@@ -1,0 +1,770 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>COPILOTE — Tournées officines · Intégral Pharma</title>
+<style>
+:root{
+  --blue:#0057FF; --blue-ink:#0042c4; --turq:#0E7C86; --ink:#0B131C;
+  --paper:#F4F6FB; --card:#FFFFFF; --gray:#6B7590; --line:#E4E8F1;
+  --green:#0B7A44; --amber:#B5750B; --red:#C23A3A;
+  --shadow:0 1px 2px rgba(11,19,28,.04),0 8px 24px -12px rgba(11,19,28,.18);
+  --shadow-lg:0 24px 60px -20px rgba(11,19,28,.30);
+  --r:14px; --r-sm:10px;
+  --A:#0B7A44; --B:#0E7C86; --C:#B5750B; --P:#0057FF;
+  font-synthesis-weight:none;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{
+  font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  color:var(--ink); background:var(--paper);
+  -webkit-font-smoothing:antialiased; letter-spacing:-.01em;
+}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:#d5dbe8;border-radius:20px;border:3px solid var(--card)}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:6px}
+
+/* ---------- TOP BAR ---------- */
+.topbar{
+  height:60px;display:flex;align-items:center;gap:16px;padding:0 20px;
+  background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:40;
+}
+.brand{display:flex;align-items:center;gap:11px;font-weight:800;letter-spacing:-.03em;font-size:16px}
+.logo{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--blue),var(--turq));
+  display:grid;place-items:center;color:#fff;font-weight:900;font-size:15px;box-shadow:0 4px 12px -4px rgba(0,87,255,.5)}
+.brand small{display:block;font-weight:600;font-size:10.5px;color:var(--gray);letter-spacing:.06em;text-transform:uppercase;margin-top:1px}
+.tabnav{display:flex;gap:2px;margin-left:6px}
+.tabnav a{padding:8px 13px;border-radius:9px;font-size:13.5px;font-weight:600;color:var(--gray);text-decoration:none}
+.tabnav a.on{background:rgba(0,87,255,.09);color:var(--blue)}
+.topbar .spacer{flex:1}
+.pill-live{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:var(--gray);
+  background:var(--paper);padding:7px 12px;border-radius:20px;border:1px solid var(--line)}
+.dot-live{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 0 3px rgba(11,122,68,.15)}
+.avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#0E7C86,#0B7A44);color:#fff;
+  display:grid;place-items:center;font-weight:700;font-size:13px}
+
+/* ---------- LAYOUT ---------- */
+.app{display:grid;grid-template-columns:344px minmax(0,1fr) 400px;gap:14px;padding:14px;height:calc(100vh - 60px);align-items:stretch}
+.col{display:flex;flex-direction:column;min-height:0;min-width:0;gap:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+.pad{padding:16px}
+.col-head{display:flex;align-items:center;gap:9px;padding:15px 16px 12px}
+.col-head h2{margin:0;font-size:13px;font-weight:800;letter-spacing:.03em;text-transform:uppercase}
+.col-head .ic{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;color:#fff;flex:none}
+.col-head .count{margin-left:auto;font-size:12px;font-weight:700;color:var(--gray);background:var(--paper);padding:3px 9px;border-radius:8px}
+
+/* ---------- FILTERS + LISTING (col 1) ---------- */
+.search{position:relative;margin:0 16px}
+.search input{width:100%;height:40px;border:1px solid var(--line);border-radius:11px;padding:0 14px 0 38px;
+  font-size:14px;background:var(--paper);color:var(--ink)}
+.search input::placeholder{color:var(--gray)}
+.search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--gray)}
+.chips{display:flex;flex-wrap:wrap;gap:7px;padding:12px 16px 4px}
+.chip{font-size:12px;font-weight:600;color:var(--gray);background:var(--paper);border:1px solid var(--line);
+  padding:6px 11px;border-radius:20px;transition:.12s;display:inline-flex;align-items:center;gap:6px}
+.chip:hover{border-color:#c9d1e2}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.chip.on.a{background:var(--A);border-color:var(--A)} .chip.on.b{background:var(--B);border-color:var(--B)}
+.chip.on.c{background:var(--C);border-color:var(--C)} .chip.on.p{background:var(--P);border-color:var(--P)}
+.chip .sw{width:8px;height:8px;border-radius:50%}
+.selrow{display:flex;gap:8px;padding:8px 16px 4px}
+.selrow select{flex:1;height:36px;border:1px solid var(--line);border-radius:10px;background:var(--paper);
+  font-size:12.5px;font-weight:600;color:var(--ink);padding:0 8px}
+.list-meta{display:flex;align-items:center;justify-content:space-between;padding:11px 16px 8px;font-size:12px;color:var(--gray);font-weight:600}
+.list-meta b{color:var(--ink)}
+.list-meta button{font-size:12px;font-weight:700;color:var(--blue)}
+.list{flex:1;overflow-y:auto;padding:0 10px 12px;min-height:0}
+.item{display:flex;gap:11px;align-items:flex-start;padding:11px;border-radius:12px;cursor:pointer;border:1px solid transparent;transition:.1s}
+.item:hover{background:var(--paper)}
+.item.active{background:rgba(0,87,255,.06);border-color:rgba(0,87,255,.22)}
+.item .badge{width:30px;height:30px;border-radius:9px;flex:none;display:grid;place-items:center;color:#fff;font-weight:800;font-size:13px;margin-top:1px}
+.item h4{margin:0;font-size:13.5px;font-weight:700;line-height:1.25}
+.item p{margin:2px 0 0;font-size:12px;color:var(--gray);font-weight:500}
+.item .tags{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+.tag{font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:6px;background:var(--paper);color:var(--gray);letter-spacing:.02em}
+.tag.grp{background:rgba(14,124,134,.1);color:var(--turq)}
+.item .add{margin-left:auto;flex:none;width:30px;height:30px;border-radius:9px;background:var(--paper);
+  display:grid;place-items:center;color:var(--blue);font-weight:700;font-size:18px;transition:.12s;align-self:center}
+.item .add:hover{background:var(--blue);color:#fff}
+.item.intour .add{background:var(--green);color:#fff}
+.empty{text-align:center;color:var(--gray);font-size:13px;padding:40px 20px}
+
+/* ---------- MAP (col 2) ---------- */
+.mapcard{flex:1;position:relative;overflow:hidden;border-radius:var(--r)}
+.mapwrap{position:absolute;inset:0}
+.map-toolbar{position:absolute;top:14px;left:14px;right:14px;display:flex;gap:9px;z-index:5;align-items:center;flex-wrap:wrap}
+.map-toolbar .tt{background:rgba(255,255,255,.92);backdrop-filter:blur(8px);border:1px solid var(--line);
+  border-radius:11px;padding:8px 13px;font-size:12.5px;font-weight:700;box-shadow:var(--shadow);display:flex;align-items:center;gap:8px}
+.map-toolbar .tt b{color:var(--blue)}
+.legend{margin-left:auto;display:flex;gap:12px;background:rgba(255,255,255,.92);backdrop-filter:blur(8px);
+  border:1px solid var(--line);border-radius:11px;padding:8px 13px;box-shadow:var(--shadow)}
+.legend span{font-size:11.5px;font-weight:600;color:var(--gray);display:flex;align-items:center;gap:5px}
+.legend i{width:9px;height:9px;border-radius:50%;display:inline-block}
+svg.france{width:100%;height:100%;display:block}
+.pt{cursor:pointer;transition:.12s}
+.pt circle.hit{fill:transparent}
+.pt .core{transition:.14s;stroke:#fff;stroke-width:2}
+.pt:hover .core{r:9}
+.pt.dim{opacity:.16;pointer-events:none}
+.pt.sel .ring{opacity:1}
+.pt .ring{opacity:0;stroke:var(--blue);stroke-width:2.5;fill:none;transition:.14s}
+.pt.intour .core{stroke:var(--blue);stroke-width:3}
+.pt .num{font-size:11px;font-weight:800;fill:#fff;text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.depot{fill:var(--ink)}
+.route-line{fill:none;stroke:var(--blue);stroke-width:2.5;stroke-dasharray:6 7;stroke-linecap:round;opacity:.55;animation:dash 22s linear infinite}
+@keyframes dash{to{stroke-dashoffset:-260}}
+.map-tip{position:absolute;z-index:8;background:var(--ink);color:#fff;padding:9px 12px;border-radius:10px;font-size:12px;
+  pointer-events:none;opacity:0;transform:translate(-50%,-118%);transition:opacity .1s;box-shadow:var(--shadow-lg);white-space:nowrap;font-weight:600}
+.map-tip b{display:block;font-size:13px;margin-bottom:2px}
+.map-tip small{color:#9fb0d8;font-weight:500}
+.mapbg-grad{position:absolute;inset:0;background:
+  radial-gradient(120% 80% at 30% -10%,rgba(0,87,255,.06),transparent 60%),
+  radial-gradient(100% 90% at 100% 110%,rgba(14,124,134,.07),transparent 55%),
+  #eef2f9;}
+
+/* ---------- COMPOSER + AGENDA (col 3) ---------- */
+.composer{display:flex;flex-direction:column;min-height:0;flex:1}
+.steps{display:flex;padding:14px 16px 4px;gap:6px}
+.step{flex:1;display:flex;flex-direction:column;gap:6px}
+.step .bar{height:4px;border-radius:3px;background:var(--line)}
+.step.done .bar,.step.cur .bar{background:var(--blue)}
+.step small{font-size:10.5px;font-weight:700;color:var(--gray);letter-spacing:.02em}
+.step.cur small{color:var(--blue)} .step.done small{color:var(--ink)}
+.setup{padding:6px 16px 14px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.field{display:flex;flex-direction:column;gap:5px}
+.field.full{grid-column:1/-1}
+.field label{font-size:11px;font-weight:700;color:var(--gray);letter-spacing:.02em;display:flex;align-items:center;gap:5px}
+.field select,.field input{height:38px;border:1px solid var(--line);border-radius:10px;background:var(--paper);
+  padding:0 11px;font-size:13px;font-weight:600;color:var(--ink);width:100%}
+.stepper{display:flex;align-items:center;border:1px solid var(--line);border-radius:10px;background:var(--paper);height:38px;overflow:hidden}
+.stepper button{width:38px;height:100%;font-size:19px;font-weight:600;color:var(--blue)}
+.stepper button:hover{background:rgba(0,87,255,.08)}
+.stepper span{flex:1;text-align:center;font-weight:800;font-size:15px}
+
+.agenda-head{display:flex;align-items:center;gap:9px;padding:4px 16px 10px}
+.agenda-head h3{margin:0;font-size:13px;font-weight:800;letter-spacing:.03em;text-transform:uppercase}
+.agenda-head .kpi{margin-left:auto;display:flex;gap:8px}
+.kpi .k{background:var(--paper);border:1px solid var(--line);border-radius:9px;padding:5px 9px;text-align:center;min-width:56px}
+.kpi .k b{display:block;font-size:14px;font-weight:800;line-height:1} .kpi .k small{font-size:9.5px;color:var(--gray);font-weight:700;letter-spacing:.03em}
+
+.agenda{flex:1;overflow-y:auto;padding:2px 16px 10px;min-height:0;position:relative}
+.tl{position:relative;padding-left:52px}
+.tl .axis{position:absolute;left:0;top:0;bottom:0;width:52px}
+.hourmark{position:relative;height:2px}
+.hourmark .lbl{position:absolute;left:0;top:-8px;font-size:10.5px;font-weight:700;color:var(--gray);width:40px;text-align:right}
+.hourmark .ln{position:absolute;left:48px;right:-16px;top:0;border-top:1px dashed var(--line)}
+.tl-track{position:absolute;left:44px;top:0;bottom:0;width:2px;background:var(--line);border-radius:2px}
+.block{position:absolute;left:52px;right:0;border-radius:11px;padding:9px 11px;overflow:hidden;box-shadow:var(--shadow);
+  border:1px solid var(--line);background:var(--card);transition:.12s}
+.block .node{position:absolute;left:-10px;top:11px;width:20px;height:20px;border-radius:50%;background:var(--card);
+  border:2px solid var(--blue);display:grid;place-items:center;font-size:10px;font-weight:800;color:var(--blue)}
+.block.visit{background:#fff;border-left:3px solid var(--blue)}
+.block.visit.a{border-left-color:var(--A)} .block.visit.b{border-left-color:var(--B)}
+.block.visit.c{border-left-color:var(--C)} .block.visit.p{border-left-color:var(--P)}
+.block.visit .node{border-color:var(--blue);color:var(--blue)}
+.block h5{margin:0;font-size:13px;font-weight:700;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:20px}
+.block .meta{margin-top:3px;font-size:11px;color:var(--gray);font-weight:600;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.block .meta .time{color:var(--ink);font-weight:800}
+.block .fixed{font-size:9.5px;font-weight:800;color:var(--amber);background:rgba(181,117,11,.12);padding:2px 6px;border-radius:5px;letter-spacing:.02em}
+.block .rm{position:absolute;top:8px;right:9px;color:var(--gray);font-size:16px;font-weight:700;line-height:1}
+.block .rm:hover{color:var(--red)}
+.block.travel{background:repeating-linear-gradient(135deg,var(--paper),var(--paper) 8px,#eef1f8 8px,#eef1f8 16px);
+  border-style:dashed;display:flex;align-items:center;gap:8px;color:var(--gray);font-size:11.5px;font-weight:700}
+.block.travel .node{border-color:var(--gray);border-style:dashed;color:var(--gray);background:var(--paper)}
+.block.travel .seg-gps{margin-left:auto;font-size:10.5px;font-weight:800;color:var(--blue);display:flex;align-items:center;gap:4px;
+  background:rgba(0,87,255,.08);padding:3px 8px;border-radius:6px}
+.block.rdv{border-left:3px solid var(--amber);background:linear-gradient(180deg,rgba(181,117,11,.05),#fff)}
+.block.rdv .node{border-color:var(--amber);color:var(--amber)}
+.nowline{position:absolute;left:44px;right:16px;height:2px;background:var(--red);z-index:6}
+.nowline::before{content:"";position:absolute;left:-4px;top:-3px;width:8px;height:8px;border-radius:50%;background:var(--red)}
+.nowline .t{position:absolute;left:-40px;top:-8px;font-size:10px;font-weight:800;color:var(--red)}
+
+.agenda-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px;color:var(--gray)}
+.agenda-empty .ico{width:56px;height:56px;border-radius:16px;background:var(--paper);display:grid;place-items:center;margin-bottom:14px;color:#b7c0d6}
+.agenda-empty b{color:var(--ink);font-size:14px;margin-bottom:5px}
+.agenda-empty span{font-size:12.5px;max-width:230px;line-height:1.5}
+
+/* ---------- GPS FOOTER ---------- */
+.gpsbar{padding:12px;border-top:1px solid var(--line);background:linear-gradient(180deg,#fff,var(--paper))}
+.gps-sum{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:12px;color:var(--gray);font-weight:600}
+.gps-sum b{color:var(--ink)}
+.btn-gps{width:100%;height:52px;border-radius:13px;background:var(--blue);color:#fff;font-size:15px;font-weight:800;
+  display:flex;align-items:center;justify-content:center;gap:10px;letter-spacing:-.01em;
+  box-shadow:0 10px 26px -8px rgba(0,87,255,.6);transition:.14s}
+.btn-gps:hover{background:var(--blue-ink);transform:translateY(-1px);box-shadow:0 16px 32px -8px rgba(0,87,255,.65)}
+.btn-gps:disabled{background:#c7cfe0;box-shadow:none;cursor:not-allowed;transform:none}
+.btn-gps .gmaps{width:24px;height:24px;border-radius:6px;background:#fff;display:grid;place-items:center;flex:none}
+.gps-hint{text-align:center;font-size:11px;color:var(--gray);margin-top:8px;font-weight:500}
+.gps-hint b{color:var(--green)}
+
+/* ---------- mobile ---------- */
+.mob-tabs{display:none}
+@media(max-width:1180px){
+  .app{grid-template-columns:300px 1fr;grid-template-rows:1fr}
+  .col.c3{position:fixed;right:14px;top:74px;bottom:14px;width:400px;z-index:30;box-shadow:var(--shadow-lg);border-radius:var(--r);
+    transform:translateX(120%);transition:.28s cubic-bezier(.4,0,.2,1)}
+  .col.c3.open{transform:none}
+  .col.c3 .card{flex:1}
+  .fab{display:flex}
+}
+.fab{display:none;position:fixed;right:20px;bottom:20px;z-index:35;height:56px;padding:0 22px;border-radius:28px;
+  background:var(--blue);color:#fff;font-weight:800;font-size:14px;align-items:center;gap:10px;box-shadow:0 14px 30px -8px rgba(0,87,255,.6)}
+.fab .b{background:#fff;color:var(--blue);border-radius:12px;min-width:22px;height:22px;display:grid;place-items:center;font-size:12px}
+@media(max-width:820px){
+  .topbar .tabnav,.pill-live{display:none}
+  .app{grid-template-columns:1fr;grid-template-rows:1fr;height:calc(100vh - 60px)}
+  .col.c1{display:flex} .col.c2{display:none}
+  body.view-map .col.c1{display:none} body.view-map .col.c2{display:flex}
+  .mob-tabs{display:flex;position:fixed;left:50%;transform:translateX(-50%);bottom:20px;z-index:36;background:var(--ink);
+    border-radius:30px;padding:5px;box-shadow:var(--shadow-lg)}
+  .mob-tabs button{padding:9px 18px;border-radius:24px;color:#9fb0d8;font-weight:700;font-size:13px}
+  .mob-tabs button.on{background:#fff;color:var(--ink)}
+  .col.c3{width:calc(100vw - 24px);right:12px;top:70px}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand"><div class="logo">IP</div><div>Intégral Pharma<small>CRM Commercial</small></div></div>
+  <nav class="tabnav">
+    <a href="#">Tableau de bord</a>
+    <a href="#" class="on">Copilote</a>
+    <a href="#">Officines</a>
+    <a href="#">Reporting</a>
+  </nav>
+  <div class="spacer"></div>
+  <div class="pill-live"><span class="dot-live"></span>19 742 officines · France</div>
+  <div class="avatar">MD</div>
+</header>
+
+<div class="app">
+
+  <!-- ============ COL 1 : FILTRES + LISTING ============ -->
+  <section class="col c1">
+    <div class="card" style="display:flex;flex-direction:column;flex:1;min-height:0">
+      <div class="col-head">
+        <div class="ic" style="background:var(--turq)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
+        </div>
+        <h2>Officines</h2>
+        <span class="count" id="colcount">— résultats</span>
+      </div>
+
+      <div class="search">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="q" placeholder="Rechercher nom, ville, titulaire…" autocomplete="off">
+      </div>
+
+      <div class="chips" id="statchips">
+        <button class="chip on" data-stat="all">Tous</button>
+        <button class="chip" data-stat="A"><span class="sw" style="background:var(--A)"></span>Client A</button>
+        <button class="chip" data-stat="B"><span class="sw" style="background:var(--B)"></span>Client B</button>
+        <button class="chip" data-stat="C"><span class="sw" style="background:var(--C)"></span>Client C</button>
+        <button class="chip" data-stat="P"><span class="sw" style="background:var(--P)"></span>Prospect</button>
+      </div>
+
+      <div class="selrow">
+        <select id="fdep"><option value="">Tous départements</option></select>
+        <select id="fgrp"><option value="">Tous groupements</option></select>
+      </div>
+      <div class="selrow" style="padding-top:0">
+        <select id="fcom"><option value="">Tous commerciaux</option></select>
+      </div>
+
+      <div class="list-meta">
+        <span><b id="listn">0</b> officine(s) affichée(s)</span>
+        <button id="reset">Réinitialiser</button>
+      </div>
+
+      <div class="list" id="list"></div>
+    </div>
+  </section>
+
+  <!-- ============ COL 2 : CARTE ============ -->
+  <section class="col c2">
+    <div class="card mapcard">
+      <div class="mapbg-grad"></div>
+      <div class="map-toolbar">
+        <div class="tt">Vue&nbsp;: <b id="mapscope">France entière</b></div>
+        <div class="tt"><b id="mappts">0</b>&nbsp;points affichés</div>
+        <div class="legend">
+          <span><i style="background:var(--A)"></i>A</span>
+          <span><i style="background:var(--B)"></i>B</span>
+          <span><i style="background:var(--C)"></i>C</span>
+          <span><i style="background:var(--P)"></i>Prospect</span>
+          <span><i style="background:var(--ink)"></i>Dépôt IP</span>
+        </div>
+      </div>
+      <div class="mapwrap">
+        <svg class="france" viewBox="0 0 820 720" id="svgmap" preserveAspectRatio="xMidYMid meet">
+          <defs>
+            <linearGradient id="land" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#eaf0fb"/>
+            </linearGradient>
+          </defs>
+          <path d="M480 96 C540 86 600 108 632 140 C700 158 742 196 738 246
+                   C770 300 760 360 742 404 C766 448 742 520 706 548
+                   C716 596 672 630 632 626 C596 660 540 662 500 648
+                   C460 664 410 660 388 638 C336 654 286 632 268 596
+                   C232 592 250 540 268 512 C226 470 232 410 254 384
+                   C214 356 200 316 226 292 C186 272 178 236 216 214
+                   C258 196 310 200 336 186 C374 150 430 122 480 96 Z"
+                fill="url(#land)" stroke="#d3dcef" stroke-width="2"/>
+          <g id="routelayer"></g>
+          <g id="ptlayer"></g>
+        </svg>
+      </div>
+      <div class="map-tip" id="tip"></div>
+    </div>
+  </section>
+
+  <!-- ============ COL 3 : COMPOSEUR + AGENDA + GPS ============ -->
+  <section class="col c3" id="c3">
+    <div class="card composer">
+      <div class="col-head">
+        <div class="ic" style="background:var(--blue)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11Z"/><circle cx="12" cy="10" r="2.4"/></svg>
+        </div>
+        <h2>Ma tournée du jour</h2>
+      </div>
+
+      <div class="steps">
+        <div class="step done" id="s1"><div class="bar"></div><small>1 · Réglages</small></div>
+        <div class="step cur" id="s2"><div class="bar"></div><small>2 · Sélection</small></div>
+        <div class="step" id="s3"><div class="bar"></div><small>3 · Itinéraire GPS</small></div>
+      </div>
+
+      <div class="setup">
+        <div class="field full">
+          <label>🏢 Départ (dépôt Intégral)</label>
+          <select id="depot"></select>
+        </div>
+        <div class="field">
+          <label>🕘 Heure de départ</label>
+          <input type="time" id="start" value="09:00">
+        </div>
+        <div class="field">
+          <label>📍 Ville à prospecter</label>
+          <select id="target"><option value="">— libre —</option></select>
+        </div>
+        <div class="field">
+          <label>👥 Nombre de visites</label>
+          <div class="stepper"><button id="less">−</button><span id="nvis">8</span><button id="more">+</button></div>
+        </div>
+        <div class="field">
+          <label>⭐ RDV fixe (ancré)</label>
+          <input type="time" id="rdv" value="14:30">
+        </div>
+      </div>
+
+      <div class="agenda-head">
+        <h3>Frise horaire</h3>
+        <div class="kpi">
+          <div class="k"><b id="kv">0</b><small>VISITES</small></div>
+          <div class="k"><b id="kkm">0</b><small>KM</small></div>
+          <div class="k"><b id="kfin">—</b><small>FIN</small></div>
+        </div>
+      </div>
+
+      <div class="agenda" id="agenda">
+        <div class="agenda-empty" id="empty">
+          <div class="ico"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg></div>
+          <b>Composez votre tournée</b>
+          <span>Cliquez sur le <b style="color:var(--blue)">+</b> d'une officine dans la liste (ou sur la carte). Elle s'ajoute ici, placée automatiquement sur la frise horaire 9h → 18h.</span>
+        </div>
+      </div>
+
+      <div class="gpsbar">
+        <div class="gps-sum">
+          <span>Trajet optimisé&nbsp;: <b id="sumkm">0 km</b> · <b id="sumt">0 min</b></span>
+          <span><b id="sumn">0</b> arrêts</span>
+        </div>
+        <button class="btn-gps" id="gps" disabled>
+          <span class="gmaps">
+            <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#34A853" d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7Z"/><circle cx="12" cy="9" r="2.6" fill="#fff"/></svg>
+          </span>
+          Ouvrir la tournée dans Google Maps
+        </button>
+        <div class="gps-hint" id="gpshint">Ajoutez au moins 2 arrêts pour lancer le GPS</div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<button class="fab" id="fab" aria-label="Voir ma tournée">🗺️ Ma tournée <span class="b" id="fabn">0</span></button>
+<div class="mob-tabs"><button class="on" data-v="list">Liste</button><button data-v="map">Carte</button></div>
+
+<script>
+(function(){
+"use strict";
+/* ---------- DONNÉES ---------- */
+const DEPOTS=[
+ {id:'d1',n:'Intégral — Rouen (76)',x:420,y:214},
+ {id:'d2',n:'Intégral — Lyon Corbas (69)',x:600,y:462},
+ {id:'d3',n:'Intégral — Bordeaux Mérignac (33)',x:300,y:520},
+ {id:'d4',n:'Intégral — Lille Lesquin (59)',x:520,y:118},
+ {id:'d5',n:'Intégral — Toulouse (31)',x:420,y:600},
+ {id:'d6',n:'Intégral — Nantes (44)',x:262,y:372},
+ {id:'d7',n:'Intégral — Strasbourg (67)',x:722,y:262},
+ {id:'d8',n:'Intégral — Marseille (13)',x:632,y:602},
+ {id:'d9',n:'Intégral — Reims (51)',x:562,y:230}
+];
+const GRP=['Giphar','Aprium','Mediprix','Pharmavie','Leadersanté','Wellpharma','Elsie Santé','Indépendant'];
+const COM=[['MDC','Morgane Delcourt'],['ILE','Ingrid Leblanc'],['MD','Manon Dussurgey'],['PGN','Pauline Guinehut'],['ASC','Alexandre Simon']];
+const CITY=[ // ville, cp, dep, x, y
+ ['Rouen','76000','76',424,216],['Le Havre','76600','76',360,206],['Dieppe','76200','76',412,178],
+ ['Paris 11e','75011','75',482,250],['Paris 15e','75015','75',470,258],['Boulogne-Billancourt','92100','92',462,262],
+ ['Lyon 3e','69003','69',602,458],['Villeurbanne','69100','69',612,452],['Vénissieux','69200','69',606,470],
+ ['Marseille 8e','13008','13',632,606],['Aix-en-Provence','13100','13',648,586],['Aubagne','13400','13',648,610],
+ ['Bordeaux','33000','33',300,522],['Mérignac','33700','33',288,520],['Pessac','33600','33',296,532],
+ ['Lille','59000','59',522,120],['Roubaix','59100','59',536,116],['Villeneuve-d’Ascq','59650','59',532,126],
+ ['Nantes','44000','44',262,374],['Saint-Herblain','44800','44',250,372],['Rezé','44400','44',262,386],
+ ['Toulouse','31000','31',420,602],['Colomiers','31770','31',406,600],['Blagnac','31700','31',412,592],
+ ['Strasbourg','67000','67',722,262],['Schiltigheim','67300','67',722,252],
+ ['Rennes','35000','35',252,300],['Nice','06000','06',722,582],['Cannes','06400','06',706,590],
+ ['Reims','51100','51',562,232],['Dijon','21000','21',582,362],['Montpellier','34000','34',540,590],
+ ['Tours','37000','37',400,360],['Grenoble','38000','38',652,490],['Clermont-Ferrand','63000','63',490,470],
+ ['Amiens','80000','80',470,180],['Caen','14000','14',332,240],['Angers','49000','49',322,368],
+ ['Metz','57000','57',640,222],['Nancy','54000','54',636,252]
+];
+const NOMS=['du Centre','de la Gare','des Halles','Saint-Michel','de la Mairie','du Marché','de la Paix','des Arcades',
+ 'de l’Hôtel de Ville','Pasteur','de la République','du Théâtre','Jean Jaurès','de la Cathédrale','du Port',
+ 'Victor Hugo','de la Place','des Écoles','du Parc','de la Fontaine','des Lilas','du Commerce','Carnot','Foch'];
+const TITU=['Dr M. Fontaine','Dr L. Girard','Dr S. Morel','Dr A. Bernard','Dr C. Petit','Dr J. Roux','Dr N. Faure',
+ 'Dr P. Lemaire','Dr E. Blanc','Dr T. Garnier','Dr V. Chevalier','Dr H. Marchand','Dr O. Renard','Dr F. Dupuis'];
+const STAT=['A','B','C','P'];
+function rnd(a){return a[Math.floor(Math.random()*a.length)]}
+let seed=42; function rr(){seed=(seed*1103515245+12345)&0x7fffffff;return seed/0x7fffffff}
+function pick(a){return a[Math.floor(rr()*a.length)]}
+
+const PH=[]; let uid=0;
+CITY.forEach(c=>{
+  const k=3+Math.floor(rr()*3);
+  for(let i=0;i<k;i++){
+    const st=pick(STAT.concat(['A','B','P']));
+    PH.push({
+      id:'p'+(uid++),
+      nom:'Pharmacie '+pick(NOMS),
+      ville:c[0],cp:c[1],dep:c[2],
+      x:c[3]+(rr()*22-11),y:c[4]+(rr()*22-11),
+      tel:'0'+(2+Math.floor(rr()*7))+' '+('0'+Math.floor(rr()*100)).slice(-2)+' '+('0'+Math.floor(rr()*100)).slice(-2)+' '+('0'+Math.floor(rr()*100)).slice(-2)+' '+('0'+Math.floor(rr()*100)).slice(-2),
+      titu:pick(TITU),
+      stat:st,
+      grp:pick(GRP),
+      com:pick(COM),
+      ca:st==='A'?60+Math.floor(rr()*90):st==='B'?25+Math.floor(rr()*40):st==='C'?8+Math.floor(rr()*20):0
+    });
+  }
+});
+const STCOL={A:'var(--A)',B:'var(--B)',C:'var(--C)',P:'var(--P)'};
+const STHEX={A:'#0B7A44',B:'#0E7C86',C:'#B5750B',P:'#0057FF'};
+const STCLS={A:'a',B:'b',C:'c',P:'p'};
+const STLBL={A:'Client A',B:'Client B',C:'Client C',P:'Prospect'};
+
+/* ---------- ÉTAT ---------- */
+const state={stat:'all',q:'',dep:'',grp:'',com:'',tour:[]/*ids*/,active:null};
+
+/* ---------- REMPLIR SELECTS ---------- */
+const $=s=>document.querySelector(s);
+const depSel=$('#fdep'),grpSel=$('#fgrp'),comSel=$('#fcom'),depotSel=$('#depot'),targetSel=$('#target');
+[...new Set(PH.map(p=>p.dep))].sort().forEach(d=>{const o=document.createElement('option');o.value=d;o.textContent='Dép. '+d;depSel.appendChild(o)});
+GRP.forEach(g=>{const o=document.createElement('option');o.value=g;o.textContent=g;grpSel.appendChild(o)});
+COM.forEach(c=>{const o=document.createElement('option');o.value=c[0];o.textContent=c[1]+' ('+c[0]+')';comSel.appendChild(o)});
+DEPOTS.forEach(d=>{const o=document.createElement('option');o.value=d.id;o.textContent=d.n;depotSel.appendChild(o)});
+[...new Set(PH.map(p=>p.ville))].sort().forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;targetSel.appendChild(o)});
+
+/* ---------- FILTRE ---------- */
+function filtered(){
+  const q=state.q.trim().toLowerCase();
+  return PH.filter(p=>{
+    if(state.stat!=='all'&&p.stat!==state.stat)return false;
+    if(state.dep&&p.dep!==state.dep)return false;
+    if(state.grp&&p.grp!==state.grp)return false;
+    if(state.com&&p.com[0]!==state.com)return false;
+    if(q&&!(p.nom.toLowerCase().includes(q)||p.ville.toLowerCase().includes(q)||p.titu.toLowerCase().includes(q)||p.cp.includes(q)))return false;
+    return true;
+  });
+}
+
+/* ---------- LISTING ---------- */
+const listEl=$('#list');
+function renderList(){
+  const f=filtered();
+  $('#listn').textContent=f.length;
+  $('#colcount').textContent=f.length+' résultat'+(f.length>1?'s':'');
+  $('#mappts').textContent=f.length;
+  const scope=[state.stat!=='all'?STLBL[state.stat]:null,state.dep?'Dép. '+state.dep:null,state.grp,state.com?COM.find(c=>c[0]===state.com)[1]:null].filter(Boolean);
+  $('#mapscope').textContent=scope.length?scope.join(' · '):'France entière';
+  if(!f.length){listEl.innerHTML='<div class="empty">Aucune officine ne correspond à ces filtres.<br>Essayez d’élargir la recherche.</div>';renderMap();return;}
+  listEl.innerHTML='';
+  f.slice(0,200).forEach(p=>{
+    const inT=state.tour.includes(p.id);
+    const el=document.createElement('div');
+    el.className='item'+(state.active===p.id?' active':'')+(inT?' intour':'');
+    el.dataset.id=p.id;
+    el.innerHTML=`
+      <div class="badge" style="background:${STCOL[p.stat]}">${p.stat}</div>
+      <div style="flex:1;min-width:0">
+        <h4>${p.nom}</h4>
+        <p>${p.ville} · ${p.cp} · ${p.titu}</p>
+        <div class="tags">
+          <span class="tag grp">${p.grp}</span>
+          <span class="tag">${p.com[0]}</span>
+          ${p.ca?`<span class="tag">${p.ca}k€ CA</span>`:'<span class="tag">nouveau</span>'}
+        </div>
+      </div>
+      <button class="add" title="${inT?'Retirer de la tournée':'Ajouter à la tournée'}">${inT?'✓':'+'}</button>`;
+    el.addEventListener('mouseenter',()=>{state.active=p.id;highlightPt(p.id,true)});
+    el.addEventListener('mouseleave',()=>{highlightPt(p.id,false)});
+    el.querySelector('.add').addEventListener('click',e=>{e.stopPropagation();toggleTour(p.id)});
+    el.addEventListener('click',()=>{state.active=p.id;flyTo(p);renderList()});
+    listEl.appendChild(el);
+  });
+  renderMap();
+}
+
+/* ---------- CARTE ---------- */
+const ptLayer=$('#ptlayer'),routeLayer=$('#routelayer'),tip=$('#tip');
+function renderMap(){
+  const f=filtered(); const fset=new Set(f.map(p=>p.id));
+  ptLayer.innerHTML='';
+  // dépôts
+  DEPOTS.forEach(d=>{
+    const g=mk('g',{class:'pt'});
+    g.appendChild(mk('rect',{x:d.x-6,y:d.y-6,width:12,height:12,rx:3,class:'core depot'}));
+    ptLayer.appendChild(g);
+  });
+  PH.forEach(p=>{
+    const show=fset.has(p.id);
+    const inT=state.tour.includes(p.id);
+    const g=mk('g',{class:'pt'+(show?'':' dim')+(inT?' intour':'')+(state.active===p.id?' sel':''),'data-id':p.id});
+    g.appendChild(mk('circle',{cx:p.x,cy:p.y,r:13,class:'ring'}));
+    g.appendChild(mk('circle',{cx:p.x,cy:p.y,r:6.5,class:'core',fill:STHEX[p.stat]}));
+    g.appendChild(mk('circle',{cx:p.x,cy:p.y,r:16,class:'hit'}));
+    if(inT){const n=state.tour.indexOf(p.id)+1;g.appendChild(mk('text',{x:p.x,y:p.y,class:'num'},String(n)))}
+    if(show||inT){
+      g.addEventListener('mouseenter',e=>showTip(e,p));
+      g.addEventListener('mousemove',e=>moveTip(e));
+      g.addEventListener('mouseleave',()=>{tip.style.opacity=0});
+      g.addEventListener('click',()=>toggleTour(p.id));
+    }
+    ptLayer.appendChild(g);
+  });
+  drawRoute();
+}
+function mk(t,a,txt){const e=document.createElementNS('http://www.w3.org/2000/svg',t);for(const k in a)e.setAttribute(k,a[k]);if(txt!=null)e.textContent=txt;return e}
+function highlightPt(id,on){const g=ptLayer.querySelector(`[data-id="${id}"]`);if(g)g.classList.toggle('sel',on)}
+const svg=$('#svgmap');
+function showTip(e,p){
+  tip.innerHTML=`<b>${p.nom}</b><small>${p.ville} · ${STLBL[p.stat]} · ${p.grp}</small>`;
+  tip.style.opacity=1;moveTip(e);
+}
+function moveTip(e){
+  const r=svg.getBoundingClientRect(); const wrap=svg.closest('.mapcard').getBoundingClientRect();
+  tip.style.left=(e.clientX-wrap.left)+'px';
+  tip.style.top=(e.clientY-wrap.top)+'px';
+}
+function flyTo(p){state.active=p.id;renderMap();}
+
+/* ---------- TOURNÉE + OPTIM ---------- */
+function toggleTour(id){
+  const i=state.tour.indexOf(id);
+  if(i>=0)state.tour.splice(i,1);
+  else{ if(state.tour.length>=12){alert('12 visites maximum par tournée.');return;} state.tour.push(id); }
+  optimize(); renderAll();
+}
+function depot(){return DEPOTS.find(d=>d.id===depotSel.value)||DEPOTS[0]}
+function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y)}
+function optimize(){
+  // nearest-neighbour depuis le dépôt
+  if(state.tour.length<2)return;
+  const pts=state.tour.map(id=>PH.find(p=>p.id===id));
+  const order=[]; let cur=depot(); const pool=[...pts];
+  while(pool.length){
+    let bi=0,bd=1e9;
+    pool.forEach((p,i)=>{const d=dist(cur,p);if(d<bd){bd=d;bi=i}});
+    cur=pool[bi];order.push(cur.id);pool.splice(bi,1);
+  }
+  state.tour=order;
+}
+function drawRoute(){
+  routeLayer.innerHTML='';
+  if(state.tour.length<1)return;
+  const pts=[depot(),...state.tour.map(id=>PH.find(p=>p.id===id))];
+  let d='M '+pts[0].x+' '+pts[0].y;
+  for(let i=1;i<pts.length;i++)d+=' L '+pts[i].x+' '+pts[i].y;
+  routeLayer.appendChild(mk('path',{d,class:'route-line'}));
+}
+// km ≈ échelle : 1 unité svg ≈ 1.35 km (France ~1000km sur ~730 unités)
+const KMU=1.35;
+function legs(){
+  const pts=[depot(),...state.tour.map(id=>PH.find(p=>p.id===id))];
+  const L=[];
+  for(let i=1;i<pts.length;i++){
+    const km=Math.round(dist(pts[i-1],pts[i])*KMU);
+    L.push({from:pts[i-1],to:pts[i],km,min:Math.max(5,Math.round(km/0.8))}); // ~48km/h
+  }
+  return L;
+}
+
+/* ---------- AGENDA / FRISE ---------- */
+const H0=8, H1=19, PXH=64; // 8h→19h, 64px/heure
+const agenda=$('#agenda'),emptyEl=$('#empty');
+function toMin(t){const[a,b]=t.split(':').map(Number);return a*60+b}
+function fmt(m){m=Math.round(m);const h=Math.floor(m/60),mm=m%60;return String(h).padStart(2,'0')+':'+String(mm).padStart(2,'0')}
+const VISITMIN=40;
+function buildSchedule(){
+  const L=legs(); if(!state.tour.length)return{items:[],endMin:null,km:0,min:0};
+  const rdvMin=toMin($('#rdv').value);
+  let t=toMin($('#start').value);
+  const items=[]; let totKm=0,totMin=0;
+  // choisir sur quelle visite ancrer le RDV : la plus tardive avant/vers rdvMin -> on ancre la 1re visite dont le début dépasse rdv
+  // simple : marque la visite dont l'index correspond ~ au milieu comme fixe si un rdv est renseigné
+  const rdvOn = $('#rdv').value ? Math.min(state.tour.length-1, Math.max(0, Math.round(state.tour.length/2)-1)) : -1;
+  L.forEach((lg,i)=>{
+    // trajet
+    items.push({type:'travel',from:lg.from,to:lg.to,km:lg.km,min:lg.min,start:t});
+    totKm+=lg.km; totMin+=lg.min; t+=lg.min;
+    const p=lg.to;
+    let fixed=false;
+    if(i===rdvOn){ if(t<rdvMin){/*attente*/ } t=Math.max(t,rdvMin); fixed=true; }
+    items.push({type:'visit',p,start:t,end:t+VISITMIN,fixed,idx:i+1});
+    t+=VISITMIN; totMin+=VISITMIN;
+  });
+  return {items,endMin:t,km:totKm,min:totMin};
+}
+function renderAgenda(){
+  const sch=buildSchedule();
+  emptyEl.style.display=state.tour.length?'none':'flex';
+  // kpis
+  $('#kv').textContent=state.tour.length;
+  $('#kkm').textContent=sch.km;
+  $('#kfin').textContent=sch.endMin?fmt(sch.endMin):'—';
+  $('#sumkm').textContent=sch.km+' km';
+  $('#sumt').textContent=Math.floor(sch.min/60)+'h'+String(sch.min%60).padStart(2,'0');
+  $('#sumn').textContent=state.tour.length;
+  $('#fabn').textContent=state.tour.length;
+  // steps
+  $('#s3').className='step'+(state.tour.length>=2?' cur':'');
+  $('#s2').className='step'+(state.tour.length?' done':' cur');
+  // gps
+  const ok=state.tour.length>=2;
+  $('#gps').disabled=!ok;
+  $('#gpshint').innerHTML=ok?'✓ Itinéraire prêt · <b>ouvre dans l’app Google Maps</b> avec tous les arrêts':'Ajoutez au moins 2 arrêts pour lancer le GPS';
+
+  // build DOM
+  agenda.querySelectorAll('.tl').forEach(n=>n.remove());
+  if(!state.tour.length)return;
+  const tl=document.createElement('div');tl.className='tl';
+  const totH=(H1-H0)*PXH+30;
+  tl.style.height=totH+'px';
+  // axe heures
+  const axis=document.createElement('div');axis.className='axis';
+  for(let h=H0;h<=H1;h++){
+    const m=document.createElement('div');m.className='hourmark';m.style.top=((h-H0)*PXH+8)+'px';
+    m.innerHTML=`<span class="lbl">${h}h</span><span class="ln"></span>`;axis.appendChild(m);
+  }
+  tl.appendChild(axis);
+  const track=document.createElement('div');track.className='tl-track';tl.appendChild(track);
+
+  const y=m=>((m-H0*60)/60)*PXH+8;
+  sch.items.forEach(it=>{
+    const b=document.createElement('div');
+    if(it.type==='travel'){
+      b.className='block travel';
+      const top=y(it.start),h=Math.max(26,(it.min/60)*PXH-3);
+      b.style.top=top+'px';b.style.height=h+'px';
+      const q=encodeURIComponent(it.from.n?it.from.n:(it.from.nom+' '+it.from.ville))+'/'+encodeURIComponent((it.to.nom||it.to.n)+' '+(it.to.ville||''));
+      b.innerHTML=`<span class="node">🚗</span> Trajet ${it.km} km · ${it.min} min
+        <button class="seg-gps" data-a="${encodeURIComponent((it.from.ville||it.from.n))}" data-b="${encodeURIComponent((it.to.nom||'')+' '+(it.to.ville||''))}">GPS segment ›</button>`;
+      b.querySelector('.seg-gps').addEventListener('click',e=>{e.stopPropagation();
+        const a=e.currentTarget.dataset.a,bb=e.currentTarget.dataset.b;
+        window.open(`https://www.google.com/maps/dir/?api=1&origin=${a}&destination=${bb}&travelmode=driving`,'_blank');
+      });
+    }else{
+      const p=it.p;const cls=STCLS[p.stat];
+      b.className='block visit '+cls;
+      const top=y(it.start),h=Math.max(48,(VISITMIN/60)*PXH-3);
+      b.style.top=top+'px';b.style.height=h+'px';
+      b.innerHTML=`<span class="node">${it.idx}</span>
+        <button class="rm" title="Retirer">×</button>
+        <h5>${p.nom}</h5>
+        <div class="meta"><span class="time">${fmt(it.start)}–${fmt(it.end)}</span><span>${p.ville}</span>
+        <span style="color:${STCOL[p.stat]};font-weight:800">${p.stat}</span>
+        ${it.fixed?'<span class="fixed">⭐ RDV FIXE</span>':''}</div>`;
+      b.querySelector('.rm').addEventListener('click',e=>{e.stopPropagation();toggleTour(p.id)});
+      b.addEventListener('mouseenter',()=>highlightPt(p.id,true));
+      b.addEventListener('mouseleave',()=>highlightPt(p.id,false));
+    }
+    tl.appendChild(b);
+  });
+  agenda.appendChild(tl);
+}
+
+/* ---------- GPS GLOBAL ---------- */
+$('#gps').addEventListener('click',()=>{
+  if(state.tour.length<2)return;
+  const d=depot();
+  const stops=state.tour.map(id=>{const p=PH.find(x=>x.id===id);return encodeURIComponent(p.nom+', '+p.ville+' '+p.cp)});
+  const origin=encodeURIComponent(d.n.replace('Intégral — ',''));
+  const destination=stops[stops.length-1];
+  const way=stops.slice(0,-1).join('|');
+  const url=`https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&waypoints=${way}&travelmode=driving`;
+  window.open(url,'_blank');
+});
+
+/* ---------- RENDER ALL ---------- */
+function renderAll(){renderList();renderAgenda();}
+
+/* ---------- EVENTS ---------- */
+$('#statchips').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;
+  state.stat=b.dataset.stat;
+  document.querySelectorAll('#statchips .chip').forEach(c=>c.className='chip'+(c===b?' on '+({A:'a',B:'b',C:'c',P:'p'}[b.dataset.stat]||''):''));
+  renderList();
+});
+$('#q').addEventListener('input',e=>{state.q=e.target.value;renderList()});
+depSel.addEventListener('change',e=>{state.dep=e.target.value;renderList()});
+grpSel.addEventListener('change',e=>{state.grp=e.target.value;renderList()});
+comSel.addEventListener('change',e=>{state.com=e.target.value;renderList()});
+$('#reset').addEventListener('click',()=>{state.stat='all';state.q='';state.dep='';state.grp='';state.com='';
+  $('#q').value='';depSel.value='';grpSel.value='';comSel.value='';
+  document.querySelectorAll('#statchips .chip').forEach((c,i)=>c.className='chip'+(i===0?' on':''));
+  renderList();
+});
+$('#less').addEventListener('click',()=>setN(-1));
+$('#more').addEventListener('click',()=>setN(1));
+function setN(d){let n=+$('#nvis').textContent+d;n=Math.max(6,Math.min(12,n));$('#nvis').textContent=n;autoFill(n)}
+$('#target').addEventListener('change',()=>autoFill(+$('#nvis').textContent));
+$('#depot').addEventListener('change',()=>{optimize();renderAll()});
+$('#start').addEventListener('change',renderAgenda);
+$('#rdv').addEventListener('change',renderAgenda);
+function autoFill(n){ // aide : pré-remplit la tournée avec n officines de la ville cible / des filtres
+  const v=$('#target').value;
+  let pool=filtered();
+  if(v)pool=PH.filter(p=>p.ville===v);
+  pool=pool.filter(p=>p.stat==='P'||p.stat==='C').concat(pool); // priorise prospects
+  const seen=new Set();state.tour=[];
+  for(const p of pool){if(state.tour.length>=n)break;if(seen.has(p.id))continue;seen.add(p.id);state.tour.push(p.id)}
+  optimize();renderAll();
+}
+
+/* mobile */
+$('#fab').addEventListener('click',()=>$('#c3').classList.toggle('open'));
+document.querySelectorAll('.mob-tabs button').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.mob-tabs button').forEach(x=>x.classList.remove('on'));b.classList.add('on');
+  document.body.classList.toggle('view-map',b.dataset.v==='map');
+}));
+
+/* ---------- INIT : démo pré-remplie pour montrer la frise ---------- */
+depotSel.value='d2'; // Lyon
+$('#target').value='Lyon 3e';
+renderList();
+autoFill(8);
+})();
+</script>
+</body>
+</html>

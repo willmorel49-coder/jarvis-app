@@ -1,0 +1,810 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Copilote — Carte des officines · Intégral Pharma</title>
+<style>
+:root{
+  --blue:#0057FF; --blue-soft:#e8efff; --turq:#0E7C86; --ink:#0B131C;
+  --grey:#6B7590; --green:#0B7A44; --line:#e7ebf2; --bg:#f5f7fb; --card:#ffffff;
+  --amber:#B8791B; --shadow:0 1px 2px rgba(11,19,28,.04),0 8px 24px rgba(11,19,28,.06);
+  --shadow-lg:0 12px 40px rgba(11,19,28,.14);
+  --radius:14px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{
+  font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  color:var(--ink); background:var(--bg); -webkit-font-smoothing:antialiased;
+  font-size:14px; line-height:1.45;
+}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input{font-family:inherit}
+.app{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+
+/* ---------- Top bar ---------- */
+.topbar{
+  display:flex;align-items:center;gap:16px;padding:12px 20px;
+  background:var(--card);border-bottom:1px solid var(--line);flex:none;z-index:40;
+}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:-.02em}
+.brand .logo{
+  width:30px;height:30px;border-radius:9px;flex:none;
+  background:linear-gradient(135deg,var(--blue),var(--turq));
+  display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;font-weight:800
+}
+.brand small{display:block;font-weight:500;color:var(--grey);font-size:11px;letter-spacing:0}
+.brand .name{font-size:15px}
+
+/* Command palette / pilote search */
+.palette{flex:1;max-width:680px;margin:0 auto;position:relative}
+.palette-box{
+  display:flex;align-items:center;gap:10px;height:44px;padding:0 14px;
+  background:var(--bg);border:1.5px solid var(--line);border-radius:12px;transition:.15s;
+}
+.palette-box:focus-within{border-color:var(--blue);background:#fff;box-shadow:0 0 0 4px rgba(0,87,255,.10)}
+.palette-box svg{flex:none;color:var(--grey)}
+.palette-box input{flex:1;border:none;background:none;outline:none;font-size:15px;color:var(--ink)}
+.palette-box input::placeholder{color:var(--grey)}
+.kbd{
+  font-size:11px;color:var(--grey);border:1px solid var(--line);border-bottom-width:2px;
+  padding:2px 7px;border-radius:6px;background:#fff;font-weight:600;white-space:nowrap
+}
+.count-badge{font-size:12px;color:var(--grey);white-space:nowrap}
+.count-badge b{color:var(--ink)}
+
+.topbar-right{display:flex;align-items:center;gap:10px}
+.avatar{width:32px;height:32px;border-radius:50%;background:var(--blue-soft);color:var(--blue);
+  display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px}
+
+/* Palette dropdown suggestions */
+.suggest{
+  position:absolute;top:52px;left:0;right:0;background:#fff;border:1px solid var(--line);
+  border-radius:14px;box-shadow:var(--shadow-lg);padding:8px;display:none;z-index:60
+}
+.suggest.open{display:block}
+.suggest h6{margin:8px 10px 4px;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--grey)}
+.suggest .row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:9px;cursor:pointer}
+.suggest .row:hover{background:var(--bg)}
+.suggest .row .tok{font-size:11px;font-weight:700;color:var(--blue);background:var(--blue-soft);padding:2px 7px;border-radius:6px}
+.suggest .row .desc{color:var(--grey);font-size:12.5px}
+
+/* ---------- Filter bar ---------- */
+.filterbar{
+  display:flex;align-items:center;gap:8px;padding:10px 20px;background:var(--card);
+  border-bottom:1px solid var(--line);flex:none;overflow-x:auto;z-index:30
+}
+.filter-group{position:relative;flex:none}
+.chip{
+  display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 12px;border-radius:9px;
+  border:1px solid var(--line);background:#fff;color:var(--ink);font-size:13px;font-weight:500;white-space:nowrap;transition:.12s
+}
+.chip:hover{border-color:#c9d2e2;background:var(--bg)}
+.chip .car{color:var(--grey);font-size:10px}
+.chip.active{border-color:var(--blue);color:var(--blue);background:var(--blue-soft);font-weight:600}
+.chip .dot{width:8px;height:8px;border-radius:50%}
+.dropdown{
+  position:absolute;top:38px;left:0;background:#fff;border:1px solid var(--line);border-radius:12px;
+  box-shadow:var(--shadow-lg);padding:6px;min-width:210px;display:none;z-index:50;max-height:320px;overflow:auto
+}
+.dropdown.open{display:block}
+.dropdown label{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:13px}
+.dropdown label:hover{background:var(--bg)}
+.dropdown input{accent-color:var(--blue);width:15px;height:15px}
+.filter-spacer{flex:1;min-width:8px}
+.link-btn{color:var(--blue);font-size:13px;font-weight:600;padding:6px 10px;border-radius:8px;white-space:nowrap}
+.link-btn:hover{background:var(--blue-soft)}
+
+/* ---------- Main ---------- */
+.main{flex:1;display:grid;grid-template-columns:380px 1fr 340px;min-height:0}
+.pane{min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.pane-list{border-right:1px solid var(--line);background:var(--card)}
+.pane-map{position:relative;background:radial-gradient(120% 120% at 50% 0%,#eef3fb 0%,#e7edf7 60%,#e2e9f5 100%)}
+.pane-tour{border-left:1px solid var(--line);background:var(--card)}
+
+.pane-head{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:12px 16px;border-bottom:1px solid var(--line);flex:none
+}
+.pane-head h3{margin:0;font-size:13px;font-weight:700;letter-spacing:-.01em;display:flex;align-items:center;gap:8px}
+.pane-head .sub{font-size:12px;color:var(--grey);font-weight:500}
+.seg{display:inline-flex;background:var(--bg);border-radius:8px;padding:2px}
+.seg button{font-size:11.5px;font-weight:600;color:var(--grey);padding:4px 9px;border-radius:6px}
+.seg button.on{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.06)}
+
+/* results list */
+.list{overflow:auto;flex:1;padding:6px}
+.item{
+  display:flex;gap:11px;padding:11px;border-radius:11px;cursor:pointer;position:relative;
+  border:1px solid transparent;transition:.1s
+}
+.item:hover{background:var(--bg)}
+.item.hover-map{background:var(--blue-soft)}
+.item.selected{background:var(--blue-soft);border-color:rgba(0,87,255,.25)}
+.item .status{width:9px;height:9px;border-radius:50%;margin-top:5px;flex:none}
+.item .body{flex:1;min-width:0}
+.item .nm{font-weight:600;font-size:13.5px;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item .meta{color:var(--grey);font-size:12px;margin-top:2px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.tag{font-size:10.5px;font-weight:600;padding:1.5px 7px;border-radius:20px;background:var(--bg);color:var(--grey);border:1px solid var(--line)}
+.tag.grp{background:#fff}
+.item .add{
+  width:30px;height:30px;border-radius:9px;flex:none;border:1px solid var(--line);background:#fff;
+  color:var(--blue);font-size:18px;font-weight:600;display:flex;align-items:center;justify-content:center;transition:.1s
+}
+.item .add:hover{background:var(--blue);color:#fff;border-color:var(--blue)}
+.item.selected .add{background:var(--green);border-color:var(--green);color:#fff}
+.empty{padding:40px 20px;text-align:center;color:var(--grey)}
+.empty svg{opacity:.4;margin-bottom:10px}
+
+/* ---------- Map ---------- */
+.map-wrap{flex:1;position:relative;overflow:hidden}
+#map{width:100%;height:100%;display:block}
+.france-fill{fill:#fbfcfe;stroke:#cdd7ea;stroke-width:1.4}
+.map-legend{
+  position:absolute;left:16px;bottom:16px;background:rgba(255,255,255,.92);backdrop-filter:blur(6px);
+  border:1px solid var(--line);border-radius:12px;padding:10px 12px;box-shadow:var(--shadow);font-size:12px
+}
+.map-legend .lg{display:flex;align-items:center;gap:7px;margin:3px 0;color:var(--grey)}
+.map-legend .lg b{color:var(--ink);font-weight:600}
+.map-legend .sw{width:10px;height:10px;border-radius:50%}
+.map-legend .sw.sq{border-radius:3px}
+.map-zoom{
+  position:absolute;right:16px;top:16px;display:flex;flex-direction:column;background:#fff;
+  border:1px solid var(--line);border-radius:10px;overflow:hidden;box-shadow:var(--shadow)
+}
+.map-zoom button{width:34px;height:34px;font-size:18px;color:var(--ink);display:flex;align-items:center;justify-content:center}
+.map-zoom button+button{border-top:1px solid var(--line)}
+.map-hint{
+  position:absolute;top:16px;left:50%;transform:translateX(-50%);
+  background:rgba(11,19,28,.85);color:#fff;font-size:12px;padding:6px 12px;border-radius:20px;
+  box-shadow:var(--shadow);white-space:nowrap;pointer-events:none
+}
+.dot-marker{cursor:pointer;transition:transform .12s}
+.dot-marker:hover{transform:scale(1.35)}
+.map-tip{
+  position:absolute;pointer-events:none;background:#0B131C;color:#fff;font-size:12px;
+  padding:8px 11px;border-radius:9px;box-shadow:var(--shadow-lg);z-index:20;max-width:220px;
+  transform:translate(-50%,calc(-100% - 12px));opacity:0;transition:opacity .1s
+}
+.map-tip .t{font-weight:700;margin-bottom:2px}
+.map-tip .s{color:#aab6cc;font-size:11px}
+.map-tip::after{content:"";position:absolute;left:50%;bottom:-5px;width:10px;height:10px;background:#0B131C;transform:translateX(-50%) rotate(45deg)}
+
+/* ---------- Tournée composer ---------- */
+.tour-scroll{overflow:auto;flex:1;display:flex;flex-direction:column}
+.tour-setup{padding:14px 16px;border-bottom:1px solid var(--line)}
+.field{margin-bottom:11px}
+.field:last-child{margin-bottom:0}
+.field label{display:block;font-size:11.5px;font-weight:600;color:var(--grey);margin-bottom:5px}
+.field .ctrl{
+  width:100%;height:38px;border:1px solid var(--line);border-radius:9px;padding:0 11px;font-size:13px;
+  background:#fff;color:var(--ink);outline:none;transition:.12s;-webkit-appearance:none;appearance:none
+}
+.field select.ctrl{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' stroke='%236B7590' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 11px center;padding-right:30px}
+.field .ctrl:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,87,255,.12)}
+.field-row{display:flex;gap:10px}
+.field-row .field{flex:1}
+.stepper{display:flex;align-items:center;border:1px solid var(--line);border-radius:9px;height:38px;overflow:hidden}
+.stepper button{width:38px;height:100%;font-size:18px;color:var(--blue);background:#fff}
+.stepper button:hover{background:var(--blue-soft)}
+.stepper input{flex:1;text-align:center;border:none;outline:none;font-size:14px;font-weight:600;width:100%}
+
+.tour-stops{padding:8px 12px 12px;flex:1}
+.tour-empty{padding:34px 18px;text-align:center;color:var(--grey);border:1.5px dashed var(--line);border-radius:12px;margin:12px}
+.tour-empty .big{font-size:26px;margin-bottom:8px}
+.stop{
+  display:flex;gap:11px;align-items:flex-start;padding:10px;border-radius:11px;position:relative;background:#fff
+}
+.stop:hover{background:var(--bg)}
+.stop .ord{
+  width:24px;height:24px;border-radius:50%;background:var(--blue);color:#fff;font-size:12px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;flex:none;margin-top:2px
+}
+.stop.depot .ord{background:var(--ink)}
+.stop .info{flex:1;min-width:0}
+.stop .info .n{font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stop .info .a{font-size:12px;color:var(--grey);margin-top:1px}
+.stop .time{font-size:12px;font-weight:700;color:var(--turq);white-space:nowrap;margin-top:2px}
+.stop .rm{color:var(--grey);font-size:16px;padding:2px 6px;border-radius:6px;flex:none}
+.stop .rm:hover{background:#ffe9e9;color:#d64545}
+.leg{display:flex;align-items:center;gap:8px;padding:2px 0 2px 22px;color:var(--grey);font-size:11px}
+.leg .ln{width:1.5px;height:16px;background:var(--line);margin-left:11px}
+.leg svg{opacity:.6}
+
+/* summary + CTA */
+.tour-foot{border-top:1px solid var(--line);padding:14px 16px;background:var(--card);flex:none}
+.summ-grid{display:flex;gap:8px;margin-bottom:12px}
+.summ-grid .box{flex:1;background:var(--bg);border-radius:10px;padding:9px 10px;text-align:center}
+.summ-grid .box .v{font-size:16px;font-weight:800;letter-spacing:-.02em}
+.summ-grid .box .k{font-size:10.5px;color:var(--grey);margin-top:1px}
+.gps-btn{
+  width:100%;height:50px;border-radius:13px;background:var(--green);color:#fff;font-size:15px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;gap:10px;transition:.14s;box-shadow:0 6px 16px rgba(11,122,68,.28)
+}
+.gps-btn:hover{filter:brightness(1.06);transform:translateY(-1px);box-shadow:0 10px 22px rgba(11,122,68,.34)}
+.gps-btn:disabled{background:#dfe4ec;color:#9aa4b6;box-shadow:none;cursor:not-allowed;transform:none}
+.gps-btn svg{flex:none}
+.gps-note{text-align:center;font-size:11.5px;color:var(--grey);margin-top:8px;display:flex;align-items:center;justify-content:center;gap:5px}
+
+.pill-btn{font-size:12px;font-weight:600;color:var(--grey);padding:5px 10px;border-radius:8px;border:1px solid var(--line);background:#fff}
+.pill-btn:hover{background:var(--bg);color:var(--ink)}
+
+/* mobile */
+.mobile-tabs{display:none}
+@media(max-width:1080px){
+  .main{grid-template-columns:1fr 320px}
+  .pane-map{display:none}
+}
+@media(max-width:820px){
+  .palette{order:3;flex-basis:100%;max-width:none;margin-top:8px}
+  .topbar{flex-wrap:wrap}
+  .main{grid-template-columns:1fr}
+  .pane{display:none}
+  .pane.mshow{display:flex}
+  .mobile-tabs{
+    display:flex;position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);
+    z-index:80;box-shadow:0 -4px 16px rgba(11,19,28,.08)
+  }
+  .mobile-tabs button{flex:1;padding:11px 0 14px;font-size:11px;color:var(--grey);display:flex;flex-direction:column;align-items:center;gap:3px;position:relative}
+  .mobile-tabs button.on{color:var(--blue)}
+  .mobile-tabs .mbadge{position:absolute;top:6px;right:22%;background:var(--green);color:#fff;font-size:10px;font-weight:700;border-radius:10px;padding:0 5px}
+  .pane-list,.pane-tour{border:none}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- TOP BAR : command palette pilote -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">IP</div>
+      <div>
+        <div class="name">Copilote</div>
+        <small>Carte des officines</small>
+      </div>
+    </div>
+
+    <div class="palette">
+      <div class="palette-box" id="paletteBox">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+        <input id="search" placeholder="Rechercher une officine, ville, titulaire, groupement…  (⌘K)" autocomplete="off">
+        <span class="count-badge"><b id="resCount">0</b> / 19 700</span>
+        <span class="kbd">⌘K</span>
+      </div>
+      <div class="suggest" id="suggest">
+        <h6>Filtres rapides</h6>
+        <div class="row" data-quick="statut:Prospect"><span class="tok">statut:</span><span>Prospects</span><span class="desc">— officines non clientes à conquérir</span></div>
+        <div class="row" data-quick="statut:A"><span class="tok">statut:</span><span>Clients A</span><span class="desc">— vos meilleurs comptes</span></div>
+        <div class="row" data-quick="grp:Giphar"><span class="tok">grp:</span><span>Giphar</span><span class="desc">— filtrer par groupement</span></div>
+        <div class="row" data-quick="dep:69"><span class="tok">dep:</span><span>69 · Rhône</span><span class="desc">— filtrer par département</span></div>
+        <h6>Astuce</h6>
+        <div class="row" style="cursor:default"><span class="desc">Tapez librement, ou cliquez le <b>+</b> pour ajouter une officine à votre tournée du jour.</span></div>
+      </div>
+    </div>
+
+    <div class="topbar-right">
+      <div class="avatar" title="Manon Dussurgey — commerciale MDC">MD</div>
+    </div>
+  </header>
+
+  <!-- FILTER BAR -->
+  <div class="filterbar" id="filterbar">
+    <div class="filter-group">
+      <button class="chip" data-menu="statut"><span class="car">▾</span> Statut</button>
+      <div class="dropdown" id="menu-statut">
+        <label><input type="checkbox" value="A" data-f="statut"> <span class="dot" style="background:var(--green)"></span> Client A</label>
+        <label><input type="checkbox" value="B" data-f="statut"> <span class="dot" style="background:#3AA36A"></span> Client B</label>
+        <label><input type="checkbox" value="C" data-f="statut"> <span class="dot" style="background:#8FCBA9"></span> Client C</label>
+        <label><input type="checkbox" value="Prospect" data-f="statut"> <span class="dot" style="background:var(--blue)"></span> Prospect</label>
+      </div>
+    </div>
+    <div class="filter-group">
+      <button class="chip" data-menu="grp"><span class="car">▾</span> Groupement</button>
+      <div class="dropdown" id="menu-grp"></div>
+    </div>
+    <div class="filter-group">
+      <button class="chip" data-menu="dep"><span class="car">▾</span> Département</button>
+      <div class="dropdown" id="menu-dep"></div>
+    </div>
+    <div class="filter-group">
+      <button class="chip" data-menu="com"><span class="car">▾</span> Commercial</button>
+      <div class="dropdown" id="menu-com"></div>
+    </div>
+    <button class="chip" id="selOnly">◎ Sélection uniquement</button>
+    <div class="filter-spacer"></div>
+    <button class="link-btn" id="clearAll">Réinitialiser</button>
+  </div>
+
+  <!-- MAIN 3 PANES -->
+  <div class="main">
+
+    <!-- LEFT : LISTING (problème 1) -->
+    <section class="pane pane-list mshow" id="paneList">
+      <div class="pane-head">
+        <h3>Officines <span class="sub" id="listSub"></span></h3>
+        <div class="seg">
+          <button class="on" data-sort="ville">Ville</button>
+          <button data-sort="ca">CA</button>
+          <button data-sort="statut">Statut</button>
+        </div>
+      </div>
+      <div class="list" id="list"></div>
+    </section>
+
+    <!-- CENTER : MAP -->
+    <section class="pane pane-map" id="paneMap">
+      <div class="map-wrap">
+        <div class="map-hint" id="mapHint">Cliquez un point pour l'ajouter à la tournée</div>
+        <svg id="map" viewBox="0 0 700 720" preserveAspectRatio="xMidYMid meet"></svg>
+        <div class="map-tip" id="mapTip"></div>
+        <div class="map-zoom">
+          <button id="zin">+</button><button id="zout">−</button>
+        </div>
+        <div class="map-legend">
+          <div class="lg"><span class="sw" style="background:var(--green)"></span> <b>Client A</b></div>
+          <div class="lg"><span class="sw" style="background:#3AA36A"></span> <b>Client B</b></div>
+          <div class="lg"><span class="sw" style="background:#8FCBA9"></span> <b>Client C</b></div>
+          <div class="lg"><span class="sw" style="background:var(--blue)"></span> <b>Prospect</b></div>
+          <div class="lg"><span class="sw sq" style="background:var(--ink)"></span> <b>Dépôt Intégral</b></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT : TOURNÉE (problèmes 2 & 3) -->
+    <aside class="pane pane-tour" id="paneTour">
+      <div class="pane-head">
+        <h3>🚗 Ma tournée</h3>
+        <button class="pill-btn" id="clearTour">Vider</button>
+      </div>
+      <div class="tour-scroll">
+        <div class="tour-setup">
+          <div class="field">
+            <label>Point de départ</label>
+            <select class="ctrl" id="depot"></select>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label>Premier RDV à</label>
+              <input class="ctrl" id="startTime" type="time" value="09:00">
+            </div>
+            <div class="field">
+              <label>Nb. de visites</label>
+              <div class="stepper">
+                <button id="minus">−</button>
+                <input id="nbVisit" value="8" readonly>
+                <button id="plus">+</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tour-stops" id="stops"></div>
+      </div>
+
+      <div class="tour-foot">
+        <div class="summ-grid">
+          <div class="box"><div class="v" id="sVisit">0</div><div class="k">visites</div></div>
+          <div class="box"><div class="v" id="sKm">0 km</div><div class="k">trajet</div></div>
+          <div class="box"><div class="v" id="sEnd">—</div><div class="k">fin estimée</div></div>
+        </div>
+        <button class="gps-btn" id="gps" disabled>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.3-7-11a7 7 0 0114 0c0 4.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg>
+          Ouvrir la tournée dans Google Maps
+        </button>
+        <div class="gps-note">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+          Itinéraire optimisé · s'ouvre dans l'app GPS de votre téléphone
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- MOBILE TABS -->
+  <nav class="mobile-tabs">
+    <button class="on" data-tab="paneList"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>Liste</button>
+    <button data-tab="paneMap"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3L3 6v15l6-3 6 3 6-3V3l-6 3-6-3z"/></svg>Carte</button>
+    <button data-tab="paneTour"><span class="mbadge" id="mTourBadge" style="display:none">0</span><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-6.3-7-11a7 7 0 0114 0c0 4.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg>Tournée</button>
+  </nav>
+</div>
+
+<script>
+/* ============ DONNÉES D'EXEMPLE (échantillon réaliste FR) ============ */
+const DEPOTS=[
+  {n:"Dépôt Intégral · Lyon-Corbas",v:"Corbas",cp:"69960",lat:45.667,lng:4.902},
+  {n:"Dépôt Intégral · Paris-Gennevilliers",v:"Gennevilliers",cp:"92230",lat:48.933,lng:2.297},
+  {n:"Dépôt Intégral · Marseille-Vitrolles",v:"Vitrolles",cp:"13127",lat:43.46,lng:5.248},
+  {n:"Dépôt Intégral · Toulouse-Blagnac",v:"Blagnac",cp:"31700",lat:43.635,lng:1.394},
+  {n:"Dépôt Intégral · Bordeaux-Mérignac",v:"Mérignac",cp:"33700",lat:44.83,lng:-0.646},
+  {n:"Dépôt Intégral · Lille-Lesquin",v:"Lesquin",cp:"59810",lat:50.586,lng:3.108},
+  {n:"Dépôt Intégral · Nantes-St-Herblain",v:"Saint-Herblain",cp:"44800",lat:47.213,lng:-1.649},
+  {n:"Dépôt Intégral · Strasbourg",v:"Strasbourg",cp:"67000",lat:48.573,lng:7.752},
+  {n:"Dépôt Intégral · Rennes",v:"Rennes",cp:"35000",lat:48.117,lng:-1.677},
+];
+
+const GROUPEMENTS=["Giphar","Aprium","Mediprix","Pharmabest","Leadersanté","Elsie Santé","Pharmavie","Wellpharma","Népenthès","Indépendant"];
+const COMS=["Manon Dussurgey (MDC)","Ingrid Le Gall (ILE)","Morgane Denis (MDC)","Pauline Soldevila (PGN)"];
+
+/* base villes réelles avec coords */
+const VILLES=[
+ ["Paris","75001",48.856,2.352,"75"],["Paris","75011",48.859,2.379,"75"],["Boulogne-Billancourt","92100",48.833,2.24,"92"],
+ ["Marseille","13008",43.27,5.39,"13"],["Marseille","13001",43.296,5.37,"13"],["Aix-en-Provence","13100",43.529,5.447,"13"],
+ ["Lyon","69003",45.758,4.85,"69"],["Lyon","69006",45.77,4.85,"69"],["Villeurbanne","69100",45.766,4.879,"69"],["Vénissieux","69200",45.697,4.886,"69"],
+ ["Toulouse","31000",43.6,1.444,"31"],["Toulouse","31300",43.599,1.42,"31"],["Colomiers","31770",43.61,1.335,"31"],
+ ["Nice","06000",43.7,7.268,"06"],["Cannes","06400",43.552,7.017,"06"],["Antibes","06600",43.581,7.125,"06"],
+ ["Nantes","44000",47.218,-1.554,"44"],["Nantes","44300",47.25,-1.52,"44"],
+ ["Montpellier","34000",43.611,3.877,"34"],["Béziers","34500",43.344,3.216,"34"],
+ ["Strasbourg","67000",48.573,7.752,"67"],["Bordeaux","33000",44.838,-0.579,"33"],["Bordeaux","33300",44.87,-0.56,"33"],
+ ["Lille","59000",50.629,3.057,"59"],["Roubaix","59100",50.69,3.174,"59"],
+ ["Rennes","35000",48.117,-1.677,"35"],["Reims","51100",49.258,4.031,"51"],["Le Havre","76600",49.494,0.107,"76"],
+ ["Saint-Étienne","42000",45.439,4.387,"42"],["Toulon","83000",43.124,5.928,"83"],["Grenoble","38000",45.188,5.724,"38"],
+ ["Dijon","21000",47.322,5.041,"21"],["Angers","49000",47.478,-0.563,"49"],["Nîmes","30000",43.837,4.36,"30"],
+ ["Clermont-Ferrand","63000",45.777,3.087,"63"],["Brest","29200",48.39,-4.486,"29"],["Tours","37000",47.394,0.684,"37"],
+ ["Amiens","80000",49.894,2.296,"80"],["Limoges","87000",45.833,1.261,"87"],["Perpignan","66000",42.699,2.895,"66"],
+ ["Metz","57000",49.119,6.176,"57"],["Besançon","25000",47.238,6.024,"25"],["Orléans","45000",47.902,1.909,"45"],
+ ["Rouen","76000",49.443,1.099,"76"],["Caen","14000",49.183,-0.37,"14"],["Nancy","54000",48.692,6.184,"54"],
+ ["Avignon","84000",43.949,4.806,"84"],["Poitiers","86000",46.58,0.34,"86"],["La Rochelle","17000",46.16,-1.151,"17"],
+ ["Pau","64000",43.3,-0.37,"64"],["Bayonne","64100",43.493,-1.475,"64"],["Annecy","74000",45.899,6.129,"74"],
+ ["Chambéry","73000",45.564,5.917,"73"],["Valence","26000",44.933,4.892,"26"],["Mulhouse","68100",47.75,7.34,"68"],
+ ["Vannes","56000",47.658,-2.76,"56"],["Quimper","29000",47.996,-4.098,"29"],["Lorient","56100",47.748,-3.37,"56"],
+];
+
+const NOMS=["Pharmacie du Centre","Pharmacie de la Gare","Grande Pharmacie","Pharmacie des Halles","Pharmacie de la Mairie",
+"Pharmacie du Marché","Pharmacie Saint-Michel","Pharmacie de la Poste","Pharmacie du Parc","Pharmacie de l'Hôtel de Ville",
+"Pharmacie du Théâtre","Pharmacie de la Fontaine","Pharmacie Principale","Pharmacie des Arcades","Pharmacie du Port",
+"Pharmacie de la République","Pharmacie Jeanne d'Arc","Pharmacie du Vieux Pont","Pharmacie de la Croix-Rousse","Pharmacie de l'Église"];
+const TITULAIRES=["Dr Sophie Martin","Dr Pierre Durand","Dr Claire Petit","Dr Julien Moreau","Dr Nathalie Robert",
+"Dr Thomas Girard","Dr Émilie Bernard","Dr Antoine Lefèvre","Dr Camille Roux","Dr Laurent Faure",
+"Dr Aurélie Blanc","Dr Nicolas Garnier","Dr Sandra Chevalier","Dr Marc Lambert","Dr Hélène Dumas"];
+const STATUTS=["A","B","C","Prospect"];
+
+/* génération pseudo-aléatoire déterministe */
+let seed=42; function rnd(){seed=(seed*1103515245+12345)&0x7fffffff;return seed/0x7fffffff;}
+function pick(a){return a[Math.floor(rnd()*a.length)];}
+
+const OFF=[];
+let id=0;
+VILLES.forEach(function(row){
+  var ville=row[0],cp=row[1],lat=row[2],lng=row[3],dep=row[4];
+  var n=2+Math.floor(rnd()*3);
+  for(var i=0;i<n;i++){
+    var st=pick(STATUTS);
+    var jit=function(){return (rnd()-.5)*0.05;};
+    OFF.push({
+      id:id++, nom:pick(NOMS), ville:ville, cp:cp, dep:dep,
+      lat:lat+jit(), lng:lng+jit(),
+      tel:"0"+(4+Math.floor(rnd()*2))+" "+["68","72","91","23","55"][Math.floor(rnd()*5)]+" "+String(10+Math.floor(rnd()*89))+" "+String(10+Math.floor(rnd()*89))+" "+String(10+Math.floor(rnd()*89)),
+      titulaire:pick(TITULAIRES),
+      statut:st,
+      grp: st==="Prospect"&&rnd()>.5 ? "Indépendant" : pick(GROUPEMENTS),
+      com:pick(COMS),
+      ca: st==="Prospect"?0:Math.round((20+rnd()*180))*1000
+    });
+  }
+});
+
+/* ============ PROJECTION carte ============ */
+const MAP_W=700,MAP_H=720;
+const LNG0=-5.2,LNG1=8.6,LAT0=51.3,LAT1=42.2;
+function proj(lat,lng){
+  var x=(lng-LNG0)/(LNG1-LNG0)*MAP_W;
+  var y=(lat-LAT0)/(LAT1-LAT0)*MAP_H;
+  return [x,y];
+}
+/* frontière France (lng,lat) approximée -> silhouette stylisée */
+const BORDER=[
+ [2.55,51.07],[2.0,50.9],[1.6,50.0],[2.9,50.7],[4.2,49.95],[5.9,49.5],[7.6,49.05],[8.2,48.95],[7.6,48.05],
+ [7.2,47.45],[6.9,47.35],[6.1,46.6],[6.85,46.0],[7.0,45.5],[6.7,45.15],[7.5,44.15],[7.6,43.75],[6.5,43.15],
+ [5.4,43.25],[4.0,43.55],[3.05,43.02],[3.1,42.42],[2.0,42.35],[0.65,42.75],[-1.4,43.29],[-1.55,44.2],
+ [-1.15,45.55],[-1.25,46.3],[-2.15,47.05],[-2.55,47.5],[-3.15,47.55],[-4.35,47.8],[-4.78,48.05],[-4.55,48.35],
+ [-3.5,48.68],[-2.55,48.55],[-1.85,48.7],[-1.55,49.35],[-1.25,49.68],[-0.2,49.28],[0.15,49.42],[1.15,49.98],
+ [1.55,50.1],[1.7,50.55],[2.55,51.07]
+];
+function borderPath(){
+  return "M"+BORDER.map(function(pt){return proj(pt[1],pt[0]).map(function(v){return v.toFixed(1);}).join(",");}).join(" L")+" Z";
+}
+const STATUS_COLOR={A:"#0B7A44",B:"#3AA36A",C:"#8FCBA9",Prospect:"#0057FF"};
+const STATUS_LABEL={A:"Client A",B:"Client B",C:"Client C",Prospect:"Prospect"};
+
+/* ============ ÉTAT ============ */
+const state={q:"",statut:new Set(),grp:new Set(),dep:new Set(),com:new Set(),selOnly:false,sort:"ville",
+  selected:new Map(), nb:8};
+
+/* ============ INIT filtres dynamiques ============ */
+function fillMenu(menuId,values,fkey){
+  var el=document.getElementById(menuId);
+  el.innerHTML=values.map(function(v){return '<label><input type="checkbox" value="'+v+'" data-f="'+fkey+'"> '+v+'</label>';}).join("");
+}
+fillMenu("menu-grp",GROUPEMENTS,"grp");
+fillMenu("menu-com",COMS,"com");
+const DEPS=Array.from(new Set(OFF.map(function(o){return o.dep;}))).sort();
+fillMenu("menu-dep",DEPS,"dep");
+
+/* ============ FILTRAGE ============ */
+function parseQuery(q){
+  var text=q, tokens={};
+  q.replace(/(statut|grp|dep):(\S+)/gi,function(m,k,v){tokens[k.toLowerCase()]=v;text=text.replace(m,"");return m;});
+  return {text:text.trim().toLowerCase(),tokens:tokens};
+}
+function matches(o){
+  var pq=parseQuery(state.q), text=pq.text, tokens=pq.tokens;
+  if(tokens.statut){var t=tokens.statut.toLowerCase();
+    var map={a:"A",b:"B",c:"C",prospect:"Prospect"}; if(o.statut!==(map[t]||tokens.statut))return false;}
+  if(tokens.grp && o.grp.toLowerCase().indexOf(tokens.grp.toLowerCase())<0)return false;
+  if(tokens.dep && o.dep!==tokens.dep)return false;
+  if(state.statut.size && !state.statut.has(o.statut))return false;
+  if(state.grp.size && !state.grp.has(o.grp))return false;
+  if(state.dep.size && !state.dep.has(o.dep))return false;
+  if(state.com.size && !state.com.has(o.com))return false;
+  if(state.selOnly && !state.selected.has(o.id))return false;
+  if(text){
+    var hay=(o.nom+" "+o.ville+" "+o.cp+" "+o.titulaire+" "+o.grp+" "+o.dep).toLowerCase();
+    if(hay.indexOf(text)<0)return false;
+  }
+  return true;
+}
+function filtered(){
+  var r=OFF.filter(matches);
+  if(state.sort==="ville")r.sort(function(a,b){return a.ville.localeCompare(b.ville)||b.ca-a.ca;});
+  else if(state.sort==="ca")r.sort(function(a,b){return b.ca-a.ca;});
+  else r.sort(function(a,b){return STATUTS.indexOf(a.statut)-STATUTS.indexOf(b.statut)||b.ca-a.ca;});
+  return r;
+}
+function isFiltering(){return !!(state.q||state.statut.size||state.grp.size||state.dep.size||state.com.size||state.selOnly);}
+
+/* ============ RENDER LISTE ============ */
+const listEl=document.getElementById("list");
+function fmtCA(c){return c?("• "+(c/1000).toFixed(0)+"k€/an"):"";}
+function renderList(){
+  var r=filtered();
+  document.getElementById("resCount").textContent=r.length.toLocaleString("fr-FR");
+  document.getElementById("listSub").textContent="· "+r.length.toLocaleString("fr-FR")+" résultat"+(r.length>1?"s":"");
+  if(!r.length){
+    listEl.innerHTML='<div class="empty"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><div>Aucune officine ne correspond.</div><div style="font-size:12px;margin-top:4px">Modifiez votre recherche ou vos filtres.</div></div>';
+    return;
+  }
+  listEl.innerHTML=r.slice(0,400).map(function(o){
+    var sel=state.selected.has(o.id);
+    return '<div class="item '+(sel?'selected':'')+'" data-id="'+o.id+'">'
+      +'<span class="status" style="background:'+STATUS_COLOR[o.statut]+'"></span>'
+      +'<div class="body">'
+        +'<div class="nm">'+o.nom+'</div>'
+        +'<div class="meta">'
+          +'<span>'+o.cp+' '+o.ville+'</span>'
+          +'<span class="tag">'+STATUS_LABEL[o.statut]+'</span>'
+          +'<span class="tag grp">'+o.grp+'</span>'
+          +(o.ca?'<span>'+fmtCA(o.ca)+'</span>':'')
+        +'</div>'
+        +'<div class="meta" style="margin-top:3px">'+o.titulaire+' · '+o.tel+'</div>'
+      +'</div>'
+      +'<button class="add" data-add="'+o.id+'" title="'+(sel?'Retirer de la tournée':'Ajouter à la tournée')+'">'+(sel?'✓':'+')+'</button>'
+    +'</div>';
+  }).join("");
+}
+
+/* ============ RENDER CARTE ============ */
+const svg=document.getElementById("map");
+const tip=document.getElementById("mapTip");
+let zoom=1, panX=0, panY=0;
+function renderMap(){
+  var rset={}; filtered().forEach(function(o){rset[o.id]=1;});
+  var flt=isFiltering();
+  var html='<defs><radialGradient id="glow" cx="50%" cy="35%" r="75%"><stop offset="0%" stop-color="#ffffff"/><stop offset="100%" stop-color="#f2f6fd"/></radialGradient></defs>';
+  html+='<g transform="translate('+panX+','+panY+') scale('+zoom+')" style="transform-origin:center">';
+  for(var gx=0;gx<=MAP_W;gx+=70)html+='<line x1="'+gx+'" y1="0" x2="'+gx+'" y2="'+MAP_H+'" stroke="#dbe3f1" stroke-width="0.5"/>';
+  for(var gy=0;gy<=MAP_H;gy+=70)html+='<line x1="0" y1="'+gy+'" x2="'+MAP_W+'" y2="'+gy+'" stroke="#dbe3f1" stroke-width="0.5"/>';
+  html+='<path d="'+borderPath()+'" class="france-fill" fill="url(#glow)"/>';
+  DEPOTS.forEach(function(d){var p=proj(d.lat,d.lng);
+    html+='<rect x="'+(p[0]-5)+'" y="'+(p[1]-5)+'" width="10" height="10" rx="2" fill="#0B131C" stroke="#fff" stroke-width="1.5"/>';});
+  var stops=orderedStops();
+  if(stops.length){
+    var dep=currentDepot(); var pts=[proj(dep.lat,dep.lng)].concat(stops.map(function(o){return proj(o.lat,o.lng);}));
+    html+='<polyline points="'+pts.map(function(p){return p.join(",");}).join(" ")+'" fill="none" stroke="#0057FF" stroke-width="2" stroke-dasharray="5 5" opacity="0.8"/>';
+  }
+  OFF.forEach(function(o){
+    var vis=!!rset[o.id], sel=state.selected.has(o.id);
+    if(flt && !vis && !sel)return;
+    var p=proj(o.lat,o.lng), col=STATUS_COLOR[o.statut], rad=sel?7:4.5;
+    if(sel)html+='<circle cx="'+p[0]+'" cy="'+p[1]+'" r="11" fill="'+col+'" opacity="0.18"/>';
+    html+='<circle class="dot-marker" cx="'+p[0]+'" cy="'+p[1]+'" r="'+rad+'" fill="'+col+'" stroke="#fff" stroke-width="'+(sel?2:1.3)+'" data-id="'+o.id+'"/>';
+  });
+  html+='</g>';
+  svg.innerHTML=html;
+}
+function currentDepot(){return DEPOTS[document.getElementById("depot").value];}
+
+/* ============ TOURNÉE ============ */
+function dist(a,b){
+  var R=111; var dLat=(a.lat-b.lat), dLng=(a.lng-b.lng)*Math.cos(a.lat*Math.PI/180);
+  return Math.sqrt(dLat*dLat+dLng*dLng)*R;
+}
+function orderedStops(){
+  var chosen=Array.from(state.selected.values());
+  if(!chosen.length)return [];
+  var dep=currentDepot();
+  var cur={lat:dep.lat,lng:dep.lng}, rest=chosen.slice(), out=[];
+  while(rest.length){
+    var bi=0,bd=Infinity;
+    rest.forEach(function(o,i){var d=dist(cur,o);if(d<bd){bd=d;bi=i;}});
+    out.push(rest[bi]); cur=rest[bi]; rest.splice(bi,1);
+  }
+  return out;
+}
+function renderTour(){
+  var el=document.getElementById("stops");
+  var stops=orderedStops();
+  var dep=currentDepot();
+  var badge=document.getElementById("mTourBadge");
+  badge.style.display=stops.length?"block":"none";
+  badge.textContent=stops.length;
+  document.getElementById("gps").disabled=stops.length===0;
+
+  if(!stops.length){
+    el.innerHTML='<div class="tour-empty"><div class="big">🗺️</div><b>Composez votre tournée</b><div style="font-size:12px;margin-top:6px">Cliquez le <b>+</b> d\'une officine dans la liste, ou un point sur la carte. L\'ordre de visite est optimisé automatiquement.</div></div>';
+    updateSummary([],dep); return;
+  }
+  var parts=document.getElementById("startTime").value.split(":");
+  var t=(+parts[0])*60+(+parts[1]); var VISIT=25;
+  var prev={lat:dep.lat,lng:dep.lng};
+  var html='<div class="stop depot"><div class="ord">D</div><div class="info"><div class="n">'+dep.n+'</div><div class="a">'+dep.cp+' '+dep.v+' · départ '+document.getElementById("startTime").value+'</div></div></div>';
+  stops.forEach(function(o,i){
+    var km=dist(prev,o); var drive=Math.max(4,Math.round(km*1.15+3));
+    if(i>0)t+=drive; // temps de route avant l'arrivée (1er RDV = heure fixée)
+    var arr=t;
+    var hh=String(Math.floor(arr/60)%24), mm=String(arr%60);
+    hh=(hh.length<2?"0":"")+hh; mm=(mm.length<2?"0":"")+mm;
+    html+='<div class="leg"><div class="ln"></div><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg> '+km.toFixed(0)+' km · ~'+drive+' min</div>';
+    html+='<div class="stop" data-id="'+o.id+'">'
+      +'<div class="ord">'+(i+1)+'</div>'
+      +'<div class="info"><div class="n">'+o.nom+'</div><div class="a">'+o.cp+' '+o.ville+' · '+STATUS_LABEL[o.statut]+' · '+o.grp+'</div><div class="time">🕐 '+hh+':'+mm+'</div></div>'
+      +'<button class="rm" data-rm="'+o.id+'" title="Retirer">✕</button>'
+    +'</div>';
+    t=arr+VISIT; prev=o;
+  });
+  el.innerHTML=html;
+  updateSummary(stops,dep);
+}
+function updateSummary(stops,dep){
+  var km=0,prev={lat:dep.lat,lng:dep.lng};
+  stops.forEach(function(o){km+=dist(prev,o);prev=o;});
+  if(stops.length)km+=dist(prev,{lat:dep.lat,lng:dep.lng});
+  document.getElementById("sVisit").textContent=stops.length;
+  document.getElementById("sKm").textContent=Math.round(km)+" km";
+  if(!stops.length){document.getElementById("sEnd").textContent="—";return;}
+  var parts=document.getElementById("startTime").value.split(":");
+  var t=(+parts[0])*60+(+parts[1]); var p={lat:dep.lat,lng:dep.lng};
+  stops.forEach(function(o,i){var drive=Math.max(4,Math.round(dist(p,o)*1.15+3));t+=(i>0?drive:0)+25;p=o;});
+  var hh=String(Math.floor(t/60)%24),mm=String(t%60);
+  hh=(hh.length<2?"0":"")+hh; mm=(mm.length<2?"0":"")+mm;
+  document.getElementById("sEnd").textContent=hh+":"+mm;
+}
+
+/* ============ ACTIONS sélection ============ */
+function toggle(oid){
+  oid=+oid;
+  if(state.selected.has(oid))state.selected.delete(oid);
+  else{
+    if(state.selected.size>=12){flash("Maximum 12 visites par tournée");return;}
+    state.selected.set(oid,OFF.filter(function(o){return o.id===oid;})[0]);
+  }
+  renderAll();
+}
+function flash(msg){
+  var h=document.getElementById("mapHint");h.textContent=msg;h.style.background="#B8791B";
+  setTimeout(function(){h.textContent="Cliquez un point pour l'ajouter à la tournée";h.style.background="rgba(11,19,28,.85)";},1800);
+}
+
+/* ============ RENDER ALL ============ */
+function renderAll(){renderList();renderMap();renderTour();}
+
+/* ============ ÉVÉNEMENTS ============ */
+const search=document.getElementById("search");
+search.addEventListener("input",function(e){state.q=e.target.value;renderAll();});
+search.addEventListener("focus",function(){document.getElementById("suggest").classList.add("open");});
+document.addEventListener("click",function(e){
+  if(!e.target.closest(".palette"))document.getElementById("suggest").classList.remove("open");
+  if(!e.target.closest(".filter-group"))document.querySelectorAll(".dropdown").forEach(function(d){d.classList.remove("open");});
+});
+document.querySelectorAll("#suggest .row[data-quick]").forEach(function(r){
+  r.addEventListener("click",function(){search.value=r.dataset.quick;state.q=r.dataset.quick;document.getElementById("suggest").classList.remove("open");renderAll();});
+});
+window.addEventListener("keydown",function(e){
+  if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="k"){e.preventDefault();search.focus();search.select();}
+  if(e.key==="Escape"){search.blur();document.getElementById("suggest").classList.remove("open");}
+});
+
+const LABELS={statut:"Statut",grp:"Groupement",dep:"Département",com:"Commercial"};
+document.querySelectorAll(".chip[data-menu]").forEach(function(btn){
+  btn.addEventListener("click",function(e){e.stopPropagation();
+    var m=document.getElementById("menu-"+btn.dataset.menu);
+    var open=m.classList.contains("open");
+    document.querySelectorAll(".dropdown").forEach(function(d){d.classList.remove("open");});
+    if(!open)m.classList.add("open");
+  });
+});
+document.getElementById("filterbar").addEventListener("change",function(e){
+  var cb=e.target; if(!cb.dataset.f)return;
+  var set=state[cb.dataset.f];
+  if(cb.checked)set.add(cb.value);else set.delete(cb.value);
+  var chip=document.querySelector('.chip[data-menu="'+cb.dataset.f+'"]');
+  if(chip){var n=set.size; chip.classList.toggle("active",n>0);
+    chip.innerHTML='<span class="car">▾</span> '+LABELS[cb.dataset.f]+(n?' · '+n:'');}
+  renderAll();
+});
+document.getElementById("selOnly").addEventListener("click",function(){
+  state.selOnly=!state.selOnly;this.classList.toggle("active",state.selOnly);renderAll();
+});
+document.getElementById("clearAll").addEventListener("click",function(){
+  state.q="";search.value="";["statut","grp","dep","com"].forEach(function(k){state[k].clear();});
+  state.selOnly=false;document.getElementById("selOnly").classList.remove("active");
+  document.querySelectorAll(".chip[data-menu]").forEach(function(c){c.classList.remove("active");
+    c.innerHTML='<span class="car">▾</span> '+LABELS[c.dataset.menu];});
+  document.querySelectorAll(".dropdown input").forEach(function(i){i.checked=false;});
+  renderAll();
+});
+document.querySelectorAll(".seg [data-sort]").forEach(function(b){b.addEventListener("click",function(){
+  document.querySelectorAll(".seg [data-sort]").forEach(function(x){x.classList.remove("on");});this.classList.add("on");
+  state.sort=this.dataset.sort;renderList();
+});});
+
+listEl.addEventListener("click",function(e){
+  var add=e.target.closest("[data-add]");
+  if(add){toggle(add.dataset.add);return;}
+  var it=e.target.closest(".item");
+  if(it){toggle(it.dataset.id);}
+});
+
+svg.addEventListener("click",function(e){
+  var d=e.target.closest("[data-id]");if(d)toggle(d.dataset.id);
+});
+svg.addEventListener("mousemove",function(e){
+  var d=e.target.closest(".dot-marker");
+  if(d){var o=OFF.filter(function(x){return x.id===+d.dataset.id;})[0];
+    var rect=svg.getBoundingClientRect();
+    tip.style.left=(e.clientX-rect.left)+"px";tip.style.top=(e.clientY-rect.top)+"px";
+    tip.style.opacity="1";
+    tip.innerHTML='<div class="t">'+o.nom+'</div><div class="s">'+o.cp+' '+o.ville+' · '+STATUS_LABEL[o.statut]+'</div><div class="s">'+o.grp+(o.ca?' · '+(o.ca/1000).toFixed(0)+'k€':'')+'</div>';
+  } else tip.style.opacity="0";
+});
+svg.addEventListener("mouseleave",function(){tip.style.opacity="0";});
+document.getElementById("zin").onclick=function(){zoom=Math.min(3,zoom+0.4);renderMap();};
+document.getElementById("zout").onclick=function(){zoom=Math.max(1,zoom-0.4);if(zoom===1){panX=0;panY=0;}renderMap();};
+
+document.getElementById("depot").innerHTML=DEPOTS.map(function(d,i){return '<option value="'+i+'">'+d.n+'</option>';}).join("");
+document.getElementById("depot").value=0;
+document.getElementById("depot").addEventListener("change",renderAll);
+document.getElementById("startTime").addEventListener("change",renderTour);
+document.getElementById("plus").onclick=function(){state.nb=Math.min(12,state.nb+1);document.getElementById("nbVisit").value=state.nb;};
+document.getElementById("minus").onclick=function(){state.nb=Math.max(6,state.nb-1);document.getElementById("nbVisit").value=state.nb;};
+document.getElementById("clearTour").onclick=function(){state.selected.clear();renderAll();};
+document.getElementById("stops").addEventListener("click",function(e){
+  var rm=e.target.closest("[data-rm]");if(rm){toggle(rm.dataset.rm);}
+});
+
+document.getElementById("gps").addEventListener("click",function(){
+  var stops=orderedStops();if(!stops.length)return;
+  var dep=currentDepot();
+  var enc=function(s){return encodeURIComponent(s);};
+  var origin=enc(dep.n+", "+dep.cp+" "+dep.v);
+  var dest=stops[stops.length-1];
+  var destination=enc(dest.nom+", "+dest.cp+" "+dest.ville);
+  var way=stops.slice(0,-1).map(function(o){return enc(o.nom+", "+o.cp+" "+o.ville);}).join("|");
+  var url="https://www.google.com/maps/dir/?api=1&origin="+origin+"&destination="+destination+"&travelmode=driving";
+  if(way)url+="&waypoints="+way;
+  window.open(url,"_blank");
+});
+
+document.querySelectorAll(".mobile-tabs button").forEach(function(b){b.addEventListener("click",function(){
+  document.querySelectorAll(".mobile-tabs button").forEach(function(x){x.classList.remove("on");});this.classList.add("on");
+  document.querySelectorAll(".main .pane").forEach(function(p){p.classList.remove("mshow");});
+  document.getElementById(this.dataset.tab).classList.add("mshow");
+});});
+
+/* premier rendu + pré-sélection démo */
+[1,14,7,25,40].forEach(function(i){var o=OFF[i];if(o)state.selected.set(o.id,o);});
+document.getElementById("nbVisit").value=state.nb;
+renderAll();
+</script>
+</body>
+</html>

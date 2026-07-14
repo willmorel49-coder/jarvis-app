@@ -1,0 +1,945 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>COPILOTE — Carte des officines · Intégral Pharma</title>
+<style>
+  :root{
+    --bg:#EEF1F6;
+    --surface:#FFFFFF;
+    --surface-2:#F6F8FC;
+    --ink:#0B131C;
+    --ink-soft:#334155;
+    --grey:#6B7590;
+    --line:#E2E7F0;
+    --line-strong:#CED6E4;
+    --accent:#0057FF;
+    --accent-ink:#0043C7;
+    --accent-wash:#EAF0FF;
+    --turq:#0E7C86;
+    --turq-wash:#E1F4F5;
+    --green:#0B7A44;
+    --green-wash:#E4F4EB;
+    --amber:#B26A12;
+    --amber-wash:#FBEED9;
+    --sea:#DDE6F2;
+    --land:#FBFCFE;
+    --shadow:0 1px 2px rgba(11,19,28,.04),0 8px 24px rgba(11,19,28,.06);
+    --shadow-lg:0 12px 40px rgba(11,19,28,.16);
+    --r:14px;
+    --r-sm:10px;
+    --font:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#0A0F17;--surface:#111927;--surface-2:#0D1521;--ink:#EAF0F8;--ink-soft:#B7C3D6;
+      --grey:#8593AC;--line:#1E2A3C;--line-strong:#2C3A50;
+      --accent:#4C86FF;--accent-ink:#8FB2FF;--accent-wash:#16233C;
+      --turq:#3FB2BC;--turq-wash:#123037;--green:#3BC07E;--green-wash:#123626;
+      --amber:#E0A24A;--amber-wash:#3A2C13;--sea:#0E1826;--land:#132032;
+      --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.4);
+      --shadow-lg:0 18px 50px rgba(0,0,0,.6);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0A0F17;--surface:#111927;--surface-2:#0D1521;--ink:#EAF0F8;--ink-soft:#B7C3D6;
+    --grey:#8593AC;--line:#1E2A3C;--line-strong:#2C3A50;
+    --accent:#4C86FF;--accent-ink:#8FB2FF;--accent-wash:#16233C;
+    --turq:#3FB2BC;--turq-wash:#123037;--green:#3BC07E;--green-wash:#123626;
+    --amber:#E0A24A;--amber-wash:#3A2C13;--sea:#0E1826;--land:#132032;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.4);
+    --shadow-lg:0 18px 50px rgba(0,0,0,.6);
+  }
+  :root[data-theme="light"]{
+    --bg:#EEF1F6;--surface:#FFFFFF;--surface-2:#F6F8FC;--ink:#0B131C;--ink-soft:#334155;
+    --grey:#6B7590;--line:#E2E7F0;--line-strong:#CED6E4;
+    --accent:#0057FF;--accent-ink:#0043C7;--accent-wash:#EAF0FF;
+    --turq:#0E7C86;--turq-wash:#E1F4F5;--green:#0B7A44;--green-wash:#E4F4EB;
+    --amber:#B26A12;--amber-wash:#FBEED9;--sea:#DDE6F2;--land:#FBFCFE;
+    --shadow:0 1px 2px rgba(11,19,28,.04),0 8px 24px rgba(11,19,28,.06);
+    --shadow-lg:0 12px 40px rgba(11,19,28,.16);
+  }
+
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font-family:var(--font);font-size:14px;line-height:1.45;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+    overflow:hidden;
+  }
+  button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+  input,select{font-family:inherit;font-size:13px;color:var(--ink)}
+  ::selection{background:var(--accent);color:#fff}
+  .num{font-variant-numeric:tabular-nums}
+
+  /* ---------- Shell ---------- */
+  .shell{display:flex;flex-direction:column;height:100vh;height:100dvh}
+
+  header.top{
+    display:flex;align-items:center;gap:16px;
+    padding:11px 18px;background:var(--surface);
+    border-bottom:1px solid var(--line);z-index:40;flex:none;
+  }
+  .brand{display:flex;align-items:center;gap:11px;min-width:0}
+  .mark{
+    width:34px;height:34px;border-radius:9px;flex:none;position:relative;
+    background:linear-gradient(150deg,var(--accent),var(--turq));
+    box-shadow:0 4px 12px rgba(0,87,255,.35);
+  }
+  .mark::before{content:"";position:absolute;inset:0;display:block;
+    background:
+      linear-gradient(#fff,#fff) center/13px 3.4px no-repeat,
+      linear-gradient(#fff,#fff) center/3.4px 13px no-repeat;
+    opacity:.95;border-radius:9px;
+  }
+  .brand h1{font-size:15px;margin:0;font-weight:700;letter-spacing:-.01em;white-space:nowrap}
+  .brand h1 b{color:var(--accent);font-weight:800}
+  .brand .sub{font-size:11px;color:var(--grey);letter-spacing:.02em;white-space:nowrap}
+  .top-spacer{flex:1}
+  .top-stat{
+    display:flex;flex-direction:column;align-items:flex-end;padding:0 14px;
+    border-left:1px solid var(--line);
+  }
+  .top-stat .big{font-weight:800;font-size:16px;letter-spacing:-.02em}
+  .top-stat .lbl{font-size:10.5px;color:var(--grey);text-transform:uppercase;letter-spacing:.08em}
+  .legend{display:flex;gap:13px;align-items:center;font-size:11.5px;color:var(--ink-soft)}
+  .legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+  .theme-btn{
+    width:34px;height:34px;border-radius:9px;border:1px solid var(--line);
+    display:grid;place-items:center;background:var(--surface-2);font-size:15px;
+  }
+  .theme-btn:hover{border-color:var(--line-strong)}
+
+  /* ---------- Layout ---------- */
+  .app{
+    flex:1;display:grid;min-height:0;
+    grid-template-columns:minmax(340px,380px) 1fr minmax(340px,392px);
+  }
+  .col{min-height:0;display:flex;flex-direction:column;background:var(--surface)}
+  .col.left{border-right:1px solid var(--line)}
+  .col.right{border-left:1px solid var(--line)}
+  .col.map{background:var(--surface-2);position:relative}
+
+  .col-head{
+    padding:13px 16px 12px;border-bottom:1px solid var(--line);flex:none;
+    display:flex;align-items:center;gap:9px;
+  }
+  .col-head .kick{font-size:11px;text-transform:uppercase;letter-spacing:.11em;color:var(--grey);font-weight:600}
+  .col-head h2{font-size:15px;margin:0;font-weight:700;letter-spacing:-.01em}
+  .col-head .badge{
+    margin-left:auto;font-size:12px;font-weight:700;color:var(--accent);
+    background:var(--accent-wash);padding:3px 9px;border-radius:20px;
+  }
+
+  /* ---------- Filters ---------- */
+  .filters{padding:13px 14px 4px;flex:none;border-bottom:1px solid var(--line)}
+  .search{position:relative;margin-bottom:10px}
+  .search input{
+    width:100%;padding:10px 12px 10px 34px;border:1px solid var(--line-strong);
+    border-radius:var(--r-sm);background:var(--surface-2);font-size:13.5px;outline:none;transition:.15s;
+  }
+  .search input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-wash);background:var(--surface)}
+  .search svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--grey)}
+
+  .seg{display:flex;gap:5px;margin-bottom:10px;flex-wrap:wrap}
+  .chip{
+    font-size:12px;font-weight:600;padding:6px 11px;border-radius:20px;
+    border:1px solid var(--line-strong);background:var(--surface);color:var(--ink-soft);
+    display:inline-flex;align-items:center;gap:6px;transition:.13s;white-space:nowrap;
+  }
+  .chip:hover{border-color:var(--grey)}
+  .chip i{width:8px;height:8px;border-radius:50%;display:inline-block}
+  .chip.on{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+  .chip[data-st="A"].on{background:var(--green);border-color:var(--green);color:#fff}
+  .chip[data-st="B"].on{background:#2E9E66;border-color:#2E9E66;color:#fff}
+  .chip[data-st="C"].on{background:var(--amber);border-color:var(--amber);color:#fff}
+  .chip[data-st="P"].on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .chip .cnt{font-variant-numeric:tabular-nums;opacity:.75;font-weight:700}
+
+  .selrow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+  .field{display:flex;flex-direction:column;gap:4px}
+  .field label{font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--grey);font-weight:600;padding-left:2px}
+  .field select{
+    width:100%;padding:8px 26px 8px 10px;border:1px solid var(--line-strong);border-radius:var(--r-sm);
+    background:var(--surface-2);appearance:none;outline:none;cursor:pointer;transition:.15s;
+    background-image:linear-gradient(45deg,transparent 50%,var(--grey) 50%),linear-gradient(135deg,var(--grey) 50%,transparent 50%);
+    background-position:calc(100% - 15px) 15px,calc(100% - 10px) 15px;background-size:5px 5px,5px 5px;background-repeat:no-repeat;
+  }
+  .field select:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-wash)}
+  .filters-foot{display:flex;align-items:center;justify-content:space-between;padding:2px 2px 10px}
+  .live{font-size:12.5px;color:var(--grey)}
+  .live b{color:var(--ink);font-weight:800;font-variant-numeric:tabular-nums}
+  .reset{font-size:12px;color:var(--accent);font-weight:600;padding:4px 6px;border-radius:6px}
+  .reset:hover{background:var(--accent-wash)}
+
+  /* ---------- List ---------- */
+  .list{flex:1;overflow-y:auto;overflow-x:hidden;padding:6px 8px 90px}
+  .list::-webkit-scrollbar{width:10px}
+  .list::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:6px;border:3px solid var(--surface)}
+  .row{
+    display:grid;grid-template-columns:auto 1fr auto;gap:11px;align-items:center;
+    padding:10px 10px;border-radius:var(--r-sm);cursor:pointer;transition:background .12s;position:relative;
+  }
+  .row+.row{margin-top:1px}
+  .row::after{content:"";position:absolute;left:38px;right:10px;bottom:-1px;height:1px;background:var(--line);opacity:.7}
+  .row:last-child::after{display:none}
+  .row:hover,.row.hi{background:var(--surface-2)}
+  .row.hi{box-shadow:inset 0 0 0 1px var(--line-strong)}
+  .row.intour{background:var(--turq-wash)}
+  .row.intour:hover{background:var(--turq-wash)}
+  .rdot{width:11px;height:11px;border-radius:50%;flex:none;box-shadow:0 0 0 3px var(--surface)}
+  .row-main{min-width:0}
+  .row-name{font-weight:650;font-size:13.5px;letter-spacing:-.005em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .row-sub{font-size:11.5px;color:var(--grey);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+  .row-sub .grp{color:var(--ink-soft);font-weight:600}
+  .row-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+  .pill{font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:6px;white-space:nowrap;letter-spacing:.01em}
+  .pill.A{background:var(--green-wash);color:var(--green)}
+  .pill.B{background:#E4F4EB;color:#2E9E66}
+  :root[data-theme="dark"] .pill.B{background:#123626;color:#4FCB8A}
+  .pill.C{background:var(--amber-wash);color:var(--amber)}
+  .pill.P{background:var(--accent-wash);color:var(--accent)}
+  .row-ca{font-size:11px;color:var(--grey);font-variant-numeric:tabular-nums}
+  .row-ca b{color:var(--ink-soft);font-weight:700}
+  .addbtn{
+    width:30px;height:30px;border-radius:8px;border:1px solid var(--line-strong);
+    display:grid;place-items:center;color:var(--accent);background:var(--surface);flex:none;
+    font-size:18px;font-weight:400;line-height:1;transition:.12s;
+  }
+  .addbtn:hover{background:var(--accent-wash);border-color:var(--accent)}
+  .row.intour .addbtn{background:var(--turq);border-color:var(--turq);color:#fff}
+  .empty{padding:44px 24px;text-align:center;color:var(--grey)}
+  .empty svg{color:var(--line-strong);margin-bottom:10px}
+  .empty b{display:block;color:var(--ink-soft);font-size:14px;margin-bottom:3px}
+
+  /* ---------- Map ---------- */
+  .map-wrap{flex:1;position:relative;overflow:hidden;display:grid;place-items:center;padding:14px}
+  .mapsvg{width:100%;height:100%;max-height:100%;display:block;touch-action:none}
+  .france{fill:var(--land);stroke:var(--line-strong);stroke-width:1.3;
+    filter:drop-shadow(0 10px 24px rgba(11,19,28,.10))}
+  :root[data-theme="dark"] .france{filter:drop-shadow(0 12px 30px rgba(0,0,0,.6))}
+  .grid line{stroke:var(--line);stroke-width:.5;opacity:.45}
+  .pt{cursor:pointer;transition:opacity .2s, r .14s;stroke:var(--surface);stroke-width:1.2}
+  .pt.out{opacity:.10;pointer-events:none}
+  .pt.hi{stroke:var(--ink);stroke-width:1.6}
+  .pt.intour{stroke:var(--turq);stroke-width:2.4}
+  .depot{fill:var(--ink);stroke:var(--surface);stroke-width:1.5;cursor:pointer}
+  :root[data-theme="dark"] .depot{fill:var(--ink-soft)}
+  .ring{fill:none;stroke:var(--accent);stroke-width:2;opacity:0}
+  .tourline{fill:none;stroke:var(--turq);stroke-width:2.2;stroke-dasharray:5 5;opacity:.85;stroke-linejoin:round;stroke-linecap:round}
+
+  .map-badges{position:absolute;top:20px;left:20px;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+  .mb{
+    background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 12px;
+    box-shadow:var(--shadow);pointer-events:auto;
+  }
+  .mb .n{font-weight:800;font-size:17px;letter-spacing:-.02em}
+  .mb .l{font-size:10.5px;color:var(--grey);text-transform:uppercase;letter-spacing:.07em}
+  .map-legend{
+    position:absolute;bottom:18px;left:20px;background:var(--surface);border:1px solid var(--line);
+    border-radius:10px;padding:9px 12px;box-shadow:var(--shadow);font-size:11.5px;display:flex;flex-direction:column;gap:6px;
+  }
+  .map-legend .row2{display:flex;align-items:center;gap:7px;color:var(--ink-soft)}
+  .map-legend i{width:9px;height:9px;border-radius:50%;display:inline-block}
+  .map-legend i.sq{border-radius:2px;background:var(--ink);transform:rotate(45deg);width:8px;height:8px}
+
+  .tooltip{
+    position:absolute;pointer-events:none;z-index:30;opacity:0;transform:translate(-50%,-118%);
+    background:var(--ink);color:#fff;padding:8px 11px;border-radius:9px;box-shadow:var(--shadow-lg);
+    font-size:12px;transition:opacity .12s;max-width:230px;white-space:nowrap;
+  }
+  :root[data-theme="dark"] .tooltip{background:#000;border:1px solid var(--line)}
+  .tooltip .tt-name{font-weight:700;margin-bottom:1px}
+  .tooltip .tt-sub{opacity:.75;font-size:11px}
+  .tooltip::after{content:"";position:absolute;left:50%;top:100%;transform:translateX(-50%);
+    border:6px solid transparent;border-top-color:var(--ink)}
+  :root[data-theme="dark"] .tooltip::after{border-top-color:#000}
+  .zoomhint{position:absolute;bottom:18px;right:20px;font-size:11px;color:var(--grey);
+    background:var(--surface);border:1px solid var(--line);padding:6px 10px;border-radius:8px;box-shadow:var(--shadow)}
+
+  /* ---------- Tour ---------- */
+  .tour-scroll{flex:1;overflow-y:auto;padding:14px 15px 16px}
+  .tour-scroll::-webkit-scrollbar{width:10px}
+  .tour-scroll::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:6px;border:3px solid var(--surface)}
+  .setup{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r);padding:13px;margin-bottom:14px}
+  .setup .g{display:flex;flex-direction:column;gap:5px;margin-bottom:11px}
+  .setup .g:last-child{margin-bottom:0}
+  .setup label{font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--grey);font-weight:700;display:flex;align-items:center;gap:6px}
+  .setup label .st{width:16px;height:16px;border-radius:50%;background:var(--turq);color:#fff;display:grid;place-items:center;font-size:10px;font-weight:800;letter-spacing:0}
+  .setup select,.setup input[type=time]{
+    padding:9px 10px;border:1px solid var(--line-strong);border-radius:var(--r-sm);background:var(--surface);outline:none;width:100%;
+  }
+  .setup select:focus,.setup input:focus{border-color:var(--turq);box-shadow:0 0 0 3px var(--turq-wash)}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+  .rangewrap{display:flex;align-items:center;gap:10px}
+  .rangewrap input[type=range]{flex:1;accent-color:var(--turq)}
+  .rangewrap .rv{font-weight:800;font-size:15px;min-width:20px;text-align:center;font-variant-numeric:tabular-nums;color:var(--turq)}
+  .auto{
+    width:100%;margin-top:2px;padding:11px;border-radius:var(--r-sm);background:var(--turq);color:#fff;
+    font-weight:700;font-size:13.5px;display:flex;align-items:center;justify-content:center;gap:8px;transition:.15s;
+    box-shadow:0 4px 14px rgba(14,124,134,.32);
+  }
+  .auto:hover{filter:brightness(1.06)}
+  .auto:active{transform:translateY(1px)}
+
+  .tour-title{display:flex;align-items:center;gap:8px;margin:4px 2px 10px}
+  .tour-title h3{font-size:12.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--grey);margin:0;font-weight:700}
+  .tour-title .clr{margin-left:auto;font-size:11.5px;color:var(--grey);padding:3px 7px;border-radius:6px}
+  .tour-title .clr:hover{background:var(--surface-2);color:var(--ink)}
+
+  .stops{display:flex;flex-direction:column;gap:0;position:relative}
+  .stop{display:grid;grid-template-columns:auto 1fr auto;gap:11px;align-items:center;padding:9px 4px;position:relative}
+  .stop .idxwrap{position:relative;display:grid;place-items:center;width:26px}
+  .stop .idx{width:24px;height:24px;border-radius:50%;background:var(--turq);color:#fff;display:grid;place-items:center;font-weight:800;font-size:12px;z-index:2}
+  .stop:not(:last-child) .idxwrap::after{content:"";position:absolute;top:26px;bottom:-18px;width:2px;background:var(--turq);opacity:.35}
+  .stop-main{min-width:0}
+  .stop-name{font-weight:650;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .stop-sub{font-size:11px;color:var(--grey);margin-top:1px}
+  .stop-sub .eta{color:var(--turq);font-weight:700}
+  .stop .rm{width:24px;height:24px;border-radius:7px;color:var(--grey);display:grid;place-items:center;font-size:16px}
+  .stop .rm:hover{background:var(--amber-wash);color:var(--amber)}
+  .stop-start .idx{background:var(--ink)}
+  .stop-start:not(:last-child) .idxwrap::after{background:var(--ink)}
+  .stop-start .stop-name{color:var(--ink)}
+
+  .tour-empty{text-align:center;padding:30px 18px;color:var(--grey);border:1.5px dashed var(--line-strong);border-radius:var(--r);margin-top:4px}
+  .tour-empty svg{color:var(--line-strong);margin-bottom:8px}
+  .tour-empty b{display:block;color:var(--ink-soft);margin-bottom:3px;font-size:13.5px}
+
+  .tour-foot{flex:none;border-top:1px solid var(--line);background:var(--surface);padding:13px 15px calc(13px + env(safe-area-inset-bottom))}
+  .summ{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:11px}
+  .summ .s{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 6px;text-align:center}
+  .summ .s .v{font-weight:800;font-size:15px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+  .summ .s .k{font-size:10px;color:var(--grey);text-transform:uppercase;letter-spacing:.06em;margin-top:1px}
+  .gps{
+    width:100%;padding:14px;border-radius:var(--r);font-weight:800;font-size:14.5px;color:#fff;
+    background:var(--accent);display:flex;align-items:center;justify-content:center;gap:10px;transition:.15s;
+    box-shadow:0 6px 20px rgba(0,87,255,.34);letter-spacing:.01em;
+  }
+  .gps:hover:not(:disabled){filter:brightness(1.07);box-shadow:0 8px 26px rgba(0,87,255,.42)}
+  .gps:active:not(:disabled){transform:translateY(1px)}
+  .gps:disabled{background:var(--line-strong);color:var(--grey);box-shadow:none;cursor:not-allowed}
+  .gps-note{font-size:11px;color:var(--grey);text-align:center;margin-top:8px;display:flex;align-items:center;justify-content:center;gap:5px}
+  .gps-note svg{flex:none}
+
+  /* ---------- Mobile tabs ---------- */
+  .tabbar{display:none}
+
+  @media (max-width:1080px){
+    body{overflow:auto}
+    .app{grid-template-columns:1fr;grid-template-rows:1fr}
+    .legend,.top-stat{display:none}
+    .col{display:none}
+    .col.map{min-height:60vh}
+    body[data-view="list"] .col.left{display:flex}
+    body[data-view="map"] .col.map{display:flex}
+    body[data-view="tour"] .col.right{display:flex}
+    .col.left,.col.right{border:none}
+    .list{padding-bottom:120px}
+    .tabbar{
+      display:grid;grid-template-columns:1fr 1fr 1fr;position:fixed;bottom:0;left:0;right:0;z-index:60;
+      background:var(--surface);border-top:1px solid var(--line);padding:6px 6px calc(6px + env(safe-area-inset-bottom));
+      box-shadow:0 -6px 20px rgba(11,19,28,.08);
+    }
+    .tab{display:flex;flex-direction:column;align-items:center;gap:2px;padding:7px;border-radius:10px;color:var(--grey);font-size:11px;font-weight:600}
+    .tab.on{color:var(--accent);background:var(--accent-wash)}
+    .tab .tn{font-variant-numeric:tabular-nums;font-weight:800}
+    .col.right .tour-foot{padding-bottom:calc(80px + env(safe-area-inset-bottom))}
+  }
+  @media (max-width:420px){
+    .selrow{grid-template-columns:1fr}
+    .brand .sub{display:none}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body data-view="map">
+<div class="shell">
+  <header class="top">
+    <div class="brand">
+      <div class="mark"></div>
+      <div>
+        <h1><b>Intégral</b> Pharma · Copilote</h1>
+        <div class="sub">Carte des officines · France métropolitaine</div>
+      </div>
+    </div>
+    <div class="top-spacer"></div>
+    <div class="legend">
+      <span><i style="background:var(--green)"></i>Client A</span>
+      <span><i style="background:#2E9E66"></i>B</span>
+      <span><i style="background:var(--amber)"></i>C</span>
+      <span><i style="background:var(--accent)"></i>Prospect</span>
+    </div>
+    <div class="top-stat">
+      <span class="big num">19&nbsp;700</span>
+      <span class="lbl">officines en base</span>
+    </div>
+    <button class="theme-btn" id="themeBtn" title="Basculer le thème">◐</button>
+  </header>
+
+  <div class="app">
+    <!-- LEFT : filters + live list -->
+    <aside class="col left">
+      <div class="col-head">
+        <div>
+          <div class="kick">Répertoire</div>
+          <h2>Officines</h2>
+        </div>
+        <span class="badge" id="listBadge">—</span>
+      </div>
+
+      <div class="filters">
+        <div class="search">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>
+          <input id="q" type="search" placeholder="Nom, ville, code postal, titulaire…" autocomplete="off">
+        </div>
+        <div class="seg" id="statusSeg">
+          <button class="chip on" data-st="all">Tous</button>
+          <button class="chip" data-st="A"><i style="background:var(--green)"></i>Client A</button>
+          <button class="chip" data-st="B"><i style="background:#2E9E66"></i>B</button>
+          <button class="chip" data-st="C"><i style="background:var(--amber)"></i>C</button>
+          <button class="chip" data-st="P"><i style="background:var(--accent)"></i>Prospect</button>
+        </div>
+        <div class="selrow">
+          <div class="field">
+            <label for="fGrp">Groupement</label>
+            <select id="fGrp"><option value="">Tous</option></select>
+          </div>
+          <div class="field">
+            <label for="fDep">Département</label>
+            <select id="fDep"><option value="">Tous</option></select>
+          </div>
+          <div class="field">
+            <label for="fCom">Commercial</label>
+            <select id="fCom"><option value="">Tous</option></select>
+          </div>
+          <div class="field">
+            <label for="fCity">Ville</label>
+            <select id="fCity"><option value="">Toutes</option></select>
+          </div>
+        </div>
+        <div class="filters-foot">
+          <span class="live"><b id="liveCount">0</b> résultat(s)</span>
+          <button class="reset" id="resetBtn">Réinitialiser</button>
+        </div>
+      </div>
+
+      <div class="list" id="list"></div>
+    </aside>
+
+    <!-- CENTER : map -->
+    <section class="col map">
+      <div class="map-wrap" id="mapWrap">
+        <div class="map-badges">
+          <div class="mb"><div class="n num" id="mbShown">0</div><div class="l">visibles sur la carte</div></div>
+        </div>
+        <svg class="mapsvg" id="mapsvg" viewBox="0 0 600 560" preserveAspectRatio="xMidYMid meet" aria-label="Carte de France des officines">
+          <defs>
+            <radialGradient id="seaGrad" cx="50%" cy="35%" r="75%">
+              <stop offset="0%" stop-color="var(--surface-2)"/>
+              <stop offset="100%" stop-color="var(--sea)"/>
+            </radialGradient>
+          </defs>
+          <rect x="0" y="0" width="600" height="560" fill="url(#seaGrad)"/>
+          <g class="grid" id="grid"></g>
+          <path class="france" d="M334,10 L437,78 L571,147 L553,193 L500,297 L550,420 L466,442 L357,487 L229,476 L159,437 L177,370 L179,282 L132,220 L79,202 L27,160 L40,143 L108,151 L158,87 L234,96 L277,72 Z"/>
+          <g id="tourlines"></g>
+          <g id="dots"></g>
+          <g id="depots"></g>
+          <circle class="ring" id="ring" r="16"/>
+        </svg>
+        <div class="tooltip" id="tip"><div class="tt-name"></div><div class="tt-sub"></div></div>
+        <div class="map-legend">
+          <div class="row2"><i class="sq"></i>Dépôt Intégral (9)</div>
+          <div class="row2"><i style="background:var(--turq)"></i>Étape de la tournée</div>
+        </div>
+        <div class="zoomhint">Survolez un point · cliquez pour ajouter à la tournée</div>
+      </div>
+    </section>
+
+    <!-- RIGHT : tour composer -->
+    <aside class="col right">
+      <div class="col-head">
+        <div>
+          <div class="kick">Prospection</div>
+          <h2>Ma tournée</h2>
+        </div>
+        <span class="badge" id="tourBadge" style="background:var(--turq-wash);color:var(--turq)">0 arrêt</span>
+      </div>
+
+      <div class="tour-scroll">
+        <div class="setup">
+          <div class="g">
+            <label><span class="st">A</span>Adresse de départ</label>
+            <select id="depot"></select>
+          </div>
+          <div class="two">
+            <div class="g" style="margin:0">
+              <label><span class="st">B</span>Ville à prospecter</label>
+              <select id="target"></select>
+            </div>
+            <div class="g" style="margin:0">
+              <label>Heure de départ</label>
+              <input type="time" id="startTime" value="09:00">
+            </div>
+          </div>
+          <div class="g" style="margin-top:11px;margin-bottom:12px">
+            <label>Nombre de visites</label>
+            <div class="rangewrap">
+              <input type="range" id="nbVisit" min="6" max="12" value="8" step="1">
+              <span class="rv num" id="nbVal">8</span>
+            </div>
+          </div>
+          <button class="auto" id="autoBtn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3v4M3 5h4M6 17v4M4 19h4"/><path d="M13 4 15.5 9.5 21 12l-5.5 2.5L13 20l-2.5-5.5L5 12l5.5-2.5z"/></svg>
+          Composer automatiquement</button>
+        </div>
+
+        <div class="tour-title">
+          <h3>Itinéraire optimisé</h3>
+          <button class="clr" id="clearBtn">Vider</button>
+        </div>
+        <div id="stops"></div>
+      </div>
+
+      <div class="tour-foot">
+        <div class="summ">
+          <div class="s"><div class="v num" id="sStops">0</div><div class="k">arrêts</div></div>
+          <div class="s"><div class="v num" id="sKm">0</div><div class="k">km</div></div>
+          <div class="s"><div class="v num" id="sEnd">—</div><div class="k">fin prévue</div></div>
+        </div>
+        <button class="gps" id="gpsBtn" disabled>
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.3-7-11a7 7 0 0 1 14 0c0 4.7-7 11-7 11Z"/><circle cx="12" cy="10" r="2.6"/></svg>
+          Ouvrir la tournée dans Google Maps
+        </button>
+        <div class="gps-note">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+          <span id="gpsNote">Ajoutez des officines pour activer le GPS</span>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<nav class="tabbar">
+  <button class="tab" data-view="list"><span class="tn" id="tabListN">0</span>Liste</button>
+  <button class="tab on" data-view="map">◍ Carte</button>
+  <button class="tab" data-view="tour"><span class="tn" id="tabTourN">0</span>Tournée</button>
+</nav>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------------- Seeded data generation ---------------- */
+var seed=20260714;
+function rnd(){seed=(seed*1103515245+12345)&0x7fffffff;return seed/0x7fffffff;}
+function pick(a){return a[Math.floor(rnd()*a.length)];}
+function ri(a,b){return Math.floor(rnd()*(b-a+1))+a;}
+
+var CITIES=[
+ ["Paris","75",48.856,2.35,12],["Lyon","69",45.76,4.83,9],["Marseille","13",43.30,5.37,9],
+ ["Toulouse","31",43.60,1.44,7],["Nice","06",43.70,7.27,6],["Nantes","44",47.22,-1.55,6],
+ ["Strasbourg","67",48.58,7.75,5],["Montpellier","34",43.61,3.88,5],["Bordeaux","33",44.84,-0.58,6],
+ ["Lille","59",50.63,3.06,6],["Rennes","35",48.11,-1.68,5],["Reims","51",49.26,4.03,4],
+ ["Le Havre","76",49.49,0.11,4],["Saint-Étienne","42",45.44,4.39,4],["Toulon","83",43.12,5.93,4],
+ ["Grenoble","38",45.19,5.72,4],["Dijon","21",47.32,5.04,4],["Angers","49",47.47,-0.55,4],
+ ["Nîmes","30",43.84,4.36,3],["Clermont-Ferrand","63",45.78,3.08,3],["Le Mans","72",48.00,0.20,3],
+ ["Aix-en-Provence","13",43.53,5.45,3],["Brest","29",48.39,-4.49,4],["Tours","37",47.39,0.69,4],
+ ["Amiens","80",49.89,2.30,3],["Limoges","87",45.83,1.26,3],["Annecy","74",45.90,6.13,3],
+ ["Perpignan","66",42.70,2.90,3],["Besançon","25",47.24,6.02,3],["Metz","57",49.12,6.18,3],
+ ["Orléans","45",47.90,1.90,3],["Rouen","76",49.44,1.10,5],["Mulhouse","68",47.75,7.34,3],
+ ["Caen","14",49.18,-0.37,14],["Nancy","54",48.69,6.18,3],["Avignon","84",43.95,4.81,3],
+ ["Poitiers","86",46.58,0.34,3],["Pau","64",43.30,-0.37,3],["La Rochelle","17",46.16,-1.15,3],
+ ["Bayonne","64",43.49,-1.47,2],["Chambéry","73",45.56,5.92,2],["Quimper","29",47.99,-4.10,2],
+ ["Vannes","56",47.66,-2.76,2],["Lorient","56",47.75,-3.37,2],["Troyes","10",48.30,4.08,2],
+ ["Colmar","68",48.08,7.36,2],["Valence","26",44.93,4.89,2],["Chartres","28",48.44,1.49,2],
+ ["Cherbourg","50",49.64,-1.62,3],["Évreux","27",49.02,1.15,3],["Lisieux","14",49.15,0.23,3],
+ ["Dieppe","76",49.92,1.08,2],["Saint-Lô","50",49.11,-1.09,2],["Bayeux","14",49.28,-0.70,2],
+ ["Deauville","14",49.36,0.07,2],["Bourges","18",47.08,2.40,2],["Niort","79",46.32,-0.46,2]
+];
+
+var NAMES=["Pharmacie du Centre","Pharmacie de la Gare","Grande Pharmacie","Pharmacie des Halles",
+ "Pharmacie du Marché","Pharmacie Saint-Michel","Pharmacie de la Mairie","Pharmacie Principale",
+ "Pharmacie des Arcades","Pharmacie du Port","Pharmacie Centrale","Pharmacie de la Place",
+ "Pharmacie Lafayette","Pharmacie du Parc","Pharmacie des Écoles","Pharmacie du Château",
+ "Pharmacie de la Poste","Pharmacie du Stade","Pharmacie Saint-Jean","Pharmacie de la Fontaine",
+ "Pharmacie des Tilleuls","Pharmacie du Théâtre","Pharmacie de la Victoire","Pharmacie du Pont"];
+var FN=["Claire","Julien","Sophie","Marc","Élodie","Thomas","Nathalie","Pierre","Camille","Antoine",
+ "Sandrine","Nicolas","Isabelle","Guillaume","Céline","Laurent","Hélène","Vincent","Aurélie","Sébastien"];
+var LN=["Martin","Bernard","Dubois","Durand","Moreau","Laurent","Girard","Lefèvre","Roux","Fournier",
+ "Mercier","Blanc","Guerin","Muller","Henry","Rousseau","Vincent","Chevalier","Faure","Robin"];
+var GROUPS=["Giphar","Aprium","Pharmabest","Mediprix","Leadersanté","Elsie Santé","Wellpharma","Pharmavie","Népenthès","Objectif Pharma","Indépendant"];
+var COMS=[["ILE","Ingrid Leblanc"],["MD","Manon Dufour"],["MDC","Morgane Da Costa"],["PGN","Pauline Girard"],["JMB","Jean-Marc Blot"]];
+var STATS=["A","B","C","P","P","C","B","P"]; // weighted: more prospects & C
+
+var LON_MIN=-5.2,LON_MAX=8.4,LAT_MIN=41.2,LAT_MAX=51.2,VW=600,VH=560;
+function proj(lat,lon){return {x:(lon-LON_MIN)/(LON_MAX-LON_MIN)*VW,y:(LAT_MAX-lat)/(LAT_MAX-LAT_MIN)*VH};}
+function hav(a,b){var R=6371,dLat=(b.lat-a.lat)*Math.PI/180,dLon=(b.lon-a.lon)*Math.PI/180,
+ la1=a.lat*Math.PI/180,la2=b.lat*Math.PI/180,
+ h=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(la1)*Math.cos(la2)*Math.sin(dLon/2)*Math.sin(dLon/2);
+ return 2*R*Math.asin(Math.sqrt(h));}
+
+var PH=[],id=0,cityCoord={};
+CITIES.forEach(function(c){
+  var name=c[0],dep=c[1],lat=c[2],lon=c[3],k=c[4];
+  cityCoord[name]={lat:lat,lon:lon,dep:dep};
+  for(var i=0;i<k;i++){
+    var plat=lat+(rnd()-0.5)*0.11, plon=lon+(rnd()-0.5)*0.16;
+    var st=pick(STATS);
+    var ca = st==="P" ? (rnd()<0.35?ri(3,14):0) : (st==="A"?ri(180,390):st==="B"?ri(80,200):ri(20,90));
+    var p=proj(plat,plon);
+    PH.push({
+      id:id++, name:pick(NAMES), city:name, dep:dep,
+      cp:dep+(""+ri(0,999)).padStart(3,"0"),
+      tel:"0"+ri(2,5)+" "+(""+ri(10,99))+" "+(""+ri(10,99))+" "+(""+ri(10,99))+" "+(""+ri(10,99)),
+      titulaire:pick(FN)+" "+pick(LN),
+      status:st, group:pick(GROUPS), com:pick(COMS),
+      ca:ca, lat:plat, lon:plon, x:p.x, y:p.y
+    });
+  }
+});
+
+var DEPOTS=[
+ ["Intégral Normandie — Caen",49.18,-0.37],["Intégral Île-de-France — Gennevilliers",48.93,2.29],
+ ["Intégral Nord — Lille",50.63,3.06],["Intégral Grand Est — Nancy",48.69,6.18],
+ ["Intégral Ouest — Rennes",48.11,-1.68],["Intégral Rhône — Lyon",45.76,4.83],
+ ["Intégral Sud — Marseille",43.30,5.37],["Intégral Occitanie — Toulouse",43.60,1.44],
+ ["Intégral Aquitaine — Bordeaux",44.84,-0.58]
+].map(function(d){var p=proj(d[1],d[2]);return {name:d[0],lat:d[1],lon:d[2],x:p.x,y:p.y};});
+
+var ST_META={A:{l:"Client A",c:"var(--green)"},B:{l:"Client B",c:"#2E9E66"},C:{l:"Client C",c:"var(--amber)"},P:{l:"Prospect",c:"var(--accent)"}};
+function stColor(s){return s==="A"?"#0B7A44":s==="B"?"#2E9E66":s==="C"?"#B26A12":"#0057FF";}
+
+/* ---------------- DOM refs ---------------- */
+var $=function(s){return document.querySelector(s);};
+var listEl=$("#list"), dotsG=$("#dots"), depotsG=$("#depots"), tourlinesG=$("#tourlines"),
+    mapWrap=$("#mapWrap"), tip=$("#tip"), ring=$("#ring"), mapsvg=$("#mapsvg");
+
+/* populate selects */
+function fill(sel,arr,cur){arr.forEach(function(v){var o=document.createElement("option");o.value=v;o.textContent=v;sel.appendChild(o);});if(cur)sel.value=cur;}
+fill($("#fGrp"),GROUPS.slice().sort());
+fill($("#fDep"),Array.from(new Set(PH.map(function(p){return p.dep;}))).sort());
+fill($("#fCom"),COMS.map(function(c){return c[1];}));
+fill($("#fCity"),Array.from(new Set(PH.map(function(p){return p.city;}))).sort());
+DEPOTS.forEach(function(d,i){var o=document.createElement("option");o.value=i;o.textContent=d.name;$("#depot").appendChild(o);});
+Array.from(new Set(PH.map(function(p){return p.city;}))).sort().forEach(function(c){var o=document.createElement("option");o.value=c;o.textContent=c;$("#target").appendChild(o);});
+$("#target").value="Caen"; $("#depot").value="0";
+
+/* grid lines on map */
+(function(){var g=$("#grid"),h="";for(var i=1;i<6;i++){var x=i*100;h+='<line x1="'+x+'" y1="0" x2="'+x+'" y2="560"/>';}for(var j=1;j<6;j++){var y=j*93;h+='<line x1="0" y1="'+y+'" x2="600" y2="'+y+'"/>';}g.innerHTML=h;})();
+
+/* ---------------- Build map dots ---------------- */
+var dotEl={};
+PH.forEach(function(p){
+  var c=document.createElementNS("http://www.w3.org/2000/svg","circle");
+  c.setAttribute("cx",p.x.toFixed(1));c.setAttribute("cy",p.y.toFixed(1));
+  c.setAttribute("r",p.status==="A"?4.6:p.status==="B"?4.1:3.7);
+  c.setAttribute("fill",stColor(p.status));
+  c.setAttribute("class","pt");c.dataset.id=p.id;
+  dotsG.appendChild(c);dotEl[p.id]=c;
+  c.addEventListener("mouseenter",function(){onHover(p.id,true,"map");});
+  c.addEventListener("mouseleave",function(){onHover(p.id,false,"map");});
+  c.addEventListener("click",function(e){e.stopPropagation();toggleTour(p.id);});
+});
+DEPOTS.forEach(function(d){
+  var r=document.createElementNS("http://www.w3.org/2000/svg","rect");
+  r.setAttribute("x",(d.x-4.5).toFixed(1));r.setAttribute("y",(d.y-4.5).toFixed(1));
+  r.setAttribute("width","9");r.setAttribute("height","9");
+  r.setAttribute("transform","rotate(45 "+d.x.toFixed(1)+" "+d.y.toFixed(1)+")");
+  r.setAttribute("class","depot");
+  r.addEventListener("mouseenter",function(){showTip(d.x,d.y,d.name,"Dépôt Intégral");});
+  r.addEventListener("mouseleave",hideTip);
+  depotsG.appendChild(r);
+});
+
+/* ---------------- State ---------------- */
+var filters={q:"",st:"all",grp:"",dep:"",com:"",city:""};
+var tour=[]; // array of pharmacy ids in optimized order
+var rowEl={};
+
+/* ---------------- Filtering + list render ---------------- */
+function matches(p){
+  if(filters.st!=="all" && p.status!==filters.st) return false;
+  if(filters.grp && p.group!==filters.grp) return false;
+  if(filters.dep && p.dep!==filters.dep) return false;
+  if(filters.com && p.com[1]!==filters.com) return false;
+  if(filters.city && p.city!==filters.city) return false;
+  if(filters.q){
+    var s=filters.q.toLowerCase();
+    if((p.name+" "+p.city+" "+p.cp+" "+p.titulaire+" "+p.group).toLowerCase().indexOf(s)<0) return false;
+  }
+  return true;
+}
+function fmtCA(v){return v>0?(v+" k€"):"—";}
+
+function renderList(){
+  var res=PH.filter(matches);
+  // status counts (over other filters) for chips
+  $("#liveCount").textContent=res.length;
+  $("#listBadge").textContent=res.length;
+  $("#tabListN").textContent=res.length;
+  $("#mbShown").textContent=res.length;
+
+  rowEl={};
+  if(res.length===0){
+    listEl.innerHTML='<div class="empty"><svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg><b>Aucune officine</b>Élargissez vos filtres pour voir des résultats.</div>';
+    updateDotClasses(res);return;
+  }
+  // sort: clients by CA desc then name; keep prospects after? Simpler: by status weight then name
+  var order={A:0,B:1,C:2,P:3};
+  res.sort(function(a,b){return (order[a.status]-order[b.status]) || (b.ca-a.ca) || a.name.localeCompare(b.name);});
+
+  var frag=document.createDocumentFragment();
+  res.forEach(function(p){
+    var row=document.createElement("div");
+    row.className="row"+(tour.indexOf(p.id)>=0?" intour":"");
+    row.dataset.id=p.id;
+    row.innerHTML=
+      '<span class="rdot" style="background:'+stColor(p.status)+'"></span>'+
+      '<div class="row-main">'+
+        '<div class="row-name">'+p.name+'</div>'+
+        '<div class="row-sub"><span class="num">'+p.cp+'</span> '+p.city+' · <span class="grp">'+p.group+'</span> · '+p.com[0]+'</div>'+
+      '</div>'+
+      '<div class="row-right">'+
+        '<span class="pill '+p.status+'">'+ST_META[p.status].l+'</span>'+
+        '<span class="row-ca">CA <b>'+fmtCA(p.ca)+'</b></span>'+
+      '</div>'+
+      '<button class="addbtn" title="Ajouter à la tournée">'+(tour.indexOf(p.id)>=0?'✓':'+')+'</button>';
+    frag.appendChild(row);
+    rowEl[p.id]=row;
+    row.addEventListener("mouseenter",function(){onHover(p.id,true,"list");});
+    row.addEventListener("mouseleave",function(){onHover(p.id,false,"list");});
+    row.addEventListener("click",function(e){
+      if(e.target.closest(".addbtn")){toggleTour(p.id);}
+      else {flyTo(p);}
+    });
+  });
+  listEl.innerHTML="";
+  listEl.appendChild(frag);
+  updateDotClasses(res);
+}
+
+function updateDotClasses(res){
+  var inSet={};res.forEach(function(p){inSet[p.id]=1;});
+  PH.forEach(function(p){
+    var c=dotEl[p.id];
+    var cls="pt";
+    if(!inSet[p.id]) cls+=" out";
+    if(tour.indexOf(p.id)>=0) cls+=" intour";
+    c.setAttribute("class",cls);
+  });
+}
+
+/* ---------------- Hover sync ---------------- */
+var hoverId=null;
+function onHover(pid,on,src){
+  var c=dotEl[pid],row=rowEl[pid],p=PH[pid];
+  if(on){
+    hoverId=pid;
+    if(c && !c.classList.contains("out")){c.classList.add("hi");c.setAttribute("r","7");}
+    if(row) row.classList.add("hi");
+    if(c){var cx=+c.getAttribute("cx"),cy=+c.getAttribute("cy");showTip(cx,cy,p.name,ST_META[p.status].l+" · "+p.city);}
+    if(src==="map" && row){row.scrollIntoView({block:"nearest",behavior:"smooth"});}
+  } else {
+    hoverId=null;
+    if(c){c.classList.remove("hi");c.setAttribute("r",p.status==="A"?4.6:p.status==="B"?4.1:3.7);}
+    if(row) row.classList.remove("hi");
+    hideTip();
+  }
+}
+function svgToScreen(x,y){
+  var pt=mapsvg.createSVGPoint();pt.x=x;pt.y=y;
+  var m=mapsvg.getScreenCTM();var sp=pt.matrixTransform(m);
+  var wr=mapWrap.getBoundingClientRect();
+  return {left:sp.x-wr.left,top:sp.y-wr.top};
+}
+function showTip(x,y,name,sub){
+  var s=svgToScreen(x,y);
+  tip.querySelector(".tt-name").textContent=name;
+  tip.querySelector(".tt-sub").textContent=sub;
+  tip.style.left=s.left+"px";tip.style.top=s.top+"px";tip.style.opacity="1";
+}
+function hideTip(){tip.style.opacity="0";}
+function flyTo(p){
+  var c=dotEl[p.id];if(!c)return;var cx=+c.getAttribute("cx"),cy=+c.getAttribute("cy");
+  ring.setAttribute("cx",cx);ring.setAttribute("cy",cy);
+  ring.style.transition="none";ring.setAttribute("r","4");ring.style.opacity="1";
+  requestAnimationFrame(function(){ring.style.transition="r .5s ease-out, opacity .6s";ring.setAttribute("r","22");ring.style.opacity="0";});
+  showTip(cx,cy,p.name,ST_META[p.status].l+" · "+p.city);
+  setTimeout(hideTip,1400);
+}
+
+/* ---------------- Tour logic ---------------- */
+function depot(){return DEPOTS[+$("#depot").value];}
+function optimize(){
+  // nearest-neighbour from depot over tour ids
+  var start=depot();
+  var remaining=tour.slice();
+  var order=[];var cur={lat:start.lat,lon:start.lon};
+  while(remaining.length){
+    var bi=0,bd=1e9;
+    for(var i=0;i<remaining.length;i++){var p=PH[remaining[i]];var d=hav(cur,p);if(d<bd){bd=d;bi=i;}}
+    var nid=remaining.splice(bi,1)[0];order.push(nid);cur=PH[nid];
+  }
+  tour=order;
+}
+function toggleTour(pid){
+  var i=tour.indexOf(pid);
+  if(i>=0) tour.splice(i,1); else tour.push(pid);
+  if(tour.length) optimize();
+  renderList();renderTour();
+}
+function clearTour(){tour=[];renderList();renderTour();}
+
+function toMin(t){var a=t.split(":");return (+a[0])*60+(+a[1]);}
+function fmtMin(m){m=Math.round(m);var h=Math.floor(m/60)%24,mm=m%60;return (h<10?"0":"")+h+":"+(mm<10?"0":"")+mm;}
+
+function renderTour(){
+  var stopsEl=$("#stops");
+  $("#tourBadge").textContent=tour.length+" arrêt"+(tour.length>1?"s":"");
+  $("#tabTourN").textContent=tour.length;
+  $("#sStops").textContent=tour.length;
+  var gps=$("#gpsBtn");
+
+  if(tour.length===0){
+    stopsEl.innerHTML='<div class="tour-empty"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.3-7-11a7 7 0 0 1 14 0c0 4.7-7 11-7 11Z"/><circle cx="12" cy="10" r="2.6"/></svg><b>Aucune étape</b>Cliquez « + » sur une officine, un point de la carte, ou lancez « Composer automatiquement ».</div>';
+    tourlinesG.innerHTML="";
+    gps.disabled=true;$("#gpsNote").textContent="Ajoutez des officines pour activer le GPS";
+    $("#sKm").textContent="0";$("#sEnd").textContent="—";
+    return;
+  }
+
+  var start=depot();
+  var t=toMin($("#startTime").value);
+  var cur={lat:start.lat,lon:start.lon};
+  var totalKm=0;
+  var html='<div class="stop stop-start"><div class="idxwrap"><div class="idx">'+
+    '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12h14M13 6l6 6-6 6"/></svg>'+
+    '</div></div><div class="stop-main"><div class="stop-name">'+start.name+'</div>'+
+    '<div class="stop-sub">Départ à <span class="eta">'+fmtMin(t)+'</span></div></div><div></div></div>';
+
+  var linePts="M"+start.x.toFixed(1)+","+start.y.toFixed(1);
+
+  tour.forEach(function(pid,idx){
+    var p=PH[pid];
+    var d=hav(cur,p);totalKm+=d;
+    t += d/45*60;      // drive at 45 km/h
+    var arr=t;
+    t += 25;           // 25 min visit
+    cur=p;
+    linePts+=" L"+p.x.toFixed(1)+","+p.y.toFixed(1);
+    html+='<div class="stop" data-id="'+pid+'"><div class="idxwrap"><div class="idx">'+(idx+1)+'</div></div>'+
+      '<div class="stop-main"><div class="stop-name">'+p.name+'</div>'+
+      '<div class="stop-sub"><span class="num">'+p.cp+'</span> '+p.city+' · arrivée <span class="eta num">'+fmtMin(arr)+'</span> · '+d.toFixed(0)+' km</div></div>'+
+      '<button class="rm" title="Retirer">×</button></div>';
+  });
+
+  stopsEl.innerHTML=html;
+  Array.prototype.forEach.call(stopsEl.querySelectorAll(".stop[data-id]"),function(s){
+    var pid=+s.dataset.id;
+    s.querySelector(".rm").addEventListener("click",function(){toggleTour(pid);});
+    s.addEventListener("mouseenter",function(){onHover(pid,true,"list");});
+    s.addEventListener("mouseleave",function(){onHover(pid,false,"list");});
+  });
+
+  // draw tour line on map
+  tourlinesG.innerHTML='<path class="tourline" d="'+linePts+'"/>';
+
+  $("#sKm").textContent=Math.round(totalKm);
+  $("#sEnd").textContent=fmtMin(t);
+
+  gps.disabled=false;
+  $("#gpsNote").textContent="Départ "+start.name.split("—")[1].trim()+" · "+tour.length+" visites · "+Math.round(totalKm)+" km";
+}
+
+/* auto-compose */
+function autoCompose(){
+  var city=$("#target").value;
+  var start=depot();
+  var nb=+$("#nbVisit").value;
+  var cc=cityCoord[city];
+  // candidates: officines in target city, else nearest to city centre
+  var inCity=PH.filter(function(p){return p.city===city;});
+  var pool;
+  if(inCity.length>=nb){pool=inCity;}
+  else{
+    pool=PH.slice().sort(function(a,b){return hav(cc,a)-hav(cc,b);}).slice(0,Math.max(nb*3,inCity.length));
+  }
+  // prefer prospects & Client C (prospection), keep the tour local to the target city
+  var w={P:0,C:1,B:2,A:3};
+  pool=pool.slice().sort(function(a,b){
+    return (w[a.status]-w[b.status]) || (hav(cc,a)-hav(cc,b));
+  });
+  tour=pool.slice(0,nb).map(function(p){return p.id;});
+  optimize();
+  // focus the map/list on that city
+  filters.city=city;$("#fCity").value=city;
+  renderList();renderTour();
+}
+
+/* google maps */
+function openMaps(){
+  if(!tour.length)return;
+  var start=depot();
+  var pts=tour.map(function(id){return PH[id];});
+  var origin=start.lat.toFixed(5)+","+start.lon.toFixed(5);
+  var dest=pts[pts.length-1].lat.toFixed(5)+","+pts[pts.length-1].lon.toFixed(5);
+  var mids=pts.slice(0,-1).map(function(p){return p.lat.toFixed(5)+","+p.lon.toFixed(5);}).join("|");
+  var url="https://www.google.com/maps/dir/?api=1&travelmode=driving&origin="+origin+"&destination="+dest;
+  if(mids) url+="&waypoints="+encodeURIComponent(mids);
+  window.open(url,"_blank","noopener");
+}
+
+/* ---------------- Events ---------------- */
+$("#q").addEventListener("input",function(e){filters.q=e.target.value;renderList();});
+$("#statusSeg").addEventListener("click",function(e){
+  var b=e.target.closest(".chip");if(!b)return;
+  Array.prototype.forEach.call(this.children,function(c){c.classList.remove("on");});
+  b.classList.add("on");filters.st=b.dataset.st;renderList();
+});
+$("#fGrp").addEventListener("change",function(e){filters.grp=e.target.value;renderList();});
+$("#fDep").addEventListener("change",function(e){filters.dep=e.target.value;renderList();});
+$("#fCom").addEventListener("change",function(e){filters.com=e.target.value;renderList();});
+$("#fCity").addEventListener("change",function(e){filters.city=e.target.value;renderList();});
+$("#resetBtn").addEventListener("click",function(){
+  filters={q:"",st:"all",grp:"",dep:"",com:"",city:""};
+  $("#q").value="";$("#fGrp").value="";$("#fDep").value="";$("#fCom").value="";$("#fCity").value="";
+  Array.prototype.forEach.call($("#statusSeg").children,function(c){c.classList.remove("on");});
+  $("#statusSeg").children[0].classList.add("on");
+  renderList();
+});
+$("#nbVisit").addEventListener("input",function(e){$("#nbVal").textContent=e.target.value;});
+$("#autoBtn").addEventListener("click",autoCompose);
+$("#clearBtn").addEventListener("click",clearTour);
+$("#depot").addEventListener("change",function(){if(tour.length){optimize();renderTour();}});
+$("#startTime").addEventListener("change",renderTour);
+$("#target").addEventListener("change",function(){/* preview */});
+$("#gpsBtn").addEventListener("click",openMaps);
+mapWrap.addEventListener("click",hideTip);
+
+/* theme toggle */
+$("#themeBtn").addEventListener("click",function(){
+  var cur=document.documentElement.getAttribute("data-theme");
+  var isDark=cur? cur==="dark" : window.matchMedia("(prefers-color-scheme:dark)").matches;
+  document.documentElement.setAttribute("data-theme",isDark?"light":"dark");
+});
+
+/* mobile tabs */
+Array.prototype.forEach.call(document.querySelectorAll(".tab"),function(t){
+  t.addEventListener("click",function(){
+    document.body.setAttribute("data-view",t.dataset.view);
+    document.querySelectorAll(".tab").forEach(function(x){x.classList.remove("on");});
+    t.classList.add("on");
+  });
+});
+
+/* ---------------- Init: demo tour around Caen ---------------- */
+renderList();
+autoCompose();   // pre-fills a realistic Normandie tour so the flow is visible immediately
+})();
+</script>
+</body>
+</html>
