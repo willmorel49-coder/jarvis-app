@@ -17,6 +17,7 @@
   var displayMode = 'points';    // points | bulles (taille = CA)
   var tourLayer = null;          // tracé de la tournée (polyline + n° d'arrêts)
   var depotLayer = null;         // marqueurs des établissements Intégral
+  var zoneLayer = null, zonesOn = false, zoneMetric = 'part';   // choroplèthe par département
   var depot = null;              // { n, lat, lng } point de départ/retour (optionnel)
   var pickDepotMode = false;     // clic carte suivant = définir le dépôt
   var SPEED = 45, SERVICE = 8;   // km/h moyens · minutes par arrêt (rendement)
@@ -211,6 +212,52 @@
     if (cn) cn.textContent = markers.length.toLocaleString('fr') + (bulles ? ' officines avec CA' : ' pharmacies');
   }
   function recolor() { if (markers) for (var k = 0; k < markers.length; k++) markers[k].setStyle(markerStyle(D.p[markers[k]._pi], markers[k]._pi)); }
+
+  // ── ZONES PAR DÉPARTEMENT (choroplèthe sur la vraie carte de France) ──
+  function ensureDeps(cb) {
+    if (window.DEPARTEMENTS_GEO) { cb(); return; }
+    var s = document.createElement('script'); s.src = 'departements-data.js' + CB;
+    s.onload = function () { cb(); }; s.onerror = function () { cb('err'); };
+    document.head.appendChild(s);
+  }
+  function zoneColor(code) {
+    var s = (window.DEPARTEMENTS_STATS || {})[code] || { cli: 0, pro: 0, tot: 0, part: 0 };
+    if (zoneMetric === 'part') { var p = s.part; return p >= 25 ? '#0B6E43' : p >= 15 ? '#2E9E66' : p >= 7 ? '#5CC98A' : p >= 1 ? '#BFE6CF' : '#EDEFF3'; }
+    if (zoneMetric === 'densite') { var t = s.tot; return t >= 400 ? '#08306B' : t >= 250 ? '#2171B5' : t >= 120 ? '#6BAED6' : t >= 40 ? '#BDD7E7' : '#EDEFF3'; }
+    var pr = s.pro; return pr >= 500 ? '#7A2E0E' : pr >= 300 ? '#C2410C' : pr >= 150 ? '#EA580C' : pr >= 40 ? '#FDBA74' : '#EDEFF3';
+  }
+  function drawZones() {
+    if (!map) return;
+    if (zoneLayer) { map.removeLayer(zoneLayer); zoneLayer = null; }
+    if (!zonesOn) return;
+    ensureDeps(function () {
+      if (!window.DEPARTEMENTS_GEO || !zonesOn) return;
+      zoneLayer = window.L.geoJSON(window.DEPARTEMENTS_GEO, {
+        style: function (f) { return { fillColor: zoneColor(f.properties.code), fillOpacity: 0.72, color: '#fff', weight: 1 }; },
+        onEachFeature: function (f, layer) {
+          var s = (window.DEPARTEMENTS_STATS || {})[f.properties.code] || {};
+          layer.bindTooltip('<b>' + esc(f.properties.code + ' · ' + f.properties.nom) + '</b><span>' + (s.cli || 0) + ' clients · ' + (s.pro || 0) + ' prospects' + (s.part != null ? ' · ' + s.part + '% clients' : '') + '</span>', { sticky: true, className: 'cn-tip' });
+          layer.on('mouseover', function () { layer.setStyle({ weight: 2.5, color: '#0B131C' }); layer.bringToFront(); });
+          layer.on('mouseout', function () { layer.setStyle({ weight: 1, color: '#fff' }); });
+          layer.on('click', function () {   // drill-down : filtre + liste du département
+            deptFocus = f.properties.code;
+            var ds = document.getElementById('cn-deptsel'); if (ds) ds.value = deptFocus;
+            if (document.getElementById('cn-listpanel')) renderListPanel(); else V2.carteListOpen();
+            try { map.fitBounds(layer.getBounds().pad(0.1)); } catch (e) {}
+          });
+        }
+      }).addTo(map);
+    });
+  }
+  V2.carteZones = function (on) {
+    zonesOn = (on === undefined ? !zonesOn : !!on);
+    var btn = document.getElementById('cn-zonebtn'); if (btn) { btn.classList.toggle('on', zonesOn); btn.textContent = zonesOn ? '✓ Zones affichées' : 'Afficher les zones (départements)'; }
+    var sel = document.getElementById('cn-zonemetric'); if (sel) sel.style.display = zonesOn ? 'block' : 'none';
+    if (zonesOn) { if (cluster) map.removeLayer(cluster); drawZones(); }
+    else { if (zoneLayer) { map.removeLayer(zoneLayer); zoneLayer = null; } rebuild(); }
+    var lg = document.getElementById('carte-legend'); if (lg) lg.innerHTML = legendHtml();
+  };
+  V2.carteZoneMetric = function (m) { zoneMetric = m; drawZones(); var lg = document.getElementById('carte-legend'); if (lg) lg.innerHTML = legendHtml(); };
   function refreshMarkerStyle(i) { if (!markers) return; for (var k = 0; k < markers.length; k++) if (markers[k]._pi === i) { markers[k].setStyle(markerStyle(D.p[i], i)); break; } }
 
   // ── PLAN DE TOURNÉE (sélection de pharmacies → journée de prospection) ──
@@ -933,6 +980,11 @@
 
   function legendHtml() {
     var lg = function (c, t) { return '<span class="cn-lg"><i style="background:' + c + '"></i>' + esc(t) + '</span>'; };
+    if (zonesOn) {
+      if (zoneMetric === 'part') return lg('#0B6E43', '≥ 25 % clients') + lg('#2E9E66', '15–25 %') + lg('#5CC98A', '7–15 %') + lg('#BFE6CF', '1–7 %') + lg('#EDEFF3', '0 %');
+      if (zoneMetric === 'densite') return lg('#08306B', '≥ 400 officines') + lg('#2171B5', '250–400') + lg('#6BAED6', '120–250') + lg('#BDD7E7', '40–120') + lg('#EDEFF3', '< 40');
+      return lg('#7A2E0E', '≥ 500 prospects') + lg('#C2410C', '300–500') + lg('#EA580C', '150–300') + lg('#FDBA74', '40–150') + lg('#EDEFF3', '< 40');
+    }
     if (colorMode === 'comm') {
       var out = '';
       for (var k = 1; k < D.comm.length; k++) out += lg(COMM_COL[k], D.comm[k]);
@@ -1209,6 +1261,10 @@
               '<select id="cn-comm" class="cn-sel" onchange="V2.carteComm(this.value)"></select>' +
               '<select id="cn-deptsel" class="cn-sel" onchange="V2.carteDept(this.value)"></select>' +
               '<select id="cn-grpsel" class="cn-sel" onchange="V2.carteGrp(this.value)"></select></div>' +
+            '<div class="cn-sgroup"><span class="cn-lbl">Zones par département</span>' +
+              '<button id="cn-zonebtn" class="cn-listbtn" onclick="V2.carteZones()">Afficher les zones (départements)</button>' +
+              '<select id="cn-zonemetric" class="cn-sel" style="display:none" onchange="V2.carteZoneMetric(this.value)">' +
+                '<option value="part">Colorer : part de clients</option><option value="densite">Colorer : densité d\'officines</option><option value="potentiel">Colorer : potentiel (prospects)</option></select></div>' +
             '<div class="cn-sgroup"><input id="cn-search" class="cn-search" type="search" placeholder="Chercher une pharmacie, une ville…" oninput="V2.carteSearch(this.value)">' +
               '<button class="cn-listbtn" onclick="V2.carteListOpen()">Liste des officines</button></div>' +
             '<div class="cn-sgroup"><span class="cn-lbl">Légende</span><div class="cn-legend" id="carte-legend"></div></div>' +
