@@ -1,0 +1,828 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>COPILOTE — Journée & tournées · Intégral Pharma</title>
+<style>
+:root{
+  --blue:#0057FF; --blue-ink:#0042c4; --blue-soft:#E7EEFF;
+  --turq:#0E7C86; --turq-soft:#E1F3F4;
+  --ink:#0B131C; --paper:#F4F6FB; --card:#FFFFFF;
+  --gray:#6B7590; --line:#E4E8F1; --line-2:#EEF1F7;
+  --green:#0B7A44; --amber:#B5750B; --red:#C23A3A;
+  --A:#0B7A44; --B:#0E7C86; --C:#B5750B; --P:#0057FF;
+  --field:#F4F6FB; --hexstroke:#FFFFFF; --canvas:#EEF3FB; --canvas2:#E7EDF7; --gridline:#DCE4F0;
+  --travel1:#F4F6FB; --travel2:#EEF1F8;
+  --shadow:0 1px 2px rgba(11,19,28,.04),0 8px 24px -12px rgba(11,19,28,.18);
+  --shadow-lg:0 24px 60px -20px rgba(11,19,28,.30);
+  --r:14px; --r-sm:10px;
+  font-synthesis-weight:none;
+}
+@media (prefers-color-scheme:dark){:root{
+  --blue-soft:#132549; --turq-soft:#0E2A2E;
+  --ink:#EAF0FA; --paper:#070B14; --card:#0F1826;
+  --gray:#8A97AD; --line:#1E2A3D; --line-2:#16202F;
+  --C:#C68A16;
+  --field:#0B1420; --hexstroke:#0F1826; --canvas:#0B1420; --canvas2:#0A1019; --gridline:#1A2740;
+  --travel1:#0B1420; --travel2:#131E30;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.55);
+  --shadow-lg:0 24px 60px -20px rgba(0,0,0,.6);
+}}
+:root[data-theme="dark"]{
+  --blue-soft:#132549; --turq-soft:#0E2A2E;
+  --ink:#EAF0FA; --paper:#070B14; --card:#0F1826;
+  --gray:#8A97AD; --line:#1E2A3D; --line-2:#16202F;
+  --C:#C68A16;
+  --field:#0B1420; --hexstroke:#0F1826; --canvas:#0B1420; --canvas2:#0A1019; --gridline:#1A2740;
+  --travel1:#0B1420; --travel2:#131E30;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.55);
+  --shadow-lg:0 24px 60px -20px rgba(0,0,0,.6);
+}
+:root[data-theme="light"]{
+  --blue-soft:#E7EEFF; --turq-soft:#E1F3F4;
+  --ink:#0B131C; --paper:#F4F6FB; --card:#FFFFFF;
+  --gray:#6B7590; --line:#E4E8F1; --line-2:#EEF1F7;
+  --C:#B5750B;
+  --field:#F4F6FB; --hexstroke:#FFFFFF; --canvas:#EEF3FB; --canvas2:#E7EDF7; --gridline:#DCE4F0;
+  --travel1:#F4F6FB; --travel2:#EEF1F8;
+  --shadow:0 1px 2px rgba(11,19,28,.04),0 8px 24px -12px rgba(11,19,28,.18);
+  --shadow-lg:0 24px 60px -20px rgba(11,19,28,.30);
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:var(--paper);-webkit-font-smoothing:antialiased;letter-spacing:-.01em;overflow:hidden}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,select{font-family:inherit;color:var(--ink)}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:var(--line);border-radius:20px;border:3px solid var(--card)}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:6px}
+.tnum{font-variant-numeric:tabular-nums}
+
+/* ---------- TOP BAR ---------- */
+.topbar{height:60px;display:flex;align-items:center;gap:14px;padding:0 18px;background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:60}
+.brand{display:flex;align-items:center;gap:11px;font-weight:800;letter-spacing:-.03em;font-size:15px;flex:0 0 auto}
+.logo{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--blue),var(--turq));display:grid;place-items:center;color:#fff;font-weight:900;font-size:14px;box-shadow:0 4px 12px -4px rgba(0,87,255,.5)}
+.brand small{display:block;font-weight:600;font-size:10.5px;color:var(--gray);letter-spacing:.06em;text-transform:uppercase;margin-top:1px}
+/* recherche pilote */
+.palette{position:relative;flex:1;max-width:560px;margin:0 auto}
+.palette-box{display:flex;align-items:center;gap:10px;height:42px;padding:0 12px;background:var(--field);border:1.5px solid var(--line);border-radius:12px;transition:.15s}
+.palette-box:focus-within{border-color:var(--blue);background:var(--card);box-shadow:0 0 0 4px var(--blue-soft)}
+.palette-box svg{flex:0 0 auto;color:var(--gray)}
+.palette-box input{flex:1;border:none;background:none;outline:none;font-size:14.5px}
+.palette-box input::placeholder{color:var(--gray)}
+.count-badge{font-size:12px;color:var(--gray);white-space:nowrap;font-weight:600}
+.count-badge b{color:var(--ink)}
+.kbd{font-size:11px;color:var(--gray);border:1px solid var(--line);border-bottom-width:2px;padding:2px 7px;border-radius:6px;background:var(--card);font-weight:700}
+.suggest{position:absolute;top:50px;left:0;right:0;background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow-lg);padding:8px;display:none;z-index:70}
+.suggest.open{display:block}
+.suggest h6{margin:8px 10px 4px;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--gray)}
+.suggest .row{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:9px;cursor:pointer}
+.suggest .row:hover{background:var(--field)}
+.suggest .tok{font-size:11px;font-weight:800;color:var(--blue);background:var(--blue-soft);padding:2px 7px;border-radius:6px}
+.suggest .desc{color:var(--gray);font-size:12.5px}
+.topbar .spacer{flex:0 0 auto}
+.topright{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+.iconbtn{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;color:var(--gray);border:1px solid var(--line);background:var(--card);transition:.12s}
+.iconbtn:hover{color:var(--ink);border-color:var(--gray)}
+.avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#0E7C86,#0B7A44);color:#fff;display:grid;place-items:center;font-weight:700;font-size:13px}
+
+/* ---------- LAYOUT ---------- */
+.app{display:grid;grid-template-columns:340px minmax(0,1fr) 408px;gap:12px;padding:12px;height:calc(100dvh - 60px);align-items:stretch}
+.col{display:flex;flex-direction:column;min-height:0;min-width:0;gap:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+.col-head{display:flex;align-items:center;gap:9px;padding:14px 15px 11px}
+.col-head h2{margin:0;font-size:12.5px;font-weight:800;letter-spacing:.03em;text-transform:uppercase}
+.col-head .ic{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;color:#fff;flex:none}
+.col-head .count{margin-left:auto;font-size:12px;font-weight:700;color:var(--gray);background:var(--field);padding:3px 9px;border-radius:8px}
+
+/* ---------- COL1 : FILTRES + LISTING ---------- */
+.chips{display:flex;flex-wrap:wrap;gap:7px;padding:2px 15px 6px}
+.chip{font-size:12px;font-weight:600;color:var(--gray);background:var(--field);border:1px solid var(--line);padding:6px 11px;border-radius:20px;transition:.12s;display:inline-flex;align-items:center;gap:6px}
+.chip:hover{border-color:var(--gray)}
+.chip.on{background:var(--ink);color:var(--card);border-color:var(--ink)}
+.chip.on.a{background:var(--A);border-color:var(--A);color:#fff} .chip.on.b{background:var(--B);border-color:var(--B);color:#fff}
+.chip.on.c{background:var(--C);border-color:var(--C);color:#fff} .chip.on.p{background:var(--P);border-color:var(--P);color:#fff}
+.chip .sw{width:8px;height:8px;border-radius:50%}
+.selrow{display:flex;gap:8px;padding:4px 15px}
+.selrow select{flex:1;height:36px;border:1px solid var(--line);border-radius:10px;background:var(--field);font-size:12.5px;font-weight:600;color:var(--ink);padding:0 8px;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236B7590' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;padding-right:26px}
+.list-meta{display:flex;align-items:center;justify-content:space-between;padding:10px 15px 8px;font-size:12px;color:var(--gray);font-weight:600}
+.list-meta b{color:var(--blue)}
+.list-meta button{font-size:12px;font-weight:700;color:var(--blue)}
+.list{flex:1;overflow-y:auto;padding:0 9px 12px;min-height:0}
+.item{display:flex;gap:11px;align-items:flex-start;padding:10px 11px;border-radius:12px;cursor:pointer;border:1px solid transparent;transition:.1s}
+.item:hover{background:var(--field)}
+.item.active{background:var(--blue-soft);border-color:rgba(0,87,255,.25)}
+.item.intour{background:var(--turq-soft)}
+.item .badge{width:32px;height:32px;border-radius:9px;flex:none;display:grid;place-items:center;color:#fff;font-weight:800;font-size:13px;margin-top:1px}
+.item h4{margin:0;font-size:13.5px;font-weight:700;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item p{margin:2px 0 0;font-size:12px;color:var(--gray);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item .tags{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+.tag{font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:6px;background:var(--field);color:var(--gray)}
+.tag.grp{background:var(--turq-soft);color:var(--turq)}
+.tag.ca{background:rgba(11,122,68,.1);color:var(--green)}
+.item .add{margin-left:auto;flex:none;width:32px;height:32px;border-radius:9px;background:var(--field);display:grid;place-items:center;color:var(--blue);transition:.12s;align-self:center;border:1px solid var(--line)}
+.item .add:hover{background:var(--blue);color:#fff;border-color:var(--blue);transform:scale(1.06)}
+.item.intour .add{background:var(--green);color:#fff;border-color:var(--green)}
+.empty{text-align:center;color:var(--gray);font-size:13px;padding:40px 22px}
+.empty .eic{width:52px;height:52px;border-radius:15px;background:var(--field);display:grid;place-items:center;margin:0 auto 12px;color:var(--gray)}
+
+/* ---------- COL2 : CARTE ---------- */
+.mapcard{flex:1;position:relative;overflow:hidden;border-radius:var(--r);display:flex;flex-direction:column;min-height:0}
+.maphead{position:absolute;top:12px;left:12px;right:12px;display:flex;align-items:flex-start;gap:9px;z-index:20;pointer-events:none;flex-wrap:wrap}
+.crumb{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:11px;padding:8px 12px;box-shadow:var(--shadow);pointer-events:auto}
+.crumb .home{color:var(--blue);cursor:pointer;display:flex;align-items:center;gap:5px}
+.crumb .home:hover{text-decoration:underline}
+.crumb .sep{color:var(--gray)} .crumb .cur{color:var(--gray)}
+.metric-tabs{display:inline-flex;background:var(--card);border:1px solid var(--line);border-radius:11px;padding:3px;box-shadow:var(--shadow);pointer-events:auto}
+.metric-tabs button{font-size:12px;font-weight:700;color:var(--gray);padding:6px 10px;border-radius:8px;transition:.12s}
+.metric-tabs button.on{background:var(--blue-soft);color:var(--blue-ink)}
+.legend{margin-left:auto;display:flex;gap:11px;background:var(--card);border:1px solid var(--line);border-radius:11px;padding:8px 12px;box-shadow:var(--shadow);pointer-events:auto;flex-wrap:wrap}
+.legend span{font-size:11px;font-weight:600;color:var(--gray);display:flex;align-items:center;gap:5px}
+.legend i{width:9px;height:9px;border-radius:50%;display:inline-block}
+.legend i.sq{border-radius:3px}
+.legend .scale{display:flex;align-items:center;gap:0}
+.legend .scale .sw{width:22px;height:10px}
+.legend .scale .sw:first-child{border-radius:3px 0 0 3px}.legend .scale .sw:last-child{border-radius:0 3px 3px 0}
+
+.mapstage{position:absolute;inset:0;display:grid;place-items:center;overflow:hidden;background:radial-gradient(120% 80% at 30% -10%,rgba(0,87,255,.06),transparent 60%),radial-gradient(100% 90% at 100% 110%,rgba(14,124,134,.07),transparent 55%),var(--paper)}
+#natMap{max-width:min(92%,620px);max-height:86%}
+.hex{cursor:pointer;transition:transform .14s ease,opacity .15s}
+.hex polygon{stroke:var(--hexstroke);stroke-width:1.6;transition:.15s}
+.hex text{font-size:9px;font-weight:800;fill:var(--ink);opacity:.5;pointer-events:none;text-anchor:middle;dominant-baseline:central}
+.hex:hover{transform:translateY(-2px)}.hex:hover polygon{stroke:var(--ink);stroke-width:2}
+.hex.dim{opacity:.2}
+.hex.hl polygon{stroke:var(--ink);stroke-width:2.6}.hex.hl{transform:translateY(-2px)}
+.hex.light text{fill:#fff;opacity:.9}
+.dcanvas{position:absolute;inset:12px;top:58px;border-radius:18px;background:radial-gradient(120% 120% at 50% 0%,var(--canvas) 0%,var(--canvas2) 100%);border:1px solid var(--line);overflow:hidden}
+.dcanvas .griddots{position:absolute;inset:0;opacity:.6;background-image:radial-gradient(var(--gridline) 1px,transparent 1px);background-size:26px 26px}
+.pt{position:absolute;transform:translate(-50%,-100%);cursor:pointer;z-index:5;transition:transform .12s;filter:drop-shadow(0 3px 4px rgba(11,19,28,.28))}
+.pt:hover{transform:translate(-50%,-100%) scale(1.16);z-index:20}
+.pt.hl{z-index:22;transform:translate(-50%,-100%) scale(1.26)}
+.pt .num{position:absolute;top:-6px;right:-8px;background:var(--blue);color:#fff;width:19px;height:19px;border-radius:50%;font-size:11px;font-weight:800;display:grid;place-items:center;border:2px solid var(--card);box-shadow:0 2px 5px rgba(0,0,0,.3)}
+.pt.dep .glyph{position:absolute;top:5px;left:50%;transform:translateX(-50%);color:#fff}
+svg.route{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:4}
+.map-tip{position:absolute;z-index:30;background:var(--ink);color:#fff;padding:9px 12px;border-radius:10px;font-size:12px;pointer-events:none;opacity:0;transition:opacity .1s;box-shadow:var(--shadow-lg);white-space:nowrap;font-weight:600;max-width:230px}
+.map-tip b{display:block;font-size:13px;margin-bottom:2px}
+.map-tip .r{display:flex;justify-content:space-between;gap:16px;color:#9fb0d8;font-weight:500;margin-top:2px}
+.map-tip .r b{display:inline;color:#fff;margin:0}
+:root[data-theme="dark"] .map-tip{background:#000;border:1px solid #223}
+.mapcount{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);z-index:20;background:var(--ink);color:#fff;padding:7px 15px;border-radius:24px;font-size:12px;font-weight:700;box-shadow:var(--shadow-lg);display:flex;align-items:center;gap:8px}
+.mapcount .k{width:7px;height:7px;border-radius:50%;background:#4ade80;box-shadow:0 0 0 3px rgba(74,222,128,.3)}
+.mapcount em{font-style:normal;color:#7FB0FF}
+
+/* ---------- COL3 : COMPOSEUR + AGENDA + GPS ---------- */
+.composer{display:flex;flex-direction:column;min-height:0;flex:1}
+.steps{display:flex;padding:12px 15px 2px;gap:6px}
+.step{flex:1;display:flex;flex-direction:column;gap:6px}
+.step .bar{height:4px;border-radius:3px;background:var(--line)}
+.step.done .bar,.step.cur .bar{background:var(--blue)}
+.step small{font-size:10.5px;font-weight:700;color:var(--gray)}
+.step.cur small{color:var(--blue)} .step.done small{color:var(--ink)}
+.setup{padding:8px 15px 12px;display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.field{display:flex;flex-direction:column;gap:5px}
+.field.full{grid-column:1/-1}
+.field label{font-size:11px;font-weight:700;color:var(--gray);display:flex;align-items:center;gap:5px}
+.field select,.field input{height:38px;border:1px solid var(--line);border-radius:10px;background:var(--field);padding:0 11px;font-size:13px;font-weight:600;color:var(--ink);width:100%}
+.field select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236B7590' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px}
+.stepper{display:flex;align-items:center;border:1px solid var(--line);border-radius:10px;background:var(--field);height:38px;overflow:hidden}
+.stepper button{width:38px;height:100%;font-size:19px;font-weight:600;color:var(--blue)}
+.stepper button:hover{background:var(--blue-soft)}
+.stepper span{flex:1;text-align:center;font-weight:800;font-size:15px}
+
+.agenda-head{display:flex;align-items:center;gap:9px;padding:2px 15px 10px}
+.agenda-head h3{margin:0;font-size:12.5px;font-weight:800;letter-spacing:.03em;text-transform:uppercase}
+.agenda-head .kpi{margin-left:auto;display:flex;gap:8px}
+.kpi .k{background:var(--field);border:1px solid var(--line);border-radius:9px;padding:5px 9px;text-align:center;min-width:54px}
+.kpi .k b{display:block;font-size:14px;font-weight:800;line-height:1} .kpi .k small{font-size:9.5px;color:var(--gray);font-weight:700}
+
+.agenda{flex:1;overflow-y:auto;padding:2px 15px 10px;min-height:0;position:relative}
+.tl{position:relative;padding-left:52px}
+.tl .axis{position:absolute;left:0;top:0;bottom:0;width:52px}
+.hourmark{position:absolute;height:2px}
+.hourmark .lbl{position:absolute;left:0;top:-8px;font-size:10.5px;font-weight:700;color:var(--gray);width:40px;text-align:right}
+.hourmark .ln{position:absolute;left:48px;right:-15px;top:0;border-top:1px dashed var(--line)}
+.tl-track{position:absolute;left:44px;top:8px;bottom:8px;width:2px;background:var(--line);border-radius:2px}
+.block{position:absolute;left:52px;right:0;border-radius:11px;padding:9px 11px;overflow:hidden;box-shadow:var(--shadow);border:1px solid var(--line);background:var(--card);transition:.12s}
+.block .node{position:absolute;left:-10px;top:11px;width:20px;height:20px;border-radius:50%;background:var(--card);border:2px solid var(--blue);display:grid;place-items:center;font-size:10px;font-weight:800;color:var(--blue)}
+.block.visit{background:var(--card);border-left:3px solid var(--blue)}
+.block.visit.a{border-left-color:var(--A)} .block.visit.b{border-left-color:var(--B)}
+.block.visit.c{border-left-color:var(--C)} .block.visit.p{border-left-color:var(--P)}
+.block.visit:hover{box-shadow:var(--shadow-lg);transform:translateX(-1px)}
+.block h5{margin:0;font-size:13px;font-weight:700;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:20px}
+.block .meta{margin-top:3px;font-size:11px;color:var(--gray);font-weight:600;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.block .meta .time{color:var(--ink);font-weight:800}
+.block .fixed{font-size:9.5px;font-weight:800;color:var(--amber);background:rgba(181,117,11,.14);padding:2px 6px;border-radius:5px}
+.block .rm{position:absolute;top:8px;right:9px;color:var(--gray);font-size:16px;font-weight:700;line-height:1;width:20px;height:20px;border-radius:6px;display:grid;place-items:center}
+.block .rm:hover{color:var(--red);background:rgba(194,58,58,.1)}
+.block.travel{background:repeating-linear-gradient(135deg,var(--travel1),var(--travel1) 8px,var(--travel2) 8px,var(--travel2) 16px);border-style:dashed;display:flex;align-items:center;gap:8px;color:var(--gray);font-size:11.5px;font-weight:700}
+.block.travel .node{border-color:var(--gray);border-style:dashed;color:var(--gray);background:var(--field)}
+.block.travel .seg-gps{margin-left:auto;font-size:10.5px;font-weight:800;color:var(--blue);display:flex;align-items:center;gap:4px;background:var(--blue-soft);padding:3px 8px;border-radius:6px}
+.block.travel .seg-gps:hover{background:var(--blue);color:#fff}
+.nowline{position:absolute;left:44px;right:15px;height:2px;background:var(--red);z-index:6}
+.nowline::before{content:"";position:absolute;left:-4px;top:-3px;width:8px;height:8px;border-radius:50%;background:var(--red)}
+.nowline .t{position:absolute;left:-40px;top:-8px;font-size:10px;font-weight:800;color:var(--red)}
+.agenda-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px;color:var(--gray)}
+.agenda-empty .ico{width:56px;height:56px;border-radius:16px;background:var(--field);display:grid;place-items:center;margin-bottom:14px;color:var(--gray)}
+.agenda-empty b{color:var(--ink);font-size:14px;margin-bottom:5px}
+.agenda-empty span{font-size:12.5px;max-width:240px;line-height:1.5}
+.agenda-empty span b{color:var(--blue)}
+
+/* ---------- GPS FOOTER ---------- */
+.gpsbar{padding:12px 14px calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--line);background:linear-gradient(180deg,var(--card),var(--field))}
+.gps-sum{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:12px;color:var(--gray);font-weight:600}
+.gps-sum b{color:var(--ink)}
+.btn-gps{width:100%;height:54px;border-radius:14px;background:var(--blue);color:#fff;font-size:15.5px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:11px;box-shadow:0 10px 26px -8px rgba(0,87,255,.6);transition:.14s}
+.btn-gps:hover{background:var(--blue-ink);transform:translateY(-1px);box-shadow:0 16px 32px -8px rgba(0,87,255,.65)}
+.btn-gps:disabled{background:var(--line);color:var(--gray);box-shadow:none;cursor:not-allowed;transform:none}
+.btn-gps .gmaps{width:26px;height:26px;border-radius:7px;background:#fff;display:grid;place-items:center;flex:none}
+.gps-hint{text-align:center;font-size:11px;color:var(--gray);margin-top:8px;font-weight:500}
+.gps-hint b{color:var(--green)}
+
+/* ---------- mobile ---------- */
+.mob-tabs{display:none}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:12px 18px;border-radius:12px;font-weight:700;font-size:13px;box-shadow:var(--shadow-lg);z-index:200;opacity:0;pointer-events:none;transition:.25s;display:flex;align-items:center;gap:9px}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast .ic{color:#5FE39A}
+:root[data-theme="dark"] .toast{background:#000;border:1px solid #223}
+
+@media(max-width:1240px){.app{grid-template-columns:300px minmax(0,1fr) 372px}}
+@media(max-width:1080px){
+  .app{grid-template-columns:300px 1fr}
+  .col.c3{position:fixed;right:12px;top:72px;bottom:12px;width:404px;max-width:calc(100vw - 24px);z-index:50;box-shadow:var(--shadow-lg);border-radius:var(--r);transform:translateX(120%);transition:.28s cubic-bezier(.4,0,.2,1)}
+  .col.c3.open{transform:none}.col.c3 .card{flex:1}
+  .fab{display:flex}
+}
+.fab{display:none;position:fixed;right:20px;bottom:20px;z-index:55;height:54px;padding:0 20px;border-radius:28px;background:var(--blue);color:#fff;font-weight:800;font-size:14px;align-items:center;gap:10px;box-shadow:0 14px 30px -8px rgba(0,87,255,.6)}
+.fab .b{background:#fff;color:var(--blue);border-radius:12px;min-width:22px;height:22px;display:grid;place-items:center;font-size:12px}
+@media(max-width:820px){
+  .palette{order:5;flex-basis:100%;max-width:none}
+  .topbar{flex-wrap:wrap;height:auto;padding:10px 14px}
+  .app{grid-template-columns:1fr;grid-template-rows:1fr;height:calc(100dvh - 108px)}
+  .col.c1{display:flex}.col.c2{display:none}
+  body.view-map .col.c1{display:none}body.view-map .col.c2{display:flex}
+  .mob-tabs{display:flex;position:fixed;left:50%;transform:translateX(-50%);bottom:18px;z-index:56;background:var(--ink);border-radius:30px;padding:5px;box-shadow:var(--shadow-lg)}
+  .mob-tabs button{padding:9px 18px;border-radius:24px;color:#9fb0d8;font-weight:700;font-size:13px}
+  .mob-tabs button.on{background:#fff;color:var(--ink)}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand"><div class="logo">IP</div><div>Intégral Pharma<small>Copilote</small></div></div>
+  <div class="palette">
+    <div class="palette-box" id="paletteBox">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="q" placeholder="Rechercher officine, ville, titulaire…  (⌘K)" autocomplete="off">
+      <span class="count-badge"><b id="resCount">0</b> / 19 742</span>
+      <span class="kbd">⌘K</span>
+    </div>
+    <div class="suggest" id="suggest">
+      <h6>Filtres rapides</h6>
+      <div class="row" data-quick="statut:Prospect"><span class="tok">statut:</span><span>Prospects</span><span class="desc">— à conquérir</span></div>
+      <div class="row" data-quick="statut:A"><span class="tok">statut:</span><span>Clients A</span><span class="desc">— meilleurs comptes</span></div>
+      <div class="row" data-quick="grp:Giphar"><span class="tok">grp:</span><span>Giphar</span><span class="desc">— groupement</span></div>
+      <div class="row" data-quick="dep:69"><span class="tok">dep:</span><span>69 · Rhône</span><span class="desc">— ouvrir la zone</span></div>
+    </div>
+  </div>
+  <div class="topright">
+    <button class="iconbtn" id="themeBtn" title="Thème clair / sombre"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></button>
+    <div class="avatar">PS</div>
+  </div>
+</header>
+
+<div class="app">
+
+  <!-- ============ COL 1 : FILTRES + LISTING ============ -->
+  <section class="col c1">
+    <div class="card" style="display:flex;flex-direction:column;flex:1;min-height:0">
+      <div class="col-head">
+        <div class="ic" style="background:var(--turq)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M4 6h16M7 12h10M10 18h4"/></svg></div>
+        <h2>Officines</h2>
+        <span class="count" id="colcount">—</span>
+      </div>
+      <div class="chips" id="statchips">
+        <button class="chip on" data-stat="all">Tous</button>
+        <button class="chip" data-stat="A"><span class="sw" style="background:var(--A)"></span>A</button>
+        <button class="chip" data-stat="B"><span class="sw" style="background:var(--B)"></span>B</button>
+        <button class="chip" data-stat="C"><span class="sw" style="background:var(--C)"></span>C</button>
+        <button class="chip" data-stat="P"><span class="sw" style="background:var(--P)"></span>Prospect</button>
+      </div>
+      <div class="selrow"><select id="fdep"><option value="">Tous départements</option></select><select id="fgrp"><option value="">Tous groupements</option></select></div>
+      <div class="selrow"><select id="fcom"><option value="">Tous commerciaux</option></select></div>
+      <div class="list-meta"><span><b id="listn">0</b> officine(s) affichée(s)</span><button id="reset">Réinitialiser</button></div>
+      <div class="list" id="list"></div>
+    </div>
+  </section>
+
+  <!-- ============ COL 2 : CARTE À ZONES ============ -->
+  <section class="col c2">
+    <div class="card mapcard">
+      <div class="maphead">
+        <div class="crumb" id="crumb"></div>
+        <div class="metric-tabs" id="metricTabs">
+          <button data-m="clients" class="on">Part clients</button>
+          <button data-m="densite">Densité</button>
+          <button data-m="potentiel">Potentiel</button>
+        </div>
+        <div class="legend" id="legend"></div>
+      </div>
+      <div class="mapstage" id="stageNat"><svg id="natMap" viewBox="0 0 430 470" role="img" aria-label="Carte des départements"></svg></div>
+      <div class="dcanvas" id="stageDept" style="display:none">
+        <div class="griddots"></div>
+        <svg class="route" id="routeSvg" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>
+        <div id="pts"></div>
+      </div>
+      <div class="map-tip" id="tip"></div>
+      <div class="mapcount"><span class="k"></span><em id="mapN">0</em>&nbsp;<span id="mapNlbl">départements</span></div>
+    </div>
+  </section>
+
+  <!-- ============ COL 3 : COMPOSEUR + AGENDA + GPS ============ -->
+  <section class="col c3" id="c3">
+    <div class="card composer">
+      <div class="col-head">
+        <div class="ic" style="background:var(--blue)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg></div>
+        <h2>Ma journée</h2>
+        <span class="count" id="tourDate"></span>
+      </div>
+      <div class="steps">
+        <div class="step done" id="s1"><div class="bar"></div><small>1 · Réglages</small></div>
+        <div class="step cur" id="s2"><div class="bar"></div><small>2 · Sélection</small></div>
+        <div class="step" id="s3"><div class="bar"></div><small>3 · Itinéraire GPS</small></div>
+      </div>
+      <div class="setup">
+        <div class="field full"><label>🏢 Départ (dépôt Intégral)</label><select id="depot"></select></div>
+        <div class="field"><label>🕘 Heure de départ</label><input type="time" id="start" value="09:00"></div>
+        <div class="field"><label>👥 Nombre de visites</label><div class="stepper"><button id="less">−</button><span id="nvis">6</span><button id="more">+</button></div></div>
+        <div class="field"><label>📍 Zone à prospecter</label><select id="target"><option value="">— libre —</option></select></div>
+        <div class="field"><label>⭐ RDV fixe (ancré)</label><input type="time" id="rdv" value="14:30"></div>
+      </div>
+      <div class="agenda-head">
+        <h3>Frise horaire</h3>
+        <div class="kpi">
+          <div class="k"><b id="kv">0</b><small>VISITES</small></div>
+          <div class="k"><b id="kkm">0</b><small>KM</small></div>
+          <div class="k"><b id="kfin">—</b><small>FIN</small></div>
+        </div>
+      </div>
+      <div class="agenda" id="agenda">
+        <div class="agenda-empty" id="empty">
+          <div class="ico"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg></div>
+          <b>Composez votre journée</b>
+          <span>Cliquez le <b>+</b> d'une officine dans la liste ou sur la carte. Elle s'ajoute ici, placée automatiquement sur la frise horaire, trajets et horaires calculés.</span>
+        </div>
+      </div>
+      <div class="gpsbar">
+        <div class="gps-sum"><span>Trajet optimisé : <b id="sumkm">0 km</b> · <b id="sumt">0 min</b></span><span><b id="sumn">0</b> arrêts</span></div>
+        <button class="btn-gps" id="gps" disabled>
+          <span class="gmaps"><svg width="17" height="17" viewBox="0 0 24 24"><path fill="#0057FF" d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7Z"/><circle cx="12" cy="9" r="2.6" fill="#fff"/></svg></span>
+          Démarrer dans Google Maps
+        </button>
+        <div class="gps-hint" id="gpshint">Ajoutez au moins 2 arrêts pour lancer le GPS</div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<button class="fab" id="fab" aria-label="Voir ma journée">🗓️ Ma journée <span class="b" id="fabn">0</span></button>
+<div class="mob-tabs"><button class="on" data-v="list">Liste</button><button data-v="map">Carte</button></div>
+<div class="toast" id="toast"><span class="ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg></span><span id="toastMsg"></span></div>
+
+<script>
+(function(){
+"use strict";
+/* =================================================================
+   DONNÉES (réalistes FR) — départements + officines
+================================================================= */
+const DEPARTS=[
+ {c:"62",n:"Pas-de-Calais",col:5,row:0},{c:"59",n:"Nord",col:6,row:0},
+ {c:"76",n:"Seine-Maritime",col:4,row:1},{c:"80",n:"Somme",col:5,row:1},{c:"02",n:"Aisne",col:6,row:1},{c:"08",n:"Ardennes",col:7,row:1},{c:"57",n:"Moselle",col:9,row:1},
+ {c:"50",n:"Manche",col:2,row:2},{c:"14",n:"Calvados",col:3,row:2},{c:"27",n:"Eure",col:4,row:2},{c:"60",n:"Oise",col:5,row:2},{c:"51",n:"Marne",col:7,row:2},{c:"55",n:"Meuse",col:8,row:2},{c:"54",n:"Meurthe-et-Moselle",col:9,row:2},{c:"67",n:"Bas-Rhin",col:10,row:2},
+ {c:"29",n:"Finistère",col:0,row:3},{c:"22",n:"Côtes-d'Armor",col:1,row:3},{c:"35",n:"Ille-et-Vilaine",col:2,row:3},{c:"53",n:"Mayenne",col:3,row:3},{c:"28",n:"Eure-et-Loir",col:4,row:3},{c:"75",n:"Paris · IDF",col:5,row:3},{c:"77",n:"Seine-et-Marne",col:6,row:3},{c:"10",n:"Aube",col:7,row:3},{c:"52",n:"Haute-Marne",col:8,row:3},{c:"88",n:"Vosges",col:9,row:3},{c:"68",n:"Haut-Rhin",col:10,row:3},
+ {c:"56",n:"Morbihan",col:1,row:4},{c:"44",n:"Loire-Atlantique",col:2,row:4},{c:"49",n:"Maine-et-Loire",col:3,row:4},{c:"41",n:"Loir-et-Cher",col:4,row:4},{c:"45",n:"Loiret",col:5,row:4},{c:"89",n:"Yonne",col:6,row:4},{c:"21",n:"Côte-d'Or",col:7,row:4},{c:"70",n:"Haute-Saône",col:8,row:4},{c:"90",n:"Belfort",col:9,row:4},
+ {c:"85",n:"Vendée",col:1,row:5},{c:"79",n:"Deux-Sèvres",col:2,row:5},{c:"37",n:"Indre-et-Loire",col:3,row:5},{c:"36",n:"Indre",col:4,row:5},{c:"18",n:"Cher",col:5,row:5},{c:"58",n:"Nièvre",col:6,row:5},{c:"71",n:"Saône-et-Loire",col:7,row:5},{c:"39",n:"Jura",col:8,row:5},{c:"25",n:"Doubs",col:9,row:5},
+ {c:"17",n:"Charente-Maritime",col:1,row:6},{c:"16",n:"Charente",col:2,row:6},{c:"86",n:"Vienne",col:3,row:6},{c:"87",n:"Haute-Vienne",col:4,row:6},{c:"23",n:"Creuse",col:5,row:6},{c:"03",n:"Allier",col:6,row:6},{c:"42",n:"Loire",col:7,row:6},{c:"69",n:"Rhône",col:8,row:6},{c:"01",n:"Ain",col:9,row:6},{c:"74",n:"Haute-Savoie",col:10,row:6},
+ {c:"33",n:"Gironde",col:1,row:7},{c:"24",n:"Dordogne",col:2,row:7},{c:"19",n:"Corrèze",col:3,row:7},{c:"15",n:"Cantal",col:4,row:7},{c:"63",n:"Puy-de-Dôme",col:5,row:7},{c:"43",n:"Haute-Loire",col:6,row:7},{c:"38",n:"Isère",col:7,row:7},{c:"73",n:"Savoie",col:8,row:7},{c:"05",n:"Hautes-Alpes",col:9,row:7},
+ {c:"40",n:"Landes",col:1,row:8},{c:"47",n:"Lot-et-Garonne",col:2,row:8},{c:"46",n:"Lot",col:3,row:8},{c:"12",n:"Aveyron",col:4,row:8},{c:"48",n:"Lozère",col:5,row:8},{c:"07",n:"Ardèche",col:6,row:8},{c:"26",n:"Drôme",col:7,row:8},{c:"04",n:"Alpes-Hte-Pce",col:8,row:8},{c:"06",n:"Alpes-Maritimes",col:9,row:8},
+ {c:"64",n:"Pyrénées-Atl.",col:1,row:9},{c:"32",n:"Gers",col:2,row:9},{c:"82",n:"Tarn-et-Garonne",col:3,row:9},{c:"81",n:"Tarn",col:4,row:9},{c:"34",n:"Hérault",col:5,row:9},{c:"30",n:"Gard",col:6,row:9},{c:"84",n:"Vaucluse",col:7,row:9},{c:"13",n:"Bouches-du-Rhône",col:8,row:9},{c:"83",n:"Var",col:9,row:9},
+ {c:"65",n:"Hautes-Pyrénées",col:2,row:10},{c:"31",n:"Haute-Garonne",col:3,row:10},{c:"09",n:"Ariège",col:4,row:10},{c:"11",n:"Aude",col:5,row:10},{c:"66",n:"Pyrénées-Or.",col:6,row:10},{c:"2B",n:"Haute-Corse",col:10,row:10},
+ {c:"2A",n:"Corse-du-Sud",col:10,row:11}
+];
+const CITIES={
+ "75":["Paris 5e","Paris 11e","Paris 15e","Paris 18e","Boulogne","Montreuil","Créteil","Versailles","Nanterre"],
+ "69":["Lyon 3e","Lyon 7e","Villeurbanne","Vénissieux","Caluire","Bron","Vaulx-en-Velin","Oullins","Tassin"],
+ "13":["Marseille 8e","Aix-en-Provence","Marseille 13e","Aubagne","Martigues","Salon","Vitrolles","Istres"],
+ "33":["Bordeaux","Mérignac","Pessac","Talence","Libourne","Arcachon","Bègles","Gradignan"],
+ "59":["Lille","Roubaix","Tourcoing","Dunkerque","Villeneuve-d'Ascq","Douai","Valenciennes"],
+ "44":["Nantes","Saint-Nazaire","Saint-Herblain","Rezé","Vertou","La Baule","Ancenis"],
+ "31":["Toulouse","Colomiers","Blagnac","Tournefeuille","Muret","Balma"],
+ "34":["Montpellier","Béziers","Sète","Lunel","Agde","Frontignan"],
+ "06":["Nice","Cannes","Antibes","Grasse","Cagnes-sur-Mer","Menton"],
+ "83":["Toulon","La Seyne","Hyères","Fréjus","Draguignan","Saint-Raphaël"],
+ "38":["Grenoble","Échirolles","Voiron","Bourgoin-Jallieu","Vienne"],
+ "67":["Strasbourg","Haguenau","Schiltigheim","Illkirch","Sélestat"],
+ "35":["Rennes","Saint-Malo","Fougères","Vitré","Cesson-Sévigné","Bruz"],
+ "76":["Rouen","Le Havre","Sotteville","Dieppe","Fécamp","Elbeuf"],
+ "01":["Bourg-en-Bresse","Oyonnax","Ambérieu","Bellegarde","Gex"],
+ "63":["Clermont-Ferrand","Riom","Cournon","Issoire","Chamalières"]
+};
+const GENERIC=["Saint-Just","Villeneuve","Beaumont","Montigny","Châteauneuf","Sainte-Marie","Neuville","Bourgneuf"];
+const GRP=["Giphar","Aprium","Mediprix","Pharmavie","Leadersanté","Wellpharma","Elsie Santé","Népenthès","Indépendant"];
+const COM=[["PGN","Pauline Soldevila"],["MD","Manon Dussurgey"],["MDC","Morgane Caron"],["ILE","Ingrid Lecuyer"]];
+const NOMS=["du Centre","de la Gare","des Halles","Saint-Michel","de la Mairie","du Marché","de la Paix","des Arcades","de l'Hôtel de Ville","Pasteur","de la République","du Théâtre","Jean Jaurès","de la Cathédrale","du Port","Victor Hugo","de la Place","des Écoles","du Parc","de la Fontaine","des Lilas","du Commerce","Carnot","Foch"];
+const FIRST=["Claire","Nicolas","Sophie","Julien","Marie","Thomas","Camille","Antoine","Émilie","Laurent","Céline","Pierre","Sandrine","David","Aurélie","Vincent"];
+const LAST=["Martin","Bernard","Dubois","Petit","Durand","Leroy","Moreau","Simon","Lefèvre","Michel","Roux","Chevalier","Girard","Bonnet","Lambert","Fabre"];
+const STREETS=["rue de la République","place du Marché","av. de la Gare","bd Victor Hugo","rue des Halles","cours Lafayette","rue Nationale"];
+const DEPOTS=[
+ {id:"d1",n:"Intégral — Lyon Corbas (69)",dep:"69"},
+ {id:"d2",n:"Intégral — Marseille Vitrolles (13)",dep:"13"},
+ {id:"d3",n:"Intégral — Bordeaux Mérignac (33)",dep:"33"},
+ {id:"d4",n:"Intégral — Paris Gennevilliers (75)",dep:"75"},
+ {id:"d5",n:"Intégral — Lille Lesquin (59)",dep:"59"},
+ {id:"d6",n:"Intégral — Toulouse Blagnac (31)",dep:"31"},
+ {id:"d7",n:"Intégral — Nantes St-Herblain (44)",dep:"44"},
+ {id:"d8",n:"Intégral — Strasbourg (67)",dep:"67"},
+ {id:"d9",n:"Intégral — Rennes (35)",dep:"35"}
+];
+const STAT=["A","B","C","P"];
+const STHEX={A:"#0B7A44",B:"#0E7C86",C:"#B5750B",P:"#0057FF"};
+const STCLS={A:"a",B:"b",C:"c",P:"p"};
+const STLBL={A:"Client A",B:"Client B",C:"Client C",P:"Prospect"};
+
+/* hex centres (schématique, ~géo France) */
+const SIZE=19.5,PAD=8,HW=SIZE*1.5,HH=Math.sqrt(3)*SIZE;
+DEPARTS.forEach(d=>{d.cx=HW*d.col+SIZE+PAD;d.cy=HH*d.row+((d.col%2)?HH/2:0)+HH/2+PAD;});
+const DMAP={};DEPARTS.forEach(d=>DMAP[d.c]=d);
+
+/* RNG déterministe */
+function seedStr(s){let h=1779033703^s.length;for(let i=0;i<s.length;i++){h=Math.imul(h^s.charCodeAt(i),3432918353);h=h<<13|h>>>19;}return function(){h=Math.imul(h^h>>>16,2246822507);h=Math.imul(h^h>>>13,3266489909);return((h^=h>>>16)>>>0)/4294967296;};}
+const pk=(r,a)=>a[Math.floor(r()*a.length)];
+const BIG={"75":40,"69":34,"13":34,"59":38,"33":30,"31":26,"38":22,"44":24,"34":22,"06":22,"83":20,"67":20,"35":18,"76":18,"62":20,"14":14,"45":13,"63":13,"01":12};
+
+/* Pool d'officines : nx,ny (national schématique = agenda km) + lx,ly (vue département) */
+const PH=[];let uid=0;
+DEPARTS.forEach(d=>{
+  const rb=seedStr("dep"+d.c);
+  const base=BIG[d.c]||(5+Math.floor(rb()*10));
+  const cities=CITIES[d.c]||GENERIC;
+  for(let i=0;i<base;i++){
+    const r=seedStr(d.c+"-"+i);
+    const isClient=r()<(0.32+r()*0.28);
+    let st;if(isClient){const q=r();st=q<0.30?"A":q<0.63?"B":"C";}else st="P";
+    const ville=pk(r,cities);
+    const cp=d.c.padStart(2,"0")+String(100+Math.floor(r()*899)).slice(0,3);
+    PH.push({
+      id:"p"+(uid++),dep:d.c,
+      nom:"Pharmacie "+pk(r,NOMS),ville,cp,
+      titu:"Dr "+pk(r,FIRST).charAt(0)+". "+pk(r,LAST),
+      tel:"0"+(2+Math.floor(r()*7))+" "+String(10+Math.floor(r()*89))+" "+String(10+Math.floor(r()*89))+" "+String(10+Math.floor(r()*89))+" "+String(10+Math.floor(r()*89)),
+      stat:st,grp:pk(r,GRP),com:pk(r,COM),
+      addr:(1+Math.floor(r()*90))+" "+pk(r,STREETS),
+      ca:st==="A"?60+Math.floor(r()*90):st==="B"?25+Math.floor(r()*40):st==="C"?8+Math.floor(r()*20):0,
+      nx:d.cx+(r()*10-5),ny:d.cy+(r()*10-5),
+      lx:8+r()*84,ly:10+r()*80
+    });
+  }
+});
+/* stats département */
+DEPARTS.forEach(d=>d.stats={nb:0,clients:0});
+PH.forEach(p=>{const d=DMAP[p.dep];d.stats.nb++;if(p.stat!=="P")d.stats.clients++;});
+DEPARTS.forEach(d=>{const s=d.stats;s.prospects=s.nb-s.clients;s.share=s.nb?s.clients/s.nb:0;s.potentiel=s.prospects*(0.6+seedStr("po"+d.c)()*0.8);});
+/* dépôt -> coords national (hex centre du dépt) */
+DEPOTS.forEach(dp=>{const d=DMAP[dp.dep];dp.nx=d?d.cx:150;dp.ny=d?d.cy:230;});
+
+/* =================================================================
+   ÉTAT
+================================================================= */
+const S={stat:"all",q:"",dep:"",grp:"",com:"",tour:[],active:null,
+  metric:"clients",view:"nat",selDept:null,hoverDept:null,nvis:6};
+const $=s=>document.querySelector(s);
+const KMU=2.6; /* 1 unité hex ≈ 2.6 km */
+
+/* remplir selects */
+const depSel=$("#fdep"),grpSel=$("#fgrp"),comSel=$("#fcom"),depotSel=$("#depot"),targetSel=$("#target");
+DEPARTS.slice().sort((a,b)=>a.c.localeCompare(b.c)).forEach(d=>{const o=document.createElement("option");o.value=d.c;o.textContent=d.c+" · "+d.n;depSel.appendChild(o);});
+GRP.forEach(g=>{const o=document.createElement("option");o.value=g;o.textContent=g;grpSel.appendChild(o);});
+COM.forEach(c=>{const o=document.createElement("option");o.value=c[0];o.textContent=c[1]+" ("+c[0]+")";comSel.appendChild(o);});
+DEPOTS.forEach(d=>{const o=document.createElement("option");o.value=d.id;o.textContent=d.n;depotSel.appendChild(o);});
+[...new Set(PH.map(p=>p.ville))].sort().forEach(v=>{const o=document.createElement("option");o.value=v;o.textContent=v;targetSel.appendChild(o);});
+
+/* =================================================================
+   FILTRAGE (recherche pilote + tokens)
+================================================================= */
+function parseQ(q){let t=q,tok={};q.replace(/(statut|grp|dep):(\S+)/gi,(m,k,v)=>{tok[k.toLowerCase()]=v;t=t.replace(m,"");return m;});return{t:t.trim().toLowerCase(),tok};}
+function match(p){
+  const pq=parseQ(S.q),t=pq.t,tk=pq.tok;
+  if(tk.statut){const m={a:"A",b:"B",c:"C",prospect:"P"};const w=m[tk.statut.toLowerCase()]||tk.statut;if(p.stat!==w)return false;}
+  if(tk.grp && p.grp.toLowerCase().indexOf(tk.grp.toLowerCase())<0)return false;
+  if(tk.dep && p.dep!==tk.dep)return false;
+  if(S.stat!=="all"&&p.stat!==S.stat)return false;
+  if(S.dep&&p.dep!==S.dep)return false;
+  if(S.grp&&p.grp!==S.grp)return false;
+  if(S.com&&p.com[0]!==S.com)return false;
+  if(t&&!(p.nom.toLowerCase().includes(t)||p.ville.toLowerCase().includes(t)||p.titu.toLowerCase().includes(t)||p.cp.includes(t)||p.grp.toLowerCase().includes(t)))return false;
+  return true;
+}
+function filtered(){return PH.filter(match);}
+function anyFilter(){return !!(S.q||S.stat!=="all"||S.dep||S.grp||S.com);}
+
+/* =================================================================
+   LISTING (toujours visible)
+================================================================= */
+const listEl=$("#list");
+function renderList(){
+  const f=filtered();
+  $("#listn").textContent=f.length;$("#resCount").textContent=f.length.toLocaleString("fr-FR");
+  $("#colcount").textContent=f.length+" résultat"+(f.length>1?"s":"");
+  if(!f.length){listEl.innerHTML='<div class="empty"><div class="eic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div>Aucune officine ne correspond.<br>Élargissez la recherche.</div>';return;}
+  listEl.innerHTML="";
+  f.slice(0,180).forEach(p=>{
+    const inT=S.tour.includes(p.id);
+    const el=document.createElement("div");
+    el.className="item"+(S.active===p.id?" active":"")+(inT?" intour":"");
+    el.dataset.id=p.id;
+    el.innerHTML=`<div class="badge" style="background:${STHEX[p.stat]}">${p.stat}</div>
+      <div style="flex:1;min-width:0"><h4>${p.nom}</h4><p>${p.ville} · ${p.cp} · ${p.titu}</p>
+      <div class="tags"><span class="tag grp">${p.grp}</span>${p.ca?`<span class="tag ca">CA ${p.ca}k€</span>`:'<span class="tag">Prospect</span>'}<span class="tag">${p.dep}</span></div></div>
+      <button class="add" title="${inT?'Retirer':'Ajouter à la journée'}">${inT?'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M20 6L9 17l-5-5"/></svg>':'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M12 5v14M5 12h14"/></svg>'}</button>`;
+    el.addEventListener("mouseenter",()=>{S.hoverDept=p.dep;S.active=p.id;hoverMap(p.id,true);});
+    el.addEventListener("mouseleave",()=>{S.hoverDept=null;hoverMap(p.id,false);});
+    el.querySelector(".add").addEventListener("click",e=>{e.stopPropagation();toggleTour(p.id);});
+    el.addEventListener("click",()=>{if(S.view==="nat"||p.dep!==S.selDept){openDept(p.dep);}S.active=p.id;renderAll();});
+    listEl.appendChild(el);
+  });
+  renderMapMeta();
+}
+
+/* =================================================================
+   CARTE — NIVEAU NATIONAL (choroplèthe départements)
+================================================================= */
+const SCALES={
+  clients:["#EDF2FF","#C7D7FF","#93B0FF","#4F7BFF","#0057FF"],
+  densite:["#E6F5F6","#B7E2E6","#79C6CE","#2E9AA6","#0E7C86"],
+  potentiel:["#FDF1DF","#F6D9A5","#EBB861","#D9931F","#B5750B"]
+};
+const LEGT={clients:"Part de clients Intégral",densite:"Densité d'officines",potentiel:"Potentiel de conquête"};
+function metricVal(d){return S.metric==="clients"?d.stats.share:S.metric==="densite"?d.stats.nb:d.stats.potentiel;}
+function colorFor(d){const v=DEPARTS.map(metricVal);const mn=Math.min(...v),mx=Math.max(...v);const t=(metricVal(d)-mn)/(mx-mn||1);return SCALES[S.metric][Math.min(4,Math.floor(t*5))];}
+function isLight(h){const r=parseInt(h.slice(1,3),16),g=parseInt(h.slice(3,5),16),b=parseInt(h.slice(5,7),16);return(0.299*r+0.587*g+0.114*b)>150;}
+function hexPath(cx,cy){let p="";for(let i=0;i<6;i++){const a=Math.PI/180*(60*i);p+=(cx+SIZE*Math.cos(a)).toFixed(1)+","+(cy+SIZE*Math.sin(a)).toFixed(1)+" ";}return p.trim();}
+function matchDeptSet(){if(!anyFilter())return null;const s=new Set();PH.forEach(p=>{if(match(p))s.add(p.dep);});return s;}
+function renderNat(){
+  const svg=$("#natMap");const ms=matchDeptSet();let html="";
+  DEPARTS.forEach(d=>{
+    const col=colorFor(d);const dim=ms&&!ms.has(d.c);const hl=S.hoverDept===d.c;
+    const cls="hex"+(dim?" dim":"")+(hl?" hl":"")+(isLight(col)?"":" light");
+    html+=`<g class="${cls}" data-c="${d.c}" tabindex="0" role="button" aria-label="${d.n}"><polygon points="${hexPath(d.cx,d.cy)}" fill="${col}"/><text x="${d.cx}" y="${d.cy}">${d.c}</text></g>`;
+  });
+  DEPOTS.forEach(dp=>{const d=DMAP[dp.dep];if(d)html+=`<rect x="${d.cx-6}" y="${d.cy-6}" width="12" height="12" rx="2.5" fill="#0B131C" stroke="#fff" stroke-width="1.4"/>`;});
+  svg.innerHTML=html;
+  svg.querySelectorAll(".hex").forEach(g=>{const c=g.dataset.c;
+    g.addEventListener("click",()=>openDept(c));
+    g.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();openDept(c);}});
+    g.addEventListener("mousemove",e=>tipDept(e,c));
+    g.addEventListener("mouseleave",hideTip);});
+}
+function tipDept(e,c){
+  const d=DMAP[c],st=d.stats,tip=$("#tip");
+  tip.innerHTML=`<b>${d.n} <span style="opacity:.6">(${d.c})</span></b>
+    <div class="r"><span>Officines</span><b>${st.nb}</b></div>
+    <div class="r"><span>Clients</span><b style="color:#5CE0A0">${st.clients} · ${Math.round(st.share*100)}%</b></div>
+    <div class="r"><span>Prospects</span><b style="color:#7FB0FF">${st.prospects}</b></div>
+    <div class="r" style="margin-top:3px;color:#8fa0bd">Cliquer pour ouvrir</div>`;
+  posTip(e);tip.style.opacity=1;
+}
+function posTip(e){const wrap=$("#stageNat").closest(".mapcard").getBoundingClientRect();const tip=$("#tip");tip.style.transform="translate(-50%,-118%)";tip.style.left=Math.max(80,Math.min(e.clientX-wrap.left,wrap.width-90))+"px";tip.style.top=(e.clientY-wrap.top-6)+"px";}
+function hideTip(){$("#tip").style.opacity=0;}
+
+/* =================================================================
+   CARTE — NIVEAU DÉPARTEMENT (officines individuelles)
+================================================================= */
+function renderDept(){
+  const fset=new Set(filtered().map(p=>p.id));
+  const deptOff=PH.filter(p=>p.dep===S.selDept);
+  const pts=$("#pts");let html="";
+  deptOff.forEach(p=>{
+    const on=fset.has(p.id);const inT=S.tour.indexOf(p.id);
+    if(!on&&inT<0)return;
+    const hl=S.active===p.id;
+    html+=`<div class="pt ${hl?'hl':''}" style="left:${p.lx}%;top:${p.ly}%" data-id="${p.id}" title="${p.nom}">
+      <svg width="22" height="30" viewBox="0 0 26 34"><path d="M13 0C5.8 0 0 5.8 0 13c0 9.7 13 21 13 21s13-11.3 13-21C26 5.8 20.2 0 13 0Z" fill="${STHEX[p.stat]}"/><circle cx="13" cy="13" r="5" fill="#fff"/></svg>
+      ${inT>=0?`<span class="num">${inT+1}</span>`:''}</div>`;
+  });
+  html+=`<div class="pt dep" style="left:50%;top:95%" title="Départ tournée"><svg width="24" height="32" viewBox="0 0 26 34"><path d="M13 0C5.8 0 0 5.8 0 13c0 9.7 13 21 13 21s13-11.3 13-21C26 5.8 20.2 0 13 0Z" fill="#0B131C"/></svg><span class="glyph"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4"><path d="M3 21V8l9-5 9 5v13"/></svg></span></div>`;
+  pts.innerHTML=html;
+  drawDeptRoute();
+  bindPts();
+}
+function drawDeptRoute(){
+  const svg=$("#routeSvg");
+  const inDept=S.tour.map(id=>PH.find(p=>p.id===id)).filter(p=>p&&p.dep===S.selDept);
+  if(S.view!=="dept"||!inDept.length){svg.innerHTML="";return;}
+  const pts=[{lx:50,ly:95}].concat(inDept.map(p=>({lx:p.lx,ly:p.ly})));
+  const d="M "+pts.map(p=>`${p.lx} ${p.ly}`).join(" L ");
+  svg.innerHTML=`<path d="${d}" fill="none" stroke="#0057FF" stroke-width="0.6" stroke-dasharray="1.6 1.4" opacity=".85" vector-effect="non-scaling-stroke" style="stroke-width:2.4px"/>`;
+}
+function bindPts(){
+  const pts=$("#pts");
+  pts.onclick=e=>{const g=e.target.closest("[data-id]");if(g)toggleTour(g.dataset.id);};
+  pts.onmouseover=e=>{const g=e.target.closest("[data-id]");if(g){const p=PH.find(x=>x.id===g.dataset.id);const tip=$("#tip");tip.innerHTML=`<b>${p.nom}</b><div class="r"><span>${p.ville} · ${STLBL[p.stat]} · ${p.grp}</span></div>`;const wrap=$("#stageDept").closest(".mapcard").getBoundingClientRect();const r=g.getBoundingClientRect();tip.style.transform="translate(-50%,-100%)";tip.style.left=(r.left-wrap.left+r.width/2)+"px";tip.style.top=(r.top-wrap.top-6)+"px";tip.style.opacity=1;}};
+  pts.onmouseout=e=>{if(e.target.closest("[data-id]"))hideTip();};
+}
+function hoverMap(id,on){
+  if(S.view==="dept"){const g=$("#pts").querySelector(`[data-id="${id}"]`);if(g)g.classList.toggle("hl",on);}
+  else{renderNat();}
+}
+
+/* navigation carte */
+function openDept(c){
+  S.selDept=c;S.dep=c;S.view="dept";depSel.value=c;
+  $("#stageNat").style.display="none";$("#stageDept").style.display="block";hideTip();
+  renderAll();
+}
+function backToNation(){
+  S.selDept=null;S.dep="";S.view="nat";S.active=null;depSel.value="";
+  $("#stageDept").style.display="none";$("#stageNat").style.display="grid";hideTip();
+  renderAll();
+}
+function renderCrumb(){
+  const cb=$("#crumb");
+  if(S.view==="nat")cb.innerHTML=`<span class="home"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>France</span>`;
+  else{const d=DMAP[S.selDept];cb.innerHTML=`<span class="home" id="crumbHome"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>France</span><span class="sep">›</span><span class="cur">${d.c} · ${d.n}</span>`;const h=$("#crumbHome");if(h)h.onclick=backToNation;}
+}
+function renderMapMeta(){
+  renderCrumb();
+  const f=filtered();
+  if(S.view==="nat"){
+    const ms=matchDeptSet();$("#mapN").textContent=ms?ms.size:DEPARTS.length;$("#mapNlbl").textContent=anyFilter()?"départements concernés":"départements";
+    $("#metricTabs").style.display="";
+    $("#legend").innerHTML=`<div class="scale">${SCALES[S.metric].map(c=>`<span class="sw" style="background:${c}"></span>`).join("")}</div><span style="margin-left:2px">${LEGT[S.metric]}</span><span><i class="sq" style="background:#0B131C"></i>Dépôt</span>`;
+  }else{
+    $("#mapN").textContent=f.length;$("#mapNlbl").textContent="officines affichées";
+    $("#metricTabs").style.display="none";
+    $("#legend").innerHTML=`<span><i style="background:var(--A)"></i>A</span><span><i style="background:var(--B)"></i>B</span><span><i style="background:var(--C)"></i>C</span><span><i style="background:var(--P)"></i>Prospect</span><span><i class="sq" style="background:#0B131C"></i>Départ</span>`;
+  }
+}
+function renderMap(){renderMapMeta();if(S.view==="nat")renderNat();else renderDept();}
+
+/* =================================================================
+   TOURNÉE + OPTIM (nearest-neighbour, coords national)
+================================================================= */
+function depot(){return DEPOTS.find(d=>d.id===depotSel.value)||DEPOTS[0];}
+function dist(a,b){return Math.hypot(a.nx-b.nx,a.ny-b.ny);}
+function toggleTour(id){
+  const i=S.tour.indexOf(id);
+  if(i>=0){S.tour.splice(i,1);}
+  else{if(S.tour.length>=12){toast("12 visites maximum par journée");return;}S.tour.push(id);const p=PH.find(x=>x.id===id);toast(p.nom+" ajoutée");}
+  optimize();renderAll();
+}
+function optimize(){
+  if(S.tour.length<2)return;
+  const pts=S.tour.map(id=>PH.find(p=>p.id===id));
+  const order=[];let cur=depot();const pool=[...pts];
+  while(pool.length){let bi=0,bd=1e9;pool.forEach((p,i)=>{const dd=dist(cur,p);if(dd<bd){bd=dd;bi=i;}});cur=pool[bi];order.push(cur.id);pool.splice(bi,1);}
+  S.tour=order;
+}
+function legs(){
+  const pts=[depot(),...S.tour.map(id=>PH.find(p=>p.id===id))];const L=[];
+  for(let i=1;i<pts.length;i++){const km=Math.max(2,Math.round(dist(pts[i-1],pts[i])*KMU));L.push({from:pts[i-1],to:pts[i],km,min:Math.max(6,Math.round(km/0.8))});}
+  return L;
+}
+
+/* =================================================================
+   AGENDA / FRISE HORAIRE (cœur — design 8)
+================================================================= */
+const H0=8,H1=19,PXH=60;
+const agenda=$("#agenda"),emptyEl=$("#empty");
+function toMin(t){const[a,b]=t.split(":").map(Number);return a*60+b;}
+function fmt(m){m=Math.round(m);const h=Math.floor(m/60),mm=m%60;return String(h).padStart(2,"0")+":"+String(mm).padStart(2,"0");}
+const VISITMIN=30;
+function buildSchedule(){
+  const L=legs();if(!S.tour.length)return{items:[],endMin:null,km:0,min:0};
+  const rdvMin=$("#rdv").value?toMin($("#rdv").value):-1;
+  let t=toMin($("#start").value);const items=[];let totKm=0,totMin=0;
+  const rdvOn=rdvMin>=0?Math.min(S.tour.length-1,Math.max(0,Math.round(S.tour.length/2)-1)):-1;
+  L.forEach((lg,i)=>{
+    items.push({type:"travel",from:lg.from,to:lg.to,km:lg.km,min:lg.min,start:t});
+    totKm+=lg.km;totMin+=lg.min;t+=lg.min;
+    const p=lg.to;let fixed=false;
+    if(i===rdvOn){t=Math.max(t,rdvMin);fixed=true;}
+    items.push({type:"visit",p,start:t,end:t+VISITMIN,fixed,idx:i+1});
+    t+=VISITMIN;totMin+=VISITMIN;
+  });
+  return{items,endMin:t,km:totKm,min:totMin};
+}
+function renderAgenda(){
+  const sch=buildSchedule();
+  emptyEl.style.display=S.tour.length?"none":"flex";
+  $("#kv").textContent=S.tour.length;$("#kkm").textContent=sch.km;$("#kfin").textContent=sch.endMin?fmt(sch.endMin):"—";
+  $("#sumkm").textContent=sch.km+" km";$("#sumt").textContent=Math.floor(sch.min/60)+"h"+String(sch.min%60).padStart(2,"0");
+  $("#sumn").textContent=S.tour.length;$("#fabn").textContent=S.tour.length;
+  $("#s3").className="step"+(S.tour.length>=2?" cur":"");
+  $("#s2").className="step"+(S.tour.length?" done":" cur");
+  const ok=S.tour.length>=2;$("#gps").disabled=!ok;
+  $("#gpshint").innerHTML=ok?'✓ Itinéraire prêt · <b>s\'ouvre dans Google Maps</b> avec tous les arrêts':'Ajoutez au moins 2 arrêts pour lancer le GPS';
+  agenda.querySelectorAll(".tl").forEach(n=>n.remove());
+  if(!S.tour.length)return;
+  const tl=document.createElement("div");tl.className="tl";
+  tl.style.height=((H1-H0)*PXH+30)+"px";
+  const axis=document.createElement("div");axis.className="axis";
+  for(let h=H0;h<=H1;h++){const m=document.createElement("div");m.className="hourmark";m.style.top=((h-H0)*PXH+8)+"px";m.innerHTML=`<span class="lbl">${h}h</span><span class="ln"></span>`;axis.appendChild(m);}
+  tl.appendChild(axis);
+  const track=document.createElement("div");track.className="tl-track";tl.appendChild(track);
+  const y=m=>((m-H0*60)/60)*PXH+8;
+  sch.items.forEach(it=>{
+    const b=document.createElement("div");
+    if(it.type==="travel"){
+      b.className="block travel";const top=y(it.start),h=Math.max(24,(it.min/60)*PXH-3);
+      b.style.top=top+"px";b.style.height=h+"px";
+      b.innerHTML=`<span class="node">🚗</span> Trajet ${it.km} km · ${it.min} min
+        <button class="seg-gps" data-a="${encodeURIComponent(it.from.ville?it.from.nom+' '+it.from.ville:it.from.n.replace('Intégral — ',''))}" data-b="${encodeURIComponent(it.to.nom+' '+it.to.ville+' '+it.to.cp)}">GPS segment ›</button>`;
+      b.querySelector(".seg-gps").addEventListener("click",e=>{e.stopPropagation();const a=e.currentTarget.dataset.a,bb=e.currentTarget.dataset.b;window.open(`https://www.google.com/maps/dir/?api=1&origin=${a}&destination=${bb}&travelmode=driving`,"_blank");});
+    }else{
+      const p=it.p;b.className="block visit "+STCLS[p.stat];
+      const top=y(it.start),h=Math.max(48,(VISITMIN/60)*PXH-3);
+      b.style.top=top+"px";b.style.height=h+"px";
+      b.innerHTML=`<span class="node">${it.idx}</span><button class="rm" title="Retirer">×</button>
+        <h5>${p.nom}</h5>
+        <div class="meta"><span class="time">${fmt(it.start)}–${fmt(it.end)}</span><span>${p.ville}</span><span style="color:${STHEX[p.stat]};font-weight:800">${p.stat}</span>${it.fixed?'<span class="fixed">⭐ RDV FIXE</span>':''}</div>`;
+      b.querySelector(".rm").addEventListener("click",e=>{e.stopPropagation();toggleTour(p.id);});
+      b.addEventListener("mouseenter",()=>{S.active=p.id;hoverMap(p.id,true);});
+      b.addEventListener("mouseleave",()=>hoverMap(p.id,false));
+    }
+    tl.appendChild(b);
+  });
+  /* now-line */
+  const now=new Date();const nowMin=now.getHours()*60+now.getMinutes();
+  if(nowMin>=H0*60&&nowMin<=H1*60){const nl=document.createElement("div");nl.className="nowline";nl.style.top=y(nowMin)+"px";nl.innerHTML=`<span class="t">${fmt(nowMin)}</span>`;tl.appendChild(nl);}
+  agenda.appendChild(tl);
+}
+
+/* GPS global */
+$("#gps").addEventListener("click",()=>{
+  if(S.tour.length<2)return;const d=depot();
+  const stops=S.tour.map(id=>{const p=PH.find(x=>x.id===id);return encodeURIComponent(p.nom+", "+p.cp+" "+p.ville);});
+  const origin=encodeURIComponent(d.n.replace("Intégral — ",""));
+  const url=`https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${stops[stops.length-1]}&waypoints=${stops.slice(0,-1).join("|")}&travelmode=driving`;
+  window.open(url,"_blank");toast("Ouverture de Google Maps…");
+});
+
+/* =================================================================
+   RENDER ALL + ÉVÉNEMENTS
+================================================================= */
+function renderAll(){renderList();renderMap();renderAgenda();}
+const palQ=$("#q");
+palQ.addEventListener("input",e=>{S.q=e.target.value;renderAll();});
+palQ.addEventListener("focus",()=>$("#suggest").classList.add("open"));
+document.addEventListener("click",e=>{if(!e.target.closest(".palette"))$("#suggest").classList.remove("open");});
+document.querySelectorAll("#suggest .row[data-quick]").forEach(r=>r.addEventListener("click",()=>{palQ.value=r.dataset.quick;S.q=r.dataset.quick;$("#suggest").classList.remove("open");const pq=parseQ(S.q);if(pq.tok.dep&&DMAP[pq.tok.dep])openDept(pq.tok.dep);else renderAll();}));
+window.addEventListener("keydown",e=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="k"){e.preventDefault();palQ.focus();palQ.select();}if(e.key==="Escape"){palQ.blur();$("#suggest").classList.remove("open");}});
+
+$("#statchips").addEventListener("click",e=>{const b=e.target.closest(".chip");if(!b)return;S.stat=b.dataset.stat;
+  document.querySelectorAll("#statchips .chip").forEach(c=>c.className="chip"+(c===b?" on "+({A:"a",B:"b",C:"c",P:"p"}[b.dataset.stat]||""):""));renderAll();});
+depSel.addEventListener("change",e=>{const v=e.target.value;if(v)openDept(v);else backToNation();});
+grpSel.addEventListener("change",e=>{S.grp=e.target.value;renderAll();});
+comSel.addEventListener("change",e=>{S.com=e.target.value;renderAll();});
+$("#reset").addEventListener("click",()=>{S.stat="all";S.q="";S.grp="";S.com="";palQ.value="";grpSel.value="";comSel.value="";document.querySelectorAll("#statchips .chip").forEach((c,i)=>c.className="chip"+(i===0?" on":""));backToNation();});
+
+$("#less").addEventListener("click",()=>setN(-1));
+$("#more").addEventListener("click",()=>setN(1));
+function setN(d){S.nvis=Math.max(4,Math.min(12,S.nvis+d));$("#nvis").textContent=S.nvis;autoFill();}
+$("#target").addEventListener("change",autoFill);
+depotSel.addEventListener("change",()=>{optimize();renderAll();});
+$("#start").addEventListener("change",renderAgenda);
+$("#rdv").addEventListener("change",renderAgenda);
+function autoFill(){
+  const v=$("#target").value;let pool=v?PH.filter(p=>p.ville===v):filtered();
+  pool=pool.filter(p=>p.stat==="P"||p.stat==="C").concat(pool);
+  const seen=new Set();S.tour=[];
+  for(const p of pool){if(S.tour.length>=S.nvis)break;if(seen.has(p.id))continue;seen.add(p.id);S.tour.push(p.id);}
+  optimize();renderAll();toast(S.tour.length+" officines placées sur la frise");
+}
+
+/* thème */
+$("#themeBtn").addEventListener("click",()=>{const cur=document.documentElement.getAttribute("data-theme");const dark=cur?cur==="dark":window.matchMedia("(prefers-color-scheme: dark)").matches;document.documentElement.setAttribute("data-theme",dark?"light":"dark");renderMap();});
+
+/* mobile */
+$("#fab").addEventListener("click",()=>$("#c3").classList.toggle("open"));
+document.querySelectorAll(".mob-tabs button").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll(".mob-tabs button").forEach(x=>x.classList.remove("on"));b.classList.add("on");document.body.classList.toggle("view-map",b.dataset.v==="map");renderMap();}));
+
+/* toast */
+let tT;function toast(m){$("#toastMsg").textContent=m;$("#toast").classList.add("on");clearTimeout(tT);tT=setTimeout(()=>$("#toast").classList.remove("on"),2200);}
+
+/* =================================================================
+   INIT — démo pré-remplie pour montrer la frise horaire
+================================================================= */
+const jours=["Dimanche","Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi"];const mois=["jan.","fév.","mars","avr.","mai","juin","juil.","août","sept.","oct.","nov.","déc."];
+const now=new Date();$("#tourDate").textContent=jours[now.getDay()]+" "+now.getDate()+" "+mois[now.getMonth()];
+S.com="PGN";comSel.value="PGN";
+depotSel.value="d1";$("#nvis").textContent=S.nvis;$("#target").value="Villeurbanne";
+autoFill();
+renderAll();
+window.addEventListener("resize",renderMap);
+})();
+</script>
+</body>
+</html>
