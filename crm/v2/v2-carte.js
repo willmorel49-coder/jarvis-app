@@ -1221,6 +1221,10 @@
       '.cn-dock .cn-lrow{padding:9px 12px}',
       '.cn-dock .cn-sortseg button{font-size:11.5px;padding:4px 9px}',
       '@media(max-width:980px){.cn-dock{display:none}}',
+      '@media(min-width:981px){.cn-listbtn-mob{display:none}}',   // dock présent : bouton liste redondant sur desktop
+      '.cn-dockflt{display:flex;flex-wrap:wrap;gap:5px;padding:0 14px 10px}',
+      '.cn-dockflt .cn-fchip{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:var(--ip-blue,#0057FF);background:color-mix(in srgb,var(--ip-blue,#0057FF) 10%,transparent);border:1px solid color-mix(in srgb,var(--ip-blue,#0057FF) 22%,transparent);border-radius:999px;padding:3px 9px}',
+      '.cn-dockflt .cn-fclear{border:none;background:none;color:var(--muted);font:inherit;font-size:11px;font-weight:700;cursor:pointer;text-decoration:underline;padding:3px 4px}',
     ].join('\n');
     document.head.appendChild(s);
   }
@@ -1320,7 +1324,7 @@
               '<select id="cn-zonemetric" class="cn-sel" style="display:none" onchange="V2.carteZoneMetric(this.value)">' +
                 '<option value="part">Colorer : part de clients</option><option value="densite">Colorer : densité d\'officines</option><option value="potentiel">Colorer : potentiel (prospects)</option></select></div>' +
             '<div class="cn-sgroup"><input id="cn-search" class="cn-search" type="search" placeholder="Chercher une pharmacie, une ville…" oninput="V2.carteSearch(this.value)">' +
-              '<button class="cn-listbtn" onclick="V2.carteListOpen()">Liste des officines</button></div>' +
+              '<button class="cn-listbtn cn-listbtn-mob" onclick="V2.carteListOpen()">Liste des officines</button></div>' +
             '<div class="cn-sgroup"><span class="cn-lbl">Légende</span><div class="cn-legend" id="carte-legend"></div></div>' +
             '<div class="cn-sgroup cn-tools">' +
               '<button class="cn-tour-cta" onclick="V2.carteTourOpen()">' + ICO('pharma', 16) + 'Organisateur de tournée</button>' +
@@ -1433,12 +1437,32 @@
   function sortSegHtml() {
     return '<span class="cn-sortlbl">Trier :</span><div class="cn-seg cn-sortseg"><button' + (listSort === 'nom' ? ' class="on"' : '') + ' onclick="V2.carteListSort(\'nom\')">Nom</button><button' + (listSort === 'ca' ? ' class="on"' : '') + ' onclick="V2.carteListSort(\'ca\')">CA</button></div>';
   }
+  // Rappel des filtres actifs (rend la liste dockée auto-explicite)
+  function activeFiltersHtml() {
+    var chips = [];
+    if (typeFocus === 'clients') chips.push('Clients');
+    else if (typeFocus === 'prospects') chips.push('Prospects');
+    if (commFocus) chips.push(esc(commFocus));
+    if (deptFocus) chips.push('Dépt ' + esc(deptFocus) + (DEPT_NAMES[deptFocus] ? ' · ' + esc(DEPT_NAMES[deptFocus]) : ''));
+    if (grpFocus) chips.push(esc(grpFocus));
+    if (searchTerm) chips.push('« ' + esc(searchTerm) + ' »');
+    if (!chips.length) return '';
+    return '<div class="cn-dockflt">' + chips.map(function (t) { return '<span class="cn-fchip">' + t + '</span>'; }).join('') +
+      '<button class="cn-fclear" onclick="V2.carteClearFilters()">tout effacer</button></div>';
+  }
+  V2.carteClearFilters = function () {
+    typeFocus = 'all'; commFocus = ''; grpFocus = ''; deptFocus = ''; searchTerm = '';
+    ['all', 'clients', 'prospects'].forEach(function (k) { var b = document.getElementById('ct-' + k); if (b) b.classList.toggle('on', k === 'all'); });
+    var ids = ['cn-comm', 'cn-deptsel', 'cn-grpsel', 'cn-search']; ids.forEach(function (id) { var e = document.getElementById(id); if (e) e.value = ''; });
+    rebuild(); renderLists();
+  };
   // Dock : liste toujours visible à côté de la carte (desktop) — pas de recherche propre (la barre latérale l'a déjà)
   function renderDock() {
     var el = document.getElementById('cn-dock'); if (!el || !D) return;
     var sc = el.querySelector('.cn-plist'); var y = sc ? sc.scrollTop : 0;
     var c = listComputed();
     el.innerHTML = '<div class="cn-dockhead"><div><b>Officines</b><small>' + c.total.toLocaleString('fr') + (c.total > 1 ? ' résultats' : ' résultat') + (c.remaining > 0 ? ' · ' + c.shown.length.toLocaleString('fr') + ' affichés' : '') + '</small></div>' + sortSegHtml() + '</div>' +
+      activeFiltersHtml() +
       '<div class="cn-plist">' + c.rows + c.more + '</div>';
     var sc2 = el.querySelector('.cn-plist'); if (sc2) sc2.scrollTop = y;
   }
