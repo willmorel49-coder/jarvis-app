@@ -220,8 +220,9 @@
     s.onload = function () { cb(); }; s.onerror = function () { cb('err'); };
     document.head.appendChild(s);
   }
+  function depCode(c) { return (c === '2A' || c === '2B') ? '20' : c; }   // Corse : carte 2A/2B ↔ officines 20
   function zoneColor(code) {
-    var s = (window.DEPARTEMENTS_STATS || {})[code] || { cli: 0, pro: 0, tot: 0, part: 0 };
+    var s = (window.DEPARTEMENTS_STATS || {})[depCode(code)] || { cli: 0, pro: 0, tot: 0, part: 0 };
     if (zoneMetric === 'part') { var p = s.part; return p >= 25 ? '#0B6E43' : p >= 15 ? '#2E9E66' : p >= 7 ? '#5CC98A' : p >= 1 ? '#BFE6CF' : '#EDEFF3'; }
     if (zoneMetric === 'densite') { var t = s.tot; return t >= 400 ? '#08306B' : t >= 250 ? '#2171B5' : t >= 120 ? '#6BAED6' : t >= 40 ? '#BDD7E7' : '#EDEFF3'; }
     var pr = s.pro; return pr >= 500 ? '#7A2E0E' : pr >= 300 ? '#C2410C' : pr >= 150 ? '#EA580C' : pr >= 40 ? '#FDBA74' : '#EDEFF3';
@@ -235,12 +236,12 @@
       zoneLayer = window.L.geoJSON(window.DEPARTEMENTS_GEO, {
         style: function (f) { return { fillColor: zoneColor(f.properties.code), fillOpacity: 0.72, color: '#fff', weight: 1 }; },
         onEachFeature: function (f, layer) {
-          var s = (window.DEPARTEMENTS_STATS || {})[f.properties.code] || {};
+          var s = (window.DEPARTEMENTS_STATS || {})[depCode(f.properties.code)] || {};
           layer.bindTooltip('<b>' + esc(f.properties.code + ' · ' + f.properties.nom) + '</b><span>' + (s.cli || 0) + ' clients · ' + (s.pro || 0) + ' prospects' + (s.part != null ? ' · ' + s.part + '% clients' : '') + '</span>', { sticky: true, className: 'cn-tip' });
           layer.on('mouseover', function () { layer.setStyle({ weight: 2.5, color: '#0B131C' }); layer.bringToFront(); });
           layer.on('mouseout', function () { layer.setStyle({ weight: 1, color: '#fff' }); });
           layer.on('click', function () {   // drill-down : filtre + liste du département
-            deptFocus = f.properties.code;
+            deptFocus = depCode(f.properties.code);
             var ds = document.getElementById('cn-deptsel'); if (ds) ds.value = deptFocus;
             if (document.getElementById('cn-listpanel')) renderListPanel(); else V2.carteListOpen();
             try { map.fitBounds(layer.getBounds().pad(0.1)); } catch (e) {}
