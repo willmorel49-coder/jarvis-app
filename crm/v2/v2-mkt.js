@@ -366,6 +366,16 @@
             '<button class="v2-btn v2-btn-ghost" onclick="V2.mkt.top50Xlsx()">' + ICO('download', 15) + ' Excel</button>' +
           '</span>' +
         '</div>' +
+        '<div class="mkt-make-card mkt-make-t50">' +
+          '<span class="mkt-make-ic">' + ICO('cat', 26, 1.8) + '</span>' +
+          '<span class="mkt-make-t">Biosimilaires substituables</span>' +
+          '<span class="mkt-make-s">Tous les biosimilaires substituables en officine — PPHT, abandon de marge et prix net IP. Fiche façon Teva prête à présenter, + la base complète.</span>' +
+          '<span class="mkt-make-t50btns">' +
+            '<a class="v2-btn v2-btn-primary" href="../../biosim-poster-synthese-pharmacien.pdf" download>' + ICO('download', 15) + ' Fiche PDF</a>' +
+            '<a class="v2-btn v2-btn-ghost" href="../../biosim-poster-detail-pharmacien.pdf" download>' + ICO('download', 15) + ' Toutes présentations</a>' +
+            (V2.pages && V2.pages.biosimilaires ? '<button class="v2-btn v2-btn-ghost" onclick="V2.go(\'biosimilaires\')">' + ICO('chev', 15, 2.2) + ' Ouvrir la base</button>' : '') +
+          '</span>' +
+        '</div>' +
       '</div>';
 
     // ── ÉTAPE 2 : mes créations récentes (une seule liste, plus de grilles répétées) ──
