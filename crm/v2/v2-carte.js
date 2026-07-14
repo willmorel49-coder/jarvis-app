@@ -178,6 +178,14 @@
   }
   function rebuild() {
     if (!map) return;
+    if (zonesOn) {   // zones affichées : pas de marqueurs sur la carte, on tient juste le compteur + le dock à jour
+      if (cluster) { map.removeLayer(cluster); cluster = null; }
+      var cn0 = document.getElementById('carte-count'), n0 = 0;
+      for (var q = 0; q < D.p.length; q++) if (pass(D.p[q])) n0++;
+      if (cn0) cn0.textContent = n0.toLocaleString('fr') + ' pharmacies';
+      renderDock();
+      return;
+    }
     if (cluster) { map.removeLayer(cluster); cluster = null; }
     markers = [];
     var pts = D.p, cn = document.getElementById('carte-count');
@@ -212,7 +220,7 @@
     if (cn) cn.textContent = markers.length.toLocaleString('fr') + (bulles ? ' officines avec CA' : ' pharmacies');
     renderDock();   // dock (liste dockée) synchronisé avec les filtres de la carte
   }
-  function recolor() { if (markers) for (var k = 0; k < markers.length; k++) markers[k].setStyle(markerStyle(D.p[markers[k]._pi], markers[k]._pi)); }
+  function recolor() { if (zonesOn || !markers) return; for (var k = 0; k < markers.length; k++) markers[k].setStyle(markerStyle(D.p[markers[k]._pi], markers[k]._pi)); }
 
   // ── ZONES PAR DÉPARTEMENT (choroplèthe sur la vraie carte de France) ──
   function ensureDeps(cb) {
@@ -1361,14 +1369,14 @@
     ['all', 'clients', 'prospects'].forEach(function (k) { var b = document.getElementById('ct-' + k); if (b) b.classList.toggle('on', k === t); });
     rebuild();
   };
-  V2.carteComm = function (v) { commFocus = v || ''; if (!zonesOn) rebuild(); renderLists(); };
-  V2.carteGrp = function (v) { grpFocus = v || ''; if (!zonesOn) rebuild(); renderLists(); };
-  V2.carteDept = function (v) { deptFocus = v || ''; if (!zonesOn) rebuild(); renderLists(); };
+  V2.carteComm = function (v) { commFocus = v || ''; rebuild(); renderLists(); };
+  V2.carteGrp = function (v) { grpFocus = v || ''; rebuild(); renderLists(); };
+  V2.carteDept = function (v) { deptFocus = v || ''; rebuild(); renderLists(); };
   var _searchTO = null;
   V2.carteSearch = function (v) {
     searchTerm = v || '';
     if (_searchTO) clearTimeout(_searchTO);
-    _searchTO = setTimeout(function () { if (!zonesOn) rebuild(); renderLists(); }, 220);
+    _searchTO = setTimeout(function () { rebuild(); renderLists(); }, 220);
   };
   // ── LISTE-DONNÉES : voir précisément noms + infos, filtrable, cliquable ──
   function filtered() { var out = []; if (!D) return out; for (var i = 0; i < D.p.length; i++) if (pass(D.p[i])) out.push(i); return out; }
