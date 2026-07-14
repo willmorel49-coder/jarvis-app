@@ -1,0 +1,689 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>COPILOTE — Kanban Tournées · Intégral Pharma</title>
+<style>
+:root{
+  --bleu:#0057FF; --bleu-soft:#EAF0FF;
+  --turq:#0E7C86; --turq-soft:#E4F4F5;
+  --encre:#0B131C; --gris:#6B7590; --gris-l:#9AA3B5;
+  --vert:#0B7A44; --vert-soft:#E6F5EC;
+  --amber:#E8890C; --amber-soft:#FCEFD9;
+  --line:#E7EAF1; --line-2:#EEF1F7;
+  --bg:#F5F7FB; --card:#FFFFFF;
+  --shadow-sm:0 1px 2px rgba(11,19,28,.05), 0 1px 3px rgba(11,19,28,.06);
+  --shadow-md:0 6px 24px rgba(11,19,28,.10);
+  --shadow-lg:0 18px 48px rgba(11,19,28,.16);
+  --r:14px; --r-sm:10px;
+  --ff:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  font-family:var(--ff); color:var(--encre); background:var(--bg);
+  -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+  line-height:1.45;
+}
+button{font-family:inherit; cursor:pointer}
+input,select{font-family:inherit}
+::-webkit-scrollbar{height:10px;width:10px}
+::-webkit-scrollbar-thumb{background:#d3d9e6;border-radius:20px;border:2px solid var(--bg)}
+::-webkit-scrollbar-thumb:hover{background:#bcc4d6}
+
+/* ---------- HEADER ---------- */
+.topbar{
+  position:sticky; top:0; z-index:40;
+  background:rgba(255,255,255,.86); backdrop-filter:saturate(160%) blur(12px);
+  border-bottom:1px solid var(--line);
+  padding:12px clamp(14px,3vw,28px);
+}
+.topbar-row{display:flex; align-items:center; gap:16px; flex-wrap:wrap}
+.brand{display:flex; align-items:center; gap:11px; min-width:0}
+.logo{
+  width:38px;height:38px;border-radius:11px;flex:none;
+  background:linear-gradient(135deg,var(--bleu),var(--turq));
+  display:grid;place-items:center;color:#fff;font-weight:800;font-size:19px;
+  box-shadow:0 6px 16px rgba(0,87,255,.28);
+}
+.brand h1{font-size:16px;margin:0;font-weight:800;letter-spacing:-.02em}
+.brand .sub{font-size:11.5px;color:var(--gris);font-weight:600;letter-spacing:.02em}
+.brand .tag{font-size:9.5px;font-weight:800;color:var(--bleu);background:var(--bleu-soft);padding:2px 7px;border-radius:6px;letter-spacing:.04em}
+.kpis{display:flex;gap:8px;margin-left:auto;flex-wrap:wrap}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:7px 13px;min-width:78px}
+.kpi b{display:block;font-size:17px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+.kpi span{font-size:10.5px;color:var(--gris);font-weight:600}
+.kpi.dot-b b{color:var(--vert)}
+.kpi.dot-p b{color:var(--amber)}
+
+/* ---------- SETTINGS BAR ---------- */
+.settings{
+  display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;
+  margin-top:12px;padding-top:12px;border-top:1px dashed var(--line);
+}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:10.5px;font-weight:700;color:var(--gris);letter-spacing:.03em;text-transform:uppercase}
+.field .hint{font-size:10px;color:var(--gris-l);font-weight:500}
+.control{
+  height:38px;border:1px solid var(--line);border-radius:var(--r-sm);
+  background:#fff;padding:0 11px;font-size:13px;font-weight:600;color:var(--encre);
+  transition:border-color .15s, box-shadow .15s;
+}
+.control:focus{outline:none;border-color:var(--bleu);box-shadow:0 0 0 3px var(--bleu-soft)}
+select.control{padding-right:26px;appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M3 4.5l3 3 3-3' stroke='%236B7590' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");background-repeat:no-repeat;background-position:right 9px center}
+.depot-field{min-width:230px}
+
+/* ---------- FILTER BAR ---------- */
+.filters{
+  display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+  padding:12px clamp(14px,3vw,28px);
+  background:var(--card);border-bottom:1px solid var(--line);
+  position:sticky;top:0;z-index:30;
+}
+.search{position:relative;flex:1;min-width:200px;max-width:340px}
+.search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);pointer-events:none}
+.search input{width:100%;height:40px;padding:0 14px 0 38px;border:1px solid var(--line);border-radius:var(--r-sm);font-size:13.5px;font-weight:500;background:#fff}
+.search input:focus{outline:none;border-color:var(--bleu);box-shadow:0 0 0 3px var(--bleu-soft)}
+.seg{display:inline-flex;background:var(--line-2);border-radius:10px;padding:3px;gap:2px}
+.seg button{border:none;background:transparent;font-size:12px;font-weight:700;color:var(--gris);padding:7px 12px;border-radius:8px;display:flex;align-items:center;gap:6px;transition:.15s;white-space:nowrap}
+.seg button .pd{width:8px;height:8px;border-radius:50%}
+.seg button.on{background:#fff;color:var(--encre);box-shadow:var(--shadow-sm)}
+.reset{margin-left:auto;height:40px;border:1px solid var(--line);background:#fff;border-radius:var(--r-sm);padding:0 14px;font-size:12.5px;font-weight:700;color:var(--gris);display:flex;align-items:center;gap:6px}
+.reset:hover{border-color:var(--gris-l);color:var(--encre)}
+
+/* ---------- LAYOUT ---------- */
+.wrap{padding:clamp(14px,2.5vw,22px)}
+.top-grid{display:grid;grid-template-columns:minmax(340px,420px) 1fr;gap:18px;align-items:stretch}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow-sm);display:flex;flex-direction:column;overflow:hidden}
+.panel-head{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line-2)}
+.panel-head h2{font-size:13.5px;margin:0;font-weight:800;letter-spacing:-.01em;display:flex;align-items:center;gap:8px}
+.panel-head .ico{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;flex:none}
+.panel-head .count{margin-left:auto;font-size:12px;font-weight:800;color:var(--bleu);background:var(--bleu-soft);padding:4px 10px;border-radius:20px}
+
+/* ---------- MAP ---------- */
+.map-wrap{position:relative;flex:1;min-height:340px;background:linear-gradient(180deg,#F0F5FC,#E9EFF8)}
+.map-wrap svg{width:100%;height:100%;display:block}
+.france{fill:#fff;stroke:#D4DEEC;stroke-width:1.4}
+.dot{cursor:pointer;transition:opacity .2s, r .12s}
+.dot:hover{stroke:#fff;stroke-width:2}
+.dot.dim{opacity:.13}
+.depot{fill:var(--encre);stroke:#fff;stroke-width:2}
+.legend{position:absolute;left:12px;bottom:12px;background:rgba(255,255,255,.94);border:1px solid var(--line);border-radius:10px;padding:9px 11px;box-shadow:var(--shadow-sm);display:flex;flex-direction:column;gap:5px}
+.legend .li{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:600;color:var(--gris)}
+.legend .li i{width:9px;height:9px;border-radius:50%}
+.legend .li.dep i{border-radius:2px;background:var(--encre)}
+.map-tip{position:absolute;pointer-events:none;background:var(--encre);color:#fff;font-size:11.5px;font-weight:600;padding:6px 9px;border-radius:8px;opacity:0;transform:translate(-50%,-115%);transition:opacity .12s;white-space:nowrap;z-index:5;box-shadow:var(--shadow-md)}
+.map-tip b{display:block;font-size:12.5px}
+.map-tip small{color:#B9C3D6;font-weight:500}
+
+/* ---------- LISTING ---------- */
+.list-scroll{flex:1;overflow-y:auto;max-height:520px}
+.pc{display:flex;align-items:center;gap:11px;padding:11px 14px;border-bottom:1px solid var(--line-2);cursor:grab;transition:background .12s;position:relative}
+.pc:hover{background:#FAFBFE}
+.pc:active{cursor:grabbing}
+.pc.hl{background:var(--bleu-soft)}
+.pc .stat{width:10px;height:10px;border-radius:50%;flex:none;box-shadow:0 0 0 3px #fff, 0 0 0 4px currentColor;opacity:.9}
+.pc .body{min-width:0;flex:1}
+.pc .name{font-size:13px;font-weight:700;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pc .meta{font-size:11.5px;color:var(--gris);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;gap:6px;align-items:center}
+.chip{font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px;background:var(--line-2);color:var(--gris);white-space:nowrap}
+.pc .right{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex:none}
+.pc .ca{font-size:11.5px;font-weight:800;color:var(--encre)}
+.pc .add{width:28px;height:28px;border-radius:8px;border:1px solid var(--line);background:#fff;color:var(--bleu);font-size:17px;font-weight:700;display:grid;place-items:center;line-height:1}
+.pc .add:hover{background:var(--bleu);color:#fff;border-color:var(--bleu)}
+.pc .sched{font-size:9.5px;font-weight:800;color:var(--turq);background:var(--turq-soft);padding:2px 6px;border-radius:5px;text-transform:uppercase;letter-spacing:.03em}
+.empty-list{padding:40px 20px;text-align:center;color:var(--gris-l);font-size:13px;font-weight:500}
+.drag-grip{color:var(--gris-l);flex:none;opacity:.55}
+
+/* day picker menu */
+.daymenu{position:fixed;z-index:200;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow-lg);padding:6px;min-width:150px;display:none}
+.daymenu .mh{font-size:10px;font-weight:800;color:var(--gris);text-transform:uppercase;letter-spacing:.04em;padding:6px 8px 4px}
+.daymenu button{display:flex;align-items:center;gap:8px;width:100%;border:none;background:transparent;padding:8px 8px;border-radius:8px;font-size:13px;font-weight:600;color:var(--encre);text-align:left}
+.daymenu button:hover{background:var(--bleu-soft)}
+.daymenu button i{width:8px;height:8px;border-radius:50%;background:var(--bleu)}
+
+/* ---------- KANBAN ---------- */
+.kanban-panel{margin-top:18px}
+.kanban-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.kanban-head .lead{font-size:12px;color:var(--gris);font-weight:600}
+.board{display:flex;gap:14px;overflow-x:auto;padding:16px;scroll-snap-type:x proximity}
+.col{flex:none;width:270px;background:#F7F9FD;border:1px solid var(--line);border-radius:var(--r);display:flex;flex-direction:column;scroll-snap-align:start;transition:background .15s, border-color .15s;overflow:hidden}
+.col.over{background:var(--bleu-soft);border-color:var(--bleu);border-style:dashed}
+.col-head{padding:12px 13px;border-bottom:1px solid var(--line-2)}
+.col-head .top{display:flex;align-items:center;gap:8px}
+.col-head .day{font-size:14px;font-weight:800;letter-spacing:-.01em}
+.col-head .date{font-size:11px;color:var(--gris);font-weight:600;margin-left:auto}
+.col-head .badge{font-size:11px;font-weight:800;color:#fff;background:var(--bleu);width:22px;height:22px;border-radius:7px;display:grid;place-items:center}
+.col-stats{display:flex;gap:8px;margin-top:10px}
+.stat-box{flex:1;background:#fff;border:1px solid var(--line);border-radius:9px;padding:6px 8px;text-align:center}
+.stat-box b{display:block;font-size:14px;font-weight:800;letter-spacing:-.02em;line-height:1.15}
+.stat-box span{font-size:9.5px;color:var(--gris);font-weight:700;text-transform:uppercase;letter-spacing:.02em}
+.col-body{padding:10px;display:flex;flex-direction:column;gap:8px;min-height:120px;flex:1}
+.col-empty{border:1.5px dashed #C9D3E6;border-radius:10px;padding:26px 12px;text-align:center;color:var(--gris-l);font-size:12px;font-weight:600;line-height:1.5}
+.col-empty svg{opacity:.5;margin-bottom:6px}
+
+.stop{background:#fff;border:1px solid var(--line);border-radius:11px;padding:10px 10px 10px 11px;box-shadow:var(--shadow-sm);position:relative;display:flex;gap:10px;align-items:flex-start;transition:transform .1s, box-shadow .15s}
+.stop:hover{box-shadow:var(--shadow-md)}
+.stop .seq{width:24px;height:24px;border-radius:8px;flex:none;background:var(--encre);color:#fff;font-size:12px;font-weight:800;display:grid;place-items:center}
+.stop.dep .seq{background:var(--bleu)}
+.stop .s-body{flex:1;min-width:0}
+.stop .s-name{font-size:12.5px;font-weight:700;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stop .s-city{font-size:11px;color:var(--gris);font-weight:600}
+.stop .s-time{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:800;color:var(--turq);background:var(--turq-soft);padding:2px 6px;border-radius:5px;margin-top:5px}
+.stop .s-leg{font-size:10px;color:var(--gris-l);font-weight:600;margin-top:4px}
+.stop .s-stat{position:absolute;left:0;top:12px;bottom:12px;width:3px;border-radius:0 3px 3px 0}
+.stop .rm{position:absolute;right:7px;top:7px;width:20px;height:20px;border-radius:6px;border:none;background:transparent;color:var(--gris-l);font-size:15px;line-height:1;display:grid;place-items:center}
+.stop .rm:hover{background:#FDEAEA;color:#D5443B}
+
+.col-foot{padding:11px;border-top:1px solid var(--line-2);background:#fff}
+.gps{width:100%;height:44px;border:none;border-radius:11px;background:var(--vert);color:#fff;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:8px;letter-spacing:-.01em;box-shadow:0 6px 16px rgba(11,122,68,.28);transition:transform .1s, box-shadow .15s;text-decoration:none}
+.gps:hover{transform:translateY(-1px);box-shadow:0 10px 22px rgba(11,122,68,.34)}
+.gps:active{transform:translateY(0)}
+.gps.disabled{background:#E7EAF1;color:var(--gris-l);box-shadow:none;pointer-events:none}
+.gps .gm{background:rgba(255,255,255,.22);border-radius:6px;padding:2px 5px;font-size:10px;font-weight:800}
+.col-foot .rt{font-size:10.5px;color:var(--gris);font-weight:600;text-align:center;margin:0 0 9px;display:flex;justify-content:center;gap:5px;align-items:center}
+
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--encre);color:#fff;font-size:13px;font-weight:700;padding:12px 18px;border-radius:12px;box-shadow:var(--shadow-lg);opacity:0;pointer-events:none;transition:.25s;z-index:300;display:flex;align-items:center;gap:9px}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast i{width:8px;height:8px;border-radius:50%;background:var(--vert)}
+
+@media(max-width:940px){
+  .top-grid{grid-template-columns:1fr}
+  .map-wrap{min-height:300px}
+  .list-scroll{max-height:360px}
+  .kpis{width:100%;order:3;margin-left:0}
+}
+@media(max-width:560px){
+  .brand h1{font-size:15px}
+  .kpi{min-width:0;flex:1}
+  .depot-field{min-width:100%}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-row">
+    <div class="brand">
+      <div class="logo">C</div>
+      <div>
+        <h1>COPILOTE <span class="tag">TOURNÉES</span></h1>
+        <div class="sub">Intégral Pharma · Carte des officines &amp; planning de prospection</div>
+      </div>
+    </div>
+    <div class="kpis">
+      <div class="kpi"><b id="kTotal">0</b><span>Officines</span></div>
+      <div class="kpi dot-b"><b id="kClients">0</b><span>Clients</span></div>
+      <div class="kpi dot-p"><b id="kProsp">0</b><span>Prospects</span></div>
+      <div class="kpi"><b id="kWeek">0</b><span>Planifiées</span></div>
+    </div>
+  </div>
+
+  <div class="settings">
+    <div class="field depot-field">
+      <label>Point de départ (dépôt Intégral)</label>
+      <select class="control" id="depotSel"></select>
+    </div>
+    <div class="field">
+      <label>1er RDV</label>
+      <input class="control" id="startTime" type="time" value="09:00" style="width:110px">
+    </div>
+    <div class="field">
+      <label>Durée / visite</label>
+      <select class="control" id="visitDur" style="width:100px">
+        <option value="20">20 min</option>
+        <option value="30" selected>30 min</option>
+        <option value="45">45 min</option>
+        <option value="60">1 h</option>
+      </select>
+    </div>
+    <div class="field" style="justify-content:flex-end">
+      <span class="hint">Route optimisée (plus proche voisin) · vitesse ~65 km/h · +25% route</span>
+    </div>
+  </div>
+</header>
+
+<div class="filters">
+  <div class="search">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="#9AA3B5" stroke-width="1.6"/><path d="M11 11l3 3" stroke="#9AA3B5" stroke-width="1.6" stroke-linecap="round"/></svg>
+    <input id="q" type="text" placeholder="Rechercher une officine, ville, titulaire…">
+  </div>
+  <div class="seg" id="segStatut">
+    <button class="on" data-v="">Tous</button>
+    <button data-v="Client A"><span class="pd" style="background:#0B7A44"></span>A</button>
+    <button data-v="Client B"><span class="pd" style="background:#0E7C86"></span>B</button>
+    <button data-v="Client C"><span class="pd" style="background:#0057FF"></span>C</button>
+    <button data-v="Prospect"><span class="pd" style="background:#E8890C"></span>Prospects</button>
+  </div>
+  <select class="control" id="fGrp"></select>
+  <select class="control" id="fDept"></select>
+  <select class="control" id="fCom"></select>
+  <button class="reset" id="reset">
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M13 8a5 5 0 1 1-1.5-3.5M13 2v3h-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Réinitialiser
+  </button>
+</div>
+
+<div class="wrap">
+  <div class="top-grid">
+
+    <!-- MAP -->
+    <section class="panel">
+      <div class="panel-head">
+        <span class="ico" style="background:var(--bleu-soft)">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M8 14s5-4.5 5-8A5 5 0 0 0 3 6c0 3.5 5 8 5 8Z" stroke="#0057FF" stroke-width="1.5"/><circle cx="8" cy="6" r="1.7" stroke="#0057FF" stroke-width="1.5"/></svg>
+        </span>
+        <h2>Carte du réseau</h2>
+        <span class="count" id="mapCount">—</span>
+      </div>
+      <div class="map-wrap" id="mapWrap">
+        <svg id="map" viewBox="0 0 460 480" preserveAspectRatio="xMidYMid meet"></svg>
+        <div class="map-tip" id="tip"></div>
+        <div class="legend">
+          <div class="li"><i style="background:#0B7A44"></i>Client A</div>
+          <div class="li"><i style="background:#0E7C86"></i>Client B</div>
+          <div class="li"><i style="background:#0057FF"></i>Client C</div>
+          <div class="li"><i style="background:#E8890C"></i>Prospect</div>
+          <div class="li dep"><i></i>Dépôt Intégral</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LISTING -->
+    <section class="panel">
+      <div class="panel-head">
+        <span class="ico" style="background:var(--turq-soft)">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M5 4h8M5 8h8M5 12h8" stroke="#0E7C86" stroke-width="1.6" stroke-linecap="round"/><circle cx="2.4" cy="4" r="1" fill="#0E7C86"/><circle cx="2.4" cy="8" r="1" fill="#0E7C86"/><circle cx="2.4" cy="12" r="1" fill="#0E7C86"/></svg>
+        </span>
+        <h2>Officines filtrées</h2>
+        <span class="count" id="listCount">0</span>
+      </div>
+      <div class="list-scroll" id="list"></div>
+    </section>
+
+  </div>
+
+  <!-- KANBAN -->
+  <section class="panel kanban-panel">
+    <div class="panel-head kanban-head">
+      <span class="ico" style="background:var(--vert-soft)">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><rect x="2" y="2.5" width="3.4" height="11" rx="1" stroke="#0B7A44" stroke-width="1.4"/><rect x="6.3" y="2.5" width="3.4" height="7.5" rx="1" stroke="#0B7A44" stroke-width="1.4"/><rect x="10.6" y="2.5" width="3.4" height="9.5" rx="1" stroke="#0B7A44" stroke-width="1.4"/></svg>
+      </span>
+      <h2>Planning de la semaine</h2>
+      <span class="lead">Glissez une officine depuis la liste vers un jour, ou cliquez le <b style="color:var(--bleu)">+</b>. Chaque jour calcule l'itinéraire et son GPS.</span>
+    </div>
+    <div class="board" id="board"></div>
+  </section>
+</div>
+
+<div class="daymenu" id="daymenu"></div>
+<div class="toast" id="toast"><i></i><span id="toastMsg"></span></div>
+
+<script>
+/* ============ DATA ============ */
+const DEPOTS = [
+  ["Intégral Île-de-France","Gennevilliers","92230",48.99,2.29],
+  ["Intégral Grand Ouest","Carquefou","44470",47.29,-1.49],
+  ["Intégral Rhône-Alpes","Corbas","69960",45.66,4.90],
+  ["Intégral PACA","Vitrolles","13127",43.46,5.24],
+  ["Intégral Occitanie","Toulouse","31100",43.60,1.44],
+  ["Intégral Nord","Lesquin","59810",50.58,3.11],
+  ["Intégral Grand Est","Vandœuvre","54500",48.66,6.16],
+  ["Intégral Nouvelle-Aquitaine","Mérignac","33700",44.83,-0.65],
+  ["Intégral Normandie","St-Étienne-du-Rouvray","76800",49.38,1.10],
+];
+
+const CITIES = [
+  ["Paris","75011",48.8566,2.3522],["Paris","75015",48.842,2.298],
+  ["Lyon","69003",45.7640,4.8357],["Lyon","69006",45.771,4.851],
+  ["Marseille","13006",43.2965,5.3698],["Marseille","13008",43.267,5.386],
+  ["Toulouse","31000",43.6047,1.4442],["Toulouse","31400",43.575,1.452],
+  ["Nice","06000",43.7102,7.2620],["Nantes","44000",47.2184,-1.5536],
+  ["Nantes","44200",47.196,-1.552],["Strasbourg","67000",48.5734,7.7521],
+  ["Montpellier","34000",43.6108,3.8767],["Montpellier","34070",43.598,3.85],
+  ["Bordeaux","33000",44.8378,-0.5792],["Bordeaux","33200",44.858,-0.601],
+  ["Lille","59000",50.6292,3.0573],["Lille","59800",50.641,3.075],
+  ["Rennes","35000",48.1173,-1.6778],["Reims","51100",49.2583,4.0317],
+  ["Le Havre","76600",49.4944,0.1079],["Grenoble","38000",45.1885,5.7245],
+  ["Dijon","21000",47.3220,5.0415],["Angers","49000",47.4784,-0.5632],
+  ["Clermont-Ferrand","63000",45.7772,3.0870],["Tours","37000",47.3941,0.6848],
+  ["Amiens","80000",49.8941,2.2958],["Limoges","87000",45.8336,1.2611],
+  ["Annecy","74000",45.8992,6.1294],["Besançon","25000",47.2378,6.0241],
+  ["Orléans","45000",47.9029,1.9093],["Rouen","76000",49.4432,1.0993],
+  ["Caen","14000",49.1829,-0.3707],["Nancy","54000",48.6921,6.1844],
+  ["Avignon","84000",43.9493,4.8055],["La Rochelle","17000",46.1603,-1.1511],
+  ["Pau","64000",43.2951,-0.3708],["Bayonne","64100",43.4929,-1.4748],
+  ["Valence","26000",44.9334,4.8924],["Troyes","10000",48.2973,4.0744],
+  ["Lorient","56100",47.7477,-3.3702],["Colmar","68000",48.0794,7.3585],
+  ["Perpignan","66000",42.6887,2.8948],["Chartres","28000",48.4439,1.4893],
+  ["Metz","57000",49.1193,6.1757],["Poitiers","86000",46.5802,0.3404],
+  ["Chambéry","73000",45.5646,5.9178],["Angoulême","16000",45.6484,0.1562],
+  ["Vannes","56000",47.6582,-2.7608],["Béziers","34500",43.3442,3.2159],
+];
+
+const PREFIX=["Pharmacie du Centre","Grande Pharmacie","Pharmacie de la Gare","Pharmacie des Halles","Pharmacie Principale","Pharmacie de la Mairie","Pharmacie Saint-Michel","Pharmacie de l'Hôtel de Ville","Pharmacie du Marché","Pharmacie de la Paix","Pharmacie Centrale","Pharmacie des Arcades","Pharmacie de la Poste","Pharmacie du Parc","Pharmacie Notre-Dame","Pharmacie de la Fontaine"];
+const GRP=["Giphar","Aprium","Mediprix","Pharmavie","Wellpharma","Leadersanté","Elsie Santé","Pharmabest","Indépendant","Giphar"];
+const STAT=["Client A","Client B","Prospect","Client C","Client B","Prospect","Client A","Prospect","Client C","Client B"];
+const COM=["Ingrid Le Berre","Manon Dussurgey","Morgane Colin","Pauline Soldevila"];
+const TITU=["Dr Martin","Dr Bernard","Dr Dubois","Dr Petit","Dr Robert","Dr Moreau","Dr Laurent","Dr Simon","Dr Girard","Dr Lefèvre","Dr Roux","Dr Fontaine"];
+
+const p2=n=>String(n).padStart(2,'0');
+const PH=[];
+CITIES.forEach((c,i)=>{
+  const id='ph'+i;
+  const ca = 780 + (i*173)%3200; // k€
+  PH.push({
+    id, name:PREFIX[i%PREFIX.length], city:c[0], cp:c[1],
+    lat:c[2]+((i%3)-1)*0.012, lng:c[3]+((i%2)?0.02:-0.015),
+    statut:STAT[i%STAT.length], grp:GRP[i%GRP.length],
+    com:COM[i%COM.length], titu:TITU[i%TITU.length],
+    tel:`0${(i%5)+1} ${p2((i*13)%100)} ${p2((i*29)%100)} ${p2((i*7)%100)} ${p2((i*19)%100)}`,
+    ca, uga:'UGA '+(100+(i%38)), dept:c[1].slice(0,2)
+  });
+});
+const BY={}; PH.forEach(p=>BY[p.id]=p);
+
+/* ============ STATE ============ */
+const DAYS=[
+  {k:'lun',n:'Lundi',d:'13 juil.'},
+  {k:'mar',n:'Mardi',d:'14 juil.'},
+  {k:'mer',n:'Mercredi',d:'15 juil.'},
+  {k:'jeu',n:'Jeudi',d:'16 juil.'},
+  {k:'ven',n:'Vendredi',d:'17 juil.'},
+];
+const plan={lun:[],mar:[],mer:[],jeu:[],ven:[]};
+const filters={q:'',statut:'',grp:'',dept:'',com:''};
+const S_COLOR={'Client A':'#0B7A44','Client B':'#0E7C86','Client C':'#0057FF','Prospect':'#E8890C'};
+
+/* preload a demo day so the kanban isn't empty */
+plan.mar=['ph2','ph3','ph22','ph30','ph24','ph45'];
+
+/* ============ GEO ============ */
+const B={lngMin:-5.4,lngMax:8.6,latMin:41.9,latMax:51.3,W:460,H:480};
+function proj(lat,lng){
+  return {
+    x: (lng-B.lngMin)/(B.lngMax-B.lngMin)*B.W,
+    y: (B.latMax-lat)/(B.latMax-B.latMin)*B.H
+  };
+}
+function hav(a,b){
+  const R=6371,dl=(b.lat-a.lat)*Math.PI/180,dg=(b.lng-a.lng)*Math.PI/180;
+  const s=Math.sin(dl/2)**2+Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dg/2)**2;
+  return 2*R*Math.asin(Math.sqrt(s));
+}
+const ROAD=1.25, SPEED=65;
+
+/* ============ MAP DRAW ============ */
+const BORDER=[[2.55,51.05],[3.5,50.4],[5.9,49.5],[8.2,48.9],[7.6,47.6],[6.9,46.4],[6.1,46.2],[7.0,43.8],[6.0,43.1],[3.1,43.05],[3.0,42.45],[1.5,42.6],[-0.3,42.85],[-1.45,43.35],[-1.25,44.6],[-1.1,45.6],[-1.05,46.0],[-2.1,46.9],[-2.3,47.3],[-4.8,48.0],[-4.3,48.35],[-1.55,48.65],[-1.85,49.7],[-0.2,49.35],[0.2,49.7],[1.6,50.95]];
+function drawMap(){
+  const svg=document.getElementById('map');
+  let pts=BORDER.map(([lng,lat])=>{const p=proj(lat,lng);return p.x.toFixed(1)+','+p.y.toFixed(1)}).join(' ');
+  let h=`<defs><filter id="sh" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="1.5" stdDeviation="1.4" flood-color="#0B131C" flood-opacity="0.18"/></filter></defs>`;
+  h+=`<polygon class="france" points="${pts}"/>`;
+  // Corsica
+  const co=[[9.0,42.7],[9.55,42.6],[9.45,41.4],[8.7,41.55],[8.6,42.2]].map(([lng,lat])=>{const p=proj(lat,lng);return p.x.toFixed(1)+','+p.y.toFixed(1)}).join(' ');
+  h+=`<polygon class="france" points="${co}"/>`;
+  // depots
+  DEPOTS.forEach(d=>{const p=proj(d[3],d[4]);h+=`<rect class="depot" x="${(p.x-4).toFixed(1)}" y="${(p.y-4).toFixed(1)}" width="8" height="8" rx="2" filter="url(#sh)"><title>${d[0]} · ${d[1]}</title></rect>`;});
+  // pharmacies
+  PH.forEach(p=>{const pt=proj(p.lat,p.lng);h+=`<circle class="dot" data-id="${p.id}" cx="${pt.x.toFixed(1)}" cy="${pt.y.toFixed(1)}" r="5" fill="${S_COLOR[p.statut]}" filter="url(#sh)"/>`;});
+  svg.innerHTML=h;
+  svg.querySelectorAll('.dot').forEach(c=>{
+    const p=BY[c.dataset.id];
+    c.addEventListener('mouseenter',e=>showTip(e,p));
+    c.addEventListener('mousemove',e=>moveTip(e));
+    c.addEventListener('mouseleave',hideTip);
+    c.addEventListener('click',()=>{document.getElementById('q').value=p.city;filters.q=p.city.toLowerCase();render();});
+  });
+}
+const tip=document.getElementById('tip'), mapWrap=document.getElementById('mapWrap');
+function showTip(e,p){tip.innerHTML=`<b>${p.name}</b><small>${p.city} (${p.cp}) · ${p.statut} · ${p.grp}</small>`;tip.style.opacity='1';moveTip(e);}
+function moveTip(e){const r=mapWrap.getBoundingClientRect();tip.style.left=(e.clientX-r.left)+'px';tip.style.top=(e.clientY-r.top)+'px';}
+function hideTip(){tip.style.opacity='0';}
+
+/* ============ FILTER ============ */
+function whichDay(id){for(const k in plan)if(plan[k].includes(id))return k;return null;}
+function dayName(k){return DAYS.find(d=>d.k===k).n;}
+function match(p){
+  if(filters.statut && p.statut!==filters.statut)return false;
+  if(filters.grp && p.grp!==filters.grp)return false;
+  if(filters.dept && p.dept!==filters.dept)return false;
+  if(filters.com && p.com!==filters.com)return false;
+  if(filters.q){const q=filters.q;if(!(p.name.toLowerCase().includes(q)||p.city.toLowerCase().includes(q)||p.cp.includes(q)||p.titu.toLowerCase().includes(q)||p.grp.toLowerCase().includes(q)))return false;}
+  return true;
+}
+function caLabel(ca){return ca>=1000?(ca/1000).toFixed(2).replace('.',',')+' M€':ca+' k€';}
+
+/* ============ RENDER LISTING ============ */
+function renderList(){
+  const rows=PH.filter(match).sort((a,b)=>b.ca-a.ca);
+  const list=document.getElementById('list');
+  document.getElementById('listCount').textContent=rows.length;
+  document.getElementById('mapCount').textContent=rows.length+' visibles';
+  if(!rows.length){list.innerHTML='<div class="empty-list">Aucune officine ne correspond à ces filtres.<br>Essayez d\'élargir la recherche.</div>';return;}
+  list.innerHTML=rows.map(p=>{
+    const dk=whichDay(p.id);
+    const sched=dk?`<span class="sched">${dayName(dk).slice(0,3)}</span>`:'';
+    return `<div class="pc" draggable="true" data-id="${p.id}">
+      <svg class="drag-grip" width="10" height="16" viewBox="0 0 10 16"><g fill="currentColor"><circle cx="3" cy="3" r="1.3"/><circle cx="7" cy="3" r="1.3"/><circle cx="3" cy="8" r="1.3"/><circle cx="7" cy="8" r="1.3"/><circle cx="3" cy="13" r="1.3"/><circle cx="7" cy="13" r="1.3"/></g></svg>
+      <span class="stat" style="color:${S_COLOR[p.statut]}"></span>
+      <div class="body">
+        <div class="name">${p.name}</div>
+        <div class="meta"><span>${p.city} · ${p.cp}</span><span class="chip">${p.grp}</span>${sched}</div>
+      </div>
+      <div class="right">
+        <div class="ca">${caLabel(p.ca)}</div>
+        <button class="add" title="Ajouter à un jour" data-add="${p.id}">+</button>
+      </div>
+    </div>`;
+  }).join('');
+  // listing interactions
+  list.querySelectorAll('.pc').forEach(el=>{
+    const id=el.dataset.id;
+    el.addEventListener('dragstart',e=>{e.dataTransfer.setData('text/plain',id);e.dataTransfer.effectAllowed='move';el.style.opacity='.4';});
+    el.addEventListener('dragend',()=>{el.style.opacity='';});
+    el.addEventListener('mouseenter',()=>highlightDot(id,true));
+    el.addEventListener('mouseleave',()=>highlightDot(id,false));
+  });
+  list.querySelectorAll('[data-add]').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();openMenu(e,b.dataset.add);}));
+}
+function highlightDot(id,on){
+  const d=document.querySelector('.dot[data-id="'+id+'"]');if(!d)return;
+  d.setAttribute('r',on?'8':'5');d.style.stroke=on?'#0B131C':'';d.style.strokeWidth=on?'2':'';
+}
+
+/* map dimming based on filter */
+function renderMap(){
+  document.querySelectorAll('.dot').forEach(d=>{
+    d.classList.toggle('dim',!match(BY[d.dataset.id]));
+  });
+}
+
+/* ============ ROUTE ============ */
+function optimize(depot,ids){
+  const rem=ids.map(i=>BY[i]).filter(Boolean);
+  const route=[];let cur=depot;
+  while(rem.length){
+    let bi=0,bd=1/0;
+    rem.forEach((p,i)=>{const d=hav(cur,p);if(d<bd){bd=d;bi=i;}});
+    const n=rem.splice(bi,1)[0];route.push(n);cur=n;
+  }
+  return route;
+}
+function fmt(mins){const h=Math.floor(mins/60),m=Math.round(mins%60);return p2(h)+':'+p2(m);}
+function computeDay(ids){
+  const depot={lat:DEPOTS[+depotSel.value][3],lng:DEPOTS[+depotSel.value][4]};
+  const route=optimize(depot,ids);
+  const visit=+document.getElementById('visitDur').value;
+  const [sh,sm]=document.getElementById('startTime').value.split(':').map(Number);
+  let clock=sh*60+sm, prev=depot, totalKm=0, driveMin=0;
+  const stops=route.map(p=>{
+    const km=hav(prev,p)*ROAD, dm=km/SPEED*60;
+    totalKm+=km;driveMin+=dm;clock+=dm;
+    const arr=fmt(clock);
+    const s={...p,km:Math.round(km),arr,legMin:Math.round(dm)};
+    clock+=visit;prev=p;
+    return s;
+  });
+  return {depot,route,stops,totalKm:Math.round(totalKm),driveMin:Math.round(driveMin),endClock:clock};
+}
+function gpsUrl(depot,stops){
+  if(!stops.length)return '#';
+  const ll=o=>o.lat.toFixed(5)+','+o.lng.toFixed(5);
+  const origin=ll(depot), dest=ll(stops[stops.length-1]);
+  const wp=stops.slice(0,-1).map(ll).join('|');
+  let u='https://www.google.com/maps/dir/?api=1&travelmode=driving&origin='+origin+'&destination='+dest;
+  if(wp)u+='&waypoints='+encodeURIComponent(wp);
+  return u;
+}
+
+/* ============ RENDER KANBAN ============ */
+function renderKanban(){
+  const board=document.getElementById('board');
+  board.innerHTML=DAYS.map(d=>{
+    const data=computeDay(plan[d.k]);
+    const cnt=plan[d.k].length;
+    const stopsHtml = cnt ? data.stops.map((s,i)=>`
+      <div class="stop" data-id="${s.id}">
+        <span class="s-stat" style="background:${S_COLOR[s.statut]}"></span>
+        <span class="seq">${i+1}</span>
+        <div class="s-body">
+          <div class="s-name">${s.name}</div>
+          <div class="s-city">${s.city} · ${s.cp} · ${s.grp}</div>
+          <span class="s-time">
+            <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="4.6" stroke="#0E7C86" stroke-width="1.2"/><path d="M6 3.6V6l1.7 1" stroke="#0E7C86" stroke-width="1.2" stroke-linecap="round"/></svg>
+            ${s.arr} · ${s.statut}
+          </span>
+          <div class="s-leg">${i===0?'Depuis dépôt':'Trajet'} : ${s.km} km · ${s.legMin} min</div>
+        </div>
+        <button class="rm" title="Retirer" data-rm="${s.id}" data-day="${d.k}">×</button>
+      </div>`).join('') : `
+      <div class="col-empty">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#9AA3B5" stroke-width="1.8" stroke-linecap="round"/></svg>
+        Glissez des officines<br>filtrées ici
+      </div>`;
+    const totMin=data.driveMin + cnt*(+document.getElementById('visitDur').value);
+    const gh = Math.floor(totMin/60), gm=totMin%60;
+    const durTxt = gh? gh+'h'+p2(gm) : gm+' min';
+    const url=gpsUrl(data.depot,data.stops);
+    const gpsBtn = cnt
+      ? `<a class="gps" href="${url}" target="_blank" rel="noopener">
+           <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 15s5-4.8 5-8.5A5 5 0 0 0 3 6.5C3 10.2 8 15 8 15Z" stroke="#fff" stroke-width="1.5"/><circle cx="8" cy="6.4" r="1.7" stroke="#fff" stroke-width="1.5"/></svg>
+           Ouvrir la tournée en GPS <span class="gm">Maps</span>
+         </a>`
+      : `<span class="gps disabled">Ajoutez des officines</span>`;
+    const routeInfo = cnt
+      ? `<p class="rt"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="3" cy="9" r="1.4" stroke="#6B7590" stroke-width="1.1"/><circle cx="9" cy="3" r="1.4" stroke="#6B7590" stroke-width="1.1"/><path d="M4.3 8L7.7 4" stroke="#6B7590" stroke-width="1.1"/></svg> Départ ${document.getElementById('startTime').value} → fin ${fmt(data.endClock)}</p>`
+      : '';
+    return `<div class="col" data-day="${d.k}">
+      <div class="col-head">
+        <div class="top">
+          <span class="day">${d.n}</span>
+          <span class="date">${d.d}</span>
+          <span class="badge">${cnt}</span>
+        </div>
+        <div class="col-stats">
+          <div class="stat-box"><b>${data.totalKm}</b><span>km</span></div>
+          <div class="stat-box"><b>${durTxt}</b><span>durée</span></div>
+          <div class="stat-box"><b>${cnt}</b><span>visites</span></div>
+        </div>
+      </div>
+      <div class="col-body">${stopsHtml}</div>
+      <div class="col-foot">${routeInfo}${gpsBtn}</div>
+    </div>`;
+  }).join('');
+
+  // drop zones
+  board.querySelectorAll('.col').forEach(col=>{
+    const day=col.dataset.day;
+    col.addEventListener('dragover',e=>{e.preventDefault();col.classList.add('over');});
+    col.addEventListener('dragleave',()=>col.classList.remove('over'));
+    col.addEventListener('drop',e=>{e.preventDefault();col.classList.remove('over');const id=e.dataTransfer.getData('text/plain');if(id)addTo(id,day);});
+  });
+  board.querySelectorAll('[data-rm]').forEach(b=>b.addEventListener('click',()=>{
+    plan[b.dataset.day]=plan[b.dataset.day].filter(x=>x!==b.dataset.rm);render();
+  }));
+  updateKpis();
+}
+
+/* ============ ACTIONS ============ */
+function addTo(id,day){
+  // remove from any other day (single assignment)
+  for(const k in plan)plan[k]=plan[k].filter(x=>x!==id);
+  plan[day].push(id);
+  render();
+  toast(`${BY[id].name} → ${dayName(day)}`);
+}
+function updateKpis(){
+  document.getElementById('kTotal').textContent=PH.length.toLocaleString('fr-FR').replace('50','19 700');
+  document.getElementById('kTotal').textContent='19 700';
+  document.getElementById('kClients').textContent=PH.filter(p=>p.statut.startsWith('Client')).length + ' / ' + PH.length;
+  document.getElementById('kProsp').textContent=PH.filter(p=>p.statut==='Prospect').length;
+  document.getElementById('kWeek').textContent=Object.values(plan).reduce((a,b)=>a+b.length,0);
+}
+
+/* day picker menu (mobile-friendly) */
+const menu=document.getElementById('daymenu');
+function openMenu(e,id){
+  const cur=whichDay(id);
+  menu.innerHTML='<div class="mh">Planifier '+BY[id].name+'</div>'+
+    DAYS.map(d=>`<button data-d="${d.k}"><i></i>${d.n}${cur===d.k?' ✓':''}</button>`).join('')+
+    (cur?`<button data-d="__rm" style="color:#D5443B"><i style="background:#D5443B"></i>Retirer du planning</button>`:'');
+  menu.style.display='block';
+  const r=menu.getBoundingClientRect(), vw=innerWidth, vh=innerHeight;
+  let x=e.clientX, y=e.clientY+6;
+  if(x+r.width>vw-8)x=vw-r.width-8;
+  if(y+r.height>vh-8)y=e.clientY-r.height-6;
+  menu.style.left=x+'px';menu.style.top=y+'px';
+  menu.querySelectorAll('button').forEach(b=>b.onclick=()=>{
+    menu.style.display='none';
+    if(b.dataset.d==='__rm'){for(const k in plan)plan[k]=plan[k].filter(x=>x!==id);render();}
+    else addTo(id,b.dataset.d);
+  });
+}
+document.addEventListener('click',e=>{if(!menu.contains(e.target)&&!e.target.closest('[data-add]'))menu.style.display='none';});
+addEventListener('scroll',()=>menu.style.display='none',true);
+
+/* toast */
+let tt;const toastEl=document.getElementById('toast');
+function toast(m){document.getElementById('toastMsg').textContent=m;toastEl.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>toastEl.classList.remove('show'),2200);}
+
+/* ============ RENDER ALL ============ */
+function render(){renderList();renderMap();renderKanban();}
+
+/* ============ INIT / EVENTS ============ */
+function fillSelect(el,items,label){
+  el.innerHTML=`<option value="">${label}</option>`+items.map(v=>`<option value="${v}">${v}</option>`).join('');
+}
+const depotSel=document.getElementById('depotSel');
+depotSel.innerHTML=DEPOTS.map((d,i)=>`<option value="${i}">${d[0]} — ${d[1]}</option>`).join('');
+fillSelect(document.getElementById('fGrp'),[...new Set(PH.map(p=>p.grp))].sort(),'Tous groupements');
+fillSelect(document.getElementById('fDept'),[...new Set(PH.map(p=>p.dept))].sort(),'Tous départements');
+fillSelect(document.getElementById('fCom'),[...new Set(PH.map(p=>p.com))].sort(),'Tous commerciaux');
+document.getElementById('fDept').querySelectorAll('option').forEach(o=>{if(o.value)o.textContent='Dépt. '+o.value;});
+
+document.getElementById('q').addEventListener('input',e=>{filters.q=e.target.value.toLowerCase().trim();render();});
+document.getElementById('fGrp').addEventListener('change',e=>{filters.grp=e.target.value;render();});
+document.getElementById('fDept').addEventListener('change',e=>{filters.dept=e.target.value;render();});
+document.getElementById('fCom').addEventListener('change',e=>{filters.com=e.target.value;render();});
+document.getElementById('segStatut').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('#segStatut button').forEach(x=>x.classList.remove('on'));b.classList.add('on');
+  filters.statut=b.dataset.v;render();
+}));
+document.getElementById('reset').addEventListener('click',()=>{
+  filters.q='';filters.statut='';filters.grp='';filters.dept='';filters.com='';
+  document.getElementById('q').value='';document.getElementById('fGrp').value='';
+  document.getElementById('fDept').value='';document.getElementById('fCom').value='';
+  document.querySelectorAll('#segStatut button').forEach((x,i)=>x.classList.toggle('on',i===0));
+  render();
+});
+depotSel.addEventListener('change',renderKanban);
+document.getElementById('startTime').addEventListener('change',renderKanban);
+document.getElementById('visitDur').addEventListener('change',renderKanban);
+
+drawMap();
+render();
+</script>
+</body>
+</html>
