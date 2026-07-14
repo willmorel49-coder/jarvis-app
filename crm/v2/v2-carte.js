@@ -935,17 +935,33 @@
   function renderTourPanel() {
     var el = document.getElementById('cn-tourpanel'); if (!el) return;
     var sched = tour.length ? computeSchedule() : [];
-    var rows = tour.map(function (s, j) {
+    // ── FRISE HORAIRE (agenda) : heure d'arrivée + trajet entre chaque arrêt ──
+    var timeline = tour.map(function (s, j) {
       var sc = sched[j] || {};
-      var arr = sc.arr != null ? '<span class="cn-tarr' + (sc.late ? ' late' : '') + '">≈ ' + fmtHM(sc.arr) + '</span>' : '';
+      var a = (j === 0) ? (depot || null) : { lat: tour[j - 1].lat, lng: tour[j - 1].lng };
+      var legHtml = '';
+      if (a && isFinite(s.lat) && isFinite(s.lng)) {
+        var dm = Math.round(travelMin(a, { lat: s.lat, lng: s.lng }));
+        var dk = Math.round(haversine(a, { lat: s.lat, lng: s.lng }) * 1.30);
+        legHtml = '<div class="cn-tlleg"><span class="cn-tllegtxt">🚗 ' + fmtDur(dm) + ' · ' + dk + ' km</span></div>';
+      }
+      var arr = sc.arr != null ? fmtHM(sc.arr) : '';
       var gq = encodeURIComponent((s.n || '') + ' ' + (s.v || '') + ' ' + (s.c || ''));
-      return '<div class="cn-trow"><span class="cn-tnum">' + (j + 1) + '</span>' +
-        '<div class="cn-tmain"><b>' + esc(s.n) + '</b><span>' + esc(s.v) + ' · ' + esc(s.c) + (s.t ? ' · ' + esc(s.t) : '') + '</span>' +
-          '<div class="cn-trdvrow">' + arr + '<label class="cn-trdvl">RDV <input type="time" class="cn-trdv" value="' + esc(s.rdv || '') + '" onchange="V2.carteTourRdv(' + j + ',this.value)"></label>' +
+      var stopHtml = '<div class="cn-tlstop' + (sc.late ? ' late' : '') + '">' +
+        '<span class="cn-tltime' + (sc.late ? ' late' : '') + '">' + arr + '</span>' +
+        '<span class="cn-tlnum">' + (j + 1) + '</span>' +
+        '<div class="cn-tlbody"><b>' + esc(s.n) + '</b><span class="cn-tlsub">' + esc(s.v) + ' · ' + esc(s.c) + (s.t ? ' · ' + esc(s.t) : '') + '</span>' +
+          '<div class="cn-trdvrow"><label class="cn-trdvl">RDV <input type="time" class="cn-trdv" value="' + esc(s.rdv || '') + '" onchange="V2.carteTourRdv(' + j + ',this.value)"></label>' +
+            (sc.wait ? '<span class="cn-twait">attente RDV</span>' : '') +
+            (sc.late ? '<span class="cn-tlate">en retard</span>' : '') +
             '<a class="cn-tmaps" href="https://www.google.com/maps/search/?api=1&query=' + gq + '" target="_blank" rel="noopener" title="Ouvrir dans Google Maps">Maps ↗</a></div>' +
         '</div>' +
         '<button class="cn-trm" onclick="V2.carteTourRemove(' + j + ')" title="Retirer">✕</button></div>';
-    }).join('') || '<div class="cn-tempty">Ta tournée est vide.<br>Utilise « Composer ma tournée » ci-dessus, ou clique une pharmacie → « Partir d\'ici ».</div>';
+      return legHtml + stopHtml;
+    }).join('');
+    var depHead = tour.length ? '<div class="cn-tldep"><span class="cn-tltime">' + esc(_startTime) + '</span><span class="cn-tldeplbl">Départ' + (depot && depot.city ? ' · ' + esc(depot.city) : '') + '</span></div>' : '';
+    var rows = tour.length ? '<div class="cn-tl">' + depHead + timeline + '</div>'
+      : '<div class="cn-tempty">Ta tournée est vide.<br>Utilise « Composer ma tournée » ci-dessus, ou clique une pharmacie → « Partir d\'ici ».</div>';
     var kmTot = Math.round(routeKm());
     var perStop = tour.length ? (Math.round(kmTot / tour.length * 10) / 10) : 0;
     var metrics = tour.length ? '<div class="cn-tmetrics">' +
@@ -1136,6 +1152,23 @@
       '.cn-tmain span{font-size:12px;color:var(--muted)}',
       '.cn-trm{flex:none;border:none;background:transparent;color:var(--muted-2);font-size:15px;cursor:pointer;padding:4px 8px}',
       '.cn-tempty{padding:32px 20px;text-align:center;color:var(--muted);font-size:13.5px;line-height:1.5}',
+      // ── Frise horaire (agenda tournée) ──
+      '.cn-tl{padding:6px 2px 4px}',
+      '.cn-tldep{display:flex;align-items:center;gap:10px;padding:4px 14px 8px}',
+      '.cn-tltime{flex:none;width:44px;text-align:right;font:700 12.5px/1 "Geist Mono",ui-monospace,monospace;color:var(--ip-blue,#0057FF);font-variant-numeric:tabular-nums}',
+      '.cn-tltime.late{color:#DC2626}',
+      '.cn-tldeplbl{font-size:12.5px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}',
+      '.cn-tlleg{padding:1px 14px 1px 66px}',
+      '.cn-tllegtxt{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--muted);padding:3px 0 3px 12px;border-left:2px dotted var(--line)}',
+      '.cn-tlstop{display:flex;align-items:flex-start;gap:10px;padding:7px 14px;border-radius:10px}',
+      '.cn-tlstop.late{background:rgba(220,38,38,.05)}',
+      '.cn-tlnum{flex:none;width:24px;height:24px;margin-top:1px;border-radius:50%;background:var(--ip-blue,#0057FF);color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center}',
+      '.cn-tlstop.late .cn-tlnum{background:#DC2626}',
+      '.cn-tlbody{flex:1;min-width:0}',
+      '.cn-tlbody b{display:block;font-size:13.5px;font-weight:700;color:var(--ip-ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      '.cn-tlsub{display:block;font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:1px}',
+      '.cn-twait{font-size:10.5px;font-weight:800;color:#B45309;background:#FEF3C7;padding:2px 6px;border-radius:6px}',
+      '.cn-tlate{font-size:10.5px;font-weight:800;color:#fff;background:#DC2626;padding:2px 6px;border-radius:6px}',
       '.cn-tmetrics{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:12px 16px;border-bottom:1px solid var(--line)}',
       '.cn-tmetric{text-align:center;background:var(--card-2,#F4F6FB);border-radius:10px;padding:8px 4px}',
       '.cn-tmetric b{display:block;font-size:15px;font-weight:800;color:var(--ip-blue,#0057FF)}',
