@@ -1,0 +1,729 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Copilote — Carte & Tournées · Intégral Pharma</title>
+<style>
+:root{
+  --blue:#0057FF; --turq:#0E7C86; --ink:#0B131C; --paper:#F4F6FB; --card:#FFFFFF;
+  --gray:#6B7590; --line:#E4E8F1; --green:#0B7A44; --amber:#C77700;
+  --a:#0B7A44; --b:#0E7C86; --c:#0057FF; --p:#C77700;
+  --shadow:0 1px 2px rgba(11,19,28,.05), 0 8px 24px rgba(11,19,28,.06);
+  --shadow-lg:0 12px 40px rgba(11,19,28,.14);
+  --r:14px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  background:var(--paper); color:var(--ink);
+  -webkit-font-smoothing:antialiased; font-size:14px; line-height:1.45;
+}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,select{font-family:inherit;font-size:14px}
+
+/* ---------- Top bar ---------- */
+.topbar{
+  position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:16px;
+  padding:12px 20px;background:rgba(255,255,255,.86);backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--line);
+}
+.brand{display:flex;align-items:center;gap:11px;font-weight:800;letter-spacing:-.02em;font-size:15px}
+.brand .logo{
+  width:32px;height:32px;border-radius:9px;display:grid;place-items:center;color:#fff;
+  background:linear-gradient(135deg,var(--blue),var(--turq));font-weight:900;font-size:15px;
+  box-shadow:0 4px 12px rgba(0,87,255,.32);
+}
+.brand small{display:block;font-weight:600;color:var(--gray);font-size:11px;letter-spacing:0}
+.tb-title{font-weight:700;color:var(--gray);font-size:13px;padding-left:16px;border-left:1px solid var(--line)}
+.tb-title b{color:var(--ink)}
+.grow{flex:1}
+.kpis{display:flex;gap:10px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:6px 13px;text-align:right;box-shadow:var(--shadow)}
+.kpi b{display:block;font-size:16px;letter-spacing:-.02em}
+.kpi span{font-size:10.5px;color:var(--gray);text-transform:uppercase;letter-spacing:.05em;font-weight:600}
+.kpi.accent b{color:var(--blue)}
+
+/* ---------- Layout ---------- */
+.wrap{display:grid;grid-template-columns:1fr 400px;gap:16px;padding:16px 20px;max-width:1680px;margin:0 auto;align-items:start}
+.col-main{min-width:0;display:flex;flex-direction:column;gap:14px}
+.col-side{position:sticky;top:76px;display:flex;flex-direction:column;gap:16px}
+
+/* ---------- Filter toolbar ---------- */
+.toolbar{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+  box-shadow:var(--shadow);padding:12px;display:flex;flex-wrap:wrap;gap:9px;align-items:center;
+}
+.search{position:relative;flex:1;min-width:220px}
+.search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--gray)}
+.search input{
+  width:100%;padding:10px 12px 10px 36px;border:1px solid var(--line);border-radius:10px;
+  background:var(--paper);outline:none;transition:.15s;
+}
+.search input:focus{border-color:var(--blue);background:#fff;box-shadow:0 0 0 3px rgba(0,87,255,.12)}
+.sel{position:relative}
+.sel select{
+  appearance:none;padding:10px 30px 10px 12px;border:1px solid var(--line);border-radius:10px;
+  background:var(--paper);color:var(--ink);outline:none;cursor:pointer;font-weight:600;transition:.15s;
+}
+.sel select:focus{border-color:var(--blue)}
+.sel::after{content:"";position:absolute;right:12px;top:50%;width:7px;height:7px;border-right:2px solid var(--gray);border-bottom:2px solid var(--gray);transform:translateY(-70%) rotate(45deg);pointer-events:none}
+.chips{display:flex;flex-wrap:wrap;gap:7px;align-items:center;padding:0 4px 10px}
+.chip{
+  display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;font-size:12px;font-weight:600;
+  background:rgba(0,87,255,.08);color:var(--blue);border:1px solid rgba(0,87,255,.18);
+}
+.chip button{width:15px;height:15px;border-radius:50%;display:grid;place-items:center;background:rgba(0,87,255,.16);color:var(--blue);font-size:11px;line-height:1}
+.chip.muted{background:var(--paper);color:var(--gray);border-color:var(--line);cursor:pointer}
+.chip.muted:hover{color:var(--ink)}
+
+/* ---------- Table ---------- */
+.tablecard{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
+.tbl-head{display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.tbl-head h2{font-size:14px;margin:0;letter-spacing:-.01em}
+.tbl-head .count{color:var(--gray);font-weight:600}
+.tbl-scroll{max-height:calc(100vh - 300px);overflow:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{
+  position:sticky;top:0;z-index:2;background:#fbfcfe;text-align:left;padding:10px 12px;
+  font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--gray);font-weight:700;
+  border-bottom:1px solid var(--line);white-space:nowrap;cursor:pointer;user-select:none;
+}
+thead th.sortable:hover{color:var(--ink)}
+thead th .arw{opacity:.35;font-size:9px;margin-left:3px}
+thead th.active .arw{opacity:1;color:var(--blue)}
+thead th.tnum{text-align:right}
+tbody td{padding:9px 12px;border-bottom:1px solid #eef1f7;white-space:nowrap}
+tbody tr{transition:background .1s;cursor:pointer}
+tbody tr:hover{background:#f7f9ff}
+tbody tr.hl{background:rgba(0,87,255,.07)}
+tbody tr.picked{background:rgba(11,122,68,.06)}
+.tnum{text-align:right;font-variant-numeric:tabular-nums}
+.pha{font-weight:700;letter-spacing:-.01em}
+.pha small{display:block;font-weight:500;color:var(--gray);font-size:11px}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:700}
+.dot{width:7px;height:7px;border-radius:50%;flex:none}
+.b-a{background:rgba(11,122,68,.12);color:var(--a)} .b-a .dot{background:var(--a)}
+.b-b{background:rgba(14,124,134,.12);color:var(--b)} .b-b .dot{background:var(--b)}
+.b-c{background:rgba(0,87,255,.12);color:var(--c)} .b-c .dot{background:var(--c)}
+.b-p{background:rgba(199,119,0,.13);color:var(--p)} .b-p .dot{background:var(--p)}
+.grp{color:var(--gray);font-weight:600}
+.ck{width:18px;height:18px;border:1.5px solid #cfd6e4;border-radius:6px;display:grid;place-items:center;transition:.12s;background:#fff}
+.ck.on{background:var(--green);border-color:var(--green)}
+.ck svg{opacity:0;color:#fff} .ck.on svg{opacity:1}
+td.tck{width:40px;text-align:center}
+.addbtn{font-size:11px;font-weight:700;color:var(--blue);padding:4px 8px;border-radius:7px;border:1px solid rgba(0,87,255,.25);background:rgba(0,87,255,.06)}
+.addbtn:hover{background:var(--blue);color:#fff}
+.addbtn.done{color:var(--green);border-color:rgba(11,122,68,.3);background:rgba(11,122,68,.08)}
+
+/* ---------- Map ---------- */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+.card-h{display:flex;align-items:center;gap:9px;padding:13px 15px;border-bottom:1px solid var(--line)}
+.card-h h3{margin:0;font-size:13.5px;letter-spacing:-.01em}
+.card-h .ic{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;background:rgba(0,87,255,.1);color:var(--blue);flex:none}
+.mapbox{position:relative}
+.mapsvg{display:block;width:100%;height:auto;background:linear-gradient(180deg,#f7fafe,#eef3fb);border-radius:0 0 var(--r) var(--r)}
+.pt{cursor:pointer;transition:transform .12s}
+.pt:hover{transform:scale(1.5)}
+.pt.hl{stroke:#fff;stroke-width:2}
+.depot{filter:drop-shadow(0 2px 3px rgba(11,19,28,.3))}
+.tourline{fill:none;stroke:var(--blue);stroke-width:2;stroke-dasharray:5 5;opacity:.85}
+.maplegend{display:flex;flex-wrap:wrap;gap:12px;padding:11px 15px;border-top:1px solid var(--line);font-size:11.5px;color:var(--gray);font-weight:600}
+.maplegend span{display:inline-flex;align-items:center;gap:5px}
+.tip{
+  position:absolute;pointer-events:none;background:var(--ink);color:#fff;padding:6px 9px;border-radius:8px;
+  font-size:11.5px;font-weight:600;opacity:0;transform:translate(-50%,-125%);transition:opacity .12s;white-space:nowrap;z-index:5;
+  box-shadow:var(--shadow-lg);
+}
+.tip b{color:#fff}.tip small{color:#aeb9cf;font-weight:500}
+
+/* ---------- Tour composer ---------- */
+.tour-h{display:flex;align-items:center;justify-content:space-between;padding:13px 15px;border-bottom:1px solid var(--line);background:linear-gradient(120deg,rgba(0,87,255,.05),rgba(14,124,134,.04))}
+.tour-h .l{display:flex;align-items:center;gap:9px}
+.tour-h h3{margin:0;font-size:14px}
+.pcount{background:var(--blue);color:#fff;font-size:11px;font-weight:800;padding:2px 9px;border-radius:999px}
+.tour-body{padding:14px 15px;display:flex;flex-direction:column;gap:13px}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.04em}
+.field input,.field select{
+  padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:var(--paper);outline:none;transition:.15s;
+}
+.field input:focus,.field select:focus{border-color:var(--blue);background:#fff;box-shadow:0 0 0 3px rgba(0,87,255,.1)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.steps{display:flex;flex-direction:column;gap:0;position:relative}
+.empty-tour{text-align:center;padding:24px 14px;color:var(--gray)}
+.empty-tour .big{width:46px;height:46px;border-radius:13px;background:var(--paper);display:grid;place-items:center;margin:0 auto 10px;color:var(--blue)}
+.empty-tour p{margin:4px 0;font-size:12.5px}
+.step{display:flex;gap:11px;padding:10px 0;position:relative}
+.step:not(:last-child)::before{content:"";position:absolute;left:13px;top:34px;bottom:-2px;width:2px;background:linear-gradient(var(--line),var(--line));z-index:0}
+.step .num{width:26px;height:26px;border-radius:50%;flex:none;display:grid;place-items:center;font-weight:800;font-size:12px;color:#fff;background:var(--blue);z-index:1;box-shadow:0 2px 6px rgba(0,87,255,.3)}
+.step.dep .num{background:var(--ink)}
+.step .info{flex:1;min-width:0}
+.step .info b{font-size:13px;display:block;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.step .info small{color:var(--gray);font-size:11.5px}
+.step .time{font-size:12px;font-weight:800;color:var(--turq);font-variant-numeric:tabular-nums;white-space:nowrap}
+.step .rm{color:var(--gray);width:22px;height:22px;border-radius:6px;flex:none}
+.step .rm:hover{background:#fde8e8;color:#d33}
+.travel{font-size:10.5px;color:var(--gray);padding:2px 0 2px 37px;display:flex;align-items:center;gap:5px}
+.optbar{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--gray);background:rgba(14,124,134,.07);border:1px solid rgba(14,124,134,.16);border-radius:9px;padding:8px 11px;font-weight:600}
+.optbar b{color:var(--turq)}
+.gps{
+  display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:15px;border-radius:12px;
+  font-size:15px;font-weight:800;color:#fff;background:linear-gradient(135deg,var(--blue),#0043c9);
+  box-shadow:0 8px 22px rgba(0,87,255,.38);transition:.15s;letter-spacing:-.01em;
+}
+.gps:hover{transform:translateY(-1px);box-shadow:0 12px 28px rgba(0,87,255,.46)}
+.gps:disabled{background:#c7cede;color:#fff;box-shadow:none;cursor:not-allowed;transform:none}
+.gps svg{flex:none}
+.gps-note{text-align:center;font-size:11px;color:var(--gray);margin-top:8px;display:flex;align-items:center;justify-content:center;gap:5px}
+.mini{display:flex;gap:8px;margin-top:2px}
+.mini button{flex:1;font-size:11.5px;font-weight:700;color:var(--gray);padding:8px;border-radius:9px;border:1px solid var(--line);background:var(--paper)}
+.mini button:hover{color:var(--ink);border-color:#cdd4e2}
+
+@media(max-width:1100px){
+  .wrap{grid-template-columns:1fr}
+  .col-side{position:static}
+  .kpis{display:none}
+  .tbl-scroll{max-height:none}
+}
+@media(max-width:640px){
+  .topbar{flex-wrap:wrap;gap:8px;padding:10px 14px}
+  .tb-title{display:none}
+  .wrap{padding:12px}
+  .toolbar{padding:10px}
+  th.hide-sm,td.hide-sm{display:none}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <span class="logo">IP</span>
+    <div>Intégral Pharma<small>CRM Commercial · Copilote</small></div>
+  </div>
+  <div class="tb-title">Carte des officines &nbsp;·&nbsp; <b>Composer une tournée</b></div>
+  <div class="grow"></div>
+  <div class="kpis">
+    <div class="kpi"><b id="kVis">—</b><span>Affichées</span></div>
+    <div class="kpi"><b id="kCli">—</b><span>Clients A/B/C</span></div>
+    <div class="kpi accent"><b id="kTour">0</b><span>Dans la tournée</span></div>
+  </div>
+</div>
+
+<div class="wrap">
+  <!-- ================= MAIN : filtres + table ================= -->
+  <div class="col-main">
+
+    <div class="toolbar">
+      <div class="search">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="m20 20-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="q" placeholder="Rechercher : pharmacie, ville, titulaire, CP…">
+      </div>
+      <div class="sel"><select id="fStatut"><option value="">Tous statuts</option><option>Client A</option><option>Client B</option><option>Client C</option><option>Prospect</option></select></div>
+      <div class="sel"><select id="fGrp"><option value="">Tous groupements</option></select></div>
+      <div class="sel"><select id="fDep"><option value="">Tous départements</option></select></div>
+      <div class="sel"><select id="fCom"><option value="">Tous commerciaux</option></select></div>
+    </div>
+    <div class="chips" id="chips"></div>
+
+    <div class="tablecard">
+      <div class="tbl-head">
+        <h2>Officines <span class="count" id="tblCount"></span></h2>
+        <div class="grow"></div>
+        <button class="addbtn" id="addAll" title="Ajouter les résultats visibles à la tournée">+ Ajouter la sélection filtrée</button>
+      </div>
+      <div class="tbl-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th class="tck"></th>
+              <th class="sortable" data-k="nom">Officine <span class="arw">▲▼</span></th>
+              <th class="sortable hide-sm" data-k="ville">Ville <span class="arw">▲▼</span></th>
+              <th class="sortable" data-k="statut">Statut <span class="arw">▲▼</span></th>
+              <th class="sortable hide-sm" data-k="grp">Groupement <span class="arw">▲▼</span></th>
+              <th class="sortable hide-sm" data-k="com">Commercial <span class="arw">▲▼</span></th>
+              <th class="sortable tnum" data-k="ca">CA / an <span class="arw">▲▼</span></th>
+              <th class="sortable tnum hide-sm" data-k="dist">Dist. <span class="arw">▲▼</span></th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= SIDE : carte + composeur ================= -->
+  <div class="col-side">
+
+    <div class="card">
+      <div class="card-h">
+        <span class="ic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 21s-7-6.3-7-11a7 7 0 1 1 14 0c0 4.7-7 11-7 11Z" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="10" r="2.4" stroke="currentColor" stroke-width="2"/></svg></span>
+        <h3>Carte de France · officines</h3>
+        <div class="grow"></div>
+        <span style="font-size:11px;color:var(--gray);font-weight:700" id="mapCount"></span>
+      </div>
+      <div class="mapbox">
+        <div class="tip" id="tip"></div>
+        <svg class="mapsvg" id="map" viewBox="0 0 420 440" preserveAspectRatio="xMidYMid meet">
+          <path id="hexFr" fill="#dbe5f4" stroke="#c3d1e8" stroke-width="1.5"
+            d="M181 22 235 30 262 60 300 66 330 96 356 150 348 196 372 236 350 286 360 330 322 360 300 402 250 420 196 410 150 424 118 392 74 372 60 322 40 276 66 232 44 186 74 150 92 104 132 70 150 40 181 22Z"/>
+          <g id="depots"></g>
+          <path id="route" class="tourline"></path>
+          <g id="pins"></g>
+        </svg>
+      </div>
+      <div class="maplegend">
+        <span><i class="dot" style="background:var(--a)"></i>Client A</span>
+        <span><i class="dot" style="background:var(--b)"></i>Client B</span>
+        <span><i class="dot" style="background:var(--c)"></i>Client C</span>
+        <span><i class="dot" style="background:var(--p)"></i>Prospect</span>
+        <span><i class="dot" style="background:var(--ink)"></i>Dépôt IP</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="tour-h">
+        <div class="l">
+          <span class="ic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M4 6h10M4 12h16M4 18h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="19" cy="6" r="2" fill="currentColor"/></svg></span>
+          <h3>Ma tournée</h3>
+        </div>
+        <span class="pcount" id="pc">0 arrêt</span>
+      </div>
+
+      <div class="tour-body">
+        <div class="field">
+          <label>Point de départ</label>
+          <select id="depart"></select>
+        </div>
+        <div class="grid2">
+          <div class="field"><label>Heure 1<sup>er</sup> RDV</label><input id="hStart" type="time" value="09:00"></div>
+          <div class="field"><label>Durée / visite</label>
+            <select id="dur"><option value="30">30 min</option><option value="45" selected>45 min</option><option value="60">1 h</option></select>
+          </div>
+        </div>
+
+        <div class="optbar" id="optbar" style="display:none">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+          <span>Itinéraire <b>optimisé</b> · <span id="optKm">—</span> km · <span id="optH">—</span> de route estimée</span>
+        </div>
+
+        <div class="steps" id="steps">
+          <div class="empty-tour">
+            <div class="big"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 21s-7-6.3-7-11a7 7 0 1 1 14 0c0 4.7-7 11-7 11Z" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="10" r="2.2" stroke="currentColor" stroke-width="2"/></svg></div>
+            <p style="color:var(--ink);font-weight:700">Aucun arrêt pour l'instant</p>
+            <p>Cochez des officines dans le tableau ou cliquez « + » pour construire votre tournée (6 à 12 visites conseillé).</p>
+          </div>
+        </div>
+
+        <button class="gps" id="gps" disabled>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 21s-7-6.3-7-11a7 7 0 1 1 14 0c0 4.7-7 11-7 11Z" fill="#fff"/><circle cx="12" cy="10" r="2.6" fill="#0057FF"/></svg>
+          Ouvrir la tournée dans Google Maps
+        </button>
+        <div class="gps-note">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="var(--green)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" stroke="var(--green)" stroke-width="1.6"/></svg>
+          <span id="gpsNote">GPS + navigation vocale sur votre téléphone</span>
+        </div>
+
+        <div class="mini">
+          <button id="clearTour">Vider la tournée</button>
+          <button id="autoFill">Remplir auto (8 visites)</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+/* ---------------- DONNÉES (échantillon réaliste FR) ---------------- */
+const DEP_LABELS={};
+const DATA=[
+ {nom:"Grande Pharmacie de la Gare",ville:"Lyon",cp:"69002",tel:"04 78 42 10 05",tit:"Dr M. Rousset",statut:"Client A",grp:"Giphar",uga:"Lyon Presqu'île",com:"Ingrid (ILE)",ca:1250000,lat:45.760,lng:4.826},
+ {nom:"Pharmacie du Cours",ville:"Villeurbanne",cp:"69100",tel:"04 78 84 22 71",tit:"Dr L. Blanc",statut:"Client B",grp:"Aprium",uga:"Est Lyonnais",com:"Ingrid (ILE)",ca:610000,lat:45.766,lng:4.879},
+ {nom:"Pharmacie des Terreaux",ville:"Lyon",cp:"69001",tel:"04 78 28 09 44",tit:"Dr S. Meyer",statut:"Client C",grp:"Mediprix",uga:"Lyon Presqu'île",com:"Ingrid (ILE)",ca:340000,lat:45.767,lng:4.833},
+ {nom:"Pharmacie de la Part-Dieu",ville:"Lyon",cp:"69003",tel:"04 72 33 18 90",tit:"Dr K. Faure",statut:"Prospect",grp:"Wellpharma",uga:"Lyon Est",com:"Ingrid (ILE)",ca:0,lat:45.760,lng:4.856},
+ {nom:"Pharmacie Bellecour",ville:"Lyon",cp:"69002",tel:"04 78 37 12 03",tit:"Dr A. Perrin",statut:"Client A",grp:"Pharmabest",uga:"Lyon Presqu'île",com:"Ingrid (ILE)",ca:1490000,lat:45.757,lng:4.832},
+ {nom:"Pharmacie du Vieux Port",ville:"Marseille",cp:"13001",tel:"04 91 54 00 21",tit:"Dr P. Ferri",statut:"Client A",grp:"Aprium",uga:"Marseille Centre",com:"Manon (MD)",ca:1180000,lat:43.296,lng:5.374},
+ {nom:"Pharmacie du Prado",ville:"Marseille",cp:"13008",tel:"04 91 22 45 60",tit:"Dr N. Bianchi",statut:"Client B",grp:"Giphar",uga:"Marseille Sud",com:"Manon (MD)",ca:720000,lat:43.269,lng:5.393},
+ {nom:"Pharmacie de la Canebière",ville:"Marseille",cp:"13001",tel:"04 91 90 33 12",tit:"Dr Y. Roux",statut:"Client C",grp:"Leadersanté",uga:"Marseille Centre",com:"Manon (MD)",ca:410000,lat:43.298,lng:5.381},
+ {nom:"Pharmacie du Panier",ville:"Marseille",cp:"13002",tel:"04 91 91 08 77",tit:"Dr C. Martin",statut:"Prospect",grp:"Indépendant",uga:"Marseille Centre",com:"Manon (MD)",ca:0,lat:43.301,lng:5.365},
+ {nom:"Pharmacie Aix Rotonde",ville:"Aix-en-Provence",cp:"13100",tel:"04 42 26 03 55",tit:"Dr V. Girard",statut:"Client B",grp:"Aprium",uga:"Pays d'Aix",com:"Manon (MD)",ca:830000,lat:43.526,lng:5.445},
+ {nom:"Pharmacie Toulouse Capitole",ville:"Toulouse",cp:"31000",tel:"05 61 21 12 08",tit:"Dr H. Lopez",statut:"Client A",grp:"Pharmabest",uga:"Toulouse Centre",com:"Pauline (PGN)",ca:1330000,lat:43.604,lng:1.444},
+ {nom:"Pharmacie des Carmes",ville:"Toulouse",cp:"31000",tel:"05 61 52 44 90",tit:"Dr B. Sanchez",statut:"Client C",grp:"Mediprix",uga:"Toulouse Centre",com:"Pauline (PGN)",ca:390000,lat:43.596,lng:1.443},
+ {nom:"Pharmacie Saint-Cyprien",ville:"Toulouse",cp:"31300",tel:"05 61 42 19 27",tit:"Dr E. Fontaine",statut:"Prospect",grp:"Giphar",uga:"Toulouse Ouest",com:"Pauline (PGN)",ca:0,lat:43.597,lng:1.421},
+ {nom:"Pharmacie Blagnac Centre",ville:"Blagnac",cp:"31700",tel:"05 61 71 30 14",tit:"Dr D. Nguyen",statut:"Client B",grp:"Aprium",uga:"Toulouse Nord",com:"Pauline (PGN)",ca:660000,lat:43.635,lng:1.394},
+ {nom:"Pharmacie Bordeaux Quinconces",ville:"Bordeaux",cp:"33000",tel:"05 56 44 21 03",tit:"Dr F. Lemoine",statut:"Client A",grp:"Giphar",uga:"Bordeaux Centre",com:"Pauline (PGN)",ca:1210000,lat:44.842,lng:-0.573},
+ {nom:"Pharmacie Sainte-Catherine",ville:"Bordeaux",cp:"33000",tel:"05 56 81 55 40",tit:"Dr I. Roy",statut:"Client C",grp:"Wellpharma",uga:"Bordeaux Centre",com:"Pauline (PGN)",ca:445000,lat:44.838,lng:-0.573},
+ {nom:"Pharmacie de Mériadeck",ville:"Bordeaux",cp:"33000",tel:"05 56 96 11 22",tit:"Dr T. Colin",statut:"Prospect",grp:"Indépendant",uga:"Bordeaux Centre",com:"Pauline (PGN)",ca:0,lat:44.838,lng:-0.588},
+ {nom:"Pharmacie Nantes Commerce",ville:"Nantes",cp:"44000",tel:"02 40 47 08 19",tit:"Dr G. Morvan",statut:"Client A",grp:"Aprium",uga:"Nantes Centre",com:"Pauline (PGN)",ca:1090000,lat:47.213,lng:-1.557},
+ {nom:"Pharmacie Graslin",ville:"Nantes",cp:"44000",tel:"02 40 73 30 88",tit:"Dr A. Gauthier",statut:"Client B",grp:"Giphar",uga:"Nantes Centre",com:"Pauline (PGN)",ca:705000,lat:47.213,lng:-1.562},
+ {nom:"Pharmacie de l'Erdre",ville:"Nantes",cp:"44300",tel:"02 40 49 61 30",tit:"Dr S. Renaud",statut:"Prospect",grp:"Mediprix",uga:"Nantes Nord",com:"Pauline (PGN)",ca:0,lat:47.253,lng:-1.542},
+ {nom:"Grande Pharmacie de Rennes",ville:"Rennes",cp:"35000",tel:"02 99 79 20 15",tit:"Dr M. Le Gall",statut:"Client A",grp:"Giphar",uga:"Rennes Centre",com:"Manon (MD)",ca:980000,lat:48.111,lng:-1.680},
+ {nom:"Pharmacie de la République",ville:"Rennes",cp:"35000",tel:"02 99 78 44 12",tit:"Dr J. Hamon",statut:"Client C",grp:"Aprium",uga:"Rennes Centre",com:"Manon (MD)",ca:415000,lat:48.109,lng:-1.677},
+ {nom:"Pharmacie Lille Grand-Place",ville:"Lille",cp:"59000",tel:"03 20 55 12 40",tit:"Dr O. Dubois",statut:"Client A",grp:"Pharmabest",uga:"Lille Centre",com:"Morgane (MDC)",ca:1275000,lat:50.637,lng:3.063},
+ {nom:"Pharmacie de Wazemmes",ville:"Lille",cp:"59000",tel:"03 20 57 33 91",tit:"Dr R. Delattre",statut:"Client B",grp:"Giphar",uga:"Lille Sud",com:"Morgane (MDC)",ca:590000,lat:50.626,lng:3.048},
+ {nom:"Pharmacie Roubaix Centre",ville:"Roubaix",cp:"59100",tel:"03 20 70 08 26",tit:"Dr N. Leroy",statut:"Prospect",grp:"Mediprix",uga:"Métropole Nord",com:"Morgane (MDC)",ca:0,lat:50.691,lng:3.181},
+ {nom:"Pharmacie de la Cathédrale",ville:"Strasbourg",cp:"67000",tel:"03 88 32 11 05",tit:"Dr W. Muller",statut:"Client A",grp:"Aprium",uga:"Strasbourg Centre",com:"Morgane (MDC)",ca:1040000,lat:48.582,lng:7.750},
+ {nom:"Pharmacie de la Krutenau",ville:"Strasbourg",cp:"67000",tel:"03 88 36 27 44",tit:"Dr E. Weber",statut:"Client C",grp:"Wellpharma",uga:"Strasbourg Centre",com:"Morgane (MDC)",ca:398000,lat:48.578,lng:7.755},
+ {nom:"Pharmacie Nancy Stanislas",ville:"Nancy",cp:"54000",tel:"03 83 35 04 62",tit:"Dr F. Klein",statut:"Client B",grp:"Giphar",uga:"Grand Nancy",com:"Morgane (MDC)",ca:640000,lat:48.694,lng:6.183},
+ {nom:"Pharmacie de la Comédie",ville:"Montpellier",cp:"34000",tel:"04 67 58 12 33",tit:"Dr L. Aubert",statut:"Client A",grp:"Pharmabest",uga:"Montpellier Centre",com:"Manon (MD)",ca:1150000,lat:43.608,lng:3.879},
+ {nom:"Pharmacie Antigone",ville:"Montpellier",cp:"34000",tel:"04 67 64 78 11",tit:"Dr S. Barbier",statut:"Prospect",grp:"Indépendant",uga:"Montpellier Est",com:"Manon (MD)",ca:0,lat:43.607,lng:3.898},
+ {nom:"Pharmacie Nice Masséna",ville:"Nice",cp:"06000",tel:"04 93 87 33 20",tit:"Dr P. Rossi",statut:"Client A",grp:"Aprium",uga:"Nice Centre",com:"Manon (MD)",ca:1310000,lat:43.697,lng:7.269},
+ {nom:"Pharmacie du Port",ville:"Nice",cp:"06300",tel:"04 93 89 15 77",tit:"Dr C. Marino",statut:"Client B",grp:"Giphar",uga:"Nice Est",com:"Manon (MD)",ca:680000,lat:43.695,lng:7.284},
+ {nom:"Pharmacie Opéra",ville:"Paris",cp:"75009",tel:"01 47 42 08 15",tit:"Dr V. Lefèvre",statut:"Client A",grp:"Pharmabest",uga:"Paris Centre",com:"Morgane (MDC)",ca:1680000,lat:48.871,lng:2.332},
+ {nom:"Pharmacie Bastille",ville:"Paris",cp:"75011",tel:"01 43 57 20 09",tit:"Dr A. Moreau",statut:"Client B",grp:"Aprium",uga:"Paris Est",com:"Morgane (MDC)",ca:790000,lat:48.853,lng:2.369},
+ {nom:"Pharmacie Montparnasse",ville:"Paris",cp:"75014",tel:"01 43 20 11 44",tit:"Dr J. Simon",statut:"Client C",grp:"Mediprix",uga:"Paris Sud",com:"Morgane (MDC)",ca:420000,lat:48.842,lng:2.323},
+ {nom:"Pharmacie de la Sorbonne",ville:"Paris",cp:"75005",tel:"01 43 26 07 32",tit:"Dr M. Petit",statut:"Prospect",grp:"Indépendant",uga:"Paris Centre",com:"Morgane (MDC)",ca:0,lat:48.848,lng:2.343},
+ {nom:"Pharmacie Grenoble Victor Hugo",ville:"Grenoble",cp:"38000",tel:"04 76 46 12 90",tit:"Dr T. Bernard",statut:"Client B",grp:"Giphar",uga:"Grenoble Centre",com:"Ingrid (ILE)",ca:720000,lat:45.190,lng:5.724},
+ {nom:"Pharmacie des Alpes",ville:"Grenoble",cp:"38100",tel:"04 76 09 44 21",tit:"Dr N. Fabre",statut:"Prospect",grp:"Wellpharma",uga:"Grenoble Sud",com:"Ingrid (ILE)",ca:0,lat:45.166,lng:5.735},
+ {nom:"Pharmacie Dijon Darcy",ville:"Dijon",cp:"21000",tel:"03 80 30 15 08",tit:"Dr E. Guerin",statut:"Client C",grp:"Aprium",uga:"Grand Dijon",com:"Ingrid (ILE)",ca:455000,lat:47.323,lng:5.036},
+ {nom:"Pharmacie Clermont Jaude",ville:"Clermont-Ferrand",cp:"63000",tel:"04 73 93 08 51",tit:"Dr B. Chevalier",statut:"Client B",grp:"Giphar",uga:"Clermont Centre",com:"Ingrid (ILE)",ca:610000,lat:45.777,lng:3.087}
+];
+const DEPOTS=[
+ {nom:"Dépôt IP Lyon-Corbas",lat:45.667,lng:4.909},
+ {nom:"Dépôt IP Marseille-Vitrolles",lat:43.460,lng:5.248},
+ {nom:"Dépôt IP Toulouse-Fenouillet",lat:43.688,lng:1.395},
+ {nom:"Dépôt IP Bordeaux-Cestas",lat:44.743,lng:-0.680},
+ {nom:"Dépôt IP Nantes-Carquefou",lat:47.297,lng:-1.494},
+ {nom:"Dépôt IP Lille-Lesquin",lat:50.588,lng:3.107},
+ {nom:"Dépôt IP Strasbourg-Vendenheim",lat:48.667,lng:7.717},
+ {nom:"Dépôt IP Paris-Gennevilliers",lat:48.933,lng:2.298},
+ {nom:"Dépôt IP Montpellier-Vendargues",lat:43.657,lng:3.972}
+];
+DATA.forEach((d,i)=>{d.id=i; d.dep=d.cp.slice(0,2);});
+
+/* ---------------- Projection lat/lng -> SVG ---------------- */
+const B={w:420,h:440,minLng:-5.2,maxLng:8.4,minLat:41.2,maxLat:51.2};
+function proj(lat,lng){
+  const x=20+ (lng-B.minLng)/(B.maxLng-B.minLng)*(B.w-40);
+  const y=15+ (B.maxLat-lat)/(B.maxLat-B.minLat)*(B.h-40);
+  return {x,y};
+}
+function dist(a,b){ // km approx
+  const R=6371,dLat=(b.lat-a.lat)*Math.PI/180,dLng=(b.lng-a.lng)*Math.PI/180;
+  const s=Math.sin(dLat/2)**2+Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dLng/2)**2;
+  return 2*R*Math.asin(Math.sqrt(s));
+}
+const STCLASS={"Client A":"a","Client B":"b","Client C":"c","Prospect":"p"};
+const STCOL={a:"#0B7A44",b:"#0E7C86",c:"#0057FF",p:"#C77700"};
+
+/* ---------------- État ---------------- */
+let filters={q:"",statut:"",grp:"",dep:"",com:""};
+let sort={k:"ca",dir:-1};
+let tour=[]; // ids
+let startDepot=0;
+let hoverId=null;
+
+/* ---------------- Init selects ---------------- */
+const uniq=(k)=>[...new Set(DATA.map(d=>d[k]))].sort();
+uniq("grp").forEach(g=>fGrp.append(new Option(g,g)));
+uniq("com").forEach(c=>fCom.append(new Option(c,c)));
+[...new Set(DATA.map(d=>d.dep))].sort().forEach(d=>{
+  const city=DATA.find(x=>x.dep===d).ville;
+  fDep.append(new Option(d+" — "+city,d));
+});
+DEPOTS.forEach((d,i)=>depart.append(new Option(d.nom,i)));
+
+/* ---------------- Filtrage + tri ---------------- */
+function currentDepot(){return DEPOTS[startDepot]}
+function withDist(d){return {...d,dist:Math.round(dist(currentDepot(),d))}}
+function getRows(){
+  let rows=DATA.map(withDist).filter(d=>{
+    if(filters.statut&&d.statut!==filters.statut)return false;
+    if(filters.grp&&d.grp!==filters.grp)return false;
+    if(filters.dep&&d.dep!==filters.dep)return false;
+    if(filters.com&&d.com!==filters.com)return false;
+    if(filters.q){
+      const q=filters.q.toLowerCase();
+      if(!(d.nom+d.ville+d.cp+d.tit).toLowerCase().includes(q))return false;
+    }
+    return true;
+  });
+  const k=sort.k;
+  rows.sort((a,b)=>{
+    let va=a[k],vb=b[k];
+    if(k==="ca"||k==="dist"){return (va-vb)*sort.dir;}
+    return String(va).localeCompare(String(vb),'fr')*sort.dir;
+  });
+  return rows;
+}
+
+/* ---------------- Rendu table ---------------- */
+const eur=n=>n?(n>=1000000?(n/1e6).toFixed(2)+" M€":Math.round(n/1000)+" k€"):"—";
+function renderTable(){
+  const rows=getRows();
+  const tb=document.getElementById("tbody");
+  tb.innerHTML="";
+  rows.forEach(d=>{
+    const inTour=tour.includes(d.id);
+    const tr=document.createElement("tr");
+    tr.dataset.id=d.id;
+    if(inTour)tr.classList.add("picked");
+    const cls=STCLASS[d.statut];
+    tr.innerHTML=`
+      <td class="tck"><span class="ck ${inTour?'on':''}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-10" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span></td>
+      <td><span class="pha">${d.nom}<small>${d.tit} · ${d.tel}</small></span></td>
+      <td class="hide-sm">${d.ville}<br><small style="color:var(--gray)">${d.cp}</small></td>
+      <td><span class="badge b-${cls}"><i class="dot"></i>${d.statut}</span></td>
+      <td class="hide-sm grp">${d.grp}</td>
+      <td class="hide-sm grp">${d.com.replace(/\s*\(.*\)/,'')}</td>
+      <td class="tnum" style="font-weight:700">${eur(d.ca)}</td>
+      <td class="tnum hide-sm" style="color:var(--gray)">${d.dist} km</td>
+      <td><button class="addbtn ${inTour?'done':''}" data-add="${d.id}">${inTour?'✓ Ajoutée':'+ Tournée'}</button></td>`;
+    tb.appendChild(tr);
+  });
+  document.getElementById("tblCount").textContent="· "+rows.length+" résultat"+(rows.length>1?"s":"");
+  document.getElementById("kVis").textContent=rows.length;
+  document.getElementById("kCli").textContent=rows.filter(r=>r.statut.startsWith("Client")).length;
+  document.getElementById("mapCount").textContent=rows.length+" points";
+  // sort header state
+  document.querySelectorAll("thead th").forEach(th=>{
+    th.classList.toggle("active",th.dataset.k===sort.k);
+    const a=th.querySelector(".arw");if(a&&th.dataset.k===sort.k)a.textContent=sort.dir>0?"▲":"▼";else if(a)a.textContent="▲▼";
+  });
+  renderChips();
+  renderMap(rows);
+}
+
+/* ---------------- Chips filtres actifs ---------------- */
+function renderChips(){
+  const c=document.getElementById("chips");c.innerHTML="";
+  const add=(label,key)=>{
+    const el=document.createElement("span");el.className="chip";
+    el.innerHTML=`${label} <button data-clr="${key}">✕</button>`;c.appendChild(el);
+  };
+  if(filters.q)add('“'+filters.q+'”',"q");
+  if(filters.statut)add(filters.statut,"statut");
+  if(filters.grp)add(filters.grp,"grp");
+  if(filters.dep)add("Dép. "+filters.dep,"dep");
+  if(filters.com)add(filters.com.replace(/\s*\(.*\)/,''),"com");
+  if(filters.q||filters.statut||filters.grp||filters.dep||filters.com){
+    const el=document.createElement("span");el.className="chip muted";el.id="clrAll";el.textContent="Réinitialiser";c.appendChild(el);
+  }
+}
+
+/* ---------------- Rendu carte ---------------- */
+function renderMap(rows){
+  const pins=document.getElementById("pins");pins.innerHTML="";
+  const dep=document.getElementById("depots");dep.innerHTML="";
+  const visIds=new Set(rows.map(r=>r.id));
+  DEPOTS.forEach((d,i)=>{
+    const p=proj(d.lat,d.lng);
+    const g=document.createElementNS("http://www.w3.org/2000/svg","rect");
+    g.setAttribute("x",p.x-4);g.setAttribute("y",p.y-4);g.setAttribute("width",8);g.setAttribute("height",8);
+    g.setAttribute("rx",2);g.setAttribute("fill",i===startDepot?"#0057FF":"#0B131C");g.setAttribute("class","depot");
+    g.style.cursor="pointer";
+    g.addEventListener("mouseenter",e=>showTip(e,`<b>${d.nom}</b><br><small>Dépôt Intégral Pharma</small>`));
+    g.addEventListener("mouseleave",hideTip);
+    dep.appendChild(g);
+  });
+  DATA.map(withDist).forEach(d=>{
+    if(!visIds.has(d.id))return;
+    const p=proj(d.lat,d.lng);
+    const inTour=tour.includes(d.id);
+    const cls=STCLASS[d.statut];
+    const c=document.createElementNS("http://www.w3.org/2000/svg","circle");
+    c.setAttribute("cx",p.x);c.setAttribute("cy",p.y);
+    c.setAttribute("r",inTour?6:4.2);
+    c.setAttribute("fill",STCOL[cls]);
+    c.setAttribute("class","pt"+(hoverId===d.id?" hl":""));
+    c.setAttribute("data-id",d.id);
+    if(inTour){c.setAttribute("stroke","#fff");c.setAttribute("stroke-width","2.2");}
+    c.addEventListener("mouseenter",e=>{hoverId=d.id;showTip(e,`<b>${d.nom}</b><br><small>${d.ville} · ${d.statut} · ${eur(d.ca)}</small>`);highlightRow(d.id,true);});
+    c.addEventListener("mouseleave",()=>{hoverId=null;hideTip();highlightRow(d.id,false);});
+    c.addEventListener("click",()=>toggleTour(d.id));
+    pins.appendChild(c);
+  });
+  drawRoute();
+}
+function drawRoute(){
+  const r=document.getElementById("route");
+  if(tour.length===0){r.setAttribute("d","");return;}
+  const seq=optimize();
+  let pts=[currentDepot(),...seq.map(id=>DATA[id])];
+  const d=pts.map((pt,i)=>{const p=proj(pt.lat,pt.lng);return (i?"L":"M")+p.x+" "+p.y;}).join(" ");
+  r.setAttribute("d",d);
+}
+
+/* ---------------- Tooltip ---------------- */
+const tip=document.getElementById("tip");
+function showTip(e,html){
+  const box=document.getElementById("map").getBoundingClientRect();
+  tip.innerHTML=html;
+  tip.style.left=(e.clientX-box.left)+"px";
+  tip.style.top=(e.clientY-box.top)+"px";
+  tip.style.opacity=1;
+}
+function hideTip(){tip.style.opacity=0;}
+
+/* ---------------- Lien table <-> carte ---------------- */
+function highlightRow(id,on){
+  const tr=document.querySelector(`tr[data-id="${id}"]`);
+  if(tr){tr.classList.toggle("hl",on); if(on)tr.scrollIntoView({block:"nearest"});}
+  const pt=document.querySelector(`circle[data-id="${id}"]`);
+  if(pt)pt.classList.toggle("hl",on);
+}
+
+/* ---------------- Optimisation (plus proche voisin) ---------------- */
+function optimize(){
+  if(tour.length<=1)return[...tour];
+  const pool=[...tour];let cur=currentDepot();const seq=[];
+  while(pool.length){
+    let bi=0,bd=Infinity;
+    pool.forEach((id,i)=>{const dd=dist(cur,DATA[id]);if(dd<bd){bd=dd;bi=i;}});
+    const nx=pool.splice(bi,1)[0];seq.push(nx);cur=DATA[nx];
+  }
+  return seq;
+}
+
+/* ---------------- Rendu composeur de tournée ---------------- */
+function fmtTime(mins){const h=Math.floor(mins/60)%24,m=mins%60;return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0");}
+function renderTour(){
+  const steps=document.getElementById("steps");
+  document.getElementById("pc").textContent=tour.length+" arrêt"+(tour.length>1?"s":"");
+  document.getElementById("kTour").textContent=tour.length;
+  const gps=document.getElementById("gps");
+  if(tour.length===0){
+    steps.innerHTML=`<div class="empty-tour"><div class="big"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 21s-7-6.3-7-11a7 7 0 1 1 14 0c0 4.7-7 11-7 11Z" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="10" r="2.2" stroke="currentColor" stroke-width="2"/></svg></div><p style="color:var(--ink);font-weight:700">Aucun arrêt pour l'instant</p><p>Cochez des officines dans le tableau ou cliquez « + » pour construire votre tournée (6 à 12 visites conseillé).</p></div>`;
+    gps.disabled=true;gps.querySelector('svg').nextSibling;
+    document.getElementById("optbar").style.display="none";
+    document.getElementById("gpsNote").textContent="GPS + navigation vocale sur votre téléphone";
+    return;
+  }
+  const seq=optimize();
+  const dur=parseInt(document.getElementById("dur").value);
+  const [h,m]=document.getElementById("hStart").value.split(":").map(Number);
+  let clock=h*60+m;
+  const dep=currentDepot();
+  let totalKm=0;
+  let html=`
+    <div class="step dep">
+      <div class="num"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="16" height="16" rx="2" fill="#fff"/></svg></div>
+      <div class="info"><b>Départ · ${dep.nom}</b><small>Point de ralliement Intégral Pharma</small></div>
+      <div class="time">${fmtTime(clock)}</div>
+    </div>`;
+  let prev=dep;
+  seq.forEach((id,i)=>{
+    const d=DATA[id];
+    const km=dist(prev,d);totalKm+=km;
+    const travel=Math.max(6,Math.round(km/60*60)); // ~60km/h
+    clock+=travel;
+    const cls=STCLASS[d.statut];
+    html+=`<div class="travel"><svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> ${Math.round(km)} km · ${travel} min de route</div>`;
+    html+=`
+      <div class="step">
+        <div class="num">${i+1}</div>
+        <div class="info">
+          <b>${d.nom}</b>
+          <small><span class="badge b-${cls}" style="padding:1px 7px"><i class="dot"></i>${d.statut}</span> ${d.ville} · ${d.grp}</small>
+        </div>
+        <div class="time">${fmtTime(clock)}</div>
+        <button class="rm" data-rm="${id}" title="Retirer">✕</button>
+      </div>`;
+    clock+=dur;
+    prev=d;
+  });
+  steps.innerHTML=html;
+  // optim bar
+  document.getElementById("optbar").style.display="flex";
+  document.getElementById("optKm").textContent=Math.round(totalKm);
+  const roadMin=Math.round(totalKm/60*60);
+  document.getElementById("optH").textContent=(roadMin>=60?Math.floor(roadMin/60)+"h"+String(roadMin%60).padStart(2,"0"):roadMin+" min");
+  gps.disabled=false;
+  document.getElementById("gpsNote").textContent=`${tour.length} arrêts · fin estimée ${fmtTime(clock)} · GPS Google Maps`;
+}
+
+/* ---------------- Actions tournée ---------------- */
+function toggleTour(id){
+  const i=tour.indexOf(id);
+  if(i>=0)tour.splice(i,1);
+  else{ if(tour.length>=12){flash("Maximum 12 visites par tournée");return;} tour.push(id);}
+  renderTable();renderTour();
+}
+function flash(msg){
+  const n=document.getElementById("gpsNote");const o=n.textContent;n.textContent=msg;n.style.color="var(--amber)";
+  setTimeout(()=>{n.style.color="";renderTour();},1600);
+}
+
+/* ---------------- Google Maps ---------------- */
+document.getElementById("gps").addEventListener("click",()=>{
+  if(!tour.length)return;
+  const seq=optimize();
+  const dep=currentDepot();
+  const origin=encodeURIComponent(dep.nom+", France");
+  const stops=seq.map(id=>DATA[id]);
+  const destination=encodeURIComponent(stops[stops.length-1].nom+", "+stops[stops.length-1].cp+" "+stops[stops.length-1].ville);
+  const waypoints=stops.slice(0,-1).map(d=>encodeURIComponent(d.nom+", "+d.cp+" "+d.ville)).join("|");
+  let url="https://www.google.com/maps/dir/?api=1&travelmode=driving&origin="+origin+"&destination="+destination;
+  if(waypoints)url+="&waypoints="+waypoints;
+  window.open(url,"_blank");
+});
+
+/* ---------------- Événements ---------------- */
+document.getElementById("q").addEventListener("input",e=>{filters.q=e.target.value;renderTable();});
+fStatut.addEventListener("change",e=>{filters.statut=e.target.value;renderTable();});
+fGrp.addEventListener("change",e=>{filters.grp=e.target.value;renderTable();});
+fDep.addEventListener("change",e=>{filters.dep=e.target.value;renderTable();});
+fCom.addEventListener("change",e=>{filters.com=e.target.value;renderTable();});
+document.getElementById("depart").addEventListener("change",e=>{startDepot=parseInt(e.target.value);renderTable();renderTour();});
+document.getElementById("dur").addEventListener("change",renderTour);
+document.getElementById("hStart").addEventListener("change",renderTour);
+
+document.querySelectorAll("thead th.sortable").forEach(th=>{
+  th.addEventListener("click",()=>{
+    const k=th.dataset.k;
+    if(sort.k===k)sort.dir*=-1;else{sort.k=k;sort.dir=(k==="ca"||k==="dist")?-1:1;}
+    renderTable();
+  });
+});
+
+document.getElementById("tbody").addEventListener("click",e=>{
+  const add=e.target.closest("[data-add]");
+  if(add){toggleTour(parseInt(add.dataset.add));return;}
+  const tr=e.target.closest("tr[data-id]");
+  if(tr)toggleTour(parseInt(tr.dataset.id));
+});
+document.getElementById("tbody").addEventListener("mouseover",e=>{
+  const tr=e.target.closest("tr[data-id]");if(!tr)return;
+  const pt=document.querySelector(`circle[data-id="${tr.dataset.id}"]`);if(pt)pt.classList.add("hl");
+});
+document.getElementById("tbody").addEventListener("mouseout",e=>{
+  const tr=e.target.closest("tr[data-id]");if(!tr)return;
+  const pt=document.querySelector(`circle[data-id="${tr.dataset.id}"]`);if(pt)pt.classList.remove("hl");
+});
+
+document.getElementById("chips").addEventListener("click",e=>{
+  const clr=e.target.closest("[data-clr]");
+  if(clr){const k=clr.dataset.clr;filters[k]="";syncControls();renderTable();return;}
+  if(e.target.id==="clrAll"){filters={q:"",statut:"",grp:"",dep:"",com:""};syncControls();renderTable();}
+});
+function syncControls(){
+  document.getElementById("q").value=filters.q;
+  fStatut.value=filters.statut;fGrp.value=filters.grp;fDep.value=filters.dep;fCom.value=filters.com;
+}
+
+document.getElementById("steps").addEventListener("click",e=>{
+  const rm=e.target.closest("[data-rm]");
+  if(rm){toggleTour(parseInt(rm.dataset.rm));}
+});
+
+document.getElementById("addAll").addEventListener("click",()=>{
+  const rows=getRows();
+  for(const r of rows){if(tour.length>=12)break;if(!tour.includes(r.id))tour.push(r.id);}
+  renderTable();renderTour();
+});
+document.getElementById("clearTour").addEventListener("click",()=>{tour=[];renderTable();renderTour();});
+document.getElementById("autoFill").addEventListener("click",()=>{
+  // 8 officines les plus proches du dépôt, mix prospects+clients
+  const near=DATA.map(withDist).sort((a,b)=>a.dist-b.dist).slice(0,8);
+  tour=near.map(d=>d.id);renderTable();renderTour();
+});
+
+/* ---------------- Go ---------------- */
+renderTable();renderTour();
+</script>
+</body>
+</html>
