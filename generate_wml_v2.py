@@ -200,6 +200,7 @@ SOURCES = [
     ('Manon', 'MD'),         # Manon
     ('Florent', 'FML'),      # Florent
     ('Morgane', 'MDC'),      # Morgane
+    ('Arthur', 'ALH'),       # Arthur Lehouerou
 ]
 MONTHS_NUM = [1, 2, 3, 4, 5, 6]
 OUT = os.path.join(BASE, 'crm', 'v2', 'wml-officines-data.js')
