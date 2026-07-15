@@ -137,6 +137,29 @@ for p in sorted(glob.glob(os.path.join(STATS, '*_0[1-6]_2026*.xlsx'))):
     wb.close()
 print('Table ARTCODE -> attributs :', len(ARTMAP), 'entrées')
 
+# ── 2bis. Benchmark CRM (catalogue IP) : affinage catégorie « finition JARVIS » ──
+# Set des désignations NR (non remboursées SS) pour reclasser un princeps prix -> NR
+# (ex. Mounjaro, Wegovy) exactement comme le CRM (classifyProduct / getBenchNrSet).
+BENCH_NR = set()
+try:
+    btxt = open(os.path.join(BASE, 'crm', 'benchmark-data.js'), encoding='utf-8').read()
+    for m in re.finditer(r'\{designation:"((?:[^"\\]|\\.)*)"[^}]*?categorie:"([a-z]+)"[^}]*?has_ameli:(true|false)', btxt):
+        desig, cat, ha = m.group(1), m.group(2), m.group(3)
+        if ha == 'false' and cat not in ('biosim', 'generique'):
+            BENCH_NR.add(re.sub(r'\s+', ' ', desig).strip().upper())
+    print('Benchmark NR (désignations) :', len(BENCH_NR))
+except Exception as e:
+    print('benchmark non chargé (affinage NR ignoré) :', e)
+
+
+def cat_famille(designation, famille):
+    """Catégorie CATS finale (finition CRM) : affine princeps prix -> NR via benchmark."""
+    if famille in ('pp', 'mi', 'ch'):
+        k = re.sub(r'\s+', ' ', designation).strip().upper()
+        if k in BENCH_NR:
+            return 'nr'
+    return famille
+
 # ── 3. Lecture des sources mensuelles, filtrées aux adhérents OPSO ──
 all_sales = []       # pour wml-sales-data.js
 agg = {}             # cip -> agrégat pour wml-data.js
@@ -148,6 +171,7 @@ def new_ph(cip):
             'ca': 0.0, 'mg': 0.0, 'qt': 0.0,
             'ca_m': [0.0] * len(MONTHS), 'mg_m': [0.0] * len(MONTHS), 'qt_m': [0.0] * len(MONTHS),
             'afm': defaultdict(lambda: [0.0, 0.0, 0.0]),
+            'cat': defaultdict(lambda: [0.0, 0.0, 0.0]),
             'sf': defaultdict(lambda: [0.0, 0.0, 0.0]),
             'tr': {'t1': [0, 0.0, 0.0], 't2': [0, 0.0, 0.0], 't3': [0, 0.0, 0.0], 't4': [0, 0.0, 0.0]},
             'prod': defaultdict(lambda: [0.0, 0.0, 0.0, ''])}  # nom -> [ca,mg,qt,ean]
@@ -208,6 +232,8 @@ for path in sorted(glob.glob(os.path.join(STATS, '*_0[1-6]_2026.xlsx'))):
         a['ca'] += mnt; a['mg'] += mg_line; a['qt'] += qte
         a['ca_m'][mi] += mnt; a['mg_m'][mi] += mg_line; a['qt_m'][mi] += qte
         a['afm'][afm][0] += mnt; a['afm'][afm][1] += mg_line; a['afm'][afm][2] += qte
+        fc = cat_famille(designation, famille)   # catégorie produit CATS (finition CRM)
+        a['cat'][fc][0] += mnt; a['cat'][fc][1] += mg_line; a['cat'][fc][2] += qte
         if subfamily:
             a['sf'][subfamily][0] += mnt; a['sf'][subfamily][1] += mg_line; a['sf'][subfamily][2] += qte
         t = tranche(mg_line / mnt * 100 if mnt > 0 else 0)
@@ -261,10 +287,10 @@ for cip in order:
     tr = a['tr']
     tr_js = '{' + ','.join("%s:[%d,%s,%s]" % (t, tr[t][0], r2(tr[t][1]), r2(tr[t][2])) for t in ('t1', 't2', 't3', 't4')) + '}'
     dlines.append(
-        '{tc:%s,nom:%s,ca:%s,mg:%s,qt:%s,ca_m:%s,mg_m:%s,qt_m:%s,afm:%s,sf:%s,pr:%s,tr:%s},' % (
+        '{tc:%s,nom:%s,ca:%s,mg:%s,qt:%s,ca_m:%s,mg_m:%s,qt_m:%s,afm:%s,cat:%s,sf:%s,pr:%s,tr:%s},' % (
             cip, js_str(a['nom']), r2(a['ca']), r2(a['mg']), r2(a['qt']),
             json.dumps([r2(x) for x in a['ca_m']]), json.dumps([r2(x) for x in a['mg_m']]), json.dumps([r2(x) for x in a['qt_m']]),
-            obj_num_map(a['afm']), obj_num_map(a['sf']), pr_js, tr_js))
+            obj_num_map(a['afm']), obj_num_map(a['cat']), obj_num_map(a['sf']), pr_js, tr_js))
 dlines.append('];')
 dlines.append('try{window.WML_MONTHS=WML_MONTHS;window.WML_DATA=WML_DATA;}catch(e){}')
 open(OUT_DATA, 'w', encoding='utf-8').write('\n'.join(dlines))

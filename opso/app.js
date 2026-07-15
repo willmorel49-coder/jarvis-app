@@ -94,6 +94,10 @@ function getOpsoChartColor(i) {
   return OPSO_CHART_PALETTE[i % OPSO_CHART_PALETTE.length];
 }
 
+// Nombre de mois couverts par les achats groupement (WML_MONTHS) — pour les moyennes mensuelles.
+function wmlNMonths() {
+  return (typeof WML_MONTHS !== 'undefined' && WML_MONTHS.length) ? WML_MONTHS.length : 4;
+}
 // Période couverte par les achats groupement (WML_MONTHS) — ex. "Jan–Juin 2026".
 function wmlPeriod() {
   const ab = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sep','Oct','Nov','Déc'];
@@ -794,6 +798,37 @@ const CATS = {
   mi:        { label: 'Intermédiaire',  color: '#FFB020', icon: '📊' },
   pp:        { label: 'Petit prix',     color: '#34D399', icon: '✓'  },
 };
+// Carte "Répartition par catégorie produit" (familles Intégral CATS) — finition CRM JARVIS.
+// catObj = { fam: [ca, mg, qt] } (champ .cat de WML_DATA, agrégé ou par officine).
+function wmlCatCard(catObj, title) {
+  if (!catObj) return '';
+  const entries = Object.entries(catObj).filter(([, v]) => v[0] > 0).sort((a, b) => b[1][0] - a[1][0]);
+  if (!entries.length) return '';
+  const fmtE = v => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(v || 0);
+  const total = entries.reduce((s, [, v]) => s + v[0], 0);
+  const rows = entries.map(([k, [ca, mg]]) => {
+    const c = CATS[k] || { label: k, color: '#94a3b8', icon: '•' };
+    const pct = total > 0 ? (ca / total * 100) : 0;
+    const tm = ca > 0 ? (mg / ca * 100) : 0;
+    return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+      <div style="width:124px;display:flex;align-items:center;gap:6px;flex-shrink:0"><span>${c.icon}</span><span style="font-size:12px;font-weight:600;color:${c.color}">${c.label}</span></div>
+      <div style="flex:1;height:8px;background:var(--bg3);border-radius:4px;overflow:hidden"><div style="width:${pct.toFixed(1)}%;height:100%;background:${c.color};border-radius:4px;transition:width .4s"></div></div>
+      <div style="font-size:11px;color:var(--text3);width:30px;text-align:right;flex-shrink:0">${pct.toFixed(0)}%</div>
+      <div style="font-size:12px;font-weight:700;width:78px;text-align:right;flex-shrink:0">${fmtE(ca)}</div>
+      <div style="font-size:10px;color:var(--green);width:48px;text-align:right;flex-shrink:0" title="remise obtenue">${tm > 0 ? '+' + tm.toFixed(1) + '%' : '—'}</div>
+    </div>`;
+  }).join('');
+  return `<div class="card" style="margin-bottom:16px">
+    <div class="card-header" style="padding:14px 20px">
+      <div class="section-header-title"><div class="section-header-icon">🏷️</div>
+        <div class="section-header-text"><h2>${title || 'Répartition par catégorie produit'}</h2>
+          <div class="section-header-sub">${wmlPeriod()} · CA HT par famille Intégral · remise = taux obtenu</div></div></div>
+      <div style="font-size:22px;font-weight:900;color:var(--opso-green)">${fmtE(total)}</div>
+    </div>
+    <div style="padding:0 20px 12px">${rows}</div>
+  </div>`;
+}
+
 // froid est un indicateur transversal (❄️), pas une catégorie standalone
 function isFroid(sale) {
   if (sale && sale.artFamille === 'froid') return true;
@@ -1725,8 +1760,8 @@ function renderPharmacies() {
     return (b.lastNoteDays ?? 9999) - (a.lastNoteDays ?? 9999);
   });
   else if (pharmaSort === 'wml') enriched.sort((a, b) => {
-    const potA = a.wmlEntry ? Math.max(0, a.wmlEntry.ca / 4 - a.caCur) : 0;
-    const potB = b.wmlEntry ? Math.max(0, b.wmlEntry.ca / 4 - b.caCur) : 0;
+    const potA = a.wmlEntry ? Math.max(0, a.wmlEntry.ca / wmlNMonths() - a.caCur) : 0;
+    const potB = b.wmlEntry ? Math.max(0, b.wmlEntry.ca / wmlNMonths() - b.caCur) : 0;
     return potB - potA;
   });
   else enriched.sort((a, b) => b.caCur - a.caCur);
@@ -1781,7 +1816,7 @@ function renderPharmacies() {
           priorityBadge = `<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:rgba(255,176,32,.14);color:var(--amber);font-weight:700">📂 Import ${lastImportDays}j</span>`;
         }
         if (!priorityBadge && wmlEntry) {
-          const wmlAvg = wmlEntry.ca / 4;
+          const wmlAvg = wmlEntry.ca / wmlNMonths();
           const pot = Math.max(0, wmlAvg - caCur);
           if (pot > 500) {
             priorityBadge = `<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:rgba(17,166,60,.12);color:var(--opso-green);font-weight:700">💡 Pot. groupement +${Math.round(pot)}€</span>`;
@@ -3422,7 +3457,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
         const directNames2 = new Set(allPhSales.map(s => nnWml2(s.artDesignation)));
         const missedWml = (wmlEntDet.pr||[]).filter(([nom]) => nom && !directNames2.has(nnWml2(nom)));
         const missedCaWml = missedWml.reduce((s,[,ca])=>s+(ca||0),0);
-        const wmlAvgMo = wmlEntDet.ca / 4;
+        const wmlAvgMo = wmlEntDet.ca / wmlNMonths();
         const convPct = wmlAvgMo > 0 ? Math.min(999, Math.round(caCur / wmlAvgMo * 100)) : null;
         const months = ['Jan','Fév','Mar','Avr'];
         const caM = wmlEntDet.ca_m || [];
@@ -8836,6 +8871,8 @@ function renderWml() {
         </div>`;
       })()}
 
+      ${wmlCatCard(ph.cat)}
+
       ${wmlMonthAvg > 0 && phFromState ? `
       <div class="card" style="margin-bottom:16px;border-left:3px solid ${convRatioPh >= 100 ? 'var(--green)' : convRatioPh >= 60 ? 'var(--amber)' : 'var(--rose)'}">
         <div class="card-header" style="padding-bottom:8px">
@@ -9173,6 +9210,15 @@ function renderWml() {
       </div>`;
     })();
 
+    // Répartition par catégorie produit (familles Intégral CATS) — finition CRM
+    const catGrp = {};
+    for (const d of WML_VISIBLE) {
+      for (const [k, v] of Object.entries(d.cat || {})) {
+        if (!catGrp[k]) catGrp[k] = [0, 0, 0];
+        catGrp[k][0] += v[0]; catGrp[k][1] += v[1]; catGrp[k][2] += v[2];
+      }
+    }
+
     container.innerHTML = `
     <div style="padding:0 0 24px">
       <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
@@ -9182,7 +9228,7 @@ function renderWml() {
         <div class="callout-icon">📦</div>
         <div class="callout-content">
           <div class="callout-title">Achats Intégral Pharma via le groupement OPSO Santé</div>
-          <div>Vue consolidée des commandes effectuées par les ${WML_VISIBLE.length} pharmacies adhérentes via OPSO Santé, période Janvier-Avril 2026. Cliquez sur une pharmacie pour voir le détail produit.</div>
+          <div>Vue consolidée des commandes effectuées par les ${WML_VISIBLE.length} pharmacies adhérentes via OPSO Santé, période ${wmlPeriod()}. Cliquez sur une pharmacie pour voir le détail produit.</div>
         </div>
       </div>
       <div class="wml-kpi-row">
@@ -9192,13 +9238,15 @@ function renderWml() {
         <div class="wml-kpi stat-box"><div class="wml-kpi-label stat-box-label">Pharmacies actives</div><div class="wml-kpi-val stat-box-value" style="font-size:22px">${WML_VISIBLE.length}</div></div>
       </div>
 
+      ${wmlCatCard(catGrp, 'Répartition par catégorie produit')}
+
       <div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:16px">
         <div class="card">
           <div class="card-header">
             <div class="section-header-title">
               <div class="section-header-icon">📊</div>
               <div class="section-header-text">
-                <h2>CA groupement Jan – Avr 2026</h2>
+                <h2>CA groupement ${PERIOD_SHORT}</h2>
                 <div class="section-header-sub">Marge (remise obtenue) en vert</div>
               </div>
             </div>
@@ -10436,7 +10484,7 @@ function renderGrpDashboard(grp) {
     for (const ph of state.pharmacies) {
       const w = wmlMap2.get(nnk(ph.name));
       if (!w) continue;
-      const wmlAvg = w.ca / 4;
+      const wmlAvg = w.ca / wmlNMonths();
       const directCa = sumCA(memberSalesCur.filter(s => s.pharmacyId === ph.id));
       totalPotentiel += Math.max(0, wmlAvg - directCa);
     }
@@ -11048,7 +11096,7 @@ function simFromWmlMissed(pharmacyId) {
         froid: false,
         puNet: offiMatch.prix_offilog || offiMatch.prix_live || 0,
         puBrut: offiMatch.prix_offilog || offiMatch.prix_live || 0,
-        qty: Math.max(1, Math.round(qt / 4) || 1),
+        qty: Math.max(1, Math.round(qt / wmlNMonths()) || 1),
       });
     } else {
       // Add without catalog match — let user fill in price
@@ -11059,7 +11107,7 @@ function simFromWmlMissed(pharmacyId) {
         froid: false,
         puNet: qt > 0 && ca > 0 ? ca / qt : 0,
         puBrut: qt > 0 && ca > 0 ? ca / qt : 0,
-        qty: Math.max(1, Math.round(qt / 4) || 1),
+        qty: Math.max(1, Math.round(qt / wmlNMonths()) || 1),
       });
     }
   }
