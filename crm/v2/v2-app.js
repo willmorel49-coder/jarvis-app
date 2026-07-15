@@ -888,6 +888,8 @@
         if (rest.length) {
           pilHtml += '<div class="v2-lch-more"><span class="lbl">Autres outils</span>' +
             rest.map(function (p) { return '<a class="v2-lch-mini" onclick="V2.go(\'' + p.k + '\')">' + ICO(p.ico, 15) + esc(p.t) + '</a>'; }).join('') +
+            // Espace Groupements : listes des groupements + listings produits (renderGroupementsList via pharma?groupements)
+            '<a class="v2-lch-mini" onclick="V2.go(\'pharma\',\'groupements\')">' + ICO('list', 15) + 'Groupements</a>' +
             '</div>';
         }
       }
@@ -927,6 +929,10 @@
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.audit) PAGES.push(['audit', 'Audit Marge (par pharmacie)', 'pilo']);
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.presentation) PAGES.push(['presentation', 'Présentation Intégral Pharma', 'pharma']);
     PAGES.forEach(function (p) { idx.push({ grp: 'Pages', label: p[1], ico: p[2], action: function () { V2.go(p[0]); } }); });
+    // Espace Groupements (sous-vue de pharma avec param) — recherchable dans ⌘K
+    if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.pharma) {
+      idx.push({ grp: 'Pages', label: 'Groupements · listes & listings produits', ico: 'list', action: function () { V2.go('pharma', 'groupements'); } });
+    }
     // Pharmacies
     (V2.pharmacies || []).forEach(function (p) {
       idx.push({ grp: 'Pharmacies', label: p.name, ico: 'pharma', meta: '', pid: String(p.id), action: function () { V2.go('pharma', p.id); } });
