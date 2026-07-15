@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>OPSO Santé · Refonte « comme JARVIS » — 4 maquettes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Varela+Round&family=Nunito:wght@400;600;700;800&family=Caveat:wght@600&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root{--green:#11a63c;--green-d:#0d8530;--green-txt:#0a7a2b;--lemon:#dddf4b;--halo:#e7f6ec;
+    --bg:#f5f6f7;--card:#fff;--ink:#2a2d2f;--muted:#64686a;--line:#e5e8ea;}
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{font-family:'Nunito',system-ui,sans-serif;background:var(--bg);color:var(--ink);display:flex;flex-direction:column;height:100dvh;overflow:hidden}
+  header{flex:none;background:var(--card);border-bottom:1px solid var(--line);padding:12px 16px calc(10px + env(safe-area-inset-bottom,0));box-shadow:0 1px 0 rgba(0,0,0,.03)}
+  .top{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+  h1{font-family:'Varela Round',sans-serif;font-size:17px;margin:0}
+  h1 b{color:var(--green)}
+  .sub{font-size:12.5px;color:var(--muted)}
+  .sig{font-family:'Caveat',cursive;font-size:18px;color:var(--green)}
+  .cur{margin:9px 0 11px;font-size:13px;line-height:1.45}
+  .cur b{font-weight:800;color:var(--green-txt)}
+  .cur .tag{display:inline-block;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;background:var(--halo);color:var(--green-txt);padding:2px 8px;border-radius:999px;margin-right:7px;vertical-align:middle}
+  .cur .ap{color:var(--muted);display:block;margin-top:3px;font-size:12px}
+  nav{display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px;scrollbar-width:thin}
+  nav button{flex:none;display:inline-flex;flex-direction:column;align-items:flex-start;gap:2px;min-width:172px;
+    border:1.5px solid var(--line);background:var(--card);border-radius:14px;padding:9px 13px;cursor:pointer;font-family:inherit;text-align:left;color:var(--ink);transition:border-color .15s,transform .12s,box-shadow .15s}
+  nav button:hover{border-color:color-mix(in srgb,var(--green) 45%,var(--line))}
+  nav button.on{border-color:var(--green);box-shadow:0 0 0 3px color-mix(in srgb,var(--green) 16%,transparent);transform:translateY(-1px)}
+  nav .num{font-family:'Space Mono',monospace;font-size:13px;color:var(--muted)}
+  nav button.on .num{color:var(--green)}
+  nav .lbl{font-size:12.5px;font-weight:800}
+  nav .scr{font-size:10.5px;color:var(--muted)}
+  .frame{flex:1;position:relative;background:var(--card)}
+  iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:var(--card)}
+  .full{position:absolute;top:12px;right:14px;z-index:5;background:var(--green);color:#fff;text-decoration:none;font-weight:800;font-size:12px;padding:9px 13px;border-radius:10px;box-shadow:0 6px 18px rgba(17,166,60,.28)}
+  .full:hover{background:var(--green-d)}
+</style>
+</head>
+<body>
+<header>
+  <div class="top"><h1>OPSO Santé · refonte <b>« comme JARVIS »</b></h1><span class="sub">Même finition que le CRM, 100% OPSO · touche un numéro · plein écran pour juger</span><span class="sig">On prend soin de vous</span></div>
+  <div class="cur" id="cur"></div>
+  <nav id="nav"></nav>
+</header>
+<div class="frame">
+  <a class="full" id="full" href="#" target="_blank" rel="noopener">Plein écran ↗</a>
+  <iframe id="fr" title="Maquette" src="v2-design-1.html"></iframe>
+</div>
+<script>
+  var D = [
+    { n:1, scr:'Cockpit', lbl:'Cockpit A', title:'Cockpit — KPI riche', ap:"Accueil façon JARVIS : CA groupement en héros (compteur animé, chiffres mono), KPI, insights actionnables, évolution du CA, top pharmacies. Dense mais lisible, ombres vertes douces." },
+    { n:2, scr:'Cockpit', lbl:'Cockpit B', title:'Cockpit — variante', ap:"Deuxième direction d'accueil, visuellement distincte : plus aérée / composition du CA en aperçu. À comparer au A." },
+    { n:3, scr:'Analyse produits', lbl:'Analyse — tranches', title:'Analyse produits & catégories — tranches de prix', ap:"LE cœur de ta demande : barre 100% du CA par catégorie + tableau des 7 tranches (Petits prix, Intermédiaire, Chers 468–2000, Très chers >2000, NR, Génériques, Biosim) avec CA, part, unités, remise, prix moyen." },
+    { n:4, scr:'Analyse produits', lbl:'Analyse — valeur/volume', title:'Analyse produits — Valeur vs Volume', ap:"Même analyse, autre angle : matrice « valeur (CA) vs volume (unités) » qui montre que les très chers/NR pèsent en CA sans volume, + top produits par tranche. Storytelling data." },
+  ];
+  var nav=document.getElementById('nav'), fr=document.getElementById('fr'), cur=document.getElementById('cur'), full=document.getElementById('full');
+  function sel(i){
+    var d=D[i];
+    fr.src='v2-design-'+d.n+'.html';
+    full.href='v2-design-'+d.n+'.html';
+    cur.innerHTML='<b>'+d.n+'. '+d.title+'</b><span class="ap"><span class="tag">'+d.scr+'</span>'+d.ap+'</span>';
+    [].forEach.call(nav.children,function(b,k){ b.classList.toggle('on', k===i); });
+    try{ nav.children[i].scrollIntoView({inline:'center',block:'nearest',behavior:'smooth'}); }catch(e){}
+  }
+  D.forEach(function(d,i){
+    var b=document.createElement('button');
+    b.innerHTML='<span class="num">'+d.n+'</span><span class="lbl">'+d.lbl+'</span><span class="scr">'+d.scr+'</span>';
+    b.onclick=function(){ sel(i); };
+    nav.appendChild(b);
+  });
+  sel(0);
+</script>
+</body>
+</html>
