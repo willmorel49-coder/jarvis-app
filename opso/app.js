@@ -791,12 +791,13 @@ function _getSalesUncached(filters = {}) {
 
 // ── CATEGORIES ────────────────────────────────
 const CATS = {
-  biosim:    { label: 'Biosimilaires',  color: '#9B5CFF', icon: '🧬' },
-  generique: { label: 'Génériques',     color: '#00E5A0', icon: '💊' },
-  nr:        { label: 'Non remboursés', color: '#FF6B35', icon: '🔴' },
-  ch:        { label: 'Cher',           color: '#FF4D6D', icon: '💎' },
-  mi:        { label: 'Intermédiaire',  color: '#FFB020', icon: '📊' },
-  pp:        { label: 'Petit prix',     color: '#34D399', icon: '✓'  },
+  biosim:    { label: 'Biosimilaires',           color: '#9B5CFF', icon: '🧬' },
+  generique: { label: 'Génériques',              color: '#00E5A0', icon: '💊' },
+  nr:        { label: 'Non remboursés',          color: '#b8730c', icon: '🔴' },
+  tch:       { label: 'Très chers (> 2000 €)',   color: '#8a1e3f', icon: '💠' },
+  ch:        { label: 'Chers (468 – 2000 €)',    color: '#c0367a', icon: '💎' },
+  mi:        { label: 'Intermédiaire (4,33 – 468 €)', color: '#e08a1e', icon: '📊' },
+  pp:        { label: 'Petits prix (≤ 4,33 €)',  color: '#11a63c', icon: '✓'  },
 };
 // Carte "Répartition par catégorie produit" (familles Intégral CATS) — finition CRM JARVIS.
 // catObj = { fam: [ca, mg, qt] } (champ .cat de WML_DATA, agrégé ou par officine).
@@ -877,7 +878,7 @@ function classifyProduct(sale) {
   if (sale.artFamille && CATS[sale.artFamille] && sale.artFamille !== 'froid') {
     const af = sale.artFamille;
     // Pour les catégories prix (mi/ch/pp), vérifier si NR via BENCHMARK
-    if (af === 'mi' || af === 'ch' || af === 'pp') {
+    if (af === 'mi' || af === 'ch' || af === 'tch' || af === 'pp') {
       const k = (sale.artDesignation || '').trim().toUpperCase().replace(/\s+/g, ' ');
       if (getBenchNrSet().has(k)) return 'nr';
     }
@@ -889,7 +890,7 @@ function classifyProduct(sale) {
   if (/\bNR\b/.test(name))                return 'nr';
   if (getBenchNrSet().has(name))           return 'nr';
   const p = sale.puNet || 0;
-  return p > 468 ? 'ch' : p > 4.33 ? 'mi' : 'pp';
+  return p > 2000 ? 'tch' : p > 468 ? 'ch' : p > 4.33 ? 'mi' : 'pp';
 }
 
 function classifyFromWMLRow(sf, nature, afm, puNet, designation) {
@@ -904,6 +905,7 @@ function classifyFromWMLRow(sf, nature, afm, puNet, designation) {
     const k = (designation).trim().toUpperCase().replace(/\s+/g, ' ');
     if (getBenchNrSet().has(k)) return 'nr';
   }
+  if (puNet > 2000) return 'tch';
   if (puNet > 468) return 'ch';
   if (puNet > 4.33) return 'mi';
   return 'pp';
