@@ -830,6 +830,44 @@ function wmlCatCard(catObj, title) {
   </div>`;
 }
 
+// Carte "Focus GLP-1" (Wegovy · Mounjaro…) — blockbusters non-remboursés, stars du moment.
+function wmlGlp1Card() {
+  if (typeof WML_GLP1 === 'undefined' || !WML_GLP1 || !WML_GLP1.ca) return '';
+  const g = WML_GLP1;
+  const fmtE = v => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(v || 0);
+  const maxB = Math.max.apply(null, g.brands.map(b => b[1])) || 1;
+  const brandRows = g.brands.filter(b => b[1] > 0).map(b => {
+    const pct = (b[1] / maxB * 100);
+    return `<div style="display:flex;align-items:center;gap:10px;padding:6px 0">
+      <div style="width:96px;font-size:12px;font-weight:800;color:var(--opso-green-text,#0a7a2b);flex-shrink:0">${b[0]}</div>
+      <div style="flex:1;height:9px;background:var(--bg3);border-radius:5px;overflow:hidden"><div style="width:${pct.toFixed(1)}%;height:100%;background:linear-gradient(90deg,var(--opso-green,#11a63c),var(--opso-accent,#dddf4b));border-radius:5px"></div></div>
+      <div style="font-size:12px;font-weight:800;width:74px;text-align:right;flex-shrink:0">${fmtE(b[1])}</div>
+      <div style="font-size:10.5px;color:var(--text3);width:44px;text-align:right;flex-shrink:0">${Math.round(b[2])} u</div>
+    </div>`;
+  }).join('');
+  const maxM = Math.max.apply(null, g.caM) || 1;
+  const ML = (typeof WML_MONTHS !== 'undefined' ? WML_MONTHS : []).map(ym => ['', 'Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'][+ym.split('-')[1]]);
+  const bars = g.caM.map((v, i) => {
+    const h = maxM > 0 ? Math.max(4, v / maxM * 100) : 4;
+    return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">
+      <div style="width:100%;height:48px;background:var(--bg3);border-radius:4px;position:relative;overflow:hidden"><div style="position:absolute;bottom:0;left:0;right:0;height:${h}%;background:var(--opso-green);border-radius:4px"></div></div>
+      <div style="font-size:9.5px;color:var(--text3)">${ML[i] || ''}</div></div>`;
+  }).join('');
+  const trend = g.caM[g.caM.length - 1] > g.caM[0] ? '▲ forte croissance' : '';
+  return `<div class="card" style="margin-bottom:16px;border:1.5px solid var(--opso-accent,#dddf4b);background:linear-gradient(180deg,var(--opso-green-pale2,#f3fbf6),#fff)">
+    <div class="card-header" style="padding:14px 20px">
+      <div class="section-header-title"><div class="section-header-icon">💉</div>
+        <div class="section-header-text"><h2>Focus GLP-1 · Wegovy · Mounjaro</h2>
+          <div class="section-header-sub">Blockbusters non remboursés (chaîne du froid) · ${g.nbPharma}/${g.nbPharma} pharmacies · ${wmlPeriod()}</div></div></div>
+      <div style="text-align:right"><div style="font-size:24px;font-weight:900;color:var(--opso-green)">${fmtE(g.ca)}</div><div style="font-size:12px;font-weight:800;color:var(--opso-accent-dark,#8a8c10)">${g.part}% du CA groupement ${trend ? '· ' + trend : ''}</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1.3fr 1fr;gap:18px;padding:4px 20px 16px">
+      <div>${brandRows}</div>
+      <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--text3);font-weight:800;margin-bottom:6px">Évolution mensuelle</div><div style="display:flex;gap:5px;align-items:flex-end">${bars}</div></div>
+    </div>
+  </div>`;
+}
+
 // froid est un indicateur transversal (❄️), pas une catégorie standalone
 function isFroid(sale) {
   if (sale && sale.artFamille === 'froid') return true;
@@ -9241,6 +9279,8 @@ function renderWml() {
       </div>
 
       ${wmlCatCard(catGrp, 'Répartition par catégorie produit')}
+
+      ${wmlGlp1Card()}
 
       <div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:16px">
         <div class="card">
