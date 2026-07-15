@@ -247,6 +247,71 @@ for path in sorted(glob.glob(os.path.join(STATS, '*_0[1-6]_2026.xlsx'))):
     if added:
         print('  %-26s : %d lignes OPSO' % (base, added))
 
+# ── 3bis. Sources AGRÉGÉES (sans découpage mensuel) : OPSO guy.xlsx ──
+# 1 feuille = 1 pharmacie. Colonnes : Code Article, Désignation, PU Brut, PU Net, Rem unitaire, Qté, Montant total Brut.
+# CA net = PU Net × Qté ; remise = (PU Brut − PU Net) × Qté. Lignes réparties en round-robin sur les mois.
+AGG_SOURCES = [('opso/OPSO guy.xlsx', {'CUZON': '2000531', 'ELBEUF': '2038359'})]
+for relpath, sheet2cip in AGG_SOURCES:
+    fpath = os.path.join(BASE, relpath)
+    if not os.path.exists(fpath):
+        print('  [skip] absent :', relpath)
+        continue
+    wb = openpyxl.load_workbook(fpath, read_only=True, data_only=True)
+    for sheet, cip in sheet2cip.items():
+        if cip not in OPSO_CIPS or sheet not in wb.sheetnames:
+            print('  [skip guy] %s -> %s (hors listing OPSO ou feuille absente)' % (sheet, cip))
+            continue
+        ws = wb[sheet]
+        it = ws.iter_rows(values_only=True)
+        next(it)  # entête
+        li = added = 0
+        for r in it:
+            designation = str(r[1] or '').strip()
+            if not designation:   # lignes de total / frais (FC_…) sans désignation
+                continue
+
+            def gf(v):
+                try:
+                    return float(v or 0)
+                except (TypeError, ValueError):
+                    return 0.0
+            code = code_str(r[0])
+            pu_brut, pu_net, qte = gf(r[2]), gf(r[3]), gf(r[5])
+            mnt = pu_net * qte
+            mg_line = (pu_brut - pu_net) * qte
+            amap = ARTMAP.get(code) or {}
+            ean = amap.get('ean', '')
+            nature = amap.get('nature') or ''
+            afm = str(amap.get('afm') or '').strip() or 'AUTRE'
+            subfamily = str(amap.get('sub') or '')
+            famille = classify(str(nature), afm, pu_net)
+            art_famille = 'froid' if subfamily.lower() == 'froid' else famille
+            month = (li % len(MONTHS)) + 1
+            mi = MONTHS.index(month)
+            li += 1
+            all_sales.append({'id': f'wml_{cip}_{month}_2026_{idx}', 'pharmacyCode': cip, 'month': month,
+                              'artDesignation': designation, 'artCode': code, 'artFamille': art_famille,
+                              'qte': qte, 'puBrut': pu_brut, 'puNet': pu_net, 'mntNetHt': mnt})
+            idx += 1
+            a = agg.get(cip) or agg.setdefault(cip, new_ph(cip))
+            a['ca'] += mnt; a['mg'] += mg_line; a['qt'] += qte
+            a['ca_m'][mi] += mnt; a['mg_m'][mi] += mg_line; a['qt_m'][mi] += qte
+            a['afm'][afm][0] += mnt; a['afm'][afm][1] += mg_line; a['afm'][afm][2] += qte
+            fc = cat_famille(designation, famille)
+            a['cat'][fc][0] += mnt; a['cat'][fc][1] += mg_line; a['cat'][fc][2] += qte
+            if subfamily:
+                a['sf'][subfamily][0] += mnt; a['sf'][subfamily][1] += mg_line; a['sf'][subfamily][2] += qte
+            t = tranche(mg_line / mnt * 100 if mnt > 0 else 0)
+            a['tr'][t][0] += 1; a['tr'][t][1] += mnt; a['tr'][t][2] += mg_line
+            pr = a['prod'][designation]
+            pr[0] += mnt; pr[1] += mg_line; pr[2] += qte
+            if ean and not pr[3]:
+                pr[3] = ean
+            added += 1
+        if added:
+            print('  %-26s : %d lignes OPSO (agrégat, mois répartis)' % ('OPSO guy/' + sheet, added))
+    wb.close()
+
 print('\nTotal : %d lignes · %d adhérents OPSO actifs' % (len(all_sales), len(agg)))
 
 # ── 4. wml-sales-data.js ──

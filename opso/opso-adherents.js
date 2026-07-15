@@ -1,7 +1,8 @@
 // Listing adhérents OPSO Santé ACTIFS (avec ventes) — généré par generate_wml_sales.py
-// 15 pharmacies actives (William + Karine…)
+// 17 pharmacies actives (William + Karine…)
 const OPSO_ADHERENTS = [
   {cip:"2144411",nom:"PHARMACIE DE KERFONTAINE",cp:"56400",ville:"PLUNERET",uga:"56PLU"},
+  {cip:"2000531",nom:"PHARMACIE CUZON",cp:"27370",ville:"AMFREVILLE-SAINT-AMAND",uga:"27"},
   {cip:"2136311",nom:"PHARMACIE HAUTEMANIERE",cp:"50700",ville:"VALOGNES",uga:"50VAL"},
   {cip:"2000462",nom:"PHARMACIE DE FEREL",cp:"56130",ville:"FEREL",uga:"44LBA"},
   {cip:"2143156",nom:"PHARMACIE DE L'ESTRAN",cp:"56750",ville:"DAMGAN",uga:"56QUE"},
@@ -9,6 +10,7 @@ const OPSO_ADHERENTS = [
   {cip:"2276691",nom:"PHARMACIE DU CHÊNE VERT",cp:"35470",ville:"BAIN-DE-BRETAGNE",uga:"35"},
   {cip:"2013097",nom:"PHARMACIE DE LA REPUBLIQUE",cp:"14600",ville:"HONFLEUR",uga:"14HON"},
   {cip:"2144359",nom:"PHARMACIE DU PONT LOROIS",cp:"56680",ville:"PLOUHINEC",uga:"56LAN"},
+  {cip:"2038359",nom:"PHARMACIE DE L'ETOILE",cp:"76 500",ville:"ELBEUF",uga:"76"},
   {cip:"2007430",nom:"PHARMACIE D'IFS CENTRE COMMERCIAL ROCADE SUD",cp:"14123",ville:"IFS",uga:"14"},
   {cip:"2135433",nom:"PHARMACIE SAINT NICOLAS",cp:"50400",ville:"GRANVILLE",uga:"50GRA"},
   {cip:"2143622",nom:"PHARMACIE DES PLAGES",cp:"56260",ville:"LARMOR-PLAGE",uga:"56"},
