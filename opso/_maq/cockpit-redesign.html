@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>OPSO Santé · Cockpit — 4 propositions design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Varela+Round&family=Nunito:wght@400;600;700;800&family=Caveat:wght@600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --green:#11a63c; --green-dark:#0d8530; --green-text:#0a7a2b; --accent:#dddf4b;
+    --green-pale:#e6f7ec; --green-pale2:#f3fbf6;
+    --bg:#f5f6f7; --card:#fff; --ink:#2a2d2f; --muted:#64686a; --line:#e5e8ea;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{font-family:'Nunito',-apple-system,system-ui,sans-serif;background:var(--bg);color:var(--ink);display:flex;flex-direction:column;height:100dvh;overflow:hidden}
+  header{flex:none;background:var(--card);border-bottom:1px solid var(--line);padding:12px 16px calc(10px + env(safe-area-inset-bottom,0));box-shadow:0 1px 0 rgba(0,0,0,.03)}
+  .top{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+  h1{font-family:'Varela Round',sans-serif;font-size:17px;margin:0;color:var(--ink)}
+  h1 b{color:var(--green)}
+  .sub{font-size:12.5px;color:var(--muted)}
+  .sig{font-family:'Caveat',cursive;font-size:17px;color:var(--green);margin-left:2px}
+  .cur{margin:9px 0 11px;font-size:13px;line-height:1.45}
+  .cur b{font-weight:800;color:var(--green-text)}
+  .cur .ap{color:var(--muted);display:block;margin-top:2px;font-size:12px}
+  nav{display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px;scrollbar-width:thin}
+  nav button{flex:none;display:inline-flex;flex-direction:column;align-items:flex-start;gap:1px;min-width:150px;
+    border:1.5px solid var(--line);background:var(--card);border-radius:14px;padding:9px 13px;cursor:pointer;font-family:inherit;text-align:left;color:var(--ink);transition:border-color .15s,transform .12s,box-shadow .15s}
+  nav button:hover{border-color:color-mix(in srgb,var(--green) 45%,var(--line))}
+  nav button.on{border-color:var(--green);box-shadow:0 0 0 3px color-mix(in srgb,var(--green) 16%,transparent);transform:translateY(-1px)}
+  nav .num{font-family:'Varela Round',sans-serif;font-size:14px}
+  nav button.on .num{color:var(--green)}
+  nav .lbl{font-size:11.5px;color:var(--muted);white-space:nowrap}
+  .frame{flex:1;position:relative;background:var(--card)}
+  iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:var(--card)}
+  .full{position:absolute;top:12px;right:14px;z-index:5;background:var(--green);color:#fff;text-decoration:none;font-weight:800;font-size:12px;padding:9px 13px;border-radius:10px;box-shadow:0 6px 18px rgba(17,166,60,.28)}
+  .full:hover{background:var(--green-dark)}
+</style>
+</head>
+<body>
+<header>
+  <div class="top"><h1>OPSO Santé · Cockpit — <b>4 propositions</b></h1><span class="sub">Touche un numéro · « Plein écran » pour bien juger · dis-moi les numéros que tu préfères</span><span class="sig">On prend soin de vous</span></div>
+  <div class="cur" id="cur"></div>
+  <nav id="nav"></nav>
+</header>
+<div class="frame">
+  <a class="full" id="full" href="#" target="_blank" rel="noopener">Plein écran ↗</a>
+  <iframe id="fr" title="Maquette" src="cockpit-design-1.html"></iframe>
+</div>
+<script>
+  var D = [
+    { n:1, lbl:'KPI éditorial', title:'KPI éditorial', ap:"La direction de référence : sobre et premium. Le CA groupement en héros (compteur animé), 4 KPI + insights lisibles sans scroller, hiérarchie claire. Pensé pour être compris en 5 secondes." },
+    { n:2, lbl:'Dashboard dense pro', title:'Dashboard dense pro', ap:"Pour le commercial power-user : classement unifié des pharmacies, vraies sparklines, tableaux triables et comparables — un maximum d'info par écran, sans jamais devenir illisible." },
+    { n:3, lbl:'Storytelling vert peps', title:'Storytelling vert peps', ap:"L'écran qui raconte le groupement avec chaleur : composition du CA en visuel fort (répartition catégories), ton de marque incarné, insights mis en récit. « On prend soin de vous », version data." },
+    { n:4, lbl:'Cockpit terrain (mobile)', title:'Cockpit terrain — mobile-first', ap:"Pensé usage terrain sur téléphone : navigation au pouce, gros boutons, tableaux qui ne débordent jamais. À tester surtout en vue étroite (mobile)." },
+  ];
+  var nav=document.getElementById('nav'), fr=document.getElementById('fr'), cur=document.getElementById('cur'), full=document.getElementById('full');
+  function sel(i){
+    var d=D[i];
+    fr.src='cockpit-design-'+d.n+'.html';
+    full.href='cockpit-design-'+d.n+'.html';
+    cur.innerHTML='<b>'+d.n+'. '+d.title+'</b><span class="ap">'+d.ap+'</span>';
+    [].forEach.call(nav.children,function(b,k){ b.classList.toggle('on', k===i); });
+    try{ nav.children[i].scrollIntoView({inline:'center',block:'nearest',behavior:'smooth'}); }catch(e){}
+  }
+  D.forEach(function(d,i){
+    var b=document.createElement('button');
+    b.innerHTML='<span class="num">'+d.n+'</span><span class="lbl">'+d.lbl+'</span>';
+    b.onclick=function(){ sel(i); };
+    nav.appendChild(b);
+  });
+  sel(0);
+</script>
+</body>
+</html>

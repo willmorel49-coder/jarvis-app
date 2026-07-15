@@ -1,0 +1,585 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>OPSO Santé — Cockpit groupement</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Varela+Round&family=Nunito:wght@300;400;500;600;700;800&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --opso-green:#11a63c; --opso-green-dark:#0d8530; --opso-green-pale:#e6f7ec; --opso-green-pale2:#f3fbf6; --opso-green-text:#0a7a2b;
+    --opso-gray:#64686a; --opso-gray-light:#6b7174; --opso-gray-pale:#f5f6f7; --opso-border:#e5e8ea;
+    --opso-text:#2a2d2f; --opso-white:#ffffff;
+    --opso-warning:#b8730c; --opso-warning-pale:#fbf1e2;
+    --opso-danger:#b73838; --opso-danger-pale:#fbecec;
+    --opso-accent:#dddf4b; --opso-accent-pale:#f9fac4; --opso-accent-dark:#8a8c10;
+    --radius-sm:8px; --radius-md:14px; --radius-lg:20px;
+    --text:#2a2d2f; --text2:#64686a; --text3:#6b7174; --text4:#c8cdd0;
+    --border:var(--opso-border);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:'Nunito',sans-serif;
+    background:var(--opso-gray-pale);
+    color:var(--opso-text);
+    font-size:13px;
+    line-height:1.45;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  h1,h2,h3{font-family:'Varela Round',sans-serif; font-weight:400; margin:0;}
+  a{color:inherit;}
+  ::selection{background:var(--opso-green-pale); color:var(--opso-green-dark);}
+  :focus-visible{outline:2px solid var(--opso-green); outline-offset:2px; border-radius:4px;}
+  ::-webkit-scrollbar{width:8px; height:8px;}
+  ::-webkit-scrollbar-thumb{background:#d5d9db; border-radius:4px;}
+  ::-webkit-scrollbar-track{background:var(--opso-gray-pale);}
+
+  /* ---------- App shell ---------- */
+  .app{display:flex; min-height:100vh;}
+
+  .sidebar{
+    width:224px; flex-shrink:0;
+    background:linear-gradient(180deg,#0d8530,#0a6d27);
+    color:#fff; display:flex; flex-direction:column;
+    padding:20px 14px; position:sticky; top:0; height:100vh;
+  }
+  .sidebar-brand{display:flex; align-items:center; gap:10px; padding:6px 8px 22px;}
+  .sidebar-brand-pin{width:34px; height:34px; flex-shrink:0;}
+  .sidebar-brand-text{font-family:'Varela Round',sans-serif; font-size:15px; line-height:1.2;}
+  .sidebar-brand-text small{display:block; font-family:'Nunito',sans-serif; font-size:10px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; opacity:.72; margin-top:2px;}
+
+  .nav{display:flex; flex-direction:column; gap:2px; flex:1;}
+  .nav-item{
+    display:flex; align-items:center; gap:10px;
+    padding:10px 12px; border-radius:var(--radius-sm);
+    font-size:13px; font-weight:600; color:rgba(255,255,255,.82);
+    text-decoration:none; cursor:pointer; min-height:44px;
+    transition:background .15s ease, color .15s ease;
+  }
+  .nav-item:hover{background:rgba(255,255,255,.1); color:#fff;}
+  .nav-item.active{background:rgba(255,255,255,.16); color:#fff; box-shadow:inset 3px 0 0 var(--opso-accent);}
+  .nav-item .ic{font-size:16px; width:20px; text-align:center;}
+
+  .sidebar-foot{
+    display:flex; align-items:center; gap:10px; padding:10px 10px; border-radius:var(--radius-sm);
+    background:rgba(0,0,0,.14); margin-top:8px;
+  }
+  .sidebar-foot-av{width:32px; height:32px; border-radius:50%; background:var(--opso-accent); color:#3a3c0e; font-family:'Varela Round',sans-serif; font-size:13px; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .sidebar-foot-txt{font-size:11.5px; line-height:1.3; overflow:hidden;}
+  .sidebar-foot-txt strong{display:block; font-size:12.5px; font-weight:700; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .sidebar-foot-txt span{color:rgba(255,255,255,.65);}
+
+  .main{flex:1; min-width:0; display:flex; flex-direction:column; min-height:100vh;}
+
+  /* ---------- Header unique compact ---------- */
+  .topbar{
+    position:sticky; top:0; z-index:20;
+    background:var(--opso-white); border-bottom:1px solid var(--opso-border);
+    padding:14px 28px;
+    display:flex; align-items:center; justify-content:space-between; gap:18px;
+    flex-wrap:wrap;
+  }
+  .topbar-left h1{font-size:19px; letter-spacing:-.2px; color:var(--text);}
+  .topbar-left .sub{font-size:11.5px; color:var(--text3); margin-top:3px; font-weight:600;}
+  .topbar-left .sub b{color:var(--opso-green-text); font-weight:800;}
+  .topbar-right{display:flex; align-items:center; gap:12px;}
+  .topbar-ca-label{font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.07em; color:var(--text3); text-align:right;}
+  .topbar-ca-value{font-family:'Varela Round',sans-serif; font-size:20px; color:var(--text); letter-spacing:-.3px; text-align:right;}
+  .topbar-trend{
+    display:inline-flex; align-items:center; gap:4px;
+    font-size:11px; font-weight:800; padding:4px 9px; border-radius:999px;
+    background:var(--opso-green-pale); color:var(--opso-green-text);
+  }
+
+  .content{flex:1; padding:22px 28px 40px; max-width:1240px; width:100%; margin:0 auto;}
+
+  /* ---------- KPI row ---------- */
+  .kpi-grid{
+    display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:18px;
+  }
+  .kpi-card{
+    position:relative; overflow:hidden;
+    background:var(--opso-white); border:1px solid var(--opso-border); border-radius:var(--radius-md);
+    padding:18px 20px;
+  }
+  .kpi-label{font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:var(--text3);}
+  .kpi-value{font-family:'Varela Round',sans-serif; font-size:26px; color:var(--text); letter-spacing:-.4px; margin:6px 0 4px; line-height:1.05;}
+  .kpi-value--hero{font-size:32px; color:var(--opso-green-dark);}
+  .kpi-sub{font-size:11.5px; color:var(--text3); font-weight:600;}
+  .kpi-sub b{font-weight:800;}
+  .up{color:var(--opso-green-text);}
+  .warn{color:var(--opso-warning);}
+  .danger{color:var(--opso-danger);}
+
+  .kpi-hero{
+    background:linear-gradient(180deg,var(--opso-green-pale2),var(--opso-white) 70%);
+    border-color:var(--opso-green-pale);
+  }
+  .kpi-hero .kpi-label{color:var(--opso-green-text);}
+
+  .breath-orb{
+    position:absolute; top:-40px; right:-40px; width:150px; height:150px; border-radius:50%;
+    background:radial-gradient(circle,rgba(17,166,60,.30),rgba(17,166,60,0) 70%);
+    filter:blur(2px);
+    animation:breathe 4.5s ease-in-out infinite;
+    animation-play-state:paused;
+    pointer-events:none;
+  }
+  .breath-orb.is-live{animation-play-state:running;}
+  @keyframes breathe{
+    0%,100%{transform:scale(1); opacity:.7;}
+    50%{transform:scale(1.22); opacity:1;}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .breath-orb{animation:none; opacity:.55;}
+  }
+
+  /* ---------- Section headers ---------- */
+  .card{background:var(--opso-white); border:1px solid var(--opso-border); border-radius:var(--radius-md); padding:18px 20px;}
+  .card + .card{margin-top:14px;}
+  .section-title{display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-bottom:14px;}
+  .section-title h2{font-size:15px; color:var(--text);}
+  .section-title .tag{font-size:11px; color:var(--text3); font-weight:700;}
+
+  /* ---------- Insights ---------- */
+  .insights{margin-bottom:18px;}
+  .insight-row{
+    display:flex; align-items:flex-start; gap:12px;
+    padding:12px 6px; border-bottom:1px solid var(--opso-border);
+  }
+  .insight-row:last-child{border-bottom:none; padding-bottom:2px;}
+  .insight-row:first-child{padding-top:2px;}
+  .insight-rank{
+    width:22px; height:22px; border-radius:50%; flex-shrink:0; margin-top:1px;
+    background:var(--opso-green-pale); color:var(--opso-green-text);
+    font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center;
+  }
+  .insight-body{flex:1; min-width:0;}
+  .insight-title{font-size:13px; font-weight:700; color:var(--text);}
+  .insight-meta{font-size:11.5px; color:var(--text3); margin-top:2px;}
+  .insight-impact{text-align:right; flex-shrink:0; min-width:82px;}
+  .insight-impact .amt{font-family:'Varela Round',sans-serif; font-size:15px; color:var(--opso-green-dark);}
+  .insight-impact .lbl{font-size:9.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--text3); font-weight:700;}
+
+  .chip{display:inline-flex; align-items:center; gap:5px; font-size:10.5px; font-weight:800; padding:3px 9px; border-radius:999px; margin-top:6px;}
+  .chip .dot{width:6px; height:6px; border-radius:50%;}
+  .chip-neutral{background:var(--opso-gray-pale); color:var(--text2);}
+  .chip-neutral .dot{background:var(--opso-gray-light);}
+  .chip-warning{background:var(--opso-warning-pale); color:var(--opso-warning);}
+  .chip-warning .dot{background:var(--opso-warning);}
+  .chip-danger{background:var(--opso-danger-pale); color:var(--opso-danger);}
+  .chip-danger .dot{background:var(--opso-danger);}
+
+  /* ---------- Two-column ---------- */
+  .grid-2{display:grid; grid-template-columns:1.55fr 1fr; gap:14px; align-items:start;}
+  .stack{display:flex; flex-direction:column; gap:14px;}
+
+  /* evolution chart */
+  .evo-svg{width:100%; height:auto; display:block;}
+  .evo-bar{transition:height 1.1s cubic-bezier(.22,1,.36,1), y 1.1s cubic-bezier(.22,1,.36,1);}
+  .evo-line{transition:stroke-dashoffset 1.3s cubic-bezier(.22,1,.36,1);}
+  .evo-caption{display:flex; align-items:center; justify-content:space-between; margin-top:10px; font-size:11.5px; color:var(--text3); font-weight:700;}
+
+  /* top 5 */
+  .top-row{display:flex; align-items:center; gap:10px; padding:9px 2px;}
+  .top-rank{width:18px; font-size:10px; font-weight:800; color:var(--text3); text-align:right; flex-shrink:0;}
+  .top-body{flex:1; min-width:0;}
+  .top-name{font-size:12px; font-weight:700; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .top-bar-track{height:5px; border-radius:3px; background:var(--opso-gray-pale); margin-top:5px; overflow:hidden;}
+  .top-bar-fill{height:100%; border-radius:3px; background:linear-gradient(90deg,var(--opso-green-dark),var(--opso-green)); width:0%; transition:width 1s cubic-bezier(.22,1,.36,1);}
+  .top-val{font-size:12px; font-weight:800; color:var(--text); flex-shrink:0; min-width:56px; text-align:right;}
+
+  /* visites */
+  .visit-stats{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:14px;}
+  .visit-stat{background:var(--opso-gray-pale); border-radius:var(--radius-sm); padding:10px 8px; text-align:center;}
+  .visit-stat .n{font-family:'Varela Round',sans-serif; font-size:18px; color:var(--text);}
+  .visit-stat .l{font-size:9.5px; color:var(--text3); font-weight:700; text-transform:uppercase; letter-spacing:.04em; margin-top:2px;}
+  .visit-list{display:flex; flex-direction:column; gap:8px;}
+  .visit-item{display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:12px; padding:7px 0; border-top:1px solid var(--opso-border);}
+  .visit-item:first-child{border-top:none; padding-top:0;}
+  .visit-item .name{font-weight:700; color:var(--text);}
+  .visit-item .date{font-size:11px; color:var(--opso-green-text); font-weight:800; background:var(--opso-green-pale); padding:3px 8px; border-radius:999px; flex-shrink:0;}
+
+  /* ---------- Footer signature ---------- */
+  .brand-foot{
+    display:flex; align-items:center; justify-content:center; gap:10px;
+    margin-top:26px; padding:18px 0 4px; color:var(--text3);
+  }
+  .brand-foot svg{width:20px; height:20px; opacity:.55;}
+  .brand-foot .caveat{font-family:'Caveat',cursive; font-size:22px; color:var(--opso-green-dark); opacity:.85;}
+
+  /* ---------- Mobile bottom nav ---------- */
+  .bottom-nav{display:none;}
+
+  @media (max-width:880px){
+    .sidebar{display:none;}
+    .content{padding:16px 14px 84px;}
+    .topbar{padding:12px 16px;}
+    .topbar-left h1{font-size:16px;}
+    .kpi-grid{grid-template-columns:repeat(2,1fr);}
+    .kpi-value--hero{font-size:28px;}
+    .kpi-card:nth-child(1){grid-column:1 / -1;}
+    .grid-2{grid-template-columns:1fr;}
+    .bottom-nav{
+      display:grid; grid-template-columns:repeat(5,1fr);
+      position:fixed; left:0; right:0; bottom:0; z-index:30;
+      background:var(--opso-white); border-top:1px solid var(--opso-border);
+      padding:6px 4px calc(6px + env(safe-area-inset-bottom));
+    }
+    .bottom-nav a{
+      display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+      min-height:48px; padding:4px 2px; border-radius:var(--radius-sm);
+      font-size:9.5px; font-weight:700; color:var(--text3); text-decoration:none;
+    }
+    .bottom-nav a .ic{font-size:17px;}
+    .bottom-nav a.active{color:var(--opso-green-dark);}
+  }
+  @media (max-width:420px){
+    .visit-stats{grid-template-columns:repeat(3,1fr); gap:6px;}
+    .insight-impact{min-width:70px;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <svg class="sidebar-brand-pin" viewBox="0 0 64 64" aria-hidden="true">
+        <path d="M32 4 C18 4 8 14 8 28 c0 12 8 20 16 24 l4 8 4-8 c2-1 4-2 6-4 c10-4 18-12 18-24 C56 14 46 4 32 4z" fill="#ffffff" opacity=".16"/>
+        <rect x="20" y="22" width="24" height="8" fill="#fff" rx="1"/>
+        <rect x="28" y="14" width="8" height="24" fill="#fff" rx="1"/>
+      </svg>
+      <div class="sidebar-brand-text">OPSO Santé<small>Groupement</small></div>
+    </div>
+    <nav class="nav">
+      <a class="nav-item active"><span class="ic">📊</span> Cockpit</a>
+      <a class="nav-item"><span class="ic">🏪</span> Mes pharmacies</a>
+      <a class="nav-item"><span class="ic">🧾</span> CA &amp; Commandes</a>
+      <a class="nav-item"><span class="ic">💊</span> Prix Offilog Live</a>
+      <a class="nav-item"><span class="ic">🎯</span> Prioritaires</a>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="sidebar-foot-av">MD</div>
+      <div class="sidebar-foot-txt"><strong>Manon Dussurgey</strong><span>Commerciale OPSO</span></div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <!-- ============ HEADER UNIQUE ============ -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <h1>Cockpit groupement · 17 pharmacies · juin 2026</h1>
+        <div class="sub">17 pharmacies adhérentes · <b>16 actives</b> ce mois-ci</div>
+      </div>
+      <div class="topbar-right">
+        <div>
+          <div class="topbar-ca-label">CA juin</div>
+          <div class="topbar-ca-value">94 000&nbsp;€</div>
+        </div>
+        <span class="topbar-trend">▲ +6,8% vs mai</span>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- ============ KPI ROW ============ -->
+      <section class="kpi-grid" aria-label="Indicateurs clés du groupement">
+        <div class="kpi-card kpi-hero" id="heroCard">
+          <div class="breath-orb" id="heroOrb"></div>
+          <div class="kpi-label">CA groupement · Jan → Juin 2026</div>
+          <div class="kpi-value kpi-value--hero" id="caCountUp" data-target="508000">0&nbsp;€</div>
+          <div class="kpi-sub"><span class="up">▲ +20,5%</span> entre janvier et juin</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-label">Remise obtenue</div>
+          <div class="kpi-value">17 400&nbsp;€</div>
+          <div class="kpi-sub">Cumul Jan → Juin · <b>3,4%</b> du CA net</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-label">Marge dégagée</div>
+          <div class="kpi-value">61 900&nbsp;€</div>
+          <div class="kpi-sub">Taux moyen <b>12,2%</b> du CA net</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-label">Part de marché secteur</div>
+          <div class="kpi-value">8,6%</div>
+          <div class="kpi-sub">Zone Basse-Normandie · <span class="up">▲ +0,4 pt</span></div>
+        </div>
+      </section>
+
+      <!-- ============ INSIGHTS ============ -->
+      <section class="card insights">
+        <div class="section-title">
+          <h2>Insights de la semaine</h2>
+          <span class="tag">Triés par impact €</span>
+        </div>
+
+        <div class="insight-row">
+          <div class="insight-rank">1</div>
+          <div class="insight-body">
+            <div class="insight-title">Cuzon &amp; Ferel proches d'un palier de remise supérieur</div>
+            <div class="insight-meta">Encore ~4 200€ de CA cumulé pour franchir le palier suivant ce trimestre.</div>
+            <span class="chip chip-neutral"><span class="dot"></span> Opportunité</span>
+          </div>
+          <div class="insight-impact"><div class="amt">12 400&nbsp;€</div><div class="lbl">potentiel</div></div>
+        </div>
+
+        <div class="insight-row">
+          <div class="insight-rank">2</div>
+          <div class="insight-body">
+            <div class="insight-title">Étoile (Elbeuf) : CA en recul depuis 2 mois</div>
+            <div class="insight-meta">-9% vs avril · visite terrain recommandée sous 15 jours.</div>
+            <span class="chip chip-warning"><span class="dot"></span> À surveiller</span>
+          </div>
+          <div class="insight-impact"><div class="amt">6 800&nbsp;€</div><div class="lbl">en jeu</div></div>
+        </div>
+
+        <div class="insight-row">
+          <div class="insight-rank">3</div>
+          <div class="insight-body">
+            <div class="insight-title">Long Cours : rupture de commande sur génériques</div>
+            <div class="insight-meta">Palier RFA du mois menacé · visite conseillée cette semaine.</div>
+            <span class="chip chip-danger"><span class="dot"></span> Risque</span>
+          </div>
+          <div class="insight-impact"><div class="amt">3 100&nbsp;€</div><div class="lbl">en jeu</div></div>
+        </div>
+      </section>
+
+      <!-- ============ EVOLUTION + TOP5 / VISITES ============ -->
+      <section class="grid-2" style="margin-top:14px">
+        <div class="card">
+          <div class="section-title">
+            <h2>Évolution du CA groupement</h2>
+            <span class="tag">Janvier → Juin 2026</span>
+          </div>
+          <svg class="evo-svg" id="evoSvg" viewBox="0 0 570 232" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Évolution du CA groupement de janvier à juin 2026, de 78 000€ à 94 000€">
+            <line x1="20" y1="190" x2="555" y2="190" stroke="rgba(0,0,0,.06)" stroke-width="1"/>
+            <line x1="20" y1="140" x2="555" y2="140" stroke="rgba(0,0,0,.05)" stroke-width="1"/>
+            <line x1="20" y1="90"  x2="555" y2="90"  stroke="rgba(0,0,0,.05)" stroke-width="1"/>
+            <g id="evoBars"></g>
+            <polyline id="evoLine" fill="none" stroke="var(--opso-green-dark)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" points=""/>
+            <g id="evoLabels"></g>
+          </svg>
+          <div class="evo-caption">
+            <span>508 000&nbsp;€ cumulés sur 6 mois</span>
+            <span class="up">progression continue</span>
+          </div>
+        </div>
+
+        <div class="stack">
+          <div class="card">
+            <div class="section-title">
+              <h2>Top 5 pharmacies</h2>
+              <span class="tag">CA net</span>
+            </div>
+            <div id="top5"></div>
+          </div>
+
+          <div class="card">
+            <div class="section-title">
+              <h2>Visites terrain</h2>
+              <span class="tag">Juin 2026</span>
+            </div>
+            <div class="visit-stats">
+              <div class="visit-stat"><div class="n">11/17</div><div class="l">Réalisées</div></div>
+              <div class="visit-stat"><div class="n">3</div><div class="l">Planifiées</div></div>
+              <div class="visit-stat"><div class="n" style="color:var(--opso-danger)">2</div><div class="l">En retard</div></div>
+            </div>
+            <div class="visit-list">
+              <div class="visit-item"><span class="name">Kerfontaine</span><span class="date">17 juillet</span></div>
+              <div class="visit-item"><span class="name">Chêne Vert</span><span class="date">22 juillet</span></div>
+              <div class="visit-item"><span class="name">Étoile (Elbeuf)</span><span class="date">24 juillet</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ SIGNATURE ============ -->
+      <div class="brand-foot">
+        <svg viewBox="0 0 64 64" aria-hidden="true">
+          <path d="M32 4 C18 4 8 14 8 28 c0 12 8 20 16 24 l4 8 4-8 c2-1 4-2 6-4 c10-4 18-12 18-24 C56 14 46 4 32 4z" fill="var(--opso-green)"/>
+          <rect x="20" y="22" width="24" height="8" fill="#fff" rx="1"/>
+          <rect x="28" y="14" width="8" height="24" fill="#fff" rx="1"/>
+        </svg>
+        <span class="caveat">On prend soin de vous</span>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ============ MOBILE BOTTOM NAV ============ -->
+<nav class="bottom-nav" aria-label="Navigation principale">
+  <a class="active"><span class="ic">📊</span>Cockpit</a>
+  <a><span class="ic">🏪</span>Pharmacies</a>
+  <a><span class="ic">🧾</span>CA</a>
+  <a><span class="ic">💊</span>Offilog</a>
+  <a><span class="ic">🎯</span>Priorités</a>
+</nav>
+
+<script>
+(function(){
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------- Count-up hero CA ---------- */
+  var caEl = document.getElementById('caCountUp');
+  var target = parseInt(caEl.getAttribute('data-target'), 10);
+  function fmtEUR(n){
+    return Math.round(n).toLocaleString('fr-FR') + ' €';
+  }
+  function easeOutCubic(t){ return 1 - Math.pow(1 - t, 3); }
+
+  function runCountUp(){
+    if (reduceMotion){ caEl.textContent = fmtEUR(target); return; }
+    var duration = 1400, start = null;
+    function step(ts){
+      if (start === null) start = ts;
+      var p = Math.min(1, (ts - start) / duration);
+      var eased = easeOutCubic(p);
+      caEl.textContent = fmtEUR(target * eased);
+      if (p < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  /* ---------- Evolution chart (SVG bars + line) ---------- */
+  var months = ['Jan','Fév','Mar','Avr','Mai','Juin'];
+  var values = [78000,80000,83000,85000,88000,94000];
+  var maxVal = 94000, baseY = 190, topY = 30, plotH = baseY - topY;
+  var slotW = 88, barW = 46, startX = 44;
+
+  var barsG = document.getElementById('evoBars');
+  var labelsG = document.getElementById('evoLabels');
+  var line = document.getElementById('evoLine');
+
+  var pts = [];
+  values.forEach(function(v, i){
+    var x = startX + i * slotW;
+    var h = (v / maxVal) * plotH;
+    var y = baseY - h;
+    var cx = x + barW / 2;
+
+    var rect = document.createElementNS('http://www.w3.org/2000/svg','rect');
+    rect.setAttribute('class','evo-bar');
+    rect.setAttribute('x', x);
+    rect.setAttribute('width', barW);
+    rect.setAttribute('rx', 6);
+    rect.setAttribute('fill', i === values.length - 1 ? 'var(--opso-green-dark)' : 'var(--opso-green)');
+    rect.setAttribute('fill-opacity', i === values.length - 1 ? '1' : '0.55');
+    rect.setAttribute('y', baseY);
+    rect.setAttribute('height', 0);
+    rect.dataset.finalY = y;
+    rect.dataset.finalH = h;
+    barsG.appendChild(rect);
+
+    var valTxt = document.createElementNS('http://www.w3.org/2000/svg','text');
+    valTxt.setAttribute('x', cx);
+    valTxt.setAttribute('y', y - 8);
+    valTxt.setAttribute('text-anchor','middle');
+    valTxt.setAttribute('font-size','10.5');
+    valTxt.setAttribute('font-weight','800');
+    valTxt.setAttribute('fill','var(--text2)');
+    valTxt.setAttribute('font-family',"'Nunito',sans-serif");
+    valTxt.textContent = Math.round(v/1000) + 'k€';
+    labelsG.appendChild(valTxt);
+
+    var moTxt = document.createElementNS('http://www.w3.org/2000/svg','text');
+    moTxt.setAttribute('x', cx);
+    moTxt.setAttribute('y', baseY + 18);
+    moTxt.setAttribute('text-anchor','middle');
+    moTxt.setAttribute('font-size','11');
+    moTxt.setAttribute('font-weight','700');
+    moTxt.setAttribute('fill','var(--text3)');
+    moTxt.setAttribute('font-family',"'Nunito',sans-serif");
+    moTxt.textContent = months[i];
+    labelsG.appendChild(moTxt);
+
+    pts.push(cx + ',' + (y - 16));
+  });
+
+  var linePoints = pts.join(' ');
+  line.setAttribute('points', linePoints);
+  var lineLen = 0;
+  try { lineLen = line.getTotalLength(); } catch(e){ lineLen = 600; }
+  line.style.strokeDasharray = lineLen;
+  line.style.strokeDashoffset = reduceMotion ? 0 : lineLen;
+
+  function runEvoChart(){
+    var rects = barsG.querySelectorAll('rect');
+    rects.forEach(function(r, i){
+      setTimeout(function(){
+        r.setAttribute('y', r.dataset.finalY);
+        r.setAttribute('height', r.dataset.finalH);
+      }, reduceMotion ? 0 : i * 70);
+    });
+    line.style.transition = reduceMotion ? 'none' : 'stroke-dashoffset 1.3s cubic-bezier(.22,1,.36,1) .3s';
+    requestAnimationFrame(function(){ line.style.strokeDashoffset = 0; });
+  }
+
+  /* ---------- Top 5 pharmacies ---------- */
+  var top5data = [
+    {name:'Kerfontaine', ca:85700},
+    {name:'Cuzon', ca:51700},
+    {name:'Hautemanière', ca:44700},
+    {name:'Férel', ca:43900},
+    {name:"L'Estran", ca:40800}
+  ];
+  var top5El = document.getElementById('top5');
+  var maxCa = top5data[0].ca;
+  top5data.forEach(function(p, i){
+    var row = document.createElement('div');
+    row.className = 'top-row';
+    row.innerHTML =
+      '<div class="top-rank">'+(i+1)+'</div>'+
+      '<div class="top-body">'+
+        '<div class="top-name">'+p.name+'</div>'+
+        '<div class="top-bar-track"><div class="top-bar-fill" data-pct="'+ (p.ca/maxCa*100).toFixed(0) +'"></div></div>'+
+      '</div>'+
+      '<div class="top-val">'+p.ca.toLocaleString('fr-FR')+' €</div>';
+    top5El.appendChild(row);
+  });
+
+  function runTop5(){
+    document.querySelectorAll('.top-bar-fill').forEach(function(el, i){
+      setTimeout(function(){ el.style.width = el.dataset.pct + '%'; }, reduceMotion ? 0 : i * 90);
+    });
+  }
+
+  /* ---------- IntersectionObserver: breath orb only on hero, animations on first view ---------- */
+  var heroCard = document.getElementById('heroCard');
+  var heroOrb = document.getElementById('heroOrb');
+  var heroPlayed = false;
+  var evoCard = document.getElementById('evoSvg').closest('.card');
+  var top5Card = top5El.closest('.card');
+  var evoPlayed = false, top5Played = false;
+
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(entry){
+      if (entry.target === heroCard){
+        heroOrb.classList.toggle('is-live', entry.isIntersecting);
+        if (entry.isIntersecting && !heroPlayed){ heroPlayed = true; runCountUp(); }
+      }
+      if (entry.target === evoCard && entry.isIntersecting && !evoPlayed){ evoPlayed = true; runEvoChart(); }
+      if (entry.target === top5Card && entry.isIntersecting && !top5Played){ top5Played = true; runTop5(); }
+    });
+  }, {threshold:0.35});
+
+  io.observe(heroCard);
+  io.observe(evoCard);
+  io.observe(top5Card);
+
+  /* Fallback: if hero already in view at load (above the fold), IO fires immediately anyway. */
+})();
+</script>
+</body>
+</html>

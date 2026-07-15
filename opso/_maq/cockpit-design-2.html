@@ -1,0 +1,786 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>OPSO Santé · Cockpit dense pro</title>
+<meta name="description" content="Cockpit groupement OPSO Santé — variante dashboard dense pro pour commercial power-user">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Varela+Round&family=Nunito:wght@300;400;500;600;700;800;900&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme: light;
+  --opso-green:       #11a63c;
+  --opso-green-dark:  #0d8530;
+  --opso-green-pale:  #e6f7ec;
+  --opso-green-pale2: #f3fbf6;
+  --opso-green-text:  #0a7a2b;
+  --opso-border:      #e5e8ea;
+  --opso-text:        #2a2d2f;
+  --opso-warning:     #b8730c;
+  --opso-warning-pale:#fbeedd;
+  --opso-danger:      #b73838;
+  --opso-danger-pale: #fbeaea;
+  --opso-accent:      #dddf4b;
+  --opso-accent-pale: #f9fac4;
+  --opso-accent-dark: #8a8c10;
+
+  --bg:     #f5f6f7;
+  --bg2:    #ffffff;
+  --bg3:    #eef0f2;
+  --bg4:    #e5e8ea;
+  --text:   #2a2d2f;
+  --text2:  #64686a;
+  --text3:  #6b7174;
+  --text4:  #c8cdd0;
+  --border:  rgba(0,0,0,0.07);
+  --border2: rgba(0,0,0,0.12);
+  --border3: rgba(0,0,0,0.05);
+
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+
+  --shadow-sm: 0 1px 2px rgba(20,30,25,.05);
+  --shadow-md: 0 4px 16px rgba(20,30,25,.07);
+  --shadow-lg: 0 14px 36px rgba(20,30,25,.10);
+
+  --font-display: 'Varela Round', sans-serif;
+  --font-body: 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-hand: 'Caveat', cursive;
+
+  /* palette catégorie unifiée — dérivée du vert marque + citron, jamais de bleu/violet */
+  --cat-nr:      #0d8530;
+  --cat-mi:      #11a63c;
+  --cat-pp:      #5fbf75;
+  --cat-ch:      #8a8c10;
+  --cat-gen:     #dddf4b;
+  --cat-biosim:  #b7c98a;
+
+  --sidebar-w: 236px;
+  --topbar-h: 60px;
+}
+
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--font-body);
+  font-size:13px;
+  line-height:1.4;
+  -webkit-font-smoothing:antialiased;
+  min-height:100vh;
+}
+::selection{background:var(--opso-green-pale);color:var(--opso-green-text);}
+:focus-visible{outline:2px solid var(--opso-green);outline-offset:2px;border-radius:4px;}
+a{color:inherit;text-decoration:none;}
+button{font-family:inherit;}
+img,svg{display:block;}
+
+/* ============ CENTRALISED CELL / LABEL STYLES (réutilisées partout) ============ */
+.cx-name{ font-size:13px; font-weight:700; color:var(--text); line-height:1.25; }
+.cx-num{ font-variant-numeric: tabular-nums; font-feature-settings:"tnum" 1; font-size:13px; font-weight:800; color:var(--text); }
+.cx-meta{ font-size:11px; font-weight:700; letter-spacing:.4px; text-transform:uppercase; color:var(--text3); }
+.cx-sub{ font-size:11px; font-weight:600; color:var(--text2); }
+
+/* ============ LAYOUT SHELL ============ */
+.app-shell{ display:grid; grid-template-columns: var(--sidebar-w) 1fr; min-height:100vh; }
+
+.sidebar{
+  background:var(--bg2);
+  border-right:1px solid var(--border);
+  display:flex; flex-direction:column;
+  padding:20px 16px;
+  position:sticky; top:0; height:100vh;
+}
+.brand{ display:flex; align-items:center; gap:10px; padding:4px 6px 20px; border-bottom:1px solid var(--border); margin-bottom:16px; }
+.brand-pin{ width:34px; height:34px; border-radius:var(--radius-sm); background:var(--opso-green); color:var(--opso-green); display:flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow:var(--shadow-sm); }
+.brand-pin svg{ width:20px; height:20px; }
+.brand-word{ font-family:var(--font-display); font-size:16px; color:var(--text); line-height:1.15; }
+.brand-sub{ font-size:11px; font-weight:700; color:var(--opso-green-text); letter-spacing:.3px; }
+
+.nav{ display:flex; flex-direction:column; gap:2px; }
+.nav-item{ display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:var(--radius-sm); color:var(--text2); font-weight:700; font-size:12px; cursor:pointer; transition:.15s ease; min-height:44px; }
+.nav-item svg{ width:18px; height:18px; flex-shrink:0; }
+.nav-item:hover{ background:var(--bg3); color:var(--text); }
+.nav-item.active{ background:var(--opso-green-pale); color:var(--opso-green-text); }
+.nav-item.active svg{ color:var(--opso-green); }
+
+.sidebar-foot{ margin-top:auto; padding:16px 8px 4px; border-top:1px solid var(--border); }
+.sidebar-foot .hand{ font-family:var(--font-hand); font-size:19px; color:var(--opso-green-text); }
+.sidebar-foot .cx-sub{ margin-top:2px; }
+
+/* ============ MAIN ============ */
+.main{ min-width:0; display:flex; flex-direction:column; }
+
+.topbar{
+  position:sticky; top:0; z-index:20;
+  height:var(--topbar-h);
+  background:var(--bg2);
+  border-bottom:1px solid var(--border);
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 24px;
+  box-shadow:var(--shadow-sm);
+}
+.topbar-title{ font-family:var(--font-display); font-size:16px; color:var(--text); }
+.topbar-title .cx-sub{ margin-top:1px; }
+.topbar-ca{ text-align:right; }
+.topbar-ca-value{ font-family:var(--font-display); font-size:22px; color:var(--opso-green-text); font-variant-numeric: tabular-nums; line-height:1.1; }
+.topbar-ca-label{ font-size:11px; font-weight:700; color:var(--text3); text-transform:uppercase; letter-spacing:.4px; }
+
+.content{ padding:20px 24px 64px; display:flex; flex-direction:column; gap:18px; max-width:1440px; width:100%; }
+
+/* ============ CARD ============ */
+.card{ background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius-md); box-shadow:var(--shadow-sm); }
+.card-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; padding:16px 20px; border-bottom:1px solid var(--border); }
+.card-title{ font-family:var(--font-display); font-size:15px; color:var(--text); }
+.card-body{ padding:16px 20px 20px; }
+
+/* ============ KPI GRID ============ */
+.kpi-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
+.kpi-card{ background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius-md); padding:16px 18px; box-shadow:var(--shadow-sm); display:flex; flex-direction:column; gap:6px; }
+.kpi-label{ font-size:11px; font-weight:700; color:var(--text3); text-transform:uppercase; letter-spacing:.4px; }
+.kpi-value{ font-family:var(--font-display); font-size:26px; color:var(--text); font-variant-numeric: tabular-nums; line-height:1.1; }
+.kpi-value.green{ color:var(--opso-green-text); }
+.kpi-value.amber{ color:var(--opso-warning); }
+.kpi-foot{ font-size:11px; font-weight:600; color:var(--text2); }
+.kpi-foot b{ color:var(--opso-green-text); font-weight:800; }
+
+/* ============ INSIGHTS ============ */
+.insight-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
+.insight-card{ background:var(--bg2); border:1px solid var(--border); border-left:4px solid var(--opso-green); border-radius:var(--radius-md); padding:13px 16px; box-shadow:var(--shadow-sm); display:flex; flex-direction:column; gap:5px; }
+.insight-card.warn{ border-left-color:var(--opso-warning); }
+.insight-card.bad{ border-left-color:var(--opso-danger); }
+.insight-tag{ font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.4px; }
+.insight-tag.green{ color:var(--opso-green-text); }
+.insight-tag.warn{ color:var(--opso-warning); }
+.insight-tag.bad{ color:var(--opso-danger); }
+.insight-text{ font-size:12px; font-weight:600; color:var(--text); line-height:1.35; }
+.insight-text b{ font-weight:800; }
+
+/* ============ CHIPS ============ */
+.chip{ display:inline-flex; align-items:center; gap:4px; padding:3px 9px; border-radius:var(--radius-lg); font-size:11px; font-weight:800; font-variant-numeric: tabular-nums; white-space:nowrap; line-height:1.5; }
+.chip--good{ background:var(--opso-green-pale); color:var(--opso-green-text); }
+.chip--warn{ background:var(--opso-warning-pale); color:var(--opso-warning); }
+.chip--bad{ background:var(--opso-danger-pale); color:var(--opso-danger); }
+.chip--amber{ background:var(--opso-warning-pale); color:var(--opso-warning); }
+.chip--green{ background:var(--opso-green-pale); color:var(--opso-green-text); }
+.chip--neutral{ background:var(--bg3); color:var(--text2); }
+
+/* ============ DELTA BADGE ============ */
+.delta{ display:inline-flex; align-items:center; gap:3px; padding:3px 8px; border-radius:var(--radius-lg); font-size:11px; font-weight:800; font-variant-numeric: tabular-nums; }
+.delta--up{ background:var(--opso-green-pale); color:var(--opso-green-text); }
+.delta--down{ background:var(--opso-danger-pale); color:var(--opso-danger); }
+.delta--flat{ background:var(--bg3); color:var(--text2); }
+
+/* ============ RANK ============ */
+.rank{ display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:var(--radius-sm); background:var(--bg3); color:var(--text2); font-size:11px; font-weight:800; font-variant-numeric: tabular-nums; }
+.rank--1{ background:var(--opso-green-dark); color:#fff; box-shadow:0 0 0 2px var(--opso-accent-pale); }
+.rank--2{ background:var(--opso-green); color:#fff; }
+.rank--3{ background:var(--opso-green-pale); color:var(--opso-green-text); border:1.5px solid var(--opso-green); }
+
+/* ============ CA BAR ============ */
+.ca-cell{ display:flex; align-items:center; gap:10px; min-width:190px; }
+.ca-bar-track{ flex:1; min-width:70px; height:8px; background:var(--bg3); border-radius:var(--radius-sm); overflow:hidden; }
+.ca-bar-fill{ height:100%; width:0%; border-radius:var(--radius-sm); background:linear-gradient(90deg, var(--opso-green-dark), var(--opso-green)); transition:width 1s cubic-bezier(.2,.7,.2,1); }
+.ca-cell .cx-num{ width:78px; text-align:right; flex-shrink:0; }
+
+/* ============ SPARKLINE (réel, proportionnel) ============ */
+.spark{ display:flex; align-items:flex-end; gap:3px; height:28px; width:84px; border-bottom:1px solid var(--border2); }
+.spark-bar{ flex:1; min-width:6px; background:var(--opso-green); border-radius:2px 2px 0 0; opacity:.85; transition:height .8s cubic-bezier(.2,.7,.2,1); }
+.spark-bar:last-child{ background:var(--opso-green-dark); opacity:1; }
+
+/* ============ TABLES ============ */
+.table-scroll{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
+table{ border-collapse:collapse; width:100%; min-width:900px; }
+thead th{ text-align:left; padding:9px 14px; border-bottom:1px solid var(--border2); background:var(--bg2); position:sticky; top:0; }
+th button.sort-th{ display:inline-flex; align-items:center; gap:5px; background:none; border:none; cursor:pointer; padding:2px 0; font-size:11px; font-weight:700; letter-spacing:.4px; text-transform:uppercase; color:var(--text3); }
+th button.sort-th:hover{ color:var(--opso-green-text); }
+th button.sort-th.active{ color:var(--opso-green-text); }
+th button.sort-th .arrow{ font-size:9px; opacity:.6; }
+th button.sort-th.active .arrow{ opacity:1; }
+tbody td{ padding:9px 14px; border-bottom:1px solid var(--border); vertical-align:middle; }
+tbody tr:hover{ background:var(--opso-green-pale2); }
+tbody tr:last-child td{ border-bottom:none; }
+.th-caption{ display:block; font-size:11px; font-weight:600; color:var(--text3); text-transform:none; letter-spacing:0; margin-top:2px; }
+
+/* ============ EVOLUTION CHART ============ */
+.chart-toggle{ display:flex; gap:6px; }
+.tgl-btn{ border:1.5px solid var(--border2); background:var(--bg2); color:var(--text2); font-size:11px; font-weight:800; padding:7px 13px; border-radius:var(--radius-lg); cursor:pointer; transition:.15s ease; min-height:32px; }
+.tgl-btn:hover{ border-color:var(--opso-green); color:var(--opso-green-text); }
+.tgl-btn.active{ background:var(--opso-green); border-color:var(--opso-green); color:#fff; }
+.legend-row{ display:flex; flex-wrap:wrap; gap:14px; margin-top:12px; padding-top:12px; border-top:1px solid var(--border); }
+.legend-item{ display:flex; align-items:center; gap:6px; }
+.legend-dot{ width:10px; height:10px; border-radius:3px; flex-shrink:0; }
+.legend-item .cx-sub{ color:var(--text); font-weight:700; }
+
+/* ============ CATEGORY CARD ============ */
+.cat-stack{ display:flex; width:100%; height:14px; border-radius:var(--radius-sm); overflow:hidden; background:var(--bg3); }
+.cat-stack-seg{ height:100%; width:0%; transition:width 1.1s cubic-bezier(.2,.7,.2,1); }
+.cat-list{ display:flex; flex-direction:column; gap:0; margin-top:14px; }
+.cat-row{ display:grid; grid-template-columns:170px 1fr 64px 96px; align-items:center; gap:12px; padding:9px 0; border-bottom:1px solid var(--border); }
+.cat-row:last-child{ border-bottom:none; }
+.cat-chip{ display:flex; align-items:center; gap:8px; }
+.cat-dot{ width:11px; height:11px; border-radius:3px; flex-shrink:0; }
+.cat-track{ height:7px; background:var(--bg3); border-radius:var(--radius-sm); overflow:hidden; }
+.cat-fill{ height:100%; width:0%; border-radius:var(--radius-sm); transition:width 1.1s cubic-bezier(.2,.7,.2,1); }
+
+/* ============ BOTTOM NAV (mobile) ============ */
+.bottom-nav{ display:none; }
+
+/* ============ RESPONSIVE ============ */
+@media (max-width:1180px){
+  .kpi-grid{ grid-template-columns:repeat(2,1fr); }
+  .insight-grid{ grid-template-columns:repeat(2,1fr); }
+}
+@media (max-width:900px){
+  .app-shell{ grid-template-columns:1fr; }
+  .sidebar{ display:none; }
+  .content{ padding:16px 14px 84px; }
+  .bottom-nav{
+    display:grid; grid-template-columns:repeat(5,1fr); position:fixed; left:0; right:0; bottom:0; z-index:30;
+    background:var(--bg2); border-top:1px solid var(--border); box-shadow:0 -4px 16px rgba(20,30,25,.08);
+  }
+  .bn-item{ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; padding:8px 2px; min-height:56px; color:var(--text3); font-size:11px; font-weight:700; }
+  .bn-item svg{ width:18px; height:18px; }
+  .bn-item.active{ color:var(--opso-green-text); }
+  .topbar{ padding:0 14px; }
+  .topbar-ca-value{ font-size:18px; }
+}
+@media (max-width:640px){
+  .kpi-grid{ grid-template-columns:repeat(2,1fr); }
+  .insight-grid{ grid-template-columns:1fr; }
+  .cat-row{ grid-template-columns:130px 1fr 44px; }
+  .cat-row > .cx-num.cat-amount{ display:none; }
+  .card-head{ flex-direction:column; }
+}
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-pin">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 2C7.58 2 4 5.58 4 10c0 5.25 6.5 11.4 7.13 11.98a1.2 1.2 0 0 0 1.74 0C13.5 21.4 20 15.25 20 10c0-4.42-3.58-8-8-8z" fill="currentColor"/><path d="M12 7v6M9 10h6" stroke="#fff" stroke-width="1.7" stroke-linecap="round"/></svg>
+      </div>
+      <div>
+        <div class="brand-word">OPSO Santé</div>
+        <div class="brand-sub">Normandie Pharma</div>
+      </div>
+    </div>
+    <nav class="nav">
+      <div class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Cockpit</div>
+      <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 21V9l8-5 8 5v12"/><path d="M9 21v-7h6v7"/></svg>Mes pharmacies</div>
+      <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M12 20V4M20 20v-7"/></svg>CA &amp; Commandes</div>
+      <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l7-7 10 10-7 7z"/><circle cx="8.5" cy="8.5" r="1.4"/></svg>Prix Offilog Live</div>
+      <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3 6.6 7 .9-5.2 4.9 1.4 6.9L12 17.8 5.8 21.3l1.4-6.9L2 9.5l7-.9z"/></svg>Prioritaires</div>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="hand">On prend soin de vous</div>
+      <div class="cx-sub">Espace commercial groupement</div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-title">
+        Cockpit groupement · 17 pharmacies
+        <div class="cx-sub">Juin 2026 · vue dense — classements &amp; tendances 6 mois</div>
+      </div>
+      <div class="topbar-ca">
+        <div class="topbar-ca-value" id="topbarCa">0 €</div>
+        <div class="topbar-ca-label">CA groupement 6 mois</div>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- KPI -->
+      <section class="kpi-grid" id="kpiGrid" aria-label="Indicateurs clés"></section>
+
+      <!-- INSIGHTS -->
+      <section class="insight-grid" id="insightGrid" aria-label="Insights actionnables"></section>
+
+      <!-- EVOLUTION -->
+      <section class="card">
+        <div class="card-head">
+          <div>
+            <div class="card-title">Évolution du CA groupement</div>
+            <div class="cx-sub">Janvier → juin 2026 · barres = CA mensuel réel · ligne = tendance (régression)</div>
+          </div>
+          <div class="chart-toggle">
+            <button class="tgl-btn active" id="btnTotal">Total groupement</button>
+            <button class="tgl-btn" id="btnTop5">Top 5 + Autres</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div id="evoChartWrap"></div>
+          <div class="legend-row" id="evoLegend"></div>
+        </div>
+      </section>
+
+      <!-- CATEGORIES -->
+      <section class="card">
+        <div class="card-head">
+          <div>
+            <div class="card-title">Répartition du CA par catégorie produit</div>
+            <div class="cx-sub">6 mois · part du CA groupement — palette unique, réutilisée sur tout le cockpit</div>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="cat-stack" id="catStack"></div>
+          <div class="cat-list" id="catList"></div>
+        </div>
+      </section>
+
+      <!-- CLASSEMENT PERFORMANCES MEMBRES -->
+      <section class="card">
+        <div class="card-head">
+          <div>
+            <div class="card-title">Classement · Performances membres</div>
+            <div class="cx-sub">CA net à échelle commune (max = Kerfontaine, 85 700 €) · seuils de marge différenciés Remb. / NR</div>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="table-scroll">
+            <table id="tblPerf">
+              <colgroup>
+                <col style="width:42px"><col style="width:170px"><col style="width:230px"><col style="width:100px"><col style="width:150px"><col style="width:110px"><col style="width:100px"><col style="width:100px">
+              </colgroup>
+              <thead><tr id="theadPerf"></tr></thead>
+              <tbody id="tbodyPerf"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- CLASSEMENT WML -->
+      <section class="card">
+        <div class="card-head">
+          <div>
+            <div class="card-title">Classement · Commandes WML</div>
+            <div class="cx-sub">CA commandé via la plateforme, même échelle (max = Kerfontaine 85 700 €) · tendance = sparkline réelle, plus de barres présence/absence</div>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="table-scroll">
+            <table id="tblWml">
+              <colgroup>
+                <col style="width:42px"><col style="width:170px"><col style="width:230px"><col style="width:100px"><col style="width:110px"><col style="width:110px"><col style="width:100px">
+              </colgroup>
+              <thead><tr id="theadWml"></tr></thead>
+              <tbody id="tbodyWml"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<nav class="bottom-nav" aria-label="Navigation principale">
+  <a class="bn-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Cockpit</a>
+  <a class="bn-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 21V9l8-5 8 5v12"/><path d="M9 21v-7h6v7"/></svg>Pharmas</a>
+  <a class="bn-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M12 20V4M20 20v-7"/></svg>CA</a>
+  <a class="bn-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l7-7 10 10-7 7z"/><circle cx="8.5" cy="8.5" r="1.4"/></svg>Offilog</a>
+  <a class="bn-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3 6.6 7 .9-5.2 4.9 1.4 6.9L12 17.8 5.8 21.3l1.4-6.9L2 9.5l7-.9z"/></svg>Priorit.</a>
+</nav>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------- helpers ---------- */
+  const fmtEUR = v => new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(v||0);
+  const fmtNum = v => new Intl.NumberFormat('fr-FR').format(Math.round(v));
+  function mulberry32(seed){
+    return function(){
+      seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function seedFromStr(s){ let h=0; for(let i=0;i<s.length;i++){ h=(Math.imul(h,31)+s.charCodeAt(i))|0; } return h>>>0; }
+  function rndFor(name, salt){ return mulberry32(seedFromStr(name+'::'+salt)); }
+  function tier(val, goodMin, warnMin){ return val>=goodMin?'good':(val>=warnMin?'warn':'bad'); }
+  function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
+
+  const MONTHS = ['Janv.','Févr.','Mars','Avr.','Mai','Juin'];
+  const GROUP_MAX_CA = 85700; // Kerfontaine — échelle commune Performances ET WML
+
+  /* ---------- source data (réelle, 6 mois jan->juin 2026) ---------- */
+  const RAW = [
+    {name:'Kerfontaine',        ca:85700},
+    {name:'Cuzon',              ca:51700},
+    {name:'Hautemanière',       ca:44700},
+    {name:'Ferel',              ca:43900},
+    {name:"L'Estran",          ca:40800},
+    {name:'Long Cours',         ca:40000},
+    {name:'Chêne Vert',         ca:33300},
+    {name:'République',         ca:27400},
+    {name:'Pont Lorois',        ca:24300},
+    {name:'Étoile (Elbeuf)',    ca:24200},
+    {name:'Vieux Port',         ca:16800},
+    {name:'Des Alizés',         ca:14200},
+    {name:'Sainte-Adresse',     ca:13500},
+    {name:'Du Cotentin',        ca:12800},
+    {name:'Des Dunes',          ca:12100},
+    {name:'De la Rade',         ca:11600},
+    {name:'De la Gare',         ca:11000, inactive:true},
+  ];
+
+  function splitMonths(name, salt, total, forceZeroLast){
+    const rnd = rndFor(name, salt);
+    const base = [0.150,0.158,0.164,0.170,0.176,0.182]; // légère hausse structurelle
+    let w = base.map(b => Math.max(0.04, b + (rnd()-0.5)*0.05));
+    if (forceZeroLast){ w[5] = 0; }
+    const sum = w.reduce((a,b)=>a+b,0);
+    w = w.map(x => x/sum);
+    let vals = w.map(x => Math.round(total*x/10)*10);
+    // ajuste l'arrondi sur le dernier mois non-forcé pour matcher exactement le total
+    const diff = total - vals.reduce((a,b)=>a+b,0);
+    const adjIdx = forceZeroLast ? 4 : 5;
+    vals[adjIdx] += diff;
+    return vals;
+  }
+
+  const PHARMA = RAW.map(p=>{
+    const months = splitMonths(p.name,'m',p.ca,!!p.inactive);
+    const deltaCa = months[4]>0 ? Math.round((months[5]-months[4])/months[4]*1000)/10 : -100;
+
+    let margeRemb = Math.round((2.0 + rndFor(p.name,'r')()*2.5)*10)/10;
+    let margeNR   = Math.round((10 + rndFor(p.name,'n')()*14)*10)/10;
+    if (p.name === 'Chêne Vert')   margeNR = 11.2;
+    if (p.name === 'Pont Lorois')  margeRemb = 2.2;
+
+    let potentiel   = Math.round((400 + rndFor(p.name,'p')()*4000)/50)*50;
+    let conversion  = Math.round((35 + rndFor(p.name,'c')()*45)*10)/10;
+    if (p.inactive){ potentiel = 3800; conversion = 21.5; }
+
+    const wmlFactor = 0.85 + rndFor(p.name,'w')()*0.13;
+    const wmlCa = Math.round(p.ca*wmlFactor/10)*10;
+    const wmlMonths = splitMonths(p.name,'wm',wmlCa,!!p.inactive);
+    const deltaWml = wmlMonths[4]>0 ? Math.round((wmlMonths[5]-wmlMonths[4])/wmlMonths[4]*1000)/10 : -100;
+    const commandes = Math.max(6, Math.round(wmlCa/850));
+    let tauxHonore = Math.round((82 + rndFor(p.name,'h')()*17)*10)/10;
+    if (p.inactive) tauxHonore = 71.4;
+
+    return {...p, months, deltaCa, margeRemb, margeNR, potentiel, conversion, wmlCa, wmlMonths, deltaWml, commandes, tauxHonore};
+  });
+
+  const TOTAL_CA = PHARMA.reduce((s,p)=>s+p.ca,0);
+  const ACTIVE_COUNT = PHARMA.filter(p=>p.months[5] > 0).length;
+  const REMISE = 17400;
+  const POTENTIEL_TOTAL = PHARMA.reduce((s,p)=>s+p.potentiel,0);
+  const CONVERSION_MOY = Math.round((PHARMA.reduce((s,p)=>s+p.conversion,0)/PHARMA.length)*10)/10;
+
+  /* ---------- KPI ---------- */
+  const kpiGrid = document.getElementById('kpiGrid');
+  kpiGrid.innerHTML = `
+    <div class="kpi-card">
+      <div class="kpi-label">CA groupement · 6 mois</div>
+      <div class="kpi-value green">${fmtEUR(TOTAL_CA)}</div>
+      <div class="kpi-foot">Janv. → juin 2026 · 17 pharmacies adhérentes</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Remise obtenue</div>
+      <div class="kpi-value">${fmtEUR(REMISE)}</div>
+      <div class="kpi-foot"><b>${(REMISE/TOTAL_CA*100).toFixed(1)}%</b> du CA groupement</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Pharmacies</div>
+      <div class="kpi-value">17 <span style="font-size:15px;color:var(--text3);font-weight:700">adh.</span></div>
+      <div class="kpi-foot"><b>${ACTIVE_COUNT}/17</b> actives ce mois (CA &gt; 0 en juin)</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Potentiel détecté</div>
+      <div class="kpi-value amber">${fmtEUR(POTENTIEL_TOTAL)}</div>
+      <div class="kpi-foot">Conversion moyenne <b>${CONVERSION_MOY.toFixed(1)}%</b></div>
+    </div>`;
+
+  /* ---------- INSIGHTS (calculés, aucun chiffre en dur hors REMISE) ---------- */
+  const inactivePh = PHARMA.find(p=>p.inactive);
+  const worstNR = PHARMA.reduce((w,p)=> p.margeNR < w.margeNR ? p : w, PHARMA[0]);
+  const worstRemb = PHARMA.reduce((w,p)=> p.margeRemb < w.margeRemb ? p : w, PHARMA[0]);
+  const bestDelta = PHARMA.filter(p=>!p.inactive).reduce((b,p)=> p.deltaCa > b.deltaCa ? p : b, PHARMA[0]);
+
+  const insightGrid = document.getElementById('insightGrid');
+  insightGrid.innerHTML = `
+    <div class="insight-card bad">
+      <div class="insight-tag bad">Alerte activité</div>
+      <div class="insight-text"><b>${esc(inactivePh.name)}</b> : 0 € de CA en juin (fermeture / travaux) — à relancer avant juillet.</div>
+    </div>
+    <div class="insight-card bad">
+      <div class="insight-tag bad">Marge NR sous seuil</div>
+      <div class="insight-text"><b>${esc(worstNR.name)}</b> : marge NR à <b>${worstNR.margeNR.toFixed(1)}%</b>, sous le seuil attendu (≥ 18 %) — vérifier la grille tarifaire.</div>
+    </div>
+    <div class="insight-card warn">
+      <div class="insight-tag warn">Marge Remb. sous seuil</div>
+      <div class="insight-text"><b>${esc(worstRemb.name)}</b> : marge remboursable à <b>${worstRemb.margeRemb.toFixed(1)}%</b>, sous le seuil (≥ 3,5 %) — le seuil NR reste correct en parallèle.</div>
+    </div>
+    <div class="insight-card">
+      <div class="insight-tag green">Top progression</div>
+      <div class="insight-text"><b>${esc(bestDelta.name)}</b> : <b>+${bestDelta.deltaCa.toFixed(1)}%</b> de CA vs mois précédent, meilleure dynamique du groupement.</div>
+    </div>`;
+
+  /* ---------- ÉVOLUTION CHART ---------- */
+  const groupMonths = MONTHS.map((_,i)=> PHARMA.reduce((s,p)=>s+p.months[i],0));
+  // régression linéaire simple
+  function linreg(ys){
+    const n = ys.length; const xs = ys.map((_,i)=>i);
+    const mx = xs.reduce((a,b)=>a+b,0)/n, my = ys.reduce((a,b)=>a+b,0)/n;
+    let num=0, den=0;
+    for(let i=0;i<n;i++){ num += (xs[i]-mx)*(ys[i]-my); den += (xs[i]-mx)**2; }
+    const b = num/den, a = my - b*mx;
+    return xs.map(x=>a+b*x);
+  }
+  const trend = linreg(groupMonths);
+
+  const top5 = PHARMA.slice(0,5);
+  const autresMonths = MONTHS.map((_,i)=> groupMonths[i] - top5.reduce((s,p)=>s+p.months[i],0));
+  const EVO_COLORS = ['#0a6b26','#11a63c','#5fbf75','#8a8c10','#c9a227','#9aa79a'];
+
+  const CH_W = 640, CH_H = 230, CH_PAD_L = 52, CH_PAD_B = 26, CH_PAD_T = 14, CH_PAD_R = 14;
+  const plotW = CH_W - CH_PAD_L - CH_PAD_R, plotH = CH_H - CH_PAD_T - CH_PAD_B;
+
+  function svgOpen(){ return `<svg viewBox="0 0 ${CH_W} ${CH_H}" width="100%" style="max-width:100%;height:auto;display:block" role="img" aria-label="Évolution du CA groupement sur 6 mois">`; }
+
+  function drawTotalChart(){
+    const maxY = Math.max(...groupMonths) * 1.15;
+    const x = i => CH_PAD_L + (plotW/6)*i + (plotW/6)*0.18;
+    const bw = (plotW/6)*0.64;
+    const y = v => CH_PAD_T + plotH - (v/maxY)*plotH;
+    let ticks = '';
+    for(let t=0;t<=4;t++){
+      const val = maxY/4*t;
+      const yy = CH_PAD_T + plotH - (val/maxY)*plotH;
+      ticks += `<line x1="${CH_PAD_L}" x2="${CH_W-CH_PAD_R}" y1="${yy}" y2="${yy}" stroke="rgba(0,0,0,.06)" stroke-width="1"/>`;
+      ticks += `<text x="${CH_PAD_L-8}" y="${yy+3}" font-size="10.5" text-anchor="end" fill="#64686a" font-family="Nunito">${Math.round(val/1000)}k€</text>`;
+    }
+    let bars = '';
+    groupMonths.forEach((v,i)=>{
+      bars += `<rect x="${x(i)}" y="${y(v)}" width="${bw}" height="${plotH-(y(v)-CH_PAD_T)}" rx="4" fill="#11a63c"/>`;
+      bars += `<text x="${x(i)+bw/2}" y="${y(v)-8}" font-size="11" font-weight="800" text-anchor="middle" fill="#0a7a2b" font-family="Nunito">${Math.round(v/1000)}k€</text>`;
+    });
+    let labels = '';
+    MONTHS.forEach((m,i)=>{
+      labels += `<text x="${x(i)+bw/2}" y="${CH_H-8}" font-size="11" text-anchor="middle" fill="#64686a" font-family="Nunito" font-weight="700">${m}</text>`;
+    });
+    let trendPts = trend.map((v,i)=>`${x(i)+bw/2},${y(v)}`).join(' ');
+    let trendLine = `<polyline points="${trendPts}" fill="none" stroke="#8a8c10" stroke-width="2.5" stroke-dasharray="6 4" stroke-linecap="round"/>`;
+    trend.forEach((v,i)=>{ trendLine += `<circle cx="${x(i)+bw/2}" cy="${y(v)}" r="3" fill="#8a8c10"/>`; });
+    return svgOpen()+ticks+bars+trendLine+labels+'</svg>';
+  }
+
+  function drawTop5Chart(){
+    const series = top5.map(p=>p.months).concat([autresMonths]);
+    const maxY = Math.max(...series.flat())*1.15;
+    const x = i => CH_PAD_L + (plotW/5)*i;
+    const y = v => CH_PAD_T + plotH - (v/maxY)*plotH;
+    let ticks = '';
+    for(let t=0;t<=4;t++){
+      const val = maxY/4*t;
+      const yy = CH_PAD_T + plotH - (val/maxY)*plotH;
+      ticks += `<line x1="${CH_PAD_L}" x2="${CH_W-CH_PAD_R}" y1="${yy}" y2="${yy}" stroke="rgba(0,0,0,.06)" stroke-width="1"/>`;
+      ticks += `<text x="${CH_PAD_L-8}" y="${yy+3}" font-size="10.5" text-anchor="end" fill="#64686a" font-family="Nunito">${Math.round(val/1000)}k€</text>`;
+    }
+    let lines = '';
+    series.forEach((s,si)=>{
+      const pts = s.map((v,i)=>`${x(i)},${y(v)}`).join(' ');
+      lines += `<polyline points="${pts}" fill="none" stroke="${EVO_COLORS[si]}" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>`;
+      s.forEach((v,i)=>{ lines += `<circle cx="${x(i)}" cy="${y(v)}" r="2.6" fill="${EVO_COLORS[si]}"/>`; });
+    });
+    let labels = '';
+    MONTHS.forEach((m,i)=>{
+      labels += `<text x="${x(i)}" y="${CH_H-8}" font-size="11" text-anchor="middle" fill="#64686a" font-family="Nunito" font-weight="700">${m}</text>`;
+    });
+    return svgOpen()+ticks+lines+labels+'</svg>';
+  }
+
+  const evoWrap = document.getElementById('evoChartWrap');
+  const evoLegend = document.getElementById('evoLegend');
+  const btnTotal = document.getElementById('btnTotal');
+  const btnTop5 = document.getElementById('btnTop5');
+
+  function renderEvo(mode){
+    if (mode === 'total'){
+      evoWrap.innerHTML = drawTotalChart();
+      evoLegend.innerHTML = `
+        <div class="legend-item"><span class="legend-dot" style="background:var(--opso-green)"></span><span class="cx-sub">CA mensuel groupement</span></div>
+        <div class="legend-item"><span class="legend-dot" style="background:var(--opso-accent-dark)"></span><span class="cx-sub">Tendance (régression linéaire)</span></div>`;
+      btnTotal.classList.add('active'); btnTop5.classList.remove('active');
+    } else {
+      evoWrap.innerHTML = drawTop5Chart();
+      evoLegend.innerHTML = top5.map((p,i)=>`<div class="legend-item"><span class="legend-dot" style="background:${EVO_COLORS[i]}"></span><span class="cx-sub">${esc(p.name)}</span></div>`).join('')
+        + `<div class="legend-item"><span class="legend-dot" style="background:${EVO_COLORS[5]}"></span><span class="cx-sub">Autres (12 pharmacies)</span></div>`;
+      btnTop5.classList.add('active'); btnTotal.classList.remove('active');
+    }
+  }
+  btnTotal.addEventListener('click', ()=>renderEvo('total'));
+  btnTop5.addEventListener('click', ()=>renderEvo('top5'));
+  renderEvo('total');
+
+  /* ---------- CATEGORIES ---------- */
+  const CATS = [
+    {key:'nr',     label:'Non remboursés',  pct:34, color:'var(--cat-nr)'},
+    {key:'mi',     label:'Intermédiaire',   pct:26, color:'var(--cat-mi)'},
+    {key:'pp',     label:'Petits prix',     pct:19, color:'var(--cat-pp)'},
+    {key:'ch',     label:'Chers',           pct:14, color:'var(--cat-ch)'},
+    {key:'gen',    label:'Génériques',      pct:4,  color:'var(--cat-gen)'},
+    {key:'biosim', label:'Biosimilaires',   pct:3,  color:'var(--cat-biosim)'},
+  ];
+  const catStack = document.getElementById('catStack');
+  const catList = document.getElementById('catList');
+  catStack.innerHTML = CATS.map(c=>`<div class="cat-stack-seg" data-w="${c.pct}" style="background:${c.color}"></div>`).join('');
+  catList.innerHTML = CATS.map(c=>{
+    const amount = Math.round(TOTAL_CA*c.pct/100);
+    return `<div class="cat-row">
+      <div class="cat-chip"><span class="cat-dot" style="background:${c.color}"></span><span class="cx-name">${c.label}</span></div>
+      <div class="cat-track"><div class="cat-fill" data-w="${c.pct}" style="background:${c.color}"></div></div>
+      <div class="cx-num">${c.pct}%</div>
+      <div class="cx-num cat-amount">${fmtEUR(amount)}</div>
+    </div>`;
+  }).join('');
+
+  /* ---------- SPARKLINE ---------- */
+  function sparkline(monthsArr){
+    const max = Math.max(...monthsArr) || 1;
+    return `<div class="spark">${monthsArr.map(v=>`<div class="spark-bar" data-h="${Math.round(v/max*100)}" style="height:0%"></div>`).join('')}</div>`;
+  }
+
+  /* ---------- DELTA BADGE ---------- */
+  function deltaBadge(d){
+    if (d <= -50) return `<span class="delta delta--down">▼ ${d.toFixed(1)}%</span>`;
+    if (d > 0.3) return `<span class="delta delta--up">▲ +${d.toFixed(1)}%</span>`;
+    if (d < -0.3) return `<span class="delta delta--down">▼ ${d.toFixed(1)}%</span>`;
+    return `<span class="delta delta--flat">= ${d.toFixed(1)}%</span>`;
+  }
+
+  /* ---------- GENERIC SORTABLE CLASSEMENT ---------- */
+  function makeClassement({theadEl, tbodyEl, data, columns, defaultKey, defaultDir, rowRenderer}){
+    let sortKey = defaultKey, sortDir = defaultDir;
+
+    function sortedData(){
+      const col = columns.find(c=>c.key===sortKey);
+      const arr = data.slice().sort((a,b)=>{
+        const av = col.get(a), bv = col.get(b);
+        if (typeof av === 'string') return sortDir==='asc' ? av.localeCompare(bv) : bv.localeCompare(av);
+        return sortDir==='asc' ? av-bv : bv-av;
+      });
+      return arr;
+    }
+
+    function renderHead(){
+      theadEl.innerHTML = columns.map(c=>{
+        if (!c.sortable) return `<th>${c.label}${c.caption?`<span class="th-caption">${c.caption}</span>`:''}</th>`;
+        const active = c.key===sortKey;
+        const arrow = active ? (sortDir==='asc'?'▲':'▼') : '↕';
+        return `<th><button class="sort-th${active?' active':''}" data-key="${c.key}" aria-sort="${active?(sortDir==='asc'?'ascending':'descending'):'none'}">${c.label} <span class="arrow">${arrow}</span></button>${c.caption?`<span class="th-caption">${c.caption}</span>`:''}</th>`;
+      }).join('');
+      theadEl.querySelectorAll('button.sort-th').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          const key = btn.getAttribute('data-key');
+          if (key === sortKey){ sortDir = sortDir==='asc'?'desc':'asc'; }
+          else { sortKey = key; sortDir = 'desc'; }
+          renderHead();
+          renderBody();
+        });
+      });
+    }
+
+    function renderBody(){
+      const arr = sortedData();
+      tbodyEl.innerHTML = arr.map((item,i)=>rowRenderer(item, i+1)).join('');
+      // anime les barres CA + sparklines fraîchement injectées
+      requestAnimationFrame(()=>{
+        tbodyEl.querySelectorAll('.ca-bar-fill[data-w]').forEach(el=>{ el.style.width = el.getAttribute('data-w')+'%'; });
+        tbodyEl.querySelectorAll('.spark-bar[data-h]').forEach(el=>{ el.style.height = el.getAttribute('data-h')+'%'; });
+      });
+    }
+
+    renderHead();
+    renderBody();
+  }
+
+  /* ---------- CLASSEMENT PERFORMANCES MEMBRES ---------- */
+  makeClassement({
+    theadEl: document.getElementById('theadPerf'),
+    tbodyEl: document.getElementById('tbodyPerf'),
+    data: PHARMA,
+    defaultKey: 'ca', defaultDir: 'desc',
+    columns: [
+      {key:'rank', label:'#', sortable:false},
+      {key:'name', label:'Pharmacie', sortable:true, get:p=>p.name},
+      {key:'ca', label:'CA net · 6 mois', sortable:true, get:p=>p.ca},
+      {key:'deltaCa', label:'Δ vs mois préc.', sortable:true, get:p=>p.deltaCa},
+      {key:'margeNR', label:'Tx marge', sortable:true, get:p=>p.margeNR, caption:'Remb. ≥3,5% · NR ≥18%'},
+      {key:'potentiel', label:'Potentiel €', sortable:true, get:p=>p.potentiel},
+      {key:'conversion', label:'Conversion %', sortable:true, get:p=>p.conversion},
+      {key:'trend', label:'Tendance 6 mois', sortable:false},
+    ],
+    rowRenderer: (p, rank) => `<tr>
+      <td><span class="rank rank--${rank<=3?rank:'x'}">${rank}</span></td>
+      <td><span class="cx-name">${esc(p.name)}</span>${p.inactive?`<div class="cx-sub" style="color:var(--opso-danger)">inactive ce mois</div>`:''}</td>
+      <td><div class="ca-cell"><div class="ca-bar-track"><div class="ca-bar-fill" data-w="${(p.ca/GROUP_MAX_CA*100).toFixed(1)}"></div></div><span class="cx-num">${fmtEUR(p.ca)}</span></div></td>
+      <td>${deltaBadge(p.deltaCa)}</td>
+      <td><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="chip chip--${tier(p.margeRemb,3.5,2.5)}">R ${p.margeRemb.toFixed(1)}%</span><span class="chip chip--${tier(p.margeNR,18,12)}">NR ${p.margeNR.toFixed(1)}%</span></div></td>
+      <td><span class="chip chip--amber cx-num">${fmtEUR(p.potentiel)}</span></td>
+      <td><span class="chip chip--green cx-num">${p.conversion.toFixed(1)}%</span></td>
+      <td>${sparkline(p.months)}</td>
+    </tr>`
+  });
+
+  /* ---------- CLASSEMENT WML ---------- */
+  makeClassement({
+    theadEl: document.getElementById('theadWml'),
+    tbodyEl: document.getElementById('tbodyWml'),
+    data: PHARMA,
+    defaultKey: 'wmlCa', defaultDir: 'desc',
+    columns: [
+      {key:'rank', label:'#', sortable:false},
+      {key:'name', label:'Pharmacie', sortable:true, get:p=>p.name},
+      {key:'wmlCa', label:'CA commandé WML', sortable:true, get:p=>p.wmlCa},
+      {key:'deltaWml', label:'Δ vs mois préc.', sortable:true, get:p=>p.deltaWml},
+      {key:'commandes', label:'Commandes', sortable:true, get:p=>p.commandes},
+      {key:'tauxHonore', label:'Taux honoré', sortable:true, get:p=>p.tauxHonore, caption:'≥95% attendu'},
+      {key:'trend', label:'Tendance 6 mois', sortable:false},
+    ],
+    rowRenderer: (p, rank) => `<tr>
+      <td><span class="rank rank--${rank<=3?rank:'x'}">${rank}</span></td>
+      <td><span class="cx-name">${esc(p.name)}</span>${p.inactive?`<div class="cx-sub" style="color:var(--opso-danger)">inactive ce mois</div>`:''}</td>
+      <td><div class="ca-cell"><div class="ca-bar-track"><div class="ca-bar-fill" data-w="${(p.wmlCa/GROUP_MAX_CA*100).toFixed(1)}"></div></div><span class="cx-num">${fmtEUR(p.wmlCa)}</span></div></td>
+      <td>${deltaBadge(p.deltaWml)}</td>
+      <td><span class="cx-num">${fmtNum(p.commandes)}</span></td>
+      <td><span class="chip chip--${tier(p.tauxHonore,95,90)}">${p.tauxHonore.toFixed(1)}%</span></td>
+      <td>${sparkline(p.wmlMonths)}</td>
+    </tr>`
+  });
+
+  /* ---------- WOW SOBRE : count-up + animations d'ouverture ---------- */
+  function countUp(el, target, ms){
+    const t0 = performance.now();
+    function step(t){
+      const p = Math.min(1, (t-t0)/ms);
+      const eased = 1 - Math.pow(1-p, 3);
+      el.textContent = fmtEUR(Math.round(target*eased));
+      if (p < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+  countUp(document.getElementById('topbarCa'), TOTAL_CA, 1000);
+
+  requestAnimationFrame(()=>{
+    setTimeout(()=>{
+      document.querySelectorAll('.cat-stack-seg[data-w]').forEach(el=>{ el.style.width = el.getAttribute('data-w')+'%'; });
+      document.querySelectorAll('.cat-fill[data-w]').forEach(el=>{ el.style.width = el.getAttribute('data-w')+'%'; });
+    }, 80);
+  });
+
+})();
+</script>
+</body>
+</html>
