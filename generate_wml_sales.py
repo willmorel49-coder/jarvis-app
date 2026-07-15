@@ -36,13 +36,15 @@ def classify(nature, afm, pu_net):
         return 'nr'
     try:
         p = float(pu_net or 0)
+        if p > 2000:
+            return 'tch'      # très chers > 2000 €
         if p > 468:
-            return 'ch'
+            return 'ch'       # chers 468 – 2000 €
         if p > 4.33:
-            return 'mi'
+            return 'mi'       # intermédiaire 4,33 – 468 €
     except (TypeError, ValueError):
         pass
-    return 'pp'
+    return 'pp'               # petits prix ≤ 4,33 €
 
 
 def tranche(remise_pct):
@@ -154,7 +156,7 @@ except Exception as e:
 
 def cat_famille(designation, famille):
     """Catégorie CATS finale (finition CRM) : affine princeps prix -> NR via benchmark."""
-    if famille in ('pp', 'mi', 'ch'):
+    if famille in ('pp', 'mi', 'ch', 'tch'):
         k = re.sub(r'\s+', ' ', designation).strip().upper()
         if k in BENCH_NR:
             return 'nr'
