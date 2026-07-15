@@ -1,5 +1,5 @@
 // WML Sales Data — app OPSO Santé (généré par generate_wml_sales.py)
-// 9920 lignes · 15 adhérents actifs · Jan-Juin 2026 (toutes sources : William + Karine…)
+// 9920 lignes · 15 adhérents actifs · Jan-Juin 2026 (William + Karine…)
 // pharmacyCode = CIP, mappé à pharmacyId au chargement (initApp)
 const WML_STATIC_SALES = [
 {id:"wml_2144411_1_2026_0",pharmacyCode:"2144411",importId:null,month:1,year:2026,artDesignation:"MODOPAR 62,5 GELU FL60",artCode:"3006654",artId:null,artFamille:"pp",qte:-1,puBrut:2.84,puNet:2.6599,mntNetHt:-2.66},

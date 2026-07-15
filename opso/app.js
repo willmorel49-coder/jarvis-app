@@ -94,6 +94,14 @@ function getOpsoChartColor(i) {
   return OPSO_CHART_PALETTE[i % OPSO_CHART_PALETTE.length];
 }
 
+// Période couverte par les achats groupement (WML_MONTHS) — ex. "Jan–Juin 2026".
+function wmlPeriod() {
+  const ab = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sep','Oct','Nov','Déc'];
+  const ms = (typeof WML_MONTHS !== 'undefined' && WML_MONTHS.length) ? WML_MONTHS : ['2026-01','2026-04'];
+  const f = ms[0].split('-'), l = ms[ms.length-1].split('-');
+  return ab[(+f[1])-1] + '–' + ab[(+l[1])-1] + ' ' + l[0];
+}
+
 function getOpsoChartColorPale(i) {
   const c = getOpsoChartColor(i);
   return c + '33'; // 20% alpha
@@ -1486,7 +1494,7 @@ function printRapportMensuel() {
     const totCa = sortedWml.reduce((s,d) => s+d.ca, 0);
     const totMg = sortedWml.reduce((s,d) => s+d.mg, 0);
     const txMoy = totCa > 0 ? (totMg/totCa*100) : 0;
-    return `<h2 style="page-break-before:always">Achats Intégral Pharma — Jan–Avr 2026</h2>
+    return `<h2 style="page-break-before:always">Achats Intégral Pharma — ${wmlPeriod()}</h2>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
       <div class="kpi"><div class="kpi-val">${fmtW(totCa)}</div><div class="kpi-lab">CA total acheté</div></div>
       <div class="kpi"><div class="kpi-val" style="color:#059669">${fmtW(totMg)}</div><div class="kpi-lab">Marge (remise obtenue)</div></div>
@@ -3193,7 +3201,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
           <div class="card-header">
             <div>
               <div class="card-title">📦 Achats via le groupement — 2026</div>
-              <div class="card-subtitle">Jan–Avr 2026 · ${(wmlEntry.pr || []).length} références · TIRCODE ${wmlEntry.tc}</div>
+              <div class="card-subtitle">${wmlPeriod()} · ${(wmlEntry.pr || []).length} références · TIRCODE ${wmlEntry.tc}</div>
             </div>
             <div style="text-align:right">
               <div style="font-size:22px;font-weight:900;color:var(--green)">${fmt(wmlEntry.ca)}</div>
@@ -3215,7 +3223,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
             </div>
           </div>
           <div style="padding:16px 20px;border-top:1px solid var(--border)">
-            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);margin-bottom:12px">CA mensuel Jan–Avr 2026</div>
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);margin-bottom:12px">CA mensuel ${wmlPeriod()}</div>
             <div style="display:flex;gap:8px">${moisBars}</div>
           </div>
           ${topProds ? `<div style="border-top:1px solid var(--border)">
@@ -3421,7 +3429,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
         return `<div class="card fade-up" style="margin-bottom:20px;border-left:3px solid #11a63c">
           <div class="card-header">
             <div>
-              <div class="card-title">📦 Groupement OPSO — Jan–Avr 2026</div>
+              <div class="card-title">📦 Groupement OPSO — ${wmlPeriod()}</div>
               <div class="card-subtitle">Achats totaux via le groupement · taux de conversion en commande directe IP</div>
             </div>
             ${convPct !== null ? `<div style="text-align:right">
@@ -6628,7 +6636,7 @@ function renderPrioritaires() {
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:14px">
         <div>
           <div style="font-size:15px;font-weight:800">Sélection produits OPSO Santé</div>
-          <div style="font-size:11px;color:var(--text3);margin-top:2px">Agrégé sur ${wmlVis.length} pharmacies adhérentes · Jan–Avr 2026 · ${fmtN(nProduits)} références</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">Agrégé sur ${wmlVis.length} pharmacies adhérentes · ${wmlPeriod()} · ${fmtN(nProduits)} références</div>
         </div>
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
@@ -6835,7 +6843,7 @@ function printPrioritairesPDF() {
   <div class="prospect-box">
     <div class="prospect-label">Sélection produits</div>
     <div class="prospect-title">${prospectName ? `Sélection préparée pour : ${prospectName}` : `Top ${page.length} produits achetés par nos adhérents chez Intégral Pharma`}</div>
-    <div class="prospect-sub">${catTitre} · Trié par ${triLabel} · Période Jan–Avr 2026 · ${wmlVis.length} pharmacies adhérentes</div>
+    <div class="prospect-sub">${catTitre} · Trié par ${triLabel} · Période ${wmlPeriod()} · ${wmlVis.length} pharmacies adhérentes</div>
     ${prospectNote ? `<div class="prospect-sub" style="margin-top:6px;font-style:italic;opacity:.9">${prospectNote}</div>` : ''}
   </div>
 </div>
@@ -6849,7 +6857,7 @@ function printPrioritairesPDF() {
 
 <div class="intro">
   <strong>📋 Ce que nos adhérents OPSO Santé commandent chez Intégral Pharma</strong>
-  Liste des ${page.length} produits les plus achetés par les pharmacies du groupement OPSO Santé, basée sur les achats réels Jan–Avr 2026.
+  Liste des ${page.length} produits les plus achetés par les pharmacies du groupement OPSO Santé, basée sur les achats réels ${wmlPeriod()}.
   Rejoindre OPSO Santé vous donne accès à ces tarifs et à un délégué dédié.
 </div>
 
@@ -8664,7 +8672,13 @@ function renderWml() {
   const fmt  = v => new Intl.NumberFormat('fr-FR', {style:'currency',currency:'EUR',maximumFractionDigits:0}).format(v||0);
   const fmtD = v => new Intl.NumberFormat('fr-FR', {style:'currency',currency:'EUR',minimumFractionDigits:2,maximumFractionDigits:2}).format(v||0);
   const fmtP = v => (v||0).toFixed(1) + ' %';
-  const MONTH_LABELS = ['Jan 2026', 'Fév 2026', 'Mar 2026', 'Avr 2026'];
+  const _MABBR = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sep','Oct','Nov','Déc'];
+  const _WMONTHS = (typeof WML_MONTHS !== 'undefined' && WML_MONTHS.length) ? WML_MONTHS : ['2026-01','2026-02','2026-03','2026-04'];
+  const N_MONTHS = _WMONTHS.length;
+  const MONTH_IDX = _WMONTHS.map((_,i)=>i);
+  const MONTH_LABELS = _WMONTHS.map(ym => { const [y,m] = ym.split('-'); return _MABBR[(+m)-1] + ' ' + y; });
+  const _first = _WMONTHS[0].split('-'), _last = _WMONTHS[N_MONTHS-1].split('-');
+  const PERIOD_SHORT = _MABBR[(+_first[1])-1] + '–' + _MABBR[(+_last[1])-1] + ' ' + _last[0];
   const AFM_LABELS = { REMBSS:'Remb. SS', MED010:'Médicament OTC', DM_20:'Dispositif médical', PARA:'Parapharmacie', DM:'DM', MED021:'Médicament autre', AUTRE:'Autre' };
 
   const ph = wmlPharma ? WML_VISIBLE.find(d => d.tc === wmlPharma) : null;
@@ -8682,7 +8696,7 @@ function renderWml() {
     const directCaPhWml = phFromState && curYPh
       ? sumCA(getSales({ pharmacyId: phFromState.id, year: curYPh, month: curMPh }))
       : 0;
-    const wmlMonthAvg = ca_tot / 4;
+    const wmlMonthAvg = ca_tot / N_MONTHS;
     const potentielPh = Math.max(0, wmlMonthAvg - directCaPhWml);
     const convRatioPh = wmlMonthAvg > 0 ? Math.round(directCaPhWml / wmlMonthAvg * 100) : null;
 
@@ -8786,7 +8800,7 @@ function renderWml() {
         <div class="wml-kpi stat-box"><div class="wml-kpi-label stat-box-label">CA net HT</div><div class="wml-kpi-val stat-box-value">${fmt(ca_tot)}</div></div>
         <div class="wml-kpi stat-box"><div class="wml-kpi-label stat-box-label">Marge (remise obtenue)</div><div class="wml-kpi-val stat-box-value" style="color:var(--green)">${fmtD(mg_tot)}</div></div>
         <div class="wml-kpi stat-box"><div class="wml-kpi-label stat-box-label">Taux de marge</div><div class="wml-kpi-val stat-box-value">${fmtP(tx_mg)}</div></div>
-        <div class="wml-kpi stat-box"><div class="wml-kpi-label stat-box-label">Mois couverts</div><div class="wml-kpi-val stat-box-value" style="font-size:18px">${ph.ca_m.filter(v=>v>0).length} / 4</div></div>
+        <div class="wml-kpi stat-box"><div class="wml-kpi-label stat-box-label">Mois couverts</div><div class="wml-kpi-val stat-box-value" style="font-size:18px">${ph.ca_m.filter(v=>v>0).length} / ${N_MONTHS}</div></div>
       </div>
 
       ${(() => {
@@ -8813,7 +8827,7 @@ function renderWml() {
               <div class="section-header-icon">🗂</div>
               <div class="section-header-text">
                 <h2>Répartition par famille</h2>
-                <div class="section-header-sub">Jan–Avr 2026 · CA HT par catégorie AFM</div>
+                <div class="section-header-sub">${PERIOD_SHORT} · CA HT par catégorie AFM</div>
               </div>
             </div>
             <div style="font-size:22px;font-weight:900;color:var(--opso-green)">${fmtD(totalAfm)}</div>
@@ -8827,7 +8841,7 @@ function renderWml() {
         <div class="card-header" style="padding-bottom:8px">
           <div>
             <div class="card-title">Direct IP vs Achats groupement</div>
-            <div class="card-subtitle">Mois courant vs moyenne mensuelle groupement (Jan–Avr)</div>
+            <div class="card-subtitle">Mois courant vs moyenne mensuelle groupement (${PERIOD_SHORT})</div>
           </div>
           ${convRatioPh !== null ? `<div style="font-size:26px;font-weight:900;color:${convRatioPh>=100?'var(--green)':convRatioPh>=60?'var(--amber)':'var(--rose)'}">${convRatioPh}%</div>` : ''}
         </div>
@@ -8865,8 +8879,8 @@ function renderWml() {
           <div class="section-header-title">
             <div class="section-header-icon">📊</div>
             <div class="section-header-text">
-              <h2>CA mensuel Jan – Avr 2026</h2>
-              <div class="section-header-sub">Évolution des commandes groupement sur 4 mois</div>
+              <h2>CA mensuel ${PERIOD_SHORT}</h2>
+              <div class="section-header-sub">Évolution des commandes groupement sur ${N_MONTHS} mois</div>
             </div>
           </div>
         </div>
@@ -8947,8 +8961,8 @@ function renderWml() {
     const tx_mg_grp = tot_ca > 0 ? (tot_mg/tot_ca*100) : 0;
 
     // CA groupement par mois
-    const ca_grp_m = [0,1,2,3].map(i => WML_VISIBLE.reduce((s,d)=>s+(d.ca_m[i]||0),0));
-    const mg_grp_m = [0,1,2,3].map(i => WML_VISIBLE.reduce((s,d)=>s+(d.mg_m[i]||0),0));
+    const ca_grp_m = MONTH_IDX.map(i => WML_VISIBLE.reduce((s,d)=>s+(d.ca_m[i]||0),0));
+    const mg_grp_m = MONTH_IDX.map(i => WML_VISIBLE.reduce((s,d)=>s+(d.mg_m[i]||0),0));
     const maxGrp = Math.max(...ca_grp_m);
     const grpBars = ca_grp_m.map((v, i) => {
       const pct = maxGrp > 0 ? (v/maxGrp*100) : 0;
@@ -8986,7 +9000,7 @@ function renderWml() {
       const tx = d.ca > 0 ? (d.mg/d.ca*100) : 0;
       const pct = (d.ca/maxPhCA*100).toFixed(1);
       const actifs = d.ca_m.filter(v=>v>0).length;
-      const wmlAvgMonth = d.ca / 4;
+      const wmlAvgMonth = d.ca / N_MONTHS;
       const directCa = directCaByNom.get(nnWml(d.nom)) || 0;
       const potentiel = Math.max(0, wmlAvgMonth - directCa);
       const convRatio = wmlAvgMonth > 0 ? Math.round(directCa / wmlAvgMonth * 100) : null;
@@ -9019,7 +9033,7 @@ function renderWml() {
             ${d.ca_m.map((v,j) => `<div style="width:10px;height:16px;border-radius:2px;background:${v>0?'var(--green)':'var(--bg3)'}"></div>`).join('')}
           </div>
         </td>
-        <td style="padding:11px 12px;text-align:center;font-size:11px;color:var(--text3)">${actifs}/4</td>
+        <td style="padding:11px 12px;text-align:center;font-size:11px;color:var(--text3)">${actifs}/${N_MONTHS}</td>
         <td style="padding:11px 12px;text-align:center">${trendBadge}</td>
         <td style="padding:11px 12px;text-align:right">
           ${potentiel > 50 ? `<span style="font-size:11px;font-weight:700;color:var(--amber)">${fmt(potentiel)}</span><div style="font-size:9px;color:var(--text3)">${convRatio !== null ? convRatio + '% conv.' : ''}</div>` : convRatio !== null ? `<span style="font-size:10px;color:var(--green);font-weight:700">✓ ${convRatio}%</span>` : '—'}
@@ -9109,7 +9123,7 @@ function renderWml() {
           <div class="section-header-icon">🏆</div>
           <div class="section-header-text">
             <h2>Top 30 produits — Groupement OPSO Santé</h2>
-            <div class="section-header-sub">${Object.keys(grpProdMap).length} références distinctes · Jan–Avr 2026</div>
+            <div class="section-header-sub">${Object.keys(grpProdMap).length} références distinctes · ${PERIOD_SHORT}</div>
           </div>
         </div>
       </div>
@@ -9261,7 +9275,7 @@ function renderWml() {
           <div class="card-header">
             <div>
               <div class="card-title">Adhérents sans données</div>
-              <div class="card-subtitle">${absents.length} pharmacie${absents.length>1?'s':''} OPSO absente${absents.length>1?'s':''} des imports Jan–Avr 2026</div>
+              <div class="card-subtitle">${absents.length} pharmacie${absents.length>1?'s':''} OPSO absente${absents.length>1?'s':''} des imports ${wmlPeriod()}</div>
             </div>
             <span style="font-size:10px;padding:3px 10px;border-radius:12px;background:rgba(255,176,32,.12);color:var(--amber);font-weight:700">${absents.length} / ${OPSO_ADHERENTS.length}</span>
           </div>
@@ -11221,7 +11235,7 @@ function showFicheVisite(pharmacyId) {
         <!-- WML Achats IP -->
         ${wmlEntry ? `
         <div style="margin-bottom:20px;padding:14px 16px;background:#f0fdf4;border-radius:12px;border-left:3px solid #11a63c">
-          <div style="font-size:11px;font-weight:800;color:#0d8530;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">📦 Achats Intégral Pharma — Jan–Avr 2026</div>
+          <div style="font-size:11px;font-weight:800;color:#0d8530;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">📦 Achats Intégral Pharma — ${wmlPeriod()}</div>
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
             <div style="text-align:center;padding:8px;background:#fff;border-radius:8px">
               <div style="font-size:16px;font-weight:900;color:#0d8530">${fmt(wmlEntry.ca)}</div>
