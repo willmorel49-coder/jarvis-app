@@ -274,7 +274,34 @@ for pf in PHARM_FILES:
     wb.close()
     print('  [master] %s : +%d officines (total %d)' % (os.path.basename(pf), added, len(pharm)))
 
-# ── 2. Ventes (Will=WML + Pauline=PGN, 5 mois chacun) ──
+# ── 1bis. Carte ARTCODE/PROCODE -> ARTCODEBARRE ──
+# Certains exports bruts (ex. Karine / KV) n'ont pas la colonne ARTCODEBARRE (EAN).
+# On la reconstruit à partir des fichiers déjà enrichis (98,9% des lignes KV couvertes).
+ART2EAN = {}
+for _p in sorted(glob.glob(os.path.join(STATS, '*_0[1-6]_2026*.xlsx'))):
+    _wb = openpyxl.load_workbook(_p, read_only=True, data_only=True)
+    _ws = _wb.active
+    _it = _ws.iter_rows(values_only=True)
+    _h = next(_it)
+    _hi = {name: i for i, name in enumerate(_h)}
+    _ib = _hi.get('ARTCODEBARRE')
+    if _ib is None:
+        _wb.close()
+        continue
+    _ia, _ip = _hi.get('ARTCODE'), _hi.get('PROCODE')
+    for _r in _it:
+        _ean = _r[_ib] if _ib < len(_r) else None
+        if _ean in (None, ''):
+            continue
+        _ean = str(_ean).split('.')[0]
+        if _ia is not None and _ia < len(_r) and _r[_ia] not in (None, ''):
+            ART2EAN.setdefault(str(_r[_ia]).split('.')[0], _ean)
+        if _ip is not None and _ip < len(_r) and _r[_ip] not in (None, ''):
+            ART2EAN.setdefault(str(_r[_ip]).split('.')[0], _ean)
+    _wb.close()
+print('  [map] ARTCODE/PROCODE -> EAN : %d entrees' % len(ART2EAN))
+
+# ── 2. Ventes (tous commerciaux, 6 mois chacun) ──
 sales = []
 active = {}  # code -> nom (fallback)
 comms = {}   # code -> set des commerciaux
@@ -308,8 +335,16 @@ for comm, prefix in SOURCES:
             if code not in active:
                 active[code] = s(c(r, 'TIRSOCIETE'))
             comms.setdefault(code, set()).add(comm)
+            # EAN : colonne ARTCODEBARRE si présente, sinon backfill via ARTCODE/PROCODE (exports bruts type KV)
+            _bc = c(r, 'ARTCODEBARRE')
+            if _bc in (None, ''):
+                for _cn in ('ARTCODE', 'PROCODE'):
+                    _v = c(r, _cn)
+                    if _v not in (None, '') and str(_v).split('.')[0] in ART2EAN:
+                        _bc = ART2EAN[str(_v).split('.')[0]]
+                        break
             # format compact (tableau) : [pharmacyId, mois, comm, cip13, qte, puNet, mntNetHt]
-            sales.append([code, mois, comm, cip13(c(r, 'ARTCODEBARRE')),
+            sales.append([code, mois, comm, cip13(_bc),
                           num(c(r, 'PLVQTE')), num(c(r, 'PLVPUNET')), num(c(r, 'PLVMNTNETHT'))])
             n += 1
         wb.close()
