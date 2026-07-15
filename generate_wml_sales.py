@@ -316,6 +316,23 @@ for relpath, sheet2cip in AGG_SOURCES:
 
 print('\nTotal : %d lignes · %d adhérents OPSO actifs' % (len(all_sales), len(agg)))
 
+# ── 3ter. Focus GLP-1 (Wegovy / Mounjaro…) : blockbusters non-remboursés « stars du moment » ──
+GLP1_BRANDS = [('Mounjaro', 'MOUNJARO'), ('Wegovy', 'WEGOVY'), ('Ozempic', 'OZEMPIC'),
+               ('Trulicity', 'TRULICITY'), ('Autres GLP-1', 'VICTOZA|SAXENDA|RYBELSUS|BYDUREON|LYXUMIA')]
+glp1 = {'ca': 0.0, 'qt': 0.0, 'ca_m': [0.0] * len(MONTHS),
+        'brands': {b[0]: [0.0, 0.0] for b in GLP1_BRANDS}, 'ph': set()}
+for s in all_sales:
+    d = (s['artDesignation'] or '').upper()
+    for name, pat in GLP1_BRANDS:
+        if re.search(pat, d):
+            glp1['ca'] += s['mntNetHt']; glp1['qt'] += s['qte']
+            glp1['ca_m'][MONTHS.index(s['month'])] += s['mntNetHt']
+            glp1['brands'][name][0] += s['mntNetHt']; glp1['brands'][name][1] += s['qte']
+            glp1['ph'].add(s['pharmacyCode'])
+            break
+_ca_grp = sum(a['ca'] for a in agg.values()) or 1
+print('  [GLP-1] %.0f EUR (%.1f%% du CA) · %d u · %d pharmacies' % (glp1['ca'], 100 * glp1['ca'] / _ca_grp, glp1['qt'], len(glp1['ph'])))
+
 # ── 4. wml-sales-data.js ──
 lines = [
     '// WML Sales Data — app OPSO Santé (généré par generate_wml_sales.py)',
@@ -359,7 +376,15 @@ for cip in order:
             json.dumps([r2(x) for x in a['ca_m']]), json.dumps([r2(x) for x in a['mg_m']]), json.dumps([r2(x) for x in a['qt_m']]),
             obj_num_map(a['afm']), obj_num_map(a['cat']), obj_num_map(a['sf']), pr_js, tr_js))
 dlines.append('];')
-dlines.append('try{window.WML_MONTHS=WML_MONTHS;window.WML_DATA=WML_DATA;}catch(e){}')
+# Focus GLP-1 (bloc dédié pour la carte "stars du moment")
+_glp_brands = sorted(([n] + v for n, v in glp1['brands'].items() if v[0] > 0), key=lambda x: -x[1])
+WML_GLP1 = {
+    'ca': r2(glp1['ca']), 'qt': r2(glp1['qt']), 'part': round(100 * glp1['ca'] / _ca_grp, 1),
+    'nbPharma': len(glp1['ph']), 'caM': [r2(x) for x in glp1['ca_m']],
+    'brands': [[b[0], r2(b[1]), r2(b[2])] for b in _glp_brands],
+}
+dlines.append('const WML_GLP1 = ' + json.dumps(WML_GLP1, ensure_ascii=False) + ';')
+dlines.append('try{window.WML_MONTHS=WML_MONTHS;window.WML_DATA=WML_DATA;window.WML_GLP1=WML_GLP1;}catch(e){}')
 open(OUT_DATA, 'w', encoding='utf-8').write('\n'.join(dlines))
 print('→ %s (%d Ko)' % (os.path.relpath(OUT_DATA, BASE), os.path.getsize(OUT_DATA) // 1024))
 
