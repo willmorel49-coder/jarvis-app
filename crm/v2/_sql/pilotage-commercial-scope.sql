@@ -33,5 +33,11 @@ update public.user_profiles set commercial = NULL
                                             or email ilike 'pascale.prieto@%'
                                             or email ilike 'demo@%');
 
--- Vérif (optionnel) : voir le mapping
--- select u.email, p.name, p.commercial from public.user_profiles p join auth.users u on u.id=p.id order by p.commercial nulls first;
+-- 4) Utilisateurs « OPSO seulement » (Normandie Pharma) : pas d'accès au CRM Intégral.
+--    S'ils ouvrent l'app Intégral, ils sont renvoyés vers l'espace OPSO.
+alter table public.user_profiles add column if not exists opso_only boolean default false;
+update public.user_profiles set opso_only = true
+  where id in (select id from auth.users where email ilike 'emmanuel.noblanc@%');
+
+-- Vérif (optionnel) : voir le mapping complet
+-- select u.email, p.name, p.commercial, p.opso_only from public.user_profiles p join auth.users u on u.id=p.id order by p.opso_only desc, p.commercial nulls first;

@@ -67,9 +67,15 @@
       if (!user) return false;
       var pr = await c.from('user_profiles').select('*').eq('id', user.id).single();
       if (pr.error || !pr.data) { await c.auth.signOut(); return false; }
+      // Utilisateur « OPSO seulement » (ex. Normandie Pharma) : n'a pas accès au CRM Intégral.
+      // S'il ouvre l'app Intégral (brand non-opso), on le renvoie vers son espace OPSO.
+      if (pr.data.opso_only && !(window.V2_BRAND && window.V2_BRAND.opso)) {
+        try { location.replace('../../opso/v2/index.html'); } catch (e) {}
+        return false;
+      }
       // `commercial` (nom exact dans les données de ventes) = périmètre du Pilotage.
       // Vide/NULL = super-admin (voit tous les commerciaux). Sinon = restreint à SON CA + le global.
-      V2.user = { id: user.id, email: user.email, name: pr.data.name, role: pr.data.role, pharmacyIds: pr.data.pharmacy_ids, commercial: pr.data.commercial || '' };
+      V2.user = { id: user.id, email: user.email, name: pr.data.name, role: pr.data.role, pharmacyIds: pr.data.pharmacy_ids, commercial: pr.data.commercial || '', opsoOnly: !!pr.data.opso_only };
       return true;
     } catch (e) { return false; }
   };

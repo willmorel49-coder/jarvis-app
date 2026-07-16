@@ -776,7 +776,10 @@
       var comms = V2.commercials ? V2.commercials() : [];
       var commSeg = '';
       var cb = function (val, lbl) { return '<button class="pilo-segbtn pilo-commbtn' + ((V2.commFilter || '') === val ? ' on' : '') + '" data-c="' + esc(val) + '">' + esc(lbl) + '</button>'; };
-      if (myComm) {
+      if (opso) {
+        // Mode OPSO (Normandie Pharma) : pas de découpage par commercial Intégral
+        commSeg = '';
+      } else if (myComm) {
         // Restreint : uniquement son périmètre ou le global national (jamais un collègue nommé)
         commSeg = '<div class="pilo-seg" style="margin-right:8px">' + cb(myComm, 'Moi') + cb('', 'Global national') + '</div>';
       } else if (comms.length > 1) {
