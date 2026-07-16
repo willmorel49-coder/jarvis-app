@@ -15,7 +15,7 @@
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s); };
   var ICO = window.ICO || function () { return ''; };
   var fmtEur = function (n) { return V2.fmtEur ? V2.fmtEur(n) : (n + ' €'); };
-  var CB = '?v=20260716c';        // aligné index.html
+  var CB = '?v=20260716g';        // aligné index.html
 
   var HOME_LS = 'jarvis_home_v1'; // adresse « chez toi » mémorisée
   var START_H = 9;                // heure de départ (9h00)
