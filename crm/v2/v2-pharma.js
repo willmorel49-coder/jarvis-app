@@ -1196,9 +1196,21 @@
     // Profil « Infos officine » = repliable (ne pas encombrer la fiche)
     var profilSec = V2.profil ? (function () {
       var open = sectionOpen('profil');
+      // CIP de la pharmacie + son nom (demande équipe)
+      var cipLine = '<div style="font-size:12.5px;color:var(--muted);margin:0 0 12px;padding:8px 12px;background:var(--card-2);border-radius:10px">CIP <b style="color:var(--ip-ink);font-family:var(--mono)">' + esc(String(pharma.code || '—')) + '</b> · ' + esc(pharma.name || '') + '</div>';
+      // Groupement éditable (correction à la main → persistée)
+      var grps = {}; (V2.pharmacies || []).forEach(function (p) { var g = String(p.groupement || '').trim(); if (g && g !== '—') grps[g] = 1; });
+      var gopts = Object.keys(grps).sort(function (a, b) { return a.localeCompare(b, 'fr'); });
+      var cur = String(pharma.groupement || '').trim();
+      var grpEdit = '<label class="v2-profil-f v2-profil-f-wide" style="display:block;margin-bottom:12px"><span style="display:block;font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px">Groupement</span>' +
+        '<select style="width:100%;box-sizing:border-box;border:1px solid var(--line-strong);border-radius:10px;padding:9px 11px;font:inherit;font-size:13.5px;color:var(--ip-ink);background:var(--card-2);cursor:pointer" onchange="V2.setPharmaGroupement(\'' + esc(String(pid)) + '\', this)">' +
+          '<option value="">—</option>' +
+          gopts.map(function (g) { return '<option' + (g === cur ? ' selected' : '') + '>' + esc(g) + '</option>'; }).join('') +
+          '<option value="__add__">➕ préciser…</option>' +
+        '</select></label>';
       return '<div class="ph-section">' +
-        sectionHead('Infos officine', 'grossistes, génériqueurs, logiciel — à compléter', 'profil', open) +
-        (open ? V2.profil.section('client', pid) : '') +
+        sectionHead('Infos officine', 'CIP, groupement, grossistes, génériqueurs, robot…', 'profil', open) +
+        (open ? (cipLine + grpEdit + V2.profil.section('client', pid)) : '') +
       '</div>';
     })() : '';
     // CA par génériqueur (Biogaran, Zentiva, EG…) — table BDPM ; section repliable
@@ -1238,6 +1250,20 @@
     if (V2.profil) V2.profil.hydrate();
     if (V2.notes) V2.notes.hydrate();
   }
+
+  // Changer le groupement d'une pharmacie depuis sa fiche (correction persistée + appliquée).
+  V2.setPharmaGroupement = function (pid, el) {
+    var v = el && el.value;
+    if (v === '__add__') {
+      v = (window.prompt('Nom du groupement :', '') || '').trim();
+      if (!v) { el.value = ''; return; }
+    }
+    var pharma = (V2.pharmacies || []).find(function (p) { return String(p.id) === String(pid); });
+    if (pharma) pharma.groupement = v || '';
+    if (V2.profil && V2.profil.saveOverride) V2.profil.saveOverride(pid, { groupement: v || '' });
+    if (V2.toast) V2.toast(v ? 'Groupement : ' + v : 'Groupement retiré');
+    V2.render();
+  };
 
   V2.phFicheTab = function (t) {
     ['apercu', 'audit'].forEach(function (x) {

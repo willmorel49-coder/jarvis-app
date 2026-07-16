@@ -43,6 +43,22 @@
     try { document.querySelector('.v2-wrap, .v2-content')?.scrollTo?.({ top: 0 }); window.scrollTo({ top: 0, behavior: 'instant' }); } catch (e) {}
   };
 
+  // Retour = UN pas en arrière dans l'historique de navigation (pas une page fixe).
+  V2.goBack = function () {
+    try {
+      var st = V2._navStack;
+      if (st && st.length >= 2) {
+        var prev = String(st[st.length - 2]);          // écran précédent
+        var i = prev.indexOf('/');
+        var name = i < 0 ? prev : prev.slice(0, i);
+        var param = i < 0 ? null : decodeURIComponent(prev.slice(i + 1));
+        V2.go(name, param);                             // go() détecte le 'back' et dépile
+        return;
+      }
+    } catch (e) {}
+    V2.go('home');
+  };
+
   function parseHash() {
     var h = (location.hash || '').replace(/^#/, '');
     if (!h) return { name: 'home', param: null };
@@ -56,7 +72,7 @@
   function topbar(opts) {
     opts = opts || {};
     var back = opts.back
-      ? '<button class="v2-back" onclick="V2.go(\'' + (opts.backTo || 'home') + '\')">' + ICO('back', 16) + (opts.backLabel || 'Accueil') + '</button>'
+      ? '<button class="v2-back" onclick="V2.goBack()">' + ICO('back', 16) + 'Retour</button>'
       : '';
     var initials = (V2.user && V2.user.name ? V2.user.name.split(' ').map(function (w) { return w[0]; }).slice(0, 2).join('') : 'WM').toUpperCase();
     // Le logo Intégral Pharma est TOUJOURS présent et cliquable → accueil (depuis n'importe où).

@@ -19,7 +19,8 @@
   var GROS = ['Intégral Pharma', 'OCP', 'CERP Rouen', 'CERP RRM', 'CERP Bretagne Atlantique', 'Alliance Healthcare', 'Phoenix Pharma', 'Cophana', 'Sagitta', 'Welcoop', 'Giphar Répartition', 'Anjou Santé', 'Mezeghel', 'Epsilon', 'Pharmest', 'Axipharm'];
   var GEN = ['Biogaran', 'Viatris (Mylan)', 'EG Labo', 'Teva', 'Sandoz', 'Zentiva', 'Arrow', 'Cristers', 'Zydus', 'Bouchara-Recordati', 'Sun Pharma', 'Substipharm'];
   var LGO = ['Winpharma', 'LGPI', 'Smart Rx', 'Léo', 'Pharmaland', 'Caduciel', 'Péripharm', 'Pharmavitale', 'Santé Cegedim'];
-  var ROBOT = ['Aucun', 'BD Rowa', 'Mekapharm', 'Meditech', 'Sinteco', 'Willach', 'Tecny-Farma', 'Apostore', 'Omnicell'];
+  var ROBOT = ['Aucun', 'Riedl', 'BD Rowa', 'Mekapharm', 'Meditech', 'Sinteco', 'Willach', 'Tecny-Farma', 'Apostore', 'Omnicell'];
+  var BIOSIM = ['Biogaran', 'Zentiva', 'EG Labo', 'Teva', 'Sandoz', 'Viatris', 'Accord', 'Celltrion', 'Amgen', 'Fresenius Kabi', 'Stada', 'Biogen'];
   // Config des champs — ajouter/retirer ici suffit.
   var FIELDS = [
     { k: 'gros1', l: 'Grossiste n°1', opts: GROS },
@@ -27,6 +28,8 @@
     { k: 'gros3', l: 'Grossiste n°3', opts: GROS },
     { k: 'gen1', l: 'Génériqueur n°1', opts: GEN },
     { k: 'gen2', l: 'Génériqueur n°2', opts: GEN },
+    { k: 'gen3', l: 'Génériqueur n°3', opts: GEN },
+    { k: 'biosim', l: 'Partenaire biosimilaires', opts: BIOSIM },
     { k: 'lgo', l: 'Logiciel (LGO)', opts: LGO },
     { k: 'robot', l: 'Robot / automate', opts: ROBOT },
     { k: 'autre', l: 'Autre info', text: true }
@@ -35,6 +38,7 @@
   var COORD = [
     { k: 'titulaire', l: 'Titulaire' },
     { k: 'tel', l: 'Téléphone' },
+    { k: 'tel_perso', l: 'Tél perso (titulaire)' },
     { k: 'email', l: 'Email' },
     { k: 'adresse', l: 'Adresse' }
   ];
@@ -156,6 +160,28 @@
       .then(function (r) { if (r.error || !r.data) return localScopeList(st); return r.data.map(function (x) { return { sid: String(x.scope_id), data: x.data || {} }; }); })
       .catch(function () { return localScopeList(st); });
     return Promise.resolve(localScopeList(st));
+  };
+
+  // ── Corrections par pharmacie (scope 'override') : ex. groupement corrigé à la main ──
+  V2.profil.saveOverride = function (pid, patch, cb) {
+    load('override', String(pid)).then(function (res) {
+      var data = (res && res.rec && res.rec.data) || {};
+      for (var k in patch) { if (patch.hasOwnProperty(k)) data[k] = patch[k]; }
+      save('override', String(pid), data);
+      if (cb) cb(data);
+    });
+  };
+  // Applique toutes les corrections connues aux pharmacies en mémoire (appelé au boot).
+  V2.profil.applyOverrides = function (cb) {
+    if (!V2.profil.loadScope) { if (cb) cb(); return; }
+    V2.profil.loadScope('override').then(function (list) {
+      var byId = {}; (V2.pharmacies || []).forEach(function (p) { byId[String(p.id)] = p; });
+      (list || []).forEach(function (o) {
+        var p = byId[String(o.sid)]; if (!p || !o.data) return;
+        if (o.data.groupement) p.groupement = o.data.groupement;
+      });
+      if (cb) cb();
+    });
   };
 
   function fill(box) {
