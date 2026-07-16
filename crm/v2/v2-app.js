@@ -933,6 +933,9 @@
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.pharma) {
       idx.push({ grp: 'Pages', label: 'Groupements · listes & listings produits', ico: 'list', action: function () { V2.go('pharma', 'groupements'); } });
     }
+    if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.carteGrp) {
+      idx.push({ grp: 'Pages', label: 'Carte groupements · clients & prospects par groupement', ico: 'pharma', action: function () { V2.go('carteGrp'); } });
+    }
     // Pharmacies
     (V2.pharmacies || []).forEach(function (p) {
       idx.push({ grp: 'Pharmacies', label: p.name, ico: 'pharma', meta: '', pid: String(p.id), action: function () { V2.go('pharma', p.id); } });
