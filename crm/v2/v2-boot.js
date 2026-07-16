@@ -191,6 +191,8 @@
       V2.imports = [];
       V2.applyOpsoPerimeter();
       V2.ready = true;
+      // Corrections manuelles (ex. groupement changé depuis une fiche) — appliquées en arrière-plan.
+      try { if (V2.profil && V2.profil.applyOverrides) V2.profil.applyOverrides(function () { if (V2.render) V2.render(); }); } catch (e) {}
       return;
     }
 
