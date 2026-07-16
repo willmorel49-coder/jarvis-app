@@ -1201,9 +1201,20 @@
         (open ? V2.profil.section('client', pid) : '') +
       '</div>';
     })() : '';
+    // CA par génériqueur (Biogaran, Zentiva, EG…) — table BDPM ; section repliable
+    var generiqueurSec = (function () {
+      var card = V2.generiqueurCard ? V2.generiqueurCard(sales, { title: 'Ses achats par génériqueur' }) : '';
+      if (!card) return '';
+      var open = sectionOpen('gnq');
+      return '<div class="ph-section">' +
+        sectionHead('CA par génériqueur', 'combien elle achète chez Biogaran, Zentiva, EG…', 'gnq', open) +
+        (open ? card : '') +
+      '</div>';
+    })();
     var apercu =
       dash +
       listing +
+      generiqueurSec +
       stats +
       profilSec +
       (V2.notes ? V2.notes.section('client', pid) : '');

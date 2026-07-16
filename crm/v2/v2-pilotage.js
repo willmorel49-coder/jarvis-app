@@ -813,8 +813,11 @@
           '</details>';
       }
 
-      // Détail : répartition du CA (familles + tranches de prix)
-      var repartition = '<div class="pilo-grid2" data-reveal>' + famCard + tierCard + '</div>';
+      // Détail : répartition du CA (familles + tranches de prix + génériqueurs)
+      // `sales` = V2.commSales() → respecte le périmètre commercial (confidentialité).
+      var gnqCard = V2.generiqueurCard ? V2.generiqueurCard(sales, { title: 'CA par génériqueur', max: 15 }) : '';
+      var repartition = '<div class="pilo-grid2" data-reveal>' + famCard + tierCard + '</div>' +
+        (gnqCard ? '<div data-reveal style="margin-top:14px">' + gnqCard + '</div>' : '');
       // Détail : classements (top pharmacies + groupements)
       var classements = grpCard ? ('<div class="pilo-grid2" data-reveal>' + topCaCard + grpCard + '</div>') : ('<div data-reveal>' + topCaCard + '</div>');
       // Détail : marché Ameli & pharmacies à relancer
