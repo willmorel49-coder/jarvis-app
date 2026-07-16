@@ -1395,7 +1395,7 @@ function renderDashboard() {
   const hasSales = allSales.length > 0;
 
   const importBanner = !hasSales ? `
-    <div style="display:flex;align-items:center;gap:12px;padding:12px 20px;border-radius:12px;background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);margin-bottom:20px">
+    <div style="display:flex;align-items:center;gap:12px;padding:12px 20px;border-radius:12px;background:var(--opso-green-pale,#e6f7ec);border:1px solid var(--opso-green-pale2,#f3fbf6);margin-bottom:20px">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${grp.couleur}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
       <div style="flex:1">
         <div style="font-size:13px;font-weight:700;color:var(--text)">Aucune donnée de ventes importée</div>
@@ -1430,12 +1430,12 @@ function renderDashboard() {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-          legend: { position: 'bottom', labels: { color: '#94A3B8', font: { size: 11 }, boxWidth: 10, padding: 12 } },
+          legend: { position: 'bottom', labels: { color: '#64686a', font: { size: 11 }, boxWidth: 10, padding: 12 } },
           tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString('fr-FR', {maximumFractionDigits:0})} €` } },
         },
         scales: {
-          x: { stacked: true, grid: { color: 'rgba(255,255,255,.04)' }, ticks: { color: '#94A3B8', font: { size: 11 } } },
-          y: { stacked: true, grid: { color: 'rgba(255,255,255,.04)' }, ticks: { color: '#94A3B8', font: { size: 11 }, callback: v => v >= 1000 ? Math.round(v/1000) + 'k €' : v + ' €' } },
+          x: { stacked: true, grid: { color: 'rgba(0,0,0,.05)' }, ticks: { color: '#64686a', font: { size: 11 } } },
+          y: { stacked: true, grid: { color: 'rgba(0,0,0,.05)' }, ticks: { color: '#64686a', font: { size: 11 }, callback: v => v >= 1000 ? Math.round(v/1000) + 'k €' : v + ' €' } },
         },
       },
     });
@@ -9691,6 +9691,7 @@ async function initApp() {
     document.getElementById('sidebar-user-name').textContent = state.user.name;
     document.getElementById('sidebar-user-role').textContent = state.user.role;
     document.getElementById('sidebar-avatar').textContent = state.user.name.charAt(0);
+    try { const _sc = document.getElementById('sidebar-pharma-count'); if (_sc && typeof OPSO_ADHERENTS !== 'undefined') _sc.textContent = 'Normandie · ' + OPSO_ADHERENTS.length + ' pharmacies actives'; } catch (e) {}
     document.getElementById('nav-admin').style.display = state.user.role === 'admin' ? 'flex' : 'none';
 
     updateNavBadge();
