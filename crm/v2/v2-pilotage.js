@@ -454,6 +454,14 @@
   // ════════════════════════════════════════════
   V2.pages.pilotage = {
     render: function (root) {
+      // ── Confidentialité inter-commerciaux (Pilotage uniquement) ──
+      // Un utilisateur relié à un commercial ne voit que SON périmètre ou le global national,
+      // jamais le tableau de bord d'un collègue. Super-admin (commercial vide) = accès total.
+      var myComm = (V2.user && V2.user.commercial) ? String(V2.user.commercial) : '';
+      if (myComm) {
+        if (!V2._piloScopedInit) { V2.commFilter = myComm; V2._piloScopedInit = true; }   // atterrit sur « Moi »
+        if (V2.commFilter !== '' && V2.commFilter !== myComm) V2.commFilter = myComm;       // jamais un collègue
+      }
       var sales = V2.commSales ? V2.commSales() : (V2.sales || []);
       var top = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' });
       injectStyles();
@@ -764,11 +772,15 @@
       function seg(mode, lbl) {
         return '<button class="pilo-segbtn' + (PERIOD === mode ? ' on' : '') + '" data-p="' + mode + '">' + lbl + '</button>';
       }
-      // sélecteur commercial (Tous / Will / Pauline) si plusieurs
+      // sélecteur commercial
       var comms = V2.commercials ? V2.commercials() : [];
       var commSeg = '';
-      if (comms.length > 1) {
-        var cb = function (val, lbl) { return '<button class="pilo-segbtn pilo-commbtn' + (V2.commFilter === val ? ' on' : '') + '" data-c="' + val + '">' + lbl + '</button>'; };
+      var cb = function (val, lbl) { return '<button class="pilo-segbtn pilo-commbtn' + ((V2.commFilter || '') === val ? ' on' : '') + '" data-c="' + esc(val) + '">' + esc(lbl) + '</button>'; };
+      if (myComm) {
+        // Restreint : uniquement son périmètre ou le global national (jamais un collègue nommé)
+        commSeg = '<div class="pilo-seg" style="margin-right:8px">' + cb(myComm, 'Moi') + cb('', 'Global national') + '</div>';
+      } else if (comms.length > 1) {
+        // Super-admin : Tous + chaque commercial
         commSeg = '<div class="pilo-seg" style="margin-right:8px">' + cb('', 'Tous') + comms.map(function (cm) { return cb(cm, cm); }).join('') + '</div>';
       }
       var header =
