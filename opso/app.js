@@ -4069,6 +4069,7 @@ function renderProduits() {
       marge: sumMarge(fSales),
       taux:  margePct(fSales),
       nb:    new Set(fSales.map(s => s.artDesignation)).size,
+      qty:   fSales.reduce((a, s) => a + (s.qte || 0), 0),
     };
   }).filter(f => f.ca > 0).sort((a, b) => b.ca - a.ca);
 
@@ -4115,9 +4116,10 @@ function renderProduits() {
   // ── Chips famille ─────────────────────────────
   const familles = [
     { key: 'tous',      label: 'Vue globale', color: '#8899BB' },
-    { key: 'pp',        label: 'PP',          color: CATS.pp.color },
-    { key: 'mi',        label: 'MI',          color: CATS.mi.color },
-    { key: 'ch',        label: 'CH',          color: CATS.ch.color },
+    { key: 'pp',        label: 'Petits prix', color: CATS.pp.color },
+    { key: 'mi',        label: 'Intermédiaire', color: CATS.mi.color },
+    { key: 'ch',        label: 'Chers',       color: CATS.ch.color },
+    { key: 'tch',       label: 'Très chers',  color: CATS.tch.color },
     { key: 'biosim',    label: 'Biosim',      color: CATS.biosim.color },
     { key: 'generique', label: 'Générique',   color: CATS.generique.color },
     { key: 'nr',        label: 'NR',          color: CATS.nr.color },
@@ -4279,16 +4281,64 @@ function renderProduits() {
     </tr>`;
   }).join('');
 
+  // ── Hero "Répartition par catégorie & tranche de prix" (design #3) ──
+  const _fmtE2 = v => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v || 0);
+  const _catOrder = ['pp', 'mi', 'ch', 'tch', 'nr', 'generique', 'biosim'];
+  const _fkByKey = {}; familyKpis.forEach(f => { _fkByKey[f.key] = f; });
+  const _totCA = familyKpis.reduce((s, f) => s + f.ca, 0) || 1;
+  const _totQt = familyKpis.reduce((s, f) => s + f.qty, 0) || 1;
+  const _ordered = _catOrder.map(k => _fkByKey[k]).filter(Boolean);
+  const _stack = _ordered.map(f => `<div title="${f.label} · ${fmt(f.ca)}" style="width:${(f.ca / _totCA * 100).toFixed(2)}%;background:${f.color}"></div>`).join('');
+  const _legend = _ordered.map(f => `<span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--text2);font-weight:600"><i style="width:9px;height:9px;border-radius:3px;background:${f.color}"></i>${f.label} ${(f.ca / _totCA * 100).toFixed(0)}%</span>`).join('');
+  const _rows = _ordered.map(f => {
+    const pu = f.qty > 0 ? f.ca / f.qty : 0;
+    return `<tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:9px 12px;font-size:12.5px;font-weight:700"><span style="display:inline-flex;align-items:center;gap:7px"><i style="width:10px;height:10px;border-radius:3px;background:${f.color}"></i>${f.label}</span></td>
+      <td style="padding:9px 12px;text-align:right;font-size:12.5px;font-weight:800;font-variant-numeric:tabular-nums">${fmt(f.ca)}</td>
+      <td style="padding:9px 12px;text-align:right;font-size:12px;color:var(--text2);font-variant-numeric:tabular-nums">${(f.ca / _totCA * 100).toFixed(1)}%</td>
+      <td style="padding:9px 12px;text-align:right;font-size:12px;color:var(--text2);font-variant-numeric:tabular-nums">${Math.round(f.qty).toLocaleString('fr')}</td>
+      <td style="padding:9px 12px;text-align:right;font-size:12px;color:var(--text2);font-variant-numeric:tabular-nums">${_fmtE2(pu)}</td>
+      <td style="padding:9px 12px;text-align:right;font-size:12px;color:var(--opso-green,#11a63c);font-weight:700;font-variant-numeric:tabular-nums">${f.taux.toFixed(1)}%</td>
+    </tr>`;
+  }).join('');
+  const _pp = _fkByKey['pp'];
+  const _rich = ['tch', 'ch', 'nr', 'biosim'].map(k => _fkByKey[k]).filter(Boolean);
+  const _richCA = _rich.reduce((s, f) => s + f.ca, 0), _richQt = _rich.reduce((s, f) => s + f.qty, 0);
+  const _insight = _pp ? `Les <b>petits prix</b> = ${(_pp.qty / _totQt * 100).toFixed(0)}% des unités mais ${(_pp.ca / _totCA * 100).toFixed(0)}% du CA ; à l'inverse <b>très chers + chers + NR + biosim</b> = ${(_richQt / _totQt * 100).toFixed(0)}% des unités mais <b>${(_richCA / _totCA * 100).toFixed(0)}% du CA</b>. Le pilotage remise se joue différemment sur le volume et sur la valeur.` : '';
+  const _per = (typeof wmlPeriod === 'function') ? wmlPeriod() : '';
+  const tranchesHero = familyKpis.length ? `
+    <div class="card fade-up" style="margin-bottom:20px">
+      <div class="card-header" style="padding:14px 20px"><div class="section-header-title"><div class="section-header-icon">🏷️</div><div class="section-header-text"><h2>Répartition par catégorie &amp; tranche de prix</h2><div class="section-header-sub">${_per} · CA HT · ${Math.round(_totQt).toLocaleString('fr')} unités</div></div></div><div style="font-size:22px;font-weight:900;color:var(--opso-green,#11a63c)">${fmt(_totCA)}</div></div>
+      <div style="padding:4px 20px 8px"><div style="display:flex;height:16px;border-radius:8px;overflow:hidden;background:var(--bg3)">${_stack}</div><div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:10px">${_legend}</div></div>
+      <div style="overflow-x:auto;padding:6px 8px 4px"><table style="width:100%;border-collapse:collapse;min-width:540px">
+        <thead><tr style="background:var(--bg2)"><th style="padding:8px 12px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--text3)">Catégorie</th><th style="padding:8px 12px;text-align:right;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--text3)">CA HT</th><th style="padding:8px 12px;text-align:right;font-size:10px;color:var(--text3)">Part</th><th style="padding:8px 12px;text-align:right;font-size:10px;color:var(--text3)">Unités</th><th style="padding:8px 12px;text-align:right;font-size:10px;color:var(--text3)">Prix moyen</th><th style="padding:8px 12px;text-align:right;font-size:10px;color:var(--text3)">Remise</th></tr></thead>
+        <tbody>${_rows}</tbody></table></div>
+      ${_insight ? `<div style="margin:8px 20px 16px;padding:10px 14px;background:var(--opso-green-pale2,#f3fbf6);border:1px solid var(--opso-green-pale,#e6f7ec);border-radius:10px;font-size:12.5px;color:var(--text2);line-height:1.5">💡 ${_insight}</div>` : ''}
+    </div>` : '';
+  const _glpRe = /MOUNJARO|WEGOVY|OZEMPIC|TRULICITY|VICTOZA|SAXENDA|RYBELSUS/i;
+  const _glpS = sales.filter(s => _glpRe.test(s.artDesignation || ''));
+  const _glpCA = sumCA(_glpS), _glpQt = _glpS.reduce((a, s) => a + (s.qte || 0), 0);
+  const glpBanner = _glpCA > 0 ? `
+    <div class="card fade-up" style="margin-bottom:20px;border:1.5px solid var(--opso-accent,#dddf4b);background:linear-gradient(180deg,var(--opso-green-pale2,#f3fbf6),#fff)">
+      <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:14px 20px">
+        <span style="font-size:26px">💉</span>
+        <div style="flex:1;min-width:180px"><div style="font-size:15px;font-weight:800;color:var(--opso-green-text,#0a7a2b)">Focus GLP-1 · Wegovy · Mounjaro</div><div style="font-size:12px;color:var(--text3)">Blockbusters non remboursés · chaîne du froid · en forte croissance</div></div>
+        <div style="text-align:right"><div style="font-size:22px;font-weight:900;color:var(--opso-green,#11a63c)">${fmt(_glpCA)}</div><div style="font-size:12px;font-weight:800;color:var(--opso-accent-dark,#8a8c10)">${(_glpCA / _totCA * 100).toFixed(0)}% du CA · ${Math.round(_glpQt).toLocaleString('fr')} u</div></div>
+      </div>
+    </div>` : '';
+
   document.getElementById('prod-content').innerHTML = `
     <div class="section-header">
       <div class="section-header-title">
         <div class="section-header-icon">💊</div>
         <div class="section-header-text">
-          <h2>Analyse produits</h2>
-          <div class="section-header-sub">Performance par famille, accélérations et opportunités</div>
+          <h2>Analyse produits &amp; catégories</h2>
+          <div class="section-header-sub">Tranches de prix, familles, accélérations et opportunités</div>
         </div>
       </div>
     </div>
+    ${tranchesHero}
+    ${glpBanner}
     ${familyKpis.length ? `
     <div class="kpi-grid fade-up" style="grid-template-columns:repeat(auto-fill,minmax(180px,1fr));margin-bottom:24px">
       ${familyKpiHtml}
@@ -11662,7 +11712,7 @@ function _gsRenderEmpty() {
     { id: 'dashboard',    label: 'Cockpit',             icon: '📊', sub: "Vue d'ensemble" },
     { id: 'pharmacies',   label: 'Mes pharmacies',      icon: '🏥', sub: 'Liste et fiches' },
     { id: 'wml',          label: 'CA & Commandes',      icon: '📦', sub: 'Achats groupement' },
-    { id: 'produits',     label: 'Catalogue IP',        icon: '💊', sub: 'Mes ventes par produit' },
+    { id: 'produits',     label: 'Analyse produits',    icon: '💊', sub: 'Catégories & tranches de prix' },
     { id: 'offilog',      label: 'Prix Offilog Live',   icon: '🛒', sub: 'Comparatifs concurrents' },
     { id: 'benchmark',    label: 'Benchmark Ameli',     icon: '📈', sub: 'Marché national' },
     { id: 'prioritaires', label: 'Prioritaires',        icon: '⭐', sub: 'Outil prospection' },
@@ -11764,7 +11814,7 @@ function gsSearch(q) {
     { id: 'dashboard',    label: 'Cockpit',             icon: '📊', sub: "Vue d'ensemble" },
     { id: 'pharmacies',   label: 'Mes pharmacies',      icon: '🏥', sub: 'Liste et fiches' },
     { id: 'wml',          label: 'CA & Commandes',      icon: '📦', sub: 'Achats groupement' },
-    { id: 'produits',     label: 'Catalogue IP',        icon: '💊', sub: 'Mes ventes par produit' },
+    { id: 'produits',     label: 'Analyse produits',    icon: '💊', sub: 'Catégories & tranches de prix' },
     { id: 'offilog',      label: 'Prix Offilog Live',   icon: '🛒', sub: 'Comparatifs concurrents' },
     { id: 'benchmark',    label: 'Benchmark Ameli',     icon: '📈', sub: 'Marché national' },
     { id: 'prioritaires', label: 'Prioritaires',        icon: '⭐', sub: 'Outil prospection' },
