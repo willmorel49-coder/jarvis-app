@@ -67,7 +67,9 @@
       if (!user) return false;
       var pr = await c.from('user_profiles').select('*').eq('id', user.id).single();
       if (pr.error || !pr.data) { await c.auth.signOut(); return false; }
-      V2.user = { id: user.id, email: user.email, name: pr.data.name, role: pr.data.role, pharmacyIds: pr.data.pharmacy_ids };
+      // `commercial` (nom exact dans les données de ventes) = périmètre du Pilotage.
+      // Vide/NULL = super-admin (voit tous les commerciaux). Sinon = restreint à SON CA + le global.
+      V2.user = { id: user.id, email: user.email, name: pr.data.name, role: pr.data.role, pharmacyIds: pr.data.pharmacy_ids, commercial: pr.data.commercial || '' };
       return true;
     } catch (e) { return false; }
   };
