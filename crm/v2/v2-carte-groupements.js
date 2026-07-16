@@ -10,7 +10,7 @@
   V2.pages = V2.pages || {};
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s); };
   var ICO = window.ICO || function () { return ''; };
-  var CB = '?v=20260716f';   // bumpé au déploiement (aligné index.html)
+  var CB = '?v=20260716g';   // bumpé au déploiement (aligné index.html)
 
   var D = null, map = null, layer = null, markers = {}, sel = '', GIDX = null;
   // Clients : vert par segment, GROS + contour = ressortent. Prospects : ambre discret.
@@ -48,6 +48,34 @@
   function llOK(p) { return typeof p[0] === 'number' && typeof p[1] === 'number' && (p[0] || p[1]); }
   function commOf(p) { return p[5] ? (D.comm[p[5]] || '') : ''; }
   function segOf(p) { return D.seg[p[4]] || ''; }
+
+  // ── RÉCONCILIATION WML (vérité client) — MÊME règle que v2-carte.js reconcileWithWml ──
+  // Un client = officine dont l'id (p[13]) est dans WML_OFFICINES. Sinon → prospect.
+  // Le groupement du client vient de WML (o.groupement). Sans ça, le seg brut de PHARMA_FR
+  // est FAUX (ex. Pharmavie 153 au lieu de 12). Idempotent (flag D._wmlRecon).
+  function reconcile() {
+    if (!D || D._wmlRecon) return;
+    var W = window.WML_OFFICINES; if (!W || !W.length) return;
+    var segIdx = {}; for (var s = 0; s < D.seg.length; s++) segIdx[D.seg[s]] = s;
+    function ensureSeg(l) { if (segIdx[l] == null) { D.seg.push(l); segIdx[l] = D.seg.length - 1; } return segIdx[l]; }
+    var iA = ensureSeg('Client A'), iB = ensureSeg('Client B'), iC = ensureSeg('Client C'), iPro = ensureSeg('Prospect');
+    var canon = function (x) { return String(x || '').normalize ? String(x || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '') : String(x || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); };
+    var grpIdx = {}; for (var g = 0; g < D.grp.length; g++) grpIdx[canon(D.grp[g])] = g;
+    function ensureGrp(nm) { var k = canon(nm); if (grpIdx[k] == null) { D.grp.push(nm); grpIdx[k] = D.grp.length - 1; } return grpIdx[k]; }
+    var wml = {}; W.forEach(function (o) { if (o && o.id) wml[String(o.id).replace(/[^0-9]/g, '')] = o; });
+    D.p.forEach(function (p) {
+      var o = wml[String(p[13] || '').replace(/[^0-9]/g, '')];
+      if (o) {
+        var ca = p[12] || 0;
+        p[4] = ca >= 40000 ? iA : (ca >= 12000 ? iB : iC);
+        var gr = o.groupement && String(o.groupement).trim();
+        if (gr && gr !== '—') p[3] = ensureGrp(gr);
+      } else if (D.seg[p[4]] !== 'Prospect') {
+        p[4] = iPro;
+      }
+    });
+    D._wmlRecon = true;
+  }
 
   // Index groupement -> { c: nbClients, pr: nbProspects, pts: [indices] }
   function buildIndex() {
@@ -313,7 +341,7 @@
       if (param) sel = String(param);
       ensureData(function (e1) {
         if (e1) { var mp = document.getElementById('cg-map'); if (mp) mp.innerHTML = '<div class="cg-empty">Données indisponibles. Réessaie.</div>'; return; }
-        D = window.PHARMA_FR; buildIndex();
+        D = window.PHARMA_FR; reconcile(); buildIndex();
         ensureDetails(function () {
         // défaut : le groupement avec le plus de clients (carte non vide d'emblée)
         if (!sel) {
