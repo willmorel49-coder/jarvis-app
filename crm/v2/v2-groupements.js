@@ -415,7 +415,7 @@
       '<div class="grp-hd-t">Groupements</div>' +
       '<div class="grp-hd-s">Repérez les pharmacies par groupement sur la carte, puis préparez vos listes d\'achats à proposer.</div>' +
       '<div class="grp-tabs" role="tablist">' +
-        '<button class="grp-tab' + (active === 'carte' ? ' on' : '') + '" onclick="V2.grpGo(\'app\')">Carte des groupements</button>' +
+        '<button class="grp-tab' + (active === 'carte' ? ' on' : '') + '" onclick="V2.go(\'carteGrp\')">Carte des groupements</button>' +
         '<button class="grp-tab' + (active === 'opp' ? ' on' : '') + '" onclick="V2.go(\'pharma\',\'groupements\')">Listes d\'achats à proposer</button>' +
       '</div>' +
     '</div>';

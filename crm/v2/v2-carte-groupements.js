@@ -1,0 +1,248 @@
+/* ═══════════════════════════════════════════════════════════════════
+   CRM V2 · Carte Groupements (pages.carteGrp)
+   Filtre UN groupement → carte + liste de TES clients (vert, en avant)
+   et prospects (ambre, discrets) de ce groupement. Données : PHARMA_FR.
+   Module isolé : réutilise vendor/leaflet + pharma-fr-data.js.
+   ═══════════════════════════════════════════════════════════════════ */
+(function () {
+  'use strict';
+  var V2 = window.V2 = window.V2 || {};
+  V2.pages = V2.pages || {};
+  var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s); };
+  var ICO = window.ICO || function () { return ''; };
+  var CB = '?v=20260716c';   // bumpé au déploiement (aligné index.html)
+
+  var D = null, map = null, layer = null, markers = {}, sel = '', GIDX = null;
+  // Clients : vert par segment, GROS + contour = ressortent. Prospects : ambre discret.
+  var SEG_COL = { 'Client A': '#0B6E43', 'Client B': '#16A34A', 'Client C': '#4FB87E' };
+  var PROSPECT_COL = '#F59E0B';
+
+  // ── loaders (repris de v2-carte.js) ──
+  function css(h) { var l = document.createElement('link'); l.rel = 'stylesheet'; l.href = h; document.head.appendChild(l); }
+  function jsl(src, cb) { var s = document.createElement('script'); s.src = src; s.onload = cb; s.onerror = function () { cb('err'); }; document.head.appendChild(s); }
+  function ensureLeaflet(cb) {
+    var V = 'vendor/leaflet/';
+    if (window.L) { cb(); return; }
+    css(V + 'leaflet.css' + CB); jsl(V + 'leaflet.js' + CB, function () {});
+    var t0 = Date.now(), iv = setInterval(function () {
+      if (window.L) { clearInterval(iv); cb(); }
+      else if (Date.now() - t0 > 15000) { clearInterval(iv); cb('err'); }
+    }, 100);
+  }
+  function ensureData(cb) {
+    if (window.PHARMA_FR) { cb(); return; }
+    var done = false, fin = function (e) { if (!done) { done = true; cb(e); } };
+    var s = document.createElement('script'); s.src = 'pharma-fr-data.js' + CB;
+    s.onload = function () { fin(window.PHARMA_FR ? null : 'err'); };
+    s.onerror = function () { fin('err'); };
+    document.head.appendChild(s);
+    var t0 = Date.now(), iv = setInterval(function () {
+      if (window.PHARMA_FR) { clearInterval(iv); fin(null); }
+      else if (Date.now() - t0 > 25000) { clearInterval(iv); fin('err'); }
+    }, 150);
+  }
+
+  function isClient(p) { return (D.seg[p[4]] || '').indexOf('Client') === 0; }
+  function isProspect(p) { return D.seg[p[4]] === 'Prospect'; }
+  function grpName(p) { return D.grp[p[3]] || ''; }
+  function llOK(p) { return typeof p[0] === 'number' && typeof p[1] === 'number' && (p[0] || p[1]); }
+  function commOf(p) { return p[5] ? (D.comm[p[5]] || '') : ''; }
+  function segOf(p) { return D.seg[p[4]] || ''; }
+
+  // Index groupement -> { c: nbClients, pr: nbProspects, pts: [indices] }
+  function buildIndex() {
+    GIDX = {};
+    for (var i = 0; i < D.p.length; i++) {
+      var p = D.p[i], g = grpName(p);
+      if (!g || g === '—') continue;
+      var e = GIDX[g] || (GIDX[g] = { c: 0, pr: 0, pts: [] });
+      e.pts.push(i);
+      if (isClient(p)) e.c++; else if (isProspect(p)) e.pr++;
+    }
+  }
+
+  // ── styles ──
+  function injectCss() {
+    if (document.getElementById('v2-cg-css')) return;
+    var st = document.createElement('style'); st.id = 'v2-cg-css';
+    st.textContent =
+      '.cg-bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 22px;background:var(--card);border-bottom:1px solid var(--line)}' +
+      '.cg-sel{font-family:var(--font);font-size:14.5px;font-weight:700;color:var(--ip-ink);background:var(--card-2);border:1px solid var(--line);border-radius:11px;padding:10px 13px;outline:none;cursor:pointer;min-width:min(340px,72vw)}' +
+      '.cg-sel:focus{border-color:var(--ip-blue);box-shadow:0 0 0 3px var(--halo)}' +
+      '.cg-count{display:flex;gap:8px;align-items:center;font-family:var(--font);font-size:13px;font-weight:700}' +
+      '.cg-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px}' +
+      '.cg-pill .d{width:9px;height:9px;border-radius:50%}' +
+      '.cg-pill.cl{background:rgba(11,110,67,.12);color:#0B6E43}.cg-pill.cl .d{background:#16A34A;box-shadow:0 0 0 2px #fff}' +
+      '.cg-pill.pr{background:rgba(245,158,11,.14);color:#B45309}.cg-pill.pr .d{background:#F59E0B}' +
+      '.cg-split{display:flex;height:calc(100vh - 172px);min-height:420px}' +
+      '.cg-map{flex:1;min-width:0;background:#EAEEF3}' +
+      '.cg-list{width:360px;max-width:42vw;overflow-y:auto;background:var(--paper);border-left:1px solid var(--line)}' +
+      '.cg-grp{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:800;padding:12px 16px 6px;position:sticky;top:0;background:var(--paper);z-index:1}' +
+      '.cg-row{display:flex;gap:10px;align-items:flex-start;padding:10px 16px;border-bottom:1px solid var(--line);cursor:pointer;transition:background .12s}' +
+      '.cg-row:hover{background:var(--card)}' +
+      '.cg-dot{width:11px;height:11px;border-radius:50%;margin-top:3px;flex-shrink:0}' +
+      '.cg-nm{font-size:13.5px;font-weight:700;color:var(--ip-ink);line-height:1.25}' +
+      '.cg-meta{font-size:11.5px;color:var(--muted);margin-top:2px;display:flex;gap:6px;flex-wrap:wrap}' +
+      '.cg-tag{font-size:10px;font-weight:800;padding:1px 6px;border-radius:5px}' +
+      '.cg-tag.cl{background:rgba(11,110,67,.14);color:#0B6E43}.cg-tag.pr{background:rgba(245,158,11,.16);color:#B45309}' +
+      '.cg-tel{color:var(--ip-blue);font-weight:700;text-decoration:none}' +
+      '.cg-empty{padding:40px 20px;text-align:center;color:var(--muted);font-size:14px}' +
+      '.cg-load{display:flex;align-items:center;justify-content:center;gap:10px;height:100%;color:var(--muted);font-size:14px}' +
+      '.cg-pop b{display:block;font-size:13px;color:#10131C}.cg-pop .a{font-size:11.5px;color:#5b6270;margin:2px 0}' +
+      '.cg-pop .t{display:inline-block;font-size:10px;font-weight:800;padding:1px 6px;border-radius:5px;margin-top:3px}' +
+      '@media(max-width:820px){.cg-split{flex-direction:column;height:auto}.cg-map{height:52vh;min-height:320px}.cg-list{width:auto;max-width:none;border-left:none;border-top:1px solid var(--line);max-height:none}}';
+    document.head.appendChild(st);
+  }
+
+  // ── options du sélecteur : tous les groupements, triés A→Z, avec compteurs ──
+  function selectOptions() {
+    var names = Object.keys(GIDX).sort(function (a, b) { return a.localeCompare(b, 'fr'); });
+    var o = '<option value="">— Choisis un groupement —</option>';
+    for (var i = 0; i < names.length; i++) {
+      var g = names[i], e = GIDX[g];
+      o += '<option value="' + esc(g) + '"' + (g === sel ? ' selected' : '') + '>' +
+        esc(g) + ' (' + e.c + ' client' + (e.c > 1 ? 's' : '') + ' · ' + e.pr + ' prospect' + (e.pr > 1 ? 's' : '') + ')</option>';
+    }
+    return o;
+  }
+
+  function counts() {
+    var e = sel && GIDX[sel];
+    if (!e) return '';
+    return '<span class="cg-pill cl"><span class="d"></span>' + e.c + ' client' + (e.c > 1 ? 's' : '') + '</span>' +
+           '<span class="cg-pill pr"><span class="d"></span>' + e.pr + ' prospect' + (e.pr > 1 ? 's' : '') + '</span>';
+  }
+
+  function popupHtml(p) {
+    var addr = (p[7] || '') + (p[8] ? ' · ' + p[8] : '');
+    var st = segOf(p), cl = isClient(p);
+    var tel = (p[9] || '').replace(/[^0-9+]/g, '');
+    var q = encodeURIComponent((p[6] || '') + ' ' + (p[7] || '') + ' ' + (p[8] || ''));
+    return '<div class="cg-pop">' +
+      '<b>' + esc(p[6] || 'Pharmacie') + '</b>' +
+      (p[10] ? '<div class="a">' + esc(p[10]) + '</div>' : '') +
+      (addr ? '<div class="a">' + esc(addr) + '</div>' : '') +
+      '<span class="t ' + (cl ? 'cl' : 'pr') + '" style="background:' + (cl ? 'rgba(11,110,67,.14);color:#0B6E43' : 'rgba(245,158,11,.16);color:#B45309') + '">' + esc(st) + '</span>' +
+      (commOf(p) ? ' <span class="t" style="background:#EEF1F6;color:#5b6270">' + esc(commOf(p)) + '</span>' : '') +
+      (tel ? '<div style="margin-top:4px"><a class="cg-tel" href="tel:' + esc(tel) + '">' + esc(p[9]) + '</a></div>' : '') +
+      '<div style="margin-top:5px"><a class="cg-tel" href="https://www.google.com/maps/search/?api=1&query=' + q + '" target="_blank" rel="noopener">Google Maps ↗</a></div>' +
+    '</div>';
+  }
+
+  // ── dessin de la carte pour le groupement `sel` ──
+  function draw() {
+    if (!map) return;
+    if (layer) { layer.clearLayers(); } else { layer = window.L.layerGroup().addTo(map); }
+    markers = {};
+    var e = sel && GIDX[sel];
+    if (!e) return;
+    var pts = e.pts, bounds = [], j, i, p;
+    // prospects d'abord (dessous), clients ensuite (dessus → ils ressortent)
+    var pros = [], clis = [];
+    for (j = 0; j < pts.length; j++) { p = D.p[pts[j]]; if (!llOK(p)) continue; (isClient(p) ? clis : pros).push(pts[j]); }
+    function add(idx, big) {
+      p = D.p[idx];
+      var cl = isClient(p);
+      var m = window.L.circleMarker([p[0], p[1]], {
+        radius: big ? 8 : 5,
+        fillColor: cl ? (SEG_COL[segOf(p)] || '#16A34A') : PROSPECT_COL,
+        color: cl ? '#ffffff' : PROSPECT_COL,
+        weight: cl ? 2 : 1,
+        opacity: cl ? 1 : 0.75,
+        fillOpacity: cl ? 0.98 : 0.6
+      });
+      m.bindPopup(popupHtml(p), { className: 'cg-pop-wrap' });
+      m.addTo(layer);
+      markers[idx] = m;
+      bounds.push([p[0], p[1]]);
+    }
+    for (j = 0; j < pros.length; j++) add(pros[j], false);
+    for (j = 0; j < clis.length; j++) add(clis[j], true);
+    if (bounds.length) { try { map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 }); } catch (ex) {} }
+    setTimeout(function () { try { map.invalidateSize(); } catch (ex) {} }, 60);
+  }
+
+  // ── liste latérale : clients (par CA décroissant) puis prospects (A→Z) ──
+  function rowHtml(idx) {
+    var p = D.p[idx], cl = isClient(p);
+    var tel = (p[9] || '').replace(/[^0-9+]/g, '');
+    return '<div class="cg-row" onclick="V2.cgFocus(' + idx + ')">' +
+      '<span class="cg-dot" style="background:' + (cl ? (SEG_COL[segOf(p)] || '#16A34A') : PROSPECT_COL) + (cl ? ';box-shadow:0 0 0 2px #fff,0 0 0 3px ' + (SEG_COL[segOf(p)] || '#16A34A') : '') + '"></span>' +
+      '<div style="flex:1;min-width:0">' +
+        '<div class="cg-nm">' + esc(p[6] || 'Pharmacie') + '</div>' +
+        '<div class="cg-meta">' +
+          '<span class="cg-tag ' + (cl ? 'cl' : 'pr') + '">' + esc(segOf(p)) + '</span>' +
+          (p[7] ? '<span>' + esc(p[7]) + '</span>' : '') +
+          (commOf(p) ? '<span>· ' + esc(commOf(p)) + '</span>' : '') +
+        '</div>' +
+        (tel ? '<div class="cg-meta"><a class="cg-tel" href="tel:' + esc(tel) + '" onclick="event.stopPropagation()">' + esc(p[9]) + '</a></div>' : '') +
+      '</div>' +
+    '</div>';
+  }
+  function listHtml() {
+    var e = sel && GIDX[sel];
+    if (!e) return '<div class="cg-empty">Choisis un groupement dans le menu pour voir tes clients et prospects.</div>';
+    var clis = [], pros = [], j, p;
+    for (j = 0; j < e.pts.length; j++) { p = D.p[e.pts[j]]; (isClient(p) ? clis : pros).push(e.pts[j]); }
+    clis.sort(function (a, b) { return (D.p[b][12] || 0) - (D.p[a][12] || 0); });
+    pros.sort(function (a, b) { return String(D.p[a][6] || '').localeCompare(String(D.p[b][6] || ''), 'fr'); });
+    var h = '';
+    if (clis.length) { h += '<div class="cg-grp">Clients · ' + clis.length + '</div>' + clis.map(rowHtml).join(''); }
+    if (pros.length) { h += '<div class="cg-grp">Prospects · ' + pros.length + '</div>' + pros.map(rowHtml).join(''); }
+    if (!clis.length && !pros.length) h = '<div class="cg-empty">Aucune pharmacie géolocalisée pour ce groupement.</div>';
+    return h;
+  }
+
+  // ── API ──
+  V2.cgSelect = function (name) {
+    sel = name || '';
+    var cn = document.getElementById('cg-count'); if (cn) cn.innerHTML = counts();
+    var ls = document.getElementById('cg-list'); if (ls) ls.innerHTML = listHtml();
+    draw();
+  };
+  V2.cgFocus = function (idx) {
+    var p = D && D.p[idx]; if (!p || !map || !llOK(p)) return;
+    map.setView([p[0], p[1]], Math.max(map.getZoom(), 14), { animate: true });
+    var m = markers[idx]; if (m) m.openPopup();
+  };
+
+  V2.pages.carteGrp = {
+    render: function (root, param) {
+      injectCss();
+      var top = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' });
+      var tabs = V2.grpSpaceTabs ? V2.grpSpaceTabs('carte') : '';
+      root.innerHTML = top + tabs +
+        '<div class="cg-bar">' +
+          '<select class="cg-sel" id="cg-sel" onchange="V2.cgSelect(this.value)">' +
+            '<option value="">Chargement des groupements…</option></select>' +
+          '<span class="cg-count" id="cg-count"></span>' +
+        '</div>' +
+        '<div class="cg-split">' +
+          '<div class="cg-map" id="cg-map"><div class="cg-load"><div class="v2-spinner"></div>Chargement de la carte…</div></div>' +
+          '<div class="cg-list" id="cg-list"><div class="cg-empty">Choisis un groupement dans le menu.</div></div>' +
+        '</div>';
+      if (param) sel = String(param);
+      ensureData(function (e1) {
+        if (e1) { var mp = document.getElementById('cg-map'); if (mp) mp.innerHTML = '<div class="cg-empty">Données indisponibles. Réessaie.</div>'; return; }
+        D = window.PHARMA_FR; buildIndex();
+        // défaut : le groupement avec le plus de clients (carte non vide d'emblée)
+        if (!sel) {
+          var best = '', bc = -1;
+          for (var g in GIDX) { if (GIDX[g].c > bc) { bc = GIDX[g].c; best = g; } }
+          sel = best;
+        }
+        var s = document.getElementById('cg-sel'); if (s) s.innerHTML = selectOptions();
+        var cn = document.getElementById('cg-count'); if (cn) cn.innerHTML = counts();
+        var ls = document.getElementById('cg-list'); if (ls) ls.innerHTML = listHtml();
+        ensureLeaflet(function (e2) {
+          var mp = document.getElementById('cg-map');
+          if (e2) { if (mp) mp.innerHTML = '<div class="cg-empty">Carte indisponible.</div>'; return; }
+          if (mp) mp.innerHTML = '';
+          map = window.L.map('cg-map', { zoomControl: true, attributionControl: false }).setView([46.6, 2.4], 6);
+          window.L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { maxZoom: 19, subdomains: 'abcd' }).addTo(map);
+          draw();
+        });
+      });
+    }
+  };
+})();
