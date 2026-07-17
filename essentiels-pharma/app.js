@@ -12932,10 +12932,12 @@ function renderGroupement() {
       <div style="margin-bottom:14px">
         <div style="font-size:11px;font-weight:800;color:${grnT};text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">${esc(depName[dep] || dep)} · ${byDep[dep].length}</div>
         ${byDep[dep].map(o => `<div style="display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
-            <div style="min-width:0"><div style="font-weight:600;color:var(--text);font-size:14px">${esc(o.nom)}</div>
-              <div style="font-size:12px;color:var(--text2)">${esc(o.adresse)}</div></div>
-            <div style="text-align:right;flex-shrink:0"><div style="font-size:12px;color:var(--text2)">${esc(o.cp)}</div>
-              <div style="font-size:13px;color:var(--text);font-weight:600">${esc(o.ville)}</div></div>
+            <div style="min-width:0">
+              <div style="font-weight:600;color:var(--text);font-size:14px">${esc(o.nom)}
+                ${o.client ? `<span style="font-size:10px;font-weight:700;padding:1px 7px;border-radius:100px;background:var(--opso-green-pale);color:${grnT};margin-left:6px;white-space:nowrap">✓ Client Intégral</span>` : ''}</div>
+              <div style="font-size:12px;color:var(--text2)">${esc(o.adresse)} · ${esc(o.cp)} ${esc(o.ville)}</div></div>
+            <div style="text-align:right;flex-shrink:0">
+              ${o.ca ? `<div style="font-size:14px;color:${grnT};font-weight:800;font-family:'Comfortaa',sans-serif">${(o.ca/1000).toFixed(0)}k€</div><div style="font-size:10px;color:var(--text3)">CA Intégral</div>` : `<div style="font-size:12px;color:var(--text3)">${esc(o.ville)}</div>`}</div>
           </div>`).join('')}
       </div>`).join('');
 
@@ -12956,10 +12958,10 @@ function renderGroupement() {
 
       <!-- Stats -->
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:16px">
-        ${stat(G.nbAdherents || '—', 'Adhérents déclarés')}
-        ${stat(geo.length, 'Officines identifiées')}
-        ${stat(G.nbLabos || '—', 'Labos référencés')}
-        ${stat('120€+', 'Cotisation')}
+        ${stat((G.reseau&&G.reseau.officines) || O.length, 'Officines réseau')}
+        ${stat(O.filter(o=>o.client).length, 'Déjà clientes Intégral')}
+        ${stat((G.reseau&&G.reseau.caReseau) || '—', 'CA réseau / an')}
+        ${stat((G.reseau&&G.reseau.pharmaciens) || '—', 'Pharmaciens')}
       </div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
@@ -12990,15 +12992,15 @@ function renderGroupement() {
       <!-- Liste officines -->
       <div class="card" style="padding:20px 22px;margin-bottom:20px">
         <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px">
-          <div style="font-family:'Comfortaa',sans-serif;font-weight:600;color:var(--text)">${O.length} officines identifiées</div>
-          <div style="font-size:12px;color:var(--text2)">sur ${G.nbAdherents || '?'} adhérents déclarés</div>
+          <div style="font-family:'Comfortaa',sans-serif;font-weight:600;color:var(--text)">${O.length} officines du réseau</div>
+          <div style="font-size:12px;color:var(--text2)">${O.filter(o=>o.client).length} déjà clientes Intégral · liste officielle Essentiels Pharma</div>
         </div>
         ${offList}
       </div>
 
       <div class="card" style="padding:16px 20px;margin-bottom:24px;border-left:3px solid ${grn};background:var(--opso-green-pale)">
         <div style="font-weight:700;color:var(--text);margin-bottom:4px">📊 Ventes par officine</div>
-        <div style="font-size:13px;color:var(--text2);line-height:1.5">Le CA, les commandes et la marge de chaque officine Essentiels Pharma s'afficheront ici une fois les exports de ventes Intégral intégrés. La liste et la carte ci-dessus sont une première base (source nationale des groupements) — à compléter avec la liste officielle du réseau.</div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.5">Liste officielle (23 officines, source : store-locator Essentiels Pharma). ${O.filter(o=>o.client).length} sont déjà clientes Intégral — leur CA remonte quand il est disponible dans nos ventes WML. Le détail complet (commandes, marge, top produits) s'affichera dès l'intégration des exports de ventes de ces officines.</div>
       </div>
     </div>`;
 
