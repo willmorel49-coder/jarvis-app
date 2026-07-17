@@ -177,8 +177,15 @@ html.bare .ip-atlas{border:none;box-shadow:none}
 html.bare .ip-map{padding:6px 8px 12px;background:transparent}
 html.bare .ip-map svg{max-width:560px;margin:0 auto}
 html.bare .ip-legend{justify-content:center}
+/* ===== NOMS TOUJOURS VISIBLES (via ?labels=all) — n'affecte PAS les appels sans le paramètre ===== */
+html.showlabels .mk__label{opacity:1;transform:translateY(0)}
+html.showlabels .mk__label text{font-size:12px;font-weight:700}
+html.showlabels .mk__label rect{fill:var(--navy);stroke:rgba(255,255,255,.16);stroke-width:1}
 </style>
-<script>if(/[?&#](bare|mode=map)/i.test(location.href))document.documentElement.classList.add('bare');</script>
+<script>
+if(/[?&#](bare|mode=map)/i.test(location.href))document.documentElement.classList.add('bare');
+if(/[?&#]labels=(all|1|on)/i.test(location.href))document.documentElement.classList.add('showlabels');
+</script>
 </head>
 <body>
 
