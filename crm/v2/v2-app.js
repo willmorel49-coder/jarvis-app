@@ -1044,6 +1044,8 @@
       if (o) { var ca = p[12] || 0; p[4] = ca >= 40000 ? iA : (ca >= 12000 ? iB : iC); var gr = o.groupement && String(o.groupement).trim(); if (gr && gr !== '—') p[3] = ensureGrp(gr); nC++; }
       else if (D.seg[p[4]] !== 'Prospect') { p[4] = iPro; }
     });
+    var OV = window.GRP_OVR;   // corrections manuelles de groupement (propagation)
+    if (OV) D.p.forEach(function (p) { var g = OV[String(p[13] || '').replace(/[^0-9]/g, '')]; if (g) p[3] = ensureGrp(g); });
     D._wmlRecon = true; if (D.meta) D.meta.clients = nC;
   };
   V2.ensurePharmaFr = function (cb) {
