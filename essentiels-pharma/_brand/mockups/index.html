@@ -1,0 +1,49 @@
+<!doctype html><html lang="fr"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Essentiels Pharma — 6 maquettes à comparer</title>
+<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;600&family=Montserrat:wght@300;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0E1310;--card:#161C15;--green:#57AE31;--lime:#8FD45F;--txt:#fff;--mut:#A9B4A3;--bd:rgba(255,255,255,.08)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font-family:Montserrat,sans-serif;font-weight:300;
+ background-image:radial-gradient(ellipse 60% 40% at 75% 0%,rgba(87,174,49,.14),transparent 60%),radial-gradient(ellipse 50% 40% at 5% 100%,rgba(150,205,64,.08),transparent 55%);min-height:100vh}
+.wrap{max-width:1100px;margin:0 auto;padding:40px 20px 60px}
+h1{font-family:Comfortaa,sans-serif;font-weight:600;font-size:clamp(26px,5vw,40px);line-height:1.15}
+.pill{background:rgba(87,174,49,.18);color:var(--lime);padding:2px 14px;border-radius:100px}
+.sub{color:var(--mut);margin:14px 0 6px;max-width:640px;line-height:1.5}
+.use{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0 34px}
+.use span{font-size:12px;border:1px solid var(--bd);border-radius:100px;padding:6px 14px;color:var(--mut)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
+a.card{display:block;text-decoration:none;color:inherit;background:var(--card);border:1px solid var(--bd);border-radius:20px;overflow:hidden;transition:.25s;position:relative}
+a.card:hover{transform:translateY(-4px);border-color:var(--green);box-shadow:0 18px 40px rgba(0,0,0,.4)}
+.frame{height:300px;overflow:hidden;background:#0b0f0c;border-bottom:1px solid var(--bd);position:relative}
+.frame iframe{width:200%;height:600px;border:0;transform:scale(.5);transform-origin:top left;pointer-events:none}
+.num{position:absolute;top:12px;left:12px;z-index:2;background:var(--green);color:#08110a;font-family:Comfortaa;font-weight:600;font-size:14px;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.meta{padding:16px 18px}
+.meta h3{font-family:Comfortaa,sans-serif;font-weight:600;font-size:16px}
+.meta p{color:var(--mut);font-size:13px;margin-top:5px;line-height:1.4}
+.open{display:inline-block;margin-top:12px;color:var(--lime);font-weight:500;font-size:13px}
+.foot{color:var(--mut);font-size:12px;margin-top:40px;text-align:center}
+</style></head><body><div class="wrap">
+<h1>Essentiels Pharma — <span class="pill">6 pistes</span> d'app</h1>
+<div class="sub">Focus <b style="color:#fff">suivi groupement + listing produits</b>. Vraies données (23 officines, 45 M€, offre privilège). Clique une carte pour l'ouvrir en grand.</div>
+<div class="use"><span>🎯 Pilotage — Pascale (DR)</span><span>🎬 Vitrine — François Tesson</span></div>
+<div class="grid" id="g"></div>
+<div class="foot">Le réflexe santé · maquettes non fonctionnelles à comparer avant le définitif</div>
+</div>
+<script>
+const V=[
+ [1,"Mission Control","Cockpit vivant : compteurs animés, jauges, halos verts, carte qui pulse. High-tech premium."],
+ [2,"Éditorial / Magazine","Grande typo, mise en page presse, le réseau raconté comme un article, « sélection de la rédaction »."],
+ [3,"Carte immersive","La carte plein écran EST l'app : marqueurs pulsants, fiches officine en verre, panneau offre."],
+ [4,"Bento Grid","Grille de tuiles modernes (Apple/Vercel) : carte, chiffres, offre, exclusivités, fiche dirigeants."],
+ [5,"Scrollytelling","Présentation cinématique au scroll : le réseau se dessine, les chiffres montent, l'offre se révèle."],
+ [6,"Bold Data","Néo-brutaliste chic : typo massive, chiffres géants, la preuve « X pharmacies » en grosses barres."],
+];
+document.getElementById('g').innerHTML=V.map(([n,t,d])=>`
+ <a class="card" href="variant${n}.html">
+   <div class="num">${n}</div>
+   <div class="frame"><iframe src="variant${n}.html" loading="lazy" scrolling="no"></iframe></div>
+   <div class="meta"><h3>${t}</h3><p>${d}</p><span class="open">Ouvrir en grand →</span></div>
+ </a>`).join('');
+</script></body></html>
