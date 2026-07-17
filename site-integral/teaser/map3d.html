@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Réseau Intégral Pharma — carte 3D</title>
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@500,700,900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{ --blue:#3E6BFF; --orange:#FF9A3C; --ink:#EAF0FF; --mono:'Geist Mono',ui-monospace,monospace; --font:'Satoshi',system-ui,sans-serif; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:
+      radial-gradient(80% 60% at 62% 30%, rgba(0,80,230,.16), transparent 60%),
+      radial-gradient(70% 60% at 70% 78%, rgba(243,120,26,.12), transparent 62%),
+      radial-gradient(120% 100% at 50% 0%, #0B1836 0%, #070E22 55%, #05091A 100%);
+    font-family:var(--font);color:var(--ink);overflow:hidden}
+  #wrap{position:absolute;inset:0}
+  canvas{display:block;position:absolute;inset:0}
+  #labels{position:absolute;inset:0;pointer-events:none;z-index:3}
+  .lab{position:absolute;transform:translate(-50%,-100%);white-space:nowrap;
+    font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.03em;color:#DCE6FF;
+    background:rgba(8,16,38,.72);border:1px solid rgba(120,150,255,.28);border-radius:7px;
+    padding:3px 8px;transition:opacity .4s ease;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+  .lab .c{color:#8FA3D6;font-weight:500}
+  .lab.siege{color:#241200;background:linear-gradient(180deg,#FFC673,#FF9A3C);
+    border-color:transparent;font-weight:700;box-shadow:0 6px 18px -6px rgba(255,150,50,.6)}
+  .lab.siege .c{color:#5a2c00}
+  .lab.part{opacity:.82;border-style:dashed}
+  .lab .tag{margin-left:6px;font-size:8.5px;opacity:.85}
+  /* legend */
+  #legend{position:absolute;left:16px;bottom:14px;z-index:4;display:flex;flex-wrap:wrap;gap:8px 16px;
+    font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;color:#9DB0DE;pointer-events:none}
+  #legend b{display:inline-flex;align-items:center;gap:7px}
+  #legend i{width:9px;height:9px;border-radius:50%;display:inline-block}
+  .d-site{background:#3E6BFF;box-shadow:0 0 10px #3E6BFF}
+  .d-siege{background:#FF9A3C;box-shadow:0 0 10px #FF9A3C}
+  .d-part{background:transparent;border:1.5px dashed #9DB0DE}
+  #hint{position:absolute;right:16px;bottom:14px;z-index:4;font-family:var(--mono);font-size:10px;
+    letter-spacing:.12em;text-transform:uppercase;color:#5f6f9c;pointer-events:none}
+  /* fallback */
+  #fallback{position:absolute;inset:0;z-index:5;display:none;background:#070E22 center/cover no-repeat;
+    align-items:flex-end}
+  #fallback.on{display:flex}
+  #fallback .cap{padding:18px 20px;font-family:var(--mono);font-size:12px;color:#cdd8f5;
+    background:linear-gradient(180deg,transparent,rgba(5,9,26,.85))}
+  @media(max-width:640px){
+    .lab{font-size:9.5px;padding:2px 5px}
+    .lab .c, .lab .tag{display:none}      /* sigle seul → pas de chevauchement */
+    #hint{display:none}                    /* évite la collision avec la légende */
+    #legend{font-size:9px;gap:5px 10px;bottom:10px}
+  }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="labels"></div>
+  <div id="legend">
+    <b><i class="d-siege"></i>Siège · Hyères</b>
+    <b><i class="d-site"></i>Agence Intégral</b>
+    <b><i class="d-part"></i>Partenaire</b>
+  </div>
+  <div id="hint">Réseau national · 9 établissements</div>
+  <div id="fallback"><div class="cap">Notre réseau national — 9 établissements, du Grand Ouest au Sud.</div></div>
+</div>
+
+<script>
+  // WebGL capability check
+  function hasWebGL(){ try{ var c=document.createElement('canvas');
+    return !!(window.WebGLRenderingContext && (c.getContext('webgl')||c.getContext('experimental-webgl'))); }catch(e){ return false; } }
+  var REDUCED = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function showFallback(){ var f=document.getElementById('fallback'); f.style.backgroundImage="url('assets/siege.jpg'),url('../assets/siege.jpg')"; f.classList.add('on'); }
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"
+        onerror="showFallback()"></script>
+<script>
+if(!hasWebGL() || !window.THREE){ showFallback(); }
+else { (function(){
+  "use strict";
+  var wrap=document.getElementById('wrap'), labelsEl=document.getElementById('labels');
+  var W=wrap.clientWidth, H=wrap.clientHeight;
+
+  var scene=new THREE.Scene();
+  scene.fog=new THREE.FogExp2(0x060B1C, 0.028);
+  var camera=new THREE.PerspectiveCamera(36, W/H, 0.1, 200);
+  var renderer=new THREE.WebGLRenderer({antialias:true, alpha:true});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  renderer.setSize(W,H); renderer.setClearColor(0x000000,0);
+  wrap.appendChild(renderer.domElement);
+
+  // lights
+  scene.add(new THREE.AmbientLight(0x415a9c, 0.9));
+  var key=new THREE.DirectionalLight(0x9fb8ff, 0.8); key.position.set(-6,10,8); scene.add(key);
+  var warm=new THREE.PointLight(0xff9a3c, 0.9, 40); warm.position.set(6,4,-2); scene.add(warm);
+
+  // glow sprite texture
+  function glowTex(){ var c=document.createElement('canvas'); c.width=c.height=128; var g=c.getContext('2d');
+    var gr=g.createRadialGradient(64,64,0,64,64,64); gr.addColorStop(0,'rgba(255,255,255,1)');
+    gr.addColorStop(.25,'rgba(255,255,255,.7)'); gr.addColorStop(1,'rgba(255,255,255,0)');
+    g.fillStyle=gr; g.fillRect(0,0,128,128); var t=new THREE.CanvasTexture(c); return t; }
+  var GLOW=glowTex();
+
+  var mapGroup=new THREE.Group(); scene.add(mapGroup);
+  var beamGroup=new THREE.Group(); scene.add(beamGroup);
+  var arcGroup=new THREE.Group(); scene.add(arcGroup);
+
+  var markers=[], comets=[], rings=[], labelObjs=[], hyeres=null, tPrev=0;
+  var SCALE=1;
+  var cx=467.5, cy=432.3; // bbox center of France polygon
+
+  function toWorld(x,y){ return new THREE.Vector3((x-cx)*SCALE, 0, (y-cy)*SCALE); }
+
+  function build(data){
+    // ---- compute scale to ~13 units wide ----
+    var xs=data.main.map(function(p){return p[0];}), ys=data.main.map(function(p){return p[1];});
+    var minX=Math.min.apply(null,xs), maxX=Math.max.apply(null,xs);
+    var minY=Math.min.apply(null,ys), maxY=Math.max.apply(null,ys);
+    cx=(minX+maxX)/2; cy=(minY+maxY)/2;
+    SCALE=13/Math.max(maxX-minX, maxY-minY);
+
+    // ---- France shape (built in XY, then laid flat) ----
+    function makeShape(pts){ var s=new THREE.Shape();
+      s.moveTo((pts[0][0]-cx)*SCALE, -(pts[0][1]-cy)*SCALE);
+      for(var i=1;i<pts.length;i++) s.lineTo((pts[i][0]-cx)*SCALE, -(pts[i][1]-cy)*SCALE);
+      return s; }
+    function addLand(pts){
+      var shape=makeShape(pts);
+      var geo=new THREE.ShapeGeometry(shape);
+      var mat=new THREE.MeshStandardMaterial({color:0x122246, metalness:.2, roughness:.72,
+        emissive:0x0a1836, emissiveIntensity:.55, transparent:true, opacity:.98});
+      var mesh=new THREE.Mesh(geo,mat); mesh.rotation.x=-Math.PI/2; mesh.position.y=0; mapGroup.add(mesh);
+      // subtle raised inner glow plane
+      var eg=new THREE.EdgesGeometry(geo);
+      var lines=new THREE.LineSegments(eg, new THREE.LineBasicMaterial({color:0x3E6BFF, transparent:true, opacity:.28}));
+      lines.rotation.x=-Math.PI/2; lines.position.y=0.012; mapGroup.add(lines);
+      // outline loop (glow)
+      var op=[]; for(var i=0;i<pts.length;i++){ op.push(new THREE.Vector3((pts[i][0]-cx)*SCALE,0.02,(pts[i][1]-cy)*SCALE)); }
+      op.push(op[0].clone());
+      var olg=new THREE.BufferGeometry().setFromPoints(op);
+      var ol=new THREE.Line(olg, new THREE.LineBasicMaterial({color:0x5B8CFF, transparent:true, opacity:.9}));
+      mapGroup.add(ol);
+    }
+    addLand(data.main);
+    if(data.corse && data.corse.length) addLand(data.corse);
+
+    // ground glow disc under the network
+    var disc=new THREE.Mesh(new THREE.CircleGeometry(9,64),
+      new THREE.MeshBasicMaterial({map:GLOW, color:0x1b3fa0, transparent:true, opacity:.5,
+        blending:THREE.AdditiveBlending, depthWrite:false}));
+    disc.rotation.x=-Math.PI/2; disc.position.set(0,-0.05,0); scene.add(disc);
+
+    // ---- markers / beams ----
+    data.markers.forEach(function(m){
+      var siege=m.type==='siege', part=m.type==='partenaire';
+      var pos=toWorld(m.ax, m.ay);
+      var col = siege?0xFF9A3C : (part?0x9DB0DE : 0x3E6BFF);
+      var beamH = siege?5.6 : (part?3.0 : 3.9+Math.random()*0.5);
+      var rad = siege?0.14 : 0.08;
+
+      // beam (additive cylinder, fades upward via vertex colors)
+      var bgeo=new THREE.CylinderGeometry(rad*0.5, rad, beamH, 16, 1, true);
+      bgeo.translate(0, beamH/2, 0);
+      var bcol=[]; var posAttr=bgeo.attributes.position; var c1=new THREE.Color(col);
+      for(var i=0;i<posAttr.count;i++){ var yy=posAttr.getY(i)/beamH; var a=1-yy; bcol.push(c1.r*a,c1.g*a,c1.b*a); }
+      bgeo.setAttribute('color', new THREE.Float32BufferAttribute(bcol,3));
+      var bmat=new THREE.MeshBasicMaterial({vertexColors:true, transparent:true, opacity:part?0.5:0.82,
+        blending:THREE.AdditiveBlending, depthWrite:false, side:THREE.DoubleSide});
+      var beam=new THREE.Mesh(bgeo,bmat); beam.position.copy(pos); beamGroup.add(beam);
+
+      // core bright line
+      var core=new THREE.Mesh(new THREE.CylinderGeometry(rad*0.28, rad*0.28, beamH*0.96, 8),
+        new THREE.MeshBasicMaterial({color:siege?0xFFD8A0:0xBFD2FF, transparent:true, opacity:part?0.4:0.8,
+          blending:THREE.AdditiveBlending, depthWrite:false}));
+      core.position.copy(pos); core.position.y=beamH*0.48; beamGroup.add(core);
+
+      // base pillar (solid) so it reads as a marker
+      var pil=new THREE.Mesh(new THREE.CylinderGeometry(rad*1.15, rad*1.5, 0.5, 18),
+        new THREE.MeshStandardMaterial({color:col, emissive:col, emissiveIntensity:siege?1.1:0.7, metalness:.4, roughness:.4}));
+      pil.position.copy(pos); pil.position.y=0.25; beamGroup.add(pil);
+
+      // top glow sprite (big → visible)
+      var sp=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW, color:col, transparent:true,
+        opacity:part?0.6:0.95, blending:THREE.AdditiveBlending, depthWrite:false}));
+      var spS=siege?2.4:1.5; sp.scale.set(spS,spS,1); sp.position.copy(pos); sp.position.y=beamH; beamGroup.add(sp);
+
+      // pulsing ground ring
+      var ring=new THREE.Mesh(new THREE.RingGeometry(rad*2.2, rad*2.7, 40),
+        new THREE.MeshBasicMaterial({color:col, transparent:true, opacity:.7, side:THREE.DoubleSide,
+          blending:THREE.AdditiveBlending, depthWrite:false}));
+      ring.rotation.x=-Math.PI/2; ring.position.copy(pos); ring.position.y=0.03; scene.add(ring);
+      rings.push({mesh:ring, base:rad*2.3, ph:Math.random()*6.28, siege:siege});
+
+      markers.push({data:m, pos:pos, top:pos.clone().setY(beamH+0.15), sp:sp, siege:siege, part:part});
+      if(siege){ hyeres=pos.clone(); warm.position.set(pos.x, 3, pos.z); }
+
+      // label
+      var d=document.createElement('div'); d.className='lab'+(siege?' siege':'')+(part?' part':'');
+      d.innerHTML=(m.sigle||m.name)+' <span class="c">'+m.city+'</span>'+(siege?'<span class="tag">SIÈGE</span>':(part?'<span class="tag">PARTENAIRE</span>':''));
+      labelsEl.appendChild(d); labelObjs.push({el:d, marker:markers[markers.length-1]});
+    });
+
+    // ---- arcs: each site → Hyères, animated comets ----
+    if(hyeres){
+      markers.forEach(function(mk){
+        if(mk.siege) return;
+        var a=mk.pos.clone().setY(0.2), b=hyeres.clone().setY(0.2);
+        var mid=a.clone().lerp(b,0.5); var dist=a.distanceTo(b);
+        mid.y=Math.max(1.6, dist*0.42);
+        var curve=new THREE.QuadraticBezierCurve3(a, mid, b);
+        var tube=new THREE.Mesh(new THREE.TubeGeometry(curve, 40, 0.012, 6, false),
+          new THREE.MeshBasicMaterial({color:mk.part?0x8aa0d8:0x3E6BFF, transparent:true, opacity:.28,
+            blending:THREE.AdditiveBlending, depthWrite:false}));
+        arcGroup.add(tube);
+        var comet=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW, color:0xFFC98A, transparent:true,
+          opacity:.95, blending:THREE.AdditiveBlending, depthWrite:false}));
+        comet.scale.set(0.5,0.5,1); arcGroup.add(comet);
+        comets.push({curve:curve, sp:comet, t:Math.random(), spd:0.14+Math.random()*0.1});
+      });
+    }
+
+    document.getElementById('hint').textContent='Réseau national · '+data.markers.length+' établissements';
+    start();
+  }
+
+  // ---- camera framing ----
+  var camTarget=new THREE.Vector3(0, 1.4, 0.6);
+  var baseYaw=0.0, mouseX=0, mouseY=0;
+  function place(){
+    var yaw=baseYaw + mouseX*0.4;
+    var fit = camera.aspect < 1.3 ? (1.3/camera.aspect) : 1;   // recule quand l'écran est étroit
+    camera.position.x=Math.sin(yaw)*4.2*fit;
+    camera.position.y=(10.6 - mouseY*1.0)*fit;
+    camera.position.z=(17.0 - mouseY*0.5)*fit;
+    camera.lookAt(camTarget);
+  }
+  window.addEventListener('mousemove', function(e){
+    mouseX=(e.clientX/window.innerWidth-0.5); mouseY=(e.clientY/window.innerHeight-0.5);
+  }, {passive:true});
+
+  // ---- label projection ----
+  var v=new THREE.Vector3();
+  function updateLabels(){
+    var rect=wrap.getBoundingClientRect();
+    for(var i=0;i<labelObjs.length;i++){
+      var lo=labelObjs[i]; v.copy(lo.marker.top).project(camera);
+      var x=(v.x*0.5+0.5)*rect.width, y=(-v.y*0.5+0.5)*rect.height;
+      var vis=v.z<1;
+      lo.el.style.opacity=vis?'1':'0';
+      lo.el.style.left=x+'px'; lo.el.style.top=y+'px';
+    }
+  }
+
+  // ---- animate ----
+  var running=false, visible=true, t0=null;
+  function frame(ts){
+    if(!running) return;
+    if(t0===null) t0=ts; var t=(ts-t0)/1000;
+    if(!REDUCED){
+      baseYaw=Math.sin(t*0.12)*0.5;
+      // pulse rings
+      for(var i=0;i<rings.length;i++){ var r=rings[i]; var s=1+0.35*(0.5+0.5*Math.sin(t*1.6+r.ph));
+        r.mesh.scale.set(s,s,s); r.mesh.material.opacity=(r.siege?0.55:0.4)*(0.6+0.4*Math.sin(t*1.6+r.ph)); }
+      // comets
+      for(var j=0;j<comets.length;j++){ var c=comets[j]; c.t+=c.spd*0.016; if(c.t>1)c.t-=1;
+        c.curve.getPointAt(c.t, c.sp.position); }
+      // beam sprite shimmer
+      for(var k=0;k<markers.length;k++){ var mk=markers[k];
+        mk.sp.material.opacity=(mk.part?0.55:0.9)*(0.82+0.18*Math.sin(t*2+ (mk.siege?0:k))); }
+    }
+    place(); updateLabels(); renderer.render(scene,camera);
+    requestAnimationFrame(frame);
+  }
+  function start(){ if(running)return; running=true; t0=null; requestAnimationFrame(frame); }
+  function stop(){ running=false; }
+
+  // pause offscreen / hidden
+  document.addEventListener('visibilitychange', function(){ if(document.hidden) stop(); else if(visible) start(); });
+  if('IntersectionObserver' in window){
+    new IntersectionObserver(function(es){ es.forEach(function(e){ visible=e.isIntersecting;
+      if(visible && !document.hidden) start(); else stop(); }); },{threshold:0.02}).observe(wrap);
+  }
+
+  // resize
+  function onResize(){ W=wrap.clientWidth; H=wrap.clientHeight; camera.aspect=W/H; camera.updateProjectionMatrix();
+    renderer.setSize(W,H); }
+  window.addEventListener('resize', onResize);
+
+  // ---- load data ----
+  fetch('_map3d-data.json').then(function(r){ return r.json(); })
+    .then(function(d){ build(d); if(REDUCED){ place(); updateLabels(); renderer.render(scene,camera); } })
+    .catch(function(){ showFallback(); });
+})(); }
+</script>
+</body>
+</html>
