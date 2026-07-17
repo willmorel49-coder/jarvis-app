@@ -10,7 +10,7 @@
   V2.pages = V2.pages || {};
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s); };
   var ICO = window.ICO || function () { return ''; };
-  var CB = '?v=20260717b';   // bumpé au déploiement (aligné index.html)
+  var CB = '?v=20260717d';   // bumpé au déploiement (aligné index.html)
 
   var D = null, map = null, layer = null, markers = {}, sel = '', GIDX = null;
   // Clients : vert par segment, GROS + contour = ressortent. Prospects : ambre discret.
@@ -81,7 +81,7 @@
   function buildIndex() {
     GIDX = {};
     for (var i = 0; i < D.p.length; i++) {
-      var p = D.p[i], g = grpName(p);
+      var p = D.p[i], g = canonGrp(grpName(p));   // nom canonique → fusionne les doublons
       if (!g || g === '—') continue;
       var e = GIDX[g] || (GIDX[g] = { c: 0, pr: 0, pts: [] });
       e.pts.push(i);
@@ -90,9 +90,13 @@
   }
 
   // ── Fiche détaillée groupement (contacts, dirigeants…) depuis GRP_PROSPECTS ──
-  var GD = null;   // norm(nom) -> détails
+  var GD = null;   // canon(nom) -> détails
   function norm(s) { return String(s || '').toLowerCase().replace(/[^a-z0-9]/g, ''); }
-  function buildGD() { GD = {}; var A = window.GRP_PROSPECTS || []; for (var i = 0; i < A.length; i++) { if (A[i] && A[i].nom) GD[norm(A[i].nom)] = A[i]; } }
+  // Nom canonique d'un groupement : fusionne les variantes (Essentiel/Essentiels, casse, ponctuation…)
+  // via une table d'alias (window.GRP_ALIAS produite par les agents) + un seed minimal.
+  var GRP_ALIAS_SEED = { 'essentielspharma': 'Essentiel Pharma', 'essentielpharma': 'Essentiel Pharma' };
+  function canonGrp(name) { var k = norm(name); var A = window.GRP_ALIAS || {}; return A[k] || GRP_ALIAS_SEED[k] || name; }
+  function buildGD() { GD = {}; var A = window.GRP_PROSPECTS || []; for (var i = 0; i < A.length; i++) { if (A[i] && A[i].nom) GD[norm(canonGrp(A[i].nom))] = A[i]; } }
   function ensureDetails(cb) {
     if (window.GRP_PROSPECTS) { buildGD(); cb(); return; }
     var s = document.createElement('script'); s.src = '../groupements-data.js' + CB;
@@ -100,7 +104,7 @@
     s.onerror = function () { GD = {}; cb(); };
     document.head.appendChild(s);
   }
-  function details(name) { return GD ? GD[norm(name)] : null; }
+  function details(name) { return GD ? GD[norm(canonGrp(name))] : null; }
   function frow(k, v) { return '<div class="cg-f-row"><span class="cg-f-k">' + k + '</span><span class="cg-f-v">' + v + '</span></div>'; }
   function eur(v) { return (v || 0) >= 1000 ? Math.round(v / 1000) + ' k€' : Math.round(v || 0) + ' €'; }
   // stats clients précises d'un groupement (depuis données réconciliées) : CA, tiers, commerciaux
@@ -285,8 +289,9 @@
     for (var g in GIDX) byNorm[norm(g)] = g;
     if (window.GRP_PROSPECTS) {
       for (var i = 0; i < GRP_PROSPECTS.length; i++) {
-        var nm = GRP_PROSPECTS[i].nom;
-        if (nm && !(norm(nm) in byNorm)) byNorm[norm(nm)] = nm;
+        var nm = GRP_PROSPECTS[i].nom; if (!nm) continue;
+        var cn = canonGrp(nm);
+        if (!(norm(cn) in byNorm)) byNorm[norm(cn)] = cn;
       }
     }
     var names = Object.keys(byNorm).map(function (k) { return byNorm[k]; }).sort(function (a, b) { return a.localeCompare(b, 'fr'); });
@@ -327,12 +332,7 @@
     if (!map) return;
     if (layer) { layer.clearLayers(); } else { layer = window.L.layerGroup().addTo(map); }
     markers = {};
-    var e = sel && GIDX[sel];
-    if (!e) return;
-    var pts = e.pts, bounds = [], j, i, p;
-    // prospects d'abord (dessous), clients ensuite (dessus → ils ressortent)
-    var pros = [], clis = [];
-    for (j = 0; j < pts.length; j++) { p = D.p[pts[j]]; if (!llOK(p)) continue; (isClient(p) ? clis : pros).push(pts[j]); }
+    var bounds = [], j, p;
     function add(idx, big) {
       p = D.p[idx];
       var cl = isClient(p);
@@ -349,9 +349,19 @@
       markers[idx] = m;
       bounds.push([p[0], p[1]]);
     }
-    for (j = 0; j < pros.length; j++) add(pros[j], false);
-    for (j = 0; j < clis.length; j++) add(clis[j], true);
-    if (bounds.length) { try { map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 }); } catch (ex) {} }
+    var e = sel && GIDX[sel];
+    if (e) {
+      // groupement sélectionné : ses clients (dessus) + prospects (dessous)
+      var pts = e.pts, pros = [], clis = [];
+      for (j = 0; j < pts.length; j++) { p = D.p[pts[j]]; if (!llOK(p)) continue; (isClient(p) ? clis : pros).push(pts[j]); }
+      for (j = 0; j < pros.length; j++) add(pros[j], false);
+      for (j = 0; j < clis.length; j++) add(clis[j], true);
+      if (bounds.length) { try { map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 }); } catch (ex) {} }
+    } else {
+      // vue d'ensemble : TOUS tes clients (verts) sur la France — la carte n'est jamais vide
+      for (j = 0; j < D.p.length; j++) { p = D.p[j]; if (llOK(p) && isClient(p)) add(j, true); }
+      try { map.setView([46.6, 2.4], 6); } catch (ex) {}
+    }
     setTimeout(function () { try { map.invalidateSize(); } catch (ex) {} }, 60);
   }
 
