@@ -1025,14 +1025,36 @@
     }).catch(function () {});
   }
   // Chargeur partagé de la base nationale (2,7 Mo, lazy) — pour la recherche d'accueil et les fiches prospect.
+  // ── VÉRITÉ CLIENT (canonique, partagée) — un client = officine dont l'id est dans WML_OFFICINES.
+  // Le seg BRUT de PHARMA_FR est FAUX (gonflé). MÊME règle que le Copilote (reconcileWithWml).
+  // Idempotent (flag D._wmlRecon). À appeler dès que PHARMA_FR est chargé, avant tout affichage de client.
+  V2.reconcilePharma = function () {
+    var D = window.PHARMA_FR, W = window.WML_OFFICINES;
+    if (!D || !D.p || !D.seg || D._wmlRecon || !W || !W.length) return;
+    var segIdx = {}; for (var s = 0; s < D.seg.length; s++) segIdx[D.seg[s]] = s;
+    function ensureSeg(l) { if (segIdx[l] == null) { D.seg.push(l); segIdx[l] = D.seg.length - 1; } return segIdx[l]; }
+    var iA = ensureSeg('Client A'), iB = ensureSeg('Client B'), iC = ensureSeg('Client C'), iPro = ensureSeg('Prospect');
+    var canon = function (x) { return String(x || '').normalize ? String(x || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '') : String(x || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); };
+    var grpIdx = {}; for (var g = 0; g < D.grp.length; g++) grpIdx[canon(D.grp[g])] = g;
+    function ensureGrp(nm) { var k = canon(nm); if (grpIdx[k] == null) { D.grp.push(nm); grpIdx[k] = D.grp.length - 1; } return grpIdx[k]; }
+    var wml = {}; W.forEach(function (o) { if (o && o.id) wml[String(o.id).replace(/[^0-9]/g, '')] = o; });
+    var nC = 0;
+    D.p.forEach(function (p) {
+      var o = wml[String(p[13] || '').replace(/[^0-9]/g, '')];
+      if (o) { var ca = p[12] || 0; p[4] = ca >= 40000 ? iA : (ca >= 12000 ? iB : iC); var gr = o.groupement && String(o.groupement).trim(); if (gr && gr !== '—') p[3] = ensureGrp(gr); nC++; }
+      else if (D.seg[p[4]] !== 'Prospect') { p[4] = iPro; }
+    });
+    D._wmlRecon = true; if (D.meta) D.meta.clients = nC;
+  };
   V2.ensurePharmaFr = function (cb) {
-    if (window.PHARMA_FR) { if (cb) cb(); return; }
+    if (window.PHARMA_FR) { try { V2.reconcilePharma(); } catch (e) {} if (cb) cb(); return; }
     V2._pfrCbs = V2._pfrCbs || []; if (cb) V2._pfrCbs.push(cb);
     if (V2._pfrLoading) return;
     V2._pfrLoading = true;
     var s = document.createElement('script'); s.src = 'pharma-fr-data.js?v=' + (window.V2_DATAV || '');
     s.onload = s.onerror = function () {
       V2._pfrLoading = false;
+      try { V2.reconcilePharma(); } catch (e) {}
       var cbs = V2._pfrCbs || []; V2._pfrCbs = [];
       cbs.forEach(function (f) { try { f(); } catch (e) {} });
     };
