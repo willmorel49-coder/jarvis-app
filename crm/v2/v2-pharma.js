@@ -1035,6 +1035,7 @@
       else renderList(root);
       return;
     }
+    if (V2.reconcilePharma) V2.reconcilePharma();   // vérité client (seg brut PHARMA_FR faux)
     var p = pharmaFrById(pid);
     if (!p) { renderList(root); return; }
     var D = window.PHARMA_FR;
