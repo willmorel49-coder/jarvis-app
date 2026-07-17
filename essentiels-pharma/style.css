@@ -17,27 +17,28 @@
 
 :root {
   /* ── Couleurs institutionnelles OPSO ── */
-  --opso-green:       #57AE31;
-  --opso-green-dark:  #3E8A1F;
-  --opso-green-pale:  #E7F4DE;
-  --opso-green-pale2: #F0F8EB;
-  --opso-green-text:  #2E7D14;   /* 4.6:1 sur blanc pour texte */
-  --opso-gray:        #64686a;
-  --opso-gray-light:  #6b7174;
-  --opso-gray-pale:   #F4F7F1;
-  --opso-border:      #E2E8DC;
-  --opso-text:        #2a2d2f;
+  /* ── DA Essentiels Pharma — THÈME SOMBRE (prolongement du site officiel) ── */
+  --opso-green:       #57AE31;   /* vert marque (fills/accents) */
+  --opso-green-dark:  #6FC23F;   /* + clair sur dark (hover, accents) */
+  --opso-green-pale:  rgba(87,174,49,0.16);  /* ex fond pâle -> translucide sur dark */
+  --opso-green-pale2: rgba(87,174,49,0.10);
+  --opso-green-text:  #8FD45F;   /* vert TEXTE lisible sur fond sombre */
+  --opso-gray:        #A9B4A3;
+  --opso-gray-light:  #8D9887;
+  --opso-gray-pale:   #161C15;   /* ex surface claire -> surface sombre */
+  --opso-border:      rgba(255,255,255,0.08);
+  --opso-text:        #FFFFFF;
   --opso-white:       #ffffff;
-  --opso-warning:     #b8730c;   /* 4.5:1 sur blanc */
-  --opso-danger:      #b73838;   /* 4.7:1 sur blanc */
-  --opso-accent:      #96CD40;  /* Pantone accent lime, charte NP page 26 */
-  --opso-accent-pale: #E7F4DE;
-  --opso-accent-dark: #2E7D14;
+  --opso-warning:     #E0A43A;   /* lisible sur dark */
+  --opso-danger:      #E56B6B;   /* lisible sur dark */
+  --opso-accent:      #96CD40;  /* lime accent */
+  --opso-accent-pale: rgba(150,205,64,0.16);
+  --opso-accent-dark: #B5F257;
 
-  /* ── Ombres teintées vert foncé (charte officielle) ── */
-  --shadow-sm: 0 1px 2px rgba(20, 30, 25, 0.04);
-  --shadow-md: 0 4px 16px rgba(20, 30, 25, 0.06);
-  --shadow-lg: 0 12px 32px rgba(20, 30, 25, 0.08);
+  /* ── Ombres (discrètes sur dark, profondeur des cartes) ── */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.30);
+  --shadow-lg: 0 14px 36px rgba(0, 0, 0, 0.40);
 
   /* ── Border-radius (règle stricte charte) ── */
   --radius-sm: 8px;
@@ -52,52 +53,52 @@
   --topbar-h: 64px;
 
   /* ── Mapping compatibilité variables app.js ── */
-  --bg:     #F4F7F1;
-  --bg2:    #ffffff;
-  --bg3:    #eef0f2;
-  --bg4:    #E2E8DC;
-  --text:   #2a2d2f;
-  --text2:  #64686a;
-  --text3:  #6b7174;   /* 5.7:1 sur #F4F7F1 — corrigé pour AA */
-  --text4:  #c8cdd0;
-  --border:  rgba(0,0,0,0.07);
-  --border2: rgba(0,0,0,0.12);
-  --border3: rgba(0,0,0,0.05);
-  --border1: rgba(0,0,0,0.07);  /* alias border pour compat app.js */
+  --bg:     #0E1310;   /* fond app sombre (anthracite légèrement verdâtre) */
+  --bg2:    #161C15;   /* cartes/surfaces */
+  --bg3:    #1B231A;
+  --bg4:    #232C21;
+  --text:   #FFFFFF;
+  --text2:  #A9B4A3;
+  --text3:  #8D9887;
+  --text4:  #5E6A58;
+  --border:  rgba(255,255,255,0.08);
+  --border2: rgba(255,255,255,0.14);
+  --border3: rgba(255,255,255,0.05);
+  --border1: rgba(255,255,255,0.08);  /* alias border pour compat app.js */
 
   /* ── Surfaces ── */
-  --glass:  rgba(255,255,255,0.85);
-  --glass2: rgba(255,255,255,1);
-  --glass3: rgba(0,0,0,0.03);
+  --glass:  rgba(22,28,21,0.85);
+  --glass2: #161C15;
+  --glass3: rgba(255,255,255,0.04);
 
-  /* ── Couleurs émotionnelles mappées sur OPSO ── */
+  /* ── Couleurs émotionnelles mappées sur Essentiels (dark) ── */
   --blue:       #57AE31;
-  --blue2:      #3E8A1F;
+  --blue2:      #6FC23F;
   --blue-l:     #96CD40;
   --blue-g:     linear-gradient(135deg, #3E8A1F 0%, #57AE31 100%);
-  --blue-glow:  rgba(87,174,49, 0.20);
-  --blue-bg:    #E7F4DE;
+  --blue-glow:  rgba(87,174,49, 0.28);
+  --blue-bg:    rgba(87,174,49,0.16);
 
-  --mint:       #059669;
+  --mint:       #34D399;
   --mint2:      #10B981;
   --mint-g:     linear-gradient(135deg, #047857 0%, #10B981 100%);
-  --mint-glow:  rgba(5, 150, 105, 0.18);
-  --mint-bg:    #ECFDF5;
+  --mint-glow:  rgba(16, 185, 129, 0.22);
+  --mint-bg:    rgba(16,185,129,0.15);
 
-  --amber:      #e8a317;
+  --amber:      #F0B429;
   --amber2:     #f59e0b;
   --amber-g:    linear-gradient(135deg, #b45309 0%, #e8a317 100%);
-  --amber-bg:   #fef5e2;
+  --amber-bg:   rgba(240,180,41,0.15);
 
-  --rose:       #d04a4a;
+  --rose:       #F06C6C;
   --rose2:      #ef4444;
   --rose-g:     linear-gradient(135deg, #b91c1c 0%, #d04a4a 100%);
-  --rose-bg:    #fbe8e8;
+  --rose-bg:    rgba(240,108,108,0.16);
 
-  --purple:     #7C3AED;
+  --purple:     #A78BFA;
   --purple2:    #8B5CF6;
   --purple-g:   linear-gradient(135deg, #6D28D9 0%, #7C3AED 100%);
-  --purple-bg:  #F5F3FF;
+  --purple-bg:  rgba(167,139,250,0.16);
 
   /* ── Radii (alias) ── */
   --r:    16px;
@@ -218,7 +219,7 @@ body {
 
 .login-card {
   width: 100%; max-width: 400px;
-  background: var(--opso-white);
+  background: var(--bg2);
   border: 1px solid var(--opso-border);
   border-radius: 24px;
   padding: 52px 44px 48px;
@@ -2553,7 +2554,10 @@ html { scroll-behavior: smooth; }
 
 /* ── Login OPSO premium (complément) ─────────────────── */
 #login-screen {
-  background: linear-gradient(135deg, var(--opso-green-pale2) 0%, var(--opso-white) 50%, var(--opso-green-pale) 100%);
+  background:
+    radial-gradient(ellipse 70% 55% at 72% 8%, rgba(87,174,49,0.14) 0%, transparent 55%),
+    radial-gradient(ellipse 55% 50% at 8% 92%, rgba(150,205,64,0.10) 0%, transparent 55%),
+    linear-gradient(160deg, #0E1310 0%, #12180F 55%, #0E1310 100%);
   position: relative;
   overflow: hidden;
 }

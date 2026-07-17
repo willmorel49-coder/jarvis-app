@@ -854,7 +854,7 @@ function wmlGlp1Card() {
       <div style="font-size:9.5px;color:var(--text3)">${ML[i] || ''}</div></div>`;
   }).join('');
   const trend = g.caM[g.caM.length - 1] > g.caM[0] ? '▲ forte croissance' : '';
-  return `<div class="card" style="margin-bottom:16px;border:1.5px solid var(--opso-accent,#dddf4b);background:linear-gradient(180deg,var(--opso-green-pale2,#f3fbf6),#fff)">
+  return `<div class="card" style="margin-bottom:16px;border:1.5px solid var(--opso-accent,#dddf4b);background:linear-gradient(180deg,var(--opso-green-pale2,rgba(87,174,49,0.10)),var(--bg2))">
     <div class="card-header" style="padding:14px 20px">
       <div class="section-header-title"><div class="section-header-icon">💉</div>
         <div class="section-header-text"><h2>Focus GLP-1 · Wegovy · Mounjaro</h2>
@@ -4319,7 +4319,7 @@ function renderProduits() {
   const _glpS = sales.filter(s => _glpRe.test(s.artDesignation || ''));
   const _glpCA = sumCA(_glpS), _glpQt = _glpS.reduce((a, s) => a + (s.qte || 0), 0);
   const glpBanner = _glpCA > 0 ? `
-    <div class="card fade-up" style="margin-bottom:20px;border:1.5px solid var(--opso-accent,#dddf4b);background:linear-gradient(180deg,var(--opso-green-pale2,#f3fbf6),#fff)">
+    <div class="card fade-up" style="margin-bottom:20px;border:1.5px solid var(--opso-accent,#dddf4b);background:linear-gradient(180deg,var(--opso-green-pale2,rgba(87,174,49,0.10)),var(--bg2))">
       <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:14px 20px">
         <span style="font-size:26px">💉</span>
         <div style="flex:1;min-width:180px"><div style="font-size:15px;font-weight:800;color:var(--opso-green-text,#2E7D14)">Focus GLP-1 · Wegovy · Mounjaro</div><div style="font-size:12px;color:var(--text3)">Blockbusters non remboursés · chaîne du froid · en forte croissance</div></div>
