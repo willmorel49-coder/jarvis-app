@@ -74,12 +74,12 @@ const sb = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
 
 const isMobile = () => window.innerWidth < 768;
 
-const PHARMA_COLORS = ['#11a63c','#059669','#0284C7','#7C3AED','#e8a317','#d04a4a','#0891B2','#6D28D9','#D97706','#DC2626'];
+const PHARMA_COLORS = ['#57AE31','#059669','#0284C7','#7C3AED','#e8a317','#d04a4a','#0891B2','#6D28D9','#D97706','#DC2626'];
 
 // ── Palette charts OPSO ─────────────────────────────────────
 const OPSO_CHART_PALETTE = [
-  '#11a63c', // opso-green
-  '#0d8530', // opso-green-dark
+  '#57AE31', // opso-green
+  '#3E8A1F', // opso-green-dark
   '#dddf4b', // opso-accent lime
   '#0284c7', // bleu
   '#7c3aed', // purple
@@ -219,7 +219,7 @@ async function load() {
     console.warn('[OPSO] Supabase load failed, continuing with static data:', e);
   }
   const allPharmas = (pharmacies || []).map(p => ({ id: p.id, name: p.name, code: p.code, color: p.color, ville: p.ville, cp: p.cp }));
-  // Périmètre OPSO Santé = listing officiel des adhérents (OPSO_LISTING_2026, 129 officines).
+  // Périmètre Essentiels Pharma = listing officiel des adhérents (OPSO_LISTING_2026, 129 officines).
   // On affiche TOUTES les officines du listing, reliées aux données existantes par CODE CIP.
   // Celles présentes dans la base (= qui commandent déjà) sont marquées inDb=true.
   const listing = (typeof OPSO_LISTING_2026 !== 'undefined' && OPSO_LISTING_2026.length)
@@ -378,10 +378,10 @@ function exportVisitsToICS() {
   const lines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//OPSO Santé//Pilotage groupement//FR',
+    'PRODID:-//Essentiels Pharma//Pilotage groupement//FR',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
-    'X-WR-CALNAME:OPSO Santé — Visites pharmacies',
+    'X-WR-CALNAME:Essentiels Pharma — Visites pharmacies',
     'X-WR-TIMEZONE:Europe/Paris',
   ];
 
@@ -394,7 +394,7 @@ function exportVisitsToICS() {
     }
     if (ev.tel) descParts.push('Téléphone : ' + ev.tel);
     if (ev.note) descParts.push('Note : ' + ev.note);
-    descParts.push('Source : OPSO Santé');
+    descParts.push('Source : Essentiels Pharma');
 
     lines.push('BEGIN:VEVENT');
     lines.push('UID:' + ev.uid);
@@ -410,7 +410,7 @@ function exportVisitsToICS() {
       lines.push('LOCATION:' + _icsEscape([ev.adr, ev.cp, ev.ville].filter(Boolean).join(' ')));
     }
     lines.push('STATUS:' + (isPlanned ? 'TENTATIVE' : 'CONFIRMED'));
-    lines.push('CATEGORIES:OPSO,Visite,' + (isPlanned ? 'Planifiée' : 'Enregistrée'));
+    lines.push('CATEGORIES:Essentiels,Visite,' + (isPlanned ? 'Planifiée' : 'Enregistrée'));
     lines.push('END:VEVENT');
   }
 
@@ -688,7 +688,7 @@ async function importFile(file) {
     const okCip = opsoCIPsSingle && nCip && opsoCIPsSingle.has(nCip);
     const okNom = opsoAllowedSingle && opsoAllowedSingle.has(normPhName(name));
     if (!okCip && !okNom) {
-      return { ok: false, error: `Pharmacie "${name}" non reconnue dans le listing OPSO Santé. Vérifiez le nom du fichier ou contactez votre administrateur.` };
+      return { ok: false, error: `Pharmacie "${name}" non reconnue dans le listing Essentiels Pharma. Vérifiez le nom du fichier ou contactez votre administrateur.` };
     }
   }
 
@@ -797,7 +797,7 @@ const CATS = {
   tch:       { label: 'Très chers (> 2000 €)',   color: '#8a1e3f', icon: '💠' },
   ch:        { label: 'Chers (468 – 2000 €)',    color: '#c0367a', icon: '💎' },
   mi:        { label: 'Intermédiaire (4,33 – 468 €)', color: '#e08a1e', icon: '📊' },
-  pp:        { label: 'Petits prix (≤ 4,33 €)',  color: '#11a63c', icon: '✓'  },
+  pp:        { label: 'Petits prix (≤ 4,33 €)',  color: '#57AE31', icon: '✓'  },
 };
 // Carte "Répartition par catégorie produit" (familles Intégral CATS) — finition CRM JARVIS.
 // catObj = { fam: [ca, mg, qt] } (champ .cat de WML_DATA, agrégé ou par officine).
@@ -839,8 +839,8 @@ function wmlGlp1Card() {
   const brandRows = g.brands.filter(b => b[1] > 0).map(b => {
     const pct = (b[1] / maxB * 100);
     return `<div style="display:flex;align-items:center;gap:10px;padding:6px 0">
-      <div style="width:96px;font-size:12px;font-weight:800;color:var(--opso-green-text,#0a7a2b);flex-shrink:0">${b[0]}</div>
-      <div style="flex:1;height:9px;background:var(--bg3);border-radius:5px;overflow:hidden"><div style="width:${pct.toFixed(1)}%;height:100%;background:linear-gradient(90deg,var(--opso-green,#11a63c),var(--opso-accent,#dddf4b));border-radius:5px"></div></div>
+      <div style="width:96px;font-size:12px;font-weight:800;color:var(--opso-green-text,#2E7D14);flex-shrink:0">${b[0]}</div>
+      <div style="flex:1;height:9px;background:var(--bg3);border-radius:5px;overflow:hidden"><div style="width:${pct.toFixed(1)}%;height:100%;background:linear-gradient(90deg,var(--opso-green,#57AE31),var(--opso-accent,#dddf4b));border-radius:5px"></div></div>
       <div style="font-size:12px;font-weight:800;width:74px;text-align:right;flex-shrink:0">${fmtE(b[1])}</div>
       <div style="font-size:10.5px;color:var(--text3);width:44px;text-align:right;flex-shrink:0">${Math.round(b[2])} u</div>
     </div>`;
@@ -1128,7 +1128,7 @@ function showCalendarModal(monthShift = 0) {
         const isPlanned = it.type === 'planned';
         return `<div onclick="closeAccessibleModal(document.getElementById('cal-modal'));showPharmaDetail('${it.ph.id}')"
           title="${it.ph.name} — ${isPlanned?'Visite planifiée':'Visite enregistrée'}${it.note?' : '+(it.note||'').replace(/"/g,'&quot;'):''}"
-          style="display:flex;align-items:center;gap:4px;padding:2px 5px;margin-bottom:2px;border-radius:5px;font-size:10px;font-weight:600;color:${isPlanned?'var(--opso-warning)':'var(--opso-green-dark)'};background:${isPlanned?'rgba(184,115,12,.10)':'rgba(17,166,60,.10)'};cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+          style="display:flex;align-items:center;gap:4px;padding:2px 5px;margin-bottom:2px;border-radius:5px;font-size:10px;font-weight:600;color:${isPlanned?'var(--opso-warning)':'var(--opso-green-dark)'};background:${isPlanned?'rgba(184,115,12,.10)':'rgba(87,174,49,.10)'};cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
           <span style="width:5px;height:5px;border-radius:50%;background:${it.ph.color};flex-shrink:0"></span>
           <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${titleCase(it.ph.name)}</span>
         </div>`;
@@ -1159,7 +1159,7 @@ function showCalendarModal(monthShift = 0) {
 
       <div style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px">
         <button onclick="showCalendarModal(-1)" class="pill pill-clickable">← Mois précédent</button>
-        <div style="font-family:'Varela Round',sans-serif;font-size:18px;color:var(--opso-text);text-align:center;flex:1">${monthLabelCap}</div>
+        <div style="font-family:'Comfortaa',sans-serif;font-size:18px;color:var(--opso-text);text-align:center;flex:1">${monthLabelCap}</div>
         <button onclick="showCalendarModal(1)" class="pill pill-clickable">Mois suivant →</button>
       </div>
 
@@ -1225,8 +1225,8 @@ function showKeyboardShortcuts() {
     <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="shortcuts-title" style="background:var(--bg2);border-radius:16px;padding:24px;max-width:480px;width:100%;box-shadow:0 24px 64px rgba(0,0,0,0.2)">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px">
         <div>
-          <div id="shortcuts-title" style="font-family:'Varela Round',sans-serif;font-size:18px;font-weight:600;color:var(--text)">⌨ Raccourcis clavier</div>
-          <div style="font-size:12px;color:var(--text3);margin-top:2px">Pour aller plus vite dans OPSO Santé</div>
+          <div id="shortcuts-title" style="font-family:'Comfortaa',sans-serif;font-size:18px;font-weight:600;color:var(--text)">⌨ Raccourcis clavier</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:2px">Pour aller plus vite dans Essentiels Pharma</div>
         </div>
         <button onclick="closeAccessibleModal(document.getElementById('shortcuts-modal'))"
           aria-label="Fermer"
@@ -1484,12 +1484,12 @@ function printRapportMensuel() {
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:'Segoe UI',Arial,sans-serif;color:#1a1a2e;background:#fff;padding:40px;font-size:13px}
-    h1{font-size:24px;font-weight:900;color:#0d8530;margin-bottom:4px}
-    h2{font-size:14px;font-weight:800;color:#0d8530;text-transform:uppercase;letter-spacing:.8px;border-bottom:2px solid #e6f7ec;padding-bottom:8px;margin:24px 0 14px}
-    .header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;padding-bottom:20px;border-bottom:3px solid #11a63c}
+    h1{font-size:24px;font-weight:900;color:#3E8A1F;margin-bottom:4px}
+    h2{font-size:14px;font-weight:800;color:#3E8A1F;text-transform:uppercase;letter-spacing:.8px;border-bottom:2px solid #e6f7ec;padding-bottom:8px;margin:24px 0 14px}
+    .header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;padding-bottom:20px;border-bottom:3px solid #57AE31}
     .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px}
     .kpi{background:#f0f4ff;border-radius:12px;padding:14px 16px;text-align:center}
-    .kpi-val{font-size:20px;font-weight:900;color:#0d8530;margin-bottom:4px}
+    .kpi-val{font-size:20px;font-weight:900;color:#3E8A1F;margin-bottom:4px}
     .kpi-lab{font-size:10px;color:#64748B;text-transform:uppercase;letter-spacing:.5px}
     .delta-pos{color:#059669;font-weight:700} .delta-neg{color:#dc2626;font-weight:700}
     table{width:100%;border-collapse:collapse;font-size:12px}
@@ -1500,7 +1500,7 @@ function printRapportMensuel() {
     @media print{body{padding:20px}.no-print{display:none}}
   </style></head><body>
   <div class="no-print" style="margin-bottom:20px">
-    <button onclick="window.print()" style="padding:8px 20px;background:#11a63c;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600">🖨 Imprimer / Enregistrer en PDF</button>
+    <button onclick="window.print()" style="padding:8px 20px;background:#57AE31;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600">🖨 Imprimer / Enregistrer en PDF</button>
   </div>
   <div class="header">
     <div>
@@ -1509,7 +1509,7 @@ function printRapportMensuel() {
       <div style="font-size:12px;color:#64748B;margin-top:4px">Généré le ${dateStr}</div>
     </div>
     <div style="text-align:right">
-      <div style="font-size:28px;font-weight:900;color:#0d8530">${fmt(caCur)}</div>
+      <div style="font-size:28px;font-weight:900;color:#3E8A1F">${fmt(caCur)}</div>
       <div style="font-size:12px;color:#64748B">CA Total HT</div>
       ${delta !== null ? `<div class="${delta >= 0 ? 'delta-pos' : 'delta-neg'}" style="margin-top:4px">${delta >= 0 ? '+' : ''}${delta.toFixed(1)}% vs ${prevLabel}</div>` : ''}
     </div>
@@ -1627,7 +1627,7 @@ function markVisitDone(pharmacyId) {
   const paliersHtml = [['1 semaine',7],['2 semaines',14],['1 mois',30],['6 semaines',42]].map(([lbl,days]) => {
     const d = new Date(); d.setDate(d.getDate() + days);
     const iso = d.toISOString().slice(0,10);
-    return '<button onclick="document.querySelectorAll(\'#mv-paliers button\').forEach(b=>b.style.background=\'var(--bg2)\');this.style.background=\'rgba(17,166,60,.15)\';document.getElementById(\'mv-nv-date\').value=\'' + iso + '\'" style="padding:7px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);color:var(--text2);font-size:12px;font-weight:600;cursor:pointer">' + lbl + '</button>';
+    return '<button onclick="document.querySelectorAll(\'#mv-paliers button\').forEach(b=>b.style.background=\'var(--bg2)\');this.style.background=\'rgba(87,174,49,.15)\';document.getElementById(\'mv-nv-date\').value=\'' + iso + '\'" style="padding:7px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);color:var(--text2);font-size:12px;font-weight:600;cursor:pointer">' + lbl + '</button>';
   }).join('');
   modal.innerHTML = '<div style="background:var(--bg);border-radius:16px;padding:22px;width:100%;max-width:380px;box-shadow:0 24px 64px rgba(0,0,0,.4)">' +
     '<div style="font-size:14px;font-weight:800;margin-bottom:3px">✅ Visite — ' + ph.name + '</div>' +
@@ -1839,7 +1839,7 @@ function renderPharmacies() {
         const { ph, caCur, caPrev, g, lastImportDays, prochaineVisiteDate, wmlEntry } = e;
         const actif = withSales.has(ph.id) || ph.inDb || caCur > 0;
         const clientBadge = actif
-          ? '<span style="font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(17,166,60,.16);color:var(--opso-green);font-weight:800;white-space:nowrap">✓ Cliente</span>'
+          ? '<span style="font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(87,174,49,.16);color:var(--opso-green);font-weight:800;white-space:nowrap">✓ Cliente</span>'
           : '<span style="font-size:10px;padding:2px 8px;border-radius:10px;background:var(--bg3);color:var(--text3);font-weight:700;white-space:nowrap">Prospect</span>';
         // Badge prioritaire UNIQUE : visite urgente > import vieux > potentiel WML
         let priorityBadge = '';
@@ -1859,7 +1859,7 @@ function renderPharmacies() {
           const wmlAvg = wmlEntry.ca / wmlNMonths();
           const pot = Math.max(0, wmlAvg - caCur);
           if (pot > 500) {
-            priorityBadge = `<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:rgba(17,166,60,.12);color:var(--opso-green);font-weight:700">💡 Pot. groupement +${Math.round(pot)}€</span>`;
+            priorityBadge = `<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:rgba(87,174,49,.12);color:var(--opso-green);font-weight:700">💡 Pot. groupement +${Math.round(pot)}€</span>`;
           }
         }
         const prospectStage = getProspectStage(ph.id);
@@ -2015,7 +2015,7 @@ function renderPharmacies() {
             <div class="section-header-icon" style="background:var(--bg3);color:var(--text2)">🎯</div>
             <div class="section-header-text">
               <h2>Adhérents OPSO à activer en direct</h2>
-              <div class="section-header-sub">${filtered.length} pharmacie${filtered.length>1?'s':''} adhérente${filtered.length>1?'s':''} OPSO Santé qui ne commandent pas (encore) directement chez Intégral Pharma</div>
+              <div class="section-header-sub">${filtered.length} pharmacie${filtered.length>1?'s':''} adhérente${filtered.length>1?'s':''} Essentiels Pharma qui ne commandent pas (encore) directement chez Intégral Pharma</div>
             </div>
           </div>
         </div>
@@ -2023,7 +2023,7 @@ function renderPharmacies() {
           <div class="callout-icon">💡</div>
           <div class="callout-content">
             <div class="callout-title">Potentiel de conversion direct</div>
-            <div>Ces ${filtered.length} pharmacies ont adhéré au groupement OPSO Santé mais n'ont pas (encore) de commande directe enregistrée chez Intégral Pharma. Idéal pour cibler vos visites de prospection.</div>
+            <div>Ces ${filtered.length} pharmacies ont adhéré au groupement Essentiels Pharma mais n'ont pas (encore) de commande directe enregistrée chez Intégral Pharma. Idéal pour cibler vos visites de prospection.</div>
           </div>
         </div>
         ${rows}
@@ -2079,7 +2079,7 @@ function showProspectInfo(cip) {
       <div class="modal-header">
         <div>
           <div class="modal-title">${titleCase(a.nom)}</div>
-          <div class="modal-subtitle">Adhérent OPSO Santé ${a.annee||''} ${a.perimetre?'· '+a.perimetre:''}</div>
+          <div class="modal-subtitle">Adhérent Essentiels Pharma ${a.annee||''} ${a.perimetre?'· '+a.perimetre:''}</div>
         </div>
         <button class="modal-close" onclick="closeAccessibleModal(document.getElementById('prospect-info-modal'))" aria-label="Fermer">✕</button>
       </div>
@@ -2087,7 +2087,7 @@ function showProspectInfo(cip) {
         <div class="callout-icon">🎯</div>
         <div class="callout-content">
           <div class="callout-title">Pharmacie à activer en direct</div>
-          <div>Cette pharmacie adhère au groupement OPSO Santé mais n'a pas (encore) de commande directe enregistrée chez Intégral Pharma.</div>
+          <div>Cette pharmacie adhère au groupement Essentiels Pharma mais n'a pas (encore) de commande directe enregistrée chez Intégral Pharma.</div>
         </div>
       </div>
       <div style="padding:18px 24px">
@@ -2203,7 +2203,7 @@ function renderProspects(search = '') {
 
   const filterTabs = [
     { key: 'tous',    label: `Tous (${CLIENTS.filter(c => c.nom && !activeNames.has(c.nom.toUpperCase().trim())).length})`, color: '#64748B' },
-    { key: 'opso',    label: `OPSO Santé (${CLIENTS.filter(c => c.nom && !activeNames.has(c.nom.toUpperCase().trim()) && opsoNames.has(nn(c.nom))).length})`, color: '#00E5A0' },
+    { key: 'opso',    label: `Essentiels Pharma (${CLIENTS.filter(c => c.nom && !activeNames.has(c.nom.toUpperCase().trim()) && opsoNames.has(nn(c.nom))).length})`, color: '#00E5A0' },
     { key: 'pelgraz', label: 'Pelgraz', color: '#9B5CFF' },
     { key: 'gx',      label: 'Gx potentiel', color: '#0057FF' },
     { key: 'ca',      label: 'CA > 5k', color: '#64748B' },
@@ -2226,7 +2226,7 @@ function renderProspects(search = '') {
     const isOpso      = opsoNames.has(nn(c.nom));
 
     const badges = [
-      isOpso ? `<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:rgba(0,229,160,.15);color:var(--mint);font-weight:700;border:1px solid rgba(0,229,160,.3)">🏥 OPSO Santé</span>` : '',
+      isOpso ? `<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:rgba(0,229,160,.15);color:var(--mint);font-weight:700;border:1px solid rgba(0,229,160,.3)">🏥 Essentiels Pharma</span>` : '',
       c.ca2023 > 0 ? `<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:rgba(0,229,160,.1);color:var(--green);font-weight:600">CA ${fmt(c.ca2023)}</span>` : '',
       c.potentielGx > 0 ? `<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:rgba(0,87,255,.1);color:var(--green);font-weight:600">Gx ${fmt(c.potentielGx)}</span>` : '',
       hasPelgraz ? `<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:rgba(155,92,255,.1);color:#9B5CFF;font-weight:600">Pelgraz ×${c.pelgraz}</span>` : '',
@@ -2761,7 +2761,7 @@ function showMorningBriefing() {
         <div style="display:flex;align-items:flex-start;gap:14px;flex:1">
           <div style="font-size:32px;line-height:1">${mainEmoji}</div>
           <div style="flex:1">
-            <div style="font-family:'Varela Round',sans-serif;font-size:18px;color:var(--opso-text);letter-spacing:-.4px">${mainTitle}</div>
+            <div style="font-family:'Comfortaa',sans-serif;font-size:18px;color:var(--opso-text);letter-spacing:-.4px">${mainTitle}</div>
             <div style="font-size:12px;color:var(--text2);margin-top:3px;font-weight:500">${mainSub}</div>
           </div>
         </div>
@@ -2769,7 +2769,7 @@ function showMorningBriefing() {
       </div>
       ${sectionsHtml}
       <div style="padding:14px 20px;background:var(--opso-gray-pale);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
-        <span style="font-size:11px;color:var(--text3);font-style:italic">On prend soin de vous · OPSO Santé</span>
+        <span style="font-size:11px;color:var(--text3);font-style:italic">Le réflexe santé · Essentiels Pharma</span>
         <button onclick="closeAccessibleModal(document.getElementById('briefing-modal'))" class="btn-opso" style="padding:7px 18px;font-size:12px">C'est parti</button>
       </div>
     </div>
@@ -2810,7 +2810,7 @@ const PROSPECT_STAGES = [
   { id: 'contact',    label: 'Contactée',       color: '#0284c7', bg: 'rgba(2,132,199,.12)' },
   { id: 'rdv',        label: 'RDV pris',        color: '#7c3aed', bg: 'rgba(124,58,237,.12)' },
   { id: 'nego',       label: 'En négociation',  color: '#b8730c', bg: 'rgba(184,115,12,.12)' },
-  { id: 'adherent',   label: 'Adhérent OPSO',   color: '#0a7a2b', bg: 'rgba(17,166,60,.12)' },
+  { id: 'adherent',   label: 'Adhérent Essentiels Pharma',   color: '#2E7D14', bg: 'rgba(87,174,49,.12)' },
   { id: 'refus',      label: 'Refus / Hors cible', color: '#b73838', bg: 'rgba(183,56,56,.1)' },
 ];
 
@@ -2997,7 +2997,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
         <button class="btn btn-ghost" onclick="pharmaDetailOverridePeriod=null;renderPharmacies()">← Retour</button>
         <svg viewBox="0 0 64 64" class="brand-pin" aria-hidden="true">
-          <path d="M32 4 C18 4 8 14 8 28 c0 12 8 20 16 24 l4 8 4-8 c2-1 4-2 6-4 c10-4 18-12 18-24 C56 14 46 4 32 4z" fill="${pharma.color || '#11a63c'}"/>
+          <path d="M32 4 C18 4 8 14 8 28 c0 12 8 20 16 24 l4 8 4-8 c2-1 4-2 6-4 c10-4 18-12 18-24 C56 14 46 4 32 4z" fill="${pharma.color || '#57AE31'}"/>
           <rect x="20" y="22" width="24" height="8" fill="#fff" rx="1"/>
           <rect x="28" y="14" width="8" height="24" fill="#fff" rx="1"/>
         </svg>
@@ -3040,9 +3040,9 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
 
       <!-- Row 1 : Hero + KPIs -->
       <div id="sec-kpi" class="kpi-grid fade-up" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr;margin-bottom:20px;scroll-margin-top:80px">
-        <div class="kpi-card" style="background:linear-gradient(135deg,#064e20 0%,#0d8530 50%,#11a63c 100%);box-shadow:0 8px 32px rgba(17,166,60,.35),0 2px 8px rgba(17,166,60,.20);border:none">
+        <div class="kpi-card" style="background:linear-gradient(135deg,#234614 0%,#3E8A1F 50%,#57AE31 100%);box-shadow:0 8px 32px rgba(87,174,49,.35),0 2px 8px rgba(87,174,49,.20);border:none">
           <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:rgba(255,255,255,.7);margin-bottom:6px">CA Intégral Pharma — ${curLabel}</div>
-          <div style="font-size:38px;font-weight:900;letter-spacing:-2px;font-family:'Varela Round',sans-serif;color:#fff">${fmt(caCur)}</div>
+          <div style="font-size:38px;font-weight:900;letter-spacing:-2px;font-family:'Comfortaa',sans-serif;color:#fff">${fmt(caCur)}</div>
           <div style="margin-top:8px;display:flex;align-items:center;gap:8px">
             ${deltaBadge(caCur, caPrev)}
             <span style="font-size:11px;color:var(--text3)">vs ${prevLabel}</span>
@@ -3207,7 +3207,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
           <div class="card-header" style="padding:16px 20px;border-bottom:1px solid var(--border)">
             <div>
               <div class="card-title">🎯 Statut prospection</div>
-              <div class="card-subtitle">Étape actuelle dans le cycle d'adhésion OPSO Santé</div>
+              <div class="card-subtitle">Étape actuelle dans le cycle d'adhésion Essentiels Pharma</div>
             </div>
             <div style="display:inline-block;padding:5px 14px;border-radius:14px;background:${currentStage.bg};color:${currentStage.color};font-size:12px;font-weight:800">${currentStage.label}</div>
           </div>
@@ -3231,7 +3231,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
       ${opsoAdh ? `
       <div style="display:flex;align-items:center;gap:8px;padding:10px 16px;background:rgba(0,229,160,.06);border-radius:10px;border:1px solid rgba(0,229,160,.2);margin-bottom:16px;flex-wrap:wrap" class="fade-up">
         <span style="font-size:13px">🏥</span>
-        <span style="font-size:12px;font-weight:700;color:var(--mint)">Adhérent OPSO Santé</span>
+        <span style="font-size:12px;font-weight:700;color:var(--mint)">Adhérent Essentiels Pharma</span>
         <span style="font-size:11px;color:var(--text3)">·</span>
         <span style="font-size:11px;color:var(--text3)">CIP ${opsoAdh.cip}</span>
         <span style="font-size:11px;color:var(--text3)">·</span>
@@ -3242,7 +3242,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
         <span style="font-size:11px;color:var(--text3)">${opsoAdh.cp} ${opsoAdh.ville}</span>
       </div>` : ''}
 
-      <!-- WML Achats IP (si pharmacie OPSO Santé avec données WML) -->
+      <!-- WML Achats IP (si pharmacie Essentiels Pharma avec données WML) -->
       ${(() => {
         const wmlVis = typeof getWmlVisible === 'function' ? getWmlVisible() : [];
         const nn = s => (s || '').trim().toUpperCase().replace(/\s+/g, ' ');
@@ -3501,7 +3501,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
         const convPct = wmlAvgMo > 0 ? Math.min(999, Math.round(caCur / wmlAvgMo * 100)) : null;
         const months = ['Jan','Fév','Mar','Avr'];
         const caM = wmlEntDet.ca_m || [];
-        return `<div class="card fade-up" style="margin-bottom:20px;border-left:3px solid #11a63c">
+        return `<div class="card fade-up" style="margin-bottom:20px;border-left:3px solid #57AE31">
           <div class="card-header">
             <div>
               <div class="card-title">📦 Groupement OPSO — ${wmlPeriod()}</div>
@@ -3573,7 +3573,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
         </div>
         <div style="display:grid;grid-template-columns:${pharmaYTDprev > 0 ? '1fr 1fr 1fr' : '1fr 1fr'};gap:0;border-top:1px solid var(--border)">
           <div style="padding:16px 20px;text-align:center;${pharmaYTDprev > 0 ? 'border-right:1px solid var(--border);' : ''}">
-            <div style="font-family:'Varela Round',sans-serif;font-size:28px;font-weight:400;color:var(--green);letter-spacing:-1px">${fmt(pharmaYTD)}</div>
+            <div style="font-family:'Comfortaa',sans-serif;font-size:28px;font-weight:400;color:var(--green);letter-spacing:-1px">${fmt(pharmaYTD)}</div>
             <div style="font-size:11px;color:var(--text3);margin-top:4px">CA Jan–${monthName(curM)} ${curY}</div>
           </div>
           ${pharmaYTDprev > 0 ? `
@@ -3984,9 +3984,9 @@ ${topProds.map(([name, ca], i) => `${i+1}. ${name} — ${fmt(ca)}`).join('\n')}
 
 Bien cordialement,
 
-L'équipe OPSO Santé
-Groupement pharmacies indépendantes — Normandie
-"On prend soin de vous"`;
+L'équipe Essentiels Pharma
+Groupement pharmacies indépendantes
+"Le réflexe santé"`;
 
   const existing = document.getElementById('email-gen-modal');
   if (existing) existing.remove();
@@ -4298,7 +4298,7 @@ function renderProduits() {
       <td style="padding:9px 12px;text-align:right;font-size:12px;color:var(--text2);font-variant-numeric:tabular-nums">${(f.ca / _totCA * 100).toFixed(1)}%</td>
       <td style="padding:9px 12px;text-align:right;font-size:12px;color:var(--text2);font-variant-numeric:tabular-nums">${Math.round(f.qty).toLocaleString('fr')}</td>
       <td style="padding:9px 12px;text-align:right;font-size:12px;color:var(--text2);font-variant-numeric:tabular-nums">${_fmtE2(pu)}</td>
-      <td style="padding:9px 12px;text-align:right;font-size:12px;color:var(--opso-green,#11a63c);font-weight:700;font-variant-numeric:tabular-nums">${f.taux.toFixed(1)}%</td>
+      <td style="padding:9px 12px;text-align:right;font-size:12px;color:var(--opso-green,#57AE31);font-weight:700;font-variant-numeric:tabular-nums">${f.taux.toFixed(1)}%</td>
     </tr>`;
   }).join('');
   const _pp = _fkByKey['pp'];
@@ -4308,7 +4308,7 @@ function renderProduits() {
   const _per = (typeof wmlPeriod === 'function') ? wmlPeriod() : '';
   const tranchesHero = familyKpis.length ? `
     <div class="card fade-up" style="margin-bottom:20px">
-      <div class="card-header" style="padding:14px 20px"><div class="section-header-title"><div class="section-header-icon">🏷️</div><div class="section-header-text"><h2>Répartition par catégorie &amp; tranche de prix</h2><div class="section-header-sub">${_per} · CA HT · ${Math.round(_totQt).toLocaleString('fr')} unités</div></div></div><div style="font-size:22px;font-weight:900;color:var(--opso-green,#11a63c)">${fmt(_totCA)}</div></div>
+      <div class="card-header" style="padding:14px 20px"><div class="section-header-title"><div class="section-header-icon">🏷️</div><div class="section-header-text"><h2>Répartition par catégorie &amp; tranche de prix</h2><div class="section-header-sub">${_per} · CA HT · ${Math.round(_totQt).toLocaleString('fr')} unités</div></div></div><div style="font-size:22px;font-weight:900;color:var(--opso-green,#57AE31)">${fmt(_totCA)}</div></div>
       <div style="padding:4px 20px 8px"><div style="display:flex;height:16px;border-radius:8px;overflow:hidden;background:var(--bg3)">${_stack}</div><div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:10px">${_legend}</div></div>
       <div style="overflow-x:auto;padding:6px 8px 4px"><table style="width:100%;border-collapse:collapse;min-width:540px">
         <thead><tr style="background:var(--bg2)"><th style="padding:8px 12px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--text3)">Catégorie</th><th style="padding:8px 12px;text-align:right;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--text3)">CA HT</th><th style="padding:8px 12px;text-align:right;font-size:10px;color:var(--text3)">Part</th><th style="padding:8px 12px;text-align:right;font-size:10px;color:var(--text3)">Unités</th><th style="padding:8px 12px;text-align:right;font-size:10px;color:var(--text3)">Prix moyen</th><th style="padding:8px 12px;text-align:right;font-size:10px;color:var(--text3)">Remise</th></tr></thead>
@@ -4322,8 +4322,8 @@ function renderProduits() {
     <div class="card fade-up" style="margin-bottom:20px;border:1.5px solid var(--opso-accent,#dddf4b);background:linear-gradient(180deg,var(--opso-green-pale2,#f3fbf6),#fff)">
       <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:14px 20px">
         <span style="font-size:26px">💉</span>
-        <div style="flex:1;min-width:180px"><div style="font-size:15px;font-weight:800;color:var(--opso-green-text,#0a7a2b)">Focus GLP-1 · Wegovy · Mounjaro</div><div style="font-size:12px;color:var(--text3)">Blockbusters non remboursés · chaîne du froid · en forte croissance</div></div>
-        <div style="text-align:right"><div style="font-size:22px;font-weight:900;color:var(--opso-green,#11a63c)">${fmt(_glpCA)}</div><div style="font-size:12px;font-weight:800;color:var(--opso-accent-dark,#8a8c10)">${(_glpCA / _totCA * 100).toFixed(0)}% du CA · ${Math.round(_glpQt).toLocaleString('fr')} u</div></div>
+        <div style="flex:1;min-width:180px"><div style="font-size:15px;font-weight:800;color:var(--opso-green-text,#2E7D14)">Focus GLP-1 · Wegovy · Mounjaro</div><div style="font-size:12px;color:var(--text3)">Blockbusters non remboursés · chaîne du froid · en forte croissance</div></div>
+        <div style="text-align:right"><div style="font-size:22px;font-weight:900;color:var(--opso-green,#57AE31)">${fmt(_glpCA)}</div><div style="font-size:12px;font-weight:800;color:var(--opso-accent-dark,#8a8c10)">${(_glpCA / _totCA * 100).toFixed(0)}% du CA · ${Math.round(_glpQt).toLocaleString('fr')} u</div></div>
       </div>
     </div>` : '';
 
@@ -5165,7 +5165,7 @@ function renderObjectifs() {
     const progressClass = r.pct === null ? '' : pct >= 100 ? '' : pct >= 70 ? 'warning' : 'danger';
     let statusPill = '';
     if (r.target > 0) {
-      if (pct >= 100) statusPill = `<span class="pill" style="background:rgba(17,166,60,.12);color:var(--opso-green-dark)">✓ Atteint</span>`;
+      if (pct >= 100) statusPill = `<span class="pill" style="background:rgba(87,174,49,.12);color:var(--opso-green-dark)">✓ Atteint</span>`;
       else if (pct >= 70) statusPill = `<span class="pill" style="background:rgba(184,115,12,.12);color:var(--opso-warning)">En cours</span>`;
       else statusPill = `<span class="pill" style="background:rgba(183,56,56,.10);color:var(--opso-danger)">À risque</span>`;
     }
@@ -5330,7 +5330,7 @@ function renderObjectifs() {
 
       <!-- Legend -->
       <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
-        <span class="pill" style="background:rgba(17,166,60,.12);color:var(--opso-green-dark)">✓ Atteint (≥ 100%)</span>
+        <span class="pill" style="background:rgba(87,174,49,.12);color:var(--opso-green-dark)">✓ Atteint (≥ 100%)</span>
         <span class="pill" style="background:rgba(184,115,12,.12);color:var(--opso-warning)">En cours (70–99%)</span>
         <span class="pill" style="background:rgba(183,56,56,.10);color:var(--opso-danger)">À risque (&lt; 70%)</span>
       </div>
@@ -5592,7 +5592,7 @@ function renderAdmin() {
             <div style="width:32px;font-size:10px;color:var(--text3);font-weight:700;text-align:right">${DAYS[day]}</div>
             ${row.map((v, h) => {
               const intensity = v / maxHeat;
-              const bg = v === 0 ? 'var(--bg3)' : `rgba(17,166,60,${0.15 + intensity * 0.75})`;
+              const bg = v === 0 ? 'var(--bg3)' : `rgba(87,174,49,${0.15 + intensity * 0.75})`;
               return `<div title="${DAYS[day]} ${h}h : ${v} action${v>1?'s':''}" style="width:14px;height:14px;background:${bg};border-radius:2px;flex-shrink:0"></div>`;
             }).join('')}
           </div>
@@ -6191,7 +6191,7 @@ function renderBenchmark() {
   function thB(col, label, align='right') {
     const active = benchSortCol === col;
     const arrow = active ? `<span style="color:var(--green);margin-left:3px">${benchSortAsc ? '↑' : '↓'}</span>` : '';
-    return `<th style="text-align:${align};cursor:pointer;user-select:none;color:${active?'var(--green)':'var(--text2)'};font-family:'Varela Round',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;background:var(--bg);position:sticky;top:0;z-index:1" onclick="benchSortCol='${col}';benchSortAsc=${active?!benchSortAsc:false};renderBenchmark()">${label}${arrow}</th>`;
+    return `<th style="text-align:${align};cursor:pointer;user-select:none;color:${active?'var(--green)':'var(--text2)'};font-family:'Comfortaa',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;background:var(--bg);position:sticky;top:0;z-index:1" onclick="benchSortCol='${col}';benchSortAsc=${active?!benchSortAsc:false};renderBenchmark()">${label}${arrow}</th>`;
   }
 
   const rowsHtml = data.slice(0, 200).map((d, i) => {
@@ -6376,7 +6376,7 @@ function renderBenchmark() {
             { key: 'tous', label: `Tous (${fmtNum(BENCHMARK.length)})`, color: '#64748B' },
             { key: 'vendus', label: `Nos ventes (${fmtNum(nVendus)})`, color: '#00E5A0' },
             { key: 'non_vendus', label: `Non vendus (${fmtNum(nNonVendus)})`, color: '#EF4444' },
-            ...(wmlBenchMap.size > 0 ? [{ key: 'wml', label: `WML OPSO (${fmtNum(BENCHMARK.filter(d => wmlBenchMap.has(nnBench(d.designation))).length)})`, color: '#00E5A0' }] : []),
+            ...(wmlBenchMap.size > 0 ? [{ key: 'wml', label: `WML Essentiels (${fmtNum(BENCHMARK.filter(d => wmlBenchMap.has(nnBench(d.designation))).length)})`, color: '#00E5A0' }] : []),
           ].map(t => {
             const active = benchCrossFilter === t.key;
             return `<button onclick="benchCrossFilter='${t.key}';renderBenchmark()"
@@ -6395,7 +6395,7 @@ function renderBenchmark() {
               ${thB('rot_pharma_jan26','Rot./pharma/mois')}
               ${thB('yoy_jan','YoY Jan')}
               <th style="text-align:right">France Jan26</th>
-              ${wmlBenchMap.size > 0 ? '<th style="text-align:center;color:var(--mint);font-size:11px" title="Nb pharmacies OPSO achetant ce produit via le groupement">Groupement</th>' : ''}
+              ${wmlBenchMap.size > 0 ? '<th style="text-align:center;color:var(--mint);font-size:11px" title="Nb pharmacies Essentiels Pharma achetant ce produit via le groupement">Groupement</th>' : ''}
               ${salesAll.length > 0 ? thB('notre_ca', 'Nos ventes CA') : ''}
               <th style="text-align:center;font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px" title="Tendance Ameli 12 mois">Tendance</th>
             </tr></thead>
@@ -6583,8 +6583,8 @@ function showBenchDetail(idx) {
           labels: ameliLabels,
           datasets: [{
             data: d.ameli_months,
-            backgroundColor: d.ameli_months.map((v, i) => i === 12 ? '#dddf4b' : 'rgba(17,166,60,0.4)'),
-            borderColor:     d.ameli_months.map((v, i) => i === 12 ? '#c8c93f' : 'rgba(17,166,60,0.7)'),
+            backgroundColor: d.ameli_months.map((v, i) => i === 12 ? '#dddf4b' : 'rgba(87,174,49,0.4)'),
+            borderColor:     d.ameli_months.map((v, i) => i === 12 ? '#c8c93f' : 'rgba(87,174,49,0.7)'),
             borderWidth: 1.5, borderRadius: 4,
           }]
         },
@@ -6638,8 +6638,8 @@ function renderPrioritaires() {
       <div class="empty-state">
         <div class="empty-state-icon" style="opacity:.6">
           <svg width="48" height="48" viewBox="0 0 32 32" fill="none">
-            <rect x="12" y="3" width="8" height="26" rx="3" fill="#11a63c"/>
-            <rect x="3" y="12" width="26" height="8" rx="3" fill="#11a63c"/>
+            <rect x="12" y="3" width="8" height="26" rx="3" fill="#57AE31"/>
+            <rect x="3" y="12" width="26" height="8" rx="3" fill="#57AE31"/>
           </svg>
         </div>
         <div class="empty-state-title">Aucune donnée groupement disponible</div>
@@ -6698,7 +6698,7 @@ function renderPrioritaires() {
   const tabsHtml = tabsDef.map(t =>
     `<button onclick="prioritairesCatFilt='${t.key}';renderPrioritaires()"
       style="padding:6px 14px;border-radius:20px;border:1.5px solid ${prioritairesCatFilt===t.key?CAT_COLORS[t.key]||'var(--opso-green)':'var(--border2)'};
-      background:${prioritairesCatFilt===t.key?(CAT_COLORS[t.key]||'#11a63c')+'18':'transparent'};
+      background:${prioritairesCatFilt===t.key?(CAT_COLORS[t.key]||'#57AE31')+'18':'transparent'};
       color:${prioritairesCatFilt===t.key?CAT_COLORS[t.key]||'var(--opso-green)':'var(--text3)'};
       font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">${t.label} <span style="opacity:.6">${t.n}</span></button>`
   ).join('');
@@ -6710,7 +6710,7 @@ function renderPrioritaires() {
   ].map(b =>
     `<button onclick="prioritairesSortBy='${b.key}';renderPrioritaires()"
       style="padding:5px 12px;border-radius:8px;border:1.5px solid ${prioritairesSortBy===b.key?'var(--opso-green)':'var(--border2)'};
-      background:${prioritairesSortBy===b.key?'rgba(17,166,60,.12)':'transparent'};
+      background:${prioritairesSortBy===b.key?'rgba(87,174,49,.12)':'transparent'};
       color:${prioritairesSortBy===b.key?'var(--opso-green)':'var(--text3)'};
       font-size:11px;font-weight:700;cursor:pointer">${b.label}</button>`
   ).join('');
@@ -6718,7 +6718,7 @@ function renderPrioritaires() {
   const nbBtns = [20,30,50].map(n =>
     `<button onclick="prioritairesNbLines=${n};renderPrioritaires()"
       style="padding:5px 10px;border-radius:8px;border:1.5px solid ${prioritairesNbLines===n?'var(--opso-green)':'var(--border2)'};
-      background:${prioritairesNbLines===n?'rgba(17,166,60,.12)':'transparent'};
+      background:${prioritairesNbLines===n?'rgba(87,174,49,.12)':'transparent'};
       color:${prioritairesNbLines===n?'var(--opso-green)':'var(--text3)'};
       font-size:11px;font-weight:700;cursor:pointer">Top ${n}</button>`
   ).join('');
@@ -6760,7 +6760,7 @@ function renderPrioritaires() {
     <div class="card fade-up" style="margin-bottom:16px;padding:16px 20px">
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:14px">
         <div>
-          <div style="font-size:15px;font-weight:800">Sélection produits OPSO Santé</div>
+          <div style="font-size:15px;font-weight:800">Sélection produits Essentiels Pharma</div>
           <div style="font-size:11px;color:var(--text3);margin-top:2px">Agrégé sur ${wmlVis.length} pharmacies adhérentes · ${wmlPeriod()} · ${fmtN(nProduits)} références</div>
         </div>
       </div>
@@ -6905,11 +6905,11 @@ function printPrioritairesPDF() {
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>OPSO Santé — Top produits prospect</title>
+<title>Essentiels Pharma — Top produits prospect</title>
 <style>
   * { box-sizing:border-box; margin:0; padding:0; }
   body { font-family:Arial,sans-serif; color:#1e293b; background:#fff; font-size:12px; }
-  .header { background:linear-gradient(135deg,#064e20 0%,#0d8530 60%,#11a63c 100%); color:#fff; padding:28px 36px; }
+  .header { background:linear-gradient(135deg,#234614 0%,#3E8A1F 60%,#57AE31 100%); color:#fff; padding:28px 36px; }
   .header-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; }
   .logo-wrap { display:flex; align-items:center; gap:12px; }
   .logo-box { width:40px; height:40px; background:rgba(255,255,255,.15); border-radius:10px; display:flex; align-items:center; justify-content:center; }
@@ -6923,10 +6923,10 @@ function printPrioritairesPDF() {
   .kpis { display:flex; border-bottom:2px solid #e2e8f0; }
   .kpi { flex:1; padding:14px 16px; text-align:center; border-right:1px solid #e2e8f0; }
   .kpi:last-child { border-right:none; }
-  .kpi-val { font-size:20px; font-weight:900; color:#11a63c; }
+  .kpi-val { font-size:20px; font-weight:900; color:#57AE31; }
   .kpi-lab { font-size:9px; color:#64748b; text-transform:uppercase; letter-spacing:.5px; margin-top:2px; font-weight:700; }
   .intro { padding:12px 20px; background:#f0fdf4; border-bottom:1px solid #bbf7d0; font-size:11px; color:#166534; line-height:1.5; }
-  .intro strong { color:#064e20; display:block; margin-bottom:3px; font-size:12px; }
+  .intro strong { color:#234614; display:block; margin-bottom:3px; font-size:12px; }
   table { width:100%; border-collapse:collapse; }
   thead tr { background:#f8fafc; border-bottom:2px solid #e2e8f0; }
   th { padding:8px 10px; font-size:9px; color:#64748b; font-weight:700; text-transform:uppercase; letter-spacing:.5px; }
@@ -6938,10 +6938,10 @@ function printPrioritairesPDF() {
   .cat { text-align:center; }
   .r { text-align:right; }
   .prix { color:#475569; }
-  .ca { font-size:13px; font-weight:800; color:#11a63c; }
-  tfoot td { padding:10px; font-weight:900; background:#f0fdf4; border-top:2px solid #11a63c; }
-  .cta { padding:18px 24px; background:linear-gradient(135deg,#f0fdf4,#dcfce7); border-top:2px solid #11a63c; text-align:center; }
-  .cta-title { font-size:15px; font-weight:900; color:#064e20; margin-bottom:6px; }
+  .ca { font-size:13px; font-weight:800; color:#57AE31; }
+  tfoot td { padding:10px; font-weight:900; background:#f0fdf4; border-top:2px solid #57AE31; }
+  .cta { padding:18px 24px; background:linear-gradient(135deg,#f0fdf4,#dcfce7); border-top:2px solid #57AE31; text-align:center; }
+  .cta-title { font-size:15px; font-weight:900; color:#234614; margin-bottom:6px; }
   .cta-body { font-size:11px; color:#166534; line-height:1.6; }
   .footer { padding:12px 20px; background:#f8fafc; border-top:1px solid #e2e8f0; display:flex; justify-content:space-between; font-size:10px; color:#64748b; }
   @media print {
@@ -6959,11 +6959,11 @@ function printPrioritairesPDF() {
         <svg width="22" height="22" viewBox="0 0 32 32" fill="none"><rect x="12" y="3" width="8" height="26" rx="3" fill="white"/><rect x="3" y="12" width="26" height="8" rx="3" fill="white"/></svg>
       </div>
       <div>
-        <div class="brand">OPSO Santé</div>
-        <div class="brand-sub">Groupement pharmacies indépendantes · Normandie</div>
+        <div class="brand">Essentiels Pharma</div>
+        <div class="brand-sub">Groupement pharmacies indépendantes</div>
       </div>
     </div>
-    <div class="meta">OPSO Santé · Normandie<br>Édité le ${dateStr}</div>
+    <div class="meta">Essentiels Pharma<br>Édité le ${dateStr}</div>
   </div>
   <div class="prospect-box">
     <div class="prospect-label">Sélection produits</div>
@@ -6981,9 +6981,9 @@ function printPrioritairesPDF() {
 </div>
 
 <div class="intro">
-  <strong>📋 Ce que nos adhérents OPSO Santé commandent chez Intégral Pharma</strong>
-  Liste des ${page.length} produits les plus achetés par les pharmacies du groupement OPSO Santé, basée sur les achats réels ${wmlPeriod()}.
-  Rejoindre OPSO Santé vous donne accès à ces tarifs et à un délégué dédié.
+  <strong>📋 Ce que nos adhérents Essentiels Pharma commandent chez Intégral Pharma</strong>
+  Liste des ${page.length} produits les plus achetés par les pharmacies du groupement Essentiels Pharma, basée sur les achats réels ${wmlPeriod()}.
+  Rejoindre Essentiels Pharma vous donne accès à ces tarifs et à un délégué dédié.
 </div>
 
 <table>
@@ -6997,30 +6997,30 @@ function printPrioritairesPDF() {
   <tbody>${rows}</tbody>
   <tfoot>
     <tr>
-      <td colspan="3" style="color:#064e20;font-size:13px">TOTAL sélection</td>
+      <td colspan="3" style="color:#234614;font-size:13px">TOTAL sélection</td>
       <td></td>
-      <td class="r" style="color:#064e20">${fmtN(totalQt)}</td>
+      <td class="r" style="color:#234614">${fmtN(totalQt)}</td>
       <td></td>
-      <td class="r" style="color:#11a63c;font-size:14px">${fmt(totalCA)}</td>
+      <td class="r" style="color:#57AE31;font-size:14px">${fmt(totalCA)}</td>
     </tr>
   </tfoot>
 </table>
 
 <div class="cta">
-  <div class="cta-title">Rejoignez OPSO Santé et bénéficiez des mêmes tarifs</div>
+  <div class="cta-title">Rejoignez Essentiels Pharma et bénéficiez des mêmes tarifs</div>
   <div class="cta-body">
-    En adhérant au groupement OPSO Santé, votre pharmacie accède aux tarifs Intégral Pharma négociés
+    En adhérant au groupement Essentiels Pharma, votre pharmacie accède aux tarifs Intégral Pharma négociés
     et à des outils de pilotage exclusifs.<br>
-    <strong style="color:#064e20">OPSO Santé · Groupement pharmacies indépendantes de Normandie</strong>
+    <strong style="color:#234614">Essentiels Pharma · Groupement pharmacies indépendantes</strong>
   </div>
 </div>
 
-<div style="text-align:center;padding:12px 20px;font-size:11px;color:#11a63c;font-style:italic;font-family:'Varela Round',sans-serif;border-top:1px solid #bbf7d0;background:#f0fdf4">
-  "On prend soin de vous"
+<div style="text-align:center;padding:12px 20px;font-size:11px;color:#57AE31;font-style:italic;font-family:'Comfortaa',sans-serif;border-top:1px solid #bbf7d0;background:#f0fdf4">
+  "Le réflexe santé"
 </div>
 <div class="footer">
-  <span>OPSO Santé · Groupement pharmacies Normandie · 2026</span>
-  <span style="color:#11a63c;font-weight:700">Intégral Pharma × OPSO Santé</span>
+  <span>Essentiels Pharma · Groupement de pharmacies · 2026</span>
+  <span style="color:#57AE31;font-weight:700">Intégral Pharma × Essentiels Pharma</span>
 </div>
 <script>window.onload = () => { window.print(); }<\/script>
 </body>
@@ -7079,7 +7079,7 @@ function navigate(page) {
   };
   const pageTitle = titles[page] || page;
   document.getElementById('topbar-title').textContent = pageTitle;
-  document.title = pageTitle + ' · OPSO Santé';
+  document.title = pageTitle + ' · Essentiels Pharma';
   announce('Page ' + pageTitle);
   // Indicateur fraîcheur données
   updateDataFreshnessIndicator();
@@ -7144,8 +7144,8 @@ function updateNavBadge() {
 function _opsoFooter() {
   return `
   <div class="opso-footer-signature" style="margin-top:28px;padding:18px 20px;text-align:center;border-top:1px solid var(--border);color:var(--text3);font-size:11px;line-height:1.6">
-    <strong style="color:var(--opso-green-text);font-family:'Varela Round',sans-serif;font-weight:400;font-size:13px">OPSO Santé</strong> <span style="opacity:.5">×</span> <strong style="color:var(--text2)">Intégral Pharma</strong> · Normandie
-    <div style="margin-top:4px;font-style:italic;opacity:.85">« On prend soin de vous »</div>
+    <strong style="color:var(--opso-green-text);font-family:'Comfortaa',sans-serif;font-weight:400;font-size:13px">Essentiels Pharma</strong> <span style="opacity:.5">×</span> <strong style="color:var(--text2)">Intégral Pharma</strong>
+    <div style="margin-top:4px;font-style:italic;opacity:.85">« Le réflexe santé »</div>
   </div>`;
 }
 
@@ -7196,7 +7196,7 @@ function showToast(msg, type) {
   toast.className = 'toast-item ' + type;
 
   const colors = {
-    success: { bg: 'linear-gradient(135deg,#0d8530,#11a63c)', stripe: 'rgba(255,255,255,.4)' },
+    success: { bg: 'linear-gradient(135deg,#3E8A1F,#57AE31)', stripe: 'rgba(255,255,255,.4)' },
     error:   { bg: 'linear-gradient(135deg,#8c2828,#b73838)', stripe: 'rgba(255,255,255,.4)' },
     warning: { bg: 'linear-gradient(135deg,#8a5208,#b8730c)', stripe: 'rgba(255,255,255,.4)' },
     info:    { bg: 'var(--opso-text)',                       stripe: 'var(--opso-green)' },
@@ -7465,7 +7465,7 @@ function renderCatalogue() {
     const cipTag     = b.cip13 ? `<span style="font-size:10px;color:var(--text3)">CIP ${b.cip13}</span>` : '';
     const offreTag   = b.offre_ip > 0 ? `<span style="font-size:10px;padding:1px 5px;background:rgba(255,176,32,.12);color:var(--amber);border-radius:4px">Offre ${fmtP(b.offre_ip)}</span>` : '';
     const wmlPop     = wmlPopMap.get(normCat(b.designation)) || 0;
-    const wmlTag     = wmlPop > 0 ? `<span style="font-size:10px;padding:1px 6px;background:rgba(0,229,160,.13);color:var(--mint);border-radius:4px;font-weight:700;border:1px solid rgba(0,229,160,.25)" title="${wmlPop} pharmacie(s) OPSO achètent ce produit via le groupement">📦 ×${wmlPop}</span>` : '';
+    const wmlTag     = wmlPop > 0 ? `<span style="font-size:10px;padding:1px 6px;background:rgba(0,229,160,.13);color:var(--mint);border-radius:4px;font-weight:700;border:1px solid rgba(0,229,160,.25)" title="${wmlPop} pharmacie(s) Essentiels Pharma achètent ce produit via le groupement">📦 ×${wmlPop}</span>` : '';
     const prixLecl   = b.cip13 ? (getCatLeclMap().get(String(b.cip13)) || null) : null;
     const leclTag    = prixLecl != null ? `<span style="font-size:10px;padding:1px 5px;background:rgba(0,114,230,.1);color:#0072e6;border-radius:4px;font-weight:700">🛒 ${fmtP(prixLecl)}</span>` : '';
     const wmlPuNet = wmlPriceMap.get(normCat(b.designation));
@@ -7525,7 +7525,7 @@ function renderCatalogue() {
       btns.push(`<button class="pill pill-clickable" style="${navStyle}" onclick="catGoPage(${totalPages})">»</button>`);
     }
     pagHtml = `<div style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:18px 16px">
-      <div style="font-family:'Varela Round',sans-serif;font-size:13px;font-weight:700;color:var(--opso-text);letter-spacing:.2px">Page ${catPageNum} <span style="color:var(--text3);font-weight:500">/ ${totalPages}</span></div>
+      <div style="font-family:'Comfortaa',sans-serif;font-size:13px;font-weight:700;color:var(--opso-text);letter-spacing:.2px">Page ${catPageNum} <span style="color:var(--text3);font-weight:500">/ ${totalPages}</span></div>
       <div style="display:flex;justify-content:center;gap:6px;flex-wrap:wrap">${btns.join('')}</div>
     </div>`;
   }
@@ -7620,7 +7620,7 @@ function renderCatalogue() {
           ${catCurrentData.length < BENCHMARK.length ? `${fmtNum(catCurrentData.length)} résultats` : `${fmtNum(BENCHMARK.length)} produits`}
         </div>
         <div style="display:flex;align-items:center;gap:10px">
-          <span style="font-family:'Varela Round',sans-serif;font-size:12px;font-weight:700;color:var(--opso-text)">Page ${catPageNum} <span style="color:var(--text3);font-weight:500">/ ${totalPages}</span></span>
+          <span style="font-family:'Comfortaa',sans-serif;font-size:12px;font-weight:700;color:var(--opso-text)">Page ${catPageNum} <span style="color:var(--text3);font-weight:500">/ ${totalPages}</span></span>
         </div>
       </div>
       ${prodsHtml}
@@ -8024,7 +8024,7 @@ function renderSimulator() {
         </div>
       </div>
       <div class="section-header-actions">
-        ${state.sim.pharmacyId ? `<button class="pill pill-clickable" onclick="simReconduire()" title="Recharger les produits de la dernière commande de cette pharmacie" style="color:var(--opso-green-dark);border-color:rgba(17,166,60,.3)">♻️ Reconduire</button>` : ''}
+        ${state.sim.pharmacyId ? `<button class="pill pill-clickable" onclick="simReconduire()" title="Recharger les produits de la dernière commande de cette pharmacie" style="color:var(--opso-green-dark);border-color:rgba(87,174,49,.3)">♻️ Reconduire</button>` : ''}
         <button class="btn-opso" onclick="saveSimulation()">💾 Sauvegarder</button>
         <button class="pill pill-clickable" onclick="printSimulation()">🖨 Imprimer</button>
         <button class="pill pill-clickable" onclick="simExportCSV()" title="Exporter le panier en CSV">⬇ CSV</button>
@@ -8116,7 +8116,7 @@ function renderSimulator() {
         <div class="card kpi-hero" style="margin-bottom:16px">
           <div class="card-body" style="padding:20px">
             <div style="font-size:12px;color:rgba(255,255,255,.65);font-weight:500;margin-bottom:6px">CA HT TOTAL SIMULÉ</div>
-            <div id="sim-total-ca" style="font-family:'Varela Round',sans-serif;font-size:32px;font-weight:400;color:#fff;letter-spacing:-1px">${fmt(caTotal)}</div>
+            <div id="sim-total-ca" style="font-family:'Comfortaa',sans-serif;font-size:32px;font-weight:400;color:#fff;letter-spacing:-1px">${fmt(caTotal)}</div>
             <div style="display:flex;gap:20px;margin-top:16px">
               <div>
                 <div style="font-size:11px;color:rgba(255,255,255,.55)">Marge brute (est.)</div>
@@ -8571,7 +8571,7 @@ function renderOffilog() {
   const pagHtml = totalPages > 1 ? `
   <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-top:18px">
     ${offiLivePage > 1 ? `<button class="pill pill-clickable" onclick="offiLivePage--;renderOffilog();${_scrollTop}">‹ Préc.</button>` : '<span></span>'}
-    <span style="font-family:'Varela Round',sans-serif;font-weight:700;font-size:13px;color:var(--text2)">Page ${offiLivePage} / ${totalPages} · ${list.length.toLocaleString('fr-FR')} produits</span>
+    <span style="font-family:'Comfortaa',sans-serif;font-weight:700;font-size:13px;color:var(--text2)">Page ${offiLivePage} / ${totalPages} · ${list.length.toLocaleString('fr-FR')} produits</span>
     ${offiLivePage < totalPages ? `<button class="pill pill-clickable" onclick="offiLivePage++;renderOffilog();${_scrollTop}">Suiv. ›</button>` : '<span></span>'}
   </div>` : '';
 
@@ -8790,7 +8790,7 @@ function renderWml() {
   const WML_VISIBLE = getWmlVisible();
 
   if (!WML_VISIBLE.length) {
-    container.innerHTML = `<div class="card" style="text-align:center;padding:60px;color:var(--text3)">Aucune pharmacie OPSO Santé dans les données du groupement.</div>`;
+    container.innerHTML = `<div class="card" style="text-align:center;padding:60px;color:var(--text3)">Aucune pharmacie Essentiels Pharma dans les données du groupement.</div>`;
     return;
   }
 
@@ -9249,7 +9249,7 @@ function renderWml() {
         <div class="section-header-title">
           <div class="section-header-icon">🏆</div>
           <div class="section-header-text">
-            <h2>Top 30 produits — Groupement OPSO Santé</h2>
+            <h2>Top 30 produits — Groupement Essentiels Pharma</h2>
             <div class="section-header-sub">${Object.keys(grpProdMap).length} références distinctes · ${PERIOD_SHORT}</div>
           </div>
         </div>
@@ -9317,8 +9317,8 @@ function renderWml() {
       <div class="callout" style="margin-bottom:18px">
         <div class="callout-icon">📦</div>
         <div class="callout-content">
-          <div class="callout-title">Achats Intégral Pharma via le groupement OPSO Santé</div>
-          <div>Vue consolidée des commandes effectuées par les ${WML_VISIBLE.length} pharmacies adhérentes via OPSO Santé, période ${wmlPeriod()}. Cliquez sur une pharmacie pour voir le détail produit.</div>
+          <div class="callout-title">Achats Intégral Pharma via le groupement Essentiels Pharma</div>
+          <div>Vue consolidée des commandes effectuées par les ${WML_VISIBLE.length} pharmacies adhérentes via Essentiels Pharma, période ${wmlPeriod()}. Cliquez sur une pharmacie pour voir le détail produit.</div>
         </div>
       </div>
       <div class="wml-kpi-row">
@@ -9415,7 +9415,7 @@ function renderWml() {
           <div class="card-header">
             <div>
               <div class="card-title">Adhérents sans données</div>
-              <div class="card-subtitle">${absents.length} pharmacie${absents.length>1?'s':''} OPSO absente${absents.length>1?'s':''} des imports ${wmlPeriod()}</div>
+              <div class="card-subtitle">${absents.length} pharmacie${absents.length>1?'s':''} Essentiels Pharma absente${absents.length>1?'s':''} des imports ${wmlPeriod()}</div>
             </div>
             <span style="font-size:10px;padding:3px 10px;border-radius:12px;background:rgba(255,176,32,.12);color:var(--amber);font-weight:700">${absents.length} / ${OPSO_ADHERENTS.length}</span>
           </div>
@@ -9691,7 +9691,7 @@ async function initApp() {
     document.getElementById('sidebar-user-name').textContent = state.user.name;
     document.getElementById('sidebar-user-role').textContent = state.user.role;
     document.getElementById('sidebar-avatar').textContent = state.user.name.charAt(0);
-    try { const _sc = document.getElementById('sidebar-pharma-count'); if (_sc && typeof OPSO_ADHERENTS !== 'undefined') _sc.textContent = 'Normandie · ' + OPSO_ADHERENTS.length + ' pharmacies actives'; } catch (e) {}
+    try { const _sc = document.getElementById('sidebar-pharma-count'); if (_sc && typeof OPSO_ADHERENTS !== 'undefined') _sc.textContent = 'Essentiels Pharma · ' + OPSO_ADHERENTS.length + ' pharmacies actives'; } catch (e) {}
     document.getElementById('nav-admin').style.display = state.user.role === 'admin' ? 'flex' : 'none';
 
     updateNavBadge();
@@ -9759,9 +9759,9 @@ function mergeWmlStaticSales() {
 const GROUPEMENTS = [
   {
     id: 'opso',
-    nom: 'Opso Santé',
-    couleur: '#11a63c',
-    bg: '#EEF2FF',
+    nom: 'Essentiels Pharma',
+    couleur: '#57AE31',
+    bg: '#E7F4DE',
     icon: '🏥',
     description: 'Groupement de pharmacies indépendantes',
   },
@@ -9973,11 +9973,11 @@ function renderGrpDashboard(grp) {
   const _greetingHello = _hour < 6 ? 'Bonne nuit' : _hour < 12 ? 'Bonjour' : _hour < 18 ? 'Bon après-midi' : 'Bonsoir';
   const _today = new Date().toLocaleDateString('fr-FR', {weekday: 'long', day: 'numeric', month: 'long'});
   const _today1 = _today.charAt(0).toUpperCase() + _today.slice(1);
-  const _slogan = 'On prend soin de vous';
+  const _slogan = 'Le réflexe santé';
 
   const opsoGreeting = `
 <div class="opso-greeting fade-up pin-card pin-card--pale" style="display:flex;align-items:center;gap:14px;margin-bottom:18px;padding:14px 18px">
-  <div class="opso-greeting-avatar" style="width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,#0d8530,#11a63c);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 4px 12px rgba(17,166,60,.25)">
+  <div class="opso-greeting-avatar" style="width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,#3E8A1F,#57AE31);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 4px 12px rgba(87,174,49,.25)">
     <svg viewBox="0 0 64 64" class="brand-pin brand-pin--sm" aria-hidden="true">
       <path d="M32 4 C18 4 8 14 8 28 c0 12 8 20 16 24 l4 8 4-8 c2-1 4-2 6-4 c10-4 18-12 18-24 C56 14 46 4 32 4z" fill="#ffffff" opacity="0.18"/>
       <rect x="20" y="22" width="24" height="8" fill="#fff" rx="1"/>
@@ -9986,7 +9986,7 @@ function renderGrpDashboard(grp) {
   </div>
   <div class="opso-greeting-text" style="flex:1;min-width:0">
     <div class="opso-greeting-hello" style="font-size:12px;color:var(--text3);font-weight:600">${_greetingHello},</div>
-    <div class="opso-greeting-name" style="font-family:'Varela Round',sans-serif;font-size:20px;color:var(--text);font-weight:400;letter-spacing:-.3px;line-height:1.15">l'équipe OPSO Santé</div>
+    <div class="opso-greeting-name" style="font-family:'Comfortaa',sans-serif;font-size:20px;color:var(--text);font-weight:400;letter-spacing:-.3px;line-height:1.15">l'équipe Essentiels Pharma</div>
     <div class="opso-greeting-tag" style="font-size:11px;color:var(--text3);margin-top:2px">${_today1}</div>
   </div>
   <div class="tagline tagline--dark" style="font-size:22px;text-align:right;line-height:1;white-space:nowrap">${_slogan}&nbsp;!</div>
@@ -9998,7 +9998,7 @@ function renderGrpDashboard(grp) {
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px">
     <div>
       <div style="font-size:11px;color:var(--opso-green-dark);font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px">Vue d'ensemble</div>
-      <div style="font-family:'Varela Round',sans-serif;font-size:16px;color:var(--opso-text)">${state.pharmacies.length} pharmacies adhérentes · ${monthName(new Date().getMonth()+1)} ${new Date().getFullYear()}</div>
+      <div style="font-family:'Comfortaa',sans-serif;font-size:16px;color:var(--opso-text)">${state.pharmacies.length} pharmacies adhérentes · ${monthName(new Date().getMonth()+1)} ${new Date().getFullYear()}</div>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <span class="pill" style="background:var(--opso-white);color:var(--opso-green-dark)"><span class="pill-dot" style="background:var(--opso-green)"></span>${state.pharmacies.length} actives</span>
@@ -10112,7 +10112,7 @@ function renderGrpDashboard(grp) {
     </div>
   </div>
   <svg viewBox="0 0 80 24" class="divider-arc" aria-hidden="true">
-    <path d="M0 20 Q15 0 30 20 Q45 0 60 20 Q70 24 80 12" stroke="#11a63c" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M0 20 Q15 0 30 20 Q45 0 60 20 Q70 24 80 12" stroke="#57AE31" stroke-width="3" fill="none" stroke-linecap="round"/>
   </svg>`;
 
   // ── Section 2 : Répartition par catégorie ─────────
@@ -10390,17 +10390,17 @@ function renderGrpDashboard(grp) {
   </div>` : '';
 
   const opsoHeader = `
-<div style="background:linear-gradient(135deg,#0d8530 0%,#11a63c 100%);border-radius:16px;padding:24px 28px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:16px;position:relative;overflow:hidden">
+<div style="background:linear-gradient(135deg,#3E8A1F 0%,#57AE31 100%);border-radius:16px;padding:24px 28px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:16px;position:relative;overflow:hidden">
   <div style="position:absolute;top:-40%;right:-5%;width:300px;height:300px;background:radial-gradient(circle,rgba(255,255,255,.08) 0%,transparent 70%);pointer-events:none"></div>
   <div style="position:relative">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
       <svg width="20" height="20" viewBox="0 0 32 32" fill="none"><rect x="12" y="3" width="8" height="26" rx="3" fill="white"/><rect x="3" y="12" width="26" height="8" rx="3" fill="white"/></svg>
-      <span style="font-family:'Varela Round',sans-serif;font-size:18px;color:#fff;letter-spacing:-.3px">OPSO Santé · Cockpit Groupement</span>
+      <span style="font-family:'Comfortaa',sans-serif;font-size:18px;color:#fff;letter-spacing:-.3px">Essentiels Pharma · Cockpit Groupement</span>
     </div>
-    <div style="font-size:13px;color:rgba(255,255,255,.75);font-weight:400">${phActives} pharmacies adhérentes · OPSO Santé · Normandie</div>
+    <div style="font-size:13px;color:rgba(255,255,255,.75);font-weight:400">${phActives} pharmacies adhérentes · Essentiels Pharma</div>
   </div>
   <div style="text-align:right;position:relative;flex-shrink:0">
-    <div style="font-family:'Varela Round',sans-serif;font-size:28px;color:#fff;font-weight:400;letter-spacing:-.5px">${caCur > 0 ? fmt(caCur) : '—'}</div>
+    <div style="font-family:'Comfortaa',sans-serif;font-size:28px;color:#fff;font-weight:400;letter-spacing:-.5px">${caCur > 0 ? fmt(caCur) : '—'}</div>
     <div style="font-size:11px;color:rgba(255,255,255,.7);margin-top:2px">CA Net HT · ${curLabel}</div>
   </div>
 </div>`;
@@ -10453,7 +10453,7 @@ function renderGrpDashboard(grp) {
       const isToday = v.diff === 0;
       const label = isLate ? `J${v.diff} (retard ${Math.abs(v.diff)}j)` : isToday ? "Aujourd'hui" : `Dans ${v.diff} j`;
       const color = isLate ? 'var(--opso-danger)' : isToday ? 'var(--opso-warning)' : 'var(--opso-green-text)';
-      const bg = isLate ? 'rgba(183,56,56,.08)' : isToday ? 'rgba(184,115,12,.08)' : 'rgba(17,166,60,.06)';
+      const bg = isLate ? 'rgba(183,56,56,.08)' : isToday ? 'rgba(184,115,12,.08)' : 'rgba(87,174,49,.06)';
       return `<div class="list-item" onclick="showPharmaDetail('${v.ph.id}')" role="button" tabindex="0" style="background:${bg}">
         <span class="list-item-dot" style="background:${v.ph.color}"></span>
         <div class="list-item-content">
@@ -10633,7 +10633,7 @@ function renderGrpDashboard(grp) {
     if (!insights.length) return '';
 
     const typeColors = {
-      success: { bg: 'rgba(17,166,60,.06)', border: 'var(--opso-green)', icon: 'var(--opso-green-dark)' },
+      success: { bg: 'rgba(87,174,49,.06)', border: 'var(--opso-green)', icon: 'var(--opso-green-dark)' },
       warning: { bg: 'rgba(184,115,12,.06)', border: 'var(--opso-warning)', icon: 'var(--opso-warning)' },
       info:    { bg: 'rgba(2,132,199,.06)', border: '#0284c7', icon: '#0284c7' },
     };
@@ -10916,7 +10916,7 @@ function renderGrpProspects() {
     return `<span style="display:inline-block;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:700;background:${c}22;color:${c};white-space:nowrap">${alliance}</span>`;
   }
 
-  // Card OPSO Santé focus
+  // Card Essentiels Pharma focus
   const opsoCard = opso ? (() => {
     const dirs = (opso.dirs || []).slice(0, 4);
     const dirsHtml = dirs.map(d => `
@@ -10950,7 +10950,7 @@ function renderGrpProspects() {
           <div>
             <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:2px;margin-bottom:6px">Groupement</div>
             <div style="font-size:26px;font-weight:900;color:#fff;letter-spacing:-.5px;margin-bottom:4px">Bretagne Pharma</div>
-            <div style="font-size:14px;color:rgba(255,255,255,.5);margin-bottom:16px">Groupe OPSO Santé · Normandie Pharma</div>
+            <div style="font-size:14px;color:rgba(255,255,255,.5);margin-bottom:16px">Groupe Essentiels Pharma</div>
             ${opso.nbAdherents ? `<div style="font-size:13px;color:rgba(255,255,255,.7);margin-bottom:6px">🏪 ${opso.nbAdherents} pharmacies adhérentes</div>` : ''}
             ${opso.alliance ? `<div style="margin-bottom:12px">${allianceBadge(opso.alliance)}</div>` : ''}
             <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">${contactHtml}</div>
@@ -11340,7 +11340,7 @@ function showFicheVisite(pharmacyId) {
   modal.innerHTML = `
     <div style="background:#fff;color:#1a1a2e;border-radius:20px;max-width:680px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.3)">
       <!-- Print header -->
-      <div style="background:linear-gradient(135deg,#064e20,#0d8530,#11a63c);padding:24px 28px;border-radius:20px 20px 0 0;color:#fff">
+      <div style="background:linear-gradient(135deg,#234614,#3E8A1F,#57AE31);padding:24px 28px;border-radius:20px 20px 0 0;color:#fff">
         <div style="display:flex;align-items:center;justify-content:space-between">
           <div>
             <div style="font-size:11px;font-weight:700;opacity:.6;text-transform:uppercase;letter-spacing:2px;margin-bottom:4px">Fiche de visite</div>
@@ -11358,7 +11358,7 @@ function showFicheVisite(pharmacyId) {
         <!-- KPIs -->
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:20px">
           <div style="padding:14px 16px;background:#f0f4ff;border-radius:12px;text-align:center">
-            <div style="font-size:20px;font-weight:900;color:#0d8530">${fmt(caCur)}</div>
+            <div style="font-size:20px;font-weight:900;color:#3E8A1F">${fmt(caCur)}</div>
             <div style="font-size:11px;color:#475569;margin-top:2px">CA ${curLabel}</div>
           </div>
           <div style="padding:14px 16px;background:${caCur >= caPrev ? '#f0fdf4' : '#fff5f5'};border-radius:12px;text-align:center">
@@ -11375,15 +11375,15 @@ function showFicheVisite(pharmacyId) {
 
         <!-- WML Achats IP -->
         ${wmlEntry ? `
-        <div style="margin-bottom:20px;padding:14px 16px;background:#f0fdf4;border-radius:12px;border-left:3px solid #11a63c">
-          <div style="font-size:11px;font-weight:800;color:#0d8530;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">📦 Achats Intégral Pharma — ${wmlPeriod()}</div>
+        <div style="margin-bottom:20px;padding:14px 16px;background:#f0fdf4;border-radius:12px;border-left:3px solid #57AE31">
+          <div style="font-size:11px;font-weight:800;color:#3E8A1F;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">📦 Achats Intégral Pharma — ${wmlPeriod()}</div>
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
             <div style="text-align:center;padding:8px;background:#fff;border-radius:8px">
-              <div style="font-size:16px;font-weight:900;color:#0d8530">${fmt(wmlEntry.ca)}</div>
+              <div style="font-size:16px;font-weight:900;color:#3E8A1F">${fmt(wmlEntry.ca)}</div>
               <div style="font-size:10px;color:#64748b">CA total</div>
             </div>
             <div style="text-align:center;padding:8px;background:#fff;border-radius:8px">
-              <div style="font-size:16px;font-weight:900;color:#0d8530">${fmt(wmlEntry.mg)}</div>
+              <div style="font-size:16px;font-weight:900;color:#3E8A1F">${fmt(wmlEntry.mg)}</div>
               <div style="font-size:10px;color:#64748b">Marge brute</div>
             </div>
             <div style="text-align:center;padding:8px;background:#fff;border-radius:8px">
@@ -11394,17 +11394,17 @@ function showFicheVisite(pharmacyId) {
           <div style="display:flex;gap:6px;margin-bottom:10px">
             ${wmlEntry.ca_m.map((v, i) => `
               <div style="flex:1;text-align:center">
-                <div style="font-size:10px;font-weight:700;color:${v>0?'#0d8530':'#94a3b8'};margin-bottom:3px">${v>0?fmt(v):'—'}</div>
-                <div style="height:6px;border-radius:3px;background:${v>0?'#11a63c':'#e2e8f0'}"></div>
+                <div style="font-size:10px;font-weight:700;color:${v>0?'#3E8A1F':'#94a3b8'};margin-bottom:3px">${v>0?fmt(v):'—'}</div>
+                <div style="height:6px;border-radius:3px;background:${v>0?'#57AE31':'#e2e8f0'}"></div>
                 <div style="font-size:9px;color:#94a3b8;margin-top:2px">${MONTHS_SHORT[i]}</div>
               </div>`).join('')}
           </div>
           ${(wmlEntry.pr||[]).length > 0 ? `
-          <div style="font-size:10px;font-weight:700;color:#0d8530;text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px">Top produits achetés</div>
+          <div style="font-size:10px;font-weight:700;color:#3E8A1F;text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px">Top produits achetés</div>
           ${(wmlEntry.pr||[]).slice(0,3).map(([nom,ca,mg,qt],i) => `
             <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid #d1fae5">
               <div style="font-size:11px;font-weight:600;color:#1e293b;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${i+1}. ${nom}</div>
-              <div style="font-size:11px;font-weight:700;color:#0d8530;margin-left:8px;flex-shrink:0">${fmt(ca)}</div>
+              <div style="font-size:11px;font-weight:700;color:#3E8A1F;margin-left:8px;flex-shrink:0">${fmt(ca)}</div>
             </div>`).join('')}` : ''}
         </div>` : ''}
 
@@ -11441,7 +11441,7 @@ function showFicheVisite(pharmacyId) {
               <div style="width:20px;font-size:12px;font-weight:800;color:#94a3b8;text-align:right;flex-shrink:0">${i+1}</div>
               <div style="flex:1;font-size:12px;font-weight:600;color:#1e293b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.label}</div>
               <div style="font-size:11px;color:#64748b;flex-shrink:0">${p.qte.toFixed(0)} u</div>
-              <div style="font-size:13px;font-weight:700;color:#0d8530;flex-shrink:0">${fmt(p.ca)}</div>
+              <div style="font-size:13px;font-weight:700;color:#3E8A1F;flex-shrink:0">${fmt(p.ca)}</div>
               <div style="font-size:10px;color:#94a3b8;flex-shrink:0">${pct}%</div>
               <span style="font-size:10px;padding:1px 6px;border-radius:6px;background:${cat.color}18;color:${cat.color};font-weight:700">${cat.icon}</span>
             </div>`;
@@ -11490,7 +11490,7 @@ function showFicheVisite(pharmacyId) {
           ${savedNotesFiche.length ? `
           <div style="margin-bottom:10px">
             ${savedNotesFiche.map(n => `
-              <div style="padding:6px 10px;margin-bottom:4px;background:#f8fafc;border-radius:7px;border-left:3px solid #11a63c">
+              <div style="padding:6px 10px;margin-bottom:4px;background:#f8fafc;border-radius:7px;border-left:3px solid #57AE31">
                 <div style="font-size:9px;color:#94a3b8;margin-bottom:2px">${n.date}</div>
                 <div style="font-size:11px;color:#1e293b;white-space:pre-wrap">${(n.text||'').replace(/</g,'&lt;')}</div>
               </div>`).join('')}
@@ -11502,7 +11502,7 @@ function showFicheVisite(pharmacyId) {
       <!-- Actions -->
       <div style="padding:16px 28px;border-top:1px solid #e2e8f0;display:flex;gap:10px;justify-content:flex-end">
         <button onclick="copyFicheResume('${pharmacyId}')" style="padding:9px 20px;border-radius:10px;border:1.5px solid #059669;background:#ecfdf5;color:#047857;font-size:13px;font-weight:700;cursor:pointer">📋 Copier résumé</button>
-        <button onclick="printFicheVisite()" style="padding:9px 20px;border-radius:10px;border:1.5px solid #11a63c;background:#e6f7ec;color:#0d8530;font-size:13px;font-weight:700;cursor:pointer">🖨 Imprimer</button>
+        <button onclick="printFicheVisite()" style="padding:9px 20px;border-radius:10px;border:1.5px solid #57AE31;background:#e6f7ec;color:#3E8A1F;font-size:13px;font-weight:700;cursor:pointer">🖨 Imprimer</button>
         <button onclick="document.getElementById('fiche-visite-modal').remove()" style="padding:9px 20px;border-radius:10px;border:1.5px solid #e2e8f0;background:#f8fafc;color:#475569;font-size:13px;font-weight:700;cursor:pointer">Fermer</button>
       </div>
     </div>`;
@@ -11666,7 +11666,7 @@ function showGlobalSearch() {
           <kbd style="background:var(--bg2);border:1px solid var(--border2);border-radius:4px;padding:1px 5px;margin-right:4px;font-family:ui-monospace,monospace;font-size:10px">↑↓</kbd>naviguer
           <kbd style="background:var(--bg2);border:1px solid var(--border2);border-radius:4px;padding:1px 5px;margin:0 4px 0 8px;font-family:ui-monospace,monospace;font-size:10px">↵</kbd>ouvrir
         </span>
-        <span style="font-style:italic;font-weight:600">OPSO Santé</span>
+        <span style="font-style:italic;font-weight:600">Essentiels Pharma</span>
       </div>
     </div>`;
   modal.addEventListener('click', e => { if (e.target === modal) _gsClose(); });
@@ -12338,7 +12338,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Sinon juste un toast léger
             if (typeof showToast === 'function') {
               const msgs = [
-                'Bienvenue chez OPSO Santé 👋',
+                'Bienvenue chez Essentiels Pharma 👋',
                 'Bonne journée à l\'équipe 🌿',
                 'Tableau de bord prêt 📊',
                 'Bon travail à tous 💪',
@@ -12431,7 +12431,7 @@ window.addEventListener('beforeinstallprompt', (e) => {
     const btn = document.createElement('button');
     btn.id = 'pwa-install-btn';
     btn.innerHTML = '📲 Installer';
-    btn.title = 'Installer OPSO Santé sur votre appareil';
+    btn.title = 'Installer Essentiels Pharma sur votre appareil';
     btn.style.cssText = 'padding:6px 12px;border-radius:8px;border:1.5px solid var(--opso-green);background:var(--opso-green-pale);color:var(--opso-green-dark);font-size:12px;font-weight:700;cursor:pointer';
     btn.onclick = async () => {
       if (!_pwaInstallEvent) return;
@@ -12446,7 +12446,7 @@ window.addEventListener('beforeinstallprompt', (e) => {
 window.addEventListener('appinstalled', () => {
   const btn = document.getElementById('pwa-install-btn');
   if (btn) btn.remove();
-  if (typeof showToast === 'function') showToast('OPSO Santé installé !', 'success');
+  if (typeof showToast === 'function') showToast('Essentiels Pharma installé !', 'success');
 });
 
 // ── PWA : detection online/offline ───────────────────────────
@@ -12720,7 +12720,7 @@ function showSettingsModal() {
       <div class="modal-header">
         <div>
           <div class="modal-title">⚙ Préférences</div>
-          <div class="modal-subtitle">Personnalisez votre expérience OPSO Santé</div>
+          <div class="modal-subtitle">Personnalisez votre expérience Essentiels Pharma</div>
         </div>
         <button class="modal-close" onclick="closeAccessibleModal(document.getElementById('settings-modal'))" aria-label="Fermer">✕</button>
       </div>
@@ -12809,7 +12809,7 @@ function showSettingsModal() {
 
       <!-- Footer -->
       <div style="padding:14px 24px;background:var(--opso-gray-pale);display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--text3)">
-        <span style="font-style:italic">OPSO Santé · ${new Date().getFullYear()}</span>
+        <span style="font-style:italic">Essentiels Pharma · ${new Date().getFullYear()}</span>
         <button onclick="closeAccessibleModal(document.getElementById('settings-modal'))" class="btn-opso" style="padding:7px 18px;font-size:12px">Fermer</button>
       </div>
     </div>
@@ -12839,9 +12839,9 @@ async function _requestNotifPermission() {
   try {
     const result = await Notification.requestPermission();
     if (result === 'granted') {
-      new Notification('OPSO Santé', {
+      new Notification('Essentiels Pharma', {
         body: 'Notifications activées ✓',
-        icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect x="12" y="3" width="8" height="26" rx="3" fill="%2311a63c"/><rect x="3" y="12" width="26" height="8" rx="3" fill="%2311a63c"/></svg>'
+        icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect x="12" y="3" width="8" height="26" rx="3" fill="%2357AE31"/><rect x="3" y="12" width="26" height="8" rx="3" fill="%2357AE31"/></svg>'
       });
       if (typeof showToast === 'function') showToast('Notifications autorisées', 'success');
     } else {
