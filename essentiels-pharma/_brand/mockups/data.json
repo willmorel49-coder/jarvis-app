@@ -1,0 +1,428 @@
+{
+ "grp": {
+  "nom": "Essentiels Pharma",
+  "baseline": "Le réflexe santé",
+  "officines": 23,
+  "clientes": 8,
+  "pharmaciens": 47,
+  "ca": "45 M€/an",
+  "salaries": 181,
+  "labos": 290,
+  "dirigeants": [
+   {
+    "nom": "François Tesson",
+    "fn": "Président"
+   },
+   {
+    "nom": "Céline Boultareau",
+    "fn": "Direction Essentiels Pharma"
+   }
+  ]
+ },
+ "officines": [
+  {
+   "nom": "Nouvelle Pharmacie Grand Maine",
+   "ville": "Angers",
+   "cp": "49000",
+   "lat": 47.46689,
+   "lng": -0.59369,
+   "client": true,
+   "ca": null
+  },
+  {
+   "nom": "Pharmacie de l'Horloge",
+   "ville": "Angers",
+   "cp": "49000",
+   "lat": 47.46514,
+   "lng": -0.59552,
+   "client": false,
+   "ca": null
+  },
+  {
+   "nom": "Grande Pharmacie Saint Serge",
+   "ville": "Angers",
+   "cp": "49100",
+   "lat": 47.48843,
+   "lng": -0.54373,
+   "client": false,
+   "ca": null
+  },
+  {
+   "nom": "Grande Pharmacie de l'Université",
+   "ville": "Angers",
+   "cp": "49100",
+   "lat": 47.47546,
+   "lng": -0.54946,
+   "client": false,
+   "ca": null
+  },
+  {
+   "nom": "Nouvelle Pharmacie Pierre Lise",
+   "ville": "Angers",
+   "cp": "49100",
+   "lat": 47.47214,
+   "lng": -0.542,
+   "client": false,
+   "ca": null
+  },
+  {
+   "nom": "Grande Pharmacie du Pilori",
+   "ville": "Angers",
+   "cp": "49100",
+   "lat": 47.47326,
+   "lng": -0.5499,
+   "client": false,
+   "ca": null
+  },
+  {
+   "nom": "Pharmacie des Halles",
+   "ville": "Angers",
+   "cp": "49100",
+   "lat": 47.47132,
+   "lng": -0.55452,
+   "client": false,
+   "ca": null
+  },
+  {
+   "nom": "Pharmacie Le Gall Visitation",
+   "ville": "Angers",
+   "cp": "49100",
+   "lat": 47.46689,
+   "lng": -0.55757,
+   "client": true,
+   "ca": null
+  },
+  {
+   "nom": "Pharmacie Gare",
+   "ville": "Angers",
+   "cp": "49100",
+   "lat": 47.46458,
+   "lng": -0.5578,
+   "client": false,
+   "ca": null
+  },
+  {
+   "nom": "Pharmacie Descartes",
+   "ville": "Cholet",
+   "cp": "49300",
+   "lat": 47.04841,
+   "lng": -0.883,
+   "client": false,
+   "ca": null
+  },
+  {
+   "nom": "Pharmacie du Thouet",
+   "ville": "Saumur",
+   "cp": "49400",
+   "lat": 47.26224,
+   "lng": -0.09099,
+   "client": true,
+   "ca": null
+  },
+  {
+   "nom": "Pharmacie des Erables",
+   "ville": "Tiercé",
+   "cp": "49125",
+   "lat": 47.61549,
+   "lng": -0.46388,
+   "client": true,
+   "ca": null
+  },
+  {
+   "nom": "Pharmacie de l'Authion",
+   "ville": "Loire-Authion",
+   "cp": "49800",
+   "lat": 47.4275,
+   "lng": -0.38063,
+   "client": false,
+   "ca": null
+  },
+  {
+   "nom": "Pharmacie des Hauts Pavés",
+   "ville": "Nantes",
+   "cp": "44000",
+   "lat": 47.22725,
+   "lng": -1.56952,
+   "client": true,
+   "ca": 28801.0
+  },
+  {
+   "nom": "Pharmacie du Chêne",
+   "ville": "Vertou",
+   "cp": "44120",
+   "lat": 47.16498,
+   "lng": -1.48374,
+   "client": true,
+   "ca": 31038.0
+  },
+  {
+   "nom": "Pharmacie de la Libération",
+   "ville": "Couëron",
+   "cp": "44220",
+   "lat": 47.21442,
+   "lng": -1.69007,
+   "client": true,
+   "ca": 10665.0
+  },
+  {
+   "nom": "Pharmacie du Centre",
+   "ville": "Montoir-de-Bretagne",
+   "cp": "44550",
+   "lat": 47.3293,
+   "lng": -2.15036,
+   "client": false,
+   "ca": null
+  },
+  {
+   "nom": "Pharmacie des Capucins",
+   "ville": "Thouars",
+   "cp": "79100",
+   "lat": 46.97838,
+   "lng": -0.20385,
+   "client": false,
+   "ca": null
+  },
+  {
+   "nom": "Pharmacie de la Croix de Pierre",
+   "ville": "Le Mans",
+   "cp": "72000",
+   "lat": 48.01208,
+   "lng": 0.20562,
+   "client": true,
+   "ca": null
+  },
+  {
+   "nom": "Grande Pharmacie du Pont de l'Eure",
+   "ville": "Pacy-sur-Eure",
+   "cp": "27120",
+   "lat": 49.01352,
+   "lng": 1.37883,
+   "client": false,
+   "ca": null
+  },
+  {
+   "nom": "Pharmacie de l'Hôtel de Ville",
+   "ville": "Boulogne-Billancourt",
+   "cp": "92100",
+   "lat": 48.83667,
+   "lng": 2.24165,
+   "client": false,
+   "ca": null
+  },
+  {
+   "nom": "Pharmacie Vavin",
+   "ville": "Paris",
+   "cp": "75006",
+   "lat": 48.84393,
+   "lng": 2.33035,
+   "client": false,
+   "ca": null
+  },
+  {
+   "nom": "Pharmacie Homéopathique Centrale",
+   "ville": "Paris",
+   "cp": "75116",
+   "lat": 48.8671,
+   "lng": 2.28064,
+   "client": false,
+   "ca": null
+  }
+ ],
+ "offre_privilege": [
+  {
+   "d": "KARDEGIC 75MG PDR SACH 30",
+   "cip": "3474419",
+   "ppht": 1.47,
+   "net": 1.19,
+   "n": 433
+  },
+  {
+   "d": "KARDEGIC 160 MG PDR AD SAC 30",
+   "cip": "3324737",
+   "ppht": 1.47,
+   "net": 1.19,
+   "n": 355
+  },
+  {
+   "d": "DOLIPRANE 2,4% SUSP PEDIATR FL",
+   "cip": "3461546",
+   "ppht": 1.26,
+   "net": 0.98,
+   "n": 257
+  },
+  {
+   "d": "DOLIPRANE 1000MG 8CPR",
+   "cip": "3595583",
+   "ppht": 1.06,
+   "net": 0.78,
+   "n": 233
+  },
+  {
+   "d": "ASPEGIC 100 ENF NOUR X 20 SACHETS",
+   "cip": "3189363",
+   "ppht": 1.35,
+   "net": 1.07,
+   "n": 228
+  },
+  {
+   "d": "DOLIPRANE 500MG PDR AD SAC 12",
+   "cip": "3233153",
+   "ppht": 1.06,
+   "net": 0.78,
+   "n": 223
+  },
+  {
+   "d": "DOLIPRANE 1000MG SACHET 8",
+   "cip": "3624698",
+   "ppht": 1.06,
+   "net": 0.78,
+   "n": 219
+  },
+  {
+   "d": "DOLIPRANE 1000 MG GELU 8",
+   "cip": "4153396",
+   "ppht": 1.06,
+   "net": 0.78,
+   "n": 217
+  }
+ ],
+ "exclu_gen": [
+  {
+   "d": "TADALAFIL 5 mg/ 28 cp. pell",
+   "cip": "3400930080269",
+   "ppht": 3.73,
+   "net": 1.0,
+   "n": 52
+  },
+  {
+   "d": "TADALAFIL 20 mg/ 8 cp. pell",
+   "cip": "3400930080290",
+   "ppht": 13.73,
+   "net": 1.0,
+   "n": 52
+  },
+  {
+   "d": "TADALAFIL 5 mg/ 84 cp. pell",
+   "cip": "3400930167472",
+   "ppht": 11.19,
+   "net": 1.0,
+   "n": 50
+  },
+  {
+   "d": "TADALAFIL 10 mg/ 4 cp. pell",
+   "cip": "3400930080276",
+   "ppht": null,
+   "net": 1.0,
+   "n": 48
+  },
+  {
+   "d": "SILDENAFIL 100 mg/ 24 cp. pell",
+   "cip": "3400930156797",
+   "ppht": null,
+   "net": 1.0,
+   "n": 41
+  },
+  {
+   "d": "SILDENAFIL 50 mg/ 12 cp. pell",
+   "cip": "3400930146545",
+   "ppht": 2.98,
+   "net": 1.0,
+   "n": 31
+  }
+ ],
+ "glp1": [
+  {
+   "d": "MOUNJARO 2.5MG KWIKPEN 2.4ML1",
+   "cip": "3400930292907",
+   "ppht": 163.7,
+   "net": 157.33,
+   "n": 269
+  },
+  {
+   "d": "MOUNJARO 5MG KWIKPEN 2.4ML1",
+   "cip": "3400930292914",
+   "ppht": 221.32,
+   "net": 212.71,
+   "n": 263
+  },
+  {
+   "d": "WEGOVY 2.4MG FLEX INJSTYLE3ML1",
+   "cip": "3400930258668",
+   "ppht": 181.48,
+   "net": 174.42,
+   "n": 212
+  },
+  {
+   "d": "WEGOVY 0.25 MG FLEX INJ S1,5ML1",
+   "cip": "3400930258620",
+   "ppht": 136.5,
+   "net": 131.19,
+   "n": 208
+  },
+  {
+   "d": "WEGOVY 1MG FLEX INJ STYL3ML1",
+   "cip": "3400930258644",
+   "ppht": 136.5,
+   "net": 131.19,
+   "n": 204
+  }
+ ],
+ "penetration": [
+  {
+   "d": "KARDEGIC 75MG PDR SACH 30",
+   "cip": "3400934744198",
+   "ppht": 1.47,
+   "net": 1.19,
+   "n": 433
+  },
+  {
+   "d": "THEALOSE SOL OPHT FL 15ML T",
+   "cip": "3662042005664",
+   "ppht": 8.34,
+   "net": 8.35,
+   "n": 429
+  },
+  {
+   "d": "IZALGI 500MG/25MG GELU BT16",
+   "cip": "3400949605538",
+   "ppht": 1.43,
+   "net": 1.26,
+   "n": 397
+  },
+  {
+   "d": "SKIACOL 0,5% COLLY FL0,5ML",
+   "cip": "3400932162901",
+   "ppht": 7.11,
+   "net": 7.02,
+   "n": 396
+  },
+  {
+   "d": "HYLO CONFORT+COLLY HYD F10ML T",
+   "cip": "3401040669580",
+   "ppht": 7.02,
+   "net": 7.03,
+   "n": 385
+  },
+  {
+   "d": "VISMED MULTI GTT LUBR FL15ML T",
+   "cip": "4028694001468",
+   "ppht": 8.6,
+   "net": 8.61,
+   "n": 370
+  },
+  {
+   "d": "KARDEGIC 160MG PDR SACH 30",
+   "cip": "3400933247379",
+   "ppht": 1.47,
+   "net": 1.19,
+   "n": 355
+  },
+  {
+   "d": "OPTIVE  FUSION COLLYRE FL 10 ML",
+   "cip": "3401060060718",
+   "ppht": 5.61,
+   "net": 5.61,
+   "n": 352
+  }
+ ]
+}

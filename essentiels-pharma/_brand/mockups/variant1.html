@@ -1,0 +1,674 @@
+<meta charset="UTF-8">
+<title>Essentiels Pharma — Mission Control</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;600;700&family=Montserrat:wght@300;400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+  :root{
+    --bg:#0E1310;
+    --bg2:#0A0E0B;
+    --surface:#161C15;
+    --surface2:#1C231B;
+    --line:#293428;
+    --white:#FFFFFF;
+    --txt2:#A9B4A3;
+    --green:#57AE31;
+    --lime:#8FD45F;
+    --lime2:#96CD40;
+    --dark-green:#00A85C;
+    --bright-green:#66F282;
+    --pale-green:#B5F257;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:
+      radial-gradient(circle at 15% -10%, rgba(87,174,49,.16), transparent 45%),
+      radial-gradient(circle at 90% 10%, rgba(150,205,64,.10), transparent 40%),
+      var(--bg);
+    color:var(--white);
+    font-family:'Montserrat',sans-serif;
+    font-weight:300;
+    min-height:100vh;
+    overflow-x:hidden;
+    position:relative;
+  }
+  /* scanline / grid texture overlay */
+  body::before{
+    content:"";
+    position:fixed; inset:0;
+    background-image:
+      linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+    background-size:38px 38px;
+    pointer-events:none;
+    z-index:0;
+    mask-image:radial-gradient(ellipse 80% 60% at 50% 0%, black 40%, transparent 90%);
+  }
+  body::after{
+    content:"";
+    position:fixed; inset:0;
+    background:repeating-linear-gradient(0deg, rgba(255,255,255,.012) 0px, rgba(255,255,255,.012) 1px, transparent 1px, transparent 3px);
+    pointer-events:none;
+    z-index:0;
+    opacity:.5;
+  }
+  h1,h2,h3,.font-display{ font-family:'Comfortaa',sans-serif; }
+  a{color:inherit;}
+  .wrap{ position:relative; z-index:1; max-width:1180px; margin:0 auto; padding:0 18px; }
+
+  /* ---------- pill highlight ---------- */
+  .pill-hl{
+    display:inline-block;
+    background:linear-gradient(100deg, var(--green), var(--lime2));
+    color:#0B1409;
+    font-weight:600;
+    padding:2px 14px;
+    border-radius:100px;
+    white-space:nowrap;
+  }
+  .pill{
+    display:inline-flex; align-items:center; gap:6px;
+    border-radius:100px;
+    padding:5px 13px;
+    font-size:.68rem;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    font-weight:500;
+    border:1px solid var(--line);
+    background:rgba(255,255,255,.02);
+    color:var(--txt2);
+  }
+  .btn-pill{
+    border-radius:100px;
+    padding:10px 22px;
+    border:none;
+    font-family:'Montserrat',sans-serif;
+    font-weight:500;
+    font-size:.82rem;
+    cursor:pointer;
+  }
+  .btn-primary{ background:linear-gradient(100deg,var(--green),var(--lime2)); color:#0B1409; }
+
+  /* ---------- live dot ---------- */
+  .live-dot{
+    width:7px; height:7px; border-radius:50%;
+    background:var(--bright-green);
+    box-shadow:0 0 0 0 rgba(102,242,130,.6);
+    animation:livepulse 1.8s infinite;
+  }
+  @keyframes livepulse{
+    0%{ box-shadow:0 0 0 0 rgba(102,242,130,.55); }
+    70%{ box-shadow:0 0 0 8px rgba(102,242,130,0); }
+    100%{ box-shadow:0 0 0 0 rgba(102,242,130,0); }
+  }
+
+  /* ---------- topbar ---------- */
+  .topbar{
+    position:sticky; top:0; z-index:20;
+    backdrop-filter:blur(14px);
+    background:rgba(14,19,16,.72);
+    border-bottom:1px solid var(--line);
+  }
+  .topbar-inner{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:13px 0;
+    gap:12px;
+  }
+  .brand{ display:flex; align-items:center; gap:10px; }
+  .brand svg{ width:26px; display:block; filter:drop-shadow(0 0 6px rgba(102,242,130,.35)); }
+  .brand-word{ font-family:'Comfortaa',sans-serif; font-size:1rem; line-height:1.05; }
+  .brand-word b{ font-weight:600; color:var(--white); display:block; }
+  .brand-word span{ font-size:.62rem; color:var(--txt2); letter-spacing:.14em; text-transform:uppercase; }
+  .topbar-right{ display:flex; align-items:center; gap:10px; }
+  .clock{ font-variant-numeric:tabular-nums; font-size:.72rem; color:var(--txt2); letter-spacing:.04em; }
+
+  /* ---------- hero ---------- */
+  .hero{ padding:44px 0 20px; position:relative; }
+  .hero .eyebrow{ display:flex; align-items:center; gap:8px; margin-bottom:14px; }
+  .hero h1{
+    font-size:2rem; line-height:1.14; font-weight:600; max-width:680px;
+  }
+  .hero p.sub{ color:var(--txt2); max-width:520px; margin-top:14px; font-size:.92rem; line-height:1.6; }
+  .radar-bg{
+    position:absolute; top:-40px; right:-160px; width:520px; height:520px;
+    border-radius:50%;
+    background:conic-gradient(from 0deg, rgba(87,174,49,.22), transparent 24%);
+    animation:spin 7s linear infinite;
+    pointer-events:none;
+    z-index:0;
+    opacity:.6;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+
+  /* ---------- kpi cockpit ---------- */
+  .kpi-grid{
+    display:grid; grid-template-columns:repeat(2,1fr); gap:14px;
+    margin-top:30px;
+  }
+  .kpi-card{
+    background:linear-gradient(160deg, var(--surface), var(--bg2));
+    border:1px solid var(--line);
+    border-radius:20px;
+    padding:20px 16px;
+    position:relative;
+    overflow:hidden;
+    display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px;
+  }
+  .kpi-card::before{
+    content:"";
+    position:absolute; inset:0;
+    background:radial-gradient(circle at 50% -10%, rgba(87,174,49,.28), transparent 60%);
+    opacity:0; transition:opacity .5s;
+  }
+  .kpi-card.in::before{ opacity:1; }
+  .gauge{ position:relative; width:112px; height:112px; }
+  .gauge svg{ width:100%; height:100%; transform:rotate(-90deg); }
+  .gauge circle{ fill:none; stroke-width:7; }
+  .gauge .track{ stroke:rgba(255,255,255,.06); }
+  .gauge .fill{
+    stroke:url(#gaugeGrad);
+    stroke-linecap:round;
+    stroke-dasharray:301.6;
+    stroke-dashoffset:301.6;
+    filter:drop-shadow(0 0 5px rgba(102,242,130,.55));
+    transition:stroke-dashoffset 1.6s cubic-bezier(.2,.7,.15,1);
+  }
+  .gauge-num{
+    position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  }
+  .gauge-num b{ font-family:'Comfortaa',sans-serif; font-size:1.5rem; font-weight:600; letter-spacing:-.02em; }
+  .gauge-num small{ font-size:.6rem; color:var(--txt2); letter-spacing:.04em; }
+  .kpi-label{ font-size:.72rem; color:var(--txt2); text-transform:uppercase; letter-spacing:.08em; }
+  .kpi-note{ font-size:.66rem; color:var(--lime); font-weight:500; }
+
+  .stat-mini-row{
+    display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px;
+  }
+  .stat-mini{
+    border:1px solid var(--line); border-radius:14px; padding:14px 16px;
+    background:rgba(255,255,255,.02);
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .stat-mini b{ font-family:'Comfortaa',sans-serif; font-size:1.3rem; }
+  .stat-mini span{ font-size:.66rem; color:var(--txt2); text-transform:uppercase; letter-spacing:.06em; display:block; }
+
+  /* ---------- section shell ---------- */
+  section.block{ padding:40px 0; border-top:1px solid var(--line); }
+  .block-head{ display:flex; align-items:flex-end; justify-content:space-between; gap:12px; margin-bottom:20px; flex-wrap:wrap; }
+  .block-head h2{ font-size:1.24rem; font-weight:600; }
+  .block-head p{ color:var(--txt2); font-size:.78rem; max-width:420px; }
+
+  /* ---------- map ---------- */
+  .map-shell{
+    border:1px solid var(--line); border-radius:20px; overflow:hidden;
+    position:relative; height:380px;
+    box-shadow:0 0 0 1px rgba(87,174,49,.06) inset;
+  }
+  #map{ height:100%; width:100%; filter:saturate(1.15) brightness(.95); }
+  .map-legend{
+    position:absolute; left:14px; bottom:14px; z-index:400;
+    display:flex; gap:8px; flex-wrap:wrap;
+  }
+  .leg{
+    display:flex; align-items:center; gap:6px;
+    background:rgba(14,19,16,.82); border:1px solid var(--line); backdrop-filter:blur(6px);
+    padding:5px 10px; border-radius:100px; font-size:.64rem; color:var(--txt2); text-transform:uppercase; letter-spacing:.05em;
+  }
+  .leg i{ width:9px; height:9px; border-radius:50%; display:inline-block; }
+  .dot-client{ background:var(--bright-green); box-shadow:0 0 6px rgba(102,242,130,.8); }
+  .dot-prospect{ background:transparent; border:1.5px solid var(--txt2); }
+  .map-count{
+    position:absolute; right:14px; top:14px; z-index:400;
+  }
+
+  /* ---------- ville bars ---------- */
+  .villes{ display:flex; flex-direction:column; gap:10px; }
+  .ville-row{ display:grid; grid-template-columns:110px 1fr 34px; align-items:center; gap:10px; }
+  .ville-row .v-name{ font-size:.76rem; color:var(--white); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .ville-track{ height:10px; border-radius:100px; background:rgba(255,255,255,.05); overflow:hidden; }
+  .ville-fill{
+    height:100%; border-radius:100px; width:0%;
+    background:linear-gradient(90deg, var(--dark-green), var(--bright-green));
+    transition:width 1.1s cubic-bezier(.2,.7,.15,1);
+    box-shadow:0 0 8px rgba(102,242,130,.45);
+  }
+  .ville-row .v-n{ font-size:.76rem; text-align:right; color:var(--lime); font-weight:500; }
+
+  /* ---------- penetration ---------- */
+  .pen-list{ display:flex; flex-direction:column; gap:14px; }
+  .pen-item{
+    border:1px solid var(--line); border-radius:16px; padding:14px 16px;
+    background:rgba(255,255,255,.015);
+  }
+  .pen-top{ display:flex; justify-content:space-between; gap:10px; margin-bottom:9px; }
+  .pen-name{ font-size:.8rem; font-weight:500; }
+  .pen-badge{
+    font-family:'Comfortaa',sans-serif; font-size:.68rem; font-weight:600;
+    color:#0B1409; background:linear-gradient(100deg,var(--green),var(--lime2));
+    border-radius:100px; padding:3px 11px; white-space:nowrap; height:fit-content;
+  }
+  .pen-track{ height:8px; border-radius:100px; background:rgba(255,255,255,.05); overflow:hidden; }
+  .pen-fill{
+    height:100%; border-radius:100px; width:0%;
+    background:linear-gradient(90deg, var(--green), var(--pale-green));
+    transition:width 1.3s cubic-bezier(.2,.7,.15,1);
+  }
+  .pen-meta{ display:flex; justify-content:space-between; margin-top:7px; font-size:.66rem; color:var(--txt2); }
+
+  /* ---------- offre privilege ---------- */
+  .priv-grid{ display:grid; grid-template-columns:1fr; gap:12px; }
+  .priv-card{
+    border:1px solid var(--line); border-radius:16px; padding:15px;
+    background:linear-gradient(160deg, var(--surface), var(--bg2));
+    display:flex; flex-direction:column; gap:10px;
+  }
+  .priv-name{ font-size:.78rem; font-weight:500; line-height:1.3; min-height:2.4em; }
+  .priv-prices{ display:flex; align-items:baseline; gap:8px; }
+  .priv-ppht{ font-size:.72rem; color:var(--txt2); text-decoration:line-through; }
+  .priv-net{ font-family:'Comfortaa',sans-serif; font-size:1.15rem; font-weight:600; color:var(--bright-green); }
+  .priv-foot{ display:flex; justify-content:space-between; align-items:center; }
+  .priv-abandon{ font-size:.64rem; color:var(--lime); background:rgba(87,174,49,.14); padding:2px 9px; border-radius:100px; }
+  .priv-n{ font-size:.64rem; color:var(--txt2); }
+
+  /* ---------- ticker ---------- */
+  .ticker-wrap{
+    border:1px solid var(--line); border-radius:16px; overflow:hidden;
+    background:var(--surface);
+    padding:14px 0;
+  }
+  .ticker-track{ display:flex; gap:24px; width:max-content; animation:ticker 28s linear infinite; }
+  @keyframes ticker{ from{ transform:translateX(0); } to{ transform:translateX(-50%); } }
+  .tick-chip{
+    display:flex; align-items:center; gap:8px;
+    border:1px solid var(--line); border-radius:100px; padding:7px 16px;
+    font-size:.72rem; white-space:nowrap; background:rgba(255,255,255,.02);
+  }
+  .tick-chip b{ color:var(--bright-green); font-family:'Comfortaa',sans-serif; }
+  .tick-chip .tk-n{ color:var(--txt2); }
+
+  /* ---------- exclu gen ---------- */
+  .exclu-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .exclu-card{
+    border:1px solid var(--line); border-radius:14px; padding:13px;
+    background:rgba(255,255,255,.02); text-align:center;
+  }
+  .exclu-card .molec{ font-size:.72rem; color:var(--txt2); margin-bottom:6px; }
+  .exclu-card .price1{ font-family:'Comfortaa',sans-serif; font-size:1.6rem; font-weight:700; color:var(--pale-green); }
+  .exclu-card .price1 sup{ font-size:.9rem; }
+  .exclu-card .exn{ font-size:.62rem; color:var(--txt2); margin-top:4px; }
+
+  /* ---------- footer ---------- */
+  footer{ padding:40px 0 60px; border-top:1px solid var(--line); }
+  .dir-grid{ display:grid; grid-template-columns:1fr; gap:12px; margin-bottom:26px; }
+  .dir-card{
+    display:flex; align-items:center; gap:12px;
+    border:1px solid var(--line); border-radius:100px; padding:8px 18px 8px 8px;
+    background:rgba(255,255,255,.02);
+  }
+  .dir-ring{
+    width:42px; height:42px; border-radius:50%;
+    background:linear-gradient(140deg, var(--dark-green), var(--bright-green));
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Comfortaa',sans-serif; font-weight:600; color:#0B1409; font-size:.9rem;
+    flex:none;
+  }
+  .dir-txt b{ display:block; font-size:.84rem; }
+  .dir-txt span{ font-size:.68rem; color:var(--txt2); }
+  .foot-baseline{ text-align:center; }
+  .foot-baseline h3{ font-size:1.3rem; font-weight:600; margin-bottom:8px; }
+  .foot-fine{ text-align:center; color:var(--txt2); font-size:.66rem; margin-top:22px; }
+
+  /* ---------- leaflet marker custom ---------- */
+  .pulse-marker{ position:relative; width:16px; height:16px; }
+  .pulse-marker .core{ width:9px; height:9px; border-radius:50%; background:var(--bright-green); position:absolute; top:3.5px; left:3.5px; box-shadow:0 0 8px rgba(102,242,130,.9); }
+  .pulse-marker .ring{ position:absolute; inset:0; border-radius:50%; border:2px solid var(--bright-green); animation:mpulse 2.2s infinite; }
+  @keyframes mpulse{ 0%{ transform:scale(.4); opacity:.9;} 100%{ transform:scale(2.4); opacity:0;} }
+  .prospect-marker{ width:11px; height:11px; border-radius:50%; border:1.6px solid #A9B4A3; background:rgba(169,180,163,.15); }
+  .leaflet-container{ background:#0A0E0B !important; }
+
+  @media(min-width:760px){
+    .wrap{ padding:0 32px; }
+    .hero h1{ font-size:2.7rem; }
+    .kpi-grid{ grid-template-columns:repeat(4,1fr); }
+    .stat-mini-row{ grid-template-columns:repeat(4,1fr); }
+    .kpi-grid + .stat-mini-row{ margin-top:14px; }
+    .priv-grid{ grid-template-columns:repeat(4,1fr); }
+    .exclu-grid{ grid-template-columns:repeat(3,1fr); }
+    .dir-grid{ grid-template-columns:1fr 1fr; }
+    .map-shell{ height:460px; }
+  }
+  @media(min-width:1000px){
+    .hero-flex{ display:grid; grid-template-columns:1.1fr .9fr; gap:40px; align-items:center; }
+  }
+</style>
+
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <linearGradient id="gaugeGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#00A85C"/>
+      <stop offset="55%" stop-color="#57AE31"/>
+      <stop offset="100%" stop-color="#B5F257"/>
+    </linearGradient>
+  </defs>
+</svg>
+
+<header class="topbar">
+  <div class="wrap topbar-inner">
+    <div class="brand">
+      <svg viewBox="-1 3 42 41" xmlns="http://www.w3.org/2000/svg">
+        <path d="M27.3094 31.175C26.8648 30.9853 26.3568 30.8588 25.9122 30.6059L25.4676 30.3529H25.4041C25.9757 31.8706 26.2297 33.2618 26.1027 34.4C25.5946 40.0912 21.0854 40.5338 19.6881 40.5338C18.2909 40.5338 13.7816 40.0912 13.2735 34.4C13.1465 33.2618 13.4005 31.8706 13.9721 30.3529H14.0357L13.5911 30.6059C13.1465 30.7956 12.6384 30.9853 12.1938 31.175H12.1303L11.7493 31.3015C11.4317 32.3132 11.3047 33.3882 11.3047 34.3368C11.3047 37.0559 12.1303 39.2059 13.6546 40.7235C15.8775 42.8103 18.8625 42.9368 19.6246 42.9368C19.6881 42.9368 19.7516 42.9368 19.8151 42.9368C19.8151 42.9368 19.8787 42.9368 20.0057 42.9368C20.7678 42.9368 23.7528 42.8103 25.9757 40.7235C27.5635 39.2059 28.3256 37.0559 28.3256 34.3368C28.3256 33.325 28.1986 32.3132 27.881 31.3015L27.5 31.175H27.3094Z" fill="#00A85C"></path>
+        <path d="M17.8465 23.9029L17.656 23.7764L17.529 23.65L17.4655 23.5867L17.3384 23.4603L17.1479 23.3338C15.7507 24.5985 13.9724 26.5588 12.7021 28.9617H12.7657C13.4008 28.7088 14.0359 28.3926 14.7345 28.0764C14.925 27.95 15.1156 27.8867 15.3061 27.7603C16.1952 26.2426 17.0844 24.8514 17.8465 23.9029Z" fill="#00A85C"></path>
+        <path d="M18.2277 23.2073C18.2277 23.2706 18.2913 23.2706 18.2913 23.2706C18.5453 22.9544 18.7358 22.7014 18.9264 22.4485L18.5453 22.1323C18.3548 22.322 18.1007 22.5117 17.8467 22.7647C17.9102 22.8279 17.9102 22.8911 17.9737 22.8911L18.2277 23.2073Z" fill="#00A85C"></path>
+        <path d="M20.9587 22.1323L20.5776 22.5117C20.7682 22.7014 20.9587 23.0176 21.2127 23.3338L21.2763 23.2706L21.5938 22.8911C21.5938 22.8279 21.6573 22.8279 21.6573 22.7647C21.4033 22.4485 21.1492 22.2588 20.9587 22.1323Z" fill="#00A85C"></path>
+        <path d="M22.3558 23.3338L22.2288 23.4603L22.1018 23.5867L22.0383 23.65L21.9112 23.7764L21.7207 23.9029C22.4193 24.8514 23.372 26.1794 24.1976 27.697C24.3882 27.8235 24.5787 27.8867 24.7692 28.0132C25.4678 28.3926 26.103 28.6456 26.7381 28.8985H26.8016C25.5949 26.5588 23.7531 24.5985 22.3558 23.3338Z" fill="#00A85C"></path>
+        <path d="M19.1805 21.3735L19.3075 21.247L19.4345 21.1206L19.498 21.0573L19.5615 20.9941L19.6251 20.9309L19.7521 20.8044C18.4819 19.4132 16.513 17.6426 14.0996 16.3779V16.4412C14.3537 17.0735 14.6712 17.7059 14.9888 18.4015C15.1158 18.5912 15.1793 18.7809 15.3063 18.9706C16.8306 19.7294 18.2278 20.6779 19.1805 21.3735Z" fill="#66F282"></path>
+        <path d="M20.9587 22.0691C20.7682 21.8794 20.5776 21.6265 20.3236 21.3735C20.2601 21.3735 20.2601 21.4368 20.1966 21.4368L19.6885 21.8162C20.006 22.0691 20.2601 22.2588 20.5141 22.4485L20.9587 22.0691C20.9587 22.1324 20.9587 22.1324 20.9587 22.0691Z" fill="#66F282"></path>
+        <path d="M19.6886 24.8515L19.7521 24.7882C19.4346 24.5353 19.117 24.2824 18.9265 24.1559L18.863 24.0294C18.9265 24.0927 18.9265 24.0927 18.9265 24.1559L18.5454 24.5353C18.7359 24.725 18.9265 24.9779 19.1805 25.2309C19.1805 25.2309 19.244 25.2309 19.244 25.1677L19.6886 24.8515Z" fill="#B5F257"></path>
+        <path d="M37.2809 17.2C35.7567 15.6191 33.5973 14.8603 30.8664 14.8603C29.8502 14.8603 28.834 14.9868 27.8178 15.3029L27.6908 15.6823V15.7456C27.5638 16.1882 27.3097 16.6941 27.1192 17.1368L26.8652 17.5794L26.8017 17.6426C28.3259 17.0735 29.7232 16.8206 30.8664 16.9471C36.5823 17.4529 37.0269 21.9426 37.0269 23.3338C37.0269 24.725 36.5823 29.2147 30.8664 29.7206C29.7232 29.7838 28.3259 29.5941 26.8017 29.025H26.7381C26.103 28.7721 25.4679 28.4559 24.7693 28.1397C24.5788 28.0132 24.3882 27.95 24.1977 27.8235C22.6735 27.0015 21.3397 26.0529 20.3871 25.3573L20.26 25.5471L20.133 25.6735L20.0695 25.7368L20.006 25.8C20.006 25.8 20.006 25.8 19.9425 25.8632L19.752 25.9265C21.0222 27.3176 22.991 29.0882 25.4044 30.3529L25.4679 30.4162L25.9125 30.6691C26.3571 30.8588 26.8652 31.0485 27.3097 31.2382H27.3733L27.7543 31.3647C28.7705 31.6809 29.8502 31.8073 30.8028 31.8073C33.5338 31.8073 35.6932 30.9853 37.2174 29.4676C39.5673 27.0015 39.4403 23.5868 39.4403 23.3338C39.5038 23.0809 39.6308 19.6662 37.2809 17.2Z" fill="#B5F257"></path>
+        <path d="M19.7521 20.7412L19.6251 20.8676L19.5616 20.9309L19.4981 20.9941L19.4346 21.0573L19.3075 21.1838L19.1805 21.3103C18.9265 21.5632 18.7359 21.8162 18.5454 22.0059L18.9265 22.3853C19.117 22.1956 19.4346 22.0059 19.7521 21.7529L20.2602 21.3735C20.3237 21.3735 20.3237 21.3103 20.3872 21.3103C21.3399 20.6147 22.6736 19.6662 24.1979 18.8441C24.3249 18.6544 24.3884 18.4647 24.5154 18.275C24.8965 17.5794 25.1505 16.9471 25.4046 16.3147V16.2515C22.9912 17.5162 21.0223 19.35 19.7521 20.7412Z" fill="#B5F257"></path>
+        <path d="M20.9588 24.5353L20.5142 24.1559C20.3237 24.3456 20.0061 24.5353 19.6886 24.7882L19.6251 24.8515L19.117 25.2309C19.117 25.2309 19.0535 25.2309 19.0535 25.2941C18.1008 25.9897 16.7671 26.9382 15.2428 27.7603C15.0523 27.8868 14.8618 27.95 14.6712 28.0765C13.9726 28.4559 13.3375 28.7088 12.7024 28.9618H12.6389C11.1146 29.5309 9.71739 29.7838 8.5742 29.6573C2.85822 29.1515 2.41364 24.6618 2.41364 23.2706C2.41364 21.8794 2.85822 17.3897 8.5742 16.8838C9.71739 16.7573 11.1146 17.0103 12.6389 17.5794H12.7024L12.4484 17.1368C12.2578 16.6941 12.0038 16.1882 11.8768 15.7456V15.6823L11.7497 15.3029C10.7336 14.9868 9.65388 14.8603 8.70122 14.8603C5.97025 14.8603 3.81088 15.6823 2.28662 17.2C-0.126789 19.6662 0.000232449 23.0809 0.000232449 23.3338C0.000232449 23.5235 -0.126789 27.0015 2.22311 29.4676C3.74737 31.0485 5.90674 31.8073 8.63771 31.8073C9.65388 31.8073 10.6701 31.6809 11.6862 31.3647L12.0673 31.2382H12.1308C12.5754 31.1118 13.0835 30.9221 13.528 30.6691L13.9726 30.4162L14.0361 30.3529C16.4495 29.0882 18.4184 27.3176 19.6886 25.9265L19.8156 25.8C19.8156 25.8 19.8156 25.8 19.8791 25.7368L19.9426 25.6735L20.0061 25.6103L20.1332 25.4838L20.2602 25.2941C20.6413 24.9779 20.8318 24.725 20.9588 24.5353Z" fill="#66F282"></path>
+        <path d="M28.2621 12.2676C28.2621 9.54853 27.4365 7.39853 25.9122 5.88088C23.4353 3.54118 20.0057 3.66765 19.7517 3.66765C19.5611 3.66765 16.068 3.54118 13.5911 5.88088C12.0033 7.39853 11.2412 9.54853 11.2412 12.2676C11.2412 13.2794 11.4317 14.2912 11.7493 15.3029L11.8763 15.6824V15.7456C12.0033 16.1882 12.2574 16.6941 12.4479 17.1368L12.702 17.5794L12.7655 17.6426C14.0357 20.0456 15.814 22.0059 17.2112 23.2706L17.3383 23.3971L17.4653 23.5235L17.5288 23.5868L17.6558 23.7132L17.7828 23.8397C18.0369 24.0926 18.2909 24.2824 18.4814 24.4721L18.8625 24.0926C18.8625 24.0926 18.799 24.0294 18.799 23.9662C18.6085 23.7765 18.4814 23.5235 18.2274 23.2706L18.1639 23.2074L17.9099 22.8279C17.8463 22.7647 17.8463 22.7015 17.7828 22.7015C17.0842 21.7529 16.1315 20.425 15.3059 18.9074C15.1789 18.7176 15.1154 18.5279 14.9884 18.3382C14.6073 17.6426 14.3532 17.0103 14.0992 16.3779V16.3147C13.5276 14.7971 13.2736 13.4059 13.4006 12.2676C13.9087 6.57647 18.4179 6.13382 19.8152 6.13382C21.2124 6.13382 25.7217 6.57647 26.2298 12.2676C26.3568 13.4059 26.1027 14.7971 25.5312 16.3147V16.3779C25.2771 17.0103 24.9596 17.6426 24.642 18.3382C24.515 18.5279 24.4515 18.7176 24.3244 18.9074C23.4988 20.425 22.5461 21.7529 21.8475 22.7015C21.8475 22.7647 21.784 22.7647 21.784 22.8279L21.4665 23.2074L21.4029 23.2706C21.1489 23.5868 20.8949 23.9029 20.7043 24.0926L21.1489 24.4721C21.3394 24.2824 21.5935 24.0926 21.8475 23.9029L22.0381 23.7765L22.1651 23.65L22.2286 23.5868L22.3556 23.4603L22.4826 23.3338C23.8799 22.0691 25.6582 20.1088 26.9284 17.7059L26.9919 17.6426L27.2459 17.2C27.4365 16.7574 27.6905 16.2515 27.8175 15.8088V15.7456L27.9446 15.3662C28.0716 14.2912 28.2621 13.2794 28.2621 12.2676Z" fill="#3E8A1F"></path>
+      </svg>
+      <div class="brand-word"><b>essentiels pharma</b><span>Mission Control</span></div>
+    </div>
+    <div class="topbar-right">
+      <span class="pill"><span class="live-dot"></span> Données en direct</span>
+      <span class="clock" id="clock">--:--:--</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section class="hero">
+    <div class="radar-bg"></div>
+    <div class="hero-flex">
+      <div>
+        <div class="eyebrow"><span class="pill">Groupement</span><span class="pill">Anjou → Nantes → Paris</span></div>
+        <h1>Centre de pilotage <span class="pill-hl">Essentiels Pharma</span></h1>
+        <p class="sub">23 officines connectées, 47 pharmaciens, un réseau qui grandit. Vue temps réel du groupement et de son adhésion à l'offre Intégral Pharma.</p>
+      </div>
+    </div>
+
+    <div class="kpi-grid" id="kpiGrid">
+      <div class="kpi-card" data-target="23" data-scale="23" data-suffix="">
+        <div class="gauge"><svg viewBox="0 0 110 110"><circle class="track" cx="55" cy="55" r="48"/><circle class="fill" cx="55" cy="55" r="48"/></svg>
+          <div class="gauge-num"><b class="num">0</b><small>officines</small></div>
+        </div>
+        <div class="kpi-label">Officines adhérentes</div>
+        <div class="kpi-note">Réseau actif</div>
+      </div>
+      <div class="kpi-card" data-target="45" data-scale="45" data-suffix=" M€">
+        <div class="gauge"><svg viewBox="0 0 110 110"><circle class="track" cx="55" cy="55" r="48"/><circle class="fill" cx="55" cy="55" r="48"/></svg>
+          <div class="gauge-num"><b class="num">0</b><small>M€ / an</small></div>
+        </div>
+        <div class="kpi-label">Chiffre d'affaires</div>
+        <div class="kpi-note">Cumul groupement</div>
+      </div>
+      <div class="kpi-card" data-target="47" data-scale="47" data-suffix="">
+        <div class="gauge"><svg viewBox="0 0 110 110"><circle class="track" cx="55" cy="55" r="48"/><circle class="fill" cx="55" cy="55" r="48"/></svg>
+          <div class="gauge-num"><b class="num">0</b><small>pharmaciens</small></div>
+        </div>
+        <div class="kpi-label">Pharmaciens titulaires</div>
+        <div class="kpi-note">181 salariés au total</div>
+      </div>
+      <div class="kpi-card" data-target="8" data-scale="23" data-suffix="">
+        <div class="gauge"><svg viewBox="0 0 110 110"><circle class="track" cx="55" cy="55" r="48"/><circle class="fill" cx="55" cy="55" r="48"/></svg>
+          <div class="gauge-num"><b class="num">0</b><small>/ 23 clientes</small></div>
+        </div>
+        <div class="kpi-label">Déjà clientes Intégral</div>
+        <div class="kpi-note">15 officines à conquérir</div>
+      </div>
+    </div>
+
+    <div class="stat-mini-row">
+      <div class="stat-mini"><div><span>Salariés</span><b id="salVal">0</b></div></div>
+      <div class="stat-mini"><div><span>Labos référencés</span><b id="labVal">0</b></div></div>
+      <div class="stat-mini"><div><span>Pénétration réseau</span><b>35%</b></div></div>
+      <div class="stat-mini"><div><span>Potentiel</span><b>15 off.</b></div></div>
+    </div>
+  </section>
+
+  <section class="block" id="mapBlock">
+    <div class="block-head">
+      <div>
+        <h2>Le réseau <span class="pill-hl">en direct</span></h2>
+        <p>23 officines géolocalisées — d'Angers à Paris. Le point plein <b style="color:#66F282">●</b> pulse pour les officines déjà clientes Intégral.</p>
+      </div>
+      <span class="pill map-count-inline">23 points actifs</span>
+    </div>
+    <div class="map-shell">
+      <div id="map"></div>
+      <div class="map-legend">
+        <span class="leg"><i class="dot-client"></i> Cliente Intégral (8)</span>
+        <span class="leg"><i class="dot-prospect"></i> À conquérir (15)</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="villeBlock">
+    <div class="block-head">
+      <div>
+        <h2>Répartition <span class="pill-hl">géographique</span></h2>
+        <p>Nombre d'officines par ville, calculé en direct depuis les 23 pharmacies du groupement.</p>
+      </div>
+    </div>
+    <div class="villes" id="villes"></div>
+  </section>
+
+  <section class="block" id="penBlock">
+    <div class="block-head">
+      <div>
+        <h2>L'argument <span class="pill-hl">massue</span></h2>
+        <p>Les produits déjà commandés par le plus grand nombre de pharmacies Intégral — la preuve sociale qui convainc.</p>
+      </div>
+    </div>
+    <div class="pen-list" id="penList"></div>
+  </section>
+
+  <section class="block" id="privBlock">
+    <div class="block-head">
+      <div>
+        <h2>Offre <span class="pill-hl">privilège</span></h2>
+        <p>Sélection à condition tarifaire dédiée — prix net après abandon de marge, déjà adoptée par le réseau.</p>
+      </div>
+    </div>
+    <div class="priv-grid" id="privGrid"></div>
+  </section>
+
+  <section class="block" id="glp1Block">
+    <div class="block-head">
+      <div>
+        <h2>Flux <span class="pill-hl">GLP-1</span></h2>
+        <p>Wegovy / Mounjaro — tension de marché, prix nets en flux continu.</p>
+      </div>
+    </div>
+    <div class="ticker-wrap">
+      <div class="ticker-track" id="tickerTrack"></div>
+    </div>
+  </section>
+
+  <section class="block" id="exBlock">
+    <div class="block-head">
+      <div>
+        <h2>Exclusivités <span class="pill-hl">génériques</span></h2>
+        <p>Sildénafil / Tadalafil — prix net exclusif.</p>
+      </div>
+    </div>
+    <div class="exclu-grid" id="exGrid"></div>
+  </section>
+
+  <footer>
+    <div class="dir-grid">
+      <div class="dir-card"><div class="dir-ring">FT</div><div class="dir-txt"><b>François Tesson</b><span>Président</span></div></div>
+      <div class="dir-card"><div class="dir-ring">CB</div><div class="dir-txt"><b>Céline Boultareau</b><span>Direction Essentiels Pharma</span></div></div>
+    </div>
+    <div class="foot-baseline">
+      <h3>Essentiels Pharma</h3>
+      <span class="pill-hl">Le réflexe santé</span>
+    </div>
+    <p class="foot-fine">Maquette de présentation — données figées — variante 1 « Mission Control »</p>
+  </footer>
+
+</main>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  const DATA = {"grp":{"nom":"Essentiels Pharma","baseline":"Le réflexe santé","officines":23,"clientes":8,"pharmaciens":47,"ca":"45 M€/an","salaries":181,"labos":290,"dirigeants":[{"nom":"François Tesson","fn":"Président"},{"nom":"Céline Boultareau","fn":"Direction Essentiels Pharma"}]},"officines":[{"nom":"Nouvelle Pharmacie Grand Maine","ville":"Angers","cp":"49000","lat":47.46689,"lng":-0.59369,"client":true,"ca":null},{"nom":"Pharmacie de l'Horloge","ville":"Angers","cp":"49000","lat":47.46514,"lng":-0.59552,"client":false,"ca":null},{"nom":"Grande Pharmacie Saint Serge","ville":"Angers","cp":"49100","lat":47.48843,"lng":-0.54373,"client":false,"ca":null},{"nom":"Grande Pharmacie de l'Université","ville":"Angers","cp":"49100","lat":47.47546,"lng":-0.54946,"client":false,"ca":null},{"nom":"Nouvelle Pharmacie Pierre Lise","ville":"Angers","cp":"49100","lat":47.47214,"lng":-0.542,"client":false,"ca":null},{"nom":"Grande Pharmacie du Pilori","ville":"Angers","cp":"49100","lat":47.47326,"lng":-0.5499,"client":false,"ca":null},{"nom":"Pharmacie des Halles","ville":"Angers","cp":"49100","lat":47.47132,"lng":-0.55452,"client":false,"ca":null},{"nom":"Pharmacie Le Gall Visitation","ville":"Angers","cp":"49100","lat":47.46689,"lng":-0.55757,"client":true,"ca":null},{"nom":"Pharmacie Gare","ville":"Angers","cp":"49100","lat":47.46458,"lng":-0.5578,"client":false,"ca":null},{"nom":"Pharmacie Descartes","ville":"Cholet","cp":"49300","lat":47.04841,"lng":-0.883,"client":false,"ca":null},{"nom":"Pharmacie du Thouet","ville":"Saumur","cp":"49400","lat":47.26224,"lng":-0.09099,"client":true,"ca":null},{"nom":"Pharmacie des Erables","ville":"Tiercé","cp":"49125","lat":47.61549,"lng":-0.46388,"client":true,"ca":null},{"nom":"Pharmacie de l'Authion","ville":"Loire-Authion","cp":"49800","lat":47.4275,"lng":-0.38063,"client":false,"ca":null},{"nom":"Pharmacie des Hauts Pavés","ville":"Nantes","cp":"44000","lat":47.22725,"lng":-1.56952,"client":true,"ca":28801.0},{"nom":"Pharmacie du Chêne","ville":"Vertou","cp":"44120","lat":47.16498,"lng":-1.48374,"client":true,"ca":31038.0},{"nom":"Pharmacie de la Libération","ville":"Couëron","cp":"44220","lat":47.21442,"lng":-1.69007,"client":true,"ca":10665.0},{"nom":"Pharmacie du Centre","ville":"Montoir-de-Bretagne","cp":"44550","lat":47.3293,"lng":-2.15036,"client":false,"ca":null},{"nom":"Pharmacie des Capucins","ville":"Thouars","cp":"79100","lat":46.97838,"lng":-0.20385,"client":false,"ca":null},{"nom":"Pharmacie de la Croix de Pierre","ville":"Le Mans","cp":"72000","lat":48.01208,"lng":0.20562,"client":true,"ca":null},{"nom":"Grande Pharmacie du Pont de l'Eure","ville":"Pacy-sur-Eure","cp":"27120","lat":49.01352,"lng":1.37883,"client":false,"ca":null},{"nom":"Pharmacie de l'Hôtel de Ville","ville":"Boulogne-Billancourt","cp":"92100","lat":48.83667,"lng":2.24165,"client":false,"ca":null},{"nom":"Pharmacie Vavin","ville":"Paris","cp":"75006","lat":48.84393,"lng":2.33035,"client":false,"ca":null},{"nom":"Pharmacie Homéopathique Centrale","ville":"Paris","cp":"75116","lat":48.8671,"lng":2.28064,"client":false,"ca":null}],"offre_privilege":[{"d":"KARDEGIC 75MG PDR SACH 30","cip":"3474419","ppht":1.47,"net":1.19,"n":433},{"d":"KARDEGIC 160 MG PDR AD SAC 30","cip":"3324737","ppht":1.47,"net":1.19,"n":355},{"d":"DOLIPRANE 2,4% SUSP PEDIATR FL","cip":"3461546","ppht":1.26,"net":0.98,"n":257},{"d":"DOLIPRANE 1000MG 8CPR","cip":"3595583","ppht":1.06,"net":0.78,"n":233},{"d":"ASPEGIC 100 ENF NOUR X 20 SACHETS","cip":"3189363","ppht":1.35,"net":1.07,"n":228},{"d":"DOLIPRANE 500MG PDR AD SAC 12","cip":"3233153","ppht":1.06,"net":0.78,"n":223},{"d":"DOLIPRANE 1000MG SACHET 8","cip":"3624698","ppht":1.06,"net":0.78,"n":219},{"d":"DOLIPRANE 1000 MG GELU 8","cip":"4153396","ppht":1.06,"net":0.78,"n":217}],"exclu_gen":[{"d":"TADALAFIL 5 mg/ 28 cp. pell","cip":"3400930080269","ppht":3.73,"net":1.0,"n":52},{"d":"TADALAFIL 20 mg/ 8 cp. pell","cip":"3400930080290","ppht":13.73,"net":1.0,"n":52},{"d":"TADALAFIL 5 mg/ 84 cp. pell","cip":"3400930167472","ppht":11.19,"net":1.0,"n":50},{"d":"TADALAFIL 10 mg/ 4 cp. pell","cip":"3400930080276","ppht":null,"net":1.0,"n":48},{"d":"SILDENAFIL 100 mg/ 24 cp. pell","cip":"3400930156797","ppht":null,"net":1.0,"n":41},{"d":"SILDENAFIL 50 mg/ 12 cp. pell","cip":"3400930146545","ppht":2.98,"net":1.0,"n":31}],"glp1":[{"d":"MOUNJARO 2.5MG KWIKPEN 2.4ML1","cip":"3400930292907","ppht":163.7,"net":157.33,"n":269},{"d":"MOUNJARO 5MG KWIKPEN 2.4ML1","cip":"3400930292914","ppht":221.32,"net":212.71,"n":263},{"d":"WEGOVY 2.4MG FLEX INJSTYLE3ML1","cip":"3400930258668","ppht":181.48,"net":174.42,"n":212},{"d":"WEGOVY 0.25 MG FLEX INJ S1,5ML1","cip":"3400930258620","ppht":136.5,"net":131.19,"n":208},{"d":"WEGOVY 1MG FLEX INJ STYL3ML1","cip":"3400930258644","ppht":136.5,"net":131.19,"n":204}],"penetration":[{"d":"KARDEGIC 75MG PDR SACH 30","cip":"3400934744198","ppht":1.47,"net":1.19,"n":433},{"d":"THEALOSE SOL OPHT FL 15ML T","cip":"3662042005664","ppht":8.34,"net":8.35,"n":429},{"d":"IZALGI 500MG/25MG GELU BT16","cip":"3400949605538","ppht":1.43,"net":1.26,"n":397},{"d":"SKIACOL 0,5% COLLY FL0,5ML","cip":"3400932162901","ppht":7.11,"net":7.02,"n":396},{"d":"HYLO CONFORT+COLLY HYD F10ML T","cip":"3401040669580","ppht":7.02,"net":7.03,"n":385},{"d":"VISMED MULTI GTT LUBR FL15ML T","cip":"4028694001468","ppht":8.6,"net":8.61,"n":370},{"d":"KARDEGIC 160MG PDR SACH 30","cip":"3400933247379","ppht":1.47,"net":1.19,"n":355},{"d":"OPTIVE  FUSION COLLYRE FL 10 ML","cip":"3401060060718","ppht":5.61,"net":5.61,"n":352}]};
+
+  /* ---------- clock ---------- */
+  function tickClock(){
+    const d = new Date();
+    document.getElementById('clock').textContent = d.toLocaleTimeString('fr-FR');
+  }
+  tickClock(); setInterval(tickClock, 1000);
+
+  /* ---------- gauges / counters ---------- */
+  function animateCount(el, target, duration, decimals, suffix){
+    const start = performance.now();
+    function frame(t){
+      const p = Math.min(1, (t - start) / duration);
+      const eased = 1 - Math.pow(1 - p, 3);
+      const val = target * eased;
+      el.textContent = (decimals ? val.toFixed(decimals) : Math.round(val)) + (suffix || '');
+      if(p < 1) requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  }
+
+  const kpiObserver = new IntersectionObserver((entries)=>{
+    entries.forEach(entry=>{
+      if(entry.isIntersecting){
+        const card = entry.target;
+        card.classList.add('in');
+        const target = parseFloat(card.dataset.target);
+        const scale = parseFloat(card.dataset.scale);
+        const numEl = card.querySelector('.num');
+        const fillEl = card.querySelector('.fill');
+        const circumference = 301.6;
+        const ratio = Math.min(1, target/scale);
+        fillEl.style.strokeDashoffset = (circumference - circumference*ratio) + 'px';
+        animateCount(numEl, target, 1400, 0, '');
+        kpiObserver.unobserve(card);
+      }
+    });
+  }, {threshold:.4});
+  document.querySelectorAll('.kpi-card').forEach(c=>kpiObserver.observe(c));
+
+  animateCount(document.getElementById('salVal'), DATA.grp.salaries, 1400, 0, '');
+  animateCount(document.getElementById('labVal'), DATA.grp.labos, 1400, 0, '');
+
+  /* ---------- ville bars ---------- */
+  const villeCount = {};
+  DATA.officines.forEach(o=>{ villeCount[o.ville] = (villeCount[o.ville]||0) + 1; });
+  const villeSorted = Object.entries(villeCount).sort((a,b)=>b[1]-a[1]);
+  const maxVille = villeSorted[0][1];
+  const villesEl = document.getElementById('villes');
+  villeSorted.forEach(([ville, n])=>{
+    const row = document.createElement('div');
+    row.className = 'ville-row';
+    row.innerHTML = `<div class="v-name">${ville}</div><div class="ville-track"><div class="ville-fill" data-w="${(n/maxVille*100).toFixed(0)}"></div></div><div class="v-n">${n}</div>`;
+    villesEl.appendChild(row);
+  });
+  const villeObserver = new IntersectionObserver((entries)=>{
+    entries.forEach(entry=>{
+      if(entry.isIntersecting){
+        entry.target.querySelectorAll('.ville-fill').forEach(f=> f.style.width = f.dataset.w + '%');
+        villeObserver.unobserve(entry.target);
+      }
+    });
+  }, {threshold:.2});
+  villeObserver.observe(villesEl);
+
+  /* ---------- penetration ---------- */
+  const penList = document.getElementById('penList');
+  const maxN = Math.max(...DATA.penetration.map(p=>p.n));
+  DATA.penetration.forEach(p=>{
+    const item = document.createElement('div');
+    item.className = 'pen-item';
+    item.innerHTML = `
+      <div class="pen-top">
+        <span class="pen-name">${p.d}</span>
+        <span class="pen-badge">${p.n} pharmacies</span>
+      </div>
+      <div class="pen-track"><div class="pen-fill" data-w="${(p.n/maxN*100).toFixed(0)}"></div></div>
+      <div class="pen-meta"><span>PPHT ${p.ppht.toFixed(2)} €</span><span>Net ${p.net.toFixed(2)} €</span></div>`;
+    penList.appendChild(item);
+  });
+  const penObserver = new IntersectionObserver((entries)=>{
+    entries.forEach(entry=>{
+      if(entry.isIntersecting){
+        entry.target.querySelectorAll('.pen-fill').forEach(f=> f.style.width = f.dataset.w + '%');
+        penObserver.unobserve(entry.target);
+      }
+    });
+  }, {threshold:.1});
+  penObserver.observe(penList);
+
+  /* ---------- offre privilege ---------- */
+  const privGrid = document.getElementById('privGrid');
+  DATA.offre_privilege.forEach(p=>{
+    const abandon = Math.round((p.ppht - p.net)/p.ppht*100);
+    const card = document.createElement('div');
+    card.className = 'priv-card';
+    card.innerHTML = `
+      <div class="priv-name">${p.d}</div>
+      <div class="priv-prices"><span class="priv-ppht">${p.ppht.toFixed(2)} €</span><span class="priv-net">${p.net.toFixed(2)} €</span></div>
+      <div class="priv-foot"><span class="priv-abandon">-${abandon}% abandon</span><span class="priv-n">${p.n} off.</span></div>`;
+    privGrid.appendChild(card);
+  });
+
+  /* ---------- ticker GLP-1 ---------- */
+  const tickerTrack = document.getElementById('tickerTrack');
+  const tickItems = [...DATA.glp1, ...DATA.glp1];
+  tickItems.forEach(g=>{
+    const chip = document.createElement('div');
+    chip.className = 'tick-chip';
+    chip.innerHTML = `<b>${g.d}</b><span class="tk-n">net ${g.net.toFixed(2)} € · ${g.n} off.</span>`;
+    tickerTrack.appendChild(chip);
+  });
+
+  /* ---------- exclu gen ---------- */
+  const exGrid = document.getElementById('exGrid');
+  const exGroup = {};
+  DATA.exclu_gen.forEach(e=>{
+    const key = e.d.split(' ')[0];
+    if(!exGroup[key]) exGroup[key] = {n:0, count:0};
+    exGroup[key].n += e.n; exGroup[key].count++;
+  });
+  Object.entries(exGroup).forEach(([mol, v])=>{
+    const card = document.createElement('div');
+    card.className = 'exclu-card';
+    card.innerHTML = `<div class="molec">${mol}</div><div class="price1">1<sup>€</sup></div><div class="exn">net exclusif · ${v.n} commandes</div>`;
+    exGrid.appendChild(card);
+  });
+  // extra summary card
+  const total = DATA.exclu_gen.reduce((s,e)=>s+e.n,0);
+  const sumCard = document.createElement('div');
+  sumCard.className = 'exclu-card';
+  sumCard.innerHTML = `<div class="molec">Total réseau</div><div class="price1" style="color:#8FD45F">${total}</div><div class="exn">commandes cumulées</div>`;
+  exGrid.appendChild(sumCard);
+
+  /* ---------- leaflet map ---------- */
+  const map = L.map('map', {zoomControl:true, attributionControl:false, scrollWheelZoom:false});
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    subdomains:'abcd', maxZoom:19
+  }).addTo(map);
+
+  const markers = [];
+  DATA.officines.forEach(o=>{
+    let icon;
+    if(o.client){
+      icon = L.divIcon({className:'', html:'<div class="pulse-marker"><div class="ring"></div><div class="core"></div></div>', iconSize:[16,16], iconAnchor:[8,8]});
+    } else {
+      icon = L.divIcon({className:'', html:'<div class="prospect-marker"></div>', iconSize:[11,11], iconAnchor:[5,5]});
+    }
+    const m = L.marker([o.lat, o.lng], {icon}).addTo(map);
+    m.bindTooltip(`<b>${o.nom}</b><br>${o.ville} (${o.cp})<br>${o.client ? 'Cliente Intégral' : 'À conquérir'}`, {direction:'top', offset:[0,-8]});
+    markers.push(m);
+  });
+  const group = L.featureGroup(markers);
+  map.fitBounds(group.getBounds().pad(0.25));
+</script>
