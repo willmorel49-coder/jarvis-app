@@ -7087,6 +7087,7 @@ function navigate(page) {
   const renders = {
     dashboard:   renderDashboard,
     groupement:  renderGroupement,
+    reco:        renderReco,
     pharmacies:  renderPharmacies,
     produits:    renderProduits,
     import:      renderImport,
@@ -13025,4 +13026,81 @@ function renderGroupement() {
       setTimeout(() => _essMap && _essMap.invalidateSize(), 120);
     } catch (e) { mapEl.innerHTML = '<div style="padding:24px;color:var(--text2);text-align:center">Carte : ' + esc(e.message) + '</div>'; }
   }, 40);
+}
+
+// ══════════ PAGE RECO PRODUITS — meilleure liste produits Essentiels (classée par nb pharmacies) ══════════
+let _recoCat = 'penetration';
+const _RECO_ORDER = ['penetration','generiques','petits_prix','sanofi_upsa','chers','nr','glp1'];
+const _RECO_LABEL = {penetration:'Top pénétration',generiques:'Génériques ZEN/EG/TEVA',petits_prix:'Petits prix >4,7%',sanofi_upsa:'Sanofi/UPSA',chers:'> 468 €',nr:'NR rotations',glp1:'GLP-1'};
+function _recoRows(cat){ const R=window.ESSENTIELS_RECO||{}; return (R[cat]&&R[cat].rows)||[]; }
+function setRecoCat(c){ _recoCat=c; renderReco(); }
+function renderReco(){
+  const el=document.getElementById('reco-content'); if(!el) return;
+  const R=window.ESSENTIELS_RECO||{};
+  const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const grnT='var(--opso-green-text)';
+  const cat=R[_recoCat]?_recoCat:'penetration';
+  const meta=R[cat]||{titre:'',note:'',rows:[]};
+  const rows=meta.rows||[];
+  const eur=v=>v==null?'—':Number(v).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';
+  const tabs=_RECO_ORDER.filter(k=>R[k]).map(k=>`<button onclick="setRecoCat('${k}')" style="padding:7px 14px;border-radius:100px;border:1.5px solid ${k===cat?'var(--opso-green)':'var(--border2)'};background:${k===cat?'var(--opso-green)':'transparent'};color:${k===cat?'#fff':'var(--text2)'};font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:'Comfortaa',sans-serif">${esc(_RECO_LABEL[k]||k)} <span style="opacity:.7">${(R[k].rows||[]).length}</span></button>`).join('');
+  const showPct = rows.some(r=>r.pct!=null);
+  const showGen = rows.some(r=>r.gen);
+  const rowHtml=rows.map((r,i)=>`<tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:8px 6px;color:var(--text3);font-size:12px;text-align:right">${i+1}</td>
+      <td style="padding:8px 10px"><div style="font-weight:600;color:var(--text);font-size:13px">${esc(r.d)}</div><div style="font-size:11px;color:var(--text3)">CIP ${esc(r.cip)}${r.gen?' · '+esc(r.gen):''}${r.offre?' · <span style="color:'+grnT+'">offre privilège</span>':''}</div></td>
+      <td style="padding:8px 6px;text-align:center"><span style="display:inline-block;min-width:38px;padding:3px 8px;border-radius:100px;background:var(--opso-green-pale);color:${grnT};font-weight:800;font-size:13px">${r.n}</span></td>
+      <td style="padding:8px 8px;text-align:right;color:var(--text2);font-size:13px">${r.ppht!=null?eur(r.ppht):'—'}</td>
+      <td style="padding:8px 8px;text-align:right;color:var(--text);font-weight:700;font-size:13px">${eur(r.offre!=null?r.offre:r.net)}</td>
+      ${showPct?`<td style="padding:8px 8px;text-align:right;color:${grnT};font-weight:700;font-size:12px">${r.pct!=null?r.pct+' %':'—'}</td>`:''}
+    </tr>`).join('');
+  el.innerHTML=`
+    <div style="max-width:1100px;margin:0 auto">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:6px">
+        <div>
+          <div style="font-family:'Comfortaa',sans-serif;font-size:20px;color:var(--text)">La <span style="background:var(--opso-green-pale);color:${grnT};padding:2px 10px;border-radius:100px">meilleure liste</span> produits</div>
+          <div style="font-size:13px;color:var(--text2);margin-top:4px">Classée par <b>nombre de pharmacies Intégral</b> qui commandent déjà chaque produit — la preuve pour Essentiels Pharma.</div>
+        </div>
+        <button onclick="printReco()" style="padding:9px 18px;border-radius:100px;border:none;background:var(--opso-green);color:#fff;font-weight:700;cursor:pointer;font-family:'Comfortaa',sans-serif;white-space:nowrap">🖨️ Imprimer / PDF</button>
+      </div>
+      <div style="display:flex;gap:8px;overflow-x:auto;padding:10px 0 14px">${tabs}</div>
+      <div class="card" style="padding:18px 20px">
+        <div style="font-family:'Comfortaa',sans-serif;font-weight:600;color:var(--text);font-size:15px">${esc(meta.titre)}</div>
+        <div style="font-size:12px;color:var(--text2);margin:2px 0 12px">${esc(meta.note)}</div>
+        <div style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse;min-width:560px">
+            <thead><tr style="border-bottom:2px solid var(--border2)">
+              <th style="padding:6px;text-align:right;font-size:10px;color:var(--text3);text-transform:uppercase">#</th>
+              <th style="padding:6px 10px;text-align:left;font-size:10px;color:var(--text3);text-transform:uppercase">Produit</th>
+              <th style="padding:6px;text-align:center;font-size:10px;color:var(--text3);text-transform:uppercase" title="Nb pharmacies qui commandent">Pharmas</th>
+              <th style="padding:6px 8px;text-align:right;font-size:10px;color:var(--text3);text-transform:uppercase">PPHT</th>
+              <th style="padding:6px 8px;text-align:right;font-size:10px;color:var(--text3);text-transform:uppercase">Net IP</th>
+              ${showPct?`<th style="padding:6px 8px;text-align:right;font-size:10px;color:var(--text3);text-transform:uppercase">Abandon</th>`:''}
+            </tr></thead>
+            <tbody>${rowHtml}</tbody>
+          </table>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin:10px 2px 24px">Source : ventes réseau Intégral (PROD_STATS). « Pharmas » = nombre d'officines Intégral commandant déjà le produit. Génériques & NR : prix net seul (prix libre). Princeps : PPHT → net IP + abandon de marge.</div>
+    </div>`;
+}
+function printReco(){
+  const R=window.ESSENTIELS_RECO||{}; const meta=R[_recoCat]||{}; const rows=meta.rows||[];
+  const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const eur=v=>v==null?'—':Number(v).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';
+  const showPct=rows.some(r=>r.pct!=null);
+  const today=new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
+  const tr=rows.map((r,i)=>`<tr><td class="r">${i+1}</td><td><b>${esc(r.d)}</b><br><span class="s">CIP ${esc(r.cip)}${r.gen?' · '+esc(r.gen):''}</span></td><td class="c"><b>${r.n}</b></td><td class="r">${r.ppht!=null?eur(r.ppht):'—'}</td><td class="r"><b>${eur(r.offre!=null?r.offre:r.net)}</b></td>${showPct?`<td class="r">${r.pct!=null?r.pct+' %':'—'}</td>`:''}</tr>`).join('');
+  const w=window.open('','_blank');
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Essentiels Pharma — ${esc(meta.titre||'')}</title>
+  <style>@page{margin:14mm}body{font-family:Arial,Helvetica,sans-serif;color:#17210F;font-size:11px}
+  h1{font-size:18px;margin:0;color:#2E7D14} .head{border-bottom:3px solid #57AE31;padding-bottom:10px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:flex-end}
+  .sub{color:#5E685A;font-size:12px;margin-top:2px} table{width:100%;border-collapse:collapse} th{background:#EAF5E3;color:#2E7D14;text-align:left;padding:6px;font-size:10px;text-transform:uppercase}
+  td{padding:5px 6px;border-bottom:1px solid #e3e8de} .r{text-align:right} .c{text-align:center} .s{color:#8a968a;font-size:9px}
+  td.c b{background:#EAF5E3;color:#2E7D14;padding:1px 7px;border-radius:8px} .foot{margin-top:12px;color:#8a968a;font-size:9px}</style></head>
+  <body><div class="head"><div><h1>Essentiels Pharma — Reco produits</h1><div class="sub">${esc(meta.titre||'')} · ${rows.length} produits</div></div><div style="text-align:right;font-size:10px;color:#5E685A">Intégral Pharma<br>${today}</div></div>
+  <table><thead><tr><th>#</th><th>Produit</th><th>Pharmas</th><th>PPHT</th><th>Net IP</th>${showPct?'<th>Abandon</th>':''}</tr></thead><tbody>${tr}</tbody></table>
+  <div class="foot">« Pharmas » = nombre d'officines Intégral commandant déjà le produit (preuve de rotation réseau). Génériques & NR : prix net libre. Le réflexe santé.</div>
+  <script>window.onload=function(){window.print()}<\/script></body></html>`);
+  w.document.close();
 }
