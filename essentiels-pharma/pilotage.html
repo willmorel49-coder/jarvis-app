@@ -166,6 +166,25 @@
   .cell-prod .cip{ font-size:.68rem; color:var(--text3); margin-top:2px; }
   .gen-tag{ font-size:.66rem; color:var(--text3); }
 
+  .prod-info h3{ display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; }
+  .prod-count{ font-size:.72rem; color:var(--text2); font-weight:600; }
+
+  .prod-toolbar{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:14px; }
+  .prod-search{
+    flex:1; min-width:220px; max-width:380px; background:var(--surface); border:1px solid var(--line); color:var(--white);
+    padding:10px 18px; border-radius:100px; font-size:.82rem; font-family:inherit;
+  }
+  .prod-search:focus{ outline:none; border-color:var(--green); }
+  .prod-search::placeholder{ color:var(--text3); }
+
+  .cat-pill{
+    display:inline-flex; align-items:center; padding:3px 10px; border-radius:100px; margin:2px 4px 2px 0;
+    background:rgba(87,174,49,.14); color:var(--lime2); border:1px solid rgba(87,174,49,.35);
+    font-size:.66rem; font-weight:700; white-space:nowrap;
+  }
+  .net-price{ color:var(--lime2) !important; font-weight:800; }
+  tbody tr:nth-child(even){ background:rgba(255,255,255,.015); }
+
   footer.app-foot{ text-align:center; color:var(--text3); font-size:.74rem; padding:30px 20px 10px; }
 </style>
 
@@ -210,9 +229,7 @@
           <th>Ville</th>
           <th>Statut</th>
           <th class="num">CA annuel Intégral</th>
-          <th>Palier RFA</th>
-          <th class="num">RFA €</th>
-          <th>Progression</th>
+          <th class="num">RFA (0,3 %)</th>
         </tr>
       </thead>
       <tbody id="officinesBody"></tbody>
@@ -220,13 +237,9 @@
   </div>
 
   <div class="legend-box">
-    <b>Barème RFA (à ajuster) :</b>
-    <span class="legend-chip">&lt; 20 000 € → 1 %</span>
-    <span class="legend-chip">20 000–50 000 € → 2 %</span>
-    <span class="legend-chip">50 000–100 000 € → 3 %</span>
-    <span class="legend-chip">&gt; 100 000 € → 4 %</span>
+    <b>RFA = 0,3 % du chiffre d'affaires généré</b> (à ajuster).
   </div>
-  <p class="note">CA &amp; commandes complets à l'intégration des ventes Intégral. Barème RFA à ajuster.</p>
+  <p class="note">CA &amp; commandes complets à l'intégration des ventes Intégral.</p>
 </section>
 
 <!-- ===================== TAB 2 — PRODUITS ===================== -->
@@ -238,7 +251,7 @@
 
   <div class="prod-head">
     <div class="prod-info">
-      <h3 id="prodTitle">—</h3>
+      <h3><span id="prodTitle">—</span> <span class="prod-count" id="prodCount"></span></h3>
       <p id="prodNote">—</p>
     </div>
     <div class="prod-actions">
@@ -247,18 +260,13 @@
     </div>
   </div>
 
+  <div class="prod-toolbar">
+    <input type="search" id="prodSearch" class="prod-search" placeholder="🔍 Rechercher un produit ou un CIP…">
+  </div>
+
   <div class="table-wrap">
     <table id="prodTable">
-      <thead>
-        <tr>
-          <th>#</th>
-          <th class="wrap">Produit</th>
-          <th>Pharmas</th>
-          <th class="num">PPHT</th>
-          <th class="num">Prix net IP</th>
-          <th class="num">Abandon</th>
-        </tr>
-      </thead>
+      <thead id="prodTableHead"></thead>
       <tbody id="prodBody"></tbody>
     </table>
   </div>
@@ -271,20 +279,11 @@
 function fmtEUR(v){ if(v===null||v===undefined||isNaN(v)) return null; return v.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' €'; }
 function fmtInt(v){ return v.toLocaleString('fr-FR'); }
 
-/* ===================== BAREME RFA ===================== */
-const RFA_PALIERS = [
-  { min:0,      max:20000,  taux:0.01, label:'< 20 000 €' },
-  { min:20000,  max:50000,  taux:0.02, label:'20 000–50 000 €' },
-  { min:50000,  max:100000, taux:0.03, label:'50 000–100 000 €' },
-  { min:100000, max:Infinity, taux:0.04, label:'> 100 000 €' }
-];
-function getPalier(ca){
-  return RFA_PALIERS.find(p => ca >= p.min && ca < p.max) || RFA_PALIERS[RFA_PALIERS.length-1];
-}
+/* ===================== TAUX RFA (flat) ===================== */
+const RFA_TAUX = 0.003; // 0,3 % du CA
 function computeRFA(ca){
   if(ca===null || ca===undefined) return null;
-  const p = getPalier(ca);
-  return { palier:p, rfa: ca * p.taux };
+  return ca * RFA_TAUX;
 }
 
 /* ===================== TAB 1 — PILOTAGE ===================== */
@@ -298,7 +297,7 @@ function computeRFA(ca){
   let rfaSum = 0;
   officines.forEach(o=>{
     if(o.client && o.ca!==null && o.ca!==undefined){
-      rfaSum += computeRFA(o.ca).rfa;
+      rfaSum += computeRFA(o.ca);
     }
   });
 
@@ -307,7 +306,7 @@ function computeRFA(ca){
     { v: clientes, l:'Déjà clientes', hl:true },
     { v: prospects, l:'À conquérir' },
     { v: grp.reseau ? grp.reseau.caReseau : '45 M€/an', l:'CA réseau / an' },
-    { v: fmtEUR(rfaSum) || '—', l:'RFA projetée (partielle)' }
+    { v: fmtEUR(rfaSum) || '—', l:'RFA projetée' }
   ];
   document.getElementById('kpiBand').innerHTML = kpis.map(k=>`
     <div class="kpi ${k.hl?'hl':''}">
@@ -328,23 +327,13 @@ function computeRFA(ca){
       ? `<span class="badge badge-client">✓ Client Intégral</span>`
       : `<span class="badge badge-prospect">À conquérir</span>`;
 
-    let caCell, palierCell, rfaCell, progCell;
+    let caCell, rfaCell;
     if(o.ca===null || o.ca===undefined){
       caCell = `<span class="dash">— à intégrer</span>`;
-      palierCell = `<span class="dash">—</span>`;
-      rfaCell = `<span class="dash">—</span>`;
-      progCell = `<span class="dash">—</span>`;
+      rfaCell = `<span class="dash">— à intégrer</span>`;
     } else {
-      const { palier, rfa } = computeRFA(o.ca);
       caCell = fmtEUR(o.ca);
-      palierCell = `<span class="palier">${palier.label} · ${(palier.taux*100).toFixed(0)}%</span>`;
-      rfaCell = `<span class="rfa-val">${fmtEUR(rfa)}</span>`;
-      if(palier.max === Infinity){
-        progCell = `<div class="prog-track"><div class="prog-fill" style="width:100%"></div></div><div class="prog-lbl">palier max</div>`;
-      } else {
-        const pct = Math.max(0, Math.min(100, ((o.ca - palier.min) / (palier.max - palier.min)) * 100));
-        progCell = `<div class="prog-track"><div class="prog-fill" style="width:${pct.toFixed(0)}%"></div></div><div class="prog-lbl">vers ${fmtEUR(palier.max)}</div>`;
-      }
+      rfaCell = `<span class="rfa-val">${fmtEUR(computeRFA(o.ca))}</span>`;
     }
 
     return `<tr>
@@ -352,9 +341,7 @@ function computeRFA(ca){
       <td>${o.ville}${o.cp ? ' ('+o.cp+')' : ''}</td>
       <td>${statutBadge}</td>
       <td class="num">${caCell}</td>
-      <td>${palierCell}</td>
       <td class="num">${rfaCell}</td>
-      <td>${progCell}</td>
     </tr>`;
   }).join('');
   document.getElementById('officinesBody').innerHTML = rows;
@@ -362,6 +349,7 @@ function computeRFA(ca){
 
 /* ===================== TAB 2 — PRODUITS ===================== */
 const PROD_LISTS = [
+  { key:'all',             label:'⭐ Tous les produits', isAll:true },
   { key:'offre_privilege', label:'Offre Privilège' },
   { key:'exclu_gen',       label:'Exclus. génériques 1€', noPct:true },
   { key:'glp1_offre',      label:'GLP-1' },
@@ -373,6 +361,7 @@ const PROD_LISTS = [
   { key:'nr',              label:'NR', noPct:true }
 ];
 let currentListKey = PROD_LISTS[0].key;
+let prodSearchTerm = '';
 
 function abandonPct(row, noPct){
   if(noPct) return null;
@@ -380,6 +369,51 @@ function abandonPct(row, noPct){
   if(row.net===null || row.net===undefined) return null;
   const pct = (row.ppht - row.net) / row.ppht * 100;
   return pct;
+}
+
+/* Fusion de toutes les listes ESSENTIELS_RECO, dédoublonnée par CIP, avec la/les catégorie(s) d'origine */
+function buildAllProductsRows(){
+  const RECO = window.ESSENTIELS_RECO || {};
+  const merged = new Map();
+  PROD_LISTS.filter(l=>!l.isAll).forEach(conf=>{
+    const data = RECO[conf.key];
+    if(!data || !Array.isArray(data.rows)) return;
+    data.rows.forEach(r=>{
+      const key = r.cip || r.d;
+      if(!key) return;
+      if(!merged.has(key)){
+        merged.set(key, { d:r.d, cip:r.cip, gen:r.gen, n:r.n, ppht:r.ppht, net:r.net, cats:[] });
+      }
+      const m = merged.get(key);
+      if(!m.cats.includes(conf.label)) m.cats.push(conf.label);
+      if((m.n===undefined || m.n===null) && r.n!==undefined && r.n!==null) m.n = r.n;
+      if((m.ppht===undefined || m.ppht===null) && r.ppht!==undefined && r.ppht!==null) m.ppht = r.ppht;
+      if((m.net===undefined || m.net===null) && r.net!==undefined && r.net!==null) m.net = r.net;
+      if(!m.gen && r.gen) m.gen = r.gen;
+      if(!m.d && r.d) m.d = r.d;
+    });
+  });
+  const rows = Array.from(merged.values()).map(m=>({
+    d:m.d, cip:m.cip, gen:m.gen, n:m.n, ppht:m.ppht, net:m.net, cat:m.cats.join(' · ')
+  }));
+  rows.sort((a,b)=> (b.n||0) - (a.n||0));
+  return rows;
+}
+
+/* Point d'accès unique aux données d'une liste, quel que soit son type (RECO directe ou fusion "Tous les produits") */
+function getListData(key){
+  const RECO = window.ESSENTIELS_RECO || {};
+  const conf = PROD_LISTS.find(l=>l.key===key);
+  if(conf && conf.isAll){
+    return {
+      titre: '⭐ Tous les produits',
+      note: 'Fusion synchronisée de toutes les listes de sélection, dédoublonnée par CIP.',
+      rows: buildAllProductsRows(),
+      isAll: true
+    };
+  }
+  const data = RECO[key] || { rows:[] };
+  return { titre: data.titre || (conf ? conf.label : key), note: data.note || '', rows: data.rows || [] };
 }
 
 function buildProdTabs(){
@@ -394,14 +428,60 @@ function buildProdTabs(){
   });
 }
 
+function buildProdHead(isAll){
+  const thead = document.getElementById('prodTableHead');
+  thead.innerHTML = isAll
+    ? `<tr>
+        <th>#</th>
+        <th class="wrap">Produit</th>
+        <th class="wrap">Catégorie(s)</th>
+        <th>Pharmas</th>
+        <th class="num">PPHT</th>
+        <th class="num">Prix net IP</th>
+      </tr>`
+    : `<tr>
+        <th>#</th>
+        <th class="wrap">Produit</th>
+        <th>Pharmas</th>
+        <th class="num">PPHT</th>
+        <th class="num">Prix net IP</th>
+        <th class="num">Abandon</th>
+      </tr>`;
+}
+
 function renderProdTable(){
-  const RECO = window.ESSENTIELS_RECO || {};
   const conf = PROD_LISTS.find(l=>l.key===currentListKey);
-  const data = RECO[currentListKey] || { titre:'—', rows:[] };
+  const data = getListData(currentListKey);
   document.getElementById('prodTitle').textContent = data.titre || conf.label;
   document.getElementById('prodNote').textContent = data.note || '';
 
-  const rows = (data.rows || []).map((r,i)=>{
+  buildProdHead(!!conf.isAll);
+
+  let rowsData = data.rows || [];
+  if(prodSearchTerm){
+    const q = prodSearchTerm.toLowerCase();
+    rowsData = rowsData.filter(r => (r.d||'').toLowerCase().includes(q) || (r.cip||'').toLowerCase().includes(q));
+  }
+
+  const countEl = document.getElementById('prodCount');
+  countEl.textContent = `· ${rowsData.length} produit${rowsData.length>1?'s':''}`;
+
+  const colspan = conf.isAll ? 6 : 6;
+  const rows = rowsData.map((r,i)=>{
+    if(conf.isAll){
+      const pills = (r.cat||'').split(' · ').filter(Boolean).map(c=>`<span class="cat-pill">${c}</span>`).join('');
+      return `<tr>
+        <td>${i+1}</td>
+        <td class="cell-prod">
+          <div class="d">${r.d}</div>
+          <div class="cip">CIP ${r.cip || '—'}${r.gen ? ' · <span class="gen-tag">'+r.gen+'</span>' : ''}</div>
+        </td>
+        <td class="wrap">${pills}</td>
+        <td><span class="badge-n">${r.n!==undefined && r.n!==null ? r.n : '—'}</span></td>
+        <td class="num">${fmtEUR(r.ppht) || '<span class="dash">—</span>'}</td>
+        <td class="num net-price">${fmtEUR(r.net) || '<span class="dash">—</span>'}</td>
+      </tr>`;
+    }
     const pct = abandonPct(r, conf.noPct);
     return `<tr>
       <td>${i+1}</td>
@@ -411,34 +491,44 @@ function renderProdTable(){
       </td>
       <td><span class="badge-n">${r.n!==undefined && r.n!==null ? r.n : '—'}</span></td>
       <td class="num">${fmtEUR(r.ppht) || '<span class="dash">—</span>'}</td>
-      <td class="num">${fmtEUR(r.net) || '<span class="dash">—</span>'}</td>
+      <td class="num net-price">${fmtEUR(r.net) || '<span class="dash">—</span>'}</td>
       <td class="num">${pct!==null ? pct.toFixed(1).replace('.',',') + ' %' : '<span class="dash">—</span>'}</td>
     </tr>`;
   }).join('');
-  document.getElementById('prodBody').innerHTML = rows || `<tr><td colspan="6" class="dash" style="padding:20px;">Aucune donnée pour cette liste.</td></tr>`;
+  document.getElementById('prodBody').innerHTML = rows || `<tr><td colspan="${colspan}" class="dash" style="padding:20px;">Aucun produit ne correspond.</td></tr>`;
 }
+
+document.getElementById('prodSearch').addEventListener('input', (e)=>{
+  prodSearchTerm = e.target.value.trim();
+  renderProdTable();
+});
 
 buildProdTabs();
 renderProdTable();
 
 /* ===================== EXPORT EXCEL ===================== */
 document.getElementById('btnExcel').addEventListener('click', ()=>{
-  const RECO = window.ESSENTIELS_RECO || {};
   const conf = PROD_LISTS.find(l=>l.key===currentListKey);
-  const data = RECO[currentListKey] || { rows:[] };
+  const data = getListData(currentListKey);
   const rows = (data.rows || []).map(r=>{
-    const pct = abandonPct(r, conf.noPct);
-    return {
+    const row = {
       'CIP': r.cip || '',
-      'Désignation': r.d || '',
-      'Nb pharmacies': r.n !== undefined && r.n !== null ? r.n : '',
-      'PPHT': r.ppht !== undefined && r.ppht !== null ? r.ppht : '',
-      'Prix net IP': r.net !== undefined && r.net !== null ? r.net : '',
-      'Abandon': pct !== null ? Math.round(pct*10)/10 : ''
+      'Désignation': r.d || ''
     };
+    if(conf.isAll) row['Catégorie(s)'] = r.cat || '';
+    row['Nb pharmacies'] = r.n !== undefined && r.n !== null ? r.n : '';
+    row['PPHT'] = r.ppht !== undefined && r.ppht !== null ? r.ppht : '';
+    row['Prix net IP'] = r.net !== undefined && r.net !== null ? r.net : '';
+    if(!conf.isAll){
+      const pct = abandonPct(r, conf.noPct);
+      row['Abandon'] = pct !== null ? Math.round(pct*10)/10 : '';
+    }
+    return row;
   });
   const ws = XLSX.utils.json_to_sheet(rows);
-  ws['!cols'] = [{wch:16},{wch:44},{wch:14},{wch:10},{wch:12},{wch:10}];
+  ws['!cols'] = conf.isAll
+    ? [{wch:16},{wch:44},{wch:36},{wch:14},{wch:10},{wch:12}]
+    : [{wch:16},{wch:44},{wch:14},{wch:10},{wch:12},{wch:10}];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Sélection');
   const safeName = (data.titre || currentListKey).replace(/[^\wàâäéèêëïîôöùûüç \-]/gi,'').trim().slice(0,40);
@@ -447,9 +537,8 @@ document.getElementById('btnExcel').addEventListener('click', ()=>{
 
 /* ===================== GENERER LA FICHE ===================== */
 document.getElementById('btnFiche').addEventListener('click', ()=>{
-  const RECO = window.ESSENTIELS_RECO || {};
   const conf = PROD_LISTS.find(l=>l.key===currentListKey);
-  const data = RECO[currentListKey] || { titre:conf.label, rows:[] };
+  const data = getListData(currentListKey);
   const base = document.baseURI;
 
   const rowsHtml = (data.rows || []).map((r,i)=>`
@@ -457,10 +546,15 @@ document.getElementById('btnFiche').addEventListener('click', ()=>{
       <td>${i+1}</td>
       <td>${r.d || ''}</td>
       <td>${r.cip || ''}</td>
+      ${conf.isAll ? `<td>${r.cat || ''}</td>` : ''}
       <td class="num">${fmtEUR(r.ppht) || '—'}</td>
       <td class="num">${fmtEUR(r.net) || '—'}</td>
     </tr>
   `).join('');
+
+  const theadHtml = conf.isAll
+    ? `<tr><th>#</th><th>Désignation</th><th>CIP</th><th>Catégorie(s)</th><th class="num">PPHT</th><th class="num">Prix net IP</th></tr>`
+    : `<tr><th>#</th><th>Désignation</th><th>CIP</th><th class="num">PPHT</th><th class="num">Prix net IP</th></tr>`;
 
   const html = `<!doctype html>
 <html lang="fr">
@@ -501,7 +595,7 @@ document.getElementById('btnFiche').addEventListener('click', ()=>{
     </div>
   </header>
   <table>
-    <thead><tr><th>#</th><th>Désignation</th><th>CIP</th><th class="num">PPHT</th><th class="num">Prix net IP</th></tr></thead>
+    <thead>${theadHtml}</thead>
     <tbody>${rowsHtml}</tbody>
   </table>
   <footer>Le réflexe santé — Essentiels Pharma × Intégral Pharma</footer>
