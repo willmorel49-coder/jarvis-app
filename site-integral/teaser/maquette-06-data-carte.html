@@ -1,0 +1,430 @@
+<meta charset="utf-8">
+<title>Intégral Pharma — Rencontrons-nous</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#F4F6FB">
+<link rel="preconnect" href="https://api.fontshare.com" crossorigin>
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --blue:#0050E6; --blue-dk:#0034A0; --navy:#0A1430; --orange:#F39A1B; --orange-dk:#E07d0a;
+  --bg:#F4F6FB; --card:#FFFFFF; --ink:#0A1430; --muted:#5B6685; --line:#E2E8F4; --line-2:#EDF1FA;
+  --font:'Satoshi',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --mono:'Geist Mono',ui-monospace,'SFMono-Regular',monospace;
+  --e-net:cubic-bezier(.16,1,.3,1);
+  --e-spring:cubic-bezier(.34,1.4,.5,1);
+  --gap:clamp(48px,7vw,88px);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;max-width:100%;overflow-x:hidden}
+body{
+  font-family:var(--font);color:var(--ink);line-height:1.55;
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  background:
+    linear-gradient(0deg,transparent 23px,var(--line) 24px),
+    linear-gradient(90deg,transparent 23px,var(--line) 24px),
+    var(--bg);
+  background-size:24px 24px,24px 24px,100% 100%;
+}
+/* soften the grid to a whisper */
+body::before{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(120% 80% at 50% -8%, rgba(255,255,255,.92), rgba(244,246,251,.55) 46%, rgba(244,246,251,0) 72%);
+}
+.wrap{position:relative;z-index:1;max-width:1120px;margin:0 auto;padding:0 clamp(18px,5vw,40px)}
+img,svg,video{max-width:100%;display:block}
+
+/* ---------- micro type ---------- */
+.eyebrow{
+  display:inline-flex;align-items:center;gap:9px;max-width:100%;flex-wrap:wrap;
+  font-family:var(--mono);font-size:11.5px;font-weight:600;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--blue);
+}
+.eyebrow .dot{flex:none;width:7px;height:7px;border-radius:50%;background:var(--orange);
+  box-shadow:0 0 0 0 rgba(243,154,27,.5);animation:pulse 2.8s var(--e-net) infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(243,154,27,.55)}70%{box-shadow:0 0 0 8px rgba(243,154,27,0)}100%{box-shadow:0 0 0 0 rgba(243,154,27,0)}}
+.mono-tag{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+
+/* ---------- top bar ---------- */
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;
+  padding:22px 0 20px;border-bottom:1px solid var(--line)}
+.topbar img{height:38px;width:auto}
+.coord{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--muted);white-space:nowrap}
+@media(max-width:560px){.coord{display:none}}
+
+/* ---------- section frame ---------- */
+section{padding:var(--gap) 0}
+.sec-head{display:flex;flex-direction:column;gap:12px;margin-bottom:34px}
+.sec-index{font-family:var(--mono);font-size:11px;letter-spacing:.18em;color:var(--muted)}
+h1,h2{margin:0;letter-spacing:-.025em;font-weight:900;line-height:1.03}
+h1{font-size:clamp(31px,6.4vw,60px)}
+h2{font-size:clamp(25px,4.4vw,40px)}
+.lede{color:var(--muted);font-size:clamp(15px,2vw,18px);font-weight:500;max-width:42ch;margin:0}
+h1 .accent,h2 .accent{color:var(--blue)}
+
+/* ---------- HERO ---------- */
+.hero{padding-top:clamp(34px,5vw,56px)}
+.hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(24px,4vw,48px);align-items:center}
+.hero-grid>*{min-width:0}
+@media(max-width:820px){.hero-grid{grid-template-columns:1fr;gap:30px}}
+.hero h1{margin:14px 0 18px}
+.hero .lede{max-width:34ch}
+.hero-media{position:relative;border-radius:18px;overflow:hidden;border:1px solid var(--line);
+  box-shadow:0 24px 60px -30px rgba(10,20,48,.4);background:#0a1430;aspect-ratio:4/3}
+.hero-media video,.hero-media img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.hero-media .fade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,20,48,0) 45%,rgba(10,20,48,.55));pointer-events:none}
+.hero-media .badge{position:absolute;left:14px;bottom:13px;z-index:2;display:flex;align-items:center;gap:8px;
+  font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:#fff;text-transform:uppercase}
+.hero-media .badge span{width:6px;height:6px;border-radius:50%;background:var(--orange)}
+
+/* proof strip */
+.proof{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+.chip{display:inline-flex;align-items:baseline;gap:7px;padding:8px 13px;border:1px solid var(--line);
+  border-radius:999px;background:var(--card);font-size:13px;color:var(--muted);font-weight:600}
+.chip b{font-family:var(--mono);color:var(--ink);font-weight:600;font-size:13px;letter-spacing:.02em}
+
+/* ---------- ATLAS / animated France ---------- */
+.atlas{display:grid;grid-template-columns:1fr .82fr;gap:clamp(20px,3vw,40px);align-items:stretch}
+.atlas>*,.values>*{min-width:0}
+@media(max-width:820px){.atlas{grid-template-columns:1fr}}
+.atlas-canvas{position:relative;border:1px solid var(--line);border-radius:18px;background:
+  radial-gradient(120% 90% at 32% 6%,#fbfcff 0%,#eef2fb 58%,#e7edfa 100%);
+  padding:20px 18px 12px;overflow:hidden}
+.atlas-canvas .corner{position:absolute;font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:#93a0c2}
+.atlas-canvas .corner.tl{top:12px;left:14px}
+.atlas-canvas .corner.tr{top:12px;right:14px}
+.atlas-canvas .corner.br{bottom:10px;right:14px}
+#fr-svg{width:100%;height:auto;overflow:visible;display:block;margin:6px auto 0;max-width:400px}
+.fr-line{fill:none;stroke:var(--blue);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.fr-fill{fill:#dfe7f7;opacity:0;transition:opacity 1.1s var(--e-net) .5s}
+.drawn .fr-fill{opacity:.55}
+.pin{opacity:0}
+.pin .stem{stroke:var(--navy);stroke-width:1.4;opacity:.35}
+.pin .head{fill:var(--orange);stroke:#fff;stroke-width:1.6}
+.pin .ring{fill:none;stroke:var(--orange);stroke-width:1.6;opacity:0}
+.dropped .pin{animation:drop .7s var(--e-spring) forwards}
+.dropped .pin .ring{animation:ping 3.6s ease-out infinite}
+@keyframes drop{0%{opacity:0;transform:translateY(-34px)}60%{opacity:1}100%{opacity:1;transform:translateY(0)}}
+@keyframes ping{0%{transform:scale(.4);opacity:.6}70%{opacity:0}100%{transform:scale(2.6);opacity:0}}
+.pin,.pin .ring{transform-box:fill-box;transform-origin:center bottom}
+.pin .ring{transform-origin:center}
+
+/* readouts column */
+.readouts{display:flex;flex-direction:column;justify-content:center;gap:18px}
+.stat{border:1px solid var(--line);border-radius:15px;background:var(--card);padding:18px 20px;position:relative;overflow:hidden}
+.stat .num{font-family:var(--mono);font-weight:600;font-size:clamp(30px,5vw,42px);letter-spacing:-.02em;line-height:1;color:var(--ink)}
+.stat .num .suf{font-size:.5em;color:var(--blue);margin-left:2px;letter-spacing:0}
+.stat .lab{margin-top:8px;font-size:13px;color:var(--muted);font-weight:600}
+.stat .meter{position:absolute;left:0;bottom:0;height:3px;width:0;background:linear-gradient(90deg,var(--blue),var(--orange));transition:width 1.4s var(--e-net)}
+.drawn .stat .meter{width:100%}
+
+/* ---------- live map ---------- */
+.mapframe{border:1px solid var(--line);border-radius:18px;overflow:hidden;background:var(--card);
+  box-shadow:0 22px 55px -34px rgba(10,20,48,.35)}
+.mapframe .caption{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:14px 18px;border-bottom:1px solid var(--line)}
+.mapframe .caption .t{font-weight:700;font-size:14px}
+iframe{width:100%;border:0;display:block;min-height:340px;background:var(--card)}
+
+/* ---------- values ---------- */
+.values{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+@media(max-width:720px){.values{grid-template-columns:1fr}}
+.value{border:1px solid var(--line);border-radius:16px;background:var(--card);padding:26px 22px;position:relative;
+  transition:transform .5s var(--e-net),box-shadow .5s var(--e-net)}
+.value:hover{transform:translateY(-4px);box-shadow:0 18px 40px -26px rgba(10,20,48,.4)}
+.value .vi{width:44px;height:44px;margin-bottom:16px}
+.value h3{margin:0 0 6px;font-size:19px;font-weight:900;letter-spacing:-.02em}
+.value p{margin:0;color:var(--muted);font-size:14px;font-weight:500}
+.value .vidx{position:absolute;top:18px;right:18px;font-family:var(--mono);font-size:11px;color:#b9c3dd}
+
+/* ---------- invitation ---------- */
+.invite{border:1px solid var(--line);border-radius:22px;overflow:hidden;
+  background:linear-gradient(160deg,#0a1430 0%,#0d1c44 55%,#0034a0 130%);color:#fff;position:relative}
+.invite .inner{padding:clamp(30px,5vw,56px);position:relative;z-index:2}
+.invite .deco{position:absolute;inset:0;z-index:0;opacity:.5;pointer-events:none}
+.invite h2{color:#fff}
+.invite .lede{color:#c3cee9;margin-top:14px}
+.cta-row{display:flex;flex-wrap:wrap;gap:14px;margin-top:30px}
+.btn{display:inline-flex;align-items:center;gap:11px;padding:15px 24px;border-radius:13px;
+  font-weight:700;font-size:15px;text-decoration:none;letter-spacing:-.01em;
+  transition:transform .3s var(--e-net),box-shadow .3s var(--e-net),background .3s}
+.btn svg{width:18px;height:18px;flex:none}
+.btn-primary{background:var(--orange);color:#2a1400;box-shadow:0 12px 30px -12px rgba(243,154,27,.7)}
+.btn-primary:hover{transform:translateY(-2px);background:#ffab2e}
+.btn-ghost{background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.22)}
+.btn-ghost:hover{transform:translateY(-2px);background:rgba(255,255,255,.13)}
+.sign{display:flex;align-items:center;gap:14px;margin-top:34px;padding-top:24px;border-top:1px solid rgba(255,255,255,.14)}
+.sign .av{width:46px;height:46px;border-radius:50%;flex:none;display:grid;place-items:center;
+  background:linear-gradient(135deg,var(--orange),#c76a06);color:#2a1400;font-weight:900;font-family:var(--mono);font-size:16px;letter-spacing:.02em}
+.sign .who b{display:block;font-size:15px;font-weight:700}
+.sign .who span{font-size:12.5px;color:#aab8dd;font-family:var(--mono);letter-spacing:.04em}
+
+/* ---------- footer ---------- */
+.foot{padding:34px 0 46px;border-top:1px solid var(--line);margin-top:var(--gap);
+  display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px}
+.foot img{height:26px;opacity:.9}
+.foot .mono-tag{font-size:10.5px}
+
+/* reveal-on-scroll base */
+.reveal{opacity:0;transform:translateY(24px);transition:opacity .8s var(--e-net),transform .8s var(--e-net)}
+.reveal.in{opacity:1;transform:none}
+
+@media(prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important}
+  .reveal{opacity:1;transform:none}
+  .fr-fill{opacity:.55}.pin{opacity:1}
+  .stat .meter{width:100%}
+}
+</style>
+
+<div class="wrap">
+
+  <!-- TOP BAR -->
+  <header class="topbar reveal">
+    <img src="../assets/logo.png" alt="Intégral Pharma">
+    <span class="coord">47.4°N · 1.9°W — FRANCE</span>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-grid">
+      <div class="reveal">
+        <span class="eyebrow"><span class="dot"></span>Intégral Pharma · Depuis plus de 20 ans</span>
+        <h1>Un réseau,<br>partout où sont<br><span class="accent">vos officines.</span></h1>
+        <p class="lede">Un groupe de grossistes-répartiteurs français indépendant, présent au plus près de chaque comptoir. Prenons le temps d'en parler.</p>
+        <div class="proof">
+          <span class="chip"><b>20+</b> ans au service des pharmaciens</span>
+          <span class="chip"><b>9</b> agences en France</span>
+          <span class="chip">Livraison <b>72h</b></span>
+        </div>
+      </div>
+      <div class="hero-media reveal">
+        <video autoplay muted loop playsinline poster="../assets/siege.jpg" preload="metadata">
+          <source src="../assets/hero.mp4" type="video/mp4">
+        </video>
+        <img src="../assets/siege.jpg" alt="Siège Intégral Pharma, vue aérienne" style="opacity:0" onerror="this.src='../assets/poster.jpg'">
+        <div class="fade"></div>
+        <div class="badge"><span></span>Notre siège · vue aérienne</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- NETWORK / ATLAS -->
+  <section id="network">
+    <div class="sec-head reveal">
+      <span class="sec-index">01 — LE RÉSEAU</span>
+      <h2>Nos agences, partout où<br>sont <span class="accent">vos officines.</span></h2>
+      <p class="lede">Une maille logistique dense, pensée pour que chaque pharmacie ait une agence à portée de main.</p>
+    </div>
+
+    <div class="atlas reveal">
+      <div class="atlas-canvas" id="atlas">
+        <span class="corner tl">ATLAS · IP</span>
+        <span class="corner tr">9 AGENCES</span>
+        <span class="corner br">SCALE 1:12M</span>
+        <svg id="fr-svg" viewBox="0 0 1000 960.1" role="img" aria-label="Carte de France — implantations Intégral Pharma">
+          <path class="fr-fill" d="M825.35,356.64 821.65,358.05 817.82,356.58 812.79,363.48 806.31,388.65 797.13,397.03 783.1,407.52 780.27,426.39 757.93,445.19 755.06,460.61 748.74,480.05 747.76,487.71 759.67,486.58 770.85,475.79 784.89,461.61 803.71,462.79 809.94,488.71 819.63,507.7 807.9,517.03 804.2,526.61 816.84,535.02 820.32,550.69 828.77,557.55 825.69,571.59 809.23,582.76 799.38,582.69 792.1,586.14 799.86,594.71 800.51,604.9 811.12,610.38 821.6,626.36 813.29,629.04 807.15,641.05 813.17,650.54 814.05,663.26 829.21,672.22 840.63,680.24 845.33,678.92 861.96,674.97 863.76,685.61 854.37,696.68 849.63,703.8 846.69,714.45 839.16,719.1 830.5,725.04 824.85,731.05 817.58,734.31 809.38,746.02 799.53,747.46 789.27,760.81 794.49,764.17 791.47,771.45 783.12,772.48 774.55,778.59 760.82,779.63 761.94,783.83 751.88,779.21 745.16,775.27 740.94,782.32 737.03,780.09 730.34,772.81 719.61,766.6 707.01,766.49 704.87,752.38 687.68,755.72 678.76,745.96 654.55,744.05 626.29,739.21 618.07,734.5 604.3,745.2 585.76,760.9 563.47,771.74 554.85,792.49 555.87,830.52 563.58,840.9 550.02,837.96 541.39,838.9 530.58,843.99 523.79,848.38 514.48,844.79 495.92,842.33 486.94,849.06 478.85,839.48 468.22,834.88 468.51,823.63 455.97,819.95 451.41,823.97 443.21,815.14 436.57,813.7 425.13,807.14 414.77,806.8 400.16,800.55 396.63,807.73 393.15,815.17 377.63,813.55 370.82,813.99 352.64,816.9 343.16,806.34 327.65,805.92 318.61,806.75 313.75,802.82 305.0,791.92 293.72,790.39 280.07,784.84 270.28,782.65 264.88,778.26 258.16,781.76 262.31,768.61 252.08,759.08 246.4,757.63 238.8,755.23 235.73,750.79 247.99,745.51 267.48,674.93 270.83,638.89 278.25,630.21 283.55,624.73 276.58,617.37 271.09,632.34 277.04,566.87 281.96,541.91 286.08,536.21 273.14,531.11 272.14,520.7 282.87,507.82 279.87,499.89 280.92,491.19 276.82,485.43 274.53,481.87 280.34,474.87 273.85,474.61 264.96,467.6 253.7,461.63 236.1,453.04 230.73,441.62 221.44,429.96 211.55,415.2 219.88,403.8 214.61,393.8 210.74,388.23 201.69,382.12 193.03,379.94 184.87,368.73 190.75,364.53 186.08,354.35 165.38,356.76 156.99,341.95 160.22,351.7 149.07,350.75 146.69,359.18 141.69,343.03 146.53,337.78 129.71,325.71 124.91,337.73 112.79,329.54 105.76,324.05 98.89,329.12 90.7,323.08 79.91,317.27 77.83,318.39 74.78,328.92 64.68,328.32 63.47,315.7 53.9,307.96 47.28,306.43 40.64,305.32 52.96,301.76 65.49,298.76 71.22,294.27 64.69,289.41 52.69,293.02 51.69,286.7 47.94,282.32 54.19,276.52 61.74,281.31 75.05,284.75 82.03,286.12 73.32,284.64 62.66,272.63 57.04,272.78 43.59,275.38 38.18,277.48 37.07,269.25 38.33,259.55 42.9,256.37 47.98,254.11 55.93,256.85 50.05,251.21 57.27,254.19 60.35,247.98 67.55,244.62 76.49,246.69 84.06,243.19 91.41,239.82 96.66,245.29 101.44,240.54 112.98,242.81 117.06,240.29 122.44,229.1 129.63,232.5 138.19,229.33 142.05,229.48 150.65,225.02 156.46,236.23 160.21,237.13 166.95,246.66 174.53,256.2 179.82,258.6 190.42,249.46 200.8,243.65 205.4,247.55 210.05,253.97 218.6,248.34 221.89,253.76 224.96,259.44 220.94,251.78 225.78,243.75 232.03,241.44 230.75,249.01 251.91,248.85 264.4,248.63 258.19,246.34 252.5,239.27 249.69,230.48 251.26,219.9 251.16,211.02 248.08,209.63 247.32,192.68 243.01,186.36 239.28,181.6 231.5,164.99 232.13,158.71 225.15,148.96 229.38,146.17 242.54,149.38 248.59,150.99 256.7,147.05 270.12,147.23 269.6,159.02 267.75,162.46 276.68,174.7 283.14,176.3 304.38,180.21 339.01,186.55 355.08,181.62 369.09,172.7 376.44,142.04 406.18,129.93 432.98,120.98 452.85,99.98 465.22,100.57 455.57,91.05 457.11,83.29 462.42,84.38 458.14,62.85 457.36,48.85 462.7,33.92 491.99,21.81 509.61,16.86 522.25,14.06 526.25,23.58 525.81,37.01 534.11,40.78 546.28,51.8 556.3,43.48 566.08,50.1 571.51,67.93 583.92,67.27 592.74,70.94 599.83,88.93 608.63,84.46 620.21,83.82 627.77,93.41 632.22,92.19 628.53,102.69 633.65,111.25 627.33,116.62 631.5,121.32 649.82,123.17 656.99,119.64 672.85,102.11 675.8,109.61 670.59,121.23 676.27,135.53 684.41,137.2 693.08,145.43 702.55,147.34 707.82,153.39 715.58,166.05 724.97,165.11 734.13,161.97 741.95,165.95 750.44,169.99 757.33,170.19 766.54,164.7 779.14,168.21 787.18,173.69 794.81,187.09 798.67,193.25 806.66,198.58 809.82,193.42 818.93,195.65 827.28,201.91 836.45,202.42 846.23,196.11 852.32,204.41 867.26,209.21 878.69,208.12 888.9,214.63 897.91,216.18 884.64,234.22 872.13,248.15 865.08,272.06 862.44,280.65 854.9,298.01 857.8,312.1 851.78,330.85 855.94,347.51 849.66,353.49 845.17,357.5 838.16,362.79 829.69,357.55 825.35,356.64Z"></path>
+          <path id="fr-line" class="fr-line" d="M825.35,356.64 821.65,358.05 817.82,356.58 812.79,363.48 806.31,388.65 797.13,397.03 783.1,407.52 780.27,426.39 757.93,445.19 755.06,460.61 748.74,480.05 747.76,487.71 759.67,486.58 770.85,475.79 784.89,461.61 803.71,462.79 809.94,488.71 819.63,507.7 807.9,517.03 804.2,526.61 816.84,535.02 820.32,550.69 828.77,557.55 825.69,571.59 809.23,582.76 799.38,582.69 792.1,586.14 799.86,594.71 800.51,604.9 811.12,610.38 821.6,626.36 813.29,629.04 807.15,641.05 813.17,650.54 814.05,663.26 829.21,672.22 840.63,680.24 845.33,678.92 861.96,674.97 863.76,685.61 854.37,696.68 849.63,703.8 846.69,714.45 839.16,719.1 830.5,725.04 824.85,731.05 817.58,734.31 809.38,746.02 799.53,747.46 789.27,760.81 794.49,764.17 791.47,771.45 783.12,772.48 774.55,778.59 760.82,779.63 761.94,783.83 751.88,779.21 745.16,775.27 740.94,782.32 737.03,780.09 730.34,772.81 719.61,766.6 707.01,766.49 704.87,752.38 687.68,755.72 678.76,745.96 654.55,744.05 626.29,739.21 618.07,734.5 604.3,745.2 585.76,760.9 563.47,771.74 554.85,792.49 555.87,830.52 563.58,840.9 550.02,837.96 541.39,838.9 530.58,843.99 523.79,848.38 514.48,844.79 495.92,842.33 486.94,849.06 478.85,839.48 468.22,834.88 468.51,823.63 455.97,819.95 451.41,823.97 443.21,815.14 436.57,813.7 425.13,807.14 414.77,806.8 400.16,800.55 396.63,807.73 393.15,815.17 377.63,813.55 370.82,813.99 352.64,816.9 343.16,806.34 327.65,805.92 318.61,806.75 313.75,802.82 305.0,791.92 293.72,790.39 280.07,784.84 270.28,782.65 264.88,778.26 258.16,781.76 262.31,768.61 252.08,759.08 246.4,757.63 238.8,755.23 235.73,750.79 247.99,745.51 267.48,674.93 270.83,638.89 278.25,630.21 283.55,624.73 276.58,617.37 271.09,632.34 277.04,566.87 281.96,541.91 286.08,536.21 273.14,531.11 272.14,520.7 282.87,507.82 279.87,499.89 280.92,491.19 276.82,485.43 274.53,481.87 280.34,474.87 273.85,474.61 264.96,467.6 253.7,461.63 236.1,453.04 230.73,441.62 221.44,429.96 211.55,415.2 219.88,403.8 214.61,393.8 210.74,388.23 201.69,382.12 193.03,379.94 184.87,368.73 190.75,364.53 186.08,354.35 165.38,356.76 156.99,341.95 160.22,351.7 149.07,350.75 146.69,359.18 141.69,343.03 146.53,337.78 129.71,325.71 124.91,337.73 112.79,329.54 105.76,324.05 98.89,329.12 90.7,323.08 79.91,317.27 77.83,318.39 74.78,328.92 64.68,328.32 63.47,315.7 53.9,307.96 47.28,306.43 40.64,305.32 52.96,301.76 65.49,298.76 71.22,294.27 64.69,289.41 52.69,293.02 51.69,286.7 47.94,282.32 54.19,276.52 61.74,281.31 75.05,284.75 82.03,286.12 73.32,284.64 62.66,272.63 57.04,272.78 43.59,275.38 38.18,277.48 37.07,269.25 38.33,259.55 42.9,256.37 47.98,254.11 55.93,256.85 50.05,251.21 57.27,254.19 60.35,247.98 67.55,244.62 76.49,246.69 84.06,243.19 91.41,239.82 96.66,245.29 101.44,240.54 112.98,242.81 117.06,240.29 122.44,229.1 129.63,232.5 138.19,229.33 142.05,229.48 150.65,225.02 156.46,236.23 160.21,237.13 166.95,246.66 174.53,256.2 179.82,258.6 190.42,249.46 200.8,243.65 205.4,247.55 210.05,253.97 218.6,248.34 221.89,253.76 224.96,259.44 220.94,251.78 225.78,243.75 232.03,241.44 230.75,249.01 251.91,248.85 264.4,248.63 258.19,246.34 252.5,239.27 249.69,230.48 251.26,219.9 251.16,211.02 248.08,209.63 247.32,192.68 243.01,186.36 239.28,181.6 231.5,164.99 232.13,158.71 225.15,148.96 229.38,146.17 242.54,149.38 248.59,150.99 256.7,147.05 270.12,147.23 269.6,159.02 267.75,162.46 276.68,174.7 283.14,176.3 304.38,180.21 339.01,186.55 355.08,181.62 369.09,172.7 376.44,142.04 406.18,129.93 432.98,120.98 452.85,99.98 465.22,100.57 455.57,91.05 457.11,83.29 462.42,84.38 458.14,62.85 457.36,48.85 462.7,33.92 491.99,21.81 509.61,16.86 522.25,14.06 526.25,23.58 525.81,37.01 534.11,40.78 546.28,51.8 556.3,43.48 566.08,50.1 571.51,67.93 583.92,67.27 592.74,70.94 599.83,88.93 608.63,84.46 620.21,83.82 627.77,93.41 632.22,92.19 628.53,102.69 633.65,111.25 627.33,116.62 631.5,121.32 649.82,123.17 656.99,119.64 672.85,102.11 675.8,109.61 670.59,121.23 676.27,135.53 684.41,137.2 693.08,145.43 702.55,147.34 707.82,153.39 715.58,166.05 724.97,165.11 734.13,161.97 741.95,165.95 750.44,169.99 757.33,170.19 766.54,164.7 779.14,168.21 787.18,173.69 794.81,187.09 798.67,193.25 806.66,198.58 809.82,193.42 818.93,195.65 827.28,201.91 836.45,202.42 846.23,196.11 852.32,204.41 867.26,209.21 878.69,208.12 888.9,214.63 897.91,216.18 884.64,234.22 872.13,248.15 865.08,272.06 862.44,280.65 854.9,298.01 857.8,312.1 851.78,330.85 855.94,347.51 849.66,353.49 845.17,357.5 838.16,362.79 829.69,357.55 825.35,356.64Z"></path>
+          <g id="pins"></g>
+        </svg>
+      </div>
+
+      <div class="readouts">
+        <div class="stat"><div class="num" data-to="20" data-suf="+"><span class="v">0</span><span class="suf">+</span></div><div class="lab">ans au service des pharmaciens</div><div class="meter"></div></div>
+        <div class="stat"><div class="num" data-to="9"><span class="v">0</span></div><div class="lab">agences réparties en France</div><div class="meter"></div></div>
+        <div class="stat"><div class="num" data-to="72" data-suf="h"><span class="v">0</span><span class="suf">h</span></div><div class="lab">le rythme de livraison</div><div class="meter"></div></div>
+      </div>
+    </div>
+
+    <!-- LIVE INTERACTIVE MAP -->
+    <div class="mapframe reveal" style="margin-top:26px">
+      <div class="caption">
+        <span class="t">Carte interactive des établissements</span>
+        <span class="mono-tag">TEMPS RÉEL · CLIQUEZ</span>
+      </div>
+      <iframe id="ipmap" src="../map-component.html?mode=map" scrolling="no" loading="lazy" title="Carte des établissements Intégral Pharma"></iframe>
+    </div>
+  </section>
+
+  <!-- VALUES -->
+  <section id="values">
+    <div class="sec-head reveal">
+      <span class="sec-index">02 — CE QUI NOUS TIENT</span>
+      <h2>Trois valeurs, une <span class="accent">même exigence.</span></h2>
+    </div>
+    <div class="values">
+      <div class="value reveal"><span class="vidx">v.01</span>
+        <svg class="vi" viewBox="0 0 48 48" fill="none"><path d="M24 4 42 12v10c0 12-8 19-18 22C14 41 6 34 6 22V12L24 4Z" stroke="#0050E6" stroke-width="2.5" stroke-linejoin="round"/><path d="M16 24l6 6 11-12" stroke="#F39A1B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <h3>Confiance</h3><p>Une relation durable, tenue dans la durée. Ce qu'on promet, on le livre.</p>
+      </div>
+      <div class="value reveal"><span class="vidx">v.02</span>
+        <svg class="vi" viewBox="0 0 48 48" fill="none"><path d="M24 43C13 37 6 30 6 20a10 10 0 0 1 18-6 10 10 0 0 1 18 6c0 10-7 17-18 23Z" stroke="#0050E6" stroke-width="2.5" stroke-linejoin="round"/><path d="M9 24h8l3-6 4 12 3-6h12" stroke="#F39A1B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <h3>Engagement</h3><p>Présents au comptoir comme en coulisses, à vos côtés au quotidien.</p>
+      </div>
+      <div class="value reveal"><span class="vidx">v.03</span>
+        <svg class="vi" viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="18" stroke="#0050E6" stroke-width="2.5"/><path d="M24 14v10l7 4" stroke="#0050E6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="24" cy="24" r="3" fill="#F39A1B"/></svg>
+        <h3>Respect</h3><p>Du pharmacien, du patient, des règles. Un partenariat sain, sans jamais forcer.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- INVITATION -->
+  <section id="invite">
+    <div class="invite reveal">
+      <svg class="deco" viewBox="0 0 800 320" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <g stroke="rgba(255,255,255,.10)" stroke-width="1" fill="none">
+          <path d="M-20 60 Q200 20 400 90 T820 70"/><path d="M-20 130 Q220 90 420 150 T820 140"/>
+          <path d="M-20 200 Q200 160 400 220 T820 210"/><path d="M-20 270 Q240 240 440 290 T820 280"/>
+        </g>
+        <circle cx="150" cy="96" r="4" fill="#F39A1B"/><circle cx="470" cy="152" r="4" fill="#F39A1B"/>
+        <circle cx="640" cy="212" r="4" fill="#F39A1B"/><circle cx="300" cy="228" r="3.4" fill="#fff" opacity=".6"/>
+      </svg>
+      <div class="inner">
+        <span class="eyebrow" style="color:#ffcf8a"><span class="dot"></span>L'invitation</span>
+        <h2 style="margin-top:12px">Rencontrons-nous.</h2>
+        <p class="lede">Le reste — nos conditions, notre offre, nos idées pour votre réseau — se raconte mieux autour d'une table. Choisissez le moment.</p>
+        <div class="cta-row">
+          <a class="btn btn-primary" href="mailto:pascale.prieto@integralpharma.fr?subject=Rencontrons-nous%20%E2%80%94%20Int%C3%A9gral%20Pharma">
+            <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="14" rx="2.5" stroke="currentColor" stroke-width="2"/><path d="M4 7l8 6 8-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Écrire à Pascale
+          </a>
+          <a class="btn btn-ghost" href="tel:+33676885391">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M6.5 4h3l1.6 4-2 1.5a12 12 0 0 0 5.4 5.4l1.5-2 4 1.6v3a2 2 0 0 1-2.2 2A16 16 0 0 1 4.5 6.2 2 2 0 0 1 6.5 4Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+            Appeler Pascale · 06 76 88 53 91
+          </a>
+        </div>
+        <div class="sign">
+          <div class="av">PP</div>
+          <div class="who">
+            <b>Pascale Prieto</b>
+            <span>Directrice commerciale France — Intégral Pharma</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <img src="../assets/logo.png" alt="Intégral Pharma">
+    <span class="mono-tag">Acteur de la santé depuis plus de 20 ans · 9 agences en France</span>
+  </footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var RM = window.matchMedia && window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+
+  /* ---- reveal on scroll ---- */
+  var revs = [].slice.call(document.querySelectorAll('.reveal'));
+  if(RM || !('IntersectionObserver' in window)){
+    revs.forEach(function(el){el.classList.add('in')});
+  } else {
+    var ro = new IntersectionObserver(function(es){
+      es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('in'); ro.unobserve(e.target);} });
+    },{threshold:.12,rootMargin:'0px 0px -8% 0px'});
+    revs.forEach(function(el){ro.observe(el)});
+  }
+
+  /* ---- hero image fallback if video fails ---- */
+  var vid = document.querySelector('.hero-media video');
+  var fallImg = document.querySelector('.hero-media img');
+  function showImg(){ if(fallImg) fallImg.style.opacity = '1'; }
+  if(vid){
+    vid.addEventListener('error', showImg, true);
+    vid.addEventListener('stalled', showImg);
+    // if playback never starts, reveal the poster image beneath
+    setTimeout(function(){ if(vid.readyState < 2) showImg(); }, 2600);
+  } else { showImg(); }
+
+  /* ---- build pins from geo projection (x=66.12*lon+353.88 ; y=4895.6-95.55*lat) ---- */
+  var PROJ = function(lat,lon){ return [66.12*lon+353.88, 4895.6-95.55*lat]; };
+  var CITIES = [
+    [50.63, 3.06],   // Lille
+    [48.85, 2.35],   // Paris
+    [48.11,-1.68],   // Rennes
+    [48.58, 7.75],   // Strasbourg
+    [45.76, 4.83],   // Lyon
+    [44.84,-0.58],   // Bordeaux
+    [43.60, 1.44],   // Toulouse
+    [43.30, 5.37],   // Marseille
+    [47.22,-1.55]    // Nantes
+  ];
+  var gp = document.getElementById('pins');
+  var NS='http://www.w3.org/2000/svg';
+  CITIES.forEach(function(c,i){
+    var p = PROJ(c[0],c[1]);
+    var g = document.createElementNS(NS,'g');
+    g.setAttribute('class','pin');
+    g.style.animationDelay = (0.15*i)+'s';
+    g.innerHTML =
+      '<line class="stem" x1="'+p[0]+'" y1="'+p[1]+'" x2="'+p[0]+'" y2="'+(p[1]-13)+'"/>'+
+      '<circle class="ring" cx="'+p[0]+'" cy="'+(p[1]-13)+'" r="7" style="animation-delay:'+(0.15*i+0.7)+'s"/>'+
+      '<circle class="head" cx="'+p[0]+'" cy="'+(p[1]-13)+'" r="5.4"/>';
+    gp.appendChild(g);
+  });
+
+  /* ---- draw France + drop pins + count up, when atlas in view ---- */
+  var atlas = document.getElementById('atlas');
+  var line = document.getElementById('fr-line');
+  var stats = [].slice.call(document.querySelectorAll('.stat .num'));
+  var played = false;
+
+  function countUp(el){
+    var to = parseInt(el.getAttribute('data-to'),10);
+    var vEl = el.querySelector('.v');
+    if(RM){ vEl.textContent = to; return; }
+    var start = performance.now(), dur = 1300;
+    function step(now){
+      var t = Math.min(1,(now-start)/dur);
+      var e = 1-Math.pow(1-t,3);
+      vEl.textContent = Math.round(e*to);
+      if(t<1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  function play(){
+    if(played) return; played = true;
+    if(line){
+      try{
+        var L = line.getTotalLength();
+        if(RM){
+          line.style.strokeDasharray='none'; line.style.strokeDashoffset='0';
+        } else {
+          line.style.strokeDasharray = L;
+          line.style.strokeDashoffset = L;
+          // force reflow then animate
+          line.getBoundingClientRect();
+          line.style.transition = 'stroke-dashoffset 2.4s cubic-bezier(.16,1,.3,1)';
+          line.style.strokeDashoffset = '0';
+        }
+      }catch(e){ line.style.strokeDashoffset='0'; }
+    }
+    var delay = RM?0:900;
+    setTimeout(function(){ atlas.classList.add('drawn'); }, RM?0:600);
+    setTimeout(function(){ atlas.classList.add('dropped'); }, delay);
+    stats.forEach(countUp);
+  }
+
+  if(RM || !('IntersectionObserver' in window)){
+    play();
+  } else {
+    var ao = new IntersectionObserver(function(es){
+      es.forEach(function(e){ if(e.isIntersecting){ play(); ao.disconnect(); } });
+    },{threshold:.3});
+    ao.observe(atlas);
+  }
+
+  /* ---- interactive map auto-height ---- */
+  var ifr = document.getElementById('ipmap');
+  window.addEventListener('message', function(e){
+    if(e && e.data && e.data.ipAtlasHeight){
+      var h = parseInt(e.data.ipAtlasHeight,10);
+      if(h>200 && h<4000) ifr.style.height = h + 'px';
+    }
+  });
+})();
+</script>

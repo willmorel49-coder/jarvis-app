@@ -1,0 +1,665 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Intégral Pharma — Rencontrons-nous</title>
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&f[]=clash-display@600,700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --blue:#0050E6; --blue-dk:#0034A0; --orange:#F39A1B; --orange-hot:#FF7A18;
+  --navy:#0A1430; --space:#050813; --space-2:#0A1024;
+  --ink:#0A1430; --paper:#F4F6FB; --card:#FFFFFF; --muted:#5B6685; --line:#E2E8F4;
+  --star:#AFC4FF;
+  --font:'Satoshi',system-ui,-apple-system,sans-serif;
+  --disp:'Clash Display','Satoshi',system-ui,sans-serif;
+  --mono:'Geist Mono',ui-monospace,monospace;
+  --ease:cubic-bezier(.16,1,.3,1);
+  --snap:cubic-bezier(.34,1.4,.64,1);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;max-width:100%;overflow-x:hidden}
+body{
+  font-family:var(--font); color:#EAF0FF; line-height:1.55;
+  background:var(--space);
+  -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+}
+img{max-width:100%;display:block}
+a{color:inherit;text-decoration:none}
+
+/* ============ HERO / GLOBE ============ */
+.hero{
+  position:relative; min-height:100svh; min-height:100vh;
+  display:flex; flex-direction:column;
+  overflow:hidden;
+  background:
+    radial-gradient(120% 90% at 50% 8%, #10193b 0%, #070d20 42%, var(--space) 100%);
+}
+/* static fallback layer (reduced-motion / no webgl) */
+.hero__fallback{
+  position:absolute; inset:0; z-index:0;
+  background:
+    radial-gradient(60% 55% at 50% 46%, rgba(0,80,230,.30), rgba(5,8,19,0) 70%),
+    radial-gradient(120% 90% at 50% 8%, #10193b 0%, #070d20 42%, var(--space) 100%);
+  opacity:0; transition:opacity .6s ease;
+}
+.hero.is-fallback .hero__fallback{opacity:1}
+.hero.is-fallback #globe{display:none}
+#globe{
+  position:absolute; inset:0; z-index:1;
+  width:100%; height:100%; display:block; touch-action:pan-y;
+}
+.hero__glow{ /* soft vignette on top, keeps text legible — safe (no filter) */
+  position:absolute; inset:0; z-index:2; pointer-events:none;
+  background:
+    radial-gradient(90% 60% at 50% 118%, rgba(5,8,19,.9), rgba(5,8,19,0) 60%),
+    linear-gradient(180deg, rgba(5,8,19,.55) 0%, rgba(5,8,19,0) 22%, rgba(5,8,19,0) 60%, rgba(5,8,19,.72) 100%);
+}
+
+.hero__top{
+  position:relative; z-index:3;
+  display:flex; align-items:center; justify-content:space-between; gap:14px;
+  padding:max(18px,env(safe-area-inset-top)) 20px 0;
+}
+.brandchip{
+  display:inline-flex; align-items:center;
+  background:#fff; border-radius:12px; padding:7px 12px;
+  box-shadow:0 6px 22px rgba(3,8,25,.5), 0 0 0 1px rgba(255,255,255,.08);
+}
+.brandchip img{height:30px;width:auto}
+.est{
+  font-family:var(--mono); font-size:11px; letter-spacing:.16em; text-transform:uppercase;
+  color:#9fb2e6; text-align:right; line-height:1.5;
+}
+.est b{color:#EAF0FF;font-weight:600}
+
+.hero__center{
+  position:relative; z-index:3; flex:1;
+  display:flex; flex-direction:column; align-items:center; justify-content:flex-end;
+  text-align:center; padding:0 22px 6px;
+}
+.eyebrow{
+  display:inline-flex; align-items:center; gap:9px;
+  font-family:var(--mono); font-size:11px; font-weight:500; letter-spacing:.22em; text-transform:uppercase;
+  color:#F6B24A; margin:0 0 16px;
+}
+.eyebrow .pip{width:6px;height:6px;border-radius:50%;background:var(--orange);
+  box-shadow:0 0 0 0 rgba(243,154,27,.6); animation:pip 2.8s var(--ease) infinite}
+@keyframes pip{0%{box-shadow:0 0 0 0 rgba(243,154,27,.6)}70%{box-shadow:0 0 0 9px rgba(243,154,27,0)}100%{box-shadow:0 0 0 0 rgba(243,154,27,0)}}
+
+.hero h1{
+  font-family:var(--disp); font-weight:700; letter-spacing:-.02em;
+  font-size:clamp(33px,8.2vw,68px); line-height:1.02; margin:0;
+  color:#F4F8FF;
+  text-shadow:0 2px 30px rgba(3,8,25,.6);
+}
+.hero h1 .amp{color:var(--orange)}
+.hero__sub{
+  max-width:30ch; margin:16px auto 0; font-size:clamp(15px,3.9vw,18px);
+  color:#B9C6ED; font-weight:500;
+}
+.scrollcue{
+  margin:26px auto 22px; width:26px; height:42px; border-radius:14px;
+  border:1.5px solid rgba(175,196,255,.35); position:relative;
+}
+.scrollcue::after{content:"";position:absolute;left:50%;top:8px;width:3px;height:8px;border-radius:2px;
+  background:var(--orange);transform:translateX(-50%);animation:cue 1.9s var(--ease) infinite}
+@keyframes cue{0%{opacity:0;transform:translate(-50%,0)}30%{opacity:1}100%{opacity:0;transform:translate(-50%,14px)}}
+
+/* ============ SHELL for light sections ============ */
+.wrap{max-width:960px;margin:0 auto;padding:0 20px}
+.section{position:relative}
+
+/* seam gradient from space -> paper */
+.seam{height:0}
+
+/* ============ SIÈGE SHOWCASE ============ */
+.siege{
+  background:linear-gradient(180deg, var(--space) 0%, #070d1e 60%, #0a1024 100%);
+  padding:64px 0 60px;
+}
+.kicker{
+  font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;
+  color:#7f93c8;margin:0 0 12px;display:flex;align-items:center;gap:10px;
+}
+.kicker::before{content:"";width:26px;height:1px;background:linear-gradient(90deg,var(--orange),transparent)}
+.siege h2{
+  font-family:var(--disp);font-weight:600;letter-spacing:-.015em;
+  font-size:clamp(26px,5.4vw,40px);line-height:1.06;margin:0 0 14px;color:#EEF3FF;
+}
+.siege p.lead{color:#AEBEE6;font-size:16px;max-width:46ch;margin:0 0 26px}
+.siege p.lead b{color:#EAF0FF;font-weight:700}
+.frame{
+  position:relative;border-radius:22px;overflow:hidden;
+  box-shadow:0 30px 70px rgba(2,6,20,.6), 0 0 0 1px rgba(255,255,255,.06);
+  background:#060a18;
+}
+.frame::after{ /* gradient rim + caption anchor, no blur */
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(180deg,rgba(5,8,19,.15) 0%,rgba(5,8,19,0) 30%,rgba(5,8,19,.62) 100%);
+}
+.frame video,.frame img{width:100%;height:auto;display:block;aspect-ratio:16/9;object-fit:cover}
+.frame__tag{
+  position:absolute;left:16px;bottom:14px;z-index:2;
+  display:inline-flex;align-items:center;gap:9px;
+  font-family:var(--mono);font-size:12px;letter-spacing:.06em;color:#EAF0FF;
+  background:rgba(6,10,24,.55);border:1px solid rgba(255,255,255,.12);
+  padding:7px 12px;border-radius:999px;
+}
+.frame__tag .d{width:7px;height:7px;border-radius:50%;background:var(--orange);box-shadow:0 0 10px var(--orange)}
+.statline{
+  display:flex;flex-wrap:wrap;gap:10px;margin-top:22px;
+}
+.stat{
+  flex:1 1 150px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);
+  border-radius:14px;padding:15px 16px;
+}
+.stat b{font-family:var(--disp);font-weight:600;font-size:24px;color:#fff;display:block;letter-spacing:-.01em}
+.stat span{font-size:12.5px;color:#9fb0dc;letter-spacing:.02em}
+
+/* ============ RÉSEAU / CARTE ============ */
+.network{background:linear-gradient(180deg,#0a1024 0%, #F4F6FB 16%);padding:60px 0 8px}
+.network .head{max-width:720px;margin:0 auto 20px;text-align:center}
+.network h2{
+  font-family:var(--disp);font-weight:600;letter-spacing:-.015em;
+  font-size:clamp(25px,5.2vw,38px);line-height:1.08;margin:6px 0 10px;color:var(--navy);
+}
+.network h2 .o{color:var(--orange)}
+.network .head p{color:var(--muted);font-size:16px;margin:0 auto;max-width:40ch}
+.network .kicker{justify-content:center;color:var(--blue)}
+.network .kicker::before{background:linear-gradient(90deg,transparent,var(--orange))}
+.network .kicker::after{content:"";width:26px;height:1px;background:linear-gradient(90deg,var(--orange),transparent)}
+.mapcard{
+  background:#fff;border-radius:22px;padding:8px 8px 4px;margin-top:6px;
+  box-shadow:0 24px 60px rgba(20,40,90,.12), 0 0 0 1px var(--line);
+}
+.mapcard iframe{width:100%;border:0;display:block;border-radius:16px;min-height:420px}
+
+/* ============ VALEURS ============ */
+.values{background:var(--paper);padding:46px 0 58px}
+.values h2{
+  text-align:center;font-family:var(--disp);font-weight:600;letter-spacing:-.015em;
+  font-size:clamp(24px,5vw,36px);color:var(--navy);margin:0 0 6px;
+}
+.values .kicker{justify-content:center;color:var(--blue)}
+.values .kicker::before{background:linear-gradient(90deg,transparent,var(--orange))}
+.vgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:26px}
+@media(max-width:640px){.vgrid{grid-template-columns:1fr}}
+.vcard{
+  background:#fff;border:1px solid var(--line);border-radius:18px;padding:24px 22px;
+  box-shadow:0 10px 30px rgba(20,40,90,.06);position:relative;overflow:hidden;
+  transition:transform .4s var(--ease), box-shadow .4s var(--ease);
+}
+.vcard:hover{transform:translateY(-4px);box-shadow:0 20px 44px rgba(20,40,90,.12)}
+.vcard::before{content:"";position:absolute;left:0;top:0;height:3px;width:100%;
+  background:linear-gradient(90deg,var(--blue),var(--orange))}
+.vicon{width:44px;height:44px;border-radius:13px;display:grid;place-items:center;margin-bottom:16px;
+  background:linear-gradient(135deg,rgba(0,80,230,.12),rgba(243,154,27,.12));border:1px solid var(--line)}
+.vicon svg{width:23px;height:23px;stroke:var(--blue);fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.vcard h3{font-family:var(--disp);font-weight:600;font-size:20px;color:var(--navy);margin:0 0 6px;letter-spacing:-.01em}
+.vcard p{color:var(--muted);font-size:14.5px;margin:0}
+.vnum{position:absolute;right:16px;top:12px;font-family:var(--mono);font-size:12px;color:#c3cde6}
+
+/* ============ INVITATION / CTA ============ */
+.invite{
+  position:relative;overflow:hidden;color:#EAF0FF;
+  background:
+    radial-gradient(90% 120% at 15% 0%, rgba(0,80,230,.28), rgba(10,20,48,0) 55%),
+    radial-gradient(80% 120% at 100% 100%, rgba(243,154,27,.18), rgba(10,20,48,0) 55%),
+    linear-gradient(180deg, var(--navy), #070d20);
+  padding:64px 0 70px;text-align:center;
+}
+.invite .kicker{justify-content:center;color:#F6B24A}
+.invite .kicker::before{background:linear-gradient(90deg,transparent,var(--orange))}
+.invite h2{
+  font-family:var(--disp);font-weight:700;letter-spacing:-.02em;
+  font-size:clamp(30px,7vw,52px);line-height:1.02;margin:6px auto 14px;color:#fff;max-width:16ch;
+}
+.invite p.lead{color:#B9C6ED;font-size:16.5px;max-width:40ch;margin:0 auto 30px}
+.ctas{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin-bottom:30px}
+.btn{
+  display:inline-flex;align-items:center;gap:11px;
+  font-weight:700;font-size:16px;letter-spacing:-.01em;
+  padding:16px 26px;border-radius:15px;transition:transform .25s var(--snap),box-shadow .25s var(--ease),background .25s;
+}
+.btn svg{width:19px;height:19px;stroke-width:1.8;fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round}
+.btn--primary{background:linear-gradient(135deg,var(--orange),#e07d10);color:#1b1206;
+  box-shadow:0 14px 34px rgba(243,154,27,.36)}
+.btn--primary:hover{transform:translateY(-3px);box-shadow:0 20px 44px rgba(243,154,27,.5)}
+.btn--ghost{background:rgba(255,255,255,.06);color:#EAF0FF;border:1px solid rgba(255,255,255,.18)}
+.btn--ghost:hover{transform:translateY(-3px);background:rgba(255,255,255,.11)}
+.btn small{display:block;font-weight:500;font-size:12px;opacity:.72;letter-spacing:.02em;font-family:var(--mono)}
+.btn .lbl{text-align:left;line-height:1.15}
+
+.signature{
+  display:inline-flex;flex-direction:column;align-items:center;gap:3px;
+  padding-top:24px;border-top:1px solid rgba(255,255,255,.1);margin-top:6px;
+}
+.sig-name{font-family:var(--disp);font-weight:600;font-size:17px;color:#fff;letter-spacing:-.01em}
+.sig-role{font-family:var(--mono);font-size:12px;letter-spacing:.06em;color:#9fb0dc}
+.sig-avatar{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;margin-bottom:8px;
+  background:linear-gradient(135deg,var(--orange),var(--blue));color:#fff;font-family:var(--disp);font-weight:600;font-size:16px;
+  box-shadow:0 8px 22px rgba(0,0,0,.4)}
+.footnote{margin-top:30px;font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:#5f70a0;text-transform:uppercase}
+
+/* reveal on scroll */
+.reveal{opacity:0;transform:translateY(22px);transition:opacity .8s var(--ease),transform .8s var(--ease)}
+.reveal.in{opacity:1;transform:none}
+@media (prefers-reduced-motion: reduce){
+  .reveal{opacity:1 !important;transform:none !important;transition:none}
+  .scrollcue,.pip{animation:none !important}
+}
+</style>
+
+<!-- ============================= HERO ============================= -->
+<header class="hero" id="hero">
+  <div class="hero__fallback"></div>
+  <canvas id="globe" aria-hidden="true"></canvas>
+  <div class="hero__glow"></div>
+
+  <div class="hero__top">
+    <span class="brandchip"><img src="../assets/logo.png" alt="Intégral Pharma" width="140" height="30"></span>
+    <span class="est">Acteur de la santé<br><b>depuis plus de 20 ans</b></span>
+  </div>
+
+  <div class="hero__center">
+    <span class="eyebrow"><span class="pip"></span>Réseau national · Intégral Pharma</span>
+    <h1>Un maillage<br>qui vous <span class="amp">rapproche</span></h1>
+    <p class="hero__sub">Grossiste-répartiteur français indépendant. Nos agences, partout où sont vos officines.</p>
+    <div class="scrollcue" aria-hidden="true"></div>
+  </div>
+</header>
+
+<!-- ============================= SIÈGE ============================= -->
+<section class="section siege">
+  <div class="wrap">
+    <p class="kicker reveal">Le siège · Hyères</p>
+    <h2 class="reveal">Une logistique ancrée<br>dans le Sud de la France.</h2>
+    <p class="lead reveal">Depuis Hyères, nos plateformes irriguent l'ensemble du territoire. <b>Livraison en 72h</b>, une exigence de proximité que nous portons depuis plus de vingt ans.</p>
+
+    <div class="frame reveal">
+      <video id="siegeVid" autoplay muted loop playsinline preload="metadata"
+             poster="../assets/siege.jpg">
+        <source src="../assets/hero.mp4" type="video/mp4">
+      </video>
+      <img id="siegeImg" src="../assets/siege.jpg" alt="Vue aérienne du siège Intégral Pharma à Hyères" style="display:none">
+      <span class="frame__tag"><span class="d"></span>Siège — Hyères (83)</span>
+    </div>
+
+    <div class="statline reveal">
+      <div class="stat"><b>20 ans +</b><span>au service des pharmaciens</span></div>
+      <div class="stat"><b>9 agences</b><span>réparties en France</span></div>
+      <div class="stat"><b>72h</b><span>délai de livraison</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================= RÉSEAU / CARTE ============================= -->
+<section class="section network">
+  <div class="wrap">
+    <div class="head reveal">
+      <p class="kicker">Le réseau</p>
+      <h2>Nos agences, partout<br>où sont <span class="o">vos officines.</span></h2>
+      <p>Explorez le maillage : chaque point est une plateforme prête à vous livrer.</p>
+    </div>
+    <div class="mapcard reveal">
+      <iframe id="mapFrame" src="../map-component.html?mode=map" title="Carte des agences Intégral Pharma"
+              scrolling="no" loading="lazy"></iframe>
+    </div>
+  </div>
+</section>
+
+<!-- ============================= VALEURS ============================= -->
+<section class="section values">
+  <div class="wrap">
+    <p class="kicker reveal">Notre engagement</p>
+    <h2 class="reveal">Trois valeurs, une relation.</h2>
+    <div class="vgrid">
+      <div class="vcard reveal">
+        <span class="vnum">01</span>
+        <span class="vicon"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg></span>
+        <h3>Confiance</h3>
+        <p>Un partenaire indépendant, stable et transparent, sur qui compter dans la durée.</p>
+      </div>
+      <div class="vcard reveal">
+        <span class="vnum">02</span>
+        <span class="vicon"><svg viewBox="0 0 24 24"><path d="M12 21s-7-4.35-9-8.5C1.5 9 3.5 5.5 7 5.5c2 0 3.5 1.2 5 3 1.5-1.8 3-3 5-3 3.5 0 5.5 3.5 4 7-2 4.15-9 8.5-9 8.5z"/></svg></span>
+        <h3>Engagement</h3>
+        <p>Une exigence de service au quotidien : disponibilité, réactivité, livraison tenue.</p>
+      </div>
+      <div class="vcard reveal">
+        <span class="vnum">03</span>
+        <span class="vicon"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20c.4-3.2 2.8-5 5.5-5s5.1 1.8 5.5 5"/><path d="M16 5.5a3 3 0 0 1 0 5.6"/><path d="M17.5 20c-.2-2.2-1.2-3.8-2.7-4.7"/></svg></span>
+        <h3>Respect</h3>
+        <p>Du pharmacien comme du patient. Une relation d'égal à égal, jamais de pression.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================= INVITATION ============================= -->
+<section class="section invite">
+  <div class="wrap">
+    <p class="kicker reveal">L'invitation</p>
+    <h2 class="reveal">Et si l'on se rencontrait&nbsp;?</h2>
+    <p class="lead reveal">Le reste — nos conditions, notre accompagnement — se raconte mieux autour d'une table. Pascale vous répond directement.</p>
+
+    <div class="ctas reveal">
+      <a class="btn btn--primary" href="mailto:pascale.prieto@integralpharma.fr?subject=Rencontrons-nous%20%E2%80%94%20Int%C3%A9gral%20Pharma">
+        <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.5 7l8.5 6 8.5-6"/></svg>
+        <span class="lbl">Écrire à Pascale<small>pascale.prieto@integralpharma.fr</small></span>
+      </a>
+      <a class="btn btn--ghost" href="tel:+33676885391">
+        <svg viewBox="0 0 24 24"><path d="M5 4h3l1.5 4.5-2 1.5a12 12 0 0 0 5.5 5.5l1.5-2 4.5 1.5V19a2 2 0 0 1-2 2A16 16 0 0 1 4 6a2 2 0 0 1 1-2z"/></svg>
+        <span class="lbl">Appeler Pascale<small>06 76 88 53 91</small></span>
+      </a>
+    </div>
+
+    <div class="signature reveal">
+      <span class="sig-avatar">PP</span>
+      <span class="sig-name">Pascale Prieto</span>
+      <span class="sig-role">Directrice commerciale France · Intégral Pharma</span>
+    </div>
+
+    <p class="footnote">Intégral Pharma — Grossiste-répartiteur français indépendant</p>
+  </div>
+</section>
+
+<!-- ============================= SCRIPTS ============================= -->
+<script>
+/* ---------- iframe auto-height ---------- */
+(function(){
+  var f=document.getElementById('mapFrame');
+  window.addEventListener('message',function(e){
+    if(e && e.data && e.data.ipAtlasHeight){ f.style.height=e.data.ipAtlasHeight+'px'; }
+  });
+})();
+
+/* ---------- siège video fallback → photo ---------- */
+(function(){
+  var v=document.getElementById('siegeVid'), img=document.getElementById('siegeImg');
+  var reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function toPhoto(){ if(v){v.pause&&v.pause(); v.style.display='none';} if(img) img.style.display='block'; }
+  if(reduce){ toPhoto(); }
+  else if(v){
+    v.addEventListener('error',toPhoto,true);
+    v.addEventListener('stalled',function(){ setTimeout(function(){ if(v.readyState<2) toPhoto(); },3000); });
+    // if metadata never loads, fall back
+    setTimeout(function(){ if(v.readyState===0) toPhoto(); },4500);
+  }
+})();
+
+/* ---------- reveal on scroll ---------- */
+(function(){
+  var els=[].slice.call(document.querySelectorAll('.reveal'));
+  if(!('IntersectionObserver' in window)){ els.forEach(function(e){e.classList.add('in')}); return; }
+  var io=new IntersectionObserver(function(en){
+    en.forEach(function(x){ if(x.isIntersecting){ x.target.classList.add('in'); io.unobserve(x.target); } });
+  },{threshold:.14, rootMargin:'0px 0px -8% 0px'});
+  els.forEach(function(e){io.observe(e)});
+})();
+
+/* ================= GLOBE LOGISTIQUE 3D (Three.js r128) ================= */
+(function(){
+  var hero=document.getElementById('hero');
+  var canvas=document.getElementById('globe');
+  var reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // WebGL support probe
+  function webglOk(){
+    try{ var c=document.createElement('canvas');
+      return !!(window.WebGLRenderingContext && (c.getContext('webgl')||c.getContext('experimental-webgl')));
+    }catch(e){ return false; }
+  }
+  if(reduce || !webglOk()){ hero.classList.add('is-fallback'); return; }
+
+  var s=document.createElement('script');
+  s.src='https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
+  s.onerror=function(){ hero.classList.add('is-fallback'); };
+  s.onload=init;
+  document.head.appendChild(s);
+
+  /* agences réelles (lat/lon) — Hyères = siège */
+  var SIEGE={name:'Hyères',lat:43.1206,lon:6.1286};
+  var AGENCES=[
+    {name:'St-Étienne-de-Montluc',lat:47.2789,lon:-1.7806},
+    {name:'Chilly-Mazarin',lat:48.7028,lon:2.3119},
+    {name:"Saint-Maurice-l'Exil",lat:45.3936,lon:4.7806},
+    {name:'Montayral',lat:44.4783,lon:0.9389},
+    {name:'Villeneuve-lès-Béziers',lat:43.3206,lon:3.2542},
+    {name:'Le Cannet-des-Maures',lat:43.3925,lon:6.3406},
+    {name:'Flassans-sur-Issole',lat:43.3614,lon:6.1828},
+    {name:'Metz',lat:49.1193,lon:6.1757}
+  ];
+
+  function init(){
+    if(typeof THREE==='undefined'){ hero.classList.add('is-fallback'); return; }
+
+    var W=hero.clientWidth, H=hero.clientHeight;
+    var renderer=new THREE.WebGLRenderer({canvas:canvas,antialias:true,alpha:true,powerPreference:'high-performance'});
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+    renderer.setSize(W,H,false);
+    renderer.setClearColor(0x000000,0);
+
+    var scene=new THREE.Scene();
+    var camera=new THREE.PerspectiveCamera(38,W/H,0.1,100);
+    camera.position.set(0,0,4.4);
+
+    // groups: tilt(outer, X) -> spin(inner, Y) -> globe content
+    var tilt=new THREE.Group();
+    var spin=new THREE.Group();
+    var globe=new THREE.Group();
+    spin.add(globe); tilt.add(spin); scene.add(tilt);
+
+    var latF=46.6, lonF=2.4;
+    spin.rotation.y=-lonF*Math.PI/180;
+    tilt.rotation.x= latF*Math.PI/180;
+    var baseTiltX=tilt.rotation.x, baseSpinY=spin.rotation.y;
+
+    var R=1;
+    function ll(lat,lon,r){
+      var la=lat*Math.PI/180, lo=lon*Math.PI/180;
+      return new THREE.Vector3(
+        r*Math.cos(la)*Math.sin(lo),
+        r*Math.sin(la),
+        r*Math.cos(la)*Math.cos(lo)
+      );
+    }
+
+    /* ---- glow sprite texture ---- */
+    function glowTex(inner,outer){
+      var c=document.createElement('canvas'); c.width=c.height=64;
+      var x=c.getContext('2d'); var g=x.createRadialGradient(32,32,0,32,32,32);
+      g.addColorStop(0,inner); g.addColorStop(.35,outer); g.addColorStop(1,'rgba(0,0,0,0)');
+      x.fillStyle=g; x.fillRect(0,0,64,64);
+      var t=new THREE.Texture(c); t.needsUpdate=true; return t;
+    }
+    var dotTex=glowTex('rgba(150,190,255,1)','rgba(60,110,230,.55)');
+    var orangeTex=glowTex('rgba(255,225,170,1)','rgba(243,140,30,.7)');
+
+    /* ---- solid base sphere (occludes back) ---- */
+    var base=new THREE.Mesh(
+      new THREE.SphereGeometry(R*0.985,64,64),
+      new THREE.MeshBasicMaterial({color:0x0a1330})
+    );
+    globe.add(base);
+
+    /* ---- atmosphere rim glow (BackSide, additive, no filter) ---- */
+    var atmo=new THREE.Mesh(
+      new THREE.SphereGeometry(R*1.18,48,48),
+      new THREE.MeshBasicMaterial({color:0x1b4fd6,transparent:true,opacity:0.16,side:THREE.BackSide,blending:THREE.AdditiveBlending,depthWrite:false})
+    );
+    globe.add(atmo);
+
+    /* ---- dotted surface (fibonacci sphere) ---- */
+    (function(){
+      var N=2600, pos=new Float32Array(N*3);
+      var off=2/N, inc=Math.PI*(3-Math.sqrt(5));
+      for(var i=0;i<N;i++){
+        var y=i*off-1+off/2, r=Math.sqrt(Math.max(0,1-y*y)), a=i*inc;
+        pos[i*3]=Math.cos(a)*r*R*1.002;
+        pos[i*3+1]=y*R*1.002;
+        pos[i*3+2]=Math.sin(a)*r*R*1.002;
+      }
+      var g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.BufferAttribute(pos,3));
+      var m=new THREE.PointsMaterial({size:0.03,map:dotTex,transparent:true,color:0x4d80ff,
+        blending:THREE.AdditiveBlending,depthWrite:false,sizeAttenuation:true,opacity:.9});
+      globe.add(new THREE.Points(g,m));
+    })();
+
+    /* ---- graticule wireframe (a few meridians / parallels) ---- */
+    (function(){
+      var mat=new THREE.LineBasicMaterial({color:0x2a56b8,transparent:true,opacity:0.22});
+      // parallels
+      for(var lat=-60;lat<=60;lat+=30){
+        var pts=[]; for(var lo=0;lo<=360;lo+=6) pts.push(ll(lat,lo,R*1.003));
+        var g=new THREE.BufferGeometry().setFromPoints(pts);
+        globe.add(new THREE.Line(g,mat));
+      }
+      // meridians
+      for(var lon=0;lon<360;lon+=30){
+        var p2=[]; for(var la=-90;la<=90;la+=6) p2.push(ll(la,lon,R*1.003));
+        var g2=new THREE.BufferGeometry().setFromPoints(p2);
+        globe.add(new THREE.Line(g2,mat));
+      }
+    })();
+
+    /* ---- markers (agencies + siège) ---- */
+    var markPos=[ll(SIEGE.lat,SIEGE.lon,R*1.01)];
+    AGENCES.forEach(function(a){ markPos.push(ll(a.lat,a.lon,R*1.01)); });
+    (function(){
+      var arr=new Float32Array(markPos.length*3);
+      markPos.forEach(function(v,i){arr[i*3]=v.x;arr[i*3+1]=v.y;arr[i*3+2]=v.z;});
+      var g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.BufferAttribute(arr,3));
+      var sizes=new Float32Array(markPos.length); sizes.fill(0.075); sizes[0]=0.14;
+      g.setAttribute('psize',new THREE.BufferAttribute(sizes,1));
+      var m=new THREE.PointsMaterial({size:0.09,map:orangeTex,transparent:true,color:0xffb24a,
+        blending:THREE.AdditiveBlending,depthWrite:false,sizeAttenuation:true});
+      globe.add(new THREE.Points(g,m));
+    })();
+
+    /* Hyères pulse ring (glow sprite scaling) */
+    var pulse=new THREE.Sprite(new THREE.SpriteMaterial({map:orangeTex,transparent:true,color:0xff8a1e,
+      blending:THREE.AdditiveBlending,depthWrite:false,opacity:.8}));
+    var pv=ll(SIEGE.lat,SIEGE.lon,R*1.02); pulse.position.copy(pv);
+    globe.add(pulse);
+
+    /* ---- ARCS Hyères -> agences ---- */
+    var SEG=90;
+    var arcs=AGENCES.map(function(a,i){
+      var S=ll(SIEGE.lat,SIEGE.lon,R*1.004), E=ll(a.lat,a.lon,R*1.004);
+      var d=S.distanceTo(E);
+      var mid=S.clone().add(E).multiplyScalar(0.5).normalize().multiplyScalar(R*(1.05+d*0.42));
+      var curve=new THREE.QuadraticBezierCurve3(S,mid,E);
+      var pts=curve.getPoints(SEG);
+      var arr=new Float32Array((SEG+1)*3);
+      pts.forEach(function(p,k){arr[k*3]=p.x;arr[k*3+1]=p.y;arr[k*3+2]=p.z;});
+
+      var gBase=new THREE.BufferGeometry(); gBase.setAttribute('position',new THREE.BufferAttribute(arr.slice(),3));
+      var mBase=new THREE.LineBasicMaterial({color:0xf39a1b,transparent:true,opacity:0.16,
+        blending:THREE.AdditiveBlending,depthWrite:false});
+      var baseLine=new THREE.Line(gBase,mBase); globe.add(baseLine);
+
+      var gCom=new THREE.BufferGeometry(); gCom.setAttribute('position',new THREE.BufferAttribute(arr.slice(),3));
+      var mCom=new THREE.LineBasicMaterial({color:0xff9a2a,transparent:true,opacity:0.95,
+        blending:THREE.AdditiveBlending,depthWrite:false});
+      var comet=new THREE.Line(gCom,mCom); comet.geometry.setDrawRange(0,0); globe.add(comet);
+
+      var head=new THREE.Sprite(new THREE.SpriteMaterial({map:orangeTex,transparent:true,color:0xffd59a,
+        blending:THREE.AdditiveBlending,depthWrite:false}));
+      head.scale.setScalar(0.11); head.visible=false; globe.add(head);
+
+      // destination arrival ring
+      var ring=new THREE.Sprite(new THREE.SpriteMaterial({map:orangeTex,transparent:true,color:0xff9a2a,
+        blending:THREE.AdditiveBlending,depthWrite:false,opacity:0}));
+      ring.position.copy(E); globe.add(ring);
+
+      return {curve:curve,comet:comet,head:head,ring:ring,E:E,delay:i*0.42,cycle:4.6,draw:2.0,tail:14};
+    });
+
+    /* ---- starfield (in scene, static bg) ---- */
+    (function(){
+      var N=420, pos=new Float32Array(N*3);
+      for(var i=0;i<N;i++){
+        var r=7+Math.random()*10, u=Math.random()*2-1, th=Math.random()*Math.PI*2, sr=Math.sqrt(1-u*u);
+        pos[i*3]=r*sr*Math.cos(th); pos[i*3+1]=r*u; pos[i*3+2]=r*sr*Math.sin(th)-3;
+      }
+      var g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.BufferAttribute(pos,3));
+      var m=new THREE.PointsMaterial({size:0.05,map:dotTex,transparent:true,color:0xaec4ff,
+        blending:THREE.AdditiveBlending,depthWrite:false,opacity:.7});
+      scene.add(new THREE.Points(g,m));
+    })();
+
+    /* ---- pointer parallax ---- */
+    var px=0,py=0,tx=0,ty=0;
+    hero.addEventListener('pointermove',function(e){
+      var r=hero.getBoundingClientRect();
+      tx=((e.clientX-r.left)/r.width-0.5)*0.5;
+      ty=((e.clientY-r.top)/r.height-0.5)*0.35;
+    },{passive:true});
+    hero.addEventListener('pointerleave',function(){tx=0;ty=0;});
+
+    /* ---- resize ---- */
+    function resize(){
+      W=hero.clientWidth; H=hero.clientHeight;
+      renderer.setSize(W,H,false);
+      camera.aspect=W/H; camera.updateProjectionMatrix();
+    }
+    window.addEventListener('resize',resize);
+
+    /* ---- pause when hero offscreen ---- */
+    var visible=true;
+    if('IntersectionObserver' in window){
+      new IntersectionObserver(function(en){ visible=en[0].isIntersecting; if(visible && !running) loop(); },
+        {threshold:0}).observe(hero);
+    }
+
+    /* ---- animation loop ---- */
+    var start=performance.now(), running=false;
+    function loop(){
+      if(!visible){ running=false; return; }
+      running=true; requestAnimationFrame(loop);
+      var t=(performance.now()-start)/1000;
+
+      px+=(tx-px)*0.06; py+=(ty-py)*0.06;
+      spin.rotation.y=baseSpinY + px + Math.sin(t*0.18)*0.05;
+      tilt.rotation.x=baseTiltX - py + Math.sin(t*0.13)*0.03;
+
+      // Hyères pulse
+      var pp=(t%2.6)/2.6;
+      pulse.scale.setScalar(0.12+pp*0.5);
+      pulse.material.opacity=(1-pp)*0.7;
+
+      // arcs
+      for(var i=0;i<arcs.length;i++){
+        var a=arcs[i];
+        var lt=t-a.delay; if(lt<0){ a.comet.geometry.setDrawRange(0,0); a.head.visible=false; continue; }
+        var ph=(lt%a.cycle);
+        if(ph<a.draw){
+          var f=ph/a.draw;               // 0..1 draw progress
+          var headIdx=Math.floor(f*SEG);
+          var startIdx=Math.max(0,headIdx-a.tail);
+          a.comet.geometry.setDrawRange(startIdx, Math.max(2,headIdx-startIdx+1));
+          a.comet.material.opacity=0.95;
+          var hp=a.curve.getPoint(Math.min(1,f));
+          a.head.position.copy(hp); a.head.visible=true;
+          a.head.scale.setScalar(0.10+Math.sin(f*Math.PI)*0.05);
+          // arrival ring near end
+          var near=Math.max(0,(f-0.82)/0.18);
+          a.ring.material.opacity=near*0.75*(1-near*0.3);
+          a.ring.scale.setScalar(0.12+near*0.4);
+        } else {
+          // fade out comet trail after arrival
+          var fade=1-Math.min(1,(ph-a.draw)/0.5);
+          a.comet.material.opacity=0.95*fade;
+          if(fade<=0){ a.comet.geometry.setDrawRange(0,0); a.head.visible=false; }
+          a.ring.material.opacity*=0.9;
+        }
+      }
+
+      renderer.render(scene,camera);
+    }
+    resize();
+    // reveal canvas already visible; kick loop
+    requestAnimationFrame(loop);
+  }
+})();
+</script>
