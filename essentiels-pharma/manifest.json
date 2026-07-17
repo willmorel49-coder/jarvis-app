@@ -1,24 +1,24 @@
 {
-  "name": "OPSO Santé — Pilotage groupement",
-  "short_name": "OPSO Santé",
-  "description": "Pilotage du groupement de pharmacies OPSO Santé · Intégral Pharma Normandie",
+  "name": "Essentiels Pharma — Pilotage groupement",
+  "short_name": "Essentiels Pharma",
+  "description": "Pilotage du groupement Essentiels Pharma · Intégral Pharma",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#f5f6f7",
-  "theme_color": "#11a63c",
+  "background_color": "#F4F7F1",
+  "theme_color": "#57AE31",
   "lang": "fr",
   "categories": ["business", "productivity", "medical"],
   "icons": [
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' fill='%2311a63c'/><rect x='80' y='16' width='32' height='160' rx='10' fill='white'/><rect x='16' y='80' width='160' height='32' rx='10' fill='white'/></svg>",
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' fill='%2357AE31'/><rect x='80' y='16' width='32' height='160' rx='10' fill='white'/><rect x='16' y='80' width='160' height='32' rx='10' fill='white'/></svg>",
       "sizes": "192x192",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' fill='%2311a63c'/><rect x='216' y='48' width='80' height='416' rx='24' fill='white'/><rect x='48' y='216' width='416' height='80' rx='24' fill='white'/></svg>",
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' fill='%2357AE31'/><rect x='216' y='48' width='80' height='416' rx='24' fill='white'/><rect x='48' y='216' width='416' height='80' rx='24' fill='white'/></svg>",
       "sizes": "512x512",
       "type": "image/svg+xml",
       "purpose": "any maskable"
