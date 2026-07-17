@@ -10,7 +10,7 @@
   V2.pages = V2.pages || {};
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s); };
   var ICO = window.ICO || function () { return ''; };
-  var CB = '?v=20260717h';   // bumpé au déploiement (aligné index.html)
+  var CB = '?v=20260717i';   // bumpé au déploiement (aligné index.html)
 
   var D = null, map = null, layer = null, markers = {}, sel = '', GIDX = null;
   // Clients : vert par segment, GROS + contour = ressortent. Prospects : ambre discret.
@@ -105,6 +105,7 @@
     document.head.appendChild(s);
   }
   function details(name) { return GD ? GD[norm(canonGrp(name))] : null; }
+  function infoOf(name) { var I = window.GRP_INFO; return I ? I[norm(canonGrp(name))] : null; }   // description + contacts + actus (scrapés)
   function frow(k, v) { return '<div class="cg-f-row"><span class="cg-f-k">' + k + '</span><span class="cg-f-v">' + v + '</span></div>'; }
   function eur(v) { return (v || 0) >= 1000 ? Math.round(v / 1000) + ' k€' : Math.round(v || 0) + ' €'; }
   // stats clients précises d'un groupement (depuis données réconciliées) : CA, tiers, commerciaux
@@ -152,29 +153,43 @@
         (cchips ? '<div class="cg-f-rep"><span class="cg-f-rl">Commercial</span><span class="cg-f-rc">' + cchips + '</span></div>' : '') +
         '</div>';
     }
-    if (d) {
-      var c = '';
-      if (d.site) c += frow('Site', '<a href="' + esc(d.site) + '" target="_blank" rel="noopener">' + esc(d.site.replace(/^https?:\/\//, '').replace(/\/$/, '')) + ' ↗</a>');
-      if (d.email) c += frow('Email', '<a href="mailto:' + esc(d.email) + '">' + esc(d.email) + '</a>');
-      if (d.tel) c += frow('Tél', '<a href="tel:' + esc(String(d.tel).replace(/[^0-9+]/g, '')) + '">' + esc(d.tel) + '</a>');
-      if (d.adresse) c += frow('Adresse', esc(d.adresse));
-      if (d.siren) c += frow('SIREN', esc(d.siren) + ' <a class="cg-f-ext" href="https://annuaire-entreprises.data.gouv.fr/entreprise/' + esc(d.siren) + '" target="_blank" rel="noopener">fiche ↗</a>');
-      if (d.alliance) c += frow('Alliance', esc(d.alliance));
-      if (d.cotisation) c += frow('Cotisation', esc(d.cotisation));
-      if (c) h += '<div class="cg-f-block">' + c + '</div>';
-      if (d.dirs && d.dirs.length) {
-        h += '<div class="cg-f-sub">Dirigeants</div><div class="cg-f-dirs">';
-        h += d.dirs.map(function (x) { return '<div class="cg-f-dir"><b>' + esc(x.nom) + '</b>' + (x.fn ? '<span>' + esc(x.fn) + '</span>' : '') + '</div>'; }).join('');
-        h += '</div>';
-        if (d.telDir || d.emailDir) {
-          var dd = '';
-          if (d.telDir) dd += '<a href="tel:' + esc(String(d.telDir).replace(/[^0-9+]/g, '')) + '">' + esc(d.telDir) + '</a>';
-          if (d.emailDir) dd += (dd ? ' · ' : '') + '<a href="mailto:' + esc(d.emailDir) + '">' + esc(d.emailDir) + '</a>';
-          h += '<div class="cg-f-dircontact">' + dd + '</div>';
-        }
+    var inf = infoOf(name);
+    // Description (scrapée)
+    if (inf && inf.description) h += '<div class="cg-f-desc">' + esc(inf.description) + (inf.type ? ' <span class="cg-f-type">' + esc(inf.type) + '</span>' : '') + '</div>';
+    // Contacts : info web d'abord, sinon GRP_PROSPECTS
+    var g = function (k) { return (inf && inf[k]) || (d && d[k]) || ''; };
+    var site = g('site'), email = g('email'), tel = g('tel'), adresse = g('adresse');
+    var region = (inf && inf.region) || '', nbAdh = (inf && inf.nbAdherents) || (d && d.nbAdherents) || '';
+    var c = '';
+    if (site) c += frow('Site', '<a href="' + esc(/^https?:/.test(site) ? site : 'https://' + site) + '" target="_blank" rel="noopener">' + esc(String(site).replace(/^https?:\/\//, '').replace(/\/$/, '')) + ' ↗</a>');
+    if (email) c += frow('Email', '<a href="mailto:' + esc(email) + '">' + esc(email) + '</a>');
+    if (tel) c += frow('Tél', '<a href="tel:' + esc(String(tel).replace(/[^0-9+]/g, '')) + '">' + esc(tel) + '</a>');
+    if (adresse) c += frow('Adresse', esc(adresse));
+    if (region) c += frow('Région', esc(region));
+    if (nbAdh) c += frow('Adhérents', esc(nbAdh));
+    if (d && d.siren) c += frow('SIREN', esc(d.siren) + ' <a class="cg-f-ext" href="https://annuaire-entreprises.data.gouv.fr/entreprise/' + esc(d.siren) + '" target="_blank" rel="noopener">fiche ↗</a>');
+    if (d && d.alliance) c += frow('Alliance', esc(d.alliance));
+    if (d && d.cotisation) c += frow('Cotisation', esc(d.cotisation));
+    if (c) h += '<div class="cg-f-block">' + c + '</div>';
+    var dirs = (inf && inf.dirigeants && inf.dirigeants.length) ? inf.dirigeants : ((d && d.dirs) || []);
+    if (dirs.length) {
+      h += '<div class="cg-f-sub">Dirigeants</div><div class="cg-f-dirs">';
+      h += dirs.map(function (x) { return '<div class="cg-f-dir"><b>' + esc(x.nom) + '</b>' + (x.fn ? '<span>' + esc(x.fn) + '</span>' : '') + '</div>'; }).join('');
+      h += '</div>';
+      if (d && (d.telDir || d.emailDir)) {
+        var dd = '';
+        if (d.telDir) dd += '<a href="tel:' + esc(String(d.telDir).replace(/[^0-9+]/g, '')) + '">' + esc(d.telDir) + '</a>';
+        if (d.emailDir) dd += (dd ? ' · ' : '') + '<a href="mailto:' + esc(d.emailDir) + '">' + esc(d.emailDir) + '</a>';
+        h += '<div class="cg-f-dircontact">' + dd + '</div>';
       }
-    } else {
-      h += '<div class="cg-f-nodata">Contacts détaillés non renseignés pour ce groupement.</div>';
+    }
+    if (!c && !dirs.length && !(inf && inf.description)) h += '<div class="cg-f-nodata">Contacts détaillés non renseignés pour ce groupement.</div>';
+    // Actualités (scrapées)
+    if (inf && inf.actualites && inf.actualites.length) {
+      h += '<div class="cg-f-sub">Actualités</div><div class="cg-f-actus">';
+      h += inf.actualites.slice(0, 6).map(function (a) {
+        return '<div class="cg-f-actu"><div class="cg-f-actt">' + esc(a.titre) + '</div><div class="cg-f-acts">' + (a.date ? esc(a.date) + ' · ' : '') + esc(a.source || '') + '</div></div>';
+      }).join('') + '</div>';
     }
     // Top clients du groupement (par CA)
     if (cs.n > 0) {
@@ -276,6 +291,12 @@
       '.cg-f-tt{font-size:10px;font-weight:800;padding:2px 6px;border-radius:6px;background:var(--card);border:1px solid var(--line);color:var(--muted)}' +
       '.cg-f-tt.ta{background:rgba(11,110,67,.14);color:#0B6E43;border-color:transparent}.cg-f-tt.tb{background:rgba(22,163,74,.13);color:#15803D;border-color:transparent}.cg-f-tt.tc{background:rgba(79,184,126,.16);color:#3f9e6a;border-color:transparent}' +
       '.cg-f-notes{margin-top:16px}' +
+      '.cg-f-desc{margin-top:12px;font-size:13px;line-height:1.5;color:var(--ip-ink)}' +
+      '.cg-f-type{display:inline-block;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);background:var(--card-2);border:1px solid var(--line);border-radius:6px;padding:1px 7px;vertical-align:middle;margin-left:4px}' +
+      '.cg-f-actus{margin-top:6px;display:flex;flex-direction:column;gap:6px}' +
+      '.cg-f-actu{background:var(--card-2);border:1px solid var(--line);border-left:3px solid var(--ip-blue);border-radius:9px;padding:8px 11px}' +
+      '.cg-f-actt{font-size:12.5px;font-weight:700;color:var(--ip-ink);line-height:1.35}' +
+      '.cg-f-acts{font-size:11px;color:var(--muted);margin-top:2px}' +
       // Classement (vue d'ensemble)
       '.cg-rk{padding:0}' +
       '.cg-rk-head{position:sticky;top:0;z-index:2;background:var(--paper);padding:14px 16px 10px;border-bottom:1px solid var(--line)}' +
