@@ -922,7 +922,8 @@
   };
   function tgenHtml() {
     var opts = ''; for (var n = 6; n <= 12; n++) opts += '<option value="' + n + '"' + (n === 8 ? ' selected' : '') + '>' + n + '</option>';
-    var grpDl = '<datalist id="cn-grp-datalist">' + (D && D.grp ? D.grp.filter(function (g) { return g && g !== '—'; }).map(function (g) { return '<option value="' + esc(g) + '">'; }).join('') : '') + '</datalist>';
+    var _gud = {}; if (D && D.p) D.p.forEach(function (p) { var g = D.grp[p[3]]; if (g && g !== '—') _gud[g] = 1; });
+    var grpDl = '<datalist id="cn-grp-datalist">' + Object.keys(_gud).map(function (g) { return '<option value="' + esc(g) + '">'; }).join('') + '</datalist>';
     return grpDl + '<div class="cn-tgen">' +
       '<div class="cn-tgen-t">🧭 Composer ma tournée du jour</div>' +
       '<label class="cn-tgen-fld"><span>Je pars de (mon adresse)</span>' +
@@ -1270,8 +1271,10 @@
     computeColors();
     var commOpts = '<option value="">Tous les commerciaux</option>' +
       D.comm.slice(1).map(function (c) { return '<option>' + esc(c) + '</option>'; }).join('');
+    // Groupements réellement présents (canoniques, sans doublon orphelin après canonicalisation)
+    var _gu = {}; D.p.forEach(function (p) { var g = D.grp[p[3]]; if (g && g !== '—') _gu[g] = 1; });
     var grpOpts = '<option value="">Tous les groupements</option>' +
-      D.grp.filter(function (g) { return g && g !== '—'; })
+      Object.keys(_gu)
         .sort(function (a, b) { return a.localeCompare(b, 'fr', { sensitivity: 'base' }); })
         .map(function (g) { return '<option>' + esc(g) + '</option>'; }).join('');
     var depSet = {}; D.p.forEach(function (p) { var d = deptOf(p[8]); if (d) depSet[d] = 1; });
