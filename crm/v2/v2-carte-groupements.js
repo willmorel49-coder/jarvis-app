@@ -10,7 +10,7 @@
   V2.pages = V2.pages || {};
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s); };
   var ICO = window.ICO || function () { return ''; };
-  var CB = '?v=20260717a';   // bumpé au déploiement (aligné index.html)
+  var CB = '?v=20260717b';   // bumpé au déploiement (aligné index.html)
 
   var D = null, map = null, layer = null, markers = {}, sel = '', GIDX = null;
   // Clients : vert par segment, GROS + contour = ressortent. Prospects : ambre discret.
@@ -121,13 +121,16 @@
     var cs = grpClientStats(e.pts);
     var pen = tot > 0 ? Math.round(e.c / tot * 100) : 0;
     var gq = encodeURIComponent(name + ' groupement pharmacie');
+    var caMoy = cs.n > 0 ? cs.ca / cs.n : 0;
     var h = '<div class="cg-fiche">';
+    h += '<a class="cg-f-back" onclick="V2.cgSelect(\'\')">← Tous les groupements</a>';
     h += '<div class="cg-f-nm">' + esc(name) + (d && d.statut ? ' <span class="cg-f-st st-' + esc(d.statut) + '">' + esc(d.statut) + '</span>' : '') + '</div>';
     h += '<div class="cg-f-stats">' +
       '<div class="cg-f-stat"><b>' + e.c + '</b><span>clients</span></div>' +
       '<div class="cg-f-stat"><b>' + e.pr + '</b><span>prospects</span></div>' +
       '<div class="cg-f-stat"><b>' + tot + '</b><span>sur la carte</span></div>' +
       (cs.ca > 0 ? '<div class="cg-f-stat"><b>' + eur(cs.ca) + '</b><span>CA clients</span></div>' : '') +
+      (caMoy > 0 ? '<div class="cg-f-stat"><b>' + eur(caMoy) + '</b><span>CA moyen/client</span></div>' : '') +
       '<div class="cg-f-stat"><b>' + pen + '%</b><span>pénétration</span></div>' +
       (d && d.nbAdherents ? '<div class="cg-f-stat"><b>' + esc(d.nbAdherents) + '</b><span>adhérents</span></div>' : '') +
       (d && d.nbLabos ? '<div class="cg-f-stat"><b>' + esc(d.nbLabos) + '</b><span>labos</span></div>' : '') +
@@ -169,7 +172,21 @@
     } else {
       h += '<div class="cg-f-nodata">Contacts détaillés non renseignés pour ce groupement.</div>';
     }
-    h += '<div class="cg-f-links"><a href="https://www.google.com/search?q=' + gq + '" target="_blank" rel="noopener">Rechercher ↗</a></div>';
+    // Top clients du groupement (par CA)
+    if (cs.n > 0) {
+      var cli = e.pts.filter(function (idx) { return isClient(D.p[idx]); })
+        .sort(function (a, b) { return (D.p[b][12] || 0) - (D.p[a][12] || 0); }).slice(0, 6);
+      h += '<div class="cg-f-sub">Top clients (CA)</div><div class="cg-f-top">';
+      h += cli.map(function (idx) {
+        var p = D.p[idx], t = segOf(p).replace('Client ', ''), cm = commOf(p);
+        return '<div class="cg-f-tc" onclick="V2.cgFocus(' + idx + ')">' +
+          '<div class="cg-f-tcm"><b>' + esc(p[6] || 'Pharmacie') + '</b><span>' + esc(p[7] || '') + (cm ? ' · ' + esc(cm) : '') + '</span></div>' +
+          '<div class="cg-f-tcr"><span class="cg-f-tt t' + t.toLowerCase() + '">' + esc(t) + '</span><b>' + eur(p[12] || 0) + '</b></div></div>';
+      }).join('') + '</div>';
+    }
+    h += '<div class="cg-f-links"><a href="https://www.google.com/search?q=' + gq + '" target="_blank" rel="noopener">Rechercher le groupement ↗</a></div>';
+    // Notes partagées par groupement (Supabase, scope 'groupement')
+    if (V2.notes && V2.notes.section) h += '<div class="cg-f-notes">' + V2.notes.section('groupement', name) + '</div>';
     h += '</div>';
     return h;
   }
@@ -233,6 +250,31 @@
       '.cg-f-dircontact{margin-top:6px;font-size:12.5px}.cg-f-dircontact a{color:var(--ip-blue);font-weight:600;text-decoration:none}' +
       '.cg-f-nodata{margin-top:10px;font-size:12.5px;color:var(--muted);font-style:italic}' +
       '.cg-f-links{margin-top:12px}.cg-f-links a{font-size:12px;font-weight:700;color:var(--ip-blue);text-decoration:none}' +
+      '.cg-f-back{display:inline-block;font-size:12px;font-weight:700;color:var(--muted);text-decoration:none;cursor:pointer;margin-bottom:10px}.cg-f-back:hover{color:var(--ip-blue)}' +
+      // Top clients
+      '.cg-f-top{margin-top:6px;display:flex;flex-direction:column;gap:5px}' +
+      '.cg-f-tc{display:flex;align-items:center;gap:8px;justify-content:space-between;background:var(--card-2);border:1px solid var(--line);border-radius:10px;padding:7px 11px;cursor:pointer;transition:border-color .15s}' +
+      '.cg-f-tc:hover{border-color:var(--ip-blue)}' +
+      '.cg-f-tcm{min-width:0;flex:1}.cg-f-tcm b{display:block;font-size:12.5px;font-weight:700;color:var(--ip-ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cg-f-tcm span{font-size:11px;color:var(--muted)}' +
+      '.cg-f-tcr{display:flex;align-items:center;gap:8px;flex-shrink:0}.cg-f-tcr b{font-size:12.5px;font-weight:800;color:var(--ip-ink);font-variant-numeric:tabular-nums}' +
+      '.cg-f-tt{font-size:10px;font-weight:800;padding:2px 6px;border-radius:6px;background:var(--card);border:1px solid var(--line);color:var(--muted)}' +
+      '.cg-f-tt.ta{background:rgba(11,110,67,.14);color:#0B6E43;border-color:transparent}.cg-f-tt.tb{background:rgba(22,163,74,.13);color:#15803D;border-color:transparent}.cg-f-tt.tc{background:rgba(79,184,126,.16);color:#3f9e6a;border-color:transparent}' +
+      '.cg-f-notes{margin-top:16px}' +
+      // Classement (vue d'ensemble)
+      '.cg-rk{padding:0}' +
+      '.cg-rk-head{position:sticky;top:0;z-index:2;background:var(--paper);padding:14px 16px 10px;border-bottom:1px solid var(--line)}' +
+      '.cg-rk-t{font-family:var(--font);font-size:15px;font-weight:800;color:var(--ip-ink)}' +
+      '.cg-rk-sum{font-size:12px;color:var(--muted);margin-top:2px;font-weight:600}' +
+      '.cg-rk-sorts{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:10px}.cg-rk-sorts>span{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;margin-right:2px}' +
+      '.cg-rk-sb{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:5px 12px;font-family:var(--font);font-size:12px;font-weight:700;color:var(--muted);cursor:pointer;transition:all .15s}' +
+      '.cg-rk-sb:hover{color:var(--ip-ink)}.cg-rk-sb.on{background:var(--ip-blue);color:#fff;border-color:var(--ip-blue)}' +
+      '.cg-rk-list{padding:6px 0}' +
+      '.cg-rk-row{display:flex;align-items:center;gap:11px;padding:9px 16px;border-bottom:1px solid var(--line-2);cursor:pointer;transition:background .12s}' +
+      '.cg-rk-row:hover{background:var(--card-2)}' +
+      '.cg-rk-n{flex:none;width:26px;height:26px;border-radius:50%;background:var(--card-2);border:1px solid var(--line);color:var(--muted);font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums}' +
+      '.cg-rk-main{flex:1;min-width:0}.cg-rk-nm{font-size:13.5px;font-weight:700;color:var(--ip-ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
+      '.cg-rk-meta{font-size:11.5px;color:var(--muted);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cg-rk-meta b{color:var(--ip-ink);font-weight:800}' +
+      '.cg-rk-pen{flex:none;font-size:13px;font-weight:800;color:var(--ip-blue);font-variant-numeric:tabular-nums;min-width:38px;text-align:right}' +
       '@media(max-width:820px){.cg-split{flex-direction:column;height:auto}.cg-map{height:52vh;min-height:320px}.cg-list{width:auto;max-width:none;border-left:none;border-top:1px solid var(--line);max-height:none}}';
     document.head.appendChild(st);
   }
@@ -330,8 +372,39 @@
       '</div>' +
     '</div>';
   }
+  // ── Classement : tous les groupements, triable ──
+  var rankSort = 'c';
+  function rankRows() {
+    var out = [];
+    for (var g in GIDX) {
+      var e = GIDX[g], cs = grpClientStats(e.pts), tot = e.pts.length;
+      var comms = Object.keys(cs.byComm).sort(function (a, b) { return cs.byComm[b] - cs.byComm[a]; });
+      out.push({ name: g, c: e.c, pr: e.pr, tot: tot, ca: cs.ca, pen: tot ? Math.round(e.c / tot * 100) : 0, topComm: comms[0] || '' });
+    }
+    var key = rankSort === 'ca' ? 'ca' : rankSort === 'pr' ? 'pr' : rankSort === 'pen' ? 'pen' : 'c';
+    out.sort(function (a, b) { return (b[key] - a[key]) || (b.c - a.c); });
+    return out;
+  }
+  function rankingHtml() {
+    var rows = rankRows(), totC = 0, totCa = 0, totPr = 0;
+    rows.forEach(function (r) { totC += r.c; totCa += r.ca; totPr += r.pr; });
+    var sb = function (k, lbl) { return '<button class="cg-rk-sb' + (rankSort === k ? ' on' : '') + '" onclick="V2.cgRankSort(\'' + k + '\')">' + lbl + '</button>'; };
+    var head = '<div class="cg-rk-head"><div class="cg-rk-t">Tous les groupements · ' + rows.length + '</div>' +
+      '<div class="cg-rk-sum">' + totC + ' clients · ' + eur(totCa) + ' · ' + totPr + ' prospects</div>' +
+      '<div class="cg-rk-sorts"><span>Trier</span>' + sb('c', 'Clients') + sb('ca', 'CA') + sb('pr', 'Prospects') + sb('pen', 'Pénétr.') + '</div></div>';
+    var body = rows.map(function (r, i) {
+      return '<div class="cg-rk-row" data-g="' + esc(r.name) + '" onclick="V2.cgSelect(this.dataset.g)">' +
+        '<span class="cg-rk-n">' + (i + 1) + '</span>' +
+        '<div class="cg-rk-main"><div class="cg-rk-nm">' + esc(r.name) + '</div>' +
+          '<div class="cg-rk-meta"><b>' + r.c + '</b> clients · ' + r.pr + ' prospects' + (r.ca > 0 ? ' · ' + eur(r.ca) : '') + (r.topComm ? ' · ' + esc(r.topComm) : '') + '</div></div>' +
+        '<span class="cg-rk-pen" title="Pénétration = clients / pharmacies">' + r.pen + '%</span></div>';
+    }).join('') || '<div class="cg-empty">Aucun groupement.</div>';
+    return '<div class="cg-rk">' + head + '<div class="cg-rk-list">' + body + '</div></div>';
+  }
+  V2.cgRankSort = function (k) { rankSort = k; var ls = document.getElementById('cg-list'); if (ls) ls.innerHTML = listHtml(); };
+
   function listHtml() {
-    if (!sel) return '<div class="cg-empty">Choisis un groupement dans le menu pour voir sa fiche, tes clients et prospects.</div>';
+    if (!sel) return rankingHtml();
     var fiche = ficheHtml(sel);
     var e = GIDX[sel];
     if (!e) return fiche + '<div class="cg-empty">Aucune pharmacie de ce groupement dans la base (fiche informative).</div>';
@@ -349,8 +422,10 @@
   // ── API ──
   V2.cgSelect = function (name) {
     sel = name || '';
+    var s = document.getElementById('cg-sel'); if (s && s.value !== sel) s.value = sel;
     var cn = document.getElementById('cg-count'); if (cn) cn.innerHTML = counts();
-    var ls = document.getElementById('cg-list'); if (ls) ls.innerHTML = listHtml();
+    var ls = document.getElementById('cg-list'); if (ls) { ls.innerHTML = listHtml(); ls.scrollTop = 0; }
+    if (sel && V2.notes && V2.notes.hydrate) V2.notes.hydrate();
     draw();
   };
   V2.cgFocus = function (idx) {
@@ -379,15 +454,11 @@
         if (e1) { var mp = document.getElementById('cg-map'); if (mp) mp.innerHTML = '<div class="cg-empty">Données indisponibles. Réessaie.</div>'; return; }
         D = window.PHARMA_FR; reconcile(); buildIndex();
         ensureDetails(function () {
-        // défaut : le groupement avec le plus de clients (carte non vide d'emblée)
-        if (!sel) {
-          var best = '', bc = -1;
-          for (var g in GIDX) { if (GIDX[g].c > bc) { bc = GIDX[g].c; best = g; } }
-          sel = best;
-        }
-        var s = document.getElementById('cg-sel'); if (s) s.innerHTML = selectOptions();
+        // défaut : classement de tous les groupements (vue d'ensemble) ; drill-down au clic
+        var s = document.getElementById('cg-sel'); if (s) { s.innerHTML = selectOptions(); s.value = sel; }
         var cn = document.getElementById('cg-count'); if (cn) cn.innerHTML = counts();
         var ls = document.getElementById('cg-list'); if (ls) ls.innerHTML = listHtml();
+        if (sel && V2.notes && V2.notes.hydrate) V2.notes.hydrate();
         ensureLeaflet(function (e2) {
           var mp = document.getElementById('cg-map');
           if (e2) { if (mp) mp.innerHTML = '<div class="cg-empty">Carte indisponible.</div>'; return; }
