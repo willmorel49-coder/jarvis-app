@@ -10,7 +10,7 @@
   V2.pages = V2.pages || {};
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s); };
   var ICO = window.ICO || function () { return ''; };
-  var CB = '?v=20260717d';   // bumpé au déploiement (aligné index.html)
+  var CB = '?v=20260717e';   // bumpé au déploiement (aligné index.html)
 
   var D = null, map = null, layer = null, markers = {}, sel = '', GIDX = null;
   // Clients : vert par segment, GROS + contour = ressortent. Prospects : ambre discret.
@@ -219,6 +219,18 @@
       '.cg-meta{font-size:11.5px;color:var(--muted);margin-top:2px;display:flex;gap:6px;flex-wrap:wrap}' +
       '.cg-tag{font-size:10px;font-weight:800;padding:1px 6px;border-radius:5px}' +
       '.cg-tag.cl{background:rgba(11,110,67,.14);color:#0B6E43}.cg-tag.pr{background:rgba(245,158,11,.16);color:#B45309}' +
+      '.cg-row{position:relative}.cg-rebtn{flex:none;align-self:center;width:30px;height:30px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--muted);font-size:15px;cursor:pointer;opacity:.55;transition:opacity .15s,border-color .15s}' +
+      '.cg-row:hover .cg-rebtn{opacity:1}.cg-rebtn:hover{border-color:var(--ip-blue);color:var(--ip-blue)}' +
+      '.cg-reov{position:fixed;inset:0;z-index:4000;display:none}.cg-reov.on{display:block}' +
+      '.cg-reov-bd{position:absolute;inset:0;background:rgba(16,19,28,.42);display:flex;align-items:center;justify-content:center;padding:20px}' +
+      '.cg-reov-card{background:var(--card);border-radius:16px;padding:20px;width:min(420px,94vw);box-shadow:0 20px 50px rgba(0,0,0,.3)}' +
+      '.cg-reov-t{font-family:var(--font);font-size:16px;font-weight:800;color:var(--ip-ink)}' +
+      '.cg-reov-p{font-size:13px;color:var(--ip-ink);font-weight:600;margin-top:6px}.cg-reov-cur{font-size:12.5px;color:var(--muted);margin-top:2px}.cg-reov-cur b{color:var(--ip-ink)}' +
+      '.cg-reov-in{width:100%;margin-top:14px;font-family:var(--font);font-size:15px;color:var(--ip-ink);background:var(--card-2);border:1px solid var(--line);border-radius:11px;padding:11px 13px;outline:none}' +
+      '.cg-reov-in:focus{border-color:var(--ip-blue);box-shadow:0 0 0 3px var(--halo)}' +
+      '.cg-reov-act{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}' +
+      '.cg-reov-x{border:1px solid var(--line);background:var(--card);color:var(--muted);border-radius:10px;padding:9px 16px;font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer}' +
+      '.cg-reov-ok{border:none;background:var(--ip-blue);color:#fff;border-radius:10px;padding:9px 18px;font-family:var(--font);font-size:13px;font-weight:800;cursor:pointer}' +
       '.cg-tel{color:var(--ip-blue);font-weight:700;text-decoration:none}' +
       '.cg-empty{padding:40px 20px;text-align:center;color:var(--muted);font-size:14px}' +
       '.cg-load{display:flex;align-items:center;justify-content:center;gap:10px;height:100%;color:var(--muted);font-size:14px}' +
@@ -380,6 +392,7 @@
         '</div>' +
         (tel ? '<div class="cg-meta"><a class="cg-tel" href="tel:' + esc(tel) + '" onclick="event.stopPropagation()">' + esc(p[9]) + '</a></div>' : '') +
       '</div>' +
+      '<button class="cg-rebtn" title="Changer de groupement" onclick="event.stopPropagation();V2.cgReassign(' + idx + ')">⇄</button>' +
     '</div>';
   }
   // ── Classement : tous les groupements, triable ──
@@ -444,6 +457,61 @@
     var m = markers[idx]; if (m) m.openPopup();
   };
 
+  // ── Corrections manuelles : changer une pharmacie de groupement (persisté Supabase, propagé) ──
+  function grpIndexOf(name) {
+    var cc = function (x) { return String(x || '').normalize ? String(x || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '') : String(x || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); };
+    var k = cc(name); for (var i = 0; i < D.grp.length; i++) if (cc(D.grp[i]) === k) return i;
+    D.grp.push(name); return D.grp.length - 1;
+  }
+  function applyOvr() { var OV = window.GRP_OVR; if (!OV || !D) return; D.p.forEach(function (p) { var g = OV[String(p[13] || '').replace(/[^0-9]/g, '')]; if (g) p[3] = grpIndexOf(g); }); }
+  function ensureOverrides(cb) {
+    window.GRP_OVR = window.GRP_OVR || {};
+    if (!V2.profil || !V2.profil.loadScope) { applyOvr(); cb(); return; }
+    V2.profil.loadScope('override').then(function (list) {
+      (list || []).forEach(function (o) { if (o && o.data && o.data.groupement) window.GRP_OVR[String(o.sid).replace(/[^0-9]/g, '')] = o.data.groupement; });
+      applyOvr(); cb();
+    }).catch(function () { applyOvr(); cb(); });
+  }
+  function allGroupNames() {
+    var set = {}; for (var g in GIDX) set[g] = 1;
+    if (window.GRP_PROSPECTS) window.GRP_PROSPECTS.forEach(function (x) { if (x.nom) set[canonGrp(x.nom)] = 1; });
+    return Object.keys(set).sort(function (a, b) { return a.localeCompare(b, 'fr'); });
+  }
+  V2.cgReassign = function (idx) {
+    var p = D && D.p[idx]; if (!p) return;
+    var cur = canonGrp(grpName(p));
+    var ov = document.getElementById('cg-reov');
+    if (!ov) { ov = document.createElement('div'); ov.id = 'cg-reov'; document.body.appendChild(ov); }
+    var dl = allGroupNames().map(function (n) { return '<option value="' + esc(n) + '">'; }).join('');
+    ov.innerHTML = '<div class="cg-reov-bd" onclick="V2.cgReassignClose(event)"><div class="cg-reov-card" onclick="event.stopPropagation()">' +
+      '<div class="cg-reov-t">Changer le groupement</div>' +
+      '<div class="cg-reov-p">' + esc(p[6] || 'Pharmacie') + (p[7] ? ' · ' + esc(p[7]) : '') + '</div>' +
+      '<div class="cg-reov-cur">Actuel : <b>' + esc(cur || '—') + '</b></div>' +
+      '<input id="cg-reov-in" class="cg-reov-in" list="cg-reov-dl" placeholder="Nouveau groupement…" value="' + esc(cur || '') + '" autocomplete="off">' +
+      '<datalist id="cg-reov-dl">' + dl + '</datalist>' +
+      '<div class="cg-reov-act"><button class="cg-reov-x" onclick="V2.cgReassignClose(event)">Annuler</button>' +
+      '<button class="cg-reov-ok" onclick="V2.cgReassignSave(' + idx + ')">Enregistrer</button></div>' +
+    '</div></div>';
+    ov.className = 'cg-reov on';
+    setTimeout(function () { var i = document.getElementById('cg-reov-in'); if (i) { i.focus(); i.select(); } }, 30);
+  };
+  V2.cgReassignClose = function (e) { if (e) e.stopPropagation(); var ov = document.getElementById('cg-reov'); if (ov) ov.className = 'cg-reov'; };
+  V2.cgReassignSave = function (idx) {
+    var p = D && D.p[idx]; if (!p) return;
+    var inp = document.getElementById('cg-reov-in'); var val = inp ? inp.value.trim() : '';
+    if (!val) { V2.cgReassignClose(); return; }
+    window.GRP_OVR = window.GRP_OVR || {}; window.GRP_OVR[String(p[13] || '').replace(/[^0-9]/g, '')] = val;
+    p[3] = grpIndexOf(val);
+    if (V2.profil && V2.profil.saveOverride) V2.profil.saveOverride(String(p[13]), { groupement: val });
+    V2.cgReassignClose();
+    buildIndex();
+    var s = document.getElementById('cg-sel'); if (s) s.innerHTML = selectOptions();
+    var ls = document.getElementById('cg-list'); if (ls) ls.innerHTML = listHtml();
+    if (sel && V2.notes && V2.notes.hydrate) V2.notes.hydrate();
+    draw();
+    if (V2.toast) V2.toast('Groupement mis à jour · ' + val);
+  };
+
   V2.pages.carteGrp = {
     render: function (root, param) {
       injectCss();
@@ -462,7 +530,9 @@
       if (param) sel = String(param);
       ensureData(function (e1) {
         if (e1) { var mp = document.getElementById('cg-map'); if (mp) mp.innerHTML = '<div class="cg-empty">Données indisponibles. Réessaie.</div>'; return; }
-        D = window.PHARMA_FR; reconcile(); buildIndex();
+        D = window.PHARMA_FR; reconcile();
+        ensureOverrides(function () {
+        buildIndex();
         ensureDetails(function () {
         // défaut : classement de tous les groupements (vue d'ensemble) ; drill-down au clic
         var s = document.getElementById('cg-sel'); if (s) { s.innerHTML = selectOptions(); s.value = sel; }
@@ -476,6 +546,7 @@
           map = window.L.map('cg-map', { zoomControl: true, attributionControl: false }).setView([46.6, 2.4], 6);
           window.L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { maxZoom: 19, subdomains: 'abcd' }).addTo(map);
           draw();
+        });
         });
         });
       });
