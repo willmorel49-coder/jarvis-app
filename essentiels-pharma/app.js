@@ -1829,7 +1829,7 @@ function renderPharmacies() {
       ).join('')}
       <select onchange="window._prospectFilter=this.value;renderPharmacies()"
         style="padding:6px 12px;border-radius:8px;border:1.5px solid var(--border2);background:var(--bg2);color:var(--text);font-size:12px;cursor:pointer">
-        <option value="" ${!window._prospectFilter?'selected':''}>🎯 Tous statuts prospect</option>
+        <option value="" ${!window._prospectFilter?'selected':''}>🎯 Tous les statuts</option>
         ${PROSPECT_STAGES.map(s => `<option value="${s.id}" ${window._prospectFilter===s.id?'selected':''}>${s.label}</option>`).join('')}
       </select>
     </div>`;
@@ -1839,8 +1839,8 @@ function renderPharmacies() {
         const { ph, caCur, caPrev, g, lastImportDays, prochaineVisiteDate, wmlEntry } = e;
         const actif = withSales.has(ph.id) || ph.inDb || caCur > 0;
         const clientBadge = actif
-          ? '<span style="font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(87,174,49,.16);color:var(--opso-green);font-weight:800;white-space:nowrap">✓ Cliente</span>'
-          : '<span style="font-size:10px;padding:2px 8px;border-radius:10px;background:var(--bg3);color:var(--text3);font-weight:700;white-space:nowrap">Prospect</span>';
+          ? '<span style="font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(87,174,49,.16);color:var(--opso-green);font-weight:800;white-space:nowrap">✓ Cliente Intégral</span>'
+          : '<span style="font-size:10px;padding:2px 8px;border-radius:10px;background:var(--bg3);color:var(--text3);font-weight:700;white-space:nowrap">Membre Essentiels</span>';
         // Badge prioritaire UNIQUE : visite urgente > import vieux > potentiel WML
         let priorityBadge = '';
         if (prochaineVisiteDate) {
@@ -12945,7 +12945,7 @@ function renderGroupement() {
       <div class="card" style="padding:24px 26px;margin-bottom:16px;background:linear-gradient(160deg,var(--opso-green-pale),var(--bg2))">
         <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
           <div style="font-family:'Comfortaa',sans-serif;font-size:26px;font-weight:600;color:var(--text)">Essentiels Pharma</div>
-          <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:100px;background:var(--amber-bg);color:var(--amber);text-transform:uppercase;letter-spacing:.05em">Prospect Intégral</span>
+          <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:100px;background:var(--opso-green-pale);color:${grnT};text-transform:uppercase;letter-spacing:.05em">Groupement de pharmacies</span>
         </div>
         <div style="margin-top:6px;color:var(--text2)">${esc(G.ancien || '')}</div>
         <div style="margin-top:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
@@ -12997,8 +12997,8 @@ function renderGroupement() {
       </div>
 
       <div class="card" style="padding:16px 20px;margin-bottom:24px;border-left:3px solid ${grn};background:var(--opso-green-pale)">
-        <div style="font-weight:700;color:var(--text);margin-bottom:4px">📊 Ventes détaillées — en attente</div>
-        <div style="font-size:13px;color:var(--text2);line-height:1.5">Le CA, les commandes et la marge par officine s'afficheront ici dès qu'Intégral fournira les exports de ventes de ces pharmacies (comme pour OPSO). La liste et la carte ci-dessus proviennent de la base nationale des groupements.</div>
+        <div style="font-weight:700;color:var(--text);margin-bottom:4px">📊 Ventes par officine</div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.5">Le CA, les commandes et la marge de chaque officine Essentiels Pharma s'afficheront ici une fois les exports de ventes Intégral intégrés. La liste et la carte ci-dessus sont une première base (source nationale des groupements) — à compléter avec la liste officielle du réseau.</div>
       </div>
     </div>`;
 
