@@ -3639,7 +3639,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
               <div class="card-title">Prix parapharmacie concurrents</div>
               <div class="card-subtitle">Prix de vente constatés — ${veilleRows.length} référence${veilleRows.length > 1 ? 's' : ''} avec données</div>
             </div>
-            <button onclick="navigate('offilog')" style="font-size:11px;padding:5px 12px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;font-weight:600">Catalogue →</button>
+            <button onclick="navigate('catalogue')" style="font-size:11px;padding:5px 12px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;font-weight:600">Catalogue →</button>
           </div>
           ${rows}
           ${veilleRows.length > 6 ? `<div style="padding:10px 20px;font-size:11px;color:var(--text3)">+${veilleRows.length - 6} autres — voir l'onglet Offilog</div>` : ''}
