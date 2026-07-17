@@ -188,8 +188,8 @@
   footer.app-foot{ text-align:center; color:var(--text3); font-size:.74rem; padding:30px 20px 10px; }
 </style>
 
-<script src="essentiels-officines.js"></script>
-<script src="essentiels-reco-data.js"></script>
+<script src="essentiels-officines.js?v=g2"></script>
+<script src="essentiels-reco-data.js?v=g2"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 
 <header class="topbar">
@@ -351,7 +351,9 @@ function computeRFA(ca){
 const PROD_LISTS = [
   { key:'all',             label:'⭐ Tous les produits', isAll:true },
   { key:'offre_privilege', label:'Offre Privilège' },
+  { key:'offre_generique', label:'Offre générique', noPct:true },
   { key:'exclu_gen',       label:'Exclus. génériques 1€', noPct:true },
+  { key:'privileges_ip',   label:'Privilèges IP', noPct:true },
   { key:'glp1_offre',      label:'GLP-1' },
   { key:'penetration',     label:'Top pénétration' },
   { key:'generiques',      label:'Génériques ZEN/EG/TEVA', noPct:true },
