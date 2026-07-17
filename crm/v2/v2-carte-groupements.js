@@ -10,7 +10,7 @@
   V2.pages = V2.pages || {};
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s); };
   var ICO = window.ICO || function () { return ''; };
-  var CB = '?v=20260716g';   // bumpé au déploiement (aligné index.html)
+  var CB = '?v=20260717a';   // bumpé au déploiement (aligné index.html)
 
   var D = null, map = null, layer = null, markers = {}, sel = '', GIDX = null;
   // Clients : vert par segment, GROS + contour = ressortent. Prospects : ambre discret.
@@ -102,10 +102,24 @@
   }
   function details(name) { return GD ? GD[norm(name)] : null; }
   function frow(k, v) { return '<div class="cg-f-row"><span class="cg-f-k">' + k + '</span><span class="cg-f-v">' + v + '</span></div>'; }
+  function eur(v) { return (v || 0) >= 1000 ? Math.round(v / 1000) + ' k€' : Math.round(v || 0) + ' €'; }
+  // stats clients précises d'un groupement (depuis données réconciliées) : CA, tiers, commerciaux
+  function grpClientStats(pts) {
+    var ca = 0, tiers = { 'Client A': 0, 'Client B': 0, 'Client C': 0 }, byComm = {}, n = 0;
+    for (var i = 0; i < pts.length; i++) {
+      var p = D.p[pts[i]]; if (!isClient(p)) continue;
+      n++; ca += p[12] || 0;
+      var t = segOf(p); if (tiers[t] != null) tiers[t]++;
+      var cm = commOf(p); if (cm) byComm[cm] = (byComm[cm] || 0) + 1;
+    }
+    return { n: n, ca: ca, tiers: tiers, byComm: byComm };
+  }
   function ficheHtml(name) {
     var e = GIDX[name] || { c: 0, pr: 0, pts: [] };
     var d = details(name);
     var tot = e.pts.length;
+    var cs = grpClientStats(e.pts);
+    var pen = tot > 0 ? Math.round(e.c / tot * 100) : 0;
     var gq = encodeURIComponent(name + ' groupement pharmacie');
     var h = '<div class="cg-fiche">';
     h += '<div class="cg-f-nm">' + esc(name) + (d && d.statut ? ' <span class="cg-f-st st-' + esc(d.statut) + '">' + esc(d.statut) + '</span>' : '') + '</div>';
@@ -113,9 +127,24 @@
       '<div class="cg-f-stat"><b>' + e.c + '</b><span>clients</span></div>' +
       '<div class="cg-f-stat"><b>' + e.pr + '</b><span>prospects</span></div>' +
       '<div class="cg-f-stat"><b>' + tot + '</b><span>sur la carte</span></div>' +
+      (cs.ca > 0 ? '<div class="cg-f-stat"><b>' + eur(cs.ca) + '</b><span>CA clients</span></div>' : '') +
+      '<div class="cg-f-stat"><b>' + pen + '%</b><span>pénétration</span></div>' +
       (d && d.nbAdherents ? '<div class="cg-f-stat"><b>' + esc(d.nbAdherents) + '</b><span>adhérents</span></div>' : '') +
       (d && d.nbLabos ? '<div class="cg-f-stat"><b>' + esc(d.nbLabos) + '</b><span>labos</span></div>' : '') +
       '</div>';
+    // Répartition clients : tiers A/B/C + par commercial
+    if (cs.n > 0) {
+      var tchips = '';
+      if (cs.tiers['Client A']) tchips += '<span class="cg-f-tier ta">A · ' + cs.tiers['Client A'] + '</span>';
+      if (cs.tiers['Client B']) tchips += '<span class="cg-f-tier tb">B · ' + cs.tiers['Client B'] + '</span>';
+      if (cs.tiers['Client C']) tchips += '<span class="cg-f-tier tc">C · ' + cs.tiers['Client C'] + '</span>';
+      var comms = Object.keys(cs.byComm).sort(function (a, b) { return cs.byComm[b] - cs.byComm[a]; });
+      var cchips = comms.map(function (cm) { return '<span class="cg-f-comm">' + esc(cm) + ' · ' + cs.byComm[cm] + '</span>'; }).join('');
+      h += '<div class="cg-f-reps">' +
+        (tchips ? '<div class="cg-f-rep"><span class="cg-f-rl">Tiers</span><span class="cg-f-rc">' + tchips + '</span></div>' : '') +
+        (cchips ? '<div class="cg-f-rep"><span class="cg-f-rl">Commercial</span><span class="cg-f-rc">' + cchips + '</span></div>' : '') +
+        '</div>';
+    }
     if (d) {
       var c = '';
       if (d.site) c += frow('Site', '<a href="' + esc(d.site) + '" target="_blank" rel="noopener">' + esc(d.site.replace(/^https?:\/\//, '').replace(/\/$/, '')) + ' ↗</a>');
@@ -183,6 +212,13 @@
       '.cg-f-stat{flex:1;min-width:64px;background:var(--card-2);border:1px solid var(--line);border-radius:12px;padding:9px 6px;text-align:center}' +
       '.cg-f-stat b{display:block;font-size:19px;font-weight:800;color:var(--ip-blue);font-variant-numeric:tabular-nums;line-height:1.1}' +
       '.cg-f-stat span{display:block;font-size:10.5px;color:var(--muted);margin-top:2px;font-weight:600}' +
+      '.cg-f-reps{margin-top:10px;display:flex;flex-direction:column;gap:7px}' +
+      '.cg-f-rep{display:flex;gap:8px;align-items:flex-start}' +
+      '.cg-f-rl{flex:none;width:78px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;padding-top:3px}' +
+      '.cg-f-rc{flex:1;display:flex;flex-wrap:wrap;gap:5px}' +
+      '.cg-f-tier{display:inline-flex;align-items:center;font-size:11.5px;font-weight:800;padding:3px 9px;border-radius:999px}' +
+      '.cg-f-tier.ta{background:rgba(11,110,67,.14);color:#0B6E43}.cg-f-tier.tb{background:rgba(22,163,74,.13);color:#15803D}.cg-f-tier.tc{background:rgba(79,184,126,.16);color:#3f9e6a}' +
+      '.cg-f-comm{display:inline-flex;align-items:center;font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:999px;background:var(--card-2);border:1px solid var(--line);color:var(--ip-ink)}' +
       '.cg-f-block{margin-top:12px;display:flex;flex-direction:column;gap:0}' +
       '.cg-f-row{display:flex;gap:10px;padding:6px 0;border-bottom:1px solid var(--line-2)}' +
       '.cg-f-k{flex:none;width:78px;font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;padding-top:1px}' +
