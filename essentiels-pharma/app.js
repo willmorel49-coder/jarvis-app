@@ -7086,6 +7086,7 @@ function navigate(page) {
 
   const renders = {
     dashboard:   renderDashboard,
+    groupement:  renderGroupement,
     pharmacies:  renderPharmacies,
     produits:    renderProduits,
     import:      renderImport,
@@ -12896,3 +12897,130 @@ document.addEventListener('DOMContentLoaded', () => {
     obs.observe(document.getElementById('app') || document.body, { attributes: true, attributeFilter: ['class'] });
   }, 500);
 });
+
+// ══════════ PAGE GROUPEMENT — Fiche Essentiels Pharma + carte (data réelle) ══════════
+let _essMap = null;
+function renderGroupement() {
+  const el = document.getElementById('groupement-content');
+  if (!el) return;
+  const G = window.ESSENTIELS_GRP || {};
+  const O = Array.isArray(window.ESSENTIELS_OFFICINES) ? window.ESSENTIELS_OFFICINES : [];
+  const geo = O.filter(o => o.lat && o.lng);
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const grn = 'var(--opso-green)', grnT = 'var(--opso-green-text)';
+
+  const stat = (v, l) => `<div class="card" style="padding:16px 18px;text-align:center">
+      <div style="font-family:'Comfortaa',sans-serif;font-size:26px;font-weight:600;color:${grnT}">${v}</div>
+      <div style="font-size:11px;color:var(--text2);margin-top:2px;text-transform:uppercase;letter-spacing:.04em">${l}</div>
+    </div>`;
+
+  const dirs = (G.dirigeants || []).map(d => `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+      <div style="width:38px;height:38px;border-radius:50%;background:var(--opso-green-pale);color:${grnT};display:flex;align-items:center;justify-content:center;font-weight:700;font-family:'Comfortaa',sans-serif;flex-shrink:0">${esc((d.nom||'?').split(' ').map(x=>x[0]).slice(0,2).join(''))}</div>
+      <div><div style="font-weight:700;color:var(--text)">${esc(d.nom)}</div><div style="font-size:12px;color:var(--text2)">${esc(d.fn)}</div></div>
+    </div>`).join('');
+
+  const actes = (G.activites || []).map(a => `<div class="card" style="padding:16px 18px">
+      <div style="font-family:'Comfortaa',sans-serif;font-weight:600;color:var(--text);margin-bottom:4px">${esc(a.t)}</div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.4">${esc(a.d)}</div>
+    </div>`).join('');
+
+  // officines groupées par département
+  const byDep = {};
+  O.forEach(o => { const d = (o.cp || '00').slice(0,2); (byDep[d] = byDep[d] || []).push(o); });
+  const depName = { '27':'Eure','44':'Loire-Atlantique','49':'Maine-et-Loire','53':'Mayenne','72':'Sarthe','79':'Deux-Sèvres','92':'Hauts-de-Seine' };
+  const offList = Object.keys(byDep).sort().map(dep => `
+      <div style="margin-bottom:14px">
+        <div style="font-size:11px;font-weight:800;color:${grnT};text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">${esc(depName[dep] || dep)} · ${byDep[dep].length}</div>
+        ${byDep[dep].map(o => `<div style="display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+            <div style="min-width:0"><div style="font-weight:600;color:var(--text);font-size:14px">${esc(o.nom)}</div>
+              <div style="font-size:12px;color:var(--text2)">${esc(o.adresse)}</div></div>
+            <div style="text-align:right;flex-shrink:0"><div style="font-size:12px;color:var(--text2)">${esc(o.cp)}</div>
+              <div style="font-size:13px;color:var(--text);font-weight:600">${esc(o.ville)}</div></div>
+          </div>`).join('')}
+      </div>`).join('');
+
+  el.innerHTML = `
+    <div style="max-width:1100px;margin:0 auto">
+      <!-- Hero fiche -->
+      <div class="card" style="padding:24px 26px;margin-bottom:16px;background:linear-gradient(160deg,var(--opso-green-pale),var(--bg2))">
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+          <div style="font-family:'Comfortaa',sans-serif;font-size:26px;font-weight:600;color:var(--text)">Essentiels Pharma</div>
+          <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:100px;background:var(--amber-bg);color:var(--amber);text-transform:uppercase;letter-spacing:.05em">Prospect Intégral</span>
+        </div>
+        <div style="margin-top:6px;color:var(--text2)">${esc(G.ancien || '')}</div>
+        <div style="margin-top:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <span style="font-size:13px;font-weight:700;padding:5px 14px;border-radius:100px;background:${grn};color:#fff;font-family:'Comfortaa',sans-serif">Le réflexe santé</span>
+          <a href="https://${esc(G.site)}" target="_blank" rel="noopener" style="color:${grnT};font-weight:600;font-size:13px">${esc(G.site)} ↗</a>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:16px">
+        ${stat(G.nbAdherents || '—', 'Adhérents déclarés')}
+        ${stat(geo.length, 'Officines identifiées')}
+        ${stat(G.nbLabos || '—', 'Labos référencés')}
+        ${stat('120€+', 'Cotisation')}
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+        <!-- Dirigeants -->
+        <div class="card" style="padding:20px 22px">
+          <div style="font-family:'Comfortaa',sans-serif;font-weight:600;color:var(--text);margin-bottom:8px">Dirigeants</div>
+          ${dirs || '<div style="color:var(--text2)">—</div>'}
+        </div>
+        <!-- Contact -->
+        <div class="card" style="padding:20px 22px">
+          <div style="font-family:'Comfortaa',sans-serif;font-weight:600;color:var(--text);margin-bottom:8px">Contact</div>
+          <div style="padding:10px 0;border-bottom:1px solid var(--border)"><div style="font-size:12px;color:var(--text2)">Téléphone</div><div style="color:var(--text);font-weight:600">${esc((G.contact||{}).tel || '—')}</div></div>
+          <div style="padding:10px 0;border-bottom:1px solid var(--border)"><div style="font-size:12px;color:var(--text2)">Email</div><div style="color:${grnT};font-weight:600;word-break:break-all">${esc((G.contact||{}).email || '—')}</div></div>
+          <div style="padding:10px 0"><div style="font-size:12px;color:var(--text2)">Email groupement</div><div style="color:var(--text)">${esc(G.email || '—')}</div></div>
+        </div>
+      </div>
+
+      <!-- Activités -->
+      <div style="font-family:'Comfortaa',sans-serif;font-size:16px;color:var(--text);margin:4px 0 10px">Les <span style="background:var(--opso-green-pale);color:${grnT};padding:2px 10px;border-radius:100px">4 activités</span></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:20px">${actes}</div>
+
+      <!-- Carte -->
+      <div style="font-family:'Comfortaa',sans-serif;font-size:16px;color:var(--text);margin:4px 0 10px">Les <span style="background:var(--opso-green-pale);color:${grnT};padding:2px 10px;border-radius:100px">officines</span> du réseau</div>
+      <div class="card" style="padding:0;overflow:hidden;margin-bottom:16px">
+        <div id="ess-map" style="height:380px;width:100%;background:var(--bg3)"></div>
+      </div>
+
+      <!-- Liste officines -->
+      <div class="card" style="padding:20px 22px;margin-bottom:20px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px">
+          <div style="font-family:'Comfortaa',sans-serif;font-weight:600;color:var(--text)">${O.length} officines identifiées</div>
+          <div style="font-size:12px;color:var(--text2)">sur ${G.nbAdherents || '?'} adhérents déclarés</div>
+        </div>
+        ${offList}
+      </div>
+
+      <div class="card" style="padding:16px 20px;margin-bottom:24px;border-left:3px solid ${grn};background:var(--opso-green-pale)">
+        <div style="font-weight:700;color:var(--text);margin-bottom:4px">📊 Ventes détaillées — en attente</div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.5">Le CA, les commandes et la marge par officine s'afficheront ici dès qu'Intégral fournira les exports de ventes de ces pharmacies (comme pour OPSO). La liste et la carte ci-dessus proviennent de la base nationale des groupements.</div>
+      </div>
+    </div>`;
+
+  // Carte Leaflet
+  setTimeout(() => {
+    const mapEl = document.getElementById('ess-map');
+    if (!mapEl || typeof L === 'undefined') { if (mapEl) mapEl.innerHTML = '<div style="padding:24px;color:var(--text2);text-align:center">Carte indisponible</div>'; return; }
+    try {
+      if (_essMap) { _essMap.remove(); _essMap = null; }
+      _essMap = L.map(mapEl, { scrollWheelZoom: false, attributionControl: true });
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '© OpenStreetMap © CARTO', maxZoom: 19, subdomains: 'abcd'
+      }).addTo(_essMap);
+      const pts = [];
+      geo.forEach(o => {
+        const m = L.circleMarker([o.lat, o.lng], { radius: 8, color: '#fff', weight: 2, fillColor: '#57AE31', fillOpacity: 0.95 }).addTo(_essMap);
+        m.bindPopup('<b>' + esc(o.nom) + '</b><br>' + esc(o.cp) + ' ' + esc(o.ville));
+        pts.push([o.lat, o.lng]);
+      });
+      if (pts.length) _essMap.fitBounds(pts, { padding: [40, 40], maxZoom: 9 });
+      else _essMap.setView([47.47, -0.55], 8);
+      setTimeout(() => _essMap && _essMap.invalidateSize(), 120);
+    } catch (e) { mapEl.innerHTML = '<div style="padding:24px;color:var(--text2);text-align:center">Carte : ' + esc(e.message) + '</div>'; }
+  }, 40);
+}

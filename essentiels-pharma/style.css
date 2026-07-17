@@ -28,7 +28,7 @@
   --opso-gray-pale:   #161C15;   /* ex surface claire -> surface sombre */
   --opso-border:      rgba(255,255,255,0.08);
   --opso-text:        #FFFFFF;
-  --opso-white:       #ffffff;
+  --opso-white:       #161C15;   /* ex #fff : sert de SURFACE (cartes/champs) -> sombre. Texte blanc = #fff en dur. */
   --opso-warning:     #E0A43A;   /* lisible sur dark */
   --opso-danger:      #E56B6B;   /* lisible sur dark */
   --opso-accent:      #96CD40;  /* lime accent */
@@ -350,7 +350,7 @@ body {
   content: '';
   position: absolute; left: -12px; top: 50%; transform: translateY(-50%);
   width: 3px; height: 20px; border-radius: 0 3px 3px 0;
-  background: white;
+  background: var(--opso-green);
 }
 .nav-divider {
   height: 1px; background: rgba(255,255,255,0.10);
