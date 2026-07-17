@@ -143,7 +143,7 @@
 
   function ensureData(cb) {
     if (window.PHARMASMILE) { cb(); return; }
-    var sc = document.createElement('script'); sc.src = 'pharmasmile-data.js?v=20260612a';
+    var sc = document.createElement('script'); sc.src = 'pharmasmile-data.js?v=20260717a';
     sc.onload = cb; sc.onerror = cb; document.head.appendChild(sc);
   }
   function ensureLeaflet(cb) {
