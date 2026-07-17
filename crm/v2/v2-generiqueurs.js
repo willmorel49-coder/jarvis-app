@@ -16,6 +16,18 @@
 
   function eur(n) { return V2.fmtEur ? V2.fmtEur(n) : (Math.round(n || 0).toLocaleString('fr') + ' €'); }
 
+  // Nettoyage AFFICHAGE des noms de labos (certains titulaires BDPM sont longs/moches).
+  // Uniquement cosmétique : ne change pas l'agrégation.
+  var LAB_FIX = { 'Glaxosmithkline': 'GSK', 'Reddy': "Dr. Reddy's", 'Pierre Fabre Medicament': 'Pierre Fabre', 'Bouchara-recordati': 'Bouchara-Recordati', 'Stragen-france': 'Stragen', 'Ratiopharm': 'Ratiopharm (Teva)', 'Eg Labo': 'EG Labo' };
+  function cleanLab(name) {
+    var n = String(name || '').trim();
+    if (LAB_FIX[n]) return LAB_FIX[n];
+    n = n.replace(/^Laboratoires?\s+/i, '');                          // « Laboratoire(s) Machin » → « Machin »
+    n = n.replace(/\s+(Holding|Deutschland|Gesellschaft.*|FUR.*|SA|SAS)$/i, '');
+    n = n.replace(/-france$/i, '');
+    return n || String(name || '');
+  }
+
   // Agrège les ventes par génériqueur. Renvoie { rows:[{lab,ca,n}], total }.
   V2.caParGeneriqueur = function (sales) {
     var G = window.GENERIQUEURS || null;
@@ -67,7 +79,7 @@
       var w = Math.max(3, Math.round(o.ca / maxCa * 100));
       var col = BAR[i % BAR.length];
       return '<div class="gnq-row">' +
-        '<span class="gnq-lab" title="' + esc(o.lab) + '">' + esc(o.lab) + '</span>' +
+        '<span class="gnq-lab" title="' + esc(o.lab) + '">' + esc(cleanLab(o.lab)) + '</span>' +
         '<span class="gnq-bar"><i style="width:' + w + '%;background:' + col + '"></i></span>' +
         '<span class="gnq-val">' + eur(o.ca) + '<small>' + pct + '%</small></span>' +
       '</div>';
