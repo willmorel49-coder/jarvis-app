@@ -10,7 +10,7 @@
   V2.pages = V2.pages || {};
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s); };
   var ICO = window.ICO || function () { return ''; };
-  var CB = '?v=20260717e';   // bumpé au déploiement (aligné index.html)
+  var CB = '?v=20260717h';   // bumpé au déploiement (aligné index.html)
 
   var D = null, map = null, layer = null, markers = {}, sel = '', GIDX = null;
   // Clients : vert par segment, GROS + contour = ressortent. Prospects : ambre discret.
@@ -284,6 +284,7 @@
       '.cg-rk-sorts{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:10px}.cg-rk-sorts>span{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;margin-right:2px}' +
       '.cg-rk-sb{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:5px 12px;font-family:var(--font);font-size:12px;font-weight:700;color:var(--muted);cursor:pointer;transition:all .15s}' +
       '.cg-rk-sb:hover{color:var(--ip-ink)}.cg-rk-sb.on{background:var(--ip-blue);color:#fff;border-color:var(--ip-blue)}' +
+      '.cg-rk-exp{flex:none;border:1px solid var(--line);background:var(--card);border-radius:9px;padding:7px 12px;font-family:var(--font);font-size:12px;font-weight:700;color:var(--ip-blue);cursor:pointer;white-space:nowrap}.cg-rk-exp:hover{border-color:var(--ip-blue);background:var(--halo)}' +
       '.cg-rk-list{padding:6px 0}' +
       '.cg-rk-row{display:flex;align-items:center;gap:11px;padding:9px 16px;border-bottom:1px solid var(--line-2);cursor:pointer;transition:background .12s}' +
       '.cg-rk-row:hover{background:var(--card-2)}' +
@@ -412,8 +413,9 @@
     var rows = rankRows(), totC = 0, totCa = 0, totPr = 0;
     rows.forEach(function (r) { totC += r.c; totCa += r.ca; totPr += r.pr; });
     var sb = function (k, lbl) { return '<button class="cg-rk-sb' + (rankSort === k ? ' on' : '') + '" onclick="V2.cgRankSort(\'' + k + '\')">' + lbl + '</button>'; };
-    var head = '<div class="cg-rk-head"><div class="cg-rk-t">Tous les groupements · ' + rows.length + '</div>' +
-      '<div class="cg-rk-sum">' + totC + ' clients · ' + eur(totCa) + ' · ' + totPr + ' prospects</div>' +
+    var head = '<div class="cg-rk-head"><div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px"><div><div class="cg-rk-t">Tous les groupements · ' + rows.length + '</div>' +
+      '<div class="cg-rk-sum">' + totC + ' clients · ' + eur(totCa) + ' · ' + totPr + ' prospects</div></div>' +
+      '<button class="cg-rk-exp" onclick="V2.cgExport()" title="Exporter en CSV (Excel)">⬇ Export</button></div>' +
       '<div class="cg-rk-sorts"><span>Trier</span>' + sb('c', 'Clients') + sb('ca', 'CA') + sb('pr', 'Prospects') + sb('pen', 'Pénétr.') + '</div></div>';
     var body = rows.map(function (r, i) {
       return '<div class="cg-rk-row" data-g="' + esc(r.name) + '" onclick="V2.cgSelect(this.dataset.g)">' +
@@ -425,6 +427,19 @@
     return '<div class="cg-rk">' + head + '<div class="cg-rk-list">' + body + '</div></div>';
   }
   V2.cgRankSort = function (k) { rankSort = k; var ls = document.getElementById('cg-list'); if (ls) ls.innerHTML = listHtml(); };
+  function csvCell(s) { s = String(s == null ? '' : s); return /[;"\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }
+  V2.cgExport = function () {
+    var rows = rankRows();
+    var head = ['Groupement', 'Clients', 'Prospects', 'Pharmacies', 'CA clients EUR', 'Penetration %', 'Top commercial'];
+    var lines = [head.join(';')];
+    rows.forEach(function (r) {
+      var tot = (GIDX[r.name] && GIDX[r.name].pts.length) || 0;
+      lines.push([csvCell(r.name), r.c, r.pr, tot, Math.round(r.ca), r.pen, csvCell(r.topComm)].join(';'));
+    });
+    var blob = new Blob(['﻿' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'groupements_integral.csv';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a); setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+  };
 
   function listHtml() {
     if (!sel) return rankingHtml();
