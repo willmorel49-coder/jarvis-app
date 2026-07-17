@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Intégral Pharma — Rencontrons-nous</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#05070E;        /* nuit */
+  --ink2:#0A1430;       /* navy */
+  --blue:#2E6BFF;       /* bleu vif ADN */
+  --blue-dk:#0034A0;
+  --orange:#F39A1B;     /* accent chaud ADN */
+  --orange-hot:#FF7A18;
+  --paper:#F4F1EA;      /* crème pour la carte */
+  --white:#FBFCFF;
+  --muted:#9AA6C4;
+  --font:'Satoshi',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --disp:'Anton',var(--font);
+  --mono:'Geist Mono',ui-monospace,monospace;
+  --ease:cubic-bezier(.16,1,.3,1);
+  --ease-snap:cubic-bezier(.34,1.4,.5,1);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--ink);color:var(--white);
+  font-family:var(--font);line-height:1.5;
+  overflow-x:hidden;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+}
+img,video{display:block;max-width:100%}
+a{color:inherit;text-decoration:none}
+
+/* ============ SCENE FIXE (vidéo drone du siège) ============ */
+.stage{position:fixed;inset:0;z-index:0;overflow:hidden;background:#05070E center/cover no-repeat;}
+.stage__media{position:absolute;inset:-2% -2%;width:104%;height:104%;object-fit:cover;
+  transform:scale(1.06);will-change:transform;background:#0A1430;}
+/* voile cinéma : bleu-nuit + assombrissement, dégradés (pas de blur) */
+.stage__grade{position:absolute;inset:0;background:
+  linear-gradient(180deg, rgba(5,7,14,.55) 0%, rgba(5,7,14,.20) 22%, rgba(5,7,14,.22) 55%, rgba(5,7,14,.72) 88%, rgba(5,7,14,.95) 100%),
+  radial-gradient(120% 78% at 50% 34%, rgba(10,20,48,0) 40%, rgba(5,7,14,.55) 100%),
+  linear-gradient(90deg, rgba(46,107,255,.10), rgba(243,154,27,.06));
+  mix-blend-mode:normal;}
+/* vignette (gradient, jamais filter:blur) */
+.stage__vig{position:absolute;inset:0;pointer-events:none;background:
+  radial-gradient(130% 100% at 50% 45%, transparent 55%, rgba(0,0,0,.62) 100%);}
+
+/* grain léger animé */
+.grain{position:fixed;inset:-120px;z-index:60;pointer-events:none;opacity:.05;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  animation:grain 7s steps(6) infinite;}
+@keyframes grain{
+  0%{transform:translate(0,0)}20%{transform:translate(-40px,20px)}40%{transform:translate(30px,-30px)}
+  60%{transform:translate(-20px,-25px)}80%{transform:translate(35px,15px)}100%{transform:translate(0,0)}}
+
+/* letterbox + barre de progression = signal "bande-annonce" */
+.bar-top,.bar-bot{position:fixed;left:0;right:0;height:clamp(14px,3.4vw,30px);z-index:55;pointer-events:none;background:#05070E}
+.bar-top{top:0}.bar-bot{bottom:0}
+.progress{position:fixed;top:0;left:0;height:2px;width:0;z-index:58;
+  background:linear-gradient(90deg,var(--orange),var(--orange-hot));box-shadow:0 0 12px rgba(243,154,27,.7)}
+
+/* ============ REEL (contenu qui défile) ============ */
+.reel{position:relative;z-index:5}
+.act{min-height:100svh;display:flex;flex-direction:column;justify-content:center;
+  padding:clamp(28px,7vw,80px) clamp(22px,6vw,90px);position:relative}
+.act--tight{min-height:auto}
+
+/* scrim local pour lisibilité, sous le texte */
+.scrim{position:absolute;left:0;right:0;bottom:0;height:70%;pointer-events:none;
+  background:linear-gradient(180deg,transparent,rgba(5,7,14,.86))}
+
+.eyebrow{display:inline-flex;align-items:center;gap:10px;font-weight:700;
+  font-size:clamp(11px,2.6vw,13px);letter-spacing:.32em;text-transform:uppercase;color:var(--white);
+  opacity:.9}
+.eyebrow .tick{width:26px;height:2px;background:var(--orange);border-radius:2px}
+.eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--orange);
+  box-shadow:0 0 0 0 rgba(243,154,27,.6);animation:ping 2.6s var(--ease) infinite}
+@keyframes ping{0%{box-shadow:0 0 0 0 rgba(243,154,27,.55)}70%{box-shadow:0 0 0 10px rgba(243,154,27,0)}100%{box-shadow:0 0 0 0 rgba(243,154,27,0)}}
+
+/* ============ TYPO CINÉTIQUE (masque overflow + translate, PAS background-clip) ============ */
+.kin{font-family:var(--disp);font-weight:400;line-height:.92;letter-spacing:.005em;
+  text-transform:uppercase;margin:0;text-wrap:balance}
+.kin .ln{display:block}
+.w{display:inline-block;overflow:hidden;vertical-align:top;padding:0 .04em .12em 0;margin:0 -.02em}
+.w > i{display:inline-block;font-style:normal;transform:translateY(115%);
+  transition:transform .9s var(--ease) calc(var(--i,0)*68ms);will-change:transform}
+.reveal.in .w > i{transform:translateY(0)}
+.accent{color:var(--orange)}
+.blue{color:var(--blue)}
+.outline{color:transparent;-webkit-text-stroke:1.5px rgba(251,252,255,.55)}
+
+/* fade + rise générique pour blocs non-typo */
+.rise{opacity:0;transform:translateY(26px);transition:opacity .9s var(--ease),transform .9s var(--ease)}
+.reveal.in .rise{opacity:1;transform:none}
+.rise.d1{transition-delay:.12s}.rise.d2{transition-delay:.24s}.rise.d3{transition-delay:.36s}
+
+.lead{max-width:36ch;font-size:clamp(16px,3.6vw,21px);color:#D6DEF3;font-weight:500;margin:22px 0 0}
+.lead b{color:#fff;font-weight:700}
+
+/* HERO */
+.hero .kin{font-size:clamp(52px,15.5vw,168px)}
+.scroll-cue{position:absolute;left:50%;bottom:clamp(30px,6vw,54px);transform:translateX(-50%);
+  display:flex;flex-direction:column;align-items:center;gap:9px;color:var(--muted);
+  font:600 11px/1 var(--mono);letter-spacing:.28em;text-transform:uppercase}
+.scroll-cue .rail{width:1.5px;height:44px;background:linear-gradient(var(--orange),transparent);position:relative;overflow:hidden;border-radius:2px}
+.scroll-cue .rail::after{content:"";position:absolute;top:-40%;left:0;width:100%;height:40%;background:var(--white);animation:drop 1.9s var(--ease) infinite}
+@keyframes drop{0%{top:-40%}70%{top:100%}100%{top:100%}}
+
+/* ACT statement */
+.statement .kin{font-size:clamp(38px,10.5vw,116px)}
+
+/* STATS mono */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(12px,2.4vw,26px);margin-top:34px}
+@media(max-width:640px){.stats{grid-template-columns:1fr;gap:14px}}
+.stat{border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:clamp(18px,3vw,26px);
+  background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.015));position:relative;overflow:hidden}
+.stat::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(var(--orange),var(--orange-hot))}
+.stat .num{font-family:var(--disp);font-size:clamp(40px,8vw,66px);line-height:.9;letter-spacing:.01em}
+.stat .num small{font-family:var(--mono);font-size:.34em;font-weight:600;vertical-align:super;color:var(--orange);letter-spacing:0}
+.stat .cap{margin-top:10px;font:600 12px/1.4 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+
+/* ============ CARTE — panneau crème qui "casse" la nuit ============ */
+.network{background:var(--paper);color:var(--ink2);z-index:6;
+  padding:clamp(40px,7vw,88px) clamp(18px,5vw,70px);border-radius:34px 34px 0 0;
+  margin-top:6svh;box-shadow:0 -40px 80px -40px rgba(0,0,0,.7)}
+.network .eyebrow{color:var(--blue-dk)}
+.network .eyebrow .tick{background:var(--blue)}
+.network .eyebrow .dot{background:var(--orange);animation:none;box-shadow:none}
+.network h2{font-family:var(--disp);text-transform:uppercase;line-height:.94;letter-spacing:.006em;
+  font-size:clamp(30px,7vw,74px);margin:14px 0 0;color:var(--ink2)}
+.network h2 .accent{color:var(--orange)}
+.network .sub{max-width:44ch;margin:16px 0 4px;color:#48557a;font-weight:500;font-size:clamp(15px,3.4vw,18px)}
+.mapframe{margin-top:26px;border-radius:22px;overflow:hidden;background:#eef2fb;
+  border:1px solid #e0e7f6;box-shadow:0 30px 60px -34px rgba(10,20,48,.5)}
+.mapframe iframe{width:100%;border:0;display:block}
+.map-fallback{padding:26px;text-align:center;color:#5b6685;font-weight:600}
+
+/* ============ VALEURS ============ */
+.values{background:var(--paper);color:var(--ink2);padding:clamp(8px,3vw,20px) clamp(18px,5vw,70px) clamp(46px,7vw,86px);z-index:6}
+.values .vhead{font:700 12px/1 var(--mono);letter-spacing:.3em;text-transform:uppercase;color:var(--blue-dk);margin:0 0 22px;display:flex;align-items:center;gap:12px}
+.values .vhead::before{content:"";width:26px;height:2px;background:var(--orange);border-radius:2px}
+.vgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(14px,2.4vw,22px)}
+@media(max-width:720px){.vgrid{grid-template-columns:1fr}}
+.val{border-top:2px solid var(--ink2);padding-top:16px;position:relative}
+.val .vnum{font:600 12px/1 var(--mono);color:var(--orange);letter-spacing:.1em}
+.val h3{font-family:var(--disp);text-transform:uppercase;font-size:clamp(34px,7.5vw,58px);
+  line-height:.92;margin:12px 0 8px;letter-spacing:.01em;color:var(--ink2)}
+.val p{margin:0;color:#4a5677;font-weight:500;font-size:clamp(14px,3.4vw,16px);max-width:22ch}
+.val .glyph{position:absolute;top:16px;right:2px;color:var(--blue)}
+.val .glyph svg{width:26px;height:26px;display:block}
+
+/* ============ INVITATION ============ */
+.invite{position:relative;z-index:6;background:
+  linear-gradient(180deg,#070C1A 0%, #05070E 60%);
+  color:var(--white);padding:clamp(52px,9vw,110px) clamp(22px,6vw,80px) clamp(48px,7vw,90px);
+  text-align:center;overflow:hidden}
+.invite::before{content:"";position:absolute;inset:0;pointer-events:none;background:
+  radial-gradient(80% 60% at 50% 0%, rgba(46,107,255,.16), transparent 60%),
+  radial-gradient(70% 55% at 50% 100%, rgba(243,154,27,.12), transparent 60%)}
+.invite .in-eb{position:relative;font:700 12px/1 var(--mono);letter-spacing:.34em;text-transform:uppercase;color:var(--orange);margin-bottom:18px}
+.invite .kin{position:relative;font-size:clamp(46px,12vw,120px)}
+.invite .isub{position:relative;max-width:30ch;margin:20px auto 0;color:#C7D0E8;font-weight:500;font-size:clamp(15px,3.6vw,19px)}
+.cta{position:relative;display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin:34px 0 0}
+.btn{display:inline-flex;align-items:center;gap:11px;padding:16px 26px;border-radius:999px;
+  font-weight:700;font-size:clamp(15px,3.6vw,17px);letter-spacing:.01em;transition:transform .3s var(--ease-snap),box-shadow .3s var(--ease),background .3s;
+  will-change:transform}
+.btn svg{width:19px;height:19px}
+.btn--mail{background:linear-gradient(180deg,var(--orange),var(--orange-hot));color:#1a1204;box-shadow:0 14px 30px -12px rgba(243,154,27,.7)}
+.btn--tel{background:transparent;color:var(--white);border:1.5px solid rgba(255,255,255,.30)}
+.btn--tel .telnum{font-family:var(--mono);font-weight:600}
+.btn:hover{transform:translateY(-3px)}
+.btn--mail:hover{box-shadow:0 20px 40px -12px rgba(243,154,27,.85)}
+.btn--tel:hover{border-color:var(--orange);color:var(--orange)}
+.btn:active{transform:translateY(-1px)}
+
+.sign{position:relative;margin:38px auto 0;max-width:520px;
+  border-top:1px solid rgba(255,255,255,.12);padding-top:22px;
+  display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap}
+.sign .avatar{width:44px;height:44px;border-radius:50%;flex:0 0 auto;
+  background:linear-gradient(135deg,var(--blue),var(--blue-dk));display:grid;place-items:center;
+  font-family:var(--disp);font-size:19px;color:#fff;letter-spacing:.02em}
+.sign .who{text-align:left;line-height:1.35}
+.sign .who b{display:block;font-weight:700;font-size:15px}
+.sign .who span{font-size:12.5px;color:var(--muted);letter-spacing:.02em}
+
+.foot{position:relative;z-index:6;background:#05070E;color:#5c688a;
+  padding:22px 24px calc(22px + env(safe-area-inset-bottom));text-align:center}
+.foot img{height:26px;margin:0 auto 10px;opacity:.9}
+.foot p{margin:0;font:500 11.5px/1.5 var(--mono);letter-spacing:.06em;color:#5c688a}
+
+/* logo flottant */
+.brand{position:fixed;top:calc(clamp(14px,3.4vw,30px) + 14px);left:clamp(20px,5vw,42px);z-index:57;
+  display:flex;align-items:center;gap:10px;transition:opacity .5s ease}
+.brand img{height:clamp(30px,4.6vw,40px);width:auto;
+  filter:drop-shadow(0 4px 14px rgba(0,0,0,.55))}
+
+/* intro / rideau */
+.intro{position:fixed;inset:0;z-index:100;background:#05070E;display:grid;place-items:center;
+  transition:opacity .8s var(--ease),visibility .8s}
+.intro.gone{opacity:0;visibility:hidden}
+.intro__logo{width:min(58vw,240px);opacity:0;transform:translateY(14px) scale(.98);
+  animation:introIn 1s var(--ease) .15s forwards}
+.intro__tag{position:absolute;bottom:16%;left:0;right:0;text-align:center;color:var(--muted);
+  font:600 11px/1 var(--mono);letter-spacing:.34em;text-transform:uppercase;opacity:0;
+  animation:introIn 1s var(--ease) .55s forwards}
+.intro__line{position:absolute;bottom:calc(16% - 22px);left:50%;width:0;height:1px;background:var(--orange);
+  transform:translateX(-50%);animation:introLine 1.1s var(--ease) .7s forwards}
+@keyframes introIn{to{opacity:1;transform:none}}
+@keyframes introLine{to{width:min(180px,52vw)}}
+
+/* reduced motion : tout visible, zéro anim */
+@media (prefers-reduced-motion: reduce){
+  .w > i,.rise{transition:none !important;transform:none !important;opacity:1 !important}
+  .grain,.scroll-cue .rail::after,.eyebrow .dot{animation:none !important}
+  .intro__logo,.intro__tag,.intro__line{animation:none !important;opacity:1;width:min(180px,52vw)}
+  .stage__media{transform:scale(1.02) !important}
+}
+</style>
+</head>
+<body>
+
+<!-- rideau d'ouverture -->
+<div class="intro" id="intro" aria-hidden="true">
+  <img class="intro__logo" src="../assets/logo.png" alt="">
+  <div class="intro__line"></div>
+  <div class="intro__tag">Acteur de la santé</div>
+</div>
+
+<!-- SCÈNE FIXE : drone du siège -->
+<div class="stage" aria-hidden="true">
+  <video class="stage__media" id="hero" autoplay muted loop playsinline preload="auto"
+         poster="../assets/poster.jpg">
+    <source src="../assets/hero.mp4" type="video/mp4">
+  </video>
+  <div class="stage__grade"></div>
+  <div class="stage__vig"></div>
+</div>
+
+<div class="grain" aria-hidden="true"></div>
+<div class="bar-top" aria-hidden="true"></div>
+<div class="bar-bot" aria-hidden="true"></div>
+<div class="progress" id="progress" aria-hidden="true"></div>
+
+<a class="brand" href="#top" aria-label="Intégral Pharma">
+  <img src="../assets/logo.png" alt="Intégral Pharma">
+</a>
+
+<main class="reel" id="top">
+
+  <!-- ACT I — HERO -->
+  <section class="act hero reveal" data-scene>
+    <div class="scrim"></div>
+    <div style="position:relative">
+      <span class="eyebrow rise"><span class="dot"></span> Intégral Pharma</span>
+      <h1 class="kin" style="margin-top:22px" data-parallax="-0.06">
+        <span class="ln" data-split>Acteur</span>
+        <span class="ln" data-split>de la</span>
+        <span class="ln"><span class="w" style="--i:0"><i>santé</i></span> <span class="w accent" style="--i:1"><i>depuis</i></span></span>
+        <span class="ln"><span class="w accent" style="--i:2"><i>plus</i></span> <span class="w accent" style="--i:3"><i>de</i></span> <span class="w accent" style="--i:4"><i>20</i></span> <span class="w accent" style="--i:5"><i>ans.</i></span></span>
+      </h1>
+      <p class="lead rise d2">Un <b>groupe de grossistes</b> français indépendant, au service des pharmaciens.</p>
+    </div>
+    <div class="scroll-cue" aria-hidden="true"><div class="rail"></div>Défiler</div>
+  </section>
+
+  <!-- ACT II — STATEMENT -->
+  <section class="act statement reveal" data-scene>
+    <div class="scrim"></div>
+    <div style="position:relative">
+      <span class="eyebrow rise"><span class="tick"></span> Le réseau</span>
+      <h2 class="kin" style="margin-top:20px">
+        <span class="ln" data-split>Neuf agences.</span>
+        <span class="ln"><span class="w" style="--i:0"><i>Une</i></span> <span class="w" style="--i:1"><i>même</i></span> <span class="w accent" style="--i:2"><i>exigence.</i></span></span>
+      </h2>
+      <p class="lead rise d2">Partout en France, la même promesse tenue&nbsp;: la <b>disponibilité</b>, jour après jour.</p>
+
+      <div class="stats">
+        <div class="stat rise d1"><div class="num">20<small>+ ANS</small></div><div class="cap">d'expérience</div></div>
+        <div class="stat rise d2"><div class="num">9<small>AGENCES</small></div><div class="cap">partout en France</div></div>
+        <div class="stat rise d3"><div class="num">72<small>H</small></div><div class="cap">livraison</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ACT III — LA CARTE -->
+  <section class="network reveal" data-scene>
+    <span class="eyebrow rise"><span class="dot"></span> Notre maillage</span>
+    <h2 class="rise d1">Nos agences,<br><span class="accent">partout où sont vos officines.</span></h2>
+    <p class="sub rise d1">Explorez le réseau Intégral Pharma. Une logistique de proximité, pensée pour ne jamais vous laisser à court.</p>
+    <div class="mapframe rise d2" id="mapWrap">
+      <iframe id="mapFrame" title="Carte des agences Intégral Pharma"
+              src="../map-component.html?mode=map" scrolling="no" loading="lazy"
+              style="height:520px"></iframe>
+    </div>
+  </section>
+
+  <!-- ACT IV — VALEURS -->
+  <section class="values reveal" data-scene>
+    <p class="vhead rise">Ce qui nous tient</p>
+    <div class="vgrid">
+      <div class="val rise d1">
+        <span class="glyph" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg></span>
+        <span class="vnum">01</span>
+        <h3>Confiance</h3>
+        <p>Un partenaire présent, dans la durée.</p>
+      </div>
+      <div class="val rise d2">
+        <span class="glyph" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7L9 18l-5-5"/></svg></span>
+        <span class="vnum">02</span>
+        <h3>Engagement</h3>
+        <p>Vos approvisionnements tenus, jour après jour.</p>
+      </div>
+      <div class="val rise d3">
+        <span class="glyph" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.5-7-10a4 4 0 017-2.5A4 4 0 0119 11c0 5.5-7 10-7 10z"/></svg></span>
+        <span class="vnum">03</span>
+        <h3>Respect</h3>
+        <p>De vous. De vos patients. De votre métier.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ACT V — INVITATION -->
+  <section class="invite reveal" data-scene>
+    <p class="in-eb">Une seule intention</p>
+    <h2 class="kin">
+      <span class="ln"><span class="w" style="--i:0"><i>Rencontrons</i></span></span>
+      <span class="ln"><span class="w accent" style="--i:1"><i>-nous.</i></span></span>
+    </h2>
+    <p class="isub rise d1">Le reste — nos conditions, nos engagements — se raconte de vive voix. Prenons un moment ensemble.</p>
+
+    <div class="cta rise d2">
+      <a class="btn btn--mail" href="mailto:pascale.prieto@integralpharma.fr?subject=Rencontrons-nous%20%E2%80%94%20Int%C3%A9gral%20Pharma">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
+        Écrire à Pascale
+      </a>
+      <a class="btn btn--tel" href="tel:+33676885391">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 01-2.2 2 19.8 19.8 0 01-8.6-3 19.5 19.5 0 01-6-6 19.8 19.8 0 01-3-8.6A2 2 0 014.1 2h3a2 2 0 012 1.7c.1.9.4 1.8.7 2.7a2 2 0 01-.5 2.1L8.1 9.6a16 16 0 006 6l1.1-1.1a2 2 0 012.1-.5c.9.3 1.8.6 2.7.7a2 2 0 011.7 2z"/></svg>
+        Appeler Pascale&nbsp;<span class="telnum">06 76 88 53 91</span>
+      </a>
+    </div>
+
+    <div class="sign rise d3">
+      <div class="avatar">PP</div>
+      <div class="who">
+        <b>Pascale Prieto</b>
+        <span>Directrice commerciale France — Intégral Pharma</span>
+      </div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <img src="../assets/logo.png" alt="Intégral Pharma">
+    <p>Intégral Pharma · Groupe de grossistes-répartiteurs français · Acteur de la santé depuis plus de 20 ans</p>
+  </footer>
+
+</main>
+
+<script>
+(function(){
+  "use strict";
+  var RM = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---- intro ---- */
+  var intro = document.getElementById('intro');
+  function dropCurtain(){ if(intro){ intro.classList.add('gone'); setTimeout(function(){ if(intro&&intro.parentNode) intro.parentNode.removeChild(intro); },900); } }
+  if(RM){ dropCurtain(); } else { setTimeout(dropCurtain, 1650); }
+  window.addEventListener('load', function(){ setTimeout(dropCurtain, 1650); });
+
+  /* ---- découpe des titres en mots masqués (overflow + translate) ---- */
+  var splits = document.querySelectorAll('[data-split]');
+  for(var s=0;s<splits.length;s++){
+    var el = splits[s];
+    var words = el.textContent.trim().split(/\s+/);
+    var html = '';
+    for(var i=0;i<words.length;i++){
+      html += '<span class="w" style="--i:'+i+'"><i>'+words[i]+'</i></span>' + (i<words.length-1?' ':'');
+    }
+    el.innerHTML = html;
+  }
+
+  /* ---- révélation au scroll ---- */
+  var scenes = document.querySelectorAll('[data-scene]');
+  if(RM || !('IntersectionObserver' in window)){
+    for(var k=0;k<scenes.length;k++) scenes[k].classList.add('in');
+  } else {
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){ if(en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target); } });
+    }, {threshold:0.18, rootMargin:'0px 0px -8% 0px'});
+    for(var j=0;j<scenes.length;j++) io.observe(scenes[j]);
+  }
+
+  /* ---- carte : hauteur auto via postMessage ---- */
+  var mapFrame = document.getElementById('mapFrame');
+  window.addEventListener('message', function(e){
+    if(e && e.data && e.data.ipAtlasHeight && mapFrame){
+      var h = parseInt(e.data.ipAtlasHeight,10);
+      if(h>200 && h<6000) mapFrame.style.height = h + 'px';
+    }
+  });
+
+  /* ---- vidéo : pause hors visibilité, respect reduced-motion ---- */
+  var vid = document.getElementById('hero');
+  if(vid){
+    if(RM){ try{ vid.pause(); vid.removeAttribute('autoplay'); }catch(e){} }
+    else { var p = vid.play && vid.play(); if(p&&p.catch) p.catch(function(){}); }
+    document.addEventListener('visibilitychange', function(){
+      if(RM) return;
+      if(document.hidden){ try{vid.pause();}catch(e){} }
+      else { var q=vid.play&&vid.play(); if(q&&q.catch) q.catch(function(){}); }
+    });
+    vid.addEventListener('error', function(){ /* poster/siege reste en fond */ });
+  }
+
+  /* ---- scrub : progression + parallax léger (rAF, coupé si reduced-motion) ---- */
+  var progress = document.getElementById('progress');
+  var media = document.querySelector('.stage__media');
+  var plx = document.querySelectorAll('[data-parallax]');
+  var ticking = false;
+
+  function frame(){
+    ticking = false;
+    var st = window.pageYOffset || document.documentElement.scrollTop || 0;
+    var docH = (document.documentElement.scrollHeight - window.innerHeight) || 1;
+    var prog = Math.min(1, Math.max(0, st/docH));
+    if(progress) progress.style.width = (prog*100).toFixed(2) + '%';
+    if(!RM){
+      if(media){ media.style.transform = 'scale('+(1.06 + prog*0.06).toFixed(3)+') translateY('+(prog*24).toFixed(1)+'px)'; }
+      for(var i=0;i<plx.length;i++){
+        var sp = parseFloat(plx[i].getAttribute('data-parallax'))||0;
+        plx[i].style.transform = 'translateY('+(st*sp).toFixed(1)+'px)';
+      }
+    }
+  }
+  function onScroll(){ if(!ticking){ ticking = true; requestAnimationFrame(frame); } }
+  window.addEventListener('scroll', onScroll, {passive:true});
+  window.addEventListener('resize', onScroll, {passive:true});
+  frame();
+})();
+</script>
+</body>
+</html>

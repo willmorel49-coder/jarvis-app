@@ -1,0 +1,471 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Intégral Pharma — Rencontrons-nous</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://api.fontshare.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --navy:#0A1430; --navy-deep:#060A18; --ink:#0A1430;
+  --blue:#0050E6; --blue-dk:#0034A0; --blue-lite:#5B8CFF;
+  --orange:#F39A1B; --orange-hi:#FFC168; --orange-deep:#C9741A;
+  --white:#FFFFFF; --cream:#F4F6FB;
+  --fg:#EAF0FF; --muted:#9AA6C8; --muted-2:#6E7BA0; --line:rgba(255,255,255,.10);
+  --disp:'Space Grotesk',system-ui,sans-serif;
+  --body:'Satoshi',system-ui,-apple-system,sans-serif;
+  --mono:'Geist Mono',ui-monospace,monospace;
+  --ease:cubic-bezier(.16,1,.3,1);
+  --maxw:720px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  font-family:var(--body); color:var(--fg); line-height:1.55;
+  background:var(--navy-deep);
+  -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+  overflow-x:hidden;
+}
+/* deep dramatic backdrop (no blur, gradients only) */
+.backdrop{position:fixed;inset:0;z-index:-2;pointer-events:none;
+  background:
+   radial-gradient(120% 80% at 50% -8%, rgba(243,154,27,.10), transparent 46%),
+   radial-gradient(90% 60% at 82% 22%, rgba(0,80,230,.14), transparent 55%),
+   radial-gradient(80% 70% at 8% 78%, rgba(0,52,160,.16), transparent 60%),
+   linear-gradient(180deg,#070B18 0%,#0A1430 42%,#080D1E 100%);
+}
+.grain{position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.5}
+#sparks{position:fixed;inset:0;z-index:0;pointer-events:none}
+
+img{max-width:100%;display:block}
+a{color:inherit;text-decoration:none}
+
+.wrap{position:relative;z-index:2;max-width:var(--maxw);margin:0 auto;padding:0 22px}
+
+/* ============ HERO + LAMP ============ */
+.hero{position:relative;min-height:100svh;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;text-align:center;overflow:hidden;padding:0 22px}
+.lamp{position:absolute;top:0;left:0;right:0;height:74vh;overflow:hidden;pointer-events:none;z-index:1}
+.lamp__glow{position:absolute;top:-34vh;left:50%;width:88vw;height:66vh;transform:translateX(-50%);
+  background:radial-gradient(50% 50% at 50% 50%, rgba(243,154,27,.30), rgba(243,154,27,.07) 44%, transparent 70%);
+  opacity:0;transition:opacity 1.2s ease .15s}
+.lamp__cone{position:absolute;top:-2px;left:50%;width:150vw;height:78vh;transform:translateX(-50%) scaleX(.14);
+  transform-origin:top center;opacity:0;
+  background:conic-gradient(at 50% 0%,
+    transparent 134deg,
+    rgba(243,154,27,.05) 150deg,
+    rgba(255,193,104,.20) 166deg,
+    rgba(255,208,140,.42) 180deg,
+    rgba(255,193,104,.20) 194deg,
+    rgba(243,154,27,.05) 210deg,
+    transparent 226deg);
+  -webkit-mask:linear-gradient(to bottom,#000 0%,rgba(0,0,0,.7) 38%,transparent 84%);
+          mask:linear-gradient(to bottom,#000 0%,rgba(0,0,0,.7) 38%,transparent 84%);
+  transition:transform 1.5s var(--ease) .1s, opacity 1s ease .1s}
+.lamp__line{position:absolute;top:0;left:50%;width:0;height:2px;transform:translateX(-50%);
+  background:linear-gradient(90deg,transparent,rgba(255,214,150,.98) 30%,rgba(255,214,150,.98) 70%,transparent);
+  box-shadow:0 0 20px 2px rgba(255,180,80,.55);border-radius:2px;
+  transition:width 1.2s var(--ease) .05s}
+body.booted .lamp__glow{opacity:1}
+body.booted .lamp__cone{transform:translateX(-50%) scaleX(1);opacity:1}
+body.booted .lamp__line{width:min(560px,72vw)}
+
+.hero__inner{position:relative;z-index:3;max-width:640px}
+.brandlogo{height:40px;width:auto;margin:0 auto 30px;
+  filter:drop-shadow(0 6px 20px rgba(0,0,0,.45));
+  opacity:0;transform:translateY(-8px);transition:opacity .9s ease .35s,transform .9s var(--ease) .35s}
+body.booted .brandlogo{opacity:1;transform:none}
+
+.eyebrow{display:inline-flex;align-items:center;gap:10px;
+  font-family:var(--mono);font-size:11.5px;letter-spacing:.34em;text-transform:uppercase;
+  color:var(--orange-hi);margin-bottom:20px;
+  opacity:0;transition:opacity 1s ease .5s}
+.eyebrow .pip{width:6px;height:6px;border-radius:50%;background:var(--orange);
+  box-shadow:0 0 0 0 rgba(243,154,27,.6)}
+body.booted .eyebrow{opacity:1}
+body.booted .eyebrow .pip{animation:pip 3s var(--ease) infinite 1.2s}
+@keyframes pip{0%{box-shadow:0 0 0 0 rgba(243,154,27,.55)}70%{box-shadow:0 0 0 9px rgba(243,154,27,0)}100%{box-shadow:0 0 0 0 rgba(243,154,27,0)}}
+
+.hero__title{font-family:var(--disp);font-weight:700;letter-spacing:-.03em;line-height:1.0;
+  font-size:clamp(37px,11vw,70px);
+  overflow-wrap:break-word;hyphens:manual;
+  color:#FFF9EF;
+  text-shadow:0 2px 40px rgba(255,180,80,.28),0 1px 3px rgba(0,0,0,.4);
+  opacity:0;transform:translateY(22px);
+  transition:opacity 1s ease .6s,transform 1.2s var(--ease) .6s}
+.hero__title .accent{color:var(--orange-hi)}
+body.booted .hero__title{opacity:1;transform:none}
+
+.hero__sub{margin:22px auto 0;max-width:440px;font-size:clamp(15px,4.2vw,17.5px);color:var(--muted);
+  opacity:0;transform:translateY(14px);transition:opacity 1s ease .9s,transform 1s var(--ease) .9s}
+.hero__sub b{color:var(--fg);font-weight:700}
+body.booted .hero__sub{opacity:1;transform:none}
+
+.scrollcue{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);z-index:3;
+  display:flex;flex-direction:column;align-items:center;gap:9px;
+  font-family:var(--mono);font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:var(--muted-2);
+  opacity:0;transition:opacity 1s ease 1.3s}
+body.booted .scrollcue{opacity:1}
+.scrollcue .rail{width:1px;height:38px;background:linear-gradient(180deg,var(--orange-hi),transparent);position:relative;overflow:hidden}
+.scrollcue .rail::after{content:"";position:absolute;left:0;top:-40%;width:1px;height:40%;
+  background:linear-gradient(180deg,transparent,#FFF);animation:cue 2.2s var(--ease) infinite}
+@keyframes cue{0%{top:-45%}60%,100%{top:110%}}
+
+/* ============ STORY / TRACING BEAM ============ */
+.story{position:relative;padding:8vh 22px 4vh}
+.beam{position:absolute;top:0;bottom:0;left:18px;width:2px;z-index:1;
+  background:rgba(255,255,255,.08);border-radius:2px}
+.beam__fill{position:absolute;top:0;left:0;width:100%;height:0;border-radius:2px;
+  background:linear-gradient(180deg,var(--orange-hi),var(--orange) 45%,var(--blue) 100%);
+  box-shadow:0 0 12px rgba(243,154,27,.5)}
+.beam__tip{position:absolute;left:50%;top:0;width:10px;height:10px;border-radius:50%;
+  transform:translate(-50%,-50%);background:#FFE7C2;
+  box-shadow:0 0 14px 3px rgba(255,190,90,.85),0 0 0 4px rgba(243,154,27,.18)}
+.story__inner{position:relative;z-index:2;padding-left:40px}
+@media(min-width:680px){
+  .beam{left:50%;transform:translateX(-50%)}
+  .story__inner{padding-left:0;max-width:560px;margin:0 auto}
+}
+
+.chapter{padding:9vh 0;position:relative}
+.chapter:first-child{padding-top:2vh}
+.chnum{font-family:var(--mono);font-size:11px;letter-spacing:.3em;color:var(--orange-hi);
+  text-transform:uppercase;margin-bottom:14px;display:block}
+.chtitle{font-family:var(--disp);font-weight:600;letter-spacing:-.02em;line-height:1.1;
+  font-size:clamp(25px,6.4vw,36px);color:#F3F6FF;margin-bottom:14px}
+.chtext{color:var(--muted);font-size:clamp(15px,4vw,16.5px);max-width:46ch}
+.chtext b{color:var(--fg);font-weight:700}
+
+/* reveal */
+.reveal{opacity:0;transform:translateY(30px);transition:opacity .9s ease,transform 1s var(--ease)}
+.reveal.in{opacity:1;transform:none}
+.reveal.d1{transition-delay:.08s}.reveal.d2{transition-delay:.16s}.reveal.d3{transition-delay:.24s}
+
+/* siège visual */
+.frame{position:relative;margin-top:26px;border-radius:18px;overflow:hidden;
+  border:1px solid rgba(255,255,255,.10);
+  box-shadow:0 24px 60px -22px rgba(0,0,0,.75),0 0 0 1px rgba(255,255,255,.03) inset}
+.frame__media{position:relative;aspect-ratio:16/10;background:#0B1226}
+.frame__media img,.frame__media video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.frame__grad{position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(6,10,24,0) 40%,rgba(6,10,24,.72) 100%),
+             linear-gradient(90deg,rgba(0,52,160,.14),transparent 40%)}
+.frame__tag{position:absolute;left:16px;bottom:14px;display:flex;align-items:center;gap:10px;
+  font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:#E7EEFF}
+.frame__tag .dot{width:7px;height:7px;border-radius:50%;background:var(--orange);
+  box-shadow:0 0 10px 2px rgba(243,154,27,.7)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:18px}
+.stat{border:1px solid var(--line);border-radius:13px;padding:13px 12px;
+  background:rgba(255,255,255,.025)}
+.stat .n{font-family:var(--mono);font-size:19px;color:#FFF;letter-spacing:-.01em}
+.stat .n b{color:var(--orange-hi);font-weight:500}
+.stat .l{font-size:12px;color:var(--muted-2);margin-top:3px}
+
+/* map */
+.mapshell{margin-top:24px;border-radius:18px;overflow:hidden;border:1px solid rgba(255,255,255,.10);
+  background:#F4F6FB;box-shadow:0 24px 60px -24px rgba(0,0,0,.7)}
+.mapshell iframe{width:100%;border:0;display:block;height:640px;transition:height .35s ease}
+.maphint{margin-top:12px;font-family:var(--mono);font-size:11px;letter-spacing:.12em;
+  color:var(--muted-2);display:flex;align-items:center;gap:8px}
+.maphint .dot{width:6px;height:6px;border-radius:50%;background:var(--blue-lite)}
+
+/* values */
+.values{display:grid;grid-template-columns:1fr;gap:12px;margin-top:26px}
+@media(min-width:560px){.values{grid-template-columns:repeat(3,1fr)}}
+.value{position:relative;border:1px solid var(--line);border-radius:16px;padding:22px 18px;
+  background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.015));
+  overflow:hidden}
+.value::before{content:"";position:absolute;inset:0;border-radius:16px;pointer-events:none;
+  background:radial-gradient(120% 80% at 50% -10%,rgba(243,154,27,.14),transparent 60%)}
+.value__ico{width:40px;height:40px;margin-bottom:14px;color:var(--orange-hi)}
+.value h3{font-family:var(--disp);font-weight:600;font-size:18px;color:#F3F6FF;letter-spacing:-.01em}
+.value p{font-size:13.5px;color:var(--muted);margin-top:6px;line-height:1.5}
+
+/* invitation */
+.invite{margin-top:12px;text-align:center;
+  border:1px solid rgba(255,255,255,.12);border-radius:22px;padding:38px 24px 30px;
+  background:
+    radial-gradient(120% 90% at 50% 0%,rgba(243,154,27,.12),transparent 55%),
+    linear-gradient(180deg,rgba(10,20,48,.6),rgba(8,13,30,.6))}
+.invite__k{font-family:var(--mono);font-size:11px;letter-spacing:.3em;text-transform:uppercase;
+  color:var(--orange-hi);margin-bottom:12px}
+.invite__t{font-family:var(--disp);font-weight:700;letter-spacing:-.02em;line-height:1.05;
+  font-size:clamp(28px,7.5vw,42px);color:#FFF9EF;text-shadow:0 2px 30px rgba(255,180,80,.22)}
+.invite__s{margin:14px auto 26px;max-width:380px;color:var(--muted);font-size:15px}
+.cta{display:flex;flex-direction:column;gap:12px;max-width:340px;margin:0 auto}
+@media(min-width:460px){.cta{flex-direction:row}}
+.btn{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:10px;
+  padding:15px 20px;border-radius:13px;font-family:var(--disp);font-weight:600;font-size:15px;
+  letter-spacing:-.01em;transition:transform .25s var(--ease),box-shadow .25s ease,background .25s ease}
+.btn svg{width:18px;height:18px}
+.btn--primary{color:#3A2405;background:linear-gradient(180deg,#FFC873,#F39A1B);
+  box-shadow:0 12px 30px -10px rgba(243,154,27,.7),0 0 0 1px rgba(255,220,160,.4) inset}
+.btn--primary:hover{transform:translateY(-2px);box-shadow:0 18px 40px -12px rgba(243,154,27,.85)}
+.btn--ghost{color:#EAF0FF;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.16)}
+.btn--ghost:hover{transform:translateY(-2px);background:rgba(255,255,255,.09);border-color:rgba(255,255,255,.28)}
+.btn--ghost .num{font-family:var(--mono);font-size:13.5px;color:var(--muted)}
+
+.signature{margin-top:26px;padding-top:22px;border-top:1px solid var(--line);
+  display:flex;align-items:center;gap:14px;justify-content:center;text-align:left;flex-wrap:wrap}
+.sig__badge{width:44px;height:44px;border-radius:50%;flex:none;
+  display:grid;place-items:center;font-family:var(--disp);font-weight:700;font-size:15px;color:#3A2405;
+  background:linear-gradient(180deg,#FFD48C,#F39A1B);box-shadow:0 6px 18px -6px rgba(243,154,27,.7)}
+.sig__txt .nm{font-family:var(--disp);font-weight:600;color:#F3F6FF;font-size:15px}
+.sig__txt .ro{font-size:12.5px;color:var(--muted-2);margin-top:2px}
+
+footer{padding:40px 22px 60px;text-align:center}
+.foot__logo{height:26px;margin:0 auto 14px;opacity:.9}
+.foot__line{font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;color:var(--muted-2);text-transform:uppercase}
+
+/* capture-only compact layout (activated via ?reveal=all) */
+body.cap .hero{min-height:600px}
+body.cap .chapter{padding:34px 0}
+body.cap .story{padding:30px 22px}
+@media(prefers-reduced-motion:reduce){
+  *{animation:none!important}
+  .lamp__glow,.lamp__cone,.lamp__line,.brandlogo,.eyebrow,.hero__title,.hero__sub,.scrollcue{transition:none!important}
+  .reveal{opacity:1!important;transform:none!important;transition:none!important}
+  body.booted .lamp__cone{transform:translateX(-50%) scaleX(1)}
+  body.booted .lamp__line{width:min(560px,72vw)}
+}
+</style>
+
+<div class="backdrop"></div>
+<svg class="grain" width="100%" height="100%" aria-hidden="true"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/><feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .04 0"/></filter><rect width="100%" height="100%" filter="url(#n)"/></svg>
+<canvas id="sparks" aria-hidden="true"></canvas>
+
+<!-- ============ HERO ============ -->
+<header class="hero">
+  <div class="lamp" aria-hidden="true">
+    <div class="lamp__glow"></div>
+    <div class="lamp__cone"></div>
+    <div class="lamp__line"></div>
+  </div>
+  <div class="hero__inner">
+    <img class="brandlogo" src="../assets/logo.png" alt="Intégral Pharma" width="240" height="40">
+    <div class="eyebrow"><span class="pip"></span>Invitation</div>
+    <h1 class="hero__title">Rencontrons-<wbr><span class="accent">nous.</span></h1>
+    <p class="hero__sub"><b>Intégral Pharma</b> — acteur de la santé depuis plus de 20 ans. Nous aimerions faire votre connaissance.</p>
+  </div>
+  <div class="scrollcue"><span>Découvrir</span><span class="rail"></span></div>
+</header>
+
+<!-- ============ STORY ============ -->
+<main class="story wrap">
+  <div class="beam" aria-hidden="true">
+    <div class="beam__fill" id="beamFill"><span class="beam__tip"></span></div>
+  </div>
+  <div class="story__inner">
+
+    <!-- Chapitre 1 — le siège -->
+    <section class="chapter">
+      <span class="chnum reveal">01 — Notre maison</span>
+      <h2 class="chtitle reveal d1">Un groupe de grossistes français, indépendant.</h2>
+      <p class="chtext reveal d2">Une plateforme pensée pour une seule chose : que vos commandes arrivent, <b>livraison en 72h</b>, partout. Le reste, on préfère vous le raconter de vive voix.</p>
+      <div class="frame reveal d2">
+        <div class="frame__media">
+          <img id="siegeImg" src="../assets/siege.jpg" alt="Siège Intégral Pharma, vue aérienne" onerror="this.onerror=null;this.src='../assets/poster.jpg'">
+          <video id="siegeVid" poster="../assets/siege.jpg" muted playsinline loop preload="none" aria-hidden="true" style="opacity:0;transition:opacity 1.2s ease">
+            <source src="../assets/hero.mp4" type="video/mp4">
+          </video>
+          <div class="frame__grad"></div>
+          <div class="frame__tag"><span class="dot"></span>Le siège Intégral Pharma</div>
+        </div>
+      </div>
+      <div class="stats reveal d3">
+        <div class="stat"><div class="n"><b>20</b>+ ans</div><div class="l">au service des officines</div></div>
+        <div class="stat"><div class="n"><b>9</b> agences</div><div class="l">réparties en France</div></div>
+        <div class="stat"><div class="n"><b>72</b>h</div><div class="l">délai de livraison</div></div>
+      </div>
+    </section>
+
+    <!-- Chapitre 2 — le réseau -->
+    <section class="chapter">
+      <span class="chnum reveal">02 — Le réseau</span>
+      <h2 class="chtitle reveal d1">Nos agences, partout où sont vos officines.</h2>
+      <p class="chtext reveal d2">Un maillage national, au plus près de vous. Explorez la carte de nos implantations.</p>
+      <div class="mapshell reveal d2">
+        <iframe id="mapFrame" src="../map-component.html?mode=map" scrolling="no" title="Carte des agences Intégral Pharma" loading="lazy"></iframe>
+      </div>
+      <div class="maphint reveal d3"><span class="dot"></span>Carte interactive — touchez une agence</div>
+    </section>
+
+    <!-- Chapitre 3 — les valeurs -->
+    <section class="chapter">
+      <span class="chnum reveal">03 — Ce qui nous tient</span>
+      <h2 class="chtitle reveal d1">Trois mots, tenus.</h2>
+      <p class="chtext reveal d2">Ce ne sont pas des slogans. C'est la façon dont on travaille avec chaque pharmacien.</p>
+      <div class="values">
+        <div class="value reveal d1">
+          <svg class="value__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 7.8-7 9-4-1.2-7-4.5-7-9V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg>
+          <h3>Confiance</h3>
+          <p>Une parole qui vaut engagement, et des délais tenus.</p>
+        </div>
+        <div class="value reveal d2">
+          <svg class="value__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/></svg>
+          <h3>Engagement</h3>
+          <p>Présents dans la durée, à vos côtés au quotidien.</p>
+        </div>
+        <div class="value reveal d3">
+          <svg class="value__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-9.3A4 4 0 0 1 12 8a4 4 0 0 1 7 2.7c0 4.9-7 9.3-7 9.3z"/></svg>
+          <h3>Respect</h3>
+          <p>De votre métier, de votre indépendance, de votre temps.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Chapitre 4 — invitation -->
+    <section class="chapter">
+      <span class="chnum reveal">04 — L'invitation</span>
+      <div class="invite reveal d1">
+        <div class="invite__k">Prenons un café</div>
+        <h2 class="invite__t">On vous doit<br>bien un échange.</h2>
+        <p class="invite__s">Le meilleur reste à se dire en face. Choisissez, on s'occupe du reste.</p>
+        <div class="cta">
+          <a class="btn btn--primary" href="mailto:pascale.prieto@integralpharma.fr?subject=Rencontrons-nous%20%E2%80%94%20Int%C3%A9gral%20Pharma">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/></svg>
+            Écrire à Pascale
+          </a>
+          <a class="btn btn--ghost" href="tel:+33676885391">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L20 13l1 5v1a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg>
+            <span>Appeler <span class="num">06 76 88 53 91</span></span>
+          </a>
+        </div>
+        <div class="signature">
+          <div class="sig__badge">PP</div>
+          <div class="sig__txt">
+            <div class="nm">Pascale Prieto</div>
+            <div class="ro">Directrice commerciale France — Intégral Pharma</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<footer>
+  <img class="foot__logo" src="../assets/logo.png" alt="Intégral Pharma">
+  <div class="foot__line">Intégral Pharma · Acteur de la santé depuis plus de 20 ans</div>
+</footer>
+
+<script>
+(function(){
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var showAll = /reveal=all/.test(location.search); /* verification aid: force all reveals visible */
+
+  /* boot the lamp */
+  requestAnimationFrame(function(){ requestAnimationFrame(function(){ document.body.classList.add('booted'); }); });
+
+  /* ===== reveal on scroll ===== */
+  var reveals = document.querySelectorAll('.reveal');
+  if(showAll){
+    document.body.classList.add('cap');
+    reveals.forEach(function(el){ el.classList.add('in'); });
+    var bf=document.getElementById('beamFill'); if(bf) bf.style.height='100%';
+  } else if('IntersectionObserver' in window && !reduce){
+    var io = new IntersectionObserver(function(es){
+      es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } });
+    },{rootMargin:'0px 0px -12% 0px',threshold:.15});
+    reveals.forEach(function(el){ io.observe(el); });
+  } else {
+    reveals.forEach(function(el){ el.classList.add('in'); });
+  }
+
+  /* ===== tracing beam fill ===== */
+  var story = document.querySelector('.story');
+  var fill  = document.getElementById('beamFill');
+  var ticking = false;
+  function updateBeam(){
+    ticking = false;
+    if(!story||!fill) return;
+    var r = story.getBoundingClientRect();
+    var vh = window.innerHeight||document.documentElement.clientHeight;
+    var total = r.height - vh*0.5;
+    var passed = (vh*0.5) - r.top;
+    var p = Math.max(0, Math.min(1, passed/total));
+    fill.style.height = (p*100).toFixed(2)+'%';
+  }
+  function onScroll(){ if(!ticking){ ticking=true; requestAnimationFrame(updateBeam); } }
+  window.addEventListener('scroll',onScroll,{passive:true});
+  window.addEventListener('resize',onScroll,{passive:true});
+  updateBeam();
+
+  /* ===== map auto-height ===== */
+  var mapFrame = document.getElementById('mapFrame');
+  window.addEventListener('message',function(e){
+    if(e && e.data && e.data.ipAtlasHeight && mapFrame){
+      mapFrame.style.height = e.data.ipAtlasHeight + 'px';
+      onScroll();
+    }
+  });
+
+  /* ===== siège video (single video, gentle crossfade when in view) ===== */
+  var vid = document.getElementById('siegeVid');
+  if(vid && !reduce){
+    var vio = new IntersectionObserver(function(es){
+      es.forEach(function(e){
+        if(e.isIntersecting){
+          var pr = vid.play();
+          if(pr && pr.then){ pr.then(function(){ vid.style.opacity='1'; }).catch(function(){}); }
+        } else { vid.pause(); }
+      });
+    },{threshold:.35});
+    vio.observe(vid);
+  }
+
+  /* ===== sparkles + embers (Canvas 2D) ===== */
+  var cv = document.getElementById('sparks'), ctx = cv.getContext('2d');
+  var W,H,DPR,parts=[], running=true, raf;
+  function size(){
+    DPR = Math.min(window.devicePixelRatio||1, 2);
+    W = cv.width = Math.floor(innerWidth*DPR);
+    H = cv.height = Math.floor(innerHeight*DPR);
+    cv.style.width=innerWidth+'px'; cv.style.height=innerHeight+'px';
+  }
+  function seed(){
+    parts=[];
+    var n = Math.round(Math.min(70, innerWidth/12));
+    for(var i=0;i<n;i++){
+      var ember = Math.random()<0.35;
+      parts.push({
+        x:Math.random()*W, y:Math.random()*H,
+        r:(ember?1.1:0.7)*(0.6+Math.random()*1.4)*DPR,
+        vx:(Math.random()-0.5)*0.10*DPR,
+        vy:(ember? -(0.10+Math.random()*0.22) : (Math.random()-0.5)*0.06)*DPR,
+        a:0.15+Math.random()*0.5, tw:Math.random()*Math.PI*2,
+        ts:0.010+Math.random()*0.02, ember:ember
+      });
+    }
+  }
+  function draw(){
+    if(!running) return;
+    ctx.clearRect(0,0,W,H);
+    for(var i=0;i<parts.length;i++){
+      var p=parts[i];
+      p.x+=p.vx; p.y+=p.vy; p.tw+=p.ts;
+      if(p.y<-10){p.y=H+10;p.x=Math.random()*W}
+      if(p.y>H+10){p.y=-10;p.x=Math.random()*W}
+      if(p.x<-10)p.x=W+10; if(p.x>W+10)p.x=-10;
+      var tw = 0.55+0.45*Math.sin(p.tw);
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,p.r,0,6.2832);
+      if(p.ember){ ctx.fillStyle='rgba(255,180,90,'+(p.a*tw*0.9)+')'; }
+      else { ctx.fillStyle='rgba(210,225,255,'+(p.a*tw*0.7)+')'; }
+      ctx.fill();
+    }
+    raf=requestAnimationFrame(draw);
+  }
+  function start(){ if(!running){running=true;raf=requestAnimationFrame(draw);} }
+  function stop(){ running=false; if(raf)cancelAnimationFrame(raf); }
+  if(!reduce){
+    size(); seed(); draw();
+    window.addEventListener('resize',function(){ size(); seed(); },{passive:true});
+    document.addEventListener('visibilitychange',function(){ document.hidden?stop():start(); });
+  } else {
+    cv.style.display='none';
+  }
+})();
+</script>
