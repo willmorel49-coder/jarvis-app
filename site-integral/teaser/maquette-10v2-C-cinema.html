@@ -1,0 +1,1227 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Intégral Pharma — Votre marge, notre métier</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://api.fontshare.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --navy:#0A1430; --navy-deep:#060A18; --ink:#0A1430;
+  --blue:#0050E6; --blue-dk:#0034A0; --blue-lite:#5B8CFF;
+  --orange:#F39A1B; --orange-hi:#FFC168; --orange-deep:#C9741A;
+  --white:#FFFFFF; --cream:#F4F6FB;
+  --fg:#EAF0FF; --muted:#9AA6C8; --muted-2:#6E7BA0; --line:rgba(255,255,255,.10);
+  --disp:'Space Grotesk',system-ui,sans-serif;
+  --body:'Satoshi',system-ui,-apple-system,sans-serif;
+  --mono:'Geist Mono',ui-monospace,monospace;
+  --ease:cubic-bezier(.16,1,.3,1);
+  --maxw:720px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  font-family:var(--body); color:var(--fg); line-height:1.55;
+  background:var(--navy-deep);
+  -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+  overflow-x:hidden;
+}
+/* deep dramatic backdrop (gradients only — Safari safe) */
+.backdrop{position:fixed;inset:0;z-index:-2;pointer-events:none;
+  background:
+   radial-gradient(120% 80% at 50% -8%, rgba(243,154,27,.10), transparent 46%),
+   radial-gradient(90% 60% at 82% 22%, rgba(0,80,230,.14), transparent 55%),
+   radial-gradient(80% 70% at 8% 78%, rgba(0,52,160,.16), transparent 60%),
+   linear-gradient(180deg,#070B18 0%,#0A1430 42%,#080D1E 100%);
+}
+.grain{position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.5}
+#sparks{position:fixed;inset:0;z-index:0;pointer-events:none}
+
+img{max-width:100%;display:block}
+a{color:inherit;text-decoration:none}
+
+.wrap{position:relative;z-index:2;max-width:var(--maxw);margin:0 auto;padding:0 22px}
+
+/* ============ HERO + LAMP ============ */
+.hero{position:relative;min-height:100svh;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;text-align:center;overflow:hidden;padding:0 22px}
+.lamp{position:absolute;top:0;left:0;right:0;height:74vh;overflow:hidden;pointer-events:none;z-index:1}
+.lamp__glow{position:absolute;top:-34vh;left:50%;width:88vw;height:66vh;transform:translateX(-50%);
+  background:radial-gradient(50% 50% at 50% 50%, rgba(243,154,27,.30), rgba(243,154,27,.07) 44%, transparent 70%);
+  opacity:0;transition:opacity 1.2s ease .15s}
+.lamp__cone{position:absolute;top:-2px;left:50%;width:150vw;height:78vh;transform:translateX(-50%) scaleX(.14);
+  transform-origin:top center;opacity:0;
+  background:conic-gradient(at 50% 0%,
+    transparent 134deg,
+    rgba(243,154,27,.05) 150deg,
+    rgba(255,193,104,.20) 166deg,
+    rgba(255,208,140,.42) 180deg,
+    rgba(255,193,104,.20) 194deg,
+    rgba(243,154,27,.05) 210deg,
+    transparent 226deg);
+  -webkit-mask:linear-gradient(to bottom,#000 0%,rgba(0,0,0,.7) 38%,transparent 84%);
+          mask:linear-gradient(to bottom,#000 0%,rgba(0,0,0,.7) 38%,transparent 84%);
+  transition:transform 1.5s var(--ease) .1s, opacity 1s ease .1s}
+.lamp__line{position:absolute;top:0;left:50%;width:0;height:2px;transform:translateX(-50%);
+  background:linear-gradient(90deg,transparent,rgba(255,214,150,.98) 30%,rgba(255,214,150,.98) 70%,transparent);
+  box-shadow:0 0 20px 2px rgba(255,180,80,.55);border-radius:2px;
+  transition:width 1.2s var(--ease) .05s}
+body.booted .lamp__glow{opacity:1}
+body.booted .lamp__cone{transform:translateX(-50%) scaleX(1);opacity:1}
+body.booted .lamp__line{width:min(560px,72vw)}
+
+.hero__inner{position:relative;z-index:3;max-width:680px}
+.brandlogo{height:40px;width:auto;margin:0 auto 30px;
+  filter:drop-shadow(0 6px 20px rgba(0,0,0,.45));
+  opacity:0;transform:translateY(-8px);transition:opacity .9s ease .35s,transform .9s var(--ease) .35s}
+body.booted .brandlogo{opacity:1;transform:none}
+
+.eyebrow{display:inline-flex;align-items:center;gap:10px;
+  font-family:var(--mono);font-size:11px;letter-spacing:.3em;text-transform:uppercase;
+  color:var(--orange-hi);margin-bottom:20px;
+  opacity:0;transition:opacity 1s ease .5s}
+.eyebrow .pip{width:6px;height:6px;border-radius:50%;background:var(--orange);
+  box-shadow:0 0 0 0 rgba(243,154,27,.6)}
+body.booted .eyebrow{opacity:1}
+body.booted .eyebrow .pip{animation:pip 3s var(--ease) infinite 1.2s}
+@keyframes pip{0%{box-shadow:0 0 0 0 rgba(243,154,27,.55)}70%{box-shadow:0 0 0 9px rgba(243,154,27,0)}100%{box-shadow:0 0 0 0 rgba(243,154,27,0)}}
+
+.hero__title{font-family:var(--disp);font-weight:700;letter-spacing:-.03em;line-height:1.02;
+  font-size:clamp(36px,10vw,68px);
+  overflow-wrap:break-word;hyphens:manual;
+  color:#FFF9EF;
+  text-shadow:0 2px 40px rgba(255,180,80,.28),0 1px 3px rgba(0,0,0,.4);
+  opacity:0;transform:translateY(22px);
+  transition:opacity 1s ease .6s,transform 1.2s var(--ease) .6s}
+.hero__title .accent{color:var(--orange-hi)}
+body.booted .hero__title{opacity:1;transform:none}
+
+.hero__sub{margin:22px auto 0;max-width:480px;font-size:clamp(15px,4.2vw,17.5px);color:var(--muted);
+  opacity:0;transform:translateY(14px);transition:opacity 1s ease .9s,transform 1s var(--ease) .9s}
+.hero__sub b{color:var(--fg);font-weight:700}
+body.booted .hero__sub{opacity:1;transform:none}
+
+.scrollcue{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);z-index:3;
+  display:flex;flex-direction:column;align-items:center;gap:9px;
+  font-family:var(--mono);font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:var(--muted-2);
+  opacity:0;transition:opacity 1s ease 1.3s}
+body.booted .scrollcue{opacity:1}
+.scrollcue .rail{width:1px;height:38px;background:linear-gradient(180deg,var(--orange-hi),transparent);position:relative;overflow:hidden}
+.scrollcue .rail::after{content:"";position:absolute;left:0;top:-40%;width:1px;height:40%;
+  background:linear-gradient(180deg,transparent,#FFF);animation:cue 2.2s var(--ease) infinite}
+@keyframes cue{0%{top:-45%}60%,100%{top:110%}}
+
+/* ============ STORY / TRACING BEAM ============ */
+.story{position:relative;padding:8vh 22px 4vh}
+.beam{position:absolute;top:0;bottom:0;left:18px;width:2px;z-index:1;
+  background:rgba(255,255,255,.08);border-radius:2px}
+.beam__fill{position:absolute;top:0;left:0;width:100%;height:0;border-radius:2px;
+  background:linear-gradient(180deg,var(--orange-hi),var(--orange) 45%,var(--blue) 100%);
+  box-shadow:0 0 12px rgba(243,154,27,.5)}
+.beam__tip{position:absolute;left:50%;top:0;width:10px;height:10px;border-radius:50%;
+  transform:translate(-50%,-50%);background:#FFE7C2;
+  box-shadow:0 0 14px 3px rgba(255,190,90,.85),0 0 0 4px rgba(243,154,27,.18)}
+.story__inner{position:relative;z-index:2;padding-left:40px}
+@media(min-width:680px){
+  .beam{left:50%;transform:translateX(-50%)}
+  .story__inner{padding-left:0;max-width:560px;margin:0 auto}
+}
+
+.chapter{padding:9vh 0;position:relative}
+.chapter:first-child{padding-top:2vh}
+.chnum{font-family:var(--mono);font-size:11px;letter-spacing:.3em;color:var(--orange-hi);
+  text-transform:uppercase;margin-bottom:14px;display:block}
+.chtitle{font-family:var(--disp);font-weight:600;letter-spacing:-.02em;line-height:1.1;
+  font-size:clamp(25px,6.4vw,36px);color:#F3F6FF;margin-bottom:14px}
+.chtext{color:var(--muted);font-size:clamp(15px,4vw,16.5px);max-width:48ch}
+.chtext b{color:var(--fg);font-weight:700}
+
+/* reveal */
+.reveal{opacity:0;transform:translateY(30px);transition:opacity .9s ease,transform 1s var(--ease)}
+.reveal.in{opacity:1;transform:none}
+.reveal.d1{transition-delay:.08s}.reveal.d2{transition-delay:.16s}.reveal.d3{transition-delay:.24s}
+
+/* siège visual */
+.frame{position:relative;margin-top:26px;border-radius:18px;overflow:hidden;
+  border:1px solid rgba(255,255,255,.10);
+  box-shadow:0 24px 60px -22px rgba(0,0,0,.75),0 0 0 1px rgba(255,255,255,.03) inset}
+.frame__media{position:relative;aspect-ratio:16/10;background:#0B1226}
+.frame__media img,.frame__media video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.frame__grad{position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(6,10,24,0) 40%,rgba(6,10,24,.72) 100%),
+             linear-gradient(90deg,rgba(0,52,160,.14),transparent 40%)}
+.frame__tag{position:absolute;left:16px;bottom:14px;display:flex;align-items:center;gap:10px;
+  font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:#E7EEFF}
+.frame__tag .dot{width:7px;height:7px;border-radius:50%;background:var(--orange);
+  box-shadow:0 0 10px 2px rgba(243,154,27,.7)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:18px}
+.stat{border:1px solid var(--line);border-radius:13px;padding:13px 12px;
+  background:rgba(255,255,255,.025);transition:border-color .25s ease,transform .25s var(--ease)}
+.stat:hover{border-color:rgba(255,193,104,.35);transform:translateY(-2px)}
+.stat .n{font-family:var(--mono);font-size:19px;color:#FFF;letter-spacing:-.01em}
+.stat .n b{color:var(--orange-hi);font-weight:500}
+.stat .l{font-size:12px;color:var(--muted-2);margin-top:3px}
+
+/* ============ PROMESSE MARGE ============ */
+.promise{display:grid;grid-template-columns:1fr;gap:12px;margin-top:26px}
+@media(min-width:560px){.promise{grid-template-columns:1fr 1fr}}
+.pcard{position:relative;border:1px solid var(--line);border-radius:16px;padding:22px 20px 20px;
+  background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.012));
+  overflow:hidden;transition:border-color .25s ease,transform .3s var(--ease),box-shadow .3s ease}
+.pcard::before{content:"";position:absolute;inset:0;border-radius:16px;pointer-events:none;opacity:0;
+  background:radial-gradient(130% 90% at 50% -10%,rgba(243,154,27,.14),transparent 60%);
+  transition:opacity .35s ease}
+.pcard:hover{border-color:rgba(255,193,104,.4);transform:translateY(-3px);
+  box-shadow:0 18px 40px -22px rgba(0,0,0,.8)}
+.pcard:hover::before{opacity:1}
+.pcard__ico{width:38px;height:38px;margin-bottom:14px;color:var(--orange-hi)}
+.pcard h3{font-family:var(--disp);font-weight:600;font-size:17px;letter-spacing:-.01em;color:#F3F6FF}
+.pcard p{font-size:13.5px;color:var(--muted);margin-top:7px;line-height:1.55}
+.pclose{margin-top:20px;display:flex;align-items:center;gap:14px;
+  border:1px solid rgba(243,154,27,.32);border-radius:16px;padding:17px 20px;
+  background:linear-gradient(90deg,rgba(243,154,27,.10),rgba(243,154,27,.02))}
+.pclose .flare{width:9px;height:9px;border-radius:50%;background:var(--orange);flex:none;
+  box-shadow:0 0 12px 3px rgba(243,154,27,.6)}
+.pclose p{font-size:14.5px;color:var(--fg)}
+.pclose b{color:var(--orange-hi)}
+
+/* ============ RÉSEAU 3D (breakout hors 720px) ============ */
+.chapter--net{width:min(1120px,94vw);max-width:min(1120px,94vw);margin-left:50%;transform:translateX(-50%)}
+.chapter--net .chhead{max-width:560px}
+.stage{position:relative;margin-top:28px;border-radius:20px;overflow:hidden;
+  border:1px solid rgba(255,255,255,.11);
+  background:
+    radial-gradient(90% 90% at 50% 110%, rgba(0,52,160,.28), transparent 60%),
+    radial-gradient(120% 60% at 50% -10%, rgba(91,140,255,.10), transparent 55%),
+    linear-gradient(180deg,#04070F 0%,#070D1F 55%,#050912 100%);
+  box-shadow:0 34px 90px -30px rgba(0,0,0,.85),0 0 0 1px rgba(255,255,255,.02) inset}
+.stage__canvas{position:relative;width:100%;height:min(72vh,680px);min-height:420px}
+@media(max-width:680px){.stage__canvas{height:64vh;min-height:400px}}
+.stage__canvas canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.stage__vignette{position:absolute;inset:0;pointer-events:none;z-index:3;
+  background:
+    radial-gradient(130% 100% at 50% 50%, transparent 58%, rgba(2,4,10,.55) 100%),
+    linear-gradient(180deg, rgba(3,6,14,.5), transparent 14%, transparent 82%, rgba(3,6,14,.62))}
+.stage__hud{position:absolute;top:16px;left:18px;z-index:4;pointer-events:none;
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:#8FA3D4;
+  display:flex;align-items:center;gap:9px}
+.stage__hud .rec{width:7px;height:7px;border-radius:50%;background:var(--orange);
+  box-shadow:0 0 10px 2px rgba(243,154,27,.7);animation:pip 2.6s var(--ease) infinite}
+.stage__hud b{color:#DEE8FF;font-weight:500}
+.stage__legend{position:absolute;left:0;right:0;bottom:14px;z-index:4;pointer-events:none;
+  display:flex;justify-content:center;gap:10px;flex-wrap:wrap;padding:0 14px}
+.lg{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:10px;
+  letter-spacing:.14em;text-transform:uppercase;color:#AAB8DF;
+  border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:6px 12px;
+  background:rgba(5,9,20,.72)}
+.lg i{width:8px;height:8px;border-radius:50%;flex:none}
+.lg--siege i{background:var(--orange);box-shadow:0 0 8px 2px rgba(243,154,27,.65)}
+.lg--site i{background:var(--blue-lite);box-shadow:0 0 8px 2px rgba(91,140,255,.55)}
+.lg--part i{background:#D7DEEF;box-shadow:0 0 8px 2px rgba(215,222,239,.4)}
+.maphint{margin-top:14px;font-family:var(--mono);font-size:11px;letter-spacing:.12em;
+  color:var(--muted-2);display:flex;align-items:center;gap:8px;justify-content:center;text-align:center}
+.maphint .dot{width:6px;height:6px;border-radius:50%;background:var(--blue-lite);flex:none}
+
+/* annuaire */
+.roster{display:grid;grid-template-columns:1fr;gap:9px;margin-top:22px}
+@media(min-width:620px){.roster{grid-template-columns:1fr 1fr}}
+@media(min-width:920px){.roster{grid-template-columns:repeat(3,1fr)}}
+.roster__cap{grid-column:1/-1;font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--muted-2);margin:6px 0 2px}
+.estab{display:flex;align-items:center;gap:12px;border:1px solid var(--line);border-radius:13px;
+  padding:11px 13px;background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.012));
+  transition:border-color .2s var(--ease),transform .2s var(--ease)}
+.estab:hover{border-color:rgba(255,193,104,.4);transform:translateY(-2px)}
+.estab__sig{flex:0 0 auto;width:48px;height:40px;border-radius:9px;display:flex;align-items:center;
+  justify-content:center;font-family:var(--mono);font-weight:600;font-size:12.5px;color:#CFE0FF;
+  background:rgba(0,80,230,.16);border:1px solid rgba(91,140,255,.32)}
+.estab__b{min-width:0;flex:1}
+.estab__n{font-family:var(--disp);font-weight:600;font-size:14.5px;color:#EAF0FF;letter-spacing:-.01em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.estab__c{font-size:12.5px;color:var(--muted);margin-top:1px}
+.estab__tag{flex:0 0 auto;font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--orange-hi);border:1px solid rgba(243,154,27,.4);
+  border-radius:999px;padding:4px 9px}
+.estab--siege{border-color:rgba(243,154,27,.42);
+  background:linear-gradient(180deg,rgba(243,154,27,.10),rgba(255,255,255,.015))}
+.estab--siege .estab__sig{color:#241300;font-weight:700;border-color:transparent;
+  background:linear-gradient(180deg,var(--orange-hi),var(--orange))}
+.estab--part .estab__sig{color:#C9D3EA;background:rgba(255,255,255,.05);border-style:dashed}
+.estab--part .estab__tag{color:var(--muted);border-color:var(--line)}
+.netbanner{display:flex;flex-wrap:wrap;gap:8px 26px;margin-top:24px;justify-content:center;align-items:baseline;text-align:center}
+.netbanner .b b{font-family:var(--disp);font-size:24px;font-weight:600;color:var(--orange-hi)}
+.netbanner .b span{font-size:13px;color:var(--muted);margin-left:8px}
+
+/* values */
+.values{display:grid;grid-template-columns:1fr;gap:12px;margin-top:26px}
+@media(min-width:560px){.values{grid-template-columns:repeat(3,1fr)}}
+.value{position:relative;border:1px solid var(--line);border-radius:16px;padding:22px 18px;
+  background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.015));
+  overflow:hidden;transition:transform .3s var(--ease),border-color .25s ease}
+.value:hover{transform:translateY(-3px);border-color:rgba(255,193,104,.35)}
+.value::before{content:"";position:absolute;inset:0;border-radius:16px;pointer-events:none;
+  background:radial-gradient(120% 80% at 50% -10%,rgba(243,154,27,.14),transparent 60%)}
+.value__ico{width:40px;height:40px;margin-bottom:14px;color:var(--orange-hi)}
+.value h3{font-family:var(--disp);font-weight:600;font-size:18px;color:#F3F6FF;letter-spacing:-.01em}
+.value p{font-size:13.5px;color:var(--muted);margin-top:6px;line-height:1.5}
+
+/* invitation */
+.invite{margin-top:12px;text-align:center;
+  border:1px solid rgba(255,255,255,.12);border-radius:22px;padding:38px 24px 30px;
+  background:
+    radial-gradient(120% 90% at 50% 0%,rgba(243,154,27,.12),transparent 55%),
+    linear-gradient(180deg,rgba(10,20,48,.6),rgba(8,13,30,.6))}
+.invite__k{font-family:var(--mono);font-size:11px;letter-spacing:.3em;text-transform:uppercase;
+  color:var(--orange-hi);margin-bottom:12px}
+.invite__t{font-family:var(--disp);font-weight:700;letter-spacing:-.02em;line-height:1.08;
+  font-size:clamp(26px,6.6vw,40px);color:#FFF9EF;text-shadow:0 2px 30px rgba(255,180,80,.22)}
+.invite__s{margin:16px auto 26px;max-width:420px;color:var(--muted);font-size:15px}
+.cta{display:flex;flex-direction:column;gap:12px;max-width:360px;margin:0 auto}
+@media(min-width:460px){.cta{flex-direction:row}}
+.btn{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:10px;
+  padding:15px 20px;border-radius:13px;font-family:var(--disp);font-weight:600;font-size:15px;
+  letter-spacing:-.01em;transition:transform .25s var(--ease),box-shadow .25s ease,background .25s ease,border-color .25s ease}
+.btn svg{width:18px;height:18px;transition:transform .25s var(--ease)}
+.btn:hover svg{transform:translateX(2px) scale(1.05)}
+.btn--primary{color:#3A2405;background:linear-gradient(180deg,#FFC873,#F39A1B);
+  box-shadow:0 12px 30px -10px rgba(243,154,27,.7),0 0 0 1px rgba(255,220,160,.4) inset}
+.btn--primary:hover{transform:translateY(-2px);box-shadow:0 18px 40px -12px rgba(243,154,27,.85)}
+.btn--ghost{color:#EAF0FF;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.16)}
+.btn--ghost:hover{transform:translateY(-2px);background:rgba(255,255,255,.09);border-color:rgba(255,255,255,.28)}
+.btn--ghost .num{font-family:var(--mono);font-size:13.5px;color:var(--muted)}
+
+.signature{margin-top:26px;padding-top:22px;border-top:1px solid var(--line);
+  display:flex;align-items:center;gap:14px;justify-content:center;text-align:left;flex-wrap:wrap}
+.sig__badge{width:44px;height:44px;border-radius:50%;flex:none;
+  display:grid;place-items:center;font-family:var(--disp);font-weight:700;font-size:15px;color:#3A2405;
+  background:linear-gradient(180deg,#FFD48C,#F39A1B);box-shadow:0 6px 18px -6px rgba(243,154,27,.7)}
+.sig__txt .nm{font-family:var(--disp);font-weight:600;color:#F3F6FF;font-size:15px}
+.sig__txt .ro{font-size:12.5px;color:var(--muted-2);margin-top:2px}
+
+footer{padding:40px 22px 60px;text-align:center}
+.foot__logo{height:26px;margin:0 auto 14px;opacity:.9}
+.foot__line{font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;color:var(--muted-2);text-transform:uppercase}
+
+/* capture-only compact layout (activated via ?reveal=all) */
+body.cap .hero{min-height:600px}
+body.cap .chapter{padding:34px 0}
+body.cap .story{padding:30px 22px}
+@media(prefers-reduced-motion:reduce){
+  *{animation:none!important}
+  .lamp__glow,.lamp__cone,.lamp__line,.brandlogo,.eyebrow,.hero__title,.hero__sub,.scrollcue{transition:none!important}
+  .reveal{opacity:1!important;transform:none!important;transition:none!important}
+  body.booted .lamp__cone{transform:translateX(-50%) scaleX(1)}
+  body.booted .lamp__line{width:min(560px,72vw)}
+}
+</style>
+</head>
+<body>
+
+<div class="backdrop"></div>
+<svg class="grain" width="100%" height="100%" aria-hidden="true"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/><feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .04 0"/></filter><rect width="100%" height="100%" filter="url(#n)"/></svg>
+<canvas id="sparks" aria-hidden="true"></canvas>
+
+<!-- ============ HERO ============ -->
+<header class="hero">
+  <div class="lamp" aria-hidden="true">
+    <div class="lamp__glow"></div>
+    <div class="lamp__cone"></div>
+    <div class="lamp__line"></div>
+  </div>
+  <div class="hero__inner">
+    <img class="brandlogo" src="../assets/logo.png" alt="Intégral Pharma" width="240" height="40">
+    <div class="eyebrow"><span class="pip"></span>À l'attention des dirigeants de groupements</div>
+    <h1 class="hero__title">Votre marge,<br><span class="accent">notre métier.</span></h1>
+    <p class="hero__sub"><b>Intégral Pharma</b> — groupe de grossistes-répartiteurs français, indépendant depuis plus de 20 ans. Grossiste de première intention, au service de la marge de vos officines.</p>
+  </div>
+  <div class="scrollcue"><span>Découvrir</span><span class="rail"></span></div>
+</header>
+
+<!-- ============ STORY ============ -->
+<main class="story wrap">
+  <div class="beam" aria-hidden="true">
+    <div class="beam__fill" id="beamFill"><span class="beam__tip"></span></div>
+  </div>
+  <div class="story__inner">
+
+    <!-- Chapitre 1 — la maison -->
+    <section class="chapter">
+      <span class="chnum reveal">01 — La maison</span>
+      <h2 class="chtitle reveal d1">Une maison indépendante, un métier : la répartition.</h2>
+      <p class="chtext reveal d2">Depuis plus de 20 ans, nous approvisionnons les officines <b>en première intention</b> depuis notre plateforme du Var. Indépendants, nous décidons vite, nous livrons partout — et nous construisons la marge de nos clients commande après commande.</p>
+      <div class="frame reveal d2">
+        <div class="frame__media">
+          <img id="siegeImg" src="../assets/siege.jpg" alt="Siège Intégral Pharma, vue aérienne" onerror="this.onerror=null;this.src='../assets/poster.jpg'">
+          <video id="siegeVid" poster="../assets/siege.jpg" muted playsinline loop preload="none" aria-hidden="true" style="opacity:0;transition:opacity 1.2s ease">
+            <source src="../assets/hero.mp4" type="video/mp4">
+          </video>
+          <div class="frame__grad"></div>
+          <div class="frame__tag"><span class="dot"></span>Le siège Intégral Pharma — Hyères</div>
+        </div>
+      </div>
+      <div class="stats reveal d3">
+        <div class="stat"><div class="n"><b>20</b>+ ans</div><div class="l">au service des officines</div></div>
+        <div class="stat"><div class="n"><b>9</b> établ.</div><div class="l">répartis en France</div></div>
+        <div class="stat"><div class="n"><b>72</b>h</div><div class="l">délai de livraison</div></div>
+      </div>
+    </section>
+
+    <!-- Chapitre 2 — la promesse marge -->
+    <section class="chapter">
+      <span class="chnum reveal">02 — La promesse</span>
+      <h2 class="chtitle reveal d1">La marge se construit dès la première boîte.</h2>
+      <p class="chtext reveal d2">Pas de mécanique opaque, pas de paliers cachés. Une conviction simple : la marge d'une officine se gagne à la source, sur <b>chaque ligne de commande</b>.</p>
+      <div class="promise reveal d2">
+        <div class="pcard">
+          <svg class="pcard__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4.5 13.5H11L10 22l8.5-11.5H12L13 2z"/></svg>
+          <h3>Première intention</h3>
+          <p>Le réflexe quotidien de vos officines, pensé pour créer de la valeur sur chaque commande — pas seulement sur le dépannage.</p>
+        </div>
+        <div class="pcard">
+          <svg class="pcard__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10m5.33 10V6m5.34 14v-8M20 20V4"/><path d="M2 20h20"/></svg>
+          <h3>Dès la première boîte</h3>
+          <p>La marge ne s'attend pas, elle s'optimise dès la première unité commandée. C'est notre façon de travailler.</p>
+        </div>
+        <div class="pcard">
+          <svg class="pcard__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+          <h3>Transparence sur facture</h3>
+          <p>Des conditions claires, lisibles, écrites noir sur blanc sur la facture. Ce que vous voyez est ce que vos adhérents gagnent.</p>
+        </div>
+        <div class="pcard">
+          <svg class="pcard__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3.5 9h17M3.5 15h17M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg>
+          <h3>Un réseau national</h3>
+          <p>9 établissements pour servir vos officines partout en France, livrées en 72 h — avec l'indépendance d'un groupe familial.</p>
+        </div>
+      </div>
+      <div class="pclose reveal d3">
+        <span class="flare"></span>
+        <p>Ce que cela représente pour votre groupement ? <b>Nous vous le chiffrons en rendez-vous.</b></p>
+      </div>
+    </section>
+
+    <!-- Chapitre 3 — le réseau (scène 3D) -->
+    <section class="chapter chapter--net">
+      <div class="chhead" style="margin:0 auto;text-align:left">
+        <span class="chnum reveal">03 — Le réseau</span>
+        <h2 class="chtitle reveal d1">Vu du ciel : un réseau national.</h2>
+        <p class="chtext reveal d2">Du Grand Ouest à la Méditerranée, 9 établissements orchestrés depuis notre base logistique du Var. Où que soient vos officines, Intégral est déjà à proximité.</p>
+      </div>
+      <div class="stage reveal d2">
+        <div class="stage__canvas" id="stage3d"></div>
+        <div class="stage__vignette" aria-hidden="true"></div>
+        <div class="stage__hud"><span class="rec"></span>Vue satellite — <b>Réseau Intégral Pharma</b></div>
+        <div class="stage__legend">
+          <span class="lg lg--siege"><i></i>Siège — Hyères</span>
+          <span class="lg lg--site"><i></i>Établissements</span>
+          <span class="lg lg--part"><i></i>Partenaire — Metz</span>
+        </div>
+      </div>
+      <div class="maphint reveal d3"><span class="dot"></span>Scène 3D temps réel — la caméra plonge sur le réseau au fil du défilement</div>
+      <div class="roster reveal d3">
+        <div class="roster__cap">Annuaire des établissements</div>
+        <div class="estab estab--siege"><span class="estab__sig">HP</span><div class="estab__b"><div class="estab__n">Hyères Pharma</div><div class="estab__c">Hyères · 83</div></div><span class="estab__tag">Siège</span></div>
+        <div class="estab"><span class="estab__sig">OPS</span><div class="estab__b"><div class="estab__n">Ouest Pharma Services</div><div class="estab__c">St-Étienne-de-Montluc · 44</div></div></div>
+        <div class="estab"><span class="estab__sig">EP</span><div class="estab__b"><div class="estab__n">Escale Pharma</div><div class="estab__c">Chilly-Mazarin · 91</div></div></div>
+        <div class="estab"><span class="estab__sig">CPR</span><div class="estab__b"><div class="estab__n">Comptoir Pharma. du Rhône</div><div class="estab__c">Saint-Maurice-l'Exil · 38</div></div></div>
+        <div class="estab"><span class="estab__sig">SOP</span><div class="estab__b"><div class="estab__n">Sud Ouest Pharma</div><div class="estab__c">Montayral · 47</div></div></div>
+        <div class="estab"><span class="estab__sig">POS</span><div class="estab__b"><div class="estab__n">Pharm'Occitanie Services</div><div class="estab__c">Villeneuve-lès-Béziers · 34</div></div></div>
+        <div class="estab"><span class="estab__sig">SEP</span><div class="estab__b"><div class="estab__n">Sud Est Pharma</div><div class="estab__c">Le Cannet-des-Maures · 83</div></div></div>
+        <div class="estab"><span class="estab__sig">MSP</span><div class="estab__b"><div class="estab__n">Mistral Santé Pharma</div><div class="estab__c">Flassans-sur-Issole · 83</div></div></div>
+        <div class="estab estab--part"><span class="estab__sig">PH</span><div class="estab__b"><div class="estab__n">Pharmest</div><div class="estab__c">Metz · 57</div></div><span class="estab__tag">Partenaire</span></div>
+      </div>
+      <div class="netbanner reveal d3">
+        <div class="b"><b>8</b><span>établissements Intégral</span></div>
+        <div class="b"><b>+1</b><span>partenaire</span></div>
+        <div class="b"><b>72h</b><span>de livraison, partout</span></div>
+      </div>
+    </section>
+
+    <!-- Chapitre 4 — les valeurs -->
+    <section class="chapter">
+      <span class="chnum reveal">04 — Ce qui nous tient</span>
+      <h2 class="chtitle reveal d1">Trois mots, tenus.</h2>
+      <p class="chtext reveal d2">Ce ne sont pas des slogans. C'est la façon dont nous travaillons avec chaque pharmacien — et avec chaque groupement.</p>
+      <div class="values">
+        <div class="value reveal d1">
+          <svg class="value__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 7.8-7 9-4-1.2-7-4.5-7-9V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg>
+          <h3>Confiance</h3>
+          <p>Une parole tenue, des livraisons tenues. La base d'une relation de première intention.</p>
+        </div>
+        <div class="value reveal d2">
+          <svg class="value__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/></svg>
+          <h3>Engagement</h3>
+          <p>Présents dans la durée, aux côtés de vos adhérents, au quotidien.</p>
+        </div>
+        <div class="value reveal d3">
+          <svg class="value__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-9.3A4 4 0 0 1 12 8a4 4 0 0 1 7 2.7c0 4.9-7 9.3-7 9.3z"/></svg>
+          <h3>Respect</h3>
+          <p>De votre indépendance, de vos choix, de votre temps.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Chapitre 5 — invitation -->
+    <section class="chapter">
+      <span class="chnum reveal">05 — L'invitation</span>
+      <div class="invite reveal d1">
+        <div class="invite__k">Parlons de votre groupement</div>
+        <h2 class="invite__t">Découvrez ce que nous pouvons proposer à votre groupement.</h2>
+        <p class="invite__s">Une rencontre, des réponses précises — et des conditions que nous réservons au face-à-face.</p>
+        <div class="cta">
+          <a class="btn btn--primary" href="mailto:pascale.prieto@integralpharma.fr?subject=Rencontrons-nous%20%E2%80%94%20Int%C3%A9gral%20Pharma">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/></svg>
+            Écrire à Pascale
+          </a>
+          <a class="btn btn--ghost" href="tel:+33676885391">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L20 13l1 5v1a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg>
+            <span>Appeler <span class="num">06 76 88 53 91</span></span>
+          </a>
+        </div>
+        <div class="signature">
+          <div class="sig__badge">PP</div>
+          <div class="sig__txt">
+            <div class="nm">Pascale Prieto</div>
+            <div class="ro">Directrice commerciale France — Intégral Pharma</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<footer>
+  <img class="foot__logo" src="../assets/logo.png" alt="Intégral Pharma">
+  <div class="foot__line">Intégral Pharma · Acteur de la santé depuis plus de 20 ans</div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var showAll = /reveal=all/.test(location.search);
+
+  /* boot the lamp */
+  requestAnimationFrame(function(){ requestAnimationFrame(function(){ document.body.classList.add('booted'); }); });
+
+  /* ===== reveal on scroll ===== */
+  var reveals = document.querySelectorAll('.reveal');
+  if(showAll){
+    document.body.classList.add('cap');
+    reveals.forEach(function(el){ el.classList.add('in'); });
+    var bf=document.getElementById('beamFill'); if(bf) bf.style.height='100%';
+  } else if('IntersectionObserver' in window && !reduce){
+    var io = new IntersectionObserver(function(es){
+      es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } });
+    },{rootMargin:'0px 0px -12% 0px',threshold:.15});
+    reveals.forEach(function(el){ io.observe(el); });
+  } else {
+    reveals.forEach(function(el){ el.classList.add('in'); });
+  }
+
+  /* ===== tracing beam fill ===== */
+  var story = document.querySelector('.story');
+  var fill  = document.getElementById('beamFill');
+  var ticking = false;
+  function updateBeam(){
+    ticking = false;
+    if(!story||!fill) return;
+    var r = story.getBoundingClientRect();
+    var vh = window.innerHeight||document.documentElement.clientHeight;
+    var total = r.height - vh*0.5;
+    var passed = (vh*0.5) - r.top;
+    var p = Math.max(0, Math.min(1, passed/total));
+    fill.style.height = (p*100).toFixed(2)+'%';
+  }
+  function onScroll(){ if(!ticking){ ticking=true; requestAnimationFrame(updateBeam); } }
+  window.addEventListener('scroll',onScroll,{passive:true});
+  window.addEventListener('resize',onScroll,{passive:true});
+  updateBeam();
+
+  /* ===== siège video (single video, gentle crossfade when in view) ===== */
+  var vid = document.getElementById('siegeVid');
+  if(vid && !reduce){
+    var vio = new IntersectionObserver(function(es){
+      es.forEach(function(e){
+        if(e.isIntersecting){
+          var pr = vid.play();
+          if(pr && pr.then){ pr.then(function(){ vid.style.opacity='1'; }).catch(function(){}); }
+        } else { vid.pause(); }
+      });
+    },{threshold:.35});
+    vio.observe(vid);
+  }
+
+  /* ===== sparkles + embers (Canvas 2D, page-wide) ===== */
+  var cv = document.getElementById('sparks'), ctx = cv.getContext('2d');
+  var W,H,DPR,parts=[], running=true, raf;
+  function size(){
+    DPR = Math.min(window.devicePixelRatio||1, 2);
+    W = cv.width = Math.floor(innerWidth*DPR);
+    H = cv.height = Math.floor(innerHeight*DPR);
+    cv.style.width=innerWidth+'px'; cv.style.height=innerHeight+'px';
+  }
+  function seed(){
+    parts=[];
+    var n = Math.round(Math.min(70, innerWidth/12));
+    for(var i=0;i<n;i++){
+      var ember = Math.random()<0.35;
+      parts.push({
+        x:Math.random()*W, y:Math.random()*H,
+        r:(ember?1.1:0.7)*(0.6+Math.random()*1.4)*DPR,
+        vx:(Math.random()-0.5)*0.10*DPR,
+        vy:(ember? -(0.10+Math.random()*0.22) : (Math.random()-0.5)*0.06)*DPR,
+        a:0.15+Math.random()*0.5, tw:Math.random()*Math.PI*2,
+        ts:0.010+Math.random()*0.02, ember:ember
+      });
+    }
+  }
+  function draw(){
+    if(!running) return;
+    ctx.clearRect(0,0,W,H);
+    for(var i=0;i<parts.length;i++){
+      var p=parts[i];
+      p.x+=p.vx; p.y+=p.vy; p.tw+=p.ts;
+      if(p.y<-10){p.y=H+10;p.x=Math.random()*W}
+      if(p.y>H+10){p.y=-10;p.x=Math.random()*W}
+      if(p.x<-10)p.x=W+10; if(p.x>W+10)p.x=-10;
+      var tw = 0.55+0.45*Math.sin(p.tw);
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,p.r,0,6.2832);
+      if(p.ember){ ctx.fillStyle='rgba(255,180,90,'+(p.a*tw*0.9)+')'; }
+      else { ctx.fillStyle='rgba(210,225,255,'+(p.a*tw*0.7)+')'; }
+      ctx.fill();
+    }
+    raf=requestAnimationFrame(draw);
+  }
+  function start(){ if(!running){running=true;raf=requestAnimationFrame(draw);} }
+  function stop(){ running=false; if(raf)cancelAnimationFrame(raf); }
+  if(!reduce){
+    size(); seed(); draw();
+    window.addEventListener('resize',function(){ size(); seed(); },{passive:true});
+    document.addEventListener('visibilitychange',function(){ document.hidden?stop():start(); });
+  } else {
+    cv.style.display='none';
+  }
+})();
+</script>
+
+<script>
+/* =====================================================================
+   CARTE 3D — « Vue satellite cinématique » (Three.js r128, global THREE)
+   Morceau de globe incliné + atmosphère + France nocturne + balises 3D
+   + arcs comètes vers Hyères. Fallback Canvas 2D statique.
+   ===================================================================== */
+(function(){
+  var stage = document.getElementById('stage3d');
+  if(!stage) return;
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var isMobile = Math.min(window.innerWidth, window.innerHeight) < 700;
+
+  /* ---------- Données ---------- */
+  /* viewBox 1000×960.1 :  x = 66.12·lon + 353.88   |   y = 4895.6 − 95.55·lat */
+  var FR_PATH = "M825.35,356.64 821.65,358.05 817.82,356.58 815.8,357.67 816.66,361.49 812.79,363.48 812.17,365.94 808.99,371.04 817.91,369.18 820.02,370.24 820.37,372.88 817.4,373.88 816.38,376.48 812.82,377.47 813.7,381.53 806.31,388.65 806.73,389.82 797.13,397.03 796.54,398.67 797.67,400.11 791.23,405.51 783.1,407.52 779.43,412.2 781.21,416.7 779.36,423.68 780.27,426.39 769.08,434.54 757.93,445.19 760.94,448.18 755.51,455.96 755.58,458.96 755.06,460.61 761.28,465.88 757.54,473.14 758.59,476.5 748.74,480.05 749.46,482.03 750.21,482.97 747.76,487.71 750.35,486.49 753.24,486.93 754.82,485.86 759.67,486.58 765.53,480.94 770.37,478.29 770.85,475.79 769.89,475.17 768.16,476.44 766.41,473.57 770.79,465.22 773.65,465.14 776.48,467.71 784.89,461.61 786.91,462.52 798.58,461.38 803.71,462.79 801.74,466.88 807.52,473.88 803.74,480.85 803.41,487.26 809.94,488.71 808.68,495.83 812.52,494.29 817.44,500.73 819.63,507.7 817.16,509.71 816.28,512.67 812.63,514.89 808.52,514.84 807.9,517.03 804.7,516.03 804.2,526.61 807.49,530.39 810.38,530.95 811.26,533.63 816.84,535.02 815.28,539.71 816.91,547.7 820.41,548.65 820.32,550.69 823.63,551.18 824.48,554.46 828.77,557.55 827.5,561.42 824.09,564.73 825.69,571.59 821.77,575.52 819.7,574.34 814.27,576.27 812.71,579.47 809.61,580.16 809.23,582.76 806.55,583.45 801.32,580.7 799.38,582.69 795.16,583.32 792.1,586.14 794.45,589.17 795.25,593.96 799.86,594.71 799.67,596.88 801.19,599.66 799.86,601.97 800.88,602.32 800.51,604.9 808.15,610.18 811.12,610.38 812.3,608.97 818.22,612.85 816.74,616.01 821.6,626.36 818.09,625.4 814.2,626.75 813.29,629.04 814.47,632.24 813.32,632.36 810.99,637.97 808.59,638.53 807.15,641.05 808.84,645.57 813.17,650.54 809.63,651.2 810.04,657.12 813.63,661.09 814.05,663.26 816.38,664.86 817.5,668.87 829.21,672.22 835.45,677.88 839.59,677.68 840.63,680.24 842.98,679.59 844.96,680.58 845.33,678.92 854.24,676.6 857.81,676.91 859.2,674.38 861.96,674.97 860.89,678.98 864.08,683.59 863.76,685.61 860.5,689.12 859.51,693.83 854.37,696.68 853.71,701.18 849.63,703.8 851.61,711.93 848.72,715.29 846.69,714.45 843.22,718.03 839.16,719.1 839.79,721.43 838.49,722.43 837.42,719.5 836.79,721.4 835.52,720.24 832.46,721.37 830.5,725.04 826.72,724.87 824.85,731.05 825.49,734.96 822.93,732.41 819.11,735.72 817.58,734.31 814.02,735.33 811.42,743.9 809.38,746.02 807.32,745.65 807.09,747.58 799.53,747.46 797.63,753.96 789.27,760.81 794.78,761.45 795.73,760.69 796.68,761.74 794.49,764.17 795.37,768.02 793.15,769.42 793.24,770.9 791.47,771.45 790.1,769.3 787.12,769.01 783.12,772.48 775.92,773.25 774.37,775.83 774.55,778.59 768.58,775.35 763.56,776.07 760.82,779.63 760.74,783.55 761.94,783.83 760.32,784.27 756.64,783.4 759.41,781.66 757.86,778.9 751.88,779.21 750.73,777.04 745.7,776.98 745.16,775.27 742.82,776.97 744.5,777.5 743.79,779.22 746.91,779.08 746.9,780.57 743.12,779.56 740.94,782.32 739.18,782.06 737.03,780.09 737.69,775.94 735.18,775.81 735.16,773.63 730.34,772.81 729.75,769.71 725.59,769.13 724.08,771.22 719.61,766.6 717.35,767.94 707.01,766.49 709.32,762.25 707.41,759.89 709.13,758.63 704.87,752.38 699.49,755.49 687.68,755.72 682.35,746.2 678.76,745.96 677.0,747.46 677.98,745.88 676.43,746.31 674.59,743.84 676.0,747.86 672.92,746.41 675.15,748.6 673.99,749.21 674.84,749.78 673.27,751.07 676.86,752.66 678.94,750.9 674.69,755.16 668.2,753.44 661.54,753.65 655.28,750.9 657.52,747.43 654.55,744.05 629.91,742.04 626.29,739.21 627.44,736.01 626.13,734.45 618.07,734.5 610.23,739.01 604.3,745.2 600.21,747.89 599.58,748.61 594.25,750.76 585.76,760.9 579.24,759.41 571.04,763.96 563.47,771.74 559.17,778.8 554.85,792.49 556.2,794.92 553.98,815.26 555.87,830.52 561.4,833.25 561.02,836.06 563.58,840.9 557.8,841.7 554.87,837.2 550.02,837.96 548.61,836.63 546.61,838.85 541.39,838.9 537.43,843.04 534.4,842.08 530.58,843.99 529.23,845.68 530.58,849.81 523.79,848.38 521.0,850.61 517.8,849.68 514.48,844.79 502.82,840.74 499.33,842.67 495.92,842.33 491.63,847.76 486.94,849.06 483.79,845.53 481.85,839.12 478.85,839.48 474.01,836.31 468.22,834.88 469.48,828.67 471.87,827.44 468.03,825.1 468.51,823.63 459.66,822.63 455.97,819.95 451.66,820.41 451.41,823.97 448.81,824.58 445.57,816.58 443.21,815.14 443.54,813.73 436.57,813.7 434.85,813.26 430.82,814.59 425.13,807.14 418.89,807.26 417.26,805.65 414.77,806.8 410.21,803.47 400.16,800.55 397.44,802.51 398.16,805.82 396.63,807.73 397.8,808.73 396.69,810.64 398.49,813.74 397.82,816.43 393.15,815.17 381.76,816.41 377.63,813.55 373.1,817.8 370.82,813.99 365.5,812.12 352.64,816.9 349.76,816.05 349.06,813.89 346.73,813.4 343.16,806.34 341.38,806.98 333.07,801.55 327.65,805.92 324.43,806.21 320.23,803.59 318.61,806.75 316.15,807.66 316.27,805.37 314.23,805.14 313.75,802.82 308.93,798.09 305.41,796.66 305.0,791.92 303.87,789.93 299.51,791.59 293.72,790.39 291.34,791.35 280.07,784.84 278.33,785.94 276.43,783.42 271.94,782.36 270.28,782.65 267.36,779.98 269.63,775.55 264.88,778.26 263.44,783.93 258.16,781.76 256.57,778.43 260.39,774.52 262.31,768.61 261.89,762.08 252.08,759.08 250.47,759.67 249.35,762.72 247.4,762.59 246.4,757.63 241.49,757.34 239.42,758.46 238.8,755.23 235.57,753.03 235.73,750.79 242.7,749.01 243.75,749.71 247.99,745.51 258.31,724.48 267.48,674.93 270.91,647.13 270.83,638.89 275.84,627.95 278.24,628.63 278.25,630.21 287.48,629.22 286.06,626.68 283.55,624.73 285.13,624.87 283.92,623.6 276.58,617.37 276.18,620.21 272.42,625.34 271.09,632.34 270.45,630.63 277.04,566.87 277.5,550.18 281.96,541.91 288.49,539.89 286.08,536.21 284.97,536.62 273.59,529.22 273.14,531.11 274.43,531.59 272.55,531.12 272.02,527.79 272.14,520.7 279.03,518.9 277.08,514.14 280.2,513.54 282.87,507.82 281.28,505.42 283.46,504.48 279.87,499.89 283.88,500.56 284.24,499.04 280.92,491.19 278.28,489.89 279.15,488.13 276.27,486.97 276.82,485.43 274.02,486.31 271.79,484.71 274.53,481.87 274.79,479.81 280.34,474.87 279.72,472.58 276.87,469.28 274.34,470.35 273.85,474.61 267.92,469.46 268.76,472.41 269.38,472.83 268.13,472.56 264.96,467.6 256.71,467.4 253.7,461.63 244.85,460.06 236.1,453.04 233.96,452.93 230.73,441.62 225.14,433.87 223.65,433.84 221.44,429.96 212.15,421.66 211.55,415.2 214.38,414.31 219.88,403.8 222.72,401.89 221.09,398.65 214.61,393.8 205.25,391.9 210.74,388.23 209.66,378.28 201.69,382.12 196.36,377.93 193.72,378.4 193.03,379.94 185.46,376.77 187.86,375.89 188.32,373.03 184.87,368.73 190.75,364.53 192.96,364.85 191.39,363.96 191.32,361.89 188.93,361.63 188.61,357.59 190.92,358.58 193.43,357.21 186.08,354.35 184.86,355.71 179.72,356.31 184.19,353.56 183.26,353.35 184.42,351.84 182.74,350.94 182.86,352.94 181.46,353.68 181.2,350.68 180.13,353.86 177.33,352.99 180.41,354.71 177.55,355.44 176.61,357.64 173.2,356.4 167.56,358.1 165.38,356.76 165.23,355.15 161.74,353.46 162.55,352.55 161.24,352.57 161.3,351.55 163.68,351.16 165.27,353.39 167.05,352.24 167.19,353.34 167.29,351.54 168.85,353.3 169.74,352.0 171.19,353.49 173.32,352.89 174.42,348.49 174.91,349.54 176.0,347.97 175.9,343.66 174.53,343.07 174.3,345.64 175.51,346.61 174.25,346.2 175.12,347.35 173.95,348.33 173.85,347.03 170.11,345.42 173.21,345.99 171.39,343.5 170.01,344.61 169.18,343.36 169.71,345.31 164.47,345.42 164.64,347.48 162.7,347.35 162.65,349.77 161.42,348.12 160.44,348.52 159.93,346.82 159.55,348.51 159.51,344.76 158.22,344.57 156.99,341.95 158.4,346.19 157.65,348.56 160.22,351.7 157.1,351.09 155.75,348.27 156.1,350.21 153.73,348.18 154.1,350.47 152.58,348.79 151.8,350.17 149.07,350.75 149.27,349.22 146.99,347.62 147.26,355.83 150.13,359.9 146.69,359.18 144.97,354.13 146.62,352.27 146.03,348.75 141.69,343.03 141.73,340.67 146.53,337.78 144.37,337.97 145.87,336.34 147.05,337.29 147.7,335.42 148.47,335.83 145.36,335.92 146.46,333.26 144.81,334.91 142.29,333.64 144.34,337.44 142.66,337.76 142.3,338.72 141.31,338.35 142.25,339.53 141.19,342.92 135.0,338.6 131.7,338.87 134.15,337.89 137.11,338.7 134.77,337.08 131.45,336.74 135.38,332.87 136.64,328.85 136.45,330.97 134.3,332.44 133.95,331.73 132.57,333.47 129.71,325.71 129.19,327.55 131.88,334.78 129.77,337.62 124.91,337.73 120.53,331.39 121.14,327.79 119.83,325.26 120.92,323.49 119.53,322.73 120.9,328.12 119.69,331.78 112.81,330.44 112.79,329.54 110.35,330.39 108.1,327.59 112.79,325.91 109.46,326.26 109.43,325.34 106.92,327.87 105.76,324.05 106.22,328.69 98.89,329.12 95.9,324.77 96.97,322.63 95.28,323.18 95.81,322.49 90.82,317.82 90.7,323.08 86.26,323.4 83.59,322.26 86.24,323.18 84.04,321.0 82.81,322.1 79.91,317.27 82.37,314.75 83.85,315.14 83.67,313.8 82.24,314.36 83.02,311.97 81.57,311.13 82.63,312.1 81.46,313.79 81.63,315.7 80.06,316.29 79.55,318.97 77.83,318.39 80.79,319.83 81.75,322.28 78.23,324.15 77.3,320.67 76.31,322.66 75.14,321.96 78.62,325.61 76.8,328.41 75.1,327.49 74.78,328.92 64.68,328.32 64.32,326.16 66.47,323.99 63.47,315.7 59.13,310.83 53.9,307.96 54.41,305.73 56.83,305.35 53.75,305.61 53.85,307.58 51.79,309.16 47.28,306.43 40.64,305.32 42.74,304.53 42.36,302.97 52.96,301.76 62.09,298.93 65.49,298.76 67.42,301.03 67.79,299.77 69.58,300.5 71.22,294.27 69.79,293.84 68.16,289.67 64.69,289.41 58.38,286.42 56.11,287.41 52.69,293.02 51.69,286.7 53.35,285.24 48.25,284.71 47.94,282.32 51.91,281.86 51.09,278.56 54.19,276.52 52.5,280.07 54.15,281.86 56.4,279.61 55.15,281.14 56.3,282.23 61.74,281.31 64.2,282.83 71.62,280.98 70.42,283.04 71.93,284.47 75.05,284.75 75.64,285.99 82.03,286.12 81.72,288.16 82.42,284.96 80.02,286.02 73.32,284.64 71.31,282.42 76.94,280.79 70.77,279.14 72.79,277.92 67.19,278.99 71.42,275.09 67.51,276.71 68.23,274.63 65.87,276.18 66.27,275.51 64.22,278.04 61.89,278.09 62.87,276.49 59.14,277.84 62.66,272.63 71.35,266.67 62.69,271.85 60.72,271.28 60.12,272.66 57.04,272.78 49.06,276.83 43.59,275.38 41.94,277.56 38.18,277.48 38.03,274.66 40.0,274.16 37.32,274.5 38.79,272.84 37.07,269.25 39.04,264.47 40.92,263.82 38.7,263.28 38.33,259.55 41.32,255.89 42.9,256.37 43.09,254.69 47.98,254.11 49.98,254.65 50.61,256.01 55.93,256.85 49.23,253.81 50.05,251.21 50.18,252.46 53.6,252.1 57.27,254.19 51.78,250.84 53.57,248.29 56.46,249.69 60.35,247.98 63.12,248.35 60.67,246.52 67.55,244.62 69.9,246.04 68.44,247.5 69.99,248.29 76.49,246.69 74.71,246.23 76.84,243.91 81.01,242.87 84.06,243.19 85.65,244.6 86.13,241.77 91.41,239.82 92.51,250.26 93.68,251.76 92.67,246.78 94.75,244.8 96.66,245.29 95.87,246.65 98.85,249.33 98.38,251.3 98.85,250.89 101.47,249.03 99.39,248.51 98.37,245.01 99.59,245.94 99.12,243.3 100.65,241.18 101.23,241.82 101.44,240.54 110.81,243.5 112.98,242.81 112.03,246.13 114.33,243.75 115.6,245.25 117.83,244.36 117.06,240.29 119.13,237.67 116.82,236.66 116.85,234.65 122.44,229.1 122.4,230.38 123.95,229.18 125.29,231.21 127.27,230.85 126.71,232.95 129.63,232.5 134.4,229.08 138.19,229.33 140.7,226.27 142.05,229.48 140.13,233.75 140.97,233.9 143.76,228.59 150.65,225.02 149.14,226.4 150.45,227.34 149.3,227.07 149.49,229.57 150.66,229.94 147.61,236.65 150.71,230.77 154.99,230.98 155.05,232.83 152.63,234.31 154.9,234.57 153.69,235.02 156.46,236.23 158.87,235.57 160.21,237.13 159.41,240.48 166.95,246.66 167.32,252.33 174.53,256.2 174.03,258.43 176.88,262.16 176.72,258.18 179.82,258.6 185.41,252.05 190.42,249.46 189.56,247.47 192.81,246.82 194.27,248.42 200.8,243.65 202.61,245.83 199.54,250.02 201.0,250.76 205.4,247.55 207.87,254.36 209.03,251.13 210.05,253.97 212.11,249.97 213.47,251.14 211.82,248.62 218.6,248.34 218.3,249.5 219.59,249.66 221.89,253.76 221.14,254.92 223.33,257.48 221.81,262.14 224.17,258.82 224.96,259.44 222.84,253.15 224.15,253.58 220.94,251.78 219.92,246.9 222.36,245.48 222.57,244.07 225.78,243.75 224.55,242.99 226.08,242.18 228.14,243.11 232.03,241.44 232.41,244.26 230.63,245.64 230.75,249.01 237.23,251.49 251.91,248.85 253.91,250.56 258.3,249.27 259.9,247.83 264.4,248.63 261.33,245.91 262.71,243.21 258.19,246.34 254.16,243.12 252.5,239.27 249.88,237.69 249.69,230.48 247.29,229.32 249.3,227.52 251.26,219.9 251.27,223.27 251.16,211.02 254.27,211.56 250.65,210.18 249.3,213.35 248.08,209.63 247.63,203.09 249.26,200.84 247.32,192.68 250.07,192.26 247.1,191.28 245.88,193.01 243.01,186.36 244.02,186.5 240.76,182.45 242.96,181.95 239.28,181.6 235.77,177.69 237.78,178.35 236.33,177.36 234.27,177.73 231.5,164.99 229.2,163.14 232.13,158.71 231.55,153.16 229.84,150.66 225.15,148.96 225.76,144.16 229.38,146.17 231.55,145.09 233.48,147.6 242.54,149.38 243.67,150.75 246.98,150.74 246.05,151.31 247.27,152.1 248.59,150.99 255.65,149.52 256.7,147.05 263.6,146.16 270.12,147.23 272.59,155.73 270.94,155.26 269.6,159.02 269.7,157.68 268.1,158.08 267.75,162.46 276.68,174.7 276.92,178.57 279.81,179.61 283.14,176.3 291.55,175.85 304.38,180.21 327.86,181.88 339.01,186.55 348.22,185.06 355.08,181.62 362.69,175.02 369.09,172.7 376.41,172.06 376.17,170.63 371.85,170.37 371.83,170.86 361.59,168.82 358.22,164.63 364.95,147.85 367.74,145.4 376.44,142.04 392.8,132.07 406.18,129.93 417.57,125.71 422.29,125.83 432.98,120.98 449.48,108.2 452.85,99.98 456.27,97.49 459.6,100.26 465.22,100.57 463.19,97.42 460.98,97.28 458.98,93.63 456.32,93.17 455.57,91.05 457.11,83.29 461.42,83.1 462.42,84.38 456.73,79.84 458.71,66.71 462.88,69.21 458.14,62.85 457.36,48.85 459.71,48.77 460.05,44.11 458.59,34.75 462.7,33.92 472.62,26.57 491.99,21.81 494.25,23.37 493.52,21.91 496.11,20.26 498.06,21.71 499.03,19.01 498.21,18.66 500.98,19.29 509.61,16.86 513.13,17.48 522.25,14.06 524.21,22.36 526.25,23.58 527.77,27.93 525.14,30.32 526.23,31.03 525.81,37.01 528.54,40.36 530.74,39.77 534.11,40.78 538.61,48.66 542.43,49.32 546.28,51.8 549.49,46.06 556.3,43.48 558.21,44.06 559.78,42.16 562.4,42.97 566.08,50.1 569.39,51.63 569.43,53.5 568.52,55.68 571.51,67.93 577.38,70.99 582.1,69.35 583.92,67.27 586.49,68.24 585.5,71.42 592.74,70.94 596.03,74.98 596.76,79.76 595.81,83.0 599.83,88.93 599.33,87.52 600.62,88.21 602.12,84.64 608.63,84.46 611.9,86.72 620.21,83.82 623.76,88.53 626.16,89.24 627.77,93.41 629.51,92.63 628.27,91.61 629.6,90.54 632.22,92.19 632.88,94.07 628.46,97.97 628.53,102.69 627.0,105.27 631.64,105.35 631.71,107.9 633.65,111.25 628.86,113.79 627.33,116.62 628.95,118.73 627.89,120.32 631.5,121.32 631.64,122.24 638.92,121.03 649.82,123.17 653.06,122.67 656.99,119.64 664.3,118.37 664.3,109.9 672.85,102.11 677.54,105.19 675.84,106.99 675.8,109.61 674.58,108.57 673.58,111.68 672.67,111.85 673.94,114.46 670.59,121.23 674.58,123.17 677.06,127.01 674.7,131.43 676.27,135.53 674.72,137.84 678.51,138.52 684.41,137.2 685.84,139.28 690.79,140.88 693.08,145.43 695.17,145.31 695.65,147.36 702.55,147.34 706.49,151.23 704.65,153.93 705.22,155.24 707.82,153.39 712.99,156.97 714.4,159.97 715.58,166.05 721.57,163.22 724.97,165.11 727.32,161.06 734.13,161.97 735.79,159.89 738.66,162.26 739.96,162.26 741.95,165.95 746.77,165.99 748.88,166.88 750.44,169.99 753.55,170.46 754.72,169.16 757.33,170.19 759.26,166.59 766.54,164.7 773.0,168.83 774.87,169.11 779.14,168.21 786.41,172.35 787.18,173.69 786.62,175.22 790.05,179.26 788.2,180.65 794.81,187.09 794.54,189.28 796.27,189.94 797.01,192.91 798.67,193.25 798.24,196.81 799.76,197.9 806.66,198.58 807.4,196.03 806.01,193.22 808.01,192.65 809.82,193.42 812.04,192.4 818.93,195.65 820.49,202.87 823.71,198.76 823.69,200.35 827.28,201.91 829.06,201.17 830.0,202.51 833.2,201.43 836.45,202.42 838.54,199.76 840.7,199.57 841.27,197.06 846.23,196.11 845.79,197.9 849.4,197.57 849.48,200.62 852.32,204.41 858.44,206.65 859.74,208.72 867.26,209.21 869.66,207.48 874.18,210.34 878.69,208.12 881.43,211.01 888.9,214.63 896.22,216.59 897.91,216.18 891.84,224.26 888.31,232.83 884.64,234.22 883.5,236.59 880.85,236.97 879.77,240.96 872.13,248.15 869.63,253.6 869.84,260.41 867.44,262.62 865.08,272.06 865.81,278.22 862.44,280.65 860.67,288.22 854.9,298.01 854.53,306.25 857.8,312.1 853.46,321.24 853.86,324.57 851.78,330.85 852.83,335.33 850.62,338.31 851.27,341.42 855.94,347.51 855.04,349.63 849.66,353.49 851.73,354.6 849.71,355.34 850.24,357.35 848.92,358.68 845.17,357.5 844.91,358.75 846.68,359.87 842.02,363.34 838.16,362.79 833.02,364.37 831.83,362.7 828.0,362.29 829.69,357.55 825.35,356.64Z";
+  var SITES = [
+    {n:"Hyères Pharma",            s:"HP",  city:"Hyères",                d:"83", lat:43.1206, lon:6.1286,  t:"siege", h:5.2,  lx:1.5,  ly:0.5},
+    {n:"Ouest Pharma Services",    s:"OPS", city:"St-Étienne-de-Montluc", d:"44", lat:47.2789, lon:-1.7806, t:"site",  h:2.9,  lx:0,    ly:0.3},
+    {n:"Escale Pharma",            s:"EP",  city:"Chilly-Mazarin",        d:"91", lat:48.7028, lon:2.3119,  t:"site",  h:3.1,  lx:0,    ly:0.3},
+    {n:"Comptoir Pharma. du Rhône",s:"CPR", city:"St-Maurice-l'Exil",     d:"38", lat:45.3936, lon:4.7806,  t:"site",  h:2.7,  lx:0,    ly:1.7},
+    {n:"Sud Ouest Pharma",         s:"SOP", city:"Montayral",             d:"47", lat:44.4783, lon:0.9389,  t:"site",  h:2.9,  lx:-2.1, ly:0.35},
+    {n:"Pharm'Occitanie Services", s:"POS", city:"Villeneuve-lès-Béziers",d:"34", lat:43.3206, lon:3.2542,  t:"site",  h:1.9,  lx:0.2,  ly:0.3},
+    {n:"Sud Est Pharma",           s:"SEP", city:"Le Cannet-des-Maures",  d:"83", lat:43.3925, lon:6.3406,  t:"site",  h:2.7,  lx:2.7,  ly:0.3},
+    {n:"Mistral Santé Pharma",     s:"MSP", city:"Flassans-sur-Issole",   d:"83", lat:43.3614, lon:6.1828,  t:"site",  h:2.4,  lx:1.5,  ly:0.35},
+    {n:"Pharmest",                 s:"PH",  city:"Metz · Partenaire",     d:"57", lat:49.1193, lon:6.1757,  t:"part",  h:2.4,  lx:0,    ly:0.3}
+  ];
+  var COL = { siege:'#FFB25A', siegeCore:'#FFD9A0', site:'#6FA0FF', siteCore:'#BAD2FF', part:'#D7DEEF', partCore:'#F0F4FF' };
+
+  /* géo helpers */
+  var lonC = 2.21, R = 60;
+  var d2r = Math.PI/180;
+  function geoV3(lat, lon, r){
+    var th = (90-lat)*d2r, ph = Math.PI/2 + (lon-lonC)*d2r;
+    return new THREE.Vector3(-r*Math.cos(ph)*Math.sin(th), r*Math.cos(th), r*Math.sin(ph)*Math.sin(th));
+  }
+  /* viewBox → lat/lon */
+  function vx2lon(x){ return (x-353.88)/66.12; }
+  function vy2lat(y){ return (4895.6-y)/95.55; }
+  var FR = { lonA:vx2lon(0), lonB:vx2lon(1000), latB:vy2lat(0), latA:vy2lat(960.1) };
+
+  /* ---------- Textures Canvas ---------- */
+  function makeCanvas(w,h){ var c=document.createElement('canvas'); c.width=w; c.height=h; return c; }
+
+  /* France « nocturne » détaillée (fenêtre = viewBox exact, fond transparent) */
+  function drawFranceDetail(scaleK, forFlat){
+    var w = Math.round(1000*scaleK), h = Math.round(960.1*scaleK);
+    var c = makeCanvas(w,h), g = c.getContext('2d');
+    var path = new Path2D(FR_PATH);
+    g.setTransform(scaleK,0,0,scaleK,0,0);
+    /* halo côtier extérieur */
+    g.strokeStyle='rgba(60,110,220,.10)'; g.lineWidth=26; g.stroke(path);
+    g.strokeStyle='rgba(80,140,255,.14)'; g.lineWidth=13; g.stroke(path);
+    /* masse terrestre sombre */
+    var lg = g.createLinearGradient(0,0,1000,960);
+    lg.addColorStop(0,'#111D3C'); lg.addColorStop(.55,'#0D1730'); lg.addColorStop(1,'#0A1226');
+    g.fillStyle=lg; g.fill(path);
+    /* relief subtil : voile radial */
+    g.save(); g.clip(path);
+    var rg = g.createRadialGradient(500,300,60,500,480,720);
+    rg.addColorStop(0,'rgba(120,160,255,.10)'); rg.addColorStop(1,'rgba(0,0,0,0)');
+    g.fillStyle=rg; g.fillRect(0,0,1000,961);
+    /* lumières nocturnes : poussière de villes */
+    var i, n = forFlat? 900 : 1500;
+    for(i=0;i<n;i++){
+      var x = Math.random()*1000, y = Math.random()*960;
+      var a = 0.05+Math.random()*0.16, r0 = 0.5+Math.random()*1.1;
+      g.fillStyle = Math.random()<0.75 ? 'rgba(160,190,255,'+a+')' : 'rgba(255,200,140,'+(a*0.95)+')';
+      g.beginPath(); g.arc(x,y,r0,0,6.2832); g.fill();
+    }
+    /* foyers urbains plus denses autour des ancres */
+    for(i=0;i<SITES.length;i++){
+      var st=SITES[i], ax=66.12*st.lon+353.88, ay=4895.6-95.55*st.lat;
+      var rg2 = g.createRadialGradient(ax,ay,0,ax,ay,30);
+      rg2.addColorStop(0, st.t==='siege' ? 'rgba(255,178,90,.34)' : 'rgba(140,175,255,.22)');
+      rg2.addColorStop(1,'rgba(0,0,0,0)');
+      g.fillStyle=rg2; g.beginPath(); g.arc(ax,ay,30,0,6.2832); g.fill();
+    }
+    g.restore();
+    /* graticule fin (1°) limité à la fenêtre */
+    g.strokeStyle='rgba(140,170,255,.05)'; g.lineWidth=0.8;
+    var lo, la;
+    for(lo=Math.ceil(FR.lonA); lo<=Math.floor(FR.lonB); lo++){
+      var gx = 66.12*lo+353.88;
+      g.beginPath(); g.moveTo(gx,0); g.lineTo(gx,960.1); g.stroke();
+    }
+    for(la=Math.ceil(FR.latA); la<=Math.floor(FR.latB); la++){
+      var gy = 4895.6-95.55*la;
+      g.beginPath(); g.moveTo(0,gy); g.lineTo(1000,gy); g.stroke();
+    }
+    /* trait de côte net */
+    g.strokeStyle='rgba(150,190,255,.55)'; g.lineWidth=1.6; g.stroke(path);
+    g.strokeStyle='rgba(225,240,255,.85)'; g.lineWidth=0.7; g.stroke(path);
+    return c;
+  }
+
+  /* Océan / globe élargi (fenêtre OC, bords fondus vers l'espace) */
+  var OC = { lonA:lonC-47, lonB:lonC+47, latA:5, latB:75 };
+  function drawOcean(){
+    var w=1024, h=Math.round(w*((OC.latB-OC.latA)*95.55)/((OC.lonB-OC.lonA)*66.12));
+    var c=makeCanvas(w,h), g=c.getContext('2d');
+    var lg=g.createLinearGradient(0,0,0,h);
+    lg.addColorStop(0,'#050A1A'); lg.addColorStop(.45,'#081124'); lg.addColorStop(1,'#04070F');
+    g.fillStyle=lg; g.fillRect(0,0,w,h);
+    /* nuance bleutée au centre (autour de la France) */
+    var cx = (FR.lonA+FR.lonB)/2, cyLat=(FR.latA+FR.latB)/2;
+    var px = (cx-OC.lonA)/(OC.lonB-OC.lonA)*w, py=(OC.latB-cyLat)/(OC.latB-OC.latA)*h;
+    var rg=g.createRadialGradient(px,py,10,px,py,w*0.42);
+    rg.addColorStop(0,'rgba(30,60,140,.32)'); rg.addColorStop(1,'rgba(0,0,0,0)');
+    g.fillStyle=rg; g.fillRect(0,0,w,h);
+    /* graticule 5° */
+    g.strokeStyle='rgba(140,170,255,.055)'; g.lineWidth=1;
+    var lo,la;
+    for(lo=Math.ceil(OC.lonA/5)*5; lo<=OC.lonB; lo+=5){
+      var gx=(lo-OC.lonA)/(OC.lonB-OC.lonA)*w;
+      g.beginPath(); g.moveTo(gx,0); g.lineTo(gx,h); g.stroke();
+    }
+    for(la=Math.ceil(OC.latA/5)*5; la<=OC.latB; la+=5){
+      var gy=(OC.latB-la)/(OC.latB-OC.latA)*h;
+      g.beginPath(); g.moveTo(0,gy); g.lineTo(w,gy); g.stroke();
+    }
+    /* silhouette France discrète (pour continuité sous la couche détail) */
+    var sx = w/((OC.lonB-OC.lonA)*66.12);
+    var tx = ((-353.88/66.12)-OC.lonA)*w/(OC.lonB-OC.lonA);
+    var sy = h/((OC.latB-OC.latA)*95.55);
+    var ty = h*(OC.latB-4895.6/95.55)/(OC.latB-OC.latA);
+    g.setTransform(sx,0,0,sy,tx,ty);
+    g.fillStyle='rgba(14,24,50,.9)'; g.fill(new Path2D(FR_PATH));
+    g.setTransform(1,0,0,1,0,0);
+    /* fondu des bords vers l'espace */
+    g.globalCompositeOperation='destination-out';
+    var e = 0.16;
+    var g1=g.createLinearGradient(0,0,w*e,0); g1.addColorStop(0,'rgba(0,0,0,1)'); g1.addColorStop(1,'rgba(0,0,0,0)');
+    g.fillStyle=g1; g.fillRect(0,0,w*e,h);
+    var g2=g.createLinearGradient(w,0,w-w*e,0); g2.addColorStop(0,'rgba(0,0,0,1)'); g2.addColorStop(1,'rgba(0,0,0,0)');
+    g.fillStyle=g2; g.fillRect(w-w*e,0,w*e,h);
+    var g3=g.createLinearGradient(0,0,0,h*e); g3.addColorStop(0,'rgba(0,0,0,1)'); g3.addColorStop(1,'rgba(0,0,0,0)');
+    g.fillStyle=g3; g.fillRect(0,0,w,h*e);
+    var g4=g.createLinearGradient(0,h,0,h-h*e); g4.addColorStop(0,'rgba(0,0,0,1)'); g4.addColorStop(1,'rgba(0,0,0,0)');
+    g.fillStyle=g4; g.fillRect(0,h-h*e,w,h*e);
+    g.globalCompositeOperation='source-over';
+    return c;
+  }
+
+  /* dégradé vertical pour faisceaux (blanc → transparent) */
+  function beamTexture(){
+    var c=makeCanvas(16,128), g=c.getContext('2d');
+    var lg=g.createLinearGradient(0,128,0,0);
+    lg.addColorStop(0,'rgba(255,255,255,.95)');
+    lg.addColorStop(.35,'rgba(255,255,255,.42)');
+    lg.addColorStop(1,'rgba(255,255,255,0)');
+    g.fillStyle=lg; g.fillRect(0,0,16,128);
+    return new THREE.CanvasTexture(c);
+  }
+  function glowSprite(colorIn, colorOut){
+    var c=makeCanvas(128,128), g=c.getContext('2d');
+    var rg=g.createRadialGradient(64,64,0,64,64,64);
+    rg.addColorStop(0,colorIn); rg.addColorStop(.35,colorOut); rg.addColorStop(1,'rgba(0,0,0,0)');
+    g.fillStyle=rg; g.beginPath(); g.arc(64,64,64,0,6.2832); g.fill();
+    return new THREE.CanvasTexture(c);
+  }
+  function labelTexture(site){
+    var big = site.t==='siege';
+    var s1 = big? 46:36, s2 = big? 26:22, pad = big? 26:20;
+    var c0 = makeCanvas(4,4), m = c0.getContext('2d');
+    m.font='700 '+s1+'px "Space Grotesk", sans-serif';
+    var w1 = m.measureText(site.n).width;
+    m.font='500 '+s2+'px "Geist Mono", monospace';
+    var sub = big? (site.city+' · Siège') : site.city;
+    var w2 = m.measureText(sub).width;
+    var w = Math.ceil(Math.max(w1,w2))+pad*2, h = s1+s2+pad*2+10;
+    var c = makeCanvas(w,h), g = c.getContext('2d');
+    /* carte */
+    var rad = 16;
+    g.beginPath();
+    g.moveTo(rad,0); g.arcTo(w,0,w,h,rad); g.arcTo(w,h,0,h,rad); g.arcTo(0,h,0,0,rad); g.arcTo(0,0,w,0,rad); g.closePath();
+    g.fillStyle='rgba(6,11,26,.86)'; g.fill();
+    g.lineWidth=2.5;
+    g.strokeStyle = site.t==='siege' ? 'rgba(243,154,27,.85)' : site.t==='part' ? 'rgba(215,222,239,.55)' : 'rgba(91,140,255,.6)';
+    if(site.t==='part'){ g.setLineDash([8,7]); }
+    g.stroke(); g.setLineDash([]);
+    g.textBaseline='top';
+    g.font='700 '+s1+'px "Space Grotesk", sans-serif';
+    g.fillStyle = site.t==='siege' ? '#FFC168' : '#EAF0FF';
+    g.fillText(site.n, pad, pad-2);
+    g.font='500 '+s2+'px "Geist Mono", monospace';
+    g.fillStyle = site.t==='siege' ? 'rgba(255,214,150,.85)' : 'rgba(154,166,200,.95)';
+    g.fillText(sub, pad, pad+s1+8);
+    var tex = new THREE.CanvasTexture(c);
+    tex.minFilter = THREE.LinearFilter;
+    return {tex:tex, ar:w/h};
+  }
+
+  /* ---------- Fallback 2D statique ---------- */
+  function buildFallback(){
+    var c = document.createElement('canvas');
+    stage.appendChild(c);
+    function paint(){
+      var dpr = Math.min(window.devicePixelRatio||1, 2);
+      var w = stage.clientWidth, h = stage.clientHeight;
+      c.width=Math.floor(w*dpr); c.height=Math.floor(h*dpr);
+      var g=c.getContext('2d'); g.scale(dpr,dpr);
+      /* espace */
+      var lg=g.createLinearGradient(0,0,0,h);
+      lg.addColorStop(0,'#04070F'); lg.addColorStop(.5,'#081124'); lg.addColorStop(1,'#04070F');
+      g.fillStyle=lg; g.fillRect(0,0,w,h);
+      var i;
+      for(i=0;i<140;i++){
+        g.fillStyle='rgba(210,225,255,'+(0.08+Math.random()*0.5)+')';
+        g.beginPath(); g.arc(Math.random()*w,Math.random()*h,Math.random()*1.2,0,6.2832); g.fill();
+      }
+      /* France */
+      var k = Math.min(w*0.72/1000, h*0.9/960.1);
+      var fr = drawFranceDetail(2, true);
+      var fw = 1000*2*k/2, fh = 960.1*2*k/2;
+      var ox=(w-fw)/2, oy=(h-fh)/2;
+      g.drawImage(fr, ox, oy, fw, fh);
+      function P(st){ return { x: ox+(66.12*st.lon+353.88)*k, y: oy+(4895.6-95.55*st.lat)*k }; }
+      var hq = P(SITES[0]);
+      /* arcs */
+      for(i=1;i<SITES.length;i++){
+        var p=P(SITES[i]);
+        var mx=(p.x+hq.x)/2, my=Math.min(p.y,hq.y)-Math.abs(p.x-hq.x)*0.22-24;
+        g.beginPath(); g.moveTo(p.x,p.y); g.quadraticCurveTo(mx,my,hq.x,hq.y);
+        g.strokeStyle = SITES[i].t==='part' ? 'rgba(215,222,239,.4)' : 'rgba(111,160,255,.5)';
+        g.lineWidth=1.4;
+        if(SITES[i].t==='part') g.setLineDash([6,6]);
+        g.stroke(); g.setLineDash([]);
+      }
+      /* balises : halo + faisceau vertical + point */
+      for(i=0;i<SITES.length;i++){
+        var st=SITES[i], p2=P(st);
+        var col = st.t==='siege' ? '255,178,90' : st.t==='part' ? '215,222,239' : '111,160,255';
+        var bh = (st.t==='siege'? 74:46);
+        var rg2=g.createRadialGradient(p2.x,p2.y,0,p2.x,p2.y,st.t==='siege'?34:20);
+        rg2.addColorStop(0,'rgba('+col+',.5)'); rg2.addColorStop(1,'rgba(0,0,0,0)');
+        g.fillStyle=rg2; g.beginPath(); g.arc(p2.x,p2.y,st.t==='siege'?34:20,0,6.2832); g.fill();
+        var bg=g.createLinearGradient(0,p2.y,0,p2.y-bh);
+        bg.addColorStop(0,'rgba('+col+',.9)'); bg.addColorStop(1,'rgba('+col+',0)');
+        g.strokeStyle=bg; g.lineWidth = st.t==='siege'?4:2.5; g.lineCap='round';
+        g.beginPath(); g.moveTo(p2.x,p2.y); g.lineTo(p2.x,p2.y-bh); g.stroke();
+        g.fillStyle='rgba('+col+',1)';
+        g.beginPath(); g.arc(p2.x,p2.y,st.t==='siege'?5:3.5,0,6.2832); g.fill();
+        /* label */
+        g.font=(st.t==='siege'?'700 13px':'600 11px')+' "Space Grotesk", sans-serif';
+        g.textAlign='center';
+        var lx=p2.x+(st.lx||0)*22, ly=p2.y-bh-8+(st.ly?-(st.ly*6):0);
+        g.fillStyle = st.t==='siege' ? '#FFC168' : '#DCE6FF';
+        g.fillText(st.s+' — '+st.city.split('·')[0].trim(), lx, ly);
+      }
+      g.textAlign='left';
+    }
+    paint();
+    window.addEventListener('resize', paint, {passive:true});
+  }
+
+  /* ---------- WebGL check ---------- */
+  function hasWebGL(){
+    try{
+      var t=document.createElement('canvas');
+      return !!(window.WebGLRenderingContext && (t.getContext('webgl')||t.getContext('experimental-webgl')));
+    }catch(e){ return false; }
+  }
+  if(reduce || !window.THREE || !hasWebGL()){ buildFallback(); return; }
+
+  /* ---------- Scène 3D ---------- */
+  var renderer, scene, camera, globe, running=false, visible=false, started=false;
+  var markers=[], comets=[], pulses=[], beacons=[], arcsData=[];
+  var t0 = performance.now();
+  var mouse={x:0,y:0}, mouseT={x:0,y:0};
+  var scroll={p:0,t:0};
+  var revealT0 = -1;
+
+  try{
+    renderer = new THREE.WebGLRenderer({antialias:!isMobile, alpha:true, powerPreference:'high-performance'});
+  }catch(e){ buildFallback(); return; }
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, isMobile?1.75:2));
+  stage.appendChild(renderer.domElement);
+  scene = new THREE.Scene();
+  camera = new THREE.PerspectiveCamera(38, 1, 0.1, 900);
+
+  globe = new THREE.Group();
+  scene.add(globe);
+  /* aligne le centre France sur l'origine, normale = +Z, nord = +Y */
+  var Pc = geoV3((FR.latA+FR.latB)/2, lonC, R);
+  var q = new THREE.Quaternion().setFromUnitVectors(Pc.clone().normalize(), new THREE.Vector3(0,0,1));
+  globe.quaternion.copy(q);
+  globe.position.set(0,0,-R);
+
+  function sphereGeo(r, win, ws, hs){
+    return new THREE.SphereGeometry(r, ws, hs,
+      Math.PI/2 + (win.lonA-lonC)*d2r, (win.lonB-win.lonA)*d2r,
+      (90-win.latB)*d2r, (win.latB-win.latA)*d2r);
+  }
+
+  /* océan / globe */
+  var oceanTex = new THREE.CanvasTexture(drawOcean());
+  oceanTex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  var ocean = new THREE.Mesh(
+    sphereGeo(R, OC, isMobile?96:144, isMobile?72:104),
+    new THREE.MeshBasicMaterial({map:oceanTex, transparent:true, depthWrite:true})
+  );
+  globe.add(ocean);
+
+  /* France détaillée */
+  var frTex = new THREE.CanvasTexture(drawFranceDetail(isMobile?1.6:2.2, false));
+  frTex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  var france = new THREE.Mesh(
+    sphereGeo(R+0.05, FR, 96, 96),
+    new THREE.MeshBasicMaterial({map:frTex, transparent:true, depthWrite:false})
+  );
+  france.renderOrder = 2;
+  globe.add(france);
+
+  /* atmosphère fresnel sur le limbe */
+  var atmWin = {lonA:OC.lonA-3, lonB:OC.lonB+3, latA:OC.latA-2, latB:OC.latB+2};
+  var atm = new THREE.Mesh(
+    sphereGeo(R*1.035, atmWin, 96, 72),
+    new THREE.ShaderMaterial({
+      transparent:true, depthWrite:false, blending:THREE.AdditiveBlending, side:THREE.FrontSide,
+      uniforms:{},
+      vertexShader:
+        'varying vec3 vN; varying vec3 vW;\n'+
+        'void main(){ vN = normalize(mat3(modelMatrix) * normal); vec4 wp = modelMatrix * vec4(position,1.0); vW = wp.xyz;\n'+
+        'gl_Position = projectionMatrix * viewMatrix * wp; }',
+      fragmentShader:
+        'varying vec3 vN; varying vec3 vW;\n'+
+        'void main(){ vec3 V = normalize(cameraPosition - vW);\n'+
+        'float f = pow(1.0 - abs(dot(normalize(vN), V)), 2.6);\n'+
+        'vec3 col = mix(vec3(0.10,0.28,0.85), vec3(0.42,0.70,1.0), f);\n'+
+        'gl_FragColor = vec4(col, f*0.85); }'
+    })
+  );
+  atm.renderOrder = 1;
+  globe.add(atm);
+
+  /* étoiles */
+  (function(){
+    var n = isMobile? 320 : 750;
+    var pos = new Float32Array(n*3);
+    for(var i=0;i<n;i++){
+      var v = new THREE.Vector3(Math.random()*2-1, Math.random()*2-1, Math.random()*2-1).normalize()
+        .multiplyScalar(260+Math.random()*220);
+      pos[i*3]=v.x; pos[i*3+1]=v.y; pos[i*3+2]=v.z;
+    }
+    var gStar = new THREE.BufferGeometry();
+    gStar.setAttribute('position', new THREE.BufferAttribute(pos,3));
+    var star = new THREE.Points(gStar, new THREE.PointsMaterial({
+      size:1.7, sizeAttenuation:true, map:glowSprite('rgba(255,255,255,.95)','rgba(200,220,255,.35)'),
+      color:0xCFE0FF, transparent:true, opacity:.85, depthWrite:false, blending:THREE.AdditiveBlending
+    }));
+    scene.add(star);
+    scene.userData.stars = star;
+  })();
+
+  /* ---------- Balises 3D ---------- */
+  var beamTex = beamTexture();
+  var glowWarm = glowSprite('rgba(255,214,150,.95)','rgba(243,154,27,.4)');
+  var glowCool = glowSprite('rgba(210,228,255,.95)','rgba(91,140,255,.4)');
+  var glowSteel = glowSprite('rgba(240,244,255,.9)','rgba(215,222,239,.3)');
+
+  function beamMat(hex, op){
+    return new THREE.MeshBasicMaterial({map:beamTex, color:new THREE.Color(hex), transparent:true,
+      opacity:op, depthWrite:false, blending:THREE.AdditiveBlending, side:THREE.DoubleSide});
+  }
+
+  SITES.forEach(function(st, idx){
+    var isS = st.t==='siege', isP = st.t==='part';
+    var base = geoV3(st.lat, st.lon, R+0.06);
+    var normal = base.clone().normalize();
+    var grp = new THREE.Group();
+    grp.position.copy(base);
+    grp.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), normal);
+    grp.scale.set(0.0001,0.0001,0.0001);
+    globe.add(grp);
+    var col = isS? COL.siege : isP? COL.part : COL.site;
+    var core = isS? COL.siegeCore : isP? COL.partCore : COL.siteCore;
+
+    /* halo au sol */
+    var ground = new THREE.Mesh(
+      new THREE.CircleGeometry(isS?1.7:0.95, 40),
+      new THREE.MeshBasicMaterial({map:isS?glowWarm:(isP?glowSteel:glowCool), color:0xffffff,
+        transparent:true, opacity:isS?.85:.6, depthWrite:false, blending:THREE.AdditiveBlending})
+    );
+    ground.rotation.x = -Math.PI/2; ground.position.y = 0.03;
+    grp.add(ground);
+
+    /* anneau fixe */
+    var ringGeo = new THREE.RingGeometry(isS?0.62:0.4, isS?0.72:0.47, 44);
+    var ring = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({color:new THREE.Color(col),
+      transparent:true, opacity:.8, depthWrite:false, blending:THREE.AdditiveBlending, side:THREE.DoubleSide}));
+    ring.rotation.x = -Math.PI/2; ring.position.y = 0.05;
+    grp.add(ring);
+
+    /* anneau pulsant */
+    var pulse = new THREE.Mesh(ringGeo.clone(), new THREE.MeshBasicMaterial({color:new THREE.Color(col),
+      transparent:true, opacity:.5, depthWrite:false, blending:THREE.AdditiveBlending, side:THREE.DoubleSide}));
+    pulse.rotation.x = -Math.PI/2; pulse.position.y = 0.06;
+    grp.add(pulse);
+    pulses.push({m:pulse, ph:idx*0.62});
+
+    /* colonne de lumière : externe large + cœur brillant */
+    var h = st.h;
+    var outer = new THREE.Mesh(new THREE.CylinderGeometry(isS?0.55:0.34, isS?0.34:0.2, h, 14, 1, true), beamMat(col, isS?.5:.38));
+    outer.position.y = h/2; grp.add(outer);
+    var inner = new THREE.Mesh(new THREE.CylinderGeometry(isS?0.16:0.09, isS?0.1:0.055, h*1.04, 10, 1, true), beamMat(core, .95));
+    inner.position.y = h*0.52; grp.add(inner);
+
+    /* pin volumétrique : cône ancré + tête balise */
+    var pinCol = new THREE.Color(col);
+    var cone = new THREE.Mesh(new THREE.ConeGeometry(isS?0.3:0.18, isS?0.9:0.55, 18),
+      new THREE.MeshBasicMaterial({color:pinCol, transparent:true, opacity:.95}));
+    cone.rotation.x = Math.PI; cone.position.y = isS?0.5:0.32;
+    grp.add(cone);
+    var headGeo = isS? new THREE.OctahedronGeometry(0.42,0) : new THREE.OctahedronGeometry(0.26,0);
+    var head = new THREE.Mesh(headGeo, new THREE.MeshBasicMaterial({color:new THREE.Color(core), transparent:true, opacity:.98}));
+    head.position.y = h;
+    grp.add(head);
+    var headGlow = new THREE.Sprite(new THREE.SpriteMaterial({map:isS?glowWarm:(isP?glowSteel:glowCool),
+      transparent:true, opacity:.9, depthWrite:false, blending:THREE.AdditiveBlending}));
+    headGlow.scale.set(isS?2.6:1.5, isS?2.6:1.5, 1);
+    headGlow.position.y = h;
+    grp.add(headGlow);
+    beacons.push({m:head, g:headGlow, h:h, ph:idx*0.9, siege:isS});
+
+    /* rotor du siège : double anneau incliné */
+    if(isS){
+      var halo2 = new THREE.Mesh(new THREE.RingGeometry(1.05,1.12,52), new THREE.MeshBasicMaterial({
+        color:0xFFB25A, transparent:true, opacity:.55, depthWrite:false, blending:THREE.AdditiveBlending, side:THREE.DoubleSide}));
+      halo2.rotation.x = -Math.PI/2; halo2.position.y = 0.1;
+      grp.add(halo2);
+      scene.userData.siegeRotor = halo2;
+    }
+
+    /* étiquette */
+    var lbl = labelTexture(st);
+    var sp = new THREE.Sprite(new THREE.SpriteMaterial({map:lbl.tex, transparent:true, depthWrite:false, depthTest:false}));
+    sp.renderOrder = 20;
+    var sh = isS? 1.02 : 0.76;
+    sp.scale.set(sh*lbl.ar, sh, 1);
+    sp.position.set(st.lx||0, h + (st.ly||0.3) + sh*0.62, 0);
+    grp.add(sp);
+
+    markers.push({grp:grp, idx:idx});
+  });
+
+  /* ---------- Arcs logistiques → Hyères ---------- */
+  var hq = SITES[0];
+  var hqV = geoV3(hq.lat, hq.lon, R+0.1);
+  var cBlue = new THREE.Color(0x5B8CFF), cOr = new THREE.Color(0xFFB25A), cSteel = new THREE.Color(0xD7DEEF);
+  SITES.forEach(function(st){
+    if(st.t==='siege') return;
+    var a = geoV3(st.lat, st.lon, R+0.1);
+    var N = 64, pts=[], cols=[];
+    var dist = a.distanceTo(hqV);
+    var arcH = 0.9 + dist*0.16;
+    var i, va=a.clone().normalize(), vb=hqV.clone().normalize();
+    for(i=0;i<=N;i++){
+      var t = i/N;
+      var dir = va.clone().lerp(vb, t).normalize();
+      var r = R + 0.1 + Math.sin(Math.PI*t)*arcH;
+      pts.push(dir.multiplyScalar(r));
+      var cc = (st.t==='part'? cSteel : cBlue).clone().lerp(cOr, t*t);
+      var b = 0.12 + 0.88*Math.pow(Math.sin(Math.PI*t), 0.6);
+      cols.push(cc.r*b, cc.g*b, cc.b*b);
+    }
+    var geo = new THREE.BufferGeometry().setFromPoints(pts);
+    var line;
+    if(st.t==='part'){
+      line = new THREE.Line(geo, new THREE.LineDashedMaterial({color:0xD7DEEF, dashSize:.4, gapSize:.3,
+        transparent:true, opacity:.55, depthWrite:false, blending:THREE.AdditiveBlending}));
+      line.computeLineDistances();
+    } else {
+      geo.setAttribute('color', new THREE.Float32BufferAttribute(cols,3));
+      line = new THREE.Line(geo, new THREE.LineBasicMaterial({vertexColors:true, transparent:true,
+        opacity:.85, depthWrite:false, blending:THREE.AdditiveBlending}));
+    }
+    line.renderOrder = 3;
+    globe.add(line);
+    arcsData.push(pts);
+
+    /* comète + traîne (3 sprites décalés) */
+    var texC = st.t==='part' ? glowSteel : glowCool;
+    var group=[], k;
+    for(k=0;k<3;k++){
+      var spC = new THREE.Sprite(new THREE.SpriteMaterial({map:k===0?glowWarm:texC, transparent:true,
+        opacity:k===0?.95:(k===1?.5:.25), depthWrite:false, blending:THREE.AdditiveBlending}));
+      var s = (k===0? 0.66 : k===1? 0.46 : 0.3) * (st.t==='part'? 0.8:1);
+      spC.scale.set(s,s,1);
+      globe.add(spC);
+      group.push(spC);
+    }
+    comets.push({pts:pts, sp:group, speed:0.10+Math.random()*0.07, ph:Math.random(), part:st.t==='part'});
+  });
+
+  /* ---------- Caméra & rendu ---------- */
+  function sizeRenderer(){
+    var w = stage.clientWidth, h = stage.clientHeight;
+    renderer.setSize(w, h, false);
+    camera.aspect = w/h;
+    camera.updateProjectionMatrix();
+  }
+  sizeRenderer();
+  window.addEventListener('resize', sizeRenderer, {passive:true});
+
+  stage.parentElement.addEventListener('mousemove', function(e){
+    var r = stage.getBoundingClientRect();
+    mouseT.x = ((e.clientX-r.left)/r.width - 0.5)*2;
+    mouseT.y = ((e.clientY-r.top)/r.height - 0.5)*2;
+  }, {passive:true});
+  stage.parentElement.addEventListener('mouseleave', function(){ mouseT.x=0; mouseT.y=0; }, {passive:true});
+
+  function updateScrollTarget(){
+    var r = stage.getBoundingClientRect();
+    var vh = window.innerHeight || document.documentElement.clientHeight;
+    scroll.t = Math.max(0, Math.min(1, (vh*0.86 - r.top) / (vh*0.95)));
+  }
+  window.addEventListener('scroll', updateScrollTarget, {passive:true});
+  updateScrollTarget();
+
+  function easeOutBack(t){ var c1=1.70158,c3=c1+1; return 1+c3*Math.pow(t-1,3)+c1*Math.pow(t-1,2); }
+
+  function frame(now){
+    if(!running) return;
+    var t = (now - t0)/1000;
+    /* lissages */
+    mouse.x += (mouseT.x-mouse.x)*0.05;
+    mouse.y += (mouseT.y-mouse.y)*0.05;
+    scroll.p += (scroll.t-scroll.p)*0.045;
+
+    /* caméra : plongée satellite au scroll + orbite + parallax */
+    var p = scroll.p;
+    var d  = 26.5 - 10.5*p;                 /* distance */
+    var be = (57 - 20*p)*d2r;               /* inclinaison depuis la verticale */
+    var az = Math.sin(t*0.14)*0.05 + mouse.x*0.075;  /* orbite légère */
+    var cx = 0, cy = -d*Math.sin(be), cz = d*Math.cos(be);
+    /* rotation azimutale autour de Z (verticale locale) */
+    var ca=Math.cos(az), sa=Math.sin(az);
+    camera.position.set(cx*ca - cy*sa + mouse.x*1.1, cx*sa + cy*ca + mouse.y*0.55, cz);
+    camera.up.set(0,1,0);
+    camera.lookAt(0, 2.1 - 1.1*p, 0);
+
+    /* étoiles : dérive lente */
+    if(scene.userData.stars) scene.userData.stars.rotation.y = t*0.004;
+
+    /* apparition des balises */
+    if(revealT0>0){
+      for(var i=0;i<markers.length;i++){
+        var mk = markers[i];
+        var lt = (now - revealT0 - mk.idx*110)/750;
+        if(lt>0){
+          var s = lt>=1 ? 1 : easeOutBack(Math.min(1,lt));
+          if(s<0.0001) s=0.0001;
+          mk.grp.scale.set(s,s,s);
+        }
+      }
+    }
+    /* pulsations */
+    for(var j=0;j<pulses.length;j++){
+      var pu=pulses[j], k=(t*0.55+pu.ph)%1;
+      var sc=1+k*2.6;
+      pu.m.scale.set(sc,sc,1);
+      pu.m.material.opacity = (1-k)*0.5;
+    }
+    /* balises flottantes */
+    for(var b=0;b<beacons.length;b++){
+      var bc=beacons[b];
+      var yy = bc.h + Math.sin(t*1.35+bc.ph)*0.14;
+      bc.m.position.y = yy; bc.g.position.y = yy;
+      bc.m.rotation.y = t*(bc.siege?0.9:0.55);
+    }
+    if(scene.userData.siegeRotor) scene.userData.siegeRotor.rotation.z = t*0.5;
+
+    /* comètes vers Hyères */
+    for(var cIdx=0;cIdx<comets.length;cIdx++){
+      var cm=comets[cIdx], n=cm.pts.length-1;
+      for(var kk=0;kk<cm.sp.length;kk++){
+        var tt = (t*cm.speed + cm.ph - kk*0.018) % 1;
+        if(tt<0) tt+=1;
+        var fi = tt*n, i0=Math.floor(fi), i1=Math.min(n,i0+1), fr2=fi-i0;
+        var pA=cm.pts[i0], pB=cm.pts[i1];
+        cm.sp[kk].position.set(pA.x+(pB.x-pA.x)*fr2, pA.y+(pB.y-pA.y)*fr2, pA.z+(pB.z-pA.z)*fr2);
+      }
+    }
+
+    renderer.render(scene, camera);
+    requestAnimationFrame(frame);
+  }
+
+  function play(){
+    if(running || !visible || document.hidden) return;
+    running = true;
+    requestAnimationFrame(frame);
+  }
+  function pause(){ running = false; }
+
+  if('IntersectionObserver' in window){
+    var sio = new IntersectionObserver(function(es){
+      es.forEach(function(e){
+        visible = e.isIntersecting;
+        if(visible){
+          if(revealT0<0) revealT0 = performance.now()+150;
+          play();
+        } else pause();
+      });
+    },{threshold:0.06});
+    sio.observe(stage);
+  } else {
+    visible = true; revealT0 = performance.now()+400; play();
+  }
+  document.addEventListener('visibilitychange', function(){ document.hidden ? pause() : play(); });
+})();
+</script>
+</body>
+</html>
