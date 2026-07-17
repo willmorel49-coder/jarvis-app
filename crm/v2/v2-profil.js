@@ -32,13 +32,13 @@
     { k: 'biosim', l: 'Partenaire biosimilaires', opts: BIOSIM },
     { k: 'lgo', l: 'Logiciel (LGO)', opts: LGO },
     { k: 'robot', l: 'Robot / automate', opts: ROBOT },
+    { k: 'tel_perso', l: 'Tél perso (titulaire)', text: true },
     { k: 'autre', l: 'Autre info', text: true }
   ];
   // Coordonnées éditables (pour compléter une officine, prospect compris). Stockées à part (scope 'coord').
   var COORD = [
     { k: 'titulaire', l: 'Titulaire' },
     { k: 'tel', l: 'Téléphone' },
-    { k: 'tel_perso', l: 'Tél perso (titulaire)' },
     { k: 'email', l: 'Email' },
     { k: 'adresse', l: 'Adresse' }
   ];
