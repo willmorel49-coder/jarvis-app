@@ -1028,6 +1028,8 @@
   // ── VÉRITÉ CLIENT (canonique, partagée) — un client = officine dont l'id est dans WML_OFFICINES.
   // Le seg BRUT de PHARMA_FR est FAUX (gonflé). MÊME règle que le Copilote (reconcileWithWml).
   // Idempotent (flag D._wmlRecon). À appeler dès que PHARMA_FR est chargé, avant tout affichage de client.
+  // Nom canonique d'un groupement (fusionne les variantes via window.GRP_ALIAS, produit par les agents)
+  V2.canonGrp = function (name) { var A = window.GRP_ALIAS || {}; return A[String(name || '').toLowerCase().replace(/[^a-z0-9]/g, '')] || name; };
   V2.reconcilePharma = function () {
     var D = window.PHARMA_FR, W = window.WML_OFFICINES;
     if (!D || !D.p || !D.seg || D._wmlRecon || !W || !W.length) return;
@@ -1041,9 +1043,11 @@
     var nC = 0;
     D.p.forEach(function (p) {
       var o = wml[String(p[13] || '').replace(/[^0-9]/g, '')];
-      if (o) { var ca = p[12] || 0; p[4] = ca >= 40000 ? iA : (ca >= 12000 ? iB : iC); var gr = o.groupement && String(o.groupement).trim(); if (gr && gr !== '—') p[3] = ensureGrp(gr); nC++; }
+      if (o) { var ca = p[12] || 0; p[4] = ca >= 40000 ? iA : (ca >= 12000 ? iB : iC); var gr = o.groupement && String(o.groupement).trim(); if (gr && gr !== '—') p[3] = ensureGrp(V2.canonGrp(gr)); nC++; }
       else if (D.seg[p[4]] !== 'Prospect') { p[4] = iPro; }
     });
+    // Canonicalise TOUS les groupements (fusionne les doublons partout dans l'appli)
+    if (window.GRP_ALIAS) D.p.forEach(function (p) { var g = D.grp[p[3]]; if (g && g !== '—') { var cg = V2.canonGrp(g); if (cg !== g) p[3] = ensureGrp(cg); } });
     var OV = window.GRP_OVR;   // corrections manuelles de groupement (propagation)
     if (OV) D.p.forEach(function (p) { var g = OV[String(p[13] || '').replace(/[^0-9]/g, '')]; if (g) p[3] = ensureGrp(g); });
     D._wmlRecon = true; if (D.meta) D.meta.clients = nC;

@@ -1249,12 +1249,15 @@
         var ca = p[12] || 0;
         p[4] = ca >= 40000 ? iA : (ca >= 12000 ? iB : iC);
         var gr = o.groupement && String(o.groupement).trim();
-        if (gr && gr !== '—') p[3] = ensureGrp(gr);
+        if (gr && gr !== '—') p[3] = ensureGrp(V2.canonGrp ? V2.canonGrp(gr) : gr);
         nClient++;
       } else if (D.seg[p[4]] !== 'Prospect') {   // pas un client WML → prospect (faux clients ET « Non défini »)
         p[4] = iPro; nDemoted++;
       }
     });
+    // Canonicalise tous les groupements + corrections manuelles (cohérence appli)
+    if (window.GRP_ALIAS && V2.canonGrp) D.p.forEach(function (p) { var g = D.grp[p[3]]; if (g && g !== '—') { var cg = V2.canonGrp(g); if (cg !== g) p[3] = ensureGrp(cg); } });
+    var _OV = window.GRP_OVR; if (_OV) D.p.forEach(function (p) { var g = _OV[String(p[13] || '').replace(/[^0-9]/g, '')]; if (g) p[3] = ensureGrp(g); });
     if (D.meta) D.meta.clients = nClient;
     try { console.log('[carte] WML réconcilié : ' + nClient + ' clients confirmés · ' + nDemoted + ' faux clients → prospects'); } catch (e) {}
   }
