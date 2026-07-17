@@ -1,0 +1,535 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Intégral Pharma — Rencontrons-nous</title>
+<link rel="preconnect" href="https://api.fontshare.com" crossorigin>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --orange:#DB5510; --orange-lite:#F39A1B;
+  --blue:#0050E6; --blue-dk:#0034A0;
+  --ink:#0A1024; --night:#04060E; --night-2:#070B18;
+  --paper:#EAEDF6; --muted:#8A94B4; --muted-2:#5C678A;
+  --line:rgba(255,255,255,.09);
+  --serif:'Fraunces',Georgia,serif;
+  --sans:'Satoshi',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --mono:'Geist Mono',ui-monospace,monospace;
+  --ease:cubic-bezier(.16,1,.3,1);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;max-width:100%;overflow-x:hidden}
+body{
+  font-family:var(--sans);
+  background:var(--night);
+  color:var(--paper);
+  -webkit-font-smoothing:antialiased;
+  line-height:1.55;
+  text-rendering:optimizeLegibility;
+}
+img{max-width:100%;display:block}
+a{color:inherit;text-decoration:none}
+.wrap{width:100%;max-width:980px;margin:0 auto;padding:0 22px}
+
+/* ============ NOISE / GRAIN (very light, static) ============ */
+body::after{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:60;opacity:.05;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ============================== HERO ============================== */
+.hero{
+  position:relative;
+  min-height:100svh;min-height:100vh;
+  display:flex;flex-direction:column;
+  overflow:hidden;
+  background:var(--night);
+}
+/* Spotlight — pure CSS radial gradients, NO blur filter */
+.hero__glow{
+  position:absolute;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(120% 70% at 50% -8%, rgba(219,85,16,.20) 0%, rgba(219,85,16,0) 42%),
+    radial-gradient(78% 62% at 50% 34%, rgba(120,150,220,.16) 0%, rgba(10,16,36,0) 60%),
+    radial-gradient(150% 100% at 50% 120%, rgba(0,80,230,.14) 0%, rgba(4,6,14,0) 55%),
+    radial-gradient(100% 100% at 50% 50%, #0a1226 0%, #05070f 60%, #030409 100%);
+}
+/* soft floor reflection band */
+.hero__floor{
+  position:absolute;left:0;right:0;bottom:0;height:38%;z-index:1;pointer-events:none;
+  background:linear-gradient(to top, rgba(0,80,230,.10), rgba(4,6,14,0));
+}
+.hero__canvas{position:absolute;inset:0;z-index:2;touch-action:pan-y}
+.hero__canvas.grab{cursor:grab}
+.hero__canvas.grabbing{cursor:grabbing}
+/* fallback poster */
+.hero__poster{
+  position:absolute;inset:0;z-index:2;display:none;
+  background:#05070f center/cover no-repeat;
+}
+.hero.is-fallback .hero__canvas{display:none}
+.hero.is-fallback .hero__poster{display:block}
+.hero__poster::after{content:"";position:absolute;inset:0;background:radial-gradient(90% 90% at 50% 40%,rgba(4,6,14,0) 30%,rgba(4,6,14,.7) 100%)}
+
+/* top bar */
+.topbar{position:relative;z-index:5;display:flex;align-items:center;justify-content:space-between;
+  padding:20px 22px;padding-top:max(20px,env(safe-area-inset-top))}
+.topbar__logo{height:38px;width:auto;filter:drop-shadow(0 6px 20px rgba(0,0,0,.5))}
+.topbar__tag{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);
+  border:1px solid var(--line);border-radius:100px;padding:7px 13px;white-space:nowrap}
+@media(max-width:520px){.topbar__tag{display:none}}
+
+/* hero copy */
+.hero__copy{position:relative;z-index:5;margin-top:auto;padding:0 22px 46px;
+  padding-bottom:max(46px,calc(env(safe-area-inset-bottom) + 34px));text-align:center;pointer-events:none}
+.hero__eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.28em;text-transform:uppercase;
+  color:var(--orange-lite);margin:0 0 18px;opacity:0;animation:rise .9s var(--ease) .2s forwards}
+.hero__title{font-family:var(--serif);font-weight:400;font-optical-sizing:auto;
+  font-size:clamp(42px,10vw,88px);line-height:.98;letter-spacing:-.02em;margin:0;
+  color:#fff;opacity:0;animation:rise 1s var(--ease) .34s forwards}
+.hero__title em{font-style:italic;color:var(--orange-lite);font-weight:300}
+.hero__lead{max-width:480px;margin:20px auto 0;font-size:clamp(15px,2.4vw,18px);color:var(--muted);
+  font-weight:500;opacity:0;animation:rise 1s var(--ease) .5s forwards}
+.hero__cue{margin-top:30px;display:inline-flex;flex-direction:column;align-items:center;gap:9px;
+  font-family:var(--mono);font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--muted-2);
+  opacity:0;animation:rise 1s var(--ease) .7s forwards}
+.hero__cue .bar{width:1px;height:34px;background:linear-gradient(var(--muted-2),transparent);
+  animation:cue 2.4s var(--ease) infinite}
+.hint{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:4;
+  font-family:var(--mono);font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.28);
+  pointer-events:none;transition:opacity .5s ease;white-space:nowrap}
+.hint.hide{opacity:0}
+@keyframes rise{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+@keyframes cue{0%{transform:scaleY(.2);transform-origin:top}45%{transform:scaleY(1);transform-origin:top}
+  55%{transform-origin:bottom}100%{transform:scaleY(.2);transform-origin:bottom}}
+
+/* ============================== SECTIONS ============================== */
+.section{position:relative;padding:clamp(64px,11vw,120px) 0}
+.section--siege{background:linear-gradient(to bottom,#04060e,#070b18 40%,#070b18)}
+.section--map{background:#070b18}
+.section--values{background:linear-gradient(to bottom,#070b18,#05070f)}
+.section--cta{background:#04060e}
+
+.kicker{display:inline-flex;align-items:center;gap:9px;font-family:var(--mono);font-size:11px;
+  letter-spacing:.2em;text-transform:uppercase;color:var(--orange-lite);margin-bottom:20px}
+.kicker .dot{width:6px;height:6px;border-radius:50%;background:var(--orange);
+  box-shadow:0 0 0 0 rgba(219,85,16,.6);animation:pulse 2.8s var(--ease) infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(219,85,16,.55)}70%{box-shadow:0 0 0 9px rgba(219,85,16,0)}100%{box-shadow:0 0 0 0 rgba(219,85,16,0)}}
+.h2{font-family:var(--serif);font-weight:400;font-size:clamp(28px,5vw,46px);line-height:1.06;
+  letter-spacing:-.02em;margin:0;color:#fff}
+.h2 em{font-style:italic;color:var(--orange-lite);font-weight:300}
+.sub{color:var(--muted);font-size:clamp(15px,2.2vw,17px);max-width:560px;margin:16px 0 0;font-weight:500}
+
+/* reveal on scroll */
+.reveal{opacity:0;transform:translateY(26px);transition:opacity .9s var(--ease),transform .9s var(--ease)}
+.reveal.in{opacity:1;transform:none}
+
+/* SIÈGE media */
+.siege{margin-top:38px;position:relative;border-radius:22px;overflow:hidden;
+  border:1px solid var(--line);box-shadow:0 40px 90px -40px rgba(0,0,0,.9)}
+.siege__media{width:100%;aspect-ratio:16/9;object-fit:cover;display:block;background:#05070f}
+.siege__frame{position:absolute;inset:0;pointer-events:none;
+  box-shadow:inset 0 0 120px rgba(4,6,14,.55);border-radius:22px}
+.siege__badge{position:absolute;left:18px;bottom:18px;z-index:3;display:flex;align-items:center;gap:10px;
+  font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#fff;
+  background:rgba(4,6,14,.5);border:1px solid var(--line);border-radius:100px;padding:8px 14px}
+.siege__badge .live{width:7px;height:7px;border-radius:50%;background:var(--orange-lite);
+  box-shadow:0 0 10px var(--orange-lite)}
+
+/* stats row */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:26px}
+.stat{border:1px solid var(--line);border-radius:16px;padding:20px 16px;background:rgba(255,255,255,.015);text-align:center}
+.stat__n{font-family:var(--serif);font-size:clamp(24px,5vw,34px);color:#fff;line-height:1;font-weight:500}
+.stat__l{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted-2);margin-top:9px}
+@media(max-width:480px){.stats{gap:10px}.stat{padding:16px 8px}}
+
+/* MAP */
+.mapcard{margin-top:34px;border:1px solid var(--line);border-radius:22px;overflow:hidden;
+  background:linear-gradient(180deg,#fbfcff,#eef2fb);box-shadow:0 40px 90px -50px rgba(0,80,230,.5)}
+.mapcard__pad{padding:16px 16px 4px}
+.mapframe{width:100%;border:0;display:block;background:transparent;transition:height .5s var(--ease)}
+
+/* VALUES */
+.values{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:44px}
+@media(max-width:720px){.values{grid-template-columns:1fr}}
+.value{position:relative;border:1px solid var(--line);border-radius:20px;padding:30px 26px;
+  background:linear-gradient(180deg,rgba(255,255,255,.028),rgba(255,255,255,.005));overflow:hidden}
+.value::before{content:"";position:absolute;inset:0;border-radius:20px;pointer-events:none;
+  background:radial-gradient(120% 90% at 20% 0%,rgba(219,85,16,.14),transparent 55%);opacity:0;transition:opacity .5s}
+.value:hover::before{opacity:1}
+.value__ico{width:46px;height:46px;margin-bottom:18px;color:var(--orange-lite)}
+.value__ico svg{width:100%;height:100%;display:block}
+.value__n{font-family:var(--mono);font-size:11px;color:var(--muted-2);letter-spacing:.14em}
+.value__t{font-family:var(--serif);font-weight:500;font-size:24px;color:#fff;margin:6px 0 8px;letter-spacing:-.01em}
+.value__d{font-size:14.5px;color:var(--muted);font-weight:500;margin:0}
+
+/* CTA */
+.cta{max-width:640px;margin:0 auto;text-align:center}
+.cta__card{margin-top:38px;border:1px solid var(--line);border-radius:26px;padding:clamp(30px,6vw,46px) clamp(22px,5vw,44px);
+  background:
+    radial-gradient(120% 100% at 50% 0%,rgba(0,80,230,.16),transparent 60%),
+    linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.008));
+  box-shadow:0 50px 110px -50px rgba(0,80,230,.55)}
+.cta__btns{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin-top:30px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:11px;
+  font-family:var(--sans);font-weight:700;font-size:15px;letter-spacing:-.01em;
+  padding:16px 26px;border-radius:100px;border:1px solid transparent;transition:transform .3s var(--ease),box-shadow .3s var(--ease);min-width:210px}
+.btn svg{width:18px;height:18px}
+.btn--primary{background:linear-gradient(135deg,var(--orange-lite),var(--orange));color:#1a0c02;
+  box-shadow:0 16px 40px -14px rgba(219,85,16,.75)}
+.btn--primary:hover{transform:translateY(-2px);box-shadow:0 22px 50px -14px rgba(219,85,16,.9)}
+.btn--ghost{background:rgba(255,255,255,.04);border-color:var(--line);color:#fff}
+.btn--ghost:hover{transform:translateY(-2px);border-color:rgba(255,255,255,.25);background:rgba(255,255,255,.07)}
+.btn__sub{font-family:var(--mono);font-weight:400;font-size:11px;opacity:.7;letter-spacing:.02em}
+.sign{margin-top:34px;display:flex;flex-direction:column;align-items:center;gap:3px}
+.sign__name{font-family:var(--serif);font-size:20px;color:#fff;font-weight:500;font-style:italic}
+.sign__role{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+
+/* footer */
+.foot{padding:34px 22px calc(34px + env(safe-area-inset-bottom));text-align:center;
+  border-top:1px solid var(--line);background:#04060e}
+.foot img{height:26px;margin:0 auto 14px;opacity:.9}
+.foot p{margin:0;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--muted-2);text-transform:uppercase}
+
+@media(prefers-reduced-motion:reduce){
+  *{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
+  .hero__eyebrow,.hero__title,.hero__lead,.hero__cue{opacity:1;transform:none}
+  .reveal{opacity:1;transform:none}
+}
+</style>
+
+<!-- ============================== HERO ============================== -->
+<header class="hero" id="hero">
+  <div class="hero__glow"></div>
+  <div class="hero__floor"></div>
+  <canvas class="hero__canvas grab" id="scene" aria-hidden="true"></canvas>
+  <div class="hero__poster" id="poster"></div>
+  <div class="hint" id="hint">Faites-la tourner &nbsp;·&nbsp; glissez</div>
+
+  <div class="topbar">
+    <img class="topbar__logo" src="../assets/logo.png" alt="Intégral Pharma">
+    <span class="topbar__tag">Acteur de la santé · +20 ans</span>
+  </div>
+
+  <div class="hero__copy">
+    <p class="hero__eyebrow">Une invitation</p>
+    <h1 class="hero__title">Rencontrons-<em>nous.</em></h1>
+    <p class="hero__lead">Intégral Pharma — groupe de grossistes-répartiteurs français indépendant. Prenons le temps d'en parler, autour d'un rendez-vous.</p>
+    <span class="hero__cue"><span class="bar"></span>Découvrir</span>
+  </div>
+</header>
+
+<!-- ============================== SIÈGE ============================== -->
+<section class="section section--siege">
+  <div class="wrap">
+    <div class="reveal">
+      <span class="kicker"><span class="dot"></span>Notre maison</span>
+      <h2 class="h2">Un ancrage <em>solide</em>,<br>une équipe à taille humaine.</h2>
+      <p class="sub">Depuis plus de vingt ans, nous accompagnons les pharmacies indépendantes avec la même exigence de service. Voici d'où nous partons chaque matin pour vous livrer.</p>
+    </div>
+
+    <div class="siege reveal">
+      <video class="siege__media" id="siegeVid" poster="../assets/siege.jpg"
+             muted autoplay loop playsinline preload="none">
+        <source src="../assets/hero.mp4" type="video/mp4">
+      </video>
+      <div class="siege__frame"></div>
+      <div class="siege__badge"><span class="live"></span>Notre siège — vue aérienne</div>
+    </div>
+
+    <div class="stats reveal">
+      <div class="stat"><div class="stat__n">+20</div><div class="stat__l">ans d'expérience</div></div>
+      <div class="stat"><div class="stat__n">9</div><div class="stat__l">agences en France</div></div>
+      <div class="stat"><div class="stat__n">72h</div><div class="stat__l">livraison</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== CARTE ============================== -->
+<section class="section section--map">
+  <div class="wrap">
+    <div class="reveal">
+      <span class="kicker"><span class="dot"></span>Le réseau</span>
+      <h2 class="h2">Nos agences, partout où<br>sont <em>vos officines.</em></h2>
+      <p class="sub">Une couverture nationale pensée pour la proximité. Explorez la carte de nos implantations.</p>
+    </div>
+    <div class="mapcard reveal">
+      <div class="mapcard__pad">
+        <iframe class="mapframe" id="mapframe" src="../map-component.html?mode=map"
+                scrolling="no" title="Carte des agences Intégral Pharma" loading="lazy"></iframe>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== VALEURS ============================== -->
+<section class="section section--values">
+  <div class="wrap">
+    <div class="reveal" style="text-align:center">
+      <span class="kicker" style="justify-content:center"><span class="dot"></span>Ce qui nous tient</span>
+      <h2 class="h2">Trois valeurs,<br>une seule <em>parole.</em></h2>
+    </div>
+    <div class="values">
+      <div class="value reveal">
+        <div class="value__ico"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M24 5 8 12v11c0 10 7 16 16 20 9-4 16-10 16-20V12L24 5Z"/><path d="M17 24l5 5 9-10"/></svg></div>
+        <div class="value__n">01</div>
+        <h3 class="value__t">Confiance</h3>
+        <p class="value__d">Des engagements clairs et tenus. Une relation qui s'installe dans la durée, sans mauvaise surprise.</p>
+      </div>
+      <div class="value reveal">
+        <div class="value__ico"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M24 42s-14-8.5-14-19a8.5 8.5 0 0 1 14-6.4A8.5 8.5 0 0 1 38 23c0 10.5-14 19-14 19Z"/><path d="M17 23l4 4 9-9"/></svg></div>
+        <div class="value__n">02</div>
+        <h3 class="value__t">Engagement</h3>
+        <p class="value__d">À vos côtés au quotidien. Nous mettons notre logistique et nos équipes au service de votre officine.</p>
+      </div>
+      <div class="value reveal">
+        <div class="value__ico"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="24" cy="16" r="7"/><path d="M10 40c1.5-8 7-12 14-12s12.5 4 14 12"/><path d="M24 30v-2"/></svg></div>
+        <div class="value__n">03</div>
+        <h3 class="value__t">Respect</h3>
+        <p class="value__d">De votre indépendance, de votre temps, de votre métier. L'humain d'abord, à chaque échange.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== CTA ============================== -->
+<section class="section section--cta">
+  <div class="wrap">
+    <div class="cta">
+      <div class="reveal">
+        <span class="kicker" style="justify-content:center"><span class="dot"></span>Rencontrons-nous</span>
+        <h2 class="h2">Le meilleur reste à se<br><em>dire de vive voix.</em></h2>
+        <p class="sub" style="margin-left:auto;margin-right:auto">Un café, trente minutes, et vous verrez ce qu'un partenaire vraiment engagé peut changer. Pascale vous attend.</p>
+      </div>
+
+      <div class="cta__card reveal">
+        <div class="cta__btns">
+          <a class="btn btn--primary" href="mailto:pascale.prieto@integralpharma.fr?subject=Rencontrons-nous%20%E2%80%94%20Int%C3%A9gral%20Pharma">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+            <span>Écrire à Pascale</span>
+          </a>
+          <a class="btn btn--ghost" href="tel:+33676885391">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h4l2 5-3 2a12 12 0 0 0 5 5l2-3 5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z"/></svg>
+            <span>Appeler Pascale<br><span class="btn__sub">06 76 88 53 91</span></span>
+          </a>
+        </div>
+        <div class="sign">
+          <span class="sign__name">Pascale Prieto</span>
+          <span class="sign__role">Directrice commerciale France — Intégral Pharma</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="foot">
+  <img src="../assets/logo.png" alt="Intégral Pharma">
+  <p>Intégral Pharma · Acteur de la santé depuis plus de 20 ans</p>
+</footer>
+
+<!-- ============================== SCRIPTS ============================== -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/* --- Carte : auto-height --- */
+(function(){
+  var f=document.getElementById('mapframe');
+  window.addEventListener('message',function(e){
+    if(e&&e.data&&e.data.ipAtlasHeight){ f.style.height=e.data.ipAtlasHeight+'px'; }
+  });
+  f.style.height='560px';
+})();
+
+/* --- Reveal on scroll --- */
+(function(){
+  var els=[].slice.call(document.querySelectorAll('.reveal'));
+  if(!('IntersectionObserver' in window)){els.forEach(function(el){el.classList.add('in')});return;}
+  var io=new IntersectionObserver(function(en){
+    en.forEach(function(e){ if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);} });
+  },{threshold:.16,rootMargin:'0px 0px -8% 0px'});
+  els.forEach(function(el){io.observe(el)});
+})();
+
+/* --- Siège : ne charge la vidéo que visible (économie) --- */
+(function(){
+  var v=document.getElementById('siegeVid');
+  if(!v)return;
+  var io=new IntersectionObserver(function(en){
+    en.forEach(function(e){
+      if(e.isIntersecting){ if(v.preload!=='auto'){v.preload='auto';v.load();} v.play&&v.play().catch(function(){}); }
+      else{ v.pause&&v.pause(); }
+    });
+  },{threshold:.25});
+  io.observe(v);
+})();
+
+/* ================= HERO 3D — Gélule « pub parfum » ================= */
+(function(){
+  var hero=document.getElementById('hero');
+  var canvas=document.getElementById('scene');
+  var poster=document.getElementById('poster');
+  var hint=document.getElementById('hint');
+  var reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+
+  function fallback(){
+    hero.classList.add('is-fallback');
+    poster.style.backgroundImage="url(../assets/poster.jpg)";
+    if(hint)hint.classList.add('hide');
+  }
+  if(reduce || !window.WebGLRenderingContext){ fallback(); return; }
+  if(typeof THREE==='undefined'){ fallback(); return; }
+
+  var renderer,scene,camera,capsule,pmrem,raf=0,running=false;
+  try{
+    renderer=new THREE.WebGLRenderer({canvas:canvas,antialias:true,alpha:true,powerPreference:'high-performance'});
+  }catch(err){ fallback(); return; }
+  if(!renderer||!renderer.getContext()){ fallback(); return; }
+
+  renderer.setClearColor(0x000000,0);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+  if(renderer.outputEncoding!==undefined){ renderer.outputEncoding=THREE.sRGBEncoding; }
+  renderer.toneMapping=THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure=0.92;
+
+  scene=new THREE.Scene();
+  camera=new THREE.PerspectiveCamera(34,1,0.1,100);
+  camera.position.set(0,0,5.4);
+
+  /* ---- Studio environment (equirect canvas) for chrome reflections ---- */
+  function envTexture(){
+    var c=document.createElement('canvas');c.width=1024;c.height=512;
+    var g=c.getContext('2d');
+    /* base dark vertical gradient */
+    var lg=g.createLinearGradient(0,0,0,512);
+    lg.addColorStop(0,'#0b1330');lg.addColorStop(.5,'#05070f');lg.addColorStop(1,'#02030a');
+    g.fillStyle=lg;g.fillRect(0,0,1024,512);
+    /* big soft key softbox (top) */
+    var s1=g.createRadialGradient(512,70,20,512,70,360);
+    s1.addColorStop(0,'rgba(255,250,240,.95)');s1.addColorStop(.5,'rgba(180,195,230,.35)');s1.addColorStop(1,'rgba(0,0,0,0)');
+    g.fillStyle=s1;g.fillRect(0,0,1024,512);
+    /* blue rim glow left */
+    var s2=g.createRadialGradient(150,300,10,150,300,300);
+    s2.addColorStop(0,'rgba(60,120,255,.55)');s2.addColorStop(1,'rgba(0,0,0,0)');
+    g.fillStyle=s2;g.fillRect(0,0,1024,512);
+    /* warm orange kicker right (subtle) */
+    var s3=g.createRadialGradient(880,360,10,880,360,260);
+    s3.addColorStop(0,'rgba(255,150,60,.4)');s3.addColorStop(1,'rgba(0,0,0,0)');
+    g.fillStyle=s3;g.fillRect(0,0,1024,512);
+    var t=new THREE.CanvasTexture(c);
+    t.mapping=THREE.EquirectangularReflectionMapping;
+    if(t.encoding!==undefined)t.encoding=THREE.sRGBEncoding;
+    return t;
+  }
+  try{
+    pmrem=new THREE.PMREMGenerator(renderer);
+    pmrem.compileEquirectangularShader();
+    var eq=envTexture();
+    var envMap=pmrem.fromEquirectangular(eq).texture;
+    scene.environment=envMap;
+    eq.dispose();
+  }catch(err){ /* continue without env — metals will use lights */ }
+
+  /* ---- Build the gélule ---- */
+  function halfShell(radius,straight,seg){
+    var pts=[],steps=18;
+    pts.push(new THREE.Vector2(radius,0));
+    pts.push(new THREE.Vector2(radius,straight));
+    for(var i=1;i<=steps;i++){
+      var a=(i/steps)*Math.PI/2;
+      pts.push(new THREE.Vector2(radius*Math.cos(a),straight+radius*Math.sin(a)));
+    }
+    return new THREE.LatheGeometry(pts,seg||96);
+  }
+
+  capsule=new THREE.Group();
+
+  var rC=0.52,lC=0.86,Cb=-0.20;   // orange cap (top)
+  var rB=0.485,lB=0.86,Bt=0.18;   // silver body (bottom), cut faces up
+
+  var chrome=new THREE.MeshStandardMaterial({
+    color:0xd7dde6,metalness:1.0,roughness:0.14,envMapIntensity:1.15
+  });
+  var orange=new THREE.MeshStandardMaterial({
+    color:0xC24A0E,metalness:0.85,roughness:0.28,envMapIntensity:0.85,
+    emissive:new THREE.Color(0x2a0d03),emissiveIntensity:0.55
+  });
+  var blue=new THREE.MeshStandardMaterial({
+    color:0x0050E6,metalness:1.0,roughness:0.22,envMapIntensity:1.0,
+    emissive:new THREE.Color(0x001a55),emissiveIntensity:0.6
+  });
+
+  var capMesh=new THREE.Mesh(halfShell(rC,lC),orange);       // dome up
+  capMesh.position.y=Cb;
+  var bodyMesh=new THREE.Mesh(halfShell(rB,lB),chrome);      // dome up -> flip
+  bodyMesh.rotation.x=Math.PI; bodyMesh.position.y=Bt;
+  var ring=new THREE.Mesh(new THREE.TorusGeometry(rC-0.006,0.02,20,120),blue);
+  ring.rotation.x=Math.PI/2; ring.position.y=Cb;
+
+  capsule.add(bodyMesh,capMesh,ring);
+  capsule.rotation.z=0.34;   // elegant tilt
+  capsule.rotation.x=0.06;
+  capsule.scale.setScalar(1.28);
+  scene.add(capsule);
+
+  /* ---- Lights (dim — env does the work; keeps orange rich) ---- */
+  scene.add(new THREE.AmbientLight(0x334066,0.35));
+  var key=new THREE.DirectionalLight(0xfff4e6,0.55); key.position.set(2,4,3); scene.add(key);
+  var rim=new THREE.DirectionalLight(0x3a6bff,0.5); rim.position.set(-3,1,-2); scene.add(rim);
+  var fill=new THREE.PointLight(0xff7a2a,0.35,20); fill.position.set(2.4,-2,1.5); scene.add(fill);
+
+  /* ---- Interaction (drag to rotate) ---- */
+  var targetY=0,targetX=0,curY=0,curX=0,velY=0.0032;
+  var dragging=false,lastX=0,lastY=0,used=false,idle=0;
+
+  function down(e){dragging=true;used=true;canvas.classList.add('grabbing');
+    var p=point(e);lastX=p.x;lastY=p.y;if(hint)hint.classList.add('hide');}
+  function move(e){ if(!dragging)return;
+    var p=point(e);targetY+=(p.x-lastX)*0.006;targetX+=(p.y-lastY)*0.004;
+    targetX=Math.max(-0.6,Math.min(0.6,targetX));lastX=p.x;lastY=p.y;idle=0; }
+  function up(){dragging=false;canvas.classList.remove('grabbing');}
+  function point(e){var t=e.touches&&e.touches[0];return{x:t?t.clientX:e.clientX,y:t?t.clientY:e.clientY};}
+  canvas.addEventListener('mousedown',down);window.addEventListener('mousemove',move);window.addEventListener('mouseup',up);
+  canvas.addEventListener('touchstart',down,{passive:true});
+  canvas.addEventListener('touchmove',move,{passive:true});
+  canvas.addEventListener('touchend',up);
+
+  /* ---- Resize ---- */
+  function resize(){
+    var w=hero.clientWidth,h=hero.clientHeight;
+    renderer.setSize(w,h,false);
+    camera.aspect=w/h;
+    /* pull object a touch closer on small screens */
+    camera.position.z = w<620 ? 6.1 : 5.4;
+    capsule.scale.setScalar(w<620?1.06:1.28);
+    camera.updateProjectionMatrix();
+  }
+  window.addEventListener('resize',resize);resize();
+
+  /* ---- Loop (paused off-screen) ---- */
+  var t0=performance.now();
+  function frame(now){
+    if(!running)return;
+    raf=requestAnimationFrame(frame);
+    var t=(now-t0)/1000;
+    if(!dragging){ targetY+=velY; idle+=1; if(hint&&!used&&idle>360)hint.classList.add('hide'); }
+    curY+=(targetY-curY)*0.08;
+    curX+=(targetX-curX)*0.08;
+    capsule.rotation.y=curY;
+    capsule.rotation.x=0.06+curX;
+    capsule.position.y=Math.sin(t*0.9)*0.07;
+    renderer.render(scene,camera);
+  }
+  function start(){ if(running)return;running=true;t0=performance.now()-1000;raf=requestAnimationFrame(frame); }
+  function stop(){ running=false;cancelAnimationFrame(raf); }
+
+  var vis=new IntersectionObserver(function(en){
+    en.forEach(function(e){ e.isIntersecting?start():stop(); });
+  },{threshold:.02});
+  vis.observe(hero);
+  document.addEventListener('visibilitychange',function(){document.hidden?stop():start();});
+})();
+</script>

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Teasers d'invitation — Intégral Pharma · 10 directions</title>
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --blue:#0050E6; --blue-dk:#0034A0; --orange:#F39A1B; --navy:#0A1430;
+  --bg:#F4F6FB; --card:#FFFFFF; --ink:#0A1430; --muted:#5B6685; --line:#E6EAF3;
+  --font:'Satoshi',system-ui,-apple-system,sans-serif;
+  --mono:'Geist Mono',ui-monospace,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:var(--font);color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased;line-height:1.5}
+a{color:inherit}
+.wrap{max-width:1180px;margin:0 auto;padding:clamp(24px,5vw,64px) clamp(18px,4vw,40px) 80px}
+header .eyebrow{display:inline-flex;align-items:center;gap:9px;font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--blue);margin-bottom:16px}
+header .eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--orange)}
+h1{font-size:clamp(30px,5vw,52px);font-weight:900;letter-spacing:-.025em;line-height:1.05;margin:0 0 14px}
+h1 span{color:var(--blue)}
+.lede{font-size:clamp(15px,2vw,18px);color:var(--muted);max-width:640px;margin:0 0 10px;font-weight:500}
+.howto{display:flex;flex-wrap:wrap;gap:10px;margin:22px 0 40px}
+.howto b{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:8px 16px;font-size:13.5px;font-weight:600;color:var(--ink);box-shadow:0 1px 2px rgba(10,20,48,.04)}
+.howto b .n{color:var(--orange);font-family:var(--mono);margin-right:6px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:22px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;overflow:hidden;box-shadow:0 2px 10px rgba(10,20,48,.05);transition:transform .25s cubic-bezier(.16,1,.3,1),box-shadow .25s;display:flex;flex-direction:column}
+.card:hover{transform:translateY(-5px);box-shadow:0 18px 40px rgba(10,20,48,.14)}
+.thumb{position:relative;aspect-ratio:16/10.5;overflow:hidden;background:#0a1430;display:block}
+.thumb img{width:100%;height:100%;object-fit:cover;object-position:top center;display:block;transition:transform .5s cubic-bezier(.16,1,.3,1)}
+.card:hover .thumb img{transform:scale(1.045)}
+.num{position:absolute;top:12px;left:12px;z-index:2;font-family:var(--mono);font-weight:600;font-size:13px;color:#fff;background:rgba(10,20,48,.62);border:1px solid rgba(255,255,255,.18);padding:5px 11px;border-radius:999px;letter-spacing:.04em}
+.tech{position:absolute;top:12px;right:12px;z-index:2;font-family:var(--mono);font-size:10.5px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:#fff;background:rgba(243,154,27,.92);padding:5px 10px;border-radius:999px}
+.tech.css{background:rgba(0,80,230,.92)}
+.body{padding:18px 20px 20px;display:flex;flex-direction:column;gap:8px;flex:1}
+.title{font-size:19px;font-weight:800;letter-spacing:-.01em;margin:0}
+.desc{font-size:13.5px;color:var(--muted);margin:0;flex:1}
+.open{margin-top:6px;display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--blue);color:#fff;font-weight:700;font-size:14.5px;text-decoration:none;padding:11px 16px;border-radius:12px;transition:background .2s}
+.open:hover{background:var(--blue-dk)}
+.open svg{width:16px;height:16px}
+footer{margin-top:56px;padding-top:26px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+footer b{color:var(--ink)}
+@media(max-width:520px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="eyebrow"><span class="dot"></span>Intégral Pharma · Support d'invitation</span>
+    <h1>10 directions pour votre <span>carton d'invitation</span>.</h1>
+    <p class="lede">Un teaser ultra court à envoyer par mail à un patron de groupement pour lui donner envie d'accepter un rendez-vous. Même contenu partout : la photo du siège, la carte des établissements, vos valeurs, et le contact de Pascale. Dix ambiances radicalement différentes — motion &amp; 3D.</p>
+    <div class="howto">
+      <b><span class="n">1.</span>Ouvre chaque maquette</b>
+      <b><span class="n">2.</span>Fais défiler jusqu'en bas</b>
+      <b><span class="n">3.</span>Dis-moi les numéros que tu préfères</b>
+    </div>
+  </header>
+
+  <div class="grid" id="grid"></div>
+
+  <footer>
+    Toutes les maquettes sont <b>autonomes</b> et <b>Safari-safe</b> (testées à l'écran). Zéro condition commerciale affichée — on chiffre en rendez-vous. Contact intégré : <b>Pascale Prieto</b>, Directrice commerciale France.
+  </footer>
+</div>
+
+<script>
+const CARDS = [
+  {n:'01', slug:'maquette-01-constellation', shot:'shot-01', tech:'WebGL 3D', title:'Constellation France', desc:"Une galaxie de milliers d'étoiles qui se réorganise en carte de France au défilement, les 9 agences s'allumant en orange. Nuit cosmique, cinématique."},
+  {n:'02', slug:'maquette-02-gelule-parfum', shot:'shot-02', tech:'WebGL 3D', title:'Gélule « pub parfum »', desc:"Le logo devient objet : une gélule chrome-et-orange qui tourne seule dans le noir sous un spot, qu'on attrape à la souris. Ultra premium, sobre."},
+  {n:'03', slug:'maquette-03-globe-arcs', shot:'shot-03', tech:'WebGL 3D', title:'Globe logistique', desc:"Un globe terrestre stylisé qui s'allume d'arcs lumineux partant de Hyères vers tout le réseau. On voit le maillage national se dessiner. Spatial."},
+  {n:'04', slug:'maquette-04-cinema-kinetic', shot:'shot-04', tech:'Vidéo', title:'Cinéma cinétique', desc:"Une bande-annonce : la vidéo drone du siège en fond, une typo géante qui se lève mot par mot à chaque scroll, jusqu'au carton « Rencontrons-nous »."},
+  {n:'05', slug:'maquette-05-aurora-clair', shot:'shot-05', tech:'Canvas', title:'Aurora clair', desc:"Une aurore lumineuse qui ondule doucement en fond clair, cartes blanches flottantes et chiffres qui s'animent. Frais, premium, apaisant."},
+  {n:'06', slug:'maquette-06-data-carte', shot:'shot-06', tech:'SVG', title:'Data — la carte star', desc:"La France se trace au chargement puis 9 pins tombent en ressort avant la vraie carte interactive. Chirurgical, data-viz : « on couvre le territoire »."},
+  {n:'07', slug:'maquette-07-bento-os', shot:'shot-07', tech:'WebGL 3D', title:'Bento OS 3D', desc:"Un dashboard « bento » premium où une mini-gélule 3D tourne au milieu de la carte de France interactive. Ça ressemble à un produit, pas à une plaquette."},
+  {n:'08', slug:'maquette-08-shader-spatial', shot:'shot-08', tech:'Shader', title:'Shader spatial', desc:"Un dégradé-nébuleuse animé en GLSL qui coule en continu sous une typo monumentale. Hypnotique, méditatif, très haut de gamme."},
+  {n:'09', slug:'maquette-09-organique-eco', shot:'shot-09', tech:'SVG', title:'Organique / RSE', desc:"Le siège respire dans une forme organique posée sur un papier crème, blobs verts flottants, clin d'œil au toit solaire réel. Chaleureux, humain."},
+  {n:'10', slug:'maquette-10-lamp-timeline', shot:'shot-10', tech:'Canvas', title:'Lamp & storytelling', desc:"Un faisceau de lumière déploie le titre dans le noir, puis un trait vivant accompagne le lecteur de chapitre en chapitre. Ça se lit comme un court-métrage."},
+];
+const grid = document.getElementById('grid');
+grid.innerHTML = CARDS.map(c => `
+  <article class="card">
+    <a class="thumb" href="${c.slug}.html" target="_blank" rel="noopener">
+      <span class="num">${c.n}</span>
+      <span class="tech ${['Vidéo','Canvas','SVG'].includes(c.tech)?'css':''}">${c.tech}</span>
+      <img src="_shots/${c.shot}.jpeg" alt="Aperçu ${c.title}" loading="lazy">
+    </a>
+    <div class="body">
+      <h2 class="title">${c.n} · ${c.title}</h2>
+      <p class="desc">${c.desc}</p>
+      <a class="open" href="${c.slug}.html" target="_blank" rel="noopener">
+        Ouvrir en plein écran
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M9 7h8v8"/></svg>
+      </a>
+    </div>
+  </article>`).join('');
+</script>
+</body>
+</html>

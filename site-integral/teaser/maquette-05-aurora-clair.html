@@ -1,0 +1,613 @@
+<meta charset="utf-8">
+<title>Intégral Pharma — Rencontrons-nous</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#eef4f1">
+<meta name="description" content="Intégral Pharma — groupe de grossistes-répartiteurs français indépendant. Rencontrons-nous.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://api.fontshare.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --blue:#0050E6;      --blue-d:#0034A0;   --navy:#0A1430;
+  --orange:#F39A1B;    --mint:#00C88E;     --cyan:#4DA8FF;
+  --ink:#0d1b2a;       --ink-soft:#46586b; --line:rgba(10,30,60,.09);
+  --paper:#eef4f1;     --card:#ffffff;
+  --shadow-sm:0 1px 2px rgba(10,30,60,.05), 0 6px 18px rgba(10,30,60,.06);
+  --shadow-md:0 2px 6px rgba(10,30,60,.06), 0 22px 50px -18px rgba(9,40,90,.22);
+  --shadow-lg:0 4px 12px rgba(10,30,60,.08), 0 44px 90px -30px rgba(9,40,90,.30);
+  --rad:22px;
+  --sans:"Satoshi",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --disp:"Space Grotesk",var(--sans);
+  --mono:"Geist Mono",ui-monospace,"SF Mono",Menlo,monospace;
+  --wrap:1100px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:var(--sans);line-height:1.55;
+  overflow-x:hidden;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+}
+h1,h2,h3,p,.lede,.eyebrow,.chip,.btn{overflow-wrap:break-word;word-break:normal}
+img{max-width:100%;display:block}
+a{color:inherit;text-decoration:none}
+
+/* ---------- Aurora background ---------- */
+#aurora{
+  position:fixed;inset:0;width:100%;height:100%;
+  z-index:0;pointer-events:none;display:block;
+}
+/* vignette + light grain overlay — radial gradient only, no blur filter */
+.veil{
+  position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:
+    radial-gradient(120% 90% at 50% -10%, rgba(255,255,255,0) 40%, rgba(238,244,241,.55) 100%),
+    radial-gradient(90% 70% at 50% 115%, rgba(238,244,241,0) 45%, rgba(238,244,241,.9) 100%);
+}
+.noWebgl #aurora{
+  background:
+    radial-gradient(60% 55% at 18% 12%, rgba(77,168,255,.30), transparent 60%),
+    radial-gradient(55% 55% at 85% 22%, rgba(0,200,142,.28), transparent 60%),
+    radial-gradient(60% 60% at 75% 90%, rgba(243,154,27,.22), transparent 62%),
+    var(--paper);
+}
+
+/* ---------- Layout ---------- */
+.wrap{width:100%;max-width:var(--wrap);margin:0 auto;padding:0 22px}
+.content{position:relative;z-index:2}
+section{position:relative}
+
+/* ---------- Nav ---------- */
+.nav{
+  position:sticky;top:0;z-index:20;
+  background:rgba(240,246,243,.86);
+  border-bottom:1px solid var(--line);
+}
+.nav .wrap{display:flex;align-items:center;justify-content:space-between;gap:14px;height:64px}
+.brand{display:flex;align-items:center;gap:12px}
+.brand img{height:38px;width:auto}
+.brand .sep{width:1px;height:24px;background:var(--line)}
+.brand .tag{
+  font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-soft);font-weight:500;white-space:nowrap;
+}
+.nav-cta{
+  display:inline-flex;align-items:center;gap:8px;
+  font-family:var(--disp);font-weight:600;font-size:14px;
+  padding:9px 16px;border-radius:999px;color:#fff;
+  background:linear-gradient(180deg,var(--blue),var(--blue-d));
+  box-shadow:0 8px 20px -8px rgba(0,80,230,.6);
+  transition:transform .18s ease, box-shadow .18s ease;
+}
+.nav-cta:hover{transform:translateY(-1px);box-shadow:0 12px 26px -8px rgba(0,80,230,.7)}
+@media(max-width:560px){ .nav-cta{display:none} .brand .sep,.brand .tag{display:none} }
+
+/* ---------- Hero ---------- */
+.hero{padding:clamp(48px,9vw,104px) 0 clamp(30px,6vw,56px)}
+.eyebrow{
+  display:inline-flex;align-items:center;gap:9px;max-width:100%;
+  font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--blue-d);font-weight:500;line-height:1.35;
+  background:rgba(255,255,255,.7);border:1px solid var(--line);
+  padding:7px 14px;border-radius:999px;box-shadow:var(--shadow-sm);
+}
+.eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--mint);flex:none;
+  box-shadow:0 0 0 4px rgba(0,200,142,.18)}
+.eb-short{display:none}
+@media(max-width:560px){
+  .eb-full{display:none} .eb-short{display:inline}
+  .eyebrow{font-size:11px;letter-spacing:.1em}
+}
+h1{
+  font-family:var(--disp);font-weight:700;
+  font-size:clamp(2.15rem,7.4vw,4.15rem);line-height:1.02;
+  letter-spacing:-.025em;margin:.5em 0 .32em;max-width:16ch;color:var(--navy);
+}
+h1 .accent{color:var(--blue)}
+h1 .warm{color:var(--orange)}
+.lede{font-size:clamp(1.02rem,2.5vw,1.24rem);color:var(--ink-soft);max-width:52ch;margin:0}
+.hero-cues{display:flex;flex-wrap:wrap;gap:9px;margin-top:26px}
+.chip{
+  display:inline-flex;align-items:center;gap:8px;
+  background:var(--card);border:1px solid var(--line);border-radius:999px;
+  padding:8px 15px;font-size:13.5px;font-weight:500;color:var(--ink);
+  box-shadow:var(--shadow-sm);
+}
+.chip svg{width:15px;height:15px;flex:none}
+.chip .b{color:var(--blue)} .chip .o{color:var(--orange)} .chip .m{color:var(--mint)}
+
+/* hero media */
+.stage{
+  margin-top:clamp(34px,6vw,58px);position:relative;
+}
+.stage-frame{
+  position:relative;border-radius:calc(var(--rad) + 6px);overflow:hidden;
+  box-shadow:var(--shadow-lg);border:1px solid rgba(255,255,255,.7);
+  background:#0a1430;aspect-ratio:16/9;
+}
+.stage-frame video,.stage-frame img.poster{
+  width:100%;height:100%;object-fit:cover;display:block;
+}
+.stage-frame .grade{
+  position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(180deg,rgba(10,20,48,.05) 0%,rgba(10,20,48,0) 30%,rgba(10,20,48,.42) 100%);
+}
+.stage-badge{
+  position:absolute;left:16px;bottom:16px;z-index:3;
+  display:flex;align-items:center;gap:10px;
+  background:rgba(255,255,255,.94);border-radius:14px;
+  padding:9px 14px;box-shadow:var(--shadow-md);
+}
+.stage-badge .pin{width:30px;height:30px;border-radius:9px;flex:none;
+  display:grid;place-items:center;color:#fff;
+  background:linear-gradient(180deg,var(--blue),var(--blue-d))}
+.stage-badge .pin svg{width:16px;height:16px}
+.stage-badge b{font-family:var(--disp);font-weight:600;font-size:13.5px;color:var(--navy);display:block;line-height:1.2}
+.stage-badge span{font-size:11.5px;color:var(--ink-soft)}
+.stage-float{
+  position:absolute;top:-18px;right:16px;z-index:4;
+  display:flex;align-items:center;gap:9px;
+  background:var(--card);border:1px solid var(--line);border-radius:14px;
+  padding:8px 13px;box-shadow:var(--shadow-md);
+}
+.stage-float .lv{width:9px;height:9px;border-radius:50%;background:var(--mint);
+  box-shadow:0 0 0 4px rgba(0,200,142,.2);animation:pulse 2.6s ease-in-out infinite}
+.stage-float span{font-size:12px;font-weight:600;color:var(--ink);font-family:var(--mono);letter-spacing:.02em}
+@keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(.7);opacity:.55}}
+@media(max-width:560px){ .stage-float{right:10px;top:-14px} }
+
+/* ---------- Stats ---------- */
+.stats{margin-top:clamp(46px,8vw,82px)}
+.stats-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:14px;
+  background:var(--card);border:1px solid var(--line);
+  border-radius:var(--rad);padding:clamp(18px,3.4vw,30px);box-shadow:var(--shadow-md);
+}
+.stat{text-align:center;padding:6px 4px;position:relative}
+.stat + .stat::before{content:"";position:absolute;left:0;top:16%;height:68%;width:1px;background:var(--line)}
+.stat .num{font-family:var(--disp);font-weight:700;color:var(--navy);
+  font-size:clamp(2rem,6.6vw,3.1rem);line-height:1;letter-spacing:-.02em;
+  display:inline-flex;align-items:baseline}
+.stat .num .suf{font-size:.5em;margin-left:.06em;color:var(--blue)}
+.stat .num.warm{color:var(--navy)} .stat.o .num .suf{color:var(--orange)}
+.stat .lab{margin-top:9px;font-size:12.5px;color:var(--ink-soft);letter-spacing:.02em;
+  text-transform:uppercase;font-family:var(--mono)}
+@media(max-width:520px){
+  .stats-grid{grid-template-columns:1fr}
+  .stat + .stat::before{left:14%;top:0;height:1px;width:72%}
+  .stat{padding:16px 4px}
+}
+
+/* ---------- Section head ---------- */
+.sec{padding:clamp(58px,10vw,108px) 0 0}
+.sec-head{max-width:60ch}
+.kicker{
+  font-family:var(--mono);font-size:12px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--blue-d);font-weight:500;display:flex;align-items:center;gap:10px;
+}
+.kicker::before{content:"";width:26px;height:2px;border-radius:2px;
+  background:linear-gradient(90deg,var(--blue),var(--mint))}
+h2{font-family:var(--disp);font-weight:700;color:var(--navy);
+  font-size:clamp(1.7rem,4.6vw,2.7rem);letter-spacing:-.02em;line-height:1.08;margin:.5em 0 .3em}
+.sec-head p{color:var(--ink-soft);font-size:clamp(1rem,2.3vw,1.12rem);margin:0}
+
+/* ---------- Map card ---------- */
+.map-card{
+  margin-top:clamp(26px,4vw,40px);background:var(--card);
+  border:1px solid var(--line);border-radius:calc(var(--rad) + 4px);
+  box-shadow:var(--shadow-lg);overflow:hidden;
+}
+.map-bar{display:flex;align-items:center;gap:12px;padding:15px 20px;border-bottom:1px solid var(--line);overflow:hidden}
+.map-bar .lights{display:flex;gap:6px;flex:none}
+.map-bar .lights i{width:10px;height:10px;border-radius:50%;display:block}
+.map-bar .lights i:nth-child(1){background:var(--orange)}
+.map-bar .lights i:nth-child(2){background:var(--mint)}
+.map-bar .lights i:nth-child(3){background:var(--cyan)}
+.map-bar b{font-family:var(--mono);font-size:12.5px;font-weight:500;color:var(--ink-soft);letter-spacing:.04em;
+  min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.map-bar .live{margin-left:auto;display:flex;align-items:center;gap:7px;font-size:11.5px;flex:none;
+  color:var(--ink-soft);font-family:var(--mono)}
+@media(max-width:430px){ .map-bar .live span:not(.lv){display:none} }
+.map-bar .live .lv{width:8px;height:8px;border-radius:50%;background:var(--mint);
+  box-shadow:0 0 0 3px rgba(0,200,142,.2)}
+.map-wrap{position:relative;min-height:360px}
+.map-wrap iframe{width:100%;border:0;display:block;min-height:360px}
+.map-skel{position:absolute;inset:0;display:grid;place-items:center;color:var(--ink-soft);
+  font-family:var(--mono);font-size:13px;background:#f5f8f6;transition:opacity .5s ease}
+.map-skel.gone{opacity:0;pointer-events:none}
+
+/* ---------- Values ---------- */
+.values-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:clamp(26px,4vw,42px)}
+.val{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--rad);
+  padding:clamp(22px,3vw,30px);box-shadow:var(--shadow-md);
+  transition:transform .28s cubic-bezier(.2,.7,.2,1), box-shadow .28s ease;
+  position:relative;overflow:hidden;
+}
+.val::after{content:"";position:absolute;left:0;top:0;height:3px;width:100%;
+  background:linear-gradient(90deg,var(--c1),var(--c2));opacity:.9}
+.val:hover{transform:translateY(-6px);box-shadow:var(--shadow-lg)}
+.val .ic{width:52px;height:52px;border-radius:15px;display:grid;place-items:center;color:#fff;
+  box-shadow:0 12px 24px -10px var(--c1)}
+.val .ic svg{width:26px;height:26px}
+.val h3{font-family:var(--disp);font-weight:600;color:var(--navy);
+  font-size:1.28rem;margin:18px 0 8px;letter-spacing:-.01em}
+.val p{margin:0;color:var(--ink-soft);font-size:14.5px;line-height:1.6}
+.val .n{position:absolute;right:18px;top:14px;font-family:var(--mono);font-size:12px;color:var(--line)}
+.val.v1{--c1:var(--blue);--c2:var(--cyan)} .val.v1 .ic{background:linear-gradient(155deg,var(--blue),var(--blue-d))}
+.val.v2{--c1:var(--mint);--c2:#12a97e} .val.v2 .ic{background:linear-gradient(155deg,var(--mint),#0f9e77)}
+.val.v3{--c1:var(--orange);--c2:#e07d10} .val.v3 .ic{background:linear-gradient(155deg,#f7a934,#e0810f)}
+@media(max-width:760px){ .values-grid{grid-template-columns:1fr} }
+
+/* ---------- Invite ---------- */
+.invite{margin:clamp(64px,11vw,120px) 0 0}
+.invite-card{
+  position:relative;overflow:hidden;border-radius:calc(var(--rad) + 8px);
+  padding:clamp(32px,6vw,64px) clamp(24px,5vw,60px);
+  background:linear-gradient(155deg,#0b1c46 0%,#0a1430 55%,#081026 100%);
+  box-shadow:var(--shadow-lg);text-align:center;color:#fff;
+}
+.invite-card .glow{position:absolute;inset:0;pointer-events:none;
+  background:
+    radial-gradient(50% 60% at 12% 8%, rgba(0,200,142,.28), transparent 60%),
+    radial-gradient(55% 70% at 90% 15%, rgba(0,80,230,.42), transparent 62%),
+    radial-gradient(50% 80% at 82% 108%, rgba(243,154,27,.30), transparent 60%)}
+.invite-card .in{position:relative;z-index:2}
+.invite-card .kicker{color:#8fe8cf;justify-content:center}
+.invite-card .kicker::before{background:linear-gradient(90deg,var(--mint),var(--cyan))}
+.invite-card h2{color:#fff;font-size:clamp(1.9rem,5.4vw,3rem);margin:.4em auto .3em;max-width:16ch}
+.invite-card .sub{color:#b9c6dd;font-size:clamp(1rem,2.4vw,1.15rem);max-width:44ch;margin:0 auto}
+.cta-row{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin-top:clamp(26px,4vw,38px)}
+.btn{
+  display:inline-flex;align-items:center;gap:11px;
+  font-family:var(--disp);font-weight:600;font-size:16px;
+  padding:15px 26px;border-radius:15px;transition:transform .18s ease, box-shadow .18s ease;
+  will-change:transform;
+}
+.btn svg{width:19px;height:19px;flex:none}
+.btn small{display:block;font-family:var(--sans);font-weight:500;font-size:11.5px;opacity:.8;letter-spacing:.02em}
+.btn .lb{text-align:left;line-height:1.15}
+.btn-primary{color:#0a1430;background:linear-gradient(180deg,#ffffff,#eef3ff);
+  box-shadow:0 14px 34px -12px rgba(0,0,0,.5)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 20px 42px -12px rgba(0,0,0,.6)}
+.btn-ghost{color:#fff;background:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,.06));
+  border:1px solid rgba(255,255,255,.24)}
+.btn-ghost:hover{transform:translateY(-2px);background:linear-gradient(180deg,rgba(255,255,255,.2),rgba(255,255,255,.1))}
+.btn .ico{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;flex:none}
+.btn-primary .ico{background:linear-gradient(155deg,var(--blue),var(--blue-d));color:#fff}
+.btn-ghost .ico{background:linear-gradient(155deg,var(--orange),#e0810f);color:#fff}
+
+.signature{margin-top:clamp(30px,5vw,44px);display:flex;align-items:center;gap:14px;justify-content:center}
+.signature .av{width:46px;height:46px;border-radius:50%;flex:none;display:grid;place-items:center;
+  font-family:var(--disp);font-weight:700;color:#0a1430;font-size:15px;
+  background:linear-gradient(150deg,#fff,#dfe9ff);box-shadow:0 8px 20px -8px rgba(0,0,0,.4)}
+.signature .who{text-align:left}
+.signature .who b{font-family:var(--disp);font-weight:600;color:#fff;font-size:15px;display:block;line-height:1.2}
+.signature .who span{font-size:12.5px;color:#9fb0cb}
+@media(max-width:440px){ .btn{width:100%;justify-content:flex-start} .cta-row{flex-direction:column} }
+
+/* ---------- Footer ---------- */
+footer{padding:clamp(40px,7vw,70px) 0 clamp(34px,6vw,54px);text-align:center}
+footer .fl{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap}
+footer img{height:30px;opacity:.9}
+footer .dv{width:1px;height:18px;background:var(--line)}
+footer p{margin:14px 0 0;font-size:12px;color:var(--ink-soft);font-family:var(--mono);letter-spacing:.03em}
+
+/* ---------- Reveal ---------- */
+.rv{opacity:0;transform:translateY(22px);transition:opacity .8s cubic-bezier(.2,.7,.2,1), transform .8s cubic-bezier(.2,.7,.2,1)}
+.rv.in{opacity:1;transform:none}
+.rv.d1{transition-delay:.08s}.rv.d2{transition-delay:.16s}.rv.d3{transition-delay:.24s}
+
+@media(prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .rv{opacity:1;transform:none;transition:none}
+  .stage-float .lv,.map-bar .live .lv,.stage-badge .lv{animation:none}
+}
+</style>
+
+<canvas id="aurora" aria-hidden="true"></canvas>
+<div class="veil" aria-hidden="true"></div>
+
+<div class="content">
+
+  <!-- NAV -->
+  <header class="nav">
+    <div class="wrap">
+      <div class="brand">
+        <img src="../assets/logo.png" alt="Intégral Pharma">
+        <span class="sep"></span>
+        <span class="tag">Grossiste-répartiteur indépendant</span>
+      </div>
+      <a class="nav-cta" href="mailto:pascale.prieto@integralpharma.fr?subject=Rencontrons-nous%20%E2%80%94%20Int%C3%A9gral%20Pharma">Rencontrons-nous</a>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="wrap">
+      <span class="eyebrow rv"><span class="dot"></span><span class="eb-full">Acteur de la santé depuis plus de 20 ans</span><span class="eb-short">Depuis plus de 20 ans</span></span>
+      <h1 class="rv d1">Le partenaire <span class="accent">discret</span> qui fait avancer votre <span class="warm">officine</span>.</h1>
+      <p class="lede rv d2">Un groupe de grossistes-répartiteurs français, indépendant. Proche, fiable, engagé à vos côtés — et prêt à en parler de vive voix.</p>
+
+      <div class="hero-cues rv d2">
+        <span class="chip"><svg class="b" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2v20M2 12h20"/></svg>9 agences en France</span>
+        <span class="chip"><svg class="o" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Livraison en 72h</span>
+        <span class="chip"><svg class="m" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7 9 18l-5-5"/></svg>Une équipe de proximité</span>
+      </div>
+
+      <!-- STAGE : photo aérienne du siège (siege.jpg) + vidéo drone optionnelle -->
+      <div class="stage rv d2">
+        <div class="stage-float"><span class="lv"></span><span>VUE DRONE</span></div>
+        <div class="stage-frame">
+          <video id="hero-video" autoplay muted loop playsinline preload="metadata" poster="../assets/siege.jpg">
+            <source src="../assets/hero.mp4" type="video/mp4">
+            <img class="poster" src="../assets/siege.jpg" alt="Vue aérienne du siège Intégral Pharma">
+          </video>
+          <div class="grade"></div>
+          <div class="stage-badge">
+            <span class="pin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.6-7-11a7 7 0 0 1 14 0c0 5.4-7 11-7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg></span>
+            <div><b>Notre plateforme logistique</b><span>Photovoltaïque · nouvelle génération</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <section class="stats">
+    <div class="wrap">
+      <div class="stats-grid rv">
+        <div class="stat"><div class="num warm"><span data-count="20">0</span><span class="suf">+</span></div><div class="lab">Ans d'expertise</div></div>
+        <div class="stat"><div class="num"><span data-count="9">0</span></div><div class="lab">Agences en France</div></div>
+        <div class="stat o"><div class="num"><span data-count="72">0</span><span class="suf">h</span></div><div class="lab">Livraison partout</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RÉSEAU / CARTE -->
+  <section class="sec" id="reseau">
+    <div class="wrap">
+      <div class="sec-head rv">
+        <div class="kicker">Notre réseau</div>
+        <h2>Nos agences, partout où sont vos officines.</h2>
+        <p>Un maillage national pensé pour la proximité. Explorez nos implantations et mesurez la distance qui nous sépare — en réalité, très courte.</p>
+      </div>
+
+      <div class="map-card rv d1">
+        <div class="map-bar">
+          <div class="lights"><i></i><i></i><i></i></div>
+          <b>reseau.integralpharma.fr</b>
+          <span class="live"><span class="lv"></span>Carte interactive</span>
+        </div>
+        <div class="map-wrap">
+          <div class="map-skel" id="map-skel">Chargement de la carte…</div>
+          <iframe id="ipmap" src="../map-component.html?mode=map" scrolling="no" title="Carte des agences Intégral Pharma" loading="lazy"></iframe>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- VALEURS -->
+  <section class="sec" id="valeurs">
+    <div class="wrap">
+      <div class="sec-head rv">
+        <div class="kicker">Ce qui nous tient</div>
+        <h2>Trois valeurs, une même main tendue.</h2>
+        <p>Ce que vous ressentirez avant même de parler chiffres.</p>
+      </div>
+
+      <div class="values-grid">
+        <article class="val v1 rv d1">
+          <span class="n">01</span>
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6v5c0 5 3.4 8.4 8 10 4.6-1.6 8-5 8-10V6l-8-3Z"/><path d="m9 12 2 2 4-4"/></svg></div>
+          <h3>Confiance</h3>
+          <p>Un partenaire indépendant, stable et transparent. On dit ce qu'on fait, on fait ce qu'on dit — dans la durée.</p>
+        </article>
+        <article class="val v2 rv d2">
+          <span class="n">02</span>
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4.5 12.5a.6.6 0 0 0 .5 1H11l-1 8.5 8.5-10.5a.6.6 0 0 0-.5-1H12l1-8.5Z"/></svg></div>
+          <h3>Engagement</h3>
+          <p>Réactifs, disponibles, présents. Vos priorités deviennent les nôtres, simplement et sans détour.</p>
+        </article>
+        <article class="val v3 rv d3">
+          <span class="n">03</span>
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-6.5-4.35-9-8.5C1.4 8.6 3 5 6.4 5c2 0 3.2 1.2 3.6 2.2C10.4 6.2 11.6 5 13.6 5 17 5 18.6 8.6 21 11.5 18.5 15.65 12 20 12 20Z"/></svg></div>
+          <h3>Respect</h3>
+          <p>Du pharmacien comme du patient. Une relation d'égal à égal, humaine, qui met votre métier au centre.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- INVITATION -->
+  <section class="invite">
+    <div class="wrap">
+      <div class="invite-card rv">
+        <div class="glow" aria-hidden="true"></div>
+        <div class="in">
+          <div class="kicker">L'invitation</div>
+          <h2>Et si nous prenions un café&nbsp;?</h2>
+          <p class="sub">Trente minutes, sans engagement. Le temps de faire connaissance et de voir, ensemble, ce que nous pouvons vous apporter.</p>
+
+          <div class="cta-row">
+            <a class="btn btn-primary" href="mailto:pascale.prieto@integralpharma.fr?subject=Rencontrons-nous%20%E2%80%94%20Int%C3%A9gral%20Pharma">
+              <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m3.5 7 8.5 6 8.5-6"/></svg></span>
+              <span class="lb">Écrire à Pascale<small>pascale.prieto@integralpharma.fr</small></span>
+            </a>
+            <a class="btn btn-ghost" href="tel:+33676885391">
+              <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 3h3l1.5 5-2.2 1.6a12 12 0 0 0 5.6 5.6L16 18l5 1.5v3a1.5 1.5 0 0 1-1.6 1.5A18 18 0 0 1 3 6.6 1.5 1.5 0 0 1 4.5 5 Z" transform="translate(0 -1.5)"/></svg></span>
+              <span class="lb">Appeler Pascale<small>06 76 88 53 91</small></span>
+            </a>
+          </div>
+
+          <div class="signature">
+            <span class="av">PP</span>
+            <div class="who">
+              <b>Pascale Prieto</b>
+              <span>Directrice commerciale France — Intégral Pharma</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap">
+      <div class="fl">
+        <img src="../assets/logo.png" alt="Intégral Pharma">
+        <span class="dv"></span>
+        <span style="font-family:var(--mono);font-size:12px;color:var(--ink-soft);letter-spacing:.06em">CONFIANCE · ENGAGEMENT · RESPECT</span>
+      </div>
+      <p>Intégral Pharma — Groupe de grossistes-répartiteurs français indépendant.</p>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion:reduce)').matches;
+
+  /* ---------- Map auto-height ---------- */
+  var iframe = document.getElementById('ipmap');
+  var skel = document.getElementById('map-skel');
+  window.addEventListener('message', function(e){
+    var h = e && e.data && e.data.ipAtlasHeight;
+    if(h && iframe){
+      iframe.style.height = h + 'px';
+      if(skel) skel.classList.add('gone');
+    }
+  });
+  if(iframe){
+    iframe.addEventListener('load', function(){
+      setTimeout(function(){ if(skel) skel.classList.add('gone'); }, 1800);
+    });
+  }
+
+  /* ---------- Reveal on scroll ---------- */
+  var rvs = [].slice.call(document.querySelectorAll('.rv'));
+  if(reduce || !('IntersectionObserver' in window)){
+    rvs.forEach(function(el){ el.classList.add('in'); });
+  } else {
+    var io = new IntersectionObserver(function(ents){
+      ents.forEach(function(en){ if(en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target); } });
+    }, {rootMargin:'0px 0px -8% 0px', threshold:.12});
+    rvs.forEach(function(el){ io.observe(el); });
+  }
+
+  /* ---------- Count-up ---------- */
+  function countUp(el){
+    var target = parseInt(el.getAttribute('data-count'),10) || 0;
+    if(reduce){ el.textContent = target; return; }
+    var dur = 1500, t0 = null;
+    function step(ts){
+      if(!t0) t0 = ts;
+      var p = Math.min((ts - t0)/dur, 1);
+      var e = 1 - Math.pow(1 - p, 3); // easeOutCubic
+      el.textContent = Math.round(e * target);
+      if(p < 1) requestAnimationFrame(step);
+      else el.textContent = target;
+    }
+    requestAnimationFrame(step);
+  }
+  var counters = [].slice.call(document.querySelectorAll('[data-count]'));
+  if(!('IntersectionObserver' in window)){
+    counters.forEach(countUp);
+  } else {
+    var cio = new IntersectionObserver(function(ents){
+      ents.forEach(function(en){ if(en.isIntersecting){ countUp(en.target); cio.unobserve(en.target); } });
+    }, {threshold:.6});
+    counters.forEach(function(el){ cio.observe(el); });
+  }
+
+  /* ---------- Reduced-motion : freeze video on poster (siege.jpg) ---------- */
+  var vid = document.getElementById('hero-video');
+  if(vid && reduce){
+    try{ vid.removeAttribute('autoplay'); vid.pause(); }catch(e){}
+  }
+
+  /* ---------- AURORA (Canvas 2D, half-res upscale for soft glow, no blur filter) ---------- */
+  var canvas = document.getElementById('aurora');
+  var ctx = canvas.getContext && canvas.getContext('2d');
+  if(!ctx){ document.documentElement.classList.add('noWebgl'); return; }
+
+  var SCALE = 0.42;                 // render small, browser upscales → free softness
+  var W=0, H=0, running=true, raf=0, t=0;
+
+  var BLOBS = [
+    {c:[77,168,255],  r:.62, ax:.20, ay:.14, sx:.00021, sy:.00016, px:0.0,  py:1.1, a:.52},
+    {c:[0,200,142],   r:.58, ax:.24, ay:.18, sx:.00017, sy:.00024, px:2.1,  py:0.4, a:.50},
+    {c:[0,80,230],    r:.50, ax:.18, ay:.20, sx:.00026, sy:.00013, px:4.2,  py:3.0, a:.40},
+    {c:[243,154,27],  r:.46, ax:.22, ay:.16, sx:.00015, sy:.00021, px:1.2,  py:5.1, a:.34},
+    {c:[147,220,255], r:.40, ax:.16, ay:.12, sx:.00031, sy:.00027, px:5.6,  py:2.2, a:.30}
+  ];
+  var BASE = [238,244,241];
+
+  function resize(){
+    W = Math.max(1, Math.floor(window.innerWidth  * SCALE));
+    H = Math.max(1, Math.floor(window.innerHeight * SCALE));
+    canvas.width = W; canvas.height = H;
+    canvas.style.width = '100%'; canvas.style.height = '100%';
+  }
+
+  function frame(now){
+    if(!running) return;
+    t = now || 0;
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = 'rgb('+BASE[0]+','+BASE[1]+','+BASE[2]+')';
+    ctx.fillRect(0,0,W,H);
+
+    var minD = Math.min(W,H), maxD = Math.max(W,H);
+    for(var i=0;i<BLOBS.length;i++){
+      var b = BLOBS[i];
+      var cx = W*0.5 + Math.sin(t*b.sx + b.px) * (W*b.ax);
+      var cy = H*0.5 + Math.cos(t*b.sy + b.py) * (H*b.ay);
+      var rad = maxD * b.r;
+      var g = ctx.createRadialGradient(cx,cy,0,cx,cy,rad);
+      var col = b.c;
+      g.addColorStop(0,   'rgba('+col[0]+','+col[1]+','+col[2]+','+b.a+')');
+      g.addColorStop(0.5, 'rgba('+col[0]+','+col[1]+','+col[2]+','+(b.a*0.4).toFixed(3)+')');
+      g.addColorStop(1,   'rgba('+col[0]+','+col[1]+','+col[2]+',0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(cx,cy,rad,0,Math.PI*2);
+      ctx.fill();
+    }
+    // soft light bloom top — keeps it airy
+    var lg = ctx.createRadialGradient(W*0.5, -H*0.15, 0, W*0.5, -H*0.15, maxD*0.9);
+    lg.addColorStop(0,'rgba(255,255,255,0.55)');
+    lg.addColorStop(1,'rgba(255,255,255,0)');
+    ctx.fillStyle = lg; ctx.fillRect(0,0,W,H);
+
+    raf = requestAnimationFrame(frame);
+  }
+
+  function start(){ if(!running){ running=true; raf=requestAnimationFrame(frame);} }
+  function stop(){ running=false; if(raf) cancelAnimationFrame(raf); }
+
+  resize();
+  window.addEventListener('resize', function(){
+    resize();
+    if(reduce){ // draw one static frame
+      running=true; frame(0); running=false;
+    }
+  });
+
+  if(reduce){
+    // static single render, no rAF
+    frame(0); running=false;
+  } else {
+    raf = requestAnimationFrame(frame);
+    // pause only when tab hidden (aurora is a cheap half-res fixed background)
+    document.addEventListener('visibilitychange', function(){
+      if(document.hidden) stop(); else start();
+    });
+  }
+})();
+</script>

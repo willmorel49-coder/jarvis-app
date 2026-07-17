@@ -1,0 +1,378 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Intégral Pharma — Rencontrons-nous</title>
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --cream:#F7F3EC; --cream-dp:#EFE8DB; --paper:#FCFAF5;
+  --green:#3F6E52; --green-soft:#6E9E7D; --green-pale:#DCE8DE;
+  --blue:#0050E6; --blue-dk:#0034A0; --navy:#0A1430;
+  --orange:#F39A1B; --orange-dp:#D97E10;
+  --ink:#1E2A22; --muted:#63705F; --line:#E4DCCC;
+  --sans:'Satoshi',system-ui,-apple-system,sans-serif;
+  --serif:'Fraunces',Georgia,serif;
+  --mono:'Geist Mono',ui-monospace,monospace;
+  --ease:cubic-bezier(.22,1,.36,1);
+  --r:34px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  font-family:var(--sans);color:var(--ink);background:var(--cream);
+  line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden;
+  position:relative;
+}
+/* subtle paper grain — tiny inline SVG, safe */
+body::before{
+  content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.5;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.35'/%3E%3C/svg%3E");
+  mix-blend-mode:multiply;
+}
+.wrap{position:relative;z-index:2;max-width:760px;margin:0 auto;padding:0 22px}
+
+/* ===== floating organic blobs (background morph) ===== */
+.field{position:fixed;inset:0;z-index:1;pointer-events:none;overflow:hidden}
+.field svg{position:absolute;will-change:transform}
+.blob-a{top:-14vh;right:-22vw;width:78vw;max-width:640px;opacity:.9}
+.blob-b{bottom:-16vh;left:-24vw;width:80vw;max-width:660px;opacity:.85}
+.blob-c{top:44vh;left:-16vw;width:46vw;max-width:360px;opacity:.6}
+@media(min-width:820px){
+  .blob-a{width:44vw}.blob-b{width:46vw}.blob-c{width:26vw}
+}
+
+/* ===== header ===== */
+header{display:flex;align-items:center;justify-content:space-between;
+  padding:26px 0 8px;position:relative;z-index:3}
+.logo{height:38px;width:auto;display:block}
+.since{font-family:var(--mono);font-size:11px;letter-spacing:.06em;
+  color:var(--muted);text-align:right;line-height:1.35}
+.since b{color:var(--green);font-weight:500}
+@media(max-width:420px){.since{display:none}}
+
+/* ===== hero ===== */
+.hero{padding:34px 0 8px;text-align:center;position:relative;z-index:3}
+.eyebrow{display:inline-flex;align-items:center;gap:9px;
+  font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--green);font-weight:500;margin-bottom:22px;
+  background:var(--green-pale);padding:8px 15px;border-radius:100px}
+.eyebrow .leaf{width:14px;height:14px;flex:none}
+.hero h1{font-family:var(--serif);font-weight:400;
+  font-size:clamp(34px,8.4vw,60px);line-height:1.04;letter-spacing:-.015em;
+  color:var(--navy)}
+.hero h1 em{font-style:italic;color:var(--green)}
+.hero h1 .accent{color:var(--blue-dk)}
+.lede{max-width:44ch;margin:20px auto 0;font-size:clamp(16px,2.4vw,19px);
+  color:var(--muted)}
+
+/* reveal on load */
+.rise{opacity:0;transform:translateY(22px);
+  transition:opacity .9s var(--ease),transform .9s var(--ease)}
+.rise.in{opacity:1;transform:none}
+
+/* ===== siège photo in living organic frame ===== */
+.stage{position:relative;z-index:3;margin:40px 0 8px}
+.frame{position:relative;width:100%;aspect-ratio:16/10;filter:drop-shadow(0 26px 46px rgba(30,42,34,.22))}
+.frame svg{display:block;width:100%;height:100%}
+.frame video,.frame img{display:none}
+.badge-solar{position:absolute;left:50%;bottom:-16px;transform:translateX(-50%);
+  display:inline-flex;align-items:center;gap:9px;
+  background:var(--paper);border:1px solid var(--line);
+  padding:10px 16px 10px 12px;border-radius:100px;
+  box-shadow:0 10px 24px rgba(30,42,34,.14);
+  font-size:13px;font-weight:500;color:var(--green);white-space:nowrap}
+.badge-solar .sun{width:20px;height:20px;flex:none}
+.stage-cap{margin:30px auto 0;text-align:center;max-width:40ch;
+  font-size:14px;color:var(--muted)}
+.stage-cap b{color:var(--ink);font-weight:700}
+
+/* ===== map ===== */
+.section{position:relative;z-index:3;margin:64px 0}
+.sec-head{text-align:center;max-width:36ch;margin:0 auto 26px}
+.kicker{font-family:var(--mono);font-size:12px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--orange-dp);font-weight:500;
+  display:block;margin-bottom:12px}
+.sec-head h2{font-family:var(--serif);font-weight:400;
+  font-size:clamp(26px,5vw,38px);line-height:1.1;color:var(--navy);letter-spacing:-.01em}
+.sec-head h2 em{font-style:italic;color:var(--green)}
+.sec-head p{margin-top:12px;color:var(--muted);font-size:15px}
+.map-card{background:var(--paper);border:1px solid var(--line);
+  border-radius:var(--r);padding:14px;overflow:hidden;
+  box-shadow:0 18px 40px rgba(30,42,34,.10)}
+.map-card iframe{width:100%;border:0;display:block;border-radius:22px;
+  min-height:420px;background:transparent}
+
+/* ===== values ===== */
+.values{display:grid;gap:16px;grid-template-columns:1fr}
+@media(min-width:640px){.values{grid-template-columns:repeat(3,1fr)}}
+.val{background:var(--paper);border:1px solid var(--line);
+  border-radius:var(--r);padding:28px 22px;text-align:center;position:relative;
+  overflow:hidden;transition:transform .5s var(--ease),box-shadow .5s var(--ease)}
+.val:hover{transform:translateY(-4px);box-shadow:0 20px 38px rgba(30,42,34,.12)}
+.val . picto,.val .picto{margin:0 auto}
+.val-ic{width:58px;height:58px;margin:0 auto 16px;display:block}
+.val h3{font-family:var(--serif);font-weight:500;font-size:22px;color:var(--navy);
+  margin-bottom:7px;letter-spacing:-.01em}
+.val p{font-size:14px;color:var(--muted);line-height:1.5}
+.val .num{position:absolute;top:14px;right:18px;font-family:var(--mono);
+  font-size:12px;color:var(--line)}
+
+/* ===== invitation / CTA ===== */
+.invite{position:relative;z-index:3;margin:72px 0 40px;
+  background:linear-gradient(160deg,#12321F 0%,#0A1430 100%);
+  border-radius:var(--r);padding:44px 30px 40px;text-align:center;color:#fff;
+  overflow:hidden;box-shadow:0 26px 54px rgba(10,20,48,.30)}
+.invite .halo{position:absolute;pointer-events:none;opacity:.5}
+.invite h2{font-family:var(--serif);font-weight:400;
+  font-size:clamp(28px,5.6vw,40px);line-height:1.08;letter-spacing:-.01em;
+  position:relative}
+.invite h2 em{font-style:italic;color:var(--orange)}
+.invite .isub{position:relative;margin:16px auto 30px;max-width:38ch;
+  color:rgba(255,255,255,.72);font-size:15.5px}
+.cta{position:relative;display:flex;flex-wrap:wrap;gap:13px;justify-content:center}
+.btn{display:inline-flex;align-items:center;gap:10px;
+  font-weight:700;font-size:16px;text-decoration:none;
+  padding:15px 26px;border-radius:100px;transition:transform .25s var(--ease),box-shadow .25s var(--ease),background .25s}
+.btn svg{width:19px;height:19px;flex:none}
+.btn-primary{background:var(--orange);color:#22160A;
+  box-shadow:0 12px 26px rgba(243,154,27,.34)}
+.btn-primary:hover{transform:translateY(-3px);box-shadow:0 18px 34px rgba(243,154,27,.44)}
+.btn-ghost{background:rgba(255,255,255,.08);color:#fff;
+  border:1px solid rgba(255,255,255,.22)}
+.btn-ghost:hover{transform:translateY(-3px);background:rgba(255,255,255,.15)}
+.sign{position:relative;z-index:3;margin:6px auto 60px;text-align:center;
+  display:flex;flex-direction:column;align-items:center;gap:3px}
+.sign .nm{font-family:var(--serif);font-style:italic;font-size:20px;color:var(--green);font-weight:500}
+.sign .rl{font-size:13px;color:var(--muted)}
+.sign .rl b{color:var(--ink);font-weight:700}
+.sign .div{width:34px;height:2px;border-radius:2px;background:var(--orange);margin:10px 0 4px}
+
+footer{position:relative;z-index:3;text-align:center;padding:0 0 42px;
+  font-family:var(--mono);font-size:11px;letter-spacing:.05em;color:var(--muted)}
+
+@media (prefers-reduced-motion:reduce){
+  .rise{transition:none;opacity:1;transform:none}
+  .field svg *{animation:none!important}
+  .field .morph{display:none}
+}
+</style>
+
+<!-- ============ BACKGROUND FIELD (morphing blobs) ============ -->
+<div class="field" aria-hidden="true">
+  <svg class="blob-a" viewBox="0 0 200 200">
+    <path fill="#DCE8DE">
+      <animate attributeName="d" dur="18s" repeatCount="indefinite"
+        values="M45,-60C58,-49,66,-31,68,-13C70,5,66,24,55,39C44,54,26,65,5,68C-16,71,-38,66,-53,53C-68,40,-76,19,-74,-1C-72,-21,-60,-40,-45,-53C-30,-66,-15,-73,2,-75C19,-77,38,-71,45,-60Z;
+                M52,-58C64,-46,68,-25,68,-5C68,15,64,34,52,48C40,62,20,71,-1,72C-22,73,-44,66,-58,52C-72,38,-78,17,-75,-3C-72,-23,-60,-42,-45,-55C-30,-68,-15,-75,3,-76C21,-77,40,-70,52,-58Z;
+                M45,-60C58,-49,66,-31,68,-13C70,5,66,24,55,39C44,54,26,65,5,68C-16,71,-38,66,-53,53C-68,40,-76,19,-74,-1C-72,-21,-60,-40,-45,-53C-30,-66,-15,-73,2,-75C19,-77,38,-71,45,-60Z"
+        calcMode="spline" keyTimes="0;0.5;1" keySplines="0.4 0 0.2 1;0.4 0 0.2 1"/>
+      <animateTransform attributeName="transform" type="translate" additive="sum" values="100 100;100 100"/>
+    </path>
+  </svg>
+  <svg class="blob-b" viewBox="0 0 200 200">
+    <path fill="#E7EFE0" transform="translate(100 100)">
+      <animate attributeName="d" dur="22s" repeatCount="indefinite"
+        values="M58,-64C72,-51,78,-25,76,-2C74,21,64,42,48,55C32,68,10,73,-13,71C-36,69,-60,60,-71,43C-82,26,-80,1,-72,-20C-64,-41,-50,-58,-33,-67C-16,-76,4,-77,24,-74C44,-71,44,-77,58,-64Z;
+                M50,-56C65,-44,77,-27,79,-8C81,11,73,32,59,46C45,60,25,67,3,68C-19,69,-43,64,-58,50C-73,36,-79,13,-75,-8C-71,-29,-57,-48,-40,-60C-23,-72,-3,-77,15,-74C33,-71,35,-68,50,-56Z;
+                M58,-64C72,-51,78,-25,76,-2C74,21,64,42,48,55C32,68,10,73,-13,71C-36,69,-60,60,-71,43C-82,26,-80,1,-72,-20C-64,-41,-50,-58,-33,-67C-16,-76,4,-77,24,-74C44,-71,44,-77,58,-64Z"
+        calcMode="spline" keyTimes="0;0.5;1" keySplines="0.4 0 0.2 1;0.4 0 0.2 1"/>
+    </path>
+  </svg>
+  <svg class="blob-c" viewBox="0 0 200 200">
+    <path fill="#F3E4C9" transform="translate(100 100)" opacity="0.8">
+      <animate attributeName="d" dur="26s" repeatCount="indefinite"
+        values="M44,-52C56,-40,63,-24,66,-6C69,12,68,32,58,44C48,56,29,60,10,63C-9,66,-30,68,-45,58C-60,48,-69,26,-70,4C-71,-18,-64,-40,-49,-53C-34,-66,-11,-70,7,-72C25,-74,32,-64,44,-52Z;
+                M52,-58C66,-46,74,-26,73,-6C72,14,62,34,48,47C34,60,16,66,-4,68C-24,70,-46,68,-58,55C-70,42,-72,18,-68,-3C-64,-24,-52,-42,-37,-55C-22,-68,-4,-76,13,-74C30,-72,38,-70,52,-58Z;
+                M44,-52C56,-40,63,-24,66,-6C69,12,68,32,58,44C48,56,29,60,10,63C-9,66,-30,68,-45,58C-60,48,-69,26,-70,4C-71,-18,-64,-40,-49,-53C-34,-66,-11,-70,7,-72C25,-74,32,-64,44,-52Z"
+        calcMode="spline" keyTimes="0;0.5;1" keySplines="0.4 0 0.2 1;0.4 0 0.2 1"/>
+    </path>
+  </svg>
+</div>
+
+<div class="wrap">
+
+  <header class="rise">
+    <img class="logo" src="../assets/logo.png" alt="Intégral Pharma" width="200" height="38">
+    <div class="since">Acteur de la santé<br><b>depuis plus de 20 ans</b></div>
+  </header>
+
+  <section class="hero">
+    <span class="eyebrow rise">
+      <svg class="leaf" viewBox="0 0 24 24" fill="none"><path d="M20 4C10 4 4 10 4 20c8 0 16-6 16-16Z" fill="#6E9E7D"/><path d="M4 20C8 14 13 10 18 8" stroke="#3F6E52" stroke-width="1.6" stroke-linecap="round"/></svg>
+      Une invitation, simplement
+    </span>
+    <h1 class="rise">Cultivons une <em>relation</em><br>de <span class="accent">confiance</span>.</h1>
+    <p class="lede rise">Intégral Pharma, groupe de grossistes-répartiteurs français indépendant. Nous aimerions faire votre connaissance.</p>
+  </section>
+
+  <section class="stage rise">
+    <div class="frame">
+      <svg viewBox="0 0 640 400" preserveAspectRatio="xMidYMid slice">
+        <defs>
+          <clipPath id="blobClip">
+            <path d="M60,44 C160,8 300,10 430,26 C540,40 610,70 616,150 C624,240 596,320 500,354 C400,390 260,392 150,368 C50,346 16,300 14,210 C12,120 20,72 60,44 Z">
+              <animate attributeName="d" dur="20s" repeatCount="indefinite" calcMode="spline"
+                keyTimes="0;0.5;1" keySplines="0.4 0 0.2 1;0.4 0 0.2 1"
+                values="M60,44 C160,8 300,10 430,26 C540,40 610,70 616,150 C624,240 596,320 500,354 C400,390 260,392 150,368 C50,346 16,300 14,210 C12,120 20,72 60,44 Z;
+                        M48,60 C150,20 300,18 440,34 C556,48 620,86 624,168 C628,252 592,326 494,362 C392,398 250,388 142,362 C44,338 20,292 22,200 C24,116 12,96 48,60 Z;
+                        M60,44 C160,8 300,10 430,26 C540,40 610,70 616,150 C624,240 596,320 500,354 C400,390 260,392 150,368 C50,346 16,300 14,210 C12,120 20,72 60,44 Z"/>
+            </path>
+          </clipPath>
+        </defs>
+        <image href="../assets/siege.jpg" x="0" y="0" width="640" height="400"
+               preserveAspectRatio="xMidYMid slice" clip-path="url(#blobClip)"/>
+        <foreignObject x="0" y="0" width="640" height="400" clip-path="url(#blobClip)">
+          <video xmlns="http://www.w3.org/1999/xhtml" id="siegeVid"
+                 muted loop playsinline preload="none" poster="../assets/siege.jpg"
+                 style="width:100%;height:100%;object-fit:cover;display:none">
+            <source src="../assets/hero.mp4" type="video/mp4">
+          </video>
+        </foreignObject>
+        <path d="M60,44 C160,8 300,10 430,26 C540,40 610,70 616,150 C624,240 596,320 500,354 C400,390 260,392 150,368 C50,346 16,300 14,210 C12,120 20,72 60,44 Z"
+              fill="none" stroke="#FCFAF5" stroke-width="6" opacity="0.9">
+          <animate attributeName="d" dur="20s" repeatCount="indefinite" calcMode="spline"
+            keyTimes="0;0.5;1" keySplines="0.4 0 0.2 1;0.4 0 0.2 1"
+            values="M60,44 C160,8 300,10 430,26 C540,40 610,70 616,150 C624,240 596,320 500,354 C400,390 260,392 150,368 C50,346 16,300 14,210 C12,120 20,72 60,44 Z;
+                    M48,60 C150,20 300,18 440,34 C556,48 620,86 624,168 C628,252 592,326 494,362 C392,398 250,388 142,362 C44,338 20,292 22,200 C24,116 12,96 48,60 Z;
+                    M60,44 C160,8 300,10 430,26 C540,40 610,70 616,150 C624,240 596,320 500,354 C400,390 260,392 150,368 C50,346 16,300 14,210 C12,120 20,72 60,44 Z"/>
+        </path>
+      </svg>
+      <div class="badge-solar">
+        <svg class="sun" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.4" fill="#F39A1B"/><g stroke="#F39A1B" stroke-width="1.8" stroke-linecap="round"><path d="M12 2.5v2.4M12 19.1v2.4M4.2 4.2l1.7 1.7M18.1 18.1l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.2 19.8l1.7-1.7M18.1 5.9l1.7-1.7"/></g></svg>
+        Notre plateforme, alimentée au solaire
+      </div>
+    </div>
+    <p class="stage-cap">Notre siège et notre plateforme logistique — <b>9 agences en France</b>, une livraison en <b>72 h</b>, et un toit qui produit son énergie.</p>
+  </section>
+
+  <section class="section">
+    <div class="sec-head rise">
+      <span class="kicker">Le réseau</span>
+      <h2>Nos agences, partout où sont <em>vos officines</em>.</h2>
+      <p>Un maillage pensé pour la proximité et la réactivité, au plus près de votre territoire.</p>
+    </div>
+    <div class="map-card rise">
+      <iframe id="ipMap" src="../map-component.html?mode=map" scrolling="no" title="Carte des agences Intégral Pharma" loading="lazy"></iframe>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="sec-head rise">
+      <span class="kicker">Ce qui nous tient à cœur</span>
+      <h2>Trois <em>valeurs</em>, un même soin.</h2>
+    </div>
+    <div class="values">
+      <div class="val rise">
+        <span class="num">01</span>
+        <svg class="val-ic" viewBox="0 0 64 64" fill="none"><path d="M32 8c8 4 16 5 16 5v14c0 15-11 24-16 29-5-5-16-14-16-29V13s8-1 16-5Z" fill="#DCE8DE" stroke="#3F6E52" stroke-width="2.4" stroke-linejoin="round"/><path d="M25 32l5 5 10-11" stroke="#0050E6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <h3>Confiance</h3>
+        <p>Une parole tenue, des engagements clairs, une relation qui s'inscrit dans la durée.</p>
+      </div>
+      <div class="val rise">
+        <span class="num">02</span>
+        <svg class="val-ic" viewBox="0 0 64 64" fill="none"><path d="M32 52s-18-11-18-24a11 11 0 0 1 18-8 11 11 0 0 1 18 8c0 13-18 24-18 24Z" fill="#F3E4C9" stroke="#D97E10" stroke-width="2.4" stroke-linejoin="round"/><path d="M40 30a8 8 0 0 1-8 8" stroke="#0050E6" stroke-width="3" stroke-linecap="round"/></svg>
+        <h3>Engagement</h3>
+        <p>Présents à chaque étape, fiables au quotidien, investis pour la santé de tous.</p>
+      </div>
+      <div class="val rise">
+        <span class="num">03</span>
+        <svg class="val-ic" viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="20" fill="#DCE8DE" stroke="#3F6E52" stroke-width="2.4"/><path d="M22 34c4-2 6-6 10-6s6 4 10 6M26 26h.02M38 26h.02" stroke="#0050E6" stroke-width="3" stroke-linecap="round"/></svg>
+        <h3>Respect</h3>
+        <p>Des femmes, des hommes et une planète que l'on écoute — l'humain avant tout.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="invite rise">
+    <svg class="halo" style="top:-60px;right:-60px;width:260px" viewBox="0 0 200 200"><path fill="#1c4a2e" d="M50,-58C63,-46,70,-23,70,-1C70,21,63,42,49,55C35,68,15,73,-6,74C-27,75,-49,72,-62,58C-75,44,-79,20,-75,-2C-71,-24,-59,-44,-43,-56C-27,-68,-7,-72,11,-72C29,-72,37,-70,50,-58Z" transform="translate(100 100)"/></svg>
+    <svg class="halo" style="bottom:-70px;left:-50px;width:220px" viewBox="0 0 200 200"><path fill="#122a4d" d="M46,-54C58,-43,64,-25,66,-6C68,13,66,33,55,45C44,57,25,62,4,64C-17,66,-40,65,-54,52C-68,39,-73,16,-70,-5C-67,-26,-56,-45,-40,-56C-24,-67,-2,-70,15,-68C32,-66,34,-65,46,-54Z" transform="translate(100 100)"/></svg>
+    <h2>Et si l'on se <em>rencontrait</em> ?</h2>
+    <p class="isub">Le temps d'un café ou d'un échange, pour parler de vous, de vos officines, et de ce que nous pouvons construire ensemble.</p>
+    <div class="cta">
+      <a class="btn btn-primary" href="mailto:pascale.prieto@integralpharma.fr?subject=Rencontrons-nous%20%E2%80%94%20Int%C3%A9gral%20Pharma">
+        <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="14" rx="3" stroke="#22160A" stroke-width="2"/><path d="M4 7l8 6 8-6" stroke="#22160A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Écrire à Pascale
+      </a>
+      <a class="btn btn-ghost" href="tel:+33676885391">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M6 3h3l2 5-2.5 1.5a11 11 0 0 0 5 5L17 15l5 2v3a2 2 0 0 1-2 2A17 17 0 0 1 3 5a2 2 0 0 1 2-2Z" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></svg>
+        Appeler Pascale · 06 76 88 53 91
+      </a>
+    </div>
+  </section>
+
+  <div class="sign rise">
+    <span class="div"></span>
+    <span class="nm">Pascale Prieto</span>
+    <span class="rl"><b>Directrice commerciale France</b> · Intégral Pharma</span>
+  </div>
+
+  <footer>INTÉGRAL PHARMA — ACTEUR DE LA SANTÉ DEPUIS PLUS DE 20 ANS</footer>
+
+</div>
+
+<script>
+(function(){
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---- reveal on scroll ---- */
+  var risers = [].slice.call(document.querySelectorAll('.rise'));
+  if(reduce || !('IntersectionObserver' in window)){
+    risers.forEach(function(el){el.classList.add('in');});
+  }else{
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); }
+      });
+    },{threshold:0.12, rootMargin:'0px 0px -8% 0px'});
+    risers.forEach(function(el){io.observe(el);});
+    // stagger the first screen
+    setTimeout(function(){
+      document.querySelectorAll('header.rise, .hero .rise, .stage.rise').forEach(function(el){el.classList.add('in');});
+    },80);
+  }
+
+  /* ---- map auto-height ---- */
+  var mapFrame = document.getElementById('ipMap');
+  window.addEventListener('message', function(e){
+    if(e && e.data && e.data.ipAtlasHeight && mapFrame){
+      mapFrame.style.height = e.data.ipAtlasHeight + 'px';
+      mapFrame.style.minHeight = '0';
+    }
+  });
+
+  /* ---- gentle parallax on background blobs ---- */
+  if(!reduce){
+    var a=document.querySelector('.blob-a'),
+        b=document.querySelector('.blob-b'),
+        c=document.querySelector('.blob-c'),
+        ticking=false;
+    function onScroll(){
+      if(ticking) return; ticking=true;
+      requestAnimationFrame(function(){
+        var y=window.pageYOffset||0;
+        if(a)a.style.transform='translateY('+(y*0.06)+'px)';
+        if(b)b.style.transform='translateY('+(y*-0.05)+'px)';
+        if(c)c.style.transform='translateY('+(y*0.09)+'px)';
+        ticking=false;
+      });
+    }
+    window.addEventListener('scroll', onScroll, {passive:true});
+  }
+
+  /* ---- optional siège drone video: play only when visible & motion allowed ---- */
+  var vid=document.getElementById('siegeVid');
+  if(vid && !reduce && 'IntersectionObserver' in window){
+    var canPlay=false;
+    var vio=new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){
+          vid.style.display='block';
+          var p=vid.play();
+          if(p&&p.catch)p.catch(function(){ vid.style.display='none'; });
+        }else if(!vid.paused){ vid.pause(); }
+      });
+    },{threshold:0.25});
+    vio.observe(vid.parentNode.parentNode); // observe the frame svg
+  }
+})();
+</script>

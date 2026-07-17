@@ -1,0 +1,554 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Intégral Pharma — Rencontrons-nous</title>
+<meta name="description" content="Carton d'invitation Intégral Pharma — direction shader GLSL plein écran.">
+<link rel="preconnect" href="https://api.fontshare.com" crossorigin>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --blue:#0050E6; --blue-dk:#0034A0; --navy:#0A1430; --deep:#050A1C;
+  --orange:#F39A1B; --orange-deep:#E07A12;
+  --ink:#EAF0FF; --muted:#A9B6DA; --faint:#7C88B0;
+  --line:rgba(160,182,240,.16);
+  --panel:rgba(8,14,34,.60);
+  --panel-2:rgba(10,18,42,.50);
+  --sans:'Satoshi',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --mono:'Geist Mono',ui-monospace,monospace;
+  --ease:cubic-bezier(.16,1,.3,1);
+  --edge:clamp(18px,5vw,44px);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  font-family:var(--sans);
+  color:var(--ink);
+  background:var(--deep);
+  -webkit-font-smoothing:antialiased;
+  line-height:1.5;
+  overflow-x:hidden;
+  position:relative;
+  min-height:100vh;
+}
+
+/* ============ FOND SHADER PLEIN ÉCRAN ============ */
+#bg-canvas{
+  position:fixed; inset:0; width:100%; height:100%;
+  z-index:0; display:block;
+}
+/* Fallback CSS animé (visible dessous le canvas ; sert si WebGL absent) */
+#bg-fallback{
+  position:fixed; inset:0; z-index:0;
+  background:
+    radial-gradient(120% 90% at 18% 12%, #103A9E 0%, rgba(16,58,158,0) 55%),
+    radial-gradient(110% 80% at 85% 20%, rgba(243,154,27,.30) 0%, rgba(243,154,27,0) 48%),
+    radial-gradient(140% 120% at 60% 100%, #071033 0%, #04081A 70%),
+    linear-gradient(160deg,#081444 0%,#050A1C 100%);
+  background-size:200% 200%,200% 200%,150% 150%,100% 100%;
+  animation:bgflow 26s var(--ease) infinite alternate;
+}
+@keyframes bgflow{
+  0%{background-position:0% 0%,100% 0%,0% 100%,0 0}
+  100%{background-position:100% 100%,0% 60%,100% 0%,0 0}
+}
+/* Voile pour asseoir la lisibilité au dessus du shader */
+#bg-veil{
+  position:fixed; inset:0; z-index:1; pointer-events:none;
+  background:
+    radial-gradient(130% 70% at 50% -10%, rgba(5,10,28,0) 30%, rgba(5,10,28,.55) 100%),
+    linear-gradient(180deg, rgba(5,10,28,.28) 0%, rgba(5,10,28,0) 22%, rgba(5,10,28,0) 60%, rgba(5,10,28,.66) 100%);
+}
+/* Grain léger (SVG data-uri, pas de filter) */
+#bg-grain{
+  position:fixed; inset:0; z-index:1; pointer-events:none; opacity:.05;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  mix-blend-mode:overlay;
+}
+
+/* ============ TRAME CONTENU ============ */
+.wrap{position:relative; z-index:2; max-width:1120px; margin:0 auto; padding:0 var(--edge)}
+section{position:relative; z-index:2}
+
+/* Apparition douce */
+.rise{opacity:0; transform:translateY(26px); transition:opacity 1s var(--ease), transform 1.1s var(--ease)}
+.rise.in{opacity:1; transform:none}
+@media(prefers-reduced-motion:reduce){
+  .rise{opacity:1 !important; transform:none !important; transition:none}
+  #bg-fallback{animation:none}
+}
+
+/* ---------- Barre logo ---------- */
+.topbar{
+  position:relative; z-index:3;
+  display:flex; align-items:center; justify-content:space-between; gap:16px;
+  padding:22px var(--edge) 6px;
+  max-width:1120px; margin:0 auto;
+}
+.topbar img{height:38px; width:auto; display:block; filter:drop-shadow(0 4px 18px rgba(0,0,0,.4))}
+.topbar .tag{
+  font-family:var(--mono); font-size:11px; letter-spacing:.16em; text-transform:uppercase;
+  color:var(--faint); white-space:nowrap;
+}
+@media(max-width:560px){.topbar .tag{display:none}}
+
+/* ---------- HERO ---------- */
+.hero{padding:min(13vh,120px) 0 clamp(48px,9vh,96px)}
+.eyebrow{
+  display:inline-flex; align-items:center; gap:10px;
+  font-family:var(--mono); font-size:12px; letter-spacing:.20em; text-transform:uppercase;
+  color:var(--muted); margin:0 0 26px;
+}
+.eyebrow .dot{
+  width:7px; height:7px; border-radius:50%; background:var(--orange);
+  box-shadow:0 0 0 0 rgba(243,154,27,.55); animation:pulse 3s var(--ease) infinite;
+}
+@keyframes pulse{70%{box-shadow:0 0 0 10px rgba(243,154,27,0)}100%{box-shadow:0 0 0 0 rgba(243,154,27,0)}}
+@media(prefers-reduced-motion:reduce){.eyebrow .dot{animation:none}}
+
+.hero h1{
+  font-weight:900; letter-spacing:-.03em; line-height:.98; margin:0;
+  font-size:clamp(44px,10.5vw,120px);
+  color:#fff;
+  text-shadow:0 8px 44px rgba(0,0,0,.42);
+}
+.hero h1 .ln{display:block}
+.hero h1 .accent{color:var(--orange)}
+.hero p.lead{
+  margin:30px 0 0; max-width:34ch;
+  font-size:clamp(16px,2.4vw,21px); font-weight:500; color:var(--muted);
+}
+.hero p.lead b{color:var(--ink); font-weight:700}
+
+/* Facts discrets */
+.facts{
+  display:flex; flex-wrap:wrap; gap:10px; margin-top:32px;
+}
+.fact{
+  font-family:var(--mono); font-size:12px; letter-spacing:.02em;
+  color:var(--muted); padding:8px 14px; border-radius:999px;
+  border:1px solid var(--line); background:rgba(8,14,34,.42);
+}
+.fact b{color:var(--ink); font-weight:600}
+
+/* ---------- STAGE (photo / vidéo siège) ---------- */
+.stage-sec{padding:0 0 clamp(56px,10vh,110px)}
+.stage{
+  position:relative; border-radius:22px; overflow:hidden;
+  border:1px solid var(--line);
+  box-shadow:0 40px 90px -40px rgba(0,0,0,.8);
+  aspect-ratio:16/9;
+  background:#081226 url("../assets/siege.jpg") center/cover no-repeat;
+}
+.stage video,.stage .poster{
+  position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block;
+}
+.stage .frame{
+  position:absolute; inset:0; pointer-events:none;
+  background:linear-gradient(180deg,rgba(5,10,28,.05) 0%,rgba(5,10,28,0) 30%,rgba(5,10,28,.62) 100%);
+}
+.stage .cap{
+  position:absolute; left:0; right:0; bottom:0; padding:20px clamp(16px,3vw,28px);
+  display:flex; align-items:flex-end; justify-content:space-between; gap:14px;
+}
+.stage .cap .t{font-weight:700; font-size:clamp(15px,2.4vw,19px); color:#fff}
+.stage .cap .s{font-family:var(--mono); font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted)}
+@media(max-width:560px){.stage{aspect-ratio:4/5}}
+
+/* ---------- SECTION titre commun ---------- */
+.sec-head{max-width:640px; margin:0 0 clamp(26px,4vh,40px)}
+.sec-head .k{
+  font-family:var(--mono); font-size:12px; letter-spacing:.18em; text-transform:uppercase;
+  color:var(--orange); margin:0 0 12px;
+}
+.sec-head h2{
+  font-weight:900; letter-spacing:-.02em; line-height:1.04; margin:0;
+  font-size:clamp(28px,5.2vw,46px); color:#fff;
+}
+.sec-head p{margin:14px 0 0; color:var(--muted); font-size:clamp(15px,2vw,17px); font-weight:500}
+
+/* ---------- CARTE (iframe) ---------- */
+.net-sec{padding:0 0 clamp(56px,10vh,110px)}
+.map-panel{
+  position:relative; border-radius:22px; overflow:hidden;
+  background:var(--panel); border:1px solid var(--line);
+  box-shadow:0 40px 90px -50px rgba(0,0,0,.7);
+  padding:clamp(14px,2.4vw,26px);
+}
+.map-panel iframe{
+  width:100%; border:0; display:block; border-radius:14px;
+  min-height:420px; background:transparent;
+}
+
+/* ---------- VALEURS ---------- */
+.val-sec{padding:0 0 clamp(56px,10vh,110px)}
+.values{
+  display:grid; grid-template-columns:repeat(3,1fr); gap:clamp(12px,2vw,20px);
+}
+@media(max-width:720px){.values{grid-template-columns:1fr}}
+.value{
+  position:relative; border-radius:20px; padding:clamp(22px,3vw,30px);
+  background:var(--panel-2); border:1px solid var(--line);
+  overflow:hidden;
+}
+.value .ico{width:38px; height:38px; margin-bottom:20px; display:block}
+.value .ico svg{width:100%; height:100%; display:block}
+.value h3{margin:0; font-size:clamp(22px,3vw,27px); font-weight:900; letter-spacing:-.01em; color:#fff}
+.value p{margin:10px 0 0; color:var(--muted); font-size:14.5px; font-weight:500; line-height:1.55}
+.value .num{
+  position:absolute; top:16px; right:20px; font-family:var(--mono);
+  font-size:12px; color:var(--faint); letter-spacing:.08em;
+}
+.value:after{
+  content:""; position:absolute; left:0; right:0; bottom:0; height:2px;
+  background:linear-gradient(90deg,var(--blue),var(--orange)); opacity:.65;
+}
+
+/* ---------- INVITATION / CTA ---------- */
+.cta-sec{padding:0 0 clamp(70px,12vh,130px)}
+.invite{
+  position:relative; border-radius:26px; overflow:hidden;
+  background:var(--panel); border:1px solid var(--line);
+  box-shadow:0 50px 110px -50px rgba(0,0,0,.8);
+  padding:clamp(30px,5vw,58px);
+  text-align:center;
+}
+.invite h2{
+  font-weight:900; letter-spacing:-.02em; line-height:1.02; margin:0 auto;
+  font-size:clamp(30px,6vw,56px); color:#fff; max-width:16ch;
+}
+.invite p.sub{margin:16px auto 0; max-width:40ch; color:var(--muted); font-size:clamp(15px,2vw,17.5px)}
+.btns{display:flex; flex-wrap:wrap; gap:14px; justify-content:center; margin-top:34px}
+.btn{
+  display:inline-flex; align-items:center; gap:11px; text-decoration:none;
+  font-weight:700; font-size:16px; padding:16px 28px; border-radius:14px;
+  transition:transform .3s var(--ease), box-shadow .3s var(--ease), background .3s var(--ease);
+  border:1px solid transparent; white-space:nowrap;
+}
+.btn svg{width:19px; height:19px; display:block}
+.btn-primary{
+  background:linear-gradient(180deg,#FCA82A,var(--orange-deep));
+  color:#2A1400; box-shadow:0 16px 40px -16px rgba(243,154,27,.7);
+}
+.btn-primary:hover{transform:translateY(-2px); box-shadow:0 22px 50px -18px rgba(243,154,27,.85)}
+.btn-ghost{
+  background:rgba(8,14,34,.5); color:var(--ink); border-color:var(--line);
+}
+.btn-ghost:hover{transform:translateY(-2px); background:rgba(20,32,66,.6)}
+.btn .ph{font-family:var(--mono); font-weight:500}
+
+/* Signature */
+.sig{
+  margin-top:34px; padding-top:26px; border-top:1px solid var(--line);
+  display:flex; align-items:center; justify-content:center; gap:14px; flex-wrap:wrap;
+}
+.sig .av{
+  width:44px; height:44px; border-radius:50%; flex:0 0 auto;
+  background:linear-gradient(135deg,var(--blue),var(--blue-dk));
+  color:#fff; font-weight:900; font-size:16px; letter-spacing:.02em;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 8px 20px -8px rgba(0,80,230,.7);
+}
+.sig .who{text-align:left}
+.sig .who .n{font-weight:800; color:#fff; font-size:15px}
+.sig .who .r{color:var(--muted); font-size:12.5px; font-family:var(--mono); letter-spacing:.04em}
+
+/* ---------- FOOTER ---------- */
+.foot{
+  position:relative; z-index:2; text-align:center; padding:0 var(--edge) 46px;
+  color:var(--faint); font-size:12px; font-family:var(--mono); letter-spacing:.06em;
+}
+.foot img{height:24px; width:auto; display:inline-block; vertical-align:middle; margin-bottom:12px; opacity:.9}
+.foot .l{display:block; margin-top:8px}
+</style>
+
+<!-- ====================== FOND ====================== -->
+<div id="bg-fallback"></div>
+<canvas id="bg-canvas" aria-hidden="true"></canvas>
+<div id="bg-veil"></div>
+<div id="bg-grain"></div>
+
+<!-- ====================== LOGO BAR ====================== -->
+<header class="topbar">
+  <img src="../assets/logo.png" alt="Intégral Pharma">
+  <span class="tag">Acteur de la santé depuis plus de 20 ans</span>
+</header>
+
+<!-- ====================== HERO ====================== -->
+<section class="hero wrap">
+  <div class="rise">
+    <p class="eyebrow"><span class="dot"></span>Une invitation d'Intégral Pharma</p>
+    <h1>
+      <span class="ln">Prenons</span>
+      <span class="ln">le temps de</span>
+      <span class="ln accent">nous rencontrer.</span>
+    </h1>
+    <p class="lead">Un groupe de grossistes-répartiteurs français indépendant. <b>Proche, fiable, à taille humaine</b> — au service des officines et de leurs patients.</p>
+    <div class="facts">
+      <span class="fact"><b>9</b> agences en France</span>
+      <span class="fact">Livraison en <b>72h</b></span>
+      <span class="fact"><b>+20 ans</b> au service des officines</span>
+    </div>
+  </div>
+</section>
+
+<!-- ====================== STAGE : SIÈGE ====================== -->
+<section class="stage-sec wrap">
+  <div class="stage rise" id="stage">
+    <video id="hero-video" autoplay muted loop playsinline preload="metadata" poster="../assets/siege.jpg">
+      <source src="../assets/hero.mp4" type="video/mp4">
+      <img class="poster" src="../assets/siege.jpg" alt="Vue aérienne du siège Intégral Pharma">
+    </video>
+    <div class="frame"></div>
+    <div class="cap">
+      <span class="t">Notre siège, cœur logistique du réseau.</span>
+      <span class="s">Vue aérienne</span>
+    </div>
+  </div>
+</section>
+
+<!-- ====================== RÉSEAU / CARTE ====================== -->
+<section class="net-sec wrap">
+  <div class="sec-head rise">
+    <p class="k">Le réseau</p>
+    <h2>Nos agences, partout où sont vos officines.</h2>
+    <p>Un maillage national pensé pour la proximité et la réactivité, agence après agence.</p>
+  </div>
+  <div class="map-panel rise">
+    <iframe id="ipmap" src="../map-component.html?mode=map" scrolling="no" title="Carte interactive des agences Intégral Pharma" loading="lazy"></iframe>
+  </div>
+</section>
+
+<!-- ====================== VALEURS ====================== -->
+<section class="val-sec wrap">
+  <div class="sec-head rise">
+    <p class="k">Ce qui nous tient</p>
+    <h2>Trois valeurs, une même exigence.</h2>
+  </div>
+  <div class="values">
+    <div class="value rise">
+      <span class="num">01</span>
+      <span class="ico" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#F39A1B" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg>
+      </span>
+      <h3>Confiance</h3>
+      <p>Une relation durable, tenue dans le temps. Ce qu'on promet, on le livre.</p>
+    </div>
+    <div class="value rise">
+      <span class="num">02</span>
+      <span class="ico" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#F39A1B" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.4-7-9.5A4.5 4.5 0 0 1 12 8a4.5 4.5 0 0 1 7 3.5C19 16.6 12 21 12 21z"/></svg>
+      </span>
+      <h3>Engagement</h3>
+      <p>Présents à vos côtés, chaque jour, avec des interlocuteurs qui vous connaissent.</p>
+    </div>
+    <div class="value rise">
+      <span class="num">03</span>
+      <span class="ico" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#F39A1B" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 12l3 3 5-6"/><circle cx="12" cy="12" r="9"/></svg>
+      </span>
+      <h3>Respect</h3>
+      <p>De vous, de votre métier, du patient. Sans pression, sans jargon inutile.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ====================== INVITATION / CTA ====================== -->
+<section class="cta-sec wrap">
+  <div class="invite rise">
+    <h2>Rencontrons-nous.</h2>
+    <p class="sub">Trente minutes, sans engagement, pour faire connaissance et voir ce qu'on peut construire ensemble.</p>
+    <div class="btns">
+      <a class="btn btn-primary" href="mailto:pascale.prieto@integralpharma.fr?subject=Rencontrons-nous%20%E2%80%94%20Int%C3%A9gral%20Pharma">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
+        Écrire à Pascale
+      </a>
+      <a class="btn btn-ghost" href="tel:+33676885391">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L16 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg>
+        Appeler Pascale <span class="ph">06 76 88 53 91</span>
+      </a>
+    </div>
+    <div class="sig">
+      <span class="av">PP</span>
+      <span class="who">
+        <span class="n">Pascale Prieto</span>
+        <span class="r">Directrice commerciale France — Intégral Pharma</span>
+      </span>
+    </div>
+  </div>
+</section>
+
+<footer class="foot">
+  <img src="../assets/logo.png" alt="Intégral Pharma">
+  <span class="l">Intégral Pharma — groupe de grossistes-répartiteurs français · 9 agences · livraison 72h</span>
+</footer>
+
+<!-- ====================== SHADER (Three.js r128) ====================== -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  "use strict";
+  var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion:reduce)').matches;
+
+  /* ---------- Carte : auto-height ---------- */
+  var iframe = document.getElementById('ipmap');
+  window.addEventListener('message', function(e){
+    var h = e && e.data && e.data.ipAtlasHeight;
+    if(h && iframe){ iframe.style.height = h + 'px'; }
+  });
+
+  /* ---------- Apparition au scroll ---------- */
+  var rises = [].slice.call(document.querySelectorAll('.rise'));
+  if(reduce || !('IntersectionObserver' in window)){
+    rises.forEach(function(el){ el.classList.add('in'); });
+  } else {
+    var io = new IntersectionObserver(function(ents){
+      ents.forEach(function(en){ if(en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target); } });
+    }, {rootMargin:'0px 0px -8% 0px', threshold:.08});
+    rises.forEach(function(el){ io.observe(el); });
+  }
+
+  /* ---------- Vidéo : freeze sur poster si reduced-motion ---------- */
+  var vid = document.getElementById('hero-video');
+  if(vid && reduce){ try{ vid.removeAttribute('autoplay'); vid.pause(); }catch(e){} }
+
+  /* ---------- SHADER GLSL PLEIN ÉCRAN ---------- */
+  var canvas = document.getElementById('bg-canvas');
+  var fallback = document.getElementById('bg-fallback');
+  var hasWebGL = (function(){
+    try{ var c=document.createElement('canvas');
+      return !!(window.WebGLRenderingContext && (c.getContext('webgl')||c.getContext('experimental-webgl'))); }
+    catch(e){ return false; }
+  })();
+
+  if(reduce || !hasWebGL || typeof THREE === 'undefined'){
+    // Fallback CSS déjà en place : on masque le canvas et on sort.
+    if(canvas) canvas.style.display='none';
+    return;
+  }
+
+  var renderer, scene, camera, mesh, uniforms, running=true, raf=0, t0=performance.now();
+  var pointer = {x:.5, y:.5, tx:.5, ty:.5};
+
+  var frag = [
+"precision highp float;",
+"uniform float uTime;",
+"uniform vec2  uRes;",
+"uniform vec2  uPointer;",
+"varying vec2  vUv;",
+// hash + value noise
+"float hash(vec2 p){ p=fract(p*vec2(123.34,345.45)); p+=dot(p,p+34.345); return fract(p.x*p.y); }",
+"float noise(vec2 p){",
+"  vec2 i=floor(p), f=fract(p);",
+"  float a=hash(i), b=hash(i+vec2(1.0,0.0)), c=hash(i+vec2(0.0,1.0)), d=hash(i+vec2(1.0,1.0));",
+"  vec2 u=f*f*(3.0-2.0*f);",
+"  return mix(mix(a,b,u.x),mix(c,d,u.x),u.y);",
+"}",
+"float fbm(vec2 p){",
+"  float v=0.0, a=0.5; mat2 m=mat2(1.6,1.2,-1.2,1.6);",
+"  for(int i=0;i<6;i++){ v+=a*noise(p); p=m*p; a*=0.5; }",
+"  return v;",
+"}",
+"void main(){",
+"  vec2 uv=vUv;",
+"  float agg=uRes.x/max(uRes.y,1.0);",
+"  vec2 p=vec2(uv.x*agg, uv.y);",
+"  float tm=uTime*0.045;",
+// domain warp (nébuleuse fluide)
+"  vec2 q=vec2(fbm(p*1.4 + vec2(0.0,tm)), fbm(p*1.4 + vec2(4.3,-tm)));",
+"  vec2 r=vec2(fbm(p*1.9 + 1.7*q + vec2(1.7,9.2) + 0.15*tm),",
+"             fbm(p*1.9 + 1.7*q + vec2(8.3,2.8) - 0.13*tm));",
+"  float f=fbm(p*1.6 + 2.2*r + tm*0.5);",
+// couche mobile pilotée pointeur (léger)
+"  vec2 mo=(uPointer-0.5);",
+"  float glow=fbm(p*2.6 - mo*0.6 + tm*0.8);",
+// palette : deep -> navy -> bleu -> touche orange
+"  vec3 cDeep = vec3(0.016,0.031,0.098);",
+"  vec3 cNavy = vec3(0.031,0.078,0.235);",
+"  vec3 cBlue = vec3(0.000,0.314,0.902);",
+"  vec3 cOrng = vec3(0.953,0.603,0.106);",
+"  vec3 col = mix(cDeep, cNavy, smoothstep(0.15,0.75,f));",
+"  col = mix(col, cBlue, smoothstep(0.55,1.05,f+0.25*r.x));",
+// filaments orange rares, en hautes valeurs seulement (accent LÉGER)
+"  float ember = smoothstep(0.72,0.95,glow) * smoothstep(0.6,1.0,f);",
+"  col = mix(col, cOrng, ember*0.42);",
+// halo bleu haut-gauche + creux sombre bas
+"  float halo = smoothstep(0.9,0.0,length(uv-vec2(0.16,0.86)));",
+"  col += cBlue*halo*0.10;",
+"  col *= 0.72 + 0.5*f;",
+// vignette
+"  float vig = smoothstep(1.25,0.25,length((uv-0.5)*vec2(agg,1.0)));",
+"  col *= mix(0.55,1.0,vig);",
+"  col = pow(col, vec3(0.92));",
+"  gl_FragColor=vec4(col,1.0);",
+"}"
+].join("\n");
+
+  var vert = [
+"varying vec2 vUv;",
+"void main(){ vUv=uv; gl_Position=vec4(position,1.0); }"
+].join("\n");
+
+  function initGL(){
+    try{
+      renderer = new THREE.WebGLRenderer({canvas:canvas, antialias:false, alpha:false, powerPreference:'high-performance'});
+    }catch(e){ if(canvas) canvas.style.display='none'; return false; }
+    renderer.setClearColor(0x050a1c, 1);
+    scene = new THREE.Scene();
+    camera = new THREE.Camera();
+    uniforms = {
+      uTime:{value:0},
+      uRes:{value:new THREE.Vector2(1,1)},
+      uPointer:{value:new THREE.Vector2(.5,.5)}
+    };
+    var geo = new THREE.PlaneBufferGeometry(2,2);
+    var mat = new THREE.ShaderMaterial({uniforms:uniforms, vertexShader:vert, fragmentShader:frag, depthTest:false, depthWrite:false});
+    mesh = new THREE.Mesh(geo, mat);
+    scene.add(mesh);
+    resize();
+    // shader OK → on peut cacher le fallback (le canvas couvre tout)
+    if(fallback) fallback.style.opacity='0';
+    return true;
+  }
+
+  function resize(){
+    if(!renderer) return;
+    var dpr = Math.min(window.devicePixelRatio||1, 1.6);
+    var w = window.innerWidth, h = window.innerHeight;
+    renderer.setPixelRatio(dpr);
+    renderer.setSize(w, h, false);
+    uniforms.uRes.value.set(w*dpr, h*dpr);
+  }
+
+  function render(now){
+    raf = requestAnimationFrame(render);
+    if(!running) return;
+    pointer.x += (pointer.tx-pointer.x)*0.04;
+    pointer.y += (pointer.ty-pointer.y)*0.04;
+    uniforms.uPointer.value.set(pointer.x, pointer.y);
+    uniforms.uTime.value = (now - t0)/1000;
+    renderer.render(scene, camera);
+  }
+
+  if(!initGL()){ return; } // fallback CSS reste visible
+
+  window.addEventListener('resize', resize, {passive:true});
+  window.addEventListener('pointermove', function(e){
+    pointer.tx = e.clientX/window.innerWidth;
+    pointer.ty = 1.0 - e.clientY/window.innerHeight;
+  }, {passive:true});
+
+  // Pause hors-écran / onglet caché (économie)
+  document.addEventListener('visibilitychange', function(){ running = !document.hidden; });
+  if('IntersectionObserver' in window){
+    var vo = new IntersectionObserver(function(ents){
+      running = ents[0].isIntersecting && !document.hidden;
+    }, {threshold:0});
+    vo.observe(canvas);
+  }
+
+  raf = requestAnimationFrame(render);
+})();
+</script>
