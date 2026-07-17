@@ -1,13 +1,11 @@
-// Groupement Essentiels Pharma (ex-Le Gall) — data réelle
-// Fiche: crm/groupements-data.js (GRP_PROSPECTS) + essentiels-pharma.fr
-// Officines: base nationale points.json / pharmacies.json (groupement='Essentiels Pharma'), géoloc incluse
+// Officines Essentiels Pharma — LISTE OFFICIELLE (store-locator pharmacies.essentiels-pharma.fr, 23 membres)
+// Géocodage API BAN. Champ 'client'=déjà client Intégral (matching clients-data/WML), 'ca'=CA WML si dispo.
 window.ESSENTIELS_GRP = {
  "nom": "Essentiels Pharma",
- "ancien": "Le Gall Santé Services (depuis 1997, renommé oct. 2024)",
+ "ancien": "ex-Le Gall Santé Services (fondé le 27/01/1997 par Christophe Le Gall)",
  "baseline": "Le réflexe santé",
  "site": "essentiels-pharma.fr",
- "siteLegacy": "legall-sante.com",
- "email": "contact-lss@legall-sante.com",
+ "siege": "Beaucouzé (49)",
  "dirigeants": [
   {
    "nom": "François Tesson",
@@ -26,28 +24,34 @@ window.ESSENTIELS_GRP = {
   "tel": "06.24.82.33.48",
   "email": "c.boultareau@essentiels-pharma.fr"
  },
- "nbAdherents": 25,
- "nbLabos": 290,
+ "reseau": {
+  "officines": 23,
+  "pharmaciens": 47,
+  "salaries": 181,
+  "caReseau": "45 M€/an",
+  "ticketsAn": "1,68 M",
+  "centraleClients": 507,
+  "labos": 290
+ },
  "cotisation": "à partir de 120 €",
- "statut": "prospect",
  "activites": [
   {
    "t": "Enseignes fédérées",
-   "d": "4 niveaux : Prestige, Premium, Premium+, Optimum"
+   "d": "Prestige · Premium · Premium+ · Optimum"
   },
   {
-   "t": "Indépendants sans enseigne",
-   "d": "Formule Discovery, sans engagement"
+   "t": "Indépendants groupés",
+   "d": "Formule Découverte, sans enseigne ni engagement"
   },
   {
    "t": "Centrale d'achats",
-   "d": "CAP Essentiels Pharma"
+   "d": "CAP Essentiels Pharma (~507 clients)"
   },
   {
    "t": "Prestataire laboratoires",
-   "d": "Services à valeur ajoutée pour les labos"
+   "d": "Services à valeur ajoutée"
   }
  ]
 };
 
-window.ESSENTIELS_OFFICINES = [{"nom": "Grande Pharmacie du Pont de l'Eure", "ville": "Pacy-sur-Eure", "cp": "27120", "adresse": "18 Rue Edouard Isambard", "lat": 49.029, "lng": 1.3449}, {"nom": "PHARMACIE DES HAUTS PAVES", "ville": "NANTES", "cp": "44000", "adresse": "90 RUE DES HAUTS PAVES", "lat": 47.2173, "lng": -1.5534}, {"nom": "PHARMACIE DU CHENE", "ville": "VERTOU", "cp": "44120", "adresse": "17 ROUTE DES SORINIERES", "lat": 47.1688, "lng": -1.4729}, {"nom": "PHARMACIE DE LA LIBERATION", "ville": "COUERON", "cp": "44220", "adresse": "48 BOULEVARD DE LA LIBERATION", "lat": 47.2147, "lng": -1.7245}, {"nom": "PHARMACIE DU GRAND MAINE", "ville": "ANGERS", "cp": "49000", "adresse": "CENTRE COMMERCIAL GRAND MAINE RUE DU GRAND LAUNAY", "lat": 47.5308, "lng": -0.5283}, {"nom": "PHARMACIE LE GALL", "ville": "ANGERS", "cp": "49100", "adresse": "27 RUE HOCHE/8 PL. VISITATION", "lat": 47.4716, "lng": -0.552}, {"nom": "GRANDE PHARMACIE SAINT SERGE", "ville": "ANGERS", "cp": "49100", "adresse": "3 BD GASTON RAMON C.COMMERCIAL ANGERS SAINT-SERGE", "lat": 47.4716, "lng": -0.552}, {"nom": "PHARMACIE GARE ANGERS 7J/7", "ville": "ANGERS", "cp": "49100", "adresse": "5 ESPLANADE DE LA GARE", "lat": 47.4716, "lng": -0.552}, {"nom": "NOUVELLE PHARMACIE PIERRE LISE", "ville": "ANGERS", "cp": "49100", "adresse": "3 AVENUE PASTEUR", "lat": 47.4716, "lng": -0.552}, {"nom": "GRANDE PHARMACIE DU PILORI", "ville": "ANGERS", "cp": "49100", "adresse": "6 PLACE DU PILORI", "lat": 47.4716, "lng": -0.552}, {"nom": "PHARMACIE DES HALLES", "ville": "ANGERS", "cp": "49100", "adresse": "78 RUE BAUDRIÈRE", "lat": 47.4716, "lng": -0.552}, {"nom": "Grande Pharmacie de l'Université", "ville": "Angers", "cp": "49100", "adresse": "54 Boulevard Ayrault", "lat": 47.4716, "lng": -0.552}, {"nom": "GRANDE PHARMACIE DE L’UNIVERSITÉ", "ville": "ANGERS", "cp": "49100", "adresse": "54 BOULEVARD AYRAULT", "lat": 47.4716, "lng": -0.552}, {"nom": "PHARMACIE DES ERABLES", "ville": "TIERCE", "cp": "49125", "adresse": "PLACE DE COUBERTIN", "lat": 47.6157, "lng": -0.4679}, {"nom": "Pharmacie Descartes", "ville": "Cholet", "cp": "49300", "adresse": "13 Rue René Descartes", "lat": 47.0589, "lng": -0.8797}, {"nom": "PHARMACIE DU THOUET", "ville": "SAUMUR", "cp": "49400", "adresse": "Centre commercial E.Leclerc 51 Bd Mal de Lattre de Tassigny", "lat": 47.223, "lng": -0.1107}, {"nom": "Pharmacie de l'Authion", "ville": "Loire-Authion", "cp": "49800", "adresse": "13 Grande Rue", "lat": 47.4463, "lng": -0.4665}, {"nom": "PHARMACIE DESJOBERT", "ville": "CHATEAU GONTIER", "cp": "53200", "adresse": "9 RUE THIERS", "lat": 47.827, "lng": -0.7051}, {"nom": "Pharmacie de la croix de Pierre", "ville": "LE MANS", "cp": "72000", "adresse": "20-22 Av. de Paderborn", "lat": 48.0021, "lng": 0.2025}, {"nom": "PHARMACIE DES CAPUCINS", "ville": "THOUARS", "cp": "79100", "adresse": "12 BOULEVARD DE HANNUT", "lat": 47.0076, "lng": -0.2109}, {"nom": "Pharmacie de l'Hôtel de Ville", "ville": "Boulogne-Billancourt", "cp": "92100", "adresse": "128 Boulevard Jean Jaurès", "lat": 48.8354, "lng": 2.2413}];
+window.ESSENTIELS_OFFICINES = [{"nom": "Pharmacie du Chêne", "adresse": "17 Route des Sorinières", "cp": "44120", "ville": "Vertou", "lat": 47.16498, "lng": -1.48374, "cip": "", "client": true, "ca": 31038.0}, {"nom": "Pharmacie des Hauts Pavés", "adresse": "90 Rue des Hauts Pavés", "cp": "44000", "ville": "Nantes", "lat": 47.22725, "lng": -1.56952, "cip": "2126298", "client": true, "ca": 28801.0}, {"nom": "Pharmacie de la Libération", "adresse": "48 Boulevard de la Libération", "cp": "44220", "ville": "Couëron", "lat": 47.21442, "lng": -1.69007, "cip": "2252246", "client": true, "ca": 10665.0}, {"nom": "Nouvelle Pharmacie Grand Maine", "adresse": "27 rue du Grand Launay", "cp": "49000", "ville": "Angers", "lat": 47.46689, "lng": -0.59369, "cip": "2132542", "client": true, "ca": null}, {"nom": "Pharmacie Le Gall Visitation", "adresse": "27 rue Hoche", "cp": "49100", "ville": "Angers", "lat": 47.46689, "lng": -0.55757, "cip": "2132741", "client": true, "ca": null}, {"nom": "Pharmacie des Erables", "adresse": "Place Pierre de Coubertin", "cp": "49125", "ville": "Tiercé", "lat": 47.61549, "lng": -0.46388, "cip": "2134576", "client": true, "ca": null}, {"nom": "Pharmacie du Thouet", "adresse": "51 Bd Mal de Lattre de Tassigny", "cp": "49400", "ville": "Saumur", "lat": 47.26224, "lng": -0.09099, "cip": "2279142", "client": true, "ca": null}, {"nom": "Pharmacie de la Croix de Pierre", "adresse": "4 Rue des Maillets", "cp": "72000", "ville": "Le Mans", "lat": 48.01208, "lng": 0.20562, "cip": "2168982", "client": true, "ca": null}, {"nom": "Grande Pharmacie du Pont de l'Eure", "adresse": "18 Rue Edouard Isambard", "cp": "27120", "ville": "Pacy-sur-Eure", "lat": 49.01352, "lng": 1.37883, "cip": "", "client": false, "ca": null}, {"nom": "Pharmacie du Centre", "adresse": "3 Rue de Berry", "cp": "44550", "ville": "Montoir-de-Bretagne", "lat": 47.3293, "lng": -2.15036, "cip": "", "client": false, "ca": null}, {"nom": "Pharmacie de l'Horloge", "adresse": "2 Square de la Penthière", "cp": "49000", "ville": "Angers", "lat": 47.46514, "lng": -0.59552, "cip": "", "client": false, "ca": null}, {"nom": "Grande Pharmacie Saint Serge", "adresse": "3 Boulevard Gaston Ramon", "cp": "49100", "ville": "Angers", "lat": 47.48843, "lng": -0.54373, "cip": "", "client": false, "ca": null}, {"nom": "Grande Pharmacie de l'Université", "adresse": "54 boulevard Ayrault", "cp": "49100", "ville": "Angers", "lat": 47.47546, "lng": -0.54946, "cip": "", "client": false, "ca": null}, {"nom": "Nouvelle Pharmacie Pierre Lise", "adresse": "3 avenue Pasteur", "cp": "49100", "ville": "Angers", "lat": 47.47214, "lng": -0.542, "cip": "", "client": false, "ca": null}, {"nom": "Grande Pharmacie du Pilori", "adresse": "6 place du Pilori", "cp": "49100", "ville": "Angers", "lat": 47.47326, "lng": -0.5499, "cip": "", "client": false, "ca": null}, {"nom": "Pharmacie des Halles", "adresse": "78 rue Baudrière", "cp": "49100", "ville": "Angers", "lat": 47.47132, "lng": -0.55452, "cip": "", "client": false, "ca": null}, {"nom": "Pharmacie Gare", "adresse": "5 Esplanade de la Gare", "cp": "49100", "ville": "Angers", "lat": 47.46458, "lng": -0.5578, "cip": "", "client": false, "ca": null}, {"nom": "Pharmacie Descartes", "adresse": "13 Rue René Descartes", "cp": "49300", "ville": "Cholet", "lat": 47.04841, "lng": -0.883, "cip": "", "client": false, "ca": null}, {"nom": "Pharmacie de l'Authion", "adresse": "13 Grande Rue", "cp": "49800", "ville": "Loire-Authion", "lat": 47.4275, "lng": -0.38063, "cip": "", "client": false, "ca": null}, {"nom": "Pharmacie Vavin", "adresse": "18 Rue Vavin", "cp": "75006", "ville": "Paris", "lat": 48.84393, "lng": 2.33035, "cip": "", "client": false, "ca": null}, {"nom": "Pharmacie Homéopathique Centrale", "adresse": "126 Rue de la Pompe", "cp": "75116", "ville": "Paris", "lat": 48.8671, "lng": 2.28064, "cip": "", "client": false, "ca": null}, {"nom": "Pharmacie des Capucins", "adresse": "12 Boulevard de Hannut", "cp": "79100", "ville": "Thouars", "lat": 46.97838, "lng": -0.20385, "cip": "", "client": false, "ca": null}, {"nom": "Pharmacie de l'Hôtel de Ville", "adresse": "128 Boulevard Jean Jaurès", "cp": "92100", "ville": "Boulogne-Billancourt", "lat": 48.83667, "lng": 2.24165, "cip": "", "client": false, "ca": null}];
