@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="description" content="OPSO Santé — Pilotage groupement pharmacies">
+<meta name="theme-color" content="#11a63c">
+<meta name="apple-touch-startup-image" content="">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' fill='%2311a63c'/><rect x='76' y='16' width='28' height='148' rx='8' fill='white'/><rect x='16' y='76' width='148' height='28' rx='8' fill='white'/></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect x='12' y='3' width='8' height='26' rx='3' fill='%2311a63c'/><rect x='3' y='12' width='26' height='8' rx='3' fill='%2311a63c'/></svg>">
+<title>OPSO Santé · Cockpit</title>
+<link rel="manifest" href="./manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="preconnect" href="https://esm.sh" crossorigin>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Varela+Round&family=Nunito:wght@300;400;600;700;800&display=swap">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Varela+Round&family=Nunito:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=20260715e">
+</head>
+<body>
+<a href="#main-content" class="skip-link">Aller au contenu principal</a>
+<div id="aria-announcer" role="status" aria-live="polite" aria-atomic="true" class="sr-only"></div>
+
+<!-- ══════════ LOGIN ══════════ -->
+<div id="login-screen">
+  <div class="login-card">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:28px">
+      <div class="login-logo" style="margin-bottom:0;width:48px;height:48px">
+        <svg aria-hidden="true" focusable="false" width="24" height="24" viewBox="0 0 32 32" fill="none"><rect x="12" y="3" width="8" height="26" rx="3" fill="white"/><rect x="3" y="12" width="26" height="8" rx="3" fill="white"/></svg>
+      </div>
+      <div>
+        <div style="font-family:'Varela Round',sans-serif;font-size:20px;color:#2a2d2f;letter-spacing:-.3px">OPSO Santé</div>
+        <div style="font-size:11px;color:#9aa0a3;font-weight:600;text-transform:uppercase;letter-spacing:.04em">Normandie · Pilotage groupement</div>
+      </div>
+    </div>
+    <div class="login-title" style="font-size:24px;margin-bottom:4px">Bienvenue</div>
+    <div class="tagline tagline--lg" style="margin:2px 0 6px">On prend soin de vous&nbsp;!</div>
+    <svg viewBox="0 0 80 24" class="divider-arc" aria-hidden="true" style="margin:6px 0 16px 0;width:80px">
+      <path d="M0 20 Q15 0 30 20 Q45 0 60 20 Q70 24 80 12" stroke="#11a63c" stroke-width="3" fill="none" stroke-linecap="round"/>
+    </svg>
+    <div class="login-sub">Accédez à votre tableau de bord groupement.</div>
+
+    <!-- Formulaire login normal -->
+    <form id="login-form">
+      <div class="field">
+        <label for="login-email">Email</label>
+        <input id="login-email" type="email" placeholder="votre@email.com" autocomplete="email" required>
+      </div>
+      <div class="field">
+        <label for="login-password">Mot de passe</label>
+        <input id="login-password" type="password" placeholder="••••••••" autocomplete="current-password" required>
+      </div>
+      <button class="login-btn" type="submit">Se connecter →</button>
+      <div id="login-error" class="login-error" role="alert" aria-live="assertive"></div>
+      <div style="text-align:center;margin-top:14px">
+        <button type="button" onclick="showResetForm()" style="background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer;text-decoration:underline">Mot de passe oublié ?</button>
+      </div>
+    </form>
+
+    <!-- Formulaire reset password (envoi email) -->
+    <form id="reset-form" style="display:none">
+      <div style="font-size:13px;color:var(--text2);margin-bottom:16px">Entrez votre email pour recevoir un lien de réinitialisation.</div>
+      <div class="field">
+        <label for="reset-email">Email</label>
+        <input id="reset-email" type="email" placeholder="votre@email.com" autocomplete="email" required>
+      </div>
+      <button class="login-btn" type="submit">Envoyer le lien →</button>
+      <div id="reset-msg" style="margin-top:12px;font-size:12px;text-align:center;color:var(--mint);display:none">Email envoyé ! Vérifiez votre boîte mail.</div>
+      <div style="text-align:center;margin-top:14px">
+        <button type="button" onclick="showLoginForm()" style="background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer;text-decoration:underline">← Retour connexion</button>
+      </div>
+    </form>
+
+    <!-- Formulaire nouveau mot de passe (après clic lien email) -->
+    <form id="newpass-form" style="display:none">
+      <div style="font-size:13px;color:var(--opso-green-dark);font-weight:600;margin-bottom:16px;background:var(--opso-green-pale);padding:10px 14px;border-radius:8px;display:flex;align-items:center;gap:8px">
+        <svg aria-hidden="true" focusable="false" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        Lien valide — choisissez votre nouveau mot de passe
+      </div>
+      <div class="field">
+        <label for="newpass-input">Nouveau mot de passe</label>
+        <input id="newpass-input" type="password" placeholder="Min. 6 caractères" minlength="6" required>
+      </div>
+      <button class="login-btn" type="submit">Enregistrer →</button>
+      <div id="newpass-error" class="login-error"></div>
+    </form>
+    <div style="text-align:center;margin-top:32px;padding-top:20px;border-top:1px solid var(--opso-border)">
+      <div style="display:flex;align-items:center;justify-content:center;gap:8px">
+        <svg aria-hidden="true" focusable="false" width="12" height="12" viewBox="0 0 32 32" fill="none"><rect x="12" y="3" width="8" height="26" rx="3" fill="#11a63c"/><rect x="3" y="12" width="26" height="8" rx="3" fill="#11a63c"/></svg>
+        <span style="font-size:11px;color:#9aa0a3">Intégral Pharma × OPSO Santé · 2026</span>
+      </div>
+        <div style="font-size:10px;color:#9aa0a3;margin-top:4px;font-style:italic">On prend soin de vous</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ APP ══════════ -->
+<div id="app">
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar" role="navigation" aria-label="Navigation principale">
+    <div class="sidebar-brand">
+      <div class="sidebar-logo">
+        <svg aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 32 32" fill="none">
+          <rect x="12" y="3" width="8" height="26" rx="3" fill="white"/>
+          <rect x="3" y="12" width="26" height="8" rx="3" fill="white"/>
+        </svg>
+      </div>
+      <div class="sidebar-brand-text">
+        <div class="sidebar-brand-name">OPSO Santé</div>
+        <div class="sidebar-brand-sub" id="sidebar-pharma-count">Normandie · groupement</div>
+      </div>
+    </div>
+
+    <div class="nav-section" style="margin-bottom:4px">
+      <div class="nav-item active" data-page="dashboard" role="button" tabindex="0" aria-current="page" onclick="navigate('dashboard')">
+        <svg aria-hidden="true" focusable="false" class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="18" y="3" width="4" height="18"/><rect x="10" y="8" width="4" height="13"/><rect x="2" y="13" width="4" height="8"/></svg>
+        <span class="nav-label-text">Cockpit</span>
+      </div>
+      <div class="nav-item" data-page="pharmacies" role="button" tabindex="0" onclick="navigate('pharmacies')">
+        <svg aria-hidden="true" focusable="false" class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span class="nav-label-text">Mes Pharmacies</span>
+      </div>
+      <div class="nav-item" data-page="wml" role="button" tabindex="0" onclick="navigate('wml')">
+        <svg aria-hidden="true" focusable="false" class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        <span class="nav-label-text">CA & Commandes</span>
+      </div>
+
+      <div class="nav-item" data-page="offilog" role="button" tabindex="0" onclick="navigate('offilog')">
+        <svg aria-hidden="true" focusable="false" class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+        <span class="nav-label-text">Prix Offilog Live</span>
+      </div>
+      <div class="nav-item" data-page="catalogue" role="button" tabindex="0" onclick="navigate('catalogue')">
+        <svg aria-hidden="true" focusable="false" class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/></svg>
+        <span class="nav-label-text">Catalogue IP</span>
+      </div>
+      <div class="nav-item" data-page="prioritaires" role="button" tabindex="0" onclick="navigate('prioritaires')">
+        <svg aria-hidden="true" focusable="false" class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        <span class="nav-label-text">Prioritaires</span>
+      </div>
+    </div>
+
+    <div class="nav-section" style="margin-top:auto">
+      <div class="nav-item" data-page="admin" id="nav-admin" role="button" tabindex="0" style="display:none" onclick="navigate('admin')">
+        <svg aria-hidden="true" focusable="false" class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span class="nav-label-text">Administration</span>
+      </div>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-user" role="button" tabindex="0" aria-label="Se déconnecter" onclick="logout()">
+        <div class="sidebar-avatar" id="sidebar-avatar">W</div>
+        <div class="sidebar-user-info">
+          <div class="sidebar-user-name" id="sidebar-user-name">Utilisateur</div>
+          <div class="sidebar-user-role" id="sidebar-user-role">role</div>
+        </div>
+        <svg aria-hidden="true" focusable="false" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:rgba(255,255,255,0.5)"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </div>
+    </div>
+    <div class="sidebar-tagline">On prend soin de vous</div>
+  </nav>
+
+  <!-- MAIN -->
+  <div class="main" id="main-content" role="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:16px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:6px;height:24px;border-radius:3px;background:linear-gradient(180deg,#0d8530,#11a63c);flex-shrink:0"></div>
+          <div>
+            <div class="topbar-title" id="topbar-title">Tableau de bord</div>
+            <div id="topbar-date" style="font-size:11px;color:var(--text3);font-weight:500;margin-top:1px"></div>
+          </div>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <button onclick="printCurrentPage()"
+          data-tooltip="Imprimer la page actuelle"
+          aria-label="Imprimer la page actuelle"
+          style="background:transparent;border:1px solid var(--border2);color:var(--text2);cursor:pointer;padding:6px 12px;border-radius:8px;font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:6px">
+          🖨
+        </button>
+        <button onclick="showCalendarModal()"
+          data-tooltip="Calendrier des visites"
+          aria-label="Ouvrir le calendrier des visites"
+          style="background:rgba(17,166,60,0.08);border:1px solid var(--opso-green-pale);color:var(--opso-green-dark);cursor:pointer;padding:6px 12px;border-radius:8px;font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:6px">
+          📅 Calendrier
+        </button>
+        <button onclick="showGlobalSearch()" title="Recherche globale (⌘K)"
+          style="display:flex;align-items:center;gap:7px;padding:7px 14px;border-radius:10px;border:1.5px solid var(--border2);background:var(--bg2);color:var(--text3);cursor:pointer;font-size:12px;font-weight:500;white-space:nowrap;transition:all .15s"
+          onmouseover="this.style.background='var(--bg)';this.style.borderColor='var(--blue)';this.style.color='var(--text)'"
+          onmouseout="this.style.background='var(--bg2)';this.style.borderColor='var(--border2)';this.style.color='var(--text3)'">
+          <svg aria-hidden="true" focusable="false" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          Recherche
+          <span style="font-size:10px;background:var(--bg);border:1px solid var(--border2);border-radius:4px;padding:1px 5px;font-family:monospace;color:var(--text3)">⌘K</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="page-content">
+      <div class="page active" id="page-dashboard"><div id="dash-content"></div></div>
+      <div class="page" id="page-pharmacies"><div id="pharma-content"></div></div>
+      <div class="page" id="page-produits"><div id="prod-content"></div></div>
+      <div class="page" id="page-import"><div id="import-content"></div></div>
+      <div class="page" id="page-admin"><div id="admin-content"></div></div>
+      <div class="page" id="page-catalogue"><div id="cat-content"></div></div>
+      <div class="page" id="page-offilog"><div id="offilog-content"></div></div>
+      <div class="page" id="page-wml"><div id="wml-content"></div></div>
+      <div class="page" id="page-benchmark"><div id="bench-content"></div></div>
+      <div class="page" id="page-simulateur"><div id="simul-content"></div></div>
+      <div class="page" id="page-groupements"><div id="groupements-content"></div></div>
+      <div class="page" id="page-objectifs"><div id="objectifs-content"></div></div>
+      <div class="page" id="page-prioritaires"><div id="prioritaires-content"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+<!-- APP LOADING OVERLAY -->
+<div id="app-loading">
+  <div class="app-loading-logo">
+    <svg aria-hidden="true" focusable="false" width="28" height="28" viewBox="0 0 32 32" fill="none">
+      <rect x="12" y="3" width="8" height="26" rx="3" fill="white"/>
+      <rect x="3" y="12" width="26" height="8" rx="3" fill="white"/>
+    </svg>
+  </div>
+  <div class="app-loading-text">OPSO Santé</div>
+  <div style="font-size:12px;opacity:.6;margin-top:-8px">Groupement Normandie</div>
+  <div class="app-loading-spinner"></div>
+</div>
+
+<!-- MOBILE NAVIGATION BAR -->
+<nav class="mobile-nav" id="mobile-nav" role="navigation" aria-label="Navigation mobile">
+  <div class="mobile-nav-items">
+    <div class="mobile-nav-item active" data-page="dashboard" role="button" tabindex="0" aria-current="page" onclick="navigate('dashboard')">
+      <svg aria-hidden="true" focusable="false" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="18" y="3" width="4" height="18"/><rect x="10" y="8" width="4" height="13"/><rect x="2" y="13" width="4" height="8"/></svg>
+      <span class="mobile-nav-label">Cockpit</span>
+    </div>
+    <div class="mobile-nav-item" data-page="pharmacies" role="button" tabindex="0" onclick="navigate('pharmacies')">
+      <svg aria-hidden="true" focusable="false" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span class="mobile-nav-label">Pharmacies</span>
+    </div>
+    <div class="mobile-nav-item" data-page="wml" role="button" tabindex="0" onclick="navigate('wml')">
+      <svg aria-hidden="true" focusable="false" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      <span class="mobile-nav-label">CA</span>
+    </div>
+    <div class="mobile-nav-item" data-page="catalogue" role="button" tabindex="0" onclick="navigate('catalogue')">
+      <svg aria-hidden="true" focusable="false" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/></svg>
+      <span class="mobile-nav-label">Catalogue</span>
+    </div>
+    <div class="mobile-nav-item" data-page="offilog" role="button" tabindex="0" onclick="navigate('offilog')">
+      <svg aria-hidden="true" focusable="false" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+      <span class="mobile-nav-label">Offilog</span>
+    </div>
+    <div class="mobile-nav-item" data-page="prioritaires" role="button" tabindex="0" onclick="navigate('prioritaires')">
+      <svg aria-hidden="true" focusable="false" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      <span class="mobile-nav-label">Priorité</span>
+    </div>
+  </div>
+</nav>
+
+<!-- LIBS CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+  Chart.defaults.color = '#64686a';
+  Chart.defaults.borderColor = 'rgba(0,0,0,0.06)';
+  Chart.defaults.font.family = "'Nunito', -apple-system, sans-serif";
+  Chart.defaults.font.size = 11;
+  Chart.defaults.font.weight = '600';
+  Chart.defaults.plugins.legend.labels.usePointStyle = true;
+  Chart.defaults.plugins.legend.labels.pointStyle = 'circle';
+  Chart.defaults.plugins.legend.labels.padding = 14;
+  Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(42, 45, 47, 0.95)';
+  Chart.defaults.plugins.tooltip.titleColor = '#fff';
+  Chart.defaults.plugins.tooltip.bodyColor = 'rgba(255,255,255,0.92)';
+  Chart.defaults.plugins.tooltip.borderColor = 'rgba(17, 166, 60, 0.4)';
+  Chart.defaults.plugins.tooltip.borderWidth = 1;
+  Chart.defaults.plugins.tooltip.padding = 10;
+  Chart.defaults.plugins.tooltip.cornerRadius = 8;
+  Chart.defaults.plugins.tooltip.titleFont = { weight: '700', size: 12 };
+  Chart.defaults.plugins.tooltip.bodyFont = { weight: '600', size: 11 };
+  Chart.defaults.plugins.tooltip.boxPadding = 6;
+  Chart.defaults.scale.grid.color = 'rgba(0,0,0,0.05)';
+  Chart.defaults.scale.ticks.color = '#9aa0a3';
+  window.SUPABASE_URL      = 'https://iyvavhnlhxksokkerkos.supabase.co';
+  window.SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5dmF2aG5saHhrc29ra2Vya29zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1NjU2NTYsImV4cCI6MjA5MzE0MTY1Nn0.eMdW6vUdoyVpZbqKXp6FNYTajwKEf4x-Xyj5zj1igO4';
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const el = document.getElementById('topbar-date');
+  if (el) {
+    const d = new Date();
+    el.textContent = d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
+  }
+});
+</script>
+<script>
+function showLoginForm() {
+  document.getElementById('login-form').style.display  = '';
+  document.getElementById('reset-form').style.display  = 'none';
+  document.getElementById('newpass-form').style.display = 'none';
+}
+function showResetForm() {
+  document.getElementById('login-form').style.display  = 'none';
+  document.getElementById('reset-form').style.display  = '';
+  document.getElementById('newpass-form').style.display = 'none';
+  document.getElementById('reset-email').focus();
+}
+function showNewPassForm() {
+  document.getElementById('login-form').style.display  = 'none';
+  document.getElementById('reset-form').style.display  = 'none';
+  document.getElementById('newpass-form').style.display = '';
+  document.getElementById('newpass-input').focus();
+}
+</script>
+<script src="../crm/clients-data.js?v=20260715e"></script>
+<script src="../crm/benchmark-data.js?v=20260715e"></script>
+<script src="../crm/offilog-data.js?v=20260715e"></script>
+<script src="../crm/drakkars-data.js?v=20260715e"></script>
+<script src="../crm/cap3000-data.js?v=20260715e"></script>
+<script src="../crm/groupements-data.js?v=20260715e"></script>
+<script src="leclerc-data.js?v=20260715e"></script>
+<script src="wml-data.js?v=20260715g"></script>
+<script defer src="opso-adherents.js?v=20260715e"></script>
+<script defer src="opso-listing-2026.js?v=20260715e"></script>
+<script defer src="pharmazon-data.js?v=20260715e"></script>
+<!-- offilog-live-data.js (2,7 Mo) : chargé en lazy via loadOffilogLive() dans app.js -->
+<script defer src="wml-sales-data.js?v=20260715g"></script>
+<script defer src="app.js?v=20260716b"></script>
+<script>
+  // Enregistrement Service Worker (PWA)
+  if ('serviceWorker' in navigator && location.protocol === 'https:') {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').then(reg => {
+        // Detecter nouvelle version
+        reg.addEventListener('updatefound', () => {
+          const newWorker = reg.installing;
+          if (!newWorker) return;
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              // Une nouvelle version est prete
+              if (typeof showUpdateBanner === 'function') showUpdateBanner();
+            }
+          });
+        });
+      }).catch(err => console.warn('SW failed:', err));
+
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        // Le nouveau SW a pris le controle, recharger
+        window.location.reload();
+      });
+    });
+  }
+</script>
+</body>
+</html>
