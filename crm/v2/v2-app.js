@@ -43,18 +43,12 @@
     try { document.querySelector('.v2-wrap, .v2-content')?.scrollTo?.({ top: 0 }); window.scrollTo({ top: 0, behavior: 'instant' }); } catch (e) {}
   };
 
-  // Retour = UN pas en arrière dans l'historique de navigation (pas une page fixe).
+  // Retour = UN pas en arrière dans l'historique NATIF du navigateur (incassable,
+  // gère correctement A→B→A). Chaque V2.go pose un hash → une entrée d'historique ;
+  // le handler 'hashchange' re-rend l'écran précédent. Repli accueil si pas d'historique.
   V2.goBack = function () {
     try {
-      var st = V2._navStack;
-      if (st && st.length >= 2) {
-        var prev = String(st[st.length - 2]);          // écran précédent
-        var i = prev.indexOf('/');
-        var name = i < 0 ? prev : prev.slice(0, i);
-        var param = i < 0 ? null : decodeURIComponent(prev.slice(i + 1));
-        V2.go(name, param);                             // go() détecte le 'back' et dépile
-        return;
-      }
+      if (window.history && window.history.length > 1) { window.history.back(); return; }
     } catch (e) {}
     V2.go('home');
   };

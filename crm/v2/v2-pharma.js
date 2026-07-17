@@ -1256,7 +1256,7 @@
     var v = el && el.value;
     if (v === '__add__') {
       v = (window.prompt('Nom du groupement :', '') || '').trim();
-      if (!v) { el.value = ''; return; }
+      if (!v) { V2.render(); return; }   // annulation → on restaure l'affichage réel du select
     }
     var pharma = (V2.pharmacies || []).find(function (p) { return String(p.id) === String(pid); });
     if (pharma) pharma.groupement = v || '';
