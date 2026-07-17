@@ -13029,9 +13029,9 @@ function renderGroupement() {
 }
 
 // ══════════ PAGE RECO PRODUITS — meilleure liste produits Essentiels (classée par nb pharmacies) ══════════
-let _recoCat = 'penetration';
-const _RECO_ORDER = ['penetration','generiques','petits_prix','sanofi_upsa','chers','nr','glp1'];
-const _RECO_LABEL = {penetration:'Top pénétration',generiques:'Génériques ZEN/EG/TEVA',petits_prix:'Petits prix >4,7%',sanofi_upsa:'Sanofi/UPSA',chers:'> 468 €',nr:'NR rotations',glp1:'GLP-1'};
+let _recoCat = 'offre_privilege';
+const _RECO_ORDER = ['offre_privilege','exclu_gen','glp1_offre','penetration','generiques','petits_prix','sanofi_upsa','chers','nr'];
+const _RECO_LABEL = {offre_privilege:'⭐ Offre Privilège',exclu_gen:'Exclus. génériques 1€',glp1_offre:'GLP-1 offre',penetration:'Top pénétration',generiques:'Génériques ZEN/EG/TEVA',petits_prix:'Petits prix >4,7%',sanofi_upsa:'Sanofi/UPSA',chers:'> 468 €',nr:'NR rotations'};
 function _recoRows(cat){ const R=window.ESSENTIELS_RECO||{}; return (R[cat]&&R[cat].rows)||[]; }
 function setRecoCat(c){ _recoCat=c; renderReco(); }
 function renderReco(){
@@ -13049,7 +13049,7 @@ function renderReco(){
   const rowHtml=rows.map((r,i)=>`<tr style="border-bottom:1px solid var(--border)">
       <td style="padding:8px 6px;color:var(--text3);font-size:12px;text-align:right">${i+1}</td>
       <td style="padding:8px 10px"><div style="font-weight:600;color:var(--text);font-size:13px">${esc(r.d)}</div><div style="font-size:11px;color:var(--text3)">CIP ${esc(r.cip)}${r.gen?' · '+esc(r.gen):''}${r.offre?' · <span style="color:'+grnT+'">offre privilège</span>':''}</div></td>
-      <td style="padding:8px 6px;text-align:center"><span style="display:inline-block;min-width:38px;padding:3px 8px;border-radius:100px;background:var(--opso-green-pale);color:${grnT};font-weight:800;font-size:13px">${r.n}</span></td>
+      <td style="padding:8px 6px;text-align:center"><span style="display:inline-block;min-width:38px;padding:3px 8px;border-radius:100px;background:var(--opso-green-pale);color:${grnT};font-weight:800;font-size:13px">${r.n!=null?r.n:'—'}</span></td>
       <td style="padding:8px 8px;text-align:right;color:var(--text2);font-size:13px">${r.ppht!=null?eur(r.ppht):'—'}</td>
       <td style="padding:8px 8px;text-align:right;color:var(--text);font-weight:700;font-size:13px">${eur(r.offre!=null?r.offre:r.net)}</td>
       ${showPct?`<td style="padding:8px 8px;text-align:right;color:${grnT};font-weight:700;font-size:12px">${r.pct!=null?r.pct+' %':'—'}</td>`:''}
@@ -13090,7 +13090,7 @@ function printReco(){
   const eur=v=>v==null?'—':Number(v).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';
   const showPct=rows.some(r=>r.pct!=null);
   const today=new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
-  const tr=rows.map((r,i)=>`<tr><td class="r">${i+1}</td><td><b>${esc(r.d)}</b><br><span class="s">CIP ${esc(r.cip)}${r.gen?' · '+esc(r.gen):''}</span></td><td class="c"><b>${r.n}</b></td><td class="r">${r.ppht!=null?eur(r.ppht):'—'}</td><td class="r"><b>${eur(r.offre!=null?r.offre:r.net)}</b></td>${showPct?`<td class="r">${r.pct!=null?r.pct+' %':'—'}</td>`:''}</tr>`).join('');
+  const tr=rows.map((r,i)=>`<tr><td class="r">${i+1}</td><td><b>${esc(r.d)}</b><br><span class="s">CIP ${esc(r.cip)}${r.gen?' · '+esc(r.gen):''}</span></td><td class="c"><b>${r.n!=null?r.n:'—'}</b></td><td class="r">${r.ppht!=null?eur(r.ppht):'—'}</td><td class="r"><b>${eur(r.offre!=null?r.offre:r.net)}</b></td>${showPct?`<td class="r">${r.pct!=null?r.pct+' %':'—'}</td>`:''}</tr>`).join('');
   const w=window.open('','_blank');
   w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Essentiels Pharma — ${esc(meta.titre||'')}</title>
   <style>@page{margin:14mm}body{font-family:Arial,Helvetica,sans-serif;color:#17210F;font-size:11px}
