@@ -629,7 +629,7 @@ h1,h2,h3,h4{text-wrap:balance}
         <div class="map3d__fallback" id="mapFallback" aria-hidden="true"></div>
       </div>
       <aside class="roster rise" aria-label="Liste des établissements">
-        <div class="roster__cap">Nos établissements <b>— survolez pour zoomer</b></div>
+        <div class="roster__cap">Nos établissements <b>— survolez pour situer</b></div>
         <div class="roster__list">
           <div class="estab estab--siege" data-i="0"><span class="estab__sig">HP</span><span class="estab__b"><span class="estab__n">Hyères Pharma</span><span class="estab__c">Hyères · 83</span></span><span class="estab__tag">Siège</span></div>
           <div class="estab" data-i="1"><span class="estab__sig">OPS</span><span class="estab__b"><span class="estab__n">Ouest Pharma Services</span><span class="estab__c">St-Étienne-de-Montluc · 44</span></span></div>
@@ -647,7 +647,7 @@ h1,h2,h3,h4{text-wrap:balance}
         <span><i class="lg o"></i>Siège — Hyères</span>
         <span><i class="lg b"></i>Établissements</span>
         <span><i class="lg p"></i>Partenaire — Metz</span>
-        <span class="hint"><span class="dot"></span>Survolez un point pour ses coordonnées</span>
+        <span class="hint"><span class="dot"></span>Survolez un établissement pour le révéler et ses coordonnées</span>
       </div>
     </div>
   </section>
@@ -1316,15 +1316,29 @@ document.addEventListener('DOMContentLoaded', function(){
         rg.scale.set(sc,sc,1);
         rg.material.opacity=(1-ph)*0.55*si*(1+b.hl*0.7);
       }
+      /* ===== CARTE ÉPURÉE : au repos une seule étiquette (le siège, repère
+         d'orientation) ; les 8 autres restent muettes. Au survol d'une ligne
+         d'annuaire OU d'un point, on révèle UNIQUEMENT l'étiquette visée. ===== */
+      var isActive = (b.idx===activeI && focusAmt>0.02);
+      var isSiege  = (b.site.t==='siege');
+      var wantLabel = isActive || isSiege;   // jamais les autres au repos
       V.set(b.wx,b.topY,b.wz).project(camera);
-      if(V.z<1 && si>0.35){
+      if(V.z<1 && si>0.35 && wantLabel){
         var lx=(V.x*0.5+0.5)*cw + b.site.ldx;
         var ly=(-V.y*0.5+0.5)*ch + b.site.ldy;
         b.el.style.transform='translate(-50%,-100%) translate('+lx.toFixed(1)+'px,'+ly.toFixed(1)+'px)';
-        b.el.style.opacity=Math.min(1,(si-0.35)*2.2)*Math.max(dim,(b.idx===activeI?1:0));
-        b.el.style.zIndex=(b.idx===activeI)?5:1;
+        var lop;
+        if(isActive){
+          lop = easeOut(focusAmt);                 // l'établissement visé : révélation nette
+        } else { /* siège au repos : repère permanent, s'efface si un autre est visé */
+          lop = (activeI>=0 && activeI!==b.idx) ? (1-0.78*focusAmt) : 1;
+        }
+        b.el.style.opacity = Math.min(1,(si-0.35)*2.2) * lop;
+        b.el.classList.toggle('on', isActive);
+        b.el.style.zIndex = isActive?6:(isSiege?4:1);
       }else{
         b.el.style.opacity=0;
+        b.el.classList.remove('on');
       }
     }
 
