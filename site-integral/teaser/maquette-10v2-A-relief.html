@@ -399,7 +399,7 @@ body.cap .story{padding:30px 22px}
       <div class="stats reveal d3">
         <div class="stat"><div class="n"><b>20</b>+ ans</div><div class="l">d'indépendance</div></div>
         <div class="stat"><div class="n"><b>9</b> établissements</div><div class="l">au service des officines</div></div>
-        <div class="stat"><div class="n"><b>72</b>h</div><div class="l">délai de livraison</div></div>
+        <div class="stat"><div class="n"><b>7</b> régions</div><div class="l">couvertes en France</div></div>
       </div>
     </section>
 
@@ -440,7 +440,7 @@ body.cap .story{padding:30px 22px}
     <section class="chapter chapter--net">
       <span class="chnum reveal">03 — Le réseau</span>
       <h2 class="chtitle reveal d1">Un réseau national derrière chaque officine.</h2>
-      <p class="chtext reveal d2">Neuf établissements, du Grand Ouest à la Méditerranée, adossés à notre base logistique du Var. Où que soient vos adhérents, <b>Intégral livre</b>.</p>
+      <p class="chtext reveal d2">Neuf établissements, du Grand Ouest à la Méditerranée, adossés à notre base logistique du Var. Où que soient vos adhérents, <b>une agence Intégral est proche</b>.</p>
       <div class="netgrid reveal d2">
         <div>
           <div class="map3d" id="map3d" role="img" aria-label="Carte 3D de France : les 9 établissements Intégral Pharma, siège à Hyères">
@@ -660,8 +660,8 @@ body.cap .story{padding:30px 22px}
     {n:"Comptoir Pharma. du Rhône",s:"CPR",c:"Saint-Maurice-l'Exil · 38",x:669.97,y:558.24,t:"site", h:13,  dxw:0,   dzw:0,   ldx:0,  ldy:0},
     {n:"Sud Ouest Pharma",       s:"SOP",c:"Montayral · 47",             x:415.96,y:645.70,t:"site", h:12.5,dxw:0,   dzw:0,   ldx:0,  ldy:0},
     {n:"Pharm'Occitanie Services",s:"POS",c:"Villeneuve-lès-Béziers · 34",x:569.05,y:756.32,t:"site",h:13.5,dxw:0,   dzw:0,   ldx:-8, ldy:0},
-    {n:"Sud Est Pharma",         s:"SEP",c:"Le Cannet-des-Maures · 83",  x:773.12,y:749.45,t:"site", h:17,  dxw:1.6, dzw:-1.4,ldx:66, ldy:0},
-    {n:"Mistral Santé Pharma",   s:"MSP",c:"Flassans-sur-Issole · 83",   x:762.69,y:752.42,t:"site", h:9.5, dxw:-1.4,dzw:-2.2,ldx:-70,ldy:0},
+    {n:"Sud Est Pharma",         s:"SEP",c:"Le Cannet-des-Maures · 83",  x:773.12,y:749.45,t:"site", h:18,  dxw:4.2, dzw:-3.4,ldx:60, ldy:-2},
+    {n:"Mistral Santé Pharma",   s:"MSP",c:"Flassans-sur-Issole · 83",   x:762.69,y:752.42,t:"site", h:12,  dxw:-4.4,dzw:-5.2,ldx:-64,ldy:-2},
     {n:"Pharmest",               s:"PH", c:"Metz · 57",                  x:762.22,y:202.25,t:"part", h:12,  dxw:0,   dzw:0,   ldx:0,  ldy:0}
   ];
   var S = 0.1, EXH = 3.2;                          /* échelle monde + épaisseur du relief */
@@ -840,8 +840,8 @@ body.cap .story{padding:30px 22px}
     beamC.position.y=bh*0.48; grp.add(beamC); mats.push(mc);
 
     /* balise : glow au sol + point sommital */
-    var gs=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:cCore,transparent:true,opacity:siege?0.9:0.6,blending:THREE.AdditiveBlending,depthWrite:false,fog:false}));
-    gs.scale.set(siege?15:6.5,siege?15:6.5,1); gs.position.y=0.5; grp.add(gs); sprites.push(gs);
+    var gs=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:cCore,transparent:true,opacity:siege?0.9:0.72,blending:THREE.AdditiveBlending,depthWrite:false,fog:false}));
+    gs.scale.set(siege?17:9,siege?17:9,1); gs.position.y=0.5; grp.add(gs); sprites.push(gs);
     if(siege){
       var halo=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:0xF3720F,transparent:true,opacity:0.42,blending:THREE.AdditiveBlending,depthWrite:false,fog:false}));
       halo.scale.set(34,34,1); halo.position.y=0.8; grp.add(halo); sprites.push(halo);
@@ -849,8 +849,8 @@ body.cap .story{padding:30px 22px}
     var tip=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:0xFFFFFF,transparent:true,opacity:0.85,blending:THREE.AdditiveBlending,depthWrite:false,fog:false}));
     tip.scale.set(siege?4.2:2.4,siege?4.2:2.4,1); tip.position.y=bh*0.99; grp.add(tip); sprites.push(tip);
 
-    /* anneaux pulsants à la base (sur l'ancre géographique exacte) */
-    var ringGrp=new THREE.Group(); ringGrp.position.set(WX(m.x),EXH+0.06,WZ(m.y)); scene.add(ringGrp);
+    /* anneaux pulsants à la base (alignés sur le faisceau, y compris le déport du cluster Var) */
+    var ringGrp=new THREE.Group(); ringGrp.position.set(wx,EXH+0.06,wz); scene.add(ringGrp);
     for(var k=0;k<2;k++){
       var rm=ringMatProto.clone();
       rm.color=new THREE.Color(siege?0xF39A1B:(part?0x9FB4D8:0x5B8CFF));
@@ -860,9 +860,12 @@ body.cap .story{padding:30px 22px}
       ringGrp.add(ring); rings.push(ring);
     }
     /* pastille fixe à la base */
-    var dm=new THREE.Mesh(new THREE.CircleGeometry(siege?1.05:0.55,32),
-      new THREE.MeshBasicMaterial({color:cCore,transparent:true,opacity:0.95,fog:false}));
-    dm.rotation.x=-Math.PI/2; dm.position.set(WX(m.x),EXH+0.08,WZ(m.y)); scene.add(dm);
+    var dm=new THREE.Mesh(new THREE.CircleGeometry(siege?1.5:1.0,32),
+      new THREE.MeshBasicMaterial({color:cCore,transparent:true,opacity:0.98,fog:false}));
+    dm.rotation.x=-Math.PI/2; dm.position.set(wx,EXH+0.08,wz); scene.add(dm);
+    /* halo permanent au sol (rend le point bien visible / cliquable) */
+    var base=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:cCore,transparent:true,opacity:siege?0.85:0.6,blending:THREE.AdditiveBlending,depthWrite:false,fog:false}));
+    base.scale.set(siege?9:5.5,siege?9:5.5,1); base.position.set(wx,EXH+0.1,wz); scene.add(base);
 
     /* étiquette HTML */
     var el=document.createElement('div');
@@ -876,8 +879,8 @@ body.cap .story{padding:30px 22px}
     beacons.push({grp:grp,mats:mats,rings:rings,site:m,el:el,wx:wx,wz:wz,topY:EXH+bh+0.9,idx:idx,hl:0,hlT:0});
 
     /* cible de survol invisible (toute la hauteur du faisceau) */
-    var pr=(siege?4.6:3.4), ph=Math.max(bh,7);
-    var pick=new THREE.Mesh(new THREE.CylinderGeometry(pr,pr,ph,10,1,true),
+    var pr=(siege?7:4.8), ph=Math.max(bh,9);
+    var pick=new THREE.Mesh(new THREE.CylinderGeometry(pr,pr,ph,12,1,true),
       new THREE.MeshBasicMaterial({colorWrite:false,depthWrite:false,transparent:true,opacity:0}));
     pick.position.set(wx, EXH+ph/2, wz); pick.userData.bi=idx; scene.add(pick); pickTargets.push(pick);
   }
@@ -989,7 +992,7 @@ body.cap .story{padding:30px 22px}
     }
     focusI = pointerInMap ? mapHoverI : rosterHoverI;
     if(focusI>=0) activeI=focusI;
-    focusAmt += ((focusI>=0?1:0)-focusAmt)*0.12;
+    focusAmt += ((focusI>=0?1:0)-focusAmt)*0.16;
     setInfo(focusI);
 
     /* caméra : orbite douce + parallax + zoom d'entrée */
@@ -1004,7 +1007,7 @@ body.cap .story{padding:30px 22px}
       var fx=fb.wx, fy=EXH+fb.site.h*0.4, fz=fb.wz;
       var dx=ovx-fx, dy=ovy-fy, dz=ovz-fz, dl=Math.sqrt(dx*dx+dy*dy+dz*dz)||1;
       dx/=dl; dy=Math.max(dy/dl,0.44); dz/=dl;
-      var fR=Math.max(38, baseR*0.34);
+      var fR=Math.max(30, baseR*0.27);
       camera.position.set(ovx+((fx+dx*fR)-ovx)*ea, ovy+((fy+dy*fR)-ovy)*ea, ovz+((fz+dz*fR)-ovz)*ea);
       lookX=fx*ea; lookY=2.5+(fy-2.5)*ea; lookZ=1.5+(fz-1.5)*ea;
     } else {
