@@ -318,6 +318,35 @@ h1,h2,h3,h4{text-wrap:balance}
 .lg.p{background:transparent;border:1.5px dashed #9FB4D8}
 .mapfoot .hint{color:var(--muted-2)}
 .mapfoot .hint .dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--blue-lite);margin-right:6px;vertical-align:middle}
+/* ===== carte + ANNUAIRE côte à côte (diapo sombre) ===== */
+.mapgrid{flex:1 1 auto;min-height:0;display:flex;gap:14px;align-items:stretch}
+.mapgrid > .map3d{flex:1 1 auto;min-width:0;height:100%}
+.roster{flex:0 0 clamp(240px,27%,320px);min-height:0;display:flex;flex-direction:column;gap:8px}
+.roster__cap{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted-2);flex:0 0 auto}
+.roster__cap b{color:var(--orange-hi);font-weight:500}
+.roster__list{flex:1 1 auto;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:7px;padding-right:4px}
+.estab{display:flex;align-items:center;gap:11px;border:1px solid rgba(255,255,255,.10);border-radius:12px;
+  padding:9px 12px;background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.015));
+  cursor:default;transition:border-color .2s ease,transform .2s ease,background .2s ease}
+.estab:hover{border-color:rgba(255,193,104,.45);transform:translateX(3px);background:linear-gradient(180deg,rgba(255,255,255,.09),rgba(255,255,255,.03))}
+.estab__sig{flex:0 0 auto;width:44px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-weight:600;font-size:12px;color:#CFE0FF;background:rgba(0,80,230,.18);border:1px solid rgba(91,140,255,.32)}
+.estab__b{min-width:0;flex:1;display:flex;flex-direction:column;line-height:1.2}
+.estab__n{font-weight:600;font-size:14px;color:#EAF0FF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.estab__c{font-size:12px;color:var(--muted)}
+.estab__tag{flex:0 0 auto;font-family:var(--mono);font-size:8.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--orange-hi);border:1px solid rgba(243,154,27,.4);border-radius:999px;padding:3px 8px}
+.estab--siege{border-color:rgba(243,154,27,.42);background:linear-gradient(180deg,rgba(243,154,27,.12),rgba(255,255,255,.02))}
+.estab--siege .estab__sig{color:#241300;font-weight:700;border-color:transparent;background:linear-gradient(180deg,var(--orange-hi),var(--orange))}
+.estab--part .estab__sig{color:#C9D3EA;background:rgba(255,255,255,.06);border-style:dashed}
+.estab--part .estab__tag{color:var(--muted);border-color:rgba(255,255,255,.14)}
+@media(max-width:880px){
+  .mapgrid{flex-direction:column;gap:10px}
+  .mapgrid > .map3d{flex:1 1 auto;min-height:42vh}
+  .roster{flex:0 0 auto}
+  .roster__list{flex-direction:row;overflow-x:auto;overflow-y:hidden;gap:8px;padding-bottom:4px}
+  .estab{flex:0 0 auto;min-width:210px}
+}
 
 /* =========================================================
    05 — VALEURS
@@ -575,6 +604,7 @@ h1,h2,h3,h4{text-wrap:balance}
         <h2 class="chtitle split" data-splitting>Un réseau national <span class="accent">derrière chaque officine.</span></h2>
         <p class="chtext rise">Neuf établissements, un maillage qui couvre <b>toute la France</b>. Où que soient vos adhérents, une agence Intégral est proche.</p>
       </div>
+      <div class="mapgrid">
       <div class="map3d" id="map3d" role="img" aria-label="Carte 3D de France : les 9 établissements Intégral Pharma, siège à Hyères">
         <div class="map3d__labels" id="lbls" aria-hidden="true"></div>
         <div class="map3d__badge"><span class="dot"></span>Réseau Intégral — France</div>
@@ -587,6 +617,21 @@ h1,h2,h3,h4{text-wrap:balance}
         <div class="map3d__load" id="mapLoad" aria-hidden="true"><span class="map3d__spin"></span><span>Chargement du réseau</span></div>
         <div class="map3d__fallback" id="mapFallback" aria-hidden="true"></div>
       </div>
+      <aside class="roster rise" aria-label="Liste des établissements">
+        <div class="roster__cap">Nos établissements <b>— survolez pour zoomer</b></div>
+        <div class="roster__list">
+          <div class="estab estab--siege" data-i="0"><span class="estab__sig">HP</span><span class="estab__b"><span class="estab__n">Hyères Pharma</span><span class="estab__c">Hyères · 83</span></span><span class="estab__tag">Siège</span></div>
+          <div class="estab" data-i="1"><span class="estab__sig">OPS</span><span class="estab__b"><span class="estab__n">Ouest Pharma Services</span><span class="estab__c">St-Étienne-de-Montluc · 44</span></span></div>
+          <div class="estab" data-i="2"><span class="estab__sig">EP</span><span class="estab__b"><span class="estab__n">Escale Pharma</span><span class="estab__c">Chilly-Mazarin · 91</span></span></div>
+          <div class="estab" data-i="3"><span class="estab__sig">CPR</span><span class="estab__b"><span class="estab__n">Comptoir Pharma. du Rhône</span><span class="estab__c">Saint-Maurice-l'Exil · 38</span></span></div>
+          <div class="estab" data-i="4"><span class="estab__sig">SOP</span><span class="estab__b"><span class="estab__n">Sud Ouest Pharma</span><span class="estab__c">Montayral · 47</span></span></div>
+          <div class="estab" data-i="5"><span class="estab__sig">POS</span><span class="estab__b"><span class="estab__n">Pharm'Occitanie Services</span><span class="estab__c">Villeneuve-lès-Béziers · 34</span></span></div>
+          <div class="estab" data-i="6"><span class="estab__sig">SEP</span><span class="estab__b"><span class="estab__n">Sud Est Pharma</span><span class="estab__c">Le Cannet-des-Maures · 83</span></span></div>
+          <div class="estab" data-i="7"><span class="estab__sig">MSP</span><span class="estab__b"><span class="estab__n">Mistral Santé Pharma</span><span class="estab__c">Flassans-sur-Issole · 83</span></span></div>
+          <div class="estab estab--part" data-i="8"><span class="estab__sig">PH</span><span class="estab__b"><span class="estab__n">Pharmest</span><span class="estab__c">Metz · 57</span></span><span class="estab__tag">Partenaire</span></div>
+        </div>
+      </aside>
+      </div><!-- /mapgrid -->
       <div class="mapfoot rise">
         <span><i class="lg o"></i>Siège — Hyères</span>
         <span><i class="lg b"></i>Établissements</span>
