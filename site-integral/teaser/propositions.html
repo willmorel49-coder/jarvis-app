@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Intégral Pharma — 10 propositions de teaser (groupements)</title>
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--blue:#0050E6;--blue-dk:#0034A0;--orange:#F39A1B;--navy:#0A1430;
+  --bg:#EEF2FA;--card:#FFFFFF;--ink:#101B3B;--muted:#54617F;--line:#E2E8F4;
+  --font:'Satoshi',system-ui,sans-serif;--mono:'Geist Mono',ui-monospace,monospace;}
+*{box-sizing:border-box}
+body{margin:0;font-family:var(--font);color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased;line-height:1.5}
+a{color:inherit}
+.wrap{max-width:1220px;margin:0 auto;padding:clamp(26px,5vw,66px) clamp(18px,4vw,40px) 90px}
+.eyebrow{display:inline-flex;align-items:center;gap:9px;font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--blue);margin-bottom:16px}
+.eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--orange)}
+h1{font-size:clamp(30px,5vw,52px);font-weight:900;letter-spacing:-.025em;line-height:1.05;margin:0 0 14px}
+h1 span{color:var(--blue)}
+.lede{font-size:clamp(15px,2vw,18px);color:var(--muted);max-width:680px;margin:0 0 8px;font-weight:500}
+.howto{display:flex;flex-wrap:wrap;gap:10px;margin:22px 0 38px}
+.howto b{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:8px 16px;font-size:13.5px;font-weight:600;box-shadow:0 1px 2px rgba(16,27,59,.05)}
+.howto b .n{color:var(--orange);font-family:var(--mono);margin-right:6px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:22px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;overflow:hidden;box-shadow:0 3px 14px rgba(16,27,59,.06);transition:transform .25s cubic-bezier(.16,1,.3,1),box-shadow .25s;display:flex;flex-direction:column}
+.card:hover{transform:translateY(-5px);box-shadow:0 20px 44px rgba(16,27,59,.16)}
+.thumb{position:relative;aspect-ratio:16/10.5;overflow:hidden;background:#0a1430;display:block}
+.thumb img{width:100%;height:100%;object-fit:cover;object-position:top center;display:block;transition:transform .5s cubic-bezier(.16,1,.3,1)}
+.card:hover .thumb img{transform:scale(1.045)}
+.num{position:absolute;top:12px;left:12px;z-index:2;font-family:var(--mono);font-weight:600;font-size:13px;color:#fff;background:rgba(10,20,48,.62);border:1px solid rgba(255,255,255,.18);padding:5px 11px;border-radius:999px;letter-spacing:.04em}
+.tag{position:absolute;top:12px;right:12px;z-index:2;font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:#fff;padding:5px 10px;border-radius:999px}
+.tag.clair{background:rgba(0,80,230,.9)}.tag.sombre{background:rgba(20,24,40,.86)}.tag.d3{background:rgba(243,154,27,.94)}
+.body{padding:18px 20px 20px;display:flex;flex-direction:column;gap:8px;flex:1}
+.title{font-size:19px;font-weight:800;letter-spacing:-.01em;margin:0}
+.desc{font-size:13.5px;color:var(--muted);margin:0;flex:1}
+.open{margin-top:6px;display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--blue);color:#fff;font-weight:700;font-size:14.5px;text-decoration:none;padding:11px 16px;border-radius:12px;transition:background .2s}
+.open:hover{background:var(--blue-dk)}
+.open svg{width:16px;height:16px}
+footer{margin-top:56px;padding-top:26px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+footer b{color:var(--ink)}
+@media(max-width:520px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="eyebrow"><span class="dot"></span>Intégral Pharma · Teaser groupements — 10 directions</span>
+    <h1>10 propositions <span>complètement différentes</span>.</h1>
+    <p class="lede">Dix directions de designers, niveau 21st.dev / Awwwards. Même contenu partout (siège, carte 3D des établissements, valeurs, marge sans chiffres, contact Pascale). La <b>carte 3D est réutilisée telle quelle</b> en bande sombre dans chacune. GSAP + Lenis + Splitting branchés.</p>
+    <div class="howto">
+      <b><span class="n">1.</span>Ouvre chaque proposition</b>
+      <b><span class="n">2.</span>Fais défiler (scroll velours + carte)</b>
+      <b><span class="n">3.</span>Dis-moi les numéros que tu préfères</b>
+    </div>
+  </header>
+  <div class="grid" id="grid"></div>
+  <footer>Toutes <b>Safari-safe</b> et testées à l'écran · zéro condition commerciale affichée (on chiffre en RDV) · contact <b>Pascale Prieto</b>. Note : 05/09/10 reprennent « Votre marge, notre métier » — je le remplace par « grossiste de première intention » sur celle que tu choisis.</footer>
+</div>
+<script>
+const C=[
+ {n:'01',s:'propo-01-institutionnel',t:'p01',tag:'Clair',cls:'clair',ti:'Institutionnel clair',d:"Blanc + bleu confiance, grille nette, beaucoup d'air, accroche serif italique. Sérieux, rassurant, crédible — la « grande institution » proche."},
+ {n:'02',s:'propo-02-editorial',t:'p02',tag:'Clair',cls:'clair',ti:'Éditorial magazine',d:"Blanc pur, immense typo serif (Fraunces), colonnes, numéros de chapitres, drop caps. Un « journal d'invitation » raffiné et désirable."},
+ {n:'03',s:'propo-03-bento',t:'p03',tag:'Clair',cls:'clair',ti:'Bento OS',d:"Grille de tuiles arrondies façon Linear/Vercel, nav flottante, spotlight curseur, count-up. Ça ressemble à un produit, pas à une plaquette."},
+ {n:'04',s:'propo-04-swiss',t:'p04',tag:'Clair',cls:'clair',ti:'Swiss minimal',d:"Design suisse : grille hairline, typographie et alignements, quasi pas de couleur. Ultra pro, épuré, institutionnel."},
+ {n:'05',s:'propo-05-creme',t:'p05',tag:'Clair',cls:'clair',ti:'Crème chaleureux',d:"Fond crème chaud, coins arrondis, serif, photo du siège solaire. Proche, humain, « à taille humaine » — tout en restant carré."},
+ {n:'06',s:'propo-06-data',t:'p06',tag:'Clair',cls:'clair',ti:'Data / la carte star',d:"Orienté data : ticker d'implantations, aperçu réseau animé, jauges et compteurs. « On couvre le territoire », piloté et moderne."},
+ {n:'07',s:'propo-07-aurora',t:'p07',tag:'Clair',cls:'clair',ti:'Aurora clair',d:"Aurore douce bleu-lilas animée (canvas, sans flou), cartes flottantes, chiffres qui montent. Frais, lumineux, premium, apaisant."},
+ {n:'08',s:'propo-08-darkluxe',t:'p08',tag:'Sombre',cls:'sombre',ti:'Dark luxe (nuit)',d:"Exception sombre pour comparer : nuit charbon, spotlight, serif cream & or. Cinématique, « pub premium ». Désirable."},
+ {n:'09',s:'propo-09-3dforward',t:'p09',tag:'3D',cls:'d3',ti:'3D-forward (objet WebGL)',d:"Une gélule 3D chrome-orange qui tourne (drag souris) en plus de la carte. Immersif, motion 3D, « produit »."},
+ {n:'10',s:'propo-10-kinetic',t:'p10',tag:'Clair',cls:'clair',ti:'Kinetic scrollytelling',d:"Signature motion GSAP + Lenis + Splitting : récit piloté au scroll, typo cinétique lettre par lettre, parallax. Le « petit film »."},
+];
+document.getElementById('grid').innerHTML=C.map(c=>`
+ <article class="card">
+   <a class="thumb" href="${c.s}.html" target="_blank" rel="noopener">
+     <span class="num">${c.n}</span><span class="tag ${c.cls}">${c.tag}</span>
+     <img src="_shots/propo/${c.t}.jpeg" alt="Aperçu ${c.ti}" loading="lazy">
+   </a>
+   <div class="body">
+     <h2 class="title">${c.n} · ${c.ti}</h2>
+     <p class="desc">${c.d}</p>
+     <a class="open" href="${c.s}.html" target="_blank" rel="noopener">Ouvrir en plein écran
+       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M9 7h8v8"/></svg></a>
+   </div>
+ </article>`).join('');
+</script>
+</body>
+</html>
