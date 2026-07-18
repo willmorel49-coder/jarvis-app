@@ -179,6 +179,12 @@ body.booted .scrollcue{opacity:1}
 /* ============ PROMESSE MARGE ============ */
 .promises{display:grid;grid-template-columns:1fr;gap:12px;margin-top:26px}
 @media(min-width:560px){.promises{grid-template-columns:1fr 1fr}}
+.paranote{margin-top:14px;border:1px solid rgba(91,140,255,.28);border-radius:16px;padding:18px 20px;
+  background:linear-gradient(180deg,rgba(0,80,230,.10),rgba(255,255,255,.02));display:flex;gap:15px;align-items:flex-start}
+.paranote__ico{flex:0 0 auto;color:var(--orange-hi);margin-top:1px}
+.paranote h4{font-family:var(--disp);font-weight:600;font-size:15.5px;color:#F3F6FF;letter-spacing:-.01em;margin-bottom:4px}
+.paranote p{font-size:13.5px;color:var(--muted);line-height:1.5}
+.paranote b{color:var(--fg);font-weight:700}
 .promise{position:relative;border:1px solid var(--line);border-radius:16px;padding:20px 18px;
   background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.015));
   overflow:hidden;transition:border-color .3s ease,transform .3s var(--ease)}
@@ -420,7 +426,7 @@ body.cap .story{padding:30px 22px}
         <div class="promise"><span class="promise__k">I</span>
           <svg class="promise__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.2"/><path d="M12 3.5V7M12 17v3.5M3.5 12H7M17 12h3.5"/></svg>
           <h3>Première intention</h3>
-          <p>Pas un dépanneur : le partenaire principal de vos adhérents, au quotidien, sur toute la largeur de gamme.</p>
+          <p>Pas un dépanneur : le partenaire principal de vos adhérents, au quotidien — <b>zéro exclusion</b> (froid, stup, biosimilaires, produits chers inclus).</p>
         </div>
         <div class="promise"><span class="promise__k">II</span>
           <svg class="promise__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8.2 12 3 3 8.2v7.6L12 21l9-5.2z"/><path d="M3 8.2 12 13l9-4.8M12 13v8"/></svg>
@@ -436,6 +442,13 @@ body.cap .story{padding:30px 22px}
           <svg class="promise__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="m15.5 8.5-2.2 4.8-4.8 2.2 2.2-4.8z"/></svg>
           <h3>Indépendance</h3>
           <p>Un groupe familial français, libre de ses choix — la même indépendance que celle que vous défendez pour vos adhérents.</p>
+        </div>
+      </div>
+      <div class="paranote reveal d3">
+        <svg class="paranote__ico" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h18M5 9 7 4h10l2 5M4 9v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9"/><path d="M9 13h6"/></svg>
+        <div>
+          <h4>Et une centrale parapharmacie intégrée</h4>
+          <p>La plus grande collection de France : <b>plus de 14 000 produits</b>, <b>plus de 430 laboratoires partenaires</b>, au meilleur prix à l'unité — un levier de marge supplémentaire pour vos adhérents.</p>
         </div>
       </div>
       <div class="tease reveal d3">
@@ -514,7 +527,7 @@ body.cap .story{padding:30px 22px}
       <div class="invite reveal d1">
         <div class="invite__k">À votre agenda</div>
         <h2 class="invite__t">Découvrez ce que nous pouvons proposer à votre groupement.</h2>
-        <p class="invite__s">Une heure suffit. Pascale vient à vous, avec des réponses précises — et des chiffres que nous réservons au <b>face-à-face</b>.</p>
+        <p class="invite__s">Une heure suffit. Pascale vient à vous, avec des réponses précises — les chiffres, on les réserve au <b>face-à-face</b>. Notre ambition : un <b>partenaire utile et durable</b> pour vos officines.</p>
         <div class="cta">
           <a class="btn btn--primary" href="mailto:pascale.prieto@integralpharma.fr?subject=Rencontrons-nous%20%E2%80%94%20Int%C3%A9gral%20Pharma">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/></svg>
