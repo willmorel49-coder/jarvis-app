@@ -367,10 +367,26 @@ footer{padding:40px 22px 60px;text-align:center}
 body.cap .hero{min-height:600px}
 body.cap .chapter{padding:34px 0}
 body.cap .story{padding:30px 22px}
+
+/* ===== UPGRADE MOTION (Safari-safe : 0 clip-text, 0 blur) ===== */
+/* titres cinétiques : mots qui montent depuis une ligne masquée */
+.kw{display:inline-block;overflow:hidden;vertical-align:top;line-height:inherit;padding-bottom:.1em;margin-bottom:-.1em}
+.kwi{display:inline-block;transform:translateY(118%);transition:transform .85s var(--ease)}
+.kin.kon .kwi{transform:none}
+.kin.kdone .kw{overflow:visible}
+.hero__title.kin{opacity:1;transform:none}
+.invite__t.kin{opacity:1;transform:none}
+/* CTA magnétique + halo curseur (radial-gradient, sans blur) */
+.btn{--mx:50%;--my:50%}
+.btn--primary{position:relative;overflow:hidden;will-change:transform}
+.btn--primary::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;
+  transition:opacity .3s ease;background:radial-gradient(130px circle at var(--mx) var(--my),rgba(255,255,255,.55),transparent 60%)}
+.btn--primary:hover::after{opacity:1}
 @media(prefers-reduced-motion:reduce){
   *{animation:none!important}
   .lamp__glow,.lamp__cone,.lamp__line,.brandlogo,.brandlogo3d,.eyebrow,.hero__title,.hero__sub,.scrollcue{transition:none!important}
   .reveal{opacity:1!important;transform:none!important;transition:none!important}
+  .kwi{transform:none!important;transition:none!important}
   body.booted .lamp__cone{transform:translateX(-50%) scaleX(1)}
   body.booted .lamp__line{width:min(560px,72vw)}
   html{scroll-behavior:auto}
@@ -422,8 +438,8 @@ body.cap .story{padding:30px 22px}
         </div>
       </div>
       <div class="stats reveal d3">
-        <div class="stat"><div class="n"><b>20</b>+ ans</div><div class="l">d'indépendance</div></div>
-        <div class="stat"><div class="n"><b>9</b> établissements</div><div class="l">au service des officines</div></div>
+        <div class="stat"><div class="n"><b data-to="20">20</b>+ ans</div><div class="l">d'indépendance</div></div>
+        <div class="stat"><div class="n"><b data-to="9">9</b> établissements</div><div class="l">au service des officines</div></div>
         <div class="stat"><div class="n"><b>France</b></div><div class="l">entière, d'un bout à l'autre</div></div>
       </div>
     </section>
@@ -826,6 +842,16 @@ body.cap .story{padding:30px 22px}
   var matSide = new THREE.MeshStandardMaterial({color:0x0A1226,metalness:0.3,roughness:0.7});
   scene.add(new THREE.Mesh(exGeo,[matTop,matSide]));
 
+  /* halo atmosphérique (Fresnel) — liseré lumineux sur les bords, sans filter:blur */
+  var fresMat = new THREE.ShaderMaterial({
+    uniforms:{ uColor:{value:new THREE.Color(0x4A86FF)}, uOp:{value:0.6} },
+    vertexShader:'varying vec3 vN; varying vec3 vP; void main(){ vec4 wp=modelViewMatrix*vec4(position,1.0); vP=wp.xyz; vN=normalMatrix*normal; gl_Position=projectionMatrix*wp; }',
+    fragmentShader:'uniform vec3 uColor; uniform float uOp; varying vec3 vN; varying vec3 vP; void main(){ float f=pow(1.0-abs(dot(normalize(vN),normalize(-vP))),3.0); gl_FragColor=vec4(uColor, f*uOp); }',
+    transparent:true, side:THREE.BackSide, blending:THREE.AdditiveBlending, depthWrite:false, fog:false
+  });
+  var fresMesh=new THREE.Mesh(exGeo.clone(), fresMat);
+  fresMesh.scale.set(1.05,1.05,1.05); scene.add(fresMesh);
+
   /* arêtes lumineuses */
   var edges = new THREE.LineSegments(new THREE.EdgesGeometry(exGeo,30),
     new THREE.LineBasicMaterial({color:0x3E7BFF,transparent:true,opacity:0.45}));
@@ -952,6 +978,14 @@ body.cap .story{padding:30px 22px}
   var V=new THREE.Vector3();
   var cw=0,ch=0;
 
+  /* ---- ignition pilotée au scroll : le réseau s'allume au fil de la lecture ---- */
+  var coarseP = window.matchMedia && window.matchMedia('(pointer:coarse)').matches;
+  var scrollDrive = !reduce && !coarseP;
+  var scrollProg = 0;
+  function updProg(){ var r=box.getBoundingClientRect(), vh=window.innerHeight||800;
+    scrollProg = Math.max(0, Math.min(1, (vh*0.72 - r.top) / (r.height*0.55) )); }
+  if(scrollDrive){ window.addEventListener('scroll',updProg,{passive:true}); window.addEventListener('resize',updProg,{passive:true}); updProg(); }
+
   /* ---- survol → focus + fiche coordonnées ---- */
   var ray=new THREE.Raycaster(), ndc=new THREE.Vector2(-2,-2);
   var pointerInMap=false, mapHoverI=-1, rosterHoverI=-1, focusI=-1, activeI=-1, focusAmt=0;
@@ -1052,8 +1086,9 @@ body.cap .story{padding:30px 22px}
       var b=beacons[i];
       b.hlT = (b.idx===focusI)?1:0;
       var dim = (activeI>=0 && b.idx!==activeI) ? (1-0.72*focusAmt) : 1;
-      var si=Math.max(0,Math.min(1,intro*1.9 - b.idx*0.09));
-      si=easeOut(si);
+      var si = scrollDrive
+        ? easeOut(Math.max(0, Math.min(1, (scrollProg - b.idx*0.085) / 0.13)))
+        : easeOut(Math.max(0, Math.min(1, intro*1.9 - b.idx*0.09)));
       b.grp.scale.y=Math.max(0.0001,si);
       b.hl+=(b.hlT-b.hl)*0.1;
       for(var j=0;j<b.mats.length;j++){
@@ -1108,6 +1143,69 @@ body.cap .story{padding:30px 22px}
   document.addEventListener('visibilitychange',function(){ document.hidden?pause():play(); });
 
   }catch(err){ buildFallback(); }
+})();
+</script>
+<script>
+/* ===== UPGRADE : titres cinétiques + compteurs + CTA magnétique ===== */
+(function(){
+  var RM = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function kinetic(el){
+    if(!el) return;
+    var kids = Array.prototype.slice.call(el.childNodes), i=0;
+    el.innerHTML='';
+    function unit(text, cls){
+      var w=document.createElement('span'); w.className='kw'+(cls?(' '+cls):'');
+      var inner=document.createElement('span'); inner.className='kwi';
+      inner.textContent=text; inner.style.transitionDelay=(i*45)+'ms'; i++;
+      w.appendChild(inner); return w;
+    }
+    kids.forEach(function(node){
+      if(node.nodeType===3){
+        node.textContent.split(/(\s+)/).forEach(function(tok){
+          if(tok==='') return;
+          if(/^\s+$/.test(tok)) el.appendChild(document.createTextNode(tok));
+          else el.appendChild(unit(tok,''));
+        });
+      } else if(node.nodeName==='BR'){ el.appendChild(node); }
+      else { el.appendChild(unit(node.textContent, node.className||'')); }
+    });
+    el.classList.add('kin');
+  }
+  var heroT=document.querySelector('.hero__title'), inviteT=document.querySelector('.invite__t');
+  if(!RM){
+    kinetic(heroT); kinetic(inviteT);
+    if(heroT) setTimeout(function(){ heroT.classList.add('kon'); setTimeout(function(){ heroT.classList.add('kdone'); },1250); }, 650);
+    if(inviteT && 'IntersectionObserver' in window){
+      var iio=new IntersectionObserver(function(es){ es.forEach(function(e){ if(e.isIntersecting){ inviteT.classList.add('kon'); setTimeout(function(){ inviteT.classList.add('kdone'); },1250); iio.unobserve(e.target); } }); }, {threshold:.4}); iio.observe(inviteT);
+    } else if(inviteT){ inviteT.classList.add('kon','kdone'); }
+  }
+
+  function countUp(b){
+    var to=parseInt(b.getAttribute('data-to'),10)||0, dur=1100, t0=null;
+    function step(ts){ if(t0===null)t0=ts; var p=Math.min(1,(ts-t0)/dur), e=1-Math.pow(1-p,3);
+      b.textContent=Math.round(e*to); if(p<1) requestAnimationFrame(step); }
+    requestAnimationFrame(step);
+  }
+  var nums=document.querySelectorAll('.stat b[data-to]');
+  if(!RM && nums.length && 'IntersectionObserver' in window){
+    var nio=new IntersectionObserver(function(es){ es.forEach(function(e){ if(e.isIntersecting){ countUp(e.target); nio.unobserve(e.target); } }); }, {threshold:.6});
+    nums.forEach(function(b){ b.textContent='0'; nio.observe(b); });
+  }
+
+  var coarse = window.matchMedia && window.matchMedia('(pointer:coarse)').matches;
+  if(!RM && !coarse){
+    document.querySelectorAll('.btn--primary').forEach(function(btn){
+      btn.addEventListener('pointermove', function(e){
+        var r=btn.getBoundingClientRect();
+        var dx=e.clientX-(r.left+r.width/2), dy=e.clientY-(r.top+r.height/2);
+        btn.style.transform='translate('+(dx*0.22).toFixed(1)+'px,'+(dy*0.30).toFixed(1)+'px)';
+        btn.style.setProperty('--mx',(e.clientX-r.left)+'px');
+        btn.style.setProperty('--my',(e.clientY-r.top)+'px');
+      });
+      btn.addEventListener('pointerleave', function(){ btn.style.transform=''; });
+    });
+  }
 })();
 </script>
 <script>
