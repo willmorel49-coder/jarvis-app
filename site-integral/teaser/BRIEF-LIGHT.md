@@ -12,12 +12,11 @@ GARDE tout le CONTENU et les INTERACTIONS : logo, **siège aux panneaux solaires
 - Proche = chaleur (arrondis, une couleur chaude, un visuel humain, un ton direct « on »), pas froid/corporate glacé.
 - Marque : bleu primaire **#0050E6**, orange accent **#F39A1B** (léger), navy texte **#0A1430**.
 
-## 3D + MOTION SUR FOND CLAIR (piège n°1)
-⚠️ Sur fond clair, **PAS d'AdditiveBlending** (ça délave tout). Adapter la carte 3D France :
-- France en relief clair (blanc/gris perle, matériau PBR doux) ou fill clair, **ombres portées douces**, côte bleue nette.
-- Établissements = **marqueurs SOLIDES saturés** bien visibles (pins/colonnes/sphères) : **siège Hyères en orange plein #F39A1B**, agences en **bleu plein #0050E6**, partenaire distinct. Halos = couleurs pleines à faible opacité (pas d'additive), ombres douces. Titres/labels **foncés** sur fond clair.
-- Conserver l'**orbite + parallax** et surtout le **survol → zoom + fiche coordonnées** (raycasting).
-- Fallback propre si WebGL absent / `prefers-reduced-motion`.
+## ⚠️⚠️ LA CARTE 3D RESTE SOMBRE (décision de Will, PRIORITAIRE)
+Will trouve la carte **bien meilleure sur fond FONCÉ** (les faisceaux lumineux y sont parfaitement intégrés). **NE PAS convertir la carte 3D en clair.** On garde la carte 3D EXACTEMENT comme dans la version A (fond nuit navy, faisceaux additifs, halo Fresnel, survol zoom + fiche coordonnées, ignition au scroll) — mais on l'installe comme une **BANDE SOMBRE « showcase »** (section pleine largeur au fond navy #0A1430/#060B1C) au milieu de la présentation claire. Le contraste clair→sombre→clair est VOULU (c'est le moment fort). Transitions douces entre les sections claires et la bande sombre (dégradé, ou séparateur net). Le titre/texte de CETTE section réseau restent clairs (sur le fond sombre), le reste de la page est foncé sur clair.
+
+## LE RESTE DE LA PAGE = CLAIR (hero, promesse, valeurs, invitation, siège…)
+Tout le reste passe en clair (fond clair, texte navy foncé), institutionnel-mais-proche. SEULE la section carte réseau (et éventuellement le hero si tu veux un rappel) reste sombre.
 
 ## MODULES PRO À UTILISER (déjà téléchargés dans le projet)
 Chemins relatifs depuis `teaser/` : `../vendor/…`
