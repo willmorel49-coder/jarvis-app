@@ -1,0 +1,1265 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Intégral Pharma — Votre grossiste de première intention</title>
+<meta name="description" content="Présentation Intégral Pharma — groupe de grossistes-répartiteurs français. Votre meilleur allié sur la marge, dès la première boîte. Invitation aux directions de groupements.">
+
+<!-- Three.js r128 (global THREE) — Safari-safe -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" onerror="window.__noThree=1"></script>
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,500&family=Fraunces:ital,opsz,wght@1,9..144,400;1,9..144,500;1,9..144,600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+<!-- Splitting (vendored) -->
+<link rel="stylesheet" href="../vendor/splitting.css">
+
+<style>
+/* =========================================================
+   INTÉGRAL PHARMA — DECK institutionnel clair (blanc + bleu confiance)
+   Mode présentation plein écran · GSAP + Splitting
+   Safari-safe : 0 background-clip:text · 0 backdrop-filter/blur
+   ========================================================= */
+:root{
+  --navy:#0A1430;
+  --ink:#0A1430;
+  --ink-2:#3E4C6B;
+  --ink-3:#6E7C99;
+  --blue:#0050E6;
+  --blue-2:#2E6BFF;
+  --blue-ink:#0B349E;
+  --orange:#F39A1B;
+  --orange-hi:#FFC673;
+  --blue-lite:#5B8CFF;
+  --paper:#FFFFFF;
+  --paper-2:#F5F8FD;
+  --paper-3:#E9F0FB;
+  --line:#E4EBF7;
+  --line-2:#D2DEF2;
+  /* consommées par la carte 3D (slide sombre) */
+  --muted:#9FB2D8;
+  --muted-2:#6C82AE;
+  --disp:'DM Sans','Segoe UI',system-ui,sans-serif;
+  --serif:'Fraunces',Georgia,serif;
+  --mono:'Space Mono',ui-monospace,monospace;
+  --ease:cubic-bezier(.22,1,.36,1);
+}
+*{box-sizing:border-box}
+html{overflow:hidden;-webkit-text-size-adjust:100%}
+body{
+  margin:0;overflow:hidden;background:var(--paper);color:var(--ink);
+  font-family:var(--disp);font-size:16px;line-height:1.6;font-weight:400;
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+}
+img,video,svg{display:block;max-width:100%}
+a{color:inherit;text-decoration:none}
+b,strong{font-weight:700}
+button{font-family:inherit}
+::selection{background:rgba(0,80,230,.16)}
+
+/* =========================================================
+   PROGRESS + TOP BAR
+   ========================================================= */
+#prog{position:fixed;top:0;left:0;right:0;height:3px;z-index:80;transform:scaleX(0);transform-origin:0 50%;
+  background:linear-gradient(90deg,var(--blue),var(--blue-2) 60%,var(--orange));will-change:transform;
+  transition:transform .6s var(--ease)}
+.topbar{position:fixed;top:0;left:0;right:0;z-index:70;display:flex;align-items:center;justify-content:space-between;
+  gap:16px;padding:14px clamp(18px,5vw,44px);pointer-events:none}
+.topbar>*{pointer-events:auto}
+.brand{display:flex;align-items:center;gap:11px}
+.brand img{height:26px;width:auto}
+.brand__wm{font-family:var(--disp);font-weight:700;font-size:15px;letter-spacing:-.01em;color:var(--ink);transition:color .5s var(--ease)}
+.brand__wm span{color:var(--blue)}
+.topbar__cta{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--blue-ink);border:1px solid var(--line-2);border-radius:999px;padding:8px 14px;
+  transition:border-color .25s var(--ease),background .25s var(--ease),transform .25s var(--ease),color .5s var(--ease);background:#fff}
+.topbar__cta:hover{border-color:var(--blue);transform:translateY(-1px)}
+.topbar__cta svg{width:13px;height:13px}
+body.deck-dark .brand__wm{color:#F1F5FF}
+body.deck-dark .brand__wm span{color:var(--orange-hi)}
+body.deck-dark .topbar__cta{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.20);color:#EAF0FF}
+body.deck-dark .topbar__cta:hover{border-color:var(--orange-hi)}
+@media(max-width:600px){.brand__wm{display:none}.topbar__cta{padding:8px 12px}.topbar__cta span.lbl{display:none}}
+
+/* =========================================================
+   DECK
+   ========================================================= */
+.deck{position:fixed;inset:0;width:100vw;height:100vh;height:100dvh;overflow:hidden}
+.slide{position:absolute;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;pointer-events:none;
+  opacity:0;visibility:hidden;z-index:1}
+.slide.is-active{pointer-events:auto;z-index:2}
+.slide__inner{min-height:100%;display:flex;flex-direction:column;justify-content:center;width:100%;
+  max-width:1120px;margin:0 auto;
+  padding:clamp(74px,11vh,116px) clamp(20px,5vw,52px) clamp(96px,12vh,120px)}
+
+/* labels / eyebrows */
+.eyebrow{display:inline-flex;align-items:center;gap:10px;font-family:var(--mono);font-size:11px;letter-spacing:.22em;
+  text-transform:uppercase;color:var(--blue-ink);background:#fff;border:1px solid var(--line-2);
+  border-radius:999px;padding:8px 15px;box-shadow:0 8px 26px -18px rgba(10,20,48,.4)}
+.eyebrow .pip{width:7px;height:7px;border-radius:50%;background:var(--orange);box-shadow:0 0 0 4px rgba(243,154,27,.16)}
+.chnum{display:inline-flex;align-items:center;gap:12px;font-family:var(--mono);font-size:11px;letter-spacing:.26em;
+  text-transform:uppercase;color:var(--blue-ink)}
+.chnum::before{content:'';width:26px;height:1px;background:var(--orange)}
+.chtitle{margin:16px 0 0;font-family:var(--disp);font-weight:600;letter-spacing:-.026em;line-height:1.05;
+  color:var(--ink);font-size:clamp(30px,5.6vw,58px);max-width:17ch}
+.chtitle .word{will-change:transform,opacity}
+.chtitle .l2{display:block;font-family:var(--serif);font-weight:500;font-style:italic;letter-spacing:-.01em;
+  color:var(--blue);font-size:.96em;margin-top:.05em}
+.chtext{margin:20px 0 0;color:var(--ink-2);font-size:clamp(16px,2.3vw,20px);line-height:1.6;max-width:60ch}
+.chtext b{color:var(--ink);font-weight:700}
+.chtext .em{color:var(--blue-ink);font-weight:700}
+
+/* boutons */
+.btn{display:inline-flex;align-items:center;gap:9px;font-family:var(--disp);font-weight:600;font-size:15px;
+  border-radius:999px;padding:13px 22px;cursor:pointer;line-height:1;border:1px solid transparent;
+  transition:transform .25s var(--ease),box-shadow .25s var(--ease),background .25s var(--ease),border-color .25s var(--ease)}
+.btn svg{width:18px;height:18px}
+.btn--primary{background:var(--blue);color:#fff;box-shadow:0 14px 32px -14px rgba(0,80,230,.62)}
+.btn--primary:hover{transform:translateY(-2px);box-shadow:0 20px 44px -16px rgba(0,80,230,.72)}
+.btn--ghost{background:#fff;color:var(--ink);border-color:var(--line-2)}
+.btn--ghost:hover{border-color:var(--blue);color:var(--blue-ink);transform:translateY(-2px)}
+.btn .num{font-variant-numeric:tabular-nums;letter-spacing:.01em}
+
+/* =========================================================
+   SLIDE 01 — TITRE
+   ========================================================= */
+.slide--title{background:
+    radial-gradient(58% 46% at 82% 6%, rgba(0,80,230,.10), rgba(0,80,230,0) 62%),
+    radial-gradient(52% 40% at 6% 2%, rgba(243,154,27,.10), rgba(243,154,27,0) 60%),
+    linear-gradient(180deg,#F7FAFF 0%, #FFFFFF 78%)}
+.slide__grid{position:absolute;inset:0;pointer-events:none;opacity:.5;z-index:0;
+  background-image:linear-gradient(rgba(10,20,48,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(10,20,48,.045) 1px,transparent 1px);
+  background-size:64px 64px;
+  -webkit-mask-image:radial-gradient(120% 90% at 50% 40%,#000 30%,transparent 78%);
+  mask-image:radial-gradient(120% 90% at 50% 40%,#000 30%,transparent 78%)}
+.slide__orbit{position:absolute;top:-6vh;right:-14vw;width:min(560px,64vw);height:min(560px,64vw);pointer-events:none;opacity:.7;z-index:0}
+.slide__orbit svg{width:100%;height:100%;animation:spin 44s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.slide--title .slide__inner{position:relative;z-index:1}
+.hero__inner{max-width:940px}
+.hero__title{margin:22px 0 0;font-family:var(--disp);font-weight:700;letter-spacing:-.032em;line-height:1.0;
+  font-size:clamp(40px,9vw,88px);color:var(--ink)}
+.hero__title .l2{display:block;font-family:var(--serif);font-weight:500;font-style:italic;letter-spacing:-.01em;
+  color:var(--blue);font-size:.94em;margin-top:.04em}
+.hero__title .word{will-change:transform,opacity}
+.hero__sub{margin:24px 0 0;max-width:60ch;font-size:clamp(16px,2.3vw,21px);line-height:1.58;color:var(--ink-2)}
+.hero__sub b{color:var(--ink)}
+.hero__cta{display:flex;flex-wrap:wrap;gap:13px;margin-top:30px}
+.trust{display:flex;flex-wrap:wrap;gap:10px 12px;margin-top:30px}
+.trust span{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:12px;letter-spacing:.05em;
+  color:var(--ink-3);background:#fff;border:1px solid var(--line);border-radius:999px;padding:8px 14px}
+.trust span i{width:6px;height:6px;border-radius:50%;background:var(--blue-2)}
+.trust span:first-child i{background:var(--orange)}
+.kbd-hint{margin-top:34px;display:inline-flex;align-items:center;gap:12px;font-family:var(--mono);font-size:11px;
+  letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3)}
+.kbd-hint kbd{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;padding:0 7px;
+  border:1px solid var(--line-2);border-bottom-width:2px;border-radius:7px;background:#fff;font-family:var(--mono);
+  font-size:13px;color:var(--ink-2)}
+.kbd-hint .sw{display:none}
+@media(max-width:720px){.kbd-hint .kb{display:none}.kbd-hint .sw{display:inline-flex;align-items:center;gap:9px}}
+
+/* =========================================================
+   STATS (slide 02)
+   ========================================================= */
+.stats{margin-top:36px;display:grid;grid-template-columns:1fr;gap:0;border:1px solid var(--line);border-radius:18px;overflow:hidden;background:#fff;
+  box-shadow:0 30px 70px -50px rgba(10,20,48,.4)}
+@media(min-width:680px){.stats{grid-template-columns:1fr 1fr 1fr}}
+.stat{padding:26px 24px;border-bottom:1px solid var(--line)}
+@media(min-width:680px){.stat{border-bottom:0;border-right:1px solid var(--line)}.stat:last-child{border-right:0}}
+.stat .n{font-family:var(--disp);font-weight:700;letter-spacing:-.02em;font-size:clamp(24px,3.4vw,34px);color:var(--ink)}
+.stat .n b{color:var(--blue);font-variant-numeric:tabular-nums}
+.stat .l{margin-top:6px;font-size:14px;color:var(--ink-3);line-height:1.45}
+
+/* =========================================================
+   PROMISES (slide 03)
+   ========================================================= */
+.promises{margin-top:34px;display:grid;grid-template-columns:1fr;gap:14px}
+@media(min-width:640px){.promises{grid-template-columns:1fr 1fr}}
+.promise{position:relative;padding:24px 22px 22px;background:#fff;border:1px solid var(--line);border-radius:18px;
+  overflow:hidden;transition:transform .3s var(--ease),box-shadow .3s var(--ease),border-color .3s var(--ease)}
+.promise::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,var(--blue),var(--blue-2));
+  transform:scaleY(0);transform-origin:0 0;transition:transform .4s var(--ease)}
+.promise:hover{transform:translateY(-4px);box-shadow:0 30px 60px -34px rgba(10,20,48,.35);border-color:var(--line-2)}
+.promise:hover::before{transform:scaleY(1)}
+.promise__k{position:absolute;right:18px;top:14px;font-family:var(--serif);font-style:italic;font-size:32px;color:var(--paper-3)}
+.promise__ico{width:26px;height:26px;color:var(--blue);margin-bottom:13px}
+.promise h3{margin:0;font-family:var(--disp);font-weight:600;font-size:19px;letter-spacing:-.01em;color:var(--ink)}
+.promise p{margin:8px 0 0;font-size:14.5px;line-height:1.5;color:var(--ink-2)}
+.promise p b{color:var(--blue-ink)}
+.paranote{margin-top:16px;display:flex;gap:18px;align-items:flex-start;padding:22px 22px;border-radius:18px;
+  background:linear-gradient(180deg,var(--paper-2),#fff);border:1px solid var(--line)}
+.paranote__ico{flex:0 0 auto;width:44px;height:44px;color:var(--blue);border:1px solid var(--line-2);border-radius:12px;
+  display:flex;align-items:center;justify-content:center;background:#fff}
+.paranote__ico svg{width:23px;height:23px}
+.paranote h4{margin:2px 0 0;font-family:var(--disp);font-weight:600;font-size:17px;color:var(--ink)}
+.paranote p{margin:7px 0 0;font-size:14.5px;line-height:1.5;color:var(--ink-2)}
+.paranote p b{color:var(--blue-ink)}
+
+/* =========================================================
+   SLIDE 04 — RÉSEAU (SOMBRE, carte 3D)
+   ========================================================= */
+.slide--net{background:radial-gradient(120% 90% at 50% 0%,#0B1734 0%,#070D1F 52%,#050912 100%);color:#EAF0FF;
+  --line:rgba(255,255,255,.10)}
+.slide--net .slide__inner{justify-content:flex-start}
+.slide--net .chnum{color:var(--orange-hi)}
+.slide--net .chnum::before{background:var(--orange)}
+.slide--net .chtitle{color:#EFF3FF}
+.slide--net .chtext{color:var(--muted)}
+.slide--net .chtext b{color:#fff}
+.net-head{flex:0 0 auto}
+.netgrid{display:grid;grid-template-columns:1fr;gap:20px;margin-top:22px;flex:1 1 auto;min-height:0}
+@media(min-width:920px){.netgrid{grid-template-columns:1.5fr 1fr;gap:26px}}
+.netcol-map{min-width:0;display:flex;flex-direction:column;min-height:0}
+.map3d{position:relative;border-radius:20px;overflow:hidden;flex:1 1 auto;
+  border:1px solid rgba(91,140,255,.20);
+  background:radial-gradient(120% 100% at 50% 0%,#0B1734 0%,#060B1C 55%,#04070F 100%);
+  box-shadow:0 30px 80px -30px rgba(0,0,0,.85),0 0 0 1px rgba(255,255,255,.03) inset;
+  min-height:300px}
+@media(max-width:919px){.map3d{flex:0 0 auto;height:50vh;min-height:340px}}
+.map3d canvas{display:block;width:100%;height:100%}
+.map3d__labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.lbl3{position:absolute;left:0;top:0;transform:translate(-50%,-100%);white-space:nowrap;
+  font-family:var(--mono);text-align:center;opacity:0;transition:opacity .5s ease;will-change:transform}
+.lbl3__box{display:inline-block;background:rgba(6,10,24,.82);border:1px solid rgba(91,140,255,.34);
+  border-radius:9px;padding:6px 10px 7px;box-shadow:0 8px 24px -10px rgba(0,0,0,.8)}
+.lbl3__n{font-size:11px;font-weight:600;letter-spacing:.06em;color:#EAF0FF}
+.lbl3__c{font-size:9.5px;letter-spacing:.08em;color:var(--muted-2);margin-top:2px}
+.lbl3__t{display:inline-block;font-size:8.5px;font-weight:600;letter-spacing:.16em;margin-top:4px;
+  padding:2px 7px;border-radius:99px;color:var(--orange-hi);border:1px solid rgba(243,154,27,.5)}
+.lbl3--siege .lbl3__box{border-color:rgba(243,154,27,.55);background:rgba(24,14,3,.84)}
+.lbl3--siege .lbl3__n{color:#FFE2B3}
+.lbl3--part .lbl3__box{border-style:dashed;border-color:rgba(159,180,216,.45)}
+.lbl3--part .lbl3__t{color:#AFC2DC;border-color:rgba(159,180,216,.5)}
+.lbl3.on .lbl3__box{border-color:rgba(255,193,104,.75)}
+.lbl3__stem{width:1px;height:14px;margin:2px auto 0;
+  background:linear-gradient(180deg,rgba(91,140,255,.5),transparent)}
+.map3d__badge{position:absolute;left:14px;top:12px;display:flex;align-items:center;gap:8px;
+  font-family:var(--mono);font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);
+  background:rgba(6,10,24,.6);border:1px solid rgba(255,255,255,.10);border-radius:999px;padding:6px 12px}
+.map3d__badge .dot{width:6px;height:6px;border-radius:50%;background:var(--orange);
+  box-shadow:0 0 8px 2px rgba(243,154,27,.6)}
+.map3d__fallback{position:absolute;inset:0;display:none;align-items:center;justify-content:center;padding:18px}
+.map3d.flat .map3d__fallback{display:flex}
+.map3d.flat canvas,.map3d.flat .map3d__labels{display:none}
+.map3d__fallback svg{width:auto;height:100%;max-width:100%}
+.map3d__info{position:absolute;left:14px;bottom:14px;z-index:6;max-width:min(300px,74%);
+  background:rgba(7,12,28,.92);border:1px solid rgba(120,150,255,.30);border-radius:14px;
+  padding:13px 15px;opacity:0;transform:translateY(10px);pointer-events:none;
+  transition:opacity .3s ease,transform .35s var(--ease);
+  box-shadow:0 22px 55px -22px rgba(0,0,0,.85)}
+.map3d__info.on{opacity:1;transform:none}
+.mi__type{display:inline-block;font-family:var(--mono);font-size:9.5px;font-weight:600;letter-spacing:.14em;
+  text-transform:uppercase;color:#0A1430;background:#5B8CFF;border-radius:999px;padding:3px 9px;margin-bottom:9px}
+.map3d__info.siege .mi__type{background:linear-gradient(180deg,#FFC673,#F39A1B);color:#241200}
+.map3d__info.part .mi__type{background:transparent;border:1px dashed #9FB4D8;color:#C9D6EE}
+.mi__name{font-family:var(--disp);font-weight:600;font-size:17px;color:#EFF3FF;letter-spacing:-.01em;line-height:1.15}
+.mi__city{font-size:13px;color:var(--muted);margin-top:3px}
+.mi__gps{display:flex;align-items:center;gap:7px;margin-top:10px;padding-top:9px;
+  border-top:1px solid rgba(255,255,255,.08);font-family:var(--mono);font-size:12px;color:#9FB6FF}
+.mi__gps svg{width:13px;height:13px;flex:none;opacity:.85}
+.mi__gps b{color:#EAF0FF;font-weight:500}
+.maplegend{display:flex;flex-wrap:wrap;gap:8px 20px;margin-top:14px;
+  font-family:var(--mono);font-size:11px;letter-spacing:.10em;color:var(--muted)}
+.maplegend span{display:inline-flex;align-items:center;gap:8px}
+.lg{width:11px;height:11px;border-radius:50%}
+.lg.o{background:var(--orange);box-shadow:0 0 8px rgba(243,154,27,.8)}
+.lg.b{background:var(--blue-lite);box-shadow:0 0 8px rgba(91,140,255,.7)}
+.lg.p{background:transparent;border:1.5px dashed #9FB4D8}
+.maphint{margin-top:10px;font-family:var(--mono);font-size:11px;letter-spacing:.12em;
+  color:var(--muted-2);display:flex;align-items:center;gap:8px}
+.maphint .dot{width:6px;height:6px;border-radius:50%;background:var(--blue-lite)}
+/* annuaire */
+.netcol-roster{min-width:0;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.roster{display:grid;grid-template-columns:1fr;gap:9px}
+@media(min-width:620px) and (max-width:919px){.roster{grid-template-columns:1fr 1fr}}
+.roster__cap{grid-column:1/-1;font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--muted-2);margin:2px 0 4px}
+.estab{display:flex;align-items:center;gap:12px;border:1px solid var(--line);border-radius:13px;
+  padding:10px 13px;background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.012));
+  transition:border-color .2s var(--ease),transform .2s var(--ease);cursor:default}
+.estab:hover{border-color:rgba(255,193,104,.4);transform:translateX(3px)}
+.estab__sig{flex:0 0 auto;width:48px;height:40px;border-radius:9px;display:flex;align-items:center;
+  justify-content:center;font-family:var(--mono);font-weight:600;font-size:12.5px;color:#CFE0FF;
+  background:rgba(0,80,230,.16);border:1px solid rgba(91,140,255,.32)}
+.estab__b{min-width:0;flex:1}
+.estab__n{font-family:var(--disp);font-weight:600;font-size:14.5px;color:#EAF0FF;letter-spacing:-.01em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.estab__c{font-size:12.5px;color:var(--muted);margin-top:1px}
+.estab__tag{flex:0 0 auto;font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--orange-hi);border:1px solid rgba(243,154,27,.4);
+  border-radius:999px;padding:4px 9px}
+.estab--siege{border-color:rgba(243,154,27,.42);
+  background:linear-gradient(180deg,rgba(243,154,27,.10),rgba(255,255,255,.015))}
+.estab--siege .estab__sig{color:#241300;font-weight:700;border-color:transparent;
+  background:linear-gradient(180deg,var(--orange-hi),var(--orange))}
+.estab--part .estab__sig{color:#C9D3EA;background:rgba(255,255,255,.05);border-style:dashed}
+.estab--part .estab__tag{color:var(--muted);border-color:var(--line)}
+
+/* =========================================================
+   VALEURS (slide 05)
+   ========================================================= */
+.values{margin-top:36px;display:grid;grid-template-columns:1fr;gap:14px}
+@media(min-width:720px){.values{grid-template-columns:1fr 1fr 1fr}}
+.value{padding:30px 26px;background:#fff;border:1px solid var(--line);border-radius:18px;
+  transition:transform .3s var(--ease),box-shadow .3s var(--ease)}
+.value:hover{transform:translateY(-4px);box-shadow:0 30px 60px -34px rgba(10,20,48,.3)}
+.value__ico{width:34px;height:34px;color:var(--blue);margin-bottom:16px}
+.value h3{margin:0;font-family:var(--serif);font-style:italic;font-weight:500;font-size:26px;color:var(--ink);letter-spacing:-.01em}
+.value p{margin:10px 0 0;font-size:15px;line-height:1.55;color:var(--ink-2)}
+
+/* =========================================================
+   SIÈGE (slide 06)
+   ========================================================= */
+.frame{margin-top:32px;border-radius:22px;overflow:hidden;border:1px solid var(--line);
+  box-shadow:0 40px 90px -50px rgba(10,20,48,.5)}
+.frame__media{position:relative;aspect-ratio:16/9;background:#0A1430;overflow:hidden}
+.frame__media img,.frame__media video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.frame__media video{opacity:0;transition:opacity 1.2s ease}
+.frame__grad{position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,20,48,0) 50%,rgba(10,20,48,.62))}
+.frame__tag{position:absolute;left:16px;bottom:15px;display:inline-flex;align-items:center;gap:9px;
+  font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:#EAF0FF;
+  background:rgba(8,14,32,.55);border:1px solid rgba(255,255,255,.16);border-radius:999px;padding:8px 14px}
+.frame__tag .dot{width:7px;height:7px;border-radius:50%;background:var(--orange);box-shadow:0 0 8px 2px rgba(243,154,27,.6)}
+.siege-note{margin-top:24px;display:flex;flex-wrap:wrap;gap:10px 26px}
+.siege-note span{display:inline-flex;align-items:center;gap:9px;font-size:14.5px;color:var(--ink-2)}
+.siege-note span svg{width:18px;height:18px;color:var(--blue);flex:none}
+
+/* =========================================================
+   INVITATION (slide 07)
+   ========================================================= */
+.invite{position:relative;margin-top:6px;padding:clamp(28px,5vw,54px);border-radius:26px;overflow:hidden;
+  background:
+    radial-gradient(70% 90% at 100% 0%, rgba(0,80,230,.10), rgba(0,80,230,0) 60%),
+    radial-gradient(60% 80% at 0% 100%, rgba(243,154,27,.12), rgba(243,154,27,0) 60%),
+    linear-gradient(180deg,#FBFCFF,#F3F7FF);
+  border:1px solid var(--line-2);box-shadow:0 50px 100px -60px rgba(10,20,48,.4)}
+.invite__k{font-family:var(--mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--orange)}
+.invite__t{margin:16px 0 0;font-family:var(--disp);font-weight:600;letter-spacing:-.024em;line-height:1.08;
+  font-size:clamp(28px,4.8vw,46px);color:var(--ink);max-width:20ch}
+.invite__t .word{will-change:transform,opacity}
+.invite__s{margin:18px 0 0;font-size:clamp(15px,2.2vw,18px);line-height:1.6;color:var(--ink-2);max-width:56ch}
+.invite__s b{color:var(--ink)}
+.invite .cta{display:flex;flex-wrap:wrap;gap:13px;margin-top:28px}
+.signature{margin-top:30px;padding-top:24px;border-top:1px solid var(--line);display:flex;align-items:center;gap:15px}
+.sig__badge{flex:0 0 auto;width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-family:var(--disp);font-weight:700;font-size:17px;color:#241300;letter-spacing:.02em;
+  background:linear-gradient(180deg,var(--orange-hi),var(--orange));box-shadow:0 10px 24px -12px rgba(243,154,27,.7)}
+.sig__txt .nm{font-family:var(--disp);font-weight:700;font-size:16px;color:var(--ink)}
+.sig__txt .ro{font-size:13.5px;color:var(--ink-3);margin-top:2px}
+
+/* =========================================================
+   CONTRÔLES DECK (bas)
+   ========================================================= */
+.deckctl{position:fixed;left:0;right:0;bottom:0;z-index:70;display:flex;align-items:center;justify-content:center;
+  gap:clamp(12px,3vw,20px);padding:14px clamp(16px,5vw,40px) max(14px,env(safe-area-inset-bottom));pointer-events:none}
+.deckctl>*{pointer-events:auto}
+.navbtn{width:46px;height:46px;border-radius:50%;border:1px solid var(--line-2);background:#fff;color:var(--ink);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+  box-shadow:0 10px 30px -18px rgba(10,20,48,.5);
+  transition:border-color .25s var(--ease),color .25s var(--ease),transform .25s var(--ease),background .5s var(--ease),opacity .25s var(--ease)}
+.navbtn svg{width:20px;height:20px}
+.navbtn:hover{border-color:var(--blue);color:var(--blue);transform:translateY(-2px)}
+.navbtn:disabled{opacity:.35;cursor:default;transform:none;border-color:var(--line)}
+.dots{display:flex;gap:9px;align-items:center;padding:0 4px}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--line-2);border:0;padding:0;cursor:pointer;
+  transition:background .25s var(--ease),transform .25s var(--ease),width .25s var(--ease)}
+.dot:hover{background:var(--blue-lite)}
+.dot.on{background:var(--blue);width:24px;border-radius:99px}
+.counter{font-family:var(--mono);font-size:12px;letter-spacing:.16em;color:var(--ink-3);min-width:66px;text-align:center;
+  transition:color .5s var(--ease)}
+.counter b{color:var(--ink);font-weight:700}
+body.deck-dark .navbtn{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.20);color:#EAF0FF}
+body.deck-dark .navbtn:hover{border-color:var(--orange-hi);color:var(--orange-hi)}
+body.deck-dark .navbtn:disabled{opacity:.3;border-color:rgba(255,255,255,.12)}
+body.deck-dark .dot{background:rgba(255,255,255,.25)}
+body.deck-dark .dot.on{background:var(--orange-hi)}
+body.deck-dark .counter{color:var(--muted)}
+body.deck-dark .counter b{color:#fff}
+
+/* =========================================================
+   ÉTATS INITIAUX D'ANIMATION
+   ========================================================= */
+.anim .reveal{opacity:0}
+.anim [data-splitting] .word{opacity:0}
+
+@media(prefers-reduced-motion: reduce){
+  .slide__orbit svg{animation:none}
+  #prog{transition:none}
+  .anim .reveal{opacity:1}
+  .anim [data-splitting] .word{opacity:1}
+}
+</style>
+</head>
+<body>
+
+<div id="prog" aria-hidden="true"></div>
+
+<!-- ============ TOP BAR ============ -->
+<div class="topbar">
+  <a class="brand" href="#" onclick="return false" aria-label="Intégral Pharma">
+    <img src="../assets/logo.png" alt="Intégral Pharma">
+    <span class="brand__wm">Intégral<span>Pharma</span></span>
+  </a>
+  <a class="topbar__cta" href="mailto:pascale.prieto@integralpharma.fr?subject=Rencontrons-nous%20%E2%80%94%20Int%C3%A9gral%20Pharma">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/></svg>
+    <span class="lbl">Écrire à Pascale</span>
+  </a>
+</div>
+
+<!-- ============ DECK ============ -->
+<div class="deck" id="deck">
+
+  <!-- ===== SLIDE 01 — TITRE ===== -->
+  <section class="slide slide--title" data-label="Titre" aria-label="Diapositive 1 — Intégral Pharma">
+    <div class="slide__grid" aria-hidden="true"></div>
+    <div class="slide__orbit" aria-hidden="true">
+      <svg viewBox="0 0 200 200" fill="none">
+        <circle cx="100" cy="100" r="94" stroke="rgba(0,80,230,.16)" stroke-width="1"/>
+        <circle cx="100" cy="100" r="70" stroke="rgba(0,80,230,.12)" stroke-width="1" stroke-dasharray="3 6"/>
+        <circle cx="100" cy="100" r="46" stroke="rgba(243,154,27,.22)" stroke-width="1"/>
+        <circle cx="194" cy="100" r="4" fill="rgba(0,80,230,.5)"/>
+        <circle cx="100" cy="30" r="3" fill="rgba(243,154,27,.7)"/>
+      </svg>
+    </div>
+    <div class="slide__inner">
+      <div class="hero__inner">
+        <div class="eyebrow reveal"><span class="pip"></span>Invitation — Directions de groupements</div>
+        <h1 class="hero__title">
+          <span data-splitting="words">Votre grossiste</span>
+          <span class="l2" data-splitting="words">de première intention.</span>
+        </h1>
+        <p class="hero__sub reveal"><b>Intégral Pharma</b> — groupe de grossistes-répartiteurs français, indépendant depuis plus de 20 ans. L'appro, la disponibilité, le service — et votre meilleur allié sur la marge.</p>
+        <div class="hero__cta reveal">
+          <a class="btn btn--primary" href="mailto:pascale.prieto@integralpharma.fr?subject=Rencontrons-nous%20%E2%80%94%20Int%C3%A9gral%20Pharma">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/></svg>
+            Rencontrer Pascale
+          </a>
+          <button class="btn btn--ghost" type="button" data-next>Commencer la présentation</button>
+        </div>
+        <div class="trust reveal">
+          <span><i></i>+20 ans d'indépendance</span>
+          <span><i></i>9 établissements</span>
+          <span><i></i>France entière</span>
+        </div>
+        <div class="kbd-hint reveal">
+          <span class="kb">Naviguez avec</span>
+          <span class="kb"><kbd>←</kbd><kbd>→</kbd></span>
+          <span class="kb">ou la barre <kbd>Espace</kbd></span>
+          <span class="sw">Faites glisser pour avancer →</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== SLIDE 02 — QUI SOMMES-NOUS ===== -->
+  <section class="slide" data-label="Qui sommes-nous" aria-label="Diapositive 2 — Qui sommes-nous">
+    <div class="slide__inner">
+      <span class="chnum reveal">Qui sommes-nous</span>
+      <h2 class="chtitle" data-splitting="words">Grossiste-répartiteur, vraiment de votre côté.</h2>
+      <p class="chtext reveal">Depuis plus de 20 ans, nous faisons le métier de grossiste-répartiteur : l'appro, la disponibilité, le service au quotidien — le <b>fournisseur de première intention</b> de vos officines. Avec une différence qui compte pour vos adhérents : <span class="em">une meilleure marge</span>, commande après commande. Sans intermédiaire, sans zone grise.</p>
+      <div class="stats reveal">
+        <div class="stat"><div class="n"><b data-to="20">20</b>+ ans</div><div class="l">d'indépendance familiale française</div></div>
+        <div class="stat"><div class="n"><b data-to="9">9</b> établissements</div><div class="l">au service des officines</div></div>
+        <div class="stat"><div class="n">France</div><div class="l">entière, d'un bout à l'autre</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== SLIDE 03 — LA PROMESSE MARGE ===== -->
+  <section class="slide" data-label="La promesse" aria-label="Diapositive 3 — La promesse marge">
+    <div class="slide__inner">
+      <span class="chnum reveal">La promesse</span>
+      <h2 class="chtitle" data-splitting="words">La marge, dès la première boîte.</h2>
+      <p class="chtext reveal">Pas de mécanique opaque, pas de palier à mériter. Une conviction simple : la performance d'un groupement se construit <b>ligne par ligne, sur chaque commande</b>.</p>
+      <div class="promises reveal">
+        <div class="promise">
+          <span class="promise__k">I</span>
+          <svg class="promise__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.2"/><path d="M12 3.5V7M12 17v3.5M3.5 12H7M17 12h3.5"/></svg>
+          <h3>Première intention</h3>
+          <p>Pas un dépanneur : le partenaire principal de vos adhérents, au quotidien — <b>zéro exclusion</b> (froid, stup, biosimilaires, produits chers inclus).</p>
+        </div>
+        <div class="promise">
+          <span class="promise__k">II</span>
+          <svg class="promise__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8.2 12 3 3 8.2v7.6L12 21l9-5.2z"/><path d="M3 8.2 12 13l9-4.8M12 13v8"/></svg>
+          <h3>Dès la première boîte</h3>
+          <p>L'optimisation commence à la première ligne de la première commande. <b>Pas de seuil, pas d'attente.</b></p>
+        </div>
+        <div class="promise">
+          <span class="promise__k">III</span>
+          <svg class="promise__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h10a1 1 0 0 1 1 1v16l-3-1.6L12 20l-3-1.6L6 20V4a1 1 0 0 1 1-1z"/><path d="M9.5 8.5h5.5M9.5 12h5.5"/></svg>
+          <h3>Transparence sur facture</h3>
+          <p>Des conditions claires, écrites noir sur blanc, lisibles sur chaque facture. <b>Ce qui est convenu est ce qui est appliqué.</b></p>
+        </div>
+        <div class="promise">
+          <span class="promise__k">IV</span>
+          <svg class="promise__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="m15.5 8.5-2.2 4.8-4.8 2.2 2.2-4.8z"/></svg>
+          <h3>Indépendance</h3>
+          <p>Un groupe familial français, libre de ses choix — <b>la même indépendance</b> que celle que vous défendez pour vos adhérents.</p>
+        </div>
+      </div>
+      <div class="paranote reveal">
+        <div class="paranote__ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h18M5 9 7 4h10l2 5M4 9v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9"/><path d="M9 13h6"/></svg></div>
+        <div>
+          <h4>Et une centrale parapharmacie intégrée</h4>
+          <p>L'une des plus vastes collections de France, au meilleur prix à l'unité — <b>un levier de marge supplémentaire</b> pour vos adhérents, au-delà de l'ordonnance.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== SLIDE 04 — LE RÉSEAU (SOMBRE, CARTE 3D) ===== -->
+  <section class="slide slide--net" data-label="Le réseau" data-dark data-map aria-label="Diapositive 4 — Le réseau national">
+    <div class="slide__inner">
+      <div class="net-head">
+        <span class="chnum reveal">Le réseau</span>
+        <h2 class="chtitle" data-splitting="words">Un réseau national derrière chaque officine.</h2>
+        <p class="chtext reveal">Neuf établissements, un maillage qui couvre <b>toute la France</b>. Où que soient vos adhérents, une agence Intégral est proche.</p>
+      </div>
+      <div class="netgrid">
+        <div class="netcol-map reveal">
+          <div class="map3d" id="map3d" role="img" aria-label="Carte 3D de France : les 9 établissements Intégral Pharma, siège à Hyères">
+            <div class="map3d__labels" id="lbls" aria-hidden="true"></div>
+            <div class="map3d__badge"><span class="dot"></span>Réseau Intégral — France</div>
+            <div class="map3d__info" id="mapInfo" aria-hidden="true">
+              <span class="mi__type" id="miType">Agence Intégral</span>
+              <div class="mi__name" id="miName">—</div>
+              <div class="mi__city" id="miCity">—</div>
+              <div class="mi__gps"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6-7-11a7 7 0 0 1 14 0c0 5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><span id="miGps">—</span></div>
+            </div>
+            <div class="map3d__fallback" id="mapFallback" aria-hidden="true"></div>
+          </div>
+          <div class="maplegend reveal">
+            <span><i class="lg o"></i>Siège — Hyères</span>
+            <span><i class="lg b"></i>Établissements</span>
+            <span><i class="lg p"></i>Partenaire — Metz</span>
+          </div>
+          <div class="maphint reveal"><span class="dot"></span>Carte vivante — survolez pour explorer</div>
+        </div>
+        <div class="netcol-roster reveal">
+          <div class="roster">
+            <div class="roster__cap">Nos établissements</div>
+            <div class="estab estab--siege" data-i="0"><span class="estab__sig">HP</span><div class="estab__b"><div class="estab__n">Hyères Pharma</div><div class="estab__c">Hyères · 83</div></div><span class="estab__tag">Siège</span></div>
+            <div class="estab" data-i="1"><span class="estab__sig">OPS</span><div class="estab__b"><div class="estab__n">Ouest Pharma Services</div><div class="estab__c">St-Étienne-de-Montluc · 44</div></div></div>
+            <div class="estab" data-i="2"><span class="estab__sig">EP</span><div class="estab__b"><div class="estab__n">Escale Pharma</div><div class="estab__c">Chilly-Mazarin · 91</div></div></div>
+            <div class="estab" data-i="3"><span class="estab__sig">CPR</span><div class="estab__b"><div class="estab__n">Comptoir Pharma. du Rhône</div><div class="estab__c">Saint-Maurice-l'Exil · 38</div></div></div>
+            <div class="estab" data-i="4"><span class="estab__sig">SOP</span><div class="estab__b"><div class="estab__n">Sud Ouest Pharma</div><div class="estab__c">Montayral · 47</div></div></div>
+            <div class="estab" data-i="5"><span class="estab__sig">POS</span><div class="estab__b"><div class="estab__n">Pharm'Occitanie Services</div><div class="estab__c">Villeneuve-lès-Béziers · 34</div></div></div>
+            <div class="estab" data-i="6"><span class="estab__sig">SEP</span><div class="estab__b"><div class="estab__n">Sud Est Pharma</div><div class="estab__c">Le Cannet-des-Maures · 83</div></div></div>
+            <div class="estab" data-i="7"><span class="estab__sig">MSP</span><div class="estab__b"><div class="estab__n">Mistral Santé Pharma</div><div class="estab__c">Flassans-sur-Issole · 83</div></div></div>
+            <div class="estab estab--part" data-i="8"><span class="estab__sig">PH</span><div class="estab__b"><div class="estab__n">Pharmest</div><div class="estab__c">Metz · 57</div></div><span class="estab__tag">Partenaire</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== SLIDE 05 — NOS VALEURS ===== -->
+  <section class="slide" data-label="Nos valeurs" aria-label="Diapositive 5 — Nos valeurs">
+    <div class="slide__inner">
+      <span class="chnum reveal">Ce qui nous tient</span>
+      <h2 class="chtitle" data-splitting="words">Trois mots, tenus.</h2>
+      <p class="chtext reveal">Ce ne sont pas des slogans. C'est la façon dont on travaille, avec chaque pharmacien et chaque direction de groupement.</p>
+      <div class="values">
+        <div class="value reveal">
+          <svg class="value__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 7.8-7 9-4-1.2-7-4.5-7-9V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg>
+          <h3>Confiance</h3>
+          <p>Une parole qui vaut engagement, tenue année après année.</p>
+        </div>
+        <div class="value reveal">
+          <svg class="value__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/></svg>
+          <h3>Engagement</h3>
+          <p>Présents dans la durée, aux côtés de vos adhérents comme de votre direction.</p>
+        </div>
+        <div class="value reveal">
+          <svg class="value__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-9.3A4 4 0 0 1 12 8a4 4 0 0 1 7 2.7c0 4.9-7 9.3-7 9.3z"/></svg>
+          <h3>Respect</h3>
+          <p>De votre indépendance, de vos accords, de votre métier.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== SLIDE 06 — LE SIÈGE ===== -->
+  <section class="slide" data-label="Le siège" data-video aria-label="Diapositive 6 — Le siège">
+    <div class="slide__inner">
+      <span class="chnum reveal">Le siège</span>
+      <h2 class="chtitle" data-splitting="words">Ancrés à Hyères, tournés vers l'avenir.</h2>
+      <p class="chtext reveal">Un site pensé pour durer — logistique moderne, toit photovoltaïque, équipes engagées. L'image d'un groupe <b>solide et indépendant</b>, au service de vos officines.</p>
+      <div class="frame reveal">
+        <div class="frame__media">
+          <img id="siegeImg" src="../assets/siege-solaire.jpg" alt="Siège Intégral Pharma, toit photovoltaïque, vue aérienne" onerror="this.onerror=null;this.src='../assets/siege.jpg'">
+          <video id="siegeVid" poster="../assets/siege-solaire.jpg" muted playsinline loop preload="none" aria-hidden="true">
+            <source src="../assets/clip3.mp4" type="video/mp4">
+          </video>
+          <div class="frame__grad"></div>
+          <div class="frame__tag"><span class="dot"></span>Le siège Intégral Pharma — Hyères</div>
+        </div>
+      </div>
+      <div class="siege-note reveal">
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v2M12 19v2M5 12H3M21 12h-2M6 6 4.5 4.5M18 18l1.5 1.5M6 18 4.5 19.5M18 6l1.5-1.5"/><circle cx="12" cy="12" r="4"/></svg>Toit photovoltaïque</span>
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V8l7-4 7 4v13M9 12h.01M15 12h.01M9 16h.01M15 16h.01"/></svg>Groupe familial français</span>
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8.2 12 3 3 8.2v7.6L12 21l9-5.2z"/><path d="M3 8.2 12 13l9-4.8"/></svg>Logistique de première intention</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== SLIDE 07 — L'INVITATION ===== -->
+  <section class="slide" data-label="L'invitation" aria-label="Diapositive 7 — L'invitation">
+    <div class="slide__inner">
+      <div class="invite reveal">
+        <div class="invite__k">À votre agenda</div>
+        <h2 class="invite__t" data-splitting="words">Découvrez ce que nous pouvons proposer à votre groupement.</h2>
+        <p class="invite__s">Une heure suffit. Pascale vient à vous, avec des réponses précises — les chiffres, on les réserve au <b>face-à-face</b>. Notre ambition : un <b>partenaire utile et durable</b> pour vos officines.</p>
+        <div class="cta">
+          <a class="btn btn--primary" href="mailto:pascale.prieto@integralpharma.fr?subject=Rencontrons-nous%20%E2%80%94%20Int%C3%A9gral%20Pharma">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/></svg>
+            Écrire à Pascale
+          </a>
+          <a class="btn btn--ghost" href="tel:+33676885391">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L20 13l1 5v1a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg>
+            <span>Appeler <span class="num">06 76 88 53 91</span></span>
+          </a>
+        </div>
+        <div class="signature">
+          <div class="sig__badge">PP</div>
+          <div class="sig__txt">
+            <div class="nm">Pascale Prieto</div>
+            <div class="ro">Directrice commerciale France — Intégral Pharma</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- ============ CONTRÔLES ============ -->
+<div class="deckctl">
+  <button class="navbtn" id="prevBtn" type="button" aria-label="Diapositive précédente">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+  </button>
+  <div class="dots" id="dots" role="tablist" aria-label="Diapositives"></div>
+  <div class="counter" id="counter"><b>01</b> / 07</div>
+  <button class="navbtn" id="nextBtn" type="button" aria-label="Diapositive suivante">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+  </button>
+</div>
+
+<!-- Modules pro vendorés -->
+<script src="../vendor/gsap.min.js"></script>
+<script src="../vendor/splitting.min.js"></script>
+
+<script>
+/* =========================================================
+   CARTE RELIEF 3D — France extrudée + faisceaux de lumière
+   Three.js r128 (global THREE) — Safari-safe, fallback SVG
+   [RÉUTILISÉE depuis propo-01 — adaptée au mode DECK :
+    plus de scroll, ignition pilotée par activation de diapo]
+   ========================================================= */
+(function(){
+  /* --- données --- */
+  var FR_D = "M825.35,356.64 821.65,358.05 817.82,356.58 815.8,357.67 816.66,361.49 812.79,363.48 812.17,365.94 808.99,371.04 817.91,369.18 820.02,370.24 820.37,372.88 817.4,373.88 816.38,376.48 812.82,377.47 813.7,381.53 806.31,388.65 806.73,389.82 797.13,397.03 796.54,398.67 797.67,400.11 791.23,405.51 783.1,407.52 779.43,412.2 781.21,416.7 779.36,423.68 780.27,426.39 769.08,434.54 757.93,445.19 760.94,448.18 755.51,455.96 755.58,458.96 755.06,460.61 761.28,465.88 757.54,473.14 758.59,476.5 748.74,480.05 749.46,482.03 750.21,482.97 747.76,487.71 750.35,486.49 753.24,486.93 754.82,485.86 759.67,486.58 765.53,480.94 770.37,478.29 770.85,475.79 769.89,475.17 768.16,476.44 766.41,473.57 770.79,465.22 773.65,465.14 776.48,467.71 784.89,461.61 786.91,462.52 798.58,461.38 803.71,462.79 801.74,466.88 807.52,473.88 803.74,480.85 803.41,487.26 809.94,488.71 808.68,495.83 812.52,494.29 817.44,500.73 819.63,507.7 817.16,509.71 816.28,512.67 812.63,514.89 808.52,514.84 807.9,517.03 804.7,516.03 804.2,526.61 807.49,530.39 810.38,530.95 811.26,533.63 816.84,535.02 815.28,539.71 816.91,547.7 820.41,548.65 820.32,550.69 823.63,551.18 824.48,554.46 828.77,557.55 827.5,561.42 824.09,564.73 825.69,571.59 821.77,575.52 819.7,574.34 814.27,576.27 812.71,579.47 809.61,580.16 809.23,582.76 806.55,583.45 801.32,580.7 799.38,582.69 795.16,583.32 792.1,586.14 794.45,589.17 795.25,593.96 799.86,594.71 799.67,596.88 801.19,599.66 799.86,601.97 800.88,602.32 800.51,604.9 808.15,610.18 811.12,610.38 812.3,608.97 818.22,612.85 816.74,616.01 821.6,626.36 818.09,625.4 814.2,626.75 813.29,629.04 814.47,632.24 813.32,632.36 810.99,637.97 808.59,638.53 807.15,641.05 808.84,645.57 813.17,650.54 809.63,651.2 810.04,657.12 813.63,661.09 814.05,663.26 816.38,664.86 817.5,668.87 829.21,672.22 835.45,677.88 839.59,677.68 840.63,680.24 842.98,679.59 844.96,680.58 845.33,678.92 854.24,676.6 857.81,676.91 859.2,674.38 861.96,674.97 860.89,678.98 864.08,683.59 863.76,685.61 860.5,689.12 859.51,693.83 854.37,696.68 853.71,701.18 849.63,703.8 851.61,711.93 848.72,715.29 846.69,714.45 843.22,718.03 839.16,719.1 839.79,721.43 838.49,722.43 837.42,719.5 836.79,721.4 835.52,720.24 832.46,721.37 830.5,725.04 826.72,724.87 824.85,731.05 825.49,734.96 822.93,732.41 819.11,735.72 817.58,734.31 814.02,735.33 811.42,743.9 809.38,746.02 807.32,745.65 807.09,747.58 799.53,747.46 797.63,753.96 789.27,760.81 794.78,761.45 795.73,760.69 796.68,761.74 794.49,764.17 795.37,768.02 793.15,769.42 793.24,770.9 791.47,771.45 790.1,769.3 787.12,769.01 783.12,772.48 775.92,773.25 774.37,775.83 774.55,778.59 768.58,775.35 763.56,776.07 760.82,779.63 760.74,783.55 761.94,783.83 760.32,784.27 756.64,783.4 759.41,781.66 757.86,778.9 751.88,779.21 750.73,777.04 745.7,776.98 745.16,775.27 742.82,776.97 744.5,777.5 743.79,779.22 746.91,779.08 746.9,780.57 743.12,779.56 740.94,782.32 739.18,782.06 737.03,780.09 737.69,775.94 735.18,775.81 735.16,773.63 730.34,772.81 729.75,769.71 725.59,769.13 724.08,771.22 719.61,766.6 717.35,767.94 707.01,766.49 709.32,762.25 707.41,759.89 709.13,758.63 704.87,752.38 699.49,755.49 687.68,755.72 682.35,746.2 678.76,745.96 677.0,747.46 677.98,745.88 676.43,746.31 674.59,743.84 676.0,747.86 672.92,746.41 675.15,748.6 673.99,749.21 674.84,749.78 673.27,751.07 676.86,752.66 678.94,750.9 674.69,755.16 668.2,753.44 661.54,753.65 655.28,750.9 657.52,747.43 654.55,744.05 629.91,742.04 626.29,739.21 627.44,736.01 626.13,734.45 618.07,734.5 610.23,739.01 604.3,745.2 600.21,747.89 599.58,748.61 594.25,750.76 585.76,760.9 579.24,759.41 571.04,763.96 563.47,771.74 559.17,778.8 554.85,792.49 556.2,794.92 553.98,815.26 555.87,830.52 561.4,833.25 561.02,836.06 563.58,840.9 557.8,841.7 554.87,837.2 550.02,837.96 548.61,836.63 546.61,838.85 541.39,838.9 537.43,843.04 534.4,842.08 530.58,843.99 529.23,845.68 530.58,849.81 523.79,848.38 521.0,850.61 517.8,849.68 514.48,844.79 502.82,840.74 499.33,842.67 495.92,842.33 491.63,847.76 486.94,849.06 483.79,845.53 481.85,839.12 478.85,839.48 474.01,836.31 468.22,834.88 469.48,828.67 471.87,827.44 468.03,825.1 468.51,823.63 459.66,822.63 455.97,819.95 451.66,820.41 451.41,823.97 448.81,824.58 445.57,816.58 443.21,815.14 443.54,813.73 436.57,813.7 434.85,813.26 430.82,814.59 425.13,807.14 418.89,807.26 417.26,805.65 414.77,806.8 410.21,803.47 400.16,800.55 397.44,802.51 398.16,805.82 396.63,807.73 397.8,808.73 396.69,810.64 398.49,813.74 397.82,816.43 393.15,815.17 381.76,816.41 377.63,813.55 373.1,817.8 370.82,813.99 365.5,812.12 352.64,816.9 349.76,816.05 349.06,813.89 346.73,813.4 343.16,806.34 341.38,806.98 333.07,801.55 327.65,805.92 324.43,806.21 320.23,803.59 318.61,806.75 316.15,807.66 316.27,805.37 314.23,805.14 313.75,802.82 308.93,798.09 305.41,796.66 305.0,791.92 303.87,789.93 299.51,791.59 293.72,790.39 291.34,791.35 280.07,784.84 278.33,785.94 276.43,783.42 271.94,782.36 270.28,782.65 267.36,779.98 269.63,775.55 264.88,778.26 263.44,783.93 258.16,781.76 256.57,778.43 260.39,774.52 262.31,768.61 261.89,762.08 252.08,759.08 250.47,759.67 249.35,762.72 247.4,762.59 246.4,757.63 241.49,757.34 239.42,758.46 238.8,755.23 235.57,753.03 235.73,750.79 242.7,749.01 243.75,749.71 247.99,745.51 258.31,724.48 267.48,674.93 270.91,647.13 270.83,638.89 275.84,627.95 278.24,628.63 278.25,630.21 287.48,629.22 286.06,626.68 283.55,624.73 285.13,624.87 283.92,623.6 276.58,617.37 276.18,620.21 272.42,625.34 271.09,632.34 270.45,630.63 277.04,566.87 277.5,550.18 281.96,541.91 288.49,539.89 286.08,536.21 284.97,536.62 273.59,529.22 273.14,531.11 274.43,531.59 272.55,531.12 272.02,527.79 272.14,520.7 279.03,518.9 277.08,514.14 280.2,513.54 282.87,507.82 281.28,505.42 283.46,504.48 279.87,499.89 283.88,500.56 284.24,499.04 280.92,491.19 278.28,489.89 279.15,488.13 276.27,486.97 276.82,485.43 274.02,486.31 271.79,484.71 274.53,481.87 274.79,479.81 280.34,474.87 279.72,472.58 276.87,469.28 274.34,470.35 273.85,474.61 267.92,469.46 268.76,472.41 269.38,472.83 268.13,472.56 264.96,467.6 256.71,467.4 253.7,461.63 244.85,460.06 236.1,453.04 233.96,452.93 230.73,441.62 225.14,433.87 223.65,433.84 221.44,429.96 212.15,421.66 211.55,415.2 214.38,414.31 219.88,403.8 222.72,401.89 221.09,398.65 214.61,393.8 205.25,391.9 210.74,388.23 209.66,378.28 201.69,382.12 196.36,377.93 193.72,378.4 193.03,379.94 185.46,376.77 187.86,375.89 188.32,373.03 184.87,368.73 190.75,364.53 192.96,364.85 191.39,363.96 191.32,361.89 188.93,361.63 188.61,357.59 190.92,358.58 193.43,357.21 186.08,354.35 184.86,355.71 179.72,356.31 184.19,353.56 183.26,353.35 184.42,351.84 182.74,350.94 182.86,352.94 181.46,353.68 181.2,350.68 180.13,353.86 177.33,352.99 180.41,354.71 177.55,355.44 176.61,357.64 173.2,356.4 167.56,358.1 165.38,356.76 165.23,355.15 161.74,353.46 162.55,352.55 161.24,352.57 161.3,351.55 163.68,351.16 165.27,353.39 167.05,352.24 167.19,353.34 167.29,351.54 168.85,353.3 169.74,352.0 171.19,353.49 173.32,352.89 174.42,348.49 174.91,349.54 176.0,347.97 175.9,343.66 174.53,343.07 174.3,345.64 175.51,346.61 174.25,346.2 175.12,347.35 173.95,348.33 173.85,347.03 170.11,345.42 173.21,345.99 171.39,343.5 170.01,344.61 169.18,343.36 169.71,345.31 164.47,345.42 164.64,347.48 162.7,347.35 162.65,349.77 161.42,348.12 160.44,348.52 159.93,346.82 159.55,348.51 159.51,344.76 158.22,344.57 156.99,341.95 158.4,346.19 157.65,348.56 160.22,351.7 157.1,351.09 155.75,348.27 156.1,350.21 153.73,348.18 154.1,350.47 152.58,348.79 151.8,350.17 149.07,350.75 149.27,349.22 146.99,347.62 147.26,355.83 150.13,359.9 146.69,359.18 144.97,354.13 146.62,352.27 146.03,348.75 141.69,343.03 141.73,340.67 146.53,337.78 144.37,337.97 145.87,336.34 147.05,337.29 147.7,335.42 148.47,335.83 145.36,335.92 146.46,333.26 144.81,334.91 142.29,333.64 144.34,337.44 142.66,337.76 142.3,338.72 141.31,338.35 142.25,339.53 141.19,342.92 135.0,338.6 131.7,338.87 134.15,337.89 137.11,338.7 134.77,337.08 131.45,336.74 135.38,332.87 136.64,328.85 136.45,330.97 134.3,332.44 133.95,331.73 132.57,333.47 129.71,325.71 129.19,327.55 131.88,334.78 129.77,337.62 124.91,337.73 120.53,331.39 121.14,327.79 119.83,325.26 120.92,323.49 119.53,322.73 120.9,328.12 119.69,331.78 112.81,330.44 112.79,329.54 110.35,330.39 108.1,327.59 112.79,325.91 109.46,326.26 109.43,325.34 106.92,327.87 105.76,324.05 106.22,328.69 98.89,329.12 95.9,324.77 96.97,322.63 95.28,323.18 95.81,322.49 90.82,317.82 90.7,323.08 86.26,323.4 83.59,322.26 86.24,323.18 84.04,321.0 82.81,322.1 79.91,317.27 82.37,314.75 83.85,315.14 83.67,313.8 82.24,314.36 83.02,311.97 81.57,311.13 82.63,312.1 81.46,313.79 81.63,315.7 80.06,316.29 79.55,318.97 77.83,318.39 80.79,319.83 81.75,322.28 78.23,324.15 77.3,320.67 76.31,322.66 75.14,321.96 78.62,325.61 76.8,328.41 75.1,327.49 74.78,328.92 64.68,328.32 64.32,326.16 66.47,323.99 63.47,315.7 59.13,310.83 53.9,307.96 54.41,305.73 56.83,305.35 53.75,305.61 53.85,307.58 51.79,309.16 47.28,306.43 40.64,305.32 42.74,304.53 42.36,302.97 52.96,301.76 62.09,298.93 65.49,298.76 67.42,301.03 67.79,299.77 69.58,300.5 71.22,294.27 69.79,293.84 68.16,289.67 64.69,289.41 58.38,286.42 56.11,287.41 52.69,293.02 51.69,286.7 53.35,285.24 48.25,284.71 47.94,282.32 51.91,281.86 51.09,278.56 54.19,276.52 52.5,280.07 54.15,281.86 56.4,279.61 55.15,281.14 56.3,282.23 61.74,281.31 64.2,282.83 71.62,280.98 70.42,283.04 71.93,284.47 75.05,284.75 75.64,285.99 82.03,286.12 81.72,288.16 82.42,284.96 80.02,286.02 73.32,284.64 71.31,282.42 76.94,280.79 70.77,279.14 72.79,277.92 67.19,278.99 71.42,275.09 67.51,276.71 68.23,274.63 65.87,276.18 66.27,275.51 64.22,278.04 61.89,278.09 62.87,276.49 59.14,277.84 62.66,272.63 71.35,266.67 62.69,271.85 60.72,271.28 60.12,272.66 57.04,272.78 49.06,276.83 43.59,275.38 41.94,277.56 38.18,277.48 38.03,274.66 40.0,274.16 37.32,274.5 38.79,272.84 37.07,269.25 39.04,264.47 40.92,263.82 38.7,263.28 38.33,259.55 41.32,255.89 42.9,256.37 43.09,254.69 47.98,254.11 49.98,254.65 50.61,256.01 55.93,256.85 49.23,253.81 50.05,251.21 50.18,252.46 53.6,252.1 57.27,254.19 51.78,250.84 53.57,248.29 56.46,249.69 60.35,247.98 63.12,248.35 60.67,246.52 67.55,244.62 69.9,246.04 68.44,247.5 69.99,248.29 76.49,246.69 74.71,246.23 76.84,243.91 81.01,242.87 84.06,243.19 85.65,244.6 86.13,241.77 91.41,239.82 92.51,250.26 93.68,251.76 92.67,246.78 94.75,244.8 96.66,245.29 95.87,246.65 98.85,249.33 98.38,251.3 98.85,250.89 101.47,249.03 99.39,248.51 98.37,245.01 99.59,245.94 99.12,243.3 100.65,241.18 101.23,241.82 101.44,240.54 110.81,243.5 112.98,242.81 112.03,246.13 114.33,243.75 115.6,245.25 117.83,244.36 117.06,240.29 119.13,237.67 116.82,236.66 116.85,234.65 122.44,229.1 122.4,230.38 123.95,229.18 125.29,231.21 127.27,230.85 126.71,232.95 129.63,232.5 134.4,229.08 138.19,229.33 140.7,226.27 142.05,229.48 140.13,233.75 140.97,233.9 143.76,228.59 150.65,225.02 149.14,226.4 150.45,227.34 149.3,227.07 149.49,229.57 150.66,229.94 147.61,236.65 150.71,230.77 154.99,230.98 155.05,232.83 152.63,234.31 154.9,234.57 153.69,235.02 156.46,236.23 158.87,235.57 160.21,237.13 159.41,240.48 166.95,246.66 167.32,252.33 174.53,256.2 174.03,258.43 176.88,262.16 176.72,258.18 179.82,258.6 185.41,252.05 190.42,249.46 189.56,247.47 192.81,246.82 194.27,248.42 200.8,243.65 202.61,245.83 199.54,250.02 201.0,250.76 205.4,247.55 207.87,254.36 209.03,251.13 210.05,253.97 212.11,249.97 213.47,251.14 211.82,248.62 218.6,248.34 218.3,249.5 219.59,249.66 221.89,253.76 221.14,254.92 223.33,257.48 221.81,262.14 224.17,258.82 224.96,259.44 222.84,253.15 224.15,253.58 220.94,251.78 219.92,246.9 222.36,245.48 222.57,244.07 225.78,243.75 224.55,242.99 226.08,242.18 228.14,243.11 232.03,241.44 232.41,244.26 230.63,245.64 230.75,249.01 237.23,251.49 251.91,248.85 253.91,250.56 258.3,249.27 259.9,247.83 264.4,248.63 261.33,245.91 262.71,243.21 258.19,246.34 254.16,243.12 252.5,239.27 249.88,237.69 249.69,230.48 247.29,229.32 249.3,227.52 251.26,219.9 251.27,223.27 251.16,211.02 254.27,211.56 250.65,210.18 249.3,213.35 248.08,209.63 247.63,203.09 249.26,200.84 247.32,192.68 250.07,192.26 247.1,191.28 245.88,193.01 243.01,186.36 244.02,186.5 240.76,182.45 242.96,181.95 239.28,181.6 235.77,177.69 237.78,178.35 236.33,177.36 234.27,177.73 231.5,164.99 229.2,163.14 232.13,158.71 231.55,153.16 229.84,150.66 225.15,148.96 225.76,144.16 229.38,146.17 231.55,145.09 233.48,147.6 242.54,149.38 243.67,150.75 246.98,150.74 246.05,151.31 247.27,152.1 248.59,150.99 255.65,149.52 256.7,147.05 263.6,146.16 270.12,147.23 272.59,155.73 270.94,155.26 269.6,159.02 269.7,157.68 268.1,158.08 267.75,162.46 276.68,174.7 276.92,178.57 279.81,179.61 283.14,176.3 291.55,175.85 304.38,180.21 327.86,181.88 339.01,186.55 348.22,185.06 355.08,181.62 362.69,175.02 369.09,172.7 376.41,172.06 376.17,170.63 371.85,170.37 371.83,170.86 361.59,168.82 358.22,164.63 364.95,147.85 367.74,145.4 376.44,142.04 392.8,132.07 406.18,129.93 417.57,125.71 422.29,125.83 432.98,120.98 449.48,108.2 452.85,99.98 456.27,97.49 459.6,100.26 465.22,100.57 463.19,97.42 460.98,97.28 458.98,93.63 456.32,93.17 455.57,91.05 457.11,83.29 461.42,83.1 462.42,84.38 456.73,79.84 458.71,66.71 462.88,69.21 458.14,62.85 457.36,48.85 459.71,48.77 460.05,44.11 458.59,34.75 462.7,33.92 472.62,26.57 491.99,21.81 494.25,23.37 493.52,21.91 496.11,20.26 498.06,21.71 499.03,19.01 498.21,18.66 500.98,19.29 509.61,16.86 513.13,17.48 522.25,14.06 524.21,22.36 526.25,23.58 527.77,27.93 525.14,30.32 526.23,31.03 525.81,37.01 528.54,40.36 530.74,39.77 534.11,40.78 538.61,48.66 542.43,49.32 546.28,51.8 549.49,46.06 556.3,43.48 558.21,44.06 559.78,42.16 562.4,42.97 566.08,50.1 569.39,51.63 569.43,53.5 568.52,55.68 571.51,67.93 577.38,70.99 582.1,69.35 583.92,67.27 586.49,68.24 585.5,71.42 592.74,70.94 596.03,74.98 596.76,79.76 595.81,83.0 599.83,88.93 599.33,87.52 600.62,88.21 602.12,84.64 608.63,84.46 611.9,86.72 620.21,83.82 623.76,88.53 626.16,89.24 627.77,93.41 629.51,92.63 628.27,91.61 629.6,90.54 632.22,92.19 632.88,94.07 628.46,97.97 628.53,102.69 627.0,105.27 631.64,105.35 631.71,107.9 633.65,111.25 628.86,113.79 627.33,116.62 628.95,118.73 627.89,120.32 631.5,121.32 631.64,122.24 638.92,121.03 649.82,123.17 653.06,122.67 656.99,119.64 664.3,118.37 664.3,109.9 672.85,102.11 677.54,105.19 675.84,106.99 675.8,109.61 674.58,108.57 673.58,111.68 672.67,111.85 673.94,114.46 670.59,121.23 674.58,123.17 677.06,127.01 674.7,131.43 676.27,135.53 674.72,137.84 678.51,138.52 684.41,137.2 685.84,139.28 690.79,140.88 693.08,145.43 695.17,145.31 695.65,147.36 702.55,147.34 706.49,151.23 704.65,153.93 705.22,155.24 707.82,153.39 712.99,156.97 714.4,159.97 715.58,166.05 721.57,163.22 724.97,165.11 727.32,161.06 734.13,161.97 735.79,159.89 738.66,162.26 739.96,162.26 741.95,165.95 746.77,165.99 748.88,166.88 750.44,169.99 753.55,170.46 754.72,169.16 757.33,170.19 759.26,166.59 766.54,164.7 773.0,168.83 774.87,169.11 779.14,168.21 786.41,172.35 787.18,173.69 786.62,175.22 790.05,179.26 788.2,180.65 794.81,187.09 794.54,189.28 796.27,189.94 797.01,192.91 798.67,193.25 798.24,196.81 799.76,197.9 806.66,198.58 807.4,196.03 806.01,193.22 808.01,192.65 809.82,193.42 812.04,192.4 818.93,195.65 820.49,202.87 823.71,198.76 823.69,200.35 827.28,201.91 829.06,201.17 830.0,202.51 833.2,201.43 836.45,202.42 838.54,199.76 840.7,199.57 841.27,197.06 846.23,196.11 845.79,197.9 849.4,197.57 849.48,200.62 852.32,204.41 858.44,206.65 859.74,208.72 867.26,209.21 869.66,207.48 874.18,210.34 878.69,208.12 881.43,211.01 888.9,214.63 896.22,216.59 897.91,216.18 891.84,224.26 888.31,232.83 884.64,234.22 883.5,236.59 880.85,236.97 879.77,240.96 872.13,248.15 869.63,253.6 869.84,260.41 867.44,262.62 865.08,272.06 865.81,278.22 862.44,280.65 860.67,288.22 854.9,298.01 854.53,306.25 857.8,312.1 853.46,321.24 853.86,324.57 851.78,330.85 852.83,335.33 850.62,338.31 851.27,341.42 855.94,347.51 855.04,349.63 849.66,353.49 851.73,354.6 849.71,355.34 850.24,357.35 848.92,358.68 845.17,357.5 844.91,358.75 846.68,359.87 842.02,363.34 838.16,362.79 833.02,364.37 831.83,362.7 828.0,362.29 829.69,357.55 825.35,356.64Z";
+  var SITES = [
+    {n:"Hyères Pharma",          s:"HP", c:"Hyères · 83",                x:759.10,y:775.43,t:"siege",h:26,  dxw:0,   dzw:0,   ldx:0,  ldy:-4},
+    {n:"Ouest Pharma Services",  s:"OPS",c:"St-Étienne-de-Montluc · 44", x:236.15,y:378.10,t:"site", h:13,  dxw:0,   dzw:0,   ldx:0,  ldy:0},
+    {n:"Escale Pharma",          s:"EP", c:"Chilly-Mazarin · 91",        x:506.74,y:242.05,t:"site", h:14,  dxw:0,   dzw:0,   ldx:0,  ldy:0},
+    {n:"Comptoir Pharma. du Rhône",s:"CPR",c:"Saint-Maurice-l'Exil · 38",x:669.97,y:558.24,t:"site", h:13,  dxw:0,   dzw:0,   ldx:0,  ldy:0},
+    {n:"Sud Ouest Pharma",       s:"SOP",c:"Montayral · 47",             x:415.96,y:645.70,t:"site", h:12.5,dxw:0,   dzw:0,   ldx:0,  ldy:0},
+    {n:"Pharm'Occitanie Services",s:"POS",c:"Villeneuve-lès-Béziers · 34",x:569.05,y:756.32,t:"site",h:13.5,dxw:0,   dzw:0,   ldx:-8, ldy:0},
+    {n:"Sud Est Pharma",         s:"SEP",c:"Le Cannet-des-Maures · 83",  x:773.12,y:749.45,t:"site", h:18,  dxw:4.2, dzw:-3.4,ldx:60, ldy:-2},
+    {n:"Mistral Santé Pharma",   s:"MSP",c:"Flassans-sur-Issole · 83",   x:762.69,y:752.42,t:"site", h:12,  dxw:-4.4,dzw:-5.2,ldx:-64,ldy:-2},
+    {n:"Pharmest",               s:"PH", c:"Metz · 57",                  x:762.22,y:202.25,t:"part", h:12,  dxw:0,   dzw:0,   ldx:0,  ldy:0}
+  ];
+  var S = 0.1, EXH = 3.2;
+  function WX(px){ return (px-500)*S; }
+  function WZ(py){ return (py-480)*S; }
+
+  var box = document.getElementById('map3d');
+  var lblWrap = document.getElementById('lbls');
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function webglOK(){
+    try{
+      var c=document.createElement('canvas');
+      return !!(window.WebGLRenderingContext && (c.getContext('webgl')||c.getContext('experimental-webgl')));
+    }catch(e){ return false; }
+  }
+
+  function buildFallback(){
+    box.classList.add('flat');
+    var mk='';
+    for(var i=0;i<SITES.length;i++){
+      var m=SITES[i], col = m.t==='siege' ? '#F39A1B' : (m.t==='part' ? '#AFC2DC' : '#5B8CFF');
+      var r  = m.t==='siege' ? 15 : 10;
+      mk += '<circle cx="'+m.x+'" cy="'+m.y+'" r="'+(r+9)+'" fill="'+col+'" opacity=".18"/>' +
+            '<circle cx="'+m.x+'" cy="'+m.y+'" r="'+r+'" fill="'+col+'"'+(m.t==='part'?' stroke-dasharray="4 4" stroke="#E7EEFF" stroke-width="2"':'')+'/>' +
+            '<text x="'+(m.x+m.ldx*0.6)+'" y="'+(m.y-r-10+(m.ldy||0))+'" text-anchor="middle" fill="#EAF0FF" font-family="Space Mono,monospace" font-size="21" font-weight="600">'+m.s+'</text>';
+    }
+    document.getElementById('mapFallback').innerHTML =
+      '<svg viewBox="-20 130 1040 700" role="img" aria-label="Carte de France des établissements Intégral Pharma">'+
+      '<path d="'+FR_D+'" fill="#101E3D" stroke="#3F79FF" stroke-width="2.4" stroke-linejoin="round"/>'+mk+'</svg>';
+  }
+
+  if(window.__noThree || typeof THREE==='undefined' || reduce || !webglOK()){ buildFallback(); return; }
+
+  try{
+
+  var renderer = new THREE.WebGLRenderer({antialias:true, alpha:true});
+  renderer.setClearColor(0x000000,0);
+  box.insertBefore(renderer.domElement, box.firstChild);
+
+  var scene = new THREE.Scene();
+  scene.fog = new THREE.Fog(0x05070F, 160, 420);
+  var camera = new THREE.PerspectiveCamera(38, 1, 1, 900);
+
+  scene.add(new THREE.AmbientLight(0x33415f, 0.95));
+  var key = new THREE.DirectionalLight(0x7fa0ff, 0.65); key.position.set(-60,120,90); scene.add(key);
+  var rim = new THREE.DirectionalLight(0x2a4aa8, 0.4);  rim.position.set(80,60,-120); scene.add(rim);
+  var hqLight = new THREE.PointLight(0xF3720F, 1.15, 46, 2);
+  hqLight.position.set(WX(SITES[0].x), EXH+7, WZ(SITES[0].y)); scene.add(hqLight);
+
+  function glowTex(){
+    var c=document.createElement('canvas'); c.width=c.height=128;
+    var g=c.getContext('2d'), gr=g.createRadialGradient(64,64,0,64,64,64);
+    gr.addColorStop(0,'rgba(255,255,255,1)'); gr.addColorStop(0.28,'rgba(255,255,255,.5)');
+    gr.addColorStop(0.65,'rgba(255,255,255,.12)'); gr.addColorStop(1,'rgba(255,255,255,0)');
+    g.fillStyle=gr; g.fillRect(0,0,128,128);
+    return new THREE.CanvasTexture(c);
+  }
+  var GLOW = glowTex();
+
+  function groundTex(){
+    var c=document.createElement('canvas'); c.width=c.height=512;
+    var g=c.getContext('2d'), gr=g.createRadialGradient(256,256,20,256,256,256);
+    gr.addColorStop(0,'#0B1531'); gr.addColorStop(0.55,'#070D20'); gr.addColorStop(1,'#04060E');
+    g.fillStyle=gr; g.fillRect(0,0,512,512);
+    return new THREE.CanvasTexture(c);
+  }
+
+  function capTex(){
+    var w=1024,h=1024,c=document.createElement('canvas'); c.width=w;c.height=h;
+    var g=c.getContext('2d');
+    g.fillStyle='#0E1934'; g.fillRect(0,0,w,h);
+    var hx=SITES[0].x/1000*w, hy=SITES[0].y/960.1*h;
+    var gr=g.createRadialGradient(hx,hy,0,hx,hy,190);
+    gr.addColorStop(0,'rgba(190,110,20,.30)'); gr.addColorStop(1,'rgba(190,110,20,0)');
+    g.fillStyle=gr; g.fillRect(0,0,w,h);
+    var px=SITES[2].x/1000*w, py=SITES[2].y/960.1*h;
+    gr=g.createRadialGradient(px,py,0,px,py,170);
+    gr.addColorStop(0,'rgba(40,90,220,.24)'); gr.addColorStop(1,'rgba(40,90,220,0)');
+    g.fillStyle=gr; g.fillRect(0,0,w,h);
+    g.fillStyle='rgba(120,150,235,.10)';
+    for(var y=6;y<h;y+=13){ for(var x=6;x<w;x+=13){ g.fillRect(x,y,1.6,1.6); } }
+    var t=new THREE.CanvasTexture(c);
+    t.wrapS=t.wrapT=THREE.ClampToEdgeWrapping;
+    return t;
+  }
+
+  var ground = new THREE.Mesh(new THREE.CircleGeometry(430,64),
+    new THREE.MeshBasicMaterial({map:groundTex()}));
+  ground.rotation.x=-Math.PI/2; ground.position.y=-0.06; scene.add(ground);
+
+  var grid = new THREE.GridHelper(520,52,0x16294f,0x0C1730);
+  grid.material.transparent=true; grid.material.opacity=0.30; grid.position.y=-0.02; scene.add(grid);
+
+  (function stars(){
+    var n=300, pos=new Float32Array(n*3);
+    for(var i=0;i<n;i++){
+      var th=Math.random()*Math.PI*2, ph=Math.acos(Math.random()*0.75), r=230+Math.random()*150;
+      pos[i*3]=Math.cos(th)*Math.sin(ph)*r;
+      pos[i*3+1]=Math.abs(Math.cos(ph))*r*0.75+16;
+      pos[i*3+2]=Math.sin(th)*Math.sin(ph)*r;
+    }
+    var ge=new THREE.BufferGeometry();
+    ge.setAttribute('position',new THREE.BufferAttribute(pos,3));
+    scene.add(new THREE.Points(ge,new THREE.PointsMaterial({color:0x9FB6FF,size:1.5,sizeAttenuation:true,transparent:true,opacity:.75,fog:false})));
+  })();
+
+  var nums = FR_D.replace(/[MZ]/g,' ').trim().split(/[\s,]+/);
+  var shape = new THREE.Shape(), outline=[];
+  for(var i=0;i<nums.length;i+=2){
+    var px=parseFloat(nums[i]), py=parseFloat(nums[i+1]);
+    var sx=(px-500)*S, sy=(480-py)*S;
+    if(i===0) shape.moveTo(sx,sy); else shape.lineTo(sx,sy);
+    outline.push(new THREE.Vector3(WX(px), EXH+0.03, WZ(py)));
+  }
+  var exGeo = new THREE.ExtrudeGeometry(shape,{depth:EXH,bevelEnabled:false,steps:1});
+  exGeo.rotateX(-Math.PI/2);
+
+  var topTex = capTex();
+  topTex.repeat.set(1/100, 1/96.01); topTex.offset.set(0.5,0.5);
+  var matTop  = new THREE.MeshStandardMaterial({map:topTex,color:0xBFC9E8,metalness:0.18,roughness:0.86});
+  var matSide = new THREE.MeshStandardMaterial({color:0x0A1226,metalness:0.3,roughness:0.7});
+  scene.add(new THREE.Mesh(exGeo,[matTop,matSide]));
+
+  var fresMat = new THREE.ShaderMaterial({
+    uniforms:{ uColor:{value:new THREE.Color(0x4A86FF)}, uOp:{value:0.6} },
+    vertexShader:'varying vec3 vN; varying vec3 vP; void main(){ vec4 wp=modelViewMatrix*vec4(position,1.0); vP=wp.xyz; vN=normalMatrix*normal; gl_Position=projectionMatrix*wp; }',
+    fragmentShader:'uniform vec3 uColor; uniform float uOp; varying vec3 vN; varying vec3 vP; void main(){ float f=pow(1.0-abs(dot(normalize(vN),normalize(-vP))),3.0); gl_FragColor=vec4(uColor, f*uOp); }',
+    transparent:true, side:THREE.BackSide, blending:THREE.AdditiveBlending, depthWrite:false, fog:false
+  });
+  var fresMesh=new THREE.Mesh(exGeo.clone(), fresMat);
+  fresMesh.scale.set(1.05,1.05,1.05); scene.add(fresMesh);
+
+  var edges = new THREE.LineSegments(new THREE.EdgesGeometry(exGeo,30),
+    new THREE.LineBasicMaterial({color:0x3E7BFF,transparent:true,opacity:0.45}));
+  scene.add(edges);
+  var coast = new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(outline),
+    new THREE.LineBasicMaterial({color:0x6FA0FF,transparent:true,opacity:0.85,blending:THREE.AdditiveBlending,fog:false}));
+  scene.add(coast);
+
+  var haze = new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:0x1B3FA8,transparent:true,opacity:0.30,blending:THREE.AdditiveBlending,depthWrite:false,fog:false}));
+  haze.scale.set(150,150,1); haze.position.set(0,1.5,4); scene.add(haze);
+
+  function beamMat(hex,opac,fade){
+    return new THREE.ShaderMaterial({
+      uniforms:{uColor:{value:new THREE.Color(hex)},uOp:{value:opac},uT:{value:0},uPh:{value:Math.random()*6.28},uF:{value:fade}},
+      vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
+      fragmentShader:'uniform vec3 uColor;uniform float uOp,uT,uPh,uF;varying vec2 vUv;'+
+        'void main(){float a=pow(max(0.0,1.0-vUv.y),uF);float fl=0.88+0.12*sin(uT*2.1+uPh);gl_FragColor=vec4(uColor,a*uOp*fl);}',
+      transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,fog:false
+    });
+  }
+  var ringMatProto = new THREE.MeshBasicMaterial({color:0x5B8CFF,transparent:true,opacity:0.5,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,fog:false});
+
+  var beacons=[];
+  var pickTargets=[];
+  function makeBeacon(m,idx){
+    var siege = m.t==='siege', part = m.t==='part';
+    var cCore = siege?0xFFC876:(part?0xE9EFF9:0xBFD9FF);
+    var cOut  = siege?0xF07C0E:(part?0x8FA6C9:0x2A63F0);
+    var rOut  = siege?2.6:(part?1.25:1.35);
+    if(m.s==='SEP'||m.s==='MSP') rOut = 1.0;
+    var wx=WX(m.x)+m.dxw, wz=WZ(m.y)+m.dzw, bh=m.h;
+
+    var grp=new THREE.Group(); grp.position.set(wx,EXH,wz); grp.scale.y=0.0001; scene.add(grp);
+    var mats=[], sprites=[], rings=[];
+
+    var mo=beamMat(cOut, siege?0.34:0.26, 1.5);
+    var beamO=new THREE.Mesh(new THREE.CylinderGeometry(rOut*1.7,rOut*0.72,bh,20,1,true),mo);
+    beamO.position.y=bh/2; grp.add(beamO); mats.push(mo);
+    var mc=beamMat(cCore, siege?0.9:0.75, 1.15);
+    var beamC=new THREE.Mesh(new THREE.CylinderGeometry(rOut*0.34,rOut*0.24,bh*0.96,12,1,true),mc);
+    beamC.position.y=bh*0.48; grp.add(beamC); mats.push(mc);
+
+    var gs=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:cCore,transparent:true,opacity:siege?0.9:0.72,blending:THREE.AdditiveBlending,depthWrite:false,fog:false}));
+    gs.scale.set(siege?17:9,siege?17:9,1); gs.position.y=0.5; grp.add(gs); sprites.push(gs);
+    if(siege){
+      var halo=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:0xF3720F,transparent:true,opacity:0.42,blending:THREE.AdditiveBlending,depthWrite:false,fog:false}));
+      halo.scale.set(34,34,1); halo.position.y=0.8; grp.add(halo); sprites.push(halo);
+    }
+    var tip=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:0xFFFFFF,transparent:true,opacity:0.85,blending:THREE.AdditiveBlending,depthWrite:false,fog:false}));
+    tip.scale.set(siege?4.2:2.4,siege?4.2:2.4,1); tip.position.y=bh*0.99; grp.add(tip); sprites.push(tip);
+
+    var ringGrp=new THREE.Group(); ringGrp.position.set(wx,EXH+0.06,wz); scene.add(ringGrp);
+    for(var k=0;k<2;k++){
+      var rm=ringMatProto.clone();
+      rm.color=new THREE.Color(siege?0xF39A1B:(part?0x9FB4D8:0x5B8CFF));
+      var ring=new THREE.Mesh(new THREE.RingGeometry(0.86,1.0,44),rm);
+      ring.rotation.x=-Math.PI/2;
+      ring.userData={ph:k*0.5, base:(siege?3.2:1.9)};
+      ringGrp.add(ring); rings.push(ring);
+    }
+    var dm=new THREE.Mesh(new THREE.CircleGeometry(siege?1.5:1.0,32),
+      new THREE.MeshBasicMaterial({color:cCore,transparent:true,opacity:0.98,fog:false}));
+    dm.rotation.x=-Math.PI/2; dm.position.set(wx,EXH+0.08,wz); scene.add(dm);
+    var base=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:cCore,transparent:true,opacity:siege?0.85:0.6,blending:THREE.AdditiveBlending,depthWrite:false,fog:false}));
+    base.scale.set(siege?9:5.5,siege?9:5.5,1); base.position.set(wx,EXH+0.1,wz); scene.add(base);
+
+    var el=document.createElement('div');
+    el.className='lbl3'+(siege?' lbl3--siege':'')+(part?' lbl3--part':'');
+    el.innerHTML='<span class="lbl3__box"><span class="lbl3__n">'+m.s+' · '+m.n+'</span><br>'+
+                 '<span class="lbl3__c">'+m.c+'</span>'+
+                 (siege?'<br><span class="lbl3__t">SIÈGE</span>':(part?'<br><span class="lbl3__t">PARTENAIRE</span>':''))+
+                 '</span><span class="lbl3__stem"></span>';
+    lblWrap.appendChild(el);
+
+    beacons.push({grp:grp,mats:mats,rings:rings,site:m,el:el,wx:wx,wz:wz,topY:EXH+bh+0.9,idx:idx,hl:0,hlT:0});
+
+    var pr=(siege?7:4.8), ph=Math.max(bh,9);
+    var pick=new THREE.Mesh(new THREE.CylinderGeometry(pr,pr,ph,12,1,true),
+      new THREE.MeshBasicMaterial({colorWrite:false,depthWrite:false,transparent:true,opacity:0}));
+    pick.position.set(wx, EXH+ph/2, wz); pick.userData.bi=idx; scene.add(pick); pickTargets.push(pick);
+  }
+  for(var bi=0;bi<SITES.length;bi++) makeBeacon(SITES[bi],bi);
+
+  var HQ = new THREE.Vector3(WX(SITES[0].x), EXH+0.6, WZ(SITES[0].y));
+  var pulses=[];
+  for(var ai=1;ai<SITES.length;ai++){
+    var m=SITES[ai];
+    var A=new THREE.Vector3(WX(m.x)+m.dxw, EXH+0.6, WZ(m.y)+m.dzw);
+    var d=A.distanceTo(HQ);
+    var mid=A.clone().lerp(HQ,0.5); mid.y += 3.5 + d*0.28;
+    var curve=new THREE.QuadraticBezierCurve3(A,mid,HQ);
+    if(m.t==='part'){
+      var pts=curve.getPoints(60);
+      var lg=new THREE.BufferGeometry().setFromPoints(pts);
+      var ln=new THREE.Line(lg,new THREE.LineDashedMaterial({color:0x9FB4D8,transparent:true,opacity:0.5,dashSize:1.3,gapSize:1.0,fog:false}));
+      ln.computeLineDistances(); scene.add(ln);
+    }else{
+      var tube=new THREE.Mesh(new THREE.TubeGeometry(curve,42,0.085,5,false),
+        new THREE.MeshBasicMaterial({color:0x2E6BFF,transparent:true,opacity:0.30,blending:THREE.AdditiveBlending,depthWrite:false,fog:false}));
+      scene.add(tube);
+    }
+    var np = d>28?2:1;
+    for(var pi=0;pi<np;pi++){
+      var sp=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:(m.t==='part'?0xD9E4F5:0xBFD6FF),transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false,fog:false}));
+      sp.scale.set(2.1,2.1,1); scene.add(sp);
+      pulses.push({sp:sp,curve:curve,v:0.055+Math.random()*0.03,ph:pi/np+Math.random()*0.3});
+    }
+  }
+
+  var az=0, elv=0.92, baseEl=0.88, baseR=125;
+  var mx=0,my=0, intro=0, started=false, inView=false, raf3=null;
+  var clock=new THREE.Clock(), T=0;
+  var V=new THREE.Vector3();
+  var cw=0,ch=0;
+
+  /* --- DECK : plus de scroll → ignition pilotée par l'intro time --- */
+  var scrollDrive = false;
+
+  var ray=new THREE.Raycaster(), ndc=new THREE.Vector2(-2,-2);
+  var pointerInMap=false, mapHoverI=-1, rosterHoverI=-1, focusI=-1, activeI=-1, focusAmt=0;
+  var LATLON=SITES.map(function(m){ return {lat:(4895.6-m.y)/95.55, lon:(m.x-353.88)/66.12}; });
+  var infoEl=document.getElementById('mapInfo'),
+      miType=document.getElementById('miType'), miName=document.getElementById('miName'),
+      miCity=document.getElementById('miCity'), miGps=document.getElementById('miGps');
+  var curInfo=-2;
+  function setInfo(i){
+    if(i===curInfo) return; curInfo=i;
+    if(i<0){ if(infoEl) infoEl.classList.remove('on'); return; }
+    var m=SITES[i], ll=LATLON[i];
+    infoEl.classList.remove('siege','part');
+    if(m.t==='siege') infoEl.classList.add('siege'); else if(m.t==='part') infoEl.classList.add('part');
+    miType.textContent = m.t==='siege'?'Siège':(m.t==='part'?'Partenaire':'Agence Intégral');
+    miName.textContent = m.n;
+    miCity.textContent = m.c;
+    miGps.innerHTML = '<b>'+ll.lat.toFixed(4)+'</b> N · <b>'+ll.lon.toFixed(4)+'</b> '+(ll.lon<0?'W':'E');
+    infoEl.classList.add('on');
+  }
+
+  function resize(){
+    cw=box.clientWidth; ch=box.clientHeight;
+    if(!cw||!ch) return;
+    var dpr=Math.min(window.devicePixelRatio||1, cw>760?2:1.6);
+    renderer.setPixelRatio(dpr);
+    renderer.setSize(cw,ch,false);
+    camera.aspect=cw/ch; camera.updateProjectionMatrix();
+    var halfW=58, vf=camera.fov*Math.PI/360;
+    baseR=Math.max(118, halfW/(Math.tan(vf)*camera.aspect));
+    scene.fog.near=baseR*1.6; scene.fog.far=baseR*3.6;
+  }
+  resize();
+  window.addEventListener('resize',resize,{passive:true});
+
+  box.addEventListener('pointermove',function(e){
+    var r=box.getBoundingClientRect();
+    mx=((e.clientX-r.left)/r.width-0.5)*2;
+    my=((e.clientY-r.top)/r.height-0.5)*2;
+    ndc.x=((e.clientX-r.left)/r.width)*2-1;
+    ndc.y=-((e.clientY-r.top)/r.height)*2+1;
+    pointerInMap=true;
+  },{passive:true});
+  function clearMapHover(){ mx=0;my=0; pointerInMap=false; mapHoverI=-1; }
+  box.addEventListener('pointerleave',clearMapHover,{passive:true});
+  box.addEventListener('pointercancel',clearMapHover,{passive:true});
+  box.addEventListener('pointerup',function(e){ if(e.pointerType!=='mouse') clearMapHover(); },{passive:true});
+
+  document.querySelectorAll('.estab[data-i]').forEach(function(row){
+    var i=parseInt(row.getAttribute('data-i'),10);
+    row.addEventListener('mouseenter',function(){ rosterHoverI=i; });
+    row.addEventListener('mouseleave',function(){ if(rosterHoverI===i) rosterHoverI=-1; });
+  });
+
+  function easeOut(x){ return 1-Math.pow(1-x,3); }
+
+  function tick(){
+    raf3=requestAnimationFrame(tick);
+    var dt=Math.min(clock.getDelta(),0.05); T+=dt;
+    if(started) intro=Math.min(1,intro+dt/2.4);
+    var e=easeOut(intro);
+
+    if(pointerInMap){
+      ray.setFromCamera(ndc,camera);
+      var hits=ray.intersectObjects(pickTargets,false);
+      mapHoverI = hits.length ? hits[0].object.userData.bi : -1;
+    }
+    focusI = pointerInMap ? mapHoverI : rosterHoverI;
+    if(focusI>=0) activeI=focusI;
+    focusAmt += ((focusI>=0?1:0)-focusAmt)*0.16;
+    setInfo(focusI);
+
+    var tAz=Math.sin(T*0.10)*0.10 + mx*0.14;
+    var tEl=baseEl + my*0.06 + (1-e)*0.16;
+    az+=(tAz-az)*0.045; elv+=(tEl-elv)*0.045;
+    var R=baseR*(1.30-0.30*e);
+    var ovx=Math.sin(az)*Math.cos(elv)*R, ovy=Math.sin(elv)*R, ovz=Math.cos(az)*Math.cos(elv)*R;
+    var lookX=0,lookY=2.5,lookZ=1.5;
+    if(focusAmt>0.001 && activeI>=0){
+      var fb=beacons[activeI], ea=easeOut(focusAmt);
+      var fx=fb.wx, fy=EXH+fb.site.h*0.4, fz=fb.wz;
+      var dx=ovx-fx, dy=ovy-fy, dz=ovz-fz, dl=Math.sqrt(dx*dx+dy*dy+dz*dz)||1;
+      dx/=dl; dy=Math.max(dy/dl,0.44); dz/=dl;
+      var fR=Math.max(30, baseR*0.27);
+      camera.position.set(ovx+((fx+dx*fR)-ovx)*ea, ovy+((fy+dy*fR)-ovy)*ea, ovz+((fz+dz*fR)-ovz)*ea);
+      lookX=fx*ea; lookY=2.5+(fy-2.5)*ea; lookZ=1.5+(fz-1.5)*ea;
+    } else {
+      camera.position.set(ovx,ovy,ovz);
+    }
+    camera.lookAt(lookX,lookY,lookZ);
+
+    for(var i=0;i<beacons.length;i++){
+      var b=beacons[i];
+      b.hlT = (b.idx===focusI)?1:0;
+      var dim = (activeI>=0 && b.idx!==activeI) ? (1-0.72*focusAmt) : 1;
+      var si = scrollDrive
+        ? easeOut(Math.max(0, Math.min(1, (scrollProg - b.idx*0.085) / 0.13)))
+        : easeOut(Math.max(0, Math.min(1, intro*1.9 - b.idx*0.09)));
+      b.grp.scale.y=Math.max(0.0001,si);
+      b.hl+=(b.hlT-b.hl)*0.1;
+      for(var j=0;j<b.mats.length;j++){
+        b.mats[j].uniforms.uT.value=T;
+        b.mats[j].uniforms.uOp.value=(j===0?(b.site.t==='siege'?0.34:0.26):(b.site.t==='siege'?0.9:0.75))*(0.35+0.65*si)*(1+b.hl*0.8)*dim;
+      }
+      for(var k=0;k<b.rings.length;k++){
+        var rg=b.rings[k];
+        var ph=(T*0.42+rg.userData.ph)%1;
+        var sc=rg.userData.base*(0.25+ph*2.6);
+        rg.scale.set(sc,sc,1);
+        rg.material.opacity=(1-ph)*0.55*si*(1+b.hl*0.7);
+      }
+      V.set(b.wx,b.topY,b.wz).project(camera);
+      if(V.z<1 && si>0.35){
+        var lx=(V.x*0.5+0.5)*cw + b.site.ldx;
+        var ly=(-V.y*0.5+0.5)*ch + b.site.ldy;
+        b.el.style.transform='translate(-50%,-100%) translate('+lx.toFixed(1)+'px,'+ly.toFixed(1)+'px)';
+        b.el.style.opacity=Math.min(1,(si-0.35)*2.2)*Math.max(dim,(b.idx===activeI?1:0));
+        b.el.style.zIndex=(b.idx===activeI)?5:1;
+      }else{
+        b.el.style.opacity=0;
+      }
+    }
+
+    for(var p=0;p<pulses.length;p++){
+      var pu=pulses[p];
+      var t=(T*pu.v+pu.ph)%1;
+      pu.curve.getPoint(t,V);
+      pu.sp.position.copy(V);
+      pu.sp.material.opacity=Math.pow(Math.sin(t*Math.PI),0.7)*0.85*e;
+    }
+
+    hqLight.intensity=1.0+0.25*Math.sin(T*1.7);
+    renderer.render(scene,camera);
+  }
+
+  function play(){ if(raf3===null && inView && !document.hidden){ clock.getDelta(); raf3=requestAnimationFrame(tick); } }
+  function pause(){ if(raf3!==null){ cancelAnimationFrame(raf3); raf3=null; } }
+
+  /* --- Hooks pilotés par le deck (remplace l'IntersectionObserver) --- */
+  window.__deckMap = {
+    activate: function(){
+      inView=true; started=true; intro=0; curInfo=-2; setInfo(-1);
+      pointerInMap=false; mapHoverI=-1; rosterHoverI=-1;
+      resize(); play();
+    },
+    deactivate: function(){ inView=false; clearMapHover(); pause(); }
+  };
+  document.addEventListener('visibilitychange',function(){ if(!inView) return; document.hidden?pause():play(); });
+
+  }catch(err){ buildFallback(); }
+})();
+</script>
+
+<script>
+/* =========================================================
+   DECK CONTROLLER — navigation plein écran + transitions GSAP
+   Clavier ← → ↑ ↓ Espace · boutons · points · swipe · barre
+   Safari-safe · prefers-reduced-motion respecté
+   ========================================================= */
+(function(){
+  var RM = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var g = window.gsap;
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var total = slides.length;
+  var cur = 0, animating = false;
+
+  var prevBtn = document.getElementById('prevBtn');
+  var nextBtn = document.getElementById('nextBtn');
+  var dotsWrap = document.getElementById('dots');
+  var counter = document.getElementById('counter');
+  var prog = document.getElementById('prog');
+
+  /* Splitting sur les grands titres */
+  if(window.Splitting){ try{ Splitting(); }catch(e){} }
+  document.body.classList.add('anim');
+
+  /* points de progression */
+  var dots = slides.map(function(s,i){
+    var b=document.createElement('button');
+    b.className='dot'+(i===0?' on':'');
+    b.setAttribute('type','button');
+    b.setAttribute('role','tab');
+    b.setAttribute('aria-label','Aller à la diapositive '+(i+1)+' — '+(s.getAttribute('data-label')||''));
+    b.addEventListener('click',function(){ go(i); });
+    dotsWrap.appendChild(b);
+    return b;
+  });
+
+  function pad(n){ return (n<10?'0':'')+n; }
+
+  function contentEls(slide){
+    return {
+      reveals: slide.querySelectorAll('.reveal'),
+      words: slide.querySelectorAll('[data-splitting] .word')
+    };
+  }
+  function hideContent(slide){
+    if(RM || !g) return;
+    var c=contentEls(slide);
+    g.set(c.reveals,{opacity:0,y:24});
+    g.set(c.words,{opacity:0,y:20});
+  }
+  function showContent(slide){
+    var c=contentEls(slide);
+    if(RM || !g){
+      if(g){ g.set(c.reveals,{opacity:1,y:0}); g.set(c.words,{opacity:1,y:0}); }
+      else { c.reveals.forEach(function(el){el.style.opacity=1;}); c.words.forEach(function(w){w.style.opacity=1;}); }
+      return;
+    }
+    g.to(c.reveals,{opacity:1,y:0,duration:.72,ease:'power3.out',stagger:.07,overwrite:true,delay:.05});
+    if(c.words.length){
+      g.to(c.words,{opacity:1,y:0,duration:.7,ease:'power4.out',stagger:.045,overwrite:true});
+    }
+    runCounters(slide);
+  }
+
+  function runCounters(slide){
+    if(RM || !g) return;
+    slide.querySelectorAll('[data-to]').forEach(function(el){
+      if(el.__done) return; el.__done=true;
+      var end=parseInt(el.getAttribute('data-to'),10); if(!end){ return; }
+      var o={v:0}; el.textContent='0';
+      g.to(o,{v:end,duration:1.3,ease:'power2.out',onUpdate:function(){ el.textContent=Math.round(o.v); }});
+    });
+  }
+
+  /* siège vidéo (1 seule vidéo) */
+  var vid=document.getElementById('siegeVid');
+  function playVideo(){
+    if(!vid || RM) return;
+    var pr=vid.play();
+    if(pr && pr.then){ pr.then(function(){ vid.style.opacity='1'; }).catch(function(){}); }
+  }
+  function pauseVideo(){ if(vid){ try{ vid.pause(); }catch(e){} } }
+
+  function onEnter(i){
+    var s=slides[i];
+    document.body.classList.toggle('deck-dark', s.hasAttribute('data-dark'));
+    if(s.hasAttribute('data-map') && window.__deckMap){ window.__deckMap.activate(); }
+    if(s.hasAttribute('data-video')){ playVideo(); }
+  }
+  function onLeave(i){
+    var s=slides[i];
+    if(s.hasAttribute('data-map') && window.__deckMap){ window.__deckMap.deactivate(); }
+    if(s.hasAttribute('data-video')){ pauseVideo(); }
+  }
+
+  function updateUI(){
+    dots.forEach(function(d,i){ d.classList.toggle('on', i===cur); d.setAttribute('aria-selected', i===cur?'true':'false'); });
+    counter.innerHTML='<b>'+pad(cur+1)+'</b> / '+pad(total);
+    prevBtn.disabled = (cur===0);
+    nextBtn.disabled = (cur===total-1);
+    var frac = total>1 ? cur/(total-1) : 1;
+    if(prog){ prog.style.transform='scaleX('+frac+')'; }
+  }
+
+  function go(n, dir){
+    if(n<0 || n>=total || n===cur || animating) return;
+    dir = dir || (n>cur?1:-1);
+    var out=slides[cur], inc=slides[n];
+    var prev=cur;
+    animating=true;
+
+    onLeave(prev);
+    inc.classList.add('is-active');
+    inc.scrollTop=0;
+    hideContent(inc);
+
+    function finalize(){
+      out.classList.remove('is-active');
+      if(g){ g.set(out,{visibility:'hidden'}); }
+      else { out.style.visibility='hidden'; out.style.opacity=0; }
+      cur=n;
+      updateUI();
+      onEnter(cur);
+      showContent(inc);
+      animating=false;
+    }
+
+    if(RM || !g){
+      slides.forEach(function(s,i){
+        if(i===n){ s.style.opacity=1; s.style.visibility='visible'; }
+        else { s.style.opacity=0; s.style.visibility='hidden'; }
+      });
+      finalize();
+      return;
+    }
+
+    var sign = dir>0?1:-1;
+    g.set(inc,{visibility:'visible',opacity:0,xPercent:7*sign,scale:.986,zIndex:3});
+    g.set(out,{zIndex:2});
+    var tl=g.timeline({onComplete:function(){ g.set(inc,{zIndex:2,clearProps:'scale,xPercent'}); finalize(); }});
+    tl.to(out,{opacity:0,xPercent:-7*sign,scale:.992,duration:.44,ease:'power2.in'},0);
+    tl.to(inc,{opacity:1,xPercent:0,scale:1,duration:.62,ease:'power3.out'},0.12);
+  }
+
+  function next(){ go(cur+1, 1); }
+  function prev(){ go(cur-1, -1); }
+
+  prevBtn.addEventListener('click',prev);
+  nextBtn.addEventListener('click',next);
+  document.querySelectorAll('[data-next]').forEach(function(b){ b.addEventListener('click',next); });
+
+  /* clavier */
+  window.addEventListener('keydown',function(e){
+    if(e.metaKey||e.ctrlKey||e.altKey) return;
+    var k=e.key;
+    if(k==='ArrowRight'||k==='ArrowDown'||k==='PageDown'||k===' '||k==='Spacebar'){ e.preventDefault(); next(); }
+    else if(k==='ArrowLeft'||k==='ArrowUp'||k==='PageUp'){ e.preventDefault(); prev(); }
+    else if(k==='Home'){ e.preventDefault(); go(0); }
+    else if(k==='End'){ e.preventDefault(); go(total-1); }
+  });
+
+  /* swipe tactile — horizontal seulement (vertical réservé au scroll interne) */
+  var tsx=0,tsy=0,tst=0,tracking=false;
+  var deck=document.getElementById('deck');
+  deck.addEventListener('touchstart',function(e){
+    if(e.touches.length!==1){ tracking=false; return; }
+    tsx=e.touches[0].clientX; tsy=e.touches[0].clientY; tst=Date.now(); tracking=true;
+  },{passive:true});
+  deck.addEventListener('touchend',function(e){
+    if(!tracking) return; tracking=false;
+    var t=e.changedTouches[0];
+    var dx=t.clientX-tsx, dy=t.clientY-tsy, dt=Date.now()-tst;
+    if(Math.abs(dx)>62 && Math.abs(dx)>Math.abs(dy)*1.4 && dt<800){
+      if(dx<0) next(); else prev();
+    }
+  },{passive:true});
+
+  /* --- init --- */
+  slides.forEach(function(s,i){
+    if(g){ g.set(s,{opacity:(i===0?1:0), visibility:(i===0?'visible':'hidden')}); }
+    else { s.style.opacity=(i===0?1:0); s.style.visibility=(i===0?'visible':'hidden'); }
+    if(i!==0) hideContent(s);
+  });
+  slides[0].classList.add('is-active');
+  updateUI();
+  onEnter(0);
+  showContent(slides[0]);
+})();
+</script>
+</body>
+</html>
