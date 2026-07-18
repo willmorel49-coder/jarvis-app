@@ -195,6 +195,73 @@
 <script src="essentiels-officines.js?v=g4"></script>
 <script src="essentiels-reco-data.js?v=g4"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+  #ess-login{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;
+    background:radial-gradient(60% 45% at 70% 8%,rgba(87,174,49,.16),transparent 60%),radial-gradient(50% 40% at 8% 95%,rgba(150,205,64,.10),transparent 60%),linear-gradient(160deg,#0E1310,#12180F 55%,#0E1310);}
+  #ess-login .card{width:100%;max-width:400px;background:#161C15;border:1px solid rgba(255,255,255,.08);border-radius:24px;padding:40px 34px;box-shadow:0 24px 64px rgba(0,0,0,.5);border-top:4px solid #57AE31;}
+  #ess-login .co{display:flex;align-items:center;gap:10px;margin-bottom:18px}
+  #ess-login .co .pill{background:#fff;border-radius:12px;padding:5px 8px;display:flex}
+  #ess-login .co .pill img{height:22px;display:block}
+  #ess-login h2{font-family:'Comfortaa',cursive;color:#fff;font-size:1.25rem;margin:4px 0 2px}
+  #ess-login .base{color:#8FD45F;font-size:.72rem;text-transform:uppercase;letter-spacing:.12em;font-weight:600;margin-bottom:18px}
+  #ess-login label{display:block;color:#A9B4A3;font-size:.74rem;font-weight:600;margin:14px 0 6px;text-transform:uppercase;letter-spacing:.04em}
+  #ess-login input{width:100%;padding:13px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:#0E1310;color:#fff;font-family:'Montserrat',sans-serif;font-size:.95rem}
+  #ess-login input:focus{outline:none;border-color:#57AE31}
+  #ess-login .go{width:100%;margin-top:22px;padding:14px;border-radius:100px;border:none;cursor:pointer;font-family:'Comfortaa',cursive;font-weight:600;font-size:.95rem;background:#57AE31;color:#fff}
+  #ess-login .go:hover{background:#4C9A28}
+  #ess-login .err{color:#F06C6C;font-size:.82rem;margin-top:12px;min-height:18px;text-align:center}
+  #ess-login .foot{text-align:center;color:#71806B;font-size:.72rem;margin-top:16px}
+  #ess-logout{background:transparent;border:1px solid rgba(255,255,255,.25);color:rgba(255,255,255,.85);border-radius:100px;padding:7px 14px;font-size:.74rem;font-weight:600;cursor:pointer;white-space:nowrap}
+  #ess-logout:hover{border-color:#8FD45F;color:#8FD45F}
+  body.locked{overflow:hidden}
+</style>
+<div id="ess-login">
+  <div class="card">
+    <div class="co">
+      <span class="pill"><img src="_brand/assets/logo-integral.png" alt="Intégral Pharma"></span>
+      <span style="color:#A9B4A3">×</span>
+      <svg viewBox="0 0 100 100" width="30" height="30" aria-hidden="true"><g fill="none" stroke-width="9" stroke-linecap="round"><path d="M50 46 C50 30 38 24 32 30 C26 36 34 48 50 48" stroke="#3E8A1F"/><path d="M54 50 C70 50 76 38 70 32 C64 26 52 34 52 50" stroke="#B5F257"/><path d="M50 54 C50 70 62 76 68 70 C74 64 66 52 50 52" stroke="#00A85C"/><path d="M46 50 C30 50 24 62 30 68 C36 74 48 66 48 50" stroke="#66F282"/></g></svg>
+    </div>
+    <h2>Pilotage groupement</h2>
+    <div class="base">Essentiels Pharma × Intégral Pharma</div>
+    <form id="ess-login-form" autocomplete="on">
+      <label for="ess-email">Email</label>
+      <input id="ess-email" type="email" placeholder="prenom.nom@integralpharma.fr" autocomplete="username" required>
+      <label for="ess-pass">Mot de passe</label>
+      <input id="ess-pass" type="password" placeholder="••••••••" autocomplete="current-password" required>
+      <button type="submit" class="go">Se connecter →</button>
+      <div class="err" id="ess-err"></div>
+    </form>
+    <div class="foot">Accès réservé · vos identifiants Jarvis habituels</div>
+  </div>
+</div>
+<script>
+(function(){
+  var SB_URL='https://iyvavhnlhxksokkerkos.supabase.co';
+  var SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5dmF2aG5saHhrc29ra2Vya29zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1NjU2NTYsImV4cCI6MjA5MzE0MTY1Nn0.eMdW6vUdoyVpZbqKXp6FNYTajwKEf4x-Xyj5zj1igO4';
+  var sb=null, tries=0;
+  try{ document.body && document.body.classList.add('locked'); }catch(e){}
+  document.addEventListener('DOMContentLoaded',function(){ document.body.classList.add('locked'); });
+  function ready(cb){ if(window.supabase&&window.supabase.createClient){cb();} else if(tries++<150){setTimeout(function(){ready(cb);},60);} }
+  function unlock(){ var o=document.getElementById('ess-login'); if(o)o.remove(); document.body.classList.remove('locked'); }
+  ready(function(){
+    sb=window.supabase.createClient(SB_URL,SB_KEY);
+    sb.auth.getSession().then(function(r){ if(r&&r.data&&r.data.session) unlock(); });
+    var f=document.getElementById('ess-login-form');
+    if(f) f.addEventListener('submit',function(e){
+      e.preventDefault();
+      var err=document.getElementById('ess-err'); err.textContent='';
+      var btn=f.querySelector('button'); btn.textContent='Connexion…'; btn.disabled=true;
+      sb.auth.signInWithPassword({email:document.getElementById('ess-email').value.trim(),password:document.getElementById('ess-pass').value})
+        .then(function(res){ btn.textContent='Se connecter →'; btn.disabled=false;
+          if(res.error){ err.textContent='Identifiants incorrects.'; } else { unlock(); } })
+        .catch(function(){ btn.textContent='Se connecter →'; btn.disabled=false; err.textContent='Erreur de connexion.'; });
+    });
+  });
+  window.essLogout=function(){ if(sb) sb.auth.signOut().then(function(){location.reload();}); else location.reload(); };
+})();
+</script>
 
 <header class="topbar">
   <div class="brand-co">
@@ -211,6 +278,7 @@
     <div class="baseline">Le réflexe santé</div>
   </div>
   <div class="spacer"></div>
+  <button id="ess-logout" onclick="essLogout()">Déconnexion</button>
 </header>
 
 <nav class="tabs main-tabs">
