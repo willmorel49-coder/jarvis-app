@@ -234,6 +234,22 @@ body.booted .scrollcue{opacity:1}
 .map3d.flat canvas,.map3d.flat .map3d__labels{display:none}
 .map3d__fallback svg{width:auto;height:100%;max-width:100%}
 
+.map3d__info{position:absolute;left:14px;bottom:14px;z-index:6;max-width:min(300px,74%);
+  background:rgba(7,12,28,.92);border:1px solid rgba(120,150,255,.30);border-radius:14px;
+  padding:13px 15px;opacity:0;transform:translateY(10px);pointer-events:none;
+  transition:opacity .3s ease,transform .35s var(--ease);
+  box-shadow:0 22px 55px -22px rgba(0,0,0,.85)}
+.map3d__info.on{opacity:1;transform:none}
+.mi__type{display:inline-block;font-family:var(--mono);font-size:9.5px;font-weight:600;letter-spacing:.14em;
+  text-transform:uppercase;color:#0A1430;background:#5B8CFF;border-radius:999px;padding:3px 9px;margin-bottom:9px}
+.map3d__info.siege .mi__type{background:linear-gradient(180deg,#FFC673,#F39A1B);color:#241200}
+.map3d__info.part .mi__type{background:transparent;border:1px dashed #9FB4D8;color:#C9D6EE}
+.mi__name{font-family:var(--disp);font-weight:600;font-size:17px;color:#EFF3FF;letter-spacing:-.01em;line-height:1.15}
+.mi__city{font-size:13px;color:var(--muted);margin-top:3px}
+.mi__gps{display:flex;align-items:center;gap:7px;margin-top:10px;padding-top:9px;
+  border-top:1px solid rgba(255,255,255,.08);font-family:var(--mono);font-size:12px;color:#9FB6FF}
+.mi__gps svg{width:13px;height:13px;flex:none;opacity:.85}
+.mi__gps b{color:#EAF0FF;font-weight:500}
 .maplegend{display:flex;flex-wrap:wrap;gap:8px 22px;margin-top:14px;justify-content:center;
   font-family:var(--mono);font-size:11px;letter-spacing:.10em;color:var(--muted)}
 .maplegend span{display:inline-flex;align-items:center;gap:8px}
@@ -430,6 +446,12 @@ body.cap .story{padding:30px 22px}
           <div class="map3d" id="map3d" role="img" aria-label="Carte 3D de France : les 9 établissements Intégral Pharma, siège à Hyères">
             <div class="map3d__labels" id="lbls" aria-hidden="true"></div>
             <div class="map3d__badge"><span class="dot"></span>Réseau Intégral — France</div>
+            <div class="map3d__info" id="mapInfo" aria-hidden="true">
+              <span class="mi__type" id="miType">Agence Intégral</span>
+              <div class="mi__name" id="miName">—</div>
+              <div class="mi__city" id="miCity">—</div>
+              <div class="mi__gps"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6-7-11a7 7 0 0 1 14 0c0 5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><span id="miGps">—</span></div>
+            </div>
             <div class="map3d__fallback" id="mapFallback" aria-hidden="true"></div>
           </div>
           <div class="maplegend reveal d3">
@@ -797,6 +819,7 @@ body.cap .story{padding:30px 22px}
   var ringMatProto = new THREE.MeshBasicMaterial({color:0x5B8CFF,transparent:true,opacity:0.5,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,fog:false});
 
   var beacons=[]; /* {grp, mats[], rings[], sprites[], site, labelEl, topY} */
+  var pickTargets=[]; /* cylindres invisibles pour le survol (raycasting) */
   function makeBeacon(m,idx){
     var siege = m.t==='siege', part = m.t==='part';
     var cCore = siege?0xFFC876:(part?0xE9EFF9:0xBFD9FF);
@@ -851,6 +874,12 @@ body.cap .story{padding:30px 22px}
     lblWrap.appendChild(el);
 
     beacons.push({grp:grp,mats:mats,rings:rings,site:m,el:el,wx:wx,wz:wz,topY:EXH+bh+0.9,idx:idx,hl:0,hlT:0});
+
+    /* cible de survol invisible (toute la hauteur du faisceau) */
+    var pr=(siege?4.6:3.4), ph=Math.max(bh,7);
+    var pick=new THREE.Mesh(new THREE.CylinderGeometry(pr,pr,ph,10,1,true),
+      new THREE.MeshBasicMaterial({colorWrite:false,depthWrite:false,transparent:true,opacity:0}));
+    pick.position.set(wx, EXH+ph/2, wz); pick.userData.bi=idx; scene.add(pick); pickTargets.push(pick);
   }
   for(var bi=0;bi<SITES.length;bi++) makeBeacon(SITES[bi],bi);
 
@@ -888,6 +917,28 @@ body.cap .story{padding:30px 22px}
   var V=new THREE.Vector3();
   var cw=0,ch=0;
 
+  /* ---- survol → focus + fiche coordonnées ---- */
+  var ray=new THREE.Raycaster(), ndc=new THREE.Vector2(-2,-2);
+  var pointerInMap=false, mapHoverI=-1, rosterHoverI=-1, focusI=-1, activeI=-1, focusAmt=0;
+  /* coordonnées GPS reconstruites depuis la projection (x=66.12·lon+353.88 ; y=4895.6−95.55·lat) */
+  var LATLON=SITES.map(function(m){ return {lat:(4895.6-m.y)/95.55, lon:(m.x-353.88)/66.12}; });
+  var infoEl=document.getElementById('mapInfo'),
+      miType=document.getElementById('miType'), miName=document.getElementById('miName'),
+      miCity=document.getElementById('miCity'), miGps=document.getElementById('miGps');
+  var curInfo=-2;
+  function setInfo(i){
+    if(i===curInfo) return; curInfo=i;
+    if(i<0){ if(infoEl) infoEl.classList.remove('on'); return; }
+    var m=SITES[i], ll=LATLON[i];
+    infoEl.classList.remove('siege','part');
+    if(m.t==='siege') infoEl.classList.add('siege'); else if(m.t==='part') infoEl.classList.add('part');
+    miType.textContent = m.t==='siege'?'Siège':(m.t==='part'?'Partenaire':'Agence Intégral');
+    miName.textContent = m.n;
+    miCity.textContent = m.c;
+    miGps.innerHTML = '<b>'+ll.lat.toFixed(4)+'</b> N · <b>'+ll.lon.toFixed(4)+'</b> '+(ll.lon<0?'W':'E');
+    infoEl.classList.add('on');
+  }
+
   function resize(){
     cw=box.clientWidth; ch=box.clientHeight;
     if(!cw||!ch) return;
@@ -906,14 +957,20 @@ body.cap .story{padding:30px 22px}
     var r=box.getBoundingClientRect();
     mx=((e.clientX-r.left)/r.width-0.5)*2;
     my=((e.clientY-r.top)/r.height-0.5)*2;
+    ndc.x=((e.clientX-r.left)/r.width)*2-1;
+    ndc.y=-((e.clientY-r.top)/r.height)*2+1;
+    pointerInMap=true;
   },{passive:true});
-  box.addEventListener('pointerleave',function(){ mx=0;my=0; },{passive:true});
+  function clearMapHover(){ mx=0;my=0; pointerInMap=false; mapHoverI=-1; }
+  box.addEventListener('pointerleave',clearMapHover,{passive:true});
+  box.addEventListener('pointercancel',clearMapHover,{passive:true});
+  box.addEventListener('pointerup',function(e){ if(e.pointerType!=='mouse') clearMapHover(); },{passive:true});
 
-  /* survol de l'annuaire → highlight du faisceau */
+  /* survol de l'annuaire → même focus + fiche que sur la carte */
   document.querySelectorAll('.estab[data-i]').forEach(function(row){
     var i=parseInt(row.getAttribute('data-i'),10);
-    row.addEventListener('mouseenter',function(){ if(beacons[i]){beacons[i].hlT=1; beacons[i].el.classList.add('on');} });
-    row.addEventListener('mouseleave',function(){ if(beacons[i]){beacons[i].hlT=0; beacons[i].el.classList.remove('on');} });
+    row.addEventListener('mouseenter',function(){ rosterHoverI=i; });
+    row.addEventListener('mouseleave',function(){ if(rosterHoverI===i) rosterHoverI=-1; });
   });
 
   function easeOut(x){ return 1-Math.pow(1-x,3); }
@@ -924,24 +981,49 @@ body.cap .story{padding:30px 22px}
     if(started) intro=Math.min(1,intro+dt/2.4);
     var e=easeOut(intro);
 
+    /* survol → focus sur un établissement */
+    if(pointerInMap){
+      ray.setFromCamera(ndc,camera);
+      var hits=ray.intersectObjects(pickTargets,false);
+      mapHoverI = hits.length ? hits[0].object.userData.bi : -1;
+    }
+    focusI = pointerInMap ? mapHoverI : rosterHoverI;
+    if(focusI>=0) activeI=focusI;
+    focusAmt += ((focusI>=0?1:0)-focusAmt)*0.12;
+    setInfo(focusI);
+
     /* caméra : orbite douce + parallax + zoom d'entrée */
     var tAz=Math.sin(T*0.10)*0.10 + mx*0.14;
     var tEl=baseEl + my*0.06 + (1-e)*0.16;
     az+=(tAz-az)*0.045; elv+=(tEl-elv)*0.045;
     var R=baseR*(1.30-0.30*e);
-    camera.position.set(Math.sin(az)*Math.cos(elv)*R, Math.sin(elv)*R, Math.cos(az)*Math.cos(elv)*R);
-    camera.lookAt(0,2.5,1.5);
+    var ovx=Math.sin(az)*Math.cos(elv)*R, ovy=Math.sin(elv)*R, ovz=Math.cos(az)*Math.cos(elv)*R;
+    var lookX=0,lookY=2.5,lookZ=1.5;
+    if(focusAmt>0.001 && activeI>=0){
+      var fb=beacons[activeI], ea=easeOut(focusAmt);
+      var fx=fb.wx, fy=EXH+fb.site.h*0.4, fz=fb.wz;
+      var dx=ovx-fx, dy=ovy-fy, dz=ovz-fz, dl=Math.sqrt(dx*dx+dy*dy+dz*dz)||1;
+      dx/=dl; dy=Math.max(dy/dl,0.44); dz/=dl;
+      var fR=Math.max(38, baseR*0.34);
+      camera.position.set(ovx+((fx+dx*fR)-ovx)*ea, ovy+((fy+dy*fR)-ovy)*ea, ovz+((fz+dz*fR)-ovz)*ea);
+      lookX=fx*ea; lookY=2.5+(fy-2.5)*ea; lookZ=1.5+(fz-1.5)*ea;
+    } else {
+      camera.position.set(ovx,ovy,ovz);
+    }
+    camera.lookAt(lookX,lookY,lookZ);
 
     /* faisceaux */
     for(var i=0;i<beacons.length;i++){
       var b=beacons[i];
+      b.hlT = (b.idx===focusI)?1:0;
+      var dim = (activeI>=0 && b.idx!==activeI) ? (1-0.72*focusAmt) : 1;
       var si=Math.max(0,Math.min(1,intro*1.9 - b.idx*0.09));
       si=easeOut(si);
       b.grp.scale.y=Math.max(0.0001,si);
       b.hl+=(b.hlT-b.hl)*0.1;
       for(var j=0;j<b.mats.length;j++){
         b.mats[j].uniforms.uT.value=T;
-        b.mats[j].uniforms.uOp.value=(j===0?(b.site.t==='siege'?0.34:0.26):(b.site.t==='siege'?0.9:0.75))*(0.35+0.65*si)*(1+b.hl*0.8);
+        b.mats[j].uniforms.uOp.value=(j===0?(b.site.t==='siege'?0.34:0.26):(b.site.t==='siege'?0.9:0.75))*(0.35+0.65*si)*(1+b.hl*0.8)*dim;
       }
       for(var k=0;k<b.rings.length;k++){
         var rg=b.rings[k];
@@ -956,7 +1038,8 @@ body.cap .story{padding:30px 22px}
         var lx=(V.x*0.5+0.5)*cw + b.site.ldx;
         var ly=(-V.y*0.5+0.5)*ch + b.site.ldy;
         b.el.style.transform='translate(-50%,-100%) translate('+lx.toFixed(1)+'px,'+ly.toFixed(1)+'px)';
-        b.el.style.opacity=Math.min(1,(si-0.35)*2.2);
+        b.el.style.opacity=Math.min(1,(si-0.35)*2.2)*Math.max(dim,(b.idx===activeI?1:0));
+        b.el.style.zIndex=(b.idx===activeI)?5:1;
       }else{
         b.el.style.opacity=0;
       }
