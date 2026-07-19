@@ -1,0 +1,1607 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Intégral Pharma — Votre grossiste de première intention</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://api.fontshare.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<!-- Modules pro (vendored) + Three.js CDN r128 -->
+<link rel="stylesheet" href="../vendor/splitting.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" onerror="window.__noThree=1"></script>
+<script defer src="../vendor/gsap.min.js"></script>
+<script defer src="../vendor/splitting.min.js"></script>
+
+<style>
+:root{
+  --navy:#0A1430; --navy-deep:#060A18;
+  --blue:#0050E6; --blue-dk:#0034A0; --blue-lite:#5B8CFF;
+  --orange:#F39A1B; --orange-hi:#FFC168; --orange-deep:#C9741A;
+  --white:#FFFFFF; --cream:#F4F6FB;
+  --paper:#F6F8FD; --paper-2:#EEF2FB; --card:#FFFFFF;
+  --ink:#0A1430; --ink-2:#3B466B; --ink-3:#6C77A0;
+  --line-l:rgba(10,20,48,.10); --line-l2:rgba(10,20,48,.06);
+  --warm:#FFF6EA;
+  /* bande sombre (carte 3D) */
+  --fg:#EAF0FF; --muted:#9AA6C8; --muted-2:#6E7BA0; --line:rgba(255,255,255,.10);
+  --serif:'Inter Tight',system-ui,sans-serif;
+  --disp:'Inter Tight',system-ui,sans-serif;
+  --body:'Inter',system-ui,-apple-system,sans-serif;
+  --mono:'Geist Mono',ui-monospace,monospace;
+  --ease:cubic-bezier(.16,1,.3,1);
+  --ease-out:cubic-bezier(.22,1,.36,1);
+
+  /* ——— Échelle typographique — DEUX rangs seulement (rigueur) ——— */
+  /* rang A : titre d'ouverture (diapo 01)                       */
+  /* rang B : titre de section (diapos 02→07, TAILLE IDENTIQUE)  */
+  --fs-display:clamp(40px,8.2vw,80px);
+  --fs-h1:clamp(28px,5.2vw,50px);   /* = LE titre de section, partout pareil */
+  --fs-h2:clamp(28px,5.2vw,50px);   /* aligné sur h1 : aucune exception */
+  --fs-h3:clamp(18px,2.4vw,22px);
+  --fs-lead:clamp(15px,2.5vw,17px);
+  --fs-body:14px;
+  --fs-cap:12.5px;
+  --fs-kicker:11px;
+  --fs-micro:10px;
+
+  /* ——— GRILLE & marges de sécurité (constantes sur les 7 diapos) ——— */
+  --mx:clamp(22px,4.4vw,60px);       /* marge horizontale (safe area) */
+  --mt:max(clamp(58px,7.2vw,78px),calc(env(safe-area-inset-top) + 52px)); /* ancre haute du contenu */
+  --mb:clamp(88px,14vh,108px);       /* marge basse (au-dessus de la nav) */
+  --measure:1060px;                  /* largeur utile constante */
+  --folio-top:clamp(18px,2.4vw,26px);
+
+  /* ——— Tracking optique (plus le corps est gros, plus on serre) ——— */
+  --tr-display:-.04em;
+  --tr-h1:-.032em;
+  --tr-h2:-.026em;
+  --tr-h3:-.014em;
+  --tr-kicker:.26em;
+  --tr-mono:.14em;
+
+  /* ——— Rythme d'espacement (base 4px) ——— */
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px;
+  --sp-5:24px; --sp-6:32px; --sp-7:48px; --sp-8:64px;
+
+  /* ——— Filets & registre Swiss ——— */
+  --hair:rgba(10,20,48,.12);
+  --hair-2:rgba(10,20,48,.07);
+  --hair-d:rgba(255,255,255,.14);
+  --hair-d2:rgba(255,255,255,.07);
+  --tick:14px;
+
+  /* échelle de rayons cohérente */
+  --r-sm:11px; --r-md:16px; --r-lg:20px; --r-xl:26px;
+  --r-tile:12px;            /* gabarit unique des tuiles d'icône */
+  /* ombres en couches (finition premium) — 1 famille « carte », froide + chaude */
+  --sh-card:0 1px 2px rgba(10,20,48,.04),0 18px 40px -28px rgba(10,20,48,.34);
+  --sh-card-hi:0 2px 6px rgba(10,20,48,.06),0 30px 60px -30px rgba(0,80,230,.34);
+  --sh-card-warm:0 1px 2px rgba(10,20,48,.04),0 18px 40px -28px rgba(243,154,27,.30);
+  --sh-card-hi-warm:0 2px 6px rgba(10,20,48,.06),0 30px 60px -30px rgba(243,154,27,.34);
+  --sh-float:0 20px 48px -22px rgba(10,20,48,.5);
+  /* accents de survol — 1 valeur froide, 1 chaude (partagées par toutes les cartes) */
+  --hover-blue:rgba(0,80,230,.26);
+  --hover-warm:rgba(243,154,27,.30);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;height:100dvh}
+html{-webkit-text-size-adjust:100%;overflow:hidden;background:var(--paper)}
+body{
+  font-family:var(--body); color:var(--ink); line-height:1.5;
+  background:var(--paper); overflow:hidden;
+  -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+  font-feature-settings:"cv11","ss01"; font-variant-ligatures:common-ligatures;
+}
+img{max-width:100%;display:block}
+a{color:inherit;text-decoration:none}
+:focus-visible{outline:2.5px solid var(--blue);outline-offset:3px;border-radius:10px}
+.slide--dark :focus-visible{outline-color:var(--orange-hi)}
+.mono{font-family:var(--mono);font-feature-settings:"tnum" 1,"zero" 1;font-variant-numeric:tabular-nums slashed-zero}
+h1,h2,h3,h4{text-wrap:balance}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+  clip:rect(0,0,0,0);white-space:nowrap;border:0}
+/* grain premium — texture SVG (jamais de blur) */
+.deck::after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;opacity:.4;mix-blend-mode:soft-light;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+
+/* =========================================================
+   DECK — chaque diapo = 100vw × 100dvh
+   ========================================================= */
+.deck{position:fixed;inset:0;height:100%;height:100dvh;overflow:hidden;background:
+  radial-gradient(120% 80% at 12% -6%, rgba(0,80,230,.06), transparent 46%),
+  radial-gradient(90% 60% at 92% 6%, rgba(243,154,27,.07), transparent 52%),
+  var(--paper)}
+/* ANATOMIE CONSTANTE : contenu ancré EN HAUT (le kicker tombe au même Y
+   sur les 7 diapos → l'œil ne saute jamais). Négatif assumé sous le bloc. */
+.slide{position:absolute;inset:0;display:flex;align-items:flex-start;justify-content:center;
+  padding:var(--mt) max(var(--mx),env(safe-area-inset-right)) var(--mb) max(var(--mx),env(safe-area-inset-left));
+  opacity:0;visibility:hidden;pointer-events:none;overflow:hidden}
+.slide.is-active{visibility:visible;pointer-events:auto}
+.slide__inner{position:relative;z-index:2;width:100%;max-width:var(--measure);max-height:100%;
+  overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
+  scrollbar-width:none}
+.slide__inner::-webkit-scrollbar{display:none}
+.slide__inner.map-slide{overflow:visible;height:100%;align-self:stretch}
+
+/* ——— Repères de safe-area : mêmes coins, même position, toutes les diapos ——— */
+.slide::before,.slide::after{content:"";position:absolute;z-index:1;width:var(--tick);height:var(--tick);
+  pointer-events:none;opacity:.55}
+.slide::before{left:var(--mx);top:clamp(46px,6vw,62px);
+  border-left:1px solid var(--hair);border-top:1px solid var(--hair)}
+.slide::after{right:var(--mx);bottom:clamp(70px,12vh,92px);
+  border-right:1px solid var(--hair);border-bottom:1px solid var(--hair)}
+.slide--dark::before{border-left-color:var(--hair-d);border-top-color:var(--hair-d)}
+.slide--dark::after{border-right-color:var(--hair-d);border-bottom-color:var(--hair-d)}
+
+/* ——— Folio : filet + brand / section / pagination (registre Swiss) ——— */
+.folio{position:absolute;left:var(--mx);right:var(--mx);top:var(--folio-top);
+  z-index:3;display:flex;align-items:center;gap:14px;pointer-events:none;
+  font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.2em;text-transform:uppercase;color:var(--ink-3)}
+.folio::after{content:"";flex:1;height:1px;background:var(--hair);order:2}
+.folio__brand{order:1;display:inline-flex;align-items:center;gap:8px;color:var(--ink-2)}
+.folio__brand .sq{width:6px;height:6px;background:var(--orange);border-radius:1px}
+.folio__sec{order:3;color:var(--ink-3)}
+.folio__pg{order:4;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.folio__pg b{color:var(--blue);font-weight:500}
+.slide--dark .folio{color:var(--muted-2)}
+.slide--dark .folio::after{background:var(--hair-d)}
+.slide--dark .folio__brand{color:var(--muted)}
+.slide--dark .folio__pg{color:var(--muted)}
+.slide--dark .folio__pg b{color:var(--orange-hi)}
+
+/* ——— Watermark : grand numéro fantôme (couleur pleine, jamais clip-text) ——— */
+.wmark{position:absolute;z-index:1;pointer-events:none;user-select:none;
+  right:clamp(-10px,1vw,18px);bottom:clamp(-24px,-1vw,6px);
+  font-family:var(--disp);font-weight:700;line-height:.7;letter-spacing:-.06em;
+  font-size:clamp(150px,30vw,360px);color:rgba(10,20,48,.035)}
+.slide--dark .wmark{color:rgba(122,150,255,.05)}
+
+/* (repères d'angle désormais portés par .slide, cf. safe-area constante) */
+
+/* décor doux (SVG/gradient, jamais de blur) */
+.slide__deco{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.orb{position:absolute;border-radius:50%}
+.orb.a{width:52vw;height:52vw;max-width:620px;max-height:620px;left:-12vw;top:-14vh;
+  background:radial-gradient(50% 50% at 50% 50%,rgba(0,80,230,.16),transparent 66%)}
+.orb.b{width:46vw;height:46vw;max-width:560px;max-height:560px;right:-12vw;bottom:-16vh;
+  background:radial-gradient(50% 50% at 50% 50%,rgba(243,154,27,.16),transparent 66%)}
+.slide__grid{position:absolute;inset:0;opacity:.55;
+  background-image:linear-gradient(rgba(10,20,48,.05) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(10,20,48,.05) 1px,transparent 1px);
+  background-size:56px 56px;
+  -webkit-mask:radial-gradient(80% 72% at 50% 44%,#000,transparent 80%);
+          mask:radial-gradient(80% 72% at 50% 44%,#000,transparent 80%)}
+
+/* =========================================================
+   HEADER DE DIAPO — anatomie constante (kicker → titre → lead)
+   Même gabarit, même rythme vertical, mêmes mesures sur les 7 diapos.
+   ========================================================= */
+.chnum{display:inline-flex;align-items:center;gap:11px;font-family:var(--mono);font-size:var(--fs-kicker);
+  letter-spacing:var(--tr-kicker);text-transform:uppercase;color:var(--orange-deep);margin-bottom:var(--sp-4)}
+.chnum::before{content:"";width:34px;height:1px;background:var(--orange)}
+.chnum::after{content:"";width:4px;height:4px;border-radius:50%;background:var(--orange);opacity:.55}
+.chtitle{font-family:var(--serif);font-weight:700;letter-spacing:var(--tr-h1);line-height:1.0;
+  font-size:var(--fs-h1);color:var(--ink);margin-bottom:var(--sp-4);max-width:18ch;text-wrap:balance}
+.chtitle .accent{color:var(--blue);font-style:normal;font-weight:700}
+.chtext{color:var(--ink-2);font-size:var(--fs-lead);line-height:1.55;max-width:54ch;text-wrap:pretty}
+.chtext b{color:var(--ink);font-weight:700}
+/* zone de contenu : toujours le MÊME décrochage sous le lead */
+.content{margin-top:var(--sp-6)}
+
+/* =========================================================
+   01 — TITRE
+   ========================================================= */
+/* 01 — même grille que les autres : aligné à gauche, header constant.
+   Le titre d'ouverture est le seul au rang « display ». */
+.hero__inner{max-width:var(--measure)}
+.brandlogo3d{position:relative;display:block;width:fit-content;margin:0 0 var(--sp-5);perspective:900px}
+.brandlogo{height:clamp(38px,5.2vw,52px);width:auto;display:block;
+  filter:drop-shadow(0 14px 26px rgba(0,60,180,.20)) drop-shadow(0 4px 8px rgba(10,20,48,.12))}
+.hero__title{font-family:var(--serif);font-weight:700;letter-spacing:var(--tr-display);line-height:.96;
+  font-size:var(--fs-display);color:var(--ink);text-wrap:balance;max-width:16ch;margin-bottom:var(--sp-4)}
+.hero__title .accent{color:var(--blue);font-style:normal;font-weight:700}
+.hero__sub{max-width:54ch;font-size:var(--fs-lead);line-height:1.55;color:var(--ink-2)}
+.hero__sub b{color:var(--ink);font-weight:700}
+.hero__hint{margin-top:var(--sp-6);display:inline-flex;align-items:center;gap:10px;
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-3)}
+.hero__hint .k{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 6px;
+  border:1px solid var(--line-l);border-radius:6px;background:var(--card);color:var(--ink-2);font-size:11px}
+
+/* =========================================================
+   02 — QUI SOMMES-NOUS
+   ========================================================= */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:var(--sp-6);max-width:660px;counter-reset:st}
+.stat{position:relative;overflow:hidden;border:1px solid var(--line-l);border-radius:var(--r-md);padding:16px 16px 18px;background:var(--card);
+  box-shadow:var(--sh-card);transition:transform .35s var(--ease-out),box-shadow .35s ease,border-color .3s ease}
+.stat:hover{transform:translateY(-3px);border-color:var(--hover-blue);box-shadow:var(--sh-card-hi)}
+.stat::before{counter-increment:st;content:counter(st,upper-roman);position:absolute;top:14px;right:15px;
+  font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.14em;color:var(--ink-3);opacity:.7}
+.stat::after{content:"";position:absolute;left:16px;right:16px;top:0;height:2px;
+  background:linear-gradient(90deg,var(--blue),transparent 62%);border-radius:0 0 2px 2px}
+.stat .n{font-family:var(--disp);font-weight:600;font-size:clamp(24px,5.2vw,32px);color:var(--ink);letter-spacing:-.018em;
+  font-variant-numeric:tabular-nums;padding-top:12px;display:flex;align-items:baseline;gap:.14em}
+.stat .n b{color:var(--blue);font-weight:700}
+.stat .n .u{font-size:.5em;color:var(--ink-3);font-weight:500;letter-spacing:0}
+.stat .l{font-size:var(--fs-cap);color:var(--ink-3);margin-top:8px;padding-top:8px;line-height:1.35;
+  border-top:1px solid var(--hair-2)}
+
+/* =========================================================
+   03 — LA PROMESSE
+   ========================================================= */
+.promises{display:grid;grid-template-columns:1fr;gap:12px;margin-top:var(--sp-6)}
+@media(min-width:620px){.promises{grid-template-columns:1fr 1fr}}
+.promise{position:relative;border:1px solid var(--line-l);border-radius:var(--r-md);padding:20px 20px;
+  background:var(--card);overflow:hidden;box-shadow:var(--sh-card);
+  transition:transform .35s var(--ease-out),box-shadow .35s ease,border-color .3s ease}
+.promise:hover{transform:translateY(-3px);border-color:var(--hover-blue);box-shadow:var(--sh-card-hi)}
+.promise:hover .promise__ico{transform:scale(1.06) rotate(-2deg)}
+.promise__k{position:absolute;top:19px;right:20px;display:inline-flex;align-items:center;gap:8px;
+  font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.14em;color:var(--ink-3)}
+.promise__k::before{content:"";width:18px;height:1px;background:var(--hair)}
+.promise__ico{width:40px;height:40px;margin-bottom:14px;color:var(--blue);
+  background:linear-gradient(180deg,rgba(0,80,230,.10),rgba(0,80,230,.03));
+  border:1px solid rgba(0,80,230,.16);border-radius:var(--r-tile);padding:9px;
+  transition:transform .4s var(--ease-out)}
+.promise h3{font-family:var(--disp);font-weight:600;font-size:var(--fs-h3);color:var(--ink);letter-spacing:var(--tr-h3);line-height:1.15}
+.promise p{font-size:var(--fs-body);color:var(--ink-2);margin-top:8px;padding-top:10px;line-height:1.5;
+  border-top:1px solid var(--hair-2)}
+.promise p b{color:var(--ink);font-weight:700}
+.paranote{margin-top:12px;border:1px solid rgba(243,154,27,.28);border-radius:var(--r-md);padding:18px 20px;
+  background:linear-gradient(180deg,var(--warm),#FFFFFF);display:flex;gap:16px;align-items:flex-start;
+  box-shadow:var(--sh-card-warm)}
+.paranote__ico{flex:0 0 auto;width:40px;height:40px;color:var(--orange-deep);
+  background:#FFFFFF;border:1px solid rgba(243,154,27,.3);border-radius:var(--r-tile);padding:9px}
+.paranote h4{font-family:var(--disp);font-weight:600;font-size:15.5px;color:var(--ink);letter-spacing:-.01em;margin-bottom:5px}
+.paranote p{font-size:13.5px;color:var(--ink-2);line-height:1.5}
+.paranote b{color:var(--ink);font-weight:700}
+
+/* =========================================================
+   04 — LE RÉSEAU (diapo sombre plein écran)
+   ========================================================= */
+.slide--dark{background:radial-gradient(120% 90% at 50% 0%,#0B1734 0%,#080D20 46%,#060A18 100%);color:var(--fg)}
+.slide--dark .chnum{color:var(--orange-hi)}
+.slide--dark .chnum::before{background:var(--orange-hi)}
+.slide--dark .chtitle{color:#F4F7FF}
+.slide--dark .chtitle .accent{color:var(--orange-hi);font-style:normal;font-weight:600}
+.slide--dark .chtext{color:var(--muted)}
+.slide--dark .chtext b{color:#EAF1FF}
+.map-slide{display:flex;flex-direction:column;height:100%;gap:var(--sp-5)}
+.map-slide__head{flex:0 0 auto}
+/* header identique aux autres diapos ; on resserre juste le lead→carte */
+.map-slide__head .chtitle{margin-bottom:var(--sp-3)}
+.map-slide__head .chtext{max-width:60ch}
+.map3d{position:relative;flex:1 1 auto;min-height:0;border-radius:var(--r-lg);overflow:hidden;
+  border:1px solid rgba(91,140,255,.20);
+  background:radial-gradient(120% 100% at 50% 0%,#0B1734 0%,#060B1C 55%,#04070F 100%);
+  box-shadow:0 30px 80px -30px rgba(0,0,0,.85),0 0 0 1px rgba(255,255,255,.03) inset}
+.map3d canvas{display:block;width:100%;height:100%}
+.map3d__labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.lbl3{position:absolute;left:0;top:0;transform:translate(-50%,-100%);white-space:nowrap;
+  font-family:var(--mono);text-align:center;opacity:0;transition:opacity .5s ease;will-change:transform}
+.lbl3__box{display:inline-block;background:rgba(6,10,24,.82);border:1px solid rgba(91,140,255,.34);
+  border-radius:9px;padding:6px 10px 7px;box-shadow:0 8px 24px -10px rgba(0,0,0,.8)}
+.lbl3__n{font-size:11px;font-weight:600;letter-spacing:.06em;color:#EAF0FF}
+.lbl3__c{font-size:9.5px;letter-spacing:.08em;color:var(--muted-2);margin-top:2px}
+.lbl3__t{display:inline-block;font-size:8.5px;font-weight:600;letter-spacing:.16em;margin-top:4px;
+  padding:2px 7px;border-radius:99px;color:var(--orange-hi);border:1px solid rgba(243,154,27,.5)}
+.lbl3--siege .lbl3__box{border-color:rgba(243,154,27,.55);background:rgba(24,14,3,.84)}
+.lbl3--siege .lbl3__n{color:#FFE2B3}
+.lbl3--part .lbl3__box{border-style:dashed;border-color:rgba(159,180,216,.45)}
+.lbl3--part .lbl3__t{color:#AFC2DC;border-color:rgba(159,180,216,.5)}
+.lbl3.on .lbl3__box{border-color:rgba(255,193,104,.75)}
+.lbl3__stem{width:1px;height:14px;margin:2px auto 0;background:linear-gradient(180deg,rgba(91,140,255,.5),transparent)}
+.map3d__badge{position:absolute;left:14px;top:12px;display:flex;align-items:center;gap:8px;
+  font-family:var(--mono);font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);
+  background:rgba(6,10,24,.6);border:1px solid rgba(255,255,255,.10);border-radius:999px;padding:6px 12px}
+.map3d__badge .dot{width:6px;height:6px;border-radius:50%;background:var(--orange);box-shadow:0 0 8px 2px rgba(243,154,27,.6)}
+.map3d__fallback{position:absolute;inset:0;display:none;align-items:center;justify-content:center;padding:18px}
+.map3d.flat .map3d__fallback{display:flex}
+.map3d.flat canvas,.map3d.flat .map3d__labels,.map3d.flat .map3d__info{display:none}
+.map3d__fallback svg{width:auto;height:100%;max-width:100%}
+.map3d__fallback .fbnote{position:absolute;right:14px;bottom:12px;font-family:var(--mono);font-size:9.5px;
+  letter-spacing:.2em;text-transform:uppercase;color:var(--muted-2);
+  border:1px solid rgba(255,255,255,.1);border-radius:999px;padding:5px 11px;background:rgba(6,10,24,.55)}
+/* squelette de chargement (avant l'ignition WebGL) */
+.map3d__load{position:absolute;inset:0;z-index:4;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:14px;color:var(--muted);pointer-events:none;
+  transition:opacity .5s ease}
+.map3d.ready .map3d__load,.map3d.flat .map3d__load{opacity:0}
+.map3d__spin{width:26px;height:26px;border-radius:50%;
+  border:2px solid rgba(159,182,255,.2);border-top-color:var(--blue-lite);animation:spin 1s linear infinite}
+.map3d__load span{font-family:var(--mono);font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted-2)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.map3d__info{position:absolute;left:14px;bottom:14px;z-index:6;max-width:min(300px,74%);
+  background:rgba(7,12,28,.92);border:1px solid rgba(120,150,255,.30);border-radius:14px;
+  padding:13px 15px;opacity:0;transform:translateY(10px);pointer-events:none;
+  transition:opacity .3s ease,transform .35s var(--ease);box-shadow:0 22px 55px -22px rgba(0,0,0,.85)}
+.map3d__info.on{opacity:1;transform:none}
+.mi__type{display:inline-block;font-family:var(--mono);font-size:9.5px;font-weight:600;letter-spacing:.14em;
+  text-transform:uppercase;color:#0A1430;background:#5B8CFF;border-radius:999px;padding:3px 9px;margin-bottom:9px}
+.map3d__info.siege .mi__type{background:linear-gradient(180deg,#FFC673,#F39A1B);color:#241200}
+.map3d__info.part .mi__type{background:transparent;border:1px dashed #9FB4D8;color:#C9D6EE}
+.mi__name{font-family:var(--disp);font-weight:600;font-size:17px;color:#EFF3FF;letter-spacing:-.01em;line-height:1.15}
+.mi__city{font-size:13px;color:var(--muted);margin-top:3px}
+.mi__gps{display:flex;align-items:center;gap:7px;margin-top:10px;padding-top:9px;
+  border-top:1px solid rgba(255,255,255,.08);font-family:var(--mono);font-size:12px;color:#9FB6FF}
+.mi__gps svg{width:13px;height:13px;flex:none;opacity:.85}
+.mi__gps b{color:#EAF0FF;font-weight:500}
+.mapfoot{flex:0 0 auto;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px 22px;
+  font-family:var(--mono);font-size:11px;letter-spacing:.10em;color:var(--muted)}
+.mapfoot span{display:inline-flex;align-items:center;gap:8px}
+.lg{width:11px;height:11px;border-radius:50%}
+.lg.o{background:var(--orange);box-shadow:0 0 8px rgba(243,154,27,.8)}
+.lg.b{background:var(--blue-lite);box-shadow:0 0 8px rgba(91,140,255,.7)}
+.lg.p{background:transparent;border:1.5px dashed #9FB4D8}
+.mapfoot .hint{color:var(--muted-2)}
+.mapfoot .hint .dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--blue-lite);margin-right:6px;vertical-align:middle}
+/* ===== carte + ANNUAIRE côte à côte (diapo sombre) ===== */
+.mapgrid{flex:1 1 auto;min-height:0;display:flex;gap:14px;align-items:stretch}
+.mapgrid > .map3d{flex:1 1 auto;min-width:0;height:100%}
+.roster{flex:0 0 clamp(240px,27%,320px);min-height:0;display:flex;flex-direction:column;gap:8px}
+.roster__cap{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted-2);flex:0 0 auto}
+.roster__cap b{color:var(--orange-hi);font-weight:500}
+.roster__list{flex:1 1 auto;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:7px;padding-right:4px}
+.estab{display:flex;align-items:center;gap:11px;border:1px solid rgba(255,255,255,.10);border-radius:12px;
+  padding:9px 12px;background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.015));
+  cursor:default;transition:border-color .2s ease,transform .2s ease,background .2s ease}
+.estab:hover{border-color:rgba(255,193,104,.45);transform:translateX(3px);background:linear-gradient(180deg,rgba(255,255,255,.09),rgba(255,255,255,.03))}
+.estab__sig{flex:0 0 auto;width:44px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-weight:600;font-size:12px;color:#CFE0FF;background:rgba(0,80,230,.18);border:1px solid rgba(91,140,255,.32)}
+.estab__b{min-width:0;flex:1;display:flex;flex-direction:column;line-height:1.2}
+.estab__n{font-weight:600;font-size:14px;color:#EAF0FF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.estab__c{font-size:12px;color:var(--muted)}
+.estab__tag{flex:0 0 auto;font-family:var(--mono);font-size:8.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--orange-hi);border:1px solid rgba(243,154,27,.4);border-radius:999px;padding:3px 8px}
+.estab--siege{border-color:rgba(243,154,27,.42);background:linear-gradient(180deg,rgba(243,154,27,.12),rgba(255,255,255,.02))}
+.estab--siege .estab__sig{color:#241300;font-weight:700;border-color:transparent;background:linear-gradient(180deg,var(--orange-hi),var(--orange))}
+.estab--part .estab__sig{color:#C9D3EA;background:rgba(255,255,255,.06);border-style:dashed}
+.estab--part .estab__tag{color:var(--muted);border-color:rgba(255,255,255,.14)}
+@media(max-width:880px){
+  .map-slide{gap:var(--sp-3)}
+  .mapgrid{flex-direction:column;gap:10px}
+  .mapgrid > .map3d{flex:1 1 auto;min-height:34vh}
+  .roster{flex:0 0 auto}
+  .roster__list{flex-direction:row;overflow-x:auto;overflow-y:hidden;gap:8px;padding-bottom:4px}
+  .estab{flex:0 0 auto;min-width:210px}
+}
+
+/* =========================================================
+   05 — VALEURS
+   ========================================================= */
+.values{display:grid;grid-template-columns:1fr;gap:14px;margin-top:var(--sp-6)}
+@media(min-width:640px){.values{grid-template-columns:repeat(3,1fr)}}
+.value{position:relative;border:1px solid var(--line-l);border-radius:var(--r-lg);padding:26px 22px;
+  background:var(--card);overflow:hidden;box-shadow:var(--sh-card);
+  transition:transform .35s var(--ease-out),box-shadow .35s ease,border-color .3s ease}
+.value:hover{transform:translateY(-3px);border-color:var(--hover-warm);
+  box-shadow:var(--sh-card-hi-warm)}
+.value:hover .value__ico{transform:scale(1.06) rotate(-2deg)}
+.value__ico{width:44px;height:44px;margin-bottom:16px;color:var(--orange-deep);
+  transition:transform .4s var(--ease-out);
+  background:linear-gradient(180deg,var(--warm),#fff);border:1px solid rgba(243,154,27,.24);border-radius:var(--r-tile);padding:10px}
+.value h3{font-family:var(--serif);font-weight:600;font-size:clamp(20px,2.6vw,23px);color:var(--ink);letter-spacing:-.018em}
+.value p{font-size:var(--fs-body);color:var(--ink-2);margin-top:10px;padding-top:12px;line-height:1.5;border-top:1px solid var(--hair-2)}
+.value__k{position:absolute;top:22px;right:22px;display:inline-flex;align-items:center;gap:8px;
+  font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-3);letter-spacing:.14em}
+.value__k::before{content:"";width:18px;height:1px;background:var(--hair)}
+
+/* =========================================================
+   06 — LE SIÈGE
+   ========================================================= */
+/* header top-left constant (kicker au même Y que partout), média à droite */
+.showcase{display:grid;grid-template-columns:1fr;gap:var(--sp-6);align-items:start}
+@media(min-width:900px){.showcase{grid-template-columns:1fr 1fr;gap:48px}}
+.showcase__txt{order:1;min-width:0}
+.showcase .frame{order:2}
+.frame{position:relative;border-radius:var(--r-lg);overflow:hidden;border:1px solid var(--line-l);background:#0B1226;
+  box-shadow:0 40px 80px -34px rgba(10,20,48,.42),0 0 0 1px rgba(255,255,255,.5) inset}
+.frame__media{position:relative;aspect-ratio:16/11;overflow:hidden}
+@media(min-width:900px){.frame__media{aspect-ratio:5/6}}
+.frame__media img,.frame__media video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.frame__grad{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(6,10,24,0) 46%,rgba(6,10,24,.62) 100%)}
+.frame__tag{position:absolute;left:18px;bottom:16px;display:flex;align-items:center;gap:10px;
+  font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;color:#EAF1FF}
+.frame__tag .dot{width:7px;height:7px;border-radius:50%;background:var(--orange);box-shadow:0 0 10px 2px rgba(243,154,27,.7)}
+.frame__ring{position:absolute;left:14px;top:14px;font-family:var(--mono);font-size:10px;
+  letter-spacing:.18em;text-transform:uppercase;color:#CFE0FF;
+  border:1px solid rgba(255,255,255,.24);border-radius:999px;padding:6px 12px;background:rgba(6,10,24,.4)}
+
+/* =========================================================
+   07 — INVITATION
+   ========================================================= */
+/* header identique aux autres diapos ; le contact = zone de contenu (panneau) */
+.invite{position:relative;max-width:var(--measure)}
+.invite__s{max-width:54ch;color:var(--ink-2);font-size:var(--fs-lead);line-height:1.55}
+.invite__s b{color:var(--ink);font-weight:700}
+.contact{position:relative;margin-top:var(--sp-6);max-width:600px;overflow:hidden;
+  border:1px solid var(--line-l);border-radius:var(--r-xl);padding:clamp(22px,3.4vw,34px);
+  background:linear-gradient(180deg,#FFFFFF,var(--paper-2));box-shadow:var(--sh-card)}
+.contact::before{content:"";position:absolute;left:0;right:0;top:0;height:3px;
+  background:linear-gradient(90deg,var(--orange),var(--blue));opacity:.9}
+.cta{position:relative;display:flex;flex-direction:column;gap:12px}
+@media(min-width:480px){.cta{flex-direction:row}}
+.btn{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:10px;
+  padding:15px 22px;border-radius:15px;font-family:var(--disp);font-weight:600;font-size:15px;
+  letter-spacing:-.01em;transition:transform .25s var(--ease),box-shadow .25s ease,border-color .25s ease}
+.btn svg{width:18px;height:18px}
+.btn--primary{color:#fff;background:linear-gradient(180deg,var(--blue-lite),var(--blue));
+  box-shadow:0 16px 34px -12px rgba(0,80,230,.6),0 0 0 1px rgba(255,255,255,.25) inset}
+.btn--primary:hover{transform:translateY(-2px);box-shadow:0 22px 44px -12px rgba(0,80,230,.75)}
+.btn--primary:active{transform:translateY(0)}
+.btn--ghost{color:var(--ink);background:#fff;border:1px solid var(--line-l);box-shadow:0 12px 26px -16px rgba(10,20,48,.4)}
+.btn--ghost:hover{transform:translateY(-2px);border-color:rgba(0,80,230,.28)}
+.btn--ghost:active{transform:translateY(0)}
+.btn--ghost .num{font-family:var(--mono);font-size:13px;color:var(--ink-3)}
+.signature{position:relative;margin-top:22px;padding-top:22px;border-top:1px solid var(--line-l);
+  display:flex;align-items:center;gap:14px;text-align:left;flex-wrap:wrap}
+.sig__badge{width:46px;height:46px;border-radius:50%;flex:none;display:grid;place-items:center;
+  font-family:var(--disp);font-weight:700;font-size:15px;color:#241400;
+  background:linear-gradient(180deg,var(--orange-hi),var(--orange));
+  box-shadow:0 8px 20px -6px rgba(243,154,27,.6),0 0 0 4px rgba(243,154,27,.12),0 0 0 1px rgba(255,255,255,.6) inset}
+.sig__txt .nm{font-family:var(--disp);font-weight:600;color:var(--ink);font-size:15px}
+.sig__txt .ro{font-size:12px;color:var(--ink-3);margin-top:2px}
+.invite__foot{position:relative;margin-top:20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.invite__foot img{height:22px;opacity:.9}
+.invite__foot .line{font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:var(--ink-3);text-transform:uppercase}
+
+/* =========================================================
+   CHROME — progression + navigation
+   ========================================================= */
+.pbar{position:fixed;top:0;left:0;right:0;height:3px;z-index:90;background:rgba(10,20,48,.08)}
+.pbar__fill{height:100%;width:0;background:linear-gradient(90deg,var(--orange),var(--blue));
+  transition:width .6s var(--ease)}
+.chrome{position:fixed;left:0;right:0;bottom:0;z-index:90;pointer-events:none;
+  display:flex;justify-content:center;padding:0 14px calc(16px + env(safe-area-inset-bottom))}
+.navbar{pointer-events:auto;display:flex;align-items:center;gap:8px;
+  background:#fff;border:1px solid var(--line-l);border-radius:999px;padding:7px 9px;
+  box-shadow:0 18px 44px -22px rgba(10,20,48,.55)}
+.navbar--dark{background:rgba(10,17,38,.9);border-color:rgba(255,255,255,.14);
+  box-shadow:0 18px 44px -20px rgba(0,0,0,.7)}
+.navbtn{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;
+  border:1px solid var(--line-l);background:var(--card);color:var(--ink);cursor:pointer;
+  transition:transform .2s,border-color .2s,opacity .2s}
+.navbtn svg{width:17px;height:17px}
+.navbtn:hover{transform:translateY(-1px);border-color:rgba(0,80,230,.35)}
+.navbtn:disabled{opacity:.32;cursor:default;transform:none}
+.navbar--dark .navbtn{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.16);color:#EAF0FF}
+.dots{display:flex;gap:7px;align-items:center;padding:0 4px}
+.dot{width:8px;height:8px;border-radius:50%;background:rgba(10,20,48,.18);cursor:pointer;
+  transition:background .3s,transform .3s;border:0;padding:0}
+.dot.on{background:var(--blue);transform:scale(1.3)}
+.navbar--dark .dot{background:rgba(255,255,255,.22)}
+.navbar--dark .dot.on{background:var(--orange-hi)}
+.count{font-family:var(--mono);font-size:12px;color:var(--ink-3);letter-spacing:.1em;padding:0 6px;min-width:66px;text-align:center;
+  font-variant-numeric:tabular-nums}
+.navbar--dark .count{color:var(--muted)}
+
+/* Splitting / kinetic — transform+opacity uniquement (jamais clip-text) */
+.split .char{display:inline-block;will-change:transform,opacity}
+.split .whitespace{display:inline-block;white-space:pre}
+.split .word{display:inline-block}
+
+/* =========================================================
+   MOBILE — une diapo par écran, rien qui déborde
+   ========================================================= */
+@media (max-width:640px){
+  .slide{padding-left:18px;padding-right:18px}
+  .chnum{margin-bottom:12px}
+  .chtitle{margin-bottom:12px}
+  .stats{gap:9px;margin-top:22px}
+  .stat{padding:15px 12px;border-radius:var(--r-sm)}
+  .stat .l{font-size:11px}
+  .promises{gap:10px;margin-top:18px}
+  .promise{padding:16px 16px}
+  .promise h3{font-size:16px}
+  .promise p{font-size:13px}
+  .paranote{margin-top:10px;padding:15px 16px;gap:13px}
+  .values{gap:11px;margin-top:22px}
+  .value{padding:20px 18px}
+  .value h3{font-size:20px}
+  .showcase{gap:20px}
+  .contact{margin-top:18px}
+  .hero__hint{margin-top:22px}
+}
+/* écrans courts : on comprime le vertical pour éviter tout scroll */
+@media (max-height:680px){
+  .slide{padding-top:40px;padding-bottom:clamp(76px,13vh,92px)}
+  .wmark{font-size:clamp(120px,26vw,300px)}
+  .stats,.promises,.values,.content{margin-top:16px}
+  .chtitle{margin-bottom:10px}
+  .hero__title{margin-bottom:10px}
+  .contact{margin-top:16px}
+  .hero__hint{margin-top:16px}
+  .brandlogo3d{margin-bottom:14px}
+}
+/* le survol carte n'a pas de sens au doigt : indice adapté */
+@media (hover:none){
+  .mapfoot .hint{opacity:.75}
+}
+
+/* ——— MICRO-MOTION AMBIANT (hors carte) — Safari-safe : transform/opacity uniquement ——— */
+@keyframes orbBreathe{0%,100%{transform:translate3d(0,0,0) scale(1);opacity:.92}50%{transform:translate3d(0,-2.5%,0) scale(1.07);opacity:1}}
+@keyframes orbBreatheB{0%,100%{transform:translate3d(0,0,0) scale(1.04);opacity:1}50%{transform:translate3d(0,2%,0) scale(.95);opacity:.84}}
+@keyframes wmDrift{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+.slide.is-active .orb.a{animation:orbBreathe 14s var(--ease) infinite}
+.slide.is-active .orb.b{animation:orbBreatheB 18s var(--ease) infinite}
+.slide.is-active .wmark{animation:wmDrift 13s ease-in-out infinite}
+/* parallax de profondeur du décor (piloté au pointeur, desktop) — le décor bouge, jamais le texte */
+.slide__deco{will-change:transform;transition:transform .5s var(--ease-out)}
+
+/* ——— OBJET 3D D'ACCENT (gélule marque) · diapo Titre ——— */
+.accent3d{position:absolute;z-index:1;pointer-events:none;
+  right:clamp(-24px,1.5vw,44px);top:clamp(64px,11vh,150px);
+  width:clamp(210px,32vw,430px);height:clamp(210px,32vw,430px);
+  filter:drop-shadow(0 34px 46px rgba(0,54,160,.26))}
+.accent3d__cv{width:100%;height:100%;display:block}
+.accent3d__poster{display:none;width:78%;height:78%;margin:11%;
+  filter:drop-shadow(0 20px 30px rgba(0,54,160,.28))}
+.accent3d.no3d .accent3d__cv{display:none}
+.accent3d.no3d .accent3d__poster{display:block}
+@media(max-width:900px){.accent3d{width:clamp(180px,42vw,300px);height:clamp(180px,42vw,300px);top:clamp(52px,8vh,110px);right:-16px;opacity:.9}}
+@media(max-width:640px){.accent3d{width:min(44vw,200px);height:min(44vw,200px);top:56px;right:-22px;opacity:.8}}
+@media(max-height:680px){.accent3d{top:44px}}
+
+/* sélection d'un établissement au tactile (l'annuaire n'a pas de survol au doigt) */
+.estab.is-sel{border-color:rgba(255,193,104,.62);
+  background:linear-gradient(180deg,rgba(243,154,27,.15),rgba(255,255,255,.03))}
+.estab.is-sel .estab__sig{border-color:rgba(255,193,104,.6)}
+
+/* cibles tactiles ≥44px */
+@media(pointer:coarse){
+  .navbtn{width:44px;height:44px}
+  .dot{width:11px;height:11px}
+  .estab{min-height:44px}
+  .btn{padding:16px 22px}
+}
+
+/* reduced-motion : tout visible */
+@media(prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important}
+  .split .char{opacity:1!important;transform:none!important}
+}
+</style>
+<noscript><style>
+  html,body{overflow:auto;height:auto}
+  .deck{position:static;height:auto}
+  .slide{position:relative;opacity:1!important;visibility:visible!important;min-height:auto;page-break-inside:avoid}
+  .chrome,.pbar{display:none}
+</style></noscript>
+</head>
+<body>
+
+<div class="pbar" aria-hidden="true"><div class="pbar__fill" id="pfill"></div></div>
+<p class="sr-only" id="deckLive" role="status" aria-live="polite"></p>
+
+<div class="deck" id="deck">
+
+  <!-- ============ 01 — TITRE ============ -->
+  <section class="slide" aria-label="Diapositive 1 : Titre">
+    <div class="folio" aria-hidden="true"><span class="folio__brand"><span class="sq"></span>Intégral Pharma</span><span class="folio__sec">Ouverture</span><span class="folio__pg"><b>01</b> / 07</span></div>
+    <div class="wmark" aria-hidden="true">01</div>
+    <div class="slide__deco" aria-hidden="true"><span class="orb a"></span><span class="orb b"></span><div class="slide__grid"></div></div>
+    <div class="accent3d" id="accent3d" aria-hidden="true"><canvas class="accent3d__cv" id="accentCv"></canvas><svg class="accent3d__poster" viewBox="0 0 120 120" fill="none" aria-hidden="true"><defs><linearGradient id="pcC" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F7FAFF"/><stop offset="1" stop-color="#B7C2DC"/></linearGradient><linearGradient id="pcO" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFC168"/><stop offset="1" stop-color="#E4870F"/></linearGradient></defs><g transform="rotate(-32 60 60)"><rect x="30" y="44" width="60" height="32" rx="16" fill="url(#pcC)"/><path d="M46 44H60v32H46a16 16 0 0 1 0-32z" fill="url(#pcO)"/><rect x="30" y="44" width="60" height="32" rx="16" stroke="rgba(10,20,48,.14)" stroke-width="1.4"/><ellipse cx="52" cy="54" rx="9" ry="4.4" fill="rgba(255,255,255,.55)"/></g></svg></div>
+    <div class="slide__inner hero__inner">
+      <div class="brandlogo3d rise" id="brandlogo3d"><img class="brandlogo" src="../assets/logo.png" alt="Intégral Pharma"></div>
+      <span class="chnum rise">01 — Invitation · Directions de groupements</span>
+      <h1 class="hero__title split" data-splitting>Votre grossiste de <span class="accent">première intention.</span></h1>
+      <p class="hero__sub rise"><b>Intégral Pharma</b> — groupe de grossistes-répartiteurs français, indépendant depuis plus de 20 ans. Le partenaire de <b>première intention</b> de vos officines.</p>
+      <div class="hero__hint rise"><span class="k">←</span><span class="k">→</span> Naviguez · ou faites glisser</div>
+    </div>
+  </section>
+
+  <!-- ============ 02 — QUI SOMMES-NOUS ============ -->
+  <section class="slide" aria-label="Diapositive 2 : Qui sommes-nous">
+    <div class="folio" aria-hidden="true"><span class="folio__brand"><span class="sq"></span>Intégral Pharma</span><span class="folio__sec">Qui sommes-nous</span><span class="folio__pg"><b>02</b> / 07</span></div>
+    <div class="wmark" aria-hidden="true">02</div>
+    <div class="slide__deco" aria-hidden="true"><span class="orb a"></span></div>
+    <div class="slide__inner">
+      <span class="chnum rise">02 — Qui sommes-nous</span>
+      <h2 class="chtitle split" data-splitting>Grossiste-répartiteur, <span class="accent">vraiment de votre côté.</span></h2>
+      <p class="chtext rise">Depuis plus de vingt ans, nous faisons un seul métier : l'approvisionnement des officines — la disponibilité, le service au quotidien, le <b>fournisseur de première intention</b> de vos adhérents. Un groupe familial <b>français et indépendant</b>, libre de ses choix, présent partout en France.</p>
+      <div class="stats rise">
+        <div class="stat"><div class="n"><b data-to="20">20</b><span class="u">+ ans</span></div><div class="l">d'indépendance</div></div>
+        <div class="stat"><div class="n"><b data-to="9">9</b><span class="u"> étab.</span></div><div class="l">au service des officines</div></div>
+        <div class="stat"><div class="n"><b>France</b></div><div class="l">partout, d'un bout à l'autre</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 03 — LA PROMESSE ============ -->
+  <section class="slide" aria-label="Diapositive 3 : La promesse">
+    <div class="folio" aria-hidden="true"><span class="folio__brand"><span class="sq"></span>Intégral Pharma</span><span class="folio__sec">La promesse</span><span class="folio__pg"><b>03</b> / 07</span></div>
+    <div class="wmark" aria-hidden="true">03</div>
+    <div class="slide__deco" aria-hidden="true"><span class="orb b"></span></div>
+    <div class="slide__inner">
+      <span class="chnum rise">03 — La promesse</span>
+      <h2 class="chtitle split" data-splitting>La marge, <span class="accent">dès la première boîte.</span></h2>
+      <p class="chtext rise">Pas de mécanique opaque, pas de palier à mériter. La performance d'un groupement se construit <b>ligne par ligne, sur chaque commande</b>.</p>
+      <div class="promises">
+        <div class="promise rise"><span class="promise__k">I</span>
+          <svg class="promise__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.2"/><path d="M12 3.5V7M12 17v3.5M3.5 12H7M17 12h3.5"/></svg>
+          <h3>Zéro exclusion</h3>
+          <p>Froid, stupéfiants, biosimilaires, produits chers : <b>tout est inclus</b>, sans zone grise ni catégorie écartée.</p>
+        </div>
+        <div class="promise rise"><span class="promise__k">II</span>
+          <svg class="promise__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8.2 12 3 3 8.2v7.6L12 21l9-5.2z"/><path d="M3 8.2 12 13l9-4.8M12 13v8"/></svg>
+          <h3>Dès la première boîte</h3>
+          <p>L'optimisation commence à la première ligne de la première commande. <b>Pas de seuil, pas d'attente.</b></p>
+        </div>
+        <div class="promise rise"><span class="promise__k">III</span>
+          <svg class="promise__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h10a1 1 0 0 1 1 1v16l-3-1.6L12 20l-3-1.6L6 20V4a1 1 0 0 1 1-1z"/><path d="M9.5 8.5h5.5M9.5 12h5.5"/></svg>
+          <h3>Transparence sur facture</h3>
+          <p>Des conditions claires, lisibles sur chaque facture. <b>Ce qui est convenu est ce qui est appliqué.</b></p>
+        </div>
+        <div class="promise rise"><span class="promise__k">IV</span>
+          <svg class="promise__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="m15.5 8.5-2.2 4.8-4.8 2.2 2.2-4.8z"/></svg>
+          <h3>Indépendance</h3>
+          <p>La même liberté de choix que celle que vous défendez pour vos adhérents.</p>
+        </div>
+      </div>
+      <div class="paranote rise">
+        <svg class="paranote__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h18M5 9 7 4h10l2 5M4 9v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9"/><path d="M9 13h6"/></svg>
+        <div>
+          <h4>Et une centrale parapharmacie intégrée</h4>
+          <p>La plus grande collection de France, au meilleur prix à l'unité — un <b>levier de marge supplémentaire</b> pour vos adhérents.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 04 — LE RÉSEAU (carte 3D, sombre) ============ -->
+  <section class="slide slide--dark" data-map aria-label="Diapositive 4 : Le réseau">
+    <div class="folio" aria-hidden="true"><span class="folio__brand"><span class="sq"></span>Intégral Pharma</span><span class="folio__sec">Le réseau</span><span class="folio__pg"><b>04</b> / 07</span></div>
+    <div class="slide__inner map-slide">
+      <div class="map-slide__head">
+        <span class="chnum rise">04 — Le réseau</span>
+        <h2 class="chtitle split" data-splitting>Un réseau national <span class="accent">derrière chaque officine.</span></h2>
+        <p class="chtext rise">Neuf établissements, un maillage qui couvre <b>toute la France</b>. Où que soient vos adhérents, une agence Intégral est proche.</p>
+      </div>
+      <div class="mapgrid">
+      <div class="map3d" id="map3d" role="img" aria-label="Carte 3D de France : les 9 établissements Intégral Pharma, siège à Hyères">
+        <div class="map3d__labels" id="lbls" aria-hidden="true"></div>
+        <div class="map3d__badge"><span class="dot"></span>Réseau Intégral — France</div>
+        <div class="map3d__info" id="mapInfo" aria-hidden="true">
+          <span class="mi__type" id="miType">Agence Intégral</span>
+          <div class="mi__name" id="miName">—</div>
+          <div class="mi__city" id="miCity">—</div>
+          <div class="mi__gps"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6-7-11a7 7 0 0 1 14 0c0 5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><span id="miGps">—</span></div>
+        </div>
+        <div class="map3d__load" id="mapLoad" aria-hidden="true"><span class="map3d__spin"></span><span>Chargement du réseau</span></div>
+        <div class="map3d__fallback" id="mapFallback" aria-hidden="true"></div>
+      </div>
+      <aside class="roster rise" aria-label="Liste des établissements">
+        <div class="roster__cap">Nos établissements <b>— survolez pour situer</b></div>
+        <div class="roster__list" data-scroll aria-label="Annuaire des établissements — faites glisser pour parcourir">
+          <div class="estab estab--siege" data-i="0"><span class="estab__sig">HP</span><span class="estab__b"><span class="estab__n">Hyères Pharma</span><span class="estab__c">Hyères · 83</span></span><span class="estab__tag">Siège</span></div>
+          <div class="estab" data-i="1"><span class="estab__sig">OPS</span><span class="estab__b"><span class="estab__n">Ouest Pharma Services</span><span class="estab__c">St-Étienne-de-Montluc · 44</span></span></div>
+          <div class="estab" data-i="2"><span class="estab__sig">EP</span><span class="estab__b"><span class="estab__n">Escale Pharma</span><span class="estab__c">Chilly-Mazarin · 91</span></span></div>
+          <div class="estab" data-i="3"><span class="estab__sig">CPR</span><span class="estab__b"><span class="estab__n">Comptoir Pharma. du Rhône</span><span class="estab__c">Saint-Maurice-l'Exil · 38</span></span></div>
+          <div class="estab" data-i="4"><span class="estab__sig">SOP</span><span class="estab__b"><span class="estab__n">Sud Ouest Pharma</span><span class="estab__c">Montayral · 47</span></span></div>
+          <div class="estab" data-i="5"><span class="estab__sig">POS</span><span class="estab__b"><span class="estab__n">Pharm'Occitanie Services</span><span class="estab__c">Villeneuve-lès-Béziers · 34</span></span></div>
+          <div class="estab" data-i="6"><span class="estab__sig">SEP</span><span class="estab__b"><span class="estab__n">Sud Est Pharma</span><span class="estab__c">Le Cannet-des-Maures · 83</span></span></div>
+          <div class="estab" data-i="7"><span class="estab__sig">MSP</span><span class="estab__b"><span class="estab__n">Mistral Santé Pharma</span><span class="estab__c">Flassans-sur-Issole · 83</span></span></div>
+          <div class="estab estab--part" data-i="8"><span class="estab__sig">PH</span><span class="estab__b"><span class="estab__n">Pharmest</span><span class="estab__c">Metz · 57</span></span><span class="estab__tag">Partenaire</span></div>
+        </div>
+      </aside>
+      </div><!-- /mapgrid -->
+      <div class="mapfoot rise">
+        <span><i class="lg o"></i>Siège — Hyères</span>
+        <span><i class="lg b"></i>Établissements</span>
+        <span><i class="lg p"></i>Partenaire — Metz</span>
+        <span class="hint"><span class="dot"></span>Survolez un établissement pour le révéler et ses coordonnées</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 05 — VALEURS ============ -->
+  <section class="slide" aria-label="Diapositive 5 : Nos valeurs">
+    <div class="folio" aria-hidden="true"><span class="folio__brand"><span class="sq"></span>Intégral Pharma</span><span class="folio__sec">Nos valeurs</span><span class="folio__pg"><b>05</b> / 07</span></div>
+    <div class="wmark" aria-hidden="true">05</div>
+    <div class="slide__deco" aria-hidden="true"><span class="orb a"></span><span class="orb b"></span></div>
+    <div class="slide__inner">
+      <span class="chnum rise">05 — Ce qui nous tient</span>
+      <h2 class="chtitle split" data-splitting>Trois mots, <span class="accent">tenus.</span></h2>
+      <p class="chtext rise">Ce ne sont pas des slogans. C'est la façon dont on travaille, avec chaque pharmacien et chaque direction de groupement.</p>
+      <div class="values">
+        <div class="value rise"><span class="value__k">I</span>
+          <svg class="value__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 7.8-7 9-4-1.2-7-4.5-7-9V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg>
+          <h3>Confiance</h3>
+          <p>Une parole qui vaut engagement, tenue année après année.</p>
+        </div>
+        <div class="value rise"><span class="value__k">II</span>
+          <svg class="value__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/></svg>
+          <h3>Engagement</h3>
+          <p>Présents dans la durée, aux côtés de vos adhérents comme de votre direction.</p>
+        </div>
+        <div class="value rise"><span class="value__k">III</span>
+          <svg class="value__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-9.3A4 4 0 0 1 12 8a4 4 0 0 1 7 2.7c0 4.9-7 9.3-7 9.3z"/></svg>
+          <h3>Respect</h3>
+          <p>De votre indépendance, de vos accords, de votre métier.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 06 — LE SIÈGE ============ -->
+  <section class="slide" data-video aria-label="Diapositive 6 : Le siège">
+    <div class="folio" aria-hidden="true"><span class="folio__brand"><span class="sq"></span>Intégral Pharma</span><span class="folio__sec">Le siège</span><span class="folio__pg"><b>06</b> / 07</span></div>
+    <div class="wmark" aria-hidden="true">06</div>
+    <div class="slide__deco" aria-hidden="true"><span class="orb b"></span></div>
+    <div class="slide__inner">
+      <div class="showcase">
+        <div class="showcase__txt">
+          <span class="chnum rise">06 — Le siège</span>
+          <h2 class="chtitle split" data-splitting>Un ancrage <span class="accent">au soleil du Sud.</span></h2>
+          <p class="chtext rise">À Hyères, notre siège avance à l'<b>énergie solaire</b> — l'image d'un groupe qui investit dans la durée, responsable et fier de ses racines françaises. Un socle solide pour tenir nos engagements, année après année, auprès de vos officines.</p>
+        </div>
+        <div class="frame rise">
+          <div class="frame__media">
+            <img id="siegeImg" src="../assets/siege-solaire.jpg" alt="Siège Intégral Pharma, toit photovoltaïque, vue aérienne" onerror="this.onerror=null;this.src='../assets/siege.jpg'">
+            <video id="siegeVid" poster="../assets/siege-solaire.jpg" muted playsinline loop preload="none" aria-hidden="true" style="opacity:0;transition:opacity 1.1s ease">
+              <source src="../assets/clip3.mp4" type="video/mp4">
+            </video>
+            <div class="frame__grad"></div>
+            <div class="frame__ring">Notre siège · Hyères</div>
+            <div class="frame__tag"><span class="dot"></span>Toit solaire — Intégral Pharma</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 07 — INVITATION ============ -->
+  <section class="slide" aria-label="Diapositive 7 : L'invitation">
+    <div class="folio" aria-hidden="true"><span class="folio__brand"><span class="sq"></span>Intégral Pharma</span><span class="folio__sec">L'invitation</span><span class="folio__pg"><b>07</b> / 07</span></div>
+    <div class="wmark" aria-hidden="true">07</div>
+    <div class="slide__deco" aria-hidden="true"><span class="orb a"></span></div>
+    <div class="slide__inner">
+      <div class="invite">
+        <span class="chnum rise">07 — L’invitation</span>
+        <h2 class="chtitle split" data-splitting>Découvrons ce que nous pouvons proposer à <span class="accent">votre groupement.</span></h2>
+        <p class="invite__s rise">Une heure suffit. Pascale vient à vous, avec des réponses précises — les chiffres, on les réserve au <b>face-à-face</b>. Notre ambition : un <b>partenaire utile et durable</b> pour vos officines.</p>
+        <div class="contact rise">
+          <div class="cta">
+            <a class="btn btn--primary" href="mailto:pascale.prieto@integralpharma.fr?subject=Rencontrons-nous%20%E2%80%94%20Int%C3%A9gral%20Pharma">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/></svg>
+              Écrire à Pascale
+            </a>
+            <a class="btn btn--ghost" href="tel:+33676885391">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L20 13l1 5v1a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg>
+              <span>Appeler <span class="num">06 76 88 53 91</span></span>
+            </a>
+          </div>
+          <div class="signature">
+            <div class="sig__badge">PP</div>
+            <div class="sig__txt">
+              <div class="nm">Pascale Prieto</div>
+              <div class="ro">Directrice commerciale France — Intégral Pharma</div>
+            </div>
+          </div>
+          <div class="invite__foot">
+            <img src="../assets/logo.png" alt="Intégral Pharma">
+            <div class="line">Acteur de la santé depuis plus de 20 ans</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- ============ CHROME NAV ============ -->
+<div class="chrome">
+  <div class="navbar" id="navbar" role="navigation" aria-label="Navigation de la présentation">
+    <button class="navbtn" id="prevBtn" aria-label="Diapositive précédente">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>
+    </button>
+    <div class="dots" id="dots" role="tablist"></div>
+    <span class="count" id="count">01 / 07</span>
+    <button class="navbtn" id="nextBtn" aria-label="Diapositive suivante">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- =========================================================
+     SCRIPT 1 — Contrôleur du DECK (GSAP + Splitting)
+     ========================================================= -->
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var hasGSAP = !!window.gsap;
+  if(window.Splitting){ try{ Splitting({ target:'[data-splitting]', by:'chars' }); }catch(e){} }
+
+  var deck   = document.getElementById('deck');
+  var slides = Array.prototype.slice.call(deck.querySelectorAll('.slide'));
+  var total  = slides.length;
+  var index  = 0, animating = false, queued = null;
+  var MAP_SLIDE = 3, SIEGE_SLIDE = 5;
+
+  /* ——— GRAMMAIRE DE MOUVEMENT (une seule, appliquée partout) ———
+     Un swap de diapo = cross-dissolve symétrique (même durée + même easing
+     dans les deux sens) + une dérive directionnelle constante. La
+     chorégraphie du contenu (titre → éléments → compteurs) est IDENTIQUE
+     sur chaque diapo : mêmes ordres, mêmes staggers, mêmes durées. */
+  var MO = {
+    swapDur : 0.64, swapEase:'power2.inOut', // changement de diapo (←/→ identiques)
+    drift   : 5,                             // % de glissement directionnel
+    revAt   : 0.30,                          // début de la chorégraphie contenu (s)
+    charDur : 0.66, charStag:0.014, charEase:'power3.out',
+    riseDur : 0.62, riseStag:0.06,  riseEase:'power3.out',
+    riseGap : 0.12,                          // décalage des .rise après les chars
+    numDur  : 1.0
+  };
+  var WHEEL_LOCK = MO.swapDur*1000 + 150;
+
+  var pfill   = document.getElementById('pfill');
+  var dotsW   = document.getElementById('dots');
+  var countEl = document.getElementById('count');
+  var prevBtn = document.getElementById('prevBtn');
+  var nextBtn = document.getElementById('nextBtn');
+  var navbar  = document.getElementById('navbar');
+
+  slides.forEach(function(s,i){
+    s.setAttribute('role','group');
+    s.setAttribute('aria-roledescription','diapositive');
+    if(i!==0) s.setAttribute('aria-hidden','true');
+    var d=document.createElement('button');
+    d.className='dot'; d.type='button'; d.setAttribute('role','tab');
+    d.setAttribute('aria-label','Aller à la diapositive '+(i+1));
+    d.setAttribute('aria-selected', i===0?'true':'false');
+    d.addEventListener('click',function(){ goTo(i); });
+    dotsW.appendChild(d);
+  });
+  var dots = Array.prototype.slice.call(dotsW.children);
+  var live = document.getElementById('deckLive');
+
+  function pad(n){ return (n<10?'0':'')+n; }
+  var LABELS=['Titre','Qui sommes-nous','La promesse','Le réseau','Nos valeurs','Le siège','L’invitation'];
+  function updateChrome(){
+    pfill.style.width = ((index+1)/total*100)+'%';
+    countEl.textContent = pad(index+1)+' / '+pad(total);
+    dots.forEach(function(d,i){ d.classList.toggle('on', i===index); d.setAttribute('aria-selected', i===index?'true':'false'); });
+    if(live) live.textContent = 'Diapositive '+(index+1)+' sur '+total+(LABELS[index]?' : '+LABELS[index]:'');
+    prevBtn.disabled = index===0;
+    nextBtn.disabled = index===total-1;
+    navbar.classList.toggle('navbar--dark', slides[index].classList.contains('slide--dark'));
+  }
+
+  function prep(el){
+    if(!hasGSAP||reduce) return;
+    gsap.set(el.querySelectorAll('.split .char'),{yPercent:110,opacity:0,rotationX:-50,transformOrigin:'50% 100%'});
+    gsap.set(el.querySelectorAll('.rise'),{y:28,opacity:0});
+  }
+  /* Chorégraphie d'entrée — la MÊME sur chaque diapo. Peut être posée dans
+     une timeline (au sein du swap, pour chevaucher sa fin d'un seul geste)
+     ou jouée seule (première diapo). Ordre constant : titre, éléments, chiffres. */
+  function reveal(el, tl, at){
+    if(!hasGSAP||reduce){ showStatic(el); return null; }
+    var chars=el.querySelectorAll('.split .char');
+    var rises=el.querySelectorAll('.rise');
+    var nums =el.querySelectorAll('.stat b[data-to]');
+    var t=tl||gsap.timeline();
+    var base=(at!=null?at:0);
+    if(chars.length) t.to(chars,{yPercent:0,opacity:1,rotationX:0,duration:MO.charDur,ease:MO.charEase,stagger:MO.charStag}, base);
+    if(rises.length) t.to(rises,{y:0,opacity:1,duration:MO.riseDur,ease:MO.riseEase,stagger:MO.riseStag}, base+MO.riseGap);
+    nums.forEach(function(b){
+      var to=parseInt(b.getAttribute('data-to'),10)||0, o={v:0}; b.textContent='0';
+      t.to(o,{v:to,duration:MO.numDur,ease:'power2.out',onUpdate:function(){ b.textContent=Math.round(o.v); }}, base+MO.riseGap);
+    });
+    return t;
+  }
+  function showStatic(el){
+    el.querySelectorAll('.split .char, .rise').forEach(function(n){ n.style.opacity=1; n.style.transform='none'; });
+    el.querySelectorAll('.stat b[data-to]').forEach(function(b){ b.textContent=b.getAttribute('data-to'); });
+  }
+  function activate(el){ el.classList.add('is-active'); el.style.visibility='visible'; el.style.pointerEvents='auto'; el.removeAttribute('aria-hidden'); }
+  function deactivate(el){ el.classList.remove('is-active'); el.style.visibility='hidden'; el.style.pointerEvents='none'; el.setAttribute('aria-hidden','true'); }
+
+  function leaveHooks(i){
+    if(i===MAP_SLIDE)   window.dispatchEvent(new CustomEvent('deck:map',  {detail:false}));
+    if(i===SIEGE_SLIDE) window.dispatchEvent(new CustomEvent('deck:video',{detail:false}));
+    window.dispatchEvent(new CustomEvent('deck:leave',{detail:i}));
+  }
+  function enterHooks(i){
+    if(i===MAP_SLIDE)   window.dispatchEvent(new CustomEvent('deck:map',  {detail:true}));
+    if(i===SIEGE_SLIDE) window.dispatchEvent(new CustomEvent('deck:video',{detail:true}));
+    window.dispatchEvent(new CustomEvent('deck:enter',{detail:i}));
+  }
+
+  function goTo(n){
+    n=Math.max(0,Math.min(total-1,n));
+    if(n===index) return;
+    /* une transition en cours : on mémorise la DERNIÈRE cible et on l'enchaîne
+       proprement à la fin (navigation réactive, jamais de double-saut brutal) */
+    if(animating){ queued=n; return; }
+    var dir=n>index?1:-1, from=slides[index], to=slides[n], prevI=index;
+    index=n; updateChrome(); leaveHooks(prevI);
+
+    if(!hasGSAP||reduce){
+      deactivate(from); from.style.opacity=0;
+      activate(to); to.style.opacity=1; showStatic(to);
+      enterHooks(n); return;
+    }
+
+    animating=true;
+    prep(to); activate(to);
+    var inInner=to.querySelector('.slide__inner'), outInner=from.querySelector('.slide__inner');
+    gsap.set(to,{opacity:0});
+    gsap.set(inInner,{xPercent:MO.drift*dir});
+    gsap.set([inInner,outInner],{willChange:'transform,opacity'});
+
+    var tl=gsap.timeline({onComplete:function(){
+      deactivate(from); gsap.set(from,{opacity:0});
+      gsap.set(outInner,{clearProps:'transform,opacity,willChange'});
+      gsap.set(inInner,{clearProps:'willChange'});
+      animating=false; enterHooks(n);
+      if(queued!=null){ var q=queued; queued=null; if(q!==index) goTo(q); }
+    }});
+    /* cross-dissolve SYMÉTRIQUE : même durée + même easing sortie/entrée */
+    tl.to(from,    {opacity:0,               duration:MO.swapDur,ease:MO.swapEase},0);
+    tl.to(outInner,{xPercent:-MO.drift*dir,  duration:MO.swapDur,ease:MO.swapEase},0);
+    tl.to(to,      {opacity:1,               duration:MO.swapDur,ease:MO.swapEase},0);
+    tl.to(inInner, {xPercent:0,              duration:MO.swapDur,ease:MO.swapEase},0);
+    /* le contenu entre en chevauchant la fin du swap → un seul geste continu */
+    reveal(to, tl, MO.revAt);
+  }
+  function next(){ goTo(index+1); }
+  function prev(){ goTo(index-1); }
+
+  prevBtn.addEventListener('click',prev);
+  nextBtn.addEventListener('click',next);
+
+  document.addEventListener('keydown',function(e){
+    var k=e.key;
+    if(k==='ArrowRight'||k==='ArrowDown'||k==='PageDown'||k===' '||k==='Spacebar'){ e.preventDefault(); next(); }
+    else if(k==='ArrowLeft'||k==='ArrowUp'||k==='PageUp'){ e.preventDefault(); prev(); }
+    else if(k==='Home'){ e.preventDefault(); goTo(0); }
+    else if(k==='End'){ e.preventDefault(); goTo(total-1); }
+  });
+
+  /* ——— GARDE-FOU DÉFILEMENT ———
+     Un geste qui COMMENCE dans une zone à défilement (annuaire [data-scroll],
+     contenu d'une diapo qui déborde…) doit défiler CETTE zone et NE JAMAIS
+     changer de diapo. On remonte le DOM depuis la cible du geste. */
+  function inHorizScroll(node){
+    while(node && node!==deck && node.nodeType===1){
+      var st=window.getComputedStyle(node), ox=st.overflowX;
+      if((node.hasAttribute('data-scroll')||ox==='auto'||ox==='scroll') && node.scrollWidth>node.clientWidth+2) return true;
+      node=node.parentNode;
+    }
+    return false;
+  }
+  function canScrollY(node,dy){
+    while(node && node!==deck && node.nodeType===1){
+      var st=window.getComputedStyle(node), oy=st.overflowY;
+      if((node.hasAttribute('data-scroll')||oy==='auto'||oy==='scroll') && node.scrollHeight>node.clientHeight+2){
+        if(dy>0 && node.scrollTop+node.clientHeight < node.scrollHeight-1) return true;
+        if(dy<0 && node.scrollTop > 1) return true;
+      }
+      node=node.parentNode;
+    }
+    return false;
+  }
+
+  /* swipe tactile (horizontal) — neutralisé si le geste part d'une zone à défilement */
+  var tsx=0,tsy=0,tracking=false,navBlocked=false;
+  deck.addEventListener('touchstart',function(e){
+    if(e.touches.length!==1){ tracking=false; return; }
+    tsx=e.touches[0].clientX; tsy=e.touches[0].clientY;
+    navBlocked=inHorizScroll(e.target);   /* ex : l'annuaire des établissements */
+    tracking=true;
+  },{passive:true});
+  deck.addEventListener('touchend',function(e){
+    if(!tracking) return; tracking=false;
+    if(navBlocked) return;                 /* le geste défilait une zone : pas de nav */
+    var t=e.changedTouches[0], dx=t.clientX-tsx, dy=t.clientY-tsy;
+    if(Math.abs(dx)>Math.abs(dy) && Math.abs(dx)>45){ dx<0?next():prev(); }
+  },{passive:true});
+
+  /* molette / trackpad (verrouillée) — laisse d'abord défiler une zone interne */
+  var wlock=false;
+  deck.addEventListener('wheel',function(e){
+    var d=Math.abs(e.deltaX)>Math.abs(e.deltaY)?e.deltaX:e.deltaY;
+    if(Math.abs(d)<20) return;
+    if(canScrollY(e.target, e.deltaY)) return;  /* l'annuaire / le contenu scrolle */
+    if(wlock) return; wlock=true; setTimeout(function(){wlock=false;},WHEEL_LOCK);
+    d>0?next():prev();
+  },{passive:true});
+
+  /* init */
+  slides.forEach(function(s,i){ if(i!==0){ deactivate(s); s.style.opacity=0; } });
+  activate(slides[0]); slides[0].style.opacity=1;
+  updateChrome();
+  if(!hasGSAP||reduce){ showStatic(slides[0]); }
+  else { prep(slides[0]); requestAnimationFrame(function(){ reveal(slides[0]); }); }
+
+  /* logo tilt léger (desktop, souris) */
+  if(!reduce && !(window.matchMedia && window.matchMedia('(pointer:coarse)').matches)){
+    var lg=document.getElementById('brandlogo3d');
+    if(lg){
+      var host=slides[0];
+      host.addEventListener('pointermove',function(e){
+        var r=host.getBoundingClientRect();
+        var px=((e.clientX-r.left)/r.width-0.5)*2, py=((e.clientY-r.top)/r.height-0.5)*2;
+        lg.style.transform='rotateX('+(-py*7).toFixed(1)+'deg) rotateY('+(px*11).toFixed(1)+'deg)';
+      },{passive:true});
+      host.addEventListener('pointerleave',function(){ lg.style.transform=''; },{passive:true});
+    }
+  }
+
+  /* ——— PARALLAX DE PROFONDEUR DU DÉCOR (desktop, pointeur fin) ———
+     Le décor (orbes + grille) suit légèrement le pointeur → profondeur,
+     sans jamais déplacer le texte (qui reste au-dessus). */
+  if(!reduce && window.matchMedia && window.matchMedia('(pointer:fine)').matches){
+    var pend=false, pcx=0, pcy=0;
+    deck.addEventListener('pointermove',function(e){
+      pcx=(e.clientX/window.innerWidth-0.5);
+      pcy=(e.clientY/window.innerHeight-0.5);
+      if(pend) return; pend=true;
+      requestAnimationFrame(function(){
+        pend=false;
+        var deco=slides[index] && slides[index].querySelector('.slide__deco');
+        if(deco) deco.style.transform='translate3d('+(pcx*-16).toFixed(1)+'px,'+(pcy*-12).toFixed(1)+'px,0)';
+      });
+    },{passive:true});
+    deck.addEventListener('pointerleave',function(){
+      var deco=slides[index] && slides[index].querySelector('.slide__deco');
+      if(deco) deco.style.transform='';
+    },{passive:true});
+  }
+});
+
+/* vidéo siège : pilotée par le deck (1 seule vidéo) */
+(function(){
+  var vid=document.getElementById('siegeVid'); if(!vid) return;
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  window.addEventListener('deck:video',function(e){
+    if(e.detail && !reduce){
+      var p=vid.play();
+      if(p&&p.then){ p.then(function(){ vid.style.opacity='1'; }).catch(function(){}); }
+    } else { vid.pause(); }
+  });
+})();
+</script>
+
+<!-- =========================================================
+     SCRIPT 2 — CARTE RELIEF 3D (reprise de propo-10-kinetic.html)
+     France extrudée + faisceaux + survol zoom/fiche coordonnées
+     Ignition pilotée à l'entrée de la diapo · Three.js r128 · fallback SVG
+     ========================================================= -->
+<script>
+(function(){
+  var FR_D = "M825.35,356.64 821.65,358.05 817.82,356.58 815.8,357.67 816.66,361.49 812.79,363.48 812.17,365.94 808.99,371.04 817.91,369.18 820.02,370.24 820.37,372.88 817.4,373.88 816.38,376.48 812.82,377.47 813.7,381.53 806.31,388.65 806.73,389.82 797.13,397.03 796.54,398.67 797.67,400.11 791.23,405.51 783.1,407.52 779.43,412.2 781.21,416.7 779.36,423.68 780.27,426.39 769.08,434.54 757.93,445.19 760.94,448.18 755.51,455.96 755.58,458.96 755.06,460.61 761.28,465.88 757.54,473.14 758.59,476.5 748.74,480.05 749.46,482.03 750.21,482.97 747.76,487.71 750.35,486.49 753.24,486.93 754.82,485.86 759.67,486.58 765.53,480.94 770.37,478.29 770.85,475.79 769.89,475.17 768.16,476.44 766.41,473.57 770.79,465.22 773.65,465.14 776.48,467.71 784.89,461.61 786.91,462.52 798.58,461.38 803.71,462.79 801.74,466.88 807.52,473.88 803.74,480.85 803.41,487.26 809.94,488.71 808.68,495.83 812.52,494.29 817.44,500.73 819.63,507.7 817.16,509.71 816.28,512.67 812.63,514.89 808.52,514.84 807.9,517.03 804.7,516.03 804.2,526.61 807.49,530.39 810.38,530.95 811.26,533.63 816.84,535.02 815.28,539.71 816.91,547.7 820.41,548.65 820.32,550.69 823.63,551.18 824.48,554.46 828.77,557.55 827.5,561.42 824.09,564.73 825.69,571.59 821.77,575.52 819.7,574.34 814.27,576.27 812.71,579.47 809.61,580.16 809.23,582.76 806.55,583.45 801.32,580.7 799.38,582.69 795.16,583.32 792.1,586.14 794.45,589.17 795.25,593.96 799.86,594.71 799.67,596.88 801.19,599.66 799.86,601.97 800.88,602.32 800.51,604.9 808.15,610.18 811.12,610.38 812.3,608.97 818.22,612.85 816.74,616.01 821.6,626.36 818.09,625.4 814.2,626.75 813.29,629.04 814.47,632.24 813.32,632.36 810.99,637.97 808.59,638.53 807.15,641.05 808.84,645.57 813.17,650.54 809.63,651.2 810.04,657.12 813.63,661.09 814.05,663.26 816.38,664.86 817.5,668.87 829.21,672.22 835.45,677.88 839.59,677.68 840.63,680.24 842.98,679.59 844.96,680.58 845.33,678.92 854.24,676.6 857.81,676.91 859.2,674.38 861.96,674.97 860.89,678.98 864.08,683.59 863.76,685.61 860.5,689.12 859.51,693.83 854.37,696.68 853.71,701.18 849.63,703.8 851.61,711.93 848.72,715.29 846.69,714.45 843.22,718.03 839.16,719.1 839.79,721.43 838.49,722.43 837.42,719.5 836.79,721.4 835.52,720.24 832.46,721.37 830.5,725.04 826.72,724.87 824.85,731.05 825.49,734.96 822.93,732.41 819.11,735.72 817.58,734.31 814.02,735.33 811.42,743.9 809.38,746.02 807.32,745.65 807.09,747.58 799.53,747.46 797.63,753.96 789.27,760.81 794.78,761.45 795.73,760.69 796.68,761.74 794.49,764.17 795.37,768.02 793.15,769.42 793.24,770.9 791.47,771.45 790.1,769.3 787.12,769.01 783.12,772.48 775.92,773.25 774.37,775.83 774.55,778.59 768.58,775.35 763.56,776.07 760.82,779.63 760.74,783.55 761.94,783.83 760.32,784.27 756.64,783.4 759.41,781.66 757.86,778.9 751.88,779.21 750.73,777.04 745.7,776.98 745.16,775.27 742.82,776.97 744.5,777.5 743.79,779.22 746.91,779.08 746.9,780.57 743.12,779.56 740.94,782.32 739.18,782.06 737.03,780.09 737.69,775.94 735.18,775.81 735.16,773.63 730.34,772.81 729.75,769.71 725.59,769.13 724.08,771.22 719.61,766.6 717.35,767.94 707.01,766.49 709.32,762.25 707.41,759.89 709.13,758.63 704.87,752.38 699.49,755.49 687.68,755.72 682.35,746.2 678.76,745.96 677.0,747.46 677.98,745.88 676.43,746.31 674.59,743.84 676.0,747.86 672.92,746.41 675.15,748.6 673.99,749.21 674.84,749.78 673.27,751.07 676.86,752.66 678.94,750.9 674.69,755.16 668.2,753.44 661.54,753.65 655.28,750.9 657.52,747.43 654.55,744.05 629.91,742.04 626.29,739.21 627.44,736.01 626.13,734.45 618.07,734.5 610.23,739.01 604.3,745.2 600.21,747.89 599.58,748.61 594.25,750.76 585.76,760.9 579.24,759.41 571.04,763.96 563.47,771.74 559.17,778.8 554.85,792.49 556.2,794.92 553.98,815.26 555.87,830.52 561.4,833.25 561.02,836.06 563.58,840.9 557.8,841.7 554.87,837.2 550.02,837.96 548.61,836.63 546.61,838.85 541.39,838.9 537.43,843.04 534.4,842.08 530.58,843.99 529.23,845.68 530.58,849.81 523.79,848.38 521.0,850.61 517.8,849.68 514.48,844.79 502.82,840.74 499.33,842.67 495.92,842.33 491.63,847.76 486.94,849.06 483.79,845.53 481.85,839.12 478.85,839.48 474.01,836.31 468.22,834.88 469.48,828.67 471.87,827.44 468.03,825.1 468.51,823.63 459.66,822.63 455.97,819.95 451.66,820.41 451.41,823.97 448.81,824.58 445.57,816.58 443.21,815.14 443.54,813.73 436.57,813.7 434.85,813.26 430.82,814.59 425.13,807.14 418.89,807.26 417.26,805.65 414.77,806.8 410.21,803.47 400.16,800.55 397.44,802.51 398.16,805.82 396.63,807.73 397.8,808.73 396.69,810.64 398.49,813.74 397.82,816.43 393.15,815.17 381.76,816.41 377.63,813.55 373.1,817.8 370.82,813.99 365.5,812.12 352.64,816.9 349.76,816.05 349.06,813.89 346.73,813.4 343.16,806.34 341.38,806.98 333.07,801.55 327.65,805.92 324.43,806.21 320.23,803.59 318.61,806.75 316.15,807.66 316.27,805.37 314.23,805.14 313.75,802.82 308.93,798.09 305.41,796.66 305.0,791.92 303.87,789.93 299.51,791.59 293.72,790.39 291.34,791.35 280.07,784.84 278.33,785.94 276.43,783.42 271.94,782.36 270.28,782.65 267.36,779.98 269.63,775.55 264.88,778.26 263.44,783.93 258.16,781.76 256.57,778.43 260.39,774.52 262.31,768.61 261.89,762.08 252.08,759.08 250.47,759.67 249.35,762.72 247.4,762.59 246.4,757.63 241.49,757.34 239.42,758.46 238.8,755.23 235.57,753.03 235.73,750.79 242.7,749.01 243.75,749.71 247.99,745.51 258.31,724.48 267.48,674.93 270.91,647.13 270.83,638.89 275.84,627.95 278.24,628.63 278.25,630.21 287.48,629.22 286.06,626.68 283.55,624.73 285.13,624.87 283.92,623.6 276.58,617.37 276.18,620.21 272.42,625.34 271.09,632.34 270.45,630.63 277.04,566.87 277.5,550.18 281.96,541.91 288.49,539.89 286.08,536.21 284.97,536.62 273.59,529.22 273.14,531.11 274.43,531.59 272.55,531.12 272.02,527.79 272.14,520.7 279.03,518.9 277.08,514.14 280.2,513.54 282.87,507.82 281.28,505.42 283.46,504.48 279.87,499.89 283.88,500.56 284.24,499.04 280.92,491.19 278.28,489.89 279.15,488.13 276.27,486.97 276.82,485.43 274.02,486.31 271.79,484.71 274.53,481.87 274.79,479.81 280.34,474.87 279.72,472.58 276.87,469.28 274.34,470.35 273.85,474.61 267.92,469.46 268.76,472.41 269.38,472.83 268.13,472.56 264.96,467.6 256.71,467.4 253.7,461.63 244.85,460.06 236.1,453.04 233.96,452.93 230.73,441.62 225.14,433.87 223.65,433.84 221.44,429.96 212.15,421.66 211.55,415.2 214.38,414.31 219.88,403.8 222.72,401.89 221.09,398.65 214.61,393.8 205.25,391.9 210.74,388.23 209.66,378.28 201.69,382.12 196.36,377.93 193.72,378.4 193.03,379.94 185.46,376.77 187.86,375.89 188.32,373.03 184.87,368.73 190.75,364.53 192.96,364.85 191.39,363.96 191.32,361.89 188.93,361.63 188.61,357.59 190.92,358.58 193.43,357.21 186.08,354.35 184.86,355.71 179.72,356.31 184.19,353.56 183.26,353.35 184.42,351.84 182.74,350.94 182.86,352.94 181.46,353.68 181.2,350.68 180.13,353.86 177.33,352.99 180.41,354.71 177.55,355.44 176.61,357.64 173.2,356.4 167.56,358.1 165.38,356.76 165.23,355.15 161.74,353.46 162.55,352.55 161.24,352.57 161.3,351.55 163.68,351.16 165.27,353.39 167.05,352.24 167.19,353.34 167.29,351.54 168.85,353.3 169.74,352.0 171.19,353.49 173.32,352.89 174.42,348.49 174.91,349.54 176.0,347.97 175.9,343.66 174.53,343.07 174.3,345.64 175.51,346.61 174.25,346.2 175.12,347.35 173.95,348.33 173.85,347.03 170.11,345.42 173.21,345.99 171.39,343.5 170.01,344.61 169.18,343.36 169.71,345.31 164.47,345.42 164.64,347.48 162.7,347.35 162.65,349.77 161.42,348.12 160.44,348.52 159.93,346.82 159.55,348.51 159.51,344.76 158.22,344.57 156.99,341.95 158.4,346.19 157.65,348.56 160.22,351.7 157.1,351.09 155.75,348.27 156.1,350.21 153.73,348.18 154.1,350.47 152.58,348.79 151.8,350.17 149.07,350.75 149.27,349.22 146.99,347.62 147.26,355.83 150.13,359.9 146.69,359.18 144.97,354.13 146.62,352.27 146.03,348.75 141.69,343.03 141.73,340.67 146.53,337.78 144.37,337.97 145.87,336.34 147.05,337.29 147.7,335.42 148.47,335.83 145.36,335.92 146.46,333.26 144.81,334.91 142.29,333.64 144.34,337.44 142.66,337.76 142.3,338.72 141.31,338.35 142.25,339.53 141.19,342.92 135.0,338.6 131.7,338.87 134.15,337.89 137.11,338.7 134.77,337.08 131.45,336.74 135.38,332.87 136.64,328.85 136.45,330.97 134.3,332.44 133.95,331.73 132.57,333.47 129.71,325.71 129.19,327.55 131.88,334.78 129.77,337.62 124.91,337.73 120.53,331.39 121.14,327.79 119.83,325.26 120.92,323.49 119.53,322.73 120.9,328.12 119.69,331.78 112.81,330.44 112.79,329.54 110.35,330.39 108.1,327.59 112.79,325.91 109.46,326.26 109.43,325.34 106.92,327.87 105.76,324.05 106.22,328.69 98.89,329.12 95.9,324.77 96.97,322.63 95.28,323.18 95.81,322.49 90.82,317.82 90.7,323.08 86.26,323.4 83.59,322.26 86.24,323.18 84.04,321.0 82.81,322.1 79.91,317.27 82.37,314.75 83.85,315.14 83.67,313.8 82.24,314.36 83.02,311.97 81.57,311.13 82.63,312.1 81.46,313.79 81.63,315.7 80.06,316.29 79.55,318.97 77.83,318.39 80.79,319.83 81.75,322.28 78.23,324.15 77.3,320.67 76.31,322.66 75.14,321.96 78.62,325.61 76.8,328.41 75.1,327.49 74.78,328.92 64.68,328.32 64.32,326.16 66.47,323.99 63.47,315.7 59.13,310.83 53.9,307.96 54.41,305.73 56.83,305.35 53.75,305.61 53.85,307.58 51.79,309.16 47.28,306.43 40.64,305.32 42.74,304.53 42.36,302.97 52.96,301.76 62.09,298.93 65.49,298.76 67.42,301.03 67.79,299.77 69.58,300.5 71.22,294.27 69.79,293.84 68.16,289.67 64.69,289.41 58.38,286.42 56.11,287.41 52.69,293.02 51.69,286.7 53.35,285.24 48.25,284.71 47.94,282.32 51.91,281.86 51.09,278.56 54.19,276.52 52.5,280.07 54.15,281.86 56.4,279.61 55.15,281.14 56.3,282.23 61.74,281.31 64.2,282.83 71.62,280.98 70.42,283.04 71.93,284.47 75.05,284.75 75.64,285.99 82.03,286.12 81.72,288.16 82.42,284.96 80.02,286.02 73.32,284.64 71.31,282.42 76.94,280.79 70.77,279.14 72.79,277.92 67.19,278.99 71.42,275.09 67.51,276.71 68.23,274.63 65.87,276.18 66.27,275.51 64.22,278.04 61.89,278.09 62.87,276.49 59.14,277.84 62.66,272.63 71.35,266.67 62.69,271.85 60.72,271.28 60.12,272.66 57.04,272.78 49.06,276.83 43.59,275.38 41.94,277.56 38.18,277.48 38.03,274.66 40.0,274.16 37.32,274.5 38.79,272.84 37.07,269.25 39.04,264.47 40.92,263.82 38.7,263.28 38.33,259.55 41.32,255.89 42.9,256.37 43.09,254.69 47.98,254.11 49.98,254.65 50.61,256.01 55.93,256.85 49.23,253.81 50.05,251.21 50.18,252.46 53.6,252.1 57.27,254.19 51.78,250.84 53.57,248.29 56.46,249.69 60.35,247.98 63.12,248.35 60.67,246.52 67.55,244.62 69.9,246.04 68.44,247.5 69.99,248.29 76.49,246.69 74.71,246.23 76.84,243.91 81.01,242.87 84.06,243.19 85.65,244.6 86.13,241.77 91.41,239.82 92.51,250.26 93.68,251.76 92.67,246.78 94.75,244.8 96.66,245.29 95.87,246.65 98.85,249.33 98.38,251.3 98.85,250.89 101.47,249.03 99.39,248.51 98.37,245.01 99.59,245.94 99.12,243.3 100.65,241.18 101.23,241.82 101.44,240.54 110.81,243.5 112.98,242.81 112.03,246.13 114.33,243.75 115.6,245.25 117.83,244.36 117.06,240.29 119.13,237.67 116.82,236.66 116.85,234.65 122.44,229.1 122.4,230.38 123.95,229.18 125.29,231.21 127.27,230.85 126.71,232.95 129.63,232.5 134.4,229.08 138.19,229.33 140.7,226.27 142.05,229.48 140.13,233.75 140.97,233.9 143.76,228.59 150.65,225.02 149.14,226.4 150.45,227.34 149.3,227.07 149.49,229.57 150.66,229.94 147.61,236.65 150.71,230.77 154.99,230.98 155.05,232.83 152.63,234.31 154.9,234.57 153.69,235.02 156.46,236.23 158.87,235.57 160.21,237.13 159.41,240.48 166.95,246.66 167.32,252.33 174.53,256.2 174.03,258.43 176.88,262.16 176.72,258.18 179.82,258.6 185.41,252.05 190.42,249.46 189.56,247.47 192.81,246.82 194.27,248.42 200.8,243.65 202.61,245.83 199.54,250.02 201.0,250.76 205.4,247.55 207.87,254.36 209.03,251.13 210.05,253.97 212.11,249.97 213.47,251.14 211.82,248.62 218.6,248.34 218.3,249.5 219.59,249.66 221.89,253.76 221.14,254.92 223.33,257.48 221.81,262.14 224.17,258.82 224.96,259.44 222.84,253.15 224.15,253.58 220.94,251.78 219.92,246.9 222.36,245.48 222.57,244.07 225.78,243.75 224.55,242.99 226.08,242.18 228.14,243.11 232.03,241.44 232.41,244.26 230.63,245.64 230.75,249.01 237.23,251.49 251.91,248.85 253.91,250.56 258.3,249.27 259.9,247.83 264.4,248.63 261.33,245.91 262.71,243.21 258.19,246.34 254.16,243.12 252.5,239.27 249.88,237.69 249.69,230.48 247.29,229.32 249.3,227.52 251.26,219.9 251.27,223.27 251.16,211.02 254.27,211.56 250.65,210.18 249.3,213.35 248.08,209.63 247.63,203.09 249.26,200.84 247.32,192.68 250.07,192.26 247.1,191.28 245.88,193.01 243.01,186.36 244.02,186.5 240.76,182.45 242.96,181.95 239.28,181.6 235.77,177.69 237.78,178.35 236.33,177.36 234.27,177.73 231.5,164.99 229.2,163.14 232.13,158.71 231.55,153.16 229.84,150.66 225.15,148.96 225.76,144.16 229.38,146.17 231.55,145.09 233.48,147.6 242.54,149.38 243.67,150.75 246.98,150.74 246.05,151.31 247.27,152.1 248.59,150.99 255.65,149.52 256.7,147.05 263.6,146.16 270.12,147.23 272.59,155.73 270.94,155.26 269.6,159.02 269.7,157.68 268.1,158.08 267.75,162.46 276.68,174.7 276.92,178.57 279.81,179.61 283.14,176.3 291.55,175.85 304.38,180.21 327.86,181.88 339.01,186.55 348.22,185.06 355.08,181.62 362.69,175.02 369.09,172.7 376.41,172.06 376.17,170.63 371.85,170.37 371.83,170.86 361.59,168.82 358.22,164.63 364.95,147.85 367.74,145.4 376.44,142.04 392.8,132.07 406.18,129.93 417.57,125.71 422.29,125.83 432.98,120.98 449.48,108.2 452.85,99.98 456.27,97.49 459.6,100.26 465.22,100.57 463.19,97.42 460.98,97.28 458.98,93.63 456.32,93.17 455.57,91.05 457.11,83.29 461.42,83.1 462.42,84.38 456.73,79.84 458.71,66.71 462.88,69.21 458.14,62.85 457.36,48.85 459.71,48.77 460.05,44.11 458.59,34.75 462.7,33.92 472.62,26.57 491.99,21.81 494.25,23.37 493.52,21.91 496.11,20.26 498.06,21.71 499.03,19.01 498.21,18.66 500.98,19.29 509.61,16.86 513.13,17.48 522.25,14.06 524.21,22.36 526.25,23.58 527.77,27.93 525.14,30.32 526.23,31.03 525.81,37.01 528.54,40.36 530.74,39.77 534.11,40.78 538.61,48.66 542.43,49.32 546.28,51.8 549.49,46.06 556.3,43.48 558.21,44.06 559.78,42.16 562.4,42.97 566.08,50.1 569.39,51.63 569.43,53.5 568.52,55.68 571.51,67.93 577.38,70.99 582.1,69.35 583.92,67.27 586.49,68.24 585.5,71.42 592.74,70.94 596.03,74.98 596.76,79.76 595.81,83.0 599.83,88.93 599.33,87.52 600.62,88.21 602.12,84.64 608.63,84.46 611.9,86.72 620.21,83.82 623.76,88.53 626.16,89.24 627.77,93.41 629.51,92.63 628.27,91.61 629.6,90.54 632.22,92.19 632.88,94.07 628.46,97.97 628.53,102.69 627.0,105.27 631.64,105.35 631.71,107.9 633.65,111.25 628.86,113.79 627.33,116.62 628.95,118.73 627.89,120.32 631.5,121.32 631.64,122.24 638.92,121.03 649.82,123.17 653.06,122.67 656.99,119.64 664.3,118.37 664.3,109.9 672.85,102.11 677.54,105.19 675.84,106.99 675.8,109.61 674.58,108.57 673.58,111.68 672.67,111.85 673.94,114.46 670.59,121.23 674.58,123.17 677.06,127.01 674.7,131.43 676.27,135.53 674.72,137.84 678.51,138.52 684.41,137.2 685.84,139.28 690.79,140.88 693.08,145.43 695.17,145.31 695.65,147.36 702.55,147.34 706.49,151.23 704.65,153.93 705.22,155.24 707.82,153.39 712.99,156.97 714.4,159.97 715.58,166.05 721.57,163.22 724.97,165.11 727.32,161.06 734.13,161.97 735.79,159.89 738.66,162.26 739.96,162.26 741.95,165.95 746.77,165.99 748.88,166.88 750.44,169.99 753.55,170.46 754.72,169.16 757.33,170.19 759.26,166.59 766.54,164.7 773.0,168.83 774.87,169.11 779.14,168.21 786.41,172.35 787.18,173.69 786.62,175.22 790.05,179.26 788.2,180.65 794.81,187.09 794.54,189.28 796.27,189.94 797.01,192.91 798.67,193.25 798.24,196.81 799.76,197.9 806.66,198.58 807.4,196.03 806.01,193.22 808.01,192.65 809.82,193.42 812.04,192.4 818.93,195.65 820.49,202.87 823.71,198.76 823.69,200.35 827.28,201.91 829.06,201.17 830.0,202.51 833.2,201.43 836.45,202.42 838.54,199.76 840.7,199.57 841.27,197.06 846.23,196.11 845.79,197.9 849.4,197.57 849.48,200.62 852.32,204.41 858.44,206.65 859.74,208.72 867.26,209.21 869.66,207.48 874.18,210.34 878.69,208.12 881.43,211.01 888.9,214.63 896.22,216.59 897.91,216.18 891.84,224.26 888.31,232.83 884.64,234.22 883.5,236.59 880.85,236.97 879.77,240.96 872.13,248.15 869.63,253.6 869.84,260.41 867.44,262.62 865.08,272.06 865.81,278.22 862.44,280.65 860.67,288.22 854.9,298.01 854.53,306.25 857.8,312.1 853.46,321.24 853.86,324.57 851.78,330.85 852.83,335.33 850.62,338.31 851.27,341.42 855.94,347.51 855.04,349.63 849.66,353.49 851.73,354.6 849.71,355.34 850.24,357.35 848.92,358.68 845.17,357.5 844.91,358.75 846.68,359.87 842.02,363.34 838.16,362.79 833.02,364.37 831.83,362.7 828.0,362.29 829.69,357.55 825.35,356.64Z";
+  var SITES = [
+    {n:"Hyères Pharma",          s:"HP", c:"Hyères · 83",                x:759.10,y:775.43,t:"siege",h:26,  dxw:0,   dzw:0,   ldx:0,  ldy:-4},
+    {n:"Ouest Pharma Services",  s:"OPS",c:"St-Étienne-de-Montluc · 44", x:236.15,y:378.10,t:"site", h:13,  dxw:0,   dzw:0,   ldx:0,  ldy:0},
+    {n:"Escale Pharma",          s:"EP", c:"Chilly-Mazarin · 91",        x:506.74,y:242.05,t:"site", h:14,  dxw:0,   dzw:0,   ldx:0,  ldy:0},
+    {n:"Comptoir Pharma. du Rhône",s:"CPR",c:"Saint-Maurice-l'Exil · 38",x:669.97,y:558.24,t:"site", h:13,  dxw:0,   dzw:0,   ldx:0,  ldy:0},
+    {n:"Sud Ouest Pharma",       s:"SOP",c:"Montayral · 47",             x:415.96,y:645.70,t:"site", h:12.5,dxw:0,   dzw:0,   ldx:0,  ldy:0},
+    {n:"Pharm'Occitanie Services",s:"POS",c:"Villeneuve-lès-Béziers · 34",x:569.05,y:756.32,t:"site",h:13.5,dxw:0,   dzw:0,   ldx:-8, ldy:0},
+    {n:"Sud Est Pharma",         s:"SEP",c:"Le Cannet-des-Maures · 83",  x:773.12,y:749.45,t:"site", h:18,  dxw:4.2, dzw:-3.4,ldx:60, ldy:-2},
+    {n:"Mistral Santé Pharma",   s:"MSP",c:"Flassans-sur-Issole · 83",   x:762.69,y:752.42,t:"site", h:12,  dxw:-4.4,dzw:-5.2,ldx:-64,ldy:-2},
+    {n:"Pharmest",               s:"PH", c:"Metz · 57",                  x:762.22,y:202.25,t:"part", h:12,  dxw:0,   dzw:0,   ldx:0,  ldy:0}
+  ];
+  var S = 0.1, EXH = 3.2;
+  function WX(px){ return (px-500)*S; }
+  function WZ(py){ return (py-480)*S; }
+
+  var box = document.getElementById('map3d');
+  var lblWrap = document.getElementById('lbls');
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function webglOK(){
+    try{
+      var c=document.createElement('canvas');
+      return !!(window.WebGLRenderingContext && (c.getContext('webgl')||c.getContext('experimental-webgl')));
+    }catch(e){ return false; }
+  }
+
+  function buildFallback(){
+    box.classList.add('flat');
+    var mk='';
+    for(var i=0;i<SITES.length;i++){
+      var m=SITES[i], col = m.t==='siege' ? '#F39A1B' : (m.t==='part' ? '#AFC2DC' : '#5B8CFF');
+      var r  = m.t==='siege' ? 15 : 10;
+      mk += '<circle cx="'+m.x+'" cy="'+m.y+'" r="'+(r+9)+'" fill="'+col+'" opacity=".18"/>' +
+            '<circle cx="'+m.x+'" cy="'+m.y+'" r="'+r+'" fill="'+col+'"'+(m.t==='part'?' stroke-dasharray="4 4" stroke="#E7EEFF" stroke-width="2"':'')+'/>' +
+            '<text x="'+(m.x+m.ldx*0.6)+'" y="'+(m.y-r-10+(m.ldy||0))+'" text-anchor="middle" fill="#EAF0FF" font-family="Geist Mono,monospace" font-size="21" font-weight="600">'+m.s+'</text>';
+    }
+    document.getElementById('mapFallback').innerHTML =
+      '<svg viewBox="-20 130 1040 700" role="img" aria-label="Carte de France des établissements Intégral Pharma">'+
+      '<path d="'+FR_D+'" fill="#101E3D" stroke="#3F79FF" stroke-width="2.4" stroke-linejoin="round"/>'+mk+'</svg>'+
+      '<span class="fbnote">Vue simplifiée</span>';
+  }
+
+  if(window.__noThree || typeof THREE==='undefined' || reduce || !webglOK()){ buildFallback(); return; }
+
+  try{
+
+  var renderer = new THREE.WebGLRenderer({antialias:true, alpha:true});
+  renderer.setClearColor(0x000000,0);
+  box.insertBefore(renderer.domElement, box.firstChild);
+
+  var scene = new THREE.Scene();
+  scene.fog = new THREE.Fog(0x05070F, 160, 420);
+  var camera = new THREE.PerspectiveCamera(38, 1, 1, 900);
+
+  scene.add(new THREE.AmbientLight(0x33415f, 0.95));
+  var key = new THREE.DirectionalLight(0x7fa0ff, 0.65); key.position.set(-60,120,90); scene.add(key);
+  var rim = new THREE.DirectionalLight(0x2a4aa8, 0.4);  rim.position.set(80,60,-120); scene.add(rim);
+  var hqLight = new THREE.PointLight(0xF3720F, 1.15, 46, 2);
+  hqLight.position.set(WX(SITES[0].x), EXH+7, WZ(SITES[0].y)); scene.add(hqLight);
+
+  function glowTex(){
+    var c=document.createElement('canvas'); c.width=c.height=128;
+    var g=c.getContext('2d'), gr=g.createRadialGradient(64,64,0,64,64,64);
+    gr.addColorStop(0,'rgba(255,255,255,1)'); gr.addColorStop(0.28,'rgba(255,255,255,.5)');
+    gr.addColorStop(0.65,'rgba(255,255,255,.12)'); gr.addColorStop(1,'rgba(255,255,255,0)');
+    g.fillStyle=gr; g.fillRect(0,0,128,128);
+    return new THREE.CanvasTexture(c);
+  }
+  var GLOW = glowTex();
+
+  function groundTex(){
+    var c=document.createElement('canvas'); c.width=c.height=512;
+    var g=c.getContext('2d'), gr=g.createRadialGradient(256,256,20,256,256,256);
+    gr.addColorStop(0,'#0B1531'); gr.addColorStop(0.55,'#070D20'); gr.addColorStop(1,'#04060E');
+    g.fillStyle=gr; g.fillRect(0,0,512,512);
+    return new THREE.CanvasTexture(c);
+  }
+
+  function capTex(){
+    var w=1024,h=1024,c=document.createElement('canvas'); c.width=w;c.height=h;
+    var g=c.getContext('2d');
+    g.fillStyle='#0E1934'; g.fillRect(0,0,w,h);
+    var hx=SITES[0].x/1000*w, hy=SITES[0].y/960.1*h;
+    var gr=g.createRadialGradient(hx,hy,0,hx,hy,190);
+    gr.addColorStop(0,'rgba(190,110,20,.30)'); gr.addColorStop(1,'rgba(190,110,20,0)');
+    g.fillStyle=gr; g.fillRect(0,0,w,h);
+    var px=SITES[2].x/1000*w, py=SITES[2].y/960.1*h;
+    gr=g.createRadialGradient(px,py,0,px,py,170);
+    gr.addColorStop(0,'rgba(40,90,220,.24)'); gr.addColorStop(1,'rgba(40,90,220,0)');
+    g.fillStyle=gr; g.fillRect(0,0,w,h);
+    g.fillStyle='rgba(120,150,235,.10)';
+    for(var y=6;y<h;y+=13){ for(var x=6;x<w;x+=13){ g.fillRect(x,y,1.6,1.6); } }
+    var t=new THREE.CanvasTexture(c);
+    t.wrapS=t.wrapT=THREE.ClampToEdgeWrapping;
+    return t;
+  }
+
+  var ground = new THREE.Mesh(new THREE.CircleGeometry(430,64),
+    new THREE.MeshBasicMaterial({map:groundTex()}));
+  ground.rotation.x=-Math.PI/2; ground.position.y=-0.06; scene.add(ground);
+
+  var grid = new THREE.GridHelper(520,52,0x16294f,0x0C1730);
+  grid.material.transparent=true; grid.material.opacity=0.30; grid.position.y=-0.02; scene.add(grid);
+
+  (function stars(){
+    var n=300, pos=new Float32Array(n*3);
+    for(var i=0;i<n;i++){
+      var th=Math.random()*Math.PI*2, ph=Math.acos(Math.random()*0.75), r=230+Math.random()*150;
+      pos[i*3]=Math.cos(th)*Math.sin(ph)*r;
+      pos[i*3+1]=Math.abs(Math.cos(ph))*r*0.75+16;
+      pos[i*3+2]=Math.sin(th)*Math.sin(ph)*r;
+    }
+    var ge=new THREE.BufferGeometry();
+    ge.setAttribute('position',new THREE.BufferAttribute(pos,3));
+    scene.add(new THREE.Points(ge,new THREE.PointsMaterial({color:0x9FB6FF,size:1.5,sizeAttenuation:true,transparent:true,opacity:.75,fog:false})));
+  })();
+
+  var nums = FR_D.replace(/[MZ]/g,' ').trim().split(/[\s,]+/);
+  var shape = new THREE.Shape(), outline=[];
+  for(var i=0;i<nums.length;i+=2){
+    var px=parseFloat(nums[i]), py=parseFloat(nums[i+1]);
+    var sx=(px-500)*S, sy=(480-py)*S;
+    if(i===0) shape.moveTo(sx,sy); else shape.lineTo(sx,sy);
+    outline.push(new THREE.Vector3(WX(px), EXH+0.03, WZ(py)));
+  }
+  var exGeo = new THREE.ExtrudeGeometry(shape,{depth:EXH,bevelEnabled:false,steps:1});
+  exGeo.rotateX(-Math.PI/2);
+
+  var topTex = capTex();
+  topTex.repeat.set(1/100, 1/96.01); topTex.offset.set(0.5,0.5);
+  var matTop  = new THREE.MeshStandardMaterial({map:topTex,color:0xBFC9E8,metalness:0.18,roughness:0.86});
+  var matSide = new THREE.MeshStandardMaterial({color:0x0A1226,metalness:0.3,roughness:0.7});
+  scene.add(new THREE.Mesh(exGeo,[matTop,matSide]));
+
+  var fresMat = new THREE.ShaderMaterial({
+    uniforms:{ uColor:{value:new THREE.Color(0x4A86FF)}, uOp:{value:0.6} },
+    vertexShader:'varying vec3 vN; varying vec3 vP; void main(){ vec4 wp=modelViewMatrix*vec4(position,1.0); vP=wp.xyz; vN=normalMatrix*normal; gl_Position=projectionMatrix*wp; }',
+    fragmentShader:'uniform vec3 uColor; uniform float uOp; varying vec3 vN; varying vec3 vP; void main(){ float f=pow(1.0-abs(dot(normalize(vN),normalize(-vP))),3.0); gl_FragColor=vec4(uColor, f*uOp); }',
+    transparent:true, side:THREE.BackSide, blending:THREE.AdditiveBlending, depthWrite:false, fog:false
+  });
+  var fresMesh=new THREE.Mesh(exGeo.clone(), fresMat);
+  fresMesh.scale.set(1.05,1.05,1.05); scene.add(fresMesh);
+
+  var edges = new THREE.LineSegments(new THREE.EdgesGeometry(exGeo,30),
+    new THREE.LineBasicMaterial({color:0x3E7BFF,transparent:true,opacity:0.45}));
+  scene.add(edges);
+  var coast = new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(outline),
+    new THREE.LineBasicMaterial({color:0x6FA0FF,transparent:true,opacity:0.85,blending:THREE.AdditiveBlending,fog:false}));
+  scene.add(coast);
+
+  var haze = new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:0x1B3FA8,transparent:true,opacity:0.30,blending:THREE.AdditiveBlending,depthWrite:false,fog:false}));
+  haze.scale.set(150,150,1); haze.position.set(0,1.5,4); scene.add(haze);
+
+  function beamMat(hex,opac,fade){
+    return new THREE.ShaderMaterial({
+      uniforms:{uColor:{value:new THREE.Color(hex)},uOp:{value:opac},uT:{value:0},uPh:{value:Math.random()*6.28},uF:{value:fade}},
+      vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
+      fragmentShader:'uniform vec3 uColor;uniform float uOp,uT,uPh,uF;varying vec2 vUv;'+
+        'void main(){float a=pow(max(0.0,1.0-vUv.y),uF);float fl=0.88+0.12*sin(uT*2.1+uPh);gl_FragColor=vec4(uColor,a*uOp*fl);}',
+      transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,fog:false
+    });
+  }
+  var ringMatProto = new THREE.MeshBasicMaterial({color:0x5B8CFF,transparent:true,opacity:0.5,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,fog:false});
+
+  var beacons=[];
+  var pickTargets=[];
+  function makeBeacon(m,idx){
+    var siege = m.t==='siege', part = m.t==='part';
+    var cCore = siege?0xFFC876:(part?0xE9EFF9:0xBFD9FF);
+    var cOut  = siege?0xF07C0E:(part?0x8FA6C9:0x2A63F0);
+    var rOut  = siege?2.6:(part?1.25:1.35);
+    if(m.s==='SEP'||m.s==='MSP') rOut = 1.0;
+    var wx=WX(m.x)+m.dxw, wz=WZ(m.y)+m.dzw, bh=m.h;
+
+    var grp=new THREE.Group(); grp.position.set(wx,EXH,wz); grp.scale.y=0.0001; scene.add(grp);
+    var mats=[], sprites=[], rings=[];
+
+    var mo=beamMat(cOut, siege?0.34:0.26, 1.5);
+    var beamO=new THREE.Mesh(new THREE.CylinderGeometry(rOut*1.7,rOut*0.72,bh,20,1,true),mo);
+    beamO.position.y=bh/2; grp.add(beamO); mats.push(mo);
+    var mc=beamMat(cCore, siege?0.9:0.75, 1.15);
+    var beamC=new THREE.Mesh(new THREE.CylinderGeometry(rOut*0.34,rOut*0.24,bh*0.96,12,1,true),mc);
+    beamC.position.y=bh*0.48; grp.add(beamC); mats.push(mc);
+
+    var gs=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:cCore,transparent:true,opacity:siege?0.9:0.72,blending:THREE.AdditiveBlending,depthWrite:false,fog:false}));
+    gs.scale.set(siege?17:9,siege?17:9,1); gs.position.y=0.5; grp.add(gs); sprites.push(gs);
+    if(siege){
+      var halo=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:0xF3720F,transparent:true,opacity:0.42,blending:THREE.AdditiveBlending,depthWrite:false,fog:false}));
+      halo.scale.set(34,34,1); halo.position.y=0.8; grp.add(halo); sprites.push(halo);
+    }
+    var tip=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:0xFFFFFF,transparent:true,opacity:0.85,blending:THREE.AdditiveBlending,depthWrite:false,fog:false}));
+    tip.scale.set(siege?4.2:2.4,siege?4.2:2.4,1); tip.position.y=bh*0.99; grp.add(tip); sprites.push(tip);
+
+    var ringGrp=new THREE.Group(); ringGrp.position.set(wx,EXH+0.06,wz); scene.add(ringGrp);
+    for(var k=0;k<2;k++){
+      var rm=ringMatProto.clone();
+      rm.color=new THREE.Color(siege?0xF39A1B:(part?0x9FB4D8:0x5B8CFF));
+      var ring=new THREE.Mesh(new THREE.RingGeometry(0.86,1.0,44),rm);
+      ring.rotation.x=-Math.PI/2;
+      ring.userData={ph:k*0.5, base:(siege?3.2:1.9)};
+      ringGrp.add(ring); rings.push(ring);
+    }
+    var dm=new THREE.Mesh(new THREE.CircleGeometry(siege?1.5:1.0,32),
+      new THREE.MeshBasicMaterial({color:cCore,transparent:true,opacity:0.98,fog:false}));
+    dm.rotation.x=-Math.PI/2; dm.position.set(wx,EXH+0.08,wz); scene.add(dm);
+    var base=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:cCore,transparent:true,opacity:siege?0.85:0.6,blending:THREE.AdditiveBlending,depthWrite:false,fog:false}));
+    base.scale.set(siege?9:5.5,siege?9:5.5,1); base.position.set(wx,EXH+0.1,wz); scene.add(base);
+
+    var el=document.createElement('div');
+    el.className='lbl3'+(siege?' lbl3--siege':'')+(part?' lbl3--part':'');
+    el.innerHTML='<span class="lbl3__box"><span class="lbl3__n">'+m.s+' · '+m.n+'</span><br>'+
+                 '<span class="lbl3__c">'+m.c+'</span>'+
+                 (siege?'<br><span class="lbl3__t">SIÈGE</span>':(part?'<br><span class="lbl3__t">PARTENAIRE</span>':''))+
+                 '</span><span class="lbl3__stem"></span>';
+    lblWrap.appendChild(el);
+
+    beacons.push({grp:grp,mats:mats,rings:rings,site:m,el:el,wx:wx,wz:wz,topY:EXH+bh+0.9,idx:idx,hl:0,hlT:0});
+
+    var pr=(siege?7:4.8), ph=Math.max(bh,9);
+    var pick=new THREE.Mesh(new THREE.CylinderGeometry(pr,pr,ph,12,1,true),
+      new THREE.MeshBasicMaterial({colorWrite:false,depthWrite:false,transparent:true,opacity:0}));
+    pick.position.set(wx, EXH+ph/2, wz); pick.userData.bi=idx; scene.add(pick); pickTargets.push(pick);
+  }
+  for(var bi=0;bi<SITES.length;bi++) makeBeacon(SITES[bi],bi);
+
+  var HQ = new THREE.Vector3(WX(SITES[0].x), EXH+0.6, WZ(SITES[0].y));
+  var pulses=[];
+  for(var ai=1;ai<SITES.length;ai++){
+    var m=SITES[ai];
+    var A=new THREE.Vector3(WX(m.x)+m.dxw, EXH+0.6, WZ(m.y)+m.dzw);
+    var d=A.distanceTo(HQ);
+    var mid=A.clone().lerp(HQ,0.5); mid.y += 3.5 + d*0.28;
+    var curve=new THREE.QuadraticBezierCurve3(A,mid,HQ);
+    if(m.t==='part'){
+      var pts=curve.getPoints(60);
+      var lg=new THREE.BufferGeometry().setFromPoints(pts);
+      var ln=new THREE.Line(lg,new THREE.LineDashedMaterial({color:0x9FB4D8,transparent:true,opacity:0.5,dashSize:1.3,gapSize:1.0,fog:false}));
+      ln.computeLineDistances(); scene.add(ln);
+    }else{
+      var tube=new THREE.Mesh(new THREE.TubeGeometry(curve,42,0.085,5,false),
+        new THREE.MeshBasicMaterial({color:0x2E6BFF,transparent:true,opacity:0.30,blending:THREE.AdditiveBlending,depthWrite:false,fog:false}));
+      scene.add(tube);
+    }
+    var np = d>28?2:1;
+    for(var pi=0;pi<np;pi++){
+      var sp=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:(m.t==='part'?0xD9E4F5:0xBFD6FF),transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false,fog:false}));
+      sp.scale.set(2.1,2.1,1); scene.add(sp);
+      pulses.push({sp:sp,curve:curve,v:0.055+Math.random()*0.03,ph:pi/np+Math.random()*0.3});
+    }
+  }
+
+  var az=0, elv=0.92, baseEl=0.88, baseR=125;
+  var mx=0,my=0, intro=0, started=false, raf3=null;
+  var clock=new THREE.Clock(), T=0;
+  var V=new THREE.Vector3();
+  var cw=0,ch=0;
+
+  /* ignition pilotée à l'entrée de la diapo (pas de scroll dans un deck) */
+  var scrollDrive = false;
+  var scrollProg = 0;
+
+  var ray=new THREE.Raycaster(), ndc=new THREE.Vector2(-2,-2);
+  var pointerInMap=false, mapHoverI=-1, rosterHoverI=-1, focusI=-1, activeI=-1, focusAmt=0;
+  var LATLON=SITES.map(function(m){ return {lat:(4895.6-m.y)/95.55, lon:(m.x-353.88)/66.12}; });
+  var infoEl=document.getElementById('mapInfo'),
+      miType=document.getElementById('miType'), miName=document.getElementById('miName'),
+      miCity=document.getElementById('miCity'), miGps=document.getElementById('miGps');
+  var curInfo=-2;
+  function setInfo(i){
+    if(i===curInfo) return; curInfo=i;
+    if(i<0){ if(infoEl) infoEl.classList.remove('on'); return; }
+    var m=SITES[i], ll=LATLON[i];
+    infoEl.classList.remove('siege','part');
+    if(m.t==='siege') infoEl.classList.add('siege'); else if(m.t==='part') infoEl.classList.add('part');
+    miType.textContent = m.t==='siege'?'Siège':(m.t==='part'?'Partenaire':'Agence Intégral');
+    miName.textContent = m.n;
+    miCity.textContent = m.c;
+    miGps.innerHTML = '<b>'+ll.lat.toFixed(4)+'</b> N · <b>'+ll.lon.toFixed(4)+'</b> '+(ll.lon<0?'W':'E');
+    infoEl.classList.add('on');
+  }
+
+  function resize(){
+    cw=box.clientWidth; ch=box.clientHeight;
+    if(!cw||!ch) return;
+    var dpr=Math.min(window.devicePixelRatio||1, cw>760?2:1.6);
+    renderer.setPixelRatio(dpr);
+    renderer.setSize(cw,ch,false);
+    camera.aspect=cw/ch; camera.updateProjectionMatrix();
+    var halfW=58, vf=camera.fov*Math.PI/360;
+    baseR=Math.max(118, halfW/(Math.tan(vf)*camera.aspect));
+    scene.fog.near=baseR*1.6; scene.fog.far=baseR*3.6;
+  }
+  resize();
+  window.addEventListener('resize',resize,{passive:true});
+
+  box.addEventListener('pointermove',function(e){
+    var r=box.getBoundingClientRect();
+    mx=((e.clientX-r.left)/r.width-0.5)*2;
+    my=((e.clientY-r.top)/r.height-0.5)*2;
+    ndc.x=((e.clientX-r.left)/r.width)*2-1;
+    ndc.y=-((e.clientY-r.top)/r.height)*2+1;
+    pointerInMap=true;
+  },{passive:true});
+  function clearMapHover(){ mx=0;my=0; pointerInMap=false; mapHoverI=-1; }
+  box.addEventListener('pointerleave',clearMapHover,{passive:true});
+  box.addEventListener('pointercancel',clearMapHover,{passive:true});
+  box.addEventListener('pointerup',function(e){ if(e.pointerType!=='mouse') clearMapHover(); },{passive:true});
+
+  var coarse = window.matchMedia && window.matchMedia('(pointer:coarse)').matches;
+  if(coarse){ /* pas de survol au doigt : on parle de « toucher » */
+    var _cap=document.querySelector('.roster__cap'); if(_cap) _cap.innerHTML='Nos établissements <b>— touchez pour situer</b>';
+    var _hint=document.querySelector('.mapfoot .hint'); if(_hint) _hint.innerHTML='<span class="dot"></span>Touchez un établissement pour le révéler et ses coordonnées';
+  }
+  function selRow(row){ document.querySelectorAll('.estab').forEach(function(r){ r.classList.remove('is-sel'); }); if(row) row.classList.add('is-sel'); }
+  document.querySelectorAll('.estab[data-i]').forEach(function(row){
+    var i=parseInt(row.getAttribute('data-i'),10);
+    row.addEventListener('mouseenter',function(){ if(!coarse) rosterHoverI=i; });
+    row.addEventListener('mouseleave',function(){ if(!coarse && rosterHoverI===i) rosterHoverI=-1; });
+    /* tactile : impossible de survoler au doigt → un TAP épingle / dépingle l'établissement
+       (un vrai glissement scrolle l'annuaire et n'émet pas de click) */
+    row.addEventListener('click',function(){
+      if(rosterHoverI===i){ rosterHoverI=-1; selRow(null); }
+      else { rosterHoverI=i; selRow(row); }
+    });
+  });
+
+  function easeOut(x){ return 1-Math.pow(1-x,3); }
+
+  function tick(){
+    raf3=requestAnimationFrame(tick);
+    var dt=Math.min(clock.getDelta(),0.05); T+=dt;
+    if(started) intro=Math.min(1,intro+dt/2.4);
+    var e=easeOut(intro);
+
+    if(pointerInMap){
+      ray.setFromCamera(ndc,camera);
+      var hits=ray.intersectObjects(pickTargets,false);
+      mapHoverI = hits.length ? hits[0].object.userData.bi : -1;
+    }
+    focusI = pointerInMap ? mapHoverI : rosterHoverI;
+    if(focusI>=0) activeI=focusI;
+    focusAmt += ((focusI>=0?1:0)-focusAmt)*0.16;
+    setInfo(focusI);
+
+    var tAz=Math.sin(T*0.10)*0.10 + mx*0.14;
+    var tEl=baseEl + my*0.06 + (1-e)*0.16;
+    az+=(tAz-az)*0.045; elv+=(tEl-elv)*0.045;
+    var R=baseR*(1.30-0.30*e);
+    var ovx=Math.sin(az)*Math.cos(elv)*R, ovy=Math.sin(elv)*R, ovz=Math.cos(az)*Math.cos(elv)*R;
+    var lookX=0,lookY=2.5,lookZ=1.5;
+    if(focusAmt>0.001 && activeI>=0){
+      var fb=beacons[activeI], ea=easeOut(focusAmt);
+      var fx=fb.wx, fy=EXH+fb.site.h*0.4, fz=fb.wz;
+      var dx=ovx-fx, dy=ovy-fy, dz=ovz-fz, dl=Math.sqrt(dx*dx+dy*dy+dz*dz)||1;
+      dx/=dl; dy=Math.max(dy/dl,0.44); dz/=dl;
+      var fR=Math.max(30, baseR*0.27);
+      camera.position.set(ovx+((fx+dx*fR)-ovx)*ea, ovy+((fy+dy*fR)-ovy)*ea, ovz+((fz+dz*fR)-ovz)*ea);
+      lookX=fx*ea; lookY=2.5+(fy-2.5)*ea; lookZ=1.5+(fz-1.5)*ea;
+    } else {
+      camera.position.set(ovx,ovy,ovz);
+    }
+    camera.lookAt(lookX,lookY,lookZ);
+
+    for(var i=0;i<beacons.length;i++){
+      var b=beacons[i];
+      b.hlT = (b.idx===focusI)?1:0;
+      var dim = (activeI>=0 && b.idx!==activeI) ? (1-0.72*focusAmt) : 1;
+      var si = scrollDrive
+        ? easeOut(Math.max(0, Math.min(1, (scrollProg - b.idx*0.085) / 0.13)))
+        : easeOut(Math.max(0, Math.min(1, intro*1.9 - b.idx*0.09)));
+      b.grp.scale.y=Math.max(0.0001,si);
+      b.hl+=(b.hlT-b.hl)*0.1;
+      for(var j=0;j<b.mats.length;j++){
+        b.mats[j].uniforms.uT.value=T;
+        b.mats[j].uniforms.uOp.value=(j===0?(b.site.t==='siege'?0.34:0.26):(b.site.t==='siege'?0.9:0.75))*(0.35+0.65*si)*(1+b.hl*0.8)*dim;
+      }
+      for(var k=0;k<b.rings.length;k++){
+        var rg=b.rings[k];
+        var ph=(T*0.42+rg.userData.ph)%1;
+        var sc=rg.userData.base*(0.25+ph*2.6);
+        rg.scale.set(sc,sc,1);
+        rg.material.opacity=(1-ph)*0.55*si*(1+b.hl*0.7);
+      }
+      /* ===== CARTE ÉPURÉE : au repos une seule étiquette (le siège, repère
+         d'orientation) ; les 8 autres restent muettes. Au survol d'une ligne
+         d'annuaire OU d'un point, on révèle UNIQUEMENT l'étiquette visée. ===== */
+      var isActive = (b.idx===activeI && focusAmt>0.02);
+      var isSiege  = (b.site.t==='siege');
+      var wantLabel = isActive || isSiege;   // jamais les autres au repos
+      V.set(b.wx,b.topY,b.wz).project(camera);
+      if(V.z<1 && si>0.35 && wantLabel){
+        var lx=(V.x*0.5+0.5)*cw + b.site.ldx;
+        var ly=(-V.y*0.5+0.5)*ch + b.site.ldy;
+        b.el.style.transform='translate(-50%,-100%) translate('+lx.toFixed(1)+'px,'+ly.toFixed(1)+'px)';
+        var lop;
+        if(isActive){
+          lop = easeOut(focusAmt);                 // l'établissement visé : révélation nette
+        } else { /* siège au repos : repère permanent, s'efface si un autre est visé */
+          lop = (activeI>=0 && activeI!==b.idx) ? (1-0.78*focusAmt) : 1;
+        }
+        b.el.style.opacity = Math.min(1,(si-0.35)*2.2) * lop;
+        b.el.classList.toggle('on', isActive);
+        b.el.style.zIndex = isActive?6:(isSiege?4:1);
+      }else{
+        b.el.style.opacity=0;
+        b.el.classList.remove('on');
+      }
+    }
+
+    for(var p=0;p<pulses.length;p++){
+      var pu=pulses[p];
+      var t=(T*pu.v+pu.ph)%1;
+      pu.curve.getPoint(t,V);
+      pu.sp.position.copy(V);
+      pu.sp.material.opacity=Math.pow(Math.sin(t*Math.PI),0.7)*0.85*e;
+    }
+
+    hqLight.intensity=1.0+0.25*Math.sin(T*1.7);
+    renderer.render(scene,camera);
+    if(!box.classList.contains('ready')) box.classList.add('ready');
+  }
+
+  var deckActive=false;
+  function play(){ if(raf3===null && deckActive && !document.hidden){ clock.getDelta(); raf3=requestAnimationFrame(tick); } }
+  function pause(){ if(raf3!==null){ cancelAnimationFrame(raf3); raf3=null; } }
+
+  window.addEventListener('deck:map',function(ev){
+    deckActive = !!(ev.detail);
+    if(deckActive){ started=true; resize(); play(); }
+    else { pause(); rosterHoverI=-1; pointerInMap=false; mapHoverI=-1; selRow(null); }
+  });
+  document.addEventListener('visibilitychange',function(){ document.hidden?pause():(deckActive&&play()); });
+
+  }catch(err){ buildFallback(); }
+})();
+</script>
+<!-- =========================================================
+     SCRIPT 3 — OBJET 3D D'ACCENT (gélule marque, chrome + orange)
+     Diapo Titre · Three.js r128 · PBR + envmap · fallback poster SVG
+     Discret, lent, jamais envahissant · prefers-reduced-motion respecté
+     ========================================================= -->
+<script>
+(function(){
+  var host=document.getElementById('accent3d');
+  var cv=document.getElementById('accentCv');
+  if(!host||!cv) return;
+  var reduce=window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function webglOK(){try{var c=document.createElement('canvas');return !!(window.WebGLRenderingContext&&(c.getContext('webgl')||c.getContext('experimental-webgl')));}catch(e){return false;}}
+  if(window.__noThree || typeof THREE==='undefined' || !webglOK()){ host.classList.add('no3d'); return; }
+  try{
+    var renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});
+    renderer.setClearColor(0x000000,0);
+    if('outputEncoding' in renderer){ renderer.outputEncoding=THREE.sRGBEncoding; }
+
+    var scene=new THREE.Scene();
+    var camera=new THREE.PerspectiveCamera(34,1,0.1,50);
+    camera.position.set(0,0,5.2);
+
+    /* environnement (reflets PBR) : dégradé équirectangulaire */
+    function envTex(){
+      var c=document.createElement('canvas');c.width=256;c.height=128;var g=c.getContext('2d');
+      var gr=g.createLinearGradient(0,0,0,128);
+      gr.addColorStop(0,'#0b1c47');gr.addColorStop(.45,'#173a86');gr.addColorStop(.72,'#6f93e6');gr.addColorStop(1,'#eaf0ff');
+      g.fillStyle=gr;g.fillRect(0,0,256,128);
+      var rg=g.createRadialGradient(58,38,0,58,38,72);
+      rg.addColorStop(0,'rgba(255,190,110,.92)');rg.addColorStop(1,'rgba(255,190,110,0)');
+      g.fillStyle=rg;g.fillRect(0,0,256,128);
+      var t=new THREE.CanvasTexture(c);t.mapping=THREE.EquirectangularReflectionMapping;return t;
+    }
+    var env=envTex(), envMap=env;
+    try{ var pm=new THREE.PMREMGenerator(renderer); pm.compileEquirectangularShader(); envMap=pm.fromEquirectangular(env).texture; }catch(e){}
+    scene.environment=envMap;
+
+    scene.add(new THREE.AmbientLight(0xbcd0ff,0.55));
+    var key=new THREE.DirectionalLight(0xffffff,1.15); key.position.set(3,4,5); scene.add(key);
+    var warm=new THREE.PointLight(0xF3A21B,0.8,22); warm.position.set(-3.4,-1.2,3); scene.add(warm);
+    var cool=new THREE.PointLight(0x5B8CFF,0.5,22); cool.position.set(2.6,-2.2,-3); scene.add(cool);
+
+    var matChrome=new THREE.MeshStandardMaterial({color:0xEDF1F8,metalness:1.0,roughness:0.14,envMap:envMap,envMapIntensity:1.15});
+    var matOrange=new THREE.MeshStandardMaterial({color:0xF39A1B,metalness:0.55,roughness:0.30,envMap:envMap,envMapIntensity:0.95});
+
+    var rad=0.52, L=1.5;
+    var bodyGeo=new THREE.CylinderGeometry(rad,rad,L/2,48,1,false); bodyGeo.rotateZ(Math.PI/2);
+    var capGeo=new THREE.SphereGeometry(rad,40,32);
+    var pill=new THREE.Group();
+    var lb=new THREE.Mesh(bodyGeo,matOrange); lb.position.x=-L/4; pill.add(lb);
+    var rb=new THREE.Mesh(bodyGeo,matChrome); rb.position.x= L/4; pill.add(rb);
+    var lc=new THREE.Mesh(capGeo,matOrange);  lc.position.x=-L/2; pill.add(lc);
+    var rc=new THREE.Mesh(capGeo,matChrome);  rc.position.x= L/2; pill.add(rc);
+    pill.rotation.z=-0.42;
+    var wrap=new THREE.Group(); wrap.add(pill); scene.add(wrap);
+
+    var cw=0,ch=0;
+    function resize(){
+      var r=host.getBoundingClientRect(); cw=r.width; ch=r.height;
+      if(!cw||!ch) return;
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+      renderer.setSize(cw,ch,false);
+      camera.aspect=cw/ch; camera.updateProjectionMatrix();
+    }
+    resize(); window.addEventListener('resize',resize,{passive:true});
+
+    var raf=null, t0=performance.now(), intro=0;
+    function frame(){
+      raf=requestAnimationFrame(frame);
+      var t=(performance.now()-t0)/1000;
+      intro=Math.min(1,intro+0.018);
+      var e=1-Math.pow(1-intro,3);
+      wrap.rotation.y=t*0.5;
+      wrap.rotation.x=Math.sin(t*0.55)*0.18;
+      wrap.position.y=Math.sin(t*0.9)*0.12;
+      wrap.scale.setScalar(0.6+0.4*e);
+      renderer.render(scene,camera);
+    }
+    function play(){ if(raf===null && !document.hidden){ raf=requestAnimationFrame(frame); } }
+    function stop(){ if(raf!==null){ cancelAnimationFrame(raf); raf=null; } }
+
+    if(reduce){
+      intro=1; wrap.scale.setScalar(1); wrap.rotation.x=0.12; wrap.rotation.y=-0.5;
+      resize(); renderer.render(scene,camera);        /* pose statique, une seule image */
+    } else {
+      resize(); play();                                /* diapo 01 active au chargement */
+      window.addEventListener('deck:enter',function(ev){ if(ev.detail===0){ resize(); play(); } });
+      window.addEventListener('deck:leave',function(ev){ if(ev.detail===0){ stop(); } });
+      document.addEventListener('visibilitychange',function(){ document.hidden?stop():play(); });
+    }
+  }catch(err){ host.classList.add('no3d'); }
+})();
+</script>
+</body>
+</html>
