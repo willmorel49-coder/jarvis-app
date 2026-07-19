@@ -3,18 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Intégral Pharma — Grossiste-répartiteur | Groupements de pharmacies</title>
-<meta name="description" content="Intégral Pharma, groupe de grossistes-répartiteurs français indépendant. Neuf établissements partout en France. Rencontrons-nous — Pascale Prieto, Directrice commerciale France.">
-<meta property="og:type" content="website">
-<meta property="og:site_name" content="Intégral Pharma">
-<meta property="og:title" content="Intégral Pharma — Votre grossiste de première intention">
-<meta property="og:description" content="Groupe de grossistes-répartiteurs français indépendant. Neuf établissements partout en France. Découvrez ce que nous pouvons proposer à votre groupement.">
-<meta property="og:image" content="https://willmorel49-coder.github.io/jarvis-app/site-integral/assets/siege-solaire.jpg">
-<meta property="og:url" content="https://willmorel49-coder.github.io/jarvis-app/site-integral/integral-pharma-groupements/">
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Intégral Pharma — Votre grossiste de première intention">
-<meta name="twitter:description" content="Groupe de grossistes-répartiteurs français indépendant. Neuf établissements partout en France.">
-<meta name="twitter:image" content="https://willmorel49-coder.github.io/jarvis-app/site-integral/assets/siege-solaire.jpg">
+<title>Intégral Pharma — Votre grossiste de première intention</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://api.fontshare.com">
@@ -86,16 +75,10 @@
 
   /* échelle de rayons cohérente */
   --r-sm:11px; --r-md:16px; --r-lg:20px; --r-xl:26px;
-  --r-tile:12px;            /* gabarit unique des tuiles d'icône */
-  /* ombres en couches (finition premium) — 1 famille « carte », froide + chaude */
+  /* ombres en couches (finition premium) */
   --sh-card:0 1px 2px rgba(10,20,48,.04),0 18px 40px -28px rgba(10,20,48,.34);
   --sh-card-hi:0 2px 6px rgba(10,20,48,.06),0 30px 60px -30px rgba(0,80,230,.34);
-  --sh-card-warm:0 1px 2px rgba(10,20,48,.04),0 18px 40px -28px rgba(243,154,27,.30);
-  --sh-card-hi-warm:0 2px 6px rgba(10,20,48,.06),0 30px 60px -30px rgba(243,154,27,.34);
   --sh-float:0 20px 48px -22px rgba(10,20,48,.5);
-  /* accents de survol — 1 valeur froide, 1 chaude (partagées par toutes les cartes) */
-  --hover-blue:rgba(0,80,230,.26);
-  --hover-warm:rgba(243,154,27,.30);
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
@@ -227,8 +210,8 @@ h1,h2,h3,h4{text-wrap:balance}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:var(--sp-6);max-width:660px;counter-reset:st}
 .stat{position:relative;overflow:hidden;border:1px solid var(--line-l);border-radius:var(--r-md);padding:16px 16px 18px;background:var(--card);
   box-shadow:var(--sh-card);transition:transform .35s var(--ease-out),box-shadow .35s ease,border-color .3s ease}
-.stat:hover{transform:translateY(-3px);border-color:var(--hover-blue);box-shadow:var(--sh-card-hi)}
-.stat::before{counter-increment:st;content:counter(st,upper-roman);position:absolute;top:14px;right:15px;
+.stat:hover{transform:translateY(-3px);border-color:rgba(0,80,230,.24);box-shadow:var(--sh-card-hi)}
+.stat::before{counter-increment:st;content:"0" counter(st);position:absolute;top:14px;right:15px;
   font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.14em;color:var(--ink-3);opacity:.7}
 .stat::after{content:"";position:absolute;left:16px;right:16px;top:0;height:2px;
   background:linear-gradient(90deg,var(--blue),transparent 62%);border-radius:0 0 2px 2px}
@@ -244,27 +227,27 @@ h1,h2,h3,h4{text-wrap:balance}
    ========================================================= */
 .promises{display:grid;grid-template-columns:1fr;gap:12px;margin-top:var(--sp-6)}
 @media(min-width:620px){.promises{grid-template-columns:1fr 1fr}}
-.promise{position:relative;border:1px solid var(--line-l);border-radius:var(--r-md);padding:20px 20px;
-  background:var(--card);overflow:hidden;box-shadow:var(--sh-card);
-  transition:transform .35s var(--ease-out),box-shadow .35s ease,border-color .3s ease}
-.promise:hover{transform:translateY(-3px);border-color:var(--hover-blue);box-shadow:var(--sh-card-hi)}
+.promise{position:relative;border:1px solid var(--line-l);border-radius:18px;padding:20px 20px;
+  background:var(--card);overflow:hidden;box-shadow:0 24px 50px -34px rgba(10,20,48,.4);
+  transition:transform .35s var(--ease),box-shadow .35s ease,border-color .3s ease}
+.promise:hover{transform:translateY(-3px);border-color:rgba(0,80,230,.28);box-shadow:var(--sh-card-hi)}
 .promise:hover .promise__ico{transform:scale(1.06) rotate(-2deg)}
 .promise__k{position:absolute;top:19px;right:20px;display:inline-flex;align-items:center;gap:8px;
   font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.14em;color:var(--ink-3)}
 .promise__k::before{content:"";width:18px;height:1px;background:var(--hair)}
-.promise__ico{width:40px;height:40px;margin-bottom:14px;color:var(--blue);
+.promise__ico{width:38px;height:38px;margin-bottom:14px;color:var(--blue);
   background:linear-gradient(180deg,rgba(0,80,230,.10),rgba(0,80,230,.03));
-  border:1px solid rgba(0,80,230,.16);border-radius:var(--r-tile);padding:9px;
+  border:1px solid rgba(0,80,230,.16);border-radius:var(--r-sm);padding:8px;
   transition:transform .4s var(--ease-out)}
 .promise h3{font-family:var(--disp);font-weight:600;font-size:var(--fs-h3);color:var(--ink);letter-spacing:var(--tr-h3);line-height:1.15}
 .promise p{font-size:var(--fs-body);color:var(--ink-2);margin-top:8px;padding-top:10px;line-height:1.5;
   border-top:1px solid var(--hair-2)}
 .promise p b{color:var(--ink);font-weight:700}
-.paranote{margin-top:12px;border:1px solid rgba(243,154,27,.28);border-radius:var(--r-md);padding:18px 20px;
+.paranote{margin-top:12px;border:1px solid rgba(243,154,27,.28);border-radius:18px;padding:18px 20px;
   background:linear-gradient(180deg,var(--warm),#FFFFFF);display:flex;gap:16px;align-items:flex-start;
-  box-shadow:var(--sh-card-warm)}
-.paranote__ico{flex:0 0 auto;width:40px;height:40px;color:var(--orange-deep);
-  background:#FFFFFF;border:1px solid rgba(243,154,27,.3);border-radius:var(--r-tile);padding:9px}
+  box-shadow:0 24px 50px -34px rgba(243,154,27,.4)}
+.paranote__ico{flex:0 0 auto;width:38px;height:38px;color:var(--orange-deep);
+  background:#FFFFFF;border:1px solid rgba(243,154,27,.3);border-radius:11px;padding:8px}
 .paranote h4{font-family:var(--disp);font-weight:600;font-size:15.5px;color:var(--ink);letter-spacing:-.01em;margin-bottom:5px}
 .paranote p{font-size:13.5px;color:var(--ink-2);line-height:1.5}
 .paranote b{color:var(--ink);font-weight:700}
@@ -284,7 +267,7 @@ h1,h2,h3,h4{text-wrap:balance}
 /* header identique aux autres diapos ; on resserre juste le lead→carte */
 .map-slide__head .chtitle{margin-bottom:var(--sp-3)}
 .map-slide__head .chtext{max-width:60ch}
-.map3d{position:relative;flex:1 1 auto;min-height:0;border-radius:var(--r-lg);overflow:hidden;
+.map3d{position:relative;flex:1 1 auto;min-height:0;border-radius:20px;overflow:hidden;
   border:1px solid rgba(91,140,255,.20);
   background:radial-gradient(120% 100% at 50% 0%,#0B1734 0%,#060B1C 55%,#04070F 100%);
   box-shadow:0 30px 80px -30px rgba(0,0,0,.85),0 0 0 1px rgba(255,255,255,.03) inset}
@@ -387,17 +370,17 @@ h1,h2,h3,h4{text-wrap:balance}
 .value{position:relative;border:1px solid var(--line-l);border-radius:var(--r-lg);padding:26px 22px;
   background:var(--card);overflow:hidden;box-shadow:var(--sh-card);
   transition:transform .35s var(--ease-out),box-shadow .35s ease,border-color .3s ease}
-.value:hover{transform:translateY(-3px);border-color:var(--hover-warm);
-  box-shadow:var(--sh-card-hi-warm)}
+.value:hover{transform:translateY(-3px);border-color:rgba(243,154,27,.3);
+  box-shadow:0 2px 6px rgba(10,20,48,.05),0 34px 66px -34px rgba(243,154,27,.36)}
 .value:hover .value__ico{transform:scale(1.06) rotate(-2deg)}
 .value__ico{width:44px;height:44px;margin-bottom:16px;color:var(--orange-deep);
   transition:transform .4s var(--ease-out);
-  background:linear-gradient(180deg,var(--warm),#fff);border:1px solid rgba(243,154,27,.24);border-radius:var(--r-tile);padding:10px}
+  background:linear-gradient(180deg,var(--warm),#fff);border:1px solid rgba(243,154,27,.24);border-radius:13px;padding:10px}
 .value h3{font-family:var(--serif);font-weight:600;font-size:clamp(20px,2.6vw,23px);color:var(--ink);letter-spacing:-.018em}
 .value p{font-size:var(--fs-body);color:var(--ink-2);margin-top:10px;padding-top:12px;line-height:1.5;border-top:1px solid var(--hair-2)}
 .value__k{position:absolute;top:22px;right:22px;display:inline-flex;align-items:center;gap:8px;
   font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-3);letter-spacing:.14em}
-.value__k::before{content:"";width:18px;height:1px;background:var(--hair)}
+.value__k::before{content:"";width:16px;height:1px;background:var(--hair)}
 
 /* =========================================================
    06 — LE SIÈGE
@@ -407,7 +390,7 @@ h1,h2,h3,h4{text-wrap:balance}
 @media(min-width:900px){.showcase{grid-template-columns:1fr 1fr;gap:48px}}
 .showcase__txt{order:1;min-width:0}
 .showcase .frame{order:2}
-.frame{position:relative;border-radius:var(--r-lg);overflow:hidden;border:1px solid var(--line-l);background:#0B1226;
+.frame{position:relative;border-radius:22px;overflow:hidden;border:1px solid var(--line-l);background:#0B1226;
   box-shadow:0 40px 80px -34px rgba(10,20,48,.42),0 0 0 1px rgba(255,255,255,.5) inset}
 .frame__media{position:relative;aspect-ratio:16/11;overflow:hidden}
 @media(min-width:900px){.frame__media{aspect-ratio:5/6}}
@@ -790,24 +773,8 @@ document.addEventListener('DOMContentLoaded', function(){
   var deck   = document.getElementById('deck');
   var slides = Array.prototype.slice.call(deck.querySelectorAll('.slide'));
   var total  = slides.length;
-  var index  = 0, animating = false, queued = null;
+  var index  = 0, animating = false;
   var MAP_SLIDE = 3, SIEGE_SLIDE = 5;
-
-  /* ——— GRAMMAIRE DE MOUVEMENT (une seule, appliquée partout) ———
-     Un swap de diapo = cross-dissolve symétrique (même durée + même easing
-     dans les deux sens) + une dérive directionnelle constante. La
-     chorégraphie du contenu (titre → éléments → compteurs) est IDENTIQUE
-     sur chaque diapo : mêmes ordres, mêmes staggers, mêmes durées. */
-  var MO = {
-    swapDur : 0.64, swapEase:'power2.inOut', // changement de diapo (←/→ identiques)
-    drift   : 5,                             // % de glissement directionnel
-    revAt   : 0.30,                          // début de la chorégraphie contenu (s)
-    charDur : 0.66, charStag:0.014, charEase:'power3.out',
-    riseDur : 0.62, riseStag:0.06,  riseEase:'power3.out',
-    riseGap : 0.12,                          // décalage des .rise après les chars
-    numDur  : 1.0
-  };
-  var WHEEL_LOCK = MO.swapDur*1000 + 150;
 
   var pfill   = document.getElementById('pfill');
   var dotsW   = document.getElementById('dots');
@@ -847,23 +814,15 @@ document.addEventListener('DOMContentLoaded', function(){
     gsap.set(el.querySelectorAll('.split .char'),{yPercent:110,opacity:0,rotationX:-50,transformOrigin:'50% 100%'});
     gsap.set(el.querySelectorAll('.rise'),{y:28,opacity:0});
   }
-  /* Chorégraphie d'entrée — la MÊME sur chaque diapo. Peut être posée dans
-     une timeline (au sein du swap, pour chevaucher sa fin d'un seul geste)
-     ou jouée seule (première diapo). Ordre constant : titre, éléments, chiffres. */
-  function reveal(el, tl, at){
-    if(!hasGSAP||reduce){ showStatic(el); return null; }
+  function animateIn(el){
+    if(!hasGSAP||reduce){ showStatic(el); return; }
     var chars=el.querySelectorAll('.split .char');
-    var rises=el.querySelectorAll('.rise');
-    var nums =el.querySelectorAll('.stat b[data-to]');
-    var t=tl||gsap.timeline();
-    var base=(at!=null?at:0);
-    if(chars.length) t.to(chars,{yPercent:0,opacity:1,rotationX:0,duration:MO.charDur,ease:MO.charEase,stagger:MO.charStag}, base);
-    if(rises.length) t.to(rises,{y:0,opacity:1,duration:MO.riseDur,ease:MO.riseEase,stagger:MO.riseStag}, base+MO.riseGap);
-    nums.forEach(function(b){
+    if(chars.length) gsap.to(chars,{yPercent:0,opacity:1,rotationX:0,stagger:0.016,duration:.72,ease:'power3.out'});
+    gsap.to(el.querySelectorAll('.rise'),{y:0,opacity:1,stagger:.06,duration:.7,ease:'power3.out',delay:.08});
+    el.querySelectorAll('.stat b[data-to]').forEach(function(b){
       var to=parseInt(b.getAttribute('data-to'),10)||0, o={v:0}; b.textContent='0';
-      t.to(o,{v:to,duration:MO.numDur,ease:'power2.out',onUpdate:function(){ b.textContent=Math.round(o.v); }}, base+MO.riseGap);
+      gsap.to(o,{v:to,duration:1.05,ease:'power2.out',delay:.22,onUpdate:function(){ b.textContent=Math.round(o.v); }});
     });
-    return t;
   }
   function showStatic(el){
     el.querySelectorAll('.split .char, .rise').forEach(function(n){ n.style.opacity=1; n.style.transform='none'; });
@@ -883,10 +842,7 @@ document.addEventListener('DOMContentLoaded', function(){
 
   function goTo(n){
     n=Math.max(0,Math.min(total-1,n));
-    if(n===index) return;
-    /* une transition en cours : on mémorise la DERNIÈRE cible et on l'enchaîne
-       proprement à la fin (navigation réactive, jamais de double-saut brutal) */
-    if(animating){ queued=n; return; }
+    if(n===index||animating) return;
     var dir=n>index?1:-1, from=slides[index], to=slides[n], prevI=index;
     index=n; updateChrome(); leaveHooks(prevI);
 
@@ -900,23 +856,17 @@ document.addEventListener('DOMContentLoaded', function(){
     prep(to); activate(to);
     var inInner=to.querySelector('.slide__inner'), outInner=from.querySelector('.slide__inner');
     gsap.set(to,{opacity:0});
-    gsap.set(inInner,{xPercent:MO.drift*dir});
-    gsap.set([inInner,outInner],{willChange:'transform,opacity'});
-
-    var tl=gsap.timeline({onComplete:function(){
+    gsap.set(inInner,{opacity:0,xPercent:7*dir,scale:1.04});
+    var tl=gsap.timeline();
+    tl.to(outInner,{opacity:0,xPercent:-7*dir,scale:.97,duration:.55,ease:'power3.inOut'},0);
+    tl.to(from,{opacity:0,duration:.5,ease:'power2.inOut'},0.05);
+    tl.to(to,{opacity:1,duration:.45,ease:'power2.out'},0.28);
+    tl.to(inInner,{opacity:1,xPercent:0,scale:1,duration:.75,ease:'power3.out'},0.30);
+    tl.add(function(){
       deactivate(from); gsap.set(from,{opacity:0});
-      gsap.set(outInner,{clearProps:'transform,opacity,willChange'});
-      gsap.set(inInner,{clearProps:'willChange'});
-      animating=false; enterHooks(n);
-      if(queued!=null){ var q=queued; queued=null; if(q!==index) goTo(q); }
-    }});
-    /* cross-dissolve SYMÉTRIQUE : même durée + même easing sortie/entrée */
-    tl.to(from,    {opacity:0,               duration:MO.swapDur,ease:MO.swapEase},0);
-    tl.to(outInner,{xPercent:-MO.drift*dir,  duration:MO.swapDur,ease:MO.swapEase},0);
-    tl.to(to,      {opacity:1,               duration:MO.swapDur,ease:MO.swapEase},0);
-    tl.to(inInner, {xPercent:0,              duration:MO.swapDur,ease:MO.swapEase},0);
-    /* le contenu entre en chevauchant la fin du swap → un seul geste continu */
-    reveal(to, tl, MO.revAt);
+      gsap.set(outInner,{clearProps:'transform,opacity'});
+      animating=false; animateIn(to); enterHooks(n);
+    });
   }
   function next(){ goTo(index+1); }
   function prev(){ goTo(index-1); }
@@ -949,7 +899,7 @@ document.addEventListener('DOMContentLoaded', function(){
   deck.addEventListener('wheel',function(e){
     var d=Math.abs(e.deltaX)>Math.abs(e.deltaY)?e.deltaX:e.deltaY;
     if(Math.abs(d)<20) return;
-    if(wlock) return; wlock=true; setTimeout(function(){wlock=false;},WHEEL_LOCK);
+    if(wlock) return; wlock=true; setTimeout(function(){wlock=false;},800);
     d>0?next():prev();
   },{passive:true});
 
@@ -958,7 +908,7 @@ document.addEventListener('DOMContentLoaded', function(){
   activate(slides[0]); slides[0].style.opacity=1;
   updateChrome();
   if(!hasGSAP||reduce){ showStatic(slides[0]); }
-  else { prep(slides[0]); requestAnimationFrame(function(){ reveal(slides[0]); }); }
+  else { prep(slides[0]); requestAnimationFrame(function(){ animateIn(slides[0]); }); }
 
   /* logo tilt léger (desktop, souris) */
   if(!reduce && !(window.matchMedia && window.matchMedia('(pointer:coarse)').matches)){
