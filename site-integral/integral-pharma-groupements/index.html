@@ -1026,18 +1026,17 @@ document.addEventListener('DOMContentLoaded', function(){
     animating=true;
     prep(to); activate(to);
     var inInner=to.querySelector('.slide__inner'), outInner=from.querySelector('.slide__inner');
-    /* [H4] la couche du DESSUS (ordre DOM) est celle qui bouge en opacité ;
-       la couche du dessous reste opaque → le composite ne montre jamais le fond (plus de voile gris).
-       En avant (dir>0) la nouvelle diapo est au-dessus → on fond `to` 0→1.
-       En arrière la diapo sortante est au-dessus → on fond `from` 1→0. */
-    var fwd = dir>0;
-    if(fwd){ gsap.set(to,{opacity:0}); gsap.set(from,{opacity:1}); }
-    else   { gsap.set(to,{opacity:1}); gsap.set(from,{opacity:1}); }
+    /* [fix transition] la diapo ENTRANTE passe TOUJOURS au-dessus (z-index) et se fond 0→1
+       par-dessus la sortante restée opaque — dans les DEUX sens. On ne dépend plus de l'ordre
+       DOM : la sortante ne peut jamais rester affichée par-dessus l'entrante. */
+    gsap.set(to,  {opacity:0, zIndex:3});
+    gsap.set(from,{opacity:1, zIndex:2});
     gsap.set(inInner,{xPercent:MO.drift*dir});
     gsap.set([inInner,outInner],{willChange:'transform,opacity'});
 
     var tl=gsap.timeline({onComplete:function(){
       deactivate(from); gsap.set(from,{opacity:0});
+      gsap.set([to,from],{clearProps:'zIndex'});
       gsap.set(outInner,{clearProps:'transform,opacity,willChange'});
       gsap.set(inInner,{clearProps:'willChange'});
       animating=false; enterHooks(n);
@@ -1046,9 +1045,8 @@ document.addEventListener('DOMContentLoaded', function(){
     /* dérive directionnelle : les DEUX .slide__inner glissent (même durée + easing) */
     tl.to(outInner,{xPercent:-MO.drift*dir,  duration:MO.swapDur,ease:MO.swapEase},0);
     tl.to(inInner, {xPercent:0,              duration:MO.swapDur,ease:MO.swapEase},0);
-    /* [H4] on ne fond QUE la couche du dessus */
-    if(fwd){ tl.to(to,  {opacity:1,duration:MO.swapDur,ease:MO.swapEase},0); }
-    else   { tl.to(from,{opacity:0,duration:MO.swapDur,ease:MO.swapEase},0); }
+    /* [fix transition] on fond l'ENTRANTE (au-dessus) 0→1, la sortante reste opaque dessous */
+    tl.to(to,{opacity:1,duration:MO.swapDur,ease:MO.swapEase},0);
     /* le contenu entre en chevauchant la fin du swap → un seul geste continu */
     reveal(to, tl, MO.revAt);
   }
