@@ -448,8 +448,14 @@ h1,h2,h3,h4{text-wrap:balance}
   padding:15px 22px;border-radius:var(--r-md);font-family:var(--disp);font-weight:600;font-size:15px;
   letter-spacing:-.01em;transition:transform .25s var(--ease),box-shadow .25s ease,border-color .25s ease}
 .btn svg{width:18px;height:18px}
-.btn--primary{color:#fff;background:linear-gradient(180deg,var(--blue-lite),var(--blue));
+.btn--primary{color:#fff;background:linear-gradient(180deg,var(--blue-lite),var(--blue));position:relative;overflow:hidden;isolation:isolate;
   box-shadow:0 16px 34px -12px rgba(0,80,230,.6),0 0 0 1px rgba(255,255,255,.25) inset}
+/* balayage lumineux au survol (transform/opacity only, clippé) */
+.btn--primary::before{content:"";position:absolute;top:0;left:0;width:60%;height:100%;z-index:-1;pointer-events:none;
+  transform:translateX(-160%) skewX(-18deg);opacity:0;
+  background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.42),rgba(255,255,255,0));
+  transition:transform .6s var(--ease-out),opacity .3s ease}
+.btn--primary:hover::before{transform:translateX(220%) skewX(-18deg);opacity:1}
 .btn--primary:hover{transform:translateY(-2px);box-shadow:0 22px 44px -12px rgba(0,80,230,.75)}
 .btn--primary:active{transform:translateY(0)}
 .btn--ghost{color:var(--ink);background:#fff;border:1px solid var(--line-l);box-shadow:0 12px 26px -16px rgba(10,20,48,.4)}
@@ -1065,8 +1071,12 @@ document.addEventListener('DOMContentLoaded', function(){
     if(inner) gsap.set(inner,{xPercent: toMap?0:6*dir, yPercent: toMap?8:0, willChange:'transform'});
 
     var tl=gsap.timeline({onComplete:function(){
-      deactivate(from); gsap.set(from,{opacity:0});
-      gsap.set([to,from],{clearProps:'zIndex,transform,opacity,willChange,boxShadow'});
+      deactivate(from);
+      /* NE PAS clear l'opacité (sinon le CSS .slide{opacity:0} rend la diapo active blanche).
+         On nettoie transform/zIndex/ombre, puis on fixe explicitement : active visible, sortante cachée. */
+      gsap.set([to,from],{clearProps:'zIndex,transform,willChange,boxShadow'});
+      gsap.set(to,{opacity:1});
+      gsap.set(from,{opacity:0});
       animating=false; enterHooks(n);
       if(queued!=null){ var q=queued; queued=null; if(q!==index) goTo(q); }
     }});
@@ -1147,12 +1157,20 @@ document.addEventListener('DOMContentLoaded', function(){
 
   /* molette / trackpad (verrouillée) — laisse d'abord défiler une zone interne */
   var wlock=false;
+  /* molette / trackpad INERTIELS : accumulateur à seuil (poids + anti double-saut de l'élan) */
+  var wAcc=0, wCool=false, wDecay;
   deck.addEventListener('wheel',function(e){
+    if(animating) return;
+    if(canScrollY(e.target, e.deltaY)) return;   /* l'annuaire / le contenu scrolle */
     var d=Math.abs(e.deltaX)>Math.abs(e.deltaY)?e.deltaX:e.deltaY;
-    if(Math.abs(d)<20) return;
-    if(canScrollY(e.target, e.deltaY)) return;  /* l'annuaire / le contenu scrolle */
-    if(wlock) return; wlock=true; setTimeout(function(){wlock=false;},WHEEL_LOCK);
-    d>0?next():prev();
+    if(Math.abs(d)<4) return;
+    wAcc+=d;
+    clearTimeout(wDecay); wDecay=setTimeout(function(){ wAcc=0; },140); /* l'élan retombe si on lâche */
+    if(wCool) return;
+    if(Math.abs(wAcc)>=90){
+      wCool=true; setTimeout(function(){ wCool=false; },WHEEL_LOCK);
+      var dir=wAcc>0?1:-1; wAcc=0; dir>0?next():prev();
+    }
   },{passive:true});
 
   /* init */
@@ -1176,25 +1194,58 @@ document.addEventListener('DOMContentLoaded', function(){
     }
   }
 
+  /* ——— TILT 3D DES CARTES au pointeur (02/03/05) : tactilité premium sans WebGL ———
+     borné 6°, 1 écouteur délégué / grille, rAF throttlé, GELÉ pendant un swap. */
+  if(!reduce && window.matchMedia && window.matchMedia('(pointer:fine)').matches){
+    var TILT=6;
+    Array.prototype.forEach.call(document.querySelectorAll('.stats,.promises,.values'),function(grid){
+      var qraf=false, tx=0, ty=0, card=null;
+      grid.addEventListener('pointermove',function(e){
+        if(animating){ if(card){card.style.transform='';card=null;} return; }
+        var c=e.target.closest('.stat,.promise,.value');
+        if(!c){ if(card){card.style.transform='';card=null;} return; }
+        card=c; var r=c.getBoundingClientRect();
+        tx=((e.clientX-r.left)/r.width-0.5)*2; ty=((e.clientY-r.top)/r.height-0.5)*2;
+        if(qraf) return; qraf=true;
+        requestAnimationFrame(function(){ qraf=false; if(!card) return;
+          card.style.transform='perspective(720px) rotateX('+(-ty*TILT).toFixed(2)+'deg) rotateY('+(tx*TILT).toFixed(2)+'deg) translateY(-3px)';
+        });
+      },{passive:true});
+      grid.addEventListener('pointerleave',function(){ if(card){card.style.transform='';card=null;} },{passive:true});
+    });
+  }
+
+  /* ——— BOUTONS CONTACT MAGNÉTIQUES (diapo 07, moment CTA) ——— */
+  if(!reduce && window.matchMedia && window.matchMedia('(pointer:fine)').matches){
+    document.querySelectorAll('.cta .btn').forEach(function(btn){
+      btn.addEventListener('pointermove',function(e){
+        var r=btn.getBoundingClientRect();
+        var x=(e.clientX-(r.left+r.width/2))/r.width, y=(e.clientY-(r.top+r.height/2))/r.height;
+        btn.style.transform='translate('+(x*14).toFixed(1)+'px,'+(y*10-2).toFixed(1)+'px)';
+      },{passive:true});
+      btn.addEventListener('pointerleave',function(){ btn.style.transform=''; },{passive:true});
+    });
+  }
+
   /* ——— PARALLAX DE PROFONDEUR DU DÉCOR (desktop, pointeur fin) ———
      Le décor (orbes + grille) suit légèrement le pointeur → profondeur,
      sans jamais déplacer le texte (qui reste au-dessus). */
   if(!reduce && window.matchMedia && window.matchMedia('(pointer:fine)').matches){
-    var pend=false, pcx=0, pcy=0;
+    var tX=0,tY=0,cX=0,cY=0,ploop=null;
+    function prun(){
+      if(animating){ ploop=null; return; }              /* pas de parallax pendant un swap */
+      cX+=(tX-cX)*0.08; cY+=(tY-cY)*0.08;               /* lissage velouté */
+      var s=slides[index], deco=s&&s.querySelector('.slide__deco'), grid=s&&s.querySelector('.slide__grid');
+      if(deco) deco.style.transform='translate3d('+(cX*-16).toFixed(2)+'px,'+(cY*-12).toFixed(2)+'px,0)';
+      if(grid) grid.style.transform='translate3d('+(cX*-30).toFixed(2)+'px,'+(cY*-22).toFixed(2)+'px,0)'; /* couche plus profonde */
+      if(Math.abs(tX-cX)>0.001||Math.abs(tY-cY)>0.001){ ploop=requestAnimationFrame(prun); } else { ploop=null; }
+    }
     deck.addEventListener('pointermove',function(e){
-      pcx=(e.clientX/window.innerWidth-0.5);
-      pcy=(e.clientY/window.innerHeight-0.5);
-      if(pend) return; pend=true;
-      requestAnimationFrame(function(){
-        pend=false;
-        var deco=slides[index] && slides[index].querySelector('.slide__deco');
-        if(deco) deco.style.transform='translate3d('+(pcx*-16).toFixed(1)+'px,'+(pcy*-12).toFixed(1)+'px,0)';
-      });
+      if(document.hidden) return;
+      tX=(e.clientX/window.innerWidth-0.5); tY=(e.clientY/window.innerHeight-0.5);
+      if(!ploop) ploop=requestAnimationFrame(prun);
     },{passive:true});
-    deck.addEventListener('pointerleave',function(){
-      var deco=slides[index] && slides[index].querySelector('.slide__deco');
-      if(deco) deco.style.transform='';
-    },{passive:true});
+    deck.addEventListener('pointerleave',function(){ tX=0;tY=0; if(!ploop) ploop=requestAnimationFrame(prun); },{passive:true});
   }
 });
 
