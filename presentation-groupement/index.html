@@ -908,7 +908,7 @@ document.addEventListener('DOMContentLoaded', function(){
      chorégraphie du contenu (titre → éléments → compteurs) est IDENTIQUE
      sur chaque diapo : mêmes ordres, mêmes staggers, mêmes durées. */
   var MO = {
-    swapDur : 0.64, swapEase:'power2.inOut', // changement de diapo (←/→ identiques)
+    swapDur : 0.68, swapEase:'power3.inOut', // changement de diapo (←/→ identiques)
     drift   : 5,                             // % de glissement directionnel
     revAt   : 0.30,                          // début de la chorégraphie contenu (s)
     charDur : 0.66, charStag:0.014, charEase:'power3.out',
@@ -916,6 +916,8 @@ document.addEventListener('DOMContentLoaded', function(){
     riseGap : 0.12,                          // décalage des .rise après les chars
     numDur  : 1.0
   };
+  /* grammaire d'ease partagée (GSAP core, aucun plugin) — donne un ressenti « posé » cohérent */
+  var EASE = { swap:'power3.inOut', char:'power3.out', rule:'back.out(1.4)', rise:'expo.out', card:'power4.out', num:'power2.out' };
   var WHEEL_LOCK = MO.swapDur*1000 + 150;
 
   var pfill   = document.getElementById('pfill');
@@ -977,19 +979,24 @@ document.addEventListener('DOMContentLoaded', function(){
     var mq=el.querySelector('.mq');
     var t=tl||gsap.timeline();
     var base=(at!=null?at:0);
-    if(chars.length) t.to(chars,{yPercent:0,opacity:1,rotationX:0,duration:MO.charDur,ease:MO.charEase,stagger:MO.charStag}, base);
-    /* filet signature : se trace L→R en chevauchant la fin du titre */
-    if(krules.length) t.to(krules,{scaleX:1,duration:.72,ease:'power3.inOut',stagger:.08}, base+MO.charDur*0.35);
-    if(rises.length) t.to(rises,{y:0,opacity:1,duration:MO.riseDur,ease:MO.riseEase,stagger:MO.riseStag}, base+MO.riseGap);
+    /* stagger « easé » : les dernières lettres se posent en rafale → le titre CLAQUE */
+    if(chars.length) t.to(chars,{yPercent:0,opacity:1,rotationX:0,duration:MO.charDur,ease:EASE.char,
+      stagger:{each:MO.charStag, from:'start', ease:'power2.out'}}, base);
+    /* filet signature : se trace L→R en dépassant d'un cheveu (back.out) puis se cale */
+    if(krules.length) t.to(krules,{scaleX:1,duration:.72,ease:EASE.rule,stagger:.08}, base+MO.charDur*0.35);
+    if(rises.length) t.to(rises,{y:0,opacity:1,duration:MO.riseDur,ease:EASE.rise,stagger:MO.riseStag}, base+MO.riseGap);
     /* cartes : relief 3D chorégraphié, même cadence sur chaque diapo
        [L13] clearProps seulement ici (tween qui finit en DERNIER sur les cartes double-tweenées)
        [L2]  on purge aussi will-change au passage */
-    if(cards.length) t.to(cards,{rotationX:0,scale:1,duration:.72,ease:'power3.out',stagger:.06,clearProps:'transform,willChange'}, base+MO.riseGap+0.04);
+    if(cards.length) t.to(cards,{rotationX:0,scale:1,duration:.72,ease:EASE.card,stagger:.06,clearProps:'transform,willChange'}, base+MO.riseGap+0.04);
     /* bandeau générique : fondu montant après les cartes */
-    if(mq) t.to(mq,{opacity:1,y:0,duration:.7,ease:'power3.out'}, base+MO.riseGap+0.18);
+    if(mq) t.to(mq,{opacity:1,y:0,duration:.7,ease:EASE.rise}, base+MO.riseGap+0.18);
     nums.forEach(function(b){
       var to=parseInt(b.getAttribute('data-to'),10)||0, o={v:0}; b.textContent='0';
-      t.to(o,{v:to,duration:MO.numDur,ease:'power2.out',onUpdate:function(){ b.textContent=Math.round(o.v); }}, base+MO.riseGap);
+      t.to(o,{v:to,duration:MO.numDur,ease:EASE.num,onUpdate:function(){ b.textContent=Math.round(o.v); }}, base+MO.riseGap);
+      /* micro-pop transform-only quand le compteur se fige (clearProps → aucun résidu) */
+      var cell=b.parentNode;
+      if(cell) t.fromTo(cell,{scale:1},{scale:1.055,duration:.15,ease:'power2.out',yoyo:true,repeat:1,transformOrigin:'0% 100%',clearProps:'transform'}, base+MO.riseGap+MO.numDur*0.80);
     });
     return t;
   }
@@ -1036,24 +1043,45 @@ document.addEventListener('DOMContentLoaded', function(){
        l'un sur l'autre → plus aucune superposition de titres (fini la sensation de plantage).
        La sortante recule légèrement (parallax de profondeur) et s'assombrit, SOUS l'entrante.
        Le contenu de l'entrante (masqué par prep) se choréographie une fois le panneau posé. */
-    gsap.set(to,   {opacity:1, zIndex:3, xPercent:100*dir});
-    gsap.set(from, {opacity:1, zIndex:2, xPercent:0});
+    /* ENTRANTE toujours opaque + scale∈[1→1.06] (≥1) → couvre EN PERMANENCE (jamais de fente).
+       SORTANTE en translate SEUL (jamais scale<1 = pas de trou au bord) + assombrissement.
+       Ombre portée STATIQUE côté d'attaque, seulement DÉPLACÉE par le transform (GPU). */
+    var toMap = (n===MAP_SLIDE);
+    var dur   = toMap ? MO.swapDur*1.12 : MO.swapDur;
+    var lead  = -dir; // bord d'attaque du panneau
+
+    if(toMap){ /* SIGNATURE carte : ascension verticale plein écran, pendant l'ignition 3D */
+      gsap.set(to,  {opacity:1, zIndex:3, xPercent:0, yPercent:100, scale:1.06, transformOrigin:'50% 50%',
+                     boxShadow:'0 -46px 110px -22px rgba(0,0,0,.55)'});
+      gsap.set(from,{opacity:1, zIndex:2, xPercent:0, yPercent:0, scale:1});
+    } else { /* cover horizontal cinématographique + ombre directionnelle */
+      gsap.set(to,  {opacity:1, zIndex:3, xPercent:100*dir, yPercent:0, scale:1.06, transformOrigin:'50% 50%',
+                     boxShadow:(lead*44)+'px 0 90px -20px rgba(6,10,24,.5)'});
+      gsap.set(from,{opacity:1, zIndex:2, xPercent:0, yPercent:0, scale:1});
+    }
     gsap.set([to,from],{willChange:'transform,opacity'});
+
+    var inner=to.querySelector('.slide__inner'); /* lag de contenu (décrochage de profondeur) */
+    if(inner) gsap.set(inner,{xPercent: toMap?0:6*dir, yPercent: toMap?8:0, willChange:'transform'});
 
     var tl=gsap.timeline({onComplete:function(){
       deactivate(from); gsap.set(from,{opacity:0});
-      gsap.set([to,from],{clearProps:'zIndex,transform,opacity,willChange'});
+      gsap.set([to,from],{clearProps:'zIndex,transform,opacity,willChange,boxShadow'});
       animating=false; enterHooks(n);
       if(queued!=null){ var q=queued; queued=null; if(q!==index) goTo(q); }
     }});
-    /* entrante : glisse et couvre (aucun fondu → jamais transparente) */
-    tl.to(to,   {xPercent:0,       duration:MO.swapDur, ease:MO.swapEase}, 0);
-    /* sortante : léger recul + assombrissement en profondeur, dessous */
-    tl.to(from, {xPercent:-14*dir, duration:MO.swapDur, ease:MO.swapEase}, 0);
-    tl.to(from, {opacity:0.55,     duration:MO.swapDur*0.7, ease:'power1.in'}, 0);
-    /* la chorégraphie du contenu démarre quand le panneau a presque fini de couvrir
-       → un seul geste continu, sans jamais montrer deux diapos en même temps */
-    reveal(to, tl, MO.swapDur*0.52);
+
+    if(toMap){
+      tl.to(to,  {yPercent:0, scale:1, duration:dur, ease:EASE.swap}, 0);
+      tl.to(from,{yPercent:-10,        duration:dur, ease:EASE.swap}, 0);
+    } else {
+      tl.to(to,  {xPercent:0, scale:1, duration:dur, ease:EASE.swap}, 0);
+      tl.to(from,{xPercent:-18*dir,     duration:dur, ease:EASE.swap}, 0);
+    }
+    tl.to(from,{opacity:0.5, duration:dur*0.72, ease:'power2.in'}, 0);
+    if(inner) tl.to(inner,{xPercent:0, yPercent:0, duration:dur*1.05, ease:'power3.out', clearProps:'transform,willChange'}, dur*0.28);
+    /* la chorégraphie du contenu démarre quand le panneau a presque fini de couvrir */
+    reveal(to, tl, dur*(toMap?0.6:0.52));
   }
   function next(){ if(index>=total-1) return; goTo(index+1); }
   function prev(){ if(index<=0) return; goTo(index-1); }
@@ -1662,6 +1690,9 @@ document.addEventListener('DOMContentLoaded', function(){
     if(deckActive){
       /* [H3] 1er passage = construction paresseuse ; [L14] on allume dès le geste (jamais play avant initMap) */
       if(!initMap()){ return; }   /* échec WebGL → fallback SVG affiché, rien à animer */
+      /* la carte REJOUE son arrivée à chaque entrée (dolly caméra + faisceaux qui montent),
+         synchronisée à l'ascension verticale du panneau. En reduced-motion : pose statique. */
+      if(!reduce){ intro = 0; }
       started=true; resize(); play();
     }
     else { pause(); rosterHoverI=-1; pointerInMap=false; mapHoverI=-1; selRow(null); }
