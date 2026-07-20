@@ -1031,30 +1031,29 @@ document.addEventListener('DOMContentLoaded', function(){
 
     animating=true;
     prep(to); activate(to);
-    var inInner=to.querySelector('.slide__inner'), outInner=from.querySelector('.slide__inner');
-    /* [fix transition] la diapo ENTRANTE passe TOUJOURS au-dessus (z-index) et se fond 0→1
-       par-dessus la sortante restée opaque — dans les DEUX sens. On ne dépend plus de l'ordre
-       DOM : la sortante ne peut jamais rester affichée par-dessus l'entrante. */
-    gsap.set(to,  {opacity:0, zIndex:3});
-    gsap.set(from,{opacity:1, zIndex:2});
-    gsap.set(inInner,{xPercent:MO.drift*dir});
-    gsap.set([inInner,outInner],{willChange:'transform,opacity'});
+    /* [COVER] transition « cover » cinématographique : la diapo ENTRANTE est un panneau
+       OPAQUE (fond plein) qui GLISSE par-dessus la sortante. On ne fond jamais deux contenus
+       l'un sur l'autre → plus aucune superposition de titres (fini la sensation de plantage).
+       La sortante recule légèrement (parallax de profondeur) et s'assombrit, SOUS l'entrante.
+       Le contenu de l'entrante (masqué par prep) se choréographie une fois le panneau posé. */
+    gsap.set(to,   {opacity:1, zIndex:3, xPercent:100*dir});
+    gsap.set(from, {opacity:1, zIndex:2, xPercent:0});
+    gsap.set([to,from],{willChange:'transform,opacity'});
 
     var tl=gsap.timeline({onComplete:function(){
       deactivate(from); gsap.set(from,{opacity:0});
-      gsap.set([to,from],{clearProps:'zIndex'});
-      gsap.set(outInner,{clearProps:'transform,opacity,willChange'});
-      gsap.set(inInner,{clearProps:'willChange'});
+      gsap.set([to,from],{clearProps:'zIndex,transform,opacity,willChange'});
       animating=false; enterHooks(n);
       if(queued!=null){ var q=queued; queued=null; if(q!==index) goTo(q); }
     }});
-    /* dérive directionnelle : les DEUX .slide__inner glissent (même durée + easing) */
-    tl.to(outInner,{xPercent:-MO.drift*dir,  duration:MO.swapDur,ease:MO.swapEase},0);
-    tl.to(inInner, {xPercent:0,              duration:MO.swapDur,ease:MO.swapEase},0);
-    /* [fix transition] on fond l'ENTRANTE (au-dessus) 0→1, la sortante reste opaque dessous */
-    tl.to(to,{opacity:1,duration:MO.swapDur,ease:MO.swapEase},0);
-    /* le contenu entre en chevauchant la fin du swap → un seul geste continu */
-    reveal(to, tl, MO.revAt);
+    /* entrante : glisse et couvre (aucun fondu → jamais transparente) */
+    tl.to(to,   {xPercent:0,       duration:MO.swapDur, ease:MO.swapEase}, 0);
+    /* sortante : léger recul + assombrissement en profondeur, dessous */
+    tl.to(from, {xPercent:-14*dir, duration:MO.swapDur, ease:MO.swapEase}, 0);
+    tl.to(from, {opacity:0.55,     duration:MO.swapDur*0.7, ease:'power1.in'}, 0);
+    /* la chorégraphie du contenu démarre quand le panneau a presque fini de couvrir
+       → un seul geste continu, sans jamais montrer deux diapos en même temps */
+    reveal(to, tl, MO.swapDur*0.52);
   }
   function next(){ if(index>=total-1) return; goTo(index+1); }
   function prev(){ if(index<=0) return; goTo(index-1); }
