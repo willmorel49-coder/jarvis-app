@@ -126,6 +126,11 @@ h1,h2,h3,h4{text-wrap:balance}
    sur les 7 diapos → l'œil ne saute jamais). Négatif assumé sous le bloc. */
 .slide{position:absolute;inset:0;display:flex;align-items:flex-start;justify-content:center;
   padding:var(--mt) max(var(--mx),env(safe-area-inset-right)) var(--mb) max(var(--mx),env(safe-area-inset-left));
+  /* [confirm] fond OPAQUE (identique à .deck) : la couche du dessus occulte réellement
+     l'autre pendant le cross-dissolve → plus de fond sombre qui persiste vers l'avant */
+  background:radial-gradient(120% 80% at 12% -6%, rgba(0,80,230,.06), transparent 46%),
+             radial-gradient(90% 60% at 92% 6%, rgba(243,154,27,.07), transparent 52%),
+             var(--paper);
   opacity:0;visibility:hidden;pointer-events:none;overflow:hidden}
 .slide.is-active{visibility:visible;pointer-events:auto}
 .slide__inner{position:relative;z-index:2;width:100%;max-width:var(--measure);max-height:100%;
@@ -370,11 +375,18 @@ h1,h2,h3,h4{text-wrap:balance}
 .estab--part .estab__tag{color:var(--muted);border-color:rgba(255,255,255,.14)}
 @media(max-width:880px){
   .map-slide{gap:var(--sp-3)}
-  .mapgrid{flex-direction:column;gap:10px}
-  .mapgrid > .map3d{flex:1 1 auto;min-height:200px}
+  /* [confirm] la slide carte doit pouvoir DÉFILER en colonne (écrans courts) :
+     hauteur au contenu + inner scrollable → la légende ne chevauche plus l'annuaire */
+  .slide__inner.map-slide{height:auto}
+  .mapgrid{flex-direction:column;gap:10px;flex:0 0 auto}
+  .mapgrid > .map3d{flex:0 0 auto;height:min(46vh,380px);min-height:180px}
   .roster{flex:0 0 auto}
   .roster__list{flex-direction:row;overflow-x:auto;overflow-y:hidden;gap:8px;padding-bottom:4px}
   .estab{flex:0 0 auto;min-width:210px}
+}
+/* [confirm] très petits écrans (iPhone SE 375×667…) : carte plus basse, tout reste lisible */
+@media(max-width:880px) and (max-height:700px){
+  .mapgrid > .map3d{height:34vh;min-height:150px}
 }
 
 /* =========================================================
@@ -591,6 +603,11 @@ h1,h2,h3,h4{text-wrap:balance}
 .estab.is-sel{border-color:rgba(255,193,104,.62);
   background:linear-gradient(180deg,rgba(243,154,27,.15),rgba(255,255,255,.03))}
 .estab.is-sel .estab__sig{border-color:rgba(255,193,104,.6)}
+/* [confirm] carte en repli (reduced-motion / sans WebGL) : l'annuaire n'est plus interactif
+   (le SVG affiche déjà toutes les étiquettes) → on neutralise l'affordance de survol */
+.roster__list.is-static .estab{cursor:default}
+.roster__list.is-static .estab:hover{transform:none;border-color:rgba(255,255,255,.10);
+  background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.015))}
 
 /* cibles tactiles ≥44px */
 @media(pointer:coarse){
@@ -659,7 +676,7 @@ h1,h2,h3,h4{text-wrap:balance}
       <span class="chnum rise">02 — Qui sommes-nous</span>
       <h2 class="chtitle split" data-splitting>Grossiste-répartiteur, <span class="accent">vraiment de votre côté.</span></h2>
       <span class="krule" aria-hidden="true"></span>
-      <p class="chtext rise">Depuis plus de vingt ans, nous faisons un seul métier&#8239;: l’approvisionnement des officines — la disponibilité, le service au quotidien, le <b>fournisseur de première intention</b> de vos adhérents. Un groupe familial <b>français et indépendant</b>, libre de ses choix, présent partout en France.</p>
+      <p class="chtext rise">Depuis plus de vingt ans, nous faisons un seul métier&#160;: l’approvisionnement des officines — la disponibilité, le service au quotidien, le <b>fournisseur de première intention</b> de vos adhérents. Un groupe familial <b>français et indépendant</b>, libre de ses choix, présent partout en France.</p>
       <div class="stats rise">
         <div class="stat"><div class="n"><b data-to="20">20</b><span class="u">+ ans</span></div><div class="l">d’indépendance</div></div>
         <div class="stat"><div class="n"><b data-to="8">8</b><span class="u"> étab.</span></div><div class="l">au service des officines · +1 partenaire</div></div>
@@ -682,7 +699,7 @@ h1,h2,h3,h4{text-wrap:balance}
         <div class="promise rise"><span class="promise__k">I</span>
           <svg class="promise__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.2"/><path d="M12 3.5V7M12 17v3.5M3.5 12H7M17 12h3.5"/></svg>
           <h3>Zéro exclusion</h3>
-          <p>Froid, stupéfiants, biosimilaires, produits chers&#8239;: <b>tout est inclus</b>, sans zone grise ni catégorie écartée.</p>
+          <p>Froid, stupéfiants, biosimilaires, produits chers&#160;: <b>tout est inclus</b>, sans zone grise ni catégorie écartée.</p>
         </div>
         <div class="promise rise"><span class="promise__k">II</span>
           <svg class="promise__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8.2 12 3 3 8.2v7.6L12 21l9-5.2z"/><path d="M3 8.2 12 13l9-4.8M12 13v8"/></svg>
@@ -751,7 +768,7 @@ h1,h2,h3,h4{text-wrap:balance}
       </div><!-- /mapgrid -->
       <div class="mapfoot rise">
         <span><i class="lg o"></i>Siège — Hyères</span>
-        <span><i class="lg b"></i>Établissements</span>
+        <span><i class="lg b"></i>Agences</span>
         <span><i class="lg p"></i>Partenaire — Metz</span>
         <span class="hint"><span class="dot"></span>Survolez un établissement pour le révéler et ses coordonnées</span>
       </div>
@@ -818,7 +835,7 @@ h1,h2,h3,h4{text-wrap:balance}
 
   <!-- ============ 07 — INVITATION ============ -->
   <section class="slide" aria-label="Diapositive 7 : L'invitation">
-    <div class="folio" aria-hidden="true"><span class="folio__brand"><span class="sq"></span>Intégral Pharma</span><span class="folio__sec">L'invitation</span><span class="folio__pg"><b>07</b> / 07</span></div>
+    <div class="folio" aria-hidden="true"><span class="folio__brand"><span class="sq"></span>Intégral Pharma</span><span class="folio__sec">L’invitation</span><span class="folio__pg"><b>07</b> / 07</span></div>
     <div class="wmark" aria-hidden="true">07</div>
     <div class="slide__deco" aria-hidden="true"><span class="orb a"></span></div>
     <div class="slide__inner">
@@ -826,7 +843,7 @@ h1,h2,h3,h4{text-wrap:balance}
         <span class="chnum rise">07 — L’invitation</span>
         <h2 class="chtitle split" data-splitting>Découvrons ce que nous pouvons proposer à <span class="accent">votre groupement.</span></h2>
         <span class="krule" aria-hidden="true"></span>
-        <p class="invite__s rise">Une heure suffit. Pascale vient à vous, avec des réponses précises — les chiffres, on les réserve au <b>face-à-face</b>. Notre ambition&#8239;: un <b>partenaire utile et durable</b> pour vos officines.</p>
+        <p class="invite__s rise">Une heure suffit. Pascale vient à vous, avec des réponses précises — les chiffres, on les réserve au <b>face-à-face</b>. Notre ambition&#160;: un <b>partenaire utile et durable</b> pour vos officines.</p>
         <div class="contact rise">
           <div class="cta">
             <a class="btn btn--primary" href="mailto:pascale.prieto@integralpharma.fr?subject=Rencontrons-nous%20%E2%80%94%20Int%C3%A9gral%20Pharma">
@@ -1219,7 +1236,19 @@ document.addEventListener('DOMContentLoaded', function(){
       '<span class="fbnote">Vue simplifiée</span>';
   }
 
-  if(window.__noThree || typeof THREE==='undefined' || reduce || !webglOK()){ buildFallback(); return; }
+  if(window.__noThree || typeof THREE==='undefined' || reduce || !webglOK()){
+    buildFallback();
+    /* [confirm] repli : le SVG affiche déjà toutes les étiquettes → l'annuaire n'a plus rien à
+       « révéler ». On enlève l'affordance interactive (sinon des <button> focusables mais inertes)
+       et on ajuste la copie pour ne pas inviter à un geste sans effet. */
+    var _cap=document.querySelector('.roster__cap'); if(_cap) _cap.innerHTML='Nos établissements';
+    var _hint=document.querySelector('.mapfoot .hint'); if(_hint) _hint.style.display='none';
+    var _rl=document.querySelector('.roster__list'); if(_rl) _rl.classList.add('is-static');
+    document.querySelectorAll('.estab[data-i]').forEach(function(row){
+      row.setAttribute('tabindex','-1'); row.style.cursor='default';
+    });
+    return;
+  }
 
   /* [H3] variables partagées par tick()/resize()/handlers — hoistées, assignées dans initMap() */
   var renderer, scene, camera, hqLight, beacons=[], pickTargets=[], pulses=[];
