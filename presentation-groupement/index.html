@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Intégral Pharma — Votre grossiste de première intention</title>
-<meta name="description" content="Intégral Pharma — groupe de grossistes-répartiteurs français, partenaire de première intention de vos officines. Présentation pour les directions de groupements.">
+<meta name="description" content="Intégral Pharma, grossiste-répartiteur français indépendant — votre partenaire de première intention, présent partout en France.">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Intégral Pharma — Votre grossiste de première intention">
-<meta property="og:description" content="Groupe de grossistes-répartiteurs français, indépendant depuis plus de 20 ans. Présent partout en France.">
+<meta property="og:description" content="Groupe de grossistes-répartiteurs français, indépendant depuis plus de vingt ans. Présent partout en France.">
 <meta property="og:image" content="https://willmorel49-coder.github.io/jarvis-app/site-integral/assets/siege-solaire.jpg">
 <meta property="og:url" content="https://willmorel49-coder.github.io/jarvis-app/presentation-groupement/">
 <meta name="twitter:card" content="summary_large_image">
@@ -30,7 +30,7 @@
   --orange:#F39A1B; --orange-hi:#FFC168; --orange-deep:#C9741A;
   --white:#FFFFFF; --cream:#F4F6FB;
   --paper:#F6F8FD; --paper-2:#EEF2FB; --card:#FFFFFF;
-  --ink:#0A1430; --ink-2:#3B466B; --ink-3:#6C77A0;
+  --ink:#0A1430; --ink-2:#3B466B; --ink-3:#525C86;
   --line-l:rgba(10,20,48,.10); --line-l2:rgba(10,20,48,.06);
   --warm:#FFF6EA;
   /* bande sombre (carte 3D) */
@@ -132,12 +132,12 @@ h1,h2,h3,h4{text-wrap:balance}
   overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
   scrollbar-width:none}
 .slide__inner::-webkit-scrollbar{display:none}
-.slide__inner.map-slide{overflow:visible;height:100%;align-self:stretch}
+.slide__inner.map-slide{overflow-y:auto;overflow-x:hidden;height:100%;align-self:stretch}
 
 /* ——— Repères de safe-area : mêmes coins, même position, toutes les diapos ——— */
 .slide::before,.slide::after{content:"";position:absolute;z-index:1;width:var(--tick);height:var(--tick);
   pointer-events:none;opacity:.55}
-.slide::before{left:var(--mx);top:clamp(46px,6vw,62px);
+.slide::before{left:var(--mx);top:calc(env(safe-area-inset-top) + clamp(46px,6vw,62px));
   border-left:1px solid var(--hair);border-top:1px solid var(--hair)}
 .slide::after{right:var(--mx);bottom:clamp(70px,12vh,92px);
   border-right:1px solid var(--hair);border-bottom:1px solid var(--hair)}
@@ -145,7 +145,7 @@ h1,h2,h3,h4{text-wrap:balance}
 .slide--dark::after{border-right-color:var(--hair-d);border-bottom-color:var(--hair-d)}
 
 /* ——— Folio : filet + brand / section / pagination (registre Swiss) ——— */
-.folio{position:absolute;left:var(--mx);right:var(--mx);top:var(--folio-top);
+.folio{position:absolute;left:var(--mx);right:var(--mx);top:calc(env(safe-area-inset-top) + var(--folio-top));
   z-index:3;display:flex;align-items:center;gap:14px;pointer-events:none;
   font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.2em;text-transform:uppercase;color:var(--ink-3)}
 .folio::after{content:"";flex:1;height:1px;background:var(--hair);order:2}
@@ -191,7 +191,7 @@ h1,h2,h3,h4{text-wrap:balance}
   letter-spacing:var(--tr-kicker);text-transform:uppercase;color:var(--orange-deep);margin-bottom:var(--sp-4)}
 .chnum::before{content:"";width:34px;height:1px;background:var(--orange)}
 .chnum::after{content:"";width:4px;height:4px;border-radius:50%;background:var(--orange);opacity:.55}
-.chtitle{font-family:var(--serif);font-weight:700;letter-spacing:var(--tr-h1);line-height:1.0;
+.chtitle{font-family:var(--serif);font-weight:700;letter-spacing:var(--tr-h1);line-height:1.06;
   font-size:var(--fs-h1);color:var(--ink);margin-bottom:var(--sp-4);max-width:18ch;text-wrap:balance}
 .chtitle .accent{color:var(--blue);font-style:normal;font-weight:700}
 .chtext{color:var(--ink-2);font-size:var(--fs-lead);line-height:1.55;max-width:54ch;text-wrap:pretty}
@@ -208,7 +208,7 @@ h1,h2,h3,h4{text-wrap:balance}
 .brandlogo3d{position:relative;display:block;width:fit-content;margin:0 0 var(--sp-5);perspective:900px}
 .brandlogo{height:clamp(38px,5.2vw,52px);width:auto;display:block;
   filter:drop-shadow(0 14px 26px rgba(0,60,180,.20)) drop-shadow(0 4px 8px rgba(10,20,48,.12))}
-.hero__title{font-family:var(--serif);font-weight:700;letter-spacing:var(--tr-display);line-height:.96;
+.hero__title{font-family:var(--serif);font-weight:700;letter-spacing:var(--tr-display);line-height:1.0;
   font-size:var(--fs-display);color:var(--ink);text-wrap:balance;max-width:16ch;margin-bottom:var(--sp-4)}
 .hero__title .accent{color:var(--blue);font-style:normal;font-weight:700}
 .hero__sub{max-width:54ch;font-size:var(--fs-lead);line-height:1.55;color:var(--ink-2)}
@@ -288,9 +288,9 @@ h1,h2,h3,h4{text-wrap:balance}
 .map3d canvas{display:block;width:100%;height:100%}
 .map3d__labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
 .lbl3{position:absolute;left:0;top:0;transform:translate(-50%,-100%);white-space:nowrap;
-  font-family:var(--mono);text-align:center;opacity:0;transition:opacity .5s ease;will-change:transform}
+  font-family:var(--mono);text-align:center;opacity:0;transition:opacity .5s ease}
 .lbl3__box{display:inline-block;background:rgba(6,10,24,.82);border:1px solid rgba(91,140,255,.34);
-  border-radius:9px;padding:6px 10px 7px;box-shadow:0 8px 24px -10px rgba(0,0,0,.8)}
+  border-radius:var(--r-sm);padding:6px 10px 7px;box-shadow:0 8px 24px -10px rgba(0,0,0,.8)}
 .lbl3__n{font-size:11px;font-weight:600;letter-spacing:.06em;color:#EAF0FF}
 .lbl3__c{font-size:9.5px;letter-spacing:.08em;color:var(--muted-2);margin-top:2px}
 .lbl3__t{display:inline-block;font-size:8.5px;font-weight:600;letter-spacing:.16em;margin-top:4px;
@@ -322,7 +322,7 @@ h1,h2,h3,h4{text-wrap:balance}
 .map3d__load span{font-family:var(--mono);font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted-2)}
 @keyframes spin{to{transform:rotate(360deg)}}
 .map3d__info{position:absolute;left:14px;bottom:14px;z-index:6;max-width:min(300px,74%);
-  background:rgba(7,12,28,.92);border:1px solid rgba(120,150,255,.30);border-radius:14px;
+  background:rgba(7,12,28,.92);border:1px solid rgba(120,150,255,.30);border-radius:var(--r-md);
   padding:13px 15px;opacity:0;transform:translateY(10px);pointer-events:none;
   transition:opacity .3s ease,transform .35s var(--ease);box-shadow:0 22px 55px -22px rgba(0,0,0,.85)}
 .map3d__info.on{opacity:1;transform:none}
@@ -352,9 +352,10 @@ h1,h2,h3,h4{text-wrap:balance}
 .roster__cap{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted-2);flex:0 0 auto}
 .roster__cap b{color:var(--orange-hi);font-weight:500}
 .roster__list{flex:1 1 auto;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:7px;padding-right:4px}
-.estab{display:flex;align-items:center;gap:11px;border:1px solid rgba(255,255,255,.10);border-radius:12px;
+.estab{display:flex;align-items:center;gap:11px;width:100%;border:1px solid rgba(255,255,255,.10);border-radius:12px;
   padding:9px 12px;background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.015));
-  cursor:default;transition:border-color .2s ease,transform .2s ease,background .2s ease}
+  font:inherit;color:inherit;text-align:left;-webkit-appearance:none;appearance:none;
+  cursor:pointer;transition:border-color .2s ease,transform .2s ease,background .2s ease}
 .estab:hover{border-color:rgba(255,193,104,.45);transform:translateX(3px);background:linear-gradient(180deg,rgba(255,255,255,.09),rgba(255,255,255,.03))}
 .estab__sig{flex:0 0 auto;width:44px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;
   font-family:var(--mono);font-weight:600;font-size:12px;color:#CFE0FF;background:rgba(0,80,230,.18);border:1px solid rgba(91,140,255,.32)}
@@ -370,7 +371,7 @@ h1,h2,h3,h4{text-wrap:balance}
 @media(max-width:880px){
   .map-slide{gap:var(--sp-3)}
   .mapgrid{flex-direction:column;gap:10px}
-  .mapgrid > .map3d{flex:1 1 auto;min-height:34vh}
+  .mapgrid > .map3d{flex:1 1 auto;min-height:200px}
   .roster{flex:0 0 auto}
   .roster__list{flex-direction:row;overflow-x:auto;overflow-y:hidden;gap:8px;padding-bottom:4px}
   .estab{flex:0 0 auto;min-width:210px}
@@ -381,16 +382,16 @@ h1,h2,h3,h4{text-wrap:balance}
    ========================================================= */
 .values{display:grid;grid-template-columns:1fr;gap:14px;margin-top:var(--sp-6)}
 @media(min-width:640px){.values{grid-template-columns:repeat(3,1fr)}}
-.value{position:relative;border:1px solid var(--line-l);border-radius:var(--r-lg);padding:26px 22px;
+.value{position:relative;border:1px solid var(--line-l);border-radius:var(--r-md);padding:26px 22px;
   background:var(--card);overflow:hidden;box-shadow:var(--sh-card);
   transition:transform .35s var(--ease-out),box-shadow .35s ease,border-color .3s ease}
 .value:hover{transform:translateY(-3px);border-color:var(--hover-warm);
   box-shadow:var(--sh-card-hi-warm)}
 .value:hover .value__ico{transform:scale(1.06) rotate(-2deg)}
-.value__ico{width:44px;height:44px;margin-bottom:16px;color:var(--orange-deep);
+.value__ico{width:40px;height:40px;margin-bottom:16px;color:var(--orange-deep);
   transition:transform .4s var(--ease-out);
-  background:linear-gradient(180deg,var(--warm),#fff);border:1px solid rgba(243,154,27,.24);border-radius:var(--r-tile);padding:10px}
-.value h3{font-family:var(--serif);font-weight:600;font-size:clamp(20px,2.6vw,23px);color:var(--ink);letter-spacing:-.018em}
+  background:linear-gradient(180deg,var(--warm),#fff);border:1px solid rgba(243,154,27,.24);border-radius:var(--r-tile);padding:9px}
+.value h3{font-family:var(--serif);font-weight:600;font-size:var(--fs-h3);color:var(--ink);letter-spacing:var(--tr-h3)}
 .value p{font-size:var(--fs-body);color:var(--ink-2);margin-top:10px;padding-top:12px;line-height:1.5;border-top:1px solid var(--hair-2)}
 .value__k{position:absolute;top:22px;right:22px;display:inline-flex;align-items:center;gap:8px;
   font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-3);letter-spacing:.14em}
@@ -432,7 +433,7 @@ h1,h2,h3,h4{text-wrap:balance}
 .cta{position:relative;display:flex;flex-direction:column;gap:12px}
 @media(min-width:480px){.cta{flex-direction:row}}
 .btn{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:10px;
-  padding:15px 22px;border-radius:15px;font-family:var(--disp);font-weight:600;font-size:15px;
+  padding:15px 22px;border-radius:var(--r-md);font-family:var(--disp);font-weight:600;font-size:15px;
   letter-spacing:-.01em;transition:transform .25s var(--ease),box-shadow .25s ease,border-color .25s ease}
 .btn svg{width:18px;height:18px}
 .btn--primary{color:#fff;background:linear-gradient(180deg,var(--blue-lite),var(--blue));
@@ -473,11 +474,12 @@ h1,h2,h3,h4{text-wrap:balance}
   transition:transform .2s,border-color .2s,opacity .2s}
 .navbtn svg{width:17px;height:17px}
 .navbtn:hover{transform:translateY(-1px);border-color:rgba(0,80,230,.35)}
-.navbtn:disabled{opacity:.32;cursor:default;transform:none}
+.navbtn[aria-disabled="true"]{opacity:.32;cursor:default;transform:none}
 .navbar--dark .navbtn{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.16);color:#EAF0FF}
 .dots{display:flex;gap:7px;align-items:center;padding:0 4px}
-.dot{width:8px;height:8px;border-radius:50%;background:rgba(10,20,48,.18);cursor:pointer;
+.dot{position:relative;width:8px;height:8px;border-radius:50%;background:rgba(10,20,48,.18);cursor:pointer;
   transition:background .3s,transform .3s;border:0;padding:0}
+.dot::after{content:"";position:absolute;inset:-11px}
 .dot.on{background:var(--blue);transform:scale(1.3)}
 .navbar--dark .dot{background:rgba(255,255,255,.22)}
 .navbar--dark .dot.on{background:var(--orange-hi)}
@@ -486,7 +488,7 @@ h1,h2,h3,h4{text-wrap:balance}
 .navbar--dark .count{color:var(--muted)}
 
 /* Splitting / kinetic — transform+opacity uniquement (jamais clip-text) */
-.split .char{display:inline-block;will-change:transform,opacity}
+.split .char{display:inline-block}
 .split .whitespace{display:inline-block;white-space:pre}
 .split .word{display:inline-block}
 /* perspective douce → les lettres et cartes prennent du relief à l'entrée */
@@ -499,7 +501,7 @@ h1,h2,h3,h4{text-wrap:balance}
    ========================================================= */
 /* filet signature : « souligné qui grandit » sous chaque titre (hors carte 3D) */
 .krule{display:block;height:2px;width:min(210px,44%);margin:-2px 0 var(--sp-4);border-radius:2px;
-  transform:scaleX(0);transform-origin:0 50%;will-change:transform;
+  transform:scaleX(0);transform-origin:0 50%;
   background:linear-gradient(90deg,var(--orange) 0%,var(--blue) 62%,rgba(0,80,230,0) 100%)}
 .slide--dark .krule{background:linear-gradient(90deg,var(--orange-hi) 0%,var(--blue-lite) 62%,rgba(91,140,255,0) 100%)}
 .hero__title + .krule{width:min(280px,52%);height:3px;margin-top:0}
@@ -509,7 +511,7 @@ h1,h2,h3,h4{text-wrap:balance}
 .mq{position:relative;margin-top:var(--sp-6);overflow:hidden;max-width:var(--measure);
   -webkit-mask:linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent);
           mask:linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent)}
-.mq__track{display:inline-flex;white-space:nowrap;will-change:transform;animation:mqmove 30s linear infinite}
+.mq__track{display:inline-flex;white-space:nowrap;animation:mqmove 30s linear infinite}
 .mq__track span{display:inline-flex;align-items:center;padding-right:34px;
   font-family:var(--mono);font-size:10.5px;letter-spacing:.24em;text-transform:uppercase;color:var(--ink-3)}
 .mq__track b{color:var(--orange-deep);font-weight:600;margin:0 14px;font-size:1.1em;line-height:0}
@@ -542,6 +544,8 @@ h1,h2,h3,h4{text-wrap:balance}
   .mq{margin-top:18px}
   .krule{margin-bottom:12px}
 }
+/* très petits écrans : le compteur cède la place aux puces */
+@media (max-width:380px){.count{display:none}}
 /* écrans courts : on comprime le vertical pour éviter tout scroll */
 @media (max-height:680px){
   .slide{padding-top:40px;padding-bottom:clamp(76px,13vh,92px)}
@@ -580,7 +584,7 @@ h1,h2,h3,h4{text-wrap:balance}
 .accent3d.no3d .accent3d__cv{display:none}
 .accent3d.no3d .accent3d__poster{display:block}
 @media(max-width:900px){.accent3d{width:clamp(180px,42vw,300px);height:clamp(180px,42vw,300px);top:clamp(52px,8vh,110px);right:-16px;opacity:.9}}
-@media(max-width:640px){.accent3d{width:min(44vw,200px);height:min(44vw,200px);top:56px;right:-22px;opacity:.8}}
+@media(max-width:640px){.accent3d{opacity:.45;top:40px;width:min(38vw,160px);height:min(38vw,160px);right:-30px}}
 @media(max-height:680px){.accent3d{top:44px}}
 
 /* sélection d'un établissement au tactile (l'annuaire n'a pas de survol au doigt) */
@@ -635,12 +639,12 @@ h1,h2,h3,h4{text-wrap:balance}
       <span class="chnum rise">01 — Invitation · Directions de groupements</span>
       <h1 class="hero__title split" data-splitting>Votre grossiste de <span class="accent">première intention.</span></h1>
       <span class="krule" aria-hidden="true"></span>
-      <p class="hero__sub rise"><b>Intégral Pharma</b> — groupe de grossistes-répartiteurs français, indépendant depuis plus de 20 ans. Le partenaire de <b>première intention</b> de vos officines.</p>
+      <p class="hero__sub rise"><b>Intégral Pharma</b> — groupe de grossistes-répartiteurs français, indépendant depuis plus de vingt ans. Le partenaire de <b>première intention</b> de vos officines.</p>
       <div class="hero__hint rise"><span class="k">←</span><span class="k">→</span> Naviguez · ou faites glisser</div>
       <div class="mq" aria-hidden="true">
         <div class="mq__track">
-          <span>Grossiste-répartiteur français<b>·</b>Indépendant<b>·</b>Partenaire de première intention<b>·</b>Présent partout en France<b>·</b>Neuf établissements<b>·</b></span>
-          <span>Grossiste-répartiteur français<b>·</b>Indépendant<b>·</b>Partenaire de première intention<b>·</b>Présent partout en France<b>·</b>Neuf établissements<b>·</b></span>
+          <span>Grossiste-répartiteur français<b>·</b>Indépendant<b>·</b>Partenaire de première intention<b>·</b>Présent partout en France<b>·</b>Huit établissements + un partenaire<b>·</b></span>
+          <span>Grossiste-répartiteur français<b>·</b>Indépendant<b>·</b>Partenaire de première intention<b>·</b>Présent partout en France<b>·</b>Huit établissements + un partenaire<b>·</b></span>
         </div>
       </div>
     </div>
@@ -655,11 +659,11 @@ h1,h2,h3,h4{text-wrap:balance}
       <span class="chnum rise">02 — Qui sommes-nous</span>
       <h2 class="chtitle split" data-splitting>Grossiste-répartiteur, <span class="accent">vraiment de votre côté.</span></h2>
       <span class="krule" aria-hidden="true"></span>
-      <p class="chtext rise">Depuis plus de vingt ans, nous faisons un seul métier : l'approvisionnement des officines — la disponibilité, le service au quotidien, le <b>fournisseur de première intention</b> de vos adhérents. Un groupe familial <b>français et indépendant</b>, libre de ses choix, présent partout en France.</p>
+      <p class="chtext rise">Depuis plus de vingt ans, nous faisons un seul métier&#8239;: l’approvisionnement des officines — la disponibilité, le service au quotidien, le <b>fournisseur de première intention</b> de vos adhérents. Un groupe familial <b>français et indépendant</b>, libre de ses choix, présent partout en France.</p>
       <div class="stats rise">
-        <div class="stat"><div class="n"><b data-to="20">20</b><span class="u">+ ans</span></div><div class="l">d'indépendance</div></div>
-        <div class="stat"><div class="n"><b data-to="9">9</b><span class="u"> étab.</span></div><div class="l">au service des officines</div></div>
-        <div class="stat"><div class="n"><b>France</b></div><div class="l">partout, d'un bout à l'autre</div></div>
+        <div class="stat"><div class="n"><b data-to="20">20</b><span class="u">+ ans</span></div><div class="l">d’indépendance</div></div>
+        <div class="stat"><div class="n"><b data-to="8">8</b><span class="u"> étab.</span></div><div class="l">au service des officines · +1 partenaire</div></div>
+        <div class="stat"><div class="n"><b>France</b></div><div class="l">partout, d’un bout à l’autre</div></div>
       </div>
     </div>
   </section>
@@ -673,17 +677,17 @@ h1,h2,h3,h4{text-wrap:balance}
       <span class="chnum rise">03 — La promesse</span>
       <h2 class="chtitle split" data-splitting>La marge, <span class="accent">dès la première boîte.</span></h2>
       <span class="krule" aria-hidden="true"></span>
-      <p class="chtext rise">Pas de mécanique opaque, pas de palier à mériter. La performance d'un groupement se construit <b>ligne par ligne, sur chaque commande</b>.</p>
+      <p class="chtext rise">Pas de mécanique opaque, pas de palier à mériter. La performance d’un groupement se construit <b>ligne par ligne, sur chaque commande</b>.</p>
       <div class="promises">
         <div class="promise rise"><span class="promise__k">I</span>
           <svg class="promise__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.2"/><path d="M12 3.5V7M12 17v3.5M3.5 12H7M17 12h3.5"/></svg>
           <h3>Zéro exclusion</h3>
-          <p>Froid, stupéfiants, biosimilaires, produits chers : <b>tout est inclus</b>, sans zone grise ni catégorie écartée.</p>
+          <p>Froid, stupéfiants, biosimilaires, produits chers&#8239;: <b>tout est inclus</b>, sans zone grise ni catégorie écartée.</p>
         </div>
         <div class="promise rise"><span class="promise__k">II</span>
           <svg class="promise__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8.2 12 3 3 8.2v7.6L12 21l9-5.2z"/><path d="M3 8.2 12 13l9-4.8M12 13v8"/></svg>
           <h3>Dès la première boîte</h3>
-          <p>L'optimisation commence à la première ligne de la première commande. <b>Pas de seuil, pas d'attente.</b></p>
+          <p>L’optimisation commence à la première ligne de la première commande. <b>Pas de seuil, pas d’attente.</b></p>
         </div>
         <div class="promise rise"><span class="promise__k">III</span>
           <svg class="promise__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h10a1 1 0 0 1 1 1v16l-3-1.6L12 20l-3-1.6L6 20V4a1 1 0 0 1 1-1z"/><path d="M9.5 8.5h5.5M9.5 12h5.5"/></svg>
@@ -700,7 +704,7 @@ h1,h2,h3,h4{text-wrap:balance}
         <svg class="paranote__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h18M5 9 7 4h10l2 5M4 9v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9"/><path d="M9 13h6"/></svg>
         <div>
           <h4>Et une centrale parapharmacie intégrée</h4>
-          <p>La plus grande collection de France, au meilleur prix à l'unité — un <b>levier de marge supplémentaire</b> pour vos adhérents.</p>
+          <p>Un assortiment très large et des prix compétitifs à l’unité — un <b>levier de marge supplémentaire</b> pour vos adhérents.</p>
         </div>
       </div>
     </div>
@@ -709,15 +713,16 @@ h1,h2,h3,h4{text-wrap:balance}
   <!-- ============ 04 — LE RÉSEAU (carte 3D, sombre) ============ -->
   <section class="slide slide--dark" data-map aria-label="Diapositive 4 : Le réseau">
     <div class="folio" aria-hidden="true"><span class="folio__brand"><span class="sq"></span>Intégral Pharma</span><span class="folio__sec">Le réseau</span><span class="folio__pg"><b>04</b> / 07</span></div>
+    <div class="wmark" aria-hidden="true">04</div>
     <div class="slide__inner map-slide">
       <div class="map-slide__head">
         <span class="chnum rise">04 — Le réseau</span>
         <h2 class="chtitle split" data-splitting>Un réseau national <span class="accent">derrière chaque officine.</span></h2>
         <span class="krule" aria-hidden="true"></span>
-        <p class="chtext rise">Neuf établissements, un maillage qui couvre <b>toute la France</b>. Où que soient vos adhérents, une agence Intégral est proche.</p>
+        <p class="chtext rise">Huit établissements et un partenaire, un maillage qui couvre <b>toute la France</b>. Où que soient vos adhérents, une agence Intégral est proche.</p>
       </div>
       <div class="mapgrid">
-      <div class="map3d" id="map3d" role="img" aria-label="Carte 3D de France : les 9 établissements Intégral Pharma, siège à Hyères">
+      <div class="map3d" id="map3d" role="img" aria-label="Carte 3D de France : les 8 établissements Intégral Pharma et 1 partenaire à Metz, siège à Hyères">
         <div class="map3d__labels" id="lbls" aria-hidden="true"></div>
         <div class="map3d__badge"><span class="dot"></span>Réseau Intégral — France</div>
         <div class="map3d__info" id="mapInfo" aria-hidden="true">
@@ -732,15 +737,15 @@ h1,h2,h3,h4{text-wrap:balance}
       <aside class="roster rise" aria-label="Liste des établissements">
         <div class="roster__cap">Nos établissements <b>— survolez pour situer</b></div>
         <div class="roster__list" data-scroll aria-label="Annuaire des établissements — faites glisser pour parcourir">
-          <div class="estab estab--siege" data-i="0"><span class="estab__sig">HP</span><span class="estab__b"><span class="estab__n">Hyères Pharma</span><span class="estab__c">Hyères · 83</span></span><span class="estab__tag">Siège</span></div>
-          <div class="estab" data-i="1"><span class="estab__sig">OPS</span><span class="estab__b"><span class="estab__n">Ouest Pharma Services</span><span class="estab__c">St-Étienne-de-Montluc · 44</span></span></div>
-          <div class="estab" data-i="2"><span class="estab__sig">EP</span><span class="estab__b"><span class="estab__n">Escale Pharma</span><span class="estab__c">Chilly-Mazarin · 91</span></span></div>
-          <div class="estab" data-i="3"><span class="estab__sig">CPR</span><span class="estab__b"><span class="estab__n">Comptoir Pharma. du Rhône</span><span class="estab__c">Saint-Maurice-l'Exil · 38</span></span></div>
-          <div class="estab" data-i="4"><span class="estab__sig">SOP</span><span class="estab__b"><span class="estab__n">Sud Ouest Pharma</span><span class="estab__c">Montayral · 47</span></span></div>
-          <div class="estab" data-i="5"><span class="estab__sig">POS</span><span class="estab__b"><span class="estab__n">Pharm'Occitanie Services</span><span class="estab__c">Villeneuve-lès-Béziers · 34</span></span></div>
-          <div class="estab" data-i="6"><span class="estab__sig">SEP</span><span class="estab__b"><span class="estab__n">Sud Est Pharma</span><span class="estab__c">Le Cannet-des-Maures · 83</span></span></div>
-          <div class="estab" data-i="7"><span class="estab__sig">MSP</span><span class="estab__b"><span class="estab__n">Mistral Santé Pharma</span><span class="estab__c">Flassans-sur-Issole · 83</span></span></div>
-          <div class="estab estab--part" data-i="8"><span class="estab__sig">PH</span><span class="estab__b"><span class="estab__n">Pharmest</span><span class="estab__c">Metz · 57</span></span><span class="estab__tag">Partenaire</span></div>
+          <button type="button" class="estab estab--siege" data-i="0"><span class="estab__sig">HP</span><span class="estab__b"><span class="estab__n">Hyères Pharma</span><span class="estab__c">Hyères · 83</span></span><span class="estab__tag">Siège</span></button>
+          <button type="button" class="estab" data-i="1"><span class="estab__sig">OPS</span><span class="estab__b"><span class="estab__n">Ouest Pharma Services</span><span class="estab__c">Saint-Étienne-de-Montluc · 44</span></span></button>
+          <button type="button" class="estab" data-i="2"><span class="estab__sig">EP</span><span class="estab__b"><span class="estab__n">Escale Pharma</span><span class="estab__c">Chilly-Mazarin · 91</span></span></button>
+          <button type="button" class="estab" data-i="3"><span class="estab__sig">CPR</span><span class="estab__b"><span class="estab__n">Comptoir Pharma. du Rhône</span><span class="estab__c">Saint-Maurice-l’Exil · 38</span></span></button>
+          <button type="button" class="estab" data-i="4"><span class="estab__sig">SOP</span><span class="estab__b"><span class="estab__n">Sud Ouest Pharma</span><span class="estab__c">Montayral · 47</span></span></button>
+          <button type="button" class="estab" data-i="5"><span class="estab__sig">POS</span><span class="estab__b"><span class="estab__n">Pharm’Occitanie Services</span><span class="estab__c">Villeneuve-lès-Béziers · 34</span></span></button>
+          <button type="button" class="estab" data-i="6"><span class="estab__sig">SEP</span><span class="estab__b"><span class="estab__n">Sud Est Pharma</span><span class="estab__c">Le Cannet-des-Maures · 83</span></span></button>
+          <button type="button" class="estab" data-i="7"><span class="estab__sig">MSP</span><span class="estab__b"><span class="estab__n">Mistral Santé Pharma</span><span class="estab__c">Flassans-sur-Issole · 83</span></span></button>
+          <button type="button" class="estab estab--part" data-i="8"><span class="estab__sig">PH</span><span class="estab__b"><span class="estab__n">Pharmest</span><span class="estab__c">Metz · 57</span></span><span class="estab__tag">Partenaire</span></button>
         </div>
       </aside>
       </div><!-- /mapgrid -->
@@ -762,7 +767,7 @@ h1,h2,h3,h4{text-wrap:balance}
       <span class="chnum rise">05 — Ce qui nous tient</span>
       <h2 class="chtitle split" data-splitting>Trois mots, <span class="accent">tenus.</span></h2>
       <span class="krule" aria-hidden="true"></span>
-      <p class="chtext rise">Ce ne sont pas des slogans. C'est la façon dont on travaille, avec chaque pharmacien et chaque direction de groupement.</p>
+      <p class="chtext rise">Ce ne sont pas des slogans. C’est la façon dont on travaille, avec chaque pharmacien et chaque direction de groupement.</p>
       <div class="values">
         <div class="value rise"><span class="value__k">I</span>
           <svg class="value__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 7.8-7 9-4-1.2-7-4.5-7-9V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg>
@@ -794,7 +799,7 @@ h1,h2,h3,h4{text-wrap:balance}
           <span class="chnum rise">06 — Le siège</span>
           <h2 class="chtitle split" data-splitting>Un ancrage <span class="accent">au soleil du Sud.</span></h2>
           <span class="krule" aria-hidden="true"></span>
-          <p class="chtext rise">À Hyères, notre siège avance à l'<b>énergie solaire</b> — l'image d'un groupe qui investit dans la durée, responsable et fier de ses racines françaises. Un socle solide pour tenir nos engagements, année après année, auprès de vos officines.</p>
+          <p class="chtext rise">À Hyères, notre siège avance à l’<b>énergie solaire</b> — l’image d’un groupe qui investit dans la durée, responsable et fier de ses racines françaises. Un socle solide pour tenir nos engagements, année après année, auprès de vos officines.</p>
         </div>
         <div class="frame rise">
           <div class="frame__media">
@@ -821,7 +826,7 @@ h1,h2,h3,h4{text-wrap:balance}
         <span class="chnum rise">07 — L’invitation</span>
         <h2 class="chtitle split" data-splitting>Découvrons ce que nous pouvons proposer à <span class="accent">votre groupement.</span></h2>
         <span class="krule" aria-hidden="true"></span>
-        <p class="invite__s rise">Une heure suffit. Pascale vient à vous, avec des réponses précises — les chiffres, on les réserve au <b>face-à-face</b>. Notre ambition : un <b>partenaire utile et durable</b> pour vos officines.</p>
+        <p class="invite__s rise">Une heure suffit. Pascale vient à vous, avec des réponses précises — les chiffres, on les réserve au <b>face-à-face</b>. Notre ambition&#8239;: un <b>partenaire utile et durable</b> pour vos officines.</p>
         <div class="contact rise">
           <div class="cta">
             <a class="btn btn--primary" href="mailto:pascale.prieto@integralpharma.fr?subject=Rencontrons-nous%20%E2%80%94%20Int%C3%A9gral%20Pharma">
@@ -842,7 +847,7 @@ h1,h2,h3,h4{text-wrap:balance}
           </div>
           <div class="invite__foot">
             <img src="../site-integral/assets/logo.png" alt="Intégral Pharma">
-            <div class="line">Acteur de la santé depuis plus de 20 ans</div>
+            <div class="line">Acteur de la santé depuis plus de vingt ans</div>
           </div>
         </div>
       </div>
@@ -857,7 +862,7 @@ h1,h2,h3,h4{text-wrap:balance}
     <button class="navbtn" id="prevBtn" aria-label="Diapositive précédente">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>
     </button>
-    <div class="dots" id="dots" role="tablist"></div>
+    <div class="dots" id="dots"></div>
     <span class="count" id="count">01 / 07</span>
     <button class="navbtn" id="nextBtn" aria-label="Diapositive suivante">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
@@ -908,9 +913,9 @@ document.addEventListener('DOMContentLoaded', function(){
     s.setAttribute('aria-roledescription','diapositive');
     if(i!==0) s.setAttribute('aria-hidden','true');
     var d=document.createElement('button');
-    d.className='dot'; d.type='button'; d.setAttribute('role','tab');
+    d.className='dot'; d.type='button';
     d.setAttribute('aria-label','Aller à la diapositive '+(i+1));
-    d.setAttribute('aria-selected', i===0?'true':'false');
+    if(i===0) d.setAttribute('aria-current','true');
     d.addEventListener('click',function(){ goTo(i); });
     dotsW.appendChild(d);
   });
@@ -922,15 +927,18 @@ document.addEventListener('DOMContentLoaded', function(){
   function updateChrome(){
     pfill.style.width = ((index+1)/total*100)+'%';
     countEl.textContent = pad(index+1)+' / '+pad(total);
-    dots.forEach(function(d,i){ d.classList.toggle('on', i===index); d.setAttribute('aria-selected', i===index?'true':'false'); });
+    dots.forEach(function(d,i){ d.classList.toggle('on', i===index); if(i===index){ d.setAttribute('aria-current','true'); } else { d.removeAttribute('aria-current'); } });
     if(live) live.textContent = 'Diapositive '+(index+1)+' sur '+total+(LABELS[index]?' : '+LABELS[index]:'');
-    prevBtn.disabled = index===0;
-    nextBtn.disabled = index===total-1;
+    if(index<=0){ prevBtn.setAttribute('aria-disabled','true'); } else { prevBtn.removeAttribute('aria-disabled'); }
+    if(index>=total-1){ nextBtn.setAttribute('aria-disabled','true'); } else { nextBtn.removeAttribute('aria-disabled'); }
     navbar.classList.toggle('navbar--dark', slides[index].classList.contains('slide--dark'));
   }
 
   function prep(el){
     if(!hasGSAP||reduce) return;
+    /* [L14] carte : on allume le réseau dès le DÉBUT du glissement vers la slide
+       (le handler deck:map déclenche initMap()+play() ; idempotent, ré-émis à l'arrivée) */
+    if(el===slides[MAP_SLIDE]) window.dispatchEvent(new CustomEvent('deck:map',{detail:true}));
     gsap.set(el.querySelectorAll('.split .char'),{yPercent:110,opacity:0,rotationX:-50,transformOrigin:'50% 100%'});
     gsap.set(el.querySelectorAll('.rise'),{y:28,opacity:0});
     /* kinetic éditorial (C) : le souligné, les cartes en relief, le bandeau.
@@ -955,9 +963,11 @@ document.addEventListener('DOMContentLoaded', function(){
     if(chars.length) t.to(chars,{yPercent:0,opacity:1,rotationX:0,duration:MO.charDur,ease:MO.charEase,stagger:MO.charStag}, base);
     /* filet signature : se trace L→R en chevauchant la fin du titre */
     if(krules.length) t.to(krules,{scaleX:1,duration:.72,ease:'power3.inOut',stagger:.08}, base+MO.charDur*0.35);
-    if(rises.length) t.to(rises,{y:0,opacity:1,duration:MO.riseDur,ease:MO.riseEase,stagger:MO.riseStag,clearProps:'transform'}, base+MO.riseGap);
-    /* cartes : relief 3D chorégraphié, même cadence sur chaque diapo */
-    if(cards.length) t.to(cards,{rotationX:0,scale:1,duration:.72,ease:'power3.out',stagger:.06,clearProps:'transform'}, base+MO.riseGap+0.04);
+    if(rises.length) t.to(rises,{y:0,opacity:1,duration:MO.riseDur,ease:MO.riseEase,stagger:MO.riseStag}, base+MO.riseGap);
+    /* cartes : relief 3D chorégraphié, même cadence sur chaque diapo
+       [L13] clearProps seulement ici (tween qui finit en DERNIER sur les cartes double-tweenées)
+       [L2]  on purge aussi will-change au passage */
+    if(cards.length) t.to(cards,{rotationX:0,scale:1,duration:.72,ease:'power3.out',stagger:.06,clearProps:'transform,willChange'}, base+MO.riseGap+0.04);
     /* bandeau générique : fondu montant après les cartes */
     if(mq) t.to(mq,{opacity:1,y:0,duration:.7,ease:'power3.out'}, base+MO.riseGap+0.18);
     nums.forEach(function(b){
@@ -1005,7 +1015,13 @@ document.addEventListener('DOMContentLoaded', function(){
     animating=true;
     prep(to); activate(to);
     var inInner=to.querySelector('.slide__inner'), outInner=from.querySelector('.slide__inner');
-    gsap.set(to,{opacity:0});
+    /* [H4] la couche du DESSUS (ordre DOM) est celle qui bouge en opacité ;
+       la couche du dessous reste opaque → le composite ne montre jamais le fond (plus de voile gris).
+       En avant (dir>0) la nouvelle diapo est au-dessus → on fond `to` 0→1.
+       En arrière la diapo sortante est au-dessus → on fond `from` 1→0. */
+    var fwd = dir>0;
+    if(fwd){ gsap.set(to,{opacity:0}); gsap.set(from,{opacity:1}); }
+    else   { gsap.set(to,{opacity:1}); gsap.set(from,{opacity:1}); }
     gsap.set(inInner,{xPercent:MO.drift*dir});
     gsap.set([inInner,outInner],{willChange:'transform,opacity'});
 
@@ -1016,24 +1032,34 @@ document.addEventListener('DOMContentLoaded', function(){
       animating=false; enterHooks(n);
       if(queued!=null){ var q=queued; queued=null; if(q!==index) goTo(q); }
     }});
-    /* cross-dissolve SYMÉTRIQUE : même durée + même easing sortie/entrée */
-    tl.to(from,    {opacity:0,               duration:MO.swapDur,ease:MO.swapEase},0);
+    /* dérive directionnelle : les DEUX .slide__inner glissent (même durée + easing) */
     tl.to(outInner,{xPercent:-MO.drift*dir,  duration:MO.swapDur,ease:MO.swapEase},0);
-    tl.to(to,      {opacity:1,               duration:MO.swapDur,ease:MO.swapEase},0);
     tl.to(inInner, {xPercent:0,              duration:MO.swapDur,ease:MO.swapEase},0);
+    /* [H4] on ne fond QUE la couche du dessus */
+    if(fwd){ tl.to(to,  {opacity:1,duration:MO.swapDur,ease:MO.swapEase},0); }
+    else   { tl.to(from,{opacity:0,duration:MO.swapDur,ease:MO.swapEase},0); }
     /* le contenu entre en chevauchant la fin du swap → un seul geste continu */
     reveal(to, tl, MO.revAt);
   }
-  function next(){ goTo(index+1); }
-  function prev(){ goTo(index-1); }
+  function next(){ if(index>=total-1) return; goTo(index+1); }
+  function prev(){ if(index<=0) return; goTo(index-1); }
 
   prevBtn.addEventListener('click',prev);
   nextBtn.addEventListener('click',next);
 
   document.addEventListener('keydown',function(e){
     var k=e.key;
-    if(k==='ArrowRight'||k==='ArrowDown'||k==='PageDown'||k===' '||k==='Spacebar'){ e.preventDefault(); next(); }
-    else if(k==='ArrowLeft'||k==='ArrowUp'||k==='PageUp'){ e.preventDefault(); prev(); }
+    var inner=slides[index].querySelector('.slide__inner');
+    if(k==='ArrowRight'){ e.preventDefault(); next(); }
+    else if(k==='ArrowLeft'){ e.preventDefault(); prev(); }
+    else if(k==='ArrowDown'||k==='PageDown'||k===' '||k==='Spacebar'){
+      if(inner&&canScrollY(inner,1)) return;   /* laisse défiler la zone interne */
+      e.preventDefault(); next();
+    }
+    else if(k==='ArrowUp'||k==='PageUp'){
+      if(inner&&canScrollY(inner,-1)) return;
+      e.preventDefault(); prev();
+    }
     else if(k==='Home'){ e.preventDefault(); goTo(0); }
     else if(k==='End'){ e.preventDefault(); goTo(total-1); }
   });
@@ -1153,7 +1179,7 @@ document.addEventListener('DOMContentLoaded', function(){
   var FR_D = "M825.35,356.64 821.65,358.05 817.82,356.58 815.8,357.67 816.66,361.49 812.79,363.48 812.17,365.94 808.99,371.04 817.91,369.18 820.02,370.24 820.37,372.88 817.4,373.88 816.38,376.48 812.82,377.47 813.7,381.53 806.31,388.65 806.73,389.82 797.13,397.03 796.54,398.67 797.67,400.11 791.23,405.51 783.1,407.52 779.43,412.2 781.21,416.7 779.36,423.68 780.27,426.39 769.08,434.54 757.93,445.19 760.94,448.18 755.51,455.96 755.58,458.96 755.06,460.61 761.28,465.88 757.54,473.14 758.59,476.5 748.74,480.05 749.46,482.03 750.21,482.97 747.76,487.71 750.35,486.49 753.24,486.93 754.82,485.86 759.67,486.58 765.53,480.94 770.37,478.29 770.85,475.79 769.89,475.17 768.16,476.44 766.41,473.57 770.79,465.22 773.65,465.14 776.48,467.71 784.89,461.61 786.91,462.52 798.58,461.38 803.71,462.79 801.74,466.88 807.52,473.88 803.74,480.85 803.41,487.26 809.94,488.71 808.68,495.83 812.52,494.29 817.44,500.73 819.63,507.7 817.16,509.71 816.28,512.67 812.63,514.89 808.52,514.84 807.9,517.03 804.7,516.03 804.2,526.61 807.49,530.39 810.38,530.95 811.26,533.63 816.84,535.02 815.28,539.71 816.91,547.7 820.41,548.65 820.32,550.69 823.63,551.18 824.48,554.46 828.77,557.55 827.5,561.42 824.09,564.73 825.69,571.59 821.77,575.52 819.7,574.34 814.27,576.27 812.71,579.47 809.61,580.16 809.23,582.76 806.55,583.45 801.32,580.7 799.38,582.69 795.16,583.32 792.1,586.14 794.45,589.17 795.25,593.96 799.86,594.71 799.67,596.88 801.19,599.66 799.86,601.97 800.88,602.32 800.51,604.9 808.15,610.18 811.12,610.38 812.3,608.97 818.22,612.85 816.74,616.01 821.6,626.36 818.09,625.4 814.2,626.75 813.29,629.04 814.47,632.24 813.32,632.36 810.99,637.97 808.59,638.53 807.15,641.05 808.84,645.57 813.17,650.54 809.63,651.2 810.04,657.12 813.63,661.09 814.05,663.26 816.38,664.86 817.5,668.87 829.21,672.22 835.45,677.88 839.59,677.68 840.63,680.24 842.98,679.59 844.96,680.58 845.33,678.92 854.24,676.6 857.81,676.91 859.2,674.38 861.96,674.97 860.89,678.98 864.08,683.59 863.76,685.61 860.5,689.12 859.51,693.83 854.37,696.68 853.71,701.18 849.63,703.8 851.61,711.93 848.72,715.29 846.69,714.45 843.22,718.03 839.16,719.1 839.79,721.43 838.49,722.43 837.42,719.5 836.79,721.4 835.52,720.24 832.46,721.37 830.5,725.04 826.72,724.87 824.85,731.05 825.49,734.96 822.93,732.41 819.11,735.72 817.58,734.31 814.02,735.33 811.42,743.9 809.38,746.02 807.32,745.65 807.09,747.58 799.53,747.46 797.63,753.96 789.27,760.81 794.78,761.45 795.73,760.69 796.68,761.74 794.49,764.17 795.37,768.02 793.15,769.42 793.24,770.9 791.47,771.45 790.1,769.3 787.12,769.01 783.12,772.48 775.92,773.25 774.37,775.83 774.55,778.59 768.58,775.35 763.56,776.07 760.82,779.63 760.74,783.55 761.94,783.83 760.32,784.27 756.64,783.4 759.41,781.66 757.86,778.9 751.88,779.21 750.73,777.04 745.7,776.98 745.16,775.27 742.82,776.97 744.5,777.5 743.79,779.22 746.91,779.08 746.9,780.57 743.12,779.56 740.94,782.32 739.18,782.06 737.03,780.09 737.69,775.94 735.18,775.81 735.16,773.63 730.34,772.81 729.75,769.71 725.59,769.13 724.08,771.22 719.61,766.6 717.35,767.94 707.01,766.49 709.32,762.25 707.41,759.89 709.13,758.63 704.87,752.38 699.49,755.49 687.68,755.72 682.35,746.2 678.76,745.96 677.0,747.46 677.98,745.88 676.43,746.31 674.59,743.84 676.0,747.86 672.92,746.41 675.15,748.6 673.99,749.21 674.84,749.78 673.27,751.07 676.86,752.66 678.94,750.9 674.69,755.16 668.2,753.44 661.54,753.65 655.28,750.9 657.52,747.43 654.55,744.05 629.91,742.04 626.29,739.21 627.44,736.01 626.13,734.45 618.07,734.5 610.23,739.01 604.3,745.2 600.21,747.89 599.58,748.61 594.25,750.76 585.76,760.9 579.24,759.41 571.04,763.96 563.47,771.74 559.17,778.8 554.85,792.49 556.2,794.92 553.98,815.26 555.87,830.52 561.4,833.25 561.02,836.06 563.58,840.9 557.8,841.7 554.87,837.2 550.02,837.96 548.61,836.63 546.61,838.85 541.39,838.9 537.43,843.04 534.4,842.08 530.58,843.99 529.23,845.68 530.58,849.81 523.79,848.38 521.0,850.61 517.8,849.68 514.48,844.79 502.82,840.74 499.33,842.67 495.92,842.33 491.63,847.76 486.94,849.06 483.79,845.53 481.85,839.12 478.85,839.48 474.01,836.31 468.22,834.88 469.48,828.67 471.87,827.44 468.03,825.1 468.51,823.63 459.66,822.63 455.97,819.95 451.66,820.41 451.41,823.97 448.81,824.58 445.57,816.58 443.21,815.14 443.54,813.73 436.57,813.7 434.85,813.26 430.82,814.59 425.13,807.14 418.89,807.26 417.26,805.65 414.77,806.8 410.21,803.47 400.16,800.55 397.44,802.51 398.16,805.82 396.63,807.73 397.8,808.73 396.69,810.64 398.49,813.74 397.82,816.43 393.15,815.17 381.76,816.41 377.63,813.55 373.1,817.8 370.82,813.99 365.5,812.12 352.64,816.9 349.76,816.05 349.06,813.89 346.73,813.4 343.16,806.34 341.38,806.98 333.07,801.55 327.65,805.92 324.43,806.21 320.23,803.59 318.61,806.75 316.15,807.66 316.27,805.37 314.23,805.14 313.75,802.82 308.93,798.09 305.41,796.66 305.0,791.92 303.87,789.93 299.51,791.59 293.72,790.39 291.34,791.35 280.07,784.84 278.33,785.94 276.43,783.42 271.94,782.36 270.28,782.65 267.36,779.98 269.63,775.55 264.88,778.26 263.44,783.93 258.16,781.76 256.57,778.43 260.39,774.52 262.31,768.61 261.89,762.08 252.08,759.08 250.47,759.67 249.35,762.72 247.4,762.59 246.4,757.63 241.49,757.34 239.42,758.46 238.8,755.23 235.57,753.03 235.73,750.79 242.7,749.01 243.75,749.71 247.99,745.51 258.31,724.48 267.48,674.93 270.91,647.13 270.83,638.89 275.84,627.95 278.24,628.63 278.25,630.21 287.48,629.22 286.06,626.68 283.55,624.73 285.13,624.87 283.92,623.6 276.58,617.37 276.18,620.21 272.42,625.34 271.09,632.34 270.45,630.63 277.04,566.87 277.5,550.18 281.96,541.91 288.49,539.89 286.08,536.21 284.97,536.62 273.59,529.22 273.14,531.11 274.43,531.59 272.55,531.12 272.02,527.79 272.14,520.7 279.03,518.9 277.08,514.14 280.2,513.54 282.87,507.82 281.28,505.42 283.46,504.48 279.87,499.89 283.88,500.56 284.24,499.04 280.92,491.19 278.28,489.89 279.15,488.13 276.27,486.97 276.82,485.43 274.02,486.31 271.79,484.71 274.53,481.87 274.79,479.81 280.34,474.87 279.72,472.58 276.87,469.28 274.34,470.35 273.85,474.61 267.92,469.46 268.76,472.41 269.38,472.83 268.13,472.56 264.96,467.6 256.71,467.4 253.7,461.63 244.85,460.06 236.1,453.04 233.96,452.93 230.73,441.62 225.14,433.87 223.65,433.84 221.44,429.96 212.15,421.66 211.55,415.2 214.38,414.31 219.88,403.8 222.72,401.89 221.09,398.65 214.61,393.8 205.25,391.9 210.74,388.23 209.66,378.28 201.69,382.12 196.36,377.93 193.72,378.4 193.03,379.94 185.46,376.77 187.86,375.89 188.32,373.03 184.87,368.73 190.75,364.53 192.96,364.85 191.39,363.96 191.32,361.89 188.93,361.63 188.61,357.59 190.92,358.58 193.43,357.21 186.08,354.35 184.86,355.71 179.72,356.31 184.19,353.56 183.26,353.35 184.42,351.84 182.74,350.94 182.86,352.94 181.46,353.68 181.2,350.68 180.13,353.86 177.33,352.99 180.41,354.71 177.55,355.44 176.61,357.64 173.2,356.4 167.56,358.1 165.38,356.76 165.23,355.15 161.74,353.46 162.55,352.55 161.24,352.57 161.3,351.55 163.68,351.16 165.27,353.39 167.05,352.24 167.19,353.34 167.29,351.54 168.85,353.3 169.74,352.0 171.19,353.49 173.32,352.89 174.42,348.49 174.91,349.54 176.0,347.97 175.9,343.66 174.53,343.07 174.3,345.64 175.51,346.61 174.25,346.2 175.12,347.35 173.95,348.33 173.85,347.03 170.11,345.42 173.21,345.99 171.39,343.5 170.01,344.61 169.18,343.36 169.71,345.31 164.47,345.42 164.64,347.48 162.7,347.35 162.65,349.77 161.42,348.12 160.44,348.52 159.93,346.82 159.55,348.51 159.51,344.76 158.22,344.57 156.99,341.95 158.4,346.19 157.65,348.56 160.22,351.7 157.1,351.09 155.75,348.27 156.1,350.21 153.73,348.18 154.1,350.47 152.58,348.79 151.8,350.17 149.07,350.75 149.27,349.22 146.99,347.62 147.26,355.83 150.13,359.9 146.69,359.18 144.97,354.13 146.62,352.27 146.03,348.75 141.69,343.03 141.73,340.67 146.53,337.78 144.37,337.97 145.87,336.34 147.05,337.29 147.7,335.42 148.47,335.83 145.36,335.92 146.46,333.26 144.81,334.91 142.29,333.64 144.34,337.44 142.66,337.76 142.3,338.72 141.31,338.35 142.25,339.53 141.19,342.92 135.0,338.6 131.7,338.87 134.15,337.89 137.11,338.7 134.77,337.08 131.45,336.74 135.38,332.87 136.64,328.85 136.45,330.97 134.3,332.44 133.95,331.73 132.57,333.47 129.71,325.71 129.19,327.55 131.88,334.78 129.77,337.62 124.91,337.73 120.53,331.39 121.14,327.79 119.83,325.26 120.92,323.49 119.53,322.73 120.9,328.12 119.69,331.78 112.81,330.44 112.79,329.54 110.35,330.39 108.1,327.59 112.79,325.91 109.46,326.26 109.43,325.34 106.92,327.87 105.76,324.05 106.22,328.69 98.89,329.12 95.9,324.77 96.97,322.63 95.28,323.18 95.81,322.49 90.82,317.82 90.7,323.08 86.26,323.4 83.59,322.26 86.24,323.18 84.04,321.0 82.81,322.1 79.91,317.27 82.37,314.75 83.85,315.14 83.67,313.8 82.24,314.36 83.02,311.97 81.57,311.13 82.63,312.1 81.46,313.79 81.63,315.7 80.06,316.29 79.55,318.97 77.83,318.39 80.79,319.83 81.75,322.28 78.23,324.15 77.3,320.67 76.31,322.66 75.14,321.96 78.62,325.61 76.8,328.41 75.1,327.49 74.78,328.92 64.68,328.32 64.32,326.16 66.47,323.99 63.47,315.7 59.13,310.83 53.9,307.96 54.41,305.73 56.83,305.35 53.75,305.61 53.85,307.58 51.79,309.16 47.28,306.43 40.64,305.32 42.74,304.53 42.36,302.97 52.96,301.76 62.09,298.93 65.49,298.76 67.42,301.03 67.79,299.77 69.58,300.5 71.22,294.27 69.79,293.84 68.16,289.67 64.69,289.41 58.38,286.42 56.11,287.41 52.69,293.02 51.69,286.7 53.35,285.24 48.25,284.71 47.94,282.32 51.91,281.86 51.09,278.56 54.19,276.52 52.5,280.07 54.15,281.86 56.4,279.61 55.15,281.14 56.3,282.23 61.74,281.31 64.2,282.83 71.62,280.98 70.42,283.04 71.93,284.47 75.05,284.75 75.64,285.99 82.03,286.12 81.72,288.16 82.42,284.96 80.02,286.02 73.32,284.64 71.31,282.42 76.94,280.79 70.77,279.14 72.79,277.92 67.19,278.99 71.42,275.09 67.51,276.71 68.23,274.63 65.87,276.18 66.27,275.51 64.22,278.04 61.89,278.09 62.87,276.49 59.14,277.84 62.66,272.63 71.35,266.67 62.69,271.85 60.72,271.28 60.12,272.66 57.04,272.78 49.06,276.83 43.59,275.38 41.94,277.56 38.18,277.48 38.03,274.66 40.0,274.16 37.32,274.5 38.79,272.84 37.07,269.25 39.04,264.47 40.92,263.82 38.7,263.28 38.33,259.55 41.32,255.89 42.9,256.37 43.09,254.69 47.98,254.11 49.98,254.65 50.61,256.01 55.93,256.85 49.23,253.81 50.05,251.21 50.18,252.46 53.6,252.1 57.27,254.19 51.78,250.84 53.57,248.29 56.46,249.69 60.35,247.98 63.12,248.35 60.67,246.52 67.55,244.62 69.9,246.04 68.44,247.5 69.99,248.29 76.49,246.69 74.71,246.23 76.84,243.91 81.01,242.87 84.06,243.19 85.65,244.6 86.13,241.77 91.41,239.82 92.51,250.26 93.68,251.76 92.67,246.78 94.75,244.8 96.66,245.29 95.87,246.65 98.85,249.33 98.38,251.3 98.85,250.89 101.47,249.03 99.39,248.51 98.37,245.01 99.59,245.94 99.12,243.3 100.65,241.18 101.23,241.82 101.44,240.54 110.81,243.5 112.98,242.81 112.03,246.13 114.33,243.75 115.6,245.25 117.83,244.36 117.06,240.29 119.13,237.67 116.82,236.66 116.85,234.65 122.44,229.1 122.4,230.38 123.95,229.18 125.29,231.21 127.27,230.85 126.71,232.95 129.63,232.5 134.4,229.08 138.19,229.33 140.7,226.27 142.05,229.48 140.13,233.75 140.97,233.9 143.76,228.59 150.65,225.02 149.14,226.4 150.45,227.34 149.3,227.07 149.49,229.57 150.66,229.94 147.61,236.65 150.71,230.77 154.99,230.98 155.05,232.83 152.63,234.31 154.9,234.57 153.69,235.02 156.46,236.23 158.87,235.57 160.21,237.13 159.41,240.48 166.95,246.66 167.32,252.33 174.53,256.2 174.03,258.43 176.88,262.16 176.72,258.18 179.82,258.6 185.41,252.05 190.42,249.46 189.56,247.47 192.81,246.82 194.27,248.42 200.8,243.65 202.61,245.83 199.54,250.02 201.0,250.76 205.4,247.55 207.87,254.36 209.03,251.13 210.05,253.97 212.11,249.97 213.47,251.14 211.82,248.62 218.6,248.34 218.3,249.5 219.59,249.66 221.89,253.76 221.14,254.92 223.33,257.48 221.81,262.14 224.17,258.82 224.96,259.44 222.84,253.15 224.15,253.58 220.94,251.78 219.92,246.9 222.36,245.48 222.57,244.07 225.78,243.75 224.55,242.99 226.08,242.18 228.14,243.11 232.03,241.44 232.41,244.26 230.63,245.64 230.75,249.01 237.23,251.49 251.91,248.85 253.91,250.56 258.3,249.27 259.9,247.83 264.4,248.63 261.33,245.91 262.71,243.21 258.19,246.34 254.16,243.12 252.5,239.27 249.88,237.69 249.69,230.48 247.29,229.32 249.3,227.52 251.26,219.9 251.27,223.27 251.16,211.02 254.27,211.56 250.65,210.18 249.3,213.35 248.08,209.63 247.63,203.09 249.26,200.84 247.32,192.68 250.07,192.26 247.1,191.28 245.88,193.01 243.01,186.36 244.02,186.5 240.76,182.45 242.96,181.95 239.28,181.6 235.77,177.69 237.78,178.35 236.33,177.36 234.27,177.73 231.5,164.99 229.2,163.14 232.13,158.71 231.55,153.16 229.84,150.66 225.15,148.96 225.76,144.16 229.38,146.17 231.55,145.09 233.48,147.6 242.54,149.38 243.67,150.75 246.98,150.74 246.05,151.31 247.27,152.1 248.59,150.99 255.65,149.52 256.7,147.05 263.6,146.16 270.12,147.23 272.59,155.73 270.94,155.26 269.6,159.02 269.7,157.68 268.1,158.08 267.75,162.46 276.68,174.7 276.92,178.57 279.81,179.61 283.14,176.3 291.55,175.85 304.38,180.21 327.86,181.88 339.01,186.55 348.22,185.06 355.08,181.62 362.69,175.02 369.09,172.7 376.41,172.06 376.17,170.63 371.85,170.37 371.83,170.86 361.59,168.82 358.22,164.63 364.95,147.85 367.74,145.4 376.44,142.04 392.8,132.07 406.18,129.93 417.57,125.71 422.29,125.83 432.98,120.98 449.48,108.2 452.85,99.98 456.27,97.49 459.6,100.26 465.22,100.57 463.19,97.42 460.98,97.28 458.98,93.63 456.32,93.17 455.57,91.05 457.11,83.29 461.42,83.1 462.42,84.38 456.73,79.84 458.71,66.71 462.88,69.21 458.14,62.85 457.36,48.85 459.71,48.77 460.05,44.11 458.59,34.75 462.7,33.92 472.62,26.57 491.99,21.81 494.25,23.37 493.52,21.91 496.11,20.26 498.06,21.71 499.03,19.01 498.21,18.66 500.98,19.29 509.61,16.86 513.13,17.48 522.25,14.06 524.21,22.36 526.25,23.58 527.77,27.93 525.14,30.32 526.23,31.03 525.81,37.01 528.54,40.36 530.74,39.77 534.11,40.78 538.61,48.66 542.43,49.32 546.28,51.8 549.49,46.06 556.3,43.48 558.21,44.06 559.78,42.16 562.4,42.97 566.08,50.1 569.39,51.63 569.43,53.5 568.52,55.68 571.51,67.93 577.38,70.99 582.1,69.35 583.92,67.27 586.49,68.24 585.5,71.42 592.74,70.94 596.03,74.98 596.76,79.76 595.81,83.0 599.83,88.93 599.33,87.52 600.62,88.21 602.12,84.64 608.63,84.46 611.9,86.72 620.21,83.82 623.76,88.53 626.16,89.24 627.77,93.41 629.51,92.63 628.27,91.61 629.6,90.54 632.22,92.19 632.88,94.07 628.46,97.97 628.53,102.69 627.0,105.27 631.64,105.35 631.71,107.9 633.65,111.25 628.86,113.79 627.33,116.62 628.95,118.73 627.89,120.32 631.5,121.32 631.64,122.24 638.92,121.03 649.82,123.17 653.06,122.67 656.99,119.64 664.3,118.37 664.3,109.9 672.85,102.11 677.54,105.19 675.84,106.99 675.8,109.61 674.58,108.57 673.58,111.68 672.67,111.85 673.94,114.46 670.59,121.23 674.58,123.17 677.06,127.01 674.7,131.43 676.27,135.53 674.72,137.84 678.51,138.52 684.41,137.2 685.84,139.28 690.79,140.88 693.08,145.43 695.17,145.31 695.65,147.36 702.55,147.34 706.49,151.23 704.65,153.93 705.22,155.24 707.82,153.39 712.99,156.97 714.4,159.97 715.58,166.05 721.57,163.22 724.97,165.11 727.32,161.06 734.13,161.97 735.79,159.89 738.66,162.26 739.96,162.26 741.95,165.95 746.77,165.99 748.88,166.88 750.44,169.99 753.55,170.46 754.72,169.16 757.33,170.19 759.26,166.59 766.54,164.7 773.0,168.83 774.87,169.11 779.14,168.21 786.41,172.35 787.18,173.69 786.62,175.22 790.05,179.26 788.2,180.65 794.81,187.09 794.54,189.28 796.27,189.94 797.01,192.91 798.67,193.25 798.24,196.81 799.76,197.9 806.66,198.58 807.4,196.03 806.01,193.22 808.01,192.65 809.82,193.42 812.04,192.4 818.93,195.65 820.49,202.87 823.71,198.76 823.69,200.35 827.28,201.91 829.06,201.17 830.0,202.51 833.2,201.43 836.45,202.42 838.54,199.76 840.7,199.57 841.27,197.06 846.23,196.11 845.79,197.9 849.4,197.57 849.48,200.62 852.32,204.41 858.44,206.65 859.74,208.72 867.26,209.21 869.66,207.48 874.18,210.34 878.69,208.12 881.43,211.01 888.9,214.63 896.22,216.59 897.91,216.18 891.84,224.26 888.31,232.83 884.64,234.22 883.5,236.59 880.85,236.97 879.77,240.96 872.13,248.15 869.63,253.6 869.84,260.41 867.44,262.62 865.08,272.06 865.81,278.22 862.44,280.65 860.67,288.22 854.9,298.01 854.53,306.25 857.8,312.1 853.46,321.24 853.86,324.57 851.78,330.85 852.83,335.33 850.62,338.31 851.27,341.42 855.94,347.51 855.04,349.63 849.66,353.49 851.73,354.6 849.71,355.34 850.24,357.35 848.92,358.68 845.17,357.5 844.91,358.75 846.68,359.87 842.02,363.34 838.16,362.79 833.02,364.37 831.83,362.7 828.0,362.29 829.69,357.55 825.35,356.64Z";
   var SITES = [
     {n:"Hyères Pharma",          s:"HP", c:"Hyères · 83",                x:759.10,y:775.43,t:"siege",h:26,  dxw:0,   dzw:0,   ldx:0,  ldy:-4},
-    {n:"Ouest Pharma Services",  s:"OPS",c:"St-Étienne-de-Montluc · 44", x:236.15,y:378.10,t:"site", h:13,  dxw:0,   dzw:0,   ldx:0,  ldy:0},
+    {n:"Ouest Pharma Services",  s:"OPS",c:"Saint-Étienne-de-Montluc · 44", x:236.15,y:378.10,t:"site", h:13,  dxw:0,   dzw:0,   ldx:0,  ldy:0},
     {n:"Escale Pharma",          s:"EP", c:"Chilly-Mazarin · 91",        x:506.74,y:242.05,t:"site", h:14,  dxw:0,   dzw:0,   ldx:0,  ldy:0},
     {n:"Comptoir Pharma. du Rhône",s:"CPR",c:"Saint-Maurice-l'Exil · 38",x:669.97,y:558.24,t:"site", h:13,  dxw:0,   dzw:0,   ldx:0,  ldy:0},
     {n:"Sud Ouest Pharma",       s:"SOP",c:"Montayral · 47",             x:415.96,y:645.70,t:"site", h:12.5,dxw:0,   dzw:0,   ldx:0,  ldy:0},
@@ -1195,20 +1221,32 @@ document.addEventListener('DOMContentLoaded', function(){
 
   if(window.__noThree || typeof THREE==='undefined' || reduce || !webglOK()){ buildFallback(); return; }
 
+  /* [H3] variables partagées par tick()/resize()/handlers — hoistées, assignées dans initMap() */
+  var renderer, scene, camera, hqLight, beacons=[], pickTargets=[], pulses=[];
+  var built=false, buildOK=false;
+
   try{
 
-  var renderer = new THREE.WebGLRenderer({antialias:true, alpha:true});
+  /* [H3] CONSTRUCTION WebGL PARESSEUSE : rien de lourd au parse (évite le figeage Safari au boot).
+     initMap() est appelée au 1er passage sur la slide carte (handler deck:map), gardée par `built`.
+     Le squelette .map3d__load couvre l'attente ; webglOK()/buildFallback() ont déjà filtré en amont. */
+  function initMap(){
+    if(built) return buildOK;
+    built=true;
+    try{
+
+  renderer = new THREE.WebGLRenderer({antialias:true, alpha:true});
   renderer.setClearColor(0x000000,0);
   box.insertBefore(renderer.domElement, box.firstChild);
 
-  var scene = new THREE.Scene();
+  scene = new THREE.Scene();
   scene.fog = new THREE.Fog(0x05070F, 160, 420);
-  var camera = new THREE.PerspectiveCamera(38, 1, 1, 900);
+  camera = new THREE.PerspectiveCamera(38, 1, 1, 900);
 
   scene.add(new THREE.AmbientLight(0x33415f, 0.95));
   var key = new THREE.DirectionalLight(0x7fa0ff, 0.65); key.position.set(-60,120,90); scene.add(key);
   var rim = new THREE.DirectionalLight(0x2a4aa8, 0.4);  rim.position.set(80,60,-120); scene.add(rim);
-  var hqLight = new THREE.PointLight(0xF3720F, 1.15, 46, 2);
+  hqLight = new THREE.PointLight(0xF3720F, 1.15, 46, 2);
   hqLight.position.set(WX(SITES[0].x), EXH+7, WZ(SITES[0].y)); scene.add(hqLight);
 
   function glowTex(){
@@ -1315,8 +1353,8 @@ document.addEventListener('DOMContentLoaded', function(){
   }
   var ringMatProto = new THREE.MeshBasicMaterial({color:0x5B8CFF,transparent:true,opacity:0.5,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,fog:false});
 
-  var beacons=[];
-  var pickTargets=[];
+  beacons=[];
+  pickTargets=[];
   function makeBeacon(m,idx){
     var siege = m.t==='siege', part = m.t==='part';
     var cCore = siege?0xFFC876:(part?0xE9EFF9:0xBFD9FF);
@@ -1377,7 +1415,7 @@ document.addEventListener('DOMContentLoaded', function(){
   for(var bi=0;bi<SITES.length;bi++) makeBeacon(SITES[bi],bi);
 
   var HQ = new THREE.Vector3(WX(SITES[0].x), EXH+0.6, WZ(SITES[0].y));
-  var pulses=[];
+  pulses=[];
   for(var ai=1;ai<SITES.length;ai++){
     var m=SITES[ai];
     var A=new THREE.Vector3(WX(m.x)+m.dxw, EXH+0.6, WZ(m.y)+m.dzw);
@@ -1401,6 +1439,13 @@ document.addEventListener('DOMContentLoaded', function(){
       pulses.push({sp:sp,curve:curve,v:0.055+Math.random()*0.03,ph:pi/np+Math.random()*0.3});
     }
   }
+
+      resize();            /* premier dimensionnement une fois le renderer prêt */
+      buildOK=true;
+    }catch(err){ buildFallback(); buildOK=false; }
+    return buildOK;
+  }
+  /* ——— fin de initMap() [H3] ——— */
 
   var az=0, elv=0.92, baseEl=0.88, baseR=125;
   var mx=0,my=0, intro=0, started=false, raf3=null;
@@ -1433,6 +1478,7 @@ document.addEventListener('DOMContentLoaded', function(){
   }
 
   function resize(){
+    if(!renderer) return;   /* [H3] la carte n'est pas encore construite */
     cw=box.clientWidth; ch=box.clientHeight;
     if(!cw||!ch) return;
     var dpr=Math.min(window.devicePixelRatio||1, cw>760?2:1.6);
@@ -1443,7 +1489,7 @@ document.addEventListener('DOMContentLoaded', function(){
     baseR=Math.max(118, halfW/(Math.tan(vf)*camera.aspect));
     scene.fog.near=baseR*1.6; scene.fog.far=baseR*3.6;
   }
-  resize();
+  /* [H3] plus d'appel resize() au parse : initMap() s'en charge à la 1re entrée */
   window.addEventListener('resize',resize,{passive:true});
 
   box.addEventListener('pointermove',function(e){
@@ -1469,6 +1515,10 @@ document.addEventListener('DOMContentLoaded', function(){
     var i=parseInt(row.getAttribute('data-i'),10);
     row.addEventListener('mouseenter',function(){ if(!coarse) rosterHoverI=i; });
     row.addEventListener('mouseleave',function(){ if(!coarse && rosterHoverI===i) rosterHoverI=-1; });
+    /* [M4] clavier : le focus révèle l'établissement comme le survol
+       (le <button> déclenche nativement le click sur Entrée/Espace → pas de keydown en double) */
+    row.addEventListener('focus',function(){ if(!coarse) rosterHoverI=i; });
+    row.addEventListener('blur',function(){ if(!coarse && rosterHoverI===i) rosterHoverI=-1; });
     /* tactile : impossible de survoler au doigt → un TAP épingle / dépingle l'établissement
        (un vrai glissement scrolle l'annuaire et n'émet pas de click) */
     row.addEventListener('click',function(){
@@ -1484,6 +1534,10 @@ document.addEventListener('DOMContentLoaded', function(){
     var dt=Math.min(clock.getDelta(),0.05); T+=dt;
     if(started) intro=Math.min(1,intro+dt/2.4);
     var e=easeOut(intro);
+    /* [L12] amortissements corrigés du delta de frame → même vitesse en 60 et 120 Hz */
+    var kFocus=1-Math.pow(1-0.16, dt*60);
+    var kCam  =1-Math.pow(1-0.045,dt*60);
+    var kHl   =1-Math.pow(1-0.10, dt*60);
 
     if(pointerInMap){
       ray.setFromCamera(ndc,camera);
@@ -1492,12 +1546,12 @@ document.addEventListener('DOMContentLoaded', function(){
     }
     focusI = pointerInMap ? mapHoverI : rosterHoverI;
     if(focusI>=0) activeI=focusI;
-    focusAmt += ((focusI>=0?1:0)-focusAmt)*0.16;
+    focusAmt += ((focusI>=0?1:0)-focusAmt)*kFocus;
     setInfo(focusI);
 
     var tAz=Math.sin(T*0.10)*0.10 + mx*0.14;
     var tEl=baseEl + my*0.06 + (1-e)*0.16;
-    az+=(tAz-az)*0.045; elv+=(tEl-elv)*0.045;
+    az+=(tAz-az)*kCam; elv+=(tEl-elv)*kCam;
     var R=baseR*(1.30-0.30*e);
     var ovx=Math.sin(az)*Math.cos(elv)*R, ovy=Math.sin(elv)*R, ovz=Math.cos(az)*Math.cos(elv)*R;
     var lookX=0,lookY=2.5,lookZ=1.5;
@@ -1522,7 +1576,7 @@ document.addEventListener('DOMContentLoaded', function(){
         ? easeOut(Math.max(0, Math.min(1, (scrollProg - b.idx*0.085) / 0.13)))
         : easeOut(Math.max(0, Math.min(1, intro*1.9 - b.idx*0.09)));
       b.grp.scale.y=Math.max(0.0001,si);
-      b.hl+=(b.hlT-b.hl)*0.1;
+      b.hl+=(b.hlT-b.hl)*kHl;
       for(var j=0;j<b.mats.length;j++){
         b.mats[j].uniforms.uT.value=T;
         b.mats[j].uniforms.uOp.value=(j===0?(b.site.t==='siege'?0.34:0.26):(b.site.t==='siege'?0.9:0.75))*(0.35+0.65*si)*(1+b.hl*0.8)*dim;
@@ -1579,7 +1633,11 @@ document.addEventListener('DOMContentLoaded', function(){
 
   window.addEventListener('deck:map',function(ev){
     deckActive = !!(ev.detail);
-    if(deckActive){ started=true; resize(); play(); }
+    if(deckActive){
+      /* [H3] 1er passage = construction paresseuse ; [L14] on allume dès le geste (jamais play avant initMap) */
+      if(!initMap()){ return; }   /* échec WebGL → fallback SVG affiché, rien à animer */
+      started=true; resize(); play();
+    }
     else { pause(); rosterHoverI=-1; pointerInMap=false; mapHoverI=-1; selRow(null); }
   });
   document.addEventListener('visibilitychange',function(){ document.hidden?pause():(deckActive&&play()); });
@@ -1653,11 +1711,14 @@ document.addEventListener('DOMContentLoaded', function(){
     }
     resize(); window.addEventListener('resize',resize,{passive:true});
 
-    var raf=null, t0=performance.now(), intro=0;
+    var raf=null, t0=performance.now(), prevT=t0, intro=0;
     function frame(){
       raf=requestAnimationFrame(frame);
-      var t=(performance.now()-t0)/1000;
-      intro=Math.min(1,intro+0.018);
+      var now=performance.now();
+      var t=(now-t0)/1000;
+      /* [L12] intro ~0,9 s indépendante du taux de rafraîchissement */
+      var dt=Math.min((now-prevT)/1000,0.05); prevT=now;
+      intro=Math.min(1,intro+dt/0.9);
       var e=1-Math.pow(1-intro,3);
       wrap.rotation.y=t*0.5;
       wrap.rotation.x=Math.sin(t*0.55)*0.18;
