@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Diagnostic officine — variantes</title>
+<style>
+  :root{
+    --ip:#0050E6; --ip-d:#0039A6; --ink:#10131C; --muted:#737A8C; --muted2:#9AA1B2;
+    --paper:#F4F6FB; --card:#fff; --line:rgba(16,19,28,.08); --line2:rgba(16,19,28,.13);
+    --green:#10915E; --green-s:rgba(16,145,94,.10); --amber:#C7791A; --amber-s:rgba(199,121,26,.12); --bad:#E0556E; --bad-s:rgba(224,85,110,.12);
+    --r:18px; --sh:0 6px 24px rgba(16,19,28,.07),0 2px 6px rgba(16,19,28,.04);
+    /* dark app tokens (fiche in-app) */
+    --dbg:#070B14; --dcard:#0E1626; --dline:rgba(255,255,255,.09); --dmut:#8A94A8; --blue:#3D7BFF; --mint:#00E5A0;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:"Inter","Segoe UI",system-ui,sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased}
+  .mono{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
+  .wrap{max-width:900px;margin:0 auto;padding:0 16px 80px}
+
+  /* ── barre de sélection variantes ── */
+  .picker{position:sticky;top:0;z-index:50;background:rgba(244,246,251,.92);backdrop-filter:saturate(1.4) blur(8px);border-bottom:1px solid var(--line);padding:12px 16px;margin-bottom:6px}
+  .picker-in{max-width:900px;margin:0 auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .picker .ttl{font-weight:800;font-size:14px;letter-spacing:-.01em;margin-right:4px}
+  .picker .ttl small{display:block;font-weight:600;font-size:11px;color:var(--muted)}
+  .segs{display:flex;gap:6px;flex-wrap:wrap}
+  .seg{border:1px solid var(--line2);background:#fff;color:var(--ink);font-weight:800;font-size:13px;border-radius:11px;padding:8px 13px;cursor:pointer;transition:.15s;min-width:40px}
+  .seg small{display:block;font-weight:600;font-size:10px;color:var(--muted);margin-top:1px}
+  .seg:hover{border-color:var(--ip)}
+  .seg.on{background:var(--ip);color:#fff;border-color:var(--ip)}
+  .seg.on small{color:rgba(255,255,255,.85)}
+  .hint{font-size:12px;color:var(--muted);margin:2px auto 14px;max-width:900px;padding:0 4px}
+  .stage{margin-top:8px}
+  .variant{display:none}
+  .variant.show{display:block;animation:fade .25s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .vlabel{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:0 2px 8px}
+
+  /* ── éléments communs clairs ── */
+  .band{background:linear-gradient(120deg,var(--ip),var(--ip-d));color:#fff;border-radius:var(--r);padding:20px 24px;box-shadow:var(--sh);display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+  .band .logo{font-weight:800;font-size:12px;letter-spacing:.18em;text-transform:uppercase;opacity:.9}
+  .band h1{font-size:21px;font-weight:800;letter-spacing:-.02em;margin:4px 0 0}
+  .band .ph{font-size:13px;opacity:.92;margin-top:6px}
+  .band .gift{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.3);border-radius:999px;padding:6px 13px;font-size:12px;font-weight:700;white-space:nowrap}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh)}
+  .sec{overflow:hidden;margin-top:16px}
+  .sh{display:flex;align-items:center;gap:12px;padding:15px 20px;border-bottom:1px solid var(--line);position:relative}
+  .sh::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--c,var(--ip))}
+  .sh .ic{width:30px;height:30px;border-radius:9px;background:var(--c,var(--ip));color:#fff;display:grid;place-items:center;font-weight:800;font-size:15px;flex:none}
+  .sh h2{font-size:13px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;color:var(--c,var(--ip));margin:0}
+  .sh .desc{font-size:12px;color:var(--muted);font-weight:500;margin-top:1px}
+  .sh .tot{margin-left:auto;font-size:13px;font-weight:800;color:#fff;background:var(--c,var(--ip));padding:5px 12px;border-radius:999px;white-space:nowrap}
+  .gain{font-weight:800;color:var(--green)}
+  .pill{display:inline-block;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;padding:3px 8px;border-radius:999px}
+  .p-bad{background:var(--bad-s);color:#c23652}
+  .p-warn{background:var(--amber-s);color:#a8651a}
+  .p-ok{background:var(--green-s);color:var(--green)}
+
+  /* plan d'action list */
+  .act{display:flex;align-items:center;gap:14px;padding:13px 20px;border-top:1px solid var(--line)}
+  .act:first-child{border-top:0}
+  .act .rk{width:26px;height:26px;border-radius:8px;background:var(--paper);border:1px solid var(--line);display:grid;place-items:center;font-weight:800;font-size:12px;color:var(--muted);flex:none}
+  .act .mn{flex:1;min-width:0}
+  .act .mn b{font-weight:700;letter-spacing:-.01em;display:block}
+  .act .mn span{font-size:12px;color:var(--muted)}
+  .act .eur{font-weight:800;color:var(--green);font-size:16px;white-space:nowrap}
+  .act .bar{height:5px;border-radius:9px;background:var(--green);opacity:.85;margin-top:5px}
+
+  /* rupture banner */
+  .rupt{display:flex;align-items:center;gap:12px;padding:14px 18px;border:1px solid #F0C9A8;background:#FFF6EC;border-radius:14px;margin-top:16px}
+  .rupt .ic{width:34px;height:34px;border-radius:10px;background:var(--amber);color:#fff;display:grid;place-items:center;font-size:17px;font-weight:800;flex:none}
+  .rupt b{color:#a8651a}
+  .rupt .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:5px}
+  .rupt .chips span{font-size:11px;font-weight:700;background:#fff;border:1px solid #F0D9C0;color:#8a5a1a;padding:2px 8px;border-radius:999px}
+
+  /* repères chips */
+  .reps{display:flex;gap:8px;flex-wrap:wrap;padding:14px 4px 2px}
+  .rep{background:#fff;border:1px solid var(--line);border-radius:12px;padding:9px 13px;font-size:12px;font-weight:600;color:var(--muted)}
+  .rep b{display:block;color:var(--ink);font-size:15px;font-weight:800}
+  .rep.warn{border-color:#F0C9A8;background:#FFF9F1}
+  .rep.warn b{color:#a8651a}
+
+  /* score ring */
+  .ring{--p:63;--col:var(--amber);width:120px;height:120px;border-radius:50%;flex:none;display:grid;place-items:center;
+    background:conic-gradient(var(--col) calc(var(--p)*1%),rgba(16,19,28,.08) 0);position:relative}
+  .ring::before{content:"";position:absolute;inset:11px;border-radius:50%;background:var(--card)}
+  .ring .in{position:relative;text-align:center}
+  .ring .in b{font-size:34px;font-weight:800;letter-spacing:-.03em;line-height:1;color:var(--ink)}
+  .ring .in small{font-size:11px;color:var(--muted);font-weight:700}
+
+  /* score axes rows */
+  .axes{padding:6px 0}
+  .ax{display:flex;align-items:center;gap:12px;padding:9px 20px}
+  .ax .lab{width:150px;font-size:12.5px;font-weight:600;flex:none}
+  .ax .track{flex:1;height:8px;border-radius:9px;background:rgba(16,19,28,.07);overflow:hidden}
+  .ax .fill{height:100%;border-radius:9px}
+  .ax .val{width:74px;text-align:right;font-weight:800;font-size:12.5px;flex:none}
+
+  /* KPI band */
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border-radius:14px;overflow:hidden;border:1px solid var(--line)}
+  .kpi{background:#fff;padding:13px 15px}
+  .kpi .l{font-size:11px;color:var(--muted);font-weight:600}
+  .kpi .v{font-size:19px;font-weight:800;letter-spacing:-.02em;margin-top:3px}
+  .kpi .d{font-size:11px;font-weight:700;margin-top:2px}
+  .up{color:var(--green)} .down{color:var(--bad)}
+
+  /* bento */
+  .bento{display:grid;grid-template-columns:1.15fr 1fr;gap:14px;margin-top:16px}
+  .bento .card{padding:0}
+  .tile-h{padding:14px 18px 0;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+
+  /* hero money */
+  .heroM{background:linear-gradient(135deg,#0B2E1E,#10915E);color:#fff;border-radius:var(--r);box-shadow:var(--sh);padding:26px;text-align:center;position:relative;overflow:hidden}
+  .heroM .lbl{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;opacity:.85}
+  .heroM .big{font-size:52px;font-weight:800;letter-spacing:-.03em;line-height:1;margin:6px 0 4px}
+  .heroM .sub{font-size:13.5px;opacity:.92}
+  .heroM .scoreflag{position:absolute;top:16px;right:18px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.3);border-radius:12px;padding:8px 12px;font-weight:800;font-size:13px}
+  .heroM .scoreflag small{display:block;font-weight:600;font-size:10px;opacity:.85}
+
+  /* dark app-native */
+  .dark{background:var(--dbg);border-radius:var(--r);padding:18px;box-shadow:var(--sh)}
+  .dark .dcard{background:var(--dcard);border:1px solid var(--dline);border-radius:15px}
+  .dark .ring::before{background:var(--dcard)}
+  .dark .ring .in b{color:#fff}
+  .dark .dtitle{color:#fff;font-weight:800;font-size:16px;letter-spacing:-.01em}
+  .dark .dsub{color:var(--dmut);font-size:12.5px}
+  .dark .ax .track{background:rgba(255,255,255,.08)}
+  .dark .kpis{background:var(--dline);border-color:var(--dline)}
+  .dark .kpi{background:var(--dcard)}
+  .dark .kpi .v{color:#fff}
+  .dark .kpi .l{color:var(--dmut)}
+  .dark .act{border-color:var(--dline)}
+  .dark .act .mn b{color:#fff}
+  .dark .act .rk{background:rgba(255,255,255,.05);border-color:var(--dline);color:var(--dmut)}
+  .dark .rep{background:var(--dcard);border-color:var(--dline)}
+  .dark .rep b{color:#fff}
+  .dark .rupt{background:rgba(199,121,26,.12);border-color:rgba(199,121,26,.35)}
+  .dark .rupt b{color:#F0B860}
+  .dark .rupt .chips span{background:rgba(255,255,255,.06);border-color:var(--dline);color:#F0B860}
+
+  @media(max-width:640px){
+    .kpis{grid-template-columns:repeat(2,1fr)}
+    .bento{grid-template-columns:1fr}
+    .band h1{font-size:19px}
+    .heroM .big{font-size:42px}
+    .ax .lab{width:120px}
+  }
+</style>
+</head>
+<body>
+
+<div class="picker">
+  <div class="picker-in">
+    <div class="ttl">Diagnostic officine<small>6 directions — choisis un ou plusieurs numéros</small></div>
+    <div class="segs" id="segs"></div>
+  </div>
+</div>
+<div class="hint" id="hint"></div>
+
+<div class="wrap">
+  <div class="stage" id="stage"></div>
+</div>
+
+<script>
+/* ── Données EXEMPLE (pharmacie fictive, chiffres réalistes) ────────────── */
+var D = {
+  pharma:'Pharmacie du Centre', ville:'56000 Vannes', groupe:'Giphar',
+  score:63, scoreWord:'Bon potentiel',
+  eurTotal:4200,
+  axes:[
+    {lab:'CA Intégral vs réseau', val:'médian', pct:52, col:'var(--amber)'},
+    {lab:'Gammes réseau prises',  val:'61 %',    pct:61, col:'var(--amber)'},
+    {lab:'Abandon de marge capté',val:'3,1 %',   pct:74, col:'var(--green)'},
+    {lab:'Substitution générique',val:'78 %',    pct:78, col:'var(--bad)'}
+  ],
+  kpis:[
+    {l:'CA juin 2026', v:'5 240 €', d:'+8 % vs mois dernier', up:true},
+    {l:'vs sa moyenne', v:'4 810 €', d:'+9 %', up:true},
+    {l:'Meilleur mois', v:'6 120 €', d:'mars 2026', up:null},
+    {l:'Mois actifs', v:'6/6', d:'réguliers', up:null}
+  ],
+  plan:[
+    {t:'Gammes que le réseau prend, pas elle', s:'Conseil hiver, dermo-cosmétique, 12 réfs best-rotation', eur:2400, w:100},
+    {t:'Abandon de marge à capter', s:'vs son grossiste actuel, sur son cœur de gamme', eur:1100, w:46},
+    {t:'Sous-substitution générique', s:'78 % vs 92,5 % national — marge & ROSP', eur:700, w:29}
+  ],
+  ruptCount:3, rupt:['Amoxicilline 1g','Ozempic 1mg','Doliprane 1000'],
+  reps:[
+    {t:'Marge brute moyenne', v:'28-29 %'},
+    {t:'Panier moyen', v:'~41 €'},
+    {t:'Substitution nationale', v:'92,5 %', warn:false},
+    {t:'Elle : substitution', v:'78 %', warn:true}
+  ]
+};
+
+var eur = function(n){ return n.toLocaleString('fr-FR')+' €'; };
+function axesHTML(dark){
+  return D.axes.map(function(a){
+    return '<div class="ax"><div class="lab">'+a.lab+'</div>'+
+      '<div class="track"><div class="fill" style="width:'+a.pct+'%;background:'+a.col+'"></div></div>'+
+      '<div class="val" style="color:'+a.col+'">'+a.val+'</div></div>';
+  }).join('');
+}
+function kpisHTML(){
+  return '<div class="kpis">'+D.kpis.map(function(k){
+    return '<div class="kpi"><div class="l">'+k.l+'</div><div class="v mono">'+k.v+'</div>'+
+      '<div class="d '+(k.up===true?'up':k.up===false?'down':'')+'">'+k.d+'</div></div>';
+  }).join('')+'</div>';
+}
+function planHTML(){
+  return D.plan.map(function(p,i){
+    return '<div class="act"><div class="rk">'+(i+1)+'</div>'+
+      '<div class="mn"><b>'+p.t+'</b><span>'+p.s+'</span><div class="bar" style="width:'+p.w+'%"></div></div>'+
+      '<div class="eur">+'+eur(p.eur)+'<small style="display:block;font-size:10px;color:var(--muted);font-weight:600;text-align:right">/ an</small></div></div>';
+  }).join('');
+}
+function ruptHTML(){
+  return '<div class="rupt"><div class="ic">!</div><div><b>'+D.ruptCount+' produits qu\'elle achète sont en tension ANSM.</b>'+
+    '<div style="font-size:12.5px;color:var(--muted)">À sécuriser / proposer une alternative Intégral en stock.</div>'+
+    '<div class="chips">'+D.rupt.map(function(r){return '<span>'+r+'</span>';}).join('')+'</div></div></div>';
+}
+function repsHTML(){
+  return '<div class="reps">'+D.reps.map(function(r){
+    return '<div class="rep'+(r.warn?' warn':'')+'">'+r.t+'<b>'+r.v+'</b></div>';
+  }).join('')+'</div>';
+}
+function ringHTML(dark){
+  return '<div class="ring" style="--p:'+D.score+';--col:var(--amber)"><div class="in"><b>'+D.score+'</b><small>/ 100</small></div></div>';
+}
+function bandHTML(){
+  return '<div class="band"><div><div class="logo">Intégral Pharma</div>'+
+    '<h1>'+D.pharma+'</h1><div class="ph">'+D.ville+' · '+D.groupe+'</div></div>'+
+    '<div class="gift">Diagnostic offert</div></div>';
+}
+
+/* ── 6 VARIANTES ───────────────────────────────────────────────────────── */
+var V = {};
+
+/* 1 — Sobre : score à gauche, axes à droite, puis plan/ruptures/repères */
+V[1] = function(){ return bandHTML()+
+  '<div class="card sec" style="--c:var(--ip)"><div style="display:flex;gap:22px;align-items:center;padding:20px">'+
+    ringHTML()+'<div style="flex:1;min-width:0"><div style="font-weight:800;font-size:16px">Score officine <span class="pill p-warn">'+D.scoreWord+'</span></div>'+
+    '<div style="font-size:12.5px;color:var(--muted);margin:2px 0 8px">Comparée aux officines du réseau Intégral.</div>'+
+    '<div class="axes">'+axesHTML()+'</div></div></div></div>'+
+  '<div class="card sec" style="--c:var(--green)"><div class="sh"><div class="ic">€</div><div><h2>Plan d\'action chiffré</h2><div class="desc">Trié par gain annuel</div></div><div class="tot">+'+eur(D.eurTotal)+'/an</div></div>'+planHTML()+'</div>'+
+  ruptHTML()+repsHTML();
+};
+
+/* 2 — Feuille claire "PharmaPex-like" : hero score énorme centré */
+V[2] = function(){ return bandHTML()+
+  '<div class="card" style="padding:26px;text-align:center;margin-top:16px">'+
+    '<div style="font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Score santé commerciale</div>'+
+    '<div style="font-size:64px;font-weight:800;letter-spacing:-.03em;color:var(--amber);line-height:1;margin:6px 0 2px">'+D.score+'<span style="font-size:24px;color:var(--muted)">/100</span></div>'+
+    '<div style="font-size:14px;color:var(--muted)">'+D.scoreWord+' — <b style="color:var(--green)">'+eur(D.eurTotal)+'/an</b> à aller chercher</div>'+
+    '<div style="margin-top:16px">'+kpisHTML()+'</div></div>'+
+  '<div class="card sec" style="--c:var(--green)"><div class="sh"><div class="ic">€</div><div><h2>Plan d\'action chiffré</h2></div><div class="tot">+'+eur(D.eurTotal)+'/an</div></div>'+planHTML()+'</div>'+
+  ruptHTML()+repsHTML();
+};
+
+/* 3 — Money-first : le € domine (hero vert), score en drapeau */
+V[3] = function(){ return bandHTML()+
+  '<div class="heroM" style="margin-top:16px"><div class="scoreflag">'+D.score+'/100<small>'+D.scoreWord+'</small></div>'+
+    '<div class="lbl">Ce qu\'elle laisse sur la table</div><div class="big mono">≈ '+eur(D.eurTotal)+'</div><div class="sub">par an — abandon de marge + gammes non prises + substitution</div></div>'+
+  '<div class="card sec" style="--c:var(--green)"><div class="sh"><div class="ic">€</div><div><h2>Comment aller la chercher</h2><div class="desc">3 leviers, triés par impact</div></div></div>'+planHTML()+'</div>'+
+  ruptHTML()+
+  '<div class="card sec" style="--c:var(--ip)"><div class="sh"><div class="ic">%</div><div><h2>Son score en détail</h2></div></div><div class="axes" style="padding:10px 0">'+axesHTML()+'</div></div>'+
+  repsHTML();
+};
+
+/* 4 — Bento : tuiles modulaires */
+V[4] = function(){ return bandHTML()+
+  '<div class="bento">'+
+    '<div class="card" style="padding:20px;display:flex;gap:18px;align-items:center">'+ringHTML()+
+      '<div><div style="font-weight:800;font-size:15px">Score officine</div><div style="font-size:12px;color:var(--muted)">vs réseau Intégral</div>'+
+      '<div style="margin-top:8px"><span class="pill p-warn">'+D.scoreWord+'</span></div></div></div>'+
+    '<div class="card heroM" style="box-shadow:none">'+'<div class="lbl">Potentiel /an</div><div class="big mono" style="font-size:38px">'+eur(D.eurTotal)+'</div><div class="sub">à capter</div></div>'+
+  '</div>'+
+  '<div class="bento">'+
+    '<div class="card sec" style="margin-top:0;--c:var(--green)"><div class="tile-h">Plan d\'action</div>'+planHTML()+'</div>'+
+    '<div class="card sec" style="margin-top:0;--c:var(--ip)"><div class="tile-h">Score en détail</div><div class="axes">'+axesHTML()+'</div></div>'+
+  '</div>'+
+  ruptHTML()+repsHTML();
+};
+
+/* 5 — App-native SOMBRE (comme la vraie fiche in-app) */
+V[5] = function(){ return '<div class="dark">'+
+  '<div style="display:flex;gap:18px;align-items:center;padding:4px 4px 16px">'+ringHTML(true)+
+    '<div><div class="dtitle">'+D.pharma+' · <span style="color:var(--mint)">'+D.score+'/100</span></div>'+
+    '<div class="dsub">'+D.ville+' · '+D.groupe+' — comparée au réseau Intégral</div>'+
+    '<div style="margin-top:8px"><span class="pill p-warn">'+D.scoreWord+'</span> <span class="pill p-ok">+'+eur(D.eurTotal)+'/an</span></div></div></div>'+
+  '<div class="dcard" style="padding:6px 0;margin-bottom:12px">'+axesHTML(true)+'</div>'+
+  '<div style="margin-bottom:12px">'+kpisHTML()+'</div>'+
+  '<div class="dcard sec" style="margin-top:0;--c:var(--mint)"><div class="sh" style="border-color:var(--dline)"><div class="ic" style="background:var(--mint);color:#04150E">€</div><div><h2 style="color:var(--mint)">Plan d\'action chiffré</h2></div><div class="tot" style="background:var(--mint);color:#04150E">+'+eur(D.eurTotal)+'/an</div></div>'+planHTML()+'</div>'+
+  ruptHTML()+
+  '<div class="reps">'+D.reps.map(function(r){return '<div class="rep'+(r.warn?' warn':'')+'">'+r.t+'<b>'+r.v+'</b></div>';}).join('')+'</div>'+
+  '</div>';
+};
+
+/* 6 — Compact mobile : dense, pensé téléphone en main pendant la visite */
+V[6] = function(){ return bandHTML()+
+  '<div class="card" style="margin-top:14px;padding:16px;display:flex;align-items:center;gap:14px">'+
+    '<div class="ring" style="--p:'+D.score+';--col:var(--amber);width:74px;height:74px"><div class="in"><b style="font-size:22px">'+D.score+'</b></div></div>'+
+    '<div style="flex:1"><div style="font-weight:800">Score '+D.score+'/100 · '+D.scoreWord+'</div>'+
+    '<div style="font-size:13px;color:var(--muted)"><b class="gain">+'+eur(D.eurTotal)+'/an</b> à aller chercher · <b style="color:var(--amber)">'+D.ruptCount+' ruptures</b> sur ses achats</div></div></div>'+
+  '<div class="card sec" style="--c:var(--green)"><div class="sh"><div class="ic">€</div><div><h2>À faire</h2></div><div class="tot">+'+eur(D.eurTotal)+'/an</div></div>'+
+    D.plan.map(function(p,i){return '<div class="act"><div class="rk">'+(i+1)+'</div><div class="mn"><b>'+p.t+'</b></div><div class="eur">+'+eur(p.eur)+'</div></div>';}).join('')+'</div>'+
+  ruptHTML()+
+  '<div class="card sec" style="--c:var(--ip)"><div class="sh"><div class="ic">%</div><div><h2>Détail du score</h2></div></div><div class="axes" style="padding:8px 0">'+axesHTML()+'</div></div>'+
+  repsHTML();
+};
+
+var LABELS = {1:'Sobre',2:'Feuille claire',3:'Money-first',4:'Bento',5:'App sombre',6:'Compact mobile'};
+var HINTS = {
+  1:'① Sobre — score à gauche + axes, façon fiche propre. Équilibré, lisible, très « CRM ».',
+  2:'② Feuille claire — gros score centré facon PharmaPex, KPIs dessous. Le plus « waouh démo ».',
+  3:'③ Money-first — le montant en € domine (hero vert), le score passe en drapeau. Le plus vendeur au comptoir.',
+  4:'④ Bento — tuiles modulaires côte à côte. Moderne, aéré, bon en desktop.',
+  5:'⑤ App sombre — exactement le look de ta fiche in-app (thème foncé). Le plus « natif ».',
+  6:'⑥ Compact mobile — dense, tout en un écran de téléphone pour la visite. Le plus rapide à lire.'
+};
+var cur = 1;
+function render(){
+  var stage = document.getElementById('stage');
+  stage.innerHTML = '<div class="vlabel">Variante '+cur+' — '+LABELS[cur]+'</div><div class="variant show">'+V[cur]()+'</div>';
+  document.getElementById('hint').textContent = HINTS[cur];
+  Array.prototype.forEach.call(document.querySelectorAll('.seg'), function(b){ b.classList.toggle('on', +b.dataset.n===cur); });
+}
+(function(){
+  var segs = document.getElementById('segs');
+  for(var i=1;i<=6;i++){ (function(n){
+    var b=document.createElement('button'); b.className='seg'; b.dataset.n=n;
+    b.innerHTML=n+'<small>'+LABELS[n]+'</small>';
+    b.onclick=function(){ cur=n; location.hash=n; render(); window.scrollTo({top:0,behavior:'smooth'}); };
+    segs.appendChild(b);
+  })(i); }
+  var h = parseInt((location.hash||'').replace('#',''),10);
+  if(h>=1&&h<=6) cur=h;
+  render();
+})();
+</script>
+</body>
+</html>
