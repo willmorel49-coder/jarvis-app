@@ -15,7 +15,7 @@ import urllib.request
 
 CLIENTS_FILE = "crm/clients-data.js"
 OUTPUT_FILE = "crm/pharmacies-geo.js"
-GEOCODE_URL = "https://api-adresse.data.gouv.fr/search/csv/"
+GEOCODE_URL = "https://data.geopf.fr/geocodage/search/csv/"  # Géoplateforme IGN (remplace la BAN décommissionnée, mêmes colonnes)
 
 
 def extract_pharmacies(js_path):
