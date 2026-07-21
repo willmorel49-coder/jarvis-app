@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Intégral Pharma — Votre grossiste de première intention</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230A1430'/%3E%3Crect x='6' y='13' width='13' height='6' rx='3' fill='%23F39A1B'/%3E%3Crect x='15' y='13' width='11' height='6' rx='3' fill='%235B8CFF'/%3E%3C/svg%3E">
 <meta name="description" content="Intégral Pharma, grossiste-répartiteur français indépendant — votre partenaire de première intention, présent partout en France.">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -489,6 +490,17 @@ h1,h2,h3,h4{text-wrap:balance}
   transition:width .6s var(--ease)}
 .chrome{position:fixed;left:0;right:0;bottom:0;z-index:90;pointer-events:none;
   display:flex;justify-content:center;padding:0 14px calc(16px + env(safe-area-inset-bottom))}
+/* indice « faire défiler » : apparaît quand la diapo active a du contenu sous la ligne de flottaison */
+.scrollcue{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:85;
+  display:inline-flex;align-items:center;gap:7px;pointer-events:none;opacity:0;transition:opacity .35s var(--ease);
+  font-family:var(--mono);font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-2);
+  background:rgba(255,255,255,.88);border:1px solid var(--line-l);border-radius:999px;padding:5px 12px;
+  box-shadow:0 8px 20px -10px rgba(10,20,48,.45)}
+.scrollcue.on{opacity:1}
+.scrollcue.cue-dark{background:rgba(10,17,38,.8);border-color:rgba(255,255,255,.16);color:#EAF0FF}
+.scrollcue svg{width:11px;height:11px;animation:cueBounce 1.5s ease-in-out infinite}
+@keyframes cueBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(3px)}}
+@media(prefers-reduced-motion:reduce){.scrollcue svg{animation:none}}
 .navbar{pointer-events:auto;display:flex;align-items:center;gap:8px;
   background:#fff;border:1px solid var(--line-l);border-radius:999px;padding:7px 9px;
   box-shadow:0 18px 44px -22px rgba(10,20,48,.55)}
@@ -667,7 +679,7 @@ h1,h2,h3,h4{text-wrap:balance}
     <div class="accent3d" id="accent3d" aria-hidden="true"><canvas class="accent3d__cv" id="accentCv"></canvas><svg class="accent3d__poster" viewBox="0 0 120 120" fill="none" aria-hidden="true"><defs><linearGradient id="pcC" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F7FAFF"/><stop offset="1" stop-color="#B7C2DC"/></linearGradient><linearGradient id="pcO" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFC168"/><stop offset="1" stop-color="#E4870F"/></linearGradient></defs><g transform="rotate(-32 60 60)"><rect x="30" y="44" width="60" height="32" rx="16" fill="url(#pcC)"/><path d="M46 44H60v32H46a16 16 0 0 1 0-32z" fill="url(#pcO)"/><rect x="30" y="44" width="60" height="32" rx="16" stroke="rgba(10,20,48,.14)" stroke-width="1.4"/><ellipse cx="52" cy="54" rx="9" ry="4.4" fill="rgba(255,255,255,.55)"/></g></svg></div>
     <div class="slide__inner hero__inner">
       <div class="brandlogo3d rise" id="brandlogo3d"><img class="brandlogo" src="../assets/logo.png" alt="Intégral Pharma"></div>
-      <span class="chnum rise">01 — Invitation · Directions de groupements</span>
+      <span class="chnum rise">01 — Ouverture · Directions de groupements</span>
       <h1 class="hero__title split" data-splitting>Votre grossiste de <span class="accent">première intention.</span></h1>
       <span class="krule" aria-hidden="true"></span>
       <p class="hero__sub rise"><b>Intégral Pharma</b> — groupe de grossistes-répartiteurs français, indépendant depuis plus de vingt ans. Le partenaire de <b>première intention</b> de vos officines.</p>
@@ -717,7 +729,7 @@ h1,h2,h3,h4{text-wrap:balance}
         </div>
         <div class="promise rise"><span class="promise__k">II</span>
           <svg class="promise__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8.2 12 3 3 8.2v7.6L12 21l9-5.2z"/><path d="M3 8.2 12 13l9-4.8M12 13v8"/></svg>
-          <h3>Dès la première boîte</h3>
+          <h3>Sans seuil ni palier</h3>
           <p>L’optimisation commence à la première ligne de la première commande. <b>Pas de seuil, pas d’attente.</b></p>
         </div>
         <div class="promise rise"><span class="promise__k">III</span>
@@ -784,7 +796,7 @@ h1,h2,h3,h4{text-wrap:balance}
         <span><i class="lg o"></i>Siège — Hyères</span>
         <span><i class="lg b"></i>Agences</span>
         <span><i class="lg p"></i>Partenaire — Metz</span>
-        <span class="hint"><span class="dot"></span>Survolez un établissement pour le révéler et ses coordonnées</span>
+        <span class="hint"><span class="dot"></span>Survolez un établissement pour le repérer et afficher ses coordonnées</span>
       </div>
     </div>
   </section>
@@ -830,7 +842,7 @@ h1,h2,h3,h4{text-wrap:balance}
           <span class="chnum rise">06 — Le siège</span>
           <h2 class="chtitle split" data-splitting>Un ancrage <span class="accent">au soleil du Sud.</span></h2>
           <span class="krule" aria-hidden="true"></span>
-          <p class="chtext rise">À Hyères, notre siège avance à l’<b>énergie solaire</b> — l’image d’un groupe qui investit dans la durée, responsable et fier de ses racines françaises. Un socle solide pour tenir nos engagements, année après année, auprès de vos officines.</p>
+          <p class="chtext rise">À Hyères, notre siège fonctionne à l’<b>énergie solaire</b> — l’image d’un groupe qui investit dans la durée, responsable et fier de ses racines françaises. Un socle solide pour tenir nos engagements, année après année, auprès de vos officines.</p>
         </div>
         <div class="frame rise">
           <div class="frame__media">
@@ -908,6 +920,7 @@ h1,h2,h3,h4{text-wrap:balance}
 document.addEventListener('DOMContentLoaded', function(){
   var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var hasGSAP = !!window.gsap;
+  if(hasGSAP) gsap.config({nullTargetWarn:false});   /* console propre : pas d'alerte sur les sélections vides (diapos sans .split/.mq) */
   if(window.Splitting){ try{ Splitting({ target:'[data-splitting]', by:'chars' }); }catch(e){} }
 
   var deck   = document.getElementById('deck');
@@ -954,6 +967,21 @@ document.addEventListener('DOMContentLoaded', function(){
   });
   var dots = Array.prototype.slice.call(dotsW.children);
   var live = document.getElementById('deckLive');
+
+  /* indice de défilement (surtout mobile) : montre un chevron « ↓ » quand il reste du contenu dessous */
+  var scrollCue=document.createElement('div');
+  scrollCue.className='scrollcue'; scrollCue.setAttribute('aria-hidden','true');
+  scrollCue.innerHTML='Faire défiler<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
+  document.body.appendChild(scrollCue);
+  function updateCue(){
+    var s=slides[index], inner=s&&s.querySelector('.slide__inner');
+    var show = inner && inner.scrollHeight>inner.clientHeight+8 && (inner.scrollTop < inner.scrollHeight-inner.clientHeight-8);
+    scrollCue.classList.toggle('on',!!show);
+    scrollCue.classList.toggle('cue-dark', !!(s&&s.classList.contains('slide--dark')));
+  }
+  slides.forEach(function(s){ var inr=s.querySelector('.slide__inner'); if(inr) inr.addEventListener('scroll',updateCue,{passive:true}); });
+  window.addEventListener('resize',function(){ setTimeout(updateCue,60); },{passive:true});
+  setTimeout(updateCue,2800);   /* diapo 0 (après le rideau) */
 
   function pad(n){ return (n<10?'0':'')+n; }
   var LABELS=['Titre','Qui sommes-nous','La promesse','Le réseau','Nos valeurs','Le siège','L’invitation'];
@@ -1033,6 +1061,7 @@ document.addEventListener('DOMContentLoaded', function(){
     if(i===MAP_SLIDE)   window.dispatchEvent(new CustomEvent('deck:map',  {detail:true}));
     if(i===SIEGE_SLIDE) window.dispatchEvent(new CustomEvent('deck:video',{detail:true}));
     window.dispatchEvent(new CustomEvent('deck:enter',{detail:i}));
+    setTimeout(updateCue,90); setTimeout(updateCue,700);   /* après pose + après reveal */
   }
 
   function goTo(n){
@@ -1651,7 +1680,7 @@ document.addEventListener('DOMContentLoaded', function(){
   var coarse = window.matchMedia && window.matchMedia('(pointer:coarse)').matches;
   if(coarse){ /* pas de survol au doigt : on parle de « toucher » */
     var _cap=document.querySelector('.roster__cap'); if(_cap) _cap.innerHTML='Nos établissements <b>— touchez pour situer</b>';
-    var _hint=document.querySelector('.mapfoot .hint'); if(_hint) _hint.innerHTML='<span class="dot"></span>Touchez un établissement pour le révéler et ses coordonnées';
+    var _hint=document.querySelector('.mapfoot .hint'); if(_hint) _hint.innerHTML='<span class="dot"></span>Touchez un établissement pour le repérer et afficher ses coordonnées';
   }
   function selRow(row){ document.querySelectorAll('.estab').forEach(function(r){ r.classList.remove('is-sel'); }); if(row) row.classList.add('is-sel'); }
   document.querySelectorAll('.estab[data-i]').forEach(function(row){
