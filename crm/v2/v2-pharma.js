@@ -1223,6 +1223,8 @@
     var nGrp = hasGrp ? buildRecoCats(pid, 'groupement').cats.reduce(function (s, o) { return s + o.rows.length; }, 0) : 0;
 
     var ficheBadge = isOpso() ? ' ' + opsoBadge(pharma) : '';
+    var repriseBadge = (window.REPRISES && REPRISES[String(pid)])
+      ? ' <span class="phf-reprise" title="Le titulaire a changé récemment — moment clé pour (re)capter la relation">🔄 Reprise récente</span>' : '';
     var loc = [pharma.cp, pharma.ville].filter(function (x) { return x; }).join(' ');
     var tel = (pharma.tel == null ? '' : String(pharma.tel)).trim();
     var email = (pharma.email == null ? '' : String(pharma.email)).trim();
@@ -1236,7 +1238,7 @@
       '<div class="phf-hcard">' +
         '<div class="phf-hid">' +
           (pharma.code ? '<span class="phf-code">' + esc(String(pharma.code)) + '</span>' : '') +
-          '<div class="phf-hname">' + esc(pharma.name) + ficheBadge + '</div>' +
+          '<div class="phf-hname">' + esc(pharma.name) + ficheBadge + repriseBadge + '</div>' +
           (loc ? '<div class="phf-hloc">' + ICO('pharma', 13) + esc(loc) + '</div>' : '') +
         '</div>' +
         '<div class="phf-hkpis">' +
@@ -2944,6 +2946,7 @@
       '.phf-hcard::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:linear-gradient(180deg,var(--ip-blue),var(--ip-blue-d))}',
       '.phf-hid{min-width:180px;flex:1}',
       '.phf-hname{font-size:21px;font-weight:800;letter-spacing:-.025em;line-height:1.12;display:flex;align-items:center;gap:10px;flex-wrap:wrap}',
+      '.phf-reprise{font-size:11px;font-weight:800;letter-spacing:.01em;color:#8a4b00;background:#FFF1DB;border:1px solid #F0C98A;border-radius:999px;padding:3px 9px;white-space:nowrap}',
       '.phf-hloc{font-size:12.5px;color:var(--muted);font-weight:500;margin-top:5px;display:flex;align-items:center;gap:5px}',
       '.phf-hkpis{display:flex;gap:10px;flex-wrap:wrap}',
       '.phf-hkpi{position:relative;background:var(--card-2);border:1px solid var(--line);border-radius:var(--r-md);padding:11px 16px 12px;min-width:100px;overflow:hidden;transition:transform .18s var(--ease),box-shadow .18s var(--ease),border-color .18s var(--ease)}',
