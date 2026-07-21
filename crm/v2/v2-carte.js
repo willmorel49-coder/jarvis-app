@@ -357,11 +357,11 @@
   // Compose N pharmacies (6–10) proches, ordre optimisé, avec heure de RDV par arrêt.
   var _startTime = '09:00';            // heure de départ de la journée
   var _geoCache = {};                  // adresse -> {lat,lng,label}
-  function geocodeAddress(q, cb) {     // BAN (gratuit, sans clé)
+  function geocodeAddress(q, cb) {     // Géoplateforme IGN (gratuit, sans clé — remplace la BAN décommissionnée)
     q = (q || '').trim(); if (!q) { cb(null); return; }
     if (_geoCache[q]) { cb(_geoCache[q]); return; }
     try {
-      fetch('https://api-adresse.data.gouv.fr/search/?limit=1&q=' + encodeURIComponent(q))
+      fetch('https://data.geopf.fr/geocodage/search?limit=1&q=' + encodeURIComponent(q))
         .then(function (r) { return r.json(); })
         .then(function (j) {
           var f = j && j.features && j.features[0];

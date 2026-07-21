@@ -25,7 +25,7 @@
     _M = {}; var P = window.PROD_STATS || [];
     for (var i = 0; i < P.length; i++) {
       var p = P[i], f = p.f;
-      _M[p.c] = { p: (f === 'p_low' || f === 'p_mid' || f === 'p_high'), g: GEN.test((p.d || '').toUpperCase()) };
+      _M[p.c] = { p: (f === 'pr_low' || f === 'pr_mid' || f === 'pr_high'), g: GEN.test((p.d || '').toUpperCase()) };
     }
     return _M;
   }
@@ -216,6 +216,7 @@
   // API publique : permet à la fiche officine (v2-pharma) d'afficher l'audit d'une pharmacie.
   V2.audit = {
     sheetFor: function (pid) { ensureCss(); return buildSheet(pid || null, pidName(pid)); },
+    audit: function (pid) { return audit(pid || null); },   // chiffres bruts (annAb, rate…) pour le Diagnostic officine
     importSection: importSection,
     ensureCss: ensureCss
   };

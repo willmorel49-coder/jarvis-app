@@ -56,11 +56,11 @@
   function pharmacyId(idx) { var p = D.p[idx]; return (p[13] != null && p[13] !== '') ? p[13] : idx; }
   function commOf(p) { return p[5] ? (D.comm[p[5]] || '') : ''; }
 
-  // ── géocodage BAN (fetch + timeout AbortController 6s) ──
+  // ── géocodage Géoplateforme IGN (gratuit, sans clé — remplace la BAN décommissionnée) — fetch + timeout AbortController 6s ──
   function geocode(q, cb) {
     q = String(q == null ? '' : q).trim();
     if (!q) { cb('empty'); return; }
-    var url = 'https://api-adresse.data.gouv.fr/search/?q=' + encodeURIComponent(q) + '&limit=1';
+    var url = 'https://data.geopf.fr/geocodage/search?q=' + encodeURIComponent(q) + '&limit=1';
     var done = false, ctrl = null, timer = null;
     try { ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null; } catch (e) { ctrl = null; }
     function fin(err, ll) { if (done) return; done = true; if (timer) clearTimeout(timer); cb(err, ll); }
