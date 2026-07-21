@@ -125,7 +125,13 @@ h1,h2,h3,h4{text-wrap:balance}
   background:radial-gradient(120% 80% at 12% -6%, rgba(0,80,230,.06), transparent 46%),
              radial-gradient(90% 60% at 92% 6%, rgba(243,154,27,.07), transparent 52%),
              var(--paper);
+  perspective:1600px;
   opacity:0;visibility:hidden;pointer-events:none;overflow:hidden}
+/* arête de lumière qui balaie la jointure pendant le « cover » (spectaculaire, sur le panneau opaque) */
+.slide__edge{position:absolute;top:-4%;bottom:-4%;width:3px;z-index:5;pointer-events:none;opacity:0;left:auto;right:auto;
+  background:linear-gradient(180deg,var(--orange),var(--blue-lite) 58%,var(--blue));
+  box-shadow:0 0 26px 7px rgba(91,140,255,.5),0 0 11px 3px rgba(243,154,27,.55)}
+.slide--dark .slide__edge{box-shadow:0 0 32px 9px rgba(91,140,255,.62),0 0 13px 4px rgba(255,193,104,.6)}
 .slide.is-active{visibility:visible;pointer-events:auto}
 .slide__inner{position:relative;z-index:2;width:100%;max-width:var(--measure);max-height:100%;
   overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
@@ -1058,19 +1064,22 @@ document.addEventListener('DOMContentLoaded', function(){
     var dur   = toMap ? MO.swapDur*1.12 : MO.swapDur;
     var lead  = -dir; // bord d'attaque du panneau
 
+    var edge = toMap ? null : to.querySelector('.slide__edge');
     if(toMap){ /* SIGNATURE carte : ascension verticale plein écran, pendant l'ignition 3D */
-      gsap.set(to,  {opacity:1, zIndex:3, xPercent:0, yPercent:100, scale:1.06, transformOrigin:'50% 50%',
-                     boxShadow:'0 -46px 110px -22px rgba(0,0,0,.55)'});
+      gsap.set(to,  {opacity:1, zIndex:3, xPercent:0, yPercent:100, scale:1.08, transformOrigin:'50% 50%',
+                     boxShadow:'0 -52px 120px -20px rgba(0,0,0,.6)'});
       gsap.set(from,{opacity:1, zIndex:2, xPercent:0, yPercent:0, scale:1});
-    } else { /* cover horizontal cinématographique + ombre directionnelle */
-      gsap.set(to,  {opacity:1, zIndex:3, xPercent:100*dir, yPercent:0, scale:1.06, transformOrigin:'50% 50%',
-                     boxShadow:(lead*44)+'px 0 90px -20px rgba(6,10,24,.5)'});
+    } else { /* cover horizontal cinématographique + ombre directionnelle + arête de lumière */
+      gsap.set(to,  {opacity:1, zIndex:3, xPercent:100*dir, yPercent:0, scale:1.08, transformOrigin:'50% 50%',
+                     boxShadow:(lead*46)+'px 0 96px -18px rgba(6,10,24,.55)'});
       gsap.set(from,{opacity:1, zIndex:2, xPercent:0, yPercent:0, scale:1});
+      if(edge){ if(dir>0){ edge.style.left='0'; edge.style.right='auto'; } else { edge.style.right='0'; edge.style.left='auto'; } gsap.set(edge,{opacity:0}); }
     }
     gsap.set([to,from],{willChange:'transform,opacity'});
 
-    var inner=to.querySelector('.slide__inner'); /* lag de contenu (décrochage de profondeur) */
-    if(inner) gsap.set(inner,{xPercent: toMap?0:6*dir, yPercent: toMap?8:0, willChange:'transform'});
+    /* contenu de l'entrante : léger décrochage + PIVOT 3D (perspective portée par .slide) */
+    var inner=to.querySelector('.slide__inner');
+    if(inner) gsap.set(inner,{xPercent: toMap?0:8*dir, yPercent: toMap?10:0, rotationY: toMap?0:(-5*dir), transformOrigin:'50% 50%', willChange:'transform'});
 
     var tl=gsap.timeline({onComplete:function(){
       deactivate(from);
@@ -1079,21 +1088,24 @@ document.addEventListener('DOMContentLoaded', function(){
       gsap.set([to,from],{clearProps:'zIndex,transform,willChange,boxShadow'});
       gsap.set(to,{opacity:1});
       gsap.set(from,{opacity:0});
+      if(edge) gsap.set(edge,{clearProps:'opacity,left,right'});
       animating=false; enterHooks(n);
       if(queued!=null){ var q=queued; queued=null; if(q!==index) goTo(q); }
     }});
 
+    /* arrivée PUNCHY (expo.out : file vite puis se pose), sortante recule plus profond */
     if(toMap){
-      tl.to(to,  {yPercent:0, scale:1, duration:dur, ease:EASE.swap}, 0);
-      tl.to(from,{yPercent:-10,        duration:dur, ease:EASE.swap}, 0);
+      tl.to(to,  {yPercent:0, scale:1, duration:dur, ease:'expo.out'}, 0);
+      tl.to(from,{yPercent:-12,        duration:dur, ease:'power2.inOut'}, 0);
     } else {
-      tl.to(to,  {xPercent:0, scale:1, duration:dur, ease:EASE.swap}, 0);
-      tl.to(from,{xPercent:-18*dir,     duration:dur, ease:EASE.swap}, 0);
+      tl.to(to,  {xPercent:0, scale:1, duration:dur, ease:'expo.out'}, 0);
+      tl.to(from,{xPercent:-22*dir,     duration:dur, ease:'power2.inOut'}, 0);
+      if(edge){ tl.to(edge,{opacity:1,duration:dur*0.3,ease:'power2.out'},0).to(edge,{opacity:0,duration:dur*0.45,ease:'power2.in'},dur*0.5); }
     }
-    tl.to(from,{opacity:0.5, duration:dur*0.72, ease:'power2.in'}, 0);
-    if(inner) tl.to(inner,{xPercent:0, yPercent:0, duration:dur*1.05, ease:'power3.out', clearProps:'transform,willChange'}, dur*0.28);
+    tl.to(from,{opacity:0.42, duration:dur*0.7, ease:'power2.in'}, 0);
+    if(inner) tl.to(inner,{xPercent:0, yPercent:0, rotationY:0, duration:dur*1.05, ease:'power3.out', clearProps:'transform,willChange'}, dur*0.26);
     /* la chorégraphie du contenu démarre quand le panneau a presque fini de couvrir */
-    reveal(to, tl, dur*(toMap?0.6:0.52));
+    reveal(to, tl, dur*(toMap?0.6:0.5));
   }
   function next(){ if(index>=total-1) return; goTo(index+1); }
   function prev(){ if(index<=0) return; goTo(index-1); }
@@ -1191,6 +1203,7 @@ document.addEventListener('DOMContentLoaded', function(){
   }
 
   /* init */
+  slides.forEach(function(s){ var e=document.createElement('div'); e.className='slide__edge'; e.setAttribute('aria-hidden','true'); s.appendChild(e); });
   slides.forEach(function(s,i){ if(i!==0){ deactivate(s); s.style.opacity=0; } });
   activate(slides[0]); slides[0].style.opacity=1;
   updateChrome();
