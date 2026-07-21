@@ -251,9 +251,9 @@ h1,h2,h3,h4{text-wrap:balance}
 /* =========================================================
    03 — LA PROMESSE
    ========================================================= */
-.promises{display:grid;grid-template-columns:1fr;gap:12px;margin-top:var(--sp-6)}
+.promises{display:grid;grid-template-columns:1fr;gap:9px;margin-top:var(--sp-4)}
 @media(min-width:620px){.promises{grid-template-columns:1fr 1fr}}
-.promise{position:relative;border:1px solid var(--line-l);border-radius:var(--r-md);padding:20px 20px;
+.promise{position:relative;border:1px solid var(--line-l);border-radius:var(--r-md);padding:15px 17px;
   background:var(--card);overflow:hidden;box-shadow:var(--sh-card);
   transition:transform .35s var(--ease-out),box-shadow .35s ease,border-color .3s ease}
 .promise:hover{transform:translateY(-3px);border-color:var(--hover-blue);box-shadow:var(--sh-card-hi)}
@@ -261,7 +261,7 @@ h1,h2,h3,h4{text-wrap:balance}
 .promise__k{position:absolute;top:19px;right:20px;display:inline-flex;align-items:center;gap:8px;
   font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.14em;color:var(--ink-3)}
 .promise__k::before{content:"";width:18px;height:1px;background:var(--hair)}
-.promise__ico{width:40px;height:40px;margin-bottom:14px;color:var(--blue);
+.promise__ico{width:36px;height:36px;margin-bottom:10px;color:var(--blue);
   background:linear-gradient(180deg,rgba(0,80,230,.10),rgba(0,80,230,.03));
   border:1px solid rgba(0,80,230,.16);border-radius:var(--r-tile);padding:9px;
   transition:transform .4s var(--ease-out)}
@@ -269,14 +269,26 @@ h1,h2,h3,h4{text-wrap:balance}
 .promise p{font-size:var(--fs-body);color:var(--ink-2);margin-top:8px;padding-top:10px;line-height:1.5;
   border-top:1px solid var(--hair-2)}
 .promise p b{color:var(--ink);font-weight:700}
-.paranote{margin-top:12px;border:1px solid rgba(243,154,27,.28);border-radius:var(--r-md);padding:18px 20px;
+.paranote{margin-top:11px;border:1px solid rgba(243,154,27,.42);border-radius:var(--r-md);padding:14px 20px;
   background:linear-gradient(180deg,var(--warm),#FFFFFF);display:flex;gap:16px;align-items:flex-start;
-  box-shadow:var(--sh-card-warm)}
-.paranote__ico{flex:0 0 auto;width:40px;height:40px;color:var(--orange-deep);
-  background:#FFFFFF;border:1px solid rgba(243,154,27,.3);border-radius:var(--r-tile);padding:9px}
-.paranote h4{font-family:var(--disp);font-weight:600;font-size:15.5px;color:var(--ink);letter-spacing:-.01em;margin-bottom:5px}
+  box-shadow:var(--sh-card-hi-warm)}
+.paranote::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;
+  background:linear-gradient(180deg,var(--orange-hi),var(--orange));border-radius:var(--r-md) 0 0 var(--r-md)}
+.paranote{position:relative;overflow:hidden}
+.paranote__ico{flex:0 0 auto;width:46px;height:46px;color:var(--orange-deep);
+  background:#FFFFFF;border:1px solid rgba(243,154,27,.32);border-radius:var(--r-tile);padding:10px;box-shadow:0 6px 14px -8px rgba(243,154,27,.5)}
+.paranote__body{flex:1;min-width:0}
+.paranote__top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:4px}
+.paranote h4{font-family:var(--disp);font-weight:700;font-size:17.5px;color:var(--ink);letter-spacing:-.014em}
+.paranote__tag{font-family:var(--mono);font-size:9px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--orange-deep);
+  border:1px solid rgba(243,154,27,.5);border-radius:999px;padding:3px 9px;white-space:nowrap}
 .paranote p{font-size:13.5px;color:var(--ink-2);line-height:1.5}
 .paranote b{color:var(--ink);font-weight:700}
+.paranote__stats{display:flex;align-items:center;gap:16px;margin-top:11px;flex-wrap:wrap}
+.paranote__stats span{font-size:12.5px;color:var(--ink-2);display:inline-flex;align-items:baseline;gap:6px}
+.paranote__stats b{font-family:var(--disp);font-weight:700;font-size:20px;color:var(--orange-deep);letter-spacing:-.02em;
+  font-variant-numeric:tabular-nums}
+.paranote__stats i{width:1px;height:20px;background:rgba(243,154,27,.35);display:inline-block}
 
 /* =========================================================
    04 — LE RÉSEAU (diapo sombre plein écran)
@@ -590,6 +602,19 @@ h1,h2,h3,h4{text-wrap:balance}
 /* très petits écrans : le compteur cède la place aux puces */
 @media (max-width:380px){.count{display:none}}
 /* écrans courts : on comprime le vertical pour éviter tout scroll */
+/* portables courts : on resserre la diapo « promesse » pour que la centrale parapharmacie reste dans le champ */
+@media(max-height:900px){
+  .chtitle{margin-bottom:10px}
+  .promises{margin-top:11px;gap:8px}
+  .promise{padding:11px 15px}
+  .promise__ico{width:30px;height:30px;margin-bottom:6px}
+  .promise h3{font-size:15.5px;line-height:1.1}
+  .promise p{font-size:12px;margin-top:5px;padding-top:7px;line-height:1.4}
+  .paranote{margin-top:9px;padding:12px 18px}
+  .paranote h4{font-size:16px}
+  .paranote__stats{margin-top:6px}
+  .paranote__stats b{font-size:18px}
+}
 @media (max-height:680px){
   .slide{padding-top:40px;padding-bottom:clamp(76px,13vh,92px)}
   .wmark{font-size:clamp(120px,26vw,300px)}
@@ -749,11 +774,12 @@ h1,h2,h3,h4{text-wrap:balance}
           <p>La même liberté de choix que celle que vous défendez pour vos adhérents.</p>
         </div>
       </div>
-      <div class="paranote rise">
+      <div class="paranote paranote--feature rise">
         <svg class="paranote__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h18M5 9 7 4h10l2 5M4 9v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9"/><path d="M9 13h6"/></svg>
-        <div>
-          <h4>Et une centrale parapharmacie intégrée</h4>
-          <p>Un assortiment très large et des prix compétitifs à l’unité — un <b>levier de marge supplémentaire</b> pour vos adhérents.</p>
+        <div class="paranote__body">
+          <div class="paranote__top"><h4>Une centrale parapharmacie intégrée</h4><span class="paranote__tag">Levier de marge</span></div>
+          <p>Un assortiment complet à des prix compétitifs à l’unité — une <b>source de marge supplémentaire</b> pour vos adhérents.</p>
+          <div class="paranote__stats"><span><b>+14 000</b> références</span><i></i><span><b>+430</b> laboratoires</span></div>
         </div>
       </div>
     </div>
