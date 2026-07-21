@@ -132,7 +132,7 @@ def geocode_officines(officines):
         try:
             out = subprocess.run(
                 ['curl', '-s', '-X', 'POST', '-F', 'data=@' + inpath, '-F', 'columns=adresse',
-                 'https://api-adresse.data.gouv.fr/search/csv/', '--max-time', '120'],
+                 'https://data.geopf.fr/geocodage/search/csv/', '--max-time', '120'],
                 capture_output=True, timeout=150)
             txt = out.stdout.decode('utf-8', 'ignore')
             rd = _csv2.DictReader(io.StringIO(txt))

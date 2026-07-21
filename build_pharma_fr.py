@@ -31,7 +31,7 @@ STATS = os.path.join(ROOT, 'STATS')
 CACHE = os.path.join(ROOT, 'STATS', 'geocode_cache.json')
 ADDR_CACHE = os.path.join(ROOT, 'STATS', 'geocode_addr_cache.json')  # adresse exacte -> [lat,lng]
 OUT = os.path.join(ROOT, 'crm', 'v2', 'pharma-fr-data.js')
-BAN = 'https://api-adresse.data.gouv.fr/search/csv/'
+BAN = 'https://data.geopf.fr/geocodage/search/csv/'  # Géoplateforme IGN (remplace la BAN décommissionnée, mêmes colonnes)
 
 
 def norm(s):
