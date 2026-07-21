@@ -866,6 +866,127 @@
         '<tbody>' + body + '</tbody></table></div></div>';
   }
 
+  // ── Bloc « Diagnostic officine » (money-first, choisi par Will — variante 3) ──
+  // En tête de fiche : chiffre-choc (abandon rendu/an) + score /100 vs réseau +
+  // plan d'action + alerte ruptures + repères nationaux. 100% données réelles,
+  // s'appuie sur les calculateurs existants (V2.audit, grpBestRotations, RUPTURES).
+  var REPERES_FR = { marge: '28–29 %', panier: '~41 €', subst: '92,5 %' }; // Interfimo/Fiducial 2025, contexte
+  function ensureDiagCss() {
+    if (document.getElementById('phd-css')) return;
+    var st = document.createElement('style'); st.id = 'phd-css';
+    st.textContent =
+      '.phd{margin:0 0 14px}' +
+      '.phd-hero{position:relative;overflow:hidden;border-radius:16px;padding:22px 24px;color:#fff;background:linear-gradient(135deg,#0B2E1E,#1E9E6A);box-shadow:0 6px 22px rgba(16,19,28,.10)}' +
+      '.phd-hero .lbl{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;opacity:.85}' +
+      '.phd-hero .big{font-size:44px;font-weight:800;letter-spacing:-.03em;line-height:1;margin:6px 0 4px;font-family:var(--mono)}' +
+      '.phd-hero .big small{font-size:18px;font-weight:700;opacity:.85}' +
+      '.phd-hero .sub{font-size:12.5px;opacity:.92;max-width:540px}' +
+      '.phd-flag{position:absolute;top:16px;right:18px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.32);border-radius:13px;padding:8px 13px;text-align:center;font-weight:800;font-size:16px}' +
+      '.phd-flag small{display:block;font-weight:600;font-size:10px;opacity:.9;margin-top:1px}' +
+      '.phd-card{background:var(--card);border:1px solid var(--line);border-radius:15px;margin-top:12px;overflow:hidden}' +
+      '.phd-sh{display:flex;align-items:center;gap:11px;padding:13px 18px;border-bottom:1px solid var(--line)}' +
+      '.phd-sh .ic{width:28px;height:28px;border-radius:8px;background:var(--c-opp);color:#fff;display:grid;place-items:center;font-weight:800;font-size:14px;flex:none}' +
+      '.phd-sh h3{margin:0;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--ip-ink)}' +
+      '.phd-sh .dsc{font-size:11.5px;color:var(--muted);font-weight:500}' +
+      '.phd-act{display:flex;align-items:center;gap:13px;padding:12px 18px;border-top:1px solid var(--line);width:100%;box-sizing:border-box;background:none;border-left:0;border-right:0;text-align:left;font:inherit;cursor:default}' +
+      '.phd-act.clk{cursor:pointer}.phd-act.clk:hover{background:var(--card-2)}' +
+      '.phd-act .rk{width:24px;height:24px;border-radius:7px;background:var(--card-2);border:1px solid var(--line);display:grid;place-items:center;font-weight:800;font-size:12px;color:var(--muted);flex:none}' +
+      '.phd-act .mn{flex:1;min-width:0}.phd-act .mn b{display:block;font-weight:700;font-size:13.5px;color:var(--ip-ink)}.phd-act .mn span{font-size:12px;color:var(--muted)}' +
+      '.phd-act .mt{font-weight:800;font-size:15px;white-space:nowrap;text-align:right;font-family:var(--mono)}' +
+      '.phd-act .mt small{display:block;font-size:10px;color:var(--muted);font-weight:600;font-family:var(--font)}' +
+      '.phd-ax{display:flex;align-items:center;gap:11px;padding:8px 18px}' +
+      '.phd-ax .lab{width:150px;font-size:12px;font-weight:600;flex:none;color:var(--ip-ink)}' +
+      '.phd-ax .track{flex:1;height:7px;border-radius:9px;background:rgba(16,19,28,.07);overflow:hidden}.phd-ax .fill{height:100%;border-radius:9px}' +
+      '.phd-ax .val{width:66px;text-align:right;font-weight:800;font-size:12px;flex:none}' +
+      '.phd-rupt{display:flex;align-items:flex-start;gap:11px;padding:12px 16px;border:1px solid #F0C9A8;background:#FFF6EC;border-radius:13px;margin-top:12px}' +
+      '.phd-rupt .ic{width:30px;height:30px;border-radius:9px;background:var(--c-amber);color:#fff;display:grid;place-items:center;font-size:16px;font-weight:800;flex:none}' +
+      '.phd-rupt b{color:#a8651a}.phd-rupt .chips{display:flex;gap:5px;flex-wrap:wrap;margin-top:4px}' +
+      '.phd-rupt .chips span{font-size:10.5px;font-weight:700;background:#fff;border:1px solid #F0D9C0;color:#8a5a1a;padding:2px 7px;border-radius:999px}' +
+      '.phd-reps{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}' +
+      '.phd-rep{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:8px 12px;font-size:11px;font-weight:600;color:var(--muted)}' +
+      '.phd-rep b{display:block;color:var(--ip-ink);font-size:14px;font-weight:800}' +
+      '@media(max-width:560px){.phd-hero .big{font-size:34px}.phd-ax .lab{width:112px}.phd-flag{position:static;display:inline-block;margin-top:10px}}';
+    document.head.appendChild(st);
+  }
+  function diagColor(v) { return v >= 66 ? 'var(--c-opp)' : (v >= 40 ? 'var(--c-amber)' : '#E0556E'); }
+  function scoreWord(s) { return s >= 75 ? 'Excellent' : (s >= 55 ? 'Bon potentiel' : (s >= 35 ? 'À développer' : 'À reconquérir')); }
+  function diagnosticSection(pid, pharma, sales, rot) {
+    ensureDiagCss();
+    // ── abandon de marge rendu / an (le chiffre-choc, réel) ──
+    var aud = (V2.audit && window.WML_SALES && window.PROD_STATS) ? V2.audit.audit(pid) : null;
+    var annAb = aud ? aud.annAb : 0, rate = aud ? aud.rate : 0;
+    // ── score /100 (3 axes réels) ──
+    var nRows = (rot && rot.rows) ? rot.rows.length : 0;
+    var nOwn = (rot && rot.rows) ? rot.rows.filter(function (r) { return r.owned; }).length : 0;
+    var nGap = nRows - nOwn;
+    var penet = nRows ? Math.round(nOwn / nRows * 100) : 0;
+    var offs = (window.WML_OFFICINES || []).filter(function (o) { return o.ca > 0; });
+    var meRec = offs.find(function (o) { return String(o.id) === String(pid); });
+    var meCa = (meRec && meRec.ca) || V2.sumCA(sales) || 0;
+    var caPct = offs.length ? Math.round(offs.filter(function (o) { return o.ca < meCa; }).length / offs.length * 100) : 0;
+    var mca = monthlyCA(sales), nAct = mca.filter(function (m) { return m.ca > 0; }).length;
+    var regul = Math.min(100, Math.round(nAct / 6 * 100));
+    var score = Math.max(0, Math.min(100, Math.round(0.40 * penet + 0.35 * caPct + 0.25 * regul)));
+    // ── ruptures ANSM sur ses achats ──
+    var seen = {}, ruptList = [];
+    sales.forEach(function (s) {
+      var c = String(s.artCode || ''); if (!(s.qte > 0) || c.length < 7 || seen[c]) return;
+      var r = V2.rupture ? V2.rupture(c) : null; if (r) { seen[c] = 1; ruptList.push(c); }
+    });
+    var nRupt = ruptList.length;
+
+    // ── HERO money-first ──
+    var pidJs = esc(String(pid));
+    var hero = annAb > 0
+      ? '<div class="phd-hero"><div class="phd-flag">' + score + '<small>/100 · ' + scoreWord(score) + '</small></div>' +
+          '<div class="lbl">Ce qu\'Intégral peut lui rendre</div>' +
+          '<div class="big">≈ ' + V2.fmtEur(annAb) + '<small> / an</small></div>' +
+          '<div class="sub">via l\'abandon de marge sur le princeps — ' + V2.fmtEur(annAb / 12) + '/mois net sur facture, cumulable, sans engagement ni franco</div></div>'
+      : '<div class="phd-hero"><div class="phd-flag">' + score + '<small>/100</small></div>' +
+          '<div class="lbl">Diagnostic officine</div><div class="big">' + score + '<small> /100 · ' + scoreWord(score) + '</small></div>' +
+          '<div class="sub">comparée aux officines du réseau Intégral</div></div>';
+
+    // ── PLAN D'ACTION (trié par impact) ──
+    var acts = [];
+    if (annAb > 0) acts.push('<div class="phd-act"><div class="rk">1</div><div class="mn"><b>Marge rendue par Intégral</b>' +
+      '<span>abandon de marge, net sur facture (' + (Math.round(rate * 10) / 10).toLocaleString('fr-FR') + ' % de ses achats princeps)</span></div>' +
+      '<div class="mt" style="color:var(--c-opp)">+' + V2.fmtEur(annAb) + '<small>/ an</small></div></div>');
+    if (nGap > 0) acts.push('<button class="phd-act clk" onclick="V2.pharmaListPdf(\'' + pidJs + '\',\'reseau\')"><div class="rk">' + (acts.length + 1) + '</div>' +
+      '<div class="mn"><b>Best-sellers du réseau à pousser</b><span>gammes que le réseau prend et pas elle — liste prête en PDF</span></div>' +
+      '<div class="mt" style="color:var(--c-amber)">' + nGap + '<small>réfs</small></div></button>');
+    if (nRupt > 0) acts.push('<button class="phd-act clk" onclick="V2.go(\'infos\')"><div class="rk">' + (acts.length + 1) + '</div>' +
+      '<div class="mn"><b>Ruptures à sécuriser</b><span>produits qu\'elle achète en tension ANSM — proposer une alternative Intégral</span></div>' +
+      '<div class="mt" style="color:var(--c-amber)">' + nRupt + '<small>produits</small></div></button>');
+    var planCard = acts.length ? '<div class="phd-card"><div class="phd-sh"><div class="ic">€</div><div><h3>Plan d\'action</h3><div class="dsc">trié par impact</div></div>' +
+      (annAb > 0 ? '<div class="tot" style="margin-left:auto;font-size:12.5px;font-weight:800;color:#fff;background:var(--c-opp);padding:4px 11px;border-radius:999px">+' + V2.fmtEur(annAb) + '/an</div>' : '') +
+      '</div>' + acts.join('') + '</div>' : '';
+
+    // ── SCORE EN DÉTAIL ──
+    var axes = [
+      { lab: 'Pénétration réseau', v: penet, txt: nOwn + '/' + nRows },
+      { lab: 'Poids CA vs réseau', v: caPct, txt: (caPct >= 99 ? '1er du réseau' : caPct >= 50 ? 'top ' + Math.max(1, 100 - caPct) + '%' : caPct + 'e centile') },
+      { lab: 'Régularité d\'achat', v: regul, txt: nAct + '/6 mois' }
+    ];
+    var axHtml = axes.map(function (a) {
+      var c = diagColor(a.v);
+      return '<div class="phd-ax"><div class="lab">' + a.lab + '</div><div class="track"><div class="fill" style="width:' + a.v + '%;background:' + c + '"></div></div><div class="val" style="color:' + c + '">' + a.txt + '</div></div>';
+    }).join('');
+    var scoreCard = '<div class="phd-card"><div class="phd-sh"><div class="ic" style="background:var(--ip-blue)">%</div><div><h3>Son score en détail</h3><div class="dsc">vs les officines du réseau Intégral</div></div></div><div style="padding:6px 0">' + axHtml + '</div></div>';
+
+    // ── RUPTURES (bandeau) ──
+    var ruptBand = nRupt > 0 ? '<div class="phd-rupt"><div class="ic">!</div><div><b>' + nRupt + ' produit' + (nRupt > 1 ? 's' : '') + ' qu\'elle achète ' + (nRupt > 1 ? 'sont' : 'est') + ' en tension ANSM.</b>' +
+      '<div style="font-size:12px;color:var(--muted)">À sécuriser / proposer une alternative Intégral en stock.</div></div></div>' : '';
+
+    // ── REPÈRES nationaux (contexte) ──
+    var reps = '<div class="phd-reps">' +
+      '<div class="phd-rep">Marge brute moyenne<b>' + REPERES_FR.marge + '</b></div>' +
+      '<div class="phd-rep">Panier moyen<b>' + REPERES_FR.panier + '</b></div>' +
+      '<div class="phd-rep">Substitution nationale<b>' + REPERES_FR.subst + '</b></div>' +
+      '</div><div style="font-size:10.5px;color:var(--muted);margin-top:6px">Repères marché France (Interfimo/Fiducial 2025) — contexte, pas la performance de l\'officine.</div>';
+
+    return '<div class="phd">' + hero + planCard + ruptBand + scoreCard + reps + '</div>';
+  }
+
   function activitySection(sales, marge, ca) {
     // 1. CA par mois — LE graphe, visible dès l'arrivée (plus de repli).
     // Présentation « Launcher » : carte calme, mois record en accent, repères
@@ -1225,6 +1346,7 @@
       '</div>';
     })();
     var apercu =
+      (function () { try { return diagnosticSection(pid, pharma, sales, rot); } catch (e) { return ''; } })() +
       dash +
       listing +
       generiqueurSec +
