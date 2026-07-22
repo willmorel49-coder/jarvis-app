@@ -16,7 +16,7 @@
   // Listes PRÉCISES (pas de « Autre » : le bouton « ➕ préciser… » ajoute une valeur exacte au besoin).
   // Intégral Pharma en tête (savoir si l'officine travaille déjà avec nous), puis les majors nationaux,
   // puis les grossistes/short-liners régionaux concurrents (Ouest surtout). Complétable via « ➕ préciser… ».
-  var GROS = ['Intégral Pharma', 'OCP', 'CERP Rouen', 'CERP RRM', 'CERP Bretagne Atlantique', 'Alliance Healthcare', 'Phoenix Pharma', 'Cophana', 'Sagitta', 'Welcoop', 'Giphar Répartition', 'Anjou Santé', 'Mezeghel', 'Epsilon', 'Pharmest', 'Axipharm'];
+  var GROS = ['Intégral Pharma', 'OCP', 'CERP Rouen', 'CERP RRM', 'CERP Bretagne Atlantique', 'Alliance Healthcare', 'Phoenix Pharma', 'Cophana', 'Sagitta', 'Sogiphar', 'CIP Pharma', 'Welcoop', 'Giphar Répartition', 'Anjou Santé', 'Mezegel', 'Epsilon', 'Pharmest', 'Axipharm'];
   var GEN = ['Biogaran', 'Viatris (Mylan)', 'EG Labo', 'Teva', 'Sandoz', 'Zentiva', 'Arrow', 'Cristers', 'Zydus', 'Bouchara-Recordati', 'Sun Pharma', 'Substipharm'];
   var LGO = ['Winpharma', 'LGPI', 'Smart Rx', 'Léo', 'Pharmaland', 'Caduciel', 'Péripharm', 'Pharmavitale', 'Santé Cegedim'];
   var ROBOT = ['Aucun', 'Riedl', 'BD Rowa', 'Mekapharm', 'Meditech', 'Sinteco', 'Willach', 'Tecny-Farma', 'Apostore', 'Omnicell'];
@@ -33,10 +33,13 @@
     { k: 'lgo', l: 'Logiciel (LGO)', opts: LGO },
     { k: 'robot', l: 'Robot / automate', opts: ROBOT },
     { k: 'tel_perso', l: 'Tél perso (titulaire)', text: true },
+    { k: 'cle_crypto', l: 'Clé de cryptage', text: true },
     { k: 'autre', l: 'Autre info', text: true }
   ];
-  // Coordonnées éditables (pour compléter une officine, prospect compris). Stockées à part (scope 'coord').
+  // Coordonnées éditables (pour compléter/corriger une officine, prospect compris). Stockées à part (scope 'coord').
   var COORD = [
+    { k: 'nom', l: 'Nom de la pharmacie' },
+    { k: 'groupement', l: 'Groupement' },
     { k: 'titulaire', l: 'Titulaire' },
     { k: 'tel', l: 'Téléphone' },
     { k: 'email', l: 'Email' },
