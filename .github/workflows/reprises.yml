@@ -1,0 +1,40 @@
+name: Reprises récentes (FINESS+)
+
+# Robot GRATUIT : télécharge le flux FINESS+ (ANS) des établissements, détecte les
+# officines dont l'entité juridique a changé (= reprise/rachat récent) et committe
+# crm/v2/reprises.json (badge « Reprise récente » sur la fiche + la carte).
+# Aucune clé, aucun coût. Mensuel (FINESS+ est actualisé ~mensuellement).
+
+on:
+  schedule:
+    - cron: '41 4 3 * *'    # le 3 de chaque mois ~06h41 Paris (minute non-ronde = plus fiable)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: reprises
+  cancel-in-progress: false
+
+jobs:
+  reprises:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Détecter les reprises (diff entité juridique FINESS+)
+        run: python3 generate_reprises.py
+      - name: Committer si changement
+        run: |
+          if git diff --quiet -- crm/v2/reprises.json crm/v2/_finess_ej_snapshot.json; then
+            echo "Pas de changement."
+          else
+            git config user.name  "JARVIS reprises"
+            git config user.email "actions@users.noreplace.github.com"
+            git add crm/v2/reprises.json crm/v2/_finess_ej_snapshot.json
+            git commit -m "data(reprises): diff FINESS+ $(date -u +%Y-%m-%d)"
+            git push
+          fi
