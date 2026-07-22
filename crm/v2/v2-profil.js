@@ -38,7 +38,6 @@
   ];
   // Coordonnées éditables (pour compléter/corriger une officine, prospect compris). Stockées à part (scope 'coord').
   var COORD = [
-    { k: 'nom', l: 'Nom de la pharmacie' },
     { k: 'groupement', l: 'Groupement' },
     { k: 'titulaire', l: 'Titulaire' },
     { k: 'tel', l: 'Téléphone' },
@@ -179,9 +178,15 @@
     if (!V2.profil.loadScope) { if (cb) cb(); return; }
     V2.profil.loadScope('override').then(function (list) {
       var byId = {}; (V2.pharmacies || []).forEach(function (p) { byId[String(p.id)] = p; });
+      V2.nameOvr = V2.nameOvr || {}; V2.promoted = V2.promoted || {};
       (list || []).forEach(function (o) {
-        var p = byId[String(o.sid)]; if (!p || !o.data) return;
+        if (!o || !o.data) return;
+        var sid = String(o.sid);
+        if (o.data.nom) V2.nameOvr[sid] = o.data.nom;   // nom corrigé (sync, lu partout au rendu)
+        if (o.data.promu) V2.promoted[sid] = true;      // prospect passé en client
+        var p = byId[sid]; if (!p) return;
         if (o.data.groupement) p.groupement = o.data.groupement;
+        if (o.data.nom) p.name = o.data.nom;
       });
       if (cb) cb();
     });
