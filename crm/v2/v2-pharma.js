@@ -1148,6 +1148,28 @@
   }
   // Fiche d'une officine NON cliente (prospect) : coordonnées + infos + notes éditables,
   // sauvegardées comme pour un futur client (Supabase, même id que la carte).
+  // ── Nom d'officine corrigé à la main (bouton Valider) — appliqué partout via V2.nameOvr ──
+  function nameOf(pid, orig) { return (V2.nameOvr && V2.nameOvr[String(pid)]) || orig || ''; }
+  function nameEditor(pid, currentName) {
+    var idp = 'nm-' + String(pid).replace(/[^a-zA-Z0-9]/g, '');
+    return '<div class="phf-nmedit"><span class="phf-nmedit-l">Corriger le nom de la pharmacie</span>' +
+      '<div class="phf-nmedit-row"><input id="' + idp + '" class="phf-nmedit-in" type="text" value="' + esc(currentName || '') + '" placeholder="Nom de la pharmacie"></input>' +
+      '<button class="phf-nmedit-btn" onclick="V2.saveOfficineName(\'' + esc(String(pid)) + '\',\'' + idp + '\')">Valider</button></div></div>';
+  }
+  V2.saveOfficineName = function (pid, inputId) {
+    var el = document.getElementById(inputId); if (!el) return;
+    if (!V2.user) { if (V2.toast) V2.toast('Connecte-toi pour modifier le nom'); return; }
+    var val = (el.value || '').trim();
+    V2.nameOvr = V2.nameOvr || {};
+    if (val) V2.nameOvr[String(pid)] = val; else delete V2.nameOvr[String(pid)];
+    var ph = (V2.pharmacies || []).find(function (p) { return String(p.id) === String(pid); });
+    if (ph && val) ph.name = val;
+    if (window.PHARMA_FR) { var pt = pharmaFrById(pid); if (pt && val) pt[6] = val; }
+    if (V2.profil && V2.profil.saveOverride) V2.profil.saveOverride(pid, { nom: val });
+    if (V2.toast) V2.toast(val ? 'Nom mis à jour ✓' : 'Nom réinitialisé');
+    V2.render();
+  };
+
   function renderProspectFiche(root, pid) {
     if (!window.PHARMA_FR) {   // base nationale pas encore chargée → lazy-load puis re-rendu
       root.innerHTML = V2.topbar({ back: true, backTo: 'pharma', backLabel: 'Officines' }) +
@@ -1171,13 +1193,14 @@
           '<div class="v2-prospect-top">' +
             '<div class="v2-pharma-pin" style="background:linear-gradient(150deg,#0057FF,#0034A0)">' + (V2.ICO ? V2.ICO('pharma', 22) : '') + '</div>' +
             '<div style="flex:1;min-width:0">' +
-              '<div class="v2-prospect-n">' + esc(p[6] || p[10] || 'Pharmacie') + '</div>' +
+              '<div class="v2-prospect-n">' + esc(nameOf(pid, p[6] || p[10]) || 'Pharmacie') + '</div>' +
               '<div class="v2-prospect-a">' + esc(ville) + (cp ? ' · ' + esc(cp) : '') + '</div>' +
               '<div class="v2-prospect-badges">' + badge(seg, 'pr') + badge(grp) + badge(uga ? 'UGA ' + uga : '') + '</div>' +
             '</div>' +
           '</div>' +
           '<p class="v2-prospect-note">Officine non cliente — complète ses coordonnées, infos et notes pour la suivre comme un futur client. Tout est sauvegardé.</p>' +
         '</div>' +
+        '<div class="v2-card" style="padding:12px 16px 14px">' + nameEditor(pid, p[6] || '') + '</div>' +
         (V2.profil ? V2.profil.coordSection(pid, seed) : '') +
         (V2.profil ? V2.profil.section('client', pid) : '') +
         (V2.notes ? V2.notes.section('client', pid) : '') +
@@ -1238,7 +1261,7 @@
       '<div class="phf-hcard">' +
         '<div class="phf-hid">' +
           (pharma.code ? '<span class="phf-code">' + esc(String(pharma.code)) + '</span>' : '') +
-          '<div class="phf-hname">' + esc(pharma.name) + ficheBadge + repriseBadge + '</div>' +
+          '<div class="phf-hname">' + esc(nameOf(pid, pharma.name)) + ficheBadge + repriseBadge + '</div>' +
           (loc ? '<div class="phf-hloc">' + ICO('pharma', 13) + esc(loc) + '</div>' : '') +
         '</div>' +
         '<div class="phf-hkpis">' +
@@ -1334,7 +1357,7 @@
         '</select></label>';
       return '<div class="ph-section">' +
         sectionHead('Infos officine', 'CIP, groupement, grossistes, génériqueurs, robot…', 'profil', open) +
-        (open ? (cipLine + grpEdit + V2.profil.section('client', pid)) : '') +
+        (open ? (cipLine + nameEditor(pid, nameOf(pid, pharma.name)) + grpEdit + V2.profil.section('client', pid)) : '') +
       '</div>';
     })() : '';
     // CA par génériqueur (Biogaran, Zentiva, EG…) — table BDPM ; section repliable
@@ -2947,6 +2970,11 @@
       '.phf-hid{min-width:180px;flex:1}',
       '.phf-hname{font-size:21px;font-weight:800;letter-spacing:-.025em;line-height:1.12;display:flex;align-items:center;gap:10px;flex-wrap:wrap}',
       '.phf-reprise{font-size:11px;font-weight:800;letter-spacing:.01em;color:#8a4b00;background:#FFF1DB;border:1px solid #F0C98A;border-radius:999px;padding:3px 9px;white-space:nowrap}',
+      '.phf-nmedit-l{display:block;font-size:11px;font-weight:700;color:var(--muted);margin-bottom:5px}',
+      '.phf-nmedit-row{display:flex;gap:8px;align-items:center}',
+      '.phf-nmedit-in{flex:1;min-width:0;border:1px solid var(--line-strong);border-radius:10px;padding:9px 11px;font:inherit;font-size:13.5px;color:var(--ip-ink);background:var(--card-2)}',
+      '.phf-nmedit-btn{flex:none;border:none;border-radius:10px;padding:9px 16px;font:inherit;font-weight:800;font-size:13px;color:#fff;background:var(--ip-blue);cursor:pointer;min-height:40px}',
+      '.phf-nmedit-btn:hover{filter:brightness(1.06)}',
       '.phf-hloc{font-size:12.5px;color:var(--muted);font-weight:500;margin-top:5px;display:flex;align-items:center;gap:5px}',
       '.phf-hkpis{display:flex;gap:10px;flex-wrap:wrap}',
       '.phf-hkpi{position:relative;background:var(--card-2);border:1px solid var(--line);border-radius:var(--r-md);padding:11px 16px 12px;min-width:100px;overflow:hidden;transition:transform .18s var(--ease),box-shadow .18s var(--ease),border-color .18s var(--ease)}',
