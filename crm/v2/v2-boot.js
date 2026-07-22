@@ -7,6 +7,18 @@
   'use strict';
 
   var V2 = window.V2 = window.V2 || {};
+
+  // Officines en « reprise récente » (changement d'entité juridique FINESS+) — robot mensuel.
+  // JSON fetché frais (cache-buster + no-store, comme infos-jour) → auto-actualisé sans re-déploiement.
+  window.REPRISES = window.REPRISES || {};
+  (function () {
+    var day = new Date().toISOString().slice(0, 10);
+    fetch('reprises.json?d=' + day, { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : {}; })
+      .then(function (j) { window.REPRISES = j || {}; if (V2.render && V2.route) V2.render(); })
+      .catch(function () {});
+  })();
+
   V2.user = null;
   V2.pharmacies = [];
   V2.imports = [];

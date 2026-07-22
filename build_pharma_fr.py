@@ -444,39 +444,6 @@ def main():
         fh.write('// segmentation client/prospect, commercial réseau. build_pharma_fr.py.\n')
         fh.write('// Chaque point: [lat,lng,ugaIdx,grpIdx,segIdx,commIdx,nom,ville,cp,tel,titulaire,email,ca,id]\n')
         fh.write('window.PHARMA_FR=' + json.dumps(data, ensure_ascii=False, separators=(',', ':')) + ';\n')
-
-    # ── Badge « reprise récente » : diff du titulaire entre 2 exports (dormant tant qu'il n'y a pas de snapshot précédent). ──
-    # Un changement de titulaire = reprise/succession → nouveau patron qui rechoisit ses fournisseurs = déclencheur de vente.
-    try:
-        SNAP = os.path.join(STATS, 'titulaires_snapshot.json')
-        REPR_OUT = os.path.join(ROOT, 'crm', 'v2', 'reprises-data.js')
-        cur = {}
-        for p in P:
-            _id, tit = str(p[13] or ''), name_key(p[10])   # id, titulaire normalisé
-            if _id and tit:
-                cur[_id] = tit
-        prev = {}
-        if os.path.exists(SNAP):
-            try:
-                prev = json.load(open(SNAP, encoding='utf-8'))
-            except Exception:
-                prev = {}
-        mois = time.strftime('%Y-%m')
-        reprises = {}
-        if prev:   # rien à comparer au 1er run → reprises-data.js reste vide
-            for _id, tit in cur.items():
-                old = prev.get(_id)
-                if old and old != tit:   # titulaire différent d'un export à l'autre
-                    reprises[_id] = mois
-        with open(REPR_OUT, 'w', encoding='utf-8') as rh:
-            rh.write('// Officines dont le titulaire a changé entre 2 exports (= reprise récente). build_pharma_fr.py.\n')
-            rh.write('// {officineId: "YYYY-MM"}. Vide au 1er run (pas de snapshot à comparer).\n')
-            rh.write('window.REPRISES=' + json.dumps(reprises, ensure_ascii=False, separators=(',', ':')) + ';\n')
-        json.dump(cur, open(SNAP, 'w', encoding='utf-8'), ensure_ascii=False)
-        print('   reprises : %d titulaire(s) changé(s) depuis le dernier export -> reprises-data.js' % len(reprises))
-    except Exception as e:
-        print('   [reprises] ignoré (%s)' % e)
-
     nGrpCovered = sum(1 for p in P if inv(grps)[p[3]] != '—')
     print('OK ->', OUT, '(%.1f Mo, %d pts, %d clients, %d adresses exactes, %d UGA, %d comm, %d dropped)'
           % (os.path.getsize(OUT) / 1048576.0, len(P), nClients, nExact, len(ugas), len(comms) - 1, dropped))
