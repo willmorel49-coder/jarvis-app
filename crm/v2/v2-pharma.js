@@ -1163,7 +1163,7 @@
     var ville = p[7] || '', cp = p[8] || '', seg = D.seg[p[4]] || 'Prospect';
     var grp = (D.grp[p[3]] && D.grp[p[3]] !== '—') ? D.grp[p[3]] : '', uga = D.uga[p[2]] || '';
     var q = encodeURIComponent((p[6] || '') + ' ' + ville + ' ' + cp);
-    var seed = { titulaire: p[10] || '', tel: p[9] || '', email: p[11] || '', adresse: '' };
+    var seed = { nom: p[6] || '', groupement: grp || '', titulaire: p[10] || '', tel: p[9] || '', email: p[11] || '', adresse: '' };
     var badge = function (t, cls) { return t ? '<span class="v2-chip' + (cls ? ' ' + cls : '') + '">' + esc(t) + '</span>' : ''; };
     root.innerHTML = V2.topbar({ back: true, backTo: 'pharma', backLabel: 'Officines' }) +
       '<div class="v2-wrap v2-prospect">' +

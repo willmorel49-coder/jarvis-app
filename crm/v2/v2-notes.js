@@ -67,11 +67,15 @@
       var finalTxt = '';
       rec.onstart = function () { _rec = rec; _recBtn = btn; btn.classList.add('rec'); btn.title = 'Arrêter la dictée'; if (V2.toast) V2.toast('Dictée en cours — parle, puis re-touche le micro'); };
       rec.onresult = function (e) {
-        var interim = '';
-        for (var i = e.resultIndex; i < e.results.length; i++) {
+        // On RECONSTRUIT le texte depuis l'ensemble des résultats à chaque événement
+        // (idempotent) au lieu d'accumuler avec += : sur mobile, resultIndex est peu
+        // fiable et l'accumulation répétait la même phrase 4-5 fois.
+        var finalT = '', interim = '';
+        for (var i = 0; i < e.results.length; i++) {
           var t = e.results[i][0].transcript;
-          if (e.results[i].isFinal) finalTxt += t + ' '; else interim += t;
+          if (e.results[i].isFinal) finalT += t + ' '; else interim += t;
         }
+        finalTxt = finalT;
         ta.value = (base + finalTxt + interim).replace(/\s+/g, ' ').replace(/^\s/, '');
       };
       rec.onerror = function (ev) {
