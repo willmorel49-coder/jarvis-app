@@ -312,6 +312,45 @@
       '<div class="ap-sub">' + (_generData.meta ? _generData.meta.nAvecGenerique : '') + ' groupes avec générique (BDPM) — les princeps que TU achètes encore et qui ont un générique dispo, top 12 par volume</div></div></div>' + rows + '</div>';
   }
 
+  // ═══ VEILLE ANSM DISPONIBILITÉS (robot quotidien) : ruptures/tensions + DATE DE RETOUR ═══
+  var _ansmState = 0, _ansmData = null;
+  var MOIS_L = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+  function ensureAnsm() {
+    if (_ansmData || _ansmState) return;
+    _ansmState = 1;
+    try {
+      var day = new Date().toISOString().slice(0, 10);
+      fetch('ansm-dispo.json?d=' + day, { cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) { _ansmData = j || {}; _ansmState = 2; try { V2.render(); } catch (e) {} })
+        .catch(function () { _ansmState = 2; });
+    } catch (e) { _ansmState = 2; }
+  }
+  function retourLabel(r) {
+    if (!r) return '';
+    if (!r.mois) return '' + r.annee;
+    if (r.approx === 'trimestre') return 'T' + (Math.floor((r.mois - 1) / 3) + 1) + ' ' + r.annee;
+    var pre = (r.approx === 'début' || r.approx === 'fin' || r.approx === 'mi') ? r.approx + ' ' : '';
+    return pre + MOIS_L[r.mois - 1] + ' ' + r.annee;
+  }
+  function ansmCard() {
+    if (!_ansmData) return '<div class="v2-card ap-card"><div class="ap-hd"><div class="ap-ic" style="background:var(--c-amber)">!</div><div><h3>Ruptures &amp; retours ANSM</h3><div class="ap-sub">chargement des signalements ANSM…</div></div></div></div>';
+    var items = (_ansmData.items || []).filter(function (i) { return i.retour && i.retour.iso; });
+    items.sort(function (a, b) { return (a.retour.annee * 100 + (a.retour.mois || 13)) - (b.retour.annee * 100 + (b.retour.mois || 13)); });
+    var rows = items.slice(0, 15).map(function (i) {
+      var rup = /upture/.test(i.st);
+      return '<div class="ap-row"><div class="ap-nm">' + esc(cap((i.spec || '').toLowerCase())) + (i.dci ? '<small>' + esc(i.dci) + '</small>' : '') + '</div>' +
+        '<div class="ap-mini">' + (rup ? '<span class="ap-tag ru">rupture</span>' : '<span class="ap-tag" style="color:#a8651a;background:#FFF8EC;border:1px solid #F0DCA8">tension</span>') + '</div>' +
+        '<div class="ap-st ok">retour ' + retourLabel(i.retour) + '</div></div>';
+    }).join('') || '<div class="ap-empty">Aucune date de retour renseignée pour le moment.</div>';
+    var m = _ansmData.meta || {}, bs = m.byStatut || {}, rupN = 0, tenN = 0;
+    Object.keys(bs).forEach(function (k) { if (/upture/.test(k)) rupN += bs[k]; if (/ension/.test(k)) tenN += bs[k]; });
+    return '<div class="v2-card ap-card"><div class="ap-hd"><div class="ap-ic" style="background:var(--c-amber)">!</div><div><h3>Ruptures &amp; retours ANSM</h3>' +
+      '<div class="ap-sub">' + (m.n || 0) + ' signalements actifs · ' + rupN + ' ruptures · ' + tenN + ' tensions · <b>' + (m.nDates || 0) + ' avec date de retour prévue</b> — top 15 par échéance</div></div></div>' +
+      rows +
+      '<div class="ap-foot" style="padding:10px 16px 12px;margin:0">Date de retour = champ « remise à disposition prévue » des fiches ANSM (approximatif, ~1 réf sur 3 renseignée). Source unique gratuite, MAJ quotidienne — personne d\'autre ne l\'agrège.</div></div>';
+  }
+
   V2.pages.appro = {
     render: function (root) {
       ensureCss();
@@ -325,12 +364,14 @@
 
       ensureEtab();   // charge en différé le stock par établissement (gros fichier NR)
       ensureGener();  // charge la veille génériques (BDPM, robot mensuel)
+      ensureAnsm();   // charge la veille ANSM disponibilités + dates de retour (robot quotidien)
       // ── Cockpit réassort (crash-safe : ne casse jamais la page si un flux manque) ──
-      var kpiBand = '', reaCard = '', rosCard = '', radarHtml = '', etabHtml = '', basculesHtml = '';
+      var kpiBand = '', reaCard = '', rosCard = '', radarHtml = '', etabHtml = '', basculesHtml = '', ansmHtml = '';
       try {
         radarHtml = radarSection(window.WML_SALES && window.STOCK_IP ? reassort() : []);
         etabHtml = etabSection();
         basculesHtml = basculesCard();
+        ansmHtml = ansmCard();
         if (window.WML_SALES && window.STOCK_IP) {
           var h = stockHealth();
           kpiBand = '<div class="ap-kpis">' +
@@ -414,6 +455,7 @@
           radarHtml +
           '<div class="ap-sec">Piloter les achats</div>' +
           reaCard +
+          ansmHtml +
           basculesHtml +
           etabHtml +
           rosCard +

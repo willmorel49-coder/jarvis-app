@@ -1,0 +1,40 @@
+name: Veille appro · ANSM disponibilités + dates de retour
+
+# Robot GRATUIT : scrape la page ANSM « Disponibilités des médicaments » (rendue
+# serveur, sans clé) → ~285 signalements (tension/rupture/remise/arrêt) + suit les
+# fiches pour extraire la DATE DE RETOUR prévue (« courant septembre 2026 »…).
+# Écrit crm/v2/ansm-dispo.json. MAJ quotidienne. Aucune clé, aucun coût.
+
+on:
+  schedule:
+    - cron: '41 5 * * *'   # tous les jours (la liste ANSM bouge quotidiennement)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ansm-dispo
+  cancel-in-progress: false
+
+jobs:
+  ansm-dispo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Recalculer les disponibilités ANSM
+        run: python3 generate_ansm_dispo.py
+      - name: Committer si changement
+        run: |
+          if git diff --quiet -- crm/v2/ansm-dispo.json; then
+            echo "Pas de changement (liste ANSM inchangée)."
+          else
+            git config user.name  "JARVIS copilote"
+            git config user.email "actions@users.noreplace.github.com"
+            git add crm/v2/ansm-dispo.json
+            git commit -m "data(veille): ANSM disponibilités $(date -u +%Y-%m-%d)"
+            git push
+          fi
