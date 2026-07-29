@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Intégral Pharma — Minuit & Cuivre</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Instrument+Sans:wght@400;500&family=Fraunces:ital,opsz@1,9..144&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0B1220; --ink2:#0E1526; --deep:#070C16; --copper:#C67B4A; --copper2:#E0A56B;
+    --ivory:#F1ECE4; --mut:rgba(241,236,228,.6); --line:rgba(224,165,107,.26);
+    --disp:'Space Grotesk',system-ui,sans-serif; --sans:'Instrument Sans',system-ui,sans-serif; --serif:'Fraunces',serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{background:var(--deep);color:var(--ivory);font-family:var(--sans);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 26px}
+  a{color:inherit;text-decoration:none}
+
+  nav{display:flex;align-items:center;justify-content:space-between;padding:22px 26px;max-width:1180px;margin:0 auto;position:relative;z-index:5}
+  .brand{display:flex;align-items:center;gap:11px;font-family:var(--disp);font-weight:600;font-size:18px;letter-spacing:.01em}
+  .brand .dot{width:9px;height:9px;border-radius:50%;background:var(--copper);box-shadow:0 0 14px var(--copper)}
+  .navlinks{display:flex;gap:28px;font-size:14px;color:var(--mut)}
+  .navlinks a:hover{color:var(--ivory)}
+  .navcta{border:1px solid var(--line);border-radius:8px;padding:9px 18px;font-size:13.5px;color:var(--copper2);transition:.3s}
+  .navcta:hover{background:rgba(224,165,107,.1);border-color:var(--copper)}
+  @media(max-width:760px){.navlinks{display:none}}
+
+  .hero{position:relative;min-height:90vh;display:flex;align-items:center;overflow:hidden}
+  #hero-bg{position:absolute;inset:0;background:linear-gradient(160deg,#0E1526 0%,#0B1220 45%,#070C16 100%)}
+  .glowc{position:absolute;left:-10%;top:20%;width:60vw;height:60vw;max-width:760px;max-height:760px;background:radial-gradient(circle,rgba(198,123,74,.16),transparent 62%);pointer-events:none;z-index:2}
+  .vign{position:absolute;inset:0;background:radial-gradient(120% 90% at 20% 30%,transparent,rgba(7,12,22,.55) 78%,var(--deep));z-index:2}
+  .hero .inner{position:relative;z-index:3;padding:60px 0;max-width:860px}
+  .kicker{display:inline-flex;align-items:center;gap:12px;font-family:var(--disp);font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--copper2);margin-bottom:28px}
+  .kicker::before{content:"";width:30px;height:1px;background:var(--copper)}
+  h1{font-family:var(--disp);font-weight:600;font-size:clamp(42px,7.4vw,90px);line-height:1.02;letter-spacing:-.03em;color:var(--ivory)}
+  h1 span{color:var(--copper2)}
+  .sub{max-width:540px;color:var(--mut);font-size:clamp(15px,2.1vw,18px);line-height:1.6;margin-top:26px}
+  .sub b{color:var(--ivory);font-weight:500}
+  .promise{font-family:var(--serif);font-style:italic;font-size:19px;color:var(--copper2);margin-top:16px}
+  .cta{margin-top:34px;display:flex;gap:14px;flex-wrap:wrap}
+  .btn{display:inline-flex;align-items:center;gap:11px;font-size:15px;padding:14px 26px;border-radius:9px;transition:transform .3s,box-shadow .3s}
+  .btn.p{background:linear-gradient(180deg,var(--copper2),var(--copper));color:#1a1008;font-weight:600;box-shadow:0 10px 30px rgba(198,123,74,.24)}
+  .btn.p:hover{transform:translateY(-2px);box-shadow:0 16px 40px rgba(198,123,74,.36)}
+  .btn.g{border:1px solid var(--line);color:var(--ivory)}
+  .btn.g:hover{border-color:var(--copper);background:rgba(224,165,107,.08)}
+
+  .stats{position:relative;z-index:3;border-top:1px solid var(--line)}
+  .stats .row{display:grid;grid-template-columns:repeat(3,1fr);padding:32px 0}
+  .stats .row>div{padding-right:20px}
+  .stat .v{font-family:var(--disp);font-weight:600;font-size:clamp(28px,4.4vw,42px);letter-spacing:-.02em}
+  .stat .v i{font-style:normal;color:var(--copper2)}
+  .stat .k{font-family:var(--disp);font-size:11.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--mut);margin-top:8px}
+  @media(max-width:640px){.stats .row{grid-template-columns:1fr;gap:20px}}
+
+  .vals{padding:96px 0}
+  .vals .lab{font-family:var(--disp);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--copper2);margin-bottom:14px}
+  .vals h2{font-family:var(--disp);font-weight:600;font-size:clamp(26px,4.4vw,44px);letter-spacing:-.02em;max-width:17ch;line-height:1.1;margin-bottom:44px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+  @media(max-width:760px){.grid3{grid-template-columns:1fr}}
+  .card{border:1px solid var(--line);border-radius:14px;padding:28px;background:linear-gradient(180deg,rgba(14,21,38,.7),rgba(11,18,32,.35));transition:transform .35s,border-color .35s}
+  .card:hover{transform:translateY(-4px);border-color:var(--copper)}
+  .card .n{font-family:var(--disp);color:var(--copper2);font-size:13px;letter-spacing:.1em}
+  .card h3{font-family:var(--disp);font-size:22px;font-weight:600;margin:12px 0 9px}
+  .card p{color:var(--mut);font-size:14.5px;line-height:1.6}
+  footer{border-top:1px solid var(--line);padding:44px 0;color:var(--mut);font-family:var(--disp);font-size:12px;text-align:center}
+  .reveal{opacity:0;transform:translateY(24px);transition:opacity .8s,transform .8s}
+  .reveal.in{opacity:1;transform:none}
+  @media(prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}}
+</style>
+</head>
+<body>
+  <nav>
+    <div class="brand"><span class="dot"></span>Intégral <span style="color:var(--mut);font-weight:400;font-size:12.5px;letter-spacing:.16em;text-transform:uppercase;align-self:center">Pharma</span></div>
+    <div class="navlinks"><a href="#">Le groupement</a><a href="#">Nos valeurs</a><a href="#">Offilog</a><a href="#">Nous rejoindre</a></div>
+    <a class="navcta" href="#">Espace adhérent →</a>
+  </nav>
+
+  <header class="hero">
+    <div id="hero-bg"></div>
+    <div class="glowc"></div>
+    <div class="vign"></div>
+    <div class="wrap inner">
+      <div class="kicker">Un partenaire, pas un fournisseur</div>
+      <h1>Plus de marge,<br><span>nette sur facture.</span></h1>
+      <p class="sub"><b>Groupement de pharmaciens indépendants</b>, à couverture nationale. Toute la parapharmacie. Ni franco imposé, ni engagement.</p>
+      <p class="promise">« Votre projet, on le porte. »</p>
+      <div class="cta">
+        <a class="btn p" href="#">Découvrir le groupement</a>
+        <a class="btn g" href="#">Rencontrer l'équipe</a>
+      </div>
+    </div>
+  </header>
+
+  <section class="stats"><div class="wrap"><div class="row">
+    <div class="stat"><div class="v">+14 <i>000</i></div><div class="k">Références Offilog</div></div>
+    <div class="stat"><div class="v">100<i>%</i></div><div class="k">Indépendants</div></div>
+    <div class="stat"><div class="v"><i>Nationale</i></div><div class="k">Couverture</div></div>
+  </div></div></section>
+
+  <section class="vals wrap">
+    <div class="lab reveal">Ce qui nous tient</div>
+    <h2 class="reveal">Trois mots qu'on met sur la table, pas dans une plaquette.</h2>
+    <div class="grid3">
+      <div class="card reveal"><div class="n">01</div><h3>Confiance</h3><p>Des conditions claires, une relation directe. Vous savez ce que vous signez.</p></div>
+      <div class="card reveal"><div class="n">02</div><h3>Engagement</h3><p>Installation, développement, transmission : on porte votre projet dans la durée.</p></div>
+      <div class="card reveal"><div class="n">03</div><h3>Respect</h3><p>Indépendants et fiers de l'être. Le groupe grandit avec vous, jamais contre vous.</p></div>
+    </div>
+  </section>
+
+  <footer>© Intégral Pharma — maquette « Minuit & Cuivre »</footer>
+
+<script>
+  (function(){
+    var rm = window.matchMedia && window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+    function boot(){
+      if(rm || !window.VANTA || !window.VANTA.WAVES) return;
+      try{
+        VANTA.WAVES({ el:'#hero-bg', color:0x0E1B33, shininess:22, waveHeight:11, waveSpeed:0.65, zoom:0.92 });
+      }catch(e){}
+    }
+    var s1=document.createElement('script'); s1.src='../../vendor/vanta/three.min.js';
+    var s2=document.createElement('script'); s2.src='../../vendor/vanta/vanta.waves.min.js';
+    s1.onload=function(){ document.body.appendChild(s2); }; s2.onload=boot;
+    if(!rm){ document.body.appendChild(s1); }
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}})},{threshold:.14});
+    document.querySelectorAll('.reveal').forEach(function(el,i){el.style.transitionDelay=(i*80)+'ms';io.observe(el);});
+  })();
+</script>
+</body>
+</html>

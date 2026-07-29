@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="fr" class="no-js">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Intégral Pharma — Plus de marge, nette sur facture</title>
+  <meta name="description" content="Groupe de grossistes français indépendant. 9 agences, un réseau national. Un partenaire, pas un fournisseur." />
+  <meta name="theme-color" content="#0B1220" />
+
+  <!-- Reused Codrops mechanics (box-sizing scaffolding, gallery/marquee base) -->
+  <link rel="stylesheet" type="text/css" href="css/base.css" />
+
+  <!-- Fonts: DM Sans (brand) + Fraunces (nocturnal serif) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&display=swap" />
+
+  <script>document.documentElement.className = 'js';</script>
+
+  <style>
+    /* ===================================================================
+       MINUIT & CUIVRE — Intégral Pharma
+       Navy nocturne + cuivre patiné. Accents de marque : bleu IP #0057FF
+       + orange #F39A1B (lueurs, curseur, marquee, CTA, survols).
+       ================================================================== */
+    :root {
+      font-size: 100%;
+      --ink: #0B1220;
+      --ink-2: #0d1626;
+      --ink-3: #122036;
+      --copper: #C67B4A;
+      --copper-2: #E0A56B;
+      --ivory: #F3ECE2;
+      --ivory-dim: rgba(243, 236, 226, 0.60);
+      --ivory-faint: rgba(243, 236, 226, 0.34);
+      /* brand accents */
+      --ip-blue: #0057FF;
+      --ip-blue-soft: #4d8bff;
+      --ip-orange: #F39A1B;
+      --line: rgba(224, 165, 107, 0.16);
+      --line-strong: rgba(224, 165, 107, 0.30);
+      --maxw: 1160px;
+      /* base.css overrides */
+      --color-bg: #0B1220;
+      --color-link: #E0A56B;
+      --color-link-hover: #F3ECE2;
+    }
+
+    html, body { background: var(--ink); }
+
+    body {
+      margin: 0;
+      font-family: 'DM Sans', system-ui, sans-serif;
+      color: var(--ivory);
+      line-height: 1.55;
+      letter-spacing: -0.005em;
+      overflow-x: clip;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* Neutralise base.css full-screen vignette; we place our own glows */
+    body::after { display: none !important; }
+
+    ::selection { background: var(--copper); color: #160d06; }
+
+    a { color: inherit; }
+    h1, h2, h3, p { margin: 0; }
+
+    .display {
+      font-family: 'Fraunces', Georgia, serif;
+      font-weight: 500;
+      letter-spacing: -0.02em;
+      line-height: 1.04;
+    }
+
+    .wrap {
+      width: 100%;
+      max-width: var(--maxw);
+      margin: 0 auto;
+      padding-inline: clamp(1.25rem, 5vw, 3rem);
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.7rem;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--copper-2);
+    }
+    .eyebrow::before {
+      content: "";
+      width: 1.8rem;
+      height: 1px;
+      background: linear-gradient(90deg, var(--ip-orange), var(--copper));
+    }
+
+    /* ---------------- Split-line masked reveals ---------------- */
+    .ln { display: block; overflow: hidden; padding-bottom: 0.14em; margin-bottom: -0.14em; }
+    .ln__i { display: block; will-change: transform; }
+    html.js [data-split] { visibility: hidden; }
+
+    /* ---------------- Buttons ---------------- */
+    .btn {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.55rem;
+      padding: 0.95rem 1.7rem;
+      border-radius: 999px;
+      font: inherit;
+      font-weight: 600;
+      font-size: 0.98rem;
+      text-decoration: none;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: box-shadow 0.35s, background 0.3s, color 0.3s, border-color 0.3s;
+    }
+    .btn--copper {
+      background: linear-gradient(135deg, var(--copper) 0%, var(--copper-2) 100%);
+      color: #180d05;
+      box-shadow: 0 12px 34px -14px rgba(224, 165, 107, 0.6);
+    }
+    .btn--copper:hover {
+      box-shadow: 0 18px 46px -14px rgba(224, 165, 107, 0.75), 0 0 0 1px rgba(0, 87, 255, 0.35);
+    }
+    .btn--ghost { border-color: var(--line-strong); color: var(--ivory); background: transparent; }
+    .btn--ghost:hover { border-color: var(--ip-orange); color: var(--ip-orange); }
+    .btn__arrow { transition: transform 0.3s; }
+    .btn:hover .btn__arrow { transform: translateX(3px); }
+
+    a:focus-visible, .btn:focus-visible {
+      outline: 2px solid var(--copper-2);
+      outline-offset: 3px;
+      border-radius: 6px;
+    }
+
+    /* ---------------- Custom cursor (desktop only) ---------------- */
+    .cursor { position: fixed; inset: 0; z-index: 12000; pointer-events: none; display: none; }
+    body.has-cursor { cursor: none; }
+    body.has-cursor a, body.has-cursor button, body.has-cursor .btn { cursor: none; }
+    body.has-cursor .cursor { display: block; }
+    .cursor__ring {
+      position: fixed; top: 0; left: 0; width: 42px; height: 42px;
+      margin: -21px 0 0 -21px; border-radius: 50%;
+      border: 1.5px solid var(--copper-2);
+      transition: width .3s, height .3s, margin .3s, border-color .3s, background .3s;
+      mix-blend-mode: difference;
+    }
+    .cursor__dot {
+      position: fixed; top: 0; left: 0; width: 6px; height: 6px;
+      margin: -3px 0 0 -3px; border-radius: 50%;
+      background: var(--ip-orange);
+    }
+    .cursor__label {
+      position: fixed; top: 0; left: 0;
+      transform: translate(18px, 14px);
+      font-size: 0.66rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--ink); background: var(--copper-2);
+      padding: 0.28rem 0.6rem; border-radius: 999px; white-space: nowrap;
+      opacity: 0; transition: opacity .25s;
+    }
+    body.cursor-hover .cursor__ring {
+      width: 66px; height: 66px; margin: -33px 0 0 -33px;
+      border-color: var(--ip-blue-soft);
+      background: rgba(0, 87, 255, 0.08);
+    }
+    body.cursor-labeled .cursor__label { opacity: 1; }
+
+    /* ---------------- Grain + glow orbs ---------------- */
+    .grain {
+      position: fixed; inset: -50%; z-index: 500; pointer-events: none;
+      opacity: 0.05; mix-blend-mode: overlay;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+      background-size: 160px 160px;
+      animation: grainShift 5.5s steps(6) infinite;
+    }
+    @keyframes grainShift {
+      0%   { transform: translate(0, 0); }
+      20%  { transform: translate(-6%, 4%); }
+      40%  { transform: translate(4%, -5%); }
+      60%  { transform: translate(-3%, 3%); }
+      80%  { transform: translate(5%, 2%); }
+      100% { transform: translate(0, 0); }
+    }
+
+    .orb {
+      position: absolute; border-radius: 50%; pointer-events: none; z-index: 0;
+      filter: blur(18px); opacity: 0.9;
+      animation: orbDrift 18s ease-in-out infinite;
+    }
+    .orb--copper { background: radial-gradient(circle, rgba(198,123,74,0.20) 0%, rgba(198,123,74,0) 62%); }
+    .orb--blue   { background: radial-gradient(circle, rgba(0,87,255,0.22) 0%, rgba(0,87,255,0) 62%); }
+    .orb--orange { background: radial-gradient(circle, rgba(243,154,27,0.18) 0%, rgba(243,154,27,0) 62%); }
+    @keyframes orbDrift {
+      0%,100% { transform: translate(0,0) scale(1); }
+      50%     { transform: translate(2rem,-1.6rem) scale(1.08); }
+    }
+
+    /* ---------------- Top nav ---------------- */
+    .nav {
+      position: fixed;
+      inset: 0 0 auto 0;
+      z-index: 9000;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 1.1rem clamp(1.25rem, 5vw, 3rem);
+      background: linear-gradient(180deg, rgba(11,18,32,0.86) 0%, rgba(11,18,32,0) 100%);
+      backdrop-filter: blur(6px);
+    }
+    .nav__brand {
+      display: inline-flex; align-items: center; gap: 0.65rem;
+      font-weight: 700; letter-spacing: 0.02em; text-decoration: none; color: var(--ivory);
+    }
+    .nav__mark {
+      width: 30px; height: 30px; border-radius: 8px;
+      display: grid; place-items: center;
+      background: linear-gradient(135deg, var(--copper), var(--copper-2));
+      color: #180d05; font-weight: 800; font-size: 0.9rem;
+      font-family: 'Fraunces', serif;
+      box-shadow: 0 0 0 1px rgba(0,87,255,0.25), 0 8px 20px -10px rgba(243,154,27,0.5);
+    }
+    .nav__brand small {
+      display: block; font-size: 0.62rem; font-weight: 500;
+      letter-spacing: 0.24em; text-transform: uppercase; color: var(--ivory-dim);
+    }
+    .nav__links { display: none; gap: 2rem; font-size: 0.9rem; }
+    .nav__links a { position: relative; text-decoration: none; color: var(--ivory-dim); transition: color 0.25s; }
+    .nav__links a::after {
+      content: ""; position: absolute; left: 0; right: 0; bottom: -5px; height: 1px;
+      background: linear-gradient(90deg, var(--ip-blue), var(--copper-2), var(--ip-orange));
+      transform: scaleX(0); transform-origin: 0 50%;
+      transition: transform 0.4s cubic-bezier(.2,.8,.2,1);
+    }
+    .nav__links a:hover { color: var(--ivory); }
+    .nav__links a:hover::after { transform: scaleX(1); }
+    .nav__cta { display: none; }
+    @media (min-width: 860px) {
+      .nav__links { display: flex; }
+      .nav__cta { display: inline-flex; padding: 0.7rem 1.3rem; font-size: 0.9rem; }
+    }
+
+    /* ---------------- Sections ---------------- */
+    section { position: relative; }
+    .section-pad { padding-block: clamp(6rem, 13vw, 11rem); }
+
+    .section-head { max-width: 46rem; margin-bottom: clamp(2.5rem, 6vw, 4.5rem); }
+    .section-head h2 { font-size: clamp(2.1rem, 5.4vw, 4rem); margin-top: 1.4rem; }
+    .section-head p { margin-top: 1.4rem; color: var(--ivory-dim); font-size: 1.06rem; max-width: 34rem; }
+
+    /* ---------------- HERO ---------------- */
+    .hero {
+      min-height: 100svh;
+      display: grid;
+      align-items: center;
+      padding-block: 8rem 3.5rem;
+      overflow: hidden;
+      background:
+        radial-gradient(120% 80% at 78% 8%, rgba(198,123,74,0.14) 0%, rgba(198,123,74,0) 55%),
+        linear-gradient(180deg, #0B1220 0%, #0c1526 100%);
+    }
+    .hero .orb--blue   { width: 34rem; height: 34rem; top: -6rem; left: -10rem; }
+    .hero .orb--orange { width: 26rem; height: 26rem; bottom: -8rem; right: -6rem; animation-delay: -6s; }
+    .hero__grid { position: relative; z-index: 2; display: grid; gap: clamp(2.5rem, 6vw, 4rem); align-items: center; }
+    .hero__copy { max-width: 40rem; }
+    .hero h1 { font-size: clamp(2.7rem, 7.4vw, 6.1rem); margin: 1.6rem 0 0; }
+    .hero h1 em { font-style: italic; color: var(--copper-2); }
+    .hero__sub { margin-top: 1.8rem; font-size: clamp(1.05rem, 2vw, 1.28rem); color: var(--ivory-dim); max-width: 32rem; }
+    .hero__cta { display: flex; flex-wrap: wrap; gap: 0.9rem; margin-top: 2.4rem; }
+    .hero__media { perspective: 1200px; display: grid; place-items: center; will-change: transform; }
+    .hero__photo {
+      width: 100%; max-width: 460px; aspect-ratio: 4 / 5;
+      background-image: url('../../../assets/siege.jpg');
+      background-size: cover; background-position: center;
+      border-radius: 14px;
+      transform-style: preserve-3d; will-change: transform;
+      box-shadow: 0 40px 90px -30px rgba(0,0,0,0.8), inset 0 0 0 1px var(--line);
+      position: relative;
+    }
+    .hero__photo::after {
+      content: ""; position: absolute; inset: 0; border-radius: 14px;
+      background: linear-gradient(180deg, rgba(11,18,32,0) 40%, rgba(11,18,32,0.55) 100%);
+    }
+    .hero__tag {
+      position: absolute; left: 1rem; bottom: 1rem; z-index: 2;
+      font-size: 0.78rem; letter-spacing: 0.16em; text-transform: uppercase;
+      color: var(--ivory); font-weight: 600;
+    }
+    .hero__tag span { color: var(--ip-orange); }
+    @media (min-width: 960px) { .hero__grid { grid-template-columns: 1.15fr 0.85fr; } }
+
+    .scrollcue {
+      display: none; margin-top: 3rem; align-items: center; gap: 0.7rem;
+      font-size: 0.72rem; letter-spacing: 0.24em; text-transform: uppercase; color: var(--ivory-faint);
+    }
+    .scrollcue i { width: 1px; height: 2.4rem; display: block; background: linear-gradient(180deg, var(--copper-2), transparent); }
+    @media (min-width: 960px) { .scrollcue { display: inline-flex; } }
+
+    /* ---------------- RÉSEAU (signature gallery) ---------------- */
+    .reseau { background: linear-gradient(180deg, #0c1526 0%, #0B1220 100%); overflow: hidden; }
+    .reseau .orb--copper { width: 40rem; height: 40rem; top: 24%; left: -12rem; }
+    .reseau .orb--blue   { width: 30rem; height: 30rem; top: 60%; right: -10rem; animation-delay: -9s; }
+
+    .reseau__stat { display: flex; flex-wrap: wrap; gap: 2.4rem; margin-top: 2.4rem; }
+    .stat__n { font-size: clamp(2.4rem, 5vw, 3.4rem); color: var(--copper-2); }
+    .stat__n.is-blue { color: var(--ip-blue-soft); }
+    .stat__l { font-size: 0.86rem; color: var(--ivory-dim); max-width: 12rem; margin-top: 0.3rem; }
+
+    .rgallery {
+      position: relative; z-index: 1;
+      display: flex; flex-direction: column; align-items: center;
+      perspective: 1300px; margin-top: clamp(2rem, 5vw, 4rem);
+    }
+    .rgallery__item {
+      width: 100%; max-width: 620px; aspect-ratio: 14 / 9;
+      background-size: cover; background-position: center; background-repeat: no-repeat;
+      border-radius: 10px;
+      transform-style: preserve-3d; will-change: transform, filter;
+      margin-bottom: -3.5rem;
+      box-shadow: 0 30px 70px -30px rgba(0,0,0,0.85), inset 0 0 0 1px var(--line);
+      transition: background-size 0.6s ease, box-shadow 0.4s ease;
+    }
+    .rgallery__item:hover {
+      background-size: 114%;
+      box-shadow: 0 40px 90px -30px rgba(0,0,0,0.9), inset 0 0 0 1px rgba(0,87,255,0.35);
+    }
+
+    /* ---------------- Kinetic marquee band (pinned scrub) ---------------- */
+    .kinetic { position: relative; z-index: 1; padding-block: clamp(2.5rem, 7vw, 5rem); }
+    .mark {
+      position: relative; top: auto; left: auto; transform: none; width: 100%;
+      margin-block: 0.4rem; mix-blend-mode: normal; overflow: hidden; z-index: 1;
+      -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+      mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+    }
+    .mark__inner { display: flex; gap: 2.5rem; width: max-content; will-change: transform; }
+    .mark__inner span {
+      white-space: nowrap; text-transform: uppercase;
+      font-family: 'Fraunces', serif; font-weight: 500;
+      font-size: clamp(2rem, 9vw, 6rem);
+      color: transparent; -webkit-text-stroke: 1px var(--line-strong);
+    }
+    .mark__inner span.solid  { color: var(--copper); -webkit-text-stroke: 0; }
+    .mark__inner span.blue   { color: var(--ip-blue-soft); -webkit-text-stroke: 0; }
+    .mark__inner span.orange { color: var(--ip-orange); -webkit-text-stroke: 0; }
+
+    /* ---------------- PARCOURS ---------------- */
+    .parcours { background: #0B1220; }
+    .parcours .orb--orange { width: 34rem; height: 34rem; top: 6%; right: -12rem; }
+    .parcours__grid { display: grid; gap: 1.4rem; perspective: 1600px; grid-template-columns: 1fr; }
+    .rcard {
+      position: relative; padding: clamp(1.6rem, 3vw, 2.2rem);
+      background: linear-gradient(160deg, var(--ink-3) 0%, var(--ink-2) 100%);
+      border: 1px solid var(--line); border-radius: 16px;
+      transform-style: preserve-3d; will-change: transform; overflow: hidden;
+    }
+    .rcard::before {
+      content: ""; position: absolute; inset: 0 auto 0 0; width: 3px;
+      background: linear-gradient(180deg, var(--ip-orange), var(--copper) 45%, var(--ip-blue));
+      opacity: 0.9;
+    }
+    .rcard__n { font-family: 'Fraunces', serif; font-size: 0.95rem; font-weight: 600; color: var(--copper-2); letter-spacing: 0.1em; }
+    .rcard h3 { font-family: 'Fraunces', serif; font-weight: 500; font-size: 1.5rem; margin-top: 0.9rem; }
+    .rcard p { margin-top: 0.7rem; color: var(--ivory-dim); font-size: 0.98rem; }
+    @media (min-width: 720px) { .parcours__grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (min-width: 1040px) { .parcours__grid { grid-template-columns: repeat(4, 1fr); } }
+
+    /* ---------------- POURQUOI ---------------- */
+    .pourquoi { background: linear-gradient(180deg, #0B1220 0%, #0c1526 100%); }
+    .pourquoi .orb--blue { width: 30rem; height: 30rem; bottom: 4%; left: -10rem; animation-delay: -4s; }
+    .pourquoi__grid { display: grid; gap: 1.4rem; grid-template-columns: 1fr; margin-top: 1rem; perspective: 1400px; }
+    .pill {
+      padding: clamp(1.8rem, 3vw, 2.6rem);
+      border: 1px solid var(--line); border-radius: 16px;
+      background: rgba(18, 32, 54, 0.5);
+      transform-style: preserve-3d; will-change: transform;
+      transition: border-color 0.35s;
+    }
+    .pill:hover { border-color: var(--line-strong); }
+    .pill h3 { font-family: 'Fraunces', serif; font-weight: 500; font-size: 1.55rem; margin-bottom: 0.7rem; }
+    .pill p { color: var(--ivory-dim); font-size: 0.98rem; }
+    .pill--count { display: flex; flex-direction: column; justify-content: center; }
+    .pill--count .num { font-family: 'Fraunces', serif; font-weight: 500; font-size: clamp(3rem, 8vw, 5.4rem); line-height: 1; color: var(--copper-2); }
+    .pill--count .num small { font-size: 0.4em; color: var(--ip-orange); vertical-align: super; margin-left: 0.1em; }
+    .pill--count .cap { margin-top: 0.6rem; color: var(--ivory-dim); font-size: 1rem; }
+    @media (min-width: 820px) { .pourquoi__grid { grid-template-columns: 1fr 1fr; } .pill--count { grid-column: 1 / -1; } }
+    @media (min-width: 1040px) { .pourquoi__grid { grid-template-columns: repeat(3, 1fr); } .pill--count { grid-column: auto; } }
+
+    /* ---------------- VALEURS ---------------- */
+    .valeurs { background: #0B1220; }
+    .valeurs .orb--copper { width: 34rem; height: 34rem; top: 20%; right: -12rem; }
+    .valeurs__grid { display: grid; gap: 1.4rem; perspective: 1600px; grid-template-columns: 1fr; margin-top: 1rem; }
+    .val {
+      padding: clamp(1.8rem, 3vw, 2.6rem);
+      border: 1px solid var(--line); border-radius: 16px;
+      background: linear-gradient(160deg, var(--ink-3) 0%, var(--ink-2) 100%);
+      transform-style: preserve-3d; will-change: transform;
+    }
+    .val__k { font-family: 'Fraunces', serif; font-style: italic; color: var(--copper-2); font-size: 1.05rem; }
+    .val h3 { font-family: 'Fraunces', serif; font-weight: 500; font-size: 1.7rem; margin: 0.6rem 0 0.7rem; }
+    .val p { color: var(--ivory-dim); font-size: 0.98rem; }
+    @media (min-width: 760px) { .valeurs__grid { grid-template-columns: repeat(3, 1fr); } }
+
+    /* ---------------- REJOINDRE ---------------- */
+    .rejoindre {
+      background:
+        radial-gradient(120% 100% at 50% 0%, rgba(198,123,74,0.16) 0%, rgba(198,123,74,0) 55%),
+        linear-gradient(180deg, #0c1526 0%, #0B1220 100%);
+      text-align: center; overflow: hidden;
+    }
+    .rejoindre .orb--blue   { width: 28rem; height: 28rem; top: -4rem; left: 8%; }
+    .rejoindre .orb--orange { width: 24rem; height: 24rem; bottom: -6rem; right: 6%; animation-delay: -7s; }
+    .rejoindre .wrap { position: relative; z-index: 2; }
+    .rejoindre h2 { font-size: clamp(2.2rem, 6vw, 4.3rem); max-width: 20ch; margin: 1.4rem auto 0; }
+    .rejoindre p { color: var(--ivory-dim); margin: 1.4rem auto 0; max-width: 32rem; }
+    .rejoindre__cta { display: flex; flex-wrap: wrap; gap: 0.9rem; justify-content: center; margin-top: 2.4rem; }
+    .rejoindre__contact { margin-top: 2.6rem; display: flex; flex-wrap: wrap; gap: 0.5rem 2rem; justify-content: center; font-size: 0.95rem; color: var(--ivory-dim); }
+    .rejoindre__contact a { color: var(--copper-2); text-decoration: none; }
+    .rejoindre__contact a:hover { text-decoration: underline; }
+    .rejoindre .eyebrow { justify-content: center; display: inline-flex; }
+
+    /* ---------------- FOOTER ---------------- */
+    footer { border-top: 1px solid var(--line); background: #090f1b; padding-block: clamp(3rem, 6vw, 4.5rem); }
+    .foot__grid { display: grid; gap: 2rem; grid-template-columns: 1fr; align-items: start; }
+    .foot__brand { display: inline-flex; align-items: center; gap: 0.65rem; font-weight: 700; }
+    .foot__tag { margin-top: 1rem; color: var(--ivory-dim); font-size: 0.95rem; max-width: 24rem; }
+    .foot__nav { display: flex; flex-wrap: wrap; gap: 0.6rem 1.8rem; }
+    .foot__nav a { position: relative; color: var(--ivory-dim); text-decoration: none; font-size: 0.95rem; transition: color 0.25s; }
+    .foot__nav a::after {
+      content: ""; position: absolute; left: 0; right: 0; bottom: -3px; height: 1px;
+      background: linear-gradient(90deg, var(--ip-blue), var(--ip-orange));
+      transform: scaleX(0); transform-origin: 0 50%; transition: transform 0.35s cubic-bezier(.2,.8,.2,1);
+    }
+    .foot__nav a:hover { color: var(--ivory); }
+    .foot__nav a:hover::after { transform: scaleX(1); }
+    .foot__legal { color: var(--ivory-faint); font-size: 0.8rem; }
+    @media (min-width: 780px) { .foot__grid { grid-template-columns: 1.4fr 1fr; } }
+
+    /* ---------------- Intro curtain ---------------- */
+    #intro { position: fixed; inset: 0; z-index: 10001; opacity: 1; visibility: visible; }
+    html.no-js #intro { display: none; }
+    .intro__panel {
+      position: absolute; top: 0; height: 100%; width: 34%;
+      background: #0B1220; will-change: transform;
+    }
+    .intro__panel:nth-child(1) { left: 0; }
+    .intro__panel:nth-child(2) { left: 33%; }
+    .intro__panel:nth-child(3) { left: 66%; width: 34%; }
+    .intro__inner {
+      position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 1.1rem;
+    }
+    .intro__mark {
+      width: 62px; height: 62px; border-radius: 16px; display: grid; place-items: center;
+      font-family: 'Fraunces', serif; font-weight: 700; font-size: 1.7rem; color: #180d05;
+      background: linear-gradient(135deg, var(--copper), var(--copper-2));
+      box-shadow: 0 0 0 1px rgba(0,87,255,0.35), 0 14px 40px -12px rgba(243,154,27,0.6);
+    }
+    .intro__word {
+      display: flex; gap: 0.5rem; overflow: hidden;
+      font-family: 'Fraunces', serif; font-weight: 500; font-size: clamp(1.6rem, 5vw, 2.4rem); color: var(--ivory);
+    }
+    .intro__word span { display: inline-block; }
+    .intro__bar { display: flex; gap: 0.4rem; margin-top: 0.4rem; }
+    .intro__bar i { display: block; width: 34px; height: 3px; border-radius: 2px; transform-origin: 0 50%; }
+    .intro__bar i:nth-child(1) { background: var(--copper); }
+    .intro__bar i:nth-child(2) { background: var(--ip-blue); }
+    .intro__bar i:nth-child(3) { background: var(--ip-orange); }
+
+    /* ---------------- Reveal states / fallbacks ---------------- */
+    html.js [data-fade] { opacity: 0; }
+
+    /* Hard fallback if the fx engine never boots */
+    html.fx-fail [data-fade] { opacity: 1 !important; transform: none !important; }
+    html.fx-fail [data-split] { visibility: visible !important; }
+    html.fx-fail .ln__i { transform: none !important; }
+    html.fx-fail #intro { display: none !important; }
+
+    @media (prefers-reduced-motion: reduce) {
+      html.js [data-fade] { opacity: 1 !important; transform: none !important; }
+      html.js [data-split] { visibility: visible !important; }
+      .ln__i { transform: none !important; }
+      .orb, .grain { animation: none !important; }
+      #intro { display: none !important; }
+      .btn, .nav__links a, .foot__nav a, .rgallery__item { transition: none !important; }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- ambient texture + cursor -->
+  <div class="grain" aria-hidden="true"></div>
+  <div class="cursor" aria-hidden="true">
+    <div class="cursor__ring"></div>
+    <div class="cursor__dot"></div>
+    <div class="cursor__label"></div>
+  </div>
+
+  <!-- intro curtain -->
+  <div id="intro" aria-hidden="true">
+    <div class="intro__panel"></div>
+    <div class="intro__panel"></div>
+    <div class="intro__panel"></div>
+    <div class="intro__inner">
+      <div class="intro__mark">i</div>
+      <div class="intro__word"><span>Intégral</span><span>Pharma</span></div>
+      <div class="intro__bar"><i></i><i></i><i></i></div>
+    </div>
+  </div>
+
+  <!-- ===== NAV ===== -->
+  <nav class="nav">
+    <a class="nav__brand" href="#top" data-magnetic>
+      <span class="nav__mark">i</span>
+      <span>Intégral Pharma<small>Grossiste indépendant</small></span>
+    </a>
+    <div class="nav__links">
+      <a href="#reseau">Le réseau</a>
+      <a href="#parcours">Vos achats</a>
+      <a href="#pourquoi">Pourquoi Intégral</a>
+      <a href="#valeurs">Nos valeurs</a>
+    </div>
+    <a class="nav__cta btn btn--copper" href="#rejoindre" data-magnetic data-cursor="Réseau">Découvrir le réseau</a>
+  </nav>
+
+  <main id="top">
+    <!-- ===== 1. HERO ===== -->
+    <header class="hero section">
+      <span class="orb orb--blue" data-orb="1.3"></span>
+      <span class="orb orb--orange" data-orb="0.8"></span>
+      <div class="wrap hero__grid">
+        <div class="hero__copy">
+          <span class="eyebrow" data-fade>Un partenaire, pas un fournisseur</span>
+          <h1 class="display" data-split>Plus de marge,<br><em>nette sur facture.</em></h1>
+          <p class="hero__sub" data-fade>Groupe de grossistes français indépendant. Neuf agences, une exigence : vous rendre la main sur vos achats.</p>
+          <div class="hero__cta" data-fade>
+            <a class="btn btn--copper" href="#rejoindre" data-magnetic data-cursor="Réseau">Découvrir le réseau <span class="btn__arrow">→</span></a>
+            <a class="btn btn--ghost" href="#reseau" data-magnetic>Voir le réseau</a>
+          </div>
+          <div class="scrollcue"><i></i> Faites défiler</div>
+        </div>
+        <div class="hero__media">
+          <div class="hero__photo" data-rotate="soft" data-cursor="Le siège" role="img" aria-label="Le siège et la plateforme logistique Intégral Pharma">
+            <span class="hero__tag"><span>●</span> Plateforme logistique · France</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ===== 2. LE RÉSEAU ===== -->
+    <section class="reseau section section-pad" id="reseau">
+      <span class="orb orb--copper"></span>
+      <span class="orb orb--blue"></span>
+      <div class="wrap">
+        <div class="section-head">
+          <span class="eyebrow" data-fade>Le réseau</span>
+          <h2 class="display" data-split>9 agences.<br>1 réseau national.</h2>
+          <p data-fade>Un maillage d'agences au service des officines, tenu par des équipes qui connaissent leur territoire — et livré avec la régularité d'un vrai partenaire.</p>
+          <div class="reseau__stat" data-fade>
+            <div><div class="stat__n display"><span data-count="9">0</span></div><div class="stat__l">agences réparties sur le territoire</div></div>
+            <div><div class="stat__n display is-blue"><span data-count="100">0</span>%</div><div class="stat__l">capital français et indépendant</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="wrap">
+        <div class="rgallery">
+          <div class="rgallery__item" data-rotate data-cursor="Le réseau" style="background-image:url('../../../assets/siege.jpg')"></div>
+          <div class="rgallery__item" data-rotate data-cursor="Le réseau" style="background-image:url('../../../assets/poster.jpg')"></div>
+          <div class="rgallery__item" data-rotate data-cursor="Le réseau" style="background-image:url('../../../assets/siege-solaire.jpg')"></div>
+          <div class="rgallery__item" data-rotate data-cursor="Le réseau" style="background-image:url('../../../assets/poster.jpg');background-position:center 30%"></div>
+          <div class="rgallery__item" data-rotate data-cursor="Le réseau" style="background-image:url('../../../assets/siege.jpg');background-position:center 70%"></div>
+          <div class="rgallery__item" data-rotate data-cursor="Le réseau" style="background-image:url('../../../assets/siege-solaire.jpg');background-position:center 20%"></div>
+        </div>
+      </div>
+
+      <!-- Pinned scroll-scrub kinetic band -->
+      <div class="kinetic" aria-hidden="true">
+        <div class="mark" data-dir="fwd">
+          <div class="mark__inner">
+            <span>9 Agences</span><span>·</span>
+            <span class="solid">Un réseau national</span><span>·</span>
+            <span>9 Agences</span><span>·</span>
+            <span class="blue">Un réseau national</span><span>·</span>
+            <span>9 Agences</span><span>·</span>
+            <span class="orange">Un réseau national</span><span>·</span>
+          </div>
+        </div>
+        <div class="mark" data-dir="rev">
+          <div class="mark__inner">
+            <span class="orange">Indépendant</span><span>·</span>
+            <span>Sans franco imposé</span><span>·</span>
+            <span class="blue">Sans engagement</span><span>·</span>
+            <span>Marge nette sur facture</span><span>·</span>
+            <span class="solid">Indépendant</span><span>·</span>
+            <span>Sans franco imposé</span><span>·</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 3. PARCOURS ===== -->
+    <section class="parcours section section-pad" id="parcours">
+      <span class="orb orb--orange"></span>
+      <div class="wrap">
+        <div class="section-head">
+          <span class="eyebrow" data-fade>Votre officine, en 4 temps</span>
+          <h2 class="display" data-split>Reprenez la main<br>sur vos achats.</h2>
+          <p data-fade>Un parcours simple, sans franco imposé ni engagement : vous commandez ce dont vous avez besoin, quand vous en avez besoin.</p>
+        </div>
+        <div class="parcours__grid">
+          <article class="rcard" data-rotate="soft" data-fade>
+            <div class="rcard__n">01</div>
+            <h3>Vous ouvrez le compte</h3>
+            <p>Un interlocuteur dédié, un catalogue accessible dès le premier jour. Sans engagement de volume.</p>
+          </article>
+          <article class="rcard" data-rotate="soft" data-fade>
+            <div class="rcard__n">02</div>
+            <h3>Vous composez vos commandes</h3>
+            <p>Plus de 14 000 références Offilog à portée de clic, du princeps au générique et au comptoir.</p>
+          </article>
+          <article class="rcard" data-rotate="soft" data-fade>
+            <div class="rcard__n">03</div>
+            <h3>Vous êtes livré</h3>
+            <p>Une agence proche, une logistique régulière. Pas de franco imposé pour déclencher la livraison.</p>
+          </article>
+          <article class="rcard" data-rotate="soft" data-fade>
+            <div class="rcard__n">04</div>
+            <h3>Vous pilotez vos marges</h3>
+            <p>La marge est nette sur facture, lisible commande après commande. Vous gardez le contrôle.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 4. POURQUOI INTÉGRAL ===== -->
+    <section class="pourquoi section section-pad" id="pourquoi">
+      <span class="orb orb--blue"></span>
+      <div class="wrap">
+        <div class="section-head">
+          <span class="eyebrow" data-fade>Pourquoi Intégral</span>
+          <h2 class="display" data-split>Un modèle qui vous laisse libre.</h2>
+        </div>
+        <div class="pourquoi__grid">
+          <article class="pill" data-tilt data-fade>
+            <h3>Indépendance</h3>
+            <p>Groupe de grossistes français indépendant. Nos décisions se prennent en France, au plus près des officines que nous servons.</p>
+          </article>
+          <article class="pill" data-tilt data-fade>
+            <h3>Ni franco imposé, ni engagement</h3>
+            <p>Vous commandez selon vos besoins réels. Aucun seuil forcé, aucune obligation de volume pour bénéficier du réseau.</p>
+          </article>
+          <article class="pill pill--count" data-fade>
+            <div class="num"><span data-count="14000">0</span><small>+</small></div>
+            <div class="cap">références disponibles sur Offilog</div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 5. NOS VALEURS ===== -->
+    <section class="valeurs section section-pad" id="valeurs">
+      <span class="orb orb--copper"></span>
+      <div class="wrap">
+        <div class="section-head">
+          <span class="eyebrow" data-fade>Nos valeurs</span>
+          <h2 class="display" data-split>Trois mots qui nous engagent.</h2>
+        </div>
+        <div class="valeurs__grid">
+          <article class="val" data-rotate="soft" data-fade>
+            <span class="val__k">i.</span>
+            <h3>Confiance</h3>
+            <p>Une relation claire et durable, où ce qui est dit est ce qui est livré.</p>
+          </article>
+          <article class="val" data-rotate="soft" data-fade>
+            <span class="val__k">ii.</span>
+            <h3>Engagement</h3>
+            <p>La régularité d'un partenaire présent, agence après agence, commande après commande.</p>
+          </article>
+          <article class="val" data-rotate="soft" data-fade>
+            <span class="val__k">iii.</span>
+            <h3>Respect</h3>
+            <p>De votre métier, de votre indépendance, du temps du pharmacien.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 6. REJOINDRE ===== -->
+    <section class="rejoindre section section-pad" id="rejoindre">
+      <span class="orb orb--blue"></span>
+      <span class="orb orb--orange"></span>
+      <div class="wrap">
+        <span class="eyebrow" data-fade>Rejoindre le réseau</span>
+        <h2 class="display" data-split>Parlons de votre officine.</h2>
+        <p data-fade>Découvrez comment le réseau Intégral Pharma peut vous rendre la main sur vos achats — sans franco imposé, sans engagement.</p>
+        <div class="rejoindre__cta" data-fade>
+          <a class="btn btn--copper" href="#rejoindre" data-magnetic data-cursor="Réseau">Découvrir le réseau <span class="btn__arrow">→</span></a>
+          <a class="btn btn--ghost" href="mailto:pascale.prieto@integralpharma.fr" data-magnetic>Nous contacter</a>
+        </div>
+        <div class="rejoindre__contact" data-fade>
+          <span>Pascale Prieto · Direction commerciale France</span>
+          <a href="mailto:pascale.prieto@integralpharma.fr">pascale.prieto@integralpharma.fr</a>
+          <a href="tel:+33676885391">06 76 88 53 91</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ===== 7. FOOTER ===== -->
+  <footer>
+    <div class="wrap foot__grid">
+      <div>
+        <span class="foot__brand"><span class="nav__mark">i</span> Intégral Pharma</span>
+        <p class="foot__tag">Groupe de grossistes français indépendant. 9 agences, un réseau national.</p>
+      </div>
+      <div>
+        <nav class="foot__nav">
+          <a href="#reseau">Le réseau</a>
+          <a href="#parcours">Vos achats</a>
+          <a href="#pourquoi">Pourquoi Intégral</a>
+          <a href="#valeurs">Nos valeurs</a>
+          <a href="#rejoindre">Nous rejoindre</a>
+        </nav>
+        <p class="foot__legal" style="margin-top:1.6rem">© 2026 Intégral Pharma — Un partenaire, pas un fournisseur.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Vendored GSAP stack (local, no CDN) -->
+  <script src="../../../vendor/gsap/gsap.min.js"></script>
+  <script src="../../../vendor/gsap/ScrollTrigger.min.js"></script>
+  <script src="../../../vendor/gsap/ScrambleTextPlugin.min.js"></script>
+  <script src="../../../vendor/gsap/lenis.min.js"></script>
+  <!-- Reused Codrops helper + our effect stack -->
+  <script src="js/imagesloaded.pkgd.min.js"></script>
+  <script src="js/site.js"></script>
+</body>
+
+</html>

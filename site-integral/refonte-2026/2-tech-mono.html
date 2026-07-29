@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Intégral — Direction ② Tech / Mono</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600&family=Instrument+Sans:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#08080A; --panel:#0E0E12; --line:rgba(255,255,255,.09); --dash:rgba(255,255,255,.16);
+    --orange:#F39A1B; --blue:#5E93FF; --paper:#F4F4F6; --mut:#8A8A93;
+    --mono:'Geist Mono',ui-monospace,monospace; --sans:'Instrument Sans',system-ui,sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--ink);color:var(--paper);font-family:var(--mono);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+  .wrap{max-width:1160px;margin:0 auto;padding:0 24px}
+  a{color:inherit;text-decoration:none}
+
+  .top{display:flex;align-items:center;justify-content:space-between;padding:16px 24px;border-bottom:1px solid var(--line);font-size:12.5px;color:var(--mut);max-width:1160px;margin:0 auto}
+  .brand{display:flex;align-items:center;gap:10px;color:var(--paper);font-size:15px;letter-spacing:.02em}
+  .brand img{height:22px}
+  .badge{border:1px solid var(--dash);border-style:dashed;border-radius:6px;padding:3px 8px;color:var(--orange);font-size:11px;letter-spacing:.06em}
+  .top nav{display:flex;gap:22px}
+  .top nav a:hover{color:var(--paper)}
+  @media(max-width:720px){.top nav{display:none}}
+
+  .hero{position:relative;text-align:center;padding:96px 0 84px;overflow:hidden;border-bottom:1px solid var(--line)}
+  #vortex{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);pointer-events:none;opacity:.9}
+  .glow{position:absolute;left:50%;top:40%;width:620px;height:620px;transform:translate(-50%,-50%);background:radial-gradient(circle,rgba(243,154,27,.16),transparent 60%);pointer-events:none}
+  .hero .z{position:relative;z-index:2}
+  .tag{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--mut)}
+  .tag b{color:var(--orange);font-weight:500}
+  h1{font-family:var(--sans);font-weight:700;font-size:clamp(36px,7vw,76px);line-height:1.02;letter-spacing:-.03em;margin:20px auto 0;max-width:12ch}
+  h1 em{font-style:normal;color:var(--orange)}
+  .sub{margin:20px auto 0;max-width:560px;color:#B7B7BE;font-size:14.5px;line-height:1.7}
+  .cta{margin-top:32px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+  .btn{border:1px solid var(--dash);border-style:dashed;border-radius:8px;padding:12px 18px;font-size:13px;letter-spacing:.03em;color:var(--paper);transition:.25s;background:rgba(255,255,255,.02)}
+  .btn:hover{border-color:var(--orange);color:var(--orange);border-style:solid}
+  .btn.solid{background:var(--orange);color:#0A0A0B;border-color:var(--orange);border-style:solid;font-weight:500}
+  .btn.solid:hover{filter:brightness(1.08);color:#0A0A0B}
+
+  .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-top:1px dashed var(--dash);border-bottom:1px dashed var(--dash);margin-top:0}
+  .metrics>div{padding:26px 20px;border-right:1px dashed var(--dash);text-align:center}
+  .metrics>div:last-child{border-right:0}
+  .metrics .v{font-family:var(--sans);font-weight:700;font-size:30px;color:var(--paper);letter-spacing:-.02em}
+  .metrics .v i{font-style:normal;color:var(--orange)}
+  .metrics .k{font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);margin-top:8px}
+  @media(max-width:760px){.metrics{grid-template-columns:1fr 1fr}.metrics>div:nth-child(2){border-right:0}.metrics>div{border-bottom:1px dashed var(--dash)}}
+
+  .feat{padding:74px 0}
+  .cmt{font-size:12.5px;color:var(--mut);margin-bottom:26px}
+  .cmt b{color:var(--orange);font-weight:500}
+  .g3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  @media(max-width:760px){.g3{grid-template-columns:1fr}}
+  .cell{border:1px dashed var(--dash);border-radius:10px;padding:24px;background:var(--panel);transition:.3s}
+  .cell:hover{border-style:solid;border-color:var(--orange);transform:translateY(-3px)}
+  .cell .id{color:var(--orange);font-size:12px}
+  .cell h3{font-family:var(--sans);font-weight:700;font-size:20px;margin:12px 0 8px}
+  .cell p{color:var(--mut);font-size:13px;line-height:1.65}
+  footer{border-top:1px solid var(--line);padding:44px 0;color:var(--mut);font-size:12px;text-align:center}
+</style>
+</head>
+<body>
+  <div class="top">
+    <div class="brand"><img src="../assets/logo.png" alt="Intégral"> <span class="badge">GROUPEMENT ·  FR</span></div>
+    <nav><a href="#">/le-groupe</a><a href="#">/services</a><a href="#">/rejoindre</a><a href="#">/contact</a></nav>
+    <a class="btn solid" href="#">espace_adhérent →</a>
+  </div>
+
+  <header class="hero">
+    <div class="glow"></div>
+    <canvas id="vortex" width="700" height="480"></canvas>
+    <div class="z wrap">
+      <div class="tag">// un partenaire, <b>pas un fournisseur</b></div>
+      <h1>Plus de marge, <em>nette sur facture.</em></h1>
+      <p class="sub">Groupement de pharmaciens indépendants. Ni franco imposé, ni engagement. On porte votre projet — partout en France.</p>
+      <div class="cta">
+        <a class="btn solid" href="#">Découvrir le groupe</a>
+        <a class="btn" href="#">nos_services()</a>
+      </div>
+    </div>
+  </header>
+
+  <div class="metrics wrap" style="max-width:1160px">
+    <div><div class="v">+14<i>k</i></div><div class="k">références Offilog</div></div>
+    <div><div class="v">100<i>%</i></div><div class="k">indépendants</div></div>
+    <div><div class="v">3</div><div class="k">valeurs, une parole</div></div>
+    <div><div class="v">FR</div><div class="k">couverture nationale</div></div>
+  </div>
+
+  <section class="feat wrap">
+    <div class="cmt">/* <b>ce qui nous tient</b> — confiance · engagement · respect */</div>
+    <div class="g3">
+      <div class="cell"><div class="id">01_confiance</div><h3>Conditions claires</h3><p>Une relation directe, lisible. Vous savez ce que vous signez — pas de petites lignes.</p></div>
+      <div class="cell"><div class="id">02_engagement</div><h3>Votre projet, porté</h3><p>Installation, développement, transmission : on avance avec vous, dans la durée.</p></div>
+      <div class="cell"><div class="id">03_respect</div><h3>Indépendants</h3><p>Le groupe grandit avec vous, jamais contre vous. Votre officine reste la vôtre.</p></div>
+    </div>
+  </section>
+
+  <footer>© Intégral Pharma — maquette direction ② « Tech / Mono »</footer>
+
+<script>
+  // orange particle vortex (canvas, no deps)
+  const c=document.getElementById('vortex'),x=c.getContext('2d');
+  const cx=c.width/2,cy=c.height/2;
+  const N=520,pts=Array.from({length:N},()=>{const a=Math.random()*6.283,r=Math.random()*230+18;return{a,r,z:Math.random(),sp:.002+Math.random()*.004}});
+  function tick(){
+    x.clearRect(0,0,c.width,c.height);
+    for(const p of pts){
+      p.a+=p.sp*(1+ (230-p.r)/300);
+      const rr=p.r*(0.55+0.45*Math.sin(p.a*.5+p.z*6));
+      const px=cx+Math.cos(p.a)*rr, py=cy+Math.sin(p.a)*rr*0.42 - (230-p.r)*0.35;
+      const al=(1-p.r/250)*.8*p.z;
+      x.beginPath();x.arc(px,py,p.z*1.6+.3,0,7);
+      x.fillStyle='rgba(243,154,27,'+al.toFixed(3)+')';x.fill();
+    }
+    requestAnimationFrame(tick);
+  }
+  tick();
+</script>
+</body>
+</html>
