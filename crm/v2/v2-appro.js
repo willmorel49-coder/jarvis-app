@@ -156,6 +156,112 @@
     return '<span class="ap-cov ' + cls + '">' + lab + '</span>';
   }
 
+  // ═══ RADAR D'ANTICIPATION : événements marché datés (curés + auto à venir) ═══
+  var TCOL = { remb: '#0050E6', gen: '#6D5AE6', bio: '#0E7C86', prix: '#C98A1A', sais: '#1E9E6A', rup: '#D5573B', vig: '#6B7280' };
+  // Événements réels 2026-2027 (sourcés HAS/ANSM/Légifrance/Le Moniteur). À terme alimentés par robots.
+  var EVENTS = [
+    { y: 2026, m: 6, d: 15, t: 'remb', ti: 'Wegovy · Mounjaro remboursés', sub: 'demande qui explose, contingentement labo', reco: 'stock sécurité +30 %' },
+    { y: 2026, m: 7, d: 20, t: 'gen', ti: 'Apixaban générique (Eliquis)', sub: 'bascule anticoagulant, très gros volume', reco: 'basculer vers les Gx' },
+    { y: 2026, m: 6, d: 28, t: 'gen', ti: 'Dapagliflozin générique (Forxiga)', sub: 'falaise SGLT2, classe en forte croissance', reco: 'référencer les Gx' },
+    { y: 2026, m: 4, d: 1, t: 'bio', ti: 'Ustekinumab biosimilaire (Stelara)', sub: 'substituable officine, bascule rapide', reco: 'référencer/négocier bio' },
+    { y: 2026, m: 9, d: 1, t: 'prix', ti: 'PLFSS 2026 — vague de baisses de prix', sub: '1,4 Md€ : cardio, onco, inflammatoire, neuro', reco: 'alléger le surstock avant' },
+    { y: 2026, m: 10, d: 14, t: 'sais', ti: 'Campagne vaccinale grippe / Covid', sub: 'pic d’achat vaccins oct.-nov.', reco: 'pré-stock avant l’ouverture' },
+    { y: 2026, m: 11, d: 1, t: 'sais', ti: 'Saison hivernale ORL / antibiotiques', sub: 'amoxicilline, antipyrétiques — plan hivernal ANSM', reco: 'constituer le stock dès octobre' },
+    { y: 2027, m: 1, d: 15, t: 'sais', ti: 'Pré-achat antihistaminiques', sub: 'allergies pollen de plus en plus précoces', reco: 'anticiper dès janvier' },
+    { y: 2027, m: 3, d: 31, t: 'sais', ti: 'Clôture précommandes vaccins 27-28', sub: 'deadline d’achat vaccins grippe', reco: 'précommander à temps' },
+    { y: 2030, m: 2, d: 1, t: 'vig', ti: 'Vyndaqel (tafamidis) — PAS de Gx avant ~2030', sub: 'exclusivité orpheline + accords labo jusqu’en 2031', reco: 'rester sur le princeps' }
+  ];
+  function evDays(ev) { var now = new Date(); var t = new Date(ev.y, ev.m - 1, ev.d); return Math.round((t - now) / 86400000); }
+  function evZone(ev) { if (ev.t === 'vig') return 'surv'; var dd = evDays(ev); if (dd < 8) return 'now'; if (dd < 46) return 'prep'; if (dd < 200) return 'surv'; return null; }
+
+  function radarSection(reaTop) {
+    var zones = [['now', '#D5573B', 'Agir maintenant', 'à traiter cette semaine'], ['prep', '#C98A1A', 'Préparer', 'sous 30-45 jours'], ['surv', '#1E9E6A', 'Surveiller', '30 à 90 jours']];
+    var byZone = { now: [], prep: [], surv: [] };
+    EVENTS.forEach(function (ev) { var z = evZone(ev); if (z) byZone[z].push(ev); });
+    var nowY = new Date().getFullYear();
+    var live = (reaTop || []).slice(0, 4).map(function (o) {
+      return '<div class="rev"><div class="rt"><span class="dot" style="background:#D5573B"></span>' + esc(cap(o.d)) + '</div>' +
+        '<div class="rs">couverture ' + Math.round(o.cov) + ' j · ' + fmt(Math.round(o.vM)) + '/mois réseau</div>' +
+        '<div class="rr">→ commander ~' + fmt(o.qcmd) + '</div></div>';
+    }).join('');
+    return '<div class="rad">' + zones.map(function (z) {
+      var evs = byZone[z[0]].map(function (ev) {
+        var dd = evDays(ev), lab = dd < 0 ? 'en cours' : (ev.d + ' ' + MOIS[ev.m - 1] + (ev.y > nowY ? ' ' + ev.y : ''));
+        return '<div class="rev"><div class="rt"><span class="dot" style="background:' + (TCOL[ev.t] || '#6B7280') + '"></span>' + esc(ev.ti) + '</div>' +
+          '<div class="rs">' + lab + ' · ' + esc(ev.sub) + '</div><div class="rr">→ ' + esc(ev.reco) + '</div></div>';
+      }).join('');
+      var body = (z[0] === 'now' ? live : '') + evs;
+      if (!body) body = '<div class="ap-empty">—</div>';
+      return '<div class="v2-card rzone" style="--z:' + z[1] + '"><div class="rzh"><span class="ring"></span><div><h3>' + z[2] + '</h3><small>' + z[3] + '</small></div></div>' + body + '</div>';
+    }).join('') + '</div>';
+  }
+
+  // ═══ STOCK PAR ÉTABLISSEMENT (7 sites) + rééquilibrage inter-sites — ETAB_PRICES (NR) ═══
+  var _etabState = 0;   // 0 pas tenté · 1 en cours · 2 fini
+  function ensureEtab() {
+    if (window.ETAB_PRICES) { _etabState = 2; return; }
+    if (_etabState) return;
+    _etabState = 1;
+    var s = document.createElement('script');
+    s.src = 'etab-prices-data.js?v=' + (window.__APPRO_V || '20260729c'); s.async = false;
+    s.onload = function () { _etabState = 2; try { V2.render(); } catch (e) {} };
+    s.onerror = function () { _etabState = 2; };
+    document.head.appendChild(s);
+  }
+  function siteStock() {
+    var EP = window.ETAB_PRICES; if (!EP || !EP.etabs) return null;
+    var out = EP.etabs.map(function (e) {
+      var P = EP.prices[e.code] || {}, t = 0;
+      for (var c in P) { if (P[c] && P[c][1] > 0) t += P[c][1]; }
+      return { code: e.code, stock: t };
+    });
+    var tot = out.reduce(function (a, b) { return a + b.stock; }, 0);
+    out.sort(function (a, b) { return b.stock - a.stock; });
+    return { sites: out, total: tot };
+  }
+  function rebalance() {
+    var EP = window.ETAB_PRICES; if (!EP || !EP.prices) return [];
+    var PS = window.PROD_STATS || [], etabs = EP.etabs.map(function (e) { return e.code; }), out = [];
+    for (var k = 0; k < PS.length; k++) {
+      var c = String(PS[k].c), per = {}, tot = 0, nz = 0, mx = 0, mxE = null;
+      for (var j = 0; j < etabs.length; j++) {
+        var e = etabs[j], v = (EP.prices[e] && EP.prices[e][c]) ? Math.max(0, EP.prices[e][c][1]) : 0;
+        per[e] = v; if (v > 0) { tot += v; nz++; } if (v > mx) { mx = v; mxE = e; }
+      }
+      if (tot < 20 || nz < 2) continue;
+      var conc = mx / tot, zeros = etabs.filter(function (e) { return per[e] === 0; }).length;
+      if (conc > 0.55 && zeros >= 1) out.push({ d: PS[k].d, per: per, tot: tot, mxE: mxE, conc: conc, zeros: zeros });
+    }
+    out.sort(function (a, b) { return b.tot - a.tot; });
+    return out.slice(0, 10);
+  }
+  function etabSection() {
+    if (!window.ETAB_PRICES) {
+      return '<div class="v2-card ap-card"><div class="ap-hd"><div class="ap-ic" style="background:#0E7C86">▤</div><div><h3>Stock par établissement</h3><div class="ap-sub">chargement des stocks des 7 sites…</div></div></div></div>';
+    }
+    var ss = siteStock(), reb = rebalance(), etabs = window.ETAB_PRICES.etabs.map(function (e) { return e.code; });
+    var mx = 0; ss.sites.forEach(function (s) { if (s.stock > mx) mx = s.stock; });
+    var strip = ss.sites.map(function (s) {
+      return '<div class="site"><div class="code">' + s.code + '</div><div class="qt mono">' + fmt(s.stock) + '</div>' +
+        '<div class="pct">' + Math.round(s.stock / ss.total * 100) + ' %</div><div class="sbar"><i style="width:' + Math.round(s.stock / mx * 100) + '%"></i></div></div>';
+    }).join('');
+    var rows = reb.map(function (p) {
+      var m = 0; etabs.forEach(function (e) { if (p.per[e] > m) m = p.per[e]; });
+      var bars = etabs.map(function (e) {
+        var v = p.per[e], hpx = v === 0 ? 2 : Math.round(4 + v / m * 32);
+        return '<div class="col"><div class="b ' + (v === 0 ? 'zero' : v === m ? 'hot' : '') + '" style="height:' + hpx + 'px"></div><small>' + e + '</small></div>';
+      }).join('');
+      return '<div class="imb"><div class="imn">' + esc(cap(p.d)) + '</div>' +
+        '<div class="imm">' + fmt(p.tot) + ' u · <b>' + Math.round(p.conc * 100) + ' % sur ' + p.mxE + '</b> · ' + p.zeros + ' site' + (p.zeros > 1 ? 's' : '') + ' à 0</div>' +
+        '<div class="imbar">' + bars + '</div>' +
+        '<div class="imfix">→ équilibrer depuis ' + p.mxE + ' — <b>transférer</b> plutôt que commander</div></div>';
+    }).join('') || '<div class="ap-empty">Stock équilibré sur les sites.</div>';
+    return '<div class="v2-card ap-card"><div class="ap-hd"><div class="ap-ic" style="background:#0E7C86">▤</div><div><h3>Stock par établissement</h3>' +
+      '<div class="ap-sub">' + fmt(ss.total) + ' unités sur 7 sites (NR) — un produit concentré sur un site, à 0 ailleurs = à rééquilibrer, pas à racheter</div></div></div>' +
+      '<div class="sites">' + strip + '</div>' +
+      '<div class="imbhd">Rééquilibrage inter-sites <span>' + reb.length + '</span></div>' + rows + '</div>';
+  }
+
   V2.pages.appro = {
     render: function (root) {
       ensureCss();
@@ -167,9 +273,12 @@
         return;
       }
 
+      ensureEtab();   // charge en différé le stock par établissement (gros fichier NR)
       // ── Cockpit réassort (crash-safe : ne casse jamais la page si un flux manque) ──
-      var kpiBand = '', reaCard = '', rosCard = '';
+      var kpiBand = '', reaCard = '', rosCard = '', radarHtml = '', etabHtml = '';
       try {
+        radarHtml = radarSection(window.WML_SALES && window.STOCK_IP ? reassort() : []);
+        etabHtml = etabSection();
         if (window.WML_SALES && window.STOCK_IP) {
           var h = stockHealth();
           kpiBand = '<div class="ap-kpis">' +
@@ -241,10 +350,16 @@
       root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
         '<div class="v2-wrap">' +
           '<div class="v2-page-title">Appro Intégral</div>' +
-          '<div class="v2-page-sub">Maîtriser les achats et anticiper les ruptures : couverture de stock, réassort conseillé et leviers de négo — d\'après la demande réelle du réseau. Outil de l\'équipe achats.</div>' +
+          '<div class="v2-page-sub">Maîtriser les achats et anticiper au jour près : santé du stock, radar des événements à venir, réassort conseillé, équilibre des 7 sites, saison et leviers de négo — sur la demande réelle du réseau. Outil de l\'équipe achats.</div>' +
           kpiBand +
+          '<div class="ap-sec">Radar 90 jours — à anticiper</div>' +
+          '<div class="ap-secsub">Ce qui va bouger la demande : remboursements, génériques, baisses de prix, saison, ruptures — croisé avec ton réassort urgent en temps réel.</div>' +
+          radarHtml +
+          '<div class="ap-sec">Piloter les achats</div>' +
           reaCard +
+          etabHtml +
           rosCard +
+          '<div class="ap-sec">Intelligence marché</div>' +
           card('spark', 'Ça monte', 'produits en croissance, présents dans le réseau — à renforcer au stock', risRows, 'var(--c-opp)') +
           '<div class="ap-grid2">' +
             card('alert', 'Ruptures à sécuriser', 'tension ANSM sur des produits que le réseau achète', rupRows, 'var(--c-amber)') +
@@ -288,7 +403,34 @@
       '.ap-cov{font-size:11px;font-weight:800;border-radius:999px;padding:3px 9px;white-space:nowrap}' +
       '.ap-cov.ko{color:#C0561A;background:#FFECEC;border:1px solid #F3B0A0}.ap-cov.wa{color:#a8651a;background:#FFF1DB;border:1px solid #F0C98A}.ap-cov.ok{color:var(--c-opp);background:#E7F5EC;border:1px solid #BFE6CF}' +
       '.ap-cmd{flex:none;font-size:10.5px;color:var(--muted);font-weight:600;text-align:right;min-width:78px;line-height:1.25}.ap-cmd b{display:block;font-size:15px;font-weight:800;color:var(--ip-ink);font-family:var(--mono)}' +
-      '@media(max-width:720px){.ap-grid2{grid-template-columns:1fr}.ap-kpis{grid-template-columns:1fr 1fr}}';
+      '.ap-sec{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--ip-ink);margin:22px 0 2px}' +
+      '.ap-secsub{font-size:12px;color:var(--muted);margin:0 0 12px;line-height:1.5}' +
+      /* radar */
+      '.rad{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:6px}' +
+      '.rzone{padding:0;overflow:hidden}' +
+      '.rzh{padding:12px 15px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:9px}' +
+      '.rzh .ring{width:16px;height:16px;border-radius:50%;border:3px solid var(--z);flex:none}' +
+      '.rzh h3{margin:0;font-size:12.5px;font-weight:800}.rzh small{display:block;font-size:10.5px;color:var(--muted);font-weight:600}' +
+      '.rev{padding:11px 15px;border-top:1px solid var(--line)}.rev:first-of-type{border-top:0}' +
+      '.rev .rt{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:800;color:var(--ip-ink)}' +
+      '.rev .rs{font-size:11.5px;color:var(--muted);margin:3px 0 0 14px;line-height:1.4}' +
+      '.rev .rr{font-size:11.5px;font-weight:800;color:var(--c-opp);margin:5px 0 0 14px}' +
+      /* stock par établissement */
+      '.sites{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:9px;padding:14px 16px}' +
+      '.site{background:var(--card-2,#F6F8FB);border:1px solid var(--line);border-radius:11px;padding:9px 8px;text-align:center}' +
+      '.site .code{font-size:12px;font-weight:800}.site .qt{font-size:16px;font-weight:800;margin:2px 0}.site .pct{font-size:10px;color:var(--muted);font-weight:700}' +
+      '.site .sbar{height:5px;border-radius:3px;background:#E4E8EF;margin-top:7px;overflow:hidden}.site .sbar i{display:block;height:100%;background:#0E7C86;border-radius:3px}' +
+      '.imbhd{font-size:11.5px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--ip-ink);padding:6px 16px;border-top:1px solid var(--line);display:flex;gap:8px;align-items:center}' +
+      '.imbhd span{background:var(--card-2,#F6F8FB);border:1px solid var(--line);border-radius:999px;padding:0 8px;font-size:11px;color:var(--muted)}' +
+      '.imb{padding:12px 16px;border-top:1px solid var(--line)}' +
+      '.imb .imn{font-size:13px;font-weight:800;color:var(--ip-ink)}' +
+      '.imb .imm{font-size:11.5px;color:var(--muted);margin:2px 0 8px}.imb .imm b{color:var(--ip-ink)}' +
+      '.imbar{display:flex;align-items:flex-end;gap:6px;height:44px}' +
+      '.imbar .col{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px}' +
+      '.imbar .col .b{width:100%;max-width:32px;border-radius:3px 3px 0 0;background:#C6D0DE;min-height:2px}.imbar .col .b.hot{background:var(--c-amber)}.imbar .col .b.zero{background:#EAEDF2}' +
+      '.imbar .col small{font-size:9px;color:var(--muted);font-weight:700}' +
+      '.imb .imfix{font-size:11.5px;font-weight:800;color:#0E7C86;margin-top:8px}.imb .imfix b{color:var(--ip-ink)}' +
+      '@media(max-width:720px){.ap-grid2{grid-template-columns:1fr}.ap-kpis{grid-template-columns:1fr 1fr}.rad{grid-template-columns:1fr}}';
     document.head.appendChild(st);
   }
 })();
