@@ -532,7 +532,8 @@
     var idComm = {};
     (V2.pharmacies || []).forEach(function (p) {
       var c = (p.comms && p.comms[0]) || '';
-      if (c) idComm[String(p.id).replace(/[^0-9]/g, '')] = c;
+      var k = String(p.id).replace(/[^0-9]/g, '');
+      if (c && k) idComm[k] = c;
     });
     var count = {};
     D.p.forEach(function (p) {
@@ -545,7 +546,8 @@
       var best = null, bn = 0; for (var c in count[uga]) if (count[uga][c] > bn) { bn = count[uga][c]; best = c; }
       if (best) map[uga] = best;
     });
-    _ugaComm = map; return map;
+    if (Object.keys(map).length) _ugaComm = map;   // ne pas cacher une map vide (clients pas encore chargés)
+    return map;
   }
   // pseudo-ligne de liste pour un point PHARMA_FR (prospect ou promu) — réutilise listRowHtml
   function prospectPseudoX(p) {
@@ -558,7 +560,7 @@
     var uc = ugaCommMap(), out = [];
     for (var i = 0; i < D.p.length; i++) {
       var p = D.p[i];
-      if (uc[p[2]] !== comm || isClientSeg(p)) continue;
+      if (uc[p[2]] !== comm || isClientSeg(p) || (V2.promoted && V2.promoted[String(p[13])])) continue;
       out.push(p);
     }
     var total = out.length;
@@ -624,7 +626,7 @@
     function applyFilters(list) {
       var q = searchQuery.trim().toLowerCase();
       return list.filter(function (x) {
-        if (V2.commFilter && (x.p.comms || []).indexOf(V2.commFilter) < 0) return false;
+        if (V2.commFilter && !x.p._promu && (x.p.comms || []).indexOf(V2.commFilter) < 0) return false;
         if (q && x.p.name.toLowerCase().indexOf(q) < 0) return false;
         if (isOpso() && opsoFilter === 'cliente' && !x.p.inDb) return false;
         if (isOpso() && opsoFilter === 'prospect' && x.p.inDb) return false;
