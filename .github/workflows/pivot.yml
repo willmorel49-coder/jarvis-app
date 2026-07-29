@@ -1,0 +1,41 @@
+name: Couplage · table pivot CIP13
+
+# Robot GRATUIT : construit la table de correspondance universelle (CIP13 ↔ CIS ↔
+# molécule/DCI ↔ groupe générique ↔ labo ↔ taux remb ↔ prix public), à partir de
+# l'API Médicaments FR (miroir BDPM, sans clé). C'est la clé qui rend couplable toute
+# source externe (épidémio ATC, ruptures DCI, prix, réglementaire) avec nos CIP13.
+# Écrit crm/v2/pivot.json + crm/v2/pivot-index.json. Aucune clé, aucun coût.
+
+on:
+  schedule:
+    - cron: '17 4 * * *'   # tous les jours (la BDPM bouge ~1x/jour)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pivot
+  cancel-in-progress: false
+
+jobs:
+  pivot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Recalculer la table pivot
+        run: python3 generate_pivot.py
+      - name: Committer si changement
+        run: |
+          if git diff --quiet -- crm/v2/pivot.json crm/v2/pivot-index.json; then
+            echo "Pas de changement (BDPM inchangée)."
+          else
+            git config user.name  "JARVIS copilote"
+            git config user.email "actions@users.noreplace.github.com"
+            git add crm/v2/pivot.json crm/v2/pivot-index.json
+            git commit -m "data(couplage): table pivot CIP13 $(date -u +%Y-%m-%d)"
+            git push
+          fi
