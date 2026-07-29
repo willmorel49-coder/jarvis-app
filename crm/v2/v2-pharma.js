@@ -28,6 +28,7 @@
   var selPid = null;    // pharma à laquelle appartient la sélection courante
   // Filtre segment OPSO : 'all' | 'cliente' | 'prospect'
   var opsoFilter = 'all';
+  var secteurTab = 'clients';   // JARVIS : bascule Clients / Prospects (par UGA) dans l'onglet Officines
   // Sous-onglet Opportunités : 'officines' | 'groupements' | 'listes'
   var pharmaView = 'officines';
   var selGroup = null;        // groupement ouvert
@@ -523,6 +524,59 @@
       '</a>';
   }
 
+  // ── Secteur : UGA -> commercial (auto : celui qui a le plus de clients dans l'UGA) ──
+  var _ugaComm = null;
+  function ugaCommMap() {
+    if (_ugaComm) return _ugaComm;
+    var D = window.PHARMA_FR; if (!D || !D.p) return {};   // pas de cache tant que PHARMA_FR absent
+    var idComm = {};
+    (V2.pharmacies || []).forEach(function (p) {
+      var c = (p.comms && p.comms[0]) || '';
+      if (c) idComm[String(p.id).replace(/[^0-9]/g, '')] = c;
+    });
+    var count = {};
+    D.p.forEach(function (p) {
+      var comm = idComm[String(p[13] || '').replace(/[^0-9]/g, '')]; if (!comm) return;
+      var uga = p[2]; if (uga == null) return;
+      (count[uga] || (count[uga] = {}))[comm] = ((count[uga] && count[uga][comm]) || 0) + 1;
+    });
+    var map = {};
+    Object.keys(count).forEach(function (uga) {
+      var best = null, bn = 0; for (var c in count[uga]) if (count[uga][c] > bn) { bn = count[uga][c]; best = c; }
+      if (best) map[uga] = best;
+    });
+    _ugaComm = map; return map;
+  }
+  // pseudo-ligne de liste pour un point PHARMA_FR (prospect ou promu) — réutilise listRowHtml
+  function prospectPseudoX(p) {
+    return { p: { id: p[13], name: nameOf(p[13], p[6] || p[10] || 'Pharmacie'), color: '#9AA1B2', inDb: false, comms: [], _prospect: true }, ca: 0, marge: 0, opp: 0 };
+  }
+  function isClientSeg(p) { var s = window.PHARMA_FR && window.PHARMA_FR.seg[p[4]]; return s && s.indexOf('Client') === 0; }
+  // Prospects (non-clients) des UGA possédées par un commercial. Plafonné à `cap`.
+  function commercialProspects(comm, cap) {
+    var D = window.PHARMA_FR; if (!D || !D.p || !comm) return { rows: [], total: 0 };
+    var uc = ugaCommMap(), out = [];
+    for (var i = 0; i < D.p.length; i++) {
+      var p = D.p[i];
+      if (uc[p[2]] !== comm || isClientSeg(p)) continue;
+      out.push(p);
+    }
+    var total = out.length;
+    return { rows: out.slice(0, cap || 200).map(prospectPseudoX), total: total };
+  }
+  // Prospects explicitement passés en client (V2.promoted) -> pseudo-clients pour la liste.
+  function promotedRows() {
+    var D = window.PHARMA_FR, prom = V2.promoted || {}, out = [];
+    if (!D || !D.p) return out;
+    var byId = {}; D.p.forEach(function (p) { byId[String(p[13])] = p; });
+    Object.keys(prom).forEach(function (pid) {
+      if (!prom[pid]) return;
+      if ((V2.pharmacies || []).some(function (c) { return String(c.id) === String(pid); })) return; // déjà client réel
+      var p = byId[String(pid)]; if (p) { var x = prospectPseudoX(p); x.p._promu = true; out.push(x); }
+    });
+    return out;
+  }
+
   function renderList(root) {
     var marketReady = !!window.OPS_AGGREGATE;
     var phs = (V2.pharmacies || []).map(function (p) {
@@ -533,6 +587,12 @@
       }
       return x;
     });
+
+    // JARVIS : PHARMA_FR sert aux promus (dans Clients) et aux prospects par UGA. Charge puis rafraîchit.
+    if (!isOpso() && !window.PHARMA_FR && V2.ensurePharmaFr) {
+      V2.ensurePharmaFr(function () { _ugaComm = null; if (V2.route && V2.route.name === 'pharma' && !V2.route.param) V2.render(); });
+    }
+    if (!isOpso() && window.PHARMA_FR) { try { phs = phs.concat(promotedRows()); } catch (e) {} }
 
     // ── Tri OPSO : clientes d'abord, puis par CA desc ──
     if (isOpso()) {
@@ -618,7 +678,31 @@
       opsoFilterBar = counterHtml + opsoFilterBar;
     }
 
-    var filtered = applyFilters(phs);
+    // ── Bascule Clients / Prospects (JARVIS uniquement) ──
+    var secteurBar = '';
+    if (!isOpso()) {
+      var sTab = function (val, label) {
+        return '<button type="button" class="v2-seg' + (secteurTab === val ? ' on' : '') + '" style="--sc:var(--ip-blue)" onclick="V2.pharmaSecteurTab(\'' + val + '\')">' + label + '</button>';
+      };
+      secteurBar = '<div class="v2-segs" style="margin-bottom:14px">' + sTab('clients', 'Clients') + sTab('prospects', 'Prospects de mon secteur') + '</div>';
+    }
+
+    // Contenu de la liste selon la bascule (Clients par défaut, sinon Prospects par UGA du commercial).
+    function listBody() {
+      try {
+        if (!isOpso() && secteurTab === 'prospects') {
+          if (!V2.commFilter) return '<div class="v2-empty"><div class="v2-empty-t">Choisis un commercial</div><div class="v2-empty-d">Sélectionne un commercial au-dessus pour voir les prospects de son secteur (UGA).</div></div>';
+          if (!window.PHARMA_FR) return '<div class="v2-loading"><div class="v2-spinner"></div><div>Chargement des prospects…</div></div>';
+          var pr = commercialProspects(V2.commFilter, 300);
+          var q = searchQuery.trim().toLowerCase();
+          var rows = q ? pr.rows.filter(function (x) { return (x.p.name || '').toLowerCase().indexOf(q) >= 0; }) : pr.rows;
+          if (!rows.length) return '<div class="v2-empty"><div class="v2-empty-t">Aucun prospect</div><div class="v2-empty-d">' + (q ? 'Aucun résultat.' : 'Aucun prospect dans les UGA de ce commercial.') + '</div></div>';
+          var more = (pr.total > pr.rows.length) ? '<a class="v2-row" style="justify-content:center;color:var(--muted);cursor:pointer" onclick="V2.go(\'pharma\',\'carte\')">+ ' + (pr.total - pr.rows.length) + ' autres prospects · voir sur la carte</a>' : '';
+          return rows.map(listRowHtml).join('') + more;
+        }
+      } catch (e) { return '<div class="v2-empty"><div class="v2-empty-t">Prospects indisponibles</div><div class="v2-empty-d">Réessaie plus tard.</div></div>'; }
+      return cardHtml(applyFilters(phs));
+    }
 
     root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
       '<div class="v2-wrap">' +
@@ -627,11 +711,12 @@
           ' · clique pour voir les opportunités</div>' +
         pharmaTabs('officines') +
         commBar +
+        secteurBar +
         opsoFilterBar +
         '<div class="v2-search" style="margin-bottom:20px;padding:14px 18px">' + ICO('search', 20, 2) +
           '<input id="v2-pharma-search" placeholder="Rechercher une officine…" autocomplete="off" value="' +
           V2.esc(searchQuery) + '"></div>' +
-        '<div class="v2-card" id="v2-pharma-card">' + cardHtml(filtered) + '</div>' +
+        '<div class="v2-card" id="v2-pharma-card">' + listBody() + '</div>' +
       '</div>';
 
     // Recherche live : on ne re-render QUE la liste pour préserver le focus
@@ -641,8 +726,7 @@
         searchQuery = inp.value;
         var card = document.getElementById('v2-pharma-card');
         if (!card) return;
-        var f = applyFilters(phs);
-        card.innerHTML = cardHtml(f);
+        card.innerHTML = listBody();
       });
     }
   }
@@ -1205,6 +1289,9 @@
         (V2.profil ? V2.profil.section('client', pid) : '') +
         (V2.notes ? V2.notes.section('client', pid) : '') +
         '<div class="v2-card v2-prospect-acts">' +
+          ((V2.promoted && V2.promoted[String(pid)])
+            ? '<span class="v2-btn v2-btn-ghost" style="cursor:default;color:var(--c-opp);border-color:var(--c-opp)">✓ Passé en client</span>'
+            : '<button class="v2-btn v2-btn-primary" onclick="V2.promoteToClient(\'' + esc(String(pid)) + '\')">➕ Passer en client</button>') +
           '<a class="v2-btn v2-btn-ghost" href="https://www.google.com/maps/search/?api=1&query=' + q + '" target="_blank" rel="noopener">Voir sur Google Maps</a>' +
         '</div>' +
       '</div>';
@@ -1545,6 +1632,15 @@
   // ── Handler filtre OPSO (segment clientes / prospects) ──
   V2.pharmaOpsoFilter = function (val) {
     opsoFilter = val;
+    V2.render();
+  };
+  V2.pharmaSecteurTab = function (v) { secteurTab = v || 'clients'; V2.render(); };
+  V2.promoteToClient = function (pid) {
+    if (!V2.user) { if (V2.toast) V2.toast('Connecte-toi pour passer un prospect en client'); return; }
+    V2.promoted = V2.promoted || {};
+    V2.promoted[String(pid)] = true;
+    if (V2.profil && V2.profil.saveOverride) V2.profil.saveOverride(pid, { promu: true });
+    if (V2.toast) V2.toast('Passé en client ✓ — visible dans tes Clients');
     V2.render();
   };
   V2.pharmaSetComm = function (val) {
