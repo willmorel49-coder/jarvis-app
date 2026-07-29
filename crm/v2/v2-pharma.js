@@ -1122,7 +1122,52 @@
       }
     } catch (e) {}
 
-    return '<div class="phd">' + hero + planCard + ruptBand + scoreCard + jumeauCard + reps + '</div>';
+    // ── RESTE À CONQUÉRIR : best-sellers du réseau qu'elle n'achète PAS encore ──
+    // (concret, chiffré à la moyenne réseau — script de visite prêt à l'emploi)
+    var conqCard = '';
+    try {
+      var PSc = window.PROD_STATS;
+      if (PSc && PSc.length && offs.length >= 10) {
+        var bought = {};
+        sales.forEach(function (s) { var c = String(s.artCode || ''); if (s.qte > 0 && c.length >= 7) bought[c] = 1; });
+        var NBc = offs.length, thr = Math.max(60, Math.round(0.20 * NBc));
+        var cand = [];
+        for (var pi = 0; pi < PSc.length; pi++) {
+          var p = PSc[pi];
+          if (!p || p.n < thr || p.rota <= 0 || p.net <= 0) continue;
+          if (bought[String(p.c)]) continue;
+          cand.push(p);
+        }
+        // trié par « à quel point c'est un standard réseau » (pénétration), puis valeur
+        cand.sort(function (a, b) { return (b.n - a.n) || ((b.rota * b.net) - (a.rota * a.net)); });
+        if (cand.length >= 3) {
+          var topc = cand.slice(0, 6);
+          var crows = topc.map(function (p, i) {
+            var eu = Math.round(p.rota * p.net);
+            var badges = '';
+            if (typeof p.f === 'string' && p.f.indexOf('pr_') === 0 && p.rpct > 0)
+              badges += '<span class="phd-rok">abandon &minus;' + (Math.round(p.rpct * 10) / 10).toLocaleString('fr-FR') + ' %</span>';
+            if ((V2.stock ? V2.stock(p.c) : 0) > 0)
+              badges += '<span class="phd-rok">✓ en stock Intégral</span>';
+            var mo = V2.momentum ? V2.momentum(p.c) : null, te = V2.tendance ? V2.tendance(p.c) : null;
+            if ((mo != null && mo > 0) || (te != null && te > 8))
+              badges += '<span class="phd-rko">↑ marché</span>';
+            return '<div class="phd-act"><div class="rk">' + (i + 1) + '</div>' +
+              '<div class="mn"><b>' + esc(cap((p.d || '').toLowerCase())) + '</b>' +
+              '<span>' + p.n + ' officines du réseau le prennent' + (badges ? ' · ' : '') + '</span>' +
+              (badges ? '<div class="phd-rnm" style="margin-top:5px;display:flex;gap:5px;flex-wrap:wrap">' + badges + '</div>' : '') +
+              '</div>' +
+              '<div class="mt" style="color:var(--ip-ink)">' + V2.fmtEur(eu) + '<small>/an réseau</small></div></div>';
+          }).join('');
+          conqCard = '<div class="phd-card"><div class="phd-sh"><div class="ic" style="background:#6D5AE6">↗</div>' +
+            '<div><h3>Reste à conquérir</h3><div class="dsc">' + cand.length + ' best-sellers pris par &ge; 20 % du réseau qu\'elle n\'achète pas encore — les 6 plus répandus</div></div></div>' +
+            crows +
+            '<div style="font-size:10.5px;color:var(--muted);padding:8px 18px 12px">Montant = achat moyen /an d\'une officine du réseau qui prend ce produit (repère, pas un engagement).</div></div>';
+        }
+      }
+    } catch (e) {}
+
+    return '<div class="phd">' + hero + planCard + ruptBand + conqCard + scoreCard + jumeauCard + reps + '</div>';
   }
 
   function activitySection(sales, marge, ca) {
