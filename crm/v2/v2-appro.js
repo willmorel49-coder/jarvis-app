@@ -389,6 +389,45 @@
       '<div class="ap-foot" style="padding:9px 16px 11px;margin:0">Réfs = produits du catalogue réseau associés à la pathologie (mots-clés). Croiser avec le stock avant le pic.</div></div>';
   }
 
+  // ═══ ANTICIPATION RÉGLEMENTAIRE (HAS, robot mensuel) — le prochain Wegovy 3-6 mois avant ═══
+  var _hasState = 0, _hasData = null, _bought = null, _boughtRef = null;
+  function boughtSet() {
+    var S = window.WML_SALES; if (!S) return {};
+    if (_bought && _boughtRef === S) return _bought;
+    var b = {}; for (var i = 0; i < S.length; i++) { var r = S[i]; if (r[4] > 0) b[String(r[3])] = 1; }
+    _bought = b; _boughtRef = S; return b;
+  }
+  function ensureHas() {
+    if (_hasData || _hasState) return;
+    _hasState = 1;
+    try {
+      var day = new Date().toISOString().slice(0, 10);
+      fetch('has-avis.json?d=' + day, { cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) { _hasData = j || {}; _hasState = 2; try { V2.render(); } catch (e) {} })
+        .catch(function () { _hasState = 2; });
+    } catch (e) { _hasState = 2; }
+  }
+  function hasCard() {
+    if (!_hasData) return '<div class="v2-card ap-card"><div class="ap-hd"><div class="ap-ic" style="background:var(--ip-blue)">§</div><div><h3>Anticipation réglementaire</h3><div class="ap-sub">chargement des avis HAS…</div></div></div></div>';
+    var favs = (_hasData.items || []).filter(function (i) { return i.cat === 'reimb'; });
+    if (!favs.length) return '';
+    var b = boughtSet();
+    function dfr(iso) { var p = (iso || '').split('-'); return p.length >= 2 ? MOIS_L[+p[1] - 1] + ' ' + p[0] : iso; }
+    var nOurs = favs.filter(function (i) { return (i.cips || []).some(function (c) { return b[c]; }); }).length;
+    var rows = favs.slice(0, 12).map(function (i) {
+      var ours = (i.cips || []).some(function (c) { return b[c]; });
+      return '<div class="ap-row"><div class="ap-nm">' + esc(cap((i.spec || '').toLowerCase())) +
+        '<small>avis HAS ' + dfr(i.date) + (i.motif ? ' · ' + esc(i.motif.toLowerCase()) : '') + '</small></div>' +
+        '<div class="ap-mini">ASMR ' + esc(i.asmr) + '</div>' +
+        (ours ? '<div class="ap-st ok">déjà au catalogue</div>' : '<div class="ap-st ko">à référencer</div>') + '</div>';
+    }).join('');
+    var m = _hasData.meta || {};
+    return '<div class="v2-card ap-card"><div class="ap-hd"><div class="ap-ic" style="background:var(--ip-blue)">§</div><div><h3>Anticipation réglementaire — HAS</h3>' +
+      '<div class="ap-sub">' + (m.nFav || 0) + ' avis favorables récents (amélioration ASMR I-IV) · <b>' + nOurs + ' déjà au catalogue réseau</b> — ce qui va monter/arriver, le signal 3-6 mois avant le remboursement</div></div></div>' + rows +
+      '<div class="ap-foot" style="padding:9px 16px 11px;margin:0">Un avis favorable de la Commission de la Transparence précède l\'inscription au remboursement de 3-6 mois. « À référencer » = ASMR élevé qu\'on ne distribue pas encore.</div></div>';
+  }
+
   V2.pages.appro = {
     render: function (root) {
       ensureCss();
@@ -404,14 +443,16 @@
       ensureGener();  // charge la veille génériques (BDPM, robot mensuel)
       ensureAnsm();   // charge la veille ANSM disponibilités + dates de retour (robot quotidien)
       ensureEpidemio(); // charge les signaux de demande (Sentinelles, robot quotidien)
+      ensureHas();    // charge l'anticipation réglementaire HAS (robot mensuel)
       // ── Cockpit réassort (crash-safe : ne casse jamais la page si un flux manque) ──
-      var kpiBand = '', reaCard = '', rosCard = '', radarHtml = '', etabHtml = '', basculesHtml = '', ansmHtml = '', epiHtml = '';
+      var kpiBand = '', reaCard = '', rosCard = '', radarHtml = '', etabHtml = '', basculesHtml = '', ansmHtml = '', epiHtml = '', hasHtml = '';
       try {
         radarHtml = radarSection(window.WML_SALES && window.STOCK_IP ? reassort() : []);
         etabHtml = etabSection();
         basculesHtml = basculesCard();
         ansmHtml = ansmCard();
         epiHtml = epidemioCard();
+        hasHtml = hasCard();
         if (window.WML_SALES && window.STOCK_IP) {
           var h = stockHealth();
           kpiBand = '<div class="ap-kpis">' +
@@ -494,6 +535,7 @@
           '<div class="ap-secsub">Ce qui va bouger la demande : remboursements, génériques, baisses de prix, saison, ruptures — croisé avec ton réassort urgent en temps réel.</div>' +
           radarHtml +
           epiHtml +
+          hasHtml +
           '<div class="ap-sec">Piloter les achats</div>' +
           reaCard +
           ansmHtml +

@@ -1,0 +1,40 @@
+name: Veille appro · anticipation HAS (remboursement)
+
+# Robot GRATUIT : avis de la Commission de la Transparence (HAS) via les CSV ouverts
+# data.gouv « Évaluation des médicaments ». Un avis favorable (ASMR I-IV) précède
+# l'inscription au remboursement de 3-6 mois = le signal « prochain Wegovy ».
+# Écrit crm/v2/has-avis.json (+ snapshot pour le diff mensuel). Aucune clé, aucun coût.
+
+on:
+  schedule:
+    - cron: '33 5 3 * *'   # le 3 de chaque mois (les CSV HAS sont mensuels)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: has-avis
+  cancel-in-progress: false
+
+jobs:
+  has:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Recalculer les avis HAS
+        run: python3 generate_has.py
+      - name: Committer si changement
+        run: |
+          if git diff --quiet -- crm/v2/has-avis.json crm/v2/_has_snapshot.json; then
+            echo "Pas de changement (avis HAS inchangés)."
+          else
+            git config user.name  "JARVIS copilote"
+            git config user.email "actions@users.noreplace.github.com"
+            git add crm/v2/has-avis.json crm/v2/_has_snapshot.json
+            git commit -m "data(veille): avis HAS $(date -u +%Y-%m-%d)"
+            git push
+          fi
