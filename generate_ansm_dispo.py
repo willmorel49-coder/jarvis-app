@@ -27,7 +27,32 @@ LIST_URL = "https://ansm.sante.fr/disponibilites-des-produits-de-sante/medicamen
 HOST = "https://ansm.sante.fr"
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "crm", "v2", "ansm-dispo.json")
+PIVOT = os.path.join(HERE, "crm", "v2", "pivot.json")
 MAX_FICHES = int(os.environ.get("ANSM_MAX", "0"))   # 0 = toutes les tensions/ruptures
+
+
+def norm_dci(s):
+    """Molécule normalisée (1er mot INN, sans parenthèses) pour la jointure floue ANSM↔pivot."""
+    s = re.sub(r"\(.*?\)", " ", (s or "").upper())
+    s = re.sub(r"[^A-ZÀ-Ü ]", " ", s)
+    parts = [p for p in s.split() if len(p) > 3]
+    return parts[0] if parts else ""
+
+
+def load_subst_set():
+    """Molécules (norm) qui ont un groupe générique, d'après la table pivot (couplage)."""
+    try:
+        with io.open(PIVOT, "r", encoding="utf-8") as f:
+            data = json.load(f).get("data", {})
+    except Exception:
+        return set()
+    out = set()
+    for row in data.values():
+        if row.get("grp") is not None:
+            k = norm_dci(row.get("dci"))
+            if k:
+                out.add(k)
+    return out
 
 MOIS = {"janvier": 1, "février": 2, "fevrier": 2, "mars": 3, "avril": 4, "mai": 5,
         "juin": 6, "juillet": 7, "août": 8, "aout": 8, "septembre": 9, "octobre": 10,
@@ -133,11 +158,20 @@ def main():
             it["retour"] = r
             n_dates += 1
 
+    # Couplage pivot : la molécule en tension a-t-elle un générique substituable ?
+    subst = load_subst_set()
+    n_subst = 0
+    for it in lst:
+        s = 1 if norm_dci(it.get("dci")) in subst else 0
+        it["subst"] = s
+        if s and ("ension" in it["st"] or "upture" in it["st"]):
+            n_subst += 1
+
     today = datetime.date.today().isoformat()
     # on n'exporte pas le slug entier (poids) — juste ce qui sert au couplage
     items = [{"st": it["st"], "spec": it["spec"], "dci": it["dci"], "dom": it["dom"],
-              "maj": it["maj"], "retour": it.get("retour")} for it in lst]
-    out = {"generated": today, "source": "ANSM Disponibilités", "meta": {"n": len(lst), "byStatut": by_statut, "nDates": n_dates}, "items": items}
+              "maj": it["maj"], "retour": it.get("retour"), "subst": it.get("subst", 0)} for it in lst]
+    out = {"generated": today, "source": "ANSM Disponibilités", "meta": {"n": len(lst), "byStatut": by_statut, "nDates": n_dates, "nSubst": n_subst}, "items": items}
     with io.open(OUT, "w", encoding="utf-8") as f:
         json.dump(out, f, ensure_ascii=False, separators=(",", ":"))
     print("OK · signalements=%d · %s · dates de retour futures=%d" % (len(lst), by_statut, n_dates))

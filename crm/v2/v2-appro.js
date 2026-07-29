@@ -339,14 +339,15 @@
     items.sort(function (a, b) { return (a.retour.annee * 100 + (a.retour.mois || 13)) - (b.retour.annee * 100 + (b.retour.mois || 13)); });
     var rows = items.slice(0, 15).map(function (i) {
       var rup = /upture/.test(i.st);
-      return '<div class="ap-row"><div class="ap-nm">' + esc(cap((i.spec || '').toLowerCase())) + (i.dci ? '<small>' + esc(i.dci) + '</small>' : '') + '</div>' +
+      return '<div class="ap-row"><div class="ap-nm">' + esc(cap((i.spec || '').toLowerCase())) +
+        (i.dci ? '<small>' + esc(i.dci) + (i.subst ? ' · <b style="color:var(--c-opp)">générique dispo</b>' : '') + '</small>' : '') + '</div>' +
         '<div class="ap-mini">' + (rup ? '<span class="ap-tag ru">rupture</span>' : '<span class="ap-tag" style="color:#a8651a;background:#FFF8EC;border:1px solid #F0DCA8">tension</span>') + '</div>' +
         '<div class="ap-st ok">retour ' + retourLabel(i.retour) + '</div></div>';
     }).join('') || '<div class="ap-empty">Aucune date de retour renseignée pour le moment.</div>';
     var m = _ansmData.meta || {}, bs = m.byStatut || {}, rupN = 0, tenN = 0;
     Object.keys(bs).forEach(function (k) { if (/upture/.test(k)) rupN += bs[k]; if (/ension/.test(k)) tenN += bs[k]; });
     return '<div class="v2-card ap-card"><div class="ap-hd"><div class="ap-ic" style="background:var(--c-amber)">!</div><div><h3>Ruptures &amp; retours ANSM</h3>' +
-      '<div class="ap-sub">' + (m.n || 0) + ' signalements actifs · ' + rupN + ' ruptures · ' + tenN + ' tensions · <b>' + (m.nDates || 0) + ' avec date de retour prévue</b> — top 15 par échéance</div></div></div>' +
+      '<div class="ap-sub">' + (m.n || 0) + ' signalements actifs · ' + rupN + ' ruptures · ' + tenN + ' tensions · <b>' + (m.nDates || 0) + ' avec date de retour</b> · <b style="color:var(--c-opp)">' + (m.nSubst || 0) + ' substituables (générique)</b> — top 15 par échéance</div></div></div>' +
       rows +
       '<div class="ap-foot" style="padding:10px 16px 12px;margin:0">Date de retour = champ « remise à disposition prévue » des fiches ANSM (approximatif, ~1 réf sur 3 renseignée). Source unique gratuite, MAJ quotidienne — personne d\'autre ne l\'agrège.</div></div>';
   }
