@@ -84,6 +84,78 @@
     return out.slice(0, 14);
   }
 
+  // ═══ COCKPIT RÉASSORT : croise WML_SALES (vitesse réseau) × STOCK_IP (couverture) ═══
+  var MINVEL = 5;      // seuil de bruit : au moins 5 bts/mois réseau pour être « mouvant »
+  var CIBLE = 21, CIBLE_TENSION = 30;   // couverture cible en jours (réappro inclus) — relevée si tension/hausse
+  var _cipIdx = null, _cipIdxRef = null;
+
+  // Index par CIP : demande mensuelle réseau (6 mois) + stock plateforme → vitesse, couverture, qté conseillée.
+  // Construit une seule fois et mis en cache (pattern salesByPid de v2-audit.js, transposé cip13).
+  function cipIndex() {
+    var S = window.WML_SALES;
+    if (!S) return {};
+    if (_cipIdx && _cipIdxRef === S) return _cipIdx;
+    var P = window.PROD_STATS || [], ps = {};
+    for (var i = 0; i < P.length; i++) ps[String(P[i].c)] = P[i];
+    var stk = (window.STOCK_IP && window.STOCK_IP.data) || {};
+    var dem = {};
+    for (var j = 0; j < S.length; j++) {
+      var r = S[j], q = r[4] || 0, m = r[1];
+      if (q <= 0 || m < 1 || m > 6) continue;
+      var c = String(r[3]), a = dem[c] || (dem[c] = [0, 0, 0, 0, 0, 0]);
+      a[m - 1] += q;
+    }
+    var idx = {};
+    Object.keys(stk).forEach(function (c) {
+      var a = dem[c], tot = a ? (a[0] + a[1] + a[2] + a[3] + a[4] + a[5]) : 0;
+      var vM = tot / 6, st = stk[c], vD = vM / 30;
+      var cov = vD > 0 ? st / vD : (st > 0 ? 9999 : 0);
+      var p = ps[c];
+      var isRupt = !!rupt(c), tg = tend(c);
+      var cibleJ = (isRupt || (tg != null && tg > 0)) ? CIBLE_TENSION : CIBLE;
+      var qcmd = Math.max(0, Math.round(cibleJ * vD - st));
+      idx[c] = { c: c, d: p ? p.d : c, vM: vM, st: st, cov: cov, qcmd: qcmd,
+        ppht: p ? (p.ppht || 0) : 0, stale: p ? p.stale : 0, rupt: isRupt, f: p ? p.f : '' };
+    });
+    _cipIdx = idx; _cipIdxRef = S;
+    return idx;
+  }
+
+  // Santé du stock : compteurs de tête (tension / à commander / dormants / capital immobilisé).
+  function stockHealth() {
+    var idx = cipIndex(), t = 0, a = 0, r = 0, cap = 0, ncmd = 0;
+    Object.keys(idx).forEach(function (k) {
+      var o = idx[k], mov = o.vM >= MINVEL;
+      if (mov && o.cov < 7) t++; else if (mov && o.cov < 21) a++;
+      if (o.st > 0 && (o.cov > 90 || o.stale === 1)) { r++; cap += o.st * o.ppht; }
+      if (mov && o.qcmd > 0) ncmd++;
+    });
+    return { tension: t, acmd: a, ross: r, cap: cap, ncmd: ncmd };
+  }
+
+  // Réassort recommandé : produits mouvants à recommander, triés par urgence (couverture croissante).
+  function reassort() {
+    var idx = cipIndex(), out = [];
+    Object.keys(idx).forEach(function (k) { var o = idx[k]; if (o.vM >= MINVEL && o.qcmd > 0 && o.cov <= 90) out.push(o); });
+    out.sort(function (a, b) { return a.cov - b.cov; });
+    return out.slice(0, 24);
+  }
+
+  // Rossignols : stock dormant (couverture > 90 j ou flag stale), trié par capital immobilisé.
+  function rossignols() {
+    var idx = cipIndex(), out = [];
+    Object.keys(idx).forEach(function (k) { var o = idx[k]; if (o.st > 0 && (o.cov > 90 || o.stale === 1)) { o.cap = o.st * o.ppht; out.push(o); } });
+    out.sort(function (a, b) { return b.cap - a.cap; });
+    return out.slice(0, 16);
+  }
+
+  function covBadge(cov) {
+    if (cov >= 9999) return '<span class="ap-cov ko">jamais vendu</span>';
+    var cls = cov < 7 ? 'ko' : cov < 21 ? 'wa' : 'ok';
+    var lab = cov > 90 ? '90+ j' : Math.round(cov) + ' j';
+    return '<span class="ap-cov ' + cls + '">' + lab + '</span>';
+  }
+
   V2.pages.appro = {
     render: function (root) {
       ensureCss();
@@ -94,6 +166,42 @@
         if (V2.loadFiles) V2.loadFiles(['bench']).then(function () { V2.render(); });
         return;
       }
+
+      // ── Cockpit réassort (crash-safe : ne casse jamais la page si un flux manque) ──
+      var kpiBand = '', reaCard = '', rosCard = '';
+      try {
+        if (window.WML_SALES && window.STOCK_IP) {
+          var h = stockHealth();
+          kpiBand = '<div class="ap-kpis">' +
+            '<div class="ap-kpi ko"><div class="ap-kv">' + fmt(h.tension) + '</div><div class="ap-kl">en tension &lt; 7 j</div></div>' +
+            '<div class="ap-kpi wa"><div class="ap-kv">' + fmt(h.acmd) + '</div><div class="ap-kl">à commander (7–21 j)</div></div>' +
+            '<div class="ap-kpi"><div class="ap-kv">' + fmt(h.ross) + '</div><div class="ap-kl">rossignols / dormants</div></div>' +
+            '<div class="ap-kpi eu"><div class="ap-kv mono">' + (V2.fmtEur ? V2.fmtEur(h.cap) : fmt(h.cap)) + '</div><div class="ap-kl">capital dormant</div></div>' +
+            '</div>';
+
+          var reaRows = reassort().map(function (o) {
+            return '<div class="ap-row"><div class="ap-nm">' + esc(cap(o.d)) + (o.rupt ? ' <span class="ap-tag ru">ANSM</span>' : '') +
+              '<small>' + fmt(Math.round(o.vM)) + '/mois réseau · stock ' + fmt(o.st) + '</small></div>' +
+              '<div class="ap-covwrap">' + covBadge(o.cov) + '</div>' +
+              '<div class="ap-cmd">commander<b>~' + fmt(o.qcmd) + '</b></div></div>';
+          }).join('') || '<div class="ap-empty">Rien d\'urgent à réassortir.</div>';
+          reaCard = '<div class="v2-card ap-card"><div class="ap-hd"><div class="ap-ic" style="background:var(--c-amber)">' + ICO('alert', 15, 2) + '</div>' +
+            '<div><h3>À commander — réassort recommandé</h3><div class="ap-sub">couverture en jours (stock plateforme ÷ vitesse réseau) + quantité conseillée — ' + fmt(h.ncmd) + ' réfs à passer, top 24 par urgence</div></div></div>' +
+            reaRows +
+            '<div class="ap-foot" style="padding:10px 18px 12px;margin:0">Vitesse = ventes réseau/mois (WML, 6 mois). Cible ' + CIBLE + ' j, portée à ' + CIBLE_TENSION + ' j si tension ANSM ou marché en hausse. Photographie du dernier import stock+ventes.</div></div>';
+
+          var rosRows = rossignols().map(function (o) {
+            var cv = o.vM > 0 ? Math.round(o.cov) + ' j de stock' : 'aucune vente sur 6 mois';
+            return '<div class="ap-row"><div class="ap-nm">' + esc(cap(o.d)) + (o.stale ? ' <span class="ap-tag ru">dormant</span>' : '') +
+              '<small>' + cv + ' · stock ' + fmt(o.st) + '</small></div>' +
+              '<div class="ap-vol mono">' + (V2.fmtEur ? V2.fmtEur(o.cap) : fmt(o.cap)) + '</div>' +
+              '<div class="ap-cmd" style="color:#a8651a">ne plus<b style="color:#a8651a">commander</b></div></div>';
+          }).join('') || '<div class="ap-empty">Aucun stock dormant détecté.</div>';
+          rosCard = '<div class="v2-card ap-card"><div class="ap-hd"><div class="ap-ic" style="background:#8A6D3B">' + ICO('cat', 15, 2) + '</div>' +
+            '<div><h3>Rossignols — stock dormant</h3><div class="ap-sub">capital immobilisé à écouler, à ne plus commander — top 16 par € dormant</div></div></div>' +
+            rosRows + '</div>';
+        }
+      } catch (e) { kpiBand = ''; reaCard = ''; rosCard = ''; }
 
       var ris = rising(), rup = ruptToSecure(), nouv = nouveautes(), sai = saisonNext(), neg = negoLabos();
 
@@ -133,7 +241,10 @@
       root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
         '<div class="v2-wrap">' +
           '<div class="v2-page-title">Appro Intégral</div>' +
-          '<div class="v2-page-sub">Ce qui monte, ce qui arrive, et tes leviers de négo — d\'après la demande réelle du réseau et le marché France. Outil de l\'équipe achats.</div>' +
+          '<div class="v2-page-sub">Maîtriser les achats et anticiper les ruptures : couverture de stock, réassort conseillé et leviers de négo — d\'après la demande réelle du réseau. Outil de l\'équipe achats.</div>' +
+          kpiBand +
+          reaCard +
+          rosCard +
           card('spark', 'Ça monte', 'produits en croissance, présents dans le réseau — à renforcer au stock', risRows, 'var(--c-opp)') +
           '<div class="ap-grid2">' +
             card('alert', 'Ruptures à sécuriser', 'tension ANSM sur des produits que le réseau achète', rupRows, 'var(--c-amber)') +
@@ -167,7 +278,17 @@
       '.ap-empty{padding:16px 18px;font-size:12.5px;color:var(--muted)}' +
       '.ap-grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}' +
       '.ap-foot{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.5}' +
-      '@media(max-width:720px){.ap-grid2{grid-template-columns:1fr}}';
+      '.ap-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}' +
+      '.ap-kpi{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:12px 14px}' +
+      '.ap-kpi.ko{border-color:#F3B0A0;background:#FFF1EE}.ap-kpi.wa{border-color:#F0C98A;background:#FFF8EC}' +
+      '.ap-kv{font-size:24px;font-weight:800;color:var(--ip-ink);font-family:var(--mono);letter-spacing:-.02em;line-height:1}' +
+      '.ap-kpi.ko .ap-kv{color:#C0561A}.ap-kpi.wa .ap-kv{color:#a8651a}' +
+      '.ap-kl{font-size:11px;color:var(--muted);font-weight:600;margin-top:3px}' +
+      '.ap-covwrap{flex:none;min-width:66px;text-align:right}' +
+      '.ap-cov{font-size:11px;font-weight:800;border-radius:999px;padding:3px 9px;white-space:nowrap}' +
+      '.ap-cov.ko{color:#C0561A;background:#FFECEC;border:1px solid #F3B0A0}.ap-cov.wa{color:#a8651a;background:#FFF1DB;border:1px solid #F0C98A}.ap-cov.ok{color:var(--c-opp);background:#E7F5EC;border:1px solid #BFE6CF}' +
+      '.ap-cmd{flex:none;font-size:10.5px;color:var(--muted);font-weight:600;text-align:right;min-width:78px;line-height:1.25}.ap-cmd b{display:block;font-size:15px;font-weight:800;color:var(--ip-ink);font-family:var(--mono)}' +
+      '@media(max-width:720px){.ap-grid2{grid-template-columns:1fr}.ap-kpis{grid-template-columns:1fr 1fr}}';
     document.head.appendChild(st);
   }
 })();
