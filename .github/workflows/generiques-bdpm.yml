@@ -1,0 +1,40 @@
+name: Veille appro · génériques BDPM
+
+# Robot GRATUIT : télécharge la base médicaments (BDPM/ANSM, miroir betagouv),
+# détecte les groupes génériques et les princeps qui ont un générique dispo,
+# et signale par diff mensuel les NOUVEAUX groupes génériques (falaise de brevet
+# en pratique). Écrit crm/v2/generiques-bdpm.json (+ snapshot). Aucune clé, aucun coût.
+
+on:
+  schedule:
+    - cron: '23 5 2 * *'   # le 2 de chaque mois (BDPM publie ~1x/mois)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: generiques-bdpm
+  cancel-in-progress: false
+
+jobs:
+  generiques:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Recalculer la veille génériques
+        run: python3 generate_generiques_bdpm.py
+      - name: Committer si changement
+        run: |
+          if git diff --quiet -- crm/v2/generiques-bdpm.json crm/v2/_gener_snapshot.json; then
+            echo "Pas de changement (base génériques inchangée)."
+          else
+            git config user.name  "JARVIS copilote"
+            git config user.email "actions@users.noreplace.github.com"
+            git add crm/v2/generiques-bdpm.json crm/v2/_gener_snapshot.json
+            git commit -m "data(veille): génériques BDPM $(date -u +%Y-%m-%d)"
+            git push
+          fi
