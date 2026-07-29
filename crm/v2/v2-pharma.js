@@ -1254,6 +1254,31 @@
     V2.render();
   };
 
+  // ── Titulaire(s) de l'officine (affiché + corrigeable) — via V2.titOvr, sinon base nationale ──
+  function titulaireOf(pid, orig) { return (V2.titOvr && V2.titOvr[String(pid)]) || orig || ''; }
+  function clientTitulaire(pid) {   // titulaire connu (override sinon PHARMA_FR p[10])
+    var base = '';
+    if (window.PHARMA_FR) { var pt = pharmaFrById(pid); if (pt && pt[10]) base = pt[10]; }
+    return titulaireOf(pid, base);
+  }
+  function titEditor(pid, currentTit) {
+    var idp = 'tit-' + String(pid).replace(/[^a-zA-Z0-9]/g, '');
+    return '<div class="phf-nmedit"><span class="phf-nmedit-l">Titulaire(s) de la pharmacie</span>' +
+      '<div class="phf-nmedit-row"><input id="' + idp + '" class="phf-nmedit-in" type="text" value="' + esc(currentTit || '') + '" placeholder="Nom du/des titulaire(s)"></input>' +
+      '<button class="phf-nmedit-btn" onclick="V2.saveOfficineTit(\'' + esc(String(pid)) + '\',\'' + idp + '\')">Valider</button></div></div>';
+  }
+  V2.saveOfficineTit = function (pid, inputId) {
+    var el = document.getElementById(inputId); if (!el) return;
+    if (!V2.user) { if (V2.toast) V2.toast('Connecte-toi pour modifier le titulaire'); return; }
+    var val = (el.value || '').trim();
+    V2.titOvr = V2.titOvr || {};
+    if (val) V2.titOvr[String(pid)] = val; else delete V2.titOvr[String(pid)];
+    if (window.PHARMA_FR) { var pt = pharmaFrById(pid); if (pt) pt[10] = val; }
+    if (V2.profil && V2.profil.saveOverride) V2.profil.saveOverride(pid, { titulaire: val });
+    if (V2.toast) V2.toast(val ? 'Titulaire mis à jour ✓' : 'Titulaire réinitialisé');
+    V2.render();
+  };
+
   function renderProspectFiche(root, pid) {
     if (!window.PHARMA_FR) {   // base nationale pas encore chargée → lazy-load puis re-rendu
       root.innerHTML = V2.topbar({ back: true, backTo: 'pharma', backLabel: 'Officines' }) +
@@ -1315,6 +1340,9 @@
       return;
     }
 
+    // PHARMA_FR (base nationale) = source du titulaire connu — charge en tâche de fond puis rafraîchit.
+    if (!window.PHARMA_FR && V2.ensurePharmaFr) { V2.ensurePharmaFr(function () { if (V2.route && V2.route.param) V2.render(); }); }
+
     // Nouvelle pharma → on repart d'une sélection vide
     if (String(selPid) !== String(pid)) { selPid = String(pid); selCips = new Set(); }
 
@@ -1350,6 +1378,7 @@
           (pharma.code ? '<span class="phf-code">' + esc(String(pharma.code)) + '</span>' : '') +
           '<div class="phf-hname">' + esc(nameOf(pid, pharma.name)) + ficheBadge + repriseBadge + '</div>' +
           (loc ? '<div class="phf-hloc">' + ICO('pharma', 13) + esc(loc) + '</div>' : '') +
+          (function () { var t = clientTitulaire(pid); return t ? '<div class="phf-htit">' + ICO('user', 12) + '<span>' + esc(t) + '</span></div>' : ''; })() +
         '</div>' +
         '<div class="phf-hkpis">' +
           kpi('Opportunités', V2.fmtNum(nReseau), 'phf-push', nReseau) +
@@ -1444,7 +1473,7 @@
         '</select></label>';
       return '<div class="ph-section">' +
         sectionHead('Infos officine', 'CIP, groupement, grossistes, génériqueurs, robot…', 'profil', open) +
-        (open ? (cipLine + nameEditor(pid, nameOf(pid, pharma.name)) + grpEdit + V2.profil.section('client', pid)) : '') +
+        (open ? (cipLine + nameEditor(pid, nameOf(pid, pharma.name)) + titEditor(pid, clientTitulaire(pid)) + grpEdit + V2.profil.section('client', pid)) : '') +
       '</div>';
     })() : '';
     // CA par génériqueur (Biogaran, Zentiva, EG…) — table BDPM ; section repliable
@@ -3065,6 +3094,8 @@
       '.phf-hcard::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:linear-gradient(180deg,var(--ip-blue),var(--ip-blue-d))}',
       '.phf-hid{min-width:180px;flex:1}',
       '.phf-hname{font-size:21px;font-weight:800;letter-spacing:-.025em;line-height:1.12;display:flex;align-items:center;gap:10px;flex-wrap:wrap}',
+      '.phf-htit{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted);font-weight:600;margin-top:4px}',
+      '.phf-htit span{color:var(--ip-ink)}',
       '.phf-reprise{font-size:11px;font-weight:800;letter-spacing:.01em;color:#8a4b00;background:#FFF1DB;border:1px solid #F0C98A;border-radius:999px;padding:3px 9px;white-space:nowrap}',
       '.phf-nmedit-l{display:block;font-size:11px;font-weight:700;color:var(--muted);margin-bottom:5px}',
       '.phf-nmedit-row{display:flex;gap:8px;align-items:center}',

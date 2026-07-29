@@ -178,12 +178,13 @@
     if (!V2.profil.loadScope) { if (cb) cb(); return; }
     V2.profil.loadScope('override').then(function (list) {
       var byId = {}; (V2.pharmacies || []).forEach(function (p) { byId[String(p.id)] = p; });
-      V2.nameOvr = V2.nameOvr || {}; V2.promoted = V2.promoted || {};
+      V2.nameOvr = V2.nameOvr || {}; V2.promoted = V2.promoted || {}; V2.titOvr = V2.titOvr || {};
       (list || []).forEach(function (o) {
         if (!o || !o.data) return;
         var sid = String(o.sid);
-        if (o.data.nom) V2.nameOvr[sid] = o.data.nom;   // nom corrigé (sync, lu partout au rendu)
-        if (o.data.promu) V2.promoted[sid] = true;      // prospect passé en client
+        if (o.data.nom) V2.nameOvr[sid] = o.data.nom;         // nom corrigé (sync, lu partout au rendu)
+        if (o.data.titulaire) V2.titOvr[sid] = o.data.titulaire;  // titulaire(s) saisi(s)
+        if (o.data.promu) V2.promoted[sid] = true;            // prospect passé en client
         var p = byId[sid]; if (!p) return;
         if (o.data.groupement) p.groupement = o.data.groupement;
         if (o.data.nom) p.name = o.data.nom;
