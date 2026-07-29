@@ -69,19 +69,28 @@
     return { rows: out.slice(0, 8), next: next };
   }
 
-  // ── Section 3 : négo labos (agrégation par génériqueur : volume + tendance = levier) ──
+  // ── Section 3 : négo labos — VRAI volume réseau par génériqueur (WML_SALES) ──
   function negoLabos() {
-    var P = window.PROD_STATS || [], G = window.GENERIQUEURS || {}, by = {};
-    for (var i = 0; i < P.length; i++) {
-      var r = P[i], lab = G[r.c]; if (!lab) continue;
-      var o = by[lab] || (by[lab] = { lab: lab, ca: 0, n: 0, gs: 0, gn: 0 });
-      o.ca += (r.ca || 0) * (r.n || 0);   // volume réseau approché = CA/pharmacie × nb pharmacies
-      o.n += 1;
-      var g = tend(r.c); if (g != null) { o.gs += g; o.gn++; }
+    var S = window.WML_SALES, G = window.GENERIQUEURS || {};
+    if (!S) return [];
+    var P = window.PROD_STATS || [], ps = {};
+    for (var k = 0; k < P.length; k++) ps[String(P[k].c)] = P[k];
+    var by = {}, totCa = 0;
+    for (var i = 0; i < S.length; i++) {
+      var r = S[i], q = r[4] || 0; if (q <= 0) continue;
+      var c = String(r[3]), lab = G[c]; if (!lab) continue;
+      var o = by[lab] || (by[lab] = { lab: lab, ca: 0, q: 0, cips: {} });
+      o.ca += (r[6] || 0); o.q += q; o.cips[c] = (o.cips[c] || 0) + q; totCa += (r[6] || 0);
     }
-    var out = Object.keys(by).map(function (k) { var o = by[k]; o.g = o.gn ? o.gs / o.gn : null; return o; });
-    out.sort(function (a, b) { return b.ca - a.ca; });
-    return out.slice(0, 14);
+    var out = Object.keys(by).map(function (lab) {
+      var o = by[lab], cips = Object.keys(o.cips);
+      var tops = cips.map(function (c) { return { c: c, q: o.cips[c] }; })
+        .sort(function (a, b) { return b.q - a.q; }).slice(0, 3)
+        .map(function (t) { return ps[t.c] ? ps[t.c].d : t.c; });
+      var gs = 0, gn = 0; cips.forEach(function (c) { var g = tend(c); if (g != null) { gs += g; gn++; } });
+      return { lab: lab, ca: o.ca, q: o.q, nref: cips.length, g: gn ? gs / gn : null, tops: tops, pct: totCa ? Math.round(o.ca / totCa * 100) : 0 };
+    }).sort(function (a, b) { return b.ca - a.ca; });
+    return out.slice(0, 12);
   }
 
   // ═══ COCKPIT RÉASSORT : croise WML_SALES (vitesse réseau) × STOCK_IP (couverture) ═══
@@ -203,7 +212,7 @@
     if (_etabState) return;
     _etabState = 1;
     var s = document.createElement('script');
-    s.src = 'etab-prices-data.js?v=' + (window.__APPRO_V || '20260729c'); s.async = false;
+    s.src = 'etab-prices-data.js?v=' + (window.__APPRO_V || '20260729d'); s.async = false;
     s.onload = function () { _etabState = 2; try { V2.render(); } catch (e) {} };
     s.onerror = function () { _etabState = 2; };
     document.head.appendChild(s);
@@ -337,9 +346,14 @@
       }).join('') || '<div class="ap-empty">Pas de pic saisonnier le mois prochain.</div>';
 
       var negRows = neg.map(function (x) {
-        return '<div class="ap-row"><div class="ap-nm">' + esc(x.lab) + '<small>' + fmt(x.n) + ' réfs réseau</small></div>' +
-          '<div class="ap-vol mono">' + (V2.fmtEur ? V2.fmtEur(x.ca) : fmt(x.ca)) + '</div>' +
-          '<div class="ap-g">' + pctHtml(x.g) + '</div></div>';
+        return '<div class="neg-row">' +
+          '<div class="neg-top"><span class="neg-lab">' + esc(x.lab) + '</span>' +
+            '<span class="neg-share">' + x.pct + ' % du volume Gx</span>' + pctHtml(x.g) + '</div>' +
+          '<div class="neg-nums"><b>' + (V2.fmtEur ? V2.fmtEur(x.ca) : fmt(x.ca)) + '</b> · ' + fmt(x.q) + ' u/an · ' + x.nref + ' réfs</div>' +
+          (x.tops.length ? '<div class="neg-tops">top : ' + x.tops.map(function (d) { return esc(cap(d)); }).join(' · ') + '</div>' : '') +
+          '<div class="neg-line">Levier : ' + fmt(x.q) + ' u/an, ' + x.pct + ' % de notre volume générique' +
+            (x.g != null && x.g > 0 ? ', en croissance de +' + Math.round(x.g) + ' %' : '') + ' → obtenir de meilleures conditions</div>' +
+        '</div>';
       }).join('') || '<div class="ap-empty">Données génériqueurs indisponibles.</div>';
 
       function card(ico, title, sub, body, accent) {
@@ -366,8 +380,8 @@
             card('spark', 'La saison arrive', 'classes qui montent le mois prochain (Medic\'AM)', saiRows, '#6D5AE6') +
           '</div>' +
           card('cat', 'Nouveautés à référencer', 'AMM récentes (BDPM) — anticiper le référencement', nouvRows, 'var(--ip-blue)') +
-          card('pilo', 'Négo labos — ton levier', 'volume réseau par génériqueur × tendance = poids de négociation', negRows, '#0E7C86') +
-          '<div class="ap-foot">Chiffres indicatifs (Medic\'AM annualisé / BDPM / demande réseau Intégral). Volume négo = CA moyen/officine × nb officines. Princeps : labo non mappé (génériqueurs uniquement).</div>' +
+          card('pilo', 'Négo labos — ton levier', 'vrai volume réseau (sell-in WML) par génériqueur — poids de négociation chiffré', negRows, '#0E7C86') +
+          '<div class="ap-foot">Négo labos = vrai sell-in réseau (WML) par génériqueur. Génériques : pas d\'abandon de marge Intégral (les génériqueurs gèrent leurs remises). « Ça monte » / saison = Medic\'AM / BDPM annualisés. Princeps : labo non mappé.</div>' +
         '</div>';
     }
   };
@@ -430,6 +444,15 @@
       '.imbar .col .b{width:100%;max-width:32px;border-radius:3px 3px 0 0;background:#C6D0DE;min-height:2px}.imbar .col .b.hot{background:var(--c-amber)}.imbar .col .b.zero{background:#EAEDF2}' +
       '.imbar .col small{font-size:9px;color:var(--muted);font-weight:700}' +
       '.imb .imfix{font-size:11.5px;font-weight:800;color:#0E7C86;margin-top:8px}.imb .imfix b{color:var(--ip-ink)}' +
+      /* négo labo chiffrée */
+      '.neg-row{padding:12px 16px;border-top:1px solid var(--line)}.neg-row:first-of-type{border-top:0}' +
+      '.neg-top{display:flex;align-items:center;gap:9px}' +
+      '.neg-lab{font-size:14px;font-weight:800;color:var(--ip-ink)}' +
+      '.neg-share{font-size:11px;font-weight:700;color:var(--muted);background:var(--card-2,#F6F8FB);border:1px solid var(--line);border-radius:999px;padding:1px 8px}' +
+      '.neg-top .ap-up,.neg-top .ap-down,.neg-top .ap-flat{margin-left:auto;font-size:12.5px;font-weight:800}' +
+      '.neg-nums{font-size:12.5px;color:var(--ip-ink);margin-top:5px;font-family:var(--mono)}.neg-nums b{font-weight:800}' +
+      '.neg-tops{font-size:11.5px;color:var(--muted);margin-top:3px}' +
+      '.neg-line{font-size:11.5px;font-weight:700;color:#0E7C86;margin-top:6px;line-height:1.4}' +
       '@media(max-width:720px){.ap-grid2{grid-template-columns:1fr}.ap-kpis{grid-template-columns:1fr 1fr}.rad{grid-template-columns:1fr}}';
     document.head.appendChild(st);
   }
