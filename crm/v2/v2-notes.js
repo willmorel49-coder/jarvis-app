@@ -70,10 +70,14 @@
         // On RECONSTRUIT le texte depuis l'ensemble des résultats à chaque événement
         // (idempotent) au lieu d'accumuler avec += : sur mobile, resultIndex est peu
         // fiable et l'accumulation répétait la même phrase 4-5 fois.
-        var finalT = '', interim = '';
+        var finalT = '', interim = '', lastFin = '';
         for (var i = 0; i < e.results.length; i++) {
-          var t = e.results[i][0].transcript;
-          if (e.results[i].isFinal) finalT += t + ' '; else interim += t;
+          var raw = e.results[i][0].transcript || '';
+          if (e.results[i].isFinal) {
+            var t = raw.trim();
+            // Safari ré-émet parfois le MÊME segment final plusieurs fois → on saute les doublons consécutifs.
+            if (t && t !== lastFin) { finalT += t + ' '; lastFin = t; }
+          } else { interim += raw; }
         }
         finalTxt = finalT;
         ta.value = (base + finalTxt + interim).replace(/\s+/g, ' ').replace(/^\s/, '');
