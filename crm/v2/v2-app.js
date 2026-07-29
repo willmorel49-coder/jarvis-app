@@ -813,6 +813,7 @@
       // Audit Marge (abandon de marge par pharmacie) — app JARVIS
       if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.audit) {
         P.push({ k: 'audit', cls: 'p4', accent: '#10915E', ico: 'pilo', tag: 'Par pharmacie', t: 'Audit marge', d: 'Ce qu\'Intégral rend à chaque pharmacie via l\'abandon de marge — par tranche, vs son grossiste actuel, calculé sur ses vrais achats. Un audit offert, prêt en PDF.', go: 'Ouvrir l\'audit' });
+        P.push({ k: 'missions', cls: 'p4', accent: '#0E9E6A', ico: 'pilo', tag: 'Expert 360', t: 'Missions rémunérées', d: 'La rémunération de l\'officine au-delà du produit : vaccination, entretiens, BPM, TROD… les tarifs 2026 + un simulateur « combien elle peut gagner ». L\'argument d\'expert à montrer au pharmacien.', go: 'Ouvrir les missions' });
       }
       // Concurrents · grossistes-répartiteurs (annuaire + actualités) — app JARVIS
       if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.grossistes) {
