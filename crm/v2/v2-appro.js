@@ -193,6 +193,13 @@
         '<div class="rs">couverture ' + Math.round(o.cov) + ' j · ' + fmt(Math.round(o.vM)) + '/mois réseau</div>' +
         '<div class="rr">→ commander ~' + fmt(o.qcmd) + '</div></div>';
     }).join('');
+    // Nouveaux groupes génériques détectés (robot BDPM, diff mensuel) → événement d'anticipation
+    var gn = (_generData && _generData.newGeneric) ? _generData.newGeneric : [];
+    var generHtml = gn.slice(0, 5).map(function (g) {
+      return '<div class="rev"><div class="rt"><span class="dot" style="background:#6D5AE6"></span>Nouveau générique — ' + esc((g.lib || '').split(',')[0]) + '</div>' +
+        '<div class="rs">groupe générique ouvert · ' + esc(g.since || '') + '</div><div class="rr">→ basculer les achats vers le Gx</div></div>';
+    }).join('');
+    live = generHtml + live;
     return '<div class="rad">' + zones.map(function (z) {
       var evs = byZone[z[0]].map(function (ev) {
         var dd = evDays(ev), lab = dd < 0 ? 'en cours' : (ev.d + ' ' + MOIS[ev.m - 1] + (ev.y > nowY ? ' ' + ev.y : ''));
@@ -212,7 +219,7 @@
     if (_etabState) return;
     _etabState = 1;
     var s = document.createElement('script');
-    s.src = 'etab-prices-data.js?v=' + (window.__APPRO_V || '20260729d'); s.async = false;
+    s.src = 'etab-prices-data.js?v=' + (window.__APPRO_V || '20260729c'); s.async = false;
     s.onload = function () { _etabState = 2; try { V2.render(); } catch (e) {} };
     s.onerror = function () { _etabState = 2; };
     document.head.appendChild(s);
@@ -271,6 +278,40 @@
       '<div class="imbhd">Rééquilibrage inter-sites <span>' + reb.length + '</span></div>' + rows + '</div>';
   }
 
+  // ═══ VEILLE GÉNÉRIQUES (BDPM, robot mensuel) : bascules princeps→Gx + nouveaux groupes ═══
+  var _generState = 0, _generData = null;
+  function ensureGener() {
+    if (_generData || _generState) return;
+    _generState = 1;
+    try {
+      var day = new Date().toISOString().slice(0, 10);
+      fetch('generiques-bdpm.json?d=' + day, { cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) { _generData = j || {}; _generState = 2; try { V2.render(); } catch (e) {} })
+        .catch(function () { _generState = 2; });
+    } catch (e) { _generState = 2; }
+  }
+  function basculesGx() {
+    if (!_generData || !_generData.princepsWithGeneric || !window.WML_SALES) return [];
+    var set = {}; _generData.princepsWithGeneric.forEach(function (c) { set[c] = 1; });
+    var P = window.PROD_STATS || [], ps = {}; for (var i = 0; i < P.length; i++) ps[String(P[i].c)] = P[i];
+    var bought = {}, S = window.WML_SALES;
+    for (var j = 0; j < S.length; j++) { var r = S[j]; if (r[4] > 0) { var c = String(r[3]); if (set[c]) bought[c] = (bought[c] || 0) + r[4]; } }
+    var out = Object.keys(bought).map(function (c) { return { c: c, q: bought[c], d: ps[c] ? ps[c].d : c }; });
+    out.sort(function (a, b) { return b.q - a.q; });
+    return out.slice(0, 12);
+  }
+  function basculesCard() {
+    if (!_generData) return '<div class="v2-card ap-card"><div class="ap-hd"><div class="ap-ic" style="background:#6D5AE6">G</div><div><h3>Bascules génériques</h3><div class="ap-sub">chargement de la base médicaments (BDPM)…</div></div></div></div>';
+    var b = basculesGx(); if (!b.length) return '';
+    var rows = b.map(function (o) {
+      return '<div class="ap-row"><div class="ap-nm">' + esc(cap(o.d)) + '<small>princeps acheté par le réseau — un générique existe</small></div>' +
+        '<div class="ap-mini">' + fmt(o.q) + ' u/an</div><div class="ap-st ok">bascule Gx</div></div>';
+    }).join('');
+    return '<div class="v2-card ap-card"><div class="ap-hd"><div class="ap-ic" style="background:#6D5AE6">G</div><div><h3>Bascules génériques à faire</h3>' +
+      '<div class="ap-sub">' + (_generData.meta ? _generData.meta.nAvecGenerique : '') + ' groupes avec générique (BDPM) — les princeps que TU achètes encore et qui ont un générique dispo, top 12 par volume</div></div></div>' + rows + '</div>';
+  }
+
   V2.pages.appro = {
     render: function (root) {
       ensureCss();
@@ -283,11 +324,13 @@
       }
 
       ensureEtab();   // charge en différé le stock par établissement (gros fichier NR)
+      ensureGener();  // charge la veille génériques (BDPM, robot mensuel)
       // ── Cockpit réassort (crash-safe : ne casse jamais la page si un flux manque) ──
-      var kpiBand = '', reaCard = '', rosCard = '', radarHtml = '', etabHtml = '';
+      var kpiBand = '', reaCard = '', rosCard = '', radarHtml = '', etabHtml = '', basculesHtml = '';
       try {
         radarHtml = radarSection(window.WML_SALES && window.STOCK_IP ? reassort() : []);
         etabHtml = etabSection();
+        basculesHtml = basculesCard();
         if (window.WML_SALES && window.STOCK_IP) {
           var h = stockHealth();
           kpiBand = '<div class="ap-kpis">' +
@@ -371,6 +414,7 @@
           radarHtml +
           '<div class="ap-sec">Piloter les achats</div>' +
           reaCard +
+          basculesHtml +
           etabHtml +
           rosCard +
           '<div class="ap-sec">Intelligence marché</div>' +
