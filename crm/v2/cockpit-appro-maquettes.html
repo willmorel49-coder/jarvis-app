@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Cockpit Appro · Maquettes calendrier</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,800,900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#EEF1F6; --card:#fff; --card2:#F6F8FB; --ink:#0E1420; --muted:#6B7280; --line:#E4E8EF;
+    --blue:#0050E6; --green:#1E9E6A; --amber:#C98A1A; --rose:#D5573B; --violet:#6D5AE6; --teal:#0E7C86; --slate:#6B7280;
+    --mono:'Geist Mono',ui-monospace,monospace; --font:'Satoshi',-apple-system,system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1180px;margin:0 auto;padding:20px 18px 80px}
+  h1{font-size:22px;font-weight:900;letter-spacing:-.02em;margin:0 0 3px}
+  .lede{font-size:13.5px;color:var(--muted);margin:0 0 18px;max-width:760px;line-height:1.5}
+  .sel{display:flex;gap:8px;flex-wrap:wrap;position:sticky;top:0;z-index:20;background:var(--bg);padding:10px 0;margin-bottom:8px;border-bottom:1px solid var(--line)}
+  .sbtn{border:1px solid var(--line);background:var(--card);border-radius:12px;padding:9px 13px;font:inherit;font-size:13px;font-weight:700;color:var(--ink);cursor:pointer;display:flex;align-items:center;gap:8px;transition:.15s}
+  .sbtn .n{width:22px;height:22px;border-radius:7px;background:var(--card2);border:1px solid var(--line);display:grid;place-items:center;font-size:12px;font-weight:800;color:var(--muted);font-family:var(--mono)}
+  .sbtn:hover{border-color:#C9D2E0}
+  .sbtn.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+  .sbtn.on .n{background:rgba(255,255,255,.22);color:#fff;border-color:transparent}
+  .legend{display:flex;gap:12px;flex-wrap:wrap;font-size:11.5px;color:var(--muted);font-weight:600;margin:6px 0 16px}
+  .legend b{display:inline-flex;align-items:center;gap:5px;font-weight:600}
+  .dot{width:9px;height:9px;border-radius:3px;display:inline-block}
+  .stage{min-height:60vh}
+  .vhead{font-size:15px;font-weight:800;margin:2px 0 2px}
+  .vsub{font-size:12.5px;color:var(--muted);margin:0 0 16px}
+  /* cards */
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px}
+  .chip{font-size:10.5px;font-weight:800;border-radius:999px;padding:2px 8px;white-space:nowrap;letter-spacing:.01em}
+  .mono{font-family:var(--mono)}
+  .now-pill{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:800;color:var(--blue);background:#E7EEFF;border:1px solid #C8D8FF;border-radius:999px;padding:3px 10px}
+  /* ── Concept 1 : Fil ── */
+  .feed-grp{margin-bottom:18px}
+  .feed-gh{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0 0 9px;display:flex;align-items:center;gap:8px}
+  .feed-gh .ct{background:var(--card2);border:1px solid var(--line);border-radius:999px;padding:1px 8px;font-size:11px;color:var(--ink)}
+  .ev{display:flex;gap:12px;padding:14px 15px;border-radius:14px;background:var(--card);border:1px solid var(--line);margin-bottom:9px;position:relative;overflow:hidden}
+  .ev::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--c)}
+  .ev .body{flex:1;min-width:0}
+  .ev .top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:3px}
+  .ev .ti{font-size:14.5px;font-weight:800;letter-spacing:-.01em}
+  .ev .dt{font-size:11.5px;color:var(--muted);font-weight:700;font-family:var(--mono)}
+  .ev .sub{font-size:12.5px;color:#3D4453;line-height:1.45;margin:2px 0 8px}
+  .ev .imp{font-size:12px;color:var(--muted);line-height:1.4}
+  .ev .imp b{color:var(--ink)}
+  .ev .foot{display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap}
+  .reco{font-size:11.5px;font-weight:800;color:var(--green);background:#E7F5EC;border:1px solid #BFE6CF;border-radius:9px;padding:5px 10px}
+  .n1{font-size:11px;color:var(--muted);font-weight:700;display:inline-flex;align-items:center;gap:5px}
+  .spark{display:inline-flex;align-items:flex-end;gap:2px;height:16px}
+  .spark i{width:4px;background:#CBD3E0;border-radius:1px}
+  .cta{margin-left:auto;font-size:12px;font-weight:800;color:#fff;background:var(--ink);border:none;border-radius:9px;padding:7px 12px;cursor:pointer}
+  /* ── Concept 2 : Bento ── */
+  .bento{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .tile{padding:0;overflow:hidden}
+  .th{display:flex;align-items:center;gap:10px;padding:13px 16px;border-bottom:1px solid var(--line)}
+  .th .ic{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;color:#fff;font-size:14px;flex:none}
+  .th h3{margin:0;font-size:12.5px;font-weight:800;text-transform:uppercase;letter-spacing:.03em}
+  .th .c{margin-left:auto;font-size:12px;font-weight:800;color:var(--muted);font-family:var(--mono)}
+  .li{display:flex;align-items:center;gap:9px;padding:10px 16px;border-top:1px solid var(--line);font-size:13px}
+  .li:first-child{border-top:0}
+  .li .nm{flex:1;min-width:0;font-weight:700}.li .nm small{display:block;font-size:11px;color:var(--muted);font-weight:600}
+  .li .rt{font-size:12px;font-weight:800;font-family:var(--mono);white-space:nowrap}
+  /* frise mini */
+  .frise{padding:12px 16px}
+  .frise-lane{display:flex;align-items:center;gap:8px;margin:7px 0}
+  .frise-lab{width:78px;font-size:10.5px;font-weight:700;color:var(--muted);flex:none}
+  .frise-track{flex:1;height:22px;position:relative;background:linear-gradient(90deg,#F0F3F8,#F0F3F8);border-radius:7px;border:1px solid var(--line)}
+  .frise-track .pt{position:absolute;top:50%;transform:translate(-50%,-50%);width:13px;height:13px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+  .frise-axis{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);font-weight:700;margin:2px 0 0 86px}
+  /* heatmap */
+  .hm{padding:12px 16px}
+  .hm-row{display:flex;align-items:center;gap:4px;margin:5px 0}
+  .hm-lab{width:74px;font-size:11px;font-weight:700;flex:none}
+  .hm-cell{flex:1;height:16px;border-radius:3px}
+  .hm-months{display:flex;gap:4px;margin:6px 0 0 78px}
+  .hm-months span{flex:1;text-align:center;font-size:9px;color:var(--muted);font-weight:700}
+  /* ── Concept 3 : Gantt ── */
+  .gantt-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:16px;background:var(--card)}
+  .gantt{min-width:820px;position:relative}
+  .gantt-months{display:grid;grid-template-columns:110px repeat(6,1fr);border-bottom:1px solid var(--line)}
+  .gantt-months div{padding:10px 6px;font-size:11px;font-weight:800;color:var(--muted);text-align:center;border-left:1px solid var(--line)}
+  .gantt-months div:first-child{border-left:0;text-align:left;color:var(--ink)}
+  .glane{display:grid;grid-template-columns:110px 1fr;border-top:1px solid var(--line);min-height:46px}
+  .glane-lab{padding:8px 10px;font-size:11px;font-weight:800;display:flex;align-items:center;gap:6px}
+  .glane-track{position:relative;border-left:1px solid var(--line)}
+  .gnow{position:absolute;top:0;bottom:0;width:2px;background:var(--blue);z-index:3}
+  .gnow::after{content:'auj.';position:absolute;top:-1px;left:3px;font-size:9px;font-weight:800;color:var(--blue)}
+  .gpt{position:absolute;top:8px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;z-index:2;max-width:150px}
+  .gpt .b{width:12px;height:12px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+  .gpt .t{font-size:9.5px;font-weight:700;margin-top:3px;text-align:center;line-height:1.15;color:#3D4453}
+  .gband{position:absolute;top:6px;bottom:6px;border-radius:6px;opacity:.16;z-index:1}
+  /* ── Concept 4 : Radar horizons ── */
+  .rad{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+  .rzone{padding:0;overflow:hidden}
+  .rzh{padding:12px 15px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:9px}
+  .rzh .ring{width:16px;height:16px;border-radius:50%;border:3px solid var(--z);flex:none}
+  .rzh h3{margin:0;font-size:12.5px;font-weight:800}
+  .rzh small{display:block;font-size:10.5px;color:var(--muted);font-weight:600}
+  .rev{padding:11px 15px;border-top:1px solid var(--line)}
+  .rev .rt{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:800}
+  .rev .rs{font-size:11.5px;color:var(--muted);margin-top:2px;line-height:1.4}
+  .rev .rr{font-size:11px;font-weight:800;color:var(--green);margin-top:6px}
+  /* ── Concept 5 : Agenda ── */
+  .ag{display:grid;grid-template-columns:1fr 320px;gap:14px}
+  .cal{padding:14px 16px}
+  .cal-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .cal-h b{font-size:15px;font-weight:800}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+  .cal-dn{font-size:10px;font-weight:800;color:var(--muted);text-align:center;padding:2px 0}
+  .cal-cell{min-height:64px;border:1px solid var(--line);border-radius:9px;padding:4px 5px;background:var(--card2);font-size:11px}
+  .cal-cell.out{opacity:.35}
+  .cal-cell.today{border-color:var(--blue);box-shadow:0 0 0 2px #E7EEFF}
+  .cal-num{font-weight:800;color:var(--muted);font-size:10.5px}
+  .cal-pill{display:block;font-size:9.5px;font-weight:800;color:#fff;border-radius:5px;padding:2px 5px;margin-top:3px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+  .todo{padding:0;overflow:hidden}
+  @media(max-width:820px){
+    .bento,.rad,.ag{grid-template-columns:1fr}
+    .cal-cell{min-height:52px}
+    .cta{margin-left:0;width:100%}
+  }
+  .foot-note{margin-top:26px;font-size:11.5px;color:var(--muted);line-height:1.6;border-top:1px solid var(--line);padding-top:14px}
+  .foot-note b{color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Cockpit Appro — calendrier d'anticipation <span class="now-pill">● aujourd'hui : 29 juil. 2026</span></h1>
+  <p class="lede">5 maquettes du même écran, remplies avec de <b>vrais événements 2026-2027</b> (sources HAS / ANSM / Légifrance / Le Moniteur). Objectif : anticiper les achats en croisant nos ventes réseau, la saisonnalité passée, et ce qui arrive (remboursements, génériques, baisses de prix, ruptures, saison). Choisis un ou deux numéros — les chiffres de réassort sont illustratifs.</p>
+
+  <div class="sel" id="sel"></div>
+  <div class="legend">
+    <b><span class="dot" style="background:var(--blue)"></span>Passe remboursé</b>
+    <b><span class="dot" style="background:var(--violet)"></span>Générique</b>
+    <b><span class="dot" style="background:var(--teal)"></span>Biosimilaire</b>
+    <b><span class="dot" style="background:var(--amber)"></span>Baisse de prix</b>
+    <b><span class="dot" style="background:var(--green)"></span>Saison</b>
+    <b><span class="dot" style="background:var(--rose)"></span>Rupture / tension</b>
+    <b><span class="dot" style="background:var(--slate)"></span>Vigilance</b>
+  </div>
+
+  <div class="stage" id="stage"></div>
+
+  <p class="foot-note">
+    <b>Événements réels sourcés</b> (mi-2026 → 2027) : Wegovy/Mounjaro remboursés 15/06/2026 · Apixaban générique (Eliquis) remboursable 20/07/2026 · Forxiga (dapagliflozin) falaise ~28/06/2026 · biosimilaires Stelara (avr.), Eylea, Prolia · campagne vaccinale ~14/10 · saison hivernale ORL/antibio nov.→fév. · vague PLFSS 2026 (1,4 Md€ de baisses) · pré-achat antihistaminiques janv.-fév. 2027 · <b>Vyndaqel (tafamidis) : PAS de générique avant ~2030</b> malgré les signaux (piège à éviter).<br>
+    <b>Ce qui sera automatique</b> : ruptures + dates de retour (ANSM), génériques à venir (base médicaments, diff mensuel), passages remboursés (avis HAS, 3-6 mois avant), saisonnalité N-1/N-2 (Medic'AM), baisses de prix (Journal Officiel). <b>Manuel</b> : calendrier brevets, géopolitique (pas de source auto fiable).
+  </p>
+</div>
+
+<script>
+/* ── Données : vrais événements, "aujourd'hui" = 29 juil. 2026 ── */
+var TYPES={
+  remb:{l:'Passe remboursé',c:'#0050E6'}, gen:{l:'Générique',c:'#6D5AE6'},
+  bio:{l:'Biosimilaire',c:'#0E7C86'}, prix:{l:'Baisse de prix',c:'#C98A1A'},
+  sais:{l:'Saison',c:'#1E9E6A'}, rup:{l:'Rupture / tension',c:'#D5573B'}, vig:{l:'Vigilance',c:'#6B7280'}
+};
+// pos = position 0..1 sur une frise août→janvier (6 mois) ; horizon = now|mois|trim|surv
+var EV=[
+  {t:'rup',ti:'Tension GLP-1 (Wegovy · Mounjaro)',dt:'en cours',pos:0.02,horizon:'now',
+   sub:'Remboursés depuis le 15/06 — la demande bascule du prix libre vers l\'ordonnance, sous contingentement Novo/Lilly.',
+   imp:'<b>Sécuriser le stock</b>, suivre dosages initiation vs entretien.',reco:'stock sécurité +30%',n1:[3,4,6,7,9]},
+  {t:'gen',ti:'Apixaban générique (Eliquis)',dt:'20 juil. 2026',pos:0.0,horizon:'now',
+   sub:'Génériques remboursables depuis le 20/07 (CCP expiré le 20/05). Anticoagulant à très gros volume.',
+   imp:'<b>Basculer les achats</b> vers les génériqueurs, dégonfler le stock princeps.',reco:'bascule Gx +900u',n1:[5,5,6,6,7]},
+  {t:'gen',ti:'Rivaroxaban générique (Xarelto)',dt:'été 2026',pos:0.12,horizon:'mois',
+   sub:'Génériques déjà déclarés sur les 4 dosages ; arrêt de présentations princeps annoncé.',
+   imp:'Poursuivre la <b>substitution</b>, même logique qu\'apixaban.',reco:'bascule Gx',n1:[4,4,5,5,6]},
+  {t:'gen',ti:'Dapagliflozin générique (Forxiga)',dt:'~fin juin 2026',pos:0.05,horizon:'mois',
+   sub:'Falaise de brevet SGLT2 (classe cardio/rénale en forte croissance). Génériques attendus 2026-2027.',
+   imp:'Référencer les génériqueurs dapagliflozin, <b>gros volume</b> à venir.',reco:'à référencer',n1:[3,4,5,6,7]},
+  {t:'bio',ti:'Ustekinumab biosimilaire (Stelara)',dt:'depuis avr. 2026',pos:0.0,horizon:'now',
+   sub:'11e groupe biosimilaire substituable en officine. Marché anti-inflammatoire (psoriasis, MICI) à gros volume.',
+   imp:'Référencer/négocier les biosimilaires, la <b>bascule est rapide</b> une fois ouverte.',reco:'référencer bio',n1:[2,3,4,6,8]},
+  {t:'bio',ti:'Biosimilaires Eylea · Prolia/Xgeva',dt:'ramp 2026',pos:0.15,horizon:'mois',
+   sub:'Aflibercept (ophtalmo) et dénosumab (ostéoporose/onco) substituables — volumes qui basculent.',
+   imp:'Suivre la substitution, <b>négocier</b> les biosimilaires dispo.',reco:'négo bio',n1:[3,4,5,6,7]},
+  {t:'sais',ti:'Campagne vaccinale grippe + COVID',dt:'~14 oct. 2026',pos:0.42,horizon:'trim',
+   sub:'Ouverture campagne : pic d\'achat vaccins oct.-nov. Précommandes closes fin mars.',
+   imp:'<b>Stock constitué avant</b> l\'ouverture ; pic saisonnier fort.',reco:'pré-stock vaccins',n1:[1,2,9,8,3]},
+  {t:'sais',ti:'Saison hivernale ORL / antibiotiques',dt:'nov. → fév.',pos:0.62,horizon:'trim',
+   sub:'Amoxicilline, amox/clav., antipyrétiques, antitussifs — plan hivernal ANSM, molécules sentinelles.',
+   imp:'Constituer le stock hiver <b>dès octobre</b>, tensions locales possibles.',reco:'plan hiver',n1:[2,3,5,8,9]},
+  {t:'prix',ti:'PLFSS 2026 — 1,4 Md€ de baisses de prix',dt:'courant 2026-27',pos:0.5,horizon:'surv',
+   sub:'Cardio, onco, inflammatoire, neuro, psy… érosion des prix (donc de la valeur de stock).',
+   imp:'<b>Éviter le surstock</b> sur les classes visées avant baisse.',reco:'alléger stock',n1:[6,6,5,5,4]},
+  {t:'prix',ti:'TFR génériques (~53 groupes)',dt:'depuis 1er mars',pos:0.0,horizon:'surv',
+   sub:'Tarif forfaitaire réactivé, ~200 M€ ; pression marge et risque de désengagement génériqueurs.',
+   imp:'Surveiller marges Gx, <b>risque de tension</b> sur groupes peu rentables.',reco:'surveiller',n1:[5,5,4,4,4]},
+  {t:'sais',ti:'Pré-achat antihistaminiques (allergies)',dt:'janv.-fév. 2027',pos:0.95,horizon:'surv',
+   sub:'Saisons polliniques de plus en plus précoces (bulletin rouge dès mi-février en 2026).',
+   imp:'<b>Avancer les commandes</b> à janvier, ruptures ponctuelles déjà vues.',reco:'anticiper janv.',n1:[1,2,4,7,9]},
+  {t:'vig',ti:'Vyndaqel (tafamidis) — PAS de générique avant ~2030',dt:'vigilance',pos:0.35,horizon:'surv',
+   sub:'CCP nov. 2026 + avis CHMP juil. 2026, MAIS exclusivité orpheline jusqu\'en 2030 / accords jusqu\'en 2031.',
+   imp:'<b>Ne pas déstocker</b> le princeps ; piège « patent watch US » vs réalité France.',reco:'rester princeps',n1:[5,5,5,5,5]},
+];
+function sparkHtml(a){var mx=Math.max.apply(null,a);return '<span class="spark">'+a.map(function(v){return '<i style="height:'+Math.round(4+v/mx*12)+'px"></i>';}).join('')+'</span>';}
+function chip(t){var T=TYPES[t];return '<span class="chip" style="color:'+T.c+';background:'+T.c+'1A;border:1px solid '+T.c+'44">'+T.l+'</span>';}
+
+/* ── 1 · Fil des échéances ── */
+function fil(){
+  var groups=[['now','À traiter maintenant'],['mois','Ce mois-ci'],['trim','Dans 30-90 jours'],['surv','À surveiller']];
+  var h='<div class="vhead">Le fil des échéances</div><div class="vsub">Une seule colonne, rangée par urgence. Chaque carte = un événement + la reco d\'achat + la courbe de l\'an dernier. Tu scrolles une fois, tu sais quoi commander.</div>';
+  groups.forEach(function(g){
+    var items=EV.filter(function(e){return e.horizon===g[0];});
+    if(!items.length)return;
+    h+='<div class="feed-grp"><div class="feed-gh">'+g[1]+' <span class="ct">'+items.length+'</span></div>';
+    items.forEach(function(e){
+      h+='<div class="ev" style="--c:'+TYPES[e.t].c+'"><div class="body">'+
+        '<div class="top"><span class="ti">'+e.ti+'</span>'+chip(e.t)+'<span class="dt">'+e.dt+'</span></div>'+
+        '<div class="sub">'+e.sub+'</div>'+
+        '<div class="imp">'+e.imp+'</div>'+
+        '<div class="foot"><span class="reco">→ '+e.reco+'</span>'+
+        '<span class="n1">N-1 '+sparkHtml(e.n1)+'</span>'+
+        '<button class="cta">Préparer l\'achat</button></div>'+
+      '</div></div>';
+    });
+    h+='</div>';
+  });
+  return h;
+}
+
+/* ── 2 · Cockpit bento ── */
+function bento(){
+  var anticiper=EV.filter(function(e){return e.horizon==='now'||e.horizon==='mois';}).slice(0,5);
+  var urgent=[['Xarelto 20mg','couv 6 j','+900 u','#D5573B'],['Amoxicilline 1g','couv 9 j','+1 200 u','#C98A1A'],['Doliprane 1000','couv 12 j','+800 u','#C98A1A'],['Apixaban 5mg','couv 14 j','+600 u','#1E9E6A']];
+  var lanes=[['remb','Remb.'],['gen','Génér.'],['bio','Biosim.'],['sais','Saison'],['prix','Prix']];
+  var hm=[['ORL / antibio',[1,1,2,3,3,2,1,1,2,4,6,5]],['Vaccins',[1,1,1,1,1,1,1,2,6,9,7,3]],['Allergo',[2,4,7,8,6,3,1,1,1,1,1,2]],['Solaires',[1,1,2,4,7,8,7,5,2,1,1,1]]];
+  function heat(v){var g=['#EDF6F1','#D5EEDF','#AEDFC4','#7ECFA3','#4FB985','#1E9E6A'];return g[Math.min(5,Math.round(v/9*5))];}
+  var h='<div class="vhead">Le cockpit « tour de contrôle »</div><div class="vsub">Vue d\'ensemble en 3 secondes : ce qui arrive, le réassort urgent, la frise 90 jours et la saisonnalité passée. On plonge dans une tuile au clic.</div><div class="bento">';
+  // tuile anticiper
+  h+='<div class="card tile"><div class="th"><div class="ic" style="background:var(--blue)">⏱</div><h3>À anticiper</h3><span class="c">'+anticiper.length+'</span></div>'+
+     anticiper.map(function(e){return '<div class="li"><span class="dot" style="background:'+TYPES[e.t].c+'"></span><div class="nm">'+e.ti+'<small>'+e.dt+'</small></div><span class="rt" style="color:var(--green)">'+e.reco+'</span></div>';}).join('')+'</div>';
+  // tuile réassort urgent
+  h+='<div class="card tile"><div class="th"><div class="ic" style="background:var(--rose)">🔥</div><h3>Réassort urgent</h3><span class="c">207</span></div>'+
+     urgent.map(function(u){return '<div class="li"><div class="nm">'+u[0]+'<small>'+u[1]+'</small></div><span class="rt" style="color:'+u[3]+'">'+u[2]+'</span></div>';}).join('')+'</div>';
+  // tuile frise
+  var fh='<div class="card tile"><div class="th"><div class="ic" style="background:#6D5AE6">🗓</div><h3>Frise 90 jours</h3></div><div class="frise">';
+  lanes.forEach(function(L){
+    var pts=EV.filter(function(e){return e.t===L[0];});
+    fh+='<div class="frise-lane"><div class="frise-lab">'+L[1]+'</div><div class="frise-track">'+
+      pts.map(function(e){return '<span class="pt" title="'+e.ti+'" style="left:'+Math.round(6+e.pos*88)+'%;background:'+TYPES[e.t].c+'"></span>';}).join('')+'</div></div>';
+  });
+  fh+='</div><div class="frise-axis"><span>août</span><span>sept</span><span>oct</span><span>nov</span><span>déc</span><span>janv</span></div></div>';
+  h+=fh;
+  // tuile heatmap saison
+  var hmh='<div class="card tile"><div class="th"><div class="ic" style="background:var(--green)">📈</div><h3>Saisonnalité N-1</h3></div><div class="hm">';
+  hm.forEach(function(r){
+    hmh+='<div class="hm-row"><div class="hm-lab">'+r[0]+'</div>'+r[1].map(function(v){return '<div class="hm-cell" style="background:'+heat(v)+'"></div>';}).join('')+'</div>';
+  });
+  hmh+='<div class="hm-months">'+['J','F','M','A','M','J','J','A','S','O','N','D'].map(function(m){return '<span>'+m+'</span>';}).join('')+'</div></div></div>';
+  h+=hmh;
+  h+='</div>';
+  return h;
+}
+
+/* ── 3 · Gantt 90 jours ── */
+function gantt(){
+  var lanes=[['rup','Ruptures'],['remb','Remb.'],['gen','Génér.'],['bio','Biosim.'],['prix','Prix'],['sais','Saison']];
+  var months=['','août','sept','oct','nov','déc','janv'];
+  var nowLeft=8; // ~fin juillet → tout début de l'échelle août
+  var h='<div class="vhead">La frise 90 jours (Gantt)</div><div class="vsub">Le temps de gauche à droite, un couloir par type. La position encode l\'urgence sans lire un chiffre ; la bande verte = pic saisonnier. Défile horizontalement.</div>';
+  h+='<div class="gantt-wrap"><div class="gantt"><div class="gantt-months">'+months.map(function(m){return '<div>'+m+'</div>';}).join('')+'</div>';
+  lanes.forEach(function(L){
+    var pts=EV.filter(function(e){return e.t===L[0];});
+    var band='';
+    if(L[0]==='sais')band='<span class="gband" style="left:52%;right:8%;background:var(--green)"></span>';
+    h+='<div class="glane"><div class="glane-lab"><span class="dot" style="background:'+TYPES[L[0]].c+'"></span>'+L[1]+'</div><div class="glane-track"><span class="gnow" style="left:'+nowLeft+'%"></span>'+band+
+      pts.map(function(e){return '<span class="gpt" style="left:'+Math.round(8+e.pos*86)+'%"><span class="b" style="background:'+TYPES[e.t].c+'"></span><span class="t">'+e.ti.split('(')[0].trim()+'</span></span>';}).join('')+
+    '</div></div>';
+  });
+  h+='</div></div>';
+  return h;
+}
+
+/* ── 4 · Radar 3 horizons ── */
+function radar(){
+  var zones=[['now','#D5573B','Agir maintenant','commander cette semaine'],['mois','#C98A1A','Préparer','sous 30 jours'],['trim','#1E9E6A','Surveiller','30 à 90 jours']];
+  var h='<div class="vhead">Le radar 90 jours</div><div class="vsub">Trois anneaux d\'horizon : ce qui est au centre, tu le commandes maintenant. Chaque zone regroupe les décisions par fenêtre d\'action.</div><div class="rad">';
+  zones.forEach(function(z){
+    var items=EV.filter(function(e){return e.horizon===z[0];});
+    if(z[0]==='trim')items=EV.filter(function(e){return e.horizon==='trim'||e.horizon==='surv';});
+    h+='<div class="card rzone" style="--z:'+z[1]+'"><div class="rzh"><span class="ring"></span><div><h3>'+z[2]+'</h3><small>'+z[3]+'</small></div></div>'+
+      items.map(function(e){return '<div class="rev"><div class="rt"><span class="dot" style="background:'+TYPES[e.t].c+'"></span>'+e.ti.split('(')[0].trim()+'</div><div class="rs">'+e.dt+' · '+e.sub.split('.')[0]+'.</div><div class="rr">→ '+e.reco+'</div></div>';}).join('')+
+    '</div>';
+  });
+  h+='</div>';
+  return h;
+}
+
+/* ── 5 · Agenda mensuel ── */
+function agenda(){
+  // septembre 2026 : 1er sept = mardi. On place des events réels de sept + todo.
+  var evByDay={12:{t:'remb',x:'Wegovy suivi'},3:{t:'prix',x:'Baisse prix'},18:{t:'gen',x:'Apixaban'},24:{t:'sais',x:'Pré-stock vaccins'},29:{t:'bio',x:'Stelara bio'}};
+  var firstDow=1; // lundi=0 → mardi=1
+  var days=30;
+  var cells='';
+  for(var i=0;i<firstDow;i++)cells+='<div class="cal-cell out"></div>';
+  for(var d=1;d<=days;d++){
+    var ev=evByDay[d];
+    cells+='<div class="cal-cell'+(d===15?' today':'')+'"><span class="cal-num">'+d+'</span>'+
+      (ev?'<span class="cal-pill" style="background:'+TYPES[ev.t].c+'">'+ev.x+'</span>':'')+'</div>';
+  }
+  var todo=EV.filter(function(e){return e.horizon==='now'||e.horizon==='mois';}).slice(0,5);
+  var h='<div class="vhead">L\'agenda du mois</div><div class="vsub">Le calendrier que tout le monde sait lire, avec les échéances en pastilles, et la to-do d\'achat du mois à droite.</div><div class="ag">';
+  h+='<div class="card cal"><div class="cal-h"><b>◀ Septembre 2026 ▶</b></div><div class="cal-grid">'+
+     ['L','M','M','J','V','S','D'].map(function(x){return '<div class="cal-dn">'+x+'</div>';}).join('')+cells+'</div></div>';
+  h+='<div class="card todo"><div class="th"><div class="ic" style="background:var(--blue)">✓</div><h3>À anticiper</h3><span class="c">'+todo.length+'</span></div>'+
+     todo.map(function(e){return '<div class="li"><span class="dot" style="background:'+TYPES[e.t].c+'"></span><div class="nm">'+e.ti.split('(')[0].trim()+'<small>'+e.dt+' · '+e.reco+'</small></div></div>';}).join('')+'</div>';
+  h+='</div>';
+  return h;
+}
+
+var VIEWS=[['Fil des échéances',fil],['Cockpit bento',bento],['Frise Gantt 90j',gantt],['Radar horizons',radar],['Agenda mensuel',agenda]];
+var sel=document.getElementById('sel'),stage=document.getElementById('stage');
+function show(i){
+  stage.innerHTML=VIEWS[i][1]();
+  [].forEach.call(sel.children,function(b,j){b.className='sbtn'+(j===i?' on':'');});
+  try{window.scrollTo({top:0,behavior:'smooth'});}catch(e){}
+}
+VIEWS.forEach(function(v,i){
+  var b=document.createElement('button');b.className='sbtn';
+  b.innerHTML='<span class="n">'+(i+1)+'</span>'+v[0];
+  b.onclick=function(){show(i);};sel.appendChild(b);
+});
+show(0);
+</script>
+</body>
+</html>
