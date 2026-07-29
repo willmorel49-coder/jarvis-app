@@ -1,0 +1,371 @@
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Intégral Pharma — Électrique</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+
+<style>
+  :root{
+    --navy:#050A1A;        /* electric base            */
+    --navy-2:#070F26;      /* panel                    */
+    --cobalt:#123EAB;      /* deep cobalt glow         */
+    --cyan:#00E5FF;        /* high-voltage cyan        */
+    --cyan-soft:#7DEBFF;   /* softened cyan            */
+    --magenta:#FF2ED1;     /* neon magenta             */
+    --ice:#EAF6FF;         /* near-white ink           */
+    --mute:#8FA6C8;        /* muted steel blue         */
+    --line:rgba(0,229,255,.16);
+    --maxw:1240px;
+    --mono:"JetBrains Mono",ui-monospace,monospace;
+    --disp:"Bricolage Grotesque",system-ui,sans-serif;
+    --body:"Instrument Sans",system-ui,sans-serif;
+  }
+
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    background:var(--navy);
+    color:var(--ice);
+    font-family:var(--body);
+    line-height:1.5;
+    overflow-x:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:inherit;text-decoration:none}
+  img{max-width:100%;display:block}
+  ::selection{background:var(--magenta);color:#0a0512}
+
+  .wrap{width:100%;max-width:var(--maxw);margin-inline:auto;padding-inline:22px}
+
+  /* ============ HERO ============ */
+  .hero{position:relative;min-height:100svh;display:flex;flex-direction:column;isolation:isolate;overflow:hidden}
+
+  /* Vanta host + fallback mesh */
+  #hero-bg{position:absolute;inset:0;z-index:0}
+  #hero-bg.mesh-fallback{
+    background:
+      radial-gradient(120% 90% at 15% 0%, rgba(18,62,171,.5), transparent 60%),
+      radial-gradient(100% 80% at 90% 100%, rgba(255,46,209,.18), transparent 55%),
+      var(--navy);
+  }
+  #hero-bg.mesh-fallback::after{
+    content:"";position:absolute;inset:0;opacity:.5;
+    background-image:
+      linear-gradient(rgba(0,229,255,.10) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,255,.10) 1px, transparent 1px);
+    background-size:46px 46px;
+    -webkit-mask-image:radial-gradient(80% 70% at 50% 40%, #000, transparent 75%);
+            mask-image:radial-gradient(80% 70% at 50% 40%, #000, transparent 75%);
+  }
+
+  /* colour grade over the webgl net */
+  .grade{position:absolute;inset:0;z-index:1;pointer-events:none}
+  .grade::before{ /* magenta bloom bottom-left */
+    content:"";position:absolute;left:-12%;bottom:-18%;width:60vw;height:60vw;
+    background:radial-gradient(circle, rgba(255,46,209,.42), transparent 62%);
+    filter:blur(30px);opacity:.9;
+  }
+  .grade::after{ /* cyan bloom top-right + vignette */
+    content:"";position:absolute;inset:0;
+    background:
+      radial-gradient(48vw 48vw at 88% 8%, rgba(0,229,255,.22), transparent 60%),
+      radial-gradient(120% 120% at 50% 50%, transparent 52%, rgba(2,5,14,.72) 100%);
+  }
+  /* scan bar — faint horizontal sweep */
+  .scan{position:absolute;left:0;right:0;height:2px;top:0;z-index:1;pointer-events:none;
+    background:linear-gradient(90deg,transparent,var(--cyan),transparent);
+    opacity:.55;mix-blend-mode:screen;
+    animation:scan 7.5s linear infinite;}
+  @keyframes scan{0%{top:-2%}100%{top:102%}}
+
+  /* ---- top bar ---- */
+  .topbar{position:relative;z-index:3;display:flex;align-items:center;justify-content:space-between;
+    gap:14px;padding-top:22px;flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:12px}
+  .brand-chip{display:grid;place-items:center;height:46px;padding:0 14px;border-radius:13px;
+    background:rgba(7,15,38,.55);border:1px solid var(--line);
+    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+    box-shadow:0 0 0 1px rgba(0,229,255,.06), 0 0 24px rgba(0,229,255,.10)}
+  .brand-chip img{height:22px;width:auto;filter:brightness(0) invert(1)}
+  .kicker{display:inline-flex;align-items:center;gap:9px;
+    font-family:var(--mono);font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--cyan-soft);
+    padding:9px 14px;border-radius:999px;border:1px solid var(--line);
+    background:rgba(0,229,255,.05)}
+  .kicker .dot{width:7px;height:7px;border-radius:50%;background:var(--magenta);
+    box-shadow:0 0 12px var(--magenta);animation:pulse 1.9s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.7)}}
+  .nat{font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--mute)}
+
+  /* ---- hero content ---- */
+  .hero-main{position:relative;z-index:3;flex:1;display:flex;flex-direction:column;justify-content:center;
+    padding-block:clamp(48px,9vh,110px)}
+  .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.28em;text-transform:uppercase;
+    color:var(--cyan);margin:0 0 22px;display:flex;align-items:center;gap:12px}
+  .eyebrow::before{content:"";width:34px;height:1px;background:var(--cyan);box-shadow:0 0 10px var(--cyan)}
+
+  h1{
+    font-family:var(--disp);font-weight:800;
+    font-size:clamp(2.7rem,10.5vw,7.7rem);
+    line-height:.94;letter-spacing:-.025em;margin:0;max-width:14ch;
+    text-wrap:balance;
+  }
+  h1 .lo{color:var(--ice)}
+  h1 .hi{
+    color:var(--cyan);position:relative;
+    text-shadow:
+      0 0 18px rgba(0,229,255,.55),
+      0 0 48px rgba(0,229,255,.30);
+  }
+  /* the current running under the accent word */
+  h1 .hi::after{content:"";position:absolute;left:0;right:0;bottom:-.06em;height:3px;
+    background:linear-gradient(90deg,transparent,var(--cyan) 12%,var(--magenta) 88%,transparent);
+    box-shadow:0 0 16px rgba(255,46,209,.6);
+    -webkit-mask:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);
+            mask:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);}
+
+  .sub{margin:30px 0 0;max-width:58ch;font-size:clamp(1rem,2.1vw,1.16rem);color:#C6D6EE}
+  .sub .b{color:var(--ice);font-weight:600}
+  .sub .sep{color:var(--cyan);padding:0 .35em;opacity:.8}
+
+  .porte{margin-top:26px;display:inline-flex;align-items:center;gap:14px}
+  .porte .q{font-family:var(--disp);font-weight:700;font-style:normal;
+    font-size:clamp(1.15rem,3.4vw,1.7rem);color:var(--ice);letter-spacing:-.01em}
+  .porte .bar{width:3px;height:1.5em;border-radius:3px;
+    background:linear-gradient(var(--cyan),var(--magenta));box-shadow:0 0 14px rgba(0,229,255,.5)}
+
+  /* ---- signature: current bus-bar of stats ---- */
+  .bus{position:relative;z-index:3;margin-top:clamp(36px,6vh,64px)}
+  .bus-line{position:relative;height:1px;background:var(--line);margin-bottom:26px;overflow:visible}
+  .bus-line .charge{position:absolute;top:50%;left:0;width:90px;height:2px;transform:translateY(-50%);
+    background:linear-gradient(90deg,transparent,var(--cyan),var(--magenta));
+    box-shadow:0 0 16px var(--cyan);border-radius:2px;
+    animation:run 4.6s linear infinite}
+  @keyframes run{0%{left:-10%}100%{left:100%}}
+
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+  .stat{position:relative;padding-left:20px}
+  .stat::before{content:"";position:absolute;left:0;top:6px;width:9px;height:9px;border-radius:50%;
+    background:var(--cyan);box-shadow:0 0 0 4px rgba(0,229,255,.12),0 0 16px var(--cyan)}
+  .stat:nth-child(2)::before{background:var(--magenta);box-shadow:0 0 0 4px rgba(255,46,209,.14),0 0 16px var(--magenta)}
+  .stat .num{font-family:var(--disp);font-weight:800;font-size:clamp(1.5rem,4.4vw,2.5rem);
+    line-height:1;letter-spacing:-.02em;color:var(--ice)}
+  .stat .lab{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--mute);margin-top:9px}
+
+  .scroll-cue{position:relative;z-index:3;display:flex;align-items:center;gap:10px;
+    font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--mute);
+    padding-block:24px 30px}
+  .scroll-cue .ln{width:30px;height:1px;background:var(--mute);position:relative;overflow:hidden}
+  .scroll-cue .ln::after{content:"";position:absolute;inset:0;background:var(--cyan);
+    box-shadow:0 0 8px var(--cyan);animation:cue 2.4s ease-in-out infinite}
+  @keyframes cue{0%{transform:translateX(-100%)}60%,100%{transform:translateX(100%)}}
+
+  /* ============ VALUES SECTION ============ */
+  .values{position:relative;padding-block:clamp(84px,13vh,150px);
+    background:
+      radial-gradient(90vw 60vw at 100% 0%, rgba(18,62,171,.28), transparent 55%),
+      radial-gradient(80vw 50vw at 0% 100%, rgba(255,46,209,.10), transparent 55%),
+      var(--navy-2);
+    border-top:1px solid var(--line)}
+  .values-head{display:flex;flex-direction:column;gap:16px;margin-bottom:clamp(40px,6vh,68px)}
+  .tag{font-family:var(--mono);font-size:12px;letter-spacing:.26em;text-transform:uppercase;color:var(--cyan);
+    display:flex;align-items:center;gap:12px}
+  .tag::before{content:"";width:34px;height:1px;background:var(--cyan);box-shadow:0 0 10px var(--cyan)}
+  .values h2{font-family:var(--disp);font-weight:800;letter-spacing:-.02em;line-height:1.0;
+    font-size:clamp(2rem,6vw,3.4rem);margin:0;max-width:16ch}
+  .values h2 em{font-style:normal;color:var(--cyan);text-shadow:0 0 22px rgba(0,229,255,.35)}
+
+  .vgrid{display:grid;grid-template-columns:1fr;gap:16px}
+  .vcard{position:relative;padding:30px 26px 32px;border-radius:18px;
+    background:linear-gradient(180deg, rgba(11,20,46,.72), rgba(6,11,26,.72));
+    border:1px solid var(--line);overflow:hidden;
+    transition:transform .45s cubic-bezier(.2,.7,.2,1), border-color .45s, box-shadow .45s}
+  .vcard::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;
+    background:linear-gradient(var(--cyan),var(--magenta));opacity:.85;
+    box-shadow:0 0 18px rgba(0,229,255,.4)}
+  .vcard::after{content:"";position:absolute;inset:0;opacity:0;transition:opacity .45s;
+    background:radial-gradient(60% 90% at 100% 0%, rgba(0,229,255,.12), transparent 60%)}
+  .vcard:hover,.vcard:focus-within{transform:translateY(-6px);border-color:rgba(0,229,255,.4);
+    box-shadow:0 24px 60px -30px rgba(0,229,255,.4)}
+  .vcard:hover::after,.vcard:focus-within::after{opacity:1}
+  .vcard .vn{font-family:var(--mono);font-size:12px;color:var(--magenta);letter-spacing:.14em}
+  .vcard .vt{font-family:var(--disp);font-weight:800;font-size:clamp(1.6rem,4.6vw,2.15rem);
+    letter-spacing:-.02em;margin:14px 0 12px;color:var(--ice)}
+  .vcard .vd{color:#B9CBE6;font-size:.98rem;max-width:34ch}
+
+  footer{padding-block:34px;border-top:1px solid var(--line);background:var(--navy)}
+  .foot{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  .foot .brand-chip{height:40px}
+  .foot .brand-chip img{height:18px}
+  .foot small{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute)}
+
+  /* ============ RESPONSIVE ============ */
+  @media (max-width:720px){
+    .stats{grid-template-columns:1fr;gap:16px}
+    .nat{display:none}
+    .porte{margin-top:22px}
+  }
+  @media (min-width:721px){
+    .vgrid{grid-template-columns:repeat(3,1fr);gap:20px}
+  }
+
+  /* ============ REDUCED MOTION ============ */
+  @media (prefers-reduced-motion:reduce){
+    .scan,.bus-line .charge,.kicker .dot,.scroll-cue .ln::after{animation:none!important}
+    .scan{display:none}
+    .vcard{transition:none}
+  }
+</style>
+
+<section class="hero">
+  <div id="hero-bg" aria-hidden="true"></div>
+  <div class="grade" aria-hidden="true"></div>
+  <div class="scan" aria-hidden="true"></div>
+
+  <div class="wrap topbar">
+    <div class="brand">
+      <span class="brand-chip"><img src="../../assets/logo.png" alt="Intégral Pharma" /></span>
+    </div>
+    <span class="kicker"><span class="dot"></span>Un partenaire, pas un fournisseur</span>
+    <span class="nat">Groupement national · Indépendants</span>
+  </div>
+
+  <div class="wrap hero-main">
+    <p class="eyebrow">Intégral Pharma</p>
+    <h1><span class="lo">Plus de marge,</span><br /><span class="hi">nette sur facture.</span></h1>
+
+    <p class="sub">
+      <span class="b">Groupement de pharmaciens indépendants</span>, à couverture nationale.
+      <span class="sep">/</span> Toute la parapharmacie.
+      <span class="sep">/</span> Ni franco imposé, ni engagement.
+    </p>
+
+    <div class="porte">
+      <span class="bar" aria-hidden="true"></span>
+      <span class="q">« Votre projet, on le porte. »</span>
+    </div>
+
+    <div class="bus">
+      <div class="bus-line" aria-hidden="true"><span class="charge"></span></div>
+      <div class="stats">
+        <div class="stat">
+          <div class="num" data-count="14000" data-suffix="+ ">+14 000</div>
+          <div class="lab">références Offilog</div>
+        </div>
+        <div class="stat">
+          <div class="num">100%</div>
+          <div class="lab">indépendants</div>
+        </div>
+        <div class="stat">
+          <div class="num">National</div>
+          <div class="lab">couverture nationale</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap scroll-cue"><span class="ln"></span> nos valeurs</div>
+</section>
+
+<section class="values">
+  <div class="wrap">
+    <div class="values-head">
+      <span class="tag">Ce qui nous relie</span>
+      <h2>Un groupement bâti sur <em>trois courants</em>.</h2>
+    </div>
+
+    <div class="vgrid">
+      <article class="vcard" tabindex="0">
+        <div class="vn">01 — Confiance</div>
+        <div class="vt">Confiance</div>
+        <p class="vd">Des conditions lisibles, la marge nette sur la facture. Rien qui se cache, rien qui se négocie dans l'ombre.</p>
+      </article>
+      <article class="vcard" tabindex="0">
+        <div class="vn">02 — Engagement</div>
+        <div class="vt">Engagement</div>
+        <p class="vd">On porte votre projet d'officine comme le nôtre. Ni franco imposé, ni engagement forcé : vous restez maître à bord.</p>
+      </article>
+      <article class="vcard" tabindex="0">
+        <div class="vn">03 — Respect</div>
+        <div class="vt">Respect</div>
+        <p class="vd">Des pharmaciens indépendants, réunis d'égal à égal. Un partenaire qui écoute avant de proposer.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot">
+    <span class="brand-chip"><img src="../../assets/logo.png" alt="Intégral Pharma" /></span>
+    <small>Un partenaire, pas un fournisseur — couverture nationale</small>
+  </div>
+</footer>
+
+<script src="../../vendor/vanta/three.min.js"></script>
+<script src="../../vendor/vanta/vanta.net.min.js"></script>
+<script>
+(function(){
+  var host = document.getElementById('hero-bg');
+  var reduce = matchMedia('(prefers-reduced-motion:reduce)').matches;
+  var gl=null; try{ gl=document.createElement('canvas').getContext('webgl'); }catch(e){}
+
+  // Fallback: reduced-motion OR Vanta / THREE / WebGL unavailable -> static electric mesh
+  if(reduce || typeof VANTA==='undefined' || !VANTA.NET || !window.THREE || !gl){
+    host.classList.add('mesh-fallback');
+    return;
+  }
+
+  try{
+    var fx = VANTA.NET({
+      el:'#hero-bg',
+      color:0x00E5FF,
+      backgroundColor:0x050A1A,
+      points:12,
+      maxDistance:23,
+      spacing:15,
+      showDots:true,
+      mouseControls:true,
+      touchControls:true,
+      gyroControls:false
+    });
+    // cap devicePixelRatio at 2
+    if(fx && fx.renderer && fx.renderer.setPixelRatio){
+      fx.renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, 2));
+      if(fx.resize) fx.resize();
+    }
+  }catch(e){
+    host.classList.add('mesh-fallback');
+  }
+})();
+
+/* count-up for the Offilog stat, fr-FR, reduced-motion safe */
+(function(){
+  var reduce = matchMedia('(prefers-reduced-motion:reduce)').matches;
+  var el = document.querySelector('[data-count]');
+  if(!el) return;
+  var end = parseInt(el.getAttribute('data-count'),10);
+  var fmt = new Intl.NumberFormat('fr-FR');
+  var render = function(v){ el.textContent = '+' + fmt.format(v); };
+  if(reduce){ render(end); return; }
+  var run = function(){
+    var t0=null, dur=1500;
+    function step(ts){
+      if(!t0) t0=ts;
+      var p=Math.min((ts-t0)/dur,1);
+      var e=1-Math.pow(1-p,3);
+      render(Math.round(end*e));
+      if(p<1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  };
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(en){
+      en.forEach(function(x){ if(x.isIntersecting){ run(); io.disconnect(); } });
+    },{threshold:.4});
+    io.observe(el);
+  } else { run(); }
+})();
+</script>

@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Intégral Pharma — Un partenaire, pas un fournisseur</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#15140F;
+    --paper:#EDEAE0;
+    --paper-2:#E4E0D3;
+    --orange:#F39A1B;
+    --rule:#15140F;
+    --hairline:rgba(21,20,15,.16);
+    --ease:cubic-bezier(.76,0,.24,1);
+    --gap:clamp(16px,4vw,40px);
+    --edge:clamp(16px,4vw,44px);
+  }
+
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:"Bricolage Grotesque",system-ui,sans-serif;
+    overflow-x:hidden;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+  }
+  .mono{
+    font-family:"Space Mono",ui-monospace,monospace;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:.14em;
+    font-size:clamp(10px,1.05vw,12px);
+  }
+  a{color:inherit;text-decoration:none}
+  :focus-visible{outline:3px solid var(--orange);outline-offset:3px}
+
+  .wrap{max-width:1500px;margin:0 auto;padding:0 var(--edge)}
+
+  /* ---------- Masthead ---------- */
+  header.mast{
+    position:sticky;top:0;z-index:50;
+    background:var(--paper);
+    border-bottom:2px solid var(--rule);
+  }
+  .mast-in{
+    display:flex;align-items:center;justify-content:space-between;
+    gap:16px;padding:14px var(--edge);
+  }
+  .brand{display:flex;align-items:center;gap:12px;min-width:0}
+  .brand img{height:26px;width:auto;display:block}
+  .brand .tag{border-left:2px solid var(--rule);padding-left:12px}
+  .mast-nav{display:flex;gap:26px;align-items:center}
+  .mast-nav a{position:relative}
+  .mast-nav a::after{
+    content:"";position:absolute;left:0;right:100%;bottom:-5px;height:2px;
+    background:var(--orange);transition:right .3s var(--ease);
+  }
+  .mast-nav a:hover::after{right:0}
+  .mast-nav .cta{
+    background:var(--ink);color:var(--paper);
+    padding:9px 16px;border:2px solid var(--ink);
+    transition:background .18s var(--ease),color .18s var(--ease);
+  }
+  .mast-nav .cta:hover{background:var(--orange);color:var(--ink);border-color:var(--orange)}
+  .mast-nav .cta::after{display:none}
+  @media(max-width:720px){
+    .mast-nav a:not(.cta){display:none}
+  }
+
+  /* ---------- Hero ---------- */
+  .hero{border-bottom:2px solid var(--rule);position:relative}
+  .hero-grid{
+    display:grid;
+    grid-template-columns:1fr;
+  }
+  .hero-top{
+    display:flex;flex-wrap:wrap;gap:12px 28px;justify-content:space-between;
+    padding:16px 0 22px;border-bottom:1px solid var(--hairline);
+  }
+  .hero-top .idx{color:var(--orange)}
+  .hero-main{padding:clamp(22px,5vw,54px) 0 clamp(26px,5vw,52px)}
+
+  .display{
+    font-weight:800;
+    line-height:.86;
+    letter-spacing:-.035em;
+    font-size:clamp(2.7rem,12.4vw,11rem);
+    text-transform:uppercase;
+    margin:0;
+  }
+  .line{overflow:hidden;display:block}
+  .line > span{display:block;transform:translateY(110%);will-change:transform}
+  .reveal .line > span{
+    animation:rise .9s var(--ease) forwards;
+  }
+  .reveal .line:nth-child(1) > span{animation-delay:.05s}
+  .reveal .line:nth-child(2) > span{animation-delay:.16s}
+  .reveal .line:nth-child(3) > span{animation-delay:.27s}
+  @keyframes rise{to{transform:translateY(0)}}
+
+  .oblock{
+    background:var(--orange);color:var(--ink);
+    display:inline-block;
+    padding:0 .16em .06em;
+    margin:0 -.02em;
+    line-height:.9;
+    box-decoration-break:clone;
+    -webkit-box-decoration-break:clone;
+  }
+
+  .hero-foot{
+    display:grid;grid-template-columns:1.5fr 1fr;gap:var(--gap);
+    align-items:end;
+    padding-top:clamp(20px,4vw,40px);
+    border-top:2px solid var(--rule);
+    margin-top:clamp(18px,3.5vw,34px);
+  }
+  .sub{
+    max-width:44ch;line-height:1.5;
+    font-size:clamp(14px,1.5vw,17px);font-weight:400;
+  }
+  .sub b{font-weight:700}
+  .sep{color:var(--orange);font-weight:700;padding:0 .35em}
+  .promise{
+    justify-self:end;text-align:right;align-self:end;
+  }
+  .promise .q{
+    font-weight:800;line-height:.95;letter-spacing:-.02em;
+    font-size:clamp(20px,3.4vw,38px);
+  }
+  .promise .q em{font-style:normal;color:var(--orange)}
+  .promise .mono{margin-top:12px;opacity:.7}
+  @media(max-width:860px){
+    .hero-foot{grid-template-columns:1fr;gap:26px}
+    .promise{justify-self:start;text-align:left}
+  }
+
+  /* ---------- Marquee ---------- */
+  .marquee{
+    background:var(--ink);color:var(--paper);
+    border-bottom:2px solid var(--rule);
+    overflow:hidden;white-space:nowrap;
+    padding:16px 0;
+  }
+  .marquee-track{
+    display:inline-flex;align-items:center;
+    animation:scroll 26s linear infinite;
+  }
+  .marquee-track span{
+    font-weight:800;letter-spacing:-.01em;text-transform:uppercase;
+    font-size:clamp(20px,3.8vw,40px);
+    padding:0 .55em;display:inline-flex;align-items:center;
+  }
+  .marquee-track .star{color:var(--orange);font-family:"Space Mono",monospace;font-weight:700}
+  @keyframes scroll{to{transform:translateX(-50%)}}
+
+  /* ---------- Values / Manifesto ---------- */
+  .manifesto{padding:clamp(30px,6vw,70px) 0 clamp(10px,2vw,20px)}
+  .sec-head{
+    display:flex;flex-wrap:wrap;gap:12px 24px;justify-content:space-between;
+    align-items:baseline;padding-bottom:20px;border-bottom:2px solid var(--rule);
+  }
+  .sec-head h2{
+    margin:0;font-weight:800;text-transform:uppercase;letter-spacing:-.02em;
+    font-size:clamp(1.4rem,3.4vw,2.6rem);line-height:.95;
+  }
+
+  .values{
+    display:grid;grid-template-columns:repeat(3,1fr);
+  }
+  .value{
+    padding:clamp(20px,2.6vw,34px) clamp(18px,2vw,26px) clamp(26px,3.4vw,44px);
+    border-right:1px solid var(--hairline);
+    position:relative;
+    transition:background .25s var(--ease),color .25s var(--ease);
+  }
+  .value:last-child{border-right:none}
+  .value .num{
+    font-family:"Space Mono",monospace;font-weight:700;
+    color:var(--orange);font-size:clamp(12px,1.3vw,14px);
+    display:block;margin-bottom:clamp(30px,7vw,90px);
+  }
+  .value h3{
+    margin:0;font-weight:800;text-transform:uppercase;letter-spacing:-.03em;
+    line-height:.9;font-size:clamp(2rem,5.4vw,4.4rem);
+  }
+  .value p{
+    margin:14px 0 0;line-height:1.5;font-size:clamp(13px,1.35vw,15px);
+    max-width:30ch;opacity:.82;
+  }
+  .value:hover{background:var(--orange);color:var(--ink)}
+  .value:hover .num{color:var(--ink)}
+  .value:hover p{opacity:1}
+  @media(max-width:760px){
+    .values{grid-template-columns:1fr}
+    .value{border-right:none;border-bottom:1px solid var(--hairline)}
+    .value .num{margin-bottom:clamp(18px,10vw,40px)}
+  }
+
+  /* ---------- Stats ---------- */
+  .stats{
+    display:grid;grid-template-columns:repeat(3,1fr);
+    border-top:2px solid var(--rule);border-bottom:2px solid var(--rule);
+    margin-top:clamp(30px,5vw,60px);
+  }
+  .stat{
+    padding:clamp(22px,3vw,40px) clamp(18px,2vw,26px);
+    border-right:1px solid var(--hairline);
+  }
+  .stat:last-child{border-right:none}
+  .stat .big{
+    font-weight:800;line-height:.82;letter-spacing:-.045em;
+    font-size:clamp(3rem,9vw,7.5rem);
+    display:block;
+  }
+  .stat .big .u{color:var(--orange)}
+  .stat .lbl{margin-top:14px;opacity:.7}
+  @media(max-width:760px){
+    .stats{grid-template-columns:1fr}
+    .stat{border-right:none;border-bottom:1px solid var(--hairline)}
+    .stat:last-child{border-bottom:none}
+  }
+
+  /* ---------- Footer band ---------- */
+  footer.foot{
+    padding:clamp(28px,5vw,54px) 0;
+    display:flex;flex-wrap:wrap;gap:18px 30px;
+    align-items:baseline;justify-content:space-between;
+  }
+  footer.foot .lead{
+    font-weight:800;text-transform:uppercase;letter-spacing:-.02em;
+    font-size:clamp(1.3rem,3vw,2.2rem);line-height:.95;max-width:16ch;
+  }
+  footer.foot .lead em{font-style:normal;color:var(--orange)}
+  .fcta{
+    display:inline-block;background:var(--ink);color:var(--paper);
+    padding:16px 26px;border:2px solid var(--ink);
+    font-family:"Space Mono",monospace;font-weight:700;text-transform:uppercase;
+    letter-spacing:.1em;font-size:13px;
+    transition:transform .18s var(--ease),background .18s var(--ease),color .18s var(--ease);
+  }
+  .fcta:hover{background:var(--orange);color:var(--ink);border-color:var(--orange);transform:translate(-2px,-2px)}
+
+  @media(prefers-reduced-motion:reduce){
+    .marquee-track{animation:none}
+    .reveal .line > span{animation:none;transform:none}
+    .line > span{transform:none}
+    *{transition:none !important}
+  }
+</style>
+</head>
+<body>
+
+  <header class="mast">
+    <div class="mast-in">
+      <div class="brand">
+        <img src="../../assets/logo.png" alt="Intégral Pharma" />
+        <span class="tag mono">Groupement · FR</span>
+      </div>
+      <nav class="mast-nav mono" aria-label="Navigation principale">
+        <a href="#manifeste">Manifeste</a>
+        <a href="#valeurs">Valeurs</a>
+        <a href="#contact" class="cta">Nous rencontrer</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <!-- HERO -->
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div class="hero-top mono">
+          <span><span class="idx">[01]</span> &nbsp;Un partenaire, pas un fournisseur</span>
+          <span>Pharmaciens indépendants — Édition 2026</span>
+        </div>
+
+        <div class="hero-main">
+          <h1 class="display reveal" aria-label="Plus de marge, nette sur facture.">
+            <span class="line"><span>Plus de</span></span>
+            <span class="line"><span>marge, <span class="oblock">nette</span></span></span>
+            <span class="line"><span>sur facture.</span></span>
+          </h1>
+
+          <div class="hero-foot">
+            <p class="sub">
+              Groupement de pharmaciens indépendants, à couverture nationale, sur
+              <b>toute la parapharmacie</b>.
+              <span class="sep">/</span> Ni franco imposé <span class="sep">/</span> ni engagement.
+            </p>
+            <div class="promise">
+              <div class="q">« Votre projet, <em>on le porte.</em> »</div>
+              <div class="mono">Confiance · Engagement · Respect</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MARQUEE -->
+    <div class="marquee" aria-hidden="true">
+      <div class="marquee-track">
+        <span>+14 000 références Offilog</span><span class="star">✳</span>
+        <span>100% indépendants</span><span class="star">✳</span>
+        <span>Couverture nationale</span><span class="star">✳</span>
+        <span>+14 000 références Offilog</span><span class="star">✳</span>
+        <span>100% indépendants</span><span class="star">✳</span>
+        <span>Couverture nationale</span><span class="star">✳</span>
+      </div>
+    </div>
+
+    <!-- MANIFESTO / VALUES -->
+    <section class="manifesto" id="manifeste">
+      <div class="wrap">
+        <div class="sec-head" id="valeurs">
+          <h2>Trois mots. Rien de négociable.</h2>
+          <span class="mono">Ce qui nous tient — 03 valeurs</span>
+        </div>
+
+        <div class="values">
+          <article class="value">
+            <span class="num">01 / Valeur</span>
+            <h3>Confiance</h3>
+            <p>On dit ce qu'on fait, on fait ce qu'on dit. Des conditions claires, nettes sur facture, sans petites lignes.</p>
+          </article>
+          <article class="value">
+            <span class="num">02 / Valeur</span>
+            <h3>Engagement</h3>
+            <p>Votre officine avance, on avance avec. Un accompagnement de terrain, pas un catalogue posté puis oublié.</p>
+          </article>
+          <article class="value">
+            <span class="num">03 / Valeur</span>
+            <h3>Respect</h3>
+            <p>Indépendants, vous le restez. Aucun engagement forcé, aucun franco imposé — vous gardez la main.</p>
+          </article>
+        </div>
+
+        <div class="stats">
+          <div class="stat">
+            <span class="big">14<span class="u">K+</span></span>
+            <div class="lbl mono">Références Offilog</div>
+          </div>
+          <div class="stat">
+            <span class="big">100<span class="u">%</span></span>
+            <div class="lbl mono">Indépendants</div>
+          </div>
+          <div class="stat">
+            <span class="big">FR<span class="u">.</span></span>
+            <div class="lbl mono">Couverture nationale</div>
+          </div>
+        </div>
+
+        <footer class="foot" id="contact">
+          <div class="lead">On <em>porte</em> votre projet. On en parle ?</div>
+          <a class="fcta" href="#contact">Rencontrer Intégral →</a>
+        </footer>
+      </div>
+    </section>
+  </main>
+
+</body>
+</html>

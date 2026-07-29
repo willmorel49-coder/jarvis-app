@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Intégral Pharma — Un partenaire, pas un fournisseur</title>
+<meta name="description" content="Intégral Pharma, groupe de grossistes français indépendant. 9 agences, un réseau national au service de l'officine.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:opsz,wght@9..40,400..700&family=Fraunces:ital,opsz,wght@0,9..144,400..600;1,9..144,400..600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="aurora.css">
+<style>
+  /* ============================ AURORE IP tokens ======================== */
+  :root{
+    --ink:#05070E;
+    --ink-2:#090D18;
+    --ink-3:#0D1322;
+    --blue:#0057FF;
+    --blue-soft:#4C8CFF;
+    --azure:#1E7BFF;
+    --orange:#F79A18;
+    --orange-hi:#FFB43A;
+    --teal:#16C7C0;
+    --paper:#F5F7FC;
+    --mute:rgba(245,247,252,.64);
+    --faint:rgba(245,247,252,.40);
+    --hair:rgba(255,255,255,.10);
+    --hair-2:rgba(255,255,255,.055);
+    --glass:rgba(255,255,255,.035);
+    --maxw:1240px;
+    --ease:cubic-bezier(.22,.61,.36,1);
+    --ease-out:cubic-bezier(.16,1,.3,1);
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    background:var(--ink);
+    color:var(--paper);
+    font-family:"DM Sans",system-ui,-apple-system,sans-serif;
+    line-height:1.55;
+    font-size:17px;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+    overflow-x:hidden;
+  }
+  a{color:inherit;text-decoration:none}
+  img,video{display:block;max-width:100%}
+  ::selection{background:var(--orange);color:#111}
+  :focus-visible{outline:2px solid var(--orange);outline-offset:3px;border-radius:3px}
+
+  /* atmospheric base wash under everything */
+  body::before{
+    content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
+    background:
+      radial-gradient(120% 80% at 50% -10%, rgba(0,87,255,.18), transparent 58%),
+      radial-gradient(90% 60% at 8% 8%, rgba(30,123,255,.10), transparent 55%),
+      radial-gradient(100% 60% at 92% 118%, rgba(247,154,27,.12), transparent 60%),
+      var(--ink);
+  }
+
+  .wrap{width:min(100% - 40px,var(--maxw));margin-inline:auto}
+
+  /* ============================ GRAIN + GLOW ATMOSPHERE ================= */
+  .grain{
+    position:fixed;inset:-50%;z-index:60;pointer-events:none;opacity:.05;
+    mix-blend-mode:soft-light;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    animation:grainShift 5.4s steps(4) infinite;
+  }
+  @keyframes grainShift{
+    0%{transform:translate(0,0)}25%{transform:translate(-3%,2%)}
+    50%{transform:translate(2%,-2%)}75%{transform:translate(-2%,-3%)}100%{transform:translate(0,0)}
+  }
+  .glow-accent{position:absolute;border-radius:50%;filter:blur(70px);pointer-events:none;
+    z-index:1;opacity:.66;will-change:transform;mix-blend-mode:screen}
+  .glow-accent.drift{animation:glowDrift 22s var(--ease) infinite alternate}
+  .glow-accent.drift.slow{animation-duration:32s;animation-direction:alternate-reverse}
+  @keyframes glowDrift{
+    0%{transform:translate3d(0,0,0) scale(1)}
+    100%{transform:translate3d(8%,-6%,0) scale(1.18)}
+  }
+
+  /* utility type */
+  .kicker{
+    font-family:"DM Mono",ui-monospace,monospace;
+    font-size:12px;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--orange);display:inline-flex;align-items:center;gap:10px;
+  }
+  .kicker::before{content:"";width:26px;height:1px;background:var(--orange);opacity:.7}
+  .accent{font-family:"Fraunces",Georgia,serif;font-style:italic;font-weight:500}
+
+  /* ============================ SPLIT-LINE MASKS ====================== */
+  .ln-mask{display:block;overflow:hidden;padding-bottom:.14em;margin-bottom:-.14em}
+  .ln-inner{display:block;will-change:transform}
+  .w{display:inline-block}
+
+  /* ============================ CUSTOM CURSOR ========================= */
+  .cur-dot,.cur-ring{position:fixed;top:0;left:0;z-index:9000;pointer-events:none;
+    border-radius:50%;display:none}
+  .cur-dot{width:6px;height:6px;background:var(--orange);box-shadow:0 0 12px var(--orange)}
+  .cur-ring{width:34px;height:34px;border:1.5px solid rgba(59,123,255,.85);
+    display:none;align-items:center;justify-content:center;
+    transition:width .32s var(--ease-out),height .32s var(--ease-out),
+      border-color .32s var(--ease-out),background .32s var(--ease-out);
+    background:radial-gradient(circle,rgba(0,87,255,.08),transparent 70%)}
+  .cur-ring.is-hover{width:56px;height:56px;border-color:rgba(243,154,27,.9)}
+  .cur-ring.is-label{width:84px;height:84px;border-color:rgba(243,154,27,0);
+    background:rgba(243,154,27,.92)}
+  .cur-label{font-family:"DM Mono",monospace;font-size:10.5px;letter-spacing:.1em;
+    text-transform:uppercase;color:#160b00;font-weight:500;opacity:0;transform:scale(.6);
+    transition:opacity .3s,transform .3s;white-space:nowrap}
+  .cur-ring.is-label .cur-label{opacity:1;transform:scale(1)}
+  body.has-cursor{cursor:none}
+  body.has-cursor a,body.has-cursor button,body.has-cursor .magnetic{cursor:none}
+  body.has-cursor .cur-dot,body.has-cursor .cur-ring{display:flex}
+  body.has-cursor .cur-dot{display:block}
+
+  /* ============================ INTRO CURTAIN ========================= */
+  .intro{position:fixed;inset:0;z-index:9500;display:grid;place-items:center;
+    background:
+      radial-gradient(80% 60% at 50% 32%, rgba(0,87,255,.22), transparent 60%),
+      radial-gradient(60% 50% at 78% 78%, rgba(243,154,27,.16), transparent 60%),
+      var(--ink);
+    will-change:transform}
+  .intro--auto{animation:introAuto 2.35s var(--ease-out) forwards}
+  @keyframes introAuto{
+    0%,46%{transform:translateY(0)}
+    100%{transform:translateY(-101%);visibility:hidden;pointer-events:none}
+  }
+  .intro__inner{text-align:center;overflow:hidden}
+  .intro__logo{display:flex;align-items:center;gap:12px;justify-content:center;
+    font-size:clamp(1.6rem,5vw,2.4rem);font-weight:600;letter-spacing:-.02em}
+  .intro--auto .intro__logo{animation:introLogo 2.35s var(--ease-out) forwards}
+  @keyframes introLogo{0%{opacity:0;transform:translateY(24px)}
+    16%,60%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-14px)}}
+  .intro__logo .dot{width:12px;height:12px;border-radius:50%;background:var(--orange);
+    box-shadow:0 0 22px var(--orange)}
+  .intro__logo span{color:var(--mute);font-weight:400}
+  .intro__bar{width:min(220px,52vw);height:2px;margin:26px auto 0;border-radius:2px;
+    background:var(--hair);overflow:hidden;position:relative}
+  .intro__bar::after{content:"";position:absolute;inset:0;transform-origin:left;
+    background:linear-gradient(90deg,var(--blue),var(--orange))}
+  .intro--auto .intro__bar::after{animation:introBar 1.5s var(--ease) forwards}
+  @keyframes introBar{0%{transform:scaleX(0)}100%{transform:scaleX(1)}}
+
+  /* ============================ NAV ==================================== */
+  header.nav{
+    position:fixed;top:0;left:0;right:0;z-index:50;
+    transition:background .4s var(--ease),border-color .4s var(--ease),backdrop-filter .4s;
+    border-bottom:1px solid transparent;
+  }
+  header.nav.scrolled{
+    background:rgba(6,9,17,.72);
+    backdrop-filter:blur(16px) saturate(140%);
+    -webkit-backdrop-filter:blur(16px) saturate(140%);
+    border-bottom:1px solid var(--hair-2);
+  }
+  .nav-in{display:flex;align-items:center;justify-content:space-between;height:70px}
+  .brand{display:flex;align-items:baseline;gap:9px;font-weight:600;letter-spacing:-.01em;font-size:18px}
+  .brand .dot{width:9px;height:9px;border-radius:50%;background:var(--orange);
+    box-shadow:0 0 14px var(--orange);align-self:center;flex:0 0 auto}
+  .brand b{font-weight:600}
+  .brand span{color:var(--mute);font-weight:400}
+  .nav-links{display:none;gap:30px;align-items:center}
+  .nav-links a{font-size:14.5px;color:var(--mute);transition:color .25s;position:relative}
+  .nav-links a::after{content:"";position:absolute;left:0;right:100%;bottom:-5px;height:1.5px;
+    background:linear-gradient(90deg,var(--blue-soft),var(--orange-hi));transition:right .35s var(--ease-out)}
+  .nav-links a:hover{color:var(--paper)}
+  .nav-links a:hover::after{right:0}
+  .btn{
+    display:inline-flex;align-items:center;gap:9px;font-size:14.5px;font-weight:500;
+    padding:11px 20px;border-radius:100px;transition:transform .3s var(--ease),background .3s,box-shadow .3s;
+    white-space:nowrap;position:relative;
+  }
+  .btn-primary{background:linear-gradient(135deg,var(--orange-hi),var(--orange) 62%,#EC8A0C);
+    color:#160b00;font-weight:600;
+    box-shadow:0 8px 30px -8px rgba(247,154,27,.7),0 0 0 1px rgba(255,180,58,.35) inset}
+  .btn-primary:hover{transform:translateY(-2px);
+    box-shadow:0 16px 44px -8px rgba(247,154,27,.9),0 0 0 1px rgba(255,180,58,.55) inset}
+  .btn-ghost{border:1px solid var(--hair);color:var(--paper);overflow:hidden}
+  .btn-ghost::before{content:"";position:absolute;inset:0;z-index:-1;opacity:0;
+    background:linear-gradient(120deg,rgba(0,87,255,.45),rgba(247,154,27,.38));transition:opacity .35s}
+  .btn-ghost:hover{border-color:transparent;transform:translateY(-2px);
+    box-shadow:0 12px 34px -12px rgba(0,87,255,.55)}
+  .btn-ghost:hover::before{opacity:1}
+  .btn .arw{transition:transform .3s var(--ease)}
+  .btn:hover .arw{transform:translate(3px,-3px)}
+
+  /* section-progress rail (desktop signature element) — pinned far RIGHT so it
+     never sits over hero copy; only shows on genuinely wide viewports (>1200) */
+  .rail{position:fixed;right:26px;left:auto;top:50%;transform:translateY(-50%);z-index:40;display:none}
+  .rail ol{list-style:none;display:flex;flex-direction:column;gap:16px;align-items:flex-end}
+  .rail a{display:flex;flex-direction:row-reverse;align-items:center;gap:12px;color:var(--faint);
+    font-family:"DM Mono",monospace;font-size:11px;letter-spacing:.14em;transition:color .3s;text-align:right}
+  .rail .tick{width:22px;height:1px;background:currentColor;transition:width .3s var(--ease)}
+  .rail a:hover,.rail a.active{color:var(--paper)}
+  .rail a.active{color:var(--orange)}
+  .rail a.active .tick{width:40px}
+
+  /* ============================ shared section ========================= */
+  .sect{position:relative;padding:120px 0}
+  .eyebrow-row{display:flex;align-items:center;gap:14px;margin-bottom:26px}
+  h2.title{
+    font-size:clamp(2rem,6vw,3.5rem);line-height:1.02;font-weight:600;
+    letter-spacing:-.025em;max-width:16ch;
+  }
+  .lede{color:var(--mute);font-size:clamp(1rem,2.3vw,1.22rem);max-width:56ch;margin-top:22px;line-height:1.6}
+
+  /* reveal-on-scroll */
+  .reveal{opacity:0;transform:translateY(34px);transition:opacity .9s var(--ease-out),transform .9s var(--ease-out)}
+  .reveal.in{opacity:1;transform:none}
+  .reveal.d1{transition-delay:.08s}.reveal.d2{transition-delay:.16s}
+  .reveal.d3{transition-delay:.24s}.reveal.d4{transition-delay:.32s}
+
+  /* ============================ HERO ================================== */
+  .hero{position:relative;min-height:100svh;display:flex;align-items:flex-end;
+    padding-bottom:64px;overflow:hidden}
+  .hero .aurora-container{z-index:0}
+  #aurora{transform-origin:center;
+    filter:saturate(calc(1.24 + var(--ab,0)*.6)) brightness(calc(1.08 + var(--ab,0)*.22)) contrast(1.05);
+    transform:scale(calc(1 + var(--ab,0)*.05))}
+  .hero .scrim{position:absolute;inset:0;z-index:1;pointer-events:none;
+    background:
+      linear-gradient(to top, var(--ink) 2%, rgba(5,7,14,.35) 34%, rgba(5,7,14,.15) 60%, rgba(5,7,14,.55) 100%),
+      radial-gradient(80% 60% at 50% 8%, transparent 40%, rgba(5,7,14,.5) 100%);
+  }
+  .hero-in{position:relative;z-index:2;width:100%}
+  .hero h1{
+    font-size:clamp(2.7rem,10.5vw,7.2rem);line-height:.95;font-weight:600;
+    letter-spacing:-.035em;margin:22px 0 0;max-width:15ch;
+    text-shadow:0 2px 40px rgba(5,7,14,.5);
+  }
+  .hero h1 .accent{color:var(--orange-hi);letter-spacing:-.01em;
+    text-shadow:0 0 34px rgba(247,154,27,.45)}
+  .hero-sub{color:rgba(245,247,252,.78);font-size:clamp(1.02rem,2.4vw,1.3rem);
+    max-width:52ch;margin-top:26px;line-height:1.6;
+    text-shadow:0 1px 24px rgba(5,7,14,.55)}
+  .hero-cta{display:flex;flex-wrap:wrap;gap:14px;margin-top:34px}
+  .hero-glass{margin-top:46px;display:grid;grid-template-columns:repeat(3,auto);
+    gap:26px 40px;padding:26px 30px;border-radius:18px;
+    border:1px solid var(--hair);background:rgba(9,13,24,.42);
+    backdrop-filter:blur(10px) saturate(130%);-webkit-backdrop-filter:blur(10px) saturate(130%);
+    box-shadow:0 30px 70px -40px rgba(0,0,0,.9),0 0 0 1px rgba(0,87,255,.1) inset;
+    width:max-content;max-width:100%;transform-style:preserve-3d}
+  .hg-item{display:flex;flex-direction:column;gap:4px;transform:translateZ(0)}
+  .hg-num{font-size:clamp(1.6rem,4vw,2.2rem);font-weight:600;letter-spacing:-.03em;
+    font-variant-numeric:tabular-nums;line-height:1;transform:translateZ(28px)}
+  .hg-item:nth-child(1) .hg-num{color:var(--blue-soft)}
+  .hg-item:nth-child(2) .hg-num{color:var(--paper)}
+  .hg-item:nth-child(3) .hg-num{color:var(--orange)}
+  .hg-lab{font-size:12px;color:var(--faint);letter-spacing:.04em}
+  .scroll-hint{position:absolute;right:0;bottom:64px;z-index:2;display:none;
+    align-items:center;gap:10px;color:var(--faint);font-family:"DM Mono",monospace;
+    font-size:11px;letter-spacing:.2em;writing-mode:vertical-rl}
+  .scroll-hint .ln{width:1px;height:52px;background:linear-gradient(var(--faint),transparent);
+    animation:pulse 2.4s var(--ease) infinite}
+  @keyframes pulse{0%,100%{opacity:.3;transform:scaleY(.7)}50%{opacity:1;transform:scaleY(1)}}
+
+  /* ============================ KINETIC MARQUEE ======================= */
+  .marquee-band{position:relative;padding:34px 0;overflow:hidden;
+    border-top:1px solid var(--hair-2);border-bottom:1px solid var(--hair-2);
+    background:linear-gradient(180deg,rgba(0,87,255,.10),transparent 55%,rgba(247,154,27,.10))}
+  /* colour bleed at the seams so the band reads as blue↔orange energy */
+  .marquee-band::before,.marquee-band::after{content:"";position:absolute;top:0;bottom:0;
+    width:26%;z-index:2;pointer-events:none}
+  .marquee-band::before{left:0;
+    background:linear-gradient(90deg,var(--ink) 4%,rgba(5,7,14,.55) 40%,transparent)}
+  .marquee-band::after{right:0;
+    background:linear-gradient(270deg,var(--ink) 4%,rgba(5,7,14,.55) 40%,transparent)}
+  .mq-row{overflow:hidden;white-space:nowrap;position:relative;z-index:1}
+  .mq-row+.mq-row{margin-top:6px}
+  .mq-track{display:inline-flex;align-items:center;will-change:transform;
+    animation:mqScroll 34s linear infinite}
+  .mq-row.rev .mq-track{animation-direction:reverse;animation-duration:42s}
+  @keyframes mqScroll{to{transform:translateX(-50%)}}
+  .mq-item{font-family:"Fraunces",Georgia,serif;font-style:italic;font-weight:500;
+    font-size:clamp(1.5rem,4.4vw,2.6rem);letter-spacing:-.01em;color:var(--paper);
+    margin-right:26px;display:inline-flex;align-items:center;gap:26px}
+  .mq-row.rev .mq-item{color:var(--mute);font-style:normal;font-family:"DM Sans",sans-serif;
+    font-weight:500;letter-spacing:-.01em}
+  .mq-sep{color:var(--orange-hi);font-style:normal;font-family:"DM Sans",sans-serif;font-size:.7em}
+  .mq-row.rev .mq-sep{color:var(--blue-soft)}
+
+  /* ============================ RÉSEAU ================================ */
+  .reseau .grid{display:grid;gap:44px;align-items:center;margin-top:54px}
+  .video-frame{position:relative;border-radius:18px;overflow:hidden;
+    border:1px solid var(--hair);background:var(--ink-2);
+    box-shadow:0 40px 90px -40px rgba(0,0,0,.9),0 0 0 1px rgba(0,87,255,.12) inset;
+    aspect-ratio:16/10}
+  .video-frame video{width:100%;height:100%;object-fit:cover;filter:saturate(1.05) contrast(1.02);
+    transition:transform .9s var(--ease-out)}
+  .video-frame:hover video{transform:scale(1.06)}
+  .video-frame::after{content:"";position:absolute;inset:0;pointer-events:none;
+    background:linear-gradient(120deg,rgba(0,87,255,.18),transparent 55%,rgba(243,154,27,.14));
+    mix-blend-mode:screen}
+  .video-tag{position:absolute;left:16px;bottom:16px;z-index:2;display:flex;align-items:center;gap:9px;
+    font-family:"DM Mono",monospace;font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+    background:rgba(6,9,17,.6);backdrop-filter:blur(8px);padding:8px 13px;border-radius:100px;
+    border:1px solid var(--hair)}
+  .video-tag i{width:7px;height:7px;border-radius:50%;background:var(--teal);
+    box-shadow:0 0 10px var(--teal);font-style:normal}
+  .reseau .big{font-size:clamp(2.4rem,7vw,4.6rem);line-height:1;font-weight:600;letter-spacing:-.03em}
+  .reseau .big .n{color:var(--blue-soft)}
+  .reseau .big .accent{color:var(--paper)}
+  .chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:30px}
+  .chip{display:inline-flex;align-items:center;gap:9px;font-size:14px;color:var(--mute);
+    border:1px solid var(--hair-2);background:var(--glass);padding:9px 15px;border-radius:100px;
+    transition:border-color .3s,color .3s,transform .3s}
+  .chip:hover{border-color:rgba(243,154,27,.4);color:var(--paper);transform:translateY(-2px)}
+  .chip i{width:5px;height:5px;border-radius:50%;background:var(--orange);font-style:normal}
+
+  /* ============================ PARCOURS ============================== */
+  .steps{display:grid;gap:16px;margin-top:56px;counter-reset:s}
+  .step{position:relative;display:grid;gap:14px;padding:30px;border-radius:16px;
+    border:1px solid var(--hair-2);background:linear-gradient(180deg,var(--glass),transparent);
+    transition:border-color .4s var(--ease),background .4s,transform .4s var(--ease)}
+  .step:hover{border-color:rgba(247,154,27,.28);transform:translateY(-3px);
+    background:linear-gradient(180deg,rgba(0,87,255,.10),transparent)}
+  .step .idx{font-family:"DM Mono",monospace;font-size:13px;color:var(--orange);letter-spacing:.1em}
+  .step h3{font-size:1.4rem;font-weight:600;letter-spacing:-.02em}
+  .step p{color:var(--mute);font-size:15.5px;max-width:42ch}
+  .step .bar{position:absolute;left:0;top:24px;bottom:24px;width:2.5px;border-radius:2px;
+    background:linear-gradient(var(--blue),var(--orange));opacity:0;transition:opacity .4s;
+    box-shadow:0 0 14px rgba(247,154,27,.4)}
+  .step:hover .bar{opacity:1}
+
+  /* ============================ POURQUOI ============================== */
+  .pourquoi{position:relative}
+  .surge-glow{position:absolute;left:50%;top:50%;width:60vw;max-width:720px;aspect-ratio:1;
+    transform:translate(-50%,-50%) scale(calc(1 + var(--surge,0)*.4));
+    border-radius:50%;pointer-events:none;z-index:0;filter:blur(80px);
+    opacity:calc(.20 + var(--surge,0)*.72);
+    background:radial-gradient(circle,rgba(0,87,255,.68),rgba(247,154,27,.42) 52%,transparent 72%)}
+  .pourquoi .wrap{position:relative;z-index:1}
+  .pillars{display:grid;gap:18px;margin-top:56px}
+  .pillar{padding:34px 30px;border-radius:18px;border:1px solid var(--hair-2);
+    background:linear-gradient(180deg,rgba(255,255,255,.03),transparent);position:relative;overflow:hidden;
+    transition:border-color .4s,transform .4s var(--ease)}
+  .pillar:hover{border-color:var(--hair);transform:translateY(-3px)}
+  .pillar .glow{position:absolute;width:230px;height:230px;border-radius:50%;
+    filter:blur(58px);opacity:.42;top:-60px;right:-40px;pointer-events:none;transition:opacity .5s}
+  .pillar:hover{border-color:rgba(247,154,27,.24)}
+  .pillar:hover .glow{opacity:.7}
+  .pillar h3{font-size:1.5rem;font-weight:600;letter-spacing:-.02em;margin-bottom:12px}
+  .pillar p{color:var(--mute);font-size:15.5px;max-width:38ch;position:relative}
+  .pillar .plabel{font-family:"DM Mono",monospace;font-size:11px;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--faint);margin-bottom:20px;display:block}
+  .count{font-size:clamp(3.2rem,11vw,5.6rem);line-height:.9;font-weight:600;
+    letter-spacing:-.04em;font-variant-numeric:tabular-nums;
+    background:none;color:var(--paper)}
+  .count .plus{color:var(--orange)}
+  .count-unit{color:var(--mute);font-size:1.05rem;margin-top:10px;letter-spacing:.02em}
+
+  /* ============================ VALEURS ============================== */
+  .values{display:grid;gap:16px;margin-top:56px}
+  .value{position:relative;padding:38px 32px 34px;border-radius:18px;overflow:hidden;
+    border:1px solid var(--hair-2);background:var(--ink-2);min-height:230px;
+    display:flex;flex-direction:column;justify-content:flex-end;
+    transition:border-color .5s;transform-style:preserve-3d}
+  .value:hover{border-color:var(--hair)}
+  .value .vn{font-family:"Fraunces",serif;font-style:italic;font-weight:500;
+    font-size:2.1rem;letter-spacing:-.01em;margin-bottom:12px;transform:translateZ(30px)}
+  .value:nth-child(1) .vn{color:var(--blue-soft)}
+  .value:nth-child(2) .vn{color:var(--teal)}
+  .value:nth-child(3) .vn{color:var(--orange)}
+  .value p{color:var(--mute);font-size:15px;max-width:34ch;transform:translateZ(14px)}
+  .value .sheen{position:absolute;inset:0;pointer-events:none;opacity:.5;
+    background:radial-gradient(90% 70% at 15% 100%,rgba(255,255,255,.05),transparent 60%)}
+
+  /* ============================ REJOINDRE ============================ */
+  .join{position:relative}
+  .join-panel{position:relative;overflow:hidden;border-radius:26px;
+    border:1px solid var(--hair);background:var(--ink-2);
+    padding:clamp(38px,7vw,80px) clamp(26px,6vw,72px);
+    box-shadow:0 60px 120px -60px rgba(0,0,0,.95)}
+  .join-panel .edge{position:absolute;inset:0;pointer-events:none;
+    background:
+      radial-gradient(60% 100% at 100% 0%, rgba(247,154,27,.30), transparent 55%),
+      radial-gradient(70% 100% at 0% 100%, rgba(0,87,255,.32), transparent 55%);}
+  .join-panel::after{content:"";position:absolute;left:0;right:0;top:0;height:2px;
+    background:linear-gradient(90deg,var(--blue),var(--orange-hi));opacity:.85}
+  .join-panel h2{position:relative;font-size:clamp(2.1rem,6.5vw,4rem);font-weight:600;
+    letter-spacing:-.03em;line-height:1;max-width:14ch}
+  .join-panel .lede{position:relative}
+  .join-cta{position:relative;display:flex;flex-wrap:wrap;gap:14px;margin-top:36px}
+  .contact{position:relative;margin-top:44px;padding-top:30px;border-top:1px solid var(--hair-2);
+    display:grid;gap:20px}
+  .contact .c-name{font-weight:600;font-size:1.05rem}
+  .contact .c-role{color:var(--faint);font-size:13px;font-family:"DM Mono",monospace;
+    letter-spacing:.06em;margin-top:2px}
+  .contact .c-links{display:flex;flex-wrap:wrap;gap:10px 26px}
+  .contact a{color:var(--mute);font-size:15px;display:inline-flex;align-items:center;gap:8px;
+    transition:color .25s;border-bottom:1px solid transparent}
+  .contact a:hover{color:var(--paper);border-color:var(--orange)}
+  .contact a i{color:var(--orange);font-style:normal}
+
+  /* ============================ FOOTER =============================== */
+  footer{border-top:1px solid var(--hair-2);padding:64px 0 44px;position:relative;margin-top:120px}
+  .foot-top{display:grid;gap:40px}
+  .foot-brand .brand{font-size:22px;margin-bottom:14px}
+  .foot-brand p{color:var(--mute);max-width:34ch;font-size:15px}
+  .foot-nav{display:grid;grid-template-columns:1fr 1fr;gap:30px}
+  .foot-col h4{font-family:"DM Mono",monospace;font-size:11px;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--faint);margin-bottom:16px}
+  .foot-col a{display:block;color:var(--mute);font-size:15px;padding:5px 0;transition:color .25s}
+  .foot-col a:hover{color:var(--paper)}
+  .foot-bottom{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;
+    align-items:center;margin-top:56px;padding-top:26px;border-top:1px solid var(--hair-2);
+    color:var(--faint);font-size:13px}
+
+  /* ============================ RESPONSIVE ========================== */
+  @media(min-width:760px){
+    .reseau .grid{grid-template-columns:1fr 1fr;gap:56px}
+    .steps{grid-template-columns:1fr 1fr}
+    .pillars{grid-template-columns:repeat(3,1fr)}
+    .values{grid-template-columns:repeat(3,1fr)}
+    .contact{grid-template-columns:auto 1fr;align-items:center}
+    .foot-top{grid-template-columns:1.3fr 1fr}
+    .foot-nav{grid-template-columns:1fr 1fr}
+  }
+  @media(min-width:960px){
+    .nav-links{display:flex}
+    .scroll-hint{display:flex}
+    .sect{padding:150px 0}
+    .step:last-child:nth-child(odd){grid-column:1 / -1}
+    .pillar.wide{grid-column:span 3}
+  }
+  /* rail only on wide screens so it can never overlap hero content */
+  @media(min-width:1200px){
+    .rail{display:block}
+  }
+
+  /* ---- small phones (390px class): kill overflow, keep peps legible ---- */
+  @media(max-width:560px){
+    .sect{padding:88px 0}
+    .hero{padding-bottom:48px}
+    .hero-glass{grid-template-columns:repeat(3,1fr);width:100%;
+      gap:16px 12px;padding:20px 18px}
+    .hg-num{font-size:clamp(1.5rem,7vw,1.9rem)}
+    .hg-lab{font-size:11px;line-height:1.25}
+    .hero-cta{flex-direction:column;align-items:stretch}
+    .hero-cta .btn{flex:1 1 auto;justify-content:center;width:100%}
+    .marquee-band::before,.marquee-band::after{width:16%}
+    .step{padding:24px 22px}
+    .pillar{padding:28px 24px}
+    .value{padding:30px 24px 28px;min-height:200px}
+    .join-panel{border-radius:20px}
+    footer{margin-top:88px}
+  }
+  /* ---- reduce heavy fx on touch even without reduced-motion pref ---- */
+  @media(hover:none){
+    .grain{display:none}
+    .glow-accent{opacity:.5;animation:none}
+    .hero h1 .accent{text-shadow:0 0 18px rgba(247,154,27,.4)}
+  }
+
+  @media(prefers-reduced-motion:reduce){
+    *{animation:none!important;transition:none!important}
+    .reveal{opacity:1;transform:none}
+    .intro{display:none}
+    .ln-inner{transform:none!important}
+    .cur-dot,.cur-ring{display:none!important}
+    .grain{display:none}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================ INTRO CURTAIN ============================ -->
+<div class="intro intro--auto" id="intro" aria-hidden="true">
+  <div class="intro__inner">
+    <div class="intro__logo"><span class="dot"></span><b>Intégral</b> <span>Pharma</span></div>
+    <div class="intro__bar"></div>
+  </div>
+</div>
+
+<!-- grain + custom cursor -->
+<div class="grain" aria-hidden="true"></div>
+<div class="cur-dot" aria-hidden="true"></div>
+<div class="cur-ring" aria-hidden="true"><span class="cur-label"></span></div>
+
+<!-- ============================ NAV ============================ -->
+<header class="nav" id="nav">
+  <div class="wrap nav-in">
+    <a class="brand" href="#top" aria-label="Intégral Pharma, accueil">
+      <span class="dot"></span><b>Intégral</b> <span>Pharma</span>
+    </a>
+    <nav class="nav-links" aria-label="Navigation principale">
+      <a href="#reseau">Le réseau</a>
+      <a href="#methode">La méthode</a>
+      <a href="#pourquoi">Pourquoi nous</a>
+      <a href="#valeurs">Valeurs</a>
+    </nav>
+    <a class="btn btn-primary magnetic" data-cursor="Réseau" href="#rejoindre">Nous rejoindre <span class="arw">↗</span></a>
+  </div>
+</header>
+
+<!-- section rail -->
+<nav class="rail" aria-label="Sections">
+  <ol>
+    <li><a href="#top" data-sec="top"><span class="tick"></span>Accueil</a></li>
+    <li><a href="#reseau" data-sec="reseau"><span class="tick"></span>Réseau</a></li>
+    <li><a href="#methode" data-sec="methode"><span class="tick"></span>Méthode</a></li>
+    <li><a href="#pourquoi" data-sec="pourquoi"><span class="tick"></span>Pourquoi</a></li>
+    <li><a href="#valeurs" data-sec="valeurs"><span class="tick"></span>Valeurs</a></li>
+    <li><a href="#rejoindre" data-sec="rejoindre"><span class="tick"></span>Rejoindre</a></li>
+  </ol>
+</nav>
+
+<main id="top">
+
+  <!-- ============================ HERO ============================ -->
+  <section class="hero" id="hero">
+    <div class="aurora-container" id="aurora"></div>
+    <div class="scrim"></div>
+    <div class="glow-accent drift" style="width:360px;height:360px;left:-6%;top:16%;background:rgba(0,87,255,.62)"></div>
+    <div class="glow-accent drift slow" style="width:320px;height:320px;right:-4%;top:34%;background:rgba(247,154,27,.56)"></div>
+    <div class="wrap hero-in">
+      <p class="kicker reveal" data-scramble>Un partenaire, pas un fournisseur</p>
+      <h1 class="reveal d1" data-split>Plus de marge,<br><span class="accent">nette</span> sur facture.</h1>
+      <p class="hero-sub reveal d2">Intégral Pharma est un groupe de grossistes français indépendant.
+        Neuf agences, un même engagement : servir l'officine, sans intermédiaire et sans compromis.</p>
+      <div class="hero-cta reveal d3">
+        <a class="btn btn-primary magnetic" data-cursor="Réseau" href="#rejoindre">Découvrir le réseau <span class="arw">↗</span></a>
+        <a class="btn btn-ghost magnetic" href="#reseau">Voir le réseau</a>
+      </div>
+      <div class="hero-glass reveal d4" data-tilt="6">
+        <div class="hg-item"><span class="hg-num"><span data-count="9">0</span></span><span class="hg-lab">agences en France</span></div>
+        <div class="hg-item"><span class="hg-num">1</span><span class="hg-lab">réseau national</span></div>
+        <div class="hg-item"><span class="hg-num">100%</span><span class="hg-lab">indépendant</span></div>
+      </div>
+    </div>
+    <div class="scroll-hint"><span class="ln"></span>Défiler</div>
+  </section>
+
+  <!-- ============================ KINETIC MARQUEE ============================ -->
+  <section class="marquee-band" aria-hidden="true">
+    <div class="mq-row">
+      <div class="mq-track">
+        <span class="mq-item">Un partenaire, pas un fournisseur<span class="mq-sep">✦</span>9 agences<span class="mq-sep">✦</span>Un réseau national<span class="mq-sep">✦</span>Nette sur facture<span class="mq-sep">✦</span>Indépendant<span class="mq-sep">✦</span></span>
+        <span class="mq-item">Un partenaire, pas un fournisseur<span class="mq-sep">✦</span>9 agences<span class="mq-sep">✦</span>Un réseau national<span class="mq-sep">✦</span>Nette sur facture<span class="mq-sep">✦</span>Indépendant<span class="mq-sep">✦</span></span>
+      </div>
+    </div>
+    <div class="mq-row rev">
+      <div class="mq-track">
+        <span class="mq-item">Proximité<span class="mq-sep">✦</span>Réactivité<span class="mq-sep">✦</span>Liberté<span class="mq-sep">✦</span>Transparence<span class="mq-sep">✦</span>Engagement<span class="mq-sep">✦</span>Respect<span class="mq-sep">✦</span></span>
+        <span class="mq-item">Proximité<span class="mq-sep">✦</span>Réactivité<span class="mq-sep">✦</span>Liberté<span class="mq-sep">✦</span>Transparence<span class="mq-sep">✦</span>Engagement<span class="mq-sep">✦</span>Respect<span class="mq-sep">✦</span></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ RÉSEAU ============================ -->
+  <section class="sect reseau" id="reseau">
+    <div class="wrap">
+      <div class="eyebrow-row reveal"><span class="kicker">Le réseau</span></div>
+      <div class="grid">
+        <div>
+          <p class="big" data-split><span class="n">9</span> agences.<br><span class="accent">1</span> réseau national.</p>
+          <p class="lede reveal d1">Un maillage pensé au plus près des officines. La proximité d'un
+            interlocuteur local, adossée à la force logistique d'un réseau qui couvre le territoire.</p>
+          <div class="chips reveal d2">
+            <span class="chip"><i></i>Interlocuteur dédié</span>
+            <span class="chip"><i></i>Livraison de proximité</span>
+            <span class="chip"><i></i>Disponibilité produit</span>
+            <span class="chip"><i></i>Réactivité de terrain</span>
+          </div>
+        </div>
+        <div class="video-frame reveal d2" data-cursor="Réseau">
+          <video autoplay muted loop playsinline poster="../../../assets/poster.jpg" preload="metadata">
+            <source src="../../../assets/hero.mp4" type="video/mp4">
+          </video>
+          <span class="video-tag"><i></i>Réseau Intégral Pharma</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ MÉTHODE / PARCOURS ============================ -->
+  <section class="sect methode" id="methode">
+    <div class="wrap">
+      <div class="eyebrow-row reveal"><span class="kicker">La méthode</span></div>
+      <h2 class="title" data-split>Reprenez la main sur vos <span class="accent">achats</span>.</h2>
+      <p class="lede reveal d2">Un parcours simple, en quatre temps, pour retrouver de la clarté —
+        et de la marge — sur ce que vous achetez chaque jour.</p>
+      <div class="steps">
+        <div class="step reveal"><span class="bar"></span>
+          <span class="idx">01 — Diagnostic</span>
+          <h3>On regarde vos achats en face</h3>
+          <p>Un état des lieux honnête de vos approvisionnements, tels qu'ils sont, sans filtre.</p>
+        </div>
+        <div class="step reveal d1"><span class="bar"></span>
+          <span class="idx">02 — Sélection</span>
+          <h3>Vous choisissez, à votre rythme</h3>
+          <p>Vos références, vos priorités. Sans franco imposé, sans engagement de volume.</p>
+        </div>
+        <div class="step reveal d2"><span class="bar"></span>
+          <span class="idx">03 — Intégration</span>
+          <h3>L'agence proche prend le relais</h3>
+          <p>Vos commandes s'organisent simplement, portées par l'agence la plus proche de vous.</p>
+        </div>
+        <div class="step reveal d3"><span class="bar"></span>
+          <span class="idx">04 — Marge retrouvée</span>
+          <h3>Ce que vous gagnez reste visible</h3>
+          <p>Le bénéfice apparaît là où il compte : nette sur facture, pas dans une promesse.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ POURQUOI ============================ -->
+  <section class="sect pourquoi" id="pourquoi">
+    <div class="surge-glow" aria-hidden="true"></div>
+    <div class="wrap">
+      <div class="eyebrow-row reveal"><span class="kicker">Pourquoi Intégral</span></div>
+      <h2 class="title" data-split>Indépendants, libres, <span class="accent">larges</span>.</h2>
+      <div class="pillars">
+        <div class="pillar reveal">
+          <div class="glow" style="background:var(--blue)"></div>
+          <span class="plabel">01 · Indépendance</span>
+          <h3>Un groupe français indépendant</h3>
+          <p>Nos décisions ne servent qu'une chose : l'officine. Aucun intermédiaire à satisfaire, aucun agenda caché.</p>
+        </div>
+        <div class="pillar reveal d1">
+          <div class="glow" style="background:var(--teal)"></div>
+          <span class="plabel">02 · Liberté</span>
+          <h3>Ni franco imposé, ni engagement</h3>
+          <p>Vous restez libre, commande après commande. On gagne votre fidélité ; on ne la contraint pas.</p>
+        </div>
+        <div class="pillar reveal d2">
+          <div class="glow" style="background:var(--orange)"></div>
+          <span class="plabel">03 · Catalogue Offilog</span>
+          <div class="count"><span class="plus">+</span><span data-count="14000" data-scrub>0</span></div>
+          <div class="count-unit">références Offilog — de quoi couvrir le quotidien de l'officine.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ VALEURS ============================ -->
+  <section class="sect valeurs" id="valeurs">
+    <div class="wrap">
+      <div class="eyebrow-row reveal"><span class="kicker">Nos valeurs</span></div>
+      <h2 class="title" data-split>Confiance. Engagement. <span class="accent">Respect.</span></h2>
+      <div class="values">
+        <div class="value reveal" data-tilt="9"><div class="sheen"></div>
+          <div class="vn">Confiance</div>
+          <p>La transparence d'abord. Ce qu'on annonce, on le tient — et ça se vérifie sur la facture.</p>
+        </div>
+        <div class="value reveal d1" data-tilt="9"><div class="sheen"></div>
+          <div class="vn">Engagement</div>
+          <p>Présents dans la durée, à vos côtés quand il le faut. Un partenaire ne disparaît pas après la vente.</p>
+        </div>
+        <div class="value reveal d2" data-tilt="9"><div class="sheen"></div>
+          <div class="vn">Respect</div>
+          <p>De l'officine, du métier, des personnes. C'est la base de tout ce que nous construisons.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ REJOINDRE ============================ -->
+  <section class="sect join" id="rejoindre">
+    <div class="wrap">
+      <div class="join-panel reveal">
+        <div class="edge"></div>
+        <div class="eyebrow-row"><span class="kicker">Nous rejoindre</span></div>
+        <h2 data-split>Parlons de votre <span class="accent">officine</span>.</h2>
+        <p class="lede">Découvrez, concrètement, ce que le réseau peut changer pour vous —
+          sans engagement, à partir d'un simple échange.</p>
+        <div class="join-cta">
+          <a class="btn btn-primary magnetic" data-cursor="Écrire" href="mailto:pascale.prieto@integralpharma.fr?subject=Découvrir%20le%20réseau%20Intégral%20Pharma">Découvrir le réseau <span class="arw">↗</span></a>
+          <a class="btn btn-ghost magnetic" href="tel:+33676885391">Nous appeler</a>
+        </div>
+        <div class="contact">
+          <div>
+            <div class="c-name">Pascale Prieto</div>
+            <div class="c-role">Directrice commerciale France</div>
+          </div>
+          <div class="c-links">
+            <a href="mailto:pascale.prieto@integralpharma.fr"><i>@</i>pascale.prieto@integralpharma.fr</a>
+            <a href="tel:+33676885391"><i>☎</i>06 76 88 53 91</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ============================ FOOTER ============================ -->
+<footer>
+  <div class="wrap">
+    <div class="foot-top">
+      <div class="foot-brand">
+        <div class="brand"><span class="dot"></span><b>Intégral</b> <span>Pharma</span></div>
+        <p>Groupe de grossistes français indépendant. Neuf agences, un réseau national au service de l'officine.</p>
+      </div>
+      <div class="foot-nav">
+        <div class="foot-col">
+          <h4>Le réseau</h4>
+          <a href="#reseau">Le réseau</a>
+          <a href="#methode">La méthode</a>
+          <a href="#pourquoi">Pourquoi nous</a>
+          <a href="#valeurs">Nos valeurs</a>
+        </div>
+        <div class="foot-col">
+          <h4>Contact</h4>
+          <a href="#rejoindre">Nous rejoindre</a>
+          <a href="mailto:pascale.prieto@integralpharma.fr">Écrire à Pascale Prieto</a>
+          <a href="tel:+33676885391">06 76 88 53 91</a>
+        </div>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span>© <span id="yr">2026</span> Intégral Pharma — Tous droits réservés.</span>
+      <span>Un partenaire, pas un fournisseur.</span>
+    </div>
+  </div>
+</footer>
+
+<!-- local WebGL aurora -->
+<script src="aurora.js"></script>
+<!-- vendored GSAP + Lenis (local, no CDN) -->
+<script src="../../../vendor/gsap/gsap.min.js"></script>
+<script src="../../../vendor/gsap/ScrollTrigger.min.js"></script>
+<script src="../../../vendor/gsap/ScrambleTextPlugin.min.js"></script>
+<script src="../../../vendor/gsap/Flip.min.js"></script>
+<script src="../../../vendor/gsap/lenis.min.js"></script>
+<script>
+(function(){
+  'use strict';
+  var mm = window.matchMedia;
+  var reduce = mm && mm('(prefers-reduced-motion: reduce)').matches;
+  var desktop = mm && mm('(min-width:960px)').matches;
+  var finePointer = mm && mm('(hover:hover) and (pointer:fine)').matches;
+  var gsapOK = !!window.gsap;
+  var heavy = gsapOK && !reduce;                 // orchestrated GSAP fx
+  var deskFx = heavy && desktop && finePointer;  // pin, tilt, cursor, magnetic
+
+  // ---- mount vendored aurora, recolored IP blue / teal hint / orange ----
+  var auroraEl = document.getElementById('aurora');
+  if (window.mountAurora) {
+    window.mountAurora(auroraEl, {
+      // vivid IP blue → bright azure → bright orange (no muddy teal midpoint)
+      colorStops: ['#0057FF', '#2E86FF', '#FFA31C'],
+      amplitude: 1.18, blend: 0.55, speed: 0.92
+    });
+  } else {
+    auroraEl.classList.add('aurora-fallback');
+  }
+
+  if (gsapOK && window.ScrollTrigger) gsap.registerPlugin(window.ScrollTrigger);
+  var SCRAMBLE = gsapOK && window.ScrambleTextPlugin;
+  if (SCRAMBLE) gsap.registerPlugin(window.ScrambleTextPlugin);
+
+  /* ---------------------------------------------------------------------
+     LENIS smooth-scroll wired to ScrollTrigger (skip on reduced-motion)
+  --------------------------------------------------------------------- */
+  var lenis = null;
+  if (heavy && window.Lenis && window.ScrollTrigger) {
+    lenis = new window.Lenis({ duration: 1.05, lerp: 0.1, wheelMultiplier: 1, smoothWheel: true });
+    lenis.on('scroll', window.ScrollTrigger.update);
+    gsap.ticker.add(function(t){ lenis.raf(t * 1000); });
+    gsap.ticker.lagSmoothing(0);
+  }
+  // smooth anchor jumps
+  document.querySelectorAll('a[href^="#"]').forEach(function(a){
+    a.addEventListener('click', function(e){
+      var id = a.getAttribute('href');
+      if (id.length < 2) return;
+      var t = document.querySelector(id);
+      if (!t) return;
+      e.preventDefault();
+      if (lenis) lenis.scrollTo(t, { offset: -20, duration: 1.1 });
+      else t.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth' });
+    });
+  });
+
+  /* ---------------------------------------------------------------------
+     SPLIT-LINE MASKED REVEALS (measure words -> group into visual lines)
+  --------------------------------------------------------------------- */
+  function splitLines(el){
+    var tokens = [];
+    Array.prototype.forEach.call(el.childNodes, function(node){
+      if (node.nodeType === 3){
+        node.textContent.split(/\s+/).forEach(function(w){ if(w) tokens.push({t:w,c:''}); });
+      } else if (node.nodeName === 'BR'){
+        tokens.push({br:true});
+      } else {
+        var cls = node.getAttribute('class') || '';
+        node.textContent.split(/\s+/).forEach(function(w){ if(w) tokens.push({t:w,c:cls}); });
+      }
+    });
+    el.innerHTML = '';
+    var words = [];
+    tokens.forEach(function(tk){
+      if (tk.br){ el.appendChild(document.createElement('br')); return; }
+      var w = document.createElement('span');
+      w.className = 'w' + (tk.c ? ' ' + tk.c : '');
+      w.textContent = tk.t;
+      el.appendChild(w);
+      el.appendChild(document.createTextNode(' '));
+      words.push(w);
+    });
+    // group by vertical position
+    var lines = [], last = null, cur = null;
+    words.forEach(function(w){
+      var top = w.offsetTop;
+      if (last === null || Math.abs(top - last) > 6){ cur = []; lines.push(cur); last = top; }
+      cur.push(w);
+    });
+    el.innerHTML = '';
+    var inners = [];
+    lines.forEach(function(group){
+      var mask = document.createElement('span'); mask.className = 'ln-mask';
+      var inner = document.createElement('span'); inner.className = 'ln-inner';
+      group.forEach(function(w,i){
+        inner.appendChild(w);
+        if (i < group.length - 1) inner.appendChild(document.createTextNode(' '));
+      });
+      mask.appendChild(inner); el.appendChild(mask); inners.push(inner);
+    });
+    return inners;
+  }
+
+  var heroLineTween = null;
+  var allSplitInners = [];               // every split line, for the safety net
+  // force a set of line-inners into their final, fully-visible resting state
+  function forceLinesVisible(inners){
+    if (!inners || !inners.length) return;
+    if (window.gsap){ gsap.set(inners, { clearProps: 'all' }); }
+    inners.forEach(function(n){
+      n.style.opacity = '1';
+      n.style.transform = 'none';
+      n.style.visibility = 'visible';
+    });
+  }
+  function buildSplits(){
+    if (!heavy) return;
+    document.querySelectorAll('[data-split]').forEach(function(el){
+      el.classList.remove('reveal','d1','d2','d3','d4');
+      el.classList.add('in');
+      el.style.opacity = '1';
+      var inners = splitLines(el);
+      allSplitInners = allSplitInners.concat(inners);
+      var isHero = el.closest('#hero');
+      if (isHero){
+        // animate FROM hidden TO the visible resting state, then clear all
+        // inline props so the lines can never get stuck mid-reveal
+        heroLineTween = gsap.fromTo(inners,
+          { yPercent: 118, opacity: 0 },
+          { yPercent: 0, opacity: 1, duration: .95, ease: 'expo.out',
+            stagger: .09, paused: true,
+            onComplete: function(){ forceLinesVisible(inners); } }
+        );
+      } else {
+        gsap.fromTo(inners,
+          { yPercent: 118, opacity: 0 },
+          { yPercent: 0, opacity: 1, duration: .9, ease: 'expo.out', stagger: .09,
+            onComplete: function(){ forceLinesVisible(inners); },
+            scrollTrigger: { trigger: el, start: 'top 84%' } }
+        );
+      }
+    });
+  }
+
+  /* ---------------------------------------------------------------------
+     INTRO CURTAIN — GSAP takes over the CSS fallback when available
+  --------------------------------------------------------------------- */
+  var intro = document.getElementById('intro');
+  function heroEntrance(){
+    if (!heavy){ return; }
+    var tl = gsap.timeline();
+    if (heroLineTween) tl.add(heroLineTween, 0);
+    var kicker = document.querySelector('.kicker[data-scramble]');
+    if (kicker && SCRAMBLE){
+      var txt = kicker.textContent;
+      tl.to(kicker, { duration: 1.1, scrambleText: { text: txt, chars: 'upperCase', speed: .5 } }, .15);
+    }
+    tl.from('.hero-sub, .hero-cta, .hero-glass', {
+      y: 26, opacity: 0, duration: .8, ease: 'power3.out', stagger: .1
+    }, .35);
+  }
+
+  function startExperience(){
+    buildSplits();
+    if (deskFx && intro){
+      intro.classList.remove('intro--auto');
+      document.documentElement.style.overflow = 'hidden';
+      gsap.timeline({ onComplete: function(){ document.documentElement.style.overflow = ''; } })
+        .fromTo('.intro__logo', { opacity:0, y:22 }, { opacity:1, y:0, duration:.7, ease:'power3.out' })
+        .to('.intro__logo', { opacity:0, y:-12, duration:.5, ease:'power2.in' }, '+=.55')
+        .to(intro, { yPercent:-101, duration:.95, ease:'expo.inOut' }, '-=.1')
+        .set(intro, { display:'none' })
+        .add(heroEntrance, '-=.55');
+    } else {
+      // CSS handles the curtain (or reduced-motion hid it); play hero after lift
+      if (intro){ setTimeout(function(){ intro.style.display = 'none'; }, 2500); }
+      if (heavy) gsap.delayedCall(1.05, heroEntrance);
+    }
+  }
+
+  if (document.fonts && document.fonts.ready){
+    document.fonts.ready.then(startExperience);
+  } else {
+    window.addEventListener('load', startExperience);
+  }
+
+  /* ---------------------------------------------------------------------
+     HARD SAFETY NET — headings must ALWAYS end visible. If the reveal
+     chain ever fails to run/complete (font-ready quirk, timeline hiccup),
+     force every split line to its fully-visible resting state.
+  --------------------------------------------------------------------- */
+  function isStuckHidden(node){
+    var cs = window.getComputedStyle(node);
+    return parseFloat(cs.opacity) < 0.9 || cs.visibility === 'hidden';
+  }
+  function rescueSplitLines(){
+    // any [data-split] that got split but whose lines are still hidden
+    document.querySelectorAll('[data-split]').forEach(function(el){
+      el.style.opacity = '1';
+      var inners = el.querySelectorAll('.ln-inner');
+      if (inners.length){
+        var stuck = Array.prototype.filter.call(inners, isStuckHidden);
+        if (stuck.length) forceLinesVisible(stuck);
+      } else {
+        // never split (JS/GSAP skipped): make sure the raw heading shows
+        el.style.visibility = 'visible';
+      }
+    });
+  }
+  setTimeout(rescueSplitLines, 2500);
+  window.addEventListener('load', function(){ setTimeout(rescueSplitLines, 300); });
+
+  /* ---------------------------------------------------------------------
+     PINNED SCROLL-SCRUB — Offilog stat surge (aurora-glow intensifies)
+  --------------------------------------------------------------------- */
+  var scrubEl = document.querySelector('[data-scrub]');
+  var pinDone = false;
+  if (deskFx && window.ScrollTrigger && scrubEl){
+    var pourquoi = document.getElementById('pourquoi');
+    window.ScrollTrigger.create({
+      trigger: pourquoi, start: 'top top', end: '+=85%', pin: true, scrub: true,
+      onUpdate: function(self){
+        var p = self.progress;
+        scrubEl.textContent = Math.round(p * 14000).toLocaleString('fr-FR');
+        pourquoi.style.setProperty('--surge', p.toFixed(3));
+      }
+    });
+    pinDone = true;
+    // hero aurora intensifies as you leave the hero
+    gsap.fromTo('#hero', { '--ab': 0 }, {
+      '--ab': 1, ease: 'none',
+      scrollTrigger: { trigger: '#hero', start: 'top top', end: 'bottom top', scrub: true }
+    });
+  }
+
+  /* ---------------------------------------------------------------------
+     Reveal-on-scroll (fallback system for non-heading content)
+  --------------------------------------------------------------------- */
+  var reveals = document.querySelectorAll('.reveal');
+  if (reduce){ reveals.forEach(function(r){ r.classList.add('in'); }); }
+  else if ('IntersectionObserver' in window){
+    var io = new IntersectionObserver(function(es){
+      es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } });
+    }, { threshold: 0.14, rootMargin: '0px 0px -8% 0px' });
+    reveals.forEach(function(r){ io.observe(r); });
+  } else { reveals.forEach(function(r){ r.classList.add('in'); }); }
+
+  /* ---------------------------------------------------------------------
+     Animated counters (9 agences always; +14 000 unless scrub owns it)
+  --------------------------------------------------------------------- */
+  function countUp(el){
+    var target = parseInt(el.getAttribute('data-count'), 10);
+    if (reduce){ el.textContent = target.toLocaleString('fr-FR'); return; }
+    var start = null, dur = 1700;
+    (function step(ts){
+      if(!start) start = ts;
+      var p = Math.min((ts - start) / dur, 1);
+      var eased = 1 - Math.pow(1 - p, 3);
+      el.textContent = Math.round(target * eased).toLocaleString('fr-FR');
+      if(p < 1) requestAnimationFrame(step);
+    })(performance.now());
+  }
+  var counters = Array.prototype.slice.call(document.querySelectorAll('[data-count]'))
+    .filter(function(c){ return !(pinDone && c.hasAttribute('data-scrub')); });
+  if ('IntersectionObserver' in window){
+    var co = new IntersectionObserver(function(es){
+      es.forEach(function(e){ if(e.isIntersecting){ countUp(e.target); co.unobserve(e.target); } });
+    }, { threshold: 0.6 });
+    counters.forEach(function(c){ co.observe(c); });
+  } else { counters.forEach(countUp); }
+
+  /* ---------------------------------------------------------------------
+     CUSTOM CURSOR — follower ring + magnetic + hover labels (desktop)
+  --------------------------------------------------------------------- */
+  if (deskFx){
+    var dot = document.querySelector('.cur-dot');
+    var ring = document.querySelector('.cur-ring');
+    var label = document.querySelector('.cur-label');
+    document.body.classList.add('has-cursor');
+    gsap.set([dot, ring], { xPercent: -50, yPercent: -50 });
+    var rx = gsap.quickTo(ring, 'x', { duration: .5, ease: 'power3' });
+    var ry = gsap.quickTo(ring, 'y', { duration: .5, ease: 'power3' });
+    var dx = gsap.quickTo(dot, 'x', { duration: .14, ease: 'power3' });
+    var dy = gsap.quickTo(dot, 'y', { duration: .14, ease: 'power3' });
+    window.addEventListener('mousemove', function(e){
+      rx(e.clientX); ry(e.clientY); dx(e.clientX); dy(e.clientY);
+    }, { passive: true });
+    document.querySelectorAll('a,button,.magnetic,[data-cursor]').forEach(function(el){
+      el.addEventListener('mouseenter', function(){ ring.classList.add('is-hover'); });
+      el.addEventListener('mouseleave', function(){ ring.classList.remove('is-hover'); });
+    });
+    document.querySelectorAll('[data-cursor]').forEach(function(el){
+      el.addEventListener('mouseenter', function(){
+        ring.classList.add('is-label'); label.textContent = el.getAttribute('data-cursor');
+      });
+      el.addEventListener('mouseleave', function(){
+        ring.classList.remove('is-label'); label.textContent = '';
+      });
+    });
+
+    // magnetic buttons
+    document.querySelectorAll('.magnetic').forEach(function(el){
+      var mx = gsap.quickTo(el, 'x', { duration: .4, ease: 'power3' });
+      var my = gsap.quickTo(el, 'y', { duration: .4, ease: 'power3' });
+      el.addEventListener('mousemove', function(e){
+        var r = el.getBoundingClientRect();
+        mx((e.clientX - (r.left + r.width/2)) * 0.4);
+        my((e.clientY - (r.top + r.height/2)) * 0.5);
+      });
+      el.addEventListener('mouseleave', function(){ mx(0); my(0); });
+    });
+
+    // glass-card + hero-glass tilt
+    document.querySelectorAll('[data-tilt]').forEach(function(el){
+      var max = parseFloat(el.getAttribute('data-tilt')) || 8;
+      el.addEventListener('mousemove', function(e){
+        var r = el.getBoundingClientRect();
+        var px = (e.clientX - r.left) / r.width - .5;
+        var py = (e.clientY - r.top) / r.height - .5;
+        gsap.to(el, { rotateY: px * max, rotateX: -py * max, duration: .4,
+          ease: 'power2.out', transformPerspective: 900 });
+      });
+      el.addEventListener('mouseleave', function(){
+        gsap.to(el, { rotateY: 0, rotateX: 0, duration: .7, ease: 'power3.out' });
+      });
+    });
+  }
+
+  /* ---------------------------------------------------------------------
+     Kinetic marquee — velocity skew from Lenis scroll (desktop)
+  --------------------------------------------------------------------- */
+  if (deskFx && lenis){
+    var tracks = document.querySelectorAll('.mq-track');
+    var skewTo = [];
+    tracks.forEach(function(t){ skewTo.push(gsap.quickTo(t, 'skewX', { duration: .5, ease: 'power3' })); });
+    lenis.on('scroll', function(e){
+      var v = Math.max(-8, Math.min(8, (e.velocity || 0) * 0.35));
+      skewTo.forEach(function(fn){ fn(v); });
+    });
+  }
+
+  /* ---------------------------------------------------------------------
+     Keep: nav bg on scroll · rail active section · year
+  --------------------------------------------------------------------- */
+  var nav = document.getElementById('nav');
+  function onScroll(){ nav.classList.toggle('scrolled', window.scrollY > 40); }
+  onScroll(); window.addEventListener('scroll', onScroll, { passive: true });
+
+  var railLinks = document.querySelectorAll('.rail a');
+  var secIds = ['top','reseau','methode','pourquoi','valeurs','rejoindre'];
+  if ('IntersectionObserver' in window){
+    var so = new IntersectionObserver(function(es){
+      es.forEach(function(e){
+        if(e.isIntersecting){
+          var id = e.target.id;
+          railLinks.forEach(function(a){ a.classList.toggle('active', a.getAttribute('data-sec') === id); });
+        }
+      });
+    }, { threshold: 0.4 });
+    secIds.forEach(function(id){ var el = document.getElementById(id); if(el) so.observe(el); });
+  }
+
+  document.getElementById('yr').textContent = new Date().getFullYear();
+
+  // safety: never let the intro trap the page
+  window.addEventListener('load', function(){
+    setTimeout(function(){ if (intro && intro.style.display !== 'none' && !deskFx) intro.style.display = 'none'; }, 2600);
+  });
+})();
+</script>
+</body>
+</html>

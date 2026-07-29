@@ -1,0 +1,432 @@
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Intégral Pharma · Réseau</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --void:#0A0A0B;          /* = Vanta backgroundColor, exact */
+    --void-2:#0E0F13;
+    --panel:#111319;
+    --panel-2:#0C0D11;
+    --paper:#EEF1F6;
+    --muted:#8A93A6;
+    --faint:#5B6274;
+    --line:rgba(150,165,200,.12);
+    --line-2:rgba(150,165,200,.08);
+    --orange:#F39A1B;
+    --orange-soft:#FFC062;
+    --orange-ink:#170E00;
+    --blue:#5E93FF;
+    --blue-soft:#9DBBFF;
+    --r:14px;
+    --ease:cubic-bezier(.22,.61,.36,1);
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0;background:var(--void);color:var(--paper);
+    font-family:"Inter",system-ui,-apple-system,sans-serif;line-height:1.55;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;overflow-x:hidden;
+  }
+  a{color:inherit;text-decoration:none}
+  img{max-width:100%;display:block}
+  button{font:inherit}
+  .wrap{max-width:1200px;margin:0 auto;padding:0 26px;position:relative;z-index:3}
+  .mono{font-family:"JetBrains Mono",ui-monospace,monospace;font-feature-settings:"tnum" 1}
+
+  /* ============ NAV ============ */
+  header{position:absolute;top:0;left:0;right:0;z-index:8}
+  .nav{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:22px 0}
+  .brand{display:flex;align-items:center;gap:12px}
+  .logo-box{
+    display:grid;place-items:center;width:42px;height:42px;border-radius:11px;
+    background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.015));
+    border:1px solid var(--line);box-shadow:inset 0 1px 0 rgba(255,255,255,.05);
+  }
+  .logo-box img{width:27px;height:27px;object-fit:contain}
+  .brand-name{font-family:"Space Grotesk",sans-serif;font-weight:600;letter-spacing:.1px;font-size:15px;line-height:1.1}
+  .brand-name small{
+    display:block;font-family:"JetBrains Mono",monospace;font-size:9px;font-weight:500;
+    letter-spacing:.28em;text-transform:uppercase;color:var(--faint);margin-top:4px;
+  }
+  .nav-cta{
+    font-family:"JetBrains Mono",monospace;font-size:11.5px;font-weight:500;letter-spacing:.06em;
+    padding:11px 17px;border-radius:999px;border:1px solid var(--line);color:var(--paper);
+    transition:border-color .3s var(--ease),background .3s var(--ease),transform .3s var(--ease);
+  }
+  .nav-cta:hover{border-color:rgba(243,154,27,.5);background:rgba(243,154,27,.06);transform:translateY(-1px)}
+
+  /* ============ HERO STAGE ============ */
+  .hero{
+    position:relative;min-height:100svh;min-height:100vh;
+    display:flex;flex-direction:column;justify-content:flex-end;
+    padding:120px 0 34px;overflow:hidden;background:var(--void);
+  }
+  /* Vanta canvas host */
+  #hero-bg{position:absolute;inset:0;z-index:0}
+  #hero-bg canvas{display:block}
+
+  /* static mesh — shown when reduced-motion OR Vanta unavailable */
+  #hero-bg.mesh-fallback{
+    background:
+      radial-gradient(58% 52% at 62% 40%, rgba(243,154,27,.16), transparent 62%),
+      radial-gradient(rgba(243,154,27,.20) 1.1px, transparent 1.4px) 0 0/34px 34px,
+      radial-gradient(rgba(94,147,255,.10) 1px, transparent 1.3px) 17px 17px/68px 68px,
+      var(--void);
+  }
+  #hero-bg.mesh-fallback::after{
+    content:"";position:absolute;inset:0;
+    background:
+      linear-gradient(115deg, transparent 0 46%, rgba(243,154,27,.10) 46.4% 46.7%, transparent 47.1%),
+      linear-gradient(58deg, transparent 0 63%, rgba(243,154,27,.08) 63.3% 63.6%, transparent 63.9%);
+  }
+
+  /* legibility veils — gradients only, no blur (Safari rule) */
+  .hero-veil{
+    position:absolute;inset:0;z-index:1;pointer-events:none;
+    background:
+      linear-gradient(92deg, rgba(10,10,11,.95) 0%, rgba(10,10,11,.72) 30%, rgba(10,10,11,.10) 60%, transparent 76%),
+      linear-gradient(0deg, var(--void) 1%, rgba(10,10,11,.80) 15%, transparent 44%),
+      radial-gradient(120% 120% at 50% 46%, transparent 56%, rgba(10,10,11,.6) 100%);
+  }
+
+  /* signature: telemetry gutter + connection index (true addressing of a network) */
+  .telemetry{position:absolute;inset:0;z-index:2;pointer-events:none;color:var(--faint)}
+  .telemetry .rail{
+    position:absolute;left:26px;top:50%;transform:translateY(-50%) rotate(180deg);
+    writing-mode:vertical-rl;font-family:"JetBrains Mono",monospace;font-size:10px;font-weight:500;
+    letter-spacing:.42em;text-transform:uppercase;color:rgba(138,147,166,.55);
+  }
+  .telemetry .ping{
+    position:absolute;top:104px;right:26px;display:inline-flex;align-items:center;gap:9px;
+    font-family:"JetBrains Mono",monospace;font-size:10.5px;font-weight:500;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--muted);
+  }
+  .telemetry .ping i{width:7px;height:7px;border-radius:50%;background:var(--orange);box-shadow:0 0 12px var(--orange)}
+  @keyframes ping{0%{box-shadow:0 0 0 0 rgba(243,154,27,.5)}70%{box-shadow:0 0 0 8px rgba(243,154,27,0)}100%{box-shadow:0 0 0 0 rgba(243,154,27,0)}}
+
+  /* ---- hero copy ---- */
+  .hero-copy{max-width:680px}
+  .kicker{
+    display:inline-flex;align-items:center;gap:10px;
+    font-family:"JetBrains Mono",monospace;font-size:11px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--orange-soft);padding:7px 15px 7px 12px;border-radius:999px;
+    border:1px solid rgba(243,154,27,.28);background:rgba(243,154,27,.06);
+  }
+  .kicker .dot{width:7px;height:7px;border-radius:50%;background:var(--orange);box-shadow:0 0 10px var(--orange)}
+  h1{
+    font-family:"Space Grotesk",sans-serif;font-weight:700;
+    font-size:clamp(2.8rem,7.6vw,5.15rem);line-height:.97;letter-spacing:-.03em;
+    margin:24px 0 0;color:var(--paper);
+  }
+  h1 .em{color:var(--orange)}
+  .lede{max-width:44ch;margin:22px 0 0;color:#B7BFD1;font-size:clamp(1rem,1.45vw,1.14rem)}
+  .lede b{color:var(--paper);font-weight:600}
+
+  .tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+  .tag{
+    font-family:"JetBrains Mono",monospace;font-size:11px;font-weight:400;letter-spacing:.01em;color:var(--muted);
+    padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.015);
+  }
+  .cta-row{display:flex;flex-wrap:wrap;gap:12px;margin-top:30px}
+  .btn{
+    font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:15px;
+    padding:14px 24px;border-radius:999px;cursor:pointer;border:1px solid transparent;
+    transition:transform .28s var(--ease),box-shadow .28s var(--ease),background .28s var(--ease),border-color .28s var(--ease);
+    display:inline-flex;align-items:center;gap:9px;
+  }
+  .btn-primary{background:var(--orange);color:var(--orange-ink);box-shadow:0 12px 34px -12px rgba(243,154,27,.7)}
+  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 18px 46px -12px rgba(243,154,27,.85)}
+  .btn-primary .arw{transition:transform .28s var(--ease)}
+  .btn-primary:hover .arw{transform:translateX(4px)}
+  .btn-ghost{background:rgba(255,255,255,.025);color:var(--paper);border-color:var(--line)}
+  .btn-ghost:hover{border-color:rgba(94,147,255,.5);background:rgba(94,147,255,.06);transform:translateY(-2px)}
+
+  /* ---- stat strip as network nodes ---- */
+  .nodes{margin-top:50px;position:relative}
+  .nodes-cap{
+    font-family:"JetBrains Mono",monospace;font-size:10.5px;font-weight:500;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--faint);margin:0 0 12px 2px;display:flex;align-items:center;gap:10px;
+  }
+  .nodes-cap::before{content:"";width:22px;height:1px;background:linear-gradient(90deg,var(--orange),transparent)}
+  .node-grid{
+    display:grid;grid-template-columns:repeat(3,1fr);
+    border:1px solid var(--line);border-radius:var(--r);overflow:hidden;
+    background:linear-gradient(180deg,rgba(17,19,25,.66),rgba(12,13,17,.66));
+  }
+  .node{padding:20px 22px;position:relative}
+  .node + .node{border-left:1px solid var(--line)}
+  .node .tick{
+    font-family:"JetBrains Mono",monospace;font-size:10px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--muted);display:flex;align-items:center;gap:8px;
+  }
+  .node .tick::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--orange);box-shadow:0 0 9px rgba(243,154,27,.75)}
+  .node .n{
+    font-family:"Space Grotesk",sans-serif;font-weight:700;
+    font-size:clamp(1.6rem,3.4vw,2.3rem);line-height:1;letter-spacing:-.02em;margin-top:13px;
+  }
+  .node .n span{color:var(--orange)}
+  .node .l{color:var(--muted);font-size:.92rem;margin-top:6px}
+
+  .scrollcue{
+    position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:4;
+    font-family:"JetBrains Mono",monospace;font-size:9.5px;letter-spacing:.3em;text-transform:uppercase;color:var(--faint);
+    display:flex;flex-direction:column;align-items:center;gap:7px;
+  }
+  .scrollcue .bar{width:1px;height:26px;background:linear-gradient(180deg,var(--orange),transparent);animation:cue 2.4s var(--ease) infinite}
+  @keyframes cue{0%,100%{opacity:.25;transform:scaleY(.6)}50%{opacity:1;transform:scaleY(1)}}
+
+  /* ============ VALUES ============ */
+  .values{position:relative;z-index:2;padding:84px 0 104px;background:var(--void)}
+  .values::before{
+    content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
+    background:radial-gradient(72% 56% at 8% -4%, rgba(94,147,255,.08), transparent 54%);
+  }
+  .sec-head{max-width:660px;position:relative;z-index:1}
+  .sec-eyebrow{font-family:"JetBrains Mono",monospace;font-size:11px;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:var(--blue-soft)}
+  .sec-head h2{
+    font-family:"Space Grotesk",sans-serif;font-weight:700;letter-spacing:-.025em;
+    font-size:clamp(1.95rem,4.6vw,3rem);line-height:1.03;margin:14px 0 0;
+  }
+  .sec-head h2 .dt{color:var(--orange)}
+  .sec-head p{color:var(--muted);margin:14px 0 0;max-width:52ch}
+
+  .vgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:38px;position:relative;z-index:1}
+  .vcard{
+    position:relative;background:linear-gradient(180deg,var(--panel),var(--panel-2));
+    border:1px solid var(--line);border-radius:var(--r);padding:24px 22px 26px;overflow:hidden;
+    transition:transform .35s var(--ease),border-color .35s var(--ease);
+  }
+  .vcard:hover{transform:translateY(-4px);border-color:rgba(243,154,27,.3)}
+  .vcard .vid{
+    font-family:"JetBrains Mono",monospace;font-size:11px;font-weight:500;letter-spacing:.12em;color:var(--faint);
+    display:flex;align-items:center;justify-content:space-between;
+  }
+  .vcard .vid .pin{width:8px;height:8px;border-radius:50%;background:var(--orange);box-shadow:0 0 0 4px rgba(243,154,27,.12),0 0 12px rgba(243,154,27,.6)}
+  .vcard h3{font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:1.42rem;letter-spacing:-.015em;margin:16px 0 0}
+  .vcard p{color:var(--muted);margin:11px 0 0;font-size:.97rem}
+  .vcard .link{width:32px;height:2px;background:linear-gradient(90deg,var(--orange),transparent);margin-top:20px;border-radius:2px}
+
+  .closer{
+    margin-top:18px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:18px;
+    padding:26px 28px;border:1px solid var(--line);border-radius:var(--r);position:relative;z-index:1;
+    background:radial-gradient(130% 200% at 100% 0,rgba(243,154,27,.11),transparent 54%),var(--void-2);
+  }
+  .closer p{margin:0;font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:clamp(1.12rem,2.4vw,1.5rem);letter-spacing:-.015em}
+  .closer p .em{color:var(--orange)}
+
+  footer{border-top:1px solid var(--line);padding:26px 0;position:relative;z-index:2;background:var(--void)}
+  .foot{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:center;color:var(--faint);font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.05em}
+
+  :focus-visible{outline:2px solid var(--orange);outline-offset:3px;border-radius:6px}
+
+  /* ============ RESPONSIVE ============ */
+  @media (max-width:900px){
+    .hero{padding:112px 0 30px;justify-content:center}
+    .hero-veil{background:
+      linear-gradient(0deg, var(--void) 5%, rgba(10,10,11,.82) 24%, rgba(10,10,11,.34) 58%, transparent 82%),
+      radial-gradient(120% 90% at 50% 42%, transparent 42%, rgba(10,10,11,.6) 100%);}
+    .telemetry .ping{right:auto;left:26px;top:96px}
+    .telemetry .rail{display:none}
+    .node-grid{grid-template-columns:1fr}
+    .node + .node{border-left:0;border-top:1px solid var(--line)}
+    .vgrid{grid-template-columns:1fr;margin-top:30px}
+    .brand-name small{display:none}
+    .scrollcue{display:none}
+  }
+  @media (max-width:560px){
+    .wrap{padding:0 16px}
+    .telemetry .ping{left:16px}
+    .btn{flex:1 1 auto;justify-content:center}
+    .nav-cta{display:none}
+    h1{font-size:clamp(2.5rem,10.5vw,3.3rem)}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{scroll-behavior:auto}
+    .btn,.vcard,.nav-cta{transition:none}
+    .telemetry .ping i,.scrollcue .bar{animation:none !important}
+  }
+</style>
+
+<header>
+  <div class="wrap">
+    <nav class="nav">
+      <div class="brand">
+        <div class="logo-box"><img src="../../assets/logo.png" alt="Intégral Pharma" /></div>
+        <div class="brand-name">Intégral Pharma<small>Réseau national</small></div>
+      </div>
+      <a class="nav-cta" href="#valeurs">Nous rencontrer</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div id="hero-bg" aria-hidden="true"></div>
+    <div class="hero-veil" aria-hidden="true"></div>
+
+    <div class="telemetry" aria-hidden="true">
+      <span class="rail">Réseau · National</span>
+      <span class="ping"><i></i>Maillage actif · FR</span>
+    </div>
+
+    <div class="wrap">
+      <div class="hero-copy">
+        <span class="kicker"><span class="dot"></span>Un partenaire, pas un fournisseur</span>
+        <h1>Plus de marge,<br /><span class="em">nette sur facture.</span></h1>
+        <p class="lede">Le groupement de <b>pharmaciens indépendants</b>, présent partout en France. Toute la parapharmacie&nbsp;— <b>ni franco imposé, ni engagement</b>. Votre projet, on le porte.</p>
+
+        <div class="tags">
+          <span class="tag">Indépendants</span>
+          <span class="tag">National</span>
+          <span class="tag">Toute la parapharmacie</span>
+        </div>
+
+        <div class="cta-row">
+          <button class="btn btn-primary" type="button">Parler à un partenaire <span class="arw">→</span></button>
+          <button class="btn btn-ghost" type="button">Découvrir le groupement</button>
+        </div>
+      </div>
+
+      <div class="nodes">
+        <div class="nodes-cap mono">11 nœuds actifs · liaison max 22 · maillage national</div>
+        <div class="node-grid" aria-label="Chiffres clés">
+          <div class="node">
+            <div class="tick">Catalogue</div>
+            <div class="n" data-count="14000" data-prefix="+">+14 000</div>
+            <div class="l">références Offilog</div>
+          </div>
+          <div class="node">
+            <div class="tick">Statut</div>
+            <div class="n">100<span>%</span></div>
+            <div class="l">indépendants</div>
+          </div>
+          <div class="node">
+            <div class="tick">Réseau</div>
+            <div class="n">Couverture&nbsp;<span>nationale</span></div>
+            <div class="l">partout en France</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="scrollcue" aria-hidden="true"><span class="bar"></span>Scroll</div>
+  </section>
+
+  <section class="values" id="valeurs">
+    <div class="wrap">
+      <div class="sec-head">
+        <div class="sec-eyebrow">Ce qui nous relie</div>
+        <h2>Confiance<span class="dt">.</span> Engagement<span class="dt">.</span> Respect<span class="dt">.</span></h2>
+        <p>Trois repères qui tiennent d'une commande à la suivante. On ne vend pas un catalogue&nbsp;: on porte votre projet.</p>
+      </div>
+
+      <div class="vgrid">
+        <article class="vcard">
+          <div class="vid">Confiance <span class="pin"></span></div>
+          <h3>Ce qui est dit est facturé</h3>
+          <p>Nos conditions s'ouvrent à l'écran, sans petites lignes. Vous savez exactement où vous mettez les pieds.</p>
+          <div class="link"></div>
+        </article>
+        <article class="vcard">
+          <div class="vid">Engagement <span class="pin"></span></div>
+          <h3>«&nbsp;Votre projet, on le porte&nbsp;»</h3>
+          <p>De la première commande à la revente, un même interlocuteur reste à vos côtés, année après année.</p>
+          <div class="link"></div>
+        </article>
+        <article class="vcard">
+          <div class="vid">Respect <span class="pin"></span></div>
+          <h3>Indépendant, vous le restez</h3>
+          <p>Ni franco imposé, ni volume à garantir. Vous gardez la main sur chaque décision, à chaque étape.</p>
+          <div class="link"></div>
+        </article>
+      </div>
+
+      <div class="closer">
+        <p>Votre officine, votre cap. <span class="em">Nous&nbsp;: le vent dans le dos.</span></p>
+        <button class="btn btn-primary" type="button">Rejoindre le réseau <span class="arw">→</span></button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <span>© Intégral Pharma — Groupement de pharmaciens indépendants</span>
+    <span>Confiance · Engagement · Respect</span>
+  </div>
+</footer>
+
+<!-- Vanta NET — vendored local only (no CDN) -->
+<script src="../../vendor/vanta/three.min.js"></script>
+<script src="../../vendor/vanta/vanta.net.min.js"></script>
+<script>
+// Living particle mesh — orange nodes on near-black. Params echo the hero caption (11 / 22).
+(function(){
+  var host = document.getElementById('hero-bg');
+  if(!host) return;
+  var reduce = matchMedia('(prefers-reduced-motion:reduce)').matches;
+
+  // WebGL probe
+  var gl=null; try{ gl=document.createElement('canvas').getContext('webgl'); }catch(e){}
+
+  // Fallback: reduced-motion, or Vanta/THREE/WebGL unavailable → static faint mesh
+  if(reduce || typeof VANTA==='undefined' || !VANTA.NET || !window.THREE || !gl){
+    host.classList.add('mesh-fallback');
+    return;
+  }
+
+  try{
+    var fx = VANTA.NET({
+      el:'#hero-bg',
+      color: 0xF39A1B,
+      backgroundColor: 0x0A0A0B,
+      points: 11,
+      maxDistance: 22,
+      spacing: 16,
+      showDots: true,
+      mouseControls: true,
+      touchControls: true,
+      gyroControls: false
+    });
+    // Cap DPR ~2 (Safari / perf safety)
+    if(fx && fx.renderer && fx.renderer.setPixelRatio){
+      fx.renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, 2));
+      if(fx.resize) fx.resize();
+    }
+  }catch(e){
+    host.classList.add('mesh-fallback');
+  }
+})();
+</script>
+<script>
+// ping pulse + count-up (fr-FR), reduced-motion safe
+(function(){
+  var reduce = matchMedia('(prefers-reduced-motion:reduce)').matches;
+  var live = document.querySelector('.telemetry .ping i');
+  if(live && !reduce) live.style.animation = 'ping 2.2s ease-out infinite';
+
+  var els = Array.prototype.slice.call(document.querySelectorAll('.n[data-count]'));
+  if(!els.length) return;
+  var fmt = new Intl.NumberFormat('fr-FR');
+  function run(el){
+    var end = +el.getAttribute('data-count'), pre = el.getAttribute('data-prefix')||'';
+    if(reduce){ el.textContent = pre + fmt.format(end); return; }
+    var t0=null, dur=1400;
+    function step(t){
+      if(!t0) t0=t;
+      var p=Math.min((t-t0)/dur,1), e=1-Math.pow(1-p,3);
+      el.textContent = pre + fmt.format(Math.round(end*e));
+      if(p<1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+  if(!('IntersectionObserver' in window)){ els.forEach(run); return; }
+  var io = new IntersectionObserver(function(ents){
+    ents.forEach(function(en){ if(en.isIntersecting){ run(en.target); io.unobserve(en.target); } });
+  },{threshold:.4});
+  els.forEach(function(el){ io.observe(el); });
+})();
+</script>
