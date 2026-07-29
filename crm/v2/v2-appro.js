@@ -351,6 +351,43 @@
       '<div class="ap-foot" style="padding:10px 16px 12px;margin:0">Date de retour = champ « remise à disposition prévue » des fiches ANSM (approximatif, ~1 réf sur 3 renseignée). Source unique gratuite, MAJ quotidienne — personne d\'autre ne l\'agrège.</div></div>';
   }
 
+  // ═══ SIGNAUX DE DEMANDE (Réseau Sentinelles, robot quotidien) — anticiper le comptoir ═══
+  var _epiState = 0, _epiData = null;
+  var EPI_MAP = {
+    grippe: { fam: 'antipyrétiques · ORL · antitussifs', kw: /PARAC[EÉ]TAMOL|IBUPROF|DOLIPRANE|EFFERALGAN|DAFALGAN|TOUX|RHUME|GORGE|NASAL|S[EÉ]RUM PHY|OSCILLO|HUMEX|FERVEX|ACTIFED|RHINO|STREPSIL/i },
+    gastro: { fam: 'antidiarrhéiques · réhydratation · antispasmodiques', kw: /DIARRH|SMECTA|IMODIUM|TIORFAN|LOP[EÉ]RAMIDE|R[EÉ]HYDRAT|ULTRALEVURE|SPASFON|PHLORO|ARESTAL|BIOGAIA/i },
+    varicelle: { fam: 'antihistaminiques · antiseptiques cutanés', kw: /C[EÉ]TIRIZIN|LORATADIN|POLARAMINE|ANTIHIST|CHLORHEXIDINE|SEPTIVON|BISEPTINE|CICALFATE|DERMASPRAID|CALADRYL|DIPROSONE/i }
+  };
+  function ensureEpidemio() {
+    if (_epiData || _epiState) return;
+    _epiState = 1;
+    try {
+      var day = new Date().toISOString().slice(0, 10);
+      fetch('epidemio.json?d=' + day, { cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) { _epiData = j || {}; _epiState = 2; try { V2.render(); } catch (e) {} })
+        .catch(function () { _epiState = 2; });
+    } catch (e) { _epiState = 2; }
+  }
+  function epidemioCard() {
+    if (!_epiData) return '<div class="v2-card ap-card"><div class="ap-hd"><div class="ap-ic" style="background:var(--c-opp)">✚</div><div><h3>Signaux de demande</h3><div class="ap-sub">chargement de la veille épidémio…</div></div></div></div>';
+    var inds = _epiData.indicators || []; if (!inds.length) return '';
+    var P = window.PROD_STATS || [];
+    var rows = inds.map(function (i) {
+      var mp = EPI_MAP[i.cat] || {}, nref = 0;
+      if (mp.kw) for (var k = 0; k < P.length; k++) { if ((P[k].n || 0) > 0 && mp.kw.test(P[k].d || '')) nref++; }
+      var reg = (i.regions && i.regions[0]) ? i.regions[0].n : '';
+      return '<div class="ap-row"><div class="ap-nm">' + esc(i.label) +
+        '<small>' + (mp.fam ? 'à renforcer : ' + mp.fam : '') + (reg ? ' · plus fort en ' + esc(cap((reg || '').toLowerCase())) : '') + '</small></div>' +
+        '<div class="ap-mini">' + (i.inc100 != null ? i.inc100 + '/100k' : '') + (nref ? ' · ' + nref + ' réfs' : '') + '</div>' +
+        '<div class="ap-g">' + pctHtml(i.trend) + '</div></div>';
+    }).join('');
+    var w = String(_epiData.week || ''), wl = w.length >= 6 ? 'sem. ' + w.slice(4) + ' · ' + w.slice(0, 4) : '';
+    return '<div class="v2-card ap-card"><div class="ap-hd"><div class="ap-ic" style="background:var(--c-opp)">✚</div><div><h3>Signaux de demande — épidémie</h3>' +
+      '<div class="ap-sub">Réseau Sentinelles ' + wl + ' · ce qui monte = à pré-stocker avant le rush comptoir (incidence France /100k + tendance hebdo)</div></div></div>' + rows +
+      '<div class="ap-foot" style="padding:9px 16px 11px;margin:0">Réfs = produits du catalogue réseau associés à la pathologie (mots-clés). Croiser avec le stock avant le pic.</div></div>';
+  }
+
   V2.pages.appro = {
     render: function (root) {
       ensureCss();
@@ -365,13 +402,15 @@
       ensureEtab();   // charge en différé le stock par établissement (gros fichier NR)
       ensureGener();  // charge la veille génériques (BDPM, robot mensuel)
       ensureAnsm();   // charge la veille ANSM disponibilités + dates de retour (robot quotidien)
+      ensureEpidemio(); // charge les signaux de demande (Sentinelles, robot quotidien)
       // ── Cockpit réassort (crash-safe : ne casse jamais la page si un flux manque) ──
-      var kpiBand = '', reaCard = '', rosCard = '', radarHtml = '', etabHtml = '', basculesHtml = '', ansmHtml = '';
+      var kpiBand = '', reaCard = '', rosCard = '', radarHtml = '', etabHtml = '', basculesHtml = '', ansmHtml = '', epiHtml = '';
       try {
         radarHtml = radarSection(window.WML_SALES && window.STOCK_IP ? reassort() : []);
         etabHtml = etabSection();
         basculesHtml = basculesCard();
         ansmHtml = ansmCard();
+        epiHtml = epidemioCard();
         if (window.WML_SALES && window.STOCK_IP) {
           var h = stockHealth();
           kpiBand = '<div class="ap-kpis">' +
@@ -453,6 +492,7 @@
           '<div class="ap-sec">Radar 90 jours — à anticiper</div>' +
           '<div class="ap-secsub">Ce qui va bouger la demande : remboursements, génériques, baisses de prix, saison, ruptures — croisé avec ton réassort urgent en temps réel.</div>' +
           radarHtml +
+          epiHtml +
           '<div class="ap-sec">Piloter les achats</div>' +
           reaCard +
           ansmHtml +
