@@ -988,6 +988,11 @@
       '.phd-rupt .ic{width:30px;height:30px;border-radius:9px;background:var(--c-amber);color:#fff;display:grid;place-items:center;font-size:16px;font-weight:800;flex:none}' +
       '.phd-rupt b{color:#a8651a}.phd-rupt .chips{display:flex;gap:5px;flex-wrap:wrap;margin-top:4px}' +
       '.phd-rupt .chips span{font-size:10.5px;font-weight:700;background:#fff;border:1px solid #F0D9C0;color:#8a5a1a;padding:2px 7px;border-radius:999px}' +
+      '.phd-rrow{display:flex;align-items:center;gap:10px;justify-content:space-between;padding:9px 18px;border-top:1px solid var(--line)}' +
+      '.phd-rnm{font-size:13px;font-weight:600;color:var(--ip-ink);min-width:0;flex:1}.phd-rnm small{color:var(--muted);font-weight:500}' +
+      '.phd-rok{flex:none;font-size:11px;font-weight:800;color:var(--c-opp);background:#E7F5EC;border:1px solid #BFE6CF;border-radius:999px;padding:3px 9px;white-space:nowrap}' +
+      '.phd-rko{flex:none;font-size:11px;font-weight:700;color:#a8651a;background:#FFF1DB;border:1px solid #F0C98A;border-radius:999px;padding:3px 9px;white-space:nowrap}' +
+      '.phd-rmore{display:block;width:100%;text-align:center;padding:10px;border:none;border-top:1px solid var(--line);background:none;color:var(--muted);font:inherit;font-size:12px;font-weight:600;cursor:pointer}.phd-rmore:hover{background:var(--card-2)}' +
       '.phd-reps{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}' +
       '.phd-rep{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:8px 12px;font-size:11px;font-weight:600;color:var(--muted)}' +
       '.phd-rep b{display:block;color:var(--ip-ink);font-size:14px;font-weight:800}' +
@@ -1013,13 +1018,20 @@
     var mca = monthlyCA(sales), nAct = mca.filter(function (m) { return m.ca > 0; }).length;
     var regul = Math.min(100, Math.round(nAct / 6 * 100));
     var score = Math.max(0, Math.min(100, Math.round(0.40 * penet + 0.35 * caPct + 0.25 * regul)));
-    // ── ruptures ANSM sur ses achats ──
+    // ── ruptures ANSM sur ses achats (actionnable : nom + stock Intégral) ──
     var seen = {}, ruptList = [];
     sales.forEach(function (s) {
       var c = String(s.artCode || ''); if (!(s.qte > 0) || c.length < 7 || seen[c]) return;
-      var r = V2.rupture ? V2.rupture(c) : null; if (r) { seen[c] = 1; ruptList.push(c); }
+      var r = V2.rupture ? V2.rupture(c) : null;
+      if (r) {
+        seen[c] = 1;
+        var b = null; try { b = benchIndex().get(c); } catch (e) {}
+        ruptList.push({ cip: c, name: (b && b.designation) || r.d || c, dci: r.d || '', stock: (V2.stock ? V2.stock(c) : 0) });
+      }
     });
     var nRupt = ruptList.length;
+    ruptList.sort(function (a, b) { return (b.stock > 0 ? 1 : 0) - (a.stock > 0 ? 1 : 0); });   // dispo Intégral d'abord (actionnable)
+    var nRuptDispo = 0; for (var ri = 0; ri < ruptList.length; ri++) if (ruptList[ri].stock > 0) nRuptDispo++;
 
     // ── HERO money-first ──
     var pidJs = esc(String(pid));
@@ -1059,9 +1071,21 @@
     }).join('');
     var scoreCard = '<div class="phd-card"><div class="phd-sh"><div class="ic" style="background:var(--ip-blue)">%</div><div><h3>Son score en détail</h3><div class="dsc">vs les officines du réseau Intégral</div></div></div><div style="padding:6px 0">' + axHtml + '</div></div>';
 
-    // ── RUPTURES (bandeau) ──
-    var ruptBand = nRupt > 0 ? '<div class="phd-rupt"><div class="ic">!</div><div><b>' + nRupt + ' produit' + (nRupt > 1 ? 's' : '') + ' qu\'elle achète ' + (nRupt > 1 ? 'sont' : 'est') + ' en tension ANSM.</b>' +
-      '<div style="font-size:12px;color:var(--muted)">À sécuriser / proposer une alternative Intégral en stock.</div></div></div>' : '';
+    // ── RUPTURES ACTIONNABLES : produits en tension qu'elle achète + dispo Intégral ──
+    var ruptBand = '';
+    if (nRupt > 0) {
+      var top = ruptList.slice(0, 8);
+      var rows = top.map(function (x) {
+        return '<div class="phd-rrow"><div class="phd-rnm">' + esc(cap((x.name || '').toLowerCase())) + (x.dci ? '<small> · ' + esc(x.dci) + '</small>' : '') + '</div>' +
+          (x.stock > 0
+            ? '<span class="phd-rok">✓ en stock Intégral</span>'
+            : '<span class="phd-rko">à sécuriser</span>') + '</div>';
+      }).join('');
+      var more = nRupt > top.length ? '<button class="phd-rmore" onclick="V2.go(\'infos\')">+ ' + (nRupt - top.length) + ' autres produits en tension · voir la veille</button>' : '';
+      ruptBand = '<div class="phd-card"><div class="phd-sh"><div class="ic" style="background:var(--c-amber)">!</div><div><h3>Ruptures à sécuriser</h3>' +
+        '<div class="dsc">' + nRupt + ' produit' + (nRupt > 1 ? 's' : '') + ' qu\'elle achète en tension ANSM' + (nRuptDispo > 0 ? ' · <b style="color:var(--c-opp)">' + nRuptDispo + ' dispo chez Intégral</b>' : '') + '</div></div></div>' +
+        rows + more + '</div>';
+    }
 
     // ── REPÈRES nationaux (contexte) ──
     var reps = '<div class="phd-reps">' +
