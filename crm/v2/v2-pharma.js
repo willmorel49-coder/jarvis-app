@@ -993,6 +993,10 @@
       '.phd-rok{flex:none;font-size:11px;font-weight:800;color:var(--c-opp);background:#E7F5EC;border:1px solid #BFE6CF;border-radius:999px;padding:3px 9px;white-space:nowrap}' +
       '.phd-rko{flex:none;font-size:11px;font-weight:700;color:#a8651a;background:#FFF1DB;border:1px solid #F0C98A;border-radius:999px;padding:3px 9px;white-space:nowrap}' +
       '.phd-rmore{display:block;width:100%;text-align:center;padding:10px;border:none;border-top:1px solid var(--line);background:none;color:var(--muted);font:inherit;font-size:12px;font-weight:600;cursor:pointer}.phd-rmore:hover{background:var(--card-2)}' +
+      '.phd-jum{padding:12px 18px 14px}' +
+      '.phd-jumrow{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:4px 0;font-size:13px;color:var(--ip-ink)}.phd-jumrow b small{font-size:10px;color:var(--muted);font-weight:600;font-family:var(--font)}' +
+      '.phd-jumtrack{height:8px;border-radius:9px;background:rgba(16,19,28,.07);overflow:hidden;margin:8px 0}.phd-jumtrack i{display:block;height:100%;border-radius:9px;background:linear-gradient(90deg,#8B7BEE,#6D5AE6)}' +
+      '.phd-jumgap{font-size:12.5px;color:var(--muted);font-weight:600}' +
       '.phd-reps{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}' +
       '.phd-rep{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:8px 12px;font-size:11px;font-weight:600;color:var(--muted)}' +
       '.phd-rep b{display:block;color:var(--ip-ink);font-size:14px;font-weight:800}' +
@@ -1094,7 +1098,31 @@
       '<div class="phd-rep">Substitution nationale<b>' + REPERES_FR.subst + '</b></div>' +
       '</div><div style="font-size:10.5px;color:var(--muted);margin-top:6px">Repères marché France (Interfimo/Fiducial 2025) — contexte, pas la performance de l\'officine.</div>';
 
-    return '<div class="phd">' + hero + planCard + ruptBand + scoreCard + reps + '</div>';
+    // ── JUMEAU D'ACHATS : cohorte d'officines Intégral au profil comparable ──
+    var jumeauCard = '';
+    try {
+      if (meCa > 0 && offs.length >= 10) {
+        var band = offs.filter(function (o) { return String(o.id) !== String(pid) && o.ca >= meCa * 0.6 && o.ca <= meCa * 1.6; });
+        if (band.length >= 5) {
+          var bcas = band.map(function (o) { return o.ca; }).sort(function (a, b) { return a - b; });
+          var jumeau = bcas[Math.floor(bcas.length * 0.65)] || bcas[bcas.length - 1];   // un cran au-dessus (65e pct)
+          var gap = jumeau - meCa;
+          var pctPos = jumeau ? Math.min(100, Math.round(meCa / jumeau * 100)) : 100;
+          jumeauCard = '<div class="phd-card"><div class="phd-sh"><div class="ic" style="background:#6D5AE6">≈</div><div><h3>Ton jumeau</h3>' +
+            '<div class="dsc">' + band.length + ' officines au profil comparable — taille &amp; achats Intégral</div></div></div>' +
+            '<div class="phd-jum">' +
+              '<div class="phd-jumrow"><span>Officines comme la tienne</span><b class="mono">' + V2.fmtEur(jumeau) + '<small>/an</small></b></div>' +
+              '<div class="phd-jumrow"><span>Elle</span><b class="mono" style="color:' + (gap > 0 ? 'var(--c-amber)' : 'var(--c-opp)') + '">' + V2.fmtEur(meCa) + '<small>/an</small></b></div>' +
+              '<div class="phd-jumtrack"><i style="width:' + pctPos + '%"></i></div>' +
+              (gap > 0
+                ? '<div class="phd-jumgap">En se calant sur son jumeau : <b style="color:var(--c-opp)">+' + V2.fmtEur(gap) + '/an</b> de potentiel d\'achats Intégral</div>'
+                : '<div class="phd-jumgap" style="color:var(--c-opp)">✓ Au niveau (ou au-dessus) de son jumeau</div>') +
+            '</div></div>';
+        }
+      }
+    } catch (e) {}
+
+    return '<div class="phd">' + hero + planCard + ruptBand + scoreCard + jumeauCard + reps + '</div>';
   }
 
   function activitySection(sales, marge, ca) {
