@@ -124,6 +124,27 @@
     .cal-cell{min-height:52px}
     .cta{margin-left:0;width:100%}
   }
+  /* stock par établissement */
+  .sitecard{margin-bottom:14px;padding:0;overflow:hidden}
+  .sites{display:grid;grid-template-columns:repeat(auto-fit,minmax(92px,1fr));gap:9px;padding:14px 16px}
+  .site{background:var(--card2);border:1px solid var(--line);border-radius:11px;padding:9px 8px;text-align:center}
+  .site .code{font-size:12px;font-weight:800;letter-spacing:.02em}
+  .site .qt{font-family:var(--mono);font-size:16px;font-weight:800;margin:2px 0}
+  .site .pct{font-size:10px;color:var(--muted);font-weight:700}
+  .site .bar{height:5px;border-radius:3px;background:#E4E8EF;margin-top:7px;overflow:hidden}
+  .site .bar i{display:block;height:100%;background:var(--teal);border-radius:3px}
+  .sitenote{font-size:11.5px;color:var(--muted);padding:0 16px 13px;line-height:1.5}.sitenote b{color:var(--ink)}
+  /* rééquilibrage */
+  .imb{padding:13px 16px;border-top:1px solid var(--line)}
+  .imb .nm{font-size:13.5px;font-weight:800}
+  .imb .meta{font-size:11.5px;color:var(--muted);margin:2px 0 9px}.imb .meta b{color:var(--ink)}
+  .imbar{display:flex;align-items:flex-end;gap:7px;height:48px}
+  .imbar .col{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px}
+  .imbar .col .b{width:100%;max-width:34px;border-radius:3px 3px 0 0;background:#C6D0DE;min-height:2px}
+  .imbar .col .b.hot{background:var(--rose)}
+  .imbar .col .b.zero{background:#EAEDF2}
+  .imbar .col small{font-size:9px;color:var(--muted);font-weight:700}
+  .imb .fix{font-size:11.5px;font-weight:800;color:var(--teal);margin-top:9px}.imb .fix b{color:var(--ink)}
   .foot-note{margin-top:26px;font-size:11.5px;color:var(--muted);line-height:1.6;border-top:1px solid var(--line);padding-top:14px}
   .foot-note b{color:var(--ink)}
 </style>
@@ -197,6 +218,17 @@ var EV=[
   {t:'vig',ti:'Vyndaqel (tafamidis) — PAS de générique avant ~2030',dt:'vigilance',pos:0.35,horizon:'surv',
    sub:'CCP nov. 2026 + avis CHMP juil. 2026, MAIS exclusivité orpheline jusqu\'en 2030 / accords jusqu\'en 2031.',
    imp:'<b>Ne pas déstocker</b> le princeps ; piège « patent watch US » vs réalité France.',reco:'rester princeps',n1:[5,5,5,5,5]},
+];
+/* Stock réel par établissement (7 sites Intégral, données ETAB_PRICES) */
+var ETABS=['CPR','HP','MSP','OPS','POS','SEP','SOP'];
+var SITEW={CPR:28920,HP:12654,MSP:22500,OPS:18552,POS:8695,SEP:10399,SOP:11583};
+/* Déséquilibres réels (stock concentré sur un site, d'autres à 0) — négatifs remis à 0 */
+var IMB=[
+  {d:'Théalose sol. opht. 15 ml',s:{CPR:5361,HP:0,MSP:0,OPS:0,POS:915,SEP:0,SOP:0}},
+  {d:'Autotest grippe / Covid bt1',s:{CPR:262,HP:0,MSP:0,OPS:194,POS:0,SEP:0,SOP:0}},
+  {d:'Miorel 4 mg gélu bt24',s:{CPR:3,HP:497,MSP:2,OPS:0,POS:1,SEP:6,SOP:7}},
+  {d:'Vaseline goménolée 5% tb15g',s:{CPR:62,HP:409,MSP:1,OPS:11,POS:4,SEP:0,SOP:19}},
+  {d:'Slinda 4 mg cpr bt28×3',s:{CPR:267,HP:0,MSP:0,OPS:0,POS:0,SEP:0,SOP:146}}
 ];
 function sparkHtml(a){var mx=Math.max.apply(null,a);return '<span class="spark">'+a.map(function(v){return '<i style="height:'+Math.round(4+v/mx*12)+'px"></i>';}).join('')+'</span>';}
 function chip(t){var T=TYPES[t];return '<span class="chip" style="color:'+T.c+';background:'+T.c+'1A;border:1px solid '+T.c+'44">'+T.l+'</span>';}
@@ -277,10 +309,25 @@ function gantt(){
   return h;
 }
 
-/* ── 4 · Radar 3 horizons ── */
+/* ── 4 · Radar cockpit complet (horizons + stock par établissement + rééquilibrage) ── */
 function radar(){
+  var h='<div class="vhead">Le cockpit radar — complet</div><div class="vsub">Trois horizons d\'action (agir / préparer / surveiller) + la vue des stocks sur tes 7 établissements pour équilibrer chaque site sur la demande, et transférer plutôt que sur-commander.</div>';
+
+  // ── A · Stock par établissement (réel) ──
+  var total=0;ETABS.forEach(function(e){total+=SITEW[e];});
+  var mx=0;ETABS.forEach(function(e){if(SITEW[e]>mx)mx=SITEW[e];});
+  var strip=ETABS.slice().sort(function(a,b){return SITEW[b]-SITEW[a];}).map(function(e){
+    return '<div class="site"><div class="code">'+e+'</div><div class="qt">'+SITEW[e].toLocaleString('fr-FR')+'</div>'+
+      '<div class="pct">'+Math.round(SITEW[e]/total*100)+'% du stock</div>'+
+      '<div class="bar"><i style="width:'+Math.round(SITEW[e]/mx*100)+'%"></i></div></div>';
+  }).join('');
+  h+='<div class="card sitecard"><div class="th"><div class="ic" style="background:var(--teal)">▤</div><h3>Stock par établissement</h3><span class="c">'+total.toLocaleString('fr-FR')+' u</span></div>'+
+     '<div class="sites">'+strip+'</div>'+
+     '<div class="sitenote">Chaque site doit tenir sa part de la demande. Un produit sur-concentré sur un site (et à 0 ailleurs) = à <b>rééquilibrer</b>, pas à racheter.</div></div>';
+
+  // ── B · Radar 3 horizons ──
   var zones=[['now','#D5573B','Agir maintenant','commander cette semaine'],['mois','#C98A1A','Préparer','sous 30 jours'],['trim','#1E9E6A','Surveiller','30 à 90 jours']];
-  var h='<div class="vhead">Le radar 90 jours</div><div class="vsub">Trois anneaux d\'horizon : ce qui est au centre, tu le commandes maintenant. Chaque zone regroupe les décisions par fenêtre d\'action.</div><div class="rad">';
+  h+='<div class="rad">';
   zones.forEach(function(z){
     var items=EV.filter(function(e){return e.horizon===z[0];});
     if(z[0]==='trim')items=EV.filter(function(e){return e.horizon==='trim'||e.horizon==='surv';});
@@ -289,6 +336,20 @@ function radar(){
     '</div>';
   });
   h+='</div>';
+
+  // ── C · Rééquilibrage inter-sites (réel) ──
+  var imbRows=IMB.map(function(p){
+    var vals=ETABS.map(function(e){return Math.max(0,p.s[e]);});
+    var tot=vals.reduce(function(a,b){return a+b;},0),m=Math.max.apply(null,vals),maxI=vals.indexOf(m),maxE=ETABS[maxI];
+    var zeros=vals.filter(function(v){return v===0;}).length;
+    var bars=ETABS.map(function(e,i){var v=vals[i];var hpx=v===0?2:Math.round(4+v/m*38);
+      return '<div class="col"><div class="b '+(v===0?'zero':i===maxI?'hot':'')+'" style="height:'+hpx+'px"></div><small>'+e+'</small></div>';}).join('');
+    return '<div class="imb"><div class="nm">'+p.d+'</div>'+
+      '<div class="meta">'+tot.toLocaleString('fr-FR')+' u au total · <b>'+Math.round(m/tot*100)+'% sur '+maxE+'</b> · '+zeros+' site'+(zeros>1?'s':'')+' à 0</div>'+
+      '<div class="imbar">'+bars+'</div>'+
+      '<div class="fix">→ équilibrer depuis '+maxE+' vers les sites à sec — <b>transférer</b> plutôt que commander</div></div>';
+  }).join('');
+  h+='<div class="card" style="margin-top:14px"><div class="th"><div class="ic" style="background:#6D5AE6">⇄</div><h3>Rééquilibrage inter-sites</h3><span class="c">'+IMB.length+'</span></div>'+imbRows+'</div>';
   return h;
 }
 
@@ -327,7 +388,7 @@ VIEWS.forEach(function(v,i){
   b.innerHTML='<span class="n">'+(i+1)+'</span>'+v[0];
   b.onclick=function(){show(i);};sel.appendChild(b);
 });
-show(0);
+show(3);
 </script>
 </body>
 </html>
