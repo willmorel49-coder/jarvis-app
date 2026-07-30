@@ -1,0 +1,114 @@
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<title>Appro · Aujourd'hui — maquettes</title>
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,800,900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#EEF1F6;--card:#fff;--card2:#F6F8FB;--ink:#0E1420;--muted:#6B7280;--line:#E4E8EF;--blue:#0050E6;--green:#0B7A4B;--red:#C0392B;--violet:#6D5AE6;--teal:#0E7C86;--amber:#B4791A;--mono:'Geist Mono',monospace;--font:'Satoshi',-apple-system,system-ui,sans-serif}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);-webkit-font-smoothing:antialiased}
+.wrap{max-width:760px;margin:0 auto;padding:18px 16px 80px}
+h1{font-size:21px;font-weight:900;margin:0 0 3px}.lede{font-size:13px;color:var(--muted);margin:0 0 16px;line-height:1.5}
+.sel{display:flex;gap:8px;flex-wrap:wrap;position:sticky;top:0;z-index:20;background:var(--bg);padding:10px 0;margin-bottom:14px;border-bottom:1px solid var(--line)}
+.sbtn{border:1px solid var(--line);background:var(--card);border-radius:12px;padding:9px 13px;font:inherit;font-size:13px;font-weight:800;color:var(--ink);cursor:pointer;display:flex;align-items:center;gap:8px}
+.sbtn .n{width:22px;height:22px;border-radius:7px;background:var(--card2);border:1px solid var(--line);display:grid;place-items:center;font-size:12px;font-weight:800;color:var(--muted);font-family:var(--mono)}
+.sbtn.on{background:var(--blue);color:#fff;border-color:var(--blue)}.sbtn.on .n{background:rgba(255,255,255,.22);color:#fff;border-color:transparent}
+.vh{font-size:15px;font-weight:800;margin:2px 0}.vs{font-size:12.5px;color:var(--muted);margin:0 0 14px}
+.mono{font-family:var(--mono)}
+/* V1 grandes cartes */
+.g{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:16px 0 8px;display:flex;align-items:center;gap:8px}
+.g .d{width:9px;height:9px;border-radius:50%}
+.ac{display:flex;align-items:center;gap:13px;background:var(--card);border:1px solid var(--line);border-left:5px solid var(--c);border-radius:15px;padding:15px 16px;margin-bottom:10px}
+.ac .m{flex:1;min-width:0}.ac .nm{font-size:15.5px;font-weight:800;line-height:1.15}
+.ac .rs{font-size:12px;color:var(--muted);font-weight:600;margin-top:4px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.ac .q{text-align:right;flex:none}.ac .q b{font-size:26px;font-weight:800;font-family:var(--mono);color:var(--c);letter-spacing:-.02em;display:block;line-height:1}
+.ac .q span{font-size:10.5px;color:var(--muted);font-weight:700}
+.crit{font-size:10px;font-weight:800;color:#B02A37;background:#FDE7EA;border:1px solid #F3B0BC;border-radius:999px;padding:1px 7px}
+.dt{font-size:10.5px;font-weight:800;border-radius:999px;padding:2px 8px;background:var(--card2);border:1px solid var(--line)}
+/* V2 kanban */
+.kb{display:grid;grid-template-columns:1fr 1fr 1fr;gap:11px}
+.kc{background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:10px 9px}
+.kh{font-size:12px;font-weight:800;display:flex;align-items:center;gap:6px;margin-bottom:9px}.kh .b{font-family:var(--mono);margin-left:auto;background:#fff;border:1px solid var(--line);border-radius:999px;padding:0 7px;font-size:11px}
+.kt{background:#fff;border:1px solid var(--line);border-radius:10px;padding:9px 10px;margin-bottom:7px}
+.kt .n{font-size:12.5px;font-weight:800;line-height:1.15}.kt .s{font-size:10.5px;color:var(--muted);font-weight:600;margin-top:2px}
+.kt .qq{font-size:13px;font-weight:800;font-family:var(--mono);color:var(--c);margin-top:4px}
+/* V3 focus */
+.big3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:11px;margin:14px 0}
+.b3{border-radius:16px;padding:18px 14px;text-align:center;color:#fff}
+.b3 b{font-size:30px;font-weight:800;font-family:var(--mono);display:block;line-height:1;letter-spacing:-.02em}
+.b3 span{font-size:12px;font-weight:700;opacity:.92;margin-top:5px;display:block}
+.fl{font-size:22px;font-weight:900;letter-spacing:-.01em;margin:6px 0 2px}
+.fr{display:flex;align-items:center;gap:12px;padding:13px 4px;border-bottom:1px solid var(--line)}
+.fr .fn{flex:1;font-size:14.5px;font-weight:800}.fr .fn small{display:block;font-size:11.5px;color:var(--muted);font-weight:600;margin-top:2px}
+.fr .fq{font-size:18px;font-weight:800;font-family:var(--mono);color:var(--c)}
+.cta{display:block;width:100%;text-align:center;margin-top:16px;background:var(--ink);color:#fff;border:none;border-radius:12px;padding:14px;font:inherit;font-size:14px;font-weight:800;cursor:pointer}
+/* V4 jauge */
+.gauge{display:flex;height:44px;border-radius:12px;overflow:hidden;border:1px solid var(--line);margin:6px 0 6px}
+.gseg{display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-weight:800}
+.gseg b{font-size:15px;font-family:var(--mono);line-height:1}.gseg span{font-size:9px;font-weight:700;opacity:.92}
+.glab{font-size:11px;color:var(--muted);margin-bottom:14px}
+.foot{margin-top:26px;font-size:11.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:14px;line-height:1.6}
+@media(max-width:560px){.kb,.big3{grid-template-columns:1fr}.ac .q b{font-size:22px}}
+</style></head><body><div class="wrap">
+<h1>Appro · écran « Aujourd'hui » — 4 maquettes</h1>
+<p class="lede">Même écran, 4 partis-pris <b>plus simples et plus visuels</b>, remplis avec tes <b>vraies données du jour</b>. Choisis un numéro.</p>
+<div class="sel" id="sel"></div><div id="stage"></div>
+<p class="foot">Données réelles : 687 à commander · 49 à sécuriser · 755 907 € à engager · 482 678 € dormant. Les gestes affichés = top priorités réelles (ruptures proches, médicaments critiques MITM…).</p>
+</div>
+<script>
+var D={"counts":{"buy":687,"sec":49,"pre":159,"red":696,"eur":755907.0299999999,"redEur":482677.51999999967},"eur":755907,"redEur":482678,"top":[{"d":"ROSUVASTATINE ZYF 5MG CPR BT30","v":"ACHETER","cls":"buy","qty":33,"reason":"à sec ~31 juil.","cov":1,"mitm":true,"val":109},{"d":"CYAMEMAZINE VIA 25MG CPR BT30","v":"ACHETER","cls":"buy","qty":50,"reason":"à sec ~31 juil.","cov":1,"mitm":true,"val":161},{"d":"LORAZEPAM VIA 2,5MG CPR FL30","v":"ACHETER","cls":"buy","qty":33,"reason":"à sec ~31 juil.","cov":1,"mitm":true,"val":55},{"d":"SKENAN LP 200MG GELU BT14","v":"SÉCURISER","cls":"sec","qty":26,"reason":"tension ANSM · à sec ~31 juil.","cov":1,"mitm":true,"val":978},{"d":"SODIUM 0,9% AGT INJ POC500ML 1","v":"ACHETER","cls":"buy","qty":42,"reason":"à sec ~31 juil.","cov":1,"mitm":true,"val":87},{"d":"ACTIQ 600MCG CPR BUC BT3","v":"SÉCURISER","cls":"sec","qty":20,"reason":"tension ANSM · à sec ~31 juil.","cov":1,"mitm":true,"val":333},{"d":"ACTIQ 1200MCG CPR BUC BT3","v":"ACHETER","cls":"buy","qty":38,"reason":"à sec ~31 juil.","cov":1,"mitm":true,"val":633},{"d":"PREDNISOLONE VIA 20MG C.DISP20","v":"ACHETER","cls":"buy","qty":41,"reason":"à sec ~31 juil.","cov":1,"mitm":true,"val":119},{"d":"METFORMINE VIA 500MG CPR BT30","v":"ACHETER","cls":"buy","qty":50,"reason":"à sec ~31 juil.","cov":1,"mitm":true,"val":75},{"d":"TRAMADOL/PAR.ZYD 37,5/325 CP20","v":"ACHETER","cls":"buy","qty":8,"reason":"à sec ~1 août","cov":2,"mitm":true,"val":9},{"d":"IBUPROFENE ZEN 200MG CPR BT30","v":"ACHETER","cls":"buy","qty":13,"reason":"à sec ~1 août","cov":2,"mitm":true,"val":12},{"d":"ASPIRINE PROTECT 100MG CPR 30","v":"ACHETER","cls":"buy","qty":928,"reason":"à sec ~1 août","cov":2,"mitm":true,"val":1559},{"d":"XANAX 0,50MG CPR BT30","v":"ACHETER","cls":"buy","qty":13,"reason":"à sec ~1 août","cov":2,"mitm":true,"val":20},{"d":"UNACIM 0,5G/1G INJ FL 1","v":"SÉCURISER","cls":"sec","qty":13,"reason":"tension ANSM · à sec ~1 août","cov":2,"mitm":true,"val":49}]};
+var COL={buy:'#0B7A4B',sec:'#C0392B',pre:'#6D5AE6',arb:'#0E7C86',red:'#B4791A'};
+var LAB={buy:'Commander',sec:'Sécuriser',pre:'Anticiper',arb:'Arbitrer',red:'Alléger'};
+function eur(n){return Math.round(n).toLocaleString('fr-FR')+' €';}
+function num(n){return Math.round(n).toLocaleString('fr-FR');}
+function crit(a){return a.mitm?'<span class="crit">critique</span>':'';}
+/* V1 — Plan du jour, grandes cartes groupées */
+function v1(){
+ var groups=[['sec','Sécuriser d\'abord (rupture)','#C0392B'],['buy','À commander','#0B7A4B'],['pre','À anticiper','#6D5AE6']];
+ var h='<div class="vh">1 · Plan du jour — grandes cartes</div><div class="vs">Les gestes du jour en cartes visuelles, groupés par priorité. La quantité saute aux yeux.</div>';
+ h+='<div style="font-size:13px;font-weight:800;color:var(--muted);margin-bottom:6px">'+num(D.counts.buy+D.counts.sec)+' commandes · <b style="color:var(--ink)">'+eur(D.eur)+'</b> à engager</div>';
+ groups.forEach(function(g){var items=D.top.filter(function(a){return a.cls===g[0];});if(!items.length)return;
+  h+='<div class="g"><span class="d" style="background:'+g[2]+'"></span>'+g[1]+'</div>';
+  items.slice(0,4).forEach(function(a){h+='<div class="ac" style="--c:'+COL[a.cls]+'"><div class="m"><div class="nm">'+cap(a.d)+'</div><div class="rs"><span class="dt">'+a.reason.replace('tension ANSM · ','')+'</span>'+crit(a)+'</div></div><div class="q"><b>'+(a.qty>0?'+'+num(a.qty):'—')+'</b><span>'+(a.qty>0?'unités':'')+'</span></div></div>';});
+ });
+ return h;
+}
+/* V2 — 3 piles kanban */
+function v2(){
+ var cols=[['sec','🔴 Sécuriser','#C0392B'],['buy','🟢 Commander','#0B7A4B'],['pre','🟣 Anticiper','#6D5AE6']];
+ var counts={sec:D.counts.sec,buy:D.counts.buy,pre:D.counts.pre};
+ var h='<div class="vh">2 · Trois piles (board)</div><div class="vs">Un tableau à 3 colonnes : tu balayes de gauche à droite par priorité.</div><div class="kb">';
+ cols.forEach(function(c){var items=D.top.filter(function(a){return a.cls===c[0];}).slice(0,5);
+  h+='<div class="kc"><div class="kh">'+c[1]+'<span class="b">'+num(counts[c[0]])+'</span></div>';
+  items.forEach(function(a){h+='<div class="kt" style="--c:'+COL[c[0]]+'"><div class="n">'+cap(a.d).slice(0,26)+'</div><div class="s">'+a.reason.replace('tension ANSM · ','').slice(0,22)+(a.mitm?' · critique':'')+'</div>'+(a.qty>0?'<div class="qq">+'+num(a.qty)+' u</div>':'')+'</div>';});
+  h+='</div>';
+ });
+ return h+'</div>';
+}
+/* V3 — Focus radical */
+function v3(){
+ var h='<div class="vh">3 · Focus radical</div><div class="vs">Le strict minimum : la situation en une phrase, 3 chiffres géants, et les 5 gestes du jour.</div>';
+ h+='<div class="fl">Aujourd\'hui : '+num(D.counts.buy+D.counts.sec)+' commandes à passer.</div>';
+ h+='<div class="big3"><div class="b3" style="background:#C0392B"><b>'+num(D.counts.sec)+'</b><span>à sécuriser</span></div><div class="b3" style="background:#0050E6"><b>'+num(D.counts.buy)+'</b><span>à commander</span></div><div class="b3" style="background:#B4791A"><b>'+eur(D.redEur).replace(' €','')+'</b><span>€ dormant</span></div></div>';
+ h+='<div class="g">Les 5 gestes prioritaires</div>';
+ D.top.slice(0,5).forEach(function(a){h+='<div class="fr" style="--c:'+COL[a.cls]+'"><div class="fn">'+cap(a.d)+'<small>'+LAB[a.cls]+' · '+a.reason.replace('tension ANSM · ','')+(a.mitm?' · critique':'')+'</small></div><div class="fq">'+(a.qty>0?'+'+num(a.qty):'—')+'</div></div>';});
+ h+='<button class="cta">Ouvrir le carnet complet →</button>';
+ return h;
+}
+/* V4 — Jauge santé + gestes */
+function v4(){
+ var c=D.counts;var tot=c.sec+c.buy+c.pre+c.red||1;
+ function seg(v,col,lab){var w=Math.max(8,Math.round(v/tot*100));return '<div class="gseg" style="flex:'+w+';background:'+col+'"><b>'+num(v)+'</b><span>'+lab+'</span></div>';}
+ var h='<div class="vh">4 · Santé du stock + gestes</div><div class="vs">Une barre visuelle de l\'état global, puis les gestes prioritaires.</div>';
+ h+='<div class="glab">Répartition de ce qui demande une action</div><div class="gauge">'+seg(c.sec,'#C0392B','sécuriser')+seg(c.buy,'#0B7A4B','commander')+seg(c.pre,'#6D5AE6','anticiper')+seg(c.red,'#B4791A','alléger')+'</div>';
+ h+='<div style="font-size:13px;font-weight:800;margin-bottom:8px">'+eur(D.eur)+' à engager aujourd\'hui</div>';
+ h+='<div class="g">Gestes prioritaires</div>';
+ D.top.slice(0,6).forEach(function(a){h+='<div class="ac" style="--c:'+COL[a.cls]+';padding:11px 14px"><div class="m"><div class="nm" style="font-size:14px">'+cap(a.d)+'</div><div class="rs"><span class="dt">'+LAB[a.cls]+'</span><span class="dt">'+a.reason.replace('tension ANSM · ','')+'</span>'+crit(a)+'</div></div><div class="q"><b style="font-size:20px">'+(a.qty>0?'+'+num(a.qty):'—')+'</b></div></div>';});
+ return h;
+}
+function cap(s){s=(s||'').toLowerCase();return s.charAt(0).toUpperCase()+s.slice(1);}
+var V=[['Plan du jour',v1],['Trois piles',v2],['Focus radical',v3],['Jauge + gestes',v4]];
+var sel=document.getElementById('sel'),stage=document.getElementById('stage');
+function show(i){stage.innerHTML=V[i][1]();[].forEach.call(sel.children,function(b,j){b.className='sbtn'+(j===i?' on':'');});try{window.scrollTo({top:0,behavior:'smooth'});}catch(e){}}
+V.forEach(function(v,i){var b=document.createElement('button');b.className='sbtn';b.innerHTML='<span class="n">'+(i+1)+'</span>'+v[0];b.onclick=function(){show(i);};sel.appendChild(b);});
+show(0);
+</script></body></html>
