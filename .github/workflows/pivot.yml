@@ -30,12 +30,12 @@ jobs:
         run: python3 generate_pivot.py
       - name: Committer si changement
         run: |
-          if git diff --quiet -- crm/v2/pivot.json crm/v2/pivot-index.json; then
+          if git diff --quiet -- crm/v2/pivot.json crm/v2/pivot-index.json crm/v2/labo-cip.json; then
             echo "Pas de changement (BDPM inchangée)."
           else
             git config user.name  "JARVIS copilote"
             git config user.email "actions@users.noreplace.github.com"
-            git add crm/v2/pivot.json crm/v2/pivot-index.json
+            git add crm/v2/pivot.json crm/v2/pivot-index.json crm/v2/labo-cip.json
             git commit -m "data(couplage): table pivot CIP13 $(date -u +%Y-%m-%d)"
             git push
           fi

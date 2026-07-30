@@ -28,6 +28,27 @@ EXPORT = "https://medicaments-api.giygas.dev/v1/medicaments/export"
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "crm", "v2", "pivot.json")
 OUT_IDX = os.path.join(HERE, "crm", "v2", "pivot-index.json")
+OUT_LABO = os.path.join(HERE, "crm", "v2", "labo-cip.json")
+PRODSTATS = os.path.join(HERE, "crm", "v2", "prod-stats-data.js")
+
+_LABO_STRIP = re.compile(r"\s+(AG|SA|SAS|SANTE|SANTÉ|EUROPE|EUROPHARM|PHARMA|INDUSTRIE|GMBH|LTD|BV|NEDERLAND|FRANCE)$", re.I)
+
+
+def short_labo(l):
+    if not l:
+        return ""
+    base = l.split("(")[0].strip()
+    two = " ".join(base.split()[:2])
+    return _LABO_STRIP.sub("", two).strip()
+
+
+def catalogue_cips():
+    try:
+        txt = io.open(PRODSTATS, "r", encoding="utf-8").read()
+        arr = json.loads(txt[txt.index("["):txt.rindex("]") + 1])
+        return set(str(p.get("c")) for p in arr if p.get("c"))
+    except Exception:
+        return set()
 
 
 def fetch_json(url):
@@ -87,7 +108,18 @@ def main():
         json.dump(out, f, ensure_ascii=False, separators=(",", ":"))
     with io.open(OUT_IDX, "w", encoding="utf-8") as f:
         json.dump(idx, f, ensure_ascii=False, separators=(",", ":"))
-    print("OK · pivot CIP13=%d · groupes=%d · molécules=%d" % (len(pivot), len(idx_grp), len(idx_dci)))
+    # labo-cip.json : fournisseur (labo court) par CIP13 du catalogue → groupement fournisseur du calendrier appro
+    cat = catalogue_cips()
+    labo = {}
+    for cip, row in pivot.items():
+        if cat and cip not in cat:
+            continue
+        sl = short_labo(row.get("labo"))
+        if sl:
+            labo[cip] = sl
+    with io.open(OUT_LABO, "w", encoding="utf-8") as f:
+        json.dump({"generated": today, "n": len(labo), "data": labo}, f, ensure_ascii=False, separators=(",", ":"))
+    print("OK · pivot CIP13=%d · groupes=%d · molécules=%d · labo-cip=%d" % (len(pivot), len(idx_grp), len(idx_dci), len(labo)))
     print("→ %s (%d Ko) · %s (%d Ko)" % (OUT, os.path.getsize(OUT) // 1024, OUT_IDX, os.path.getsize(OUT_IDX) // 1024))
 
 

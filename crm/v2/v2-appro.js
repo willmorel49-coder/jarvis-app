@@ -531,7 +531,10 @@
       } else return;
       var mitm = isMitm(c);
       if (mitm && (cls === 'sec' || cls === 'buy')) prio += 0.5;   // médicament critique → remonte dans le carnet
-      acts.push({ c: c, name: (ps[c] && ps[c].d) || c, o: o, v: verdict, cls: cls, prio: prio, qty: qty, reason: reason, rupt: rupt, season: seasonUp, gen: isGen, mitm: mitm });
+      var cmdDays = null;   // jours avant la date limite de commande (pour le calendrier). arb/red = pas de date.
+      if (cls === 'buy' || cls === 'sec') cmdDays = Math.max(0, Math.round(o.cov - ORDER_LEAD));
+      else if (cls === 'pre') { var nm = new Date().getMonth() + 1, ma = ((sM - nm) + 12) % 12; cmdDays = Math.max(7, ma * 30 - 42); }
+      acts.push({ c: c, name: (ps[c] && ps[c].d) || c, o: o, v: verdict, cls: cls, prio: prio, qty: qty, reason: reason, rupt: rupt, season: seasonUp, gen: isGen, mitm: mitm, cmdDays: cmdDays });
     });
     acts.sort(function (a, b) { return (b.prio - a.prio) || (a.o.cov - b.o.cov); });
     _carnetActs = acts;
@@ -633,6 +636,90 @@
     if (!el) { el = document.createElement('div'); el.id = 'appro-ticket'; el.className = 'tk-ov'; el.onclick = function (e) { if (e.target === el) V2.approTicketClose(); }; document.body.appendChild(el); }
     el.innerHTML = html; el.style.display = 'flex';
   };
+
+  // ═══ VUE CALENDRIER (synthèse experts) : calendrier d'ACTIONS groupé FOURNISSEUR ═══
+  var _laboState = 0, _laboMap = null;
+  function ensureLabo() {
+    if (_laboMap || _laboState) return;
+    _laboState = 1;
+    try {
+      var day = new Date().toISOString().slice(0, 10);
+      fetch('labo-cip.json?d=' + day, { cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) { _laboMap = (j && j.data) || {}; _laboState = 2; try { V2.render(); } catch (e) {} })
+        .catch(function () { _laboMap = {}; _laboState = 2; });
+    } catch (e) { _laboMap = {}; _laboState = 2; }
+  }
+  function laboOf(c) { if (_laboMap && _laboMap[c]) return _laboMap[c]; var G = window.GENERIQUEURS; if (G && G[c]) return G[c]; return 'Divers'; }
+  var _calSub = 'today';
+  V2.approCal = function (s) { _calSub = s; if (V2.render) V2.render(); try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {} };
+  var CLJ = ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.'];
+  var CLCOL = { buy: '#D93A2B', sec: '#C77700', pre: '#0050E6' };
+  function calDate(days) { return new Date(Date.now() + days * 86400000); }
+  function calDayLab(d) { return CLJ[d.getDay()] + ' ' + d.getDate(); }
+  function supGroup(items) {
+    var m = {}, order = [];
+    items.forEach(function (a) {
+      var k = laboOf(a.c), g = m[k];
+      if (!g) { g = m[k] = { labo: k, lines: [], eur: 0, mitm: 0, cls: a.cls, prio: 0 }; order.push(k); }
+      g.lines.push(a); g.eur += a.qty * (a.o.ppht || 0); if (a.mitm) g.mitm++;
+      if (a.prio > g.prio) { g.prio = a.prio; g.cls = a.cls; }
+    });
+    return order.map(function (k) { return m[k]; }).sort(function (a, b) { return b.eur - a.eur; });
+  }
+  function supCardHtml(s) {
+    var lines = s.lines.slice(0, 3).map(function (a) {
+      return '<button class="cl-line" onclick="event.stopPropagation();V2.approTicket(\'' + esc(a.c) + '\')">' +
+        '<span>' + esc(cap((a.name || '').toLowerCase())) + '</span><b>' + (a.qty > 0 ? '+' + fmt(a.qty) : '—') + '</b></button>';
+    }).join('');
+    var more = s.lines.length > 3 ? '<div class="cl-more">+' + (s.lines.length - 3) + ' autres lignes</div>' : '';
+    return '<div class="cl-sup" style="--c:' + (CLCOL[s.cls] || '#6B7280') + '"><div class="cl-suh"><b>' + esc(s.labo) + (s.mitm ? ' <span class="mitm"></span>' : '') +
+      '</b><span>' + s.lines.length + ' ligne' + (s.lines.length > 1 ? 's' : '') + ' · ' + (V2.fmtEur ? V2.fmtEur(s.eur) : fmt(s.eur)) + '</span></div>' + lines + more + '</div>';
+  }
+  function calToggle() {
+    var subs = [['today', 'Aujourd’hui'], ['week', 'Semaine'], ['month', 'Mois'], ['list', 'Toutes les lignes']];
+    return '<div class="cl-tabs">' + subs.map(function (t) { return '<button class="cl-tab' + (_calSub === t[0] ? ' on' : '') + '" onclick="V2.approCal(\'' + t[0] + '\')">' + t[1] + '</button>'; }).join('') + '</div>';
+  }
+  function calendarView(carnetHtml) {
+    ensureLabo();
+    var toggle = calToggle();
+    if (_calSub === 'list') return toggle + (carnetHtml || '');
+    var acts = (_carnetActs || []).filter(function (a) { return a.cmdDays != null; });
+    if (!acts.length) return toggle + '<div class="v2-card" style="padding:22px;text-align:center;color:var(--muted)">Chargement du calendrier…</div>';
+    var late = acts.filter(function (a) { return a.o.cov <= 1; });
+    var byDay = {}; acts.forEach(function (a) { if (a.o.cov <= 1) return; (byDay[a.cmdDays] = byDay[a.cmdDays] || []).push(a); });
+    var band = '';
+    if (_calSub === 'today' || _calSub === 'week') {
+      band = '<div class="cl-band">';
+      for (var k = 0; k < 7; k++) { var d = calDate(k); var n = (byDay[k] || []).length + (k === 0 ? late.length : 0); band += '<div class="cl-bd' + (k === 0 ? ' today' : '') + '"><div class="dn">' + CLJ[d.getDay()].replace('.', '') + '</div><div class="cn">' + (n || '·') + '</div></div>'; }
+      band += '</div>';
+    }
+    var body = '';
+    if (_calSub === 'today') {
+      var t0 = late.concat(byDay[0] || []); var today = supGroup(t0);
+      var nM = t0.filter(function (a) { return a.mitm; }).length;
+      body = '<div class="cl-today"><div class="cl-th">' + calDayLab(calDate(0)) + '</div>' +
+        '<div class="cl-big">' + today.length + ' commande' + (today.length > 1 ? 's' : '') + ' à passer' + (nM ? ' · ' + nM + ' critique' + (nM > 1 ? 's' : '') : '') + '</div>' +
+        (today.slice(0, 6).map(supCardHtml).join('') || '<div class="ap-empty">Rien à commander aujourd’hui ✓</div>') +
+        (today.length > 6 ? '<div class="cl-more">+' + (today.length - 6) + ' autres labos</div>' : '') + '</div>';
+      body += '<div class="cl-th" style="margin-top:14px">Ensuite</div>';
+      for (var k2 = 1; k2 <= 6; k2++) { var d2 = calDate(k2); var sp = supGroup(byDay[k2] || []); body += '<div class="cl-nx"><span class="d">' + calDayLab(d2) + '</span><span class="i">' + (sp.length ? sp.length + ' commande' + (sp.length > 1 ? 's' : '') + ' · ' + sp.slice(0, 2).map(function (s) { return s.labo; }).join(', ') : '—') + '</span></div>'; }
+    } else if (_calSub === 'week') {
+      body = '<div class="cl-wk">';
+      for (var k3 = 0; k3 < 7; k3++) { var d3 = calDate(k3); var sps = supGroup((byDay[k3] || []).concat(k3 === 0 ? late : [])); body += '<div class="cl-wc' + (k3 === 0 ? ' today' : '') + '"><div class="cl-wch">' + (k3 === 0 ? 'Auj.' : calDayLab(d3)) + '<b>' + (sps.length || '') + '</b></div>' + (sps.slice(0, 4).map(supCardHtml).join('') || '<div class="cl-more">—</div>') + (sps.length > 4 ? '<div class="cl-more">+' + (sps.length - 4) + ' labos</div>' : '') + '</div>'; }
+      body += '</div>';
+    } else if (_calSub === 'month') {
+      var nowd = new Date(), y = nowd.getFullYear(), mo = nowd.getMonth(), fdow = (new Date(y, mo, 1).getDay() + 6) % 7, ndays = new Date(y, mo + 1, 0).getDate();
+      var load = {}; acts.forEach(function (a) { var dd = calDate(a.o.cov <= 1 ? 0 : a.cmdDays); if (dd.getMonth() === mo) load[dd.getDate()] = (load[dd.getDate()] || 0) + 1; });
+      var mx = 1; Object.keys(load).forEach(function (k) { if (load[k] > mx) mx = load[k]; });
+      function shade(v) { if (!v) return 'transparent'; var t = v / mx; return t > 0.66 ? '#D93A2B' : t > 0.33 ? '#E88A2A' : '#F1C27A'; }
+      body = '<div class="cl-mhead">' + cap(MOIS[mo]) + ' ' + y + '</div><div class="cl-mgrid">' + ['L', 'M', 'M', 'J', 'V', 'S', 'D'].map(function (x) { return '<div class="cl-mdn">' + x + '</div>'; }).join('');
+      for (var i = 0; i < fdow; i++) body += '<div></div>';
+      for (var day = 1; day <= ndays; day++) { var v = load[day] || 0, isT = day === nowd.getDate(); body += '<div class="cl-mcell' + (isT ? ' today' : '') + '"><span class="dn">' + day + '</span>' + (v ? '<span class="cn" style="color:' + shade(v) + '">' + v + '</span><span class="ld" style="background:' + shade(v) + '"></span>' : '') + '</div>'; }
+      body += '</div><div class="ap-foot" style="padding:8px 2px 0;margin:0">Les jours chauds = beaucoup de commandes à passer. Vue de planification — on exécute dans « Aujourd’hui » et « Semaine ».</div>';
+    }
+    return toggle + band + body;
+  }
 
   V2.pages.appro = {
     render: function (root) {
@@ -782,7 +869,7 @@
       function secHead(t, s) { return '<div class="ap-sec">' + t + '</div>' + (s ? '<div class="ap-secsub">' + s + '</div>' : ''); }
       var content = '';
       if (_section === 'today') {
-        content = carnetHtml || '<div class="v2-card" style="padding:22px;text-align:center;color:var(--muted)">Chargement du carnet…</div>';
+        content = calendarView(carnetHtml || '<div class="v2-card" style="padding:22px;text-align:center;color:var(--muted)">Chargement du carnet…</div>');
       } else if (_section === 'anticiper') {
         content = secHead('Radar 90 jours', 'ce qui va bouger la demande : remboursements, génériques, baisses de prix, saison, ruptures') + radarHtml +
           secHead('Signaux &amp; échéances') + epiHtml + saiCipHtml + hasHtml + ansmHtml;
@@ -894,6 +981,31 @@
       '.ap-navb{flex:1;min-width:120px;font-size:13.5px;font-weight:800;color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:11px;padding:10px 8px;cursor:pointer;transition:.15s}' +
       '.ap-navb:hover{border-color:#C9D2E0}.ap-navb.on{background:var(--ip-blue);color:#fff;border-color:var(--ip-blue)}' +
       '@media(max-width:640px){.ap-hero{grid-template-columns:1fr 1fr}.ap-navb{min-width:0;font-size:12.5px;padding:9px 4px}}' +
+      /* vue calendrier (groupée fournisseur) */
+      '.cl-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}' +
+      '.cl-tab{flex:1;min-width:88px;font-size:12.5px;font-weight:800;color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 6px;cursor:pointer}.cl-tab.on{background:var(--ip-ink);color:#fff;border-color:var(--ip-ink)}' +
+      '.cl-band{display:flex;gap:5px;margin-bottom:14px}' +
+      '.cl-bd{flex:1;text-align:center;background:var(--card);border:1px solid var(--line);border-radius:9px;padding:6px 2px}.cl-bd .dn{font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase}.cl-bd .cn{font-size:14px;font-weight:800;font-family:var(--mono);margin-top:2px}.cl-bd.today{background:var(--ip-blue);color:#fff}.cl-bd.today .dn{color:#fff;opacity:.85}' +
+      '.cl-th{font-size:11.5px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}' +
+      '.cl-big{font-size:18px;font-weight:900;margin:3px 0 12px;color:var(--ip-ink)}' +
+      '.cl-today{margin-bottom:6px}' +
+      '.cl-sup{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--c);border-radius:12px;padding:11px 13px;margin-bottom:9px}' +
+      '.cl-suh{display:flex;align-items:baseline;justify-content:space-between;gap:8px}.cl-suh b{font-size:14px;font-weight:800}.cl-suh span{font-size:11.5px;color:var(--muted);font-weight:700;font-family:var(--mono);white-space:nowrap}' +
+      '.cl-line{display:flex;width:100%;align-items:center;justify-content:space-between;gap:8px;background:none;border:0;border-top:1px solid var(--line);padding:7px 0 0;margin-top:7px;font:inherit;cursor:pointer;text-align:left}' +
+      '.cl-line span{font-size:12.5px;color:var(--ip-ink);font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cl-line b{font-family:var(--mono);font-size:13px;color:var(--c);flex:none}' +
+      '.cl-line:first-of-type{border-top:0}' +
+      '.cl-more{font-size:11px;color:var(--muted);font-weight:700;text-align:center;padding:4px}' +
+      '.cl-nx{display:flex;align-items:center;gap:10px;padding:9px 2px;border-top:1px solid var(--line);font-size:13px}.cl-nx .d{width:76px;font-weight:800;color:var(--ip-ink)}.cl-nx .i{flex:1;color:var(--muted);font-weight:600;font-size:12px}' +
+      '.cl-wk{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}' +
+      '.cl-wc{background:var(--card-2,#F6F8FB);border:1px solid var(--line);border-radius:11px;padding:7px 6px;min-height:110px}.cl-wc.today{background:#EAF1FF;border-color:#C8DBFF}' +
+      '.cl-wch{font-size:10.5px;font-weight:800;text-transform:uppercase;color:var(--muted);display:flex;justify-content:space-between;margin-bottom:6px}.cl-wch b{color:var(--ip-ink);font-family:var(--mono)}' +
+      '.cl-wc .cl-sup{padding:7px 8px;margin-bottom:6px}.cl-wc .cl-suh b{font-size:12px}.cl-wc .cl-suh span{font-size:10px}.cl-wc .cl-line{display:none}' +
+      '.cl-mhead{font-size:14px;font-weight:800;margin-bottom:8px}' +
+      '.cl-mgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}' +
+      '.cl-mdn{font-size:10px;font-weight:800;color:var(--muted);text-align:center}' +
+      '.cl-mcell{aspect-ratio:1;border:1px solid var(--line);border-radius:9px;background:var(--card);position:relative}.cl-mcell.today{outline:2px solid var(--ip-blue)}' +
+      '.cl-mcell .dn{position:absolute;top:4px;left:6px;font-size:10.5px;font-weight:700;color:var(--muted);font-family:var(--mono)}.cl-mcell .cn{position:absolute;top:4px;right:6px;font-size:12px;font-weight:800;font-family:var(--mono)}.cl-mcell .ld{position:absolute;left:5px;right:5px;bottom:5px;height:5px;border-radius:4px}' +
+      '@media(max-width:640px){.cl-wk{grid-template-columns:1fr}.cl-wc{min-height:0}.cl-wc .cl-line{display:flex}.cl-tab{min-width:0}}' +
       '.ap-sec{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--ip-ink);margin:22px 0 2px}' +
       '.ap-secsub{font-size:12px;color:var(--muted);margin:0 0 12px;line-height:1.5}' +
       /* radar */
