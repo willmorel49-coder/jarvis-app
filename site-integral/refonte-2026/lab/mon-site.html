@@ -3,160 +3,22 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Intégral — mon site (assemblage des briques)</title>
+<title>Intégral Pharma — Un partenaire, pas un fournisseur</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<style>
-  :root{--ink:#06080e;--pan:#0d1018;--line:rgba(255,255,255,.10);--pap:#F4F1EA;--mut:#8b93a3;--blue:#0057FF;--or:#F39A1B;
-    --sans:'DM Sans',system-ui,sans-serif;--mono:'DM Mono',monospace;}
-  *{margin:0;padding:0;box-sizing:border-box}
-  html{scroll-behavior:smooth}
-  body{background:var(--ink);color:var(--pap);font-family:var(--sans);-webkit-font-smoothing:antialiased;overflow-x:hidden}
-  @media(hover:hover) and (pointer:fine){ body.cur-none,body.cur-none *{cursor:none} }
-  a{color:inherit;text-decoration:none}
-  img,video{display:block;max-width:100%}
-
-  /* ---- fond live fixe ---- */
-  #bg{position:fixed;inset:0;z-index:0;background:#04060c;overflow:hidden}
-  #bg canvas{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;z-index:0!important;display:block}
-  #bg::after{content:'';position:absolute;inset:0;background:radial-gradient(120% 90% at 70% 30%,transparent 40%,rgba(4,6,12,.55));pointer-events:none}
-
-  /* ---- switch de fond (discret) ---- */
-  .fondsw{position:fixed;right:16px;bottom:16px;z-index:60;display:flex;gap:6px;background:rgba(6,8,14,.7);border:1px solid var(--line);border-radius:999px;padding:6px;backdrop-filter:blur(8px)}
-  .fondsw button{font-family:var(--mono);font-size:11px;color:var(--mut);background:transparent;border:0;padding:6px 11px;border-radius:999px;cursor:pointer;transition:.2s}
-  .fondsw button.on{background:rgba(243,154,27,.16);color:var(--pap)}
-  .fondsw .lb{font-family:var(--mono);font-size:10px;color:var(--mut);align-self:center;padding-left:6px;letter-spacing:.08em}
-
-  /* ---- nav ---- */
-  nav{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:16px clamp(18px,4vw,54px);transition:background .3s,border-color .3s;border-bottom:1px solid transparent}
-  nav.scr{background:rgba(6,8,14,.72);backdrop-filter:blur(10px);border-bottom-color:var(--line)}
-  nav .logo{font-weight:800;letter-spacing:-.02em;font-size:18px} nav .logo b{color:var(--or)}
-  nav .links{display:flex;gap:26px;align-items:center} @media(max-width:720px){nav .links{display:none}}
-  nav .nl{font-size:14px;position:relative;padding-bottom:3px} .nl::after{content:'';position:absolute;left:0;bottom:0;height:2px;width:100%;background:linear-gradient(90deg,var(--blue),var(--or));transform:scaleX(0);transform-origin:left;transition:transform .35s} .nl:hover::after{transform:scaleX(1)}
-  nav .cta{font-size:13.5px;font-weight:600;padding:10px 18px;border-radius:999px;background:var(--or);color:#1a1206}
-
-  /* ---- boutons + micro-interactions retenues ---- */
-  .btn{position:relative;overflow:hidden;display:inline-flex;align-items:center;gap:10px;font-size:15px;padding:14px 26px;border-radius:999px;font-weight:600;cursor:pointer;z-index:0;transition:transform .3s,color .3s,filter .3s}
-  .btn.p{background:var(--or);color:#1a1206} .btn.p:hover{filter:brightness(1.08)}
-  .btn.ghost{border:1px solid var(--line);color:var(--pap);background:transparent}
-  .btn.ghost::before{content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,var(--blue),var(--or));transform:translateX(-101%);transition:transform .42s ease}
-  .btn.ghost:hover::before{transform:translateX(0)} .btn.ghost:hover{color:#fff;border-color:transparent}
-  .lnk{position:relative;padding-bottom:3px} .lnk::after{content:'';position:absolute;left:0;bottom:0;height:2px;width:100%;background:linear-gradient(90deg,var(--blue),var(--or));transform:scaleX(0);transform-origin:left;transition:transform .35s} .lnk:hover::after{transform:scaleX(1)}
-  .ripple{position:absolute;border-radius:50%;background:rgba(255,255,255,.45);transform:scale(0);animation:rp .6s ease-out;pointer-events:none;z-index:2}
-  @keyframes rp{to{transform:scale(3.2);opacity:0}}
-
-  /* ---- curseur : gélule 3D ---- */
-  .pill{position:fixed;top:0;left:0;margin:-6.5px 0 0 -15px;width:30px;height:13px;z-index:9999;pointer-events:none;will-change:transform}
-  .pill .body{position:relative;width:100%;height:100%;border-radius:999px;overflow:hidden;background:linear-gradient(90deg,#0057FF 0 48%,rgba(3,10,30,.55) 48% 52%,#F7A62B 52% 100%);box-shadow:0 4px 10px rgba(0,0,0,.5),inset 0 0 0 .6px rgba(255,255,255,.20)}
-  .pill .body::before{content:'';position:absolute;inset:0;border-radius:999px;background:linear-gradient(180deg,rgba(255,255,255,.65),rgba(255,255,255,.05) 42%,rgba(0,0,0,.03) 60%,rgba(0,0,0,.34))}
-  .pill .glare{position:absolute;top:1.5px;left:5px;right:5px;height:3px;border-radius:999px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.9),transparent);filter:blur(.4px)}
-
-  /* ---- layout général ---- */
-  .wrap{position:relative;z-index:1}
-  section{position:relative}
-  .kick{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--or);margin-bottom:16px}
-  .lab{font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--mut);margin-bottom:22px}
-
-  /* HERO split — transparent, laisse voir le fond */
-  .hero{min-height:100vh;display:flex;align-items:center;padding:120px clamp(18px,5vw,64px) 80px;position:relative;z-index:1}
-  .hero .grid{display:grid;grid-template-columns:1.05fr .95fr;gap:44px;align-items:center;width:100%;max-width:1180px;margin:0 auto} @media(max-width:900px){.hero .grid{grid-template-columns:1fr;gap:30px}}
-  #h1{font-size:clamp(38px,6.4vw,82px);line-height:1.0;letter-spacing:-.03em;font-weight:900}
-  #h1 .or{color:var(--or)}
-  .hero .sub{margin-top:20px;max-width:46ch;color:#cfd4de;font-size:16px;line-height:1.55}
-  .hero .cta{margin-top:30px;display:flex;gap:14px;flex-wrap:wrap} @media(max-width:480px){.hero .cta{flex-direction:column}.hero .cta .btn{width:100%;justify-content:center}}
-  .hero .media{aspect-ratio:4/3;border-radius:20px;overflow:hidden;border:1px solid var(--line);position:relative;box-shadow:0 30px 80px rgba(0,0,0,.5)}
-  .hero .media video,.hero .media img{width:100%;height:100%;object-fit:cover}
-  .hero .media::after{content:'';position:absolute;inset:0;box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);border-radius:20px}
-
-  /* le reste scrolle sur fond opaque (couvre le fond live) */
-  .sheet{position:relative;z-index:1;background:linear-gradient(180deg,rgba(6,8,14,.86),var(--ink) 10%)}
-  .band{padding:clamp(60px,9vw,120px) clamp(18px,5vw,64px)} .band .in{max-width:1180px;margin:0 auto}
-  .reveal{opacity:0;transform:translateY(28px);transition:opacity .7s ease,transform .7s ease} .reveal.in{opacity:1;transform:none}
-
-  /* BENTO */
-  .bento{display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:118px;gap:14px} @media(max-width:760px){.bento{grid-template-columns:repeat(2,1fr)}}
-  .b{border:1px solid var(--line);border-radius:18px;padding:20px;background:linear-gradient(180deg,rgba(255,255,255,.03),transparent);position:relative;overflow:hidden}
-  .b.big{grid-column:span 2;grid-row:span 2} .b.wide{grid-column:span 2}
-  .b .n{font-family:var(--mono);font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.08em}
-  .b .v{font-size:38px;font-weight:900;margin-top:8px;letter-spacing:-.02em} .b .v i{font-style:normal;color:var(--or)}
-  .b.blue{background:linear-gradient(160deg,rgba(0,87,255,.22),rgba(0,87,255,.04))} .b.or{background:linear-gradient(160deg,rgba(243,154,27,.22),rgba(243,154,27,.04))}
-
-  /* VALEURS */
-  .g3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px} @media(max-width:760px){.g3{grid-template-columns:1fr}}
-  .card{border:1px solid var(--line);border-radius:16px;padding:26px;background:linear-gradient(180deg,rgba(255,255,255,.03),transparent);transition:border-color .3s,transform .3s}
-  .card:hover{border-color:rgba(243,154,27,.5);transform:translateY(-4px)}
-  .card .id{font-family:var(--mono);color:var(--or);font-size:13px} .card h3{font-size:22px;font-weight:800;margin:8px 0} .card p{color:var(--mut);font-size:14.5px;line-height:1.55}
-
-  /* GALERIE (zoom image) */
-  .gal{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:26px} @media(max-width:760px){.gal{grid-template-columns:1fr 1fr}}
-  .gal a{aspect-ratio:4/3;border-radius:16px;overflow:hidden;border:1px solid var(--line);display:block;position:relative}
-  .gal img{width:100%;height:100%;object-fit:cover;transition:transform .55s ease} .gal a:hover img{transform:scale(1.08)}
-  .gal .cap{position:absolute;left:12px;bottom:12px;font-family:var(--mono);font-size:11px;background:rgba(0,0,0,.5);padding:4px 9px;border-radius:7px}
-
-  /* CTA final */
-  .final{text-align:center} .final h2{font-size:clamp(30px,5vw,56px);font-weight:900;letter-spacing:-.025em} .final h2 .or{color:var(--or)}
-  .final p{color:var(--mut);margin:16px auto 32px;max-width:52ch;font-size:16px}
-  footer{border-top:1px solid var(--line);padding:40px clamp(18px,5vw,64px);display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-family:var(--mono);font-size:12px;color:var(--mut)}
-  h2.big{font-size:clamp(28px,4.6vw,52px);font-weight:900;letter-spacing:-.025em;max-width:20ch}
-
-  /* eyebrow + lede communs */
-  .eyebrow{display:flex;align-items:center;gap:12px;font-family:var(--mono);font-size:12px;letter-spacing:.08em;color:var(--mut);text-transform:uppercase;margin-bottom:18px}
-  .eyebrow .idx{color:var(--or)} .eyebrow .rule{flex:1;height:1px;background:var(--line);max-width:120px}
-  .h2{font-size:clamp(30px,4.8vw,58px);line-height:1.02;font-weight:900;letter-spacing:-.025em} .h2 .or{color:var(--or)}
-  .lede2{margin-top:16px;max-width:56ch;color:#c8cdd8;font-size:16px;line-height:1.6}
-  /* carte 3D réseau (iframe) */
-  .mapframe{position:relative;margin-top:32px;border-radius:20px;overflow:hidden;border:1px solid var(--line);background:#070E22;aspect-ratio:16/9;box-shadow:0 30px 80px rgba(0,0,0,.5)}
-  .mapframe iframe{width:100%;height:100%;border:0;display:block}
-  .mapframe .tagcap{position:absolute;left:20px;top:18px;z-index:2;font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:#cfd4de;background:rgba(6,8,14,.6);border:1px solid var(--line);border-radius:999px;padding:6px 12px;backdrop-filter:blur(6px);pointer-events:none}
-  @media(max-width:640px){.mapframe{aspect-ratio:3/4}}
-  /* band video réseau */
-  .band-v{position:relative;margin-top:32px;border-radius:20px;overflow:hidden;border:1px solid var(--line);aspect-ratio:21/9}
-  .band-v video{width:100%;height:100%;object-fit:cover} .band-v .grade{position:absolute;inset:0;background:linear-gradient(90deg,rgba(4,6,12,.8),transparent 60%)}
-  .band-v .cap{position:absolute;left:clamp(18px,4vw,40px);bottom:clamp(18px,4vw,36px);max-width:30ch}
-  .band-v .cap .big{font-size:clamp(20px,3vw,32px);font-weight:800;letter-spacing:-.02em} .band-v .cap .big b{color:var(--or)} .band-v .cap p{color:#c8cdd8;font-size:14px;margin-top:6px}
-  /* cellules repères réseau */
-  .cells{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-top:16px} @media(max-width:860px){.cells{grid-template-columns:repeat(3,1fr)}} @media(max-width:480px){.cells{grid-template-columns:repeat(2,1fr)}}
-  .cell{border:1px solid var(--line);border-radius:14px;padding:16px;background:linear-gradient(180deg,rgba(255,255,255,.03),transparent);transition:border-color .3s,transform .3s}
-  .cell:hover{border-color:rgba(0,87,255,.5);transform:translateY(-3px)}
-  .cell .m{font-family:var(--mono);font-size:11px;color:var(--or)} .cell b{display:block;margin-top:10px;font-size:15px} .cell span{color:var(--mut);font-size:12.5px}
-  /* parcours 4 temps */
-  .steps4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:30px} @media(max-width:900px){.steps4{grid-template-columns:1fr 1fr}} @media(max-width:520px){.steps4{grid-template-columns:1fr}}
-  .st4{border:1px solid var(--line);border-radius:16px;padding:22px;background:linear-gradient(180deg,rgba(255,255,255,.03),transparent);transition:border-color .3s}
-  .st4:hover{border-color:rgba(243,154,27,.5)}
-  .st4 .t{font-family:var(--mono);color:var(--blue);font-size:14px;font-weight:600} .st4 h3{font-size:17px;margin:12px 0 8px;line-height:1.25} .st4 p{color:var(--mut);font-size:13.5px;line-height:1.55} .st4 .tag{display:inline-block;margin-top:12px;font-family:var(--mono);font-size:11px;color:var(--or);border:1px solid rgba(243,154,27,.4);border-radius:999px;padding:4px 10px}
-  /* pourquoi 3 principes */
-  .why{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:30px} @media(max-width:760px){.why{grid-template-columns:1fr}}
-  .wc{border:1px solid var(--line);border-radius:16px;padding:26px;background:linear-gradient(180deg,rgba(255,255,255,.03),transparent);transition:border-color .3s,transform .3s} .wc:hover{border-color:rgba(0,87,255,.5);transform:translateY(-4px)}
-  .wc .big{font-size:44px;font-weight:900;letter-spacing:-.02em;color:var(--or)} .wc h3{font-size:18px;margin:8px 0 8px} .wc p{color:var(--mut);font-size:14px;line-height:1.55}
-  /* marquee */
-  .mq{overflow:hidden;white-space:nowrap;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:26px 0;background:rgba(6,8,14,.6)}
-  .mq .track{display:inline-block;animation:mv 26s linear infinite} @media(prefers-reduced-motion:reduce){.mq .track{animation:none}}
-  .mq span{font-size:clamp(24px,3.6vw,40px);font-weight:900;letter-spacing:-.02em;margin:0 22px} .mq .dim{color:var(--mut)} .mq .sep{margin:0 6px;color:var(--blue)}
-  @keyframes mv{to{transform:translateX(-50%)}}
-  /* rejoindre CTA card */
-  .ctacard{border:1px solid var(--line);border-radius:24px;padding:clamp(28px,5vw,56px);background:radial-gradient(120% 140% at 80% 0%,rgba(0,87,255,.16),rgba(13,16,24,.6));position:relative;overflow:hidden}
-  .ctacard h2{font-size:clamp(28px,4.6vw,52px);font-weight:900;letter-spacing:-.025em} .ctacard .sub{color:#c8cdd8;margin:14px 0 26px;max-width:52ch;font-size:16px}
-  .contact-row{display:flex;gap:14px;flex-wrap:wrap;margin-top:30px;border-top:1px solid var(--line);padding-top:24px}
-  .contact-row .c{min-width:180px} .contact-row .label{font-family:var(--mono);font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:6px} .contact-row b{font-size:15px} .contact-row a{color:var(--or)}
-  /* footer complet */
-  .foot-top{display:flex;justify-content:space-between;gap:40px;flex-wrap:wrap;padding:56px clamp(18px,5vw,64px) 30px;border-top:1px solid var(--line)}
-  .foot-brand{max-width:34ch} .foot-brand .fb{font-weight:800;font-size:20px;letter-spacing:-.02em} .foot-brand .fb b{color:var(--or)} .foot-brand small{display:block;font-family:var(--mono);font-size:11px;color:var(--mut);margin-top:2px;letter-spacing:.06em} .foot-brand p{color:var(--mut);font-size:14px;line-height:1.55;margin-top:14px}
-  .foot-nav{display:flex;gap:44px;flex-wrap:wrap} .foot-nav .col{display:flex;flex-direction:column;gap:10px} .foot-nav .label{font-family:var(--mono);font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px} .foot-nav a{font-size:14px;color:#c8cdd8;transition:color .2s} .foot-nav a:hover{color:var(--or)}
-  .foot-bottom{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:20px clamp(18px,5vw,64px);border-top:1px solid var(--line);font-family:var(--mono);font-size:12px;color:var(--mut)}
-</style>
+<link rel="stylesheet" href="site.css">
 </head>
-<body class="cur-none">
+<body class="cur-none" data-fond="iridescence">
   <div id="bg"></div>
 
   <nav id="nav">
-    <div class="logo">Intégral<b>.</b></div>
+    <a class="logo" href="mon-site.html">Intégral<b>.</b></a>
     <div class="links">
-      <a class="nl" href="#reseau">Le réseau</a>
-      <a class="nl" href="#parcours">Votre parcours</a>
-      <a class="nl" href="#pourquoi">Pourquoi Intégral</a>
-      <a class="nl" href="#valeurs">Nos valeurs</a>
+      <a class="nl active" href="mon-site.html">Accueil</a>
+      <a class="nl" href="reseau.html">Le réseau</a>
+      <a class="nl" href="mon-site.html#valeurs">Nos valeurs</a>
     </div>
-    <a class="cta btn" href="#contact">Nous rejoindre</a>
+    <a class="cta btn" href="rejoindre.html">Nous rejoindre</a>
   </nav>
 
   <!-- HERO SPLIT -->
@@ -167,8 +29,8 @@
         <h1 id="h1"><span class="seg">Plus de marge,</span><br><span class="seg or">nette sur facture.</span></h1>
         <p class="sub">Groupe de grossistes français indépendant · 9 agences · 1 réseau national. Toute la parapharmacie, sans franco imposé ni engagement.</p>
         <div class="cta">
-          <a class="btn p" href="#reseau">Découvrir le réseau <span>→</span></a>
-          <a class="btn ghost" href="#contact">Nous rejoindre</a>
+          <a class="btn p" href="reseau.html">Découvrir le réseau <span>→</span></a>
+          <a class="btn ghost" href="rejoindre.html">Nous rejoindre</a>
         </div>
       </div>
       <div class="media"><video src="../../assets/hero.mp4" autoplay muted loop playsinline poster="../../assets/poster.jpg"></video></div>
@@ -197,7 +59,6 @@
           <div class="cell"><span class="m">A6</span><b>Indépendance</b><span>Capital français</span></div>
         </div>
 
-        <!-- chiffres-clés (bento retenu) -->
         <div class="bento" style="margin-top:16px">
           <div class="b big blue"><div class="n">Le réseau</div><div class="v">9<i> agences</i></div><div style="color:var(--mut);font-size:14px;margin-top:10px;max-width:22ch">1 réseau national, présent sur tout le territoire français.</div></div>
           <div class="b"><div class="n">Références Offilog</div><div class="v" data-count="14000" data-suf="+">0</div></div>
@@ -205,6 +66,7 @@
           <div class="b wide"><div class="n">Sans contrainte</div><div style="font-size:17px;margin-top:8px">Ni franco imposé, ni engagement.</div></div>
           <div class="b"><div class="n">Couverture</div><div class="v"><i>FR</i></div></div>
         </div>
+        <div style="margin-top:26px"><a class="btn ghost" href="reseau.html">Voir tout le réseau <span>→</span></a></div>
       </div>
     </section>
 
@@ -263,7 +125,7 @@
       </div>
     </section>
 
-    <!-- GALERIE (zoom image) -->
+    <!-- GALERIE -->
     <section class="band" id="gal">
       <div class="in reveal">
         <div class="eyebrow"><span class="idx">05</span><span class="txt">Le réseau, en vrai</span><span class="rule"></span></div>
@@ -283,8 +145,8 @@
           <h2>Prêt à reprendre la main ?</h2>
           <p class="sub">Parlons de votre officine. Votre agence Intégral vous répond — sans grille imposée, sans engagement.</p>
           <div class="cta" style="display:flex;gap:14px;flex-wrap:wrap">
-            <a class="btn p" href="#reseau">Découvrir le réseau <span>→</span></a>
-            <a class="btn ghost" href="mailto:contact@integralpharma.fr">Nous contacter</a>
+            <a class="btn p" href="rejoindre.html">Nous rejoindre <span>→</span></a>
+            <a class="btn ghost" href="mailto:contact@integralpharma.fr">Nous écrire</a>
           </div>
           <div class="contact-row">
             <div class="c"><span class="label">Écrire</span><b><a href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a></b></div>
@@ -303,111 +165,17 @@
           <p>Groupe de grossistes français indépendant. Un partenaire de l'officine — plus de marge, nette sur facture.</p>
         </div>
         <div class="foot-nav">
-          <div class="col"><span class="label">Le réseau</span><a href="#reseau">9 agences</a><a href="#reseau">Couverture nationale</a><a href="#pourquoi">Indépendance</a></div>
-          <div class="col"><span class="label">L'officine</span><a href="#parcours">Vos achats</a><a href="#pourquoi">Offilog</a><a href="#valeurs">Nos valeurs</a></div>
-          <div class="col"><span class="label">Contact</span><a href="mailto:contact@integralpharma.fr">Écrire</a><a href="#contact">Nous rejoindre</a></div>
+          <div class="col"><span class="label">Le réseau</span><a href="reseau.html">9 agences</a><a href="reseau.html">Couverture nationale</a><a href="mon-site.html#pourquoi">Indépendance</a></div>
+          <div class="col"><span class="label">L'officine</span><a href="mon-site.html#parcours">Vos achats</a><a href="mon-site.html#pourquoi">Offilog</a><a href="mon-site.html#valeurs">Nos valeurs</a></div>
+          <div class="col"><span class="label">Contact</span><a href="mailto:contact@integralpharma.fr">Écrire</a><a href="rejoindre.html">Nous rejoindre</a></div>
         </div>
       </div>
       <div class="foot-bottom"><span>© 2026 Intégral Pharma</span><span>Groupe de grossistes français indépendant</span></div>
     </footer>
   </div>
 
-<!-- Vanta (pour Halo Intégral en mode natif fallback) -->
-<script src="../../vendor/vanta/three.min.js"></script>
-<script src="../../vendor/vanta/vanta.halo.min.js"></script>
-<!-- GSAP + SplitText pour le titre en mots décalés -->
 <script src="../../vendor/gsap/gsap.min.js"></script>
 <script src="../../vendor/gsap/SplitText.min.js"></script>
-
-<script type="module">
-  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const fine = matchMedia('(hover:hover) and (pointer:fine)').matches && !reduce;
-
-  /* ============ FOND LIVE (tes 4 retenus) ============ */
-  const bg = document.getElementById('bg');
-  const FONDS = {
-    iridescence:{name:'Iridescence', mod:'./fx/iridescence.js', opts:{color:'#0057FF'}},
-    'dark-veil':{name:'Dark Veil', mod:'./fx/dark-veil.js', opts:{hue:210,tint:0.6}},
-    halo:{name:'Halo Intégral', halo:true},
-  };
-  let cur=null;
-  async function mountFond(id){
-    if(cur){ try{cur.destroy();}catch(e){} cur=null; }
-    bg.innerHTML='';
-    const f=FONDS[id];
-    document.querySelectorAll('.fondsw button').forEach(b=>b.classList.toggle('on',b.dataset.f===id));
-    try{
-      if(f.halo){ const m=await import('./fx/halo-integral.js'); cur=m.init(bg,{}); }
-      else { const m=await import(f.mod); cur=m.init(bg, f.opts||{}); }
-    }catch(e){ bg.style.background='radial-gradient(120% 120% at 30% 20%,#0057FF33,#05070d)'; }
-  }
-  // switch UI
-  const sw=document.createElement('div'); sw.className='fondsw';
-  sw.innerHTML='<span class="lb">FOND</span>'+Object.entries(FONDS).map(([id,f])=>`<button data-f="${id}">${f.name}</button>`).join('');
-  document.body.appendChild(sw);
-  sw.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>mountFond(b.dataset.f)));
-  mountFond('iridescence');
-
-  /* ============ TITRE : mots décalés (GSAP SplitText) ============ */
-  gsap.registerPlugin(SplitText);
-  const h1=document.getElementById('h1');
-  function animH1(){
-    if(reduce) return;
-    try{
-      const split=new SplitText(h1,{type:'words'});
-      gsap.from(split.words,{y:36,opacity:0,duration:.7,stagger:.05,ease:'power3.out'});
-    }catch(e){}
-  }
-  window.addEventListener('load',()=>requestAnimationFrame(animH1));
-
-  /* ============ NAV au scroll ============ */
-  const nav=document.getElementById('nav');
-  addEventListener('scroll',()=>nav.classList.toggle('scr',scrollY>40),{passive:true});
-
-  /* ============ REVEAL au scroll ============ */
-  const io=new IntersectionObserver((es)=>es.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } }),{threshold:.16});
-  document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
-
-  /* ============ COMPTEURS bento ============ */
-  const cio=new IntersectionObserver((es)=>es.forEach(e=>{ if(!e.isIntersecting)return; const el=e.target; const to=+el.dataset.count,suf=el.dataset.suf||''; const st=performance.now(); (function a(n){let p=Math.min(1,(n-st)/1200);el.textContent=Math.round(to*(1-Math.pow(1-p,3))).toLocaleString('fr-FR')+suf;if(p<1)requestAnimationFrame(a);})(st); cio.unobserve(el); }),{threshold:.6});
-  document.querySelectorAll('[data-count]').forEach(el=>cio.observe(el));
-
-  /* ============ MICRO : ripple au clic (boutons + cartes) ============ */
-  document.querySelectorAll('.btn, .card, .gal a').forEach(el=>{
-    el.addEventListener('click',e=>{
-      const r=el.getBoundingClientRect(), d=Math.max(r.width,r.height);
-      const rp=document.createElement('span'); rp.className='ripple';
-      rp.style.width=rp.style.height=d+'px'; rp.style.left=(e.clientX-r.left-d/2)+'px'; rp.style.top=(e.clientY-r.top-d/2)+'px';
-      if(getComputedStyle(el).position==='static') el.style.position='relative';
-      el.appendChild(rp); setTimeout(()=>rp.remove(),600);
-    });
-  });
-
-  /* ============ CURSEUR : gélule 3D + traînée ============ */
-  if(fine){
-    let mx=innerWidth/2,my=innerHeight/2, lastx=mx,lasty=my;
-    addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;});
-    const N=6, pills=[];
-    for(let i=0;i<N;i++){
-      const el=document.createElement('div'); el.className='pill'; el.innerHTML='<div class="body"><span class="glare"></span></div>';
-      el.style.opacity=(1-i/N*0.82).toFixed(2); document.body.appendChild(el);
-      pills.push({el, x:mx, y:my, ang:-18, s:(1-i/N*0.7)});
-    }
-    (function raf(){
-      let px=mx,py=my;
-      const vx=mx-lastx, vy=my-lasty; const moving=Math.hypot(vx,vy)>0.7;
-      const target = moving ? Math.atan2(vy,vx)*180/Math.PI : -18;
-      lastx=mx; lasty=my;
-      pills.forEach((o,i)=>{
-        o.x+=(px-o.x)*0.42; o.y+=(py-o.y)*0.42;
-        let d=target-o.ang; d=((d+180)%360+360)%360-180; // plus court chemin angulaire
-        o.ang+=d*(i===0?0.28:0.2);
-        o.el.style.transform=`translate(${o.x}px,${o.y}px) rotate(${o.ang}deg) scale(${o.s})`;
-        px=o.x; py=o.y;
-      });
-      requestAnimationFrame(raf);
-    })();
-  } else { document.body.classList.remove('cur-none'); }
-</script>
+<script type="module" src="site.js"></script>
 </body>
 </html>
