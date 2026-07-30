@@ -1,0 +1,41 @@
+name: Prix · baisses de prix officielles (BDPM)
+
+# Robot GRATUIT : suit le prix public officiel (BDPM CIS_CIP) des références du catalogue
+# réseau et détecte, par diff avec son propre instantané (prix-snapshot.json), les produits
+# dont le prix a BAISSÉ. Un prix qui baisse = stock qui se dévalorise → signal d'achat.
+# Écrit crm/v2/prix.json (servi à l'app) + crm/v2/prix-snapshot.json (baseline du prochain diff).
+# Aucune clé, aucun coût.
+
+on:
+  schedule:
+    - cron: '33 5 * * *'   # tous les jours (les révisions tarifaires CEPS tombent souvent le 1er)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: prix
+  cancel-in-progress: false
+
+jobs:
+  prix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Détecter les baisses de prix
+        run: python3 generate_prix.py
+      - name: Committer si changement
+        run: |
+          if git diff --quiet -- crm/v2/prix.json crm/v2/prix-snapshot.json; then
+            echo "Pas de changement (prix BDPM inchangés)."
+          else
+            git config user.name  "JARVIS copilote"
+            git config user.email "actions@users.noreplace.github.com"
+            git add crm/v2/prix.json crm/v2/prix-snapshot.json
+            git commit -m "data(prix): baisses de prix officielles BDPM $(date -u +%Y-%m-%d)"
+            git push
+          fi

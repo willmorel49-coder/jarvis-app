@@ -539,6 +539,7 @@
     if (_odisseData && _odisseData.week) s.push('Urgences sem. ' + String(_odisseData.week).slice(4));
     if (_saiCip && _saiCip.generated) s.push('Saison ' + fdate(_saiCip.generated));
     if (_mitmGen) s.push('MITM ' + fdate(_mitmGen));
+    if (_prixData && _prixData.generated) s.push('Prix BDPM ' + fdate(_prixData.generated));
     // Date réelle de l'inventaire plateforme = dénominateur des couvertures (audit : talon d'Achille).
     // On l'affiche et on alerte si le stock est vieux (> 35 j) car les jours-avant-rupture s'en trouvent optimistes.
     var stk = window.STOCK_IP && window.STOCK_IP.meta, stockTxt = '<b>stock plateforme = dernier inventaire importé</b> (photographie, pas temps réel)', warn = '';
@@ -788,6 +789,38 @@
     return toggle + band + body;
   }
 
+  // ═══ BAISSES DE PRIX OFFICIELLES (BDPM prix public, robot quotidien, diff par snapshot) ═══
+  var _prixState = 0, _prixData = null;
+  function ensurePrix() {
+    if (_prixData || _prixState) return;
+    _prixState = 1;
+    try {
+      var day = new Date().toISOString().slice(0, 10);
+      fetch('prix.json?d=' + day, { cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) { _prixData = j || {}; _prixState = 2; approRerender(); })
+        .catch(function () { _prixState = 2; });
+    } catch (e) { _prixState = 2; }
+  }
+  function prixCard() {
+    if (!_prixData) return '';
+    var d = _prixData, drops = d.drops || [];
+    if (!drops.length) {
+      // amorçage ou aucune baisse depuis le dernier relevé : présence honnête, pas de carte vide
+      return '<div class="ap-foot" style="margin-top:8px">💶 Surveillance des prix publics officiels active — <b>' + (d.nTracked || 0) + ' références suivies</b>. ' +
+        (d.baseline ? 'Relevé de départ posé : les baisses apparaîtront ici dès la prochaine révision tarifaire (souvent le 1<sup>er</sup> du mois).' : 'Aucune baisse depuis le dernier relevé.') + '</div>';
+    }
+    var rows = drops.slice(0, 12).map(function (x) {
+      return '<div class="ap-row"><div class="ap-nm">' + esc(x.d || x.c) +
+        '<small>' + (x.remb ? 'remb. ' + esc(x.remb) + ' · ' : '') + (x.n ? x.n + ' vendus (réseau)' : 'hors réseau') + '</small></div>' +
+        '<div class="ap-mini">' + fmtEur(x.old) + ' → <b>' + fmtEur(x.new) + '</b></div>' +
+        '<div class="ap-g"><span class="ap-down">▼ −' + x.pct + ' %</span></div></div>';
+    }).join('');
+    return card('pilo', 'Baisses de prix officielles', 'prix public BDPM en baisse depuis le dernier relevé — un stock qui se dévalorise, à ne pas surcharger', rows, 'var(--rose,#D5573B)') +
+      '<div class="ap-foot" style="margin:0">Prix public TTC officiel (BDPM). ' + (d.nDown || 0) + ' baisse' + ((d.nDown || 0) > 1 ? 's' : '') + ' · ' + (d.nUp || 0) + ' hausse' + ((d.nUp || 0) > 1 ? 's' : '') + ' sur ' + (d.nTracked || 0) + ' réfs suivies. Classé par baisse × volume réseau.</div>';
+  }
+  function fmtEur(v) { return (v == null ? '—' : String(v.toFixed ? v.toFixed(2) : v).replace('.', ',') + ' €'); }
+
   // ═══ ACTU APPRO (quotidien, gratuit) : fil d'actualité filtré appro + bloc PRÉDICTIF ═══
   var _infosState = 0, _infosData = null;
   function ensureInfos() {
@@ -853,6 +886,7 @@
       ensureSaisonCip(); // charge la saison par produit (Medic'AM, robot mensuel)
       ensureMitm();   // charge la liste des médicaments critiques MITM (ANSM, robot mensuel)
       ensureInfos();  // charge l'actu quotidienne (veille RSS gratuite, filtrée appro)
+      ensurePrix();   // charge les baisses de prix officielles (BDPM, robot quotidien)
       // ── Cockpit réassort (crash-safe : ne casse jamais la page si un flux manque) ──
       var kpiBand = '', reaCard = '', rosCard = '', radarHtml = '', etabHtml = '', basculesHtml = '', ansmHtml = '', epiHtml = '', hasHtml = '', saiCipHtml = '', carnetHtml = '', carnetCounts = null;
       try {
@@ -1000,6 +1034,7 @@
           '</div>' +
           card('cat', 'Nouveautés à référencer', 'AMM récentes (BDPM)', nouvRows, 'var(--ip-blue)') +
           card('pilo', 'Négo labos — ton levier', 'vrai volume réseau par génériqueur', negRows, '#0E7C86') +
+          prixCard() +
           '<div class="ap-foot">Négo = vrai sell-in réseau (WML) par génériqueur. Génériques : pas d\'abandon de marge Intégral. « Ça monte » / saison = Medic\'AM / BDPM.</div>';
       }
 
