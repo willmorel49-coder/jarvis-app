@@ -41,9 +41,9 @@
 <body>
   <header class="wrap">
     <div class="ey">Site vitrine · Intégral Pharma · V2026</div>
-    <h1>5 sites <em>finalisés.</em></h1>
-    <p class="lead">Cinq sites complets finalisés, chacun une D.A. et un effet de transition différents. Même marque, même vérité : <b>groupe de grossistes français indépendant</b>, 9 agences, aucune condition commerciale chiffrée. Clique « Ouvrir » pour parcourir le site (les effets se déclenchent au scroll).</p>
-    <div class="meta"><b>8 sites</b> · effets primés réutilisés (Codrops MIT) + WebGL (Vanta / react-bits) · <b>bleu IP + orange · DM Sans</b> · compatible Safari · responsive</div>
+    <h1>6 sites <em>finalisés.</em></h1>
+    <p class="lead">Six sites complets finalisés, chacun une D.A. et un effet de transition différents. Le <b>n°01</b> est le site <b>configuré brique par brique</b> (fond 3D au choix, gélule animée, carte 3D du réseau). Même marque, même vérité : <b>groupe de grossistes français indépendant</b>, 9 agences, aucune condition commerciale chiffrée. Clique « Ouvrir » pour parcourir le site (les effets se déclenchent au scroll).</p>
+    <div class="meta"><b>6 sites</b> · effets primés réutilisés (Codrops MIT) + WebGL (Vanta / react-bits / OGL) · <b>bleu IP + orange · DM Sans</b> · compatible Safari · responsive</div>
   </header>
 
   <main class="wrap"><div class="grid" id="grid"></div></main>
@@ -51,11 +51,12 @@
 
 <script>
   const SITES=[
-    {no:'01',name:'Manifeste Cinétique',fx:'ScrollTextMotion · Codrops',tag:'Kinétique',url:'gallery/da-manifeste/index.html',desc:"Typo géante qui se recompose au scroll. Navy + bleu IP + orange, éditorial et fort."},
-    {no:'02',name:'Vague Logistique',fx:'Vanta WAVES',tag:'Flux',url:'gallery/site-vague.html',desc:"Mer 3D navy + orange, waterline lumineuse, chiffres animés. Le flux logistique."},
-    {no:'03',name:'Aurore IP',fx:'Aurora WebGL · react-bits',tag:'Aurore',url:'gallery/site-aurore/index.html',desc:"Aurore fluide bleu IP → teal → orange (shader réécrit en WebGL, zéro dépendance)."},
-    {no:'04',name:'Teal & Sable',fx:'Vanta FOG · galerie H',tag:'Calme',url:'gallery/site-teal.html',desc:"Teal profond + sable + terracotta, galerie horizontale. Calme, côtier, intemporel."},
-    {no:'05',name:'Brume Claire',fx:'Vanta FOG',tag:'Clair',url:'gallery/site-brume.html',desc:"Monde clair : crème + vert botanique + orange, brume douce, bulles de verre. Santé premium."},
+    {no:'01',name:'Site configuré · brique par brique',fx:'OGL Iridescence · gélule 3D · carte 3D réseau',tag:'Configuré',url:'lab/mon-site.html',desc:"Le site assemblé à partir de vos choix : fond 3D interchangeable (Iridescence / Dark Veil / Halo Intégral), titre en mots décalés, curseur gélule, carte 3D du réseau (9 établissements), parcours, valeurs, contact."},
+    {no:'02',name:'Manifeste Cinétique',fx:'ScrollTextMotion · Codrops',tag:'Kinétique',url:'gallery/da-manifeste/index.html',desc:"Typo géante qui se recompose au scroll. Navy + bleu IP + orange, éditorial et fort."},
+    {no:'03',name:'Vague Logistique',fx:'Vanta WAVES',tag:'Flux',url:'gallery/site-vague.html',desc:"Mer 3D navy + orange, waterline lumineuse, chiffres animés. Le flux logistique."},
+    {no:'04',name:'Aurore IP',fx:'Aurora WebGL · react-bits',tag:'Aurore',url:'gallery/site-aurore/index.html',desc:"Aurore fluide bleu IP → teal → orange (shader réécrit en WebGL, zéro dépendance)."},
+    {no:'05',name:'Teal & Sable',fx:'Vanta FOG · galerie H',tag:'Calme',url:'gallery/site-teal.html',desc:"Teal profond + sable + terracotta, galerie horizontale. Calme, côtier, intemporel."},
+    {no:'06',name:'Brume Claire',fx:'Vanta FOG',tag:'Clair',url:'gallery/site-brume.html',desc:"Monde clair : crème + vert botanique + orange, brume douce, bulles de verre. Santé premium."},
   ];
   const g=document.getElementById('grid');
   g.innerHTML=SITES.map(s=>`<article class="card">
