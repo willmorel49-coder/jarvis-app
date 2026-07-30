@@ -1,0 +1,41 @@
+name: Demande · urgences par département (SurSaUD/Odissé)
+
+# Robot GRATUIT : passages aux urgences + actes SOS Médecins par PATHOLOGIE et par
+# DÉPARTEMENT (grippe/IRA, bronchiolite, gastro-entérite) — Santé publique France.
+# Plus fin que le Réseau Sentinelles (maille département + bronchiolite absente de
+# Sentinelles). Permet de pré-positionner l'ORL/pédiatrie sur le bon secteur avant la
+# vague comptoir. Écrit crm/v2/odisse.json. Aucune clé, aucun coût.
+
+on:
+  schedule:
+    - cron: '41 5 * * 2'   # chaque mardi (données hebdo SurSaUD)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: odisse
+  cancel-in-progress: false
+
+jobs:
+  odisse:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Recalculer les signaux urgences/département
+        run: python3 generate_odisse.py
+      - name: Committer si changement
+        run: |
+          if git diff --quiet -- crm/v2/odisse.json; then
+            echo "Pas de changement (SurSaUD inchangé)."
+          else
+            git config user.name  "JARVIS copilote"
+            git config user.email "actions@users.noreplace.github.com"
+            git add crm/v2/odisse.json
+            git commit -m "data(demande): urgences par département SurSaUD $(date -u +%Y-%m-%d)"
+            git push
+          fi
