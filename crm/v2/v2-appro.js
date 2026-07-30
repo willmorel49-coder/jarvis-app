@@ -115,9 +115,13 @@
       a[m - 1] += q;
     }
     var idx = {};
-    Object.keys(stk).forEach(function (c) {
+    // P1 (audit) : inclure aussi les fast-movers EN RUPTURE plateforme (vendus mais stock 0 = absents de STOCK_IP).
+    var keys = {};
+    Object.keys(stk).forEach(function (c) { keys[c] = 1; });
+    Object.keys(dem).forEach(function (c) { var a = dem[c]; if ((a[0] + a[1] + a[2] + a[3] + a[4] + a[5]) / 6 >= MINVEL) keys[c] = 1; });
+    Object.keys(keys).forEach(function (c) {
       var a = dem[c], tot = a ? (a[0] + a[1] + a[2] + a[3] + a[4] + a[5]) : 0;
-      var vM = tot / 6, st = stk[c], vD = vM / 30;
+      var vM = tot / 6, st = Math.max(0, stk[c] || 0), vD = vM / 30;   // stock borné à 0 (jamais de couverture négative)
       var cov = vD > 0 ? st / vD : (st > 0 ? 9999 : 0);
       var p = ps[c];
       var isRupt = !!rupt(c), tg = tend(c);
@@ -181,7 +185,7 @@
     { y: 2030, m: 2, d: 1, t: 'vig', ti: 'Vyndaqel (tafamidis) — PAS de Gx avant ~2030', sub: 'exclusivité orpheline + accords labo jusqu’en 2031', reco: 'rester sur le princeps' }
   ];
   function evDays(ev) { var now = new Date(); var t = new Date(ev.y, ev.m - 1, ev.d); return Math.round((t - now) / 86400000); }
-  function evZone(ev) { if (ev.t === 'vig') return 'surv'; var dd = evDays(ev); if (dd < 8) return 'now'; if (dd < 46) return 'prep'; if (dd < 200) return 'surv'; return null; }
+  function evZone(ev) { if (ev.t === 'vig') return 'surv'; var dd = evDays(ev); if (dd < -30) return null; if (dd < 8) return 'now'; if (dd < 46) return 'prep'; if (dd < 200) return 'surv'; return null; }   // audit #4 : masquer le vieux passé
 
   function radarSection(reaTop) {
     var zones = [['now', '#D5573B', 'Agir maintenant', 'à traiter cette semaine'], ['prep', '#C98A1A', 'Préparer', 'sous 30-45 jours'], ['surv', '#1E9E6A', 'Surveiller', '30 à 90 jours']];
@@ -259,7 +263,7 @@
     var mx = 0; ss.sites.forEach(function (s) { if (s.stock > mx) mx = s.stock; });
     var strip = ss.sites.map(function (s) {
       return '<div class="site"><div class="code">' + s.code + '</div><div class="qt mono">' + fmt(s.stock) + '</div>' +
-        '<div class="pct">' + Math.round(s.stock / ss.total * 100) + ' %</div><div class="sbar"><i style="width:' + Math.round(s.stock / mx * 100) + '%"></i></div></div>';
+        '<div class="pct">' + (ss.total ? Math.round(s.stock / ss.total * 100) : 0) + ' %</div><div class="sbar"><i style="width:' + (mx ? Math.round(s.stock / mx * 100) : 0) + '%"></i></div></div>';
     }).join('');
     var rows = reb.map(function (p) {
       var m = 0; etabs.forEach(function (e) { if (p.per[e] > m) m = p.per[e]; });
@@ -423,7 +427,7 @@
       if (!b[c]) return;
       var o = data[c], pm = win[0], pv = o.i[win[0] - 1];
       win.forEach(function (m) { if (o.i[m - 1] > pv) { pv = o.i[m - 1]; pm = m; } });
-      if (pv < 1.2) return;
+      if (pv < (pm === 1 ? 1.5 : 1.2)) return;   // audit P2 : pic janvier = renouvellements, seuil relevé
       cand.push({ c: c, pv: pv, pm: pm, q: b[c] });
     });
     if (!cand.length) return '';
@@ -506,6 +510,7 @@
     var d = new Date(Date.now() + Math.round(Math.max(0, daysAhead)) * 86400000);
     return d.getDate() + ' ' + MOIS_L[d.getMonth()];
   }
+  function secLab(cov) { return cov < 1 ? 'déjà à sec (stock 0)' : 'à sec ~' + dtLabel(cov); }   // audit #2 : pas de « à sec ~aujourd'hui »
   function carnet() {
     var idx = cipIndex();
     if (!idx || !Object.keys(idx).length) return null;
@@ -521,7 +526,7 @@
       var rupt = V2.rupture ? !!V2.rupture(c) : false;
       var s = sai[c], sUp = 0, sM = 0;
       if (s && s.i) win.forEach(function (m) { if (s.i[m - 1] > sUp) { sUp = s.i[m - 1]; sM = m; } });
-      var seasonUp = sUp >= 1.2;
+      var seasonUp = sUp >= (sM === 1 ? 1.5 : 1.2);   // audit P2 : pic janvier = renouvellements chroniques → seuil relevé
       var isGen = genSet ? !!genSet[c] : false;
       var verdict, cls, prio, qty = 0, reason = '';
       if ((o.stale === 1 || o.cov > 90) && o.st > 0) {
@@ -529,8 +534,8 @@
         C.red++; C.redEur += o.st * (o.ppht || 0);
       } else if (o.cov < 7 && o.vM >= 5) {
         qty = o.qcmd;
-        if (rupt) { verdict = 'SÉCURISER'; cls = 'sec'; reason = 'tension ANSM · à sec ~' + dtLabel(o.cov) + ' — commander maintenant'; C.sec++; }
-        else { verdict = 'ACHETER'; cls = 'buy'; reason = 'à sec ~' + dtLabel(o.cov) + ' — commander maintenant'; C.buy++; }
+        if (rupt) { verdict = 'SÉCURISER'; cls = 'sec'; reason = 'tension ANSM · ' + secLab(o.cov) + ' — commander maintenant'; C.sec++; }
+        else { verdict = 'ACHETER'; cls = 'buy'; reason = secLab(o.cov) + ' — commander maintenant'; C.buy++; }
         prio = 5; C.eur += qty * (o.ppht || 0);
       } else if (o.qcmd > 0 && o.cov < 21) {
         verdict = 'ACHETER'; cls = 'buy'; prio = 4; qty = o.qcmd;
@@ -555,7 +560,7 @@
   }
   function carnetRow(x) {
     var chips = '';
-    if (x.mitm) chips += ' <span class="ap-tag" style="color:#B02A37;background:#FDE7EA;border:1px solid #F3B0BC">critique</span>';
+    if (x.mitm) { var crit = x.rupt || (x.o && x.o.cov < 7); chips += crit ? ' <span class="ap-tag" style="color:#B02A37;background:#FDE7EA;border:1px solid #F3B0BC">critique</span>' : ' <span class="ap-tag" style="color:#6B7280;background:var(--card-2,#F6F8FB);border:1px solid var(--line)">surveillé ANSM</span>'; }   // audit P3 : « critique » réservé au croisement avec l'état de stock
     if (x.rupt) chips += ' <span class="ap-tag ru">ANSM</span>';
     if (x.season) chips += ' <span class="ap-tag" style="color:#6D5AE6;background:#EFEBFB;border:1px solid #D3C9F5">saison</span>';
     if (x.gen && x.cls !== 'arb') chips += ' <span class="ap-tag" style="color:#0E7C86;background:#E5F4F5;border:1px solid #B8E0E3">Gx</span>';
@@ -608,7 +613,7 @@
     }
     // signaux
     var sig = [];
-    if (isMitm(cip)) sig.push('<span class="ap-tag" style="color:#B02A37;background:#FDE7EA;border:1px solid #F3B0BC">MITM — médicament critique</span>');
+    if (isMitm(cip)) { var mc = (V2.rupture && V2.rupture(cip)) || (o && o.cov < 7); sig.push(mc ? '<span class="ap-tag" style="color:#B02A37;background:#FDE7EA;border:1px solid #F3B0BC">critique — MITM en tension</span>' : '<span class="ap-tag" style="color:#6B7280;background:var(--card-2,#F6F8FB);border:1px solid var(--line)">MITM — surveillé ANSM</span>'); }
     if (V2.rupture && V2.rupture(cip)) sig.push('<span class="ap-tag ru">tension ANSM</span>');
     var sai = _saiCip && _saiCip.data && _saiCip.data[cip];
     if (sai) { var pk = sai.p; sig.push('<span class="ap-tag" style="color:#6D5AE6;background:#EFEBFB;border:1px solid #D3C9F5">pic saison ' + MOIS_L[pk - 1] + '</span>'); }
@@ -617,7 +622,7 @@
     if (mo != null) sig.push('<span class="ap-tag" style="color:' + (mo > 0 ? 'var(--c-opp)' : '#a8651a') + ';background:var(--card-2,#F6F8FB);border:1px solid var(--line)">momentum ' + (mo > 0 ? '▲' : '▼') + '</span>');
     var net = p ? p.net : o.ppht, rpct = p ? p.rpct : 0;
     var kpis = '<div class="tk-kpis">' +
-      '<div class="tk-kpi"><b>' + Math.round(o.cov) + ' j</b><span>couverture</span></div>' +
+      '<div class="tk-kpi"><b>' + (o.cov >= 9999 ? 'jamais' : Math.round(o.cov) + ' j') + '</b><span>couverture</span></div>' +
       '<div class="tk-kpi"><b>' + fmt(Math.round(o.vM)) + '</b><span>ventes/mois</span></div>' +
       '<div class="tk-kpi"><b>' + fmt(o.st) + '</b><span>en stock</span></div>' +
       '<div class="tk-kpi"><b style="color:var(--c-opp)">' + (o.qcmd > 0 ? '+' + fmt(o.qcmd) : '—') + '</b><span>à commander</span></div>' +
