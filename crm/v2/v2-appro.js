@@ -472,6 +472,21 @@
   // ═══ CARNET D'ACHAT DU JOUR — fusion de tous les signaux en décisions (façon salle de marché) ═══
   // Chaque produit stocké = une position : couverture (runway), demande, signaux (rupture,
   // saison, générique) → un VERDICT + une quantité. Onglets par verdict · ticket au clic · export.
+  // MITM — médicaments d'intérêt thérapeutique majeur (liste ANSM, robot mensuel) : priorité max
+  var _mitmState = 0, _mitmSet = null;
+  function ensureMitm() {
+    if (_mitmSet || _mitmState) return;
+    _mitmState = 1;
+    try {
+      var day = new Date().toISOString().slice(0, 10);
+      fetch('mitm.json?d=' + day, { cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) { var s = {}; ((j && j.cips) || []).forEach(function (c) { s[c] = 1; }); _mitmSet = s; _mitmState = 2; try { V2.render(); } catch (e) {} })
+        .catch(function () { _mitmSet = {}; _mitmState = 2; });
+    } catch (e) { _mitmSet = {}; _mitmState = 2; }
+  }
+  function isMitm(c) { return !!(_mitmSet && _mitmSet[c]); }
+
   var _bookTab = 'all', _carnetActs = null;
   var ORDER_LEAD = 4; // délai fournisseur par défaut (jours) pour la date « commander avant »
   function dtLabel(daysAhead) {
@@ -514,7 +529,9 @@
       } else if (isGen) {
         verdict = 'ARBITRER'; cls = 'arb'; prio = 2; reason = 'générique dispo → basculer'; C.arb++;
       } else return;
-      acts.push({ c: c, name: (ps[c] && ps[c].d) || c, o: o, v: verdict, cls: cls, prio: prio, qty: qty, reason: reason, rupt: rupt, season: seasonUp, gen: isGen });
+      var mitm = isMitm(c);
+      if (mitm && (cls === 'sec' || cls === 'buy')) prio += 0.5;   // médicament critique → remonte dans le carnet
+      acts.push({ c: c, name: (ps[c] && ps[c].d) || c, o: o, v: verdict, cls: cls, prio: prio, qty: qty, reason: reason, rupt: rupt, season: seasonUp, gen: isGen, mitm: mitm });
     });
     acts.sort(function (a, b) { return (b.prio - a.prio) || (a.o.cov - b.o.cov); });
     _carnetActs = acts;
@@ -522,6 +539,7 @@
   }
   function carnetRow(x) {
     var chips = '';
+    if (x.mitm) chips += ' <span class="ap-tag" style="color:#B02A37;background:#FDE7EA;border:1px solid #F3B0BC">critique</span>';
     if (x.rupt) chips += ' <span class="ap-tag ru">ANSM</span>';
     if (x.season) chips += ' <span class="ap-tag" style="color:#6D5AE6;background:#EFEBFB;border:1px solid #D3C9F5">saison</span>';
     if (x.gen && x.cls !== 'arb') chips += ' <span class="ap-tag" style="color:#0E7C86;background:#E5F4F5;border:1px solid #B8E0E3">Gx</span>';
@@ -572,6 +590,7 @@
     }
     // signaux
     var sig = [];
+    if (isMitm(cip)) sig.push('<span class="ap-tag" style="color:#B02A37;background:#FDE7EA;border:1px solid #F3B0BC">MITM — médicament critique</span>');
     if (V2.rupture && V2.rupture(cip)) sig.push('<span class="ap-tag ru">tension ANSM</span>');
     var sai = _saiCip && _saiCip.data && _saiCip.data[cip];
     if (sai) { var pk = sai.p; sig.push('<span class="ap-tag" style="color:#6D5AE6;background:#EFEBFB;border:1px solid #D3C9F5">pic saison ' + MOIS_L[pk - 1] + '</span>'); }
@@ -630,6 +649,7 @@
       ensureEpidemio(); // charge les signaux de demande (Sentinelles, robot quotidien)
       ensureHas();    // charge l'anticipation réglementaire HAS (robot mensuel)
       ensureSaisonCip(); // charge la saison par produit (Medic'AM, robot mensuel)
+      ensureMitm();   // charge la liste des médicaments critiques MITM (ANSM, robot mensuel)
       // ── Cockpit réassort (crash-safe : ne casse jamais la page si un flux manque) ──
       var kpiBand = '', reaCard = '', rosCard = '', radarHtml = '', etabHtml = '', basculesHtml = '', ansmHtml = '', epiHtml = '', hasHtml = '', saiCipHtml = '', carnetHtml = '';
       try {
