@@ -549,6 +549,8 @@
       '<div class="cb-qt">' + (x.qty > 0 ? '+' + fmt(x.qty) + '<small>u</small>' : '—') + '</div></div>';
   }
   V2.approTab = function (t) { _bookTab = t; if (V2.render) V2.render(); };
+  var _section = 'today';   // espace affiché : today / anticiper / stock / marche
+  V2.approSec = function (s) { _section = s; if (V2.render) V2.render(); try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {} };
   V2.approExport = function () {
     var buys = (_carnetActs || []).filter(function (a) { return a.qty > 0; });
     if (!buys.length) { try { alert('Aucune ligne à commander.'); } catch (e) {} return; }
@@ -651,12 +653,13 @@
       ensureSaisonCip(); // charge la saison par produit (Medic'AM, robot mensuel)
       ensureMitm();   // charge la liste des médicaments critiques MITM (ANSM, robot mensuel)
       // ── Cockpit réassort (crash-safe : ne casse jamais la page si un flux manque) ──
-      var kpiBand = '', reaCard = '', rosCard = '', radarHtml = '', etabHtml = '', basculesHtml = '', ansmHtml = '', epiHtml = '', hasHtml = '', saiCipHtml = '', carnetHtml = '';
+      var kpiBand = '', reaCard = '', rosCard = '', radarHtml = '', etabHtml = '', basculesHtml = '', ansmHtml = '', epiHtml = '', hasHtml = '', saiCipHtml = '', carnetHtml = '', carnetCounts = null;
       try {
         if (window.WML_SALES && window.STOCK_IP) {
           var cb = carnet();
           if (cb && cb.acts.length) {
             var C = cb.counts, acts = cb.acts;
+            carnetCounts = C;
             var TABS = [['all', 'Tous', acts.length], ['buy', 'Acheter', C.buy], ['sec', 'Sécuriser', C.sec], ['pre', 'Pré-acheter', C.pre], ['arb', 'Arbitrer', C.arb], ['red', 'Alléger', C.red]];
             var tabBar = TABS.map(function (t) { return '<button class="cb-tab' + (_bookTab === t[0] ? ' on' : '') + '" onclick="V2.approTab(\'' + t[0] + '\')">' + t[1] + ' <b>' + t[2] + '</b></button>'; }).join('');
             var shown = _bookTab === 'all' ? acts : acts.filter(function (a) { return a.cls === _bookTab; });
@@ -752,33 +755,56 @@
           '<div><h3>' + title + '</h3><div class="ap-sub">' + sub + '</div></div></div>' + body + '</div>';
       }
 
-      root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
-        '<div class="v2-wrap">' +
-          '<div class="v2-page-title">Appro Intégral</div>' +
-          '<div class="v2-page-sub">Acheter au quotidien comme une salle de marché : le carnet du jour fusionne tous les signaux en décisions chiffrées, puis le détail par thème. Outil de l\'équipe achats.</div>' +
-          carnetHtml +
-          kpiBand +
-          '<div class="ap-sec">Radar 90 jours — à anticiper</div>' +
-          '<div class="ap-secsub">Ce qui va bouger la demande : remboursements, génériques, baisses de prix, saison, ruptures — croisé avec ton réassort urgent en temps réel.</div>' +
-          radarHtml +
-          epiHtml +
-          hasHtml +
-          '<div class="ap-sec">Piloter les achats</div>' +
-          reaCard +
-          saiCipHtml +
-          ansmHtml +
-          basculesHtml +
-          etabHtml +
-          rosCard +
-          '<div class="ap-sec">Intelligence marché</div>' +
+      // ── Vue globale (3 secondes) : les 4 chiffres qui disent où agir ──
+      var CC = carnetCounts || { buy: 0, sec: 0, pre: 0, arb: 0, red: 0, eur: 0, redEur: 0 };
+      var nAnticip = 0;
+      try { EVENTS.forEach(function (ev) { var z = evZone(ev); if (z === 'now' || z === 'prep') nAnticip++; }); if (_generData && _generData.newGeneric) nAnticip += _generData.newGeneric.length; } catch (e) {}
+      function htile(sec, big, lab, sub, col) {
+        return '<button class="ap-htile" style="--hc:' + col + '" onclick="V2.approSec(\'' + sec + '\')">' +
+          '<div class="ap-hbig">' + big + '</div><div class="ap-hlab">' + lab + '</div><div class="ap-hsub">' + sub + '</div></button>';
+      }
+      var eurEng = (V2.fmtEur ? V2.fmtEur(CC.eur) : fmt(CC.eur));
+      var eurDorm = (V2.fmtEur ? V2.fmtEur(CC.redEur) : fmt(CC.redEur));
+      var hero = '<div class="ap-hero">' +
+        htile('today', fmt(CC.buy + CC.sec), 'à commander', eurEng + ' à engager', 'var(--ip-blue)') +
+        htile('today', fmt(CC.sec), 'à sécuriser', 'ruptures critiques', '#D5573B') +
+        htile('anticiper', fmt(nAnticip), 'à anticiper', 'événements à venir', '#6D5AE6') +
+        htile('stock', eurDorm, 'capital dormant', fmt(CC.red) + ' réfs à alléger', 'var(--c-amber)') +
+        '</div>';
+
+      // ── Navigation : 4 espaces clairs ──
+      var NAV = [['today', 'Aujourd’hui'], ['anticiper', 'Anticiper'], ['stock', 'Stock & sites'], ['marche', 'Marché & négo']];
+      var nav = '<div class="ap-nav">' + NAV.map(function (n) {
+        return '<button class="ap-navb' + (_section === n[0] ? ' on' : '') + '" onclick="V2.approSec(\'' + n[0] + '\')">' + n[1] + '</button>';
+      }).join('') + '</div>';
+
+      // ── Contenu selon l'espace ──
+      function secHead(t, s) { return '<div class="ap-sec">' + t + '</div>' + (s ? '<div class="ap-secsub">' + s + '</div>' : ''); }
+      var content = '';
+      if (_section === 'today') {
+        content = carnetHtml || '<div class="v2-card" style="padding:22px;text-align:center;color:var(--muted)">Chargement du carnet…</div>';
+      } else if (_section === 'anticiper') {
+        content = secHead('Radar 90 jours', 'ce qui va bouger la demande : remboursements, génériques, baisses de prix, saison, ruptures') + radarHtml +
+          secHead('Signaux &amp; échéances') + epiHtml + saiCipHtml + hasHtml + ansmHtml;
+      } else if (_section === 'stock') {
+        content = kpiBand + secHead('Réassort &amp; stock') + reaCard + etabHtml + basculesHtml + rosCard;
+      } else {
+        content = secHead('Intelligence marché') +
           card('spark', 'Ça monte', 'produits en croissance, présents dans le réseau — à renforcer au stock', risRows, 'var(--c-opp)') +
           '<div class="ap-grid2">' +
             card('alert', 'Ruptures à sécuriser', 'tension ANSM sur des produits que le réseau achète', rupRows, 'var(--c-amber)') +
             card('spark', 'La saison arrive', 'classes qui montent le mois prochain (Medic\'AM)', saiRows, '#6D5AE6') +
           '</div>' +
-          card('cat', 'Nouveautés à référencer', 'AMM récentes (BDPM) — anticiper le référencement', nouvRows, 'var(--ip-blue)') +
-          card('pilo', 'Négo labos — ton levier', 'vrai volume réseau (sell-in WML) par génériqueur — poids de négociation chiffré', negRows, '#0E7C86') +
-          '<div class="ap-foot">Négo labos = vrai sell-in réseau (WML) par génériqueur. Génériques : pas d\'abandon de marge Intégral (les génériqueurs gèrent leurs remises). « Ça monte » / saison = Medic\'AM / BDPM annualisés. Princeps : labo non mappé.</div>' +
+          card('cat', 'Nouveautés à référencer', 'AMM récentes (BDPM)', nouvRows, 'var(--ip-blue)') +
+          card('pilo', 'Négo labos — ton levier', 'vrai volume réseau par génériqueur', negRows, '#0E7C86') +
+          '<div class="ap-foot">Négo = vrai sell-in réseau (WML) par génériqueur. Génériques : pas d\'abandon de marge Intégral. « Ça monte » / saison = Medic\'AM / BDPM.</div>';
+      }
+
+      root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
+        '<div class="v2-wrap">' +
+          '<div class="v2-page-title">Appro Intégral</div>' +
+          '<div class="v2-page-sub">Ta vue du jour en un coup d\'œil — clique un chiffre ou un espace pour agir.</div>' +
+          hero + nav + content +
         '</div>';
     }
   };
@@ -857,6 +883,17 @@
       '.tk-bar b{font-size:10px;font-weight:700;color:var(--ip-ink);font-family:var(--mono)}.tk-bar span{font-size:9.5px;color:var(--muted);font-weight:600}' +
       '.tk-sites{display:flex;align-items:flex-end;gap:8px;height:52px;margin-bottom:4px}' +
       '.tk-site{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px}.tk-site i{width:100%;max-width:26px;background:#0E7C86;border-radius:3px 3px 0 0;display:block}.tk-site span{font-size:9px;font-weight:700;color:var(--muted)}.tk-site b{font-size:9.5px;font-family:var(--mono);color:var(--ip-ink)}' +
+      /* vue globale (hero 4 tuiles) + navigation */
+      '.ap-hero{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}' +
+      '.ap-htile{text-align:left;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--hc);border-radius:14px;padding:13px 15px;cursor:pointer;transition:.15s}' +
+      '.ap-htile:hover{box-shadow:0 4px 14px rgba(16,19,28,.08);transform:translateY(-1px)}' +
+      '.ap-hbig{font-size:26px;font-weight:800;font-family:var(--mono);color:var(--hc);letter-spacing:-.02em;line-height:1}' +
+      '.ap-hlab{font-size:13px;font-weight:800;color:var(--ip-ink);margin-top:5px}' +
+      '.ap-hsub{font-size:11px;color:var(--muted);font-weight:600;margin-top:1px}' +
+      '.ap-nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;position:sticky;top:0;z-index:10;background:var(--bg,#EEF1F6);padding:8px 0}' +
+      '.ap-navb{flex:1;min-width:120px;font-size:13.5px;font-weight:800;color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:11px;padding:10px 8px;cursor:pointer;transition:.15s}' +
+      '.ap-navb:hover{border-color:#C9D2E0}.ap-navb.on{background:var(--ip-blue);color:#fff;border-color:var(--ip-blue)}' +
+      '@media(max-width:640px){.ap-hero{grid-template-columns:1fr 1fr}.ap-navb{min-width:0;font-size:12.5px;padding:9px 4px}}' +
       '.ap-sec{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--ip-ink);margin:22px 0 2px}' +
       '.ap-secsub{font-size:12px;color:var(--muted);margin:0 0 12px;line-height:1.5}' +
       /* radar */
