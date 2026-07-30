@@ -540,6 +540,7 @@
     if (_saiCip && _saiCip.generated) s.push('Saison ' + fdate(_saiCip.generated));
     if (_mitmGen) s.push('MITM ' + fdate(_mitmGen));
     if (_prixData && _prixData.generated) s.push('Prix BDPM ' + fdate(_prixData.generated));
+    if (_rapData && _rapData.generated) s.push('Rappels ' + fdate(_rapData.generated));
     // Date réelle de l'inventaire plateforme = dénominateur des couvertures (audit : talon d'Achille).
     // On l'affiche et on alerte si le stock est vieux (> 35 j) car les jours-avant-rupture s'en trouvent optimistes.
     var stk = window.STOCK_IP && window.STOCK_IP.meta, stockTxt = '<b>stock plateforme = dernier inventaire importé</b> (photographie, pas temps réel)', warn = '';
@@ -821,6 +822,38 @@
   }
   function fmtEur(v) { return (v == null ? '—' : String(v.toFixed ? v.toFixed(2) : v).replace('.', ',') + ' €'); }
 
+  // ═══ RAPPELS DE PRODUITS (RappelConso/DGCCRF, robot hebdo) — parapharma + match catalogue ═══
+  var _rapState = 0, _rapData = null;
+  function ensureRappels() {
+    if (_rapData || _rapState) return;
+    _rapState = 1;
+    try {
+      var day = new Date().toISOString().slice(0, 10);
+      fetch('rappels.json?d=' + day, { cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) { _rapData = j || {}; _rapState = 2; approRerender(); })
+        .catch(function () { _rapState = 2; });
+    } catch (e) { _rapState = 2; }
+  }
+  function rappelRow(x, strong) {
+    var lien = x.url ? '<a href="' + esc(x.url) + '" target="_blank" rel="noopener" class="ap-rap-lk">fiche ▸</a>' : '';
+    return '<div class="ap-row"><div class="ap-nm">' + esc(x.d || x.gtin || '') +
+      '<small>' + (x.marque ? esc(x.marque) + ' · ' : '') + (x.date ? fdate(x.date) : '') + (strong && x.n ? ' · ' + x.n + ' vendus (réseau)' : '') + (x.motif ? ' — ' + esc(x.motif) : '') + '</small></div>' +
+      '<div class="ap-mini">' + (x.risque ? esc(x.risque) : '') + ' ' + lien + '</div></div>';
+  }
+  function rappelsCard() {
+    if (!_rapData) return '';
+    var m = _rapData.matched || [], p = _rapData.para || [], out = '';
+    if (m.length) {
+      out += card('alert', 'Rappel sur une réf que le réseau distribue', 'produit rappelé (RappelConso) présent dans le catalogue réseau — stopper la distribution, prévenir le fournisseur', m.slice(0, 10).map(function (x) { return rappelRow(x, true); }).join(''), 'var(--rose,#D5573B)');
+    }
+    if (p.length) {
+      out += card('cat', 'Rappels parapharma récents', 'cosmétiques / hygiène-beauté rappelés (DGCCRF) — à retirer du comptoir', p.slice(0, 12).map(function (x) { return rappelRow(x, false); }).join(''), 'var(--c-amber)') +
+        '<div class="ap-foot" style="margin:0">RappelConso (DGCCRF). Rappels médicaments = onglet ANSM. ' + (_rapData.nMatched || 0) + ' réf réseau · ' + (_rapData.nPara || 0) + ' parapharma récents.</div>';
+    }
+    return out;
+  }
+
   // ═══ ACTU APPRO (quotidien, gratuit) : fil d'actualité filtré appro + bloc PRÉDICTIF ═══
   var _infosState = 0, _infosData = null;
   function ensureInfos() {
@@ -863,7 +896,8 @@
       '<div class="v2-card ap-card" style="padding:6px 4px">' + predHtml + '</div>' +
       '<div class="ap-sec">Actualité appro du jour</div>' +
       '<div class="ap-secsub">ruptures, sécurité, réglementaire — ANSM &amp; presse pro (RSS gratuit, quotidien)</div>' +
-      '<div class="v2-card ap-card" style="padding:0">' + news + '</div>';
+      '<div class="v2-card ap-card" style="padding:0">' + news + '</div>' +
+      (rappelsCard() ? '<div class="ap-sec">Rappels de produits</div><div class="ap-secsub">RappelConso (DGCCRF) — parapharma &amp; réfs du réseau (les rappels médicaments sont dans l’onglet ANSM)</div>' + rappelsCard() : '');
   }
 
   V2.pages.appro = {
@@ -887,6 +921,7 @@
       ensureMitm();   // charge la liste des médicaments critiques MITM (ANSM, robot mensuel)
       ensureInfos();  // charge l'actu quotidienne (veille RSS gratuite, filtrée appro)
       ensurePrix();   // charge les baisses de prix officielles (BDPM, robot quotidien)
+      ensureRappels(); // charge les rappels de produits (RappelConso, robot hebdo)
       // ── Cockpit réassort (crash-safe : ne casse jamais la page si un flux manque) ──
       var kpiBand = '', reaCard = '', rosCard = '', radarHtml = '', etabHtml = '', basculesHtml = '', ansmHtml = '', epiHtml = '', hasHtml = '', saiCipHtml = '', carnetHtml = '', carnetCounts = null;
       try {
@@ -1168,6 +1203,7 @@
       '.ac-nm{min-width:0}.ac-nm b{display:block;font-size:13.5px;font-weight:700;color:var(--ip-ink);line-height:1.3}.ac-nm span{font-size:11.5px;color:var(--muted);font-weight:600}' +
       '.ap-fresh{font-size:11px;color:var(--muted);line-height:1.5;margin-top:20px;padding-top:12px;border-top:1px solid var(--line)}.ap-fresh b{color:var(--ip-ink)}' +
       '.ap-fresh-warn{font-size:11.5px;line-height:1.5;margin-top:8px;padding:8px 11px;border-radius:9px;background:rgba(213,87,59,.09);border:1px solid rgba(213,87,59,.28);color:var(--rose,#D5573B)}' +
+      '.ap-rap-lk{color:var(--ip-blue,#0050E6);font-weight:600;text-decoration:none;white-space:nowrap}' +
       /* radar */
       '.rad{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:6px}' +
       '.rzone{padding:0;overflow:hidden}' +
