@@ -473,7 +473,7 @@
   // Chaque produit stocké = une position : couverture (runway), demande, signaux (rupture,
   // saison, générique) → un VERDICT + une quantité. Onglets par verdict · ticket au clic · export.
   // MITM — médicaments d'intérêt thérapeutique majeur (liste ANSM, robot mensuel) : priorité max
-  var _mitmState = 0, _mitmSet = null;
+  var _mitmState = 0, _mitmSet = null, _mitmGen = null;
   function ensureMitm() {
     if (_mitmSet || _mitmState) return;
     _mitmState = 1;
@@ -481,9 +481,22 @@
       var day = new Date().toISOString().slice(0, 10);
       fetch('mitm.json?d=' + day, { cache: 'no-store' })
         .then(function (r) { return r.ok ? r.json() : null; })
-        .then(function (j) { var s = {}; ((j && j.cips) || []).forEach(function (c) { s[c] = 1; }); _mitmSet = s; _mitmState = 2; try { V2.render(); } catch (e) {} })
+        .then(function (j) { var s = {}; ((j && j.cips) || []).forEach(function (c) { s[c] = 1; }); _mitmSet = s; _mitmGen = j && j.generated; _mitmState = 2; try { V2.render(); } catch (e) {} })
         .catch(function () { _mitmSet = {}; _mitmState = 2; });
     } catch (e) { _mitmSet = {}; _mitmState = 2; }
+  }
+  // ── Couche de confiance : fraîcheur des sources (recommandation stratégie : fiabiliser d'abord) ──
+  function fdate(iso) { if (!iso) return '—'; var p = String(iso).slice(0, 10).split('-'); return p.length >= 3 ? p[2] + '/' + p[1] : String(iso); }
+  function freshnessBar() {
+    var s = [];
+    if (_ansmData && _ansmData.generated) s.push('Ruptures ANSM ' + fdate(_ansmData.generated));
+    if (_generData && _generData.generated) s.push('Génériques ' + fdate(_generData.generated));
+    if (_hasData && _hasData.generated) s.push('HAS ' + fdate(_hasData.generated));
+    if (_epiData && _epiData.week) s.push('Épidémio sem. ' + String(_epiData.week).slice(4));
+    if (_saiCip && _saiCip.generated) s.push('Saison ' + fdate(_saiCip.generated));
+    if (_mitmGen) s.push('MITM ' + fdate(_mitmGen));
+    if (!s.length) return '';
+    return '<div class="ap-fresh">🕓 Sources à jour : ' + s.join(' · ') + ' · <b>stock plateforme = dernier inventaire importé</b> (photographie, pas temps réel). Vitesse = ventes réseau janv.-juin 2026.</div>';
   }
   function isMitm(c) { return !!(_mitmSet && _mitmSet[c]); }
 
@@ -939,7 +952,7 @@
         '<div class="v2-wrap">' +
           '<div class="v2-page-title">Appro Intégral</div>' +
           '<div class="v2-page-sub">Ta vue du jour en un coup d\'œil — clique un chiffre ou un espace pour agir.</div>' +
-          hero + nav + content +
+          hero + nav + content + freshnessBar() +
         '</div>';
     }
   };
@@ -1063,6 +1076,7 @@
       '.ac-news{display:flex;align-items:flex-start;gap:11px;padding:12px 14px;border-top:1px solid var(--line);text-decoration:none}.ac-news:first-child{border-top:0}.ac-news:hover{background:var(--card-2,#F6F8FB)}' +
       '.ac-cat{flex:none;font-size:10px;font-weight:800;color:#fff;border-radius:999px;padding:3px 9px;margin-top:1px;white-space:nowrap}' +
       '.ac-nm{min-width:0}.ac-nm b{display:block;font-size:13.5px;font-weight:700;color:var(--ip-ink);line-height:1.3}.ac-nm span{font-size:11.5px;color:var(--muted);font-weight:600}' +
+      '.ap-fresh{font-size:11px;color:var(--muted);line-height:1.5;margin-top:20px;padding-top:12px;border-top:1px solid var(--line)}.ap-fresh b{color:var(--ip-ink)}' +
       /* radar */
       '.rad{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:6px}' +
       '.rzone{padding:0;overflow:hidden}' +
