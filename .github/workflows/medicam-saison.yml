@@ -1,0 +1,42 @@
+name: Veille appro · saison produit (Medic'AM)
+
+# Robot GRATUIT : reconstruit la saisonnalité PAR PRODUIT à partir de Medic'AM
+# (Assurance Maladie, boîtes remboursées par CIP13 et par mois, 2 années pleines).
+# Indice mensuel par produit → « pré-commander avant le pic historique ».
+# Écrit crm/v2/saison-cip.json (restreint au catalogue). Aucune clé, aucun coût.
+
+on:
+  schedule:
+    - cron: '27 4 5 * *'   # le 5 de chaque mois (Medic'AM publié mensuellement)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: medicam-saison
+  cancel-in-progress: false
+
+jobs:
+  saison:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Installer les dépendances
+        run: pip install xlrd
+      - name: Recalculer la saison produit
+        run: python3 generate_medicam_saison.py
+      - name: Committer si changement
+        run: |
+          if git diff --quiet -- crm/v2/saison-cip.json; then
+            echo "Pas de changement (Medic'AM inchangé)."
+          else
+            git config user.name  "JARVIS copilote"
+            git config user.email "actions@users.noreplace.github.com"
+            git add crm/v2/saison-cip.json
+            git commit -m "data(veille): saison produit Medic'AM $(date -u +%Y-%m-%d)"
+            git push
+          fi

@@ -394,8 +394,49 @@
   function boughtSet() {
     var S = window.WML_SALES; if (!S) return {};
     if (_bought && _boughtRef === S) return _bought;
-    var b = {}; for (var i = 0; i < S.length; i++) { var r = S[i]; if (r[4] > 0) b[String(r[3])] = 1; }
+    var b = {}; for (var i = 0; i < S.length; i++) { var r = S[i]; if (r[4] > 0) { var c = String(r[3]); b[c] = (b[c] || 0) + r[4]; } }
     _bought = b; _boughtRef = S; return b;
+  }
+
+  // ═══ SAISON PAR PRODUIT (Medic'AM 2 ans, robot mensuel) — pré-commander avant le pic ═══
+  var _saiState = 0, _saiCip = null;
+  function ensureSaisonCip() {
+    if (_saiCip || _saiState) return;
+    _saiState = 1;
+    try {
+      var day = new Date().toISOString().slice(0, 10);
+      fetch('saison-cip.json?d=' + day, { cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) { _saiCip = j || {}; _saiState = 2; try { V2.render(); } catch (e) {} })
+        .catch(function () { _saiState = 2; });
+    } catch (e) { _saiState = 2; }
+  }
+  function saisonCipCard() {
+    if (!_saiCip) return '';   // discret : rien tant que non chargé (évite le clignotement)
+    var data = _saiCip.data || {}; if (!Object.keys(data).length) return '';
+    var b = boughtSet();
+    var now = new Date().getMonth() + 1;
+    var win = [now % 12 + 1, (now + 1) % 12 + 1, (now + 2) % 12 + 1];   // 3 prochains mois
+    var P = window.PROD_STATS || [], ps = {}; for (var i = 0; i < P.length; i++) ps[String(P[i].c)] = P[i];
+    var cand = [];
+    Object.keys(data).forEach(function (c) {
+      if (!b[c]) return;
+      var o = data[c], pm = win[0], pv = o.i[win[0] - 1];
+      win.forEach(function (m) { if (o.i[m - 1] > pv) { pv = o.i[m - 1]; pm = m; } });
+      if (pv < 1.2) return;
+      cand.push({ c: c, pv: pv, pm: pm, q: b[c] });
+    });
+    if (!cand.length) return '';
+    cand.sort(function (a, b2) { return (b2.pv * b2.q) - (a.pv * a.q); });
+    var rows = cand.slice(0, 12).map(function (x) {
+      return '<div class="ap-row"><div class="ap-nm">' + esc(cap(((ps[x.c] && ps[x.c].d) || x.c).toLowerCase())) +
+        '<small>pic en ' + MOIS_L[x.pm - 1] + ' · +' + Math.round((x.pv - 1) * 100) + ' % vs moyenne (Medic\'AM 2 ans)</small></div>' +
+        '<div class="ap-mini">' + fmt(x.q) + ' u/an réseau</div>' +
+        '<div class="ap-st ok">pré-commander</div></div>';
+    }).join('');
+    return '<div class="v2-card ap-card"><div class="ap-hd"><div class="ap-ic" style="background:#6D5AE6">☀</div><div><h3>Pré-commander avant le pic</h3>' +
+      '<div class="ap-sub">saison PAR PRODUIT (Medic\'AM 2 ans) — ce que le réseau achète et qui monte dans les 3 prochains mois, à stocker avant le pic</div></div></div>' + rows +
+      '<div class="ap-foot" style="padding:9px 16px 11px;margin:0">Indice = boîtes remboursées France du mois / moyenne annuelle, sur 2 ans. Pic à venir = constituer le stock maintenant.</div></div>';
   }
   function ensureHas() {
     if (_hasData || _hasState) return;
@@ -444,8 +485,9 @@
       ensureAnsm();   // charge la veille ANSM disponibilités + dates de retour (robot quotidien)
       ensureEpidemio(); // charge les signaux de demande (Sentinelles, robot quotidien)
       ensureHas();    // charge l'anticipation réglementaire HAS (robot mensuel)
+      ensureSaisonCip(); // charge la saison par produit (Medic'AM, robot mensuel)
       // ── Cockpit réassort (crash-safe : ne casse jamais la page si un flux manque) ──
-      var kpiBand = '', reaCard = '', rosCard = '', radarHtml = '', etabHtml = '', basculesHtml = '', ansmHtml = '', epiHtml = '', hasHtml = '';
+      var kpiBand = '', reaCard = '', rosCard = '', radarHtml = '', etabHtml = '', basculesHtml = '', ansmHtml = '', epiHtml = '', hasHtml = '', saiCipHtml = '';
       try {
         radarHtml = radarSection(window.WML_SALES && window.STOCK_IP ? reassort() : []);
         etabHtml = etabSection();
@@ -453,6 +495,7 @@
         ansmHtml = ansmCard();
         epiHtml = epidemioCard();
         hasHtml = hasCard();
+        saiCipHtml = saisonCipCard();
         if (window.WML_SALES && window.STOCK_IP) {
           var h = stockHealth();
           kpiBand = '<div class="ap-kpis">' +
@@ -538,6 +581,7 @@
           hasHtml +
           '<div class="ap-sec">Piloter les achats</div>' +
           reaCard +
+          saiCipHtml +
           ansmHtml +
           basculesHtml +
           etabHtml +
