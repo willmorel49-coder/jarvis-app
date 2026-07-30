@@ -111,12 +111,21 @@ def main():
     cat = catalogue_cips()
     urls = resource_map()
     acc, seen = {}, set()
+    ok = 0
     for (y, sem), url in sorted(urls.items()):
         try:
             process(fetch(url), sem, acc, seen)
+            ok += 1
             print("  chargé %d S%d" % (y, sem))
         except Exception as e:
             print("  échec %d S%d : %s" % (y, sem, e))
+    # Garde de complétude (audit #3) : il faut les 2 semestres × 2 ans, sinon la moyenne est
+    # divisée par ~2 et TOUS les indices sont gonflés (faux « pic janvier »). On conserve alors
+    # le JSON précédent plutôt que d'en publier un faux.
+    expected = 2 * len(YEARS)
+    if ok < expected:
+        print("ABANDON : %d/%d fichiers Medic'AM chargés — saison-cip.json précédent conservé (évite un faux pic)." % (ok, expected))
+        return
 
     data = {}
     for cip, rec in acc.items():
