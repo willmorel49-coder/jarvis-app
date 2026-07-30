@@ -216,6 +216,13 @@
     }).join('') + '</div>';
   }
 
+  // Ne re-render QUE si l'utilisateur est encore sur l'écran Appro (audit robustesse) :
+  // les chargeurs différés (ensure*) résolvent en asynchrone ; sans ce garde, un flux qui
+  // arrive après une navigation re-rendrait inutilement une autre page (flicker, travail perdu).
+  function approRerender() {
+    try { if (V2.route && V2.route.name === 'appro' && V2.render) V2.render(); } catch (e) {}
+  }
+
   // ═══ STOCK PAR ÉTABLISSEMENT (7 sites) + rééquilibrage inter-sites — ETAB_PRICES (NR) ═══
   var _etabState = 0;   // 0 pas tenté · 1 en cours · 2 fini
   function ensureEtab() {
@@ -224,7 +231,7 @@
     _etabState = 1;
     var s = document.createElement('script');
     s.src = 'etab-prices-data.js?v=' + (window.__APPRO_V || '20260729c'); s.async = false;
-    s.onload = function () { _etabState = 2; try { V2.render(); } catch (e) {} };
+    s.onload = function () { _etabState = 2; approRerender(); };
     s.onerror = function () { _etabState = 2; };
     document.head.appendChild(s);
   }
@@ -291,7 +298,7 @@
       var day = new Date().toISOString().slice(0, 10);
       fetch('generiques-bdpm.json?d=' + day, { cache: 'no-store' })
         .then(function (r) { return r.ok ? r.json() : null; })
-        .then(function (j) { _generData = j || {}; _generState = 2; try { V2.render(); } catch (e) {} })
+        .then(function (j) { _generData = j || {}; _generState = 2; approRerender(); })
         .catch(function () { _generState = 2; });
     } catch (e) { _generState = 2; }
   }
@@ -326,7 +333,7 @@
       var day = new Date().toISOString().slice(0, 10);
       fetch('ansm-dispo.json?d=' + day, { cache: 'no-store' })
         .then(function (r) { return r.ok ? r.json() : null; })
-        .then(function (j) { _ansmData = j || {}; _ansmState = 2; try { V2.render(); } catch (e) {} })
+        .then(function (j) { _ansmData = j || {}; _ansmState = 2; approRerender(); })
         .catch(function () { _ansmState = 2; });
     } catch (e) { _ansmState = 2; }
   }
@@ -373,7 +380,7 @@
       var day = new Date().toISOString().slice(0, 10);
       fetch('odisse.json?d=' + day, { cache: 'no-store' })
         .then(function (r) { return r.ok ? r.json() : null; })
-        .then(function (j) { _odisseData = j || {}; _odiState = 2; try { V2.render(); } catch (e) {} })
+        .then(function (j) { _odisseData = j || {}; _odiState = 2; approRerender(); })
         .catch(function () { _odiState = 2; });
     } catch (e) { _odiState = 2; }
   }
@@ -384,7 +391,7 @@
       var day = new Date().toISOString().slice(0, 10);
       fetch('epidemio.json?d=' + day, { cache: 'no-store' })
         .then(function (r) { return r.ok ? r.json() : null; })
-        .then(function (j) { _epiData = j || {}; _epiState = 2; try { V2.render(); } catch (e) {} })
+        .then(function (j) { _epiData = j || {}; _epiState = 2; approRerender(); })
         .catch(function () { _epiState = 2; });
     } catch (e) { _epiState = 2; }
   }
@@ -443,7 +450,7 @@
       var day = new Date().toISOString().slice(0, 10);
       fetch('saison-cip.json?d=' + day, { cache: 'no-store' })
         .then(function (r) { return r.ok ? r.json() : null; })
-        .then(function (j) { _saiCip = j || {}; _saiState = 2; try { V2.render(); } catch (e) {} })
+        .then(function (j) { _saiCip = j || {}; _saiState = 2; approRerender(); })
         .catch(function () { _saiState = 2; });
     } catch (e) { _saiState = 2; }
   }
@@ -481,7 +488,7 @@
       var day = new Date().toISOString().slice(0, 10);
       fetch('has-avis.json?d=' + day, { cache: 'no-store' })
         .then(function (r) { return r.ok ? r.json() : null; })
-        .then(function (j) { _hasData = j || {}; _hasState = 2; try { V2.render(); } catch (e) {} })
+        .then(function (j) { _hasData = j || {}; _hasState = 2; approRerender(); })
         .catch(function () { _hasState = 2; });
     } catch (e) { _hasState = 2; }
   }
@@ -517,7 +524,7 @@
       var day = new Date().toISOString().slice(0, 10);
       fetch('mitm.json?d=' + day, { cache: 'no-store' })
         .then(function (r) { return r.ok ? r.json() : null; })
-        .then(function (j) { var s = {}; ((j && j.cips) || []).forEach(function (c) { s[c] = 1; }); _mitmSet = s; _mitmGen = j && j.generated; _mitmState = 2; try { V2.render(); } catch (e) {} })
+        .then(function (j) { var s = {}; ((j && j.cips) || []).forEach(function (c) { s[c] = 1; }); _mitmSet = s; _mitmGen = j && j.generated; _mitmState = 2; approRerender(); })
         .catch(function () { _mitmSet = {}; _mitmState = 2; });
     } catch (e) { _mitmSet = {}; _mitmState = 2; }
   }
@@ -696,7 +703,7 @@
       var day = new Date().toISOString().slice(0, 10);
       fetch('labo-cip.json?d=' + day, { cache: 'no-store' })
         .then(function (r) { return r.ok ? r.json() : null; })
-        .then(function (j) { _laboMap = (j && j.data) || {}; _laboState = 2; try { V2.render(); } catch (e) {} })
+        .then(function (j) { _laboMap = (j && j.data) || {}; _laboState = 2; approRerender(); })
         .catch(function () { _laboMap = {}; _laboState = 2; });
     } catch (e) { _laboMap = {}; _laboState = 2; }
   }
@@ -780,7 +787,7 @@
       var day = new Date().toISOString().slice(0, 10);
       fetch('infos-jour.json?d=' + day, { cache: 'no-store' })
         .then(function (r) { return r.ok ? r.json() : null; })
-        .then(function (j) { _infosData = j || {}; _infosState = 2; try { V2.render(); } catch (e) {} })
+        .then(function (j) { _infosData = j || {}; _infosState = 2; approRerender(); })
         .catch(function () { _infosState = 2; });
     } catch (e) { _infosState = 2; }
   }
