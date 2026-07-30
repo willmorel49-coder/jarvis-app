@@ -1,0 +1,40 @@
+name: Qualité · rappels de produits (RappelConso)
+
+# Robot GRATUIT : rappels de produits DGCCRF (RappelConso), en complément des rappels
+# MÉDICAMENTS ANSM déjà branchés. Deux signaux : (1) un GTIN rappelé présent dans le
+# catalogue réseau = réf à retirer/prévenir le fournisseur ; (2) rappels parapharma
+# (hygiène-beauté) récents pertinents comptoir. Écrit crm/v2/rappels.json. Aucune clé.
+
+on:
+  schedule:
+    - cron: '48 5 * * 3'   # chaque mercredi
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: rappels
+  cancel-in-progress: false
+
+jobs:
+  rappels:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Récupérer les rappels de produits
+        run: python3 generate_rappels.py
+      - name: Committer si changement
+        run: |
+          if git diff --quiet -- crm/v2/rappels.json; then
+            echo "Pas de changement (RappelConso inchangé)."
+          else
+            git config user.name  "JARVIS copilote"
+            git config user.email "actions@users.noreplace.github.com"
+            git add crm/v2/rappels.json
+            git commit -m "data(qualité): rappels de produits RappelConso $(date -u +%Y-%m-%d)"
+            git push
+          fi
