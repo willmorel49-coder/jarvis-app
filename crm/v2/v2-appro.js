@@ -361,8 +361,22 @@
   var EPI_MAP = {
     grippe: { fam: 'antipyrétiques · ORL · antitussifs', kw: /PARAC[EÉ]TAMOL|IBUPROF|DOLIPRANE|EFFERALGAN|DAFALGAN|TOUX|RHUME|GORGE|NASAL|S[EÉ]RUM PHY|OSCILLO|HUMEX|FERVEX|ACTIFED|RHINO|STREPSIL/i },
     gastro: { fam: 'antidiarrhéiques · réhydratation · antispasmodiques', kw: /DIARRH|SMECTA|IMODIUM|TIORFAN|LOP[EÉ]RAMIDE|R[EÉ]HYDRAT|ULTRALEVURE|SPASFON|PHLORO|ARESTAL|BIOGAIA/i },
-    varicelle: { fam: 'antihistaminiques · antiseptiques cutanés', kw: /C[EÉ]TIRIZIN|LORATADIN|POLARAMINE|ANTIHIST|CHLORHEXIDINE|SEPTIVON|BISEPTINE|CICALFATE|DERMASPRAID|CALADRYL|DIPROSONE/i }
+    varicelle: { fam: 'antihistaminiques · antiseptiques cutanés', kw: /C[EÉ]TIRIZIN|LORATADIN|POLARAMINE|ANTIHIST|CHLORHEXIDINE|SEPTIVON|BISEPTINE|CICALFATE|DERMASPRAID|CALADRYL|DIPROSONE/i },
+    bronchiolite: { fam: 'sérum physiologique · mouche-bébé · désobstruction nourrisson', kw: /S[EÉ]RUM PHY|PHYSIO(DOSE|MER|LOGIQUE)|STERIMAR|MOUCHE|RHINO.*B[EÉ]B|D[EÉ]SOBSTRUCT|PROSPAN|HELICIDINE|BALSAMIQUE|PRORHINEL/i }
   };
+  // Odissé / SurSaUD (urgences par département, Santé publique France) — plus fin que Sentinelles
+  var _odiState = 0, _odisseData = null;
+  function ensureOdisse() {
+    if (_odisseData || _odiState) return;
+    _odiState = 1;
+    try {
+      var day = new Date().toISOString().slice(0, 10);
+      fetch('odisse.json?d=' + day, { cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) { _odisseData = j || {}; _odiState = 2; try { V2.render(); } catch (e) {} })
+        .catch(function () { _odiState = 2; });
+    } catch (e) { _odiState = 2; }
+  }
   function ensureEpidemio() {
     if (_epiData || _epiState) return;
     _epiState = 1;
@@ -388,8 +402,26 @@
         '<div class="ap-g">' + pctHtml(i.trend) + '</div></div>';
     }).join('');
     var w = String(_epiData.week || ''), wl = w.length >= 6 ? 'sem. ' + w.slice(4) + ' · ' + w.slice(0, 4) : '';
+    // Bloc Odissé : où ça chauffe aux urgences, par département (SurSaUD, plus fin que Sentinelles + bronchiolite)
+    var odiHtml = '';
+    var odi = _odisseData && _odisseData.pathologies;
+    if (odi && odi.length) {
+      var ow = String(_odisseData.week || '');
+      var orows = odi.map(function (p) {
+        var mp = EPI_MAP[p.cat] || {}, nref = 0;
+        if (mp.kw) for (var k = 0; k < P.length; k++) { if ((P[k].n || 0) > 0 && mp.kw.test(P[k].d || '')) nref++; }
+        var deps = (p.hotDeps || []).slice(0, 3).map(function (d) { return esc(d.n || d.dep || ''); }).filter(Boolean).join(' · ');
+        return '<div class="ap-row"><div class="ap-nm">' + esc(p.label) +
+          '<small>' + (deps ? 'foyers actifs : ' + deps : '') + (mp.fam ? ' · à renforcer : ' + mp.fam : '') + '</small></div>' +
+          '<div class="ap-mini">' + (p.passages != null ? p.passages + ' passages' : '') + (nref ? ' · ' + nref + ' réfs' : '') + '</div>' +
+          '<div class="ap-g">' + pctHtml(p.trend) + '</div></div>';
+      }).join('');
+      odiHtml = '<div class="ap-foot" style="padding:11px 16px 4px;margin:0;font-weight:600;color:var(--ink)">Où ça chauffe — urgences par département' +
+        (ow.length >= 6 ? ' · sem. ' + ow.slice(4) : '') + '</div>' +
+        '<div class="ap-foot" style="padding:0 16px 6px;margin:0">SurSaUD (Santé publique France) — pré-positionner ces secteurs avant la vague comptoir.</div>' + orows;
+    }
     return '<div class="v2-card ap-card"><div class="ap-hd"><div class="ap-ic" style="background:var(--c-opp)">✚</div><div><h3>Signaux de demande — épidémie</h3>' +
-      '<div class="ap-sub">Réseau Sentinelles ' + wl + ' · ce qui monte = à pré-stocker avant le rush comptoir (incidence France /100k + tendance hebdo)</div></div></div>' + rows +
+      '<div class="ap-sub">Réseau Sentinelles ' + wl + ' · ce qui monte = à pré-stocker avant le rush comptoir (incidence France /100k + tendance hebdo)</div></div></div>' + rows + odiHtml +
       '<div class="ap-foot" style="padding:9px 16px 11px;margin:0">Réfs = produits du catalogue réseau associés à la pathologie (mots-clés). Croiser avec le stock avant le pic.</div></div>';
   }
 
@@ -799,6 +831,7 @@
       ensureGener();  // charge la veille génériques (BDPM, robot mensuel)
       ensureAnsm();   // charge la veille ANSM disponibilités + dates de retour (robot quotidien)
       ensureEpidemio(); // charge les signaux de demande (Sentinelles, robot quotidien)
+      ensureOdisse(); // charge les urgences par département (SurSaUD/Odissé, robot hebdo)
       ensureHas();    // charge l'anticipation réglementaire HAS (robot mensuel)
       ensureSaisonCip(); // charge la saison par produit (Medic'AM, robot mensuel)
       ensureMitm();   // charge la liste des médicaments critiques MITM (ANSM, robot mensuel)
