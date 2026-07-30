@@ -61,6 +61,8 @@ def main():
         cols = ln.split("\t")
         if len(cols) < 7:
             continue
+        if "Arr" in (cols[4] if len(cols) > 4 else ""):   # audit #11 : ignorer les présentations « Arrêt de commercialisation »
+            continue
         if cols[0].strip() in mitm_cis:
             cip = digits13(cols[6])
             if cip and (not cat or cip in cat):
