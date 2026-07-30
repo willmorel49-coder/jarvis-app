@@ -536,10 +536,20 @@
     if (_generData && _generData.generated) s.push('Génériques ' + fdate(_generData.generated));
     if (_hasData && _hasData.generated) s.push('HAS ' + fdate(_hasData.generated));
     if (_epiData && _epiData.week) s.push('Épidémio sem. ' + String(_epiData.week).slice(4));
+    if (_odisseData && _odisseData.week) s.push('Urgences sem. ' + String(_odisseData.week).slice(4));
     if (_saiCip && _saiCip.generated) s.push('Saison ' + fdate(_saiCip.generated));
     if (_mitmGen) s.push('MITM ' + fdate(_mitmGen));
-    if (!s.length) return '';
-    return '<div class="ap-fresh">🕓 Sources à jour : ' + s.join(' · ') + ' · <b>stock plateforme = dernier inventaire importé</b> (photographie, pas temps réel). Vitesse = ventes réseau janv.-juin 2026.</div>';
+    // Date réelle de l'inventaire plateforme = dénominateur des couvertures (audit : talon d'Achille).
+    // On l'affiche et on alerte si le stock est vieux (> 35 j) car les jours-avant-rupture s'en trouvent optimistes.
+    var stk = window.STOCK_IP && window.STOCK_IP.meta, stockTxt = '<b>stock plateforme = dernier inventaire importé</b> (photographie, pas temps réel)', warn = '';
+    if (stk && stk.gen) {
+      stockTxt = '<b>stock plateforme arrêté au ' + fdate(stk.gen) + '</b> (photographie, pas temps réel)';
+      var age = null;
+      try { age = Math.round((new Date().getTime() - new Date(stk.gen + 'T00:00:00').getTime()) / 864e5); } catch (e) {}
+      if (age != null && age > 35) warn = '<div class="ap-fresh-warn">⚠️ Inventaire de ' + age + ' jours : les « jours avant rupture » sont donc optimistes (le stock a baissé depuis). À recroiser avant grosse commande — réimporter le stock = priorité.</div>';
+    }
+    if (!s.length && !warn) return '';
+    return '<div class="ap-fresh">🕓 Sources à jour : ' + s.join(' · ') + ' · ' + stockTxt + '. Vitesse = ventes réseau janv.-juin 2026.</div>' + warn;
   }
   function isMitm(c) { return !!(_mitmSet && _mitmSet[c]); }
 
@@ -1122,6 +1132,7 @@
       '.ac-cat{flex:none;font-size:10px;font-weight:800;color:#fff;border-radius:999px;padding:3px 9px;margin-top:1px;white-space:nowrap}' +
       '.ac-nm{min-width:0}.ac-nm b{display:block;font-size:13.5px;font-weight:700;color:var(--ip-ink);line-height:1.3}.ac-nm span{font-size:11.5px;color:var(--muted);font-weight:600}' +
       '.ap-fresh{font-size:11px;color:var(--muted);line-height:1.5;margin-top:20px;padding-top:12px;border-top:1px solid var(--line)}.ap-fresh b{color:var(--ip-ink)}' +
+      '.ap-fresh-warn{font-size:11.5px;line-height:1.5;margin-top:8px;padding:8px 11px;border-radius:9px;background:rgba(213,87,59,.09);border:1px solid rgba(213,87,59,.28);color:var(--rose,#D5573B)}' +
       /* radar */
       '.rad{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:6px}' +
       '.rzone{padding:0;overflow:hidden}' +
