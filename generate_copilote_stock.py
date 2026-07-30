@@ -32,11 +32,18 @@ def main():
         raise SystemExit("Aucun stock lu dans %s" % SRC)
     items = ",".join('"%s":%d' % (c, v) for c, v in sorted(data.items()))
     tot = sum(data.values())
+    # Date de l'inventaire = date de dernière modif du fichier source (plus honnête que la date
+    # du run) → surfacée dans la barre de fraîcheur de l'appro (« stock arrêté au … »).
+    import datetime
+    try:
+        gen = datetime.date.fromtimestamp(os.path.getmtime(SRC)).isoformat()
+    except Exception:
+        gen = datetime.date.today().isoformat()
     js = (
         "// Copilote — stock Intégral global (tous établissements confondus : OPS+HP+CPR+POS+SEP+MSP+SOP).\n"
         "// Source: crm/stock.js (inventaire consolidé Intégral). Généré par generate_copilote_stock.py.\n"
-        "window.STOCK_IP={meta:{n:%d,unites:%d,etabs:\"tous\"},data:{%s}};\n"
-    ) % (len(data), tot, items)
+        "window.STOCK_IP={meta:{n:%d,unites:%d,etabs:\"tous\",gen:\"%s\"},data:{%s}};\n"
+    ) % (len(data), tot, gen, items)
     open(OUT, "w", encoding="utf-8").write(js)
     print("Écrit %s (%d Ko, %d réfs en stock, %d unités)"
           % (OUT, os.path.getsize(OUT) // 1024, len(data), tot))
