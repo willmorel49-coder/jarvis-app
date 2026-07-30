@@ -469,6 +469,60 @@
       '<div class="ap-foot" style="padding:9px 16px 11px;margin:0">Un avis favorable de la Commission de la Transparence précède l\'inscription au remboursement de 3-6 mois. « À référencer » = ASMR élevé qu\'on ne distribue pas encore.</div></div>';
   }
 
+  // ═══ CARNET D'ACHAT DU JOUR — fusion de tous les signaux en décisions (façon salle de marché) ═══
+  // Chaque produit stocké = une position : couverture (runway), demande (momentum), et
+  // signaux (rupture, saison, générique) → un VERDICT + une quantité. LE plan du jour.
+  function carnet() {
+    var idx = cipIndex();
+    if (!idx || !Object.keys(idx).length) return { html: '', counts: null };
+    var sai = (_saiCip && _saiCip.data) || {};
+    var genSet = null;
+    if (_generData && _generData.princepsWithGeneric) { genSet = {}; _generData.princepsWithGeneric.forEach(function (c) { genSet[c] = 1; }); }
+    var now = new Date().getMonth() + 1, win = [now % 12 + 1, (now + 1) % 12 + 1, (now + 2) % 12 + 1];
+    var acts = [], C = { buy: 0, sec: 0, pre: 0, arb: 0, red: 0, eur: 0, redEur: 0 };
+    Object.keys(idx).forEach(function (c) {
+      var o = idx[c];
+      if (o.vM < 3 && o.stale !== 1) return;
+      var rupt = V2.rupture ? !!V2.rupture(c) : false;
+      var s = sai[c], sUp = 0, sM = 0;
+      if (s && s.i) win.forEach(function (m) { if (s.i[m - 1] > sUp) { sUp = s.i[m - 1]; sM = m; } });
+      var seasonUp = sUp >= 1.2;
+      var isGen = genSet ? !!genSet[c] : false;
+      var verdict, cls, prio, qty = 0, reason = '';
+      if ((o.stale === 1 || o.cov > 90) && o.st > 0) {
+        verdict = 'ALLÉGER'; cls = 'red'; prio = 1; reason = (o.cov > 90 ? (o.cov >= 9999 ? 'invendu' : Math.round(o.cov) + ' j de stock') : 'dormant');
+        C.red++; C.redEur += o.st * (o.ppht || 0);
+      } else if (o.cov < 7 && o.vM >= 5) {
+        qty = o.qcmd;
+        if (rupt) { verdict = 'SÉCURISER'; cls = 'sec'; reason = 'tension ANSM · couv ' + Math.round(o.cov) + ' j'; C.sec++; }
+        else { verdict = 'ACHETER'; cls = 'buy'; reason = 'couv ' + Math.round(o.cov) + ' j (rupture proche)'; C.buy++; }
+        prio = 5; C.eur += qty * (o.ppht || 0);
+      } else if (o.qcmd > 0 && o.cov < 21) {
+        verdict = 'ACHETER'; cls = 'buy'; prio = 4; qty = o.qcmd; reason = 'couv ' + Math.round(o.cov) + ' j'; C.buy++; C.eur += qty * (o.ppht || 0);
+      } else if (seasonUp) {
+        verdict = 'PRÉ-ACHETER'; cls = 'pre'; prio = 3;
+        qty = Math.max(o.qcmd, Math.round(o.vM / 30 * 21 * sUp - o.st)); if (qty < 0) qty = 0;
+        reason = 'pic ' + MOIS_L[sM - 1] + ' +' + Math.round((sUp - 1) * 100) + '%'; C.pre++; C.eur += qty * (o.ppht || 0);
+      } else if (isGen) {
+        verdict = 'ARBITRER'; cls = 'arb'; prio = 2; reason = 'générique dispo → basculer'; C.arb++;
+      } else return;
+      acts.push({ c: c, o: o, v: verdict, cls: cls, prio: prio, qty: qty, reason: reason, rupt: rupt, season: seasonUp, gen: isGen });
+    });
+    acts.sort(function (a, b) { return (b.prio - a.prio) || (a.o.cov - b.o.cov); });
+    var P = window.PROD_STATS || [], ps = {}; for (var i = 0; i < P.length; i++) ps[String(P[i].c)] = P[i];
+    var rows = acts.slice(0, 24).map(function (x) {
+      var chips = '';
+      if (x.rupt) chips += ' <span class="ap-tag ru">ANSM</span>';
+      if (x.season) chips += ' <span class="ap-tag" style="color:#6D5AE6;background:#EFEBFB;border:1px solid #D3C9F5">saison</span>';
+      if (x.gen && x.cls !== 'arb') chips += ' <span class="ap-tag" style="color:#0E7C86;background:#E5F4F5;border:1px solid #B8E0E3">Gx</span>';
+      return '<div class="cb-row"><span class="cb-tag cb-' + x.cls + '">' + x.v + '</span>' +
+        '<div class="cb-nm">' + esc(cap(((ps[x.c] && ps[x.c].d) || x.c).toLowerCase())) + '<small>' + x.reason + chips + '</small></div>' +
+        '<div class="cb-cov">' + covBadge(x.o.cov) + '</div>' +
+        '<div class="cb-qt">' + (x.qty > 0 ? '+' + fmt(x.qty) + '<small>u</small>' : '—') + '</div></div>';
+    }).join('');
+    return { html: rows, counts: C, total: acts.length };
+  }
+
   V2.pages.appro = {
     render: function (root) {
       ensureCss();
@@ -487,7 +541,26 @@
       ensureHas();    // charge l'anticipation réglementaire HAS (robot mensuel)
       ensureSaisonCip(); // charge la saison par produit (Medic'AM, robot mensuel)
       // ── Cockpit réassort (crash-safe : ne casse jamais la page si un flux manque) ──
-      var kpiBand = '', reaCard = '', rosCard = '', radarHtml = '', etabHtml = '', basculesHtml = '', ansmHtml = '', epiHtml = '', hasHtml = '', saiCipHtml = '';
+      var kpiBand = '', reaCard = '', rosCard = '', radarHtml = '', etabHtml = '', basculesHtml = '', ansmHtml = '', epiHtml = '', hasHtml = '', saiCipHtml = '', carnetHtml = '';
+      try {
+        if (window.WML_SALES && window.STOCK_IP) {
+          var cb = carnet();
+          if (cb.counts && cb.html) {
+            var C = cb.counts;
+            carnetHtml = '<div class="v2-card cb-card"><div class="cb-hd"><div><h3>Carnet d\'achat du jour</h3>' +
+              '<div class="cb-sub">' + cb.total + ' positions à traiter — fusion de tous les signaux (couverture, tension ANSM, saison, générique) en décisions</div></div>' +
+              '<div class="cb-tot"><b>' + (V2.fmtEur ? V2.fmtEur(C.eur) : fmt(C.eur)) + '</b><small>à engager</small></div></div>' +
+              '<div class="cb-kpis">' +
+                '<span class="cb-k cb-buy">' + C.buy + ' acheter</span>' +
+                '<span class="cb-k cb-sec">' + C.sec + ' sécuriser</span>' +
+                '<span class="cb-k cb-pre">' + C.pre + ' pré-acheter</span>' +
+                '<span class="cb-k cb-arb">' + C.arb + ' arbitrer</span>' +
+                '<span class="cb-k cb-red">' + C.red + ' alléger</span>' +
+              '</div>' + cb.html +
+              '<div class="ap-foot" style="padding:10px 16px 12px;margin:0">Priorisé par urgence. Quantité conseillée = pour revenir à la couverture cible. « À engager » = valeur d\'achat (prix net) des lignes à acheter/pré-acheter.</div></div>';
+          }
+        }
+      } catch (e) { carnetHtml = ''; }
       try {
         radarHtml = radarSection(window.WML_SALES && window.STOCK_IP ? reassort() : []);
         etabHtml = etabSection();
@@ -572,7 +645,8 @@
       root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
         '<div class="v2-wrap">' +
           '<div class="v2-page-title">Appro Intégral</div>' +
-          '<div class="v2-page-sub">Maîtriser les achats et anticiper au jour près : santé du stock, radar des événements à venir, réassort conseillé, équilibre des 7 sites, saison et leviers de négo — sur la demande réelle du réseau. Outil de l\'équipe achats.</div>' +
+          '<div class="v2-page-sub">Acheter au quotidien comme une salle de marché : le carnet du jour fusionne tous les signaux en décisions chiffrées, puis le détail par thème. Outil de l\'équipe achats.</div>' +
+          carnetHtml +
           kpiBand +
           '<div class="ap-sec">Radar 90 jours — à anticiper</div>' +
           '<div class="ap-secsub">Ce qui va bouger la demande : remboursements, génériques, baisses de prix, saison, ruptures — croisé avec ton réassort urgent en temps réel.</div>' +
@@ -630,6 +704,25 @@
       '.ap-cov{font-size:11px;font-weight:800;border-radius:999px;padding:3px 9px;white-space:nowrap}' +
       '.ap-cov.ko{color:#C0561A;background:#FFECEC;border:1px solid #F3B0A0}.ap-cov.wa{color:#a8651a;background:#FFF1DB;border:1px solid #F0C98A}.ap-cov.ok{color:var(--c-opp);background:#E7F5EC;border:1px solid #BFE6CF}' +
       '.ap-cmd{flex:none;font-size:10.5px;color:var(--muted);font-weight:600;text-align:right;min-width:78px;line-height:1.25}.ap-cmd b{display:block;font-size:15px;font-weight:800;color:var(--ip-ink);font-family:var(--mono)}' +
+      /* carnet d'achat du jour (salle de marché) */
+      '.cb-card{padding:0;overflow:hidden;margin-bottom:16px;border:1px solid var(--line);border-top:3px solid var(--ip-blue)}' +
+      '.cb-hd{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line)}' +
+      '.cb-hd h3{margin:0;font-size:15px;font-weight:800;color:var(--ip-ink)}' +
+      '.cb-sub{font-size:12px;color:var(--muted);font-weight:500;margin-top:2px}' +
+      '.cb-tot{margin-left:auto;text-align:right;flex:none}.cb-tot b{display:block;font-size:20px;font-weight:800;font-family:var(--mono);color:var(--ip-blue)}.cb-tot small{font-size:10px;color:var(--muted);font-weight:600}' +
+      '.cb-kpis{display:flex;gap:7px;flex-wrap:wrap;padding:12px 16px 6px}' +
+      '.cb-k{font-size:11.5px;font-weight:800;border-radius:999px;padding:4px 11px}' +
+      '.cb-buy{color:#0B7A4B;background:#E7F5EC;border:1px solid #BFE6CF}' +
+      '.cb-sec{color:#C0392B;background:#FDEDEA;border:1px solid #F3B0A0}' +
+      '.cb-pre{color:#6D5AE6;background:#EFEBFB;border:1px solid #D3C9F5}' +
+      '.cb-arb{color:#0E7C86;background:#E5F4F5;border:1px solid #B8E0E3}' +
+      '.cb-red{color:#a8651a;background:#FFF1DB;border:1px solid #F0C98A}' +
+      '.cb-row{display:flex;align-items:center;gap:11px;padding:10px 16px;border-top:1px solid var(--line)}' +
+      '.cb-tag{flex:none;width:92px;text-align:center;font-size:10.5px;font-weight:800;border-radius:7px;padding:4px 0}' +
+      '.cb-nm{flex:1;min-width:0;font-size:13.5px;font-weight:700;color:var(--ip-ink)}.cb-nm small{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-top:1px}' +
+      '.cb-cov{flex:none;min-width:56px;text-align:right}' +
+      '.cb-qt{flex:none;min-width:64px;text-align:right;font-size:14px;font-weight:800;font-family:var(--mono);color:var(--ip-ink)}.cb-qt small{font-size:10px;color:var(--muted);font-weight:600;font-family:var(--font)}' +
+      '@media(max-width:600px){.cb-tag{width:78px}.cb-cov{display:none}}' +
       '.ap-sec{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--ip-ink);margin:22px 0 2px}' +
       '.ap-secsub{font-size:12px;color:var(--muted);margin:0 0 12px;line-height:1.5}' +
       /* radar */
