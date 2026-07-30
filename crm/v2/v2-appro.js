@@ -721,6 +721,51 @@
     return toggle + band + body;
   }
 
+  // ═══ ACTU APPRO (quotidien, gratuit) : fil d'actualité filtré appro + bloc PRÉDICTIF ═══
+  var _infosState = 0, _infosData = null;
+  function ensureInfos() {
+    if (_infosData || _infosState) return;
+    _infosState = 1;
+    try {
+      var day = new Date().toISOString().slice(0, 10);
+      fetch('infos-jour.json?d=' + day, { cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) { _infosData = j || {}; _infosState = 2; try { V2.render(); } catch (e) {} })
+        .catch(function () { _infosState = 2; });
+    } catch (e) { _infosState = 2; }
+  }
+  function actuView() {
+    ensureInfos();
+    // ── PRÉDICTIF : ce qui arrive, calculé sur nos robots ──
+    var pred = [];
+    var acts = _carnetActs || [];
+    var imm = acts.filter(function (a) { return a.o && a.o.cov <= 7 && (a.cls === 'buy' || a.cls === 'sec'); });
+    if (imm.length) pred.push({ ic: '⏱', c: '#D5573B', t: imm.length + ' produits à sec sous 7 jours', s: 'à commander en urgence — ' + imm.slice(0, 2).map(function (a) { return cap((a.name || '').toLowerCase()); }).join(', ') });
+    if (_ansmData && _ansmData.items) { var rets = _ansmData.items.filter(function (i) { return i.retour && i.retour.iso; }).sort(function (a, b) { return (a.retour.annee * 100 + (a.retour.mois || 13)) - (b.retour.annee * 100 + (b.retour.mois || 13)); }); if (rets.length) pred.push({ ic: '📦', c: '#0E7C86', t: ((_ansmData.meta && _ansmData.meta.nDates) || rets.length) + ' retours de rupture prévus', s: cap((rets[0].spec || '').toLowerCase()).slice(0, 28) + ' → ' + retourLabel(rets[0].retour) }); }
+    if (_generData && _generData.newGeneric && _generData.newGeneric.length) pred.push({ ic: 'Ⓖ', c: '#6D5AE6', t: _generData.newGeneric.length + ' nouveaux génériques', s: 'basculer les achats — ' + esc((_generData.newGeneric[0].lib || '').split(',')[0]) });
+    else if (_generData && _generData.meta) pred.push({ ic: 'Ⓖ', c: '#6D5AE6', t: 'bascules génériques disponibles', s: _generData.meta.nAvecGenerique + ' groupes avec un générique — princeps à basculer' });
+    if (_hasData && _hasData.items) { var f = _hasData.items.filter(function (i) { return i.cat === 'reimb'; }); if (f.length) pred.push({ ic: '§', c: '#0050E6', t: f.length + ' avis HAS favorables récents', s: 'futurs remboursements 3-6 mois avant — ' + cap((f[0].spec || '').toLowerCase()).slice(0, 26) }); }
+    if (_epiData && _epiData.indicators) { var up = _epiData.indicators.filter(function (i) { return i.trend != null && i.trend > 10; }); if (up.length) pred.push({ ic: '✚', c: '#1E9E6A', t: up[0].label + ' en hausse (+' + up[0].trend + ' %)', s: (up[0].regions && up[0].regions[0] ? 'plus fort en ' + cap((up[0].regions[0].n || '').toLowerCase()) + ' · ' : '') + 'renforcer les familles avant le pic' }); }
+    var predHtml = pred.map(function (p) { return '<div class="ac-pred"><div class="ac-ic" style="background:' + p.c + '">' + p.ic + '</div><div class="ac-pt"><b>' + p.t + '</b><span>' + p.s + '</span></div></div>'; }).join('') || '<div class="ap-empty">Signaux en cours de chargement…</div>';
+    // ── ACTUALITÉ : RSS filtré appro ──
+    var news;
+    if (_infosData && _infosData.items) {
+      var CATN = { ruptures: ['rupture', '#D5573B'], securite: ['sécurité', '#C77700'], reglementaire: ['réglementaire', '#0050E6'] };
+      var appro = _infosData.items.filter(function (i) { return CATN[i.cat]; });
+      news = appro.slice(0, 14).map(function (i) {
+        var cn = CATN[i.cat];
+        return '<a class="ac-news" href="' + esc(i.url) + '" target="_blank" rel="noopener"><span class="ac-cat" style="background:' + cn[1] + '">' + cn[0] + '</span>' +
+          '<div class="ac-nm"><b>' + esc(i.titre) + '</b><span>' + esc(i.source) + '</span></div></a>';
+      }).join('') || '<div class="ap-empty">Pas d’actu appro dans les derniers jours.</div>';
+    } else news = '<div class="ap-empty">Chargement de l’actualité…</div>';
+    return '<div class="ap-sec">Prédictif — ce qui arrive</div>' +
+      '<div class="ap-secsub">calculé chaque jour sur ta donnée réseau + les sources publiques gratuites</div>' +
+      '<div class="v2-card ap-card" style="padding:6px 4px">' + predHtml + '</div>' +
+      '<div class="ap-sec">Actualité appro du jour</div>' +
+      '<div class="ap-secsub">ruptures, sécurité, réglementaire — ANSM &amp; presse pro (RSS gratuit, quotidien)</div>' +
+      '<div class="v2-card ap-card" style="padding:0">' + news + '</div>';
+  }
+
   V2.pages.appro = {
     render: function (root) {
       ensureCss();
@@ -739,6 +784,7 @@
       ensureHas();    // charge l'anticipation réglementaire HAS (robot mensuel)
       ensureSaisonCip(); // charge la saison par produit (Medic'AM, robot mensuel)
       ensureMitm();   // charge la liste des médicaments critiques MITM (ANSM, robot mensuel)
+      ensureInfos();  // charge l'actu quotidienne (veille RSS gratuite, filtrée appro)
       // ── Cockpit réassort (crash-safe : ne casse jamais la page si un flux manque) ──
       var kpiBand = '', reaCard = '', rosCard = '', radarHtml = '', etabHtml = '', basculesHtml = '', ansmHtml = '', epiHtml = '', hasHtml = '', saiCipHtml = '', carnetHtml = '', carnetCounts = null;
       try {
@@ -860,7 +906,7 @@
         '</div>';
 
       // ── Navigation : 4 espaces clairs ──
-      var NAV = [['today', 'Aujourd’hui'], ['anticiper', 'Anticiper'], ['stock', 'Stock & sites'], ['marche', 'Marché & négo']];
+      var NAV = [['today', 'Aujourd’hui'], ['actu', 'Actu'], ['anticiper', 'Anticiper'], ['stock', 'Stock & sites'], ['marche', 'Marché & négo']];
       var nav = '<div class="ap-nav">' + NAV.map(function (n) {
         return '<button class="ap-navb' + (_section === n[0] ? ' on' : '') + '" onclick="V2.approSec(\'' + n[0] + '\')">' + n[1] + '</button>';
       }).join('') + '</div>';
@@ -870,6 +916,8 @@
       var content = '';
       if (_section === 'today') {
         content = calendarView(carnetHtml || '<div class="v2-card" style="padding:22px;text-align:center;color:var(--muted)">Chargement du carnet…</div>');
+      } else if (_section === 'actu') {
+        content = actuView();
       } else if (_section === 'anticiper') {
         content = secHead('Radar 90 jours', 'ce qui va bouger la demande : remboursements, génériques, baisses de prix, saison, ruptures') + radarHtml +
           secHead('Signaux &amp; échéances') + epiHtml + saiCipHtml + hasHtml + ansmHtml;
@@ -1008,6 +1056,13 @@
       '@media(max-width:640px){.cl-wk{grid-template-columns:1fr}.cl-wc{min-height:0}.cl-wc .cl-line{display:flex}.cl-tab{min-width:0}}' +
       '.ap-sec{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--ip-ink);margin:22px 0 2px}' +
       '.ap-secsub{font-size:12px;color:var(--muted);margin:0 0 12px;line-height:1.5}' +
+      /* actu appro + prédictif */
+      '.ac-pred{display:flex;align-items:center;gap:12px;padding:11px 14px;border-top:1px solid var(--line)}.ac-pred:first-child{border-top:0}' +
+      '.ac-ic{width:34px;height:34px;border-radius:10px;color:#fff;display:grid;place-items:center;font-size:15px;font-weight:800;flex:none}' +
+      '.ac-pt{min-width:0}.ac-pt b{display:block;font-size:14px;font-weight:800;color:var(--ip-ink)}.ac-pt span{font-size:12px;color:var(--muted);font-weight:600}' +
+      '.ac-news{display:flex;align-items:flex-start;gap:11px;padding:12px 14px;border-top:1px solid var(--line);text-decoration:none}.ac-news:first-child{border-top:0}.ac-news:hover{background:var(--card-2,#F6F8FB)}' +
+      '.ac-cat{flex:none;font-size:10px;font-weight:800;color:#fff;border-radius:999px;padding:3px 9px;margin-top:1px;white-space:nowrap}' +
+      '.ac-nm{min-width:0}.ac-nm b{display:block;font-size:13.5px;font-weight:700;color:var(--ip-ink);line-height:1.3}.ac-nm span{font-size:11.5px;color:var(--muted);font-weight:600}' +
       /* radar */
       '.rad{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:6px}' +
       '.rzone{padding:0;overflow:hidden}' +
