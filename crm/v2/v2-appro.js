@@ -473,6 +473,11 @@
   // Chaque produit stocké = une position : couverture (runway), demande, signaux (rupture,
   // saison, générique) → un VERDICT + une quantité. Onglets par verdict · ticket au clic · export.
   var _bookTab = 'all', _carnetActs = null;
+  var ORDER_LEAD = 4; // délai fournisseur par défaut (jours) pour la date « commander avant »
+  function dtLabel(daysAhead) {
+    var d = new Date(Date.now() + Math.round(Math.max(0, daysAhead)) * 86400000);
+    return d.getDate() + ' ' + MOIS_L[d.getMonth()];
+  }
   function carnet() {
     var idx = cipIndex();
     if (!idx || !Object.keys(idx).length) return null;
@@ -496,11 +501,12 @@
         C.red++; C.redEur += o.st * (o.ppht || 0);
       } else if (o.cov < 7 && o.vM >= 5) {
         qty = o.qcmd;
-        if (rupt) { verdict = 'SÉCURISER'; cls = 'sec'; reason = 'tension ANSM · couv ' + Math.round(o.cov) + ' j'; C.sec++; }
-        else { verdict = 'ACHETER'; cls = 'buy'; reason = 'couv ' + Math.round(o.cov) + ' j (rupture proche)'; C.buy++; }
+        if (rupt) { verdict = 'SÉCURISER'; cls = 'sec'; reason = 'tension ANSM · à sec ~' + dtLabel(o.cov) + ' — commander maintenant'; C.sec++; }
+        else { verdict = 'ACHETER'; cls = 'buy'; reason = 'à sec ~' + dtLabel(o.cov) + ' — commander maintenant'; C.buy++; }
         prio = 5; C.eur += qty * (o.ppht || 0);
       } else if (o.qcmd > 0 && o.cov < 21) {
-        verdict = 'ACHETER'; cls = 'buy'; prio = 4; qty = o.qcmd; reason = 'couv ' + Math.round(o.cov) + ' j'; C.buy++; C.eur += qty * (o.ppht || 0);
+        verdict = 'ACHETER'; cls = 'buy'; prio = 4; qty = o.qcmd;
+        reason = 'à sec ~' + dtLabel(o.cov) + ' · commander avant ' + dtLabel(o.cov - ORDER_LEAD); C.buy++; C.eur += qty * (o.ppht || 0);
       } else if (seasonUp) {
         verdict = 'PRÉ-ACHETER'; cls = 'pre'; prio = 3;
         qty = Math.max(o.qcmd, Math.round(o.vM / 30 * 21 * sUp - o.st)); if (qty < 0) qty = 0;
@@ -581,11 +587,25 @@
       '</div>';
     var priceLine = '<div class="tk-price">Prix grossiste (PPHT) <b>' + (V2.fmtEur ? V2.fmtEur(o.ppht) : o.ppht) + '</b>' +
       (rpct > 0 ? ' · abandon de marge <b>' + (Math.round(rpct * 10) / 10) + ' %</b> → net <b>' + (V2.fmtEur ? V2.fmtEur(net) : net) + '</b>' : '') + '</div>';
+    // projection du stock → date de rupture (le meilleur d'Aprobot, en clair)
+    var proj = '', velDay = o.vM / 30;
+    if (velDay > 0 && o.st > 0) {
+      var W = 460, Hh = 76, npt = 24, horizon = Math.max(14, Math.min(75, Math.ceil(o.cov) + 7)), pts = [];
+      for (var k = 0; k <= npt; k++) { var dd = horizon * k / npt, val = Math.max(0, o.st - velDay * dd); pts.push(Math.round(W * k / npt) + ',' + Math.round(Hh - (val / o.st) * Hh)); }
+      var xr = Math.min(W, Math.round(W * o.cov / horizon)), xo = Math.min(W, Math.round(W * Math.max(0, o.cov - ORDER_LEAD) / horizon));
+      proj = '<div class="tk-h">Projection du stock</div>' +
+        '<div class="tk-proj"><svg viewBox="0 0 ' + W + ' ' + (Hh + 2) + '" preserveAspectRatio="none">' +
+          '<polyline points="' + pts.join(' ') + '" fill="none" stroke="#0050E6" stroke-width="2.5" vector-effect="non-scaling-stroke"/>' +
+          '<line x1="' + xo + '" y1="0" x2="' + xo + '" y2="' + Hh + '" stroke="#0E7C86" stroke-width="1.5" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"/>' +
+          '<line x1="' + xr + '" y1="0" x2="' + xr + '" y2="' + Hh + '" stroke="#D5573B" stroke-width="1.5" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"/>' +
+        '</svg></div>' +
+        '<div class="tk-projlab"><b style="color:#0E7C86">commander avant ~' + dtLabel(o.cov - ORDER_LEAD) + '</b><b style="color:#D5573B">rupture ~' + dtLabel(o.cov) + '</b></div>';
+    }
     var html = '<div class="tk-box"><button class="tk-x" onclick="V2.approTicketClose()">✕</button>' +
       '<div class="tk-title">' + esc(cap((name || '').toLowerCase())) + '</div>' +
       '<div class="tk-cip">CIP ' + esc(cip) + (p && p.f ? ' · ' + esc(p.f) : '') + '</div>' +
       (sig.length ? '<div class="tk-sig">' + sig.join(' ') + '</div>' : '') +
-      kpis + priceLine +
+      kpis + priceLine + proj +
       '<div class="tk-h">Demande réseau (6 mois)</div>' + spark +
       sitesHtml + '</div>';
     var el = document.getElementById('appro-ticket');
@@ -809,6 +829,8 @@
       '.tk-kpi b{display:block;font-size:17px;font-weight:800;font-family:var(--mono);color:var(--ip-ink)}.tk-kpi span{font-size:10px;color:var(--muted);font-weight:600}' +
       '.tk-price{font-size:12.5px;color:var(--muted);background:var(--card-2,#F6F8FB);border:1px solid var(--line);border-radius:10px;padding:9px 12px;margin-bottom:14px}.tk-price b{color:var(--ip-ink);font-family:var(--mono)}' +
       '.tk-h{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:6px 0 8px}' +
+      '.tk-proj{border:1px solid var(--line);border-radius:10px;background:var(--card-2,#F6F8FB);padding:6px 8px;margin-bottom:4px}.tk-proj svg{width:100%;height:82px;display:block}' +
+      '.tk-projlab{display:flex;justify-content:space-between;font-size:11px;font-weight:800;margin:0 2px 14px}' +
       '.tk-spark{display:flex;align-items:flex-end;gap:6px;height:96px;padding:0 2px}' +
       '.tk-bar{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:3px}' +
       '.tk-bar i{width:100%;max-width:34px;background:var(--ip-blue);border-radius:4px 4px 0 0;display:block}' +
