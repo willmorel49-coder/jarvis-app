@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Configurateur Intégral — Brique 5 · Micro-interactions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--ink:#06080e;--pan:#0d1018;--line:rgba(255,255,255,.10);--pap:#F4F1EA;--mut:#8b93a3;--blue:#0057FF;--or:#F39A1B;
+    --sans:'DM Sans',system-ui,sans-serif;--mono:'DM Mono',monospace;}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--ink);color:var(--pap);font-family:var(--sans);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+  .top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 22px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .top .t{font-family:var(--mono);font-size:12.5px;letter-spacing:.06em;color:var(--mut)} .top .t b{color:var(--pap)} .top .t .or{color:var(--or)}
+  .now{font-family:var(--mono);font-size:12px;color:var(--mut)} .now b{color:var(--or)}
+
+  .zone{position:relative;min-height:52vh;display:flex;align-items:center;justify-content:center;border-bottom:1px solid var(--line);background:radial-gradient(120% 90% at 60% 25%,#0a1226,#05070d 70%);padding:40px}
+  .demo{display:flex;flex-direction:column;gap:26px;align-items:flex-start;width:100%;max-width:820px}
+  .btns{display:flex;gap:14px;flex-wrap:wrap}
+  .mbtn{position:relative;overflow:hidden;display:inline-flex;align-items:center;gap:10px;font-size:15px;padding:14px 26px;border-radius:999px;text-decoration:none;font-weight:600;border:1px solid var(--line);color:var(--pap);background:transparent;cursor:pointer;transition:transform .3s,color .3s}
+  .mbtn.p{background:var(--or);color:#1a1206;border-color:var(--or)}
+  .mbtn .ar{transition:transform .3s}
+  .mcards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;width:100%} @media(max-width:680px){.mcards{grid-template-columns:1fr}}
+  .mcard{position:relative;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--pan);min-height:150px;transform-style:preserve-3d;transition:transform .3s,border-color .3s}
+  .mcard .ph{height:92px;overflow:hidden} .mcard img{width:100%;height:100%;object-fit:cover;transition:transform .5s}
+  .mcard .cc{padding:12px 14px} .mcard h4{font-size:15px} .mcard .rg{font-family:var(--mono);font-size:11px;color:var(--mut)}
+  .mcard .glow{position:absolute;inset:0;opacity:0;transition:opacity .3s;background:radial-gradient(180px 180px at var(--mx,50%) var(--my,50%),rgba(0,87,255,.28),transparent 60%);pointer-events:none}
+  .links{display:flex;gap:26px;flex-wrap:wrap} .mlink{position:relative;color:var(--pap);text-decoration:none;font-size:15px;padding-bottom:3px}
+  .mlink::after{content:'';position:absolute;left:0;bottom:0;height:2px;width:100%;background:linear-gradient(90deg,var(--blue),var(--or));transform:scaleX(0);transform-origin:left;transition:transform .35s ease}
+  .hint{font-family:var(--mono);font-size:12px;color:var(--mut)}
+
+  /* effets activés par une classe sur .zone */
+  .fx-fill .mbtn:not(.p)::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,var(--blue),var(--or));transform:translateX(-101%);transition:transform .4s ease;z-index:-1}
+  .fx-fill .mbtn{z-index:0} .fx-fill .mbtn:not(.p):hover::before{transform:translateX(0)} .fx-fill .mbtn:not(.p):hover{color:#fff;border-color:transparent}
+  .fx-fill .mbtn.p:hover{filter:brightness(1.08)}
+  .fx-arrow .mbtn:hover .ar{transform:translateX(6px)}
+  .fx-underline .mlink:hover::after{transform:scaleX(1)}
+  .fx-zoom .mcard:hover img{transform:scale(1.08)}
+  .ripple{position:absolute;border-radius:50%;background:rgba(255,255,255,.5);transform:scale(0);animation:rp .6s ease-out;pointer-events:none}
+  @keyframes rp{to{transform:scale(3.2);opacity:0}}
+
+  .picker{padding:20px 22px 70px}
+  .picker h2{font-size:15px;font-weight:600} .picker .sub2{font-family:var(--mono);font-size:12px;color:var(--mut);margin:4px 0 18px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(205px,1fr));gap:12px}
+  .tile{position:relative;border:1px solid var(--line);border-radius:13px;padding:16px;cursor:pointer;background:var(--pan);transition:transform .2s,border-color .2s}
+  .tile:hover{transform:translateY(-3px);border-color:rgba(0,87,255,.5)} .tile.active{border-color:var(--or);box-shadow:0 0 0 1px var(--or)}
+  .tile.keep{border-color:rgba(243,154,27,.55)} .tile .star{position:absolute;top:10px;right:12px;color:var(--or);font-size:14px}
+  .tile .nm{font-size:14.5px;font-weight:600;margin-bottom:3px} .tile .ds{font-family:var(--mono);font-size:11px;color:var(--mut);line-height:1.4}
+  .foot{margin-top:24px;font-family:var(--mono);font-size:12px;color:var(--mut);border-top:1px solid var(--line);padding-top:14px} .foot b{color:var(--pap)}
+</style>
+</head>
+<body>
+  <div class="top">
+    <div class="t">CONFIGURATEUR INTÉGRAL · <b>BRIQUE 5</b> — <span class="or">MICRO-INTERACTIONS</span> · survole / clique les éléments</div>
+    <div class="now">Effet : <b id="nowName">—</b></div>
+  </div>
+
+  <div class="zone" id="zone">
+    <div class="demo">
+      <div class="hint" id="hint">// survole les boutons, les cartes et les liens ci-dessous</div>
+      <div class="btns">
+        <a class="mbtn p" href="#">Découvrir le réseau <span class="ar">→</span></a>
+        <a class="mbtn" href="#">Nous rejoindre <span class="ar">→</span></a>
+      </div>
+      <div class="mcards">
+        <div class="mcard"><div class="glow"></div><div class="ph"><img src="../../assets/siege.jpg" alt=""></div><div class="cc"><h4>Le siège</h4><div class="rg">Plateforme · France</div></div></div>
+        <div class="mcard"><div class="glow"></div><div class="ph"><img src="../../assets/poster.jpg" alt=""></div><div class="cc"><h4>Entrepôts</h4><div class="rg">9 agences</div></div></div>
+        <div class="mcard"><div class="glow"></div><div class="ph"><img src="../../assets/siege-solaire.jpg" alt=""></div><div class="cc"><h4>Énergie</h4><div class="rg">Solaire</div></div></div>
+      </div>
+      <div class="links"><a class="mlink" href="#">Le réseau</a><a class="mlink" href="#">Nos valeurs</a><a class="mlink" href="#">Nous contacter</a></div>
+    </div>
+  </div>
+
+  <section class="picker">
+    <h2>Choisis tes micro-interactions</h2>
+    <div class="sub2">// boutons, cartes, liens — 100% local, désactivées au tactile / reduced-motion</div>
+    <div class="grid" id="grid"></div>
+    <div class="foot">Dernière brique ✓ — ensuite : <b>« Prévisualiser mon site »</b> assemble tous tes choix.</div>
+  </section>
+
+<script src="../../vendor/gsap/gsap.min.js"></script>
+<script>
+  const zone=document.getElementById('zone'), nowName=document.getElementById('nowName');
+  const fine=matchMedia('(hover:hover) and (pointer:fine)').matches && !matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const btns=[...zone.querySelectorAll('.mbtn')], cards=[...zone.querySelectorAll('.mcard')];
+  let handlers=[]; const FXCLASSES=['fx-fill','fx-arrow','fx-underline','fx-zoom'];
+  function on(el,ev,fn){el.addEventListener(ev,fn);handlers.push([el,ev,fn]);}
+  function clearAll(){ handlers.forEach(([el,ev,fn])=>el.removeEventListener(ev,fn)); handlers=[]; FXCLASSES.forEach(c=>zone.classList.remove(c)); btns.forEach(b=>gsap.set(b,{x:0,y:0})); cards.forEach(c=>gsap.set(c,{rotateX:0,rotateY:0})); cards.forEach(c=>{const g=c.querySelector('.glow');if(g)g.style.opacity='0';}); }
+
+  const FX={
+    fill:{name:'Fill sweep', ds:'le fond balaie le bouton au survol', keep:true, apply(){ zone.classList.add('fx-fill'); }},
+    arrow:{name:'Flèche qui glisse', ds:'la flèche avance au survol', apply(){ zone.classList.add('fx-arrow'); }},
+    underline:{name:'Soulignement', ds:'trait bleu→orange sous les liens', keep:true, apply(){ zone.classList.add('fx-underline'); }},
+    zoom:{name:'Zoom image', ds:'la photo zoome au survol', keep:true, apply(){ zone.classList.add('fx-zoom'); }},
+    magnetic:{name:'Boutons magnétiques', ds:'les boutons sont attirés par la souris', apply(){ btns.forEach(b=>{ on(b,'mousemove',e=>{const r=b.getBoundingClientRect();gsap.to(b,{x:(e.clientX-(r.left+r.width/2))*.3,y:(e.clientY-(r.top+r.height/2))*.5,duration:.4,ease:'power3'});}); on(b,'mouseleave',()=>gsap.to(b,{x:0,y:0,duration:.5,ease:'elastic.out(1,.4)'})); }); }},
+    tilt:{name:'Cartes tilt 3D', ds:'les cartes s\'inclinent vers la souris', apply(){ cards.forEach(c=>{ gsap.set(c,{transformPerspective:700}); on(c,'mousemove',e=>{const r=c.getBoundingClientRect();const px=(e.clientX-r.left)/r.width-.5,py=(e.clientY-r.top)/r.height-.5;gsap.to(c,{rotateY:px*14,rotateX:-py*14,duration:.4,ease:'power2'});}); on(c,'mouseleave',()=>gsap.to(c,{rotateX:0,rotateY:0,duration:.5,ease:'power2'})); }); }},
+    glow:{name:'Glow suiveur', ds:'un halo bleu suit sur les cartes', apply(){ cards.forEach(c=>{const g=c.querySelector('.glow'); on(c,'mouseenter',()=>g.style.opacity='1'); on(c,'mouseleave',()=>g.style.opacity='0'); on(c,'mousemove',e=>{const r=c.getBoundingClientRect();c.style.setProperty('--mx',(e.clientX-r.left)+'px');c.style.setProperty('--my',(e.clientY-r.top)+'px');}); }); }},
+    ripple:{name:'Ripple au clic', ds:'onde au clic sur boutons/cartes', keep:true, apply(){ [...btns,...cards].forEach(el=>{ on(el,'click',e=>{const r=el.getBoundingClientRect();const d=Math.max(r.width,r.height);const rp=document.createElement('span');rp.className='ripple';rp.style.width=rp.style.height=d+'px';rp.style.left=(e.clientX-r.left-d/2)+'px';rp.style.top=(e.clientY-r.top-d/2)+'px';el.appendChild(rp);setTimeout(()=>rp.remove(),600);}); }); }},
+  };
+
+  function set(id){ clearAll(); nowName.textContent=FX[id].name; document.querySelectorAll('.tile').forEach(t=>t.classList.toggle('active',t.dataset.id===id)); if(fine) FX[id].apply(); }
+  const grid=document.getElementById('grid');
+  grid.innerHTML=Object.entries(FX).map(([id,f])=>`<div class="tile${f.keep?' keep':''}" data-id="${id}">${f.keep?'<span class="star" title="retenu">★</span>':''}<div class="nm">${f.name}</div><div class="ds">${f.ds}</div></div>`).join('');
+  grid.querySelectorAll('.tile').forEach(t=>t.addEventListener('click',()=>set(t.dataset.id)));
+  if(!fine) document.getElementById('hint').textContent='// interactions actives uniquement sur ordinateur (souris)';
+  set('fill');
+</script>
+</body>
+</html>
