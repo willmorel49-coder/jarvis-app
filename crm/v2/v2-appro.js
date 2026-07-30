@@ -470,15 +470,17 @@
   }
 
   // ═══ CARNET D'ACHAT DU JOUR — fusion de tous les signaux en décisions (façon salle de marché) ═══
-  // Chaque produit stocké = une position : couverture (runway), demande (momentum), et
-  // signaux (rupture, saison, générique) → un VERDICT + une quantité. LE plan du jour.
+  // Chaque produit stocké = une position : couverture (runway), demande, signaux (rupture,
+  // saison, générique) → un VERDICT + une quantité. Onglets par verdict · ticket au clic · export.
+  var _bookTab = 'all', _carnetActs = null;
   function carnet() {
     var idx = cipIndex();
-    if (!idx || !Object.keys(idx).length) return { html: '', counts: null };
+    if (!idx || !Object.keys(idx).length) return null;
     var sai = (_saiCip && _saiCip.data) || {};
     var genSet = null;
     if (_generData && _generData.princepsWithGeneric) { genSet = {}; _generData.princepsWithGeneric.forEach(function (c) { genSet[c] = 1; }); }
     var now = new Date().getMonth() + 1, win = [now % 12 + 1, (now + 1) % 12 + 1, (now + 2) % 12 + 1];
+    var P = window.PROD_STATS || [], ps = {}; for (var i = 0; i < P.length; i++) ps[String(P[i].c)] = P[i];
     var acts = [], C = { buy: 0, sec: 0, pre: 0, arb: 0, red: 0, eur: 0, redEur: 0 };
     Object.keys(idx).forEach(function (c) {
       var o = idx[c];
@@ -506,22 +508,90 @@
       } else if (isGen) {
         verdict = 'ARBITRER'; cls = 'arb'; prio = 2; reason = 'générique dispo → basculer'; C.arb++;
       } else return;
-      acts.push({ c: c, o: o, v: verdict, cls: cls, prio: prio, qty: qty, reason: reason, rupt: rupt, season: seasonUp, gen: isGen });
+      acts.push({ c: c, name: (ps[c] && ps[c].d) || c, o: o, v: verdict, cls: cls, prio: prio, qty: qty, reason: reason, rupt: rupt, season: seasonUp, gen: isGen });
     });
     acts.sort(function (a, b) { return (b.prio - a.prio) || (a.o.cov - b.o.cov); });
-    var P = window.PROD_STATS || [], ps = {}; for (var i = 0; i < P.length; i++) ps[String(P[i].c)] = P[i];
-    var rows = acts.slice(0, 24).map(function (x) {
-      var chips = '';
-      if (x.rupt) chips += ' <span class="ap-tag ru">ANSM</span>';
-      if (x.season) chips += ' <span class="ap-tag" style="color:#6D5AE6;background:#EFEBFB;border:1px solid #D3C9F5">saison</span>';
-      if (x.gen && x.cls !== 'arb') chips += ' <span class="ap-tag" style="color:#0E7C86;background:#E5F4F5;border:1px solid #B8E0E3">Gx</span>';
-      return '<div class="cb-row"><span class="cb-tag cb-' + x.cls + '">' + x.v + '</span>' +
-        '<div class="cb-nm">' + esc(cap(((ps[x.c] && ps[x.c].d) || x.c).toLowerCase())) + '<small>' + x.reason + chips + '</small></div>' +
-        '<div class="cb-cov">' + covBadge(x.o.cov) + '</div>' +
-        '<div class="cb-qt">' + (x.qty > 0 ? '+' + fmt(x.qty) + '<small>u</small>' : '—') + '</div></div>';
-    }).join('');
-    return { html: rows, counts: C, total: acts.length };
+    _carnetActs = acts;
+    return { acts: acts, counts: C };
   }
+  function carnetRow(x) {
+    var chips = '';
+    if (x.rupt) chips += ' <span class="ap-tag ru">ANSM</span>';
+    if (x.season) chips += ' <span class="ap-tag" style="color:#6D5AE6;background:#EFEBFB;border:1px solid #D3C9F5">saison</span>';
+    if (x.gen && x.cls !== 'arb') chips += ' <span class="ap-tag" style="color:#0E7C86;background:#E5F4F5;border:1px solid #B8E0E3">Gx</span>';
+    return '<div class="cb-row" onclick="V2.approTicket(\'' + esc(x.c) + '\')"><span class="cb-tag cb-' + x.cls + '">' + x.v + '</span>' +
+      '<div class="cb-nm">' + esc(cap((x.name || '').toLowerCase())) + '<small>' + x.reason + chips + '</small></div>' +
+      '<div class="cb-cov">' + covBadge(x.o.cov) + '</div>' +
+      '<div class="cb-qt">' + (x.qty > 0 ? '+' + fmt(x.qty) + '<small>u</small>' : '—') + '</div></div>';
+  }
+  V2.approTab = function (t) { _bookTab = t; if (V2.render) V2.render(); };
+  V2.approExport = function () {
+    var buys = (_carnetActs || []).filter(function (a) { return a.qty > 0; });
+    if (!buys.length) { try { alert('Aucune ligne à commander.'); } catch (e) {} return; }
+    var lines = [['CIP', 'Produit', 'Action', 'Quantite', 'Couverture_jours', 'PrixNet_HT', 'Valeur_HT']];
+    buys.forEach(function (a) { lines.push([a.c, a.name, a.v, a.qty, Math.round(a.o.cov), a.o.ppht || '', Math.round(a.qty * (a.o.ppht || 0))]); });
+    var csv = lines.map(function (r) { return r.map(function (v) { return '"' + String(v).replace(/"/g, '""') + '"'; }).join(';'); }).join('\r\n');
+    try {
+      var blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+      var url = URL.createObjectURL(blob), a = document.createElement('a');
+      a.href = url; a.download = 'carnet-achat-' + new Date().toISOString().slice(0, 10) + '.csv';
+      document.body.appendChild(a); a.click();
+      setTimeout(function () { document.body.removeChild(a); URL.revokeObjectURL(url); }, 150);
+    } catch (e) {}
+  };
+  V2.approTicketClose = function () { var el = document.getElementById('appro-ticket'); if (el) el.style.display = 'none'; };
+  V2.approTicket = function (cip) {
+    cip = String(cip);
+    var o = cipIndex()[cip]; if (!o) return;
+    var P = window.PROD_STATS || [], p = null; for (var i = 0; i < P.length; i++) if (String(P[i].c) === cip) { p = P[i]; break; }
+    var name = (p && p.d) || cip;
+    // demande 6 mois (WML)
+    var series = [0, 0, 0, 0, 0, 0], S = window.WML_SALES || [];
+    for (var j = 0; j < S.length; j++) { var r = S[j]; if (String(r[3]) === cip && r[4] > 0 && r[1] >= 1 && r[1] <= 6) series[r[1] - 1] += r[4]; }
+    var mx = Math.max.apply(null, series) || 1;
+    var MS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin'];
+    var spark = '<div class="tk-spark">' + series.map(function (v, k) {
+      return '<div class="tk-bar"><i style="height:' + Math.round(6 + v / mx * 66) + 'px"></i><b>' + fmt(v) + '</b><span>' + MS[k] + '</span></div>';
+    }).join('') + '</div>';
+    // stock par site (ETAB, NR)
+    var EP = window.ETAB_PRICES, sitesHtml = '';
+    if (EP && EP.prices && EP.etabs) {
+      var per = EP.etabs.map(function (e) { var v = (EP.prices[e.code] && EP.prices[e.code][cip]) ? Math.max(0, EP.prices[e.code][cip][1]) : 0; return { code: e.code, v: v }; });
+      var tot = per.reduce(function (a, b) { return a + b.v; }, 0);
+      if (tot > 0) {
+        var smx = Math.max.apply(null, per.map(function (x) { return x.v; })) || 1;
+        sitesHtml = '<div class="tk-h">Stock par établissement</div><div class="tk-sites">' +
+          per.map(function (x) { return '<div class="tk-site"><i style="height:' + Math.round(4 + x.v / smx * 30) + 'px"></i><span>' + x.code + '</span><b>' + fmt(x.v) + '</b></div>'; }).join('') + '</div>';
+      }
+    }
+    // signaux
+    var sig = [];
+    if (V2.rupture && V2.rupture(cip)) sig.push('<span class="ap-tag ru">tension ANSM</span>');
+    var sai = _saiCip && _saiCip.data && _saiCip.data[cip];
+    if (sai) { var pk = sai.p; sig.push('<span class="ap-tag" style="color:#6D5AE6;background:#EFEBFB;border:1px solid #D3C9F5">pic saison ' + MOIS_L[pk - 1] + '</span>'); }
+    if (_generData && _generData.princepsWithGeneric && _generData.princepsWithGeneric.indexOf(cip) >= 0) sig.push('<span class="ap-tag" style="color:#0E7C86;background:#E5F4F5;border:1px solid #B8E0E3">générique dispo</span>');
+    var mo = V2.momentum ? V2.momentum(cip) : null;
+    if (mo != null) sig.push('<span class="ap-tag" style="color:' + (mo > 0 ? 'var(--c-opp)' : '#a8651a') + ';background:var(--card-2,#F6F8FB);border:1px solid var(--line)">momentum ' + (mo > 0 ? '▲' : '▼') + '</span>');
+    var net = p ? p.net : o.ppht, rpct = p ? p.rpct : 0;
+    var kpis = '<div class="tk-kpis">' +
+      '<div class="tk-kpi"><b>' + Math.round(o.cov) + ' j</b><span>couverture</span></div>' +
+      '<div class="tk-kpi"><b>' + fmt(Math.round(o.vM)) + '</b><span>ventes/mois</span></div>' +
+      '<div class="tk-kpi"><b>' + fmt(o.st) + '</b><span>en stock</span></div>' +
+      '<div class="tk-kpi"><b style="color:var(--c-opp)">' + (o.qcmd > 0 ? '+' + fmt(o.qcmd) : '—') + '</b><span>à commander</span></div>' +
+      '</div>';
+    var priceLine = '<div class="tk-price">Prix grossiste (PPHT) <b>' + (V2.fmtEur ? V2.fmtEur(o.ppht) : o.ppht) + '</b>' +
+      (rpct > 0 ? ' · abandon de marge <b>' + (Math.round(rpct * 10) / 10) + ' %</b> → net <b>' + (V2.fmtEur ? V2.fmtEur(net) : net) + '</b>' : '') + '</div>';
+    var html = '<div class="tk-box"><button class="tk-x" onclick="V2.approTicketClose()">✕</button>' +
+      '<div class="tk-title">' + esc(cap((name || '').toLowerCase())) + '</div>' +
+      '<div class="tk-cip">CIP ' + esc(cip) + (p && p.f ? ' · ' + esc(p.f) : '') + '</div>' +
+      (sig.length ? '<div class="tk-sig">' + sig.join(' ') + '</div>' : '') +
+      kpis + priceLine +
+      '<div class="tk-h">Demande réseau (6 mois)</div>' + spark +
+      sitesHtml + '</div>';
+    var el = document.getElementById('appro-ticket');
+    if (!el) { el = document.createElement('div'); el.id = 'appro-ticket'; el.className = 'tk-ov'; el.onclick = function (e) { if (e.target === el) V2.approTicketClose(); }; document.body.appendChild(el); }
+    el.innerHTML = html; el.style.display = 'flex';
+  };
 
   V2.pages.appro = {
     render: function (root) {
@@ -545,19 +615,19 @@
       try {
         if (window.WML_SALES && window.STOCK_IP) {
           var cb = carnet();
-          if (cb.counts && cb.html) {
-            var C = cb.counts;
+          if (cb && cb.acts.length) {
+            var C = cb.counts, acts = cb.acts;
+            var TABS = [['all', 'Tous', acts.length], ['buy', 'Acheter', C.buy], ['sec', 'Sécuriser', C.sec], ['pre', 'Pré-acheter', C.pre], ['arb', 'Arbitrer', C.arb], ['red', 'Alléger', C.red]];
+            var tabBar = TABS.map(function (t) { return '<button class="cb-tab' + (_bookTab === t[0] ? ' on' : '') + '" onclick="V2.approTab(\'' + t[0] + '\')">' + t[1] + ' <b>' + t[2] + '</b></button>'; }).join('');
+            var shown = _bookTab === 'all' ? acts : acts.filter(function (a) { return a.cls === _bookTab; });
+            var rowsHtml = shown.slice(0, 24).map(carnetRow).join('') || '<div class="ap-empty">Rien dans cette catégorie.</div>';
             carnetHtml = '<div class="v2-card cb-card"><div class="cb-hd"><div><h3>Carnet d\'achat du jour</h3>' +
-              '<div class="cb-sub">' + cb.total + ' positions à traiter — fusion de tous les signaux (couverture, tension ANSM, saison, générique) en décisions</div></div>' +
-              '<div class="cb-tot"><b>' + (V2.fmtEur ? V2.fmtEur(C.eur) : fmt(C.eur)) + '</b><small>à engager</small></div></div>' +
-              '<div class="cb-kpis">' +
-                '<span class="cb-k cb-buy">' + C.buy + ' acheter</span>' +
-                '<span class="cb-k cb-sec">' + C.sec + ' sécuriser</span>' +
-                '<span class="cb-k cb-pre">' + C.pre + ' pré-acheter</span>' +
-                '<span class="cb-k cb-arb">' + C.arb + ' arbitrer</span>' +
-                '<span class="cb-k cb-red">' + C.red + ' alléger</span>' +
-              '</div>' + cb.html +
-              '<div class="ap-foot" style="padding:10px 16px 12px;margin:0">Priorisé par urgence. Quantité conseillée = pour revenir à la couverture cible. « À engager » = valeur d\'achat (prix net) des lignes à acheter/pré-acheter.</div></div>';
+              '<div class="cb-sub">' + acts.length + ' positions — clique une ligne pour le détail, exporte la commande</div></div>' +
+              '<div class="cb-tot"><b>' + (V2.fmtEur ? V2.fmtEur(C.eur) : fmt(C.eur)) + '</b><small>à engager</small></div>' +
+              '<button class="cb-exp" onclick="V2.approExport()">⤓ Exporter</button></div>' +
+              '<div class="cb-tabs">' + tabBar + '</div>' +
+              rowsHtml +
+              '<div class="ap-foot" style="padding:10px 16px 12px;margin:0">Priorisé par urgence · quantité = pour revenir à la couverture cible · « à engager » = valeur d\'achat (prix net) des lignes à acheter/pré-acheter.</div></div>';
           }
         }
       } catch (e) { carnetHtml = ''; }
@@ -717,12 +787,34 @@
       '.cb-pre{color:#6D5AE6;background:#EFEBFB;border:1px solid #D3C9F5}' +
       '.cb-arb{color:#0E7C86;background:#E5F4F5;border:1px solid #B8E0E3}' +
       '.cb-red{color:#a8651a;background:#FFF1DB;border:1px solid #F0C98A}' +
-      '.cb-row{display:flex;align-items:center;gap:11px;padding:10px 16px;border-top:1px solid var(--line)}' +
+      '.cb-exp{flex:none;font-size:12px;font-weight:800;color:var(--ip-blue);background:#EAF1FF;border:1px solid #C8DBFF;border-radius:9px;padding:8px 12px;cursor:pointer;margin-left:10px}.cb-exp:hover{background:#DCE8FF}' +
+      '.cb-tabs{display:flex;gap:6px;flex-wrap:wrap;padding:11px 16px 4px;overflow-x:auto}' +
+      '.cb-tab{flex:none;font-size:12px;font-weight:700;color:var(--muted);background:var(--card-2,#F6F8FB);border:1px solid var(--line);border-radius:999px;padding:5px 12px;cursor:pointer}' +
+      '.cb-tab b{font-family:var(--mono)}.cb-tab.on{background:var(--ip-blue);color:#fff;border-color:var(--ip-blue)}' +
+      '.cb-row{display:flex;align-items:center;gap:11px;padding:10px 16px;border-top:1px solid var(--line);cursor:pointer}.cb-row:hover{background:var(--card-2,#F6F8FB)}' +
       '.cb-tag{flex:none;width:92px;text-align:center;font-size:10.5px;font-weight:800;border-radius:7px;padding:4px 0}' +
       '.cb-nm{flex:1;min-width:0;font-size:13.5px;font-weight:700;color:var(--ip-ink)}.cb-nm small{display:block;font-size:11px;color:var(--muted);font-weight:500;margin-top:1px}' +
       '.cb-cov{flex:none;min-width:56px;text-align:right}' +
       '.cb-qt{flex:none;min-width:64px;text-align:right;font-size:14px;font-weight:800;font-family:var(--mono);color:var(--ip-ink)}.cb-qt small{font-size:10px;color:var(--muted);font-weight:600;font-family:var(--font)}' +
       '@media(max-width:600px){.cb-tag{width:78px}.cb-cov{display:none}}' +
+      /* ticket de position (overlay) */
+      '.tk-ov{position:fixed;inset:0;z-index:9000;background:rgba(16,19,28,.45);display:none;align-items:center;justify-content:center;padding:16px}' +
+      '.tk-box{background:var(--card);border:1px solid var(--line);border-radius:16px;max-width:520px;width:100%;max-height:88vh;overflow:auto;padding:20px 20px 22px;position:relative;box-shadow:0 18px 50px rgba(16,19,28,.28)}' +
+      '.tk-x{position:absolute;top:14px;right:14px;width:30px;height:30px;border-radius:8px;border:1px solid var(--line);background:var(--card-2,#F6F8FB);font-size:14px;font-weight:800;color:var(--muted);cursor:pointer}' +
+      '.tk-title{font-size:17px;font-weight:800;color:var(--ip-ink);padding-right:34px;line-height:1.2}' +
+      '.tk-cip{font-size:11.5px;color:var(--muted);font-weight:600;font-family:var(--mono);margin:3px 0 10px}' +
+      '.tk-sig{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}' +
+      '.tk-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}' +
+      '.tk-kpi{background:var(--card-2,#F6F8FB);border:1px solid var(--line);border-radius:11px;padding:10px 8px;text-align:center}' +
+      '.tk-kpi b{display:block;font-size:17px;font-weight:800;font-family:var(--mono);color:var(--ip-ink)}.tk-kpi span{font-size:10px;color:var(--muted);font-weight:600}' +
+      '.tk-price{font-size:12.5px;color:var(--muted);background:var(--card-2,#F6F8FB);border:1px solid var(--line);border-radius:10px;padding:9px 12px;margin-bottom:14px}.tk-price b{color:var(--ip-ink);font-family:var(--mono)}' +
+      '.tk-h{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:6px 0 8px}' +
+      '.tk-spark{display:flex;align-items:flex-end;gap:6px;height:96px;padding:0 2px}' +
+      '.tk-bar{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:3px}' +
+      '.tk-bar i{width:100%;max-width:34px;background:var(--ip-blue);border-radius:4px 4px 0 0;display:block}' +
+      '.tk-bar b{font-size:10px;font-weight:700;color:var(--ip-ink);font-family:var(--mono)}.tk-bar span{font-size:9.5px;color:var(--muted);font-weight:600}' +
+      '.tk-sites{display:flex;align-items:flex-end;gap:8px;height:52px;margin-bottom:4px}' +
+      '.tk-site{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px}.tk-site i{width:100%;max-width:26px;background:#0E7C86;border-radius:3px 3px 0 0;display:block}.tk-site span{font-size:9px;font-weight:700;color:var(--muted)}.tk-site b{font-size:9.5px;font-family:var(--mono);color:var(--ip-ink)}' +
       '.ap-sec{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--ip-ink);margin:22px 0 2px}' +
       '.ap-secsub{font-size:12px;color:var(--muted);margin:0 0 12px;line-height:1.5}' +
       /* radar */
