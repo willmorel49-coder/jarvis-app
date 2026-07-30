@@ -1,0 +1,139 @@
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<title>Appro · Calendrier — maquettes</title>
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,800,900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F7F8FA;--card:#fff;--card2:#F1F4F8;--ink:#0E1420;--muted:#6B7280;--line:#E6E9EF;--blue:#0050E6;--red:#D93A2B;--amber:#C77700;--green:#1E9E6A;--violet:#6D5AE6;--mono:'Geist Mono',monospace;--font:'Satoshi',-apple-system,system-ui,sans-serif}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);-webkit-font-smoothing:antialiased}
+.wrap{max-width:1080px;margin:0 auto;padding:18px 16px 90px}
+h1{font-size:21px;font-weight:900;margin:0 0 3px}.lede{font-size:13px;color:var(--muted);margin:0 0 14px;line-height:1.5}
+.sel{display:flex;gap:8px;flex-wrap:wrap;position:sticky;top:0;z-index:30;background:var(--bg);padding:10px 0;margin-bottom:14px;border-bottom:1px solid var(--line)}
+.sbtn{border:1px solid var(--line);background:var(--card);border-radius:12px;padding:9px 12px;font:inherit;font-size:12.5px;font-weight:800;color:var(--ink);cursor:pointer;display:flex;align-items:center;gap:7px}
+.sbtn .n{width:20px;height:20px;border-radius:6px;background:var(--card2);border:1px solid var(--line);display:grid;place-items:center;font-size:11px;font-weight:800;color:var(--muted);font-family:var(--mono)}
+.sbtn.on{background:var(--blue);color:#fff;border-color:var(--blue)}.sbtn.on .n{background:rgba(255,255,255,.22);color:#fff;border-color:transparent}
+.vh{font-size:16px;font-weight:800;margin:2px 0}.vs{font-size:12.5px;color:var(--muted);margin:0 0 14px;line-height:1.5}
+.mono{font-family:var(--mono)}
+.late{display:flex;align-items:center;gap:9px;background:#FDECEA;border:1px solid #F5C2BA;border-radius:12px;padding:10px 14px;margin-bottom:14px;font-size:13px;font-weight:800;color:#B02A1E}
+.late .c{background:var(--red);color:#fff;border-radius:999px;padding:1px 9px;font-family:var(--mono)}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.mitm{width:7px;height:7px;border-radius:50%;background:#111;display:inline-block;margin-left:3px;vertical-align:middle}
+/* fournisseur card */
+.sup{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--c);border-radius:12px;padding:10px 12px;margin-bottom:8px}
+.sup .nm{font-size:13.5px;font-weight:800;display:flex;align-items:center;gap:5px}
+.sup .mt{font-size:11.5px;color:var(--muted);font-weight:600;margin-top:3px;font-family:var(--mono)}
+/* V1 semaine */
+.wk{display:grid;grid-template-columns:repeat(7,1fr);gap:9px}
+.wc{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:8px 7px;min-height:120px}
+.wc.today{background:#EAF1FF;border-color:#Bcd4ff}
+.wch{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);margin-bottom:8px;display:flex;justify-content:space-between}
+.wch b{color:var(--ink);font-family:var(--mono)}
+.more{font-size:11px;color:var(--muted);font-weight:700;text-align:center;padding:3px}
+/* V2 today */
+.tdblk{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:16px}
+.tdh{font-size:13px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.tdbig{font-size:19px;font-weight:900;margin:4px 0 12px}
+.nx{display:flex;align-items:center;gap:10px;padding:11px 4px;border-top:1px solid var(--line);font-size:13px}
+.nx .d{width:70px;font-weight:800;color:var(--ink)}.nx .info{flex:1;color:var(--muted);font-weight:600;font-size:12px}
+/* V3 fil */
+.band{display:flex;gap:5px;margin-bottom:16px}
+.bd{flex:1;text-align:center;background:var(--card);border:1px solid var(--line);border-radius:9px;padding:6px 2px}
+.bd .n{font-size:10px;color:var(--muted);font-weight:700}.bd .num{font-size:13px;font-weight:800;font-family:var(--mono);margin-top:2px}.bd.today{background:var(--blue);color:#fff}.bd.today .n{color:#fff;opacity:.85}
+.fsec{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:16px 0 8px;position:sticky;top:52px;background:var(--bg);padding:4px 0}
+.fr{display:flex;align-items:center;gap:11px;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--c);border-radius:11px;padding:11px 13px;margin-bottom:7px}
+.fr .m{flex:1;min-width:0}.fr .nm{font-size:13.5px;font-weight:800}.fr .s{font-size:11.5px;color:var(--muted);font-weight:600;margin-top:2px}
+.fr .q{font-size:16px;font-weight:800;font-family:var(--mono);color:var(--c)}
+/* V4 mois */
+.mgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.mdn{font-size:10px;font-weight:800;color:var(--muted);text-align:center}
+.mcell{aspect-ratio:1;border:1px solid var(--line);border-radius:9px;padding:5px;font-size:11px;position:relative;background:var(--card)}
+.mcell .dn{font-family:var(--mono);font-weight:700;color:var(--muted);font-size:10.5px}
+.mcell .ld{position:absolute;left:5px;right:5px;bottom:5px;border-radius:5px;height:5px}
+.mcell.today{outline:2px solid var(--blue)}
+.mcell .cnt{position:absolute;top:4px;right:6px;font-size:11px;font-weight:800;font-family:var(--mono)}
+.banner{background:#EEF3FF;border:1px solid #CFE0FF;border-radius:11px;padding:10px 14px;font-size:12.5px;font-weight:700;color:#1a3ea8;margin-bottom:12px}
+.leg{display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--muted);font-weight:600;margin:12px 0 0}
+.leg b{display:inline-flex;align-items:center;gap:5px;font-weight:600}
+.foot{margin-top:24px;font-size:11.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:14px;line-height:1.6}
+@media(max-width:640px){.wk{grid-template-columns:1fr;min-height:0}.wc{min-height:0}}
+</style></head><body><div class="wrap">
+<h1>Appro · vue calendrier — 4 maquettes</h1>
+<p class="lede">Synthèse des experts appro · trading · design · UX (Fable 5). Vraies données du jour. Calendrier d'<b>actions</b> (« commander avant »), groupé par <b>fournisseur</b>, une couleur = une action. Choisis un numéro.</p>
+<div class="sel" id="sel"></div><div id="stage"></div>
+<div class="leg"><b><span class="dot" style="background:var(--red)"></span>Acheter (rupture proche)</b><b><span class="dot" style="background:var(--amber)"></span>Sécuriser</b><b><span class="dot" style="background:var(--blue)"></span>Pré-acheter (saison)</b><b><span class="mitm"></span>critique</b></div>
+<p class="foot">Données réelles : 687 à commander · 49 à sécuriser · 755 907 € à engager. Chaque carte = un fournisseur avec ses lignes (l'acheteur commande par labo, pas produit par produit). « J−n » = jours avant la date limite de commande.</p>
+</div>
+<script>
+var D={"counts":{"buy":687,"sec":49,"pre":159,"red":696,"eur":755907.0299999999,"redEur":482677.51999999967},"eur":755907,"redEur":482678,"items":[{"d":"EYLEA 114,3MG/ML INJ SRG 1","cls":"buy","qty":172,"cov":4,"cmdDays":0,"labo":"BAYER AG (ALLEMAGNE)","mitm":false,"val":62992},{"d":"REPATHA 140MG INJ STYLO1ML 1","cls":"sec","qty":197,"cov":4,"cmdDays":0,"labo":"AMGEN EUROPE","mitm":true,"val":33701},{"d":"WEGOVY 1MG FLEX INJ STYLO SC 1","cls":"buy","qty":112,"cov":5,"cmdDays":0,"labo":"NOVO NORDISK (DANEMARK)","mitm":true,"val":21269},{"d":"ENTRESTO 24MG/26MG CPR BT28","cls":"buy","qty":352,"cov":4,"cmdDays":0,"labo":"NOVARTIS EUROPHARM (IRLANDE)","mitm":true,"val":17970},{"d":"REPEVAX INJ SRG 1 S/A+1","cls":"buy","qty":875,"cov":2,"cmdDays":0,"labo":"SANOFI WINTHROP INDUSTRIE","mitm":true,"val":17430},{"d":"TRULICITY 3MG INJ STY0,5ML 4","cls":"buy","qty":194,"cov":5,"cmdDays":0,"labo":"ELI LILLY NEDERLAND (PAY-BAS)","mitm":true,"val":14410},{"d":"DECAPEPTYL LP11,25MG F+A 1+NEC","cls":"buy","qty":55,"cov":4,"cmdDays":0,"labo":"IPSEN PHARMA","mitm":true,"val":13420},{"d":"ENTRESTO 97MG/103MG CPR BT56","cls":"buy","qty":128,"cov":6,"cmdDays":0,"labo":"NOVARTIS EUROPHARM (IRLANDE)","mitm":true,"val":13071},{"d":"UZPRUVO 90MG INJ SRG1ML 1","cls":"buy","qty":7,"cov":4,"cmdDays":0,"labo":"STADA ARZNEIMITTEL AG","mitm":false,"val":7372},{"d":"TOUJEO 300U SOLOSTAR STY1,5ML3","cls":"sec","qty":196,"cov":7,"cmdDays":0,"labo":"SANOFI AVENTIS (ALLEMAGNE)","mitm":true,"val":6333},{"d":"NORDITROPINE FLEXP.15MG STYLO1","cls":"buy","qty":14,"cov":4,"cmdDays":0,"labo":"NOVO NORDISK","mitm":true,"val":4502},{"d":"IMBRUVICA 140MG CPR BT30 DU","cls":"buy","qty":3,"cov":6,"cmdDays":0,"labo":"JANSSEN CILAG INTERNATIONAL NV","mitm":true,"val":4168},{"d":"UVEDOSE 50000UI CAPS MOL BT2","cls":"buy","qty":2051,"cov":5,"cmdDays":0,"labo":"CRINEX","mitm":false,"val":4020},{"d":"OPTIVE FUSION COLLYRE FL 10 ML","cls":"buy","qty":460,"cov":6,"cmdDays":0,"labo":"Divers","mitm":false,"val":2581},{"d":"ADVAGRAF 3MG GELU LP BT30 DU","cls":"buy","qty":22,"cov":4,"cmdDays":0,"labo":"ASTELLAS PHARMA EUROPE (PAYS-BAS)","mitm":true,"val":2446},{"d":"PENTASA 2G GLE SACH 60","cls":"sec","qty":39,"cov":3,"cmdDays":0,"labo":"FERRING (FRANCE)","mitm":true,"val":2384},{"d":"ASPIRINE PROTECT 100MG CPR 30","cls":"buy","qty":928,"cov":2,"cmdDays":0,"labo":"BAYER HEALTHCARE","mitm":true,"val":1559},{"d":"PREVENAR 13 INJ SRG0,5ML 1 A/A","cls":"buy","qty":33,"cov":2,"cmdDays":0,"labo":"PFIZER EUROPE MA EEIG (BELGIQUE)","mitm":true,"val":1489},{"d":"SPASFON LYOC 160MG LYOT ORAL 5","cls":"buy","qty":999,"cov":1,"cmdDays":0,"labo":"TEVA SANTE","mitm":false,"val":1299},{"d":"SPIFEN 400MG CPR BT20","cls":"buy","qty":732,"cov":2,"cmdDays":0,"labo":"ZAMBON FRANCE","mitm":false,"val":1274},{"d":"SAXENDA 6MG/ML INJ STYLO3ML 3","cls":"sec","qty":9,"cov":3,"cmdDays":0,"labo":"NOVO NORDISK (DANEMARK)","mitm":true,"val":1067},{"d":"XEPLION 75MG INJ LP SRG 1","cls":"sec","qty":7,"cov":7,"cmdDays":0,"labo":"JANSSEN CILAG INTERNATIONAL NV","mitm":true,"val":1000},{"d":"SKENAN LP 200MG GELU BT14","cls":"sec","qty":26,"cov":1,"cmdDays":0,"labo":"ETHYPHARM","mitm":true,"val":978},{"d":"EDUCTYL AD. SUP EFFV BT12","cls":"buy","qty":637,"cov":4,"cmdDays":0,"labo":"TECHNI-PHARMA","mitm":false,"val":936},{"d":"PLAQUENIL 200MG CPR PEL BT30","cls":"sec","qty":301,"cov":4,"cmdDays":0,"labo":"SANOFI WINTHROP INDUSTRIE","mitm":true,"val":927},{"d":"METEOXANE GELU BT60","cls":"buy","qty":312,"cov":6,"cmdDays":0,"labo":"ALFASIGMA FRANCE","mitm":false,"val":905},{"d":"ORGALUTRAN 0,25MG INJ SRG 5","cls":"buy","qty":8,"cov":4,"cmdDays":0,"labo":"ORGANON (HOLLANDE)","mitm":false,"val":840},{"d":"LEVOCARNIL 100MG/ML BUV10ML 10","cls":"sec","qty":120,"cov":6,"cmdDays":0,"labo":"ALFASIGMA FRANCE","mitm":true,"val":778},{"d":"ALFUZOSINE ZEN LP 10MG CPR 30","cls":"buy","qty":105,"cov":4,"cmdDays":0,"labo":"ZENTIVA FRANCE","mitm":false,"val":770},{"d":"OMNITROPE 10MG INJ CS1,5ML 1","cls":"buy","qty":4,"cov":5,"cmdDays":0,"labo":"SANDOZ (AUTRICHE)","mitm":true,"val":754},{"d":"MULTICROM 2% COLLY FL10ML","cls":"buy","qty":125,"cov":4,"cmdDays":0,"labo":"THEA","mitm":false,"val":653},{"d":"PANTOPRAZOLE ZEN 20MG CPR BT28","cls":"sec","qty":236,"cov":6,"cmdDays":0,"labo":"ZENTIVA FRANCE","mitm":true,"val":640},{"d":"ACTIQ 1200MCG CPR BUC BT3","cls":"buy","qty":38,"cov":1,"cmdDays":0,"labo":"PHOENIX LABS (IRLANDE)","mitm":true,"val":633},{"d":"RELVAR ELLIPTA 184/22MCG30DOSX3","cls":"sec","qty":8,"cov":6,"cmdDays":0,"labo":"GLAXOSMITHKLINE TRADING SERVICES (IRLANDE)","mitm":true,"val":625},{"d":"APREPITANT ZEN 125+80MG GELU 3","cls":"buy","qty":32,"cov":3,"cmdDays":0,"labo":"ZENTIVA FRANCE","mitm":true,"val":579},{"d":"OVITRELLE 250MCG INJ SRG0,5ML 1","cls":"buy","qty":25,"cov":2,"cmdDays":0,"labo":"MERCK EUROPE (PAYS-BAS)","mitm":false,"val":568},{"d":"OPTIVE GTT LUBR FL10ML T","cls":"buy","qty":101,"cov":6,"cmdDays":0,"labo":"Divers","mitm":false,"val":567},{"d":"SELINCRO 18MG CPR BT14","cls":"buy","qty":15,"cov":6,"cmdDays":0,"labo":"LUNDBECK (DANEMARK)","mitm":true,"val":563},{"d":"CONTOUR+ BANDEL REACT BT2X50 T","cls":"buy","qty":22,"cov":5,"cmdDays":0,"labo":"Divers","mitm":false,"val":544},{"d":"CERNEVIT INJ FL 10","cls":"buy","qty":11,"cov":3,"cmdDays":0,"labo":"BAXTER","mitm":true,"val":529},{"d":"LORMETAZEPAM ARW 2MG CPR BT14","cls":"buy","qty":419,"cov":4,"cmdDays":0,"labo":"ARROW GENERIQUES","mitm":false,"val":515},{"d":"ORGALUTRAN 0,25MG INJ SRG 1","cls":"buy","qty":24,"cov":1,"cmdDays":0,"labo":"ORGANON (HOLLANDE)","mitm":false,"val":504},{"d":"AMOX/AC.CLAV ZTL 500/62,5 C.24","cls":"sec","qty":98,"cov":3,"cmdDays":0,"labo":"GLAXOSMITHKLINE","mitm":true,"val":486},{"d":"CERAZETTE 0,075MG CPR BT28X3","cls":"buy","qty":17,"cov":2,"cmdDays":0,"labo":"ORGANON FRANCE","mitm":false,"val":485},{"d":"ARANESP 100MCG INJ STYLO0,5ML 1","cls":"buy","qty":5,"cov":5,"cmdDays":0,"labo":"AMGEN EUROPE","mitm":true,"val":478},{"d":"AVAMYS 27,5MCG/PULV NAS 120DOS1","cls":"buy","qty":92,"cov":6,"cmdDays":0,"labo":"GLAXOSMITHKLINE TRADING SERVICES (IRLANDE)","mitm":false,"val":440},{"d":"XEPLION 25MG INJ LP SRG 1","cls":"sec","qty":8,"cov":4,"cmdDays":0,"labo":"JANSSEN CILAG INTERNATIONAL NV","mitm":true,"val":440},{"d":"NIVESTIM 12MU/0,2ML INJ SRG 1","cls":"buy","qty":15,"cov":2,"cmdDays":0,"labo":"PFIZER EUROPE MA EEIG (BELGIQUE)","mitm":true,"val":417},{"d":"RITALINE LP 30MG GELU FL28","cls":"sec","qty":20,"cov":5,"cmdDays":0,"labo":"INFECTOPHARM ARZNEIMITTEL UND CONSILIUM (ALLEMAGNE)","mitm":true,"val":407},{"d":"MORPHINE 10MG LAV S/C 1ML 10","cls":"buy","qty":46,"cov":4,"cmdDays":0,"labo":"LABORATOIRES CHAIX ET DU MARAIS","mitm":true,"val":397},{"d":"COLOPEG BUV PDR SACH 4","cls":"buy","qty":57,"cov":4,"cmdDays":0,"labo":"BOUCHARA-RECORDATI","mitm":false,"val":357},{"d":"MEDIKINET 20MG LM GELU BT28","cls":"sec","qty":19,"cov":4,"cmdDays":0,"labo":"MEDICE ARZNEIMITTEL PÜTTER (ALLEMAGNE)","mitm":true,"val":341},{"d":"ACTIQ 600MCG CPR BUC BT3","cls":"sec","qty":20,"cov":1,"cmdDays":0,"labo":"PHOENIX LABS (IRLANDE)","mitm":true,"val":333},{"d":"SOLUPRED 5MG CPR ORODISP BT30","cls":"sec","qty":154,"cov":5,"cmdDays":0,"labo":"CHEPLAPHARM ARZNEIMITTEL (ALLEMAGNE)","mitm":true,"val":330},{"d":"MEPILEX B FLEX EM 5CMX5CM 10 T ref 581220","cls":"buy","qty":89,"cov":5,"cmdDays":0,"labo":"Divers","mitm":false,"val":312},{"d":"ACCU CHEK Mobile cassettes 100","cls":"buy","qty":10,"cov":6,"cmdDays":0,"labo":"Divers","mitm":false,"val":304},{"d":"MEDIKINET 10MG LM GELU BT28","cls":"sec","qty":25,"cov":4,"cmdDays":0,"labo":"MEDICE ARZNEIMITTEL PÜTTER (ALLEMAGNE)","mitm":true,"val":300},{"d":"RITALINE LP 40MG GELU FL28","cls":"sec","qty":11,"cov":5,"cmdDays":0,"labo":"INFECTOPHARM ARZNEIMITTEL UND CONSILIUM (ALLEMAGNE)","mitm":true,"val":288},{"d":"RITALINE LP 10MG GELU FL28","cls":"sec","qty":27,"cov":7,"cmdDays":0,"labo":"INFECTOPHARM ARZNEIMITTEL UND CONSILIUM (ALLEMAGNE)","mitm":true,"val":288},{"d":"ACUPAN 30MG CPR BT30","cls":"buy","qty":31,"cov":5,"cmdDays":0,"labo":"BIOCODEX","mitm":false,"val":285},{"d":"ESCITALOPRAM ZEN 5MG CPR BT28","cls":"pre","qty":5,"cov":24,"cmdDays":14,"labo":"ZENTIVA FRANCE","mitm":true,"val":15},{"d":"FERTISTARTKIT 900UI FL+SRG 1","cls":"pre","qty":0,"cov":34,"cmdDays":14,"labo":"IBSA PHARMA SAS","mitm":true,"val":0},{"d":"ENGERIX B 10MCG SRG.BACK.0,5ML1","cls":"pre","qty":0,"cov":29,"cmdDays":14,"labo":"GLAXOSMITHKLINE","mitm":true,"val":0},{"d":"TUSSIDANE 30MG CPR BT12","cls":"pre","qty":0,"cov":42,"cmdDays":14,"labo":"ELERTE","mitm":false,"val":0},{"d":"DECAPEPTYL 0,1MG INJ FL+AMP 7","cls":"pre","qty":3,"cov":23,"cmdDays":15,"labo":"IPSEN PHARMA","mitm":false,"val":78},{"d":"PRAVASTATINE EG 10MG CPR BT28","cls":"pre","qty":0,"cov":75,"cmdDays":15,"labo":"EG LABO - LABORATOIRES EUROGENERICS","mitm":true,"val":0},{"d":"EFFERALGANMED 1000MG CPR BT8","cls":"pre","qty":0,"cov":33,"cmdDays":15,"labo":"UPSA","mitm":false,"val":0},{"d":"SYNJARDY 12,5MG/1000MG CPR60DU","cls":"pre","qty":0,"cov":32,"cmdDays":16,"labo":"BOEHRINGER INGELHEIM INTERNATIONAL","mitm":true,"val":0},{"d":"ARIPIPRAZOLE EG 15MG CPR BT28","cls":"pre","qty":0,"cov":54,"cmdDays":16,"labo":"EG LABO - LABORATOIRES EUROGENERICS","mitm":true,"val":0},{"d":"REKOVELLE 72MCG/2,16ML INJ STY1","cls":"pre","qty":0,"cov":40,"cmdDays":16,"labo":"FERRING PHARMACEUTICALS (DANEMARK)","mitm":true,"val":0},{"d":"AZITHROMYCINE ZEN 250MG CPR 6","cls":"pre","qty":0,"cov":38,"cmdDays":16,"labo":"ZENTIVA FRANCE","mitm":true,"val":0},{"d":"URAPIDIL VIA LP 60MG GELU30","cls":"pre","qty":0,"cov":65,"cmdDays":16,"labo":"VIATRIS SANTE","mitm":true,"val":0},{"d":"ENOXAPARINE TVC 4000U/0,4ML S2","cls":"pre","qty":0,"cov":81,"cmdDays":16,"labo":"TEVA (PAYS-BAS)","mitm":true,"val":0},{"d":"IBUPROFENE ZEN 400MG CPR BT20","cls":"pre","qty":0,"cov":48,"cmdDays":16,"labo":"ZENTIVA FRANCE","mitm":false,"val":0},{"d":"EUTHYROX 125MCG CPR BT50","cls":"pre","qty":0,"cov":75,"cmdDays":16,"labo":"Divers","mitm":false,"val":0},{"d":"CONCERTA LP 54MG CPR FL28","cls":"pre","qty":0,"cov":35,"cmdDays":16,"labo":"JANSSEN CILAG","mitm":true,"val":0},{"d":"MICROPAKINE LP 750MG GLE S.30","cls":"pre","qty":0,"cov":79,"cmdDays":16,"labo":"SANOFI WINTHROP INDUSTRIE","mitm":true,"val":0},{"d":"EZETIMIB/ATOR.BGA10/40MG CPR90","cls":"pre","qty":1,"cov":62,"cmdDays":17,"labo":"BIOGARAN","mitm":false,"val":27},{"d":"AMLODIP/VALS.ZEN 5/80MG CPR 90","cls":"pre","qty":2,"cov":23,"cmdDays":17,"labo":"ZENTIVA FRANCE","mitm":true,"val":25},{"d":"CONCERTA LP 18MG CPR FL28","cls":"pre","qty":1,"cov":28,"cmdDays":17,"labo":"JANSSEN CILAG","mitm":true,"val":12},{"d":"ATORVASTATINE ZEN 10MG CPR B90","cls":"pre","qty":0,"cov":60,"cmdDays":17,"labo":"ZENTIVA FRANCE","mitm":true,"val":0},{"d":"CHOLECALCIFEROL ZEN BUV A.2ML1","cls":"pre","qty":0,"cov":41,"cmdDays":17,"labo":"ZENTIVA FRANCE","mitm":false,"val":0},{"d":"PERNAZENE 0,05% NAS FP12ML","cls":"pre","qty":0,"cov":77,"cmdDays":17,"labo":"CILFA DEVELOPPEMENT","mitm":false,"val":0},{"d":"NAPROSYNE 500MG CPR BT10","cls":"pre","qty":0,"cov":57,"cmdDays":17,"labo":"LABORATOIRES GRUNENTHAL","mitm":false,"val":0},{"d":"TETRAVAC-ACELLULAIRE SRG 1 S/S AIG+1 AIG SEP","cls":"pre","qty":0,"cov":42,"cmdDays":17,"labo":"SANOFI WINTHROP INDUSTRIE","mitm":true,"val":0}]};
+var COL={buy:'#D93A2B',sec:'#C77700',pre:'#0050E6'};
+var JN=['dim','lun','mar','mer','jeu','ven','sam'];var MN=['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+var NOW=new Date();NOW.setHours(0,0,0,0);
+function eur(n){return Math.round(n).toLocaleString('fr-FR')+' €';}
+function shortLabo(l){return (l||'Divers').split('(')[0].trim().split(/s+/).slice(0,2).join(' ').replace(/ (AG|SA|SAS|SANTE|EUROPE|EUROPHARM|PHARMA|INDUSTRIE|GMBH|LTD|BV|NEDERLAND)$/i,'')||'Divers';}
+function cap(s){s=(s||'').toLowerCase();return s.charAt(0).toUpperCase()+s.slice(1);}
+function dOf(days){return new Date(NOW.getTime()+days*86400000);}
+function dLab(d){return JN[d.getDay()]+' '+d.getDate();}
+// groupby fournisseur pour un ensemble ditems
+function bySup(items){var m={};items.forEach(function(i){var k=shortLabo(i.labo);(m[k]=m[k]||{labo:k,lines:[],eur:0,mitm:0,cls:i.cls}).lines.push(i);m[k].eur+=i.val;if(i.mitm)m[k].mitm++;});
+ return Object.values(m).sort(function(a,b){return b.eur-a.eur;});}
+function supCard(s){return '<div class="sup" style="--c:'+COL[s.cls]+'"><div class="nm">'+s.labo+(s.mitm?' <span class="mitm"></span>':'')+'</div><div class="mt">'+s.lines.length+' ligne'+(s.lines.length>1?'s':'')+' · '+eur(s.eur)+'</div></div>';}
+var late=D.items.filter(function(i){return i.cov<=1;});
+var byDay={};D.items.forEach(function(i){if(i.cov<=1)return;var k=i.cmdDays;(byDay[k]=byDay[k]||[]).push(i);});
+
+/* V1 — Semaine fournisseur */
+function v1(){
+ var h='<div class="vh">1 · Semaine fournisseur <span style="font-size:12px;color:var(--muted)">(reco appro + trading)</span></div><div class="vs">7 jours. Chaque colonne = les commandes à passer ce jour, <b>groupées par labo</b>. Les retards remontent en haut.</div>';
+ h+='<div class="late">⚠ En retard <span class="c">'+late.length+'</span> — à commander maintenant · '+bySup(late).slice(0,3).map(function(s){return s.labo;}).join(' · ')+'</div>';
+ h+='<div class="wk">';
+ for(var k=0;k<7;k++){var d=dOf(k);var sups=bySup((byDay[k]||[]).concat(k===0?late:[]));
+  h+='<div class="wc'+(k===0?' today':'')+'"><div class="wch">'+(k===0?'AUJOURD.':dLab(d))+'<b>'+(sups.length||'')+'</b></div>';
+  h+=sups.slice(0,3).map(supCard).join('')||'<div class="more">—</div>';
+  if(sups.length>3)h+='<div class="more">+'+(sups.length-3)+' labos</div>';
+  h+='</div>';}
+ return h+'</div>';
+}
+/* V2 — Aujourd hui dabord */
+function v2(){
+ var today=bySup(late.concat(byDay[0]||[]));
+ var nMitm=late.concat(byDay[0]||[]).filter(function(i){return i.mitm;}).length;
+ var h='<div class="vh">2 · Aujourd\'hui d\'abord <span style="font-size:12px;color:var(--muted)">(reco design + UX)</span></div><div class="vs">Le jour en grand, les suivants condensés. Zéro navigation : tu vois ce que tu fais maintenant.</div>';
+ h+='<div class="tdblk"><div class="tdh">'+dLab(dOf(0))+' '+MN[NOW.getMonth()]+'</div><div class="tdbig">'+today.length+' commandes à passer'+(nMitm?' · '+nMitm+' critique'+(nMitm>1?'s':''):'')+'</div>';
+ h+=today.slice(0,5).map(supCard).join('');if(today.length>5)h+='<div class="more">+'+(today.length-5)+' autres labos</div>';
+ h+='</div><div class="tdh" style="margin-bottom:6px">Ensuite</div>';
+ for(var k=1;k<=6;k++){var d=dOf(k);var sups=bySup(byDay[k]||[]);
+  h+='<div class="nx"><div class="d">'+dLab(d)+'</div><div class="info">'+(sups.length?sups.length+' commande'+(sups.length>1?'s':'')+' · '+sups.slice(0,2).map(function(s){return s.labo;}).join(', '):'— rien —')+'</div></div>';}
+ return h;
+}
+/* V3 — Fil déchéances */
+function v3(){
+ var h='<div class="vh">3 · Fil d\'échéances <span style="font-size:12px;color:var(--muted)">(todo datée)</span></div><div class="vs">Une seule liste, dans l\'ordre où on agit : en retard → aujourd\'hui → cette semaine → plus tard. La bande du haut = la charge de la semaine.</div>';
+ h+='<div class="band">';for(var k=0;k<7;k++){var d=dOf(k);var n=(byDay[k]||[]).length+(k===0?late.length:0);h+='<div class="bd'+(k===0?' today':'')+'"><div class="n">'+JN[d.getDay()]+'</div><div class="num">'+(n||'·')+'</div></div>';}h+='</div>';
+ function block(title,items){if(!items.length)return'';var sups=bySup(items);return '<div class="fsec">'+title+' ('+sups.length+')</div>'+sups.slice(0,6).map(function(s){return '<div class="fr" style="--c:'+COL[s.cls]+'"><div class="m"><div class="nm">'+s.labo+(s.mitm?' <span class="mitm"></span>':'')+'</div><div class="s">'+s.lines.length+' ligne'+(s.lines.length>1?'s':'')+' · '+cap(s.lines[0].d).slice(0,24)+(s.lines.length>1?'…':'')+'</div></div><div class="q">'+eur(s.eur).replace(' €','')+'</div></div>';}).join('')+(sups.length>6?'<div class="more">+'+(sups.length-6)+' labos</div>':'');}
+ h+=block('⚠ En retard',late);
+ h+=block('Aujourd\'hui',byDay[0]||[]);
+ var week=[];for(var k=1;k<=6;k++)week=week.concat(byDay[k]||[]);h+=block('Cette semaine',week);
+ var later=[];Object.keys(byDay).forEach(function(k){if(+k>=7)later=later.concat(byDay[k]);});h+=block('Plus tard',later);
+ return h;
+}
+/* V4 — Semainier mois */
+function v4(){
+ var y=NOW.getFullYear(),m=NOW.getMonth();var first=new Date(y,m,1);var fd=(first.getDay()+6)%7;var ndays=new Date(y,m+1,0).getDate();
+ var load={};D.items.forEach(function(i){if(i.cov<=1||i.cmdDays!=null){var d=dOf(i.cmdDays||0);if(d.getMonth()===m)load[d.getDate()]=(load[d.getDate()]||0)+1;}});
+ var mx=Math.max(1,...Object.values(load));
+ function shade(v){if(!v)return 'transparent';var t=v/mx;return t>0.66?'#D93A2B':t>0.33?'#E88A2A':'#F1C27A';}
+ var h='<div class="vh">4 · Semainier du mois <span style="font-size:12px;color:var(--muted)">(planifier)</span></div><div class="vs">Le mois d\'un coup d\'œil : les jours chauds se voient à 2 mètres. On n\'exécute pas ici, on anticipe (saison, retours ANSM). Tap un jour → sa liste.</div>';
+ h+='<div class="banner">☀ Pic saison à venir : vitamine D, ORL/antitussifs, antihistaminiques — pré-acheter avant le pic.</div>';
+ h+='<div style="font-size:14px;font-weight:800;margin-bottom:8px">'+cap(MN[m])+' '+y+'</div><div class="mgrid">';
+ ['L','M','M','J','V','S','D'].forEach(function(x){h+='<div class="mdn">'+x+'</div>';});
+ for(var i=0;i<fd;i++)h+='<div></div>';
+ for(var day=1;day<=ndays;day++){var isT=(day===NOW.getDate());var v=load[day]||0;
+  h+='<div class="mcell'+(isT?' today':'')+'"><span class="dn">'+day+'</span>'+(v?'<span class="cnt" style="color:'+shade(v)+'">'+v+'</span>':'')+(v?'<span class="ld" style="background:'+shade(v)+'"></span>':'')+'</div>';}
+ return h+'</div>';
+}
+function cap2(){}
+var V=[['Semaine fournisseur',v1],['Aujourd’hui d’abord',v2],['Fil d’échéances',v3],['Semainier mois',v4]];
+var sel=document.getElementById('sel'),stage=document.getElementById('stage');
+function show(i){stage.innerHTML=V[i][1]();[].forEach.call(sel.children,function(b,j){b.className='sbtn'+(j===i?' on':'');});try{window.scrollTo({top:0,behavior:'smooth'});}catch(e){}}
+V.forEach(function(v,i){var b=document.createElement('button');b.className='sbtn';b.innerHTML='<span class="n">'+(i+1)+'</span>'+v[0];b.onclick=function(){show(i);};sel.appendChild(b);});
+show(0);
+</script></body></html>
