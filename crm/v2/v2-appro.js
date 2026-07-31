@@ -745,7 +745,7 @@
   var _calSub = 'today';
   V2.approCal = function (s) { _calSub = s; if (V2.render) V2.render(); try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {} };
   var CLJ = ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.'];
-  var CLCOL = { buy: '#D93A2B', sec: '#C77700', pre: '#0050E6' };
+  var CLCOL = { buy: '#0B7A4B', sec: '#C0392B', pre: '#6D5AE6' };   // audit UX : aligné sur le carnet (ACHETER vert, SÉCURISER rouge, PRÉ violet — une couleur = une action partout)
   function calDate(days) { return new Date(Date.now() + days * 86400000); }
   function calDayLab(d) { return CLJ[d.getDay()] + ' ' + d.getDate(); }
   function supGroup(items) {
@@ -1010,11 +1010,12 @@
 
       var ris = rising(), rup = ruptToSecure(), nouv = nouveautes(), sai = saisonNext(), neg = negoLabos();
 
-      var risRows = ris.map(function (x) {
+      var RIS_SHOW = 8;   // audit UX : plafonner le mur (les 1res suffisent à décider), le reste en décompte
+      var risRows = ris.length ? (ris.slice(0, RIS_SHOW).map(function (x) {
         return '<div class="ap-row"><div class="ap-nm">' + esc(cap(x.d)) + (x.ru ? ' <span class="ap-tag ru">rupture</span>' : '') + '<small>' + fmt(x.n) + ' officines réseau · marché FR ~' + fmt(x.mk) + ' bts/an</small></div>' +
           '<div class="ap-g">' + pctHtml(x.g) + '</div>' +
           '<div class="ap-st ' + (x.st > 0 ? 'ok' : 'ko') + '">' + (x.st > 0 ? fmt(x.st) + ' en stock' : 'stock 0') + '</div></div>';
-      }).join('') || '<div class="ap-empty">Aucun produit en forte croissance détecté.</div>';
+      }).join('') + (ris.length > RIS_SHOW ? '<div class="ap-foot" style="margin:0;padding:9px 16px">+ ' + (ris.length - RIS_SHOW) + ' autres produits en croissance dans le réseau</div>' : '')) : '<div class="ap-empty">Aucun produit en forte croissance détecté.</div>';
 
       var rupRows = rup.map(function (x) {
         return '<div class="ap-row"><div class="ap-nm">' + esc(cap(x.d)) + (x.dci ? '<small>' + esc(x.dci) + '</small>' : '') + '</div>' +
