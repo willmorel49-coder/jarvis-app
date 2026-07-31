@@ -890,6 +890,19 @@
         .catch(function () { _pfState = 2; });
     } catch (e) { _pfState = 2; }
   }
+  // Génériques & biosimilaires en approche (EMA, robot quotidien) — signal 6-18 mois avant la bascule
+  var _emaState = 0, _emaData = null;
+  function ensureEmaGx() {
+    if (_emaData || _emaState) return;
+    _emaState = 1;
+    try {
+      var day = new Date().toISOString().slice(0, 10);
+      fetch('ema-generiques.json?d=' + day, { cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) { _emaData = j || {}; _emaState = 2; approRerender(); })
+        .catch(function () { _emaState = 2; });
+    } catch (e) { _emaState = 2; }
+  }
   function prixCard() {
     if (!_prixData) return '';
     var d = _prixData, drops = d.drops || [];
@@ -1018,6 +1031,10 @@
       out.push({ d: (g.lib || g.d || '').split(',')[0], c: c, st: stq(c), val: stq(c) * (g.ppht || 0), neuf: true });
     });
     try { basculesGx().slice(0, 8).forEach(function (b) { if (seen[b.c]) return; seen[b.c] = 1; out.push({ d: b.d, c: b.c, q: b.q, st: stq(b.c) }); }); } catch (e) {}
+    // EMA : génériques/biosimilaires autorisés/en pipeline au niveau UE (molécules de notre catalogue)
+    if (_emaData && _emaData.items) _emaData.items.forEach(function (e) {
+      out.push({ ema: true, d: e.inn, name: e.name, typ: e.type, pipeline: e.pipeline, amm: e.amm });
+    });
     return out;
   }
   // Couloir ① : la demande qui monte (épidémie + saison fusionnées)
@@ -1067,9 +1084,12 @@
       return '<div class="ap-row"><div class="ap-nm"><b>' + esc(x.d) + '</b><small>' + esc(x.sub) + (x.fam ? ' · renforcer ' + esc(x.fam) : '') + '</small></div><span class="an-verb buy">PRÉ-ACHETER</span></div>';
     }).join('') + (up.length > 4 ? '<div class="ap-foot" style="margin:0;padding:7px 2px">+ ' + (up.length - 4) + ' autres</div>' : '');
     // ② Basculer
-    var basRows = bas.slice(0, 4).map(function (b) {
+    var basRows = bas.slice(0, 5).map(function (b) {
+      if (b.ema) {
+        return '<div class="ap-row"><div class="ap-nm"><b>' + esc(cap(b.d)) + '</b><small>' + esc(b.typ) + ' UE ' + (b.pipeline ? 'en pipeline (avis rendu)' : 'autorisé' + (b.amm ? ' ' + fdate(b.amm) : '')) + ' — ' + esc(b.name) + ' · préparer la bascule</small></div><span class="an-verb sw">' + (b.pipeline ? 'PRÉPARER' : 'BASCULER') + '</span></div>';
+      }
       return '<div class="ap-row"><div class="ap-nm"><b>' + esc(cap(b.d || b.c)) + '</b><small>' + (b.st ? 'stock princeps ' + fmt(b.st) + (b.val ? ' = ' + (V2.fmtEur ? V2.fmtEur(b.val) : fmt(b.val)) : '') + ' · ' : '') + 'négocier les Gx maintenant</small></div><span class="an-verb sw">BASCULER</span></div>';
-    }).join('') + (bas.length > 4 ? '<div class="ap-foot" style="margin:0;padding:7px 2px">+ ' + (bas.length - 4) + ' autres</div>' : '');
+    }).join('') + (bas.length > 5 ? '<div class="ap-foot" style="margin:0;padding:7px 2px">+ ' + (bas.length - 5) + ' autres</div>' : '');
     // ③ Alléger avant
     var algRows = algF.slice(0, 4).map(function (x) {
       var tag = (x.st > 0 && x.expo > 0) ? '<b>' + (V2.fmtEur ? V2.fmtEur(x.expo) : fmt(x.expo)) + '</b> exposés' : 'pas de stock détenu';
@@ -1111,6 +1131,7 @@
       ensureRappels(); // charge les rappels de produits (RappelConso, robot hebdo)
       ensureOpenMedic(); // charge la demande nationale par produit (Open Medic, robot annuel) → white space
       ensurePrixFuturs(); // charge les futures baisses de prix (avis CEPS/JO, robot quotidien)
+      ensureEmaGx(); // charge les génériques/biosimilaires en approche (EMA, robot quotidien)
       // ── Cockpit réassort (crash-safe : ne casse jamais la page si un flux manque) ──
       var kpiBand = '', reaCard = '', rosCard = '', radarHtml = '', etabHtml = '', basculesHtml = '', ansmHtml = '', epiHtml = '', hasHtml = '', saiCipHtml = '', carnetHtml = '', carnetCounts = null;
       try {
