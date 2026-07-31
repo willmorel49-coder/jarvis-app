@@ -106,8 +106,15 @@ def main():
         elif newp > oldp:
             ups += 1
 
-    # impact = ampleur de la baisse × vitesse de vente réseau (les baisses sur nos best-sellers d'abord)
-    drops.sort(key=lambda x: x["pct"] * (1 + (x["n"] or 0)), reverse=True)
+    # Garde de complétude (audit data) : un téléchargement BDPM tronqué ferait disparaître des
+    # références de `cur` → au prochain passage elles re-baselinent en silence (baisses ratées).
+    # Si on a beaucoup moins de références que la dernière fois, on abandonne SANS toucher au snapshot.
+    if prev and len(cur) < 0.8 * len(prev):
+        print("ABANDON : %d réfs lues vs %d au snapshot (téléchargement probablement tronqué) — snapshot conservé." % (len(cur), len(prev)))
+        return
+
+    # impact = ampleur de la baisse en euros × portée réseau (nb d'officines) — pas le simple %
+    drops.sort(key=lambda x: (x["old"] - x["new"]) * (1 + (x["n"] or 0)), reverse=True)
     baseline = not prev              # 1er passage : on amorce, aucune baisse à afficher
 
     out = {"generated": datetime.date.today().isoformat(),
