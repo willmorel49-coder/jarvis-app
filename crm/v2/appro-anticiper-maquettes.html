@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Anticiper — maquettes (mode trading)</title>
+<style>
+  :root{
+    --bg:#F4F6FB; --card:#fff; --ink:#0E1526; --muted:#6B7690; --line:#E6EAF2;
+    --blue:#0050E6; --green:#1E9E6A; --violet:#6D5AE6; --rose:#D5573B; --amber:#C77700;
+    --mono:'Geist Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+    --sans:'Satoshi',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+  .wrap{max-width:440px;margin:0 auto;padding:0 14px 60px}
+  /* Sélecteur */
+  .pick{position:sticky;top:0;z-index:20;background:rgba(244,246,251,.92);backdrop-filter:saturate(1.2) blur(6px);padding:12px 14px 10px;border-bottom:1px solid var(--line)}
+  .pick h1{margin:0 0 3px;font-size:15px;font-weight:800}
+  .pick p{margin:0 0 9px;font-size:12px;color:var(--muted)}
+  .pick .tabs{display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .pick button{flex:0 0 auto;border:1px solid var(--line);background:#fff;color:var(--ink);font-weight:700;font-size:12.5px;padding:8px 12px;border-radius:999px;cursor:pointer;font-family:var(--sans)}
+  .pick button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .variant{display:none;padding-top:16px}
+  .variant.on{display:block}
+  .vname{font-size:13px;font-weight:800;color:var(--blue);margin:0 0 2px;text-transform:uppercase;letter-spacing:.03em}
+  .vsub{font-size:12px;color:var(--muted);margin:0 0 14px;line-height:1.45}
+  /* Génériques communs */
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 14px;margin-bottom:12px;box-shadow:0 1px 2px rgba(16,24,40,.04)}
+  .mono{font-family:var(--mono)}
+  .jx{font-family:var(--mono);font-weight:700}
+  .sec{font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:16px 2px 8px}
+  .row{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+  .row:first-child{border-top:0}
+  .row .nm{flex:1;min-width:0}
+  .row .nm b{display:block;font-size:14px;font-weight:700}
+  .row .nm small{font-size:11.5px;color:var(--muted)}
+  .pill{display:inline-block;font-size:10.5px;font-weight:800;padding:2px 7px;border-radius:6px;text-transform:uppercase;letter-spacing:.02em}
+  .p-gx{background:#EEeafb;color:var(--violet)} .p-px{background:#FBE9E6;color:var(--rose)}
+  .p-mk{background:#E5EEFE;color:var(--blue)} .p-pe{background:#FFF1DB;color:var(--amber)}
+  .p-ru{background:#E7F5EC;color:var(--green)}
+  .act{font-size:12.5px;font-weight:800}
+  .foot{font-size:11px;color:var(--muted);padding:8px 2px;line-height:1.45}
+  .note{background:#FFF8E6;border:1px solid #F0D98A;border-radius:10px;padding:8px 11px;font-size:11.5px;color:#8a6d1a;margin-bottom:12px}
+  /* Compteurs P&L */
+  .pl{display:flex;gap:10px;margin-bottom:14px}
+  .pl>div{flex:1;border-radius:14px;padding:12px;color:#fff}
+  .pl .lose{background:linear-gradient(135deg,#D5573B,#B02A1E)}
+  .pl .win{background:linear-gradient(135deg,#1E9E6A,#127a50)}
+  .pl b{display:block;font-family:var(--mono);font-size:22px;font-weight:800;line-height:1}
+  .pl span{font-size:11px;opacity:.92;display:block;margin-top:5px}
+  /* Frise */
+  .frise{background:#fff;border:1px solid var(--line);border-radius:14px;padding:10px 4px 4px;overflow-x:auto;margin-bottom:12px}
+  .friseband{display:flex;gap:2px;font-size:10px;color:var(--muted);padding:0 8px 4px}
+  .dotrow{position:relative;height:96px;min-width:520px}
+  .today{position:absolute;left:16%;top:6px;bottom:18px;width:2px;background:var(--rose)}
+  .today span{position:absolute;top:-2px;left:4px;font-size:9px;color:var(--rose);font-weight:800}
+  .ev{position:absolute;transform:translateX(-50%);text-align:center;width:74px}
+  .ev .d{width:13px;height:13px;border-radius:50%;margin:0 auto;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.08)}
+  .ev .jl{font-family:var(--mono);font-size:10px;font-weight:700;margin-top:3px}
+  .ev .el{font-size:9.5px;color:var(--muted);line-height:1.15;margin-top:1px}
+  .axis{position:absolute;left:0;right:0;bottom:14px;height:1px;background:var(--line)}
+  .tick{position:absolute;bottom:0;font-size:9px;color:var(--muted);transform:translateX(-50%)}
+  /* Tickets */
+  .tk{border-left:5px solid var(--muted);background:#fff;border:1px solid var(--line);border-radius:12px;padding:11px 12px;margin-bottom:10px}
+  .tk.g{border-left-color:var(--violet)} .tk.x{border-left-color:var(--rose)}
+  .tk.m{border-left-color:var(--blue)} .tk.p{border-left-color:var(--amber)} .tk.r{border-left-color:var(--green)}
+  .tk .top{display:flex;justify-content:space-between;align-items:flex-start}
+  .tk .big{font-family:var(--mono);font-size:26px;font-weight:800;line-height:.9}
+  .tk .nmn{font-size:15px;font-weight:800;margin:6px 0 2px}
+  .tk .spark{margin:4px 0}
+  .tk .ord{font-size:13px;font-weight:800;margin-top:5px}
+  .tk .ord.buy{color:var(--green)} .tk .ord.sell{color:var(--rose)} .tk .ord.sw{color:var(--violet)}
+  .rail{display:flex;gap:10px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;margin-bottom:6px}
+  .rail .tk{flex:0 0 250px;margin-bottom:0}
+  .fam4{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+  .fam4 button{border:1px solid var(--line);background:#fff;border-radius:11px;padding:9px;text-align:left;font-family:var(--sans);cursor:pointer}
+  .fam4 b{font-size:16px;font-family:var(--mono)} .fam4 small{display:block;font-size:11px;color:var(--muted)}
+  /* Couloirs */
+  .lane{margin-bottom:14px}
+  .lanehd{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:800;padding:9px 12px;border-radius:11px;color:#fff;margin-bottom:8px}
+  .lane.buy .lanehd{background:var(--green)} .lane.sw .lanehd{background:var(--violet)}
+  .lane.cut .lanehd{background:var(--rose)} .lane.flush .lanehd{background:var(--amber)}
+  .lanehd .n{margin-left:auto;font-family:var(--mono)}
+  .gauge{height:5px;border-radius:3px;background:#EEF1F7;overflow:hidden;margin-top:6px}
+  .gauge i{display:block;height:100%;border-radius:3px}
+  /* Bins péremption */
+  .bins{display:flex;gap:8px;margin-bottom:10px}
+  .bin{flex:1;border-radius:12px;padding:10px;color:#fff;text-align:center}
+  .bin.r{background:#D5573B} .bin.o{background:#E08A1E} .bin.y{background:#C9A227}
+  .bin b{font-family:var(--mono);font-size:18px;display:block} .bin span{font-size:10.5px;opacity:.95}
+  /* Board / cote */
+  .ticker{background:var(--ink);color:#fff;border-radius:10px;padding:8px 10px;font-family:var(--mono);font-size:11.5px;white-space:nowrap;overflow:hidden;margin-bottom:12px}
+  .board{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .board .h,.board .b{display:grid;grid-template-columns:52px 1fr auto;gap:8px;padding:9px 12px;align-items:center}
+  .board .h{background:#F7F9FC;font-size:10.5px;font-weight:800;color:var(--muted);text-transform:uppercase}
+  .board .b{border-top:1px solid var(--line);font-size:13px}
+  .board .b .jx{font-size:14px}
+  .u{color:var(--green);font-weight:800} .dn{color:var(--rose);font-weight:800}
+  .agenda{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px}
+  .mg{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+  .mg .dn2{font-size:9px;color:var(--muted);text-align:center;padding:2px 0}
+  .mg .cell{aspect-ratio:1;border:1px solid var(--line);border-radius:6px;padding:3px;position:relative;font-size:10px}
+  .mg .cell.t{border-color:var(--blue);box-shadow:inset 0 0 0 1px var(--blue)}
+  .mg .dots{position:absolute;bottom:3px;left:3px;display:flex;gap:2px}
+  .mg .dots i{width:6px;height:6px;border-radius:50%}
+</style>
+</head>
+<body>
+<div class="pick">
+  <h1>« Anticiper » — 5 visuels façon salle de marché</h1>
+  <p>Choisis un numéro. Données d'exemple. Blocs : génériques à venir · baisses de prix · marchés · péremptions courtes.</p>
+  <div class="tabs">
+    <button class="on" data-v="1">1 · Le Fil</button>
+    <button data-v="2">2 · Les Tickets</button>
+    <button data-v="3">3 · Les Couloirs</button>
+    <button data-v="4">4 · L'Agenda</button>
+    <button data-v="5">5 · La Cote</button>
+  </div>
+</div>
+<div class="wrap">
+
+  <!-- ================= 1 · LE FIL ================= -->
+  <section class="variant on" data-v="1">
+    <div class="vname">1 · Le Fil</div>
+    <div class="vsub">Le temps EST l'écran : une frise 90 jours, chaque point = un événement daté. On voit d'un regard si les prochaines semaines sont chargées.</div>
+    <div class="pl">
+      <div class="lose"><b>47 300 €</b><span>à protéger (péremptions + baisses + génériques)</span></div>
+      <div class="win"><b>12</b><span>marchés à capter (saison, retours, remboursés)</span></div>
+    </div>
+    <div class="frise">
+      <div class="dotrow">
+        <div class="today"><span>AUJ.</span></div>
+        <div class="axis"></div>
+        <div class="tick" style="left:16%">auj.</div>
+        <div class="tick" style="left:40%">+7 j</div>
+        <div class="tick" style="left:64%">+30 j</div>
+        <div class="tick" style="left:92%">+90 j</div>
+        <div class="ev" style="left:26%;top:4px"><div class="d" style="background:var(--rose)"></div><div class="jl" style="color:var(--rose)">J−4</div><div class="el">Baisse prix<br>Doliprane</div></div>
+        <div class="ev" style="left:38%;top:30px"><div class="d" style="background:var(--amber)"></div><div class="jl" style="color:var(--amber)">J−9</div><div class="el">Péremption<br>lot Amox.</div></div>
+        <div class="ev" style="left:52%;top:4px"><div class="d" style="background:var(--violet)"></div><div class="jl" style="color:var(--violet)">J−20</div><div class="el">Générique<br>Eliquis</div></div>
+        <div class="ev" style="left:66%;top:30px"><div class="d" style="background:var(--green)"></div><div class="jl" style="color:var(--green)">J−34</div><div class="el">Pic saison<br>ORL</div></div>
+        <div class="ev" style="left:82%;top:4px"><div class="d" style="background:var(--blue)"></div><div class="jl" style="color:var(--blue)">J−62</div><div class="el">Retour<br>Ozempic</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span class="pill p-gx">Générique</span><span class="jx" style="font-size:22px;color:var(--violet)">J−20</span>
+      </div>
+      <div style="font-size:16px;font-weight:800;margin:6px 0 2px">ELIQUIS (apixaban)</div>
+      <div style="font-size:12px;color:var(--muted)">Stock princeps 1 240 bt = <b>38 400 €</b> · réseau 610/mois → 2 mois de stock (trop)</div>
+      <div class="act" style="color:var(--violet);margin-top:6px">→ RAMENER à 10 j avant le 20/07 · négocier les Gx maintenant</div>
+    </div>
+    <div class="sec">Les 5 prochaines échéances</div>
+    <div class="card" style="padding:2px 14px">
+      <div class="row"><div class="nm"><b>Doliprane gamme <span class="pill p-px">Prix ▼</span></b><small>−8 % le 01/09 · 1 240 € de stock exposé</small></div><span class="jx" style="color:var(--rose)">J−4</span></div>
+      <div class="row"><div class="nm"><b>Amoxicilline lot L23 <span class="pill p-pe">Péremption</span></b><small>DLU proche · 2 100 € à écouler</small></div><span class="jx" style="color:var(--amber)">J−9</span></div>
+      <div class="row"><div class="nm"><b>Eliquis <span class="pill p-gx">Générique</span></b><small>bascule princeps→Gx</small></div><span class="jx" style="color:var(--violet)">J−20</span></div>
+      <div class="row"><div class="nm"><b>ORL / antipyrétiques <span class="pill p-mk">Marché ▲</span></b><small>pic saison · commander avant le 15/09</small></div><span class="jx" style="color:var(--green)">J−34</span></div>
+      <div class="row"><div class="nm"><b>Ozempic <span class="pill p-ru">Retour</span></b><small>retour de rupture · demande réseau en attente</small></div><span class="jx" style="color:var(--blue)">J−62</span></div>
+    </div>
+    <div class="foot">+ 14 autres échéances → tout voir</div>
+  </section>
+
+  <!-- ================= 2 · LES TICKETS ================= -->
+  <section class="variant" data-v="2">
+    <div class="vname">2 · Les Tickets</div>
+    <div class="vsub">Chaque opportunité = un ticket d'ordre, comme en bourse. Un verbe, un compte à rebours géant, une mini-courbe. On lit un ordre, pas un tableau.</div>
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">
+      <div style="font-weight:800;font-size:15px">12 positions à jouer</div><div class="mono" style="font-weight:800;color:var(--rose)">47 300 € en jeu</div>
+    </div>
+    <div class="tk x">
+      <div class="top"><span class="pill p-px">Prix ▼</span><span class="big" style="color:var(--rose)">J−4</span></div>
+      <div class="nmn">Doliprane gamme</div>
+      <svg class="spark" width="120" height="26" viewBox="0 0 120 26"><polyline points="0,6 30,7 60,8 90,18 120,22" fill="none" stroke="#D5573B" stroke-width="2"/></svg>
+      <div class="ord sell">VENDRE le stock avant le 01/09 · 1 240 € exposés</div>
+    </div>
+    <div class="rail">
+      <div class="tk g"><div class="top"><span class="pill p-gx">Générique</span><span class="big" style="color:var(--violet)">J−20</span></div><div class="nmn" style="font-size:14px">Eliquis</div><div class="ord sw">BASCULER · princeps 38 400 €</div></div>
+      <div class="tk p"><div class="top"><span class="pill p-pe">Péremption</span><span class="big" style="color:var(--amber)">J−9</span></div><div class="nmn" style="font-size:14px">Amox. lot L23</div><div class="ord sell">ÉCOULER · 2 100 €</div></div>
+      <div class="tk m"><div class="top"><span class="pill p-mk">Marché ▲</span><span class="big" style="color:var(--blue)">J−34</span></div><div class="nmn" style="font-size:14px">ORL saison</div><div class="ord buy">ACHETER +400</div></div>
+    </div>
+    <div class="fam4">
+      <button><b style="color:var(--violet)">4</b><small>Génériques à venir</small></button>
+      <button><b style="color:var(--rose)">3</b><small>Baisses de prix</small></button>
+      <button><b style="color:var(--blue)">5</b><small>Marchés à capter</small></button>
+      <button><b style="color:var(--amber)">2</b><small>Péremptions courtes</small></button>
+    </div>
+  </section>
+
+  <!-- ================= 3 · LES COULOIRS ================= -->
+  <section class="variant" data-v="3">
+    <div class="vname">3 · Les Couloirs <span style="color:var(--muted);font-weight:600;text-transform:none">— reco des experts</span></div>
+    <div class="vsub">4 portes, toujours les mêmes, dans le même ordre : Acheter avant · Basculer · Alléger avant · Écouler. La réponse à « on sait pas où aller » est dans la structure.</div>
+    <div class="pl">
+      <div class="lose"><b>47 300 €</b><span>à protéger</span></div>
+      <div class="win"><b>12</b><span>à capter</span></div>
+    </div>
+    <div class="lane buy"><div class="lanehd">① ACHETER AVANT — la demande qui monte<span class="n">5</span></div>
+      <div class="card" style="padding:2px 14px">
+        <div class="row"><div class="nm"><b>ORL / antipyrétiques</b><small>pic saison mi-sept. · +45 j</small></div><div style="text-align:right"><div class="jx" style="color:var(--green)">J−34</div><div class="gauge" style="width:70px"><i style="width:62%;background:var(--green)"></i></div></div></div>
+        <div class="row"><div class="nm"><b>Antihistaminiques</b><small>allergies · pic +60 j</small></div><div style="text-align:right"><div class="jx" style="color:var(--green)">J−48</div><div class="gauge" style="width:70px"><i style="width:46%;background:var(--green)"></i></div></div></div>
+      </div>
+      <div class="foot">+ 3 autres → tout voir</div>
+    </div>
+    <div class="lane sw"><div class="lanehd">② BASCULER — génériques qui arrivent<span class="n">4</span></div>
+      <div class="card" style="padding:2px 14px">
+        <div class="row"><div class="nm"><b>Eliquis (apixaban)</b><small>princeps 38 400 € · négocier les Gx</small></div><span class="jx" style="color:var(--violet)">J−20</span></div>
+        <div class="row"><div class="nm"><b>Xarelto (rivaroxaban)</b><small>princeps 21 500 €</small></div><span class="jx" style="color:var(--violet)">J−75</span></div>
+      </div>
+    </div>
+    <div class="lane cut"><div class="lanehd">③ ALLÉGER AVANT — baisses de prix<span class="n">3</span></div>
+      <div class="card" style="padding:2px 14px">
+        <div class="row"><div class="nm"><b>Doliprane gamme</b><small>−8 % le 01/09 · <b>1 240 €</b> exposés</small></div><span class="jx" style="color:var(--rose)">J−4</span></div>
+        <div class="row"><div class="nm"><b>Statines génériques</b><small>−12 % · <b>3 200 €</b> exposés · <span style="color:var(--rose)">invendable à temps</span></small></div><span class="jx" style="color:var(--rose)">J−12</span></div>
+      </div>
+    </div>
+    <div class="lane flush"><div class="lanehd">④ ÉCOULER — péremptions courtes<span class="n">2</span></div>
+      <div class="card" style="padding:2px 14px">
+        <div class="row"><div class="nm"><b>Amoxicilline lot L23</b><small>DLU &lt; 3 mois · <b>2 100 €</b> · transférer vers Site B</small></div><span class="jx" style="color:var(--amber)">J−9</span></div>
+        <div class="row"><div class="nm"><b>Collyre X lot K88</b><small>DLU &lt; 3 mois · <b>1 400 €</b> · retour fournisseur avant le 30/08</small></div><span class="jx" style="color:var(--amber)">J−26</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 4 · L'AGENDA ================= -->
+  <section class="variant" data-v="4">
+    <div class="vname">4 · L'Agenda</div>
+    <div class="vsub">Le format « calendrier économique » des plateformes de trading : un mois, les échéances posées sur les jours. Simple à lire, mais souvent clairsemé.</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div style="font-weight:800">‹ Septembre 2026 ›</div><div class="mono" style="font-size:12px;color:var(--muted)">8 échéances · 12 300 € exposés</div>
+    </div>
+    <div class="agenda">
+      <div class="mg">
+        <div class="dn2">L</div><div class="dn2">M</div><div class="dn2">M</div><div class="dn2">J</div><div class="dn2">V</div><div class="dn2">S</div><div class="dn2">D</div>
+        <div class="cell">1<div class="dots"><i style="background:var(--rose)"></i></div></div>
+        <div class="cell">2</div><div class="cell">3</div>
+        <div class="cell t">4<div class="dots"><i style="background:var(--rose)"></i><i style="background:var(--amber)"></i></div></div>
+        <div class="cell">5</div><div class="cell">6</div><div class="cell">7</div>
+        <div class="cell">8</div><div class="cell">9<div class="dots"><i style="background:var(--amber)"></i></div></div><div class="cell">10</div>
+        <div class="cell">11</div><div class="cell">12</div><div class="cell">13</div><div class="cell">14</div>
+        <div class="cell">15<div class="dots"><i style="background:var(--green)"></i></div></div><div class="cell">16</div><div class="cell">17</div>
+        <div class="cell">18</div><div class="cell">19</div><div class="cell">20<div class="dots"><i style="background:var(--violet)"></i></div></div><div class="cell">21</div>
+      </div>
+    </div>
+    <div class="sec">Jeudi 4 septembre — 2 échéances</div>
+    <div class="tk x"><div class="top"><span class="pill p-px">Prix ▼</span><span class="big" style="color:var(--rose)">J−4</span></div><div class="nmn">Doliprane −8 %</div><div class="ord sell">VENDRE avant · 1 240 € exposés</div></div>
+    <div class="note">⚠️ Sur 90 jours il n'y a que ~15 échéances : ce calendrier sera souvent vide. Direction documentée mais peu adaptée ici.</div>
+  </section>
+
+  <!-- ================= 5 · LA COTE ================= -->
+  <section class="variant" data-v="5">
+    <div class="vname">5 · La Cote</div>
+    <div class="vsub">Un tableau de cotation unique, dense, trié par échéance. L'esthétique « trading » la plus littérale — mais ça reste une liste.</div>
+    <div class="ticker">▸ APIXABAN Gx J−20 ▾ · DOLIPRANE −8 % J−4 ▾ · ORL saison +45 % J−34 ▴ · AMOX. péremption J−9 · OZEMPIC retour J−62 ▴</div>
+    <div class="board">
+      <div class="h"><div>Échéance</div><div>Produit / événement</div><div>Action</div></div>
+      <div class="b"><div class="jx dn">J−4</div><div><b>Doliprane</b> <span class="pill p-px">Prix ▼</span><br><small style="color:var(--muted)">−8 % · 1 240 € exposés</small></div><div class="act" style="color:var(--rose)">Alléger</div></div>
+      <div class="b"><div class="jx" style="color:var(--amber)">J−9</div><div><b>Amox. L23</b> <span class="pill p-pe">Péremption</span><br><small style="color:var(--muted)">DLU &lt; 3 m · 2 100 €</small></div><div class="act" style="color:var(--amber)">Écouler</div></div>
+      <div class="b"><div class="jx" style="color:var(--violet)">J−20</div><div><b>Eliquis</b> <span class="pill p-gx">Générique</span><br><small style="color:var(--muted)">princeps 38 400 €</small></div><div class="act" style="color:var(--violet)">Basculer</div></div>
+      <div class="b"><div class="jx u">J−34</div><div><b>ORL saison</b> <span class="pill p-mk">Marché ▲</span><br><small style="color:var(--muted)">pic mi-sept. · +400 à pré-acheter</small></div><div class="act" style="color:var(--green)">Acheter</div></div>
+      <div class="b"><div class="jx" style="color:var(--blue)">J−62</div><div><b>Ozempic</b> <span class="pill p-ru">Retour</span><br><small style="color:var(--muted)">demande réseau en attente</small></div><div class="act" style="color:var(--blue)">Se positionner</div></div>
+    </div>
+    <div class="foot">12 lignes max, triées par échéance · filtres par famille au-dessus · clic → détail produit.</div>
+  </section>
+
+</div>
+<script>
+  var btns=document.querySelectorAll('.pick button'), vars=document.querySelectorAll('.variant');
+  btns.forEach(function(b){ b.addEventListener('click',function(){
+    btns.forEach(function(x){x.classList.remove('on')}); b.classList.add('on');
+    vars.forEach(function(v){ v.classList.toggle('on', v.getAttribute('data-v')===b.getAttribute('data-v')); });
+    window.scrollTo({top:0,behavior:'smooth'});
+  }); });
+</script>
+</body>
+</html>
