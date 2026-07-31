@@ -1,0 +1,42 @@
+name: Anticipation · génériques & biosimilaires en approche (EMA)
+
+# Robot GRATUIT : lit le fichier quotidien de l'Agence européenne du médicament (EMA) et
+# en extrait les generiques/biosimilaires autorises ou en pipeline au niveau UE, restreints
+# aux molecules (DCI) du catalogue reseau. Signal « preparer la bascule » 6-18 mois avant.
+# Ecrit crm/v2/ema-generiques.json. Aucune cle, aucun cout.
+
+on:
+  schedule:
+    - cron: '44 6 * * 1'   # chaque lundi (le fichier EMA bouge lentement)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ema-generiques
+  cancel-in-progress: false
+
+jobs:
+  ema:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Installer openpyxl
+        run: pip install --quiet openpyxl
+      - name: Extraire les génériques/biosimilaires EMA
+        run: python3 generate_ema_generiques.py
+      - name: Committer si changement
+        run: |
+          if git diff --quiet -- crm/v2/ema-generiques.json; then
+            echo "Pas de changement."
+          else
+            git config user.name  "JARVIS copilote"
+            git config user.email "actions@users.noreplace.github.com"
+            git add crm/v2/ema-generiques.json
+            git commit -m "data(anticipation): génériques/biosimilaires EMA $(date -u +%Y-%m-%d)"
+            git push
+          fi
