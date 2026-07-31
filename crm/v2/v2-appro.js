@@ -745,6 +745,8 @@
   function laboOf(c) { if (_laboMap && _laboMap[c]) return _laboMap[c]; var G = window.GENERIQUEURS; if (G && G[c]) return G[c]; return 'Divers'; }
   var _calSub = 'today';
   V2.approCal = function (s) { _calSub = s; if (V2.render) V2.render(); try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {} };
+  // audit UX : depuis le hero, ouvrir directement la liste filtrée sur un verdict (ex. « à sécuriser »).
+  V2.approFocus = function (tab) { _section = 'today'; _calSub = 'list'; _bookTab = tab || 'all'; if (V2.render) V2.render(); try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {} };
   var CLJ = ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.'];
   var CLCOL = { buy: '#0B7A4B', sec: '#C0392B', pre: '#6D5AE6' };   // audit UX : aligné sur le carnet (ACHETER vert, SÉCURISER rouge, PRÉ violet — une couleur = une action partout)
   function calDate(days) { return new Date(Date.now() + days * 86400000); }
@@ -1096,20 +1098,21 @@
       }).join('') || '<div class="ap-empty">Données génériqueurs indisponibles.</div>';
 
       // ── Vue globale (3 secondes) : les 4 chiffres qui disent où agir ──
+      var loading = (carnetCounts == null);   // audit UX : ne pas afficher un faux « 0 à commander » avant le calcul
       var CC = carnetCounts || { buy: 0, sec: 0, pre: 0, arb: 0, red: 0, eur: 0, redEur: 0 };
       var nAnticip = 0;
       try { EVENTS.forEach(function (ev) { var z = evZone(ev); if (z === 'now' || z === 'prep') nAnticip++; }); if (_generData && _generData.newGeneric) nAnticip += _generData.newGeneric.length; } catch (e) {}
-      function htile(sec, big, lab, sub, col) {
-        return '<button class="ap-htile" style="--hc:' + col + '" onclick="V2.approSec(\'' + sec + '\')">' +
+      function htile(onclick, big, lab, sub, col) {
+        return '<button class="ap-htile" style="--hc:' + col + '" onclick="' + onclick + '">' +
           '<div class="ap-hbig">' + big + '</div><div class="ap-hlab">' + lab + '</div><div class="ap-hsub">' + sub + '</div></button>';
       }
-      var eurEng = (V2.fmtEur ? V2.fmtEur(CC.eur) : fmt(CC.eur));
-      var eurDorm = (V2.fmtEur ? V2.fmtEur(CC.redEur) : fmt(CC.redEur));
+      var eurEng = loading ? '…' : (V2.fmtEur ? V2.fmtEur(CC.eur) : fmt(CC.eur));
+      var eurDorm = loading ? '…' : (V2.fmtEur ? V2.fmtEur(CC.redEur) : fmt(CC.redEur));
       var hero = '<div class="ap-hero">' +
-        htile('today', fmt(CC.buy + CC.sec), 'à commander', eurEng + ' à engager', 'var(--ip-blue)') +
-        htile('today', fmt(CC.sec), 'à sécuriser', 'ruptures critiques', '#D5573B') +
-        htile('anticiper', fmt(nAnticip), 'à anticiper', 'événements à venir', '#6D5AE6') +
-        htile('stock', eurDorm, 'capital dormant', fmt(CC.red) + ' réfs à alléger', 'var(--c-amber)') +
+        htile("V2.approSec('today')", loading ? '…' : fmt(CC.buy + CC.sec), 'à commander', loading ? 'calcul en cours…' : eurEng + ' à engager', 'var(--ip-blue)') +
+        htile("V2.approFocus('sec')", loading ? '…' : fmt(CC.sec), 'à sécuriser', 'ruptures critiques', '#D5573B') +
+        htile("V2.approSec('anticiper')", fmt(nAnticip), 'à anticiper', 'événements à venir', '#6D5AE6') +
+        htile("V2.approSec('stock')", eurDorm, 'capital dormant', (loading ? '' : fmt(CC.red) + ' réfs à alléger'), 'var(--c-amber)') +
         '</div>';
 
       // ── Navigation : 4 espaces clairs ──
@@ -1144,11 +1147,14 @@
           '<div class="ap-foot">Négo = vrai sell-in réseau (WML) par génériqueur. Génériques : pas d\'abandon de marge Intégral. « Ça monte » / saison = Medic\'AM / BDPM.</div>';
       }
 
+      // audit UX : un rappel touchant une réf du réseau = l'action la plus urgente → bandeau en tête, toutes sections.
+      var nMatch = (_rapData && _rapData.matched) ? _rapData.matched.length : 0;
+      var recallBanner = nMatch ? '<button class="ap-recall" onclick="V2.approSec(\'actu\')">⚠️ ' + nMatch + ' rappel' + (nMatch > 1 ? 's' : '') + ' produit sur des références du réseau — stopper la distribution → voir</button>' : '';
       root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
         '<div class="v2-wrap">' +
           '<div class="v2-page-title">Appro Intégral</div>' +
           '<div class="v2-page-sub">Ta vue du jour en un coup d\'œil — clique un chiffre ou un espace pour agir.</div>' +
-          hero + nav + content + freshnessBar() +
+          recallBanner + hero + nav + content + freshnessBar() +
         '</div>';
     }
   };
@@ -1275,6 +1281,7 @@
       '.ap-fresh{font-size:11px;color:var(--muted);line-height:1.5;margin-top:20px;padding-top:12px;border-top:1px solid var(--line)}.ap-fresh b{color:var(--ip-ink)}' +
       '.ap-fresh-warn{font-size:11.5px;line-height:1.5;margin-top:8px;padding:8px 11px;border-radius:9px;background:rgba(213,87,59,.09);border:1px solid rgba(213,87,59,.28);color:var(--rose,#D5573B)}' +
       '.ap-rap-lk{color:var(--ip-blue,#0050E6);font-weight:600;text-decoration:none;white-space:nowrap}' +
+      '.ap-recall{display:block;width:100%;text-align:left;margin:0 0 12px;padding:11px 14px;border-radius:11px;background:#FBE9E6;border:1px solid #E8A99C;color:#B02A1E;font-weight:700;font-size:13.5px;cursor:pointer}' +
       '.cl-suh .mitm{display:inline-block;width:8px;height:8px;border-radius:50%;background:#B02A37;vertical-align:middle;margin-left:3px}' +
       '.rev .rt .dot{display:inline-block;width:8px;height:8px;border-radius:50%;flex:none}' +
       /* radar */
