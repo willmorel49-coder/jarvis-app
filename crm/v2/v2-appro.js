@@ -877,6 +877,19 @@
         .catch(function () { _prixState = 2; });
     } catch (e) { _prixState = 2; }
   }
+  // Futures baisses de prix CEPS (avis au JO, robot quotidien) — le signal « déstocker avant que ça baisse »
+  var _pfState = 0, _pfData = null;
+  function ensurePrixFuturs() {
+    if (_pfData || _pfState) return;
+    _pfState = 1;
+    try {
+      var day = new Date().toISOString().slice(0, 10);
+      fetch('prix-futurs.json?d=' + day, { cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) { _pfData = j || {}; _pfState = 2; approRerender(); })
+        .catch(function () { _pfState = 2; });
+    } catch (e) { _pfState = 2; }
+  }
   function prixCard() {
     if (!_prixData) return '';
     var d = _prixData, drops = d.drops || [];
@@ -975,6 +988,105 @@
       (rapH ? '<div class="ap-sec">Rappels de produits</div><div class="ap-secsub">RappelConso (DGCCRF) — parapharma &amp; réfs du réseau (les rappels médicaments sont dans l’espace Anticiper)</div>' + rapH : '');
   }
 
+  // ═══════════════════════════════════════════════════════════════════
+  // COCKPIT « ANTICIPER » — frise 90 j + 4 couloirs d'action (choix Will : maquette 3 + frise)
+  // Acheter avant · Basculer · Alléger avant · Écouler. Chaque ligne : produit / date / montant / verbe.
+  // ═══════════════════════════════════════════════════════════════════
+  function daysTo(iso) { if (!iso) return null; try { var d = new Date(iso + (iso.length <= 7 ? '-01' : '') + 'T00:00:00'); return Math.round((d.getTime() - Date.now()) / 86400000); } catch (e) { return null; } }
+  function jxLab(d) { return d == null ? '' : (d <= 0 ? 'auj.' : 'J−' + d); }
+  function frisePos(d) { d = Math.max(0, d); var p = d <= 7 ? 16 + d / 7 * 24 : d <= 30 ? 40 + (d - 7) / 23 * 24 : 64 + (d - 30) / 60 * 28; return Math.min(93, p); }
+  function stq(c) { var s = (window.STOCK_IP && window.STOCK_IP.data) || {}; return Math.max(0, s[c] || 0); }
+
+  // Couloir ③ : futures baisses de prix (CEPS/JO) — € d'exposition = (ancien − nouveau) × stock détenu
+  function alleger() {
+    if (!_pfData || !_pfData.changes) return [];
+    var today = new Date().toISOString().slice(0, 10), out = [];
+    _pfData.changes.forEach(function (x) {
+      if (x.sens !== 'baisse') return;
+      var st = stq(x.c), old = x.ancien_ttc || x.ppttc, expo = Math.max(0, (old - x.ppttc)) * st;
+      out.push({ c: x.c, d: x.d, pfht: x.pfht, ppttc: x.ppttc, old: old, st: st, expo: expo,
+        date: x.date_effet, dd: daysTo(x.date_effet), future: (x.date_effet || '') >= today });
+    });
+    out.sort(function (a, b) { return b.expo - a.expo || (a.dd || 999) - (b.dd || 999); });
+    return out;
+  }
+  // Couloir ② : génériques qui arrivent (signal live = nouveaux groupes BDPM + princeps qu'on achète)
+  function basculer() {
+    var out = [], seen = {};
+    if (_generData && _generData.newGeneric) _generData.newGeneric.forEach(function (g) {
+      var c = String(g.cip || g.c || ''); if (seen[c]) return; seen[c] = 1;
+      out.push({ d: (g.lib || g.d || '').split(',')[0], c: c, st: stq(c), val: stq(c) * (g.ppht || 0), neuf: true });
+    });
+    try { basculesGx().slice(0, 8).forEach(function (b) { if (seen[b.c]) return; seen[b.c] = 1; out.push({ d: b.d, c: b.c, q: b.q, st: stq(b.c) }); }); } catch (e) {}
+    return out;
+  }
+  // Couloir ① : la demande qui monte (épidémie + saison fusionnées)
+  function demandeUp() {
+    var out = [];
+    if (_epiData && _epiData.indicators) _epiData.indicators.forEach(function (i) { if (i.trend != null && i.trend > 10) out.push({ d: i.label, sub: 'épidémie · +' + i.trend + '%' + (i.regions && i.regions[0] ? ' · ' + cap((i.regions[0].n || '').toLowerCase()) : ''), fam: (EPI_MAP[i.cat] || {}).fam || '' }); });
+    if (_odisseData && _odisseData.pathologies) _odisseData.pathologies.forEach(function (p) { if (p.trend != null && p.trend > 5 && !out.some(function (o) { return o.d === p.label; })) out.push({ d: p.label, sub: 'urgences · +' + p.trend + '%' + ((p.hotDeps || [])[0] ? ' · ' + (p.hotDeps[0].n || '') : ''), fam: (EPI_MAP[p.cat] || {}).fam || '' }); });
+    return out;
+  }
+  function friseDots() {
+    var dots = [], today = new Date().toISOString().slice(0, 10);
+    alleger().forEach(function (x) { if (x.future && x.dd != null && x.dd <= 90) dots.push({ dd: x.dd, c: '#D5573B', l: 'Prix ▼', s: (x.d || '').slice(0, 14) }); });
+    if (_ansmData && _ansmData.items) _ansmData.items.forEach(function (i) { if (i.retour && i.retour.iso) { var dd = daysTo(i.retour.iso); if (dd != null && dd >= 0 && dd <= 90) dots.push({ dd: dd, c: '#0050E6', l: 'Retour', s: cap((i.spec || '').toLowerCase()).slice(0, 14) }); } });
+    try { EVENTS.forEach(function (ev) { if (!ev.y) return; var d = new Date(ev.y, (ev.m || 1) - 1, ev.d || 1), dd = Math.round((d.getTime() - Date.now()) / 86400000); if (dd >= 0 && dd <= 90) dots.push({ dd: dd, c: ev.t === 'gen' ? '#6D5AE6' : ev.t === 'sais' ? '#1E9E6A' : '#0050E6', l: ev.t === 'gen' ? 'Générique' : ev.t === 'sais' ? 'Saison' : 'Marché', s: (ev.ti || '').slice(0, 16) }); }); } catch (e) {}
+    dots.sort(function (a, b) { return a.dd - b.dd; });
+    return dots.slice(0, 10);
+  }
+  function friseHtml() {
+    var dots = friseDots();
+    var pts = dots.map(function (x, i) {
+      var top = i % 2 ? 34 : 4;
+      return '<div class="an-ev" style="left:' + frisePos(x.dd) + '%;top:' + top + 'px"><div class="an-d" style="background:' + x.c + '"></div><div class="an-jl" style="color:' + x.c + '">' + jxLab(x.dd) + '</div><div class="an-el">' + esc(x.s) + '</div></div>';
+    }).join('');
+    return '<div class="an-frise"><div class="an-dotrow">' +
+      '<div class="an-today"><span>AUJ.</span></div><div class="an-axis"></div>' +
+      '<div class="an-tick" style="left:16%">auj.</div><div class="an-tick" style="left:40%">+7j</div><div class="an-tick" style="left:64%">+30j</div><div class="an-tick" style="left:92%">+90j</div>' +
+      pts + (dots.length ? '' : '<div class="an-empty">Aucune échéance datée dans les 90 jours.</div>') + '</div></div>';
+  }
+  function laneCard(cls, num, title, count, rows, empty) {
+    return '<div class="an-lane ' + cls + '"><div class="an-lhd">' + num + ' ' + title + '<span class="an-n">' + count + '</span></div>' +
+      '<div class="v2-card ap-card" style="padding:2px 14px">' + (rows || '<div class="ap-empty">' + empty + '</div>') + '</div></div>';
+  }
+  function anticiperCockpit() {
+    // ── données des 4 couloirs ──
+    var up = demandeUp(), bas = basculer(), alg = alleger(), algF = alg.filter(function (x) { return x.future; });
+    var retours = (_ansmData && _ansmData.items) ? _ansmData.items.filter(function (i) { return i.retour && i.retour.iso; }).length : 0;
+    // compteurs P&L
+    var protectEur = 0; algF.forEach(function (x) { protectEur += x.expo; });
+    bas.forEach(function (b) { protectEur += (b.val || 0); });
+    var capter = up.length + retours;
+    var pl = '<div class="an-pl">' +
+      '<div class="lose"><b>' + (V2.fmtEur ? V2.fmtEur(protectEur) : fmt(protectEur)) + '</b><span>à protéger — baisses de prix + stock des futurs génériques</span></div>' +
+      '<div class="win"><b>' + fmt(capter) + '</b><span>à capter — demande qui monte + retours de rupture</span></div></div>';
+
+    // ① Acheter avant
+    var upRows = up.slice(0, 4).map(function (x) {
+      return '<div class="ap-row"><div class="ap-nm"><b>' + esc(x.d) + '</b><small>' + esc(x.sub) + (x.fam ? ' · renforcer ' + esc(x.fam) : '') + '</small></div><span class="an-verb buy">PRÉ-ACHETER</span></div>';
+    }).join('') + (up.length > 4 ? '<div class="ap-foot" style="margin:0;padding:7px 2px">+ ' + (up.length - 4) + ' autres</div>' : '');
+    // ② Basculer
+    var basRows = bas.slice(0, 4).map(function (b) {
+      return '<div class="ap-row"><div class="ap-nm"><b>' + esc(cap(b.d || b.c)) + '</b><small>' + (b.st ? 'stock princeps ' + fmt(b.st) + (b.val ? ' = ' + (V2.fmtEur ? V2.fmtEur(b.val) : fmt(b.val)) : '') + ' · ' : '') + 'négocier les Gx maintenant</small></div><span class="an-verb sw">BASCULER</span></div>';
+    }).join('') + (bas.length > 4 ? '<div class="ap-foot" style="margin:0;padding:7px 2px">+ ' + (bas.length - 4) + ' autres</div>' : '');
+    // ③ Alléger avant
+    var algRows = algF.slice(0, 4).map(function (x) {
+      var tag = (x.st > 0 && x.expo > 0) ? '<b>' + (V2.fmtEur ? V2.fmtEur(x.expo) : fmt(x.expo)) + '</b> exposés' : 'pas de stock détenu';
+      return '<div class="ap-row"><div class="ap-nm"><b>' + esc(cap(x.d)) + '</b><small>PFHT ' + fmtEur(x.pfht) + ' · ' + tag + ' · effet le ' + (x.date ? fdate(x.date) : '?') + '</small></div><span class="an-verb sell">' + jxLab(x.dd) + '</span></div>';
+    }).join('');
+    // ④ Écouler (péremptions — donnée interne à fournir)
+    var perRows = '';   // activable quand l'export stock inclura la date de péremption
+
+    return pl + friseHtml() +
+      laneCard('buy', '①', 'ACHETER AVANT — la demande qui monte', up.length, upRows, 'Aucun pic de demande détecté.') +
+      laneCard('sw', '②', 'BASCULER — génériques qui arrivent', bas.length, basRows, 'Aucun générique en approche détecté.') +
+      laneCard('cut', '③', 'ALLÉGER AVANT — futures baisses de prix', algF.length, algRows, (_pfData ? 'Aucune baisse annoncée au JO pour l\'instant.' : 'Chargement des avis de prix…')) +
+      laneCard('flush', '④', 'ÉCOULER — péremptions courtes', 0, perRows,
+        'Module prêt : ajoute la <b>date de péremption</b> (+ n° de lot, quantité) à ton export stock et tes lots à écouler apparaîtront ici, triés par € à risque.') +
+      '<div class="ap-foot" style="padding:10px 2px 0">Futures baisses de prix = avis CEPS au Journal Officiel (4-20 j d\'avance). Génériques = nouveaux groupes BDPM + princeps que le réseau achète. Demande = épidémie + urgences.</div>';
+  }
+
   V2.pages.appro = {
     render: function (root) {
       ensureCss();
@@ -998,6 +1110,7 @@
       ensurePrix();   // charge les baisses de prix officielles (BDPM, robot quotidien)
       ensureRappels(); // charge les rappels de produits (RappelConso, robot hebdo)
       ensureOpenMedic(); // charge la demande nationale par produit (Open Medic, robot annuel) → white space
+      ensurePrixFuturs(); // charge les futures baisses de prix (avis CEPS/JO, robot quotidien)
       // ── Cockpit réassort (crash-safe : ne casse jamais la page si un flux manque) ──
       var kpiBand = '', reaCard = '', rosCard = '', radarHtml = '', etabHtml = '', basculesHtml = '', ansmHtml = '', epiHtml = '', hasHtml = '', saiCipHtml = '', carnetHtml = '', carnetCounts = null;
       try {
@@ -1129,8 +1242,10 @@
       } else if (_section === 'actu') {
         content = actuView();
       } else if (_section === 'anticiper') {
-        content = secHead('Radar 90 jours', 'ce qui va bouger la demande : remboursements, génériques, baisses de prix, saison, ruptures') + radarHtml +
-          secHead('Signaux &amp; échéances') + epiHtml + saiCipHtml + hasHtml + ansmHtml;
+        var cockpit = '';
+        try { cockpit = anticiperCockpit(); } catch (e) { cockpit = ''; }
+        content = cockpit +
+          secHead('Veille — retours de rupture &amp; futurs remboursés', 'plus loin dans le temps, à surveiller') + ansmHtml + hasHtml;
       } else if (_section === 'stock') {
         content = kpiBand + secHead('Réassort &amp; stock') + reaCard + etabHtml + basculesHtml + rosCard;
       } else {
@@ -1282,6 +1397,23 @@
       '.ap-fresh-warn{font-size:11.5px;line-height:1.5;margin-top:8px;padding:8px 11px;border-radius:9px;background:rgba(213,87,59,.09);border:1px solid rgba(213,87,59,.28);color:var(--rose,#D5573B)}' +
       '.ap-rap-lk{color:var(--ip-blue,#0050E6);font-weight:600;text-decoration:none;white-space:nowrap}' +
       '.ap-recall{display:block;width:100%;text-align:left;margin:0 0 12px;padding:11px 14px;border-radius:11px;background:#FBE9E6;border:1px solid #E8A99C;color:#B02A1E;font-weight:700;font-size:13.5px;cursor:pointer}' +
+      // ── Cockpit Anticiper ──
+      '.an-pl{display:flex;gap:10px;margin:2px 0 12px}.an-pl>div{flex:1;border-radius:14px;padding:12px;color:#fff}' +
+      '.an-pl .lose{background:linear-gradient(135deg,#D5573B,#B02A1E)}.an-pl .win{background:linear-gradient(135deg,#1E9E6A,#127a50)}' +
+      '.an-pl b{display:block;font-family:var(--mono,monospace);font-size:21px;font-weight:800;line-height:1}.an-pl span{font-size:10.5px;opacity:.93;display:block;margin-top:5px;line-height:1.3}' +
+      '.an-frise{background:#fff;border:1px solid var(--line);border-radius:14px;padding:8px 4px 4px;overflow-x:auto;margin-bottom:14px}' +
+      '.an-dotrow{position:relative;height:92px;min-width:520px}' +
+      '.an-today{position:absolute;left:16%;top:4px;bottom:16px;width:2px;background:#D5573B}.an-today span{position:absolute;top:-2px;left:4px;font-size:9px;color:#D5573B;font-weight:800}' +
+      '.an-axis{position:absolute;left:0;right:0;bottom:12px;height:1px;background:var(--line)}' +
+      '.an-tick{position:absolute;bottom:0;font-size:9px;color:var(--muted);transform:translateX(-50%)}' +
+      '.an-ev{position:absolute;transform:translateX(-50%);text-align:center;width:72px}' +
+      '.an-d{width:13px;height:13px;border-radius:50%;margin:0 auto;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.1)}' +
+      '.an-jl{font-family:var(--mono,monospace);font-size:10px;font-weight:700;margin-top:3px}.an-el{font-size:9.5px;color:var(--muted);line-height:1.15;margin-top:1px}' +
+      '.an-empty{position:absolute;top:36px;left:0;right:0;text-align:center;font-size:12px;color:var(--muted)}' +
+      '.an-lane{margin-bottom:14px}.an-lhd{display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:800;padding:9px 13px;border-radius:11px;color:#fff;margin-bottom:8px}' +
+      '.an-lhd .an-n{margin-left:auto;font-family:var(--mono,monospace)}' +
+      '.an-lane.buy .an-lhd{background:#1E9E6A}.an-lane.sw .an-lhd{background:#6D5AE6}.an-lane.cut .an-lhd{background:#D5573B}.an-lane.flush .an-lhd{background:#C77700}' +
+      '.an-verb{font-size:11px;font-weight:800;font-family:var(--mono,monospace);white-space:nowrap}.an-verb.buy{color:#1E9E6A}.an-verb.sw{color:#6D5AE6}.an-verb.sell{color:#D5573B}' +
       '.cl-suh .mitm{display:inline-block;width:8px;height:8px;border-radius:50%;background:#B02A37;vertical-align:middle;margin-left:3px}' +
       '.rev .rt .dot{display:inline-block;width:8px;height:8px;border-radius:50%;flex:none}' +
       /* radar */
