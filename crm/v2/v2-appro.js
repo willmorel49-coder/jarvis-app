@@ -562,6 +562,7 @@
     if (_mitmGen) s.push('MITM ' + fdate(_mitmGen));
     if (_prixData && _prixData.generated) s.push('Prix BDPM ' + fdate(_prixData.generated));
     if (_rapData && _rapData.generated) s.push('Rappels ' + fdate(_rapData.generated));
+    if (_omData && _omData.year) s.push('Marché national ' + _omData.year);
     // Date réelle de l'inventaire plateforme = dénominateur des couvertures (audit : talon d'Achille).
     // On l'affiche et on alerte si le stock est vieux (> 35 j) car les jours-avant-rupture s'en trouvent optimistes.
     var stk = window.STOCK_IP && window.STOCK_IP.meta, stockTxt = '<b>stock plateforme = dernier inventaire importé</b> (photographie, pas temps réel)', warn = '';
@@ -812,6 +813,55 @@
     return toggle + band + body;
   }
 
+  // ═══ DEMANDE NATIONALE PAR PRODUIT (Open Medic) → white space réseau ═══
+  var _omState = 0, _omData = null;
+  function ensureOpenMedic() {
+    if (_omData || _omState) return;
+    _omState = 1;
+    try {
+      var day = new Date().toISOString().slice(0, 10);
+      fetch('openmedic.json?d=' + day, { cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) { _omData = j || {}; _omState = 2; approRerender(); })
+        .catch(function () { _omState = 2; });
+    } catch (e) { _omState = 2; }
+  }
+  // « White space » : gros marché national (Open Medic) où le réseau vend peu = potentiel de référencement.
+  var _wsCache = null, _wsRef = null, _wsOmRef = null;
+  function whiteSpace() {
+    if (!_omData || !_omData.data || !window.WML_SALES) return [];
+    if (_wsCache && _wsRef === window.WML_SALES && _wsOmRef === _omData) return _wsCache;
+    var nat = _omData.data, idx = cipIndex();
+    var totNat = 0, totNet = 0;
+    Object.keys(nat).forEach(function (c) { var n = nat[c]; if (!n) return; totNat += n; var o = idx[c]; if (o) totNet += o.vM * 12; });
+    var S = totNat > 0 ? totNet / totNat : 0;   // part réseau moyenne du marché national (footprint grossiste)
+    if (S <= 0) { _wsCache = []; _wsRef = window.WML_SALES; _wsOmRef = _omData; return _wsCache; }
+    var P = window.PROD_STATS || [], ps = {}; for (var i = 0; i < P.length; i++) ps[String(P[i].c)] = P[i];
+    var out = [];
+    Object.keys(nat).forEach(function (c) {
+      var n = nat[c]; if (n < 20000) return;                 // demande nationale significative
+      var o = idx[c], net = o ? o.vM * 12 : 0;
+      var gap = n * S - net;                                 // manque à gagner au rythme de notre part moyenne
+      if (gap <= 0) return;
+      var p = ps[c];
+      out.push({ c: c, d: p ? p.d : c, nat: n, net: Math.round(net), gap: Math.round(gap), sold: !!o });
+    });
+    out.sort(function (a, b) { return b.gap - a.gap; });
+    _wsCache = out.slice(0, 12); _wsRef = window.WML_SALES; _wsOmRef = _omData;
+    return _wsCache;
+  }
+  function whiteSpaceCard() {
+    if (!_omData) return '';
+    var ws = whiteSpace(); if (!ws.length) return '';
+    var rows = ws.map(function (x) {
+      return '<div class="ap-row"><div class="ap-nm">' + esc(cap(x.d)) +
+        '<small>' + fmt(x.nat) + ' boîtes/an en France · réseau ' + (x.sold ? '~' + fmt(x.net) + '/an' : '<b>non référencé</b>') + '</small></div>' +
+        '<div class="ap-mini">potentiel <b>+' + fmt(x.gap) + '</b>/an</div></div>';
+    }).join('');
+    return card('spark', 'Potentiel réseau — gros marché, faible présence', 'forte demande nationale (Open Medic ' + (_omData.year || '') + ') où le réseau vend peu — à référencer / pousser', rows, 'var(--ip-blue)') +
+      '<div class="ap-foot" style="margin:0">Potentiel = ce que le réseau vendrait à sa part de marché moyenne. Remboursables uniquement (Open Medic). Croisé au sell-in réseau.</div>';
+  }
+
   // ═══ BAISSES DE PRIX OFFICIELLES (BDPM prix public, robot quotidien, diff par snapshot) ═══
   var _prixState = 0, _prixData = null;
   function ensurePrix() {
@@ -945,6 +995,7 @@
       ensureInfos();  // charge l'actu quotidienne (veille RSS gratuite, filtrée appro)
       ensurePrix();   // charge les baisses de prix officielles (BDPM, robot quotidien)
       ensureRappels(); // charge les rappels de produits (RappelConso, robot hebdo)
+      ensureOpenMedic(); // charge la demande nationale par produit (Open Medic, robot annuel) → white space
       // ── Cockpit réassort (crash-safe : ne casse jamais la page si un flux manque) ──
       var kpiBand = '', reaCard = '', rosCard = '', radarHtml = '', etabHtml = '', basculesHtml = '', ansmHtml = '', epiHtml = '', hasHtml = '', saiCipHtml = '', carnetHtml = '', carnetCounts = null;
       try {
@@ -1088,6 +1139,7 @@
           '</div>' +
           card('cat', 'Nouveautés à référencer', 'AMM récentes (BDPM)', nouvRows, 'var(--ip-blue)') +
           card('pilo', 'Négo labos — ton levier', 'vrai volume réseau par génériqueur', negRows, '#0E7C86') +
+          whiteSpaceCard() +
           prixCard() +
           '<div class="ap-foot">Négo = vrai sell-in réseau (WML) par génériqueur. Génériques : pas d\'abandon de marge Intégral. « Ça monte » / saison = Medic\'AM / BDPM.</div>';
       }
