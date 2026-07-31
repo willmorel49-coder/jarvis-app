@@ -1,0 +1,41 @@
+name: Anticipation · futures baisses de prix (CEPS / JO)
+
+# Robot GRATUIT : lit les avis CEPS publiés au Journal Officiel (dumps ouverts DILA
+# JORFSIMPLE) et en extrait les NOUVEAUX prix (PFHT + PPTTC) des spécialités avec leur
+# DATE D'EFFET — souvent 4 a 20 jours a l'avance. Le vrai signal « destocker avant que ca
+# baisse ». Compare au dernier prix connu (prix-snapshot.json) pour marquer baisse/hausse.
+# Ecrit crm/v2/prix-futurs.json. Aucune cle, aucun cout.
+
+on:
+  schedule:
+    - cron: '38 6 * * *'   # tous les jours (le JO parait chaque jour)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: prix-futurs
+  cancel-in-progress: false
+
+jobs:
+  prix-futurs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Extraire les avis de prix CEPS du JO
+        run: python3 generate_prix_futurs.py
+      - name: Committer si changement
+        run: |
+          if git diff --quiet -- crm/v2/prix-futurs.json; then
+            echo "Pas de changement."
+          else
+            git config user.name  "JARVIS copilote"
+            git config user.email "actions@users.noreplace.github.com"
+            git add crm/v2/prix-futurs.json
+            git commit -m "data(anticipation): futures baisses de prix CEPS/JO $(date -u +%Y-%m-%d)"
+            git push
+          fi
