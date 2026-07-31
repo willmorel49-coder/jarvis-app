@@ -1,0 +1,40 @@
+name: Marché · demande nationale par produit (Open Medic)
+
+# Robot GRATUIT : boîtes remboursées en France par CIP13 (Open Medic, Assurance Maladie),
+# millésime annuel. Croisé au sell-in réseau côté app -> « white space » : gros marché
+# national où le réseau vend peu = potentiel de référencement. Écrit crm/v2/openmedic.json.
+# Mensuel = capte la publication du nouveau millésime (~mi-année). Aucune clé, aucun coût.
+
+on:
+  schedule:
+    - cron: '52 5 5 * *'   # le 5 de chaque mois
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: openmedic
+  cancel-in-progress: false
+
+jobs:
+  openmedic:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Récupérer la demande nationale (Open Medic)
+        run: python3 generate_openmedic.py
+      - name: Committer si changement
+        run: |
+          if git diff --quiet -- crm/v2/openmedic.json; then
+            echo "Pas de changement (Open Medic inchangé)."
+          else
+            git config user.name  "JARVIS copilote"
+            git config user.email "actions@users.noreplace.github.com"
+            git add crm/v2/openmedic.json
+            git commit -m "data(marché): demande nationale Open Medic $(date -u +%Y-%m-%d)"
+            git push
+          fi
