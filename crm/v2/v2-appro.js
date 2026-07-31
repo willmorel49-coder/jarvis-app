@@ -75,9 +75,11 @@
   }
 
   // ── Section 3 : négo labos — VRAI volume réseau par génériqueur (WML_SALES) ──
+  var _negoCache = null, _negoRef = null;
   function negoLabos() {
     var S = window.WML_SALES, G = window.GENERIQUEURS || {};
     if (!S) return [];
+    if (_negoCache && _negoRef === S) return _negoCache;   // audit M1 : ne pas re-scanner 426k lignes à chaque render
     var P = window.PROD_STATS || [], ps = {};
     for (var k = 0; k < P.length; k++) ps[String(P[k].c)] = P[k];
     var by = {}, totCa = 0;
@@ -95,7 +97,8 @@
       var gs = 0, gn = 0; cips.forEach(function (c) { var g = tend(c); if (g != null) { gs += g; gn++; } });
       return { lab: lab, ca: o.ca, q: o.q, nref: cips.length, g: gn ? gs / gn : null, tops: tops, pct: totCa ? Math.round(o.ca / totCa * 100) : 0 };
     }).sort(function (a, b) { return b.ca - a.ca; });
-    return out.slice(0, 12);
+    _negoCache = out.slice(0, 12); _negoRef = S;
+    return _negoCache;
   }
 
   // ═══ COCKPIT RÉASSORT : croise WML_SALES (vitesse réseau) × STOCK_IP (couverture) ═══
@@ -226,8 +229,14 @@
   // Ne re-render QUE si l'utilisateur est encore sur l'écran Appro (audit robustesse) :
   // les chargeurs différés (ensure*) résolvent en asynchrone ; sans ce garde, un flux qui
   // arrive après une navigation re-rendrait inutilement une autre page (flicker, travail perdu).
+  var _rerenderT = null;
   function approRerender() {
-    try { if (V2.route && V2.route.name === 'appro' && V2.render) V2.render(); } catch (e) {}
+    // Debounce (audit M1) : au chargement ~11 ensure* résolvent en rafale → un seul render au lieu de 11.
+    if (_rerenderT) return;
+    _rerenderT = setTimeout(function () {
+      _rerenderT = null;
+      try { if (V2.route && V2.route.name === 'appro' && V2.render) V2.render(); } catch (e) {}
+    }, 60);
   }
 
   // ═══ STOCK PAR ÉTABLISSEMENT (7 sites) + rééquilibrage inter-sites — ETAB_PRICES (NR) ═══
@@ -309,15 +318,19 @@
         .catch(function () { _generState = 2; });
     } catch (e) { _generState = 2; }
   }
+  var _bascCache = null, _bascRef = null, _bascGenRef = null;
   function basculesGx() {
     if (!_generData || !_generData.princepsWithGeneric || !window.WML_SALES) return [];
+    var S = window.WML_SALES;
+    if (_bascCache && _bascRef === S && _bascGenRef === _generData) return _bascCache;   // audit M1 : cache (ventes + base génériques)
     var set = {}; _generData.princepsWithGeneric.forEach(function (c) { set[c] = 1; });
     var P = window.PROD_STATS || [], ps = {}; for (var i = 0; i < P.length; i++) ps[String(P[i].c)] = P[i];
-    var bought = {}, S = window.WML_SALES;
+    var bought = {};
     for (var j = 0; j < S.length; j++) { var r = S[j]; if (r[4] > 0) { var c = String(r[3]); if (set[c]) bought[c] = (bought[c] || 0) + r[4]; } }
     var out = Object.keys(bought).map(function (c) { return { c: c, q: bought[c], d: ps[c] ? ps[c].d : c }; });
     out.sort(function (a, b) { return b.q - a.q; });
-    return out.slice(0, 12);
+    _bascCache = out.slice(0, 12); _bascRef = S; _bascGenRef = _generData;
+    return _bascCache;
   }
   function basculesCard() {
     if (!_generData) return '<div class="v2-card ap-card"><div class="ap-hd"><div class="ap-ic" style="background:#6D5AE6">G</div><div><h3>Bascules génériques</h3><div class="ap-sub">chargement de la base médicaments (BDPM)…</div></div></div></div>';
