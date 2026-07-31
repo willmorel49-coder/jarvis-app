@@ -1078,7 +1078,7 @@
     // ④ Écouler (péremptions — donnée interne à fournir)
     var perRows = '';   // activable quand l'export stock inclura la date de péremption
 
-    return pl + friseHtml() +
+    return pl +
       laneCard('buy', '①', 'ACHETER AVANT — la demande qui monte', up.length, upRows, 'Aucun pic de demande détecté.') +
       laneCard('sw', '②', 'BASCULER — génériques qui arrivent', bas.length, basRows, 'Aucun générique en approche détecté.') +
       laneCard('cut', '③', 'ALLÉGER AVANT — futures baisses de prix', algF.length, algRows, (_pfData ? 'Aucune baisse annoncée au JO pour l\'instant.' : 'Chargement des avis de prix…')) +
