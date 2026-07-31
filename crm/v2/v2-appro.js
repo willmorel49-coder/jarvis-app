@@ -120,19 +120,25 @@
       a[m - 1] += q;
     }
     var idx = {};
+    // Âge de l'inventaire plateforme (audit data#2) : le stock date de meta.gen ; il s'est écoulé depuis.
+    // On estime le stock d'AUJOURD'HUI = stock inventaire − ventes écoulées, sinon on daterait chaque
+    // rupture avec ~invAge jours de retard (couvertures optimistes, dates fantômes jusqu'en septembre).
+    var meta = window.STOCK_IP && window.STOCK_IP.meta, invAge = 0;
+    if (meta && meta.gen) { try { invAge = Math.max(0, Math.round((new Date().getTime() - new Date(meta.gen + 'T00:00:00').getTime()) / 864e5)); } catch (e) {} }
     // P1 (audit) : inclure aussi les fast-movers EN RUPTURE plateforme (vendus mais stock 0 = absents de STOCK_IP).
     var keys = {};
     Object.keys(stk).forEach(function (c) { keys[c] = 1; });
     Object.keys(dem).forEach(function (c) { var a = dem[c]; if ((a[0] + a[1] + a[2] + a[3] + a[4] + a[5]) / 6 >= MINVEL) keys[c] = 1; });
     Object.keys(keys).forEach(function (c) {
       var a = dem[c], tot = a ? (a[0] + a[1] + a[2] + a[3] + a[4] + a[5]) : 0;
-      var vM = tot / 6, st = Math.max(0, stk[c] || 0), vD = vM / 30;   // stock borné à 0 (jamais de couverture négative)
-      var cov = vD > 0 ? st / vD : (st > 0 ? 9999 : 0);
+      var vM = tot / 6, stJ = Math.max(0, stk[c] || 0), vD = vM / 30;   // stJ = stock à la date d'inventaire
+      var st = vD > 0 ? Math.max(0, stJ - vD * invAge) : stJ;          // stock estimé aujourd'hui (écoulé depuis l'inventaire)
+      var cov = vD > 0 ? st / vD : (st > 0 ? 9999 : 0);                // couverture restante à partir d'aujourd'hui
       var p = ps[c];
       var isRupt = !!rupt(c), tg = tend(c);
       var cibleJ = (isRupt || (tg != null && tg > 0)) ? CIBLE_TENSION : CIBLE;
       var qcmd = Math.max(0, Math.round(cibleJ * vD - st));
-      idx[c] = { c: c, d: p ? p.d : c, vM: vM, st: st, cov: cov, qcmd: qcmd,
+      idx[c] = { c: c, d: p ? p.d : c, vM: vM, st: st, stJ: stJ, invAge: invAge, cov: cov, qcmd: qcmd,
         ppht: p ? (p.ppht || 0) : 0, stale: p ? p.stale : 0, rupt: isRupt, f: p ? p.f : '' };
     });
     _cipIdx = idx; _cipIdxRef = S;
@@ -978,7 +984,7 @@
           reaCard = '<div class="v2-card ap-card"><div class="ap-hd"><div class="ap-ic" style="background:var(--c-amber)">' + ICO('alert', 15, 2) + '</div>' +
             '<div><h3>À commander — réassort recommandé</h3><div class="ap-sub">couverture en jours (stock plateforme ÷ vitesse réseau) + quantité conseillée — ' + fmt(h.ncmd) + ' réfs à passer, top 24 par urgence</div></div></div>' +
             reaRows +
-            '<div class="ap-foot" style="padding:10px 18px 12px;margin:0">Vitesse = ventes réseau/mois (WML, 6 mois). Cible ' + CIBLE + ' j, portée à ' + CIBLE_TENSION + ' j si tension ANSM ou marché en hausse. Photographie du dernier import stock+ventes.</div></div>';
+            '<div class="ap-foot" style="padding:10px 18px 12px;margin:0">Vitesse = ventes réseau/mois (WML, 6 mois). Cible ' + CIBLE + ' j, portée à ' + CIBLE_TENSION + ' j si tension ANSM ou marché en hausse. <b>Stock estimé aujourd\'hui</b> = inventaire du ' + (window.STOCK_IP && window.STOCK_IP.meta && window.STOCK_IP.meta.gen ? fdate(window.STOCK_IP.meta.gen) : '?') + ' moins l\'écoulement depuis — à confirmer par un réimport du stock (ne tient pas compte de tes commandes déjà passées).</div></div>';
 
           var rosRows = rossignols().map(function (o) {
             var cv = o.vM > 0 ? Math.round(o.cov) + ' j de stock' : 'aucune vente sur 6 mois';
