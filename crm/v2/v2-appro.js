@@ -23,7 +23,12 @@
   function stock(c) { return V2.stock ? V2.stock(c) : 0; }
   function rupt(c) { return V2.rupture ? V2.rupture(c) : null; }
   function marketFr(c) { return (window.AMELI_AVG && window.AMELI_AVG.data && window.AMELI_AVG.data[String(c)]) || 0; }
-  function pctHtml(v) { if (v == null) return '<span class="ap-flat">—</span>'; var s = Math.round(v); return '<span class="' + (s > 0 ? 'ap-up' : s < 0 ? 'ap-down' : 'ap-flat') + '">' + (s > 0 ? '▲ +' : s < 0 ? '▼ ' : '') + s + ' %</span>'; }
+  function pctHtml(v) { if (v == null || !isFinite(v)) return '<span class="ap-flat">—</span>'; var s = Math.round(v); return '<span class="' + (s > 0 ? 'ap-up' : s < 0 ? 'ap-down' : 'ap-flat') + '">' + (s > 0 ? '▲ +' : s < 0 ? '▼ ' : '') + s + ' %</span>'; }
+  // Carte standard de l'appro (niveau IIFE pour être visible de prixCard/rappelsCard/render — sinon ReferenceError quand une carte hors-render l'appelle).
+  function card(ico, title, sub, body, accent) {
+    return '<div class="v2-card ap-card"><div class="ap-hd"><div class="ap-ic" style="background:' + accent + '">' + ICO(ico, 15, 2) + '</div>' +
+      '<div><h3>' + title + '</h3><div class="ap-sub">' + sub + '</div></div></div>' + body + '</div>';
+  }
 
   // ── Section 1 : ce qui MONTE (croissance marché × présence réseau) ──
   function rising() {
@@ -140,7 +145,7 @@
     Object.keys(idx).forEach(function (k) {
       var o = idx[k], mov = o.vM >= MINVEL;
       if (mov && o.cov < 7) t++; else if (mov && o.cov < 21) a++;
-      if (o.st > 0 && (o.cov > 90 || o.stale === 1)) { r++; cap += o.st * o.ppht; }
+      if (o.st > 0 && o.cov > 90) { r++; cap += o.st * o.ppht; }
       if (mov && o.qcmd > 0) ncmd++;
     });
     return { tension: t, acmd: a, ross: r, cap: cap, ncmd: ncmd };
@@ -157,7 +162,7 @@
   // Rossignols : stock dormant (couverture > 90 j ou flag stale), trié par capital immobilisé.
   function rossignols() {
     var idx = cipIndex(), out = [];
-    Object.keys(idx).forEach(function (k) { var o = idx[k]; if (o.st > 0 && (o.cov > 90 || o.stale === 1)) { o.cap = o.st * o.ppht; out.push(o); } });
+    Object.keys(idx).forEach(function (k) { var o = idx[k]; if (o.st > 0 && o.cov > 90) { o.cap = o.st * o.ppht; out.push(o); } });
     out.sort(function (a, b) { return b.cap - a.cap; });
     return out.slice(0, 16);
   }
@@ -317,7 +322,7 @@
     var b = basculesGx(); if (!b.length) return '';
     var rows = b.map(function (o) {
       return '<div class="ap-row"><div class="ap-nm">' + esc(cap(o.d)) + '<small>princeps acheté par le réseau — un générique existe</small></div>' +
-        '<div class="ap-mini">' + fmt(o.q) + ' u/an</div><div class="ap-st ok">bascule Gx</div></div>';
+        '<div class="ap-mini">' + fmt(o.q) + ' u/6 mois</div><div class="ap-st ok">bascule Gx</div></div>';
     }).join('');
     return '<div class="v2-card ap-card"><div class="ap-hd"><div class="ap-ic" style="background:#6D5AE6">G</div><div><h3>Bascules génériques à faire</h3>' +
       '<div class="ap-sub">' + (_generData.meta ? _generData.meta.nAvecGenerique : '') + ' groupes avec générique (BDPM) — les princeps que TU achètes encore et qui ont un générique dispo, top 12 par volume</div></div></div>' + rows + '</div>';
@@ -464,7 +469,8 @@
     var cand = [];
     Object.keys(data).forEach(function (c) {
       if (!b[c]) return;
-      var o = data[c], pm = win[0], pv = o.i[win[0] - 1];
+      var o = data[c]; if (!o || !o.i || o.i.length < 12) return;   // garde (audit M3) : entrée saison-cip sans indice → sinon TypeError efface le cockpit stock
+      var pm = win[0], pv = o.i[win[0] - 1];
       win.forEach(function (m) { if (o.i[m - 1] > pv) { pv = o.i[m - 1]; pm = m; } });
       if (pv < (pm === 1 ? 1.5 : 1.2)) return;   // audit P2 : pic janvier = renouvellements, seuil relevé
       cand.push({ c: c, pv: pv, pm: pm, q: b[c] });
@@ -474,7 +480,7 @@
     var rows = cand.slice(0, 12).map(function (x) {
       return '<div class="ap-row"><div class="ap-nm">' + esc(cap(((ps[x.c] && ps[x.c].d) || x.c).toLowerCase())) +
         '<small>pic en ' + MOIS_L[x.pm - 1] + ' · +' + Math.round((x.pv - 1) * 100) + ' % vs moyenne (Medic\'AM 2 ans)</small></div>' +
-        '<div class="ap-mini">' + fmt(x.q) + ' u/an réseau</div>' +
+        '<div class="ap-mini">' + fmt(x.q) + ' u/6 mois réseau</div>' +
         '<div class="ap-st ok">pré-commander</div></div>';
     }).join('');
     return '<div class="v2-card ap-card"><div class="ap-hd"><div class="ap-ic" style="background:#6D5AE6">☀</div><div><h3>Pré-commander avant le pic</h3>' +
@@ -551,7 +557,8 @@
       if (age != null && age > 35) warn = '<div class="ap-fresh-warn">⚠️ Inventaire de ' + age + ' jours : les « jours avant rupture » sont donc optimistes (le stock a baissé depuis). À recroiser avant grosse commande — réimporter le stock = priorité.</div>';
     }
     if (!s.length && !warn) return '';
-    return '<div class="ap-fresh">🕓 Sources à jour : ' + s.join(' · ') + ' · ' + stockTxt + '. Vitesse = ventes réseau janv.-juin 2026.</div>' + warn;
+    var parts = s.concat([stockTxt]);   // audit m8 : pas de séparateur orphelin quand aucune source datée n'est encore chargée
+    return '<div class="ap-fresh">🕓 Sources à jour : ' + parts.join(' · ') + '. Vitesse = ventes réseau janv.-juin 2026.</div>' + warn;
   }
   function isMitm(c) { return !!(_mitmSet && _mitmSet[c]); }
 
@@ -573,15 +580,15 @@
     var acts = [], C = { buy: 0, sec: 0, pre: 0, arb: 0, red: 0, eur: 0, redEur: 0 };
     Object.keys(idx).forEach(function (c) {
       var o = idx[c];
-      if (o.vM < 3 && o.stale !== 1) return;
+      if (o.vM < 3) return;   // audit data#1 : ne plus retenir un produit juste parce que son PPHT est à rafraîchir (stale ≠ dormant)
       var rupt = V2.rupture ? !!V2.rupture(c) : false;
       var s = sai[c], sUp = 0, sM = 0;
       if (s && s.i) win.forEach(function (m) { if (s.i[m - 1] > sUp) { sUp = s.i[m - 1]; sM = m; } });
       var seasonUp = sUp >= (sM === 1 ? 1.5 : 1.2);   // audit P2 : pic janvier = renouvellements chroniques → seuil relevé
       var isGen = genSet ? !!genSet[c] : false;
       var verdict, cls, prio, qty = 0, reason = '';
-      if ((o.stale === 1 || o.cov > 90) && o.st > 0) {
-        verdict = 'ALLÉGER'; cls = 'red'; prio = 1; reason = (o.cov > 90 ? (o.cov >= 9999 ? 'invendu' : Math.round(o.cov) + ' j de stock') : 'dormant');
+      if (o.cov > 90 && o.st > 0) {   // audit data#1 : ALLÉGER = vraie sur-couverture (>90 j), plus jamais sur le flag stale (tarif à rafraîchir)
+        verdict = 'ALLÉGER'; cls = 'red'; prio = 1; reason = (o.cov >= 9999 ? 'invendu' : Math.round(o.cov) + ' j de stock');
         C.red++; C.redEur += o.st * (o.ppht || 0);
       } else if (o.cov < 7 && o.vM >= 5) {
         qty = o.qcmd;
@@ -813,7 +820,7 @@
     }
     var rows = drops.slice(0, 12).map(function (x) {
       return '<div class="ap-row"><div class="ap-nm">' + esc(x.d || x.c) +
-        '<small>' + (x.remb ? 'remb. ' + esc(x.remb) + ' · ' : '') + (x.n ? x.n + ' vendus (réseau)' : 'hors réseau') + '</small></div>' +
+        '<small>' + (x.remb ? 'remb. ' + esc(x.remb) + ' · ' : '') + (x.n ? 'présent dans ' + x.n + ' officines' : 'hors réseau') + '</small></div>' +
         '<div class="ap-mini">' + fmtEur(x.old) + ' → <b>' + fmtEur(x.new) + '</b></div>' +
         '<div class="ap-g"><span class="ap-down">▼ −' + x.pct + ' %</span></div></div>';
     }).join('');
@@ -849,7 +856,7 @@
     }
     if (p.length) {
       out += card('cat', 'Rappels parapharma récents', 'cosmétiques / hygiène-beauté rappelés (DGCCRF) — à retirer du comptoir', p.slice(0, 12).map(function (x) { return rappelRow(x, false); }).join(''), 'var(--c-amber)') +
-        '<div class="ap-foot" style="margin:0">RappelConso (DGCCRF). Rappels médicaments = onglet ANSM. ' + (_rapData.nMatched || 0) + ' réf réseau · ' + (_rapData.nPara || 0) + ' parapharma récents.</div>';
+        '<div class="ap-foot" style="margin:0">RappelConso (DGCCRF). Rappels médicaments = espace Anticiper. ' + (_rapData.nMatched || 0) + ' réf réseau · ' + (_rapData.nPara || 0) + ' parapharma récents.</div>';
     }
     return out;
   }
@@ -879,7 +886,7 @@
     else if (_generData && _generData.meta) pred.push({ ic: 'Ⓖ', c: '#6D5AE6', t: 'bascules génériques disponibles', s: _generData.meta.nAvecGenerique + ' groupes avec un générique — princeps à basculer' });
     if (_hasData && _hasData.items) { var f = _hasData.items.filter(function (i) { return i.cat === 'reimb'; }); if (f.length) pred.push({ ic: '§', c: '#0050E6', t: f.length + ' avis HAS favorables récents', s: 'futurs remboursements 3-6 mois avant — ' + cap((f[0].spec || '').toLowerCase()).slice(0, 26) }); }
     if (_epiData && _epiData.indicators) { var up = _epiData.indicators.filter(function (i) { return i.trend != null && i.trend > 10; }); if (up.length) pred.push({ ic: '✚', c: '#1E9E6A', t: up[0].label + ' en hausse (+' + up[0].trend + ' %)', s: (up[0].regions && up[0].regions[0] ? 'plus fort en ' + cap((up[0].regions[0].n || '').toLowerCase()) + ' · ' : '') + 'renforcer les familles avant le pic' }); }
-    var predHtml = pred.map(function (p) { return '<div class="ac-pred"><div class="ac-ic" style="background:' + p.c + '">' + p.ic + '</div><div class="ac-pt"><b>' + p.t + '</b><span>' + p.s + '</span></div></div>'; }).join('') || '<div class="ap-empty">Signaux en cours de chargement…</div>';
+    var predHtml = pred.map(function (p) { return '<div class="ac-pred"><div class="ac-ic" style="background:' + p.c + '">' + p.ic + '</div><div class="ac-pt"><b>' + esc(p.t) + '</b><span>' + esc(p.s) + '</span></div></div>'; }).join('') || '<div class="ap-empty">Signaux en cours de chargement…</div>';
     // ── ACTUALITÉ : RSS filtré appro ──
     var news;
     if (_infosData && _infosData.items) {
@@ -891,13 +898,14 @@
           '<div class="ac-nm"><b>' + esc(i.titre) + '</b><span>' + esc(i.source) + '</span></div></a>';
       }).join('') || '<div class="ap-empty">Pas d’actu appro dans les derniers jours.</div>';
     } else news = '<div class="ap-empty">Chargement de l’actualité…</div>';
+    var rapH = rappelsCard();   // audit m2 : calculer une seule fois (évite le double scan)
     return '<div class="ap-sec">Prédictif — ce qui arrive</div>' +
       '<div class="ap-secsub">calculé chaque jour sur ta donnée réseau + les sources publiques gratuites</div>' +
       '<div class="v2-card ap-card" style="padding:6px 4px">' + predHtml + '</div>' +
       '<div class="ap-sec">Actualité appro du jour</div>' +
       '<div class="ap-secsub">ruptures, sécurité, réglementaire — ANSM &amp; presse pro (RSS gratuit, quotidien)</div>' +
       '<div class="v2-card ap-card" style="padding:0">' + news + '</div>' +
-      (rappelsCard() ? '<div class="ap-sec">Rappels de produits</div><div class="ap-secsub">RappelConso (DGCCRF) — parapharma &amp; réfs du réseau (les rappels médicaments sont dans l’onglet ANSM)</div>' + rappelsCard() : '');
+      (rapH ? '<div class="ap-sec">Rappels de produits</div><div class="ap-secsub">RappelConso (DGCCRF) — parapharma &amp; réfs du réseau (les rappels médicaments sont dans l’espace Anticiper)</div>' + rapH : '');
   }
 
   V2.pages.appro = {
@@ -974,7 +982,7 @@
 
           var rosRows = rossignols().map(function (o) {
             var cv = o.vM > 0 ? Math.round(o.cov) + ' j de stock' : 'aucune vente sur 6 mois';
-            return '<div class="ap-row"><div class="ap-nm">' + esc(cap(o.d)) + (o.stale ? ' <span class="ap-tag ru">dormant</span>' : '') +
+            return '<div class="ap-row"><div class="ap-nm">' + esc(cap(o.d)) + (o.stale ? ' <span class="ap-tag ru">tarif à rafraîchir</span>' : '') +
               '<small>' + cv + ' · stock ' + fmt(o.st) + '</small></div>' +
               '<div class="ap-vol mono">' + (V2.fmtEur ? V2.fmtEur(o.cap) : fmt(o.cap)) + '</div>' +
               '<div class="ap-cmd" style="color:#a8651a">ne plus<b style="color:#a8651a">commander</b></div></div>';
@@ -1013,17 +1021,12 @@
         return '<div class="neg-row">' +
           '<div class="neg-top"><span class="neg-lab">' + esc(x.lab) + '</span>' +
             '<span class="neg-share">' + x.pct + ' % du volume Gx</span>' + pctHtml(x.g) + '</div>' +
-          '<div class="neg-nums"><b>' + (V2.fmtEur ? V2.fmtEur(x.ca) : fmt(x.ca)) + '</b> · ' + fmt(x.q) + ' u/an · ' + x.nref + ' réfs</div>' +
+          '<div class="neg-nums"><b>' + (V2.fmtEur ? V2.fmtEur(x.ca) : fmt(x.ca)) + '</b> · ' + fmt(x.q) + ' u/6 mois · ' + x.nref + ' réfs</div>' +
           (x.tops.length ? '<div class="neg-tops">top : ' + x.tops.map(function (d) { return esc(cap(d)); }).join(' · ') + '</div>' : '') +
-          '<div class="neg-line">Levier : ' + fmt(x.q) + ' u/an, ' + x.pct + ' % de notre volume générique' +
+          '<div class="neg-line">Levier : ' + fmt(x.q) + ' u/6 mois, ' + x.pct + ' % de notre volume générique' +
             (x.g != null && x.g > 0 ? ', en croissance de +' + Math.round(x.g) + ' %' : '') + ' → obtenir de meilleures conditions</div>' +
         '</div>';
       }).join('') || '<div class="ap-empty">Données génériqueurs indisponibles.</div>';
-
-      function card(ico, title, sub, body, accent) {
-        return '<div class="v2-card ap-card"><div class="ap-hd"><div class="ap-ic" style="background:' + accent + '">' + ICO(ico, 15, 2) + '</div>' +
-          '<div><h3>' + title + '</h3><div class="ap-sub">' + sub + '</div></div></div>' + body + '</div>';
-      }
 
       // ── Vue globale (3 secondes) : les 4 chiffres qui disent où agir ──
       var CC = carnetCounts || { buy: 0, sec: 0, pre: 0, arb: 0, red: 0, eur: 0, redEur: 0 };
@@ -1204,6 +1207,8 @@
       '.ap-fresh{font-size:11px;color:var(--muted);line-height:1.5;margin-top:20px;padding-top:12px;border-top:1px solid var(--line)}.ap-fresh b{color:var(--ip-ink)}' +
       '.ap-fresh-warn{font-size:11.5px;line-height:1.5;margin-top:8px;padding:8px 11px;border-radius:9px;background:rgba(213,87,59,.09);border:1px solid rgba(213,87,59,.28);color:var(--rose,#D5573B)}' +
       '.ap-rap-lk{color:var(--ip-blue,#0050E6);font-weight:600;text-decoration:none;white-space:nowrap}' +
+      '.cl-suh .mitm{display:inline-block;width:8px;height:8px;border-radius:50%;background:#B02A37;vertical-align:middle;margin-left:3px}' +
+      '.rev .rt .dot{display:inline-block;width:8px;height:8px;border-radius:50%;flex:none}' +
       /* radar */
       '.rad{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:6px}' +
       '.rzone{padding:0;overflow:hidden}' +
