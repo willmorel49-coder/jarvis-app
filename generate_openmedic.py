@@ -11,7 +11,8 @@ Complète AMELI_AVG (moyenne par pharmacie) par le VOLUME NATIONAL ABSOLU.
 Téléchargement 2 étapes, gratuit sans clé :
   1) page listant les fichiers (jeton de session) : download2.php?Dir_Rep=<AN>_CIP13
   2) le fichier tokenisé NB_<AN>_cip13.CSV.gz (national, CIP13;l_cip13;nbc;REM;BSE;BOITES)
-Restreint au catalogue réseau (prod-stats). Écrit crm/v2/openmedic.json. Python 3.9, urllib seul.
+Couvre TOUT le marché français (aucun filtre catalogue : le modèle national
+doit voir aussi ce qu'Intégral ne vend pas encore). Écrit crm/v2/openmedic.json. Python 3.9, urllib seul.
 """
 import io
 import os
@@ -24,7 +25,6 @@ import urllib.request
 BASE = "https://open-data-assurance-maladie.ameli.fr/medicaments/"
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "crm", "v2", "openmedic.json")
-PRODSTATS = os.path.join(HERE, "crm", "v2", "prod-stats-data.js")
 
 
 def fetch(url, binary=False):
@@ -34,20 +34,11 @@ def fetch(url, binary=False):
     return raw if binary else raw.decode("utf-8", "ignore")
 
 
-def catalogue():
-    try:
-        txt = io.open(PRODSTATS, "r", encoding="utf-8").read()
-        arr = json.loads(txt[txt.index("["):txt.rindex("]") + 1])
-        return set(str(p.get("c")) for p in arr if p.get("c"))
-    except Exception:
-        return set()
-
-
 def digits(v):
     return "".join(ch for ch in str(v or "") if ch.isdigit())
 
 
-def load_year(year, cat):
+def load_year(year):
     """Retourne {cip13: boites} pour l'année, ou None si le millésime n'existe pas encore."""
     page = fetch(BASE + "download2.php?Dir_Rep=%d_CIP13" % year)
     m = re.search(r'download_file\.php\?token=[a-f0-9]+&file=[^"\']*NB_%d_cip13\.CSV\.gz' % year, page)
@@ -63,7 +54,7 @@ def load_year(year, cat):
         if len(cols) < 6:
             continue
         cip = digits(cols[0])
-        if len(cip) != 13 or (cat and cip not in cat):
+        if len(cip) != 13:
             continue
         b = digits(cols[5])   # BOITES (entier, séparateurs éventuels retirés)
         if b:
@@ -72,12 +63,11 @@ def load_year(year, cat):
 
 
 def main():
-    cat = catalogue()
     this = datetime.date.today().year
     data, year = None, None
     for y in (this - 1, this - 2, this):   # le millésime N est publié à l'année N+1
         try:
-            data = load_year(y, cat)
+            data = load_year(y)
         except Exception as e:
             print("  échec %d : %s" % (y, e))
             data = None
@@ -95,7 +85,7 @@ def main():
     with io.open(OUT, "w", encoding="utf-8") as f:
         json.dump(out, f, ensure_ascii=False, separators=(",", ":"))
     tot = sum(data.values())
-    print("OK · millésime %d · %d produits du catalogue · %d boîtes nationales" % (year, len(data), tot))
+    print("OK · millésime %d · %d produits (marché français complet) · %d boîtes nationales" % (year, len(data), tot))
     print("→ %s (%d Ko)" % (OUT, os.path.getsize(OUT) // 1024))
 
 
