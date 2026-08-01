@@ -140,8 +140,50 @@
       idx[c] = { c: c, d: p ? p.d : c, vM: vM, st: st, cov: cov, qcmd: qcmd,
         ppht: p ? (p.ppht || 0) : 0, stale: p ? p.stale : 0, rupt: isRupt, f: p ? p.f : '' };
     });
+    abcPareto(idx);
     _cipIdx = idx; _cipIdxRef = S;
     return idx;
+  }
+
+  // ═══ CLASSEMENT ABC (Pareto) ═══
+  // Trie les références par VALEUR de demande réseau (vitesse mensuelle × PPHT) et coupe en 3 :
+  //   A = les réfs qui font les 80 premiers % de la valeur · B = jusqu'à 95 % · C = la traîne.
+  // Sert à ne JAMAIS traiter un best-seller comme un rossignol (cf. le bug des faux « ALLÉGER »).
+  function abcPareto(idx) {
+    var ks = Object.keys(idx), tot = 0, i;
+    for (i = 0; i < ks.length; i++) { var o = idx[ks[i]]; o._val = (o.vM || 0) * (o.ppht || 0); tot += o._val; }
+    ks.sort(function (a, b) { return idx[b]._val - idx[a]._val; });
+    var cum = 0;
+    for (i = 0; i < ks.length; i++) {
+      var x = idx[ks[i]];
+      if (tot <= 0) { x.abc = 'C'; continue; }
+      cum += x._val;
+      var p = cum / tot;
+      x.abc = p <= 0.8 ? 'A' : (p <= 0.95 ? 'B' : 'C');
+    }
+  }
+  var ABC_POIDS = { A: 25, B: 15, C: 7 };
+
+  // ═══ SCORE D'URGENCE 0-100 ═══
+  // Une seule note, lisible, pour trancher entre deux lignes à commander. Volontairement
+  // simple et explicable au téléphone — 4 composantes bornées, additionnées :
+  //   • risque de sec (0-45)   : à quel point la couverture est sous la cible
+  //   • poids réseau ABC (0-25): un A qui manque coûte plus cher qu'un C
+  //   • tension ANSM (0-20)    : rupture déclarée = 20, médicament critique surveillé = 8
+  //   • saison (0-10)          : pic saisonnier dans les 3 mois
+  function urgence(o, rupt, mitm, seasonUp) {
+    var cible = rupt ? CIBLE_TENSION : CIBLE;
+    var manque = cible > 0 ? Math.max(0, Math.min(1, 1 - (o.cov || 0) / cible)) : 0;
+    var s = 45 * manque + (ABC_POIDS[o.abc] || 7);
+    s += rupt ? 20 : (mitm ? 8 : 0);
+    if (seasonUp) s += 10;
+    return Math.max(0, Math.min(100, Math.round(s)));
+  }
+  function scoreBadge(n) {
+    if (n == null) return '';
+    var c = n >= 75 ? '#B02A37' : (n >= 50 ? '#C77700' : '#6B7280');
+    var b = n >= 75 ? '#FDE7EA' : (n >= 50 ? '#FFF8EC' : 'var(--card-2,#F6F8FB)');
+    return '<span class="ap-tag" title="score d\'urgence sur 100" style="color:' + c + ';background:' + b + ';border:1px solid var(--line)">' + n + '/100</span>';
   }
 
   // Santé du stock : compteurs de tête (tension / à commander / dormants / capital immobilisé).
@@ -246,7 +288,7 @@
     if (_etabState) return;
     _etabState = 1;
     var s = document.createElement('script');
-    s.src = 'etab-prices-data.js?v=' + (window.__APPRO_V || '20260801b'); s.async = false;
+    s.src = 'etab-prices-data.js?v=' + (window.__APPRO_V || '20260801c'); s.async = false;
     s.onload = function () { _etabState = 2; approRerender(); };
     s.onerror = function () { _etabState = 2; };
     document.head.appendChild(s);
@@ -364,6 +406,19 @@
     var pre = (r.approx === 'début' || r.approx === 'fin' || r.approx === 'mi') ? r.approx + ' ' : '';
     return pre + MOIS_L[r.mois - 1] + ' ' + r.annee;
   }
+  // « depuis quand » — journal append-only tenu par le robot ANSM (ansm-histo.json).
+  // ≈ = date amorcée sur la date ANSM de dernière mise à jour ; = = changement observé par Jarvis.
+  function depuisLabel(i) {
+    if (!i || !i.since) return '';
+    var d = daysTo(i.since);
+    if (d == null) return '';
+    var j = Math.max(0, -d), t;
+    if (j < 1) t = 'depuis aujourd’hui';
+    else if (j < 31) t = 'depuis ' + j + ' j';
+    else if (j < 365) t = 'depuis ' + Math.round(j / 30) + ' mois';
+    else t = 'depuis ' + (Math.round(j / 36.5) / 10).toString().replace('.', ',') + ' an' + (j >= 730 ? 's' : '');
+    return (i.sinceA ? '≈ ' : '') + t;
+  }
   function ansmCard() {
     if (!_ansmData) return '<div class="v2-card ap-card"><div class="ap-hd"><div class="ap-ic" style="background:var(--c-amber)">!</div><div><h3>Ruptures &amp; retours ANSM</h3><div class="ap-sub">chargement des signalements ANSM…</div></div></div></div>';
     var items = (_ansmData.items || []).filter(function (i) { return i.retour && i.retour.iso; });
@@ -371,7 +426,8 @@
     var rows = items.slice(0, 15).map(function (i) {
       var rup = /upture/.test(i.st);
       return '<div class="ap-row"><div class="ap-nm">' + esc(cap((i.spec || '').toLowerCase())) +
-        (i.dci ? '<small>' + esc(i.dci) + (i.subst ? ' · <b style="color:var(--c-opp)">générique dispo</b>' : '') + '</small>' : '') + '</div>' +
+        '<small>' + (i.dci ? esc(i.dci) : '') + (i.subst ? ' · <b style="color:var(--c-opp)">générique dispo</b>' : '') +
+        (depuisLabel(i) ? ' · <b>' + depuisLabel(i) + '</b>' : '') + '</small></div>' +
         '<div class="ap-mini">' + (rup ? '<span class="ap-tag ru">rupture</span>' : '<span class="ap-tag" style="color:#a8651a;background:#FFF8EC;border:1px solid #F0DCA8">tension</span>') + '</div>' +
         '<div class="ap-st ok">retour ' + retourLabel(i.retour) + '</div></div>';
     }).join('') || '<div class="ap-empty">Aucune date de retour renseignée pour le moment.</div>';
@@ -380,7 +436,7 @@
     return '<div class="v2-card ap-card"><div class="ap-hd"><div class="ap-ic" style="background:var(--c-amber)">!</div><div><h3>Ruptures &amp; retours ANSM</h3>' +
       '<div class="ap-sub">' + (m.n || 0) + ' signalements actifs · ' + rupN + ' ruptures · ' + tenN + ' tensions · <b>' + (m.nDates || 0) + ' avec date de retour</b> · <b style="color:var(--c-opp)">' + (m.nSubst || 0) + ' substituables (générique)</b> — top 15 par échéance</div></div></div>' +
       rows +
-      '<div class="ap-foot" style="padding:10px 16px 12px;margin:0">Date de retour = champ « remise à disposition prévue » des fiches ANSM (approximatif, ~1 réf sur 3 renseignée). Source unique gratuite, MAJ quotidienne — personne d\'autre ne l\'agrège.</div></div>';
+      '<div class="ap-foot" style="padding:10px 16px 12px;margin:0">Date de retour = champ « remise à disposition prévue » des fiches ANSM (approximatif, ~1 réf sur 3 renseignée). <b>« depuis »</b> = journal tenu par Jarvis ; « ≈ » = amorcé sur la date ANSM de dernière mise à jour, la date devient exacte dès qu\'on observe le changement nous-mêmes. Source unique gratuite, MAJ quotidienne — personne d\'autre ne l\'agrège.</div></div>';
   }
 
   // ═══ SIGNAUX DE DEMANDE (Réseau Sentinelles, robot quotidien) — anticiper le comptoir ═══
@@ -626,14 +682,17 @@
       var cmdDays = null;   // jours avant la date limite de commande (pour le calendrier). arb/red = pas de date.
       if (cls === 'buy' || cls === 'sec') cmdDays = Math.max(0, Math.round(o.cov - ORDER_LEAD));
       else if (cls === 'pre') { var nm = new Date().getMonth() + 1, ma = ((sM - nm) + 12) % 12; cmdDays = Math.max(7, ma * 30 - 42); }
-      acts.push({ c: c, name: (ps[c] && ps[c].d) || c, o: o, v: verdict, cls: cls, prio: prio, qty: qty, reason: reason, rupt: rupt, season: seasonUp, gen: isGen, mitm: mitm, cmdDays: cmdDays });
+      // score d'urgence : n'a de sens que pour ce qu'on doit COMMANDER (alléger/arbitrer = autre logique)
+      var score = (cls === 'buy' || cls === 'sec' || cls === 'pre') ? urgence(o, rupt, mitm, seasonUp) : null;
+      acts.push({ c: c, name: (ps[c] && ps[c].d) || c, o: o, v: verdict, cls: cls, prio: prio, qty: qty, reason: reason, rupt: rupt, season: seasonUp, gen: isGen, mitm: mitm, cmdDays: cmdDays, score: score });
     });
-    acts.sort(function (a, b) { return (b.prio - a.prio) || (a.o.cov - b.o.cov); });
+    acts.sort(function (a, b) { return (b.prio - a.prio) || ((b.score || 0) - (a.score || 0)) || (a.o.cov - b.o.cov); });
     _carnetActs = acts;
     return { acts: acts, counts: C };
   }
   function carnetRow(x) {
-    var chips = '';
+    var chips = scoreBadge(x.score);
+    if (x.o && x.o.abc) chips += ' <span class="ap-tag" title="poids dans la valeur réseau : A = cœur de gamme, C = traîne" style="color:#0E7C86;background:#E5F4F5;border:1px solid #B8E0E3">' + x.o.abc + '</span>';
     if (x.mitm) { var crit = x.rupt || (x.o && x.o.cov < 7); chips += crit ? ' <span class="ap-tag" style="color:#B02A37;background:#FDE7EA;border:1px solid #F3B0BC">critique</span>' : ' <span class="ap-tag" style="color:#6B7280;background:var(--card-2,#F6F8FB);border:1px solid var(--line)">surveillé ANSM</span>'; }   // audit P3 : « critique » réservé au croisement avec l'état de stock
     if (x.rupt) chips += ' <span class="ap-tag ru">ANSM</span>';
     if (x.season) chips += ' <span class="ap-tag" style="color:#6D5AE6;background:#EFEBFB;border:1px solid #D3C9F5">saison</span>';

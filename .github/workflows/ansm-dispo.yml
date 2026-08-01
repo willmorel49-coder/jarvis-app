@@ -29,12 +29,14 @@ jobs:
         run: python3 generate_ansm_dispo.py
       - name: Committer si changement
         run: |
-          if git diff --quiet -- crm/v2/ansm-dispo.json; then
+          # ⚠️ ansm-histo.json = journal append-only « depuis quand » : il DOIT être commité,
+          # sinon le registre repart de zéro à chaque exécution et on perd l'ancienneté.
+          if git diff --quiet -- crm/v2/ansm-dispo.json crm/v2/ansm-histo.json; then
             echo "Pas de changement (liste ANSM inchangée)."
           else
             git config user.name  "JARVIS copilote"
             git config user.email "actions@users.noreplace.github.com"
-            git add crm/v2/ansm-dispo.json
+            git add crm/v2/ansm-dispo.json crm/v2/ansm-histo.json
             git commit -m "data(veille): ANSM disponibilités $(date -u +%Y-%m-%d)"
             git push
           fi
