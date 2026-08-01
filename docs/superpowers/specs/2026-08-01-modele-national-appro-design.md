@@ -42,14 +42,29 @@ de la fonctionnalité. Journal du robot :
 OK · produits avec saison=0 (sur 0 CIP Medic'AM, catalogue=5945)
 ```
 
-Le téléchargement Medic'AM n'a rien ramené sur le serveur GitHub, et le robot a **quand même écrit
-un fichier vide**. C'est pour cette raison que le carnet affiche « Pré-acheter 0 » depuis.
+**Cause établie** (journal complet du run `30572171899`) :
+
+```
+échec 2023 S1 : HTTP Error 403: Forbidden
+échec 2023 S2 : HTTP Error 403: Forbidden
+échec 2024 S1 : HTTP Error 403: Forbidden
+échec 2024 S2 : HTTP Error 403: Forbidden
+OK · produits avec saison=0 → saison-cip.json (0 Ko)
+```
+
+`assurance-maladie.ameli.fr` **refuse les serveurs GitHub** (403), alors que le téléchargement
+fonctionne depuis le Mac de Will — vérifié le 2026-08-01 : ZIP de 6,6 Mo, feuille
+`MedicAM_2023mois_tous_presc`, 14 195 lignes, entêtes `CIP13` et `Nombre de boites remboursées`
+conformes. La source et le parseur sont sains ; seul l'accès depuis le CI est bloqué.
+
+Second défaut : malgré 4 échecs sur 4, le robot a **quand même écrit un fichier vide**.
+C'est pour cette raison que le carnet affiche « Pré-acheter 0 » depuis.
 
 Le profil mensuel est la matière première du modèle national : sans lui, pas d'anticipation.
 À faire d'abord :
 
-1. Comprendre pourquoi le téléchargement échoue sur le runner et le fiabiliser.
-2. Ajouter la garde anti-écrasement (§6) — cette panne ne doit plus jamais pouvoir passer.
+1. Garde anti-écrasement (§6) — cette panne ne doit plus jamais pouvoir passer.
+2. Contourner le 403 : entêtes de navigateur complètes, puis miroir data.gouv en repli.
 3. Lever le filtre catalogue.
 
 ## 4. Le marché à modéliser (mesuré)
