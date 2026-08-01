@@ -343,7 +343,7 @@
     if (_etabState) return;
     _etabState = 1;
     var s = document.createElement('script');
-    s.src = 'etab-prices-data.js?v=' + (window.__APPRO_V || '20260801e'); s.async = false;
+    s.src = 'etab-prices-data.js?v=' + (window.__APPRO_V || '20260801f'); s.async = false;
     s.onload = function () { _etabState = 2; approRerender(); };
     s.onerror = function () { _etabState = 2; };
     document.head.appendChild(s);
@@ -674,6 +674,21 @@
     if (_prixData && _prixData.generated) s.push('Prix BDPM ' + fdate(_prixData.generated));
     if (_rapData && _rapData.generated) s.push('Rappels ' + fdate(_rapData.generated));
     if (_omData && _omData.year) s.push('Marché national ' + _omData.year);
+    // audit 01/08 : ces flux (robots MENSUELS) n'étaient surveillés par personne — s'ils
+    // gelaient, l'écran continuait d'afficher de vieux chiffres sans le dire.
+    // ⚠️ doit rester AVANT le calcul de `parts` et de `warn` : c'est l'inversion de cet ordre
+    // qui a fait tomber toute la page Appro le 01/08 (variable utilisée avant déclaration).
+    var muets = [];
+    [['Marché France', window.AMELI_AVG], ['Tendance', window.TENDANCE], ['Momentum', window.MOMENTUM],
+     ['Nouveautés', window.NOUVEAUTES], ['Saison ATC', window.SAISON]].forEach(function (f) {
+      var m = f[1] && f[1].meta;
+      if (!m) return;
+      if (!m.gen) { muets.push(f[0] + ' (date inconnue)'); return; }
+      s.push(f[0] + ' ' + fdate(m.gen));
+      var ageF = null;
+      try { ageF = Math.round((new Date().getTime() - new Date(m.gen + 'T00:00:00').getTime()) / 864e5); } catch (e) {}
+      if (ageF != null && ageF > 45) muets.push(f[0] + ' figé depuis ' + ageF + ' j');
+    });
     // Date réelle de l'inventaire plateforme = dénominateur des couvertures (audit : talon d'Achille).
     // On l'affiche et on alerte si le stock est vieux (> 35 j) car les jours-avant-rupture s'en trouvent optimistes.
     var stk = window.STOCK_IP && window.STOCK_IP.meta, stockTxt = '<b>stock plateforme = dernier inventaire importé</b> (photographie, pas temps réel)', warn = '';
@@ -688,19 +703,6 @@
     }
     if (!s.length && !warn) return '';
     var parts = s.concat([stockTxt]);   // audit m8 : pas de séparateur orphelin quand aucune source datée n'est encore chargée
-    // audit 01/08 : ces 4 flux (robots MENSUELS) n'étaient surveillés par personne — s'ils
-    // gelaient, l'écran continuait d'afficher de vieux chiffres sans le dire.
-    var muets = [];
-    [['Marché France', window.AMELI_AVG], ['Tendance', window.TENDANCE], ['Momentum', window.MOMENTUM],
-     ['Nouveautés', window.NOUVEAUTES], ['Saison ATC', window.SAISON]].forEach(function (f) {
-      var m = f[1] && f[1].meta;
-      if (!m) return;
-      if (!m.gen) { muets.push(f[0] + ' (date inconnue)'); return; }
-      s.push(f[0] + ' ' + fdate(m.gen));
-      var age = null;
-      try { age = Math.round((new Date().getTime() - new Date(m.gen + 'T00:00:00').getTime()) / 864e5); } catch (e) {}
-      if (age != null && age > 45) muets.push(f[0] + ' figé depuis ' + age + ' j');
-    });
 
     // audit 01/08 : dire sur COMBIEN de mois la vitesse est calculée (un mois d'export partiel
     // est exclu) et combien de références n'ont jamais été inventoriées.
