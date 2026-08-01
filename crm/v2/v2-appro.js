@@ -246,7 +246,7 @@
     if (_etabState) return;
     _etabState = 1;
     var s = document.createElement('script');
-    s.src = 'etab-prices-data.js?v=' + (window.__APPRO_V || '20260801a'); s.async = false;
+    s.src = 'etab-prices-data.js?v=' + (window.__APPRO_V || '20260801b'); s.async = false;
     s.onload = function () { _etabState = 2; approRerender(); };
     s.onerror = function () { _etabState = 2; };
     document.head.appendChild(s);
@@ -977,13 +977,20 @@
     var n = x.nl || L.length;
     return head + (n > 6 ? ' · +' + (n - 6) + ' autres' : '');
   }
+  function clipMots(s, n) {   // couper sur un mot entier (sinon « …de ces lo » à l'écran)
+    s = String(s || '').trim();
+    if (s.length <= n) return s;
+    var c = s.slice(0, n);
+    var i = c.lastIndexOf(' ');
+    return (i > n * 0.6 ? c.slice(0, i) : c).replace(/[ ,;:.’'-]+$/, '') + '…';
+  }
   function rappelLotRow(x, withStock) {
     var q = (x.stk || []).reduce(function (s, y) { return s + (y.q || 0); }, 0);
     var lien = x.url ? '<a href="' + esc(x.url) + '" target="_blank" rel="noopener" class="ap-rap-lk">fiche ▸</a>' : '';
     var nom = (x.cat && x.cat[0] && x.cat[0].d) ? cap(x.cat[0].d.toLowerCase()) : (x.t || '').split('–')[0].trim();
     return '<div class="ap-row"><div class="ap-nm"><b>' + esc(nom) + '</b><small>' +
       (x.d ? fdate(x.d) + ' · ' : '') + esc(lotsLabel(x)) +
-      (x.motif ? ' — ' + esc(x.motif.slice(0, 90)) : '') + '</small></div>' +
+      (x.motif ? ' — ' + esc(clipMots(x.motif, 78)) : '') + '</small></div>' +
       '<div class="ap-mini">' + (withStock && q ? '<b>' + fmt(q) + ' u en stock</b> ' : '') + lien + '</div></div>';
   }
   function rappelsLotsCard() {
