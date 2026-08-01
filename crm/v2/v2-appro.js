@@ -104,6 +104,53 @@
   // ═══ COCKPIT RÉASSORT : croise WML_SALES (vitesse réseau) × STOCK_IP (couverture) ═══
   var MINVEL = 5;      // seuil de bruit : au moins 5 bts/mois réseau pour être « mouvant »
   var CIBLE = 21, CIBLE_TENSION = 30;   // couverture cible en jours (réappro inclus) — relevée si tension/hausse
+  // ═══ MÉMOIRE DES COMMANDES DÉJÀ PASSÉES ═══
+  // Sans elle, l'outil repropose le lendemain les lignes exportées la veille → double commande.
+  // 100 % local au navigateur (aucun serveur), oubli automatique après un cycle d'achat.
+  var CMD_KEY = 'jarvis.appro.cmd', CMD_JOURS = 21;
+  function cmdLire() {
+    try { return JSON.parse(window.localStorage.getItem(CMD_KEY) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function marquerCommande(cips, iso) {
+    var o = cmdLire();
+    for (var i = 0; i < cips.length; i++) o[String(cips[i])] = iso;
+    try { window.localStorage.setItem(CMD_KEY, JSON.stringify(o)); } catch (e) {}
+    return o;
+  }
+  function commandeDe(cip, aujourdhui) {
+    var d = cmdLire()[String(cip)];
+    if (!d) return null;
+    var j = Math.round((new Date(aujourdhui + 'T00:00:00') - new Date(d + 'T00:00:00')) / 86400000);
+    return (j >= 0 && j <= CMD_JOURS) ? d : null;
+  }
+
+  // ═══ MOIS COMPLETS ═══
+  // Le dernier mois d'un export est souvent PARTIEL (toutes les officines n'ont pas encore
+  // remonté). Le diviser comme un mois plein sous-évalue la vitesse de vente, donc SURÉVALUE
+  // la couverture en jours — l'outil dit « tu as le temps » alors que non.
+  // Règle : on ne rogne QUE par la fin, tant que le mois compte moins de 80 % des officines
+  // actives des mois retenus. Jamais un mois du milieu (un creux réel n'est pas un trou de
+  // données). Plancher à 3 mois pour garder une moyenne qui tienne debout.
+  function moisRetenus(S) {
+    var off = {}, m, i;
+    for (i = 0; i < S.length; i++) {
+      m = S[i][1];
+      if (m >= 1 && m <= 12) (off[m] || (off[m] = {}))[S[i][0]] = 1;
+    }
+    var mois = Object.keys(off).map(Number).sort(function (a, b) { return a - b; });
+    var nb = function (x) { return Object.keys(off[x]).length; };
+    while (mois.length > 3) {
+      var dernier = mois[mois.length - 1], reste = mois.slice(0, -1);
+      var moy = 0;
+      for (i = 0; i < reste.length; i++) moy += nb(reste[i]);
+      moy = moy / reste.length;
+      if (nb(dernier) >= 0.8 * moy) break;
+      mois = reste;
+    }
+    return mois;
+  }
+
   var _cipIdx = null, _cipIdxRef = null;
 
   // Index par CIP : demande mensuelle réseau (6 mois) + stock plateforme → vitesse, couverture, qté conseillée.
@@ -115,29 +162,37 @@
     var P = window.PROD_STATS || [], ps = {};
     for (var i = 0; i < P.length; i++) ps[String(P[i].c)] = P[i];
     var stk = (window.STOCK_IP && window.STOCK_IP.data) || {};
+    // audit 01/08 : on ne compte QUE les mois complets (le dernier mois d'export est partiel —
+    // 425 officines contre 630 en avril — et diluait la vitesse, donc gonflait les couvertures).
+    var MR = moisRetenus(S), garde = {}, nMois = MR.length;
+    for (var k = 0; k < MR.length; k++) garde[MR[k]] = 1;
     var dem = {};
     for (var j = 0; j < S.length; j++) {
       var r = S[j], q = r[4] || 0, m = r[1];
-      if (q <= 0 || m < 1 || m > 6) continue;
-      var c = String(r[3]), a = dem[c] || (dem[c] = [0, 0, 0, 0, 0, 0]);
-      a[m - 1] += q;
+      if (q <= 0 || !garde[m]) continue;
+      var c = String(r[3]), a = dem[c] || (dem[c] = {});
+      a[m] = (a[m] || 0) + q;
     }
+    function somme(a) { var t = 0; for (var x in a) if (a.hasOwnProperty(x)) t += a[x]; return t; }
     var idx = {};
     // Le dernier stock disponible est traité comme « courant » (Will : l'outil doit marcher comme si les
     // stocks étaient à jour ; le vrai correctif = réimporter le stock régulièrement, pas dégrader l'outil).
     // P1 (audit) : inclure aussi les fast-movers EN RUPTURE plateforme (vendus mais stock 0 = absents de STOCK_IP).
     var keys = {};
     Object.keys(stk).forEach(function (c) { keys[c] = 1; });
-    Object.keys(dem).forEach(function (c) { var a = dem[c]; if ((a[0] + a[1] + a[2] + a[3] + a[4] + a[5]) / 6 >= MINVEL) keys[c] = 1; });
+    Object.keys(dem).forEach(function (c) { if (somme(dem[c]) / nMois >= MINVEL) keys[c] = 1; });
     Object.keys(keys).forEach(function (c) {
-      var a = dem[c], tot = a ? (a[0] + a[1] + a[2] + a[3] + a[4] + a[5]) : 0;
-      var vM = tot / 6, st = Math.max(0, stk[c] || 0), vD = vM / 30;   // stock borné à 0 (jamais de couverture négative)
+      var a = dem[c], tot = a ? somme(a) : 0;
+      var vM = tot / nMois, st = Math.max(0, stk[c] || 0), vD = vM / 30;   // stock borné à 0 (jamais de couverture négative)
       var cov = vD > 0 ? st / vD : (st > 0 ? 9999 : 0);
       var p = ps[c];
       var isRupt = !!rupt(c), tg = tend(c);
       var cibleJ = (isRupt || (tg != null && tg > 0)) ? CIBLE_TENSION : CIBLE;
       var qcmd = Math.max(0, Math.round(cibleJ * vD - st));
-      idx[c] = { c: c, d: p ? p.d : c, vM: vM, st: st, cov: cov, qcmd: qcmd,
+      idx[c] = { c: c, d: p ? p.d : c, vM: vM, st: st, cov: cov, qcmd: qcmd, nMois: nMois,
+        // audit 01/08 : absent de l'inventaire ≠ inventorié à zéro. 791 produits (28 %) sont
+        // dans ce cas et passaient pour « déjà à sec » → fausses urgences + € gonflé.
+        unk: (stk[c] == null) ? 1 : 0,
         ppht: p ? (p.ppht || 0) : 0, stale: p ? p.stale : 0, rupt: isRupt, f: p ? p.f : '' };
     });
     abcPareto(idx);
@@ -288,7 +343,7 @@
     if (_etabState) return;
     _etabState = 1;
     var s = document.createElement('script');
-    s.src = 'etab-prices-data.js?v=' + (window.__APPRO_V || '20260801d'); s.async = false;
+    s.src = 'etab-prices-data.js?v=' + (window.__APPRO_V || '20260801e'); s.async = false;
     s.onload = function () { _etabState = 2; approRerender(); };
     s.onerror = function () { _etabState = 2; };
     document.head.appendChild(s);
@@ -628,9 +683,36 @@
       try { age = Math.round((new Date().getTime() - new Date(stk.gen + 'T00:00:00').getTime()) / 864e5); } catch (e) {}
       if (age != null && age > 35) warn = '<div class="ap-fresh-warn">🔄 Pense à réimporter le stock des établissements pour des chiffres au plus juste — dernier import il y a ' + age + ' jours.</div>';
     }
+    if (muets.length) {
+      warn += '<div class="ap-fresh-warn">⏸ Flux de marché à vérifier : ' + muets.join(' · ') + ' — le robot mensuel n’a peut-être pas tourné.</div>';
+    }
     if (!s.length && !warn) return '';
     var parts = s.concat([stockTxt]);   // audit m8 : pas de séparateur orphelin quand aucune source datée n'est encore chargée
-    return '<div class="ap-fresh">🕓 Sources à jour : ' + parts.join(' · ') + '. Vitesse = ventes réseau janv.-juin 2026.</div>' + warn;
+    // audit 01/08 : ces 4 flux (robots MENSUELS) n'étaient surveillés par personne — s'ils
+    // gelaient, l'écran continuait d'afficher de vieux chiffres sans le dire.
+    var muets = [];
+    [['Marché France', window.AMELI_AVG], ['Tendance', window.TENDANCE], ['Momentum', window.MOMENTUM],
+     ['Nouveautés', window.NOUVEAUTES], ['Saison ATC', window.SAISON]].forEach(function (f) {
+      var m = f[1] && f[1].meta;
+      if (!m) return;
+      if (!m.gen) { muets.push(f[0] + ' (date inconnue)'); return; }
+      s.push(f[0] + ' ' + fdate(m.gen));
+      var age = null;
+      try { age = Math.round((new Date().getTime() - new Date(m.gen + 'T00:00:00').getTime()) / 864e5); } catch (e) {}
+      if (age != null && age > 45) muets.push(f[0] + ' figé depuis ' + age + ' j');
+    });
+
+    // audit 01/08 : dire sur COMBIEN de mois la vitesse est calculée (un mois d'export partiel
+    // est exclu) et combien de références n'ont jamais été inventoriées.
+    var vit = 'Vitesse = ventes réseau.', ix = null;
+    try { ix = _cipIdx; } catch (e) {}
+    if (ix) {
+      var k0 = Object.keys(ix)[0], nm = k0 ? ix[k0].nMois : null, nu = 0;
+      Object.keys(ix).forEach(function (c) { if (ix[c].unk) nu++; });
+      if (nm) vit = 'Vitesse = moyenne sur ' + nm + ' mois complets (un mois d’export partiel est écarté).';
+      if (nu) vit += ' <b>' + nu + ' références jamais inventoriées</b> — leurs quantités sont des estimations.';
+    }
+    return '<div class="ap-fresh">🕓 Sources à jour : ' + parts.join(' · ') + '. ' + vit + '</div>' + warn;
   }
   function isMitm(c) { return !!(_mitmSet && _mitmSet[c]); }
 
@@ -649,7 +731,7 @@
     if (_generData && _generData.princepsWithGeneric) { genSet = {}; _generData.princepsWithGeneric.forEach(function (c) { genSet[c] = 1; }); }
     var now = new Date().getMonth() + 1, win = [now % 12 + 1, (now + 1) % 12 + 1, (now + 2) % 12 + 1];
     var P = window.PROD_STATS || [], ps = {}; for (var i = 0; i < P.length; i++) ps[String(P[i].c)] = P[i];
-    var acts = [], C = { buy: 0, sec: 0, pre: 0, arb: 0, red: 0, eur: 0, redEur: 0 };
+    var acts = [], C = { buy: 0, sec: 0, pre: 0, arb: 0, red: 0, eur: 0, redEur: 0, eurInconnu: 0, nInconnu: 0, eurPre: 0 };
     Object.keys(idx).forEach(function (c) {
       var o = idx[c];
       if (o.vM < 3) return;   // audit data#1 : ne plus retenir un produit juste parce que son PPHT est à rafraîchir (stale ≠ dormant)
@@ -659,21 +741,28 @@
       var seasonUp = sUp >= (sM === 1 ? 1.5 : 1.2);   // audit P2 : pic janvier = renouvellements chroniques → seuil relevé
       var isGen = genSet ? !!genSet[c] : false;
       var verdict, cls, prio, qty = 0, reason = '';
+      // audit 01/08 : « stock inconnu » = on n'a jamais inventorié la réf, pas qu'elle est à zéro.
+      var secTxt = o.unk ? 'stock inconnu — à vérifier avant de commander' : secLab(o.cov);
+      function engager(e, kind) {
+        if (o.unk) { C.eurInconnu += e; C.nInconnu++; }
+        else if (kind === 'pre') C.eurPre += e;
+        else C.eur += e;
+      }
       if (o.cov > 90 && o.st > 0) {   // audit data#1 : ALLÉGER = vraie sur-couverture (>90 j), plus jamais sur le flag stale (tarif à rafraîchir)
         verdict = 'ALLÉGER'; cls = 'red'; prio = 1; reason = (o.cov >= 9999 ? 'invendu' : Math.round(o.cov) + ' j de stock');
         C.red++; C.redEur += o.st * (o.ppht || 0);
       } else if (o.cov < 7 && o.vM >= 5) {
         qty = o.qcmd;
-        if (rupt) { verdict = 'SÉCURISER'; cls = 'sec'; reason = 'tension ANSM · ' + secLab(o.cov) + ' — commander maintenant'; C.sec++; }
-        else { verdict = 'ACHETER'; cls = 'buy'; reason = secLab(o.cov) + ' — commander maintenant'; C.buy++; }
-        prio = 5; C.eur += qty * (o.ppht || 0);
+        if (rupt) { verdict = 'SÉCURISER'; cls = 'sec'; reason = 'tension ANSM · ' + secTxt + ' — commander maintenant'; C.sec++; }
+        else { verdict = 'ACHETER'; cls = 'buy'; reason = secTxt + ' — commander maintenant'; C.buy++; }
+        prio = 5; engager(qty * (o.ppht || 0), 'buy');
       } else if (o.qcmd > 0 && o.cov < 21) {
         verdict = 'ACHETER'; cls = 'buy'; prio = 4; qty = o.qcmd;
-        reason = 'à sec ~' + dtLabel(o.cov) + ' · commander avant ' + dtLabel(o.cov - ORDER_LEAD); C.buy++; C.eur += qty * (o.ppht || 0);
+        reason = o.unk ? secTxt : ('à sec ~' + dtLabel(o.cov) + ' · commander avant ' + dtLabel(o.cov - ORDER_LEAD)); C.buy++; engager(qty * (o.ppht || 0), 'buy');
       } else if (seasonUp) {
         verdict = 'PRÉ-ACHETER'; cls = 'pre'; prio = 3;
         qty = Math.max(o.qcmd, Math.round(o.vM / 30 * 21 * sUp - o.st)); if (qty < 0) qty = 0;
-        reason = 'pic ' + MOIS_L[sM - 1] + ' +' + Math.round((sUp - 1) * 100) + '%'; C.pre++; C.eur += qty * (o.ppht || 0);
+        reason = 'pic ' + MOIS_L[sM - 1] + ' +' + Math.round((sUp - 1) * 100) + '%'; C.pre++; engager(qty * (o.ppht || 0), 'pre');
       } else if (isGen) {
         verdict = 'ARBITRER'; cls = 'arb'; prio = 2; reason = 'générique dispo → basculer'; C.arb++;
       } else return;
@@ -693,6 +782,9 @@
   function carnetRow(x) {
     var chips = scoreBadge(x.score);
     if (x.o && x.o.abc) chips += ' <span class="ap-tag" title="poids dans la valeur réseau : A = cœur de gamme, C = traîne" style="color:#0E7C86;background:#E5F4F5;border:1px solid #B8E0E3">' + x.o.abc + '</span>';
+    if (x.o && x.o.unk) chips += ' <span class="ap-tag" title="cette référence n\'a jamais été inventoriée : la quantité proposée est une estimation" style="color:#6B7280;background:var(--card-2,#F6F8FB);border:1px dashed var(--line)">stock inconnu</span>';
+    var dejaCmd = commandeDe(x.c, new Date().toISOString().slice(0, 10));
+    if (dejaCmd) chips += ' <span class="ap-tag" title="déjà exporté dans une commande — vérifie avant de recommander" style="color:#0E7C86;background:#E5F4F5;border:1px solid #B8E0E3">déjà commandé ' + fdate(dejaCmd) + '</span>';
     if (x.mitm) { var crit = x.rupt || (x.o && x.o.cov < 7); chips += crit ? ' <span class="ap-tag" style="color:#B02A37;background:#FDE7EA;border:1px solid #F3B0BC">critique</span>' : ' <span class="ap-tag" style="color:#6B7280;background:var(--card-2,#F6F8FB);border:1px solid var(--line)">surveillé ANSM</span>'; }   // audit P3 : « critique » réservé au croisement avec l'état de stock
     if (x.rupt) chips += ' <span class="ap-tag ru">ANSM</span>';
     if (x.season) chips += ' <span class="ap-tag" style="color:#6D5AE6;background:#EFEBFB;border:1px solid #D3C9F5">saison</span>';
@@ -717,6 +809,9 @@
       a.href = url; a.download = 'carnet-achat-' + new Date().toISOString().slice(0, 10) + '.csv';
       document.body.appendChild(a); a.click();
       setTimeout(function () { document.body.removeChild(a); URL.revokeObjectURL(url); }, 150);
+      // audit 01/08 : on retient ce qui vient de partir, sinon les mêmes lignes reviennent demain
+      marquerCommande(buys.map(function (x) { return x.c; }), new Date().toISOString().slice(0, 10));
+      if (V2.render) V2.render();
     } catch (e) {}
   };
   V2.approTicketClose = function () { var el = document.getElementById('appro-ticket'); if (el) el.style.display = 'none'; };
@@ -1283,7 +1378,7 @@
               '<button class="cb-exp" onclick="V2.approExport()">⤓ Exporter</button></div>' +
               '<div class="cb-tabs">' + tabBar + '</div>' +
               rowsHtml +
-              '<div class="ap-foot" style="padding:10px 16px 12px;margin:0">Priorisé par urgence · quantité = pour revenir à la couverture cible · « à engager » = valeur d\'achat (prix net) des lignes à acheter/pré-acheter.</div></div>';
+              '<div class="ap-foot" style="padding:10px 16px 12px;margin:0">Priorisé par urgence · quantité = pour revenir à la couverture cible · <b>« à engager » = achats fermes uniquement</b> (hors pré-achats de saison et hors références jamais inventoriées).</div></div>';
           }
         }
       } catch (e) { carnetHtml = ''; }
@@ -1313,7 +1408,7 @@
           reaCard = '<div class="v2-card ap-card"><div class="ap-hd"><div class="ap-ic" style="background:var(--c-amber)">' + ICO('alert', 15, 2) + '</div>' +
             '<div><h3>À commander — réassort recommandé</h3><div class="ap-sub">couverture en jours (stock plateforme ÷ vitesse réseau) + quantité conseillée — ' + fmt(h.ncmd) + ' réfs à passer, top 24 par urgence</div></div></div>' +
             reaRows +
-            '<div class="ap-foot" style="padding:10px 18px 12px;margin:0">Vitesse = ventes réseau/mois (WML, 6 mois). Cible ' + CIBLE + ' j, portée à ' + CIBLE_TENSION + ' j si tension ANSM ou marché en hausse. Sur la base du dernier stock importé' + (window.STOCK_IP && window.STOCK_IP.meta && window.STOCK_IP.meta.gen ? ' (' + fdate(window.STOCK_IP.meta.gen) + ')' : '') + '.</div></div>';
+            '<div class="ap-foot" style="padding:10px 18px 12px;margin:0">Vitesse = ventes réseau/mois (WML, mois complets uniquement). Cible ' + CIBLE + ' j, portée à ' + CIBLE_TENSION + ' j si tension ANSM ou marché en hausse. Sur la base du dernier stock importé' + (window.STOCK_IP && window.STOCK_IP.meta && window.STOCK_IP.meta.gen ? ' (' + fdate(window.STOCK_IP.meta.gen) + ')' : '') + '.</div></div>';
 
           var rosRows = rossignols().map(function (o) {
             var cv = o.vM > 0 ? Math.round(o.cov) + ' j de stock' : 'aucune vente sur 6 mois';
@@ -1376,7 +1471,7 @@
       var eurEng = loading ? '…' : (V2.fmtEur ? V2.fmtEur(CC.eur) : fmt(CC.eur));
       var eurDorm = loading ? '…' : (V2.fmtEur ? V2.fmtEur(CC.redEur) : fmt(CC.redEur));
       var hero = '<div class="ap-hero">' +
-        htile("V2.approSec('today')", loading ? '…' : fmt(CC.buy + CC.sec), 'à commander', loading ? 'calcul en cours…' : eurEng + ' à engager', 'var(--ip-blue)') +
+        htile("V2.approSec('today')", loading ? '…' : fmt(CC.buy + CC.sec), 'à commander', loading ? 'calcul en cours…' : eurEng + ' à engager (ferme)', 'var(--ip-blue)') +
         htile("V2.approFocus('sec')", loading ? '…' : fmt(CC.sec), 'à sécuriser', 'ruptures critiques', '#D5573B') +
         htile("V2.approSec('anticiper')", fmt(nAnticip), 'à anticiper', 'événements à venir', '#6D5AE6') +
         htile("V2.approSec('stock')", eurDorm, 'capital dormant', (loading ? '' : fmt(CC.red) + ' réfs à alléger'), 'var(--c-amber)') +
