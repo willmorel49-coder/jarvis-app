@@ -12,6 +12,7 @@ Python 3.9 · xlrd.
 """
 import io
 import os
+import datetime
 import re
 import sys
 import zipfile
@@ -140,8 +141,8 @@ def main():
         "// Copilote — saisonnalité par classe thérapeutique (ATC2). idx[0..11] = indice\n"
         "// par mois (jan..déc), 100 = moyenne annuelle. Source: Medic'AM. Indicatif.\n"
         "// Généré par generate_saison.py — ne pas éditer.\n"
-        "window.SAISON={meta:{source:\"Medic'AM\"},data:{%s}};\n"
-    ) % items
+        "window.SAISON={meta:{gen:\"%s\",source:\"Medic'AM\"},data:{%s}};\n"
+    ) % (datetime.date.today().isoformat(), items)
     open(OUT, "w", encoding="utf-8").write(js)
     print("Écrit %s (%d Ko, %d classes)" % (OUT, os.path.getsize(OUT) // 1024, len(out)))
 

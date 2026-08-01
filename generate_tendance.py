@@ -12,6 +12,7 @@ Source : Medic'AM (mêmes fichiers que generate_ameli_avg). Gratuit. Python 3.9 
 """
 import io
 import os
+import datetime
 import re
 import sys
 import zipfile
@@ -139,8 +140,8 @@ def main():
     js = (
         "// Copilote — tendance marché (croissance YoY %%) par CIP13, mois %s de 2026 vs 2025.\n"
         "// Source: Medic'AM. Indicatif. Généré par generate_tendance.py — ne pas éditer.\n"
-        "window.TENDANCE={meta:{mois:\"%s\",source:\"Medic'AM\"},data:{%s}};\n"
-    ) % ("/".join(common), "/".join(common), items)
+        "window.TENDANCE={meta:{mois:\"%s\",gen:\"%s\",source:\"Medic'AM\"},data:{%s}};\n"
+    ) % ("/".join(common), "/".join(common), datetime.date.today().isoformat(), items)
     open(OUT, "w", encoding="utf-8").write(js)
     print("Écrit %s (%d Ko, %d produits)" % (OUT, os.path.getsize(OUT) // 1024, len(data)))
 
@@ -179,8 +180,8 @@ def main():
     mjs = (
         "// Copilote — momentum/accélération (%% de progression par mois) par CIP13,\n"
         "// pente des ventes Medic'AM sur les %d derniers mois (%s). Généré par generate_tendance.py.\n"
-        "window.MOMENTUM={meta:{fenetre:\"%s\",mois:%d,source:\"Medic'AM\"},data:{%s}};\n"
-    ) % (MOM_WINDOW, mlabel, mlabel, MOM_WINDOW, mitems)
+        "window.MOMENTUM={meta:{fenetre:\"%s\",mois:%d,gen:\"%s\",source:\"Medic'AM\"},data:{%s}};\n"
+    ) % (MOM_WINDOW, mlabel, mlabel, MOM_WINDOW, datetime.date.today().isoformat(), mitems)
     open(OUT_MOM, "w", encoding="utf-8").write(mjs)
     print("Écrit %s (%d Ko, %d produits)" % (OUT_MOM, os.path.getsize(OUT_MOM) // 1024, len(mom)))
 

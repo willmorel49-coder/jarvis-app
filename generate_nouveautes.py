@@ -84,8 +84,8 @@ def main():
     js = (
         "// Copilote — nouveautés : produits d'AMM récente (%d mois) et commercialisés.\n"
         "// Source: BDPM (base-donnees-publique.medicaments.gouv.fr). Généré par generate_nouveautes.py.\n"
-        "window.NOUVEAUTES={meta:{mois:%d,source:\"BDPM\"},data:{%s}};\n"
-    ) % (MONTHS, MONTHS, items)
+        "window.NOUVEAUTES={meta:{mois:%d,gen:\"%s\",source:\"BDPM\"},data:{%s}};\n"
+    ) % (MONTHS, MONTHS, datetime.date.today().isoformat(), items)
     open(OUT, "w", encoding="utf-8").write(js)
     print("Écrit %s (%d Ko, %d produits)" % (OUT, os.path.getsize(OUT) // 1024, len(data)))
 
