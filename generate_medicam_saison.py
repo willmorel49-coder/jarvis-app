@@ -52,6 +52,32 @@ def catalogue_cips():
         return set()
 
 
+def ecrire_si_complet(chemin, nouveau, seuil=0.8):
+    """N'ecrit que si le resultat n'est pas une regression massive.
+
+    Le 2026-07-30, les 4 telechargements Medic'AM ont echoue en HTTP 403 depuis les
+    serveurs GitHub et le robot a quand meme ecrit un fichier vide, ecrasant 4 678
+    produits — d'ou le « Pre-acheter 0 » du carnet d'achat pendant deux jours.
+
+    Regle : sous `seuil` fois le volume precedent, on conserve l'ancien fichier et on
+    le dit fort. Renvoie True si le fichier a ete ecrit.
+    """
+    n_new = len(nouveau.get("data") or {})
+    n_old = 0
+    try:
+        with io.open(chemin, "r", encoding="utf-8") as f:
+            n_old = len(json.load(f).get("data") or {})
+    except Exception:
+        n_old = 0
+    if n_old and n_new < seuil * n_old:
+        print("REFUS D'ECRIRE : %d entrees contre %d precedemment (< %d %%). "
+              "Fichier precedent conserve." % (n_new, n_old, int(seuil * 100)))
+        return False
+    with io.open(chemin, "w", encoding="utf-8") as f:
+        json.dump(nouveau, f, ensure_ascii=False, separators=(",", ":"))
+    return True
+
+
 def resource_map():
     d = json.loads(fetch(META))
     out = {}
@@ -143,8 +169,8 @@ def main():
 
     out = {"generated": datetime.date.today().isoformat(), "source": "Medic'AM %s" % "+".join(str(y) for y in YEARS),
            "n": len(data), "data": data}
-    with io.open(OUT, "w", encoding="utf-8") as f:
-        json.dump(out, f, ensure_ascii=False, separators=(",", ":"))
+    if not ecrire_si_complet(OUT, out):
+        raise SystemExit(1)   # echec VISIBLE : le robot doit rougir, pas passer inapercu
     print("OK · produits avec saison=%d (sur %d CIP Medic'AM, catalogue=%d)" % (len(data), len(acc), len(cat)))
     print("→ %s (%d Ko)" % (OUT, os.path.getsize(OUT) // 1024))
 
