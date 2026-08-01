@@ -246,7 +246,7 @@
     if (_etabState) return;
     _etabState = 1;
     var s = document.createElement('script');
-    s.src = 'etab-prices-data.js?v=' + (window.__APPRO_V || '20260729c'); s.async = false;
+    s.src = 'etab-prices-data.js?v=' + (window.__APPRO_V || '20260801a'); s.async = false;
     s.onload = function () { _etabState = 2; approRerender(); };
     s.onerror = function () { _etabState = 2; };
     document.head.appendChild(s);
@@ -949,9 +949,67 @@
     }
     if (p.length) {
       out += card('cat', 'Rappels parapharma récents', 'cosmétiques / hygiène-beauté rappelés (DGCCRF) — à retirer du comptoir', p.slice(0, 12).map(function (x) { return rappelRow(x, false); }).join(''), 'var(--c-amber)') +
-        '<div class="ap-foot" style="margin:0">RappelConso (DGCCRF). Rappels médicaments = espace Anticiper. ' + (_rapData.nMatched || 0) + ' réf réseau · ' + (_rapData.nPara || 0) + ' parapharma récents.</div>';
+        '<div class="ap-foot" style="margin:0">RappelConso (DGCCRF) — parapharma. Rappels de médicaments : voir « Lots rappelés ». ' + (_rapData.nMatched || 0) + ' réf réseau · ' + (_rapData.nPara || 0) + ' parapharma récents.</div>';
     }
     return out;
+  }
+
+  // ═══ RAPPELS DE LOTS — MÉDICAMENTS (ANSM, robot quotidien) ═══
+  // Seul flux public qui donne CIP13 + numéro de lot → se croise directement avec le stock plateforme.
+  // ⚠️ HONNÊTETÉ : notre stock n'est pas suivi par lot → on dit « on détient la réf, vérifier les lots »,
+  // jamais « on détient ces lots ». Le contrôle physique reste à faire.
+  var _rlState = 0, _rlData = null;
+  function ensureRappelsLots() {
+    if (_rlData || _rlState) return;
+    _rlState = 1;
+    try {
+      var day = new Date().toISOString().slice(0, 10);
+      fetch('rappels-lots.json?d=' + day, { cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) { _rlData = j || {}; _rlState = 2; approRerender(); })
+        .catch(function () { _rlState = 2; });
+    } catch (e) { _rlState = 2; }
+  }
+  function lotsLabel(x) {
+    var L = x.lots || [];
+    if (!L.length) return 'lots non détaillés par l’ANSM';
+    var head = L.slice(0, 6).map(function (l) { return l.n + (l.exp ? ' (' + l.exp + ')' : ''); }).join(' · ');
+    var n = x.nl || L.length;
+    return head + (n > 6 ? ' · +' + (n - 6) + ' autres' : '');
+  }
+  function rappelLotRow(x, withStock) {
+    var q = (x.stk || []).reduce(function (s, y) { return s + (y.q || 0); }, 0);
+    var lien = x.url ? '<a href="' + esc(x.url) + '" target="_blank" rel="noopener" class="ap-rap-lk">fiche ▸</a>' : '';
+    var nom = (x.cat && x.cat[0] && x.cat[0].d) ? cap(x.cat[0].d.toLowerCase()) : (x.t || '').split('–')[0].trim();
+    return '<div class="ap-row"><div class="ap-nm"><b>' + esc(nom) + '</b><small>' +
+      (x.d ? fdate(x.d) + ' · ' : '') + esc(lotsLabel(x)) +
+      (x.motif ? ' — ' + esc(x.motif.slice(0, 90)) : '') + '</small></div>' +
+      '<div class="ap-mini">' + (withStock && q ? '<b>' + fmt(q) + ' u en stock</b> ' : '') + lien + '</div></div>';
+  }
+  function rappelsLotsCard() {
+    if (!_rlData || !_rlData.items) return '';
+    var items = _rlData.items, m = _rlData.meta || {};
+    var enStock = items.filter(function (x) { return x.stk && x.stk.length; });
+    var auCat = items.filter(function (x) { return (!x.stk || !x.stk.length) && x.cat && x.cat.length; });
+    if (!enStock.length && !auCat.length) return '';
+    var out = '';
+    if (enStock.length) {
+      out += card('alert', 'Lots rappelés — on détient la référence',
+        'rappel ANSM sur un médicament présent au stock plateforme : isoler les lots ci-dessous, ne pas les expédier',
+        enStock.slice(0, 6).map(function (x) { return rappelLotRow(x, true); }).join('') +
+        (enStock.length > 6 ? '<div class="ap-foot" style="margin:0;padding:7px 2px">+ ' + (enStock.length - 6) + ' autres</div>' : ''),
+        'var(--rose,#D5573B)');
+    }
+    if (auCat.length) {
+      out += card('cat', 'Lots rappelés — référence distribuée par le réseau',
+        'pas de stock plateforme, mais les officines en achètent : à signaler',
+        auCat.slice(0, 5).map(function (x) { return rappelLotRow(x, false); }).join('') +
+        (auCat.length > 5 ? '<div class="ap-foot" style="margin:0;padding:7px 2px">+ ' + (auCat.length - 5) + ' autres</div>' : ''),
+        'var(--c-amber)');
+    }
+    return out + '<div class="ap-foot" style="margin:0">ANSM — informations de sécurité, ' +
+      (m.nItems || 0) + ' rappels de médicaments sur ' + Math.round((m.fenetreJours || 540) / 30) + ' mois, ' +
+      (m.nEnStock || 0) + ' touchant le stock. <b>Le stock plateforme n’est pas suivi par numéro de lot</b> : vérifier physiquement les numéros ci-dessus avant de conclure.</div>';
   }
 
   // ═══ ACTU APPRO (quotidien, gratuit) : fil d'actualité filtré appro + bloc PRÉDICTIF ═══
@@ -992,13 +1050,16 @@
       }).join('') || '<div class="ap-empty">Pas d’actu appro dans les derniers jours.</div>';
     } else news = '<div class="ap-empty">Chargement de l’actualité…</div>';
     var rapH = rappelsCard();   // audit m2 : calculer une seule fois (évite le double scan)
+    var rlH = rappelsLotsCard();
     return '<div class="ap-sec">Prédictif — ce qui arrive</div>' +
       '<div class="ap-secsub">calculé chaque jour sur ta donnée réseau + les sources publiques gratuites</div>' +
       '<div class="v2-card ap-card" style="padding:6px 4px">' + predHtml + '</div>' +
+      (rlH ? '<div class="ap-sec">Lots rappelés — médicaments</div>' +
+        '<div class="ap-secsub">décisions de rappel de l’ANSM croisées avec le stock plateforme et le catalogue réseau</div>' + rlH : '') +
       '<div class="ap-sec">Actualité appro du jour</div>' +
       '<div class="ap-secsub">ruptures, sécurité, réglementaire — ANSM &amp; presse pro (RSS gratuit, quotidien)</div>' +
       '<div class="v2-card ap-card" style="padding:0">' + news + '</div>' +
-      (rapH ? '<div class="ap-sec">Rappels de produits</div><div class="ap-secsub">RappelConso (DGCCRF) — parapharma &amp; réfs du réseau (les rappels médicaments sont dans l’espace Anticiper)</div>' + rapH : '');
+      (rapH ? '<div class="ap-sec">Rappels de produits</div><div class="ap-secsub">RappelConso (DGCCRF) — parapharma &amp; réfs du réseau (les rappels de médicaments sont juste au-dessus)</div>' + rapH : '');
   }
 
   // ═══════════════════════════════════════════════════════════════════
@@ -1129,6 +1190,7 @@
       ensureInfos();  // charge l'actu quotidienne (veille RSS gratuite, filtrée appro)
       ensurePrix();   // charge les baisses de prix officielles (BDPM, robot quotidien)
       ensureRappels(); // charge les rappels de produits (RappelConso, robot hebdo)
+      ensureRappelsLots(); // charge les rappels de LOTS de médicaments (ANSM, robot quotidien)
       ensureOpenMedic(); // charge la demande nationale par produit (Open Medic, robot annuel) → white space
       ensurePrixFuturs(); // charge les futures baisses de prix (avis CEPS/JO, robot quotidien)
       ensureEmaGx(); // charge les génériques/biosimilaires en approche (EMA, robot quotidien)
