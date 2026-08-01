@@ -10,7 +10,8 @@ montait en septembre → pré-commander en août ». Complète la saison ATC2 (S
 un angle PRODUIT + le vrai historique national.
 
 Source : data.gouv « Medic'AM par type de prescripteur » (ZIP → .xls binaire), gratuit
-sans clé. On restreint aux CIP de notre catalogue (prod-stats) pour un JSON léger.
+sans clé. Couvre TOUT le marché français : le modèle national doit voir aussi ce qu'Intégral
+ne vend pas encore.
 
 Écrit crm/v2/saison-cip.json. Python 3.9 · urllib + xlrd.
 """
@@ -27,7 +28,6 @@ import xlrd
 META = "https://www.data.gouv.fr/api/1/datasets/medicam-medicaments-rembourses-par-lassurance-maladie-par-type-de-prescripteur-donnees-interregimes/"
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "crm", "v2", "saison-cip.json")
-PRODSTATS = os.path.join(HERE, "crm", "v2", "prod-stats-data.js")
 YEARS = [2023, 2024]
 MIN_BOITES = 240   # volume total mini sur la période pour être significatif
 
@@ -50,16 +50,6 @@ def fetch(url):
             import gzip
             raw = gzip.decompress(raw)
     return raw
-
-
-def catalogue_cips():
-    """CIP13 de notre catalogue (PROD_STATS) pour restreindre la sortie."""
-    try:
-        txt = io.open(PRODSTATS, "r", encoding="utf-8").read()
-        arr = json.loads(txt[txt.index("["):txt.rindex("]") + 1])
-        return set(str(p.get("c")) for p in arr if p.get("c"))
-    except Exception:
-        return set()
 
 
 def ecrire_si_complet(chemin, nouveau, seuil=0.8):
@@ -144,7 +134,6 @@ def process(raw, sem, acc, seen):
 
 
 def main():
-    cat = catalogue_cips()
     urls = resource_map()
     acc, seen = {}, set()
     ok = 0
@@ -165,8 +154,6 @@ def main():
 
     data = {}
     for cip, rec in acc.items():
-        if cat and cip not in cat:
-            continue
         tot = sum(rec["m"])
         if tot < MIN_BOITES:
             continue
@@ -181,7 +168,7 @@ def main():
            "n": len(data), "data": data}
     if not ecrire_si_complet(OUT, out):
         raise SystemExit(1)   # echec VISIBLE : le robot doit rougir, pas passer inapercu
-    print("OK · produits avec saison=%d (sur %d CIP Medic'AM, catalogue=%d)" % (len(data), len(acc), len(cat)))
+    print("OK · produits avec saison=%d (sur %d CIP Medic'AM, marché complet)" % (len(data), len(acc)))
     print("→ %s (%d Ko)" % (OUT, os.path.getsize(OUT) // 1024))
 
 
