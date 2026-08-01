@@ -1,0 +1,53 @@
+name: Qualité · rappels de LOTS de médicaments (ANSM)
+
+# Robot GRATUIT, sans clé : page ANSM « Informations de sécurité ».
+# Extrait, pour chaque rappel de médicament, le CIP13 + les NUMÉROS DE LOT + la péremption,
+# puis croise avec le catalogue réseau (PROD_STATS) et le stock plateforme (STOCK_IP).
+# = « ce lot est rappelé ET on a la référence en stock » → isoler, ne pas expédier.
+# Complète generate_rappels.py (RappelConso), qui ne couvre PAS le médicament.
+# Écrit crm/v2/rappels-lots.json.
+
+on:
+  schedule:
+    - cron: '35 5 * * *'   # tous les jours (un rappel de lot ne peut pas attendre la semaine)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: rappels-lots
+  cancel-in-progress: false
+
+jobs:
+  rappels-lots:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Récupérer les rappels de lots ANSM
+        run: python3 generate_rappels_lots.py
+        env:
+          ANSM_RL_PAGES: '45'
+          ANSM_RL_DAYS: '540'
+      - name: Garde de complétude (si la page ANSM change, on garde l'ancien fichier)
+        run: |
+          N=$(python3 -c "import json;print(len(json.load(open('crm/v2/rappels-lots.json')).get('items',[])))")
+          echo "rappels extraits : $N"
+          if [ "$N" -lt 5 ]; then
+            echo "ANORMAL (<5) — extraction probablement cassée, on restaure le fichier précédent."
+            git checkout -- crm/v2/rappels-lots.json
+          fi
+      - name: Committer si changement
+        run: |
+          if git diff --quiet -- crm/v2/rappels-lots.json; then
+            echo "Pas de changement (aucun nouveau rappel de lot)."
+          else
+            git config user.name  "JARVIS copilote"
+            git config user.email "actions@users.noreplace.github.com"
+            git add crm/v2/rappels-lots.json
+            git commit -m "data(qualité): rappels de lots médicaments ANSM $(date -u +%Y-%m-%d)"
+            git push
+          fi
