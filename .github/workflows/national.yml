@@ -1,0 +1,40 @@
+name: Marché · modèle national d'anticipation
+
+# Fusionne Open Medic (volume France) + Medic'AM (profil mensuel) + table pivot (molécule,
+# groupe générique) en une fiche par médicament, SANS aucune donnée Intégral.
+# Ne télécharge rien : il ne fait que relire les fichiers produits par les robots amont,
+# il n'est donc pas concerné par le blocage 403 d'ameli.fr sur les serveurs GitHub.
+
+on:
+  schedule:
+    - cron: '17 6 8 * *'   # le 8 du mois, après openmedic (le 5) et saison (le 6)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: national
+  cancel-in-progress: false
+
+jobs:
+  national:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Construire le modèle national
+        run: python3 generate_national.py
+      - name: Committer si changement
+        run: |
+          if git diff --quiet -- crm/v2/national.json; then
+            echo "Pas de changement (sources amont inchangées)."
+          else
+            git config user.name  "JARVIS copilote"
+            git config user.email "actions@users.noreplace.github.com"
+            git add crm/v2/national.json
+            git commit -m "data(marché): modèle national $(date -u +%Y-%m-%d)"
+            git push
+          fi
