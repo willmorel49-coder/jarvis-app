@@ -229,6 +229,10 @@
   function urgence(o, rupt, mitm, seasonUp) {
     var cible = rupt ? CIBLE_TENSION : CIBLE;
     var manque = cible > 0 ? Math.max(0, Math.min(1, 1 - (o.cov || 0) / cible)) : 0;
+    // audit 01/08 : sur une réf JAMAIS inventoriée la couverture est une supposition, pas une
+    // mesure. On plafonne donc sa part de risque, sinon 801 lignes spéculatives raflaient le
+    // score maximum et enterraient les vraies urgences mesurées.
+    if (o.unk) manque = Math.min(manque, 0.4);
     var s = 45 * manque + (ABC_POIDS[o.abc] || 7);
     s += rupt ? 20 : (mitm ? 8 : 0);
     if (seasonUp) s += 10;
@@ -343,7 +347,7 @@
     if (_etabState) return;
     _etabState = 1;
     var s = document.createElement('script');
-    s.src = 'etab-prices-data.js?v=' + (window.__APPRO_V || '20260801f'); s.async = false;
+    s.src = 'etab-prices-data.js?v=' + (window.__APPRO_V || '20260801g'); s.async = false;
     s.onload = function () { _etabState = 2; approRerender(); };
     s.onerror = function () { _etabState = 2; };
     document.head.appendChild(s);
