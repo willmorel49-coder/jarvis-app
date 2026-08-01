@@ -16,6 +16,7 @@ Python 3.9. Dépend de xlrd (les fichiers Medic'AM sont des .xls binaires).
 """
 import io
 import os
+import datetime
 import re
 import sys
 import zipfile
@@ -168,8 +169,8 @@ def main():
         "// Source: assurance-maladie.ameli.fr Medic'AM (interrégimes, tous prescripteurs, soins de ville)\n"
         "// Base: %d officines · fenêtre %s (%d mois annualisés) · remboursables uniquement\n"
         "// Généré par generate_ameli_avg.py — NE PAS éditer à la main.\n"
-        "window.AMELI_AVG={meta:{periode:\"%s\",base:%d,mois:%d,source:\"Medic'AM\",unite:\"boites/pharmacie/an\"},data:{%s}};\n"
-    ) % (NB_OFFICINES, periode, n_win, periode, NB_OFFICINES, n_win, items)
+        "window.AMELI_AVG={meta:{periode:\"%s\",base:%d,mois:%d,gen:\"%s\",source:\"Medic'AM\",unite:\"boites/pharmacie/an\"},data:{%s}};\n"
+    ) % (NB_OFFICINES, periode, n_win, periode, NB_OFFICINES, n_win, datetime.date.today().isoformat(), items)
     with open(OUT, "w", encoding="utf-8") as f:
         f.write(js)
     kb = os.path.getsize(OUT) // 1024
