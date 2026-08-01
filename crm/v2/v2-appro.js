@@ -288,7 +288,7 @@
     if (_etabState) return;
     _etabState = 1;
     var s = document.createElement('script');
-    s.src = 'etab-prices-data.js?v=' + (window.__APPRO_V || '20260801c'); s.async = false;
+    s.src = 'etab-prices-data.js?v=' + (window.__APPRO_V || '20260801d'); s.async = false;
     s.onload = function () { _etabState = 2; approRerender(); };
     s.onerror = function () { _etabState = 2; };
     document.head.appendChild(s);
@@ -821,9 +821,14 @@
     return order.map(function (k) { return m[k]; }).sort(function (a, b) { return b.eur - a.eur; });
   }
   function supCardHtml(s) {
-    var lines = s.lines.slice(0, 3).map(function (a) {
+    // on montre les 3 lignes les PLUS URGENTES du fournisseur (score), pas les 3 premières venues
+    var ord = s.lines.slice().sort(function (a, b) { return (b.score || 0) - (a.score || 0); });
+    var lines = ord.slice(0, 3).map(function (a) {
+      var sc = a.score != null ? '<i style="font-style:normal;font-size:11px;font-weight:700;color:' +
+        (a.score >= 75 ? '#B02A37' : a.score >= 50 ? '#C77700' : '#6B7280') + ';margin-left:6px" title="score d\'urgence sur 100">' + a.score + '</i>' : '';
+      var ab = (a.o && a.o.abc) ? '<i style="font-style:normal;font-size:10px;font-weight:700;color:#0E7C86;margin-left:5px" title="poids réseau (A = cœur de gamme)">' + a.o.abc + '</i>' : '';
       return '<button class="cl-line" onclick="event.stopPropagation();V2.approTicket(\'' + esc(a.c) + '\')">' +
-        '<span>' + esc(cap((a.name || '').toLowerCase())) + '</span><b>' + (a.qty > 0 ? '+' + fmt(a.qty) : '—') + '</b></button>';
+        '<span>' + esc(cap((a.name || '').toLowerCase())) + sc + ab + '</span><b>' + (a.qty > 0 ? '+' + fmt(a.qty) : '—') + '</b></button>';
     }).join('');
     var more = s.lines.length > 3 ? '<div class="cl-more">+' + (s.lines.length - 3) + ' autres lignes</div>' : '';
     return '<div class="cl-sup" style="--c:' + (CLCOL[s.cls] || '#6B7280') + '"><div class="cl-suh"><b>' + esc(s.labo) + (s.mitm ? ' <span class="mitm"></span>' : '') +
