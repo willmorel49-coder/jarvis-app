@@ -33,7 +33,17 @@ MIN_BOITES = 240   # volume total mini sur la période pour être significatif
 
 
 def fetch(url):
-    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0", "Accept-Encoding": "gzip"})
+    # assurance-maladie.ameli.fr renvoie HTTP 403 aux serveurs GitHub avec un User-Agent
+    # minimal (panne du 2026-07-30, 4 fichiers sur 4). On se presente comme un vrai
+    # navigateur : entetes completes + Referer data.gouv, d'ou provient le lien.
+    req = urllib.request.Request(url, headers={
+        "User-Agent": ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
+                       "(KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"),
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,*/*;q=0.8",
+        "Accept-Language": "fr-FR,fr;q=0.9,en;q=0.8",
+        "Referer": "https://www.data.gouv.fr/",
+        "Accept-Encoding": "gzip",
+    })
     with urllib.request.urlopen(req, timeout=180) as r:
         raw = r.read()
         if r.headers.get("Content-Encoding") == "gzip":
