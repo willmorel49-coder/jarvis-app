@@ -729,6 +729,154 @@
     return d.getDate() + ' ' + MOIS_L[d.getMonth()];
   }
   function secLab(cov) { return cov < 1 ? 'déjà à sec (stock 0)' : 'à sec ~' + dtLabel(cov); }   // audit #2 : pas de « à sec ~aujourd'hui »
+  // ═══ MODÈLE NATIONAL (national.json, robot mensuel) ═══
+  // Volume France + profil saisonnier par CIP13, calculés SANS aucune donnée Intégral.
+  // Notre réel n'intervient qu'ici, en dernière couche : calibrer la part, puis comparer.
+  // Sans nos données, tout retombe au niveau 3 et l'outil continue de fonctionner en le disant.
+  var _natState = 0, _natData = null, _partGlob = null, _partFam = null, _partRef = null;
+  function ensureNational() {
+    if (_natData || _natState) return;
+    _natState = 1;
+    try {
+      var jour = new Date().toISOString().slice(0, 10);
+      fetch('national.json?d=' + jour, { cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) { _natData = j || {}; _natState = 2; _partGlob = null; approRerender(); })
+        .catch(function () { _natState = 2; });
+    } catch (e) { _natState = 2; }
+  }
+
+  // Part de marché globale = total annualisé réseau ÷ total France, sur les produits communs.
+  // Mesurée à 0,28 % le 01/08/2026 — recalculée à chaque chargement, jamais figée en dur.
+  // Calcule au passage la part par MOLÉCULE, qui sert de repli (niveau 2).
+  function partGlobale() {
+    var idx = cipIndex();
+    if (_partGlob != null && _partRef === idx) return _partGlob;
+    var d = (_natData && _natData.data) || {};
+    var ip = 0, nat = 0, famIp = {}, famNat = {};
+    _partFam = {};
+    Object.keys(idx).forEach(function (c) {
+      var n = d[c];
+      if (!n || !n.v) return;
+      var an = (idx[c].vM || 0) * 12;
+      ip += an; nat += n.v;
+      var f = n.d || '';
+      if (f) { famIp[f] = (famIp[f] || 0) + an; famNat[f] = (famNat[f] || 0) + n.v; }
+    });
+    Object.keys(famIp).forEach(function (f) { if (famNat[f] > 0) _partFam[f] = famIp[f] / famNat[f]; });
+    _partGlob = nat > 0 ? ip / nat : 0.0028;
+    _partRef = idx;
+    return _partGlob;
+  }
+
+  function partMarche(cip) {
+    var d = (_natData && _natData.data) || {}, n = d[String(cip)];
+    var glob = partGlobale();
+    if (!n) return { part: glob, niveau: 3, libelle: 'estimé (moyenne)' };
+    var o = cipIndex()[String(cip)];
+    if (o && o.vM > 0 && n.v > 0) return { part: (o.vM * 12) / n.v, niveau: 1, libelle: 'mesuré' };
+    var f = (_partFam && n.d) ? _partFam[n.d] : null;
+    if (f > 0) return { part: f, niveau: 2, libelle: 'estimé (famille)' };
+    return { part: glob, niveau: 3, libelle: 'estimé (moyenne)' };
+  }
+
+  // Stock cible en unités : demande France du mois × notre part, ramenée à la couverture cible.
+  // mois = 1..12. Renvoie null si le produit n'est pas dans le modèle — on n'invente rien.
+  function cibleNationale(cip, mois) {
+    var d = (_natData && _natData.data) || {}, n = d[String(cip)];
+    if (!n || !n.v) return null;
+    var pm = partMarche(cip);
+    var indice = (n.s && n.s[(mois - 1 + 12) % 12]) || 1;
+    var demandeMois = n.v / 12 * indice * pm.part;
+    var o = cipIndex()[String(cip)];
+    var couv = (o && o.rupt) ? CIBLE_TENSION : CIBLE;
+    return { unites: Math.round(demandeMois / 30 * couv), part: pm.part,
+             niveau: pm.niveau, libelle: pm.libelle, indice: indice };
+  }
+
+  // ═══ LISTE A — écart entre ce que dit le marché France et ce qu'on détient ═══
+  // C'est la seule ligne où nos données entrent : le « détenu ». Tout le reste vient du
+  // modèle national, donc reste juste même quand notre inventaire a 61 jours.
+  function ecartNational() {
+    if (!_natData || !_natData.data) return '';
+    var idx = cipIndex(), mois = new Date().getMonth() + 1, out = [];
+    Object.keys(idx).forEach(function (c) {
+      var cb = cibleNationale(c, mois);
+      if (!cb || !cb.unites) return;
+      var o = idx[c];
+      if (o.unk) return;                       // stock inconnu : l'ecart n'aurait aucun sens
+      var ecart = cb.unites - (o.st || 0);
+      if (ecart < 5) return;                   // sous 5 unites : du bruit
+      out.push({ c: c, nom: o.d, cible: cb.unites, detenu: o.st, ecart: ecart,
+                 niveau: cb.niveau, libelle: cb.libelle, part: cb.part, indice: cb.indice });
+    });
+    if (!out.length) return '';
+    out.sort(function (a, b) { return b.ecart - a.ecart; });
+    var lignes = out.slice(0, 8).map(function (x) {
+      var sais = x.indice >= 1.15 ? ' · <b style="color:#6D5AE6">saison ×' + x.indice.toFixed(2).replace('.', ',') + '</b>' : '';
+      return '<div class="ap-row"><div class="ap-nm"><b>' + esc(cap((x.nom || '').toLowerCase())) + '</b>' +
+        '<small>cible ~' + fmt(x.cible) + ' u · détenu ' + fmt(x.detenu) +
+        ' · part ' + (x.part * 100).toFixed(2).replace('.', ',') + ' % (' + x.libelle + ')' + sais + '</small></div>' +
+        '<div class="ap-mini"><b style="color:#B02A37">−' + fmt(x.ecart) + '</b></div></div>';
+    }).join('');
+    return card('pilo', 'Écart au marché France',
+      'ce que le marché national dit qu’il faudrait tenir ce mois-ci, comparé à votre stock',
+      lignes + (out.length > 8 ? '<div class="ap-foot" style="margin:0;padding:7px 2px">+ ' + (out.length - 8) + ' autres</div>' : ''),
+      'var(--ip-blue)') +
+      '<div class="ap-foot" style="margin:0">Modèle national (Open Medic + Medic’AM), calculé <b>sans vos données</b>. ' +
+      'La part de marché utilisée est indiquée ligne par ligne : <b>mesuré</b> = sur vos ventes réelles, ' +
+      '<b>estimé</b> = déduit de la famille ou de votre moyenne. Seul le « détenu » vient de votre inventaire.</div>';
+  }
+
+  // ═══ LISTE B — hors catalogue : ce que nos données ne peuvent PAS voir ═══
+  // Jamais dans le carnet d'achat : c'est du développement de gamme, pas du réassort.
+  // ⚠️ On raisonne par MOLÉCULE, pas par code produit. Comparer code à code faisait remonter
+  // « paracétamol » ou « macrogol » comme non distribués alors qu'Intégral vend Doliprane et
+  // Movicol — une présentation générique manquait, c'est tout. Et la même molécule sortait
+  // 3 fois. Une molécule dont on vend NE SERAIT-CE QU'UNE présentation est donc écartée.
+  function horsCatalogue() {
+    if (!_natData || !_natData.data) return [];
+    var idx = cipIndex(), d = _natData.data, glob = partGlobale();
+    var vendues = {}, agg = {};
+    Object.keys(idx).forEach(function (c) {
+      var n = d[c];
+      if (n && n.d) vendues[n.d] = 1;
+    });
+    Object.keys(d).forEach(function (c) {
+      var n = d[c];
+      if (!n.v || !n.d) return;
+      if (vendues[n.d]) return;                // molécule déjà distribuée sous une forme
+      var a = agg[n.d] || (agg[n.d] = { dci: n.d, vol: 0, nRef: 0, gen: 0 });
+      a.vol += n.v; a.nRef++; if (n.g) a.gen = 1;
+    });
+    var out = [];
+    Object.keys(agg).forEach(function (m) {
+      var a = agg[m];
+      if (a.vol < 200000) return;              // sous 200 000 boîtes/an France : pas un enjeu
+      a.potentiel = Math.round(a.vol * glob);
+      out.push(a);
+    });
+    out.sort(function (a, b) { return b.potentiel - a.potentiel; });
+    return out.slice(0, 10);
+  }
+  function horsCatalogueCard() {
+    var l = horsCatalogue();
+    if (!l.length) return '';
+    var glob = partGlobale();
+    var lignes = l.map(function (x) {
+      return '<div class="ap-row"><div class="ap-nm"><b>' + esc(cap((x.dci || '').toLowerCase())) + '</b>' +
+        '<small>' + fmt(x.vol) + ' boîtes/an en France · ' + x.nRef + ' présentation' + (x.nRef > 1 ? 's' : '') +
+        (x.gen ? ' · générique existant' : '') + '</small></div>' +
+        '<div class="ap-mini">~' + fmt(x.potentiel) + ' u/an</div></div>';
+    }).join('');
+    return card('cat', 'Hors catalogue — gros marché non référencé',
+      'molécules qui pèsent en France dont vous ne distribuez <b>aucune</b> présentation — le modèle national voit ce que vos ventes ne peuvent pas voir',
+      lignes, 'var(--c-amber)') +
+      '<div class="ap-foot" style="margin:0">Potentiel = volume France × votre part moyenne (' +
+      (glob * 100).toFixed(2).replace('.', ',') + ' %). <b>Estimation de cadrage</b>, jamais un engagement — ' +
+      'et volontairement tenu hors du carnet d’achat du jour.</div>';
+  }
+
   function carnet() {
     var idx = cipIndex();
     if (!idx || !Object.keys(idx).length) return null;
@@ -1363,6 +1511,7 @@
       ensurePrix();   // charge les baisses de prix officielles (BDPM, robot quotidien)
       ensureRappels(); // charge les rappels de produits (RappelConso, robot hebdo)
       ensureRappelsLots(); // charge les rappels de LOTS de médicaments (ANSM, robot quotidien)
+      ensureNational(); // charge le modèle national d'anticipation (robot mensuel, 1,2 Mo différé)
       ensureOpenMedic(); // charge la demande nationale par produit (Open Medic, robot annuel) → white space
       ensurePrixFuturs(); // charge les futures baisses de prix (avis CEPS/JO, robot quotidien)
       ensureEmaGx(); // charge les génériques/biosimilaires en approche (EMA, robot quotidien)
@@ -1499,12 +1648,18 @@
       } else if (_section === 'anticiper') {
         var cockpit = '';
         try { cockpit = anticiperCockpit(); } catch (e) { cockpit = ''; }
+        var ecartH = '';
+        try { ecartH = ecartNational(); } catch (e) { ecartH = ''; }
         content = cockpit +
+          (ecartH ? secHead('Écart au marché France', 'calculé sur le marché national, indépendamment de la fraîcheur de vos données') + ecartH : '') +
           secHead('Veille — retours de rupture &amp; futurs remboursés', 'plus loin dans le temps, à surveiller') + ansmHtml + hasHtml;
       } else if (_section === 'stock') {
         content = kpiBand + secHead('Réassort &amp; stock') + reaCard + etabHtml + basculesHtml + rosCard;
       } else {
-        content = secHead('Intelligence marché') +
+        var horsH = '';
+        try { horsH = horsCatalogueCard(); } catch (e) { horsH = ''; }
+        content = (horsH ? secHead('Développement de gamme', 'ce que le modèle national voit et que vos ventes ne peuvent pas voir') + horsH : '') +
+          secHead('Intelligence marché') +
           card('spark', 'Ça monte', 'produits en croissance, présents dans le réseau — à renforcer au stock', risRows, 'var(--c-opp)') +
           '<div class="ap-grid2">' +
             card('alert', 'Ruptures à sécuriser', 'tension ANSM sur des produits que le réseau achète', rupRows, 'var(--c-amber)') +
