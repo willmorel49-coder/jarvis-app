@@ -1,0 +1,1061 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Intégral Pharma — Grossiste-répartiteur français indépendant</title>
+<meta name="description" content="Groupe de grossistes-répartiteurs français indépendant. Nous approvisionnons les officines tous les jours depuis neuf implantations : 14 000+ références, préparation au plus près, tournées quotidiennes.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230050E6'/%3E%3Ctext x='16' y='23' text-anchor='middle' font-family='Georgia' font-size='20' font-style='italic' fill='%23F39A1B'%3EI%3C/text%3E%3C/svg%3E">
+
+<!-- Polices : Fraunces (titres), DM Sans (texte), DM Mono (surtitres) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,300;1,9..144,400;1,9..144,500;1,9..144,600&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<!-- Splitting : découpe le texte en lettres/mots -->
+<link rel="stylesheet" href="../../vendor/splitting.css">
+
+<style>
+  /* =====================================================================
+     MANIFESTE CINÉTIQUE — la typographie est la star.
+     Règle vitale : sans JavaScript, TOUT le texte reste lisible.
+     Les états « cachés avant révélation » n'existent que sous html.anim
+     (classe posée par le script UNIQUEMENT quand GSAP est chargé).
+     Sécurité Safari : aucun background-clip:text, aucun backdrop-filter,
+     aucun blur grande surface, aucune vidéo.
+     ===================================================================== */
+  :root{
+    --bleu:#0050E6;
+    --orange:#F39A1B;
+    --encre:#0A0E1A;
+    --encre-2:#0E1424;
+    --clair:#F8FAFC;
+    --clair-2:#EEF2F7;
+    --brume:#8B94A8;      /* gris sur encre */
+    --pierre:#5A6376;     /* gris sur clair */
+    --ligne-sombre:rgba(248,250,252,.14);
+    --ligne-claire:rgba(10,14,26,.14);
+    --ease:cubic-bezier(.16,1,.3,1);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:auto}
+  html,body{background:var(--encre);overflow-x:clip}
+  body{
+    font-family:"DM Sans",system-ui,sans-serif;
+    color:var(--clair);
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+    line-height:1.5;
+  }
+  .mono{font-family:"DM Mono",ui-monospace,monospace}
+  .serif{font-family:"Fraunces",Georgia,serif}
+  a{color:inherit;text-decoration:none}
+  img{max-width:100%;display:block}
+  ::selection{background:var(--orange);color:var(--encre)}
+
+  .wrap{max-width:1480px;margin:0 auto;padding-left:clamp(20px,4.5vw,64px);padding-right:clamp(20px,4.5vw,64px)}
+
+  /* Surtitres éditoriaux */
+  .sur{
+    font-family:"DM Mono",ui-monospace,monospace;
+    font-size:clamp(10px,1.1vw,12px);letter-spacing:.28em;text-transform:uppercase;
+    display:inline-flex;align-items:center;gap:12px;
+  }
+  .sur .tiret{width:30px;height:1px;background:var(--orange);flex:none}
+
+  /* ------------------------------------------------------------------
+     BARRE HAUTE
+     ------------------------------------------------------------------ */
+  .haut{
+    position:fixed;inset:0 0 auto 0;z-index:60;
+    display:flex;align-items:center;justify-content:space-between;gap:16px;
+    padding:14px clamp(20px,4.5vw,64px);
+    background:rgba(10,14,26,.86); /* opaque suffisant, pas de backdrop-filter */
+    border-bottom:1px solid var(--ligne-sombre);
+  }
+  .haut .logo{display:flex;align-items:center;gap:10px}
+  .haut .logo img{height:26px;width:auto}
+  .haut nav{display:flex;gap:clamp(12px,2.4vw,28px);font-size:12px;letter-spacing:.14em;text-transform:uppercase}
+  .haut nav a{color:var(--brume);transition:color .3s}
+  .haut nav a:hover{color:var(--clair)}
+  .haut .cta{
+    color:var(--encre);background:var(--orange);border-radius:999px;
+    padding:8px 16px;font-weight:700;letter-spacing:.08em;
+    transition:transform .3s var(--ease);
+  }
+  .haut .cta:hover{transform:translateY(-2px);color:var(--encre)}
+  @media(max-width:720px){.haut nav a:not(.cta){display:none}}
+
+  /* ------------------------------------------------------------------
+     ACTE I — LE HÉROS. Des mots géants en perspective.
+     ------------------------------------------------------------------ */
+  .heros{
+    position:relative;min-height:100dvh;display:flex;flex-direction:column;justify-content:flex-end;
+    padding-top:96px;padding-bottom:clamp(22px,4vh,48px);overflow:clip;
+  }
+  /* Mot fantôme vertical : contour seul (text-stroke, PAS background-clip) */
+  .fantome{
+    position:absolute;top:50%;right:-.14em;transform:translateY(-50%) rotate(180deg);
+    writing-mode:vertical-rl;
+    font-family:"Fraunces",serif;font-weight:700;font-size:clamp(90px,17vh,190px);line-height:1;
+    color:transparent;-webkit-text-stroke:1px rgba(248,250,252,.08);
+    letter-spacing:.04em;pointer-events:none;user-select:none;white-space:nowrap;
+  }
+  @media(max-width:860px){.fantome{display:none}}
+
+  .heros .sur{color:var(--brume);margin-bottom:clamp(18px,3vh,34px)}
+
+  .h-titre{
+    font-family:"Fraunces",serif;font-weight:600;
+    font-size:clamp(2.4rem,8.4vw,7.6rem);  /* réduit : le titre validé est plus long que « Servir sans jamais enfermer. » */
+    line-height:.92;letter-spacing:-.02em;
+    text-transform:uppercase;
+    perspective:900px; /* la 3D légère : perspective sur les lettres */
+  }
+  .h-titre .ligne{display:block;overflow:hidden;padding:.03em 0}
+  .h-titre .accent{
+    font-style:italic;font-weight:500;text-transform:none;color:var(--orange);
+    /* repli sans JS : une seule ombre douce, lumière haut-gauche — pas de faux relief */
+    text-shadow:.03em .05em .16em rgba(0,0,0,.4);
+  }
+  .h-titre .char{transform-style:preserve-3d;backface-visibility:hidden;will-change:transform}
+
+  .h-bas{
+    margin-top:clamp(26px,4.5vh,52px);
+    display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:18px 32px;
+  }
+  .h-phrase{max-width:520px;color:var(--brume);font-size:clamp(14px,1.5vw,17px)}
+  .h-phrase b{color:var(--clair);font-weight:500}
+  .h-defile{display:flex;align-items:center;gap:12px;color:var(--brume);font-size:11px;letter-spacing:.22em;text-transform:uppercase}
+  .h-defile .fil{width:1px;height:34px;background:var(--ligne-sombre);position:relative;overflow:hidden}
+  .h-defile .fil::after{content:"";position:absolute;inset:0;background:var(--orange);transform:translateY(-100%);animation:goutte 2.2s var(--ease) infinite}
+  @keyframes goutte{0%{transform:translateY(-100%)}50%{transform:translateY(0)}100%{transform:translateY(100%)}}
+
+  /* ------------------------------------------------------------------
+     ACTE II — LE MANIFESTE. Le texte se reforme depuis l'éclat.
+     ------------------------------------------------------------------ */
+  .manifeste{background:var(--encre);position:relative;overflow:clip}
+  .manifeste .scene{min-height:100vh;display:flex;align-items:center;padding-top:12vh;padding-bottom:12vh}
+  .m-bloc{max-width:1180px}
+  .m-bloc .sur{color:var(--brume);margin-bottom:clamp(20px,3.5vh,40px)}
+  .m-texte{
+    font-family:"Fraunces",serif;font-weight:400;
+    font-size:clamp(1.55rem,4.6vw,4.1rem);
+    line-height:1.18;letter-spacing:-.01em;color:var(--clair);
+  }
+  .m-texte .word{will-change:transform}
+  .m-texte em{font-style:italic;color:var(--orange)}
+  .m-texte .bleu{color:transparent;-webkit-text-stroke:1.5px var(--bleu);font-weight:600;font-style:normal}
+  .m-signe{margin-top:clamp(22px,4vh,42px);color:var(--brume);font-size:13px;letter-spacing:.18em;text-transform:uppercase}
+  .m-signe b{color:var(--clair)}
+
+  /* ------------------------------------------------------------------
+     RUBAN — le métier, en un souffle (marquee CSS pur)
+     ------------------------------------------------------------------ */
+  .ruban{
+    background:var(--orange);color:var(--encre);overflow:clip;white-space:nowrap;
+    border-top:1px solid rgba(10,14,26,.2);border-bottom:1px solid rgba(10,14,26,.2);
+  }
+  .ruban .piste{display:inline-flex;align-items:center;will-change:transform;animation:defile 30s linear infinite}
+  .ruban .mot{
+    font-family:"Fraunces",serif;font-weight:600;text-transform:uppercase;
+    font-size:clamp(1.3rem,3.6vw,2.6rem);line-height:1;padding:.55em 0;letter-spacing:-.01em;
+  }
+  .ruban .etoile{padding:0 clamp(16px,2.6vw,36px);font-size:clamp(.9rem,2vw,1.4rem);opacity:.6}
+  @keyframes defile{to{transform:translateX(-50%)}}
+
+  /* ------------------------------------------------------------------
+     ACTE II BIS — LE MÉTIER. Les quatre temps de la répartition, en grand.
+     ------------------------------------------------------------------ */
+  .metier{background:var(--encre);color:var(--clair);overflow:clip}
+  .met-tete{padding-top:clamp(52px,9vh,110px);padding-bottom:clamp(18px,3vh,36px)}
+  .met-tete .sur{color:var(--brume)}
+  .met-note{margin-top:14px;color:var(--brume);font-size:clamp(13px,1.5vw,16px);max-width:560px}
+  .met-note b{color:var(--clair);font-weight:500}
+  .met-liste{border-top:1px solid var(--ligne-sombre)}
+  .met-liste + .met-note{margin-top:clamp(18px,3vh,32px);max-width:640px}
+  .temps{
+    display:grid;grid-template-columns:56px 1fr;align-items:baseline;gap:8px clamp(14px,2.6vw,32px);
+    padding:clamp(18px,3vh,30px) 0;border-bottom:1px solid var(--ligne-sombre);
+    transition:background .35s;
+  }
+  .temps:hover{background:rgba(248,250,252,.03)}
+  .met-nom{
+    font-family:"Fraunces",serif;font-weight:500;
+    font-size:clamp(1.5rem,4.6vw,3.6rem);line-height:1.05;letter-spacing:-.015em;
+    transition:transform .5s var(--ease),color .4s;
+  }
+  .temps:hover .met-nom{transform:translateX(clamp(6px,1.2vw,18px));color:var(--orange)}
+  .met-desc{grid-column:2;max-width:640px;color:var(--brume);font-size:clamp(13.5px,1.5vw,16px)}
+  .met-desc b{color:var(--clair);font-weight:500}
+  @media(max-width:640px){.temps{grid-template-columns:40px 1fr}}
+
+  /* Invitations de contact au fil de la page — le ton du manifeste */
+  .invite{
+    display:inline-block;
+    font-family:"Fraunces",serif;font-style:italic;font-weight:500;
+    font-size:clamp(1.05rem,2.6vw,1.6rem);color:var(--clair);
+    border-bottom:2px solid var(--orange);padding-bottom:4px;
+    transition:color .3s,border-color .3s;overflow-wrap:anywhere;
+  }
+  .invite:hover{color:var(--orange)}
+  .invite-ligne{padding-top:clamp(20px,3.5vh,40px)}
+  .invite-avant{color:var(--brume);font-size:clamp(13px,1.5vw,16px);margin-bottom:12px}
+  .metier .invite-ligne{padding-bottom:clamp(48px,8vh,96px)}
+
+  /* ------------------------------------------------------------------
+     ACTE III — LES 3 VALEURS. Section épinglée, un mot géant à la fois.
+     Sans animation : les 3 valeurs s'empilent, parfaitement lisibles.
+     ------------------------------------------------------------------ */
+  .piliers{background:var(--clair);color:var(--encre)}
+  .piliers ::selection{background:var(--bleu);color:var(--clair)}
+  .p-tete{
+    display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:14px;
+    padding-top:clamp(52px,9vh,110px);padding-bottom:clamp(20px,3.5vh,40px);
+    border-bottom:1px solid var(--ligne-claire);
+  }
+  .p-tete .sur{color:var(--pierre)}
+  .p-tete .sur .tiret{background:var(--bleu)}
+  .p-tete .note{font-size:13px;color:var(--pierre);max-width:360px}
+
+  .p-scene{position:relative;padding-top:clamp(30px,5vh,60px);padding-bottom:clamp(40px,7vh,80px)}
+  /* Mode animé : les piliers se superposent dans une scène épinglée plein écran */
+  .anim .p-scene{height:100vh;display:flex;align-items:center;padding-top:0;padding-bottom:0}
+  .anim .p-pile{position:relative;width:100%;height:min(72vh,720px)}
+  .anim .pilier{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center}
+
+  .pilier{padding:clamp(26px,4vh,44px) 0;border-bottom:1px solid var(--ligne-claire)}
+  .anim .pilier{padding:0;border-bottom:0}
+  .p-index{font-family:"DM Mono",monospace;font-size:12px;letter-spacing:.2em;color:var(--pierre);margin-bottom:clamp(10px,2vh,22px)}
+  .p-index b{color:var(--bleu);font-weight:500}
+  .p-mot{
+    font-family:"Fraunces",serif;font-weight:600;text-transform:uppercase;
+    font-size:clamp(1.9rem,8.6vw,10.5rem);line-height:.95;letter-spacing:-.02em;
+    white-space:nowrap; /* un mot géant = une seule ligne, même en 390 px */
+    perspective:900px;
+  }
+  .p-mot .masque{display:block;overflow:hidden;padding:.04em 0}
+  .p-mot .char{transform-style:preserve-3d;backface-visibility:hidden;will-change:transform}
+  .pilier:nth-child(odd) .p-mot{color:var(--encre)}
+  .pilier:nth-child(even) .p-mot{color:var(--bleu)}
+  .p-desc{
+    margin-top:clamp(14px,2.5vh,26px);max-width:560px;
+    font-size:clamp(14px,1.6vw,17px);color:var(--pierre);
+  }
+  .p-desc b{color:var(--encre);font-weight:500}
+  .p-jauge{display:none}
+  .anim .p-jauge{
+    display:block;position:absolute;left:0;right:0;bottom:6vh;height:2px;background:var(--ligne-claire);
+  }
+  .anim .p-jauge i{display:block;height:100%;width:0;background:var(--bleu)}
+
+  /* ------------------------------------------------------------------
+     ACTE IV — LE RÉSEAU. 9 implantations, une colonne vertébrale typo.
+     ------------------------------------------------------------------ */
+  .reseau{background:var(--encre);color:var(--clair);overflow:clip}
+  .r-tete{padding-top:clamp(56px,10vh,120px);padding-bottom:clamp(20px,3.5vh,44px)}
+  .r-tete .sur{color:var(--brume)}
+  .r-titre{
+    font-family:"Fraunces",serif;font-weight:600;text-transform:uppercase;
+    font-size:clamp(2.6rem,10.5vw,9.5rem);line-height:.95;letter-spacing:-.02em;margin-top:14px;
+    perspective:900px;
+  }
+  .r-titre .ligne{display:block;overflow:hidden;padding:.03em 0}
+  .r-titre .accent{font-style:italic;font-weight:500;text-transform:none;color:var(--orange)}
+  .r-note{margin-top:16px;color:var(--brume);font-size:clamp(13px,1.5vw,16px);max-width:520px}
+  .r-note b{color:var(--clair);font-weight:500}
+
+  .r-liste{border-top:1px solid var(--ligne-sombre);margin-top:clamp(20px,4vh,44px)}
+  .site{
+    display:grid;grid-template-columns:56px 1fr auto;align-items:baseline;gap:10px clamp(14px,2.6vw,32px);
+    padding:clamp(16px,2.6vh,26px) 0;border-bottom:1px solid var(--ligne-sombre);
+    transition:background .35s;position:relative;
+  }
+  .site:hover{background:rgba(248,250,252,.03)}
+  .s-num{font-family:"DM Mono",monospace;font-size:12px;color:var(--brume);letter-spacing:.14em}
+  .s-nom{
+    font-family:"Fraunces",serif;font-weight:500;
+    font-size:clamp(1.35rem,4.2vw,3.4rem);line-height:1.05;letter-spacing:-.015em;
+    transition:transform .5s var(--ease),color .4s;
+  }
+  .site:hover .s-nom{transform:translateX(clamp(6px,1.2vw,18px));color:var(--orange)}
+  .s-lieu{font-family:"DM Mono",monospace;font-size:clamp(11px,1.3vw,13px);color:var(--brume);text-align:right;letter-spacing:.06em}
+  .s-badge{
+    display:inline-block;margin-left:10px;padding:3px 9px;border-radius:999px;
+    font-family:"DM Mono",monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;vertical-align:middle;
+  }
+  .s-badge.siege{background:var(--orange);color:var(--encre)}
+  .s-badge.part{border:1px solid var(--ligne-sombre);color:var(--brume)}
+  @media(max-width:640px){
+    .site{grid-template-columns:40px 1fr}
+    .s-lieu{grid-column:2;text-align:left}
+  }
+
+  .r-pied{
+    display:flex;flex-wrap:wrap;gap:12px 28px;justify-content:space-between;
+    padding:clamp(20px,3.5vh,36px) 0 clamp(48px,8vh,96px);
+    color:var(--brume);font-size:13px;
+  }
+  .r-pied b{color:var(--clair);font-weight:500}
+
+  /* ------------------------------------------------------------------
+     ACTE V — CONTACT. Le siège, une adresse, une phrase.
+     ------------------------------------------------------------------ */
+  .contact{background:var(--clair);color:var(--encre);overflow:clip}
+  .contact ::selection{background:var(--bleu);color:var(--clair)}
+  .c-grille{
+    display:grid;grid-template-columns:1.15fr .85fr;gap:clamp(24px,4vw,64px);align-items:center;
+    padding-top:clamp(56px,10vh,120px);padding-bottom:clamp(56px,10vh,120px);
+  }
+  @media(max-width:860px){.c-grille{grid-template-columns:1fr}}
+  .c-txt .sur{color:var(--pierre)}
+  .c-txt .sur .tiret{background:var(--bleu)}
+  .c-titre{
+    font-family:"Fraunces",serif;font-weight:600;text-transform:uppercase;
+    font-size:clamp(2.8rem,9.5vw,7.5rem);line-height:.95;letter-spacing:-.02em;margin-top:16px;
+    perspective:900px;
+  }
+  .c-titre .ligne{display:block;overflow:hidden;padding:.03em 0}
+  .c-titre .accent{font-style:italic;font-weight:500;text-transform:none;color:var(--bleu)}
+  .c-p{margin-top:clamp(16px,3vh,28px);max-width:480px;color:var(--pierre);font-size:clamp(14px,1.6vw,17px)}
+  .c-p b{color:var(--encre);font-weight:500}
+  .c-mail{
+    display:inline-block;margin-top:clamp(20px,3.5vh,36px);
+    font-family:"Fraunces",serif;font-style:italic;font-weight:500;
+    font-size:clamp(1.15rem,3vw,1.9rem);color:var(--encre);
+    border-bottom:2px solid var(--orange);padding-bottom:4px;
+    transition:color .3s,border-color .3s;
+  }
+  .c-mail:hover{color:var(--bleu);border-color:var(--bleu)}
+  .c-img{position:relative}
+  .c-img figure{overflow:clip;border-radius:6px}
+  .c-img img{width:100%;height:auto;transform-origin:center}
+  .c-img figcaption{
+    margin-top:12px;font-family:"DM Mono",monospace;font-size:11px;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--pierre);
+  }
+
+  /* ------------------------------------------------------------------
+     PIED DE PAGE
+     ------------------------------------------------------------------ */
+  .pied{background:var(--encre);color:var(--brume);border-top:1px solid var(--ligne-sombre)}
+  .pied .haut-pied{
+    display:flex;flex-wrap:wrap;gap:20px 40px;align-items:center;justify-content:space-between;
+    padding-top:clamp(30px,5vh,52px);padding-bottom:clamp(22px,4vh,40px);
+  }
+  .pied .haut-pied img{height:30px;width:auto}
+  .pied .devise{font-family:"Fraunces",serif;font-style:italic;font-size:clamp(15px,2vw,19px);color:var(--clair)}
+  .pied .bas-pied{
+    display:flex;flex-wrap:wrap;gap:8px 28px;justify-content:space-between;
+    padding-bottom:clamp(26px,4.5vh,46px);font-size:12.5px;letter-spacing:.03em;
+  }
+  .pied a:hover{color:var(--clair)}
+
+  /* ------------------------------------------------------------------
+     ÉTATS D'ANIMATION — uniquement quand html.anim est posé par le JS.
+     Si le script casse, rien n'est masqué : la page reste lisible.
+     ------------------------------------------------------------------ */
+  .anim .rv-op{opacity:0}
+
+  /* ------------------------------------------------------------------
+     VOLUME — profondeur typographique DISCRÈTE, façon gravure.
+     Construite par le JS uniquement (aucune trace sans script) :
+     chaque grand titre = face avant (les .char animés) + quelques
+     tranches fines en translateZ qui FONDENT vers le fond + une seule
+     ombre portée courte (lumière haut-gauche, cohérente sur la page).
+     Ni halo, ni arête lumineuse, ni contour : on devine le volume.
+     Aucun background-clip:text, aucun filter, aucun backdrop-filter.
+     ------------------------------------------------------------------ */
+  .anim .h-titre,.anim .r-titre,.anim .c-titre{perspective:1100px}
+  .anim .h-titre .accent{text-shadow:none} /* le relief simulé cède la place au vrai volume */
+  .anim .t3d{transform-style:preserve-3d;will-change:transform}
+  .anim .ligne.l3d{overflow:visible;padding:0}
+  .anim .l3d{position:relative;transform-style:preserve-3d}
+  .anim .ligne.l3d>.masque{display:block;overflow:hidden;padding:.03em 0;position:relative}
+  .anim .masque{perspective:700px}
+  .anim .libre .masque{overflow:visible}
+  .prof{position:absolute;inset:0;transform-style:preserve-3d;pointer-events:none;user-select:none}
+  .prof b{position:absolute;inset:0;display:block;font:inherit;letter-spacing:inherit;white-space:inherit}
+  .prof .cp-accent{font-style:italic;font-weight:500;text-transform:none}
+  .prof .cp-ombre{color:transparent!important}
+  .anim .m-bloc{perspective:1100px}
+  .anim .m-texte{transform-style:preserve-3d;will-change:transform}
+  .anim .p-scene{perspective:1200px}
+  .anim .p-pile{transform-style:preserve-3d;will-change:transform}
+  .anim .pilier{transform-style:preserve-3d}
+  .anim .p-mot{perspective:none} /* la caméra est sur .p-pile, pas par mot */
+
+  /* ------------------------------------------------------------------
+     MOUVEMENT RÉDUIT : tout statique, tout lisible.
+     ------------------------------------------------------------------ */
+  @media(prefers-reduced-motion:reduce){
+    *{animation:none!important;transition:none!important}
+    .ruban .piste{animation:none!important}
+    .h-defile .fil::after{display:none}
+  }
+</style>
+</head>
+<body>
+
+  <!-- ================= BARRE HAUTE ================= -->
+  <header class="haut">
+    <a class="logo" href="#haut" aria-label="Intégral Pharma">
+      <img src="../../assets/logo-web.png" alt="Intégral Pharma">
+    </a>
+    <nav>
+      <a href="#manifeste">Manifeste</a>
+      <a href="#metier">Le métier</a>
+      <a href="#piliers">Valeurs</a>
+      <a href="#reseau">Réseau</a>
+      <a href="#contact">Contact</a>
+      <a class="cta" href="mailto:contact@integralpharma.fr">Écrivez-nous</a>
+    </nav>
+  </header>
+
+  <!-- ================= ACTE I — HÉROS ================= -->
+  <section class="heros wrap" id="haut">
+    <span class="fantome" aria-hidden="true">MANIFESTE</span>
+
+    <p class="sur" data-scramble><span class="tiret" aria-hidden="true"></span>Groupe de grossistes-répartiteurs français indépendant</p>
+
+    <h1 class="h-titre" id="h-titre">
+      <span class="ligne"><span class="mot-eclat" data-splitting>Livrer</span></span>
+      <span class="ligne"><span class="mot-eclat" data-splitting>la pharmacie française,</span></span>
+      <span class="ligne"><span class="mot-eclat accent" data-splitting>autrement.</span></span>
+    </h1>
+
+    <div class="h-bas">
+      <p class="h-phrase">Nous approvisionnons les officines françaises <b>tous les jours, depuis neuf implantations</b> — au service des pharmaciens et des patients. Ce site n'est pas une plaquette&nbsp;: c'est une déclaration.</p>
+      <p class="h-valeurs mono">Confiance <span class="pt" aria-hidden="true">·</span> Engagement <span class="pt" aria-hidden="true">·</span> Respect</p>
+      <p class="h-defile"><span class="fil" aria-hidden="true"></span>Faites défiler</p>
+    </div>
+  </section>
+
+  <!-- ================= ACTE II — MANIFESTE ================= -->
+  <section class="manifeste" id="manifeste">
+    <div class="scene wrap">
+      <div class="m-bloc">
+        <p class="sur rv-op" data-scramble><span class="tiret" aria-hidden="true"></span>Le manifeste — article premier</p>
+        <p class="m-texte" id="m-texte-1" data-splitting="words">Nous croyons qu'une officine se sert mieux <em>de près</em> que de loin. Qu'un engagement se juge <em>sur la durée</em>, pas sur une saison. Et que l'indépendance d'un pharmacien n'est <em>jamais</em> une variable d'ajustement.</p>
+        <p class="m-signe rv-op">— Intégral Pharma, <b>groupe indépendant</b></p>
+      </div>
+    </div>
+
+    <div class="scene wrap">
+      <div class="m-bloc">
+        <p class="sur rv-op" data-scramble><span class="tiret" aria-hidden="true"></span>Le manifeste — article second</p>
+        <p class="m-texte" id="m-texte-2" data-splitting="words">Neuf implantations, plus de <span class="bleu">14&nbsp;000</span> références au catalogue, des tournées quotidiennes, et une seule promesse&nbsp;: dire ce que nous faisons, faire ce que nous disons. <em>Au service des pharmaciens, et à travers eux, des patients.</em></p>
+        <p class="m-signe rv-op">— Écrit pour être <b>tenu</b></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= RUBAN — LE MÉTIER ================= -->
+  <div class="ruban" aria-label="Le métier : catalogue, disponibilité, préparation, livraison — tournées quotidiennes">
+    <div class="piste" id="ruban-piste">
+      <!-- rempli en JS ; repli sans script ci-dessous -->
+      <noscript><span class="mot">Catalogue · Disponibilité · Préparation · Livraison · Tournées quotidiennes</span></noscript>
+    </div>
+  </div>
+
+  <!-- ================= ACTE II BIS — LE MÉTIER ================= -->
+  <section class="metier" id="metier">
+    <div class="wrap">
+      <div class="met-tete">
+        <p class="sur" data-scramble><span class="tiret" aria-hidden="true"></span>Le métier — la répartition</p>
+        <p class="met-note">Un manifeste ne vaut que mis à l'épreuve. Le nôtre l'est <b>tous les jours</b>&nbsp;: approvisionner chaque officine servie, en quatre temps.</p>
+      </div>
+
+      <div class="met-liste">
+        <article class="temps" data-temps>
+          <span class="s-num">01</span>
+          <h3 class="met-nom">Le catalogue</h3>
+          <p class="met-desc">Plus de <b>14&nbsp;000 références</b> réunies dans Offilog&nbsp;: un point d'entrée unique pour toute l'officine.</p>
+        </article>
+        <article class="temps" data-temps>
+          <span class="s-num">02</span>
+          <h3 class="met-nom">La disponibilité</h3>
+          <p class="met-desc">Des stocks suivis <b>implantation par implantation</b> — savoir avant de promettre.</p>
+        </article>
+        <article class="temps" data-temps>
+          <span class="s-num">03</span>
+          <h3 class="met-nom">La préparation</h3>
+          <p class="met-desc">Chaque commande préparée dans <b>l'implantation la plus proche</b> de votre officine.</p>
+        </article>
+        <article class="temps" data-temps>
+          <span class="s-num">04</span>
+          <h3 class="met-nom">La livraison</h3>
+          <p class="met-desc">Des <b>tournées quotidiennes</b>, du quai de la plateforme jusqu'à votre comptoir.</p>
+        </article>
+      </div>
+
+      <p class="met-note">Et quand la vie de l'officine change — transfert, agrandissement, cession de parts, optimisation — <b>nous ajustons l'approvisionnement avec vous</b>, sans à-coup au comptoir.</p>
+
+      <div class="invite-ligne">
+        <p class="invite-avant">Une question sur la desserte de votre officine&nbsp;?</p>
+        <a class="invite" href="mailto:contact@integralpharma.fr">Écrivez-nous — contact@integralpharma.fr</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= ACTE III — LES 3 VALEURS ================= -->
+  <section class="piliers" id="piliers">
+    <div class="wrap">
+      <div class="p-tete">
+        <p class="sur" data-scramble><span class="tiret" aria-hidden="true"></span>Ce qui nous tient — trois valeurs</p>
+        <p class="note">Un partenaire se juge à ce qu'il défend. Voici ce que nous défendons, mot par mot.</p>
+      </div>
+    </div>
+
+    <div class="p-scene wrap" id="p-scene">
+      <div class="p-pile" id="p-pile">
+        <article class="pilier" data-pilier>
+          <p class="p-index"><b>01</b> / 03</p>
+          <h2 class="p-mot"><span class="masque"><span data-splitting>Confiance</span></span></h2>
+          <p class="p-desc">La transparence d'abord. Une relation claire, tenue dans la durée, où la parole donnée vaut engagement.</p>
+        </article>
+        <article class="pilier" data-pilier>
+          <p class="p-index"><b>02</b> / 03</p>
+          <h2 class="p-mot"><span class="masque"><span data-splitting>Engagement</span></span></h2>
+          <p class="p-desc">Présents dans la durée, à vos côtés quand il le faut. Un partenaire ne disparaît pas après la vente.</p>
+        </article>
+        <article class="pilier" data-pilier>
+          <p class="p-index"><b>03</b> / 03</p>
+          <h2 class="p-mot"><span class="masque"><span data-splitting>Respect</span></span></h2>
+          <p class="p-desc">Du pharmacien comme du patient. On défend l'officine indépendante, parce qu'elle soigne un territoire.</p>
+        </article>
+      
+
+      </div>
+      <div class="p-jauge" aria-hidden="true"><i id="p-jauge-i"></i></div>
+    </div>
+  </section>
+
+  <!-- ================= ACTE IV — LE RÉSEAU ================= -->
+  <section class="reseau" id="reseau">
+    <div class="wrap">
+      <div class="r-tete">
+        <p class="sur" data-scramble><span class="tiret" aria-hidden="true"></span>Le réseau — neuf implantations</p>
+        <h2 class="r-titre">
+          <span class="ligne"><span class="mot-eclat" data-splitting>Une France,</span></span>
+          <span class="ligne"><span class="mot-eclat accent" data-splitting>neuf ancrages.</span></span>
+        </h2>
+        <p class="r-note">Du Var à la Loire-Atlantique, chaque plateforme est <b>proche de ses officines</b> — et le partenaire Pharmest prolonge le maillage à l'Est.</p>
+      </div>
+
+      <div class="r-liste">
+        <a class="site" data-site>
+          <span class="s-num">01</span>
+          <span class="s-nom">Hyères Pharma<span class="s-badge siege">Siège</span></span>
+          <span class="s-lieu">Hyères — Var (83)</span>
+        </a>
+        <a class="site" data-site>
+          <span class="s-num">02</span>
+          <span class="s-nom">Ouest Pharma Services</span>
+          <span class="s-lieu">St-Étienne-de-Montluc — Loire-Atlantique (44)</span>
+        </a>
+        <a class="site" data-site>
+          <span class="s-num">03</span>
+          <span class="s-nom">Comptoir Pharmaceutique du Rhône</span>
+          <span class="s-lieu">Saint-Maurice-l'Exil — Isère (38)</span>
+        </a>
+        <a class="site" data-site>
+          <span class="s-num">04</span>
+          <span class="s-nom">Sud Ouest Pharma</span>
+          <span class="s-lieu">Montayral — Lot-et-Garonne (47)</span>
+        </a>
+        <a class="site" data-site>
+          <span class="s-num">05</span>
+          <span class="s-nom">Pharm'Occitanie Services</span>
+          <span class="s-lieu">Villeneuve-lès-Béziers — Hérault (34)</span>
+        </a>
+        <a class="site" data-site>
+          <span class="s-num">06</span>
+          <span class="s-nom">Sud Est Pharma</span>
+          <span class="s-lieu">Le Cannet-des-Maures — Var (83)</span>
+        </a>
+        <a class="site" data-site>
+          <span class="s-num">07</span>
+          <span class="s-nom">Mistral Santé Pharma</span>
+          <span class="s-lieu">Flassans-sur-Issole — Var (83)</span>
+        </a>
+        <a class="site" data-site>
+          <span class="s-num">08</span>
+          <span class="s-nom">Escale Pharma</span>
+          <span class="s-lieu">Chilly-Mazarin — Essonne (91)</span>
+        </a>
+        <a class="site" data-site>
+          <span class="s-num">09</span>
+          <span class="s-nom">Pharmest<span class="s-badge part">Partenaire</span></span>
+          <span class="s-lieu">Metz — Moselle (57)</span>
+        </a>
+      </div>
+
+      <div class="invite-ligne">
+        <p class="invite-avant">Votre officine est quelque part sur cette carte.</p>
+        <a class="invite" href="mailto:contact@integralpharma.fr">Parlez à l'implantation la plus proche — contact@integralpharma.fr</a>
+      </div>
+
+      <div class="r-pied">
+        <span><b>14&nbsp;000+</b> références au catalogue</span>
+        <span>Des <b>tournées quotidiennes</b>, préparées dans l'implantation la plus proche</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= ACTE V — CONTACT ================= -->
+  <section class="contact" id="contact">
+    <div class="c-grille wrap">
+      <div class="c-txt">
+        <p class="sur" data-scramble><span class="tiret" aria-hidden="true"></span>Dernier mot — le vôtre</p>
+        <h2 class="c-titre">
+          <span class="ligne"><span class="mot-eclat" data-splitting>Écrivons</span></span>
+          <span class="ligne"><span class="mot-eclat accent" data-splitting>la suite.</span></span>
+        </h2>
+        <p class="c-p">Une question sur votre approvisionnement, la desserte de votre secteur, une première commande&nbsp;? <b>Une réponse humaine, sans détour.</b></p>
+        <a class="c-mail" href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a>
+      </div>
+      <div class="c-img">
+        <figure><img src="../../assets/siege-web.jpg" alt="Le siège d'Intégral Pharma à Hyères" id="c-photo" width="820" height="652"></figure>
+        <figcaption>Le siège — 758 Chemin de la Source, 83400 Hyères</figcaption>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= PIED DE PAGE ================= -->
+  <footer class="pied">
+    <div class="wrap">
+      <div class="haut-pied">
+        <img src="../../assets/logo-web.png" alt="Intégral Pharma">
+        <p class="devise">Servir sans jamais enfermer.</p>
+      </div>
+      <div class="bas-pied">
+        <span>758 Chemin de la Source, 83400 Hyères</span>
+        <a href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a>
+        <span>© 2026 Intégral Pharma — groupe de grossistes-répartiteurs français indépendant</span>
+      </div>
+    </div>
+  </footer>
+
+<!-- ================= LIBRAIRIES (locales, aucun CDN) ================= -->
+<script src="../../vendor/gsap.min.js"></script>
+<script src="../../vendor/ScrollTrigger.min.js"></script>
+<script src="../../vendor/gsap/ScrambleTextPlugin.min.js"></script>
+<script src="../../vendor/lenis.min.js"></script>
+<script src="../../vendor/splitting.min.js"></script>
+
+<script>
+(function(){
+  'use strict';
+
+  /* Le ruban du métier se remplit toujours (même sans GSAP) */
+  var piste = document.getElementById('ruban-piste');
+  if (piste){
+    var temps = ["Catalogue","Disponibilité","Préparation","Livraison","Tournées quotidiennes","14 000+ références"];
+    var moitie = temps.map(function(p){ return '<span class="mot">'+p+'</span><span class="etoile" aria-hidden="true">✳</span>'; }).join('');
+    piste.innerHTML = moitie + moitie; /* deux copies → boucle propre à -50 % */
+  }
+
+  var reduit = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* Sécurité vitale : si GSAP manque ou si le visiteur veut moins de
+     mouvement, on ne masque RIEN — la page reste un beau document statique. */
+  if (reduit || !window.gsap || !window.ScrollTrigger || !window.Splitting) return;
+
+  gsap.registerPlugin(ScrollTrigger);
+  if (window.ScrambleTextPlugin) gsap.registerPlugin(ScrambleTextPlugin);
+
+  /* =====================================================================
+     VOLUME — profondeur discrète, façon gravure de magazine.
+     Chaque grand titre reçoit : un chariot caméra (.t3d, tourné par la
+     souris et le scroll) et, par ligne, quelques tranches fines (.prof)
+     décalées en translateZ : face avant = les vrais .char animés,
+     tranches = une épaisseur qu'on devine (les teintes FONDENT vers le
+     fond, jamais de bloc), dernière tranche = une seule ombre portée
+     courte et douce (lumière haut-gauche partout — cohérente).
+     Ni halo, ni lueur, ni contour lumineux.
+     ===================================================================== */
+  var mobileEtroit = window.matchMedia('(max-width:768px)').matches;
+  var NB_TRANCHES = mobileEtroit ? 2 : 3;
+  var PAL = {
+    /* fond encre, lettres claires : tranches qui s'éteignent vers l'encre */
+    clairSurSombre: ['#707A8D','#454D5E','#252B38'],
+    orange:         ['#9E6412','#6B440D','#3E2808'],
+    /* fond clair, lettres encre : tranches qui pâlissent vers le papier */
+    encreSurClair:  ['#828B9C','#B2B8C5','#DBDFE7'],
+    bleuProfond:    ['#6D96EB','#AAC3F4','#DAE4FA']
+  };
+  var OMBRE_SOMBRE = '.05em .08em .2em rgba(0,0,0,.45)';
+  var OMBRE_CLAIRE = '.04em .07em .18em rgba(10,14,26,.25)';
+
+  /* Creuse une ligne de titre : ajoute la pile de tranches derrière la face. */
+  function creuse(ligne, opts){
+    var masque = ligne.querySelector('.masque');
+    if (!masque){
+      masque = document.createElement('span');
+      masque.className = 'masque';
+      while (ligne.firstChild) masque.appendChild(ligne.firstChild);
+      ligne.appendChild(masque);
+    }
+    ligne.classList.add('l3d');
+    var accent = !!masque.querySelector('.accent');
+    var texte = masque.textContent;
+    var fs = parseFloat(getComputedStyle(ligne).fontSize) || 60;
+    var pas = Math.max(1.5, fs * .011); /* tranche fine : le volume se devine, il ne s'impose pas */
+    var pal = accent ? (opts.accentPal || PAL.orange) : opts.pal;
+    var prof = document.createElement('span');
+    prof.className = 'prof';
+    prof.setAttribute('aria-hidden', 'true');
+    function copie(cls){
+      var b = document.createElement('b');
+      b.className = cls + (accent ? ' cp-accent' : '');
+      b.textContent = texte;
+      b.style.padding = opts.pad;
+      prof.appendChild(b);
+      return b;
+    }
+    var tranches = [];
+    for (var i = 0; i < NB_TRANCHES; i++){
+      var b = copie('cp');
+      b.style.color = pal[Math.min(i, pal.length - 1)];
+      b._z = -pas * (i + 1);
+      tranches.push(b);
+    }
+    var ombre = copie('cp cp-ombre');       /* l'ombre portée, seule et courte, tout au fond */
+    ombre.style.textShadow = opts.ombre;
+    ombre._z = -pas * (NB_TRANCHES + 1.6);
+    tranches.push(ombre);
+    ligne.appendChild(prof);
+    return { prof: prof, tranches: tranches };
+  }
+
+  /* Chariot caméra : enveloppe le contenu d'un titre pour le faire pivoter. */
+  function chariot(el){
+    var t = document.createElement('div');
+    t.className = 't3d';
+    while (el.firstChild) t.appendChild(el.firstChild);
+    el.appendChild(t);
+    return t;
+  }
+
+  var herosT3d = chariot(document.getElementById('h-titre'));
+  var herosProfs = [];
+  document.querySelectorAll('#h-titre .ligne').forEach(function(l){
+    herosProfs.push(creuse(l, { pal: PAL.clairSurSombre, pad: '.03em 0', ombre: OMBRE_SOMBRE }));
+  });
+  var reseauT3d = chariot(document.querySelector('.r-titre'));
+  var reseauProfs = [];
+  document.querySelectorAll('.r-titre .ligne').forEach(function(l){
+    reseauProfs.push(creuse(l, { pal: PAL.clairSurSombre, pad: '.03em 0', ombre: OMBRE_SOMBRE }));
+  });
+  var contactT3d = chariot(document.querySelector('.c-titre'));
+  var contactProfs = [];
+  document.querySelectorAll('.c-titre .ligne').forEach(function(l){
+    contactProfs.push(creuse(l, { pal: PAL.encreSurClair, accentPal: PAL.bleuProfond, pad: '.03em 0', ombre: OMBRE_CLAIRE }));
+  });
+  /* Les trois mots-valeurs : Confiance / Engagement / Respect */
+  document.querySelectorAll('[data-pilier]').forEach(function(p, i){
+    var mot = p.querySelector('.p-mot');
+    p._prof = creuse(mot, { pal: (i % 2 === 0 ? PAL.encreSurClair : PAL.bleuProfond), pad: '.04em 0', ombre: OMBRE_CLAIRE });
+  });
+
+  /* Découpe typographique (lettres et mots) AVANT de poser la classe .anim */
+  Splitting();
+
+  /* À partir d'ici seulement, on s'autorise à cacher pour révéler */
+  document.documentElement.classList.add('anim');
+
+  /* ---------- Défilement doux (Lenis) ---------- */
+  var lenis = null;
+  if (window.Lenis){
+    lenis = new Lenis({ duration: 1.05 });
+    lenis.on('scroll', ScrollTrigger.update);
+    gsap.ticker.add(function(t){ lenis.raf(t * 1000); });
+    gsap.ticker.lagSmoothing(0);
+    /* Ancres du menu passées à Lenis */
+    document.querySelectorAll('a[href^="#"]').forEach(function(a){
+      a.addEventListener('click', function(e){
+        var cible = document.querySelector(a.getAttribute('href'));
+        if (cible){ e.preventDefault(); lenis.scrollTo(cible, { offset: -60 }); }
+      });
+    });
+  }
+
+  var easeSortie = 'expo.out';
+
+  /* ---------- LA CAMÉRA : souris + scroll font tourner le point de vue ----------
+     Un seul ticker pour toutes les scènes. Chaque scène hors écran est
+     coupée (IntersectionObserver) : zéro travail quand rien n'est visible. */
+  var pointeurFin = window.matchMedia('(pointer:fine)').matches;
+  var sourisX = 0, sourisY = 0;
+  if (pointeurFin){
+    window.addEventListener('pointermove', function(e){
+      sourisX = e.clientX / window.innerWidth - .5;
+      sourisY = e.clientY / window.innerHeight - .5;
+    }, { passive: true });
+  }
+  var scenes = [];
+  var ioScenes = new IntersectionObserver(function(entrees){
+    entrees.forEach(function(en){ if (en.target._scene) en.target._scene.vis = en.isIntersecting; });
+  }, { rootMargin: '12% 0px' });
+  function regarde(racine, t3d, ax, ay){
+    var s = { t3d: t3d, ax: ax, ay: ay, sx: 0, sy: 0, cx: 0, cy: 0, vis: false };
+    racine._scene = s;
+    ioScenes.observe(racine);
+    scenes.push(s);
+    return s;
+  }
+  gsap.ticker.add(function(temps){
+    for (var i = 0; i < scenes.length; i++){
+      var s = scenes[i];
+      if (!s.vis) continue;
+      var tx, ty;
+      if (pointeurFin){
+        tx = -sourisY * 2 * s.ax + s.sx;
+        ty = sourisX * 2 * s.ay + s.sy;
+      } else {
+        /* tactile : lente dérive orbitale, le volume se lit sans souris */
+        tx = Math.cos(temps * .32 + i) * s.ax * .35 + s.sx;
+        ty = Math.sin(temps * .45 + i) * s.ay * .55 + s.sy;
+      }
+      s.cx += (tx - s.cx) * .075;
+      s.cy += (ty - s.cy) * .075;
+      gsap.set(s.t3d, { rotateX: s.cx, rotateY: s.cy, force3D: true });
+    }
+  });
+
+  /* Le ruban ne défile que quand il est visible */
+  var rubanEl = document.querySelector('.ruban');
+  if (rubanEl && piste){
+    new IntersectionObserver(function(es){
+      piste.style.animationPlayState = es[0].isIntersecting ? 'running' : 'paused';
+    }).observe(rubanEl);
+  }
+
+  /* ---------- ACTE I : entrée du titre, lettre à lettre, en perspective ---------- */
+  /* Entrée rapide : jamais plus d'une fraction de seconde sans titre lisible */
+  var herosChars = document.querySelectorAll('#h-titre .char');
+  gsap.set(herosChars, { yPercent: 120, rotateX: -80, opacity: 0 });
+  /* les tranches attendent, collées à la face avant */
+  herosProfs.forEach(function(hp){ gsap.set(hp.tranches, { z: 0, opacity: 0 }); });
+  var sceneHeros = regarde(document.getElementById('h-titre'), herosT3d, 7, 10);
+  var intro = gsap.timeline({ delay: .05 });
+  intro.to(herosChars, {
+    yPercent: 0, rotateX: 0, opacity: 1,
+    duration: .85, ease: easeSortie, stagger: { each: .02 }
+  });
+  /* …puis les lettres prennent leur ÉPAISSEUR : les tranches s'enfoncent une à une */
+  herosProfs.forEach(function(hp){
+    intro.to(hp.tranches, {
+      z: function(i, cible){ return cible._z; },
+      opacity: 1, duration: .7, ease: 'power3.out', stagger: .05
+    }, '-=.35');
+  });
+
+  /* Le héros se DÉCHIRE quand on le quitte : la face avant part en éclats
+     (x, y, profondeur, vrille), les tranches se séparent en Z — la
+     déchirure a maintenant une profondeur. Créée seulement APRÈS l'intro :
+     sinon, page chargée déjà scrollée, la déchirure capture opacity:0
+     comme état de départ et le titre reste invisible quand on remonte. */
+  intro.eventCallback('onComplete', function(){
+    document.getElementById('h-titre').classList.add('libre'); /* les masques s'ouvrent : la 3D peut sortir du cadre */
+    var stDechire = { trigger: '.heros', start: 'bottom 92%', end: 'bottom 30%', scrub: true };
+    herosChars.forEach(function(ch){
+      gsap.to(ch, {
+        x: gsap.utils.random(-160, 160),
+        y: gsap.utils.random(-320, -60),
+        z: gsap.utils.random(-420, 240),
+        rotation: gsap.utils.random(-50, 50),
+        rotationY: gsap.utils.random(-70, 70),
+        opacity: 0,
+        ease: 'power1.in',
+        scrollTrigger: stDechire
+      });
+    });
+    herosProfs.forEach(function(hp){
+      hp.tranches.forEach(function(tr, k){
+        gsap.to(tr, {
+          z: '-=' + (80 + k * 46), opacity: 0,
+          ease: 'power1.in', scrollTrigger: stDechire
+        });
+      });
+      gsap.to(hp.prof, { opacity: 0, ease: 'power1.in', scrollTrigger: stDechire });
+    });
+  });
+  gsap.to('.fantome', {
+    yPercent: 30, ease: 'none',
+    scrollTrigger: { trigger: '.heros', start: 'top top', end: 'bottom top', scrub: true }
+  });
+
+  /* ---------- ACTE II : le manifeste se REFORME depuis l'éclat ---------- */
+  ['#m-texte-1', '#m-texte-2'].forEach(function(sel){
+    var bloc = document.querySelector(sel);
+    var mots = document.querySelectorAll(sel + ' .word');
+    mots.forEach(function(mot){
+      gsap.fromTo(mot,
+        {
+          x: gsap.utils.random(-140, 140), y: gsap.utils.random(60, 220),
+          z: gsap.utils.random(-520, -160),               /* les mots arrivent du fond de la scène */
+          rotation: gsap.utils.random(-24, 24),
+          rotationX: gsap.utils.random(-65, 65), opacity: 0
+        },
+        {
+          x: 0, y: 0,
+          z: gsap.utils.random(-24, 24),                  /* chacun se pose à SA profondeur : la phrase a du relief */
+          rotation: 0, rotationX: 0, opacity: 1, ease: 'power2.out',
+          scrollTrigger: { trigger: sel, start: 'top 96%', end: 'top 45%', scrub: 1 }
+        });
+    });
+    regarde(bloc, bloc, 3, 5); /* la caméra penche doucement le paragraphe */
+  });
+
+  /* ---------- Surtitres : petit brouillage de caractères à l'arrivée ---------- */
+  if (window.ScrambleTextPlugin){
+    document.querySelectorAll('[data-scramble]').forEach(function(el){
+      var noeud = el.childNodes[el.childNodes.length - 1]; /* le texte après le tiret */
+      if (!noeud || noeud.nodeType !== 3) return;
+      var texte = noeud.textContent;
+      var porte = document.createElement('span');
+      porte.textContent = texte;
+      el.replaceChild(porte, noeud);
+      ScrollTrigger.create({
+        trigger: el, start: 'top 88%', once: true,
+        onEnter: function(){
+          gsap.to(porte, { duration: 1.1, scrambleText: { text: texte, chars: 'upperCase', speed: .55 } });
+        }
+      });
+    });
+  }
+
+  /* ---------- ACTE III : piliers épinglés, un mot géant à la fois ---------- */
+  var piliers = gsap.utils.toArray('[data-pilier]');
+  var jauge = document.getElementById('p-jauge-i');
+  var scenePiliers = regarde(document.getElementById('p-scene'), document.getElementById('p-pile'), 5, 8);
+  var parMot = 1;      /* durée d'un pilier dans la frise */
+  var tl = gsap.timeline({
+    scrollTrigger: {
+      trigger: '#p-scene', start: 'top top', end: '+=320%',
+      pin: true, scrub: .8,
+      onUpdate: function(st){
+        if (jauge) jauge.style.width = (st.progress * 100) + '%';
+        /* la caméra orbite lentement tout au long de la scène épinglée */
+        scenePiliers.sy = (st.progress - .5) * 12;
+        scenePiliers.sx = Math.sin(st.progress * Math.PI) * 4;
+      }
+    }
+  });
+  piliers.forEach(function(p, i){
+    var chars = p.querySelectorAll('.char');
+    var autres = [p.querySelector('.p-index'), p.querySelector('.p-desc')];
+    var prof = p._prof;
+    /* les tranches du mot sont posées à leur profondeur définitive */
+    prof.tranches.forEach(function(tr){ gsap.set(tr, { z: tr._z }); });
+    if (i === 0){
+      /* le premier arrive à l'entrée de la scène */
+      gsap.set(chars, { yPercent: 0 });
+      gsap.set(autres, { opacity: 1 });
+    } else {
+      /* l'entrée démarre APRÈS la sortie du mot précédent (pas de chevauchement) */
+      var t = i * parMot + .42;
+      tl.set(p, { zIndex: 2 }, t);
+      tl.fromTo(chars, { yPercent: 118, rotateX: -70 }, {
+        yPercent: 0, rotateX: 0, ease: 'power3.out', duration: .5,
+        stagger: { each: .03 }
+      }, t);
+      /* l'épaisseur pousse juste derrière la face qui arrive */
+      tl.set(prof.prof, { opacity: 1 }, t + .18);
+      tl.fromTo(prof.tranches, { z: 0, opacity: 0 }, {
+        z: function(k, cible){ return cible._z; },
+        opacity: 1, duration: .45, ease: 'power2.out', stagger: .02
+      }, t + .18);
+      tl.fromTo(autres, { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: .35, ease: 'power2.out' }, t + .15);
+    }
+    if (i < piliers.length - 1){
+      var s = (i + 1) * parMot;
+      tl.to(chars, { yPercent: -118, rotateX: 60, ease: 'power2.in', duration: .38, stagger: { each: .02 } }, s);
+      tl.to(prof.tranches, { opacity: 0, z: '-=60', duration: .3, ease: 'power1.in' }, s);
+      tl.set(prof.prof, { opacity: 0 }, s + .32);
+      tl.to(autres, { opacity: 0, y: -18, duration: .25 }, s);
+    }
+  });
+  /* état de départ : seuls les mots du pilier 1 sont visibles */
+  piliers.forEach(function(p, i){
+    if (i > 0){
+      gsap.set(p.querySelectorAll('.char'), { yPercent: 118, rotateX: -70 });
+      gsap.set(p._prof.prof, { opacity: 0 });
+      gsap.set(p._prof.tranches, { opacity: 0, z: 0 });
+      gsap.set([p.querySelector('.p-index'), p.querySelector('.p-desc')], { opacity: 0 });
+    }
+  });
+
+  /* ---------- ACTE IV : titres et lignes du réseau ---------- */
+  [
+    ['.r-titre', reseauT3d, reseauProfs],
+    ['.c-titre', contactT3d, contactProfs]
+  ].forEach(function(trio){
+    var racine = document.querySelector(trio[0]);
+    var chars = racine.querySelectorAll('.char');
+    var profs = trio[2];
+    gsap.set(chars, { yPercent: 120, rotateX: -80, opacity: 0 });
+    profs.forEach(function(pr){ gsap.set(pr.tranches, { z: 0, opacity: 0 }); });
+    var scene = regarde(racine, trio[1], 7, 10);
+    /* le titre entre incliné vers l'arrière et se redresse au fil du scroll */
+    ScrollTrigger.create({
+      trigger: trio[0], start: 'top bottom', end: 'top 25%', scrub: true,
+      onUpdate: function(st){
+        scene.sx = (1 - st.progress) * 15;
+        scene.sy = (1 - st.progress) * -7;
+      }
+    });
+    ScrollTrigger.create({
+      trigger: trio[0], start: 'top 82%', once: true,
+      onEnter: function(){
+        gsap.to(chars, { yPercent: 0, rotateX: 0, opacity: 1, duration: 1.05, ease: easeSortie, stagger: { each: .025 } });
+        profs.forEach(function(pr){
+          gsap.to(pr.tranches, {
+            z: function(k, cible){ return cible._z; },
+            opacity: 1, duration: .8, delay: .4, ease: 'power3.out', stagger: .05
+          });
+        });
+      }
+    });
+  });
+  gsap.utils.toArray('[data-site], [data-temps]').forEach(function(ligne, i){
+    gsap.from(ligne, {
+      y: 44, opacity: 0, duration: .8, ease: 'power3.out',
+      scrollTrigger: { trigger: ligne, start: 'top 94%', once: true }
+    });
+  });
+
+  /* ---------- ACTE V : la photo du siège se dévoile ---------- */
+  var photo = document.getElementById('c-photo');
+  if (photo){
+    gsap.fromTo(photo, { clipPath: 'inset(0 0 100% 0)', scale: 1.15 }, {
+      clipPath: 'inset(0 0 0% 0)', scale: 1, ease: 'power2.out',
+      scrollTrigger: { trigger: '.c-img', start: 'top 88%', end: 'top 35%', scrub: 1 }
+    });
+  }
+
+  /* ---------- Cinétique : les grands titres s'inclinent avec la vitesse ---------- */
+  if (lenis){
+    var pentes = [];
+    document.querySelectorAll('.m-texte, .r-titre, .c-titre').forEach(function(el){
+      pentes.push(gsap.quickTo(el, 'skewY', { duration: .5, ease: 'power3' }));
+    });
+    lenis.on('scroll', function(e){
+      var v = gsap.utils.clamp(-3, 3, e.velocity * .06);
+      pentes.forEach(function(fn){ fn(v); });
+    });
+  }
+
+  /* Les éléments discrets déjà révélés par l'intro ne doivent pas rester cachés ailleurs */
+  gsap.utils.toArray('.manifeste .rv-op').forEach(function(el){
+    gsap.to(el, {
+      opacity: 1, duration: .8, ease: 'power2.out',
+      scrollTrigger: { trigger: el, start: 'top 92%', once: true }
+    });
+  });
+})();
+</script>
+</body>
+</html>
