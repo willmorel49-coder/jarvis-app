@@ -443,7 +443,7 @@
           '<a class="mkt-link" onclick="V2.go(\'marketing\',\'propositions\')">' +
             '<span class="mkt-link-ic mkt-link-ic-cat">' + ICO('cat', 18) + '</span>' +
             '<span style="flex:1;min-width:0"><span class="mkt-link-t">Maquettes du nouveau site</span>' +
-            '<span class="mkt-link-s">Galerie des directions design à présenter à la direction.</span></span>' +
+            '<span class="mkt-link-s">8 directions artistiques complètes, à comparer et à choisir.</span></span>' +
             '<span class="v2-row-chev">' + ICO('chev', 17) + '</span>' +
           '</a>' +
           '<a class="mkt-link" onclick="V2.go(\'marketing\',\'fxbank\')">' +
@@ -504,7 +504,7 @@
   function renderPropositions(root) {
     root.innerHTML = V2.topbar({ back: true, backTo: 'marketing', backLabel: 'Marketing' }) +
       '<div style="width:100%;height:calc(100vh - 66px);min-height:520px;background:#FAFAF8">' +
-        '<iframe src="../../site-integral/propositions/index.html?v=20260708b" title="Propositions de direction artistique" loading="lazy" style="width:100%;height:100%;border:0;display:block"></iframe>' +
+        '<iframe src="../../site-integral/refonte-2026/index.html?v=20260803b" title="Propositions de direction artistique" loading="lazy" style="width:100%;height:100%;border:0;display:block"></iframe>' +
       '</div>';
   }
 
