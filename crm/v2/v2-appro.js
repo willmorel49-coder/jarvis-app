@@ -347,7 +347,7 @@
     if (_etabState) return;
     _etabState = 1;
     var s = document.createElement('script');
-    s.src = 'etab-prices-data.js?v=' + (window.__APPRO_V || '20260803d'); s.async = false;
+    s.src = 'etab-prices-data.js?v=' + (window.__APPRO_V || '20260803e'); s.async = false;
     s.onload = function () { _etabState = 2; approRerender(); };
     s.onerror = function () { _etabState = 2; };
     document.head.appendChild(s);
@@ -945,7 +945,7 @@
     if (x.o && x.o.unk) chips += ' <span class="ap-tag" title="cette référence n\'a jamais été inventoriée : la quantité proposée est une estimation" style="color:#6B7280;background:var(--card-2,#F6F8FB);border:1px dashed var(--line)">stock inconnu</span>';
     var dejaCmd = commandeDe(x.c, new Date().toISOString().slice(0, 10));
     if (dejaCmd) chips += ' <span class="ap-tag" title="déjà exporté dans une commande — vérifie avant de recommander" style="color:#0E7C86;background:#E5F4F5;border:1px solid #B8E0E3">déjà commandé ' + fdate(dejaCmd) + '</span>';
-    if (x.mitm) { var crit = x.rupt || (x.o && x.o.cov < 7); chips += crit ? ' <span class="ap-tag" style="color:#B02A37;background:#FDE7EA;border:1px solid #F3B0BC">critique</span>' : ' <span class="ap-tag" style="color:#6B7280;background:var(--card-2,#F6F8FB);border:1px solid var(--line)">surveillé ANSM</span>'; }   // audit P3 : « critique » réservé au croisement avec l'état de stock
+    if (x.mitm) { chips += estCritique(x) ? ' <span class="ap-tag" style="color:#B02A37;background:#FDE7EA;border:1px solid #F3B0BC">critique</span>' : ' <span class="ap-tag" style="color:#6B7280;background:var(--card-2,#F6F8FB);border:1px solid var(--line)">surveillé ANSM</span>'; }   // audit P3 : « critique » réservé au croisement avec l'état de stock — même règle partout (estCritique)
     if (x.rupt) chips += ' <span class="ap-tag ru">ANSM</span>';
     if (x.season) chips += ' <span class="ap-tag" style="color:#6D5AE6;background:#EFEBFB;border:1px solid #D3C9F5">saison</span>';
     if (x.gen && x.cls !== 'arb') chips += ' <span class="ap-tag" style="color:#0E7C86;background:#E5F4F5;border:1px solid #B8E0E3">Gx</span>';
@@ -1065,12 +1065,26 @@
   var CLCOL = { buy: '#0B7A4B', sec: '#C0392B', pre: '#6D5AE6' };   // audit UX : aligné sur le carnet (ACHETER vert, SÉCURISER rouge, PRÉ violet — une couleur = une action partout)
   function calDate(days) { return new Date(Date.now() + days * 86400000); }
   function calDayLab(d) { return CLJ[d.getDay()] + ' ' + d.getDate(); }
+  // « critique » = médicament d'intérêt thérapeutique majeur ET réellement en danger
+  // (rupture déclarée ou moins de 7 jours de couverture). Sans ce croisement, 57 % des
+  // lignes à commander ressortaient « critiques » et le mot ne voulait plus rien dire.
+  // La liste appliquait déjà cette règle de son côté ; le titre du jour et les pastilles
+  // fournisseur, non — d'où « 562 critiques » en tête d'écran.
+  function estCritique(a) { return !!(a && a.mitm && (a.rupt || (a.o && a.o.cov < 7))); }
+  // Charge d'une journée, dans l'unité de tout l'écran : la COMMANDE (un fournisseur =
+  // une commande). La bande des 7 jours comptait des lignes — mardi affichait 51 juste
+  // au-dessus de « mar. 4 — 28 commandes », deux chiffres pour le même jour.
+  function chargeJour(acts) {
+    var a = acts || [];
+    return { commandes: supGroup(a).length, lignes: a.length,
+             critiques: a.filter(estCritique).length };
+  }
   function supGroup(items) {
     var m = {}, order = [];
     items.forEach(function (a) {
       var k = laboOf(a.c), g = m[k];
       if (!g) { g = m[k] = { labo: k, lines: [], eur: 0, mitm: 0, cls: a.cls, prio: 0 }; order.push(k); }
-      g.lines.push(a); g.eur += a.qty * (a.o.ppht || 0); if (a.mitm) g.mitm++;
+      g.lines.push(a); g.eur += a.qty * (a.o.ppht || 0); if (estCritique(a)) g.mitm++;
       if (a.prio > g.prio) { g.prio = a.prio; g.cls = a.cls; }
     });
     return order.map(function (k) { return m[k]; }).sort(function (a, b) { return b.eur - a.eur; });
@@ -1104,13 +1118,13 @@
     var band = '';
     if (_calSub === 'today' || _calSub === 'week') {
       band = '<div class="cl-band">';
-      for (var k = 0; k < 7; k++) { var d = calDate(k); var n = (byDay[k] || []).length + (k === 0 ? late.length : 0); band += '<div class="cl-bd' + (k === 0 ? ' today' : '') + '"><div class="dn">' + CLJ[d.getDay()].replace('.', '') + '</div><div class="cn">' + (n || '·') + '</div></div>'; }
+      for (var k = 0; k < 7; k++) { var d = calDate(k); var n = chargeJour((byDay[k] || []).concat(k === 0 ? late : [])).commandes; band += '<div class="cl-bd' + (k === 0 ? ' today' : '') + '"><div class="dn">' + CLJ[d.getDay()].replace('.', '') + '</div><div class="cn">' + (n || '·') + '</div></div>'; }
       band += '</div>';
     }
     var body = '';
     if (_calSub === 'today') {
       var t0 = late.concat(byDay[0] || []); var today = supGroup(t0);
-      var nM = t0.filter(function (a) { return a.mitm; }).length;
+      var nM = chargeJour(t0).critiques;
       body = '<div class="cl-today"><div class="cl-th">' + calDayLab(calDate(0)) + '</div>' +
         '<div class="cl-big">' + today.length + ' commande' + (today.length > 1 ? 's' : '') + ' à passer' + (nM ? ' · ' + nM + ' critique' + (nM > 1 ? 's' : '') : '') + '</div>' +
         (today.slice(0, 6).map(supCardHtml).join('') || '<div class="ap-empty">Rien à commander aujourd’hui ✓</div>') +
