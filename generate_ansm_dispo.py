@@ -187,9 +187,18 @@ def maj_histo(lst, today):
         st = it.get("st") or ""
         e = h.get(k)
         if not e:
-            e = {"f": today, "s": st, "d": maj_iso(it.get("maj")) or today,
-                 "a": 1 if maj_iso(it.get("maj")) else 0, "g": today}
+            # Le fichier officiel BDPM donne la VRAIE date de debut du signalement :
+            # quand on l'a, l'anciennete est exacte des le premier passage, plus besoin
+            # de l'amorcer sur la date de derniere mise a jour (approchee).
+            officiel = it.get("debutOfficiel")
+            depart = officiel or maj_iso(it.get("maj")) or today
+            e = {"f": today, "s": st, "d": depart,
+                 "a": 0 if officiel else (1 if maj_iso(it.get("maj")) else 0), "g": today}
             h[k] = e
+        elif e.get("a") == 1 and it.get("debutOfficiel"):
+            # une date approchee devient exacte des que le fichier officiel la fournit
+            e["d"] = it["debutOfficiel"]
+            e["a"] = 0
         elif e.get("s") != st:
             e["p"] = e.get("s")          # statut précédent
             e["s"] = st
@@ -219,8 +228,119 @@ def maj_histo(lst, today):
     return len(h), n_exact
 
 
+# ── Fichier OFFICIEL des signalements (BDPM) ─────────────────────────────────
+# https://base-donnees-publique.medicaments.gouv.fr/download/file/CIS_CIP_Dispo_Spec.txt
+# 8 colonnes, separateur tabulation, encodage CP1252 :
+#   0 CIS · 1 CIP13 · 2 code statut · 3 libelle · 4 DATE DE DEBUT ·
+#   5 date de derniere maj · 6 date de remise a disposition effective · 7 URL de fiche
+#
+# Pourquoi on s'en sert alors qu'on gratte deja la page HTML : la colonne 4 donne la
+# VRAIE date de debut du signalement (une rupture y remonte au 14/02/2024). Le journal
+# « depuis quand » etait jusqu'ici amorce sur la date de derniere mise a jour de la
+# fiche, donc affiche « ≈ depuis 8 mois ». Avec ce fichier, l'anciennete est exacte
+# des le premier passage — et c'est precisement ce que personne d'autre n'agrege.
+# Le CIS permet en prime une jointure EXACTE vers nos CIP13, la ou on rapprochait
+# les specialites par le premier mot de la molecule.
+DISPO_URL = "https://base-donnees-publique.medicaments.gouv.fr/download/file/CIS_CIP_Dispo_Spec.txt"
+CIP_URL = "https://base-donnees-publique.medicaments.gouv.fr/download/file/CIS_CIP_bdpm.txt"
+
+# ⚠️ le libelle existe aussi ecrit « REmise a disposition » (E majuscule, 4 lignes sur
+# 641) : on classe sur le CODE, pas sur le texte.
+STATUTS = {"1": "rupture", "2": "tension", "3": "arret", "4": "remise"}
+
+
+def _iso(fr):
+    """23/07/2026 -> 2026-07-23. Renvoie None si la case est vide ou mal formee."""
+    fr = (fr or "").strip()
+    m = re.match(r"^(\d{2})/(\d{2})/(\d{4})$", fr)
+    return "%s-%s-%s" % (m.group(3), m.group(2), m.group(1)) if m else None
+
+
+def parse_officiel(texte):
+    """CIS -> {statut, debut, maj, retourEffectif, cip, url}. Tolere le fichier vide."""
+    out = {}
+    for ligne in (texte or "").splitlines():
+        p = ligne.split("\t")
+        if len(p) < 8:
+            continue
+        cis = p[0].strip()
+        if not cis:
+            continue
+        cip = re.sub(r"\D", "", p[1])
+        out[cis] = {
+            "statut": STATUTS.get(p[2].strip(), ""),
+            "debut": _iso(p[4]),
+            "maj": _iso(p[5]),
+            "retourEffectif": _iso(p[6]),
+            # la colonne CIP13 n'est remplie que sur 5 % des lignes : c'est normal,
+            # la jointure passe par le CIS pour tout le reste.
+            "cip": cip if len(cip) == 13 else "",
+            "url": p[7].strip(),
+        }
+    return out
+
+
+def cis_vers_cip13(texte):
+    """CIS -> [CIP13]. Un CIS porte souvent plusieurs presentations."""
+    out = {}
+    for ligne in (texte or "").splitlines():
+        p = ligne.split("\t")
+        if len(p) < 7:
+            continue
+        cis = p[0].strip()
+        cip = re.sub(r"\D", "", p[6])
+        if cis and len(cip) == 13:
+            lst = out.setdefault(cis, [])
+            if cip not in lst:
+                lst.append(cip)
+    return out
+
+
+def charger_officiel():
+    """Telecharge les deux fichiers BDPM. En cas d'echec on continue sans : le
+    grattage HTML reste la source de reference, cet apport est un enrichissement."""
+    try:
+        dispo = parse_officiel(fetch(DISPO_URL))
+    except Exception as e:
+        print("! fichier officiel des signalements indisponible (%s) — on continue sans" % e)
+        return {}, {}
+    try:
+        cips = cis_vers_cip13(fetch(CIP_URL))
+    except Exception as e:
+        print("! table CIS→CIP13 indisponible (%s) — dates exactes seules" % e)
+        cips = {}
+    return dispo, cips
+
+
 def main():
     lst = parse_list(fetch(LIST_URL))
+
+    # Enrichissement par le fichier officiel : la cle de rapprochement est l'URL de
+    # fiche, que les deux sources portent — donc exacte, pas approximative.
+    officiel, cis_cip = charger_officiel()
+    par_url = {}
+    for cis, o in officiel.items():
+        chemin = re.sub(r"^https?://[^/]+", "", o.get("url") or "").rstrip("/")
+        if chemin:
+            par_url[chemin] = (cis, o)
+    n_debut = n_cip = 0
+    for it in lst:
+        cle = (it.get("slug") or "").rstrip("/")
+        paire = par_url.get(cle)
+        if not paire:
+            continue
+        cis, o = paire
+        it["cis"] = cis
+        if o.get("debut"):
+            it["debutOfficiel"] = o["debut"]
+            n_debut += 1
+        cips = [o["cip"]] if o.get("cip") else cis_cip.get(cis, [])
+        if cips:
+            it["cips"] = cips
+            n_cip += 1
+    print("Fichier officiel : %d/%d signalements rapproches · %d dates de debut exactes · %d avec CIP13"
+          % (len(par_url), len(lst), n_debut, n_cip))
+
     by_statut = {}
     for it in lst:
         k = it["st"][:20]
@@ -251,7 +371,9 @@ def main():
     # on n'exporte pas le slug entier (poids) — juste ce qui sert au couplage
     items = [{"st": it["st"], "spec": it["spec"], "dci": it["dci"], "dom": it["dom"],
               "maj": it["maj"], "retour": it.get("retour"), "subst": it.get("subst", 0),
-              "since": it.get("since"), "sinceA": it.get("sinceA", 1)} for it in lst]
+              "since": it.get("since"), "sinceA": it.get("sinceA", 1),
+              # apports du fichier officiel BDPM : jointure exacte au catalogue
+              "cips": it.get("cips") or None} for it in lst]
     out = {"generated": today, "source": "ANSM Disponibilités",
            "meta": {"n": len(lst), "byStatut": by_statut, "nDates": n_dates, "nSubst": n_subst,
                     "nHisto": n_histo, "nDepuisExact": n_exact},
