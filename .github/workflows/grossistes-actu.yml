@@ -36,10 +36,16 @@ jobs:
             git config user.email "actions@users.noreply.github.com"
             git add crm/v2/grossistes-actu.json
             git commit -m "data(concurrents): actualités grossistes $(date -u +%Y-%m-%d)"
-            # 24 robots poussent sur le meme depot. On ne se rattrape QUE si le push
-            # echoue (collision), et sur la branche courante — pas sur « main » en dur.
-            git push || {
-              echo 'push refuse : un autre robot est passe avant, rattrapage'
-              git pull --rebase --autostash origin "$GITHUB_REF_NAME" && git push
-            }
+            # 24 robots poussent sur le meme depot et GitHub livre leurs executions
+            # planifiees en paquet : une seule reprise ne suffit pas (le 03/08, ansm-dispo,
+            # has et nouveautes ont perdu leur journee). On retente, en se remettant a jour
+            # sur la branche courante, et on echoue BRUYAMMENT si tout est refuse.
+            pousse=0
+            for essai in 1 2 3 4 5; do
+              if git push; then pousse=1; break; fi
+              echo "push refuse (tentative $essai/5) — un autre robot est passe, rattrapage"
+              git pull --rebase --autostash origin "$GITHUB_REF_NAME" || exit 1
+              sleep $(( essai * 5 + RANDOM % 10 ))
+            done
+            [ "$pousse" = 1 ] || { echo "ECHEC : 5 tentatives de push refusees"; exit 1; }
           fi
