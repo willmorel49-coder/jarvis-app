@@ -232,7 +232,7 @@
     if (window.XLSX) return Promise.resolve();
     return new Promise(function (res, rej) {
       var s = document.createElement('script');
-      s.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.20.3/dist/xlsx.full.min.js';
+      s.src = 'https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js';
       s.onload = res; s.onerror = rej; document.head.appendChild(s);
     });
   }
