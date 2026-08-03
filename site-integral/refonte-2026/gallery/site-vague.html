@@ -1,7 +1,10 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Intégral Pharma — Vague Logistique</title>
-<meta name="description" content="Groupe de grossistes français indépendant. 9 agences, 1 réseau national. Plus de marge, nette sur facture.">
+<title>Intégral Pharma — Grossiste-répartiteur français indépendant</title>
+<meta name="description" content="Groupe de grossistes-répartiteurs français indépendant. Neuf implantations en France, 14 000+ références au catalogue, et un interlocuteur qui connaît votre officine.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -18,7 +21,7 @@
   --sea-2:#0D2038;      /* raised panel */
   --orange:#F39A1B;     /* Intégral orange */
   --orange-hi:#FFB43D;  /* lifted orange — glows & hover */
-  --blue:#0057FF;       /* IP blue */
+  --blue:#0050E6;       /* IP blue */
   --blue-hi:#3D82FF;    /* lifted blue */
   --water:#CFE8FF;      /* luminous waterline */
   --foam:#EAF1FB;       /* primary text */
@@ -64,7 +67,7 @@ p{margin:0}
 .waterline::before{
   content:"";position:absolute;top:-1px;left:0;height:3px;width:150px;
   background:linear-gradient(90deg,transparent,var(--blue-hi),var(--water) 55%,var(--orange-hi),transparent);
-  filter:blur(.3px);
+  
   box-shadow:0 0 16px 1px rgba(207,232,255,.6);
   animation:drift 9s linear infinite;
 }
@@ -85,8 +88,8 @@ header.nav{
 }
 header.nav.scrolled{
   background:rgba(6,14,28,.72);
-  -webkit-backdrop-filter:blur(14px) saturate(1.3);
-  backdrop-filter:blur(14px) saturate(1.3);
+  
+  
   border-bottom:1px solid var(--line);
   padding:11px 24px;
 }
@@ -176,6 +179,7 @@ nav.links a:hover::after{transform:scaleX(1);transform-origin:left}
   color:var(--faint);
 }
 .hero-foot .mono{color:var(--faint)}
+@media(max-width:480px){.hero-foot .mono{font-size:9.5px;letter-spacing:.12em}}
 .scrollcue{width:22px;height:34px;border:1px solid var(--line);border-radius:12px;position:relative;flex:0 0 auto}
 .scrollcue::after{content:"";position:absolute;left:50%;top:7px;width:3px;height:7px;border-radius:2px;background:var(--water);transform:translateX(-50%);animation:cue 1.8s var(--ease) infinite}
 @keyframes cue{0%{opacity:0;transform:translate(-50%,0)}30%{opacity:1}100%{opacity:0;transform:translate(-50%,12px)}}
@@ -190,19 +194,21 @@ section{position:relative;padding:clamp(84px,13vw,148px) 0}
 .h2{font-size:clamp(30px,5.4vw,58px);font-weight:600;letter-spacing:-.03em;line-height:1.03;max-width:18ch}
 .section-lede{margin-top:22px;color:var(--mute);max-width:56ch;font-size:clamp(16px,2vw,18.5px)}
 
-/* reveal */
-.reveal{opacity:0;transform:translateY(26px);transition:opacity .9s var(--ease),transform .9s var(--ease)}
-.reveal.in{opacity:1;transform:none}
+/* reveal — masqué UNIQUEMENT quand le JS est là (html.js), jamais en CSS seul */
+.reveal{transition:opacity .9s var(--ease),transform .9s var(--ease)}
+html.js .reveal{opacity:0;transform:translateY(26px)}
+html.js .reveal.in{opacity:1;transform:none}
 .reveal.d1{transition-delay:.08s}.reveal.d2{transition-delay:.16s}.reveal.d3{transition-delay:.24s}.reveal.d4{transition-delay:.32s}
 
 /* ============ 2 · LE RÉSEAU (video band) ============ */
 .reseau{background:var(--sea)}
 .band{
   position:relative;border-radius:20px;overflow:hidden;margin-top:44px;
-  aspect-ratio:16/8;min-height:280px;
+  aspect-ratio:3/2;  /* ⚠️ pas de min-height ici : avec aspect-ratio il se transfère en min-width et fait déborder le mobile */
   border:1px solid var(--line);
   background:var(--sea-deep);
 }
+@media(min-width:720px){.band{aspect-ratio:16/8;min-height:280px}}
 .band video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.72;transition:transform 1s var(--ease),opacity .6s}
 .band:hover video{transform:scale(1.06);opacity:.85}
 .band .grade{position:absolute;inset:0;background:
@@ -225,6 +231,19 @@ section{position:relative;padding:clamp(84px,13vw,148px) 0}
 .agencies .cell span{color:var(--mute);font-size:13px}
 @media(min-width:480px){.agencies{grid-template-columns:repeat(3,1fr)}}
 @media(min-width:720px){.agencies{grid-template-columns:repeat(6,1fr)}}
+/* the 9 implantations — same hairline grammar as .agencies */
+.sites{display:grid;grid-template-columns:1fr;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-top:26px}
+.sites .cell{background:var(--sea);padding:20px 18px;display:flex;flex-direction:column;gap:4px;position:relative;transition:background .4s}
+.sites .cell::before{content:"";position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--current);transform:scaleY(0);transform-origin:bottom;transition:transform .45s var(--ease)}
+.sites .cell:hover{background:var(--sea-2)}
+.sites .cell:hover::before{transform:scaleY(1);transform-origin:top}
+.sites .cell .head{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:18px}
+.sites .cell .head .mono{color:var(--faint);font-weight:700}
+.sites .cell .badge{font-family:"Space Mono",monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--orange-hi);border:1px solid rgba(243,154,27,.34);background:rgba(243,154,27,.08);border-radius:999px;padding:2px 9px}
+.sites .cell b{font-weight:600;font-size:15px;margin-top:4px}
+.sites .cell span.ville{color:var(--mute);font-size:13px}
+@media(min-width:560px){.sites{grid-template-columns:repeat(2,1fr)}}
+@media(min-width:820px){.sites{grid-template-columns:repeat(3,1fr)}}
 
 /* ============ 3 · PARCOURS (4 temps) ============ */
 .parcours{background:var(--sea-deep)}
@@ -268,6 +287,11 @@ section{position:relative;padding:clamp(84px,13vw,148px) 0}
 }
 .drag-hint{display:none;align-items:center;gap:10px;margin-top:26px;color:var(--faint)}
 .drag-hint .ln{width:44px;height:1px;background:linear-gradient(90deg,var(--orange),transparent)}
+
+/* ============ 3b · LE MÉTIER (4 cartes, même grammaire que .vcard) ============ */
+.metier{background:var(--sea)}
+.pgrid{display:grid;grid-template-columns:1fr;gap:16px;margin-top:52px}
+@media(min-width:720px){.pgrid{grid-template-columns:repeat(2,1fr)}}
 
 /* ============ 4 · POURQUOI (stats + count-up) ============ */
 .pourquoi{background:var(--sea)}
@@ -371,7 +395,7 @@ a:focus-visible,button:focus-visible{outline:2px solid var(--orange-hi);outline-
 .lline{display:block;padding-bottom:.14em;margin-bottom:-.14em}
 
 /* --- drifting glow orbs (ambient blue/orange) --- */
-.orb{position:absolute;border-radius:50%;filter:blur(64px);pointer-events:none;z-index:0;will-change:transform}
+.orb{position:absolute;border-radius:50%;-webkit-mask-image:radial-gradient(closest-side,#000 22%,transparent 78%);mask-image:radial-gradient(closest-side,#000 22%,transparent 78%);pointer-events:none;z-index:0;will-change:transform}
 .orb-b{background:radial-gradient(circle,rgba(0,87,255,.72),transparent 68%)}
 .orb-o{background:radial-gradient(circle,rgba(243,154,27,.58),transparent 68%)}
 
@@ -455,11 +479,13 @@ body.fancy,body.fancy a,body.fancy button,body.fancy .btn{cursor:none}
 </style>
 
 <!-- ============ FX OVERLAYS ============ -->
+</head>
+<body>
 <div class="intro" id="intro" aria-hidden="true">
   <div class="intro__inner">
     <span class="intro__mark"></span>
     <div class="intro__word"><span>Intégral</span><span>Pharma</span></div>
-    <div class="intro__line">Vague logistique · 9 agences</div>
+    <div class="intro__line">Vague logistique · neuf implantations</div>
   </div>
   <div class="intro__bar"><i></i></div>
 </div>
@@ -476,6 +502,7 @@ body.fancy,body.fancy a,body.fancy button,body.fancy .btn{cursor:none}
   </a>
   <nav class="links" aria-label="Navigation principale">
     <a href="#reseau">Le réseau</a>
+    <a href="#metier">Le métier</a>
     <a href="#parcours">Vos achats</a>
     <a href="#pourquoi">Pourquoi nous</a>
     <a href="#valeurs">Nos valeurs</a>
@@ -494,15 +521,15 @@ body.fancy,body.fancy a,body.fancy button,body.fancy .btn{cursor:none}
       <span class="dot" aria-hidden="true"></span>
       <span>Un partenaire, pas un fournisseur</span>
     </div>
-    <h1>Plus de marge,<br><span class="em">nette sur facture.</span></h1>
-    <p class="lede">Groupe de grossistes français indépendant. Nous rendons aux pharmaciens la main sur leurs achats — sans franco imposé, sans engagement.</p>
+    <h1>Livrer la pharmacie<br><span class="em">française, autrement.</span></h1>
+    <p class="lede">Groupe de grossistes-répartiteurs français indépendant. Nous approvisionnons les officines françaises tous les jours — commandes préparées et livrées depuis neuf implantations.</p>
     <div class="actions">
       <a class="btn btn-primary" href="#rejoindre" data-cursor="Rejoindre">Rejoindre le réseau <span class="arrow" aria-hidden="true">→</span></a>
       <a class="btn btn-ghost" href="#reseau" data-cursor="Explorer">Voir le réseau</a>
     </div>
     <div class="hero-foot">
       <span class="scrollcue" aria-hidden="true"></span>
-      <span class="mono">9 agences · 1 réseau national</span>
+      <span class="mono">neuf implantations · un réseau national</span>
     </div>
   </div>
 </section>
@@ -513,14 +540,14 @@ body.fancy,body.fancy a,body.fancy button,body.fancy .btn{cursor:none}
   <span class="orb orb-b" style="width:38vw;height:38vw;max-width:460px;max-height:460px;right:-8vw;top:6%;opacity:.5" aria-hidden="true"></span>
   <div class="wrap">
     <div class="eyebrow reveal"><span class="idx">01</span><span class="txt">Le réseau</span><span class="rule"></span></div>
-    <h2 class="h2 reveal d1" id="reseau-h">9 agences.<br>1 réseau national.</h2>
+    <h2 class="h2 reveal d1" id="reseau-h">Neuf implantations.<br>Un réseau national.</h2>
     <p class="section-lede reveal d2">Un maillage logistique français qui approvisionne l'officine au plus près — la proximité d'un partenaire local, la force d'un réseau national.</p>
 
     <div class="band reveal d2">
       <video src="../../assets/band.mp4" autoplay muted loop playsinline poster="" preload="metadata" aria-hidden="true"></video>
       <div class="grade" aria-hidden="true"></div>
       <div class="caption">
-        <div class="big"><b>9</b> agences, une même exigence.</div>
+        <div class="big"><b>9</b> implantations, une même exigence.</div>
         <p>Des flux pensés pour l'officine : disponibilité, régularité, réactivité.</p>
       </div>
     </div>
@@ -532,6 +559,18 @@ body.fancy,body.fancy a,body.fancy button,body.fancy .btn{cursor:none}
       <div class="cell" role="listitem"><span class="mono">A4</span><b>Couverture</b><span>Ancrage national</span></div>
       <div class="cell" role="listitem"><span class="mono">A5</span><b>Disponibilité</b><span>Stock présent</span></div>
       <div class="cell" role="listitem"><span class="mono">A6</span><b>Indépendance</b><span>Capital français</span></div>
+    </div>
+
+    <div class="sites reveal" role="list" aria-label="Les neuf implantations">
+      <div class="cell" role="listitem"><div class="head"><span class="mono">01</span><span class="badge">Siège</span></div><b>Hyères Pharma</b><span class="ville">Hyères (83)</span></div>
+      <div class="cell" role="listitem"><div class="head"><span class="mono">02</span></div><b>Ouest Pharma Services</b><span class="ville">St-Étienne-de-Montluc (44)</span></div>
+      <div class="cell" role="listitem"><div class="head"><span class="mono">03</span></div><b>Comptoir Pharmaceutique du Rhône</b><span class="ville">Saint-Maurice-l'Exil (38)</span></div>
+      <div class="cell" role="listitem"><div class="head"><span class="mono">04</span></div><b>Sud Ouest Pharma</b><span class="ville">Montayral (47)</span></div>
+      <div class="cell" role="listitem"><div class="head"><span class="mono">05</span></div><b>Pharm'Occitanie Services</b><span class="ville">Villeneuve-lès-Béziers (34)</span></div>
+      <div class="cell" role="listitem"><div class="head"><span class="mono">06</span></div><b>Sud Est Pharma</b><span class="ville">Le Cannet-des-Maures (83)</span></div>
+      <div class="cell" role="listitem"><div class="head"><span class="mono">07</span></div><b>Mistral Santé Pharma</b><span class="ville">Flassans-sur-Issole (83)</span></div>
+      <div class="cell" role="listitem"><div class="head"><span class="mono">08</span></div><b>Escale Pharma</b><span class="ville">Chilly-Mazarin (91)</span></div>
+      <div class="cell" role="listitem"><div class="head"><span class="mono">09</span><span class="badge">Partenaire</span></div><b>Pharmest</b><span class="ville">Metz (57)</span></div>
     </div>
   </div>
 </section>
@@ -550,16 +589,16 @@ body.fancy,body.fancy a,body.fancy button,body.fancy .btn{cursor:none}
         <div class="num">T1<span class="tick" aria-hidden="true"></span></div>
         <div>
           <h3>On vous écoute, sans grille imposée</h3>
-          <p>Un échange direct avec votre agence. Pas de contrat qui vous enferme, pas de conditions à subir — on part de votre officine, telle qu'elle est.</p>
-          <span class="tag label">Sans engagement</span>
+          <p>Un échange direct avec votre agence, qui part de votre officine telle qu'elle est — vos volumes, votre saisonnalité, votre quartier.</p>
+          <span class="tag label">Proximité</span>
         </div>
       </div>
       <div class="step reveal" data-step>
         <div class="num">T2<span class="tick" aria-hidden="true"></span></div>
         <div>
-          <h3>Vous gardez la liberté de vos volumes</h3>
-          <p>Ni franco imposé, ni quantité minimale dictée. Vous commandez au rythme de votre officine, et la marge reste nette sur facture.</p>
-          <span class="tag label">Ni franco · ni engagement</span>
+          <h3>Vous commandez au rythme de votre comptoir</h3>
+          <p>Une commande préparée près de chez vous, par une équipe qui connaît votre officine et ses saisons.</p>
+          <span class="tag label">Proximité · Réactivité</span>
         </div>
       </div>
       <div class="step reveal" data-step>
@@ -582,25 +621,60 @@ body.fancy,body.fancy a,body.fancy button,body.fancy .btn{cursor:none}
   </div>
 </section>
 
-<!-- ============ 4 · POURQUOI ============ -->
+<!-- ============ 4 · LE MÉTIER ============ -->
+<div class="waterline" aria-hidden="true"></div>
+<section class="metier" id="metier" aria-labelledby="metier-h">
+  <div class="wrap">
+    <div class="eyebrow reveal"><span class="idx">03</span><span class="txt">Le métier</span><span class="rule"></span></div>
+    <h2 class="h2 reveal d1" id="metier-h">Approvisionner l'officine,<br>tous les jours.</h2>
+    <p class="section-lede reveal d2">Grossiste-répartiteur, c'est un métier de chaque matin : référencer, stocker, préparer, livrer. Voilà ce que le réseau fait pour votre comptoir.</p>
+
+    <div class="pgrid">
+      <div class="vcard reveal d1">
+        <div class="vn">M.01</div>
+        <h3>Le catalogue</h3>
+        <p>Plus de 14 000 références Offilog, du médicament à la parapharmacie. De quoi couvrir le quotidien du comptoir, produit par produit.</p>
+      </div>
+      <div class="vcard reveal d2">
+        <div class="vn">M.02</div>
+        <h3>La disponibilité</h3>
+        <p>Des stocks répartis sur neuf implantations, au plus près de votre officine. Quand le comptoir a besoin, le réseau répond présent.</p>
+      </div>
+      <div class="vcard reveal d3">
+        <div class="vn">M.03</div>
+        <h3>La préparation de commande</h3>
+        <p>Chaque commande est préparée dans l'implantation la plus proche de chez vous, par une équipe qui connaît votre officine et ses saisons.</p>
+      </div>
+      <div class="vcard reveal d4">
+        <div class="vn">M.04</div>
+        <h3>La livraison quotidienne</h3>
+        <p>Tous les jours, les tournées partent vers les officines françaises. La régularité d'un service tenu — c'est elle qui fait la confiance.</p>
+      </div>
+    </div>
+
+    <p class="section-lede reveal" style="margin-top:34px;max-width:64ch">Et quand la vie de votre officine change — transfert, agrandissement, cession de parts, optimisation — votre interlocuteur ajuste l'approvisionnement avec vous, sans à-coup au comptoir.</p>
+  </div>
+</section>
+
+<!-- ============ 5 · POURQUOI ============ -->
 <div class="waterline" aria-hidden="true"></div>
 <section class="pourquoi" id="pourquoi" aria-labelledby="pourquoi-h">
   <span class="orb orb-o" style="width:40vw;height:40vw;max-width:480px;max-height:480px;left:-8vw;bottom:2%;opacity:.35" aria-hidden="true"></span>
   <div class="wrap">
-    <div class="eyebrow reveal"><span class="idx">03</span><span class="txt">Pourquoi Intégral</span><span class="rule"></span></div>
+    <div class="eyebrow reveal"><span class="idx">04</span><span class="txt">Pourquoi Intégral</span><span class="rule"></span></div>
     <h2 class="h2 reveal d1" id="pourquoi-h">L'indépendance,<br>mise en pratique.</h2>
     <p class="section-lede reveal d2">Trois principes qui ne se négocient pas — et qui changent le quotidien de l'officine.</p>
 
     <div class="stat-grid reveal d2">
       <div class="stat" data-stat>
         <div class="num" data-count="9" data-suffix="">0</div>
-        <div class="cap">Agences indépendantes</div>
-        <div class="sub">Un groupe de grossistes français, à capital indépendant.</div>
+        <div class="cap">Implantations en France</div>
+        <div class="sub">Huit sites Intégral et un partenaire — un maillage au plus près de l'officine.</div>
       </div>
       <div class="stat" data-stat>
-        <div class="num"><span class="u">×</span>0</div>
-        <div class="cap">Ni franco imposé, ni engagement</div>
-        <div class="sub">Vous commandez librement. Aucune contrainte de volume ni de durée.</div>
+        <div class="num" data-count="100" data-suffix=" %">0</div>
+        <div class="cap">Français et indépendant</div>
+        <div class="sub">Un capital français, des décisions prises près du terrain — une équipe qui répond, une agence qui livre.</div>
       </div>
       <div class="stat" data-stat>
         <div class="num" data-count="14000" data-suffix="" data-plus="1">0</div>
@@ -614,14 +688,14 @@ body.fancy,body.fancy a,body.fancy button,body.fancy .btn{cursor:none}
 <!-- ============ MARQUEE ============ -->
 <div class="marquee" aria-hidden="true">
   <div class="track">
-    <div class="item"><span>Plus de marge</span><span class="sep"></span><span class="dim">Nette sur facture</span><span class="sep"></span></div>
+    <div class="item"><span>Au service de l'officine</span><span class="sep"></span><span class="dim">Neuf implantations</span><span class="sep"></span></div>
     <div class="item"><span>Un partenaire</span><span class="sep"></span><span class="dim">Pas un fournisseur</span><span class="sep"></span></div>
-    <div class="item"><span>9 agences</span><span class="sep"></span><span class="dim">1 réseau national</span><span class="sep"></span></div>
+    <div class="item"><span>La livraison quotidienne</span><span class="sep"></span><span class="dim">Au plus près de l'officine</span><span class="sep"></span></div>
     <div class="item"><span>Indépendance</span><span class="sep"></span><span class="dim">Capital français</span><span class="sep"></span></div>
     <!-- duplicate for seamless loop -->
-    <div class="item"><span>Plus de marge</span><span class="sep"></span><span class="dim">Nette sur facture</span><span class="sep"></span></div>
+    <div class="item"><span>Au service de l'officine</span><span class="sep"></span><span class="dim">Neuf implantations</span><span class="sep"></span></div>
     <div class="item"><span>Un partenaire</span><span class="sep"></span><span class="dim">Pas un fournisseur</span><span class="sep"></span></div>
-    <div class="item"><span>9 agences</span><span class="sep"></span><span class="dim">1 réseau national</span><span class="sep"></span></div>
+    <div class="item"><span>La livraison quotidienne</span><span class="sep"></span><span class="dim">Au plus près de l'officine</span><span class="sep"></span></div>
     <div class="item"><span>Indépendance</span><span class="sep"></span><span class="dim">Capital français</span><span class="sep"></span></div>
   </div>
 </div>
@@ -629,7 +703,7 @@ body.fancy,body.fancy a,body.fancy button,body.fancy .btn{cursor:none}
 <!-- ============ 5 · VALEURS ============ -->
 <section class="valeurs" id="valeurs" aria-labelledby="valeurs-h">
   <div class="wrap">
-    <div class="eyebrow reveal"><span class="idx">04</span><span class="txt">Nos valeurs</span><span class="rule"></span></div>
+    <div class="eyebrow reveal"><span class="idx">05</span><span class="txt">Nos valeurs</span><span class="rule"></span></div>
     <h2 class="h2 reveal d1" id="valeurs-h">Ce qui tient le cap.</h2>
     <p class="section-lede reveal d2">Trois valeurs qui guident chaque relation — avec le pharmacien comme avec le patient.</p>
 
@@ -642,12 +716,12 @@ body.fancy,body.fancy a,body.fancy button,body.fancy .btn{cursor:none}
       <div class="vcard reveal d2">
         <div class="vn">V.02</div>
         <h3>Engagement</h3>
-        <p>Au service de l'officine, chaque jour. On répond présent quand ça compte, et on avance à vos côtés.</p>
+        <p>Présents dans la durée, à vos côtés quand il le faut. Un partenaire ne disparaît pas après la vente.</p>
       </div>
       <div class="vcard reveal d3">
         <div class="vn">V.03</div>
         <h3>Respect</h3>
-        <p>Du pharmacien et du patient. Une manière de travailler pro, jamais imposée, toujours à hauteur d'humain.</p>
+        <p>Du pharmacien comme du patient. On défend l'officine indépendante, parce qu'elle soigne un territoire.</p>
       </div>
     </div>
   </div>
@@ -660,16 +734,16 @@ body.fancy,body.fancy a,body.fancy button,body.fancy .btn{cursor:none}
   <div class="wrap">
     <div class="cta-card reveal">
       <div class="cta-water" aria-hidden="true"></div>
-      <div class="eyebrow"><span class="idx">05</span><span class="txt">Nous rejoindre</span></div>
+      <div class="eyebrow"><span class="idx">06</span><span class="txt">Nous rejoindre</span></div>
       <h2 id="rejoindre-h">Prêt à reprendre la main ?</h2>
-      <p class="h2-sub">Parlons de votre officine. Votre agence Intégral vous répond — sans grille imposée, sans engagement.</p>
+      <p class="h2-sub">Parlons de votre officine. Votre agence Intégral vous répond — simplement, directement.</p>
       <div class="actions">
         <a class="btn btn-primary" href="#reseau" data-cursor="Le réseau">Découvrir le réseau <span class="arrow" aria-hidden="true">→</span></a>
         <a class="btn btn-ghost" href="mailto:contact@integralpharma.fr" data-cursor="Écrire">Nous contacter</a>
       </div>
       <div class="contact-row">
         <div class="c"><span class="label">Écrire</span><b><a href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a></b></div>
-        <div class="c"><span class="label">Le réseau</span><b>9 agences en France</b></div>
+        <div class="c"><span class="label">Le réseau</span><b>neuf implantations en France</b></div>
         <div class="c"><span class="label">Statut</span><b>Grossiste français indépendant</b></div>
       </div>
     </div>
@@ -686,17 +760,18 @@ body.fancy,body.fancy a,body.fancy button,body.fancy .btn{cursor:none}
           <span class="mark" aria-hidden="true"></span>
           <span>Intégral Pharma<small>Grossiste-répartiteur</small></span>
         </a>
-        <p>Groupe de grossistes français indépendant. Un partenaire de l'officine — plus de marge, nette sur facture.</p>
+        <p>Groupe de grossistes-répartiteurs français indépendant. Un partenaire de l'officine — présent, et qui tient parole.</p>
       </div>
       <nav class="foot-nav" aria-label="Liens de pied de page">
         <div class="col">
           <span class="label">Le réseau</span>
-          <a href="#reseau">9 agences</a>
+          <a href="#reseau">Neuf implantations</a>
           <a href="#reseau">Couverture nationale</a>
           <a href="#pourquoi">Indépendance</a>
         </div>
         <div class="col">
           <span class="label">L'officine</span>
+          <a href="#metier">Le métier</a>
           <a href="#parcours">Vos achats</a>
           <a href="#pourquoi">Offilog</a>
           <a href="#valeurs">Nos valeurs</a>
@@ -710,8 +785,12 @@ body.fancy,body.fancy a,body.fancy button,body.fancy .btn{cursor:none}
     </div>
     <div class="foot-bottom">
       <span class="mono">© 2026 Intégral Pharma</span>
-      <span class="mono">Groupe de grossistes français indépendant</span>
+      <span class="mono">Groupe de grossistes-répartiteurs français indépendant</span>
     </div>
+  </div>
+
+  <div class="coord-uniforme" style="text-align:center;padding:18px 26px 26px;font-size:12.5px;line-height:1.7;color:rgba(248,250,252,.62)">
+    758 Chemin de la Source, 83400 Hyères · <a href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a> · © 2026 Intégral Pharma
   </div>
 </footer>
 
@@ -734,8 +813,14 @@ body.fancy,body.fancy a,body.fancy button,body.fancy .btn{cursor:none}
   document.documentElement.classList.add('js');
 
   /* -------- intro cleanup (curtain lift is pure CSS; JS just removes node) -------- */
+  /* if we arrive already scrolled (reload mid-page, back button), skip the curtain */
+  var startScrolled = (window.scrollY || window.pageYOffset || 0) > 40;
   var intro = document.getElementById('intro');
+  if(intro && startScrolled){ intro.parentNode.removeChild(intro); intro = null; }
   if(intro){ setTimeout(function(){ if(intro && intro.parentNode) intro.parentNode.removeChild(intro); }, reduce ? 0 : 3100); }
+
+  /* -------- arrival state: anything already scrolled past must be visible -------- */
+  function aboveViewport(el){ var r = el.getBoundingClientRect(); return r.bottom < 0; }
 
   /* ============ Lenis smooth-scroll wired to ScrollTrigger ============ */
   var lenis = null;
@@ -763,24 +848,24 @@ body.fancy,body.fancy a,body.fancy button,body.fancy .btn{cursor:none}
   var revs = document.querySelectorAll('.reveal:not(.in)');
   if('IntersectionObserver' in window){
     var ro = new IntersectionObserver(function(es){ es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('in'); ro.unobserve(e.target); } }); }, {threshold:.14, rootMargin:'0px 0px -8% 0px'});
-    revs.forEach(function(el){ ro.observe(el); });
+    revs.forEach(function(el){ if(aboveViewport(el)){ el.classList.add('in'); } else ro.observe(el); });
   } else revs.forEach(function(el){ el.classList.add('in'); });
 
   /* ============ step ticks ============ */
   var steps = document.querySelectorAll('[data-step]');
   if('IntersectionObserver' in window){
     var so = new IntersectionObserver(function(es){ es.forEach(function(e){ if(e.isIntersecting) e.target.classList.add('in'); }); }, {threshold:.4});
-    steps.forEach(function(el){ so.observe(el); });
+    steps.forEach(function(el){ if(aboveViewport(el)){ el.classList.add('in'); } else so.observe(el); });
   } else steps.forEach(function(el){ el.classList.add('in'); });
 
   /* ============ animated counters ============ */
   function fmt(n){ return n.toLocaleString('fr-FR'); }
-  function countUp(el){
+  function countUp(el, instant){
     var target = parseInt(el.getAttribute('data-count'), 10);
     var suffix = el.getAttribute('data-suffix') || '';
     var plus = el.getAttribute('data-plus') ? '+' : '';
     function render(v){ el.textContent = fmt(v) + plus + suffix; }
-    if(reduce){ render(target); return; }
+    if(reduce || instant){ render(target); return; }
     var dur = 1500, t0 = null;
     function tick(ts){ if(!t0) t0 = ts; var p = Math.min((ts-t0)/dur, 1); var e = 1 - Math.pow(1-p, 3); render(Math.round(target*e)); if(p < 1) requestAnimationFrame(tick); }
     requestAnimationFrame(tick);
@@ -788,8 +873,8 @@ body.fancy,body.fancy a,body.fancy button,body.fancy .btn{cursor:none}
   var counters = document.querySelectorAll('[data-count]');
   if('IntersectionObserver' in window){
     var co = new IntersectionObserver(function(es){ es.forEach(function(e){ if(e.isIntersecting){ countUp(e.target); co.unobserve(e.target); } }); }, {threshold:.6});
-    counters.forEach(function(el){ co.observe(el); });
-  } else counters.forEach(countUp);
+    counters.forEach(function(el){ if(aboveViewport(el)){ countUp(el, true); } else co.observe(el); });
+  } else counters.forEach(function(el){ countUp(el, true); });
 
   /* ============ split-line masked heading reveals ============ */
   function maskLines(el){
@@ -800,6 +885,7 @@ body.fancy,body.fancy a,body.fancy button,body.fancy .btn{cursor:none}
   if(hasG && !reduce){
     var heads = [].slice.call(document.querySelectorAll('.h2, .cta-card h2'));
     heads.forEach(function(el){
+      if(aboveViewport(el)) return;               /* déjà passé : ne pas re-masquer */
       var lines = maskLines(el);
       G.set(lines, {yPercent:110});
       G.to(lines, {yPercent:0, duration:.9, ease:'power4.out', stagger:.09, scrollTrigger:{trigger:el, start:'top 86%'}});
@@ -999,3 +1085,5 @@ body.fancy,body.fancy a,body.fancy button,body.fancy .btn{cursor:none}
   }
 })();
 </script>
+</body>
+</html>

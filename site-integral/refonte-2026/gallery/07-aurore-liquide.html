@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Intégral Pharma — Grossiste-répartiteur français indépendant</title>
+<meta name="description" content="Groupe de grossistes-répartiteurs français indépendant. Neuf implantations en France, 14 000+ références au catalogue, et un interlocuteur qui connaît votre officine.">
+<link rel="icon" href="../../assets/logo-web.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..600;1,9..144,300..500&family=DM+Sans:opsz,wght@9..40,300..600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../vendor/splitting.css">
+
+<script>
+/* Le masquage des blocs à révéler n'existe QUE si le JS tourne (règle anti page blanche).
+   Sous prefers-reduced-motion, on ne masque rien et on n'anime rien. */
+if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  document.documentElement.classList.add('js');
+}
+</script>
+
+<style>
+  :root{
+    --bleu:#0050E6; --orange:#F39A1B;
+    --encre:#0A0E1A; --encre-2:#0D1322; --clair:#F8FAFC;
+    --brume:#9AA4BC; --sable:#F3D9AE;
+    --serif:"Fraunces",Georgia,serif;
+    --sans:"DM Sans",system-ui,sans-serif;
+    --mono:"DM Mono",ui-monospace,monospace;
+    --pad:clamp(20px,5vw,88px);
+    --maxw:1180px;
+  }
+  *{ box-sizing:border-box; margin:0; }
+  html{ -webkit-text-size-adjust:100%; }
+  body{
+    background:var(--encre); color:var(--clair);
+    font-family:var(--sans); line-height:1.6;
+    overflow-x:hidden; -webkit-font-smoothing:antialiased;
+  }
+  a{ color:inherit; text-decoration:none; }
+  img{ max-width:100%; display:block; }
+  ::selection{ background:rgba(0,80,230,.4); color:#fff; }
+
+  /* ---------- FOND : shader aurore liquide (fixe, plein écran) ---------- */
+  .aurore{ position:fixed; inset:0; z-index:0; }
+  .aurore canvas{ display:block; width:100%; height:100%; }
+  /* Repli sans WebGL / reduced-motion : mêmes teintes, en dégradés statiques (aucun flou) */
+  .aurore-repli{
+    position:absolute; inset:0; display:none;
+    background:
+      radial-gradient(40% 30% at 30% 34%, rgba(0,80,230,.2), transparent 70%),
+      radial-gradient(90% 75% at 22% 18%, rgba(0,80,230,.42), transparent 62%),
+      radial-gradient(70% 60% at 78% 46%, rgba(9,42,120,.6), transparent 64%),
+      radial-gradient(34% 26% at 70% 30%, rgba(2,18,58,.55), transparent 70%),
+      radial-gradient(55% 45% at 62% 84%, rgba(243,154,27,.12), transparent 60%),
+      linear-gradient(180deg, #0B1122, var(--encre) 70%);
+  }
+  .aurore.repli canvas{ display:none; }
+  .aurore.repli .aurore-repli{ display:block; }
+
+  /* Voile de lisibilité — radial + linear uniquement, jamais de flou (règle Safari) */
+  .voile{
+    position:fixed; inset:0; z-index:1; pointer-events:none;
+    background:
+      radial-gradient(130% 70% at 50% -12%, rgba(10,14,26,.6), transparent 46%),
+      radial-gradient(120% 55% at 50% 115%, rgba(10,14,26,.82), transparent 58%);
+  }
+  /* Grain discret en SVG data-uri (texture matière, pas de filtre CSS) */
+  .grain{
+    position:fixed; inset:0; z-index:1; pointer-events:none; opacity:.045; mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  .page{ position:relative; z-index:2; }
+  .wrap{ width:100%; max-width:var(--maxw); margin-inline:auto; padding-inline:var(--pad); }
+
+  /* Masquage AVANT révélation : uniquement si .js sur <html> (anti page blanche).
+     Légère échelle : les blocs ÉMERGENT de la profondeur, ils ne glissent pas. */
+  .js .rv{ opacity:0; transform:translateY(34px) scale(.97); }
+
+  /* ---------- NAV ---------- */
+  .nav{
+    position:fixed; top:0; left:0; right:0; z-index:5;
+    display:flex; align-items:center; justify-content:space-between; gap:16px;
+    padding:18px var(--pad);
+    background:linear-gradient(180deg, rgba(10,14,26,.85), rgba(10,14,26,0));
+  }
+  .brand img{ height:34px; width:auto; }
+  .nav-tag{
+    font-family:var(--mono); font-size:11px; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--brume); padding:8px 14px; border-radius:100px;
+    border:1px solid rgba(255,255,255,.14); background:rgba(10,14,26,.5);
+  }
+  @media (max-width:640px){ .nav-tag{ display:none; } }
+
+  /* ---------- HERO ---------- */
+  .hero{
+    min-height:100svh; display:flex; flex-direction:column; justify-content:center;
+    padding-top:96px; padding-bottom:clamp(48px,10vh,110px);
+  }
+  .surtitre{
+    font-family:var(--mono); font-size:12.5px; letter-spacing:.22em; text-transform:uppercase;
+    color:var(--sable); display:flex; align-items:center; gap:14px;
+  }
+  .surtitre::before{
+    content:""; width:44px; height:1px;
+    background:linear-gradient(90deg, var(--orange), transparent);
+  }
+  h1{
+    font-family:var(--serif); font-weight:330; font-optical-sizing:auto;
+    font-size:clamp(42px,8.4vw,104px); line-height:1.02; letter-spacing:-.02em;
+    margin-top:26px; max-width:16ch; color:var(--clair);
+  }
+  h1 em{ font-style:italic; font-weight:340; color:#CFE0FF; }
+  .hero .sous{
+    margin-top:28px; max-width:52ch; color:var(--brume);
+    font-size:clamp(15px,1.7vw,18px); line-height:1.75;
+  }
+  .hero .sous strong{ color:var(--clair); font-weight:500; }
+  .cta-row{ display:flex; flex-wrap:wrap; gap:14px; margin-top:40px; }
+  .btn{
+    display:inline-flex; align-items:center; gap:10px;
+    font-family:var(--mono); font-size:13.5px; letter-spacing:.04em;
+    padding:15px 28px; border-radius:100px; border:1px solid transparent;
+    transition:transform .3s ease, border-color .3s ease, background .3s ease, box-shadow .3s ease;
+  }
+  .btn-plein{
+    color:#0A1430; background:linear-gradient(180deg,#EAF1FF,#C9D9FF);
+    box-shadow:0 14px 40px -16px rgba(0,80,230,.9);
+  }
+  .btn-plein:hover{ transform:translateY(-2px); box-shadow:0 20px 50px -16px rgba(0,80,230,1); }
+  .btn-ligne{ color:var(--clair); border-color:rgba(255,255,255,.22); background:rgba(10,14,26,.35); }
+  .btn-ligne:hover{ transform:translateY(-2px); border-color:rgba(255,255,255,.5); }
+  .hero-reperes{
+    margin-top:clamp(46px,8vh,84px); display:flex; flex-wrap:wrap; gap:clamp(22px,5vw,64px);
+    border-top:1px solid rgba(255,255,255,.12); padding-top:26px;
+  }
+  .repere .rn{ font-family:var(--serif); font-weight:360; font-size:clamp(24px,3vw,34px); letter-spacing:-.02em; }
+  .repere .rn i{ font-style:italic; color:var(--sable); }
+  .repere .rl{ font-family:var(--mono); font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--brume); margin-top:4px; }
+  .indice{
+    margin-top:clamp(30px,6vh,60px); font-family:var(--mono); font-size:11px;
+    letter-spacing:.2em; text-transform:uppercase; color:var(--brume);
+    display:flex; align-items:center; gap:12px;
+  }
+  .indice .trait{ width:1px; height:34px; background:linear-gradient(180deg, var(--brume), transparent); }
+
+  /* ---------- Sections communes ---------- */
+  section{ position:relative; }
+  .panneau{
+    position:absolute; inset:0; z-index:-1;
+    background:linear-gradient(180deg, rgba(10,14,26,0) 0%, rgba(10,14,26,.88) 12%, rgba(10,14,26,.94) 50%, rgba(10,14,26,.88) 88%, rgba(10,14,26,0) 100%);
+  }
+  .eyebrow{
+    font-family:var(--mono); font-size:12px; letter-spacing:.2em; text-transform:uppercase; color:var(--orange);
+  }
+  h2{
+    font-family:var(--serif); font-weight:330; font-size:clamp(30px,4.8vw,58px);
+    line-height:1.05; letter-spacing:-.02em; margin-top:14px; max-width:18ch;
+  }
+  h2 em{ font-style:italic; color:#CFE0FF; }
+
+  /* ---------- MÉTIER ---------- */
+  .metier{ padding-block:clamp(70px,12vh,130px); }
+  .metier .lede{
+    margin-top:26px; max-width:58ch; color:var(--brume);
+    font-size:clamp(15.5px,1.9vw,19px); line-height:1.8;
+  }
+  .metier .lede strong{ color:var(--clair); font-weight:500; }
+  .facettes{
+    margin-top:clamp(36px,6vh,60px); display:grid; grid-template-columns:repeat(3,1fr);
+    gap:clamp(22px,3.5vw,44px); border-top:1px solid rgba(255,255,255,.12); padding-top:34px;
+  }
+  @media (max-width:820px){ .facettes{ grid-template-columns:1fr; gap:28px; } }
+  .facette .fnum{ font-family:var(--mono); font-size:12px; letter-spacing:.16em; color:var(--sable); }
+  .facette h3{ font-family:var(--serif); font-weight:380; font-size:22px; letter-spacing:-.01em; margin-top:12px; }
+  .facette p{ color:var(--brume); font-size:14.5px; line-height:1.7; margin-top:10px; }
+
+  /* ---------- PILIERS (3 valeurs) & PROJETS (4 cartes, même grammaire) ---------- */
+  .piliers{ padding-block:clamp(70px,11vh,120px); }
+  .pgrid{
+    display:grid; grid-template-columns:repeat(3,1fr); gap:16px;
+    margin-top:clamp(36px,6vh,60px);
+  }
+  .pgrid.quatre{ grid-template-columns:repeat(4,1fr); }
+  @media (max-width:960px){ .pgrid, .pgrid.quatre{ grid-template-columns:repeat(2,1fr); } }
+  @media (max-width:560px){ .pgrid, .pgrid.quatre{ grid-template-columns:1fr; } }
+  .pilier{
+    position:relative; padding:28px 24px 32px; border-radius:18px;
+    border:1px solid rgba(255,255,255,.1);
+    background:
+      radial-gradient(130% 110% at 15% 0%, rgba(0,80,230,.1), transparent 55%),
+      linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.012));
+    transition:transform .35s ease, border-color .35s ease;
+  }
+  .pilier:hover{ transform:translateY(-5px); border-color:rgba(0,80,230,.5); }
+  .pilier .num{ font-family:var(--mono); font-size:12px; letter-spacing:.16em; color:var(--sable); }
+  .pilier h3{ font-family:var(--serif); font-weight:380; font-size:24px; letter-spacing:-.01em; margin-top:14px; }
+  .pilier p{ color:var(--brume); font-size:14.5px; line-height:1.7; margin-top:10px; }
+  .pilier::after{
+    content:""; position:absolute; left:24px; bottom:0; width:38px; height:2px;
+    background:linear-gradient(90deg, var(--orange), transparent);
+    transform-origin:left; transform:scaleX(.4); transition:transform .35s ease;
+  }
+  .pilier:hover::after{ transform:scaleX(1.6); }
+
+  /* ---------- MÉTHODE (comment ça se passe) ---------- */
+  .methode{ padding-block:clamp(70px,12vh,130px); }
+  .etapes{
+    margin-top:clamp(36px,6vh,60px); display:grid; grid-template-columns:repeat(2,1fr);
+    gap:clamp(26px,4vh,44px) clamp(26px,4vw,64px);
+  }
+  @media (max-width:720px){ .etapes{ grid-template-columns:1fr; } }
+  .etape{ border-top:1px solid rgba(255,255,255,.12); padding-top:20px; }
+  .etape .enum{ font-family:var(--mono); font-size:12px; letter-spacing:.16em; color:var(--sable); }
+  .etape h3{ font-family:var(--serif); font-weight:380; font-size:22px; letter-spacing:-.01em; margin-top:12px; }
+  .etape p{ color:var(--brume); font-size:14.5px; line-height:1.7; margin-top:10px; }
+  /* Relance de contact au milieu de page */
+  .relance{
+    margin-top:clamp(46px,8vh,84px);
+    display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:18px 28px;
+    padding:26px clamp(22px,3vw,34px); border-radius:18px;
+    border:1px solid rgba(255,255,255,.14);
+    background:
+      radial-gradient(120% 140% at 12% 0%, rgba(0,80,230,.16), transparent 58%),
+      linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.015));
+  }
+  .relance p{
+    font-family:var(--serif); font-weight:360; font-size:clamp(19px,2.4vw,25px);
+    letter-spacing:-.01em; max-width:24ch;
+  }
+  .relance p em{ font-style:italic; color:#CFE0FF; }
+
+  /* ---------- IMPLANTATIONS ---------- */
+  .implantations{ padding-block:clamp(80px,14vh,150px); }
+  .imp-tete{ display:flex; align-items:flex-end; justify-content:space-between; gap:28px; flex-wrap:wrap; }
+  .imp-tete p{ color:var(--brume); max-width:38ch; font-size:15px; }
+  .imp-corps{
+    display:grid; grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);
+    gap:clamp(24px,4vw,56px); margin-top:clamp(36px,6vh,64px); align-items:start;
+  }
+  @media (max-width:880px){ .imp-corps{ grid-template-columns:1fr; } }
+  .imp-liste{ border-top:1px solid rgba(255,255,255,.12); }
+  .imp{
+    display:grid; grid-template-columns:44px minmax(0,1fr) auto; gap:14px; align-items:baseline;
+    padding:17px 4px; border-bottom:1px solid rgba(255,255,255,.12);
+    transition:background .3s ease, padding-left .3s ease;
+  }
+  .imp:hover{ background:rgba(0,80,230,.08); padding-left:12px; }
+  .imp .no{ font-family:var(--mono); font-size:12px; color:var(--brume); }
+  .imp .nom{ font-family:var(--serif); font-weight:400; font-size:clamp(17px,2vw,21px); letter-spacing:-.01em; }
+  .imp .lieu{ font-family:var(--mono); font-size:12px; color:var(--brume); text-align:right; white-space:nowrap; }
+  .badge{
+    display:inline-block; vertical-align:middle; margin-left:10px;
+    font-family:var(--mono); font-size:9.5px; letter-spacing:.14em; text-transform:uppercase;
+    padding:3px 9px; border-radius:100px;
+  }
+  .badge-siege{ color:#FFDCA3; border:1px solid rgba(243,154,27,.55); background:rgba(243,154,27,.12); }
+  .badge-part{ color:#BBD0FF; border:1px solid rgba(0,80,230,.55); background:rgba(0,80,230,.14); }
+  @media (max-width:560px){
+    .imp{ grid-template-columns:32px minmax(0,1fr); }
+    .imp .lieu{ grid-column:2; text-align:left; white-space:normal; }
+  }
+  .imp-photo{ position:sticky; top:96px; }
+  @media (max-width:880px){ .imp-photo{ position:static; } }
+  .imp-photo .cadre{
+    border-radius:20px; overflow:hidden; border:1px solid rgba(255,255,255,.14);
+    box-shadow:0 30px 80px -30px rgba(0,0,0,.8);
+  }
+  .imp-photo img{ width:100%; height:auto; }
+  .imp-photo figcaption{
+    margin-top:14px; font-family:var(--mono); font-size:12px; letter-spacing:.1em;
+    text-transform:uppercase; color:var(--brume); display:flex; gap:10px; align-items:center;
+  }
+  .imp-photo figcaption::before{
+    content:""; width:8px; height:8px; border-radius:50%;
+    background:var(--orange); box-shadow:0 0 12px 2px rgba(243,154,27,.6); flex:none;
+  }
+
+  /* ---------- CONTACT ---------- */
+  .contact{ padding-block:clamp(90px,16vh,170px); text-align:center; }
+  .contact .panneau{
+    background:linear-gradient(180deg, rgba(10,14,26,0) 0%, rgba(10,14,26,.6) 20%, rgba(10,14,26,.6) 80%, rgba(10,14,26,0) 100%);
+  }
+  .contact .eyebrow{ justify-content:center; }
+  .contact h2{ margin-inline:auto; }
+  .contact .sous-c{
+    margin:26px auto 0; max-width:52ch; color:var(--brume);
+    font-size:clamp(15px,1.7vw,17.5px); line-height:1.8;
+  }
+  .contact .sous-c strong{ color:var(--clair); font-weight:500; }
+  .contact .cta-row{ justify-content:center; margin-top:42px; }
+  .contact .note{ margin-top:22px; font-size:14px; color:var(--brume); }
+  .contact .adresse{
+    margin-top:12px; font-family:var(--mono); font-size:12px;
+    letter-spacing:.08em; color:var(--brume);
+  }
+
+  /* ---------- FOOTER ---------- */
+  footer{
+    position:relative; padding:34px var(--pad) 40px;
+    border-top:1px solid rgba(255,255,255,.1);
+    background:rgba(10,14,26,.92);
+  }
+  .foot-in{
+    max-width:var(--maxw); margin-inline:auto;
+    display:flex; flex-wrap:wrap; gap:14px 34px; align-items:center; justify-content:space-between;
+    font-family:var(--mono); font-size:12px; letter-spacing:.05em; color:var(--brume);
+  }
+  .foot-in a:hover{ color:var(--clair); }
+
+  /* Splitting : chaque caractère du H1 est animé en douceur */
+  .js h1 .char{ display:inline-block; }
+
+  /* ---------- Reduced motion : tout visible, tout figé, WebGL coupé ---------- */
+  @media (prefers-reduced-motion: reduce){
+    .rv, h1 .char{ opacity:1 !important; transform:none !important; animation:none !important; transition:none !important; }
+    .aurore canvas{ display:none; }
+    .aurore .aurore-repli{ display:block; }
+    .btn:hover, .pilier:hover{ transform:none; }
+  }
+
+/* menu de navigation — ajouté pour que la page soit parcourable */
+.nav{display:flex;align-items:center;justify-content:space-between;gap:20px}
+.nav-liens{display:flex;gap:26px;margin-left:auto}
+.nav-liens a{font-size:14px;color:rgba(248,250,252,.72);text-decoration:none;transition:color .25s}
+.nav-liens a:hover{color:#F8FAFC}
+.nav-cta{font-size:14px;font-weight:600;color:#0A0E1A;background:#F39A1B;
+         padding:9px 18px;border-radius:999px;text-decoration:none;white-space:nowrap;transition:filter .25s}
+.nav-cta:hover{filter:brightness(1.08)}
+@media(max-width:720px){.nav-liens{display:none}.nav-cta{padding:8px 14px;font-size:13px}}
+</style>
+</head>
+<body>
+
+  <!-- Fond aurore (WebGL) + repli statique -->
+  <div class="aurore" id="aurore" aria-hidden="true"><div class="aurore-repli"></div></div>
+  <div class="voile" aria-hidden="true"></div>
+  <div class="grain" aria-hidden="true"></div>
+
+  <div class="page">
+
+    <header class="nav">
+      <a class="brand" href="#" aria-label="Intégral Pharma, accueil">
+        <img src="../../assets/logo-web.png" alt="Intégral Pharma">
+      </a>
+      <nav class="nav-liens" aria-label="Navigation principale">
+      <a href="#metier">Le métier</a>
+      <a href="#piliers">Nos valeurs</a>
+      <a href="#implantations">Le réseau</a>
+      <a href="#contact">Contact</a>
+    </nav>
+    <a class="nav-cta" href="#contact">Nous écrire</a>
+    </header>
+
+    <!-- HERO -->
+    <main class="wrap hero" role="main">
+      <p class="surtitre rv">Groupe de grossistes-répartiteurs français indépendant</p>
+      <h1 id="titre">Livrer la pharmacie française, <em>autrement.</em></h1>
+      <p class="sous rv">
+        <strong>Intégral Pharma</strong> approvisionne les officines tous les jours,
+        depuis neuf implantations partout en France. Une matière vivante, un mouvement
+        calme&nbsp;: la répartition, pensée par des indépendants, pour des indépendants.
+      </p>
+      <div class="cta-row rv">
+        <a href="#contact" class="btn btn-plein">Nous écrire <span aria-hidden="true">→</span></a>
+        <a href="#implantations" class="btn btn-ligne">Voir nos implantations</a>
+      </div>
+      <div class="hero-reperes rv">
+        <div class="repere"><div class="rn"><i>9</i> implantations</div><div class="rl">Partout en France</div></div>
+        <div class="repere"><div class="rn"><i>14&nbsp;000+</i> références</div><div class="rl">Au catalogue</div></div>
+        <div class="repere"><div class="rn"><i>100&nbsp;%</i> français</div><div class="rl">Et indépendant</div></div>
+      </div>
+      <div class="indice rv"><span class="trait" aria-hidden="true"></span>Faire défiler</div>
+    </main>
+
+    <!-- MÉTIER -->
+    <section class="metier" id="metier">
+      <div class="panneau" aria-hidden="true"></div>
+      <div class="wrap">
+        <span class="eyebrow rv">Le métier</span>
+        <h2 class="rv">Entre les laboratoires et votre comptoir, <em>un flux continu.</em></h2>
+        <p class="lede rv">
+          Grossiste-répartiteur, c'est un métier d'exactitude&nbsp;: <strong>recevoir, stocker,
+          préparer et livrer</strong> chaque jour les médicaments et produits de santé dont les
+          officines ont besoin. Un travail de l'ombre, réglé comme une marée — où rien ne doit
+          manquer au comptoir, jamais.
+        </p>
+        <div class="facettes">
+          <div class="facette rv">
+            <span class="fnum">—&nbsp;A</span>
+            <h3>Un catalogue profond</h3>
+            <p>Plus de 14&nbsp;000 références suivies au quotidien, du médicament à la parapharmacie, pour coller à la réalité de votre comptoir et de votre patientèle.</p>
+          </div>
+          <div class="facette rv">
+            <span class="fnum">—&nbsp;B</span>
+            <h3>Une chaîne tenue de bout en bout</h3>
+            <p>Réception, stockage, préparation, livraison&nbsp;: chaque étape est assurée par nos équipes, dans nos entrepôts, partout en France.</p>
+          </div>
+          <div class="facette rv">
+            <span class="fnum">—&nbsp;C</span>
+            <h3>Des visages, pas un guichet</h3>
+            <p>Vous parlez à des gens qui connaissent votre officine et son territoire. Les décisions se prennent près de vous, pas à l'autre bout d'une plateforme.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PILIERS -->
+    <section class="piliers" id="piliers">
+      <div class="panneau" aria-hidden="true"></div>
+      <div class="wrap">
+        <span class="eyebrow rv">Ce qui nous porte</span>
+        <h2 class="rv">Trois valeurs, <em>une même eau.</em></h2>
+        <div class="pgrid">
+        <article class="pilier rv">
+          <span class="num">I</span>
+          <h3>Confiance</h3>
+          <p>La transparence d'abord. Une relation claire, tenue dans la durée, où la parole donnée vaut engagement.</p>
+        </article>
+        <article class="pilier rv">
+          <span class="num">II</span>
+          <h3>Engagement</h3>
+          <p>Présents dans la durée, à vos côtés quand il le faut. Un partenaire ne disparaît pas après la vente.</p>
+        </article>
+        <article class="pilier rv">
+          <span class="num">III</span>
+          <h3>Respect</h3>
+          <p>Du pharmacien comme du patient. On défend l'officine indépendante, parce qu'elle soigne un territoire.</p>
+        </article>
+      
+        </div>
+      </div>
+    </section>
+
+    <!-- MÉTHODE -->
+    <section class="methode" id="methode">
+      <div class="panneau" aria-hidden="true"></div>
+      <div class="wrap">
+        <span class="eyebrow rv">La façon de travailler</span>
+        <h2 class="rv">Simple comme l'eau <em>qui suit sa pente.</em></h2>
+        <div class="etapes">
+          <div class="etape rv">
+            <span class="enum">01</span>
+            <h3>La rencontre</h3>
+            <p>Tout commence à l'officine. On écoute votre organisation, vos horaires, vos habitudes de commande — avant de parler de nous.</p>
+          </div>
+          <div class="etape rv">
+            <span class="enum">02</span>
+            <h3>La mise en route</h3>
+            <p>Le démarrage se fait à votre rythme, accompagné pas à pas, sans rien bousculer du quotidien de votre équipe.</p>
+          </div>
+          <div class="etape rv">
+            <span class="enum">03</span>
+            <h3>Le quotidien</h3>
+            <p>Vos commandes sont préparées et livrées avec régularité. Votre interlocuteur reste le même — et il répond.</p>
+          </div>
+          <div class="etape rv">
+            <span class="enum">04</span>
+            <h3>La durée</h3>
+            <p>On revient, on ajuste, on reste. Et quand la vie de l'officine change — transfert, agrandissement, cession de parts, optimisation — votre interlocuteur ajuste l'approvisionnement avec vous, sans à-coup au comptoir.</p>
+          </div>
+        </div>
+        <div class="relance rv">
+          <p>Envie d'en parler <em>de vive voix&nbsp;?</em></p>
+          <a href="#contact" class="btn btn-plein">Nous écrire <span aria-hidden="true">→</span></a>
+        </div>
+      </div>
+    </section>
+
+    <!-- IMPLANTATIONS -->
+    <section class="implantations" id="implantations">
+      <div class="panneau" aria-hidden="true"></div>
+      <div class="wrap">
+        <div class="imp-tete">
+          <div>
+            <span class="eyebrow rv">Le réseau</span>
+            <h2 class="rv">Neuf maisons, <em>un seul courant.</em></h2>
+          </div>
+          <p class="rv">Du siège d'Hyères à notre partenaire de Metz, un maillage pensé pour être proche de chaque officine.</p>
+        </div>
+        <div class="imp-corps">
+          <div class="imp-liste rv" role="list">
+            <div class="imp" role="listitem">
+              <span class="no">01</span>
+              <span class="nom">Hyères Pharma<span class="badge badge-siege">Siège</span></span>
+              <span class="lieu">Hyères · Var (83)</span>
+            </div>
+            <div class="imp" role="listitem">
+              <span class="no">02</span>
+              <span class="nom">Ouest Pharma Services</span>
+              <span class="lieu">St-Étienne-de-Montluc · (44)</span>
+            </div>
+            <div class="imp" role="listitem">
+              <span class="no">03</span>
+              <span class="nom">Comptoir Pharmaceutique du Rhône</span>
+              <span class="lieu">Saint-Maurice-l'Exil · (38)</span>
+            </div>
+            <div class="imp" role="listitem">
+              <span class="no">04</span>
+              <span class="nom">Sud Ouest Pharma</span>
+              <span class="lieu">Montayral · (47)</span>
+            </div>
+            <div class="imp" role="listitem">
+              <span class="no">05</span>
+              <span class="nom">Pharm'Occitanie Services</span>
+              <span class="lieu">Villeneuve-lès-Béziers · (34)</span>
+            </div>
+            <div class="imp" role="listitem">
+              <span class="no">06</span>
+              <span class="nom">Sud Est Pharma</span>
+              <span class="lieu">Le Cannet-des-Maures · (83)</span>
+            </div>
+            <div class="imp" role="listitem">
+              <span class="no">07</span>
+              <span class="nom">Mistral Santé Pharma</span>
+              <span class="lieu">Flassans-sur-Issole · (83)</span>
+            </div>
+            <div class="imp" role="listitem">
+              <span class="no">08</span>
+              <span class="nom">Escale Pharma</span>
+              <span class="lieu">Chilly-Mazarin · (91)</span>
+            </div>
+            <div class="imp" role="listitem">
+              <span class="no">09</span>
+              <span class="nom">Pharmest<span class="badge badge-part">Partenaire</span></span>
+              <span class="lieu">Metz · (57)</span>
+            </div>
+          </div>
+          <figure class="imp-photo rv">
+            <div class="cadre"><img src="../../assets/siege-web.jpg" alt="Vue aérienne du siège d'Intégral Pharma à Hyères" loading="lazy"></div>
+            <figcaption>Le siège · 758 Chemin de la Source, Hyères</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- LA RÉPARTITION EN QUATRE TEMPS -->
+    <section class="projets-sec piliers" id="quatre-temps">
+      <div class="panneau" aria-hidden="true"></div>
+      <div class="wrap">
+        <span class="eyebrow rv">Chaque jour</span>
+        <h2 class="rv">La répartition, <em>en quatre temps.</em></h2>
+        <div class="pgrid quatre">
+          <article class="pilier rv">
+            <span class="num">I</span>
+            <h3>Le catalogue</h3>
+            <p>14&nbsp;000+ références au catalogue Offilog&nbsp;: du médicament à la parapharmacie, de quoi suivre la réalité de votre comptoir.</p>
+          </article>
+          <article class="pilier rv">
+            <span class="num">II</span>
+            <h3>La disponibilité</h3>
+            <p>Des stocks suivis implantation par implantation, jour après jour, pour que rien ne manque au moment où la commande part.</p>
+          </article>
+          <article class="pilier rv">
+            <span class="num">III</span>
+            <h3>La préparation</h3>
+            <p>Chaque commande est préparée dans l'implantation la plus proche de votre officine, par des équipes qui connaissent vos habitudes.</p>
+          </article>
+          <article class="pilier rv">
+            <span class="num">IV</span>
+            <h3>La livraison</h3>
+            <p>Des tournées quotidiennes, des chauffeurs réguliers, des caisses posées là où votre équipe les attend.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- CONTACT -->
+    <section class="contact" id="contact">
+      <div class="panneau" aria-hidden="true"></div>
+      <div class="wrap">
+        <span class="eyebrow rv">Contact</span>
+        <h2 class="rv">Parlons de <em>votre officine.</em></h2>
+        <p class="sous-c rv">
+          Une question, une mise en route, ou simplement l'envie de voir comment nous travaillons&nbsp;:
+          écrivez-nous. Votre message arrive à Hyères, chez des gens dont c'est le métier —
+          et c'est <strong>une personne qui vous répond</strong>, pas un ticket.
+        </p>
+        <div class="cta-row rv">
+          <a href="mailto:contact@integralpharma.fr" class="btn btn-plein">contact@integralpharma.fr</a>
+        </div>
+        <p class="note rv">Une réponse humaine, depuis Hyères.</p>
+        <p class="adresse rv">758 Chemin de la Source · 83400 Hyères</p>
+      </div>
+    </section>
+
+    <footer>
+      <div class="foot-in">
+        <span>Intégral Pharma · 758 Chemin de la Source, 83400 Hyères</span>
+        <a href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a>
+        <span>© 2026 — Groupe de grossistes-répartiteurs français indépendant</span>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- Librairies locales (aucun CDN) -->
+  <script src="../../vendor/gsap.min.js"></script>
+  <script src="../../vendor/ScrollTrigger.min.js"></script>
+  <script src="../../vendor/lenis.min.js"></script>
+  <script src="../../vendor/splitting.min.js"></script>
+
+  <script>
+  /* ============ Animations (défilement doux + révélations) ============ */
+  (function(){
+    var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // Si GSAP manque ou reduced-motion : on retire .js → tout redevient visible en CSS pur.
+    if (reduce || !window.gsap || !window.ScrollTrigger){
+      document.documentElement.classList.remove('js');
+      return;
+    }
+    gsap.registerPlugin(ScrollTrigger);
+
+    // Défilement doux Lenis, piloté par le ticker GSAP
+    if (window.Lenis){
+      var lenis = new Lenis({ duration: 1.15, smoothWheel: true });
+      lenis.on('scroll', ScrollTrigger.update);
+      gsap.ticker.add(function(t){ lenis.raf(t * 1000); });
+      gsap.ticker.lagSmoothing(0);
+
+      // Ancres pilotées par Lenis — sinon le saut natif est repris par le défilement doux
+      document.querySelectorAll('a[href^="#"]').forEach(function(a){
+        a.addEventListener('click', function(e){
+          var h = a.getAttribute('href');
+          if (h === '#'){ e.preventDefault(); lenis.scrollTo(0); return; }
+          var cible = document.querySelector(h);
+          if (cible){ e.preventDefault(); lenis.scrollTo(cible); }
+        });
+      });
+    }
+
+    // Titre : lettres révélées une à une (Splitting)
+    var titre = document.getElementById('titre');
+    if (window.Splitting && titre){
+      Splitting({ target: titre, by: 'chars' });
+      gsap.fromTo(titre.querySelectorAll('.char'),
+        { opacity: 0, yPercent: 60 },
+        { opacity: 1, yPercent: 0, duration: 1.1, ease: 'power3.out',
+          stagger: { each: 0.016, from: 'start' }, delay: 0.25 });
+    }
+
+    // Blocs du hero : entrée séquencée au chargement
+    gsap.to('.hero .rv', {
+      opacity: 1, y: 0, scale: 1, duration: 1, ease: 'power3.out',
+      stagger: 0.12, delay: 0.45
+    });
+
+    // On TRAVERSE le hero : en défilant, il grossit légèrement et s'estompe,
+    // comme si on passait au travers pour s'enfoncer dans la matière.
+    gsap.to('.hero', {
+      scale: 1.05, opacity: 0.22, transformOrigin: '50% 38%', ease: 'none',
+      scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom 25%', scrub: 0.6 }
+    });
+
+    // Chaque section ÉMERGE de la profondeur, liée au défilement (réversible).
+    // .implantations est exclue : sa photo est sticky, un transform parent la casserait.
+    gsap.utils.toArray('.metier .wrap, .piliers .wrap, .methode .wrap, .contact .wrap').forEach(function(w){
+      gsap.fromTo(w, { scale: 0.972, y: 34 }, {
+        scale: 1, y: 0, ease: 'none',
+        scrollTrigger: { trigger: w, start: 'top 96%', end: 'top 42%', scrub: 0.5 }
+      });
+    });
+
+    // Blocs : révélation au défilement (émergence : opacité + échelle)
+    gsap.utils.toArray('section .rv').forEach(function(el){
+      gsap.to(el, {
+        opacity: 1, y: 0, scale: 1, duration: 1.05, ease: 'power3.out',
+        scrollTrigger: { trigger: el, start: 'top 90%', once: true }
+      });
+    });
+  })();
+  </script>
+
+  <script type="module">
+  /* ============ Fond « Matière traversée » — OGL (module local) ============
+     Volumétrique en 6 tranches de profondeur qui s'enroulent à l'infini :
+     — le DÉFILEMENT fait avancer la caméra DANS la matière (les nappes
+       proches grossissent, passent, et de nouvelles émergent du fond) ;
+     — la SOURIS est une lanterne : parallaxe par profondeur (le proche
+       bouge plus que le lointain) + filaments révélés uniquement sous elle ;
+     — coût maîtrisé : 7 fbm de 4 octaves par pixel (≈ l'ancien shader plat),
+       dpr plafonné à 1.25 et qualité adaptative si la machine peine.
+     Mobile / sans WebGL / reduced-motion : repli statique en dégradés. */
+  const hote = document.getElementById('aurore');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const mobile = matchMedia('(max-width: 820px), (pointer: coarse)').matches;
+  if (!reduce && !mobile && hote){
+    try {
+      const { Renderer, Program, Mesh, Triangle } = await import('../../vendor/ogl/ogl.mjs');
+
+      let dpr = Math.min(window.devicePixelRatio || 1, 1.25);
+      const renderer = new Renderer({ dpr, alpha: false, antialias: false });
+      const gl = renderer.gl;
+      hote.appendChild(gl.canvas);
+
+      const vertex = /* glsl */`
+        attribute vec2 uv;
+        attribute vec2 position;
+        varying vec2 vUv;
+        void main(){ vUv = uv; gl_Position = vec4(position, 0.0, 1.0); }
+      `;
+
+      const fragment = /* glsl */`
+        precision highp float;
+        varying vec2 vUv;
+        uniform float uTime;
+        uniform float uScroll;   // 0..1 lissé — position de la caméra dans la matière
+        uniform vec2  uRes;
+        uniform vec2  uMouse;    // 0..1 lissé
+
+        float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123); }
+        float noise(vec2 p){
+          vec2 i = floor(p), f = fract(p);
+          vec2 u = f * f * (3.0 - 2.0 * f);
+          return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x),
+                     mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y);
+        }
+        float fbm(vec2 p){
+          float v = 0.0, a = 0.5;
+          mat2 m = mat2(1.6, 1.2, -1.2, 1.6);
+          for (int i = 0; i < 4; i++){ v += a * noise(p); p = m * p; a *= 0.5; }
+          return v;
+        }
+
+        void main(){
+          vec2 uv = vUv;
+          float asp = uRes.x / uRes.y;
+          vec2 p = (uv - 0.5) * vec2(asp, 1.0);
+          vec2 m = (uMouse - 0.5) * vec2(asp, 1.0);
+          float t = uTime * 0.05;                      // très lent : matière, pas gadget
+
+          // La caméra AVANCE dans la matière : portée par le défilement,
+          // avec une dérive résiduelle très lente quand on ne bouge pas.
+          float camZ = uScroll * 2.3 + t * 0.12;
+
+          // Lanterne : halo doux autour du pointeur
+          float md = exp(-2.6 * dot(p - m, p - m));
+
+          vec3 encre  = vec3(0.039, 0.055, 0.102);
+          vec3 abysse = vec3(0.016, 0.075, 0.260);
+          vec3 bleu   = vec3(0.000, 0.314, 0.902);
+          vec3 ambre  = vec3(0.953, 0.604, 0.106);
+
+          // Fond : un puits, plus sombre en bas (le texte y repose)
+          vec3 col = mix(encre * 0.85, abysse * 0.4, smoothstep(-0.65, 0.75, p.y + 0.15));
+
+          // ------- 6 tranches de profondeur, wrap infini (pseudo-volume) -------
+          vec3  acc  = vec3(0.0);
+          float dust = 0.0;
+          for (int i = 0; i < 6; i++){
+            float fi = float(i);
+            float z  = fract(fi / 6.0 - camZ);         // 0 = contre l'œil · 1 = au fond
+            // fondu aux deux bouts : aucune nappe ne "pope" en se recyclant
+            float fade = smoothstep(0.0, 0.22, z) * smoothstep(1.0, 0.72, z);
+            float sc   = mix(0.55, 3.4, z);            // perspective : le proche est ample
+            vec2  sp   = p * sc + vec2(hash(vec2(fi, 1.3)), hash(vec2(fi, 7.7))) * 9.0;
+            sp += m * (1.0 - z) * 0.42;                // parallaxe souris : le proche suit plus
+            sp += vec2(t * (0.5 + 0.7 * (1.0 - z)), -t * 0.2);  // dérive lente de la nappe
+            float den = fbm(sp);
+            // sous la lanterne, la matière proche gagne du relief (densité révélée)
+            float d2  = smoothstep(0.44, 0.92, den + md * 0.10 * (1.0 - z));
+            vec3  cz  = mix(bleu, abysse, z * z);      // le proche est lumineux, le fond s'éteint
+            acc += cz * d2 * fade * mix(0.30, 0.10, z);
+            // crêtes ambrées rares, réservées aux nappes proches
+            acc += ambre * smoothstep(0.82, 0.97, den) * fade * (1.0 - z) * (1.0 - z) * 0.10;
+            // poussières en suspension : minuscules, elles vendent la traversée
+            vec2  g = sp * 7.0;
+            float h = hash(floor(g));
+            dust += smoothstep(0.985, 1.0, h)
+                  * smoothstep(0.32, 0.0, length(fract(g) - 0.5))
+                  * fade * (1.0 - z) * 0.5;
+          }
+          col += acc;
+          col += dust * mix(vec3(0.72, 0.82, 1.0), ambre, 0.22) * 0.32;
+
+          // ------- La curiosité récompensée : filaments visibles SOUS la lanterne -------
+          float fil = fbm(p * 3.2 + m * 0.15 + vec2(0.0, camZ * 1.2));
+          fil = pow(smoothstep(0.52, 0.92, fil), 2.0);
+          col += (bleu * 0.7 + ambre * 0.3) * fil * md * 0.42;
+          col += bleu * md * 0.05;
+
+          // Compression douce (rien ne crame) + vignette de lisibilité
+          col = 1.0 - exp(-col * 1.35);
+          col *= 1.0 - 0.30 * smoothstep(0.5, 1.05, distance(uv, vec2(0.5, 0.55)));
+
+          gl_FragColor = vec4(col, 1.0);
+        }
+      `;
+
+      const geometry = new Triangle(gl);
+      const program = new Program(gl, {
+        vertex, fragment,
+        uniforms: {
+          uTime:   { value: 0 },
+          uScroll: { value: 0 },
+          uRes:    { value: [1, 1] },
+          uMouse:  { value: [0.5, 0.5] }
+        }
+      });
+      const mesh = new Mesh(gl, { geometry, program });
+
+      function taille(){
+        renderer.dpr = dpr;
+        renderer.setSize(hote.clientWidth, hote.clientHeight);
+        program.uniforms.uRes.value = [gl.canvas.width, gl.canvas.height];
+      }
+      taille();
+      window.addEventListener('resize', taille);
+
+      // Souris lissée + progression du défilement
+      let mx = 0.5, my = 0.5;
+      window.addEventListener('pointermove', (e) => {
+        mx = e.clientX / window.innerWidth;
+        my = 1 - e.clientY / window.innerHeight;
+      }, { passive: true });
+
+      let visible = true;
+      document.addEventListener('visibilitychange', () => { visible = !document.hidden; });
+
+      // Qualité adaptative : si la machine tient < 42 i/s sur 2 s, on
+      // baisse la définition interne (1.25 → 1.0 → 0.8), jamais l'inverse.
+      let frames = 0, accMs = 0, lastNow = 0;
+
+      let t0 = performance.now();
+      function boucle(now){
+        requestAnimationFrame(boucle);
+        if (!visible) return;                            // en pause quand l'onglet est caché
+        if (lastNow){ accMs += now - lastNow; frames++; }
+        lastNow = now;
+        if (accMs > 2000){
+          const fps = frames * 1000 / accMs;
+          if (fps < 42 && dpr > 0.8){
+            dpr = Math.max(0.8, dpr - 0.25);
+            taille();
+          }
+          frames = 0; accMs = 0;
+        }
+        const u = program.uniforms;
+        u.uTime.value = (now - t0) / 1000;
+        const max = document.documentElement.scrollHeight - window.innerHeight;
+        const cible = max > 0 ? (window.scrollY / max) : 0;
+        u.uScroll.value += (cible - u.uScroll.value) * 0.06;
+        u.uMouse.value[0] += (mx - u.uMouse.value[0]) * 0.045;
+        u.uMouse.value[1] += (my - u.uMouse.value[1]) * 0.045;
+        renderer.render({ scene: mesh });
+      }
+      requestAnimationFrame(boucle);
+    } catch (e) {
+      hote.classList.add('repli');                        // WebGL indisponible → dégradés statiques
+    }
+  } else if (hote) {
+    hote.classList.add('repli');                          // mobile / reduced-motion → repli statique
+  }
+  </script>
+</body>
+</html>

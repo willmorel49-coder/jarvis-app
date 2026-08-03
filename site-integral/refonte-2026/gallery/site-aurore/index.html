@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Intégral Pharma — Un partenaire, pas un fournisseur</title>
-<meta name="description" content="Intégral Pharma, groupe de grossistes français indépendant. 9 agences, un réseau national au service de l'officine.">
+<title>Intégral Pharma — Grossiste-répartiteur français indépendant</title>
+<meta name="description" content="Groupe de grossistes-répartiteurs français indépendant. Neuf implantations en France, 14 000+ références au catalogue, et un interlocuteur qui connaît votre officine.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:opsz,wght@9..40,400..700&family=Fraunces:ital,opsz,wght@0,9..144,400..600;1,9..144,400..600&display=swap" rel="stylesheet">
@@ -15,15 +15,15 @@
     --ink:#05070E;
     --ink-2:#090D18;
     --ink-3:#0D1322;
-    --blue:#0057FF;
+    --blue:#0050E6;
     --blue-soft:#4C8CFF;
     --azure:#1E7BFF;
-    --orange:#F79A18;
+    --orange:#F39A1B;
     --orange-hi:#FFB43A;
-    --teal:#16C7C0;
-    --paper:#F5F7FC;
-    --mute:rgba(245,247,252,.64);
-    --faint:rgba(245,247,252,.40);
+    --teal:#4C8CFF;
+    --paper:#F8FAFC;
+    --mute:rgba(248,250,252,.64);
+    --faint:rgba(248,250,252,.40);
     --hair:rgba(255,255,255,.10);
     --hair-2:rgba(255,255,255,.055);
     --glass:rgba(255,255,255,.035);
@@ -72,7 +72,7 @@
     0%{transform:translate(0,0)}25%{transform:translate(-3%,2%)}
     50%{transform:translate(2%,-2%)}75%{transform:translate(-2%,-3%)}100%{transform:translate(0,0)}
   }
-  .glow-accent{position:absolute;border-radius:50%;filter:blur(70px);pointer-events:none;
+  .glow-accent{position:absolute;border-radius:50%;-webkit-mask-image:radial-gradient(closest-side,#000 22%,transparent 78%);mask-image:radial-gradient(closest-side,#000 22%,transparent 78%);pointer-events:none;
     z-index:1;opacity:.66;will-change:transform;mix-blend-mode:screen}
   .glow-accent.drift{animation:glowDrift 22s var(--ease) infinite alternate}
   .glow-accent.drift.slow{animation-duration:32s;animation-direction:alternate-reverse}
@@ -147,13 +147,11 @@
   /* ============================ NAV ==================================== */
   header.nav{
     position:fixed;top:0;left:0;right:0;z-index:50;
-    transition:background .4s var(--ease),border-color .4s var(--ease),backdrop-filter .4s;
+    transition:background .4s var(--ease),border-color .4s var(--ease);
     border-bottom:1px solid transparent;
   }
   header.nav.scrolled{
-    background:rgba(6,9,17,.72);
-    backdrop-filter:blur(16px) saturate(140%);
-    -webkit-backdrop-filter:blur(16px) saturate(140%);
+    background:rgba(6,9,17,.88);
     border-bottom:1px solid var(--hair-2);
   }
   .nav-in{display:flex;align-items:center;justify-content:space-between;height:70px}
@@ -207,9 +205,10 @@
   }
   .lede{color:var(--mute);font-size:clamp(1rem,2.3vw,1.22rem);max-width:56ch;margin-top:22px;line-height:1.6}
 
-  /* reveal-on-scroll */
-  .reveal{opacity:0;transform:translateY(34px);transition:opacity .9s var(--ease-out),transform .9s var(--ease-out)}
-  .reveal.in{opacity:1;transform:none}
+  /* reveal-on-scroll — masqué UNIQUEMENT quand le JS a posé .js-anim sur <html>
+     (jamais en CSS seul : si le script casse, tout reste visible) */
+  .js-anim .reveal{opacity:0;transform:translateY(34px);transition:opacity .9s var(--ease-out),transform .9s var(--ease-out)}
+  .js-anim .reveal.in{opacity:1;transform:none}
   .reveal.d1{transition-delay:.08s}.reveal.d2{transition-delay:.16s}
   .reveal.d3{transition-delay:.24s}.reveal.d4{transition-delay:.32s}
 
@@ -225,7 +224,9 @@
       linear-gradient(to top, var(--ink) 2%, rgba(5,7,14,.35) 34%, rgba(5,7,14,.15) 60%, rgba(5,7,14,.55) 100%),
       radial-gradient(80% 60% at 50% 8%, transparent 40%, rgba(5,7,14,.5) 100%);
   }
-  .hero-in{position:relative;z-index:2;width:100%}
+  /* pas de width:100% ici : il écraserait la largeur min() posée par .wrap
+     et collerait le texte du héros au bord gauche de l'écran */
+  .hero-in{position:relative;z-index:2}
   .hero h1{
     font-size:clamp(2.7rem,10.5vw,7.2rem);line-height:.95;font-weight:600;
     letter-spacing:-.035em;margin:22px 0 0;max-width:15ch;
@@ -233,14 +234,14 @@
   }
   .hero h1 .accent{color:var(--orange-hi);letter-spacing:-.01em;
     text-shadow:0 0 34px rgba(247,154,27,.45)}
-  .hero-sub{color:rgba(245,247,252,.78);font-size:clamp(1.02rem,2.4vw,1.3rem);
+  .hero-sub{color:rgba(248,250,252,.78);font-size:clamp(1.02rem,2.4vw,1.3rem);
     max-width:52ch;margin-top:26px;line-height:1.6;
     text-shadow:0 1px 24px rgba(5,7,14,.55)}
   .hero-cta{display:flex;flex-wrap:wrap;gap:14px;margin-top:34px}
   .hero-glass{margin-top:46px;display:grid;grid-template-columns:repeat(3,auto);
     gap:26px 40px;padding:26px 30px;border-radius:18px;
     border:1px solid var(--hair);background:rgba(9,13,24,.42);
-    backdrop-filter:blur(10px) saturate(130%);-webkit-backdrop-filter:blur(10px) saturate(130%);
+    
     box-shadow:0 30px 70px -40px rgba(0,0,0,.9),0 0 0 1px rgba(0,87,255,.1) inset;
     width:max-content;max-width:100%;transform-style:preserve-3d}
   .hg-item{display:flex;flex-direction:column;gap:4px;transform:translateZ(0)}
@@ -296,7 +297,7 @@
     mix-blend-mode:screen}
   .video-tag{position:absolute;left:16px;bottom:16px;z-index:2;display:flex;align-items:center;gap:9px;
     font-family:"DM Mono",monospace;font-size:11px;letter-spacing:.16em;text-transform:uppercase;
-    background:rgba(6,9,17,.6);backdrop-filter:blur(8px);padding:8px 13px;border-radius:100px;
+    background:rgba(6,9,17,.6);padding:8px 13px;border-radius:100px;
     border:1px solid var(--hair)}
   .video-tag i{width:7px;height:7px;border-radius:50%;background:var(--teal);
     box-shadow:0 0 10px var(--teal);font-style:normal}
@@ -309,6 +310,20 @@
     transition:border-color .3s,color .3s,transform .3s}
   .chip:hover{border-color:rgba(243,154,27,.4);color:var(--paper);transform:translateY(-2px)}
   .chip i{width:5px;height:5px;border-radius:50%;background:var(--orange);font-style:normal}
+
+  /* les 9 implantations — même grammaire de cartes que le reste de la page */
+  .sites{display:grid;grid-template-columns:1fr;gap:12px;margin-top:48px}
+  .site{position:relative;border:1px solid var(--hair-2);border-radius:14px;padding:18px 20px;
+    background:linear-gradient(180deg,var(--glass),transparent);
+    transition:border-color .3s,transform .3s var(--ease)}
+  .site:hover{border-color:rgba(247,154,27,.28);transform:translateY(-2px)}
+  .site .s-tag{position:absolute;top:14px;right:14px;
+    font-family:"DM Mono",monospace;font-size:10px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--orange);border:1px solid rgba(247,154,27,.35);
+    border-radius:99px;padding:3px 9px;display:inline-block}
+  .site .s-tag.blue{color:var(--blue-soft);border-color:rgba(76,140,255,.35)}
+  .site .s-name{font-weight:600;line-height:1.3}
+  .site .s-city{font-size:13.5px;color:var(--mute);margin-top:3px}
 
   /* ============================ PARCOURS ============================== */
   .steps{display:grid;gap:16px;margin-top:56px;counter-reset:s}
@@ -325,11 +340,14 @@
     box-shadow:0 0 14px rgba(247,154,27,.4)}
   .step:hover .bar{opacity:1}
 
+  /* mention courte des accompagnements (activité annexe — jamais de section dédiée) */
+  .annexe{margin-top:52px;max-width:62ch}
+
   /* ============================ POURQUOI ============================== */
   .pourquoi{position:relative}
   .surge-glow{position:absolute;left:50%;top:50%;width:60vw;max-width:720px;aspect-ratio:1;
     transform:translate(-50%,-50%) scale(calc(1 + var(--surge,0)*.4));
-    border-radius:50%;pointer-events:none;z-index:0;filter:blur(80px);
+    border-radius:50%;pointer-events:none;z-index:0;-webkit-mask-image:radial-gradient(closest-side,#000 22%,transparent 78%);mask-image:radial-gradient(closest-side,#000 22%,transparent 78%);
     opacity:calc(.20 + var(--surge,0)*.72);
     background:radial-gradient(circle,rgba(0,87,255,.68),rgba(247,154,27,.42) 52%,transparent 72%)}
   .pourquoi .wrap{position:relative;z-index:1}
@@ -339,7 +357,7 @@
     transition:border-color .4s,transform .4s var(--ease)}
   .pillar:hover{border-color:var(--hair);transform:translateY(-3px)}
   .pillar .glow{position:absolute;width:230px;height:230px;border-radius:50%;
-    filter:blur(58px);opacity:.42;top:-60px;right:-40px;pointer-events:none;transition:opacity .5s}
+    -webkit-mask-image:radial-gradient(closest-side,#000 22%,transparent 78%);mask-image:radial-gradient(closest-side,#000 22%,transparent 78%);opacity:.42;top:-60px;right:-40px;pointer-events:none;transition:opacity .5s}
   .pillar:hover{border-color:rgba(247,154,27,.24)}
   .pillar:hover .glow{opacity:.7}
   .pillar h3{font-size:1.5rem;font-weight:600;letter-spacing:-.02em;margin-bottom:12px}
@@ -408,11 +426,17 @@
   .foot-bottom{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;
     align-items:center;margin-top:56px;padding-top:26px;border-top:1px solid var(--hair-2);
     color:var(--faint);font-size:13px}
+  .foot-bottom a{color:var(--mute);border-bottom:1px solid transparent;transition:color .25s,border-color .25s}
+  .foot-bottom a:hover{color:var(--paper);border-color:var(--orange)}
 
   /* ============================ RESPONSIVE ========================== */
+  @media(min-width:560px){
+    .sites{grid-template-columns:repeat(2,1fr)}
+  }
   @media(min-width:760px){
     .reseau .grid{grid-template-columns:1fr 1fr;gap:56px}
     .steps{grid-template-columns:1fr 1fr}
+    .sites{grid-template-columns:repeat(3,1fr)}
     .pillars{grid-template-columns:repeat(3,1fr)}
     .values{grid-template-columns:repeat(3,1fr)}
     .contact{grid-template-columns:auto 1fr;align-items:center}
@@ -426,8 +450,9 @@
     .step:last-child:nth-child(odd){grid-column:1 / -1}
     .pillar.wide{grid-column:span 3}
   }
-  /* rail only on wide screens so it can never overlap hero content */
-  @media(min-width:1200px){
+  /* rail visible seulement quand la marge est assez large pour ses libellés
+     (contenu 1240px + ~140px de rail : sous 1560px il chevauche les cartes) */
+  @media(min-width:1560px){
     .rail{display:block}
   }
 
@@ -488,11 +513,11 @@
     </a>
     <nav class="nav-links" aria-label="Navigation principale">
       <a href="#reseau">Le réseau</a>
-      <a href="#methode">La méthode</a>
+      <a href="#methode">Le métier</a>
       <a href="#pourquoi">Pourquoi nous</a>
-      <a href="#valeurs">Valeurs</a>
+      <a href="#valeurs">Nos valeurs</a>
     </nav>
-    <a class="btn btn-primary magnetic" data-cursor="Réseau" href="#rejoindre">Nous rejoindre <span class="arw">↗</span></a>
+    <a class="btn btn-primary magnetic" data-cursor="Contact" href="#rejoindre">Nous rejoindre <span class="arw">↗</span></a>
   </div>
 </header>
 
@@ -501,9 +526,9 @@
   <ol>
     <li><a href="#top" data-sec="top"><span class="tick"></span>Accueil</a></li>
     <li><a href="#reseau" data-sec="reseau"><span class="tick"></span>Réseau</a></li>
-    <li><a href="#methode" data-sec="methode"><span class="tick"></span>Méthode</a></li>
+    <li><a href="#methode" data-sec="methode"><span class="tick"></span>Métier</a></li>
     <li><a href="#pourquoi" data-sec="pourquoi"><span class="tick"></span>Pourquoi</a></li>
-    <li><a href="#valeurs" data-sec="valeurs"><span class="tick"></span>Valeurs</a></li>
+    <li><a href="#valeurs" data-sec="valeurs"><span class="tick"></span>Nos valeurs</a></li>
     <li><a href="#rejoindre" data-sec="rejoindre"><span class="tick"></span>Rejoindre</a></li>
   </ol>
 </nav>
@@ -518,17 +543,18 @@
     <div class="glow-accent drift slow" style="width:320px;height:320px;right:-4%;top:34%;background:rgba(247,154,27,.56)"></div>
     <div class="wrap hero-in">
       <p class="kicker reveal" data-scramble>Un partenaire, pas un fournisseur</p>
-      <h1 class="reveal d1" data-split>Plus de marge,<br><span class="accent">nette</span> sur facture.</h1>
-      <p class="hero-sub reveal d2">Intégral Pharma est un groupe de grossistes français indépendant.
-        Neuf agences, un même engagement : servir l'officine, sans intermédiaire et sans compromis.</p>
+      <h1 class="reveal d1" data-split>Livrer la pharmacie<br><span class="accent">française</span>, autrement.</h1>
+      <p class="hero-sub reveal d2">Intégral Pharma est un groupe de grossistes-répartiteurs français indépendant.
+        Nous approvisionnons les officines françaises tous les jours : 14 000+ références, préparées
+        et livrées depuis neuf implantations.</p>
       <div class="hero-cta reveal d3">
-        <a class="btn btn-primary magnetic" data-cursor="Réseau" href="#rejoindre">Découvrir le réseau <span class="arw">↗</span></a>
-        <a class="btn btn-ghost magnetic" href="#reseau">Voir le réseau</a>
+        <a class="btn btn-primary magnetic" data-cursor="Contact" href="#rejoindre">Parlons de votre officine <span class="arw">↗</span></a>
+        <a class="btn btn-ghost magnetic" href="#reseau">Découvrir le réseau</a>
       </div>
       <div class="hero-glass reveal d4" data-tilt="6">
-        <div class="hg-item"><span class="hg-num"><span data-count="9">0</span></span><span class="hg-lab">agences en France</span></div>
+        <div class="hg-item"><span class="hg-num"><span data-count="9">0</span></span><span class="hg-lab">implantations en France</span></div>
         <div class="hg-item"><span class="hg-num">1</span><span class="hg-lab">réseau national</span></div>
-        <div class="hg-item"><span class="hg-num">100%</span><span class="hg-lab">indépendant</span></div>
+        <div class="hg-item"><span class="hg-num">100%</span><span class="hg-lab">français, indépendant</span></div>
       </div>
     </div>
     <div class="scroll-hint"><span class="ln"></span>Défiler</div>
@@ -538,14 +564,14 @@
   <section class="marquee-band" aria-hidden="true">
     <div class="mq-row">
       <div class="mq-track">
-        <span class="mq-item">Un partenaire, pas un fournisseur<span class="mq-sep">✦</span>9 agences<span class="mq-sep">✦</span>Un réseau national<span class="mq-sep">✦</span>Nette sur facture<span class="mq-sep">✦</span>Indépendant<span class="mq-sep">✦</span></span>
-        <span class="mq-item">Un partenaire, pas un fournisseur<span class="mq-sep">✦</span>9 agences<span class="mq-sep">✦</span>Un réseau national<span class="mq-sep">✦</span>Nette sur facture<span class="mq-sep">✦</span>Indépendant<span class="mq-sep">✦</span></span>
+        <span class="mq-item">Livrer l'officine, chaque jour<span class="mq-sep">✦</span>Neuf implantations<span class="mq-sep">✦</span>14 000+ références<span class="mq-sep">✦</span>Un partenaire, pas un fournisseur<span class="mq-sep">✦</span>Indépendant<span class="mq-sep">✦</span></span>
+        <span class="mq-item">Livrer l'officine, chaque jour<span class="mq-sep">✦</span>Neuf implantations<span class="mq-sep">✦</span>14 000+ références<span class="mq-sep">✦</span>Un partenaire, pas un fournisseur<span class="mq-sep">✦</span>Indépendant<span class="mq-sep">✦</span></span>
       </div>
     </div>
     <div class="mq-row rev">
       <div class="mq-track">
-        <span class="mq-item">Proximité<span class="mq-sep">✦</span>Réactivité<span class="mq-sep">✦</span>Liberté<span class="mq-sep">✦</span>Transparence<span class="mq-sep">✦</span>Engagement<span class="mq-sep">✦</span>Respect<span class="mq-sep">✦</span></span>
-        <span class="mq-item">Proximité<span class="mq-sep">✦</span>Réactivité<span class="mq-sep">✦</span>Liberté<span class="mq-sep">✦</span>Transparence<span class="mq-sep">✦</span>Engagement<span class="mq-sep">✦</span>Respect<span class="mq-sep">✦</span></span>
+        <span class="mq-item">Confiance<span class="mq-sep">✦</span>Engagement<span class="mq-sep">✦</span>Respect<span class="mq-sep">✦</span></span>
+        <span class="mq-item">Confiance<span class="mq-sep">✦</span>Engagement<span class="mq-sep">✦</span>Respect<span class="mq-sep">✦</span></span>
       </div>
     </div>
   </section>
@@ -556,7 +582,7 @@
       <div class="eyebrow-row reveal"><span class="kicker">Le réseau</span></div>
       <div class="grid">
         <div>
-          <p class="big" data-split><span class="n">9</span> agences.<br><span class="accent">1</span> réseau national.</p>
+          <p class="big" data-split><span class="n">9</span> implantations.<br><span class="accent">1</span> réseau national.</p>
           <p class="lede reveal d1">Un maillage pensé au plus près des officines. La proximité d'un
             interlocuteur local, adossée à la force logistique d'un réseau qui couvre le territoire.</p>
           <div class="chips reveal d2">
@@ -574,37 +600,57 @@
         </div>
       </div>
     </div>
-  </section>
+  
+  <div class="wrap">
+    <div class="sites reveal">
+      <div class="site"><span class="s-tag">Siège</span>
+        <div class="s-name">Hyères Pharma</div><div class="s-city">Hyères (83)</div></div>
+      <div class="site"><div class="s-name">Ouest Pharma Services</div><div class="s-city">St-Étienne-de-Montluc (44)</div></div>
+      <div class="site"><div class="s-name">Comptoir Pharmaceutique du Rhône</div><div class="s-city">Saint-Maurice-l'Exil (38)</div></div>
+      <div class="site"><div class="s-name">Sud Ouest Pharma</div><div class="s-city">Montayral (47)</div></div>
+      <div class="site"><div class="s-name">Pharm'Occitanie Services</div><div class="s-city">Villeneuve-lès-Béziers (34)</div></div>
+      <div class="site"><div class="s-name">Sud Est Pharma</div><div class="s-city">Le Cannet-des-Maures (83)</div></div>
+      <div class="site"><div class="s-name">Mistral Santé Pharma</div><div class="s-city">Flassans-sur-Issole (83)</div></div>
+      <div class="site"><div class="s-name">Escale Pharma</div><div class="s-city">Chilly-Mazarin (91)</div></div>
+      <div class="site"><span class="s-tag blue">Partenaire</span>
+        <div class="s-name">Pharmest</div><div class="s-city">Metz (57)</div></div>
+    </div>
+  </div>
+</section>
 
   <!-- ============================ MÉTHODE / PARCOURS ============================ -->
   <section class="sect methode" id="methode">
     <div class="wrap">
-      <div class="eyebrow-row reveal"><span class="kicker">La méthode</span></div>
-      <h2 class="title" data-split>Reprenez la main sur vos <span class="accent">achats</span>.</h2>
-      <p class="lede reveal d2">Un parcours simple, en quatre temps, pour retrouver de la clarté —
-        et de la marge — sur ce que vous achetez chaque jour.</p>
+      <div class="eyebrow-row reveal"><span class="kicker">Le métier</span></div>
+      <h2 class="title" data-split>Approvisionner votre officine, <span class="accent">tous les jours</span>.</h2>
+      <p class="lede reveal d2">Grossiste-répartiteur, c'est un métier de chaque matin : référencer,
+        stocker, préparer, livrer. Quatre gestes, répétés jour après jour depuis neuf implantations.</p>
       <div class="steps">
         <div class="step reveal"><span class="bar"></span>
-          <span class="idx">01 — Diagnostic</span>
-          <h3>On regarde vos achats en face</h3>
-          <p>Un état des lieux honnête de vos approvisionnements, tels qu'ils sont, sans filtre.</p>
+          <span class="idx">01 — Le catalogue</span>
+          <h3>14 000+ références à portée de commande</h3>
+          <p>Du médicament à la parapharmacie : un catalogue Offilog assez large pour couvrir le quotidien du comptoir, produit par produit.</p>
         </div>
         <div class="step reveal d1"><span class="bar"></span>
-          <span class="idx">02 — Sélection</span>
-          <h3>Vous choisissez, à votre rythme</h3>
-          <p>Vos références, vos priorités. Sans franco imposé, sans engagement de volume.</p>
+          <span class="idx">02 — La disponibilité</span>
+          <h3>Un stock proche, prêt à partir</h3>
+          <p>Des stocks répartis sur neuf implantations, au plus près des officines. Quand le comptoir a besoin, le réseau répond présent.</p>
         </div>
         <div class="step reveal d2"><span class="bar"></span>
-          <span class="idx">03 — Intégration</span>
-          <h3>L'agence proche prend le relais</h3>
-          <p>Vos commandes s'organisent simplement, portées par l'agence la plus proche de vous.</p>
+          <span class="idx">03 — La préparation</span>
+          <h3>Votre commande, préparée près de chez vous</h3>
+          <p>Chaque commande est préparée dans l'implantation la plus proche, par une équipe qui connaît votre officine et ses saisons.</p>
         </div>
         <div class="step reveal d3"><span class="bar"></span>
-          <span class="idx">04 — Marge retrouvée</span>
-          <h3>Ce que vous gagnez reste visible</h3>
-          <p>Le bénéfice apparaît là où il compte : nette sur facture, pas dans une promesse.</p>
+          <span class="idx">04 — La livraison</span>
+          <h3>Livrée à votre officine, jour après jour</h3>
+          <p>Les tournées partent chaque jour vers les officines françaises. Et votre interlocuteur reste le même — proche, joignable, présent dans la durée.</p>
         </div>
       </div>
+
+      <p class="lede reveal annexe">Et quand la vie de l'officine change — transfert, agrandissement,
+        cession de parts, optimisation — votre interlocuteur ajuste l'approvisionnement avec vous,
+        sans à-coup au comptoir.</p>
     </div>
   </section>
 
@@ -613,7 +659,7 @@
     <div class="surge-glow" aria-hidden="true"></div>
     <div class="wrap">
       <div class="eyebrow-row reveal"><span class="kicker">Pourquoi Intégral</span></div>
-      <h2 class="title" data-split>Indépendants, libres, <span class="accent">larges</span>.</h2>
+      <h2 class="title" data-split>Indépendants, proches, <span class="accent">disponibles</span>.</h2>
       <div class="pillars">
         <div class="pillar reveal">
           <div class="glow" style="background:var(--blue)"></div>
@@ -623,9 +669,9 @@
         </div>
         <div class="pillar reveal d1">
           <div class="glow" style="background:var(--teal)"></div>
-          <span class="plabel">02 · Liberté</span>
-          <h3>Ni franco imposé, ni engagement</h3>
-          <p>Vous restez libre, commande après commande. On gagne votre fidélité ; on ne la contraint pas.</p>
+          <span class="plabel">02 · Proximité</span>
+          <h3>Un interlocuteur qui vous connaît</h3>
+          <p>Votre commande est préparée et livrée depuis l'implantation la plus proche, par une équipe qui connaît votre officine — et qui revient vous voir.</p>
         </div>
         <div class="pillar reveal d2">
           <div class="glow" style="background:var(--orange)"></div>
@@ -645,7 +691,7 @@
       <div class="values">
         <div class="value reveal" data-tilt="9"><div class="sheen"></div>
           <div class="vn">Confiance</div>
-          <p>La transparence d'abord. Ce qu'on annonce, on le tient — et ça se vérifie sur la facture.</p>
+          <p>La transparence d'abord. Une relation claire, tenue dans la durée, où la parole donnée vaut engagement.</p>
         </div>
         <div class="value reveal d1" data-tilt="9"><div class="sheen"></div>
           <div class="vn">Engagement</div>
@@ -653,7 +699,7 @@
         </div>
         <div class="value reveal d2" data-tilt="9"><div class="sheen"></div>
           <div class="vn">Respect</div>
-          <p>De l'officine, du métier, des personnes. C'est la base de tout ce que nous construisons.</p>
+          <p>Du pharmacien comme du patient. On défend l'officine indépendante, parce qu'elle soigne un territoire.</p>
         </div>
       </div>
     </div>
@@ -666,20 +712,18 @@
         <div class="edge"></div>
         <div class="eyebrow-row"><span class="kicker">Nous rejoindre</span></div>
         <h2 data-split>Parlons de votre <span class="accent">officine</span>.</h2>
-        <p class="lede">Découvrez, concrètement, ce que le réseau peut changer pour vous —
-          sans engagement, à partir d'un simple échange.</p>
+        <p class="lede">Parlons de votre officine et de son approvisionnement au quotidien —
+          à partir d'un simple échange.</p>
         <div class="join-cta">
-          <a class="btn btn-primary magnetic" data-cursor="Écrire" href="mailto:pascale.prieto@integralpharma.fr?subject=Découvrir%20le%20réseau%20Intégral%20Pharma">Découvrir le réseau <span class="arw">↗</span></a>
-          <a class="btn btn-ghost magnetic" href="tel:+33676885391">Nous appeler</a>
+          <a class="btn btn-primary magnetic" data-cursor="Écrire" href="mailto:contact@integralpharma.fr?subject=Découvrir%20le%20réseau%20Intégral%20Pharma">Nous écrire <span class="arw">↗</span></a>
         </div>
         <div class="contact">
           <div>
-            <div class="c-name">Pascale Prieto</div>
-            <div class="c-role">Directrice commerciale France</div>
+            <div class="c-name">Intégral Pharma</div>
+            <div class="c-role">Grossiste-répartiteur français indépendant</div>
           </div>
           <div class="c-links">
-            <a href="mailto:pascale.prieto@integralpharma.fr"><i>@</i>pascale.prieto@integralpharma.fr</a>
-            <a href="tel:+33676885391"><i>☎</i>06 76 88 53 91</a>
+            <a href="mailto:contact@integralpharma.fr"><i>@</i>contact@integralpharma.fr</a>
           </div>
         </div>
       </div>
@@ -693,26 +737,25 @@
     <div class="foot-top">
       <div class="foot-brand">
         <div class="brand"><span class="dot"></span><b>Intégral</b> <span>Pharma</span></div>
-        <p>Groupe de grossistes français indépendant. Neuf agences, un réseau national au service de l'officine.</p>
+        <p>Groupe de grossistes-répartiteurs français indépendant. Neuf implantations, un réseau national au service de l'officine.</p>
       </div>
       <div class="foot-nav">
         <div class="foot-col">
           <h4>Le réseau</h4>
           <a href="#reseau">Le réseau</a>
-          <a href="#methode">La méthode</a>
+          <a href="#methode">Le métier</a>
           <a href="#pourquoi">Pourquoi nous</a>
           <a href="#valeurs">Nos valeurs</a>
         </div>
         <div class="foot-col">
           <h4>Contact</h4>
           <a href="#rejoindre">Nous rejoindre</a>
-          <a href="mailto:pascale.prieto@integralpharma.fr">Écrire à Pascale Prieto</a>
-          <a href="tel:+33676885391">06 76 88 53 91</a>
+          <a href="mailto:contact@integralpharma.fr">Nous écrire</a>
         </div>
       </div>
     </div>
     <div class="foot-bottom">
-      <span>© <span id="yr">2026</span> Intégral Pharma — Tous droits réservés.</span>
+      <span>758 Chemin de la Source, 83400 Hyères · <a href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a> · © <span id="yr">2026</span> Intégral Pharma</span>
       <span>Un partenaire, pas un fournisseur.</span>
     </div>
   </div>
@@ -737,12 +780,24 @@
   var heavy = gsapOK && !reduce;                 // orchestrated GSAP fx
   var deskFx = heavy && desktop && finePointer;  // pin, tilt, cursor, magnetic
 
+  // arm the reveal-on-scroll system NOW that JS is alive (the CSS masking is
+  // gated on html.js-anim so a broken script can never leave a blank page)
+  if (!reduce) document.documentElement.classList.add('js-anim');
+
+  // the hero intro is choreographed by GSAP: remove those elements from the
+  // generic reveal system so the two never fight over opacity
+  if (heavy){
+    document.querySelectorAll('#hero .reveal').forEach(function(el){
+      el.classList.remove('reveal','d1','d2','d3','d4');
+    });
+  }
+
   // ---- mount vendored aurora, recolored IP blue / teal hint / orange ----
   var auroraEl = document.getElementById('aurora');
   if (window.mountAurora) {
     window.mountAurora(auroraEl, {
       // vivid IP blue → bright azure → bright orange (no muddy teal midpoint)
-      colorStops: ['#0057FF', '#2E86FF', '#FFA31C'],
+      colorStops: ['#0050E6', '#2E86FF', '#FFA31C'],
       amplitude: 1.18, blend: 0.55, speed: 0.92
     });
   } else {
@@ -795,6 +850,15 @@
     var words = [];
     tokens.forEach(function(tk){
       if (tk.br){ el.appendChild(document.createElement('br')); return; }
+      // une ponctuation isolée (", autrement") se colle au mot précédent :
+      // jamais d'espace avant une virgule ou un point
+      if (/^[,.;:!?…»)\]]/.test(tk.t) && words.length){
+        var glue = document.createElement('span');
+        if (tk.c) glue.className = tk.c;
+        glue.textContent = tk.t;
+        words[words.length - 1].appendChild(glue);
+        return;
+      }
       var w = document.createElement('span');
       w.className = 'w' + (tk.c ? ' ' + tk.c : '');
       w.textContent = tk.t;
@@ -871,7 +935,9 @@
   function heroEntrance(){
     if (!heavy){ return; }
     var tl = gsap.timeline();
-    if (heroLineTween) tl.add(heroLineTween, 0);
+    // un tween créé paused:true reste figé même inséré dans une timeline :
+    // on le réveille explicitement, sinon le titre n'anime jamais
+    if (heroLineTween) tl.add(heroLineTween.paused(false), 0);
     var kicker = document.querySelector('.kicker[data-scramble]');
     if (kicker && SCRAMBLE){
       var txt = kicker.textContent;
@@ -882,7 +948,10 @@
     }, .35);
   }
 
+  var started = false;
   function startExperience(){
+    if (started) return;
+    started = true;
     buildSplits();
     if (deskFx && intro){
       intro.classList.remove('intro--auto');
@@ -905,6 +974,8 @@
   } else {
     window.addEventListener('load', startExperience);
   }
+  // filet : si les fontes tardent, on démarre quand même (garde anti double-run)
+  setTimeout(startExperience, 1500);
 
   /* ---------------------------------------------------------------------
      HARD SAFETY NET — headings must ALWAYS end visible. If the reveal
@@ -968,7 +1039,7 @@
   } else { reveals.forEach(function(r){ r.classList.add('in'); }); }
 
   /* ---------------------------------------------------------------------
-     Animated counters (9 agences always; +14 000 unless scrub owns it)
+     Animated counters (neuf implantations always; +14 000 unless scrub owns it)
   --------------------------------------------------------------------- */
   function countUp(el){
     var target = parseInt(el.getAttribute('data-count'), 10);
@@ -999,7 +1070,9 @@
     var ring = document.querySelector('.cur-ring');
     var label = document.querySelector('.cur-label');
     document.body.classList.add('has-cursor');
-    gsap.set([dot, ring], { xPercent: -50, yPercent: -50 });
+    // démarre hors écran : sinon l'anneau traîne en haut à gauche tant que
+    // la souris n'a pas bougé
+    gsap.set([dot, ring], { xPercent: -50, yPercent: -50, x: -120, y: -120 });
     var rx = gsap.quickTo(ring, 'x', { duration: .5, ease: 'power3' });
     var ry = gsap.quickTo(ring, 'y', { duration: .5, ease: 'power3' });
     var dx = gsap.quickTo(dot, 'x', { duration: .14, ease: 'power3' });
