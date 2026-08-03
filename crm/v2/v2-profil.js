@@ -68,9 +68,18 @@
     var by = (V2.user && V2.user.name) || '', at = Date.now();
     var c = sb();
     var rec = { data: data, by: by, at: at };
+    // Si l'enregistrement partagé échoue, on garde la saisie dans le navigateur pour ne rien
+    // perdre — MAIS on le DIT. Un repli silencieux a déjà coûté des corrections : elles
+    // semblaient enregistrées, restaient dans le seul navigateur, et disparaissaient ensuite.
+    function repli(motif) {
+      localSet(st, sid, rec);
+      if (V2.toast) V2.toast('Enregistré sur cet ordinateur seulement — pas partagé avec l\'équipe', 'error');
+      try { console.warn('[profil] enregistrement partagé refusé', st, sid, motif); } catch (e) {}
+    }
     if (c && V2.user) {
       c.from(TABLE).upsert({ scope_type: st, scope_id: String(sid), data: data, updated_by: V2.user.id, updated_by_name: by, updated_at: new Date().toISOString() }, { onConflict: 'scope_type,scope_id' })
-        .then(function (r) { if (r.error) localSet(st, sid, rec); }).catch(function () { localSet(st, sid, rec); });
+        .then(function (r) { if (r.error) repli(r.error.message || ''); })
+        .catch(function (e) { repli((e && e.message) || 'connexion'); });
     } else { localSet(st, sid, rec); }
     return rec;
   }
@@ -160,10 +169,10 @@
   V2.profil.loadScope = function (st) {
     var c = sb();
     if (!c) return Promise.resolve(localScopeList(st));
-    // Supabase plafonne une requête à 1000 lignes. Au-delà, les corrections les plus
-    // anciennes disparaissaient SILENCIEUSEMENT du résultat : un nom de titulaire corrigé
-    // à la main se remettait tout seul à la valeur de la base quelques jours plus tard.
-    // On lit donc par tranches de 1000 jusqu'à avoir tout.
+    // Supabase plafonne une requête à 1000 lignes : au-delà, les enregistrements en trop
+    // disparaîtraient silencieusement du résultat. On lit donc par tranches de 1000.
+    // (Ce n'était PAS la cause du bug « le titulaire se remet tout seul » — celle-là était
+    // une contrainte en base qui refusait le type 'override', corrigée le 03/08/2026.)
     var PAS = 1000, out = [];
     function tranche(depart) {
       return c.from(TABLE).select('scope_id,data').eq('scope_type', st)
@@ -189,9 +198,46 @@
       if (cb) cb(data);
     });
   };
+  // Rattrapage des corrections restées coincées dans le navigateur.
+  // Jusqu'au 03/08/2026 la base refusait le type 'override' : les corrections saisies par
+  // l'équipe (titulaire, nom, groupement, prospect promu) tombaient en repli local et
+  // n'étaient jamais partagées. On les remonte une fois, puis on vide le repli.
+  function remonterRepliLocal() {
+    var c = sb(); if (!c || !V2.user) return Promise.resolve();
+    var m = localMap(), aFaire = [];
+    Object.keys(m).forEach(function (k) {
+      if (k.indexOf('override:') !== 0) return;
+      var rec = m[k]; if (!rec || !rec.data || !Object.keys(rec.data).length) return;
+      aFaire.push({ k: k, sid: k.slice('override:'.length), rec: rec });
+    });
+    if (!aFaire.length) return Promise.resolve();
+    return Promise.all(aFaire.map(function (it) {
+      // On ne remonte que si la base n'a rien de plus récent pour cette pharmacie.
+      return c.from(TABLE).select('updated_at').eq('scope_type', 'override').eq('scope_id', it.sid).maybeSingle()
+        .then(function (r) {
+          if (r.error) return null;
+          var distant = r.data && r.data.updated_at ? +new Date(r.data.updated_at) : 0;
+          if (distant >= (it.rec.at || 0)) return { k: it.k, ok: true };  // déjà à jour → on peut oublier le local
+          return c.from(TABLE).upsert({
+            scope_type: 'override', scope_id: it.sid, data: it.rec.data,
+            updated_by: V2.user.id, updated_by_name: it.rec.by || (V2.user.name || ''),
+            updated_at: new Date(it.rec.at || Date.now()).toISOString()
+          }, { onConflict: 'scope_type,scope_id' }).then(function (u) { return { k: it.k, ok: !u.error }; });
+        }).catch(function () { return null; });
+    })).then(function (res) {
+      var map = localMap(), n = 0;
+      (res || []).forEach(function (x) { if (x && x.ok) { delete map[x.k]; n++; } });
+      if (n) { try { localStorage.setItem(LS, JSON.stringify(map)); } catch (e) {} }
+      if (n && V2.toast) V2.toast(n + ' correction' + (n > 1 ? 's' : '') + ' de cet ordinateur remontée' + (n > 1 ? 's' : '') + ' et partagée' + (n > 1 ? 's' : '') + ' avec l\'équipe');
+    }).catch(function () {});
+  }
+
   // Applique toutes les corrections connues aux pharmacies en mémoire (appelé au boot).
   V2.profil.applyOverrides = function (cb) {
     if (!V2.profil.loadScope) { if (cb) cb(); return; }
+    return remonterRepliLocal().then(function () { chargerOverrides(cb); });
+  };
+  function chargerOverrides(cb) {
     V2.profil.loadScope('override').then(function (list) {
       var byId = {}; (V2.pharmacies || []).forEach(function (p) { byId[String(p.id)] = p; });
       V2.nameOvr = V2.nameOvr || {}; V2.promoted = V2.promoted || {}; V2.titOvr = V2.titOvr || {};
@@ -207,7 +253,7 @@
       });
       if (cb) cb();
     });
-  };
+  }
 
   function fill(box) {
     var st = box.getAttribute('data-st'), sid = box.getAttribute('data-sid');
