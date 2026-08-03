@@ -98,10 +98,15 @@
     if (!it.owner) it.owner = (V2.user && V2.user.email) || '';
     var c = sb();
     if (backend === 'supabase' && c) {
+      // Un repli silencieux fait croire que c'est partagé alors que ça reste sur ce poste.
+      var repli = function () {
+        saveLocal(it);
+        if (V2.toast) V2.toast('Enregistré sur cet ordinateur seulement — pas partagé avec l\'équipe', 'error');
+      };
       return c.from('marketing_items').upsert(toRow(it)).then(function (r) {
-        if (r.error) saveLocal(it);
+        if (r.error) { repli(); try { console.warn('[marketing]', r.error.message); } catch (e) {} }
         return loadItems();
-      }).catch(function () { saveLocal(it); return Promise.resolve(items); });
+      }).catch(function () { repli(); return Promise.resolve(items); });
     }
     saveLocal(it); return Promise.resolve(items);
   }
