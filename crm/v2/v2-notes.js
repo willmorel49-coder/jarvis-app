@@ -57,41 +57,101 @@
       var box = btn.closest('.v2-notes-box'); if (!box) return;
       var ta = box.querySelector('.v2-notes-ta'); if (!ta) return;
       // déjà en écoute sur ce bouton → on arrête
-      if (_rec && _recBtn === btn) { try { _rec.stop(); } catch (e) {} return; }
-      if (_rec) { try { _rec.stop(); } catch (e) {} }
+      if (_rec && _recBtn === btn) { _rec._arretDemande = true; try { _rec.stop(); } catch (e) {} return; }
+      if (_rec) { _rec._arretDemande = true; try { _rec.stop(); } catch (e) {} }
       var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!SR) { if (V2.toast) V2.toast('La dictée vocale n\'est pas disponible sur ce navigateur'); return; }
-      var rec = new SR();
-      rec.lang = 'fr-FR'; rec.continuous = true; rec.interimResults = true;
+
+      // Ce qui était déjà écrit dans la note avant de commencer à dicter.
       var base = ta.value ? (ta.value.replace(/\s+$/, '') + ' ') : '';
-      var finalTxt = '';
-      rec.onstart = function () { _rec = rec; _recBtn = btn; btn.classList.add('rec'); btn.title = 'Arrêter la dictée'; if (V2.toast) V2.toast('Dictée en cours — parle, puis re-touche le micro'); };
-      rec.onresult = function (e) {
-        // On RECONSTRUIT le texte depuis l'ensemble des résultats à chaque événement
-        // (idempotent) au lieu d'accumuler avec += : sur mobile, resultIndex est peu
-        // fiable et l'accumulation répétait la même phrase 4-5 fois.
-        var finalT = '', interim = '', lastFin = '';
-        for (var i = 0; i < e.results.length; i++) {
-          var raw = e.results[i][0].transcript || '';
-          if (e.results[i].isFinal) {
-            var t = raw.trim();
-            // Safari ré-émet parfois le MÊME segment final plusieurs fois → on saute les doublons consécutifs.
-            if (t && t !== lastFin) { finalT += t + ' '; lastFin = t; }
-          } else { interim += raw; }
-        }
-        finalTxt = finalT;
-        ta.value = (base + finalTxt + interim).replace(/\s+/g, ' ').replace(/^\s/, '');
-      };
-      rec.onerror = function (ev) {
-        if (ev && (ev.error === 'not-allowed' || ev.error === 'service-not-allowed')) { if (V2.toast) V2.toast('Micro refusé : autorise le microphone dans le navigateur'); }
-        else if (ev && ev.error === 'no-speech') { if (V2.toast) V2.toast('Rien entendu — réessaie'); }
-      };
-      rec.onend = function () {
-        btn.classList.remove('rec'); btn.title = 'Dicter la note à la voix';
-        ta.value = (base + finalTxt).trim(); if (ta.value) ta.focus();
-        _rec = null; _recBtn = null;
-      };
-      try { rec.start(); } catch (e) { if (V2.toast) V2.toast('Impossible de démarrer la dictée'); }
+      var acquis = '';        // tout ce qui a été définitivement reconnu depuis le début
+      var affiche = '';       // dernier texte réellement montré à l'écran
+      var arret = false;      // l'utilisateur a-t-il touché le micro pour arrêter ?
+      var relances = 0;       // garde-fou : jamais de relance en boucle infinie
+
+      // enCours = on est au milieu d'une phrase : on garde l'espace final qui sépare
+      // les mots à venir. Sinon on nettoie, pour ne pas laisser d'espace qui traîne.
+      function ecrire(txt, enCours) {
+        affiche = txt.replace(/\s+/g, ' ').replace(/^\s/, '');
+        if (!enCours) affiche = affiche.replace(/\s+$/, '');
+        ta.value = affiche;
+      }
+
+      function demarrer(premier) {
+        var rec = new SR();
+        rec.lang = 'fr-FR';
+        rec.interimResults = true;
+        // Safari accepte `continuous` mais coupe quand même après une phrase :
+        // c'est la relance automatique ci-dessous qui fait le vrai travail.
+        try { rec.continuous = true; } catch (e) {}
+        rec._fin = '';
+
+        rec.onstart = function () {
+          _rec = rec; _recBtn = btn;
+          btn.classList.add('rec'); btn.title = 'Arrêter la dictée';
+          if (premier && V2.toast) V2.toast('Dictée en cours — parle, puis re-touche le micro pour arrêter');
+        };
+
+        rec.onresult = function (e) {
+          // On RECONSTRUIT le texte depuis l'ensemble des résultats à chaque événement
+          // (idempotent) au lieu d'accumuler avec += : sur mobile, resultIndex est peu
+          // fiable et l'accumulation répétait la même phrase 4-5 fois.
+          var fin = '', interim = '', dernierFin = '';
+          for (var i = 0; i < e.results.length; i++) {
+            var brut = e.results[i][0].transcript || '';
+            if (e.results[i].isFinal) {
+              var t = brut.trim();
+              // Safari ré-émet parfois le MÊME segment final plusieurs fois → on saute les doublons consécutifs.
+              if (t && t !== dernierFin) { fin += t + ' '; dernierFin = t; }
+            } else { interim += brut; }
+          }
+          rec._fin = fin;
+          rec._interim = interim;
+          ecrire(base + acquis + fin + interim, !!interim);
+        };
+
+        rec.onerror = function (ev) {
+          var err = ev && ev.error;
+          if (err === 'not-allowed' || err === 'service-not-allowed') {
+            arret = true;   // inutile de relancer : c'est une autorisation refusée
+            if (V2.toast) V2.toast('Micro refusé — autorise le microphone pour ce site dans les réglages du navigateur', 'error');
+          } else if (err === 'audio-capture') {
+            arret = true;
+            if (V2.toast) V2.toast('Aucun micro détecté sur cet appareil', 'error');
+          }
+          // 'no-speech' et 'network' : on laisse la relance automatique retenter, sans alarmer.
+        };
+
+        rec.onend = function () {
+          // Ce qui vient d'être reconnu est acquis pour de bon.
+          // ⚠️ Safari coupe souvent SANS avoir marqué la phrase « définitive » : dans ce
+          // cas on garde le texte provisoire, sinon la phrase disparaît à la relance.
+          var capte = rec._fin || rec._interim || '';
+          if (capte) { acquis = (acquis + capte.trim() + ' ').replace(/\s+/g, ' '); }
+
+          // Safari (Mac et iPhone) arrête l'écoute tout seul après chaque phrase.
+          // Tant que Karine n'a pas re-touché le micro, on relance : c'est ce qui
+          // donnait l'impression que « le dictaphone ne marche pas ».
+          if (!arret && !rec._arretDemande && relances < 60) {
+            relances++;
+            try { demarrer(false); return; } catch (e) {}
+          }
+
+          btn.classList.remove('rec'); btn.title = 'Dicter la note à la voix';
+          _rec = null; _recBtn = null;
+
+          // ⚠️ On ne VIDE JAMAIS la note. Avant, si aucun segment n'était marqué
+          // « définitif », tout ce que Karine venait de dicter disparaissait à l'arrêt.
+          var texte = (base + acquis).trim() || affiche.trim() || ta.value.trim();
+          ta.value = texte;
+          if (texte) { ta.focus(); }
+          else if (V2.toast) V2.toast('Rien n\'a été entendu — vérifie le micro et réessaie', 'error');
+        };
+
+        rec.start();
+      }
+
+      try { demarrer(true); } catch (e) { if (V2.toast) V2.toast('Impossible de démarrer la dictée', 'error'); }
     },
 
     // charge tous les conteneurs pas encore hydratés
