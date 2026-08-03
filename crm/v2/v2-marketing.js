@@ -196,7 +196,7 @@
       '.mkt-prev-wrap{position:sticky;top:18px;background:#e9ecef;border-radius:14px;padding:18px;overflow:auto;max-height:calc(100vh - 120px)}',
       '.mkt-prev-scale{transform-origin:top center;margin:0 auto}',
       // sélecteur overlay
-      '.mkt-sel-bd{position:fixed;inset:0;z-index:200;background:rgba(7,11,20,.55);backdrop-filter:blur(3px);display:none;align-items:flex-start;justify-content:center;padding:8vh 16px}',
+      '.mkt-sel-bd{position:fixed;inset:0;z-index:200;background:rgba(7,11,20,.55);display:none;align-items:flex-start;justify-content:center;padding:8vh 16px}',
       '.mkt-sel-bd.open{display:flex}',
       '.mkt-sel{width:min(560px,100%);background:var(--bg-2,var(--card));border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.5)}',
       '.mkt-sel-search{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line)}',
