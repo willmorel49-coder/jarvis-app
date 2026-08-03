@@ -27,7 +27,8 @@
     radial-gradient(60% 42% at 18% 62%, rgba(0, 87, 255, 0.62), transparent 62%),
     radial-gradient(52% 40% at 50% 58%, rgba(46, 134, 255, 0.50), transparent 60%),
     radial-gradient(62% 46% at 84% 64%, rgba(255, 163, 28, 0.58), transparent 64%);
-  filter: blur(38px) saturate(128%);
+  /* pas de filter:blur grand format (règle Safari) : les dégradés radiaux
+     sont déjà doux par construction */
   opacity: 0.9;
   will-change: transform, opacity;
   animation: auroraDrift 18s ease-in-out infinite alternate;

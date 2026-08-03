@@ -114,3 +114,7 @@ L'INTEGRAL COMPLET*.pdf
 # Fiche biosimilaires INTERNE (conditions commerciales — ne jamais publier)
 biosim-poster-interne.pdf
 biosim-poster-*interne.pdf
+
+# Comptes utilisateurs : contiennent des mots de passe en clair — NE JAMAIS publier
+crm/v2/_sql/create-user-*.sql
+**/create-user-*.sql

@@ -1,7 +1,11 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Intégral Pharma — Un partenaire, pas un fournisseur</title>
-<meta name="description" content="Groupe de grossistes français indépendant. 9 agences, 1 réseau national au service des pharmaciens.">
+<title>Intégral Pharma — Grossiste-répartiteur français indépendant</title>
+<meta name="description" content="Groupe de grossistes-répartiteurs français indépendant. Neuf implantations en France, 14 000+ références au catalogue, et un interlocuteur qui connaît votre officine.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7' fill='%230050E6'/%3E%3Ccircle cx='8' cy='8' r='3' fill='%23F39A1B'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -10,26 +14,26 @@
 /* ============================================================
    INTÉGRAL PHARMA — « BRUME CLAIRE » · agency edition v2
    Warm cream + botanical green + Intégral orange + IP blue
-   Signature : L'Hexagone — le réseau des 9 agences, vivant.
+   Signature : L'Hexagone — le réseau des neuf implantations, vivant.
    ============================================================ */
 :root{
-  --cream:#F7F4EE;
-  --cream-2:#F1EBDF;
-  --sand:#EAD9B8;
-  --green:#1E3A2E;      /* deep botanical */
-  --green-2:#2E5F4A;    /* mid */
-  --green-3:#4E7A63;    /* soft */
+  --cream:#F8FAFC;
+  --cream-2:#EDF2F9;
+  --sand:#D8E4F5;
+  --green:#0A1B33;      /* deep botanical */
+  --green-2:#0050E6;    /* mid */
+  --green-3:#3D7BFF;    /* soft */
   --orange:#F39A1B;
   --orange-deep:#D97E06;
   --orange-ink:#B45309;  /* orange for TEXT on light — AA-legible, still vibrant */
-  --blue:#0057FF;        /* IP brand blue — a real accent */
+  --blue:#0050E6;        /* IP brand blue — a real accent */
   --blue-soft:#3D7BFF;
   --blue-bright:#2E74FF;
-  --ink:#233029;
-  --muted:#556257;       /* crisper grey-green on cream (AA) */
-  --line:rgba(30,58,46,.14);
-  --line-soft:rgba(30,58,46,.08);
-  --shadow:26px 40px 90px -50px rgba(30,58,46,.55);
+  --ink:#0A1B33;
+  --muted:#55617A;       /* crisper grey-green on cream (AA) */
+  --line:rgba(10,27,51,.14);
+  --line-soft:rgba(10,27,51,.08);
+  --shadow:26px 40px 90px -50px rgba(10,27,51,.55);
   --serif:"Fraunces",Georgia,"Times New Roman",serif;
   --sans:"DM Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   --edge:clamp(20px,5.5vw,84px);
@@ -92,7 +96,7 @@ html.fx .rv{opacity:0;transform:translateY(26px)}
   transition:transform .5s cubic-bezier(.2,.8,.2,1),background .4s,box-shadow .5s,color .4s;
   will-change:transform;position:relative;
 }
-.btn:hover{transform:translateY(-3px);background:var(--green-2);box-shadow:0 22px 40px -22px rgba(30,58,46,.7)}
+.btn:hover{transform:translateY(-3px);background:var(--green-2);box-shadow:0 22px 40px -22px rgba(10,27,51,.7)}
 .btn .arw{transition:transform .5s cubic-bezier(.2,.8,.2,1)}
 .btn:hover .arw{transform:translateX(5px)}
 .btn--ghost{background:transparent;color:var(--green);border-color:var(--line)}
@@ -133,7 +137,7 @@ html.fx .intro{display:block}
    ============================================================ */
 .cursor,.cursor-dot{position:fixed;top:0;left:0;z-index:95;pointer-events:none;border-radius:50%;
   opacity:0;transition:opacity .3s}
-.cursor{width:44px;height:44px;margin:-22px 0 0 -22px;border:1.6px solid rgba(30,58,46,.62);
+.cursor{width:44px;height:44px;margin:-22px 0 0 -22px;border:1.6px solid rgba(10,27,51,.62);
   box-shadow:0 0 0 1.5px rgba(247,244,238,.42);
   display:grid;place-items:center;transition:opacity .3s,width .35s cubic-bezier(.2,.8,.2,1),height .35s cubic-bezier(.2,.8,.2,1),border-color .35s,background .35s,box-shadow .35s}
 .cursor-dot{width:6px;height:6px;margin:-3px 0 0 -3px;background:var(--orange);box-shadow:0 0 8px rgba(243,154,27,.6)}
@@ -154,8 +158,8 @@ html.cursor-on, html.cursor-on *{cursor:none!important}
 }
 .hd.scrolled{
   background:rgba(247,244,238,.82);
-  -webkit-backdrop-filter:blur(14px) saturate(140%);
-  backdrop-filter:blur(14px) saturate(140%);
+  
+  
   box-shadow:0 1px 0 var(--line-soft);
   padding-top:11px;padding-bottom:11px;
 }
@@ -170,6 +174,11 @@ html.cursor-on, html.cursor-on *{cursor:none!important}
 .hd__nav a.lnk:hover::after{right:0}
 .hd__cta{padding:.7em 1.35em;font-size:.88rem}
 @media(max-width:860px){.hd__nav a.lnk{display:none}}
+@media(max-width:600px){
+  .hd__cta{font-size:.82rem;padding:.65em 1.15em;white-space:nowrap}
+  .hd__cta .arw{display:none}
+}
+@media(max-width:430px){.hd__brand b{display:none}}
 
 /* ============================================================
    HERO
@@ -190,7 +199,7 @@ html.cursor-on, html.cursor-on *{cursor:none!important}
 .orbs{position:absolute;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
 .orb{
   position:absolute;border-radius:50%;
-  -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+  
   border:1px solid rgba(255,255,255,.5);
   will-change:transform;
 }
@@ -238,7 +247,7 @@ html.cursor-on, html.cursor-on *{cursor:none!important}
 .reseau__grid{display:grid;grid-template-columns:1fr;gap:clamp(46px,6vw,72px);align-items:center}
 @media(min-width:940px){.reseau__grid{grid-template-columns:1.02fr .98fr}}
 .reseau h2{margin:22px 0 24px;max-width:12ch}
-.reseau h2 span{color:var(--orange-ink)}
+.reseau h2 .accent-o{color:var(--orange-ink)}
 .reseau__stats{display:flex;gap:clamp(22px,4vw,46px);margin-top:38px;flex-wrap:wrap}
 .stat__n{font-family:var(--serif);font-size:clamp(2.6rem,5vw,3.5rem);line-height:1;color:var(--green);font-weight:400}
 .stat__l{font-size:.82rem;letter-spacing:.05em;color:var(--muted);margin-top:8px;max-width:16ch}
@@ -256,15 +265,15 @@ html.cursor-on, html.cursor-on *{cursor:none!important}
 /* floating photo inset grounds the abstract map */
 .constel__inset{
   position:absolute;left:-2%;bottom:-1%;width:min(46%,220px);z-index:3;
-  border-radius:16px;overflow:hidden;box-shadow:0 26px 46px -26px rgba(30,58,46,.7);
+  border-radius:16px;overflow:hidden;box-shadow:0 26px 46px -26px rgba(10,27,51,.7);
   border:3px solid var(--cream);
 }
 .constel__inset img{width:100%;aspect-ratio:5/4;object-fit:cover;transition:transform 1.1s cubic-bezier(.2,.8,.2,1);will-change:transform}
 .constel__inset:hover img{transform:scale(1.06)}
 .constel__tag{
   position:absolute;right:2%;top:4%;z-index:3;
-  background:rgba(247,244,238,.9);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
-  border-radius:13px;padding:10px 14px;box-shadow:0 12px 30px -18px rgba(30,58,46,.6);
+  background:rgba(247,244,238,.9);
+  border-radius:13px;padding:10px 14px;box-shadow:0 12px 30px -18px rgba(10,27,51,.6);
   display:flex;align-items:center;gap:10px;
 }
 .constel__tag .dot{width:9px;height:9px;border-radius:50%;background:var(--orange);box-shadow:0 0 0 4px rgba(243,154,27,.22)}
@@ -276,8 +285,32 @@ html.cursor-on, html.cursor-on *{cursor:none!important}
 }
 .constel__cap b{color:var(--green-2);font-weight:600}
 
+/* --- les neuf implantations : cartes dans la grammaire de la page --- */
+.sites{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;
+  margin-top:clamp(60px,8vw,84px);position:relative;z-index:1;
+}
+@media(max-width:900px){.sites{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.sites{grid-template-columns:1fr}}
+.site{
+  background:linear-gradient(180deg,#fff 0%,#FBF8F2 100%);
+  border:1px solid var(--line-soft);border-radius:16px;
+  padding:18px 20px;
+  box-shadow:0 24px 48px -46px rgba(10,27,51,.5);
+  transition:transform .5s cubic-bezier(.2,.8,.2,1),border-color .4s,box-shadow .5s;
+}
+.site:hover{transform:translateY(-3px);border-color:rgba(0,80,230,.32);box-shadow:0 30px 56px -40px rgba(0,80,230,.35)}
+.site b{font-family:var(--serif);font-weight:500;font-size:1.05rem;color:var(--green);display:block;line-height:1.2}
+.site small{display:block;color:var(--muted);font-size:.84rem;margin-top:4px;letter-spacing:.01em}
+.site__badge{
+  display:inline-block;font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;
+  border-radius:99px;padding:3px 9px;margin-bottom:9px;
+}
+.site__badge--hq{background:rgba(243,154,27,.14);color:var(--orange-ink);border:1px solid rgba(243,154,27,.42)}
+.site__badge--part{background:rgba(0,80,230,.08);color:var(--blue);border:1px solid rgba(0,80,230,.3)}
+
 /* soft drifting glow blobs — blue + orange */
-.glow{position:absolute;border-radius:50%;filter:blur(60px);pointer-events:none;z-index:0;opacity:.6;will-change:transform}
+.glow{position:absolute;border-radius:50%;-webkit-mask-image:radial-gradient(closest-side,#000 22%,transparent 78%);mask-image:radial-gradient(closest-side,#000 22%,transparent 78%);pointer-events:none;z-index:0;opacity:.6;will-change:transform}
 .glow--blue{background:radial-gradient(circle,rgba(0,87,255,.40),transparent 70%)}
 .glow--orange{background:radial-gradient(circle,rgba(243,154,27,.44),transparent 70%)}
 .reseau .glow--blue{width:340px;height:340px;left:-120px;bottom:-80px;animation:gd1 24s ease-in-out infinite}
@@ -343,6 +376,29 @@ html.fx .parcours.pinnable .step.active .step__n{color:var(--orange)}
 }
 
 /* ============================================================
+   LE MÉTIER (section 3 bis) — catalogue · disponibilité · préparation · livraison
+   ============================================================ */
+.projets{padding-block:clamp(80px,13vh,150px);background:linear-gradient(180deg,var(--cream-2) 0%,var(--cream) 100%);overflow:hidden}
+.projets__head{max-width:60ch;position:relative;z-index:1}
+.projets h2{margin:22px 0 20px;max-width:16ch}
+.projets h2 em{font-style:italic;color:var(--green-2)}
+.projets__grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-top:clamp(40px,6vw,60px);position:relative;z-index:1}
+@media(max-width:1080px){.projets__grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.projets__grid{grid-template-columns:1fr}}
+.projet{
+  background:linear-gradient(180deg,#fff 0%,#FBF8F2 100%);
+  border:1px solid var(--line-soft);border-radius:18px;
+  padding:clamp(22px,2.6vw,28px);
+  box-shadow:0 26px 52px -48px rgba(10,27,51,.5);
+  transition:transform .5s cubic-bezier(.2,.8,.2,1),border-color .4s,box-shadow .5s;
+  display:flex;flex-direction:column;gap:10px;
+}
+.projet:hover{transform:translateY(-4px);border-color:rgba(243,154,27,.4);box-shadow:0 32px 60px -40px rgba(243,154,27,.4)}
+.projet__n{font-family:var(--serif);font-size:.92rem;color:var(--orange-ink);letter-spacing:.05em;font-weight:500}
+.projet h3{font-size:1.22rem;font-weight:500;color:var(--green);line-height:1.15}
+.projet p{color:var(--muted);font-size:.92rem;line-height:1.55}
+
+/* ============================================================
    POURQUOI (section 4)
    ============================================================ */
 .pourquoi{padding-block:clamp(80px,13vh,150px);overflow:hidden}
@@ -357,7 +413,7 @@ html.fx .parcours.pinnable .step.active .step__n{color:var(--orange)}
   background:linear-gradient(180deg,#fff 0%,#FBF8F2 100%);
   border:1px solid var(--line-soft);
   border-radius:22px;padding:clamp(26px,3vw,36px);
-  box-shadow:0 30px 60px -50px rgba(30,58,46,.5);
+  box-shadow:0 30px 60px -50px rgba(10,27,51,.5);
   transition:box-shadow .5s,border-color .4s;
   display:flex;flex-direction:column;gap:14px;min-height:100%;
   transform-style:preserve-3d;will-change:transform;
@@ -372,7 +428,7 @@ html.fx .parcours.pinnable .step.active .step__n{color:var(--orange)}
 .pillar--count .num{font-family:var(--serif);font-size:clamp(3rem,7vw,4.4rem);line-height:.95;color:var(--cream);font-weight:400}
 .pillar--count .num .plus{color:var(--orange)}
 .pillar--count p{color:rgba(247,244,238,.72)}
-.pillar--count:hover{box-shadow:0 40px 70px -40px rgba(30,58,46,.7);border-color:var(--green)}
+.pillar--count:hover{box-shadow:0 40px 70px -40px rgba(10,27,51,.7);border-color:var(--green)}
 
 /* ============================================================
    VALEURS (section 5)
@@ -440,10 +496,11 @@ html.fx .parcours.pinnable .step.active .step__n{color:var(--orange)}
 .ft__brand b{font-family:var(--serif);font-weight:500;font-size:1.15rem;color:var(--cream)}
 .ft p.desc{color:rgba(247,244,238,.66);max-width:34ch;font-size:.96rem;line-height:1.5}
 .ft__col h4{font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--sand);margin-bottom:16px}
-.ft__col a{display:inline-block;color:rgba(247,244,238,.78);font-size:.96rem;padding:5px 0;transition:color .3s;position:relative}
+.ft__col a{display:block;width:fit-content;color:rgba(247,244,238,.78);font-size:.96rem;padding:5px 0;transition:color .3s;position:relative}
 .ft__col a::after{content:"";position:absolute;left:0;right:100%;bottom:2px;height:1px;background:var(--orange);transition:right .4s cubic-bezier(.2,.8,.2,1)}
 .ft__col a:hover{color:var(--orange)}
 .ft__col a:hover::after{right:0}
+.ft__addr{display:block;color:rgba(247,244,238,.6);font-size:.9rem;line-height:1.5;margin-top:10px}
 .ft__bottom{display:flex;flex-wrap:wrap;gap:12px 24px;justify-content:space-between;align-items:center;padding-top:26px;color:rgba(247,244,238,.55);font-size:.82rem}
 
 /* global fixed grain overlay */
@@ -457,6 +514,8 @@ html.fx .parcours.pinnable .step.active .step__n{color:var(--orange)}
 </style>
 
 <!-- scroll progress -->
+</head>
+<body>
 <div class="progress" id="progress" aria-hidden="true"></div>
 <!-- grain -->
 <div class="grain" aria-hidden="true"></div>
@@ -466,7 +525,7 @@ html.fx .parcours.pinnable .step.active .step__n{color:var(--orange)}
   <div class="intro__panel top"></div>
   <div class="intro__panel bot"></div>
   <div class="intro__mark">
-    <img src="../../assets/logo.png" alt="">
+    <img src="../../assets/logo-web.png" alt="">
     <div class="intro__word"><span>Un partenaire, pas un fournisseur</span></div>
     <div class="intro__rule"></div>
   </div>
@@ -475,12 +534,12 @@ html.fx .parcours.pinnable .step.active .step__n{color:var(--orange)}
 <!-- ============================ HEADER ============================ -->
 <header class="hd" id="hd">
   <a class="hd__brand" href="#top" aria-label="Intégral Pharma, accueil" data-cursor="Accueil">
-    <img src="../../assets/logo.png" alt="Intégral Pharma">
+    <img src="../../assets/logo-web.png" alt="Intégral Pharma">
     <b>Intégral&nbsp;Pharma</b>
   </a>
   <nav class="hd__nav" aria-label="Navigation principale">
     <a class="lnk" href="#reseau">Le réseau</a>
-    <a class="lnk" href="#parcours">L'accompagnement</a>
+    <a class="lnk" href="#parcours">Le métier</a>
     <a class="lnk" href="#pourquoi">Pourquoi Intégral</a>
     <a class="lnk" href="#valeurs">Nos valeurs</a>
     <a class="btn btn--amber hd__cta" href="#rejoindre" data-magnetic data-cursor="Réseau"><span class="btn__t">Découvrir le réseau <span class="arw" aria-hidden="true">→</span></span></a>
@@ -499,11 +558,11 @@ html.fx .parcours.pinnable .step.active .step__n{color:var(--orange)}
   <div class="wrap hero__inner">
     <div class="hero__parallax" data-parallax="0.4">
       <div class="hero__kicker eyebrow rv" id="heroKicker">Un partenaire, pas un fournisseur</div>
-      <h1 class="rv d1">Plus de marge,<br><em>nette sur facture.</em></h1>
-      <p class="lede hero__sub rv d2">9&nbsp;agences, 1&nbsp;réseau national. Nous accompagnons chaque officine, agence par agence — avec la disponibilité et la proximité d'un vrai partenaire.</p>
+      <h1 class="rv d1">Livrer la pharmacie<br><em>française, autrement.</em></h1>
+      <p class="lede hero__sub rv d2">Groupe de grossistes-répartiteurs français indépendant. Nous approvisionnons les officines chaque jour&nbsp;: 14&nbsp;000+ références, préparées et livrées depuis neuf implantations.</p>
       <div class="hero__cta rv d3">
         <a class="btn btn--amber" href="#rejoindre" data-magnetic data-cursor="Réseau"><span class="btn__t">Découvrir le réseau <span class="arw" aria-hidden="true">→</span></span></a>
-        <a class="btn btn--ghost" href="#reseau" data-magnetic><span class="btn__t">Voir nos 9 agences</span></a>
+        <a class="btn btn--ghost" href="#reseau" data-magnetic><span class="btn__t">Voir nos neuf implantations</span></a>
       </div>
     </div>
   </div>
@@ -518,12 +577,12 @@ html.fx .parcours.pinnable .step.active .step__n{color:var(--orange)}
   <div class="wrap reseau__grid">
     <div>
       <span class="eyebrow rv">Le réseau</span>
-      <h2 class="rv d1">9&nbsp;agences.<br><span>1&nbsp;réseau</span> national.</h2>
-      <p class="lede rv d2">Une couverture au plus près du terrain. Nos agences maillent le territoire pour livrer vite, répondre juste et rester joignables — parce que la proximité ne se sous-traite pas.</p>
+      <h2 class="rv d1">9&nbsp;implantations.<br><span class="accent-o">1&nbsp;réseau</span> national.</h2>
+      <p class="lede rv d2">Une couverture au plus près du terrain. Nos implantations maillent le territoire pour livrer vite, répondre juste et rester joignables — parce que la proximité ne se sous-traite pas.</p>
       <div class="reseau__stats rv d3">
         <div class="stat">
           <div class="stat__n" data-count="9">9</div>
-          <div class="stat__l">agences réparties sur le territoire</div>
+          <div class="stat__l">implantations réparties sur le territoire</div>
         </div>
         <div class="stat">
           <div class="stat__n">100%</div>
@@ -540,7 +599,7 @@ html.fx .parcours.pinnable .step.active .step__n{color:var(--orange)}
       <svg class="constel__svg" id="constel" viewBox="0 0 500 560" fill="none" role="presentation" data-parallax-svg>
         <defs>
           <linearGradient id="hexgrad" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stop-color="#0057FF"/>
+            <stop offset="0" stop-color="#0050E6"/>
             <stop offset=".55" stop-color="#3D7BFF"/>
             <stop offset="1" stop-color="#F39A1B"/>
           </linearGradient>
@@ -591,12 +650,55 @@ html.fx .parcours.pinnable .step.active .step__n{color:var(--orange)}
       </svg>
       <div class="constel__tag">
         <span class="dot" aria-hidden="true"></span>
-        <div><b>1 réseau national</b><small>Piloté au plus près du terrain</small></div>
+        <div><b>un réseau national</b><small>Piloté au plus près du terrain</small></div>
       </div>
       <div class="constel__inset">
-        <img src="../../assets/siege-solaire.jpg" alt="" loading="lazy">
+        <img src="../../assets/siege-web.jpg" alt="" loading="lazy">
       </div>
-      <div class="constel__cap"><b>Neuf agences</b>, un même réseau — reliées, jamais isolées.</div>
+      <div class="constel__cap"><b>Neuf implantations</b>, un même réseau — reliées, jamais isolées.</div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="sites" id="implantations">
+      <div class="site rv">
+        <span class="site__badge site__badge--hq">Siège</span>
+        <b>Hyères Pharma</b>
+        <small>Hyères (83)</small>
+      </div>
+      <div class="site rv">
+        <b>Ouest Pharma Services</b>
+        <small>St-Étienne-de-Montluc (44)</small>
+      </div>
+      <div class="site rv d1">
+        <b>Comptoir Pharmaceutique du Rhône</b>
+        <small>Saint-Maurice-l'Exil (38)</small>
+      </div>
+      <div class="site rv">
+        <b>Sud Ouest Pharma</b>
+        <small>Montayral (47)</small>
+      </div>
+      <div class="site rv d1">
+        <b>Pharm'Occitanie Services</b>
+        <small>Villeneuve-lès-Béziers (34)</small>
+      </div>
+      <div class="site rv d2">
+        <b>Sud Est Pharma</b>
+        <small>Le Cannet-des-Maures (83)</small>
+      </div>
+      <div class="site rv">
+        <b>Mistral Santé Pharma</b>
+        <small>Flassans-sur-Issole (83)</small>
+      </div>
+      <div class="site rv d1">
+        <b>Escale Pharma</b>
+        <small>Chilly-Mazarin (91)</small>
+      </div>
+      <div class="site rv d2">
+        <span class="site__badge site__badge--part">Partenaire</span>
+        <b>Pharmest</b>
+        <small>Metz (57)</small>
+      </div>
     </div>
   </div>
 </section>
@@ -606,26 +708,26 @@ html.fx .parcours.pinnable .step.active .step__n{color:var(--orange)}
   <div class="marquee__row" id="marquee">
     <span class="marquee__item">Indépendant<span class="marquee__sep"></span></span>
     <span class="marquee__item b">Français<span class="marquee__sep"></span></span>
-    <span class="marquee__item">9 agences<span class="marquee__sep"></span></span>
-    <span class="marquee__item b">1 réseau national<span class="marquee__sep"></span></span>
-    <span class="marquee__item">Sans engagement de volume<span class="marquee__sep"></span></span>
-    <span class="marquee__item b">Proximité<span class="marquee__sep"></span></span>
+    <span class="marquee__item">neuf implantations<span class="marquee__sep"></span></span>
+    <span class="marquee__item b">un réseau national<span class="marquee__sep"></span></span>
+    <span class="marquee__item">+14&nbsp;000 références<span class="marquee__sep"></span></span>
+    <span class="marquee__item b">Livrées au plus près<span class="marquee__sep"></span></span>
   </div>
 </div>
 
 <!-- ============================ 3 · PARCOURS ============================ -->
 <section class="parcours" id="parcours">
   <div class="wrap">
-    <span class="eyebrow rv">L'accompagnement</span>
-    <h2 class="rv d1">Un partenaire présent, <em>du premier contact au quotidien.</em></h2>
-    <p class="lede rv d2">Le parcours d'une officine avec Intégral, en quatre temps. Simple, lisible, sans engagement de volume.</p>
+    <span class="eyebrow rv">Le métier</span>
+    <h2 class="rv d1">De votre commande <em>au comptoir de l'officine.</em></h2>
+    <p class="lede rv d2">Le quotidien d'un grossiste-répartiteur avec votre officine, en quatre temps. Simple, lisible, humain.</p>
 
     <div class="steps__rail" aria-hidden="true"><span class="steps__rail-fill" id="railFill"></span></div>
     <div class="steps">
       <article class="step rv">
         <div class="step__n">01</div>
         <h3>On se rencontre</h3>
-        <p>Votre agence prend contact. On écoute votre fonctionnement, vos volumes, vos priorités — avant de parler catalogue.</p>
+        <p>L'équipe de l'implantation la plus proche vient à vous. On écoute votre fonctionnement, vos volumes, vos priorités — avant de parler catalogue.</p>
       </article>
       <article class="step rv d1">
         <div class="step__n">02</div>
@@ -635,12 +737,45 @@ html.fx .parcours.pinnable .step.active .step__n{color:var(--orange)}
       <article class="step rv d2">
         <div class="step__n">03</div>
         <h3>On livre au plus près</h3>
-        <p>La plateforme régionale la plus proche prépare et achemine. Ni franco imposé, ni engagement de volume.</p>
+        <p>L'implantation la plus proche prépare votre commande et la livre. Des tournées quotidiennes, au rythme de votre officine.</p>
       </article>
       <article class="step rv d3">
         <div class="step__n">04</div>
         <h3>On reste à vos côtés</h3>
-        <p>Un interlocuteur qui connaît votre officine et qui répond. Le suivi d'un partenaire, dans la durée.</p>
+        <p>Un interlocuteur qui connaît votre officine et qui répond. Et si elle a un projet — transfert, agrandissement, cession de parts, optimisation —, on l'accompagne aussi.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 3bis · LE MÉTIER, CHAQUE JOUR ============================ -->
+<section class="projets" id="metier">
+  <div class="wrap">
+    <div class="projets__head">
+      <span class="eyebrow rv">Notre métier</span>
+      <h2 class="rv d1">Approvisionner l'officine, <em>chaque jour.</em></h2>
+      <p class="lede rv d2">Grossiste-répartiteur national, c'est un travail quotidien : recevoir, stocker, préparer, livrer. Neuf implantations le font, commande après commande, pour les officines françaises.</p>
+    </div>
+    <div class="projets__grid">
+      <article class="projet rv">
+        <div class="projet__n">01</div>
+        <h3>Le catalogue</h3>
+        <p>14&nbsp;000+ références sur Offilog, notre catalogue en ligne : toute la parapharmacie de l'officine, du soin quotidien aux temps forts saisonniers.</p>
+      </article>
+      <article class="projet rv d1">
+        <div class="projet__n">02</div>
+        <h3>La disponibilité</h3>
+        <p>Des stocks suivis au plus près dans chaque implantation, pour que le produit soit là quand votre patient le demande.</p>
+      </article>
+      <article class="projet rv d2">
+        <div class="projet__n">03</div>
+        <h3>La préparation</h3>
+        <p>Chaque commande est préparée dans l'implantation la plus proche de chez vous, par une équipe qui connaît votre officine et ses habitudes.</p>
+      </article>
+      <article class="projet rv d3">
+        <div class="projet__n">04</div>
+        <h3>La livraison</h3>
+        <p>Des tournées quotidiennes vers les officines, au rythme qui est le vôtre. Commander, être livré, recommencer demain.</p>
       </article>
     </div>
   </div>
@@ -662,17 +797,17 @@ html.fx .parcours.pinnable .step.active .step__n{color:var(--orange)}
           <svg viewBox="0 0 24 24"><path d="M12 3l7 4v5c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V7l7-4z"/></svg>
         </div>
         <h3>Indépendance</h3>
-        <p>Un groupe de grossistes français, sans actionnaire à servir. Nos décisions restent tournées vers l'officine.</p>
+        <p>Un groupe de grossistes-répartiteurs français, sans actionnaire à servir. Nos décisions restent tournées vers l'officine.</p>
       </article>
       <article class="pillar rv d1" data-tilt>
         <div class="pillar__ic" aria-hidden="true">
           <svg viewBox="0 0 24 24"><path d="M5 12h14M5 12l4-4M5 12l4 4M19 6v12"/></svg>
         </div>
-        <h3>Aucune contrainte</h3>
-        <p>Ni franco imposé, ni engagement de volume. Vous commandez à votre rythme, selon vos vrais besoins.</p>
+        <h3>À taille humaine</h3>
+        <p>L'équipe qui vous livre est celle qui vous connaît. Une implantation proche, joignable, qui répond au rythme de votre officine.</p>
       </article>
       <article class="pillar pillar--count rv d2" data-tilt>
-        <div class="num" id="counter" data-count="14000" data-plus="1">+0</div>
+        <div class="num" id="counter" data-count="14000" data-plus="1">+14&nbsp;000</div>
         <p>références disponibles sur Offilog, notre catalogue en ligne.</p>
       </article>
     </div>
@@ -691,12 +826,12 @@ html.fx .parcours.pinnable .step.active .step__n{color:var(--orange)}
       <div class="vrow rv" data-cursor="Confiance">
         <div class="vrow__n">01</div>
         <h3>Confiance</h3>
-        <p>Des conditions claires et tenues. Ce qu'on dit en rendez-vous, on l'écrit sur la facture.</p>
+        <p>La transparence d'abord. Une relation claire, tenue dans la durée, où la parole donnée vaut engagement.</p>
       </div>
       <div class="vrow rv d1" data-cursor="Engagement">
         <div class="vrow__n">02</div>
         <h3>Engagement</h3>
-        <p>Une équipe qui répond, une livraison qui suit. On s'engage sur le service, pas sur des volumes.</p>
+        <p>Présents dans la durée, à vos côtés quand il le faut. Un partenaire ne disparaît pas après la vente.</p>
       </div>
       <div class="vrow rv d2" data-cursor="Respect">
         <div class="vrow__n">03</div>
@@ -721,7 +856,7 @@ html.fx .parcours.pinnable .step.active .step__n{color:var(--orange)}
           <div class="contact-block">
             <b>Parlons de votre officine</b>
             <a href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a>
-            <span>Une agence proche de vous vous rappelle.</span>
+            <span>L'implantation la plus proche de votre officine vous répond.</span>
           </div>
         </div>
       </div>
@@ -736,15 +871,16 @@ html.fx .parcours.pinnable .step.active .step__n{color:var(--orange)}
     <div class="ft__top">
       <div>
         <div class="ft__brand">
-          <img src="../../assets/logo.png" alt="">
+          <img src="../../assets/logo-web.png" alt="">
           <b>Intégral&nbsp;Pharma</b>
         </div>
-        <p class="desc">Groupe de grossistes français indépendant. 9 agences, 1 réseau national au service des pharmaciens.</p>
+        <p class="desc">Groupe de grossistes-répartiteurs français indépendant. Neuf implantations, un réseau national au service des pharmaciens.</p>
       </div>
       <nav class="ft__col" aria-label="Le réseau">
         <h4>Le réseau</h4>
-        <a href="#reseau">Nos 9 agences</a>
-        <a href="#parcours">L'accompagnement</a>
+        <a href="#reseau">Nos neuf implantations</a>
+        <a href="#parcours">Le métier</a>
+        <a href="#metier">Le catalogue &amp; la livraison</a>
         <a href="#pourquoi">Pourquoi Intégral</a>
         <a href="#valeurs">Nos valeurs</a>
       </nav>
@@ -752,10 +888,12 @@ html.fx .parcours.pinnable .step.active .step__n{color:var(--orange)}
         <h4>Contact</h4>
         <a href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a>
         <a href="#rejoindre">Découvrir le réseau</a>
+        <span class="ft__addr">758 Chemin de la Source<br>83400 Hyères</span>
       </nav>
     </div>
     <div class="ft__bottom">
       <span>© 2026 Intégral Pharma — Grossiste-répartiteur français indépendant.</span>
+      <span>758 Chemin de la Source, 83400 Hyères</span>
       <span>Mentions légales · Confidentialité</span>
     </div>
   </div>
@@ -798,8 +936,8 @@ html.fx .parcours.pinnable .step.active .step__n{color:var(--orange)}
         el:"#hero-fog", THREE:window.THREE,
         mouseControls:true, touchControls:true, gyroControls:false,
         minHeight:200.0, minWidth:200.0,
-        highlightColor:0xF39A1B, midtoneColor:0xEAD9B8,
-        lowlightColor:0x1E3A2E, baseColor:0xF7F4EE,
+        highlightColor:0xF39A1B, midtoneColor:0xD8E4F5,
+        lowlightColor:0x0050E6, baseColor:0xF8FAFC,
         blurFactor:0.62, speed:0.9, zoom:0.72
       });
       if(fog && fog.renderer && fog.renderer.setPixelRatio){
@@ -868,14 +1006,15 @@ html.fx .parcours.pinnable .step.active .step__n{color:var(--orange)}
     el.innerHTML=parts.map(function(p){return '<span class="ln"><span class="ln__i">'+p+'</span></span>';}).join('');
     return el.querySelectorAll(".ln__i");
   }
-  var headSel=".hero h1, .reseau h2, .parcours h2, .pourquoi h2, .valeurs h2, .cta-card h2, .step h3, .pillar:not(.pillar--count) h3, .vrow h3";
+  var headSel=".hero h1, .reseau h2, .parcours h2, .projets h2, .pourquoi h2, .valeurs h2, .cta-card h2, .step h3, .projet h3, .pillar:not(.pillar--count) h3, .vrow h3";
   var allLines=[];
   [].forEach.call(document.querySelectorAll(headSel),function(h){
     var lines=splitLines(h);
     [].push.apply(allLines,[].slice.call(lines));
     gsap.set(lines,{yPercent:112});
-    /* onComplete wipes the inline transform so the line ends perfectly flush & visible */
-    var settle=function(){ gsap.set(lines,{clearProps:"transform"}); };
+    /* onComplete pins the line flush & visible with an inline transform:none.
+       ⚠️ ne PAS utiliser clearProps ici : la règle CSS `html.fx .ln__i` re-masquerait la ligne. */
+    var settle=function(){ for(var k=0;k<lines.length;k++){ lines[k].style.transform="none"; } };
     var inView=h.getBoundingClientRect().top < window.innerHeight*0.92;
     if(inView){
       /* above-the-fold headings (the hero H1) must NOT depend on a scroll event that
@@ -1137,3 +1276,5 @@ html.fx .parcours.pinnable .step.active .step__n{color:var(--orange)}
   ScrollTrigger.refresh();
 })();
 </script>
+</body>
+</html>

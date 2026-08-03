@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Intégral Pharma — 10 D.A. · Sites complets</title>
+<title>Intégral Pharma — 8 D.A. · Sites complets</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;1,9..144,500&family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  :root{--ink:#0B0D12;--ink2:#12151d;--line:rgba(255,255,255,.10);--pap:#F4F1EA;--mut:#9AA0AD;--blue:#0057FF;--or:#F39A1B;
+  :root{--ink:#0B0D12;--ink2:#12151d;--line:rgba(255,255,255,.10);--pap:#F4F1EA;--mut:#9AA0AD;--blue:#0050E6;--or:#F39A1B;
     --sans:'DM Sans',system-ui,sans-serif;--serif:'Fraunces',serif;--mono:'DM Mono',monospace;}
   *{margin:0;padding:0;box-sizing:border-box}
   body{background:var(--ink);color:var(--pap);font-family:var(--sans);-webkit-font-smoothing:antialiased;overflow-x:hidden}
@@ -27,7 +27,7 @@
   .card:hover{transform:translateY(-4px);border-color:rgba(243,154,27,.5)}
   .thumb{aspect-ratio:16/10;position:relative;overflow:hidden;border-bottom:1px solid var(--line)}
   .thumb iframe{position:absolute;top:0;left:0;width:200%;height:200%;transform:scale(.5);transform-origin:top left;border:0;pointer-events:none;background:#0b0d12}
-  .thumb .tag{position:absolute;top:10px;left:10px;z-index:2;font-family:var(--mono);font-size:11px;letter-spacing:.08em;background:rgba(0,0,0,.55);backdrop-filter:blur(3px);color:#fff;padding:4px 8px;border-radius:6px}
+  .thumb .tag{position:absolute;top:10px;left:10px;z-index:2;font-family:var(--mono);font-size:11px;letter-spacing:.08em;background:rgba(0,0,0,.55);color:#fff;padding:4px 8px;border-radius:6px}
   .body{padding:20px;display:flex;flex-direction:column;gap:8px;flex:1}
   .no{font-family:var(--mono);font-size:12px;color:var(--or)}
   .card h3{font-size:20px;font-weight:600;letter-spacing:-.01em}
@@ -36,31 +36,38 @@
   .open{margin-top:6px;align-self:flex-start;font-size:13.5px;font-weight:600;color:#0b0d12;background:var(--or);padding:9px 16px;border-radius:999px;transition:filter .25s}
   .open:hover{filter:brightness(1.08)}
   footer{border-top:1px solid var(--line);padding:40px 0;color:var(--mut);font-family:var(--mono);font-size:12px;text-align:center}
+  /* Repli si l'utilisateur a demandé moins d'animations (réglage système). */
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none!important;transition:none!important}
+    .card:hover{transform:none}
+  }
 </style>
 </head>
 <body>
   <header class="wrap">
     <div class="ey">Site vitrine · Intégral Pharma · V2026</div>
-    <h1>6 sites <em>finalisés.</em></h1>
-    <p class="lead">Six sites complets finalisés, chacun une D.A. et un effet de transition différents. Le <b>n°01</b> est le site <b>configuré brique par brique</b> (fond 3D au choix, gélule animée, carte 3D du réseau). Même marque, même vérité : <b>groupe de grossistes français indépendant</b>, 9 agences, aucune condition commerciale chiffrée. Clique « Ouvrir » pour parcourir le site (les effets se déclenchent au scroll).</p>
-    <div class="meta"><b>6 sites</b> · effets primés réutilisés (Codrops MIT) + WebGL (Vanta / react-bits / OGL) · <b>bleu IP + orange · DM Sans</b> · compatible Safari · responsive</div>
+    <h1>8 sites <em>finalisés.</em></h1>
+    <p class="lead">Huit sites complets, chacun une direction artistique et un effet différents. Même marque, même vérité : <b>groupe de grossistes-répartiteurs français indépendant</b>, neuf implantations, aucune condition commerciale chiffrée. Clique « Ouvrir » pour parcourir le site (les effets se déclenchent au scroll).</p>
+    <div class="meta">⚠️ <b>À ouvrir via le serveur local</b> (`bash ~/voir-sites-integral.sh`) — en double-clic, le navigateur bloque les aperçus et la 3D.<br><b>8 sites</b> · effets primés réutilisés (Codrops MIT) + WebGL local (OGL / Three.js / Vanta) · <b>bleu IP + orange · Fraunces + DM Sans</b> · compatible Safari · responsive</div>
   </header>
 
   <main class="wrap"><div class="grid" id="grid"></div></main>
-  <footer>Intégral Pharma — 10 D.A. pour le site vitrine. Choisir la préférée → développement final + mise en ligne.</footer>
+  <footer>Intégral Pharma — 8 D.A. pour le site vitrine. Choisir la préférée → développement final + mise en ligne.</footer>
 
 <script>
   const SITES=[
-    {no:'01',name:'Site configuré · brique par brique',fx:'OGL Iridescence · gélule 3D · carte 3D réseau',tag:'Configuré',url:'lab/mon-site.html',desc:"Le site assemblé à partir de vos choix : fond 3D interchangeable (Iridescence / Dark Veil / Halo Intégral), titre en mots décalés, curseur gélule, carte 3D du réseau (9 établissements), parcours, valeurs, contact."},
-    {no:'02',name:'Manifeste Cinétique',fx:'ScrollTextMotion · Codrops',tag:'Kinétique',url:'gallery/da-manifeste/index.html',desc:"Typo géante qui se recompose au scroll. Navy + bleu IP + orange, éditorial et fort."},
-    {no:'03',name:'Vague Logistique',fx:'Vanta WAVES',tag:'Flux',url:'gallery/site-vague.html',desc:"Mer 3D navy + orange, waterline lumineuse, chiffres animés. Le flux logistique."},
-    {no:'04',name:'Aurore IP',fx:'Aurora WebGL · react-bits',tag:'Aurore',url:'gallery/site-aurore/index.html',desc:"Aurore fluide bleu IP → teal → orange (shader réécrit en WebGL, zéro dépendance)."},
-    {no:'05',name:'Teal & Sable',fx:'Vanta FOG · galerie H',tag:'Calme',url:'gallery/site-teal.html',desc:"Teal profond + sable + terracotta, galerie horizontale. Calme, côtier, intemporel."},
-    {no:'06',name:'Brume Claire',fx:'Vanta FOG',tag:'Clair',url:'gallery/site-brume.html',desc:"Monde clair : crème + vert botanique + orange, brume douce, bulles de verre. Santé premium."},
+        {no:'02',name:'Vague Logistique',fx:'Vanta WAVES',tag:'Flux',url:'gallery/site-vague.html',desc:"Mer 3D navy + orange, waterline lumineuse, chiffres animés. Le flux logistique."},
+    {no:'03',name:'Aurore IP',fx:'Aurora WebGL · react-bits',tag:'Aurore',url:'gallery/site-aurore/index.html',desc:"Aurore fluide bleu IP → bleu clair → orange (shader réécrit en WebGL, zéro dépendance)."},
+    {no:'04',name:'Bleu & Glacial',fx:'Vanta FOG · galerie H',tag:'Glacial',url:'gallery/site-teal.html',desc:"Bleu profond + blanc glacial + orange, galerie horizontale. Calme, intemporel."},
+    {no:'05',name:'Brume Claire',fx:'Vanta FOG',tag:'Clair',url:'gallery/site-brume.html',desc:"Monde clair : blanc glacial + bleu + orange, brume douce, bulles de verre. Santé premium."},
+    {no:'06',name:'Bento Magnétique',fx:'21st.dev · Feature Bento + texte magnétique',tag:'Bento',url:'gallery/site-bento-magnetique.html',desc:"Grille bento éditoriale sur photo du siège + mots magnétiques (survole « Livrer » et « exigence »). Fraunces + DM Sans."},
+    {no:'07',name:'Aurore Liquide',fx:'Shader WebGL · OGL local',tag:'Matière',url:'gallery/07-aurore-liquide.html',desc:"Matière liquide plein écran en bruit fractal, très lente, qui suit le scroll et la souris. La matière comme sujet."},
+        {no:'09',name:'Matière & Profondeur',fx:'Parallaxe + tilt 3D · zéro WebGL',tag:'Profondeur',url:'gallery/09-matiere-profondeur.html',desc:"La 3D sans WebGL : couches en parallaxe, photos inclinées en perspective, grain photographique. La plus fluide sur vieux téléphone."},
+    {no:'10',name:'Manifeste Cinétique',fx:'Typographie en volume · 3D CSS',tag:'Volume',url:'gallery/10-manifeste-cinetique.html',desc:"Des lettres en volume réel : épaisseur, faces latérales, arête orange sous un certain angle. La souris fait pivoter les blocs, le titre se déchire en profondeur."},
   ];
   const g=document.getElementById('grid');
   g.innerHTML=SITES.map(s=>`<article class="card">
-    <a class="thumb" href="${s.url}"><span class="tag">${s.tag}</span><iframe loading="lazy" src="${s.url}" title="${s.name}" scrolling="no" tabindex="-1"></iframe></a>
+    <a class="thumb" href="${s.url}"><span class="tag">${s.tag}</span><iframe loading="lazy" src="${s.url}?v=${Date.now()}" title="${s.name}" scrolling="no" tabindex="-1"></iframe></a>
     <div class="body"><div class="no">${s.no}</div><h3>${s.name}</h3><p>${s.desc}</p><div class="fx">✦ ${s.fx}</div><a class="open" href="${s.url}">Ouvrir ↗</a></div>
   </article>`).join('');
 </script>

@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Intégral Pharma — Grossiste-répartiteur français indépendant</title>
+<meta name="description" content="Groupe de grossistes-répartiteurs français indépendant. Neuf implantations en France, 14 000+ références au catalogue, et un interlocuteur qui connaît votre officine.">
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,500&family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   06 — BENTO MAGNÉTIQUE
+   Assemblé à partir de 2 composants 21st.dev (récupérés le 31/07/2026),
+   recodés en vanilla et passés aux règles Safari fx-bank :
+   pas de background-clip:text, pas de backdrop-filter, pas de filter:blur,
+   1 seule vidéo autoplay max, prefers-reduced-motion respecté.
+   ============================================================ */
+:root{
+  --ink:#0A0E1A; --ink2:#111725; --line:rgba(255,255,255,.10);
+  --pap:#F8FAFC; --mut:#95A0B5;
+  --blue:#0050E6; --blue-l:#3B82F6; --or:#F39A1B;
+  --sans:'DM Sans',system-ui,-apple-system,sans-serif;
+  --serif:'Fraunces',Georgia,serif;
+  --mono:'DM Mono',ui-monospace,monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--ink);color:var(--pap);font-family:var(--sans);
+     -webkit-font-smoothing:antialiased;overflow-x:hidden}
+.wrap{max-width:1240px;margin:0 auto;padding:0 26px}
+a{color:inherit;text-decoration:none}
+
+/* ---------- barre ---------- */
+.bar{position:sticky;top:0;z-index:50;background:rgba(10,14,26,.92);
+     border-bottom:1px solid var(--line)}
+.bar .wrap{display:flex;align-items:center;justify-content:space-between;padding:15px 26px}
+.brand{display:flex;align-items:center;gap:11px}
+.brand img{height:30px;width:auto;display:block}
+.brand span{font-family:var(--mono);font-size:11.5px;letter-spacing:.16em;
+            text-transform:uppercase;color:var(--mut)}
+.bar nav{display:flex;gap:26px;font-size:14px;color:var(--mut)}
+.bar nav a:hover{color:var(--pap)}
+.btn{background:var(--or);color:#0A0E1A;font-weight:600;font-size:14px;
+     padding:10px 19px;border-radius:999px;transition:filter .25s,transform .25s}
+.btn:hover{filter:brightness(1.08);transform:translateY(-1px)}
+
+/* ---------- hero ---------- */
+.hero{position:relative;padding:120px 0 96px;overflow:hidden}
+/* halo en dégradés radiaux — AUCUN filter:blur (règle Safari fx-bank) */
+.hero::before{content:"";position:absolute;inset:-20% -10% auto -10%;height:130%;
+  background:
+    radial-gradient(46% 38% at 22% 18%, rgba(0,80,230,.30), transparent 70%),
+    radial-gradient(38% 34% at 82% 26%, rgba(243,154,27,.18), transparent 72%),
+    radial-gradient(60% 50% at 50% 96%, rgba(59,130,246,.12), transparent 74%);
+  pointer-events:none}
+.hero .wrap{position:relative;z-index:2}
+.ey{font-family:var(--mono);font-size:12px;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--or);margin-bottom:22px}
+h1{font-family:var(--serif);font-weight:400;font-size:clamp(40px,7vw,86px);
+   line-height:1.02;letter-spacing:-.025em;max-width:16ch}
+h1 .l2{display:block;margin-top:.12em}
+.lead{color:var(--mut);font-size:clamp(16px,1.6vw,19px);line-height:1.6;
+      max-width:56ch;margin-top:28px}
+.lead b{color:var(--pap);font-weight:600}
+.acts{display:flex;flex-wrap:wrap;gap:13px;margin-top:38px}
+.ghost{border:1px solid var(--line);color:var(--pap);font-weight:500;font-size:14px;
+       padding:10px 19px;border-radius:999px;transition:border-color .25s,background .25s}
+.ghost:hover{border-color:rgba(243,154,27,.55);background:rgba(243,154,27,.07)}
+
+/* ---------- 53 · texte magnétique ---------- */
+.mag{position:relative;display:inline-flex;align-items:center;justify-content:center;
+     cursor:none;user-select:none;vertical-align:baseline}
+.mag .circle{position:absolute;top:0;left:0;width:0;height:0;border-radius:50%;
+  background:var(--or);overflow:hidden;pointer-events:none;
+  transition:width .5s cubic-bezier(.33,1,.68,1),height .5s cubic-bezier(.33,1,.68,1);
+  will-change:transform,width,height}
+.mag .inner{position:absolute;top:50%;left:50%;display:flex;align-items:center;
+            justify-content:center;will-change:transform}
+.mag .inner span{font-family:var(--serif);font-weight:400;
+  font-size:inherit;line-height:inherit;letter-spacing:inherit;
+  color:#0A0E1A;white-space:nowrap}
+/* indice de découverte : appliqué UNIQUEMENT quand le JS a activé l'effet
+   (classe .has-mag posée par le script) — jamais de promesse sans effet */
+.has-mag .mag::after{content:"";position:absolute;left:3%;right:3%;bottom:.04em;height:2px;
+  background:repeating-linear-gradient(90deg,rgba(243,154,27,.55) 0 7px,transparent 7px 14px);
+  border-radius:2px;pointer-events:none;transition:opacity .3s}
+.has-mag .mag:hover::after{opacity:0}
+.mag-hint{display:none;font-family:var(--mono);font-size:12px;letter-spacing:.08em;
+          color:var(--mut);margin-top:20px;align-items:baseline;gap:9px}
+.mag-hint .ast{color:var(--or)}
+.has-mag .mag-hint{display:flex}
+
+/* ---------- 45 · bento ---------- */
+.sec{padding:96px 0}
+.sec-ey{font-family:var(--mono);font-size:12px;letter-spacing:.18em;
+        text-transform:uppercase;color:var(--or);margin-bottom:14px}
+h2{font-family:var(--serif);font-weight:400;font-size:clamp(29px,4vw,46px);
+   letter-spacing:-.02em;line-height:1.1;max-width:20ch}
+.sec-lead{color:var(--mut);max-width:58ch;margin-top:16px;line-height:1.6}
+.bento{display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:268px;
+       gap:16px;margin-top:44px}
+.bento>*{position:relative;overflow:hidden;border-radius:22px;padding:30px;
+         display:flex;flex-direction:column;border:1px solid var(--line)}
+/* grande carte */
+.b-big{grid-column:span 2;grid-row:span 2;justify-content:flex-end;
+       border-color:transparent}
+/* siege-web.jpg = version allégée pour le web (1600px, 435 Ko au lieu de 1394 Ko).
+   L'original pleine résolution reste dans assets/siege.jpg, intact. */
+.b-big .ph{position:absolute;inset:0;background:url('../../assets/siege-web.jpg') center/cover;
+           transform:scale(1.02);transition:transform .8s cubic-bezier(.22,1,.36,1)}
+.b-big:hover .ph{transform:scale(1.07)}
+.b-big .veil{position:absolute;inset:0;
+  background:linear-gradient(to top,rgba(6,10,20,.90) 8%,rgba(6,10,20,.45) 46%,rgba(0,80,230,.18) 100%)}
+.b-big .in{position:relative;z-index:2;display:flex;flex-direction:column;gap:14px}
+.pill{align-self:flex-start;display:inline-flex;align-items:center;gap:9px;
+      background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.18);
+      border-radius:999px;padding:6px 15px;font-size:13px;font-weight:500}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--or)}
+.b-big h3{font-family:var(--serif);font-weight:400;font-size:clamp(28px,3.4vw,42px);
+          line-height:1.06;letter-spacing:-.02em}
+.b-big p{max-width:46ch;color:rgba(248,250,252,.86);font-size:16px;line-height:1.55}
+/* tuiles chiffres */
+.b-num{justify-content:center;gap:9px;
+       background:linear-gradient(150deg,#0C1730,#0050E6 145%)}
+.b-num.or{background:linear-gradient(150deg,#1A1206,#F39A1B 165%)}
+.b-num .halo{position:absolute;inset:0;
+  background:radial-gradient(52% 46% at 84% 12%,rgba(255,255,255,.16),transparent 70%)}
+.num{position:relative;z-index:2;font-family:var(--serif);font-weight:400;
+     font-size:clamp(42px,5vw,60px);line-height:1;letter-spacing:-.03em}
+.cap{position:relative;z-index:2;font-family:var(--mono);font-size:11.5px;
+     letter-spacing:.16em;text-transform:uppercase;color:rgba(248,250,252,.72);margin-top:4px}
+/* carte texte */
+.b-txt{background:var(--ink2);justify-content:space-between}
+.ico{width:46px;height:46px;border-radius:13px;display:flex;align-items:center;
+     justify-content:center;font-size:20px;
+     background:linear-gradient(140deg,rgba(0,80,230,.9),rgba(59,130,246,.75))}
+.b-txt h4{font-size:20px;font-weight:600;letter-spacing:-.01em;margin-bottom:7px}
+.b-txt p{color:var(--mut);font-size:14px;line-height:1.55}
+/* carte CTA */
+.b-cta{background:linear-gradient(150deg,#0D1220,#1B2338);justify-content:space-between;
+       cursor:pointer;transition:border-color .3s}
+.b-cta:hover{border-color:rgba(243,154,27,.5)}
+.b-cta .top{display:flex;justify-content:space-between;align-items:flex-start}
+.tagline{font-family:var(--mono);font-size:10.5px;font-weight:500;text-transform:uppercase;
+         letter-spacing:.14em;background:rgba(255,255,255,.10);
+         border:1px solid var(--line);padding:6px 12px;border-radius:999px}
+.arrow{width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.10);
+       border:1px solid var(--line);display:flex;align-items:center;justify-content:center;
+       font-size:17px;transition:transform .35s,background .35s}
+.b-cta:hover .arrow{transform:rotate(45deg);background:var(--or);color:#0A0E1A}
+.b-cta h4{font-family:var(--serif);font-weight:400;font-size:26px;line-height:1.1;
+          letter-spacing:-.015em}
+
+/* ---------- piliers ---------- */
+.piliers{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:44px}
+.pil{border:1px solid var(--line);border-radius:18px;padding:28px 24px 26px;
+     background:var(--ink2);position:relative;transition:border-color .3s,transform .3s}
+.pil:hover{border-color:rgba(243,154,27,.45);transform:translateY(-3px)}
+.pil-no{font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;color:var(--or)}
+.pil h4{font-family:var(--serif);font-weight:400;font-size:25px;letter-spacing:-.015em;
+        margin:14px 0 10px}
+.pil p{color:var(--mut);font-size:14px;line-height:1.6}
+
+/* ---------- le quotidien : 4 temps ---------- */
+.jours{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:44px}
+.jours .pil h4{font-size:21px}
+
+/* ---------- projets accompagnés ---------- */
+.projets{margin-top:64px;border-top:1px solid var(--line);padding-top:52px}
+.projets h3{font-family:var(--serif);font-weight:400;font-size:clamp(24px,2.6vw,30px);
+            letter-spacing:-.015em;line-height:1.15}
+.projets .p-lead{color:var(--mut);max-width:58ch;margin-top:12px;line-height:1.6;font-size:15px}
+.projets-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:32px}
+.pro{border:1px solid var(--line);border-radius:18px;padding:24px 22px 22px;
+     background:radial-gradient(90% 60% at 50% 0%, rgba(0,80,230,.10), transparent 70%), var(--ink2);
+     transition:border-color .3s,transform .3s}
+.pro:hover{border-color:rgba(0,80,230,.5);transform:translateY(-3px)}
+.pro-tag{font-family:var(--mono);font-size:11px;letter-spacing:.14em;
+         text-transform:uppercase;color:var(--or);display:block;margin-bottom:12px}
+.pro p{color:var(--mut);font-size:14px;line-height:1.6}
+
+/* ---------- réseau : les implantations ---------- */
+.reseau{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:42px}
+.ag{position:relative;border:1px solid var(--line);border-radius:16px;padding:22px 22px 20px;
+    background:var(--ink2);transition:border-color .3s,transform .3s}
+.ag:hover{border-color:rgba(0,80,230,.55);transform:translateY(-3px)}
+.ag-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.sig{font-family:var(--mono);font-size:12px;letter-spacing:.1em;color:var(--blue-l);
+     border:1px solid rgba(0,80,230,.35);border-radius:7px;padding:4px 9px}
+.badge-s{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+         background:var(--or);color:#0A0E1A;font-weight:600;padding:4px 9px;border-radius:6px}
+.badge-p{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+         border:1px solid var(--line);color:var(--mut);padding:4px 9px;border-radius:6px}
+.ag h4{font-size:16.5px;font-weight:600;letter-spacing:-.01em;line-height:1.25;margin-bottom:6px}
+.ag p{color:var(--pap);font-size:14px}
+.ag p span{color:var(--mut)}
+.ag-siege{background:linear-gradient(150deg,#0C1730,#101B33);border-color:rgba(243,154,27,.35)}
+.ag-part{opacity:.72}
+
+/* ---------- bloc final ---------- */
+.final{padding-bottom:110px}
+.final-in{border:1px solid var(--line);border-radius:24px;padding:54px 46px;
+  background:
+    radial-gradient(52% 60% at 12% 0%, rgba(0,80,230,.20), transparent 70%),
+    radial-gradient(44% 54% at 92% 100%, rgba(243,154,27,.13), transparent 72%),
+    var(--ink2)}
+.final-in h2{margin-top:12px}
+.final-in .acts{margin-top:30px}
+.final-mono{font-family:var(--mono);font-size:12px;letter-spacing:.08em;
+            color:var(--mut);margin-top:24px}
+
+/* ---------- pied ---------- */
+footer{border-top:1px solid var(--line);padding:54px 0 46px}
+.f-grid{display:grid;grid-template-columns:2fr 1fr 1fr;gap:34px}
+.f-col{display:flex;flex-direction:column;gap:9px;align-items:flex-start}
+.f-brand img{margin-bottom:6px}
+.f-col h5{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+          color:var(--or);font-weight:500;margin-bottom:4px}
+.f-col a{color:var(--mut);font-size:14px;transition:color .25s}
+.f-col a:hover{color:var(--pap)}
+.f-txt{color:var(--mut);font-size:14px;line-height:1.6;max-width:46ch}
+.f-mono{font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;color:var(--mut)}
+.f-bas{display:flex;flex-wrap:wrap;gap:14px 26px;align-items:center;
+       margin-top:40px;padding-top:22px;border-top:1px solid var(--line)}
+.f-bas a:hover{color:var(--pap)}
+.f-var{margin-left:auto}
+
+/* ---------- révélation au scroll ----------
+   Le masquage n'est appliqué QUE si le JS tourne (classe .js sur <html>).
+   Sans JS, ou si le script casse, la page reste entièrement lisible :
+   jamais d'écran vide. */
+.js .rv{opacity:0;transform:translateY(22px);
+    transition:opacity .8s cubic-bezier(.22,1,.36,1),transform .8s cubic-bezier(.22,1,.36,1)}
+.js .rv.on{opacity:1;transform:none}
+
+@media(max-width:980px){
+  .bento{grid-template-columns:repeat(2,1fr)}
+  .b-big{grid-column:span 2;grid-row:span 1;min-height:380px}
+  .reseau{grid-template-columns:repeat(2,1fr)}
+  .piliers{grid-template-columns:repeat(2,1fr)}
+  .jours{grid-template-columns:repeat(2,1fr)}
+  .projets-grid{grid-template-columns:repeat(2,1fr)}
+  .f-grid{grid-template-columns:1fr 1fr}
+  .f-brand{grid-column:span 2}
+}
+@media(max-width:640px){
+  .bar nav{display:none}
+  .brand span{display:none}          /* le sous-titre passait sur 2 lignes */
+  .btn{white-space:nowrap;padding:9px 15px;font-size:13.5px}
+  .bar .wrap{padding:12px 20px}
+  .hero{padding:76px 0 64px}
+  .bento{grid-template-columns:1fr;grid-auto-rows:auto}
+  .bento>*{min-height:210px}
+  .b-big{grid-column:auto;min-height:340px}
+  .reseau{grid-template-columns:1fr}
+  .piliers{grid-template-columns:1fr}
+  .jours{grid-template-columns:1fr}
+  .projets{margin-top:52px;padding-top:44px}
+  .projets-grid{grid-template-columns:1fr}
+  .f-grid{grid-template-columns:1fr}
+  .f-brand{grid-column:auto}
+  .f-var{margin-left:0;width:100%}
+  .final-in{padding:36px 24px}
+  .mag{cursor:auto}
+}
+@media (prefers-reduced-motion: reduce){
+  *{animation:none!important;transition:none!important}
+  .rv{opacity:1;transform:none}
+  html{scroll-behavior:auto}
+}
+</style>
+</head>
+<body>
+<script>
+/* Le JS est là : on autorise le masquage des blocs avant révélation.
+   Placé ici (et pas en fin de page) pour éviter tout clignotement.
+   Dans un iframe (aperçu de la galerie), on ne masque rien : la vignette
+   doit montrer la page pleine, pas des blocs en attente de scroll. */
+(function(){
+  var framed = false;
+  try { framed = window.self !== window.top; } catch(e){ framed = true; }
+  if (!framed && !window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+    document.documentElement.classList.add('js');
+  }
+})();
+</script>
+
+<div class="bar">
+  <div class="wrap">
+    <a class="brand" href="#">
+      <img src="../../assets/logo-web.png" alt="Intégral Pharma" width="120" height="30">
+      <span>Grossiste-répartiteur</span>
+    </a>
+    <nav>
+      <a href="#maison">La maison</a>
+      <a href="#quotidien">Le quotidien</a>
+      <a href="#reseau">Le réseau</a>
+      <a href="#parler">Contact</a>
+    </nav>
+    <a class="btn" href="#parler">Nous rencontrer</a>
+  </div>
+</div>
+
+<section class="hero">
+  <div class="wrap">
+    <div class="ey rv">Groupe français indépendant</div>
+    <h1 class="rv">
+      <span class="mag" data-hover="Servir">Livrer</span> la pharmacie
+      <span class="l2">française, <em style="font-style:italic;color:var(--blue-l)">autrement.</em></span>
+    </h1>
+    <p class="lead rv">Intégral Pharma est un <b>groupe de grossistes-répartiteurs français indépendant</b> :
+       nous approvisionnons les officines tous les jours, depuis neuf implantations en France.
+       Des équipes qui connaissent leurs pharmaciens par leur nom, et une conviction :
+       la proximité n'est pas un argument, c'est un métier.</p>
+    <div class="acts rv">
+      <a class="btn" href="#parler">Nous rencontrer</a>
+      <a class="ghost" href="#reseau">Découvrir le réseau</a>
+    </div>
+    <p class="mag-hint rv"><span class="ast">✳</span><span>Certains mots soulignés cachent leur double — passez la souris dessus.</span></p>
+  </div>
+</section>
+
+<section class="sec" id="maison">
+  <div class="wrap">
+    <div class="sec-ey rv">La maison</div>
+    <h2 class="rv">Un grossiste à taille humaine, <em style="font-style:italic;color:var(--blue-l)">et fier de l'être.</em></h2>
+    <p class="sec-lead rv">Nous ne cherchons pas à être le plus gros. Nous cherchons à être celui
+       qu'on appelle quand ça compte — et qui répond.</p>
+
+    <div class="bento">
+      <article class="b-big rv">
+        <div class="ph"></div><div class="veil"></div>
+        <div class="in">
+          <span class="pill"><span class="dot"></span>Siège &amp; plateforme logistique</span>
+          <h3>Une maison française,<br>des décisions prises ici.</h3>
+          <p>Indépendants, nous décidons vite et nous assumons nos choix.
+             Pas de siège lointain, pas d'arbitrage à l'autre bout de l'Europe.</p>
+        </div>
+      </article>
+
+      <article class="b-num rv">
+        <div class="halo"></div>
+        <span class="num">9</span>
+        <span class="cap">Implantations en France</span>
+      </article>
+
+      <article class="b-txt rv">
+        <div class="ico">◈</div>
+        <div>
+          <h4>Un interlocuteur, pas un numéro</h4>
+          <p>Chaque pharmacie a son commercial et son agence de rattachement.
+             La même voix au téléphone, d'une année sur l'autre.</p>
+        </div>
+      </article>
+
+      <a class="b-cta rv" href="#parler">
+        <div class="top">
+          <span class="tagline">Contact</span>
+          <span class="arrow">↗</span>
+        </div>
+        <h4>Rencontrer<br>votre agence</h4>
+      </a>
+
+      <article class="b-num or rv">
+        <div class="halo"></div>
+        <span class="num">14 000+</span>
+        <span class="cap">Références au catalogue</span>
+      </article>
+
+      <article class="b-txt rv">
+        <div class="ico">◇</div>
+        <div>
+          <h4>La disponibilité d'abord</h4>
+          <p>Un catalogue large et suivi au quotidien, pour que le comptoir
+             ne soit jamais celui qui dit non au patient.</p>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="quotidien">
+  <div class="wrap">
+    <div class="sec-ey rv">Le quotidien</div>
+    <h2 class="rv">Une journée avec Intégral, <em style="font-style:italic;color:var(--blue-l)">concrètement.</em></h2>
+    <p class="sec-lead rv">Pas de grande promesse : voilà ce qui se passe vraiment, de la commande
+       passée depuis votre officine jusqu'aux caisses posées au comptoir.</p>
+
+    <div class="jours">
+      <article class="pil rv">
+        <span class="pil-no">01 · Vous commandez</span>
+        <h4>Votre agence reçoit</h4>
+        <p>Votre commande arrive dans votre agence de rattachement — pas sur une plateforme anonyme.
+           Elle est lue par des gens qui connaissent vos habitudes.</p>
+      </article>
+      <article class="pil rv">
+        <span class="pil-no">02 · On prépare</span>
+        <h4>Au plus près de chez vous</h4>
+        <p>La préparation se fait sur place, sur un catalogue large et des stocks suivis
+           au quotidien, pour que le comptoir ne dise pas non au patient.</p>
+      </article>
+      <article class="pil rv">
+        <span class="pil-no">03 · On vous livre</span>
+        <h4>Des visages connus</h4>
+        <p>Des tournées régulières, des chauffeurs que votre équipe reconnaît,
+           des caisses posées là où vous les attendez.</p>
+      </article>
+      <article class="pil rv">
+        <span class="pil-no">04 · Si ça coince</span>
+        <h4>Quelqu'un décroche</h4>
+        <p>Un doute, un manquant, une urgence : vous appelez votre agence, et une voix
+           que vous connaissez vous répond. On rappelle, on prévient, on assume.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="metier">
+  <div class="wrap">
+    <div class="sec-ey rv">Ce qui nous tient</div>
+    <h2 class="rv">Trois valeurs, et on ne <span class="mag" data-hover="transige">négocie</span> pas dessus.</h2>
+
+    <div class="piliers">
+      <article class="pil rv">
+        <span class="pil-no">01</span>
+        <h4>Confiance</h4>
+        <p>La transparence d'abord. Une relation claire, tenue dans la durée, où la parole donnée vaut engagement.</p>
+      </article>
+      <article class="pil rv">
+        <span class="pil-no">02</span>
+        <h4>Engagement</h4>
+        <p>Présents dans la durée, à vos côtés quand il le faut. Un partenaire ne disparaît pas après la vente.</p>
+      </article>
+      <article class="pil rv">
+        <span class="pil-no">03</span>
+        <h4>Respect</h4>
+        <p>Du pharmacien comme du patient. On défend l'officine indépendante, parce qu'elle soigne un territoire.</p>
+      </article>
+    
+    </div>
+
+    <div class="projets">
+      <h3 class="rv">La répartition, en <em style="font-style:italic;color:var(--blue-l)">quatre temps.</em></h3>
+      <p class="p-lead rv">Derrière la journée racontée plus haut, une mécanique tenue —
+         du catalogue à la porte de votre officine.</p>
+      <div class="projets-grid">
+        <article class="pro rv">
+          <span class="pro-tag">Le catalogue</span>
+          <p>14 000+ références au catalogue Offilog : médicament, parapharmacie, dispositifs.
+             Assez large pour coller à la réalité de votre comptoir.</p>
+        </article>
+        <article class="pro rv">
+          <span class="pro-tag">La disponibilité</span>
+          <p>Des stocks suivis implantation par implantation, jour après jour, pour que le produit
+             soit là au moment où la commande part.</p>
+        </article>
+        <article class="pro rv">
+          <span class="pro-tag">La préparation</span>
+          <p>Chaque commande est préparée dans l'implantation la plus proche de votre officine,
+             par des équipes qui connaissent vos habitudes.</p>
+        </article>
+        <article class="pro rv">
+          <span class="pro-tag">La livraison</span>
+          <p>Des tournées quotidiennes, des chauffeurs réguliers, des caisses posées là où
+             votre équipe les attend. Tous les jours.</p>
+        </article>
+      </div>
+      <p class="p-lead rv" style="margin-top:28px">Et quand la vie de l'officine change — transfert, agrandissement,
+         cession de parts, optimisation — votre agence ajuste l'approvisionnement avec vous, sans à-coup au comptoir.</p>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="reseau">
+  <div class="wrap">
+    <div class="sec-ey rv">Le réseau</div>
+    <h2 class="rv">Neuf implantations, une seule <span class="mag" data-hover="parole">exigence</span>.</h2>
+    <p class="sec-lead rv">De la commande à la livraison, la même façon de travailler partout :
+       on rappelle, on prévient, on assume. C'est tout, et c'est déjà beaucoup.</p>
+
+    <div class="reseau">
+      <article class="ag ag-siege rv">
+        <div class="ag-top"><span class="sig">HP</span><span class="badge-s">Siège</span></div>
+        <h4>Hyères Pharma</h4>
+        <p>Hyères <span>· Var (83)</span></p>
+      </article>
+      <article class="ag rv">
+        <div class="ag-top"><span class="sig">OPS</span></div>
+        <h4>Ouest Pharma Services</h4>
+        <p>St-Étienne-de-Montluc <span>· Loire-Atlantique (44)</span></p>
+      </article>
+      <article class="ag rv">
+        <div class="ag-top"><span class="sig">CPR</span></div>
+        <h4>Comptoir Pharmaceutique du Rhône</h4>
+        <p>Saint-Maurice-l'Exil <span>· Isère (38)</span></p>
+      </article>
+      <article class="ag rv">
+        <div class="ag-top"><span class="sig">SOP</span></div>
+        <h4>Sud Ouest Pharma</h4>
+        <p>Montayral <span>· Lot-et-Garonne (47)</span></p>
+      </article>
+      <article class="ag rv">
+        <div class="ag-top"><span class="sig">POS</span></div>
+        <h4>Pharm'Occitanie Services</h4>
+        <p>Villeneuve-lès-Béziers <span>· Hérault (34)</span></p>
+      </article>
+      <article class="ag rv">
+        <div class="ag-top"><span class="sig">SEP</span></div>
+        <h4>Sud Est Pharma</h4>
+        <p>Le Cannet-des-Maures <span>· Var (83)</span></p>
+      </article>
+      <article class="ag rv">
+        <div class="ag-top"><span class="sig">MSP</span></div>
+        <h4>Mistral Santé Pharma</h4>
+        <p>Flassans-sur-Issole <span>· Var (83)</span></p>
+      </article>
+      <article class="ag rv">
+        <div class="ag-top"><span class="sig">EP</span></div>
+        <h4>Escale Pharma</h4>
+        <p>Chilly-Mazarin <span>· Essonne (91)</span></p>
+      </article>
+      <article class="ag ag-part rv">
+        <div class="ag-top"><span class="sig">—</span><span class="badge-p">Partenaire</span></div>
+        <h4>Pharmest</h4>
+        <p>Metz <span>· Moselle (57)</span></p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="sec final" id="parler">
+  <div class="wrap">
+    <div class="final-in rv">
+      <div class="sec-ey">Contact</div>
+      <h2>Votre agence est votre <em style="font-style:italic;color:var(--blue-l)">premier interlocuteur.</em></h2>
+      <p class="sec-lead">Pas de standard national, pas de formulaire qui tombe dans le vide.
+         Vous parlez à l'équipe qui vous livre — celle qui connaît votre officine et votre région.</p>
+      <div class="acts">
+        <a class="btn" href="mailto:contact@integralpharma.fr">Nous écrire</a>
+        <a class="ghost" href="#reseau">Voir les implantations</a>
+      </div>
+      <p class="final-mono">contact@integralpharma.fr · 758 Chemin de la Source, 83400 Hyères</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap f-grid">
+    <div class="f-col f-brand">
+      <img src="../../assets/logo-web.png" alt="Intégral Pharma" width="120" height="30">
+      <p class="f-txt">Groupe de grossistes-répartiteurs français indépendant.
+         Votre agence régionale est votre premier interlocuteur.</p>
+    </div>
+    <div class="f-col">
+      <h5>Le groupe</h5>
+      <a href="#maison">La maison</a>
+      <a href="#quotidien">Le quotidien</a>
+      <a href="#metier">Ce qui nous tient</a>
+      <a href="#reseau">Les implantations</a>
+    </div>
+    <div class="f-col">
+      <h5>Nous joindre</h5>
+      <a href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a>
+      <span class="f-txt">758 Chemin de la Source<br>83400 Hyères</span>
+    </div>
+  </div>
+  <div class="wrap f-bas">
+    <span class="f-mono">© 2026 Intégral Pharma</span>
+    <a class="f-mono" href="mailto:contact@integralpharma.fr?subject=Demande%20de%20mentions%20l%C3%A9gales">Mentions légales</a>
+    
+  </div>
+</footer>
+
+<script>
+/* ---- 53 · texte magnétique (21st.dev, recodé vanilla) ---- */
+(function(){
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  if (window.matchMedia('(hover: none)').matches) return; /* pas sur mobile */
+
+  /* l'effet est actif : on peut montrer l'indice (pointillé sous les mots + phrase) */
+  document.documentElement.classList.add('has-mag');
+
+  document.querySelectorAll('.mag').forEach(function(el){
+    var circle = document.createElement('div'); circle.className = 'circle';
+    var inner  = document.createElement('div'); inner.className  = 'inner';
+    var word   = document.createElement('span'); word.textContent = el.dataset.hover;
+    inner.appendChild(word); circle.appendChild(inner); el.appendChild(circle);
+
+    var mouse = {x:0,y:0}, pos = {x:0,y:0}, running = false, raf = null;
+
+    function size(){ inner.style.width = el.offsetWidth+'px'; inner.style.height = el.offsetHeight+'px'; }
+    size(); window.addEventListener('resize', size);
+
+    function lerp(a,b,f){ return a + (b-a)*f; }
+    function loop(){
+      pos.x = lerp(pos.x, mouse.x, .15);
+      pos.y = lerp(pos.y, mouse.y, .15);
+      circle.style.transform = 'translate('+pos.x+'px,'+pos.y+'px) translate(-50%,-50%)';
+      inner.style.transform  = 'translate('+(-pos.x)+'px,'+(-pos.y)+'px)';
+      if (running) raf = requestAnimationFrame(loop);
+    }
+    el.addEventListener('mousemove', function(e){
+      var r = el.getBoundingClientRect();
+      mouse.x = e.clientX - r.left; mouse.y = e.clientY - r.top;
+    });
+    el.addEventListener('mouseenter', function(e){
+      var r = el.getBoundingClientRect();
+      mouse.x = pos.x = e.clientX - r.left;
+      mouse.y = pos.y = e.clientY - r.top;
+      /* le cercle doit couvrir le mot entier : le « double » se lit d'un coup */
+      var d = Math.max(el.offsetWidth * 1.25, el.offsetHeight * 1.9, 130);
+      circle.style.width = circle.style.height = d + 'px';
+      if (!running){ running = true; loop(); }
+    });
+    el.addEventListener('mouseleave', function(){
+      circle.style.width = circle.style.height = '0px';
+      setTimeout(function(){ running = false; if (raf) cancelAnimationFrame(raf); }, 520);
+    });
+  });
+})();
+
+/* ---- révélation au scroll ---- */
+(function(){
+  var els = document.querySelectorAll('.rv');
+  if (!('IntersectionObserver' in window)){
+    els.forEach(function(e){ e.classList.add('on'); }); return;
+  }
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(en, i){
+      if (en.isIntersecting){
+        setTimeout(function(){ en.target.classList.add('on'); }, i * 70);
+        io.unobserve(en.target);
+      }
+    });
+  }, {threshold:.12, rootMargin:'0px 0px -8% 0px'});
+  els.forEach(function(e){ io.observe(e); });
+})();
+</script>
+</body>
+</html>
