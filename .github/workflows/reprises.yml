@@ -36,8 +36,10 @@ jobs:
             git config user.email "actions@users.noreplace.github.com"
             git add crm/v2/reprises.json crm/v2/_finess_ej_snapshot.json
             git commit -m "data(reprises): diff FINESS+ $(date -u +%Y-%m-%d)"
-            # 24 robots poussent sur le meme depot : sans rattrapage, celui qui arrive
-            # second perd sa journee (vecu par « nouveautes » le 2026-08-03).
-            git pull --rebase --autostash origin main
-            git push
+            # 24 robots poussent sur le meme depot. On ne se rattrape QUE si le push
+            # echoue (collision), et sur la branche courante — pas sur « main » en dur.
+            git push || {
+              echo 'push refuse : un autre robot est passe avant, rattrapage'
+              git pull --rebase --autostash origin "$GITHUB_REF_NAME" && git push
+            }
           fi
