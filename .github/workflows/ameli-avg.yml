@@ -39,5 +39,8 @@ jobs:
             git config user.email "actions@users.noreplace.github.com"
             git add crm/v2/ameli-avg-data.js
             git commit -m "data(copilote): marché France Ameli $(date -u +%Y-%m-%d)"
+            # 24 robots poussent sur le meme depot : sans rattrapage, celui qui arrive
+            # second perd sa journee (vecu par « nouveautes » le 2026-08-03).
+            git pull --rebase --autostash origin main
             git push
           fi
