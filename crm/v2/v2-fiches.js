@@ -310,8 +310,8 @@
     '.fch-tot-v.green{color:#46D399}.fch-tot-v.blue{color:#79A8FF}'+
     '.fch-tot-sep{width:1px;align-self:stretch;background:rgba(255,255,255,.12);margin:10px 0}'+
     // sélecteurs overlay
-    '.fch-sel-bd{position:fixed;inset:0;z-index:210;background:rgba(16,19,28,.34);backdrop-filter:blur(7px);'+
-    '-webkit-backdrop-filter:blur(7px);display:flex;align-items:flex-start;justify-content:center;padding-top:9vh;opacity:0;pointer-events:none;transition:opacity .2s var(--ease)}'+
+    '.fch-sel-bd{position:fixed;inset:0;z-index:210;background:rgba(16,19,28,0.55);'+
+    'display:flex;align-items:flex-start;justify-content:center;padding-top:9vh;opacity:0;pointer-events:none;transition:opacity .2s var(--ease)}'+
     '.fch-sel-bd.open{opacity:1;pointer-events:auto}'+
     '.fch-sel{width:min(620px,93vw);max-height:74vh;background:var(--card);border-radius:18px;box-shadow:var(--sh-pop);'+
     'display:flex;flex-direction:column;overflow:hidden;transform:scale(.97);opacity:0;transition:transform .24s var(--ease),opacity .18s}'+

@@ -174,7 +174,7 @@
       steps = '1. Ouvre le menu du navigateur (<b>⋮</b> en haut à droite)<br>2. Choisis <b>« Installer l\'application »</b> ou <b>« Ajouter à l\'écran d\'accueil »</b>';
     }
     var o = document.createElement('div');
-    o.style.cssText = 'position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(16,19,28,.5);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)';
+    o.style.cssText = 'position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(16,19,28,0.55);';
     o.innerHTML =
       '<div style="background:#fff;border-radius:22px;max-width:380px;width:100%;padding:26px 26px 22px;box-shadow:0 24px 60px rgba(16,19,28,.3);font-family:var(--font,system-ui)">' +
         '<img src="icons/icon-192.png" alt="" style="width:56px;height:56px;border-radius:14px;box-shadow:0 4px 12px rgba(0,80,230,.3)" />' +
@@ -691,7 +691,10 @@
       // Hero : plus d'air, halo dégradé sobre bleu→orange derrière le titre
       '.v2-home-x .v2-hero{position:relative;margin-bottom:34px;padding-top:8px}',
       // Halo hero : bleu IP (devient vert en OPSO via --ip-blue) + touche orange sobre côté droit
-      '.v2-home-x .v2-hero::before{content:"";position:absolute;left:50%;top:-30px;width:min(620px,86%);height:210px;transform:translateX(-50%);pointer-events:none;z-index:-1;background:radial-gradient(60% 100% at 30% 0%,color-mix(in srgb,var(--ip-blue) 11%,transparent),transparent 70%),radial-gradient(55% 100% at 78% 10%,color-mix(in srgb,var(--c-pilo) 9%,transparent),transparent 72%);filter:blur(6px)}',
+      '.v2-home-x .v2-hero::before{content:"";position:absolute;left:50%;top:-30px;width:min(620px,86%);height:210px;transform:translateX(-50%);pointer-events:none;z-index:-1;background:radial-gradient(60% 100% at 30% 0%,color-mix(in srgb,var(--ip-blue) 11%,transparent),transparent 78%),radial-gradient(55% 100% at 78% 10%,color-mix(in srgb,var(--c-pilo) 9%,transparent),transparent 80%)}',
+      /* halo : dégradés radiaux seuls. Le filter:blur(6px) qui les adoucissait portait
+         sur 620×210 px — « flou sur une grande surface », interdit (le Mac de Will plante).
+         Les arrêts de dégradé ont été étirés (70→78 %, 72→80 %) pour retrouver la douceur. */
       '.v2-home-x .v2-eyebrow{background:linear-gradient(180deg,var(--card),var(--card-2));border:1px solid var(--line);padding:6px 13px;border-radius:var(--r-pill);box-shadow:var(--sh-1)}',
       '.v2-home-x .v2-hero h1{background:none}',
       '.v2-home-x .v2-hero .ac{color:var(--ip-blue)}',

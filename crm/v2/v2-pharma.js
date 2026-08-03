@@ -3085,7 +3085,7 @@
       '.pl-rm:hover{color:var(--c-rose);border-color:color-mix(in srgb,var(--c-rose) 35%,var(--line));background:color-mix(in srgb,var(--c-rose) 8%,#fff)}',
       '.pl-del{color:var(--c-rose) !important}',
       // modale d\'ajout de pharmacies
-      '.pl-pick-ov{position:fixed;inset:0;z-index:130;display:flex;align-items:center;justify-content:center;padding:4vh 16px;background:rgba(16,19,28,.45);backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px)}',
+      '.pl-pick-ov{position:fixed;inset:0;z-index:130;display:flex;align-items:center;justify-content:center;padding:4vh 16px;background:rgba(16,19,28,0.55);}',
       '.pl-pick-card{width:min(560px,96vw);max-height:90vh;display:flex;flex-direction:column;background:var(--card);border-radius:20px;box-shadow:var(--sh-pop);overflow:hidden}',
       '.pl-pick-top{display:flex;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid var(--line)}',
       '.pl-pick-t{flex:1;font-weight:800;font-size:15.5px;letter-spacing:-.01em}',
@@ -3105,7 +3105,7 @@
       // carte de secteur
       '.sec-mapwrap{position:relative;border-radius:var(--r-card);overflow:hidden;border:1px solid var(--line);box-shadow:var(--sh-1)}',
       '.sec-map{width:100%;height:calc(100vh - 280px);min-height:420px;background:#EAEEF3}',
-      '.sec-legend{position:absolute;right:14px;bottom:14px;z-index:500;background:rgba(255,255,255,.94);backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:12px;padding:11px 13px;box-shadow:var(--sh-2);font-size:11.5px}',
+      '.sec-legend{position:absolute;right:14px;bottom:14px;z-index:500;background:rgba(255,255,255,0.96);border:1px solid var(--line);border-radius:12px;padding:11px 13px;box-shadow:var(--sh-2);font-size:11.5px}',
       '.sec-legend-t{font-weight:800;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:7px}',
       '.sec-legend-row{display:flex;align-items:center;gap:8px;color:var(--ip-ink-2);margin-bottom:4px;font-weight:600}',
       '.sec-dot{display:inline-block;border-radius:50%;border:1.5px solid;flex-shrink:0}',
@@ -3117,7 +3117,7 @@
       '.grp-logo-big{width:48px;height:48px;border-radius:13px}',
       '.grp-logo-big.grp-logo-x{font-size:17px}',
       // ── Modal aperçu prépa RDV ──
-      '.prepa-modal{position:fixed;inset:0;z-index:120;background:rgba(16,19,28,.45);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:flex;align-items:flex-start;justify-content:center;padding:4vh 16px;opacity:0;pointer-events:none;transition:opacity .2s var(--ease)}',
+      '.prepa-modal{position:fixed;inset:0;z-index:120;background:rgba(16,19,28,0.55);display:flex;align-items:flex-start;justify-content:center;padding:4vh 16px;opacity:0;pointer-events:none;transition:opacity .2s var(--ease)}',
       '.prepa-modal.open{opacity:1;pointer-events:auto}',
       '.prepa-dialog{width:min(900px,96vw);max-height:92vh;background:var(--card);border-radius:20px;box-shadow:var(--sh-pop);display:flex;flex-direction:column;overflow:hidden;transform:scale(.97);transition:transform .24s var(--ease)}',
       '.prepa-modal.open .prepa-dialog{transform:scale(1)}',

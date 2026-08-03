@@ -151,19 +151,36 @@
     return mois;
   }
 
-  var _cipIdx = null, _cipIdxRef = null;
+  var _cipIdx = null, _cipIdxRef = null, _cipIdxSai = null;
+
+  // Indice saisonnier du mois qu'on est en train de couvrir (saison-cip.json, robot mensuel).
+  // Bornes volontaires : les indices bruts montent jusqu'à ×7,1 sur des produits à très
+  // petit volume — sans plafond, une commande délirante partirait. Le plancher protège de
+  // l'inverse : un indice à 0 (observé aussi) supprimerait tout réassort d'un produit qui
+  // se vend vraiment. Un indice absent ou aberrant vaut 1 : on ne touche à rien.
+  var SAIS_MIN = 0.6, SAIS_MAX = 1.8;
+  function saisonMois(cip, mois0) {
+    var s = (_saiCip && _saiCip.data) ? _saiCip.data[String(cip)] : null;
+    if (!s || !s.i) return 1;
+    var v = s.i[mois0];
+    if (typeof v !== 'number' || !isFinite(v) || v <= 0) return 1;
+    return Math.min(SAIS_MAX, Math.max(SAIS_MIN, v));
+  }
 
   // Index par CIP : demande mensuelle réseau (6 mois) + stock plateforme → vitesse, couverture, qté conseillée.
   // Construit une seule fois et mis en cache (pattern salesByPid de v2-audit.js, transposé cip13).
   function cipIndex() {
     var S = window.WML_SALES;
     if (!S) return {};
-    if (_cipIdx && _cipIdxRef === S) return _cipIdx;
+    // Le cache dépend AUSSI de la saison : saison-cip.json arrive en différé, et sans
+    // cette condition l'index resterait figé sur la version calculée avant son arrivée.
+    if (_cipIdx && _cipIdxRef === S && _cipIdxSai === _saiCip) return _cipIdx;
     var P = window.PROD_STATS || [], ps = {};
     for (var i = 0; i < P.length; i++) ps[String(P[i].c)] = P[i];
     var stk = (window.STOCK_IP && window.STOCK_IP.data) || {};
     // audit 01/08 : on ne compte QUE les mois complets (le dernier mois d'export est partiel —
     // 425 officines contre 630 en avril — et diluait la vitesse, donc gonflait les couvertures).
+    var moisCourant = new Date().getMonth();   // 0-11, le mois que le réassort doit couvrir
     var MR = moisRetenus(S), garde = {}, nMois = MR.length;
     for (var k = 0; k < MR.length; k++) garde[MR[k]] = 1;
     var dem = {};
@@ -188,15 +205,26 @@
       var p = ps[c];
       var isRupt = !!rupt(c), tg = tend(c);
       var cibleJ = (isRupt || (tg != null && tg > 0)) ? CIBLE_TENSION : CIBLE;
-      var qcmd = Math.max(0, Math.round(cibleJ * vD - st));
-      idx[c] = { c: c, d: p ? p.d : c, vM: vM, st: st, cov: cov, qcmd: qcmd, nMois: nMois,
+      // La saison entre ICI, et seulement ici. La couverture `cov` ci-dessus reste sur la
+      // vitesse moyenne : c'est une mesure factuelle (stock ÷ vitesse), affichée partout et
+      // comparable d'un produit à l'autre. Ce qu'on saisonnalise, c'est la CIBLE : combien
+      // il faut tenir pour le mois qui vient, pas combien on tient aujourd'hui.
+      var sais = saisonMois(c, moisCourant);
+      // Sur un produit EN TENSION ANSM, un creux saisonnier ne doit PAS réduire la
+      // commande : c'est justement là qu'une rupture coûte le plus cher, et c'est la
+      // raison pour laquelle la cible est passée à 30 jours. Mesuré sans ce garde-fou :
+      // Izalgi (tension ANSM) tombait de 8 907 à 7 620 unités à cause d'un août à 0,91.
+      // Un pic, lui, continue de faire monter.
+      if (isRupt) sais = Math.max(1, sais);
+      var qcmd = Math.max(0, Math.round(cibleJ * vD * sais - st));
+      idx[c] = { c: c, d: p ? p.d : c, vM: vM, st: st, cov: cov, qcmd: qcmd, nMois: nMois, sais: sais,
         // audit 01/08 : absent de l'inventaire ≠ inventorié à zéro. 791 produits (28 %) sont
         // dans ce cas et passaient pour « déjà à sec » → fausses urgences + € gonflé.
         unk: (stk[c] == null) ? 1 : 0,
         ppht: p ? (p.ppht || 0) : 0, stale: p ? p.stale : 0, rupt: isRupt, f: p ? p.f : '' };
     });
     abcPareto(idx);
-    _cipIdx = idx; _cipIdxRef = S;
+    _cipIdx = idx; _cipIdxRef = S; _cipIdxSai = _saiCip;
     return idx;
   }
 
@@ -347,7 +375,7 @@
     if (_etabState) return;
     _etabState = 1;
     var s = document.createElement('script');
-    s.src = 'etab-prices-data.js?v=' + (window.__APPRO_V || '20260803i'); s.async = false;
+    s.src = 'etab-prices-data.js?v=' + (window.__APPRO_V || '20260803j'); s.async = false;
     s.onload = function () { _etabState = 2; approRerender(); };
     s.onerror = function () { _etabState = 2; };
     document.head.appendChild(s);
