@@ -347,7 +347,7 @@
     if (_etabState) return;
     _etabState = 1;
     var s = document.createElement('script');
-    s.src = 'etab-prices-data.js?v=' + (window.__APPRO_V || '20260803b'); s.async = false;
+    s.src = 'etab-prices-data.js?v=' + (window.__APPRO_V || '20260803d'); s.async = false;
     s.onload = function () { _etabState = 2; approRerender(); };
     s.onerror = function () { _etabState = 2; };
     document.head.appendChild(s);
@@ -430,12 +430,15 @@
     for (var j = 0; j < S.length; j++) { var r = S[j]; if (r[4] > 0) { var c = String(r[3]); if (set[c]) bought[c] = (bought[c] || 0) + r[4]; } }
     var out = Object.keys(bought).map(function (c) { return { c: c, q: bought[c], d: ps[c] ? ps[c].d : c }; });
     out.sort(function (a, b) { return b.q - a.q; });
-    _bascCache = out.slice(0, 12); _bascRef = S; _bascGenRef = _generData;
+    // Liste COMPLÈTE : le compteur « à protéger » doit valoriser tout le stock de princeps
+    // menacé. C'est aux appelants d'afficher un top N — plafonner ici sous-estimait
+    // l'exposition en silence.
+    _bascCache = out; _bascRef = S; _bascGenRef = _generData;
     return _bascCache;
   }
   function basculesCard() {
     if (!_generData) return '<div class="v2-card ap-card"><div class="ap-hd"><div class="ap-ic" style="background:#6D5AE6">G</div><div><h3>Bascules génériques</h3><div class="ap-sub">chargement de la base médicaments (BDPM)…</div></div></div></div>';
-    var b = basculesGx(); if (!b.length) return '';
+    var b = basculesGx().slice(0, 12); if (!b.length) return '';
     var rows = b.map(function (o) {
       return '<div class="ap-row"><div class="ap-nm">' + esc(cap(o.d)) + '<small>princeps acheté par le réseau — un générique existe</small></div>' +
         '<div class="ap-mini">' + fmt(o.q) + ' u/6 mois</div><div class="ap-st ok">bascule Gx</div></div>';
@@ -1414,12 +1417,38 @@
       var c = String(g.cip || g.c || ''); if (seen[c]) return; seen[c] = 1;
       out.push({ d: (g.lib || g.d || '').split(',')[0], c: c, st: stq(c), val: stq(c) * (g.ppht || 0), neuf: true });
     });
-    try { basculesGx().slice(0, 8).forEach(function (b) { if (seen[b.c]) return; seen[b.c] = 1; out.push({ d: b.d, c: b.c, q: b.q, st: stq(b.c) }); }); } catch (e) {}
+    // Le stock de princeps est exactement ce qui se dévalorisera quand le générique
+    // arrivera : chaque ligne porte sa valeur (stock × PPHT), affichée et comptée.
+    var idxP = {}; try { idxP = cipIndex(); } catch (e) {}
+    try {
+      basculesGx().slice(0, 8).forEach(function (b) {
+        if (seen[b.c]) return; seen[b.c] = 1;
+        var st = stq(b.c), o = idxP[String(b.c)];
+        out.push({ d: b.d, c: b.c, q: b.q, st: st, val: st * ((o && o.ppht) || 0) });
+      });
+    } catch (e) {}
     // EMA : génériques/biosimilaires autorisés/en pipeline au niveau UE (molécules de notre catalogue)
     if (_emaData && _emaData.items) _emaData.items.forEach(function (e) {
       out.push({ ema: true, d: e.inn, name: e.name, typ: e.type, pipeline: e.pipeline, amm: e.amm });
     });
     return out;
+  }
+  // Exposition « à protéger » côté génériques : la valeur du stock de princeps qu'on
+  // achète encore alors qu'un générique existe ou arrive. Calculée sur TOUS les produits
+  // concernés — le couloir n'en affiche que quelques-uns, le compteur ne doit pas hériter
+  // de ce plafond d'affichage. Dédoublonnée : un produit peut être à la fois nouveau
+  // groupe du mois et princeps déjà repéré.
+  function exposGeneriques() {
+    var idx = {}; try { idx = cipIndex(); } catch (e) {}
+    var vu = {}, eur = 0, n = 0;
+    function ajoute(cip, prixConnu) {
+      var c = String(cip || ''); if (!c || vu[c]) return; vu[c] = 1;
+      var o = idx[c], p = prixConnu || (o && o.ppht) || 0, v = stq(c) * p;
+      if (v > 0) { eur += v; n++; }
+    }
+    if (_generData && _generData.newGeneric) _generData.newGeneric.forEach(function (g) { ajoute(g.cip || g.c, g.ppht); });
+    try { basculesGx().forEach(function (b) { ajoute(b.c); }); } catch (e) {}
+    return { eur: eur, n: n };
   }
   // Couloir ① : la demande qui monte (épidémie + saison fusionnées)
   function demandeUp() {
@@ -1457,7 +1486,7 @@
     var retours = (_ansmData && _ansmData.items) ? _ansmData.items.filter(function (i) { return i.retour && i.retour.iso; }).length : 0;
     // compteurs P&L
     var protectEur = 0; algF.forEach(function (x) { protectEur += x.expo; });
-    bas.forEach(function (b) { protectEur += (b.val || 0); });
+    var gxExpo = exposGeneriques(); protectEur += gxExpo.eur;
     var capter = up.length + retours;
     var pl = '<div class="an-pl">' +
       '<div class="lose"><b>' + (V2.fmtEur ? V2.fmtEur(protectEur) : fmt(protectEur)) + '</b><span>à protéger — baisses de prix + stock des futurs génériques</span></div>' +
