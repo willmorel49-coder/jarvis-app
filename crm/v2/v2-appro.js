@@ -347,7 +347,7 @@
     if (_etabState) return;
     _etabState = 1;
     var s = document.createElement('script');
-    s.src = 'etab-prices-data.js?v=' + (window.__APPRO_V || '20260803a'); s.async = false;
+    s.src = 'etab-prices-data.js?v=' + (window.__APPRO_V || '20260803b'); s.async = false;
     s.onload = function () { _etabState = 2; approRerender(); };
     s.onerror = function () { _etabState = 2; };
     document.head.appendChild(s);
@@ -666,13 +666,16 @@
   }
   // ── Couche de confiance : fraîcheur des sources (recommandation stratégie : fiabiliser d'abord) ──
   function fdate(iso) { if (!iso) return '—'; var p = String(iso).slice(0, 10).split('-'); return p.length >= 3 ? p[2] + '/' + p[1] : String(iso); }
+  // Les deux robots ne datent pas leur semaine pareil : Sentinelles écrit « 202630 »,
+  // Odissé écrit « 2026-S30 ». Un découpage à position fixe affichait « sem. -S30 ».
+  function sem(w) { var m = String(w == null ? '' : w).match(/(\d{1,2})$/); return m ? m[1] : String(w == null ? '' : w); }
   function freshnessBar() {
     var s = [];
     if (_ansmData && _ansmData.generated) s.push('Ruptures ANSM ' + fdate(_ansmData.generated));
     if (_generData && _generData.generated) s.push('Génériques ' + fdate(_generData.generated));
     if (_hasData && _hasData.generated) s.push('HAS ' + fdate(_hasData.generated));
-    if (_epiData && _epiData.week) s.push('Épidémio sem. ' + String(_epiData.week).slice(4));
-    if (_odisseData && _odisseData.week) s.push('Urgences sem. ' + String(_odisseData.week).slice(4));
+    if (_epiData && _epiData.week) s.push('Épidémio sem. ' + sem(_epiData.week));
+    if (_odisseData && _odisseData.week) s.push('Urgences sem. ' + sem(_odisseData.week));
     if (_saiCip && _saiCip.generated) s.push('Saison ' + fdate(_saiCip.generated));
     if (_mitmGen) s.push('MITM ' + fdate(_mitmGen));
     if (_prixData && _prixData.generated) s.push('Prix BDPM ' + fdate(_prixData.generated));
