@@ -355,9 +355,15 @@
     p.updated_at = new Date().toISOString();
     var c = sb();
     if (backend === 'supabase' && c) {
+      // Un repli silencieux fait croire que c'est partagé alors que ça reste sur ce poste.
+      var repli = function () {
+        saveLocal(p);
+        if (V2.toast) V2.toast('Enregistré sur cet ordinateur seulement — pas partagé avec l\'équipe', 'error');
+      };
       return c.from('linkedin_posts').upsert(toRow(p)).then(function (r) {
-        if (r.error) { saveLocal(p); return posts; } return loadPosts();
-      }).catch(function () { saveLocal(p); return Promise.resolve(posts); });
+        if (r.error) { repli(); try { console.warn('[linkedin]', r.error.message); } catch (e) {} return posts; }
+        return loadPosts();
+      }).catch(function () { repli(); return Promise.resolve(posts); });
     }
     return Promise.resolve(saveLocal(p));
   }

@@ -79,11 +79,17 @@
       if (V2.route && V2.route.name === 'remontees') V2.render();
     };
     if (c) {
+      // « Idée envoyée à l'équipe » ne doit pas s'afficher si l'idée n'est PAS partie.
+      var repli = function () {
+        saveLocalNew(body);
+        if (V2.toast) V2.toast('Idée gardée sur cet ordinateur seulement — pas envoyée à l\'équipe', 'error');
+        if (V2.route && V2.route.name === 'remontees') V2.render();
+      };
       c.from(TABLE).insert({ author_id: V2.user.id, author_name: V2.user.name || '', body: body, status: 'nouveau', votes: 0 })
         .then(function (r) {
-          if (r.error) { saveLocalNew(body); }
-          done();
-        }).catch(function () { saveLocalNew(body); done(); });
+          if (r.error) { try { console.warn('[remontees]', r.error.message); } catch (e) {} repli(); }
+          else done();
+        }).catch(function () { repli(); });
     } else { saveLocalNew(body); done(); }
   };
   function saveLocalNew(body) {
