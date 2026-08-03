@@ -18,7 +18,7 @@
   // puis les grossistes/short-liners régionaux concurrents (Ouest surtout). Complétable via « ➕ préciser… ».
   var GROS = ['Intégral Pharma', 'OCP', 'CERP Rouen', 'CERP RRM', 'CERP Bretagne Atlantique', 'Alliance Healthcare', 'Phoenix Pharma', 'Cophana', 'Sagitta', 'Sogiphar', 'CIP Pharma', 'Welcoop', 'Giphar Répartition', 'Anjou Santé', 'Mezegel', 'Epsilon', 'Pharmest', 'Axipharm'];
   var GEN = ['Biogaran', 'Viatris (Mylan)', 'EG Labo', 'Teva', 'Sandoz', 'Zentiva', 'Arrow', 'Cristers', 'Zydus', 'Bouchara-Recordati', 'Sun Pharma', 'Substipharm'];
-  var LGO = ['Winpharma', 'LGPI', 'Smart Rx', 'Léo', 'Pharmaland', 'Caduciel', 'Péripharm', 'Pharmavitale', 'Santé Cegedim'];
+  var LGO = ['Winpharma', 'LGPI', 'Smart Rx', 'Léo', 'Pharmaland', 'Caduciel', 'Péripharm', 'Pharmavitale', 'Santé Cegedim', 'Pharmony'];
   var ROBOT = ['Aucun', 'Riedl', 'BD Rowa', 'Mekapharm', 'Meditech', 'Sinteco', 'Willach', 'Tecny-Farma', 'Apostore', 'Omnicell'];
   var BIOSIM = ['Biogaran', 'Zentiva', 'EG Labo', 'Teva', 'Sandoz', 'Viatris', 'Accord', 'Celltrion', 'Amgen', 'Fresenius Kabi', 'Stada', 'Biogen'];
   // Config des champs — ajouter/retirer ici suffit.
@@ -26,6 +26,7 @@
     { k: 'gros1', l: 'Grossiste n°1', opts: GROS },
     { k: 'gros2', l: 'Grossiste n°2', opts: GROS },
     { k: 'gros3', l: 'Grossiste n°3', opts: GROS },
+    { k: 'gros4', l: 'Grossiste n°4', opts: GROS },
     { k: 'gen1', l: 'Génériqueur n°1', opts: GEN },
     { k: 'gen2', l: 'Génériqueur n°2', opts: GEN },
     { k: 'gen3', l: 'Génériqueur n°3', opts: GEN },
@@ -158,10 +159,25 @@
   // Charge TOUS les enregistrements d'un scope (ex. 'newpharma' pour lister les prospects créés).
   V2.profil.loadScope = function (st) {
     var c = sb();
-    if (c) return c.from(TABLE).select('scope_id,data').eq('scope_type', st)
-      .then(function (r) { if (r.error || !r.data) return localScopeList(st); return r.data.map(function (x) { return { sid: String(x.scope_id), data: x.data || {} }; }); })
+    if (!c) return Promise.resolve(localScopeList(st));
+    // Supabase plafonne une requête à 1000 lignes. Au-delà, les corrections les plus
+    // anciennes disparaissaient SILENCIEUSEMENT du résultat : un nom de titulaire corrigé
+    // à la main se remettait tout seul à la valeur de la base quelques jours plus tard.
+    // On lit donc par tranches de 1000 jusqu'à avoir tout.
+    var PAS = 1000, out = [];
+    function tranche(depart) {
+      return c.from(TABLE).select('scope_id,data').eq('scope_type', st)
+        .range(depart, depart + PAS - 1)
+        .then(function (r) {
+          if (r.error || !r.data) return null;
+          r.data.forEach(function (x) { out.push({ sid: String(x.scope_id), data: x.data || {} }); });
+          if (r.data.length === PAS && depart + PAS < 20000) return tranche(depart + PAS);
+          return out;
+        });
+    }
+    return tranche(0)
+      .then(function (res) { return res === null ? localScopeList(st) : res; })
       .catch(function () { return localScopeList(st); });
-    return Promise.resolve(localScopeList(st));
   };
 
   // ── Corrections par pharmacie (scope 'override') : ex. groupement corrigé à la main ──
