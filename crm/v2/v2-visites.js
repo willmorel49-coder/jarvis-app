@@ -20,6 +20,30 @@
   function localMap() { try { return JSON.parse(localStorage.getItem(LS) || '{}') || {}; } catch (e) { return {}; } }
   function localSet(m) { try { localStorage.setItem(LS, JSON.stringify(m)); } catch (e) {} }
 
+  // Rattrapage : jusqu'au 03/08/2026 la table `visites` n'existait pas en base.
+  // Chaque « vu le… » restait dans le navigateur de la personne. On remonte une fois
+  // ce que le serveur ne connaît pas, sans jamais écraser une visite plus récente.
+  function remonterRepliLocal(surServeur) {
+    var c = sb(); if (!c || !V2.user || !V2.user.id) return;
+    var locales = localMap(), aRemonter = [];
+    Object.keys(locales).forEach(function (pid) {
+      var d = locales[pid]; if (!pid || !d) return;
+      var distant = surServeur ? surServeur[pid] : null;
+      if (!distant || d > distant) {
+        aRemonter.push({ pharmacy_id: String(pid), user_id: V2.user.id, visited_at: d });
+      }
+    });
+    if (!aRemonter.length) return;
+    try {
+      c.from(TABLE).insert(aRemonter).then(function (r) {
+        if (r && r.error) return;        // on garde le repli, rien n'est perdu
+        aRemonter.forEach(function (v) { _cache[v.pharmacy_id] = maxDate(_cache[v.pharmacy_id], v.visited_at); });
+        localSet({});
+        if (V2.toast) V2.toast(aRemonter.length + ' visite(s) de cet ordinateur partagée(s) avec l\'équipe');
+      }, function () {});
+    } catch (e) {}
+  }
+
   // Date du jour au format YYYY-MM-DD (local, pas UTC — pour ne pas décaler le soir)
   function today() {
     var d = new Date();
@@ -77,6 +101,7 @@
     // au boot : charge les visites Supabase dans le cache mémoire (fusion local).
     // Repli silencieux si la table n'existe pas. cb() toujours appelé.
     load: function (cb) {
+      // (le rattrapage du repli local est défini plus bas, remonterRepliLocal)
       var done = function () { if (typeof cb === 'function') { try { cb(); } catch (e) {} } };
       var c = sb();
       if (!c) { _cache = _cache || {}; done(); return; }
@@ -92,6 +117,7 @@
                 if (pid && dt) map[pid] = maxDate(map[pid], dt);
               }
               _cache = map;
+              remonterRepliLocal(map);
             } else { _cache = _cache || {}; }
             done();
           }, function () { _cache = _cache || {}; done(); });
