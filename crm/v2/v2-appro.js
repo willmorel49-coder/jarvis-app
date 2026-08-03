@@ -347,7 +347,7 @@
     if (_etabState) return;
     _etabState = 1;
     var s = document.createElement('script');
-    s.src = 'etab-prices-data.js?v=' + (window.__APPRO_V || '20260803e'); s.async = false;
+    s.src = 'etab-prices-data.js?v=' + (window.__APPRO_V || '20260803f'); s.async = false;
     s.onload = function () { _etabState = 2; approRerender(); };
     s.onerror = function () { _etabState = 2; };
     document.head.appendChild(s);
@@ -916,7 +916,13 @@
         if (rupt) { verdict = 'SÉCURISER'; cls = 'sec'; reason = 'tension ANSM · ' + secTxt + ' — commander maintenant'; C.sec++; }
         else { verdict = 'ACHETER'; cls = 'buy'; reason = secTxt + ' — commander maintenant'; C.buy++; }
         prio = 5; engager(qty * (o.ppht || 0), 'buy');
-      } else if (o.qcmd > 0 && o.cov < 21) {
+        // La cible de couverture n'est pas toujours 21 jours : elle passe à 30 en cas de
+        // tension ANSM ou de marché en hausse (cibleJ, cipIndex). Comparer la couverture à
+        // 21 en dur écartait du carnet 143 références en manque réel — dont NIMENRIX
+        // (tension ANSM, 26 j de stock, 113 unités manquantes), invisible partout, et des
+        // princeps qui ressortaient « ARBITRER » avec une quantité à zéro.
+        // `qcmd > 0` dit déjà « sous la cible » : c'est le seul test qui vaille.
+      } else if (o.qcmd > 0) {
         verdict = 'ACHETER'; cls = 'buy'; prio = 4; qty = o.qcmd;
         reason = o.unk ? secTxt : ('à sec ~' + dtLabel(o.cov) + ' · commander avant ' + dtLabel(o.cov - ORDER_LEAD)); C.buy++; engager(qty * (o.ppht || 0), 'buy');
       } else if (seasonUp) {
@@ -1607,7 +1613,7 @@
               '<div class="ap-cmd">commander<b>~' + fmt(o.qcmd) + '</b></div></div>';
           }).join('') || '<div class="ap-empty">Rien d\'urgent à réassortir.</div>';
           reaCard = '<div class="v2-card ap-card"><div class="ap-hd"><div class="ap-ic" style="background:var(--c-amber)">' + ICO('alert', 15, 2) + '</div>' +
-            '<div><h3>À commander — réassort recommandé</h3><div class="ap-sub">couverture en jours (stock plateforme ÷ vitesse réseau) + quantité conseillée — ' + fmt(h.ncmd) + ' réfs à passer, top 24 par urgence</div></div></div>' +
+            '<div><h3>À commander — réassort recommandé</h3><div class="ap-sub">couverture en jours (stock plateforme ÷ vitesse réseau) + quantité conseillée — ' + fmt(h.ncmd) + ' réfs à passer à partir de ' + MINVEL + ' boîtes/mois, top 24 par urgence</div></div></div>' +
             reaRows +
             '<div class="ap-foot" style="padding:10px 18px 12px;margin:0">Vitesse = ventes réseau/mois (WML, mois complets uniquement). Cible ' + CIBLE + ' j, portée à ' + CIBLE_TENSION + ' j si tension ANSM ou marché en hausse. Sur la base du dernier stock importé' + (window.STOCK_IP && window.STOCK_IP.meta && window.STOCK_IP.meta.gen ? ' (' + fdate(window.STOCK_IP.meta.gen) + ')' : '') + '.</div></div>';
 
