@@ -75,12 +75,32 @@
     return { id: it.id, type: it.type, title: it.title, accroche: it.accroche, footer: it.footer || '', status: it.status,
              products: it.products, theme: it.theme || null, owner: it.owner || (V2.user && V2.user.email) || '', updated_at: new Date().toISOString() };
   }
+  // Rattrapage : jusqu'au 03/08/2026 la table `marketing_items` n'existait pas en base.
+  // Tout ce que l'équipe créait tombait en repli local et n'était jamais partagé.
+  // On remonte une fois ce qui manque au serveur, puis on vide le repli.
+  function remonterRepliLocal(surServeur) {
+    var c = sb(); if (!c) return Promise.resolve();
+    var locaux = localAll(); if (!locaux.length) return Promise.resolve();
+    var connus = {}; (surServeur || []).forEach(function (x) { connus[String(x.id)] = 1; });
+    var manquants = locaux.filter(function (x) { return x && x.id && !connus[String(x.id)]; });
+    if (!manquants.length) { localWrite([]); return Promise.resolve(); }
+    return c.from('marketing_items').upsert(manquants.map(toRow)).then(function (r) {
+      if (r.error) return;               // on garde le repli, rien n'est perdu
+      localWrite([]);
+      if (V2.toast) V2.toast(manquants.length + ' élément(s) marketing de cet ordinateur partagé(s) avec l\'équipe');
+    }).catch(function () {});
+  }
+
   function loadItems() {
     var c = sb();
     if (c) {
       return c.from('marketing_items').select('*').order('updated_at', { ascending: false })
         .then(function (r) {
-          if (!r.error && r.data) { backend = 'supabase'; items = r.data.map(fromRow); return items; }
+          if (!r.error && r.data) {
+            backend = 'supabase'; items = r.data.map(fromRow);
+            remonterRepliLocal(items);
+            return items;
+          }
           backend = 'local'; items = localAll(); return items;
         }).catch(function () { backend = 'local'; items = localAll(); return items; });
     }

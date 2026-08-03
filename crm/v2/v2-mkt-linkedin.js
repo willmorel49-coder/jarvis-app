@@ -330,12 +330,31 @@
       owner: (V2.user && V2.user.email) || '', updated_at: new Date().toISOString() };
   }
 
+  // Rattrapage : jusqu'au 03/08/2026 la table `linkedin_posts` n'existait pas en base.
+  // Les posts créés tombaient en repli local, jamais partagés. On les remonte une fois.
+  function remonterRepliLocal(surServeur) {
+    var c = sb(); if (!c) return Promise.resolve();
+    var locaux = localAll(); if (!locaux.length) return Promise.resolve();
+    var connus = {}; (surServeur || []).forEach(function (x) { connus[String(x.id)] = 1; });
+    var manquants = locaux.filter(function (x) { return x && x.id && !connus[String(x.id)]; });
+    if (!manquants.length) { localWrite([]); return Promise.resolve(); }
+    return c.from('linkedin_posts').upsert(manquants.map(toRow)).then(function (r) {
+      if (r.error) return;               // on garde le repli, rien n'est perdu
+      localWrite([]);
+      if (V2.toast) V2.toast(manquants.length + ' post(s) LinkedIn de cet ordinateur partagé(s) avec l\'équipe');
+    }).catch(function () {});
+  }
+
   function loadPosts() {
     var c = sb();
     if (c) {
       return c.from('linkedin_posts').select('*').order('date', { ascending: true })
         .then(function (r) {
-          if (!r.error && r.data) { backend = 'supabase'; posts = r.data.map(fromRow); return posts; }
+          if (!r.error && r.data) {
+            backend = 'supabase'; posts = r.data.map(fromRow);
+            remonterRepliLocal(posts);
+            return posts;
+          }
           backend = 'local'; posts = localAll(); return posts;
         }).catch(function () { backend = 'local'; posts = localAll(); return posts; });
     }
