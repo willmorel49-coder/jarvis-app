@@ -52,7 +52,10 @@ Clés publiques exposées dans `crm/index.html` (lignes ~152-153). Pas de `.env`
 
 ```bash
 # Déploiement (GitHub Pages auto après push main)
-git add . && git commit -m "feat: ..." && git push
+# ⚠️ Les fichiers s'ajoutent UN PAR UN — `git add -A` / `.` sont bloqués par hook
+# (des PDF privés et lourds traînent à la racine). Lancer d'abord le sous-agent
+# `gardien-deploiement` : verdict NO-GO = on ne pousse pas.
+git add crm/v2/<fichier1> crm/v2/<fichier2> && git commit -m "feat: ..." && git push
 
 # Pipeline données Offilog (inclut Drakkars, Cap3000, Leclerc, Ma Pharmacie)
 python3 generate_offilog.py    # → crm/offilog-data.js (3 520 produits, 1 417 prix Leclerc)
@@ -85,12 +88,24 @@ python3 scraper_leclerc.py     # → leclerc_prices.json + opso/leclerc-data.js
 
 ## §6 Skills disponibles
 
+**Projet** (`.claude/skills/`, chargées quand on travaille sous `JARVIS/APP/`) :
+
 | Skill | Contenu |
 |-------|---------|
-| `.claude/skills/crm-structure.md` | Architecture app.js, pages, navigation, état global |
-| `.claude/skills/crm-supabase.md` | Schema SQL complet, RLS, Storage, Auth |
-| `.claude/skills/crm-offilog.md` | Pipeline Offilog × scrapers × matching EAN/nom |
-| `.claude/skills/crm-design.md` | Tokens CSS, composants, conventions UI |
+| `jarvis-conventions` | Nommage `v2-*.js` / `*-data.js`, helpers `V2.*` obligatoires, cache `?v=` + `sw.js VER`, Python 3.9 strict |
+
+**Globales** (`~/.claude/skills/`, disponibles partout) :
+
+| Skill | Quand elle se déclenche |
+|-------|--------|
+| `pharma-metier` | tout calcul ou affichage de prix, marge, abandon, tranche, générique |
+| `livraison-preuve` | avant d'annoncer que c'est en ligne, avant tout push |
+| `safari-safe` | avant d'écrire un effet visuel |
+| `fx-bank` | assembler une page vitrine en vanilla |
+| `robots-launchd` | les robots qui tournent tout seuls |
+| `refresh-stats-commercial` | nouveaux fichiers de ventes déposés dans `STATS/` |
+
+> Les 4 skills `crm-*.md` annoncées dans les versions précédentes de ce fichier **n'ont jamais existé** (vérifié sur tout l'historique git). Voir `~/.claude/JOURNAL.md` § ÉCARTÉ.
 
 ---
 
@@ -100,7 +115,7 @@ python3 scraper_leclerc.py     # → leclerc_prices.json + opso/leclerc-data.js
 2. Vanilla JS only — pas de framework, pas de build step, pas de npm
 3. Scrapers Python : compatibilité **Python 3.9** stricte (pas de `X | Y` type hints)
 4. Matching Offilog : **EAN prioritaire**, nom normalisé en fallback
-5. Chaque modification fonctionnelle → `git push` immédiat sur `main`
+5. Chaque modification fonctionnelle → `git push` sur `main` **après** verdict GO du sous-agent `gardien-deploiement`, fichiers ajoutés un par un
 6. Scrapers longs → lancer en background `&`, surveiller via log file
 
 ---
@@ -149,7 +164,7 @@ python3 scraper_leclerc.py     # → leclerc_prices.json + opso/leclerc-data.js
 | Règle | Détail |
 |-------|--------|
 | Abandon de marge, jamais « remise » | Toujours dire/écrire « abandon de marge » (« remise » n'est pas légal pour ça). « Net remisé » toléré à l'oral. |
-| Barème par tranche | Prix net grossiste : 0–4,33 € (petits prix) · 4,33–468 € · >468 €. Marge MDL (REMBOURSABLES uniquement) : 0,18 € fixe ≤4,33 € · 3,9 % jusqu'à 468 € · 19,50 € fixe au-delà. NR = marge libre. |
+| Barème par tranche | Tranches de prix net grossiste : 0–4,33 € (petits prix) · 4,33–468 € · >468 €. **ABANDON DE MARGE Intégral** (remboursables) : 0,18 €/boîte ≤ 4,33 € · **3,89 % du prix grossiste** (= 4,16 % du PFHT) jusqu'à 468 € · 19,50 €/boîte au-delà. NR = marge libre. ⚠️ Ce barème est l'**abandon grossiste**, PAS la marge MDL de l'officine (5 tranches de PFHT, taux en réforme) — la confondre fausse tout argumentaire. Détail : skill globale `pharma-metier`. |
 | NR & génériques | Prix libre → afficher UNIQUEMENT le prix net IP : aucun %, aucun abandon. Génériques : juste le prix (les génériqueurs gèrent leurs remises). Exception : offres Sanofi/UPSA = champ `offre_ip`. |
 | Conditions commerciales | On MONTRE les remises/conditions à l'écran en rdv ; on ne les IMPRIME jamais sur un doc remis au pharmacien, ni sur un support public (site vitrine, LinkedIn). |
 | Identité Intégral | « Groupe de grossistes français » / « grossiste-répartiteur ». NE PAS décrire Intégral comme un « groupement » (les groupements = les groupes d'achat des pharmacies = la feature Groupements, autre chose). |
