@@ -177,7 +177,7 @@
       kpiCard('k3', 'CA IP', V2.fmtEur(agg.caIP),
         agg.prixMoy > 0 ? 'prix net moyen ' + V2.fmtEur(agg.prixMoy) : '') +
       kpiCard('k4', 'Marge MDL potentielle', V2.fmtEur(agg.mdl),
-        agg.remMoy > 0 ? 'remise moyenne ' + agg.remMoy.toFixed(1).replace('.', ',') + ' %' : 'sur remboursables') +
+        agg.remMoy > 0 ? 'abandon de marge moyen ' + agg.remMoy.toFixed(1).replace('.', ',') + ' %' : 'sur remboursables') +
     '</div>';
   }
 
@@ -277,7 +277,7 @@
         '<div class="cat-kpi-grid">' +
           kpi('Prix HT', ht > 0 ? V2.fmtEur(ht) : '—') +
           kpi('Prix net IP', ip > 0 ? V2.fmtEur(ip) : '—', 'var(--ip-blue)') +
-          kpi('Remise IP', rem > 0 ? rem + '%' : '—', 'var(--c-mint)') +
+          kpi('Abandon de marge', rem > 0 ? rem + '%' : '—', 'var(--c-mint)') +
           kpi('Volume IP', V2.fmtNum(vol)) +
         '</div>' +
         perfHtml +
@@ -548,7 +548,7 @@
             '<th>Famille</th>' +
             thSort('Prix HT', 'prix_ht', true) +
             thSort('Prix IP', 'prix_ip', true) +
-            '<th class="num">Remise</th>' +
+            '<th class="num" title="Abandon de marge">Abandon</th>' +
             thSort('Vol IP', 'ip_qty', true) +
             thSort('CA IP', 'ip_ca', true) +
             '<th class="num">Vol Ameli</th>' +

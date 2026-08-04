@@ -1538,7 +1538,7 @@
         '</div>' +
       '</div>' +
       '<div class="phf-tablewrap"><table class="phf-tbl"><thead><tr>' +
-        '<th class="phf-tl">Produit</th><th>Statut</th><th>Prix net IP</th><th>Remise</th><th class="phf-tc">Nbr pharma</th>' +
+        '<th class="phf-tl">Produit</th><th>Statut</th><th>Prix net IP</th><th title="Abandon de marge">Abandon</th><th class="phf-tc">Nbr pharma</th>' +
       '</tr></thead><tbody>' + rotRows + '</tbody></table></div>' +
       '<div class="phf-foot">' + ICO('check', 13) + ' ' + nOwn + ' déjà commandé' + (nOwn > 1 ? 's' : '') + ' · <b style="color:var(--c-amber);margin-left:4px">' + nGap + ' à pousser</b> — sur les ' + rot.rows.length + ' meilleures rotations ' + (rot.isGrp ? 'du groupement' : 'du réseau') + '.</div>' +
     '</div>' : '';
@@ -2166,7 +2166,7 @@
       '</tr>';
     }).join('');
     var body = '<div class="v2-cat-table-wrap"><table class="v2-table">' +
-      '<thead><tr><th class="num">#</th><th>Produit</th><th>CIP</th><th class="num">Prix net</th><th class="num">Remise</th>' +
+      '<thead><tr><th class="num">#</th><th>Produit</th><th>CIP</th><th class="num">Prix net</th><th class="num" title="Abandon de marge">Abandon</th>' +
       '<th class="num">Nbr pharma</th><th></th>' + (enc ? '<th></th>' : '') + '</tr></thead><tbody>' + trs + '</tbody></table></div>';
     return '<div class="v2-card v2-cat open">' + head + body + '</div>';
   }
@@ -2516,7 +2516,7 @@
           '<div style="font-size:9px;color:#737A8C">Nbr pharma = pharmacies qui commandent / ' + panel + '</div>' +
         '</div>' +
         '<table style="width:100%;border-collapse:collapse;table-layout:fixed;page-break-after:avoid">' + COLS6 +
-          '<thead><tr style="background:#10131C">' + thd('Produit', 'left') + thd('CIP13', 'left', true) + thd('PPHT', 'right') + thd('Remise', 'right') + thd('Prix net IP', 'right') + thd('Nbr pharma', 'center') + '</tr></thead></table>' +
+          '<thead><tr style="background:#10131C">' + thd('Produit', 'left') + thd('CIP13', 'left', true) + thd('PPHT', 'right') + thd('Abandon de marge', 'right') + thd('Prix net IP', 'right') + thd('Nbr pharma', 'center') + '</tr></thead></table>' +
         (catHtml || '<div style="color:#9AA1B2;padding:36px;text-align:center;font-size:12px">Aucun produit à proposer.</div>') +
         // Pied
         '<div style="margin-top:16px;padding-top:9px;border-top:1px solid #E7EBF2;display:flex;align-items:center;justify-content:space-between;page-break-inside:avoid">' +

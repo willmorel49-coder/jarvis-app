@@ -126,7 +126,7 @@
       + '<div class="aud-intro">Votre N°1 est <b>plafonné à 2,5 %</b> sur le remboursable et <b>0 % au-delà de ~450 €</b>. Intégral n\'est pas plafonné : l\'abandon <b>s\'empile par-dessus</b>.</div>'
       + '<table><thead><tr><th>Tranche (PFHT)</th><th>Intégral</th><th>Votre N°1</th></tr></thead><tbody>' + rows5 + '</tbody></table></div>'
 
-      + '<div class="aud-verif"><div class="aud-vic">🔍</div><div><h3>Vérificateur de remise</h3>'
+      + '<div class="aud-verif"><div class="aud-vic">🔍</div><div><h3>Vérificateur d\'abandon de marge</h3>'
       + '<p>Vous doutez de ce que votre grossiste vous fait vraiment ? On calcule, sur votre facture, la remise que le barème officiel permet — net à net.</p></div></div>'
 
       + '<div class="aud-fo">Calculé sur le barème officiel de marge grossiste et l\'abandon Intégral (art. L.138-9), à partir de vos achats réels. '
@@ -223,7 +223,7 @@
 
   function importSection() {
     return '<div class="aud-imp">'
-      + '<div class="aud-imp-head"><span class="aud-vic2">🔍</span><div><b>Vérificateur de remise</b><div class="aud-imp-d">Importez une facture (Excel/CSV) d\'un autre grossiste — je calcule, ligne par ligne, <b>ce qu\'Intégral vous aurait rendu</b> dessus. Vos vrais chiffres, pas des promesses.</div></div></div>'
+      + '<div class="aud-imp-head"><span class="aud-vic2">🔍</span><div><b>Vérificateur d\'abandon de marge</b><div class="aud-imp-d">Importez une facture (Excel/CSV) d\'un autre grossiste — je calcule, ligne par ligne, <b>ce qu\'Intégral vous aurait rendu</b> dessus. Vos vrais chiffres, pas des promesses.</div></div></div>'
       + '<label class="v2-btn v2-btn-primary aud-imp-btn">Choisir un fichier Excel/CSV<input type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="V2.auditImport(this)"></label>'
       + '<div id="aud-imp-res"></div></div>';
   }
