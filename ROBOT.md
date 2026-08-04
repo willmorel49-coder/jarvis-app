@@ -171,7 +171,10 @@ python3 scraper_leclerc.py     # → leclerc_prices.json + opso/leclerc-data.js
 | Ton & positionnement | Pro, jamais familier ni auto-promo agressive. Soutenir pharmaciens ET patients (cf. positionnement LinkedIn). |
 | 2 marques distinctes | CRM Intégral Pharma (bleu) ≠ OPSO/Normandie Pharma (vert). Ne pas mélanger chartes ni logos. |
 
-> ⚠️ À CONFIRMER avec Will (non gravé car non vérifié) : liste exacte des génériqueurs « partenaires » ; statut NR de Wegovy/Mounjaro (dit sorti du NR au 15/06). Demander avant de coder une règle dessus.
+> **Génériqueurs partenaires** (confirmé par Will le 04/08/2026) : **EG · Zentiva · Zydus · Teva**.
+> ⚠️ Cette liste commerciale n'est **PAS** la liste de détection des génériques (`SUFFIXES_GENERIQUEURS` dans `generate_prod_stats.py`), qui est volontairement bien plus large. Intégral n'abandonne de marge sur **aucun** générique, partenaire ou non : réduire la détection aux 4 partenaires collerait un abandon fictif aux produits Biogaran, Mylan ou Sandoz.
+>
+> **Wegovy / Mounjaro** (confirmé le 04/08/2026) : **redevenus REMBOURSABLES** au 15/06/2026 — exclus du catalogue NR, soumis au barème d'abandon comme tout princeps.
 
 ## §11 Mode de travail avec Will
 
