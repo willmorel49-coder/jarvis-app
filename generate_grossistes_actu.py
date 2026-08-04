@@ -38,10 +38,32 @@ QUERIES = [
     {'tag': 'welcoop', 'q': 'Welcoop pharmacie répartition'},
     {'tag': 'giphar', 'q': 'Giphar répartition pharmacie'},
     {'tag': '', 'q': 'short-liner grossiste pharmacie'},
+
+    # Angles ajoutés le 04/08/2026. Les requêtes ci-dessus ne suivent que la
+    # RÉPARTITION ; il manquait tout ce qui se passe en amont (laboratoires,
+    # génériques, biosimilaires) et en face (groupements d'achat, rémunération
+    # de l'officine) — c'est-à-dire exactement les sujets de discussion en
+    # rendez-vous pharmacien. Testé sur 30 jours : 17 articles pertinents,
+    # dont l'extension du « tiers payant contre génériques » aux biosimilaires
+    # au 1er septembre, qu'aucune requête existante ne remontait.
+    # Requêtes volontairement SIMPLES : Google News renvoie 0 résultat sur les
+    # requêtes à rallonge avec plusieurs OR.
+    {'tag': 'generique', 'q': 'substitution générique officine'},
+    {'tag': 'generique', 'q': 'Zentiva OR Sandoz générique'},
+    {'tag': 'generique', 'q': 'Biogaran pharmacie'},
+    {'tag': 'biosimilaire', 'q': 'biosimilaire substitution officine'},
+    {'tag': 'biosimilaire', 'q': 'tiers payant contre génériques'},
+    {'tag': 'groupement', 'q': 'groupement pharmacies France'},
+    {'tag': 'groupement', 'q': 'PharmaBest'},
+    {'tag': 'groupement', 'q': 'Aprium pharmacie'},
+    {'tag': 'marge', 'q': 'marge officine pharmacien rémunération'},
+    {'tag': 'marge', 'q': 'honoraires dispensation pharmacien'},
 ]
 
 # Filtre pertinence : au moins un mot du secteur (évite le bruit "alliance"/"phoenix" hors pharma).
-KW = re.compile(r'pharmac|r[eé]partit|grossiste|officine|CERP|OCP|Alliance Healthcare|Phoenix Pharma|Giphar|Sagitta|Cophana|Welcoop|Astera|Alphega|labo|m[eé]dicament|g[eé]n[eé]rique|approvisionn|rupture', re.I)
+KW = re.compile(r'pharmac|r[eé]partit|grossiste|officine|CERP|OCP|Alliance Healthcare|Phoenix Pharma|Giphar|Sagitta|Cophana|Welcoop|Astera|Alphega|labo|m[eé]dicament|g[eé]n[eé]rique|approvisionn|rupture'
+                # Ajouts du 04/08/2026, pour les nouveaux angles (voir QUERIES).
+                r'|biosimilaire|substitu|honoraire|groupement|tiers payant|remboursement|d[eé]livrance', re.I)
 
 # Flux RSS DIRECTS gratuits (texte complet accessible) — priorité "accès libre".
 FEEDS = [

@@ -8,8 +8,10 @@
 → crm/v2/mkt-images-data.js  (window.MKT_IMG = {cip: url})
 Python 3.9.
 """
+import os
 import re
 import json
+import time as _time
 import unicodedata
 import urllib.request
 import urllib.parse
@@ -17,6 +19,19 @@ from concurrent.futures import ThreadPoolExecutor
 
 OUT = 'crm/v2/mkt-images-data.js'
 SRC = 'crm/v2/marketing-mix-data.js'
+
+# ── Travail par petits lots (ajouté le 04/08/2026) ──────────────────────────
+# Sans réglage, le script cherche TOUT à chaque exécution : plusieurs heures, et
+# on retape sur les sites sources pour des photos déjà trouvées. Avec
+# MKT_IMG_LOT=40, il ne tente que 40 produits neufs par passage — ce qui permet
+# à un robot de tourner chaque nuit sans gêner personne, jusqu'à épuisement.
+#   MKT_IMG_LOT=0 (ou absent) = comportement d'origine, on cherche tout.
+LOT = int(os.environ.get('MKT_IMG_LOT') or 0)
+# Un produit introuvable le reste souvent (il n'existe nulle part en photo).
+# On note l'échec pour ne pas repasser dessus toutes les nuits, et on retente
+# quand même au bout d'un mois : les catalogues des sources bougent.
+ECHECS = 'mkt-images-echecs.json'
+RETENTE_JOURS = 30
 UA = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36'}
 MESO = 'https://www.apothical.fr/medicaments-parapharmacie/produits/page/1/recherche/'
 
@@ -40,6 +55,33 @@ for path, eanrx, imgrx in [
         if e and i and e.group(1):
             ean_img[e.group(1)] = upsize(i.group(1))
 print('1. Offilog : %d EAN -> photo' % len(ean_img))
+
+# Photos déjà trouvées aux passages précédents (pharma-gdd, mesoigner…). Sans
+# cette reprise, chaque exécution repartait de zéro. Offilog reste prioritaire :
+# on ne fait que boucher les trous.
+try:
+    _txt = open(OUT, encoding='utf-8').read()
+    _deja = json.loads(re.search(r'window\.MKT_IMG\s*=\s*(\{.*\});', _txt, re.S).group(1))
+except Exception:
+    _deja = {}
+for _e, _u in _deja.items():
+    if _e not in ean_img:
+        ean_img[_e] = _u
+print('   %d photos déjà connues reprises' % len(_deja))
+
+try:
+    echecs = json.load(open(ECHECS))
+except Exception:
+    echecs = {}
+_limite = _time.time() - RETENTE_JOURS * 86400
+_frais = set(e for e, t in echecs.items() if isinstance(t, (int, float)) and t > _limite)
+
+
+def a_tenter(codes):
+    """Codes restant à chercher : on saute ceux déjà tentés en vain récemment,
+    et on s'arrête à la taille du lot si un lot est demandé."""
+    restants = [e for e in codes if e not in _frais] if LOT else list(codes)
+    return restants[:LOT] if LOT else restants
 
 # ── catalogue : EAN + désignation ──
 data = json.loads(re.search(r'window\.MKT_MIX\s*=\s*(\{.*\});',
@@ -113,7 +155,7 @@ def pharmagdd(cip):
         return None
     return img
 
-stage_gdd = [e for e in cat_eans if e not in ean_img]
+stage_gdd = a_tenter([e for e in cat_eans if e not in ean_img])
 print('3. pharma-gdd : %d CIP à chercher (redirection = fiche exacte)…' % len(stage_gdd))
 addedg = 0
 with ThreadPoolExecutor(max_workers=2) as ex:
@@ -218,7 +260,7 @@ def meso(desig):
             return u
     return None
 
-stage3 = [e for e in cat_eans if e not in ean_img]
+stage3 = a_tenter([e for e in cat_eans if e not in ean_img])
 print('4. mesoigner : %d produits à chercher par nom…' % len(stage3))
 added3 = 0
 with ThreadPoolExecutor(max_workers=6) as ex:
@@ -226,6 +268,19 @@ with ThreadPoolExecutor(max_workers=6) as ex:
         if img:
             ean_img[e] = img; added3 += 1
 print('   +%d photos' % added3)
+
+# On mémorise les produits cherchés sans succès pour ne pas y revenir chaque nuit.
+_tentes = set(stage_gdd) | set(stage3)
+_maintenant = _time.time()
+for _e in _tentes:
+    if _e in ean_img:
+        echecs.pop(_e, None)
+    else:
+        echecs[_e] = _maintenant
+try:
+    json.dump(echecs, open(ECHECS, 'w'), separators=(',', ':'))
+except OSError:
+    pass
 
 # ── Sortie ──
 found = {e: ean_img[e] for e in cat_eans if e in ean_img}
