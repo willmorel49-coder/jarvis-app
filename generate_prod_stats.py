@@ -48,25 +48,79 @@ for r in ws.iter_rows(min_row=2, values_only=True):
             'nat': (str(r[ni]).strip() if (ni is not None and r[ni]) else ''),
         }
 
-def famille(cip, ppht, net, remb, nat):
+# Filet de sécurité : quand `artnature` manque ou dit "Referent" à tort, un générique
+# se retrouve classé princeps et reçoit un abandon de marge qu'il ne devrait PAS avoir
+# (Intégral n'abandonne rien sur les génériques, ce sont les génériqueurs qui remisent).
+# Mesuré le 04/08/2026 : 21 produits dans ce cas — SITAGLIPTINE BGR, ROSUVASTATINE BGR,
+# SOLIFENACINE BGR, PARACETAMOL SDZ, VENLAFAXINE SDZ, ROPINIROLE EG, METRONIDAZOLE ARW…
+# Ces suffixes sont des abréviations de génériqueurs telles qu'elles apparaissent en fin
+# de désignation. Sous-estimer notre offre est moins grave que d'annoncer au pharmacien
+# un abandon qui n'existe pas : en cas de doute, on classe en générique.
+#
+# ⚠️ NE PAS réduire cette liste aux génériqueurs PARTENAIRES d'Intégral
+# (EG, Zentiva, Zydus, Teva — confirmés par Will le 04/08/2026). Ce sont deux
+# choses différentes : ici on détecte TOUT générique, partenaire ou non, parce
+# qu'Intégral n'abandonne de marge sur AUCUN d'eux. Retirer Biogaran, Mylan ou
+# Sandoz reclasserait leurs produits en princeps et leur collerait un abandon
+# fictif — exactement le bug que ce filet existe pour éviter.
+SUFFIXES_GENERIQUEURS = [
+    "BGR", "EG", "TEVA", "MYL", "SDZ", "ZTL", "ARW", "CRS", "ZDS", "ACD", "KRK",
+    "ALM", "EVP", "SUN", "BIOGARAN", "VIATRIS", "SANDOZ", "ZENTIVA", "ARROW",
+    "CRISTERS", "MYLAN", "ACCORD", "ZYDUS", "ALMUS", "EVOLUPHARM", "SUBSTIPHARM",
+    "REDDY", "EUGIA", "KRKA",
+]
+RX_GENERIQUEUR = re.compile(
+    r"(?:^|[\s\-])(" + "|".join(SUFFIXES_GENERIQUEURS) + r")(?:[\s\-]|$)")
+
+RATTRAPES = []   # journal des reclassements, affiché en fin de génération
+
+
+def famille(cip, ppht, net, remb, nat, designation=''):
     """Catégories voulues (Will) : NR · Génériques+biosimilaires · Princeps par tranche de prix.
     Nature depuis artnature du fichier prix (Referent=princeps ; Generique/Generique
-    Partenaire/Biosimilaire = genbio)."""
+    Partenaire/Biosimilaire = genbio), avec rattrapage par la désignation."""
     if not remb:
         return 'nr'
     nl = (nat or '').lower()
     if 'biosimilaire' in nl: return 'biosim'
     if 'generique' in nl or 'générique' in nl: return 'gen'
+
+    m = RX_GENERIQUEUR.search((designation or '').upper())
+    if m:                                   # artnature dit princeps, la désignation dit générique
+        RATTRAPES.append((cip, (designation or '').strip()[:60], m.group(1)))
+        return 'gen'
+
     p = ppht if ppht > 0 else net           # princeps / référent → tranche de prix
     if p <= 4.33: return 'pr_low'
     if p <= 468:  return 'pr_mid'
     return 'pr_high'
 
-def mdl(p):
+
+def abandon_ip(p):
+    """ABANDON DE MARGE Intégral sur un princeps remboursable — PAS la marge MDL de
+    l'officine. (Confusion historique : ces chiffres ont longtemps été nommés « MDL ».
+    La MDL officine a 5 tranches de PFHT et ses taux sont en réforme.)
+    Barème : 0,18 €/boîte ≤ 4,33 € · taux sur le cœur de gamme · 19,50 €/boîte > 468 €."""
     if p <= 0: return 0
     if p <= 4.33: return 0.18
-    if p <= 468: return p * 0.039
+    if p <= 468: return p * TAUX_COEUR
     return 19.50
+
+
+# Taux du cœur de gamme. Deux chiffres circulent pour le MÊME abandon, sur deux bases :
+#   4,16 % du PFHT (prix fabricant)  = 60 % de la marge grossiste réglementée de 6,93 %
+#   3,89 % du PGHT (prix grossiste)  = 4,16 ÷ 1,0693 — la base que voit le pharmacien
+# Ne jamais appliquer l'un sur la base de l'autre.
+#
+# Vérifié le 04/08/2026 sur les ventes réelles : la colonne `ppht` de
+# STATS/stock et prix*.xlsx est le TARIF GROSSISTE. L'écart mesuré PPHT → prix net
+# effectivement payé, sur 1 596 princeps du cœur de gamme, a une médiane de 3,70 %
+# (quartiles 3,50–3,80) — cohérent avec 3,89 %, incompatible avec 4,16 %.
+# C'est donc bien 3,89 % qui s'applique ici. L'ancienne valeur 0.039 était un arrondi.
+# Aligné sur `abandonBareme()` / `V2.bestPrice()`, la source de vérité du CRM.
+TAUX_COEUR = 0.0389
+
+mdl = abandon_ip   # rétrocompatibilité — ancien nom, trompeur
 
 t = open(WML, encoding='utf-8').read()
 sales = json.loads(re.search(r'WML_SALES\s*=\s*(\[.*?\]);', t, re.S).group(1))
@@ -97,7 +151,7 @@ for c, a in ag.items():
     rem_pct = round((pp_eff - net_u) / pp_eff * 100, 1) if (pp_eff > 0 and 0 < net_u <= pp_eff) else 0
     rows.append({
         'c': c, 'd': info[c]['d'][:46], 'n': nph,
-        'f': famille(c, info[c]['ppht'], net, info[c]['remb'], info[c]['nat']),
+        'f': famille(c, info[c]['ppht'], net, info[c]['remb'], info[c]['nat'], info[c]['d']),
         'ppht': ppht,                              # PPHT tarif grossiste
         'net': net_u,                              # prix net remisé (réel achat, hors retours)
         'rpct': rem_pct,                           # % de remise (PPHT → net)
@@ -113,3 +167,13 @@ with open(OUT, 'w', encoding='utf-8') as f:
     f.write('// Stats reseau PAR PRODUIT (CIP) — rotation/marge/remise/CA par pharmacie/an — generate_prod_stats.py\n')
     f.write('window.PROD_STATS = ' + json.dumps(rows, ensure_ascii=False, separators=(',', ':')) + ';\n')
 print('OK %d produits (CIP, nph>=3) sur %d mois -> %s' % (len(rows), NM, OUT))
+
+if RATTRAPES:
+    print('\n⚠️  %d produits reclassés PRINCEPS -> GÉNÉRIQUE d\'après leur désignation'
+          % len(RATTRAPES))
+    print('    (artnature les disait "Referent" : ils auraient reçu un abandon de marge'
+          ' qu\'Intégral n\'accorde pas sur les génériques)')
+    for cip, des, suf in sorted(RATTRAPES, key=lambda x: x[1]):
+        print('      %-14s %-62s [%s]' % (cip, des, suf))
+    print('    → si l\'un de ces produits est un VRAI princeps, retirer son suffixe de'
+          ' SUFFIXES_GENERIQUEURS et le signaler à Will.')
