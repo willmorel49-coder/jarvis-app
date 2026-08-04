@@ -8,8 +8,8 @@
 
 ### A. Prix & fiches (commercial, sensible)
 - [ ] Abandon de marge sur **princeps petits prix** (aujourd'hui souvent « — »)
-- [ ] **PPHT + prix IP net** sur fiches collégiales/marketing — visible à l'écran devant le client, **jamais imprimé/communiqué** l'abandon de marge
-- [ ] Vocabulaire : toujours « **abandon de marge** », jamais « remise » (audit écran + PDF)
+- [x] **PPHT + prix IP net** sur fiches collégiales/marketing — visible à l'écran devant le client, **jamais imprimé/communiqué** l'abandon de marge
+- [x] Vocabulaire : toujours « **abandon de marge** », jamais « remise » (audit écran + PDF) — fait le 04/08/2026
 
 ### B. Groupements & clients
 - [ ] Ranger les groupements par **ordre alphabétique**
