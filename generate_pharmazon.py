@@ -16,8 +16,34 @@ UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/
 JAR = "/tmp/pz_cookies.txt"
 BASE = "https://www.sra-pharmazon.com"
 OUT = "/Users/williammorel/JARVIS/APP/crm/v2/pharmazon-data.js"
-EMAIL = "william.morel@integralpharma.fr"
-PWD = "Cindy49100"
+# ⚠️ JAMAIS d'identifiant en clair dans ce fichier : le dépôt est PUBLIC.
+# Ils se lisent depuis ~/.pharmazon.env (hors dépôt, permissions 600) :
+#     PHARMAZON_EMAIL=...
+#     PHARMAZON_PWD=...
+def _identifiants():
+    fichier = os.path.expanduser("~/.pharmazon.env")
+    vals = {}
+    if os.path.exists(fichier):
+        with open(fichier, encoding="utf-8") as f:
+            for ligne in f:
+                ligne = ligne.strip()
+                if ligne and not ligne.startswith("#") and "=" in ligne:
+                    k, v = ligne.split("=", 1)
+                    vals[k.strip()] = v.strip().strip('"').strip("'")
+    email = os.environ.get("PHARMAZON_EMAIL") or vals.get("PHARMAZON_EMAIL")
+    pwd = os.environ.get("PHARMAZON_PWD") or vals.get("PHARMAZON_PWD")
+    if not email or not pwd:
+        sys.exit(
+            "Identifiants Pharmazon introuvables.\n"
+            "Crée ~/.pharmazon.env avec :\n"
+            "  PHARMAZON_EMAIL=ton.email@integralpharma.fr\n"
+            "  PHARMAZON_PWD=ton-mot-de-passe\n"
+            "puis : chmod 600 ~/.pharmazon.env"
+        )
+    return email, pwd
+
+
+EMAIL, PWD = _identifiants()
 
 def log(*a): print(*a, flush=True)
 
