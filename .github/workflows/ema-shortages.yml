@@ -1,0 +1,40 @@
+name: Veille appro · ruptures Europe (EMA, signal amont)
+
+# Robot GRATUIT : catalogue des ruptures EMA (xlsx public, sans clé). Signal AMONT
+# des ruptures françaises — une rupture évaluée au niveau européen précède souvent
+# la déclaration ANSM. Croisé au catalogue par substance active (INN).
+# Écrit crm/v2/ema-shortages.json. MAJ quotidienne.
+
+on:
+  schedule:
+    - cron: '40 5 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ema-shortages
+  cancel-in-progress: false
+
+jobs:
+  ema-shortages:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Recalculer les ruptures EMA
+        run: python3 generate_ema_shortages.py
+      - name: Committer si changement
+        run: |
+          if git diff --quiet -- crm/v2/ema-shortages.json; then
+            echo "Pas de changement (EMA inchangé)."
+          else
+            git config user.name  "JARVIS copilote"
+            git config user.email "actions@users.noreply.github.com"
+            git add crm/v2/ema-shortages.json
+            git commit -m "data(veille): ruptures EMA $(date -u +%Y-%m-%d)"
+            git push
+          fi

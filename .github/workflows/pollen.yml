@@ -1,0 +1,39 @@
+name: Veille appro · pollens (signal de demande)
+
+# Robot GRATUIT : indice pollen par département (Atmo France, WFS ODbL, sans clé).
+# Signal AVANCÉ de demande — antihistaminiques/collyres montent 1-3 j après un pic
+# pollinique. Écrit crm/v2/pollen.json. MAJ quotidienne (prévision à J+2).
+
+on:
+  schedule:
+    - cron: '35 5 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pollen
+  cancel-in-progress: false
+
+jobs:
+  pollen:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Recalculer l'indice pollen par département
+        run: python3 generate_pollen.py
+      - name: Committer si changement
+        run: |
+          if git diff --quiet -- crm/v2/pollen.json; then
+            echo "Pas de changement (pollen inchangé)."
+          else
+            git config user.name  "JARVIS copilote"
+            git config user.email "actions@users.noreply.github.com"
+            git add crm/v2/pollen.json
+            git commit -m "data(veille): indice pollen $(date -u +%Y-%m-%d)"
+            git push
+          fi
