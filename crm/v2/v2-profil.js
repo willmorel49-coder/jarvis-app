@@ -16,9 +16,9 @@
   // Listes PRÉCISES (pas de « Autre » : le bouton « ➕ préciser… » ajoute une valeur exacte au besoin).
   // Intégral Pharma en tête (savoir si l'officine travaille déjà avec nous), puis les majors nationaux,
   // puis les grossistes/short-liners régionaux concurrents (Ouest surtout). Complétable via « ➕ préciser… ».
-  var GROS = ['Intégral Pharma', 'OCP', 'CERP Rouen', 'CERP RRM', 'CERP Bretagne Atlantique', 'Alliance Healthcare', 'Phoenix Pharma', 'Cophana', 'Sagitta', 'Welcoop', 'Giphar Répartition', 'Anjou Santé', 'Mezeghel', 'Epsilon', 'Pharmest', 'Axipharm'];
+  var GROS = ['Intégral Pharma', 'OCP', 'CERP Rouen', 'CERP RRM', 'CERP Bretagne Atlantique', 'Alliance Healthcare', 'Phoenix Pharma', 'Cophana', 'Sagitta', 'Sogiphar', 'CIP Pharma', 'Welcoop', 'Giphar Répartition', 'Anjou Santé', 'Mezegel', 'Epsilon', 'Pharmest', 'Axipharm'];
   var GEN = ['Biogaran', 'Viatris (Mylan)', 'EG Labo', 'Teva', 'Sandoz', 'Zentiva', 'Arrow', 'Cristers', 'Zydus', 'Bouchara-Recordati', 'Sun Pharma', 'Substipharm'];
-  var LGO = ['Winpharma', 'LGPI', 'Smart Rx', 'Léo', 'Pharmaland', 'Caduciel', 'Péripharm', 'Pharmavitale', 'Santé Cegedim'];
+  var LGO = ['Winpharma', 'LGPI', 'Smart Rx', 'Léo', 'Pharmaland', 'Caduciel', 'Péripharm', 'Pharmavitale', 'Santé Cegedim', 'Pharmony'];
   var ROBOT = ['Aucun', 'Riedl', 'BD Rowa', 'Mekapharm', 'Meditech', 'Sinteco', 'Willach', 'Tecny-Farma', 'Apostore', 'Omnicell'];
   var BIOSIM = ['Biogaran', 'Zentiva', 'EG Labo', 'Teva', 'Sandoz', 'Viatris', 'Accord', 'Celltrion', 'Amgen', 'Fresenius Kabi', 'Stada', 'Biogen'];
   // Config des champs — ajouter/retirer ici suffit.
@@ -26,6 +26,7 @@
     { k: 'gros1', l: 'Grossiste n°1', opts: GROS },
     { k: 'gros2', l: 'Grossiste n°2', opts: GROS },
     { k: 'gros3', l: 'Grossiste n°3', opts: GROS },
+    { k: 'gros4', l: 'Grossiste n°4', opts: GROS },
     { k: 'gen1', l: 'Génériqueur n°1', opts: GEN },
     { k: 'gen2', l: 'Génériqueur n°2', opts: GEN },
     { k: 'gen3', l: 'Génériqueur n°3', opts: GEN },
@@ -33,10 +34,12 @@
     { k: 'lgo', l: 'Logiciel (LGO)', opts: LGO },
     { k: 'robot', l: 'Robot / automate', opts: ROBOT },
     { k: 'tel_perso', l: 'Tél perso (titulaire)', text: true },
+    { k: 'cle_crypto', l: 'Clé de cryptage', text: true },
     { k: 'autre', l: 'Autre info', text: true }
   ];
-  // Coordonnées éditables (pour compléter une officine, prospect compris). Stockées à part (scope 'coord').
+  // Coordonnées éditables (pour compléter/corriger une officine, prospect compris). Stockées à part (scope 'coord').
   var COORD = [
+    { k: 'groupement', l: 'Groupement' },
     { k: 'titulaire', l: 'Titulaire' },
     { k: 'tel', l: 'Téléphone' },
     { k: 'email', l: 'Email' },
@@ -65,9 +68,18 @@
     var by = (V2.user && V2.user.name) || '', at = Date.now();
     var c = sb();
     var rec = { data: data, by: by, at: at };
+    // Si l'enregistrement partagé échoue, on garde la saisie dans le navigateur pour ne rien
+    // perdre — MAIS on le DIT. Un repli silencieux a déjà coûté des corrections : elles
+    // semblaient enregistrées, restaient dans le seul navigateur, et disparaissaient ensuite.
+    function repli(motif) {
+      localSet(st, sid, rec);
+      if (V2.toast) V2.toast('Enregistré sur cet ordinateur seulement — pas partagé avec l\'équipe', 'error');
+      try { console.warn('[profil] enregistrement partagé refusé', st, sid, motif); } catch (e) {}
+    }
     if (c && V2.user) {
       c.from(TABLE).upsert({ scope_type: st, scope_id: String(sid), data: data, updated_by: V2.user.id, updated_by_name: by, updated_at: new Date().toISOString() }, { onConflict: 'scope_type,scope_id' })
-        .then(function (r) { if (r.error) localSet(st, sid, rec); }).catch(function () { localSet(st, sid, rec); });
+        .then(function (r) { if (r.error) repli(r.error.message || ''); })
+        .catch(function (e) { repli((e && e.message) || 'connexion'); });
     } else { localSet(st, sid, rec); }
     return rec;
   }
@@ -156,10 +168,25 @@
   // Charge TOUS les enregistrements d'un scope (ex. 'newpharma' pour lister les prospects créés).
   V2.profil.loadScope = function (st) {
     var c = sb();
-    if (c) return c.from(TABLE).select('scope_id,data').eq('scope_type', st)
-      .then(function (r) { if (r.error || !r.data) return localScopeList(st); return r.data.map(function (x) { return { sid: String(x.scope_id), data: x.data || {} }; }); })
+    if (!c) return Promise.resolve(localScopeList(st));
+    // Supabase plafonne une requête à 1000 lignes : au-delà, les enregistrements en trop
+    // disparaîtraient silencieusement du résultat. On lit donc par tranches de 1000.
+    // (Ce n'était PAS la cause du bug « le titulaire se remet tout seul » — celle-là était
+    // une contrainte en base qui refusait le type 'override', corrigée le 03/08/2026.)
+    var PAS = 1000, out = [];
+    function tranche(depart) {
+      return c.from(TABLE).select('scope_id,data').eq('scope_type', st)
+        .range(depart, depart + PAS - 1)
+        .then(function (r) {
+          if (r.error || !r.data) return null;
+          r.data.forEach(function (x) { out.push({ sid: String(x.scope_id), data: x.data || {} }); });
+          if (r.data.length === PAS && depart + PAS < 20000) return tranche(depart + PAS);
+          return out;
+        });
+    }
+    return tranche(0)
+      .then(function (res) { return res === null ? localScopeList(st) : res; })
       .catch(function () { return localScopeList(st); });
-    return Promise.resolve(localScopeList(st));
   };
 
   // ── Corrections par pharmacie (scope 'override') : ex. groupement corrigé à la main ──
@@ -171,18 +198,62 @@
       if (cb) cb(data);
     });
   };
+  // Rattrapage des corrections restées coincées dans le navigateur.
+  // Jusqu'au 03/08/2026 la base refusait le type 'override' : les corrections saisies par
+  // l'équipe (titulaire, nom, groupement, prospect promu) tombaient en repli local et
+  // n'étaient jamais partagées. On les remonte une fois, puis on vide le repli.
+  function remonterRepliLocal() {
+    var c = sb(); if (!c || !V2.user) return Promise.resolve();
+    var m = localMap(), aFaire = [];
+    Object.keys(m).forEach(function (k) {
+      if (k.indexOf('override:') !== 0) return;
+      var rec = m[k]; if (!rec || !rec.data || !Object.keys(rec.data).length) return;
+      aFaire.push({ k: k, sid: k.slice('override:'.length), rec: rec });
+    });
+    if (!aFaire.length) return Promise.resolve();
+    return Promise.all(aFaire.map(function (it) {
+      // On ne remonte que si la base n'a rien de plus récent pour cette pharmacie.
+      return c.from(TABLE).select('updated_at').eq('scope_type', 'override').eq('scope_id', it.sid).maybeSingle()
+        .then(function (r) {
+          if (r.error) return null;
+          var distant = r.data && r.data.updated_at ? +new Date(r.data.updated_at) : 0;
+          if (distant >= (it.rec.at || 0)) return { k: it.k, ok: true };  // déjà à jour → on peut oublier le local
+          return c.from(TABLE).upsert({
+            scope_type: 'override', scope_id: it.sid, data: it.rec.data,
+            updated_by: V2.user.id, updated_by_name: it.rec.by || (V2.user.name || ''),
+            updated_at: new Date(it.rec.at || Date.now()).toISOString()
+          }, { onConflict: 'scope_type,scope_id' }).then(function (u) { return { k: it.k, ok: !u.error }; });
+        }).catch(function () { return null; });
+    })).then(function (res) {
+      var map = localMap(), n = 0;
+      (res || []).forEach(function (x) { if (x && x.ok) { delete map[x.k]; n++; } });
+      if (n) { try { localStorage.setItem(LS, JSON.stringify(map)); } catch (e) {} }
+      if (n && V2.toast) V2.toast(n + ' correction' + (n > 1 ? 's' : '') + ' de cet ordinateur remontée' + (n > 1 ? 's' : '') + ' et partagée' + (n > 1 ? 's' : '') + ' avec l\'équipe');
+    }).catch(function () {});
+  }
+
   // Applique toutes les corrections connues aux pharmacies en mémoire (appelé au boot).
   V2.profil.applyOverrides = function (cb) {
     if (!V2.profil.loadScope) { if (cb) cb(); return; }
+    return remonterRepliLocal().then(function () { chargerOverrides(cb); });
+  };
+  function chargerOverrides(cb) {
     V2.profil.loadScope('override').then(function (list) {
       var byId = {}; (V2.pharmacies || []).forEach(function (p) { byId[String(p.id)] = p; });
+      V2.nameOvr = V2.nameOvr || {}; V2.promoted = V2.promoted || {}; V2.titOvr = V2.titOvr || {};
       (list || []).forEach(function (o) {
-        var p = byId[String(o.sid)]; if (!p || !o.data) return;
+        if (!o || !o.data) return;
+        var sid = String(o.sid);
+        if (o.data.nom) V2.nameOvr[sid] = o.data.nom;         // nom corrigé (sync, lu partout au rendu)
+        if (o.data.titulaire) V2.titOvr[sid] = o.data.titulaire;  // titulaire(s) saisi(s)
+        if (o.data.promu) V2.promoted[sid] = true;            // prospect passé en client
+        var p = byId[sid]; if (!p) return;
         if (o.data.groupement) p.groupement = o.data.groupement;
+        if (o.data.nom) p.name = o.data.nom;
       });
       if (cb) cb();
     });
-  };
+  }
 
   function fill(box) {
     var st = box.getAttribute('data-st'), sid = box.getAttribute('data-sid');

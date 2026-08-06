@@ -67,11 +67,19 @@
       var finalTxt = '';
       rec.onstart = function () { _rec = rec; _recBtn = btn; btn.classList.add('rec'); btn.title = 'Arrêter la dictée'; if (V2.toast) V2.toast('Dictée en cours — parle, puis re-touche le micro'); };
       rec.onresult = function (e) {
-        var interim = '';
-        for (var i = e.resultIndex; i < e.results.length; i++) {
-          var t = e.results[i][0].transcript;
-          if (e.results[i].isFinal) finalTxt += t + ' '; else interim += t;
+        // On RECONSTRUIT le texte depuis l'ensemble des résultats à chaque événement
+        // (idempotent) au lieu d'accumuler avec += : sur mobile, resultIndex est peu
+        // fiable et l'accumulation répétait la même phrase 4-5 fois.
+        var finalT = '', interim = '', lastFin = '';
+        for (var i = 0; i < e.results.length; i++) {
+          var raw = e.results[i][0].transcript || '';
+          if (e.results[i].isFinal) {
+            var t = raw.trim();
+            // Safari ré-émet parfois le MÊME segment final plusieurs fois → on saute les doublons consécutifs.
+            if (t && t !== lastFin) { finalT += t + ' '; lastFin = t; }
+          } else { interim += raw; }
         }
+        finalTxt = finalT;
         ta.value = (base + finalTxt + interim).replace(/\s+/g, ' ').replace(/^\s/, '');
       };
       rec.onerror = function (ev) {

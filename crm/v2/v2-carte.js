@@ -12,7 +12,7 @@
   V2.pages = V2.pages || {};
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
 
-  var CB = '?v=20260715d';
+  var CB = '?v=20260804a';
   var map = null, cluster = null, markers = null, D = null, canvas = null;
   var displayMode = 'points';    // points | bulles (taille = CA)
   var tourLayer = null;          // tracé de la tournée (polyline + n° d'arrêts)
@@ -115,6 +115,7 @@
       '<div class="cn-pop-a">' + esc(p[7]) + (p[8] ? ' · ' + esc(p[8]) : '') + '</div>' +
       '<div class="cn-pop-tags">' +
         '<span class="cn-tag ' + (isClient(p) ? 'cl' : (D.seg[p[4]] === 'Prospect' ? 'pr' : '')) + '">' + esc(D.seg[p[4]]) + '</span>' +
+        (window.REPRISES && REPRISES[String(p[13])] ? '<span class="cn-tag" style="background:#FFF1DB;color:#8a4b00;border:1px solid #F0C98A">🔄 Reprise</span>' : '') +
         (caOf(p) > 0 ? '<span class="cn-tag ca">CA ' + eurK(caOf(p)) + '</span>' : '') +
         (comm ? '<span class="cn-tag co">' + esc(comm) + '</span>' : '') +
         '<span class="cn-tag">UGA ' + esc(D.uga[p[2]] || '—') + '</span>' +
@@ -230,10 +231,21 @@
     document.head.appendChild(s);
   }
   function depCode(c) { return (c === '2A' || c === '2B') ? '20' : c; }   // Corse : carte 2A/2B ↔ officines 20
+  // Population légale par département (INSEE via decoupage-administratif etalab, hors arrondissements ; Corse 2A+2B → 20).
+  var DEP_POP={"01":657417,"02":528994,"03":335628,"04":165451,"05":140605,"06":1097410,"07":329325,"08":269701,"09":153913,"10":311435,"11":375217,"12":279554,"13":2048070,"14":697547,"15":144379,"16":351282,"17":655709,"18":300933,"19":239190,"20":343701,"21":535078,"22":603640,"23":115995,"24":412807,"25":545209,"26":517709,"27":599668,"28":431443,"29":917179,"30":751457,"31":1415757,"32":191819,"33":1636391,"34":1188973,"35":1088855,"36":218707,"37":612119,"38":1277513,"39":258798,"40":418122,"41":329357,"42":768508,"43":227489,"44":1445171,"45":682304,"46":174670,"47":330844,"48":76633,"49":820713,"50":494452,"51":566283,"52":171798,"53":306538,"54":732590,"55":183001,"56":764161,"57":1049155,"58":202670,"59":2607746,"60":829699,"61":278475,"62":1462167,"63":661852,"64":687240,"65":229788,"66":482765,"67":1148073,"68":767842,"69":1883437,"70":234601,"71":550936,"72":566993,"73":439750,"74":835206,"75":2145906,"76":1254739,"77":1428636,"78":1449723,"79":374481,"80":568748,"81":391066,"82":262316,"83":1085189,"84":561941,"85":691867,"86":439332,"87":372123,"88":362397,"89":334156,"90":140120,"91":1306118,"92":1626213,"93":1655422,"94":1407972,"95":1251804};
+  function habParOfficine(code) {   // habitants pour 1 officine (tension d'accès) ; 0 si inconnu
+    var s = (window.DEPARTEMENTS_STATS || {})[depCode(code)] || {};
+    var pp = DEP_POP[depCode(code)] || 0, tt = s.tot || 0;
+    return tt > 0 && pp > 0 ? Math.round(pp / tt) : 0;
+  }
   function zoneColor(code) {
     var s = (window.DEPARTEMENTS_STATS || {})[depCode(code)] || { cli: 0, pro: 0, tot: 0, part: 0 };
     if (zoneMetric === 'part') { var p = s.part; return p >= 25 ? '#0B6E43' : p >= 15 ? '#2E9E66' : p >= 7 ? '#5CC98A' : p >= 1 ? '#BFE6CF' : '#EDEFF3'; }
     if (zoneMetric === 'densite') { var t = s.tot; return t >= 400 ? '#08306B' : t >= 250 ? '#2171B5' : t >= 120 ? '#6BAED6' : t >= 40 ? '#BDD7E7' : '#EDEFF3'; }
+    if (zoneMetric === 'tension') {   // habitants/officine : rouge = sous-doté (opportunité), vert = bien doté. Moyenne nationale ~3400.
+      var h = habParOfficine(code);
+      return h >= 4200 ? '#B01532' : h >= 3400 ? '#E8546A' : h >= 2800 ? '#FBD08A' : h >= 2200 ? '#9FD9B5' : h > 0 ? '#2E9E66' : '#EDEFF3';
+    }
     var pr = s.pro; return pr >= 500 ? '#7A2E0E' : pr >= 300 ? '#C2410C' : pr >= 150 ? '#EA580C' : pr >= 40 ? '#FDBA74' : '#EDEFF3';
   }
   function drawZones() {
@@ -246,7 +258,8 @@
         style: function (f) { return { fillColor: zoneColor(f.properties.code), fillOpacity: 0.72, color: '#fff', weight: 1 }; },
         onEachFeature: function (f, layer) {
           var s = (window.DEPARTEMENTS_STATS || {})[depCode(f.properties.code)] || {};
-          layer.bindTooltip('<b>' + esc(f.properties.code + ' · ' + f.properties.nom) + '</b><span>' + (s.cli || 0) + ' clients · ' + (s.pro || 0) + ' prospects' + (s.part != null ? ' · ' + s.part + '% clients' : '') + '</span>', { sticky: true, className: 'cn-tip' });
+          var hpo = habParOfficine(f.properties.code);
+          layer.bindTooltip('<b>' + esc(f.properties.code + ' · ' + f.properties.nom) + '</b><span>' + (s.cli || 0) + ' clients · ' + (s.pro || 0) + ' prospects' + (s.part != null ? ' · ' + s.part + '% clients' : '') + (hpo ? ' · ' + hpo.toLocaleString('fr-FR') + ' hab./officine' : '') + '</span>', { sticky: true, className: 'cn-tip' });
           layer.on('mouseover', function () { layer.setStyle({ weight: 2.5, color: '#0B131C' }); layer.bringToFront(); });
           layer.on('mouseout', function () { layer.setStyle({ weight: 1, color: '#fff' }); });
           layer.on('click', function () {   // drill-down : filtre + liste du département
@@ -1011,6 +1024,7 @@
     if (zonesOn) {
       if (zoneMetric === 'part') return lg('#0B6E43', '≥ 25 % clients') + lg('#2E9E66', '15–25 %') + lg('#5CC98A', '7–15 %') + lg('#BFE6CF', '1–7 %') + lg('#EDEFF3', '0 %');
       if (zoneMetric === 'densite') return lg('#08306B', '≥ 400 officines') + lg('#2171B5', '250–400') + lg('#6BAED6', '120–250') + lg('#BDD7E7', '40–120') + lg('#EDEFF3', '< 40');
+      if (zoneMetric === 'tension') return lg('#B01532', '≥ 4 200 hab./officine') + lg('#E8546A', '3 400–4 200 · sous-doté') + lg('#FBD08A', '2 800–3 400') + lg('#9FD9B5', '2 200–2 800') + lg('#2E9E66', '< 2 200 · bien doté');
       return lg('#7A2E0E', '≥ 500 prospects') + lg('#C2410C', '300–500') + lg('#EA580C', '150–300') + lg('#FDBA74', '40–150') + lg('#EDEFF3', '< 40');
     }
     if (colorMode === 'comm') {
@@ -1328,7 +1342,7 @@
             '<div class="cn-sgroup"><span class="cn-lbl">Zones par département</span>' +
               '<button id="cn-zonebtn" class="cn-listbtn" onclick="V2.carteZones()">Afficher les zones (départements)</button>' +
               '<select id="cn-zonemetric" class="cn-sel" style="display:none" onchange="V2.carteZoneMetric(this.value)">' +
-                '<option value="part">Colorer : part de clients</option><option value="densite">Colorer : densité d\'officines</option><option value="potentiel">Colorer : potentiel (prospects)</option></select></div>' +
+                '<option value="part">Colorer : part de clients</option><option value="densite">Colorer : densité d\'officines</option><option value="tension">Colorer : zone sous-dotée (hab./officine)</option><option value="potentiel">Colorer : potentiel (prospects)</option></select></div>' +
             '<div class="cn-sgroup"><input id="cn-search" class="cn-search" type="search" placeholder="Chercher une pharmacie, une ville…" oninput="V2.carteSearch(this.value)">' +
               '<button class="cn-listbtn cn-listbtn-mob" onclick="V2.carteListOpen()">Liste des officines</button></div>' +
             '<div class="cn-sgroup"><span class="cn-lbl">Légende</span><div class="cn-legend" id="carte-legend"></div></div>' +
