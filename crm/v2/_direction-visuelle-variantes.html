@@ -1,0 +1,390 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Directions visuelles — CRM Intégral Pharma</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;450;500;600;700&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ══════════════════════════════════════════════════════════════════
+   GALERIE DE DIRECTIONS VISUELLES — repere 0 = l'existant
+   Fichier autonome, Safari-safe : pas de filtre verre, pas de flou de
+   grande surface, aucun texte en degrade. Donnees 100% fictives.
+   Effets verre/halo faits en radial/conic-gradient + rgba + transform.
+   ══════════════════════════════════════════════════════════════════ */
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  font-family:'Inter',system-ui,-apple-system,sans-serif;
+  background:#0C0F14;color:#E7EBF2;line-height:1.45;
+  min-height:100vh;max-width:100%;overflow-x:hidden;
+}
+
+/* ── Chrome de la galerie (neutre, pour ne pas polluer les variantes) ── */
+.shell{max-width:1180px;margin:0 auto;padding:26px 20px 90px}
+.head{margin-bottom:22px}
+.head h1{font-family:'Space Grotesk',sans-serif;font-size:clamp(20px,3.4vw,28px);font-weight:600;letter-spacing:-.02em}
+.head p{color:#93A0B4;font-size:14px;margin-top:6px;max-width:60ch}
+.head .rule{height:1px;background:linear-gradient(90deg,#2A3444,transparent);margin-top:18px}
+
+.toolbar{
+  position:sticky;top:0;z-index:20;margin:-26px -20px 26px;padding:14px 20px;
+  background:rgba(12,15,20,.92);border-bottom:1px solid #1E2632;
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+}
+.toolbar .tt{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:14px;letter-spacing:-.01em;white-space:nowrap}
+.nums{display:flex;gap:7px;flex-wrap:wrap;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.nums button{
+  min-width:40px;height:40px;padding:0 10px;border-radius:11px;border:1px solid #26303E;
+  background:#161C25;color:#C4CEDC;font-family:'JetBrains Mono',monospace;font-weight:600;font-size:15px;
+  cursor:pointer;transition:transform .16s ease,background .16s ease,border-color .16s ease,color .16s ease;
+}
+.nums button:hover{transform:translateY(-2px);border-color:#3A4657;color:#fff}
+.nums button.on{background:#F1F4F9;color:#0C0F14;border-color:#F1F4F9}
+.spacer{flex:1 1 auto}
+.mode{
+  height:40px;padding:0 16px;border-radius:11px;border:1px solid #26303E;background:#161C25;
+  color:#C4CEDC;font-weight:600;font-size:13px;cursor:pointer;white-space:nowrap;
+  transition:background .16s ease,color .16s ease,border-color .16s ease;
+}
+.mode:hover{border-color:#3A4657;color:#fff}
+.mode.on{background:#2C6BFF;border-color:#2C6BFF;color:#fff}
+
+/* ── Grille / solo ── */
+.stage{display:grid;gap:26px}
+.stage.grid{grid-template-columns:repeat(auto-fill,minmax(430px,1fr))}
+.stage.solo .card{display:none}
+.stage.solo .card.show{display:block}
+.stage.solo{grid-template-columns:1fr;max-width:1040px;margin:0 auto}
+
+.card{opacity:1;animation:fadein .38s ease;min-width:0}
+@keyframes fadein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.cap{display:flex;align-items:flex-start;gap:14px;margin-bottom:14px}
+.cap .no{
+  font-family:'JetBrains Mono',monospace;font-weight:600;line-height:1;
+  font-size:clamp(30px,5vw,44px);color:#EDEFF3;flex-shrink:0;
+}
+.cap .txt h2{font-family:'Space Grotesk',sans-serif;font-size:clamp(15px,2.2vw,19px);font-weight:600;letter-spacing:-.01em}
+.cap .txt p{color:#8B98AC;font-size:13px;margin-top:3px;max-width:52ch}
+.stage.grid .cap .no{font-size:30px}
+.stage.grid .cap .txt h2{font-size:15px}
+.stage.grid .cap .txt p{font-size:12px}
+
+/* Cadre du "device" contenant l'ecran type */
+.frame{border-radius:20px;overflow:hidden;max-width:100%;box-shadow:0 24px 60px -30px rgba(0,0,0,.75),0 2px 0 rgba(255,255,255,.02) inset}
+.stage.grid .scr{transition:transform .2s ease}
+.stage.grid .card:hover .scr{transform:translateY(-3px)}
+
+/* ══════════════════════════════════════════════════════════════════
+   ECRAN TYPE — structure commune, themee par variables --v-*
+   ══════════════════════════════════════════════════════════════════ */
+.scr{
+  --v-bg:#0b0f16; --v-panel:#141A28; --v-ink:#fff; --v-muted:#889;
+  --v-line:rgba(255,255,255,.08); --v-accent:#2C6BFF; --v-accent-ink:#fff;
+  --v-ok:#00E5A0; --v-bad:#FF4D6D; --v-track:rgba(255,255,255,.08);
+  --v-radius:16px; --v-radius-sm:11px;
+  --v-fdisp:'Space Grotesk',sans-serif; --v-fbody:'Inter',sans-serif; --v-fnum:'JetBrains Mono',monospace;
+  background:var(--v-bg);color:var(--v-ink);font-family:var(--v-fbody);
+  padding:clamp(15px,2.4vw,24px);display:flex;flex-direction:column;gap:16px;position:relative;isolation:isolate;
+  max-width:100%;overflow:hidden;
+}
+.scr *{position:relative}
+.scr>*{min-width:0}
+.scr-main{min-width:0}
+.scr-main>*{min-width:0}
+.scr-kpis>*{min-width:0}
+.tbl-wrap{min-width:0}
+
+/* header */
+.scr-top{display:flex;align-items:center;gap:12px}
+.scr-brand{display:flex;align-items:center;gap:11px;min-width:0}
+.scr-logo{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;flex-shrink:0;
+  font-family:var(--v-fdisp);font-weight:700;font-size:15px;letter-spacing:-.03em;
+  background:var(--v-accent);color:var(--v-accent-ink)}
+.scr-name{font-family:var(--v-fdisp);font-weight:600;font-size:15px;letter-spacing:-.01em;display:block;line-height:1.2}
+.scr-sub{font-size:11.5px;color:var(--v-muted);display:block}
+.scr-search{flex:1;min-width:0;height:38px;border-radius:var(--v-radius-sm);border:1px solid var(--v-line);
+  background:var(--v-track);display:flex;align-items:center;padding:0 14px;color:var(--v-muted);font-size:13px;
+  overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.scr-user{width:36px;height:36px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;
+  font-family:var(--v-fnum);font-size:12px;font-weight:600;border:1px solid var(--v-line);color:var(--v-ink)}
+
+/* kpis */
+.scr-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:11px}
+.kpi{background:var(--v-panel);border:1px solid var(--v-line);border-radius:var(--v-radius-sm);padding:13px 14px}
+.kpi-l{font-size:11px;color:var(--v-muted);display:block;letter-spacing:.01em}
+.kpi-v{font-family:var(--v-fnum);font-size:clamp(19px,2.3vw,24px);font-weight:600;letter-spacing:-.02em;display:block;margin-top:6px;line-height:1}
+.kpi-d{font-size:11px;font-weight:600;display:inline-block;margin-top:7px}
+.kpi-d.up{color:var(--v-ok)} .kpi-d.dn{color:var(--v-bad)} .kpi-d.nt{color:var(--v-muted)}
+
+/* main */
+.scr-main{display:grid;grid-template-columns:1fr 1.12fr;gap:14px}
+.prod{background:var(--v-panel);border:1px solid var(--v-line);border-radius:var(--v-radius);padding:17px;display:flex;flex-direction:column;gap:15px}
+.prod-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.prod-name{font-family:var(--v-fdisp);font-size:18px;font-weight:600;letter-spacing:-.02em}
+.prod-meta{font-size:11.5px;color:var(--v-muted);display:block;margin-top:3px}
+.prod-tag{font-size:10.5px;font-weight:600;padding:4px 9px;border-radius:99px;white-space:nowrap;
+  color:var(--v-ok);border:1px solid color-mix(in srgb,var(--v-ok) 40%,transparent);
+  background:color-mix(in srgb,var(--v-ok) 12%,transparent)}
+.prod-figs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.fig-l{font-size:10.5px;color:var(--v-muted);display:block}
+.fig-v{font-family:var(--v-fnum);font-size:17px;font-weight:600;letter-spacing:-.02em;display:block;margin-top:4px}
+.fig-v.accent{color:var(--v-accent-txt,var(--v-accent))}
+.prod-bar{display:flex;flex-direction:column;gap:7px}
+.prod-bar-l{font-size:11px;color:var(--v-muted);display:flex;justify-content:space-between}
+.track{height:8px;border-radius:99px;background:var(--v-track);overflow:hidden}
+.track i{display:block;height:100%;border-radius:99px;background:var(--v-accent)}
+.btn{margin-top:auto;align-self:flex-start;height:42px;padding:0 20px;border-radius:var(--v-radius-sm);border:none;cursor:pointer;
+  font-family:var(--v-fbody);font-weight:600;font-size:14px;letter-spacing:-.01em;
+  background:var(--v-accent);color:var(--v-accent-ink);transition:transform .16s ease,filter .16s ease}
+.btn:hover{transform:translateY(-2px);filter:brightness(1.06)}
+
+/* table */
+.tbl-wrap{background:var(--v-panel);border:1px solid var(--v-line);border-radius:var(--v-radius);padding:6px 4px;overflow-x:auto}
+.tbl{width:100%;border-collapse:collapse;min-width:340px}
+.tbl th{font-size:10.5px;font-weight:600;color:var(--v-muted);text-align:left;padding:11px 14px;letter-spacing:.02em;text-transform:uppercase}
+.tbl th.num,.tbl td.num{text-align:right;font-family:var(--v-fnum);font-variant-numeric:tabular-nums}
+.tbl td{padding:11px 14px;font-size:13px;border-top:1px solid var(--v-line);color:var(--v-ink)}
+.tbl tbody tr:hover td{background:var(--v-track)}
+.tbl .pn{font-weight:500}
+.tbl td.num{font-size:12.5px;font-weight:500}
+
+/* responsive ecran */
+@media(max-width:560px){
+  .scr-kpis{grid-template-columns:repeat(2,1fr)}
+  .scr-main{grid-template-columns:1fr}
+  .scr-search{display:none}
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   THEMES PAR VARIANTE
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── 0 · L'EXISTANT (repere) — thème clair "Action terrain" réel (v2.css) ── */
+.dv-0 .scr{
+  --v-bg:#FBFCFE; --v-panel:#FFFFFF; --v-ink:#10131C; --v-muted:#737A8C;
+  --v-line:rgba(16,19,28,.07); --v-accent:#0050E6; --v-accent-ink:#fff; --v-accent-txt:#9A5B12;
+  --v-ok:#0F7A52; --v-bad:#C7283D; --v-track:rgba(16,19,28,.05);
+  --v-fdisp:'Satoshi','Inter',sans-serif; --v-fbody:'Inter',sans-serif; --v-fnum:'Geist Mono','Inter',monospace;
+}
+.dv-0 .scr::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background:radial-gradient(120% 60% at 82% -10%,rgba(0,80,230,.06),transparent 60%)}
+.dv-0 .prod-tag{color:#9A5B12;border-color:rgba(243,154,27,.4);background:rgba(243,154,27,.12)}
+
+/* ── 1 · PAPIER & ENCRE — editorial clair, un seul accent d'encre ── */
+.dv-1 .scr{
+  --v-bg:#F7F4ED; --v-panel:#FFFDF8; --v-ink:#1B1710; --v-muted:#8C8271;
+  --v-line:rgba(27,23,16,.10); --v-accent:#1F3B57; --v-accent-ink:#F7F4ED; --v-accent-txt:#9A5B12;
+  --v-ok:#2C7A55; --v-bad:#B23A48; --v-track:rgba(27,23,16,.055);
+  --v-radius:14px; --v-radius-sm:10px;
+  --v-fdisp:'Fraunces',Georgia,serif; --v-fbody:'Inter',sans-serif; --v-fnum:'Inter',sans-serif;
+}
+.dv-1 .scr .fig-v,.dv-1 .scr .kpi-v,.dv-1 .scr .tbl .num{font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.dv-1 .prod-name{font-weight:500}
+.dv-1 .scr-name{font-weight:500}
+.dv-1 .scr::before{content:"";position:absolute;left:0;right:0;top:0;height:3px;z-index:-1;
+  background:linear-gradient(90deg,#1F3B57,#9A5B12 70%,transparent)}
+.dv-1 .prod-tag{color:#2C7A55;border-color:rgba(44,122,85,.35);background:rgba(44,122,85,.10)}
+
+/* ── 2 · ARDOISE & CUIVRE — mat, serieux, accent cuivre ── */
+.dv-2 .scr{
+  --v-bg:#171B21; --v-panel:#1E242C; --v-ink:#E9ECF0; --v-muted:#8792A0;
+  --v-line:rgba(255,255,255,.075); --v-accent:#C0864A; --v-accent-ink:#1a1206; --v-accent-txt:#D79C5E;
+  --v-ok:#5FB98C; --v-bad:#E0697A; --v-track:rgba(255,255,255,.05);
+  --v-radius:15px; --v-radius-sm:10px;
+  --v-fdisp:'Space Grotesk',sans-serif; --v-fbody:'Inter',sans-serif; --v-fnum:'JetBrains Mono',monospace;
+}
+.dv-2 .scr::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background:radial-gradient(90% 55% at 88% -8%,rgba(192,134,74,.20),transparent 62%)}
+.dv-2 .scr-logo{box-shadow:0 1px 0 rgba(255,255,255,.25) inset}
+.dv-2 .prod-tag{color:#5FB98C;border-color:rgba(95,185,140,.35);background:rgba(95,185,140,.10)}
+
+/* ── 3 · BLEU NUIT & OR — nocturne premium, degrades riches ── */
+.dv-3 .scr{
+  --v-bg:#0A1230; --v-panel:#121C42; --v-ink:#EDF1FB; --v-muted:#8894BE;
+  --v-line:rgba(210,180,110,.16); --v-accent:#E4B95B; --v-accent-ink:#221803; --v-accent-txt:#F0CB78;
+  --v-ok:#6BD6A6; --v-bad:#F27B8C; --v-track:rgba(255,255,255,.055);
+  --v-radius:16px; --v-radius-sm:11px;
+  --v-fdisp:'Fraunces',Georgia,serif; --v-fbody:'Inter',sans-serif; --v-fnum:'Inter',sans-serif;
+}
+.dv-3 .scr{background:
+  radial-gradient(130% 80% at 10% -20%,rgba(59,86,190,.45),transparent 55%),
+  radial-gradient(120% 90% at 100% 120%,rgba(228,185,91,.14),transparent 55%),
+  #0A1230}
+.dv-3 .scr .fig-v,.dv-3 .scr .kpi-v,.dv-3 .scr .num{font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.dv-3 .prod-name,.dv-3 .scr-name{font-weight:500}
+.dv-3 .kpi,.dv-3 .prod,.dv-3 .tbl-wrap{background:
+  linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,0)),var(--v-panel)}
+.dv-3 .prod-tag{color:#6BD6A6;border-color:rgba(107,214,166,.32);background:rgba(107,214,166,.10)}
+.dv-3 .btn{box-shadow:0 8px 20px -10px rgba(228,185,91,.6)}
+
+/* ── 4 · VERRE TEINTE — matieres verre SANS flou (Safari-safe) ── */
+.dv-4 .scr{
+  --v-bg:#EEF1F8; --v-panel:rgba(255,255,255,.72); --v-ink:#1A2233; --v-muted:#727C93;
+  --v-line:rgba(90,104,160,.18); --v-accent:#5566EE; --v-accent-ink:#fff; --v-accent-txt:#4A57C8;
+  --v-ok:#1F9E72; --v-bad:#E24D6B; --v-track:rgba(90,104,160,.10);
+  --v-radius:17px; --v-radius-sm:12px;
+  --v-fdisp:'Manrope',sans-serif; --v-fbody:'Manrope',sans-serif; --v-fnum:'Manrope',sans-serif;
+}
+.dv-4 .scr{background:
+  radial-gradient(90% 70% at 8% 0%,rgba(120,110,240,.20),transparent 55%),
+  radial-gradient(80% 80% at 100% 100%,rgba(80,180,220,.18),transparent 55%),
+  #EEF1F8}
+.dv-4 .scr .fig-v,.dv-4 .scr .kpi-v,.dv-4 .scr .num{font-variant-numeric:tabular-nums}
+.dv-4 .kpi,.dv-4 .prod,.dv-4 .tbl-wrap{
+  background:linear-gradient(160deg,rgba(255,255,255,.85),rgba(255,255,255,.55));
+  box-shadow:0 1px 0 rgba(255,255,255,.9) inset,0 10px 30px -18px rgba(40,55,120,.5)}
+.dv-4 .prod-tag{color:#1F9E72;border-color:rgba(31,158,114,.32);background:rgba(31,158,114,.12)}
+
+/* ── 5 · GRAPHITE MONO — rigueur suisse, donnees au premier plan ── */
+.dv-5 .scr{
+  --v-bg:#EDEBE4; --v-panel:#F7F6F1; --v-ink:#171614; --v-muted:#7C7869;
+  --v-line:rgba(23,22,20,.14); --v-accent:#1F1E1B; --v-accent-ink:#F7F6F1; --v-accent-txt:#A23B2B;
+  --v-ok:#3B6E4A; --v-bad:#A23B2B; --v-track:rgba(23,22,20,.05);
+  --v-radius:6px; --v-radius-sm:6px;
+  --v-fdisp:'Space Grotesk',sans-serif; --v-fbody:'Inter',sans-serif; --v-fnum:'IBM Plex Mono',monospace;
+}
+.dv-5 .scr .prod-name,.dv-5 .scr-name{text-transform:uppercase;letter-spacing:-.01em;font-weight:600}
+.dv-5 .scr .kpi-l,.dv-5 .scr .fig-l,.dv-5 .scr .prod-bar-l,.dv-5 .scr .scr-sub{
+  text-transform:uppercase;letter-spacing:.06em;font-family:'IBM Plex Mono',monospace;font-size:10px}
+.dv-5 .kpi,.dv-5 .prod,.dv-5 .tbl-wrap{box-shadow:none}
+.dv-5 .scr-logo{border-radius:6px}
+.dv-5 .prod-tag{border-radius:4px;color:#3B6E4A;border-color:rgba(59,110,74,.4);background:transparent}
+.dv-5 .track{border-radius:0}.dv-5 .track i{border-radius:0}
+.dv-5 .btn{border-radius:6px}
+
+/* ── mobile chrome ── */
+@media(max-width:560px){
+  .stage.grid{grid-template-columns:1fr}
+  .toolbar{gap:10px}
+  .toolbar .tt{width:100%}
+}
+
+/* ── reduction de mouvement ── */
+@media(prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important}
+  .card{opacity:1!important;transform:none!important}
+}
+</style>
+
+<div class="toolbar">
+  <span class="tt">Directions visuelles — choisis les numeros</span>
+  <div class="nums" id="nums"></div>
+  <span class="spacer"></span>
+  <button class="mode" id="modeBtn">Vue grille</button>
+</div>
+
+<div class="shell">
+  <div class="head">
+    <h1>6 pistes pour un CRM plus « pro »</h1>
+    <p>Meme ecran type (en-tete, indicateurs, fiche produit, tableau, bouton) decline en 6 partis-pris. Le <b>0</b> est l'app actuelle, comme repere. Regarde-les, note les numeros que tu veux garder — on code seulement apres. Donnees fictives.</p>
+    <div class="rule"></div>
+  </div>
+  <div class="stage solo" id="stage"></div>
+</div>
+
+<script>
+(function(){
+  var VARIANTS=[
+    {n:0,title:"L'existant (repere)",intent:"L'app d'aujourd'hui — theme clair Action terrain, bleu #0050E6, chiffres en mono. Point de comparaison."},
+    {n:1,title:"Papier & encre",intent:"Editorial clair sur papier chaud, titres en serif, un seul accent d'encre. Sobre, serieux, respirant."},
+    {n:2,title:"Ardoise & cuivre",intent:"Ardoise mate et cuivre chaud. Discret, haut de gamme, sans clinquant."},
+    {n:3,title:"Bleu nuit & or",intent:"Nocturne premium : degrades riches en radial, filets or, serif race. Registre banque privee."},
+    {n:4,title:"Verre teinte",intent:"Cartes verre translucide en degrades (aucun flou, Safari-safe), lumiere violet-bleu. Moderne et leger."},
+    {n:5,title:"Graphite mono",intent:"Rigueur suisse : graphite sur ecru, labels en mono capitales, filets fins, la donnee au premier plan."}
+  ];
+
+  function screenHTML(){
+    return ''+
+    '<div class="scr">'+
+      '<div class="scr-top">'+
+        '<div class="scr-brand">'+
+          '<span class="scr-logo">IP</span>'+
+          '<span><span class="scr-name">Integral Pharma</span><span class="scr-sub">CRM · Pilotage produit</span></span>'+
+        '</div>'+
+        '<div class="scr-search">Rechercher un produit, une officine…</div>'+
+        '<span class="scr-user">MDC</span>'+
+      '</div>'+
+      '<div class="scr-kpis">'+
+        '<div class="kpi"><span class="kpi-l">CA du mois</span><span class="kpi-v">128 450 €</span><span class="kpi-d up">+6,4 %</span></div>'+
+        '<div class="kpi"><span class="kpi-l">Abandon de marge moy.</span><span class="kpi-v">4,2 %</span><span class="kpi-d nt">stable</span></div>'+
+        '<div class="kpi"><span class="kpi-l">Volume 30 j</span><span class="kpi-v">12 380 u</span><span class="kpi-d up">+3,1 %</span></div>'+
+        '<div class="kpi"><span class="kpi-l">Officines actives</span><span class="kpi-v">621</span><span class="kpi-d up">+8</span></div>'+
+      '</div>'+
+      '<div class="scr-main">'+
+        '<div class="prod">'+
+          '<div class="prod-head">'+
+            '<div><div class="prod-name">Doliprane 1000 mg</div><span class="prod-meta">Boite de 8 cp · CIP 3400930XXXXXX</span></div>'+
+            '<span class="prod-tag">Remboursable</span>'+
+          '</div>'+
+          '<div class="prod-figs">'+
+            '<div class="fig"><span class="fig-l">Prix net</span><span class="fig-v">1,92 €</span></div>'+
+            '<div class="fig"><span class="fig-l">Abandon de marge</span><span class="fig-v accent">4,2 %</span></div>'+
+            '<div class="fig"><span class="fig-l">Volume 30 j</span><span class="fig-v">1 240 u</span></div>'+
+          '</div>'+
+          '<div class="prod-bar"><span class="prod-bar-l"><span>Abandon de marge vs plafond</span><span>42 %</span></span>'+
+            '<div class="track"><i style="width:42%"></i></div></div>'+
+          '<button class="btn">Ouvrir la fiche</button>'+
+        '</div>'+
+        '<div class="tbl-wrap">'+
+          '<table class="tbl"><thead><tr><th>Produit</th><th class="num">Prix net</th><th class="num">Abandon marge</th><th class="num">Volume</th></tr></thead>'+
+          '<tbody>'+
+            '<tr><td class="pn">Doliprane 1000 mg</td><td class="num">1,92 €</td><td class="num">4,2 %</td><td class="num">1 240</td></tr>'+
+            '<tr><td class="pn">Efferalgan 500 mg</td><td class="num">2,15 €</td><td class="num">3,8 %</td><td class="num">980</td></tr>'+
+            '<tr><td class="pn">Spasfon Lyoc</td><td class="num">3,74 €</td><td class="num">2,1 %</td><td class="num">610</td></tr>'+
+            '<tr><td class="pn">Smecta 3 g</td><td class="num">4,05 €</td><td class="num">5,6 %</td><td class="num">540</td></tr>'+
+            '<tr><td class="pn">Gaviscon menthe</td><td class="num">5,20 €</td><td class="num">6,3 %</td><td class="num">430</td></tr>'+
+          '</tbody></table>'+
+        '</div>'+
+      '</div>'+
+    '</div>';
+  }
+
+  var stage=document.getElementById('stage');
+  var nums=document.getElementById('nums');
+  var modeBtn=document.getElementById('modeBtn');
+  var current=0, gridMode=false;
+
+  VARIANTS.forEach(function(v){
+    var card=document.createElement('div');
+    card.className='card dv-'+v.n;
+    card.dataset.n=v.n;
+    card.innerHTML=
+      '<div class="cap"><span class="no">'+v.n+'</span>'+
+      '<span class="txt"><h2>'+v.n+' — '+v.title+'</h2><p>'+v.intent+'</p></span></div>'+
+      '<div class="frame">'+screenHTML()+'</div>';
+    stage.appendChild(card);
+
+    var b=document.createElement('button');
+    b.textContent=v.n;
+    b.dataset.n=v.n;
+    b.addEventListener('click',function(){ current=v.n; gridMode=false; render(); });
+    nums.appendChild(b);
+  });
+
+  modeBtn.addEventListener('click',function(){ gridMode=!gridMode; render(); });
+
+  function render(){
+    stage.className='stage '+(gridMode?'grid':'solo');
+    modeBtn.classList.toggle('on',gridMode);
+    modeBtn.textContent=gridMode?'Vue plein ecran':'Vue grille';
+    var cards=stage.querySelectorAll('.card');
+    cards.forEach(function(c){
+      var show=gridMode||(+c.dataset.n===current);
+      c.classList.toggle('show',show);
+      if(show){ c.style.animation='none'; void c.offsetWidth; c.style.animation=''; }
+    });
+    nums.querySelectorAll('button').forEach(function(b){
+      b.classList.toggle('on',!gridMode&&(+b.dataset.n===current));
+    });
+  }
+
+  document.addEventListener('keydown',function(e){
+    if(gridMode) return;
+    if(e.key==='ArrowRight'){ current=(current+1)%VARIANTS.length; render(); }
+    if(e.key==='ArrowLeft'){ current=(current+VARIANTS.length-1)%VARIANTS.length; render(); }
+  });
+
+  render();
+})();
+</script>

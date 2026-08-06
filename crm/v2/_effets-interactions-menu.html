@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JARVIS — Menu des effets & micro-interactions</title>
+<style>
+/* =========================================================================
+   JARVIS — Catalogue d'effets & micro-interactions (CRM pharma)
+   Vanilla, un seul fichier. Safari-safe : aucun flou, aucun verre depoli,
+   aucun degrade sur du texte. Halos/glow = radial-gradient + rgba +
+   box-shadow. Animations en transform/opacity uniquement.
+   ========================================================================= */
+
+:root{
+  --bleu:#0050E6;
+  --bleu-clair:#3B7BFF;
+  --orange:#F39A1B;
+  --encre:#0A0E1A;
+  --gris:#5B6472;
+  --gris-clair:#9AA3B2;
+  --clair:#F8FAFC;
+  --carte:#FFFFFF;
+  --bord:#E6EAF1;
+  --bord-fort:#D4DAE6;
+  --vert:#12915B;
+  --vert-bg:#E4F5EC;
+  --rouge:#D63A3A;
+  --rouge-bg:#FBE7E7;
+  --ombre-s:0 1px 2px rgba(10,14,26,.05), 0 1px 3px rgba(10,14,26,.04);
+  --ombre-m:0 4px 12px rgba(10,14,26,.06), 0 8px 24px rgba(10,14,26,.05);
+  --ombre-g:0 12px 28px rgba(10,14,26,.10), 0 24px 60px rgba(10,14,26,.10);
+  --r:14px;
+  --ease:cubic-bezier(.22,.61,.36,1);
+  --ease-out:cubic-bezier(.16,1,.3,1);
+}
+
+*{box-sizing:border-box}
+html,body{-webkit-text-size-adjust:100%;max-width:100%;overflow-x:hidden}
+body{
+  margin:0;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+  color:var(--encre);
+  background:
+    radial-gradient(1200px 600px at 12% -8%, rgba(0,80,230,.06), transparent 60%),
+    radial-gradient(900px 500px at 100% 0%, rgba(243,154,27,.05), transparent 55%),
+    var(--clair);
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ---------- En-tete ---------- */
+header.hero{
+  max-width:1120px;margin:0 auto;padding:56px 24px 20px;
+}
+.kicker{
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--bleu);
+  background:rgba(0,80,230,.07);
+  border:1px solid rgba(0,80,230,.14);
+  padding:6px 12px;border-radius:999px;
+}
+.kicker .dot{width:7px;height:7px;border-radius:50%;background:var(--orange);box-shadow:0 0 0 4px rgba(243,154,27,.18)}
+h1{font-size:clamp(28px,4.4vw,44px);line-height:1.08;letter-spacing:-.02em;margin:18px 0 10px;font-weight:800}
+.sub{font-size:17px;color:var(--gris);max-width:680px;margin:0}
+.legend{
+  display:flex;flex-wrap:wrap;gap:10px;margin-top:22px;
+}
+.legend span{
+  font-size:12.5px;color:var(--gris);background:var(--carte);
+  border:1px solid var(--bord);border-radius:999px;padding:6px 12px;box-shadow:var(--ombre-s)
+}
+.legend b{color:var(--encre)}
+
+/* ---------- Grille de cartes-effet ---------- */
+.grid{
+  max-width:1120px;margin:0 auto;padding:24px 24px 80px;
+  display:grid;grid-template-columns:repeat(2,1fr);gap:22px;
+}
+@media (max-width:760px){
+  .grid{grid-template-columns:1fr;padding:18px 16px 64px}
+  header.hero{padding:36px 16px 12px}
+  /* wide demos scroll a l'interieur de leur carte, jamais le body */
+  .fx-stage{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .demo-reveal{grid-template-columns:repeat(3,minmax(88px,1fr))}
+  .kpi-row{gap:20px}
+}
+
+.fx{
+  background:var(--carte);border:1px solid var(--bord);border-radius:18px;
+  box-shadow:var(--ombre-m);overflow:hidden;display:flex;flex-direction:column;min-width:0;
+  /* reveal: etat par defaut = VISIBLE. La classe .pre-reveal (posee par JS)
+     masque ; si le JS casse, la carte reste visible. */
+  transition:transform .7s var(--ease-out), opacity .7s var(--ease-out);
+}
+.fx.pre-reveal{opacity:0;transform:translateY(22px)}
+.fx-head{padding:18px 20px 0;display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.fx-num{
+  font-variant-numeric:tabular-nums;font-weight:800;font-size:13px;color:var(--bleu);
+  background:rgba(0,80,230,.08);border-radius:8px;padding:3px 9px;flex:none;margin-top:2px
+}
+.fx-title{font-size:16.5px;font-weight:750;letter-spacing:-.01em;margin:0}
+.fx-stage{
+  margin:16px 20px 0;padding:22px;border-radius:var(--r);
+  background:
+    radial-gradient(600px 240px at 50% -40%, rgba(0,80,230,.045), transparent 70%),
+    #FBFCFE;
+  border:1px solid var(--bord);
+  min-height:150px;display:flex;flex-direction:column;justify-content:center;
+}
+.fx-usage{
+  margin:14px 20px 18px;padding:11px 14px;border-radius:10px;
+  background:rgba(243,154,27,.07);border:1px solid rgba(243,154,27,.2);
+  font-size:13px;color:#7a5410;display:flex;gap:9px;align-items:flex-start
+}
+.fx-usage svg{flex:none;margin-top:1px}
+.fx-usage b{color:#5c3d06}
+
+/* Bouton "rejouer" discret */
+.replay{
+  appearance:none;border:1px solid var(--bord-fort);background:var(--carte);color:var(--gris);
+  font:inherit;font-size:12.5px;font-weight:600;padding:6px 12px;border-radius:8px;cursor:pointer;
+  display:inline-flex;align-items:center;gap:6px;
+  transition:transform .12s var(--ease), border-color .15s, color .15s, box-shadow .15s;
+}
+.replay:hover{color:var(--encre);border-color:var(--bleu);box-shadow:0 0 0 3px rgba(0,80,230,.08)}
+.replay:active{transform:scale(.96)}
+.replay svg{transition:transform .5s var(--ease)}
+.replay.spin svg{transform:rotate(360deg)}
+
+/* =========================================================================
+   1 — Apparition douce au scroll (deja appliquee a toutes les cartes .fx)
+   ========================================================================= */
+.demo-reveal{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.demo-reveal .chip{
+  background:var(--carte);border:1px solid var(--bord);border-radius:10px;padding:14px 10px;text-align:center;
+  box-shadow:var(--ombre-s);
+  transition:opacity .5s var(--ease-out), transform .5s var(--ease-out)
+}
+.demo-reveal .chip.pre{opacity:0;transform:translateY(14px)}
+.demo-reveal .chip .n{font-weight:800;font-size:20px;color:var(--bleu)}
+.demo-reveal .chip .l{font-size:11px;color:var(--gris);margin-top:2px}
+
+/* =========================================================================
+   2 — Compteur de chiffres anime (KPI)
+   ========================================================================= */
+.kpi-row{display:flex;gap:26px;flex-wrap:wrap;align-items:flex-end}
+.kpi .val{font-size:38px;font-weight:820;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1}
+.kpi .lab{font-size:12.5px;color:var(--gris);margin-top:6px;font-weight:600}
+.kpi .val.blu{color:var(--bleu)} .kpi .val.org{color:var(--orange)}
+
+/* =========================================================================
+   3 — Carte au survol : elevation + halo radial (SANS aucun flou)
+   ========================================================================= */
+.lift-card{
+  position:relative;background:var(--carte);border:1px solid var(--bord);border-radius:14px;
+  padding:18px;box-shadow:var(--ombre-s);overflow:hidden;
+  transition:transform .35s var(--ease-out), box-shadow .35s var(--ease-out), border-color .35s;
+  cursor:pointer;
+}
+.lift-card::before{
+  content:"";position:absolute;inset:0;border-radius:inherit;opacity:0;
+  background:radial-gradient(320px 220px at var(--mx,50%) var(--my,0%), rgba(0,80,230,.14), transparent 60%);
+  transition:opacity .35s var(--ease-out);pointer-events:none
+}
+.lift-card:hover{transform:translateY(-6px);box-shadow:var(--ombre-g);border-color:rgba(0,80,230,.35)}
+.lift-card:hover::before{opacity:1}
+.lift-card .lc-t{font-weight:750;font-size:15px;position:relative}
+.lift-card .lc-s{font-size:13px;color:var(--gris);margin-top:4px;position:relative}
+.lift-card .lc-tag{
+  position:relative;display:inline-block;margin-top:12px;font-size:12px;font-weight:700;
+  color:var(--bleu);background:rgba(0,80,230,.08);padding:4px 10px;border-radius:999px
+}
+
+/* =========================================================================
+   4 — Transition d'onglet fluide (indicateur glissant + fondu)
+   ========================================================================= */
+.tabs{display:inline-flex;position:relative;background:#EEF1F7;border-radius:11px;padding:4px;gap:2px}
+.tabs .glider{
+  position:absolute;top:4px;left:4px;height:calc(100% - 8px);border-radius:8px;background:var(--carte);
+  box-shadow:var(--ombre-s);transition:transform .38s var(--ease), width .38s var(--ease);z-index:0
+}
+.tabs button{
+  position:relative;z-index:1;appearance:none;border:0;background:transparent;font:inherit;
+  font-size:13px;font-weight:650;color:var(--gris);padding:8px 16px;border-radius:8px;cursor:pointer;
+  transition:color .3s
+}
+.tabs button[aria-selected="true"]{color:var(--bleu)}
+.tab-panels{margin-top:16px;position:relative}
+.tab-panel{font-size:13.5px;color:var(--gris);animation:panelIn .4s var(--ease-out)}
+.tab-panel[hidden]{display:none}
+@keyframes panelIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.tab-panel b{color:var(--encre)}
+
+/* =========================================================================
+   5 — Feedback de bouton (appui + onde)
+   ========================================================================= */
+.btn-demo{display:flex;gap:12px;flex-wrap:wrap}
+.jbtn{
+  position:relative;overflow:hidden;appearance:none;border:0;cursor:pointer;font:inherit;
+  font-size:14px;font-weight:700;padding:12px 22px;border-radius:11px;color:#fff;
+  background:linear-gradient(180deg,var(--bleu-clair),var(--bleu));
+  box-shadow:0 2px 4px rgba(0,80,230,.25), inset 0 1px 0 rgba(255,255,255,.22);
+  transition:transform .12s var(--ease), box-shadow .2s;
+}
+.jbtn:hover{box-shadow:0 6px 16px rgba(0,80,230,.3), inset 0 1px 0 rgba(255,255,255,.22)}
+.jbtn:active{transform:translateY(1px) scale(.985);box-shadow:0 1px 2px rgba(0,80,230,.3)}
+.jbtn.ghost{
+  color:var(--encre);background:var(--carte);
+  box-shadow:inset 0 0 0 1px var(--bord-fort), var(--ombre-s)
+}
+.jbtn.ghost:active{transform:translateY(1px) scale(.985)}
+.ripple{position:absolute;border-radius:50%;background:rgba(255,255,255,.5);transform:scale(0);pointer-events:none;animation:ripple .6s var(--ease-out)}
+.jbtn.ghost .ripple{background:rgba(0,80,230,.18)}
+@keyframes ripple{to{transform:scale(2.6);opacity:0}}
+
+/* =========================================================================
+   6 — Tri de tableau anime (technique FLIP)
+   ========================================================================= */
+.jtable{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
+.jtable thead th{
+  text-align:left;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--gris-clair);
+  font-weight:700;padding:0 10px 10px;cursor:pointer;user-select:none;white-space:nowrap
+}
+.jtable thead th.num{text-align:right}
+.jtable thead th .arrow{opacity:0;transition:opacity .2s, transform .3s;display:inline-block;margin-left:3px}
+.jtable thead th.active{color:var(--bleu)}
+.jtable thead th.active .arrow{opacity:1}
+.jtable thead th.desc .arrow{transform:rotate(180deg)}
+.jtable tbody tr{background:var(--carte);will-change:transform}
+.jtable tbody td{padding:11px 10px;border-top:1px solid var(--bord);font-variant-numeric:tabular-nums}
+.jtable tbody td.num{text-align:right;font-weight:650}
+.jtable tbody tr td:first-child{border-radius:8px 0 0 8px}
+.jtable tbody tr td:last-child{border-radius:0 8px 8px 0}
+
+/* =========================================================================
+   7 — Badge de tendance (pulse une fois)
+   ========================================================================= */
+.trend-row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.trend{
+  display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:750;
+  padding:6px 12px;border-radius:999px;font-variant-numeric:tabular-nums
+}
+.trend.up{color:var(--vert);background:var(--vert-bg)}
+.trend.down{color:var(--rouge);background:var(--rouge-bg)}
+.trend.pulse.up{animation:pulseVert .9s var(--ease)}
+.trend.pulse.down{animation:pulseRouge .9s var(--ease)}
+@keyframes pulseVert{0%{box-shadow:0 0 0 0 rgba(18,145,91,.45)}70%{box-shadow:0 0 0 10px rgba(18,145,91,0)}100%{box-shadow:0 0 0 0 rgba(18,145,91,0)}}
+@keyframes pulseRouge{0%{box-shadow:0 0 0 0 rgba(214,58,58,.45)}70%{box-shadow:0 0 0 10px rgba(214,58,58,0)}100%{box-shadow:0 0 0 0 rgba(214,58,58,0)}}
+
+/* =========================================================================
+   8 — Skeleton de chargement (reflet par position de gradient, aucun flou)
+   ========================================================================= */
+.skel-wrap{display:flex;flex-direction:column;gap:12px}
+.skel-card{display:flex;gap:14px;align-items:center}
+.sk{
+  border-radius:8px;
+  background:linear-gradient(100deg,#EEF1F7 30%,#F6F8FC 50%,#EEF1F7 70%);
+  background-size:220% 100%;animation:shimmer 1.4s linear infinite
+}
+@keyframes shimmer{from{background-position:200% 0}to{background-position:-40% 0}}
+.sk.av{width:44px;height:44px;border-radius:50%;flex:none}
+.sk.l1{height:12px;width:62%}
+.sk.l2{height:11px;width:40%;margin-top:8px}
+.skel-lines{flex:1}
+/* etat "charge" : vraie donnee qui apparait */
+.loaded-row{display:flex;gap:14px;align-items:center;opacity:0;transform:translateY(6px);animation:fadeUp .5s var(--ease-out) forwards}
+@keyframes fadeUp{to{opacity:1;transform:none}}
+.loaded-row .av{width:44px;height:44px;border-radius:50%;flex:none;display:grid;place-items:center;color:#fff;font-weight:800;font-size:15px;background:linear-gradient(180deg,var(--bleu-clair),var(--bleu))}
+.loaded-row .nm{font-weight:700;font-size:14px}
+.loaded-row .sc{font-size:12.5px;color:var(--gris)}
+
+/* =========================================================================
+   9 — Toast de confirmation
+   ========================================================================= */
+.toast-host{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:60;display:flex;flex-direction:column;gap:10px;align-items:center;pointer-events:none}
+.toast{
+  pointer-events:auto;display:flex;align-items:center;gap:11px;
+  background:var(--encre);color:#fff;font-size:13.5px;font-weight:600;
+  padding:12px 16px;border-radius:12px;box-shadow:var(--ombre-g);
+  transform:translateY(20px);opacity:0;transition:transform .45s var(--ease-out), opacity .45s
+}
+.toast.show{transform:translateY(0);opacity:1}
+.toast .ic{width:22px;height:22px;border-radius:50%;background:var(--vert);display:grid;place-items:center;flex:none}
+.toast.info .ic{background:var(--bleu)}
+
+/* =========================================================================
+   10 — Surbrillance de ligne + focus clavier soigne
+   ========================================================================= */
+.rowlist{display:flex;flex-direction:column}
+.rowlist .row{
+  display:flex;align-items:center;gap:12px;padding:12px 12px;border-radius:10px;cursor:pointer;
+  transition:background .2s var(--ease), box-shadow .2s, transform .2s var(--ease)
+}
+.rowlist .row:hover{background:#F1F5FD}
+.rowlist .row:hover .go{opacity:1;transform:translateX(0)}
+.rowlist .row + .row{border-top:1px solid var(--bord)}
+.rowlist .row:focus-visible{outline:none;box-shadow:0 0 0 2px var(--carte),0 0 0 4px var(--bleu);background:#F1F5FD}
+.rowlist .av2{width:34px;height:34px;border-radius:9px;flex:none;display:grid;place-items:center;color:#fff;font-weight:800;font-size:13px;background:linear-gradient(180deg,#7C90AE,#5B6472)}
+.rowlist .row:hover .av2,.rowlist .row:focus-visible .av2{background:linear-gradient(180deg,var(--bleu-clair),var(--bleu))}
+.rowlist .meta{flex:1;min-width:0}
+.rowlist .meta .a{font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rowlist .meta .b{font-size:12px;color:var(--gris)}
+.rowlist .go{opacity:0;transform:translateX(-6px);transition:opacity .2s,transform .2s;color:var(--bleu);font-weight:800}
+.hint{font-size:11.5px;color:var(--gris-clair);margin-top:10px;text-align:center}
+kbd{font:inherit;font-size:11px;font-weight:700;background:#EEF1F7;border:1px solid var(--bord-fort);border-bottom-width:2px;border-radius:5px;padding:1px 6px;color:var(--gris)}
+
+/* ---------- Pied ---------- */
+footer{max-width:1120px;margin:0 auto;padding:8px 24px 60px;color:var(--gris-clair);font-size:12.5px;text-align:center}
+
+/* =========================================================================
+   ACCESSIBILITE / SECURITE — tout mouvement coupe si l'utilisateur le demande.
+   Les etats finaux restent VISIBLES (jamais bloques en opacity 0).
+   ========================================================================= */
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important;scroll-behavior:auto !important}
+  .fx.pre-reveal,.demo-reveal .chip.pre{opacity:1 !important;transform:none !important}
+  .sk{animation:none;background:#EEF1F7}
+}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <span class="kicker"><span class="dot"></span>JARVIS · Direction artistique</span>
+  <h1>Menu des effets &amp; micro-interactions</h1>
+  <p class="sub">Dix touches discretes et haut de gamme pour donner de la vie au CRM sans le transformer en vitrine. Chacune se joue en direct ci-dessous. Dis-moi les numeros que tu veux, je les branche dans l'app.</p>
+  <div class="legend">
+    <span><b>Safari-safe</b> · zero flou, zero clignotement</span>
+    <span><b>Sobre</b> · matiere &amp; fluidite, pas de gadget</span>
+    <span>Coupe si <b>mouvement reduit</b> active</span>
+    <span>Reste <b>lisible</b> meme si un script casse</span>
+  </div>
+</header>
+
+<main class="grid" id="grid">
+
+  <!-- 1 -->
+  <section class="fx">
+    <div class="fx-head"><h2 class="fx-title">Apparition douce au scroll</h2><span class="fx-num">01</span></div>
+    <div class="fx-stage">
+      <div class="demo-reveal" id="revealDemo">
+        <div class="chip"><div class="n">23</div><div class="l">appels du jour</div></div>
+        <div class="chip"><div class="n">6</div><div class="l">relances</div></div>
+        <div class="chip"><div class="n">4</div><div class="l">rendez-vous</div></div>
+        <div class="chip"><div class="n">89%</div><div class="l">couverture</div></div>
+        <div class="chip"><div class="n">12</div><div class="l">prospects</div></div>
+        <div class="chip"><div class="n">2</div><div class="l">urgents</div></div>
+      </div>
+      <button class="replay" data-replay="reveal" style="margin-top:16px;align-self:flex-start"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M21 12a9 9 0 11-3-6.7M21 3v5h-5"/></svg>Rejouer</button>
+    </div>
+    <p class="fx-usage"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c07f17" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg><span><b>Ou ca sert :</b> les tuiles du tableau de bord et les cartes officines glissent en place quand on descend. Restent visibles meme si le JS echoue.</span></p>
+  </section>
+
+  <!-- 2 -->
+  <section class="fx">
+    <div class="fx-head"><h2 class="fx-title">Compteur de chiffres anime</h2><span class="fx-num">02</span></div>
+    <div class="fx-stage">
+      <div class="kpi-row" id="kpiDemo">
+        <div class="kpi"><div class="val blu" data-count="1284350" data-money="1">0</div><div class="lab">Chiffre d'affaires (&euro;)</div></div>
+        <div class="kpi"><div class="val org" data-count="4.16" data-dec="2" data-suffix="%">0</div><div class="lab">Abandon de marge moyen</div></div>
+        <div class="kpi"><div class="val" data-count="621">0</div><div class="lab">Officines suivies</div></div>
+      </div>
+      <button class="replay" data-replay="kpi" style="margin-top:18px;align-self:flex-start"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M21 12a9 9 0 11-3-6.7M21 3v5h-5"/></svg>Rejouer</button>
+    </div>
+    <p class="fx-usage"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c07f17" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg><span><b>Ou ca sert :</b> les KPI prix, CA et abandon de marge defilent jusqu'a leur valeur. Format francais, chiffres alignes (tabulaire).</span></p>
+  </section>
+
+  <!-- 3 -->
+  <section class="fx">
+    <div class="fx-head"><h2 class="fx-title">Carte au survol : elevation + halo</h2><span class="fx-num">03</span></div>
+    <div class="fx-stage">
+      <div class="lift-card" id="liftCard">
+        <div class="lc-t">Pharmacie du Centre</div>
+        <div class="lc-s">Angers (49) · Client · UGA 12</div>
+        <span class="lc-tag">CA +14 % ce trimestre</span>
+      </div>
+      <p style="font-size:12px;color:var(--gris-clair);margin:14px 0 0">Passe la souris sur la carte — le halo suit le curseur, sans aucun flou.</p>
+    </div>
+    <p class="fx-usage"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c07f17" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg><span><b>Ou ca sert :</b> cartes officine, cartes produit, tuiles du launcher. L'elevation dit « cliquable », le halo focalise l'oeil.</span></p>
+  </section>
+
+  <!-- 4 -->
+  <section class="fx">
+    <div class="fx-head"><h2 class="fx-title">Transition d'onglet fluide</h2><span class="fx-num">04</span></div>
+    <div class="fx-stage">
+      <div class="tabs" id="tabsDemo" role="tablist">
+        <span class="glider" aria-hidden="true"></span>
+        <button role="tab" aria-selected="true">Synthese</button>
+        <button role="tab" aria-selected="false">Ventes</button>
+        <button role="tab" aria-selected="false">Historique</button>
+      </div>
+      <div class="tab-panels">
+        <div class="tab-panel" role="tabpanel"><b>Synthese.</b> Vue d'ensemble de l'officine : segment, statut, dernier contact.</div>
+        <div class="tab-panel" role="tabpanel" hidden><b>Ventes.</b> Top produits, sell-out NR, tendance sur 12 mois.</div>
+        <div class="tab-panel" role="tabpanel" hidden><b>Historique.</b> Appels, visites, relances et notes horodates.</div>
+      </div>
+    </div>
+    <p class="fx-usage"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c07f17" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg><span><b>Ou ca sert :</b> les onglets de la fiche officine. L'indicateur glisse, le contenu fait un fondu court — on ne perd jamais le fil.</span></p>
+  </section>
+
+  <!-- 5 -->
+  <section class="fx">
+    <div class="fx-head"><h2 class="fx-title">Feedback de bouton (appui)</h2><span class="fx-num">05</span></div>
+    <div class="fx-stage">
+      <div class="btn-demo" id="btnDemo">
+        <button class="jbtn">Enregistrer l'appel</button>
+        <button class="jbtn ghost">Reporter</button>
+      </div>
+      <p style="font-size:12px;color:var(--gris-clair);margin:16px 0 0">Clique : le bouton s'enfonce legerement et une onde part du point touche.</p>
+    </div>
+    <p class="fx-usage"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c07f17" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg><span><b>Ou ca sert :</b> tous les boutons d'action (enregistrer, appeler, valider). L'appui confirme le geste, utile surtout sur mobile.</span></p>
+  </section>
+
+  <!-- 6 -->
+  <section class="fx">
+    <div class="fx-head"><h2 class="fx-title">Tri de tableau anime</h2><span class="fx-num">06</span></div>
+    <div class="fx-stage">
+      <table class="jtable" id="sortTable">
+        <thead><tr>
+          <th data-key="nom">Officine</th>
+          <th data-key="ca" class="num active">CA (k&euro;)<span class="arrow">&#9650;</span></th>
+          <th data-key="marge" class="num">Marge %<span class="arrow">&#9650;</span></th>
+        </tr></thead>
+        <tbody>
+          <tr><td>Grande Pharmacie</td><td class="num">312</td><td class="num">6,2</td></tr>
+          <tr><td>Pharmacie du Port</td><td class="num">198</td><td class="num">4,9</td></tr>
+          <tr><td>Pharmacie Saint-Yves</td><td class="num">274</td><td class="num">5,4</td></tr>
+          <tr><td>Pharmacie Centrale</td><td class="num">156</td><td class="num">7,1</td></tr>
+        </tbody>
+      </table>
+      <p style="font-size:12px;color:var(--gris-clair);margin:14px 0 0">Clique un en-tete — les lignes se reordonnent en glissant.</p>
+    </div>
+    <p class="fx-usage"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c07f17" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg><span><b>Ou ca sert :</b> listes d'officines, catalogue, stats commerciaux. On suit visuellement chaque ligne qui change de place.</span></p>
+  </section>
+
+  <!-- 7 -->
+  <section class="fx">
+    <div class="fx-head"><h2 class="fx-title">Badge de tendance (pulsation)</h2><span class="fx-num">07</span></div>
+    <div class="fx-stage">
+      <div class="trend-row" id="trendDemo">
+        <span class="trend up">&#9650; +14 %</span>
+        <span class="trend down">&#9660; &minus;6 %</span>
+        <span class="trend up">&#9650; +2,3 pts</span>
+      </div>
+      <button class="replay" data-replay="trend" style="margin-top:18px;align-self:flex-start"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M21 12a9 9 0 11-3-6.7M21 3v5h-5"/></svg>Rejouer la pulsation</button>
+    </div>
+    <p class="fx-usage"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c07f17" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg><span><b>Ou ca sert :</b> variations de CA, de marge, de tournee. Une <b>seule</b> pulsation attire l'oeil sur ce qui bouge, puis se calme.</span></p>
+  </section>
+
+  <!-- 8 -->
+  <section class="fx">
+    <div class="fx-head"><h2 class="fx-title">Skeleton de chargement</h2><span class="fx-num">08</span></div>
+    <div class="fx-stage">
+      <div class="skel-wrap" id="skelDemo"><!-- rempli par JS --></div>
+      <button class="replay" data-replay="skel" style="margin-top:16px;align-self:flex-start"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M21 12a9 9 0 11-3-6.7M21 3v5h-5"/></svg>Recharger</button>
+    </div>
+    <p class="fx-usage"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c07f17" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg><span><b>Ou ca sert :</b> pendant le chargement des fiches, listes et stats. Le reflet balaie (degrade, aucun flou) puis la vraie donnee apparait.</span></p>
+  </section>
+
+  <!-- 9 -->
+  <section class="fx">
+    <div class="fx-head"><h2 class="fx-title">Toast de confirmation</h2><span class="fx-num">09</span></div>
+    <div class="fx-stage">
+      <div class="btn-demo">
+        <button class="jbtn" data-toast="ok">Interaction enregistree</button>
+        <button class="jbtn ghost" data-toast="info">Prospect &rarr; client</button>
+      </div>
+      <p style="font-size:12px;color:var(--gris-clair);margin:16px 0 0">Le message monte en bas de l'ecran puis disparait seul.</p>
+    </div>
+    <p class="fx-usage"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c07f17" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg><span><b>Ou ca sert :</b> apres chaque action (appel note, statut change, note sauvee). Confirme sans bloquer, disparait tout seul.</span></p>
+  </section>
+
+  <!-- 10 -->
+  <section class="fx">
+    <div class="fx-head"><h2 class="fx-title">Surbrillance de ligne + focus clavier</h2><span class="fx-num">10</span></div>
+    <div class="fx-stage">
+      <div class="rowlist" id="rowDemo">
+        <div class="row" tabindex="0"><span class="av2">PC</span><div class="meta"><div class="a">Pharmacie du Centre</div><div class="b">Angers · dernier appel il y a 3 j</div></div><span class="go">&rarr;</span></div>
+        <div class="row" tabindex="0"><span class="av2">GP</span><div class="meta"><div class="a">Grande Pharmacie</div><div class="b">Nantes · a relancer</div></div><span class="go">&rarr;</span></div>
+        <div class="row" tabindex="0"><span class="av2">SY</span><div class="meta"><div class="a">Pharmacie Saint-Yves</div><div class="b">Rennes · rendez-vous jeudi</div></div><span class="go">&rarr;</span></div>
+      </div>
+      <p class="hint">Survole une ligne, ou navigue au clavier avec <kbd>Tab</kbd> — l'anneau de focus est net et lisible.</p>
+    </div>
+    <p class="fx-usage"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c07f17" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg><span><b>Ou ca sert :</b> listes d'appels et d'officines. Le survol guide l'oeil, le focus clavier reste impeccable pour naviguer vite.</span></p>
+  </section>
+
+</main>
+
+<footer>JARVIS · 10 effets a la carte — dis-moi les numeros retenus, je les integre dans l'app reelle.</footer>
+
+<div class="toast-host" id="toastHost" aria-live="polite"></div>
+
+<script>
+(function(){
+  "use strict";
+  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ---------- 1. Apparition des cartes .fx au scroll ----------
+     On pose .pre-reveal PAR JS (jamais en CSS), puis on la retire quand la
+     carte entre dans le viewport. Si le JS ne tourne pas, tout reste visible. */
+  var cards = Array.prototype.slice.call(document.querySelectorAll(".fx"));
+  if(!reduce && "IntersectionObserver" in window){
+    cards.forEach(function(c){ c.classList.add("pre-reveal"); });
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){
+          e.target.classList.remove("pre-reveal");
+          io.unobserve(e.target);
+        }
+      });
+    },{threshold:.12, rootMargin:"0px 0px -40px 0px"});
+    cards.forEach(function(c){ io.observe(c); });
+  }
+
+  /* Demo interne de reveal (les petites chips) */
+  function playReveal(){
+    var chips = document.querySelectorAll("#revealDemo .chip");
+    chips.forEach(function(ch,i){
+      ch.classList.add("pre");
+      ch.style.transitionDelay = (i*70)+"ms";
+      void ch.offsetWidth;
+    });
+    requestAnimationFrame(function(){
+      chips.forEach(function(ch){ ch.classList.remove("pre"); });
+    });
+  }
+  if(!reduce) playReveal();
+
+  /* ---------- 2. Compteur de chiffres ---------- */
+  function animateCount(el){
+    var target = parseFloat(el.dataset.count);
+    var dec = parseInt(el.dataset.dec||"0",10);
+    var money = el.dataset.money==="1";
+    var suffix = el.dataset.suffix||"";
+    function fmt(v){
+      if(money) return Math.round(v).toLocaleString("fr-FR");
+      return v.toLocaleString("fr-FR",{minimumFractionDigits:dec,maximumFractionDigits:dec}) + suffix;
+    }
+    if(reduce){ el.textContent = fmt(target); return; }
+    var dur = 1100, start = null;
+    function step(ts){
+      if(!start) start = ts;
+      var p = Math.min(1,(ts-start)/dur);
+      var eased = 1-Math.pow(1-p,3); // easeOutCubic
+      el.textContent = fmt(target*eased);
+      if(p<1) requestAnimationFrame(step); else el.textContent = fmt(target);
+    }
+    requestAnimationFrame(step);
+  }
+  function playKpi(){ document.querySelectorAll("#kpiDemo .val").forEach(animateCount); }
+  if("IntersectionObserver" in window){
+    var kio = new IntersectionObserver(function(es){
+      es.forEach(function(e){ if(e.isIntersecting){ playKpi(); kio.disconnect(); } });
+    },{threshold:.4});
+    kio.observe(document.getElementById("kpiDemo"));
+  } else { playKpi(); }
+
+  /* ---------- 3. Halo qui suit le curseur ---------- */
+  var lift = document.getElementById("liftCard");
+  if(lift){
+    lift.addEventListener("pointermove", function(e){
+      var r = lift.getBoundingClientRect();
+      lift.style.setProperty("--mx", ((e.clientX-r.left)/r.width*100)+"%");
+      lift.style.setProperty("--my", ((e.clientY-r.top)/r.height*100)+"%");
+    });
+  }
+
+  /* ---------- 4. Onglets ---------- */
+  (function(){
+    var tabs = document.getElementById("tabsDemo");
+    if(!tabs) return;
+    var glider = tabs.querySelector(".glider");
+    var btns = Array.prototype.slice.call(tabs.querySelectorAll("button"));
+    var panels = document.querySelectorAll(".tab-panel");
+    function move(btn){
+      glider.style.width = btn.offsetWidth+"px";
+      glider.style.transform = "translateX("+(btn.offsetLeft-4)+"px)";
+    }
+    function select(i){
+      btns.forEach(function(b,j){ b.setAttribute("aria-selected", j===i?"true":"false"); });
+      panels.forEach(function(p,j){ p.hidden = j!==i; });
+      move(btns[i]);
+    }
+    btns.forEach(function(b,i){ b.addEventListener("click", function(){ select(i); }); });
+    requestAnimationFrame(function(){ move(btns[0]); });
+    window.addEventListener("resize", function(){
+      var cur = btns.findIndex(function(b){ return b.getAttribute("aria-selected")==="true"; });
+      move(btns[cur<0?0:cur]);
+    });
+  })();
+
+  /* ---------- 5 & 9. Onde de bouton + toasts ---------- */
+  document.querySelectorAll(".jbtn").forEach(function(btn){
+    btn.addEventListener("pointerdown", function(e){
+      if(reduce) return;
+      var r = btn.getBoundingClientRect();
+      var size = Math.max(r.width, r.height);
+      var rp = document.createElement("span");
+      rp.className = "ripple";
+      rp.style.width = rp.style.height = size+"px";
+      rp.style.left = (e.clientX-r.left-size/2)+"px";
+      rp.style.top = (e.clientY-r.top-size/2)+"px";
+      btn.appendChild(rp);
+      setTimeout(function(){ rp.remove(); }, 620);
+    });
+  });
+
+  var toastHost = document.getElementById("toastHost");
+  function toast(msg, type){
+    var t = document.createElement("div");
+    t.className = "toast "+(type==="info"?"info":"");
+    var ic = type==="info"
+      ? '<span class="ic"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path d="M12 8h.01M11 12h1v5h1"/></svg></span>'
+      : '<span class="ic"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2"><path d="M5 12l4.5 4.5L19 7"/></svg></span>';
+    t.innerHTML = ic+"<span>"+msg+"</span>";
+    toastHost.appendChild(t);
+    requestAnimationFrame(function(){ t.classList.add("show"); });
+    setTimeout(function(){
+      t.classList.remove("show");
+      setTimeout(function(){ t.remove(); }, 500);
+    }, 2600);
+  }
+  document.querySelectorAll("[data-toast]").forEach(function(b){
+    b.addEventListener("click", function(){
+      if(b.dataset.toast==="info") toast("Statut mis a jour : prospect devenu client.","info");
+      else toast("Interaction enregistree.","ok");
+    });
+  });
+
+  /* ---------- 6. Tri de tableau (FLIP) ---------- */
+  (function(){
+    var table = document.getElementById("sortTable");
+    if(!table) return;
+    var tbody = table.querySelector("tbody");
+    var ths = Array.prototype.slice.call(table.querySelectorAll("th"));
+    var state = {key:"ca", dir:-1};
+    function valOf(tr, key){
+      var idx = key==="nom"?0:(key==="ca"?1:2);
+      var cell = tr.children[idx].textContent.trim();
+      if(key==="nom") return cell.toLowerCase();
+      return parseFloat(cell.replace(",","."));
+    }
+    function flipSort(key){
+      var rows = Array.prototype.slice.call(tbody.children);
+      var firsts = new Map();
+      rows.forEach(function(r){ firsts.set(r, r.getBoundingClientRect().top); });
+      if(state.key===key) state.dir*=-1; else { state.key=key; state.dir = key==="nom"?1:-1; }
+      ths.forEach(function(th){
+        th.classList.toggle("active", th.dataset.key===state.key);
+        th.classList.toggle("desc", th.dataset.key===state.key && state.dir<0);
+      });
+      rows.sort(function(a,b){
+        var va=valOf(a,state.key), vb=valOf(b,state.key);
+        if(va<vb) return -1*state.dir; if(va>vb) return 1*state.dir; return 0;
+      });
+      rows.forEach(function(r){ tbody.appendChild(r); });
+      if(reduce) return;
+      rows.forEach(function(r){
+        var last = r.getBoundingClientRect().top;
+        var dy = firsts.get(r) - last;
+        if(!dy) return;
+        r.style.transition = "none";
+        r.style.transform = "translateY("+dy+"px)";
+        requestAnimationFrame(function(){
+          r.style.transition = "transform .5s cubic-bezier(.22,.61,.36,1)";
+          r.style.transform = "";
+        });
+      });
+    }
+    ths.forEach(function(th){ th.addEventListener("click", function(){ flipSort(th.dataset.key); }); });
+  })();
+
+  /* ---------- 7. Pulsation des badges ---------- */
+  function playTrend(){
+    document.querySelectorAll("#trendDemo .trend").forEach(function(el){
+      el.classList.remove("pulse"); void el.offsetWidth; el.classList.add("pulse");
+    });
+  }
+  if("IntersectionObserver" in window){
+    var tio = new IntersectionObserver(function(es){
+      es.forEach(function(e){ if(e.isIntersecting){ playTrend(); tio.disconnect(); } });
+    },{threshold:.5});
+    tio.observe(document.getElementById("trendDemo"));
+  }
+
+  /* ---------- 8. Skeleton -> donnee ---------- */
+  var people = [
+    {i:"PC", n:"Pharmacie du Centre", s:"Angers (49) · Client"},
+    {i:"GP", n:"Grande Pharmacie", s:"Nantes (44) · a relancer"}
+  ];
+  function skelLoad(){
+    var host = document.getElementById("skelDemo");
+    host.innerHTML =
+      '<div class="skel-card"><div class="sk av"></div><div class="skel-lines"><div class="sk l1"></div><div class="sk l2"></div></div></div>'+
+      '<div class="skel-card"><div class="sk av"></div><div class="skel-lines"><div class="sk l1"></div><div class="sk l2"></div></div></div>';
+    var delay = reduce ? 200 : 1300;
+    setTimeout(function(){
+      host.innerHTML = "";
+      people.forEach(function(p,i){
+        var row = document.createElement("div");
+        row.className = "loaded-row";
+        row.style.animationDelay = (i*90)+"ms";
+        row.innerHTML = '<div class="av">'+p.i+'</div><div><div class="nm">'+p.n+'</div><div class="sc">'+p.s+'</div></div>';
+        host.appendChild(row);
+      });
+    }, delay);
+  }
+  skelLoad();
+
+  /* ---------- Boutons "rejouer" ---------- */
+  document.querySelectorAll("[data-replay]").forEach(function(b){
+    b.addEventListener("click", function(){
+      b.classList.add("spin"); setTimeout(function(){ b.classList.remove("spin"); }, 520);
+      var k = b.dataset.replay;
+      if(k==="reveal") playReveal();
+      else if(k==="kpi") playKpi();
+      else if(k==="trend") playTrend();
+      else if(k==="skel") skelLoad();
+    });
+  });
+
+  /* ---------- 10. Rangee : validation clavier ---------- */
+  document.querySelectorAll("#rowDemo .row").forEach(function(r){
+    r.addEventListener("keydown", function(e){
+      if(e.key==="Enter" || e.key===" "){ e.preventDefault(); toast("Fiche ouverte : "+r.querySelector(".a").textContent,"info"); }
+    });
+  });
+})();
+</script>
+</body>
+</html>

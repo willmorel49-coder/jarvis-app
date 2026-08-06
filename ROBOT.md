@@ -32,8 +32,10 @@
 | Scrapers | Python 3.9 · requests · BeautifulSoup · openpyxl |
 | Données statiques | `crm/clients-data.js` · `crm/benchmark-data.js` · `crm/offilog-data.js` · `crm/drakkars-data.js` · `crm/cap3000-data.js` · `opso/leclerc-data.js` |
 
-**Design tokens (dark mode) :**
-`--bg #070B14` · `--blue #0057FF` · `--mint #00E5A0` · `--amber #FFB020` · `--rose #FF4D6D` · Font : Space Grotesk + Inter
+**Design tokens (thème CLAIR « Action terrain » — vérifié 06/08/2026) :**
+`--paper #FBFCFE` · `--card #FFFFFF` · `--ip-blue #0050E6` · `--ip-ink #10131C` · `--c-mint #1E9E6A` (txt `#0F7A52`) · `--c-rose #E0556E` (txt `#C7283D`) · `--c-amber #C7791A`
+Fonts : **Satoshi** (Fontshare CDN, légal, pas auto-hébergé) + **Inter** + **Geist Mono** (chiffres).
+⚠️ L'app est passée de sombre à clair ; les anciens tokens `#070B14`/Space Grotesk ne sont plus d'actualité.
 
 ---
 
