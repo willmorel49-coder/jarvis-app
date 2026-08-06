@@ -457,7 +457,7 @@
       /* Inspecteur latéral */
       '.cat-insp{position:fixed;top:0;right:0;width:372px;max-width:90vw;height:100vh;background:var(--card);border-left:1px solid var(--line);box-shadow:var(--sh-3);transform:translateX(100%);transition:transform .32s var(--ease);z-index:50;overflow-y:auto;display:flex;flex-direction:column}',
       '.cat-insp.open{transform:translateX(0)}',
-      '.cat-insp-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:20px;border-bottom:1px solid var(--line);background:rgba(251,252,254,.7);backdrop-filter:blur(10px);position:sticky;top:0}',
+      '.cat-insp-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:20px;border-bottom:1px solid var(--line);background:rgba(251,252,254,.97);position:sticky;top:0}',
       '.cat-insp-name{font-size:17px;font-weight:800;letter-spacing:-.02em;line-height:1.2}',
       '.cat-insp-cip{font-size:12px;color:var(--muted);margin-top:4px}',
       '.cat-insp-x{width:32px;height:32px;border-radius:9px;border:1px solid var(--line);background:var(--card);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted);flex-shrink:0;transition:.18s var(--ease)}',
