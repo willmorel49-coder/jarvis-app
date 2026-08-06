@@ -174,9 +174,9 @@
       steps = '1. Ouvre le menu du navigateur (<b>⋮</b> en haut à droite)<br>2. Choisis <b>« Installer l\'application »</b> ou <b>« Ajouter à l\'écran d\'accueil »</b>';
     }
     var o = document.createElement('div');
-    o.style.cssText = 'position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(16,19,28,.5);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)';
+    o.style.cssText = 'position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(16,19,28,.5);';
     o.innerHTML =
-      '<div style="background:#fff;border-radius:22px;max-width:380px;width:100%;padding:26px 26px 22px;box-shadow:0 24px 60px rgba(16,19,28,.3);font-family:var(--font,system-ui)">' +
+      '<div style="background:#fff;border-radius:22px;max-width:380px;width:100%;padding:26px 26px 22px;box-shadow:0 24px 60px rgba(16,19,28,.56);font-family:var(--font,system-ui)">' +
         '<img src="icons/icon-192.png" alt="" style="width:56px;height:56px;border-radius:14px;box-shadow:0 4px 12px rgba(0,80,230,.3)" />' +
         '<div style="font-size:18px;font-weight:800;letter-spacing:-.02em;margin:14px 0 6px;color:#10131C">Installer JARVIS</div>' +
         '<div style="font-size:13.5px;line-height:1.6;color:#46506A;margin-bottom:18px">' + steps + '</div>' +
@@ -691,7 +691,7 @@
       // Hero : plus d'air, halo dégradé sobre bleu→orange derrière le titre
       '.v2-home-x .v2-hero{position:relative;margin-bottom:34px;padding-top:8px}',
       // Halo hero : bleu IP (devient vert en OPSO via --ip-blue) + touche orange sobre côté droit
-      '.v2-home-x .v2-hero::before{content:"";position:absolute;left:50%;top:-30px;width:min(620px,86%);height:210px;transform:translateX(-50%);pointer-events:none;z-index:-1;background:radial-gradient(60% 100% at 30% 0%,color-mix(in srgb,var(--ip-blue) 11%,transparent),transparent 70%),radial-gradient(55% 100% at 78% 10%,color-mix(in srgb,var(--c-pilo) 9%,transparent),transparent 72%);filter:blur(6px)}',
+      '.v2-home-x .v2-hero::before{content:"";position:absolute;left:50%;top:-30px;width:min(620px,86%);height:210px;transform:translateX(-50%);pointer-events:none;z-index:-1;background:radial-gradient(60% 100% at 30% 0%,color-mix(in srgb,var(--ip-blue) 11%,transparent),transparent 70%),radial-gradient(55% 100% at 78% 10%,color-mix(in srgb,var(--c-pilo) 9%,transparent),transparent 72%);}',
       '.v2-home-x .v2-eyebrow{background:linear-gradient(180deg,var(--card),var(--card-2));border:1px solid var(--line);padding:6px 13px;border-radius:var(--r-pill);box-shadow:var(--sh-1)}',
       '.v2-home-x .v2-hero h1{background:none}',
       '.v2-home-x .v2-hero .ac{color:var(--ip-blue)}',
@@ -813,6 +813,8 @@
       // Audit Marge (abandon de marge par pharmacie) — app JARVIS
       if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.audit) {
         P.push({ k: 'audit', cls: 'p4', accent: '#10915E', ico: 'pilo', tag: 'Par pharmacie', t: 'Audit marge', d: 'Ce qu\'Intégral rend à chaque pharmacie via l\'abandon de marge — par tranche, vs son grossiste actuel, calculé sur ses vrais achats. Un audit offert, prêt en PDF.', go: 'Ouvrir l\'audit' });
+        P.push({ k: 'missions', cls: 'p4', accent: '#0E9E6A', ico: 'pilo', tag: 'Expert 360', t: 'Missions rémunérées', d: 'La rémunération de l\'officine au-delà du produit : vaccination, entretiens, BPM, TROD… les tarifs 2026 + un simulateur « combien elle peut gagner ». L\'argument d\'expert à montrer au pharmacien.', go: 'Ouvrir les missions' });
+        P.push({ k: 'appro', cls: 'p5', accent: '#0E7C86', ico: 'spark', tag: 'Achats', t: 'Appro Intégral', d: 'L\'outil de l\'équipe achats : ce qui monte dans le réseau, la saison qui arrive, les nouveautés à référencer, les ruptures à sécuriser et tes leviers de négo par génériqueur.', go: 'Ouvrir l\'appro' });
       }
       // Concurrents · grossistes-répartiteurs (annuaire + actualités) — app JARVIS
       if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.grossistes) {

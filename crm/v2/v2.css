@@ -99,8 +99,7 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opa
 
 /* ─── Top bar persistante ─── */
 .v2-top{position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:16px;
-  padding:14px 26px;background:rgba(251,252,254,.78);backdrop-filter:saturate(180%) blur(20px);
-  -webkit-backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid var(--line)}
+  padding:14px 26px;background:rgba(251,252,254,.97);border-bottom:1px solid var(--line)}
 .v2-brand{display:flex;align-items:center;gap:12px;cursor:pointer;text-decoration:none;color:inherit}
 .v2-brand-compact{gap:0}
 .v2-logo{width:38px;height:38px;border-radius:11px;position:relative;flex-shrink:0;
@@ -335,7 +334,7 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opa
 @keyframes v2spin{to{transform:rotate(360deg)}}
 
 /* ─── Command palette ⌘K ─── */
-.v2-cmdk-bd{position:fixed;inset:0;z-index:200;background:rgba(16,19,28,.32);backdrop-filter:blur(7px);
+.v2-cmdk-bd{position:fixed;inset:0;z-index:200;background:rgba(16,19,28,.32);
   display:flex;align-items:flex-start;justify-content:center;padding-top:12vh;opacity:0;pointer-events:none;
   transition:opacity .22s var(--ease-soft)}
 .v2-cmdk-bd.open{opacity:1;pointer-events:auto}
