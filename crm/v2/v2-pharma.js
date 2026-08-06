@@ -28,6 +28,7 @@
   var selPid = null;    // pharma à laquelle appartient la sélection courante
   // Filtre segment OPSO : 'all' | 'cliente' | 'prospect'
   var opsoFilter = 'all';
+  var secteurTab = 'clients';   // JARVIS : bascule Clients / Prospects (par UGA) dans l'onglet Officines
   // Sous-onglet Opportunités : 'officines' | 'groupements' | 'listes'
   var pharmaView = 'officines';
   var selGroup = null;        // groupement ouvert
@@ -523,6 +524,61 @@
       '</a>';
   }
 
+  // ── Secteur : UGA -> commercial (auto : celui qui a le plus de clients dans l'UGA) ──
+  var _ugaComm = null;
+  function ugaCommMap() {
+    if (_ugaComm) return _ugaComm;
+    var D = window.PHARMA_FR; if (!D || !D.p) return {};   // pas de cache tant que PHARMA_FR absent
+    var idComm = {};
+    (V2.pharmacies || []).forEach(function (p) {
+      var c = (p.comms && p.comms[0]) || '';
+      var k = String(p.id).replace(/[^0-9]/g, '');
+      if (c && k) idComm[k] = c;
+    });
+    var count = {};
+    D.p.forEach(function (p) {
+      var comm = idComm[String(p[13] || '').replace(/[^0-9]/g, '')]; if (!comm) return;
+      var uga = p[2]; if (uga == null) return;
+      (count[uga] || (count[uga] = {}))[comm] = ((count[uga] && count[uga][comm]) || 0) + 1;
+    });
+    var map = {};
+    Object.keys(count).forEach(function (uga) {
+      var best = null, bn = 0; for (var c in count[uga]) if (count[uga][c] > bn) { bn = count[uga][c]; best = c; }
+      if (best) map[uga] = best;
+    });
+    if (Object.keys(map).length) _ugaComm = map;   // ne pas cacher une map vide (clients pas encore chargés)
+    return map;
+  }
+  // pseudo-ligne de liste pour un point PHARMA_FR (prospect ou promu) — réutilise listRowHtml
+  function prospectPseudoX(p) {
+    return { p: { id: p[13], name: nameOf(p[13], p[6] || p[10] || 'Pharmacie'), color: '#9AA1B2', inDb: false, comms: [], _prospect: true }, ca: 0, marge: 0, opp: 0 };
+  }
+  function isClientSeg(p) { var s = window.PHARMA_FR && window.PHARMA_FR.seg[p[4]]; return s && s.indexOf('Client') === 0; }
+  // Prospects (non-clients) des UGA possédées par un commercial. Plafonné à `cap`.
+  function commercialProspects(comm, cap) {
+    var D = window.PHARMA_FR; if (!D || !D.p || !comm) return { rows: [], total: 0 };
+    var uc = ugaCommMap(), out = [];
+    for (var i = 0; i < D.p.length; i++) {
+      var p = D.p[i];
+      if (uc[p[2]] !== comm || isClientSeg(p) || (V2.promoted && V2.promoted[String(p[13])])) continue;
+      out.push(p);
+    }
+    var total = out.length;
+    return { rows: out.slice(0, cap || 200).map(prospectPseudoX), total: total };
+  }
+  // Prospects explicitement passés en client (V2.promoted) -> pseudo-clients pour la liste.
+  function promotedRows() {
+    var D = window.PHARMA_FR, prom = V2.promoted || {}, out = [];
+    if (!D || !D.p) return out;
+    var byId = {}; D.p.forEach(function (p) { byId[String(p[13])] = p; });
+    Object.keys(prom).forEach(function (pid) {
+      if (!prom[pid]) return;
+      if ((V2.pharmacies || []).some(function (c) { return String(c.id) === String(pid); })) return; // déjà client réel
+      var p = byId[String(pid)]; if (p) { var x = prospectPseudoX(p); x.p._promu = true; out.push(x); }
+    });
+    return out;
+  }
+
   function renderList(root) {
     var marketReady = !!window.OPS_AGGREGATE;
     var phs = (V2.pharmacies || []).map(function (p) {
@@ -533,6 +589,12 @@
       }
       return x;
     });
+
+    // JARVIS : PHARMA_FR sert aux promus (dans Clients) et aux prospects par UGA. Charge puis rafraîchit.
+    if (!isOpso() && !window.PHARMA_FR && V2.ensurePharmaFr) {
+      V2.ensurePharmaFr(function () { _ugaComm = null; if (V2.route && V2.route.name === 'pharma' && !V2.route.param) V2.render(); });
+    }
+    if (!isOpso() && window.PHARMA_FR) { try { phs = phs.concat(promotedRows()); } catch (e) {} }
 
     // ── Tri OPSO : clientes d'abord, puis par CA desc ──
     if (isOpso()) {
@@ -564,7 +626,7 @@
     function applyFilters(list) {
       var q = searchQuery.trim().toLowerCase();
       return list.filter(function (x) {
-        if (V2.commFilter && (x.p.comms || []).indexOf(V2.commFilter) < 0) return false;
+        if (V2.commFilter && !x.p._promu && (x.p.comms || []).indexOf(V2.commFilter) < 0) return false;
         if (q && x.p.name.toLowerCase().indexOf(q) < 0) return false;
         if (isOpso() && opsoFilter === 'cliente' && !x.p.inDb) return false;
         if (isOpso() && opsoFilter === 'prospect' && x.p.inDb) return false;
@@ -618,7 +680,31 @@
       opsoFilterBar = counterHtml + opsoFilterBar;
     }
 
-    var filtered = applyFilters(phs);
+    // ── Bascule Clients / Prospects (JARVIS uniquement) ──
+    var secteurBar = '';
+    if (!isOpso()) {
+      var sTab = function (val, label) {
+        return '<button type="button" class="v2-seg' + (secteurTab === val ? ' on' : '') + '" style="--sc:var(--ip-blue)" onclick="V2.pharmaSecteurTab(\'' + val + '\')">' + label + '</button>';
+      };
+      secteurBar = '<div class="v2-segs" style="margin-bottom:14px">' + sTab('clients', 'Clients') + sTab('prospects', 'Prospects de mon secteur') + '</div>';
+    }
+
+    // Contenu de la liste selon la bascule (Clients par défaut, sinon Prospects par UGA du commercial).
+    function listBody() {
+      try {
+        if (!isOpso() && secteurTab === 'prospects') {
+          if (!V2.commFilter) return '<div class="v2-empty"><div class="v2-empty-t">Choisis un commercial</div><div class="v2-empty-d">Sélectionne un commercial au-dessus pour voir les prospects de son secteur (UGA).</div></div>';
+          if (!window.PHARMA_FR) return '<div class="v2-loading"><div class="v2-spinner"></div><div>Chargement des prospects…</div></div>';
+          var pr = commercialProspects(V2.commFilter, 300);
+          var q = searchQuery.trim().toLowerCase();
+          var rows = q ? pr.rows.filter(function (x) { return (x.p.name || '').toLowerCase().indexOf(q) >= 0; }) : pr.rows;
+          if (!rows.length) return '<div class="v2-empty"><div class="v2-empty-t">Aucun prospect</div><div class="v2-empty-d">' + (q ? 'Aucun résultat.' : 'Aucun prospect dans les UGA de ce commercial.') + '</div></div>';
+          var more = (pr.total > pr.rows.length) ? '<a class="v2-row" style="justify-content:center;color:var(--muted);cursor:pointer" onclick="V2.go(\'pharma\',\'carte\')">+ ' + (pr.total - pr.rows.length) + ' autres prospects · voir sur la carte</a>' : '';
+          return rows.map(listRowHtml).join('') + more;
+        }
+      } catch (e) { return '<div class="v2-empty"><div class="v2-empty-t">Prospects indisponibles</div><div class="v2-empty-d">Réessaie plus tard.</div></div>'; }
+      return cardHtml(applyFilters(phs));
+    }
 
     root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
       '<div class="v2-wrap">' +
@@ -627,11 +713,12 @@
           ' · clique pour voir les opportunités</div>' +
         pharmaTabs('officines') +
         commBar +
+        secteurBar +
         opsoFilterBar +
         '<div class="v2-search" style="margin-bottom:20px;padding:14px 18px">' + ICO('search', 20, 2) +
           '<input id="v2-pharma-search" placeholder="Rechercher une officine…" autocomplete="off" value="' +
           V2.esc(searchQuery) + '"></div>' +
-        '<div class="v2-card" id="v2-pharma-card">' + cardHtml(filtered) + '</div>' +
+        '<div class="v2-card" id="v2-pharma-card">' + listBody() + '</div>' +
       '</div>';
 
     // Recherche live : on ne re-render QUE la liste pour préserver le focus
@@ -641,8 +728,7 @@
         searchQuery = inp.value;
         var card = document.getElementById('v2-pharma-card');
         if (!card) return;
-        var f = applyFilters(phs);
-        card.innerHTML = cardHtml(f);
+        card.innerHTML = listBody();
       });
     }
   }
@@ -902,6 +988,15 @@
       '.phd-rupt .ic{width:30px;height:30px;border-radius:9px;background:var(--c-amber);color:#fff;display:grid;place-items:center;font-size:16px;font-weight:800;flex:none}' +
       '.phd-rupt b{color:#a8651a}.phd-rupt .chips{display:flex;gap:5px;flex-wrap:wrap;margin-top:4px}' +
       '.phd-rupt .chips span{font-size:10.5px;font-weight:700;background:#fff;border:1px solid #F0D9C0;color:#8a5a1a;padding:2px 7px;border-radius:999px}' +
+      '.phd-rrow{display:flex;align-items:center;gap:10px;justify-content:space-between;padding:9px 18px;border-top:1px solid var(--line)}' +
+      '.phd-rnm{font-size:13px;font-weight:600;color:var(--ip-ink);min-width:0;flex:1}.phd-rnm small{color:var(--muted);font-weight:500}' +
+      '.phd-rok{flex:none;font-size:11px;font-weight:800;color:var(--c-opp);background:#E7F5EC;border:1px solid #BFE6CF;border-radius:999px;padding:3px 9px;white-space:nowrap}' +
+      '.phd-rko{flex:none;font-size:11px;font-weight:700;color:#a8651a;background:#FFF1DB;border:1px solid #F0C98A;border-radius:999px;padding:3px 9px;white-space:nowrap}' +
+      '.phd-rmore{display:block;width:100%;text-align:center;padding:10px;border:none;border-top:1px solid var(--line);background:none;color:var(--muted);font:inherit;font-size:12px;font-weight:600;cursor:pointer}.phd-rmore:hover{background:var(--card-2)}' +
+      '.phd-jum{padding:12px 18px 14px}' +
+      '.phd-jumrow{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:4px 0;font-size:13px;color:var(--ip-ink)}.phd-jumrow b small{font-size:10px;color:var(--muted);font-weight:600;font-family:var(--font)}' +
+      '.phd-jumtrack{height:8px;border-radius:9px;background:rgba(16,19,28,.07);overflow:hidden;margin:8px 0}.phd-jumtrack i{display:block;height:100%;border-radius:9px;background:linear-gradient(90deg,#8B7BEE,#6D5AE6)}' +
+      '.phd-jumgap{font-size:12.5px;color:var(--muted);font-weight:600}' +
       '.phd-reps{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}' +
       '.phd-rep{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:8px 12px;font-size:11px;font-weight:600;color:var(--muted)}' +
       '.phd-rep b{display:block;color:var(--ip-ink);font-size:14px;font-weight:800}' +
@@ -927,13 +1022,20 @@
     var mca = monthlyCA(sales), nAct = mca.filter(function (m) { return m.ca > 0; }).length;
     var regul = Math.min(100, Math.round(nAct / 6 * 100));
     var score = Math.max(0, Math.min(100, Math.round(0.40 * penet + 0.35 * caPct + 0.25 * regul)));
-    // ── ruptures ANSM sur ses achats ──
+    // ── ruptures ANSM sur ses achats (actionnable : nom + stock Intégral) ──
     var seen = {}, ruptList = [];
     sales.forEach(function (s) {
       var c = String(s.artCode || ''); if (!(s.qte > 0) || c.length < 7 || seen[c]) return;
-      var r = V2.rupture ? V2.rupture(c) : null; if (r) { seen[c] = 1; ruptList.push(c); }
+      var r = V2.rupture ? V2.rupture(c) : null;
+      if (r) {
+        seen[c] = 1;
+        var b = null; try { b = benchIndex().get(c); } catch (e) {}
+        ruptList.push({ cip: c, name: (b && b.designation) || r.d || c, dci: r.d || '', stock: (V2.stock ? V2.stock(c) : 0) });
+      }
     });
     var nRupt = ruptList.length;
+    ruptList.sort(function (a, b) { return (b.stock > 0 ? 1 : 0) - (a.stock > 0 ? 1 : 0); });   // dispo Intégral d'abord (actionnable)
+    var nRuptDispo = 0; for (var ri = 0; ri < ruptList.length; ri++) if (ruptList[ri].stock > 0) nRuptDispo++;
 
     // ── HERO money-first ──
     var pidJs = esc(String(pid));
@@ -973,9 +1075,21 @@
     }).join('');
     var scoreCard = '<div class="phd-card"><div class="phd-sh"><div class="ic" style="background:var(--ip-blue)">%</div><div><h3>Son score en détail</h3><div class="dsc">vs les officines du réseau Intégral</div></div></div><div style="padding:6px 0">' + axHtml + '</div></div>';
 
-    // ── RUPTURES (bandeau) ──
-    var ruptBand = nRupt > 0 ? '<div class="phd-rupt"><div class="ic">!</div><div><b>' + nRupt + ' produit' + (nRupt > 1 ? 's' : '') + ' qu\'elle achète ' + (nRupt > 1 ? 'sont' : 'est') + ' en tension ANSM.</b>' +
-      '<div style="font-size:12px;color:var(--muted)">À sécuriser / proposer une alternative Intégral en stock.</div></div></div>' : '';
+    // ── RUPTURES ACTIONNABLES : produits en tension qu'elle achète + dispo Intégral ──
+    var ruptBand = '';
+    if (nRupt > 0) {
+      var top = ruptList.slice(0, 8);
+      var rows = top.map(function (x) {
+        return '<div class="phd-rrow"><div class="phd-rnm">' + esc(cap((x.name || '').toLowerCase())) + (x.dci ? '<small> · ' + esc(x.dci) + '</small>' : '') + '</div>' +
+          (x.stock > 0
+            ? '<span class="phd-rok">✓ en stock Intégral</span>'
+            : '<span class="phd-rko">à sécuriser</span>') + '</div>';
+      }).join('');
+      var more = nRupt > top.length ? '<button class="phd-rmore" onclick="V2.go(\'infos\')">+ ' + (nRupt - top.length) + ' autres produits en tension · voir la veille</button>' : '';
+      ruptBand = '<div class="phd-card"><div class="phd-sh"><div class="ic" style="background:var(--c-amber)">!</div><div><h3>Ruptures à sécuriser</h3>' +
+        '<div class="dsc">' + nRupt + ' produit' + (nRupt > 1 ? 's' : '') + ' qu\'elle achète en tension ANSM' + (nRuptDispo > 0 ? ' · <b style="color:var(--c-opp)">' + nRuptDispo + ' dispo chez Intégral</b>' : '') + '</div></div></div>' +
+        rows + more + '</div>';
+    }
 
     // ── REPÈRES nationaux (contexte) ──
     var reps = '<div class="phd-reps">' +
@@ -984,7 +1098,76 @@
       '<div class="phd-rep">Substitution nationale<b>' + REPERES_FR.subst + '</b></div>' +
       '</div><div style="font-size:10.5px;color:var(--muted);margin-top:6px">Repères marché France (Interfimo/Fiducial 2025) — contexte, pas la performance de l\'officine.</div>';
 
-    return '<div class="phd">' + hero + planCard + ruptBand + scoreCard + reps + '</div>';
+    // ── JUMEAU D'ACHATS : cohorte d'officines Intégral au profil comparable ──
+    var jumeauCard = '';
+    try {
+      if (meCa > 0 && offs.length >= 10) {
+        var band = offs.filter(function (o) { return String(o.id) !== String(pid) && o.ca >= meCa * 0.6 && o.ca <= meCa * 1.6; });
+        if (band.length >= 5) {
+          var bcas = band.map(function (o) { return o.ca; }).sort(function (a, b) { return a - b; });
+          var jumeau = bcas[Math.floor(bcas.length * 0.65)] || bcas[bcas.length - 1];   // un cran au-dessus (65e pct)
+          var gap = jumeau - meCa;
+          var pctPos = jumeau ? Math.min(100, Math.round(meCa / jumeau * 100)) : 100;
+          jumeauCard = '<div class="phd-card"><div class="phd-sh"><div class="ic" style="background:#6D5AE6">≈</div><div><h3>Ton jumeau</h3>' +
+            '<div class="dsc">' + band.length + ' officines au profil comparable — taille &amp; achats Intégral</div></div></div>' +
+            '<div class="phd-jum">' +
+              '<div class="phd-jumrow"><span>Officines comme la tienne</span><b class="mono">' + V2.fmtEur(jumeau) + '<small>/an</small></b></div>' +
+              '<div class="phd-jumrow"><span>Elle</span><b class="mono" style="color:' + (gap > 0 ? 'var(--c-amber)' : 'var(--c-opp)') + '">' + V2.fmtEur(meCa) + '<small>/an</small></b></div>' +
+              '<div class="phd-jumtrack"><i style="width:' + pctPos + '%"></i></div>' +
+              (gap > 0
+                ? '<div class="phd-jumgap">En se calant sur son jumeau : <b style="color:var(--c-opp)">+' + V2.fmtEur(gap) + '/an</b> de potentiel d\'achats Intégral</div>'
+                : '<div class="phd-jumgap" style="color:var(--c-opp)">✓ Au niveau (ou au-dessus) de son jumeau</div>') +
+            '</div></div>';
+        }
+      }
+    } catch (e) {}
+
+    // ── RESTE À CONQUÉRIR : best-sellers du réseau qu'elle n'achète PAS encore ──
+    // (concret, chiffré à la moyenne réseau — script de visite prêt à l'emploi)
+    var conqCard = '';
+    try {
+      var PSc = window.PROD_STATS;
+      if (PSc && PSc.length && offs.length >= 10) {
+        var bought = {};
+        sales.forEach(function (s) { var c = String(s.artCode || ''); if (s.qte > 0 && c.length >= 7) bought[c] = 1; });
+        var NBc = offs.length, thr = Math.max(60, Math.round(0.20 * NBc));
+        var cand = [];
+        for (var pi = 0; pi < PSc.length; pi++) {
+          var p = PSc[pi];
+          if (!p || p.n < thr || p.rota <= 0 || p.net <= 0) continue;
+          if (bought[String(p.c)]) continue;
+          cand.push(p);
+        }
+        // trié par « à quel point c'est un standard réseau » (pénétration), puis valeur
+        cand.sort(function (a, b) { return (b.n - a.n) || ((b.rota * b.net) - (a.rota * a.net)); });
+        if (cand.length >= 3) {
+          var topc = cand.slice(0, 6);
+          var crows = topc.map(function (p, i) {
+            var eu = Math.round(p.rota * p.net);
+            var badges = '';
+            if (typeof p.f === 'string' && p.f.indexOf('pr_') === 0 && p.rpct > 0)
+              badges += '<span class="phd-rok">abandon &minus;' + (Math.round(p.rpct * 10) / 10).toLocaleString('fr-FR') + ' %</span>';
+            if ((V2.stock ? V2.stock(p.c) : 0) > 0)
+              badges += '<span class="phd-rok">✓ en stock Intégral</span>';
+            var mo = V2.momentum ? V2.momentum(p.c) : null, te = V2.tendance ? V2.tendance(p.c) : null;
+            if ((mo != null && mo > 0) || (te != null && te > 8))
+              badges += '<span class="phd-rko">↑ marché</span>';
+            return '<div class="phd-act"><div class="rk">' + (i + 1) + '</div>' +
+              '<div class="mn"><b>' + esc(cap((p.d || '').toLowerCase())) + '</b>' +
+              '<span>' + p.n + ' officines du réseau le prennent' + (badges ? ' · ' : '') + '</span>' +
+              (badges ? '<div class="phd-rnm" style="margin-top:5px;display:flex;gap:5px;flex-wrap:wrap">' + badges + '</div>' : '') +
+              '</div>' +
+              '<div class="mt" style="color:var(--ip-ink)">' + V2.fmtEur(eu) + '<small>/an réseau</small></div></div>';
+          }).join('');
+          conqCard = '<div class="phd-card"><div class="phd-sh"><div class="ic" style="background:#6D5AE6">↗</div>' +
+            '<div><h3>Reste à conquérir</h3><div class="dsc">' + cand.length + ' best-sellers pris par &ge; 20 % du réseau qu\'elle n\'achète pas encore — les 6 plus répandus</div></div></div>' +
+            crows +
+            '<div style="font-size:10.5px;color:var(--muted);padding:8px 18px 12px">Montant = achat moyen /an d\'une officine du réseau qui prend ce produit (repère, pas un engagement).</div></div>';
+        }
+      }
+    } catch (e) {}
+
+    return '<div class="phd">' + hero + planCard + ruptBand + conqCard + scoreCard + jumeauCard + reps + '</div>';
   }
 
   function activitySection(sales, marge, ca) {
@@ -1148,6 +1331,53 @@
   }
   // Fiche d'une officine NON cliente (prospect) : coordonnées + infos + notes éditables,
   // sauvegardées comme pour un futur client (Supabase, même id que la carte).
+  // ── Nom d'officine corrigé à la main (bouton Valider) — appliqué partout via V2.nameOvr ──
+  function nameOf(pid, orig) { return (V2.nameOvr && V2.nameOvr[String(pid)]) || orig || ''; }
+  function nameEditor(pid, currentName) {
+    var idp = 'nm-' + String(pid).replace(/[^a-zA-Z0-9]/g, '');
+    return '<div class="phf-nmedit"><span class="phf-nmedit-l">Corriger le nom de la pharmacie</span>' +
+      '<div class="phf-nmedit-row"><input id="' + idp + '" class="phf-nmedit-in" type="text" value="' + esc(currentName || '') + '" placeholder="Nom de la pharmacie"></input>' +
+      '<button class="phf-nmedit-btn" onclick="V2.saveOfficineName(\'' + esc(String(pid)) + '\',\'' + idp + '\')">Valider</button></div></div>';
+  }
+  V2.saveOfficineName = function (pid, inputId) {
+    var el = document.getElementById(inputId); if (!el) return;
+    if (!V2.user) { if (V2.toast) V2.toast('Connecte-toi pour modifier le nom'); return; }
+    var val = (el.value || '').trim();
+    V2.nameOvr = V2.nameOvr || {};
+    if (val) V2.nameOvr[String(pid)] = val; else delete V2.nameOvr[String(pid)];
+    var ph = (V2.pharmacies || []).find(function (p) { return String(p.id) === String(pid); });
+    if (ph && val) ph.name = val;
+    if (window.PHARMA_FR) { var pt = pharmaFrById(pid); if (pt && val) pt[6] = val; }
+    if (V2.profil && V2.profil.saveOverride) V2.profil.saveOverride(pid, { nom: val });
+    if (V2.toast) V2.toast(val ? 'Nom mis à jour ✓' : 'Nom réinitialisé');
+    V2.render();
+  };
+
+  // ── Titulaire(s) de l'officine (affiché + corrigeable) — via V2.titOvr, sinon base nationale ──
+  function titulaireOf(pid, orig) { return (V2.titOvr && V2.titOvr[String(pid)]) || orig || ''; }
+  function clientTitulaire(pid) {   // titulaire connu (override sinon PHARMA_FR p[10])
+    var base = '';
+    if (window.PHARMA_FR) { var pt = pharmaFrById(pid); if (pt && pt[10]) base = pt[10]; }
+    return titulaireOf(pid, base);
+  }
+  function titEditor(pid, currentTit) {
+    var idp = 'tit-' + String(pid).replace(/[^a-zA-Z0-9]/g, '');
+    return '<div class="phf-nmedit"><span class="phf-nmedit-l">Titulaire(s) de la pharmacie</span>' +
+      '<div class="phf-nmedit-row"><input id="' + idp + '" class="phf-nmedit-in" type="text" value="' + esc(currentTit || '') + '" placeholder="Nom du/des titulaire(s)"></input>' +
+      '<button class="phf-nmedit-btn" onclick="V2.saveOfficineTit(\'' + esc(String(pid)) + '\',\'' + idp + '\')">Valider</button></div></div>';
+  }
+  V2.saveOfficineTit = function (pid, inputId) {
+    var el = document.getElementById(inputId); if (!el) return;
+    if (!V2.user) { if (V2.toast) V2.toast('Connecte-toi pour modifier le titulaire'); return; }
+    var val = (el.value || '').trim();
+    V2.titOvr = V2.titOvr || {};
+    if (val) V2.titOvr[String(pid)] = val; else delete V2.titOvr[String(pid)];
+    if (window.PHARMA_FR) { var pt = pharmaFrById(pid); if (pt) pt[10] = val; }
+    if (V2.profil && V2.profil.saveOverride) V2.profil.saveOverride(pid, { titulaire: val });
+    if (V2.toast) V2.toast(val ? 'Titulaire mis à jour ✓' : 'Titulaire réinitialisé');
+    V2.render();
+  };
+
   function renderProspectFiche(root, pid) {
     if (!window.PHARMA_FR) {   // base nationale pas encore chargée → lazy-load puis re-rendu
       root.innerHTML = V2.topbar({ back: true, backTo: 'pharma', backLabel: 'Officines' }) +
@@ -1163,7 +1393,7 @@
     var ville = p[7] || '', cp = p[8] || '', seg = D.seg[p[4]] || 'Prospect';
     var grp = (D.grp[p[3]] && D.grp[p[3]] !== '—') ? D.grp[p[3]] : '', uga = D.uga[p[2]] || '';
     var q = encodeURIComponent((p[6] || '') + ' ' + ville + ' ' + cp);
-    var seed = { titulaire: p[10] || '', tel: p[9] || '', email: p[11] || '', adresse: '' };
+    var seed = { nom: p[6] || '', groupement: grp || '', titulaire: p[10] || '', tel: p[9] || '', email: p[11] || '', adresse: '' };
     var badge = function (t, cls) { return t ? '<span class="v2-chip' + (cls ? ' ' + cls : '') + '">' + esc(t) + '</span>' : ''; };
     root.innerHTML = V2.topbar({ back: true, backTo: 'pharma', backLabel: 'Officines' }) +
       '<div class="v2-wrap v2-prospect">' +
@@ -1171,17 +1401,21 @@
           '<div class="v2-prospect-top">' +
             '<div class="v2-pharma-pin" style="background:linear-gradient(150deg,#0057FF,#0034A0)">' + (V2.ICO ? V2.ICO('pharma', 22) : '') + '</div>' +
             '<div style="flex:1;min-width:0">' +
-              '<div class="v2-prospect-n">' + esc(p[6] || p[10] || 'Pharmacie') + '</div>' +
+              '<div class="v2-prospect-n">' + esc(nameOf(pid, p[6] || p[10]) || 'Pharmacie') + '</div>' +
               '<div class="v2-prospect-a">' + esc(ville) + (cp ? ' · ' + esc(cp) : '') + '</div>' +
               '<div class="v2-prospect-badges">' + badge(seg, 'pr') + badge(grp) + badge(uga ? 'UGA ' + uga : '') + '</div>' +
             '</div>' +
           '</div>' +
           '<p class="v2-prospect-note">Officine non cliente — complète ses coordonnées, infos et notes pour la suivre comme un futur client. Tout est sauvegardé.</p>' +
         '</div>' +
+        '<div class="v2-card" style="padding:12px 16px 14px">' + nameEditor(pid, p[6] || '') + '</div>' +
         (V2.profil ? V2.profil.coordSection(pid, seed) : '') +
         (V2.profil ? V2.profil.section('client', pid) : '') +
         (V2.notes ? V2.notes.section('client', pid) : '') +
         '<div class="v2-card v2-prospect-acts">' +
+          ((V2.promoted && V2.promoted[String(pid)])
+            ? '<span class="v2-btn v2-btn-ghost" style="cursor:default;color:var(--c-opp);border-color:var(--c-opp)">✓ Passé en client</span>'
+            : '<button class="v2-btn v2-btn-primary" onclick="V2.promoteToClient(\'' + esc(String(pid)) + '\')">➕ Passer en client</button>') +
           '<a class="v2-btn v2-btn-ghost" href="https://www.google.com/maps/search/?api=1&query=' + q + '" target="_blank" rel="noopener">Voir sur Google Maps</a>' +
         '</div>' +
       '</div>';
@@ -1205,6 +1439,9 @@
       return;
     }
 
+    // PHARMA_FR (base nationale) = source du titulaire connu — charge en tâche de fond puis rafraîchit.
+    if (!window.PHARMA_FR && V2.ensurePharmaFr) { V2.ensurePharmaFr(function () { if (V2.route && V2.route.param) V2.render(); }); }
+
     // Nouvelle pharma → on repart d'une sélection vide
     if (String(selPid) !== String(pid)) { selPid = String(pid); selCips = new Set(); }
 
@@ -1223,6 +1460,8 @@
     var nGrp = hasGrp ? buildRecoCats(pid, 'groupement').cats.reduce(function (s, o) { return s + o.rows.length; }, 0) : 0;
 
     var ficheBadge = isOpso() ? ' ' + opsoBadge(pharma) : '';
+    var repriseBadge = (window.REPRISES && REPRISES[String(pid)])
+      ? ' <span class="phf-reprise" title="Le titulaire a changé récemment — moment clé pour (re)capter la relation">🔄 Reprise récente</span>' : '';
     var loc = [pharma.cp, pharma.ville].filter(function (x) { return x; }).join(' ');
     var tel = (pharma.tel == null ? '' : String(pharma.tel)).trim();
     var email = (pharma.email == null ? '' : String(pharma.email)).trim();
@@ -1236,8 +1475,9 @@
       '<div class="phf-hcard">' +
         '<div class="phf-hid">' +
           (pharma.code ? '<span class="phf-code">' + esc(String(pharma.code)) + '</span>' : '') +
-          '<div class="phf-hname">' + esc(pharma.name) + ficheBadge + '</div>' +
+          '<div class="phf-hname">' + esc(nameOf(pid, pharma.name)) + ficheBadge + repriseBadge + '</div>' +
           (loc ? '<div class="phf-hloc">' + ICO('pharma', 13) + esc(loc) + '</div>' : '') +
+          (function () { var t = clientTitulaire(pid); return t ? '<div class="phf-htit">' + ICO('user', 12) + '<span>' + esc(t) + '</span></div>' : ''; })() +
         '</div>' +
         '<div class="phf-hkpis">' +
           kpi('Opportunités', V2.fmtNum(nReseau), 'phf-push', nReseau) +
@@ -1332,7 +1572,7 @@
         '</select></label>';
       return '<div class="ph-section">' +
         sectionHead('Infos officine', 'CIP, groupement, grossistes, génériqueurs, robot…', 'profil', open) +
-        (open ? (cipLine + grpEdit + V2.profil.section('client', pid)) : '') +
+        (open ? (cipLine + nameEditor(pid, nameOf(pid, pharma.name)) + titEditor(pid, clientTitulaire(pid)) + grpEdit + V2.profil.section('client', pid)) : '') +
       '</div>';
     })() : '';
     // CA par génériqueur (Biogaran, Zentiva, EG…) — table BDPM ; section repliable
@@ -1520,6 +1760,15 @@
   // ── Handler filtre OPSO (segment clientes / prospects) ──
   V2.pharmaOpsoFilter = function (val) {
     opsoFilter = val;
+    V2.render();
+  };
+  V2.pharmaSecteurTab = function (v) { secteurTab = v || 'clients'; V2.render(); };
+  V2.promoteToClient = function (pid) {
+    if (!V2.user) { if (V2.toast) V2.toast('Connecte-toi pour passer un prospect en client'); return; }
+    V2.promoted = V2.promoted || {};
+    V2.promoted[String(pid)] = true;
+    if (V2.profil && V2.profil.saveOverride) V2.profil.saveOverride(pid, { promu: true });
+    if (V2.toast) V2.toast('Passé en client ✓ — visible dans tes Clients');
     V2.render();
   };
   V2.pharmaSetComm = function (val) {
@@ -2836,7 +3085,7 @@
       '.pl-rm:hover{color:var(--c-rose);border-color:color-mix(in srgb,var(--c-rose) 35%,var(--line));background:color-mix(in srgb,var(--c-rose) 8%,#fff)}',
       '.pl-del{color:var(--c-rose) !important}',
       // modale d\'ajout de pharmacies
-      '.pl-pick-ov{position:fixed;inset:0;z-index:130;display:flex;align-items:center;justify-content:center;padding:4vh 16px;background:rgba(16,19,28,.45);backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px)}',
+      '.pl-pick-ov{position:fixed;inset:0;z-index:130;display:flex;align-items:center;justify-content:center;padding:4vh 16px;background:rgba(16,19,28,.45);}',
       '.pl-pick-card{width:min(560px,96vw);max-height:90vh;display:flex;flex-direction:column;background:var(--card);border-radius:20px;box-shadow:var(--sh-pop);overflow:hidden}',
       '.pl-pick-top{display:flex;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid var(--line)}',
       '.pl-pick-t{flex:1;font-weight:800;font-size:15.5px;letter-spacing:-.01em}',
@@ -2856,7 +3105,7 @@
       // carte de secteur
       '.sec-mapwrap{position:relative;border-radius:var(--r-card);overflow:hidden;border:1px solid var(--line);box-shadow:var(--sh-1)}',
       '.sec-map{width:100%;height:calc(100vh - 280px);min-height:420px;background:#EAEEF3}',
-      '.sec-legend{position:absolute;right:14px;bottom:14px;z-index:500;background:rgba(255,255,255,.94);backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:12px;padding:11px 13px;box-shadow:var(--sh-2);font-size:11.5px}',
+      '.sec-legend{position:absolute;right:14px;bottom:14px;z-index:500;background:rgba(255,255,255,.94);border:1px solid var(--line);border-radius:12px;padding:11px 13px;box-shadow:var(--sh-2);font-size:11.5px}',
       '.sec-legend-t{font-weight:800;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:7px}',
       '.sec-legend-row{display:flex;align-items:center;gap:8px;color:var(--ip-ink-2);margin-bottom:4px;font-weight:600}',
       '.sec-dot{display:inline-block;border-radius:50%;border:1.5px solid;flex-shrink:0}',
@@ -2868,7 +3117,7 @@
       '.grp-logo-big{width:48px;height:48px;border-radius:13px}',
       '.grp-logo-big.grp-logo-x{font-size:17px}',
       // ── Modal aperçu prépa RDV ──
-      '.prepa-modal{position:fixed;inset:0;z-index:120;background:rgba(16,19,28,.45);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:flex;align-items:flex-start;justify-content:center;padding:4vh 16px;opacity:0;pointer-events:none;transition:opacity .2s var(--ease)}',
+      '.prepa-modal{position:fixed;inset:0;z-index:120;background:rgba(16,19,28,.45);display:flex;align-items:flex-start;justify-content:center;padding:4vh 16px;opacity:0;pointer-events:none;transition:opacity .2s var(--ease)}',
       '.prepa-modal.open{opacity:1;pointer-events:auto}',
       '.prepa-dialog{width:min(900px,96vw);max-height:92vh;background:var(--card);border-radius:20px;box-shadow:var(--sh-pop);display:flex;flex-direction:column;overflow:hidden;transform:scale(.97);transition:transform .24s var(--ease)}',
       '.prepa-modal.open .prepa-dialog{transform:scale(1)}',
@@ -2944,6 +3193,14 @@
       '.phf-hcard::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:linear-gradient(180deg,var(--ip-blue),var(--ip-blue-d))}',
       '.phf-hid{min-width:180px;flex:1}',
       '.phf-hname{font-size:21px;font-weight:800;letter-spacing:-.025em;line-height:1.12;display:flex;align-items:center;gap:10px;flex-wrap:wrap}',
+      '.phf-htit{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted);font-weight:600;margin-top:4px}',
+      '.phf-htit span{color:var(--ip-ink)}',
+      '.phf-reprise{font-size:11px;font-weight:800;letter-spacing:.01em;color:#8a4b00;background:#FFF1DB;border:1px solid #F0C98A;border-radius:999px;padding:3px 9px;white-space:nowrap}',
+      '.phf-nmedit-l{display:block;font-size:11px;font-weight:700;color:var(--muted);margin-bottom:5px}',
+      '.phf-nmedit-row{display:flex;gap:8px;align-items:center}',
+      '.phf-nmedit-in{flex:1;min-width:0;border:1px solid var(--line-strong);border-radius:10px;padding:9px 11px;font:inherit;font-size:13.5px;color:var(--ip-ink);background:var(--card-2)}',
+      '.phf-nmedit-btn{flex:none;border:none;border-radius:10px;padding:9px 16px;font:inherit;font-weight:800;font-size:13px;color:#fff;background:var(--ip-blue);cursor:pointer;min-height:40px}',
+      '.phf-nmedit-btn:hover{filter:brightness(1.06)}',
       '.phf-hloc{font-size:12.5px;color:var(--muted);font-weight:500;margin-top:5px;display:flex;align-items:center;gap:5px}',
       '.phf-hkpis{display:flex;gap:10px;flex-wrap:wrap}',
       '.phf-hkpi{position:relative;background:var(--card-2);border:1px solid var(--line);border-radius:var(--r-md);padding:11px 16px 12px;min-width:100px;overflow:hidden;transition:transform .18s var(--ease),box-shadow .18s var(--ease),border-color .18s var(--ease)}',
