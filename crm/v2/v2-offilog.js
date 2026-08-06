@@ -41,9 +41,12 @@
   var CHIP_BY_KEY = {}; CHIPS.forEach(function (c) { CHIP_BY_KEY[c.k] = c; });
 
   var CONC = [
+    // Concurrence EN LIGNE grand public (TTC). Drakkars/Cap3000 (enseignes de niche)
+    // retirés le 06/08/2026 sur décision de Will : on ne garde que la vraie concurrence
+    // en ligne. Pharma-GDD à ajouter ici dès que ses prix seront scrapés (aujourd'hui
+    // le repo n'a que ses images, pas ses prix). L'axe PRO Offilog vs Pharmazon vit
+    // plus bas (pzIndex/inspector), inchangé.
     { key: 'prix_leclerc',  label: 'E.Leclerc', color: '#0066B3' },
-    { key: 'prix_drakkars', label: 'Drakkars',  color: '#1E9E6A' },
-    { key: 'prix_cap3000',  label: 'Cap3000',   color: '#C7791A' },
   ];
 
   // ── Index ─────────────────────────────────────
