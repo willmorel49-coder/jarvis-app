@@ -2,8 +2,8 @@
    CRM V2 · Pilier "Offilog & concurrents" (pages.offilog)
    Catalogue PARAPHARMA = meilleures ventes Offilog (live, connecté),
    classées par ventes décroissantes, AVEC PHOTOS + prix Offilog.
-   Enrichi par EAN avec la veille prix (achat IP vs prix publics
-   E.Leclerc / Drakkars / Cap3000) depuis OFFILOG.
+   Enrichi par EAN avec la veille prix (achat IP vs prix public
+   E.Leclerc) depuis OFFILOG. + axe pro Offilog vs Pharmazon.
    ── Même DA que le catalogue grossiste · vanilla · zéro emoji ──
    ═══════════════════════════════════════════════════════════════════ */
 (function () {
@@ -917,7 +917,7 @@
         '<div class="v2-wrap' + (S.sel != null ? ' v2-detail-shift" style="--detw:392px"' : '"') + '>' +
           (V2.priceTabs ? V2.priceTabs('offilog') : '') +
           '<div class="v2-page-title">Concurrents</div>' +
-          '<div class="v2-page-sub">Ton prix d\'achat IP (HT) comparé en direct aux prix publics E.Leclerc, Drakkars et Cap3000 (TTC). Vois d\'un coup d\'œil où un concurrent casse les prix sous ton achat.</div>' +
+          '<div class="v2-page-sub">Ton prix d\'achat IP (HT) comparé en direct au prix public E.Leclerc (TTC). Vois d\'un coup d\'œil où un concurrent casse les prix sous ton achat.</div>' +
           '<div class="off-search">' + ICO('search', 19, 2) +
             '<input id="off-search-input" autocomplete="off" placeholder="Rechercher par produit, marque ou EAN…" value="' + qVal + '" oninput="V2.offSearch(this.value)">' + clrBtn + '</div>' +
           verdictBand(filtered) +
