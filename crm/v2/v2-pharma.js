@@ -694,7 +694,7 @@
       try {
         if (!isOpso() && secteurTab === 'prospects') {
           if (!V2.commFilter) return '<div class="v2-empty"><div class="v2-empty-t">Choisis un commercial</div><div class="v2-empty-d">Sélectionne un commercial au-dessus pour voir les prospects de son secteur (UGA).</div></div>';
-          if (!window.PHARMA_FR) return '<div class="v2-loading"><div class="v2-spinner"></div><div>Chargement des prospects…</div></div>';
+          if (!window.PHARMA_FR) return '<div class="v2-skel-card" aria-busy="true" aria-label="Chargement…"><div class="v2-skel v2-skel-title"></div>' + new Array(7).join('<div class="v2-skel-row"><span class="v2-skel v2-skel-av"></span><div style="flex:1;min-width:0"><div class="v2-skel v2-skel-line w60"></div><div class="v2-skel v2-skel-line sm w40"></div></div><span class="v2-skel v2-skel-chip"></span></div>') + '</div>';
           var pr = commercialProspects(V2.commFilter, 300);
           var q = searchQuery.trim().toLowerCase();
           var rows = q ? pr.rows.filter(function (x) { return (x.p.name || '').toLowerCase().indexOf(q) >= 0; }) : pr.rows;
@@ -1381,7 +1381,7 @@
   function renderProspectFiche(root, pid) {
     if (!window.PHARMA_FR) {   // base nationale pas encore chargée → lazy-load puis re-rendu
       root.innerHTML = V2.topbar({ back: true, backTo: 'pharma', backLabel: 'Officines' }) +
-        '<div class="v2-loading"><div class="v2-spinner"></div><div>Chargement de la fiche…</div></div>';
+        '<div class="v2-wrap"><div class="v2-skel-card" aria-busy="true" aria-label="Chargement de la fiche…"><div class="v2-skel v2-skel-title"></div><div class="v2-skel v2-skel-line w80"></div><div class="v2-skel v2-skel-line w60"></div><div style="height:16px"></div><div class="v2-skel v2-skel-kpi"></div></div></div>';
       if (V2.ensurePharmaFr) V2.ensurePharmaFr(function () { V2.render(); });
       else renderList(root);
       return;
@@ -1434,7 +1434,7 @@
     // Agrégats marché + catalogue IP chargés ? sinon lazy-load + état loading
     if (!window.OPS_AGGREGATE || !window.BENCHMARK) {
       root.innerHTML = V2.topbar({ back: true, backTo: 'pharma', backLabel: 'Officines' }) +
-        '<div class="v2-loading"><div class="v2-spinner"></div><div>Chargement du marché sectoriel…</div></div>';
+        '<div class="v2-wrap"><div class="v2-skel-card" aria-busy="true" aria-label="Chargement…"><div class="v2-skel v2-skel-title"></div>' + new Array(7).join('<div class="v2-skel-row"><span class="v2-skel v2-skel-av"></span><div style="flex:1;min-width:0"><div class="v2-skel v2-skel-line w60"></div><div class="v2-skel v2-skel-line sm w40"></div></div><span class="v2-skel v2-skel-chip"></span></div>') + '</div></div>';
       V2.loadFiles(['establishments', 'bench']).then(function () { _marketCache = null; V2.render(); });
       return;
     }
@@ -2174,7 +2174,7 @@
   function renderGroupementDetail(root, grpName) {
     if (!window.BENCHMARK) {
       root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
-        '<div class="v2-loading"><div class="v2-spinner"></div><div>Chargement du catalogue…</div></div>';
+        '<div class="v2-wrap"><div class="v2-skel-card" aria-busy="true" aria-label="Chargement…"><div class="v2-skel v2-skel-title"></div>' + new Array(7).join('<div class="v2-skel-row"><span class="v2-skel v2-skel-av"></span><div style="flex:1;min-width:0"><div class="v2-skel v2-skel-line w60"></div><div class="v2-skel v2-skel-line sm w40"></div></div><span class="v2-skel v2-skel-chip"></span></div>') + '</div></div>';
       V2.loadFiles(['bench', 'sagitta']).then(function () { V2.render(); });
       return;
     }
@@ -2689,7 +2689,7 @@
     if (!l) { selList = null; renderListesList(root); return; }
     if (!window.BENCHMARK) {
       root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
-        '<div class="v2-loading"><div class="v2-spinner"></div><div>Chargement du catalogue…</div></div>';
+        '<div class="v2-wrap"><div class="v2-skel-card" aria-busy="true" aria-label="Chargement…"><div class="v2-skel v2-skel-title"></div>' + new Array(7).join('<div class="v2-skel-row"><span class="v2-skel v2-skel-av"></span><div style="flex:1;min-width:0"><div class="v2-skel v2-skel-line w60"></div><div class="v2-skel v2-skel-line sm w40"></div></div><span class="v2-skel v2-skel-chip"></span></div>') + '</div></div>';
       V2.loadFiles(['bench', 'sagitta']).then(function () { V2.render(); });
       return;
     }

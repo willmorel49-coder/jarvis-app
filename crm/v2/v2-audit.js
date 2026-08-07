@@ -13,7 +13,7 @@
   V2.pages = V2.pages || {};
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s); };
   var ICO = function (n, s, w) { return window.ICO ? window.ICO(n, s, w) : ''; };
-  function fmt(n) { n = Math.round(n || 0); return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }
+  function fmt(n) { return V2.fmtNum ? V2.fmtNum(n) : String(Math.round(n || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }
   function pc1(x) { return (Math.round(x * 10) / 10).toString().replace('.', ',') + ' %'; }
 
   var MOIS = 5;                       // période couverte : janv → mai 2026
