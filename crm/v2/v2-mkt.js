@@ -1318,7 +1318,7 @@
   function renderDocs(root) {
     if (docs === null) {
       root.innerHTML = V2.topbar({ back: true, backTo: 'marketing', backLabel: 'Marketing' }) +
-        '<div class="v2-loading"><div class="v2-spinner"></div><div>Ouverture des documents…</div></div>';
+        '<div class="v2-wrap"><div class="v2-skel-card" aria-busy="true" aria-label="Chargement…"><div class="v2-skel v2-skel-title"></div>' + new Array(7).join('<div class="v2-skel-row"><span class="v2-skel v2-skel-av"></span><div style="flex:1;min-width:0"><div class="v2-skel v2-skel-line w60"></div><div class="v2-skel v2-skel-line sm w40"></div></div><span class="v2-skel v2-skel-chip"></span></div>') + '</div></div>';
       loadDocs().then(function () { if (V2.route && V2.route.name === 'marketing') V2.render(); });
       return;
     }
@@ -1356,7 +1356,7 @@
       injectCss();
       if (items === null) {
         root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
-          '<div class="v2-loading"><div class="v2-spinner"></div><div>Ouverture de l\'espace Marketing…</div></div>';
+          '<div class="v2-wrap"><div class="v2-skel-card" aria-busy="true" aria-label="Chargement…"><div class="v2-skel v2-skel-title"></div>' + new Array(7).join('<div class="v2-skel-row"><span class="v2-skel v2-skel-av"></span><div style="flex:1;min-width:0"><div class="v2-skel v2-skel-line w60"></div><div class="v2-skel v2-skel-line sm w40"></div></div><span class="v2-skel v2-skel-chip"></span></div>') + '</div></div>';
         loadItems().then(function () { V2.render(); });
         return;
       }

@@ -920,7 +920,7 @@
     return card('pilo', 'Baisses de prix officielles', 'prix public BDPM en baisse depuis le dernier relevé — un stock qui se dévalorise, à ne pas surcharger', rows, 'var(--rose,#D5573B)') +
       '<div class="ap-foot" style="margin:0">Prix public TTC officiel (BDPM). ' + (d.nDown || 0) + ' baisse' + ((d.nDown || 0) > 1 ? 's' : '') + ' · ' + (d.nUp || 0) + ' hausse' + ((d.nUp || 0) > 1 ? 's' : '') + ' sur ' + (d.nTracked || 0) + ' réfs suivies. Classé par baisse × volume réseau.</div>';
   }
-  function fmtEur(v) { return (v == null ? '—' : String(v.toFixed ? v.toFixed(2) : v).replace('.', ',') + ' €'); }
+  function fmtEur(v) { return V2.fmtEur ? V2.fmtEur(v) : (v == null ? '—' : String(v.toFixed ? v.toFixed(2) : v).replace('.', ',') + ' €'); }
 
   // ═══ RAPPELS DE PRODUITS (RappelConso/DGCCRF, robot hebdo) — parapharma + match catalogue ═══
   var _rapState = 0, _rapData = null;
@@ -1113,7 +1113,7 @@
       // Les flux marché sont-ils là ? (chargés par le socle Copilote)
       if (!window.PROD_STATS) {
         root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
-          '<div class="v2-wrap"><div class="v2-loading"><div class="v2-spinner"></div><div>Chargement des données marché…</div></div></div>';
+          '<div class="v2-wrap"><div class="v2-skel-card" aria-busy="true" aria-label="Chargement…"><div class="v2-skel v2-skel-title"></div>' + new Array(7).join('<div class="v2-skel-row"><span class="v2-skel v2-skel-av"></span><div style="flex:1;min-width:0"><div class="v2-skel v2-skel-line w60"></div><div class="v2-skel v2-skel-line sm w40"></div></div><span class="v2-skel v2-skel-chip"></span></div>') + '</div></div>';
         if (V2.loadFiles) V2.loadFiles(['bench']).then(function () { V2.render(); });
         return;
       }
