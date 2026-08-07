@@ -243,6 +243,10 @@
     cap3000: 'cap3000-data.js',
     sagitta: 'sagitta-shortlist-data.js',
     clients: 'clients-data.js',
+    // wml (27 Mo : officines + ventes réseau) — chargé À LA DEMANDE au 1er rendu,
+    // plus au boot (sortait 27 Mo du chargement initial = écran blanc figé 30 s).
+    // ⚠️ dans crm/v2/, pas crm/ → chemin préfixé v2/ (base loadFiles = '../').
+    wml: 'v2/wml-officines-data.js',
   };
   var loaded = {}, pending = {};
   // Corrige le prix NR au tarif officiel PPHT (window.PPHT) directement dans le

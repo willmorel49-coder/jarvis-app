@@ -284,6 +284,22 @@
   V2.render = function () {
     var root = $app(); if (!root) return;
     injectShellStyles();
+    // Les données réseau (27 Mo) ne sont plus chargées au boot : on les charge ici,
+    // UNE fois, au premier rendu, derrière un écran de lancement — l'app apparaît
+    // instantanément au lieu d'un écran blanc figé. loadData() (dans le .then) mappe
+    // ensuite V2.pharmacies/V2.sales, donc AUCUNE page ne s'affiche sans ses données.
+    if (V2.loadFiles && !V2.dataLoaded('wml') && !V2._wmlAsked) {
+      V2._wmlAsked = true;
+      root.innerHTML =
+        '<div class="v2-boot-splash"><div class="v2-boot-brand">Intégral Pharma</div>'
+        + '<div class="v2-spinner"></div>'
+        + '<div class="v2-boot-msg">Chargement des données réseau…</div></div>';
+      V2.loadFiles(['wml'])
+        .then(function () { return V2.loadData ? V2.loadData() : null; })
+        .then(function () { V2._wmlAsked = false; V2.render(); });
+      return;
+    }
+    if (V2.loadFiles && !V2.dataLoaded('wml')) { return; }   // chargement en cours
     var page = V2.pages[V2.route.name];
     if (!page) { V2.route.name = 'home'; page = V2.pages.home; }
     if (!page) { root.innerHTML = '<div class="v2-loading"><div class="v2-spinner"></div><div>Chargement…</div></div>'; return; }
