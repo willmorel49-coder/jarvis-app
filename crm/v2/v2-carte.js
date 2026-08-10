@@ -406,9 +406,12 @@
   }
   function parseHM(s) { var m = /^(\d{1,2}):(\d{2})$/.exec(s || ''); return m ? (+m[1] * 60 + +m[2]) : null; }
   function fmtHM(mins) { mins = Math.round(mins); var h = Math.floor(mins / 60) % 24, m = ((mins % 60) + 60) % 60; return (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m; }
-  // Durée de visite (min) selon segment : Client A=30, B/C=20, Prospect=12 ; RDV titulaire=45.
-  var TP_SERV = { 0: 30, 1: 20, 2: 20, 3: 12 };
-  function serviceMin(s) { if (parseHM(s.rdv) != null) return 45; var sg = (s.sg != null ? s.sg : 3); return TP_SERV[sg] != null ? TP_SERV[sg] : 12; }
+  // Catégorie de segment STABLE (indépendante de l'ordre des labels dans D.seg, qui n'est PAS [A,B,C,P]).
+  // Corrige un décalage historique : durées & priorités étaient indexées par l'index brut → prospect traité comme gros client, Client A ignoré.
+  function segCat(idx) { var s = D.seg[idx] || ''; if (s === 'Client A') return 'A'; if (s === 'Client B') return 'B'; if (s.indexOf('Client') === 0) return 'C'; return 'P'; }
+  // Durée de visite (min) selon segment : Client A=30, B/C=20, Prospect/autre=12 ; RDV titulaire=45.
+  var TP_SERV = { A: 30, B: 20, C: 20, P: 12 };
+  function serviceMin(s) { if (parseHM(s.rdv) != null) return 45; return TP_SERV[segCat(s.sg)] || 12; }
   // Temps de trajet estimé (min) — vitesse effective CROISSANTE avec la distance
   // (rues en ville lentes → nationale → autoroute) + facteur de détour route/vol d'oiseau
   // plus fort sur les courtes distances. Sans serveur de routage, colle au réel à ~10 %.
@@ -501,11 +504,37 @@
   var TP = {
     NEAR_VILLE: 30, CORRIDOR_MAX: 20, BBOX_PAD: 0.55, T_LO: -0.15, T_HI: 1.15, K_SHORT: 120,
     DAY_MIN: 10 * 60, SAFETY: 30, RDV_MARGIN: 12,
-    W: { villeMin: 1.0, detourMin: 0.4, latKm: 0.8, grpTarget: 15, grpCover: 5,
-         seg: { prospection: { 0: 2, 1: 3, 2: 3, 3: 8 }, mixte: { 0: 10, 1: 5, 2: 5, 3: 8 } },
-         densHi: 12, densLo: 4, isol: -10, caTop: 6 }
+    W: { villeMin: 0.5, detourMin: 0.4, latKm: 0.8, grpTarget: 15, grpCover: 5, clientProx: 12,
+         seg: { prospection: { A: 2, B: 3, C: 3, P: 8 }, mixte: { A: 10, B: 5, C: 5, P: 8 } },
+         densHi: 12, densLo: 4, isol: -10, caTop: 6 },
+    DELIV_RADIUS: 15   // km : un prospect n'est « logique » à livrer que si un client Intégral est à ≤ ce rayon
   };
   function llOK(p) { return isFinite(p[0]) && isFinite(p[1]) && (p[0] !== 0 || p[1] !== 0); }
+  // ── GRILLE DE LIVRAISON : tous les clients Intégral (là où on livre déjà). Un prospect n'est « logique »
+  //    à prospecter que s'il tombe dans le rayon de livraison d'un client. Hash spatial (cellules ~0,2°) pour la vitesse.
+  var _clientCells = null, _clientCount = 0;
+  function buildClientGrid() {
+    _clientCells = {}; _clientCount = 0;
+    if (!D || !D.p) return;
+    for (var i = 0; i < D.p.length; i++) {
+      var p = D.p[i]; if (!llOK(p)) continue;
+      if ((D.seg[p[4]] || '').indexOf('Client') !== 0) continue;   // clients Intégral uniquement
+      var key = Math.round(p[0] * 5) + '_' + Math.round(p[1] * 5);
+      (_clientCells[key] = _clientCells[key] || []).push([p[0], p[1]]);
+      _clientCount++;
+    }
+  }
+  // Distance (km) au client Intégral le plus proche. Cellules ±1 (~±22 km) : couvre tout rayon utile ≤ 15 km.
+  function nearestClientKm(c) {
+    if (_clientCells == null) buildClientGrid();
+    if (!_clientCount) return Infinity;
+    var gx = Math.round(c.lat * 5), gy = Math.round(c.lng * 5), m = Infinity;
+    for (var dx = -1; dx <= 1; dx++) for (var dy = -1; dy <= 1; dy++) {
+      var cell = _clientCells[(gx + dx) + '_' + (gy + dy)]; if (!cell) continue;
+      for (var k = 0; k < cell.length; k++) { var d = haversine(c, { lat: cell[k][0], lng: cell[k][1] }); if (d < m) m = d; }
+    }
+    return m;   // si aucune cellule voisine peuplée → Infinity (zone sans client = illogique à livrer)
+  }
   function LL(p) { return { lat: p[0], lng: p[1] }; }
   function detourKm(A, c, B, dAB) { return haversine(A, c) + haversine(c, B) - dAB; }
   function projT(A, c, B) {   // position projetée le long de A->B (équirectangulaire local) : <0 derrière, >1 au-delà
@@ -520,17 +549,23 @@
   }
   function tpSelect(plan, corridorMax) {   // une passe O(n) : bbox O(1) puis corridor/zone-ville
     var A = plan.origin, B = plan.ville, dAB = haversine(A, B), out = [];
+    plan._excluded = 0;   // prospects écartés (hors zone de livraison) — recompté à chaque passe (bbox constant)
     var minLat = Math.min(A.lat, B.lat) - TP.BBOX_PAD, maxLat = Math.max(A.lat, B.lat) + TP.BBOX_PAD;
     var minLng = Math.min(A.lng, B.lng) - TP.BBOX_PAD, maxLng = Math.max(A.lng, B.lng) + TP.BBOX_PAD;
     for (var i = 0; i < D.p.length; i++) {
       var p = D.p[i]; if (!llOK(p) || plan.pinnedIds[p[13]]) continue;
       if (p[0] < minLat || p[0] > maxLat || p[1] < minLng || p[1] > maxLng) continue;
       if (plan.commFocus && D.comm[p[5]] !== plan.commFocus) continue;
-      if ((D.seg[p[4]] || '').indexOf('Client') === 0 && !plan.incClients) continue;
-      var c = LL(p), dVille = haversine(c, B), det = detourKm(A, c, B, dAB), nearV = dVille <= TP.NEAR_VILLE;
+      var estClient = (D.seg[p[4]] || '').indexOf('Client') === 0;
+      if (estClient && !plan.incClients) continue;
+      var c = LL(p);
+      // ZONE DE LIVRAISON : un prospect n'est retenu que s'il a un client Intégral à ≤ DELIV_RADIUS (sinon illogique à livrer).
+      var dClient = estClient ? 0 : nearestClientKm(c);
+      if (!estClient && dClient > TP.DELIV_RADIUS) { plan._excluded = (plan._excluded || 0) + 1; continue; }
+      var dVille = haversine(c, B), det = detourKm(A, c, B, dAB), nearV = dVille <= TP.NEAR_VILLE;
       if (!nearV && det > corridorMax) continue;
       if (!nearV) { var t = projT(A, c, B); if (t < TP.T_LO || t > TP.T_HI) continue; }
-      out.push({ ref: c, grp: p[3], seg: p[4], id: p[13], ca: p[12] || 0, detour: det, latKm: segLatKm(A, c, B), dVille: dVille, dens: 0, name: p[6], ville: p[7], cp: p[8], tel: p[9] });
+      out.push({ ref: c, grp: p[3], seg: p[4], id: p[13], ca: p[12] || 0, detour: det, latKm: segLatKm(A, c, B), dVille: dVille, dClient: dClient, dens: 0, name: p[6], ville: p[7], cp: p[8], tel: p[9] });
     }
     return out;
   }
@@ -541,11 +576,13 @@
     }
   }
   function tpScore(c, plan, caMax, firstOfGrp) {   // minutes-équivalent, + haut = mieux
-    // Priorité DOMINANTE : proximité de la ville à prospecter (on veut visiter LÀ-BAS, pas au départ).
-    // Le détour "sur l'axe" reste un critère secondaire (pas de zigzag, on the way).
+    // Priorité DOMINANTE (choix métier) : PROXIMITÉ D'UN CLIENT Intégral pour les prospects — on prospecte là où on
+    // livre déjà (coût de livraison mini). La ville reste un simple repère de zone (poids réduit). Détour = secondaire.
     var s = -TP.W.villeMin * (c.dVille * 1.30 * (60 / 38)) - TP.W.detourMin * (c.detour * 1.30 * (60 / 38)) - TP.W.latKm * c.latKm;
+    var isCli = (D.seg[c.seg] || '').indexOf('Client') === 0;
+    if (!isCli) s += TP.W.clientProx * (1 - Math.min(c.dClient != null ? c.dClient : TP.DELIV_RADIUS, TP.DELIV_RADIUS) / TP.DELIV_RADIUS);   // prospect collé à un client = max
     if (plan.grpTargets[c.grp]) { s += TP.W.grpTarget; if (!firstOfGrp[c.grp]) s += TP.W.grpCover; }
-    s += (TP.W.seg[plan.segMode] || TP.W.seg.mixte)[c.seg] || 0;
+    s += (TP.W.seg[plan.segMode] || TP.W.seg.mixte)[segCat(c.seg)] || 0;
     s += c.dens;
     if (caMax > 0 && c.ca >= 0.75 * caMax) s += TP.W.caTop;
     return s;
@@ -564,7 +601,7 @@
     if (best < 0) return null;
     var out = seq.slice(); out.splice(best, 0, stop); return out;
   }
-  function tpSvc(s) { return s.rdv != null ? 45 : (TP_SERV[s.seg != null ? s.seg : 3] != null ? TP_SERV[s.seg != null ? s.seg : 3] : 12); }
+  function tpSvc(s) { return s.rdv != null ? 45 : (TP_SERV[segCat(s.seg)] || 12); }
   function tpSimulate(seq, plan) {   // horaires + retards (fenêtres RDV)
     var t = plan.t0, lateness = 0, timeline = [];
     for (var k = 0; k < seq.length; k++) {
@@ -677,8 +714,11 @@
       var B = plan.ville, all = [], i;
       for (i = 0; i < D.p.length; i++) { var p = D.p[i]; if (!llOK(p) || plan.pinnedIds[p[13]]) continue;
         if (plan.commFocus && D.comm[p[5]] !== plan.commFocus) continue;
-        if ((D.seg[p[4]] || '').indexOf('Client') === 0 && !plan.incClients) continue;
-        var c = LL(p); all.push({ ref: c, grp: p[3], seg: p[4], id: p[13], ca: p[12] || 0, detour: 2 * haversine(c, B), latKm: 0, dVille: haversine(c, B), dens: 0, name: p[6], ville: p[7], cp: p[8], tel: p[9] }); }
+        var estCli = (D.seg[p[4]] || '').indexOf('Client') === 0;
+        if (estCli && !plan.incClients) continue;
+        var c = LL(p), dCl = estCli ? 0 : nearestClientKm(c);
+        if (!estCli && dCl > TP.DELIV_RADIUS) continue;   // même règle : pas de prospect hors zone de livraison
+        all.push({ ref: c, grp: p[3], seg: p[4], id: p[13], ca: p[12] || 0, detour: 2 * haversine(c, B), latKm: 0, dVille: haversine(c, B), dClient: dCl, dens: 0, name: p[6], ville: p[7], cp: p[8], tel: p[9] }); }
       all.sort(function (x, y) { return x.dVille - y.dVille || x.id - y.id; }); cand = all.slice(0, TP.K_SHORT);
     } else {   // shortlist double : proches de la ville + faibles détours (prospecter la ville ET rester sur l'axe)
       var byDet = cand.slice().sort(function (x, y) { return x.detour - y.detour || x.id - y.id; });
@@ -739,7 +779,11 @@
       // La tournée s'affiche via drawTourLine (ligne + pastilles) ; on rafraîchit juste les styles des arrêts.
       saveTour(); updateTourBar(); drawTourLine(); renderTourPanel(); V2.carteTourFit();
       tour.forEach(function (s) { for (var m = 0; markers && m < markers.length; m++) { if (D.p[markers[m]._pi] && D.p[markers[m]._pi][13] === s.id) { refreshMarkerStyle(markers[m]._pi); break; } } });
-      if (V2.toast) V2.toast(tour.length + ' pharmacies · ' + Math.round(routeKm()) + ' km' + (res.sim && !res.sim.ok ? ' · ⚠ RDV serré' : ''));
+      var nCli = tour.filter(function (s) { return (D.seg[s.sg] || '').indexOf('Client') === 0; }).length;
+      var nPro = tour.length - nCli;
+      if (V2.toast) V2.toast(tour.length + ' arrêts (' + nCli + ' clients · ' + nPro + ' prospects) · ' + Math.round(routeKm()) + ' km'
+        + (plan._excluded ? ' · ' + plan._excluded + ' prospects hors zone écartés' : '')
+        + (res.sim && !res.sim.ok ? ' · ⚠ RDV serré' : ''));
     };
 
     if (addr) {
@@ -790,6 +834,7 @@
       var p = D.p[i]; if (!isProspect(p)) continue;
       if (tourPos(keyOf(p)) >= 0) continue;
       var P = { lat: p[0], lng: p[1] };
+      if (nearestClientKm(P) > TP.DELIV_RADIUS) continue;   // hors zone de livraison → pas proposé
       var nr = nearRoute(P); if (nr > PROSPECT_RADIUS) continue;
       var bi = bestInsert(P);
       out.push({ i: i, n: p[6], v: p[7], c: p[8], t: p[9], near: nr, add: bi.add, pos: bi.pos });
@@ -1020,7 +1065,7 @@
       '<label class="cn-tgen-fld"><span>Je pars de (mon adresse)</span>' +
         '<div class="cn-tgen-2"><input id="cn-tgen-addr" class="cn-tgen-in" type="search" placeholder="ex. 12 rue Nationale, Nantes" onkeydown="if(event.key===\'Enter\'){event.preventDefault();V2.carteBuildTour();}">' +
         '<input id="cn-tgen-time" class="cn-tgen-time" type="time" value="' + esc(_startTime) + '" title="Heure de départ"></div></label>' +
-      '<label class="cn-tgen-fld"><span>Ville à prospecter (ou pharmacie)</span>' +
+      '<label class="cn-tgen-fld"><span>Zone à couvrir (ville ou pharmacie, optionnel)</span>' +
         '<input id="cn-tgen-start" class="cn-tgen-in" type="search" placeholder="ex. Angers — vide = autour de mon départ" onkeydown="if(event.key===\'Enter\'){event.preventDefault();V2.carteBuildTour();}"></label>' +
       '<label class="cn-tgen-fld"><span>Groupements à cibler (optionnel)</span>' +
         '<input id="cn-tgen-grp" class="cn-tgen-in" list="cn-grp-datalist" placeholder="ex. Giphar, Aprium, Mediprix" onkeydown="if(event.key===\'Enter\'){event.preventDefault();V2.carteBuildTour();}"></label>' +
@@ -1029,7 +1074,7 @@
         '<label class="cn-tgen-chk"><input type="checkbox" id="cn-tgen-cli" checked> Inclure mes clients</label>' +
       '</div>' +
       '<button class="v2-btn v2-btn-primary cn-tgen-go" onclick="V2.carteBuildTour()">Générer la tournée</button>' +
-      '<div class="cn-tgen-h">Optimise <b>sur les axes</b> (pharmacies sur le trajet), priorise tes groupements ciblés, et respecte les RDV. Astuce : ajoute d\'abord un client/une pharmacie « + Ajouter à ma tournée » → il sera gardé comme <b>arrêt imposé</b>.</div>' +
+      '<div class="cn-tgen-h"><b>Prospection sur ta zone de livraison :</b> on ne propose QUE des prospects à moins de ' + TP.DELIV_RADIUS + ' km d\'un client Intégral (là où tu livres déjà) — pour limiter les coûts de livraison. Les prospects isolés sont écartés. Optimise <b>sur les axes</b> et respecte les RDV. Astuce : « + Ajouter à ma tournée » sur une pharmacie → arrêt imposé.</div>' +
     '</div>';
   }
   function renderTourPanel() {
