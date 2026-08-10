@@ -19,8 +19,12 @@ create table if not exists public.rdv_dispo (
   rayon_chaud_km    int  not null default 25,
   rayon_max_km      int  not null default 60,
   vitesse_kmh       int  not null default 50,
+  -- Numéro donné au pharmacien en cas d'empêchement. Rangé ici et pas dans
+  -- user_profiles : cette table nous appartient, l'autre est le socle de l'app.
+  tel               text,
   maj_le            timestamptz not null default now()
 );
+alter table public.rdv_dispo add column if not exists tel text;
 
 -- Demi-journées bloquées (réunion, congés)
 create table if not exists public.rdv_blocage (
@@ -111,3 +115,141 @@ begin
     execute format('revoke all on public.%I from anon', t);
   end loop;
 end $$;
+
+-- ═══════════════════════════════════════════════════════════════
+-- Les trois seules portes ouvertes au public.
+-- SECURITY DEFINER + search_path figé. Aucune table n'est lisible
+-- directement par anon : tout passe par ces fonctions.
+-- ═══════════════════════════════════════════════════════════════
+
+create or replace function public.rdv_fenetre(p_token uuid)
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare
+  l public.rdv_lien;
+  d public.rdv_dispo;
+  v_prenom text;
+begin
+  select * into l from public.rdv_lien where token = p_token limit 1;
+  if not found                 then return jsonb_build_object('ok', false, 'raison', 'inconnu');  end if;
+  if l.consomme_le is not null  then return jsonb_build_object('ok', false, 'raison', 'consomme'); end if;
+  if l.expire_le <= now()       then return jsonb_build_object('ok', false, 'raison', 'expire');   end if;
+
+  select * into d from public.rdv_dispo where user_id = l.user_id;
+
+  select nullif(split_part(coalesce(p.name, ''), ' ', 1), '')
+    into v_prenom from public.user_profiles p where p.id = l.user_id;
+
+  return jsonb_build_object(
+    'ok', true,
+    'officine',   jsonb_build_object('nom', l.nom, 'lat', l.lat, 'lon', l.lon,
+                                     'ville', l.ville, 'contact', l.contact_nom),
+    'commercial', jsonb_build_object('prenom', coalesce(v_prenom, 'votre commercial'), 'tel', d.tel),
+    'dispo', case when d.user_id is null then null else jsonb_build_object(
+        'jours', d.jours, 'duree_min', d.duree_min, 'marge_route_min', d.marge_route_min,
+        'horizon_jours', d.horizon_jours, 'delai_min_jours', d.delai_min_jours,
+        'rayon_chaud_km', d.rayon_chaud_km, 'rayon_max_km', d.rayon_max_km,
+        'vitesse_kmh', d.vitesse_kmh) end,
+    'blocages', coalesce((
+        select jsonb_agg(jsonb_build_object('date', b.date, 'moment', b.moment))
+          from public.rdv_blocage b
+         where b.user_id = l.user_id and b.date >= current_date), '[]'::jsonb),
+    -- Points anonymes : ni nom, ni CIP, ni chiffre. Coordonnées arrondies au km.
+    'occupes', coalesce((
+        select jsonb_agg(jsonb_build_object(
+                 'date', r.date, 'heure', to_char(r.heure, 'HH24:MI'),
+                 'duree_min', r.duree_min,
+                 'lat', round(r.lat::numeric, 2), 'lon', round(r.lon::numeric, 2)))
+          from public.rdv r
+         where r.user_id = l.user_id and r.statut = 'confirme' and r.date >= current_date), '[]'::jsonb)
+  );
+end $$;
+
+create or replace function public.rdv_poser(
+  p_token uuid, p_date date, p_heure time, p_nom text, p_tel text)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  l public.rdv_lien;
+  d public.rdv_dispo;
+  v_id uuid; v_duree int; v_ok boolean := false;
+  v_plage jsonb; v_deb time; v_fin time;
+  v_prenom text;
+begin
+  select * into l from public.rdv_lien where token = p_token limit 1;
+  if not found                 then return jsonb_build_object('ok', false, 'raison', 'inconnu');  end if;
+  if l.consomme_le is not null  then return jsonb_build_object('ok', false, 'raison', 'consomme'); end if;
+  if l.expire_le <= now()       then return jsonb_build_object('ok', false, 'raison', 'expire');   end if;
+  if p_date < current_date      then return jsonb_build_object('ok', false, 'raison', 'hors_grille'); end if;
+
+  select * into d from public.rdv_dispo where user_id = l.user_id;
+  v_duree := coalesce(d.duree_min, 45);
+
+  -- Le jour est-il bloqué ?
+  if exists (select 1 from public.rdv_blocage b
+              where b.user_id = l.user_id and b.date = p_date
+                and (b.moment = 'journee'
+                  or (b.moment = 'matin'      and p_heure <  time '12:00')
+                  or (b.moment = 'apres_midi' and p_heure >= time '12:00')))
+  then return jsonb_build_object('ok', false, 'raison', 'hors_grille'); end if;
+
+  -- L'horaire tombe-t-il dans une plage travaillée, durée comprise ?
+  for v_plage in
+    select jsonb_array_elements(
+             coalesce(d.jours, '{}'::jsonb) -> to_char(extract(isodow from p_date), 'FM9'))
+  loop
+    v_deb := (v_plage ->> 0)::time;
+    v_fin := (v_plage ->> 1)::time;
+    if p_heure >= v_deb and (p_heure + (v_duree || ' minutes')::interval) <= v_fin then
+      v_ok := true;
+    end if;
+  end loop;
+  if not v_ok then return jsonb_build_object('ok', false, 'raison', 'hors_grille'); end if;
+
+  begin
+    insert into public.rdv (user_id, cip, nom, adresse, cp, ville, lat, lon,
+                            date, heure, duree_min, statut, origine, contact_nom, contact_tel)
+    values (l.user_id, l.cip, l.nom, l.adresse, l.cp, l.ville, l.lat, l.lon,
+            p_date, p_heure, v_duree, 'confirme', 'mailing',
+            coalesce(nullif(p_nom, ''), l.contact_nom), nullif(p_tel, ''))
+    returning id into v_id;
+  exception when unique_violation then
+    return jsonb_build_object('ok', false, 'raison', 'pris');
+  end;
+
+  update public.rdv_lien set consomme_le = now() where token = p_token;
+
+  select nullif(split_part(coalesce(p.name, ''), ' ', 1), '')
+    into v_prenom from public.user_profiles p where p.id = l.user_id;
+
+  return jsonb_build_object('ok', true,
+    'rdv', jsonb_build_object('id', v_id, 'date', p_date, 'heure', to_char(p_heure, 'HH24:MI'),
+                              'duree_min', v_duree, 'nom', l.nom,
+                              'adresse', concat_ws(', ', l.adresse, l.cp, l.ville)),
+    'commercial', jsonb_build_object('prenom', coalesce(v_prenom, 'votre commercial'), 'tel', d.tel));
+end $$;
+
+create or replace function public.rdv_preference(
+  p_token uuid, p_texte text, p_nom text, p_tel text)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare l public.rdv_lien;
+begin
+  select * into l from public.rdv_lien where token = p_token limit 1;
+  if not found                 then return jsonb_build_object('ok', false, 'raison', 'inconnu');  end if;
+  if l.consomme_le is not null  then return jsonb_build_object('ok', false, 'raison', 'consomme'); end if;
+  if l.expire_le <= now()       then return jsonb_build_object('ok', false, 'raison', 'expire');   end if;
+
+  insert into public.rdv (user_id, cip, nom, adresse, cp, ville, lat, lon,
+                          date, heure, duree_min, statut, origine, contact_nom, contact_tel, message)
+  values (l.user_id, l.cip, l.nom, l.adresse, l.cp, l.ville, l.lat, l.lon,
+          current_date, time '00:00', 0, 'a_rappeler', 'mailing',
+          coalesce(nullif(p_nom, ''), l.contact_nom), nullif(p_tel, ''), left(coalesce(p_texte, ''), 500));
+
+  update public.rdv_lien set consomme_le = now() where token = p_token;
+  return jsonb_build_object('ok', true);
+end $$;
+
+grant execute on function public.rdv_fenetre(uuid)                       to anon, authenticated;
+grant execute on function public.rdv_poser(uuid, date, time, text, text) to anon, authenticated;
+grant execute on function public.rdv_preference(uuid, text, text, text)  to anon, authenticated;
