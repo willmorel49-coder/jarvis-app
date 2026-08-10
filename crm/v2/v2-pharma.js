@@ -1505,7 +1505,9 @@
           return '<div class="phf-hcontacts">' +
             (tel ? '<a class="phf-cbtn2" href="tel:' + esc(tel.replace(/[^+0-9]/g, '')) + '">' + ICO('phone', 15) + 'Appeler</a>' : '') +
             (mail ? '<a class="phf-cbtn2" href="mailto:' + esc(mail) + '">' + ICO('mail', 15) + 'E-mail</a>' : '') +
-            (mail && V2.rdv ? '<button class="phf-cbtn2" onclick="V2.rdv.proposer(\'' + esc(String(pid)) +
+            // pid injecté dans un onclick : on le réduit à ce qu'il est réellement
+            // (un CIP), pour qu'aucune quote ne puisse refermer la chaîne JS.
+            (mail && V2.rdv ? '<button class="phf-cbtn2" onclick="V2.rdv.proposer(\'' + esc(String(pid).replace(/[^0-9A-Za-z_-]/g, '')) +
               '\')" title="Elle choisit son créneau, calé sur la géographie de ta journée">' +
               ICO('cal', 15) + 'Proposer un RDV</button>' : '') +
           '</div>';

@@ -296,12 +296,28 @@
       geocode(destQ, function (e2, dest) {
         if (e2 || !dest) { fail('Destination introuvable. Précise ville + code postal.'); return; }
         ST.home = home; ST.dest = dest;
-        setMsg('ok', 'Sélection des prospects autour de ' + (dest.label || destQ) + '…');
-        var idxs = V2.tourneeSelect({
-          destLat: dest.lat, destLng: dest.lng,
-          radiusKm: ST.radiusKm, maxStops: ST.maxStops,
-          homeLat: home.lat, homeLng: home.lng
-        }) || [];
+        // Journée déjà fixée par des rendez-vous pris (V2.rdv.tourneeDuJour) :
+        // on remplace la sélection automatique par ces officines-là, retrouvées
+        // par leur identifiant dans D.p (colonne 13). Usage UNIQUE, pour qu'un
+        // retour ultérieur sur la page rejoue bien la sélection normale.
+        var idxs = null;
+        if (V2.rdvCips && V2.rdvCips.length) {
+          var voulus = {}, n;
+          for (n = 0; n < V2.rdvCips.length; n++) voulus[String(V2.rdvCips[n])] = 1;
+          V2.rdvCips = null;
+          idxs = [];
+          for (n = 0; n < D.p.length; n++) if (voulus[String(D.p[n][13])]) idxs.push(n);
+          if (idxs.length) setMsg('ok', idxs.length + ' rendez-vous de la journée à ordonner…');
+          else setMsg('ok', 'Ces officines ne sont pas dans la base nationale — sélection automatique.');
+        }
+        if (!idxs || !idxs.length) {
+          setMsg('ok', 'Sélection des prospects autour de ' + (dest.label || destQ) + '…');
+          idxs = V2.tourneeSelect({
+            destLat: dest.lat, destLng: dest.lng,
+            radiusKm: ST.radiusKm, maxStops: ST.maxStops,
+            homeLat: home.lat, homeLng: home.lng
+          }) || [];
+        }
         idxs = idxs.filter(function (i) { return llOK(D.p[i]); });
         if (!idxs.length) {
           ST.stops = []; ST.route = null; renderSide(); drawRoute();

@@ -139,7 +139,10 @@
         var bl = (st.blocages || []).map(function (b) {
           return '<li><b>' + esc(b.date) + '</b> · ' + esc(MOMENTS[b.moment] || b.moment) +
             '<button class="v2-btn v2-btn-ghost" style="min-height:44px;margin-left:auto" ' +
-            'onclick="V2.rdvDispo.debloquer(\'' + esc(b.date) + '\',\'' + esc(b.moment) + '\')">retirer</button></li>';
+            // Valeur dans un onclick : elle traverse HTML puis JS — on neutralise
+            // les quotes à la source, esc() seul ne suffirait pas.
+            'onclick="V2.rdvDispo.debloquer(\'' + esc(String(b.date).replace(/[^0-9-]/g, '')) +
+            '\',\'' + esc(String(b.moment).replace(/[^a-z_]/g, '')) + '\')">retirer</button></li>';
         }).join('');
 
         root.innerHTML = top + '<div class="v2-wrap narrow">' +
