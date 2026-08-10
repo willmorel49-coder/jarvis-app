@@ -1423,6 +1423,8 @@
     if (V2.notes) V2.notes.hydrate();
   }
 
+  var _clientsAsked = false;   // évite de redemander clients-data.js à chaque rendu
+
   function renderDetail(root, pid) {
     var pharma = (V2.pharmacies || []).find(function (p) { return String(p.id) === String(pid); });
     if (!pharma) {
@@ -1441,6 +1443,15 @@
 
     // PHARMA_FR (base nationale) = source du titulaire connu — charge en tâche de fond puis rafraîchit.
     if (!window.PHARMA_FR && V2.ensurePharmaFr) { V2.ensurePharmaFr(function () { if (V2.route && V2.route.param) V2.render(); }); }
+
+    // CLIENTS = seule source de l'e-mail et de l'adresse postale (absents de WML).
+    // Sans lui, ni le bouton E-mail ni « Proposer un RDV » ne peuvent s'afficher.
+    if (!window.CLIENTS && V2.loadFiles) {
+      if (!_clientsAsked) {
+        _clientsAsked = true;
+        V2.loadFiles(['clients']).then(function () { if (V2.route && V2.route.param) V2.render(); });
+      }
+    }
 
     // Nouvelle pharma → on repart d'une sélection vide
     if (String(selPid) !== String(pid)) { selPid = String(pid); selCips = new Set(); }
@@ -1485,10 +1496,20 @@
           kpi('Marge MDL', V2.fmtEur(marge), 'phf-pos', marge) +
           kpi('Références', V2.fmtNum(nbRefs), '', nbRefs) +
         '</div>' +
-        ((tel || email) ? '<div class="phf-hcontacts">' +
-          (tel ? '<a class="phf-cbtn2" href="tel:' + esc(tel.replace(/[^+0-9]/g, '')) + '">' + ICO('phone', 15) + 'Appeler</a>' : '') +
-          (email ? '<a class="phf-cbtn2" href="mailto:' + esc(email) + '">' + ICO('mail', 15) + 'E-mail</a>' : '') +
-        '</div>' : '') +
+        (function () {
+          // E-mail : absent de WML_OFFICINES, il ne vit que dans CLIENTS (chargé
+          // à la demande). On le récupère par le CIP, qui est aussi l'id.
+          var infoRdv = (V2.rdvInfo ? V2.rdvInfo(pid) : null);
+          var mail = email || (infoRdv && infoRdv.email) || '';
+          if (!tel && !mail) return '';
+          return '<div class="phf-hcontacts">' +
+            (tel ? '<a class="phf-cbtn2" href="tel:' + esc(tel.replace(/[^+0-9]/g, '')) + '">' + ICO('phone', 15) + 'Appeler</a>' : '') +
+            (mail ? '<a class="phf-cbtn2" href="mailto:' + esc(mail) + '">' + ICO('mail', 15) + 'E-mail</a>' : '') +
+            (mail && V2.rdv ? '<button class="phf-cbtn2" onclick="V2.rdv.proposer(\'' + esc(String(pid)) +
+              '\')" title="Elle choisit son créneau, calé sur la géographie de ta journée">' +
+              ICO('cal', 15) + 'Proposer un RDV</button>' : '') +
+          '</div>';
+        })() +
       '</div>';
 
     // ── Tableau de bord de l'officine (VISIBLE dès l'arrivée) ──
