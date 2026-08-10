@@ -682,7 +682,11 @@
 
   // Copilote = LA CARTE de tournée (choix Will : « carte de mes trajets », zéro doublon de stats).
   // L'ancien hub de stats reste accessible via #marche (à trancher : garder en tuile « Opportunités » ou retirer).
-  V2.pages.copilote = { render: function (root) { if (V2.pages.carte) { V2.pages.carte.render(root); return; } V2.pages.marche.render(root); } };
+  // Le Copilote affiche le CERVEAU de la tournée (marche : opportunités par officine,
+  // "Prépare ta visite" + PDF, marchés en croissance). Le cerveau contient déjà un
+  // lien vers la carte nationale (co-maplink → V2.go('carte')), donc rien n'est perdu.
+  // Avant, cette ligne court-circuitait vers la carte → ~640 lignes de cerveau injoignables.
+  V2.pages.copilote = { render: function (root) { if (V2.pages.marche) { V2.pages.marche.render(root); return; } if (V2.pages.carte) V2.pages.carte.render(root); } };
   V2.pages.marche = {
     render: function (root) {
       injectCss();
