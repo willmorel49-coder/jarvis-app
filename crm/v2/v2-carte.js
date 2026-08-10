@@ -20,7 +20,7 @@
   var zoneLayer = null, zonesOn = false, zoneMetric = 'part';   // choroplèthe par département
   var depot = null;              // { n, lat, lng } point de départ/retour (optionnel)
   var pickDepotMode = false;     // clic carte suivant = définir le dépôt
-  var SPEED = 45, SERVICE = 8;   // km/h moyens · minutes par arrêt (rendement)
+  // (temps de trajet : travelMin() · durée de visite : serviceMin() — modèles dédiés plus bas)
   // Établissements Intégral (source : site vitrine map-component) — points de départ/retour
   var DEPOTS = [
     { s: 'OPS', n: 'Ouest Pharma Services', city: 'St-Étienne-de-Montluc', lat: 47.2789, lng: -1.7806 },
@@ -323,7 +323,7 @@
   }
   // Suite ordonnée des points = dépôt (si défini) + arrêts (+ retour au dépôt)
   function routeStops() { var a = []; if (depot) a.push(depot); for (var j = 0; j < tour.length; j++) a.push(tour[j]); if (depot && tour.length) a.push(depot); return a; }
-  function routeKm() { var pts = routeStops(), d = 0; for (var j = 1; j < pts.length; j++) d += haversine(pts[j - 1], pts[j]); return d; }
+  function routeKm() { var pts = routeStops(), d = 0; for (var j = 1; j < pts.length; j++) d += roadKm(pts[j - 1], pts[j]); return d; }
   function tourDistance() { return routeKm(); }
   function estMinutes() {   // cohérent avec l'agenda : dernière arrivée - départ + durée du dernier arrêt
     var s = computeSchedule(); if (!s.length) return 0;
@@ -404,7 +404,18 @@
   // Durée de visite (min) selon segment : Client A=30, B/C=20, Prospect=12 ; RDV titulaire=45.
   var TP_SERV = { 0: 30, 1: 20, 2: 20, 3: 12 };
   function serviceMin(s) { if (parseHM(s.rdv) != null) return 45; var sg = (s.sg != null ? s.sg : 3); return TP_SERV[sg] != null ? TP_SERV[sg] : 12; }
-  function travelMin(a, b) { return haversine(a, b) * 1.30 / 38 * 60; }   // vol d'oiseau -> km routiers / vitesse effective
+  // Temps de trajet estimé (min) — vitesse effective CROISSANTE avec la distance
+  // (rues en ville lentes → nationale → autoroute) + facteur de détour route/vol d'oiseau
+  // plus fort sur les courtes distances. Sans serveur de routage, colle au réel à ~10 %.
+  function travelMin(a, b) {
+    var straight = haversine(a, b);
+    var detour = straight < 3 ? 1.45 : straight < 15 ? 1.35 : 1.25;   // rues sinueuses vs grands axes
+    var km = straight * detour;
+    var kmh = km < 2 ? 22 : km < 6 ? 32 : km < 20 ? 55 : km < 60 ? 72 : 82;
+    return km / kmh * 60 + 1.5;   // +1,5 min : stationnement / approche
+  }
+  // Distance ROUTIÈRE estimée (km) — même facteur de détour que travelMin (cohérence agenda ↔ métriques).
+  function roadKm(a, b) { var s = haversine(a, b); return s * (s < 3 ? 1.45 : s < 15 ? 1.35 : 1.25); }
   // Agenda : heure d'arrivée estimée à chaque arrêt (départ + trajets routiers + visites), en attendant les RDV fixes.
   function computeSchedule() {
     var t = parseHM(_startTime); if (t == null) t = 9 * 60;
@@ -718,7 +729,7 @@
 
   // ── PROSPECTION / densification : prospects proches de la tournée, classés par km ajoutés ──
   var PROSPECT_RADIUS = 8;   // km autour du trajet
-  function routeKmFor(arr) { var pts = []; if (depot) pts.push(depot); for (var j = 0; j < arr.length; j++) pts.push(arr[j]); if (depot && arr.length) pts.push(depot); var d = 0; for (var k = 1; k < pts.length; k++) d += haversine(pts[k - 1], pts[k]); return d; }
+  function routeKmFor(arr) { var pts = []; if (depot) pts.push(depot); for (var j = 0; j < arr.length; j++) pts.push(arr[j]); if (depot && arr.length) pts.push(depot); var d = 0; for (var k = 1; k < pts.length; k++) d += roadKm(pts[k - 1], pts[k]); return d; }
   function nearRoute(P) { var pts = routeStops(), m = Infinity; for (var j = 0; j < pts.length; j++) { var d = haversine(pts[j], P); if (d < m) m = d; } return m; }
   function bestInsert(P) { var base = routeKmFor(tour), best = { pos: tour.length, add: Infinity }; for (var k = 0; k <= tour.length; k++) { var tmp = tour.slice(); tmp.splice(k, 0, P); var add = routeKmFor(tmp) - base; if (add < best.add) { best.add = add; best.pos = k; } } return best; }
   function computeProspects() {
@@ -980,7 +991,7 @@
       var legHtml = '';
       if (a && isFinite(s.lat) && isFinite(s.lng)) {
         var dm = Math.round(travelMin(a, { lat: s.lat, lng: s.lng }));
-        var dk = Math.round(haversine(a, { lat: s.lat, lng: s.lng }) * 1.30);
+        var dk = Math.round(roadKm(a, { lat: s.lat, lng: s.lng }));
         legHtml = '<div class="cn-tlleg"><span class="cn-tllegtxt">🚗 ' + fmtDur(dm) + ' · ' + dk + ' km</span></div>';
       }
       var arr = sc.arr != null ? fmtHM(sc.arr) : '';
@@ -997,7 +1008,7 @@
         '<button class="cn-trm" onclick="V2.carteTourRemove(' + j + ')" title="Retirer">✕</button></div>';
       return legHtml + stopHtml;
     }).join('');
-    var depHead = tour.length ? '<div class="cn-tldep"><span class="cn-tltime">' + esc(_startTime) + '</span><span class="cn-tldeplbl">Départ' + (depot && depot.city ? ' · ' + esc(depot.city) : '') + '</span></div>' : '';
+    var depHead = tour.length ? '<div class="cn-tldep"><span class="cn-tltime">' + esc(_startTime) + '</span><span class="cn-tldeplbl">Départ' + (depot && depot.n ? ' · ' + esc(depot.n) : '') + '</span></div>' : '';
     var rows = tour.length ? '<div class="cn-tl">' + depHead + timeline + '</div>'
       : '<div class="cn-tempty">Ta tournée est vide.<br>Utilise « Composer ma tournée » ci-dessus, ou clique une pharmacie → « Partir d\'ici ».</div>';
     var kmTot = Math.round(routeKm());
