@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="robots" content="noindex, nofollow" />
+<title>Prendre rendez-vous</title>
+<style>
+  :root { --bleu:#0050E6; --encre:#10131C; --gris:#5B6577; --bord:#E3E8F0; --fond:#FBFCFE; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--fond); color:var(--encre);
+         font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+         -webkit-text-size-adjust:100%; }
+  .wrap { max-width:560px; margin:0 auto; padding:24px 18px 56px; }
+  .carte { background:#fff; border:1px solid var(--bord); border-radius:16px; padding:20px; margin-bottom:14px; }
+  h1 { font-size:22px; margin:0 0 6px; letter-spacing:-.01em; }
+  .sub { color:var(--gris); margin:0 0 4px; }
+  .jour { font-weight:600; margin:0 0 10px; }
+  .creneaux { display:flex; flex-wrap:wrap; gap:10px; }
+  .cr { min-height:48px; min-width:96px; padding:12px 16px; font-size:17px; font-weight:600;
+        background:#fff; color:var(--bleu); border:1.5px solid var(--bleu); border-radius:12px;
+        cursor:pointer; font-family:inherit; }
+  .cr:active { background:var(--bleu); color:#fff; }
+  .lien { display:inline-block; min-height:44px; padding:12px 0; color:var(--bleu); background:none;
+          border:0; font-size:16px; text-decoration:underline; cursor:pointer; font-family:inherit; }
+  .btn { display:inline-block; min-height:48px; padding:14px 22px; background:var(--bleu); color:#fff;
+         border:0; border-radius:12px; font-size:17px; font-weight:600; text-decoration:none;
+         cursor:pointer; font-family:inherit; }
+  .btn[disabled] { opacity:.6; }
+  label { display:block; font-weight:600; margin:14px 0 6px; }
+  input, textarea { width:100%; font-size:16px; padding:12px; border:1px solid var(--bord);
+                    border-radius:10px; font-family:inherit; }
+  a { color:var(--bleu); }
+  .err { color:#C7283D; }
+  .ok { font-size:19px; font-weight:600; margin:0 0 6px; }
+  @media (prefers-reduced-motion: reduce) { * { animation:none !important; transition:none !important; } }
+</style>
+</head>
+<body>
+  <div class="wrap" id="app"><div class="carte">Chargement…</div></div>
+  <!-- Version FIGÉE + empreinte vérifiée : si le CDN sert autre chose, le navigateur refuse. -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.2/dist/umd/supabase.min.js"
+          integrity="sha384-B2duOBIryCXbX4eDE4BdJwtNkQMRQde3o6IsjfPW28E6aH1CYE96hHeZRG3zY56O"
+          crossorigin="anonymous"></script>
+  <script>
+    window.SUPABASE_URL = 'https://iyvavhnlhxksokkerkos.supabase.co';
+    window.SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5dmF2aG5saHhrc29ra2Vya29zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1NjU2NTYsImV4cCI6MjA5MzE0MTY1Nn0.eMdW6vUdoyVpZbqKXp6FNYTajwKEf4x-Xyj5zj1igO4';
+  </script>
+  <script src="v2-rdv-creneaux.js?v=20260810a"></script>
+  <script src="v2-rdv-ics.js?v=20260810a"></script>
+  <script src="rdv-public.js?v=20260810a"></script>
+</body>
+</html>
