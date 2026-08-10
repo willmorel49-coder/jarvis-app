@@ -51,6 +51,28 @@
     };
   };
 
+  // CA cumulé d'une officine, depuis les ventes réseau déjà en mémoire.
+  V2.rdvCA = function (pid) {
+    if (!V2.sumCA || !V2.sales) return null;
+    var s = V2.sales.filter(function (x) { return String(x.pharmacyId) === String(pid); });
+    return s.length ? V2.sumCA(s) : null;
+  };
+
+  // Téléphone du commercial, lu une fois depuis ses disponibilités et gardé.
+  // Chargé à la demande : le mail peut partir de la fiche comme de la campagne,
+  // sans dépendre de l'écran par lequel on est passé.
+  V2.rdvTel = '';
+  var _telPromesse = null;
+  V2.rdvTelCharger = function () {
+    if (_telPromesse) return _telPromesse;
+    var c = sb(), u = uid();
+    if (!c || !u) return Promise.resolve('');
+    _telPromesse = c.from('rdv_dispo').select('tel').eq('user_id', u).maybeSingle()
+      .then(function (d) { V2.rdvTel = (d && d.data && d.data.tel) || ''; return V2.rdvTel; })
+      .catch(function () { return ''; });
+    return _telPromesse;
+  };
+
   // Géocodage gratuit sans clé — même service que la tournée et la carte.
   function geocode(q) {
     if (!q) return Promise.resolve(null);
@@ -100,14 +122,19 @@
     _ouvrir: function (url) { window.location.href = url; },
 
     // Crée un jeton pour cette officine et ouvre le mail pré-rempli.
-    proposer: function (pid) {
+    // Utilisé aussi bien depuis la fiche (un coup) que depuis la campagne (en série).
+    // cb(ok) est appelé une seule fois, réussite ou échec.
+    preparerMail: function (pid, modele, texteLibre, cb) {
+      var fini = cb || function () {};
       var c = sb(), u = uid();
-      if (!c || !u) { V2.toast('Connecte-toi pour proposer un rendez-vous.'); return; }
-      var pret = window.CLIENTS ? Promise.resolve() : V2.loadFiles(['clients']);
-      Promise.resolve(pret).then(function () {
+      if (!c || !u) { V2.toast('Connecte-toi pour proposer un rendez-vous.'); fini(false); return; }
+      var pret = Promise.all([
+        window.CLIENTS ? Promise.resolve() : V2.loadFiles(['clients']),
+        V2.rdvTelCharger()
+      ]);
+      pret.then(function () {
         var o = V2.rdvInfo(pid);
-        if (!o.email) { V2.toast('Cette officine n’a pas d’adresse mail connue.'); return; }
-        V2.toast('Préparation du mail…');
+        if (!o.email) { V2.toast('Cette officine n’a pas d’adresse mail connue.'); fini(false); return; }
         var coord = (o.lat != null && o.lon != null)
           ? Promise.resolve({ lat: o.lat, lon: o.lon })
           : geocode([o.adresse, o.cp, o.ville].filter(Boolean).join(' '));
@@ -116,27 +143,26 @@
             user_id: u, cip: o.cip, nom: o.nom, adresse: o.adresse || null,
             cp: o.cp || null, ville: o.ville || null,
             lat: ll ? ll.lat : null, lon: ll ? ll.lon : null,
-            contact_nom: o.contact || null, modele: 'routine'
+            contact_nom: o.contact || null, modele: modele || 'routine'
           }).select('token').single();
         }).then(function (r) {
-          if (!r || r.error || !r.data) { V2.toast('Création du lien impossible.'); return; }
-          var lien = V2.rdv.BASE_URL + '?t=' + r.data.token;
-          var corps =
-            'Bonjour' + (o.contact ? ' ' + o.contact : '') + ',\n\n' +
-            'Je passe prochainement dans votre secteur et j’aimerais faire le point avec vous.\n\n' +
-            'Plutôt que de vous appeler en plein rush, choisissez vous-même le moment qui vous arrange :\n' +
-            lien + '\n\n' +
-            'Trois créneaux vous seront proposés, ça prend dix secondes.\n\n' +
-            'Bien à vous,\n' + prenom() +
-            '\n\n— Si vous ne souhaitez plus recevoir ces propositions, répondez STOP à ce mail.';
+          if (!r || r.error || !r.data) { V2.toast('Création du lien impossible.'); fini(false); return; }
+          var m = window.V2MOD.rendre(modele || 'routine', {
+            contact: o.contact, nom_officine: o.nom, ville: o.ville,
+            ca_annee: V2.rdvCA(pid), mois_derniere_visite: null,
+            prenom_commercial: prenom(), tel_commercial: V2.rdvTel || '',
+            lien: V2.rdv.BASE_URL + '?t=' + r.data.token, texte_libre: texteLibre || ''
+          });
+          if (m.avertissement) V2.toast(m.avertissement);
           V2.rdv._ouvrir('mailto:' + encodeURIComponent(o.email) +
-            '?subject=' + encodeURIComponent('Un moment pour se voir ?') +
-            '&body=' + encodeURIComponent(corps));
+            '?subject=' + encodeURIComponent(m.objet) + '&body=' + encodeURIComponent(m.corps));
           c.from('rdv_lien').update({ envoye_le: new Date().toISOString() })
-            .eq('token', r.data.token).then(function () {});
+            .eq('token', r.data.token).then(function () { fini(true); });
         });
-      }).catch(function () { V2.toast('Création du lien impossible.'); });
+      }).catch(function () { V2.toast('Création du lien impossible.'); fini(false); });
     },
+
+    proposer: function (pid) { V2.rdv.preparerMail(pid, 'routine', '', function () {}); },
 
     // Télécharge l'invitation agenda d'un rendez-vous déjà pris.
     ics: function (id) {
@@ -185,6 +211,7 @@
         return;
       }
       var auj = new Date().toISOString().slice(0, 10);
+      V2.rdvTelCharger();
       Promise.all([
         c.from('rdv').select('*').eq('user_id', u).eq('statut', 'confirme').gte('date', auj)
           .order('date').order('heure'),
@@ -228,6 +255,9 @@
           '<div class="v2-rdv-sec">À rappeler</div>' + htmlRappeler +
           '<div class="v2-rdv-sec">Sans réponse</div>' + htmlAttente +
           '<div class="v2-rdv-acts" style="margin-top:22px">' +
+            (V2.pages.campagne
+              ? '<button class="v2-btn v2-btn-primary" onclick="V2.go(\'campagne\')">' + ICO('plus', 15) +
+                ' Lancer une campagne</button>' : '') +
             '<button class="v2-btn" onclick="V2.go(\'rdvdispo\')">' + ICO('cal', 15) + ' Mes disponibilités</button>' +
           '</div></div>';
       });
