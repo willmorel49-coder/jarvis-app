@@ -20,7 +20,7 @@ Un mail court, personnalisé, envoyé par le commercial depuis sa propre boîte.
 | **JARVIS détient la vérité** des créneaux | Corollaire du point précédent : aucun agenda extérieur n'est lu. |
 | Envoi **depuis la boîte du commercial** (`mailto:`) | Zéro coût, zéro clé, et un mail signé d'une personne connue du pharmacien convertit mieux qu'un mailing de masse. |
 | Créneaux calculés par **effet d'aimant**, sans planning de secteur à tenir | Le premier RDV posé fixe la zone du jour ; les officines voisines viennent s'y greffer. Zéro entretien. |
-| Lien sur **rdv.integralpharma.fr** | Gratuit (un enregistrement DNS + certificat GitHub Pages), rassure le pharmacien, passe mieux les filtres anti-spam. |
+| Lien sur l'**adresse GitHub Pages actuelle**, domaine propre plus tard | On ne dépend de personne pour livrer. `rdv.integralpharma.fr` (gratuit : un enregistrement DNS + certificat GitHub Pages) se branchera quand quelqu'un chez Intégral pourra toucher aux réglages du domaine. Les liens déjà envoyés continueront de fonctionner. Le lien du mail est donc construit à partir d'une **constante unique** (`RDV_BASE_URL`), pas écrit en dur. |
 | Mails **courts** (6–8 lignes) | Meilleur taux de réponse, et tient dans la limite de longueur d'un `mailto:` (~1 800 caractères sous Outlook). |
 | Ligne **STOP** dans chaque mail + liste d'exclusion | Prospection B2B sur base client existante : légitime, mais l'opposition doit être simple et tracée. |
 
@@ -160,5 +160,5 @@ Relance automatique · synchro bidirectionnelle avec Outlook/Google · rappel SM
 1. Règle géographique testée sur cas fabriqués : deux officines à 10 km, une à 100 km, journée vide, deux réservations simultanées sur le même créneau, officine sans coordonnées.
 2. Page publique vue **à 390 px de large**, capture d'écran à l'appui.
 3. Fichier `.ics` réellement ouvert dans Apple Calendrier **et** dans Gmail.
-4. `rdv.integralpharma.fr` résolu, cadenas vert, page servie.
+4. Page publique servie et fonctionnelle sur l'adresse GitHub Pages, lien testé depuis un vrai mail. Le passage à `rdv.integralpharma.fr` est un lot à part : changer `RDV_BASE_URL`, ajouter l'enregistrement DNS, vérifier le cadenas.
 5. Contrôle `gardien-deploiement` passé avant tout push.
