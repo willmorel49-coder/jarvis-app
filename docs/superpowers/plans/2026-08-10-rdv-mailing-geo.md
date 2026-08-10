@@ -782,14 +782,14 @@ Modifier `.github/workflows/ci.yml` : insérer cette étape **juste après** l'�
 
 ```yaml
       - name: Tests unitaires (moteur de créneaux, .ics, modèles de mail)
-        run: node --test tests/
+        run: node --test tests/*.test.mjs
 ```
 
 Puis ajouter `tests/**` à la liste `paths` des deux déclencheurs `push` et `pull_request` du fichier, pour que la CI se déclenche aussi quand seuls les tests changent.
 
 - [ ] **Step 6: Vérifier que la commande de la CI passe en local**
 
-Run: `cd /Users/williammorel/JARVIS/APP && node --test tests/`
+Run: `cd /Users/williammorel/JARVIS/APP && node --test tests/*.test.mjs`
 Expected: `# pass 24`, `# fail 0`.
 
 - [ ] **Step 7: Commit**
@@ -1765,7 +1765,7 @@ cd /Users/williammorel/JARVIS/APP
 node --check crm/v2/v2-rdv.js
 node --check crm/v2/v2-pharma.js
 node --check crm/v2/v2-app.js
-node --test tests/
+node --test tests/*.test.mjs
 grep -o '?v=[0-9a-z]*' crm/v2/index.html | sort -u
 grep -n "^var VER" crm/v2/sw.js
 ```
@@ -2014,7 +2014,7 @@ Créer `crm/v2/v2-rdv-modeles.js` :
 
 - [ ] **Step 4: Lancer les tests et vérifier qu'ils passent**
 
-Run: `cd /Users/williammorel/JARVIS/APP && node --test tests/`
+Run: `cd /Users/williammorel/JARVIS/APP && node --test tests/*.test.mjs`
 Expected: `# fail 0`.
 
 Si le test « aucune condition commerciale chiffrée » échoue, corriger le **modèle**, jamais le test.
@@ -2259,7 +2259,7 @@ Dans `crm/v2/v2-app.js`, après la tuile `rdv` — même icône que celle vérif
 cd /Users/williammorel/JARVIS/APP
 node --check crm/v2/v2-campagne.js
 node --check crm/v2/v2-rdv.js
-node --test tests/
+node --test tests/*.test.mjs
 grep -o '?v=[0-9a-z]*' crm/v2/index.html | sort -u
 ```
 
@@ -2371,7 +2371,7 @@ Puis remplacer le corps du `map` par :
 - [ ] **Step 4: Vérifier**
 
 ```bash
-cd /Users/williammorel/JARVIS/APP && node --check crm/v2/v2-rdv.js && node --test tests/
+cd /Users/williammorel/JARVIS/APP && node --check crm/v2/v2-rdv.js && node --test tests/*.test.mjs
 ```
 
 À l'écran : créer un jeton d'essai, forcer sa date d'envoi à il y a 10 jours, recharger la page Rendez-vous.
@@ -2502,7 +2502,7 @@ Dans `V2.pages.rdv.render`, remplacer la construction de la section « À venir 
 cd /Users/williammorel/JARVIS/APP
 node --check crm/v2/v2-rdv.js
 node --check crm/v2/v2-tournee.js
-node --test tests/
+node --test tests/*.test.mjs
 ```
 
 À l'écran : créer deux rendez-vous d'essai le même jour, avec les **CIP de deux vraies officines** présentes dans `pharma-fr-data.js` et distantes de quelques kilomètres (les relever dans la carte). Vérifier que :
@@ -2537,7 +2537,7 @@ git commit -m "RDV : composer la tournee du jour depuis les rendez-vous pris"
 cd /Users/williammorel/JARVIS/APP
 grep -o '?v=[0-9a-z]*' crm/v2/index.html | sort -u   # UNE seule valeur
 grep -n "^var VER" crm/v2/sw.js                       # la même
-node --test tests/                                    # 0 échec
+node --test tests/*.test.mjs                          # 0 échec
 ```
 
 - [ ] **Fusionner dans `main` et pousser**
