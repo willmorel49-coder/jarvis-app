@@ -128,7 +128,7 @@ python3 scraper_leclerc.py     # → leclerc_prices.json + opso/leclerc-data.js
 
 | Indicateur | Valeur |
 |-----------|--------|
-| Auth Supabase | 1 compte actif : `demo@integralpharma.fr` / `demo2026` (rôle admin) |
+| Auth Supabase | 12 comptes nominatifs (William, Pascale, Karine, Pauline G., Pauline S., Manon, Florent, Guy, Morgane, Arthur, Emmanuel/OPSO, sauvegarde). ⚠️ Vérifié le 10/08/2026 : le compte `demo@integralpharma.fr` **n'existe plus** — ne plus le proposer pour tester. Pour un essai automatisé, créer un compte temporaire en SQL puis le supprimer. |
 | Clients | 517 pharmacies · champs : cip, nom, adresse, cp, ville, email, tel, potentielGx, ca2023, prochaineVisite, commentaire, pelgraz, pelmeg, ecodage, gros1, gros2 |
 | Benchmark | 10 500 produits IP · 1 090 matchés Ameli · champs : designation, cip13, categorie, ip_qty, ip_ca, ip_rank_qty, ip_rank_ca, prix_ht, prix_ip, remise_pct, offre_ip, is_froid, has_ameli, ameli_months[13], ameli_jan26, rot_pharma_jan26, ameli_total, yoy_jan, atc2 |
 | Offilog | 3 520 produits · 1 417 Leclerc matchés (EAN) · 1 403 Cap3000 · 1 113 Drakkars — champs : prix_offilog, prix_live, prix_pharmacie, prix_drakkars, prix_cap3000, **prix_leclerc**, img, dans_offilog, role, saison, etc. |
