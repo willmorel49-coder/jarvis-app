@@ -164,6 +164,39 @@
 
     proposer: function (pid) { V2.rdv.preparerMail(pid, 'routine', '', function () {}); },
 
+    // Relance : trois lignes, avec le MÊME lien. Le jeton vit 21 jours, il est
+    // donc encore valide — inutile d'en créer un second qui doublonnerait.
+    relancer: function (token, pid) {
+      // CLIENTS porte les adresses mail et n'est pas chargé sur cet écran.
+      Promise.all([
+        window.CLIENTS ? Promise.resolve() : V2.loadFiles(['clients']),
+        V2.rdvTelCharger()
+      ]).then(function () {
+        var o = V2.rdvInfo(pid);
+        if (!o.email) { V2.toast('Pas d’adresse mail pour cette officine.'); return; }
+        var corps = 'Bonjour' + (o.contact ? ' ' + o.contact : '') + ',\n\n' +
+          'Je me permets de revenir vers vous : le lien pour choisir un créneau est toujours actif.\n' +
+          V2.rdv.BASE_URL + '?t=' + token + '\n\nBien à vous,\n' + prenom() +
+          (V2.rdvTel ? '\n' + V2.rdvTel : '') +
+          '\n\n— Si vous ne souhaitez plus recevoir ces propositions, répondez STOP à ce mail.';
+        V2.rdv._ouvrir('mailto:' + encodeURIComponent(o.email) +
+          '?subject=' + encodeURIComponent('Petit rappel · ' + (o.nom || '')) +
+          '&body=' + encodeURIComponent(corps));
+      });
+    },
+
+    // Le pharmacien a répondu STOP : on l'écarte des campagnes futures.
+    nePlusSolliciter: function (cip, nom) {
+      var c = sb(), u = uid();
+      if (!c || !u || !cip) { V2.toast('Action impossible.'); return; }
+      c.from('rdv_opposition').upsert({ user_id: u, cip: String(cip), motif: 'STOP' },
+                                      { onConflict: 'user_id,cip' }).then(function (r) {
+        V2.toast(r.error ? 'Enregistrement impossible.'
+                         : (nom || 'Cette officine') + ' ne sera plus sollicitée.');
+        if (!r.error) V2.go('rdv');
+      });
+    },
+
     // Télécharge l'invitation agenda d'un rendez-vous déjà pris.
     ics: function (id) {
       var c = sb();
@@ -217,8 +250,12 @@
           .order('date').order('heure'),
         c.from('rdv').select('*').eq('user_id', u).eq('statut', 'a_rappeler')
           .order('cree_le', { ascending: false }),
+        // « Sans réponse » = envoyé il y a plus de 7 jours et toujours pas réservé.
+        // En dessous, le pharmacien n'a simplement pas encore eu le temps.
         c.from('rdv_lien').select('*').eq('user_id', u).is('consomme_le', null)
-          .not('envoye_le', 'is', null).order('envoye_le', { ascending: false })
+          .not('envoye_le', 'is', null)
+          .lte('envoye_le', new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString())
+          .order('envoye_le', { ascending: false })
       ]).then(function (r) {
         var venir = (r[0] && r[0].data) || [];
         var rappeler = (r[1] && r[1].data) || [];
@@ -244,9 +281,16 @@
         }).join('') : '<p class="v2-rdv-vide">Personne à rappeler.</p>';
 
         var htmlAttente = attente.length ? attente.map(function (l) {
+          var n = String(l.nom || '').replace(/'/g, '');
           return '<div class="v2-rdv-item"><b>' + esc(l.nom) + '</b>' +
-            '<span class="sm">envoyé le ' + esc(String(l.envoye_le).slice(0, 10)) + '</span></div>';
-        }).join('') : '<p class="v2-rdv-vide">Rien en attente.</p>';
+            '<span class="sm">envoyé le ' + esc(String(l.envoye_le).slice(0, 10)) + '</span>' +
+            '<div class="v2-rdv-acts">' +
+              '<button class="v2-btn" onclick="V2.rdv.relancer(\'' + esc(l.token) + '\',\'' +
+                esc(String(l.cip || '')) + '\')">Relancer</button>' +
+              '<button class="v2-btn v2-btn-ghost" onclick="V2.rdv.nePlusSolliciter(\'' +
+                esc(String(l.cip || '')) + '\',\'' + esc(n) + '\')">Ne plus solliciter</button>' +
+            '</div></div>';
+        }).join('') : '<p class="v2-rdv-vide">Rien à relancer. On ne relance qu’au-delà de 7 jours.</p>';
 
         root.innerHTML = top + '<div class="v2-wrap narrow">' +
           '<div class="v2-rdv-hero"><h1>Rendez-vous</h1>' +
