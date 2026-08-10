@@ -25,6 +25,16 @@
   function hhmm(h) { return String(h).slice(0, 5).replace(':', 'h'); }
   function numero(s) { return String(s || '').replace(/[^0-9+]/g, ''); }
 
+  // Valeur injectée DANS un onclick="…('ICI')" : elle traverse deux analyseurs,
+  // HTML puis JavaScript. V2.esc seul ne suffit pas — il transforme ' en &#39;,
+  // que le navigateur redécode en ' AVANT que JS ne lise la chaîne, ce qui la
+  // referme. On neutralise donc quotes, antislashs et chevrons à la source.
+  // Le nom du contact et le message viennent de la page publique : ils sont
+  // saisis par un inconnu, jamais par nous.
+  function escArg(s) {
+    return esc(String(s == null ? '' : s).replace(/[\\'"<>&]/g, ''));
+  }
+
   // ── Coordonnées d'une officine ────────────────────────────────
   // Les officines du CRM (WML) n'ont NI e-mail NI adresse postale : ces deux
   // champs ne vivent que dans CLIENTS (clients-data.js, chargé à la demande).
@@ -185,6 +195,23 @@
       });
     },
 
+    // Reprend les RDV confirmés d'un jour et laisse la tournée existante ordonner
+    // la route via OSRM. On ne passe que des CIP : c'est la tournée qui les
+    // convertit en indices, une fois pharma-fr-data.js chargé de son côté.
+    tourneeDuJour: function (dateISO) {
+      var c = sb(), u = uid();
+      if (!c || !u) return;
+      c.from('rdv').select('cip').eq('user_id', u).eq('statut', 'confirme')
+        .eq('date', dateISO).order('heure')
+        .then(function (r) {
+          var cips = ((r && r.data) || []).map(function (d) { return String(d.cip || ''); })
+                       .filter(function (x) { return x; });
+          if (!cips.length) { V2.toast('Aucun rendez-vous identifié ce jour-là.'); return; }
+          V2.rdvCips = cips;          // consommé une seule fois par la tournée
+          V2.go('tournee');
+        });
+    },
+
     // Le pharmacien a répondu STOP : on l'écarte des campagnes futures.
     nePlusSolliciter: function (cip, nom) {
       var c = sb(), u = uid();
@@ -226,7 +253,7 @@
       (d.ville ? '<span class="sm" style="color:var(--muted)">· ' + esc(d.ville) + '</span>' : '') +
       '<span class="v2-rdv-c">' + (d.contact_nom ? esc(d.contact_nom) : '') +
         (tel ? ' · <a href="tel:' + esc(tel) + '">' + esc(d.contact_tel) + '</a>' : '') +
-        ' · <a href="#" onclick="V2.rdv.ics(\'' + esc(d.id) + '\');return false">ajouter à mon agenda</a>' +
+        ' · <a href="#" onclick="V2.rdv.ics(\'' + escArg(d.id) + '\');return false">ajouter à mon agenda</a>' +
       '</span></div>';
   }
 
@@ -267,8 +294,13 @@
           parJour[d.date].push(d);
         });
         var htmlVenir = ordre.length ? ordre.sort().map(function (date) {
+          // La tournée n'a de sens qu'à partir de deux arrêts.
+          var tournee = (parJour[date].length > 1 && V2.pages.tournee)
+            ? '<div class="v2-rdv-acts"><button class="v2-btn v2-btn-primary" onclick="V2.rdv.tourneeDuJour(\'' +
+              escArg(date) + '\')">' + ICO('pilo', 15) + ' Composer ma tournée de ce jour</button></div>'
+            : '';
           return '<div class="v2-rdv-jour"><p class="v2-rdv-jt">' + esc(libelle(date)) + '</p>' +
-            parJour[date].map(ligneRdv).join('') + '</div>';
+            parJour[date].map(ligneRdv).join('') + tournee + '</div>';
         }).join('') : '<p class="v2-rdv-vide">Aucun rendez-vous pour l’instant. Ouvre une fiche officine et propose un créneau.</p>';
 
         var htmlRappeler = rappeler.length ? rappeler.map(function (d) {
@@ -285,10 +317,10 @@
           return '<div class="v2-rdv-item"><b>' + esc(l.nom) + '</b>' +
             '<span class="sm">envoyé le ' + esc(String(l.envoye_le).slice(0, 10)) + '</span>' +
             '<div class="v2-rdv-acts">' +
-              '<button class="v2-btn" onclick="V2.rdv.relancer(\'' + esc(l.token) + '\',\'' +
-                esc(String(l.cip || '')) + '\')">Relancer</button>' +
+              '<button class="v2-btn" onclick="V2.rdv.relancer(\'' + escArg(l.token) + '\',\'' +
+                escArg(String(l.cip || '')) + '\')">Relancer</button>' +
               '<button class="v2-btn v2-btn-ghost" onclick="V2.rdv.nePlusSolliciter(\'' +
-                esc(String(l.cip || '')) + '\',\'' + esc(n) + '\')">Ne plus solliciter</button>' +
+                escArg(String(l.cip || '')) + '\',\'' + escArg(l.nom) + '\')">Ne plus solliciter</button>' +
             '</div></div>';
         }).join('') : '<p class="v2-rdv-vide">Rien à relancer. On ne relance qu’au-delà de 7 jours.</p>';
 
