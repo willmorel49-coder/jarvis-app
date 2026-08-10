@@ -16,6 +16,11 @@
   var map = null, cluster = null, markers = null, D = null, canvas = null;
   var displayMode = 'points';    // points | bulles (taille = CA)
   var tourLayer = null;          // tracé de la tournée (polyline + n° d'arrêts)
+  // Routage routier réel (OSRM gratuit) : temps/distances/tracé réels de la tournée courante.
+  var routeInfo = null;          // { legsSec, legsM, totalSec, totalM, geometry, source } ou null
+  var routeSig = '';             // signature (dépôt+arrêts) à laquelle routeInfo correspond
+  var _routeFetching = '';       // signature en cours de récupération (anti-doublon)
+  var _routeTO = null;           // debounce du fetch OSRM
   var depotLayer = null;         // marqueurs des établissements Intégral
   var zoneLayer = null, zonesOn = false, zoneMetric = 'part';   // choroplèthe par département
   var depot = null;              // { n, lat, lng } point de départ/retour (optionnel)
@@ -323,7 +328,7 @@
   }
   // Suite ordonnée des points = dépôt (si défini) + arrêts (+ retour au dépôt)
   function routeStops() { var a = []; if (depot) a.push(depot); for (var j = 0; j < tour.length; j++) a.push(tour[j]); if (depot && tour.length) a.push(depot); return a; }
-  function routeKm() { var pts = routeStops(), d = 0; for (var j = 1; j < pts.length; j++) d += roadKm(pts[j - 1], pts[j]); return d; }
+  function routeKm() { var real = routeReal(); if (real) return real.totalM / 1000; var pts = routeStops(), d = 0; for (var j = 1; j < pts.length; j++) d += roadKm(pts[j - 1], pts[j]); return d; }
   function tourDistance() { return routeKm(); }
   function estMinutes() {   // cohérent avec l'agenda : dernière arrivée - départ + durée du dernier arrêt
     var s = computeSchedule(); if (!s.length) return 0;
@@ -416,14 +421,57 @@
   }
   // Distance ROUTIÈRE estimée (km) — même facteur de détour que travelMin (cohérence agenda ↔ métriques).
   function roadKm(a, b) { var s = haversine(a, b); return s * (s < 3 ? 1.45 : s < 15 ? 1.35 : 1.25); }
-  // Agenda : heure d'arrivée estimée à chaque arrêt (départ + trajets routiers + visites), en attendant les RDV fixes.
+
+  // ── Routage routier RÉEL (OSRM gratuit) : signature + récupération + repli estimation ──
+  // Signature de la tournée courante (dépôt + arrêts, coords arrondies) : identifie à quoi routeInfo se rapporte.
+  function tourSig() {
+    var r = function (n) { return (Math.round(n * 1e4) / 1e4); };
+    var s = depot ? ('D' + r(depot.lat) + ',' + r(depot.lng) + '|') : '';
+    for (var j = 0; j < tour.length; j++) s += r(tour[j].lat) + ',' + r(tour[j].lng) + ';';
+    return s;
+  }
+  // routeInfo est-il à jour pour la tournée affichée ?
+  function routeReal() { return (routeInfo && routeSig === tourSig() && routeInfo.source === 'osrm') ? routeInfo : null; }
+  // Index du trajet OSRM qui ARRIVE à l'arrêt tour[j] (dépôt → arrêts → retour dépôt).
+  function legIndexFor(j) { return depot ? j : (j - 1); }
+  // Temps de trajet (min) vers l'arrêt j : réel OSRM si dispo, sinon estimation travelMin.
+  function legMinFor(j, prev, s) {
+    var real = routeReal();
+    if (real) { var li = legIndexFor(j); if (li >= 0 && real.legsSec[li] != null) return real.legsSec[li] / 60; }
+    return prev ? travelMin(prev, s) : 0;
+  }
+  // Distance de trajet (km) vers l'arrêt j : réelle OSRM si dispo, sinon estimation roadKm.
+  function legKmFor(j, prev, s) {
+    var real = routeReal();
+    if (real) { var li = legIndexFor(j); if (li >= 0 && real.legsM[li] != null) return real.legsM[li] / 1000; }
+    return prev ? roadKm(prev, s) : 0;
+  }
+  // Récupère la vraie route OSRM si la tournée a changé, puis re-render (debounce + anti-doublon).
+  function maybeRefreshRoute() {
+    if (!tour.length || !V2.osrmRoute) return;
+    var sig = tourSig();
+    if (routeInfo && routeSig === sig) return;   // déjà à jour
+    if (_routeFetching === sig) return;           // déjà en cours pour cette tournée
+    if (_routeTO) clearTimeout(_routeTO);
+    _routeTO = setTimeout(function () {
+      var sig2 = tourSig(); _routeFetching = sig2;
+      var pts = routeStops().map(function (s) { return [s.lat, s.lng]; });
+      V2.osrmRoute(pts, function (res) {
+        _routeFetching = '';
+        if (tourSig() !== sig2) return;   // la tournée a encore changé entre-temps → on ignore
+        routeInfo = res; routeSig = sig2;
+        drawTourLine(); renderTourPanel();
+      });
+    }, 220);
+  }
+  // Agenda : heure d'arrivée à chaque arrêt (départ + trajets RÉELS + visites), en attendant les RDV fixes.
   function computeSchedule() {
     var t = parseHM(_startTime); if (t == null) t = 9 * 60;
     var out = [], prev = depot ? depot : (tour[0] || null), cur = t;
     for (var j = 0; j < tour.length; j++) {
       var s = tour[j];
       if (j === 0 && !depot) { out.push({ arr: cur, rdv: s.rdv || '' }); prev = s; cur += serviceMin(s); continue; }
-      cur += prev ? travelMin(prev, s) : 0;
+      cur += legMinFor(j, prev, s);
       var rdv = parseHM(s.rdv), wait = false;
       if (rdv != null && rdv > cur) { cur = rdv; wait = true; }
       out.push({ arr: cur, rdv: s.rdv || '', wait: wait, late: (rdv != null && cur - rdv > 10) });
@@ -712,7 +760,10 @@
     if (tourLayer) { map.removeLayer(tourLayer); tourLayer = null; }
     var pts = routeStops(); if (pts.length < 2) return;
     tourLayer = window.L.layerGroup();
-    window.L.polyline(pts.map(function (s) { return [s.lat, s.lng]; }), { color: '#0050E6', weight: 3, opacity: 0.85, dashArray: '1,0' }).addTo(tourLayer);
+    // Vraie route (géométrie OSRM) si dispo, sinon lignes droites entre arrêts.
+    var real = routeReal();
+    var line = (real && real.geometry && real.geometry.length > pts.length) ? real.geometry : pts.map(function (s) { return [s.lat, s.lng]; });
+    window.L.polyline(line, { color: '#0050E6', weight: 3, opacity: 0.85, dashArray: '1,0' }).addTo(tourLayer);
     if (depot) window.L.marker([depot.lat, depot.lng]) && window.L.circleMarker([depot.lat, depot.lng], { radius: 9, color: '#fff', weight: 2, fillColor: '#10131C', fillOpacity: 1 }).bindTooltip('Dépôt : ' + esc(depot.n || ''), { direction: 'top' }).addTo(tourLayer);
     tour.forEach(function (s, j) {
       window.L.circleMarker([s.lat, s.lng], { radius: 11, color: '#fff', weight: 2, fillColor: '#0050E6', fillOpacity: 1 })
@@ -990,8 +1041,8 @@
       var a = (j === 0) ? (depot || null) : { lat: tour[j - 1].lat, lng: tour[j - 1].lng };
       var legHtml = '';
       if (a && isFinite(s.lat) && isFinite(s.lng)) {
-        var dm = Math.round(travelMin(a, { lat: s.lat, lng: s.lng }));
-        var dk = Math.round(roadKm(a, { lat: s.lat, lng: s.lng }));
+        var dm = Math.round(legMinFor(j, a, { lat: s.lat, lng: s.lng }));
+        var dk = Math.round(legKmFor(j, a, { lat: s.lat, lng: s.lng }));
         legHtml = '<div class="cn-tlleg"><span class="cn-tllegtxt">🚗 ' + fmtDur(dm) + ' · ' + dk + ' km</span></div>';
       }
       var arr = sc.arr != null ? fmtHM(sc.arr) : '';
@@ -1013,12 +1064,15 @@
       : '<div class="cn-tempty">Ta tournée est vide.<br>Utilise « Composer ma tournée » ci-dessus, ou clique une pharmacie → « Partir d\'ici ».</div>';
     var kmTot = Math.round(routeKm());
     var perStop = tour.length ? (Math.round(kmTot / tour.length * 10) / 10) : 0;
+    var isReal = !!routeReal();   // temps/distances issus du vrai réseau routier OSRM ?
+    var srcBadge = tour.length ? '<div class="cn-tsrc' + (isReal ? ' real' : '') + '">' +
+      (isReal ? '🛰️ Temps réels par la route' : (_routeFetching ? '⏳ Calcul des vrais temps…' : '≈ Estimation')) + '</div>' : '';
     var metrics = tour.length ? '<div class="cn-tmetrics">' +
       '<div class="cn-tmetric"><b>' + tour.length + '</b><span>arrêt' + (tour.length > 1 ? 's' : '') + '</span></div>' +
       '<div class="cn-tmetric"><b>' + kmTot + ' km</b><span>total' + (depot ? ' (dépôt inclus)' : '') + '</span></div>' +
-      '<div class="cn-tmetric"><b>' + fmtDur(estMinutes()) + '</b><span>temps estimé</span></div>' +
+      '<div class="cn-tmetric"><b>' + fmtDur(estMinutes()) + '</b><span>temps' + (isReal ? ' réel' : ' estimé') + '</span></div>' +
       '<div class="cn-tmetric"><b>' + perStop + '</b><span>km / arrêt</span></div>' +
-      '</div>' : '';
+      '</div>' + srcBadge : '';
     var pinSvg = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-5.5 7-11a7 7 0 0 0-14 0c0 5.5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>';
     var depOpts = '<option value="">— Dépôt de départ —</option>' + DEPOTS.map(function (d, i) {
       return '<option value="' + i + '"' + (depot && depot.di === i ? ' selected' : '') + '>' + esc((d.s ? d.s + ' · ' : '') + d.city) + '</option>';
@@ -1044,6 +1098,7 @@
         (tour.length >= 1 ? '<button class="v2-btn v2-btn-ghost" onclick="V2.carteTourClear()">Vider</button>' : '') +
         '</div>' +
       '</div>';
+    maybeRefreshRoute();   // si les vrais temps ne sont pas à jour, on les récupère puis on re-render
   }
 
   function legendHtml() {
@@ -1268,6 +1323,8 @@
       '.cn-tmetric{text-align:center;background:var(--card-2,#F4F6FB);border-radius:10px;padding:8px 4px}',
       '.cn-tmetric b{display:block;font-size:15px;font-weight:800;color:var(--ip-blue,#0057FF)}',
       '.cn-tmetric span{display:block;font-size:10.5px;color:var(--muted);margin-top:1px}',
+      '.cn-tsrc{padding:6px 16px 10px;font-size:11px;font-weight:700;color:var(--muted)}',
+      '.cn-tsrc.real{color:#0B6E43}',
       '.cn-tdepot{display:flex;align-items:center;gap:7px;padding:10px 16px;border-bottom:1px solid var(--line);font-size:12.5px;color:var(--ip-ink)}',
       '.cn-tdepot svg{color:var(--muted);flex-shrink:0}',
       '.cn-tlink{background:none;border:none;color:var(--ip-blue,#0057FF);font:inherit;font-size:12px;font-weight:700;cursor:pointer;padding:2px 4px}',
