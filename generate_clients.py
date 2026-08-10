@@ -36,6 +36,31 @@ if raw is None:
     print(f'ERREUR : impossible de lire {SRC}')
     sys.exit(1)
 
+
+def repare_accents(t):
+    """Repare les accents massacres a l'export du CRM.
+
+    Le CSV source est un UTF-8 valide, mais son contenu est faux : des octets
+    Mac OS Roman ont ete relus comme du cyrillique (CP1251) puis reencodes.
+    Resultat : "general" s'ecrit "gЋnЋral", "ST LO" s'ecrit "ST Lп".
+    On refait le chemin inverse, caractere par caractere.
+    Verifie le 10/08/2026 sur les 167 caracteres concernes.
+    """
+    out = []
+    for ch in t:
+        try:
+            b = ch.encode('cp1251')
+            if len(b) == 1 and b[0] >= 0x80:
+                out.append(b.decode('mac_roman'))
+                continue
+        except (UnicodeEncodeError, UnicodeDecodeError):
+            pass
+        out.append(ch)
+    return ''.join(out)
+
+
+raw = repare_accents(raw)
+
 lines_raw = raw.splitlines()
 print(f"Total lines: {len(lines_raw)}")
 

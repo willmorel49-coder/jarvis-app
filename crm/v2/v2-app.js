@@ -843,6 +843,10 @@
       if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.remontees) {
         P.push({ k: 'remontees', cls: 'p6', accent: '#7C3AED', ico: 'spark', tag: 'Équipe', t: 'Remontées', d: 'Le mur d\'idées de l\'équipe : propose une amélioration de l\'appli, vote pour celles des autres, suis leur avancement.', go: 'Voir les remontées' });
       }
+      // Prise de RDV par mailing — app JARVIS
+      if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.rdv) {
+        P.push({ k: 'rdv', cls: 'p1', accent: '#0050E6', ico: 'cal', tag: 'Terrain', t: 'Rendez-vous', d: 'Envoie un lien de réservation à une officine : elle choisit son créneau elle-même, calé sur la géographie de ta journée. L\'invitation part dans ton agenda.', go: 'Voir mes rendez-vous' });
+      }
       // Pilier marketing : uniquement en mode OPSO (module v2-marketing chargé)
       if (window.V2_BRAND && window.V2_BRAND.opso && V2.pages.marketing) {
         P.splice(2, 0, { k: 'marketing', cls: 'p2', ico: 'fiche', tag: 'A4', t: 'Fiches marketing OPSO', d: 'Crée une sélection de produits négociée par Intégral Pharma, en charte Normandie Pharma, prête à imprimer pour tes adhérents.', go: 'Créer une sélection' });
