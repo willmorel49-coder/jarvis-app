@@ -86,14 +86,16 @@ Pour chaque jour candidat, on regarde les rendez-vous **déjà confirmés ce jou
 - **Distance** : haversine × 1,3 (approximation route). Choix assumé : c'est assez juste pour grouper une journée, c'est instantané, et ça évite que la page du pharmacien dépende d'un service extérieur. Le vrai itinéraire reste dans la tournée, une fois la journée constituée.
 - **Temps de route** : `d_km / 50 × 60` minutes, arrondi, + marge de 15 min.
 - **Sélection finale** : tri par (score, date), on garde **3 jours**, et **3 créneaux par jour** espacés d'au moins 1 h quand c'est possible, arrondis au quart d'heure. Si moins de 3 jours sortent, on complète par les jours ouverts les plus proches.
-- **Coordonnées de l'officine** : reprises de `pharma-fr-data.js` par CIP ; à défaut, géocodage BAN au moment de la génération du mail, puis figées dans le jeton. Une officine sans coordonnées est proposée sur les jours ouverts uniquement (jamais écartée).
+- **Coordonnées de l'officine** : reprises de `pharma-fr-data.js` par CIP ; à défaut, géocodage `data.geopf.fr/geocodage/search` (gratuit, sans clé, déjà utilisé par la tournée et la carte) au moment de la génération du mail, puis **figées dans le jeton**. Une officine sans coordonnées n'est **jamais écartée** : tous ses jours travaillés restent proposables, sans effet d'aimant.
 
 ## Données (Supabase — projet existant `iyvavhnlhxksokkerkos`)
 
 Quatre tables. Toutes en RLS : un commercial ne voit que ses propres lignes, et **`anon` n'a aucun accès direct**.
 
 **`rdv_dispo`** — une ligne par commercial
-`user_id` (PK, → auth.users) · `jours` jsonb (`{"1":[["09:00","12:30"],["14:00","18:00"]], …}`, clés 1 = lundi) · `duree_min` (45) · `marge_route_min` (15) · `horizon_jours` (21) · `delai_min_jours` (3) · `rayon_chaud_km` (25) · `rayon_max_km` (60) · `maj_le`
+`user_id` (PK, → auth.users) · `jours` jsonb (`{"1":[["09:00","12:30"],["14:00","18:00"]], …}`, clés 1 = lundi) · `duree_min` (45) · `marge_route_min` (15) · `horizon_jours` (21) · `delai_min_jours` (3) · `rayon_chaud_km` (25) · `rayon_max_km` (60) · `vitesse_kmh` (50) · `tel` · `maj_le`
+
+> **`tel` est ici et pas dans `user_profiles`.** Vérifié le 10/08/2026 : la table des profils du CRM ne porte que `id, name, role, pharmacy_ids, commercial` — aucun numéro. Plutôt que de modifier le socle de l'app et son démarrage pour un besoin qui n'est que le nôtre, le numéro donné au pharmacien en cas d'empêchement vit dans notre propre table, et se règle dans l'écran « Mes disponibilités ». Le prénom du commercial, lui, est bien tiré de `user_profiles.name` (premier mot).
 
 **`rdv_blocage`** — demi-journées indisponibles
 `id` · `user_id` · `date` · `moment` (`matin` | `apres_midi` | `journee`) · `motif`
@@ -114,11 +116,13 @@ Fonctions Postgres `SECURITY DEFINER`, `search_path` figé, appelées avec la cl
 
 | Fonction | Rôle |
 |---|---|
-| `rdv_creneaux(token)` | Vérifie le jeton (existe, non expiré, non consommé) et renvoie `{officine:{nom}, commercial:{prenom, tel}, jours:[{date, creneaux:[…]}]}`. Ne renvoie **jamais** de chiffres ni d'autres clients. |
-| `rdv_poser(token, date, heure, nom, tel)` | Insère le rendez-vous. Si la contrainte d'unicité saute → `{ok:false, raison:"pris"}`. Sinon marque le jeton consommé et renvoie de quoi fabriquer l'`.ics`. |
+| `rdv_fenetre(token)` | Vérifie le jeton (existe, non expiré, non consommé) et renvoie la matière brute : `{officine:{nom, lat, lon}, commercial:{prenom, tel}, dispo:{…}, blocages:[…], occupes:[{date, heure, duree_min, lat, lon}]}`. Ne renvoie **jamais** de nom de client, de CIP ni de chiffre : les rendez-vous déjà posés n'y figurent qu'en points anonymes, coordonnées arrondies au kilomètre. |
+| `rdv_poser(token, date, heure, nom, tel)` | Revalide côté base : jeton bon, horaire dans la grille du commercial, jour non bloqué, créneau libre. Puis insère. Si la contrainte d'unicité saute → `{ok:false, raison:"pris"}`. Sinon marque le jeton consommé et renvoie de quoi fabriquer l'`.ics`. |
 | `rdv_preference(token, texte, nom, tel)` | Enregistre un « aucun créneau ne me va » en statut `a_rappeler`. |
 
-Le calcul des créneaux vit **dans `rdv_creneaux`**, en SQL, avec une fonction haversine immuable. Raison : la règle ne doit exister qu'à un seul endroit, et la page publique ne doit rien pouvoir contourner.
+**Où vit le calcul des créneaux :** dans un fichier JavaScript isolé (`v2-rdv-creneaux.js`), pas dans la base. Raison : il se teste seul, sans base ni navigateur, sur les cas fabriqués listés plus bas — et le même fichier sert à la page du pharmacien et à l'aperçu côté commercial.
+
+La règle géographique est une règle de **proposition**, pas de sécurité : quelqu'un qui la contournerait ne ferait que réserver un créneau éloigné, exactement ce que le bouton « aucun ne me convient » permet déjà. Ce qui compte vraiment — l'horaire existe, il est libre, le jour n'est pas bloqué — reste vérifié par `rdv_poser`, côté base, non contournable.
 
 ## Les trois modèles de mail
 
@@ -133,14 +137,19 @@ Chaque modèle se termine par le lien et la ligne d'opposition : *« Si vous ne 
 ## Fichiers
 
 À créer, dans `crm/v2/` :
+- `v2-rdv-creneaux.js` — **le moteur** : règle géographique et grille horaire. Pur, sans DOM, sans `V2`, testable en ligne de commande.
+- `v2-rdv-ics.js` — fabrication du fichier `.ics`. Pur, testable de la même façon.
 - `v2-rdv.js` — écran Rendez-vous du commercial
 - `v2-rdv-dispo.js` — disponibilités et blocages
 - `v2-campagne.js` — sélection, aperçu, file d'attente d'envoi
 - `v2-rdv-modeles.js` — les trois modèles et leur remplissage
 - `rdv.html` + `rdv-public.js` — la page du pharmacien, **autonome** (ne charge pas le bundle CRM, ne contient aucune donnée client)
 - `docs/supabase/rdv.sql` — tables, RLS, fonctions
+- `tests/rdv-creneaux.test.mjs` et `tests/rdv-ics.test.mjs` — lancés par `node --test`, sans rien installer
 
-À modifier : `index.html` (entrées de menu + `?v=` de cache-busting), `sw.js` (version).
+À modifier : `index.html` (scripts + tuile de menu + `?v=`), `sw.js` (`VER`), `v2-app.js` (tuile du lanceur), `v2-pharma.js` (bouton « Proposer un RDV » sur la fiche officine), `.github/workflows/ci.yml` (étape `node --test`).
+
+Conventions imposées (skill `jarvis-conventions`) : vanilla, **zéro librairie, zéro npm, zéro build** ; `V2.esc` sur tout texte injecté ; `V2.toast` et jamais `alert()` ; token `?v=AAAAMMJJ<lettre>` identique dans `index.html` et `VER` de `sw.js`.
 
 Contrainte de style : la page publique s'ouvre sur des iPhone. Interdits habituels — pas de `backdrop-filter`, pas de `filter: blur` sur grande surface, pas de dégradé sur texte, repli `prefers-reduced-motion`.
 
