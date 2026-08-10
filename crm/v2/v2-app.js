@@ -819,7 +819,7 @@
       }
       // Copilote — hub global (croise marché France × ventes réseau) — app JARVIS
       if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.copilote) {
-        P.push({ k: 'copilote', cls: 'p1', accent: 'var(--ip-blue)', ico: 'spark', tag: 'Nouveau', t: 'Copilote', d: 'Le cerveau de la tournée : quoi pousser et où le réseau décroche, officine par officine — croise le marché France et tes ventes. Prépare ta visite (PDF) et bascule sur la carte nationale d\'un clic.', go: 'Ouvrir le copilote' });
+        P.push({ k: 'copilote', cls: 'p1', accent: 'var(--ip-blue)', ico: 'spark', tag: 'Carte', t: 'Copilote', d: 'Toutes tes officines sur la carte, où tu filtres tout : client/prospect, commercial, UGA, groupement, département, tranche de CA, ville, titulaire — cumulables, avec le compte en direct.', go: 'Ouvrir la carte' });
       }
       // Pilier Molécules (analyse réseau : rotation + marge pharmacien) — app JARVIS
       if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.molecules) {
