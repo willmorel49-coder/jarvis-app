@@ -87,6 +87,16 @@ test('proposer : 3 jours max, 3 creneaux max, tries croissants', () => {
   });
 });
 
+test('proposer : une journee vide balaie la journee, pas seulement le matin', () => {
+  const r = M.proposer({ officine: NANTES, dispo: D, blocages: [], occupes: [], aujourdhui: '2026-08-10' });
+  const jour = r[0];
+  assert.equal(jour.creneaux.length, 3);
+  const apresMidi = jour.creneaux.filter(h => h >= '14:00').length;
+  assert.ok(apresMidi >= 1, `aucun creneau l apres-midi : ${jour.creneaux.join(', ')}`);
+  const matin = jour.creneaux.filter(h => h < '12:00').length;
+  assert.ok(matin >= 1, `aucun creneau le matin : ${jour.creneaux.join(', ')}`);
+});
+
 test('proposer : le jour ou un voisin est deja pose est retenu', () => {
   const occ = [{ date: '2026-08-25', heure: '10:00', duree_min: 45, ...NANTES_10KM }];
   const r = M.proposer({ officine: NANTES, dispo: D, blocages: [], occupes: occ, aujourdhui: '2026-08-10' });

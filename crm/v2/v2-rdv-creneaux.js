@@ -133,6 +133,17 @@
     return plages.length ? plages : null;
   }
 
+  // Journée sans contrainte de voisinage : on BALAIE la journée au lieu de
+  // proposer trois horaires collés le matin. Le pharmacien voit ainsi du matin,
+  // du début et de la fin d'après-midi.
+  function etaler(creneaux, max) {
+    var n = creneaux.length;
+    if (n <= max) return creneaux.slice();
+    var out = [];
+    for (var k = 0; k < max; k++) out.push(creneaux[Math.floor((k + 0.5) * n / max)]);
+    return out;
+  }
+
   // Garde au plus `max` créneaux, en préférant les espacer d'au moins une heure.
   function espacer(creneaux, max) {
     var gardes = [];
@@ -173,10 +184,13 @@
     jours.sort(function (a, b) { return a.score - b.score || (a.date < b.date ? -1 : 1); });
 
     return jours.slice(0, 3).map(function (j) {
+      // score 0 = un voisin est déjà posé : les créneaux sont triés par proximité
+      // avec lui, on garde donc les plus proches. Sinon on balaie la journée.
+      var choisis = j.score === 0 ? espacer(j.creneaux, 3) : etaler(j.creneaux, 3);
       return {
         date: j.date,
         score: j.score,
-        creneaux: espacer(j.creneaux, 3).map(min2hm)
+        creneaux: choisis.sort(function (a, b) { return a - b; }).map(min2hm)
       };
     }).sort(function (a, b) { return a.date < b.date ? -1 : 1; });
   };
