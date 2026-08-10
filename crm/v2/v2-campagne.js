@@ -48,22 +48,21 @@
     document.head.appendChild(s);
   }
 
-  // Officines du commercial. Le CIP est l'id : c'est la clé de jointure avec
-  // CLIENTS (e-mail, adresse) et avec la liste d'opposition.
+  // Officines du commercial. V2.rdvInfo réconcilie les trois sources d'adresses
+  // (équipe, base nationale, WML) : c'est lui qui décide si une officine est
+  // joignable, pas nous. Le CIP est l'id, et la clé de la liste d'opposition.
   function candidates(opts, opposes) {
-    var clients = window.CLIENTS || [];
-    var mails = {};
-    clients.forEach(function (c) { if (c.email) mails[String(c.cip)] = c.email; });
-    return (V2.pharmacies || []).filter(function (p) {
+    var out = [];
+    (V2.pharmacies || []).forEach(function (p) {
       var cip = String(p.id);
-      if (!mails[cip]) return false;                       // filtre obligatoire
-      if (opposes.indexOf(cip) !== -1) return false;       // ne plus solliciter
-      if (opts.dept && String(p.cp || '').slice(0, 2) !== opts.dept) return false;
-      if (opts.caMax && (V2.rdvCA(cip) || 0) > opts.caMax) return false;
-      return true;
-    }).map(function (p) {
-      return { cip: String(p.id), nom: p.name, ville: p.ville || '', email: mails[String(p.id)] };
+      if (opposes.indexOf(cip) !== -1) return;                                    // ne plus solliciter
+      if (opts.dept && String(p.cp || '').slice(0, 2) !== opts.dept) return;
+      if (opts.caMax && (V2.rdvCA(cip) || 0) > opts.caMax) return;
+      var o = V2.rdvInfo(cip);
+      if (!o.email) return;                                                        // filtre obligatoire
+      out.push({ cip: cip, nom: o.nom, ville: o.ville, email: o.email });
     });
+    return out;
   }
 
   V2.campagne = {
@@ -80,8 +79,8 @@
         dept: (val('cp-dept') || '').trim(),
         caMax: parseInt(val('cp-camax'), 10) || 0
       };
-      var pret = window.CLIENTS ? Promise.resolve() : V2.loadFiles(['clients']);
-      Promise.resolve(pret).then(function () {
+      V2.toast('Préparation de la liste…');
+      V2.rdvSources().then(function () {
         return c.from('rdv_opposition').select('cip').eq('user_id', u);
       }).then(function (r) {
         var opposes = ((r && r.data) || []).map(function (x) { return String(x.cip); });

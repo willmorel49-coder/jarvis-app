@@ -36,28 +36,54 @@
   }
 
   // ── Coordonnées d'une officine ────────────────────────────────
-  // Les officines du CRM (WML) n'ont NI e-mail NI adresse postale : ces deux
-  // champs ne vivent que dans CLIENTS (clients-data.js, chargé à la demande).
-  // On réconcilie par le CIP, qui est aussi l'id de l'officine.
+  // Les officines du CRM (WML) n'ont NI e-mail NI adresse postale. Trois sources,
+  // dans cet ordre de confiance :
+  //   1. CLIENTS (clients-data.js)  — saisi par l'équipe, fait foi
+  //   2. PHARMA_FR (base nationale) — 19 671 officines, 95 % tel / 53 % mail
+  //   3. WML                        — nom, ville, CP, coordonnées GPS
+  // Toutes se réconcilient par le CIP, qui est aussi l'id de l'officine.
+  // Mesuré le 10/08/2026 : la source 2 apporte à elle seule +444 téléphones
+  // et +322 adresses mail sur les 691 officines du portefeuille.
   function clientDuCip(cip) {
     var t = window.CLIENTS || [];
     for (var i = 0; i < t.length; i++) if (String(t[i].cip) === String(cip)) return t[i];
     return null;
   }
 
+  // Index de la base nationale, construit une fois (19 671 entrées).
+  var _natIdx = null;
+  function nationalDuCip(cip) {
+    var D = window.PHARMA_FR;
+    if (!D || !D.p) return null;
+    if (!_natIdx || _natIdx._n !== D.p.length) {
+      _natIdx = { _n: D.p.length };
+      for (var i = 0; i < D.p.length; i++) {
+        var id = D.p[i][13];
+        if (id != null && id !== '') _natIdx[String(id)] = D.p[i];
+      }
+    }
+    return _natIdx[String(cip)] || null;
+  }
+
+  // [lat, lng, uga, grp, seg, comm, nom, ville, cp, tel, titulaire, email, ca, id]
+  var NAT = { lat: 0, lng: 1, nom: 6, ville: 7, cp: 8, tel: 9, titulaire: 10, email: 11 };
+
   V2.rdvInfo = function (pid) {
     var ph = (V2.pharmacies || []).find(function (p) { return String(p.id) === String(pid); }) || {};
     var cl = clientDuCip(pid) || {};
+    var n = nationalDuCip(pid) || [];
+    function nat(k) { return n[NAT[k]] || ''; }
     return {
       cip: String(pid),
-      nom: ph.name || cl.nom || '',
+      nom: ph.name || cl.nom || nat('nom') || '',
       adresse: cl.adresse || '',
-      cp: ph.cp || cl.cp || '',
-      ville: ph.ville || cl.ville || '',
-      email: (cl.email || '').trim(),
-      contact: (cl.contact || '').trim(),
-      lat: (typeof ph.lat === 'number' ? ph.lat : null),
-      lon: (typeof ph.lng === 'number' ? ph.lng : null)
+      cp: ph.cp || cl.cp || nat('cp') || '',
+      ville: ph.ville || cl.ville || nat('ville') || '',
+      email: String(cl.email || nat('email') || '').trim(),
+      tel: String(ph.tel || cl.tel || nat('tel') || '').trim(),
+      contact: String(cl.contact || nat('titulaire') || '').trim(),
+      lat: (typeof ph.lat === 'number' ? ph.lat : (typeof n[NAT.lat] === 'number' ? n[NAT.lat] : null)),
+      lon: (typeof ph.lng === 'number' ? ph.lng : (typeof n[NAT.lng] === 'number' ? n[NAT.lng] : null))
     };
   };
 
@@ -81,6 +107,18 @@
       .then(function (d) { V2.rdvTel = (d && d.data && d.data.tel) || ''; return V2.rdvTel; })
       .catch(function () { return ''; });
     return _telPromesse;
+  };
+
+  // Les deux jeux de données nécessaires aux coordonnées, chargés à la demande.
+  // Sans PHARMA_FR, on perd 322 adresses mail sur 691 : ça vaut l'attente.
+  V2.rdvSources = function () {
+    return Promise.all([
+      window.CLIENTS ? Promise.resolve() : V2.loadFiles(['clients']),
+      new Promise(function (ok) {
+        if (window.PHARMA_FR || !V2.ensurePharmaFr) { ok(); return; }
+        V2.ensurePharmaFr(function () { ok(); });
+      })
+    ]);
   };
 
   // Géocodage gratuit sans clé — même service que la tournée et la carte.
@@ -138,10 +176,7 @@
       var fini = cb || function () {};
       var c = sb(), u = uid();
       if (!c || !u) { V2.toast('Connecte-toi pour proposer un rendez-vous.'); fini(false); return; }
-      var pret = Promise.all([
-        window.CLIENTS ? Promise.resolve() : V2.loadFiles(['clients']),
-        V2.rdvTelCharger()
-      ]);
+      var pret = Promise.all([V2.rdvSources(), V2.rdvTelCharger()]);
       pret.then(function () {
         var o = V2.rdvInfo(pid);
         if (!o.email) { V2.toast('Cette officine n’a pas d’adresse mail connue.'); fini(false); return; }
@@ -178,10 +213,7 @@
     // donc encore valide — inutile d'en créer un second qui doublonnerait.
     relancer: function (token, pid) {
       // CLIENTS porte les adresses mail et n'est pas chargé sur cet écran.
-      Promise.all([
-        window.CLIENTS ? Promise.resolve() : V2.loadFiles(['clients']),
-        V2.rdvTelCharger()
-      ]).then(function () {
+      Promise.all([V2.rdvSources(), V2.rdvTelCharger()]).then(function () {
         var o = V2.rdvInfo(pid);
         if (!o.email) { V2.toast('Pas d’adresse mail pour cette officine.'); return; }
         var corps = 'Bonjour' + (o.contact ? ' ' + o.contact : '') + ',\n\n' +
