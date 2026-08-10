@@ -104,6 +104,11 @@ alter table public.rdv            enable row level security;
 alter table public.rdv_lien       enable row level security;
 alter table public.rdv_opposition enable row level security;
 
+-- ⚠️ Deux choses distinctes, et il faut LES DEUX :
+--   · le DROIT sur la table (grant) — sinon « permission denied », même connecté ;
+--   · la POLICY RLS — qui restreint ensuite aux lignes de l'utilisateur.
+-- Une policy sans grant ne sert à rien. Vérifier les deux sens : que anon ne
+-- peut PAS lire, et que le commercial PEUT lire.
 do $$
 declare t text;
 begin
@@ -112,6 +117,7 @@ begin
     execute format(
       'create policy %I on public.%I for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid())',
       t || '_mine', t);
+    execute format('grant select, insert, update, delete on public.%I to authenticated', t);
     execute format('revoke all on public.%I from anon', t);
   end loop;
 end $$;
