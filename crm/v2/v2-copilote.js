@@ -686,7 +686,10 @@
   // "Prépare ta visite" + PDF, marchés en croissance). Le cerveau contient déjà un
   // lien vers la carte nationale (co-maplink → V2.go('carte')), donc rien n'est perdu.
   // Avant, cette ligne court-circuitait vers la carte → ~640 lignes de cerveau injoignables.
-  V2.pages.copilote = { render: function (root) { if (V2.pages.marche) { V2.pages.marche.render(root); return; } if (V2.pages.carte) V2.pages.carte.render(root); } };
+  // Le Copilote EST la carte des officines, où tout est filtrable (décision Will 10/08/2026).
+  // La carte porte la barre de filtres Direction 2 (statut, commercial, UGA, groupement,
+  // département, tranche de CA, ville, titulaire) + chips retirables + compteur live.
+  V2.pages.copilote = { render: function (root) { if (V2.pages.carte) { V2.pages.carte.render(root); return; } if (V2.pages.marche) V2.pages.marche.render(root); } };
   V2.pages.marche = {
     render: function (root) {
       injectCss();

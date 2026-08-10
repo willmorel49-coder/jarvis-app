@@ -40,6 +40,14 @@
   var LIST_STEP = 500, listShown = LIST_STEP;   // liste : rendu par paquets (toutes dispo, DOM borné)
   var deptFocus = '';    // filtre département (2 chiffres, 3 pour DOM)
   var caMin = 0;         // filtre CA minimum (€)
+  var caMax = 0;         // filtre CA maximum (€) — 0 = pas de plafond (plage de CA)
+  var ugaFocus = '';     // filtre UGA (secteur)
+  var villeFocus = '';   // filtre ville (contient)
+  var titFocus = '';     // filtre titulaire (contient)
+  // ── Barre de filtres « Direction 2 » (boutons + menus + pastilles + compteur) ──
+  var COMMS = [], GRPS = [], DEPTS = [], UGAS = [], CA_HI = 0;   // valeurs de menus (remplies au boot)
+  var fbOpen = '', fbFilter = '';        // menu ouvert · recherche dans le menu
+  var fbMenuOpts = [], fbMenuSetter = ''; // options courantes du menu (choix par index → zéro échappement)
   var DEPT_NAMES = { '01': 'Ain', '02': 'Aisne', '03': 'Allier', '04': 'Alpes-de-Hte-Provence', '05': 'Hautes-Alpes', '06': 'Alpes-Maritimes', '07': 'Ardèche', '08': 'Ardennes', '09': 'Ariège', '10': 'Aube', '11': 'Aude', '12': 'Aveyron', '13': 'Bouches-du-Rhône', '14': 'Calvados', '15': 'Cantal', '16': 'Charente', '17': 'Charente-Maritime', '18': 'Cher', '19': 'Corrèze', '21': "Côte-d'Or", '22': "Côtes-d'Armor", '23': 'Creuse', '24': 'Dordogne', '25': 'Doubs', '26': 'Drôme', '27': 'Eure', '28': 'Eure-et-Loir', '29': 'Finistère', '30': 'Gard', '31': 'Haute-Garonne', '32': 'Gers', '33': 'Gironde', '34': 'Hérault', '35': 'Ille-et-Vilaine', '36': 'Indre', '37': 'Indre-et-Loire', '38': 'Isère', '39': 'Jura', '40': 'Landes', '41': 'Loir-et-Cher', '42': 'Loire', '43': 'Haute-Loire', '44': 'Loire-Atlantique', '45': 'Loiret', '46': 'Lot', '47': 'Lot-et-Garonne', '48': 'Lozère', '49': 'Maine-et-Loire', '50': 'Manche', '51': 'Marne', '52': 'Haute-Marne', '53': 'Mayenne', '54': 'Meurthe-et-Moselle', '55': 'Meuse', '56': 'Morbihan', '57': 'Moselle', '58': 'Nièvre', '59': 'Nord', '60': 'Oise', '61': 'Orne', '62': 'Pas-de-Calais', '63': 'Puy-de-Dôme', '64': 'Pyrénées-Atlantiques', '65': 'Hautes-Pyrénées', '66': 'Pyrénées-Orientales', '67': 'Bas-Rhin', '68': 'Haut-Rhin', '69': 'Rhône', '70': 'Haute-Saône', '71': 'Saône-et-Loire', '72': 'Sarthe', '73': 'Savoie', '74': 'Haute-Savoie', '75': 'Paris', '76': 'Seine-Maritime', '77': 'Seine-et-Marne', '78': 'Yvelines', '79': 'Deux-Sèvres', '80': 'Somme', '81': 'Tarn', '82': 'Tarn-et-Garonne', '83': 'Var', '84': 'Vaucluse', '85': 'Vendée', '86': 'Vienne', '87': 'Haute-Vienne', '88': 'Vosges', '89': 'Yonne', '90': 'Belfort', '91': 'Essonne', '92': 'Hauts-de-Seine', '93': 'Seine-St-Denis', '94': 'Val-de-Marne', '95': "Val-d'Oise", '971': 'Guadeloupe', '972': 'Martinique', '973': 'Guyane', '974': 'La Réunion', '976': 'Mayotte' };
   var COMM_COL = {}, GRP_COL = {};
   var PALETTE = ['#0050E6', '#EA580C', '#0F7A52', '#7C3AED', '#C7283D', '#00B5D8', '#C7791A',
@@ -155,7 +163,11 @@
     if (commFocus && D.comm[p[5]] !== commFocus) return false;
     if (grpFocus && D.grp[p[3]] !== grpFocus) return false;
     if (deptFocus && deptOf(p[8]) !== deptFocus) return false;
+    if (ugaFocus && D.uga[p[2]] !== ugaFocus) return false;
     if (caMin && caOf(p) < caMin) return false;
+    if (caMax && caOf(p) > caMax) return false;
+    if (villeFocus && norm(p[7]).indexOf(norm(villeFocus)) < 0) return false;
+    if (titFocus && norm(p[10]).indexOf(norm(titFocus)) < 0) return false;
     if (searchTerm && !matchTxt(p)) return false;
     return true;
   }
@@ -184,7 +196,7 @@
       var cn0 = document.getElementById('carte-count'), n0 = 0;
       for (var q = 0; q < D.p.length; q++) if (pass(D.p[q])) n0++;
       if (cn0) cn0.textContent = n0.toLocaleString('fr') + ' pharmacies';
-      renderDock();
+      renderDock(); renderFbChips(n0);
       return;
     }
     if (cluster) { map.removeLayer(cluster); cluster = null; }
@@ -220,6 +232,7 @@
     map.addLayer(cluster);
     if (cn) cn.textContent = markers.length.toLocaleString('fr') + (bulles ? ' officines avec CA' : ' pharmacies');
     renderDock();   // dock (liste dockée) synchronisé avec les filtres de la carte
+    renderFbChips(idx.length);   // barre de filtres : compteur live = officines qui passent pass()
   }
   function recolor() { if (zonesOn || !markers) return; for (var k = 0; k < markers.length; k++) markers[k].setStyle(markerStyle(D.p[markers[k]._pi], markers[k]._pi)); }
 
@@ -264,7 +277,7 @@
           layer.on('mouseout', function () { layer.setStyle({ weight: 1, color: '#fff' }); });
           layer.on('click', function () {   // drill-down : filtre + liste du département
             deptFocus = depCode(f.properties.code);
-            var ds = document.getElementById('cn-deptsel'); if (ds) ds.value = deptFocus;
+            renderFbRow(); renderFbChips();
             renderLists();
             var dk = document.getElementById('cn-dock'); if (!dk || !dk.offsetParent) V2.carteListOpen();   // dock masqué (mobile) → modale
             try { map.fitBounds(layer.getBounds().pad(0.1)); } catch (e) {}
@@ -1042,7 +1055,48 @@
     if (document.getElementById('v2-carte-css')) return;
     var s = document.createElement('style'); s.id = 'v2-carte-css';
     s.textContent = [
-      '.cn-wrap{display:flex;flex-direction:row;height:calc(100vh - var(--topbar-h,60px));height:calc(100dvh - var(--topbar-h,60px));min-height:520px}',
+      '.cn-shell{display:flex;flex-direction:column;height:calc(100vh - var(--topbar-h,60px));height:calc(100dvh - var(--topbar-h,60px));min-height:560px}',
+      '.cn-wrap{display:flex;flex-direction:row;flex:1 1 auto;min-height:0}',
+      // ── Barre de filtres « Direction 2 » ──
+      '.cn-fb{flex:none;background:var(--card);border-bottom:1px solid var(--line);padding:9px 16px 8px;display:flex;flex-direction:column;gap:8px}',
+      '.cn-fbtop{display:flex;align-items:center;gap:10px}',
+      '.cn-fbsearch{flex:1;min-width:0;max-width:420px}',
+      '.cn-fbcount{margin-left:auto;font-size:13px;font-weight:800;color:var(--ip-blue,#0057FF);white-space:nowrap;font-variant-numeric:tabular-nums}',
+      '.cn-fb-toggle{display:none;font:inherit;font-size:13px;font-weight:700;color:var(--ip-ink);background:var(--card-2,#F4F6FB);border:1px solid var(--line);border-radius:999px;padding:7px 13px;cursor:pointer}',
+      '.cn-fbrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}',
+      '.cn-fb-item{position:relative}',
+      '.cn-fb-btn{display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:12.5px;font-weight:700;color:var(--ip-ink);background:var(--card-2,#F4F6FB);border:1px solid var(--line);border-radius:999px;padding:7px 13px;cursor:pointer;transition:border-color .14s var(--ease,ease),background .14s var(--ease,ease)}',
+      '.cn-fb-btn:hover{border-color:var(--ip-blue,#0057FF)}',
+      '.cn-fb-btn.on{background:color-mix(in srgb,var(--ip-blue,#0057FF) 12%,var(--card));border-color:var(--ip-blue,#0057FF);color:var(--ip-blue,#0057FF)}',
+      '.cn-fb-btn.open{border-color:var(--ip-blue,#0057FF)}',
+      '.cn-fb-car{font-style:normal;font-size:10px;opacity:.6;margin-left:1px}',
+      '.cn-fb-soon{opacity:.5;cursor:not-allowed}',
+      '.cn-fb-soon:hover{border-color:var(--line)}',
+      '.cn-fb-menu{position:absolute;top:calc(100% + 6px);left:0;z-index:1200;min-width:230px;max-width:min(320px,86vw);background:var(--card,#fff);border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 34px rgba(11,19,28,.22);padding:8px;display:flex;flex-direction:column;gap:6px}',
+      '.cn-fb-msearch .cn-fb-tin,.cn-fb-txt .cn-fb-tin{width:100%}',
+      '.cn-fb-tin{font:inherit;font-size:13px;color:var(--ip-ink);background:var(--card);border:1px solid var(--line);border-radius:9px;padding:8px 11px}',
+      '.cn-fb-tin:focus{outline:none;border-color:var(--ip-blue,#0057FF);box-shadow:0 0 0 3px color-mix(in srgb,var(--ip-blue,#0057FF) 14%,transparent)}',
+      '.cn-fb-mlist{display:flex;flex-direction:column;gap:2px;max-height:300px;overflow-y:auto}',
+      '.cn-fb-opt{text-align:left;font:inherit;font-size:12.5px;font-weight:600;color:var(--ip-ink);background:none;border:none;border-radius:8px;padding:8px 10px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+      '.cn-fb-opt:hover{background:var(--card-2,#F4F6FB)}',
+      '.cn-fb-opt.on{background:color-mix(in srgb,var(--ip-blue,#0057FF) 12%,transparent);color:var(--ip-blue,#0057FF);font-weight:800}',
+      '.cn-fb-mempty{padding:12px 10px;font-size:12.5px;color:var(--muted);text-align:center}',
+      '.cn-fb-ca{display:flex;flex-direction:column;gap:9px;padding:4px 4px 2px;min-width:220px}',
+      '.cn-fb-ca-lbl{font-size:13px;font-weight:800;color:var(--ip-blue,#0057FF);text-align:center;font-variant-numeric:tabular-nums}',
+      '.cn-fb-ca-row{display:flex;align-items:center;gap:9px;font-size:11.5px;font-weight:700;color:var(--muted)}',
+      '.cn-fb-ca-row span{flex:none;width:30px}',
+      '.cn-fb-ca-row input[type=range]{flex:1;accent-color:var(--ip-blue,#0057FF)}',
+      '.cn-fb-ca-clr{font:inherit;font-size:12px;font-weight:700;color:var(--muted);background:var(--card-2,#F4F6FB);border:1px solid var(--line);border-radius:8px;padding:7px;cursor:pointer}',
+      '.cn-fb-ca-clr:hover{border-color:var(--ip-blue,#0057FF);color:var(--ip-blue,#0057FF)}',
+      '.cn-fbchips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}',
+      '.cn-fbchips:empty{display:none}',
+      '.cn-fb-chip{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:700;color:var(--ip-blue,#0057FF);background:color-mix(in srgb,var(--ip-blue,#0057FF) 10%,transparent);border:1px solid color-mix(in srgb,var(--ip-blue,#0057FF) 22%,transparent);border-radius:999px;padding:3px 6px 3px 10px}',
+      '.cn-fb-x{border:none;background:none;color:var(--ip-blue,#0057FF);font:inherit;font-size:12px;line-height:1;cursor:pointer;padding:2px 3px;border-radius:50%}',
+      '.cn-fb-x:hover{background:color-mix(in srgb,var(--ip-blue,#0057FF) 18%,transparent)}',
+      '.cn-fb-clear{border:none;background:none;color:var(--muted);font:inherit;font-size:11.5px;font-weight:700;cursor:pointer;text-decoration:underline;padding:3px 4px}',
+      '.cn-fb-clear:hover{color:var(--ip-blue,#0057FF)}',
+      '@media(max-width:760px){.cn-fb-toggle{display:inline-flex}.cn-fbrow{display:none}.cn-fb.open .cn-fbrow{display:flex}.cn-fbsearch{max-width:none}.cn-fb-menu{min-width:200px;max-width:min(300px,80vw);right:auto}}',
+      '@media(prefers-reduced-motion:reduce){.cn-fb-btn{transition:none}}',
       // Bulle de survol enrichie (multi-lignes)
       '.cn-tip{padding:7px 10px!important;border:none!important;border-radius:9px!important;box-shadow:0 6px 20px rgba(11,19,28,.22)!important;max-width:230px!important}',
       '.cn-tip b{display:block;font-size:12.5px;font-weight:700;color:#0B131C;line-height:1.25}',
@@ -1283,21 +1337,18 @@
     loadTour();
     try { var dp = JSON.parse(localStorage.getItem('jarvis_depot_v1') || 'null'); if (dp && dp.lat) depot = dp; } catch (e) {}
     computeColors();
-    var commOpts = '<option value="">Tous les commerciaux</option>' +
-      D.comm.slice(1).map(function (c) { return '<option>' + esc(c) + '</option>'; }).join('');
-    // Groupements réellement présents (canoniques, sans doublon orphelin après canonicalisation)
+    // Valeurs des menus de la barre de filtres (calculées sur les données réellement présentes)
+    COMMS = D.comm.slice(1).filter(function (c) { return c; });
     var _gu = {}; D.p.forEach(function (p) { var g = D.grp[p[3]]; if (g && g !== '—') _gu[g] = 1; });
-    var grpOpts = '<option value="">Tous les groupements</option>' +
-      Object.keys(_gu)
-        .sort(function (a, b) { return a.localeCompare(b, 'fr', { sensitivity: 'base' }); })
-        .map(function (g) { return '<option>' + esc(g) + '</option>'; }).join('');
-    var depSet = {}; D.p.forEach(function (p) { var d = deptOf(p[8]); if (d) depSet[d] = 1; });
-    var deptOpts = '<option value="">Tous les départements</option>' +
-      Object.keys(depSet).sort().map(function (d) { return '<option value="' + d + '">' + d + ' · ' + esc(DEPT_NAMES[d] || '') + '</option>'; }).join('');
-    root.querySelector('#cn-comm').innerHTML = commOpts;
-    root.querySelector('#cn-deptsel').innerHTML = deptOpts;
-    root.querySelector('#cn-grpsel').innerHTML = grpOpts;
+    GRPS = Object.keys(_gu).sort(function (a, b) { return a.localeCompare(b, 'fr', { sensitivity: 'base' }); });
+    var _du = {}; D.p.forEach(function (p) { var d = deptOf(p[8]); if (d) _du[d] = 1; });
+    DEPTS = Object.keys(_du).sort();
+    var _uu = {}; D.p.forEach(function (p) { var u = D.uga[p[2]]; if (u) _uu[u] = 1; });
+    UGAS = Object.keys(_uu).sort(function (a, b) { return a.localeCompare(b, 'fr', { sensitivity: 'base' }); });
+    var _cm = 0; D.p.forEach(function (p) { var c = caOf(p); if (c > _cm) _cm = c; });
+    CA_HI = Math.max(10000, Math.ceil(_cm / 10000) * 10000);
     root.querySelector('#carte-legend').innerHTML = legendHtml();
+    renderFbRow(); renderFbChips();   // barre de filtres Direction 2
     // Nettoie une éventuelle carte précédente (évite l'accumulation d'instances Leaflet au fil des visites).
     if (map) { try { map.remove(); } catch (e) {} map = null; cluster = null; markers = null; }
     map = window.L.map(root.querySelector('#carte-map'), { preferCanvas: true, zoomControl: true, attributionControl: false }).setView([46.6, 2.4], 6);
@@ -1316,6 +1367,115 @@
     if (!V2._carteResize) { V2._carteResize = true; window.addEventListener('resize', function () { if (map && V2.route && V2.route.name === 'carte') map.invalidateSize(); }); }
   }
 
+  // ══ BARRE DE FILTRES « Direction 2 » ══════════════════════════════════
+  // Un bouton par critère → petit menu de valeurs · pastilles retirables · compteur live.
+  // Tout passe par les mêmes variables d'état + pass() : filtres 100 % cumulables.
+  function caLabel() { if (!caMin && !caMax) return 'Tranche de CA'; return (caMin ? eurK(caMin) : '0') + ' – ' + (caMax ? eurK(caMax) : 'max'); }
+  // Menus « liste » (choix par index → aucun échappement de guillemet dans le onclick)
+  function fbMenuData(key) {
+    if (key === 'statut') return { setter: 'carteType', cur: typeFocus, search: false, opts: [['all', 'Toutes les officines'], ['clients', 'Clients'], ['prospects', 'Prospects']] };
+    if (key === 'comm') return { setter: 'carteComm', cur: commFocus, search: COMMS.length > 10, opts: [['', 'Tous les commerciaux']].concat(COMMS.map(function (c) { return [c, c]; })) };
+    if (key === 'uga') return { setter: 'carteUga', cur: ugaFocus, search: true, opts: [['', 'Toutes les UGA']].concat(UGAS.map(function (u) { return [u, u]; })) };
+    if (key === 'grp') return { setter: 'carteGrp', cur: grpFocus, search: true, opts: [['', 'Tous les groupements']].concat(GRPS.map(function (g) { return [g, g]; })) };
+    if (key === 'dept') return { setter: 'carteDept', cur: deptFocus, search: true, opts: [['', 'Tous les départements']].concat(DEPTS.map(function (d) { return [d, d + ' · ' + (DEPT_NAMES[d] || '')]; })) };
+    return null;
+  }
+  function fbRenderMenuList() {
+    var d = fbMenuData(fbOpen); if (!d) return '';
+    var q = norm(fbFilter);
+    var opts = d.opts.filter(function (o) { return !q || o[0] === '' || norm(o[1]).indexOf(q) >= 0; });
+    fbMenuOpts = opts; fbMenuSetter = d.setter;
+    return opts.map(function (o, i) { return '<button class="cn-fb-opt' + (d.cur === o[0] ? ' on' : '') + '" onclick="V2.carteFbPickIdx(' + i + ')">' + esc(o[1]) + '</button>'; }).join('')
+      || '<div class="cn-fb-mempty">Aucun résultat</div>';
+  }
+  function fbMenuHtml(key) {
+    if (key === 'ca') {
+      return '<div class="cn-fb-ca">' +
+        '<div class="cn-fb-ca-lbl" id="cn-ca-lbl">' + esc(caLabel()) + '</div>' +
+        '<label class="cn-fb-ca-row"><span>Mini</span><input type="range" id="cn-ca-min" min="0" max="' + CA_HI + '" step="1000" value="' + caMin + '" oninput="V2.carteCARange(\'min\',this.value)"></label>' +
+        '<label class="cn-fb-ca-row"><span>Maxi</span><input type="range" id="cn-ca-max" min="0" max="' + CA_HI + '" step="1000" value="' + (caMax || CA_HI) + '" oninput="V2.carteCARange(\'max\',this.value)"></label>' +
+        '<button class="cn-fb-ca-clr" onclick="V2.carteFilterRemove(\'ca\')">Réinitialiser</button>' +
+        '</div>';
+    }
+    if (key === 'ville' || key === 'tit') {
+      var cur = key === 'ville' ? villeFocus : titFocus, setter = key === 'ville' ? 'carteVille' : 'carteTit';
+      var ph = key === 'ville' ? 'ex. Nantes' : 'ex. Dupont';
+      return '<div class="cn-fb-txt"><input type="search" class="cn-fb-tin" autofocus placeholder="' + ph + '" value="' + esc(cur) + '" oninput="V2.' + setter + '(this.value)"></div>';
+    }
+    var d = fbMenuData(key); if (!d) return '';
+    return (d.search ? '<div class="cn-fb-msearch"><input type="search" class="cn-fb-tin" autofocus placeholder="Filtrer…" value="' + esc(fbFilter) + '" oninput="V2.carteFbMenuFilter(this.value)"></div>' : '') +
+      '<div class="cn-fb-mlist" id="cn-fbmlist">' + fbRenderMenuList() + '</div>';
+  }
+  function fbItem(key, label, active) {
+    return '<div class="cn-fb-item">' +
+      '<button id="cn-fbb-' + key + '" class="cn-fb-btn' + (active ? ' on' : '') + (fbOpen === key ? ' open' : '') + '" onclick="V2.carteFbToggle(\'' + key + '\')">' + esc(label) + '<i class="cn-fb-car">▾</i></button>' +
+      (fbOpen === key ? '<div class="cn-fb-menu">' + fbMenuHtml(key) + '</div>' : '') +
+      '</div>';
+  }
+  function renderFbRow() {
+    var el = document.getElementById('cn-fbrow'); if (!el) return;
+    el.innerHTML =
+      fbItem('statut', typeFocus === 'clients' ? 'Statut : Clients' : typeFocus === 'prospects' ? 'Statut : Prospects' : 'Statut', typeFocus !== 'all') +
+      fbItem('comm', commFocus || 'Commercial', !!commFocus) +
+      fbItem('uga', ugaFocus ? 'UGA ' + ugaFocus : 'UGA', !!ugaFocus) +
+      fbItem('grp', grpFocus || 'Groupement', !!grpFocus) +
+      fbItem('dept', deptFocus ? 'Dépt ' + deptFocus : 'Département', !!deptFocus) +
+      fbItem('ca', caLabel(), !!(caMin || caMax)) +
+      fbItem('ville', villeFocus ? 'Ville : ' + villeFocus : 'Ville', !!villeFocus) +
+      fbItem('tit', titFocus ? 'Titulaire : ' + titFocus : 'Titulaire', !!titFocus) +
+      '<button class="cn-fb-btn cn-fb-soon" disabled title="Bientôt : ruptures & opportunités">Signaux · à venir</button>';
+  }
+  function renderFbChips(n) {
+    var cel = document.getElementById('cn-fbcount');
+    if (cel) { if (n == null) { n = 0; if (D) for (var i = 0; i < D.p.length; i++) if (pass(D.p[i])) n++; } cel.textContent = n.toLocaleString('fr') + ' officine' + (n > 1 ? 's' : ''); }
+    var el = document.getElementById('cn-fbchips'); if (!el) return;
+    var chips = [];
+    function ch(k, l) { chips.push('<span class="cn-fb-chip">' + esc(l) + '<button class="cn-fb-x" onclick="V2.carteFilterRemove(\'' + k + '\')" aria-label="Retirer le filtre">✕</button></span>'); }
+    if (typeFocus === 'clients') ch('statut', 'Clients'); else if (typeFocus === 'prospects') ch('statut', 'Prospects');
+    if (commFocus) ch('comm', commFocus);
+    if (ugaFocus) ch('uga', 'UGA ' + ugaFocus);
+    if (grpFocus) ch('grp', grpFocus);
+    if (deptFocus) ch('dept', 'Dépt ' + deptFocus + (DEPT_NAMES[deptFocus] ? ' · ' + DEPT_NAMES[deptFocus] : ''));
+    if (caMin || caMax) ch('ca', 'CA ' + caLabel());
+    if (villeFocus) ch('ville', 'Ville : ' + villeFocus);
+    if (titFocus) ch('tit', 'Titulaire : ' + titFocus);
+    if (searchTerm) ch('search', '« ' + searchTerm + ' »');
+    el.innerHTML = chips.length ? (chips.join('') + '<button class="cn-fb-clear" onclick="V2.carteClearFilters()">Tout effacer</button>') : '';
+  }
+  function applyFilters() { rebuild(); renderFbRow(); renderListPanel(); }   // changement discret → re-render complet de la barre
+  var _fbTO = null;
+  function fbApplyLight() { if (_fbTO) clearTimeout(_fbTO); _fbTO = setTimeout(function () { rebuild(); renderListPanel(); }, 180); }   // texte/curseur → garde le focus, pas de re-render de la barre
+
+  V2.carteFbToggle = function (key) { fbOpen = (fbOpen === key) ? '' : key; fbFilter = ''; renderFbRow(); };
+  V2.carteFbPickIdx = function (i) { var o = fbMenuOpts[i]; if (!o) return; var setter = fbMenuSetter; fbOpen = ''; fbFilter = ''; if (V2[setter]) V2[setter](o[0]); else renderFbRow(); };
+  V2.carteFbMenuFilter = function (v) { fbFilter = v || ''; var l = document.getElementById('cn-fbmlist'); if (l) l.innerHTML = fbRenderMenuList(); };
+  V2.carteFbDrawer = function () { var b = document.getElementById('cn-fb'); if (b) b.classList.toggle('open'); };
+  V2.carteUga = function (v) { ugaFocus = v || ''; applyFilters(); };
+  V2.carteVille = function (v) { villeFocus = v || ''; var b = document.getElementById('cn-fbb-ville'); if (b) b.classList.toggle('on', !!villeFocus); fbApplyLight(); };
+  V2.carteTit = function (v) { titFocus = v || ''; var b = document.getElementById('cn-fbb-tit'); if (b) b.classList.toggle('on', !!titFocus); fbApplyLight(); };
+  V2.carteCARange = function (which, val) {
+    val = parseInt(val, 10) || 0;
+    if (which === 'min') { caMin = val; if (caMax && caMin > caMax) caMax = caMin; }
+    else { caMax = (val >= CA_HI) ? 0 : val; if (caMax && caMax < caMin) caMin = caMax; }
+    var lbl = document.getElementById('cn-ca-lbl'); if (lbl) lbl.textContent = caLabel();
+    var mn = document.getElementById('cn-ca-min'); if (mn && +mn.value !== caMin) mn.value = caMin;
+    var mx = document.getElementById('cn-ca-max'); if (mx) { var mv = caMax || CA_HI; if (+mx.value !== mv) mx.value = mv; }
+    var b = document.getElementById('cn-fbb-ca'); if (b) b.classList.toggle('on', !!(caMin || caMax));
+    fbApplyLight();
+  };
+  V2.carteFilterRemove = function (key) {
+    if (key === 'statut') typeFocus = 'all';
+    else if (key === 'comm') commFocus = '';
+    else if (key === 'uga') ugaFocus = '';
+    else if (key === 'grp') grpFocus = '';
+    else if (key === 'dept') deptFocus = '';
+    else if (key === 'ca') { caMin = 0; caMax = 0; }
+    else if (key === 'ville') villeFocus = '';
+    else if (key === 'tit') titFocus = '';
+    else if (key === 'search') { searchTerm = ''; var s = document.getElementById('cn-search'); if (s) s.value = ''; var s2 = document.getElementById('cn-search2'); if (s2) s2.value = ''; }
+    applyFilters();
+  };
+
   function segBtn(k, lbl) { return '<button id="cb-' + k + '"' + (colorMode === k ? ' class="on"' : '') + ' onclick="V2.carteColor(\'' + k + '\')">' + lbl + '</button>'; }
   function typeBtn(k, lbl) { return '<button id="ct-' + k + '"' + (typeFocus === k ? ' class="on"' : '') + ' onclick="V2.carteType(\'' + k + '\')">' + lbl + '</button>'; }
   function dispBtn(k, lbl) { return '<button id="cd-' + k + '"' + (displayMode === k ? ' class="on"' : '') + ' onclick="V2.carteDisplay(\'' + k + '\')">' + lbl + '</button>'; }
@@ -1324,10 +1484,20 @@
     render: function (root) {
       injectCss();
       root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
+        '<div class="cn-shell">' +
+        // ── Barre de filtres « Direction 2 » : recherche + compteur live · boutons-critères · pastilles retirables ──
+        '<div class="cn-fb" id="cn-fb">' +
+          '<div class="cn-fbtop">' +
+            '<input id="cn-search" class="cn-search cn-fbsearch" type="search" placeholder="Chercher une pharmacie, une ville, un titulaire…" oninput="V2.carteSearch(this.value)">' +
+            '<button class="cn-fb-toggle" onclick="V2.carteFbDrawer()">Filtres ▾</button>' +
+            '<span class="cn-fbcount" id="cn-fbcount">chargement…</span>' +
+          '</div>' +
+          '<div class="cn-fbrow" id="cn-fbrow"></div>' +
+          '<div class="cn-fbchips" id="cn-fbchips"></div>' +
+        '</div>' +
         '<div class="cn-wrap">' +
           '<aside class="cn-side">' +
             '<div class="cn-title">Carte nationale <small id="carte-count">chargement…</small></div>' +
-            '<div class="cn-sgroup"><span class="cn-lbl">Voir</span><div class="cn-seg">' + typeBtn('all', 'Tout') + typeBtn('clients', 'Clients') + typeBtn('prospects', 'Prospects') + '</div></div>' +
             '<div class="cn-sgroup"><span class="cn-lbl">Colorer par</span>' +
               '<select class="cn-sel" onchange="V2.carteColor(this.value)">' +
                 [['comm', 'Commercial'], ['type', 'Client / Prospect'], ['ca', 'CA (taille des points)'], ['uga', 'UGA (zone)']]
@@ -1335,15 +1505,11 @@
               '</select>' +
               '<div class="cn-disp">' + dispBtn('points', 'Points') + dispBtn('bulles', 'Bulles (taille = CA)') + '</div>' +
             '</div>' +
-            '<div class="cn-sgroup"><span class="cn-lbl">Filtrer</span>' +
-              '<select id="cn-comm" class="cn-sel" onchange="V2.carteComm(this.value)"></select>' +
-              '<select id="cn-deptsel" class="cn-sel" onchange="V2.carteDept(this.value)"></select>' +
-              '<select id="cn-grpsel" class="cn-sel" onchange="V2.carteGrp(this.value)"></select></div>' +
             '<div class="cn-sgroup"><span class="cn-lbl">Zones par département</span>' +
               '<button id="cn-zonebtn" class="cn-listbtn" onclick="V2.carteZones()">Afficher les zones (départements)</button>' +
               '<select id="cn-zonemetric" class="cn-sel" style="display:none" onchange="V2.carteZoneMetric(this.value)">' +
                 '<option value="part">Colorer : part de clients</option><option value="densite">Colorer : densité d\'officines</option><option value="tension">Colorer : zone sous-dotée (hab./officine)</option><option value="potentiel">Colorer : potentiel (prospects)</option></select></div>' +
-            '<div class="cn-sgroup"><input id="cn-search" class="cn-search" type="search" placeholder="Chercher une pharmacie, une ville…" oninput="V2.carteSearch(this.value)">' +
+            '<div class="cn-sgroup">' +
               '<button class="cn-listbtn cn-listbtn-mob" onclick="V2.carteListOpen()">Liste des officines</button></div>' +
             '<div class="cn-sgroup"><span class="cn-lbl">Légende</span><div class="cn-legend" id="carte-legend"></div></div>' +
             '<div class="cn-sgroup cn-tools">' +
@@ -1359,7 +1525,17 @@
             '<div class="cn-load" id="carte-load"><div class="v2-spinner"></div><div>Chargement de la carte nationale…</div></div>' +
           '</div>' +
           '<aside class="cn-dock" id="cn-dock"></aside>' +
+        '</div>' +
         '</div>';
+      // Fermer le menu ouvert au clic hors de la barre (une seule fois par session de page)
+      if (!V2._fbDocClick) {
+        V2._fbDocClick = true;
+        document.addEventListener('click', function (e) {
+          if (!fbOpen) return;
+          if (e.target && e.target.closest && e.target.closest('.cn-fb-item')) return;
+          fbOpen = ''; fbFilter = ''; renderFbRow();
+        });
+      }
       var load = document.getElementById('carte-load');
       ensureLeaflet(function (e) {
         if (e) { if (load) load.innerHTML = 'Carte indisponible (connexion requise).'; return; }
@@ -1388,19 +1564,15 @@
       : legendHtml();
     rebuild();
   };
-  V2.carteType = function (t) {
-    typeFocus = t;
-    ['all', 'clients', 'prospects'].forEach(function (k) { var b = document.getElementById('ct-' + k); if (b) b.classList.toggle('on', k === t); });
-    rebuild();
-  };
-  V2.carteComm = function (v) { commFocus = v || ''; rebuild(); renderLists(); };
-  V2.carteGrp = function (v) { grpFocus = v || ''; rebuild(); renderLists(); };
-  V2.carteDept = function (v) { deptFocus = v || ''; rebuild(); renderLists(); };
+  V2.carteType = function (t) { typeFocus = t || 'all'; applyFilters(); };
+  V2.carteComm = function (v) { commFocus = v || ''; applyFilters(); };
+  V2.carteGrp = function (v) { grpFocus = v || ''; applyFilters(); };
+  V2.carteDept = function (v) { deptFocus = v || ''; applyFilters(); };
   var _searchTO = null;
   V2.carteSearch = function (v) {
     searchTerm = v || '';
     if (_searchTO) clearTimeout(_searchTO);
-    _searchTO = setTimeout(function () { rebuild(); renderLists(); }, 220);
+    _searchTO = setTimeout(function () { rebuild(); renderFbRow(); renderListPanel(); }, 220);
   };
   // ── LISTE-DONNÉES : voir précisément noms + infos, filtrable, cliquable ──
   function filtered() { var out = []; if (!D) return out; for (var i = 0; i < D.p.length; i++) if (pass(D.p[i])) out.push(i); return out; }
@@ -1465,6 +1637,10 @@
     if (commFocus) chips.push(esc(commFocus));
     if (deptFocus) chips.push('Dépt ' + esc(deptFocus) + (DEPT_NAMES[deptFocus] ? ' · ' + esc(DEPT_NAMES[deptFocus]) : ''));
     if (grpFocus) chips.push(esc(grpFocus));
+    if (ugaFocus) chips.push('UGA ' + esc(ugaFocus));
+    if (caMin || caMax) chips.push('CA ' + esc(caLabel()));
+    if (villeFocus) chips.push('Ville : ' + esc(villeFocus));
+    if (titFocus) chips.push('Titulaire : ' + esc(titFocus));
     if (searchTerm) chips.push('« ' + esc(searchTerm) + ' »');
     if (!chips.length) return '';
     return '<div class="cn-dockflt">' + chips.map(function (t) { return '<span class="cn-fchip">' + t + '</span>'; }).join('') +
@@ -1472,9 +1648,9 @@
   }
   V2.carteClearFilters = function () {
     typeFocus = 'all'; commFocus = ''; grpFocus = ''; deptFocus = ''; searchTerm = '';
-    ['all', 'clients', 'prospects'].forEach(function (k) { var b = document.getElementById('ct-' + k); if (b) b.classList.toggle('on', k === 'all'); });
-    var ids = ['cn-comm', 'cn-deptsel', 'cn-grpsel', 'cn-search']; ids.forEach(function (id) { var e = document.getElementById(id); if (e) e.value = ''; });
-    rebuild(); renderLists();
+    ugaFocus = ''; caMin = 0; caMax = 0; villeFocus = ''; titFocus = ''; fbOpen = ''; fbFilter = '';
+    ['cn-search', 'cn-search2'].forEach(function (id) { var e = document.getElementById(id); if (e) e.value = ''; });
+    applyFilters();
   };
   // Dock : liste toujours visible à côté de la carte (desktop) — pas de recherche propre (la barre latérale l'a déjà)
   function renderDock() {
