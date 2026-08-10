@@ -921,7 +921,7 @@
             rest.map(function (p) { return '<a class="v2-lch-mini" onclick="V2.go(\'' + p.k + '\')">' + ICO(p.ico, 15) + esc(p.t) + '</a>'; }).join('') +
             // Espace Groupements : listes des groupements + listings produits (renderGroupementsList via pharma?groupements)
             '<a class="v2-lch-mini" onclick="V2.go(\'pharma\',\'groupements\')">' + ICO('list', 15) + 'Groupements</a>' +
-            (V2.pages.tournee ? '<a class="v2-lch-mini" onclick="V2.go(\'tournee\')">' + ICO('cal', 15) + 'Tournée prospect</a>' : '') +
+            // Tournée prospect : vit désormais dans le Copilote (Organisateur de tournée sur la carte).
             '</div>';
         }
       }
@@ -968,9 +968,7 @@
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.carteGrp) {
       idx.push({ grp: 'Pages', label: 'Carte groupements · clients & prospects par groupement', ico: 'pharma', action: function () { V2.go('carteGrp'); } });
     }
-    if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.tournee) {
-      idx.push({ grp: 'Pages', label: 'Tournée prospect · itinéraire du jour', ico: 'cal', action: function () { V2.go('tournee'); } });
-    }
+    // Tournée prospect : intégrée au Copilote (Organisateur de tournée) — recherchable via l'entrée « Copilote ».
     // Pharmacies
     (V2.pharmacies || []).forEach(function (p) {
       idx.push({ grp: 'Pharmacies', label: p.name, ico: 'pharma', meta: '', pid: String(p.id), action: function () { V2.go('pharma', p.id); } });
