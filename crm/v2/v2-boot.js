@@ -307,7 +307,7 @@
   V2.loadFiles = function (keys) {
     // chemins relatifs au dossier parent crm/ (les data files sont dans crm/)
     // ⚠️ DOIT être bumpé en même temps que la version globale (sinon le SW ressert les vieilles données)
-    var V = '?v=20260811d';
+    var V = '?v=20260811e';
     var promises = keys.map(function (k) {
       var src = (window.V2_DATA_BASE || '../') + DATA_FILES[k];
       if (loaded[src]) return Promise.resolve();
