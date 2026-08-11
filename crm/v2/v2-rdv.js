@@ -40,7 +40,8 @@
   // dans cet ordre de confiance :
   //   1. CLIENTS (clients-data.js)  — saisi par l'équipe, fait foi
   //   2. PHARMA_FR (base nationale) — 19 671 officines, 95 % tel / 53 % mail
-  //   3. WML                        — nom, ville, CP, coordonnées GPS
+  //   3. MAILS_COMPLEMENT           — retrouvé sur le site de l'officine / OSM
+  //   4. WML                        — nom, ville, CP, coordonnées GPS
   // Toutes se réconcilient par le CIP, qui est aussi l'id de l'officine.
   // Mesuré le 10/08/2026 : la source 2 apporte à elle seule +444 téléphones
   // et +322 adresses mail sur les 691 officines du portefeuille.
@@ -72,6 +73,7 @@
     var ph = (V2.pharmacies || []).find(function (p) { return String(p.id) === String(pid); }) || {};
     var cl = clientDuCip(pid) || {};
     var n = nationalDuCip(pid) || [];
+    var xt = (window.MAILS_COMPLEMENT || {})[String(pid)] || {};
     function nat(k) { return n[NAT[k]] || ''; }
     return {
       cip: String(pid),
@@ -79,8 +81,8 @@
       adresse: cl.adresse || '',
       cp: ph.cp || cl.cp || nat('cp') || '',
       ville: ph.ville || cl.ville || nat('ville') || '',
-      email: String(cl.email || nat('email') || '').trim(),
-      tel: String(ph.tel || cl.tel || nat('tel') || '').trim(),
+      email: String(cl.email || nat('email') || xt.email || '').trim(),
+      tel: String(ph.tel || cl.tel || nat('tel') || xt.tel || '').trim(),
       contact: String(cl.contact || nat('titulaire') || '').trim(),
       lat: (typeof ph.lat === 'number' ? ph.lat : (typeof n[NAT.lat] === 'number' ? n[NAT.lat] : null)),
       lon: (typeof ph.lng === 'number' ? ph.lng : (typeof n[NAT.lng] === 'number' ? n[NAT.lng] : null))
