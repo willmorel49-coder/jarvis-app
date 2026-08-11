@@ -136,3 +136,60 @@ test('proposer : agenda entierement bloque donne un tableau vide, pas une erreur
   const r = M.proposer({ officine: NANTES, dispo: D, blocages: bl, occupes: [], aujourdhui: '2026-08-10' });
   assert.deepEqual(r, []);
 });
+
+// ─── Agenda personnel du commercial ────────────────────────────────
+// Une plage venue de son agenda ferme des heures. Elle ne doit JAMAIS
+// orienter la zone géographique de la journée : elle n'a pas de lieu.
+
+const lundiProchain = (() => {
+  const d = new Date('2026-08-17T00:00:00Z');   // un lundi
+  return d.toISOString().slice(0, 10);
+})();
+const veille = '2026-08-10';   // 7 jours avant : respecte delai_min_jours
+
+test('une réunion de 10h à 11h retire ces heures et coupe la plage en deux', () => {
+  const sans = M.proposer({ officine: NANTES, aujourdhui: veille });
+  const avec = M.proposer({
+    officine: NANTES, aujourdhui: veille,
+    agenda: [{ date: lundiProchain, debut: '10:00', fin: '11:00' }]
+  });
+  const heures = (r) => (r.find(j => j.date === lundiProchain) || {}).creneaux || [];
+  const hAvec = heures(avec);
+  assert.ok(heures(sans).length > 0, 'le lundi doit être proposé sans agenda');
+  // Un RDV de 45 min ne peut plus commencer entre 09:16 et 11:00.
+  for (const h of hAvec) {
+    const m = (+h.slice(0, 2)) * 60 + (+h.slice(3));
+    assert.ok(m + 45 <= 600 || m >= 660,
+      `créneau ${h} : chevauche la réunion 10:00-11:00`);
+  }
+});
+
+test('une journée entière dans l’agenda écarte le jour', () => {
+  const r = M.proposer({
+    officine: NANTES, aujourdhui: veille,
+    agenda: [{ date: lundiProchain, debut: '00:00', fin: '23:59' }]
+  });
+  assert.equal(r.find(j => j.date === lundiProchain), undefined);
+});
+
+test('l’agenda ne change PAS la note géographique de la journée', () => {
+  // Sans aucun RDV posé, une journée vaut 2 (« encore vide »). Une plage
+  // d'agenda ne doit pas la faire passer à 0 (« un voisin est déjà là ») :
+  // sinon un déjeuner déciderait du secteur de la journée.
+  const r = M.proposer({
+    officine: NANTES, aujourdhui: veille,
+    agenda: [{ date: lundiProchain, debut: '12:30', fin: '14:00' }]
+  });
+  const j = r.find(x => x.date === lundiProchain);
+  assert.ok(j, 'le jour reste proposé');
+  assert.notEqual(j.score, 0, 'une plage d’agenda ne doit pas jouer le rôle de voisin');
+});
+
+test('une plage d’agenda incohérente est ignorée, pas plantée', () => {
+  const r = M.proposer({
+    officine: NANTES, aujourdhui: veille,
+    agenda: [{ date: lundiProchain, debut: '15:00', fin: '14:00' },
+             { date: lundiProchain, debut: null, fin: '10:00' }]
+  });
+  assert.ok(r.find(j => j.date === lundiProchain), 'le jour reste proposé');
+});

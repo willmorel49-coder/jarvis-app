@@ -38,7 +38,15 @@
     if (!window.supabase || !window.supabase.createClient) { secours(INDISPO); return; }
     if (!token) { secours('Ce lien est incomplet.'); return; }
     if (!sb) sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
-    sb.rpc('rdv_fenetre', { p_token: token }).then(function (r) {
+    // On demande d'abord une relève de l'agenda du commercial, puis on lit la
+    // fenêtre. La relève se protège elle-même (une fois toutes les 10 minutes
+    // au plus) et ne peut PAS faire échouer la page : si l'agenda est muet,
+    // révoqué ou lent, on continue avec ce qu'on a. Une page de réservation
+    // qui paraît cassée fait fuir le pharmacien ; un conflit résiduel, lui,
+    // sera refusé par le serveur au moment de poser.
+    relever().then(function () {
+      return sb.rpc('rdv_fenetre', { p_token: token });
+    }).then(function (r) {
       if (r.error) { secours(INDISPO); return; }
       F = r.data || {};
       if (!F.ok) {
@@ -51,12 +59,31 @@
     }).catch(function () { secours(INDISPO); });
   }
 
+  // Demande au serveur de relire l'agenda du commercial. Ne rejette jamais :
+  // l'agenda est un confort, la réservation doit marcher sans lui.
+  function relever() {
+    return new Promise(function (fini) {
+      var stop = setTimeout(fini, 6000);   // on n'attend pas un agenda lent
+      fetch(window.SUPABASE_URL + '/functions/v1/agenda', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': window.SUPABASE_ANON_KEY,
+          'Authorization': 'Bearer ' + window.SUPABASE_ANON_KEY
+        },
+        body: JSON.stringify({ action: 'relever', token: token })
+      }).then(function () { clearTimeout(stop); fini(); })
+        .catch(function () { clearTimeout(stop); fini(); });
+    });
+  }
+
   function afficherCreneaux() {
     var jours = window.V2RDV.proposer({
       officine: F.officine,
       dispo: F.dispo,
       blocages: F.blocages || [],
       occupes: F.occupes || [],
+      agenda: F.agenda || [],
       aujourdhui: new Date().toISOString().slice(0, 10)
     });
     var h = carte('<h1>Prendre rendez-vous</h1>' +
