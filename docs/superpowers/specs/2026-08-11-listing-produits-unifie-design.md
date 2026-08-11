@@ -49,7 +49,8 @@ Aucune nouvelle source, aucun scraping, aucun coût.
 
 **Faits mesurés le 11/08/2026** (sur les fichiers de production) :
 
-- 135 groupements distincts ; 516 officines sur 691 (**75 %**) appartiennent à un groupement d'au moins 5 officines ; 18 officines sans aucun groupement.
+- 134 groupements distincts ; 516 officines sur 691 (**75 %**) appartiennent à un groupement d'au moins 5 officines ; 18 officines sans aucun groupement.
+  *(Remesuré le 11/08/2026 sur les fichiers de `origin/main`, pas sur une branche en retard.)*
 - 7 886 CIP distincts vendus ; 86 216 paires (groupement × CIP) ; 155 785 paires (officine × CIP).
 - Indexation complète des 437 848 lignes : **259 ms**, une seule fois.
 
