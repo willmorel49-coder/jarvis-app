@@ -119,8 +119,27 @@
     return { date: dateISO, score: 1, creneaux: meme };
   };
 
-  // Retire les plages couvertes par un blocage de demi-journée.
-  function plagesDuJour(dateISO, dispo, blocages) {
+  // Retire un intervalle d'une liste de plages. Une réunion au milieu de
+  // l'après-midi coupe la plage en deux ; elle ne la supprime pas.
+  function soustraire(plages, deb, fin) {
+    var out = [];
+    for (var i = 0; i < plages.length; i++) {
+      var a = hm2min(plages[i][0]), b = hm2min(plages[i][1]);
+      if (fin <= a || deb >= b) { out.push(plages[i]); continue; }   // aucun contact
+      if (deb > a) out.push([min2hm(a), min2hm(deb)]);               // le bout d'avant
+      if (fin < b) out.push([min2hm(fin), min2hm(b)]);               // le bout d'après
+    }
+    return out;
+  }
+
+  // Retire les demi-journées bloquées à la main, PUIS les heures déjà prises
+  // dans l'agenda personnel du commercial.
+  //
+  // Pourquoi ici et pas dans la liste des rendez-vous : une plage d'agenda
+  // n'a pas de coordonnées. La traiter comme un RDV ferait croire au moteur
+  // qu'un voisin est posé ce jour-là et orienterait toute la zone de la
+  // journée sur un déjeuner. Ici, elle ne fait que fermer des heures.
+  function plagesDuJour(dateISO, dispo, blocages, agenda) {
     var d = fusionner(dispo);
     var plages = d.jours[String(jourSemaine(dateISO))];
     if (!plages || !plages.length) return null;
@@ -129,6 +148,12 @@
       if (bl[i].moment === 'journee') return null;
       if (bl[i].moment === 'matin') plages = plages.filter(function (p) { return hm2min(p[0]) >= MIDI; });
       if (bl[i].moment === 'apres_midi') plages = plages.filter(function (p) { return hm2min(p[0]) < MIDI; });
+    }
+    var ag = (agenda || []).filter(function (o) { return o && o.date === dateISO; });
+    for (var j = 0; j < ag.length && plages.length; j++) {
+      var deb = hm2min(ag[j].debut), fin = hm2min(ag[j].fin);
+      if (deb == null || fin == null || fin <= deb) continue;
+      plages = soustraire(plages, deb, fin);
     }
     return plages.length ? plages : null;
   }
@@ -164,6 +189,8 @@
     var officine = (p && p.officine) || {};
     var occupes = (p && p.occupes) || [];
     var blocages = (p && p.blocages) || [];
+    // Plages venues de l'agenda personnel du commercial (heures seulement).
+    var agenda = (p && p.agenda) || [];
     var aujourdhui = (p && p.aujourdhui) || new Date().toISOString().slice(0, 10);
 
     var parDate = {};
@@ -175,7 +202,7 @@
     var jours = [];
     for (var i = d.delai_min_jours; i <= d.horizon_jours; i++) {
       var iso = isoPlus(aujourdhui, i);
-      var plages = plagesDuJour(iso, d, blocages);
+      var plages = plagesDuJour(iso, d, blocages, agenda);
       if (!plages) continue;
       var j = M.jour(iso, parDate[iso] || [], officine, d, plages);
       if (j) jours.push(j);
