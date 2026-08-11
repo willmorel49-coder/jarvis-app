@@ -273,7 +273,8 @@
     home: 'var(--accent)', pharma: 'var(--pil-opp)', fiches: 'var(--pil-fiche)',
     catalogue: 'var(--pil-cat)', pilotage: 'var(--pil-pilo)', offilog: 'var(--pil-froid)',
     groupements: 'var(--pil-fiche)', molecules: '#7C3AED', presentation: 'var(--c-opp)',
-    infos: 'var(--c-amber)', marketing: 'var(--c-rose)', audit: '#10915E', sagitta: 'var(--pil-froid)'
+    infos: 'var(--c-amber)', marketing: 'var(--c-rose)', audit: '#10915E', sagitta: 'var(--pil-froid)',
+    produits: 'var(--ip-blue)'
   };
   function accentFor(name) {
     if (name === 'marketing') return (window.V2_BRAND && window.V2_BRAND.opso) ? 'var(--pil-fiche)' : 'var(--pil-rose)';
@@ -809,7 +810,10 @@
       var P = [
         { k: 'pharma', cls: 'p1', ico: 'opp', tag: 'RDV', t: 'Officines', d: 'Arrive sur une officine et vois direct quoi proposer : ses best, ce qu\'elle ne commande pas, son audit marge — classé par catégorie et tranche de prix.', go: 'Choisir une pharmacie' },
         { k: 'fiches', cls: 'p2', ico: 'fiche', tag: 'PDF', t: 'Fiches commerciales', d: 'Crée une fiche produit sur-mesure et sors-la en PDF à montrer ou envoyer au pharmacien pendant le rendez-vous.', go: 'Créer une fiche' },
-        { k: 'catalogue', cls: 'p3', ico: 'cat', tag: (window.BENCHMARK ? V2.fmtNum(window.BENCHMARK.length) : '10 500'), t: 'Catalogue grossiste', d: 'Tout le catalogue médicaments IP par tranches de prix et familles AFMCODE, avec ton volume et le marché Ameli.', go: 'Explorer le catalogue' },
+        // Entrée UNIQUE des produits (11/08/2026). Remplace la tuile Catalogue ;
+        // les tuiles « Par molécule » et « Appro » sont retirées plus bas. Les
+        // trois écrans restent atteignables depuis Produits et depuis ⌘K.
+        { k: 'produits', cls: 'p3', ico: 'cat', tag: 'Par officine', t: 'Produits', d: 'Ce que les confrères du même groupement d\'achat prennent et pas cette officine — uniquement ce qu\'on a en stock, chiffré en € de potentiel. Et la même chose par produit pour les achats.', go: 'Ouvrir les produits' },
         { k: 'offilog', cls: 'p5', accent: 'var(--c-froid)', ico: 'spark', tag: 'Veille', t: 'Offilog & concurrents', d: 'Ta parapharma : ton prix d\'achat IP comparé en direct au prix public E.Leclerc. Repère où un concurrent casse les prix.', go: 'Ouvrir Offilog' },
         { k: 'pilotage', cls: 'p4', ico: 'pilo', tag: V2.fmtK(caTotal) + ' €', t: 'Pilotage', d: 'Ton chiffre d\'affaires, ta marge MDL, tes objectifs et qui commande quoi. Le tableau de bord de ta tournée.', go: 'Voir mon pilotage' },
       ];
@@ -821,10 +825,8 @@
       if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.copilote) {
         P.push({ k: 'copilote', cls: 'p1', accent: 'var(--ip-blue)', ico: 'spark', tag: 'Carte', t: 'Copilote', d: 'Toutes tes officines sur la carte, où tu filtres tout : client/prospect, commercial, UGA, groupement, département, tranche de CA, ville, titulaire — cumulables, avec le compte en direct.', go: 'Ouvrir la carte' });
       }
-      // Pilier Molécules (analyse réseau : rotation + marge pharmacien) — app JARVIS
-      if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.molecules) {
-        P.push({ k: 'molecules', cls: 'p3', accent: '#7C3AED', ico: 'cat', tag: 'Réseau', t: 'Par molécule', d: 'Ce qu\'une pharmacie moyenne fait sur chaque molécule : rotation, marge pharmacien et ton abandon de marge. Pour chiffrer ce que ça rapporte au comptoir.', go: 'Voir les molécules' });
-      }
+      // Tuile « Par molécule » retirée le 11/08/2026 : l'écran existe toujours,
+      // il est atteignable depuis Produits (lien de bas de page) et depuis ⌘K.
       // Base Biosimilaires (marché FR × réseau IP) — app JARVIS
       if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.biosimilaires) {
         P.push({ k: 'biosimilaires', cls: 'p3', accent: '#6D4FC4', ico: 'cat', tag: 'Marché FR', t: 'Biosimilaires', d: 'La base complète des biosimilaires France : substituables en officine et labos partenaires (Zentiva, EG, Teva) en tête, croisés à tes ventes et stocks réseau.', go: 'Ouvrir la base' });
@@ -833,7 +835,9 @@
       if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.audit) {
         P.push({ k: 'audit', cls: 'p4', accent: '#10915E', ico: 'pilo', tag: 'Par pharmacie', t: 'Audit marge', d: 'Ce qu\'Intégral rend à chaque pharmacie via l\'abandon de marge — par tranche, vs son grossiste actuel, calculé sur ses vrais achats. Un audit offert, prêt en PDF.', go: 'Ouvrir l\'audit' });
         P.push({ k: 'missions', cls: 'p4', accent: '#0E9E6A', ico: 'pilo', tag: 'Expert 360', t: 'Missions rémunérées', d: 'La rémunération de l\'officine au-delà du produit : vaccination, entretiens, BPM, TROD… les tarifs 2026 + un simulateur « combien elle peut gagner ». L\'argument d\'expert à montrer au pharmacien.', go: 'Ouvrir les missions' });
-        P.push({ k: 'appro', cls: 'p5', accent: '#0E7C86', ico: 'spark', tag: 'Achats', t: 'Appro Intégral', d: 'L\'outil de l\'équipe achats : ce qui monte dans le réseau, la saison qui arrive, les nouveautés à référencer, les ruptures à sécuriser et tes leviers de négo par génériqueur.', go: 'Ouvrir l\'appro' });
+        // Tuile « Appro Intégral » retirée le 11/08/2026 : l'écran existe
+        // toujours, atteignable depuis Produits (mode Achats + lien de bas de
+        // page) et depuis ⌘K.
       }
       // Concurrents · grossistes-répartiteurs (annuaire + actualités) — app JARVIS
       if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.grossistes) {
@@ -960,7 +964,11 @@
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.copilote) PAGES.splice(1, 0, ['copilote', 'Copilote · opportunités & tournée', 'spark']);
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.carte) PAGES.splice(2, 0, ['carte', 'Carte des officines', 'pharma']);
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.infos) PAGES.splice(1, 0, ['infos', 'Infos du matin', 'spark']);
-    if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.molecules) PAGES.splice(3, 0, ['molecules', 'Catalogue & prix (par produit)', 'cat']);
+    if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.produits) PAGES.splice(1, 0, ['produits', 'Produits · par officine et par groupement d\'achat', 'cat']);
+    // molecules / catalogue / appro restent dans ⌘K : c'est le chemin de secours
+    // depuis qu'ils ont quitté les tuiles de l'accueil.
+    if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.molecules) PAGES.splice(4, 0, ['molecules', 'Catalogue & prix (par produit)', 'cat']);
+    if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.appro) PAGES.push(['appro', 'Appro Intégral · vue achats détaillée', 'spark']);
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.biosimilaires) PAGES.splice(4, 0, ['biosimilaires', 'Base Biosimilaires (marché FR)', 'cat']);
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.audit) PAGES.push(['audit', 'Audit Marge (par pharmacie)', 'pilo']);
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.presentation) PAGES.push(['presentation', 'Présentation Intégral Pharma', 'pharma']);
