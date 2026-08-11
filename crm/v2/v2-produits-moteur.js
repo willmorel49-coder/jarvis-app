@@ -97,6 +97,71 @@
     };
   };
 
+  // Agrégat d'un groupe : pour chaque CIP, combien d'officines du groupe
+  // l'achètent réellement (net > 0) et pour quel montant cumulé.
+  // Mémorisé sur l'index : une seule fois par clé, quel que soit le nombre
+  // d'officines qui s'en servent. Sans ça, la vue Achats recalculerait le
+  // même agrégat une fois par officine — des millions d'opérations.
+  M.agregatGroupe = function (idx, cle) {
+    idx._agg = idx._agg || {};
+    if (idx._agg[cle]) return idx._agg[cle];
+    var membres = idx.membres[cle] || [];
+    var cnt = {}, som = {}, i, cip;
+    for (i = 0; i < membres.length; i++) {
+      var v = idx.netParOfficine[membres[i]];
+      if (!v) continue;
+      for (cip in v) {
+        if (!Object.prototype.hasOwnProperty.call(v, cip)) continue;
+        if (!(v[cip] > 0)) continue;
+        cnt[cip] = (cnt[cip] || 0) + 1;
+        som[cip] = (som[cip] || 0) + v[cip];
+      }
+    }
+    idx._agg[cle] = { cnt: cnt, som: som, taille: membres.length };
+    return idx._agg[cle];
+  };
+
+  M.listingOfficine = function (idx, phId, opts) {
+    opts = opts || {};
+    var seuil = opts.seuil == null ? M.SEUIL_PEERS : opts.seuil;
+    var stock = opts.stock || {};
+    var exigerStock = opts.exigerStock !== false;
+
+    var grp = M.groupeComparaison(idx, phId);
+    if (!grp) return { groupe: null, nbConfreres: 0, lignes: [] };
+
+    var id = String(phId);
+    var mien = idx.netParOfficine[id] || {};
+    var agg = M.agregatGroupe(idx, grp.cle);
+    // L'officine cible appartient au groupe agrégé : on retire sa propre
+    // contribution pour ne compter que les confrères.
+    var dansLeGroupe = (idx.membres[grp.cle] || []).indexOf(id) >= 0;
+    var n = grp.taille - (dansLeGroupe ? 1 : 0);
+    if (n <= 0) return { groupe: grp, nbConfreres: 0, lignes: [] };
+
+    var out = [], cip;
+    for (cip in agg.cnt) {
+      if (!Object.prototype.hasOwnProperty.call(agg.cnt, cip)) continue;
+      if (mien[cip] > 0) continue;                       // elle le prend déjà
+      // L'agrégat ne compte que les officines dont le net est > 0. La cible
+      // ayant été écartée juste au-dessus, sa contribution est forcément
+      // nulle : rien à retrancher ici, seul le dénominateur change.
+      var peers = agg.cnt[cip], somme = agg.som[cip];
+      if (peers <= 0) continue;
+      var pct = peers / n;
+      if (pct < seuil) continue;
+      var st = +stock[cip] || 0;
+      if (exigerStock && !(st > 0)) continue;
+      var moy = somme / peers;
+      out.push({
+        cip: cip, peers: peers, pctPeers: pct, caMoyen: moy,
+        potentiel: moy * pct, stock: st
+      });
+    }
+    out.sort(function (a, b) { return b.potentiel - a.potentiel; });
+    return { groupe: grp, nbConfreres: n, lignes: out };
+  };
+
   if (typeof module !== 'undefined' && module.exports) module.exports = M;
   else glob.V2PRODUITS = M;
 })(typeof window !== 'undefined' ? window : this);
