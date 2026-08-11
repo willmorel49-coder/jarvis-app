@@ -12,10 +12,19 @@ const B = new URL('../crm/v2/', import.meta.url);
 const lire = (f) => readFileSync(new URL(f, B), 'utf8');
 
 const styles = [];
+// Le faux DOM doit se souvenir des elements poses : sinon getElementById rend
+// toujours null et la page reinjecte sa feuille de style a chaque rendu — un
+// faux echec qui n'existe pas dans un navigateur.
+const parId = {};
 const doc = {
-  getElementById: () => null,
-  createElement: () => ({ textContent: '' }),
-  head: { appendChild: (el) => styles.push(el.textContent || '') },
+  getElementById: (id) => parId[id] || null,
+  createElement: () => ({ id: '', textContent: '' }),
+  head: {
+    appendChild: (el) => {
+      if (el.id) parId[el.id] = el;
+      styles.push(el.textContent || '');
+    },
+  },
 };
 // Dans un navigateur, `window` EST l'objet global : on le reproduit, sinon
 // `window.V2 = ...` ne cree pas la variable globale V2 que le code utilise.
@@ -107,4 +116,48 @@ test('mobile : les cibles tactiles font au moins 44 px', () => {
 test('iOS : les champs de saisie font au moins 16 px', () => {
   const bloc = styles[0].split('.pr-search input{')[1] || '';
   assert.ok(/font-size:16px/.test(bloc.slice(0, 200)), 'champ sous 16 px : iOS zoomera');
+});
+
+// ── Mode Achats ────────────────────────────────────────────────────
+sb.V2.produits.S.mode = 'achats';
+const rootA = { innerHTML: '' };
+sb.V2.pages.produits.render(rootA, null);
+const hA = rootA.innerHTML;
+const blocsA = hA.split('<div class="pr-row">').slice(1);
+
+test('achats : la vue par produit rend des lignes', () => {
+  assert.ok(blocsA.length > 0, 'aucune ligne rendue en mode Achats');
+  assert.ok(/ne nous le prennent pas/.test(hA), 'l argument achats est absent');
+});
+
+test('achats : le selecteur liste les groupements, le plus gros en tete', () => {
+  const noms = [...hA.matchAll(/<option value="[^"]*"[^>]*>([^·<]+) · (\d+) officines</g)]
+    .map((m) => ({ nom: m[1].trim(), n: +m[2] }));
+  assert.ok(noms.length > 50, `seulement ${noms.length} groupements listes`);
+  for (let i = 1; i < noms.length; i++) {
+    assert.ok(noms[i - 1].n >= noms[i].n,
+      `${noms[i - 1].nom} (${noms[i - 1].n}) avant ${noms[i].nom} (${noms[i].n})`);
+  }
+  assert.equal(noms[0].nom, 'UPP', `attendu UPP en tete, obtenu ${noms[0].nom}`);
+});
+
+test('achats : la couverture est en mois ou « — », jamais infinie', () => {
+  for (const b of blocsA) {
+    const c = (b.match(/<span>([^<]*)<\/span><em>couverture<\/em>/) || [])[1];
+    assert.ok(c === '—' || /^(> 24 mois|[\d ,]+ mois)$/.test(c),
+      `couverture illisible : « ${c} »`);
+  }
+});
+
+test('achats : « ce qu on n a pas » ne montre que du stock a zero', () => {
+  sb.V2.produits.S.horsStock = true;
+  const r = { innerHTML: '' };
+  sb.V2.pages.produits.render(r, null);
+  const bl = r.innerHTML.split('<div class="pr-row">').slice(1);
+  assert.ok(bl.length > 0, 'aucun produit hors stock remonte');
+  for (const b of bl) {
+    const st = (b.match(/<span>([^<]*)<\/span><em>en stock<\/em>/) || [])[1];
+    assert.equal(st, '0', `produit avec un stock de ${st} dans « ce qu on n a pas »`);
+  }
+  sb.V2.produits.S.horsStock = false;
 });
