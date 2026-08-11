@@ -98,7 +98,20 @@ Un CIP entre dans la liste de l'officine si :
 | 20 % | 188 | 0 |
 | 10 % | 503 | 0 |
 
-Le seuil est exposé en constante `SEUIL_PEERS = 0.30` en tête de module, modifiable sans toucher au reste.
+⚠️ **Correction du 11/08/2026, trouvée par le test d'invariants.** Cette table ne portait que sur les **506 officines ayant un vrai groupement**, jamais sur les 185 du chemin de repli. À 30 %, **4 officines se retrouvaient avec zéro produit** : Pharmacie FAURE, Grande Pharmacie des Voûtes, Bajatière, Mirman — toutes minuscules (1 552 € à 6 102 € de CA), comparées à d'autres toutes petites officines qui nous achètent peu.
+
+**Correctif retenu — paliers de repli.** `SEUILS = [0.30, 0.20, 0.10, 0.05]` : on descend d'un cran tant que la liste compte moins de `MIN_LIGNES = 5` produits. Le seuil réellement utilisé est rendu dans le résultat (`.seuil`) et le pourcentage réel reste affiché sur chaque ligne — le commercial voit toujours d'où sort le chiffre.
+
+**Effet mesuré sur les 691 officines :**
+
+| Seuil réellement utilisé | Officines |
+|---|---|
+| 30 % (nominal) | **665 (96 %)** |
+| 20 % | 26 (4 %) |
+| 10 % ou 5 % | 0 |
+
+Produits par officine : minimum **5** (garantie tenue), moyenne **85,3**, maximum **441**.
+Coût : indexation 199 ms, les 691 listings 850 ms, vue Achats (1 360 produits) 574 ms.
 
 ### 4.3 Tri
 

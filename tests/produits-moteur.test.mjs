@@ -134,7 +134,7 @@ test('listing : un produit deja achete par l officine n apparait pas', () => {
 
 test('listing : le trou remonte avec le bon pourcentage et la bonne moyenne', () => {
   const idx = M.indexer(OFFICINES, VENTES);
-  const r = M.listingOfficine(idx, 'G4', { stock: STOCK });
+  const r = M.listingOfficine(idx, 'G4', { stock: STOCK, garantirMin: false });
   const aaa = r.lignes.find((l) => l.cip === 'AAA');
   assert.ok(aaa, 'AAA doit remonter pour G4');
   assert.equal(aaa.peers, 3);
@@ -145,8 +145,10 @@ test('listing : le trou remonte avec le bon pourcentage et la bonne moyenne', ()
 
 test('listing : sous le seuil, le produit est ecarte', () => {
   const idx = M.indexer(OFFICINES, VENTES);
-  // CCC : 1 confrere sur 5 = 20 %, sous le seuil de 30 %
-  const r = M.listingOfficine(idx, 'G4', { stock: STOCK });
+  // CCC : 1 confrere sur 5 = 20 %, sous le seuil de 30 %.
+  // garantirMin:false = un seul passage au seuil nominal, sans repli — le
+  // jeu d'essai n'a que 3 produits, garantir un minimum de 5 n'y a aucun sens.
+  const r = M.listingOfficine(idx, 'G4', { stock: STOCK, garantirMin: false });
   assert.equal(r.lignes.filter((l) => l.cip === 'CCC').length, 0);
   // seuil abaisse a 10 % : il remonte
   const r2 = M.listingOfficine(idx, 'G4', { stock: STOCK, seuil: 0.1 });
@@ -182,4 +184,79 @@ test('listing : officine inconnue rend une liste vide, pas une erreur', () => {
   const r = M.listingOfficine(idx, 'INEXISTANTE', { stock: STOCK });
   assert.deepEqual(r.lignes, []);
   assert.equal(r.nbConfreres, 0);
+});
+
+// ── Task 3 : listing par produit (mode Achats) ─────────────────────
+test('couverture : stock divise par la demande mensuelle', () => {
+  const idx = M.indexer(OFFICINES, VENTES);
+  // AAA : 3 unites sur 6 mois = 0,5/mois ; stock 500 → 1000 mois
+  assert.equal(M.couverture(idx, 'AAA', { AAA: 500 }), 1000);
+});
+
+test('couverture : demande nulle rend null au lieu d infini', () => {
+  const idx = M.indexer(OFFICINES, VENTES);
+  assert.equal(M.couverture(idx, 'INCONNU', { INCONNU: 10 }), null);
+});
+
+test('produits : agrege le nombre d officines en trou sur chaque CIP', () => {
+  const idx = M.indexer(OFFICINES, VENTES);
+  const r = M.listingProduits(idx, { stock: STOCK, seuil: 0.1 });
+  const aaa = r.find((l) => l.cip === 'AAA');
+  assert.ok(aaa, 'AAA doit apparaitre');
+  // G4, G5, G6 ne prennent pas AAA et sont dans le groupe Giphar
+  assert.ok(aaa.officines >= 3, `attendu >= 3, obtenu ${aaa.officines}`);
+});
+
+test('produits : le potentiel cumule est la somme des potentiels officine', () => {
+  const idx = M.indexer(OFFICINES, VENTES);
+  const r = M.listingProduits(idx, { stock: STOCK, seuil: 0.1 });
+  const aaa = r.find((l) => l.cip === 'AAA');
+  let attendu = 0;
+  for (const o of OFFICINES) {
+    const li = M.listingOfficine(idx, o.id, { stock: STOCK, seuil: 0.1 })
+      .lignes.find((l) => l.cip === 'AAA');
+    if (li) attendu += li.potentiel;
+  }
+  assert.ok(Math.abs(aaa.potentiel - attendu) < 1e-9);
+});
+
+test('produits : trie par potentiel decroissant', () => {
+  const idx = M.indexer(OFFICINES, VENTES);
+  const r = M.listingProduits(idx, { stock: STOCK, seuil: 0.1 });
+  for (let i = 1; i < r.length; i++) {
+    assert.ok(r[i - 1].potentiel >= r[i].potentiel, `ligne ${i} mal triee`);
+  }
+});
+
+test('produits : filtre par groupement ne garde que ses officines', () => {
+  const idx = M.indexer(OFFICINES, VENTES);
+  const r = M.listingProduits(idx, { stock: STOCK, seuil: 0.1, filtreGroupement: 'Mediprix' });
+  const tous = M.listingProduits(idx, { stock: STOCK, seuil: 0.1 });
+  const somme = (a) => a.reduce((s, x) => s + x.officines, 0);
+  assert.ok(somme(r) < somme(tous), 'le filtre doit reduire le total');
+});
+
+test('produits : exigerStock a false fait apparaitre ce qu on n a pas', () => {
+  const idx = M.indexer(OFFICINES, VENTES);
+  const r = M.listingProduits(idx, { stock: {}, seuil: 0.1, exigerStock: false });
+  assert.ok(r.length > 0, 'sans stock du tout, la vue achats doit rester peuplee');
+  assert.equal(r[0].stock, 0);
+});
+
+test('repli : une liste trop courte descend les paliers jusqu a MIN_LIGNES', () => {
+  const idx = M.indexer(OFFICINES, VENTES);
+  // G4 au seuil nominal n'a que AAA et BBB (2 produits) : le repli descend
+  // les paliers, et le seuil reellement utilise est rendu dans le resultat.
+  const strict = M.listingOfficine(idx, 'G4', { stock: STOCK, garantirMin: false });
+  const avecRepli = M.listingOfficine(idx, 'G4', { stock: STOCK });
+  assert.equal(strict.seuil, M.SEUIL_PEERS);
+  assert.ok(avecRepli.seuil < M.SEUIL_PEERS, 'le seuil doit avoir baisse');
+  assert.ok(avecRepli.lignes.length > strict.lignes.length);
+});
+
+test('repli : un seuil impose par l appelant n est jamais degrade', () => {
+  const idx = M.indexer(OFFICINES, VENTES);
+  const r = M.listingOfficine(idx, 'G4', { stock: STOCK, seuil: 0.9 });
+  assert.equal(r.seuil, 0.9);
+  assert.equal(r.lignes.length, 0);
 });
