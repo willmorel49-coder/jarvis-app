@@ -2,8 +2,8 @@
    CRM V2 · Pilier "Offilog & concurrents" (pages.offilog)
    Catalogue PARAPHARMA = meilleures ventes Offilog (live, connecté),
    classées par ventes décroissantes, AVEC PHOTOS + prix Offilog.
-   Enrichi par EAN avec la veille prix (achat IP vs prix publics
-   E.Leclerc / Drakkars / Cap3000) depuis OFFILOG.
+   Enrichi par EAN avec la veille prix (achat IP vs prix public
+   E.Leclerc) depuis OFFILOG. + axe pro Offilog vs Pharmazon.
    ── Même DA que le catalogue grossiste · vanilla · zéro emoji ──
    ═══════════════════════════════════════════════════════════════════ */
 (function () {
@@ -41,9 +41,14 @@
   var CHIP_BY_KEY = {}; CHIPS.forEach(function (c) { CHIP_BY_KEY[c.k] = c; });
 
   var CONC = [
+    // Concurrence EN LIGNE grand public (TTC). Drakkars/Cap3000 (enseignes de niche)
+    // retirés le 06/08/2026 sur décision de Will : on ne garde que la vraie concurrence
+    // en ligne. Pharma-GDD à ajouter ici dès que ses prix seront scrapés (aujourd'hui
+    // le repo n'a que ses images, pas ses prix). L'axe PRO Offilog vs Pharmazon vit
+    // plus bas (pzIndex/inspector), inchangé.
+    // ⚠️ Remise en ligne le 11/08/2026 : la décision du 06/08 n'était jamais arrivée
+    // en production, elle dormait sur une branche abandonnée.
     { key: 'prix_leclerc',  label: 'E.Leclerc', color: '#0066B3' },
-    { key: 'prix_drakkars', label: 'Drakkars',  color: '#1E9E6A' },
-    { key: 'prix_cap3000',  label: 'Cap3000',   color: '#C7791A' },
   ];
 
   // ── Index ─────────────────────────────────────
@@ -914,7 +919,7 @@
         '<div class="v2-wrap' + (S.sel != null ? ' v2-detail-shift" style="--detw:392px"' : '"') + '>' +
           (V2.priceTabs ? V2.priceTabs('offilog') : '') +
           '<div class="v2-page-title">Concurrents</div>' +
-          '<div class="v2-page-sub">Ton prix d\'achat IP (HT) comparé en direct aux prix publics E.Leclerc, Drakkars et Cap3000 (TTC). Vois d\'un coup d\'œil où un concurrent casse les prix sous ton achat.</div>' +
+          '<div class="v2-page-sub">Ton prix d\'achat IP (HT) comparé en direct au prix public E.Leclerc (TTC). Vois d\'un coup d\'œil où un concurrent casse les prix sous ton achat.</div>' +
           '<div class="off-search">' + ICO('search', 19, 2) +
             '<input id="off-search-input" autocomplete="off" placeholder="Rechercher par produit, marque ou EAN…" value="' + qVal + '" oninput="V2.offSearch(this.value)">' + clrBtn + '</div>' +
           verdictBand(filtered) +
