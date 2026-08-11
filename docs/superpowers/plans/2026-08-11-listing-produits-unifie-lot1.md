@@ -22,7 +22,18 @@
 - **Intégral Pharma est un groupe de grossistes-répartiteurs.** Dans cet écran, le mot « groupement » désigne uniquement le groupement d'achat du pharmacien (Giphar, UPP…). Ne jamais employer ce mot pour désigner Intégral.
 - **Interdits Safari** (le Mac de Will plante) : pas de `backdrop-filter`, pas de `background-clip:text` sur du grand texte, pas de `filter:blur` sur une grande surface, pas plus d'une `<video autoplay>`. Toujours un repli `@media (prefers-reduced-motion: reduce)`.
 - **Cache-busting :** toute modification d'un fichier servi impose de monter le jeton `?v=AAAAMMJJ<lettre>` **aux trois endroits** : tous les `?v=` de `crm/v2/index.html`, `var VER` dans `crm/v2/sw.js`, et `var V = '?v=…'` dans `crm/v2/v2-boot.js` (ligne ~310). Valeur actuelle : `20260810a` → cible de ce lot : `20260811a`.
-- **Git :** fichiers ajoutés **un par un**, jamais `git add -A` / `.` / `--all` (bloqué par hook). Contrôler `git status --short` après indexation. Branche courante : `feature/rdv-mailing`.
+- **Git :** fichiers ajoutés **un par un**, jamais `git add -A` / `.` / `--all` (bloqué par hook). Contrôler `git status --short` après indexation.
+- ⛔ **NE PAS travailler ni pousser sur `feature/rdv-mailing`.** Cette branche est en retard de **316 commits** sur `main`, son homologue distante a été **supprimée**, et le `JOURNAL.md` du 11/08/2026 interdit de la pousser : elle ajoute 120 adresses mail d'officines à un dépôt **public**. Elle est sauvegardée en paquet git local dans `~/sauvegardes-jarvis/`.
+  **Premier geste du lot, avant toute autre chose :**
+  ```bash
+  cd /Users/williammorel/JARVIS/APP
+  git fetch origin main
+  git stash push -m "avant-produits"          # 20 fichiers modifiés trainent dans l'arbre
+  git checkout -b claude/produits-unifie origin/main
+  git cherry-pick 2ef93ba f633fb9 46ec93a     # la spec et ce plan, ecrits sur l'ancienne branche
+  ```
+  Tout le lot se fait sur `claude/produits-unifie`, et la mise en ligne passe par une PR vers `main` (Task 8).
+- **Lancer les tests avec le glob, jamais le dossier :** `node --test tests/` cherche un *module* nommé « tests » et **passe en ne testant rien du tout**. Toujours `node --test tests/*.test.mjs` (skill projet `jarvis-conventions`).
 - **Avant tout `git push` :** verdict **GO** obligatoire du sous-agent `gardien-deploiement`.
 - **Mobile :** lisible à 390 px, cibles tactiles ≥ 44 px, champs de saisie ≥ 16 px (sinon iOS zoome).
 - **Données de test réelles :** `WML_OFFICINES` = 691 officines, `WML_SALES` = 437 848 lignes, `STOCK_IP.data` = 6 367 CIP, `PROD_STATS` = 6 292 CIP.
@@ -1048,14 +1059,14 @@ Créer `crm/v2/v2-produits.js` :
 
 - [ ] **Step 2: Brancher les deux scripts dans la page**
 
-Dans `crm/v2/index.html`, juste après la ligne `<script src="v2-campagne.js?v=20260810a"></script>` (ligne 112), insérer :
+Dans `crm/v2/index.html`, juste après la ligne `<script src="v2-campagne.js?v=…"></script>`, insérer (en reprenant le jeton déjà en place dans le fichier) :
 
 ```html
-  <script src="v2-produits-moteur.js?v=20260810a"></script>
-  <script src="v2-produits.js?v=20260810a"></script>
+  <script src="v2-produits-moteur.js?v=20260811d"></script>
+  <script src="v2-produits.js?v=20260811d"></script>
 ```
 
-Le jeton reste `20260810a` à cette étape ; il sera monté d'un coup en Task 8.
+Le jeton reste celui du fichier à cette étape ; il sera monté d'un coup en Task 8.
 
 - [ ] **Step 3: Vérifier que la page s'ouvre**
 
@@ -1271,7 +1282,7 @@ Contrôles :
 - [ ] **Step 4: Relancer toute la suite de tests**
 
 ```bash
-cd /Users/williammorel/JARVIS/APP && node --test tests/
+cd /Users/williammorel/JARVIS/APP && cd /Users/williammorel/JARVIS/APP && node --test tests/*.test.mjs
 ```
 
 Attendu : tous les tests passent (`produits-moteur`, `produits-reel`, `rdv-creneaux`, `rdv-ics`, `rdv-modeles`) — la page ne doit rien avoir cassé du moteur.
@@ -1482,9 +1493,9 @@ git commit -m "feat(produits): Produits devient l'entree unique de l'accueil, an
 
 ```bash
 cd /Users/williammorel/JARVIS/APP
-sed -i '' 's/?v=20260810a/?v=20260811a/g' crm/v2/index.html
-sed -i '' "s/^var VER = '20260810a';/var VER = '20260811a';/" crm/v2/sw.js
-sed -i '' "s/var V = '?v=20260810a';/var V = '?v=20260811a';/" crm/v2/v2-boot.js
+sed -i '' 's/?v=[0-9a-z]*/?v=20260811e/g' crm/v2/index.html
+sed -i '' "s/^var VER = '[0-9a-z]*';/var VER = '20260811e';/" crm/v2/sw.js
+sed -i '' "s/var V = '?v=[0-9a-z]*';/var V = '?v=20260811e';/" crm/v2/v2-boot.js
 ```
 
 - [ ] **Step 2: Vérifier qu'ils sont bien alignés**
@@ -1496,12 +1507,12 @@ grep -n "^var VER" crm/v2/sw.js
 grep -n "var V = '?v=" crm/v2/v2-boot.js
 ```
 
-Attendu : `?v=20260811a` **et rien d'autre** sur la première commande ; `20260811a` sur les deux autres.
+Attendu : `?v=20260811e` **et rien d'autre** sur la première commande ; `20260811e` sur les deux autres.
 
 - [ ] **Step 3: Relancer toute la suite de tests**
 
 ```bash
-cd /Users/williammorel/JARVIS/APP && node --test tests/
+cd /Users/williammorel/JARVIS/APP && cd /Users/williammorel/JARVIS/APP && node --test tests/*.test.mjs
 ```
 
 Attendu : 0 fail.
@@ -1522,8 +1533,11 @@ git add crm/v2/sw.js
 git add crm/v2/v2-boot.js
 git status --short crm/v2/index.html crm/v2/sw.js crm/v2/v2-boot.js
 git commit -m "chore(produits): jeton de cache 20260811a sur les trois emplacements"
-git push origin feature/rdv-mailing
+git push -u origin claude/produits-unifie
+gh pr create --base main --head claude/produits-unifie --title "Ecran Produits unifie (lot 1)" --body "Voir docs/superpowers/plans/2026-08-11-listing-produits-unifie-lot1.md"
 ```
+
+⚠️ La mise en ligne n'a lieu qu'une fois la PR **fusionnee dans `main`** : GitHub Pages ne sert que `main`. Pousser la branche ne deploie rien.
 
 - [ ] **Step 6: Prouver que c'est vraiment en ligne**
 
@@ -1531,14 +1545,14 @@ Ne **jamais** annoncer la mise en ligne sur la foi d'un `git push` réussi.
 
 ```bash
 cd /Users/williammorel/JARVIS/APP
-# 1. le commit est bien sur le distant
-git log origin/feature/rdv-mailing --oneline -1
+# 1. le commit est bien sur main
+git log origin/main --oneline -1
 # 2. attendre la publication puis lire la page RÉELLEMENT servie
 bash scripts/attendre-prod.sh 2>/dev/null || sleep 60
 curl -s https://willmorel49-coder.github.io/jarvis-app/crm/v2/index.html | grep -o '?v=[0-9a-z]*' | sort -u
 ```
 
-Attendu sur la dernière commande : `?v=20260811a`. Tant que c'est `20260810a`, **ce n'est pas en ligne**.
+Attendu sur la dernière commande : `?v=20260811e`. Tant que c'est `20260811d` (la version servie au 11/08 à 23 h), **ce n'est pas en ligne**.
 
 Puis capture finale de la page servie (pas du serveur local) : `browser_navigate` vers `https://willmorel49-coder.github.io/jarvis-app/crm/v2/#produits`, purge du service worker, rechargement, `browser_resize` 390 × 844, `browser_take_screenshot` → `verif-ecran/produits-prod-390.png`.
 
@@ -1548,7 +1562,7 @@ Puis capture finale de la page servie (pas du serveur local) : `browser_navigate
 cd /Users/williammorel/JARVIS/APP
 git add verif-ecran/produits-prod-390.png
 git commit -m "chore(produits): capture de la page servie en ligne"
-git push origin feature/rdv-mailing
+git push origin claude/produits-unifie
 ```
 
 ---
