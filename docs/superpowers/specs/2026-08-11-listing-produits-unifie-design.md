@@ -72,10 +72,15 @@ Le libellé du groupe de comparaison est **toujours visible sur la ligne** : le 
 Pour chaque CIP acheté par au moins un confrère :
 
 ```
-peers      = nb de confrères dont le net sur ce CIP est > 0
-pctPeers   = peers / (taille du groupe - 1)
-caMoyen    = somme des nets confrères sur ce CIP / peers
+nbConfreres = nb d'officines du groupe de comparaison, officine cible EXCLUE
+peers       = nb de confrères dont le net sur ce CIP est > 0
+pctPeers    = peers / nbConfreres
+caMoyen     = somme des nets confrères sur ce CIP / peers
 ```
+
+`nbConfreres` exclut toujours l'officine cible, y compris dans les chemins de repli
+où elle n'appartient pas au groupe construit — le dénominateur est le même dans les
+trois cas.
 
 Un CIP entre dans la liste de l'officine si :
 
@@ -126,7 +131,11 @@ Nouveau fichier `crm/v2/v2-produits.js`, chargé comme les autres modules. Style
 
 Bascule par onglet, même moteur, agrégation par produit sur **toutes** les officines :
 
-- nb d'officines en trou sur ce CIP · potentiel cumulé € · stock actuel · couverture (stock ÷ demande réseau mensuelle) · alerte rupture ANSM · génériqueur (via `GENERIQUEURS`).
+- nb d'officines en trou sur ce CIP · potentiel cumulé € · stock actuel · **couverture en mois** · alerte rupture ANSM · génériqueur (via `GENERIQUEURS`).
+
+  Couverture = `STOCK_IP[cip] ÷ (quantité totale vendue sur ce CIP dans WML_SALES ÷ 6)`,
+  6 étant le nombre de mois couverts par les ventes (jan.–juin 2026). Affichée « — »
+  si la quantité mensuelle est nulle.
 - Filtre « uniquement les produits hors stock » : ce qu'il faudrait rentrer.
 - Filtre par groupement : *« sur quoi Giphar est-il en retard chez nous ? »*
 
