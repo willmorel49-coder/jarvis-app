@@ -147,7 +147,13 @@
       root.innerHTML = top + '<div class="v2-wrap narrow"><div class="v2-rdvd-hero">' +
         '<h1>Mes disponibilités</h1><p>Chargement…</p></div></div>';
 
-      V2.rdvDispo.charger().then(function (st) {
+      Promise.all([
+        V2.rdvDispo.charger(),
+        // L'agenda est un confort : s'il ne répond pas, l'écran s'affiche
+        // quand même avec les disponibilités saisies à la main.
+        (V2.rdvAgenda ? V2.rdvAgenda.charger() : Promise.resolve(null))
+      ]).then(function (res) {
+        var st = res[0], ag = res[1];
         var d = st.dispo, k, jours = '';
         for (k = 1; k <= 5; k++) jours += ligneJour(String(k), d.jours && d.jours[String(k)]);
 
@@ -164,6 +170,9 @@
           '<div class="v2-rdvd-hero"><h1>Mes disponibilités</h1>' +
             '<p>Ce que les pharmaciens pourront réserver quand tu leur envoies un lien. ' +
             'Décoche un jour pour qu’il n’apparaisse jamais.</p></div>' +
+
+          '<div class="v2-rdvd-sec">Mon agenda</div>' +
+          (V2.rdvAgenda ? V2.rdvAgenda.bloc(ag) : '') +
 
           '<div class="v2-rdvd-sec">Mes journées</div>' + jours +
 
@@ -191,6 +200,10 @@
           (bl ? '<ul class="v2-rdvd-list">' + bl + '</ul>'
               : '<p class="v2-rdvd-vide">Aucune indisponibilité enregistrée.</p>') +
         '</div>';
+
+        // Le mode d'emploi s'affiche d'emblée : sans lui, personne ne trouve
+        // l'adresse de son agenda — elle est enterrée dans les réglages.
+        if (V2.rdvAgenda) V2.rdvAgenda.aide('google');
       });
     }
   };
