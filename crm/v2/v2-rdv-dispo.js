@@ -61,7 +61,22 @@
           .gte('date', new Date().toISOString().slice(0, 10)).order('date')
       ]).then(function (r) {
         var d = (r[0] && r[0].data) || null;
-        return { dispo: d || defaut(), blocages: (r[1] && r[1].data) || [] };
+        var blocages = (r[1] && r[1].data) || [];
+        if (d) return { dispo: d, blocages: blocages };
+        // Aucune ligne en base : ce commercial n'a jamais ouvert cet écran.
+        // Sans ce filet, la page publique calculait des créneaux sur les valeurs
+        // par défaut du NAVIGATEUR, que le serveur refusait ensuite TOUS
+        // ("hors_grille") parce que rdv_dispo.jours était vide de son côté :
+        // le pharmacien voyait des horaires et se faisait jeter à chaque clic.
+        // On écrit donc les valeurs par défaut dès la première lecture — client
+        // et serveur regardent enfin la même chose, sans que personne n'ait rien à faire.
+        var base = defaut();
+        return c.from('rdv_dispo').upsert(
+          { user_id: u, jours: base.jours, duree_min: base.duree_min,
+            marge_route_min: base.marge_route_min, maj_le: new Date().toISOString() },
+          { onConflict: 'user_id' }
+        ).then(function () { return { dispo: base, blocages: blocages }; })
+         .catch(function () { return { dispo: base, blocages: blocages }; });
       }).catch(function () { return { dispo: defaut(), blocages: [] }; });
     },
 
