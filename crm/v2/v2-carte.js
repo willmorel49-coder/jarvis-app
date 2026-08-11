@@ -504,8 +504,10 @@
   var TP = {
     NEAR_VILLE: 30, CORRIDOR_MAX: 20, BBOX_PAD: 0.55, T_LO: -0.15, T_HI: 1.15, K_SHORT: 120,
     DAY_MIN: 10 * 60, SAFETY: 30, RDV_MARGIN: 12,
-    W: { villeMin: 0.5, detourMin: 0.4, latKm: 0.8, grpTarget: 15, grpCover: 5, clientProx: 12,
-         seg: { prospection: { A: 2, B: 3, C: 3, P: 8 }, mixte: { A: 10, B: 5, C: 5, P: 8 } },
+    W: { villeMin: 0.5, detourMin: 0.4, latKm: 0.8, grpTarget: 15, grpCover: 5, clientProx: 6,
+         // mixte (tournée existante + prospection) : les CLIENTS sont les ancres (tu les visites/livres déjà),
+         // les prospects proches d'un client se glissent dedans. prospection : que des prospects, classés par proximité client.
+         seg: { prospection: { A: 2, B: 3, C: 3, P: 8 }, mixte: { A: 15, B: 10, C: 8, P: 5 } },
          densHi: 12, densLo: 4, isol: -10, caTop: 6 },
     DELIV_RADIUS: 15   // km : un prospect n'est « logique » à livrer que si un client Intégral est à ≤ ce rayon
   };
