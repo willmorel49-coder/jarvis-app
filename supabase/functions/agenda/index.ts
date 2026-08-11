@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════
-// JARVIS · Lecteur d'agenda des commerciaux
+// JARVIS · Agenda des commerciaux — lecture, relève, coffre
 //
 // Pourquoi cette fonction existe : un flux iCal (Google, Outlook, iCloud)
 // n'est PAS lisible depuis un navigateur — aucun de ces serveurs n'envoie
@@ -10,8 +10,16 @@
 // Ce qui sort d'ici : UNIQUEMENT des plages « occupé de telle heure à
 // telle heure ». Jamais un titre, jamais un lieu, jamais un participant.
 // Ce n'est pas une promesse : il n'y a pas de champ pour les transporter.
+//
+// Quatre actions :
+//   tester      (commercial connecté) — je viens de coller mon lien, ça marche ?
+//   brancher    (commercial connecté) — range le lien dans le coffre + relève
+//   debrancher  (commercial connecté) — retire le lien ET les plages relevées
+//   relever     (jeton de RDV valide) — le pharmacien ouvre sa page : on
+//               rafraîchit l'agenda du commercial, au plus une fois / 10 min
 // ═══════════════════════════════════════════════════════════════
 import ICAL from 'npm:ical.js@2.2.1'
+import { createClient } from 'npm:@supabase/supabase-js@2.112.2'
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -20,18 +28,22 @@ const CORS = {
 }
 
 // On n'accepte que les hébergeurs d'agenda connus : sans ça la fonction
-// devient un relais anonyme utilisable par n'importe qui pour aller chercher
-// n'importe quelle page depuis nos serveurs.
+// devient un relais anonyme utilisable pour aller chercher n'importe quelle
+// page depuis nos serveurs.
 const HOTES = [
   'calendar.google.com',
   'outlook.office365.com', 'outlook.office.com', 'outlook.live.com',
-  'p01-calendarws.icloud.com', 'p02-calendarws.icloud.com',
 ]
 const hoteAutorise = (h: string) =>
   HOTES.includes(h) || h.endsWith('.icloud.com') || h.endsWith('.calendar.google.com')
 
 const TAILLE_MAX = 8 * 1024 * 1024   // 8 Mo : un agenda chargé pèse ~1 Mo
-const JOURS_MAX = 60
+const JOURS = 45                     // au-delà de l'horizon de réservation (21 j)
+const FRAICHEUR_MIN = 10 * 60 * 1000 // on ne relève pas plus d'une fois / 10 min
+
+const URL_SB = Deno.env.get('SUPABASE_URL')!
+const CLE_SERVICE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+const CLE_ANON = Deno.env.get('SUPABASE_ANON_KEY')!
 
 function reponse(corps: unknown, code = 200) {
   return new Response(JSON.stringify(corps), {
@@ -40,27 +52,60 @@ function reponse(corps: unknown, code = 200) {
   })
 }
 
+function normaliser(brut: string) {
+  const s = String(brut || '').trim().replace(/^webcal:\/\//i, 'https://')
+  let u: URL
+  try { u = new URL(s) } catch { return { erreur: 'adresse_invalide' } }
+  if (u.protocol !== 'https:') return { erreur: 'https_obligatoire' }
+  if (!hoteAutorise(u.hostname)) return { erreur: 'hebergeur_inconnu', hote: u.hostname }
+  return { url: u.toString(), hote: u.hostname }
+}
+
+async function telecharger(url: string) {
+  let r: Response
+  try {
+    r = await fetch(url, {
+      redirect: 'follow',
+      signal: AbortSignal.timeout(20000),
+      // Certains hébergeurs d'agenda refusent un agent inconnu : on se
+      // présente comme un lecteur de calendrier ordinaire.
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; JARVIS-agenda/1.0)',
+        'Accept': 'text/calendar, text/plain;q=0.9, */*;q=0.5',
+      },
+    })
+  } catch (e) {
+    return { erreur: 'agenda_injoignable', detail: String(e).slice(0, 140) }
+  }
+  if (!r.ok) return { erreur: 'agenda_injoignable', code: r.status }
+  const buf = await r.arrayBuffer()
+  if (buf.byteLength > TAILLE_MAX) return { erreur: 'agenda_trop_gros' }
+  const ics = new TextDecoder().decode(buf)
+  if (!/BEGIN:VCALENDAR/i.test(ics)) return { erreur: 'pas_un_agenda' }
+  return { ics }
+}
+
+type Plage = { date: string; debut: string; fin: string; jour_entier: boolean }
+
 /** Transforme un flux iCal en plages occupées, sans rien retenir d'autre. */
-function plagesOccupees(ics: string, jours: number) {
-  const jcal = ICAL.parse(ics)
-  const cal = new ICAL.Component(jcal)
+function plagesOccupees(ics: string, jours: number): { lus: number; plages: Plage[] } {
+  const cal = new ICAL.Component(ICAL.parse(ics))
   const debutFenetre = ICAL.Time.now()
   const finFenetre = debutFenetre.clone()
   finFenetre.addDuration(ICAL.Duration.fromSeconds(jours * 86400))
 
-  const plages: { date: string; debut: string; fin: string; jour_entier: boolean }[] = []
+  const plages: Plage[] = []
   let lus = 0
 
   for (const vevent of cal.getAllSubcomponents('vevent')) {
     const ev = new ICAL.Event(vevent)
     lus++
 
-    // TRANSP:TRANSPARENT = « je reste disponible » (rappel, anniversaire).
-    // L'ignorer remplirait l'agenda de fausses occupations.
+    // TRANSP:TRANSPARENT = « je reste disponible » (anniversaire, jour férié).
+    // L'ignorer remplirait l'agenda de fausses occupations : vérifié sur le
+    // calendrier des fêtes françaises de Google — 209 événements, 209 transparents.
     if (vevent.getFirstPropertyValue('transp') === 'TRANSPARENT') continue
-    // Invitation refusée ou simplement reçue : ce n'est pas une occupation.
-    const statut = String(vevent.getFirstPropertyValue('status') || '')
-    if (statut === 'CANCELLED') continue
+    if (String(vevent.getFirstPropertyValue('status') || '') === 'CANCELLED') continue
 
     const pousser = (deb: ICAL.Time, fin: ICAL.Time) => {
       const d = deb.toJSDate(), f = fin.toJSDate()
@@ -93,42 +138,131 @@ function plagesOccupees(ics: string, jours: number) {
   return { lus, plages }
 }
 
+const admin = () => createClient(URL_SB, CLE_SERVICE, { auth: { persistSession: false } })
+
+/** Qui appelle ? Renvoie l'id du commercial connecté, ou null. */
+async function commercialConnecte(req: Request): Promise<string | null> {
+  const entete = req.headers.get('Authorization') || ''
+  if (!entete.startsWith('Bearer ')) return null
+  const jeton = entete.slice(7)
+  if (jeton === CLE_ANON) return null              // la clé publique n'est pas une identité
+  const c = createClient(URL_SB, CLE_ANON, {
+    global: { headers: { Authorization: 'Bearer ' + jeton } },
+    auth: { persistSession: false },
+  })
+  const { data } = await c.auth.getUser()
+  return data?.user?.id || null
+}
+
+/** Relève l'agenda d'un commercial et remplace ses plages occupées. */
+async function relever(userId: string, forcer = false) {
+  const db = admin()
+  const { data: a } = await db.from('rdv_agenda')
+    .select('url, actif, dernier_ok').eq('user_id', userId).maybeSingle()
+  if (!a || !a.actif) return { ok: false, raison: 'pas_d_agenda' }
+
+  if (!forcer && a.dernier_ok && Date.now() - new Date(a.dernier_ok).getTime() < FRAICHEUR_MIN) {
+    return { ok: true, frais: true }
+  }
+
+  const t = await telecharger(a.url)
+  if ('erreur' in t) {
+    await db.from('rdv_agenda').update({
+      dernier_essai: new Date().toISOString(),
+      // Le code HTTP et le détail sont gardés : sans eux, « injoignable »
+      // ne dit pas si c'est l'adresse qui est fausse, l'hébergeur qui
+      // refuse, ou le réseau qui a lâché — et on répare à l'aveugle.
+      derniere_erreur: [t.erreur, t.code, t.detail].filter(Boolean).join(' · ').slice(0, 300),
+    }).eq('user_id', userId)
+    return { ok: false, raison: t.erreur, code: t.code, detail: t.detail }
+  }
+
+  let lus = 0, plages: Plage[] = []
+  try { ({ lus, plages } = plagesOccupees(t.ics!, JOURS)) }
+  catch (e) {
+    await db.from('rdv_agenda').update({
+      dernier_essai: new Date().toISOString(),
+      derniere_erreur: 'lecture_impossible: ' + String(e).slice(0, 100),
+    }).eq('user_id', userId)
+    return { ok: false, raison: 'lecture_impossible' }
+  }
+
+  // Remplacement complet : on ne conserve aucun historique de sa vie privée.
+  await db.from('rdv_occupe').delete().eq('user_id', userId)
+  if (plages.length) {
+    await db.from('rdv_occupe').insert(plages.map((p) => ({
+      user_id: userId, date: p.date, debut: p.debut, fin: p.fin, jour_entier: p.jour_entier,
+    })))
+  }
+  const maintenant = new Date().toISOString()
+  await db.from('rdv_agenda').update({
+    dernier_essai: maintenant, dernier_ok: maintenant, derniere_erreur: null,
+    evenements_lus: lus, plages_gardees: plages.length, maj_le: maintenant,
+  }).eq('user_id', userId)
+
+  return { ok: true, evenements_lus: lus, plages_gardees: plages.length }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
   if (req.method !== 'POST') return reponse({ ok: false, raison: 'methode' }, 405)
 
-  let corps: { url?: string; jours?: number }
-  try { corps = await req.json() } catch { return reponse({ ok: false, raison: 'json' }, 400) }
+  let c: { action?: string; url?: string; token?: string }
+  try { c = await req.json() } catch { return reponse({ ok: false, raison: 'json' }, 400) }
+  const action = String(c.action || 'tester')
 
-  const brut = String(corps.url || '').trim().replace(/^webcal:\/\//i, 'https://')
-  const jours = Math.min(Math.max(Number(corps.jours) || 21, 1), JOURS_MAX)
-
-  let u: URL
-  try { u = new URL(brut) } catch { return reponse({ ok: false, raison: 'adresse_invalide' }) }
-  if (u.protocol !== 'https:') return reponse({ ok: false, raison: 'https_obligatoire' })
-  if (!hoteAutorise(u.hostname)) return reponse({ ok: false, raison: 'hebergeur_inconnu', hote: u.hostname })
-
-  let ics: string
-  try {
-    const r = await fetch(u.toString(), {
-      redirect: 'follow',
-      signal: AbortSignal.timeout(20000),
-      headers: { 'User-Agent': 'JARVIS-agenda/1.0' },
-    })
-    if (!r.ok) return reponse({ ok: false, raison: 'agenda_injoignable', code: r.status })
-    const buf = await r.arrayBuffer()
-    if (buf.byteLength > TAILLE_MAX) return reponse({ ok: false, raison: 'agenda_trop_gros' })
-    ics = new TextDecoder().decode(buf)
-  } catch (e) {
-    return reponse({ ok: false, raison: 'agenda_injoignable', detail: String(e).slice(0, 120) })
+  // ─── Le pharmacien ouvre sa page : on rafraîchit l'agenda du commercial.
+  // Pas d'identité ici, mais un jeton de rendez-vous valide : il désigne
+  // exactement un commercial, et rien d'autre n'est accessible.
+  if (action === 'relever') {
+    if (!c.token) return reponse({ ok: false, raison: 'jeton_manquant' }, 400)
+    const db = admin()
+    const { data: l } = await db.from('rdv_lien')
+      .select('user_id, expire_le').eq('token', c.token).maybeSingle()
+    if (!l) return reponse({ ok: false, raison: 'jeton_inconnu' }, 403)
+    if (new Date(l.expire_le).getTime() <= Date.now())
+      return reponse({ ok: false, raison: 'jeton_expire' }, 403)
+    return reponse(await relever(l.user_id))
   }
 
-  if (!/BEGIN:VCALENDAR/i.test(ics)) return reponse({ ok: false, raison: 'pas_un_agenda' })
+  // ─── Toutes les autres actions exigent un commercial connecté.
+  const userId = await commercialConnecte(req)
+  if (!userId) return reponse({ ok: false, raison: 'connexion_requise' }, 401)
 
-  try {
-    const { lus, plages } = plagesOccupees(ics, jours)
-    return reponse({ ok: true, evenements_lus: lus, jours, occupe: plages })
-  } catch (e) {
-    return reponse({ ok: false, raison: 'lecture_impossible', detail: String(e).slice(0, 160) })
+  if (action === 'debrancher') {
+    // Le déclencheur en base efface aussi les plages relevées.
+    await admin().from('rdv_agenda').delete().eq('user_id', userId)
+    return reponse({ ok: true })
   }
+
+  const n = normaliser(c.url || '')
+  if ('erreur' in n) return reponse({ ok: false, raison: n.erreur, hote: n.hote })
+
+  if (action === 'tester') {
+    const t = await telecharger(n.url!)
+    if ('erreur' in t) return reponse({ ok: false, raison: t.erreur, code: t.code })
+    try {
+      const { lus, plages } = plagesOccupees(t.ics!, JOURS)
+      // On renvoie 3 plages en exemple pour que le commercial reconnaisse
+      // SON agenda et sache qu'il n'a pas collé le lien d'un collègue.
+      return reponse({
+        ok: true, hote: n.hote, evenements_lus: lus, plages_gardees: plages.length,
+        exemple: plages.slice(0, 3),
+      })
+    } catch (e) {
+      return reponse({ ok: false, raison: 'lecture_impossible', detail: String(e).slice(0, 160) })
+    }
+  }
+
+  if (action === 'brancher') {
+    const t = await telecharger(n.url!)
+    if ('erreur' in t) return reponse({ ok: false, raison: t.erreur, code: t.code })
+    const db = admin()
+    await db.from('rdv_agenda').upsert(
+      { user_id: userId, url: n.url, hote: n.hote, actif: true, maj_le: new Date().toISOString() },
+      { onConflict: 'user_id' })
+    return reponse(await relever(userId, true))
+  }
+
+  return reponse({ ok: false, raison: 'action_inconnue' }, 400)
 })
