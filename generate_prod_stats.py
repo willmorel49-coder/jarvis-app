@@ -4,7 +4,9 @@
 Stats reseau PAR PRODUIT (CIP13) -> crm/v2/prod-stats-data.js (window.PROD_STATS)
 Pour chaque produit reellement vendu par le reseau (>=3 pharmacies) :
   - rota   : rotation moyenne (boites) par pharmacie / an  (qte / nbMois * 12 / nbPharma)
-  - marge  : marge pharmacien MDL / pharmacie / an (REMBOURSABLES uniquement)
+  - marge  : abandon de marge Intégral / pharmacie / an (PRINCEPS remboursables uniquement —
+             jamais sur un générique ni un biosimilaire). Ce n'est PAS la marge MDL de
+             l'officine : confondre les deux fausse tout argumentaire (cf. ROBOT.md §10).
   - remise : remise Integral (PPHT - prix net achat) / pharmacie / an
   - ca     : CA d'achat HT / pharmacie / an
 Source prix + libelle + statut remb : STATS/stock et prix 22 06 2026.xlsx
@@ -149,15 +151,22 @@ for c, a in ag.items():
     stale = 1 if (ppht > 0 and net_u > ppht) else 0   # PPHT du fichier périmé (< net réel)
     pp_eff = ppht if (ppht > 0 and not stale) else net_u
     rem_pct = round((pp_eff - net_u) / pp_eff * 100, 1) if (pp_eff > 0 and 0 < net_u <= pp_eff) else 0
+    fam = famille(c, info[c]['ppht'], net, info[c]['remb'], info[c]['nat'], info[c]['d'])
+    # Intégral n'abandonne de marge sur AUCUN générique ni biosimilaire : seuls les
+    # princeps (familles pr_*) en portent. Le front dit déjà exactement cela
+    # (v2-boot.js : « seuls eux ont l'abandon de marge »), mais l'accumulation plus
+    # haut créditait tout produit remboursable sans regarder sa famille — 2 413
+    # génériques sur 2 518 affichaient un abandon fictif (9 802 € au total).
+    aband = a['marge'] if fam.startswith('pr_') else 0.0
     rows.append({
         'c': c, 'd': info[c]['d'][:46], 'n': nph,
-        'f': famille(c, info[c]['ppht'], net, info[c]['remb'], info[c]['nat'], info[c]['d']),
+        'f': fam,
         'ppht': ppht,                              # PPHT tarif grossiste
         'net': net_u,                              # prix net remisé (réel achat, hors retours)
         'rpct': rem_pct,                           # % de remise (PPHT → net)
         'stale': stale,                            # 1 = PPHT fichier à rafraîchir
         'rota': round(a['qte'] * k),
-        'marge': round(a['marge'] * k),
+        'marge': round(aband * k),                 # abandon de marge Intégral — princeps seuls
         'remise': round(max(0, a['tarif'] - a['ca']) * k),
         'ca': round(a['ca'] * k),
     })
