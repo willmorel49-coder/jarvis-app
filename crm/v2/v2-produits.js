@@ -220,6 +220,106 @@
       '</div>';
   }
 
+  // ── Rendu : mode Achats ────────────────────────────────────────
+  // Même moteur, lu par produit : sur combien d'officines ce produit est-il
+  // un trou. « Ce qu'on n'a pas » lève le filtre stock : c'est ce qu'il
+  // faudrait rentrer.
+  function achatsData(M, idx) {
+    // 691 listings = ~600 ms : on mémorise tant que les filtres de fond
+    // ne bougent pas (la recherche et les familles filtrent en aval).
+    var cle = (S.grp || 'all') + '|' + (S.horsStock ? 'hs' : 'st');
+    if (V2.produits._achatsCle === cle && V2.produits._achats) return V2.produits._achats;
+    var lignes = M.listingProduits(idx, {
+      stock: stockIP(),
+      exigerStock: !S.horsStock,
+      filtreGroupement: S.grp === 'all' ? null : S.grp
+    });
+    if (S.horsStock) {
+      lignes = lignes.filter(function (l) { return !(l.stock > 0); });
+    }
+    V2.produits._achats = lignes;
+    V2.produits._achatsCle = cle;
+    return lignes;
+  }
+
+  function rendreAchats() {
+    var M = window.V2PRODUITS, idx = V2.produits.index();
+    if (!M || !idx) return vide('Moteur indisponible', 'Le fichier v2-produits-moteur.js n\'est pas chargé.');
+
+    var lignes = filtrer(achatsData(M, idx));
+    var total = 0, i;
+    for (i = 0; i < lignes.length; i++) total += lignes[i].potentiel;
+
+    var visibles = lignes.slice(0, (S.page + 1) * PAR_PAGE), corps = '';
+    for (i = 0; i < visibles.length; i++) corps += ligneAchatHtml(visibles[i]);
+
+    return '' +
+      '<div class="pr-bandeau">' +
+        '<select class="pr-select" aria-label="Filtrer par groupement d\'achat" onchange="V2.produits.setGrp(this.value)">' +
+          optionsGroupements() +
+        '</select>' +
+        '<div class="pr-ctx">' +
+          '<span class="pr-ctx-n">' + num(lignes.length) + ' produits</span>' +
+          '<span class="pr-ctx-pot">' + eur(total) + ' de potentiel réseau</span>' +
+        '</div>' +
+        '<div class="pr-chips">' +
+          '<span class="pr-chip' + (S.horsStock ? ' on' : '') +
+          '" onclick="V2.produits.setHorsStock()">Uniquement ce qu\'on n\'a pas</span>' +
+        '</div>' +
+        '<div class="pr-source">ventes réseau jan.–juin 2026</div>' +
+      '</div>' +
+      filtresHtml() +
+      liste(lignes, visibles, corps);
+  }
+
+  function optionsGroupements() {
+    var vus = {}, phs = V2.pharmacies || [], i, g;
+    for (i = 0; i < phs.length; i++) {
+      g = String(phs[i].groupement || '').trim();
+      if (g) vus[g] = (vus[g] || 0) + 1;
+    }
+    var noms = Object.keys(vus).sort(function (a, b) { return vus[b] - vus[a]; });
+    var out = '<option value="all"' + (S.grp === 'all' ? ' selected' : '') +
+              '>Tous les groupements d\'achat</option>';
+    for (i = 0; i < noms.length; i++) {
+      out += '<option value="' + escAttr(noms[i]) + '"' +
+             (S.grp === noms[i] ? ' selected' : '') + '>' +
+             esc(noms[i]) + ' · ' + vus[noms[i]] + ' officines</option>';
+    }
+    return out;
+  }
+
+  function generiqueur(cip) {
+    var G = window.GENERIQUEURS;
+    if (!G) return '';
+    var d = G.data || G;
+    var e = d[String(cip)];
+    if (!e) return '';
+    return typeof e === 'string' ? e : (e.labo || e.g || '');
+  }
+
+  function ligneAchatHtml(l) {
+    var f = fiche(l.cip);
+    var g = generiqueur(l.cip);
+    var couv = l.couverture == null ? '—'
+      : (l.couverture >= 24 ? '> 24 mois'
+        : (Math.round(l.couverture * 10) / 10).toString().replace('.', ',') + ' mois');
+    return '' +
+      '<div class="pr-row">' +
+        enTeteProduit(l) +
+        '<div class="pr-arg">' +
+          '<strong>' + num(l.officines) + ' officines</strong> ne nous le prennent pas' +
+          (g ? ' · ' + esc(g) : '') +
+        '</div>' +
+        '<div class="pr-chiffres">' +
+          chiffre(eur(l.potentiel), 'potentiel réseau', 'pr-pot') +
+          chiffre(num(l.stock), 'en stock') +
+          chiffre(esc(couv), 'couverture') +
+          chiffre(f && f.net > 0 ? eur(f.net) : '—', 'prix net') +
+        '</div>' +
+      '</div>';
+  }
+
   // ── PDF à laisser au pharmacien ────────────────────────────────
   // Impression navigateur sur un document dédié : aucune librairie, aucun
   // coût. CONTENU AUTORISÉ : produit, prix net, disponibilité. Le barème
@@ -296,9 +396,7 @@
           '<button class="pr-mode' + (S.mode === 'achats' ? ' on' : '') +
             '" onclick="V2.produits.setMode(\'achats\')">Achats</button>' +
         '</div>';
-      var corps = S.mode === 'vendeur'
-        ? rendreVendeur()
-        : vide('Vue achats en préparation', 'Elle arrive juste après.');
+      var corps = S.mode === 'vendeur' ? rendreVendeur() : rendreAchats();
       root.innerHTML =
         V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
         '<div class="v2-wrap pr-wrap">' +
