@@ -14,6 +14,16 @@
   // 11/08/2026 : 50 % laisse 101 officines sous 5 produits, 20 % noie
   // la liste (188 produits). 30 % = 87 produits, aucune officine à vide.
   M.SEUIL_PEERS = 0.30;
+  // Paliers de repli. 30 % marche pour les 506 officines qui ont un vrai
+  // groupement, mais PAS pour les petites officines tombées sur le repli
+  // « comparables » : leurs pairs sont d'autres toutes petites officines qui
+  // nous achètent peu, et à 30 % leur liste est VIDE (4 cas mesurés le
+  // 11/08/2026 : Pharmacie FAURE, Grande Pharmacie des Voûtes, Bajatière,
+  // Mirman — de 1 552 € à 6 102 € de CA). On descend d'un cran jusqu'à
+  // obtenir MIN_LIGNES produits. Le pourcentage réel reste affiché sur
+  // chaque ligne : le commercial voit toujours d'où sort le chiffre.
+  M.SEUILS = [0.30, 0.20, 0.10, 0.05];
+  M.MIN_LIGNES = 5;
   // Taille minimale d'un groupe pour que la comparaison ait un sens.
   M.MIN_GROUPE = 5;
   // Nombre de mois couverts par WML_SALES (jan.–juin 2026).
@@ -121,24 +131,10 @@
     return idx._agg[cle];
   };
 
-  M.listingOfficine = function (idx, phId, opts) {
-    opts = opts || {};
-    var seuil = opts.seuil == null ? M.SEUIL_PEERS : opts.seuil;
-    var stock = opts.stock || {};
-    var exigerStock = opts.exigerStock !== false;
-
-    var grp = M.groupeComparaison(idx, phId);
-    if (!grp) return { groupe: null, nbConfreres: 0, lignes: [] };
-
-    var id = String(phId);
-    var mien = idx.netParOfficine[id] || {};
+  // Un seul passage, à un seuil donné. C'est la primitive ; listingOfficine
+  // l'appelle une ou plusieurs fois selon le repli.
+  function passe(idx, phId, grp, n, mien, seuil, stock, exigerStock) {
     var agg = M.agregatGroupe(idx, grp.cle);
-    // L'officine cible appartient au groupe agrégé : on retire sa propre
-    // contribution pour ne compter que les confrères.
-    var dansLeGroupe = (idx.membres[grp.cle] || []).indexOf(id) >= 0;
-    var n = grp.taille - (dansLeGroupe ? 1 : 0);
-    if (n <= 0) return { groupe: grp, nbConfreres: 0, lignes: [] };
-
     var out = [], cip;
     for (cip in agg.cnt) {
       if (!Object.prototype.hasOwnProperty.call(agg.cnt, cip)) continue;
@@ -159,7 +155,86 @@
       });
     }
     out.sort(function (a, b) { return b.potentiel - a.potentiel; });
-    return { groupe: grp, nbConfreres: n, lignes: out };
+    return out;
+  }
+
+  M.listingOfficine = function (idx, phId, opts) {
+    opts = opts || {};
+    var stock = opts.stock || {};
+    var exigerStock = opts.exigerStock !== false;
+
+    var grp = M.groupeComparaison(idx, phId);
+    if (!grp) return { groupe: null, nbConfreres: 0, seuil: null, lignes: [] };
+
+    var id = String(phId);
+    var mien = idx.netParOfficine[id] || {};
+    // L'officine cible appartient au groupe agrégé : on retire sa propre
+    // contribution pour ne compter que les confrères.
+    var dansLeGroupe = (idx.membres[grp.cle] || []).indexOf(id) >= 0;
+    var n = grp.taille - (dansLeGroupe ? 1 : 0);
+    if (n <= 0) return { groupe: grp, nbConfreres: 0, seuil: null, lignes: [] };
+
+    // Seuil imposé par l'appelant → un seul passage, strict.
+    if (opts.seuil != null) {
+      return {
+        groupe: grp, nbConfreres: n, seuil: opts.seuil,
+        lignes: passe(idx, phId, grp, n, mien, opts.seuil, stock, exigerStock)
+      };
+    }
+    // Repli désactivé → un seul passage au seuil nominal.
+    if (opts.garantirMin === false) {
+      return {
+        groupe: grp, nbConfreres: n, seuil: M.SEUIL_PEERS,
+        lignes: passe(idx, phId, grp, n, mien, M.SEUIL_PEERS, stock, exigerStock)
+      };
+    }
+    // Sinon : on descend les paliers jusqu'à obtenir assez de produits.
+    var lignes = [], seuil = M.SEUILS[0], i;
+    for (i = 0; i < M.SEUILS.length; i++) {
+      seuil = M.SEUILS[i];
+      lignes = passe(idx, phId, grp, n, mien, seuil, stock, exigerStock);
+      if (lignes.length >= M.MIN_LIGNES) break;
+    }
+    return { groupe: grp, nbConfreres: n, seuil: seuil, lignes: lignes };
+  };
+
+  // Combien de mois de stock on tient sur ce produit, au rythme du réseau.
+  M.couverture = function (idx, cip, stock) {
+    var parMois = (idx.qteParCip[String(cip)] || 0) / M.MOIS_COUVERTS;
+    if (!(parMois > 0)) return null;
+    return (+((stock || {})[String(cip)]) || 0) / parMois;
+  };
+
+  // La même matière, lue par produit : sur combien d'officines ce produit
+  // est-il un trou, et pour quel potentiel cumulé.
+  M.listingProduits = function (idx, opts) {
+    opts = opts || {};
+    var stock = opts.stock || {};
+    var filtre = opts.filtreGroupement ? String(opts.filtreGroupement).trim() : null;
+    var par = {}, id, i, cip;
+
+    for (id in idx.officines) {
+      if (!Object.prototype.hasOwnProperty.call(idx.officines, id)) continue;
+      if (filtre && idx.officines[id].groupement !== filtre) continue;
+      var r = M.listingOfficine(idx, id, opts);
+      for (i = 0; i < r.lignes.length; i++) {
+        var l = r.lignes[i];
+        var e = par[l.cip] || (par[l.cip] = {
+          cip: l.cip, officines: 0, potentiel: 0, stock: l.stock, couverture: null
+        });
+        e.officines += 1;
+        e.potentiel += l.potentiel;
+      }
+    }
+
+    var out = [];
+    for (cip in par) {
+      if (!Object.prototype.hasOwnProperty.call(par, cip)) continue;
+      par[cip].couverture = M.couverture(idx, cip, stock);
+      out.push(par[cip]);
+    }
+    out.sort(function (a, b) { return b.potentiel - a.potentiel; });
+    return out;
   };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = M;
