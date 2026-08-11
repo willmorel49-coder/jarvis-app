@@ -1,0 +1,2050 @@
+[
+ {
+  "cip": "2000220",
+  "nom": "Pharmacie BEDOY",
+  "ville": "CHALAMONT",
+  "cp": "1320",
+  "lat": 45.99663,
+  "lon": 5.17022
+ },
+ {
+  "cip": "2001194",
+  "nom": "PHARMACIE DE LA CROIX ROUGE",
+  "ville": "ST MARTIN D HERES",
+  "cp": "38400",
+  "lat": 45.17844,
+  "lon": 5.76322
+ },
+ {
+  "cip": "2001287",
+  "nom": "PHARMACIE DAMERY",
+  "ville": "ENCHASTRAYES",
+  "cp": "04400",
+  "lat": 44.37416,
+  "lon": 6.68138
+ },
+ {
+  "cip": "2001292",
+  "nom": "PHARMACIE SAINT PATRICE",
+  "ville": "PIERREVERT",
+  "cp": "04860",
+  "lat": 43.81319,
+  "lon": 5.72694
+ },
+ {
+  "cip": "2001931",
+  "nom": "PHARMACIE DES BOULEVARDS",
+  "ville": "CAGNES-SUR-MER",
+  "cp": "06800",
+  "lat": 43.67541,
+  "lon": 7.15035
+ },
+ {
+  "cip": "2002055",
+  "nom": "PHARMACIE DE LA PALMERAIE",
+  "ville": "GRASSE",
+  "cp": "06130",
+  "lat": 43.65406,
+  "lon": 6.93776
+ },
+ {
+  "cip": "2002068",
+  "nom": "LA GRANDE PHARMACIE",
+  "ville": "CASTRES",
+  "cp": "81100",
+  "lat": 43.60939,
+  "lon": 2.24548
+ },
+ {
+  "cip": "2002171",
+  "nom": "PHARMACIE DE LA MONTA",
+  "ville": "ST EGREVE",
+  "cp": "38120",
+  "lat": 45.23072,
+  "lon": 5.67697
+ },
+ {
+  "cip": "2002340",
+  "nom": "PHARMACIE DE LA BARBEROLLE",
+  "ville": "BESAYES",
+  "cp": "26300",
+  "lat": 44.96668,
+  "lon": 5.09017
+ },
+ {
+  "cip": "2002466",
+  "nom": "PHARMACIE DE LONGCHAMP",
+  "ville": "NANTES",
+  "cp": "44300",
+  "lat": 47.23937,
+  "lon": -1.55533
+ },
+ {
+  "cip": "2002470",
+  "nom": "PHARMACIE DES HALLES - SAVENAY",
+  "ville": "SAVENAY",
+  "cp": "44260",
+  "lat": 47.35498,
+  "lon": -1.92881
+ },
+ {
+  "cip": "2002684",
+  "nom": "PHARMACIE GAMBETTA LAFAYETTE",
+  "ville": "NARBONNE",
+  "cp": "11100",
+  "lat": 43.16671,
+  "lon": 3.05014
+ },
+ {
+  "cip": "2002804",
+  "nom": "PHARMACIE DE LERINS",
+  "ville": "CANNES",
+  "cp": "06400",
+  "lat": 43.55547,
+  "lon": 7.00458
+ },
+ {
+  "cip": "2003077",
+  "nom": "PHARMACIE MEZERETTE",
+  "ville": "BESLE SUR VILAINE",
+  "cp": "44290",
+  "lat": 47.67805,
+  "lon": -1.8491
+ },
+ {
+  "cip": "2003260",
+  "nom": "Pharmacie SIALA",
+  "ville": "SAINT ETIENNE",
+  "cp": "42100",
+  "lat": 45.43019,
+  "lon": 4.37005
+ },
+ {
+  "cip": "2003350",
+  "nom": "PHARMACIE FAURE DELAIGUE",
+  "ville": "POLIGNAC",
+  "cp": "43000",
+  "lat": 45.07145,
+  "lon": 3.85806
+ },
+ {
+  "cip": "2003499",
+  "nom": "PHARMACIE DE LA LIBERATION",
+  "ville": "NICE",
+  "cp": "06000",
+  "lat": 43.71273,
+  "lon": 7.25531
+ },
+ {
+  "cip": "2003771",
+  "nom": "Pharmacie SERVE",
+  "ville": "SAINT FELICIEN",
+  "cp": "7410",
+  "lat": 45.0789,
+  "lon": 4.60635
+ },
+ {
+  "cip": "2003792",
+  "nom": "PHARMACIE CARNOT (07)",
+  "ville": "GUILHERAND GRANGES",
+  "cp": "07500",
+  "lat": 44.92934,
+  "lon": 4.86918
+ },
+ {
+  "cip": "2003829",
+  "nom": "Pharmacie GAUTHIER",
+  "ville": "PEAUGRES",
+  "cp": "7340",
+  "lat": 45.28438,
+  "lon": 4.73153
+ },
+ {
+  "cip": "2004358",
+  "nom": "Pharmacie BLACHERE PERRIER",
+  "ville": "BONSON",
+  "cp": "42160",
+  "lat": 45.52311,
+  "lon": 4.22087
+ },
+ {
+  "cip": "2004405",
+  "nom": "PHARMACIE FORGES",
+  "ville": "STE ANNE D AURAY",
+  "cp": "56400",
+  "lat": 47.70168,
+  "lon": -2.94589
+ },
+ {
+  "cip": "2004583",
+  "nom": "PHARMACIE SAINT JULIEN",
+  "ville": "CAZOULS LES BEZIERS",
+  "cp": "34370",
+  "lat": 43.39351,
+  "lon": 3.10317
+ },
+ {
+  "cip": "2005067",
+  "nom": "PHARMACIE DES MASSELETTES",
+  "ville": "THEZAN LES BEZIERS",
+  "cp": "34490",
+  "lat": 43.41597,
+  "lon": 3.16609
+ },
+ {
+  "cip": "2005279",
+  "nom": "LA GRANDE PHARMACIE DES PINS",
+  "ville": "BEZIERS",
+  "cp": "34500",
+  "lat": 43.34326,
+  "lon": 3.23346
+ },
+ {
+  "cip": "2005337",
+  "nom": "PHARMACIE BASTIDE",
+  "ville": "SERVIAN",
+  "cp": "34290",
+  "lat": 43.4197,
+  "lon": 3.30886
+ },
+ {
+  "cip": "2005542",
+  "nom": "PHARMACIE DU CHAVAN",
+  "ville": "CHAVANOD",
+  "cp": "74650",
+  "lat": 45.88395,
+  "lon": 6.05173
+ },
+ {
+  "cip": "2005561",
+  "nom": "Pharmacie LEMAITRE - KILEDJIAN",
+  "ville": "CONDRIEU",
+  "cp": "69420",
+  "lat": 45.47676,
+  "lon": 4.75406
+ },
+ {
+  "cip": "2005583",
+  "nom": "PHARMACIE DE L OPPIDUM",
+  "ville": "NISSAN LEZ ENSERUNE",
+  "cp": "34440",
+  "lat": 43.28546,
+  "lon": 3.11901
+ },
+ {
+  "cip": "2005976",
+  "nom": "PHARMACIE DE LA LIBERTE",
+  "ville": "BEZIERS",
+  "cp": "34500",
+  "lat": 43.34326,
+  "lon": 3.23346
+ },
+ {
+  "cip": "2006621",
+  "nom": "PHARMACIE DE SAINT MARTIN",
+  "ville": "LAMBALLE",
+  "cp": "22400",
+  "lat": 48.4918,
+  "lon": -2.51465
+ },
+ {
+  "cip": "2006688",
+  "nom": "Pharmacie BURNIAT NEUVILLE - ZEROUK",
+  "ville": "ST ETIENNE",
+  "cp": "42100",
+  "lat": 45.43019,
+  "lon": 4.37005
+ },
+ {
+  "cip": "2006795",
+  "nom": "PHARMACIE DE CHENS",
+  "ville": "CHENS SUR LEMAN",
+  "cp": "74140",
+  "lat": 46.31744,
+  "lon": 6.26467
+ },
+ {
+  "cip": "2006951",
+  "nom": "PHARMACIE DE LA COLLINE",
+  "ville": "BALARUC LES BAINS",
+  "cp": "34540",
+  "lat": 43.4468,
+  "lon": 3.69077
+ },
+ {
+  "cip": "2006967",
+  "nom": "PHARMACIE ANCESSY",
+  "ville": "CRUZY",
+  "cp": "34310",
+  "lat": 43.33218,
+  "lon": 2.95018
+ },
+ {
+  "cip": "2007040",
+  "nom": "PHARMACIE DE L ATLANTIS",
+  "ville": "ALBI",
+  "cp": "81000",
+  "lat": 43.93037,
+  "lon": 2.13631
+ },
+ {
+  "cip": "2007188",
+  "nom": "Pharmacie AMREIN",
+  "ville": "ROYAT",
+  "cp": "63130",
+  "lat": 45.75889,
+  "lon": 3.04527
+ },
+ {
+  "cip": "2007200",
+  "nom": "PHARMACIE DE LA FRETTE",
+  "ville": "LA FRETTE",
+  "cp": "38260",
+  "lat": 45.39254,
+  "lon": 5.36115
+ },
+ {
+  "cip": "2007265",
+  "nom": "PHARMACIE DU BOURG DE BRECH",
+  "ville": "BRECH",
+  "cp": "56400",
+  "lat": 47.70418,
+  "lon": -3.02211
+ },
+ {
+  "cip": "2007326",
+  "nom": "PHARMACIE PRAIRIE AU DUC",
+  "ville": "NANTES",
+  "cp": "44200",
+  "lat": 47.23937,
+  "lon": -1.55533
+ },
+ {
+  "cip": "2007335",
+  "nom": "Pharmacie CHAPUIS",
+  "ville": "VEAUCHE",
+  "cp": "42340",
+  "lat": 45.56149,
+  "lon": 4.29002
+ },
+ {
+  "cip": "2007387",
+  "nom": "PHARMACIE DE LA MEDITERRANEE",
+  "ville": "SERIGNAN",
+  "cp": "34410",
+  "lat": 43.26426,
+  "lon": 3.29613
+ },
+ {
+  "cip": "2007704",
+  "nom": "Pharmacie MAROLLES",
+  "ville": "FIRMINY",
+  "cp": "42700",
+  "lat": 45.38657,
+  "lon": 4.2877
+ },
+ {
+  "cip": "2008747",
+  "nom": "PHARMACIE OCEANE",
+  "ville": "ST MEEN LE GRAND",
+  "cp": "35290",
+  "lat": 48.19112,
+  "lon": -2.18959
+ },
+ {
+  "cip": "2008750",
+  "nom": "PHARMACIE DES CEDRES",
+  "ville": "MOUANS-SARTOUX",
+  "cp": "06370",
+  "lat": 43.61955,
+  "lon": 6.96737
+ },
+ {
+  "cip": "2008753",
+  "nom": "Pharmacie FROMAGE",
+  "ville": "RANDAN",
+  "cp": "63310",
+  "lat": 46.01001,
+  "lon": 3.3572
+ },
+ {
+  "cip": "2008847",
+  "nom": "PHARMACIE DU BARRAGE DE SERRE PONCON",
+  "ville": "ESPINASSES",
+  "cp": "05190",
+  "lat": 44.46913,
+  "lon": 6.22813
+ },
+ {
+  "cip": "2009397",
+  "nom": "PHARMACIE DE CAPESTANG",
+  "ville": "CAPESTANG",
+  "cp": "34310",
+  "lat": 43.31927,
+  "lon": 3.07168
+ },
+ {
+  "cip": "2009449",
+  "nom": "PHARMACIE D'OLBY",
+  "ville": "OLBY",
+  "cp": "63210",
+  "lat": 45.7439,
+  "lon": 2.86677
+ },
+ {
+  "cip": "2009458",
+  "nom": "PHARMACIE CLARON",
+  "ville": "BOUJAN SUR LIBRON",
+  "cp": "34760",
+  "lat": 43.37004,
+  "lon": 3.2493
+ },
+ {
+  "cip": "2009471",
+  "nom": "Pharmacie BERTHIER",
+  "ville": "MACLAS",
+  "cp": "42520",
+  "lat": 45.36501,
+  "lon": 4.69322
+ },
+ {
+  "cip": "2009541",
+  "nom": "Pharmacie NICOLAS",
+  "ville": "MONTREJEAU",
+  "cp": "31210",
+  "lat": 43.08795,
+  "lon": 0.55959
+ },
+ {
+  "cip": "2009612",
+  "nom": "PHARMACIE PIERRE CURIE",
+  "ville": "",
+  "cp": "",
+  "lat": null,
+  "lon": null
+ },
+ {
+  "cip": "2009672",
+  "nom": "PHARMACIE BARNAVE",
+  "ville": "ST EGREVE",
+  "cp": "38120",
+  "lat": 45.23072,
+  "lon": 5.67697
+ },
+ {
+  "cip": "2009728",
+  "nom": "PHARMACIE DE BEAUVALLON (26 - BEAUVALLON)",
+  "ville": "BEAUVALLON",
+  "cp": "26800",
+  "lat": 44.85487,
+  "lon": 4.90562
+ },
+ {
+  "cip": "2009921",
+  "nom": "PHARMACIE SAINT JEANNAISE",
+  "ville": "ST JEAN DE MOIRANS",
+  "cp": "38430",
+  "lat": 45.33415,
+  "lon": 5.57863
+ },
+ {
+  "cip": "2009959",
+  "nom": "PHARMACIE LAFAYETTE SAINT MALO",
+  "ville": "ST MALO",
+  "cp": "35400",
+  "lat": 48.64208,
+  "lon": -1.98863
+ },
+ {
+  "cip": "2010233",
+  "nom": "GRANDE PHARMACIE DU PROGRES (42 - ROANNE)",
+  "ville": "",
+  "cp": "",
+  "lat": null,
+  "lon": null
+ },
+ {
+  "cip": "2010882",
+  "nom": "PHARMACIE DES CHAPELIERS",
+  "ville": "",
+  "cp": "",
+  "lat": null,
+  "lon": null
+ },
+ {
+  "cip": "2011018",
+  "nom": "GRANDE PHARMACIE DE BEAULIEU",
+  "ville": "NANTES",
+  "cp": "44200",
+  "lat": 47.23937,
+  "lon": -1.55533
+ },
+ {
+  "cip": "2011123",
+  "nom": "PHARMACIE DE SION",
+  "ville": "SION LES MINES",
+  "cp": "44590",
+  "lat": 47.73021,
+  "lon": -1.58158
+ },
+ {
+  "cip": "2011179",
+  "nom": "PHARMACIE DES DERVALLIERES",
+  "ville": "NANTES",
+  "cp": "44100",
+  "lat": 47.23937,
+  "lon": -1.55533
+ },
+ {
+  "cip": "2012550",
+  "nom": "PHARMACIE DES MEANNES",
+  "ville": "ROMANS SUR ISERE",
+  "cp": "26100",
+  "lat": 45.05159,
+  "lon": 5.04634
+ },
+ {
+  "cip": "2012756",
+  "nom": "PHARMACIE DE TOKORO",
+  "ville": "GAP",
+  "cp": "05000",
+  "lat": 44.56323,
+  "lon": 6.07678
+ },
+ {
+  "cip": "2012837",
+  "nom": "PHARMACIE DU GOHLEN",
+  "ville": "SULNIAC",
+  "cp": "56250",
+  "lat": 47.65995,
+  "lon": -2.55707
+ },
+ {
+  "cip": "2013573",
+  "nom": "PHARMACIE DE L ETANG DE L OR",
+  "ville": "LANSARGUES",
+  "cp": "34130",
+  "lat": 43.64686,
+  "lon": 4.07287
+ },
+ {
+  "cip": "2013703",
+  "nom": "PHARMACIE VERDUGO (KENNEDY)",
+  "ville": "BOURG DE PEAGE",
+  "cp": "26300",
+  "lat": 45.0222,
+  "lon": 5.05055
+ },
+ {
+  "cip": "2013843",
+  "nom": "Pharmacie DECHAUME",
+  "ville": "TASSIN LA DEMI LUNE",
+  "cp": "69160",
+  "lat": 45.76125,
+  "lon": 4.75677
+ },
+ {
+  "cip": "2014007",
+  "nom": "PHARMACIE DES ALPES (74-ANNECY)",
+  "ville": "ANNECY",
+  "cp": "74000",
+  "lat": 45.90158,
+  "lon": 6.1253
+ },
+ {
+  "cip": "2014064",
+  "nom": "PHARMACIE TOMAS VACHAT",
+  "ville": "CHATUZANGE LE GOUBET",
+  "cp": "26300",
+  "lat": 45.00535,
+  "lon": 5.09312
+ },
+ {
+  "cip": "2014507",
+  "nom": "PHARMACIE DE CLAVARY",
+  "ville": "GRASSE",
+  "cp": "06130",
+  "lat": 43.65406,
+  "lon": 6.93776
+ },
+ {
+  "cip": "2014644",
+  "nom": "PHARMACIE DE L'ETANG DE LA CANE",
+  "ville": "MONTFORT SUR MEU",
+  "cp": "35160",
+  "lat": 48.1264,
+  "lon": -1.95447
+ },
+ {
+  "cip": "2017721",
+  "nom": "PHARMACIE BRAHIC",
+  "ville": "MARAUSSAN",
+  "cp": "34370",
+  "lat": 43.36491,
+  "lon": 3.16053
+ },
+ {
+  "cip": "2020341",
+  "nom": "PHARMACIE IOBBI- NIVOL",
+  "ville": "LES ABRETS",
+  "cp": "38490",
+  "lat": 45.54454,
+  "lon": 5.58172
+ },
+ {
+  "cip": "2020399",
+  "nom": "PHARMACIE DES COTES DU RHONE",
+  "ville": "ROUSSILLON",
+  "cp": "38150",
+  "lat": 45.38015,
+  "lon": 4.81704
+ },
+ {
+  "cip": "2020949",
+  "nom": "PHARMACIE DU JARDIN DES PLANTES",
+  "ville": "GRENOBLE",
+  "cp": "38000",
+  "lat": 45.18283,
+  "lon": 5.7243
+ },
+ {
+  "cip": "2021104",
+  "nom": "PHARMACIE DU COLOMBIER",
+  "ville": "VOIRON",
+  "cp": "38500",
+  "lat": 45.37805,
+  "lon": 5.58545
+ },
+ {
+  "cip": "2021895",
+  "nom": "Pharmacie SIMAND",
+  "ville": "SAINT CHAMOND",
+  "cp": "42400",
+  "lat": 45.47046,
+  "lon": 4.50575
+ },
+ {
+  "cip": "2022160",
+  "nom": "Pharmacie FORAY-JAGER SELARL",
+  "ville": "ST ETIENNE",
+  "cp": "42100",
+  "lat": 45.43019,
+  "lon": 4.37005
+ },
+ {
+  "cip": "2022553",
+  "nom": "PHARMACIE DU CENTRE - MONTOIR DE BRETAGNE",
+  "ville": "MONTOIR DE BRETAGNE",
+  "cp": "44550",
+  "lat": 47.31988,
+  "lon": -2.15023
+ },
+ {
+  "cip": "2022569",
+  "nom": "PHARMACIE TREANTON",
+  "ville": "LA BAULE",
+  "cp": "44500",
+  "lat": 47.28875,
+  "lon": -2.36346
+ },
+ {
+  "cip": "2022595",
+  "nom": "PHARMACIE BEAU SOLEIL",
+  "ville": "HAUTE GOULAINE",
+  "cp": "44115",
+  "lat": 47.19564,
+  "lon": -1.41519
+ },
+ {
+  "cip": "2022768",
+  "nom": "PHARMACIE CHAMINANT",
+  "ville": "COUERON",
+  "cp": "44220",
+  "lat": 47.23175,
+  "lon": -1.7056
+ },
+ {
+  "cip": "2022789",
+  "nom": "GRANDE PHARMACIE DE COUERON",
+  "ville": "COUERON",
+  "cp": "44220",
+  "lat": 47.23175,
+  "lon": -1.7056
+ },
+ {
+  "cip": "2022878",
+  "nom": "PHARMACIE DE KERLEDE",
+  "ville": "ST NAZAIRE",
+  "cp": "44600",
+  "lat": 47.27525,
+  "lon": -2.24249
+ },
+ {
+  "cip": "2023206",
+  "nom": "PHARMACIE DE MONTBAZON",
+  "ville": "NANTES",
+  "cp": "44300",
+  "lat": 47.23937,
+  "lon": -1.55533
+ },
+ {
+  "cip": "2023211",
+  "nom": "PHARMACIE DE LA GARE - NANTES",
+  "ville": "NANTES",
+  "cp": "44000",
+  "lat": 47.23937,
+  "lon": -1.55533
+ },
+ {
+  "cip": "2023227",
+  "nom": "PHARMACIE SAINT JACQUES",
+  "ville": "NANTES",
+  "cp": "44200",
+  "lat": 47.23937,
+  "lon": -1.55533
+ },
+ {
+  "cip": "2025931",
+  "nom": "PHARMACIE DE RUFFIAC",
+  "ville": "RUFFIAC",
+  "cp": "56140",
+  "lat": 47.81707,
+  "lon": -2.28931
+ },
+ {
+  "cip": "2025947",
+  "nom": "PHARMACIE DU PLESSIS - REPUBLIQUE",
+  "ville": "LANESTER",
+  "cp": "56600",
+  "lat": 47.76878,
+  "lon": -3.33086
+ },
+ {
+  "cip": "2026123",
+  "nom": "PHARMACIE DE SAINT ARMEL",
+  "ville": "LORIENT",
+  "cp": "56100",
+  "lat": 47.75036,
+  "lon": -3.37803
+ },
+ {
+  "cip": "2030260",
+  "nom": "PHARMACIE PONTAUMUR",
+  "ville": "PONTAUMUR",
+  "cp": "63380",
+  "lat": 45.8657,
+  "lon": 2.67795
+ },
+ {
+  "cip": "2030454",
+  "nom": "Pharmacie HERVAS SARL",
+  "ville": "CHATEAUGAY",
+  "cp": "63119",
+  "lat": 45.84896,
+  "lon": 3.09692
+ },
+ {
+  "cip": "2035007",
+  "nom": "Pharmacie MOUYABI KIBOUILOU",
+  "ville": "BRON",
+  "cp": "69500",
+  "lat": 45.73548,
+  "lon": 4.9112
+ },
+ {
+  "cip": "2035117",
+  "nom": "Pharmacie RAZON",
+  "ville": "VILLEURBANNE",
+  "cp": "69100",
+  "lat": 45.76897,
+  "lon": 4.89004
+ },
+ {
+  "cip": "2035468",
+  "nom": "PHARMACIE DE SAINT PIERRE DE VAISE",
+  "ville": "LYON",
+  "cp": "69009",
+  "lat": 45.758,
+  "lon": 4.835
+ },
+ {
+  "cip": "2037046",
+  "nom": "PHARMACIE DU PRADIAN",
+  "ville": "BASSENS",
+  "cp": "73000",
+  "lat": 45.57824,
+  "lon": 5.93834
+ },
+ {
+  "cip": "2037402",
+  "nom": "PHARMACIE DU LAC (74-MESSERY)",
+  "ville": "MESSERY",
+  "cp": "74140",
+  "lat": 46.34827,
+  "lon": 6.29558
+ },
+ {
+  "cip": "2037418",
+  "nom": "PHARMACIE DU SALEVE",
+  "ville": "MONNETIER MORNEX",
+  "cp": "74560",
+  "lat": 46.15135,
+  "lon": 6.21788
+ },
+ {
+  "cip": "2037507",
+  "nom": "PHARMACIE DU CHABLAIS",
+  "ville": "DOUVAINE",
+  "cp": "74140",
+  "lat": 46.30864,
+  "lon": 6.29984
+ },
+ {
+  "cip": "2059384",
+  "nom": "PHARMACIE ESCALLIER",
+  "ville": "BARCELONNETTE",
+  "cp": "04400",
+  "lat": 44.38703,
+  "lon": 6.64732
+ },
+ {
+  "cip": "2059583",
+  "nom": "PHARMACIE DE L HOTEL DE VILLE - MANOSQUE",
+  "ville": "MANOSQUE",
+  "cp": "04100",
+  "lat": 43.82654,
+  "lon": 5.79024
+ },
+ {
+  "cip": "2059693",
+  "nom": "PHARMACIE DE L HORLOGE",
+  "ville": "SISTERON",
+  "cp": "04200",
+  "lat": 44.20371,
+  "lon": 5.93561
+ },
+ {
+  "cip": "2060049",
+  "nom": "PHARMACIE COUTIN-RIZZITELLI (CARNOT)",
+  "ville": "GAP",
+  "cp": "05000",
+  "lat": 44.56323,
+  "lon": 6.07678
+ },
+ {
+  "cip": "2060190",
+  "nom": "PHARMACIE DE LA ROCHE",
+  "ville": "LA ROCHE DES ARNAUDS",
+  "cp": "05400",
+  "lat": 44.56015,
+  "lon": 5.96241
+ },
+ {
+  "cip": "2061807",
+  "nom": "PHARMACIE MONT ALBAN",
+  "ville": "NICE",
+  "cp": "06300",
+  "lat": 43.71273,
+  "lon": 7.25531
+ },
+ {
+  "cip": "2061917",
+  "nom": "PHARMACIE SAINT ANTOINE",
+  "ville": "NICE",
+  "cp": "06200",
+  "lat": 43.71273,
+  "lon": 7.25531
+ },
+ {
+  "cip": "2062711",
+  "nom": "PHARMACIE DES ARTS",
+  "ville": "VALLAURIS",
+  "cp": "06220",
+  "lat": 43.57423,
+  "lon": 7.06012
+ },
+ {
+  "cip": "2063123",
+  "nom": "PHARMACIE DU CHENE VERT",
+  "ville": "VALBONNE",
+  "cp": "06560",
+  "lat": 43.62734,
+  "lon": 7.01656
+ },
+ {
+  "cip": "2063411",
+  "nom": "PHARMACIE DE CHOMERAC",
+  "ville": "CHOMERAC",
+  "cp": "07210",
+  "lat": 44.70991,
+  "lon": 4.67071
+ },
+ {
+  "cip": "2063584",
+  "nom": "PHARMACIE DE ROCHEMAURE",
+  "ville": "ROCHEMAURE",
+  "cp": "07400",
+  "lat": 44.58761,
+  "lon": 4.70272
+ },
+ {
+  "cip": "2063584IN",
+  "nom": "PHARMACIE DE ROCHEMAURE",
+  "ville": "ROCHEMAURE",
+  "cp": "07400",
+  "lat": 44.58761,
+  "lon": 4.70272
+ },
+ {
+  "cip": "2063720",
+  "nom": "Pharmacie VALENTIN ALAIN",
+  "ville": "SERRIERES",
+  "cp": "7340",
+  "lat": 45.32002,
+  "lon": 4.76362
+ },
+ {
+  "cip": "2063736",
+  "nom": "PHARMACIE DU CENTRE (07 - TEIL)",
+  "ville": "LE TEIL",
+  "cp": "07400",
+  "lat": 44.54636,
+  "lon": 4.66829
+ },
+ {
+  "cip": "2063851",
+  "nom": "PHARMACIE DE VERNOUX",
+  "ville": "VERNOUX EN VIVARAIS",
+  "cp": "07240",
+  "lat": 44.90731,
+  "lon": 4.64993
+ },
+ {
+  "cip": "2063872",
+  "nom": "Pharmacie BROUSSOLLE",
+  "ville": "VILLEVOCANCE",
+  "cp": "7690",
+  "lat": 45.22237,
+  "lon": 4.59436
+ },
+ {
+  "cip": "2067222",
+  "nom": "PHARMACIE DES 3 PONTS",
+  "ville": "NARBONNE",
+  "cp": "11100",
+  "lat": 43.16671,
+  "lon": 3.05014
+ },
+ {
+  "cip": "2088724",
+  "nom": "PHARMACIE DE BEAUVALLON (26 - BEAUVALLON)",
+  "ville": "BEAUVALLON",
+  "cp": "26800",
+  "lat": 44.85487,
+  "lon": 4.90562
+ },
+ {
+  "cip": "2088860",
+  "nom": "PHARMACIE TARDY (26-CLERIEUX)",
+  "ville": "CLERIEUX",
+  "cp": "26260",
+  "lat": 45.07853,
+  "lon": 4.95849
+ },
+ {
+  "cip": "2088970",
+  "nom": "PHARMACIE DE MALISSARD",
+  "ville": "MALISSARD",
+  "cp": "26120",
+  "lat": 44.89944,
+  "lon": 4.95581
+ },
+ {
+  "cip": "2089005",
+  "nom": "PHARMACIE DE MONTELIER",
+  "ville": "MONTELIER",
+  "cp": "26120",
+  "lat": 44.94174,
+  "lon": 5.02367
+ },
+ {
+  "cip": "2089115",
+  "nom": "PHARMACIE SAINT EUSEBE",
+  "ville": "MOURS ST EUSEBE",
+  "cp": "26540",
+  "lat": 45.07,
+  "lon": 5.05714
+ },
+ {
+  "cip": "2089183",
+  "nom": "PHARMACIE GAUTIER",
+  "ville": "PORTES LES VALENCE",
+  "cp": "26800",
+  "lat": 44.87662,
+  "lon": 4.88441
+ },
+ {
+  "cip": "2089199",
+  "nom": "PHARMACIE PORTES SUD (26)",
+  "ville": "PORTES LES VALENCE",
+  "cp": "26800",
+  "lat": 44.87662,
+  "lon": 4.88441
+ },
+ {
+  "cip": "2089335",
+  "nom": "PHARMACIE DES COLLINES",
+  "ville": "ROMANS SUR ISERE",
+  "cp": "26100",
+  "lat": 45.05159,
+  "lon": 5.04634
+ },
+ {
+  "cip": "2089775",
+  "nom": "PHARMACIE GUTTIN GANANSIA",
+  "ville": "CHABEUIL",
+  "cp": "26120",
+  "lat": 44.91169,
+  "lon": 5.00023
+ },
+ {
+  "cip": "2089801",
+  "nom": "PHARMACIE VOGEL",
+  "ville": "CHATILLON ST JEAN",
+  "cp": "26750",
+  "lat": 45.09739,
+  "lon": 5.13276
+ },
+ {
+  "cip": "2089859",
+  "nom": "PHARMACIE DU PONT",
+  "ville": "CREST",
+  "cp": "26400",
+  "lat": 44.73067,
+  "lon": 5.02015
+ },
+ {
+  "cip": "2096295",
+  "nom": "PHARMACIE DE L EGLISE",
+  "ville": "BOUILLARGUES",
+  "cp": "30230",
+  "lat": 43.80311,
+  "lon": 4.43261
+ },
+ {
+  "cip": "2097498",
+  "nom": "PHARMACIE VIDAL",
+  "ville": "VALLABREGUES",
+  "cp": "30300",
+  "lat": 43.85177,
+  "lon": 4.63798
+ },
+ {
+  "cip": "2097655",
+  "nom": "PHARMACIE DE LANGLADE",
+  "ville": "LANGLADE",
+  "cp": "30980",
+  "lat": 43.80321,
+  "lon": 4.25881
+ },
+ {
+  "cip": "2106287",
+  "nom": "PHARMACIE DELMAS (DE LA MEDITERRANEE BEZIERS)",
+  "ville": "BEZIERS",
+  "cp": "34500",
+  "lat": 43.34326,
+  "lon": 3.23346
+ },
+ {
+  "cip": "2107689",
+  "nom": "PHARMACIE DU GRIFFE",
+  "ville": "PAULHAN",
+  "cp": "34230",
+  "lat": 43.54201,
+  "lon": 3.46421
+ },
+ {
+  "cip": "2111082",
+  "nom": "PHARMACIE DU MOUCHOIR VERT",
+  "ville": "ST MALO",
+  "cp": "35400",
+  "lat": 48.64208,
+  "lon": -1.98863
+ },
+ {
+  "cip": "2114476",
+  "nom": "PHARMACIE D APPRIEU",
+  "ville": "APPRIEU",
+  "cp": "38140",
+  "lat": 45.38541,
+  "lon": 5.4985
+ },
+ {
+  "cip": "2115265",
+  "nom": "Pharmacie GABARD",
+  "ville": "EYZIN PINET",
+  "cp": "38780",
+  "lat": 45.48155,
+  "lon": 5.00085
+ },
+ {
+  "cip": "2115354",
+  "nom": "PHARMACIE DE L'HOTEL DE VILLE (38-FONTAINE)",
+  "ville": "FONTAINE",
+  "cp": "38600",
+  "lat": 45.19503,
+  "lon": 5.68284
+ },
+ {
+  "cip": "2115485",
+  "nom": "PHARMACIE DU VERCORS",
+  "ville": "GRENOBLE",
+  "cp": "38100",
+  "lat": 45.18283,
+  "lon": 5.7243
+ },
+ {
+  "cip": "2115527",
+  "nom": "PHARMACIE LOUISE MICHEL",
+  "ville": "GRENOBLE",
+  "cp": "38100",
+  "lat": 45.18283,
+  "lon": 5.7243
+ },
+ {
+  "cip": "2115925",
+  "nom": "PHARMACIE BONNET",
+  "ville": "JARRIE",
+  "cp": "38560",
+  "lat": 45.10438,
+  "lon": 5.74894
+ },
+ {
+  "cip": "2116447",
+  "nom": "Pharmacie ACOMAT",
+  "ville": "SAINT CLAIR DU RHONE",
+  "cp": "38370",
+  "lat": 45.43644,
+  "lon": 4.77587
+ },
+ {
+  "cip": "2116489",
+  "nom": "PHARMACIE DE LA SURE",
+  "ville": "SAINT ETIENNE DE CROSSEY",
+  "cp": "38960",
+  "lat": 45.38028,
+  "lon": 5.6361
+ },
+ {
+  "cip": "2116541",
+  "nom": "PHARMACIE FONTAINE AMELIE",
+  "ville": "ST ISMIER",
+  "cp": "38330",
+  "lat": 45.24941,
+  "lon": 5.83455
+ },
+ {
+  "cip": "2116887",
+  "nom": "PHARMACIE DES ROCHES BLEUES",
+  "ville": "SEYSSINET PARISET",
+  "cp": "38170",
+  "lat": 45.17402,
+  "lon": 5.67961
+ },
+ {
+  "cip": "2116913",
+  "nom": "PHARMACIE DU VILLAGE (38)",
+  "ville": "SEYSSINS",
+  "cp": "38180",
+  "lat": 45.15924,
+  "lon": 5.68196
+ },
+ {
+  "cip": "2117042IN",
+  "nom": "PHARMACIE AUBRET",
+  "ville": "",
+  "cp": "",
+  "lat": null,
+  "lon": null
+ },
+ {
+  "cip": "2117079",
+  "nom": "PHARMACIE ROMEO",
+  "ville": "VAULNAVEYS LE HAUT",
+  "cp": "38410",
+  "lat": 45.12418,
+  "lon": 5.82073
+ },
+ {
+  "cip": "2117571",
+  "nom": "Pharmacie CARBONI",
+  "ville": "FARAMANS",
+  "cp": "38260",
+  "lat": 45.38908,
+  "lon": 5.16686
+ },
+ {
+  "cip": "2122356",
+  "nom": "Pharmacie MOLLICONE",
+  "ville": "ROCHE LA MOLIERE",
+  "cp": "42230",
+  "lat": 45.42951,
+  "lon": 4.32695
+ },
+ {
+  "cip": "2122995",
+  "nom": "Pharmacie DALMAZE",
+  "ville": "ST ETIENNE",
+  "cp": "42000",
+  "lat": 45.43019,
+  "lon": 4.37005
+ },
+ {
+  "cip": "2123208",
+  "nom": "Pharmacie MICHON - PELISSIER",
+  "ville": "ST JEAN BONNEFONDS",
+  "cp": "42650",
+  "lat": 45.46098,
+  "lon": 4.44553
+ },
+ {
+  "cip": "2123297",
+  "nom": "Pharmacie PERIMONY",
+  "ville": "SAINT PAUL EN JAREZ",
+  "cp": "42740",
+  "lat": 45.47546,
+  "lon": 4.5793
+ },
+ {
+  "cip": "2123433",
+  "nom": "Pharmacie COUSSOT",
+  "ville": "UNIEUX",
+  "cp": "42240",
+  "lat": 45.40335,
+  "lon": 4.26981
+ },
+ {
+  "cip": "2123454",
+  "nom": "Pharmacie MICHEL SARL",
+  "ville": "UNIEUX",
+  "cp": "42240",
+  "lat": 45.40335,
+  "lon": 4.26981
+ },
+ {
+  "cip": "2124039",
+  "nom": "PHARMACIE DE GUITARD",
+  "ville": "LE PUY EN VELAY",
+  "cp": "43000",
+  "lat": 45.03059,
+  "lon": 3.90623
+ },
+ {
+  "cip": "2124264",
+  "nom": "PHARMACIE VERCHERE CAUVIN",
+  "ville": "SOLIGNAC SUR LOIRE",
+  "cp": "43370",
+  "lat": 44.95287,
+  "lon": 3.88612
+ },
+ {
+  "cip": "2124526",
+  "nom": "PHARMACIE CENTRALE - BLAIN",
+  "ville": "BLAIN",
+  "cp": "44130",
+  "lat": 47.46269,
+  "lon": -1.77997
+ },
+ {
+  "cip": "2124615",
+  "nom": "PHARMACIE BIRGAND",
+  "ville": "BOUVRON",
+  "cp": "44130",
+  "lat": 47.41833,
+  "lon": -1.86414
+ },
+ {
+  "cip": "2124657",
+  "nom": "PHARMACIE NOURY PEPION",
+  "ville": "CARQUEFOU",
+  "cp": "44470",
+  "lat": 47.29712,
+  "lon": -1.46682
+ },
+ {
+  "cip": "2124971",
+  "nom": "PHARMACIE CENTRALE - DONGES",
+  "ville": "DONGES",
+  "cp": "44480",
+  "lat": 47.34575,
+  "lon": -2.06672
+ },
+ {
+  "cip": "2125514",
+  "nom": "PHARMACIE DES DERVALLIERES",
+  "ville": "NANTES",
+  "cp": "44100",
+  "lat": 47.23937,
+  "lon": -1.55533
+ },
+ {
+  "cip": "2125708",
+  "nom": "PHARMACIE DE LA PLACE LECHAT",
+  "ville": "NANTES",
+  "cp": "44100",
+  "lat": 47.23937,
+  "lon": -1.55533
+ },
+ {
+  "cip": "2126193",
+  "nom": "PHARMACIE ROND POINT DE VANNES",
+  "ville": "NANTES",
+  "cp": "44000",
+  "lat": 47.23937,
+  "lon": -1.55533
+ },
+ {
+  "cip": "2126324EX",
+  "nom": "PHARMACIE DES ENFANTS NANTAIS",
+  "ville": "NANTES",
+  "cp": "44000",
+  "lat": 47.23937,
+  "lon": -1.55533
+ },
+ {
+  "cip": "2126591",
+  "nom": "PHARMACIE DE LA GARE - PORNIC",
+  "ville": "PORNIC",
+  "cp": "44210",
+  "lat": 47.12377,
+  "lon": -2.05422
+ },
+ {
+  "cip": "2126722",
+  "nom": "PHARMACIE TURBAN BARRE",
+  "ville": "REZE",
+  "cp": "44400",
+  "lat": 47.17269,
+  "lon": -1.55279
+ },
+ {
+  "cip": "2126738",
+  "nom": "PHARMACIE ATOUT SUD",
+  "ville": "REZE",
+  "cp": "44400",
+  "lat": 47.17269,
+  "lon": -1.55279
+ },
+ {
+  "cip": "2126790",
+  "nom": "PHARMACIE SAINT PAUL",
+  "ville": "REZE",
+  "cp": "44400",
+  "lat": 47.17033,
+  "lon": -1.54961
+ },
+ {
+  "cip": "2127176",
+  "nom": "PHARMACIE MALOUINE",
+  "ville": "ST MALO DE GUERSAC",
+  "cp": "44550",
+  "lat": 47.35676,
+  "lon": -2.17341
+ },
+ {
+  "cip": "2127600",
+  "nom": "PHARMACIE DE L ERDRE",
+  "ville": "SUCE SUR ERDRE",
+  "cp": "44240",
+  "lat": 47.34793,
+  "lon": -1.52228
+ },
+ {
+  "cip": "2128007",
+  "nom": "PHARMACIE DU CENTRE",
+  "ville": "NANTES",
+  "cp": "44000",
+  "lat": 47.23937,
+  "lon": -1.55533
+ },
+ {
+  "cip": "2128138",
+  "nom": "PHARMACIE LETOURNEUX",
+  "ville": "GUERANDE",
+  "cp": "44350",
+  "lat": 47.33131,
+  "lon": -2.40676
+ },
+ {
+  "cip": "2132736",
+  "nom": "PHARMACIE DE LA DOUTRE",
+  "ville": "ANGERS",
+  "cp": "49100",
+  "lat": 47.46747,
+  "lon": -0.56161
+ },
+ {
+  "cip": "2134780",
+  "nom": "PHARMACIE SAINT MARTIN DE LA PLACE",
+  "ville": "ST MARTIN DE LA PLACE",
+  "cp": "49160",
+  "lat": 47.31849,
+  "lon": -0.15291
+ },
+ {
+  "cip": "2143051",
+  "nom": "PHARMACIE DE BROCELIANDE",
+  "ville": "CAMPENEAC",
+  "cp": "56800",
+  "lat": 47.95557,
+  "lon": -2.29956
+ },
+ {
+  "cip": "2143334",
+  "nom": "PHARMACIE LA LAITA",
+  "ville": "GUIDEL",
+  "cp": "56520",
+  "lat": 47.79092,
+  "lon": -3.48803
+ },
+ {
+  "cip": "2143622",
+  "nom": "PHARMACIE DES PLAGES",
+  "ville": "LARMOR PLAGE",
+  "cp": "56260",
+  "lat": 47.71567,
+  "lon": -3.39156
+ },
+ {
+  "cip": "2144055",
+  "nom": "PHARMACIE RUMMENS",
+  "ville": "MUZILLAC",
+  "cp": "56190",
+  "lat": 47.5501,
+  "lon": -2.46988
+ },
+ {
+  "cip": "2144228",
+  "nom": "PHARMACIE DE L EGLISE",
+  "ville": "PLOEMEUR",
+  "cp": "56270",
+  "lat": 47.72877,
+  "lon": -3.4456
+ },
+ {
+  "cip": "2144322",
+  "nom": "PHARMACIE CENTRALE - PLOUAY",
+  "ville": "PLOUAY",
+  "cp": "56240",
+  "lat": 47.93223,
+  "lon": -3.34024
+ },
+ {
+  "cip": "2144495",
+  "nom": "PHARMACIE NAPOLEONVILLE",
+  "ville": "PONTIVY",
+  "cp": "56300",
+  "lat": 48.06562,
+  "lon": -2.97517
+ },
+ {
+  "cip": "2144757",
+  "nom": "PHARMACIE CORNIER",
+  "ville": "ST GILDAS DE RHUYS",
+  "cp": "56730",
+  "lat": 47.51237,
+  "lon": -2.83383
+ },
+ {
+  "cip": "2144888",
+  "nom": "PHARMACIE DU SOURN",
+  "ville": "LE SOURN",
+  "cp": "56300",
+  "lat": 48.03881,
+  "lon": -2.99278
+ },
+ {
+  "cip": "2145038",
+  "nom": "PHARMACIE DU FOURCHENE",
+  "ville": "VANNES",
+  "cp": "56000",
+  "lat": 47.65997,
+  "lon": -2.75219
+ },
+ {
+  "cip": "2145153",
+  "nom": "PHARMACIE CLISCOUET CONCLEAU",
+  "ville": "VANNES",
+  "cp": "56000",
+  "lat": 47.65997,
+  "lon": -2.75219
+ },
+ {
+  "cip": "2145326",
+  "nom": "PHARMACIE LEGAVRE GRUAIS",
+  "ville": "TAUPONT",
+  "cp": "56800",
+  "lat": 47.96202,
+  "lon": -2.44036
+ },
+ {
+  "cip": "2145331",
+  "nom": "PHARMACIE DU POULFANC",
+  "ville": "SENE",
+  "cp": "56860",
+  "lat": 47.62437,
+  "lon": -2.74005
+ },
+ {
+  "cip": "2165604",
+  "nom": "Pharmacie PONS ISABELLE",
+  "ville": "CLERMONT FERRAND",
+  "cp": "63000",
+  "lat": 45.78667,
+  "lon": 3.10705
+ },
+ {
+  "cip": "2165735",
+  "nom": "Pharmacie LALOY SARL",
+  "ville": "CLERMONT FERRAND",
+  "cp": "63000",
+  "lat": 45.78667,
+  "lon": 3.10705
+ },
+ {
+  "cip": "2175612",
+  "nom": "Pharmacie BRIGAND",
+  "ville": "FONTAINES SUR SAONE",
+  "cp": "69270",
+  "lat": 45.82561,
+  "lon": 4.85803
+ },
+ {
+  "cip": "2175654",
+  "nom": "Pharmacie PELLEREY",
+  "ville": "GIVORS",
+  "cp": "69700",
+  "lat": 45.58298,
+  "lon": 4.75628
+ },
+ {
+  "cip": "2176108",
+  "nom": "Pharmacie LEMIUS",
+  "ville": "ST DIDIER AU MT D'OR",
+  "cp": "69370",
+  "lat": 45.8111,
+  "lon": 4.79803
+ },
+ {
+  "cip": "2177054",
+  "nom": "PHARMACIE DE VILLEURBANNE (JBS)",
+  "ville": "VILLEURBANNE",
+  "cp": "69100",
+  "lat": 45.76897,
+  "lon": 4.89004
+ },
+ {
+  "cip": "2177363",
+  "nom": "Pharmacie MENARD",
+  "ville": "FEYZIN",
+  "cp": "69320",
+  "lat": 45.67466,
+  "lon": 4.85826
+ },
+ {
+  "cip": "2177379",
+  "nom": "Pharmacie FIUME",
+  "ville": "FEYZIN",
+  "cp": "69320",
+  "lat": 45.67466,
+  "lon": 4.85826
+ },
+ {
+  "cip": "2177740",
+  "nom": "Pharmacie RUBIO",
+  "ville": "ST PRIEST",
+  "cp": "69800",
+  "lat": 45.70189,
+  "lon": 4.94422
+ },
+ {
+  "cip": "2177824",
+  "nom": "PHARMACIE DE LA FRESQUE DES LYONNAIS",
+  "ville": "LYON",
+  "cp": "69001",
+  "lat": 45.758,
+  "lon": 4.835
+ },
+ {
+  "cip": "2178168",
+  "nom": "Pharmacie ARTIGE",
+  "ville": "LYON",
+  "cp": "69003",
+  "lat": 45.758,
+  "lon": 4.835
+ },
+ {
+  "cip": "2178388",
+  "nom": "PHARMACIE DU MAIL (69 Lyon)",
+  "ville": "LYON",
+  "cp": "69004",
+  "lat": 45.758,
+  "lon": 4.835
+ },
+ {
+  "cip": "2178676",
+  "nom": "PHARMACIE ISALYA (CHARMETTES)",
+  "ville": "LYON",
+  "cp": "69006",
+  "lat": 45.758,
+  "lon": 4.835
+ },
+ {
+  "cip": "2178896",
+  "nom": "PHARMACIE BERTHELOT",
+  "ville": "LYON",
+  "cp": "69007",
+  "lat": 45.758,
+  "lon": 4.835
+ },
+ {
+  "cip": "2183136",
+  "nom": "Pharmacie REMY",
+  "ville": "LE MANS",
+  "cp": "72000",
+  "lat": 47.99338,
+  "lon": 0.19117
+ },
+ {
+  "cip": "2184213",
+  "nom": "PHARMACIE DU VAL DES ROSES",
+  "ville": "ALBERTVILLE",
+  "cp": "73200",
+  "lat": 45.671,
+  "lon": 6.39677
+ },
+ {
+  "cip": "2184564",
+  "nom": "PHARMACIE DES CASCADES (73)",
+  "ville": "GRESY SUR AIX",
+  "cp": "73100",
+  "lat": 45.72529,
+  "lon": 5.93389
+ },
+ {
+  "cip": "2184653",
+  "nom": "PHARMACIE LES PORTIQUES",
+  "ville": "LA MOTTE SERVOLEX",
+  "cp": "73290",
+  "lat": 45.60692,
+  "lon": 5.86559
+ },
+ {
+  "cip": "2185442",
+  "nom": "PHARMACIE PRINCIPALE D'ANNEMASSE",
+  "ville": "ANNEMASSE",
+  "cp": "74100",
+  "lat": 46.18933,
+  "lon": 6.24305
+ },
+ {
+  "cip": "2185877",
+  "nom": "PHARMACIE DES ECOLES (74)",
+  "ville": "FAVERGES",
+  "cp": "74210",
+  "lat": 45.75395,
+  "lon": 6.29207
+ },
+ {
+  "cip": "2186231",
+  "nom": "PHARMACIE DES ACACIAS",
+  "ville": "ST JULIEN EN GENEVOIS",
+  "cp": "74160",
+  "lat": 46.13888,
+  "lon": 6.08175
+ },
+ {
+  "cip": "2186671",
+  "nom": "PHARMACIE TRAVAILLOT",
+  "ville": "MAGLAND",
+  "cp": "74300",
+  "lat": 46.01176,
+  "lon": 6.62369
+ },
+ {
+  "cip": "2206839",
+  "nom": "PHARMACIE LES ROSIERES",
+  "ville": "LA MOTHE ST HERAY",
+  "cp": "79800",
+  "lat": 46.35312,
+  "lon": -0.11267
+ },
+ {
+  "cip": "2209337",
+  "nom": "PHARMACIE REVEILLON",
+  "ville": "ALBI",
+  "cp": "81000",
+  "lat": 43.93037,
+  "lon": 2.13631
+ },
+ {
+  "cip": "2209599",
+  "nom": "PHARMACIE DAUTEZAC",
+  "ville": "CASTRES",
+  "cp": "81100",
+  "lat": 43.60939,
+  "lon": 2.24548
+ },
+ {
+  "cip": "2242421",
+  "nom": "Pharmacie GORGE - MONTAGNER",
+  "ville": "AUBIERE",
+  "cp": "63170",
+  "lat": 45.75253,
+  "lon": 3.12579
+ },
+ {
+  "cip": "2243231",
+  "nom": "PHARMACIE DE JAUSIERS",
+  "ville": "JAUSIERS",
+  "cp": "04850",
+  "lat": 44.41484,
+  "lon": 6.74018
+ },
+ {
+  "cip": "2246033",
+  "nom": "PHARMACIE DE MIRMAN",
+  "ville": "CAISSARGUES",
+  "cp": "30132",
+  "lat": 43.79304,
+  "lon": 4.38663
+ },
+ {
+  "cip": "2252466",
+  "nom": "PHARMACIE ROCAS",
+  "ville": "BOURG LES VALENCE",
+  "cp": "26500",
+  "lat": 44.96272,
+  "lon": 4.89364
+ },
+ {
+  "cip": "2253784",
+  "nom": "PHARMACIE GARCIA",
+  "ville": "PORTEL DES CORBIERES",
+  "cp": "11490",
+  "lat": 43.06146,
+  "lon": 2.91663
+ },
+ {
+  "cip": "2255514",
+  "nom": "PHARMACIE DE LA GRAMMOIRE",
+  "ville": "VERTOU",
+  "cp": "44120",
+  "lat": 47.15533,
+  "lon": -1.46756
+ },
+ {
+  "cip": "2256020",
+  "nom": "PHARMACIE DU PETIT ROCHEFORT",
+  "ville": "VARCES ALLIERES ET RISSET",
+  "cp": "38760",
+  "lat": 45.09548,
+  "lon": 5.67725
+ },
+ {
+  "cip": "2256151",
+  "nom": "PHARMACIE PARC LANN",
+  "ville": "VANNES",
+  "cp": "56000",
+  "lat": 47.65997,
+  "lon": -2.75219
+ },
+ {
+  "cip": "2256675",
+  "nom": "PHARMACIE RONDEAU",
+  "ville": "ST SEBASTIEN SUR LOIRE",
+  "cp": "44230",
+  "lat": 47.19935,
+  "lon": -1.50268
+ },
+ {
+  "cip": "2259812",
+  "nom": "PHARMACIE LES CLOTS",
+  "ville": "UPIE",
+  "cp": "26120",
+  "lat": 44.79994,
+  "lon": 4.97695
+ },
+ {
+  "cip": "2260550",
+  "nom": "PHARMACIE DE LA MADELEINE - MORLAIX",
+  "ville": "MORLAIX",
+  "cp": "29600",
+  "lat": 48.59515,
+  "lon": -3.8202
+ },
+ {
+  "cip": "2261004",
+  "nom": "PHARMACIE SANTOS DUMONT",
+  "ville": "NANTES",
+  "cp": "44300",
+  "lat": 47.23937,
+  "lon": -1.55533
+ },
+ {
+  "cip": "2261266",
+  "nom": "PHARMACIE PORTE OCEANE",
+  "ville": "AURAY",
+  "cp": "56400",
+  "lat": 47.6681,
+  "lon": -2.99084
+ },
+ {
+  "cip": "2261727",
+  "nom": "PHARMACIE DU TER",
+  "ville": "LORIENT",
+  "cp": "56100",
+  "lat": 47.75036,
+  "lon": -3.37803
+ },
+ {
+  "cip": "2263766",
+  "nom": "PHARMACIE DES LYS",
+  "ville": "MONTAGNAC",
+  "cp": "34530",
+  "lat": 43.48065,
+  "lon": 3.48177
+ },
+ {
+  "cip": "2264115",
+  "nom": "PHARMACIE SEMPN CAP ATLANTIQUE",
+  "ville": "ST ETIENNE DE MONTLUC",
+  "cp": "44360",
+  "lat": 47.27236,
+  "lon": -1.78344
+ },
+ {
+  "cip": "2264361",
+  "nom": "PHARMACIE DU LIFFRE",
+  "ville": "LAMBALLE",
+  "cp": "22400",
+  "lat": 48.4918,
+  "lon": -2.51465
+ },
+ {
+  "cip": "2265255",
+  "nom": "PHARMACIE DE L'OUST",
+  "ville": "MALESTROIT",
+  "cp": "56140",
+  "lat": 47.8078,
+  "lon": -2.38677
+ },
+ {
+  "cip": "2265983",
+  "nom": "PHARMACIE SAINT COLOMBAN",
+  "ville": "LOCMINE",
+  "cp": "56500",
+  "lat": 47.8809,
+  "lon": -2.83519
+ },
+ {
+  "cip": "2267142",
+  "nom": "PHARMACIE DU BVD DE STRASBOURG",
+  "ville": "ANGERS",
+  "cp": "49000",
+  "lat": 47.46775,
+  "lon": -0.56633
+ },
+ {
+  "cip": "2268429IN",
+  "nom": "PHARMACIE DE LA PIERRE PERCEE",
+  "ville": "",
+  "cp": "",
+  "lat": null,
+  "lon": null
+ },
+ {
+  "cip": "2269113",
+  "nom": "PHARMACIE DE VILLARD DE LANS",
+  "ville": "VILLARD DE LANS",
+  "cp": "38250",
+  "lat": 45.06843,
+  "lon": 5.55004
+ },
+ {
+  "cip": "2271599",
+  "nom": "PHARMACIE DES TROIS VALLEES",
+  "ville": "LA VOULTE SUR RHONE",
+  "cp": "07800",
+  "lat": 44.80257,
+  "lon": 4.78548
+ },
+ {
+  "cip": "2271667",
+  "nom": "PHARMACIE HERY BOZEC",
+  "ville": "LOCMARIA PLOUZANE",
+  "cp": "29280",
+  "lat": 48.37205,
+  "lon": -4.6511
+ },
+ {
+  "cip": "2271929",
+  "nom": "PHARMACIE CRUSSARD",
+  "ville": "MALESTROIT",
+  "cp": "56140",
+  "lat": 47.8078,
+  "lon": -2.38677
+ },
+ {
+  "cip": "2276508",
+  "nom": "PHARMACIE DU BOURG (26-CREST)",
+  "ville": "CREST",
+  "cp": "26400",
+  "lat": 44.73067,
+  "lon": 5.02015
+ },
+ {
+  "cip": "2276775",
+  "nom": "PHARMACIE ROCHE BRUNARD",
+  "ville": "RIANTEC",
+  "cp": "56670",
+  "lat": 47.72202,
+  "lon": -3.3106
+ },
+ {
+  "cip": "2277145",
+  "nom": "PHARMACIE DE LA RIA",
+  "ville": "LOCOAL MENDON",
+  "cp": "56550",
+  "lat": 47.69819,
+  "lon": -3.10669
+ },
+ {
+  "cip": "2277632",
+  "nom": "PHARMACIE CENTRALE (CREST)",
+  "ville": "CREST",
+  "cp": "26400",
+  "lat": 44.73067,
+  "lon": 5.02015
+ },
+ {
+  "cip": "2277716",
+  "nom": "PHARMACIE SAINT GUENOLE",
+  "ville": "BATZ SUR MER",
+  "cp": "44740",
+  "lat": 47.27365,
+  "lon": -2.47302
+ },
+ {
+  "cip": "2277852",
+  "nom": "PHARMACIE DU CANAL",
+  "ville": "ROUANS",
+  "cp": "44640",
+  "lat": 47.17017,
+  "lon": -1.84703
+ },
+ {
+  "cip": "2279273",
+  "nom": "Pharmacie BERAUD DANIEL",
+  "ville": "LES ROCHES DE CONDRIEU",
+  "cp": "38370",
+  "lat": 45.45256,
+  "lon": 4.76675
+ },
+ {
+  "cip": "2279776",
+  "nom": "PHARMACIE LEMAIRE",
+  "ville": "PIPRIAC",
+  "cp": "35550",
+  "lat": 47.81475,
+  "lon": -1.94071
+ },
+ {
+  "cip": "2281921",
+  "nom": "PHARMACIE CAMPELIERES",
+  "ville": "MOUGINS",
+  "cp": "06250",
+  "lat": 43.59525,
+  "lon": 6.9993
+ },
+ {
+  "cip": "2282129",
+  "nom": "PHARMACIE DE VIGNEUX",
+  "ville": "VIGNEUX DE BRETAGNE",
+  "cp": "44360",
+  "lat": 47.31673,
+  "lon": -1.71841
+ },
+ {
+  "cip": "2282925",
+  "nom": "PHARMACIE SUD QUELAVOINE",
+  "ville": "TOURNON SUR RHONE",
+  "cp": "07300",
+  "lat": 45.05416,
+  "lon": 4.81548
+ },
+ {
+  "cip": "2283138",
+  "nom": "Pharmacie FARGETTE",
+  "ville": "ST ETIENNE",
+  "cp": "42000",
+  "lat": 45.43019,
+  "lon": 4.37005
+ },
+ {
+  "cip": "2283159",
+  "nom": "PHARMACIE CHEREL",
+  "ville": "LE PALLET",
+  "cp": "44330",
+  "lat": 47.14124,
+  "lon": -1.34659
+ },
+ {
+  "cip": "2283452",
+  "nom": "PHARMACIE DE L ISAC",
+  "ville": "BLAIN",
+  "cp": "44130",
+  "lat": 47.46269,
+  "lon": -1.77997
+ },
+ {
+  "cip": "2285219",
+  "nom": "PHARMACIE DE LA GRIVE",
+  "ville": "BOURGOIN JALLIEU",
+  "cp": "38300",
+  "lat": 45.59796,
+  "lon": 5.26699
+ },
+ {
+  "cip": "2285533",
+  "nom": "PHARMACIE DU CHATELET",
+  "ville": "ANDANCE",
+  "cp": "07340",
+  "lat": 45.22573,
+  "lon": 4.79581
+ },
+ {
+  "cip": "2288005",
+  "nom": "PHARMACIE DE MALAKOFF",
+  "ville": "NANTES",
+  "cp": "44000",
+  "lat": 47.23937,
+  "lon": -1.55533
+ },
+ {
+  "cip": "EX2004243",
+  "nom": "PHARMACIE DU GOLFEUR - EX",
+  "ville": "",
+  "cp": "",
+  "lat": null,
+  "lon": null
+ },
+ {
+  "cip": "EX2125556",
+  "nom": "PHARMACIE DE BEAULIEU",
+  "ville": "",
+  "cp": "",
+  "lat": null,
+  "lon": null
+ }
+]
