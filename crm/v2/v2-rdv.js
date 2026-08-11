@@ -241,8 +241,14 @@
           var cips = ((r && r.data) || []).map(function (d) { return String(d.cip || ''); })
                        .filter(function (x) { return x; });
           if (!cips.length) { V2.toast('Aucun rendez-vous identifié ce jour-là.'); return; }
-          V2.rdvCips = cips;          // consommé une seule fois par la tournée
-          V2.go('tournee');
+          // La page Tournée autonome a été retirée (redondante) : c'est
+          // l'Organisateur de tournée de la carte qui ordonne la route.
+          if (!V2.carteTourFromIds) { V2.toast('Organisateur de tournée indisponible.'); return; }
+          V2.go('carte');
+          V2.carteTourFromIds(cips, function (n) {
+            if (!n) { V2.toast('Ces officines ne sont pas dans la base nationale.'); return; }
+            V2.carteTourOpen(); if (V2.carteTourFit) V2.carteTourFit();
+          });
         });
     },
 
@@ -329,7 +335,7 @@
         });
         var htmlVenir = ordre.length ? ordre.sort().map(function (date) {
           // La tournée n'a de sens qu'à partir de deux arrêts.
-          var tournee = (parJour[date].length > 1 && V2.pages.tournee)
+          var tournee = (parJour[date].length > 1 && V2.carteTourFromIds)
             ? '<div class="v2-rdv-acts"><button class="v2-btn v2-btn-primary" onclick="V2.rdv.tourneeDuJour(\'' +
               escArg(date) + '\')">' + ICO('pilo', 15) + ' Composer ma tournée de ce jour</button></div>'
             : '';

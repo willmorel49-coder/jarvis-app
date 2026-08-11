@@ -1001,6 +1001,31 @@
   V2.carteTourClear = function () { tour = []; saveTour(); updateTourBar(); renderTourPanel(); rebuild(); drawTourLine(); };
   V2.carteTourClose = function () { var el = document.getElementById('cn-tourpanel'); if (el) el.remove(); };
 
+  // Compose la tournée à partir d'officines déjà choisies ailleurs — les rendez-vous
+  // confirmés d'une journée, côté Prise de RDV. La carte se monte en plusieurs temps
+  // (Leaflet, puis la base nationale) : on attend que les points soient là avant de
+  // remplir, sinon la tournée sortirait vide. cb reçoit le nombre d'arrêts retrouvés.
+  V2.carteTourFromIds = function (ids, cb) {
+    var voulus = {}, k;
+    for (k = 0; k < (ids || []).length; k++) voulus[String(ids[k])] = 1;
+    var essais = 0;
+    (function attendre() {
+      if (!D || !D.p) {
+        if (++essais > 150) { if (cb) cb(0); return; }   // 15 s d'attente, puis on renonce
+        setTimeout(attendre, 100); return;
+      }
+      tour = [];
+      for (var j = 0; j < D.p.length; j++) {
+        var p = D.p[j];
+        if (!voulus[String(p[13])] || !p[0] || !p[1]) continue;   // sans coordonnées, rien à tracer
+        tour.push({ k: keyOf(p), n: p[6], v: p[7], c: p[8], t: p[9], lat: p[0], lng: p[1], id: p[13], sg: p[4], gp: p[3] });
+      }
+      saveTour(); updateTourBar();
+      if (map) { rebuild(); drawTourLine(); }
+      if (cb) cb(tour.length);
+    })();
+  };
+
   // ── Tournées enregistrées (nommées) ──
   V2.carteTourSaveAs = function () {
     if (!tour.length) return;
