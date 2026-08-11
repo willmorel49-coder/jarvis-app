@@ -102,3 +102,84 @@ test('groupe : officine inconnue rend null au lieu de planter', () => {
   const idx = M.indexer(OFFICINES, VENTES);
   assert.equal(M.groupeComparaison(idx, 'INEXISTANTE'), null);
 });
+
+// ── Task 2 : listing d'une officine ────────────────────────────────
+const STOCK = { AAA: 500, BBB: 12, CCC: 7, DDD: 0 };
+
+test('agregat : compte les officines et somme les nets par CIP', () => {
+  const idx = M.indexer(OFFICINES, VENTES);
+  const a = M.agregatGroupe(idx, 'g:Giphar');
+  assert.equal(a.taille, 6);
+  assert.equal(a.cnt.AAA, 3);          // G1, G2, G3
+  assert.equal(a.som.AAA, 600);
+  assert.equal(a.cnt.CCC, 1);          // G1 est a zero net, seul G2 compte
+});
+
+test('agregat : deux appels rendent le meme objet memorise', () => {
+  const idx = M.indexer(OFFICINES, VENTES);
+  assert.equal(M.agregatGroupe(idx, 'g:Giphar'), M.agregatGroupe(idx, 'g:Giphar'));
+});
+
+test('listing : le denominateur exclut toujours l officine cible', () => {
+  const idx = M.indexer(OFFICINES, VENTES);
+  const r = M.listingOfficine(idx, 'G4', { stock: STOCK });
+  assert.equal(r.nbConfreres, 5);      // 6 Giphar - elle-meme
+});
+
+test('listing : un produit deja achete par l officine n apparait pas', () => {
+  const idx = M.indexer(OFFICINES, VENTES);
+  const r = M.listingOfficine(idx, 'G1', { stock: STOCK, seuil: 0.1 });
+  assert.equal(r.lignes.filter((l) => l.cip === 'AAA').length, 0);
+});
+
+test('listing : le trou remonte avec le bon pourcentage et la bonne moyenne', () => {
+  const idx = M.indexer(OFFICINES, VENTES);
+  const r = M.listingOfficine(idx, 'G4', { stock: STOCK });
+  const aaa = r.lignes.find((l) => l.cip === 'AAA');
+  assert.ok(aaa, 'AAA doit remonter pour G4');
+  assert.equal(aaa.peers, 3);
+  assert.equal(aaa.pctPeers, 3 / 5);
+  assert.equal(aaa.caMoyen, 200);      // (100+200+300)/3
+  assert.equal(aaa.potentiel, 200 * (3 / 5));
+});
+
+test('listing : sous le seuil, le produit est ecarte', () => {
+  const idx = M.indexer(OFFICINES, VENTES);
+  // CCC : 1 confrere sur 5 = 20 %, sous le seuil de 30 %
+  const r = M.listingOfficine(idx, 'G4', { stock: STOCK });
+  assert.equal(r.lignes.filter((l) => l.cip === 'CCC').length, 0);
+  // seuil abaisse a 10 % : il remonte
+  const r2 = M.listingOfficine(idx, 'G4', { stock: STOCK, seuil: 0.1 });
+  assert.equal(r2.lignes.filter((l) => l.cip === 'CCC').length, 1);
+});
+
+test('listing : un produit hors stock est ecarte', () => {
+  const idx = M.indexer(OFFICINES, VENTES);
+  const r = M.listingOfficine(idx, 'G4', { stock: { AAA: 0, BBB: 12 } });
+  assert.equal(r.lignes.filter((l) => l.cip === 'AAA').length, 0);
+  assert.equal(r.lignes.filter((l) => l.cip === 'BBB').length, 1);
+});
+
+test('listing : exigerStock a false garde les produits hors stock', () => {
+  const idx = M.indexer(OFFICINES, VENTES);
+  const r = M.listingOfficine(idx, 'G4', { stock: { AAA: 0 }, exigerStock: false });
+  const aaa = r.lignes.find((l) => l.cip === 'AAA');
+  assert.ok(aaa);
+  assert.equal(aaa.stock, 0);
+});
+
+test('listing : trie par potentiel decroissant', () => {
+  const idx = M.indexer(OFFICINES, VENTES);
+  const r = M.listingOfficine(idx, 'G4', { stock: STOCK, seuil: 0.1 });
+  for (let i = 1; i < r.lignes.length; i++) {
+    assert.ok(r.lignes[i - 1].potentiel >= r.lignes[i].potentiel,
+      `ligne ${i} mal triee`);
+  }
+});
+
+test('listing : officine inconnue rend une liste vide, pas une erreur', () => {
+  const idx = M.indexer(OFFICINES, VENTES);
+  const r = M.listingOfficine(idx, 'INEXISTANTE', { stock: STOCK });
+  assert.deepEqual(r.lignes, []);
+  assert.equal(r.nbConfreres, 0);
+});
