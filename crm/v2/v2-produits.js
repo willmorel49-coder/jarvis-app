@@ -146,6 +146,114 @@
   // Sous ce seuil, « 2 pharmacies le prennent » dessert l'argument : on se tait.
   var SEUIL_PREUVE = 10;
 
+  // ── Recherche : une seule barre pour les officines ET les groupements ──
+  // Taper ne doit JAMAIS relancer V2.render() : le champ perdrait le focus et
+  // le clavier se refermerait sur iPhone. On ne rafraîchit que la liste.
+  var MAX_OFF = 12, MAX_GRP = 4;
+  var suggCourantes = [], suggSel = -1;
+
+  function sansAccent(x) {
+    var v = String(x == null ? '' : x).toLowerCase();
+    if (v.normalize) v = v.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    return v;
+  }
+  function suggestions(q) {
+    q = sansAccent(q).trim();
+    if (!q) return [];
+    var out = [], i;
+    // Groupements d'abord : ils mènent à une liste entière, pas à une officine.
+    var G = groupements();
+    for (i = 0; i < G.noms.length && out.length < MAX_GRP; i++) {
+      var n = G.noms[i];
+      if (sansAccent(n).indexOf(q) < 0) continue;
+      out.push({ type: 'grp', cle: n, titre: n, sous: G.n[n] + ' officines', logo: logoGrp(n) });
+    }
+    var phs = V2.pharmacies || [], nOff = 0;
+    for (i = 0; i < phs.length && nOff < MAX_OFF; i++) {
+      var p = phs[i];
+      // ⚠️ ville et cp sont vides pour une partie du parc : on ne se repose
+      // jamais dessus seul, le nom suffit toujours à retrouver une officine.
+      var foin = sansAccent((p.name || '') + ' ' + (p.ville || '') + ' ' + (p.cp || ''));
+      if (foin.indexOf(q) < 0) continue;
+      var g = canonGrp(p.groupement);
+      var sous = [p.ville || '', p.cp || '', g].filter(Boolean).join(' · ');
+      out.push({ type: 'off', cle: String(p.id), titre: p.name || ('Officine ' + p.id),
+                 sous: sous || 'officine', logo: g ? logoGrp(g) : '' });
+      nOff++;
+    }
+    return out;
+  }
+  function suggHtml(liste) {
+    if (!liste.length) return '';
+    var h = '', i;
+    for (i = 0; i < liste.length; i++) {
+      var x = liste[i];
+      h += '<button class="pr-sug' + (i === suggSel ? ' on' : '') +
+        '" onmousedown="event.preventDefault()" onclick="V2.produits.rechChoisir(' + i + ')">' +
+        (x.logo || '') +
+        '<span class="pr-sug-m"><span class="pr-sug-t">' + esc(x.titre) + '</span>' +
+        '<span class="pr-sug-s">' + esc(x.sous) + '</span></span>' +
+        '<span class="pr-sug-k">' + (x.type === 'grp' ? 'groupement' : 'officine') + '</span></button>';
+    }
+    return h;
+  }
+  function rafraichirSugg() {
+    var box = document.getElementById('pr-sugg');
+    if (!box) return;
+    box.innerHTML = suggHtml(suggCourantes);
+    box.style.display = suggCourantes.length ? 'block' : 'none';
+  }
+  var tr = null;
+  V2.produits.rechSaisie = function (v) {
+    if (tr) clearTimeout(tr);
+    tr = setTimeout(function () {
+      suggCourantes = suggestions(v);
+      suggSel = suggCourantes.length ? 0 : -1;
+      rafraichirSugg();
+    }, 180);
+  };
+  V2.produits.rechChoisir = function (i) {
+    var x = suggCourantes[i];
+    if (!x) return;
+    suggCourantes = []; suggSel = -1;
+    // Choisir un groupement bascule sur l'onglet Groupement, choisir une
+    // officine sur l'onglet Client : la recherche pilote le mode.
+    if (x.type === 'grp') { S.mode = 'groupement'; S.grp = x.cle; V2.produits._grpCle = null; }
+    else { S.mode = 'client'; S.ph = x.cle; }
+    S.page = 0;
+    V2.render();
+  };
+  V2.produits.rechTouche = function (e) {
+    if (!e) return;
+    var k = e.key;
+    if (k === 'Escape') { suggCourantes = []; suggSel = -1; rafraichirSugg(); return; }
+    if (!suggCourantes.length) return;
+    if (k === 'ArrowDown' || k === 'ArrowUp') {
+      e.preventDefault();
+      suggSel = (suggSel + (k === 'ArrowDown' ? 1 : -1) + suggCourantes.length) % suggCourantes.length;
+      rafraichirSugg();
+    } else if (k === 'Enter') {
+      e.preventDefault();
+      V2.produits.rechChoisir(suggSel < 0 ? 0 : suggSel);
+    }
+  };
+  V2.produits.rechFermer = function () {
+    setTimeout(function () { suggCourantes = []; suggSel = -1; rafraichirSugg(); }, 120);
+  };
+
+  // La barre, posée en tête des modes Client et Groupement.
+  function barreRecherche(place) {
+    return '<div class="pr-rech">' +
+      '<div class="pr-search pr-rech-in">' + ICO('search', 16, 2) +
+        '<input type="search" autocomplete="off" placeholder="' + escAttr(place) + '"' +
+        ' oninput="V2.produits.rechSaisie(this.value)"' +
+        ' onkeydown="V2.produits.rechTouche(event)"' +
+        ' onblur="V2.produits.rechFermer()">' +
+      '</div>' +
+      '<div class="pr-sugg" id="pr-sugg" style="display:none"></div>' +
+      '</div>';
+  }
+
   // CIP de nos listes négociées : « OFFRE IP Générique » et « Offres
   // Privilèges IP » (crm/marketing-offers.js). 41 références, 35 en stock.
   function cipsExclusifs() {
@@ -550,11 +658,7 @@
     if (!phs.length) return vide('Aucune officine', 'Les données réseau ne sont pas chargées.');
     if (!S.ph) S.ph = String(phs[0].id);
 
-    var opts = '', i;
-    for (i = 0; i < phs.length; i++) {
-      opts += '<option value="' + escAttr(phs[i].id) + '"' +
-        (String(phs[i].id) === String(S.ph) ? ' selected' : '') + '>' + esc(phs[i].name) + '</option>';
-    }
+    var i;
     var r = M.listingOfficine(idx, S.ph, { stock: stockIP() });
     var libGrp = r.groupe ? r.groupe.libelle : 'confrères';
     var brutes = filtrer(avecFamille(r.lignes));
@@ -577,7 +681,8 @@
     var rl = rendreLignes(lignes, ligneClient);
 
     return '<div class="pr-bandeau">' +
-      '<select class="pr-select" aria-label="Choisir une officine" onchange="V2.produits.setPh(this.value)">' + opts + '</select>' +
+      barreRecherche('Officine ou groupement — nom, ville, code postal…') +
+      '<div class="pr-cible">' + esc(nomCible() || '—') + '</div>' +
       '<div class="pr-ctx">' +
         '<span class="pr-ctx-grp">' + (estGrp ? logoGrp(nomGrp) : '') +
           num(r.nbConfreres) + ' ' + esc(libGrp) + '</span>' +
@@ -620,12 +725,7 @@
     if (!G.noms.length) return vide('Aucun groupement', 'Les données réseau ne sont pas chargées.');
     if (!S.grp || G.n[S.grp] === undefined) S.grp = G.noms[0];
 
-    var opts = '', i;
-    for (i = 0; i < G.noms.length; i++) {
-      opts += '<option value="' + escAttr(G.noms[i]) + '"' +
-        (G.noms[i] === S.grp ? ' selected' : '') + '>' +
-        esc(G.noms[i]) + ' · ' + G.n[G.noms[i]] + ' officines</option>';
-    }
+    var i;
     // Même moteur que la vue Achats, filtré sur le groupement : agrège les
     // trous de tous ses adhérents.
     var cle = 'g:' + S.grp;
@@ -647,9 +747,10 @@
     var rl = rendreLignes(lignes, ligneGroupement);
 
     return '<div class="pr-bandeau">' +
-      '<select class="pr-select" aria-label="Choisir un groupement" onchange="V2.produits.setGrp(this.value)">' + opts + '</select>' +
+      barreRecherche('Groupement ou officine — nom, ville, code postal…') +
+      '<div class="pr-cible">' + logoGrp(S.grp, true) + esc(S.grp) + '</div>' +
       '<div class="pr-ctx">' +
-        '<span class="pr-ctx-grp">' + logoGrp(S.grp, true) + num(taille) + ' adhérents</span>' +
+        '<span class="pr-ctx-grp">' + num(taille) + ' adhérents</span>' +
         '<span class="pr-ctx-pot">' + eur(pot) + ' de potentiel</span>' +
         '<span class="pr-ctx-n">' + num(lignes.length) + ' produits</span>' +
       '</div>' + composeurHtml(dispo) +
@@ -1190,6 +1291,19 @@
       '.pr-panier em{font:400 12px/1.3 Inter,sans-serif;font-style:normal;opacity:.85;flex:1;min-width:110px}',
       '.pr-panier button{min-height:44px;padding:0 14px;border-radius:10px;border:1px solid rgba(255,255,255,.5);background:transparent;color:#fff;font:600 14px/1 Inter,sans-serif;cursor:pointer}',
       '.pr-plus{width:100%;min-height:44px;margin-top:8px}',
+      '.pr-rech{position:relative;margin-bottom:10px}',
+      '.pr-rech-in{background:var(--paper)}',
+      // La liste est ancree SOUS le champ, pas en plein ecran : on garde le
+      // contexte de la page derriere, contrairement a la palette Cmd+K.
+      '.pr-sugg{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:60;max-height:56vh;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 30px rgba(16,19,28,.14)}',
+      '.pr-sug{display:flex;align-items:center;gap:8px;width:100%;min-height:52px;padding:8px 10px;border:0;border-bottom:1px solid var(--line);background:transparent;text-align:left;cursor:pointer}',
+      '.pr-sug:last-child{border-bottom:0}',
+      '.pr-sug.on{background:rgba(0,80,230,.07)}',
+      '.pr-sug-m{flex:1;min-width:0}',
+      '.pr-sug-t{display:block;font:600 14px/1.25 Inter,sans-serif;color:var(--ip-ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      '.pr-sug-s{display:block;font:400 12px/1.3 Inter,sans-serif;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      '.pr-sug-k{font:600 10px/1 Inter,sans-serif;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;flex:none}',
+      '.pr-cible{display:flex;align-items:center;gap:8px;font:700 17px/1.3 Satoshi,Inter,sans-serif;color:var(--ip-ink);margin-bottom:2px}',
       '.pr-apx-bar{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 0;margin-bottom:6px;background:var(--paper)}',
       '.pr-apx-bar .v2-btn{min-height:44px;padding:0 14px}',
       '.pr-apx-n{font:600 14px/1 Inter,sans-serif;color:var(--muted);flex:1;min-width:70px}',
