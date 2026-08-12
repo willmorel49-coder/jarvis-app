@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>Prendre rendez-vous — Intégral Pharma</title>
+<!--
+  Pourquoi cette page existe.
+
+  Le 12/08/2026, Pascale a ouvert son écran « Mes disponibilités ». L'app lui a
+  créé son lien de réservation et le lui a affiché : .../rdv/pascale. Sauf que
+  la page correspondante devait être GÉNÉRÉE par un script, et ne l'avait pas
+  été. Elle a donc reçu, dans son CRM, un lien qui menait à un 404.
+
+  Le défaut n'était pas le fichier manquant : c'était qu'un lien affiché à un
+  commercial dépende d'une action manuelle. Cette page supprime la dépendance.
+  GitHub Pages la sert pour TOUTE adresse inconnue ; si l'adresse ressemble à
+  /rdv/<prénom>, on renvoie vers la prise de rendez-vous. Un nouveau commercial
+  a donc un lien qui marche à la seconde où son compte existe.
+
+  Les pages de rdv/ restent générées : elles répondent 200, ce qui est plus
+  propre. Celle-ci est le filet en dessous.
+-->
+<style>
+  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;
+       background:#FBFCFE;color:#10131C;padding:24px;
+       font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  .c{max-width:460px;background:#fff;border:1px solid #E3E8F0;border-radius:14px;padding:26px}
+  h1{font-size:21px;font-weight:800;letter-spacing:-.02em;margin:0 0 10px}
+  p{margin:0 0 12px;color:#5B6577}
+  a{color:#0050E6;font-weight:600}
+</style>
+</head>
+<body>
+  <div class="c" id="c">
+    <h1>Un instant…</h1>
+    <p>Nous ouvrons la prise de rendez-vous.</p>
+  </div>
+<script>
+(function () {
+  var p = window.location.pathname;
+  // .../rdv/<prénom> — avec ou sans .html, avec ou sans barre finale.
+  var m = p.match(/\/rdv\/([a-z0-9][a-z0-9-]{0,31})(?:\.html)?\/?$/i);
+  if (m) {
+    var racine = p.slice(0, p.indexOf('/rdv/') + 1);
+    window.location.replace(racine + 'crm/v2/rdv.html?p=' + encodeURIComponent(m[1].toLowerCase()));
+    return;
+  }
+  document.getElementById('c').innerHTML =
+    '<h1>Cette page n’existe pas</h1>' +
+    '<p>Le lien que vous avez suivi est peut-être incomplet — les messageries ' +
+    'coupent parfois les adresses longues en deux.</p>' +
+    '<p>Vérifiez qu’il ne manque pas un morceau à la fin, ou répondez au mail ' +
+    'que vous avez reçu : votre interlocuteur vous renverra un lien.</p>';
+})();
+</script>
+</body>
+</html>
