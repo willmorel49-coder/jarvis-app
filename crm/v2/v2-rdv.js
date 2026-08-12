@@ -151,6 +151,11 @@
       '.v2-rdv-h{font-weight:800;font-variant-numeric:tabular-nums;min-width:52px}',
       '.v2-rdv-n{font-weight:600}',
       '.v2-rdv-c{color:var(--muted);font-size:13px;width:100%}',
+      // Fiche de préparation : ce qu'il faut savoir AVANT d'entrer dans l'officine.
+      '.v2-rdv-prep{width:100%;margin-top:6px;padding:8px 10px;font-size:13px;line-height:1.5;',
+      '  border-left:3px solid var(--ip-blue);background:var(--card-2);border-radius:0 8px 8px 0}',
+      '.v2-rdv-prep b{font-weight:800}',
+      '.v2-rdv-prep a{min-height:44px;display:inline-flex;align-items:center}',
       '.v2-rdv-c a{color:var(--ip-blue);font-weight:700;text-decoration:none}',
       '.v2-rdv-item{background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);padding:12px 14px;margin-bottom:8px}',
       '.v2-rdv-item b{display:block;font-size:14.5px}',
@@ -285,6 +290,38 @@
     }
   };
 
+  // Ce qu'on sait déjà de l'officine, sans rien recalculer : l'abandon de
+  // marge annuel vient de V2.audit (API publique), les ruptures de V2.rupture.
+  // Le vrai gain du commercial n'est pas le créneau, c'est d'arriver préparé.
+  function prepa(cip) {
+    if (!cip) return '';
+    var bouts = [];
+    try {
+      var a = (V2.audit && window.WML_SALES && window.PROD_STATS) ? V2.audit.audit(cip) : null;
+      if (a && a.annAb > 0) {
+        bouts.push('<b>' + esc(V2.fmtEur ? V2.fmtEur(a.annAb) : Math.round(a.annAb) + ' €') +
+                   '/an</b> d’abandon de marge à lui rendre');
+      }
+    } catch (e) {}
+    try {
+      // Ruptures ANSM sur ce qu'elle achète, dont ce qu'Intégral a en stock :
+      // c'est l'argument le plus concret à poser sur le comptoir.
+      var vus = {}, n = 0, dispo = 0;
+      (V2.sales || []).forEach(function (s) {
+        if (String(s.pharmacyId) !== String(cip) || !(s.qte > 0)) return;
+        var c = String(s.artCode || '');
+        if (c.length < 7 || vus[c]) return;
+        vus[c] = 1;
+        if (V2.rupture && V2.rupture(c)) { n++; if (V2.stock && V2.stock(c) > 0) dispo++; }
+      });
+      if (n) bouts.push('<b>' + n + '</b> rupture' + (n > 1 ? 's' : '') + ' sur ses achats' +
+                        (dispo ? ' · <b>' + dispo + '</b> en stock chez nous' : ''));
+    } catch (e) {}
+    if (!bouts.length) return '';
+    return '<div class="v2-rdv-prep">' + bouts.join(' — ') +
+      ' · <a href="#" onclick="V2.go(\'pharma\',\'' + escArg(cip) + '\');return false">voir sa fiche</a></div>';
+  }
+
   function ligneRdv(d) {
     var tel = numero(d.contact_tel);
     return '<div class="v2-rdv-l">' +
@@ -294,7 +331,7 @@
       '<span class="v2-rdv-c">' + (d.contact_nom ? esc(d.contact_nom) : '') +
         (tel ? ' · <a href="tel:' + esc(tel) + '">' + esc(d.contact_tel) + '</a>' : '') +
         ' · <a href="#" onclick="V2.rdv.ics(\'' + escArg(d.id) + '\');return false">ajouter à mon agenda</a>' +
-      '</span></div>';
+      '</span>' + prepa(d.cip) + '</div>';
   }
 
   V2.pages.rdv = {
