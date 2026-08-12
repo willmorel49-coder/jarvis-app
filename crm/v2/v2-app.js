@@ -809,11 +809,11 @@
 
       var P = [
         { k: 'pharma', cls: 'p1', ico: 'opp', tag: 'RDV', t: 'Officines', d: 'Arrive sur une officine et vois direct quoi proposer : ses best, ce qu\'elle ne commande pas, son audit marge — classé par catégorie et tranche de prix.', go: 'Choisir une pharmacie' },
+        { k: 'produits', cls: 'p3', ico: 'cat', tag: 'Par officine', t: 'Produits', d: 'Ce que les confrères du même groupement d\'achat prennent et pas cette officine — uniquement ce qu\'on a en stock, chiffré en € de potentiel. Et la même chose par produit pour les achats.', go: 'Ouvrir les produits' },
         { k: 'fiches', cls: 'p2', ico: 'fiche', tag: 'PDF', t: 'Fiches commerciales', d: 'Crée une fiche produit sur-mesure et sors-la en PDF à montrer ou envoyer au pharmacien pendant le rendez-vous.', go: 'Créer une fiche' },
         // Entrée UNIQUE des produits (11/08/2026). Remplace la tuile Catalogue ;
         // les tuiles « Par molécule » et « Appro » sont retirées plus bas. Les
         // trois écrans restent atteignables depuis Produits et depuis ⌘K.
-        { k: 'produits', cls: 'p3', ico: 'cat', tag: 'Par officine', t: 'Produits', d: 'Ce que les confrères du même groupement d\'achat prennent et pas cette officine — uniquement ce qu\'on a en stock, chiffré en € de potentiel. Et la même chose par produit pour les achats.', go: 'Ouvrir les produits' },
         { k: 'offilog', cls: 'p5', accent: 'var(--c-froid)', ico: 'spark', tag: 'Veille', t: 'Offilog & concurrents', d: 'Ta parapharma : ton prix d\'achat IP comparé en direct au prix public E.Leclerc. Repère où un concurrent casse les prix.', go: 'Ouvrir Offilog' },
         { k: 'pilotage', cls: 'p4', ico: 'pilo', tag: V2.fmtK(caTotal) + ' €', t: 'Pilotage', d: 'Ton chiffre d\'affaires, ta marge MDL, tes objectifs et qui commande quoi. Le tableau de bord de ta tournée.', go: 'Voir mon pilotage' },
       ];
@@ -821,7 +821,8 @@
       if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.infos) {
         P.push({ k: 'infos', cls: 'p6', accent: 'var(--c-amber)', ico: 'spark', tag: 'Quotidien', t: 'Infos du matin', d: 'La veille du jour : ruptures ANSM, sécurité, réglementaire et actu officine — avec ton alternative IP pour chaque molécule en tension.', go: 'Voir la veille' });
       }
-      // Copilote — hub global (croise marché France × ventes réseau) — app JARVIS
+      // Copilote : chantier en cours. Il reste dans la liste, mais il a perdu sa
+      // bannière en tête d'accueil (12/08/2026) et se range dans « Autres outils ».
       if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.copilote) {
         P.push({ k: 'copilote', cls: 'p1', accent: 'var(--ip-blue)', ico: 'spark', tag: 'Carte', t: 'Copilote', d: 'Toutes tes officines sur la carte, où tu filtres tout : client/prospect, commercial, UGA, groupement, département, tranche de CA, ville, titulaire — cumulables, avec le compte en direct.', go: 'Ouvrir la carte' });
       }
@@ -856,7 +857,7 @@
         P.splice(2, 0, { k: 'marketing', cls: 'p2', ico: 'fiche', tag: 'A4', t: 'Fiches marketing OPSO', d: 'Crée une sélection de produits négociée par Intégral Pharma, en charte Normandie Pharma, prête à imprimer pour tes adhérents.', go: 'Créer une sélection' });
       } else if (V2.pages.marketing) {
         // App JARVIS : espace Marketing de Pauline & Will (supports + sélections à pousser)
-        P.splice(2, 0, { k: 'marketing', cls: 'p6', accent: '#E0556E', ico: 'spark', tag: 'Pauline & Will', t: 'Marketing', d: 'Fabriquez vos supports (flyers produits avec photos et prix) et vos sélections à pousser aux pharmacies. À deux, au même endroit.', go: 'Ouvrir le marketing' });
+        P.splice(3, 0, { k: 'marketing', cls: 'p6', accent: '#E0556E', ico: 'spark', tag: 'Pauline & Will', t: 'Marketing', d: 'Fabriquez vos supports (flyers produits avec photos et prix) et vos sélections à pousser aux pharmacies. À deux, au même endroit.', go: 'Ouvrir le marketing' });
       }
       // Groupements : fusionné dans le Copilote (carte unique + outils terrain). Plus de carte séparée.
       // Mode prospection : pitch à montrer au comptoir
@@ -893,15 +894,18 @@
         if (pmap.presentation) { pmap.presentation.t = 'Présentation'; }
         if (pmap.offilog) { pmap.offilog.t = 'Concurrents'; }
         // ── Accueil « Launcher » (choix Will) : 4 grandes entrées, tout le reste en « Autres outils »
-        var ESSENTIAL = ['pharma', 'molecules', 'marketing', 'infos'];
-        var ACC = { pharma: 'var(--ip-blue)', molecules: 'var(--ip-blue)', marketing: '#F39A1B', infos: '#F39A1B' };
+        // ⚠️ 'molecules' figurait ici alors que sa tuile avait ete retiree le
+        // 11/08 : la grille n'affichait plus que 3 cartes sur 4. Produits,
+        // l'outil le plus utilise, prend la place.
+        var ESSENTIAL = ['pharma', 'produits', 'marketing', 'infos'];
+        var ACC = { pharma: 'var(--ip-blue)', produits: 'var(--ip-blue)', marketing: '#F39A1B', infos: '#F39A1B' };
         var SUB = {
           pharma: 'Fiches, visites & suivi terrain',
-          molecules: 'Tous les produits, prix & marge réseau',
+          produits: 'Client, groupement ou prospect — la liste à proposer',
           marketing: 'Supports & sélections à pousser',
           infos: 'Ruptures, actu & opportunités du jour'
         };
-        var ICOK = { pharma: 'pharma', molecules: 'cat', marketing: 'fiche', infos: 'spark' };
+        var ICOK = { pharma: 'pharma', produits: 'cat', marketing: 'fiche', infos: 'spark' };
         // catalogue grossiste médicaments replié · fiches retiré · audit fusionné dans la fiche pharmacie
         var used = { catalogue: 1, fiches: 1, audit: 1 };
         function bigCard(k) {
@@ -912,17 +916,10 @@
             '<span class="v2-lch-meta"><span class="v2-lch-t">' + esc(p.t) + '</span><span class="v2-lch-d">' + (SUB[k] || '') + '</span></span></a>';
         }
         var big = ESSENTIAL.map(bigCard).filter(Boolean).join('');
-        var featured = '';
-        if (pmap.copilote) {
-          used.copilote = 1;
-          featured = '<a class="v2-lch-feat" onmousemove="V2.homeSpot(event,this)" onclick="V2.go(\'copilote\')">' +
-            '<span class="v2-lch-feat-ic">' + ICO('spark', 26) + '</span>' +
-            '<span class="v2-lch-feat-main"><span class="v2-lch-feat-tag">Nouveau · Copilote</span>' +
-            '<span class="v2-lch-feat-t">Le cerveau de ta tournée</span>' +
-            '<span class="v2-lch-feat-d">Le marché réel France croisé à tes ventes réseau — où pousser quoi, officine par officine.</span></span>' +
-            '<span class="v2-lch-arrow">→</span></a>';
-        }
-        pilHtml = featured + '<div class="v2-lch-grid">' + big + '</div>';
+        // Bannière « Nouveau · Copilote » retirée le 12/08/2026 : c'est un
+        // chantier, il n'a pas à occuper la tête de l'accueil. Il reste
+        // accessible dans « Autres outils » et par ⌘K.
+        pilHtml = '<div class="v2-lch-grid">' + big + '</div>';
         var rest = P.filter(function (p) { return !used[p.k]; });
         if (rest.length) {
           pilHtml += '<div class="v2-lch-more"><span class="lbl">Autres outils</span>' +

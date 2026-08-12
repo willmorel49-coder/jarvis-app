@@ -12,7 +12,7 @@
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function () {
         var hadController = !!navigator.serviceWorker.controller;
-        navigator.serviceWorker.register('sw.js?v=20260812l').then(function (reg) {
+        navigator.serviceWorker.register('sw.js?v=20260812m').then(function (reg) {
           try { reg.update(); } catch (e) {}   // vérifie tout de suite au chargement
           // pendant une longue session, re-vérifier périodiquement s'il y a une nouvelle version
           setInterval(function () { try { reg.update(); } catch (e) {} }, 5 * 60 * 1000);
@@ -50,11 +50,11 @@
   <link href="https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,700,800,900&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="dns-prefetch" href="https://images.weserv.nl">
-  <link rel="stylesheet" href="v2.css?v=20260812l" />
-  <link rel="stylesheet" href="v2-motion.css?v=20260812l" />
+  <link rel="stylesheet" href="v2.css?v=20260812m" />
+  <link rel="stylesheet" href="v2-motion.css?v=20260812m" />
 
   <!-- PWA : installable sur l'écran d'accueil (iOS + Android) -->
-  <link rel="manifest" href="manifest.webmanifest?v=20260812l" />
+  <link rel="manifest" href="manifest.webmanifest?v=20260812m" />
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -88,94 +88,94 @@
   <div class="v2" id="v2-root"></div>
 
   <!-- Socle -->
-  <script src="v2-icons.js?v=20260812l"></script>
+  <script src="v2-icons.js?v=20260812m"></script>
   <!-- Données officines + ventes WML (source de vérité, 5 mois) -->
   <!-- Table d'alias groupements (canonicalisation) : fusionne les doublons partout -->
-  <script src="groupement-alias.js?v=20260812l"></script>
+  <script src="groupement-alias.js?v=20260812m"></script>
   <!-- Infos groupements scrapées : description + contacts + actualités (fiche détaillée) -->
-  <script src="groupement-info.js?v=20260812l"></script>
+  <script src="groupement-info.js?v=20260812m"></script>
   <!-- Prix PPHT NR (tarif grossiste officiel) — corrige le prix NR partout -->
-  <script src="ppht-data.js?v=20260812l"></script>
-  <script src="v2-boot.js?v=20260812l"></script>
+  <script src="ppht-data.js?v=20260812m"></script>
+  <script src="v2-boot.js?v=20260812m"></script>
   <!-- Coin notes + Profil commercial + Remontées (partagés Supabase, repli localStorage) -->
-  <script src="v2-notes.js?v=20260812l"></script>
-  <script src="v2-profil.js?v=20260812l"></script>
-  <script src="v2-remontees.js?v=20260812l"></script>
+  <script src="v2-notes.js?v=20260812m"></script>
+  <script src="v2-profil.js?v=20260812m"></script>
+  <script src="v2-remontees.js?v=20260812m"></script>
   <!-- Prise de RDV : moteur de créneaux + invitation agenda + écrans -->
   <!-- Complément d'annuaire (e-mails retrouvés) : 12 Ko, chargement direct -->
-  <script src="mails-complement-data.js?v=20260812l"></script>
-  <script src="v2-rdv-creneaux.js?v=20260812l"></script>
-  <script src="v2-rdv-ics.js?v=20260812l"></script>
-  <script src="v2-rdv-dispo.js?v=20260812l"></script>
-  <script src="v2-rdv-agenda.js?v=20260812l"></script>
-  <script src="v2-rdv-lien.js?v=20260812l"></script>
-  <script src="v2-rdv.js?v=20260812l"></script>
-  <script src="v2-rdv-modeles.js?v=20260812l"></script>
-  <script src="v2-campagne.js?v=20260812l"></script>
-  <script src="../marketing-offers.js?v=20260812l"></script>
-  <script src="v2-produits-moteur.js?v=20260812l"></script>
-  <script src="v2-produits.js?v=20260812l"></script>
+  <script src="mails-complement-data.js?v=20260812m"></script>
+  <script src="v2-rdv-creneaux.js?v=20260812m"></script>
+  <script src="v2-rdv-ics.js?v=20260812m"></script>
+  <script src="v2-rdv-dispo.js?v=20260812m"></script>
+  <script src="v2-rdv-agenda.js?v=20260812m"></script>
+  <script src="v2-rdv-lien.js?v=20260812m"></script>
+  <script src="v2-rdv.js?v=20260812m"></script>
+  <script src="v2-rdv-modeles.js?v=20260812m"></script>
+  <script src="v2-campagne.js?v=20260812m"></script>
+  <script src="../marketing-offers.js?v=20260812m"></script>
+  <script src="v2-produits-moteur.js?v=20260812m"></script>
+  <script src="v2-produits.js?v=20260812m"></script>
   <!-- CA par génériqueur : table CIP→génériqueur (BDPM) + helper d'agrégation -->
-  <script src="generiqueurs-data.js?v=20260812l"></script>
-  <script src="v2-generiqueurs.js?v=20260812l"></script>
+  <script src="generiqueurs-data.js?v=20260812m"></script>
+  <script src="v2-generiqueurs.js?v=20260812m"></script>
   <!-- Piliers (chargés avant app pour enregistrer V2.pages.*) -->
-  <script src="v2-pharma.js?v=20260812l"></script>
-  <script src="v2-offilog.js?v=20260812l"></script>
-  <script src="v2-fiches.js?v=20260812l"></script>
-  <script src="v2-pilotage.js?v=20260812l"></script>
+  <script src="v2-pharma.js?v=20260812m"></script>
+  <script src="v2-offilog.js?v=20260812m"></script>
+  <script src="v2-fiches.js?v=20260812m"></script>
+  <script src="v2-pilotage.js?v=20260812m"></script>
   <!-- Analyse par produit / CIP (rotation/marge réseau) -->
-  <script src="prod-stats-data.js?v=20260812l"></script>
+  <script src="prod-stats-data.js?v=20260812m"></script>
   <!-- Copilote · feeds (marché France Ameli + ruptures ANSM + potentiel de zone) + socle cerveau -->
-  <script src="ameli-avg-data.js?v=20260812l"></script>
-  <script src="ruptures-data.js?v=20260812l"></script>
-  <script src="zone-data.js?v=20260812l"></script>
-  <script src="saison-data.js?v=20260812l"></script>
-  <script src="stock-data.js?v=20260812l"></script>
-  <script src="tendance-data.js?v=20260812l"></script>
-  <script src="momentum-data.js?v=20260812l"></script>
-  <script src="nouveautes-data.js?v=20260812l"></script>
-  <script src="v2-copilote.js?v=20260812l"></script>
-  <link rel="stylesheet" href="vendor/leaflet/leaflet.css?v=20260812l">
-  <link rel="stylesheet" href="vendor/leaflet/MarkerCluster.css?v=20260812l">
-  <link rel="stylesheet" href="vendor/leaflet/MarkerCluster.Default.css?v=20260812l">
-  <script src="vendor/leaflet/leaflet.js?v=20260812l"></script>
-  <script src="vendor/leaflet/leaflet.markercluster.js?v=20260812l"></script>
-  <script src="v2-carte.js?v=20260812l"></script>
-  <script src="v2-molecules.js?v=20260812l"></script>
+  <script src="ameli-avg-data.js?v=20260812m"></script>
+  <script src="ruptures-data.js?v=20260812m"></script>
+  <script src="zone-data.js?v=20260812m"></script>
+  <script src="saison-data.js?v=20260812m"></script>
+  <script src="stock-data.js?v=20260812m"></script>
+  <script src="tendance-data.js?v=20260812m"></script>
+  <script src="momentum-data.js?v=20260812m"></script>
+  <script src="nouveautes-data.js?v=20260812m"></script>
+  <script src="v2-copilote.js?v=20260812m"></script>
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css?v=20260812m">
+  <link rel="stylesheet" href="vendor/leaflet/MarkerCluster.css?v=20260812m">
+  <link rel="stylesheet" href="vendor/leaflet/MarkerCluster.Default.css?v=20260812m">
+  <script src="vendor/leaflet/leaflet.js?v=20260812m"></script>
+  <script src="vendor/leaflet/leaflet.markercluster.js?v=20260812m"></script>
+  <script src="v2-carte.js?v=20260812m"></script>
+  <script src="v2-molecules.js?v=20260812m"></script>
   <!-- Base Biosimilaires France (ANSM/Ameli/EMA × réseau IP, 100% client-side) -->
-  <script src="biosimilaires-data.js?v=20260812l"></script>
-  <script src="v2-biosimilaires.js?v=20260812l"></script>
+  <script src="biosimilaires-data.js?v=20260812m"></script>
+  <script src="v2-biosimilaires.js?v=20260812m"></script>
   <!-- Missions rémunérées (catalogue 2026 + simulateur, 100% client-side) -->
-  <script src="v2-missions.js?v=20260812l"></script>
+  <script src="v2-missions.js?v=20260812m"></script>
   <!-- Appro Intégral (interne) : tendances, saison, nouveautés, ruptures, négo labos -->
-  <script src="v2-appro.js?v=20260812l"></script>
+  <script src="v2-appro.js?v=20260812m"></script>
   <!-- Concurrents · grossistes-répartiteurs (annuaire intel + actualités veille) -->
-  <script src="v2-grossistes.js?v=20260812l"></script>
+  <script src="v2-grossistes.js?v=20260812m"></script>
   <!-- Infos du matin (brief quotidien, 100% client-side) -->
-  <script src="v2-infos.js?v=20260812l"></script>
+  <script src="v2-infos.js?v=20260812m"></script>
   <!-- Audit Marge (abandon de marge par pharmacie, 100% client-side) -->
-  <script src="v2-audit.js?v=20260812l"></script>
+  <script src="v2-audit.js?v=20260812m"></script>
   <!-- Espace Marketing JARVIS (Pauline & Will) -->
-  <script src="marketing-mix-data.js?v=20260812l"></script>
-  <script src="mkt-images-data.js?v=20260812l"></script>
-  <script src="v2-mkt.js?v=20260812l"></script>
-  <script src="v2-mkt-linkedin.js?v=20260812l"></script>
-  <script src="v2-mkt-li-strategy.js?v=20260812l"></script>
+  <script src="marketing-mix-data.js?v=20260812m"></script>
+  <script src="mkt-images-data.js?v=20260812m"></script>
+  <script src="v2-mkt.js?v=20260812m"></script>
+  <script src="v2-mkt-linkedin.js?v=20260812m"></script>
+  <script src="v2-mkt-li-strategy.js?v=20260812m"></script>
   <!-- App Groupements (carte de prospection, iframe) -->
-  <script src="v2-groupements.js?v=20260812l"></script>
+  <script src="v2-groupements.js?v=20260812m"></script>
   <!-- Carte Groupements dédiée (filtre groupement → clients + prospects) -->
-  <script src="v2-carte-groupements.js?v=20260812l"></script>
+  <script src="v2-carte-groupements.js?v=20260812m"></script>
   <!-- Tournée prospect : routage OSRM + suivi visites + moteur de sélection + écran -->
-  <script src="v2-osrm.js?v=20260812l"></script>
-  <script src="v2-visites.js?v=20260812l"></script>
+  <script src="v2-osrm.js?v=20260812m"></script>
+  <script src="v2-visites.js?v=20260812m"></script>
   <!-- Tournée prospect : intégrée au Copilote (Organisateur de tournée dans v2-carte.js).
        Page autonome v2-tournee.js retirée (redondante). osrm + visites conservés pour l'organisateur. -->
   <!-- App (boot en dernier) -->
-  <script src="v2-app.js?v=20260812l"></script>
+  <script src="v2-app.js?v=20260812m"></script>
   <!-- Couche motion design (scroll-reveal, count-up, micro-interactions) — après l'app pour wrapper V2.render -->
-  <script src="v2-motion.js?v=20260812l"></script>
+  <script src="v2-motion.js?v=20260812m"></script>
   <!-- Fond WebGL interactif de l'accueil (aurora clair) — après l'app pour wrapper pages.home -->
-  <script src="v2-bg.js?v=20260812l"></script>
-  <script src="v2-campagne-cible.js?v=20260812l"></script>
+  <script src="v2-bg.js?v=20260812m"></script>
+  <script src="v2-campagne-cible.js?v=20260812m"></script>
 </body>
 </html>
