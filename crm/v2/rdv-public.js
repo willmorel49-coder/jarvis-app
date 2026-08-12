@@ -9,6 +9,7 @@
   var params = new URLSearchParams(window.location.search);
   var token = params.get('t') || '';        // lien de campagne : usage unique, officine connue
   var ctoken = params.get('c') || '';       // lien permanent d'un commercial : officine à déclarer
+  var pslug = params.get('p') || '';        // même chose, mais par nom court (« william »)
   var moi = null;                           // l'officine déclarée sur le lien permanent
   var sb = null;
   var F = null;      // la fenêtre renvoyée par rdv_fenetre
@@ -39,8 +40,25 @@
 
   function demarrer() {
     if (!window.supabase || !window.supabase.createClient) { secours(INDISPO); return; }
-    if (!token && !ctoken) { secours('Ce lien est incomplet.'); return; }
+    if (!token && !ctoken && !pslug) { secours('Ce lien est incomplet.'); return; }
     if (!sb) sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+    // Nom court (« william ») : on le traduit une fois en jeton, puis tout se
+    // passe comme avec un lien permanent classique. Le jeton n'apparaît jamais
+    // dans l'adresse — c'est ce qui permet de le remplacer sans changer le lien.
+    if (pslug && !ctoken) {
+      sb.rpc('rdv_slug_token', { p_slug: pslug }).then(function (r) {
+        var d = (r && r.data) || {};
+        if (!d.ok) {
+          secours(d.raison === 'ferme'
+            ? 'Ce lien de réservation est fermé pour le moment.'
+            : 'Ce lien n’est pas valide.');
+          return;
+        }
+        ctoken = d.token;
+        demarrer();
+      }).catch(function () { secours(INDISPO); });
+      return;
+    }
     // Lien permanent : on ne sait pas encore QUI réserve. Or toute la
     // cohérence géographique repose sur la position de l'officine — sans
     // elle, on proposerait Brest et Nantes le même matin. On la demande

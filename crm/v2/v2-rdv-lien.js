@@ -9,9 +9,14 @@
    son code postal AVANT d'afficher le moindre créneau — sans quoi toute la
    cohérence géographique s'effondrerait.
 
-   Le jeton est secret-mais-public, exactement comme le fait Calendly : il
-   suffit à réserver, il ne donne accès à rien d'autre. Un bouton le remplace
-   d'un clic si jamais il circule trop.
+   L'adresse est volontairement lisible (…/rdv/william) : c'est un lien de
+   signature de mail, pas un secret. Il ne donne accès qu'à la prise de
+   rendez-vous, rien d'autre.
+
+   « Fermer » est le vrai bouton d'arrêt : plus personne ne peut réserver.
+   « Remplacer » ne change PAS cette adresse — il change le jeton caché
+   derrière, ce qui n'invalide que d'anciens liens techniques (…?c=…) ayant
+   pu circuler avant que les adresses courtes existent.
    ═══════════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
@@ -21,10 +26,18 @@
   function sb() { return (V2.sb && V2.sb()) || null; }
   function uid() { return (V2.user && V2.user.id) || null; }
 
-  function base() {
-    // Même dossier que le CRM : /crm/v2/rdv.html
-    var u = window.location.origin + window.location.pathname.replace(/[^/]*$/, '');
-    return u + 'rdv.html?c=';
+  // Adresse courte et lisible : …/rdv/william, et non
+  // …/crm/v2/rdv.html?c=a5517181-9568-43bf-bf79-6ab011555df8.
+  // C'est ce qu'un commercial colle dans sa signature — l'identifiant
+  // technique n'a rien à faire sous les yeux d'un pharmacien.
+  function joli(slug) {
+    var p = window.location.pathname.replace(/crm\/v2\/[^/]*$/, '');
+    return window.location.origin + p + 'rdv/' + slug;
+  }
+  // Repli si le nom court manque encore (commercial sans prénom en base).
+  function brut(token) {
+    var p = window.location.pathname.replace(/[^/]*$/, '');
+    return window.location.origin + p + 'rdv.html?c=' + token;
   }
 
   function css() {
@@ -49,11 +62,11 @@
     charger: function () {
       var c = sb(), u = uid();
       if (!c || !u) return Promise.resolve(null);
-      return c.from('rdv_lien_public').select('token, actif').eq('user_id', u).maybeSingle()
+      return c.from('rdv_lien_public').select('token, actif, slug').eq('user_id', u).maybeSingle()
         .then(function (r) {
           if (r && r.data) return r.data;
           return c.from('rdv_lien_public').insert({ user_id: u })
-            .select('token, actif').single()
+            .select('token, actif, slug').single()
             .then(function (r2) { return (r2 && r2.data) || null; })
             .catch(function () { return null; });
         })
@@ -66,7 +79,7 @@
         return '<div class="v2-lien-box"><p class="v2-lien-note">' +
           'Ton lien de réservation n’a pas pu être chargé. Recharge la page.</p></div>';
       }
-      var url = base() + l.token;
+      var url = l.slug ? joli(l.slug) : brut(l.token);
       return '<div class="v2-lien-box' + (l.actif ? '' : ' v2-lien-off') + '">' +
         '<p class="v2-lien-note" style="margin:0">' +
           (l.actif
@@ -80,9 +93,9 @@
             (l.actif ? 'Fermer le lien' : 'Rouvrir le lien') + '</button>' +
           '<button class="v2-btn v2-btn-ghost" onclick="V2.rdvLien.remplacer()">Remplacer</button>' +
         '</div>' +
-        '<p class="v2-lien-note">Ce lien suffit à réserver un créneau avec toi — il ne donne accès ' +
-          'à rien d’autre. S’il circule trop, « Remplacer » en crée un nouveau et l’ancien cesse ' +
-          'aussitôt de fonctionner.</p>' +
+        '<p class="v2-lien-note">Ce lien ne donne accès qu’à la prise de rendez-vous avec toi. ' +
+          'Pour l’arrêter, utilise <b>Fermer</b> : plus personne ne pourra réserver, et le lien ' +
+          'reste le même si tu le rouvres plus tard.</p>' +
       '</div>';
     },
 
