@@ -326,3 +326,47 @@ test('index : le champ mois s appelle `month` dans l app, `mois` dans les tests'
   assert.equal(idx.premierMois.G1.ZZZ, 3);
   assert.equal(idx.moisMax, 3);
 });
+
+// ── Quotas appliques a une liste deja calculee ─────────────────────
+// Sert aux modes Client et Groupement : la liste vient du calcul « trou vs
+// confreres », puis on la taille par categorie comme pour un prospect.
+// Deja triee par potentiel decroissant, comme les vraies listes du moteur.
+const LIGNES = [
+  { cip: 'C1', fam: 'nr', potentiel: 95 },
+  { cip: 'A1', fam: 'pr_low', potentiel: 90 },
+  { cip: 'B1', fam: 'gen', potentiel: 85 },
+  { cip: 'A2', fam: 'pr_low', potentiel: 80 },
+  { cip: 'A3', fam: 'pr_low', potentiel: 70 },
+  { cip: 'B2', fam: 'gen', potentiel: 60 },
+  { cip: 'D1', fam: 'biosim', potentiel: 50 },
+];
+
+test('quotas : chaque categorie est limitee a son nombre', () => {
+  const r = M.limiterParCategorie(LIGNES, { pr_low: 2, gen: 1, nr: 5, biosim: 0 });
+  // A3 tombe (3e petit prix), B2 tombe (2e generique), D1 tombe (quota 0).
+  assert.deepEqual(r.map((l) => l.cip), ['C1', 'A1', 'B1', 'A2']);
+});
+
+test('quotas : l ordre d origine est conserve, pas re-trie par categorie', () => {
+  // On ne re-trie pas : l'ordre d'entree, deja par potentiel, est conserve.
+  const r = M.limiterParCategorie(LIGNES, { pr_low: 3, gen: 2, nr: 1, biosim: 1 });
+  for (let i = 1; i < r.length; i++) {
+    assert.ok(r[i - 1].potentiel >= r[i].potentiel, `ligne ${i} mal ordonnee`);
+  }
+});
+
+test('quotas : une categorie a zero disparait', () => {
+  const r = M.limiterParCategorie(LIGNES, { pr_low: 5, biosim: 0 });
+  assert.ok(!r.some((l) => l.fam === 'biosim'));
+});
+
+test('quotas : aucun quota pose = liste inchangee', () => {
+  assert.equal(M.limiterParCategorie(LIGNES, {}).length, LIGNES.length);
+  assert.equal(M.limiterParCategorie(LIGNES, null).length, LIGNES.length);
+});
+
+test('quotas : une ligne sans famille connue passe toujours', () => {
+  const avec = LIGNES.concat([{ cip: 'X', fam: '', potentiel: 10 }]);
+  const r = M.limiterParCategorie(avec, { pr_low: 1 });
+  assert.ok(r.some((l) => l.cip === 'X'), 'une famille inconnue ne doit pas etre filtree');
+});
