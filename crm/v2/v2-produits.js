@@ -27,6 +27,11 @@
     biosim:  { l: 'Biosimilaire',         c: '#6D4FC4' }
   };
   var FAM_ORDRE = ['pr_low', 'pr_mid', 'pr_high', 'nr', 'gen', 'biosim'];
+  // Libellés courts pour le résumé du composeur replié.
+  var FAM_COURT = {
+    pr_low: 'petits prix', pr_mid: 'moyens', pr_high: 'chers',
+    nr: 'NR', gen: 'génér.', biosim: 'biosim.'
+  };
   // Seules les familles princeps portent un abandon de marge. Génériques,
   // NR et biosimilaires : net = PPHT, aucun abandon (règle métier stricte).
   function porteAbandon(f) { return String(f || '').indexOf('pr_') === 0; }
@@ -201,12 +206,21 @@
   }
 
   function filtresHtml() {
-    var chips = '<span class="pr-chip' + (S.fam === 'all' ? ' on' : '') +
-      '" onclick="V2.produits.setFam(\'all\')">Toutes familles</span>', i, k;
-    for (i = 0; i < FAM_ORDRE.length; i++) {
-      k = FAM_ORDRE[i];
-      chips += '<span class="pr-chip' + (S.fam === k ? ' on' : '') +
-        '" onclick="V2.produits.setFam(\'' + k + '\')">' + esc(FAM[k].l) + '</span>';
+    // En mode Sur mesure, les familles se choisissent DÉJÀ dans le composeur
+    // (un quota par catégorie) : réafficher des puces de famille en dessous
+    // serait redondant et contradictoire.
+    var fams = '';
+    if (S.mode !== 'surmesure') {
+      var chips = '<span class="pr-chip' + (S.fam === 'all' ? ' on' : '') +
+        '" onclick="V2.produits.setFam(\'all\')">Toutes familles</span>', i, k;
+      for (i = 0; i < FAM_ORDRE.length; i++) {
+        k = FAM_ORDRE[i];
+        chips += '<span class="pr-chip' + (S.fam === k ? ' on' : '') +
+          '" onclick="V2.produits.setFam(\'' + k + '\')">' + esc(FAM[k].l) + '</span>';
+      }
+      // Une seule ligne qui défile : à 390 px, les 7 puces prenaient 4 lignes,
+      // soit ~150 px avant le premier produit.
+      fams = '<div class="pr-chips pr-defile">' + chips + '</div>';
     }
     return '' +
       '<div class="pr-filtres">' +
@@ -214,7 +228,8 @@
           '<input placeholder="Produit ou CIP…" value="' + escAttr(S.q) +
           '" oninput="V2.produits.setQ(this.value)">' +
         '</div>' +
-        '<div class="pr-chips">' + chips +
+        fams +
+        '<div class="pr-chips">' +
           '<span class="pr-chip' + (S.sansRupture ? ' on' : '') +
           '" onclick="V2.produits.setRupt()">Masquer les ruptures ANSM</span>' +
         '</div>' +
@@ -340,12 +355,25 @@
     var p = PRESETS.decouverte;
     return { quotas: JSON.parse(JSON.stringify(p.q)), abandonMin: JSON.parse(JSON.stringify(p.a)), nom: '' };
   }
+  // Toute composition qui entre ici est normalisée : un réglage tronqué ou
+  // corrompu (vieille version, écriture partielle, bricolage manuel) ne doit
+  // JAMAIS produire un écran blanc en rendez-vous.
+  function smNormaliser(b) {
+    var d = smDefaut(), i, k;
+    if (!b || typeof b !== 'object') return d;
+    if (!b.quotas || typeof b.quotas !== 'object') b.quotas = d.quotas;
+    if (!b.abandonMin || typeof b.abandonMin !== 'object') b.abandonMin = {};
+    for (i = 0; i < FAM_ORDRE.length; i++) {
+      k = FAM_ORDRE[i];
+      b.quotas[k] = Math.max(0, Math.min(300, parseInt(b.quotas[k], 10) || 0));
+    }
+    b.nom = typeof b.nom === 'string' ? b.nom : '';
+    b.plie = !!b.plie;
+    return b;
+  }
   function smCharger() {
-    try {
-      var b = JSON.parse(localStorage.getItem('produits.surmesure'));
-      if (b && b.quotas) return b;
-    } catch (e) {}
-    return smDefaut();
+    try { return smNormaliser(JSON.parse(localStorage.getItem('produits.surmesure'))); }
+    catch (e) { return smDefaut(); }
   }
   function smSauver() {
     try { localStorage.setItem('produits.surmesure', JSON.stringify(S.sm)); } catch (e) {}
@@ -380,6 +408,9 @@
     var n = parseFloat(v);
     if (!n) delete S.sm.abandonMin[fam]; else S.sm.abandonMin[fam] = n;
     S.page = 0; smSauver(); V2.render();
+  };
+  V2.produits.smPlier = function () {
+    S.sm.plie = !S.sm.plie; smSauver(); V2.render();
   };
   V2.produits.smPreset = function (k) {
     var p = PRESETS[k]; if (!p) return;
@@ -460,13 +491,29 @@
     });
     var lignes = filtrer(r.lignes);
 
-    var comp = '', i;
-    for (i = 0; i < M.FAMILLES.length; i++) comp += ligneComposeur(M.FAMILLES[i], r.dispo[M.FAMILLES[i]]);
+    var i, k;
+    // Replié, le composeur laisse voir la liste : à 390 px il occupait tout
+    // l'écran, on ne voyait donc jamais l'effet du réglage qu'on venait de faire.
+    var resume = [];
+    for (i = 0; i < M.FAMILLES.length; i++) {
+      k = M.FAMILLES[i];
+      if (+S.sm.quotas[k] > 0) resume.push(S.sm.quotas[k] + ' ' + FAM_COURT[k]);
+    }
+    var entete = '<button class="sm-plier" onclick="V2.produits.smPlier()">' +
+      (S.sm.plie ? '▸ Régler la liste' : '▾ Replier le réglage') +
+      '<em>' + esc(resume.length ? resume.join(' · ') : 'aucune catégorie') + '</em></button>';
 
-    var presets = '';
-    for (var k in PRESETS) {
-      if (!Object.prototype.hasOwnProperty.call(PRESETS, k)) continue;
-      presets += '<span class="pr-chip" onclick="V2.produits.smPreset(\'' + k + '\')">' + esc(PRESETS[k].l) + '</span>';
+    var corpsComposeur = '';
+    if (!S.sm.plie) {
+      var comp = '';
+      for (i = 0; i < M.FAMILLES.length; i++) comp += ligneComposeur(M.FAMILLES[i], r.dispo[M.FAMILLES[i]]);
+      var presets = '';
+      for (k in PRESETS) {
+        if (!Object.prototype.hasOwnProperty.call(PRESETS, k)) continue;
+        presets += '<span class="pr-chip" onclick="V2.produits.smPreset(\'' + k + '\')">' + esc(PRESETS[k].l) + '</span>';
+      }
+      corpsComposeur = '<div class="pr-chips sm-presets">' + presets + '</div>' +
+                       '<div class="sm-grille">' + comp + '</div>';
     }
 
     var visibles = lignes.slice(0, (S.page + 1) * PAR_PAGE), corps = '';
@@ -476,8 +523,8 @@
       '<div class="pr-bandeau">' +
         '<input class="pr-select sm-nom" placeholder="Nom de l\'officine (pour le PDF)" value="' +
           escAttr(S.sm.nom) + '" oninput="V2.produits.smNom(this.value)">' +
-        '<div class="pr-chips sm-presets">' + presets + '</div>' +
-        '<div class="sm-grille">' + comp + '</div>' +
+        entete +
+        corpsComposeur +
         '<div class="pr-ctx">' +
           '<span class="pr-ctx-pot">' + num(lignes.length) + ' produits dans la liste</span>' +
         '</div>' +
@@ -581,7 +628,9 @@
           '<button class="pr-mode' + (S.mode === 'surmesure' ? ' on' : '') +
             '" onclick="V2.produits.setMode(\'surmesure\')">Sur mesure</button>' +
         '</div>';
-      if (!S.sm) S.sm = smCharger();
+      // Normalisé à chaque rendu, pas seulement au premier chargement : S.sm est
+      // exposé sur V2.produits.S, donc modifiable de l'extérieur.
+      S.sm = S.sm ? smNormaliser(S.sm) : smCharger();
       var corps = S.mode === 'vendeur' ? rendreVendeur()
         : S.mode === 'achats' ? rendreAchats()
         : rendreSurMesure();
@@ -637,6 +686,11 @@
       '.pr-plus{width:100%;min-height:44px;margin-top:8px}',
       '.pr-liens{display:flex;flex-wrap:wrap;gap:14px;margin-top:24px;padding-top:16px;border-top:1px solid var(--line)}',
       '.pr-liens a{font:500 13px/1 Inter,sans-serif;color:var(--muted);cursor:pointer;text-decoration:underline}',
+      '.pr-defile{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}',
+      '.pr-defile::-webkit-scrollbar{display:none}',
+      '.pr-defile .pr-chip{flex:none}',
+      '.sm-plier{display:flex;flex-direction:column;align-items:flex-start;gap:3px;width:100%;min-height:44px;margin:10px 0;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--paper);font:600 14px/1.2 Inter,sans-serif;color:var(--ip-blue);cursor:pointer;text-align:left}',
+      '.sm-plier em{font:400 12px/1.3 Inter,sans-serif;color:var(--muted);font-style:normal}',
       '.sm-nom{margin-bottom:10px}',
       '.sm-presets{margin-bottom:12px}',
       '.sm-grille{display:flex;flex-direction:column;gap:8px}',
