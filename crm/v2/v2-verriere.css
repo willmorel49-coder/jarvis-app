@@ -1,0 +1,107 @@
+/* ═══════════════════════════════════════════════════════════════════
+   CRM INTÉGRAL PHARMA · V2 — Peau « VERRIÈRE »
+   Direction choisie par Will le 12/08/2026 (galerie de 5, repère 0 inclus).
+
+   Le principe, en une phrase : la lumière tombe d'en haut, comme par une
+   verrière d'atelier, et s'épuise vers le bas de page. Chaque surface est
+   ÉCLAIRÉE (arête haute allumée, ombre toujours dirigée vers le bas) au
+   lieu d'être détourée par un filet.
+
+   Ce fichier se charge EN DERNIER et ne fait que trois choses :
+     1. poser la lumière,
+     2. rendre les cartes éclairées plutôt que détourées,
+     3. ramener l'accueil à UNE seule couleur (il en portait onze).
+
+   Il ne crée aucune classe et ne touche à aucune structure : le retirer de
+   index.html rend l'app exactement à son état d'avant.
+
+   Contraintes respectées : uniquement des dégradés et des ombres, aucune des
+   propriétés qui font figer Safari, repli mouvement réduit conservé.
+   ═══════════════════════════════════════════════════════════════════ */
+
+:root{
+  /* Le ciel de la verrière : la valeur la plus claire est au zénith. */
+  --vr-ciel:#E4EDFC;
+  --vr-ciel-g:#CFDFFC;   /* nappe gauche */
+  --vr-ciel-d:#DCE7FC;   /* nappe droite */
+  --vr-h:520px;          /* hauteur de la lumière — au-delà, la page redevient calme */
+
+  /* Le halo existant devient le corps de la verrière. */
+  --halo:var(--vr-ciel);
+
+  /* Ombres : même échelle, mais dirigées vers le BAS et arête haute allumée.
+     C'est la direction constante qui fait croire à une lampe unique. */
+  --sh-1:0 1px 1px rgba(11,31,77,.05),
+         0 4px 10px -6px rgba(11,31,77,.16),
+         0 1px 0 rgba(255,255,255,.9) inset;
+  --sh-2:0 1px 1px rgba(11,31,77,.05),
+         0 10px 24px -14px rgba(11,31,77,.22),
+         0 1px 0 rgba(255,255,255,.95) inset;
+  --sh-3:0 2px 3px rgba(11,31,77,.06),
+         0 18px 34px -18px rgba(11,31,77,.26),
+         0 1px 0 rgba(255,255,255,1) inset;
+}
+
+/* ── 1 · LA LUMIÈRE ────────────────────────────────────────────────
+   Le fond n'a plus la même valeur du haut en bas : c'est ce qui manquait.
+   Posé sur .v2-halo, qui existe déjà et est déjà en position fixe. */
+.v2-halo{
+  height:var(--vr-h);
+  background:
+    radial-gradient(58% 78% at 50% -14%, #FFFFFF 0%, rgba(255,255,255,0) 64%),
+    radial-gradient(64% 96% at 2% -12%,  var(--vr-ciel-g) 0%, rgba(207,223,252,0) 66%),
+    radial-gradient(64% 96% at 99% -8%,  var(--vr-ciel-d) 0%, rgba(220,231,252,0) 68%),
+    linear-gradient(var(--vr-ciel) 0%, rgba(251,252,254,0) 92%);
+}
+
+/* La barre du haut cesse d'être un bandeau opaque : elle laisse passer la
+   verrière. Un filet en bas suffit à la détacher quand on défile. */
+.v2-top{
+  background:linear-gradient(rgba(255,255,255,.92), rgba(255,255,255,.74));
+  border-bottom-color:rgba(11,31,77,.10);
+}
+
+/* Une seule lampe, sinon ce n'est plus une matière : c'est un effet.
+   L'accueil portait en plus une deuxième lumière qui suivait le curseur, bleue
+   ET orange (#v2-bg). Elle entrait en conflit avec la verrière et salissait le
+   bas de l'écran. Le script continue de tourner, on masque seulement sa sortie
+   — un `display:none` ici suffit, aucun code à toucher. */
+#v2-bg{display:none}
+
+/* ── 2 · DES CARTES ÉCLAIRÉES, PAS DÉTOURÉES ──────────────────────
+   Le filet recule, l'arête haute s'allume, l'ombre porte vers le bas. */
+.v2-pil,
+.v2-card,
+.v2-home-x .v2-lch-card{
+  border-color:rgba(11,31,77,.09);
+}
+
+/* ── 3 · UNE SEULE LUMIÈRE SUR L'ACCUEIL ──────────────────────────
+   L'accueil portait ONZE couleurs d'accent : chaque module tirait la
+   couverture à lui et l'ensemble n'avait pas de source. Les tuiles passent
+   toutes au bleu de marque. Les couleurs SÉMANTIQUES (--ok / --warn / --bad)
+   ne sont pas touchées : elles veulent dire quelque chose, elles restent.
+   Le !important est nécessaire : l'accent des tuiles est écrit en style
+   en-ligne par v2-app.js. */
+.v2-home-x .v2-pil,
+.v2-home-x .v2-lch-card,
+.v2-home-x .v2-lch-mini{
+  --accent:var(--ip-blue) !important;
+}
+
+/* La barre d'accent verticale sur le côté gauche des tuiles s'en va :
+   carte arrondie + rail coloré est le tic d'interface le plus daté de l'app. */
+.v2-home-x .v2-pil::before{
+  display:none;
+}
+
+/* Le survol ne s'appuie plus sur le rail : il monte dans la lumière. */
+.v2-home-x .v2-pil:hover,
+.v2-home-x .v2-lch-card:hover{
+  border-color:rgba(0,80,230,.22);
+}
+
+/* ── Repli mouvement réduit ───────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce){
+  .v2-pil, .v2-card{transition:none}
+}
