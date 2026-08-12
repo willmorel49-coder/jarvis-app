@@ -256,12 +256,45 @@
 
   M.FAMILLES = ['pr_low', 'pr_mid', 'pr_high', 'nr', 'gen', 'biosim'];
 
+  // Laboratoires présents dans une famille, du plus fourni au moins fourni.
+  // Sert à ne proposer à l'écran que des labos qui existent vraiment en stock.
+  M.labosDisponibles = function (produits, fam) {
+    var cnt = {}, i, l;
+    produits = produits || [];
+    for (i = 0; i < produits.length; i++) {
+      var p = produits[i];
+      if (String(p.fam || '') !== fam) continue;
+      if (!(+p.stock > 0)) continue;
+      l = p.labo ? String(p.labo).trim() : '';
+      if (!l) continue;
+      cnt[l] = (cnt[l] || 0) + 1;
+    }
+    var out = [];
+    for (l in cnt) {
+      if (Object.prototype.hasOwnProperty.call(cnt, l)) out.push({ nom: l, n: cnt[l] });
+    }
+    out.sort(function (a, b) { return b.n - a.n || (a.nom < b.nom ? -1 : 1); });
+    return out;
+  };
+
   M.listeSurMesure = function (produits, opts) {
     opts = opts || {};
     var quotas = opts.quotas || {};
     var abandonMin = opts.abandonMin || {};
+    var labos = opts.labos || {};
+    var exclusifs = opts.exclusifs || {};
     var sansRupture = !!opts.sansRupture;
     produits = produits || [];
+
+    // Index des labos retenus par famille, pour un test en temps constant.
+    var labosSet = {}, ff, k;
+    for (ff in labos) {
+      if (!Object.prototype.hasOwnProperty.call(labos, ff)) continue;
+      var liste = labos[ff];
+      if (!liste || !liste.length) continue;              // liste vide = aucun filtre
+      labosSet[ff] = {};
+      for (k = 0; k < liste.length; k++) labosSet[ff][String(liste[k]).trim()] = 1;
+    }
 
     var parFam = {}, dispo = {}, i, f;
     for (i = 0; i < M.FAMILLES.length; i++) { parFam[M.FAMILLES[i]] = []; dispo[M.FAMILLES[i]] = 0; }
@@ -272,6 +305,10 @@
       if (!parFam[f]) continue;                       // famille inconnue : ignorée
       if (!(+p.stock > 0)) continue;                  // jamais ce qu'on ne peut pas livrer
       if (sansRupture && p.rupture) continue;
+      // Filtre laboratoire : un produit sans labo identifié ne peut pas
+      // satisfaire un filtre, il sort. Sans filtre, il reste.
+      if (labosSet[f] && !labosSet[f][p.labo ? String(p.labo).trim() : '']) continue;
+      if (exclusifs[f] && !p.exclusif) continue;
 
       var ppht = +p.ppht || 0;
       var porte = M.porteAbandon(f) && ppht > 0;
@@ -284,7 +321,8 @@
       dispo[f] += 1;
       parFam[f].push({
         cip: p.cip, fam: f, n: +p.n || 0, ppht: ppht, stock: +p.stock || 0,
-        rupture: !!p.rupture, abandon: ab, abandonPct: pct,
+        rupture: !!p.rupture, labo: p.labo || null, exclusif: !!p.exclusif,
+        abandon: ab, abandonPct: pct,
         net: porte ? Math.round((ppht - ab) * 100) / 100 : ppht
       });
     }

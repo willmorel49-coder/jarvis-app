@@ -109,3 +109,72 @@ test('catalogue vide ou options absentes : liste vide, pas d erreur', () => {
   assert.deepEqual(M.listeSurMesure([], {}).lignes, []);
   assert.deepEqual(M.listeSurMesure(CAT, {}).lignes, []);
 });
+
+// ── Filtres par laboratoire et exclusivites ────────────────────────
+const p2 = (cip, fam, n, ppht, stock, labo, exclusif) =>
+  ({ cip, fam, n, ppht, stock, rupture: false, labo, exclusif: !!exclusif });
+const CAT2 = [
+  p2('GZ1', 'gen', 500, 3.0, 100, 'Zentiva', true),
+  p2('GZ2', 'gen', 400, 3.0, 100, 'Zentiva', false),
+  p2('GE1', 'gen', 450, 3.0, 100, 'EG Labo', true),
+  p2('GB1', 'gen', 480, 3.0, 100, 'Biogaran', false),
+  p2('GV1', 'gen', 300, 3.0, 100, 'Viatris', false),
+  p2('GX1', 'gen', 200, 3.0, 100, null, false),        // labo inconnu
+  p2('BS1', 'biosim', 90, 300, 100, 'Sandoz', false),
+  p2('BS2', 'biosim', 80, 300, 100, 'Amgen', false),
+];
+
+test('labos : un seul laboratoire retenu', () => {
+  const r = M.listeSurMesure(CAT2, { quotas: { gen: 10 }, labos: { gen: ['Zentiva'] } });
+  assert.deepEqual(r.lignes.map((l) => l.cip), ['GZ1', 'GZ2']);
+});
+
+test('labos : plusieurs laboratoires cumulables', () => {
+  const r = M.listeSurMesure(CAT2, { quotas: { gen: 10 }, labos: { gen: ['Zentiva', 'EG Labo'] } });
+  assert.deepEqual(r.lignes.map((l) => l.cip).sort(), ['GE1', 'GZ1', 'GZ2']);
+});
+
+test('labos : liste vide = aucun filtre', () => {
+  const r = M.listeSurMesure(CAT2, { quotas: { gen: 10 }, labos: { gen: [] } });
+  assert.equal(r.lignes.length, 6);
+});
+
+test('labos : le filtre d une famille n affecte pas les autres', () => {
+  const r = M.listeSurMesure(CAT2, { quotas: { gen: 10, biosim: 10 }, labos: { gen: ['Zentiva'] } });
+  assert.equal(r.lignes.filter((l) => l.fam === 'biosim').length, 2);
+});
+
+test('labos : filtre propre aux biosimilaires', () => {
+  const r = M.listeSurMesure(CAT2, { quotas: { biosim: 10 }, labos: { biosim: ['Sandoz'] } });
+  assert.deepEqual(r.lignes.map((l) => l.cip), ['BS1']);
+});
+
+test('exclusivites : ne garde que les references de notre liste', () => {
+  const r = M.listeSurMesure(CAT2, { quotas: { gen: 10 }, exclusifs: { gen: true } });
+  assert.deepEqual(r.lignes.map((l) => l.cip).sort(), ['GE1', 'GZ1']);
+});
+
+test('exclusivites et labos se cumulent', () => {
+  const r = M.listeSurMesure(CAT2, {
+    quotas: { gen: 10 }, exclusifs: { gen: true }, labos: { gen: ['Zentiva'] },
+  });
+  assert.deepEqual(r.lignes.map((l) => l.cip), ['GZ1']);
+});
+
+test('dispo : le compteur tient compte des filtres de labo', () => {
+  const r = M.listeSurMesure(CAT2, { quotas: { gen: 2 }, labos: { gen: ['Zentiva'] } });
+  assert.equal(r.dispo.gen, 2, 'doit compter les eligibles, pas tout le catalogue');
+});
+
+test('labos : un produit sans labo est ecarte des qu un filtre existe', () => {
+  const r = M.listeSurMesure(CAT2, { quotas: { gen: 10 }, labos: { gen: ['Viatris'] } });
+  assert.ok(!r.lignes.some((l) => l.cip === 'GX1'), 'le labo inconnu ne doit pas passer');
+});
+
+test('labosDisponibles : liste les labos d une famille avec leur nombre', () => {
+  const l = M.labosDisponibles(CAT2, 'gen');
+  assert.equal(l[0].nom, 'Zentiva');
+  assert.equal(l[0].n, 2);
+  for (let i = 1; i < l.length; i++) assert.ok(l[i - 1].n >= l[i].n, 'doit etre trie');
+  assert.ok(!l.some((x) => x.nom == null), 'pas d entree sans nom');
+});

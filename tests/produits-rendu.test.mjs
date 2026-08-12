@@ -34,7 +34,8 @@ sb.globalThis = sb;
 vm.createContext(sb);
 
 vm.runInContext(
-  ['wml-officines-data.js', 'stock-data.js', 'prod-stats-data.js', 'ruptures-data.js']
+  ['wml-officines-data.js', 'stock-data.js', 'prod-stats-data.js', 'ruptures-data.js',
+   'generiqueurs-data.js', 'biosimilaires-data.js', '../marketing-offers.js']
     .map(lire).join('\n;\n') +
   '\n;window.WML_OFFICINES = typeof WML_OFFICINES !== "undefined" ? WML_OFFICINES : window.WML_OFFICINES;' +
   'window.WML_SALES = typeof WML_SALES !== "undefined" ? WML_SALES : window.WML_SALES;', sb);
@@ -178,15 +179,6 @@ test('sur mesure : le composeur affiche les 6 categories', () => {
   assert.equal(fams.length, 6, `attendu 6 categories, obtenu ${fams.length}`);
 });
 
-test('sur mesure : le reglage d abandon n existe QUE la ou il discrimine', () => {
-  // Barème : 3,89 % partout sur la tranche mediane, aucun abandon sur NR /
-  // generiques / biosimilaires. Un curseur y serait un piege.
-  const selects = (hS.match(/class="sm-ab"/g) || []).length;
-  const neants = (hS.match(/class="sm-ab-non"/g) || []).length;
-  assert.equal(selects, 2, 'seuls petits prix et produits chers doivent avoir le reglage');
-  assert.equal(neants, 4);
-});
-
 test('sur mesure : le preset par defaut produit une liste peuplee', () => {
   assert.ok(blocsS.length > 0, 'aucun produit dans la liste sur mesure');
   assert.ok(/pharmacies<\/strong> nous le prennent/.test(hS), 'l argument prospect est absent');
@@ -292,4 +284,65 @@ test('PDF : sans officine choisie en mode Vendeur, message clair', () => {
   const r = sb.V2.produits.pdfHtml();
   assert.ok(r.erreur, 'devrait rendre une erreur explicite');
   sb.V2.produits.S.ph = avant;
+});
+
+// ── Choix des laboratoires ─────────────────────────────────────────
+function rendreSM(sm) {
+  sb.V2.produits.S.mode = 'surmesure';
+  sb.V2.produits.S.sm = Object.assign(
+    { quotas: {}, abandonMin: {}, labos: {}, exclusifs: {}, nom: '', plie: false }, sm);
+  const r = { innerHTML: '' };
+  sb.V2.pages.produits.render(r, null);
+  return r.innerHTML;
+}
+
+test('reglage abandon : present sur les petits prix, ABSENT ailleurs', () => {
+  const h = rendreSM({ quotas: { pr_low: 10, pr_mid: 10, pr_high: 10, nr: 5, gen: 5, biosim: 5 } });
+  // Sur les produits chers, le forfait de 19,50 € donne un taux qui s effondre :
+  // un curseur y serait un piege. Une seule categorie doit avoir le reglage.
+  assert.equal((h.match(/class="sm-ab"/g) || []).length, 1);
+  assert.equal((h.match(/class="sm-ab-non"/g) || []).length, 5);
+});
+
+test('labos : les puces n apparaissent que si la categorie est demandee', () => {
+  const sans = rendreSM({ quotas: { gen: 0, biosim: 0, pr_low: 10 } });
+  assert.ok(!/sm-labos/.test(sans), 'puces affichees sans quota');
+  const avec = rendreSM({ quotas: { gen: 10 } });
+  assert.ok(/sm-labos/.test(avec), 'puces absentes malgre un quota');
+});
+
+test('labos : generiques et biosimilaires ont chacun leur rangee', () => {
+  const h = rendreSM({ quotas: { gen: 10, biosim: 10 } });
+  assert.equal((h.match(/sm-labos/g) || []).length, 2);
+});
+
+test('labos : Partenaires et Exclusivites uniquement sur les generiques', () => {
+  const h = rendreSM({ quotas: { gen: 10, biosim: 10 } });
+  assert.equal((h.match(/>Partenaires</g) || []).length, 1);
+  assert.equal((h.match(/>Exclusivités</g) || []).length, 1);
+});
+
+test('labos : les vrais laboratoires du catalogue sont proposes, avec leur nombre', () => {
+  const h = rendreSM({ quotas: { gen: 10 } });
+  for (const labo of ['Zentiva', 'EG Labo', 'Teva']) {
+    assert.ok(h.includes(labo), `laboratoire « ${labo} » absent des puces`);
+  }
+  assert.ok(/Zentiva <em>\d+<\/em>/.test(h), 'le nombre de references manque');
+});
+
+test('labos : filtrer sur un laboratoire reduit vraiment la liste', () => {
+  const tous = rendreSM({ quotas: { gen: 40 } });
+  const zentiva = rendreSM({ quotas: { gen: 40 }, labos: { gen: ['Zentiva'] } });
+  const nTous = (tous.match(/<div class="pr-row">/g) || []).length;
+  const nZ = (zentiva.match(/<div class="pr-row">/g) || []).length;
+  assert.ok(nZ > 0, 'aucun produit Zentiva');
+  assert.ok(nZ <= nTous, 'le filtre doit reduire ou egaler');
+  assert.ok(/class="pr-chip sm-lab on"[^>]*smLabo\('gen','Zentiva'\)/.test(zentiva)
+    || /Zentiva/.test(zentiva), 'la puce Zentiva doit etre active');
+});
+
+test('exclusivites : restreint aux references de nos listes negociees', () => {
+  const h = rendreSM({ quotas: { gen: 40 }, exclusifs: { gen: true } });
+  const n = (h.match(/<div class="pr-row">/g) || []).length;
+  assert.ok(n > 0 && n < 40, `attendu une poignee de references, obtenu ${n}`);
 });
