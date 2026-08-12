@@ -29,12 +29,16 @@ jobs:
         run: python3 generate_national.py
       - name: Committer si changement
         run: |
-          if git diff --quiet -- crm/v2/national.json; then
+          # ⚠️ national-histo.json = SEULE mémoire de la tendance du marché. Open Medic
+          # ne publie qu'un millésime à la fois : un mois non commité est perdu pour
+          # toujours. On indexe d'abord (git diff ne voit pas un fichier non suivi),
+          # puis on juge sur ce qui est indexé.
+          git config user.name  "JARVIS copilote"
+          git config user.email "actions@users.noreplace.github.com"
+          git add crm/v2/national.json crm/v2/national-histo.json
+          if git diff --cached --quiet; then
             echo "Pas de changement (sources amont inchangées)."
           else
-            git config user.name  "JARVIS copilote"
-            git config user.email "actions@users.noreplace.github.com"
-            git add crm/v2/national.json
             git commit -m "data(marché): modèle national $(date -u +%Y-%m-%d)"
             # 24 robots poussent sur le meme depot et GitHub livre leurs executions
             # planifiees en paquet : une seule reprise ne suffit pas (le 03/08, ansm-dispo,

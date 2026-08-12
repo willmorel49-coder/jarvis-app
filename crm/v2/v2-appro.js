@@ -768,7 +768,22 @@
   // Notre réel n'intervient qu'ici, en dernière couche : calibrer la part, puis comparer.
   // Sans nos données, tout retombe au niveau 3 et l'outil continue de fonctionner en le disant.
   var _natState = 0, _natData = null, _partGlob = null, _partFam = null, _partRef = null;
+  // Parc officinal : 357 octets, chargé avec le modèle national. Sans lui, la vue macro
+  // perd son chiffre le plus parlant (« 1 boîte sur N chez vos propres clients »).
+  var _parcData = null, _parcState = 0;
+  function ensureParc() {
+    if (_parcData || _parcState) return;
+    _parcState = 1;
+    try {
+      fetch('parc-officines.json?d=' + new Date().toISOString().slice(0, 10), { cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) { _parcData = j || null; _parcState = 2; approRerender(); })
+        .catch(function () { _parcState = 2; });
+    } catch (e) { _parcState = 2; }
+  }
+
   function ensureNational() {
+    ensureParc();
     if (_natData || _natState) return;
     _natState = 1;
     try {
@@ -826,6 +841,137 @@
     var couv = (o && o.rupt) ? CIBLE_TENSION : CIBLE;
     return { unites: Math.round(demandeMois / 30 * couv), part: pm.part,
              niveau: pm.niveau, libelle: pm.libelle, indice: indice };
+  }
+
+  // ═══ VUE MACRO — où Intégral pèse sur le marché français, et où il ne pèse pas ═══
+  // Répond à « besoins / offres » d'un coup d'œil, là où les listes A et B répondent
+  // produit par produit. Tout est calculé, rien n'est écrit en dur.
+  //
+  // ⚠️ DEUX DÉNOMINATEURS, à ne jamais confondre :
+  //   · part du MARCHÉ  = nos boîtes / boîtes France (0,26 % mesuré le 12/08/2026)
+  //   · part du PARC    = nos officines clientes / officines France (2 223 / 19 671)
+  // Le taux de couverture chez nos propres clients est le RAPPORT des deux — c'est lui
+  // qui dit « chez un client, nous fournissons 1 boîte sur N ». Le sortir sans dire de
+  // quel parc on parle donne des résultats qui varient du simple au quadruple.
+  var MARCHE_MINI = 100000;   // boîtes/an en France : sous ce seuil, un % n'a pas de sens
+
+  // La BDPM écrit une même molécule dans les deux sens : « DL-LYSINE (ACÉTYLSALICYLATE DE) »
+  // et « ACÉTYLSALICYLATE DE DL-LYSINE » sont le Kardegic, et sortaient sur DEUX lignes de
+  // la vue macro, chacune avec la moitié du volume. On regroupe sur les mots significatifs
+  // TRIÉS : deux écritures permutées se rejoignent, deux molécules différentes non
+  // (« paracétamol » et « paracétamol codéine » n'ont pas les mêmes mots).
+  function cleDci(s) {
+    var t = (s || '').toUpperCase().replace(/[^A-ZÀ-Ü]+/g, ' ').split(' ')
+      .filter(function (m) { return m.length > 3; });
+    return t.sort().join(' ');
+  }
+
+  function positionMarche() {
+    if (!_natData || !_natData.data) return null;
+    var idx = cipIndex(), d = _natData.data;
+    var ip = 0, nat = 0, nCommun = 0, famIp = {}, famNat = {}, famN = {}, famLbl = {};
+    Object.keys(idx).forEach(function (c) {
+      var n = d[c];
+      if (!n || !n.v) return;                       // hors modèle : on ne devine pas
+      var an = (idx[c].vM || 0) * 12;
+      if (an <= 0) return;
+      nCommun++; ip += an; nat += n.v;
+      var brut = n.d || '';
+      if (!brut) return;
+      var f = cleDci(brut);
+      if (!f) return;
+      famIp[f] = (famIp[f] || 0) + an;
+      famNat[f] = (famNat[f] || 0) + n.v;
+      famN[f] = (famN[f] || 0) + 1;
+      if (!famLbl[f] || brut.length < famLbl[f].length) famLbl[f] = brut;  // le libellé le plus court
+    });
+    if (!nat) return null;
+
+    var fams = Object.keys(famIp).filter(function (f) { return famNat[f] > 0 && famIp[f] > 0; })
+      .map(function (f) {
+        return { dci: famLbl[f] || f, part: famIp[f] / famNat[f], nous: famIp[f],
+                 marche: famNat[f], nRef: famN[f] };
+      });
+    // « Fort » et « faible » se jugent par rapport à NOTRE propre moyenne, pas dans l'absolu :
+    // 0,5 % du marché français d'une molécule, c'est le double de notre moyenne.
+    var part = ip / nat;
+    // ⚠️ Un pourcentage élevé sur un marché minuscule est du bruit : 56 % d'un marché de
+    // 3 000 boîtes/an (atovaquone) n'apprend rien et chasse les vraies positions de la
+    // liste. On exige donc une taille de marché minimale, et on trie par le volume qu'on
+    // y fait RÉELLEMENT — c'est ça, une position forte.
+    var forts = fams.filter(function (x) { return x.part >= part * 3 && x.marche >= MARCHE_MINI; })
+      .sort(function (a, b) { return b.nous - a.nous; });
+    // Les faibles se trient par ENJEU (volume France), pas par faiblesse : être absent
+    // d'un marché minuscule n'intéresse personne.
+    var faibles = fams.filter(function (x) { return x.part <= part / 3; })
+      .sort(function (a, b) { return b.marche - a.marche; });
+
+    // Le parc vient de `parc-officines.json` (357 octets), pas de PHARMA_FR : ce dernier
+    // pèse 2,8 Mo et n'est chargé que par la carte. La 1re version lisait PHARMA_FR et
+    // le bloc « 1 boîte sur N » disparaissait donc en silence sur cet écran — défaut vu
+    // seulement à la capture, jamais par les tests.
+    var parc = null;
+    try {
+      var P = _parcData || (window.PHARMA_FR && window.PHARMA_FR.meta) || null;
+      if (P && P.n && P.clients) parc = { fr: P.n, clients: P.clients, partParc: P.clients / P.n };
+    } catch (e) { parc = null; }
+
+    return { part: part, ip: ip, nat: nat, nCommun: nCommun, nCatalogue: Object.keys(idx).length,
+             forts: forts, faibles: faibles, nFam: fams.length, parc: parc };
+  }
+
+  function positionMarcheCard() {
+    var p = positionMarche();
+    if (!p) return '';
+    var pc = function (x) { return (x * 100).toFixed(x < 0.01 ? 3 : 2).replace('.', ','); };
+
+    var kpi = '<div class="pm-kpi">' +
+      '<div class="pm-k"><b>' + fmt(Math.round(p.nat / 1e6)) + ' M</b><span>boîtes/an — le besoin France sur les produits que vous distribuez</span></div>' +
+      '<div class="pm-k"><b>' + fmt(Math.round(p.ip / 1e3)) + ' k</b><span>boîtes/an — ce que vous fournissez</span></div>' +
+      '<div class="pm-k"><b style="color:var(--ip-blue)">' + pc(p.part) + ' %</b><span>votre part du marché français</span></div>' +
+      '</div>';
+
+    // Le chiffre qui parle : chez nos PROPRES clients, quelle part de leurs besoins ?
+    var couv = '';
+    if (p.parc && p.parc.partParc > 0) {
+      var taux = p.part / p.parc.partParc;           // part du marché ÷ part du parc
+      var surN = taux > 0 ? Math.round(1 / taux) : 0;
+      couv = '<div class="pm-hl"><b>Chez vos propres clients, vous fournissez environ 1 boîte sur ' + surN + '.</b>' +
+        '<small>' + fmt(p.parc.clients) + ' officines clientes sur ' + fmt(p.parc.fr) + ' en France (' +
+        pc(p.parc.partParc) + ' % du parc) captent ' + pc(p.part) + ' % du marché. ' +
+        'Le gisement est donc chez les clients actuels, pas seulement dans la conquête. ' +
+        '⚠️ calcul sur les clients <b>référencés</b> : tous ne commandent pas chaque mois, ' +
+        'la couverture réelle des officines actives est meilleure.</small></div>';
+    }
+
+    // Le titre porte l'effectif RÉEL, pas celui de l'extrait affiché. Trois positions
+    // fortes contre 330 faiblesses, c'est le vrai visage d'un short-liner : le dire
+    // franchement vaut mieux qu'une liste qui laisse croire à un équilibre.
+    function bloc(titre, liste, sens) {
+      if (!liste.length) return '';
+      titre += ' <b>(' + fmt(liste.length) + ')</b>';
+      var l = liste.slice(0, 6).map(function (x) {
+        return '<div class="ap-row"><div class="ap-nm"><b>' + esc(cap((x.dci || '').toLowerCase())) + '</b>' +
+          '<small>' + fmt(Math.round(x.marche / 1000)) + ' k boîtes/an en France · ' +
+          x.nRef + ' référence' + (x.nRef > 1 ? 's' : '') + ' chez vous</small></div>' +
+          '<div class="ap-mini"><b style="color:' + (sens === 'fort' ? '#1F7A3D' : '#B02A37') + '">' +
+          pc(x.part) + ' %</b></div></div>';
+      }).join('');
+      return '<div class="pm-sub">' + titre + '</div>' + l;
+    }
+
+    var corps = kpi + couv +
+      bloc('Molécules où vous pesez — plus de 3× votre moyenne', p.forts, 'fort') +
+      bloc('Gros marchés où vous êtes quasi absent — moins du tiers de votre moyenne', p.faibles, 'faible');
+
+    return card('pilo', 'Votre position sur le marché français',
+      'calculé sur ' + fmt(p.nCommun) + ' produits que vous distribuez et que le modèle national connaît, ' +
+      'et ' + fmt(p.nFam) + ' molécules',
+      corps, 'var(--ip-blue)') +
+      '<div class="ap-foot" style="margin:0">Besoin France = Open Medic (boîtes remboursées, millésime le plus récent). ' +
+      'Votre volume = vos ventes réseau ramenées à l’année. ' +
+      '<b>Les deux pourcentages ne se comparent pas entre eux</b> : l’un porte sur des boîtes, l’autre sur des officines. ' +
+      'Molécules non remboursées et parapharmacie sont hors modèle — elles ne comptent ni au numérateur ni au dénominateur.</div>';
   }
 
   // ═══ LISTE A — écart entre ce que dit le marché France et ce qu'on détient ═══
@@ -1042,6 +1188,32 @@
     if (_generData && _generData.princepsWithGeneric && _generData.princepsWithGeneric.indexOf(cip) >= 0) sig.push('<span class="ap-tag" style="color:#0E7C86;background:#E5F4F5;border:1px solid #B8E0E3">générique dispo</span>');
     var mo = V2.momentum ? V2.momentum(cip) : null;
     if (mo != null) sig.push('<span class="ap-tag" style="color:' + (mo > 0 ? 'var(--c-opp)' : '#a8651a') + ';background:var(--card-2,#F6F8FB);border:1px solid var(--line)">momentum ' + (mo > 0 ? '▲' : '▼') + '</span>');
+    // ── Ce que dit le marché France, à côté de ce que disent nos ventes ──
+    // Volontairement AFFICHÉ, jamais appliqué : la quantité à commander reste calculée
+    // sur nos ventes. Notre part varie de 0,035 % à 73 % selon le produit (mesuré le
+    // 12/08/2026) — une cible nationale posée en plancher gonflerait les commandes sur
+    // les 1 567 références où nous sommes sous 0,05 %. L'acheteur voit l'écart et tranche.
+    var marcheLine = '';
+    try {
+      var cb = cibleNationale(cip, new Date().getMonth() + 1);
+      if (cb && cb.unites) {
+        var ecart = cb.unites - (o.st || 0);
+        var teinte = o.unk ? '#6B7280' : (ecart > 0 ? '#B02A37' : '#1F7A3D');
+        var verdict = o.unk
+          ? 'stock inconnu — écart non calculable'
+          : (ecart > 0 ? 'il manquerait ' + fmt(ecart) + ' u' : 'vous êtes au-dessus de la cible');
+        marcheLine = '<div class="tk-h">Ce que dit le marché France</div>' +
+          '<div class="tk-nat"><div><b>' + fmt(cb.unites) + ' u</b><span>cible pour ce mois</span></div>' +
+          '<div><b>' + fmt(o.st || 0) + ' u</b><span>votre stock</span></div>' +
+          '<div><b style="color:' + teinte + '">' + verdict + '</b><span>part utilisée : ' +
+          (cb.part * 100).toFixed(2).replace('.', ',') + ' % (' + esc(cb.libelle) + ')' +
+          (cb.indice >= 1.15 ? ' · saison ×' + cb.indice.toFixed(2).replace('.', ',') : '') +
+          '</span></div></div>' +
+          '<div class="tk-natf">Calculé sans vos données, sauf le stock. <b>Indicatif</b> : la quantité ' +
+          'proposée plus haut reste celle de vos ventes réelles.</div>';
+      }
+    } catch (e) { marcheLine = ''; }
+
     var net = p ? p.net : o.ppht, rpct = p ? p.rpct : 0;
     var kpis = '<div class="tk-kpis">' +
       '<div class="tk-kpi"><b>' + (o.cov >= 9999 ? 'jamais' : Math.round(o.cov) + ' j') + '</b><span>couverture</span></div>' +
@@ -1071,7 +1243,7 @@
       (sig.length ? '<div class="tk-sig">' + sig.join(' ') + '</div>' : '') +
       kpis + priceLine + proj +
       '<div class="tk-h">Demande réseau (6 mois)</div>' + spark +
-      sitesHtml + '</div>';
+      marcheLine + sitesHtml + '</div>';
     var el = document.getElementById('appro-ticket');
     if (!el) { el = document.createElement('div'); el.id = 'appro-ticket'; el.className = 'tk-ov'; el.onclick = function (e) { if (e.target === el) V2.approTicketClose(); }; document.body.appendChild(el); }
     el.innerHTML = html; el.style.display = 'flex';
@@ -1738,7 +1910,10 @@
       } else {
         var horsH = '';
         try { horsH = horsCatalogueCard(); } catch (e) { horsH = ''; }
-        content = (horsH ? secHead('Développement de gamme', 'ce que le modèle national voit et que vos ventes ne peuvent pas voir') + horsH : '') +
+        var posH = '';
+        try { posH = positionMarcheCard(); } catch (e) { posH = ''; }
+        content = (posH ? secHead('Besoins &amp; offre — la vue d’ensemble', 'le marché français sur votre périmètre, et la place que vous y tenez') + posH : '') +
+          (horsH ? secHead('Développement de gamme', 'ce que le modèle national voit et que vos ventes ne peuvent pas voir') + horsH : '') +
           secHead('Intelligence marché') +
           card('spark', 'Ça monte', 'produits en croissance, présents dans le réseau — à renforcer au stock', risRows, 'var(--c-opp)') +
           '<div class="ap-grid2">' +
@@ -1846,6 +2021,29 @@
       '.ap-hlab{font-size:13px;font-weight:800;color:var(--ip-ink);margin-top:5px}' +
       '.ap-hsub{font-size:11px;color:var(--muted);font-weight:600;margin-top:1px}' +
       '.ap-nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;position:sticky;top:0;z-index:10;background:var(--bg,#EEF1F6);padding:8px 0}' +
+      // Vue macro « Besoins & offre » — fonds opaques uniquement, aucun effet de flou
+      // ni de transparence calculée (règle Safari §5 : le Mac de Will fige).
+      '.pm-kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:2px 0 12px}' +
+      '.pm-k{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px 13px}' +
+      '.pm-k b{display:block;font-size:23px;font-weight:900;line-height:1.15;letter-spacing:-.4px}' +
+      '.pm-k span{display:block;margin-top:4px;font-size:11.5px;color:var(--muted);line-height:1.35}' +
+      '.pm-hl{background:var(--bg);border:1px solid var(--line);border-left:4px solid var(--ip-blue);' +
+        'border-radius:10px;padding:12px 14px;margin:0 0 14px}' +
+      // `>b` et non `b` : sinon un <b> de mise en valeur DANS le texte passe en bloc et
+      // part à la ligne comme un titre (vu à la capture, invisible pour les tests).
+      '.pm-hl>b{display:block;font-size:15px;line-height:1.35;margin-bottom:5px}' +
+      '.pm-hl small{display:block;font-size:11.5px;color:var(--muted);line-height:1.5}' +
+      '.pm-hl small b{font-weight:800;color:var(--text,#111)}' +
+      '.pm-sub{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;' +
+        'color:var(--muted);margin:14px 0 6px;padding-top:11px;border-top:1px solid var(--line)}' +
+      '@media(max-width:640px){.pm-kpi{grid-template-columns:1fr}.pm-k b{font-size:20px}}' +
+      // Avis du marché dans le ticket de commande — fonds pleins, cohérent avec .tk-*
+      '.tk-nat{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:2px 0 6px}' +
+      '.tk-nat>div{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 10px}' +
+      '.tk-nat b{display:block;font-size:15px;font-weight:900;line-height:1.25}' +
+      '.tk-nat span{display:block;margin-top:3px;font-size:10.5px;color:var(--muted);line-height:1.35}' +
+      '.tk-natf{font-size:11px;color:var(--muted);line-height:1.45;margin:0 0 10px}' +
+      '@media(max-width:640px){.tk-nat{grid-template-columns:1fr}}' +
       '.ap-navb{flex:1;min-width:120px;font-size:13.5px;font-weight:800;color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:11px;padding:10px 8px;cursor:pointer;transition:.15s}' +
       '.ap-navb:hover{border-color:#C9D2E0}.ap-navb.on{background:var(--ip-blue);color:#fff;border-color:var(--ip-blue)}' +
       '@media(max-width:640px){.ap-hero{grid-template-columns:1fr 1fr}.ap-navb{min-width:0;font-size:12.5px;padding:9px 4px}}' +
