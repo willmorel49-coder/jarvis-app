@@ -260,3 +260,69 @@ test('repli : un seuil impose par l appelant n est jamais degrade', () => {
   assert.equal(r.seuil, 0.9);
   assert.equal(r.lignes.length, 0);
 });
+
+// ── Suivi d'effet : ce que l'officine a COMMENCE a prendre ─────────
+// Le mois de premiere commande suffit : pas besoin d'enregistrer quoi que ce
+// soit cote serveur, le fichier mensuel de Will porte deja la preuve.
+const VENTES_M = [
+  { pharmacyId: 'G1', artCode: 'AAA', mois: 1, mntNetHt: 100, qte: 1 },
+  { pharmacyId: 'G1', artCode: 'AAA', mois: 4, mntNetHt: 90, qte: 1 },
+  { pharmacyId: 'G1', artCode: 'BBB', mois: 5, mntNetHt: 60, qte: 1 },  // entree en mai
+  { pharmacyId: 'G1', artCode: 'CCC', mois: 6, mntNetHt: 30, qte: 1 },  // entree en juin
+  { pharmacyId: 'G2', artCode: 'AAA', mois: 2, mntNetHt: 50, qte: 1 },
+];
+
+test('index : le mois de PREMIERE commande est retenu, pas le dernier', () => {
+  const idx = M.indexer(OFFICINES, VENTES_M);
+  assert.equal(idx.premierMois.G1.AAA, 1);
+  assert.equal(idx.premierMois.G1.BBB, 5);
+  assert.equal(idx.moisMax, 6, 'le dernier mois du fichier doit etre connu');
+});
+
+test('suivi : distingue ce qui est entre en commande depuis la proposition', () => {
+  const idx = M.indexer(OFFICINES, VENTES_M);
+  // Proposition faite quand le fichier s'arretait a avril : BBB (mai) et
+  // CCC (juin) sont entres depuis ; AAA etait deja pris ; DDD n'a jamais bouge.
+  const r = M.suiviProposition(idx, 'G1', ['AAA', 'BBB', 'CCC', 'DDD'], 4);
+  assert.deepEqual(r.entres.map((x) => x.cip), ['BBB', 'CCC']);
+  assert.deepEqual(r.enAttente, ['DDD']);
+  assert.deepEqual(r.dejaPris, ['AAA']);
+  assert.equal(r.total, 4);
+});
+
+test('suivi : rien de neuf tant que le fichier n a pas avance', () => {
+  const idx = M.indexer(OFFICINES, VENTES_M);
+  const r = M.suiviProposition(idx, 'G1', ['BBB', 'CCC'], 6);
+  assert.deepEqual(r.entres, []);
+  assert.equal(r.moisRecus, 0, 'aucun mois nouveau depuis la proposition');
+});
+
+test('suivi : le nombre de mois ecoules depuis la proposition est rendu', () => {
+  const idx = M.indexer(OFFICINES, VENTES_M);
+  assert.equal(M.suiviProposition(idx, 'G1', ['BBB'], 4).moisRecus, 2);
+});
+
+test('suivi : officine inconnue rend un suivi vide, pas une erreur', () => {
+  const idx = M.indexer(OFFICINES, VENTES_M);
+  const r = M.suiviProposition(idx, 'INEXISTANTE', ['AAA'], 1);
+  assert.equal(r.total, 1);
+  assert.deepEqual(r.entres, []);
+  assert.deepEqual(r.enAttente, ['AAA']);
+});
+
+test('nouveautes : ce que l officine a commence a prendre recemment', () => {
+  const idx = M.indexer(OFFICINES, VENTES_M);
+  const n = M.nouveautesOfficine(idx, 'G1', 5);
+  assert.deepEqual(n.map((x) => x.cip), ['CCC', 'BBB'], 'du plus recent au plus ancien');
+  assert.equal(n[0].mois, 6);
+});
+
+test('index : le champ mois s appelle `month` dans l app, `mois` dans les tests', () => {
+  // v2-boot.js construit V2.sales avec `month`. Si le moteur ne lisait que
+  // `mois`, le suivi d'effet serait vide en production sans qu'un test le voie.
+  const idx = M.indexer(OFFICINES, [
+    { pharmacyId: 'G1', artCode: 'ZZZ', month: 3, mntNetHt: 10, qte: 1 },
+  ]);
+  assert.equal(idx.premierMois.G1.ZZZ, 3);
+  assert.equal(idx.moisMax, 3);
+});

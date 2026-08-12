@@ -166,6 +166,56 @@
     return '';
   }
 
+  // ── Mémoire des propositions ───────────────────────────────────
+  // On n'enregistre PAS une date mais le dernier mois présent dans les
+  // données au moment de la proposition : le fichier mensuel arrive avec du
+  // retard, c'est son avancement qui dit si un produit est entré depuis.
+  function propsCharger() {
+    try {
+      var b = JSON.parse(localStorage.getItem('produits.propositions'));
+      return Array.isArray(b) ? b : [];
+    } catch (e) { return []; }
+  }
+  function propsEnregistrer(lignes) {
+    if (S.mode === 'surmesure' || !S.ph || !lignes.length) return;   // prospect : rien à suivre
+    var M = window.V2PRODUITS, idx = V2.produits.index();
+    if (!M || !idx) return;
+    var cips = [], i;
+    for (i = 0; i < lignes.length; i++) cips.push(String(lignes[i].cip));
+    var liste = propsCharger();
+    liste.unshift({
+      ph: String(S.ph), nom: nomOfficine(), cips: cips,
+      moisBase: idx.moisMax || 0,
+      date: new Date().toISOString().slice(0, 10)
+    });
+    try { localStorage.setItem('produits.propositions', JSON.stringify(liste.slice(0, 50))); } catch (e) {}
+  }
+  function jourCourt(iso) {
+    var p = String(iso || '').split('-');
+    return p.length === 3 ? p[2] + '/' + p[1] : String(iso || '');
+  }
+
+  function suiviHtml() {
+    if (S.mode !== 'vendeur' || !S.ph) return '';
+    var M = window.V2PRODUITS, idx = V2.produits.index();
+    if (!M || !idx || !M.suiviProposition) return '';
+    var liste = propsCharger(), i, out = '';
+    for (i = 0; i < liste.length && out.length < 3000; i++) {
+      var p = liste[i];
+      if (String(p.ph) !== String(S.ph)) continue;
+      var r = M.suiviProposition(idx, S.ph, p.cips, p.moisBase);
+      var phrase = r.moisRecus <= 0
+        ? 'en attente du prochain fichier de ventes'
+        : '<strong>' + num(r.entres.length) + ' produit' + (r.entres.length > 1 ? 's' : '') +
+          '</strong> sur ' + num(r.total) + ' sont entrés en commande depuis';
+      out += '<div class="pr-suivi">' +
+        '<b>Proposition du ' + esc(jourCourt(p.date)) + '</b> · ' + phrase +
+        (r.dejaPris.length ? ' <em>(' + num(r.dejaPris.length) + ' déjà pris avant)</em>' : '') +
+        '</div>';
+    }
+    return out;
+  }
+
   function panierHtml() {
     var n = selNb();
     if (!n) return '';
@@ -290,6 +340,7 @@
           '<span class="pr-ctx-n">' + num(lignes.length) + ' produits</span>' +
         '</div>' +
         noteSeuil +
+        suiviHtml() +
         '<button class="v2-btn v2-btn-primary pr-pdf" onclick="V2.produits.pdf()">Sortir le PDF</button>' +
         '<div class="pr-source">ventes réseau jan.–juin 2026</div>' +
       '</div>' +
@@ -815,6 +866,7 @@
   V2.produits.propositionPdf = function () {
     var r = V2.produits.propositionHtml();
     if (r.erreur) { if (V2.toast) V2.toast(r.erreur); return; }
+    propsEnregistrer(propositionLignes());
     ouvrirImpression(r.html);
   };
 
@@ -833,6 +885,7 @@
     corps += '\nTotal : ' + (V2.fmtEur ? V2.fmtEur(propositionTotal(lignes)) : '') +
       ' hors taxes.\nProduits disponibles ce jour, sous réserve des stocks.\n\n' +
       'Bien à vous,\n';
+    propsEnregistrer(lignes);
     var sujet = 'Proposition Intégral Pharma' + (nom ? ' — ' + nom : '');
     window.location.href = 'mailto:?subject=' + encodeURIComponent(sujet) +
       '&body=' + encodeURIComponent(corps);
@@ -1031,6 +1084,9 @@
       '.pr-defile .pr-chip{flex:none}',
       '.sm-plier{display:flex;flex-direction:column;align-items:flex-start;gap:3px;width:100%;min-height:44px;margin:10px 0;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--paper);font:600 14px/1.2 Inter,sans-serif;color:var(--ip-blue);cursor:pointer;text-align:left}',
       '.sm-plier em{font:400 12px/1.3 Inter,sans-serif;color:var(--muted);font-style:normal}',
+      '.pr-suivi{margin-top:8px;padding:8px 10px;border-radius:8px;background:rgba(30,158,106,.10);border:1px solid rgba(30,158,106,.30);font:400 13px/1.4 Inter,sans-serif;color:var(--ip-ink)}',
+      '.pr-suivi b{font-weight:700}',
+      '.pr-suivi em{font-style:normal;color:var(--muted)}',
       '.pr-add{margin-top:10px;width:100%;min-height:44px;border-radius:10px;border:1px dashed var(--ip-blue);background:transparent;color:var(--ip-blue);font:600 14px/1 Inter,sans-serif;cursor:pointer}',
       '.pr-qte{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:10px}',
       '.pr-panier{position:sticky;bottom:8px;z-index:40;display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px;padding:12px;border-radius:14px;background:var(--ip-blue);color:#fff;box-shadow:0 6px 22px rgba(0,80,230,.28)}',
