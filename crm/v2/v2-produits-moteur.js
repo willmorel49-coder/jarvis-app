@@ -237,6 +237,70 @@
     return out;
   };
 
+  // ── Liste sur mesure (prospect) ────────────────────────────────
+  // Un prospect n'a aucun historique chez nous : la comparaison aux confrères
+  // ne s'applique pas. On part du catalogue et on compose par quotas.
+
+  // Abandon de marge Intégral, barème par tranche (ROBOT.md §10).
+  // On prend le BARÈME, pas le net moyen réellement pratiqué : à un prospect
+  // on annonce ce à quoi il a droit, pas la moyenne négociée d'un autre.
+  M.bareme = function (ppht) {
+    ppht = +ppht || 0;
+    if (ppht <= 4.33) return 0.18;
+    if (ppht <= 468) return Math.round(ppht * 0.0389 * 100) / 100;
+    return 19.50;
+  };
+  // Seuls les princeps portent un abandon de marge. Génériques, NR et
+  // biosimilaires : net = tarif, aucun abandon, jamais de chiffre inventé.
+  M.porteAbandon = function (fam) { return String(fam || '').indexOf('pr_') === 0; };
+
+  M.FAMILLES = ['pr_low', 'pr_mid', 'pr_high', 'nr', 'gen', 'biosim'];
+
+  M.listeSurMesure = function (produits, opts) {
+    opts = opts || {};
+    var quotas = opts.quotas || {};
+    var abandonMin = opts.abandonMin || {};
+    var sansRupture = !!opts.sansRupture;
+    produits = produits || [];
+
+    var parFam = {}, dispo = {}, i, f;
+    for (i = 0; i < M.FAMILLES.length; i++) { parFam[M.FAMILLES[i]] = []; dispo[M.FAMILLES[i]] = 0; }
+
+    for (i = 0; i < produits.length; i++) {
+      var p = produits[i];
+      f = String(p.fam || '');
+      if (!parFam[f]) continue;                       // famille inconnue : ignorée
+      if (!(+p.stock > 0)) continue;                  // jamais ce qu'on ne peut pas livrer
+      if (sansRupture && p.rupture) continue;
+
+      var ppht = +p.ppht || 0;
+      var porte = M.porteAbandon(f) && ppht > 0;
+      var ab = porte ? M.bareme(ppht) : null;
+      var pct = porte ? (ab / ppht) * 100 : null;
+      // Un seuil d'abandon posé sur une famille qui n'en porte pas ne filtre
+      // rien : sinon régler « ≥ 5 % » viderait les génériques sans raison.
+      if (porte && abandonMin[f] != null && pct < +abandonMin[f]) continue;
+
+      dispo[f] += 1;
+      parFam[f].push({
+        cip: p.cip, fam: f, n: +p.n || 0, ppht: ppht, stock: +p.stock || 0,
+        rupture: !!p.rupture, abandon: ab, abandonPct: pct,
+        net: porte ? Math.round((ppht - ab) * 100) / 100 : ppht
+      });
+    }
+
+    var lignes = [];
+    for (i = 0; i < M.FAMILLES.length; i++) {
+      f = M.FAMILLES[i];
+      var q = +quotas[f] || 0;
+      if (q <= 0) continue;
+      // « Top » = le plus d'officines du réseau qui nous le prennent.
+      parFam[f].sort(function (a, b) { return b.n - a.n; });
+      lignes = lignes.concat(parFam[f].slice(0, q));
+    }
+    return { lignes: lignes, dispo: dispo };
+  };
+
   if (typeof module !== 'undefined' && module.exports) module.exports = M;
   else glob.V2PRODUITS = M;
 })(typeof window !== 'undefined' ? window : this);

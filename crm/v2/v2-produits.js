@@ -33,7 +33,8 @@
 
   var S = {
     mode: 'vendeur', ph: null, fam: 'all', q: '', sansRupture: false, page: 0,
-    grp: 'all', horsStock: false
+    grp: 'all', horsStock: false,
+    sm: null   // composition de la liste sur mesure, chargée au 1er rendu
   };
   var PAR_PAGE = 40;
 
@@ -320,35 +321,217 @@
       '</div>';
   }
 
+  // ── Mode Sur mesure : la « best list » d'un prospect ───────────
+  // Un prospect n'a aucun historique chez nous : pas de comparaison aux
+  // confrères possible. On part du catalogue et on compose par quotas,
+  // ajustables en direct devant le pharmacien.
+  var PRESETS = {
+    decouverte: { l: 'Découverte', q: { pr_low: 50, pr_mid: 20, pr_high: 5, nr: 10, gen: 20, biosim: 0 }, a: { pr_low: 8 } },
+    petitsprix: { l: 'Petits prix', q: { pr_low: 80, pr_mid: 0, pr_high: 0, nr: 0, gen: 0, biosim: 0 }, a: { pr_low: 8 } },
+    large:      { l: 'Large', q: { pr_low: 40, pr_mid: 40, pr_high: 10, nr: 30, gen: 40, biosim: 10 }, a: {} }
+  };
+  // Le réglage d'abandon n'a de sens que là où il discrimine : sur la tranche
+  // médiane le barème donne 3,89 % à tout le monde, et les NR / génériques /
+  // biosimilaires n'en portent aucun.
+  var REGLE_ABANDON = { pr_low: 1, pr_high: 1 };
+  var PALIERS_ABANDON = [0, 4, 6, 8, 10, 15];
+
+  function smDefaut() {
+    var p = PRESETS.decouverte;
+    return { quotas: JSON.parse(JSON.stringify(p.q)), abandonMin: JSON.parse(JSON.stringify(p.a)), nom: '' };
+  }
+  function smCharger() {
+    try {
+      var b = JSON.parse(localStorage.getItem('produits.surmesure'));
+      if (b && b.quotas) return b;
+    } catch (e) {}
+    return smDefaut();
+  }
+  function smSauver() {
+    try { localStorage.setItem('produits.surmesure', JSON.stringify(S.sm)); } catch (e) {}
+  }
+
+  // Catalogue au format attendu par le moteur, construit une fois.
+  function catalogue() {
+    if (V2.produits._cat) return V2.produits._cat;
+    var PS = window.PROD_STATS || [], ST = stockIP();
+    var R = (window.RUPTURES && window.RUPTURES.data) || {};
+    var out = [], i;
+    for (i = 0; i < PS.length; i++) {
+      var r = PS[i], c = String(r.c);
+      out.push({ cip: c, fam: r.f, n: +r.n || 0, ppht: +r.ppht || 0,
+                 stock: +ST[c] || 0, rupture: !!R[c] });
+    }
+    V2.produits._cat = out;
+    return out;
+  }
+
+  V2.produits.smQuota = function (fam, delta) {
+    var v = (+S.sm.quotas[fam] || 0) + delta;
+    S.sm.quotas[fam] = Math.max(0, Math.min(300, v));
+    S.page = 0; smSauver(); V2.render();
+  };
+  V2.produits.smQuotaSet = function (fam, v) {
+    var n = parseInt(String(v).replace(/\D/g, ''), 10);
+    S.sm.quotas[fam] = isNaN(n) ? 0 : Math.max(0, Math.min(300, n));
+    S.page = 0; smSauver(); V2.render();
+  };
+  V2.produits.smAbandon = function (fam, v) {
+    var n = parseFloat(v);
+    if (!n) delete S.sm.abandonMin[fam]; else S.sm.abandonMin[fam] = n;
+    S.page = 0; smSauver(); V2.render();
+  };
+  V2.produits.smPreset = function (k) {
+    var p = PRESETS[k]; if (!p) return;
+    S.sm.quotas = JSON.parse(JSON.stringify(p.q));
+    S.sm.abandonMin = JSON.parse(JSON.stringify(p.a));
+    S.page = 0; smSauver(); V2.render();
+  };
+  var tn = null;
+  V2.produits.smNom = function (v) {
+    S.sm.nom = v || '';
+    if (tn) clearTimeout(tn);
+    tn = setTimeout(smSauver, 400);
+  };
+
+  function ligneComposeur(fam, dispo) {
+    var q = +S.sm.quotas[fam] || 0;
+    var manque = q > dispo;
+    var sel = '';
+    if (REGLE_ABANDON[fam]) {
+      var cur = S.sm.abandonMin[fam] || 0, i;
+      sel = '<select class="sm-ab" aria-label="Abandon de marge minimum" onchange="V2.produits.smAbandon(\'' + fam + '\',this.value)">';
+      for (i = 0; i < PALIERS_ABANDON.length; i++) {
+        var p = PALIERS_ABANDON[i];
+        sel += '<option value="' + p + '"' + (cur === p ? ' selected' : '') + '>' +
+               (p === 0 ? 'tous' : '≥ ' + p + ' %') + '</option>';
+      }
+      sel += '</select>';
+    } else {
+      sel = '<span class="sm-ab-non">—</span>';
+    }
+    return '' +
+      '<div class="sm-row">' +
+        '<div class="sm-fam"><span class="sm-dot" style="background:' + FAM[fam].c + '"></span>' +
+          esc(FAM[fam].l) +
+          '<em class="' + (manque ? 'sm-manque' : '') + '">' + num(dispo) + ' dispo</em>' +
+        '</div>' +
+        '<div class="sm-ctl">' +
+          '<button class="sm-b" aria-label="Moins" onclick="V2.produits.smQuota(\'' + fam + '\',-5)">–</button>' +
+          '<input class="sm-n" inputmode="numeric" value="' + q + '" onchange="V2.produits.smQuotaSet(\'' + fam + '\',this.value)">' +
+          '<button class="sm-b" aria-label="Plus" onclick="V2.produits.smQuota(\'' + fam + '\',5)">+</button>' +
+          sel +
+        '</div>' +
+      '</div>';
+  }
+
+  function ligneSurMesureHtml(l) {
+    var f = fiche(l.cip);
+    var lib = f && f.d ? f.d : ('CIP ' + l.cip);
+    var fam = FAM[l.fam];
+    var ab = l.abandon == null ? null : l.abandon;
+    return '' +
+      '<div class="pr-row">' +
+        '<div class="pr-lib">' + esc(lib) +
+          (fam ? '<span class="pr-fam" style="--fc:' + fam.c + '">' + esc(fam.l) + '</span>' : '') +
+          (l.rupture ? '<span class="pr-rupt">rupture ANSM</span>' : '') +
+        '</div>' +
+        '<div class="pr-arg">' +
+          '<strong>' + num(l.n) + ' pharmacies</strong> nous le prennent' +
+          (ab != null ? ' · <strong>+' + eur(ab) + ' par boîte</strong> pour le pharmacien (' +
+            (Math.round(l.abandonPct * 10) / 10).toString().replace('.', ',') + ' %)' : '') +
+        '</div>' +
+        '<div class="pr-chiffres">' +
+          chiffre(eur(l.net), 'prix net', 'pr-pot') +
+          chiffre(ab == null ? '—' : '+' + eur(ab), 'abandon de marge') +
+          chiffre(eur(l.ppht), 'tarif') +
+          chiffre(num(l.stock), 'en stock') +
+        '</div>' +
+      '</div>';
+  }
+
+  function rendreSurMesure() {
+    var M = window.V2PRODUITS;
+    if (!M || !M.listeSurMesure) return vide('Moteur indisponible', 'Le fichier v2-produits-moteur.js n\'est pas à jour.');
+    if (!(window.PROD_STATS || []).length) return vide('Catalogue indisponible', 'Les données produits ne sont pas chargées.');
+
+    var r = M.listeSurMesure(catalogue(), {
+      quotas: S.sm.quotas, abandonMin: S.sm.abandonMin, sansRupture: S.sansRupture
+    });
+    var lignes = filtrer(r.lignes);
+
+    var comp = '', i;
+    for (i = 0; i < M.FAMILLES.length; i++) comp += ligneComposeur(M.FAMILLES[i], r.dispo[M.FAMILLES[i]]);
+
+    var presets = '';
+    for (var k in PRESETS) {
+      if (!Object.prototype.hasOwnProperty.call(PRESETS, k)) continue;
+      presets += '<span class="pr-chip" onclick="V2.produits.smPreset(\'' + k + '\')">' + esc(PRESETS[k].l) + '</span>';
+    }
+
+    var visibles = lignes.slice(0, (S.page + 1) * PAR_PAGE), corps = '';
+    for (i = 0; i < visibles.length; i++) corps += ligneSurMesureHtml(visibles[i]);
+
+    return '' +
+      '<div class="pr-bandeau">' +
+        '<input class="pr-select sm-nom" placeholder="Nom de l\'officine (pour le PDF)" value="' +
+          escAttr(S.sm.nom) + '" oninput="V2.produits.smNom(this.value)">' +
+        '<div class="pr-chips sm-presets">' + presets + '</div>' +
+        '<div class="sm-grille">' + comp + '</div>' +
+        '<div class="pr-ctx">' +
+          '<span class="pr-ctx-pot">' + num(lignes.length) + ' produits dans la liste</span>' +
+        '</div>' +
+        '<button class="v2-btn v2-btn-primary pr-pdf" onclick="V2.produits.pdf()">Sortir le PDF</button>' +
+        '<div class="pr-source">catalogue Intégral · uniquement ce qui est en stock</div>' +
+      '</div>' +
+      filtresHtml() +
+      liste(lignes, visibles, corps);
+  }
+
   // ── PDF à laisser au pharmacien ────────────────────────────────
   // Impression navigateur sur un document dédié : aucune librairie, aucun
   // coût. CONTENU AUTORISÉ : produit, prix net, disponibilité. Le barème
   // d'abandon de marge et toute autre condition chiffrée en sont exclus.
   V2.produits.pdf = function () {
-    var M = window.V2PRODUITS, idx = V2.produits.index();
-    if (!M || !idx || !S.ph) { if (V2.toast) V2.toast('Choisis d\'abord une officine'); return; }
+    var M = window.V2PRODUITS, i;
+    if (!M) { if (V2.toast) V2.toast('Moteur indisponible'); return; }
 
-    var ph = null, phs = V2.pharmacies || [], i;
-    for (i = 0; i < phs.length; i++) if (String(phs[i].id) === String(S.ph)) ph = phs[i];
-    if (!ph) { if (V2.toast) V2.toast('Officine introuvable'); return; }
-
-    var lignes = filtrer(M.listingOfficine(idx, S.ph, { stock: stockIP() }).lignes).slice(0, 30);
+    var titre, lignes;
+    if (S.mode === 'surmesure') {
+      // Liste prospect : le net vient du barème, calculé par le moteur.
+      titre = (S.sm && S.sm.nom) ? S.sm.nom : 'Sélection Intégral Pharma';
+      lignes = filtrer(M.listeSurMesure(catalogue(), {
+        quotas: S.sm.quotas, abandonMin: S.sm.abandonMin, sansRupture: S.sansRupture
+      }).lignes);
+    } else {
+      var idx = V2.produits.index();
+      if (!idx || !S.ph) { if (V2.toast) V2.toast('Choisis d\'abord une officine'); return; }
+      var ph = null, phs = V2.pharmacies || [];
+      for (i = 0; i < phs.length; i++) if (String(phs[i].id) === String(S.ph)) ph = phs[i];
+      if (!ph) { if (V2.toast) V2.toast('Officine introuvable'); return; }
+      titre = ph.name;
+      lignes = filtrer(M.listingOfficine(idx, S.ph, { stock: stockIP() }).lignes);
+    }
+    lignes = lignes.slice(0, 60);
     if (!lignes.length) { if (V2.toast) V2.toast('Aucun produit à imprimer'); return; }
 
     var rows = '';
     for (i = 0; i < lignes.length; i++) {
-      var f = fiche(lignes[i].cip);
+      var l = lignes[i], f = fiche(l.cip);
+      // `net` est porté par la ligne en mode Sur mesure (barème), sinon lu
+      // dans PROD_STATS (net moyen réel du réseau).
+      var net = (l.net != null) ? l.net : (f && f.net > 0 ? f.net : null);
       rows += '<tr>' +
-        '<td>' + esc(f && f.d ? f.d : ('CIP ' + lignes[i].cip)) + '</td>' +
-        '<td class="n">' + esc(String(lignes[i].cip)) + '</td>' +
-        '<td class="n">' + (f && f.net > 0 ? eur(f.net) : '—') + '</td>' +
-        '<td class="n">' + (lignes[i].stock > 0 ? 'Disponible' : '—') + '</td>' +
+        '<td>' + esc(f && f.d ? f.d : ('CIP ' + l.cip)) + '</td>' +
+        '<td class="n">' + esc(String(l.cip)) + '</td>' +
+        '<td class="n">' + (net > 0 ? eur(net) : '—') + '</td>' +
+        '<td class="n">' + (l.stock > 0 ? 'Disponible' : '—') + '</td>' +
       '</tr>';
     }
 
     var jour = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
     var html = '<!doctype html><html lang="fr"><head><meta charset="utf-8">' +
-      '<title>Sélection produits — ' + esc(ph.name) + '</title><style>' +
+      '<title>Sélection produits — ' + esc(titre) + '</title><style>' +
       '@page{size:A4;margin:14mm}' +
       'body{font:12px/1.45 Inter,system-ui,sans-serif;color:#10131C;margin:0}' +
       'h1{font-size:19px;margin:0 0 2px;color:#0050E6}' +
@@ -360,7 +543,7 @@
       'td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}' +
       '.pied{margin-top:16px;font-size:10px;color:#8A93A6}' +
       '</style></head><body>' +
-      '<h1>Sélection produits — ' + esc(ph.name) + '</h1>' +
+      '<h1>Sélection produits — ' + esc(titre) + '</h1>' +
       '<div class="sub">Établie le ' + esc(jour) + ' · Intégral Pharma</div>' +
       '<table><thead><tr><th>Produit</th><th class="n">CIP</th>' +
       '<th class="n">Prix net</th><th class="n">Disponibilité</th></tr></thead>' +
@@ -395,8 +578,13 @@
             '" onclick="V2.produits.setMode(\'vendeur\')">Vendeur</button>' +
           '<button class="pr-mode' + (S.mode === 'achats' ? ' on' : '') +
             '" onclick="V2.produits.setMode(\'achats\')">Achats</button>' +
+          '<button class="pr-mode' + (S.mode === 'surmesure' ? ' on' : '') +
+            '" onclick="V2.produits.setMode(\'surmesure\')">Sur mesure</button>' +
         '</div>';
-      var corps = S.mode === 'vendeur' ? rendreVendeur() : rendreAchats();
+      if (!S.sm) S.sm = smCharger();
+      var corps = S.mode === 'vendeur' ? rendreVendeur()
+        : S.mode === 'achats' ? rendreAchats()
+        : rendreSurMesure();
       root.innerHTML =
         V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
         '<div class="v2-wrap pr-wrap">' +
@@ -449,6 +637,19 @@
       '.pr-plus{width:100%;min-height:44px;margin-top:8px}',
       '.pr-liens{display:flex;flex-wrap:wrap;gap:14px;margin-top:24px;padding-top:16px;border-top:1px solid var(--line)}',
       '.pr-liens a{font:500 13px/1 Inter,sans-serif;color:var(--muted);cursor:pointer;text-decoration:underline}',
+      '.sm-nom{margin-bottom:10px}',
+      '.sm-presets{margin-bottom:12px}',
+      '.sm-grille{display:flex;flex-direction:column;gap:8px}',
+      '.sm-row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:8px 0;border-top:1px solid var(--line)}',
+      '.sm-fam{display:flex;align-items:center;gap:7px;font:600 14px/1.3 Inter,sans-serif;color:var(--ip-ink);flex:1;min-width:150px}',
+      '.sm-dot{width:9px;height:9px;border-radius:50%;flex:none}',
+      '.sm-fam em{font:400 12px/1 Inter,sans-serif;color:var(--muted);font-style:normal;white-space:nowrap}',
+      '.sm-fam em.sm-manque{color:var(--c-rose);font-weight:600}',
+      '.sm-ctl{display:flex;align-items:center;gap:6px}',
+      '.sm-b{width:44px;min-height:44px;border-radius:10px;border:1px solid var(--line);background:var(--card);font:600 20px/1 Inter,sans-serif;color:var(--ip-ink);cursor:pointer}',
+      '.sm-n{width:56px;min-height:44px;text-align:center;font:600 16px/1 "Geist Mono",ui-monospace,monospace;border:1px solid var(--line);border-radius:10px;background:var(--paper);color:var(--ip-ink)}',
+      '.sm-ab{min-height:44px;font-size:16px;border-radius:10px;border:1px solid var(--line);background:var(--paper);color:var(--ip-ink);padding:0 6px}',
+      '.sm-ab-non{width:70px;text-align:center;color:var(--muted);font:400 13px/1 Inter,sans-serif}',
       '@media (max-width:430px){.pr-chiffres{grid-template-columns:repeat(2,1fr);gap:10px}}',
       '@media (prefers-reduced-motion: reduce){.pr-row,.pr-chip,.pr-mode{transition:none}}'
     ].join('\n');
