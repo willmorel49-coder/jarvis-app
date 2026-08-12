@@ -9,7 +9,7 @@
   'use strict';
   var M = {};
 
-  var STOP = '\n\n—\nVous ne souhaitez plus recevoir ces propositions ? Répondez simplement STOP\nà ce message, et nous ne vous écrirons plus.';
+  var STOP = '\n\n—\nVous ne souhaitez plus recevoir ces propositions ? Répondez STOP à ce message.';
   var CHIFFRE_PCT = /\d+(?:[.,]\d+)?\s*%/;
 
   function txt(v, repli) {
@@ -38,6 +38,14 @@
   // condition commerciale sur un support qui sort de la maison. On l'écarte.
   M.texteRefuse = function (t) { return CHIFFRE_PCT.test(String(t || '')); };
 
+  // ── Les trois motifs ─────────────────────────────────────────────
+  // Style choisi par Will le 12/08/2026 : le mélange des directions 3 et 4 de
+  // la galerie — le ton d'un mail écrit à la main, avec trois points en puces
+  // pour qu'il se lise en balayant.
+  //
+  // Conséquence assumée : PAS de gros bouton. C'est ce qui fait qu'un mail ne
+  // ressemble pas à un mailing, et c'était le trait qui définissait la
+  // direction 4. Le lien reste seul sur sa ligne, donc repérable.
   var MODELES = {
     bilan: {
       nom: 'Le bilan de son officine',
@@ -46,13 +54,15 @@
         var ca = eur(ctx.ca_annee), mq = eur(ctx.manque_a_gagne);
         var corps = salut(ctx) + '\n\n' +
           'J’ai repris le détail de ce que nous faisons ensemble' +
-          (ca ? ' : ' + ca + ' cette année' : '') + '.' +
-          (mq ? '\n\nEn regardant votre potentiel, je vois de la place pour aller chercher ' + mq +
-                ' de plus, sans rien changer à vos habitudes de commande.'
-              : '\n\nEn regardant votre potentiel, je vois de la place pour aller plus loin.') +
-          '\n\nJe vous montre ça en quinze minutes ? Choisissez le moment qui vous arrange :\n' +
+          (ca ? ', et j’aimerais vous le montrer' : ' et j’aimerais faire le point avec vous') +
+          '.\n\nTrois choses que je voudrais voir avec vous :\n\n' +
+          '• ' + (ca ? 'vos chiffres de l’année — ' + ca + ' à ce jour' : 'vos chiffres de l’année, ligne par ligne') + '\n' +
+          '• ' + (mq ? 'les ' + mq + ' que vous pourriez récupérer sans changer vos habitudes'
+                     : 'ce que vous pourriez récupérer sans changer vos habitudes') + '\n' +
+          '• les références en tension que nous avons en stock\n\n' +
+          'Quinze minutes suffisent. Je vous laisse choisir le moment :\n' +
           txt(ctx.lien) + signature(ctx) + STOP;
-        return { objet: 'Votre bilan · ' + txt(ctx.nom_officine, 'votre officine'), corps: corps };
+        return { objet: 'Vos chiffres, ' + txt(ctx.nom_officine, 'votre officine'), corps: corps };
       }
     },
     offre: {
@@ -63,9 +73,13 @@
         var refuse = M.texteRefuse(libre);
         if (refuse || !libre) libre = 'J’ai du nouveau à vous présenter.';
         var corps = salut(ctx) + '\n\n' + libre +
-          '\n\nJe passe prochainement dans votre secteur — dites-moi quand vous êtes disponible :\n' +
+          '\n\nJe passe dans votre secteur prochainement. Trois choses à voir ensemble :\n\n' +
+          '• la nouveauté en question, et ce qu’elle change pour vous\n' +
+          '• ce que vous faites déjà avec nous, chiffres à l’appui\n' +
+          '• les références en tension que nous avons en stock\n\n' +
+          'Plutôt que de tomber au mauvais moment, je vous laisse choisir :\n' +
           txt(ctx.lien) + '\n\nÇa prend dix secondes.' + signature(ctx) + STOP;
-        var out = { objet: 'Une nouveauté pour ' + txt(ctx.nom_officine, 'votre officine'), corps: corps };
+        var out = { objet: 'Du nouveau pour ' + txt(ctx.nom_officine, 'votre officine'), corps: corps };
         if (refuse) {
           out.avertissement = 'Ton texte contenait un pourcentage : il a été retiré. ' +
             'Les conditions commerciales ne s’écrivent pas dans un mail.';
@@ -79,11 +93,20 @@
       rendre: function (ctx) {
         var m = ctx.mois_derniere_visite;
         var corps = salut(ctx) + '\n\n' +
-          (m ? 'Cela fait ' + m + ' mois que nous ne nous sommes pas vus, et j’aimerais faire le point avec vous.'
-             : 'J’aimerais faire le point avec vous.') +
-          '\n\nPlutôt que de vous appeler en plein rush, choisissez vous-même le moment :\n' +
-          txt(ctx.lien) + '\n\nTrois créneaux vous seront proposés.' + signature(ctx) + STOP;
-        return { objet: 'Un moment pour se voir ?', corps: corps };
+          'Je passe dans le secteur prochainement et j’aimerais m’arrêter chez vous. ' +
+          (m ? 'Cela fait ' + m + ' mois que nous ne nous sommes pas vus.'
+             : 'Cela fait un moment que nous ne nous sommes pas vus.') +
+          '\n\nTrois choses que je voudrais voir avec vous :\n\n' +
+          '• ce que vous faites déjà avec nous, chiffres à l’appui\n' +
+          '• les références en tension que nous avons en stock\n' +
+          '• ce que vous pourriez récupérer sans changer vos habitudes\n\n' +
+          'Plutôt que de tomber au mauvais moment, je vous laisse choisir :\n' +
+          txt(ctx.lien) + '\n\nTrois créneaux vous seront proposés, ça prend dix secondes.' +
+          (txt(ctx.tel_commercial)
+            ? '\nEt si aucun ne vous va, appelez-moi, mon numéro est juste en dessous.'
+            : '') +
+          signature(ctx) + STOP;
+        return { objet: 'Je passe dans votre secteur', corps: corps };
       }
     }
   };
@@ -117,26 +140,47 @@
     var m = M.rendre(cle, ctx || {});
     var lien = txt((ctx || {}).lien);
     var lignes = m.corps.split('\n');
-    var out = [], i, l, dans = false;
+    var out = [], i, l, mode = '';   // '' | 'p' | 'ul'
 
-    // Le lien devient un vrai bouton ; le reste garde ses paragraphes.
+    function fermer() {
+      if (mode === 'p') out[out.length - 1] += '</p>';
+      if (mode === 'ul') out[out.length - 1] += '</ul>';
+      mode = '';
+    }
+
     for (i = 0; i < lignes.length; i++) {
       l = lignes[i];
-      if (lien && l.trim() === lien) {
-        out.push('<p style="margin:22px 0"><a href="' + h(lien) + '" ' +
-          'style="display:inline-block;padding:13px 22px;background:#0050E6;color:#ffffff;' +
-          'text-decoration:none;border-radius:8px;font-weight:700">Choisir un créneau</a></p>');
-        dans = false;
+
+      if (l.trim() === '') { fermer(); continue; }
+
+      // Le filet avant la mention de désinscription.
+      if (l.trim() === '—') {
+        fermer();
+        out.push('<hr style="border:0;border-top:1px solid #E3E8F0;margin:26px 0 14px" />');
         continue;
       }
-      if (l.trim() === '') { dans = false; continue; }
-      if (l.trim() === '—') { out.push('<hr style="border:0;border-top:1px solid #E3E8F0;margin:26px 0 14px" />'); dans = false; continue; }
-      if (!dans) { out.push('<p style="margin:0 0 14px">' + h(l)); dans = true; }
+
+      // Le lien, seul sur sa ligne. Volontairement PAS un bouton : c'est ce qui
+      // fait qu'un mail ne ressemble pas à un mailing (direction 4, choisie par
+      // Will). Il reste repérable parce qu'il est seul et coloré.
+      if (lien && l.trim() === lien) {
+        fermer();
+        out.push('<p style="margin:16px 0"><a href="' + h(lien) + '" ' +
+          'style="color:#0050E6;font-weight:600;word-break:break-all">' + h(lien) + '</a></p>');
+        continue;
+      }
+
+      // Une puce.
+      if (l.indexOf('• ') === 0) {
+        if (mode !== 'ul') { fermer(); out.push('<ul style="margin:0 0 14px;padding-left:22px">'); mode = 'ul'; }
+        out[out.length - 1] += '<li style="margin:6px 0">' + h(l.slice(2)) + '</li>';
+        continue;
+      }
+
+      if (mode !== 'p') { fermer(); out.push('<p style="margin:0 0 14px">' + h(l)); mode = 'p'; }
       else { out[out.length - 1] += '<br />' + h(l); }
     }
-    for (i = 0; i < out.length; i++) {
-      if (out[i].indexOf('<p') === 0 && out[i].indexOf('</p>') < 0) out[i] += '</p>';
-    }
+    fermer();
 
     return {
       objet: m.objet,
