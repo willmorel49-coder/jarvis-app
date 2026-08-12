@@ -122,13 +122,19 @@
   // le nom BRUT : on les réindexe sur le nom canonique normalisé.
   function logos() {
     if (V2.produits._logos) return V2.produits._logos;
-    var src = window.GRP_LOGOS || {}, out = {}, k;
-    for (k in src) {
-      if (!Object.prototype.hasOwnProperty.call(src, k)) continue;
-      var c = normCle(canonGrp(k));
-      if (c && !out[c]) out[c] = src[k];
-      var b = normCle(k);
-      if (b && !out[b]) out[b] = src[k];
+    // Deux sources : les logos historiques de wml-officines-data.js et le
+    // complément de grp-logos-plus.js (récupéré depuis les sites des
+    // groupements, puis filtré à l'œil — un mauvais logo est pire que rien).
+    var out = {}, k, srcs = [window.GRP_LOGOS || {}, window.GRP_LOGOS_PLUS || {}], si;
+    for (si = 0; si < srcs.length; si++) {
+      var src = srcs[si];
+      for (k in src) {
+        if (!Object.prototype.hasOwnProperty.call(src, k)) continue;
+        var c = normCle(canonGrp(k));
+        if (c && !out[c]) out[c] = src[k];
+        var b = normCle(k);
+        if (b && !out[b]) out[b] = src[k];
+      }
     }
     V2.produits._logos = out;
     return out;
