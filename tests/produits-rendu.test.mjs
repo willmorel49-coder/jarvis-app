@@ -150,6 +150,10 @@ test('achats : la couverture est en mois ou « — », jamais infinie', () => {
 });
 
 test('achats : « ce qu on n a pas » ne montre que du stock a zero', () => {
+  // Le corps du fichier bascule S.mode pour preparer les autres blocs et
+  // s'execute AVANT les tests : on repose le mode ici, sinon on rendrait
+  // une autre vue sans s'en apercevoir.
+  sb.V2.produits.S.mode = 'achats';
   sb.V2.produits.S.horsStock = true;
   const r = { innerHTML: '' };
   sb.V2.pages.produits.render(r, null);
@@ -160,4 +164,67 @@ test('achats : « ce qu on n a pas » ne montre que du stock a zero', () => {
     assert.equal(st, '0', `produit avec un stock de ${st} dans « ce qu on n a pas »`);
   }
   sb.V2.produits.S.horsStock = false;
+});
+
+// ── Mode Sur mesure (best list prospect) ───────────────────────────
+sb.V2.produits.S.mode = 'surmesure';
+const rootS = { innerHTML: '' };
+sb.V2.pages.produits.render(rootS, null);
+const hS = rootS.innerHTML;
+const blocsS = hS.split('<div class="pr-row">').slice(1);
+
+test('sur mesure : le composeur affiche les 6 categories', () => {
+  const fams = [...hS.matchAll(/class="sm-dot"[^>]*><\/span>\s*([^<]+)</g)].map((m) => m[1].trim());
+  assert.equal(fams.length, 6, `attendu 6 categories, obtenu ${fams.length}`);
+});
+
+test('sur mesure : le reglage d abandon n existe QUE la ou il discrimine', () => {
+  // Barème : 3,89 % partout sur la tranche mediane, aucun abandon sur NR /
+  // generiques / biosimilaires. Un curseur y serait un piege.
+  const selects = (hS.match(/class="sm-ab"/g) || []).length;
+  const neants = (hS.match(/class="sm-ab-non"/g) || []).length;
+  assert.equal(selects, 2, 'seuls petits prix et produits chers doivent avoir le reglage');
+  assert.equal(neants, 4);
+});
+
+test('sur mesure : le preset par defaut produit une liste peuplee', () => {
+  assert.ok(blocsS.length > 0, 'aucun produit dans la liste sur mesure');
+  assert.ok(/pharmacies<\/strong> nous le prennent/.test(hS), 'l argument prospect est absent');
+});
+
+test('sur mesure : le quota par categorie est respecte', () => {
+  const M = sb.V2PRODUITS;
+  const q = sb.V2.produits.S.sm.quotas;
+  const r = M.listeSurMesure(sb.V2.produits._cat, { quotas: q, abandonMin: sb.V2.produits.S.sm.abandonMin });
+  for (const f of M.FAMILLES) {
+    const n = r.lignes.filter((l) => l.fam === f).length;
+    assert.ok(n <= (q[f] || 0), `${f} : ${n} lignes pour un quota de ${q[f] || 0}`);
+  }
+  assert.equal(r.lignes.filter((l) => l.fam === 'biosim').length, 0,
+    'le preset Decouverte demande 0 biosimilaire');
+});
+
+test('REGLE METIER sur mesure : aucun abandon chiffre hors princeps', () => {
+  const fautifs = [];
+  for (const b of blocsS) {
+    const fam = (b.match(/class="pr-fam"[^>]*>([^<]+)</) || [])[1] || '';
+    if (/Princeps/.test(fam)) continue;
+    const ab = (b.match(/<span>([^<]*)<\/span><em>abandon de marge<\/em>/) || [])[1];
+    if (ab !== '—') fautifs.push(`${fam} → ${ab}`);
+  }
+  assert.deepEqual(fautifs, [], `lignes fautives : ${fautifs.join(' | ')}`);
+});
+
+test('sur mesure : 100 % des produits proposes sont en stock', () => {
+  for (const b of blocsS) {
+    const st = (b.match(/<span>([^<]*)<\/span><em>en stock<\/em>/) || [])[1];
+    assert.ok(parseInt(st.replace(/\D/g, ''), 10) > 0, `stock affiche : ${st}`);
+  }
+});
+
+test('sur mesure : les commandes se touchent au doigt (44 px)', () => {
+  for (const sel of ['.sm-b', '.sm-n', '.sm-ab']) {
+    const bloc = styles[0].split(sel + '{')[1] || '';
+    assert.ok(/min-height:44px/.test(bloc.slice(0, 220)), `${sel} sous 44 px`);
+  }
 });
