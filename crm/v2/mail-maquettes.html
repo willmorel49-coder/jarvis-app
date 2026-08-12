@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>Mails de prise de rendez-vous — 6 directions</title>
+<style>
+  :root{
+    --paper:#FBFCFE; --card:#FFFFFF; --line:#E3E8F0; --ink:#10131C; --muted:#5B6577;
+    --blue:#0050E6; --blue-d:#0040B8; --vert:#0F7A52;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);
+       font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  .wrap{max-width:900px;margin:0 auto;padding:28px 18px 80px}
+  h1{font-size:clamp(24px,4vw,34px);font-weight:800;letter-spacing:-.03em;margin:0 0 8px}
+  .intro{color:var(--muted);font-size:15px;max-width:62ch;margin:0 0 8px}
+  .intro b{color:var(--ink)}
+  .rappel{background:#FFF8E6;border:1px solid #F0DFAE;border-radius:12px;padding:12px 14px;
+          font-size:14px;line-height:1.55;margin:18px 0 30px}
+
+  .num{display:flex;align-items:baseline;gap:10px;margin:38px 0 4px}
+  .num .n{width:34px;height:34px;flex:0 0 auto;border-radius:10px;background:var(--blue);color:#fff;
+          display:flex;align-items:center;justify-content:center;font-weight:800;font-size:17px}
+  .num h2{font-size:19px;font-weight:800;margin:0;letter-spacing:-.01em}
+  .quoi{color:var(--muted);font-size:14px;margin:0 0 14px 44px;max-width:62ch}
+
+  .mail{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;
+        box-shadow:0 1px 2px rgba(16,19,28,.04)}
+  .objet{padding:11px 16px;border-bottom:1px solid var(--line);background:#F7F9FC;font-size:13.5px}
+  .objet span{color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-size:11px;
+              font-weight:800;margin-right:8px}
+  .corps{padding:22px 20px}
+  .corps p{margin:0 0 13px}
+  .corps p:last-child{margin-bottom:0}
+  .cta{display:inline-block;padding:13px 22px;background:var(--blue);color:#fff!important;
+       text-decoration:none;border-radius:8px;font-weight:700;margin:8px 0}
+  .sig{margin-top:22px;padding-top:14px;border-top:1px solid var(--line);font-size:14.5px;line-height:1.5}
+  .sig b{display:block}
+  .sig span{color:var(--muted)}
+  .stop{margin-top:18px;padding-top:12px;border-top:1px solid var(--line);
+        color:var(--muted);font-size:12.5px;line-height:1.5}
+  .puces{margin:0 0 13px;padding-left:20px}
+  .puces li{margin:5px 0}
+  .gros{font-size:30px;font-weight:800;letter-spacing:-.02em;line-height:1.2;margin:0 0 2px}
+  .gros small{display:block;font-size:14px;font-weight:600;color:var(--muted);letter-spacing:0}
+  .bandeau{height:5px;background:var(--blue)}
+  .entete{padding:16px 20px 0;font-size:13px;color:var(--muted)}
+  .entete b{color:var(--ink);font-size:15px;display:block;letter-spacing:-.01em}
+  .lettre-h{font-size:14px;color:var(--muted);margin:0 0 18px;line-height:1.5}
+  .encadre{border-left:3px solid var(--blue);background:#F5F8FF;padding:12px 14px;
+           border-radius:0 8px 8px 0;margin:0 0 15px}
+  .encadre b{color:var(--blue-d)}
+
+  .brut{margin-top:10px}
+  .brut summary{cursor:pointer;color:var(--blue);font-size:13.5px;font-weight:600;
+                min-height:44px;display:flex;align-items:center}
+  .brut pre{white-space:pre-wrap;word-break:break-word;background:#F7F9FC;border:1px solid var(--line);
+            border-radius:10px;padding:14px;font:13.5px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;
+            margin:0;color:var(--ink)}
+  .fin{margin-top:50px;padding:18px;background:var(--card);border:1px solid var(--line);
+       border-radius:14px;font-size:15px;line-height:1.6}
+  @media (max-width:520px){ .quoi{margin-left:0} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Le mail de prise de rendez-vous</h1>
+  <p class="intro">Six directions, avec <b>le même contenu</b> à chaque fois, pour que tu compares
+     la forme et non le fond. Officine, chiffres et prénom sont des exemples.</p>
+  <p class="intro">Dis-moi <b>un numéro</b> — ou « le 3 mais la signature du 6 ».</p>
+
+  <div class="rappel">
+    <b>À savoir avant de choisir.</b> Quand JARVIS ouvre ta messagerie tout seul, il ne peut envoyer
+    que du <b>texte brut</b> : c'est une limite du système, pas un réglage. Les directions ci-dessous
+    s'obtiennent avec le bouton <b>« Copier le mail mis en forme »</b>, que tu colles dans Outlook.
+    Chaque direction montre donc aussi sa version texte — replie-la pour voir ce que ça donne
+    dans les deux cas.
+  </div>
+
+  <!-- ═══ 1 ═══ -->
+  <div class="num"><div class="n">1</div><h2>Sobre et direct</h2></div>
+  <p class="quoi">Quatre lignes, une question, un bouton. Le pari : un pharmacien lit son mail entre
+     deux clients — moins il y a de mots, plus il répond.</p>
+  <div class="mail">
+    <div class="objet"><span>Objet</span>Un moment pour se voir ?</div>
+    <div class="corps">
+      <p>Bonjour Madame Durand,</p>
+      <p>J'aimerais faire le point avec vous sur votre officine. Quinze minutes suffisent.</p>
+      <p>Plutôt que de vous appeler en plein rush, choisissez vous-même le moment :</p>
+      <p><a class="cta" href="#">Choisir un créneau</a></p>
+      <div class="sig"><b>William Morel</b><span>Intégral Pharma · 06 12 34 56 78</span></div>
+      <div class="stop">Vous ne souhaitez plus recevoir ces propositions ? Répondez STOP à ce message.</div>
+    </div>
+  </div>
+  <details class="brut"><summary>Voir la version texte</summary><pre>Bonjour Madame Durand,
+
+J'aimerais faire le point avec vous sur votre officine. Quinze minutes suffisent.
+
+Plutôt que de vous appeler en plein rush, choisissez vous-même le moment :
+https://rdv.integralpharma.fr/rdv/william
+
+Bien à vous,
+
+William Morel
+Intégral Pharma
+06 12 34 56 78
+
+—
+Vous ne souhaitez plus recevoir ces propositions ? Répondez STOP à ce message.</pre></details>
+
+  <!-- ═══ 2 ═══ -->
+  <div class="num"><div class="n">2</div><h2>Le chiffre en premier</h2></div>
+  <p class="quoi">On ouvre sur le montant, comme un rapport. Le pari : ce qui retient un chef
+     d'entreprise, c'est un chiffre qui le concerne, pas une formule de politesse.</p>
+  <div class="mail">
+    <div class="objet"><span>Objet</span>PHARMACIE DU MARCHÉ — votre bilan 2026</div>
+    <div class="corps">
+      <p>Bonjour Madame Durand,</p>
+      <div class="encadre">
+        <div class="gros">48 200 €<small>ce que nous avons fait ensemble cette année</small></div>
+      </div>
+      <p>En regardant votre potentiel, je vois de la place pour aller chercher <b>12 400 € de plus</b>,
+         sans rien changer à vos habitudes de commande.</p>
+      <p>Je vous montre le détail en quinze minutes ?</p>
+      <p><a class="cta" href="#">Choisir un créneau</a></p>
+      <div class="sig"><b>William Morel</b><span>Intégral Pharma · 06 12 34 56 78</span></div>
+      <div class="stop">Vous ne souhaitez plus recevoir ces propositions ? Répondez STOP à ce message.</div>
+    </div>
+  </div>
+  <details class="brut"><summary>Voir la version texte</summary><pre>Bonjour Madame Durand,
+
+48 200 € — c'est ce que nous avons fait ensemble cette année.
+
+En regardant votre potentiel, je vois de la place pour aller chercher
+12 400 € de plus, sans rien changer à vos habitudes de commande.
+
+Je vous montre le détail en quinze minutes ?
+https://rdv.integralpharma.fr/rdv/william
+
+Bien à vous,
+
+William Morel
+Intégral Pharma
+06 12 34 56 78
+
+—
+Vous ne souhaitez plus recevoir ces propositions ? Répondez STOP à ce message.</pre></details>
+
+  <!-- ═══ 3 ═══ -->
+  <div class="num"><div class="n">3</div><h2>Scannable en cinq secondes</h2></div>
+  <p class="quoi">Trois points, trois lignes. Le pari : le pharmacien ne lit pas, il balaie —
+     autant lui donner des points d'accroche.</p>
+  <div class="mail">
+    <div class="objet"><span>Objet</span>Quinze minutes pour faire le point ?</div>
+    <div class="corps">
+      <p>Bonjour Madame Durand,</p>
+      <p>Trois choses que j'aimerais voir avec vous :</p>
+      <ul class="puces">
+        <li>ce que vous faites déjà avec nous, chiffres à l'appui ;</li>
+        <li>les références en tension que nous avons en stock ;</li>
+        <li>ce que vous pourriez récupérer sans changer vos habitudes.</li>
+      </ul>
+      <p>Quinze minutes, au moment qui vous arrange :</p>
+      <p><a class="cta" href="#">Choisir un créneau</a></p>
+      <div class="sig"><b>William Morel</b><span>Intégral Pharma · 06 12 34 56 78</span></div>
+      <div class="stop">Vous ne souhaitez plus recevoir ces propositions ? Répondez STOP à ce message.</div>
+    </div>
+  </div>
+  <details class="brut"><summary>Voir la version texte</summary><pre>Bonjour Madame Durand,
+
+Trois choses que j'aimerais voir avec vous :
+
+• ce que vous faites déjà avec nous, chiffres à l'appui
+• les références en tension que nous avons en stock
+• ce que vous pourriez récupérer sans changer vos habitudes
+
+Quinze minutes, au moment qui vous arrange :
+https://rdv.integralpharma.fr/rdv/william
+
+Bien à vous,
+
+William Morel
+Intégral Pharma
+06 12 34 56 78
+
+—
+Vous ne souhaitez plus recevoir ces propositions ? Répondez STOP à ce message.</pre></details>
+
+  <!-- ═══ 4 ═══ -->
+  <div class="num"><div class="n">4</div><h2>Écrit à la main</h2></div>
+  <p class="quoi">Aucun bouton, aucune mise en forme : un mail qu'un humain aurait tapé.
+     Le pari : ça ne ressemble pas à un mailing, donc ça se lit et ça se répond.</p>
+  <div class="mail">
+    <div class="objet"><span>Objet</span>Je passe dans votre secteur</div>
+    <div class="corps">
+      <p>Bonjour Madame Durand,</p>
+      <p>Je passe dans le secteur la semaine prochaine et j'aimerais m'arrêter chez vous.
+         Cela fait un moment que nous ne nous sommes pas vus.</p>
+      <p>Plutôt que de tomber au mauvais moment, je vous laisse choisir :
+         <a href="#">rdv.integralpharma.fr/rdv/william</a> — trois créneaux vous seront proposés,
+         ça prend dix secondes.</p>
+      <p>Et si aucun ne vous va, appelez-moi directement au 06 12 34 56 78.</p>
+      <div class="sig"><b>William Morel</b><span>Intégral Pharma</span></div>
+      <div class="stop">Vous ne souhaitez plus recevoir ces propositions ? Répondez STOP à ce message.</div>
+    </div>
+  </div>
+  <details class="brut"><summary>Voir la version texte</summary><pre>Bonjour Madame Durand,
+
+Je passe dans le secteur la semaine prochaine et j'aimerais m'arrêter chez vous.
+Cela fait un moment que nous ne nous sommes pas vus.
+
+Plutôt que de tomber au mauvais moment, je vous laisse choisir :
+https://rdv.integralpharma.fr/rdv/william
+
+Trois créneaux vous seront proposés, ça prend dix secondes.
+Et si aucun ne vous va, appelez-moi directement au 06 12 34 56 78.
+
+Bien à vous,
+
+William Morel
+Intégral Pharma
+
+—
+Vous ne souhaitez plus recevoir ces propositions ? Répondez STOP à ce message.</pre></details>
+
+  <!-- ═══ 5 ═══ -->
+  <div class="num"><div class="n">5</div><h2>Papier à en-tête</h2></div>
+  <p class="quoi">Un filet aux couleurs d'Intégral, le nom de la maison en haut, le ton d'un courrier.
+     Le pari : ça pose l'entreprise avant la personne.</p>
+  <div class="mail">
+    <div class="bandeau"></div>
+    <div class="entete"><b>Intégral Pharma</b>Groupe de grossistes-répartiteurs</div>
+    <div class="objet" style="margin-top:14px"><span>Objet</span>Proposition de rendez-vous — PHARMACIE DU MARCHÉ</div>
+    <div class="corps">
+      <p class="lettre-h">À l'attention de Madame Durand<br />Pharmacie du Marché — Nantes</p>
+      <p>Madame,</p>
+      <p>Je souhaiterais convenir d'un rendez-vous afin de faire le point sur votre activité
+         et sur ce que nous pouvons vous apporter cette année.</p>
+      <p>Afin de ne pas vous déranger au mauvais moment, je vous laisse choisir le créneau
+         qui vous convient :</p>
+      <p><a class="cta" href="#">Choisir un créneau</a></p>
+      <p>Je reste à votre disposition d'ici là.</p>
+      <div class="sig"><b>William Morel</b><span>Intégral Pharma · 06 12 34 56 78</span></div>
+      <div class="stop">Vous ne souhaitez plus recevoir ces propositions ? Répondez STOP à ce message.</div>
+    </div>
+  </div>
+  <details class="brut"><summary>Voir la version texte</summary><pre>INTÉGRAL PHARMA
+Groupe de grossistes-répartiteurs
+
+À l'attention de Madame Durand
+Pharmacie du Marché — Nantes
+
+Madame,
+
+Je souhaiterais convenir d'un rendez-vous afin de faire le point sur votre
+activité et sur ce que nous pouvons vous apporter cette année.
+
+Afin de ne pas vous déranger au mauvais moment, je vous laisse choisir le
+créneau qui vous convient :
+https://rdv.integralpharma.fr/rdv/william
+
+Je reste à votre disposition d'ici là.
+
+Bien à vous,
+
+William Morel
+Intégral Pharma
+06 12 34 56 78
+
+—
+Vous ne souhaitez plus recevoir ces propositions ? Répondez STOP à ce message.</pre></details>
+
+  <!-- ═══ 6 ═══ -->
+  <div class="num"><div class="n">6</div><h2>Une seule question</h2></div>
+  <p class="quoi">Trois lignes, pas une de plus. Le pari : le mail le plus court est celui qui obtient
+     une réponse — on garde les arguments pour le rendez-vous.</p>
+  <div class="mail">
+    <div class="objet"><span>Objet</span>Un créneau la semaine prochaine ?</div>
+    <div class="corps">
+      <p>Bonjour Madame Durand,</p>
+      <p>Auriez-vous quinze minutes pour moi la semaine prochaine ?</p>
+      <p><a class="cta" href="#">Choisir un créneau</a></p>
+      <div class="sig"><b>William Morel</b><span>Intégral Pharma · 06 12 34 56 78</span></div>
+      <div class="stop">Vous ne souhaitez plus recevoir ces propositions ? Répondez STOP à ce message.</div>
+    </div>
+  </div>
+  <details class="brut"><summary>Voir la version texte</summary><pre>Bonjour Madame Durand,
+
+Auriez-vous quinze minutes pour moi la semaine prochaine ?
+https://rdv.integralpharma.fr/rdv/william
+
+Bien à vous,
+
+William Morel
+Intégral Pharma
+06 12 34 56 78
+
+—
+Vous ne souhaitez plus recevoir ces propositions ? Répondez STOP à ce message.</pre></details>
+
+  <div class="fin">
+    <b>Ce que je te conseille de regarder</b>, dans l'ordre : est-ce que <b>tu</b> répondrais à ce mail
+    si tu étais pharmacien ? Est-ce que l'objet donne envie de l'ouvrir ? Est-ce que la signature
+    inspire confiance ?<br /><br />
+    Donne-moi un numéro, ou un mélange. Je peux aussi en refaire trois autres si aucune ne va —
+    dans ce cas, montre-moi un mail que tu trouves bien fait, ça vaut mieux que des mots.
+  </div>
+
+</div>
+</body>
+</html>
