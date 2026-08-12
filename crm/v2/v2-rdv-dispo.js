@@ -13,6 +13,19 @@
   var NOMS = { '1': 'Lundi', '2': 'Mardi', '3': 'Mercredi', '4': 'Jeudi', '5': 'Vendredi' };
   var MOMENTS = { matin: 'matin', apres_midi: 'après-midi', journee: 'toute la journée' };
 
+  // Géocodage gratuit et sans clé — le même service que la carte et la tournée.
+  // Ne rejette jamais : sans coordonnées, on enregistre quand même le texte.
+  function geocoder(q) {
+    return fetch('https://data.geopf.fr/geocodage/search?limit=1&q=' + encodeURIComponent(q))
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        var f = j && j.features && j.features[0];
+        if (!f || !f.geometry) return {};
+        return { lat: f.geometry.coordinates[1], lon: f.geometry.coordinates[0] };
+      })
+      .catch(function () { return {}; });
+  }
+
   function sb() { return (V2.sb && V2.sb()) || null; }
   function uid() { return (V2.user && V2.user.id) || null; }
   function defaut() { return JSON.parse(JSON.stringify(window.V2RDV.DEFAUT_DISPO)); }
@@ -98,14 +111,32 @@
         V2.toast('Garde au moins un jour travaillé, sinon personne ne pourra réserver.');
         return;
       }
-      c.from('rdv_dispo').upsert({
-        user_id: u, jours: jours,
-        duree_min: parseInt(val('rd-duree'), 10) || 45,
-        marge_route_min: parseInt(val('rd-marge'), 10) || 15,
-        tel: val('rd-tel') || null,
-        maj_le: new Date().toISOString()
-      }, { onConflict: 'user_id' }).then(function (r) {
-        V2.toast(r.error ? 'Enregistrement impossible.' : 'Disponibilités enregistrées.');
+      // Le point de départ est saisi en clair (« Nantes ») : on le convertit en
+      // coordonnées avant d'enregistrer, sinon le moteur ne peut rien en faire.
+      // Si le géocodage échoue, on garde le texte SANS coordonnées — le moteur
+      // se comporte alors comme avant plutôt que d'écarter des journées sur un
+      // point faux. Et on le dit au commercial.
+      var depart = (val('rd-depart') || '').trim();
+      var avant = depart ? geocoder(depart) : Promise.resolve({ vide: true });
+
+      avant.then(function (g) {
+        return c.from('rdv_dispo').upsert({
+          user_id: u, jours: jours,
+          duree_min: parseInt(val('rd-duree'), 10) || 45,
+          marge_route_min: parseInt(val('rd-marge'), 10) || 15,
+          tel: val('rd-tel') || null,
+          depart_label: depart || null,
+          depart_lat: (g && g.lat != null) ? g.lat : null,
+          depart_lon: (g && g.lon != null) ? g.lon : null,
+          maj_le: new Date().toISOString()
+        }, { onConflict: 'user_id' }).then(function (r) {
+          if (r.error) { V2.toast('Enregistrement impossible.'); return; }
+          if (depart && (!g || g.lat == null)) {
+            V2.toast('Enregistré, mais « ' + depart + ' » est introuvable : le temps de route depuis chez toi ne sera pas compté.');
+          } else {
+            V2.toast('Disponibilités enregistrées.');
+          }
+        });
       });
     },
 
@@ -184,6 +215,12 @@
               esc(d.marge_route_min || 15) + '" /><small>minutes entre deux RDV</small></div>' +
             '<div><b>Mon téléphone</b><input type="tel" id="rd-tel" value="' + esc(d.tel || '') +
               '" placeholder="06 12 34 56 78" /><small>donné au pharmacien en cas d’empêchement</small></div>' +
+            '<div><b>Je pars de</b><input type="text" id="rd-depart" value="' + esc(d.depart_label || '') +
+              '" placeholder="Nantes" /><small>' +
+              (d.depart_lat != null
+                ? 'le temps de route depuis chez toi est pris en compte'
+                : 'sans ça, on peut te proposer 9 h à 300 km') +
+              '</small></div>' +
           '</div>' +
 
           '<div class="v2-rdvd-actions">' +
