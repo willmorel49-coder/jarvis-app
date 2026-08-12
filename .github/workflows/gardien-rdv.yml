@@ -1,0 +1,39 @@
+name: Gardien de la prise de rendez-vous
+
+# Robot GRATUIT, aucune clé : il rejoue chaque matin ce qu'un pharmacien fait
+# vraiment — ouvrir un lien, voir des créneaux — et échoue si quoi que ce soit
+# casse. GitHub envoie alors un mail à Will.
+#
+# Pourquoi il existe : le 12/08/2026, Pascale a reçu dans son CRM un lien qui
+# menait à un 404, et les mails de campagne partaient avec une adresse coupée
+# en deux. Personne ne l'a su avant qu'un humain essaie. La brique que voient
+# les pharmaciens était la seule qui n'était pas surveillée.
+#
+# Ce robot n'écrit RIEN dans le dépôt : il ne fait que constater. Un gardien
+# qui modifie ce qu'il surveille finit par masquer les pannes.
+
+on:
+  schedule:
+    # Le cron GitHub est « best effort » : minutes non rondes, et deux passages
+    # pour que la journée ne dépende pas d'un seul déclenchement.
+    - cron: '41 5 * * *'    # ~07h41 Paris (été)
+    - cron: '13 12 * * *'   # ~14h13 Paris — filet si le matin est sauté
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gardien-rdv
+  cancel-in-progress: false
+
+jobs:
+  controler:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Rejouer le parcours du pharmacien
+        run: python3 scripts/verifier-rdv.py
