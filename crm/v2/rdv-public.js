@@ -6,7 +6,10 @@
 (function () {
   'use strict';
   var app = document.getElementById('app');
-  var token = new URLSearchParams(window.location.search).get('t') || '';
+  var params = new URLSearchParams(window.location.search);
+  var token = params.get('t') || '';        // lien de campagne : usage unique, officine connue
+  var ctoken = params.get('c') || '';       // lien permanent d'un commercial : officine à déclarer
+  var moi = null;                           // l'officine déclarée sur le lien permanent
   var sb = null;
   var F = null;      // la fenêtre renvoyée par rdv_fenetre
   var JOURS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
@@ -36,8 +39,14 @@
 
   function demarrer() {
     if (!window.supabase || !window.supabase.createClient) { secours(INDISPO); return; }
-    if (!token) { secours('Ce lien est incomplet.'); return; }
+    if (!token && !ctoken) { secours('Ce lien est incomplet.'); return; }
     if (!sb) sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+    // Lien permanent : on ne sait pas encore QUI réserve. Or toute la
+    // cohérence géographique repose sur la position de l'officine — sans
+    // elle, on proposerait Brest et Nantes le même matin. On la demande
+    // donc avant d'afficher le moindre créneau.
+    if (ctoken && !moi) { formulaireOfficine(); return; }
+    if (ctoken) { fenetrePublique(); return; }
     // On demande d'abord une relève de l'agenda du commercial, puis on lit la
     // fenêtre. La relève se protège elle-même (une fois toutes les 10 minutes
     // au plus) et ne peut PAS faire échouer la page : si l'agenda est muet,
@@ -63,9 +72,69 @@
     }).catch(function () { secours(INDISPO); });
   }
 
+  // ─── Lien permanent : qui êtes-vous ? ────────────────────────────
+  function formulaireOfficine() {
+    app.innerHTML = carte(
+      '<h1>Prendre rendez-vous</h1>' +
+      '<p>Deux informations, et vous voyez les créneaux disponibles.</p>' +
+      '<label for="of">Nom de votre officine</label>' +
+      '<input id="of" autocomplete="organization" placeholder="Pharmacie du Marché" />' +
+      '<label for="cp">Code postal</label>' +
+      '<input id="cp" inputmode="numeric" maxlength="5" autocomplete="postal-code" placeholder="44000" />' +
+      '<p style="margin-top:18px"><button class="btn" id="ok">Voir les créneaux</button></p>' +
+      '<p id="err" style="color:#C7283D;margin-top:12px"></p>');
+    var b = document.getElementById('ok');
+    b.addEventListener('click', function () {
+      var nom = (document.getElementById('of').value || '').trim();
+      var cp = (document.getElementById('cp').value || '').trim();
+      var e = document.getElementById('err');
+      if (nom.length < 2) { e.textContent = 'Indiquez le nom de votre officine.'; return; }
+      if (!/^[0-9]{5}$/.test(cp)) { e.textContent = 'Le code postal doit avoir 5 chiffres.'; return; }
+      b.disabled = true; b.textContent = 'Un instant…';
+      // Le code postal sert à placer l'officine sur la carte, donc à ne
+      // proposer que des créneaux que le commercial peut réellement tenir.
+      fetch('https://data.geopf.fr/geocodage/search?limit=1&type=municipality&q=' + encodeURIComponent(cp))
+        .then(function (r) { return r.json(); })
+        .then(function (j) {
+          var f = j && j.features && j.features[0];
+          var g = (f && f.geometry) ? f.geometry.coordinates : null;
+          moi = {
+            nom: nom, cp: cp,
+            ville: (f && f.properties && f.properties.city) || '',
+            // Sans coordonnées on continue quand même : le pharmacien verra
+            // simplement des créneaux moins bien calés. Mieux qu'une impasse.
+            lat: g ? g[1] : null, lon: g ? g[0] : null
+          };
+          fenetrePublique();
+        })
+        .catch(function () { moi = { nom: nom, cp: cp, ville: '', lat: null, lon: null }; fenetrePublique(); });
+    });
+  }
+
+  function fenetrePublique() {
+    app.innerHTML = carte('<p>Chargement des créneaux…</p>');
+    relever().then(function () {
+      return sb.rpc('rdv_fenetre_publique', { p_token: ctoken, p_lat: moi.lat, p_lon: moi.lon });
+    }).then(function (r) {
+      if (r.error) { secours(INDISPO); return; }
+      F = r.data || {};
+      if (!F.ok) {
+        secours(F.raison === 'ferme'
+          ? 'Ce lien de réservation est fermé pour le moment.'
+          : 'Ce lien n’est pas valide.');
+        return;
+      }
+      F.officine = { nom: moi.nom, lat: moi.lat, lon: moi.lon, ville: moi.ville };
+      afficherCreneaux();
+    }).catch(function () { secours(INDISPO); });
+  }
+
   // Demande au serveur de relire l'agenda du commercial. Ne rejette jamais :
   // l'agenda est un confort, la réservation doit marcher sans lui.
   function relever() {
+    // La relève s'autorise avec un jeton de rendez-vous. Le lien permanent
+    // n'en a pas : on saute, plutôt que d'appeler pour se faire refuser.
+    if (!token) return Promise.resolve();
     return new Promise(function (fini) {
       var stop = setTimeout(fini, 6000);   // on n'attend pas un agenda lent
       fetch(window.SUPABASE_URL + '/functions/v1/agenda', {
@@ -104,7 +173,16 @@
               esc(hhh(c)) + '</button>';
           }).join('') + '</div></div>';
       });
-      h += carte('<button class="lien" id="pref">Aucun ne me convient →</button>');
+      // « Aucun ne me convient » enregistre une préférence rattachée au jeton
+      // de campagne. Le lien permanent n'en a pas : on propose le téléphone
+      // du commercial plutôt qu'un bouton qui échouerait au clic.
+      var cm = F.commercial || {};
+      h += carte(ctoken
+        ? (cm.tel
+            ? 'Aucun créneau ne vous convient ? Appelez ' + esc(cm.prenom) +
+              ' au <a href="tel:' + esc(numero(cm.tel)) + '">' + esc(cm.tel) + '</a>.'
+            : 'Aucun créneau ne vous convient ? Répondez à son mail, il vous rappellera.')
+        : '<button class="lien" id="pref">Aucun ne me convient →</button>');
     }
     app.innerHTML = h;
     Array.prototype.forEach.call(app.querySelectorAll('.cr'), function (b) {
@@ -128,11 +206,20 @@
       var b = this;
       function rendre() { b.disabled = false; b.textContent = 'Confirmer ce rendez-vous'; }
       b.disabled = true; b.textContent = 'Enregistrement…';
-      sb.rpc('rdv_poser', {
-        p_token: token, p_date: date, p_heure: heure,
-        p_nom: document.getElementById('nom').value || '',
-        p_tel: document.getElementById('tel').value || ''
-      }).then(function (r) {
+      var appel = ctoken
+        ? sb.rpc('rdv_poser_public', {
+            p_token: ctoken, p_date: date, p_heure: heure,
+            p_officine: moi.nom, p_cp: moi.cp, p_ville: moi.ville,
+            p_nom: document.getElementById('nom').value || '',
+            p_tel: document.getElementById('tel').value || '',
+            p_lat: moi.lat, p_lon: moi.lon
+          })
+        : sb.rpc('rdv_poser', {
+            p_token: token, p_date: date, p_heure: heure,
+            p_nom: document.getElementById('nom').value || '',
+            p_tel: document.getElementById('tel').value || ''
+          });
+      appel.then(function (r) {
         if (r.error) { rendre(); secours('Enregistrement impossible. Merci de réessayer.'); return; }
         var d = r.data || {};
         if (!d.ok) {
