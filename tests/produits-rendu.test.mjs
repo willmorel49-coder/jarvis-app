@@ -34,7 +34,7 @@ sb.globalThis = sb;
 vm.createContext(sb);
 
 vm.runInContext(
-  ['groupement-alias.js', 'wml-officines-data.js', 'stock-data.js', 'prod-stats-data.js',
+  ['groupement-alias.js', 'grp-logos-plus.js', 'wml-officines-data.js', 'stock-data.js', 'prod-stats-data.js',
    'ruptures-data.js', 'generiqueurs-data.js', 'biosimilaires-data.js', '../marketing-offers.js']
     .map(lire).join('\n;\n') +
   '\n;window.WML_OFFICINES = typeof WML_OFFICINES !== "undefined" ? WML_OFFICINES : window.WML_OFFICINES;' +
@@ -613,4 +613,28 @@ test('client : la ligne porte AUSSI le compteur clients IP', () => {
   const r = { innerHTML: '' };
   sb.V2.pages.produits.render(r, null);
   assert.ok(/clients IP/.test(r.innerHTML), 'le compteur clients IP manque en mode Client');
+});
+
+test('logos : le complement est bien fusionne avec les logos historiques', () => {
+  // grp-logos-plus.js apporte 17 logos verifies a l oeil ; ils doivent se
+  // retrouver dans le meme index que ceux de wml-officines-data.js.
+  assert.ok(sb.window.GRP_LOGOS_PLUS, 'le complement n est pas charge');
+  const nPlus = Object.keys(sb.window.GRP_LOGOS_PLUS).length;
+  assert.ok(nPlus >= 15, `attendu au moins 15 logos, obtenu ${nPlus}`);
+  // OPSO Sante venait du complement : il doit s afficher en image, pas en initiales.
+  sb.V2.produits.S.mode = 'groupement';
+  sb.V2.produits.S.grp = 'OPSO Santé';
+  const r = { innerHTML: '' };
+  sb.V2.pages.produits.render(r, null);
+  // Le grand format ajoute une classe : ne pas ancrer sur le guillemet.
+  assert.ok(/class="pr-logo[^"]*"><img/.test(r.innerHTML),
+    'OPSO Sante devrait afficher un vrai logo, pas des initiales');
+});
+
+test('logos : un groupement sans logo garde sa pastille d initiales', () => {
+  sb.V2.produits.S.mode = 'groupement';
+  sb.V2.produits.S.grp = 'Apothical';   // ecarte faute de site connu
+  const r = { innerHTML: '' };
+  sb.V2.pages.produits.render(r, null);
+  assert.ok(/pr-logo-x/.test(r.innerHTML), 'le repli en initiales a disparu');
 });
