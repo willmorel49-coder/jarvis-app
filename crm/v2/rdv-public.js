@@ -50,7 +50,11 @@
       if (r.error) { secours(INDISPO); return; }
       F = r.data || {};
       if (!F.ok) {
-        if (F.raison === 'consomme') { secours('Ce rendez-vous est déjà confirmé. Merci !'); return; }
+        // Rendez-vous déjà pris : au lieu d'un message sec, on lui montre SON
+        // rendez-vous et on lui laisse la main. C'est la fonction n°1 de
+        // Calendly, et un pharmacien qui ne peut pas décaler ne prévient pas :
+        // il ne vient pas.
+        if (F.raison === 'consomme') { revoirMonRdv(); return; }
         if (F.raison === 'expire') { secours('Ce lien a expiré.'); return; }
         secours('Ce lien n’est pas valide.');
         return;
@@ -161,6 +165,44 @@
         window.V2ICS.dataUrl(ics) + '">Ajouter à mon agenda</a></p>' +
       (c.tel ? '<p style="margin-top:14px">Un empêchement ? Appelez ' + esc(c.prenom) +
         ' au <a href="tel:' + esc(numero(c.tel)) + '">' + esc(c.tel) + '</a>.</p>' : ''));
+  }
+
+  // Le pharmacien revient sur son lien après avoir réservé.
+  function revoirMonRdv() {
+    sb.rpc('rdv_mon_rdv', { p_token: token }).then(function (r) {
+      var d = (r && r.data) || {};
+      if (!d.ok || !d.rdv) { secours('Ce rendez-vous est déjà confirmé. Merci !'); return; }
+      var v = d.rdv, c = d.commercial || {};
+      var ics = window.V2ICS.build({
+        uid: v.id, date: v.date, heure: v.heure, duree_min: v.duree_min,
+        titre: 'Rendez-vous ' + (c.prenom || '') + ' · Intégral Pharma',
+        lieu: v.adresse, description: 'Rendez-vous pris depuis le lien reçu par mail.',
+        organisateur: c.prenom || 'Intégral Pharma'
+      });
+      app.innerHTML = carte(
+        '<h1>Votre rendez-vous</h1>' +
+        '<p class="ok">' + esc(libelle(v.date)) + ' à ' + esc(hhh(v.heure)) + '.</p>' +
+        '<p>' + esc(c.prenom || 'Votre commercial') + ' vous attend à ' + esc(v.nom) + '.</p>' +
+        '<p style="margin-top:18px"><a class="btn" download="rendez-vous.ics" href="' +
+          window.V2ICS.dataUrl(ics) + '">Ajouter à mon agenda</a></p>' +
+        '<p style="margin-top:16px"><button class="lien" id="annul">' +
+          'Annuler ou choisir un autre créneau</button></p>' +
+        (c.tel ? '<p style="margin-top:14px">Ou appelez ' + esc(c.prenom) +
+          ' au <a href="tel:' + esc(numero(c.tel)) + '">' + esc(c.tel) + '</a>.</p>' : ''));
+      document.getElementById('annul').addEventListener('click', annuler);
+    }).catch(function () { secours('Ce rendez-vous est déjà confirmé. Merci !'); });
+  }
+
+  function annuler() {
+    var b = document.getElementById('annul');
+    if (b) { b.disabled = true; b.textContent = 'Annulation…'; }
+    sb.rpc('rdv_annuler', { p_token: token, p_motif: null }).then(function (r) {
+      var d = (r && r.data) || {};
+      if (!d.ok) { secours('Annulation impossible. Appelez votre commercial.'); return; }
+      // Le serveur a libéré le créneau ET réouvert le lien : on repart sur la
+      // liste des créneaux, pour qu'annuler serve surtout à décaler.
+      demarrer();
+    }).catch(function () { secours('Annulation impossible. Appelez votre commercial.'); });
   }
 
   function formulairePreference() {
