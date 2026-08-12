@@ -42,6 +42,21 @@
     if (!window.supabase || !window.supabase.createClient) { secours(INDISPO); return; }
     if (!token && !ctoken && !pslug) { secours('Ce lien est incomplet.'); return; }
     if (!sb) sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+    // Le lien du mail porte un CODE de 8 lettres, pas le jeton de 36 caractères :
+    // 101 caractères se coupaient en deux lignes dans un mail en texte brut, et
+    // le pharmacien atterrissait sur une adresse tronquée. On traduit ici.
+    if (token && token.length < 20) {
+      sb.rpc('rdv_code_token', { p_code: token }).then(function (r) {
+        var d = (r && r.data) || {};
+        if (!d.ok) {
+          secours(d.raison === 'expire' ? 'Ce lien a expiré.' : 'Ce lien n’est pas valide.');
+          return;
+        }
+        token = d.token;
+        demarrer();
+      }).catch(function () { secours(INDISPO); });
+      return;
+    }
     // Nom court (« william ») : on le traduit une fois en jeton, puis tout se
     // passe comme avec un lien permanent classique. Le jeton n'apparaît jamais
     // dans l'adresse — c'est ce qui permet de le remplacer sans changer le lien.
