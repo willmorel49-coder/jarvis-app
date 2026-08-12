@@ -163,8 +163,22 @@
       '<p class="sub">' + esc(F.commercial.prenom) + ' vous propose de passer à ' +
       esc(F.officine.nom) + '. Choisissez le moment qui vous arrange.</p>');
     if (!jours.length) {
-      h += carte('<p>Aucun créneau ne se libère dans les trois prochaines semaines.</p>' +
-        '<p><button class="btn" id="pref">Dites-moi vos préférences</button></p>');
+      // Sur le lien permanent, « Dites-moi vos préférences » enregistre une
+      // préférence rattachée à un jeton de campagne qui n'existe pas ici : le
+      // bouton échouerait au clic. Et le cas est fréquent — une officine loin
+      // du secteur du commercial ne rentre dans aucune journée. On explique
+      // pourquoi, et on donne son numéro.
+      var cx = F.commercial || {};
+      h += carte(ctoken
+        ? '<p>Aucun créneau ne se libère dans les trois prochaines semaines — ' +
+          'votre officine est peut-être hors du secteur que ' + esc(cx.prenom) +
+          ' couvre habituellement.</p>' +
+          (cx.tel
+            ? '<p style="margin-top:14px">Appelez-le au <a href="tel:' + esc(numero(cx.tel)) +
+              '">' + esc(cx.tel) + '</a>, il verra ce qu’il peut faire.</p>'
+            : '<p style="margin-top:14px">Répondez à son mail, il vous recontactera.</p>')
+        : '<p>Aucun créneau ne se libère dans les trois prochaines semaines.</p>' +
+          '<p><button class="btn" id="pref">Dites-moi vos préférences</button></p>');
     } else {
       jours.forEach(function (j) {
         h += '<div class="carte"><p class="jour">' + esc(libelle(j.date)) + '</p><div class="creneaux">' +
