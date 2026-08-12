@@ -43,7 +43,8 @@
   };
 
   M.indexer = function (officines, ventes) {
-    var idx = { officines: {}, netParOfficine: {}, qteParCip: {}, cles: {}, membres: {} };
+    var idx = { officines: {}, netParOfficine: {}, qteParCip: {}, cles: {}, membres: {},
+                premierMois: {}, moisMax: 0 };
     var i, o, id;
 
     officines = officines || [];
@@ -76,6 +77,16 @@
       var m = idx.netParOfficine[ph] || (idx.netParOfficine[ph] = {});
       m[cip] = (m[cip] || 0) + (+v.mntNetHt || 0);
       idx.qteParCip[cip] = (idx.qteParCip[cip] || 0) + (+v.qte || 0);
+      // Mois de PREMIERE commande : c'est lui qui dit si une reference vient
+      // d'entrer chez l'officine. Le fichier mensuel de Will porte la preuve,
+      // aucune trace serveur n'est necessaire.
+      // v2-boot nomme le champ `month`, les tests `mois` : on accepte les deux.
+      var mo = +(v.mois != null ? v.mois : v.month) || 0;
+      if (mo > 0) {
+        var pm = idx.premierMois[ph] || (idx.premierMois[ph] = {});
+        if (pm[cip] === undefined || mo < pm[cip]) pm[cip] = mo;
+        if (mo > idx.moisMax) idx.moisMax = mo;
+      }
     }
     return idx;
   };
@@ -337,6 +348,42 @@
       lignes = lignes.concat(parFam[f].slice(0, q));
     }
     return { lignes: lignes, dispo: dispo };
+  };
+
+  // ── Suivi d'effet ──────────────────────────────────────────────
+  // `moisBase` = dernier mois present dans les donnees AU MOMENT de la
+  // proposition. On ne compare pas a une date : le fichier arrive avec du
+  // retard, et c'est son avancement qui fait foi.
+  M.suiviProposition = function (idx, phId, cips, moisBase) {
+    cips = cips || [];
+    moisBase = +moisBase || 0;
+    var pm = (idx.premierMois || {})[String(phId)] || {};
+    var entres = [], enAttente = [], dejaPris = [], i;
+    for (i = 0; i < cips.length; i++) {
+      var c = String(cips[i]), m = pm[c];
+      if (m === undefined) enAttente.push(c);
+      else if (m > moisBase) entres.push({ cip: c, mois: m });
+      else dejaPris.push(c);
+    }
+    entres.sort(function (a, b) { return a.mois - b.mois; });
+    return {
+      total: cips.length, entres: entres, enAttente: enAttente, dejaPris: dejaPris,
+      moisRecus: Math.max(0, (idx.moisMax || 0) - moisBase)
+    };
+  };
+
+  // Ce que l'officine a commence a prendre depuis un mois donne, sans qu'on
+  // lui ait rien propose : la mesure marche meme sans proposition enregistree.
+  M.nouveautesOfficine = function (idx, phId, depuisMois) {
+    var pm = (idx.premierMois || {})[String(phId)] || {};
+    depuisMois = +depuisMois || 0;
+    var out = [], c;
+    for (c in pm) {
+      if (!Object.prototype.hasOwnProperty.call(pm, c)) continue;
+      if (pm[c] >= depuisMois) out.push({ cip: c, mois: pm[c] });
+    }
+    out.sort(function (a, b) { return b.mois - a.mois || (a.cip < b.cip ? -1 : 1); });
+    return out;
   };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = M;
