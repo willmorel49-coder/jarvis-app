@@ -90,6 +90,40 @@ select has_table_privilege('authenticated','public.<table>','select') as commerc
 
 Vécu le 10/08/2026 sur les 5 tables `rdv*`.
 
+**Et `service_role` est logé à la même enseigne — en pire.** Il contourne la RLS
+mais **pas les droits de table**. Une fonction serveur qui l'utilise ne reçoit
+alors **aucune erreur** : juste une liste vide. Symptôme vécu le 11/08/2026 —
+la fonction `agenda` répondait « jeton inconnu » sur un jeton parfaitement
+valide, pendant qu'on cherchait le bug dans le code.
+
+```sql
+grant select, insert, update, delete on public.<table> to service_role;
+select has_table_privilege('service_role','public.<table>','select');
+```
+
+## Variables CSS — les noms du projet, pas ceux de la doc
+
+Ce projet n'a **ni `--blue` ni `--bg`**. Les vrais noms :
+
+| À écrire | Pas |
+|---|---|
+| `--ip-blue`, `--ip-blue-d` | `--blue` |
+| `--ip-ink`, `--ip-ink-2` | `--ink` |
+| `--card`, `--card-2` | `--bg` |
+| `--line`, `--line-2`, `--line-strong` · `--muted`, `--muted-2` · `--r-md` | |
+
+Une variable inconnue ne casse rien de visible à la relecture : la déclaration
+est simplement ignorée, et l'écran sort **sans couleur** sans le moindre
+message. Vécu le 11/08/2026 sur deux écrans neufs d'un coup. Contrôle :
+
+```bash
+grep -o 'var(--[a-z0-9-]*)' crm/v2/<fichier>.js | sed 's/.*var(//;s/)//' | sort -u \
+  | while read v; do grep -q -- "$v:" crm/v2/v2.css || echo "MANQUE $v"; done
+```
+
+Éviter aussi `color-mix()` : préférer une teinte fixe (`rgba(...)`), plus sûre
+partout et sans dépendance à la version du navigateur.
+
 ## Tests
 
 `node --test tests/` cherche un **module** nommé « tests », pas un dossier :
