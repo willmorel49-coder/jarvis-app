@@ -59,7 +59,7 @@
   var AVEC_COMPOSEUR = { client: 1, groupement: 1, prospect: 1 };
 
   var S = {
-    mode: 'client', ph: null, grp: null, fam: 'all', q: '', sansRupture: false,
+    mode: 'client', ph: null, grp: null, toutGrp: false, fam: 'all', q: '', sansRupture: false,
     page: 0, horsStock: false,
     sm: null,  // composition par catégorie, chargée au 1er rendu
     sel: null,  // { cip: 1 } — produits retenus pour le document
@@ -377,6 +377,9 @@
   // ── Commandes appelées depuis le HTML ──────────────────────────
   V2.produits.setMode = function (m) { S.mode = m; S.page = 0; V2.render(); };
   V2.produits.setPh = function (id) { S.ph = id || null; S.page = 0; V2.render(); };
+  V2.produits.setToutGrp = function (v) {
+    S.toutGrp = !!v; S.page = 0; V2.produits._grpCle = null; V2.render();
+  };
   V2.produits.setGrp = function (g) { S.grp = g || null; S.page = 0; V2.produits._ach = null; V2.render(); };
   V2.produits.setFam = function (k) { S.fam = k; S.page = 0; V2.render(); };
   V2.produits.setRupt = function () { S.sansRupture = !S.sansRupture; S.page = 0; V2.render(); };
@@ -462,11 +465,14 @@
     var out = [], i;
     for (i = 0; i < lignes.length; i++) {
       var l = lignes[i];
-      out.push(l.fam ? l : {
-        cip: l.cip, fam: famDe(l.cip), peers: l.peers, pctPeers: l.pctPeers,
-        caMoyen: l.caMoyen, potentiel: l.potentiel, stock: l.stock,
-        officines: l.officines, couverture: l.couverture
-      });
+      if (l.fam) { out.push(l); continue; }
+      // ⚠️ On RECOPIE tous les champs. Une liste figée perdait en silence les
+      // champs des nouvelles listes (statut, adhérents, clients IP) : le
+      // groupement affichait « 0 à pousser » alors qu'il y en avait 340.
+      var c = {}, k;
+      for (k in l) if (Object.prototype.hasOwnProperty.call(l, k)) c[k] = l[k];
+      c.fam = famDe(l.cip);
+      out.push(c);
     }
     return out;
   }
@@ -641,7 +647,9 @@
     return '<div class="pr-row">' + enTeteProduit(l) +
       '<div class="pr-arg">' + (l._logo || '') +
         '<strong>' + num(l.peers) + ' des ' + num(l._nbConf) + '</strong> ' + esc(l._grp) +
-        ' le prennent · <strong>' + eur(l.caMoyen) + '</strong> en moyenne</div>' +
+        ' le prennent' +
+        (l._ip ? ' · <strong>' + num(l._ip.n) + ' des ' + num(l._ip.total) + '</strong> clients IP' : '') +
+        ' · <strong>' + eur(l.caMoyen) + '</strong> en moyenne</div>' +
       '<div class="pr-chiffres">' +
         chiffre(eur(l.potentiel), 'potentiel', 'pr-pot') +
         chiffre(f && f.net > 0 ? eur(f.net) : '—', 'prix net') +
@@ -671,6 +679,9 @@
     var logoH = estGrp ? logoGrp(nomGrp) : '';
     for (i = 0; i < lignes.length; i++) {
       lignes[i]._grp = libGrp; lignes[i]._nbConf = r.nbConfreres; lignes[i]._logo = logoH;
+      // Le second compteur demande par Will : combien de clients Integral, au
+      // total, prennent ce produit.
+      lignes[i]._ip = M.penetration(idx, lignes[i].cip);
     }
     var pot = 0;
     for (i = 0; i < lignes.length; i++) pot += lignes[i].potentiel;
@@ -693,22 +704,50 @@
       '</div>' + filtresHtml() + liste(lignes, rl.visibles, rl.corps) + panierHtml();
   }
 
-  // ── Mode Groupement ────────────────────────────────────────────
-  function ligneGroupement(l) {
+  // ── Le listing : un TABLEAU dense, pas des cartes ──────────────
+  // C'est la presentation de l'ancien Espace Groupements : une ligne = une
+  // ligne, avec « 48/77 » et sa barre de diffusion. Les cartes a 4 tuiles
+  // prenaient six fois plus de hauteur pour la meme information.
+  function ligneTableau(l) {
     var f = fiche(l.cip);
-    var abandon = (f && porteAbandon(f.f) && f.ppht > 0 && f.net > 0) ? eur(f.ppht - f.net) : '—';
-    return '<div class="pr-row">' + enTeteProduit(l) +
-      '<div class="pr-arg">' + (l._logo || '') +
-        '<strong>' + num(l.officines) + ' adhérents sur ' + num(l._taille) + '</strong>' +
-        ' ne nous le prennent pas' +
-        (l._pris > 0 ? ' · <strong>' + num(l._pris) + '</strong> le prennent déjà' : '') + '</div>' +
-      '<div class="pr-chiffres">' +
-        chiffre(eur(l.potentiel), 'potentiel', 'pr-pot') +
-        chiffre(f && f.net > 0 ? eur(f.net) : '—', 'prix net') +
-        chiffre(abandon, 'abandon de marge') +
-        chiffre(num(l.stock), 'en stock') +
-      '</div>' + boutonSel(l.cip) + '</div>';
+    var lib = f && f.d ? f.d : ('CIP ' + l.cip);
+    var net = f && f.net > 0 ? f.net : null;
+    var ab = (f && porteAbandon(f.f) && f.ppht > 0 && f.net > 0) ? eur(f.ppht - f.net) : '—';
+    var pct = l.taille ? Math.round(l.adherents / l.taille * 100) : 0;
+    var pris = !!S.sel[String(l.cip)];
+    return '<tr class="' + (l.statut === 'pousser' ? 'pr-t-gap' : '') + '">' +
+      '<td class="pr-t-l">' +
+        '<div class="pr-t-d">' + esc(lib) +
+          (enRupture(l.cip) ? '<span class="pr-rupt">rupture ANSM</span>' : '') + '</div>' +
+        '<div class="pr-t-cip">' + esc(l.cip) +
+          (l.statut === 'pousser' ? '<span class="pr-t-mini">À pousser</span>' : '') + '</div>' +
+      '</td>' +
+      '<td>' + (l.statut === 'pousser'
+        ? '<span class="pr-mk pr-mk-gap">À pousser</span>'
+        : '<span class="pr-mk pr-mk-own">✓ Commande</span>') + '</td>' +
+      '<td class="n pr-t-prix">' + (net > 0 ? eur(net) : '—') + '</td>' +
+      '<td class="n pr-t-ab">' + ab + '</td>' +
+      '<td class="n">' +
+        '<div class="pr-t-diff"><b>' + num(l.adherents) + '</b><i>/' + num(l.taille) + '</i></div>' +
+        '<div class="pr-t-bar"><span style="width:' + pct + '%"></span></div>' +
+      '</td>' +
+      '<td class="n pr-t-ip">' + num(l.clientsIP) + '<i>/' + num(l.reseauTotal) + '</i></td>' +
+      '<td class="n"><button class="pr-t-add' + (pris ? ' on' : '') +
+        '" onclick="V2.produits.selBascule(\'' + escAttr(l.cip) + '\')">' +
+        (pris ? '✓' : '+') + '</button></td>' +
+      '</tr>';
   }
+  function tableauHtml(lignes) {
+    var corps = '', i;
+    for (i = 0; i < lignes.length; i++) corps += ligneTableau(lignes[i]);
+    return '<div class="pr-t-wrap"><table class="pr-t">' +
+      '<thead><tr><th>Produit</th><th>Statut</th><th class="n">Prix net</th>' +
+      '<th class="n" title="Abandon de marge">Abandon</th>' +
+      '<th class="n">Adhérents</th><th class="n">Clients IP</th><th></th></tr></thead>' +
+      '<tbody>' + corps + '</tbody></table></div>';
+  }
+
+  // ── Mode Groupement ────────────────────────────────────────────
   function groupements() {
     var vus = {}, phs = V2.pharmacies || [], i, g;
     for (i = 0; i < phs.length; i++) {
@@ -725,37 +764,63 @@
     if (!G.noms.length) return vide('Aucun groupement', 'Les données réseau ne sont pas chargées.');
     if (!S.grp || G.n[S.grp] === undefined) S.grp = G.noms[0];
 
-    var i;
-    // Même moteur que la vue Achats, filtré sur le groupement : agrège les
-    // trous de tous ses adhérents.
-    var cle = 'g:' + S.grp;
+    // Menu déroulant EN PLUS de la recherche : la recherche sert quand on sait
+    // ce qu'on cherche, le déroulant quand on veut parcourir. Ordonnés par
+    // taille — 44 des 109 groupements n'ont qu'une seule officine.
+    var opts = '', i, petits = false;
+    for (i = 0; i < G.noms.length; i++) {
+      var n = G.noms[i], nb = G.n[n];
+      if (nb < 5 && !petits) { opts += '<option disabled>─────── plus petits ───────</option>'; petits = true; }
+      opts += '<option value="' + escAttr(n) + '"' + (n === S.grp ? ' selected' : '') + '>' +
+        esc(n) + ' · ' + nb + ' officine' + (nb > 1 ? 's' : '') + '</option>';
+    }
+
+    var cle = 'g:' + S.grp + '|' + (S.toutGrp ? 'tout' : 'trous');
     if (V2.produits._grpCle !== cle) {
-      V2.produits._grpLignes = M.listingProduits(idx, { stock: stockIP(), filtreGroupement: S.grp });
+      var tout = M.listingGroupementComplet(idx, S.grp, { stock: stockIP() });
+      V2.produits._grpLignes = S.toutGrp
+        ? tout
+        : tout.filter(function (l) { return l.statut === 'pousser'; });
       V2.produits._grpCle = cle;
     }
     var brutes = filtrer(avecFamille(V2.produits._grpLignes));
     var dispo = compterParFamille(brutes);
-    var lignes = M.limiterParCategorie(brutes, S.sm.quotas);
-    var logoH = logoGrp(S.grp), taille = G.n[S.grp] || 0, pot = 0;
+    // « Toute la data » ne se laisse pas tronquer par le composeur : c'est
+    // justement ce qu'on veut voir en entier.
+    var lignes = S.toutGrp ? brutes : M.limiterParCategorie(brutes, S.sm.quotas);
+    V2.produits._affichees = lignes;
+    var taille = G.n[S.grp] || 0, nPris = 0, nPousser = 0;
     for (i = 0; i < lignes.length; i++) {
-      lignes[i]._logo = logoH;
-      lignes[i]._taille = taille;
-      // Combien d'adhérents le prennent DÉJÀ : l'autre moitié de l'argument.
-      lignes[i]._pris = M.penetration(idx, lignes[i].cip, S.grp).n;
-      pot += lignes[i].potentiel;
+      if (lignes[i].statut === 'pousser') nPousser++; else nPris++;
     }
-    var rl = rendreLignes(lignes, ligneGroupement);
+    var visibles = lignes.slice(0, (S.page + 1) * PAR_PAGE);
 
     return '<div class="pr-bandeau">' +
       barreRecherche('Groupement ou officine — nom, ville, code postal…') +
+      '<select class="pr-select pr-grp-sel" aria-label="Choisir un groupement"' +
+        ' onchange="V2.produits.setGrp(this.value)">' + opts + '</select>' +
       '<div class="pr-cible">' + logoGrp(S.grp, true) + esc(S.grp) + '</div>' +
       '<div class="pr-ctx">' +
         '<span class="pr-ctx-grp">' + num(taille) + ' adhérents</span>' +
-        '<span class="pr-ctx-pot">' + eur(pot) + ' de potentiel</span>' +
-        '<span class="pr-ctx-n">' + num(lignes.length) + ' produits</span>' +
-      '</div>' + composeurHtml(dispo) +
+        '<span class="pr-ctx-n">' + num(lignes.length) + ' références</span>' +
+        (S.toutGrp ? '<span class="pr-ctx-pot">' + num(nPris) + ' commandées · ' +
+          num(nPousser) + ' à pousser</span>' : '') +
+      '</div>' +
+      '<div class="pr-chips">' +
+        '<span class="pr-chip' + (S.toutGrp ? '' : ' on') +
+        '" onclick="V2.produits.setToutGrp(false)">Ce qu\'ils ne prennent pas</span>' +
+        '<span class="pr-chip' + (S.toutGrp ? ' on' : '') +
+        '" onclick="V2.produits.setToutGrp(true)">Toute la data</span>' +
+      '</div>' +
+      (S.toutGrp ? '' : composeurHtml(dispo)) +
       actionsHtml('ventes réseau jan.–juin 2026') +
-      '</div>' + filtresHtml() + liste(lignes, rl.visibles, rl.corps) + panierHtml();
+      '</div>' + filtresHtml() +
+      (lignes.length ? tableauHtml(visibles) +
+        (visibles.length < lignes.length
+          ? '<button class="v2-btn pr-plus" onclick="V2.produits.plus()">Voir 40 références de plus</button>'
+          : '')
+        : vide('Aucune référence', 'Élargis la recherche ou change de filtre.')) +
+      panierHtml();
   }
 
   // ── Mode Prospect ──────────────────────────────────────────────
@@ -1291,6 +1356,50 @@
       '.pr-panier em{font:400 12px/1.3 Inter,sans-serif;font-style:normal;opacity:.85;flex:1;min-width:110px}',
       '.pr-panier button{min-height:44px;padding:0 14px;border-radius:10px;border:1px solid rgba(255,255,255,.5);background:transparent;color:#fff;font:600 14px/1 Inter,sans-serif;cursor:pointer}',
       '.pr-plus{width:100%;min-height:44px;margin-top:8px}',
+      '.pr-grp-sel{margin-bottom:10px}',
+      '.pr-t-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;background:var(--card);border:1px solid var(--line);border-radius:12px}',
+      '.pr-t{width:100%;border-collapse:collapse;font:400 13px/1.35 Inter,sans-serif}',
+      '.pr-t th{position:sticky;top:0;z-index:2;background:var(--card);text-align:left;font:700 10.5px/1 Inter,sans-serif;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);padding:10px 8px;border-bottom:1.5px solid var(--ip-blue);white-space:nowrap}',
+      '.pr-t td{padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:middle}',
+      '.pr-t td.n,.pr-t th.n{text-align:right;font-variant-numeric:tabular-nums}',
+      '.pr-t tr:last-child td{border-bottom:0}',
+      // Ligne « a pousser » teintee : c est elle qui fait de la liste un
+      // outil de rendez-vous et pas un catalogue.
+      '.pr-t-gap td{background:rgba(199,121,26,.06)}',
+      '.pr-t-gap td.pr-t-l{box-shadow:inset 3px 0 0 var(--c-amber)}',
+      '.pr-t-l{min-width:190px}',
+      '.pr-t-d{font:600 13px/1.3 Inter,sans-serif;color:var(--ip-ink)}',
+      '.pr-t-cip{font:400 11px/1.3 "Geist Mono",ui-monospace,monospace;color:var(--muted)}',
+      '.pr-t-prix{font:700 13px/1 "Geist Mono",ui-monospace,monospace;color:var(--ip-blue);white-space:nowrap}',
+      '.pr-t-ab{font:600 12px/1 "Geist Mono",ui-monospace,monospace;color:var(--c-mint);white-space:nowrap}',
+      '.pr-mk{display:inline-block;padding:2px 7px;border-radius:999px;font:700 10.5px/1.6 Inter,sans-serif;white-space:nowrap}',
+      '.pr-mk-own{background:rgba(30,158,106,.14);color:#0F7A52}',
+      '.pr-mk-gap{background:rgba(199,121,26,.16);color:#8A5310}',
+      '.pr-t-diff{font:400 12px/1 "Geist Mono",ui-monospace,monospace;color:var(--muted);white-space:nowrap}',
+      '.pr-t-diff b{font-weight:700;font-size:13px;color:var(--ip-ink)}',
+      '.pr-t-diff i{font-style:normal;opacity:.6}',
+      '.pr-t-bar{width:46px;height:6px;margin:4px 0 0 auto;border-radius:3px;background:var(--line);overflow:hidden}',
+      '.pr-t-bar span{display:block;height:100%;background:var(--ip-blue)}',
+      '.pr-t-ip{font:400 12px/1 "Geist Mono",ui-monospace,monospace;color:var(--muted);white-space:nowrap}',
+      '.pr-t-ip i{font-style:normal;opacity:.6}',
+      '.pr-t-add{width:34px;height:34px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ip-blue);font:700 16px/1 Inter,sans-serif;cursor:pointer}',
+      '.pr-t-add.on{background:var(--c-mint);border-color:var(--c-mint);color:#fff}',
+      '.pr-t-mini{display:none;margin-left:6px;padding:1px 6px;border-radius:999px;background:rgba(199,121,26,.16);color:#8A5310;font:700 9.5px/1.6 Inter,sans-serif}',
+      // Sous 620 px, la colonne Statut et la colonne Abandon sortent — mais
+      // JAMAIS les deux compteurs : c est eux qu on montre au pharmacien.
+      // Le statut se replie en pastille sous le nom du produit.
+      '@media (max-width:620px){',
+      '  .pr-t th:nth-child(2),.pr-t td:nth-child(2),',
+      '  .pr-t th:nth-child(4),.pr-t td:nth-child(4){display:none}',
+      '  .pr-t-mini{display:inline-block}',
+      '  .pr-t-l{min-width:112px}',
+      '  .pr-t th,.pr-t td{padding:8px 4px;font-size:12px}',
+      '  .pr-t th{font-size:9.5px;letter-spacing:0}',
+      '  .pr-t-d{font-size:12.5px}',
+      '  .pr-t-prix{font-size:12px}',
+      '  .pr-t-bar{width:38px}',
+      '  .pr-t-add{width:40px;height:44px}',
+      '}',
       '.pr-rech{position:relative;margin-bottom:10px}',
       '.pr-rech-in{background:var(--paper)}',
       // La liste est ancree SOUS le champ, pas en plein ecran : on garde le
