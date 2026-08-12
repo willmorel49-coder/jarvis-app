@@ -131,15 +131,19 @@ test('achats : la vue par produit rend des lignes', () => {
   assert.ok(/ne nous le prennent pas/.test(hA), 'l argument achats est absent');
 });
 
-test('achats : le selecteur liste les groupements, le plus gros en tete', () => {
-  const noms = [...hA.matchAll(/<option value="[^"]*"[^>]*>([^·<]+) · (\d+) officines</g)]
+test('groupement : le selecteur liste les groupements, le plus gros en tete', () => {
+  sb.V2.produits.S.mode = 'groupement';
+  const r = { innerHTML: '' };
+  sb.V2.pages.produits.render(r, null);
+  const noms = [...r.innerHTML.matchAll(/<option value="[^"]*"[^>]*>([^·<]+) · (\d+) officines</g)]
     .map((m) => ({ nom: m[1].trim(), n: +m[2] }));
   assert.ok(noms.length > 50, `seulement ${noms.length} groupements listes`);
   for (let i = 1; i < noms.length; i++) {
-    assert.ok(noms[i - 1].n >= noms[i].n,
-      `${noms[i - 1].nom} (${noms[i - 1].n}) avant ${noms[i].nom} (${noms[i].n})`);
+    assert.ok(noms[i - 1].n >= noms[i].n, `${noms[i - 1].nom} avant ${noms[i].nom}`);
   }
   assert.equal(noms[0].nom, 'UPP', `attendu UPP en tete, obtenu ${noms[0].nom}`);
+  assert.ok(/adhérents<\/strong> ne nous le prennent pas/.test(r.innerHTML),
+    'l argument groupement est absent');
 });
 
 test('achats : la couverture est en mois ou « — », jamais infinie', () => {
@@ -168,7 +172,7 @@ test('achats : « ce qu on n a pas » ne montre que du stock a zero', () => {
 });
 
 // ── Mode Sur mesure (best list prospect) ───────────────────────────
-sb.V2.produits.S.mode = 'surmesure';
+sb.V2.produits.S.mode = 'prospect';
 const rootS = { innerHTML: '' };
 sb.V2.pages.produits.render(rootS, null);
 const hS = rootS.innerHTML;
@@ -225,7 +229,7 @@ test('robustesse : un reglage corrompu ne fait PAS d ecran blanc', () => {
   // Un ecran blanc devant un pharmacien est le pire defaut possible.
   // S.sm est expose sur V2.produits.S : il peut arriver tronque (vieille
   // version, ecriture partielle). Le rendu doit tenir dans tous les cas.
-  sb.V2.produits.S.mode = 'surmesure';
+  sb.V2.produits.S.mode = 'prospect';
   for (const casse of [{}, { quotas: null }, { quotas: { pr_low: 'abc' } }, null]) {
     sb.V2.produits.S.sm = casse;
     const r = { innerHTML: '' };
@@ -237,19 +241,19 @@ test('robustesse : un reglage corrompu ne fait PAS d ecran blanc', () => {
 
 // ── Le PDF laissé au pharmacien ────────────────────────────────────
 test('PDF : se fabrique et porte le nom saisi', () => {
-  sb.V2.produits.S.mode = 'surmesure';
+  sb.V2.produits.S.mode = 'prospect';
   sb.V2.produits.S.sm = {
     quotas: { pr_low: 12, pr_mid: 4, pr_high: 1, nr: 3, gen: 4, biosim: 0 },
     abandonMin: { pr_low: 8 }, nom: 'PHARMACIE DU CENTRE', plie: false,
   };
-  const r = sb.V2.produits.pdfHtml();
+  const r = sb.V2.produits.documentHtml();
   assert.ok(r && !r.erreur, `erreur : ${r && r.erreur}`);
   assert.ok(r.html.includes('PHARMACIE DU CENTRE'));
   assert.ok(r.lignes > 10, `seulement ${r.lignes} lignes`);
 });
 
 test('PDF · REGLE METIER : aucune condition commerciale chiffree', () => {
-  const h = sb.V2.produits.pdfHtml().html;
+  const h = sb.V2.produits.documentHtml().html;
   assert.ok(!/abandon/i.test(h), 'le PDF mentionne l abandon de marge');
   assert.ok(!/remise/i.test(h), 'le PDF contient le mot proscrit');
   // Un « % » n'est tolere que dans un NOM de produit (IBUFETUM 5% GEL) ou dans
@@ -263,7 +267,7 @@ test('PDF · REGLE METIER : aucune condition commerciale chiffree', () => {
 });
 
 test('PDF : regroupe par bloc lisible par un pharmacien', () => {
-  const h = sb.V2.produits.pdfHtml().html;
+  const h = sb.V2.produits.documentHtml().html;
   for (const bloc of ['Médicaments remboursables', 'Non remboursables', 'Génériques']) {
     assert.ok(h.includes(bloc), `bloc « ${bloc} » absent`);
   }
@@ -272,23 +276,15 @@ test('PDF : regroupe par bloc lisible par un pharmacien', () => {
 });
 
 test('PDF : plus de colonne « Disponibilite » qui repete la meme chose', () => {
-  const h = sb.V2.produits.pdfHtml().html;
+  const h = sb.V2.produits.documentHtml().html;
   assert.ok(!h.includes('<th class="n">Disponibilité</th>'), 'colonne inutile encore la');
   assert.ok(/disponibles au jour de/.test(h), 'la mention de disponibilite a disparu');
 });
 
-test('PDF : sans officine choisie en mode Vendeur, message clair', () => {
-  sb.V2.produits.S.mode = 'vendeur';
-  const avant = sb.V2.produits.S.ph;
-  sb.V2.produits.S.ph = null;
-  const r = sb.V2.produits.pdfHtml();
-  assert.ok(r.erreur, 'devrait rendre une erreur explicite');
-  sb.V2.produits.S.ph = avant;
-});
 
 // ── Choix des laboratoires ─────────────────────────────────────────
 function rendreSM(sm) {
-  sb.V2.produits.S.mode = 'surmesure';
+  sb.V2.produits.S.mode = 'prospect';
   sb.V2.produits.S.sm = Object.assign(
     { quotas: {}, abandonMin: {}, labos: {}, exclusifs: {}, nom: '', plie: false }, sm);
   const r = { innerHTML: '' };
@@ -347,62 +343,78 @@ test('exclusivites : restreint aux references de nos listes negociees', () => {
   assert.ok(n > 0 && n < 40, `attendu une poignee de references, obtenu ${n}`);
 });
 
-// ── Selection et proposition ───────────────────────────────────────
-test('selection : chaque ligne porte un bouton « Proposer »', () => {
+// ── Selection et document ──────────────────────────────────────────
+// Plus de quantite par produit : ce qui se regle, c'est le NOMBRE de meilleurs
+// produits par categorie (le composeur). Ici on inclut ou on exclut.
+test('selection : chaque ligne porte un bouton d ajout au document', () => {
   const h = rendreSM({ quotas: { pr_low: 5 } });
-  assert.ok(/pr-add[^>]*>\+ Proposer</.test(h), 'bouton absent');
+  assert.ok(/pr-add[^>]*>\+ Ajouter au document</.test(h), 'bouton absent');
+  assert.ok(!/pr-qte|selQte/.test(h), 'il ne doit plus y avoir de compteur de quantite');
 });
 
 test('selection : la barre n apparait que s il y a une selection', () => {
   sb.V2.produits.S.sel = {};
   assert.ok(!/pr-panier/.test(rendreSM({ quotas: { pr_low: 5 } })), 'barre affichee a vide');
-  const cip = Object.keys(sb.V2.produits._ps).find((c) => sb.V2.produits._ps[c].ppht > 0);
-  sb.V2.produits.S.sel = { [cip]: 3 };
+  const cip = Object.keys(sb.V2.produits._ps)[0];
+  sb.V2.produits.S.sel = { [cip]: 1 };
   const h = rendreSM({ quotas: { pr_low: 5 } });
   assert.ok(/pr-panier/.test(h), 'barre absente malgre une selection');
-  assert.ok(/1 produit</.test(h), 'compte errone');
+  assert.ok(/1 produit retenu/.test(h), 'compte errone');
+  sb.V2.produits.S.sel = {};
 });
 
-test('proposition : quantites, prix net au bareme, et total', () => {
-  const ps = sb.V2.produits._ps;
-  // un princeps a petit prix : le net doit valoir le tarif moins 0,18 €
-  const cip = Object.keys(ps).find((c) => ps[c].f === 'pr_low' && ps[c].ppht > 1);
-  sb.V2.produits.S.sel = { [cip]: 4 };
-  const r = sb.V2.produits.propositionHtml();
+test('document : sans selection, il reprend TOUTE la liste affichee', () => {
+  sb.V2.produits.S.sel = {};
+  rendreSM({ quotas: { pr_low: 6, gen: 4 } });
+  const r = sb.V2.produits.documentHtml();
   assert.ok(!r.erreur, r.erreur);
-  const attenduNet = Math.round((ps[cip].ppht - 0.18) * 100) / 100;
-  assert.equal(r.total, Math.round(attenduNet * 4 * 100) / 100);
-  assert.ok(r.html.includes('<th class="n">Qté</th>'), 'colonne quantite absente');
-  assert.ok(/tr class="tot"/.test(r.html), 'ligne de total absente');
+  assert.equal(r.lignes, 10, `attendu 10 lignes, obtenu ${r.lignes}`);
 });
 
-test('proposition · REGLE METIER : aucune condition chiffree', () => {
-  const h = sb.V2.produits.propositionHtml().html;
-  assert.ok(!/abandon/i.test(h), 'la proposition mentionne l abandon de marge');
-  assert.ok(!/remise/i.test(h), 'la proposition contient le mot proscrit');
-});
-
-test('proposition : dit explicitement qu elle ne vaut pas commande', () => {
-  const h = sb.V2.produits.propositionHtml().html;
-  assert.ok(/ne vaut pas commande/.test(h), 'mention juridique absente');
-  assert.ok(/hors taxes/i.test(h), 'les prix doivent etre annonces HT');
-});
-
-test('proposition : selection vide = message clair, pas de document', () => {
+test('document : avec une selection, il ne reprend QUE les produits retenus', () => {
+  rendreSM({ quotas: { pr_low: 20 } });
+  const deux = sb.V2.produits._affichees.slice(0, 2).map((l) => l.cip);
+  sb.V2.produits.S.sel = { [deux[0]]: 1, [deux[1]]: 1 };
+  const r = sb.V2.produits.documentHtml();
+  assert.equal(r.lignes, 2);
   sb.V2.produits.S.sel = {};
-  const r = sb.V2.produits.propositionHtml();
-  assert.ok(r.erreur, 'devrait refuser une proposition vide');
-  assert.ok(!r.html);
 });
 
-test('selection : une quantite absurde est ramenee dans les clous', () => {
+test('document : ni quantite ni total — c est une selection, pas un devis', () => {
+  rendreSM({ quotas: { pr_low: 5 } });
+  const h = sb.V2.produits.documentHtml().html;
+  assert.ok(!/Qté/.test(h), 'colonne quantite encore la');
+  assert.ok(!/<th class="n">Total<\/th>/.test(h), 'colonne total encore la');
+  assert.ok(h.includes('<th class="n">Prix net</th>'), 'le prix net doit rester');
+});
+
+test('document · REGLE METIER : aucune condition chiffree', () => {
+  rendreSM({ quotas: { pr_low: 5, gen: 3 } });
+  const h = sb.V2.produits.documentHtml().html;
+  assert.ok(!/abandon/i.test(h), 'le document mentionne l abandon de marge');
+  assert.ok(!/remise/i.test(h), 'le document contient le mot proscrit');
+  const suspects = (h.match(/.{0,30}%/g) || []).filter((bout) => {
+    if (/width:\s*100%/.test(bout)) return false;
+    if (/<td>[^<]*\d[,.]?\d*\s*%/.test(bout)) return false;
+    return /\d\s*%/.test(bout);
+  });
+  assert.deepEqual(suspects, [], `pourcentage suspect : ${suspects.join(' | ')}`);
+});
+
+test('document : regroupe en blocs lisibles par un pharmacien', () => {
+  rendreSM({ quotas: { pr_low: 6, nr: 3, gen: 3 } });
+  const h = sb.V2.produits.documentHtml().html;
+  for (const bloc of ['Médicaments remboursables', 'Non remboursables', 'Génériques']) {
+    assert.ok(h.includes(bloc), `bloc « ${bloc} » absent`);
+  }
+  assert.ok(!/Princeps/.test(h), 'le document expose notre decoupage interne');
+});
+
+test('document : liste vide = message clair, pas de document', () => {
   sb.V2.produits.S.sel = {};
-  const cip = Object.keys(sb.V2.produits._ps)[0];
-  sb.V2.produits.selQteSet(cip, '99999');
-  assert.equal(sb.V2.produits.S.sel[cip], 999);
-  sb.V2.produits.selQteSet(cip, '0');
-  assert.equal(sb.V2.produits.S.sel[cip], undefined, 'zero doit retirer la ligne');
-  sb.V2.produits.S.sel = {};
+  rendreSM({ quotas: { pr_low: 0, pr_mid: 0, pr_high: 0, nr: 0, gen: 0, biosim: 0 } });
+  const r = sb.V2.produits.documentHtml();
+  assert.ok(r.erreur, 'devrait refuser un document vide');
 });
 
 // ── Suivi d'effet, mesure par le fichier mensuel ───────────────────
