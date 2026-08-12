@@ -370,3 +370,43 @@ test('quotas : une ligne sans famille connue passe toujours', () => {
   const r = M.limiterParCategorie(avec, { pr_low: 1 });
   assert.ok(r.some((l) => l.cip === 'X'), 'une famille inconnue ne doit pas etre filtree');
 });
+
+// ── Comptage des acheteurs : la preuve sociale ─────────────────────
+const VENTES_ACH = [
+  { pharmacyId: 'G1', artCode: 'AAA', mntNetHt: 100, qte: 1 },
+  { pharmacyId: 'G2', artCode: 'AAA', mntNetHt: 200, qte: 1 },
+  { pharmacyId: 'G3', artCode: 'AAA', mntNetHt: 300, qte: 1 },
+  { pharmacyId: 'MED1', artCode: 'AAA', mntNetHt: 50, qte: 1 },
+  // G1 a commande BBB puis tout retourne : solde nul, il ne compte pas
+  { pharmacyId: 'G1', artCode: 'BBB', mntNetHt: 80, qte: 1 },
+  { pharmacyId: 'G1', artCode: 'BBB', mntNetHt: -80, qte: -1 },
+  { pharmacyId: 'G2', artCode: 'BBB', mntNetHt: 40, qte: 1 },
+];
+
+test('acheteurs : nombre d officines distinctes par produit, retours exclus', () => {
+  const idx = M.indexer(OFFICINES, VENTES_ACH);
+  assert.equal(idx.acheteurs.AAA, 4);
+  assert.equal(idx.acheteurs.BBB, 1, 'un solde nul ne compte pas comme acheteur');
+});
+
+test('acheteurs : detail par groupement', () => {
+  const idx = M.indexer(OFFICINES, VENTES_ACH);
+  assert.equal(idx.acheteursGrp.Giphar.AAA, 3);
+  assert.equal(idx.acheteursGrp.Mediprix.AAA, 1);
+  assert.equal(idx.acheteursGrp.Giphar.BBB, 1);
+});
+
+test('acheteurs : taille de chaque groupement connue', () => {
+  const idx = M.indexer(OFFICINES, VENTES_ACH);
+  assert.equal(idx.tailleGrp.Giphar, 6);
+  assert.equal(idx.tailleGrp.Mediprix, 2);
+  assert.equal(idx.nbOfficines, 9);
+});
+
+test('penetration : rend le couple (acheteurs, total) reseau et groupement', () => {
+  const idx = M.indexer(OFFICINES, VENTES_ACH);
+  assert.deepEqual(M.penetration(idx, 'AAA'), { n: 4, total: 9 });
+  assert.deepEqual(M.penetration(idx, 'AAA', 'Giphar'), { n: 3, total: 6 });
+  assert.deepEqual(M.penetration(idx, 'INCONNU'), { n: 0, total: 9 });
+  assert.deepEqual(M.penetration(idx, 'AAA', 'Inexistant'), { n: 0, total: 0 });
+});
