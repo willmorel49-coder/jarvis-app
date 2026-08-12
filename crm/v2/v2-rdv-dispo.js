@@ -182,9 +182,10 @@
         V2.rdvDispo.charger(),
         // L'agenda est un confort : s'il ne répond pas, l'écran s'affiche
         // quand même avec les disponibilités saisies à la main.
-        (V2.rdvAgenda ? V2.rdvAgenda.charger() : Promise.resolve(null))
+        (V2.rdvAgenda ? V2.rdvAgenda.charger() : Promise.resolve(null)),
+        (V2.rdvLien ? V2.rdvLien.charger() : Promise.resolve(null))
       ]).then(function (res) {
-        var st = res[0], ag = res[1];
+        var st = res[0], ag = res[1], lien = res[2];
         var d = st.dispo, k, jours = '';
         for (k = 1; k <= 5; k++) jours += ligneJour(String(k), d.jours && d.jours[String(k)]);
 
@@ -201,6 +202,9 @@
           '<div class="v2-rdvd-hero"><h1>Mes disponibilités</h1>' +
             '<p>Ce que les pharmaciens pourront réserver quand tu leur envoies un lien. ' +
             'Décoche un jour pour qu’il n’apparaisse jamais.</p></div>' +
+
+          '<div class="v2-rdvd-sec">Mon lien de réservation</div>' +
+          (V2.rdvLien ? V2.rdvLien.bloc(lien) : '') +
 
           '<div class="v2-rdvd-sec">Mon agenda</div>' +
           (V2.rdvAgenda ? V2.rdvAgenda.bloc(ag) : '') +
