@@ -539,9 +539,12 @@
   // Impression navigateur sur un document dédié : aucune librairie, aucun
   // coût. CONTENU AUTORISÉ : produit, prix net, disponibilité. Le barème
   // d'abandon de marge et toute autre condition chiffrée en sont exclus.
-  V2.produits.pdf = function () {
+  // Fabrique le document et le REND, sans l'ouvrir : c'est ce qui permet de le
+  // vérifier automatiquement (aucune condition commerciale chiffrée) au lieu de
+  // le relire à l'œil dans une fenêtre d'impression.
+  V2.produits.pdfHtml = function () {
     var M = window.V2PRODUITS, i;
-    if (!M) { if (V2.toast) V2.toast('Moteur indisponible'); return; }
+    if (!M) return null;
 
     var titre, lignes;
     if (S.mode === 'surmesure') {
@@ -552,28 +555,49 @@
       }).lignes);
     } else {
       var idx = V2.produits.index();
-      if (!idx || !S.ph) { if (V2.toast) V2.toast('Choisis d\'abord une officine'); return; }
+      if (!idx || !S.ph) return { erreur: 'Choisis d\'abord une officine' };
       var ph = null, phs = V2.pharmacies || [];
       for (i = 0; i < phs.length; i++) if (String(phs[i].id) === String(S.ph)) ph = phs[i];
-      if (!ph) { if (V2.toast) V2.toast('Officine introuvable'); return; }
+      if (!ph) return { erreur: 'Officine introuvable' };
       titre = ph.name;
       lignes = filtrer(M.listingOfficine(idx, S.ph, { stock: stockIP() }).lignes);
     }
     lignes = lignes.slice(0, 60);
-    if (!lignes.length) { if (V2.toast) V2.toast('Aucun produit à imprimer'); return; }
+    if (!lignes.length) return { erreur: 'Aucun produit à imprimer' };
 
-    var rows = '';
-    for (i = 0; i < lignes.length; i++) {
-      var l = lignes[i], f = fiche(l.cip);
-      // `net` est porté par la ligne en mode Sur mesure (barème), sinon lu
-      // dans PROD_STATS (net moyen réel du réseau).
-      var net = (l.net != null) ? l.net : (f && f.net > 0 ? f.net : null);
-      rows += '<tr>' +
-        '<td>' + esc(f && f.d ? f.d : ('CIP ' + l.cip)) + '</td>' +
-        '<td class="n">' + esc(String(l.cip)) + '</td>' +
-        '<td class="n">' + (net > 0 ? eur(net) : '—') + '</td>' +
-        '<td class="n">' + (l.stock > 0 ? 'Disponible' : '—') + '</td>' +
-      '</tr>';
+    // Regroupé dans le vocabulaire du PHARMACIEN, pas dans nos 6 familles
+    // internes : nos trois tranches de princeps n'ont de sens que pour nous.
+    var BLOCS = [
+      { t: 'Médicaments remboursables', f: ['pr_low', 'pr_mid', 'pr_high'] },
+      { t: 'Non remboursables', f: ['nr'] },
+      { t: 'Génériques', f: ['gen'] },
+      { t: 'Biosimilaires', f: ['biosim'] }
+    ];
+    function famDe(l) {
+      if (l.fam) return l.fam;                    // mode Sur mesure
+      var f = fiche(l.cip);                       // mode Vendeur
+      return f ? f.f : '';
+    }
+    var rows = '', b, j;
+    for (b = 0; b < BLOCS.length; b++) {
+      var dedans = [];
+      for (i = 0; i < lignes.length; i++) {
+        if (BLOCS[b].f.indexOf(famDe(lignes[i])) >= 0) dedans.push(lignes[i]);
+      }
+      if (!dedans.length) continue;
+      rows += '<tr class="bloc"><td colspan="3">' + esc(BLOCS[b].t) +
+              ' <span>' + dedans.length + '</span></td></tr>';
+      for (j = 0; j < dedans.length; j++) {
+        var l = dedans[j], f2 = fiche(l.cip);
+        // `net` est porté par la ligne en mode Sur mesure (barème), sinon lu
+        // dans PROD_STATS (net moyen réel du réseau).
+        var net = (l.net != null) ? l.net : (f2 && f2.net > 0 ? f2.net : null);
+        rows += '<tr>' +
+          '<td>' + esc(f2 && f2.d ? f2.d : ('CIP ' + l.cip)) + '</td>' +
+          '<td class="n">' + esc(String(l.cip)) + '</td>' +
+          '<td class="n">' + (net > 0 ? eur(net) : '—') + '</td>' +
+        '</tr>';
+      }
     }
 
     var jour = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -589,15 +613,26 @@
       'td{padding:6px 4px;border-bottom:1px solid #E6E9F0}' +
       'td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}' +
       '.pied{margin-top:16px;font-size:10px;color:#8A93A6}' +
+      'tr.bloc td{padding:14px 4px 5px;font-size:11px;font-weight:700;text-transform:uppercase;' +
+      'letter-spacing:.05em;color:#0050E6;border-bottom:1px solid #0050E6}' +
+      'tr.bloc span{color:#8A93A6;font-weight:500}' +
       '</style></head><body>' +
       '<h1>Sélection produits — ' + esc(titre) + '</h1>' +
       '<div class="sub">Établie le ' + esc(jour) + ' · Intégral Pharma</div>' +
       '<table><thead><tr><th>Produit</th><th class="n">CIP</th>' +
-      '<th class="n">Prix net</th><th class="n">Disponibilité</th></tr></thead>' +
+      '<th class="n">Prix net</th></tr></thead>' +
       '<tbody>' + rows + '</tbody></table>' +
-      '<div class="pied">Disponibilités constatées au jour de l\'édition, sous réserve des stocks.</div>' +
+      '<div class="pied">Tous les produits de cette sélection sont disponibles au jour de ' +
+      'l\'édition, sous réserve des stocks.</div>' +
       '</body></html>';
 
+    return { html: html, titre: titre, lignes: lignes.length };
+  };
+
+  V2.produits.pdf = function () {
+    var r = V2.produits.pdfHtml();
+    if (!r || r.erreur) { if (V2.toast) V2.toast((r && r.erreur) || 'Moteur indisponible'); return; }
+    var html = r.html;
     // Blob plutôt que document.write : pas d'écriture dans un document ouvert,
     // et la fenêtre d'impression reçoit une vraie URL.
     var url = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
@@ -667,6 +702,8 @@
       '.pr-ctx-n,.pr-ctx-grp{color:var(--muted)}',
       '.pr-note{margin-top:8px;padding:8px 10px;border-radius:8px;background:rgba(199,121,26,.10);border:1px solid rgba(199,121,26,.30);font:500 13px/1.4 Inter,sans-serif;color:var(--ip-ink)}',
       '.pr-pdf{margin-top:12px;width:100%;min-height:44px}',
+      // Sur grand écran, un bouton de 1 000 px de large est absurde.
+      '@media (min-width:760px){.pr-pdf{width:auto;padding:0 28px}}',
       '.pr-source{margin-top:10px;font:400 12px/1 Inter,sans-serif;color:var(--muted)}',
       '.pr-filtres{margin-bottom:12px}',
       '.pr-search{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:0 12px;min-height:44px}',

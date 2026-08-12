@@ -1526,11 +1526,23 @@
       return '<button class="phf-actbtn ' + (cls || '') + '" onclick="V2.pharmaListPdf(\'' + esc(String(pid)) + '\',\'' + scope + '\')" title="ce qu\'elle n\'a pas encore, prêt en PDF">' +
         ICO('download', 15) + label + ' <b class="mono">' + V2.fmtNum(n) + '</b></button>';
     };
-    var pdfButtons = (nReseau > 0 || (hasGrp && nGrp > 0)) ?
+    // Porte d'entrée vers l'écran Produits, déjà calé sur CETTE officine.
+    // Sans elle, le commercial devait revenir à l'accueil puis re-choisir
+    // l'officine dans une liste de 691.
+    var btnProduits = V2.pages.produits
+      ? '<button class="phf-actbtn phf-actbtn-net" onclick="V2.go(\'produits\', \'' +
+        esc(String(pid).replace(/[\\'"<>&]/g, '')) + '\')">' +
+        ICO('cat', 14, 2) + ' Ce que ses confrères prennent</button>'
+      : '';
+    // Conditions d'origine des 2 boutons PDF laissées telles quelles ; seule
+    // la présence du bouton Produits peut désormais faire apparaître la barre.
+    var aDesPdf = (nReseau > 0 || (hasGrp && nGrp > 0));
+    var pdfButtons = (aDesPdf || btnProduits) ?
       '<div class="phf-actions">' +
         '<span class="phf-actions-l">Listes à proposer</span>' +
-        pdfBtn('reseau', 'Réseau Intégral', nReseau, 'phf-actbtn-net') +
-        (hasGrp ? pdfBtn('groupement', esc(g.name), nGrp, 'phf-actbtn-grp') : '') +
+        btnProduits +
+        (aDesPdf ? pdfBtn('reseau', 'Réseau Intégral', nReseau, 'phf-actbtn-net') : '') +
+        (aDesPdf && hasGrp ? pdfBtn('groupement', esc(g.name), nGrp, 'phf-actbtn-grp') : '') +
       '</div>' : '';
 
     // ── Listing : best rotations de son groupement, avec marqueur commande / ne commande pas ──
