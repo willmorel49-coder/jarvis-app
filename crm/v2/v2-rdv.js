@@ -169,8 +169,13 @@
   }
 
   V2.rdv = {
-    // Adresse publique de la page du pharmacien. Bascule de domaine = cette ligne.
-    BASE_URL: 'https://willmorel49-coder.github.io/jarvis-app/crm/v2/rdv.html',
+    // Adresse publique envoyée au pharmacien. Bascule de domaine = cette ligne.
+    //
+    // Volontairement COURTE : l'ancienne (…/crm/v2/rdv.html?t=…) faisait
+    // 101 caractères, or un mail en texte brut est replié vers 76. Le lien se
+    // coupait en deux lignes et menait à une adresse tronquée — c'est ce qui a
+    // fait échouer le test de Will le 12/08. Mesuré, pas supposé.
+    BASE_URL: 'https://willmorel49-coder.github.io/jarvis-app/r',
 
     // Seul endroit qui ouvre la messagerie. Isolé pour pouvoir vérifier le mail
     // produit sans réellement lancer Mail/Outlook pendant un contrôle.
@@ -196,7 +201,7 @@
             cp: o.cp || null, ville: o.ville || null,
             lat: ll ? ll.lat : null, lon: ll ? ll.lon : null,
             contact_nom: o.contact || null, modele: modele || 'routine'
-          }).select('token').single();
+          }).select('token, code').single();
         }).then(function (r) {
           if (!r || r.error || !r.data) { V2.toast('Création du lien impossible.'); fini(false); return; }
           var m = window.V2MOD.rendre(modele || 'routine', {
@@ -205,7 +210,7 @@
             prenom_commercial: prenom(),
             nom_complet_commercial: (V2.user && V2.user.name) || '',
             tel_commercial: V2.rdvTel || '',
-            lien: V2.rdv.BASE_URL + '?t=' + r.data.token, texte_libre: texteLibre || ''
+            lien: V2.rdv.BASE_URL + '?t=' + (r.data.code || r.data.token), texte_libre: texteLibre || ''
           });
           if (m.avertissement) V2.toast(m.avertissement);
           V2.rdv._ouvrir('mailto:' + encodeURIComponent(o.email) +
@@ -220,14 +225,14 @@
 
     // Relance : trois lignes, avec le MÊME lien. Le jeton vit 21 jours, il est
     // donc encore valide — inutile d'en créer un second qui doublonnerait.
-    relancer: function (token, pid) {
+    relancer: function (code, pid) {
       // CLIENTS porte les adresses mail et n'est pas chargé sur cet écran.
       Promise.all([V2.rdvSources(), V2.rdvTelCharger()]).then(function () {
         var o = V2.rdvInfo(pid);
         if (!o.email) { V2.toast('Pas d’adresse mail pour cette officine.'); return; }
         var corps = 'Bonjour' + (o.contact ? ' ' + o.contact : '') + ',\n\n' +
           'Je me permets de revenir vers vous : le lien pour choisir un créneau est toujours actif.\n' +
-          V2.rdv.BASE_URL + '?t=' + token + '\n\nBien à vous,\n' + prenom() +
+          V2.rdv.BASE_URL + '?t=' + code + '\n\nBien à vous,\n' + prenom() +
           (V2.rdvTel ? '\n' + V2.rdvTel : '') +
           '\n\n— Si vous ne souhaitez plus recevoir ces propositions, répondez STOP à ce mail.';
         V2.rdv._ouvrir('mailto:' + encodeURIComponent(o.email) +
@@ -401,7 +406,7 @@
           return '<div class="v2-rdv-item"><b>' + esc(l.nom) + '</b>' +
             '<span class="sm">envoyé le ' + esc(String(l.envoye_le).slice(0, 10)) + '</span>' +
             '<div class="v2-rdv-acts">' +
-              '<button class="v2-btn" onclick="V2.rdv.relancer(\'' + escArg(l.token) + '\',\'' +
+              '<button class="v2-btn" onclick="V2.rdv.relancer(\'' + escArg(l.code || l.token) + '\',\'' +
                 escArg(String(l.cip || '')) + '\')">Relancer</button>' +
               '<button class="v2-btn v2-btn-ghost" onclick="V2.rdv.nePlusSolliciter(\'' +
                 escArg(String(l.cip || '')) + '\',\'' + escArg(l.nom) + '\')">Ne plus solliciter</button>' +
