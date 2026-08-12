@@ -63,6 +63,9 @@ jobs:
       - name: Test archive d'évènements (prix, avis CEPS)
         run: python3 tests/archive-evenements.test.py
 
+      - name: Test journal du modèle national (mémoire de la tendance marché)
+        run: python3 tests/national-histo.test.py
+
       - name: Installer Playwright (éphémère, non committé)
         run: |
           npm i --no-save playwright@latest >/dev/null 2>&1

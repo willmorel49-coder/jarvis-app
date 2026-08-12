@@ -26,7 +26,62 @@ import datetime
 HERE = os.path.dirname(os.path.abspath(__file__))
 V2 = os.path.join(HERE, "crm", "v2")
 OUT = os.path.join(V2, "national.json")
+HISTO = os.path.join(V2, "national-histo.json")
 MINI_BOITES = int(os.environ.get("NAT_MINI", "1000"))   # sous ce volume France : du bruit
+
+
+def maj_histo(data, mois):
+    """Journal des passages : un volume France par (produit, mois). Append-only.
+
+    POURQUOI. `national.json` est une PHOTO : volume, saison, molécule — aucune tendance.
+    Or c'est la tendance du marché (« cette molécule progresse de 12 % sur un an ») qui
+    améliorerait vraiment la commande ; la saison nationale, elle, n'ajoute que 143
+    produits à la couverture déjà en place (mesuré le 12/08/2026). Une tendance ne se
+    calcule pas après coup : elle s'accumule. Un mois non enregistré est perdu pour
+    toujours — la source Open Medic ne publie qu'un millésime à la fois.
+
+    FORMAT. Colonnes parallèles `{"mois": [...], "v": {cip: [...]}}` : 9 986 produits ×
+    N mois grossit vite, et cette forme évite de répéter la clé à chaque point. Toutes
+    les séries ont la longueur de `mois` — un trou vaut `None` (produit pas encore suivi,
+    ou sorti du modèle), jamais 0 : absent ne veut pas dire nul.
+
+    Rejouer le même mois met la valeur à jour au lieu d'ajouter une colonne.
+    """
+    try:
+        with io.open(HISTO, "r", encoding="utf-8") as f:
+            h = json.load(f)
+        mois_l = h.get("mois") or []
+        vals = h.get("v") or {}
+        if not isinstance(mois_l, list) or not isinstance(vals, dict):
+            raise ValueError
+    except Exception:
+        mois_l, vals = [], {}          # illisible : on repart proprement, sans perdre le mois
+
+    if mois in mois_l:
+        i = mois_l.index(mois)         # relance du robot le même mois
+    else:
+        mois_l.append(mois)
+        i = len(mois_l) - 1
+    n = len(mois_l)
+
+    for cip, série in vals.items():
+        while len(série) < n:
+            série.append(None)         # produit sorti du modèle : trou, pas zéro
+
+    for cip, x in (data or {}).items():
+        s = vals.setdefault(str(cip), [None] * n)
+        while len(s) < n:
+            s.append(None)
+        s[i] = x.get("v")
+
+    # Toujours écrire : `git add` échoue en bloc si un chemin n'existe pas, et le commit
+    # qui suit passe quand même, amputé.
+    with io.open(HISTO, "w", encoding="utf-8") as f:
+        json.dump({"generated": mois, "n": len(vals), "nMois": n,
+                   "note": "volume France par produit, un point par passage mensuel — "
+                           "append-only, jamais purgé : c'est la seule mémoire du marché",
+                   "mois": mois_l, "v": vals}, f, ensure_ascii=False, separators=(",", ":"))
+    return len(data or {})
 
 
 def charger(nom):
@@ -98,8 +153,13 @@ def main():
     }
     if not ecrire_si_complet(OUT, out):
         raise SystemExit(1)
+    # La photo est ecrite ; on note aussi le passage, sinon la tendance du marche
+    # n'existera jamais (chaque mois non enregistre est perdu definitivement).
+    mois = datetime.date.today().strftime("%Y-%m")
+    n_histo = maj_histo(data, mois)
     print("OK · %d medicaments modelises · %d avec profil saisonnier · %d avec molecule"
           % (len(data), avec_saison, avec_dci))
+    print("journal du marche : %d produits notes pour %s" % (n_histo, mois))
     print("→ %s (%d Ko)" % (OUT, os.path.getsize(OUT) // 1024))
 
 
