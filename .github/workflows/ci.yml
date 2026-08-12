@@ -58,6 +58,11 @@ jobs:
       - name: Test robot ANSM (l'archive des épisodes clos ne perd rien)
         run: python3 tests/ansm-archive.test.py
 
+      # Les sources de prix sont des fenêtres glissantes (DILA ~20 jours, BDPM sans
+      # historique) : ce qu'un robot voit et n'archive pas est perdu définitivement.
+      - name: Test archive d'évènements (prix, avis CEPS)
+        run: python3 tests/archive-evenements.test.py
+
       - name: Installer Playwright (éphémère, non committé)
         run: |
           npm i --no-save playwright@latest >/dev/null 2>&1

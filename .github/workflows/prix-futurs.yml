@@ -30,12 +30,15 @@ jobs:
         run: python3 generate_prix_futurs.py
       - name: Committer si changement
         run: |
-          if git diff --quiet -- crm/v2/prix-futurs.json; then
+          # ⚠️ l'archive est la SEULE copie des évènements sortis de la fenêtre glissante
+          # de la source : elle DOIT être commitée. On indexe d'abord — `git diff` seul
+          # ne voit pas un fichier encore non suivi — puis on juge sur ce qui est indexé.
+          git config user.name  "JARVIS copilote"
+          git config user.email "actions@users.noreplace.github.com"
+          git add crm/v2/prix-futurs.json crm/v2/prix-futurs-archive.json
+          if git diff --cached --quiet; then
             echo "Pas de changement."
           else
-            git config user.name  "JARVIS copilote"
-            git config user.email "actions@users.noreplace.github.com"
-            git add crm/v2/prix-futurs.json
             git commit -m "data(anticipation): futures baisses de prix CEPS/JO $(date -u +%Y-%m-%d)"
             # 24 robots poussent sur le meme depot et GitHub livre leurs executions
             # planifiees en paquet : une seule reprise ne suffit pas (le 03/08, ansm-dispo,
