@@ -23,9 +23,12 @@ import tarfile
 import datetime
 import urllib.request
 
+from archive_evenements import archiver
+
 LIST = "https://echanges.dila.gouv.fr/OPENDATA/JORFSIMPLE/"
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "crm", "v2", "prix-futurs.json")
+ARCHIVE = os.path.join(HERE, "crm", "v2", "prix-futurs-archive.json")
 SNAP = os.path.join(HERE, "crm", "v2", "prix-snapshot.json")
 PRODSTATS = os.path.join(HERE, "crm", "v2", "prod-stats-data.js")
 
@@ -147,7 +150,15 @@ def main():
            "changes": out[:120]}
     with io.open(OUT, "w", encoding="utf-8") as f:
         json.dump(res, f, ensure_ascii=False, separators=(",", ":"))
+    # La DILA ne garde que ~20 jours (N_TARBALLS) : un avis sorti de la fenêtre n'existe
+    # plus nulle part. On archive donc `out` ENTIER — surtout pas `res["changes"]`, qui
+    # est tronqué à 120 pour l'affichage (un plafond d'affichage n'est pas un plafond
+    # d'enregistrement).
+    n_arch, n_neuf = archiver(ARCHIVE, out, lambda e: (e.get("c"), e.get("date_effet")), today,
+                              note="avis CEPS (CIP13, PFHT, date d'effet) archivés une fois "
+                                   "pour toutes — la DILA ne publie qu'une fenêtre de ~20 jours")
     print("OK · %d dumps lus · %d changements de prix (catalogue) · %d à venir · %d baisses" % (ok, len(out), len(futures), len(baisses)))
+    print("archive des avis CEPS = %d (+%d aujourd'hui)" % (n_arch, n_neuf))
     for x in out[:6]:
         print("  %s  %s  PFHT %.2f  TTC %.2f  effet %s  [%s]" % (x["c"], x["d"][:26], x["pfht"], x["ppttc"], x.get("date_effet"), x.get("sens")))
     print("→ %s (%d o)" % (OUT, os.path.getsize(OUT)))
