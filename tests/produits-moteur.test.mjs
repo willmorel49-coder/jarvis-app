@@ -410,3 +410,64 @@ test('penetration : rend le couple (acheteurs, total) reseau et groupement', () 
   assert.deepEqual(M.penetration(idx, 'INCONNU'), { n: 0, total: 9 });
   assert.deepEqual(M.penetration(idx, 'AAA', 'Inexistant'), { n: 0, total: 0 });
 });
+
+// ── Listing complet d'un groupement ────────────────────────────────
+// « Toute la data » : ce que le groupement commande DEJA, et ce qu'il ne
+// prend pas — avec, sur chaque ligne, ses adherents ET les clients IP.
+const V_GRP = [
+  { pharmacyId: 'G1', artCode: 'AAA', mntNetHt: 100, qte: 1 },
+  { pharmacyId: 'G2', artCode: 'AAA', mntNetHt: 200, qte: 1 },
+  { pharmacyId: 'G3', artCode: 'AAA', mntNetHt: 50, qte: 1 },
+  { pharmacyId: 'G1', artCode: 'BBB', mntNetHt: 60, qte: 1 },
+  // CCC : aucun Giphar ne le prend, mais 2 officines hors groupement oui
+  { pharmacyId: 'MED1', artCode: 'CCC', mntNetHt: 90, qte: 1 },
+  { pharmacyId: 'SEUL', artCode: 'CCC', mntNetHt: 70, qte: 1 },
+];
+
+test('listing groupement : ce qu il commande, avec ses deux compteurs', () => {
+  const idx = M.indexer(OFFICINES, V_GRP);
+  const r = M.listingGroupementComplet(idx, 'Giphar', { seuilTrou: 1 });
+  const aaa = r.find((l) => l.cip === 'AAA');
+  assert.equal(aaa.adherents, 3);
+  assert.equal(aaa.taille, 6, 'le groupement compte 6 officines');
+  assert.equal(aaa.clientsIP, 3);
+  assert.equal(aaa.reseauTotal, 9);
+  assert.equal(aaa.statut, 'commande');
+});
+
+test('listing groupement : les trous remontent aussi, marques a pousser', () => {
+  const idx = M.indexer(OFFICINES, V_GRP);
+  const r = M.listingGroupementComplet(idx, 'Giphar', { seuilTrou: 1 });
+  const ccc = r.find((l) => l.cip === 'CCC');
+  assert.ok(ccc, 'un produit que le groupement ne prend pas doit apparaitre');
+  assert.equal(ccc.adherents, 0);
+  assert.equal(ccc.clientsIP, 2);
+  assert.equal(ccc.statut, 'pousser');
+});
+
+test('listing groupement : un trou trop confidentiel est ecarte', () => {
+  const idx = M.indexer(OFFICINES, V_GRP);
+  const r = M.listingGroupementComplet(idx, 'Giphar', { seuilTrou: 3 });
+  assert.ok(!r.some((l) => l.cip === 'CCC'), 'CCC n a que 2 clients IP');
+});
+
+test('listing groupement : trie par diffusion decroissante', () => {
+  const idx = M.indexer(OFFICINES, V_GRP);
+  const r = M.listingGroupementComplet(idx, 'Giphar', { seuilTrou: 1 });
+  for (let i = 1; i < r.length; i++) {
+    const a = r[i - 1], b = r[i];
+    assert.ok(a.adherents > b.adherents || (a.adherents === b.adherents && a.clientsIP >= b.clientsIP),
+      `ligne ${i} mal triee`);
+  }
+});
+
+test('listing groupement : filtre stock respecte', () => {
+  const idx = M.indexer(OFFICINES, V_GRP);
+  const r = M.listingGroupementComplet(idx, 'Giphar', { seuilTrou: 1, stock: { AAA: 5 } });
+  assert.deepEqual(r.map((l) => l.cip), ['AAA'], 'seul AAA est en stock');
+});
+
+test('listing groupement : groupement inconnu rend une liste vide', () => {
+  const idx = M.indexer(OFFICINES, V_GRP);
+  assert.deepEqual(M.listingGroupementComplet(idx, 'Inexistant', {}), []);
+});

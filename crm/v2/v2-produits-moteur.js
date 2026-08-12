@@ -443,6 +443,49 @@
     return out;
   };
 
+  // Listing COMPLET d'un groupement : tout ce que ses adhérents commandent
+  // déjà, plus ce qu'ils ne prennent pas alors que le réseau le prend.
+  // Chaque ligne porte les deux compteurs qui font l'argument :
+  //   · combien de SES adhérents le prennent   (48 / 77)
+  //   · combien de clients Intégral le prennent (478 / 691)
+  // opts : { stock, seuilTrou } — seuilTrou = nb minimal de clients IP pour
+  // qu'un produit non pris par le groupement mérite d'apparaître.
+  M.listingGroupementComplet = function (idx, groupement, opts) {
+    opts = opts || {};
+    var stock = opts.stock || null;
+    var seuil = opts.seuilTrou == null ? 10 : +opts.seuilTrou;
+    var taille = (idx.tailleGrp || {})[groupement] || 0;
+    if (!taille) return [];
+    var dansGrp = (idx.acheteursGrp || {})[groupement] || {};
+    var reseauTotal = idx.nbOfficines || 0;
+    var out = [], cip, enStock = function (c) { return !stock || (+stock[c] || 0) > 0; };
+
+    for (cip in dansGrp) {
+      if (!Object.prototype.hasOwnProperty.call(dansGrp, cip)) continue;
+      if (!enStock(cip)) continue;
+      out.push({
+        cip: cip, adherents: dansGrp[cip], taille: taille,
+        clientsIP: (idx.acheteurs || {})[cip] || 0, reseauTotal: reseauTotal,
+        statut: 'commande'
+      });
+    }
+    for (cip in idx.acheteurs) {
+      if (!Object.prototype.hasOwnProperty.call(idx.acheteurs, cip)) continue;
+      if (dansGrp[cip]) continue;                       // déjà pris en compte
+      if (idx.acheteurs[cip] < seuil) continue;         // trop confidentiel
+      if (!enStock(cip)) continue;
+      out.push({
+        cip: cip, adherents: 0, taille: taille,
+        clientsIP: idx.acheteurs[cip], reseauTotal: reseauTotal,
+        statut: 'pousser'
+      });
+    }
+    // Diffusion dans le groupement d'abord, diffusion réseau en départage —
+    // même règle que l'ancien listing (sortie puis quantité).
+    out.sort(function (a, b) { return b.adherents - a.adherents || b.clientsIP - a.clientsIP; });
+    return out;
+  };
+
   if (typeof module !== 'undefined' && module.exports) module.exports = M;
   else glob.V2PRODUITS = M;
 })(typeof window !== 'undefined' ? window : this);
