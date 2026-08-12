@@ -193,3 +193,52 @@ test('une plage d’agenda incohérente est ignorée, pas plantée', () => {
   });
   assert.ok(r.find(j => j.date === lundiProchain), 'le jour reste proposé');
 });
+
+// ─── Point de départ du commercial ─────────────────────────────────
+// Sans lui, une journée vide proposait 9h à Brest à quelqu'un qui part
+// de Nantes. Le trajet doit exister dans le calcul, pas seulement sur la route.
+
+const NANTES_DEPART = { lat: 47.2184, lon: -1.5536 };
+const BREST = { lat: 48.3904, lon: -4.4861 };      // ~300 km
+const CHOLET = { lat: 47.0594, lon: -0.8797 };     // ~60 km
+
+test('sans point de départ, rien ne change (aucun créneau écarté)', () => {
+  const a = M.libres([], BREST, {}, PLAGES);
+  const b = M.libres([], BREST, { depart: null }, PLAGES);
+  assert.deepEqual(a, b);
+  assert.ok(a.includes(9 * 60), '9h reste proposé quand on ne sait pas d’où il part');
+});
+
+test('avec un départ de Nantes, Brest n’est plus proposé à 9h', () => {
+  const l = M.libres([], BREST, { depart: NANTES_DEPART }, PLAGES);
+  assert.ok(!l.includes(9 * 60), '9h à Brest en partant de Nantes : impossible');
+});
+
+test('une officine à 60 km reste réservable, mais plus à l’ouverture', () => {
+  const l = M.libres([], CHOLET, { depart: NANTES_DEPART }, PLAGES);
+  assert.ok(l.length > 0, 'Cholet reste atteignable dans la journée');
+  assert.ok(!l.includes(9 * 60), 'pas à 9h pile : il y a une heure de route');
+  const premier = Math.min(...l);
+  assert.ok(premier > 9 * 60, `le premier créneau (${premier}) est après l’ouverture`);
+});
+
+test('il doit aussi pouvoir rentrer : plus de créneau collé à la fermeture', () => {
+  const l = M.libres([], CHOLET, { depart: NANTES_DEPART }, PLAGES);
+  const dernier = Math.max(...l);
+  assert.ok(dernier + 45 < 18 * 60, 'le dernier RDV finit avant 18h, route de retour comprise');
+});
+
+test('un RDV déjà posé le matin lève la contrainte de départ', () => {
+  // Il est déjà sorti de chez lui : c'est le chaînage entre RDV qui décide,
+  // plus la distance depuis son domicile.
+  const avec = M.libres([{ heure: '09:00', duree_min: 45, ...CHOLET }],
+                        CHOLET, { depart: NANTES_DEPART }, PLAGES);
+  assert.ok(avec.includes(10 * 60), '10h reste possible juste après le RDV de 9h');
+});
+
+test('une officine hors de portée sur la journée disparaît complètement', () => {
+  const loin = { lat: 43.6047, lon: 1.4442 };   // Toulouse, ~560 km
+  const j = M.jour('2026-08-17', [], loin, { depart: NANTES_DEPART },
+                   [['09:00', '12:30'], ['14:00', '18:00']]);
+  assert.equal(j, null, 'aucune journée ne tient : le jour est écarté');
+});

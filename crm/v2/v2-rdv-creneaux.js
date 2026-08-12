@@ -18,7 +18,10 @@
       '5': [['09:00', '12:30'], ['14:00', '18:00']]
     },
     duree_min: 45, marge_route_min: 15, horizon_jours: 21, delai_min_jours: 3,
-    rayon_chaud_km: 25, rayon_max_km: 60, vitesse_kmh: 50, coef_route: 1.3
+    rayon_chaud_km: 25, rayon_max_km: 60, vitesse_kmh: 50, coef_route: 1.3,
+    // D'où le commercial part le matin et où il rentre le soir : {lat, lon}.
+    // null = on ne sait pas, et on ne suppose rien (aucun créneau n'est écarté).
+    depart: null
   };
 
   var PAS = 15;          // granularité des créneaux, en minutes
@@ -74,15 +77,42 @@
   };
 
   // Un créneau est libre s'il ne chevauche aucun RDV du jour, temps de route compris.
+  //
+  // Et — depuis le 12/08 — s'il est ATTEIGNABLE depuis le point de départ du
+  // commercial. Sans ça, une journée encore vide proposait 9 h à Brest à
+  // quelqu'un qui part de Nantes : trois heures de route qui n'existaient nulle
+  // part dans le calcul. La contrainte ne s'applique qu'au PREMIER rendez-vous
+  // de la journée ; dès qu'un autre le précède, le commercial est déjà sur la
+  // route et c'est le chaînage entre RDV qui reprend la main.
   M.libres = function (occupesDuJour, officine, dispo, plages) {
     var d = fusionner(dispo), duree = d.duree_min;
     var occ = occupesDuJour || [];
+    var pl = plages || [];
+
+    var tAller = null, tRetour = null;
+    if (d.depart && pl.length) {
+      var km0 = M.distanceKm(officine, d.depart, d.coef_route);
+      if (km0 != null) {
+        var route = M.trajetMin(km0, d);
+        var ouverture = hm2min(pl[0][0]);
+        var fermeture = hm2min(pl[pl.length - 1][1]);
+        tAller = ouverture + route;              // au plus tôt sur place
+        tRetour = fermeture - route;             // dernier départ tenable
+      }
+    }
+
     return M.grille(plages, duree).filter(function (t) {
+      var precede = false;
       for (var i = 0; i < occ.length; i++) {
         var o = occ[i], ot = hm2min(o.heure), od = o.duree_min || duree;
         var km = M.distanceKm(officine, o, d.coef_route);
         var tr = km == null ? d.marge_route_min : M.trajetMin(km, d);
         if (!(t + duree + tr <= ot || ot + od + tr <= t)) return false;
+        if (ot + od <= t) precede = true;        // un RDV le précède déjà ce jour-là
+      }
+      if (tAller != null && !precede) {
+        if (t < tAller) return false;              // il ne peut pas être là si tôt
+        if (t + duree > tRetour) return false;     // il finirait après sa journée
       }
       return true;
     });
