@@ -20,10 +20,13 @@ import json
 import datetime
 import urllib.request
 
+from archive_evenements import archiver
+
 CISCIP = "https://base-donnees-publique.medicaments.gouv.fr/download/file/CIS_CIP_bdpm.txt"
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "crm", "v2", "prix.json")
 SNAP = os.path.join(HERE, "crm", "v2", "prix-snapshot.json")
+ARCHIVE = os.path.join(HERE, "crm", "v2", "prix-archive.json")
 PRODSTATS = os.path.join(HERE, "crm", "v2", "prod-stats-data.js")
 
 MIN_DROP_PCT = 1.0    # baisse mini pour être retenue (bruit d'arrondi sinon)
@@ -127,6 +130,15 @@ def main():
     with io.open(SNAP, "w", encoding="utf-8") as f:
         json.dump(cur, f, ensure_ascii=False, separators=(",", ":"))
 
+    # La BDPM ne publie AUCUN historique de prix : une baisse detectee aujourd'hui
+    # disparait du fichier des le prochain passage. On archive donc `drops` ENTIER
+    # (pas `drops[:MAX_DROPS]`, qui est une troncature d'affichage).
+    n_arch, n_neuf = archiver(ARCHIVE, drops,
+                              lambda e: (e.get("c"), e.get("old"), e.get("new")),
+                              datetime.date.today().isoformat(),
+                              note="baisses de prix BDPM constatees, archivees une fois pour "
+                                   "toutes — la source ne publie aucun historique")
+    print("archive des baisses de prix = %d (+%d aujourd'hui)" % (n_arch, n_neuf))
     print("OK · suivis=%d · baisses=%d · hausses=%d · %s" % (
         len(cur), len(drops), ups, "AMORCAGE (1er passage)" if baseline else "diff actif"))
     for d in drops[:6]:
