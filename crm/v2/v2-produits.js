@@ -345,15 +345,25 @@
     petitsprix: { l: 'Petits prix', q: { pr_low: 80, pr_mid: 0, pr_high: 0, nr: 0, gen: 0, biosim: 0 }, a: { pr_low: 8 } },
     large:      { l: 'Large', q: { pr_low: 40, pr_mid: 40, pr_high: 10, nr: 30, gen: 40, biosim: 10 }, a: {} }
   };
-  // Le réglage d'abandon n'a de sens que là où il discrimine : sur la tranche
-  // médiane le barème donne 3,89 % à tout le monde, et les NR / génériques /
-  // biosimilaires n'en portent aucun.
-  var REGLE_ABANDON = { pr_low: 1, pr_high: 1 };
+  // Le réglage d'abandon n'a de sens QUE sur les petits prix : l'abandon y est
+  // un forfait de 0,18 €, donc un pourcentage qui va de 4,2 % à 60 % selon le
+  // tarif. Partout ailleurs il ne discrimine rien — 3,89 % sur toute la tranche
+  // médiane (barème), et sur les produits chers le forfait de 19,50 € donne un
+  // taux qui s'effondre (médiane 1,8 %) sans qu'on puisse en tirer un choix.
+  var REGLE_ABANDON = { pr_low: 1 };
   var PALIERS_ABANDON = [0, 4, 6, 8, 10, 15];
+  // Familles où l'on choisit le laboratoire.
+  var LABOS_FAM = { gen: 1, biosim: 1 };
+  var NB_LABOS_AFFICHES = 8;
+  // Génériqueurs partenaires d'Intégral (confirmé par Will le 04/08/2026).
+  var PARTENAIRES = ['EG Labo', 'Zentiva', 'Zydus', 'Teva'];
 
   function smDefaut() {
     var p = PRESETS.decouverte;
-    return { quotas: JSON.parse(JSON.stringify(p.q)), abandonMin: JSON.parse(JSON.stringify(p.a)), nom: '' };
+    return {
+      quotas: JSON.parse(JSON.stringify(p.q)), abandonMin: JSON.parse(JSON.stringify(p.a)),
+      labos: {}, exclusifs: {}, nom: '', plie: false
+    };
   }
   // Toute composition qui entre ici est normalisée : un réglage tronqué ou
   // corrompu (vieille version, écriture partielle, bricolage manuel) ne doit
@@ -363,6 +373,11 @@
     if (!b || typeof b !== 'object') return d;
     if (!b.quotas || typeof b.quotas !== 'object') b.quotas = d.quotas;
     if (!b.abandonMin || typeof b.abandonMin !== 'object') b.abandonMin = {};
+    if (!b.labos || typeof b.labos !== 'object') b.labos = {};
+    if (!b.exclusifs || typeof b.exclusifs !== 'object') b.exclusifs = {};
+    for (k in b.labos) {
+      if (Object.prototype.hasOwnProperty.call(b.labos, k) && !Array.isArray(b.labos[k])) b.labos[k] = [];
+    }
     for (i = 0; i < FAM_ORDRE.length; i++) {
       k = FAM_ORDRE[i];
       b.quotas[k] = Math.max(0, Math.min(300, parseInt(b.quotas[k], 10) || 0));
@@ -379,16 +394,64 @@
     try { localStorage.setItem('produits.surmesure', JSON.stringify(S.sm)); } catch (e) {}
   }
 
+  // CIP de nos listes négociées : « OFFRE IP Générique » et « Offres
+  // Privilèges IP » (crm/marketing-offers.js). 41 références, 35 en stock.
+  function cipsExclusifs() {
+    if (V2.produits._excl) return V2.produits._excl;
+    var set = {}, O = window.MARKETING_IP_OFFERS || [], i, j;
+    for (i = 0; i < O.length; i++) {
+      if (!/Générique|Privilèges/i.test(String(O[i].title || ''))) continue;
+      var pr = O[i].products || [];
+      for (j = 0; j < pr.length; j++) {
+        var c = String(pr[j].cip13 || pr[j].ean || '').replace(/\D/g, '');
+        if (c) set[c] = 1;
+      }
+    }
+    V2.produits._excl = set;
+    return set;
+  }
+
+  // CIP → laboratoire. Génériques : table GENERIQUEURS (99 % de couverture).
+  // Biosimilaires : la base BIOSIMILAIRES, où chaque produit porte ses CIP.
+  function laboParCip() {
+    if (V2.produits._labo) return V2.produits._labo;
+    var m = {}, G = window.GENERIQUEURS, c;
+    if (G) {
+      var d = G.data || G;
+      for (c in d) {
+        if (!Object.prototype.hasOwnProperty.call(d, c)) continue;
+        var v = d[c];
+        m[String(c)] = typeof v === 'string' ? v : (v && (v.labo || v.g)) || null;
+      }
+    }
+    var BS = window.BIOSIMILAIRES, i, j, k;
+    if (BS && BS.molecules) {
+      for (i = 0; i < BS.molecules.length; i++) {
+        var lst = BS.molecules[i].biosimilaires || [];
+        for (j = 0; j < lst.length; j++) {
+          var cips = lst[j].cips || [];
+          for (k = 0; k < cips.length; k++) {
+            if (lst[j].labo) m[String(cips[k])] = lst[j].labo;
+          }
+        }
+      }
+    }
+    V2.produits._labo = m;
+    return m;
+  }
+
   // Catalogue au format attendu par le moteur, construit une fois.
   function catalogue() {
     if (V2.produits._cat) return V2.produits._cat;
     var PS = window.PROD_STATS || [], ST = stockIP();
     var R = (window.RUPTURES && window.RUPTURES.data) || {};
+    var EX = cipsExclusifs(), LB = laboParCip();
     var out = [], i;
     for (i = 0; i < PS.length; i++) {
       var r = PS[i], c = String(r.c);
       out.push({ cip: c, fam: r.f, n: +r.n || 0, ppht: +r.ppht || 0,
-                 stock: +ST[c] || 0, rupture: !!R[c] });
+                 stock: +ST[c] || 0, rupture: !!R[c],
+                 labo: LB[c] || null, exclusif: !!EX[c] });
     }
     V2.produits._cat = out;
     return out;
@@ -409,6 +472,27 @@
     if (!n) delete S.sm.abandonMin[fam]; else S.sm.abandonMin[fam] = n;
     S.page = 0; smSauver(); V2.render();
   };
+  V2.produits.smLabo = function (fam, nom) {
+    var l = S.sm.labos[fam] || (S.sm.labos[fam] = []);
+    var i = l.indexOf(nom);
+    if (i >= 0) l.splice(i, 1); else l.push(nom);
+    S.page = 0; smSauver(); V2.render();
+  };
+  V2.produits.smLabosTous = function (fam) {
+    S.sm.labos[fam] = []; S.page = 0; smSauver(); V2.render();
+  };
+  V2.produits.smPartenaires = function (fam) {
+    // Bascule : si les 4 partenaires sont déjà seuls sélectionnés, on relâche.
+    var l = S.sm.labos[fam] || [];
+    var memes = l.length === PARTENAIRES.length &&
+                PARTENAIRES.every(function (p) { return l.indexOf(p) >= 0; });
+    S.sm.labos[fam] = memes ? [] : PARTENAIRES.slice();
+    S.page = 0; smSauver(); V2.render();
+  };
+  V2.produits.smExclusif = function (fam) {
+    S.sm.exclusifs[fam] = !S.sm.exclusifs[fam];
+    S.page = 0; smSauver(); V2.render();
+  };
   V2.produits.smPlier = function () {
     S.sm.plie = !S.sm.plie; smSauver(); V2.render();
   };
@@ -416,6 +500,7 @@
     var p = PRESETS[k]; if (!p) return;
     S.sm.quotas = JSON.parse(JSON.stringify(p.q));
     S.sm.abandonMin = JSON.parse(JSON.stringify(p.a));
+    S.sm.labos = {}; S.sm.exclusifs = {};
     S.page = 0; smSauver(); V2.render();
   };
   var tn = null;
@@ -453,7 +538,36 @@
           '<button class="sm-b" aria-label="Plus" onclick="V2.produits.smQuota(\'' + fam + '\',5)">+</button>' +
           sel +
         '</div>' +
+        ligneLabos(fam) +
       '</div>';
+  }
+
+  // Choix des laboratoires — n'apparaît que si la catégorie est demandée,
+  // sinon on encombrerait le composeur avec des réglages sans effet.
+  function ligneLabos(fam) {
+    if (!LABOS_FAM[fam] || !(+S.sm.quotas[fam] > 0)) return '';
+    var M = window.V2PRODUITS;
+    var choisis = S.sm.labos[fam] || [];
+    var dispo = M.labosDisponibles(catalogue(), fam).slice(0, NB_LABOS_AFFICHES);
+    if (!dispo.length) return '';
+    var q = function (v) { return String(v).replace(/[\\'"<>&]/g, ''); };
+
+    var c = '<span class="pr-chip sm-lab' + (choisis.length ? '' : ' on') +
+      '" onclick="V2.produits.smLabosTous(\'' + fam + '\')">Tous</span>';
+    if (fam === 'gen') {
+      var memes = choisis.length === PARTENAIRES.length &&
+        PARTENAIRES.every(function (p) { return choisis.indexOf(p) >= 0; });
+      c += '<span class="pr-chip sm-lab' + (memes ? ' on' : '') +
+        '" onclick="V2.produits.smPartenaires(\'gen\')">Partenaires</span>' +
+        '<span class="pr-chip sm-lab sm-excl' + (S.sm.exclusifs.gen ? ' on' : '') +
+        '" onclick="V2.produits.smExclusif(\'gen\')">Exclusivités</span>';
+    }
+    for (var i = 0; i < dispo.length; i++) {
+      c += '<span class="pr-chip sm-lab' + (choisis.indexOf(dispo[i].nom) >= 0 ? ' on' : '') +
+        '" onclick="V2.produits.smLabo(\'' + fam + '\',\'' + q(dispo[i].nom) + '\')">' +
+        esc(dispo[i].nom) + ' <em>' + dispo[i].n + '</em></span>';
+    }
+    return '<div class="pr-chips pr-defile sm-labos">' + c + '</div>';
   }
 
   function ligneSurMesureHtml(l) {
@@ -487,7 +601,8 @@
     if (!(window.PROD_STATS || []).length) return vide('Catalogue indisponible', 'Les données produits ne sont pas chargées.');
 
     var r = M.listeSurMesure(catalogue(), {
-      quotas: S.sm.quotas, abandonMin: S.sm.abandonMin, sansRupture: S.sansRupture
+      quotas: S.sm.quotas, abandonMin: S.sm.abandonMin, sansRupture: S.sansRupture,
+      labos: S.sm.labos, exclusifs: S.sm.exclusifs
     });
     var lignes = filtrer(r.lignes);
 
@@ -551,7 +666,8 @@
       // Liste prospect : le net vient du barème, calculé par le moteur.
       titre = (S.sm && S.sm.nom) ? S.sm.nom : 'Sélection Intégral Pharma';
       lignes = filtrer(M.listeSurMesure(catalogue(), {
-        quotas: S.sm.quotas, abandonMin: S.sm.abandonMin, sansRupture: S.sansRupture
+        quotas: S.sm.quotas, abandonMin: S.sm.abandonMin, sansRupture: S.sansRupture,
+      labos: S.sm.labos, exclusifs: S.sm.exclusifs
       }).lignes);
     } else {
       var idx = V2.produits.index();
@@ -728,6 +844,10 @@
       '.pr-defile .pr-chip{flex:none}',
       '.sm-plier{display:flex;flex-direction:column;align-items:flex-start;gap:3px;width:100%;min-height:44px;margin:10px 0;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--paper);font:600 14px/1.2 Inter,sans-serif;color:var(--ip-blue);cursor:pointer;text-align:left}',
       '.sm-plier em{font:400 12px/1.3 Inter,sans-serif;color:var(--muted);font-style:normal}',
+      '.sm-labos{margin-top:8px}',
+      '.sm-lab{min-height:38px;font-size:12.5px}',
+      '.sm-lab em{font-style:normal;opacity:.55;margin-left:3px}',
+      '.sm-excl.on{background:var(--c-mint);border-color:var(--c-mint)}',
       '.sm-nom{margin-bottom:10px}',
       '.sm-presets{margin-bottom:12px}',
       '.sm-grille{display:flex;flex-direction:column;gap:8px}',
