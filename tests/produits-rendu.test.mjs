@@ -242,3 +242,54 @@ test('robustesse : un reglage corrompu ne fait PAS d ecran blanc', () => {
     assert.ok(r.innerHTML.length > 500, `ecran quasi vide avec ${JSON.stringify(casse)}`);
   }
 });
+
+// ── Le PDF laissé au pharmacien ────────────────────────────────────
+test('PDF : se fabrique et porte le nom saisi', () => {
+  sb.V2.produits.S.mode = 'surmesure';
+  sb.V2.produits.S.sm = {
+    quotas: { pr_low: 12, pr_mid: 4, pr_high: 1, nr: 3, gen: 4, biosim: 0 },
+    abandonMin: { pr_low: 8 }, nom: 'PHARMACIE DU CENTRE', plie: false,
+  };
+  const r = sb.V2.produits.pdfHtml();
+  assert.ok(r && !r.erreur, `erreur : ${r && r.erreur}`);
+  assert.ok(r.html.includes('PHARMACIE DU CENTRE'));
+  assert.ok(r.lignes > 10, `seulement ${r.lignes} lignes`);
+});
+
+test('PDF · REGLE METIER : aucune condition commerciale chiffree', () => {
+  const h = sb.V2.produits.pdfHtml().html;
+  assert.ok(!/abandon/i.test(h), 'le PDF mentionne l abandon de marge');
+  assert.ok(!/remise/i.test(h), 'le PDF contient le mot proscrit');
+  // Un « % » n'est tolere que dans un NOM de produit (IBUFETUM 5% GEL) ou dans
+  // le CSS (width:100%). Tout autre pourcentage serait une condition chiffree.
+  const suspects = (h.match(/.{0,30}%/g) || []).filter((bout) => {
+    if (/width:\s*100%/.test(bout)) return false;          // CSS
+    if (/<td>[^<]*\d[,.]?\d*\s*%/.test(bout)) return false; // nom de produit
+    return /\d\s*%/.test(bout);
+  });
+  assert.deepEqual(suspects, [], `pourcentage suspect : ${suspects.join(' | ')}`);
+});
+
+test('PDF : regroupe par bloc lisible par un pharmacien', () => {
+  const h = sb.V2.produits.pdfHtml().html;
+  for (const bloc of ['Médicaments remboursables', 'Non remboursables', 'Génériques']) {
+    assert.ok(h.includes(bloc), `bloc « ${bloc} » absent`);
+  }
+  // Nos 3 tranches internes de princeps n'ont aucun sens pour le pharmacien.
+  assert.ok(!/Princeps/.test(h), 'le PDF expose notre decoupage interne');
+});
+
+test('PDF : plus de colonne « Disponibilite » qui repete la meme chose', () => {
+  const h = sb.V2.produits.pdfHtml().html;
+  assert.ok(!h.includes('<th class="n">Disponibilité</th>'), 'colonne inutile encore la');
+  assert.ok(/disponibles au jour de/.test(h), 'la mention de disponibilite a disparu');
+});
+
+test('PDF : sans officine choisie en mode Vendeur, message clair', () => {
+  sb.V2.produits.S.mode = 'vendeur';
+  const avant = sb.V2.produits.S.ph;
+  sb.V2.produits.S.ph = null;
+  const r = sb.V2.produits.pdfHtml();
+  assert.ok(r.erreur, 'devrait rendre une erreur explicite');
+  sb.V2.produits.S.ph = avant;
+});
