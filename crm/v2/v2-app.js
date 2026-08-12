@@ -284,6 +284,13 @@
   // ── RENDER (routeur) ──────────────────────────
   V2.render = function () {
     var root = $app(); if (!root) return;
+    // Pas connecté = on ne rend RIEN. V2.boot() a déjà affiché l'écran de connexion et
+    // s'est arrêté là, sans jamais brancher l'écouteur `hashchange`. Or plusieurs modules
+    // (profil, données réseau) rappellent V2.render() en différé : sans cette garde, ils
+    // écrasaient l'écran de connexion par l'accueil. L'utilisateur voyait une app d'apparence
+    // normale dont AUCUN onglet ne répondait — le clic changeait le #hash, et personne
+    // n'écoutait. Même garde que V2.openCmdk plus bas.
+    if (!V2.user) return;
     injectShellStyles();
     // Les données réseau (27 Mo) ne sont plus chargées au boot : on les charge ici,
     // UNE fois, au premier rendu, derrière un écran de lancement — l'app apparaît
