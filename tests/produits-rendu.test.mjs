@@ -43,7 +43,12 @@ vm.runInContext(
 // Stubs V2 : memes contrats que v2-app.js.
 vm.runInContext(`window.V2 = { pages:{}, sales:[], pharmacies:[],
   esc: s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'),
-  fmtEur: n => Math.round(+n||0).toLocaleString('fr-FR') + ' €',
+  // COPIE CONFORME de v2-boot.js : un stub qui arrondit fabrique de faux
+  // echecs (« 12 € » au lieu de « 12,34 € ») et masque de vrais defauts.
+  fmtEur: n => { if (typeof n !== 'number' || !isFinite(n)) return '—';
+    if (n === 0) return '0 €';
+    if (Math.abs(n) >= 1000) return Math.round(n).toLocaleString('fr-FR') + ' €';
+    return n.toFixed(2).replace('.', ',') + ' €'; },
   fmtNum: n => Math.round(+n||0).toLocaleString('fr-FR'),
   topbar: () => '<header></header>', go: () => {}, toast: () => {}, render: () => {} };
   window.ICO = () => '';`, sb);
@@ -449,4 +454,109 @@ test('suivi : sur les vraies donnees, des references entrent bien en cours d ann
   }
   assert.ok(officinesAvecEntree > 50,
     `seulement ${officinesAvecEntree} officines avec une nouvelle reference le dernier mois`);
+});
+
+// ── L'apercu modifiable ────────────────────────────────────────────
+function ouvrirApercu(sm) {
+  sb.V2.produits.S.sel = {};
+  sb.V2.produits.S.doc = null;
+  rendreSM(sm || { quotas: { pr_low: 6, gen: 3 } });
+  sb.V2.produits.S.apercu = true;
+  const r = { innerHTML: '' };
+  sb.V2.pages.produits.render(r, null);
+  return r.innerHTML;
+}
+
+test('apercu : la feuille reprend la liste et se laisse modifier', () => {
+  const h = ouvrirApercu();
+  assert.ok(/pr-apx-a4/.test(h), 'feuille absente');
+  assert.ok(/contenteditable="true"[^>]*data-champ="titre"/.test(h), 'titre non modifiable');
+  assert.ok(/data-champ="d"/.test(h), 'libelle non modifiable');
+  assert.ok(/data-champ="net"/.test(h), 'prix non modifiable');
+  assert.equal((h.match(/<tr><td>/g) || []).length, 9, '9 lignes attendues');
+});
+
+test('apercu : largeur A4 conservee, comme le PDF', () => {
+  ouvrirApercu();
+  assert.ok(styles[0].includes('.pr-apx-a4{width:794px'), 'la feuille doit faire 794 px');
+});
+
+test('retouche : corriger un libelle change le document ET le PDF', () => {
+  ouvrirApercu();
+  const cip = sb.V2.produits.documentHtml().cips[0];
+  sb.V2.produits.docChamp(cip, 'd', 'MON LIBELLE A MOI');
+  const r = sb.V2.produits.documentHtml();
+  assert.ok(r.html.includes('MON LIBELLE A MOI'), 'le PDF ignore la retouche');
+});
+
+test('retouche : un prix se saisit en euros, virgule comprise', () => {
+  ouvrirApercu();
+  const cip = sb.V2.produits.documentHtml().cips[0];
+  sb.V2.produits.docChamp(cip, 'net', '12,34 €');
+  assert.ok(sb.V2.produits.documentHtml().html.includes('12,34 €'));
+  // saisie illisible : on reprend la valeur calculee, on n affiche jamais NaN
+  sb.V2.produits.docChamp(cip, 'net', 'nawak');
+  assert.ok(!/NaN/.test(sb.V2.produits.documentHtml().html), 'NaN dans le document');
+});
+
+test('retouche : retirer une ligne la sort du document', () => {
+  ouvrirApercu();
+  const avant = sb.V2.produits.documentHtml();
+  sb.V2.produits.docRetirer(avant.cips[0]);
+  const apres = sb.V2.produits.documentHtml();
+  assert.equal(apres.lignes, avant.lignes - 1);
+  assert.ok(!apres.cips.includes(avant.cips[0]));
+});
+
+test('retouche : deplacer une ligne change son rang', () => {
+  ouvrirApercu();
+  const avant = sb.V2.produits.documentHtml().cips.slice();
+  sb.V2.produits.docDeplacer(avant[1], -1);
+  const apres = sb.V2.produits.documentHtml().cips;
+  assert.equal(apres[0], avant[1], 'la ligne devait remonter');
+  assert.equal(apres[1], avant[0]);
+});
+
+test('retouche : « repartir de la liste » efface tout', () => {
+  ouvrirApercu();
+  const d = sb.V2.produits.documentHtml();
+  sb.V2.produits.docRetirer(d.cips[0]);
+  sb.V2.produits.docTitreSet('AUTRE TITRE');
+  assert.ok(sb.V2.produits.docRetouche() >= 2);
+  sb.V2.produits.docReset();
+  assert.equal(sb.V2.produits.docRetouche(), 0);
+  assert.equal(sb.V2.produits.documentHtml().lignes, d.lignes);
+});
+
+test('apercu · REGLE METIER : le PDF ne porte aucune retouche d interface', () => {
+  const h = sb.V2.produits.documentHtml().html;
+  assert.ok(!/contenteditable/.test(h), 'le PDF contient des zones modifiables');
+  assert.ok(!/docDeplacer|docRetirer/.test(h), 'le PDF contient des boutons');
+  assert.ok(!/abandon/i.test(h) && !/remise/i.test(h), 'condition commerciale dans le PDF');
+});
+
+test('apercu : document vide = message clair, pas de feuille cassee', () => {
+  const h = ouvrirApercu();
+  for (const c of sb.V2.produits.documentHtml().cips.slice()) sb.V2.produits.docRetirer(c);
+  const r = { innerHTML: '' };
+  sb.V2.pages.produits.render(r, null);
+  assert.ok(/Le document est vide/.test(r.innerHTML));
+  assert.ok(/Repartir de la liste/.test(r.innerHTML), 'aucune sortie de secours');
+  sb.V2.produits.docReset();
+  sb.V2.produits.S.apercu = false;
+});
+
+test('apercu : autonome — il calcule la liste s il arrive avant elle', () => {
+  // Cas reel : on ouvre l apercu sans avoir affiche la liste (rechargement,
+  // lien direct). Il doit se remplir tout seul, pas afficher « document vide ».
+  sb.V2.produits._affichees = null;
+  sb.V2.produits.S.sel = {};
+  sb.V2.produits.S.doc = null;
+  sb.V2.produits.S.mode = 'client';
+  sb.V2.produits.S.apercu = true;
+  const r = { innerHTML: '' };
+  sb.V2.pages.produits.render(r, null);
+  assert.ok(!/Le document est vide/.test(r.innerHTML), 'apercu vide alors que la liste ne l est pas');
+  assert.ok(/pr-apx-a4/.test(r.innerHTML), 'feuille absente');
+  sb.V2.produits.S.apercu = false;
 });

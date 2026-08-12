@@ -62,7 +62,9 @@
     mode: 'client', ph: null, grp: null, fam: 'all', q: '', sansRupture: false,
     page: 0, horsStock: false,
     sm: null,  // composition par catégorie, chargée au 1er rendu
-    sel: null  // { cip: 1 } — produits retenus pour le document
+    sel: null,  // { cip: 1 } — produits retenus pour le document
+    doc: null,  // retouches du document (titre, ordre, lignes retirees, champs)
+    apercu: false
   };
   var PAR_PAGE = 40;
 
@@ -518,7 +520,8 @@
   }
 
   function actionsHtml(sousTitre) {
-    return '<button class="v2-btn v2-btn-primary pr-pdf" onclick="V2.produits.documentPdf()">Sortir le PDF</button>' +
+    return '<button class="v2-btn v2-btn-primary pr-pdf" onclick="V2.produits.apercu(true)">Voir et retoucher le document</button>' +
+      '<button class="v2-btn pr-mail" onclick="V2.produits.documentPdf()">Sortir le PDF</button>' +
       '<button class="v2-btn pr-mail" onclick="V2.produits.documentMail()">Par mail</button>' +
       '<div class="pr-source">' + esc(sousTitre) + '</div>';
   }
@@ -800,7 +803,7 @@
   // Les CIP du document : la sélection si elle existe, sinon toute la liste
   // affichée. Aucune quantité — ce qui se règle, c'est le nombre de meilleurs
   // produits par catégorie.
-  function documentCips() {
+  function documentBase() {
     var n = selNb(), out = [], c, i;
     if (n) {
       for (c in S.sel) if (Object.prototype.hasOwnProperty.call(S.sel, c)) out.push(String(c));
@@ -810,11 +813,123 @@
     for (i = 0; i < l.length; i++) out.push(String(l[i].cip));
     return out;
   }
-  V2.produits.documentHtml = function () {
-    var M = window.V2PRODUITS;
+
+  // ── Retouches du document ──────────────────────────────────────
+  // Le commercial peut réécrire un libellé, corriger un prix, retirer ou
+  // déplacer une ligne, changer le titre. Ces retouches vivent à part de la
+  // liste calculée : on peut toujours « repartir de la liste » sans rien perdre.
+  function docDefaut() { return { titre: null, ordre: null, retires: {}, champs: {} }; }
+  function docCharger() {
+    try {
+      var b = JSON.parse(localStorage.getItem('produits.document'));
+      if (!b || typeof b !== 'object') return docDefaut();
+      return {
+        titre: typeof b.titre === 'string' ? b.titre : null,
+        ordre: Array.isArray(b.ordre) ? b.ordre.map(String) : null,
+        retires: (b.retires && typeof b.retires === 'object') ? b.retires : {},
+        champs: (b.champs && typeof b.champs === 'object') ? b.champs : {}
+      };
+    } catch (e) { return docDefaut(); }
+  }
+  function docSauver() {
+    try { localStorage.setItem('produits.document', JSON.stringify(S.doc)); } catch (e) {}
+  }
+
+  // Les CIP du document : la sélection si elle existe, sinon toute la liste
+  // affichée — puis les retouches (lignes retirées, ordre imposé).
+  function documentCips() {
+    var base = documentBase(), vus = {}, out = [], i, c;
+    for (i = 0; i < base.length; i++) vus[base[i]] = 1;
+    if (S.doc.ordre) {
+      // On garde l'ordre choisi pour ce qui est encore dans la liste, puis on
+      // ajoute à la fin ce qui est apparu depuis.
+      for (i = 0; i < S.doc.ordre.length; i++) {
+        c = S.doc.ordre[i];
+        if (vus[c] && !S.doc.retires[c] && out.indexOf(c) < 0) out.push(c);
+      }
+      for (i = 0; i < base.length; i++) {
+        if (!S.doc.retires[base[i]] && out.indexOf(base[i]) < 0) out.push(base[i]);
+      }
+      return out;
+    }
+    for (i = 0; i < base.length; i++) if (!S.doc.retires[base[i]]) out.push(base[i]);
+    return out;
+  }
+  function docLibelle(cip) {
+    var r = S.doc.champs[cip];
+    if (r && typeof r.d === 'string' && r.d.trim()) return r.d;
+    var f = fiche(cip);
+    return f && f.d ? f.d : ('CIP ' + cip);
+  }
+  function docNet(cip) {
+    var r = S.doc.champs[cip];
+    if (r && typeof r.net === 'number' && isFinite(r.net) && r.net >= 0) return r.net;
+    var M = window.V2PRODUITS, f = fiche(cip), ppht = f ? +f.ppht || 0 : 0;
+    // Prospect : le net vient du BARÈME, ce à quoi il a droit. Client et
+    // groupement : le net réel du réseau, déjà négocié.
+    if (S.mode === 'prospect') {
+      return (M && M.porteAbandon(f && f.f) && ppht > 0)
+        ? Math.round((ppht - M.bareme(ppht)) * 100) / 100 : ppht;
+    }
+    return (f && f.net > 0) ? f.net : null;
+  }
+  function docTitre() {
+    if (typeof S.doc.titre === 'string' && S.doc.titre.trim()) return S.doc.titre;
+    return nomCible() || 'Sélection Intégral Pharma';
+  }
+
+  V2.produits.docTitreSet = function (v) {
+    S.doc.titre = String(v || '').trim() || null; docSauver(); V2.render();
+  };
+  V2.produits.docChamp = function (cip, champ, valeur) {
+    cip = String(cip);
+    var r = S.doc.champs[cip] || (S.doc.champs[cip] = {});
+    if (champ === 'net') {
+      // « 1,25 € » → 1.25 ; vide ou illisible → on reprend la valeur calculée.
+      var n = parseFloat(String(valeur).replace(/[^0-9,.-]/g, '').replace(',', '.'));
+      if (isFinite(n) && n >= 0) r.net = Math.round(n * 100) / 100; else delete r.net;
+    } else {
+      var t = String(valeur || '').trim();
+      if (t) r.d = t.slice(0, 90); else delete r.d;
+    }
+    if (!r.d && r.net === undefined) delete S.doc.champs[cip];
+    docSauver(); V2.render();
+  };
+  V2.produits.docRetirer = function (cip) {
+    S.doc.retires[String(cip)] = 1; docSauver(); V2.render();
+  };
+  V2.produits.docDeplacer = function (cip, sens) {
+    var l = documentCips(), i = l.indexOf(String(cip)), j = i + sens;
+    if (i < 0 || j < 0 || j >= l.length) return;
+    var t = l[i]; l[i] = l[j]; l[j] = t;
+    S.doc.ordre = l; docSauver(); V2.render();
+  };
+  V2.produits.docReset = function () {
+    S.doc = docDefaut(); docSauver(); V2.render();
+  };
+  V2.produits.docRetouche = function () {
+    var d = S.doc, n = 0, c;
+    for (c in d.retires) if (Object.prototype.hasOwnProperty.call(d.retires, c)) n++;
+    for (c in d.champs) if (Object.prototype.hasOwnProperty.call(d.champs, c)) n++;
+    if (d.titre) n++;
+    if (d.ordre) n++;
+    return n;
+  };
+  // Saisie directe dans l'aperçu : on lit l'élément au moment où il perd le
+  // focus. Pas de double-clic — il n'existe pas au doigt.
+  V2.produits.docSaisie = function (el) {
+    if (!el) return;
+    var cip = el.getAttribute('data-cip'), champ = el.getAttribute('data-champ');
+    var v = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    if (champ === 'titre') V2.produits.docTitreSet(v);
+    else if (cip) V2.produits.docChamp(cip, champ, v);
+  };
+  V2.produits.apercu = function (on) { S.apercu = !!on; V2.render(); };
+  // Le corps du document : les mêmes lignes à l'écran et au PDF. `edit` ajoute
+  // la saisie directe et les boutons de retouche — le PDF n'en porte jamais.
+  function docLignes(edit) {
     var cips = documentCips();
-    if (!cips.length) return { erreur: 'Aucun produit à mettre dans le document' };
-    var titre = nomCible() || 'Sélection Intégral Pharma';
+    if (!cips.length) return null;
     // Regroupé dans le vocabulaire du PHARMACIEN : nos trois tranches de
     // princeps n'ont de sens que pour nous.
     var BLOCS = [
@@ -823,29 +938,40 @@
       { t: 'Génériques', f: ['gen'] },
       { t: 'Biosimilaires', f: ['biosim'] }
     ];
-    var rows = '', b, i, n = 0;
+    var rows = '', b, i, n = 0, cols = edit ? 4 : 3;
     for (b = 0; b < BLOCS.length; b++) {
       var dedans = [];
       for (i = 0; i < cips.length; i++) if (BLOCS[b].f.indexOf(famDe(cips[i])) >= 0) dedans.push(cips[i]);
       if (!dedans.length) continue;
-      rows += '<tr class="bloc"><td colspan="3">' + esc(BLOCS[b].t) + ' <span>' + dedans.length + '</span></td></tr>';
+      rows += '<tr class="bloc"><td colspan="' + cols + '">' + esc(BLOCS[b].t) +
+        ' <span>' + dedans.length + '</span></td></tr>';
       for (i = 0; i < dedans.length; i++) {
-        var f = fiche(dedans[i]), ppht = f ? +f.ppht || 0 : 0;
-        // Prospect : le net vient du BARÈME, ce à quoi il a droit. Client et
-        // groupement : le net réel du réseau, déjà négocié.
-        var net = (S.mode === 'prospect')
-          ? (M && M.porteAbandon(f && f.f) && ppht > 0 ? Math.round((ppht - M.bareme(ppht)) * 100) / 100 : ppht)
-          : (f && f.net > 0 ? f.net : null);
-        rows += '<tr><td>' + esc(f && f.d ? f.d : ('CIP ' + dedans[i])) + '</td>' +
-          '<td class="n">' + esc(dedans[i]) + '</td>' +
-          '<td class="n">' + (net > 0 ? eur(net) : '—') + '</td></tr>';
+        var c = dedans[i], net = docNet(c), q = escAttr(c);
+        var lib = edit
+          ? '<span class="ed" contenteditable="true" data-cip="' + q + '" data-champ="d"' +
+            ' onblur="V2.produits.docSaisie(this)">' + esc(docLibelle(c)) + '</span>'
+          : esc(docLibelle(c));
+        var prix = edit
+          ? '<span class="ed" contenteditable="true" data-cip="' + q + '" data-champ="net"' +
+            ' onblur="V2.produits.docSaisie(this)">' + (net > 0 ? eur(net) : '—') + '</span>'
+          : (net > 0 ? eur(net) : '—');
+        rows += '<tr><td>' + lib + '</td>' +
+          '<td class="n">' + esc(c) + '</td>' +
+          '<td class="n">' + prix + '</td>' +
+          (edit ? '<td class="act">' +
+            '<button title="Monter" onclick="V2.produits.docDeplacer(\'' + q + '\',-1)">↑</button>' +
+            '<button title="Descendre" onclick="V2.produits.docDeplacer(\'' + q + '\',1)">↓</button>' +
+            '<button title="Retirer" onclick="V2.produits.docRetirer(\'' + q + '\')">✕</button>' +
+            '</td>' : '') +
+          '</tr>';
         n++;
       }
     }
-    var jour = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
-    var html = '<!doctype html><html lang="fr"><head><meta charset="utf-8">' +
-      '<title>Sélection produits — ' + esc(titre) + '</title><style>' +
-      '@page{size:A4;margin:14mm}' +
+    return { rows: rows, n: n, cips: cips };
+  }
+
+  function docStyle() {
+    return '@page{size:A4;margin:14mm}' +
       'body{font:12px/1.45 Inter,system-ui,sans-serif;color:#10131C;margin:0}' +
       'h1{font-size:19px;margin:0 0 2px;color:#0050E6}' +
       '.sub{color:#5A6478;font-size:12px;margin-bottom:14px}' +
@@ -857,16 +983,28 @@
       'tr.bloc td{padding:14px 4px 5px;font-size:11px;font-weight:700;text-transform:uppercase;' +
       'letter-spacing:.05em;color:#0050E6;border-bottom:1px solid #0050E6}' +
       'tr.bloc span{color:#8A93A6;font-weight:500}' +
-      '.pied{margin-top:16px;font-size:10px;color:#8A93A6}' +
+      '.pied{margin-top:16px;font-size:10px;color:#8A93A6}';
+  }
+  function docPied() {
+    return 'Prix nets hors taxes. Tous les produits de cette sélection sont ' +
+      'disponibles au jour de l\'édition, sous réserve des stocks.';
+  }
+
+  V2.produits.documentHtml = function () {
+    var d = docLignes(false);
+    if (!d) return { erreur: 'Aucun produit à mettre dans le document' };
+    var titre = docTitre();
+    var jour = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+    var html = '<!doctype html><html lang="fr"><head><meta charset="utf-8">' +
+      '<title>Sélection produits — ' + esc(titre) + '</title><style>' + docStyle() +
       '</style></head><body>' +
       '<h1>Sélection produits — ' + esc(titre) + '</h1>' +
       '<div class="sub">Établie le ' + esc(jour) + ' · Intégral Pharma</div>' +
       '<table><thead><tr><th>Produit</th><th class="n">CIP</th><th class="n">Prix net</th></tr></thead>' +
-      '<tbody>' + rows + '</tbody></table>' +
-      '<div class="pied">Prix nets hors taxes. Tous les produits de cette sélection sont ' +
-      'disponibles au jour de l\'édition, sous réserve des stocks.</div>' +
+      '<tbody>' + d.rows + '</tbody></table>' +
+      '<div class="pied">' + docPied() + '</div>' +
       '</body></html>';
-    return { html: html, titre: titre, lignes: n, cips: cips };
+    return { html: html, titre: titre, lignes: d.n, cips: d.cips };
   };
 
   function ouvrirImpression(html) {
@@ -903,6 +1041,48 @@
       '&body=' + encodeURIComponent(corps);
   };
 
+  // ── L'aperçu : le document tel qu'il sortira, modifiable ───────
+  function rendreApercu() {
+    // L'aperçu se sert de la liste affichée. Si on arrive ici sans que la liste
+    // ait été rendue (rechargement, lien direct), on la calcule d'abord —
+    // sinon le document paraît vide alors qu'il ne l'est pas.
+    if (!V2.produits._affichees || !V2.produits._affichees.length) {
+      try {
+        if (S.mode === 'groupement') rendreGroupement();
+        else if (S.mode === 'prospect') rendreProspect();
+        else if (S.mode === 'achats') rendreAchats();
+        else rendreClient();
+      } catch (e) {}
+    }
+    var d = docLignes(true);
+    var titre = docTitre();
+    var jour = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+    var nRet = V2.produits.docRetouche();
+    if (!d) {
+      return '<div class="pr-apx-bar">' +
+        '<button class="v2-btn" onclick="V2.produits.apercu(false)">← Revenir à la liste</button></div>' +
+        vide('Le document est vide', 'Tu as retiré toutes les lignes. Reprends la liste pour repartir.') +
+        (nRet ? '<button class="v2-btn pr-plus" onclick="V2.produits.docReset()">Repartir de la liste</button>' : '');
+    }
+    return '' +
+      '<div class="pr-apx-bar">' +
+        '<button class="v2-btn" onclick="V2.produits.apercu(false)">← Liste</button>' +
+        '<span class="pr-apx-n">' + num(d.n) + ' produits</span>' +
+        (nRet ? '<button class="v2-btn pr-apx-raz" onclick="V2.produits.docReset()">Repartir de la liste</button>' : '') +
+        '<button class="v2-btn v2-btn-primary" onclick="V2.produits.documentPdf()">PDF</button>' +
+        '<button class="v2-btn" onclick="V2.produits.documentMail()">Mail</button>' +
+      '</div>' +
+      '<div class="pr-apx-aide">Touche un libellé ou un prix pour le corriger. ↑ ↓ pour déplacer, ✕ pour retirer.</div>' +
+      '<div class="pr-apx-feuille"><div class="pr-apx-a4">' +
+        '<h1>Sélection produits — <span class="ed" contenteditable="true" data-champ="titre"' +
+          ' onblur="V2.produits.docSaisie(this)">' + esc(titre) + '</span></h1>' +
+        '<div class="sub">Établie le ' + esc(jour) + ' · Intégral Pharma</div>' +
+        '<table><thead><tr><th>Produit</th><th class="n">CIP</th><th class="n">Prix net</th>' +
+        '<th class="n"></th></tr></thead><tbody>' + d.rows + '</tbody></table>' +
+        '<div class="pied">' + docPied() + '</div>' +
+      '</div></div>';
+  }
+
   function panierHtml() {
     var n = selNb();
     if (!n) return '';
@@ -923,6 +1103,7 @@
       if (S.mode === 'surmesure') S.mode = 'prospect';
       S.sm = S.sm ? smNormaliser(S.sm) : smCharger();
       if (!S.sel) S.sel = selCharger();
+      if (!S.doc) S.doc = docCharger();
 
       var onglets = '<div class="pr-modes pr-defile">', i;
       for (i = 0; i < PUBLICS.length; i++) {
@@ -931,6 +1112,11 @@
       }
       onglets += '</div>';
 
+      if (S.apercu) {
+        root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
+          '<div class="v2-wrap pr-wrap">' + rendreApercu() + '</div>';
+        return;
+      }
       var corps = S.mode === 'groupement' ? rendreGroupement()
         : S.mode === 'prospect' ? rendreProspect()
         : S.mode === 'achats' ? rendreAchats()
@@ -1004,6 +1190,40 @@
       '.pr-panier em{font:400 12px/1.3 Inter,sans-serif;font-style:normal;opacity:.85;flex:1;min-width:110px}',
       '.pr-panier button{min-height:44px;padding:0 14px;border-radius:10px;border:1px solid rgba(255,255,255,.5);background:transparent;color:#fff;font:600 14px/1 Inter,sans-serif;cursor:pointer}',
       '.pr-plus{width:100%;min-height:44px;margin-top:8px}',
+      '.pr-apx-bar{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 0;margin-bottom:6px;background:var(--paper)}',
+      '.pr-apx-bar .v2-btn{min-height:44px;padding:0 14px}',
+      '.pr-apx-n{font:600 14px/1 Inter,sans-serif;color:var(--muted);flex:1;min-width:70px}',
+      '.pr-apx-raz{color:var(--c-rose)}',
+      '.pr-apx-aide{font:400 13px/1.4 Inter,sans-serif;color:var(--muted);margin-bottom:10px}',
+      // La feuille garde la largeur A4 (794 px) et se met a l echelle de
+      // l ecran : ce qu on voit est exactement ce qui sortira.
+      '.pr-apx-feuille{overflow-x:auto;-webkit-overflow-scrolling:touch;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}',
+      '.pr-apx-a4{width:794px;max-width:100%;font:12px/1.45 Inter,system-ui,sans-serif;color:#10131C}',
+      '.pr-apx-a4 h1{font-size:19px;margin:0 0 2px;color:#0050E6}',
+      '.pr-apx-a4 .sub{color:#5A6478;font-size:12px;margin-bottom:14px}',
+      '.pr-apx-a4 table{width:100%;border-collapse:collapse}',
+      '.pr-apx-a4 th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#5A6478;border-bottom:1.5px solid #0050E6;padding:6px 4px}',
+      '.pr-apx-a4 td{padding:6px 4px;border-bottom:1px solid #E6E9F0}',
+      '.pr-apx-a4 td.n,.pr-apx-a4 th.n{text-align:right;font-variant-numeric:tabular-nums}',
+      '.pr-apx-a4 tr.bloc td{padding:14px 4px 5px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#0050E6;border-bottom:1px solid #0050E6}',
+      '.pr-apx-a4 tr.bloc span{color:#8A93A6;font-weight:500}',
+      '.pr-apx-a4 .pied{margin-top:16px;font-size:10px;color:#8A93A6}',
+      // Ce qui se touche se voit : pointille discret, fond au focus.
+      '.pr-apx-a4 .ed{border-bottom:1px dashed rgba(0,80,230,.45);outline:none;display:inline-block;min-width:28px;padding:1px 2px;border-radius:3px}',
+      '.pr-apx-a4 .ed:focus{background:rgba(0,80,230,.08);border-bottom-style:solid}',
+      '.pr-apx-a4 td.act{white-space:nowrap;text-align:right;width:1%}',
+      '.pr-apx-a4 td.act button{min-width:34px;min-height:34px;margin-left:2px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ip-ink);font-size:14px;cursor:pointer}',
+      // Sous 700 px, on n'essaie plus de reproduire une A4 : elle serait
+      // ecrasee et illisible. L'apercu redevient une surface d'EDITION
+      // fluide — le PDF, lui, reste en A4. Le CIP sort de l'ecran : il ne
+      // sert a rien pour retoucher, et il mange la largeur du libelle.
+      '@media (max-width:700px){',
+      '  .pr-apx-feuille{padding:12px}',
+      '  .pr-apx-a4{width:100%}',
+      '  .pr-apx-a4 th:nth-child(2),.pr-apx-a4 td:nth-child(2){display:none}',
+      '  .pr-apx-a4 td.act{white-space:normal;width:auto}',
+      '  .pr-apx-a4 td.act button{min-width:40px;min-height:44px}',
+      '}',
       '.pr-liens{display:flex;flex-wrap:wrap;gap:14px;margin-top:24px;padding-top:16px;border-top:1px solid var(--line)}',
       '.pr-liens a{font:500 13px/1 Inter,sans-serif;color:var(--muted);cursor:pointer;text-decoration:underline}',
       '.sm-plier{display:flex;flex-direction:column;align-items:flex-start;gap:3px;width:100%;min-height:44px;margin:10px 0;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--paper);font:600 14px/1.2 Inter,sans-serif;color:var(--ip-blue);cursor:pointer;text-align:left}',
