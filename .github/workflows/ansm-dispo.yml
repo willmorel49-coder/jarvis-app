@@ -31,12 +31,16 @@ jobs:
         run: |
           # ⚠️ ansm-histo.json = journal append-only « depuis quand » : il DOIT être commité,
           # sinon le registre repart de zéro à chaque exécution et on perd l'ancienneté.
-          if git diff --quiet -- crm/v2/ansm-dispo.json crm/v2/ansm-histo.json; then
+          # ⚠️ ansm-archive.json = mémoire des épisodes CLOS (durées de rupture). Même
+          # exigence, et c'est la seule copie : rien ne la reconstitue après coup.
+          git config user.name  "JARVIS copilote"
+          git config user.email "actions@users.noreplace.github.com"
+          # on indexe d'abord (git add voit aussi un fichier encore non suivi, ce que
+          # `git diff` ne verrait pas), puis on juge sur ce qui est indexé.
+          git add crm/v2/ansm-dispo.json crm/v2/ansm-histo.json crm/v2/ansm-archive.json
+          if git diff --cached --quiet; then
             echo "Pas de changement (liste ANSM inchangée)."
           else
-            git config user.name  "JARVIS copilote"
-            git config user.email "actions@users.noreplace.github.com"
-            git add crm/v2/ansm-dispo.json crm/v2/ansm-histo.json
             git commit -m "data(veille): ANSM disponibilités $(date -u +%Y-%m-%d)"
             # 24 robots poussent sur le meme depot et GitHub livre leurs executions
             # planifiees en paquet : une seule reprise ne suffit pas (le 03/08, ansm-dispo,
