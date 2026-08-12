@@ -47,6 +47,12 @@
   V2.mountHomeBg = function (root) {
     // le contenu de l'accueil passe au-dessus du fond
     var wrap = root && root.querySelector('.v2-wrap'); if (wrap) { wrap.style.position = 'relative'; wrap.style.zIndex = '1'; }
+    // Peau « Verrière » (12/08/2026) : la lumière de l'app vient désormais du halo de tête,
+    // source unique. Cette deuxième lueur (bleu + orange, suivant le curseur) entrait en
+    // conflit avec elle. On n'en monte plus l'élément — le masquer en CSS aurait laissé la
+    // boucle d'animation tourner pour rien sur l'accueil.
+    // Pour la réactiver : retirer cette ligne ET la règle #v2-bg de v2-verriere.css.
+    return;
     if (document.getElementById('v2-bg')) return;   // déjà monté
     el = document.createElement('div'); el.id = 'v2-bg'; el.setAttribute('aria-hidden', 'true');
     el.style.cssText = 'position:fixed;inset:0;z-index:0;pointer-events:none;background:' + BG;
