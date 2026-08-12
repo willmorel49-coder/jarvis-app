@@ -386,6 +386,31 @@
     return out;
   };
 
+  // Taille une liste DÉJÀ classée à N produits par catégorie, sans en changer
+  // l'ordre. C'est ce qui permet d'appliquer le même composeur (« 50 petits
+  // prix, 20 moyens… ») à un client et à un groupement, alors que leur liste
+  // vient du calcul « trou vs confrères » et non du catalogue.
+  // Une ligne dont la famille est inconnue n'est jamais écartée : mieux vaut
+  // un produit de trop qu'un produit qui disparaît sans explication.
+  M.limiterParCategorie = function (lignes, quotas) {
+    lignes = lignes || [];
+    if (!quotas) return lignes.slice();
+    var pris = {}, out = [], i, aucun = true, k;
+    for (k in quotas) {
+      if (Object.prototype.hasOwnProperty.call(quotas, k)) { aucun = false; break; }
+    }
+    if (aucun) return lignes.slice();
+    for (i = 0; i < lignes.length; i++) {
+      var f = String(lignes[i].fam || '');
+      if (!f || quotas[f] === undefined) { out.push(lignes[i]); continue; }
+      var q = +quotas[f] || 0;
+      if (q <= 0) continue;
+      pris[f] = (pris[f] || 0) + 1;
+      if (pris[f] <= q) out.push(lignes[i]);
+    }
+    return out;
+  };
+
   if (typeof module !== 'undefined' && module.exports) module.exports = M;
   else glob.V2PRODUITS = M;
 })(typeof window !== 'undefined' ? window : this);
