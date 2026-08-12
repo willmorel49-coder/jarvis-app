@@ -50,15 +50,15 @@
       '.v2-ag-pastille{display:inline-block;width:9px;height:9px;border-radius:50%;flex:0 0 auto}',
       '.v2-ag-ok{background:#00A870}.v2-ag-ko{background:#E5484D}.v2-ag-off{background:#8B93A1}',
       '.v2-ag-box input[type=url]{width:100%;min-height:44px;font-size:16px;padding:10px 12px;',
-      '  border:1px solid var(--line);border-radius:10px;background:var(--bg);color:inherit}',
+      '  border:1px solid var(--line);border-radius:10px;background:var(--card-2);color:inherit}',
       '.v2-ag-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}',
       '.v2-ag-acts .v2-btn{min-height:44px}',
       '.v2-ag-aide{margin-top:12px;font-size:14px;color:var(--muted);line-height:1.55}',
       '.v2-ag-aide ol{margin:6px 0 0;padding-left:20px}.v2-ag-aide li{margin:3px 0}',
       '.v2-ag-onglets{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}',
-      '.v2-ag-onglets button{min-height:40px;padding:0 12px;border-radius:9px;border:1px solid var(--line);',
+      '.v2-ag-onglets button{min-height:44px;padding:0 12px;border-radius:9px;border:1px solid var(--line);',
       '  background:transparent;color:inherit;font:inherit;cursor:pointer}',
-      '.v2-ag-onglets button.on{border-color:var(--blue);color:var(--blue);font-weight:700}',
+      '.v2-ag-onglets button.on{border-color:var(--ip-blue);color:var(--ip-blue);font-weight:700}',
       '.v2-ag-piege{margin-top:6px;font-style:italic}',
       '.v2-ag-res{margin-top:10px;font-size:14px;line-height:1.5}'
     ].join('');
