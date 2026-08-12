@@ -51,7 +51,7 @@ vm.runInContext(`window.V2 = { pages:{}, sales:[], pharmacies:[],
 vm.runInContext(lire('v2-produits-moteur.js'), sb);
 vm.runInContext(lire('v2-produits.js'), sb);
 vm.runInContext(`V2.pharmacies = window.WML_OFFICINES.map(p => ({ id:String(p.id), name:p.name, groupement:p.groupement, cp:p.cp, ca:p.ca }));
-  V2.sales = window.WML_SALES.map(s => ({ pharmacyId:String(s[0]), artCode:s[3], qte:s[4]||0, mntNetHt:s[6]||0 }));`, sb);
+  V2.sales = window.WML_SALES.map(s => ({ pharmacyId:String(s[0]), month:s[1], artCode:s[3], qte:s[4]||0, mntNetHt:s[6]||0 }));`, sb);
 
 const officine = sb.V2.pharmacies.find((p) => /CARREFOUR/i.test(p.name || '')) || sb.V2.pharmacies[0];
 const root = { innerHTML: '' };
@@ -403,4 +403,32 @@ test('selection : une quantite absurde est ramenee dans les clous', () => {
   sb.V2.produits.selQteSet(cip, '0');
   assert.equal(sb.V2.produits.S.sel[cip], undefined, 'zero doit retirer la ligne');
   sb.V2.produits.S.sel = {};
+});
+
+// ── Suivi d'effet, mesure par le fichier mensuel ───────────────────
+test('suivi : une proposition enregistree se relit sur la fiche de l officine', () => {
+  const idx = sb.V2.produits.index();
+  const off = sb.V2.pharmacies[0];
+  const pm = idx.premierMois[String(off.id)] || {};
+  const cips = Object.keys(pm).slice(0, 6);
+  assert.ok(cips.length >= 3, 'jeu de donnees insuffisant pour le test');
+  // Proposition faite quand le fichier s arretait 2 mois avant la fin.
+  const moisBase = Math.max(0, idx.moisMax - 2);
+  sb.localStorage = undefined;   // pas de localStorage dans le bac a sable
+  const r = sb.V2PRODUITS.suiviProposition(idx, off.id, cips, moisBase);
+  assert.equal(r.total, cips.length);
+  assert.equal(r.moisRecus, 2);
+  assert.equal(r.entres.length + r.enAttente.length + r.dejaPris.length, cips.length,
+    'chaque produit doit tomber dans exactement une categorie');
+});
+
+test('suivi : sur les vraies donnees, des references entrent bien en cours d annee', () => {
+  const idx = sb.V2.produits.index();
+  let officinesAvecEntree = 0;
+  for (const o of sb.V2.pharmacies.slice(0, 200)) {
+    const n = sb.V2PRODUITS.nouveautesOfficine(idx, o.id, idx.moisMax);
+    if (n.length) officinesAvecEntree++;
+  }
+  assert.ok(officinesAvecEntree > 50,
+    `seulement ${officinesAvecEntree} officines avec une nouvelle reference le dernier mois`);
 });
