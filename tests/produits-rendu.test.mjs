@@ -136,15 +136,22 @@ test('achats : la vue par produit rend des lignes', () => {
   assert.ok(/ne nous le prennent pas/.test(hA), 'l argument achats est absent');
 });
 
-test('groupement : la barre de recherche remplace la liste deroulante', () => {
+test('groupement : recherche ET deroulant, dans un vrai tableau', () => {
   sb.V2.produits.S.mode = 'groupement';
   const r = { innerHTML: '' };
   sb.V2.pages.produits.render(r, null);
-  assert.ok(!/<select[^>]*setGrp/.test(r.innerHTML), 'la liste deroulante est encore la');
+  // Will veut LES DEUX : la recherche pour aller droit au but, le deroulant
+  // pour parcourir les 109 groupements.
+  assert.ok(/<select[^>]*setGrp/.test(r.innerHTML), 'le menu deroulant a disparu');
   assert.ok(/id="pr-sugg"/.test(r.innerHTML), 'pas de zone de suggestions');
   assert.ok(/rechSaisie/.test(r.innerHTML), 'le champ n est pas branche');
-  assert.ok(/adhérents sur |ne nous le prennent pas/.test(r.innerHTML),
-    'l argument groupement est absent');
+  assert.ok(/class="pr-t"/.test(r.innerHTML), 'le listing doit etre un TABLEAU, pas des cartes');
+  assert.ok(/Adhérents<\/th>/.test(r.innerHTML) && /Clients IP<\/th>/.test(r.innerHTML),
+    'les deux compteurs doivent etre en colonnes');
+  // La diffusion se lit « 48/77 » avec sa barre, comme l ancien listing.
+  assert.ok(/pr-t-diff/.test(r.innerHTML), 'la colonne de diffusion est absente');
+  assert.ok(/pr-t-bar/.test(r.innerHTML), 'la barre de diffusion est absente');
+  assert.ok(/pr-mk-own|pr-mk-gap/.test(r.innerHTML), 'le marqueur Commande / A pousser est absent');
 });
 
 test('client : la barre remplace le deroulant de 691 lignes', () => {
@@ -567,4 +574,43 @@ test('apercu : autonome — il calcule la liste s il arrive avant elle', () => {
   assert.ok(!/Le document est vide/.test(r.innerHTML), 'apercu vide alors que la liste ne l est pas');
   assert.ok(/pr-apx-a4/.test(r.innerHTML), 'feuille absente');
   sb.V2.produits.S.apercu = false;
+});
+
+test('groupement : « toute la data » distingue commande et a pousser', () => {
+  // Regression reelle : avecFamille() recopiait une liste FIGEE de champs et
+  // perdait `statut` — l ecran annoncait « 0 a pousser » sur 340.
+  sb.V2.produits.S.mode = 'groupement';
+  sb.V2.produits.S.toutGrp = true;
+  sb.V2.produits._grpCle = null;
+  const r = { innerHTML: '' };
+  sb.V2.pages.produits.render(r, null);
+  const m = /(\d[\d   ]*) commandées · (\d[\d   ]*) à pousser/.exec(r.innerHTML);
+  assert.ok(m, 'le double compteur est absent');
+  const nPousser = parseInt(m[2].replace(/\D/g, ''), 10);
+  assert.ok(nPousser > 0, `attendu des references a pousser, obtenu ${nPousser}`);
+  assert.ok(/pr-mk-gap/.test(r.innerHTML) || nPousser > 0, 'aucune ligne marquee a pousser');
+  sb.V2.produits.S.toutGrp = false;
+  sb.V2.produits._grpCle = null;
+});
+
+test('groupement : le bouton « Toute la data » passe par le VRAI chemin', () => {
+  // Le gardien a trouve que setToutGrp n existait pas : le bouton levait une
+  // erreur en production. Les tests ne le voyaient pas parce qu ils forcaient
+  // S.toutGrp directement. Ici on appelle la fonction, comme le clic.
+  sb.V2.produits.S.mode = 'groupement';
+  assert.equal(typeof sb.V2.produits.setToutGrp, 'function', 'le setter n existe pas');
+  sb.V2.produits.setToutGrp(true);
+  assert.equal(sb.V2.produits.S.toutGrp, true);
+  const r = { innerHTML: '' };
+  sb.V2.pages.produits.render(r, null);
+  assert.ok(/à pousser/.test(r.innerHTML), 'la vue complete ne s affiche pas');
+  sb.V2.produits.setToutGrp(false);
+  assert.equal(sb.V2.produits.S.toutGrp, false);
+});
+
+test('client : la ligne porte AUSSI le compteur clients IP', () => {
+  sb.V2.produits.S.mode = 'client';
+  const r = { innerHTML: '' };
+  sb.V2.pages.produits.render(r, null);
+  assert.ok(/clients IP/.test(r.innerHTML), 'le compteur clients IP manque en mode Client');
 });
