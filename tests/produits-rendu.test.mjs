@@ -346,3 +346,61 @@ test('exclusivites : restreint aux references de nos listes negociees', () => {
   const n = (h.match(/<div class="pr-row">/g) || []).length;
   assert.ok(n > 0 && n < 40, `attendu une poignee de references, obtenu ${n}`);
 });
+
+// ── Selection et proposition ───────────────────────────────────────
+test('selection : chaque ligne porte un bouton « Proposer »', () => {
+  const h = rendreSM({ quotas: { pr_low: 5 } });
+  assert.ok(/pr-add[^>]*>\+ Proposer</.test(h), 'bouton absent');
+});
+
+test('selection : la barre n apparait que s il y a une selection', () => {
+  sb.V2.produits.S.sel = {};
+  assert.ok(!/pr-panier/.test(rendreSM({ quotas: { pr_low: 5 } })), 'barre affichee a vide');
+  const cip = Object.keys(sb.V2.produits._ps).find((c) => sb.V2.produits._ps[c].ppht > 0);
+  sb.V2.produits.S.sel = { [cip]: 3 };
+  const h = rendreSM({ quotas: { pr_low: 5 } });
+  assert.ok(/pr-panier/.test(h), 'barre absente malgre une selection');
+  assert.ok(/1 produit</.test(h), 'compte errone');
+});
+
+test('proposition : quantites, prix net au bareme, et total', () => {
+  const ps = sb.V2.produits._ps;
+  // un princeps a petit prix : le net doit valoir le tarif moins 0,18 €
+  const cip = Object.keys(ps).find((c) => ps[c].f === 'pr_low' && ps[c].ppht > 1);
+  sb.V2.produits.S.sel = { [cip]: 4 };
+  const r = sb.V2.produits.propositionHtml();
+  assert.ok(!r.erreur, r.erreur);
+  const attenduNet = Math.round((ps[cip].ppht - 0.18) * 100) / 100;
+  assert.equal(r.total, Math.round(attenduNet * 4 * 100) / 100);
+  assert.ok(r.html.includes('<th class="n">Qté</th>'), 'colonne quantite absente');
+  assert.ok(/tr class="tot"/.test(r.html), 'ligne de total absente');
+});
+
+test('proposition · REGLE METIER : aucune condition chiffree', () => {
+  const h = sb.V2.produits.propositionHtml().html;
+  assert.ok(!/abandon/i.test(h), 'la proposition mentionne l abandon de marge');
+  assert.ok(!/remise/i.test(h), 'la proposition contient le mot proscrit');
+});
+
+test('proposition : dit explicitement qu elle ne vaut pas commande', () => {
+  const h = sb.V2.produits.propositionHtml().html;
+  assert.ok(/ne vaut pas commande/.test(h), 'mention juridique absente');
+  assert.ok(/hors taxes/i.test(h), 'les prix doivent etre annonces HT');
+});
+
+test('proposition : selection vide = message clair, pas de document', () => {
+  sb.V2.produits.S.sel = {};
+  const r = sb.V2.produits.propositionHtml();
+  assert.ok(r.erreur, 'devrait refuser une proposition vide');
+  assert.ok(!r.html);
+});
+
+test('selection : une quantite absurde est ramenee dans les clous', () => {
+  sb.V2.produits.S.sel = {};
+  const cip = Object.keys(sb.V2.produits._ps)[0];
+  sb.V2.produits.selQteSet(cip, '99999');
+  assert.equal(sb.V2.produits.S.sel[cip], 999);
+  sb.V2.produits.selQteSet(cip, '0');
+  assert.equal(sb.V2.produits.S.sel[cip], undefined, 'zero doit retirer la ligne');
+  sb.V2.produits.S.sel = {};
+});

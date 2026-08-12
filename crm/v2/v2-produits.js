@@ -39,7 +39,8 @@
   var S = {
     mode: 'vendeur', ph: null, fam: 'all', q: '', sansRupture: false, page: 0,
     grp: 'all', horsStock: false,
-    sm: null   // composition de la liste sur mesure, chargée au 1er rendu
+    sm: null,  // composition de la liste sur mesure, chargée au 1er rendu
+    sel: null  // { cip: quantite } — proposition en cours de construction
   };
   var PAR_PAGE = 40;
 
@@ -71,6 +72,111 @@
   }
   function stockIP() {
     return (window.STOCK_IP && window.STOCK_IP.data) || {};
+  }
+
+  // ── Sélection : cocher des produits pour en faire une proposition ──
+  // Survit à un rechargement : un rendez-vous peut être interrompu.
+  function selCharger() {
+    try {
+      var b = JSON.parse(localStorage.getItem('produits.selection'));
+      if (b && typeof b === 'object' && !Array.isArray(b)) {
+        var out = {}, c;
+        for (c in b) {
+          if (!Object.prototype.hasOwnProperty.call(b, c)) continue;
+          var q = parseInt(b[c], 10);
+          if (q > 0) out[String(c)] = Math.min(999, q);
+        }
+        return out;
+      }
+    } catch (e) {}
+    return {};
+  }
+  function selSauver() {
+    try { localStorage.setItem('produits.selection', JSON.stringify(S.sel)); } catch (e) {}
+  }
+  function selNb() {
+    var n = 0, c;
+    for (c in S.sel) if (Object.prototype.hasOwnProperty.call(S.sel, c)) n++;
+    return n;
+  }
+
+  V2.produits.selAjouter = function (cip) {
+    cip = String(cip);
+    if (S.sel[cip]) delete S.sel[cip]; else S.sel[cip] = 1;
+    selSauver(); V2.render();
+  };
+  V2.produits.selQte = function (cip, delta) {
+    cip = String(cip);
+    var q = (+S.sel[cip] || 0) + delta;
+    if (q <= 0) delete S.sel[cip]; else S.sel[cip] = Math.min(999, q);
+    selSauver(); V2.render();
+  };
+  V2.produits.selQteSet = function (cip, v) {
+    cip = String(cip);
+    var q = parseInt(String(v).replace(/\D/g, ''), 10);
+    if (!(q > 0)) delete S.sel[cip]; else S.sel[cip] = Math.min(999, q);
+    selSauver(); V2.render();
+  };
+  V2.produits.selVider = function () { S.sel = {}; selSauver(); V2.render(); };
+
+  // Le bouton de sélection posé sur chaque ligne, dans les trois modes.
+  function boutonSel(cip) {
+    cip = String(cip);
+    var q = +S.sel[cip] || 0;
+    var c = escAttr(cip);
+    if (!q) {
+      return '<button class="pr-add" aria-label="Ajouter à la proposition" ' +
+        'onclick="V2.produits.selAjouter(\'' + c + '\')">+ Proposer</button>';
+    }
+    return '<div class="pr-qte">' +
+      '<button class="sm-b" aria-label="Moins" onclick="V2.produits.selQte(\'' + c + '\',-1)">–</button>' +
+      '<input class="sm-n" inputmode="numeric" value="' + q +
+        '" onchange="V2.produits.selQteSet(\'' + c + '\',this.value)">' +
+      '<button class="sm-b" aria-label="Plus" onclick="V2.produits.selQte(\'' + c + '\',1)">+</button>' +
+      '</div>';
+  }
+
+  // Les lignes de la proposition : produit, quantité, prix net, total.
+  // Le net vient du barème pour un princeps (ce à quoi l'officine a droit) et
+  // du tarif pour les génériques, NR et biosimilaires — qui n'ont pas d'abandon.
+  function propositionLignes() {
+    var M = window.V2PRODUITS, out = [], c;
+    for (c in S.sel) {
+      if (!Object.prototype.hasOwnProperty.call(S.sel, c)) continue;
+      var f = fiche(c), qte = +S.sel[c] || 0;
+      if (!f || qte <= 0) continue;
+      var ppht = +f.ppht || 0;
+      var net = (M && M.porteAbandon(f.f) && ppht > 0) ? (ppht - M.bareme(ppht)) : ppht;
+      net = Math.round(net * 100) / 100;
+      out.push({ cip: String(c), d: f.d || ('CIP ' + c), fam: f.f, qte: qte,
+                 net: net, total: Math.round(net * qte * 100) / 100 });
+    }
+    out.sort(function (a, b) { return b.total - a.total; });
+    return out;
+  }
+  function propositionTotal(lignes) {
+    var t = 0, i;
+    for (i = 0; i < lignes.length; i++) t += lignes[i].total;
+    return Math.round(t * 100) / 100;
+  }
+  function nomOfficine() {
+    if (S.mode === 'surmesure') return (S.sm && S.sm.nom) || '';
+    var phs = V2.pharmacies || [], i;
+    for (i = 0; i < phs.length; i++) if (String(phs[i].id) === String(S.ph)) return phs[i].name || '';
+    return '';
+  }
+
+  function panierHtml() {
+    var n = selNb();
+    if (!n) return '';
+    var lignes = propositionLignes();
+    return '<div class="pr-panier">' +
+      '<b>' + num(n) + ' produit' + (n > 1 ? 's' : '') + '</b>' +
+      '<em>' + eur(propositionTotal(lignes)) + ' au total</em>' +
+      '<button onclick="V2.produits.propositionPdf()">Proposition</button>' +
+      '<button onclick="V2.produits.propositionMail()">Par mail</button>' +
+      '<button class="vider" onclick="V2.produits.selVider()">Vider</button>' +
+      '</div>';
   }
 
   // ── Pilotage depuis le HTML ────────────────────────────────────
@@ -137,6 +243,7 @@
           chiffre(abandon, 'abandon de marge') +
           chiffre(num(l.stock), 'en stock') +
         '</div>' +
+        boutonSel(l.cip) +
       '</div>';
   }
 
@@ -187,7 +294,8 @@
         '<div class="pr-source">ventes réseau jan.–juin 2026</div>' +
       '</div>' +
       filtresHtml() +
-      liste(lignes, visibles, corps);
+      liste(lignes, visibles, corps) +
+      panierHtml();
   }
 
   function liste(lignes, visibles, corps) {
@@ -285,7 +393,8 @@
         '<div class="pr-source">ventes réseau jan.–juin 2026</div>' +
       '</div>' +
       filtresHtml() +
-      liste(lignes, visibles, corps);
+      liste(lignes, visibles, corps) +
+      panierHtml();
   }
 
   function optionsGroupements() {
@@ -333,6 +442,7 @@
           chiffre(esc(couv), 'couverture') +
           chiffre(f && f.net > 0 ? eur(f.net) : '—', 'prix net') +
         '</div>' +
+        boutonSel(l.cip) +
       '</div>';
   }
 
@@ -592,6 +702,7 @@
           chiffre(eur(l.ppht), 'tarif') +
           chiffre(num(l.stock), 'en stock') +
         '</div>' +
+        boutonSel(l.cip) +
       '</div>';
   }
 
@@ -647,13 +758,101 @@
         '<div class="pr-source">catalogue Intégral · uniquement ce qui est en stock</div>' +
       '</div>' +
       filtresHtml() +
-      liste(lignes, visibles, corps);
+      liste(lignes, visibles, corps) +
+      panierHtml();
   }
 
   // ── PDF à laisser au pharmacien ────────────────────────────────
   // Impression navigateur sur un document dédié : aucune librairie, aucun
   // coût. CONTENU AUTORISÉ : produit, prix net, disponibilité. Le barème
   // d'abandon de marge et toute autre condition chiffrée en sont exclus.
+  // ── La proposition : ce que le commercial laisse ou envoie ─────
+  // Ici les totaux sont légitimes — c'est un devis. Ce qui reste proscrit,
+  // ce sont les CONDITIONS : barème d'abandon de marge, pourcentages.
+  V2.produits.propositionHtml = function () {
+    var lignes = propositionLignes();
+    if (!lignes.length) return { erreur: 'Aucun produit sélectionné' };
+    var titre = nomOfficine() || 'Proposition Intégral Pharma';
+    var rows = '', i;
+    for (i = 0; i < lignes.length; i++) {
+      var l = lignes[i];
+      rows += '<tr>' +
+        '<td>' + esc(l.d) + '</td>' +
+        '<td class="n">' + esc(l.cip) + '</td>' +
+        '<td class="n">' + num(l.qte) + '</td>' +
+        '<td class="n">' + eur(l.net) + '</td>' +
+        '<td class="n">' + eur(l.total) + '</td>' +
+      '</tr>';
+    }
+    var jour = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+    var html = '<!doctype html><html lang="fr"><head><meta charset="utf-8">' +
+      '<title>Proposition — ' + esc(titre) + '</title><style>' +
+      '@page{size:A4;margin:14mm}' +
+      'body{font:12px/1.45 Inter,system-ui,sans-serif;color:#10131C;margin:0}' +
+      'h1{font-size:19px;margin:0 0 2px;color:#0050E6}' +
+      '.sub{color:#5A6478;font-size:12px;margin-bottom:14px}' +
+      'table{width:100%;border-collapse:collapse}' +
+      'th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#5A6478;' +
+      'border-bottom:1.5px solid #0050E6;padding:6px 4px}' +
+      'td{padding:6px 4px;border-bottom:1px solid #E6E9F0}' +
+      'td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}' +
+      'tr.tot td{border-top:1.5px solid #0050E6;border-bottom:0;font-weight:700;padding-top:9px}' +
+      '.pied{margin-top:16px;font-size:10px;color:#8A93A6}' +
+      '</style></head><body>' +
+      '<h1>Proposition — ' + esc(titre) + '</h1>' +
+      '<div class="sub">Établie le ' + esc(jour) + ' · Intégral Pharma</div>' +
+      '<table><thead><tr><th>Produit</th><th class="n">CIP</th><th class="n">Qté</th>' +
+      '<th class="n">Prix net</th><th class="n">Total</th></tr></thead><tbody>' + rows +
+      '<tr class="tot"><td colspan="4">Total</td><td class="n">' +
+      eur(propositionTotal(lignes)) + '</td></tr>' +
+      '</tbody></table>' +
+      '<div class="pied">Prix nets hors taxes. Produits disponibles au jour de l\'édition, ' +
+      'sous réserve des stocks. Cette proposition ne vaut pas commande.</div>' +
+      '</body></html>';
+    return { html: html, titre: titre, lignes: lignes.length, total: propositionTotal(lignes) };
+  };
+
+  V2.produits.propositionPdf = function () {
+    var r = V2.produits.propositionHtml();
+    if (r.erreur) { if (V2.toast) V2.toast(r.erreur); return; }
+    ouvrirImpression(r.html);
+  };
+
+  // Le mail part de la boîte du commercial (mailto:), jamais d'un service
+  // d'envoi : zéro clé, zéro coût, et un expéditeur que le pharmacien connaît.
+  V2.produits.propositionMail = function () {
+    var lignes = propositionLignes();
+    if (!lignes.length) { if (V2.toast) V2.toast('Aucun produit sélectionné'); return; }
+    var nom = nomOfficine();
+    var corps = 'Bonjour,\n\nComme convenu, voici la sélection dont nous avons parlé :\n\n', i;
+    for (i = 0; i < lignes.length; i++) {
+      var l = lignes[i];
+      corps += '- ' + l.d + ' (CIP ' + l.cip + ') — ' + l.qte + ' × ' +
+        (V2.fmtEur ? V2.fmtEur(l.net) : l.net + ' €') + '\n';
+    }
+    corps += '\nTotal : ' + (V2.fmtEur ? V2.fmtEur(propositionTotal(lignes)) : '') +
+      ' hors taxes.\nProduits disponibles ce jour, sous réserve des stocks.\n\n' +
+      'Bien à vous,\n';
+    var sujet = 'Proposition Intégral Pharma' + (nom ? ' — ' + nom : '');
+    window.location.href = 'mailto:?subject=' + encodeURIComponent(sujet) +
+      '&body=' + encodeURIComponent(corps);
+  };
+
+  function ouvrirImpression(html) {
+    var url = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
+    var w = window.open(url, '_blank');
+    if (!w) {
+      URL.revokeObjectURL(url);
+      if (V2.toast) V2.toast('Autorise les fenêtres pour sortir le document');
+      return;
+    }
+    w.focus();
+    setTimeout(function () {
+      try { w.print(); } catch (e) {}
+      setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
+    }, 400);
+  }
+
   // Fabrique le document et le REND, sans l'ouvrir : c'est ce qui permet de le
   // vérifier automatiquement (aucune condition commerciale chiffrée) au lieu de
   // le relire à l'œil dans une fenêtre d'impression.
@@ -749,20 +948,7 @@
     var r = V2.produits.pdfHtml();
     if (!r || r.erreur) { if (V2.toast) V2.toast((r && r.erreur) || 'Moteur indisponible'); return; }
     var html = r.html;
-    // Blob plutôt que document.write : pas d'écriture dans un document ouvert,
-    // et la fenêtre d'impression reçoit une vraie URL.
-    var url = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
-    var w = window.open(url, '_blank');
-    if (!w) {
-      URL.revokeObjectURL(url);
-      if (V2.toast) V2.toast('Autorise les fenêtres pour sortir le PDF');
-      return;
-    }
-    w.focus();
-    setTimeout(function () {
-      try { w.print(); } catch (e) {}
-      setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
-    }, 400);
+    ouvrirImpression(html);
   };
 
   // ── Page ───────────────────────────────────────────────────────
@@ -782,6 +968,7 @@
       // Normalisé à chaque rendu, pas seulement au premier chargement : S.sm est
       // exposé sur V2.produits.S, donc modifiable de l'extérieur.
       S.sm = S.sm ? smNormaliser(S.sm) : smCharger();
+      if (!S.sel) S.sel = selCharger();
       var corps = S.mode === 'vendeur' ? rendreVendeur()
         : S.mode === 'achats' ? rendreAchats()
         : rendreSurMesure();
@@ -844,6 +1031,13 @@
       '.pr-defile .pr-chip{flex:none}',
       '.sm-plier{display:flex;flex-direction:column;align-items:flex-start;gap:3px;width:100%;min-height:44px;margin:10px 0;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--paper);font:600 14px/1.2 Inter,sans-serif;color:var(--ip-blue);cursor:pointer;text-align:left}',
       '.sm-plier em{font:400 12px/1.3 Inter,sans-serif;color:var(--muted);font-style:normal}',
+      '.pr-add{margin-top:10px;width:100%;min-height:44px;border-radius:10px;border:1px dashed var(--ip-blue);background:transparent;color:var(--ip-blue);font:600 14px/1 Inter,sans-serif;cursor:pointer}',
+      '.pr-qte{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:10px}',
+      '.pr-panier{position:sticky;bottom:8px;z-index:40;display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px;padding:12px;border-radius:14px;background:var(--ip-blue);color:#fff;box-shadow:0 6px 22px rgba(0,80,230,.28)}',
+      '.pr-panier b{font:700 15px/1.2 Inter,sans-serif}',
+      '.pr-panier em{font:400 12px/1.3 Inter,sans-serif;font-style:normal;opacity:.85;flex:1;min-width:110px}',
+      '.pr-panier button{min-height:44px;padding:0 14px;border-radius:10px;border:0;background:#fff;color:var(--ip-blue);font:600 14px/1 Inter,sans-serif;cursor:pointer}',
+      '.pr-panier .vider{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.5)}',
       '.sm-labos{margin-top:8px}',
       '.sm-lab{min-height:38px;font-size:12.5px}',
       '.sm-lab em{font-style:normal;opacity:.55;margin-left:3px}',
