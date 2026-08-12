@@ -261,11 +261,16 @@
     nePlusSolliciter: function (cip, nom) {
       var c = sb(), u = uid();
       if (!c || !u || !cip) { V2.toast('Action impossible.'); return; }
-      c.from('rdv_opposition').upsert({ user_id: u, cip: String(cip), motif: 'STOP' },
-                                      { onConflict: 'user_id,cip' }).then(function (r) {
-        V2.toast(r.error ? 'Enregistrement impossible.'
-                         : (nom || 'Cette officine') + ' ne sera plus sollicitée.');
-        if (!r.error) V2.go('rdv');
+      // Vaut pour TOUTE l'équipe : la fonction pose la clé par officine, et
+      // non plus par (commercial, officine). Une officine qui dit stop à
+      // Karine ne doit plus recevoir les mails de Morgane — le refus
+      // s'adresse à Intégral, pas à la personne qui a envoyé le mail.
+      c.rpc('rdv_opposer', { p_cip: String(cip), p_motif: 'STOP' }).then(function (r) {
+        var ok = !r.error && r.data && r.data.ok;
+        V2.toast(ok
+          ? (nom || 'Cette officine') + ' ne sera plus sollicitée, par personne dans l’équipe.'
+          : 'Enregistrement impossible.');
+        if (ok) V2.go('rdv');
       });
     },
 
