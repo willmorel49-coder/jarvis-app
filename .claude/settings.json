@@ -1,6 +1,6 @@
 {
+  "_comment": "Pas de defaultMode ici : un fichier de projet ne peut pas s'accorder de mode de permission (Claude Code le rejette, et ce dépôt est PUBLIC). Le mode se règle une fois pour toutes dans ~/.claude/settings.json.",
   "permissions": {
-    "defaultMode": "bypassPermissions",
     "deny": [
       "Bash(rm -rf:*)",
       "Bash(sudo:*)",
