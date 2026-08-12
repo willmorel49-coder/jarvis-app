@@ -28,6 +28,7 @@ HOST = "https://ansm.sante.fr"
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "crm", "v2", "ansm-dispo.json")
 HISTO = os.path.join(HERE, "crm", "v2", "ansm-histo.json")
+ARCHIVE = os.path.join(HERE, "crm", "v2", "ansm-archive.json")
 PIVOT = os.path.join(HERE, "crm", "v2", "pivot.json")
 OUBLI_JOURS = 120   # on garde une ligne sortie de la liste ANSM 120 j (pour dire « revenu le … »)
 MAX_FICHES = int(os.environ.get("ANSM_MAX", "0"))   # 0 = toutes les tensions/ruptures
@@ -165,6 +166,52 @@ def load_histo():
         return {}
 
 
+def load_archive():
+    """Archive append-only des épisodes CLOS. Jamais purgée, jamais réécrite."""
+    try:
+        with io.open(ARCHIVE, "r", encoding="utf-8") as f:
+            eps = json.load(f).get("episodes", [])
+            return eps if isinstance(eps, list) else []
+    except Exception:
+        return []
+
+
+def ecart_jours(debut, fin):
+    """Nombre de jours entre deux dates ISO. None si l'une des deux est inexploitable."""
+    try:
+        return (datetime.date.fromisoformat(fin) - datetime.date.fromisoformat(debut)).days
+    except Exception:
+        return None
+
+
+def clore_episode(eps, vus, k, e, fin):
+    """Ajoute l'épisode terminé (statut `e['s']`, commencé le `e['d']`) à l'archive.
+
+    Pourquoi : le journal `ansm-histo` écrase la date de début à chaque changement de
+    statut, et la purge à OUBLI_JOURS supprime la ligne. Les deux effacent la seule chose
+    qui permettrait de mesurer un jour COMBIEN DE TEMPS une rupture dure. On fige donc
+    l'épisode avant de toucher au journal.
+
+    Dédoublonnage sur (clé, statut, début) : un robot qui repasse ne réécrit rien.
+    """
+    debut = e.get("d")
+    statut = e.get("s")
+    if not debut or not statut:
+        return False
+    sig = (k, statut, debut)
+    if sig in vus:
+        return False
+    vus.add(sig)
+    ep = {"k": k, "st": statut, "d": debut, "f": fin, "j": ecart_jours(debut, fin)}
+    if e.get("a"):
+        ep["a"] = 1              # date de début approchée → à traiter avec prudence
+    for champ, src in (("spec", "l"), ("dci", "dci"), ("dom", "dom")):
+        if e.get(src):
+            ep[champ] = e[src]
+    eps.append(ep)
+    return True
+
+
 def maj_histo(lst, today):
     """Journal append-only « depuis quand ».
 
@@ -177,6 +224,9 @@ def maj_histo(lst, today):
     Dès qu'on observe NOUS-MÊMES un changement de statut, la date devient exacte (`sinceA`=0).
     """
     h = load_histo()
+    eps = load_archive()
+    deja = set((e.get("k"), e.get("st"), e.get("d")) for e in eps)   # anti-doublon
+    n_arch0 = len(eps)
     vus = set()
     n_exact = 0
     for it in lst:
@@ -186,6 +236,13 @@ def maj_histo(lst, today):
         vus.add(k)
         st = it.get("st") or ""
         e = h.get(k)
+        # Libellé / molécule / domaine rafraîchis AVANT toute clôture : sans ça, un épisode
+        # qui se termine aujourd'hui part à l'archive sans le nom du produit (l'item ANSM
+        # n'existe plus au moment de la purge, et on ne saurait plus de quoi on parle).
+        if e:
+            for src, dst in (("spec", "l"), ("dci", "dci"), ("dom", "dom")):
+                if it.get(src):
+                    e[dst] = it[src]
         if not e:
             # Le fichier officiel BDPM donne la VRAIE date de debut du signalement :
             # quand on l'a, l'anciennete est exacte des le premier passage, plus besoin
@@ -194,12 +251,18 @@ def maj_histo(lst, today):
             depart = officiel or maj_iso(it.get("maj")) or today
             e = {"f": today, "s": st, "d": depart,
                  "a": 0 if officiel else (1 if maj_iso(it.get("maj")) else 0), "g": today}
+            for src, dst in (("spec", "l"), ("dci", "dci"), ("dom", "dom")):
+                if it.get(src):
+                    e[dst] = it[src]
             h[k] = e
         elif e.get("a") == 1 and it.get("debutOfficiel"):
             # une date approchee devient exacte des que le fichier officiel la fournit
             e["d"] = it["debutOfficiel"]
             e["a"] = 0
         elif e.get("s") != st:
+            # L'ancien statut se termine AUJOURD'HUI : on fige l'épisode avant d'écraser
+            # sa date de début, sinon sa durée est perdue pour toujours.
+            clore_episode(eps, deja, k, e, today)
             e["p"] = e.get("s")          # statut précédent
             e["s"] = st
             e["d"] = today               # changement observé par nous → date EXACTE
@@ -221,11 +284,25 @@ def maj_histo(lst, today):
         if not h[k].get("o"):
             h[k]["o"] = today
         if h[k].get("g", "") < limite:
+            # La ligne quitte le journal : dernière chance d'archiver l'épisode.
+            # La fin, c'est le jour où le signalement a quitté la liste ANSM (`o`),
+            # pas le jour de la purge — sinon on gonfle la durée de OUBLI_JOURS.
+            clore_episode(eps, deja, k, h[k], h[k].get("o") or today)
             del h[k]
     with io.open(HISTO, "w", encoding="utf-8") as f:
         json.dump({"generated": today, "note": "journal append-only des signalements ANSM (date de début de statut)",
                    "items": h}, f, ensure_ascii=False, separators=(",", ":"))
-    return len(h), n_exact
+    # Toujours écrire, même sans nouvel épisode : `git add` échoue EN BLOC si un des
+    # chemins n'existe pas (rien n'est alors indexé et le commit passe quand même,
+    # amputé). Le fichier doit donc exister dès le premier passage.
+    if len(eps) != n_arch0 or not os.path.exists(ARCHIVE):
+        with io.open(ARCHIVE, "w", encoding="utf-8") as f:
+            json.dump({"generated": today,
+                       "note": "épisodes ANSM CLOS (statut, début, fin, durée en jours). "
+                               "Append-only, jamais purgé : c'est la mémoire des ruptures.",
+                       "n": len(eps), "episodes": eps},
+                      f, ensure_ascii=False, separators=(",", ":"))
+    return len(h), n_exact, len(eps), len(eps) - n_arch0
 
 
 # ── Fichier OFFICIEL des signalements (BDPM) ─────────────────────────────────
@@ -367,7 +444,7 @@ def main():
             n_subst += 1
 
     today = datetime.date.today().isoformat()
-    n_histo, n_exact = maj_histo(lst, today)
+    n_histo, n_exact, n_arch, n_arch_new = maj_histo(lst, today)
     # on n'exporte pas le slug entier (poids) — juste ce qui sert au couplage
     items = [{"st": it["st"], "spec": it["spec"], "dci": it["dci"], "dom": it["dom"],
               "maj": it["maj"], "retour": it.get("retour"), "subst": it.get("subst", 0),
@@ -376,12 +453,13 @@ def main():
               "cips": it.get("cips") or None} for it in lst]
     out = {"generated": today, "source": "ANSM Disponibilités",
            "meta": {"n": len(lst), "byStatut": by_statut, "nDates": n_dates, "nSubst": n_subst,
-                    "nHisto": n_histo, "nDepuisExact": n_exact},
+                    "nHisto": n_histo, "nDepuisExact": n_exact, "nArchive": n_arch},
            "items": items}
     with io.open(OUT, "w", encoding="utf-8") as f:
         json.dump(out, f, ensure_ascii=False, separators=(",", ":"))
     print("OK · signalements=%d · %s · dates de retour futures=%d · journal=%d lignes (dont %d dates exactes)" % (len(lst), by_statut, n_dates, n_histo, n_exact))
     print("→ %s (%d Ko)" % (OUT, os.path.getsize(OUT) // 1024))
+    print("archive des épisodes clos = %d (+%d aujourd'hui)" % (n_arch, n_arch_new))
 
 
 if __name__ == "__main__":
