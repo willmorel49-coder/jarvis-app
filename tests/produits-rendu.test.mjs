@@ -228,3 +228,17 @@ test('sur mesure : les commandes se touchent au doigt (44 px)', () => {
     assert.ok(/min-height:44px/.test(bloc.slice(0, 220)), `${sel} sous 44 px`);
   }
 });
+
+test('robustesse : un reglage corrompu ne fait PAS d ecran blanc', () => {
+  // Un ecran blanc devant un pharmacien est le pire defaut possible.
+  // S.sm est expose sur V2.produits.S : il peut arriver tronque (vieille
+  // version, ecriture partielle). Le rendu doit tenir dans tous les cas.
+  sb.V2.produits.S.mode = 'surmesure';
+  for (const casse of [{}, { quotas: null }, { quotas: { pr_low: 'abc' } }, null]) {
+    sb.V2.produits.S.sm = casse;
+    const r = { innerHTML: '' };
+    assert.doesNotThrow(() => sb.V2.pages.produits.render(r, null),
+      `rendu casse avec ${JSON.stringify(casse)}`);
+    assert.ok(r.innerHTML.length > 500, `ecran quasi vide avec ${JSON.stringify(casse)}`);
+  }
+});
