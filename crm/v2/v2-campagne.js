@@ -187,6 +187,15 @@
       V2.campagne.chercher();
     },
 
+    // Aperçu du mail tel qu'il partira. Calé sur la première officine cochée
+    // quand il y en a une : voir SES chiffres vaut mieux qu'un exemple neutre.
+    apercu: function () {
+      if (!window.V2rdvApercuPret) { window.V2rdvApercuPret = 1; }
+      var cips = Object.keys(ETAT.choisis);
+      V2.rdvApercu.montrer('cp-apercu', val('cp-modele') || 'routine',
+                           val('cp-texte') || '', cips.length ? cips[0] : null);
+    },
+
     typer: function (t) { ETAT.type = t; V2.campagne.rafraichir(); },
 
     groupe: function (g) {
@@ -200,6 +209,8 @@
       V2.campagne.majBarre();
       var e = document.getElementById('cp-l-' + cip);
       if (e) e.classList.toggle('on', !!ETAT.choisis[cip]);
+      // Première officine cochée : l'aperçu prend ses chiffres à elle.
+      if (Object.keys(ETAT.choisis).length <= 1) V2.campagne.apercu();
     },
 
     // Coche ou décoche TOUT CE QUI EST AFFICHÉ, pas toute la base : sinon on
@@ -350,12 +361,15 @@
         '<div class="v2-camp-sec">Le motif</div>' +
         '<div class="v2-camp-box">' +
           '<label for="cp-modele">Pourquoi tu leur écris</label>' +
-          '<select id="cp-modele">' + mods + '</select>' +
+          '<select id="cp-modele" onchange="V2.campagne.apercu()">' + mods + '</select>' +
           '<label for="cp-texte" style="margin-top:14px">Ton texte (modèle « nouveauté » uniquement)</label>' +
           '<p>Deux lignes, réutilisées pour toute la liste. Aucun pourcentage : ' +
             'les conditions commerciales ne s’écrivent pas dans un mail.</p>' +
-          '<textarea id="cp-texte" rows="2" placeholder="Ex. La gamme diabète arrive en septembre."></textarea>' +
+          '<textarea id="cp-texte" rows="2" oninput="V2.campagne.apercu()" placeholder="Ex. La gamme diabète arrive en septembre."></textarea>' +
         '</div>' +
+
+        '<div class="v2-camp-sec">Aperçu du mail</div>' +
+        '<div id="cp-apercu"></div>' +
 
         '<div class="v2-camp-sec">Qui tu vises</div>' +
         '<div class="v2-camp-box">' +
@@ -395,6 +409,10 @@
         '<p class="v2-camp-note">Les officines sans adresse mail et celles marquées ' +
           '« ne plus solliciter » sont écartées automatiquement.</p>' +
       '</div>';
+
+      // L'aperçu s'affiche dès l'ouverture : on doit voir le mail AVANT de
+      // préparer une liste, pas après avoir tout choisi.
+      V2.campagne.apercu();
     }
   };
 })();
