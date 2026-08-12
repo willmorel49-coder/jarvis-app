@@ -161,9 +161,14 @@
       }
       if (z) z.innerHTML = '<p class="v2-camp-note">Chargement des officines…</p>';
       V2.rdvSources().then(function () {
-        return c.from('rdv_opposition').select('cip').eq('user_id', u);
+        // Liste d'opposition COMMUNE : une officine qui dit stop à Karine ne
+        // doit plus recevoir les mails de Morgane non plus. Le refus s'adresse
+        // à Intégral, pas à la personne qui a envoyé le mail.
+        return c.rpc('rdv_opposes');
       }).then(function (r) {
-        ETAT.opposes = ((r && r.data) || []).map(function (x) { return String(x.cip); });
+        ETAT.opposes = ((r && r.data) || []).map(function (x) {
+          return String(x && x.cip != null ? x.cip : x);   // la fonction renvoie des CIP bruts
+        });
         ETAT.tous = recenser();
         V2.campagne.rafraichir();
       }).catch(function () {
