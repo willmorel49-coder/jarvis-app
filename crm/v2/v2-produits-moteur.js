@@ -44,7 +44,8 @@
 
   M.indexer = function (officines, ventes) {
     var idx = { officines: {}, netParOfficine: {}, qteParCip: {}, cles: {}, membres: {},
-                premierMois: {}, moisMax: 0 };
+                premierMois: {}, moisMax: 0,
+                acheteurs: {}, acheteursGrp: {}, tailleGrp: {}, nbOfficines: 0 };
     var i, o, id;
 
     officines = officines || [];
@@ -67,6 +68,9 @@
       if (cs.grp) (idx.membres[cs.grp] = idx.membres[cs.grp] || []).push(id);
       if (cs.deptTranche) (idx.membres[cs.deptTranche] = idx.membres[cs.deptTranche] || []).push(id);
       (idx.membres[cs.tranche] = idx.membres[cs.tranche] || []).push(id);
+      idx.nbOfficines += 1;
+      var gg = idx.officines[id].groupement;
+      if (gg) idx.tailleGrp[gg] = (idx.tailleGrp[gg] || 0) + 1;
     }
 
     ventes = ventes || [];
@@ -88,7 +92,35 @@
         if (mo > idx.moisMax) idx.moisMax = mo;
       }
     }
+    // Acheteurs : une officine ne compte que si son solde net est > 0 —
+    // sinon un simple retour ferait d'elle un « acheteur ».
+    var ph, cip2;
+    for (ph in idx.netParOfficine) {
+      if (!Object.prototype.hasOwnProperty.call(idx.netParOfficine, ph)) continue;
+      var g2 = (idx.officines[ph] || {}).groupement || '';
+      var m2 = idx.netParOfficine[ph];
+      for (cip2 in m2) {
+        if (!Object.prototype.hasOwnProperty.call(m2, cip2)) continue;
+        if (!(m2[cip2] > 0)) continue;
+        idx.acheteurs[cip2] = (idx.acheteurs[cip2] || 0) + 1;
+        if (g2) {
+          var d2 = idx.acheteursGrp[g2] || (idx.acheteursGrp[g2] = {});
+          d2[cip2] = (d2[cip2] || 0) + 1;
+        }
+      }
+    }
     return idx;
+  };
+
+  // Penetration d'un produit : combien d'officines l'achetent, sur combien.
+  // Sans groupement : le reseau entier. Avec : ce groupement seulement.
+  M.penetration = function (idx, cip, groupement) {
+    cip = String(cip);
+    if (groupement) {
+      var d = idx.acheteursGrp[groupement] || {};
+      return { n: d[cip] || 0, total: idx.tailleGrp[groupement] || 0 };
+    }
+    return { n: idx.acheteurs[cip] || 0, total: idx.nbOfficines || 0 };
   };
 
   M.groupeComparaison = function (idx, phId) {

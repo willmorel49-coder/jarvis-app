@@ -75,7 +75,13 @@
     if (!M) return null;
     var sig = (V2.sales || []).length + ':' + (V2.pharmacies || []).length;
     if (V2.produits._idx && V2.produits._sig === sig) return V2.produits._idx;
-    V2.produits._idx = M.indexer(V2.pharmacies || [], V2.sales || []);
+    // Groupements canonisés AVANT indexation : sinon les variantes d'un même
+    // groupement sont comptées comme des groupes différents.
+    var offs = (V2.pharmacies || []).map(function (p) {
+      return { id: p.id, name: p.name, cp: p.cp, ca: p.ca, ville: p.ville,
+               groupement: canonGrp(p.groupement) };
+    });
+    V2.produits._idx = M.indexer(offs, V2.sales || []);
     V2.produits._sig = sig;
     return V2.produits._idx;
   };
@@ -93,6 +99,50 @@
     return !!(R && R[String(cip)]);
   }
   function stockIP() { return (window.STOCK_IP && window.STOCK_IP.data) || {}; }
+
+  // ── Groupements : nom canonique et logo ────────────────────────
+  // L'app fusionne les variantes de noms via GRP_ALIAS. Sans ça, « UPP » (73
+  // officines), « Pharm-Upp » (4) et « UPP ULTRA » (3) apparaissent comme trois
+  // groupements distincts — et le logo, indexé sur « Pharm-Upp », ne sort jamais.
+  function normCle(x) {
+    var v = String(x == null ? '' : x).toLowerCase();
+    if (v.normalize) v = v.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    return v.replace(/[^a-z0-9]/g, '');
+  }
+  function canonGrp(nom) {
+    nom = String(nom == null ? '' : nom).trim();
+    if (!nom) return '';
+    if (V2.canonGrp) { try { return V2.canonGrp(nom) || nom; } catch (e) {} }
+    var A = window.GRP_ALIAS || {};
+    return A[normCle(nom)] || nom;
+  }
+  // Logos embarqués en local (base64) dans wml-officines-data.js. Indexés sur
+  // le nom BRUT : on les réindexe sur le nom canonique normalisé.
+  function logos() {
+    if (V2.produits._logos) return V2.produits._logos;
+    var src = window.GRP_LOGOS || {}, out = {}, k;
+    for (k in src) {
+      if (!Object.prototype.hasOwnProperty.call(src, k)) continue;
+      var c = normCle(canonGrp(k));
+      if (c && !out[c]) out[c] = src[k];
+      var b = normCle(k);
+      if (b && !out[b]) out[b] = src[k];
+    }
+    V2.produits._logos = out;
+    return out;
+  }
+  // Image si on l'a, sinon pastille d'initiales — jamais de trou dans la mise
+  // en page. Même principe que grpLogo() de v2-pharma.js.
+  function logoGrp(nom, grand) {
+    var cls = 'pr-logo' + (grand ? ' pr-logo-g' : '');
+    var l = logos()[normCle(canonGrp(nom))];
+    if (l) return '<span class="' + cls + '"><img src="' + esc(l) + '" alt=""></span>';
+    var ini = String(nom || '?').replace(/[^A-Za-zÀ-ÿ0-9]+/g, ' ').trim().split(/\s+/)
+      .slice(0, 2).map(function (w) { return w.charAt(0); }).join('').toUpperCase() || '?';
+    return '<span class="' + cls + ' pr-logo-x">' + esc(ini) + '</span>';
+  }
+  // Sous ce seuil, « 2 pharmacies le prennent » dessert l'argument : on se tait.
+  var SEUIL_PREUVE = 10;
 
   // CIP de nos listes négociées : « OFFRE IP Générique » et « Offres
   // Privilèges IP » (crm/marketing-offers.js). 41 références, 35 en stock.
@@ -478,8 +528,9 @@
     var f = fiche(l.cip);
     var abandon = (f && porteAbandon(f.f) && f.ppht > 0 && f.net > 0) ? eur(f.ppht - f.net) : '—';
     return '<div class="pr-row">' + enTeteProduit(l) +
-      '<div class="pr-arg"><strong>' + Math.round(l.pctPeers * 100) + ' %</strong> de ses ' +
-        esc(l._grp) + ' le prennent · <strong>' + eur(l.caMoyen) + '</strong> en moyenne par confrère</div>' +
+      '<div class="pr-arg">' + (l._logo || '') +
+        '<strong>' + num(l.peers) + ' des ' + num(l._nbConf) + '</strong> ' + esc(l._grp) +
+        ' le prennent · <strong>' + eur(l.caMoyen) + '</strong> en moyenne</div>' +
       '<div class="pr-chiffres">' +
         chiffre(eur(l.potentiel), 'potentiel', 'pr-pot') +
         chiffre(f && f.net > 0 ? eur(f.net) : '—', 'prix net') +
@@ -506,7 +557,14 @@
     var brutes = filtrer(avecFamille(r.lignes));
     var dispo = compterParFamille(brutes);
     var lignes = M.limiterParCategorie(brutes, S.sm.quotas);
-    for (i = 0; i < lignes.length; i++) lignes[i]._grp = libGrp;
+    // Le logo n'a de sens que pour un vrai groupement : sur le chemin de repli
+    // (« officines comparables »), il n'y a pas de marque à montrer.
+    var nomGrp = (idx.officines[String(S.ph)] || {}).groupement || '';
+    var estGrp = !!(r.groupe && r.groupe.type === 'groupement' && nomGrp);
+    var logoH = estGrp ? logoGrp(nomGrp) : '';
+    for (i = 0; i < lignes.length; i++) {
+      lignes[i]._grp = libGrp; lignes[i]._nbConf = r.nbConfreres; lignes[i]._logo = logoH;
+    }
     var pot = 0;
     for (i = 0; i < lignes.length; i++) pot += lignes[i].potentiel;
 
@@ -518,7 +576,8 @@
     return '<div class="pr-bandeau">' +
       '<select class="pr-select" aria-label="Choisir une officine" onchange="V2.produits.setPh(this.value)">' + opts + '</select>' +
       '<div class="pr-ctx">' +
-        '<span class="pr-ctx-grp">' + num(r.nbConfreres) + ' ' + esc(libGrp) + '</span>' +
+        '<span class="pr-ctx-grp">' + (estGrp ? logoGrp(nomGrp) : '') +
+          num(r.nbConfreres) + ' ' + esc(libGrp) + '</span>' +
         '<span class="pr-ctx-pot">' + eur(pot) + ' de potentiel</span>' +
         '<span class="pr-ctx-n">' + num(lignes.length) + ' produits</span>' +
       '</div>' + noteSeuil + suiviHtml() + composeurHtml(dispo) +
@@ -531,7 +590,10 @@
     var f = fiche(l.cip);
     var abandon = (f && porteAbandon(f.f) && f.ppht > 0 && f.net > 0) ? eur(f.ppht - f.net) : '—';
     return '<div class="pr-row">' + enTeteProduit(l) +
-      '<div class="pr-arg"><strong>' + num(l.officines) + ' adhérents</strong> ne nous le prennent pas</div>' +
+      '<div class="pr-arg">' + (l._logo || '') +
+        '<strong>' + num(l.officines) + ' adhérents sur ' + num(l._taille) + '</strong>' +
+        ' ne nous le prennent pas' +
+        (l._pris > 0 ? ' · <strong>' + num(l._pris) + '</strong> le prennent déjà' : '') + '</div>' +
       '<div class="pr-chiffres">' +
         chiffre(eur(l.potentiel), 'potentiel', 'pr-pot') +
         chiffre(f && f.net > 0 ? eur(f.net) : '—', 'prix net') +
@@ -542,7 +604,7 @@
   function groupements() {
     var vus = {}, phs = V2.pharmacies || [], i, g;
     for (i = 0; i < phs.length; i++) {
-      g = String(phs[i].groupement || '').trim();
+      g = canonGrp(phs[i].groupement);
       if (g) vus[g] = (vus[g] || 0) + 1;
     }
     var noms = Object.keys(vus).sort(function (a, b) { return vus[b] - vus[a]; });
@@ -571,14 +633,20 @@
     var brutes = filtrer(avecFamille(V2.produits._grpLignes));
     var dispo = compterParFamille(brutes);
     var lignes = M.limiterParCategorie(brutes, S.sm.quotas);
-    var pot = 0;
-    for (i = 0; i < lignes.length; i++) pot += lignes[i].potentiel;
+    var logoH = logoGrp(S.grp), taille = G.n[S.grp] || 0, pot = 0;
+    for (i = 0; i < lignes.length; i++) {
+      lignes[i]._logo = logoH;
+      lignes[i]._taille = taille;
+      // Combien d'adhérents le prennent DÉJÀ : l'autre moitié de l'argument.
+      lignes[i]._pris = M.penetration(idx, lignes[i].cip, S.grp).n;
+      pot += lignes[i].potentiel;
+    }
     var rl = rendreLignes(lignes, ligneGroupement);
 
     return '<div class="pr-bandeau">' +
       '<select class="pr-select" aria-label="Choisir un groupement" onchange="V2.produits.setGrp(this.value)">' + opts + '</select>' +
       '<div class="pr-ctx">' +
-        '<span class="pr-ctx-grp">' + num(G.n[S.grp]) + ' adhérents</span>' +
+        '<span class="pr-ctx-grp">' + logoGrp(S.grp, true) + num(taille) + ' adhérents</span>' +
         '<span class="pr-ctx-pot">' + eur(pot) + ' de potentiel</span>' +
         '<span class="pr-ctx-n">' + num(lignes.length) + ' produits</span>' +
       '</div>' + composeurHtml(dispo) +
@@ -595,7 +663,10 @@
         (fam ? '<span class="pr-fam" style="--fc:' + fam.c + '">' + esc(fam.l) + '</span>' : '') +
         (l.rupture ? '<span class="pr-rupt">rupture ANSM</span>' : '') +
       '</div>' +
-      '<div class="pr-arg"><strong>' + num(l.n) + ' pharmacies</strong> nous le prennent' +
+      '<div class="pr-arg">' +
+        (l.n >= SEUIL_PREUVE
+          ? '<strong>' + num(l.n) + ' des ' + num(l._reseau) + '</strong> officines du réseau nous le prennent'
+          : 'Référence de niche') +
         (ab != null ? ' · <strong>+' + eur(ab) + ' par boîte</strong> pour le pharmacien (' +
           (Math.round(l.abandonPct * 10) / 10).toString().replace('.', ',') + ' %)' : '') + '</div>' +
       '<div class="pr-chiffres">' +
@@ -613,7 +684,8 @@
       quotas: S.sm.quotas, abandonMin: S.sm.abandonMin, sansRupture: S.sansRupture,
       labos: S.sm.labos, exclusifs: S.sm.exclusifs
     });
-    var lignes = filtrer(r.lignes);
+    var lignes = filtrer(r.lignes), reseau = (V2.pharmacies || []).length, i;
+    for (i = 0; i < lignes.length; i++) lignes[i]._reseau = reseau;
     var rl = rendreLignes(lignes, ligneProspect);
     return '<div class="pr-bandeau">' +
       '<input class="pr-select sm-nom" placeholder="Nom de l\'officine (pour le PDF)" value="' +
@@ -913,6 +985,13 @@
       '.pr-lib{font:700 15px/1.35 Satoshi,Inter,sans-serif;color:var(--ip-ink)}',
       '.pr-fam{display:inline-block;margin-left:8px;padding:2px 8px;border-radius:999px;font:600 11px/1.6 Inter,sans-serif;color:var(--fc);border:1px solid var(--fc)}',
       '.pr-rupt{display:inline-block;margin-left:8px;padding:2px 8px;border-radius:999px;background:var(--c-rose);color:#fff;font:600 11px/1.6 Inter,sans-serif}',
+      // Largeur libre : la plupart des logos de groupements sont horizontaux et
+      // deviennent illisibles dans un carre.
+      '.pr-logo{display:inline-flex;align-items:center;justify-content:center;min-width:22px;max-width:52px;height:22px;padding:0 3px;margin-right:6px;border-radius:5px;background:#fff;border:1px solid var(--line);overflow:hidden;vertical-align:-6px;flex:none}',
+      '.pr-logo img{max-width:100%;max-height:100%;object-fit:contain;display:block}',
+      '.pr-logo-x{font:700 9px/1 Inter,sans-serif;color:var(--muted);background:var(--paper)}',
+      '.pr-logo-g{min-width:34px;max-width:78px;height:34px;border-radius:8px;vertical-align:-11px}',
+      '.pr-logo-g.pr-logo-x{font-size:13px}',
       '.pr-arg{margin-top:6px;font:400 14px/1.4 Inter,sans-serif;color:var(--muted)}',
       '.pr-chiffres{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}',
       '.pr-chiffres span{display:block;font:600 15px/1.2 "Geist Mono",ui-monospace,monospace;color:var(--ip-ink)}',

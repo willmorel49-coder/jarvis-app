@@ -34,8 +34,8 @@ sb.globalThis = sb;
 vm.createContext(sb);
 
 vm.runInContext(
-  ['wml-officines-data.js', 'stock-data.js', 'prod-stats-data.js', 'ruptures-data.js',
-   'generiqueurs-data.js', 'biosimilaires-data.js', '../marketing-offers.js']
+  ['groupement-alias.js', 'wml-officines-data.js', 'stock-data.js', 'prod-stats-data.js',
+   'ruptures-data.js', 'generiqueurs-data.js', 'biosimilaires-data.js', '../marketing-offers.js']
     .map(lire).join('\n;\n') +
   '\n;window.WML_OFFICINES = typeof WML_OFFICINES !== "undefined" ? WML_OFFICINES : window.WML_OFFICINES;' +
   'window.WML_SALES = typeof WML_SALES !== "undefined" ? WML_SALES : window.WML_SALES;', sb);
@@ -141,9 +141,14 @@ test('groupement : le selecteur liste les groupements, le plus gros en tete', ()
   for (let i = 1; i < noms.length; i++) {
     assert.ok(noms[i - 1].n >= noms[i].n, `${noms[i - 1].nom} avant ${noms[i].nom}`);
   }
-  assert.equal(noms[0].nom, 'UPP', `attendu UPP en tete, obtenu ${noms[0].nom}`);
-  assert.ok(/adhérents<\/strong> ne nous le prennent pas/.test(r.innerHTML),
-    'l argument groupement est absent');
+  // Les variantes sont fusionnees par GRP_ALIAS : « UPP » (73) + « Pharm-Upp »
+  // (4) = « Pharm-UPP » (77). Sans canonisation, le plus gros groupement du
+  // reseau apparaissait coupe en trois.
+  assert.equal(noms[0].nom, 'Pharm-UPP', `attendu Pharm-UPP en tete, obtenu ${noms[0].nom}`);
+  assert.equal(noms[0].n, 77, `attendu 77 officines, obtenu ${noms[0].n}`);
+  assert.ok(!noms.some((x) => x.nom === 'UPP'), 'la variante brute UPP ne doit plus apparaitre');
+  assert.ok(/adhérents sur <\/strong>|adhérents sur /.test(r.innerHTML)
+    || /ne nous le prennent pas/.test(r.innerHTML), 'l argument groupement est absent');
 });
 
 test('achats : la couverture est en mois ou « — », jamais infinie', () => {
@@ -185,7 +190,8 @@ test('sur mesure : le composeur affiche les 6 categories', () => {
 
 test('sur mesure : le preset par defaut produit une liste peuplee', () => {
   assert.ok(blocsS.length > 0, 'aucun produit dans la liste sur mesure');
-  assert.ok(/pharmacies<\/strong> nous le prennent/.test(hS), 'l argument prospect est absent');
+  assert.ok(/officines du réseau nous le prennent|Référence de niche/.test(hS),
+    'l argument prospect est absent');
 });
 
 test('sur mesure : le quota par categorie est respecte', () => {
