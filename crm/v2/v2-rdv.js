@@ -202,7 +202,9 @@
           var m = window.V2MOD.rendre(modele || 'routine', {
             contact: o.contact, nom_officine: o.nom, ville: o.ville,
             ca_annee: V2.rdvCA(pid), mois_derniere_visite: null,
-            prenom_commercial: prenom(), tel_commercial: V2.rdvTel || '',
+            prenom_commercial: prenom(),
+            nom_complet_commercial: (V2.user && V2.user.name) || '',
+            tel_commercial: V2.rdvTel || '',
             lien: V2.rdv.BASE_URL + '?t=' + r.data.token, texte_libre: texteLibre || ''
           });
           if (m.avertissement) V2.toast(m.avertissement);

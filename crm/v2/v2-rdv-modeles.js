@@ -9,7 +9,7 @@
   'use strict';
   var M = {};
 
-  var STOP = '\n\n— Si vous ne souhaitez plus recevoir ces propositions, répondez STOP à ce mail.';
+  var STOP = '\n\n—\nVous ne souhaitez plus recevoir ces propositions ? Répondez simplement STOP\nà ce message, et nous ne vous écrirons plus.';
   var CHIFFRE_PCT = /\d+(?:[.,]\d+)?\s*%/;
 
   function txt(v, repli) {
@@ -24,9 +24,14 @@
     var c = txt(ctx.contact);
     return 'Bonjour' + (c ? ' ' + c : '') + ',';
   }
+  // Signature complète. Elle ne contient QUE des faits : nom du commercial,
+  // sa maison, son numéro. Aucune fonction inventée — un titre faux dans un
+  // mail à un pharmacien se remarque, et décrédibilise tout le reste.
   function signature(ctx) {
     var t = txt(ctx.tel_commercial);
-    return '\n\nBien à vous,\n' + txt(ctx.prenom_commercial) + (t ? '\n' + t : '');
+    var nom = txt(ctx.nom_complet_commercial) || txt(ctx.prenom_commercial);
+    return '\n\nBien à vous,\n\n' + nom +
+           '\nIntégral Pharma' + (t ? '\n' + t : '');
   }
 
   // Garde-fou : un pourcentage saisi à la main dans le texte libre serait une
@@ -92,6 +97,53 @@
   M.rendre = function (cle, ctx) {
     var m = MODELES[cle] || MODELES.routine;
     return m.rendre(ctx || {});
+  };
+
+  // ── Version mise en forme ────────────────────────────────────────
+  // Pourquoi elle existe : `mailto:` ne transporte QUE du texte brut — c'est
+  // une limite du système d'exploitation, pas un choix. Le commercial copie
+  // donc ce bloc et le colle dans Outlook, qui conserve la mise en forme.
+  //
+  // Volontairement sobre : pas d'image, pas de couleur de fond, pas de
+  // colonnes. Un mail chargé tombe en indésirable et s'affiche mal sur la
+  // moitié des messageries d'officine. Ce qui fait « pro », c'est la
+  // typographie et l'espacement, pas la décoration.
+  function h(t) {
+    return String(t == null ? '' : t)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  M.rendreHtml = function (cle, ctx) {
+    var m = M.rendre(cle, ctx || {});
+    var lien = txt((ctx || {}).lien);
+    var lignes = m.corps.split('\n');
+    var out = [], i, l, dans = false;
+
+    // Le lien devient un vrai bouton ; le reste garde ses paragraphes.
+    for (i = 0; i < lignes.length; i++) {
+      l = lignes[i];
+      if (lien && l.trim() === lien) {
+        out.push('<p style="margin:22px 0"><a href="' + h(lien) + '" ' +
+          'style="display:inline-block;padding:13px 22px;background:#0050E6;color:#ffffff;' +
+          'text-decoration:none;border-radius:8px;font-weight:700">Choisir un créneau</a></p>');
+        dans = false;
+        continue;
+      }
+      if (l.trim() === '') { dans = false; continue; }
+      if (l.trim() === '—') { out.push('<hr style="border:0;border-top:1px solid #E3E8F0;margin:26px 0 14px" />'); dans = false; continue; }
+      if (!dans) { out.push('<p style="margin:0 0 14px">' + h(l)); dans = true; }
+      else { out[out.length - 1] += '<br />' + h(l); }
+    }
+    for (i = 0; i < out.length; i++) {
+      if (out[i].indexOf('<p') === 0 && out[i].indexOf('</p>') < 0) out[i] += '</p>';
+    }
+
+    return {
+      objet: m.objet,
+      avertissement: m.avertissement,
+      html: '<div style="font:15px/1.65 -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial,sans-serif;' +
+            'color:#10131C;max-width:560px">' + out.join('') + '</div>'
+    };
   };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = M;
