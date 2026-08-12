@@ -53,6 +53,11 @@ jobs:
       - name: Tests unitaires (moteur de créneaux, .ics, modèles de mail)
         run: node --test tests/*.test.mjs
 
+      # L'archive des épisodes ANSM clos est la SEULE mémoire des durées de rupture :
+      # rien ne la reconstitue si un robot se remet à purger. D'où un test à part.
+      - name: Test robot ANSM (l'archive des épisodes clos ne perd rien)
+        run: python3 tests/ansm-archive.test.py
+
       - name: Installer Playwright (éphémère, non committé)
         run: |
           npm i --no-save playwright@latest >/dev/null 2>&1
