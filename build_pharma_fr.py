@@ -16,6 +16,7 @@ import re
 import csv
 import math
 import time
+import datetime
 import unicodedata
 import urllib.request
 
@@ -444,6 +445,24 @@ def main():
         fh.write('// segmentation client/prospect, commercial réseau. build_pharma_fr.py.\n')
         fh.write('// Chaque point: [lat,lng,ugaIdx,grpIdx,segIdx,commIdx,nom,ville,cp,tel,titulaire,email,ca,id]\n')
         fh.write('window.PHARMA_FR=' + json.dumps(data, ensure_ascii=False, separators=(',', ':')) + ';\n')
+    # Comptes du parc, à part et minuscules. La vue macro de l'appro n'a besoin QUE de
+    # ces deux nombres pour dire « chez vos clients, vous fournissez 1 boîte sur N » :
+    # lui faire charger les 2,8 Mo de la carte pour ça ferait ramer le poste.
+    parc = os.path.join(os.path.dirname(OUT), 'parc-officines.json')
+    seg_l = inv(segs)
+    par_seg = {}
+    for p in P:
+        par_seg[seg_l[p[4]]] = par_seg.get(seg_l[p[4]], 0) + 1
+    with open(parc, 'w', encoding='utf-8') as fh:
+        json.dump({'generated': datetime.date.today().isoformat(),
+                   'source': data['meta']['source'],
+                   'n': len(P), 'clients': nClients, 'parSegment': par_seg,
+                   'note': "officines de France métropolitaine et leur segmentation client. "
+                           "Extrait de pharma-fr-data.js pour éviter d'en charger 2,8 Mo."},
+                  fh, ensure_ascii=False, separators=(',', ':'))
+    print('   parc ->', parc, '(%d octets, %d officines, %d clientes)'
+          % (os.path.getsize(parc), len(P), nClients))
+
     nGrpCovered = sum(1 for p in P if inv(grps)[p[3]] != '—')
     print('OK ->', OUT, '(%.1f Mo, %d pts, %d clients, %d adresses exactes, %d UGA, %d comm, %d dropped)'
           % (os.path.getsize(OUT) / 1048576.0, len(P), nClients, nExact, len(ugas), len(comms) - 1, dropped))
