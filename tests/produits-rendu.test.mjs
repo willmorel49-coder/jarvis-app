@@ -136,25 +136,33 @@ test('achats : la vue par produit rend des lignes', () => {
   assert.ok(/ne nous le prennent pas/.test(hA), 'l argument achats est absent');
 });
 
-test('groupement : le selecteur liste les groupements, le plus gros en tete', () => {
+test('groupement : la barre de recherche remplace la liste deroulante', () => {
   sb.V2.produits.S.mode = 'groupement';
   const r = { innerHTML: '' };
   sb.V2.pages.produits.render(r, null);
-  const noms = [...r.innerHTML.matchAll(/<option value="[^"]*"[^>]*>([^·<]+) · (\d+) officines</g)]
-    .map((m) => ({ nom: m[1].trim(), n: +m[2] }));
-  assert.ok(noms.length > 50, `seulement ${noms.length} groupements listes`);
-  for (let i = 1; i < noms.length; i++) {
-    assert.ok(noms[i - 1].n >= noms[i].n, `${noms[i - 1].nom} avant ${noms[i].nom}`);
-  }
-  // Les variantes sont fusionnees par GRP_ALIAS : « UPP » (73) + « Pharm-Upp »
-  // (4) = « Pharm-UPP » (77). Sans canonisation, le plus gros groupement du
-  // reseau apparaissait coupe en trois.
-  assert.equal(noms[0].nom, 'Pharm-UPP', `attendu Pharm-UPP en tete, obtenu ${noms[0].nom}`);
-  assert.equal(noms[0].n, 77, `attendu 77 officines, obtenu ${noms[0].n}`);
-  assert.ok(!noms.some((x) => x.nom === 'UPP'), 'la variante brute UPP ne doit plus apparaitre');
-  assert.ok(/adhérents sur <\/strong>|adhérents sur /.test(r.innerHTML)
-    || /ne nous le prennent pas/.test(r.innerHTML), 'l argument groupement est absent');
+  assert.ok(!/<select[^>]*setGrp/.test(r.innerHTML), 'la liste deroulante est encore la');
+  assert.ok(/id="pr-sugg"/.test(r.innerHTML), 'pas de zone de suggestions');
+  assert.ok(/rechSaisie/.test(r.innerHTML), 'le champ n est pas branche');
+  assert.ok(/adhérents sur |ne nous le prennent pas/.test(r.innerHTML),
+    'l argument groupement est absent');
 });
+
+test('client : la barre remplace le deroulant de 691 lignes', () => {
+  sb.V2.produits.S.mode = 'client';
+  const r = { innerHTML: '' };
+  sb.V2.pages.produits.render(r, null);
+  assert.ok(!/<select[^>]*setPh/.test(r.innerHTML), 'la liste deroulante est encore la');
+  // Les seules <option> restantes sont les 6 paliers d'abandon du composeur :
+  // plus aucune officine n'est construite en liste, ce qui evitait 691 nœuds
+  // fabriques a chaque rendu pour rien.
+  const opts = (r.innerHTML.match(/<option /g) || []).length;
+  assert.ok(opts <= 8, `${opts} options encore construites — la liste d officines est-elle revenue ?`);
+  assert.ok(/id="pr-sugg"/.test(r.innerHTML));
+  // Le nom de l officine choisie doit rester lisible : sans deroulant, plus
+  // rien ne dirait sur QUI porte la liste.
+  assert.ok(/class="pr-cible"/.test(r.innerHTML), 'la cible n est plus affichee');
+});
+
 
 test('achats : la couverture est en mois ou « — », jamais infinie', () => {
   for (const b of blocsA) {
