@@ -16,6 +16,7 @@
     modele: 'routine', texte: '', file: [], i: 0, envoyes: 0, passes: 0,
     tous: [],          // tout ce que le commercial peut viser, recensé une fois
     opposes: [],       // « ne plus solliciter »
+    comm: null,        // le commercial visé — null = pas encore choisi
     type: 'tous',      // tous | clients | prospects
     groupements: [],   // vide = tous les groupements
     choisis: {}        // cip -> 1, la sélection à la main
@@ -88,16 +89,45 @@
   // (base nationale, seule à porter le groupement). V2.rdvInfo réconcilie les
   // adresses mail des trois sources. Le CIP est la clé partout, y compris
   // pour la liste « ne plus solliciter ».
+  // Le commercial du compte connecté, tel que le reste du CRM le nomme
+  // (v2-pilotage.js : « jamais un collègue »). Peut être vide pour un compte
+  // qui n'est rattaché à aucun secteur — un admin, par exemple.
+  function moi() { return (V2.user && V2.user.commercial) ? String(V2.user.commercial) : ''; }
+
   function recenser() {
     var D = window.PHARMA_FR || null;
+    var comm = ETAT.comm || '';
+    // Sans commercial choisi, on ne recense RIEN. Montrer les officines de
+    // toute l'équipe n'est pas un repli acceptable : on écrit à des clients
+    // qui ne sont pas les siens, et la règle géographique n'a plus de sens.
+    if (!comm) return [];
+    // Un client appartient à un commercial via `comms` — même critère que la
+    // liste des officines (v2-pharma.js).
+    var miennes = (V2.pharmacies || []).filter(function (p) {
+      return (p.comms || []).indexOf(comm) >= 0;
+    });
     return window.V2CIBLE.recenser({
-      pharmacies: V2.pharmacies || [],
+      pharmacies: miennes,
       national: D ? { p: D.p, seg: D.seg, grp: D.grp, comm: D.comm } : null,
-      // Le nom du commercial cadre les prospects sur SON secteur. S'il est
-      // inconnu, on préfère tout montrer plutôt qu'une liste vide inexpliquée.
-      commercial: (V2.profil && V2.profil.name) || (V2.user && V2.user.name) || '',
+      commercial: comm,
       info: function (cip) { return V2.rdvInfo(cip); }
     });
+  }
+
+  // Un bouton par commercial. Le compte connecté atterrit sur le sien et ne
+  // peut pas en changer — même règle que le pilotage (« jamais un collègue »).
+  // Un compte non rattaché à un secteur (admin) choisit, mais doit choisir.
+  function boutonsComm() {
+    var m = moi();
+    var liste = m ? [m] : (V2.commercials ? V2.commercials() : []);
+    if (!liste.length) {
+      return '<span class="v2-camp-note" style="margin:0">Aucun commercial identifié sur ce compte.</span>';
+    }
+    return liste.map(function (cm) {
+      return '<button data-c="' + esc(cm) + '" class="' + (ETAT.comm === cm ? 'on' : '') +
+        '" onclick="V2.campagne.viser(' + esc(JSON.stringify(cm)).replace(/"/g, '&quot;') +
+        ')">' + esc(cm) + '</button>';
+    }).join('');
   }
 
   // Filtres courants de l'écran.
@@ -125,6 +155,10 @@
       var c = sb(), u = uid();
       if (!c || !u) { V2.toast('Connecte-toi pour préparer une campagne.'); return; }
       var z = document.getElementById('cp-liste');
+      if (!ETAT.comm) {
+        if (z) z.innerHTML = '<p class="v2-camp-note">Choisis d’abord un commercial ci-dessus.</p>';
+        return;
+      }
       if (z) z.innerHTML = '<p class="v2-camp-note">Chargement des officines…</p>';
       V2.rdvSources().then(function () {
         return c.from('rdv_opposition').select('cip').eq('user_id', u);
@@ -135,6 +169,17 @@
       }).catch(function () {
         if (z) z.innerHTML = '<p class="v2-camp-note">Chargement impossible. Réessaie.</p>';
       });
+    },
+
+    // Changer de commercial vide la sélection : garder des officines cochées
+    // qui ne sont plus dans la liste enverrait des mails au nom du mauvais.
+    viser: function (cm) {
+      if (ETAT.comm === cm) return;
+      ETAT.comm = cm;
+      ETAT.choisis = {}; ETAT.groupements = []; ETAT.tous = [];
+      var bt = document.querySelectorAll('.cp-comm button');
+      for (var i = 0; i < bt.length; i++) bt[i].classList.toggle('on', bt[i].getAttribute('data-c') === cm);
+      V2.campagne.chercher();
     },
 
     typer: function (t) { ETAT.type = t; V2.campagne.rafraichir(); },
@@ -284,6 +329,10 @@
   V2.pages.campagne = {
     render: function (r) {
       ensureCss();
+      // Le commercial du compte atterrit sur le sien. Un compte non rattaché
+      // (admin) arrive sans choix fait, et doit en faire un : c'est ce qui
+      // évite d'écrire aux clients de toute l'équipe.
+      if (ETAT.comm === null) ETAT.comm = moi() || null;
       var top = V2.topbar ? V2.topbar({ back: true, backTo: 'rdv', backLabel: 'Rendez-vous' }) : '';
       var mods = window.V2MOD.liste().map(function (m) {
         return '<option value="' + esc(m.cle) + '">' + esc(m.nom) + '</option>';
@@ -305,6 +354,9 @@
 
         '<div class="v2-camp-sec">Qui tu vises</div>' +
         '<div class="v2-camp-box">' +
+          '<label>Commercial</label>' +
+          '<p>On n’écrit qu’aux officines de ce commercial — clients comme prospects.</p>' +
+          '<div class="cp-type cp-comm" style="margin-bottom:14px">' + boutonsComm() + '</div>' +
           '<div class="cp-type">' +
             '<button data-t="tous" class="on" onclick="V2.campagne.typer(\'tous\')">Clients et prospects</button>' +
             '<button data-t="clients" onclick="V2.campagne.typer(\'clients\')">Clients</button>' +

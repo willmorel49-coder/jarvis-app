@@ -57,7 +57,11 @@ test('les prospects d’un autre commercial ne remontent pas', () => {
   assert.equal(recenser().find(o => o.cip === '444'), undefined);
 });
 
-test('sans nom de commercial, tous les prospects remontent', () => {
+// ⚠️ Comportement du MOTEUR, pas de l'écran. L'écran Campagne, lui, refuse de
+// recenser sans commercial choisi — montrer les officines de toute l'équipe a
+// été signalé comme un défaut par Will le 12/08/2026. Le cadrage est la
+// responsabilité de l'appelant.
+test('sans nom de commercial, le moteur ne filtre pas (c’est à l’appelant de cadrer)', () => {
   const l = M.recenser({ pharmacies: PHARMA, national: NAT, commercial: '' });
   assert.ok(l.find(o => o.cip === '444'), 'la pharmacie de Karine est là');
 });
