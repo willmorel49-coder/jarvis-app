@@ -333,6 +333,9 @@
           jours +
 
           '<div style="display:flex;flex-wrap:wrap;gap:10px;margin:18px 0 0">' +
+            (V2.pages.rdvajout
+              ? '<button class="v2-btn v2-btn-primary" style="min-height:48px" ' +
+                'onclick="V2.go(\'rdvajout\')">' + ICO('plus', 15) + ' Noter un rendez-vous</button>' : '') +
             '<button class="v2-btn" style="min-height:48px" onclick="V2.go(\'rdvdispo\')">' +
               ICO('cal', 15) + ' Mes disponibilités</button>' +
             '<button class="v2-btn" style="min-height:48px" onclick="V2.go(\'rdv\')">' +

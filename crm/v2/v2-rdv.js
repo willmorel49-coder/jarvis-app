@@ -427,6 +427,9 @@
             (V2.pages.campagne
               ? '<button class="v2-btn v2-btn-primary" onclick="V2.go(\'campagne\')">' + ICO('plus', 15) +
                 ' Lancer une campagne</button>' : '') +
+            (V2.pages.rdvajout
+              ? '<button class="v2-btn v2-btn-primary" onclick="V2.go(\'rdvajout\')">' + ICO('plus', 15) +
+                ' Noter un rendez-vous</button>' : '') +
             (V2.pages.rdvplanning
               ? '<button class="v2-btn" onclick="V2.go(\'rdvplanning\')">' + ICO('cal', 15) +
                 ' Voir mon agenda</button>' : '') +
