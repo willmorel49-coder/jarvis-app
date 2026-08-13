@@ -47,7 +47,10 @@
   function charger() {
     var c = sb();
     if (c) {
-      return c.from(TABLE).select('*')
+      // `archive = false` : une note retirée sort des moyennes mais reste en
+      // base. Sur cette app on regarde, on ne supprime pas — une ligne effacée
+      // par erreur ne se rattrape pas.
+      return c.from(TABLE).select('*').eq('archive', false)
         .then(function (r) {
           if (!r.error && r.data) {
             backend = 'supabase';
@@ -72,7 +75,7 @@
     if (!a.length || !c || !u) return;
     var lot = a.map(function (x) {
       return { maquette: x.maquette, auteur_id: u, auteur_nom: (V2.user && V2.user.name) || '',
-               note: x.note, maj: new Date().toISOString() };
+               note: x.note, archive: false, maj: new Date().toISOString() };
     });
     c.from(TABLE).upsert(lot, { onConflict: 'maquette,auteur_id' })
       .then(function (r) {
@@ -123,7 +126,9 @@
     if (backend === 'supabase' && c && u) {
       c.from(TABLE).upsert({
         maquette: id, auteur_id: u, auteur_nom: (V2.user && V2.user.name) || '',
-        note: n, maj: new Date().toISOString()
+        // Reposer une note ré-active la ligne : sans ça, quelqu'un dont la note
+        // a été archivée noterait dans le vide, sans jamais le voir.
+        note: n, archive: false, maj: new Date().toISOString()
       }, { onConflict: 'maquette,auteur_id' })
         .then(function (r) {
           if (r && r.error) { if (V2.toast) V2.toast('Note non enregistrée — réessaie'); return; }
