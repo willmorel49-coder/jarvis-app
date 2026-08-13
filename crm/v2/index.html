@@ -165,7 +165,14 @@
   </script>
 
   <!-- Supabase + config (même backend que l'app actuelle) -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- ⚠️ crossorigin="anonymous" : SANS lui, toute erreur lancée à l'intérieur
+       de cette bibliothèque remonte au navigateur SANS fichier, SANS ligne et
+       SANS pile — la règle de sécurité des scripts d'un autre domaine. C'est
+       exactement ce qui rendait le « RangeError » de l'iPhone de Will
+       impossible à situer : le rapport ne contenait que le message.
+       Le CDN renvoie « access-control-allow-origin: * » (vérifié), l'attribut
+       est donc sans risque et rend la trace lisible. -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
   <script>
     window.V2_DATAV = '20260711h';   // version des données lazy (pharma-fr-data.js) — recherche & fiches prospect
     window.SUPABASE_URL = 'https://iyvavhnlhxksokkerkos.supabase.co';
@@ -175,6 +182,7 @@
       return new Promise(function (resolve, reject) {
         var s = document.createElement('script');
         s.src = 'https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.2/dist/html2pdf.bundle.min.js';
+        s.crossOrigin = 'anonymous';   // même raison : sans ça, une erreur de cette lib est aveugle
         s.onload = resolve; s.onerror = reject; document.head.appendChild(s);
       });
     };
