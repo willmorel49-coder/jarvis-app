@@ -31,10 +31,43 @@
 
   <!-- Capteur d'erreurs visible (debug) -->
   <script>
+    // ⚠️ TEMPORAIRE (13/08/2026) — à retirer une fois le diagnostic fait.
+    // « RangeError: Maximum call stack size exceeded » n'apparaît QUE sur
+    // l'iPhone de Will, jamais sur ordinateur, et n'est reproductible sur
+    // aucun de nos moteurs de test. Recopier une pile d'appels depuis un
+    // téléphone est illusoire : on l'envoie donc dans une table dédiée,
+    // qu'on peut relire directement. Aucune donnée métier, aucune identité —
+    // juste le message, l'écran, la pile et le navigateur.
+    // Table `js_erreur`, insertion seule (personne ne peut la relire côté app).
+    var __erreurEnvoyee = 0;
+    function __signaler(message, ecran, pile) {
+      try {
+        if (__erreurEnvoyee >= 3) return;   // jamais de déluge : 3 suffisent à comprendre
+        __erreurEnvoyee++;
+        fetch(window.SUPABASE_URL + '/rest/v1/js_erreur', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'apikey': window.SUPABASE_ANON_KEY,
+                     'Authorization': 'Bearer ' + window.SUPABASE_ANON_KEY, 'Prefer': 'return=minimal' },
+          body: JSON.stringify({
+            message: String(message || '').slice(0, 500),
+            ecran: String(ecran || '').slice(0, 60),
+            pile: String(pile || '').slice(0, 2000),
+            ua: String(navigator.userAgent || '').slice(0, 300),
+            standalone: !!(window.navigator.standalone === true ||
+              (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)),
+            connecte: !!(window.V2 && window.V2.user)
+          })
+        }).catch(function () {});
+      } catch (x) {}
+    }
+
     window.addEventListener('error', function (e) {
       var p = document.getElementById('__err'); if (!p) { p = document.createElement('div'); p.id = '__err'; p.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#FFE5E5;color:#7A0000;padding:12px 18px;font:13px/1.4 -apple-system,system-ui;border-bottom:3px solid #FF3B30;white-space:pre-wrap;max-height:50vh;overflow:auto'; (document.body||document.documentElement).appendChild(p); }
       var ou2 = ''; try { ou2 = (window.V2 && V2.route && V2.route.name) ? '\n[écran : ' + V2.route.name + ']' : ''; } catch (x) {}
       p.textContent = '⚠️ ' + (e.message||'') + (e.filename ? '\n→ ' + e.filename.split('/').pop() + ':' + (e.lineno||'?') : '') + ou2;
+      __signaler(e.message, (window.V2 && V2.route && V2.route.name) || '',
+                 (e.filename || '') + ':' + (e.lineno || '?') + ':' + (e.colno || '?') +
+                 ((e.error && e.error.stack) ? '\n' + e.error.stack : ''));
     });
     // erreurs async non capturées (auth Supabase, loadFiles, .then) — sinon écran figé sans message
     //
@@ -51,6 +84,8 @@
       var pile = '';
       try { pile = (r && r.stack) ? '\n' + String(r.stack).split('\n').slice(0, 5).join('\n') : ''; } catch (x) {}
       p.textContent = '⚠️ ' + ((r && (r.message || r)) || 'Promesse rejetée') + ou + pile;
+      __signaler((r && (r.message || r)) || 'Promesse rejetée',
+                 (window.V2 && V2.route && V2.route.name) || '', (r && r.stack) || '');
     });
   </script>
 
