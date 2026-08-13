@@ -33,12 +33,24 @@
   <script>
     window.addEventListener('error', function (e) {
       var p = document.getElementById('__err'); if (!p) { p = document.createElement('div'); p.id = '__err'; p.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#FFE5E5;color:#7A0000;padding:12px 18px;font:13px/1.4 -apple-system,system-ui;border-bottom:3px solid #FF3B30;white-space:pre-wrap;max-height:50vh;overflow:auto'; (document.body||document.documentElement).appendChild(p); }
-      p.textContent = '⚠️ ' + (e.message||'') + (e.filename ? '\n→ ' + e.filename.split('/').pop() + ':' + (e.lineno||'?') : '');
+      var ou2 = ''; try { ou2 = (window.V2 && V2.route && V2.route.name) ? '\n[écran : ' + V2.route.name + ']' : ''; } catch (x) {}
+      p.textContent = '⚠️ ' + (e.message||'') + (e.filename ? '\n→ ' + e.filename.split('/').pop() + ':' + (e.lineno||'?') : '') + ou2;
     });
     // erreurs async non capturées (auth Supabase, loadFiles, .then) — sinon écran figé sans message
+    //
+    // ⚠️ 13/08/2026 : ce bandeau a affiché « RangeError: Maximum call stack size
+    // exceeded » sur l'iPhone de Will, SANS aucun fichier ni ligne — impossible à
+    // situer, et non reproductible sur un compte neuf (Chrome et WebKit). Un message
+    // d'erreur qui ne dit pas OÙ ne sert à rien. On ajoute donc l'écran en cours et
+    // le début de la pile d'appels : c'est ce qui manquait pour diagnostiquer.
     window.addEventListener('unhandledrejection', function (e) {
       var p = document.getElementById('__err'); if (!p) { p = document.createElement('div'); p.id = '__err'; p.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#FFE5E5;color:#7A0000;padding:12px 18px;font:13px/1.4 -apple-system,system-ui;border-bottom:3px solid #FF3B30;white-space:pre-wrap;max-height:50vh;overflow:auto'; (document.body||document.documentElement).appendChild(p); }
-      var r = e && e.reason; p.textContent = '⚠️ ' + ((r && (r.message || r)) || 'Promesse rejetée') ;
+      var r = e && e.reason;
+      var ou = '';
+      try { ou = (window.V2 && V2.route && V2.route.name) ? '\n[écran : ' + V2.route.name + ']' : ''; } catch (x) {}
+      var pile = '';
+      try { pile = (r && r.stack) ? '\n' + String(r.stack).split('\n').slice(0, 5).join('\n') : ''; } catch (x) {}
+      p.textContent = '⚠️ ' + ((r && (r.message || r)) || 'Promesse rejetée') + ou + pile;
     });
   </script>
 
