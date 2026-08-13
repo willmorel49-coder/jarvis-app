@@ -4,9 +4,24 @@ name: Copilote · potentiel de zone
 # depuis les fichiers STATS/*_geolocalisation + l'API geo.api.gouv.fr. Aucune clé.
 # Change peu (adresses officines) → mensuel. Déclenchable à la main.
 
+# ⚠️ PASSAGE MENSUEL SUSPENDU LE 13/08/2026.
+# Ce robot lit STATS/*_geolocalisation_*.xlsx dans le dépôt CLONÉ par GitHub.
+# Or STATS/ vient d'être retiré du dépôt public : ces classeurs contenaient les
+# ventes des commerciaux et étaient téléchargeables par n'importe qui (vérifié :
+# STATS/ALH_01_2026.xlsx répondait HTTP 200). Sans eux, generate_zone.py sort sur
+# « Aucune zone résolue. » et le robot échouerait le 5 de chaque mois.
+#
+# Ce qu'on perd en attendant : le recalcul automatique de la commune et de la
+# population par officine (crm/v2/zone-data.js). Le fichier DÉJÀ généré reste en
+# place et l'app continue de fonctionner — ces données ne bougent quasiment pas.
+#
+# Pour le remettre en marche, deux voies : relancer à la main depuis un poste qui
+# a les fichiers (le déclenchement manuel reste actif ci-dessous), ou donner au
+# robot une source privée pour ces classeurs.
+# Trouvé par le sous-agent gardien-deploiement, pas par moi.
 on:
-  schedule:
-    - cron: '51 4 5 * *'   # le 5 du mois
+  # schedule:
+  #   - cron: '51 4 5 * *'   # le 5 du mois — suspendu, voir ci-dessus
   workflow_dispatch:
 
 permissions:
