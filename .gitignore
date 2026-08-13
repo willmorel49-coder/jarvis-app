@@ -130,6 +130,22 @@ reports/
 OFFILOG/
 CONCURRENTS/
 
+# ── Le fichier de ventes (13/08/2026) ───────────────────────────────
+# `wml-officines-data.js` porte 691 officines CLIENTES avec leur chiffre
+# d'affaires, le commercial qui les suit, et 437 848 lignes de ventes avec
+# les prix nets. Autrement dit tout le sell-in d'Intégral. L'audit du même
+# jour l'a trouvé téléchargeable par n'importe qui, sans mot de passe
+# (HTTP 200 sur 27 Mo, mesuré).
+#
+# Il vit maintenant dans l'espace Supabase FERMÉ `donnees-protegees` :
+# l'app en demande une adresse signée valable une heure, délivrée seulement
+# à une personne connectée. Le fichier reste sur ce Mac, `generate_wml_v2.py`
+# continue de le produire — mais il ne repart plus dans le dépôt.
+#
+# ⚠️ Après l'avoir régénéré, le redéposer :
+#   voir la procédure dans ~/.claude/ (mémoire « données protégées JARVIS »).
+crm/v2/wml-officines-data.js
+
 # Aucun classeur, aucun PDF ne doit plus partir dans un dépôt PUBLIC.
 # Le mot de passe Offilog est resté lisible en ligne pendant trois mois
 # faute d'une règle mécanique : une consigne qui n'est pas automatique

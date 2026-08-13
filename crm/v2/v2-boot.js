@@ -273,6 +273,27 @@
     // ⚠️ dans crm/v2/, pas crm/ → chemin préfixé v2/ (base loadFiles = '../').
     wml: 'v2/wml-officines-data.js',
   };
+
+  // ── Les fichiers qui ne doivent PLUS être servis en clair ───────────
+  // `wml-officines-data.js` contient 691 officines clientes avec leur chiffre
+  // d'affaires, le commercial qui les suit, et 437 848 lignes de ventes avec
+  // les prix nets. Le dépôt est public : n'importe qui pouvait le télécharger
+  // sans mot de passe (constaté le 13/08/2026, HTTP 200 sur 27 Mo).
+  //
+  // Il est désormais déposé dans un espace Supabase FERMÉ. On demande une
+  // adresse signée, valable une heure, et seulement si la personne est
+  // connectée. Sans session, il n'y a pas d'adresse — donc pas de fichier.
+  var PROTEGES = { wml: 'wml-officines-data.js' };
+  var SEAU_PROTEGE = 'donnees-protegees';
+
+  function adresseProtegee(cle) {
+    var c = (V2.sb && V2.sb()) || null;
+    if (!c || !c.storage) return Promise.resolve(null);
+    return c.storage.from(SEAU_PROTEGE).createSignedUrl(PROTEGES[cle], 3600)
+      .then(function (r) { return (r && r.data && r.data.signedUrl) || null; })
+      .catch(function () { return null; });
+  }
+
   var loaded = {}, pending = {};
   // Corrige le prix NR au tarif officiel PPHT (window.PPHT) directement dans le
   // benchmark : impacte partout (groupements, fiches, catalogue, listes).
@@ -344,8 +365,28 @@
       if (loaded[src]) return Promise.resolve();
       if (pending[src]) return pending[src];
       var p = new Promise(function (resolve) {
+        // Un fichier protégé n'a pas d'adresse fixe : on va la demander, et
+        // elle n'est délivrée qu'à une personne connectée. Le reste du
+        // chargement est identique — même balise, même gestion d'échec.
+        var prepare = PROTEGES[k]
+          ? adresseProtegee(k)
+          : Promise.resolve(src + V);
+        prepare.then(function (url) {
+          if (!url) {
+            console.warn('[V2] adresse protégée refusée pour ' + k + ' — pas de session ?');
+            delete pending[src];
+            resolve();
+            return;
+          }
+          poser(url, resolve);
+        });
+      });
+      pending[src] = p;
+      return p;
+
+      function poser(url, resolve) {
         var s = document.createElement('script');
-        s.src = src + V; s.async = false;
+        s.src = url; s.async = false;
         s.onload = function () { loaded[src] = true; bridge(); resolve(); };
         s.onerror = function () {
           // On résout SANS marquer le fichier comme chargé : c'est à l'appelant
@@ -359,9 +400,7 @@
           resolve();
         };
         document.head.appendChild(s);
-      });
-      pending[src] = p;
-      return p;
+      }
     });
     return Promise.all(promises).then(bridge);
   };
