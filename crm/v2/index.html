@@ -39,7 +39,36 @@
     // qu'on peut relire directement. Aucune donnée métier, aucune identité —
     // juste le message, l'écran, la pile et le navigateur.
     // Table `js_erreur`, insertion seule (personne ne peut la relire côté app).
-    var __BUILD = '20260813e';   // pour savoir QUELLE version a produit un rapport
+    var __BUILD = '20260813f';   // pour savoir QUELLE version a produit un rapport
+
+    // Le bandeau de diagnostic. Il était collé EN HAUT, plein écran : sur
+    // iPhone il recouvrait la barre de navigation et son menu profil — Will
+    // ne pouvait même plus se déconnecter. Un outil de diagnostic qui empêche
+    // d'utiliser l'app est un deuxième bug, pas une aide.
+    // Il vit donc EN BAS, limité en hauteur, et se ferme d'une croix.
+    function __bandeau() {
+      var p = document.getElementById('__err');
+      if (p) return p.querySelector('.__errtxt') || p;
+      p = document.createElement('div');
+      p.id = '__err';
+      p.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:99999;' +
+        'background:#FFE5E5;color:#7A0000;font:12.5px/1.45 -apple-system,system-ui;' +
+        'border-top:3px solid #FF3B30;max-height:34vh;display:flex;align-items:flex-start;' +
+        'padding-bottom:env(safe-area-inset-bottom,0)';
+      var t = document.createElement('div');
+      t.className = '__errtxt';
+      t.style.cssText = 'flex:1;min-width:0;padding:11px 4px 11px 14px;white-space:pre-wrap;' +
+        'overflow:auto;max-height:34vh;-webkit-overflow-scrolling:touch';
+      var x = document.createElement('button');
+      x.textContent = '✕';
+      x.setAttribute('aria-label', 'Fermer');
+      x.style.cssText = 'flex:none;width:44px;height:44px;margin:4px;border:0;background:transparent;' +
+        'color:#7A0000;font-size:19px;cursor:pointer';
+      x.onclick = function () { p.parentNode && p.parentNode.removeChild(p); };
+      p.appendChild(t); p.appendChild(x);
+      (document.body || document.documentElement).appendChild(p);
+      return t;
+    }
     var __erreurEnvoyee = 0;
     function __signaler(message, ecran, pile) {
       message = '[' + __BUILD + '] ' + message;
@@ -169,7 +198,7 @@
     })();
 
     window.addEventListener('error', function (e) {
-      var p = document.getElementById('__err'); if (!p) { p = document.createElement('div'); p.id = '__err'; p.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#FFE5E5;color:#7A0000;padding:12px 18px;font:13px/1.4 -apple-system,system-ui;border-bottom:3px solid #FF3B30;white-space:pre-wrap;max-height:50vh;overflow:auto'; (document.body||document.documentElement).appendChild(p); }
+      var p = __bandeau();
       var ou2 = ''; try { ou2 = (window.V2 && V2.route && V2.route.name) ? '\n[écran : ' + V2.route.name + ']' : ''; } catch (x) {}
       p.textContent = '⚠️ ' + (e.message||'') + (e.filename ? '\n→ ' + e.filename.split('/').pop() + ':' + (e.lineno||'?') : '') + ou2;
       __signaler(e.message, (window.V2 && V2.route && V2.route.name) || '',
@@ -184,7 +213,7 @@
     // d'erreur qui ne dit pas OÙ ne sert à rien. On ajoute donc l'écran en cours et
     // le début de la pile d'appels : c'est ce qui manquait pour diagnostiquer.
     window.addEventListener('unhandledrejection', function (e) {
-      var p = document.getElementById('__err'); if (!p) { p = document.createElement('div'); p.id = '__err'; p.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#FFE5E5;color:#7A0000;padding:12px 18px;font:13px/1.4 -apple-system,system-ui;border-bottom:3px solid #FF3B30;white-space:pre-wrap;max-height:50vh;overflow:auto'; (document.body||document.documentElement).appendChild(p); }
+      var p = __bandeau();
       var r = e && e.reason;
       var ou = '';
       try { ou = (window.V2 && V2.route && V2.route.name) ? '\n[écran : ' + V2.route.name + ']' : ''; } catch (x) {}
