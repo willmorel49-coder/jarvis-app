@@ -207,14 +207,14 @@
       // pourquoi, et on donne son numéro.
       var cx = F.commercial || {};
       h += carte(ctoken
-        ? '<p>Aucun créneau ne se libère dans les trois prochaines semaines — ' +
+        ? '<p>Aucun créneau ne se libère dans les trois prochains mois — ' +
           'votre officine est peut-être hors du secteur que ' + esc(cx.prenom) +
           ' couvre habituellement.</p>' +
           (cx.tel
             ? '<p style="margin-top:14px">Appelez-le au <a href="tel:' + esc(numero(cx.tel)) +
               '">' + esc(cx.tel) + '</a>, il verra ce qu’il peut faire.</p>'
             : '<p style="margin-top:14px">Répondez à son mail, il vous recontactera.</p>')
-        : '<p>Aucun créneau ne se libère dans les trois prochaines semaines.</p>' +
+        : '<p>Aucun créneau ne se libère dans les trois prochains mois.</p>' +
           '<p><button class="btn" id="pref">Dites-moi vos préférences</button></p>');
     } else {
       jours.forEach(function (j) {
@@ -224,6 +224,10 @@
               esc(hhh(c)) + '</button>';
           }).join('') + '</div></div>';
       });
+      // Avant de renvoyer au téléphone : toutes les autres dates, sur trois
+      // mois. Une officine qui ne peut pas dans les trois semaines qui
+      // viennent avait, sinon, pour seule issue de ne pas donner suite.
+      h += carte('<button class="lien" id="plus">Voir d’autres dates →</button>');
       // « Aucun ne me convient » enregistre une préférence rattachée au jeton
       // de campagne. Le lien permanent n'en a pas : on propose le téléphone
       // du commercial plutôt qu'un bouton qui échouerait au clic.
@@ -243,6 +247,86 @@
     });
     var p = document.getElementById('pref');
     if (p) p.addEventListener('click', formulairePreference);
+    var pl = document.getElementById('plus');
+    if (pl) pl.addEventListener('click', afficherToutesLesDates);
+  }
+
+  // ─── Toutes les dates ouvertes, groupées par mois ─────────────────
+  // Les trois propositions de l'écran précédent restent le chemin normal :
+  // elles sont calées sur la géographie de la journée du commercial. Ici on
+  // déroule simplement le calendrier, pour l'officine qui a besoin de se
+  // projeter plus loin — et rien n'y est affiché qui ne soit réellement
+  // tenable (mêmes règles de route, d'agenda et de blocage).
+  function afficherToutesLesDates() {
+    var jours = window.V2RDV.calendrier({
+      officine: F.officine,
+      dispo: F.dispo,
+      blocages: F.blocages || [],
+      occupes: F.occupes || [],
+      agenda: F.agenda || [],
+      aujourdhui: new Date().toISOString().slice(0, 10)
+    });
+
+    var h = carte('<h1>Toutes les dates</h1>' +
+      '<p class="sub">Les disponibilités de ' + esc(F.commercial.prenom) +
+      ' sur les trois prochains mois.</p>');
+
+    if (!jours.length) {
+      h += carte('<p>Aucune date ne se libère sur les trois prochains mois.</p>');
+    } else {
+      // Trois mois de dates font une page de douze mille pixels : atteindre
+      // novembre demandait quatorze écrans de défilement. Ces raccourcis y
+      // mènent en un geste — c'est la différence entre une liste consultable
+      // et une liste qu'on abandonne.
+      var mois = [];
+      jours.forEach(function (j) {
+        var q = String(j.date).split('-');
+        var cle = q[0] + '-' + q[1];
+        if (mois.indexOf(cle) === -1) mois.push(cle);
+      });
+      if (mois.length > 1) {
+        h += '<div class="carte" style="display:flex;flex-wrap:wrap;gap:8px">' +
+          mois.map(function (cle) {
+            var q = cle.split('-');
+            return '<button class="cr" data-mois="' + esc(cle) + '" style="text-transform:capitalize">' +
+              esc(MOIS[+q[1] - 1]) + '</button>';
+          }).join('') + '</div>';
+      }
+      var moisCourant = '';
+      jours.forEach(function (j) {
+        var p = String(j.date).split('-');
+        var m = MOIS[+p[1] - 1] + ' ' + p[0];
+        if (m !== moisCourant) {
+          moisCourant = m;
+          h += '<p class="jour" id="m-' + esc(p[0] + '-' + p[1]) + '"' +
+               ' style="margin:22px 0 8px;text-transform:capitalize">' + esc(m) + '</p>';
+        }
+        h += '<div class="carte"><p class="jour">' + esc(libelle(j.date)) + '</p><div class="creneaux">' +
+          j.creneaux.map(function (c) {
+            return '<button class="cr" data-d="' + esc(j.date) + '" data-h="' + esc(c) + '">' +
+              esc(hhh(c)) + '</button>';
+          }).join('') + '</div></div>';
+      });
+    }
+    h += carte('<button class="lien" id="retour3">← revenir aux dates proposées</button>');
+
+    app.innerHTML = h;
+    Array.prototype.forEach.call(app.querySelectorAll('.cr'), function (b) {
+      var cible = b.getAttribute('data-mois');
+      if (cible) {
+        // Raccourci de mois : on descend jusqu'au titre correspondant.
+        b.addEventListener('click', function () {
+          var t = document.getElementById('m-' + cible);
+          if (t && t.scrollIntoView) t.scrollIntoView({ block: 'start' });
+        });
+        return;
+      }
+      b.addEventListener('click', function () {
+        formulaire(b.getAttribute('data-d'), b.getAttribute('data-h'));
+      });
+    });
+    document.getElementById('retour3').addEventListener('click', afficherCreneaux);
+    try { window.scrollTo(0, 0); } catch (e) {}
   }
 
   function formulaire(date, heure) {

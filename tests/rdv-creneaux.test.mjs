@@ -68,12 +68,12 @@ test('officine sans coordonnees : jamais ecartee', () => {
   assert.equal(j.score, 2);
 });
 
-test('proposer : respecte le delai de 3 jours et l horizon de 21 jours', () => {
+test('proposer : respecte le delai de 3 jours et l horizon de 90 jours', () => {
   const r = M.proposer({ officine: NANTES, dispo: D, blocages: [], occupes: [], aujourdhui: '2026-08-10' });
   assert.ok(r.length > 0);
   r.forEach(j => {
     assert.ok(j.date >= '2026-08-13', `${j.date} est trop tot`);
-    assert.ok(j.date <= '2026-08-31', `${j.date} depasse l horizon`);
+    assert.ok(j.date <= '2026-11-08', `${j.date} depasse l horizon`);
   });
 });
 
@@ -128,7 +128,10 @@ test('proposer : samedi et dimanche ne sont jamais proposes', () => {
 
 test('proposer : agenda entierement bloque donne un tableau vide, pas une erreur', () => {
   const bl = [];
-  for (let i = 0; i <= 25; i++) {
+  // Tout l'horizon, pas seulement trois semaines : depuis le 13/08/2026 il
+  // couvre 90 jours. Bloquer 26 jours laissait des dates libres derriere,
+  // et le test passait pour une mauvaise raison.
+  for (let i = 0; i <= 95; i++) {
     const d = new Date(Date.UTC(2026, 7, 10));
     d.setUTCDate(d.getUTCDate() + i);
     bl.push({ date: d.toISOString().slice(0, 10), moment: 'journee' });
@@ -241,4 +244,46 @@ test('une officine hors de portée sur la journée disparaît complètement', ()
   const j = M.jour('2026-08-17', [], loin, { depart: NANTES_DEPART },
                    [['09:00', '12:30'], ['14:00', '18:00']]);
   assert.equal(j, null, 'aucune journée ne tient : le jour est écarté');
+});
+
+// ─── « Voir d'autres dates » : le calendrier sur trois mois ──────────
+// proposer() met en avant TROIS dates, choisies pour la tournée. calendrier()
+// déroule tout l'horizon, dans l'ordre des dates, pour l'officine qui doit se
+// projeter plus loin. Les mêmes règles s'y appliquent : c'est le point à ne
+// jamais perdre de vue — une date affichée ici doit rester tenable.
+
+test('calendrier : rend beaucoup plus de dates que proposer, dans l ordre', () => {
+  const c = M.calendrier({ officine: NANTES, dispo: D, blocages: [], occupes: [], aujourdhui: '2026-08-10' });
+  assert.ok(c.length > 20, `seulement ${c.length} dates`);
+  const dates = c.map(j => j.date);
+  assert.deepEqual(dates.slice(), dates.slice().sort(), 'les dates ne sont pas croissantes');
+  assert.ok(dates[0] >= '2026-08-13', 'le delai minimum de 3 jours n est pas respecte');
+});
+
+test('calendrier : ne depasse pas l horizon de 90 jours', () => {
+  const c = M.calendrier({ officine: NANTES, dispo: D, blocages: [], occupes: [], aujourdhui: '2026-08-10' });
+  c.forEach(j => assert.ok(j.date <= '2026-11-08', `${j.date} depasse l horizon`));
+});
+
+test('calendrier : respecte les demi-journees bloquees', () => {
+  const bl = [{ date: '2026-08-17', moment: 'journee' }];
+  const c = M.calendrier({ officine: NANTES, dispo: D, blocages: bl, occupes: [], aujourdhui: '2026-08-10' });
+  assert.ok(!c.some(j => j.date === '2026-08-17'), 'un jour bloque est propose');
+});
+
+test('calendrier : agenda entierement bloque rend un tableau vide', () => {
+  const bl = [];
+  for (let i = 0; i <= 95; i++) {
+    const d = new Date(Date.UTC(2026, 7, 10));
+    d.setUTCDate(d.getUTCDate() + i);
+    bl.push({ date: d.toISOString().slice(0, 10), moment: 'journee' });
+  }
+  const c = M.calendrier({ officine: NANTES, dispo: D, blocages: bl, occupes: [], aujourdhui: '2026-08-10' });
+  assert.deepEqual(c, []);
+});
+
+test('calendrier : plafonne le nombre de dates rendues', () => {
+  const c = M.calendrier({ officine: NANTES, dispo: D, blocages: [], occupes: [],
+                           aujourdhui: '2026-08-10', max_jours: 5 });
+  assert.equal(c.length, 5);
 });
