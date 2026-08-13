@@ -403,6 +403,30 @@
         '</div>' +
       '</div>';
 
+    // ── Le nouveau site : une carte pleine largeur, avec les aperçus ──
+    // Elle était rangée dans le tiroir « Autres outils », replié par défaut :
+    // personne n'y arrivait. C'est pourtant la décision la plus lourde du
+    // moment, et elle attend un choix — donc elle est visible d'entrée, avec
+    // trois vrais aperçus et l'avancement des notes.
+    var mqZone = '';
+    if (window.MAQUETTES_SITE && window.MAQUETTES_SITE.length) {
+      var mqL = window.MAQUETTES_SITE, mqB = '../../site-integral/propositions/nouvelles/vignettes/';
+      var mqApercus = '';
+      for (var mqi = 0; mqi < 3 && mqi < mqL.length; mqi++) {
+        mqApercus += '<img src="' + mqB + mqL[mqi].id + '.jpg" loading="lazy" decoding="async" alt="">';
+      }
+      mqZone =
+        '<button class="mkt-site" onclick="V2.go(\'marketing\',\'propositions\')">' +
+          '<span class="mkt-site-shots">' + mqApercus + '</span>' +
+          '<span class="mkt-site-txt">' +
+            '<span class="mkt-site-kick">À choisir</span>' +
+            '<span class="mkt-site-t">Le nouveau site — ' + mqL.length + ' directions</span>' +
+            '<span class="mkt-site-s">Ouvre-les en vrai, elles défilent et elles répondent. Mets une note sur 10 : la moyenne est partagée entre vous.</span>' +
+            '<span class="mkt-site-cta">Voir et noter ' + ICO('chev', 17, 2.2) + '</span>' +
+          '</span>' +
+        '</button>';
+    }
+
     // ── ÉTAPE 2 : mes créations récentes (une seule liste, plus de grilles répétées) ──
     var recentZone;
     if (all.length) {
@@ -465,10 +489,13 @@
             '<span class="mkt-link-s">Une liste de produits du moment, montée à la main.</span></span>' +
             '<span class="v2-row-chev">' + ICO('chev', 17) + '</span>' +
           '</a>' +
-          '<a class="mkt-link" onclick="V2.go(\'marketing\',\'propositions\')">' +
+          // Les maquettes ne sont plus ici : elles ont leur propre carte, en
+          // haut de la page. En laisser une copie dans le tiroir ferait douter
+          // qu'il s'agit du même écran.
+          '<a class="mkt-link" onclick="V2.go(\'marketing\',\'site\')">' +
             '<span class="mkt-link-ic mkt-link-ic-cat">' + ICO('cat', 18) + '</span>' +
-            '<span style="flex:1;min-width:0"><span class="mkt-link-t">Maquettes du nouveau site</span>' +
-            '<span class="mkt-link-s">8 directions artistiques complètes, à comparer et à choisir.</span></span>' +
+            '<span style="flex:1;min-width:0"><span class="mkt-link-t">Le site actuel</span>' +
+            '<span class="mkt-link-s">La vitrine en ligne aujourd\'hui — le point de comparaison.</span></span>' +
             '<span class="v2-row-chev">' + ICO('chev', 17) + '</span>' +
           '</a>' +
           '<a class="mkt-link" onclick="V2.go(\'marketing\',\'fxbank\')">' +
@@ -488,6 +515,7 @@
           '<div class="mkt-head-share">' + shareNote + '</div>' +
         '</div>' +
         makeZone +
+        mqZone +
         recentZone +
         liZone +
         docsZone +
@@ -524,12 +552,17 @@
   }
 
   // ════════════════════════════════════════════
-  // PROPOSITIONS DE DIRECTION ARTISTIQUE (galerie des maquettes)
+  // PROPOSITIONS DE DIRECTION ARTISTIQUE (les 20 directions + les notes)
   // ════════════════════════════════════════════
+  // L'écran n'est plus une galerie enfermée dans une iframe : c'est une vraie
+  // page de l'app (`v2-maquettes.js`), avec la note sur 10 de chacun et la
+  // moyenne partagée. On garde l'ancienne galerie en repli au cas où le
+  // module ne serait pas chargé — mieux vaut une iframe qu'un écran blanc.
   function renderPropositions(root) {
+    if (V2.maquettes && V2.maquettes.render) { V2.maquettes.render(root); return; }
     root.innerHTML = V2.topbar({ back: true, backTo: 'marketing', backLabel: 'Marketing' }) +
       '<div style="width:100%;height:calc(100vh - 66px);min-height:520px;background:#FAFAF8">' +
-        '<iframe src="../../site-integral/refonte-2026/index.html?v=20260803b" title="Propositions de direction artistique" loading="lazy" style="width:100%;height:100%;border:0;display:block"></iframe>' +
+        '<iframe src="../../site-integral/propositions/nouvelles/index.html?v=20260813q" title="Les vingt directions du nouveau site" loading="lazy" style="width:100%;height:100%;border:0;display:block"></iframe>' +
       '</div>';
   }
 
@@ -1475,6 +1508,19 @@
       '.mkt-make-t50:hover{transform:none;box-shadow:var(--sh-1);border-color:var(--line)}',
       '.mkt-make-t50btns{display:flex;gap:8px;align-self:stretch;margin-top:6px}',
       '.mkt-make-t50btns .v2-btn{flex:1;justify-content:center}',
+      // La carte « nouveau site » : trois aperçus réels + l'invitation à noter.
+      // Les aperçus sont cadrés en haut (`object-position:top`) — c'est l'accroche
+      // qui distingue une direction d'une autre, pas le bas de page.
+      '.mkt-site{display:flex;flex-direction:column;width:100%;text-align:left;padding:0;margin:0 0 16px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);overflow:hidden;cursor:pointer;font-family:var(--font);box-shadow:var(--sh-1);transition:transform .26s var(--mo-ease-soft),box-shadow .26s var(--mo-ease-soft),border-color .26s var(--mo-ease-soft)}',
+      '.mkt-site:hover{transform:translateY(-2px);box-shadow:var(--sh-2,0 10px 30px rgba(16,19,28,.10));border-color:var(--ip-blue)}',
+      '.mkt-site-shots{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border-bottom:1px solid var(--line)}',
+      '.mkt-site-shots img{width:100%;height:96px;object-fit:cover;object-position:top center;display:block;background:var(--card-2)}',
+      '@media(min-width:640px){.mkt-site-shots img{height:132px}}',
+      '.mkt-site-txt{display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:16px 18px 17px}',
+      '.mkt-site-kick{font-size:10.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:#fff;background:var(--ip-blue);border-radius:var(--r-pill);padding:3px 9px}',
+      '.mkt-site-t{font-size:17px;font-weight:800;letter-spacing:-.02em;color:var(--ip-ink)}',
+      '.mkt-site-s{font-size:13.5px;line-height:1.5;color:var(--muted);max-width:56ch}',
+      '.mkt-site-cta{display:inline-flex;align-items:center;gap:4px;margin-top:4px;font-size:13px;font-weight:700;color:var(--ip-blue);min-height:32px}',
       '.mkt-search{position:relative;display:flex;align-items:center;margin-bottom:14px}',
       '.mkt-search-ic{position:absolute;left:14px;color:var(--muted-2);display:inline-flex;pointer-events:none}',
       '.mkt-search input{flex:1;width:100%;box-sizing:border-box;padding:12px 40px;font-size:14.5px;font-family:var(--font);color:var(--ip-ink);background:var(--card);border:1px solid var(--line);border-radius:var(--r-pill);outline:none;transition:border-color .16s var(--ease),box-shadow .16s var(--ease)}',
