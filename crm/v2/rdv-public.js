@@ -207,14 +207,14 @@
       // pourquoi, et on donne son numéro.
       var cx = F.commercial || {};
       h += carte(ctoken
-        ? '<p>Aucun créneau ne se libère dans les trois prochains mois — ' +
+        ? '<p>Aucun créneau ne se libère dans les six prochains mois — ' +
           'votre officine est peut-être hors du secteur que ' + esc(cx.prenom) +
           ' couvre habituellement.</p>' +
           (cx.tel
             ? '<p style="margin-top:14px">Appelez-le au <a href="tel:' + esc(numero(cx.tel)) +
               '">' + esc(cx.tel) + '</a>, il verra ce qu’il peut faire.</p>'
             : '<p style="margin-top:14px">Répondez à son mail, il vous recontactera.</p>')
-        : '<p>Aucun créneau ne se libère dans les trois prochains mois.</p>' +
+        : '<p>Aucun créneau ne se libère dans les six prochains mois.</p>' +
           '<p><button class="btn" id="pref">Dites-moi vos préférences</button></p>');
     } else {
       jours.forEach(function (j) {
@@ -269,10 +269,10 @@
 
     var h = carte('<h1>Toutes les dates</h1>' +
       '<p class="sub">Les disponibilités de ' + esc(F.commercial.prenom) +
-      ' sur les trois prochains mois.</p>');
+      ' sur les six prochains mois.</p>');
 
     if (!jours.length) {
-      h += carte('<p>Aucune date ne se libère sur les trois prochains mois.</p>');
+      h += carte('<p>Aucune date ne se libère sur les six prochains mois.</p>');
     } else {
       // Trois mois de dates font une page de douze mille pixels : atteindre
       // novembre demandait quatorze écrans de défilement. Ces raccourcis y

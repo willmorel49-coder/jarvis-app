@@ -17,13 +17,21 @@
       '4': [['09:00', '12:30'], ['14:00', '18:00']],
       '5': [['09:00', '12:30'], ['14:00', '18:00']]
     },
-    // horizon_jours : jusqu'où le pharmacien peut réserver. Passé de 21 à 90
-    // le 13/08/2026 — trois semaines ne laissaient aucune marge à une officine
-    // qui n'est pas disponible tout de suite, et le rendez-vous se perdait
-    // faute d'alternative. Les trois propositions mises en avant restent les
-    // mêmes (les plus proches, calées sur la géographie du jour) ; c'est
-    // « Voir d'autres dates » qui ouvre les trois mois.
-    duree_min: 45, marge_route_min: 15, horizon_jours: 90, delai_min_jours: 3,
+    // horizon_jours : jusqu'où le pharmacien peut réserver. 21 → 90 → 180 le
+    // 13/08/2026. Trois semaines ne laissaient aucune marge à une officine
+    // indisponible tout de suite ; six mois, c'est l'horizon d'un vrai agenda
+    // commercial — on cale une visite de rentrée dès juin.
+    //
+    // ⚠️ CETTE VALEUR VIT À QUATRE ENDROITS, et n'en changer qu'une partie
+    // donne le pire des défauts : une date affichée, choisie, puis refusée.
+    // Le repli ci-dessous · la colonne rdv_dispo.horizon_jours (qui ÉCRASE ce
+    // repli) · le coalesce EN DUR de rdv_poser et rdv_poser_public · le
+    // default de la table. Voir docs/supabase/rdv-horizon-6-mois.sql.
+    //
+    // Les trois propositions mises en avant restent les mêmes (les plus
+    // proches, calées sur la géographie du jour) ; c'est le calendrier qui
+    // ouvre les six mois.
+    duree_min: 45, marge_route_min: 15, horizon_jours: 180, delai_min_jours: 3,
     rayon_chaud_km: 25, rayon_max_km: 60, vitesse_kmh: 50, coef_route: 1.3,
     // D'où le commercial part le matin et où il rentre le soir : {lat, lon}.
     // null = on ne sait pas, et on ne suppose rien (aucun créneau n'est écarté).
@@ -275,10 +283,11 @@
     var blocages = (p && p.blocages) || [];
     var agenda = (p && p.agenda) || [];
     var aujourdhui = (p && p.aujourdhui) || new Date().toISOString().slice(0, 10);
-    // 90 jours d'horizon ne font qu'une soixantaine de jours OUVRÉS : ce
-    // plafond doit donc être au-dessus, sinon la page s'arrête avant la fin
-    // des trois mois annoncés. Mesuré : à 45, elle s'arrêtait au 19 octobre.
-    var maxJours = (p && p.max_jours) || 70;
+    // 180 jours d'horizon ne font qu'environ 130 jours OUVRÉS : ce plafond
+    // doit rester au-dessus, sinon la liste s'arrête avant la fin des six mois
+    // annoncés. Déjà mesuré une fois : à 45, elle s'arrêtait au 19 octobre
+    // alors qu'on promettait trois mois.
+    var maxJours = (p && p.max_jours) || 135;
     var parJour = (p && p.creneaux_par_jour) || 4;
 
     var parDate = {};
