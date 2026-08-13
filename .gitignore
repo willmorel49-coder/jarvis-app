@@ -118,3 +118,23 @@ biosim-poster-*interne.pdf
 # Comptes utilisateurs : contiennent des mots de passe en clair — NE JAMAIS publier
 crm/v2/_sql/create-user-*.sql
 **/create-user-*.sql
+
+# ── Sécurité (13/08/2026, audit de 4 experts) ──────────────────────
+# Ces dossiers étaient SERVIS PUBLIQUEMENT par le site, sans mot de passe,
+# alors qu'aucun écran de l'app ne les lit. Vérifié en ligne : les Excel de
+# ventes des commerciaux répondaient HTTP 200 (STATS/ALH_01_2026.xlsx), tout
+# comme le rapport d'audit de sécurité qui listait nos propres faiblesses.
+# Ils restent sur le Mac, les générateurs continuent de tourner dessus.
+STATS/
+reports/
+OFFILOG/
+CONCURRENTS/
+
+# Aucun classeur, aucun PDF ne doit plus partir dans un dépôt PUBLIC.
+# Le mot de passe Offilog est resté lisible en ligne pendant trois mois
+# faute d'une règle mécanique : une consigne qui n'est pas automatique
+# n'est pas une consigne.
+*.xlsx
+*.xls
+*.csv
+*.pdf
