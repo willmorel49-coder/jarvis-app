@@ -187,22 +187,73 @@
 
     changer: function () { choisie = null; V2.go('rdvajout'); },
 
-    enregistrer: function () {
+    // ── Créer le rendez-vous — LE SEUL ENDROIT ────────────────────
+    // Partagé par l'écran complet ET par la feuille rapide du bouton rond.
+    // Une règle qui vit à deux endroits finit par diverger : ici, la position
+    // retrouvée, l'origine « manuel » et la traduction du chevauchement en
+    // français ne sont écrites qu'une fois.
+    // Rend { ok:true, id } ou { ok:false, raison, message }.
+    creer: function (o, q) {
       var c = sb(), u = uid();
-      if (!c || !u) { V2.toast('Connecte-toi pour noter un rendez-vous.'); return; }
+      if (!c || !u) return Promise.resolve({ ok: false, raison: 'connexion',
+        message: 'Connecte-toi pour noter un rendez-vous.' });
+      if (!o) return Promise.resolve({ ok: false, raison: 'officine',
+        message: 'Choisis d’abord une officine.' });
+      if (!q || !q.date) return Promise.resolve({ ok: false, raison: 'date',
+        message: 'Indique la date.' });
+      if (!q.heure) return Promise.resolve({ ok: false, raison: 'heure',
+        message: 'Indique l’heure.' });
+      // Une date passée n'est pas une faute improbable : le champ date d'un
+      // téléphone se manipule vite. On refuse plutôt que de créer un
+      // rendez-vous invisible dans l'agenda, qui ne montre que l'à-venir.
+      if (q.date < new Date().toISOString().slice(0, 10))
+        return Promise.resolve({ ok: false, raison: 'passe', message: 'Cette date est déjà passée.' });
+
+      // Sans position, le moteur de créneaux ne sait pas placer ce rendez-vous
+      // dans la géographie de la journée : les suivants seraient proposés
+      // n'importe où. On la retrouve donc AVANT d'enregistrer.
+      var pos = (o.lat != null && o.lon != null)
+        ? Promise.resolve({ lat: o.lat, lon: o.lon })
+        : geocode([o.adresse, o.cp, o.ville].filter(Boolean).join(' '));
+
+      return pos.then(function (ll) {
+        return c.from('rdv').insert({
+          user_id: u,
+          cip: o.cip || null,
+          nom: o.nom || 'Officine',
+          adresse: o.adresse || null,
+          cp: o.cp || null,
+          ville: o.ville || null,
+          lat: ll ? ll.lat : null,
+          lon: ll ? ll.lon : null,
+          date: q.date,
+          heure: q.heure,
+          duree_min: parseInt(q.duree, 10) || 45,
+          statut: 'confirme',
+          origine: 'manuel',
+          contact_nom: q.contact || o.contact || null,
+          contact_tel: q.tel || o.tel || null,
+          message: q.note || null
+        }).select('id').single();
+      }).then(function (r) {
+        if (r && r.error) {
+          // La règle « pas de chevauchement » de la base : deux rendez-vous ne
+          // peuvent pas se marcher dessus. Le message brut ne dirait rien.
+          var m = String((r.error && r.error.message) || '');
+          if (m.indexOf('chevauchement') !== -1 || r.error.code === '23P01') {
+            return { ok: false, raison: 'chevauchement',
+              message: 'Tu as déjà un rendez-vous à ce moment-là. Change l’heure ou la durée.' };
+          }
+          return { ok: false, raison: 'base', message: 'Enregistrement impossible.' };
+        }
+        return { ok: true, id: r && r.data && r.data.id };
+      }).catch(function () {
+        return { ok: false, raison: 'reseau', message: 'Enregistrement impossible.' };
+      });
+    },
+
+    enregistrer: function () {
       if (!choisie) { dire('Choisis d’abord une officine.', 'var(--rose,#E0556E)'); return; }
-
-      var date = val('rda-date'), heure = val('rda-heure');
-      var duree = parseInt(val('rda-duree'), 10) || 45;
-      if (!date) { dire('Indique la date.', 'var(--rose,#E0556E)'); return; }
-      if (!heure) { dire('Indique l’heure.', 'var(--rose,#E0556E)'); return; }
-      // Une date passée n'est pas une faute de frappe improbable : le champ
-      // date d'un téléphone se manipule vite. On refuse plutôt que de créer
-      // un rendez-vous invisible dans l'agenda, qui ne montre que l'à-venir.
-      if (date < new Date().toISOString().slice(0, 10)) {
-        dire('Cette date est déjà passée.', 'var(--rose,#E0556E)'); return;
-      }
-
       var b = document.getElementById('rda-go');
       if (b) { b.disabled = true; b.textContent = 'Enregistrement…'; }
       var rendre = function () { if (b) { b.disabled = false; b.textContent = 'Noter ce rendez-vous'; } };
@@ -213,51 +264,15 @@
         o.cp = val('rda-cp') || '';
         o.ville = val('rda-ville') || '';
       }
-      // Sans position, le moteur de créneaux ne saurait pas placer ce
-      // rendez-vous dans la géographie de la journée : les suivants seraient
-      // proposés n'importe où. On la retrouve donc AVANT d'enregistrer.
-      var pos = (o.lat != null && o.lon != null)
-        ? Promise.resolve({ lat: o.lat, lon: o.lon })
-        : geocode([o.adresse, o.cp, o.ville].filter(Boolean).join(' '));
-
-      pos.then(function (ll) {
-        return c.from('rdv').insert({
-          user_id: u,
-          cip: o.cip || null,
-          nom: o.nom || 'Officine',
-          adresse: o.adresse || null,
-          cp: o.cp || null,
-          ville: o.ville || null,
-          lat: ll ? ll.lat : null,
-          lon: ll ? ll.lon : null,
-          date: date,
-          heure: heure,
-          duree_min: duree,
-          statut: 'confirme',
-          origine: 'manuel',
-          contact_nom: val('rda-contact') || o.contact || null,
-          contact_tel: val('rda-tel') || o.tel || null,
-          message: val('rda-note') || null
-        }).select('id').single();
+      V2.rdvAjout.creer(o, {
+        date: val('rda-date'), heure: val('rda-heure'), duree: val('rda-duree'),
+        contact: val('rda-contact'), tel: val('rda-tel'), note: val('rda-note')
       }).then(function (r) {
-        if (r && r.error) {
-          rendre();
-          // La règle « pas de chevauchement » de la base : deux rendez-vous
-          // ne peuvent pas se marcher dessus. Le message brut ne dirait rien
-          // à personne.
-          var m = String((r.error && r.error.message) || '');
-          if (m.indexOf('chevauchement') !== -1 || (r.error && r.error.code === '23P01')) {
-            dire('Tu as déjà un rendez-vous à ce moment-là. Change l’heure ou la durée.',
-                 'var(--rose,#E0556E)');
-            return;
-          }
-          dire('Enregistrement impossible.', 'var(--rose,#E0556E)');
-          return;
-        }
+        if (!r.ok) { rendre(); dire(esc(r.message), 'var(--rose,#E0556E)'); return; }
         V2.toast('Rendez-vous noté.');
         choisie = null;
         V2.go('rdvplanning');
-      }).catch(function () { rendre(); dire('Enregistrement impossible.', 'var(--rose,#E0556E)'); });
+      });
     }
   };
 

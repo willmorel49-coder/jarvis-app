@@ -352,6 +352,10 @@
     }
     if (V2.updateCartBar) V2.updateCartBar();
     if (V2.installBanner) V2.installBanner();
+    // Le bouton « noter un rendez-vous » vit sur TOUS les écrans : on le
+    // repose après chaque rendu, car il doit s'effacer quand une barre
+    // flottante occupe déjà le bas, et sur les écrans où il ferait doublon.
+    if (V2.rdvGeste) V2.rdvGeste.poser();
     if (window.__swUpdateReady && V2.showUpdateBanner) V2.showUpdateBanner();
   };
 
