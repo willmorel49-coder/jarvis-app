@@ -39,8 +39,10 @@
     // qu'on peut relire directement. Aucune donnée métier, aucune identité —
     // juste le message, l'écran, la pile et le navigateur.
     // Table `js_erreur`, insertion seule (personne ne peut la relire côté app).
+    var __BUILD = '20260813e';   // pour savoir QUELLE version a produit un rapport
     var __erreurEnvoyee = 0;
     function __signaler(message, ecran, pile) {
+      message = '[' + __BUILD + '] ' + message;
       try {
         if (__erreurEnvoyee >= 3) return;   // jamais de déluge : 3 suffisent à comprendre
         __erreurEnvoyee++;
@@ -107,6 +109,63 @@
           return _rel.call(this, type, (cb && cb.__filet) || cb, opts);
         };
       } catch (x) { /* un filet de diagnostic ne doit jamais casser l'app */ }
+    })();
+
+    // ⚠️ TEMPORAIRE (13/08/2026) — la SONDE DE PROFONDEUR, à retirer avec le reste.
+    //
+    // Quand la pile déborde, le navigateur n'a plus la place de construire la
+    // trace : les trois rapports reçus de l'iPhone de Will ne contenaient que
+    // le message, sans un seul nom de fonction. Aucun capteur d'erreur ne peut
+    // corriger ça — il faut regarder AVANT le débordement.
+    //
+    // On enveloppe donc les fonctions de l'app en tenant un compteur : passé
+    // 40 appels imbriqués, on envoie la liste des 45 derniers noms. La boucle
+    // apparaît alors en clair (« A <- B <- A <- B <- … »).
+    //
+    // Les fonctions appelées des dizaines de milliers de fois (échappement,
+    // formatage de prix) sont exclues : les envelopper ralentirait l'app pour
+    // rien, elles ne sont jamais des points de récursion.
+    (function () {
+      // margeMDLboite tourne dans trois boucles de v2-pilotage.js sur les ventes
+      // du mois (des dizaines de milliers d'appels par rendu) : l'envelopper
+      // ralentirait l'écran qu'on cherche justement à observer sans le perturber.
+      var CHAUDES = { esc: 1, fmtEur: 1, fmtK: 1, fmtPct: 1, sumCA: 1, esc2: 1, num: 1, fmtNum: 1,
+                      margeMDLboite: 1, bestPrice: 1, canonGrp: 1 };
+      var prof = 0, dit = false, chemin = [];
+      function garde(nom, fn) {
+        return function () {
+          prof++; chemin.push(nom);
+          if (prof > 40 && !dit) {
+            dit = true;
+            __signaler('SONDE — ' + prof + ' appels imbriqués',
+                       (window.V2 && window.V2.route && window.V2.route.name) || '',
+                       chemin.slice(-45).join(' <- '));
+          }
+          try { return fn.apply(this, arguments); }
+          finally { prof--; chemin.pop(); }
+        };
+      }
+      function poser() {
+        try {
+          if (!window.V2 || !window.V2.pages) { setTimeout(poser, 250); return; }
+          var k;
+          for (k in V2) {
+            if (!Object.prototype.hasOwnProperty.call(V2, k)) continue;
+            if (CHAUDES[k] || typeof V2[k] !== 'function' || V2[k].__sonde) continue;
+            V2[k] = garde('V2.' + k, V2[k]); V2[k].__sonde = 1;
+          }
+          for (k in V2.pages) {
+            if (!Object.prototype.hasOwnProperty.call(V2.pages, k)) continue;
+            var pg = V2.pages[k];
+            if (!pg || typeof pg.render !== 'function' || pg.render.__sonde) continue;
+            pg.render = garde('page:' + k, pg.render); pg.render.__sonde = 1;
+          }
+          // Des écrans s'enregistrent après coup : on repasse quelques fois.
+          if (poser.n === undefined) poser.n = 0;
+          if (++poser.n < 12) setTimeout(poser, 700);
+        } catch (x) { /* une sonde ne doit jamais casser l'app */ }
+      }
+      setTimeout(poser, 300);
     })();
 
     window.addEventListener('error', function (e) {
