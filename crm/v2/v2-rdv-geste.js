@@ -27,6 +27,7 @@
   var choisie = null;      // l'officine retenue
   var propositions = [];   // [{date, creneaux:[...]}] venues du moteur
   var choixDate = '', choixHeure = '';
+  var moisAffiche = '';    // 'AAAA-MM' — le mois que le calendrier montre
 
   function sb() { return (V2.sb && V2.sb()) || null; }
   function uid() { return (V2.user && V2.user.id) || null; }
@@ -50,6 +51,24 @@
     return JOURS[d.getUTCDay()] + ' ' + (+p[2]) + ' ' + MOIS[+p[1] - 1];
   }
   function hhh(h) { return String(h).slice(0, 5).replace(':', 'h').replace(/^0/, ''); }
+  function moisDe(iso) { return String(iso).slice(0, 7); }
+  function moisNom(cle) {
+    var p = String(cle).split('-');
+    return MOIS[+p[1] - 1] + ' ' + p[0];
+  }
+  function moisPlus(cle, n) {
+    var p = String(cle).split('-'), d = new Date(Date.UTC(+p[0], +p[1] - 1 + n, 1));
+    return d.getUTCFullYear() + '-' + ('0' + (d.getUTCMonth() + 1)).slice(-2);
+  }
+  // Lundi = 0 : un calendrier français ne commence pas le dimanche.
+  function colonneDe(iso) {
+    var p = String(iso).split('-');
+    return (new Date(Date.UTC(+p[0], +p[1] - 1, +p[2])).getUTCDay() + 6) % 7;
+  }
+  function joursDuMois(cle) {
+    var p = String(cle).split('-');
+    return new Date(Date.UTC(+p[0], +p[1], 0)).getUTCDate();
+  }
 
   function css() {
     if ($('v2-geste-css')) return;
@@ -103,6 +122,32 @@
       '.v2-gok[disabled]{opacity:.45;box-shadow:none}',
       '.v2-gmsg{margin-top:12px;font-size:14px;line-height:1.5}',
       '.v2-gvide{color:var(--muted,#737A8C);font-size:13.5px;margin:2px 0 14px;line-height:1.5}',
+      /* ── Le calendrier ────────────────────────────────────────────
+         Un vrai agenda : on voit le mois, on sait quels jours sont
+         possibles, on tape sur la date. Huit pastilles ne montraient pas
+         assez loin — c'est la remarque de Will le 13/08/2026. */
+      '.v2-gcal-tete{display:flex;align-items:center;gap:8px;margin:0 0 10px}',
+      '.v2-gcal-tete b{flex:1;text-align:center;font-size:15.5px;font-weight:800;',
+      '  text-transform:capitalize;letter-spacing:-.01em}',
+      '.v2-gcal-tete button{width:44px;height:44px;border-radius:12px;border:1px solid var(--line,#E4E8F0);',
+      '  background:#fff;color:var(--ip-blue,#0050E6);cursor:pointer;font-size:18px;line-height:1;',
+      '  display:flex;align-items:center;justify-content:center}',
+      '.v2-gcal-tete button[disabled]{opacity:.32;cursor:default}',
+      '.v2-gcal-j{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin:0 0 6px}',
+      '.v2-gcal-j span{text-align:center;font-size:13px;font-weight:700;color:var(--muted,#737A8C)}',
+      '.v2-gcal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin:0 0 16px}',
+      '.v2-gcal button,.v2-gcal i{height:46px;border-radius:11px;display:flex;align-items:center;',
+      '  justify-content:center;font-size:15px;font-style:normal}',
+      '.v2-gcal button{border:1px solid var(--line,#E4E8F0);background:#fff;color:var(--ip-ink,#10131C);',
+      '  font-weight:600;cursor:pointer;position:relative}',
+      /* Un jour possible porte un point : la disponibilité se voit avant de taper. */
+      '.v2-gcal button::after{content:"";position:absolute;bottom:6px;left:50%;margin-left:-2px;',
+      '  width:4px;height:4px;border-radius:50%;background:var(--ip-blue,#0050E6)}',
+      '.v2-gcal button.on{background:var(--ip-blue,#0050E6);border-color:var(--ip-blue,#0050E6);',
+      '  color:#fff;font-weight:800}',
+      '.v2-gcal button.on::after{background:#fff}',
+      '.v2-gcal i{color:#B9C0CE;font-size:14px}',   /* jour sans créneau, non cliquable */
+      '.v2-gcal i.vide{color:transparent}',
       '@media (prefers-reduced-motion:reduce){.v2-fab,.v2-gv,.v2-gs{transition:none}}'
     ].join('');
     document.head.appendChild(s);
@@ -196,6 +241,7 @@
 
     changer: function () { choisie = null; choixDate = ''; choixHeure = ''; rendre(); },
 
+    mois: function (n) { moisAffiche = moisPlus(moisAffiche, n); rendre(); },
     jour: function (d) { choixDate = d; choixHeure = ''; rendre(); },
     heure: function (h) { choixHeure = h; rendre(); },
 
@@ -245,12 +291,17 @@
       var agenda = ((r[2] && r[2].data) || []).map(function (x) {
         return { date: x.date, debut: String(x.debut).slice(0, 5), fin: String(x.fin).slice(0, 5) };
       });
+      // Tout l'horizon (trois mois), pas les huit prochains jours : le
+      // calendrier doit pouvoir se feuilleter comme un vrai agenda.
       propositions = window.V2RDV.calendrier({
         officine: { lat: choisie && choisie.lat, lon: choisie && choisie.lon },
         dispo: st.dispo, blocages: st.blocages || [],
         occupes: occupes, agenda: agenda,
-        aujourdhui: auj, max_jours: 8, creneaux_par_jour: 6
+        aujourdhui: auj, max_jours: 70, creneaux_par_jour: 8
       });
+      // On ouvre sur le mois du premier jour possible, pas sur le mois
+      // courant : si tout est plein jusqu'en septembre, autant y aller.
+      moisAffiche = propositions.length ? moisDe(propositions[0].date) : moisDe(auj);
       if (ouverte) rendre();
     }).catch(function () { if (ouverte) rendre(); });
   }
@@ -285,6 +336,45 @@
       ' » à la main</b><span>si elle n’est dans aucun fichier</span></button></li>';
   }
 
+  // ── Le calendrier du mois ────────────────────────────────────────
+  // Les jours possibles sont cliquables et portent un point. Les autres
+  // restent visibles mais éteints : un agenda qui cache ses jours pleins
+  // ne se lit pas, on croit qu'il manque des dates.
+  function calendrier() {
+    var dispo = {};
+    propositions.forEach(function (j) { dispo[j.date] = j.creneaux; });
+    var premier = propositions.length ? moisDe(propositions[0].date) : moisAffiche;
+    var dernier = propositions.length ? moisDe(propositions[propositions.length - 1].date) : moisAffiche;
+    if (!moisAffiche) moisAffiche = premier;
+
+    var n = joursDuMois(moisAffiche);
+    var cases = '';
+    // Les cases vides avant le 1er : sans elles, le mois glisse d'un cran.
+    var decal = colonneDe(moisAffiche + '-01');
+    for (var k = 0; k < decal; k++) cases += '<i class="vide"></i>';
+    for (var d = 1; d <= n; d++) {
+      var iso = moisAffiche + '-' + ('0' + d).slice(-2);
+      if (dispo[iso]) {
+        cases += '<button class="' + (iso === choixDate ? 'on' : '') +
+          '" onclick="V2.rdvGeste.jour(\'' + esc(iso) + '\')" aria-label="' +
+          esc(dlong(iso)) + '">' + d + '</button>';
+      } else {
+        cases += '<i>' + d + '</i>';
+      }
+    }
+
+    return '<div class="v2-gcal-tete">' +
+        '<button onclick="V2.rdvGeste.mois(-1)"' +
+          (moisAffiche <= premier ? ' disabled' : '') + ' aria-label="Mois précédent">‹</button>' +
+        '<b>' + esc(moisNom(moisAffiche)) + '</b>' +
+        '<button onclick="V2.rdvGeste.mois(1)"' +
+          (moisAffiche >= dernier ? ' disabled' : '') + ' aria-label="Mois suivant">›</button>' +
+      '</div>' +
+      '<div class="v2-gcal-j"><span>L</span><span>M</span><span>M</span><span>J</span>' +
+        '<span>V</span><span>S</span><span>D</span></div>' +
+      '<div class="v2-gcal">' + cases + '</div>';
+  }
+
   function rendre() {
     var s = $('v2-gs');
     if (!s) return;
@@ -315,11 +405,7 @@
       return;
     }
 
-    h += '<span class="v2-gl">Le jour</span><div class="v2-gpu">' +
-      propositions.map(function (j) {
-        return '<button class="' + (j.date === choixDate ? 'on' : '') +
-          '" onclick="V2.rdvGeste.jour(\'' + esc(j.date) + '\')">' + esc(dcourt(j.date)) + '</button>';
-      }).join('') + '</div>';
+    h += '<span class="v2-gl">Le jour</span>' + calendrier();
 
     var jour = null;
     propositions.forEach(function (j) { if (j.date === choixDate) jour = j; });
