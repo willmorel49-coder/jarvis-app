@@ -413,7 +413,12 @@
     return Promise.all(promises).then(bridge);
   };
   V2.dataLoaded = function (key) {
-    return loaded['../' + DATA_FILES[key]] === true;
+    // ⚠️ La base doit être la MÊME que celle utilisée pour charger le fichier.
+    // Elle était écrite en dur ('../'), or l'app OPSO charge depuis
+    // '../../crm/' : la clé cherchée ne correspondait à rien, `dataLoaded`
+    // répondait toujours faux, et OPSO affichait « Données non chargées »
+    // alors que les 691 officines étaient bien en mémoire.
+    return loaded[(window.V2_DATA_BASE || '../') + DATA_FILES[key]] === true;
   };
 
   // ── Helpers métier partagés ───────────────────
