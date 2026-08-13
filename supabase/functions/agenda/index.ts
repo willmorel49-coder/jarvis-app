@@ -11,12 +11,19 @@
 // telle heure ». Jamais un titre, jamais un lieu, jamais un participant.
 // Ce n'est pas une promesse : il n'y a pas de champ pour les transporter.
 //
-// Quatre actions :
-//   tester      (commercial connecté) — je viens de coller mon lien, ça marche ?
-//   brancher    (commercial connecté) — range le lien dans le coffre + relève
-//   debrancher  (commercial connecté) — retire le lien ET les plages relevées
-//   relever     (jeton de RDV valide) — le pharmacien ouvre sa page : on
-//               rafraîchit l'agenda du commercial, au plus une fois / 10 min
+// Six actions :
+//   tester       (commercial connecté) — je viens de coller mon lien, ça marche ?
+//   brancher     (commercial connecté) — range le lien dans le coffre + relève
+//   debrancher   (commercial connecté) — retire le lien ET les plages relevées
+//   relever_moi  (commercial connecté) — j'ouvre l'app, remets-moi à jour
+//   relever      (jeton de RDV valide, de campagne OU permanent) — le pharmacien
+//                ouvre sa page : on rafraîchit l'agenda du commercial
+//   relever_tous (clé de service) — le robot de 15 minutes passe sur tout le monde
+//
+// ⚠️ Pourquoi « relever_tous » existe : avant lui, un agenda n'était relu que si
+// un pharmacien ouvrait un lien. Mesuré le 13/08/2026 sur la prod : le seul
+// agenda branché n'avait pas bougé depuis 19 h. Les créneaux proposés
+// s'appuyaient donc sur une photo de la veille.
 // ═══════════════════════════════════════════════════════════════
 import ICAL from 'npm:ical.js@2.2.1'
 import { createClient } from 'npm:@supabase/supabase-js@2.112.2'
@@ -40,6 +47,13 @@ const hoteAutorise = (h: string) =>
 const TAILLE_MAX = 8 * 1024 * 1024   // 8 Mo : un agenda chargé pèse ~1 Mo
 const JOURS = 45                     // au-delà de l'horizon de réservation (21 j)
 const FRAICHEUR_MIN = 10 * 60 * 1000 // on ne relève pas plus d'une fois / 10 min
+
+// Google plafonne la lecture de l'adresse secrète d'un agenda et répond 429
+// quand on insiste — constaté le 13/08/2026, six lectures en quarante minutes
+// ont suffi. Ce n'est PAS une panne : les heures déjà relevées restent bonnes.
+// On attend donc une demi-heure avant de retenter, au lieu de cogner à chaque
+// passage du robot et de finir vraiment bloqué.
+const PATIENCE = 30 * 60 * 1000
 
 const URL_SB = Deno.env.get('SUPABASE_URL')!
 const CLE_SERVICE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -155,24 +169,36 @@ async function commercialConnecte(req: Request): Promise<string | null> {
 }
 
 /** Relève l'agenda d'un commercial et remplace ses plages occupées. */
-async function relever(userId: string, forcer = false) {
+async function relever(userId: string, forcer = false, fraicheur = FRAICHEUR_MIN) {
   const db = admin()
   const { data: a } = await db.from('rdv_agenda')
-    .select('url, actif, dernier_ok').eq('user_id', userId).maybeSingle()
+    .select('url, actif, dernier_ok, dernier_essai, derniere_erreur')
+    .eq('user_id', userId).maybeSingle()
   if (!a || !a.actif) return { ok: false, raison: 'pas_d_agenda' }
 
-  if (!forcer && a.dernier_ok && Date.now() - new Date(a.dernier_ok).getTime() < FRAICHEUR_MIN) {
+  if (!forcer && a.dernier_ok && Date.now() - new Date(a.dernier_ok).getTime() < fraicheur) {
     return { ok: true, frais: true }
+  }
+  // L'hébergeur nous a demandé de lever le pied : on ne réessaie pas avant
+  // une demi-heure. Insister transforme un ralentissement en vrai blocage.
+  if (!forcer && String(a.derniere_erreur || '').startsWith('patience') &&
+      a.dernier_essai && Date.now() - new Date(a.dernier_essai).getTime() < PATIENCE) {
+    return { ok: true, patiente: true }
   }
 
   const t = await telecharger(a.url)
   if ('erreur' in t) {
+    // « patience » = l'hébergeur nous rationne (429), ou il a eu un hoquet
+    // passager (502/503). Marqué à part parce que l'écran ne doit PAS crier à
+    // la panne : les heures déjà relevées restent justes, on repassera.
+    const rationne = t.code === 429 || t.code === 502 || t.code === 503
     await db.from('rdv_agenda').update({
       dernier_essai: new Date().toISOString(),
       // Le code HTTP et le détail sont gardés : sans eux, « injoignable »
       // ne dit pas si c'est l'adresse qui est fausse, l'hébergeur qui
       // refuse, ou le réseau qui a lâché — et on répare à l'aveugle.
-      derniere_erreur: [t.erreur, t.code, t.detail].filter(Boolean).join(' · ').slice(0, 300),
+      derniere_erreur: (rationne ? 'patience · ' : '') +
+        [t.erreur, t.code, t.detail].filter(Boolean).join(' · ').slice(0, 280),
     }).eq('user_id', userId)
     return { ok: false, raison: t.erreur, code: t.code, detail: t.detail }
   }
@@ -211,23 +237,64 @@ Deno.serve(async (req) => {
   try { c = await req.json() } catch { return reponse({ ok: false, raison: 'json' }, 400) }
   const action = String(c.action || 'tester')
 
+  // ─── Le robot de 15 minutes : il repasse sur tous les agendas branchés,
+  // que quelqu'un ouvre une page ou non. C'est LUI qui rend les créneaux
+  // fiables ; le reste n'est qu'un rattrapage opportuniste.
+  // Seule la clé de service ouvre cette porte — elle ne sort jamais du serveur.
+  if (action === 'relever_tous') {
+    const entete = req.headers.get('Authorization') || ''
+    if (entete !== 'Bearer ' + CLE_SERVICE) return reponse({ ok: false, raison: 'interdit' }, 403)
+    const db = admin()
+    const { data: tous } = await db.from('rdv_agenda').select('user_id').eq('actif', true)
+    const bilan: Record<string, unknown>[] = []
+    for (const a of tous || []) {
+      // En série, pas en parallèle : deux agendas, aucun intérêt à paralléliser,
+      // et on évite de saturer la fonction si un hébergeur traîne.
+      //
+      // Surtout : PAS de « forcer ». Le robot passe toutes les 15 minutes et se
+      // contente d'une fenêtre de 12 — de quoi relire à chaque passage, sans
+      // additionner ses lectures à celles déclenchées par une page ouverte.
+      // Forcer avait suffi à faire répondre 429 à Google le 13/08/2026.
+      const r = await relever(a.user_id, false, 12 * 60 * 1000)
+      bilan.push({ user_id: a.user_id, ...r })
+    }
+    return reponse({ ok: true, agendas: bilan.length, bilan })
+  }
+
   // ─── Le pharmacien ouvre sa page : on rafraîchit l'agenda du commercial.
   // Pas d'identité ici, mais un jeton de rendez-vous valide : il désigne
   // exactement un commercial, et rien d'autre n'est accessible.
+  //
+  // Deux sortes de jetons mènent à une page de réservation, et il a longtemps
+  // manqué la seconde : le lien de campagne (rdv_lien, à usage unique) ET le
+  // lien permanent du commercial (rdv_lien_public, celui de rdv/william.html).
+  // Un pharmacien passé par le lien permanent ne déclenchait donc aucune relève.
   if (action === 'relever') {
     if (!c.token) return reponse({ ok: false, raison: 'jeton_manquant' }, 400)
     const db = admin()
     const { data: l } = await db.from('rdv_lien')
       .select('user_id, expire_le').eq('token', c.token).maybeSingle()
-    if (!l) return reponse({ ok: false, raison: 'jeton_inconnu' }, 403)
-    if (new Date(l.expire_le).getTime() <= Date.now())
-      return reponse({ ok: false, raison: 'jeton_expire' }, 403)
-    return reponse(await relever(l.user_id))
+    if (l) {
+      if (new Date(l.expire_le).getTime() <= Date.now())
+        return reponse({ ok: false, raison: 'jeton_expire' }, 403)
+      return reponse(await relever(l.user_id))
+    }
+    const { data: lp } = await db.from('rdv_lien_public')
+      .select('user_id, actif').eq('token', c.token).maybeSingle()
+    if (!lp) return reponse({ ok: false, raison: 'jeton_inconnu' }, 403)
+    if (!lp.actif) return reponse({ ok: false, raison: 'lien_ferme' }, 403)
+    return reponse(await relever(lp.user_id))
   }
 
   // ─── Toutes les autres actions exigent un commercial connecté.
   const userId = await commercialConnecte(req)
   if (!userId) return reponse({ ok: false, raison: 'connexion_requise' }, 401)
+
+  // ─── Le commercial ouvre son écran Rendez-vous : on remet son agenda à jour
+  // avant qu'il regarde son planning. Cinq minutes de fraîcheur suffisent à
+  // éviter qu'un aller-retour entre deux écrans relance une lecture complète —
+  // et à ne pas s'ajouter au rythme du robot au point de fâcher l'hébergeur.
+  if (action === 'relever_moi') return reponse(await relever(userId, false, 5 * 60 * 1000))
 
   if (action === 'debrancher') {
     // Le déclencheur en base efface aussi les plages relevées.

@@ -183,9 +183,11 @@
         // L'agenda est un confort : s'il ne répond pas, l'écran s'affiche
         // quand même avec les disponibilités saisies à la main.
         (V2.rdvAgenda ? V2.rdvAgenda.charger() : Promise.resolve(null)),
-        (V2.rdvLien ? V2.rdvLien.charger() : Promise.resolve(null))
+        (V2.rdvLien ? V2.rdvLien.charger() : Promise.resolve(null)),
+        (V2.rdvNotif ? V2.rdvNotif.charger() : Promise.resolve(null)),
+        (V2.rdvFlux ? V2.rdvFlux.charger() : Promise.resolve(null))
       ]).then(function (res) {
-        var st = res[0], ag = res[1], lien = res[2];
+        var st = res[0], ag = res[1], lien = res[2], notif = res[3], flux = res[4];
         var d = st.dispo, k, jours = '';
         for (k = 1; k <= 5; k++) jours += ligneJour(String(k), d.jours && d.jours[String(k)]);
 
@@ -208,6 +210,12 @@
 
           '<div class="v2-rdvd-sec">Mon agenda</div>' +
           (V2.rdvAgenda ? V2.rdvAgenda.bloc(ag) : '') +
+
+          '<div class="v2-rdvd-sec">Être prévenu</div>' +
+          (V2.rdvNotif ? V2.rdvNotif.bloc(notif) : '') +
+
+          '<div class="v2-rdvd-sec">Mes rendez-vous dans mon agenda</div>' +
+          (V2.rdvFlux ? V2.rdvFlux.bloc(flux) : '') +
 
           '<div class="v2-rdvd-sec">Mes journées</div>' + jours +
 
@@ -245,6 +253,7 @@
         // Le mode d'emploi s'affiche d'emblée : sans lui, personne ne trouve
         // l'adresse de son agenda — elle est enterrée dans les réglages.
         if (V2.rdvAgenda) V2.rdvAgenda.aide('google');
+        if (V2.rdvFlux) V2.rdvFlux.aide('iphone');
       });
     }
   };

@@ -10,7 +10,7 @@
 
    ⚠️ Bumper VER à chaque déploiement (aligné sur le ?v= de index.html).
    ═══════════════════════════════════════════════════════════════════ */
-var VER = '20260813b';
+var VER = '20260813c';
 var CACHE = 'jarvis-' + VER;
 
 self.addEventListener('install', function (e) {
@@ -22,6 +22,42 @@ self.addEventListener('activate', function (e) {
     caches.keys().then(function (keys) {
       return Promise.all(keys.map(function (k) { if (k !== CACHE) return caches.delete(k); }));
     }).then(function () { return self.clients.claim(); })
+  );
+});
+
+/* ── Alertes « un pharmacien vient de réserver » ────────────────────
+   Le serveur pousse un petit JSON ; on l'affiche. Si le corps est illisible
+   (relais qui envoie un ping vide), on affiche quand même quelque chose :
+   une notification muette vaut mieux qu'un rendez-vous manqué. */
+self.addEventListener('push', function (e) {
+  var d = {};
+  try { d = e.data ? e.data.json() : {}; } catch (err) { d = {}; }
+  var titre = d.titre || 'JARVIS';
+  e.waitUntil(self.registration.showNotification(titre, {
+    body: d.corps || 'Un rendez-vous vient d’être pris.',
+    icon: './icons/icon-192.png',
+    badge: './icons/icon-192.png',
+    tag: 'jarvis-rdv',
+    renotify: true,
+    data: { url: d.url || '#rdv' }
+  }));
+});
+
+/* Toucher la notification ouvre l'app SUR le bon écran — et réutilise
+   l'onglet déjà ouvert plutôt que d'en empiler un second. */
+self.addEventListener('notificationclick', function (e) {
+  e.notification.close();
+  var cible = (e.notification.data && e.notification.data.url) || '#rdv';
+  e.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (l) {
+      for (var i = 0; i < l.length; i++) {
+        if (l[i].url.indexOf(self.registration.scope) === 0 && 'focus' in l[i]) {
+          l[i].navigate(self.registration.scope + 'index.html' + cible);
+          return l[i].focus();
+        }
+      }
+      return self.clients.openWindow('./index.html' + cible);
+    })
   );
 });
 

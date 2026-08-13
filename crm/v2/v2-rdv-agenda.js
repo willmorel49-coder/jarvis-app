@@ -70,12 +70,17 @@
     if (e) e.innerHTML = '<span style="color:' + (couleur || 'var(--muted)') + '">' + html + '</span>';
   }
 
+  // « il y a 19 h » a déjà été lu « à 19 h » par un utilisateur, qui a cru que
+  // l'agenda se relisait tout seul le soir. On donne donc les minutes tant
+  // qu'on peut : c'est la granularité qui correspond à la réalité maintenant
+  // que le robot repasse toutes les 15 minutes.
   function depuis(iso) {
     if (!iso) return 'jamais';
-    var h = Math.floor((Date.now() - new Date(iso).getTime()) / 3600000);
-    if (h < 1) return 'il y a moins d’une heure';
-    if (h < 24) return 'il y a ' + h + ' h';
-    return 'il y a ' + Math.floor(h / 24) + ' jour(s)';
+    var m = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+    if (m < 2) return 'à l’instant';
+    if (m < 60) return 'il y a ' + m + ' min';
+    if (m < 1440) return 'il y a ' + Math.floor(m / 60) + ' h';
+    return 'il y a ' + Math.floor(m / 1440) + ' jour(s)';
   }
 
   function appeler(corps) {
@@ -116,15 +121,24 @@
     bloc: function (a) {
       css();
       var branche = !!(a && a.hote);
+      // Ce qui compte n'est pas « le dernier appel a-t-il abouti » mais « mes
+      // heures sont-elles à jour ». Google rationne parfois la lecture de son
+      // flux (429) : l'appel échoue, et pourtant les plages relevées quinze
+      // minutes plus tôt sont parfaitement valables. Crier à la panne dans ce
+      // cas apprend à ignorer le voyant.
+      var vieux = !a || !a.dernier_ok ||
+        (Date.now() - new Date(a.dernier_ok).getTime()) > 2 * 3600 * 1000;
       var etat = !branche
         ? '<span class="v2-ag-pastille v2-ag-off"></span> Aucun agenda connecté'
-        : (a.derniere_erreur
+        : (vieux
             ? '<span class="v2-ag-pastille v2-ag-ko"></span> ' + esc(a.hote) +
-              ' — dernière relève en échec'
+              ' — pas relu depuis ' + esc(depuis(a.dernier_ok)) +
+              (a.derniere_erreur ? ' · ' + esc(String(a.derniere_erreur).slice(0, 60)) : '')
             : '<span class="v2-ag-pastille v2-ag-ok"></span> ' + esc(a.hote) +
-              ' — relevé ' + esc(depuis(a.dernier_ok)) +
+              ' — relu ' + esc(depuis(a.dernier_ok)) +
               (a.plages_gardees != null
-                ? ' · ' + esc(a.plages_gardees) + ' plage(s) occupée(s)' : ''));
+                ? ' · ' + esc(a.plages_gardees) + ' plage(s) occupée(s)' : '') +
+              ' · relecture automatique toutes les 15 min');
 
       var onglets = MODES.map(function (m, i) {
         return '<button class="' + (i === 0 ? 'on' : '') + '" data-m="' + m.cle +
@@ -138,6 +152,8 @@
         '<div class="v2-ag-acts">' +
           '<button class="v2-btn" onclick="V2.rdvAgenda.tester()">Tester</button>' +
           '<button class="v2-btn v2-btn-primary" onclick="V2.rdvAgenda.brancher()">Connecter mon agenda</button>' +
+          (branche && V2.pages && V2.pages.rdvplanning
+            ? '<button class="v2-btn" onclick="V2.go(\'rdvplanning\')">Voir mon agenda</button>' : '') +
           (branche ? '<button class="v2-btn" onclick="V2.rdvAgenda.debrancher()">Débrancher</button>' : '') +
         '</div>' +
         '<div class="v2-ag-res" id="v2-ag-res"></div>' +
@@ -198,6 +214,16 @@
         V2.toast('Agenda débranché.');
         if (V2.go) V2.go('rdvdispo');
       });
+    },
+
+    // Relève à la demande, quand le commercial ouvre un écran qui montre son
+    // planning. Le serveur se protège lui-même (pas deux lectures en moins de
+    // deux minutes), donc on peut appeler sans compter.
+    // Ne rejette JAMAIS : l'écran doit s'afficher même agenda muet.
+    relever: function () {
+      var c = sb(), u = uid();
+      if (!c || !u) return Promise.resolve(null);
+      return appeler({ action: 'relever_moi' }).catch(function () { return null; });
     },
 
     // État affichable (jamais l'adresse : la base refuse de la relire).
