@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Rendez-vous — six directions</title>
+<!--
+  Galerie de directions pour « Rendez-vous, une app dans l'app ».
+  Règles appliquées : variantes numérotées · repère 0 = l'app d'aujourd'hui ·
+  le risque de chacune écrit en clair · fond clair AVEC source de lumière ·
+  aucune ressource externe · cibles ≥ 44 px · rien sous 13 px.
+-->
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#FBFCFE;color:#10131C;
+       font:16px/1.55 -apple-system,system-ui,"Segoe UI",sans-serif;
+       background-image:linear-gradient(180deg,#EAF1FD 0%,#FBFCFE 44%);
+       background-repeat:no-repeat;background-size:100% 640px}
+  header{padding:26px 20px 6px;max-width:920px;margin:0 auto}
+  h1{font-size:clamp(23px,5vw,34px);letter-spacing:-.03em;margin:0 0 8px;font-weight:800}
+  header p{color:#4A5262;margin:0 0 8px;max-width:62ch;font-size:15px}
+  .rappel{color:#0F7A52;font-weight:600;font-size:14px}
+  nav{position:sticky;top:0;z-index:10;background:rgba(251,252,254,.97);
+      border-bottom:1px solid #E4E8F0;padding:10px 12px;margin-top:14px}
+  .onglets{display:flex;gap:8px;overflow-x:auto;max-width:920px;margin:0 auto;-webkit-overflow-scrolling:touch}
+  .onglet{flex:0 0 auto;min-height:44px;padding:0 14px;border-radius:11px;border:1px solid #E4E8F0;
+          background:#fff;color:#10131C;font:600 14.5px/1 -apple-system,system-ui,sans-serif;cursor:pointer}
+  .onglet.on{border-color:#0050E6;color:#0050E6;box-shadow:0 2px 10px rgba(0,80,230,.15)}
+  main{max-width:920px;margin:0 auto;padding:22px 20px 80px}
+  .vue[hidden]{display:none}
+  .num{font:800 13px/1 -apple-system,system-ui,sans-serif;letter-spacing:.09em;
+       text-transform:uppercase;color:#737A8C;margin:0 0 6px}
+  h2{font-size:clamp(20px,4vw,27px);letter-spacing:-.02em;margin:0 0 10px;font-weight:800}
+  .concept{font-size:16.5px;margin:0 0 14px;max-width:62ch}
+  dl{margin:0 0 22px;display:grid;gap:9px}
+  dt{font:700 13px/1 -apple-system,system-ui,sans-serif;letter-spacing:.06em;
+     text-transform:uppercase;color:#737A8C}
+  dd{margin:4px 0 0;font-size:15px;max-width:62ch}
+  dd.risque{color:#C7283D;font-weight:600}
+  .tel{width:390px;height:844px;position:relative;border-radius:38px;background:#FBFCFE;
+       border:1px solid #DDE3EE;overflow:hidden;margin:0 auto;
+       box-shadow:0 1px 0 #fff inset,0 26px 60px -18px rgba(16,19,28,.28),0 4px 14px rgba(16,19,28,.06)}
+  .captures{display:flex;gap:18px;flex-wrap:wrap;justify-content:center}
+  .captures img{width:390px;height:auto;border-radius:22px;border:1px solid #DDE3EE;
+                box-shadow:0 20px 46px -16px rgba(16,19,28,.26)}
+  @media (max-width:460px){
+    .tel{transform:scale(calc((100vw - 40px)/390));transform-origin:top center;
+         margin-bottom:calc(((100vw - 40px)/390 - 1) * 844px)}
+    .captures img{width:100%}
+  }
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+  /* ══ socle commun aux maquettes ══ */
+  .tel .sb{position:relative;z-index:5;height:44px;display:flex;align-items:center;justify-content:space-between;
+           padding:0 22px;font:600 13px/1 -apple-system,system-ui,sans-serif;color:#10131C}
+  .tel .sb span:last-child{letter-spacing:1px;font-size:13px;color:#737A8C}
+  .tel .zone{position:absolute;left:0;right:0;overflow:hidden}
+  .tel .h1{font:800 24px/1.15 -apple-system,system-ui,sans-serif;letter-spacing:-.02em;margin:0}
+  .tel .sub{font-size:13.5px;color:#737A8C;margin:4px 0 0}
+  .tel .carte{background:#fff;border:1px solid #E4E8F0;border-radius:16px;
+              box-shadow:0 1px 0 #fff inset,0 6px 16px -8px rgba(16,19,28,.16)}
+  .tel .bleu{background:linear-gradient(180deg,#0A57E8,#0043C4);color:#fff;border:0;
+             box-shadow:0 10px 22px -10px rgba(0,80,230,.6)}
+  .tel .pastille{display:inline-flex;align-items:center;justify-content:center;height:44px;
+                 padding:0 14px;border-radius:12px;border:1px solid #E4E8F0;background:#fff;
+                 font:600 14px/1 -apple-system,system-ui,sans-serif;color:#0050E6}
+
+  /* ══ 01 — la barre d'onglets ══ */
+  .d01{background:linear-gradient(180deg,#F2F6FE,#FBFCFE 260px)}
+  .d01 .top{padding:6px 20px 0}
+  .d01 .liste{position:absolute;top:96px;bottom:92px;left:0;right:0;padding:0 16px;overflow:hidden}
+  .d01 .rdv{display:flex;gap:13px;padding:14px;margin-bottom:10px;min-height:44px}
+  .d01 .hh{font:800 17px/1.1 -apple-system,system-ui,sans-serif;color:#0050E6;min-width:52px}
+  .d01 .nm{font:700 15px/1.25 -apple-system,system-ui,sans-serif;margin:0}
+  .d01 .vl{font-size:13px;color:#737A8C;margin:3px 0 0}
+  .d01 .tabbar{position:absolute;left:0;right:0;bottom:0;height:84px;background:#fff;
+                border-top:1px solid #E4E8F0;display:flex;padding-bottom:16px;
+                box-shadow:0 -8px 22px -14px rgba(16,19,28,.3)}
+  .d01 .tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+             gap:5px;font:600 13px/1 -apple-system,system-ui,sans-serif;color:#737A8C;min-height:44px}
+  .d01 .tab.act{color:#0050E6}
+  .d01 .tab svg{width:23px;height:23px}
+  .d01 .pt{position:absolute;top:8px;right:26%;width:7px;height:7px;border-radius:50%;background:#E0556E}
+
+  /* ══ 02 — la journée d'abord ══ */
+  .d02{background:linear-gradient(180deg,#E9F0FD,#FBFCFE 340px)}
+  .d02 .zone{top:44px;bottom:0;padding:8px 16px 0;overflow:hidden}
+  .d02 .jour{padding:16px;margin:12px 0 14px}
+  .d02 .et{font:800 13px/1 -apple-system,system-ui,sans-serif;letter-spacing:.1em;
+           text-transform:uppercase;color:#737A8C;margin:0 0 10px}
+  .d02 .pro{display:flex;align-items:baseline;gap:10px}
+  .d02 .pro b{font:800 30px/1 -apple-system,system-ui,sans-serif;color:#0050E6;letter-spacing:-.02em}
+  .d02 .pro span{font:700 15px/1.2 -apple-system,system-ui,sans-serif}
+  .d02 .meta{font-size:13px;color:#737A8C;margin:6px 0 0}
+  .d02 .apres{display:flex;gap:9px;margin:13px 0 0;padding-top:12px;border-top:1px solid #EEF1F6}
+  .d02 .apres div{font-size:13px;color:#4A5262}
+  .d02 .apres b{color:#10131C}
+  .d02 .acts{display:flex;gap:9px;margin:13px 0 0}
+  .d02 .acts button{flex:1;min-height:46px;border-radius:12px;font:700 14px/1 -apple-system,system-ui,sans-serif;
+                    border:1px solid #E4E8F0;background:#fff;color:#0050E6}
+  .d02 .acts .p{border:0;color:#fff}
+  .d02 .tuiles{display:flex;flex-direction:column;gap:9px;margin-top:6px}
+  .d02 .tu{display:flex;align-items:center;gap:12px;padding:14px;min-height:44px}
+  .d02 .ic{width:38px;height:38px;border-radius:11px;background:#EAF0FE;flex:0 0 auto}
+  .d02 .tu p{margin:0;font:700 14.5px/1.2 -apple-system,system-ui,sans-serif}
+  .d02 .tu small{display:block;font-weight:400;color:#737A8C;font-size:13px;margin-top:2px}
+
+  /* ══ 03 — le hub plein écran ══ */
+  .d03{background:#FBFCFE}
+  .d03 .cap{position:absolute;top:0;left:0;right:0;height:212px;
+            background:linear-gradient(165deg,#0B5BEE,#0039A8);color:#fff;padding:52px 20px 0}
+  .d03 .cap h1{color:#fff;font-size:26px}
+  .d03 .cap .sub{color:rgba(255,255,255,.82)}
+  .d03 .prochain{position:absolute;top:168px;left:16px;right:16px;padding:15px;z-index:2}
+  .d03 .lbl{font:800 13px/1 -apple-system,system-ui,sans-serif;letter-spacing:.1em;
+            text-transform:uppercase;color:#0F7A52;margin:0 0 8px}
+  .d03 .prochain b{font:800 17px/1.2 -apple-system,system-ui,sans-serif;display:block}
+  .d03 .prochain .m{font-size:13.5px;color:#737A8C;margin:5px 0 0}
+  .d03 .grille{position:absolute;top:300px;left:16px;right:16px;display:grid;
+               grid-template-columns:1fr 1fr;gap:11px}
+  .d03 .ent{padding:15px 14px;min-height:96px;display:flex;flex-direction:column;justify-content:space-between}
+  .d03 .ent svg{width:22px;height:22px;color:#0050E6}
+  .d03 .ent p{margin:0;font:700 14.5px/1.2 -apple-system,system-ui,sans-serif}
+  .d03 .ent small{color:#737A8C;font-size:13px}
+  .d03 .large{grid-column:1/-1;min-height:auto;flex-direction:row;align-items:center;gap:12px}
+  .d03 .chiffres{position:absolute;left:16px;right:16px;bottom:26px;display:flex;gap:11px}
+  .d03 .ch{flex:1;padding:13px;text-align:left}
+  .d03 .ch b{display:block;font:800 22px/1 -apple-system,system-ui,sans-serif;letter-spacing:-.02em}
+  .d03 .ch small{font-size:13px;color:#737A8C}
+
+  /* ══ 04 — le fil du temps ══ */
+  .d04{background:linear-gradient(180deg,#F1F5FD,#FBFCFE 200px)}
+  .d04 .zone{top:44px;bottom:0;padding:10px 0 0}
+  .d04 .tete{padding:0 18px 12px}
+  .d04 .frise{position:absolute;top:96px;bottom:0;left:0;right:0;padding:0 16px 0 56px;overflow:hidden}
+  .d04 .h{position:absolute;left:16px;font:600 13px/1 -apple-system,system-ui,sans-serif;color:#8A91A0}
+  .d04 .ligne{position:absolute;left:52px;right:16px;height:1px;background:#E9EDF5}
+  .d04 .bloc{position:absolute;left:56px;right:16px;border-radius:13px;padding:11px 13px;overflow:hidden}
+  .d04 .rdv{z-index:1;background:linear-gradient(180deg,#0A57E8,#0046CB);color:#fff;
+            box-shadow:0 10px 20px -12px rgba(0,80,230,.7)}
+  .d04 .rdv b{display:block;font:800 14.5px/1.2 -apple-system,system-ui,sans-serif}
+  .d04 .rdv small{color:rgba(255,255,255,.86);font-size:13px}
+  .d04 .occ{z-index:1;background:repeating-linear-gradient(135deg,#EDEFF4 0 7px,#E4E7EE 7px 14px);
+            color:#5C6474;border:1px solid #E0E4EC}
+  .d04 .occ b{display:block;font:700 13.5px/1.2 -apple-system,system-ui,sans-serif}
+  .d04 .libre{z-index:1;border:1.5px dashed #C3D3F2;background:rgba(255,255,255,.7);color:#0050E6;
+              display:flex;align-items:center;justify-content:space-between}
+  .d04 .libre b{font:700 13.5px/1 -apple-system,system-ui,sans-serif}
+  .d04 .libre span{font-size:13px;color:#737A8C}
+  .d04 .now{z-index:0;position:absolute;left:38px;right:16px;height:2px;background:#E0556E}
+  .d04 .now i{position:absolute;left:-6px;top:-4px;width:10px;height:10px;border-radius:50%;background:#E0556E}
+  .d04 .nowl{z-index:2;position:absolute;left:8px;font:700 13px/1 -apple-system,system-ui,sans-serif;color:#C7283D}
+
+  /* ══ 05 — la tournée sur la carte ══ */
+  .d05{background:#FBFCFE}
+  .d05 .carte-fond{position:absolute;top:0;z-index:0;left:0;right:0;height:430px;overflow:hidden;
+                   background:linear-gradient(170deg,#E8EFF9,#F4F8FC)}
+  .d05 .carte-fond svg{position:absolute;inset:0;width:100%;height:100%}
+  .d05 .tete{position:absolute;top:52px;left:16px;right:16px;padding:13px 15px;z-index:3}
+  .d05 .tete b{font:800 15px/1.2 -apple-system,system-ui,sans-serif;display:block}
+  .d05 .tete small{color:#737A8C;font-size:13px}
+  .d05 .pin{position:absolute;width:30px;height:30px;border-radius:50%;background:#0050E6;color:#fff;
+            display:flex;align-items:center;justify-content:center;z-index:2;
+            font:800 14px/1 -apple-system,system-ui,sans-serif;
+            box-shadow:0 6px 14px -4px rgba(0,80,230,.65),0 0 0 4px rgba(255,255,255,.9)}
+  .d05 .pin.dep{background:#fff;color:#0050E6;border:2px solid #0050E6}
+  .d05 .km{position:absolute;font:700 13px/1 -apple-system,system-ui,sans-serif;color:#4A5262;
+           background:rgba(255,255,255,.92);border-radius:7px;padding:4px 7px;z-index:2}
+  .d05 .feuille{position:absolute;left:0;right:0;bottom:0;top:398px;background:#fff;
+                border-radius:22px 22px 0 0;border-top:1px solid #E4E8F0;padding:10px 16px 0;
+                box-shadow:0 -14px 34px -18px rgba(16,19,28,.3)}
+  .d05 .poignee{width:38px;height:4px;border-radius:2px;background:#DDE3EE;margin:0 auto 12px}
+  .d05 .et{font:800 13px/1 -apple-system,system-ui,sans-serif;letter-spacing:.1em;
+           text-transform:uppercase;color:#737A8C;margin:0 0 10px}
+  .d05 .ar{display:flex;gap:12px;align-items:center;padding:11px 0;border-top:1px solid #F0F3F8;min-height:44px}
+  .d05 .ar:first-of-type{border-top:0}
+  .d05 .no{width:26px;height:26px;border-radius:50%;background:#EAF0FE;color:#0050E6;flex:0 0 auto;
+           display:flex;align-items:center;justify-content:center;font:800 13px/1 -apple-system,system-ui,sans-serif}
+  .d05 .ar b{font:700 14.5px/1.2 -apple-system,system-ui,sans-serif;display:block}
+  .d05 .ar small{color:#737A8C;font-size:13px}
+  .d05 .ar .t{margin-left:auto;font:800 14px/1 -apple-system,system-ui,sans-serif;color:#0050E6}
+
+  /* ══ 06 — le geste permanent ══ */
+  .d06{background:linear-gradient(180deg,#F2F6FE,#FBFCFE 240px)}
+  .d06 .fond{position:absolute;top:44px;left:0;right:0;bottom:0;padding:10px 16px;filter:none}
+  .d06 .tu{display:flex;align-items:center;gap:12px;padding:14px;margin-bottom:9px;min-height:44px;opacity:.55}
+  .d06 .ic{width:36px;height:36px;border-radius:11px;background:#EAF0FE;flex:0 0 auto}
+  .d06 .tu p{margin:0;font:700 14.5px/1.2 -apple-system,system-ui,sans-serif}
+  .d06 .voile{position:absolute;inset:0;background:rgba(16,19,28,.34)}
+  .d06 .fab{position:absolute;right:18px;bottom:496px;width:60px;height:60px;border-radius:50%;
+            display:flex;align-items:center;justify-content:center;z-index:4}
+  .d06 .fab svg{width:26px;height:26px}
+  .d06 .feuille{position:absolute;left:0;right:0;bottom:0;height:474px;background:#fff;
+                border-radius:24px 24px 0 0;padding:12px 18px 0;z-index:3;
+                box-shadow:0 -16px 40px -20px rgba(16,19,28,.45)}
+  .d06 .poignee{width:38px;height:4px;border-radius:2px;background:#DDE3EE;margin:0 auto 14px}
+  .d06 h3{font:800 19px/1.2 -apple-system,system-ui,sans-serif;margin:0 0 4px}
+  .d06 .sous{font-size:13.5px;color:#737A8C;margin:0 0 16px}
+  .d06 label{display:block;font:700 13px/1 -apple-system,system-ui,sans-serif;
+             letter-spacing:.05em;text-transform:uppercase;color:#737A8C;margin:0 0 7px}
+  .d06 .champ{width:100%;min-height:48px;border-radius:12px;border:1px solid #E4E8F0;background:#F7F9FC;
+              display:flex;align-items:center;padding:0 13px;font-size:16px;margin:0 0 16px}
+  .d06 .champ.rempli{background:#fff;border-color:#0050E6;font-weight:700}
+  .d06 .puces{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px}
+  .d06 .valider{width:100%;min-height:50px;border-radius:13px;border:0;color:#fff;
+                font:800 15px/1 -apple-system,system-ui,sans-serif}
+</style>
+</head>
+<body>
+<header>
+  <h1>Rendez-vous — six directions</h1>
+  <p>« Une app dans l’app ». Six partis pris <strong>volontairement différents</strong> :
+     la navigation, l’accueil, le module, le temps, l’espace, le geste. Chacun est poussé
+     à fond plutôt qu’arrondi — trois nuances de la même idée ne feraient pas un choix.</p>
+  <p class="rappel">Réponds avec un numéro. On peut croiser : « 2 pour l’accueil, 4 pour l’intérieur ».</p>
+</header>
+<nav><div class="onglets">
+  <button class="onglet on" data-v="0" onclick="voir('0')">0 · aujourd’hui</button>
+  <button class="onglet" data-v="1" onclick="voir('1')">1 · barre d’onglets</button>
+  <button class="onglet" data-v="2" onclick="voir('2')">2 · la journée d’abord</button>
+  <button class="onglet" data-v="3" onclick="voir('3')">3 · le hub</button>
+  <button class="onglet" data-v="4" onclick="voir('4')">4 · le fil du temps</button>
+  <button class="onglet" data-v="5" onclick="voir('5')">5 · la tournée</button>
+  <button class="onglet" data-v="6" onclick="voir('6')">6 · le geste</button>
+</div></nav>
+<main>
+
+<!-- ═══ 0 · repère ═══ -->
+<section class="vue" id="v0">
+  <p class="num">Repère</p>
+  <h2>Aujourd’hui</h2>
+  <p class="concept">Rendez-vous est la <strong>8ᵉ tuile sur 14</strong>, et chaque tuile occupe
+     presque tout l’écran. Voilà pourquoi on ne l’ouvre pas.</p>
+  <dl>
+    <dt>Ce que ça change</dt><dd>Rien — c’est l’état réel, capturé ce jour, pour que la comparaison se voie au lieu de se raconter.</dd>
+    <dt>Le risque</dt><dd class="risque">Le module reste invisible. Une fonctionnalité qu’on n’atteint pas est une fonctionnalité qui n’existe pas.</dd>
+  </dl>
+  <div class="captures">
+    <img src="_rdv-dir/r0-accueil.png" width="390" alt="Accueil actuel de JARVIS" />
+    <img src="_rdv-dir/r0-rdv.png" width="390" alt="Écran Rendez-vous actuel" />
+  </div>
+</section>
+
+<!-- ═══ 1 · la barre d'onglets ═══ -->
+<section class="vue" id="v1" hidden>
+  <p class="num">Direction 1</p>
+  <h2>La barre d’onglets</h2>
+  <p class="concept">Une barre permanente en bas, comme une vraie application. Rendez-vous est
+     à <strong>un geste depuis n’importe où</strong>, sans jamais repasser par l’accueil.</p>
+  <dl>
+    <dt>Ce que ça change</dt><dd>Le module devient un lieu, pas une page. Le point rouge prévient d’un nouveau rendez-vous même quand tu es ailleurs dans l’app.</dd>
+    <dt>Le risque</dt><dd class="risque">Ça change la navigation de TOUTE l’app, pas seulement du module. Il faut choisir les trois autres onglets, et 14 tuiles ne rentrent pas dans quatre onglets — quelque chose finit dans « Plus ».</dd>
+  </dl>
+  <div class="tel d01">
+    <div class="sb"><span>9:41</span><span>▮▮▮</span></div>
+    <div class="top"><p class="h1">Rendez-vous</p><p class="sub">Jeudi 13 août · 2 aujourd’hui, 5 cette semaine</p></div>
+    <div class="liste">
+      <div class="carte rdv"><div class="hh">09h30</div><div><p class="nm">Pharmacie du Marché</p><p class="vl">Nantes · 45 min · Mme Leroy</p></div></div>
+      <div class="carte rdv"><div class="hh">14h00</div><div><p class="nm">Pharmacie de la Gare</p><p class="vl">Rezé · 45 min · 12 km, 28 min de route</p></div></div>
+      <div class="carte rdv" style="opacity:.62"><div class="hh">Ven.</div><div><p class="nm">Grande Pharmacie Centrale</p><p class="vl">Angers · 11h00</p></div></div>
+      <div class="carte rdv" style="opacity:.42"><div class="hh">Lun.</div><div><p class="nm">Pharmacie des Halles</p><p class="vl">Saint-Nazaire · 10h15</p></div></div>
+    </div>
+    <div class="tabbar">
+      <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10.5 12 3l9 7.5V21H3z"/></svg>Accueil</div>
+      <div class="tab act" style="position:relative"><span class="pt"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>Rendez-vous</div>
+      <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.4 7-11a7 7 0 1 0-14 0c0 4.6 7 11 7 11z"/><circle cx="12" cy="10" r="2.6"/></svg>Officines</div>
+      <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg>Plus</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 2 · la journée d'abord ═══ -->
+<section class="vue" id="v2" hidden>
+  <p class="num">Direction 2</p>
+  <h2>La journée d’abord</h2>
+  <p class="concept">JARVIS s’ouvre sur <strong>ta journée</strong> : le prochain rendez-vous en
+     grand, les suivants, deux actions. Les quatorze tuiles descendent dessous.</p>
+  <dl>
+    <dt>Ce que ça change</dt><dd>Le matin, tu ouvres l’app et tu sais où tu vas. Aucun geste à faire. La navigation, elle, ne bouge pas d’un pouce.</dd>
+    <dt>Le risque</dt><dd class="risque">Les jours sans rendez-vous, cette place est occupée pour rien — et l’accueil paraît vide. Il faut décider quoi y mettre ce jour-là.</dd>
+  </dl>
+  <div class="tel d02">
+    <div class="sb"><span>9:41</span><span>▮▮▮</span></div>
+    <div class="zone">
+      <p class="h1">Bonjour William</p><p class="sub">Jeudi 13 août · 690 officines actives</p>
+      <div class="carte jour">
+        <p class="et">Ta journée</p>
+        <div class="pro"><b>9h30</b><span>Pharmacie du Marché</span></div>
+        <p class="meta">Nantes · 45 min · Mme Leroy · 8 km, 19 min de route</p>
+        <div class="apres">
+          <div><b>14h00</b> Pharmacie de la Gare, Rezé</div>
+        </div>
+        <div class="acts">
+          <button class="p bleu">Noter un rendez-vous</button>
+          <button>Mon agenda</button>
+        </div>
+      </div>
+      <div class="tuiles">
+        <div class="carte tu"><div class="ic"></div><p>Infos du matin<small>Ruptures, prix, Journal officiel</small></p></div>
+        <div class="carte tu"><div class="ic"></div><p>Officines<small>Fiches, visites &amp; suivi terrain</small></p></div>
+        <div class="carte tu"><div class="ic"></div><p>Copilote<small>Quoi proposer, à qui</small></p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 3 · le hub ═══ -->
+<section class="vue" id="v3" hidden>
+  <p class="num">Direction 3</p>
+  <h2>Le hub plein écran</h2>
+  <p class="concept">La tuile ouvre un <strong>vrai module</strong>, avec sa propre identité,
+     sa page d’accueil et ses cinq entrées. L’accueil de JARVIS ne change pas.</p>
+  <dl>
+    <dt>Ce que ça change</dt><dd>Tout ce qui touche aux rendez-vous vit au même endroit, et se voit d’un coup d’œil. C’est la direction la plus simple à construire et la moins risquée.</dd>
+    <dt>Le risque</dt><dd class="risque">Le module reste à deux gestes, sous une tuile qu’il faut aller chercher. Ça règle l’organisation, pas la visibilité — le problème du repère 0 reste entier.</dd>
+  </dl>
+  <div class="tel d03">
+    <div class="sb"><span>9:41</span><span>▮▮▮</span></div>
+    <div class="cap"><p class="h1">Rendez-vous</p><p class="sub">2 aujourd’hui · 5 cette semaine · 3 liens sans réponse</p></div>
+    <div class="carte prochain">
+      <p class="lbl">Prochain — dans 1 h 12</p>
+      <b>9h30 · Pharmacie du Marché</b>
+      <p class="m">Nantes · Mme Leroy · 8 km, 19 min de route</p>
+    </div>
+    <div class="grille">
+      <div class="carte ent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M8 3v4M16 3v4M3 10h18"/></svg><p>Mon agenda<small>15 jours</small></p></div>
+      <div class="carte ent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg><p>Noter un RDV<small>pris au téléphone</small></p></div>
+      <div class="carte ent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16v12H4z"/><path d="m4 7 8 6 8-6"/></svg><p>Envoyer un lien<small>il choisit son créneau</small></p></div>
+      <div class="carte ent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><p>Mes dispos<small>jours et horaires</small></p></div>
+      <div class="carte ent large"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg><p>Mon lien permanent<small>celui que tu envoies à la main</small></p></div>
+    </div>
+    <div class="chiffres">
+      <div class="carte ch"><b>5</b><small>cette semaine</small></div>
+      <div class="carte ch"><b>3</b><small>sans réponse</small></div>
+      <div class="carte ch"><b>7 h</b><small>encore libres</small></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 4 · le fil du temps ═══ -->
+<section class="vue" id="v4" hidden>
+  <p class="num">Direction 4</p>
+  <h2>Le fil du temps</h2>
+  <p class="concept">La journée n’est pas une liste, c’est une <strong>durée</strong>. Une frise
+     de 8h à 19h : les rendez-vous sont pleins, l’agenda personnel est rayé, et
+     <strong>le temps libre se clique</strong> pour poser un rendez-vous dessus.</p>
+  <dl>
+    <dt>Ce que ça change</dt><dd>Tu vois tes trous, pas seulement tes rendez-vous. Noter un RDV devient un geste sur l’heure voulue, plus un formulaire à remplir.</dd>
+    <dt>Le risque</dt><dd class="risque">Une journée à un seul rendez-vous donne un écran très vide. Et sur un téléphone, onze heures dans 700 px, c’est serré : il faudra sûrement défiler.</dd>
+  </dl>
+  <div class="tel d04">
+    <div class="sb"><span>9:41</span><span>▮▮▮</span></div>
+    <div class="tete" style="position:absolute;top:44px;left:0;right:0"><p class="h1" style="padding:0 18px">Jeudi 13 août</p><p class="sub" style="padding:0 18px">2 rendez-vous · 6 h 30 encore réservables</p></div>
+    <div class="frise">
+      <div class="h" style="top:6px">8h</div><div class="ligne" style="top:12px"></div>
+      <div class="h" style="top:76px">9h</div><div class="ligne" style="top:82px"></div>
+      <div class="h" style="top:146px">10h</div><div class="ligne" style="top:152px"></div>
+      <div class="h" style="top:216px">11h</div><div class="ligne" style="top:222px"></div>
+      <div class="h" style="top:286px">12h</div><div class="ligne" style="top:292px"></div>
+      <div class="h" style="top:356px">13h</div><div class="ligne" style="top:362px"></div>
+      <div class="h" style="top:426px">14h</div><div class="ligne" style="top:432px"></div>
+      <div class="h" style="top:496px">15h</div><div class="ligne" style="top:502px"></div>
+      <div class="h" style="top:566px">16h</div><div class="ligne" style="top:572px"></div>
+      <div class="h" style="top:636px">17h</div><div class="ligne" style="top:642px"></div>
+
+      <div class="bloc libre" style="top:12px;height:101px"><b>1 h 30 libre</b><span>8h00 → 9h30</span></div>
+      <div class="bloc rdv" style="top:117px;height:48px"><b>Pharmacie du Marché</b><small>9h30 – 10h15 · Nantes</small></div>
+      <div class="bloc libre" style="top:169px;height:119px"><b>1 h 45 libre</b><span>10h15 → 12h00</span></div>
+      <div class="bloc occ" style="top:292px;height:66px"><b>Occupé</b><small>12h00 – 13h00 · ton agenda personnel</small></div>
+      <div class="bloc libre" style="top:362px;height:66px"><b>1 h libre</b><span>13h00 → 14h00</span></div>
+      <div class="bloc rdv" style="top:432px;height:48px"><b>Pharmacie de la Gare</b><small>14h00 – 14h45 · Rezé · 12 km</small></div>
+      <div class="bloc libre" style="top:484px;height:154px"><b>2 h 15 libres</b><span>14h45 → 17h00</span></div>
+
+      <div class="nowl" style="top:125px">9:41</div>
+      <div class="now" style="top:130px"><i></i></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 5 · la tournée ═══ -->
+<section class="vue" id="v5" hidden>
+  <p class="num">Direction 5</p>
+  <h2>La tournée sur la carte</h2>
+  <p class="concept">Une journée de commercial n’est pas une liste, c’est un <strong>trajet</strong>.
+     Les rendez-vous sont des points numérotés reliés, avec les kilomètres et le temps de route entre eux.</p>
+  <dl>
+    <dt>Ce que ça change</dt><dd>Tu vois immédiatement si ta journée tient debout géographiquement — c’est exactement ce que le moteur de créneaux calcule déjà, mais que personne ne voit.</dd>
+    <dt>Le risque</dt><dd class="risque">La carte de cette maquette est dessinée. La vraie demande une bibliothèque de cartes, et Leaflet est déjà dans l’app mais lourd à ouvrir sur un téléphone. C’est la direction la plus chère à construire.</dd>
+  </dl>
+  <div class="tel d05">
+    <div class="sb"><span>9:41</span><span>▮▮▮</span></div>
+    <div class="carte-fond">
+      <svg viewBox="0 0 390 430" preserveAspectRatio="none" aria-hidden="true">
+        <path d="M-10 300 C 90 280, 130 210, 250 200 S 380 150, 400 120" stroke="#DCE5F2" stroke-width="22" fill="none"/>
+        <path d="M-10 120 C 80 140, 120 210, 210 250 S 330 330, 400 320" stroke="#E3EAF5" stroke-width="14" fill="none"/>
+        <path d="M60 -10 C 80 90, 150 140, 170 250 S 210 400, 200 440" stroke="#E3EAF5" stroke-width="12" fill="none"/>
+        <circle cx="330" cy="360" r="70" fill="#DEE9F6" opacity=".55"/>
+        <circle cx="70" cy="80" r="46" fill="#DEE9F6" opacity=".5"/>
+        <path d="M92 214 L 196 168 L 300 258" stroke="#0050E6" stroke-width="2.5" fill="none" stroke-dasharray="7 6"/>
+      </svg>
+      <div class="pin dep" style="left:78px;top:200px">D</div>
+      <div class="pin" style="left:182px;top:154px">1</div>
+      <div class="pin" style="left:286px;top:244px">2</div>
+      <div class="km" style="left:96px;top:246px">8 km · 19 min</div>
+      <div class="km" style="left:214px;top:288px">12 km · 28 min</div>
+    </div>
+    <div class="carte tete"><b>Jeudi 13 août · 2 arrêts</b><small>20 km · 47 min de route au total</small></div>
+    <div class="feuille">
+      <div class="poignee"></div>
+      <p class="et">L’ordre de la journée</p>
+      <div class="ar"><div class="no">1</div><div><b>Pharmacie du Marché</b><small>Nantes · Mme Leroy · 45 min</small></div><div class="t">9h30</div></div>
+      <div class="ar"><div class="no">2</div><div><b>Pharmacie de la Gare</b><small>Rezé · 12 km depuis le précédent</small></div><div class="t">14h00</div></div>
+      <div class="ar"><div class="no">+</div><div><b>Ajouter un arrêt</b><small>3 officines à moins de 10 km sont libres</small></div></div>
+      <div class="ar"><div class="no" style="background:#EAF7F0;color:#0F7A52">↺</div><div><b>Réordonner la tournée</b><small>gagner 11 km en inversant les deux arrêts</small></div></div>
+      <button class="bleu" style="width:100%;min-height:48px;border-radius:13px;margin:14px 0 0;font:800 15px/1 -apple-system,system-ui,sans-serif">Ouvrir l’itinéraire</button>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 6 · le geste ═══ -->
+<section class="vue" id="v6" hidden>
+  <p class="num">Direction 6</p>
+  <h2>Le geste permanent</h2>
+  <p class="concept">L’app ne change pas d’un pouce. Un <strong>bouton rond</strong> flotte sur
+     tous les écrans, et ouvre une feuille pour noter un rendez-vous en trois gestes.</p>
+  <dl>
+    <dt>Ce que ça change</dt><dd>Le geste le plus fréquent — noter ce qu’on vient de décrocher au téléphone — devient possible sans quitter ce qu’on faisait. C’est le chemin le plus court vers l’abandon du carnet papier.</dd>
+    <dt>Le risque</dt><dd class="risque">Ça met en avant UN geste, pas le module. L’agenda, les dispos et les liens restent aussi enfouis qu’avant. Et un bouton flottant masque toujours un bout de contenu.</dd>
+  </dl>
+  <div class="tel d06">
+    <div class="sb"><span>9:41</span><span>▮▮▮</span></div>
+    <div class="fond">
+      <div class="carte tu"><div class="ic"></div><p>Officines</p></div>
+      <div class="carte tu"><div class="ic"></div><p>Produits</p></div>
+      <div class="carte tu"><div class="ic"></div><p>Marketing</p></div>
+    </div>
+    <div class="voile"></div>
+    <div class="feuille">
+      <div class="poignee"></div>
+      <h3>Noter un rendez-vous</h3>
+      <p class="sous">Trois gestes. Le reste est repris du fichier.</p>
+      <label>L’officine</label>
+      <div class="champ rempli">Pharmacie du Marché · Nantes</div>
+      <label>Le jour</label>
+      <div class="puces">
+        <span class="pastille">Demain</span>
+        <span class="pastille" style="border-color:#0050E6;background:#EAF0FE">Lun. 17</span>
+        <span class="pastille">Mar. 18</span>
+        <span class="pastille">Autre…</span>
+      </div>
+      <label>L’heure</label>
+      <div class="puces">
+        <span class="pastille">9h00</span>
+        <span class="pastille">9h30</span>
+        <span class="pastille" style="border-color:#0050E6;background:#EAF0FE">11h00</span>
+        <span class="pastille">14h00</span>
+      </div>
+      <button class="valider bleu">Noter — lundi 17 août à 11h00</button>
+    </div>
+    <div class="fab bleu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg></div>
+  </div>
+</section>
+
+</main>
+<script>
+  function voir(n){
+    var v=document.querySelectorAll('.vue');
+    for(var i=0;i<v.length;i++) v[i].hidden=(v[i].id!=='v'+n);
+    var o=document.querySelectorAll('.onglet');
+    for(var j=0;j<o.length;j++) o[j].classList.toggle('on',o[j].getAttribute('data-v')===n);
+    window.scrollTo(0,0);
+  }
+</script>
+</body>
+</html>
