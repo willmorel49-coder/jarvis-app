@@ -361,6 +361,10 @@
       }
       var auj = new Date().toISOString().slice(0, 10);
       V2.rdvTelCharger();
+      // Ouvrir cet écran relance une lecture de l'agenda personnel, en fond.
+      // On n'attend pas sa réponse : la liste des rendez-vous ne dépend pas de
+      // lui, et un agenda lent ne doit pas retarder l'affichage.
+      if (V2.rdvAgenda) V2.rdvAgenda.relever();
       Promise.all([
         c.from('rdv').select('*').eq('user_id', u).eq('statut', 'confirme').gte('date', auj)
           .order('date').order('heure'),
@@ -423,6 +427,9 @@
             (V2.pages.campagne
               ? '<button class="v2-btn v2-btn-primary" onclick="V2.go(\'campagne\')">' + ICO('plus', 15) +
                 ' Lancer une campagne</button>' : '') +
+            (V2.pages.rdvplanning
+              ? '<button class="v2-btn" onclick="V2.go(\'rdvplanning\')">' + ICO('cal', 15) +
+                ' Voir mon agenda</button>' : '') +
             '<button class="v2-btn" onclick="V2.go(\'rdvdispo\')">' + ICO('cal', 15) + ' Mes disponibilités</button>' +
           '</div></div>';
       });

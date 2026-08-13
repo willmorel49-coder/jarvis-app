@@ -165,9 +165,13 @@
   // Demande au serveur de relire l'agenda du commercial. Ne rejette jamais :
   // l'agenda est un confort, la réservation doit marcher sans lui.
   function relever() {
-    // La relève s'autorise avec un jeton de rendez-vous. Le lien permanent
-    // n'en a pas : on saute, plutôt que d'appeler pour se faire refuser.
-    if (!token) return Promise.resolve();
+    // Deux sortes de jetons ouvrent une page de réservation : celui d'une
+    // campagne (usage unique) et le lien permanent du commercial. Le second
+    // était laissé de côté — un pharmacien arrivé par rdv/william.html ne
+    // déclenchait aucune relève, et voyait donc des créneaux calés sur la
+    // dernière lecture, parfois vieille de plusieurs jours.
+    var jeton = token || ctoken;
+    if (!jeton) return Promise.resolve();
     return new Promise(function (fini) {
       var stop = setTimeout(fini, 6000);   // on n'attend pas un agenda lent
       fetch(window.SUPABASE_URL + '/functions/v1/agenda', {
@@ -177,7 +181,7 @@
           'apikey': window.SUPABASE_ANON_KEY,
           'Authorization': 'Bearer ' + window.SUPABASE_ANON_KEY
         },
-        body: JSON.stringify({ action: 'relever', token: token })
+        body: JSON.stringify({ action: 'relever', token: jeton })
       }).then(function () { clearTimeout(stop); fini(); })
         .catch(function () { clearTimeout(stop); fini(); });
     });
