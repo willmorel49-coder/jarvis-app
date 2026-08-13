@@ -1,0 +1,75 @@
+name: Veille Journal officiel · ce qui touche les marges
+
+# Robot GRATUIT, sans clé : lit l'open data DILA du Journal officiel
+# (https://echanges.dila.gouv.fr/OPENDATA/JORF/) et ne retient que les textes qui
+# touchent l'ARGENT d'un grossiste-répartiteur — barème de marge, distribution en
+# gros, honoraire, clause de sauvegarde, TFR, plafond de remises.
+#
+# POURQUOI il existe : le 11/08/2026, l'arrêté qui fait passer le plancher de la
+# marge grossiste de 0,30 € à 0,22 € au 20/01/2027 (~308 000 €/an pour Intégral)
+# est paru au JO. « Infos du matin » ne l'a pas vu : ses sept sources sont
+# cliniques ou syndicales, et AUCUNE des trois presses pro (USPO, FSPF, Le
+# Moniteur) ne l'a relayé — la marge du grossiste n'est pas le sujet du pharmacien.
+#
+# Écrit crm/v2/jo-marges.json (CUMULATIF : le fichier est relu puis fusionné,
+# jamais réécrit de zéro — sinon la mémoire des échéances repart à vide).
+
+on:
+  schedule:
+    - cron: '18 6 * * 1-6'   # le JO paraît du mardi au dimanche ; on lit tous les matins sauf dimanche
+  workflow_dispatch:
+    inputs:
+      jours:
+        description: "Nombre de jours d'éditions à relire"
+        required: false
+        default: '8'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: jo-marges
+  cancel-in-progress: false
+
+jobs:
+  jo-marges:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Lire le Journal officiel
+        # L'entrée passe par une variable d'environnement et n'est utilisée qu'après
+        # validation : jamais d'interpolation directe dans un `run:`.
+        env:
+          JOURS: ${{ github.event.inputs.jours }}
+        run: |
+          case "$JOURS" in
+            ''|*[!0-9]*) JOURS=8 ;;
+          esac
+          [ "$JOURS" -ge 1 ] && [ "$JOURS" -le 60 ] || JOURS=8
+          python3 generate_jo_marges.py "$JOURS"
+      - name: Committer si changement
+        run: |
+          # ⚠️ jo-marges.json porte les ÉCHÉANCES À VENIR (compte à rebours affiché dans
+          # l'app). C'est une mémoire : elle doit être commitée, et le script ne doit
+          # jamais la réécrire de zéro.
+          git config user.name  "JARVIS copilote"
+          git config user.email "actions@users.noreplace.github.com"
+          git add crm/v2/jo-marges.json
+          if git diff --cached --quiet; then
+            echo "Aucun texte nouveau au Journal officiel."
+          else
+            git commit -m "data(veille): Journal officiel · marges $(date -u +%Y-%m-%d)"
+            # 25 robots poussent sur le même dépôt et GitHub livre leurs exécutions
+            # planifiées en paquet : une seule reprise ne suffit pas.
+            pousse=0
+            for essai in 1 2 3 4 5; do
+              if git push; then pousse=1; break; fi
+              echo "push refusé (tentative $essai/5) — un autre robot est passé, rattrapage"
+              git pull --rebase --autostash origin "$GITHUB_REF_NAME" || exit 1
+              sleep $(( essai * 5 + RANDOM % 10 ))
+            done
+            [ "$pousse" = 1 ] || { echo "ÉCHEC : 5 tentatives de push refusées"; exit 1; }
+          fi
