@@ -283,7 +283,15 @@
   // Il est désormais déposé dans un espace Supabase FERMÉ. On demande une
   // adresse signée, valable une heure, et seulement si la personne est
   // connectée. Sans session, il n'y a pas d'adresse — donc pas de fichier.
-  var PROTEGES = { wml: 'wml-officines-data.js' };
+  // ⚠️ N'ajouter ici QUE des fichiers chargés par ce chargeur. Un fichier
+  // encore appelé par une balise <script> ailleurs (ancien CRM, opso/,
+  // essentiels-pharma/) casserait cette app-là au moment où on le retire du
+  // dépôt. Vérifier avec : git grep 'script src=.*<nom-du-fichier>'
+  var PROTEGES = {
+    wml: 'wml-officines-data.js',              // 691 officines · CA · 437 848 ventes
+    establishments: 'establishments-aggregate.js', // agrégats par établissement IP
+    sagitta: 'sagitta-shortlist-data.js',      // porte des % de remise
+  };
   var SEAU_PROTEGE = 'donnees-protegees';
 
   function adresseProtegee(cle) {
