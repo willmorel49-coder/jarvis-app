@@ -1,4 +1,11 @@
 #!/usr/bin/env python3
+# ⚠️ APRÈS AVOIR LANCÉ CE SCRIPT : lancer aussi `python3 compacter_wml.py`.
+# Ce générateur écrit encore le format long (le code officine, le nom du
+# commercial et le code produit en toutes lettres, 437 848 fois). Le compacteur
+# les remplace par des numéros de rang : 27 Mo -> 16,6 Mo, sans qu'un chiffre
+# bouge, et il refuse d'écrire si un seul total diffère. Sans lui, le fichier
+# repasse à 27 Mo — l'app continue de marcher (le lecteur accepte les deux
+# formats), mais le premier écran redevient lent pour toute l'équipe.
 # -*- coding: utf-8 -*-
 """
 Génère crm/v2/wml-officines-data.js pour le CRM V2.
