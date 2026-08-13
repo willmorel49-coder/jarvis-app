@@ -1,0 +1,384 @@
+/* ==================================================================
+   KIT — la bibliothèque de variantes de la banque v2.
+
+   La v1 était un seul gabarit repeint 100 fois : Will l'a vu tout de
+   suite — « il y en a que 6, c'est pas bon ». Ici, ce qui varie n'est
+   plus la couleur mais la STRUCTURE. Chaque page compose :
+
+     · une accroche      .h1 → .h10   (dix façons d'ouvrir)
+     · une navigation    .n1 → .n5
+     · un réseau         .r1 → .r6    (six façons de montrer les 10 sites)
+     · un métier         .m1 → .m5
+     · des valeurs       .v1 → .v4
+     · une transparence  .t1 → .t4
+     · une densité       .d1 → .d3
+     · une palette + un couple de polices, posés en variables
+
+   TOUTES les palettes contiennent du bleu et/ou de l'orange Intégral :
+   ce sont des nuances de la charte, jamais autre chose.
+
+   Interdits tenus partout : aucune des quatre propriétés qui figent le
+   Mac sous Safari, aucune vidéo, un vrai menu sur téléphone, repli
+   `prefers-reduced-motion`, cibles ≥ 44 px.
+================================================================== */
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font-family: var(--f-texte); font-size: var(--pas-base);
+  line-height: 1.55; overflow-x: hidden; -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3 { margin: 0; font-family: var(--f-titre); font-weight: var(--gras-titre); line-height: 1.06; letter-spacing: var(--serrage); }
+p { margin: 0 0 1em; }
+img, svg { max-width: 100%; }
+a { color: inherit; }
+
+/* Densités — trois respirations différentes */
+.d1 { --y: clamp(52px, 7vw, 92px); --gap: 14px; }
+.d2 { --y: clamp(70px, 10vw, 132px); --gap: 20px; }
+.d3 { --y: clamp(92px, 13vw, 176px); --gap: 28px; }
+
+.marge { padding-left: clamp(16px, 5vw, 60px); padding-right: clamp(16px, 5vw, 60px); }
+.centre { max-width: var(--large, 1160px); margin: 0 auto; }
+
+/* Les mouvements d'arrivée latéraux (mo6 & co) posent un `translateX` de
+   quelques dizaines de pixels tant que le bloc n'est pas révélé. Sur mobile
+   ce décalage sortait de l'écran et créait un défilement horizontal parasite.
+   `clip` et non `hidden` : `overflow-x: hidden` transforme l'élément en
+   conteneur de défilement et casserait TOUS les `position: sticky` du kit —
+   les blocs collants du métier et les quatre gestes 3D en dépendent. */
+main { overflow-x: clip; }
+/* Écrit en longhand À DESSEIN. En raccourci (`padding: var(--y) 0`), cette
+   règle remettait à zéro la marge latérale posée juste au-dessus par
+   `.marge` — même spécificité, déclarée après, elle gagnait. Résultat :
+   sur mobile, tous les titres de section venaient coller le bord de
+   l'écran alors que l'accroche, elle, gardait ses 20 px. */
+.sect { padding-top: var(--y); padding-bottom: var(--y); }
+.sect h2 { font-size: var(--pas-h2); margin-bottom: .5em; max-width: 22ch; }
+.intro { color: var(--doux); max-width: 58ch; }
+.kick { font-family: var(--f-mono); font-size: .7rem; letter-spacing: .16em; text-transform: uppercase; color: var(--acc2); margin: 0 0 1.4em; }
+.acc { color: var(--acc); }
+.trait { border-top: 1px solid var(--bord); }
+
+.btn {
+  display: inline-flex; align-items: center; gap: 9px; min-height: 48px; padding: 0 24px;
+  background: var(--acc); color: var(--sur-acc); font-size: .93rem; font-weight: 600;
+  text-decoration: none; border: 1px solid var(--acc); border-radius: var(--rond-btn);
+}
+.btn:hover { filter: none; opacity: .88; }
+.btn--c { background: transparent; color: var(--fg); border-color: var(--bord); }
+.btn--c:hover { background: var(--sur2); opacity: 1; }
+.actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 2em; }
+
+/* ================= NAVIGATIONS ================= */
+.nav-hote { position: sticky; top: 0; z-index: 60; }
+.nav-in { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.logo { display: flex; align-items: center; gap: 10px; font-weight: 600; }
+.logo img { height: 20px; width: auto; display: block; }
+.liens { display: flex; align-items: center; gap: 2px; }
+.liens a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 13px; font-size: .88rem; color: var(--doux); text-decoration: none; border-radius: 8px; }
+.liens a:hover { color: var(--acc); }
+.liens a.cta { background: var(--acc); color: var(--sur-acc); border-radius: var(--rond-btn); padding: 0 20px; min-height: 42px; font-weight: 600; }
+
+/* n1 · barre pleine largeur */
+.n1 .nav-hote { background: var(--sur); border-bottom: 1px solid var(--bord); }
+.n1 .nav-in { min-height: 64px; padding: 0 clamp(16px,5vw,60px); }
+/* n2 · pilule centrée */
+.n2 .nav-hote { top: 12px; display: flex; justify-content: center; padding: 0 clamp(16px,5vw,60px); }
+.n2 .nav-in { background: var(--sur); border: 1px solid var(--bord); border-radius: 999px; padding: 6px 8px 6px 16px; min-height: 56px; }
+/* n3 · pilules aux coins */
+.n3 .nav-hote { position: fixed; left: 0; right: 0; top: 0; padding: 12px clamp(16px,5vw,60px); pointer-events: none; }
+.n3 .nav-in { pointer-events: none; }
+.n3 .logo, .n3 .liens { pointer-events: auto; background: var(--sur); border: 1px solid var(--bord); border-radius: 999px; padding: 8px 16px; }
+/* n4 · barre sombre */
+.n4 .nav-hote { background: var(--fg); border-bottom: 0; }
+.n4 .nav-in { min-height: 62px; padding: 0 clamp(16px,5vw,60px); }
+.n4 .logo { color: var(--bg); }
+.n4 .liens a { color: var(--bg); opacity: .82; }
+.n4 .liens a:hover { opacity: 1; }
+.n4 .liens a.cta { opacity: 1; }
+.n4 .burger span, .n4 .burger span::before, .n4 .burger span::after { background: var(--bg); }
+/* n5 · minimale, soulignée */
+.n5 .nav-hote { background: var(--bg); }
+.n5 .nav-in { min-height: 68px; padding: 0 clamp(16px,5vw,60px); border-bottom: 2px solid var(--fg); }
+.n5 .liens a { border-radius: 0; }
+.n5 .liens a:hover { box-shadow: inset 0 -2px 0 var(--acc); }
+
+.burger { display: none; width: 44px; height: 44px; align-items: center; justify-content: center; border: 1px solid var(--bord); border-radius: 10px; background: var(--sur); cursor: pointer; }
+.burger span { display: block; width: 18px; height: 2px; background: var(--fg); position: relative; }
+.burger span::before, .burger span::after { content: ""; position: absolute; left: 0; width: 18px; height: 2px; background: var(--fg); transition: transform .2s ease; }
+.burger span::before { top: -6px; } .burger span::after { top: 6px; }
+.burger[aria-expanded="true"] span { background: transparent; }
+.burger[aria-expanded="true"] span::before { transform: translateY(6px) rotate(45deg); }
+.burger[aria-expanded="true"] span::after { transform: translateY(-6px) rotate(-45deg); }
+@media (max-width: 900px) {
+  .burger { display: flex; pointer-events: auto; }
+  .liens {
+    position: fixed; left: 12px; right: 12px; top: 74px; flex-direction: column; align-items: stretch; gap: 0;
+    background: var(--sur); border: 1px solid var(--bord); border-radius: 14px; padding: 6px;
+    opacity: 0; visibility: hidden; transform: translateY(-10px);
+    transition: opacity .2s ease, transform .2s ease, visibility .2s; pointer-events: auto;
+  }
+  .liens[data-ouvert="true"] { opacity: 1; visibility: visible; transform: none; }
+  .liens a { min-height: 52px; font-size: 1rem; border-radius: 10px; color: var(--fg); }
+  .n4 .liens a { color: var(--fg); }
+  .liens a.cta { margin-top: 10px; justify-content: center; }
+}
+
+/* ================= ACCROCHES ================= */
+.hero { padding-top: var(--y); padding-bottom: var(--y); }  /* longhand : cf. `.sect` */
+.hero h1 { font-size: var(--pas-h1); margin-bottom: .45em; }
+.hero__t { color: var(--doux); max-width: 52ch; font-size: 1.06rem; }
+
+/* h1 · centrée éditoriale */
+.h1 .hero { text-align: center; }
+.h1 .hero h1, .h1 .hero__t { margin-left: auto; margin-right: auto; max-width: 20ch; }
+.h1 .hero__t { max-width: 52ch; }
+.h1 .actions { justify-content: center; }
+/* h2 · nom géant en bas */
+.h2 .hero { min-height: 76vh; display: flex; flex-direction: column; justify-content: flex-end; }
+.h2 .hero h1 { font-size: clamp(2.1rem, 11.5vw, 8.6rem); line-height: .86; letter-spacing: -.05em; }
+.h2 .hero h1 b { display: block; font-weight: inherit; }
+.h2 .meta { display: flex; justify-content: space-between; gap: 18px; font-family: var(--f-mono); font-size: .7rem; letter-spacing: .14em; text-transform: uppercase; color: var(--acc2); margin-bottom: auto; padding-bottom: 40px; }
+/* h3 · partagée, photo à droite */
+.h3 .hero { display: grid; gap: 40px; align-items: center; }
+@media (min-width: 940px) { .h3 .hero { grid-template-columns: 1.05fr .95fr; } }
+.h3 .visuel { border-radius: var(--rond); overflow: hidden; aspect-ratio: 4/3; border: 1px solid var(--bord); }
+.h3 .visuel img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* h4 · photo pleine largeur sous le titre */
+.h4 .hero { text-align: center; padding-bottom: 0; }
+.h4 .hero h1, .h4 .hero__t { margin-left: auto; margin-right: auto; }
+.h4 .bandeau { margin-top: 48px; height: min(46vh, 420px); border-radius: var(--rond) var(--rond) 0 0; overflow: hidden; border: 1px solid var(--bord); border-bottom: 0; }
+.h4 .bandeau img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* h5 · index numéroté à gauche */
+.h5 .hero { display: grid; gap: 40px; }
+@media (min-width: 940px) { .h5 .hero { grid-template-columns: 200px 1fr; } }
+.h5 .index { font-family: var(--f-mono); font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; color: var(--doux); display: grid; gap: 10px; align-content: start; }
+.h5 .index b { color: var(--acc); font-weight: 400; }
+/* h6 · chiffre géant en ouverture */
+.h6 .hero { text-align: center; }
+.h6 .gros { font-family: var(--f-titre); font-size: clamp(5rem, 22vw, 16rem); line-height: .8; color: var(--acc); letter-spacing: -.06em; }
+.h6 .hero h1 { font-size: var(--pas-h2); margin-top: .2em; margin-left: auto; margin-right: auto; max-width: 20ch; }
+.h6 .hero__t, .h6 .actions { margin-left: auto; margin-right: auto; justify-content: center; }
+/* h7 · citation / manifeste */
+.h7 .hero h1 { font-size: clamp(1.7rem, 4.4vw, 3.2rem); max-width: 24ch; line-height: 1.2; }
+.h7 .hero::before { content: "«"; display: block; font-family: var(--f-titre); font-size: clamp(4rem, 12vw, 9rem); line-height: .7; color: var(--acc); opacity: .35; margin-bottom: .1em; }
+/* h8 · bandeau défilant du nom */
+.h8 .hero { position: relative; overflow: hidden; text-align: center; }
+.h8 .defile { position: absolute; left: 0; right: 0; top: 62%; transform: translateY(-50%); white-space: nowrap; overflow: hidden; opacity: .08; pointer-events: none; }
+.h8 .defile b { display: inline-block; font-family: var(--f-titre); font-size: clamp(3rem,13vw,11rem); letter-spacing: -.03em; animation: glisse 38s linear infinite; }
+.h8 .hero h1, .h8 .hero__t, .h8 .actions, .h8 .kick { position: relative; z-index: 2; }
+.h8 .hero h1, .h8 .hero__t { margin-left: auto; margin-right: auto; }
+.h8 .actions { justify-content: center; }
+/* h9 · deux colonnes de texte, sans image */
+.h9 .hero { display: grid; gap: 32px; align-items: end; }
+@media (min-width: 900px) { .h9 .hero { grid-template-columns: 1.2fr 1fr; } }
+.h9 .hero h1 { font-size: clamp(2.2rem, 6.4vw, 5rem); }
+/* h10 · carte posée sur un aplat coloré */
+.h10 .hero { background: var(--acc); color: var(--sur-acc); border-radius: 0 0 var(--rond) var(--rond); padding-left: clamp(20px,5vw,60px); padding-right: clamp(20px,5vw,60px); text-align: center; }
+.h10 .hero h1, .h10 .hero__t { margin-left: auto; margin-right: auto; color: var(--sur-acc); }
+.h10 .hero__t { opacity: .86; }
+.h10 .kick { color: var(--sur-acc); opacity: .8; }
+.h10 .acc { color: var(--sur-acc); text-decoration: underline; text-underline-offset: .12em; }
+.h10 .actions { justify-content: center; }
+.h10 .btn { background: var(--sur-acc); color: var(--acc); border-color: var(--sur-acc); }
+.h10 .btn--c { background: transparent; color: var(--sur-acc); border-color: var(--sur-acc); }
+
+@keyframes glisse { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+/* ================= LE RÉSEAU — six façons ================= */
+.sites { margin-top: 40px; }
+/* r1 · les portes qui s'ouvrent */
+.r1 .sites { display: grid; gap: var(--gap); grid-template-columns: repeat(2, 1fr); }
+@media (min-width: 760px) { .r1 .sites { grid-template-columns: repeat(5, 1fr); } }
+.r1 .site { position: relative; aspect-ratio: 3/4; border: 1px solid var(--bord); border-radius: var(--rond); overflow: hidden; background: var(--sur); perspective: 700px; }
+.r1 .site__in { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: flex-end; padding: 12px; }
+.r1 .facade { position: absolute; left: 9%; right: 9%; top: 7%; width: 82%; height: 52%; }
+.r1 .site__bat { position: absolute; inset: 0; transform-origin: left center; transform: rotateY(calc(var(--ouv,0) * -102deg)); background: var(--sur2); border-right: 1px solid var(--bord); will-change: transform; }
+/* r2 · liste à filets */
+.r2 .sites { border-top: 1px solid var(--bord); }
+.r2 .site { display: grid; gap: 4px 24px; padding: 18px 0; border-bottom: 1px solid var(--bord); align-items: baseline; }
+@media (min-width: 780px) { .r2 .site { grid-template-columns: 46px 1fr 220px 90px; } }
+.r2 .site__n { font-family: var(--f-mono); font-size: .72rem; color: var(--acc); }
+.r2 .facade { display: none; }
+/* r3 · grille d'aplats, sans porte */
+.r3 .sites { display: grid; gap: 1px; background: var(--bord); grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); border: 1px solid var(--bord); }
+.r3 .site { background: var(--sur); padding: 22px 18px 26px; }
+.r3 .facade { height: 90px; width: 100%; margin-bottom: 14px; display: block; }
+.r3 .site__bat { display: none; }
+/* r4 · cartes hautes en éventail */
+.r4 .sites { display: grid; gap: var(--gap); grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+.r4 .site { border: 1px solid var(--bord); border-radius: var(--rond); padding: 18px; background: var(--sur); border-top: 3px solid var(--acc); }
+.r4 .facade { height: 100px; width: 100%; margin-bottom: 12px; display: block; }
+.r4 .site__bat { display: none; }
+/* r5 · deux colonnes façon sommaire */
+.r5 .sites { columns: 2; column-gap: 40px; }
+@media (max-width: 640px) { .r5 .sites { columns: 1; } }
+.r5 .site { break-inside: avoid; padding: 12px 0; border-bottom: 1px solid var(--bord); }
+.r5 .facade, .r5 .site__bat { display: none; }
+.r5 .site__n { font-family: var(--f-mono); font-size: .7rem; color: var(--acc); margin-right: 8px; }
+/* r6 · pastilles larges */
+.r6 .sites { display: flex; flex-wrap: wrap; gap: var(--gap); }
+.r6 .site { border: 1px solid var(--bord); border-radius: 999px; padding: 12px 22px; background: var(--sur); display: flex; align-items: baseline; gap: 10px; }
+.r6 .facade, .r6 .site__bat { display: none; }
+.r6 .site__n { font-family: var(--f-mono); font-size: .7rem; color: var(--acc); }
+
+.site b { font-size: .84rem; font-weight: 600; line-height: 1.25; display: block; }
+.site span { font-family: var(--f-mono); font-size: .66rem; color: var(--doux); }
+.site em { font-style: normal; font-family: var(--f-mono); font-size: .62rem; text-transform: uppercase; letter-spacing: .1em; color: var(--acc2); display: block; margin-bottom: 3px; }
+.facade .m { stroke: var(--acc); } .facade .g { stroke: var(--bord); }
+.facade .f, .facade .s { fill: var(--sur2); } .facade .o { fill: var(--acc2); }
+
+/* ================= LE MÉTIER — cinq façons ================= */
+.tps { margin-top: 40px; }
+/* m1 · quatre cartes */
+.m1 .tps { display: grid; gap: var(--gap); grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+.m1 .tp { border: 1px solid var(--bord); border-radius: var(--rond); padding: 24px; background: var(--sur); }
+/* m2 · blocs collants */
+.m2 .tp { position: sticky; top: 80px; border: 1px solid var(--bord); border-radius: var(--rond); padding: clamp(22px,4vw,44px); background: var(--sur); margin-bottom: 14px; display: grid; gap: 16px; }
+@media (min-width: 900px) { .m2 .tp { grid-template-columns: 60px 1fr 1fr; align-items: start; } }
+/* m3 · lignes numérotées */
+.m3 .tps { border-top: 1px solid var(--bord); }
+.m3 .tp { display: grid; gap: 8px 24px; padding: 24px 0; border-bottom: 1px solid var(--bord); align-items: start; }
+@media (min-width: 780px) { .m3 .tp { grid-template-columns: 52px 240px 1fr; } }
+/* m4 · aplats côte à côte, sans bordure */
+.m4 .tps { display: grid; gap: 1px; background: var(--bord); grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); border: 1px solid var(--bord); }
+.m4 .tp { background: var(--sur2); padding: 28px 22px 34px; }
+/* m5 · frise horizontale */
+.m5 .tps { display: grid; gap: var(--gap); grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); position: relative; padding-top: 26px; }
+.m5 .tps::before { content: ""; position: absolute; top: 8px; left: 0; right: 0; height: 2px; background: var(--bord); }
+.m5 .tp { position: relative; }
+.m5 .tp::before { content: ""; position: absolute; top: -24px; left: 0; width: 12px; height: 12px; border-radius: 50%; background: var(--acc); }
+.tp b { font-family: var(--f-mono); font-size: .7rem; letter-spacing: .12em; color: var(--acc); display: block; margin-bottom: 14px; }
+.tp h3 { font-size: 1.2rem; margin-bottom: .4em; }
+.tp p { margin: 0; color: var(--doux); font-size: .93rem; }
+
+/* ================= VALEURS — quatre façons ================= */
+.vals { margin-top: 40px; }
+.v1 .vals { display: grid; gap: var(--gap); grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+.v1 .val { border: 1px solid var(--bord); border-radius: var(--rond); padding: 26px; background: var(--sur); }
+.v2 .vals { display: grid; gap: 0; border-top: 1px solid var(--bord); }
+.v2 .val { padding: 24px 0; border-bottom: 1px solid var(--bord); display: grid; gap: 6px 28px; }
+@media (min-width: 780px) { .v2 .val { grid-template-columns: 220px 1fr; } }
+.v3 .vals { display: grid; gap: var(--gap); grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+.v3 .val { padding: 26px 0 0; border-top: 3px solid var(--acc); }
+.v4 .vals { display: grid; gap: 1px; background: var(--bord); grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); border: 1px solid var(--bord); }
+.v4 .val { background: var(--acc); color: var(--sur-acc); padding: 28px 24px 34px; }
+.v4 .val p { color: var(--sur-acc); opacity: .85; }
+.val h3 { font-size: 1.18rem; margin-bottom: .4em; color: var(--acc); }
+.v4 .val h3 { color: var(--sur-acc); }
+.val p { margin: 0; color: var(--doux); font-size: .93rem; }
+
+/* ================= TRANSPARENCE — quatre façons ================= */
+.t1 .tr { border: 1px solid var(--bord); border-radius: var(--rond); padding: clamp(26px,5vw,60px); background: var(--sur); }
+.t2 .tr { background: var(--fg); color: var(--bg); padding: clamp(26px,5vw,60px); border-radius: var(--rond); }
+.t2 .tr .intro { color: var(--bg); opacity: .78; }
+.t2 .tr .kick { color: var(--bg); opacity: .66; }
+.t2 .tr .btn { background: var(--bg); color: var(--fg); border-color: var(--bg); }
+.t3 .tr { border-left: 4px solid var(--acc); padding: 8px 0 8px clamp(20px,4vw,40px); }
+.t4 .tr { background: var(--acc); color: var(--sur-acc); padding: clamp(26px,5vw,60px); border-radius: var(--rond); text-align: center; }
+.t4 .tr .intro { color: var(--sur-acc); opacity: .86; margin-left: auto; margin-right: auto; }
+.t4 .tr h2 { margin-left: auto; margin-right: auto; }
+.t4 .tr .kick { color: var(--sur-acc); opacity: .8; }
+.t4 .tr .btn { background: var(--sur-acc); color: var(--acc); border-color: var(--sur-acc); }
+
+/* ================= COMMUNS ================= */
+.chiffres { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 28px; margin-top: 42px; }
+.chiffres b { display: block; font-family: var(--f-titre); font-size: clamp(1.8rem,4.4vw,3.1rem); letter-spacing: -.03em; }
+.chiffres span { display: block; font-family: var(--f-mono); font-size: .66rem; letter-spacing: .12em; text-transform: uppercase; color: var(--doux); margin-top: 6px; }
+
+.part { border-top: 1px solid var(--bord); border-bottom: 1px solid var(--bord); overflow: hidden; white-space: nowrap; padding: 18px 0; }
+.part b { display: inline-block; animation: glisse 30s linear infinite; font-weight: 400; }
+.part span { font-family: var(--f-mono); font-size: .76rem; letter-spacing: .12em; text-transform: uppercase; color: var(--doux); padding: 0 30px; }
+
+.pied { border-top: 1px solid var(--bord); padding: var(--y) clamp(16px,5vw,60px); font-size: .86rem; color: var(--doux); text-align: center; }
+.pied a { color: var(--acc); }
+
+/* Repère de navigation de la banque — retiré des copies publiées. Il flotte
+   au-dessus de la page, donc le pied réserve la hauteur qu'il occupe :
+   sinon il vient masquer les dernières lignes du contact sur mobile. */
+body:has(.retour) .pied { padding-bottom: calc(var(--y) + 56px); }
+.retour { position: fixed; left: 12px; bottom: 12px; z-index: 90; display: inline-flex; align-items: center; min-height: 38px; padding: 0 14px; background: var(--fg); color: var(--bg); border-radius: 999px; font-family: var(--f-mono); font-size: .66rem; letter-spacing: .08em; text-transform: uppercase; text-decoration: none; }
+
+.revele { opacity: 1; }
+.js-anim .revele { opacity: 0; transform: translateY(14px); }
+.js-anim .revele.vu { opacity: 1; transform: none; transition: opacity .7s ease, transform .7s ease; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .part b, .h8 .defile b { animation: none; }
+  .r1 .site__bat { transform: rotateY(-102deg); }
+  .m2 .tp { position: static; }
+  .js-anim .revele { opacity: 1; transform: none; }
+}
+
+/* ==================================================================
+   LUMIÈRE, MATIÈRE ET PROFONDEUR — ajouté le 13/08/2026.
+
+   Diagnostic de Will : « nos propositions précédentes faisaient beaucoup
+   plus site internet que les nouvelles ». Mesuré : les anciennes avaient
+   14 à 22 dégradés, une vidéo et jusqu'à 5 visuels ; les miennes avaient
+   ZÉRO dégradé et une image. Des filaires, pas des sites.
+
+   Et ça enfreignait sa règle la plus chère : « le vrai motif de ses
+   rejets est la platitude — tout ce qu'il valide a une source de
+   lumière ». Un aplat clair sans lumière est plus mort qu'un aplat sombre.
+
+   Rien ici n'utilise les propriétés interdites : ce sont des dégradés
+   et des ombres portées, pas des flous.
+================================================================== */
+
+/* Une source de lumière sur le fond de page, tirée de la palette. */
+body {
+  background-image:
+    radial-gradient(120% 55% at 78% -5%, color-mix(in oklab, var(--acc) 9%, transparent) 0%, transparent 62%),
+    radial-gradient(90% 45% at 8% 2%, color-mix(in oklab, var(--acc2) 7%, transparent) 0%, transparent 58%);
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+/* Rythme : une section sur deux se pose sur la surface, pas sur le fond.
+   Sans ça toutes les sections pèsent pareil et la page n'a pas de relief. */
+.sect:nth-of-type(even) { background: var(--sur); }
+
+/* Profondeur sur les cartes — ombre portée, jamais de flou de fond. */
+.tp, .val, .site, .tr { box-shadow: 0 1px 2px color-mix(in oklab, var(--fg) 5%, transparent); }
+.m1 .tp, .v1 .val, .r4 .site { box-shadow: 0 10px 30px color-mix(in oklab, var(--fg) 7%, transparent); }
+.tp:hover, .val:hover { box-shadow: 0 18px 40px color-mix(in oklab, var(--fg) 11%, transparent); }
+
+/* Le moment plein cadre : une vraie image, en grand, une fois par page. */
+.plein { position: relative; margin: 0; overflow: hidden; }
+.plein img, .plein video { width: 100%; height: min(62vh, 520px); object-fit: cover; display: block; }
+.plein figcaption {
+  position: absolute; left: clamp(16px, 5vw, 60px); bottom: clamp(16px, 4vw, 40px);
+  color: #fff; font-family: var(--f-mono); font-size: .72rem; letter-spacing: .14em;
+  text-transform: uppercase; text-shadow: 0 1px 8px rgba(0, 0, 0, .55);
+}
+.plein::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(180deg, transparent 45%, rgba(0, 0, 0, .38) 100%);
+  pointer-events: none;
+}
+
+/* La carte du territoire — dessinée, pas une image. */
+.terr { display: grid; gap: clamp(24px, 4vw, 56px); align-items: center; margin-top: 40px; }
+@media (min-width: 900px) { .terr { grid-template-columns: 1fr 1fr; } }
+.terr svg { width: 100%; height: auto; display: block; }
+.terr .pays { fill: color-mix(in oklab, var(--acc) 6%, transparent); stroke: color-mix(in oklab, var(--acc) 45%, transparent); stroke-width: .7; stroke-linejoin: round; }
+.terr .pt { fill: var(--acc2); }
+.terr .pt--siege { fill: var(--acc); }
+.terr__lg { display: grid; gap: 6px; font-family: var(--f-mono); font-size: .72rem; color: var(--doux); }
+.terr__lg b { color: var(--fg); font-weight: 400; }
+
+/* Un pied de page en colonnes, comme un vrai site. */
+.pied--riche { text-align: left; }
+.pied__cols { display: grid; gap: 28px; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); max-width: var(--large, 1160px); margin: 0 auto 28px; }
+.pied__cols h4 { margin: 0 0 10px; font-family: var(--f-mono); font-size: .68rem; letter-spacing: .14em; text-transform: uppercase; color: var(--acc); font-weight: 400; }
+.pied__cols a, .pied__cols span { display: block; padding: 4px 0; color: var(--doux); text-decoration: none; }
+.pied__cols a:hover { color: var(--acc); }
+.pied__bas { max-width: var(--large, 1160px); margin: 0 auto; padding-top: 20px; border-top: 1px solid var(--bord); display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; font-size: .8rem; }
+
+@media (prefers-reduced-motion: reduce) {
+  body { background-attachment: scroll; }
+}

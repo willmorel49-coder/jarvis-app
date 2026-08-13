@@ -1,0 +1,294 @@
+/* ==================================================================
+   FX — les trois signatures qui donnent sa DA à chaque site.
+
+   Chaque maquette reçoit EXACTEMENT une variante de chaque famille :
+     · un défilé   .s1 → .s8   (comment on parcourt les dix implantations)
+     · un mouvement .mo1 → .mo8 (la seule signature d'animation de la page)
+     · un geste 3D  .td1/.td3/.td4/.td6 — et il agit sur du VRAI
+       CONTENU (une carte, un panneau, un chiffre), jamais sur un objet
+       décoratif posé à côté. Les quatre scènes abstraites (cube, pile,
+       entrepôt isométrique, anneau) ont été supprimées le 13/08/2026.
+
+   C'est la règle que Will a posée au départ : « on dirait des fourre-tout
+   niveau animations ». Une page = un défilé + un mouvement + un 3D.
+   Jamais deux mouvements, jamais deux gestes en volume.
+
+   Le 3D est en TRANSFORMATIONS CSS uniquement — composées par le GPU,
+   sans contexte WebGL permanent. C'est ce qui le rend sûr sur le Mac de
+   Will, contrairement à three.js (84 Ko + GPU tenu en permanence).
+
+   Aucune des quatre propriétés interdites n'apparaît ici.
+================================================================== */
+
+/* ================== DÉFILÉS — parcourir les implantations ========= */
+
+.piste { position: relative; }
+
+/* s1 · carrousel à flèches */
+/* `overflow-x: auto` et non `hidden` : les flèches marchaient, mais au doigt
+   le carrousel était mort — on ne pouvait pas le balayer. La barre de
+   défilement est masquée, l'aspect ne change pas ; seul le geste s'ajoute. */
+.s1 .sites { display: flex; gap: var(--gap); overflow-x: auto; overflow-y: hidden; scroll-behavior: smooth; scroll-snap-type: x proximity; scrollbar-width: none; -ms-overflow-style: none; }
+.s1 .sites::-webkit-scrollbar { display: none; }
+.s1 .sites > * { scroll-snap-align: start; }
+.s1 .site { flex: 0 0 clamp(180px, 22vw, 240px); }
+.s1 .fleches { display: flex; gap: 8px; margin-top: 20px; }
+.s1 .fleche {
+  width: 46px; height: 46px; display: grid; place-items: center; cursor: pointer;
+  border: 1px solid var(--bord); border-radius: 999px; background: var(--sur);
+  color: var(--fg); font: inherit; font-size: 1rem;
+}
+.s1 .fleche:hover { background: var(--acc); color: var(--sur-acc); border-color: var(--acc); }
+
+/* s2 · onglets — une implantation à la fois */
+.s2 .onglets { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 22px; }
+.s2 .onglet {
+  min-height: 44px; padding: 0 16px; border: 1px solid var(--bord); background: var(--sur);
+  border-radius: var(--rond-btn); font: inherit; font-size: .82rem; cursor: pointer; color: var(--doux);
+}
+.s2 .onglet[aria-selected="true"] { background: var(--acc); color: var(--sur-acc); border-color: var(--acc); }
+.s2 .sites .site { display: none; }
+.s2 .sites .site[data-actif="1"] { display: block; }
+.s2 .sites { display: block; border: 1px solid var(--bord); border-radius: var(--rond); padding: 28px; background: var(--sur); }
+.s2 .facade { height: 130px; width: auto; display: block; margin-bottom: 16px; }
+
+/* s3 · accordéon */
+.s3 .sites { border-top: 1px solid var(--bord); }
+.s3 .site { border-bottom: 1px solid var(--bord); }
+.s3 .site__tete {
+  width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  min-height: 60px; padding: 0; background: none; border: 0; font: inherit; color: inherit;
+  cursor: pointer; text-align: left;
+}
+.s3 .site__tete::after { content: "+"; font-family: var(--f-mono); color: var(--acc); }
+.s3 .site[data-ouv="1"] .site__tete::after { content: "–"; }
+.s3 .site__corps { display: none; padding-bottom: 22px; }
+.s3 .site[data-ouv="1"] .site__corps { display: block; }
+.s3 .facade { height: 110px; width: auto; display: block; }
+
+/* s4 · empilement collant */
+.s4 .sites { display: block; }
+.s4 .site {
+  position: sticky; top: 90px; border: 1px solid var(--bord); border-radius: var(--rond);
+  background: var(--sur); padding: 22px 24px; margin-bottom: 12px;
+  display: grid; gap: 14px; align-items: center;
+}
+@media (min-width: 800px) { .s4 .site { grid-template-columns: 120px 1fr 200px; } }
+.s4 .facade { height: 90px; width: auto; display: block; }
+
+/* s5 · défilé continu de cartes */
+.s5 .sites { display: flex; gap: var(--gap); width: max-content; animation: glisse 46s linear infinite; }
+.s5 .piste { overflow: hidden; }
+.s5 .site { flex: 0 0 200px; border: 1px solid var(--bord); border-radius: var(--rond); padding: 16px; background: var(--sur); }
+.s5 .facade { height: 84px; width: auto; display: block; margin-bottom: 10px; }
+
+/* s6 · pleine largeur, calage au scroll */
+.s6 .sites { display: flex; gap: var(--gap); overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 12px; }
+.s6 .site { flex: 0 0 min(78vw, 320px); scroll-snap-align: start; border: 1px solid var(--bord); border-radius: var(--rond); padding: 20px; background: var(--sur); }
+.s6 .facade { height: 110px; width: auto; display: block; margin-bottom: 12px; }
+
+/* s7 · volets qui glissent */
+.s7 .sites { display: grid; gap: 1px; background: var(--bord); grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); border: 1px solid var(--bord); overflow: hidden; }
+.s7 .site { background: var(--sur); padding: 20px 16px 24px; position: relative; overflow: hidden; }
+.s7 .site::before {
+  content: ""; position: absolute; inset: 0; background: var(--acc);
+  transform: translateY(101%); transition: transform .45s cubic-bezier(.22,.8,.25,1);
+}
+.s7 .site:hover::before { transform: translateY(0); }
+.s7 .site > * { position: relative; z-index: 2; transition: color .3s ease; }
+.s7 .site:hover > *, .s7 .site:hover b, .s7 .site:hover span { color: var(--sur-acc); }
+.s7 .facade { height: 78px; width: auto; display: block; margin-bottom: 10px; }
+
+/* s8 · pagination par points */
+.s8 .sites { display: block; border: 1px solid var(--bord); border-radius: var(--rond); padding: 30px; background: var(--sur); min-height: 220px; }
+.s8 .site { display: none; }
+.s8 .site[data-actif="1"] { display: block; }
+.s8 .points { display: flex; gap: 2px; margin-top: 18px; justify-content: center; }
+/* La pastille reste petite (9 px), mais la zone qu'on touche fait 44 px :
+   c'est le minimum tenable au doigt. Les points faisaient 30 px — visibles,
+   mais on les ratait une fois sur trois sur un téléphone. */
+.s8 .point { width: 44px; height: 44px; padding: 0; border: 0; background: none; cursor: pointer; display: grid; place-items: center; }
+.s8 .point::after { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--bord); }
+.s8 .point[aria-current="true"]::after { background: var(--acc); }
+.s8 .facade { height: 120px; width: auto; display: block; margin-bottom: 14px; }
+
+/* ================== MOUVEMENTS — une seule signature ============== */
+/* L'état masqué n'est posé QUE si le script tourne (.js-anim).
+   Sans script, la page est entièrement lisible. */
+
+.js-anim .fx { will-change: transform, opacity; }
+
+.mo1 .js-anim .fx, .js-anim .mo1 .fx { opacity: 0; transform: translateY(26px); }
+.js-anim .mo1 .fx.vu { opacity: 1; transform: none; transition: opacity .7s ease, transform .7s cubic-bezier(.22,.8,.25,1); }
+
+.js-anim .mo2 .fx { clip-path: inset(0 0 100% 0); }
+.js-anim .mo2 .fx.vu { clip-path: inset(0 0 0 0); transition: clip-path .9s cubic-bezier(.22,.8,.25,1); }
+
+.js-anim .mo3 .fx { opacity: 0; }
+.js-anim .mo3 .fx.vu { opacity: 1; transition: opacity .5s ease; }
+.js-anim .mo3 .mot { display: inline-block; opacity: 0; transform: translateY(.5em); }
+.js-anim .mo3 .vu .mot { opacity: 1; transform: none; transition: opacity .5s ease, transform .55s cubic-bezier(.22,.8,.25,1); }
+
+.js-anim .mo4 .fx { opacity: 0; }
+.js-anim .mo4 .fx.vu { opacity: 1; transition: opacity .6s ease; }
+.mo4 .trait-fx { height: 2px; background: var(--acc); width: 0; margin-bottom: 22px; }
+.js-anim .mo4 .fx.vu .trait-fx { width: 72px; transition: width .8s cubic-bezier(.22,.8,.25,1) .1s; }
+
+.js-anim .mo5 .fx { opacity: 0; transform: scale(.965); }
+.js-anim .mo5 .fx.vu { opacity: 1; transform: none; transition: opacity .8s ease, transform .8s cubic-bezier(.22,.8,.25,1); }
+
+.js-anim .mo6 .fx { opacity: 0; transform: translateX(-28px); }
+.js-anim .mo6 .fx:nth-child(even) { transform: translateX(28px); }
+.js-anim .mo6 .fx.vu { opacity: 1; transform: none; transition: opacity .7s ease, transform .7s cubic-bezier(.22,.8,.25,1); }
+
+.js-anim .mo7 .fx { opacity: 0; transform: translateY(14px); }
+.js-anim .mo7 .fx.vu { opacity: 1; transform: none; transition: opacity .6s ease, transform .6s ease; }
+/* Le compteur ne montre que des valeurs vraies : il monte vers le chiffre
+   exact et s'arrête dessus. Jamais un nombre intermédiaire faux affiché
+   comme définitif. */
+
+.js-anim .mo8 .fx { opacity: 0; transform: translateY(20px) scale(.99); }
+.js-anim .mo8 .fx.vu { opacity: 1; transform: none; transition: opacity .6s ease, transform .7s cubic-bezier(.22,.8,.25,1); }
+
+/* ================== 3D — un seul geste, en transformations ======== */
+
+/* td1 · les portes qui pivotent */
+.td1 .site { perspective: 800px; }
+.td1 .volet {
+  position: absolute; inset: 0; transform-origin: left center;
+  transform: rotateY(calc(var(--ouv, 0) * -104deg));
+  background: var(--sur2); border-right: 1px solid var(--bord);
+  will-change: transform;
+}
+.td1 .site { position: relative; overflow: hidden; }
+
+/* td3 · inclinaison au survol */
+.td3 .site, .td3 .tp, .td3 .val { transition: transform .3s cubic-bezier(.22,.8,.25,1); transform-style: preserve-3d; }
+.td3 .sites, .td3 .tps, .td3 .vals { perspective: 1000px; }
+.td3 .site:hover, .td3 .tp:hover, .td3 .val:hover { transform: rotateX(4deg) rotateY(-5deg) translateZ(10px); }
+
+/* td4 · panneaux repliés */
+.td4 .tps { perspective: 1200px; }
+.td4 .tp { transform-origin: top center; transform: rotateX(0); transition: transform .5s ease; }
+.js-anim .td4 .tp { transform: rotateX(-64deg); opacity: .2; }
+.js-anim .td4 .tp.vu { transform: rotateX(0); opacity: 1; transition: transform .8s cubic-bezier(.22,.8,.25,1), opacity .6s ease; }
+
+/* td6 · retournement des chiffres */
+.td6 .chiffres > div { perspective: 700px; }
+.td6 .chiffres b { display: block; transform-style: preserve-3d; transition: transform .8s cubic-bezier(.22,.8,.25,1); }
+.js-anim .td6 .chiffres.vu b { animation: bascule .9s cubic-bezier(.22,.8,.25,1) both; }
+.js-anim .td6 .chiffres.vu div:nth-child(2) b { animation-delay: .1s; }
+.js-anim .td6 .chiffres.vu div:nth-child(3) b { animation-delay: .2s; }
+.js-anim .td6 .chiffres.vu div:nth-child(4) b { animation-delay: .3s; }
+@keyframes bascule { from { transform: rotateX(-92deg); opacity: 0; } to { transform: rotateX(0); opacity: 1; } }
+
+
+/* ================== REPLI MOUVEMENT RÉDUIT ==================
+   Tout se fige sur un état FINI et lisible — jamais sur un état vide
+   ni sur une image à moitié révélée. */
+@media (prefers-reduced-motion: reduce) {
+  .js-anim .fx, .js-anim .mo1 .fx, .js-anim .mo2 .fx, .js-anim .mo3 .fx,
+  .js-anim .mo4 .fx, .js-anim .mo5 .fx, .js-anim .mo6 .fx, .js-anim .mo7 .fx,
+  .js-anim .mo8 .fx, .js-anim .mo3 .mot {
+    opacity: 1 !important; transform: none !important; clip-path: none !important;
+  }
+  .js-anim .td4 .tp { transform: none; opacity: 1; }
+  .js-anim .td6 .chiffres.vu b { animation: none; }
+  .mo4 .trait-fx { width: 72px; }
+  .td1 .volet { transform: rotateY(-104deg); }
+  .s5 .sites { animation: none; }
+  .s4 .site { position: static; }
+}
+
+/* ==================================================================
+   LA CARTE VIVANTE — le réseau, montré comme une donnée.
+
+   Will : « les petits icônes pour les établissements, c'est pas pro ;
+   avant on avait même de la 3D impressionnante pour ça ». L'audit a
+   tranché : ce qui impressionnait n'était PAS la gélule en three.js
+   (603 Ko et une boucle WebGL qui ne s'arrête jamais), c'était la
+   CARTE VIVANTE de `maquette-55` — halos qui pulsent, arcs partant du
+   siège, survol qui ouvre une fiche.
+
+   Ici : contour IGN réel, dix points géocodés, tout en SVG et en
+   transformations CSS. Aucune librairie, aucun des interdits Safari.
+   Le composant remplace le carrousel de pictogrammes.
+================================================================== */
+
+.vive { display: grid; gap: clamp(20px, 3vw, 44px); align-items: start; margin-top: 40px; }
+@media (min-width: 940px) { .vive { grid-template-columns: 1.15fr .85fr; } }
+
+.vive__carte { position: relative; }
+.vive__carte svg { width: 100%; height: auto; display: block; overflow: visible; }
+
+/* L'entête « réseau en direct », qui dit que la carte est vivante. */
+.vive__tete {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 14px;
+  font-family: var(--f-mono); font-size: .7rem; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--doux);
+}
+.vive__tete i { width: 7px; height: 7px; border-radius: 50%; background: var(--acc2); display: block; }
+.vive__tete b { color: var(--fg); font-weight: 400; }
+
+/* Les arcs qui partent du siège vers chaque implantation. */
+.vive .arc { fill: none; stroke: var(--acc2); stroke-opacity: .38; stroke-width: .3; stroke-dasharray: 1.4 1.4; }
+
+/* Les halos : ils pulsent, en décalé, pour que la carte respire. */
+.vive .halo { fill: var(--acc2); opacity: 0; transform-origin: center; transform-box: fill-box; animation: pulse 3.4s ease-out infinite; }
+.vive .halo--siege { fill: var(--acc); }
+@keyframes pulse { 0% { opacity: .45; transform: scale(.5); } 70% { opacity: 0; transform: scale(2.4); } 100% { opacity: 0; transform: scale(2.4); } }
+
+/* Le point lui-même, et sa zone de clic généreuse. */
+.vive .site-pt { cursor: pointer; }
+.vive .site-pt circle.noyau { fill: var(--acc2); transition: r .22s ease; }
+.vive .site-pt.est-siege circle.noyau { fill: var(--acc); }
+.vive .site-pt.est-part circle.noyau { fill: var(--acc); fill-opacity: .5; }
+.vive .site-pt circle.zone { fill: transparent; }
+.vive .site-pt:hover circle.noyau, .vive .site-pt:focus-visible circle.noyau { r: 2.6; }
+.vive .site-pt:focus-visible { outline: none; }
+.vive .site-pt:focus-visible circle.zone { stroke: var(--acc); stroke-width: .5; }
+
+/* La fiche qui s'ouvre au survol. Elle EXISTE dans le HTML dès le départ :
+   si le script ne tourne pas, la légende ci-dessous reste lisible. */
+.vive__fiche {
+  position: absolute; z-index: 3; pointer-events: none;
+  background: var(--fg); color: var(--bg);
+  padding: 10px 14px; border-radius: var(--rond);
+  font-size: .82rem; line-height: 1.35; max-width: 240px;
+  opacity: 0; transform: translateY(4px);
+  transition: opacity .18s ease, transform .18s ease;
+}
+.vive__fiche[data-on="1"] { opacity: 1; transform: none; }
+.vive__fiche b { display: block; font-weight: 600; }
+.vive__fiche span { opacity: .78; font-family: var(--f-mono); font-size: .7rem; }
+
+/* La légende : les dix sites, lisibles sans survoler quoi que ce soit. */
+.vive__lg { display: grid; gap: 2px; }
+.vive__lg li { list-style: none; display: flex; align-items: baseline; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--bord); }
+.vive__lg i { width: 8px; height: 8px; border-radius: 50%; background: var(--acc2); flex: 0 0 auto; }
+.vive__lg li.est-siege i { background: var(--acc); }
+.vive__lg li.est-part i { background: var(--acc); opacity: .5; }
+.vive__lg b { font-size: .86rem; font-weight: 600; }
+.vive__lg span { font-family: var(--f-mono); font-size: .68rem; color: var(--doux); margin-left: auto; }
+.vive__lg li.actif { background: var(--sur2); }
+
+@media (prefers-reduced-motion: reduce) {
+  .vive .halo { animation: none; opacity: .2; }
+}
+
+/* Le rang de l'implantation, à la place du pictogramme retiré. */
+.site__rang { display: block; font-family: var(--f-mono); font-size: 1.6rem; color: var(--acc); opacity: .5; margin-bottom: 10px; line-height: 1; }
+
+/* À 390 px, la ville et le département poussés à droite par `margin-left:auto`
+   faisaient déborder la page de 2 px. Sur petit écran, ils passent dessous. */
+@media (max-width: 560px) {
+  .vive__lg li { flex-wrap: wrap; }
+  .vive__lg span { margin-left: 18px; width: 100%; }
+}
+
+/* Les six qualités du réseau — récupérées de `site-vague.html`, elles
+   avaient entièrement disparu des nouvelles maquettes. */
+.qual { display: grid; gap: 1px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); background: var(--bord); border: 1px solid var(--bord); margin-top: 32px; }
+.qual__b { background: var(--sur); padding: 18px 16px 20px; }
+.qual__b b { display: block; font-size: .95rem; font-weight: 600; }
+.qual__b span { display: block; font-family: var(--f-mono); font-size: .66rem; letter-spacing: .06em; color: var(--doux); margin-top: 5px; }

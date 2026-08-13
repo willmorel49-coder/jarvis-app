@@ -1,0 +1,159 @@
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+  <!--
+    Dix façades dessinées, une par implantation.
+
+    Pourquoi dessinées et pas photographiées : nous n'avons de photo que
+    du siège d'Hyères. Mettre une photo de banque d'images derrière une
+    porte reviendrait à montrer un bâtiment qui n'est pas le vôtre — un
+    mensonge visuel sur un support public. Chaque façade est donc une
+    ligne claire, distincte, et honnête : elle évoque un site de
+    répartition sans prétendre être une photo.
+
+    À remplacer par les vraies photos dès que vous les avez.
+    Traits en bleu de marque, accents en orange. Aucun effet interdit.
+  -->
+  <defs>
+    <!-- Les couleurs passent par des variables CSS avec repli sur la
+         charte Intégral. Les variables personnalisées traversent la
+         frontière du <use>, contrairement aux règles de classe : chaque
+         façade prend donc automatiquement les couleurs du système de
+         design chargé par la page. -->
+    <style>
+      .m { fill: none; stroke: var(--accent, #0050e6); stroke-opacity: .55; stroke-width: 1.6; stroke-linejoin: round; stroke-linecap: round; }
+      .f { fill: var(--accent, #0050e6); fill-opacity: .05; }
+      .o { fill: var(--meta, #f39a1b); fill-opacity: .85; }
+      .g { fill: none; stroke: var(--accent, #0050e6); stroke-opacity: .22; stroke-width: 1; }
+      .s { fill: var(--accent, #0050e6); fill-opacity: .14; }
+    </style>
+  </defs>
+
+  <!-- 1 · Hyères Pharma — le siège : long bâtiment, panneaux solaires, auvent -->
+  <symbol id="f1" viewBox="0 0 120 160">
+    <path class="g" d="M0 132 H120" />
+    <path class="f" d="M14 78 H106 V132 H14 Z" />
+    <path class="m" d="M14 78 H106 V132 H14 Z" />
+    <path class="m" d="M14 78 L24 66 H116 L106 78" />
+    <path class="s" d="M30 69 H62 V75 H30 Z M68 69 H104 V75 H68 Z" />
+    <path class="m" d="M8 100 H112" />
+    <path class="m" d="M26 104 H42 V132 H26 Z M52 104 H68 V132 H52 Z M78 104 H94 V132 H78 Z" />
+    <rect class="o" x="26" y="126" width="16" height="3" />
+    <path class="g" d="M0 140 C24 136 44 144 68 138 S104 142 120 138" />
+  </symbol>
+
+  <!-- 2 · SR Pharma — Palaiseau : deux corps, toit à redents -->
+  <symbol id="f2" viewBox="0 0 120 160">
+    <path class="g" d="M0 132 H120" />
+    <path class="f" d="M12 84 H60 V132 H12 Z M64 74 H108 V132 H64 Z" />
+    <path class="m" d="M12 84 H60 V132 H12 Z M64 74 H108 V132 H64 Z" />
+    <path class="m" d="M12 84 L22 74 L32 84 L42 74 L52 84 L60 74" />
+    <path class="m" d="M22 100 H50 M22 110 H50" />
+    <path class="m" d="M74 90 H98 V132 H74 Z" />
+    <rect class="o" x="74" y="90" width="24" height="4" />
+    <path class="g" d="M0 142 H120" />
+  </symbol>
+
+  <!-- 3 · Mistral Santé Pharma — Flassans : pins, toit bas, grande porte -->
+  <symbol id="f3" viewBox="0 0 120 160">
+    <path class="g" d="M0 132 H120" />
+    <path class="m" d="M16 60 L22 74 H10 Z M22 74 L28 88 H16 Z M22 88 V96" />
+    <path class="f" d="M36 88 H108 V132 H36 Z" />
+    <path class="m" d="M36 88 H108 V132 H36 Z" />
+    <path class="m" d="M36 88 L44 80 H116 L108 88" />
+    <path class="m" d="M54 100 H90 V132 H54 Z" />
+    <rect class="o" x="54" y="100" width="36" height="3" />
+    <path class="m" d="M72 100 V132" />
+    <path class="g" d="M0 141 C30 137 60 145 90 139 S116 141 120 140" />
+  </symbol>
+
+  <!-- 4 · Sud Ouest Pharma — Montayral : halle à pignon, quai latéral -->
+  <symbol id="f4" viewBox="0 0 120 160">
+    <path class="g" d="M0 132 H120" />
+    <path class="f" d="M20 86 H92 V132 H20 Z" />
+    <path class="m" d="M20 86 H92 V132 H20 Z" />
+    <path class="m" d="M20 86 L56 66 L92 86" />
+    <path class="m" d="M92 96 H110 V132 H92 Z" />
+    <path class="m" d="M34 104 H50 V132 H34 Z M62 104 H78 V132 H62 Z" />
+    <rect class="o" x="96" y="104" width="10" height="3" />
+    <circle class="s" cx="56" cy="82" r="7" />
+    <path class="g" d="M0 143 H120" />
+  </symbol>
+
+  <!-- 5 · Comptoir Pharmaceutique du Rhône — Saint-Maurice-l'Exil : bâtiment large, tour technique -->
+  <symbol id="f5" viewBox="0 0 120 160">
+    <path class="g" d="M0 132 H120" />
+    <path class="f" d="M10 90 H96 V132 H10 Z" />
+    <path class="m" d="M10 90 H96 V132 H10 Z" />
+    <path class="m" d="M96 62 H112 V132 H96 Z" />
+    <path class="m" d="M96 62 H112" />
+    <rect class="o" x="99" y="68" width="10" height="3" />
+    <path class="m" d="M10 90 H96" />
+    <path class="m" d="M22 102 H38 V132 H22 Z M46 102 H62 V132 H46 Z M70 102 H86 V132 H70 Z" />
+    <path class="s" d="M16 94 H90 V99 H16 Z" />
+    <path class="g" d="M0 142 H120" />
+  </symbol>
+
+  <!-- 6 · Escale Pharma — Chilly-Mazarin : bloc urbain, étage vitré -->
+  <symbol id="f6" viewBox="0 0 120 160">
+    <path class="g" d="M0 132 H120" />
+    <path class="f" d="M16 72 H104 V132 H16 Z" />
+    <path class="m" d="M16 72 H104 V132 H16 Z" />
+    <path class="m" d="M16 92 H104" />
+    <path class="s" d="M22 78 H98 V88 H22 Z" />
+    <path class="m" d="M28 78 V88 M44 78 V88 M60 78 V88 M76 78 V88 M92 78 V88" />
+    <path class="m" d="M30 100 H50 V132 H30 Z M62 100 H82 V132 H62 Z" />
+    <rect class="o" x="62" y="100" width="20" height="3" />
+    <path class="g" d="M0 141 H120" />
+  </symbol>
+
+  <!-- 7 · Ouest Pharma Services — Saint-Étienne-de-Montluc : long quai, auvent en avancée -->
+  <symbol id="f7" viewBox="0 0 120 160">
+    <path class="g" d="M0 132 H120" />
+    <path class="f" d="M8 84 H100 V132 H8 Z" />
+    <path class="m" d="M8 84 H100 V132 H8 Z" />
+    <path class="m" d="M4 96 H116 L108 104 H4 Z" />
+    <path class="m" d="M20 108 H36 V132 H20 Z M44 108 H60 V132 H44 Z M68 108 H84 V132 H68 Z" />
+    <rect class="o" x="44" y="108" width="16" height="3" />
+    <path class="m" d="M100 84 V132" />
+    <path class="s" d="M14 88 H94 V93 H14 Z" />
+    <path class="g" d="M0 142 C26 139 52 145 78 140 S110 142 120 141" />
+  </symbol>
+
+  <!-- 8 · Pharm'Occitanie Services — Villeneuve-lès-Béziers : toit-terrasse, ombrières -->
+  <symbol id="f8" viewBox="0 0 120 160">
+    <path class="g" d="M0 132 H120" />
+    <path class="f" d="M14 88 H106 V132 H14 Z" />
+    <path class="m" d="M14 88 H106 V132 H14 Z" />
+    <path class="m" d="M14 88 H106" />
+    <path class="m" d="M22 74 H50 L46 82 H18 Z M62 74 H90 L86 82 H58 Z" />
+    <path class="m" d="M30 82 V88 M74 82 V88" />
+    <path class="m" d="M32 100 H56 V132 H32 Z M66 100 H90 V132 H66 Z" />
+    <rect class="o" x="32" y="100" width="24" height="3" />
+    <path class="g" d="M0 141 H120" />
+  </symbol>
+
+  <!-- 9 · Sud Est Pharma — Le Cannet-des-Maures : le plus récent, volume net -->
+  <symbol id="f9" viewBox="0 0 120 160">
+    <path class="g" d="M0 132 H120" />
+    <path class="f" d="M18 76 H102 V132 H18 Z" />
+    <path class="m" d="M18 76 H102 V132 H18 Z" />
+    <path class="m" d="M18 76 L28 68 H112 L102 76" />
+    <path class="s" d="M34 70 H104 V74 H34 Z" />
+    <path class="m" d="M18 104 H102" />
+    <path class="m" d="M34 108 H56 V132 H34 Z M66 108 H88 V132 H66 Z" />
+    <rect class="o" x="66" y="108" width="22" height="3" />
+    <path class="m" d="M60 76 V104" />
+    <path class="g" d="M0 142 H120" />
+  </symbol>
+
+  <!-- 10 · Pharmest — Metz, partenaire : trait plus léger, orange dominant -->
+  <symbol id="f10" viewBox="0 0 120 160">
+    <path class="g" d="M0 132 H120" />
+    <path class="f" d="M20 82 H100 V132 H20 Z" />
+    <path class="m" d="M20 82 H100 V132 H20 Z" stroke-dasharray="5 4" />
+    <path class="m" d="M20 82 L30 72 H110 L100 82" stroke-dasharray="5 4" />
+    <path class="m" d="M36 100 H58 V132 H36 Z M66 100 H88 V132 H66 Z" />
+    <rect class="o" x="36" y="100" width="52" height="3" />
+    <circle class="o" cx="60" cy="90" r="3" />
+    <path class="g" d="M0 141 H120" />
+  </symbol>
+</svg>

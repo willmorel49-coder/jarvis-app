@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>La banque — 20 maquettes Intégral Pharma</title>
+    <style>
+      :root {
+        --pap:#f4f2ef; --enc:#14161a; --doux:#7b7871; --trait:#dedbd5;
+        --ble:#0050e6; --ora:#f39a1b;
+        --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+        --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+        --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+        --marge:clamp(16px,4vw,48px);
+      }
+      * { box-sizing: border-box; }
+      body { margin:0; background:var(--pap); color:var(--enc); font-family:var(--sans); font-size:16px; line-height:1.55; -webkit-font-smoothing:antialiased; }
+      h1 { margin:0 0 .3em; font-weight:600; font-size:clamp(1.9rem,4.6vw,3rem); letter-spacing:-.025em; }
+      .it { font-family:var(--serif); font-style:italic; font-weight:400; }
+      a { color:inherit; text-decoration:none; }
+
+      .tete { padding:clamp(36px,6vw,68px) var(--marge) clamp(18px,3vw,28px); border-bottom:1px solid var(--trait); }
+      .tete p { max-width:72ch; color:var(--doux); margin:0 0 .8em; }
+      .sur { font-family:var(--mono); font-size:.68rem; letter-spacing:.16em; text-transform:uppercase; color:var(--ble); margin:0 0 1em; }
+      .compteurs { display:flex; gap:22px; flex-wrap:wrap; font-family:var(--mono); font-size:.7rem; letter-spacing:.1em; text-transform:uppercase; color:var(--doux); }
+      .compteurs b { color:var(--enc); font-weight:600; }
+
+      .filtres { position:sticky; top:0; z-index:20; display:flex; gap:8px; flex-wrap:wrap; align-items:center; padding:12px var(--marge); background:rgba(244,242,239,.97); border-bottom:1px solid var(--trait); }
+      .filtres select, .filtres input { font:inherit; font-size:.86rem; padding:8px 10px; min-height:44px; border:1px solid var(--trait); border-radius:10px; background:#fffdfa; color:inherit; }
+      .filtres input { flex:1 1 180px; min-width:150px; }
+      .cpt { font-family:var(--mono); font-size:.72rem; letter-spacing:.1em; text-transform:uppercase; color:var(--doux); margin-left:auto; }
+      .raz { background:none; border:0; font:inherit; font-size:.8rem; color:var(--ble); cursor:pointer; min-height:44px; padding:0 6px; }
+
+      .grille { display:grid; gap:16px; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); padding:20px var(--marge) clamp(56px,9vw,100px); }
+      .c { border:1px solid var(--trait); border-radius:14px; overflow:hidden; background:#fffdfa; display:flex; flex-direction:column; transition:transform .16s ease, border-color .16s ease; }
+      .c:hover { transform:translateY(-3px); border-color:var(--ble); }
+      .c[hidden] { display:none; }
+      .ap { aspect-ratio:4/3; overflow:hidden; border-bottom:1px solid var(--trait); background:#fff; }
+      .ap img { width:100%; height:100%; object-fit:cover; object-position:top center; display:block; }
+      .tx { padding:13px 13px 15px; display:flex; flex-direction:column; gap:3px; }
+      .tx b { font-size:.92rem; font-weight:600; margin-bottom:3px; }
+      .l { font-family:var(--mono); font-size:.6rem; letter-spacing:.09em; text-transform:uppercase; color:var(--doux); }
+      .l--h { color:var(--ble); } .l--r { color:var(--ora); } .l--m { color:#7a6a55; } .l--d { color:#0a2a6b; }
+
+      .note { padding:0 var(--marge) clamp(48px,8vw,84px); }
+      .note div { max-width:76ch; padding:16px 18px; border-left:2px solid var(--ora); background:#fffaf1; font-size:.92rem; color:#6b5220; }
+    </style>
+  </head>
+  <body>
+    <header class="tete">
+      <p class="sur">La banque · 13 août 2026</p>
+      <h1>Vingt maquettes, <span class="it">vingt signatures.</span></h1>
+      <p>
+        Ce qui change n'est plus la peinture mais <b>la structure</b> : le type
+        d'accroche, la façon de montrer les dix implantations, le rythme du
+        métier, la navigation, l'ordre des sections. Les vingt combinaisons
+        sont <b>toutes différentes</b> — aucune n'est répétée.
+      </p>
+      <p>
+        Le contenu, lui, ne bouge jamais : textes validés, dix implantations
+        vérifiées au registre, aucune condition commerciale. Et
+        <b>toutes les palettes sont des nuances de bleu et/ou d'orange Intégral</b>.
+      </p>
+      <div class="compteurs">
+        <span><b>10</b> accroches</span>
+        <span><b>8</b> défilés</span>
+        <span><b>8</b> mouvements</span>
+        <span><b>16</b> palettes</span>
+        <span><b>20</b> signatures uniques</span>
+      </div>
+    </header>
+
+    <div class="filtres">
+      <input id="q" type="search" placeholder="Chercher…" aria-label="Chercher" />
+      <select data-f="h" aria-label="Toutes les accroches"><option value="">Toutes les accroches</option><option value="Aplat coloré">Aplat coloré</option><option value="Bandeau défilant">Bandeau défilant</option><option value="Centrée éditoriale">Centrée éditoriale</option><option value="Chiffre géant">Chiffre géant</option><option value="Deux colonnes">Deux colonnes</option><option value="Index numéroté">Index numéroté</option><option value="Manifeste cité">Manifeste cité</option><option value="Nom géant">Nom géant</option><option value="Partagée avec photo">Partagée avec photo</option><option value="Photo pleine largeur">Photo pleine largeur</option></select><select data-f="s" aria-label="Tous les défilés"><option value="">Tous les défilés</option><option value="Accordéon">Accordéon</option><option value="Calage au scroll">Calage au scroll</option><option value="Carrousel à flèches">Carrousel à flèches</option><option value="Défilé continu">Défilé continu</option><option value="Empilement collant">Empilement collant</option><option value="Onglets">Onglets</option><option value="Pagination par points">Pagination par points</option><option value="Volets qui montent">Volets qui montent</option></select><select data-f="o" aria-label="Tous les mouvements"><option value="">Tous les mouvements</option><option value="Cascade">Cascade</option><option value="Compteurs qui montent">Compteurs qui montent</option><option value="Dévoilement par masque">Dévoilement par masque</option><option value="Glissement alterné">Glissement alterné</option><option value="Montée depuis le bas">Montée depuis le bas</option><option value="Mots qui montent un à un">Mots qui montent un à un</option><option value="Trait qui se trace">Trait qui se trace</option><option value="Zoom doux">Zoom doux</option></select><select data-f="t" aria-label="Tous les gestes 3D"><option value="">Tous les gestes 3D</option><option value="Chiffres qui basculent">Chiffres qui basculent</option><option value="Inclinaison au survol">Inclinaison au survol</option><option value="Panneaux repliés">Panneaux repliés</option><option value="Portes qui pivotent">Portes qui pivotent</option></select><select data-f="p" aria-label="Toutes les palettes"><option value="">Toutes les palettes</option><option value="Acier">Acier</option><option value="Ardoise & ambre">Ardoise & ambre</option><option value="Blanc & bleu franc">Blanc & bleu franc</option><option value="Bleu nuit sur papier">Bleu nuit sur papier</option><option value="Bleu profond clair">Bleu profond clair</option><option value="Camaïeu de bleus">Camaïeu de bleus</option><option value="Contraste net">Contraste net</option><option value="Crème & bleu">Crème & bleu</option><option value="Crème & orange">Crème & orange</option><option value="Encre & orange">Encre & orange</option><option value="Glacier">Glacier</option><option value="Mandarine">Mandarine</option><option value="Nuit bleutée">Nuit bleutée</option><option value="Orange brûlé">Orange brûlé</option><option value="Poudré">Poudré</option><option value="Sable & bleu">Sable & bleu</option></select>
+      <button class="raz" id="raz">Tout afficher</button>
+      <span class="cpt" id="cpt">20 maquettes</span>
+    </div>
+
+    <main class="grille" id="grille">
+        <a class="c" href="v3-001.html" data-h="Centrée éditoriale" data-s="Carrousel à flèches" data-o="Montée depuis le bas" data-t="Portes qui pivotent" data-p="Blanc & bleu franc" data-rech="blanc & bleu franc centrée éditoriale carrousel à flèches montée depuis le bas portes qui pivotent quatre cartes système"><div class="ap"><img src="vignettes/v3-001.jpg" loading="lazy" decoding="async" width="1280" height="960" alt="Aperçu de la maquette 01" /></div><div class="tx"><b>01 · Blanc & bleu franc</b><span class="l l--h">Centrée éditoriale</span><span class="l l--r">Défilé · Carrousel à flèches</span><span class="l l--m">Mouvement · Montée depuis le bas</span><span class="l l--d">3D · Portes qui pivotent</span><span class="l">Quatre cartes · Système</span></div></a>
+        <a class="c" href="v3-002.html" data-h="Nom géant" data-s="Défilé continu" data-o="Cascade" data-t="Inclinaison au survol" data-p="Sable & bleu" data-rech="sable & bleu nom géant défilé continu cascade inclinaison au survol aplats jointifs baskerville & helvetica"><div class="ap"><img src="vignettes/v3-002.jpg" loading="lazy" decoding="async" width="1280" height="960" alt="Aperçu de la maquette 02" /></div><div class="tx"><b>02 · Sable & bleu</b><span class="l l--h">Nom géant</span><span class="l l--r">Défilé · Défilé continu</span><span class="l l--m">Mouvement · Cascade</span><span class="l l--d">3D · Inclinaison au survol</span><span class="l">Aplats jointifs · Baskerville & Helvetica</span></div></a>
+        <a class="c" href="v3-003.html" data-h="Partagée avec photo" data-s="Calage au scroll" data-o="Mots qui montent un à un" data-t="Chiffres qui basculent" data-p="Nuit bleutée" data-rech="nuit bleutée partagée avec photo calage au scroll mots qui montent un à un chiffres qui basculent blocs collants futura & système"><div class="ap"><img src="vignettes/v3-003.jpg" loading="lazy" decoding="async" width="1280" height="960" alt="Aperçu de la maquette 03" /></div><div class="tx"><b>03 · Nuit bleutée</b><span class="l l--h">Partagée avec photo</span><span class="l l--r">Défilé · Calage au scroll</span><span class="l l--m">Mouvement · Mots qui montent un à un</span><span class="l l--d">3D · Chiffres qui basculent</span><span class="l">Blocs collants · Futura & système</span></div></a>
+        <a class="c" href="v3-004.html" data-h="Photo pleine largeur" data-s="Onglets" data-o="Trait qui se trace" data-t="Panneaux repliés" data-p="Bleu nuit sur papier" data-rech="bleu nuit sur papier photo pleine largeur onglets trait qui se trace panneaux repliés frise sans titre, serif texte"><div class="ap"><img src="vignettes/v3-004.jpg" loading="lazy" decoding="async" width="1280" height="960" alt="Aperçu de la maquette 04" /></div><div class="tx"><b>04 · Bleu nuit sur papier</b><span class="l l--h">Photo pleine largeur</span><span class="l l--r">Défilé · Onglets</span><span class="l l--m">Mouvement · Trait qui se trace</span><span class="l l--d">3D · Panneaux repliés</span><span class="l">Frise · Sans titre, serif texte</span></div></a>
+        <a class="c" href="v3-005.html" data-h="Index numéroté" data-s="Accordéon" data-o="Montée depuis le bas" data-t="Inclinaison au survol" data-p="Bleu profond clair" data-rech="bleu profond clair index numéroté accordéon montée depuis le bas inclinaison au survol lignes numérotées palatino & avenir"><div class="ap"><img src="vignettes/v3-005.jpg" loading="lazy" decoding="async" width="1280" height="960" alt="Aperçu de la maquette 05" /></div><div class="tx"><b>05 · Bleu profond clair</b><span class="l l--h">Index numéroté</span><span class="l l--r">Défilé · Accordéon</span><span class="l l--m">Mouvement · Montée depuis le bas</span><span class="l l--d">3D · Inclinaison au survol</span><span class="l">Lignes numérotées · Palatino & Avenir</span></div></a>
+        <a class="c" href="v3-006.html" data-h="Partagée avec photo" data-s="Carrousel à flèches" data-o="Cascade" data-t="Portes qui pivotent" data-p="Glacier" data-rech="glacier partagée avec photo carrousel à flèches cascade portes qui pivotent quatre cartes optima & système"><div class="ap"><img src="vignettes/v3-006.jpg" loading="lazy" decoding="async" width="1280" height="960" alt="Aperçu de la maquette 06" /></div><div class="tx"><b>06 · Glacier</b><span class="l l--h">Partagée avec photo</span><span class="l l--r">Défilé · Carrousel à flèches</span><span class="l l--m">Mouvement · Cascade</span><span class="l l--d">3D · Portes qui pivotent</span><span class="l">Quatre cartes · Optima & système</span></div></a>
+        <a class="c" href="v3-007.html" data-h="Centrée éditoriale" data-s="Défilé continu" data-o="Trait qui se trace" data-t="Chiffres qui basculent" data-p="Poudré" data-rech="poudré centrée éditoriale défilé continu trait qui se trace chiffres qui basculent aplats jointifs charter & avenir"><div class="ap"><img src="vignettes/v3-007.jpg" loading="lazy" decoding="async" width="1280" height="960" alt="Aperçu de la maquette 07" /></div><div class="tx"><b>07 · Poudré</b><span class="l l--h">Centrée éditoriale</span><span class="l l--r">Défilé · Défilé continu</span><span class="l l--m">Mouvement · Trait qui se trace</span><span class="l l--d">3D · Chiffres qui basculent</span><span class="l">Aplats jointifs · Charter & Avenir</span></div></a>
+        <a class="c" href="v3-008.html" data-h="Photo pleine largeur" data-s="Calage au scroll" data-o="Compteurs qui montent" data-t="Inclinaison au survol" data-p="Crème & bleu" data-rech="crème & bleu photo pleine largeur calage au scroll compteurs qui montent inclinaison au survol blocs collants iowan & système"><div class="ap"><img src="vignettes/v3-008.jpg" loading="lazy" decoding="async" width="1280" height="960" alt="Aperçu de la maquette 08" /></div><div class="tx"><b>08 · Crème & bleu</b><span class="l l--h">Photo pleine largeur</span><span class="l l--r">Défilé · Calage au scroll</span><span class="l l--m">Mouvement · Compteurs qui montent</span><span class="l l--d">3D · Inclinaison au survol</span><span class="l">Blocs collants · Iowan & système</span></div></a>
+        <a class="c" href="v3-009.html" data-h="Manifeste cité" data-s="Empilement collant" data-o="Dévoilement par masque" data-t="Panneaux repliés" data-p="Camaïeu de bleus" data-rech="camaïeu de bleus manifeste cité empilement collant dévoilement par masque panneaux repliés frise didot & système"><div class="ap"><img src="vignettes/v3-009.jpg" loading="lazy" decoding="async" width="1280" height="960" alt="Aperçu de la maquette 09" /></div><div class="tx"><b>09 · Camaïeu de bleus</b><span class="l l--h">Manifeste cité</span><span class="l l--r">Défilé · Empilement collant</span><span class="l l--m">Mouvement · Dévoilement par masque</span><span class="l l--d">3D · Panneaux repliés</span><span class="l">Frise · Didot & système</span></div></a>
+        <a class="c" href="v3-010.html" data-h="Chiffre géant" data-s="Accordéon" data-o="Zoom doux" data-t="Chiffres qui basculent" data-p="Ardoise & ambre" data-rech="ardoise & ambre chiffre géant accordéon zoom doux chiffres qui basculent lignes numérotées superclarendon"><div class="ap"><img src="vignettes/v3-010.jpg" loading="lazy" decoding="async" width="1280" height="960" alt="Aperçu de la maquette 10" /></div><div class="tx"><b>10 · Ardoise & ambre</b><span class="l l--h">Chiffre géant</span><span class="l l--r">Défilé · Accordéon</span><span class="l l--m">Mouvement · Zoom doux</span><span class="l l--d">3D · Chiffres qui basculent</span><span class="l">Lignes numérotées · Superclarendon</span></div></a>
+        <a class="c" href="v3-011.html" data-h="Deux colonnes" data-s="Défilé continu" data-o="Mots qui montent un à un" data-t="Portes qui pivotent" data-p="Acier" data-rech="acier deux colonnes défilé continu mots qui montent un à un portes qui pivotent quatre cartes système"><div class="ap"><img src="vignettes/v3-011.jpg" loading="lazy" decoding="async" width="1280" height="960" alt="Aperçu de la maquette 11" /></div><div class="tx"><b>11 · Acier</b><span class="l l--h">Deux colonnes</span><span class="l l--r">Défilé · Défilé continu</span><span class="l l--m">Mouvement · Mots qui montent un à un</span><span class="l l--d">3D · Portes qui pivotent</span><span class="l">Quatre cartes · Système</span></div></a>
+        <a class="c" href="v3-012.html" data-h="Nom géant" data-s="Carrousel à flèches" data-o="Trait qui se trace" data-t="Panneaux repliés" data-p="Mandarine" data-rech="mandarine nom géant carrousel à flèches trait qui se trace panneaux repliés aplats jointifs baskerville & helvetica"><div class="ap"><img src="vignettes/v3-012.jpg" loading="lazy" decoding="async" width="1280" height="960" alt="Aperçu de la maquette 12" /></div><div class="tx"><b>12 · Mandarine</b><span class="l l--h">Nom géant</span><span class="l l--r">Défilé · Carrousel à flèches</span><span class="l l--m">Mouvement · Trait qui se trace</span><span class="l l--d">3D · Panneaux repliés</span><span class="l">Aplats jointifs · Baskerville & Helvetica</span></div></a>
+        <a class="c" href="v3-013.html" data-h="Index numéroté" data-s="Volets qui montent" data-o="Dévoilement par masque" data-t="Chiffres qui basculent" data-p="Encre & orange" data-rech="encre & orange index numéroté volets qui montent dévoilement par masque chiffres qui basculent blocs collants futura & système"><div class="ap"><img src="vignettes/v3-013.jpg" loading="lazy" decoding="async" width="1280" height="960" alt="Aperçu de la maquette 13" /></div><div class="tx"><b>13 · Encre & orange</b><span class="l l--h">Index numéroté</span><span class="l l--r">Défilé · Volets qui montent</span><span class="l l--m">Mouvement · Dévoilement par masque</span><span class="l l--d">3D · Chiffres qui basculent</span><span class="l">Blocs collants · Futura & système</span></div></a>
+        <a class="c" href="v3-014.html" data-h="Bandeau défilant" data-s="Empilement collant" data-o="Compteurs qui montent" data-t="Inclinaison au survol" data-p="Orange brûlé" data-rech="orange brûlé bandeau défilant empilement collant compteurs qui montent inclinaison au survol frise sans titre, serif texte"><div class="ap"><img src="vignettes/v3-014.jpg" loading="lazy" decoding="async" width="1280" height="960" alt="Aperçu de la maquette 14" /></div><div class="tx"><b>14 · Orange brûlé</b><span class="l l--h">Bandeau défilant</span><span class="l l--r">Défilé · Empilement collant</span><span class="l l--m">Mouvement · Compteurs qui montent</span><span class="l l--d">3D · Inclinaison au survol</span><span class="l">Frise · Sans titre, serif texte</span></div></a>
+        <a class="c" href="v3-015.html" data-h="Aplat coloré" data-s="Défilé continu" data-o="Glissement alterné" data-t="Panneaux repliés" data-p="Crème & orange" data-rech="crème & orange aplat coloré défilé continu glissement alterné panneaux repliés lignes numérotées palatino & avenir"><div class="ap"><img src="vignettes/v3-015.jpg" loading="lazy" decoding="async" width="1280" height="960" alt="Aperçu de la maquette 15" /></div><div class="tx"><b>15 · Crème & orange</b><span class="l l--h">Aplat coloré</span><span class="l l--r">Défilé · Défilé continu</span><span class="l l--m">Mouvement · Glissement alterné</span><span class="l l--d">3D · Panneaux repliés</span><span class="l">Lignes numérotées · Palatino & Avenir</span></div></a>
+        <a class="c" href="v3-016.html" data-h="Manifeste cité" data-s="Pagination par points" data-o="Dévoilement par masque" data-t="Inclinaison au survol" data-p="Contraste net" data-rech="contraste net manifeste cité pagination par points dévoilement par masque inclinaison au survol quatre cartes optima & système"><div class="ap"><img src="vignettes/v3-016.jpg" loading="lazy" decoding="async" width="1280" height="960" alt="Aperçu de la maquette 16" /></div><div class="tx"><b>16 · Contraste net</b><span class="l l--h">Manifeste cité</span><span class="l l--r">Défilé · Pagination par points</span><span class="l l--m">Mouvement · Dévoilement par masque</span><span class="l l--d">3D · Inclinaison au survol</span><span class="l">Quatre cartes · Optima & système</span></div></a>
+        <a class="c" href="v3-017.html" data-h="Chiffre géant" data-s="Volets qui montent" data-o="Glissement alterné" data-t="Inclinaison au survol" data-p="Blanc & bleu franc" data-rech="blanc & bleu franc chiffre géant volets qui montent glissement alterné inclinaison au survol aplats jointifs charter & avenir"><div class="ap"><img src="vignettes/v3-017.jpg" loading="lazy" decoding="async" width="1280" height="960" alt="Aperçu de la maquette 17" /></div><div class="tx"><b>17 · Blanc & bleu franc</b><span class="l l--h">Chiffre géant</span><span class="l l--r">Défilé · Volets qui montent</span><span class="l l--m">Mouvement · Glissement alterné</span><span class="l l--d">3D · Inclinaison au survol</span><span class="l">Aplats jointifs · Charter & Avenir</span></div></a>
+        <a class="c" href="v3-018.html" data-h="Aplat coloré" data-s="Carrousel à flèches" data-o="Dévoilement par masque" data-t="Chiffres qui basculent" data-p="Sable & bleu" data-rech="sable & bleu aplat coloré carrousel à flèches dévoilement par masque chiffres qui basculent blocs collants iowan & système"><div class="ap"><img src="vignettes/v3-018.jpg" loading="lazy" decoding="async" width="1280" height="960" alt="Aperçu de la maquette 18" /></div><div class="tx"><b>18 · Sable & bleu</b><span class="l l--h">Aplat coloré</span><span class="l l--r">Défilé · Carrousel à flèches</span><span class="l l--m">Mouvement · Dévoilement par masque</span><span class="l l--d">3D · Chiffres qui basculent</span><span class="l">Blocs collants · Iowan & système</span></div></a>
+        <a class="c" href="v3-019.html" data-h="Bandeau défilant" data-s="Pagination par points" data-o="Glissement alterné" data-t="Chiffres qui basculent" data-p="Nuit bleutée" data-rech="nuit bleutée bandeau défilant pagination par points glissement alterné chiffres qui basculent frise didot & système"><div class="ap"><img src="vignettes/v3-019.jpg" loading="lazy" decoding="async" width="1280" height="960" alt="Aperçu de la maquette 19" /></div><div class="tx"><b>19 · Nuit bleutée</b><span class="l l--h">Bandeau défilant</span><span class="l l--r">Défilé · Pagination par points</span><span class="l l--m">Mouvement · Glissement alterné</span><span class="l l--d">3D · Chiffres qui basculent</span><span class="l">Frise · Didot & système</span></div></a>
+        <a class="c" href="v3-020.html" data-h="Centrée éditoriale" data-s="Carrousel à flèches" data-o="Glissement alterné" data-t="Inclinaison au survol" data-p="Bleu nuit sur papier" data-rech="bleu nuit sur papier centrée éditoriale carrousel à flèches glissement alterné inclinaison au survol lignes numérotées superclarendon"><div class="ap"><img src="vignettes/v3-020.jpg" loading="lazy" decoding="async" width="1280" height="960" alt="Aperçu de la maquette 20" /></div><div class="tx"><b>20 · Bleu nuit sur papier</b><span class="l l--h">Centrée éditoriale</span><span class="l l--r">Défilé · Carrousel à flèches</span><span class="l l--m">Mouvement · Glissement alterné</span><span class="l l--d">3D · Inclinaison au survol</span><span class="l">Lignes numérotées · Superclarendon</span></div></a>
+    </main>
+
+    <div class="note">
+      <div>
+        <b>Comment trier.</b> Ne regarde pas la couleur en premier — elle se
+        change en une ligne. Regarde <b>l'accroche</b>, <b>le défilé</b> et <b>le geste 3D</b> : ce sont les deux choses qui font qu'un site
+        ressemble à un site. Filtre par « accroche », garde-en trois, puis
+        compare les réseaux.
+      </div>
+    </div>
+
+    <script>
+      (function () {
+        var q = document.getElementById("q"),
+            cpt = document.getElementById("cpt"),
+            raz = document.getElementById("raz"),
+            sels = Array.prototype.slice.call(document.querySelectorAll("select[data-f]")),
+            cartes = Array.prototype.slice.call(document.querySelectorAll(".c"));
+
+        function filtrer() {
+          var t = q.value.trim().toLowerCase(), n = 0;
+          cartes.forEach(function (el) {
+            var ok = !t || el.dataset.rech.indexOf(t) !== -1;
+            if (ok) {
+              sels.forEach(function (s) {
+                if (s.value && el.dataset[s.dataset.f] !== s.value) ok = false;
+              });
+            }
+            el.hidden = !ok;
+            if (ok) n++;
+          });
+          cpt.textContent = n + (n > 1 ? " maquettes" : " maquette");
+        }
+        q.addEventListener("input", filtrer);
+        sels.forEach(function (s) { s.addEventListener("change", filtrer); });
+        raz.addEventListener("click", function () {
+          q.value = ""; sels.forEach(function (s) { s.value = ""; }); filtrer();
+        });
+      })();
+    </script>
+  </body>
+</html>
