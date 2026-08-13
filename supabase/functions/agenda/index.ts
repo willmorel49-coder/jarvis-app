@@ -51,9 +51,16 @@ const FRAICHEUR_MIN = 10 * 60 * 1000 // on ne relève pas plus d'une fois / 10 m
 // Google plafonne la lecture de l'adresse secrète d'un agenda et répond 429
 // quand on insiste — constaté le 13/08/2026, six lectures en quarante minutes
 // ont suffi. Ce n'est PAS une panne : les heures déjà relevées restent bonnes.
-// On attend donc une demi-heure avant de retenter, au lieu de cogner à chaque
-// passage du robot et de finir vraiment bloqué.
-const PATIENCE = 30 * 60 * 1000
+// On attend donc avant de retenter, au lieu de cogner à chaque passage du robot
+// et de finir vraiment bloqué.
+//
+// ⚠️ 25 minutes, PAS 30. Le robot passe toutes les 15 minutes : avec une
+// attente de 30 min pile, le passage situé exactement 30 min après l'échec
+// tombait douze secondes trop tôt et se faisait refouler — la reprise glissait
+// systématiquement au passage suivant, soit 45 min de retard au lieu de 30.
+// Une temporisation doit toujours être un peu PLUS COURTE que le multiple de
+// la cadence qu'elle vise, jamais égale.
+const PATIENCE = 25 * 60 * 1000
 
 const URL_SB = Deno.env.get('SUPABASE_URL')!
 const CLE_SERVICE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -180,7 +187,7 @@ async function relever(userId: string, forcer = false, fraicheur = FRAICHEUR_MIN
     return { ok: true, frais: true }
   }
   // L'hébergeur nous a demandé de lever le pied : on ne réessaie pas avant
-  // une demi-heure. Insister transforme un ralentissement en vrai blocage.
+  // PATIENCE. Insister transforme un ralentissement en vrai blocage.
   if (!forcer && String(a.derniere_erreur || '').startsWith('patience') &&
       a.dernier_essai && Date.now() - new Date(a.dernier_essai).getTime() < PATIENCE) {
     return { ok: true, patiente: true }
