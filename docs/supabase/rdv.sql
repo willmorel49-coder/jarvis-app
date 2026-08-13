@@ -14,7 +14,7 @@ create table if not exists public.rdv_dispo (
                         "5":[["09:00","12:30"],["14:00","18:00"]]}'::jsonb,
   duree_min         int  not null default 45,
   marge_route_min   int  not null default 15,
-  horizon_jours     int  not null default 21,
+  horizon_jours     int  not null default 90,   -- 3 mois (13/08/2026) — voir rdv-horizon-3-mois.sql
   delai_min_jours   int  not null default 3,
   rayon_chaud_km    int  not null default 25,
   rayon_max_km      int  not null default 60,

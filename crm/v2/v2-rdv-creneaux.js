@@ -17,7 +17,13 @@
       '4': [['09:00', '12:30'], ['14:00', '18:00']],
       '5': [['09:00', '12:30'], ['14:00', '18:00']]
     },
-    duree_min: 45, marge_route_min: 15, horizon_jours: 21, delai_min_jours: 3,
+    // horizon_jours : jusqu'où le pharmacien peut réserver. Passé de 21 à 90
+    // le 13/08/2026 — trois semaines ne laissaient aucune marge à une officine
+    // qui n'est pas disponible tout de suite, et le rendez-vous se perdait
+    // faute d'alternative. Les trois propositions mises en avant restent les
+    // mêmes (les plus proches, calées sur la géographie du jour) ; c'est
+    // « Voir d'autres dates » qui ouvre les trois mois.
+    duree_min: 45, marge_route_min: 15, horizon_jours: 90, delai_min_jours: 3,
     rayon_chaud_km: 25, rayon_max_km: 60, vitesse_kmh: 50, coef_route: 1.3,
     // D'où le commercial part le matin et où il rentre le soir : {lat, lon}.
     // null = on ne sait pas, et on ne suppose rien (aucun créneau n'est écarté).
@@ -250,6 +256,52 @@
         creneaux: choisis.sort(function (a, b) { return a - b; }).map(min2hm)
       };
     }).sort(function (a, b) { return a.date < b.date ? -1 : 1; });
+  };
+
+  // ── Toutes les dates ouvertes, sur tout l'horizon ────────────────────
+  // `proposer` met en avant TROIS dates, choisies pour la cohérence de la
+  // tournée. C'est la bonne réponse dans neuf cas sur dix — mais une officine
+  // qui ne peut ni la semaine prochaine ni celle d'après n'avait, elle, aucune
+  // porte de sortie. Cette fonction ouvre le calendrier complet, dans l'ordre
+  // des dates cette fois : le pharmacien choisit son mois.
+  //
+  // Les mêmes règles s'appliquent : délai minimum, journées non travaillées,
+  // demi-journées bloquées, agenda personnel, RDV déjà posés, temps de route.
+  // Rien n'est proposé ici qui ne serait pas réellement tenable.
+  M.calendrier = function (p) {
+    var d = fusionner(p && p.dispo);
+    var officine = (p && p.officine) || {};
+    var occupes = (p && p.occupes) || [];
+    var blocages = (p && p.blocages) || [];
+    var agenda = (p && p.agenda) || [];
+    var aujourdhui = (p && p.aujourdhui) || new Date().toISOString().slice(0, 10);
+    // 90 jours d'horizon ne font qu'une soixantaine de jours OUVRÉS : ce
+    // plafond doit donc être au-dessus, sinon la page s'arrête avant la fin
+    // des trois mois annoncés. Mesuré : à 45, elle s'arrêtait au 19 octobre.
+    var maxJours = (p && p.max_jours) || 70;
+    var parJour = (p && p.creneaux_par_jour) || 4;
+
+    var parDate = {};
+    occupes.forEach(function (o) {
+      if (!o || !o.date) return;
+      (parDate[o.date] = parDate[o.date] || []).push(o);
+    });
+
+    var out = [];
+    for (var i = d.delai_min_jours; i <= d.horizon_jours && out.length < maxJours; i++) {
+      var iso = isoPlus(aujourdhui, i);
+      var plages = plagesDuJour(iso, d, blocages, agenda);
+      if (!plages) continue;
+      var j = M.jour(iso, parDate[iso] || [], officine, d, plages);
+      if (!j) continue;
+      out.push({
+        date: j.date,
+        score: j.score,
+        creneaux: etaler(j.creneaux, parJour)
+          .sort(function (a, b) { return a - b; }).map(min2hm)
+      });
+    }
+    return out;   // déjà dans l'ordre des dates
   };
 
   M._min2hm = min2hm;

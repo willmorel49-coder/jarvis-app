@@ -133,7 +133,7 @@ begin
   select * into d from public.rdv_dispo where user_id = lp.user_id;
   v_duree   := coalesce(d.duree_min, 45);
   v_delai   := coalesce(d.delai_min_jours, 3);
-  v_horizon := coalesce(d.horizon_jours, 21);
+  v_horizon := coalesce(d.horizon_jours, 90);
   v_jours   := coalesce(d.jours, c_jours_defaut);
   if v_jours = '{}'::jsonb then v_jours := c_jours_defaut; end if;
 
