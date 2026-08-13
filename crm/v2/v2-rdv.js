@@ -163,7 +163,38 @@
       '.v2-rdv-msg{margin:6px 0 0;font-style:italic}',
       '.v2-rdv-vide{color:var(--muted);font-size:14px;margin:0 0 6px}',
       '.v2-rdv-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}',
-      '.v2-rdv-acts .v2-btn{min-height:44px}'
+      '.v2-rdv-acts .v2-btn{min-height:44px}',
+      /* ── Le hub (direction 3, choisie le 13/08/2026) ──────────────
+         L'en-tête porte l'identité du module : on doit sentir qu'on est
+         ENTRÉ quelque part, pas qu'on a ouvert une page de plus. */
+      '.v2-hub-cap{margin:-8px -16px 0;padding:26px 20px 74px;color:#fff;',
+      '  background:linear-gradient(165deg,#0B5BEE,#0039A8)}',
+      '.v2-hub-cap h1{font-size:clamp(24px,5vw,30px);font-weight:800;letter-spacing:-.03em;margin:0 0 6px}',
+      '.v2-hub-cap p{margin:0;font-size:14px;color:rgba(255,255,255,.84)}',
+      '.v2-hub-pro{background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);',
+      '  padding:15px;margin:-58px 0 16px;position:relative;',
+      '  box-shadow:0 1px 0 #fff inset,0 10px 26px -12px rgba(16,19,28,.28)}',
+      '.v2-hub-lbl{font-size:13px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;',
+      '  color:var(--c-mint-txt,#0F7A52);margin:0 0 8px}',
+      '.v2-hub-pro b{display:block;font-size:17px;font-weight:800;letter-spacing:-.01em}',
+      '.v2-hub-pro .m{font-size:13.5px;color:var(--muted);margin:5px 0 0}',
+      '.v2-hub-pro .v2-btn{min-height:44px;margin-top:12px}',
+      '.v2-hub-grille{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin:0 0 16px}',
+      '.v2-hub-e{display:flex;flex-direction:column;justify-content:space-between;gap:12px;',
+      '  min-height:98px;padding:14px;background:var(--card);border:1px solid var(--line);',
+      '  border-radius:var(--r-md);color:inherit;font:inherit;text-align:left;cursor:pointer;',
+      '  box-shadow:0 1px 0 #fff inset,0 6px 16px -10px rgba(16,19,28,.18)}',
+      '.v2-hub-e.large{grid-column:1/-1;flex-direction:row;align-items:center;min-height:auto}',
+      '.v2-hub-e.large span{flex:1;min-width:0}',
+      '.v2-hub-e svg{color:var(--ip-blue);flex:0 0 auto}',
+      '.v2-hub-e b{display:block;font-size:14.5px;font-weight:700}',
+      '.v2-hub-e small{display:block;color:var(--muted);font-size:13px;margin-top:2px}',
+      '.v2-hub-ch{display:flex;gap:10px;margin:0 0 6px}',
+      '.v2-hub-ch > div{flex:1;padding:12px 13px;background:var(--card);border:1px solid var(--line);',
+      '  border-radius:var(--r-md)}',
+      '.v2-hub-ch b{display:block;font-size:21px;font-weight:800;letter-spacing:-.02em;',
+      '  font-variant-numeric:tabular-nums}',
+      '.v2-hub-ch small{color:var(--muted);font-size:13px}'
     ].join('');
     document.head.appendChild(s);
   }
@@ -334,6 +365,23 @@
       ' · <a href="#" onclick="V2.go(\'pharma\',\'' + escArg(cip) + '\');return false">voir sa fiche</a></div>';
   }
 
+  // Une entrée du hub. `ic` est un tracé SVG, jamais une emoji d'interface.
+  function entree(route, titre, sous, ic, large) {
+    return '<button class="v2-hub-e' + (large ? ' large' : '') +
+      '" onclick="V2.go(\'' + route + '\')">' +
+      '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+      'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + ic + '</svg>' +
+      '<span><b>' + esc(titre) + '</b><small>' + esc(sous) + '</small></span></button>';
+  }
+  var IC = {
+    agenda: '<rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M8 3v4M16 3v4M3 10h18"/>',
+    noter: '<path d="M12 5v14M5 12h14"/>',
+    envoyer: '<path d="M4 6h16v12H4z"/><path d="m4 7 8 6 8-6"/>',
+    dispos: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    lien: '<path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/>' +
+          '<path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/>'
+  };
+
   function ligneRdv(d) {
     var tel = numero(d.contact_tel);
     return '<div class="v2-rdv-l">' +
@@ -417,24 +465,56 @@
             '</div></div>';
         }).join('') : '<p class="v2-rdv-vide">Rien à relancer. On ne relance qu’au-delà de 7 jours.</p>';
 
+        // ── LE HUB (direction 3) ────────────────────────────────
+        // L'en-tête porte l'identité du module, le prochain rendez-vous se
+        // lit sans chercher, et les cinq entrées sortent l'agenda, les
+        // dispos et les liens du tiroir où ils étaient enfouis.
+        var pro = venir.length ? venir[0] : null;
+        var libres = 0;
+        var semaine = venir.filter(function (d) {
+          return d.date <= new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10);
+        }).length;
+
+        var htmlPro = pro
+          ? '<div class="v2-hub-pro"><p class="v2-hub-lbl">Prochain</p>' +
+              '<b>' + esc(hhmm(pro.heure)) + ' · ' + esc(pro.nom) + '</b>' +
+              '<p class="m">' + esc(libelle(pro.date)) +
+                (pro.ville ? ' · ' + esc(pro.ville) : '') +
+                (pro.contact_nom ? ' · ' + esc(pro.contact_nom) : '') + '</p>' +
+              (numero(pro.contact_tel)
+                ? '<a class="v2-btn" href="tel:' + esc(numero(pro.contact_tel)) + '">Appeler ' +
+                  esc(pro.contact_tel) + '</a>' : '') +
+            '</div>'
+          : '<div class="v2-hub-pro"><p class="v2-hub-lbl">Aucun rendez-vous à venir</p>' +
+              '<b>Ta semaine est libre</b>' +
+              '<p class="m">Note un rendez-vous pris au téléphone, ou envoie un lien à une officine ' +
+              'pour qu’elle choisisse elle-même son créneau.</p></div>';
+
         root.innerHTML = top + '<div class="v2-wrap narrow">' +
-          '<div class="v2-rdv-hero"><h1>Rendez-vous</h1>' +
-            '<p>Ce que les pharmaciens ont réservé eux-mêmes, depuis le lien que tu leur as envoyé.</p></div>' +
+          '<div class="v2-hub-cap"><h1>Rendez-vous</h1>' +
+            '<p>' + esc(venir.length) + ' à venir · ' + esc(semaine) + ' cette semaine' +
+            (attente.length ? ' · ' + esc(attente.length) + ' lien(s) sans réponse' : '') + '</p></div>' +
+
+          htmlPro +
+
+          '<div class="v2-hub-grille">' +
+            (V2.pages.rdvplanning ? entree('rdvplanning', 'Mon agenda', '15 jours, heure par heure', IC.agenda) : '') +
+            (V2.pages.rdvajout ? entree('rdvajout', 'Noter un RDV', 'pris au téléphone', IC.noter) : '') +
+            (V2.pages.campagne ? entree('campagne', 'Envoyer un lien', 'il choisit son créneau', IC.envoyer) : '') +
+            entree('rdvdispo', 'Mes dispos', 'jours, horaires, agenda', IC.dispos) +
+            entree('rdvdispo', 'Mon lien permanent', 'à envoyer à la main — même écran, plus bas', IC.lien, true) +
+          '</div>' +
+
+          '<div class="v2-hub-ch">' +
+            '<div><b>' + esc(venir.length) + '</b><small>à venir</small></div>' +
+            '<div><b>' + esc(rappeler.length) + '</b><small>à rappeler</small></div>' +
+            '<div><b>' + esc(attente.length) + '</b><small>sans réponse</small></div>' +
+          '</div>' +
+
           '<div class="v2-rdv-sec">À venir</div>' + htmlVenir +
           '<div class="v2-rdv-sec">À rappeler</div>' + htmlRappeler +
           '<div class="v2-rdv-sec">Sans réponse</div>' + htmlAttente +
-          '<div class="v2-rdv-acts" style="margin-top:22px">' +
-            (V2.pages.campagne
-              ? '<button class="v2-btn v2-btn-primary" onclick="V2.go(\'campagne\')">' + ICO('plus', 15) +
-                ' Lancer une campagne</button>' : '') +
-            (V2.pages.rdvajout
-              ? '<button class="v2-btn v2-btn-primary" onclick="V2.go(\'rdvajout\')">' + ICO('plus', 15) +
-                ' Noter un rendez-vous</button>' : '') +
-            (V2.pages.rdvplanning
-              ? '<button class="v2-btn" onclick="V2.go(\'rdvplanning\')">' + ICO('cal', 15) +
-                ' Voir mon agenda</button>' : '') +
-            '<button class="v2-btn" onclick="V2.go(\'rdvdispo\')">' + ICO('cal', 15) + ' Mes disponibilités</button>' +
-          '</div></div>';
+        '</div>';
       });
     }
   };
