@@ -64,14 +64,33 @@
     catch (e) { fallbackCopy(txt); ok(); }
   };
 
+  var JO = null;   // Journal officiel · ce qui touche les marges (robot generate_jo_marges.py)
+
+  function joDansJours(iso) {
+    try { return Math.round((new Date(iso + 'T00:00:00') - new Date(new Date().toISOString().slice(0, 10) + 'T00:00:00')) / 86400000); }
+    catch (e) { return null; }
+  }
+  function joDepuis(n) {
+    try { var d = new Date(); d.setDate(d.getDate() - n); return d.toISOString().slice(0, 10); } catch (e) { return '0000-00-00'; }
+  }
+  function joDateFr(iso) {
+    try { return new Date(iso + 'T00:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }); }
+    catch (e) { return iso; }
+  }
+
   function load(cb) {
     if (LOADED) { cb(); return; }
     FAILED = false;   // nouvelle tentative à chaque entrée sur la page (avant : un seul échec figeait la page toute la session)
     var day = ''; try { day = new Date().toISOString().slice(0, 10); } catch (e) {}
     try {
-      fetch('infos-jour.json?d=' + day, { cache: 'no-store' })
-        .then(function (r) { if (!r.ok) throw 0; return r.json(); })
-        .then(function (j) { DATA = j; LOADED = true; cb(); })
+      // Deux sources : la veille du jour (presse + ANSM) et le Journal officiel.
+      // Le JO est facultatif — s'il manque, la page s'affiche quand même.
+      Promise.all([
+        fetch('infos-jour.json?d=' + day, { cache: 'no-store' })
+          .then(function (r) { if (!r.ok) throw 0; return r.json(); }),
+        fetch('jo-marges.json?d=' + day, { cache: 'no-store' })
+          .then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })
+      ]).then(function (res) { DATA = res[0]; JO = res[1]; LOADED = true; cb(); })
         .catch(function () { FAILED = true; cb(); });
     } catch (e) { FAILED = true; cb(); }
   }
@@ -180,6 +199,42 @@
             '<p class="inf-lede">' + lede + '</p>' +
             '<button class="inf-copy" data-lbl="Copier le brief" onclick="V2.infosCopyBrief(this)">' + COPY_SVG + 'Copier le brief</button>' +
           '</div>';
+
+      // ════════ CE QUI TOUCHE TES MARGES (Journal officiel) ════════
+      // Placé AVANT tout le reste, et volontairement hors du système de filtres :
+      // un texte qui change le barème ne se masque pas. Et il ne disparaît pas au bout
+      // de 7 jours comme une actu — il reste tant qu'il n'est pas appliqué, avec le
+      // nombre de jours restants. Une réforme n'est pas une nouvelle, c'est une échéance.
+      var joItems = (JO && JO.items) ? JO.items.slice() : [];
+      if (joItems.length) {
+        var auj = new Date().toISOString().slice(0, 10);
+        joItems = joItems.filter(function (t) {
+          return !t.date_effet || t.date_effet >= auj || t.jo >= joDepuis(60);
+        }).sort(function (a, b) {
+          if (!!b.a_venir !== !!a.a_venir) return b.a_venir ? 1 : -1;   // à venir d'abord
+          return (b.jo || '').localeCompare(a.jo || '');
+        }).slice(0, 4);
+      }
+      if (joItems.length) {
+        html += '<div class="inf-jo">' +
+          '<div class="inf-jo-h">' + ICO('alert', 17, 2) + 'Ce qui touche tes marges' +
+            '<span>Journal officiel</span></div>' +
+          joItems.map(function (t) {
+            var j = t.date_effet ? joDansJours(t.date_effet) : null;
+            var pastille = (j !== null && j >= 0)
+              ? '<span class="inf-jo-cd' + (j <= 45 ? ' urgent' : '') + '">dans ' + j + ' jour' + (j > 1 ? 's' : '') + '</span>'
+              : '<span class="inf-jo-cd applique">déjà applicable</span>';
+            return '<div class="inf-jo-i">' +
+              '<div class="inf-jo-top">' + pastille +
+                '<span class="inf-jo-d">' + (t.date_effet ? 'à partir du ' + joDateFr(t.date_effet) : 'paru le ' + joDateFr(t.jo)) + '</span></div>' +
+              '<div class="inf-jo-t">' + esc(t.titre) + '</div>' +
+              (t.resume ? '<div class="inf-jo-r">' + esc(t.resume) + '</div>' : '') +
+              (t.motifs && t.motifs.length ? '<div class="inf-jo-w">' + esc(t.motifs[0]) + '</div>' : '') +
+              (t.url ? '<a class="inf-jo-l" href="' + esc(t.url) + '" target="_blank" rel="noopener">Lire le texte au Journal officiel →</a>' : '') +
+            '</div>';
+          }).join('') +
+        '</div>';
+      }
 
       // ════════ L'ESSENTIEL = les filtres : chaque carte affiche/masque sa rubrique (mémorisé) ════════
       // Ordre : Actu officine EN AVANT, puis Opportunités, Ruptures, Rappels.
@@ -342,6 +397,25 @@
       '.inf2 .a-rose{--acc:var(--c-rose)}.inf2 .a-amber{--acc:var(--c-amber)}.inf2 .a-blue{--acc:var(--ip-blue)}.inf2 .a-green{--acc:var(--c-opp)}',
       // ── HERO ──
       '.inf2 .inf-hero{text-align:center;margin-bottom:var(--sp-6)}',
+      // ── « Ce qui touche tes marges » (Journal officiel) ──
+      // Éclairé, pas encadré de rouge : c'est important, pas alarmant. Une seule
+      // teinte ambre, réservée au compte à rebours quand l'échéance approche.
+      '.inf2 .inf-jo{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);padding:var(--sp-5) var(--sp-5) var(--sp-4);margin-bottom:var(--sp-6);box-shadow:var(--sh-2)}',
+      '.inf2 .inf-jo-h{display:flex;align-items:center;gap:9px;font-weight:800;font-size:15px;letter-spacing:-.02em;color:var(--ip-ink);margin-bottom:var(--sp-4)}',
+      '.inf2 .inf-jo-h svg{color:var(--c-amber);flex:0 0 auto}',
+      '.inf2 .inf-jo-h span{margin-left:auto;font:600 10.5px/1 var(--mono);letter-spacing:.09em;text-transform:uppercase;color:var(--muted-2)}',
+      '.inf2 .inf-jo-i{padding:var(--sp-3) 0;border-top:1px solid var(--line-2)}',
+      '.inf2 .inf-jo-i:first-of-type{border-top:0;padding-top:0}',
+      '.inf2 .inf-jo-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px}',
+      '.inf2 .inf-jo-cd{font:700 11.5px/1 var(--mono);font-variant-numeric:tabular-nums;padding:5px 10px;border-radius:var(--r-pill);background:color-mix(in srgb,var(--c-amber) 12%,transparent);color:var(--c-amber-txt);border:1px solid color-mix(in srgb,var(--c-amber) 26%,transparent)}',
+      '.inf2 .inf-jo-cd.urgent{background:color-mix(in srgb,var(--c-rose) 12%,transparent);color:var(--c-rose-txt);border-color:color-mix(in srgb,var(--c-rose) 28%,transparent)}',
+      '.inf2 .inf-jo-cd.applique{background:var(--card-2);color:var(--muted);border-color:var(--line)}',
+      '.inf2 .inf-jo-d{font-size:12.5px;color:var(--muted)}',
+      '.inf2 .inf-jo-t{font-size:15px;font-weight:600;line-height:1.4;letter-spacing:-.01em;color:var(--ip-ink)}',
+      '.inf2 .inf-jo-r{font-size:14px;font-weight:600;color:var(--ip-ink);margin-top:5px;line-height:1.45}',
+      '.inf2 .inf-jo-w{font-size:12.5px;color:var(--muted);margin-top:3px}',
+      '.inf2 .inf-jo-l{display:inline-block;margin-top:8px;font-size:13px;font-weight:600;color:var(--ip-blue);text-decoration:none;min-height:44px;line-height:44px}',
+      '@media(max-width:640px){.inf2 .inf-jo{padding:var(--sp-4)}.inf2 .inf-jo-t{font-size:14.5px}}',
       '.inf2 .inf-eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:10px}',
       '.inf2 .inf-eyebrow .live{display:inline-flex;align-items:center;gap:6px;color:var(--c-rose);font-weight:700}',
       '.inf2 .inf-eyebrow .live i{width:7px;height:7px;border-radius:50%;background:var(--c-rose);box-shadow:0 0 0 3px color-mix(in srgb,var(--c-rose) 20%,transparent);animation:infpulse 1.8s ease-in-out infinite}',
