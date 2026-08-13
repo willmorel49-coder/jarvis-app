@@ -146,6 +146,16 @@ CONCURRENTS/
 #   voir la procédure dans ~/.claude/ (mémoire « données protégées JARVIS »).
 crm/v2/wml-officines-data.js
 
+# Même motif, même traitement (13/08/2026) :
+#   establishments-aggregate.js — agrégats de CA par établissement Intégral
+#   ops-aggregate.js            — 5 935 produits, 16 232 476 € de CA OPS Nantes
+#   sagitta-shortlist-data.js   — porte des pourcentages de remise
+# Les deux premiers passent par l'espace fermé ; `ops-aggregate.js` n'est
+# chargé par AUCUNE app (vérifié) : il sort simplement du dépôt.
+crm/establishments-aggregate.js
+crm/ops-aggregate.js
+crm/sagitta-shortlist-data.js
+
 # Aucun classeur, aucun PDF ne doit plus partir dans un dépôt PUBLIC.
 # Le mot de passe Offilog est resté lisible en ligne pendant trois mois
 # faute d'une règle mécanique : une consigne qui n'est pas automatique
