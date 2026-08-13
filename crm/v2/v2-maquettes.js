@@ -40,6 +40,10 @@
   function localWrite(a) { try { localStorage.setItem(LS, JSON.stringify(a)); } catch (e) {} }
 
   // ── Chargement ────────────────────────────────────────────────────
+  // ⚠️ `charge` ne passe à true QUE si la lecture partagée a réussi. Sinon on
+  // réessaie au prochain affichage : sans ça, un seul échec au démarrage
+  // (réseau, session pas encore prête) enfermait tout le monde en mode
+  // « sur cet appareil » pour le reste de la session, sans le savoir.
   function charger() {
     var c = sb();
     if (c) {
@@ -50,13 +54,34 @@
             notes = r.data.map(function (x) {
               return { maquette: x.maquette, auteur: x.auteur_id, nom: x.auteur_nom || '', note: x.note, avis: x.avis || '' };
             });
+            charge = true;
+            remonterLesLocales();
           } else { backend = 'local'; notes = localAll(); }
-          charge = true; return notes;
+          return notes;
         })
-        .catch(function () { backend = 'local'; notes = localAll(); charge = true; return notes; });
+        .catch(function () { backend = 'local'; notes = localAll(); return notes; });
     }
-    backend = 'local'; notes = localAll(); charge = true;
+    backend = 'local'; notes = localAll();
     return Promise.resolve(notes);
+  }
+
+  // Les notes mises hors connexion ne doivent pas rester orphelines : dès que
+  // le partage répond, on les remonte une fois, puis on vide le stock local.
+  function remonterLesLocales() {
+    var a = localAll(), c = sb(), u = moi();
+    if (!a.length || !c || !u) return;
+    var lot = a.map(function (x) {
+      return { maquette: x.maquette, auteur_id: u, auteur_nom: (V2.user && V2.user.name) || '',
+               note: x.note, maj: new Date().toISOString() };
+    });
+    c.from(TABLE).upsert(lot, { onConflict: 'maquette,auteur_id' })
+      .then(function (r) {
+        if (r && r.error) return;            // on garde le local : rien n'est perdu
+        localWrite([]);
+        if (V2.toast) V2.toast(lot.length + ' note' + (lot.length > 1 ? 's' : '') + ' de cet appareil partagée' + (lot.length > 1 ? 's' : '') + ' avec l\'équipe');
+        charger().then(redessiner);
+      })
+      .catch(function () {});
   }
 
   // ── Calculs ───────────────────────────────────────────────────────
@@ -168,7 +193,7 @@
              'aria-label="Noter ' + n + ' sur 10">' + n + '</button>');
     }
     return '<div class="mq-notes' + (compact ? ' mq-notes-c' : '') + '">' +
-             '<span class="mq-notes-l">' + (mienne ? 'Ta note' : 'Ta note') + '</span>' +
+             '<span class="mq-notes-l">' + (mienne ? 'Ta note · ' + mienne + '/10' : 'Ta note') + '</span>' +
              '<div class="mq-nrow">' + b.join('') + '</div>' +
            '</div>';
   }
