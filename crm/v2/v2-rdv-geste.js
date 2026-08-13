@@ -291,17 +291,22 @@
       var agenda = ((r[2] && r[2].data) || []).map(function (x) {
         return { date: x.date, debut: String(x.debut).slice(0, 5), fin: String(x.fin).slice(0, 5) };
       });
-      // Tout l'horizon (trois mois), pas les huit prochains jours : le
-      // calendrier doit pouvoir se feuilleter comme un vrai agenda.
+      // Tout l'horizon (six mois ≈ 130 jours ouvrés), pas les huit prochains
+      // jours : le calendrier doit se feuilleter comme un vrai agenda.
+      // ⚠️ Ce plafond doit rester AU-DESSUS du nombre de jours ouvrés de
+      // l'horizon, sinon le calendrier s'arrête avant la fin — mesuré : à 70,
+      // il s'arrêtait en novembre alors qu'on promettait six mois.
       propositions = window.V2RDV.calendrier({
         officine: { lat: choisie && choisie.lat, lon: choisie && choisie.lon },
         dispo: st.dispo, blocages: st.blocages || [],
         occupes: occupes, agenda: agenda,
-        aujourdhui: auj, max_jours: 70, creneaux_par_jour: 8
+        aujourdhui: auj, max_jours: 135, creneaux_par_jour: 8
       });
-      // On ouvre sur le mois du premier jour possible, pas sur le mois
-      // courant : si tout est plein jusqu'en septembre, autant y aller.
-      moisAffiche = propositions.length ? moisDe(propositions[0].date) : moisDe(auj);
+      // On ouvre sur le MOIS EN COURS. C'est là qu'on se repère : un
+      // calendrier qui s'ouvre en septembre parce que août est plein donne
+      // l'impression d'avoir sauté un mois. Les jours pleins du mois courant
+      // se voient, éteints — et les flèches mènent aux six mois suivants.
+      moisAffiche = moisDe(auj);
       if (ouverte) rendre();
     }).catch(function () { if (ouverte) rendre(); });
   }
@@ -343,8 +348,12 @@
   function calendrier() {
     var dispo = {};
     propositions.forEach(function (j) { dispo[j.date] = j.creneaux; });
-    var premier = propositions.length ? moisDe(propositions[0].date) : moisAffiche;
-    var dernier = propositions.length ? moisDe(propositions[propositions.length - 1].date) : moisAffiche;
+    // Les bornes de navigation : du mois EN COURS au dernier mois ouvert.
+    // On ne remonte pas avant le mois courant — il n'y a rien à y réserver.
+    var auj = new Date().toISOString().slice(0, 10);
+    var premier = moisDe(auj);
+    var dernier = propositions.length
+      ? moisDe(propositions[propositions.length - 1].date) : premier;
     if (!moisAffiche) moisAffiche = premier;
 
     var n = joursDuMois(moisAffiche);
