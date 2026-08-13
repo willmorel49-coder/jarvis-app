@@ -194,7 +194,32 @@
                  lat: (typeof p.lat === 'number' ? p.lat : null), lng: (typeof p.lng === 'number' ? p.lng : null),
                  comms: p.comms || [] };
       });
-      // format compact tableau : [pharmacyId, mois, commercial, cip13, qte, puNet, mntNetHt]
+      // ── Format compacté (13/08/2026) ────────────────────────────────
+      // Les trois colonnes répétées 437 848 fois — code officine, nom du
+      // commercial, code produit — ne sont plus écrites en toutes lettres dans
+      // le fichier, mais remplacées par un NUMÉRO DE RANG dans trois listes
+      // livrées en tête. 27 Mo -> 16,6 Mo au téléchargement, sans qu'un seul
+      // chiffre bouge. C'est ce fichier qui figeait le premier écran.
+      //
+      // ⚠️ ON REDONNE À window.WML_SALES SA FORME D'ORIGINE, ICI ET UNE SEULE
+      // FOIS. Deux modules — Audit Marge (v2-audit.js) et Appro (v2-appro.js) —
+      // lisent ce tableau EN DIRECT en supposant l'ancien format, à une
+      // vingtaine d'endroits. Les corriger un par un, c'était prendre le risque
+      // d'en oublier un : le sous-agent gardien-deploiement a mesuré que sans
+      // ce décodage, 0 ligne sur 437 848 retrouvait son produit — Audit Marge
+      // serait tombé à zéro partout et Appro serait resté vide, SANS la moindre
+      // erreur à l'écran. Un défaut silencieux, que personne n'aurait vu venir.
+      //
+      // Le gain visé était le POIDS DU TÉLÉCHARGEMENT, pas la mémoire : après
+      // décodage on occupe exactement ce qu'on occupait avant. Aucune régression.
+      var dOff = window.WML_D_OFFICINES, dCom = window.WML_D_COMMERCIAUX, dPro = window.WML_D_PRODUITS;
+      if (dOff && dCom && dPro && window.WML_SALES.length &&
+          typeof window.WML_SALES[0][0] === 'number') {
+        window.WML_SALES = window.WML_SALES.map(function (s) {
+          return [dOff[s[0]], s[1], dCom[s[2]], dPro[s[3]], s[4], s[5], s[6]];
+        });
+      }
+      // format tableau : [pharmacyId, mois, commercial, cip13, qte, puNet, mntNetHt]
       V2.sales = window.WML_SALES.map(function (s) {
         return { id: null, importId: null, pharmacyId: String(s[0]), month: s[1], year: 2026,
                  commercial: s[2] || '', artDesignation: '', artCode: s[3], artFamille: null,
@@ -306,12 +331,14 @@
   }
   V2.loadFiles = function (keys) {
     // chemins relatifs au dossier parent crm/ (les data files sont dans crm/)
-    // Jeton PROPRE aux fichiers de données (27 Mo), distinct du ?v= global.
-    // ⚠️ Le bumper quand les DONNÉES changent. Pas besoin de le suivre à chaque
-    // déploiement : quand `VER` de sw.js change, l'activation du service worker
-    // efface TOUS les caches — ces fichiers sont donc de toute façon repris au
-    // réseau. Le monter pour rien coûte 27 Mo de données mobiles à chacun.
-    var V = '?v=20260813b';
+    // Jeton PROPRE aux fichiers de données, distinct du ?v= global.
+    // ⚠️ Le bumper quand les DONNÉES changent — et elles viennent de changer :
+    // wml-officines-data.js est passé de 27 à 16,6 Mo le 13/08/2026. Sans ce
+    // bump, les téléphones qui ont déjà l'ancien fichier en cache continueraient
+    // de le servir, et le lecteur compacté ne trouverait pas ses dictionnaires.
+    // Pas besoin de le suivre à chaque déploiement en revanche : quand `VER` de
+    // sw.js change, l'activation du service worker efface tous les caches.
+    var V = '?v=20260813s';
     var promises = keys.map(function (k) {
       var src = (window.V2_DATA_BASE || '../') + DATA_FILES[k];
       if (loaded[src]) return Promise.resolve();
