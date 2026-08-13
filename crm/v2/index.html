@@ -39,7 +39,7 @@
     // qu'on peut relire directement. Aucune donnée métier, aucune identité —
     // juste le message, l'écran, la pile et le navigateur.
     // Table `js_erreur`, insertion seule (personne ne peut la relire côté app).
-    var __BUILD = '20260813f';   // pour savoir QUELLE version a produit un rapport
+    var __BUILD = '20260813g';   // pour savoir QUELLE version a produit un rapport
 
     // Le bandeau de diagnostic. Il était collé EN HAUT, plein écran : sur
     // iPhone il recouvrait la barre de navigation et son menu profil — Will
@@ -91,111 +91,6 @@
         }).catch(function () {});
       } catch (x) {}
     }
-
-    // ⚠️ TEMPORAIRE (13/08/2026) — filet à retirer avec le reste du capteur.
-    // Safari ne joint NI fichier NI pile quand l'erreur part d'un appel différé
-    // (minuteur, image d'animation, écouteur d'événement) : le rapport reçu de
-    // l'iPhone de Will ne contenait que « RangeError », rien d'autre. On
-    // enveloppe donc ces trois portes d'entrée pour attraper l'erreur là où
-    // elle est LANCÉE, avec sa pile — puis on la relance telle quelle, pour ne
-    // rien changer au comportement de l'app.
-    (function () {
-      function filet(nom, fn) {
-        if (typeof fn !== 'function') return fn;
-        return function () {
-          try { return fn.apply(this, arguments); }
-          catch (err) {
-            __signaler('[' + nom + '] ' + ((err && err.message) || err),
-                       (window.V2 && window.V2.route && window.V2.route.name) || '',
-                       (err && err.stack) || '(pile absente)');
-            throw err;
-          }
-        };
-      }
-      try {
-        var _st = window.setTimeout, _si = window.setInterval, _rf = window.requestAnimationFrame;
-        window.setTimeout = function (f, d) {
-          var a = [].slice.call(arguments, 2);
-          return _st.call(window, filet('setTimeout', typeof f === 'function' ? function () { f.apply(null, a); } : f), d);
-        };
-        window.setInterval = function (f, d) {
-          var a = [].slice.call(arguments, 2);
-          return _si.call(window, filet('setInterval', typeof f === 'function' ? function () { f.apply(null, a); } : f), d);
-        };
-        if (_rf) window.requestAnimationFrame = function (f) { return _rf.call(window, filet('rAF', f)); };
-        var _ael = EventTarget.prototype.addEventListener;
-        EventTarget.prototype.addEventListener = function (type, cb, opts) {
-          if (typeof cb === 'function') {
-            // On garde l'enveloppe sur la fonction elle-même : sans ça,
-            // removeEventListener ne retrouverait plus son écouteur.
-            if (!cb.__filet) { try { cb.__filet = filet('écouteur:' + type, cb); } catch (x) { return _ael.call(this, type, cb, opts); } }
-            return _ael.call(this, type, cb.__filet, opts);
-          }
-          return _ael.call(this, type, cb, opts);
-        };
-        var _rel = EventTarget.prototype.removeEventListener;
-        EventTarget.prototype.removeEventListener = function (type, cb, opts) {
-          return _rel.call(this, type, (cb && cb.__filet) || cb, opts);
-        };
-      } catch (x) { /* un filet de diagnostic ne doit jamais casser l'app */ }
-    })();
-
-    // ⚠️ TEMPORAIRE (13/08/2026) — la SONDE DE PROFONDEUR, à retirer avec le reste.
-    //
-    // Quand la pile déborde, le navigateur n'a plus la place de construire la
-    // trace : les trois rapports reçus de l'iPhone de Will ne contenaient que
-    // le message, sans un seul nom de fonction. Aucun capteur d'erreur ne peut
-    // corriger ça — il faut regarder AVANT le débordement.
-    //
-    // On enveloppe donc les fonctions de l'app en tenant un compteur : passé
-    // 40 appels imbriqués, on envoie la liste des 45 derniers noms. La boucle
-    // apparaît alors en clair (« A <- B <- A <- B <- … »).
-    //
-    // Les fonctions appelées des dizaines de milliers de fois (échappement,
-    // formatage de prix) sont exclues : les envelopper ralentirait l'app pour
-    // rien, elles ne sont jamais des points de récursion.
-    (function () {
-      // margeMDLboite tourne dans trois boucles de v2-pilotage.js sur les ventes
-      // du mois (des dizaines de milliers d'appels par rendu) : l'envelopper
-      // ralentirait l'écran qu'on cherche justement à observer sans le perturber.
-      var CHAUDES = { esc: 1, fmtEur: 1, fmtK: 1, fmtPct: 1, sumCA: 1, esc2: 1, num: 1, fmtNum: 1,
-                      margeMDLboite: 1, bestPrice: 1, canonGrp: 1 };
-      var prof = 0, dit = false, chemin = [];
-      function garde(nom, fn) {
-        return function () {
-          prof++; chemin.push(nom);
-          if (prof > 40 && !dit) {
-            dit = true;
-            __signaler('SONDE — ' + prof + ' appels imbriqués',
-                       (window.V2 && window.V2.route && window.V2.route.name) || '',
-                       chemin.slice(-45).join(' <- '));
-          }
-          try { return fn.apply(this, arguments); }
-          finally { prof--; chemin.pop(); }
-        };
-      }
-      function poser() {
-        try {
-          if (!window.V2 || !window.V2.pages) { setTimeout(poser, 250); return; }
-          var k;
-          for (k in V2) {
-            if (!Object.prototype.hasOwnProperty.call(V2, k)) continue;
-            if (CHAUDES[k] || typeof V2[k] !== 'function' || V2[k].__sonde) continue;
-            V2[k] = garde('V2.' + k, V2[k]); V2[k].__sonde = 1;
-          }
-          for (k in V2.pages) {
-            if (!Object.prototype.hasOwnProperty.call(V2.pages, k)) continue;
-            var pg = V2.pages[k];
-            if (!pg || typeof pg.render !== 'function' || pg.render.__sonde) continue;
-            pg.render = garde('page:' + k, pg.render); pg.render.__sonde = 1;
-          }
-          // Des écrans s'enregistrent après coup : on repasse quelques fois.
-          if (poser.n === undefined) poser.n = 0;
-          if (++poser.n < 12) setTimeout(poser, 700);
-        } catch (x) { /* une sonde ne doit jamais casser l'app */ }
-      }
-      setTimeout(poser, 300);
-    })();
 
     window.addEventListener('error', function (e) {
       var p = __bandeau();
