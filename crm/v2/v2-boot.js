@@ -306,7 +306,11 @@
   }
   V2.loadFiles = function (keys) {
     // chemins relatifs au dossier parent crm/ (les data files sont dans crm/)
-    // ⚠️ DOIT être bumpé en même temps que la version globale (sinon le SW ressert les vieilles données)
+    // Jeton PROPRE aux fichiers de données (27 Mo), distinct du ?v= global.
+    // ⚠️ Le bumper quand les DONNÉES changent. Pas besoin de le suivre à chaque
+    // déploiement : quand `VER` de sw.js change, l'activation du service worker
+    // efface TOUS les caches — ces fichiers sont donc de toute façon repris au
+    // réseau. Le monter pour rien coûte 27 Mo de données mobiles à chacun.
     var V = '?v=20260813b';
     var promises = keys.map(function (k) {
       var src = (window.V2_DATA_BASE || '../') + DATA_FILES[k];
@@ -316,7 +320,17 @@
         var s = document.createElement('script');
         s.src = src + V; s.async = false;
         s.onload = function () { loaded[src] = true; bridge(); resolve(); };
-        s.onerror = function () { console.warn('[V2] échec ' + src); resolve(); };
+        s.onerror = function () {
+          // On résout SANS marquer le fichier comme chargé : c'est à l'appelant
+          // de constater l'échec (V2.dataLoaded reste faux).
+          // ⚠️ Et on RETIRE la promesse en attente. Sans ça, une nouvelle
+          // tentative recevait cet échec déjà résolu — instantanément — au lieu
+          // de relancer un vrai téléchargement. C'est ce qui transformait une
+          // simple coupure réseau en boucle infinie côté écran d'accueil.
+          console.warn('[V2] échec ' + src);
+          delete pending[src];
+          resolve();
+        };
         document.head.appendChild(s);
       });
       pending[src] = p;

@@ -281,6 +281,20 @@
     return ROUTE_ACCENT[name] || 'var(--accent)';
   }
 
+  // Les données réseau n'ont pas pu être téléchargées. On le DIT, avec un
+  // bouton — au lieu de retenter sans fin en silence. Un écran qui explique
+  // vaut mieux qu'une app qui tourne en rond.
+  function ecranDonneesIndisponibles(root) {
+    root.innerHTML =
+      '<div class="v2-wrap"><div class="v2-empty">' +
+        '<div class="v2-empty-t">Données non chargées</div>' +
+        '<div class="v2-empty-d">Les données du réseau n’ont pas pu être téléchargées ' +
+        '(27 Mo). Vérifie ta connexion — le Wi-Fi si tu peux — puis réessaie.</div>' +
+        '<button class="v2-btn v2-btn-primary" style="min-height:48px" ' +
+          'onclick="V2.render()">Réessayer</button>' +
+      '</div></div>';
+  }
+
   // ── RENDER (routeur) ──────────────────────────
   V2.render = function () {
     var root = $app(); if (!root) return;
@@ -304,7 +318,21 @@
         + '<div class="v2-boot-msg">Chargement des données réseau…</div></div>';
       V2.loadFiles(['wml'])
         .then(function () { return V2.loadData ? V2.loadData() : null; })
-        .then(function () { V2._wmlAsked = false; V2.render(); });
+        .then(function () {
+          V2._wmlAsked = false;
+          // ⚠️ 13/08/2026 — la boucle infinie de l'iPhone de Will.
+          // V2.loadFiles RÉSOUT sa promesse même quand le téléchargement
+          // échoue, sans marquer le fichier comme chargé. Sans le contrôle
+          // ci-dessous, on repartait aussitôt pour un tour ; et comme la
+          // tentative ratée restait mémorisée « déjà terminée », le tour
+          // suivant était instantané. Résultat : un rendu qui se rappelle
+          // lui-même sans fin, et « RangeError: Maximum call stack size
+          // exceeded » en bandeau rouge. Une connexion imparfaite suffisait —
+          // et l'app installée y était plus exposée, son service worker ayant
+          // vidé les caches au changement de version.
+          if (!V2.dataLoaded('wml')) { ecranDonneesIndisponibles(root); return; }
+          V2.render();
+        });
       return;
     }
     if (V2.loadFiles && !V2.dataLoaded('wml')) { return; }   // chargement en cours
