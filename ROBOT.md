@@ -114,6 +114,7 @@ python3 scraper_leclerc.py     # → leclerc_prices.json + opso/leclerc-data.js
 | Offilog Excel | Feuille `"Croisement Complet"`, pas la feuille active |
 | SheetJS | Parser les colonnes **par nom**, pas par index |
 | GitHub Pages | Délai 1-2 min après push avant mise en ligne |
+| ⚠️ `crm/v2/rdv.html` (page du pharmacien) | **Aucun service worker sur cette page.** Son `?v=` est indépendant de celui de `crm/v2/index.html` et doit être monté **à la main** dès que `rdv-public.js`, `v2-rdv-creneaux.js` ou `v2-rdv-ics.js` change. Sinon un pharmacien ayant déjà ouvert le lien continue de charger l'ANCIEN fichier : le correctif est en ligne et pourtant invisible. Contrôle : `grep -o '?v=[0-9a-z]*' crm/v2/rdv.html` doit renvoyer la même valeur que `index.html` |
 | ip_app-8.html | Legacy — ne pas toucher |
 | Libs JS | Ne pas ajouter sans accord explicite |
 | DRAKKARS ean | Peut être `null` (EAN absent sur certains produits) — ne pas supposer que l'EAN est toujours présent |
