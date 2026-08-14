@@ -26,6 +26,51 @@
     setTimeout(function () { t.classList.remove('show'); setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 350); }, 2800);
   };
 
+  // ── Bandeau « des chiffres manquent » ─────────
+  // ⚠️ 14/08/2026 — Will : « ya plus aucune données sur jarvis ».
+  // Depuis le 13/08 les chiffres viennent d'un espace fermé. Quand un de ces
+  // fichiers ne se charge pas, l'app s'affichait ENTIÈRE avec des zéros et des
+  // listes vides — rien ne disait que c'était un échec de téléchargement. Des
+  // zéros muets sur un CA, c'est pire que pas d'écran du tout : on les croit.
+  // `wml` a déjà son écran plein (« Données non chargées ») ; ce bandeau couvre
+  // les deux autres, qui échouaient sans un mot.
+  var LIB_PROTEGE = {
+    wml: 'les officines et leurs ventes',
+    establishments: 'le chiffre d’affaires par établissement',
+    sagitta: 'la sélection Sagitta'
+  };
+  V2.bandeauDonneesManquantes = function () {
+    ensureAppbarCss();
+    var ex = document.getElementById('v2-databar');
+    var ko = (V2.donneesProtegeesKO && V2.donneesProtegeesKO()) || [];
+    if (!ko.length) { if (ex) ex.classList.remove('show'); return; }
+    if (!ex) {
+      ex = document.createElement('div');
+      ex.id = 'v2-databar';
+      ex.className = 'v2-appbar v2-appbar-data';
+      document.body.appendChild(ex);
+    }
+    var quoi = ko.map(function (k) { return LIB_PROTEGE[k] || k; }).join(' et ');
+    ex.innerHTML =
+      '<div class="v2-appbar-in">' +
+        '<span class="v2-appbar-lbl">Les chiffres n’ont pas pu être téléchargés (' + quoi +
+        '). Ce qui s’affiche est incomplet.</span>' +
+        '<button class="v2-btn v2-btn-primary v2-appbar-go" onclick="V2.rechargerDonneesProtegees()">Réessayer</button>' +
+      '</div>';
+    ex.classList.add('show');
+  };
+  V2.rechargerDonneesProtegees = function () {
+    var ko = (V2.donneesProtegeesKO && V2.donneesProtegeesKO()) || [];
+    if (!ko.length || !V2.loadFiles) return;
+    V2.toast('Nouvelle tentative…');
+    V2.loadFiles(ko).then(function () {
+      var reste = (V2.donneesProtegeesKO && V2.donneesProtegeesKO()) || [];
+      if (reste.length) V2.toast('Toujours indisponible — vérifie ta connexion', 'error');
+      else V2.toast('Chiffres récupérés');
+      V2.render();
+    });
+  };
+
   // ── NAVIGATION ────────────────────────────────
   V2._navStack = V2._navStack || ['home'];
   V2.go = function (name, param) {
@@ -210,6 +255,11 @@
       '.v2-appbar{position:fixed;left:50%;bottom:20px;transform:translate(-50%,150%);z-index:9500;width:max-content;max-width:min(560px,calc(100vw - 32px));opacity:0;transition:transform .34s cubic-bezier(.2,.8,.2,1),opacity .34s}',
       '.v2-appbar.show{transform:translate(-50%,0);opacity:1}',
       '.v2-appbar-update{bottom:20px;z-index:9600}',
+      // Chiffres manquants : liseré ambre — c'est un avertissement, pas une panne.
+      '.v2-appbar-data{z-index:9700}',
+      '.v2-appbar-data .v2-appbar-in{border-color:var(--c-amber,#D98324)}',
+      // 44 px minimum : mesuré à 43 px au premier essai, sous la cible tactile.
+      '.v2-appbar-data .v2-appbar-go{min-height:44px}',
       '.v2-appbar-in{display:flex;align-items:center;gap:12px;padding:11px 12px 11px 15px;background:var(--card,#fff);border:1px solid var(--line,#E4E8F0);border-radius:16px;box-shadow:0 14px 40px rgba(16,19,28,.22)}',
       '.v2-appbar-ic{flex:none;width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--ip-blue,#0050E6) 12%,var(--card,#fff));color:var(--ip-blue,#0050E6)}',
       '.v2-appbar-update .v2-appbar-ic{background:color-mix(in srgb,var(--c-opp,#12A150) 15%,#fff);color:var(--c-opp,#0f7a52)}',
@@ -351,6 +401,7 @@
       root.innerHTML = topbar({ back: true }) + '<div class="v2-wrap"><div class="v2-empty"><div class="v2-empty-t">Une erreur est survenue</div><div class="v2-empty-d">' + (e && e.message ? e.message : '') + '</div><button class="v2-btn v2-btn-primary" onclick="V2.go(\'home\')">Retour à l\'accueil</button></div></div>';
     }
     if (V2.updateCartBar) V2.updateCartBar();
+    if (V2.bandeauDonneesManquantes) V2.bandeauDonneesManquantes();
     if (V2.installBanner) V2.installBanner();
     // Le bouton « noter un rendez-vous » vit sur TOUS les écrans : on le
     // repose après chaque rendu, car il doit s'effacer quand une barre
