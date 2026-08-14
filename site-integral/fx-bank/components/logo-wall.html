@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FX-BANK · Logo Wall</title>
+<!--
+/* FX-BANK · LOGO WALL
+   QUOI : Mur de partenaires. Deux modes dans un seul composant : une grille qui s'allume au
+          survol, ou un ruban qui défile en boucle et ralentit quand la souris s'en approche.
+   QUAND : Laboratoires, partenaires, marques distribuées. Preuve de sérieux immédiate — le
+           lecteur reconnaît les noms en une seconde, avant même d'avoir lu une ligne.
+   DEPENDANCES : aucune
+   SAFARI : conforme. Aucun flou, aucun verre dépoli, aucun dégradé découpé dans du texte.
+            Le fondu des bords du ruban se fait par masque, pas par estompage d'image.
+            Mouvement réduit = ruban figé, grille entièrement lisible.
+   TEXTE : fonctionne avec de vrais logos (<img>) ou, à défaut, avec les noms composés — ce qui
+           évite d'attendre des fichiers pour avancer.
+   COPIER : le bloc entre FX:COPY:START et FX:COPY:END */
+-->
+<style>
+  body{margin:0;background:#FBFCFE;color:#0E1626;font:16px/1.6 ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif}
+  .demo-note{position:fixed;left:16px;bottom:16px;z-index:50;font-size:12px;letter-spacing:.1em;
+    text-transform:uppercase;color:#8B96AC;background:#FBFCFE;padding:8px 12px;border:1px solid #DCE5F4}
+  h2.t{max-width:900px;margin:56px auto 8px;padding:0 24px;font-size:1.5rem}
+  p.s{max-width:900px;margin:0 auto 22px;padding:0 24px;color:#54607A;font-size:.95rem}
+
+  /* FX:COPY:START */
+  .fx-lw{
+    --fx-lw-accent:#0050E6;
+    --fx-lw-bord:#DCE5F4;
+    --fx-lw-doux:#54607A;
+    --fx-lw-vitesse:34s;             /* durée d'un tour complet du ruban */
+    max-width:1100px; margin:0 auto; padding:0 24px;
+  }
+
+  /* ---- Mode 1 : la grille ---- */
+  .fx-lw__grille{
+    display:grid; gap:1px; background:var(--fx-lw-bord);
+    border:1px solid var(--fx-lw-bord);
+    grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+  }
+  .fx-lw__case{
+    background:#fff; min-height:104px; display:grid; place-items:center; padding:20px;
+    transition:background .3s ease;
+  }
+  .fx-lw__case:hover{ background:#F2F6FD }
+  .fx-lw__nom{
+    font-weight:650; font-size:1.02rem; color:var(--fx-lw-doux); letter-spacing:-.01em;
+    transition:color .3s ease, transform .3s cubic-bezier(.22,.8,.25,1);
+  }
+  .fx-lw__case:hover .fx-lw__nom{ color:var(--fx-lw-accent); transform:translateY(-2px) }
+  .fx-lw__case img{ max-width:130px; max-height:44px; width:auto; height:auto; display:block }
+
+  /* ---- Mode 2 : le ruban ---- */
+  .fx-lw__ruban{
+    position:relative; overflow:hidden; padding:26px 0; margin-top:26px;
+    /* bords fondus : un masque, pas un estompage d'image */
+    -webkit-mask-image:linear-gradient(90deg,transparent,#000 9%,#000 91%,transparent);
+            mask-image:linear-gradient(90deg,transparent,#000 9%,#000 91%,transparent);
+  }
+  .fx-lw__piste{
+    display:flex; width:max-content; gap:64px; align-items:center;
+    animation:fxLwGlisse var(--fx-lw-vitesse) linear infinite;
+    animation-play-state:var(--etat,running);
+  }
+  .fx-lw__ruban:hover .fx-lw__piste{ --etat:paused }
+  .fx-lw__piste span{
+    font-weight:650; font-size:1.12rem; color:var(--fx-lw-doux); white-space:nowrap;
+    letter-spacing:-.01em;
+  }
+  @keyframes fxLwGlisse{ from{ transform:translateX(0) } to{ transform:translateX(-50%) } }
+
+  @media (prefers-reduced-motion: reduce){
+    .fx-lw__piste{ animation:none; flex-wrap:wrap; width:auto; justify-content:center; gap:26px 40px }
+    .fx-lw__ruban{ -webkit-mask-image:none; mask-image:none }
+    .fx-lw__case:hover .fx-lw__nom{ transform:none }
+  }
+  /* FX:COPY:END */
+</style>
+</head>
+<body>
+
+<h2 class="t">Deux modes, un seul composant</h2>
+<p class="s"><b>La grille</b> — sobre, sans mouvement parasite : à préférer quand la liste est courte
+et stable. <b>Le ruban</b> — défilé continu qui s'arrête au survol pour qu'on puisse lire : à
+préférer quand la liste est longue. On garde l'un ou l'autre, pas les deux.</p>
+
+<!-- FX:COPY:START -->
+<section class="fx-lw" data-fx-lw>
+
+  <!-- Mode 1 — grille. Remplacer .fx-lw__nom par <img src="…" alt="…"> quand les logos arrivent. -->
+  <div class="fx-lw__grille">
+    <div class="fx-lw__case"><span class="fx-lw__nom">EG Labo</span></div>
+    <div class="fx-lw__case"><span class="fx-lw__nom">Zentiva</span></div>
+    <div class="fx-lw__case"><span class="fx-lw__nom">Zydus</span></div>
+    <div class="fx-lw__case"><span class="fx-lw__nom">Viatris</span></div>
+    <div class="fx-lw__case"><span class="fx-lw__nom">ITP</span></div>
+    <div class="fx-lw__case"><span class="fx-lw__nom">Santestat</span></div>
+  </div>
+
+  <!-- Mode 2 — ruban. La piste est dupliquée par le script pour boucler sans couture. -->
+  <div class="fx-lw__ruban">
+    <div class="fx-lw__piste" data-fx-lw-piste>
+      <span>EG Labo</span><span>Zentiva</span><span>Zydus</span>
+      <span>Viatris</span><span>ITP</span><span>Santestat</span>
+    </div>
+  </div>
+</section>
+
+<script>
+(function(){
+  // Le ruban ne boucle proprement que si la piste contient exactement deux fois la série :
+  // l'animation translate de -50 %, donc la seconde moitié prend la place de la première
+  // au moment précis où la boucle repart. Dupliquer en JS évite d'avoir à le faire à la main
+  // dans le HTML, et évite surtout de se tromper en ajoutant un partenaire plus tard.
+  document.querySelectorAll('[data-fx-lw-piste]').forEach(function(piste){
+    if (piste.dataset.fxLwPret) return;
+    piste.innerHTML += piste.innerHTML;
+    piste.setAttribute('aria-hidden','false');
+    piste.dataset.fxLwPret = '1';
+  });
+})();
+</script>
+<!-- FX:COPY:END -->
+
+<div style="height:30vh"></div>
+<div class="demo-note">logo-wall · grille ou ruban</div>
+
+</body>
+</html>

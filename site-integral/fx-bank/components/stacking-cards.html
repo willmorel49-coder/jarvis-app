@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FX-BANK · Stacking Cards</title>
+<!--
+/* FX-BANK · STACKING CARDS
+   QUOI : Des cartes qui se collent en haut les unes après les autres et s'empilent en profondeur.
+          Celle du dessous rapetisse et s'assombrit à mesure que la suivante monte la recouvrir.
+   QUAND : Quatre à six étapes d'un parcours, des métiers, des arguments. Le lecteur ne peut pas
+           sauter une étape : c'est le seul bloc qui impose vraiment un ordre de lecture.
+   DEPENDANCES : aucune
+   SAFARI : conforme. Aucun flou, aucun verre dépoli, aucun dégradé découpé dans du texte.
+            L'assombrissement se fait par un voile plein en surimpression, pas par un filtre.
+            Mouvement réduit = les cartes se suivent normalement, sans collage ni empilement.
+   LIMITE : au-delà de six cartes, l'empilement devient illisible et le défilement interminable.
+   COPIER : le bloc entre FX:COPY:START et FX:COPY:END */
+-->
+<style>
+  body{margin:0;background:#FBFCFE;color:#0E1626;font:16px/1.6 ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif}
+  .demo-note{position:fixed;left:16px;bottom:16px;z-index:50;font-size:12px;letter-spacing:.1em;
+    text-transform:uppercase;color:#8B96AC;background:#FBFCFE;padding:8px 12px;border:1px solid #DCE5F4}
+
+  /* FX:COPY:START */
+  .fx-stack{
+    --fx-stack-accent:#0050E6;
+    --fx-stack-bord:#DCE5F4;
+    --fx-stack-doux:#54607A;
+    --fx-stack-haut:96px;            /* à quelle hauteur les cartes se collent */
+    --fx-stack-decalage:16px;        /* décalage visible entre deux cartes empilées */
+    max-width:900px; margin:0 auto; padding:0 24px;
+  }
+  .fx-stack__carte{
+    position:sticky; top:var(--fx-stack-haut);
+    /* chaque carte est décalée un peu plus bas que la précédente : c'est ce décalage
+       qui laisse voir la tranche des cartes du dessous, comme un jeu de cartes en main */
+    margin-bottom:26px;
+    transform-origin:top center;
+    will-change:transform;
+  }
+  .fx-stack__inner{
+    position:relative; overflow:hidden;
+    background:#fff; border:1px solid var(--fx-stack-bord); border-radius:3px;
+    padding:clamp(26px,4vw,46px);
+    box-shadow:0 18px 40px -26px rgba(14,22,38,.35);
+    display:grid; grid-template-columns:auto 1fr; gap:0 28px; align-items:start;
+    min-height:210px;
+  }
+  /* le voile qui assombrit la carte quand elle passe dessous — un aplat, pas un filtre */
+  .fx-stack__inner::after{
+    content:""; position:absolute; inset:0; background:#0E1626;
+    opacity:var(--voile,0); pointer-events:none; transition:opacity .2s linear;
+  }
+  .fx-stack__num{
+    font-variant-numeric:tabular-nums; font-weight:650; font-size:.92rem;
+    color:var(--fx-stack-accent); letter-spacing:.08em; padding-top:6px;
+  }
+  .fx-stack__t{ margin:0 0 10px; font-size:clamp(1.15rem,2.6vw,1.6rem); font-weight:650; letter-spacing:-.015em }
+  .fx-stack__d{ margin:0; color:var(--fx-stack-doux); max-width:56ch }
+
+  @media (max-width:560px){
+    .fx-stack{ --fx-stack-haut:74px }
+    .fx-stack__inner{ grid-template-columns:1fr; gap:12px }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .fx-stack__carte{ position:static; transform:none!important }
+    .fx-stack__inner::after{ display:none }
+  }
+  /* FX:COPY:END */
+</style>
+</head>
+<body>
+
+<div style="height:45vh;display:grid;place-items:center;color:#8B96AC">↓ descendre</div>
+
+<!-- FX:COPY:START -->
+<section class="fx-stack" data-fx-stack>
+
+  <article class="fx-stack__carte">
+    <div class="fx-stack__inner">
+      <div class="fx-stack__num">01</div>
+      <div>
+        <h3 class="fx-stack__t">Le référencement</h3>
+        <p class="fx-stack__d">Un même catalogue, tenu à jour, disponible partout dans le réseau.</p>
+      </div>
+    </div>
+  </article>
+
+  <article class="fx-stack__carte">
+    <div class="fx-stack__inner">
+      <div class="fx-stack__num">02</div>
+      <div>
+        <h3 class="fx-stack__t">La disponibilité</h3>
+        <p class="fx-stack__d">Des stocks répartis au plus près. Quand une référence manque quelque part, elle existe souvent ailleurs.</p>
+      </div>
+    </div>
+  </article>
+
+  <article class="fx-stack__carte">
+    <div class="fx-stack__inner">
+      <div class="fx-stack__num">03</div>
+      <div>
+        <h3 class="fx-stack__t">La préparation</h3>
+        <p class="fx-stack__d">Chaque commande part de l'implantation la plus proche, préparée par une équipe qui connaît la maison.</p>
+      </div>
+    </div>
+  </article>
+
+  <article class="fx-stack__carte">
+    <div class="fx-stack__inner">
+      <div class="fx-stack__num">04</div>
+      <div>
+        <h3 class="fx-stack__t">La livraison</h3>
+        <p class="fx-stack__d">Tous les jours, à la même heure. C'est la régularité qui fait la confiance, pas les promesses.</p>
+      </div>
+    </div>
+  </article>
+
+</section>
+
+<script>
+(function(){
+  var reduit = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  document.querySelectorAll('[data-fx-stack]').forEach(function(pile){
+    var cartes = Array.prototype.slice.call(pile.querySelectorAll('.fx-stack__carte'));
+    if (!cartes.length || reduit) return;
+
+    var lire = function(v){ return parseFloat(getComputedStyle(pile).getPropertyValue(v)) || 0; };
+    var tic = false;
+
+    function placer(){
+      tic = false;
+      var haut = lire('--fx-stack-haut');
+      var dec  = lire('--fx-stack-decalage');
+
+      cartes.forEach(function(carte, i){
+        var inner = carte.querySelector('.fx-stack__inner');
+        var suivante = cartes[i + 1];
+
+        // Une carte collée garde une position d'écran constante : la mesurer elle-même
+        // donnerait toujours le même résultat et rien ne bougerait jamais. Ce qu'il faut
+        // mesurer, c'est l'arrivée de la carte SUIVANTE, qui vient la recouvrir.
+        // La dernière de la pile n'est jamais recouverte : elle reste intacte.
+        if (!suivante) {
+          carte.style.transform = 'none';
+          if (inner) inner.style.setProperty('--voile', 0);
+          return;
+        }
+
+        var r  = carte.getBoundingClientRect();
+        var rs = suivante.getBoundingClientRect();
+        var d  = rs.top - haut;                            // distance restante avant recouvrement
+        var t  = 1 - Math.min(1, Math.max(0, d / Math.max(1, r.height)));
+
+        carte.style.transform = 'scale(' + (1 - t * 0.06).toFixed(4) + ') translateY(' + (t * dec).toFixed(1) + 'px)';
+        if (inner) inner.style.setProperty('--voile', (t * 0.14).toFixed(3));
+      });
+    }
+
+    function onScroll(){ if (!tic){ tic = true; requestAnimationFrame(placer); } }
+    window.addEventListener('scroll', onScroll, {passive:true});
+    window.addEventListener('resize', onScroll, {passive:true});
+    placer();
+  });
+})();
+</script>
+<!-- FX:COPY:END -->
+
+<div style="height:80vh;display:grid;place-items:center;color:#8B96AC">fin</div>
+<div class="demo-note">stacking-cards · les cartes s'empilent en profondeur</div>
+
+</body>
+</html>

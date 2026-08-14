@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FX-BANK · Zoom Scroll</title>
+<!--
+/* FX-BANK · ZOOM SCROLL
+   QUOI : Une seule caméra qui descend d'une vue large jusqu'au détail. Trois plans zooment
+          à des vitesses différentes selon la progression du scroll, la page entière devient
+          un seul mouvement continu.
+   QUAND : Raconter « le national ET la proximité » sans poser une carte de France — le cliché
+           absolu du secteur. Un zoom continu n'est pas une carte.
+   DEPENDANCES : aucune
+   SAFARI : conforme. Aucun flou, aucun verre dépoli, aucun dégradé découpé dans du texte.
+            Uniquement transform + opacity, composés par le GPU.
+            Mouvement réduit = les trois plans posés à leur état final, lisibles, sans animation.
+   COPIER : le bloc entre FX:COPY:START et FX:COPY:END */
+-->
+<style>
+  body{margin:0;background:#0A0E1A;color:#F8FAFC;font:16px/1.6 ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif}
+  .demo-note{position:fixed;left:16px;bottom:16px;z-index:50;font-size:12px;letter-spacing:.1em;
+    text-transform:uppercase;color:#8B96AC;background:#0A0E1A;padding:8px 12px;border:1px solid #243349}
+
+  /* FX:COPY:START */
+  .fx-zoom{
+    --fx-zoom-h: 320vh;              /* hauteur de course : plus c'est haut, plus le zoom est lent */
+    --fx-zoom-ink: #F8FAFC;
+    --fx-zoom-accent: #0050E6;
+    position:relative; height:var(--fx-zoom-h);
+  }
+  .fx-zoom__scene{
+    position:sticky; top:0; height:100vh; overflow:clip;
+    display:grid; place-items:center;
+  }
+  .fx-zoom__plan{
+    position:absolute; inset:0; display:grid; place-items:center;
+    will-change:transform,opacity;
+    transform:scale(var(--s,1)); opacity:var(--o,1);
+  }
+  .fx-zoom__plan > *{ text-align:center; max-width:min(90vw,760px); padding:0 24px }
+  .fx-zoom__t{
+    margin:0 0 14px; font-size:clamp(1.9rem,5.5vw,4rem); line-height:1.08;
+    letter-spacing:-.02em; font-weight:650; color:var(--fx-zoom-ink); text-wrap:balance;
+  }
+  .fx-zoom__t em{ font-style:normal; color:var(--fx-zoom-accent) }
+  .fx-zoom__s{ margin:0; color:#A3B0C7; font-size:clamp(.98rem,2vw,1.15rem); text-wrap:balance }
+
+  /* Repère de progression : sobre, il aide à comprendre qu'on descend dans un même plan */
+  .fx-zoom__jauge{
+    position:absolute; right:22px; top:50%; translate:0 -50%;
+    width:2px; height:120px; background:rgba(255,255,255,.14); border-radius:2px; overflow:hidden;
+  }
+  .fx-zoom__jauge i{
+    display:block; width:100%; height:100%; background:var(--fx-zoom-accent);
+    transform-origin:top; transform:scaleY(var(--p,0));
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .fx-zoom{ height:auto }
+    .fx-zoom__scene{ position:static; height:auto; display:block; padding:48px 0 }
+    .fx-zoom__plan{ position:static; transform:none!important; opacity:1!important; padding:38px 0 }
+    .fx-zoom__jauge{ display:none }
+  }
+  /* FX:COPY:END */
+</style>
+</head>
+<body>
+
+<div style="height:60vh;display:grid;place-items:center;color:#54607A">↓ descendre</div>
+
+<!-- FX:COPY:START -->
+<section class="fx-zoom" data-fx-zoom>
+  <div class="fx-zoom__scene">
+
+    <!-- Plan 1 — la vue la plus large. Il s'éloigne et s'efface en premier. -->
+    <div class="fx-zoom__plan" data-plan="0">
+      <div>
+        <h2 class="fx-zoom__t">Neuf maisons.<br><em>Un seul nom.</em></h2>
+        <p class="fx-zoom__s">De la Bretagne à la Méditerranée, un réseau qui couvre la France.</p>
+      </div>
+    </div>
+
+    <!-- Plan 2 — l'échelle intermédiaire. -->
+    <div class="fx-zoom__plan" data-plan="1">
+      <div>
+        <h2 class="fx-zoom__t">Une implantation<br><em>à trente minutes.</em></h2>
+        <p class="fx-zoom__s">Celle qui prépare votre commande, et dont vous connaissez l'équipe.</p>
+      </div>
+    </div>
+
+    <!-- Plan 3 — le détail, l'échelle humaine. C'est là qu'on atterrit. -->
+    <div class="fx-zoom__plan" data-plan="2">
+      <div>
+        <h2 class="fx-zoom__t">Et au bout,<br><em>votre comptoir.</em></h2>
+        <p class="fx-zoom__s">Tous les matins, à la même heure.</p>
+      </div>
+    </div>
+
+    <div class="fx-zoom__jauge"><i></i></div>
+  </div>
+</section>
+
+<script>
+(function(){
+  var reduit = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  document.querySelectorAll('[data-fx-zoom]').forEach(function(bloc){
+    var scene  = bloc.querySelector('.fx-zoom__scene');
+    var plans  = Array.prototype.slice.call(bloc.querySelectorAll('.fx-zoom__plan'));
+    var jauge  = bloc.querySelector('.fx-zoom__jauge i');
+    if (!plans.length) return;
+
+    // Mouvement réduit : on empile les plans, chacun lisible, aucun mouvement.
+    if (reduit) {
+      plans.forEach(function(p){ p.style.setProperty('--s',1); p.style.setProperty('--o',1); });
+      return;
+    }
+
+    var n = plans.length, tic = false;
+
+    function placer(){
+      tic = false;
+      var r = bloc.getBoundingClientRect();
+      var course = bloc.offsetHeight - scene.offsetHeight;
+      if (course <= 0) return;
+      // p va de 0 (haut du bloc atteint) à 1 (bas de la course)
+      var p = Math.min(1, Math.max(0, -r.top / course));
+      if (jauge) jauge.style.setProperty('--p', p);
+
+      plans.forEach(function(plan, i){
+        // chaque plan occupe sa tranche de la course, avec un recouvrement pour enchaîner sans à-coup
+        var t = p * n - i;                       // <0 : pas encore ; 0→1 : en scène ; >1 : dépassé
+        var s, o;
+        if (t < 0)      { s = 0.82; o = 0; }     // attend, légèrement en retrait
+        else if (t > 1) { s = 1.5;  o = 0; }     // dépassé, il a grandi et disparu
+        else {
+          s = 0.82 + t * 0.68;                   // 0,82 → 1,5 : traversée continue
+          o = t < 0.5 ? t / 0.5 : (1 - t) / 0.5; // apparaît puis s'efface
+          o = Math.min(1, o * 1.6);              // pleine opacité au milieu de la tranche
+        }
+        plan.style.setProperty('--s', s.toFixed(3));
+        plan.style.setProperty('--o', o.toFixed(3));
+      });
+    }
+
+    function onScroll(){ if (!tic){ tic = true; requestAnimationFrame(placer); } }
+    window.addEventListener('scroll', onScroll, {passive:true});
+    window.addEventListener('resize', onScroll, {passive:true});
+    placer();
+  });
+})();
+</script>
+<!-- FX:COPY:END -->
+
+<div style="height:80vh;display:grid;place-items:center;color:#54607A">fin</div>
+<div class="demo-note">zoom-scroll · une caméra, trois échelles</div>
+
+</body>
+</html>
