@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FX-BANK · Noise Grain</title>
+<!--
+/* FX-BANK · NOISE GRAIN
+   QUOI : Une texture de grain animée, très discrète, posée par-dessus un fond. Deux
+          couches de grain à des échelles différentes dérivent par petits sauts, comme la
+          matière d'une pellicule. Le grain est un SVG feTurbulence écrit dans le fichier
+          et encodé en data-URI : aucune image n'est téléchargée.
+   QUAND : Donner de la matière à un aplat ou à un grand dégradé. C'est aussi le remède au
+           « banding » — ces marches de couleur visibles dans les fonds dégradés : le grain
+           casse les paliers et le dégradé redevient lisse.
+   DEPENDANCES : aucune.
+   SAFARI : conforme. Aucun flou, aucun verre dépoli, aucun dégradé découpé dans du texte.
+            Le SVG sert de TEXTURE (background-image), il n'est jamais appliqué au contenu.
+            Uniquement transform + opacity, composés par le GPU.
+            Mouvement réduit = la texture reste, elle ne bouge plus.
+   COPIER : le bloc entre FX:COPY:START et FX:COPY:END */
+-->
+<style>
+  /* ---- DÉMO uniquement (hors bloc copiable) ---- */
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%}
+  body{background:#FBFCFE;color:#0E1626;
+    font:16px/1.6 ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif}
+  .demo-scene{position:relative;min-height:100vh;overflow:hidden;display:grid;place-items:center;
+    background:
+      radial-gradient(70% 55% at 18% 12%, rgba(255,255,255,.95), transparent 70%),
+      radial-gradient(85% 70% at 82% 8%,  rgba(0,80,230,.16),  transparent 68%),
+      radial-gradient(90% 80% at 50% 108%, rgba(14,22,38,.14), transparent 70%),
+      #FBFCFE;}
+  .demo-contenu{position:relative;z-index:6;text-align:center;padding:32px;max-width:min(90vw,720px)}
+  .demo-contenu h1{font-size:clamp(2rem,6vw,3.8rem);line-height:1.05;letter-spacing:-.03em;
+    font-weight:650;text-wrap:balance}
+  .demo-contenu h1 em{font-style:normal;color:#0050E6}
+  .demo-contenu p{margin-top:14px;color:#4A5670;text-wrap:balance}
+  .demo-actions{margin-top:26px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+  .demo-bouton{padding:11px 20px;min-height:44px;border:1px solid #C9D4E5;border-radius:999px;
+    background:#FFF;color:#0E1626;font:inherit;font-size:.9rem;cursor:pointer}
+  .demo-bouton:hover{border-color:#0050E6;color:#0050E6}
+  .demo-note{position:fixed;left:16px;bottom:16px;z-index:50;font-size:12px;letter-spacing:.1em;
+    text-transform:uppercase;color:#5A6780;background:#FFF;padding:8px 12px;border:1px solid #E1E7F0}
+  /* variante sombre de la démo */
+  body.demo-sombre .demo-scene{background:
+      radial-gradient(70% 55% at 18% 12%, rgba(120,165,255,.30), transparent 70%),
+      radial-gradient(85% 70% at 82% 8%,  rgba(0,80,230,.45),   transparent 68%),
+      radial-gradient(90% 80% at 50% 108%, rgba(243,154,27,.16), transparent 70%),
+      #0A0E1A;}
+  body.demo-sombre{background:#0A0E1A;color:#F1F5FB}
+  body.demo-sombre .demo-contenu p{color:#A9B6CC}
+  body.demo-sombre .demo-contenu h1 em{color:#7FA9FF}
+  body.demo-sombre .demo-bouton{background:transparent;color:#F1F5FB;border-color:#2A3852}
+  body.demo-sombre .demo-note{background:#0A0E1A;color:#8B96AC;border-color:#243349}
+
+  /* FX:COPY:START */
+  .fx-noise{
+    --fx-noise-force:.055;      /* .03 = souffle · .06 = matière · .10 = pellicule marquée */
+    --fx-noise-taille:170px;    /* taille de la tuile de grain fin */
+    --fx-noise-vitesse:1.6s;    /* durée d'un cycle de sautillement */
+    position:absolute; inset:0; z-index:5; pointer-events:none; overflow:hidden;
+  }
+  /* Chaque couche déborde de 140px de tous les côtés : on peut la déplacer
+     sans jamais découvrir un bord vide. */
+  .fx-noise__couche{
+    position:absolute; inset:-140px;
+    background-repeat:repeat;
+    will-change:transform;
+    animation:fx-noise-derive var(--fx-noise-vitesse) steps(1,end) infinite;
+    /* Grain : SVG feTurbulence écrit ici même, encodé en data-URI — aucun fichier chargé.
+       Il sert de TEXTURE de fond, il n'est jamais appliqué au contenu de la page.
+       Trois réglages font tout, et ils ont été mesurés à l'écran :
+        · numOctaves='1'  → du bruit fin, pas de nuages ;
+        · la matrice met tout le bruit dans la TRANSPARENCE d'un grain noir ;
+        · l'étirement (slope 3) rend le grain visible sans avoir à monter l'opacité,
+          donc sans grisailler le fond. Sur fond clair : grain noir. */
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='1' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='linear' slope='3' intercept='-1'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+  }
+  .fx-noise__couche--fin{
+    background-size:var(--fx-noise-taille) var(--fx-noise-taille);
+    opacity:var(--fx-noise-force);
+  }
+  /* La 2e couche, plus grosse et à contretemps : le grain cesse de « clignoter » régulier. */
+  .fx-noise__couche--large{
+    background-size:calc(var(--fx-noise-taille) * 2.6) calc(var(--fx-noise-taille) * 2.6);
+    opacity:calc(var(--fx-noise-force) * .65);
+    animation-duration:calc(var(--fx-noise-vitesse) * 1.75);
+    animation-direction:reverse;
+  }
+  /* Sauts secs (steps) : c'est ce qui fait « grain de pellicule » et non « voile qui glisse ». */
+  @keyframes fx-noise-derive{
+    0%   {transform:translate3d(0,0,0)}
+    12.5%{transform:translate3d(-16px,10px,0)}
+    25%  {transform:translate3d(12px,-14px,0)}
+    37.5%{transform:translate3d(-9px,-11px,0)}
+    50%  {transform:translate3d(15px,13px,0)}
+    62.5%{transform:translate3d(-13px,7px,0)}
+    75%  {transform:translate3d(8px,-9px,0)}
+    87.5%{transform:translate3d(-11px,-6px,0)}
+    100% {transform:translate3d(0,0,0)}
+  }
+
+  /* Sur fond sombre, un grain noir ne se voit pas : on retourne le grain en blanc
+     (même recette, la matrice sort du blanc) et on le monte un peu. */
+  .fx-noise--sombre{ --fx-noise-force:.09 }
+  .fx-noise--sombre .fx-noise__couche{
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='gs'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='1' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 1 0 0 0 0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='linear' slope='3' intercept='-1'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23gs)'/%3E%3C/svg%3E");
+  }
+  /* Grain 100 % fixe, sans sautillement (parfois plus juste sur une page de lecture). */
+  .fx-noise--fixe .fx-noise__couche{ animation:none }
+  /* Arrêt quand la zone sort de l'écran ou que l'onglet passe derrière (posé par le script). */
+  .fx-noise--pause .fx-noise__couche{ animation-play-state:paused }
+  /* Utilisé par la démo pour comparer avec / sans. */
+  .fx-noise--eteint{ opacity:0 }
+
+  /* Mouvement réduit : la matière reste — seul le sautillement disparaît. */
+  @media (prefers-reduced-motion: reduce){
+    .fx-noise__couche{ animation:none !important }
+    .fx-noise__couche--large{ transform:translate3d(9px,-7px,0) }
+  }
+  /* FX:COPY:END */
+</style>
+</head>
+<body>
+
+<section class="demo-scene">
+
+  <!-- FX:COPY:START -->
+  <!-- Le parent doit être en position:relative (ou absolute). Le grain se pose PAR-DESSUS
+       le fond et sous le contenu : donner un z-index supérieur à 5 au contenu. -->
+  <div class="fx-noise" data-fx-noise aria-hidden="true">
+    <span class="fx-noise__couche fx-noise__couche--fin"></span>
+    <span class="fx-noise__couche fx-noise__couche--large"></span>
+  </div>
+
+  <script>
+  (function(){
+    // Une texture qui sautille en permanence hors écran, c'est de la batterie perdue.
+    var blocs = Array.prototype.slice.call(document.querySelectorAll('[data-fx-noise]'));
+    if (!blocs.length) return;
+
+    function appliquer(bloc){
+      var actif = bloc.dataset.fxVisible !== '0' && !document.hidden;
+      bloc.classList.toggle('fx-noise--pause', !actif);
+    }
+
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function(entrees){
+        entrees.forEach(function(e){
+          e.target.dataset.fxVisible = e.isIntersecting ? '1' : '0';
+          appliquer(e.target);
+        });
+      }, {rootMargin:'120px'});
+      blocs.forEach(function(b){ io.observe(b); });
+    }
+
+    document.addEventListener('visibilitychange', function(){ blocs.forEach(appliquer); });
+  })();
+  </script>
+  <!-- FX:COPY:END -->
+
+  <div class="demo-contenu">
+    <h1>De la <em>matière</em>, pas un aplat.</h1>
+    <p>Le grain casse les marches de couleur du dégradé. Coupez-le puis remettez-le : le fond devient net, puis plat.</p>
+    <div class="demo-actions">
+      <button class="demo-bouton" type="button" data-demo-grain>Couper le grain</button>
+      <button class="demo-bouton" type="button" data-demo-theme>Voir la variante sombre</button>
+    </div>
+  </div>
+</section>
+
+<script>
+(function(){
+  var grain   = document.querySelector('.fx-noise');
+  var bGrain  = document.querySelector('[data-demo-grain]');
+  var bTheme  = document.querySelector('[data-demo-theme]');
+  if (!grain) return;
+
+  if (bGrain) bGrain.addEventListener('click', function(){
+    var eteint = grain.classList.toggle('fx-noise--eteint');
+    bGrain.textContent = eteint ? 'Remettre le grain' : 'Couper le grain';
+  });
+
+  if (bTheme) bTheme.addEventListener('click', function(){
+    var sombre = grain.classList.toggle('fx-noise--sombre');
+    document.body.classList.toggle('demo-sombre', sombre);
+    bTheme.textContent = sombre ? 'Revenir au clair' : 'Voir la variante sombre';
+  });
+})();
+</script>
+
+<div class="demo-note">noise-grain · grain SVG animé, très discret</div>
+
+</body>
+</html>

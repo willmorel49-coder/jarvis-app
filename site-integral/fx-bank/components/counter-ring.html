@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FX-BANK · Counter Ring</title>
+<!--
+/* FX-BANK · COUNTER RING
+   QUOI : Une jauge circulaire qui se remplit à l'apparition, avec sa valeur au centre. L'anneau
+          est un cercle SVG dont on anime le pointillé — net à toutes les tailles, aucun rognage.
+   QUAND : Une part, un taux de couverture, un niveau de service. ⚠️ Uniquement pour une valeur
+           qui EST un pourcentage ou une fraction : un anneau à 2 000 officines ne veut rien dire.
+   DEPENDANCES : aucune
+   SAFARI : conforme. Aucun flou, aucun verre dépoli, aucun dégradé découpé dans du texte.
+            L'anneau s'anime par stroke-dashoffset, pas par un masque.
+   ⚠️ USAGE PHARMA : n'afficher ici AUCUN taux touchant aux conditions commerciales. Un
+      pourcentage de cette nature sur un support public est une condition commerciale affichée.
+      Réserver ce composant à des données de service : couverture, disponibilité, ponctualité.
+   FILET : la valeur finale est écrite en clair dans le HTML et l'anneau part rempli en CSS.
+           Script cassé = jauge juste, simplement pas animée.
+   COPIER : le bloc entre FX:COPY:START et FX:COPY:END */
+-->
+<style>
+  body{margin:0;background:#FBFCFE;color:#0E1626;font:16px/1.6 ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif}
+  .demo-note{position:fixed;left:16px;bottom:16px;z-index:50;font-size:12px;letter-spacing:.1em;
+    text-transform:uppercase;color:#8B96AC;background:#FBFCFE;padding:8px 12px;border:1px solid #DCE5F4}
+
+  /* FX:COPY:START */
+  .fx-ring{
+    --fx-ring-accent:#0050E6;
+    --fx-ring-rail:#DCE5F4;
+    --fx-ring-doux:#54607A;
+    display:grid; gap:34px; grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
+    max-width:900px; margin:0 auto; padding:0 24px;
+  }
+  .fx-ring__bloc{ text-align:center }
+  .fx-ring__svg{ width:min(168px,44vw); height:auto; display:block; margin:0 auto 14px }
+  .fx-ring__rail{ fill:none; stroke:var(--fx-ring-rail); stroke-width:7 }
+  .fx-ring__jauge{
+    fill:none; stroke:var(--fx-ring-accent); stroke-width:7; stroke-linecap:round;
+    /* Départ REMPLI : si le script ne tourne pas, la jauge est juste, pas vide. */
+    stroke-dasharray:var(--tour,283);
+    stroke-dashoffset:var(--reste,0);
+    transform:rotate(-90deg); transform-origin:50% 50%;
+    transition:stroke-dashoffset 1.25s cubic-bezier(.22,.8,.25,1);
+  }
+  .fx-ring__val{
+    font-size:1.65rem; font-weight:650; letter-spacing:-.02em;
+    fill:#0E1626; font-variant-numeric:tabular-nums;
+  }
+  .fx-ring__l{
+    display:block; font-size:12.5px; letter-spacing:.09em; text-transform:uppercase;
+    color:var(--fx-ring-doux);
+  }
+  @media (prefers-reduced-motion: reduce){
+    .fx-ring__jauge{ transition:none }
+  }
+  /* FX:COPY:END */
+</style>
+</head>
+<body>
+
+<div style="height:65vh;display:grid;place-items:center;color:#8B96AC">↓ descendre</div>
+
+<!-- FX:COPY:START -->
+<section class="fx-ring" data-fx-ring>
+  <!-- data-valeur = le pourcentage. Le texte au centre est écrit en clair : il reste juste
+       même si le script ne démarre pas. -->
+  <div class="fx-ring__bloc">
+    <svg class="fx-ring__svg" viewBox="0 0 120 120" role="img" aria-label="Couverture du catalogue : 96 %">
+      <circle class="fx-ring__rail"  cx="60" cy="60" r="45"></circle>
+      <circle class="fx-ring__jauge" cx="60" cy="60" r="45" data-valeur="96"></circle>
+      <text class="fx-ring__val" x="60" y="67" text-anchor="middle">96 %</text>
+    </svg>
+    <span class="fx-ring__l">couverture du catalogue</span>
+  </div>
+
+  <div class="fx-ring__bloc">
+    <svg class="fx-ring__svg" viewBox="0 0 120 120" role="img" aria-label="Commandes livrées le lendemain : 99 %">
+      <circle class="fx-ring__rail"  cx="60" cy="60" r="45"></circle>
+      <circle class="fx-ring__jauge" cx="60" cy="60" r="45" data-valeur="99"></circle>
+      <text class="fx-ring__val" x="60" y="67" text-anchor="middle">99 %</text>
+    </svg>
+    <span class="fx-ring__l">livrées le lendemain</span>
+  </div>
+
+  <div class="fx-ring__bloc">
+    <svg class="fx-ring__svg" viewBox="0 0 120 120" role="img" aria-label="Références en stock : 90 %">
+      <circle class="fx-ring__rail"  cx="60" cy="60" r="45"></circle>
+      <circle class="fx-ring__jauge" cx="60" cy="60" r="45" data-valeur="90"></circle>
+      <text class="fx-ring__val" x="60" y="67" text-anchor="middle">90 %</text>
+    </svg>
+    <span class="fx-ring__l">références en stock</span>
+  </div>
+</section>
+
+<script>
+(function(){
+  var reduit = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var jauges = Array.prototype.slice.call(document.querySelectorAll('.fx-ring__jauge[data-valeur]'));
+  if (!jauges.length) return;
+
+  jauges.forEach(function(c){
+    var r = parseFloat(c.getAttribute('r')) || 45;
+    var tour = 2 * Math.PI * r;                 // longueur du cercle
+    var pct = Math.min(100, Math.max(0, parseFloat(c.getAttribute('data-valeur')) || 0));
+    c.style.setProperty('--tour', tour.toFixed(2));
+    c.dataset.reste = (tour * (1 - pct / 100)).toFixed(2);
+    // on vide l'anneau juste avant de l'animer — jamais avant, sinon un script interrompu
+    // laisserait une jauge vide alors que la valeur, elle, est bonne
+    if (!reduit) c.style.setProperty('--reste', tour.toFixed(2));
+    else c.style.setProperty('--reste', c.dataset.reste);
+  });
+
+  if (reduit) return;
+
+  var tic = false;
+  function verifier(){
+    tic = false;
+    var reste = false;
+    jauges.forEach(function(c){
+      if (c.dataset.fait) return;
+      var r = c.getBoundingClientRect();
+      if (r.top < window.innerHeight * 0.88 && r.bottom > 0){
+        c.dataset.fait = '1';
+        requestAnimationFrame(function(){ c.style.setProperty('--reste', c.dataset.reste); });
+      } else reste = true;
+    });
+    if (!reste) window.removeEventListener('scroll', onScroll);
+  }
+  function onScroll(){ if (!tic){ tic = true; requestAnimationFrame(verifier); } }
+  window.addEventListener('scroll', onScroll, {passive:true});
+  window.addEventListener('resize', onScroll, {passive:true});
+  verifier();
+})();
+</script>
+<!-- FX:COPY:END -->
+
+<div style="height:80vh;display:grid;place-items:center;color:#8B96AC">fin</div>
+<div class="demo-note">counter-ring · la jauge se remplit</div>
+
+</body>
+</html>

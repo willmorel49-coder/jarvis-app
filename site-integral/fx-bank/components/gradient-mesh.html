@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FX-BANK · Gradient Mesh</title>
+<!--
+/* FX-BANK · GRADIENT MESH
+   QUOI : Un fond de nappes de couleur qui dérivent très lentement les unes sur les autres.
+          Quatre grands radial-gradient + une source de lumière, déplacés uniquement en
+          transform. Le mélange se fait par superposition (multiply en clair, screen en
+          sombre), jamais par un adoucissement d'image.
+   QUAND : Fond de hero, de section, d'écran d'accueil. C'est le remplacement propre de
+           l'« aurora estompé » : même douceur, aucun coût de rendu continu.
+   DEPENDANCES : aucune.
+   SAFARI : conforme. Aucun flou, aucun verre dépoli, aucun dégradé découpé dans du texte.
+            Uniquement transform + opacity, composés par le GPU.
+            Mouvement réduit = les nappes figées sur une composition choisie, pas un fond blanc.
+   COPIER : le bloc entre FX:COPY:START et FX:COPY:END */
+-->
+<style>
+  /* ---- DÉMO uniquement (hors bloc copiable) ---- */
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%}
+  body{background:#FBFCFE;color:#0E1626;
+    font:16px/1.6 ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif}
+  .demo-hero{position:relative;min-height:100vh;overflow:hidden;display:grid;place-items:center;isolation:isolate}
+  .demo-contenu{position:relative;z-index:2;text-align:center;padding:32px;max-width:min(90vw,760px)}
+  .demo-contenu h1{font-size:clamp(2rem,6vw,4rem);line-height:1.05;letter-spacing:-.03em;font-weight:650;text-wrap:balance}
+  .demo-contenu h1 em{font-style:normal;color:#0050E6}
+  .demo-contenu p{margin-top:14px;color:#4A5670;font-size:clamp(1rem,2vw,1.15rem);text-wrap:balance}
+  .demo-bouton{margin-top:26px;padding:11px 20px;min-height:44px;border:1px solid #C9D4E5;border-radius:999px;
+    background:#FFF;color:#0E1626;font:inherit;font-size:.9rem;cursor:pointer}
+  .demo-bouton:hover{border-color:#0050E6;color:#0050E6}
+  .demo-note{position:fixed;left:16px;bottom:16px;z-index:50;font-size:12px;letter-spacing:.1em;
+    text-transform:uppercase;color:#5A6780;background:#FFF;padding:8px 12px;border:1px solid #E1E7F0}
+  /* la démo bascule en sombre pour montrer la variante — le clair reste le défaut */
+  body.demo-sombre{background:#0A0E1A;color:#F1F5FB}
+  body.demo-sombre .demo-contenu p{color:#A9B6CC}
+  body.demo-sombre .demo-contenu h1 em{color:#7FA9FF}
+  body.demo-sombre .demo-bouton{background:transparent;color:#F1F5FB;border-color:#2A3852}
+  body.demo-sombre .demo-note{background:#0A0E1A;color:#8B96AC;border-color:#243349}
+
+  /* FX:COPY:START */
+  .fx-mesh{
+    --fx-mesh-fond:#FBFCFE;               /* la couleur de base, visible dans les creux */
+    --fx-mesh-c1:rgba(0,80,230,.30);      /* bleu marque — la nappe dominante */
+    --fx-mesh-c2:rgba(0,80,230,.15);      /* bleu pâle — elle élargit la première */
+    --fx-mesh-c3:rgba(14,22,38,.13);      /* encre — c'est elle qui donne la profondeur */
+    --fx-mesh-c4:rgba(243,154,27,.13);    /* orange — accent rare, toujours le plus petit */
+    --fx-mesh-lumiere:rgba(255,255,255,.95); /* la source de lumière, posée par-dessus */
+    --fx-mesh-melange:multiply;           /* fond clair = multiply · fond sombre = screen */
+    --fx-mesh-vitesse:52s;                /* + grand = + lent. En dessous de 30s ça s'agite */
+    position:absolute; inset:0; z-index:0; overflow:hidden; pointer-events:none;
+    isolation:isolate;                    /* le mélange reste enfermé dans le bloc */
+    background:var(--fx-mesh-fond);
+  }
+  /* Une nappe = un grand radial-gradient qui s'éteint en transparence sur ses bords.
+     C'est le dégradé lui-même qui fait la douceur : rien n'est adouci après coup. */
+  .fx-mesh__nappe,
+  .fx-mesh__lumiere{
+    position:absolute; will-change:transform; transform-origin:50% 50%;
+    animation-duration:var(--fx-mesh-vitesse);
+    animation-timing-function:cubic-bezier(.45,.05,.55,.95);
+    animation-iteration-count:infinite;
+    animation-direction:alternate;
+  }
+  .fx-mesh__nappe{ mix-blend-mode:var(--fx-mesh-melange) }
+
+  .fx-mesh__nappe--a{
+    left:-20vmax; top:-26vmax; width:92vmax; height:92vmax;
+    background:radial-gradient(closest-side, var(--fx-mesh-c1), transparent 70%);
+    animation-name:fx-mesh-a;
+  }
+  .fx-mesh__nappe--b{
+    right:-26vmax; top:-18vmax; width:88vmax; height:88vmax;
+    background:radial-gradient(closest-side, var(--fx-mesh-c2), transparent 72%);
+    animation-name:fx-mesh-b; animation-duration:calc(var(--fx-mesh-vitesse) * 1.34);
+  }
+  .fx-mesh__nappe--c{
+    left:4vmax; bottom:-38vmax; width:96vmax; height:96vmax;
+    background:radial-gradient(closest-side, var(--fx-mesh-c3), transparent 68%);
+    animation-name:fx-mesh-c; animation-duration:calc(var(--fx-mesh-vitesse) * 1.72);
+  }
+  .fx-mesh__nappe--d{
+    right:-14vmax; bottom:-30vmax; width:58vmax; height:58vmax;
+    background:radial-gradient(closest-side, var(--fx-mesh-c4), transparent 66%);
+    animation-name:fx-mesh-d; animation-duration:calc(var(--fx-mesh-vitesse) * 2.15);
+  }
+  /* La source de lumière : elle ne se mélange pas, elle éclaire. Sans elle le fond est plat. */
+  .fx-mesh__lumiere{
+    left:-12vmax; top:-32vmax; width:94vmax; height:76vmax;
+    background:radial-gradient(closest-side, var(--fx-mesh-lumiere), transparent 68%);
+    animation-name:fx-mesh-lumiere; animation-duration:calc(var(--fx-mesh-vitesse) * 1.5);
+  }
+
+  @keyframes fx-mesh-a{
+    0%  {transform:translate3d(0,0,0) scale(1) rotate(0deg)}
+    100%{transform:translate3d(14%,9%,0) scale(1.22) rotate(9deg)}
+  }
+  @keyframes fx-mesh-b{
+    0%  {transform:translate3d(0,0,0) scale(1.06) rotate(0deg)}
+    100%{transform:translate3d(-16%,13%,0) scale(1.30) rotate(-11deg)}
+  }
+  @keyframes fx-mesh-c{
+    0%  {transform:translate3d(0,0,0) scale(1.04) rotate(0deg)}
+    100%{transform:translate3d(12%,-15%,0) scale(1.24) rotate(7deg)}
+  }
+  @keyframes fx-mesh-d{
+    0%  {transform:translate3d(0,0,0) scale(.94) rotate(0deg)}
+    100%{transform:translate3d(-20%,-9%,0) scale(1.18) rotate(-6deg)}
+  }
+  @keyframes fx-mesh-lumiere{
+    0%  {transform:translate3d(-4%,-3%,0) scale(1)}
+    100%{transform:translate3d(9%,6%,0) scale(1.14)}
+  }
+
+  /* Variante sombre — minoritaire : le clair reste le défaut. */
+  .fx-mesh--sombre{
+    --fx-mesh-fond:#0A0E1A;
+    --fx-mesh-c1:rgba(0,80,230,.55);
+    --fx-mesh-c2:rgba(64,130,255,.28);
+    --fx-mesh-c3:rgba(120,150,210,.16);
+    --fx-mesh-c4:rgba(243,154,27,.20);
+    --fx-mesh-lumiere:rgba(180,210,255,.40);
+    --fx-mesh-melange:screen;
+  }
+  .fx-mesh--sombre .fx-mesh__lumiere{ mix-blend-mode:screen }
+
+  /* Le fond ne tourne que quand il est visible (posé par le script). */
+  .fx-mesh--pause .fx-mesh__nappe,
+  .fx-mesh--pause .fx-mesh__lumiere{ animation-play-state:paused }
+
+  /* Mouvement réduit : composition figée, choisie — décalée, avec sa lumière en haut à gauche. */
+  @media (prefers-reduced-motion: reduce){
+    .fx-mesh__nappe,
+    .fx-mesh__lumiere{ animation:none !important }
+    .fx-mesh__nappe--a{ transform:translate3d(9%,6%,0) scale(1.14) rotate(6deg) }
+    .fx-mesh__nappe--b{ transform:translate3d(-10%,8%,0) scale(1.20) rotate(-7deg) }
+    .fx-mesh__nappe--c{ transform:translate3d(7%,-9%,0) scale(1.15) rotate(4deg) }
+    .fx-mesh__nappe--d{ transform:translate3d(-12%,-5%,0) scale(1.08) rotate(-4deg) }
+    .fx-mesh__lumiere{ transform:translate3d(3%,2%,0) scale(1.08) }
+  }
+  /* FX:COPY:END */
+</style>
+</head>
+<body>
+
+<section class="demo-hero">
+
+  <!-- FX:COPY:START -->
+  <!-- Le parent doit être en position:relative (ou absolute) et en overflow:hidden. -->
+  <div class="fx-mesh" data-fx-mesh aria-hidden="true">
+    <span class="fx-mesh__nappe fx-mesh__nappe--a"></span>
+    <span class="fx-mesh__nappe fx-mesh__nappe--b"></span>
+    <span class="fx-mesh__nappe fx-mesh__nappe--c"></span>
+    <span class="fx-mesh__nappe fx-mesh__nappe--d"></span>
+    <span class="fx-mesh__lumiere"></span>
+  </div>
+
+  <script>
+  (function(){
+    // Un fond permanent ne doit pas tourner dans le vide : on l'arrête dès qu'il
+    // sort de l'écran ou que l'onglet passe en arrière-plan.
+    var blocs = Array.prototype.slice.call(document.querySelectorAll('[data-fx-mesh]'));
+    if (!blocs.length) return;
+
+    function appliquer(bloc){
+      var actif = bloc.dataset.fxVisible !== '0' && !document.hidden;
+      bloc.classList.toggle('fx-mesh--pause', !actif);
+    }
+
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function(entrees){
+        entrees.forEach(function(e){
+          e.target.dataset.fxVisible = e.isIntersecting ? '1' : '0';
+          appliquer(e.target);
+        });
+      }, {rootMargin:'150px'});
+      blocs.forEach(function(b){ io.observe(b); });
+    }
+
+    document.addEventListener('visibilitychange', function(){ blocs.forEach(appliquer); });
+  })();
+  </script>
+  <!-- FX:COPY:END -->
+
+  <div class="demo-contenu">
+    <h1>Un réseau qui vous <em>connaît</em>.</h1>
+    <p>Nappes de couleur qui dérivent — aucun adoucissement d'image, uniquement des dégradés superposés.</p>
+    <button class="demo-bouton" type="button" data-demo-theme>Voir la variante sombre</button>
+  </div>
+</section>
+
+<script>
+(function(){
+  var bouton = document.querySelector('[data-demo-theme]');
+  var mesh   = document.querySelector('.fx-mesh');
+  if (!bouton || !mesh) return;
+  bouton.addEventListener('click', function(){
+    var sombre = mesh.classList.toggle('fx-mesh--sombre');
+    document.body.classList.toggle('demo-sombre', sombre);
+    bouton.textContent = sombre ? 'Revenir au clair' : 'Voir la variante sombre';
+  });
+})();
+</script>
+
+<div class="demo-note">gradient-mesh · nappes qui dérivent, zéro adoucissement</div>
+
+</body>
+</html>
