@@ -198,7 +198,7 @@ h1 em,h2 em{font-style:normal;color:var(--bleu)}
 /* ─── 8. Boutons ───────────────────────────────────────────────────────── */
 .btns{display:flex;flex-wrap:wrap;gap:12px;margin-top:26px}
 .btn{
-  display:inline-flex;align-items:center;gap:10px;min-height:50px;padding:0 24px;
+  display:inline-flex;align-items:center;gap:10px;min-height:52px;padding:0 24px;
   border-radius:12px;text-decoration:none;font-weight:600;font-size:15.5px;letter-spacing:-.01em;
   border:1px solid transparent;
 }
@@ -291,7 +291,7 @@ h1 em,h2 em{font-style:normal;color:var(--bleu)}
 .pied__l a{color:var(--bleu);text-decoration:none;font-weight:560;min-height:44px;display:inline-flex;align-items:center}
 .pied__l a:hover{text-decoration:underline}
 .pied__chiffres{font:530 12.5px/1.6 var(--police);letter-spacing:.085em;text-transform:uppercase;color:var(--encre-3);border-top:1px solid var(--trait);padding-top:18px}
-.pied__da{font:500 11.5px/1.5 var(--mono);color:var(--encre-3);letter-spacing:.05em}
+.pied__da{font:500 12.5px/1.5 var(--mono);color:var(--encre-3);letter-spacing:.04em}
 .pied__da b{color:var(--bleu-nuit)}
 
 .signature{
@@ -320,7 +320,8 @@ h1 em,h2 em{font-style:normal;color:var(--bleu)}
   .compteurs{gap:16px 30px}
   .btns .btn{flex:1 1 auto;justify-content:center}
   .cadre{width:88vw;border-radius:13px}
-  .bandeau{font-size:10.5px;letter-spacing:.06em}
+  .bandeau{font-size:11.5px;letter-spacing:.055em}
+  .geste__no{top:-.42em;color:#E2EBFA}
 }
 @media (max-width:820px) and (max-height:720px){
   .txt{line-height:1.55}
@@ -334,7 +335,7 @@ h1 em,h2 em{font-style:normal;color:var(--bleu)}
   .foc.cine .plan{position:relative;inset:auto;opacity:1 !important;transform:none !important;
                   padding:clamp(52px,8vh,96px) 0;border-bottom:1px solid var(--trait);display:block}
   .foc.cine .plan__in{padding:0}
-  .champ,.rail,.jauge{display:none !important}
+  .champ,.rail,.jauge,.indice{display:none !important}
   .panneau{transition:none}
 }
 </style>
@@ -443,6 +444,12 @@ h1 em,h2 em{font-style:normal;color:var(--bleu)}
           <div class="compteur"><b>2006</b><i>année de création</i></div>
           <div class="compteur"><b>9</b><i>implantations</i></div>
           <div class="compteur"><b>2&#8239;000 +</b><i>officines livrées</i></div>
+          <!-- Ce quatrième compteur avait été coupé au motif qu'une note du BRIEF-DA-2026
+               jugeait « +20 ans » trompeur — le groupe n'ayant alors que huit ans. Cette note
+               est devenue caduque le 14/08 : Will a tranché que la création date de 2006, et
+               les vingt ans en découlent directement. Les trois autres directions le portent ;
+               le retirer ici créait un écart entre les maquettes sans raison. -->
+          <div class="compteur"><b>20</b><i>ans d'indépendance</i></div>
         </div>
       </div>
     </section>
