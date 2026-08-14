@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FX-BANK · Split Sticky</title>
+<!--
+/* FX-BANK · SPLIT STICKY
+   QUOI : L'écran est coupé en deux du haut en bas de la PAGE, pas d'un bloc. À gauche un volet
+          qui se fige et ne change qu'au palier suivant (numéro + titre + une ligne). À droite
+          le contenu qui défile normalement. Cinq paliers s'enchaînent en se poussant l'un
+          l'autre : le volet sortant est chassé par le volet entrant, sans trou ni saut.
+   QUAND : Une page « comment ça marche » en étapes numérotées, un parcours, une méthode.
+           C'est l'architecture qui donne à un site l'air d'être écrit, pas empilé — la tension
+           du récit devient structurelle : on ne peut pas lire l'étape 4 avant la 3.
+   DEPENDANCES : aucune. Aucune image, aucune police, aucun script distant.
+                 Les visuels de démonstration sont des SVG écrits dans le fichier.
+   SAFARI : conforme. Aucun flou, aucun verre dépoli, aucun dégradé découpé dans du texte.
+            Uniquement transform, opacity et position:sticky, composés par le GPU.
+            Mouvement réduit = cinq sections simples empilées, rien de figé, rien de coupé.
+   FILET : la révélation des blocs de droite se décide sur la position réelle lue à chaque
+           défilement, jamais sur une notification unique qui pourrait ne jamais arriver.
+           Aucun texte transparent au repos : script cassé, la page reste entièrement lisible.
+   MESURE : un volet collé rend toujours la même position d'écran — le mesurer ne dit rien.
+            La progression d'un palier se lit sur la section SUIVANTE, la seule qui bouge encore.
+   COPIER : le bloc entre FX:COPY:START et FX:COPY:END */
+-->
+<style>
+  body{margin:0;background:#FBFCFE;color:#0E1626;font:16px/1.6 ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif}
+  .demo-note{position:fixed;left:16px;bottom:16px;z-index:50;font-size:12px;letter-spacing:.1em;
+    text-transform:uppercase;color:#8B96AC;background:#FBFCFE;padding:8px 12px;border:1px solid #DCE5F4}
+
+  /* FX:COPY:START */
+  .fx-split{
+    --fx-split-bleu:#0050E6;
+    --fx-split-orange:#F39A1B;      /* accent rare : un seul emploi sur toute la page */
+    --fx-split-encre:#0E1626;
+    --fx-split-gris:#54607A;
+    --fx-split-bord:#DCE5F4;
+    --fx-split-fond:#FBFCFE;
+    --fx-split-volet:40%;           /* largeur du panneau figé */
+    --fx-split-gouttiere:64px;
+    --fx-split-marge:clamp(20px,4vw,64px);
+    background:var(--fx-split-fond); color:var(--fx-split-encre);
+  }
+
+  /* ---- Ouverture ---- */
+  .fx-split__hero{
+    max-width:1180px; margin:0 auto; padding:clamp(72px,12vh,140px) var(--fx-split-marge) clamp(56px,9vh,110px);
+  }
+  .fx-split__sur{
+    margin:0 0 18px; font-size:.78rem; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--fx-split-bleu); font-weight:650;
+  }
+  .fx-split__geant{
+    margin:0 0 20px; font-size:clamp(2.1rem,6vw,4.4rem); line-height:1.04;
+    letter-spacing:-.028em; font-weight:660; text-wrap:balance; max-width:16ch;
+  }
+  .fx-split__chapo{
+    margin:0; max-width:56ch; color:var(--fx-split-gris); font-size:clamp(1rem,1.6vw,1.16rem);
+  }
+
+  /* ---- Le squelette : chaque section est une grille à deux colonnes ----
+     Le volet est collé dans SA section. Quand la section se termine, le volet de la
+     suivante le pousse hors de l'écran : les paliers se relaient sans laisser de trou. */
+  .fx-split__section{
+    display:grid;
+    grid-template-columns:var(--fx-split-volet) 1fr;
+    gap:0;
+    max-width:1180px; margin:0 auto; padding:0 var(--fx-split-marge);
+    /* Plancher seulement. La hauteur vient du CONTENU de la colonne de droite :
+       forcer ici un écran et demi creuserait un grand vide sous les sections courtes.
+       C'est le contenu qui doit valoir un écran et demi, pas la règle CSS. */
+    min-height:100vh;
+  }
+  /* Le volet fait EXACTEMENT une hauteur d'écran. C'est ce qui donne le relais propre :
+     le volet sortant est chassé par le volet entrant, et il n'y a jamais deux titres à
+     l'écran en même temps. Un volet à la hauteur de son contenu tiendrait plus longtemps,
+     mais les deux paliers se chevaucheraient pendant la bascule.
+     Conséquence à connaître au montage : le volet reste figé sur (hauteur de section −
+     un écran). Donner à chaque section un écran et demi de contenu, sinon le palier
+     passe trop vite.
+     Le trait vertical est porté par la colonne de droite, qui va d'un bord à l'autre de
+     la section : la ligne est continue par construction, sans trou entre les paliers. */
+  .fx-split__volet{
+    position:sticky; top:0; align-self:start;
+    height:100vh; height:100svh;
+    display:flex; flex-direction:column; justify-content:flex-start;
+    padding:20vh var(--fx-split-gouttiere) 0 0;
+    box-sizing:border-box;
+  }
+  .fx-split__num{
+    display:block; font-variant-numeric:tabular-nums; line-height:1;
+    font-size:clamp(2.6rem,5vw,4.2rem); font-weight:660; letter-spacing:-.03em;
+    color:var(--fx-split-bord);
+    transition:color .5s ease;
+  }
+  .fx-split__section.est-actif .fx-split__num{ color:var(--fx-split-bleu) }
+  .fx-split__section.est-phare.est-actif .fx-split__num{ color:var(--fx-split-orange) }
+
+  .fx-split__titre{
+    margin:14px 0 10px; font-size:clamp(1.5rem,2.6vw,2.2rem); line-height:1.1;
+    letter-spacing:-.02em; font-weight:650; text-wrap:balance;
+  }
+  .fx-split__ligne{ margin:0; color:var(--fx-split-gris); font-size:.99rem; max-width:34ch }
+
+  /* La jauge du palier : elle dit où on en est DANS l'étape en cours. */
+  .fx-split__jauge{
+    margin-top:26px; width:120px; height:2px; background:var(--fx-split-bord); overflow:hidden;
+  }
+  .fx-split__jauge i{
+    display:block; width:100%; height:100%; background:var(--fx-split-bleu);
+    transform-origin:left; transform:scaleX(var(--p,0));
+  }
+
+  /* ---- La colonne qui défile ---- */
+  .fx-split__corps{
+    padding:18vh 0 20vh var(--fx-split-gouttiere);
+    border-left:1px solid var(--fx-split-bord);
+    max-width:calc(56ch + var(--fx-split-gouttiere)); box-sizing:content-box;
+  }
+  /* L'air se met ENTRE les blocs, pas au changement de palier : un grand vide au moment
+     de la bascule se lit comme un trou dans la page. */
+  .fx-split__bloc + .fx-split__bloc{ margin-top:12vh }
+  /* Le filet : au repos le bloc est PLEINEMENT lisible. La mise en retrait n'existe
+     que si le script a démarré — il pose lui-même la classe `est-anime`. Script
+     absent, en erreur ou bloqué : la page reste exactement la même, entièrement lue. */
+  .fx-split.est-anime .fx-split__bloc{
+    opacity:.42; transform:translateY(14px);
+    transition:opacity .6s ease, transform .6s cubic-bezier(.22,.8,.25,1);
+  }
+  .fx-split.est-anime .fx-split__bloc.est-vu{ opacity:1; transform:none }
+
+  .fx-split__p{ margin:0 0 16px; color:#2A3550; font-size:1.04rem }
+  .fx-split__p:last-child{ margin-bottom:0 }
+  .fx-split__p strong{ font-weight:650; color:var(--fx-split-encre) }
+
+  .fx-split__encart{
+    border:1px solid var(--fx-split-bord); border-left:3px solid var(--fx-split-bleu);
+    background:#fff; padding:20px 22px;
+  }
+  .fx-split__encart h3{
+    margin:0 0 8px; font-size:.78rem; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--fx-split-bleu); font-weight:650;
+  }
+  .fx-split__encart p{ margin:0; color:var(--fx-split-gris); font-size:.97rem }
+
+  .fx-split__liste{ margin:0; padding:0; list-style:none; border-top:1px solid var(--fx-split-bord) }
+  .fx-split__liste li{
+    display:flex; gap:14px; align-items:baseline;
+    padding:13px 0; border-bottom:1px solid var(--fx-split-bord); font-size:.99rem;
+  }
+  .fx-split__liste b{
+    flex:0 0 auto; font-variant-numeric:tabular-nums; color:var(--fx-split-bleu);
+    font-weight:650; font-size:.86rem; letter-spacing:.06em;
+  }
+  .fx-split__liste span{ color:#2A3550 }
+
+  /* Visuels de démonstration : SVG écrits dans le fichier, zéro requête réseau. */
+  .fx-split__visuel{
+    height:230px; border:1px solid var(--fx-split-bord);
+    background-repeat:no-repeat; background-position:center; background-size:cover;
+  }
+  .fx-split__visuel--quais{
+    background-image:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 640 300'><rect width='640' height='300' fill='%23F4F8FE'/><g stroke='%23DCE5F4' stroke-width='2'><path d='M0 238h640'/></g><g fill='%230050E6' opacity='.16'><rect x='54' y='152' width='80' height='86' rx='5'/><rect x='150' y='120' width='80' height='118' rx='5'/><rect x='246' y='168' width='80' height='70' rx='5'/><rect x='342' y='98' width='80' height='140' rx='5'/><rect x='438' y='140' width='80' height='98' rx='5'/><rect x='534' y='176' width='60' height='62' rx='5'/></g><g fill='%230050E6'><rect x='342' y='98' width='80' height='9' rx='4.5'/></g><g fill='%2354607A' opacity='.5'><circle cx='94' cy='262' r='4'/><circle cx='190' cy='262' r='4'/><circle cx='286' cy='262' r='4'/><circle cx='382' cy='262' r='4'/><circle cx='478' cy='262' r='4'/></g></svg>");
+  }
+  .fx-split__visuel--froid{
+    background-image:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 640 300'><rect width='640' height='300' fill='%23F4F8FE'/><g stroke='%23DCE5F4' stroke-width='1.5' stroke-dasharray='5 7'><path d='M40 96h560'/><path d='M40 204h560'/></g><path d='M40 176 L136 168 L232 182 L328 158 L424 172 L520 164 L600 174' fill='none' stroke='%230050E6' stroke-width='3' stroke-linejoin='round' stroke-linecap='round'/><g fill='%230050E6'><circle cx='136' cy='168' r='5'/><circle cx='232' cy='182' r='5'/><circle cx='328' cy='158' r='5'/><circle cx='424' cy='172' r='5'/><circle cx='520' cy='164' r='5'/></g><g fill='%2354607A' font-family='sans-serif' font-size='16'><text x='40' y='88'>8 °C</text><text x='40' y='232'>2 °C</text></g></svg>");
+  }
+  .fx-split__visuel--reseau{
+    background-image:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 640 300'><rect width='640' height='300' fill='%23F4F8FE'/><g stroke='%230050E6' stroke-width='1.6' opacity='.35' fill='none'><path d='M320 150 L120 76'/><path d='M320 150 L96 196'/><path d='M320 150 L232 250'/><path d='M320 150 L470 66'/><path d='M320 150 L556 140'/><path d='M320 150 L500 244'/><path d='M320 150 L300 54'/></g><g fill='%230050E6'><circle cx='120' cy='76' r='7'/><circle cx='96' cy='196' r='7'/><circle cx='232' cy='250' r='7'/><circle cx='470' cy='66' r='7'/><circle cx='556' cy='140' r='7'/><circle cx='500' cy='244' r='7'/><circle cx='300' cy='54' r='7'/></g><circle cx='320' cy='150' r='16' fill='%23FFFFFF' stroke='%230050E6' stroke-width='4'/></svg>");
+  }
+
+  /* ---- Sortie ---- */
+  .fx-split__pied{
+    border-top:1px solid var(--fx-split-bord); margin-top:40px;
+    padding:clamp(56px,9vh,96px) var(--fx-split-marge);
+  }
+  .fx-split__pied > div{ max-width:1180px; margin:0 auto }
+  .fx-split__pied h2{ margin:0 0 12px; font-size:clamp(1.5rem,3vw,2.3rem); letter-spacing:-.02em; font-weight:650 }
+  .fx-split__pied p{ margin:0 0 26px; color:var(--fx-split-gris); max-width:52ch }
+  .fx-split__cta{
+    display:inline-block; padding:14px 26px; background:var(--fx-split-bleu); color:#fff;
+    text-decoration:none; font-weight:640; font-size:1rem; min-height:44px; box-sizing:border-box;
+  }
+  .fx-split__cta:hover{ background:#0043C4 }
+
+  /* ---- Mobile : les deux colonnes se remettent l'une sous l'autre.
+         Le volet redevient un simple titre de section, posé au-dessus du texte. ---- */
+  @media (max-width:880px){
+    .fx-split__section{
+      grid-template-columns:1fr; gap:0; min-height:0;
+      padding-top:46px; padding-bottom:10px;
+    }
+    .fx-split__volet{
+      position:static; display:block; height:auto;
+      padding:0 0 18px; border-bottom:1px solid var(--fx-split-bord);
+    }
+    .fx-split__num{ font-size:1.7rem; display:inline-block; vertical-align:middle }
+    .fx-split__titre{ display:inline-block; vertical-align:middle; margin:0 0 0 14px; font-size:1.45rem }
+    .fx-split__ligne{ margin-top:10px; max-width:none }
+    .fx-split__jauge{ display:none }
+    .fx-split__corps{ padding:26px 0 6px; border-left:0; max-width:none }
+    .fx-split__bloc + .fx-split__bloc{ margin-top:30px }
+    .fx-split__visuel{ height:180px }
+  }
+
+  /* ---- Repli : plus rien n'est figé, cinq sections simples empilées ---- */
+  @media (prefers-reduced-motion: reduce){
+    .fx-split__section{ grid-template-columns:1fr; min-height:0; padding-top:44px }
+    .fx-split__volet{
+      position:static; display:block; height:auto;
+      padding:0 0 18px; border-bottom:1px solid var(--fx-split-bord);
+    }
+    .fx-split__num{ color:var(--fx-split-bleu); font-size:1.7rem }
+    .fx-split__jauge{ display:none }
+    .fx-split__corps{ padding:26px 0 6px; border-left:0 }
+    .fx-split__bloc + .fx-split__bloc{ margin-top:30px }
+    .fx-split.est-anime .fx-split__bloc{ opacity:1; transform:none; transition:none }
+  }
+  /* FX:COPY:END */
+</style>
+</head>
+<body>
+
+<!-- FX:COPY:START -->
+<main class="fx-split" data-fx-split>
+
+  <header class="fx-split__hero">
+    <p class="fx-split__sur">Notre métier, du quai au comptoir</p>
+    <h1 class="fx-split__geant">Cinq étapes entre le laboratoire et le patient.</h1>
+    <p class="fx-split__chapo">Aucune n'est spectaculaire. Prises ensemble, elles décident si la boîte
+      que le pharmacien attend sera là ce matin — ou pas.</p>
+  </header>
+
+  <!-- Palier 01 ------------------------------------------------------------->
+  <section class="fx-split__section">
+    <div class="fx-split__volet">
+      <span class="fx-split__num">01</span>
+      <h2 class="fx-split__titre">La réception</h2>
+      <p class="fx-split__ligne">Rien n'entre en stock sans être identifié, daté et tracé.</p>
+      <div class="fx-split__jauge"><i></i></div>
+    </div>
+    <div class="fx-split__corps">
+      <div class="fx-split__bloc">
+        <p class="fx-split__p">Les palettes arrivent des laboratoires toute la journée. Chaque colis est
+          ouvert, compté, rapproché du bon de livraison, puis rangé à un emplacement connu.
+          <strong>Un carton mal rangé est un carton perdu</strong> : il ne ressortira pas au bon moment.</p>
+        <p class="fx-split__p">Les numéros de lot et les dates de péremption sont saisis à l'entrée.
+          C'est ce qui permet, des mois plus tard, de retrouver en quelques minutes toutes les officines
+          concernées par un rappel de lot.</p>
+      </div>
+      <div class="fx-split__bloc">
+        <div class="fx-split__visuel fx-split__visuel--quais" role="img"
+             aria-label="Schéma de quais de réception, six emplacements de hauteurs différentes."></div>
+      </div>
+      <div class="fx-split__bloc">
+        <ul class="fx-split__liste">
+          <li><b>COMPTÉ</b><span>Le reçu est rapproché du bon de livraison, colis par colis.</span></li>
+          <li><b>TRACÉ</b><span>Numéro de lot et date de péremption saisis dès l'entrée.</span></li>
+          <li><b>RANGÉ</b><span>Chaque référence à un emplacement unique et connu.</span></li>
+        </ul>
+      </div>
+      <div class="fx-split__bloc">
+        <div class="fx-split__encart">
+          <h3>Ce qui se joue ici</h3>
+          <p>Un produit reçu mais mal identifié n'existe pas pour le système. Il sera introuvable
+            le jour où une officine le demandera.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Palier 02 ------------------------------------------------------------->
+  <section class="fx-split__section">
+    <div class="fx-split__volet">
+      <span class="fx-split__num">02</span>
+      <h2 class="fx-split__titre">La préparation</h2>
+      <p class="fx-split__ligne">Des milliers de lignes à préparer, sans en oublier une seule.</p>
+      <div class="fx-split__jauge"><i></i></div>
+    </div>
+    <div class="fx-split__corps">
+      <div class="fx-split__bloc">
+        <p class="fx-split__p">Une commande d'officine, ce n'est pas un carton : c'est une liste de
+          références différentes, souvent unitaires, à réunir dans le même bac. Les préparateurs
+          suivent un chemin calculé pour ne jamais revenir sur leurs pas.</p>
+        <p class="fx-split__p">Les produits sensibles sortent en dernier, au plus près du départ,
+          pour rester le moins longtemps possible hors de leur environnement.</p>
+      </div>
+      <div class="fx-split__bloc">
+        <ul class="fx-split__liste">
+          <li><b>ÉTAPE 1</b><span>Le bac est identifié au nom de l'officine.</span></li>
+          <li><b>ÉTAPE 2</b><span>Chaque ligne est scannée au moment où elle est prise.</span></li>
+          <li><b>ÉTAPE 3</b><span>Le bac est contrôlé avant fermeture, ligne à ligne.</span></li>
+          <li><b>ÉTAPE 4</b><span>Il rejoint le quai de départ de sa tournée.</span></li>
+        </ul>
+      </div>
+      <div class="fx-split__bloc">
+        <div class="fx-split__visuel fx-split__visuel--quais" role="img"
+             aria-label="Schéma de postes de préparation, six emplacements de hauteurs différentes."></div>
+      </div>
+      <div class="fx-split__bloc">
+        <div class="fx-split__encart">
+          <h3>Dit tout de suite</h3>
+          <p>Ce qui manque est signalé au moment de la préparation, pas à la livraison :
+            le pharmacien peut arbitrer avant que son patient soit devant lui.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Palier 03 — le seul palier « phare », le seul accent orange de la page -->
+  <section class="fx-split__section est-phare">
+    <div class="fx-split__volet">
+      <span class="fx-split__num">03</span>
+      <h2 class="fx-split__titre">Le froid</h2>
+      <p class="fx-split__ligne">Entre 2 et 8 °C, du laboratoire jusqu'au réfrigérateur de l'officine.</p>
+      <div class="fx-split__jauge"><i></i></div>
+    </div>
+    <div class="fx-split__corps">
+      <div class="fx-split__bloc">
+        <p class="fx-split__p">Vaccins, insulines, biosimilaires : une rupture de chaîne du froid ne se
+          voit pas. Le produit a l'air intact et ne l'est plus. <strong>C'est le seul endroit du métier
+          où l'erreur est invisible</strong> — donc le seul où l'on ne peut pas se contenter de faire attention.</p>
+      </div>
+      <div class="fx-split__bloc">
+        <div class="fx-split__visuel fx-split__visuel--froid" role="img"
+             aria-label="Courbe de température restant entre 2 et 8 degrés sur tout le trajet."></div>
+      </div>
+      <div class="fx-split__bloc">
+        <div class="fx-split__encart">
+          <h3>Enregistré, pas promis</h3>
+          <p>La température est relevée en continu dans les chambres froides et dans les contenants
+            de transport. L'historique est conservé : il peut être ressorti à la demande.</p>
+        </div>
+      </div>
+      <div class="fx-split__bloc">
+        <p class="fx-split__p">À l'arrivée, ces produits ne sont jamais déposés sur un comptoir en
+          attendant que quelqu'un passe. Ils sont remis en main propre, et rangés tout de suite.</p>
+        <p class="fx-split__p">C'est la dernière minute du trajet — et c'est souvent là que la
+          chaîne se casse.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Palier 04 ------------------------------------------------------------->
+  <section class="fx-split__section">
+    <div class="fx-split__volet">
+      <span class="fx-split__num">04</span>
+      <h2 class="fx-split__titre">Les tournées</h2>
+      <p class="fx-split__ligne">Deux passages par jour, aux mêmes heures, toute l'année.</p>
+      <div class="fx-split__jauge"><i></i></div>
+    </div>
+    <div class="fx-split__corps">
+      <div class="fx-split__bloc">
+        <p class="fx-split__p">Les camions partent avant l'ouverture des officines. Un chauffeur connaît
+          sa tournée, ses accès, ses horaires de livraison, et souvent l'équipe qui l'attend.
+          Ce n'est pas un détail de confort : c'est ce qui fait qu'un colis mal adressé se rattrape
+          en un appel plutôt qu'en un jour.</p>
+        <p class="fx-split__p">Le maillage compte autant que les moyens. Une implantation proche,
+          c'est un délai court sans avoir à rouler vite.</p>
+      </div>
+      <div class="fx-split__bloc">
+        <div class="fx-split__visuel fx-split__visuel--reseau" role="img"
+             aria-label="Schéma d'un réseau : un point central relié à sept implantations."></div>
+      </div>
+      <div class="fx-split__bloc">
+        <ul class="fx-split__liste">
+          <li><b>AVANT 9 H</b><span>La commande de la veille au soir est déjà livrée.</span></li>
+          <li><b>DANS LA JOURNÉE</b><span>Second passage pour ce qui a été demandé le matin.</span></li>
+          <li><b>WEEK-END</b><span>Les officines de garde sont desservies comme en semaine.</span></li>
+        </ul>
+      </div>
+      <div class="fx-split__bloc">
+        <div class="fx-split__encart">
+          <h3>Le dimanche soir aussi</h3>
+          <p>Quand une officine de garde appelle, il faut que quelqu'un décroche et qu'un
+            véhicule puisse partir. C'est le jour où l'on juge un répartiteur.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Palier 05 ------------------------------------------------------------->
+  <section class="fx-split__section">
+    <div class="fx-split__volet">
+      <span class="fx-split__num">05</span>
+      <h2 class="fx-split__titre">Le comptoir</h2>
+      <p class="fx-split__ligne">Là où tout ce qui précède devient visible — ou pas.</p>
+      <div class="fx-split__jauge"><i></i></div>
+    </div>
+    <div class="fx-split__corps">
+      <div class="fx-split__bloc">
+        <p class="fx-split__p">Le patient ne voit ni les quais, ni les bacs, ni les relevés de température.
+          Il voit un pharmacien qui lui dit « c'est là » ou « je vous le fais venir pour cet après-midi ».</p>
+        <p class="fx-split__p">Tout le métier tient dans l'écart entre ces deux phrases.</p>
+      </div>
+      <div class="fx-split__bloc">
+        <ul class="fx-split__liste">
+          <li><b>MATIN</b><span>La commande de la veille au soir est sur le comptoir.</span></li>
+          <li><b>MIDI</b><span>Ce qui a été demandé dans la matinée repart en préparation.</span></li>
+          <li><b>SOIR</b><span>Second passage : l'ordonnance de l'après-midi est servie le jour même.</span></li>
+        </ul>
+      </div>
+      <div class="fx-split__bloc">
+        <div class="fx-split__visuel fx-split__visuel--reseau" role="img"
+             aria-label="Schéma : une implantation centrale reliée aux officines qu'elle dessert."></div>
+      </div>
+      <div class="fx-split__bloc">
+        <div class="fx-split__encart">
+          <h3>Un interlocuteur, pas un standard</h3>
+          <p>Chaque officine a un contact identifié dans son implantation. C'est la même personne
+            d'un mois sur l'autre.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="fx-split__pied">
+    <div>
+      <h2>Venez voir le quai.</h2>
+      <p>La meilleure façon de juger un répartiteur, c'est de regarder partir ses camions
+        un matin de semaine.</p>
+      <a class="fx-split__cta" href="#">Prendre rendez-vous</a>
+    </div>
+  </footer>
+
+</main>
+
+<script>
+(function(){
+  var reduit = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  document.querySelectorAll('[data-fx-split]').forEach(function(page){
+    var sections = Array.prototype.slice.call(page.querySelectorAll('.fx-split__section'));
+    var blocs    = Array.prototype.slice.call(page.querySelectorAll('.fx-split__bloc'));
+    if (!sections.length) return;
+
+    // Mouvement réduit : tout est posé à son état final, rien ne bouge, rien n'est masqué.
+    if (reduit) {
+      blocs.forEach(function(b){ b.classList.add('est-vu'); });
+      sections.forEach(function(s){ s.classList.add('est-actif'); });
+      return;
+    }
+
+    // C'est le script qui autorise la mise en retrait des blocs. Tant qu'il n'a pas
+    // tourné, la page est simplement lisible — c'est le filet.
+    page.classList.add('est-anime');
+
+    var tic = false;
+
+    function placer(){
+      tic = false;
+      var vue = window.innerHeight;
+      var ligne = vue * 0.82;          // la ligne de lecture, basse : on révèle avant d'arriver
+
+      sections.forEach(function(s, i){
+        var r = s.getBoundingClientRect();
+
+        // ⚠️ On ne mesure JAMAIS le volet collé : une fois collé il rend toujours la même
+        // position d'écran, donc une valeur constante et aucune progression. Le repère est
+        // le haut de la section SUIVANTE — la seule chose qui bouge encore à ce moment-là.
+        var suivante = sections[i + 1];
+        var repere = suivante ? suivante.getBoundingClientRect().top : r.bottom;
+
+        // Le volet reste collé tant que le repère n'a pas remonté jusqu'au bas de l'écran.
+        var course = s.offsetHeight - vue;
+        var p = course > 0 ? (s.offsetHeight - repere) / course : 1;
+        p = Math.min(1, Math.max(0, p));
+        s.style.setProperty('--p', p.toFixed(3));
+
+        // Palier actif : la section tient la ligne de lecture.
+        var actif = r.top <= vue * 0.5 && repere > vue * 0.4;
+        s.classList.toggle('est-actif', actif);
+      });
+
+      // Le filet : chaque bloc est révélé d'après sa position réelle, relue à chaque
+      // défilement. Aucun bloc ne peut rester en retrait parce qu'une notification
+      // ne serait jamais venue — et au repos ils sont déjà lisibles.
+      blocs.forEach(function(b){
+        if (b.classList.contains('est-vu')) return;
+        if (b.getBoundingClientRect().top < ligne) b.classList.add('est-vu');
+      });
+    }
+
+    function onScroll(){ if (!tic){ tic = true; requestAnimationFrame(placer); } }
+    window.addEventListener('scroll', onScroll, {passive:true});
+    window.addEventListener('resize', onScroll, {passive:true});
+    placer();
+  });
+})();
+</script>
+<!-- FX:COPY:END -->
+
+<div class="demo-note">split-sticky · l'écran coupé en deux, cinq paliers</div>
+
+</body>
+</html>

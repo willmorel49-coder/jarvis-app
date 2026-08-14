@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FX-BANK · Crossfade Sections</title>
+<!--
+/* FX-BANK · CROSSFADE SECTIONS
+   QUOI : Architecture de page complète. Toutes les sections occupent le même emplacement à
+          l'écran et se succèdent en fondu enchaîné au fil du défilement : l'une s'efface
+          pendant que la suivante apparaît, sans que la page ne saute jamais. La couleur de
+          fond glisse d'une section à l'autre, ce qui tient l'ensemble.
+   QUAND : Quand chaque section est une IDÉE QUI REMPLACE la précédente — les étapes d'une
+           nuit de préparation, un raisonnement, une démonstration. À éviter dès qu'on veut
+           pouvoir comparer deux sections côte à côte : ici on n'en voit qu'une.
+   DEPENDANCES : aucune
+   SAFARI : conforme. Aucun flou, aucun verre dépoli, aucun dégradé découpé dans du texte.
+            Uniquement de l'opacité et un léger décalage vertical, composés par le GPU.
+            Mouvement réduit = sections empilées normalement, aucun fondu.
+   SECURITE : l'état de départ du CSS est une page ORDINAIRE, les cinq sections l'une sous
+              l'autre, toutes visibles. C'est le script qui les superpose, après avoir
+              vérifié que chacune tient dans l'écran. Script absent, en panne ou erreur JS
+              = page entièrement lisible, aucune section ne disparaît.
+   LIMITE : cinq sections maximum, et un texte court par section — le contenu doit tenir
+            dans un écran, sinon le mécanisme se désactive tout seul.
+   COPIER : le bloc entre FX:COPY:START et FX:COPY:END */
+-->
+<style>
+  body{margin:0;background:#FBFCFE;color:#0E1626;font:16px/1.6 ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif}
+  .demo-note{position:fixed;left:16px;bottom:16px;z-index:60;font-size:12px;letter-spacing:.1em;
+    text-transform:uppercase;color:#8B96AC;background:#FBFCFE;padding:8px 12px;border:1px solid #DCE5F4}
+
+  /* FX:COPY:START */
+  .fx-cross{
+    --fx-cross-accent:#0050E6;
+    --fx-cross-orange:#F39A1B;
+    --fx-cross-encre:#0E1626;
+    --fx-cross-doux:#54607A;
+    --fx-cross-bord:#DCE5F4;
+    --fx-cross-pas:96svh;            /* course de défilement consommée par section */
+    --fx-cross-n:5;                  /* nombre de sections — le script le recalcule */
+    position:relative;
+  }
+
+  /* ── ÉTAT DE DÉPART : une page normale, les sections l'une sous l'autre. ───────────
+     C'est ce qui reste si le script ne tourne pas. Rien n'est masqué. */
+  .fx-cross__scene{ position:relative }
+  .fx-cross__vue{
+    position:relative;
+    display:grid; place-items:center;
+    padding:clamp(54px,8vh,100px) clamp(20px,5vw,64px);
+    border-top:1px solid var(--fx-cross-bord);
+    background:var(--fond,#FBFCFE);
+  }
+  .fx-cross__vue:first-child{ border-top:0 }
+
+  /* ── ÉTAT ACTIF : posé par le script uniquement ─────────────────────────────────── */
+  .fx-cross--actif{ height:calc(var(--fx-cross-n) * var(--fx-cross-pas)) }
+  .fx-cross--actif .fx-cross__scene{
+    position:sticky; top:0; height:100vh; height:100svh; overflow:clip;
+    background:var(--fx-cross-fond,#FBFCFE);
+  }
+  .fx-cross--actif .fx-cross__vue{
+    position:absolute; inset:0; border-top:0; background:transparent;
+    opacity:var(--o,1); translate:0 var(--y,0px);
+    will-change:opacity, translate;
+  }
+
+  .fx-cross__inner{ width:100%; max-width:900px }
+  .fx-cross__eti{
+    display:flex; align-items:center; gap:12px; margin:0 0 22px;
+    font-size:.74rem; letter-spacing:.17em; text-transform:uppercase; font-weight:650;
+    color:var(--accent,var(--fx-cross-accent));
+  }
+  .fx-cross__eti b{ font-variant-numeric:tabular-nums; font-weight:650 }
+  .fx-cross__eti i{ flex:1 1 auto; height:1px; background:currentColor; opacity:.35; font-style:normal }
+  .fx-cross__heure{
+    margin:0 0 10px; font-variant-numeric:tabular-nums; font-weight:650;
+    font-size:clamp(.95rem,2vw,1.05rem); color:var(--fx-cross-doux); letter-spacing:.04em;
+  }
+  .fx-cross__t{
+    margin:0 0 18px; font-size:clamp(2.05rem,6vw,4.2rem); line-height:1.03;
+    letter-spacing:-.03em; font-weight:650; text-wrap:balance; color:var(--fx-cross-encre);
+  }
+  .fx-cross__t em{ font-style:normal; color:var(--accent,var(--fx-cross-accent)) }
+  .fx-cross__p{
+    margin:0; max-width:54ch; font-size:clamp(1rem,2vw,1.2rem);
+    color:var(--fx-cross-doux); text-wrap:pretty;
+  }
+  .fx-cross__chiffres{
+    margin:32px 0 0; padding:0; list-style:none; display:flex; flex-wrap:wrap; gap:14px 36px;
+  }
+  .fx-cross__chiffres li{ display:grid; gap:2px }
+  .fx-cross__chiffres b{
+    font-size:clamp(1.3rem,3vw,1.9rem); font-weight:650; letter-spacing:-.02em;
+    font-variant-numeric:tabular-nums; color:var(--accent,var(--fx-cross-accent));
+  }
+  .fx-cross__chiffres span{ font-size:.84rem; letter-spacing:.05em; color:var(--fx-cross-doux) }
+  .fx-cross__cta{
+    display:inline-flex; align-items:center; gap:10px; margin-top:32px;
+    padding:15px 26px; border-radius:3px; text-decoration:none; font-weight:650;
+    background:var(--accent,var(--fx-cross-accent)); color:#fff;
+    box-shadow:0 12px 26px -16px rgba(0,80,230,.9);
+  }
+  .fx-cross__cta:hover{ background:var(--fx-cross-encre); box-shadow:none }
+
+  /* trame de fond, SVG écrit dans le fichier — aucune requête réseau */
+  .fx-cross--actif .fx-cross__scene::before{
+    content:""; position:absolute; inset:0; pointer-events:none; opacity:.5;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96'%3E%3Cg fill='none' stroke='%23DCE5F4' stroke-width='1'%3E%3Cpath d='M0 .5h96M.5 0v96'/%3E%3C/g%3E%3C/svg%3E");
+  }
+
+  /* barre d'avancement — visible seulement quand le mécanisme est actif */
+  .fx-cross__jauge{
+    display:none; position:fixed; left:0; right:0; bottom:0; height:3px; z-index:40;
+    background:rgba(14,22,38,.10);
+  }
+  .fx-cross--actif .fx-cross__jauge{ display:block }
+  .fx-cross__jauge i{
+    display:block; height:100%; width:100%; background:var(--fx-cross-accent);
+    transform-origin:left; transform:scaleX(var(--p,0));
+  }
+  .fx-cross__pas{
+    display:none; position:fixed; right:22px; bottom:20px; z-index:40;
+    font-size:.76rem; letter-spacing:.14em; font-variant-numeric:tabular-nums; font-weight:650;
+    color:var(--fx-cross-doux); background:rgba(255,255,255,.92);
+    border:1px solid var(--fx-cross-bord); border-radius:2px; padding:7px 11px;
+  }
+  .fx-cross--actif .fx-cross__pas{ display:block }
+
+  @media (max-width:560px){
+    .fx-cross{ --fx-cross-pas:92svh }
+    .fx-cross__chiffres{ gap:12px 24px }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .fx-cross--actif{ height:auto!important }
+    .fx-cross--actif .fx-cross__scene{ position:relative; height:auto; overflow:visible; background:none }
+    .fx-cross--actif .fx-cross__scene::before{ display:none }
+    .fx-cross--actif .fx-cross__vue{
+      position:relative; inset:auto; opacity:1!important; translate:none!important;
+      background:var(--fond,#FBFCFE); border-top:1px solid var(--fx-cross-bord);
+    }
+    .fx-cross__jauge, .fx-cross__pas{ display:none!important }
+  }
+  /* FX:COPY:END */
+</style>
+</head>
+<body>
+
+<!-- FX:COPY:START -->
+<div class="fx-cross" data-fx-cross>
+  <div class="fx-cross__scene">
+
+    <!-- data-fond = la couleur vers laquelle le fond glisse quand cette section est en scène -->
+    <section class="fx-cross__vue" data-fond="#FBFCFE" style="--fond:#FBFCFE">
+      <div class="fx-cross__inner">
+        <p class="fx-cross__eti"><b>01 / 05</b><i></i>La commande</p>
+        <p class="fx-cross__heure">19 h 30</p>
+        <h1 class="fx-cross__t">Vous passez commande<br><em>en fermant l'officine.</em></h1>
+        <p class="fx-cross__p">Le catalogue est le même partout dans le réseau, tenu à jour
+          chaque nuit. Ce que vous voyez à l'écran est ce qui part le lendemain.</p>
+      </div>
+    </section>
+
+    <section class="fx-cross__vue" data-fond="#EEF3FD" style="--fond:#EEF3FD">
+      <div class="fx-cross__inner">
+        <p class="fx-cross__eti"><b>02 / 05</b><i></i>La préparation</p>
+        <p class="fx-cross__heure">01 h 10</p>
+        <h2 class="fx-cross__t">Pendant la nuit,<br><em>les bacs se remplissent.</em></h2>
+        <p class="fx-cross__p">Chaque bac porte le nom de votre officine. Les produits
+          sensibles sont isolés dès la sortie de stock et ne rejoignent jamais la ligne
+          ordinaire.</p>
+        <ul class="fx-cross__chiffres">
+          <li><b>2</b><span>passages par jour ouvré</span></li>
+          <li><b>1</b><span>bac par officine, jamais mélangé</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="fx-cross__vue" data-fond="#FFFFFF" style="--fond:#FFFFFF">
+      <div class="fx-cross__inner">
+        <p class="fx-cross__eti"><b>03 / 05</b><i></i>Le contrôle</p>
+        <p class="fx-cross__heure">04 h 45</p>
+        <h2 class="fx-cross__t">Rien ne part<br><em>sans être relu.</em></h2>
+        <p class="fx-cross__p">Lecture des codes au départ, relevé de température joint pour
+          les colis sensibles, écarts signalés avant le chargement plutôt que découverts au
+          comptoir.</p>
+      </div>
+    </section>
+
+    <section class="fx-cross__vue" data-fond="#FFF6EA" style="--fond:#FFF6EA;--accent:#C7791A">
+      <div class="fx-cross__inner">
+        <p class="fx-cross__eti"><b>04 / 05</b><i></i>La livraison</p>
+        <p class="fx-cross__heure">08 h 05</p>
+        <h2 class="fx-cross__t">Livré avant<br><em>votre premier patient.</em></h2>
+        <p class="fx-cross__p">La tournée est la même chaque jour, tenue par la même personne.
+          C'est cette régularité qui fait la confiance, pas les promesses de rattrapage.</p>
+      </div>
+    </section>
+
+    <section class="fx-cross__vue" data-fond="#F2F6FD" style="--fond:#F2F6FD">
+      <div class="fx-cross__inner">
+        <p class="fx-cross__eti"><b>05 / 05</b><i></i>La suite</p>
+        <p class="fx-cross__heure">Et demain</p>
+        <h2 class="fx-cross__t">On recommence,<br><em>à la même heure.</em></h2>
+        <p class="fx-cross__p">Venez voir une implantation, ou faites-nous venir chez vous.
+          Les modalités se discutent en rendez-vous, jamais sur une page web.</p>
+        <a class="fx-cross__cta" href="#">Demander une visite
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M4 12h15M12 5l7 7-7 7"/></svg>
+        </a>
+      </div>
+    </section>
+
+  </div>
+
+  <div class="fx-cross__jauge" aria-hidden="true"><i></i></div>
+  <div class="fx-cross__pas" aria-hidden="true">01 / 05</div>
+</div>
+
+<script>
+(function(){
+  var reduit = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function versRgb(h){
+    h = String(h || '').replace('#','').trim();
+    if (h.length === 3) h = h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+    var n = parseInt(h, 16);
+    if (isNaN(n) || h.length !== 6) return [251,252,254];
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  }
+  function melange(a, b, k){
+    return 'rgb(' + Math.round(a[0]+(b[0]-a[0])*k) + ',' +
+                    Math.round(a[1]+(b[1]-a[1])*k) + ',' +
+                    Math.round(a[2]+(b[2]-a[2])*k) + ')';
+  }
+
+  document.querySelectorAll('[data-fx-cross]').forEach(function(bloc){
+    var scene = bloc.querySelector('.fx-cross__scene');
+    var vues  = Array.prototype.slice.call(bloc.querySelectorAll('.fx-cross__vue'));
+    var jauge = bloc.querySelector('.fx-cross__jauge i');
+    var pas   = bloc.querySelector('.fx-cross__pas');
+    if (!scene || vues.length < 2 || reduit) return;
+
+    var n = vues.length;
+    var fonds = vues.map(function(v){ return versRgb(v.getAttribute('data-fond') || '#FBFCFE'); });
+    var actif = false, tic = false, attente = null;
+
+    bloc.style.setProperty('--fx-cross-n', n);
+
+    // ── Garde-fou ────────────────────────────────────────────────────────────────────
+    // Superposées, les sections sont bornées à la hauteur de l'écran : ce qui dépasse est
+    // coupé. On mesure donc la hauteur NATURELLE (mécanisme désactivé) et on n'active que
+    // si tout tient. Sinon la page reste une pile de sections ordinaires, entièrement lue.
+    function tientDansEcran(){
+      bloc.classList.remove('fx-cross--actif');
+      var maxi = 0;
+      for (var i = 0; i < n; i++){
+        var h = vues[i].getBoundingClientRect().height;
+        if (h > maxi) maxi = h;
+      }
+      return maxi <= window.innerHeight - 4;
+    }
+
+    // ── Placement : la POSITION RÉELLE est relue à chaque défilement. ─────────────────
+    // Aucun observateur d'entrée dans l'écran : une section rendue transparente ne
+    // signalerait plus rien et resterait invisible pour toujours.
+    function placer(){
+      tic = false;
+      if (!actif) return;
+
+      var r = bloc.getBoundingClientRect();
+      var course = bloc.offsetHeight - scene.offsetHeight;
+      if (course <= 0) return;
+
+      var p = Math.min(1, Math.max(0, -r.top / course));   // 0 → 1 sur toute l'architecture
+      var t = p * (n - 1);                                 // position dans la suite des sections
+
+      // le fond glisse d'une couleur à l'autre : c'est lui qui empêche le « saut »
+      var i0 = Math.min(n - 2, Math.floor(t));
+      if (n < 2) i0 = 0;
+      var k = Math.min(1, Math.max(0, t - i0));
+      scene.style.setProperty('--fx-cross-fond', melange(fonds[i0], fonds[i0 + 1] || fonds[i0], k));
+
+      for (var i = 0; i < n; i++){
+        var d = Math.abs(t - i);
+        // Plateau pleinement lisible autour du centre, puis effacement franc. Le réglage
+        // est calculé pour que la sortante ait DISPARU quand l'entrante commence à se lire :
+        // deux grands titres à demi transparents l'un sur l'autre sont illisibles. Au point
+        // de bascule, il ne reste que la couleur de fond — c'est la respiration du fondu.
+        var o = (0.50 - d) / 0.34;
+        o = o < 0 ? 0 : (o > 1 ? 1 : o);
+        vues[i].style.setProperty('--o', o.toFixed(3));
+        vues[i].style.setProperty('--y', ((t - i) * -30).toFixed(1) + 'px');
+        vues[i].style.visibility = o <= 0.002 ? 'hidden' : 'visible';
+      }
+
+      if (jauge) jauge.style.setProperty('--p', p.toFixed(4));
+      if (pas){
+        var courant = Math.min(n, Math.max(1, Math.round(t) + 1));
+        pas.textContent = ('0' + courant).slice(-2) + ' / ' + ('0' + n).slice(-2);
+      }
+    }
+
+    function evaluer(){
+      actif = tientDansEcran();
+      if (actif){
+        bloc.classList.add('fx-cross--actif');
+      } else {
+        vues.forEach(function(v){
+          v.style.removeProperty('--o'); v.style.removeProperty('--y'); v.style.visibility = '';
+        });
+      }
+      placer();
+    }
+
+    function auDefilement(){ if (!tic){ tic = true; requestAnimationFrame(placer); } }
+
+    try {
+      evaluer();
+    } catch (e) {
+      // en cas d'imprévu on revient à la page ordinaire plutôt que de laisser un écran vide
+      bloc.classList.remove('fx-cross--actif');
+      vues.forEach(function(v){ v.style.visibility = ''; v.style.removeProperty('--o'); });
+      return;
+    }
+
+    window.addEventListener('scroll', auDefilement, {passive:true});
+    window.addEventListener('resize', function(){
+      clearTimeout(attente);
+      attente = setTimeout(evaluer, 140);
+    }, {passive:true});
+  });
+})();
+</script>
+<!-- FX:COPY:END -->
+
+<div style="height:60vh;display:grid;place-items:center;color:#8B96AC">fin de page</div>
+<div class="demo-note">crossfade-sections · une idée remplace la précédente</div>
+
+</body>
+</html>

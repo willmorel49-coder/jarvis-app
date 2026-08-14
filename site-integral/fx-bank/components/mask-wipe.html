@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FX-BANK · Mask Wipe</title>
+<!--
+/* FX-BANK · MASK WIPE
+   QUOI : Architecture de page complète. La section suivante se révèle à travers un balayage
+          géométrique : des bandes verticales descendent l'une après l'autre et découpent le
+          nouveau contenu par formes franches. Le rognage est un polygone en peigne recalculé
+          à chaque défilement — aucun adoucissement, aucun dégradé, des arêtes nettes.
+   QUAND : Un enchaînement où l'on veut une rupture VISIBLE entre deux idées, avec un geste
+           mécanique, industriel. Convient au discours logistique : ça évoque un volet qui
+           s'ouvre, pas un effet de mode.
+   DEPENDANCES : aucune
+   SAFARI : conforme. Aucun flou, aucun verre dépoli, aucun dégradé découpé dans du texte.
+            Le découpage se fait par polygone géométrique, la propriété la mieux tenue par
+            Safari pour ce genre de figure.
+            Mouvement réduit = sections empilées normalement, aucun découpage.
+   SECURITE : point le plus délicat de ce composant, et la raison de sa construction.
+              Le CSS de départ ne découpe RIEN : c'est une page ordinaire, cinq sections
+              l'une sous l'autre, toutes visibles. C'est le script qui pose le découpage,
+              après avoir vérifié que chaque section tient dans l'écran, et il le recalcule
+              en LISANT la position réelle à chaque défilement. Aucune classe attendue,
+              aucune notification d'entrée dans l'écran : un bloc rogné n'a plus de surface
+              visible, il ne pourrait donc jamais se signaler — c'est ainsi qu'une page
+              reste blanche pour toujours. Script absent, en panne ou erreur JS = page
+              entièrement lisible.
+   LIMITE : cinq sections maximum, texte court. Le nombre de bandes se règle par
+            --fx-wipe-bandes (7 en large, 4 en étroit) : au-delà, le geste devient nerveux.
+   COPIER : le bloc entre FX:COPY:START et FX:COPY:END */
+-->
+<style>
+  body{margin:0;background:#FBFCFE;color:#0E1626;font:16px/1.6 ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif}
+  .demo-note{position:fixed;left:16px;bottom:16px;z-index:60;font-size:12px;letter-spacing:.1em;
+    text-transform:uppercase;color:#8B96AC;background:#FBFCFE;padding:8px 12px;border:1px solid #DCE5F4}
+
+  /* FX:COPY:START */
+  .fx-wipe{
+    --fx-wipe-accent:#0050E6;
+    --fx-wipe-orange:#F39A1B;
+    --fx-wipe-encre:#0E1626;
+    --fx-wipe-doux:#54607A;
+    --fx-wipe-bord:#DCE5F4;
+    --fx-wipe-bandes:7;              /* nombre de bandes du balayage */
+    --fx-wipe-pas:112svh;            /* course de défilement consommée par section */
+    --fx-wipe-n:5;                   /* nombre de sections — le script le recalcule */
+    position:relative;
+  }
+
+  /* ── ÉTAT DE DÉPART : une page normale, aucun découpage. ──────────────────────────
+     C'est ce qui reste si le script ne tourne pas. Rien n'est masqué. */
+  .fx-wipe__scene{ position:relative }
+  .fx-wipe__vue{
+    position:relative;
+    display:grid; place-items:center;
+    padding:clamp(54px,8vh,100px) clamp(20px,5vw,64px);
+    background:var(--fond,#FFFFFF);
+    color:var(--encre,var(--fx-wipe-encre));
+    border-top:1px solid var(--fx-wipe-bord);
+  }
+  .fx-wipe__vue:first-child{ border-top:0 }
+
+  /* ── ÉTAT ACTIF : posé par le script uniquement ─────────────────────────────────── */
+  .fx-wipe--actif{ height:calc(var(--fx-wipe-n) * var(--fx-wipe-pas)) }
+  .fx-wipe--actif .fx-wipe__scene{
+    position:sticky; top:0; height:100vh; height:100svh; overflow:clip;
+  }
+  .fx-wipe--actif .fx-wipe__vue{
+    position:absolute; inset:0; border-top:0;
+    will-change:clip-path;
+  }
+
+  .fx-wipe__inner{ width:100%; max-width:920px }
+  .fx-wipe__eti{
+    display:flex; align-items:center; gap:12px; margin:0 0 22px;
+    font-size:.74rem; letter-spacing:.17em; text-transform:uppercase; font-weight:650;
+    color:var(--accent,var(--fx-wipe-accent));
+  }
+  .fx-wipe__eti b{ font-variant-numeric:tabular-nums; font-weight:650 }
+  .fx-wipe__eti i{ width:46px; height:1px; background:currentColor; opacity:.45; font-style:normal }
+  .fx-wipe__t{
+    margin:0 0 18px; font-size:clamp(2rem,5.6vw,4rem); line-height:1.04;
+    letter-spacing:-.028em; font-weight:650; text-wrap:balance;
+  }
+  .fx-wipe__t em{ font-style:normal; color:var(--accent,var(--fx-wipe-accent)) }
+  .fx-wipe__p{
+    margin:0; max-width:54ch; font-size:clamp(1rem,2vw,1.2rem);
+    color:var(--doux,var(--fx-wipe-doux)); text-wrap:pretty;
+  }
+  .fx-wipe__liste{
+    margin:30px 0 0; padding:0; list-style:none;
+    display:grid; gap:12px 30px; grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+    max-width:780px;
+  }
+  .fx-wipe__liste li{
+    display:flex; gap:11px; align-items:flex-start;
+    padding-top:12px; border-top:1px solid var(--trait,var(--fx-wipe-bord));
+    font-size:.95rem; color:var(--doux,var(--fx-wipe-doux));
+  }
+  .fx-wipe__liste svg{ flex:0 0 auto; width:16px; height:16px; margin-top:3px; color:var(--accent,var(--fx-wipe-accent)) }
+  .fx-wipe__cta{
+    display:inline-flex; align-items:center; gap:10px; margin-top:32px;
+    padding:15px 26px; border-radius:3px; text-decoration:none; font-weight:650;
+    background:var(--btn,var(--fx-wipe-accent)); color:var(--btnTxt,#fff);
+    box-shadow:0 12px 26px -16px rgba(14,22,38,.7);
+  }
+  .fx-wipe__cta:hover{ background:var(--fx-wipe-encre); color:#fff; box-shadow:none }
+
+  /* trames décoratives, SVG écrits dans le fichier — aucune requête réseau */
+  .fx-wipe__vue--casiers{
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='48'%3E%3Cg fill='none' stroke='%23DCE5F4' stroke-width='1'%3E%3Crect x='.5' y='.5' width='71' height='47'/%3E%3Cpath d='M24 0v48M48 0v48M0 24h72'/%3E%3C/g%3E%3C/svg%3E");
+  }
+  .fx-wipe__vue--reseau{
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='128'%3E%3Cg fill='none' stroke='rgba(255,255,255,.20)' stroke-width='1'%3E%3Cpath d='M0 64h128M64 0v128M0 0l128 128M128 0L0 128'/%3E%3C/g%3E%3Ccircle cx='64' cy='64' r='3.5' fill='rgba(255,255,255,.36)'/%3E%3C/svg%3E");
+  }
+  .fx-wipe__vue--points{
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='30'%3E%3Ccircle cx='2' cy='2' r='1.1' fill='%23C9D8F2'/%3E%3C/svg%3E");
+  }
+
+  /* repères : un trait par section, rempli quand elle est en scène */
+  .fx-wipe__reperes{
+    display:none; position:fixed; left:0; right:0; top:0; z-index:40;
+    grid-auto-flow:column; grid-auto-columns:1fr; gap:2px; padding:0 2px;
+  }
+  .fx-wipe--actif .fx-wipe__reperes{ display:grid }
+  .fx-wipe__rep{ height:3px; background:rgba(14,22,38,.12); overflow:hidden }
+  .fx-wipe__rep i{
+    display:block; height:100%; width:100%; background:var(--fx-wipe-accent);
+    transform-origin:left; transform:scaleX(var(--f,0));
+  }
+
+  @media (max-width:640px){
+    .fx-wipe{ --fx-wipe-bandes:4; --fx-wipe-pas:106svh }
+    .fx-wipe__liste{ grid-template-columns:1fr }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .fx-wipe--actif{ height:auto!important }
+    .fx-wipe--actif .fx-wipe__scene{ position:relative; height:auto; overflow:visible }
+    .fx-wipe--actif .fx-wipe__vue{
+      position:relative; inset:auto; clip-path:none!important;
+      border-top:1px solid var(--fx-wipe-bord);
+    }
+    .fx-wipe__reperes{ display:none!important }
+  }
+  /* FX:COPY:END */
+</style>
+</head>
+<body>
+
+<!-- FX:COPY:START -->
+<div class="fx-wipe" data-fx-wipe>
+  <div class="fx-wipe__scene">
+
+    <section class="fx-wipe__vue fx-wipe__vue--points" style="--fond:#FBFCFE">
+      <div class="fx-wipe__inner">
+        <p class="fx-wipe__eti"><i></i><b>01</b> Intégral Pharma</p>
+        <h1 class="fx-wipe__t">Un grossiste-répartiteur<br><em>qui ouvre avant vous.</em></h1>
+        <p class="fx-wipe__p">Le catalogue, la préparation, la tournée, l'équipe. Quatre
+          pièces d'une même mécanique — descendez, elles se posent une par une.</p>
+      </div>
+    </section>
+
+    <section class="fx-wipe__vue fx-wipe__vue--reseau"
+             style="--fond:#0050E6;--encre:#FFFFFF;--accent:#FFFFFF;--doux:rgba(255,255,255,.84);--trait:rgba(255,255,255,.26);--btn:#FFFFFF;--btnTxt:#0050E6">
+      <div class="fx-wipe__inner">
+        <p class="fx-wipe__eti"><i></i><b>02</b> Le catalogue</p>
+        <h2 class="fx-wipe__t">Le même fonds,<br>partout, <em>tenu à jour.</em></h2>
+        <p class="fx-wipe__p">Princeps, génériques, produits de santé non remboursables et
+          matériel : une seule référence de vérité pour toutes les implantations, mise à
+          jour chaque nuit.</p>
+        <ul class="fx-wipe__liste">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 13l4 4L19 7"/></svg>Fiches produit alignées sur la base publique du médicament</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 13l4 4L19 7"/></svg>Disponibilité affichée avant la validation</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 13l4 4L19 7"/></svg>Tensions d'approvisionnement signalées</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="fx-wipe__vue fx-wipe__vue--casiers" style="--fond:#FFFFFF">
+      <div class="fx-wipe__inner">
+        <p class="fx-wipe__eti"><i></i><b>03</b> La préparation</p>
+        <h2 class="fx-wipe__t">Un bac,<br><em>un nom d'officine.</em></h2>
+        <p class="fx-wipe__p">Les produits sensibles sont isolés dès la sortie de stock. Le
+          relevé de température suit le colis et reste consultable après la livraison.</p>
+        <ul class="fx-wipe__liste">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 3v18M5 10l7-7 7 7"/></svg>Chaîne du froid tracée de bout en bout</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 3v18M5 10l7-7 7 7"/></svg>Écarts signalés avant le chargement</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="fx-wipe__vue" style="--fond:#FFF6EA;--accent:#C7791A">
+      <div class="fx-wipe__inner">
+        <p class="fx-wipe__eti"><i></i><b>04</b> L'équipe</p>
+        <h2 class="fx-wipe__t">Le numéro que vous appelez<br><em>décroche à côté de chez vous.</em></h2>
+        <p class="fx-wipe__p">Chaque implantation garde ses préparateurs, ses chauffeurs et
+          son référent commercial. Vous ne racontez pas deux fois la même histoire.</p>
+      </div>
+    </section>
+
+    <section class="fx-wipe__vue fx-wipe__vue--points" style="--fond:#FBFCFE">
+      <div class="fx-wipe__inner">
+        <p class="fx-wipe__eti"><i></i><b>05</b> Le rendez-vous</p>
+        <h2 class="fx-wipe__t">Une heure,<br><em>à votre comptoir.</em></h2>
+        <p class="fx-wipe__p">Nous venons regarder votre organisation et vos contraintes de
+          livraison. Les modalités se discutent en rendez-vous, jamais sur une page web.</p>
+        <a class="fx-wipe__cta" href="#">Demander une visite
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M4 12h15M12 5l7 7-7 7"/></svg>
+        </a>
+      </div>
+    </section>
+
+  </div>
+
+  <div class="fx-wipe__reperes" aria-hidden="true">
+    <span class="fx-wipe__rep"><i></i></span><span class="fx-wipe__rep"><i></i></span>
+    <span class="fx-wipe__rep"><i></i></span><span class="fx-wipe__rep"><i></i></span>
+    <span class="fx-wipe__rep"><i></i></span>
+  </div>
+</div>
+
+<script>
+(function(){
+  var reduit = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // adoucissement de la COURSE d'une bande (sa vitesse), pas de son bord :
+  // le bord reste une arête franche, c'est tout l'intérêt du balayage géométrique
+  function lisser(x){
+    if (x <= 0) return 0;
+    if (x >= 1) return 1;
+    return x * x * (3 - 2 * x);
+  }
+
+  document.querySelectorAll('[data-fx-wipe]').forEach(function(bloc){
+    var scene = bloc.querySelector('.fx-wipe__scene');
+    var vues  = Array.prototype.slice.call(bloc.querySelectorAll('.fx-wipe__vue'));
+    var reps  = Array.prototype.slice.call(bloc.querySelectorAll('.fx-wipe__rep i'));
+    if (!scene || vues.length < 2 || reduit) return;
+
+    var n = vues.length;
+    var actif = false, tic = false, attente = null;
+
+    bloc.style.setProperty('--fx-wipe-n', n);
+
+    function nbBandes(){
+      var v = parseInt(getComputedStyle(bloc).getPropertyValue('--fx-wipe-bandes'), 10);
+      return (v && v > 0) ? Math.min(14, v) : 6;
+    }
+
+    // ── Le peigne ────────────────────────────────────────────────────────────────────
+    // Un seul polygone décrit toutes les bandes : on descend le long du profil bas de
+    // gauche à droite, puis on revient par le haut. Une bande à 0 % laisse simplement
+    // un segment plat — aucune bande orpheline, aucune forme invalide.
+    function peigne(f){
+      var b = f.length, pts = ['0% 0%', '0% ' + f[0].toFixed(2) + '%'], i, x;
+      for (i = 0; i < b; i++){
+        x = ((i + 1) / b * 100).toFixed(4);
+        pts.push(x + '% ' + f[i].toFixed(2) + '%');
+        if (i < b - 1) pts.push(x + '% ' + f[i + 1].toFixed(2) + '%');
+      }
+      pts.push('100% 0%');
+      return 'polygon(' + pts.join(',') + ')';
+    }
+
+    // ── Garde-fou ────────────────────────────────────────────────────────────────────
+    // Superposées, les sections sont bornées à la hauteur de l'écran : ce qui dépasse
+    // serait coupé. On mesure la hauteur NATURELLE (mécanisme désactivé) et on n'active
+    // que si tout tient. Sinon la page reste une pile de sections ordinaires.
+    function tientDansEcran(){
+      bloc.classList.remove('fx-wipe--actif');
+      var maxi = 0;
+      for (var i = 0; i < n; i++){
+        var h = vues[i].getBoundingClientRect().height;
+        if (h > maxi) maxi = h;
+      }
+      return maxi <= window.innerHeight - 4;
+    }
+
+    // ── Placement : la POSITION RÉELLE est relue à chaque défilement. ─────────────────
+    // Jamais d'observateur d'entrée dans l'écran : une section rognée n'a plus aucune
+    // surface visible, elle ne serait donc jamais signalée et resterait masquée à vie.
+    function placer(){
+      tic = false;
+      if (!actif) return;
+
+      var r = bloc.getBoundingClientRect();
+      var course = bloc.offsetHeight - scene.offsetHeight;
+      if (course <= 0) return;
+
+      var p = Math.min(1, Math.max(0, -r.top / course));
+      var u = p * (n - 1);                     // 0 → n-1 : où en est-on dans la suite
+      var b = nbBandes();
+      var etalement = 0.48;                    // part de la course prise par le décalage entre bandes
+
+      // la première section n'est jamais rognée : c'est le sol de l'architecture
+      vues[0].style.clipPath = 'none';
+      vues[0].style.visibility = 'visible';
+
+      for (var i = 1; i < n; i++){
+        // chaque section a sa tranche de course, avec un temps de pause avant et après
+        var local = (u - (i - 1) - 0.12) / 0.66;
+        local = local < 0 ? 0 : (local > 1 ? 1 : local);
+
+        if (local >= 1){                       // entièrement posée : plus aucun découpage
+          vues[i].style.clipPath = 'none';
+          vues[i].style.visibility = 'visible';
+          if (reps[i]) reps[i].style.setProperty('--f', 1);
+          continue;
+        }
+        if (local <= 0){                       // pas encore entrée en scène
+          vues[i].style.visibility = 'hidden';
+          vues[i].style.clipPath = 'polygon(0% 0%,0% 0%,100% 0%)';
+          if (reps[i]) reps[i].style.setProperty('--f', 0);
+          continue;
+        }
+
+        var f = [];
+        for (var j = 0; j < b; j++){
+          var retard = (b > 1) ? (j / (b - 1)) * etalement : 0;
+          f.push(lisser((local - retard) / (1 - etalement)) * 100);
+        }
+        vues[i].style.visibility = 'visible';
+        vues[i].style.clipPath = peigne(f);
+        if (reps[i]) reps[i].style.setProperty('--f', local.toFixed(3));
+      }
+
+      if (reps[0]) reps[0].style.setProperty('--f', 1);
+    }
+
+    function evaluer(){
+      actif = tientDansEcran();
+      if (actif){
+        bloc.classList.add('fx-wipe--actif');
+      } else {
+        vues.forEach(function(v){ v.style.clipPath = ''; v.style.visibility = ''; });
+      }
+      placer();
+    }
+
+    function auDefilement(){ if (!tic){ tic = true; requestAnimationFrame(placer); } }
+
+    try {
+      evaluer();
+    } catch (e) {
+      // en cas d'imprévu on rend la page ordinaire plutôt que de laisser un écran vide
+      bloc.classList.remove('fx-wipe--actif');
+      vues.forEach(function(v){ v.style.clipPath = ''; v.style.visibility = ''; });
+      return;
+    }
+
+    window.addEventListener('scroll', auDefilement, {passive:true});
+    window.addEventListener('resize', function(){
+      clearTimeout(attente);
+      attente = setTimeout(evaluer, 140);
+    }, {passive:true});
+  });
+})();
+</script>
+<!-- FX:COPY:END -->
+
+<div style="height:60vh;display:grid;place-items:center;color:#8B96AC">fin de page</div>
+<div class="demo-note">mask-wipe · balayage par bandes verticales</div>
+
+</body>
+</html>

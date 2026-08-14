@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FX-BANK · Sticky Index</title>
+<!--
+/* FX-BANK · STICKY INDEX
+   QUOI : Un sommaire latéral qui reste en place pendant toute la lecture et qui SUIT le
+          lecteur : l'entrée du volet en cours s'allume, un trait vient se poser dessus,
+          et une jauge dit combien il reste de dossier. Cliquer y amène en douceur.
+          C'est l'architecture d'une page entière — un dossier long en cinq volets.
+   QUAND : Une page « notre métier », un dossier de fond, des mentions longues, une
+           documentation. Dès qu'un lecteur doit pouvoir sauter à un volet précis et
+           savoir en permanence où il en est.
+   DEPENDANCES : aucune. Aucune image, aucune police, aucun script distant.
+                 Les visuels de démonstration sont des SVG écrits dans le fichier.
+   SAFARI : conforme. Aucun flou, aucun verre dépoli, aucun dégradé découpé dans du texte.
+            Uniquement transform, opacity et position:sticky.
+            Mouvement réduit = sommaire posé en haut, volets empilés, défilement instantané.
+   MESURE : le sommaire est collé — le mesurer rend toujours la même position d'écran et
+            n'apprend rien. Le volet actif se lit sur les VOLETS eux-mêmes, qui bougent.
+   FILET : le volet actif et la révélation des blocs se décident sur la position réelle
+           relue à chaque défilement, jamais sur une notification unique. Sans script,
+           le sommaire reste une liste de liens d'ancrage qui fonctionne, et tout le
+           texte du dossier est lisible : aucun texte transparent au repos.
+   COPIER : le bloc entre FX:COPY:START et FX:COPY:END */
+-->
+<style>
+  body{margin:0;background:#FBFCFE;color:#0E1626;font:16px/1.6 ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif}
+  .demo-note{position:fixed;left:16px;bottom:16px;z-index:60;font-size:12px;letter-spacing:.1em;
+    text-transform:uppercase;color:#8B96AC;background:#FBFCFE;padding:8px 12px;border:1px solid #DCE5F4}
+
+  /* FX:COPY:START */
+  .fx-index{
+    --fx-index-bleu:#0050E6;
+    --fx-index-orange:#F39A1B;     /* accent rare : un seul emploi sur toute la page */
+    --fx-index-encre:#0E1626;
+    --fx-index-gris:#54607A;
+    --fx-index-bord:#DCE5F4;
+    --fx-index-fond:#FBFCFE;
+    --fx-index-col:246px;
+    --fx-index-gouttiere:clamp(40px,6vw,88px);
+    --fx-index-marge:clamp(20px,5vw,64px);
+    --fx-index-haut:96px;          /* hauteur à laquelle le sommaire se pose */
+    background:var(--fx-index-fond); color:var(--fx-index-encre);
+  }
+
+  /* ---- Ouverture ---- */
+  .fx-index__hero{
+    max-width:1180px; margin:0 auto;
+    padding:clamp(64px,11vh,128px) var(--fx-index-marge) clamp(48px,8vh,88px);
+    border-bottom:1px solid var(--fx-index-bord);
+  }
+  .fx-index__sur{
+    margin:0 0 16px; font-size:.78rem; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--fx-index-bleu); font-weight:650;
+  }
+  .fx-index__geant{
+    margin:0 0 18px; font-size:clamp(2rem,5.6vw,4rem); line-height:1.05;
+    letter-spacing:-.028em; font-weight:660; text-wrap:balance; max-width:17ch;
+  }
+  .fx-index__chapo{ margin:0; max-width:58ch; color:var(--fx-index-gris); font-size:clamp(1rem,1.6vw,1.16rem) }
+
+  /* ---- La double colonne : sommaire collé + dossier qui défile ---- */
+  .fx-index__page{
+    display:grid; grid-template-columns:var(--fx-index-col) 1fr;
+    gap:0 var(--fx-index-gouttiere);
+    max-width:1180px; margin:0 auto; padding:0 var(--fx-index-marge);
+    align-items:start;
+  }
+
+  .fx-index__sommaire{
+    position:sticky; top:var(--fx-index-haut); align-self:start;
+    padding:56px 0 40px;
+  }
+  .fx-index__legende{
+    margin:0 0 18px; font-size:.72rem; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--fx-index-gris); font-weight:650;
+  }
+  /* Le rail porte le trait ; la liste reste une liste propre (un <ul> ne contient que des <li>). */
+  .fx-index__rail{
+    position:relative; padding-left:18px; border-left:1px solid var(--fx-index-bord);
+  }
+  .fx-index__liste{ margin:0; padding:0; list-style:none }
+  /* Le trait qui marque le volet en cours : il glisse d'une entrée à l'autre. */
+  .fx-index__curseur{
+    position:absolute; left:-1px; top:0; width:2px; height:0;
+    background:var(--fx-index-bleu);
+    transform:translateY(var(--y,0px));
+    transition:transform .42s cubic-bezier(.22,.8,.25,1), height .42s cubic-bezier(.22,.8,.25,1);
+  }
+  .fx-index__lien{
+    display:block; padding:9px 0; text-decoration:none; color:var(--fx-index-gris);
+    font-size:.95rem; line-height:1.4; min-height:44px; box-sizing:border-box;
+    transition:color .3s ease;
+  }
+  .fx-index__lien b{
+    display:inline-block; width:26px; font-variant-numeric:tabular-nums;
+    font-weight:650; font-size:.82rem; color:#9AA8C2; transition:color .3s ease;
+  }
+  .fx-index__lien:hover{ color:var(--fx-index-encre) }
+  .fx-index__lien.est-actif{ color:var(--fx-index-bleu); font-weight:640 }
+  .fx-index__lien.est-actif b{ color:var(--fx-index-bleu) }
+  .fx-index__lien:focus-visible{ outline:2px solid var(--fx-index-bleu); outline-offset:3px }
+
+  /* La jauge d'avancement du dossier entier */
+  .fx-index__avance{
+    margin-top:26px; display:flex; align-items:center; gap:12px;
+    font-size:.76rem; letter-spacing:.1em; text-transform:uppercase; color:#9AA8C2; font-weight:650;
+  }
+  .fx-index__avance span{ display:block; flex:1; height:2px; background:var(--fx-index-bord); overflow:hidden }
+  .fx-index__avance span i{
+    display:block; width:100%; height:100%; background:var(--fx-index-bleu);
+    transform-origin:left; transform:scaleX(var(--p,0));
+  }
+
+  /* ---- Les volets ---- */
+  .fx-index__dossier{ padding:56px 0 40px; max-width:64ch }
+  .fx-index__volet{ scroll-margin-top:calc(var(--fx-index-haut) - 24px); padding:0 0 76px }
+  .fx-index__volet + .fx-index__volet{ padding-top:20px }
+
+  .fx-index__num{
+    display:block; font-variant-numeric:tabular-nums; font-size:.8rem; letter-spacing:.16em;
+    text-transform:uppercase; color:var(--fx-index-bleu); font-weight:650; margin-bottom:12px;
+  }
+  .fx-index__t{
+    margin:0 0 18px; font-size:clamp(1.5rem,3.2vw,2.3rem); line-height:1.12;
+    letter-spacing:-.022em; font-weight:650; text-wrap:balance;
+  }
+  .fx-index__bloc + .fx-index__bloc{ margin-top:26px }
+  /* Le filet : au repos le bloc est PLEINEMENT lisible. La mise en retrait n'existe
+     que si le script a démarré — il pose lui-même la classe `est-anime`. Script
+     absent, en erreur ou bloqué : le dossier reste entièrement lu. */
+  .fx-index.est-anime .fx-index__bloc{
+    opacity:.45; transform:translateY(12px);
+    transition:opacity .6s ease, transform .6s cubic-bezier(.22,.8,.25,1);
+  }
+  .fx-index.est-anime .fx-index__bloc.est-vu{ opacity:1; transform:none }
+
+  .fx-index__p{ margin:0 0 16px; color:#2A3550; font-size:1.04rem }
+  .fx-index__p:last-child{ margin-bottom:0 }
+  .fx-index__p strong{ font-weight:650; color:var(--fx-index-encre) }
+
+  .fx-index__citation{
+    margin:0; padding:22px 26px; border-left:3px solid var(--fx-index-orange);
+    background:#FFF; border-top:1px solid var(--fx-index-bord);
+    border-right:1px solid var(--fx-index-bord); border-bottom:1px solid var(--fx-index-bord);
+  }
+  .fx-index__citation p{ margin:0 0 10px; font-size:1.12rem; line-height:1.45; letter-spacing:-.01em }
+  .fx-index__citation footer{ font-size:.86rem; color:var(--fx-index-gris) }
+
+  .fx-index__defs{ margin:0; border-top:1px solid var(--fx-index-bord) }
+  .fx-index__defs div{ display:grid; grid-template-columns:150px 1fr; gap:0 20px;
+    padding:14px 0; border-bottom:1px solid var(--fx-index-bord) }
+  .fx-index__defs dt{ font-weight:650; font-size:.94rem }
+  .fx-index__defs dd{ margin:0; color:var(--fx-index-gris); font-size:.95rem }
+
+  /* Visuels de démonstration : SVG écrits dans le fichier, zéro requête réseau. */
+  .fx-index__visuel{
+    height:220px; border:1px solid var(--fx-index-bord); background:#fff;
+    background-repeat:no-repeat; background-position:center; background-size:cover;
+  }
+  .fx-index__visuel--flux{
+    background-image:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 640 260'><rect width='640' height='260' fill='%23F4F8FE'/><g stroke='%23B7C4DD' stroke-width='2' stroke-linecap='round'><path d='M148 130h96'/><path d='M396 130h96'/></g><g fill='%23FFFFFF' stroke='%230050E6' stroke-width='3'><rect x='34' y='92' width='114' height='76' rx='6'/><rect x='244' y='78' width='152' height='104' rx='6'/><rect x='492' y='92' width='114' height='76' rx='6'/></g><g fill='%230050E6' opacity='.16'><rect x='262' y='96' width='34' height='68' rx='4'/><rect x='304' y='110' width='34' height='54' rx='4'/><rect x='346' y='88' width='34' height='76' rx='4'/></g><g fill='%2354607A' font-family='sans-serif' font-size='15' text-anchor='middle'><text x='91' y='206'>Laboratoire</text><text x='320' y='214'>Répartition</text><text x='549' y='206'>Officine</text></g></svg>");
+  }
+  .fx-index__visuel--jours{
+    background-image:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 640 260'><rect width='640' height='260' fill='%23F4F8FE'/><g stroke='%23DCE5F4' stroke-width='1.6'><path d='M56 200h544'/></g><g fill='%230050E6' opacity='.2'><rect x='72' y='108' width='46' height='92' rx='3'/><rect x='146' y='92' width='46' height='108' rx='3'/><rect x='220' y='124' width='46' height='76' rx='3'/><rect x='294' y='84' width='46' height='116' rx='3'/><rect x='368' y='116' width='46' height='84' rx='3'/></g><g fill='%230050E6' opacity='.55'><rect x='442' y='140' width='46' height='60' rx='3'/><rect x='516' y='160' width='46' height='40' rx='3'/></g><g fill='%2354607A' font-family='sans-serif' font-size='14' text-anchor='middle'><text x='95' y='228'>lun</text><text x='169' y='228'>mar</text><text x='243' y='228'>mer</text><text x='317' y='228'>jeu</text><text x='391' y='228'>ven</text><text x='465' y='228'>sam</text><text x='539' y='228'>dim</text></g></svg>");
+  }
+
+  /* ---- Sortie ---- */
+  .fx-index__pied{
+    border-top:1px solid var(--fx-index-bord);
+    padding:clamp(52px,9vh,96px) var(--fx-index-marge);
+  }
+  .fx-index__pied > div{ max-width:1180px; margin:0 auto }
+  .fx-index__pied h2{ margin:0 0 12px; font-size:clamp(1.5rem,3vw,2.2rem); letter-spacing:-.02em; font-weight:650 }
+  .fx-index__pied p{ margin:0 0 26px; color:var(--fx-index-gris); max-width:52ch }
+  .fx-index__cta{
+    display:inline-block; padding:14px 26px; background:var(--fx-index-bleu); color:#fff;
+    text-decoration:none; font-weight:640; min-height:44px; box-sizing:border-box;
+  }
+  .fx-index__cta:hover{ background:#0043C4 }
+
+  /* ---- Mobile : le sommaire devient un bandeau horizontal collé en haut ---- */
+  @media (max-width:920px){
+    .fx-index{ --fx-index-haut:0px }
+    .fx-index__page{ display:block; padding:0 }
+    .fx-index__sommaire{
+      top:0; z-index:20; padding:0;
+      background:var(--fx-index-fond); border-bottom:1px solid var(--fx-index-bord);
+    }
+    .fx-index__legende{ display:none }
+    .fx-index__rail{ padding-left:0; border-left:0 }
+    .fx-index__liste{
+      display:flex; gap:6px; padding:0 var(--fx-index-marge);
+      overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none;
+    }
+    .fx-index__liste::-webkit-scrollbar{ display:none }
+    .fx-index__curseur{ display:none }
+    .fx-index__lien{
+      white-space:nowrap; padding:14px 2px; border-bottom:2px solid transparent;
+      display:flex; align-items:center; gap:6px;
+    }
+    .fx-index__lien.est-actif{ border-bottom-color:var(--fx-index-bleu) }
+    .fx-index__lien b{ width:auto }
+    .fx-index__avance{ margin:0; padding:0 var(--fx-index-marge) 10px }
+    .fx-index__dossier{ padding:34px var(--fx-index-marge) 20px; max-width:none }
+    /* Mesuré, pas estimé : le bandeau collé fait 82 px (entrées + jauge « Lu »).
+       En dessous, le clic sur le sommaire fait atterrir le titre SOUS le bandeau. */
+    .fx-index__volet{ scroll-margin-top:96px; padding-bottom:56px }
+    .fx-index__defs div{ grid-template-columns:1fr; gap:4px }
+    .fx-index__visuel{ height:180px }
+  }
+
+  /* ---- Repli : sommaire posé en haut, volets empilés, rien de collé ---- */
+  @media (prefers-reduced-motion: reduce){
+    .fx-index__page{ display:block; padding:0 var(--fx-index-marge) }
+    .fx-index__sommaire{ position:static; padding:32px 0 8px }
+    .fx-index__curseur{ display:none; transition:none }
+    .fx-index__lien{ min-height:0; padding:6px 0 }
+    .fx-index__dossier{ padding:24px 0 20px; max-width:64ch }
+    .fx-index.est-anime .fx-index__bloc{ opacity:1; transform:none; transition:none }
+  }
+  /* FX:COPY:END */
+</style>
+</head>
+<body>
+
+<!-- FX:COPY:START -->
+<main class="fx-index" data-fx-index>
+
+  <header class="fx-index__hero">
+    <p class="fx-index__sur">Dossier</p>
+    <h1 class="fx-index__geant">Ce que fait vraiment un répartiteur.</h1>
+    <p class="fx-index__chapo">Cinq volets pour comprendre un métier qu'on ne voit jamais :
+      il n'est visible que le jour où il défaille.</p>
+  </header>
+
+  <div class="fx-index__page">
+
+    <!-- Le sommaire. Sans script, ce sont de simples liens d'ancrage : ils marchent. -->
+    <nav class="fx-index__sommaire" aria-label="Sommaire du dossier">
+      <p class="fx-index__legende">Sommaire</p>
+      <div class="fx-index__rail">
+        <i class="fx-index__curseur" aria-hidden="true"></i>
+        <ul class="fx-index__liste">
+          <li><a class="fx-index__lien est-actif" href="#volet-1"><b>01</b>Le maillon invisible</a></li>
+          <li><a class="fx-index__lien" href="#volet-2"><b>02</b>Une obligation, pas un service</a></li>
+          <li><a class="fx-index__lien" href="#volet-3"><b>03</b>La chaîne du froid</a></li>
+          <li><a class="fx-index__lien" href="#volet-4"><b>04</b>Quand le produit manque</a></li>
+          <li><a class="fx-index__lien" href="#volet-5"><b>05</b>Le lien avec l'officine</a></li>
+        </ul>
+      </div>
+      <p class="fx-index__avance">Lu<span><i></i></span></p>
+    </nav>
+
+    <div class="fx-index__dossier">
+
+      <!-- Volet 01 -->
+      <article class="fx-index__volet" id="volet-1">
+        <span class="fx-index__num">Volet 01</span>
+        <h2 class="fx-index__t">Le maillon invisible</h2>
+        <div class="fx-index__bloc">
+          <p class="fx-index__p">Un laboratoire produit par lots de plusieurs milliers de boîtes.
+            Une officine en délivre quelques-unes par jour, parfois une seule dans l'année.
+            <strong>Entre les deux, il faut quelqu'un qui casse l'échelle</strong> : recevoir gros,
+            stocker large, redistribuer à l'unité.</p>
+          <p class="fx-index__p">C'est tout le métier de la répartition pharmaceutique. Il ne
+            s'invente pas au moment où on en a besoin : il suppose des entrepôts, des stocks
+            immobilisés et des camions qui roulent même les jours creux.</p>
+        </div>
+        <div class="fx-index__bloc">
+          <div class="fx-index__visuel fx-index__visuel--flux" role="img"
+               aria-label="Schéma : du laboratoire à l'officine, en passant par la répartition."></div>
+        </div>
+        <div class="fx-index__bloc">
+          <dl class="fx-index__defs">
+            <div><dt>Référencer</dt><dd>Tenir en stock l'immense majorité des présentations du marché.</dd></div>
+            <div><dt>Fractionner</dt><dd>Sortir une boîte là où le laboratoire n'expédie qu'un carton.</dd></div>
+            <div><dt>Livrer</dt><dd>Deux passages par jour dans chaque officine desservie.</dd></div>
+          </dl>
+        </div>
+      </article>
+
+      <!-- Volet 02 -->
+      <article class="fx-index__volet" id="volet-2">
+        <span class="fx-index__num">Volet 02</span>
+        <h2 class="fx-index__t">Une obligation, pas un service en option</h2>
+        <div class="fx-index__bloc">
+          <p class="fx-index__p">Le répartiteur ne choisit pas ses clients ni ses références.
+            Il est tenu de desservir toutes les officines de son territoire et de tenir en stock
+            l'essentiel des médicaments exploités en France, y compris ceux qui ne sortent jamais.</p>
+          <p class="fx-index__p">Les stocks de sécurité, les délais de livraison, la capacité à
+            répondre en urgence : ce ne sont pas des arguments, ce sont des obligations
+            réglementaires. Ce qui distingue deux répartiteurs se joue ailleurs.</p>
+        </div>
+        <div class="fx-index__bloc">
+          <blockquote class="fx-index__citation">
+            <p>« Un répartiteur qui garde en stock un produit qui ne part pas ne fait pas un geste
+              commercial. Il fait son travail. »</p>
+            <footer>Un pharmacien titulaire, sur ce qu'il attend de son fournisseur.</footer>
+          </blockquote>
+        </div>
+      </article>
+
+      <!-- Volet 03 -->
+      <article class="fx-index__volet" id="volet-3">
+        <span class="fx-index__num">Volet 03</span>
+        <h2 class="fx-index__t">La chaîne du froid ne se rattrape pas</h2>
+        <div class="fx-index__bloc">
+          <p class="fx-index__p">Vaccins, insulines, biosimilaires : ces produits doivent rester
+            entre 2 et 8 °C du site de production jusqu'au réfrigérateur de l'officine.
+            <strong>Une rupture ne se voit pas.</strong> Le flacon a l'air intact, l'étiquette est
+            propre, et le produit ne vaut plus rien.</p>
+          <p class="fx-index__p">C'est le seul endroit du métier où l'erreur est silencieuse.
+            Donc le seul où faire attention ne suffit pas : il faut mesurer, enregistrer, et
+            pouvoir ressortir l'historique des mois plus tard.</p>
+        </div>
+        <div class="fx-index__bloc">
+          <dl class="fx-index__defs">
+            <div><dt>En entrepôt</dt><dd>Chambres froides sous relevé continu, avec alerte et astreinte.</dd></div>
+            <div><dt>En transport</dt><dd>Contenants qualifiés, sondes embarquées, historique conservé.</dd></div>
+            <div><dt>À l'arrivée</dt><dd>Le produit est remis en main propre, jamais laissé sur un quai.</dd></div>
+          </dl>
+        </div>
+      </article>
+
+      <!-- Volet 04 -->
+      <article class="fx-index__volet" id="volet-4">
+        <span class="fx-index__num">Volet 04</span>
+        <h2 class="fx-index__t">Quand le produit manque partout</h2>
+        <div class="fx-index__bloc">
+          <p class="fx-index__p">Les tensions d'approvisionnement ne se résolvent pas au niveau
+            du répartiteur : quand un laboratoire ne produit plus, personne n'a de réserve cachée.
+            Ce qui change d'un fournisseur à l'autre, c'est le <strong>moment</strong> où le
+            pharmacien l'apprend.</p>
+          <p class="fx-index__p">Un manquant annoncé la veille au soir laisse le temps d'appeler
+            le patient, de contacter le prescripteur, de chercher une présentation équivalente.
+            Le même manquant découvert au comptoir laisse un client debout devant une réponse
+            qu'on n'a pas.</p>
+        </div>
+        <div class="fx-index__bloc">
+          <div class="fx-index__visuel fx-index__visuel--jours" role="img"
+               aria-label="Activité de livraison sur sept jours, samedi et dimanche compris."></div>
+        </div>
+        <div class="fx-index__bloc">
+          <p class="fx-index__p">Le week-end n'est pas une pause : les officines de garde appellent,
+            et il faut que quelqu'un décroche.</p>
+        </div>
+      </article>
+
+      <!-- Volet 05 -->
+      <article class="fx-index__volet" id="volet-5">
+        <span class="fx-index__num">Volet 05</span>
+        <h2 class="fx-index__t">Le lien avec l'officine</h2>
+        <div class="fx-index__bloc">
+          <p class="fx-index__p">Tout ce qui précède est du logistique. Ce qu'un pharmacien retient,
+            lui, c'est le nom de la personne qui décroche quand ça va mal — et le fait que ce soit
+            la même d'un mois sur l'autre.</p>
+          <p class="fx-index__p">Une implantation proche, ce n'est pas seulement un délai court.
+            C'est une équipe qui connaît les accès de l'officine, ses horaires, son organisation,
+            et qui sait ce qu'un appel à 19 h veut dire.</p>
+        </div>
+        <div class="fx-index__bloc">
+          <blockquote class="fx-index__citation">
+            <p>« Je ne juge pas mon répartiteur sur les jours normaux. Je le juge sur les trois
+              jours par an où tout se passe mal. »</p>
+            <footer>Un pharmacien titulaire, à propos du choix d'un fournisseur.</footer>
+          </blockquote>
+        </div>
+      </article>
+
+    </div>
+  </div>
+
+  <footer class="fx-index__pied">
+    <div>
+      <h2>Une question sur ce dossier ?</h2>
+      <p>Le plus simple est encore d'en parler avec l'implantation qui dessert votre secteur.</p>
+      <a class="fx-index__cta" href="#">Nous écrire</a>
+    </div>
+  </footer>
+
+</main>
+
+<script>
+(function(){
+  var reduit = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  document.querySelectorAll('[data-fx-index]').forEach(function(page){
+    var liens  = Array.prototype.slice.call(page.querySelectorAll('.fx-index__lien'));
+    var volets = liens.map(function(a){
+      return page.querySelector(a.getAttribute('href'));
+    }).filter(Boolean);
+    var curseur = page.querySelector('.fx-index__curseur');
+    var jauge   = page.querySelector('.fx-index__avance i');
+    var dossier = page.querySelector('.fx-index__dossier');
+    var blocs   = Array.prototype.slice.call(page.querySelectorAll('.fx-index__bloc'));
+    var liste   = page.querySelector('.fx-index__liste');
+    if (volets.length !== liens.length || !volets.length) return;
+
+    // Défilement doux au clic. On garde l'ancre native : sans script, le lien marche déjà.
+    if (!reduit) {
+      liens.forEach(function(a, i){
+        a.addEventListener('click', function(e){
+          e.preventDefault();
+          volets[i].scrollIntoView({ behavior:'smooth', block:'start' });
+          history.replaceState(null, '', a.getAttribute('href'));
+        });
+      });
+    }
+
+    // Mouvement réduit : tout est posé lisible, le sommaire reste une liste d'ancres.
+    if (reduit) {
+      blocs.forEach(function(b){ b.classList.add('est-vu'); });
+      return;
+    }
+
+    // C'est le script qui autorise la mise en retrait des blocs. Tant qu'il n'a pas
+    // tourné, le dossier est simplement lisible — c'est le filet.
+    page.classList.add('est-anime');
+
+    var tic = false, dernier = -1;
+
+    function placer(){
+      tic = false;
+      var vue = window.innerHeight;
+      var decision = vue * 0.32;     // ligne de décision, haute : le sommaire anticipe
+      var ligne    = vue * 0.86;     // ligne de révélation, basse
+
+      // ⚠️ Le sommaire est collé : une fois posé il rend toujours la même position d'écran.
+      // Le mesurer donnerait une valeur constante et le trait ne bougerait jamais.
+      // On lit donc la position des VOLETS — ce sont eux qui défilent.
+      var actif = 0;
+      for (var i = 0; i < volets.length; i++){
+        if (volets[i].getBoundingClientRect().top <= decision) actif = i;
+      }
+      // Fin de page : le dernier volet reste allumé même s'il est court.
+      if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4){
+        actif = volets.length - 1;
+      }
+
+      if (actif !== dernier){
+        dernier = actif;
+        liens.forEach(function(a, i){
+          a.classList.toggle('est-actif', i === actif);
+        });
+        // Le trait vient se poser sur l'entrée en cours (mesure de mise en page, pas d'écran).
+        if (curseur){
+          var a = liens[actif];
+          curseur.style.setProperty('--y', a.offsetTop + 'px');
+          curseur.style.height = a.offsetHeight + 'px';
+        }
+        // Bandeau mobile : on ramène l'entrée active dans le champ, sans toucher au défilement vertical.
+        if (liste && liste.scrollWidth > liste.clientWidth + 4){
+          var a2 = liens[actif];
+          liste.scrollLeft = Math.max(0, a2.offsetLeft - liste.clientWidth * 0.35);
+        }
+      }
+
+      // Avancement du dossier entier.
+      if (jauge && dossier){
+        var r = dossier.getBoundingClientRect();
+        var p = (decision - r.top) / Math.max(1, r.height - vue * 0.4);
+        jauge.style.setProperty('--p', Math.min(1, Math.max(0, p)).toFixed(3));
+      }
+
+      // Le filet : révélation décidée sur la position réelle, relue à chaque défilement.
+      // Aucun bloc ne peut rester en retrait faute d'une notification, et au repos
+      // le texte est déjà lisible.
+      blocs.forEach(function(b){
+        if (b.classList.contains('est-vu')) return;
+        if (b.getBoundingClientRect().top < ligne) b.classList.add('est-vu');
+      });
+    }
+
+    function onScroll(){ if (!tic){ tic = true; requestAnimationFrame(placer); } }
+    window.addEventListener('scroll', onScroll, {passive:true});
+    window.addEventListener('resize', function(){ dernier = -1; onScroll(); }, {passive:true});
+    placer();
+  });
+})();
+</script>
+<!-- FX:COPY:END -->
+
+<div class="demo-note">sticky-index · le sommaire suit la lecture</div>
+
+</body>
+</html>
