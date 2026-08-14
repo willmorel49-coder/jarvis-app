@@ -38,7 +38,16 @@ vm.runInContext(
    'ruptures-data.js', 'generiqueurs-data.js', 'biosimilaires-data.js', '../marketing-offers.js']
     .map(lire).join('\n;\n') +
   '\n;window.WML_OFFICINES = typeof WML_OFFICINES !== "undefined" ? WML_OFFICINES : window.WML_OFFICINES;' +
-  'window.WML_SALES = typeof WML_SALES !== "undefined" ? WML_SALES : window.WML_SALES;', sb);
+  'window.WML_SALES = typeof WML_SALES !== "undefined" ? WML_SALES : window.WML_SALES;' +
+  // ⚠️ Depuis le 13/08/2026 le fichier est COMPACTE : officine, commercial et
+  // produit sont des NUMEROS DE RANG. On refait le decodage de `V2.loadData()`,
+  // sinon plus aucune vente ne retrouve son officine et l'ecran rend 0 ligne.
+  'var _dO = typeof WML_D_OFFICINES !== "undefined" ? WML_D_OFFICINES : window.WML_D_OFFICINES;' +
+  'var _dC = typeof WML_D_COMMERCIAUX !== "undefined" ? WML_D_COMMERCIAUX : window.WML_D_COMMERCIAUX;' +
+  'var _dP = typeof WML_D_PRODUITS !== "undefined" ? WML_D_PRODUITS : window.WML_D_PRODUITS;' +
+  'if (_dO && _dC && _dP && window.WML_SALES.length && typeof window.WML_SALES[0][0] === "number") {' +
+  '  window.WML_SALES = window.WML_SALES.map(function (s) {' +
+  '    return [_dO[s[0]], s[1], _dC[s[2]], _dP[s[3]], s[4], s[5], s[6]]; }); }', sb);
 
 // Stubs V2 : memes contrats que v2-app.js.
 vm.runInContext(`window.V2 = { pages:{}, sales:[], pharmacies:[],
