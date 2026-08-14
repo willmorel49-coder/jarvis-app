@@ -76,8 +76,11 @@
     var cible = parseInt(m[1].replace(/[^\d]/g, ""), 10);
     var suffixe = m[2];
     if (!cible || cible > 100000) return;
-    // Une année ne prend pas de séparateur de milliers : 2018, pas « 2 018 ».
-    var estAnnee = !suffixe && cible >= 1900 && cible <= 2100;
+    // Une année ne prend pas de séparateur de milliers : 2006, pas « 2 006 ».
+    // Le repère est l'attribut `data-brut` posé dans le HTML, jamais la valeur : deviner
+    // « entre 1900 et 2100 » attrapait aussi les 2 000 officines livrées, et le compteur
+    // les affichait « 2000 ». Constaté le 14/08/2026.
+    var estAnnee = el.hasAttribute("data-brut");
     function ecrire(n) {
       return estAnnee ? String(n) : n.toLocaleString("fr-FR") + suffixe;
     }
@@ -106,13 +109,16 @@
       document.querySelectorAll(".fx h1, .fx h2").forEach(decouperEnMots);
     }
 
+    function reveler(el) {
+      if (el.classList.contains("vu")) return;
+      el.classList.add("vu");
+      if (mo === "mo7") el.querySelectorAll(".chiffres b").forEach(monterCompteur);
+    }
+
     var obs = new IntersectionObserver(function (es) {
       es.forEach(function (e) {
         if (!e.isIntersecting) return;
-        e.target.classList.add("vu");
-        if (mo === "mo7") {
-          e.target.querySelectorAll(".chiffres b").forEach(monterCompteur);
-        }
+        reveler(e.target);
         obs.unobserve(e.target);
       });
     }, { rootMargin: "0px 0px -8% 0px", threshold: 0.01 });
@@ -120,13 +126,34 @@
     cibles.forEach(function (el) {
       var r = el.getBoundingClientRect();
       // Déjà à l'écran au chargement : on révèle sans attendre.
-      if (r.top < window.innerHeight && r.bottom > 0) {
-        el.classList.add("vu");
-        if (mo === "mo7") el.querySelectorAll(".chiffres b").forEach(monterCompteur);
-      } else {
-        obs.observe(el);
-      }
+      if (r.top < window.innerHeight && r.bottom > 0) reveler(el);
+      else obs.observe(el);
     });
+
+    // Filet de sécurité — indispensable, pas un confort.
+    //
+    // Le mode `mo2` masque par `clip-path: inset(0 0 100% 0)`. Un élément ainsi découpé
+    // n'a plus aucune aire visible, donc l'IntersectionObserver ne se déclenche JAMAIS :
+    // le CSS attend une classe que le JS ne pose plus, et le bloc reste invisible pour
+    // toujours. Les quatre maquettes en `mo2` étaient entièrement blanches, sauf leur
+    // premier écran. Constaté le 14/08/2026 sur la 009, signalé par Will.
+    //
+    // `getBoundingClientRect` renvoie la boîte de mise en page, que `clip-path` n'affecte
+    // pas : on peut donc décider nous-mêmes, au défilement, de ce qui doit apparaître.
+    // On s'arrête dès que tout est révélé.
+    var filet = function () {
+      var reste = false;
+      cibles.forEach(function (el) {
+        if (el.classList.contains("vu")) return;
+        var r = el.getBoundingClientRect();
+        if (r.top < window.innerHeight * 0.92 && r.bottom > 0) reveler(el);
+        else reste = true;
+      });
+      if (!reste) window.removeEventListener("scroll", filet);
+    };
+    window.addEventListener("scroll", filet, { passive: true });
+    window.addEventListener("resize", filet, { passive: true });
+    setTimeout(filet, 400);
   }
 
   /* ---------- Le geste 3D des portes (td1) ---------- */
