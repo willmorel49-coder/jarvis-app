@@ -76,14 +76,19 @@
     var cible = parseInt(m[1].replace(/[^\d]/g, ""), 10);
     var suffixe = m[2];
     if (!cible || cible > 100000) return;
+    // Une année ne prend pas de séparateur de milliers : 2018, pas « 2 018 ».
+    var estAnnee = !suffixe && cible >= 1900 && cible <= 2100;
+    function ecrire(n) {
+      return estAnnee ? String(n) : n.toLocaleString("fr-FR") + suffixe;
+    }
     var debut = null, duree = 900;
     function pas(t) {
       if (debut === null) debut = t;
       var p = Math.min(1, (t - debut) / duree);
       var v = Math.round(cible * (1 - Math.pow(1 - p, 3)));
-      el.textContent = v.toLocaleString("fr-FR") + suffixe;
+      el.textContent = ecrire(v);
       if (p < 1) requestAnimationFrame(pas);
-      else el.textContent = cible.toLocaleString("fr-FR") + suffixe; // valeur exacte
+      else el.textContent = ecrire(cible); // valeur exacte
     }
     requestAnimationFrame(pas);
   }
