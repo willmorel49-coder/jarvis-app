@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FX-BANK · Image Trail</title>
+<!--
+/* FX-BANK · IMAGE TRAIL
+   QUOI : Une traînée de visuels qui apparaissent brièvement dans le sillage du curseur puis
+          s'effacent. Six visuels en rotation, jamais plus de huit à l'écran, léger décalage
+          aléatoire pour que deux passages ne donnent jamais la même traînée.
+   QUAND : Un bandeau d'ouverture, une section « nos implantations », un titre qu'on veut vivant
+           sans allonger la page. C'est un effet de survol : il n'ajoute aucune hauteur.
+   DEPENDANCES : aucune
+   SAFARI : conforme. Aucun flou, aucun verre dépoli, aucun dégradé découpé dans du texte.
+            Les vignettes bougent en transform et opacity uniquement, jamais en top/left.
+            L'ombre est un empilement de box-shadow.
+   TACTILE : sur téléphone il n'y a pas de survol — les six visuels s'affichent alors en une
+             ligne de vignettes sous le titre. La section reste utile, elle ne fait pas « rien ».
+   FILET : rien n'est masqué en attendant un script. Le titre et la ligne de vignettes sont
+           dans le HTML, visibles même si le JS ne tourne pas.
+   RESEAU : zéro requête. Les visuels sont des SVG fabriqués dans le fichier (data-URI).
+   COPIER : le bloc entre FX:COPY:START et FX:COPY:END */
+-->
+<style>
+  body{margin:0;background:#FBFCFE;color:#0E1626;font:16px/1.6 ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif}
+  .demo-note{position:fixed;left:16px;bottom:16px;z-index:50;font-size:12px;letter-spacing:.1em;
+    text-transform:uppercase;color:#8B96AC;background:#FBFCFE;padding:8px 12px;border:1px solid #DCE5F4}
+
+  /* FX:COPY:START */
+  .fx-tr{
+    --fx-tr-accent:#0050E6;
+    --fx-tr-orange:#F39A1B;
+    --fx-tr-ink:#0E1626;
+    --fx-tr-doux:#54607A;
+    --fx-tr-bord:#DCE5F4;
+    --fx-tr-fond:#FBFCFE;
+    --fx-tr-larg:176px;             /* largeur d'une vignette de traînée */
+    position:relative; overflow:hidden;
+    min-height:74vh; display:grid; place-items:center;
+    padding:64px 24px; background:var(--fx-tr-fond);
+    border-top:1px solid var(--fx-tr-bord); border-bottom:1px solid var(--fx-tr-bord);
+  }
+
+  /* le texte reste dessous : la traînée passe par-dessus, c'est ce qui fait l'effet */
+  /* largeur en px : en `ch`, la mesure suivrait la taille de police du conteneur (16px)
+     et non celle du titre — la ligne se casserait en quatre. */
+  .fx-tr__mot{ position:relative; z-index:1; text-align:center; max-width:660px; user-select:none }
+  .fx-tr__sur{
+    margin:0 0 14px; font-size:12px; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--fx-tr-doux);
+  }
+  .fx-tr__t{
+    margin:0; font-size:clamp(2rem,5.4vw,3.4rem); line-height:1.08; letter-spacing:-.03em;
+    font-weight:680; color:var(--fx-tr-ink);
+  }
+  .fx-tr__d{ margin:16px auto 0; max-width:44ch; color:var(--fx-tr-doux); font-size:1rem }
+
+  /* la couche des vignettes : au-dessus du texte, jamais cliquable */
+  .fx-tr__couche{ position:absolute; inset:0; z-index:2; pointer-events:none }
+  .fx-tr__v{
+    position:absolute; top:0; left:0;
+    width:var(--fx-tr-larg); aspect-ratio:4/5; object-fit:cover; display:block;
+    border-radius:2px;
+    box-shadow:0 1px 2px rgba(14,22,38,.06),
+               0 8px 18px -8px rgba(14,22,38,.16),
+               0 26px 50px -26px rgba(14,22,38,.30);
+    opacity:0;
+    transform:translate3d(calc(var(--x,0px) - 50%), calc(var(--y,0px) - 50%), 0)
+              rotate(var(--r,0deg)) scale(.90);
+    transition:opacity .42s ease, transform .52s cubic-bezier(.22,.8,.25,1);
+  }
+  .fx-tr__v.est-vive{
+    opacity:1;
+    transform:translate3d(calc(var(--x,0px) - 50%), calc(var(--y,0px) - 50%), 0)
+              rotate(var(--r,0deg)) scale(1);
+  }
+
+  /* repli : la même série, en ligne, quand il n'y a pas de survol ou pas d'animation */
+  .fx-tr__ligne{
+    display:none; position:relative; z-index:1;
+    justify-content:center; flex-wrap:wrap; gap:10px; margin:30px auto 0;
+  }
+  .fx-tr__mini{
+    width:76px; aspect-ratio:4/5; object-fit:cover; display:block; border-radius:2px;
+    box-shadow:0 1px 2px rgba(14,22,38,.06), 0 8px 18px -10px rgba(14,22,38,.20);
+  }
+
+  @media (hover:none){
+    .fx-tr{ min-height:auto }
+    .fx-tr__couche{ display:none }
+    .fx-tr__ligne{ display:flex }
+  }
+  @media (max-width:620px){
+    .fx-tr{ padding:48px 18px }
+    .fx-tr__mini{ width:62px }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .fx-tr{ min-height:auto }
+    .fx-tr__couche{ display:none }
+    .fx-tr__ligne{ display:flex }
+    .fx-tr__v{ transition:none }
+  }
+  /* FX:COPY:END */
+</style>
+</head>
+<body>
+
+<div style="height:22vh;display:grid;place-items:center;color:#8B96AC">↓ la section est plus bas</div>
+
+<!-- FX:COPY:START -->
+<section class="fx-tr" data-fx-tr>
+  <div class="fx-tr__mot">
+    <p class="fx-tr__sur">Grossiste-répartiteur</p>
+    <h2 class="fx-tr__t">Neuf maisons, une seule exigence</h2>
+    <p class="fx-tr__d">Passez la souris : chaque implantation apparaît un instant, puis laisse la place à la suivante.</p>
+    <div class="fx-tr__ligne" aria-hidden="true"></div>
+  </div>
+  <div class="fx-tr__couche" aria-hidden="true"></div>
+</section>
+
+<script>
+(function(){
+  var reduit = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var survol = window.matchMedia('(hover:hover)').matches;
+
+  // Les visuels sont fabriqués ici même, en SVG : aucune requête réseau, aucun service tiers,
+  // aucune police distante. Remplacer SRC par les vraies photos le moment venu.
+  var VISUELS = [
+    { n:'01', t:'Hyères',              v:'Var · 83',           a:'#0050E6', b:'#0A2352', or:false },
+    { n:'02', t:'Palaiseau',           v:'Essonne · 91',       a:'#1663F0', b:'#0B2A6B', or:false },
+    { n:'03', t:'Flassans-sur-Issole', v:'Var · 83',           a:'#0E4FD1', b:'#08306E', or:false },
+    { n:'04', t:'Montayral',           v:'Lot-et-Garonne · 47',a:'#2A6BF2', b:'#0C2E70', or:true  },
+    { n:'05', t:"Saint-Maurice-l'Exil",v:'Isère · 38',         a:'#0846B8', b:'#071F52', or:false },
+    { n:'06', t:'Riom',                v:'Puy-de-Dôme · 63',   a:'#1155DA', b:'#0A2760', or:false }
+  ];
+
+  function source(v){
+    var trait = v.or ? '#F39A1B' : 'rgba(255,255,255,.62)';
+    var svg =
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 400">' +
+        '<defs><linearGradient id="f" x1="0" y1="0" x2="1" y2="1">' +
+          '<stop offset="0" stop-color="' + v.a + '"/>' +
+          '<stop offset="1" stop-color="' + v.b + '"/>' +
+        '</linearGradient></defs>' +
+        '<rect width="320" height="400" fill="url(#f)"/>' +
+        '<rect x="0" y="308" width="320" height="92" fill="rgba(8,14,28,.52)"/>' +
+        '<rect x="26" y="30" width="36" height="3" fill="' + trait + '"/>' +
+        '<text x="26" y="70" font-family="ui-monospace,monospace" font-size="14" ' +
+          'fill="rgba(255,255,255,.72)">' + v.n + '</text>' +
+        '<text x="26" y="352" font-family="system-ui,sans-serif" font-size="19" ' +
+          'font-weight="600" fill="#ffffff">' + v.t + '</text>' +
+        '<text x="26" y="378" font-family="ui-monospace,monospace" font-size="12.5" ' +
+          'fill="rgba(255,255,255,.72)">' + v.v + '</text>' +
+      '</svg>';
+    return 'data:image/svg+xml,' + encodeURIComponent(svg);
+  }
+
+  var SRC = VISUELS.map(source);
+
+  document.querySelectorAll('[data-fx-tr]').forEach(function(scene){
+    var couche = scene.querySelector('.fx-tr__couche');
+    var ligne  = scene.querySelector('.fx-tr__ligne');
+
+    // la ligne de repli est remplie dans tous les cas : c'est elle qui sert sur téléphone
+    // et en mouvement réduit, et elle ne coûte rien quand elle est masquée.
+    if (ligne){
+      SRC.forEach(function(s){
+        var m = document.createElement('img');
+        m.className = 'fx-tr__mini'; m.src = s; m.alt = ''; m.draggable = false;
+        ligne.appendChild(m);
+      });
+    }
+
+    if (!couche || reduit || !survol) return;
+
+    // Réserve fixe de vignettes, réutilisées en boucle : on ne crée ni ne détruit
+    // jamais d'élément pendant le mouvement.
+    var POOL = 8, cases = [], k = 0, z = 0, ix = 0;
+    for (var i = 0; i < POOL; i++){
+      var el = document.createElement('img');
+      el.className = 'fx-tr__v'; el.alt = ''; el.draggable = false;
+      couche.appendChild(el);
+      cases.push({ el: el, t: 0 });
+    }
+
+    var cadre = scene.getBoundingClientRect();
+    function remesurer(){ cadre = scene.getBoundingClientRect(); }
+    window.addEventListener('resize', remesurer, {passive:true});
+    window.addEventListener('scroll', remesurer, {passive:true});
+
+    var lx = null, ly = null;
+    var SEUIL = 86;   // distance à parcourir avant de poser la vignette suivante
+
+    scene.addEventListener('mousemove', function(e){
+      var x = e.clientX - cadre.left;
+      var y = e.clientY - cadre.top;
+      if (lx === null){ lx = x; ly = y; return; }
+      var dx = x - lx, dy = y - ly;
+      if (Math.sqrt(dx * dx + dy * dy) < SEUIL) return;
+      lx = x; ly = y;
+      poser(x, y);
+    });
+    scene.addEventListener('mouseleave', function(){ lx = null; });
+
+    function poser(x, y){
+      var c = cases[k]; k = (k + 1) % POOL;
+      var el = c.el;
+
+      el.src = SRC[ix]; ix = (ix + 1) % SRC.length;
+      // léger décalage aléatoire : sans lui, la traînée dessine une règle
+      el.style.setProperty('--x', (x + (Math.random() * 22 - 11)).toFixed(1) + 'px');
+      el.style.setProperty('--y', (y + (Math.random() * 22 - 11)).toFixed(1) + 'px');
+      el.style.setProperty('--r', (Math.random() * 10 - 5).toFixed(2) + 'deg');
+      el.style.zIndex = ++z;
+
+      // on coupe la transition le temps de replacer la vignette : sans ça, une case
+      // encore visible glisserait depuis sa position précédente au lieu d'apparaître.
+      el.style.transition = 'none';
+      el.classList.remove('est-vive');
+      void el.offsetWidth;
+      el.style.transition = '';
+      el.classList.add('est-vive');
+
+      clearTimeout(c.t);
+      c.t = setTimeout(function(){ el.classList.remove('est-vive'); }, 540);
+    }
+  });
+})();
+</script>
+<!-- FX:COPY:END -->
+
+<div style="height:60vh;display:grid;place-items:center;color:#8B96AC">fin</div>
+<div class="demo-note">image-trail · les visuels suivent le curseur</div>
+
+</body>
+</html>

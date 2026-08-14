@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FX-BANK · Card 3D Carousel</title>
+<!--
+/* FX-BANK · CARD 3D CAROUSEL
+   QUOI : Un carrousel de cartes en profondeur, piloté par le DÉFILEMENT de la page — pas par
+          des flèches. Celle du centre est de face ; les latérales s'inclinent, reculent et
+          s'estompent légèrement. Descendre fait tourner la file, remonter la fait revenir.
+   QUAND : Cinq à sept sujets d'égale importance qu'on veut faire regarder un par un.
+           Un seul par page : deux carrousels collés se disputent le défilement.
+   DEPENDANCES : aucune
+   SAFARI : conforme. Aucun flou, aucun verre dépoli, aucun dégradé découpé dans du texte.
+            La profondeur vient de la perspective et d'ombres empilées, pas d'un filtre.
+   PIEGE DE CALCUL : la scène est collée en haut de l'écran. Une fois collée, sa position
+            d'écran ne bouge plus — la mesurer donnerait toujours la même valeur et le
+            carrousel resterait figé. On mesure donc la SECTION haute qui l'enveloppe, la
+            seule qui continue de défiler, et on en tire la progression.
+   FILET : sans script, les cartes forment une simple bande horizontale que l'on fait glisser
+           au doigt : tout reste lisible et opaque. C'est le script qui bascule en 3D, et lui
+           seul qui donne sa hauteur à la section — donc pas de trou blanc si rien ne tourne.
+   REPLI : mouvement réduit = la bande horizontale, sans 3D et sans capture du défilement.
+   COPIER : le bloc entre FX:COPY:START et FX:COPY:END */
+-->
+<style>
+  body{margin:0;background:#FBFCFE;color:#0E1626;font:16px/1.6 ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif}
+  .demo-note{position:fixed;left:16px;bottom:16px;z-index:50;font-size:12px;letter-spacing:.1em;
+    text-transform:uppercase;color:#8B96AC;background:#FBFCFE;padding:8px 12px;border:1px solid #DCE5F4}
+
+  /* FX:COPY:START */
+  .fx-carr3d{
+    --fx-carr3d-accent:#0050E6;
+    --fx-carr3d-orange:#F39A1B;      /* accent rare : le point actif, rien d'autre */
+    --fx-carr3d-encre:#0E1626;
+    --fx-carr3d-doux:#54607A;
+    --fx-carr3d-bord:#DCE5F4;
+    --fx-carr3d-fond:#FBFCFE;
+    --fx-carr3d-ecart:0.74;          /* écartement latéral, en fraction de largeur de carte */
+    --fx-carr3d-recul:260;           /* recul en profondeur, en pixels par cran */
+    --fx-carr3d-angle:34;            /* inclinaison, en degrés par cran */
+    position:relative;
+  }
+
+  /* Vignettes de démonstration : SVG écrits ici même, aucun fichier distant. */
+  .fx-carr3d__vignette{
+    display:block; width:100%; height:clamp(132px,20vh,178px); border-radius:2px;
+    background-color:#F1F6FE; background-repeat:no-repeat;
+    background-position:center; background-size:cover;
+  }
+  .fx-carr3d__vignette--reseau{ background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 132' fill='none'><rect width='320' height='132' fill='%23F1F6FE'/><path d='M40 96 L110 44 L188 82 L268 36' stroke='%230050E6' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/><circle cx='40' cy='96' r='6' fill='%230050E6'/><circle cx='110' cy='44' r='6' fill='%230050E6'/><circle cx='188' cy='82' r='6' fill='%230050E6'/><circle cx='268' cy='36' r='6' fill='%230050E6'/><path d='M0 118h320' stroke='%23DCE5F4' stroke-width='1.4'/></svg>") }
+  .fx-carr3d__vignette--entrepot{ background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 132' fill='none'><rect width='320' height='132' fill='%23F1F6FE'/><g stroke='%230050E6' stroke-width='1.6'><rect x='46' y='72' width='46' height='34'/><rect x='100' y='52' width='46' height='54'/><rect x='154' y='66' width='46' height='40'/><rect x='208' y='40' width='46' height='66'/></g><path d='M28 106h264' stroke='%230E1626' stroke-width='1.6' stroke-linecap='round'/></svg>") }
+  .fx-carr3d__vignette--froid{ background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 132' fill='none'><rect width='320' height='132' fill='%23F1F6FE'/><g stroke='%230050E6' stroke-width='1.6' stroke-linecap='round'><path d='M160 24v84M124 42l72 48M196 42l-72 48'/><path d='M160 40l-11-11 11-11 11 11z'/></g><path d='M0 116h320' stroke='%23DCE5F4' stroke-width='1.4'/></svg>") }
+  .fx-carr3d__vignette--tournee{ background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 132' fill='none'><rect width='320' height='132' fill='%23F1F6FE'/><path d='M24 104c56 0 40-64 96-64s40 64 96 64 56-24 80-24' stroke='%230050E6' stroke-width='1.8' stroke-linecap='round'/><circle cx='24' cy='104' r='5.5' fill='%230E1626'/><circle cx='296' cy='80' r='5.5' fill='%23F39A1B'/></svg>") }
+  .fx-carr3d__vignette--comptoir{ background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 132' fill='none'><rect width='320' height='132' fill='%23F1F6FE'/><g stroke='%230050E6' stroke-width='1.6'><rect x='66' y='38' width='188' height='44' rx='3'/><path d='M66 60h188'/></g><path d='M46 104h228' stroke='%230E1626' stroke-width='1.8' stroke-linecap='round'/><circle cx='160' cy='94' r='5' fill='%230050E6'/></svg>") }
+
+  /* --- État de repos : une bande horizontale que l'on fait glisser. Tout est lisible. --- */
+  .fx-carr3d__scene{ padding:8px 0 }
+  .fx-carr3d__piste{
+    display:flex; gap:18px; overflow-x:auto; padding:14px 24px 22px;
+    scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch;
+  }
+  .fx-carr3d__carte{
+    position:relative; flex:none; width:min(76vw,320px); scroll-snap-align:center;
+    background:#fff; border:1px solid var(--fx-carr3d-bord); border-radius:3px;
+    padding:14px 14px 20px;
+    /* ombre douce = plusieurs box-shadow empilées, jamais un filtre */
+    box-shadow:0 1px 1px rgba(14,22,38,.04),
+               0 8px 16px -12px rgba(14,22,38,.16),
+               0 26px 44px -34px rgba(14,22,38,.30);
+  }
+  /* Le recul se lit par un voile plein de la couleur du fond, posé PAR-DESSUS la carte :
+     un aplat, jamais un filtre. La carte reste opaque, donc deux cartes qui se recouvrent
+     ne se mélangent pas — c'est ce qui garde la carte du centre parfaitement lisible. */
+  .fx-carr3d__carte::after{
+    content:""; position:absolute; inset:0; border-radius:3px;
+    background:var(--fx-carr3d-fond);
+    opacity:var(--voile,0); pointer-events:none;
+  }
+  .fx-carr3d__num{
+    display:block; margin:14px 0 6px; font-variant-numeric:tabular-nums;
+    font-size:.78rem; letter-spacing:.14em; font-weight:650; color:var(--fx-carr3d-accent);
+  }
+  .fx-carr3d__t{ margin:0 0 8px; font-size:1.1rem; font-weight:650; letter-spacing:-.014em }
+  .fx-carr3d__d{ margin:0; font-size:.94rem; color:var(--fx-carr3d-doux) }
+  .fx-carr3d__points{ display:flex; gap:7px; justify-content:center; padding:0 0 8px }
+  .fx-carr3d__point{
+    width:6px; height:6px; border-radius:50%; background:#C6D2E8;
+    transition:background-color .2s ease, transform .2s ease;
+  }
+  .fx-carr3d__point.est-actif{ background:var(--fx-carr3d-orange); transform:scale(1.5) }
+
+  /* --- État ARMÉ : posé par le script uniquement. --- */
+  .fx-carr3d.est-armee .fx-carr3d__scene{
+    position:sticky; top:0; height:100vh; padding:0;
+    display:grid; grid-template-rows:1fr auto; align-items:center;
+    overflow:hidden;                       /* posé sur l'élément collé lui-même : sans effet
+                                              sur son collage, et rien ne déborde en largeur */
+    background:var(--fx-carr3d-fond);
+  }
+  .fx-carr3d.est-armee .fx-carr3d__piste{
+    display:block; overflow:visible; padding:0;
+    position:relative; width:100%; height:0;
+    perspective:1200px;                    /* la perspective vit ici, pas sur l'élément collé */
+    align-self:center;
+  }
+  .fx-carr3d.est-armee .fx-carr3d__carte{
+    position:absolute; left:50%; top:0; margin:0;
+    width:min(72vw,330px); min-height:min(58vh,400px);
+    transform-origin:50% 50%;
+    will-change:transform, opacity;
+  }
+  .fx-carr3d.est-armee .fx-carr3d__carte.est-centre{
+    box-shadow:0 1px 1px rgba(14,22,38,.05),
+               0 14px 26px -14px rgba(0,80,230,.20),
+               0 44px 70px -46px rgba(14,22,38,.42);
+  }
+  .fx-carr3d.est-armee .fx-carr3d__points{ padding:0 0 34px }
+
+  @media (prefers-reduced-motion: reduce){
+    .fx-carr3d__point{ transition:none }
+  }
+  /* FX:COPY:END */
+</style>
+</head>
+<body>
+
+<div style="height:55vh;display:grid;place-items:center;color:#8B96AC">↓ descendre</div>
+
+<!-- FX:COPY:START -->
+<section class="fx-carr3d" data-fx-carr3d>
+  <div class="fx-carr3d__scene">
+
+    <div class="fx-carr3d__piste">
+
+      <article class="fx-carr3d__carte">
+        <span class="fx-carr3d__vignette fx-carr3d__vignette--reseau" aria-hidden="true"></span>
+        <span class="fx-carr3d__num">01</span>
+        <h3 class="fx-carr3d__t">Un réseau, des maisons</h3>
+        <p class="fx-carr3d__d">Des entreprises qui livraient déjà leur région avancent ensemble, chacune avec ses équipes et son quai.</p>
+      </article>
+
+      <article class="fx-carr3d__carte">
+        <span class="fx-carr3d__vignette fx-carr3d__vignette--entrepot" aria-hidden="true"></span>
+        <span class="fx-carr3d__num">02</span>
+        <h3 class="fx-carr3d__t">Le stock au plus près</h3>
+        <p class="fx-carr3d__d">Chaque implantation tient son propre stock. Ce qui manque ici existe souvent à quelques kilomètres.</p>
+      </article>
+
+      <article class="fx-carr3d__carte">
+        <span class="fx-carr3d__vignette fx-carr3d__vignette--froid" aria-hidden="true"></span>
+        <span class="fx-carr3d__num">03</span>
+        <h3 class="fx-carr3d__t">Les produits sensibles</h3>
+        <p class="fx-carr3d__d">Un circuit dédié au froid, en conteneurs qualifiés, avec un relevé de température consultable après coup.</p>
+      </article>
+
+      <article class="fx-carr3d__carte">
+        <span class="fx-carr3d__vignette fx-carr3d__vignette--tournee" aria-hidden="true"></span>
+        <span class="fx-carr3d__num">04</span>
+        <h3 class="fx-carr3d__t">La tournée</h3>
+        <p class="fx-carr3d__d">Préparée la nuit, livrée à heure fixe. C'est la régularité qui fait la confiance, pas la promesse.</p>
+      </article>
+
+      <article class="fx-carr3d__carte">
+        <span class="fx-carr3d__vignette fx-carr3d__vignette--comptoir" aria-hidden="true"></span>
+        <span class="fx-carr3d__num">05</span>
+        <h3 class="fx-carr3d__t">Au comptoir</h3>
+        <p class="fx-carr3d__d">Un interlocuteur nommé, la même équipe d'une visite à l'autre, et un imprévu qu'on traite sans tout ré-expliquer.</p>
+      </article>
+
+    </div>
+
+    <div class="fx-carr3d__points" data-fx-carr3d-points aria-hidden="true"></div>
+
+  </div>
+</section>
+
+<script>
+(function(){
+  var reduit = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  document.querySelectorAll('[data-fx-carr3d]').forEach(function(sec){
+    var piste  = sec.querySelector('.fx-carr3d__piste');
+    var cartes = Array.prototype.slice.call(sec.querySelectorAll('.fx-carr3d__carte'));
+    var zone   = sec.querySelector('[data-fx-carr3d-points]');
+    if (!piste || cartes.length < 2) return;
+
+    // Les points existent dans les deux états : on les construit quoi qu'il arrive.
+    var points = [];
+    if (zone){
+      cartes.forEach(function(){
+        var p = document.createElement('span');
+        p.className = 'fx-carr3d__point';
+        zone.appendChild(p);
+        points.push(p);
+      });
+      points[0].classList.add('est-actif');
+    }
+
+    // Mouvement réduit : on s'arrête là. La bande horizontale reste glissable et lisible.
+    if (reduit) return;
+
+    var n = cartes.length;
+    var lire = function(v){ return parseFloat(getComputedStyle(sec).getPropertyValue(v)) || 0; };
+
+    // Le passage en 3D vient du SCRIPT, jamais de la feuille de style. C'est aussi lui qui
+    // donne sa hauteur à la section : sans script, pas de section géante ni de trou blanc.
+    sec.classList.add('est-armee');
+    sec.style.height = (100 + (n - 1) * 72) + 'vh';
+
+    var tic = false, dernierActif = -1;
+
+    function placer(){
+      tic = false;
+
+      // La scène est COLLÉE : une fois collée sa position d'écran ne change plus, la mesurer
+      // ne dirait rien. On mesure la section enveloppante, la seule qui défile encore.
+      var r = sec.getBoundingClientRect();
+      var course = r.height - window.innerHeight;
+      var p = course > 0 ? (-r.top) / course : 0;
+      p = Math.min(1, Math.max(0, p));
+
+      var pos    = p * (n - 1);                 // position continue dans la file
+      var ecart  = lire('--fx-carr3d-ecart') || 0.62;
+      var recul  = lire('--fx-carr3d-recul') || 230;
+      var angle  = lire('--fx-carr3d-angle') || 38;
+      var largeur = cartes[0].offsetWidth || 320;
+      var actif  = Math.round(pos);
+
+      cartes.forEach(function(c, i){
+        var d  = i - pos;                        // crans d'écart avec le centre
+        var ad = Math.abs(d);
+        var dx = d * largeur * ecart;
+        var dz = -Math.min(ad, 3) * recul;
+        var ry = -Math.max(-3, Math.min(3, d)) * angle;
+        // Le voile éclaircit la carte à mesure qu'elle s'éloigne ; l'opacité ne sert qu'à
+        // faire disparaître celles qui sortent franchement du champ.
+        var voile = Math.min(0.66, ad * 0.30);
+        var op = ad > 2.6 ? 0 : (ad > 2.2 ? (2.6 - ad) / 0.4 : 1);
+
+        c.style.transform =
+          'translate(-50%,-50%) translateX(' + dx.toFixed(1) + 'px)' +
+          ' translateZ(' + dz.toFixed(1) + 'px)' +
+          ' rotateY(' + ry.toFixed(2) + 'deg)';
+        c.style.setProperty('--voile', voile.toFixed(3));
+        c.style.opacity = op.toFixed(3);
+        c.style.zIndex  = String(Math.round(1000 - ad * 100));
+        c.style.pointerEvents = ad > 0.5 ? 'none' : 'auto';
+        c.classList.toggle('est-centre', i === actif);
+      });
+
+      if (actif !== dernierActif){
+        dernierActif = actif;
+        points.forEach(function(pt, i){ pt.classList.toggle('est-actif', i === actif); });
+      }
+    }
+
+    function onScroll(){ if (!tic){ tic = true; requestAnimationFrame(placer); } }
+    window.addEventListener('scroll', onScroll, {passive:true});
+    window.addEventListener('resize', onScroll, {passive:true});
+    placer();
+  });
+})();
+</script>
+<!-- FX:COPY:END -->
+
+<div style="height:70vh;display:grid;place-items:center;color:#8B96AC">fin</div>
+<div class="demo-note">card-3d-carousel · le défilement fait tourner la file</div>
+
+</body>
+</html>

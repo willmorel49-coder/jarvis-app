@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FX-BANK · Text Scramble</title>
+<!--
+/* FX-BANK · TEXT SCRAMBLE
+   QUOI : Un mot ou une phrase qui se « décode ». Les lettres défilent au hasard, puis se fixent
+          une à une de la gauche vers la droite. La ponctuation ne se brouille pas, et chaque
+          lettre garde sa largeur définitive : la ligne ne sautille jamais.
+   QUAND : Un mot-clé de titre, un chiffre d'ouverture, une signature de bas de page. À réserver
+           à UN élément par écran : deux textes qui se décodent en même temps, ça fait gadget.
+   DEPENDANCES : aucune
+   SAFARI : conforme. Aucun flou, aucun verre dépoli, aucun dégradé découpé dans du texte.
+            Seule la couleur du texte change pendant le décodage.
+   FILET : le texte définitif est écrit en clair dans le HTML et n'est JAMAIS transparent au
+           repos — si le script ne tourne pas, la page reste parfaitement lisible. Le départ se
+           décide à chaque défilement sur la position réelle du bloc, jamais sur une notification
+           unique qui pourrait ne jamais arriver.
+   COPIER : le bloc entre FX:COPY:START et FX:COPY:END */
+-->
+<style>
+  body{margin:0;background:#FBFCFE;color:#0E1626;font:16px/1.6 ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif}
+  .demo-note{position:fixed;left:16px;bottom:16px;z-index:50;font-size:12px;letter-spacing:.1em;
+    text-transform:uppercase;color:#8B96AC;background:#FBFCFE;padding:8px 12px;border:1px solid #DCE5F4}
+
+  /* FX:COPY:START */
+  .fx-dc-bloc{
+    --fx-dc-accent:#0050E6;
+    --fx-dc-orange:#F39A1B;
+    --fx-dc-ink:#0E1626;
+    --fx-dc-doux:#54607A;
+    --fx-dc-bord:#DCE5F4;
+    max-width:820px; margin:0 auto; padding:0 24px;
+  }
+  .fx-dc-bloc__sur{
+    margin:0 0 12px; font-size:12px; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--fx-dc-doux);
+  }
+  .fx-dc-bloc__t{
+    margin:0; font-size:clamp(1.9rem,5.2vw,3.2rem); line-height:1.1; letter-spacing:-.03em;
+    font-weight:680; color:var(--fx-dc-ink);
+  }
+  .fx-dc-bloc__d{ margin:18px 0 0; color:var(--fx-dc-doux); max-width:52ch }
+
+  /* le texte qui se décode : couleur pleine au repos, jamais transparent */
+  .fx-dc{
+    color:var(--fx-dc-ink);
+    font-variant-ligatures:none;   /* les ligatures fausseraient la largeur des cases */
+  }
+  .fx-dc--accent{ color:var(--fx-dc-accent) }
+  .fx-dc__c{
+    display:inline-block; text-align:center;
+    transition:color .26s ease;
+  }
+  /* les lettres pas encore fixées sont simplement plus douces — jamais invisibles */
+  .fx-dc__c.est-brouille{ color:var(--fx-dc-doux) }
+  .fx-dc--accent .fx-dc__c.est-brouille{ color:#9DB4E6 }
+
+  .fx-dc__rejouer{
+    display:inline-flex; align-items:center; gap:9px; margin-top:26px;
+    min-height:44px; padding:0 18px; border:1px solid var(--fx-dc-bord); border-radius:2px;
+    background:#fff; color:var(--fx-dc-ink); font:inherit; font-size:.92rem; cursor:pointer;
+    transition:border-color .24s ease, color .24s ease;
+  }
+  .fx-dc__rejouer:hover{ border-color:var(--fx-dc-accent); color:var(--fx-dc-accent) }
+  .fx-dc__rejouer span{ width:6px; height:6px; border-radius:50%; background:var(--fx-dc-orange) }
+
+  @media (max-width:620px){ .fx-dc-bloc{ padding:0 18px } }
+  @media (prefers-reduced-motion: reduce){
+    .fx-dc__c{ transition:none }
+    .fx-dc__c.est-brouille{ color:inherit }
+    .fx-dc__rejouer{ display:none }   /* rien à rejouer : le texte est déjà à sa place */
+  }
+  /* FX:COPY:END */
+</style>
+</head>
+<body>
+
+<div style="height:26vh;display:grid;place-items:center;color:#8B96AC">↓ descendre</div>
+
+<!-- FX:COPY:START -->
+<section class="fx-dc-bloc">
+  <p class="fx-dc-bloc__sur">Ce que nous sommes</p>
+  <!-- Le texte définitif est écrit ici, en clair. Sans JavaScript, il s'affiche tel quel. -->
+  <h2 class="fx-dc-bloc__t"><span class="fx-dc fx-dc--accent" data-fx-dc>Répartiteur</span></h2>
+  <p class="fx-dc-bloc__d">Un groupe de grossistes français. Neuf maisons, leurs équipes,
+     leurs entrepôts — et la même exigence partout.</p>
+  <button class="fx-dc__rejouer" type="button" data-fx-dc-rejouer><span></span>Rejouer le décodage</button>
+</section>
+
+<div style="height:80vh"></div>
+
+<section class="fx-dc-bloc">
+  <p class="fx-dc-bloc__sur">Plus bas dans la page</p>
+  <h2 class="fx-dc-bloc__t"><span class="fx-dc" data-fx-dc data-pas="46">Proximité et continuité</span></h2>
+  <p class="fx-dc-bloc__d">Le décodage part quand le bloc arrive vraiment à l'écran, et une seule fois.</p>
+</section>
+
+<script>
+(function(){
+  var reduit = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Alphabets volontairement amputés des lettres très étroites (i, j, l, f, t) et très
+  // larges (m, w) : chaque case garde la largeur de sa lettre définitive, et une lettre
+  // tirée trop fine y laisserait un trou visible.
+  var MAJ = 'ABCDEGHKNOPQRSUVXYZ';
+  var MIN = 'abcdeghknopqrsuvxyz';
+  var NUM = '0123456789';
+
+  var blocs = Array.prototype.slice.call(document.querySelectorAll('[data-fx-dc]'));
+  if (!blocs.length) return;
+
+  blocs.forEach(preparer);
+
+  // Mouvement réduit : on ne découpe rien, on ne brouille rien. Le texte reste tel quel.
+  if (reduit){ brancherBoutons(); return; }
+
+  function preparer(bloc){
+    var texte = bloc.textContent.replace(/\s+/g, ' ').trim();
+    bloc._texte = texte;
+    if (reduit) return;
+
+    // Découpage en cases. Une case par caractère visible, un vrai espace entre les mots
+    // pour que la phrase puisse toujours revenir à la ligne.
+    bloc.textContent = '';
+    var cases = [];
+    for (var i = 0; i < texte.length; i++){
+      var ch = texte.charAt(i);
+      if (ch === ' '){
+        bloc.appendChild(document.createTextNode(' '));
+        cases.push({ el:null, fin:' ' });
+        continue;
+      }
+      var s = document.createElement('span');
+      s.className = 'fx-dc__c';
+      s.textContent = ch;
+      bloc.appendChild(s);
+      cases.push({ el:s, fin:ch });
+    }
+
+    // On fige la largeur définitive de chaque case AVANT tout brouillage : sans ça,
+    // les lettres tirées au hasard n'ont pas la même largeur et la ligne sautille.
+    var largeurs = cases.map(function(c){
+      return c.el ? c.el.getBoundingClientRect().width : 0;
+    });
+    cases.forEach(function(c, i){
+      if (c.el) c.el.style.width = largeurs[i].toFixed(2) + 'px';
+    });
+
+    bloc._cases = cases;
+  }
+
+  function tirage(fin){
+    if (NUM.indexOf(fin) !== -1) return NUM.charAt(Math.floor(Math.random() * NUM.length));
+    // la ponctuation, les traits d'union et les apostrophes ne se brouillent pas :
+    // c'est ce qui garde le mot lisible comme un mot, et pas comme du bruit.
+    if (!/[a-zà-öø-ÿ]/i.test(fin)) return fin;
+    var src = (fin === fin.toUpperCase() && fin !== fin.toLowerCase()) ? MAJ : MIN;
+    return src.charAt(Math.floor(Math.random() * src.length));
+  }
+
+  function decoder(bloc){
+    var cases = bloc._cases;
+    if (!cases || bloc._enCours) return;
+    bloc._enCours = true;
+
+    var pas = parseInt(bloc.getAttribute('data-pas'), 10) || 58;  // ms avant de fixer la lettre suivante
+    var TIRAGE = 48;                                              // ms entre deux tirages au hasard
+    var t0 = null, dernier = 0;
+
+    cases.forEach(function(c){
+      if (c.el){ c.el.classList.add('est-brouille'); c.el.textContent = tirage(c.fin); }
+    });
+
+    function image(t){
+      if (t0 === null){ t0 = t; dernier = t; }
+      var fixes = Math.floor((t - t0) / pas);
+      var rejouer = (t - dernier) >= TIRAGE;
+      if (rejouer) dernier = t;
+
+      for (var i = 0; i < cases.length; i++){
+        var c = cases[i];
+        if (!c.el) continue;
+        if (i < fixes){
+          if (c.el.textContent !== c.fin){
+            c.el.textContent = c.fin;
+            c.el.classList.remove('est-brouille');
+          }
+        } else if (rejouer){
+          c.el.textContent = tirage(c.fin);
+        }
+      }
+
+      if (fixes < cases.length){
+        requestAnimationFrame(image);
+      } else {
+        // arrivée franche : on repose le texte exact, sans dépendre du dernier tour de boucle
+        cases.forEach(function(c){
+          if (c.el){ c.el.textContent = c.fin; c.el.classList.remove('est-brouille'); }
+        });
+        bloc._enCours = false;
+      }
+    }
+    requestAnimationFrame(image);
+  }
+
+  function brancherBoutons(){
+    document.querySelectorAll('[data-fx-dc-rejouer]').forEach(function(b){
+      b.addEventListener('click', function(){
+        var cible = b.closest('.fx-dc-bloc');
+        var champ = cible ? cible.querySelector('[data-fx-dc]') : blocs[0];
+        if (champ) decoder(champ);
+      });
+    });
+  }
+
+  // Départ au défilement. On relit la position RÉELLE de chaque bloc à chaque tour :
+  // un bloc ne peut pas rester indéfiniment en attente parce qu'une notification
+  // ne serait jamais arrivée.
+  var attente = blocs.slice();
+  var tic = false;
+
+  function placer(){
+    tic = false;
+    var vue = window.innerHeight;
+    for (var i = attente.length - 1; i >= 0; i--){
+      var b = attente[i];
+      var r = b.getBoundingClientRect();
+      if (r.top < vue * 0.88 && r.bottom > 0){
+        attente.splice(i, 1);
+        decoder(b);
+      }
+    }
+    if (!attente.length){
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+    }
+  }
+
+  function onScroll(){ if (!tic){ tic = true; requestAnimationFrame(placer); } }
+  window.addEventListener('scroll', onScroll, {passive:true});
+  window.addEventListener('resize', onScroll, {passive:true});
+  placer();
+
+  brancherBoutons();
+})();
+</script>
+<!-- FX:COPY:END -->
+
+<div style="height:70vh;display:grid;place-items:center;color:#8B96AC">fin</div>
+<div class="demo-note">text-scramble · le mot se décode</div>
+
+</body>
+</html>

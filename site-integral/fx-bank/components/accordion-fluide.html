@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FX-BANK · Accordion Fluide</title>
+<!--
+/* FX-BANK · ACCORDION FLUIDE
+   QUOI : Une liste de questions dont une seule réponse reste ouverte à la fois. La hauteur
+          s'anime en douceur au lieu de sauter, et le chevron pivote pour dire l'état.
+   QUAND : Questions fréquentes, mentions, détails d'un service. Cinq à huit entrées : au-delà,
+           l'ouverture d'une réponse renvoie les suivantes hors de l'écran et on perd le fil.
+   DEPENDANCES : aucune
+   SAFARI : conforme. Aucun flou, aucun verre dépoli, aucun dégradé découpé dans du texte.
+            Le chevron est tracé en bordures CSS, pas en image.
+   ACCESSIBILITE : de vrais <button> dans un titre, aria-expanded, aria-controls, et la réponse
+            en role="region" reliée à sa question. Au clavier : Tabulation pour entrer,
+            Entrée/Espace pour ouvrir, Flèches haut/bas pour passer d'une question à l'autre,
+            Début/Fin pour aller à la première ou à la dernière. Une réponse fermée est retirée
+            du parcours de tabulation — sinon le focus disparaîtrait dans une zone invisible.
+   FILET : toutes les réponses sont OUVERTES par défaut dans la feuille de style. C'est le
+           script qui referme, au démarrage, tout sauf la première. Si le script ne tourne pas,
+           la page reste entièrement lisible : rien n'est jamais transparent au repos.
+   REPLI : mouvement réduit = TOUTES les réponses restent ouvertes, sans animation.
+   COPIER : le bloc entre FX:COPY:START et FX:COPY:END */
+-->
+<style>
+  body{margin:0;background:#FBFCFE;color:#0E1626;font:16px/1.6 ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif}
+  .demo-note{position:fixed;left:16px;bottom:16px;z-index:50;font-size:12px;letter-spacing:.1em;
+    text-transform:uppercase;color:#8B96AC;background:#FBFCFE;padding:8px 12px;border:1px solid #DCE5F4}
+
+  /* FX:COPY:START */
+  .fx-acc{
+    --fx-acc-accent:#0050E6;
+    --fx-acc-orange:#F39A1B;        /* accent rare : le point du sur-titre, rien d'autre */
+    --fx-acc-encre:#0E1626;
+    --fx-acc-doux:#54607A;
+    --fx-acc-bord:#DCE5F4;
+    --fx-acc-duree:380ms;
+    max-width:760px; margin:0 auto; padding:0 24px;
+  }
+  .fx-acc__chapeau{ margin:0 0 24px }
+  .fx-acc__sur{
+    display:inline-flex; align-items:center; gap:8px; margin:0 0 10px;
+    font-size:.76rem; letter-spacing:.14em; text-transform:uppercase; color:var(--fx-acc-doux);
+  }
+  .fx-acc__sur::before{
+    content:""; width:6px; height:6px; border-radius:50%; background:var(--fx-acc-orange);
+  }
+  .fx-acc__titre{
+    margin:0; font-size:clamp(1.5rem,3.6vw,2.3rem); font-weight:650; letter-spacing:-.02em;
+  }
+
+  .fx-acc__liste{
+    background:#fff; border:1px solid var(--fx-acc-bord); border-radius:3px;
+    box-shadow:0 1px 1px rgba(14,22,38,.04),
+               0 8px 16px -12px rgba(14,22,38,.16),
+               0 26px 44px -34px rgba(14,22,38,.30);
+  }
+  .fx-acc__item + .fx-acc__item{ border-top:1px solid var(--fx-acc-bord) }
+
+  .fx-acc__h{ margin:0 }
+  .fx-acc__bouton{
+    /* un vrai bouton : focus, Entrée et Espace sont gérés par le navigateur */
+    appearance:none; -webkit-appearance:none;
+    display:flex; align-items:center; gap:18px; width:100%;
+    background:none; border:0; margin:0; text-align:left; cursor:pointer;
+    padding:clamp(16px,2.2vw,22px) clamp(18px,2.6vw,26px);
+    min-height:44px;                                  /* cible tactile confortable */
+    font:inherit; font-weight:600; font-size:1.02rem; letter-spacing:-.008em;
+    color:var(--fx-acc-encre);
+    transition:color .2s ease, background-color .2s ease;
+  }
+  .fx-acc__bouton:hover{ color:var(--fx-acc-accent); background:#F6F9FE }
+  .fx-acc__bouton:focus-visible{
+    outline:2px solid var(--fx-acc-accent); outline-offset:-3px;
+  }
+  .fx-acc__label{ flex:1 }
+  .fx-acc__chevron{
+    flex:none; width:9px; height:9px; margin-right:4px;
+    border-right:1.8px solid currentColor; border-bottom:1.8px solid currentColor;
+    transform:rotate(45deg); transform-origin:60% 60%;
+    transition:transform var(--fx-acc-duree) cubic-bezier(.22,.61,.36,1);
+  }
+  .fx-acc__bouton[aria-expanded="true"] .fx-acc__chevron{ transform:rotate(-135deg) }
+  .fx-acc__bouton[aria-expanded="true"]{ color:var(--fx-acc-accent) }
+
+  /* Ouvert par défaut : sans script, tout se lit. */
+  .fx-acc__reponse{ height:auto }
+  .fx-acc__corps{
+    padding:0 clamp(18px,2.6vw,26px) clamp(18px,2.4vw,24px);
+    color:var(--fx-acc-doux);
+  }
+  .fx-acc__corps p{ margin:0 }
+  .fx-acc__corps p + p{ margin-top:10px }
+
+  /* État ARMÉ : posé par le script uniquement. */
+  .fx-acc.est-armee .fx-acc__reponse{
+    overflow:hidden;
+    transition:height var(--fx-acc-duree) cubic-bezier(.22,.61,.36,1);
+    will-change:height;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .fx-acc.est-armee .fx-acc__reponse{
+      height:auto!important; visibility:visible!important; overflow:visible; transition:none;
+    }
+    .fx-acc__chevron{ transition:none }
+  }
+  /* FX:COPY:END */
+</style>
+</head>
+<body>
+
+<div style="height:22vh"></div>
+
+<!-- FX:COPY:START -->
+<section class="fx-acc" data-fx-acc>
+
+  <header class="fx-acc__chapeau">
+    <p class="fx-acc__sur">Questions fréquentes</p>
+    <h2 class="fx-acc__titre">Ce que les officines nous demandent</h2>
+  </header>
+
+  <div class="fx-acc__liste">
+
+    <div class="fx-acc__item">
+      <h3 class="fx-acc__h">
+        <button class="fx-acc__bouton" type="button" id="fx-acc-q1" aria-expanded="true" aria-controls="fx-acc-r1">
+          <span class="fx-acc__label">Comment passe-t-on une commande&nbsp;?</span>
+          <span class="fx-acc__chevron" aria-hidden="true"></span>
+        </button>
+      </h3>
+      <div class="fx-acc__reponse" id="fx-acc-r1" role="region" aria-labelledby="fx-acc-q1">
+        <div class="fx-acc__corps">
+          <p>Depuis le poste du comptoir, par le logiciel de l'officine, ou par téléphone auprès de l'implantation qui vous sert. Le catalogue affiche la disponibilité réelle du stock au moment où vous le consultez.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="fx-acc__item">
+      <h3 class="fx-acc__h">
+        <button class="fx-acc__bouton" type="button" id="fx-acc-q2" aria-expanded="true" aria-controls="fx-acc-r2">
+          <span class="fx-acc__label">Que se passe-t-il si une référence est en tension&nbsp;?</span>
+          <span class="fx-acc__chevron" aria-hidden="true"></span>
+        </button>
+      </h3>
+      <div class="fx-acc__reponse" id="fx-acc-r2" role="region" aria-labelledby="fx-acc-q2">
+        <div class="fx-acc__corps">
+          <p>La recherche se poursuit sur les autres implantations du réseau avant de vous répondre. Quand le produit manque partout, vous êtes prévenu avec la date de retour annoncée par le laboratoire, plutôt que par un simple «&nbsp;non servi&nbsp;».</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="fx-acc__item">
+      <h3 class="fx-acc__h">
+        <button class="fx-acc__bouton" type="button" id="fx-acc-q3" aria-expanded="true" aria-controls="fx-acc-r3">
+          <span class="fx-acc__label">Comment sont transportés les produits qui exigent du froid&nbsp;?</span>
+          <span class="fx-acc__chevron" aria-hidden="true"></span>
+        </button>
+      </h3>
+      <div class="fx-acc__reponse" id="fx-acc-r3" role="region" aria-labelledby="fx-acc-q3">
+        <div class="fx-acc__corps">
+          <p>Sur un circuit dédié, en conteneurs qualifiés, avec un relevé de température du quai jusqu'à votre comptoir. Le relevé reste consultable après la livraison.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="fx-acc__item">
+      <h3 class="fx-acc__h">
+        <button class="fx-acc__bouton" type="button" id="fx-acc-q4" aria-expanded="true" aria-controls="fx-acc-r4">
+          <span class="fx-acc__label">Qui suit mon officine au quotidien&nbsp;?</span>
+          <span class="fx-acc__chevron" aria-hidden="true"></span>
+        </button>
+      </h3>
+      <div class="fx-acc__reponse" id="fx-acc-r4" role="region" aria-labelledby="fx-acc-q4">
+        <div class="fx-acc__corps">
+          <p>Un interlocuteur nommé, rattaché à l'implantation qui vous livre, et la même équipe de préparation d'une tournée à l'autre. C'est ce qui permet de traiter un imprévu sans tout ré-expliquer.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="fx-acc__item">
+      <h3 class="fx-acc__h">
+        <button class="fx-acc__bouton" type="button" id="fx-acc-q5" aria-expanded="true" aria-controls="fx-acc-r5">
+          <span class="fx-acc__label">Combien de temps garde-t-on la trace d'une livraison&nbsp;?</span>
+          <span class="fx-acc__chevron" aria-hidden="true"></span>
+        </button>
+      </h3>
+      <div class="fx-acc__reponse" id="fx-acc-r5" role="region" aria-labelledby="fx-acc-q5">
+        <div class="fx-acc__corps">
+          <p>Le lot, le colis et l'heure de dépôt sont conservés pour toute la durée imposée par la réglementation du médicament. Un rappel de lot se traite alors en heures, pas en jours.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<script>
+(function(){
+  var reduit = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  document.querySelectorAll('[data-fx-acc]').forEach(function(acc){
+    var boutons = Array.prototype.slice.call(acc.querySelectorAll('.fx-acc__bouton'));
+    if (!boutons.length) return;
+
+    // Mouvement réduit : on ne touche à rien. Toutes les réponses restent ouvertes,
+    // et aria-expanded="true" du HTML dit déjà la vérité.
+    if (reduit) return;
+
+    var duree = parseFloat(getComputedStyle(acc).getPropertyValue('--fx-acc-duree')) || 380;
+
+    function panneau(btn){ return document.getElementById(btn.getAttribute('aria-controls')); }
+
+    function ouvrir(btn, anime){
+      var p = panneau(btn);
+      if (!p) return;
+      btn.setAttribute('aria-expanded', 'true');
+      p.style.visibility = '';
+      window.clearTimeout(p._minuteur);
+      if (!anime){ p.style.height = 'auto'; return; }
+      p.style.height = p.scrollHeight + 'px';
+      // Une fois l'animation finie on repasse en hauteur automatique : sinon un
+      // changement de largeur (rotation du téléphone) couperait le texte.
+      p._minuteur = window.setTimeout(function(){ p.style.height = 'auto'; }, duree + 40);
+    }
+
+    function fermer(btn, anime){
+      var p = panneau(btn);
+      if (!p) return;
+      btn.setAttribute('aria-expanded', 'false');
+      window.clearTimeout(p._minuteur);
+      if (!anime){
+        p.style.height = '0px';
+        p.style.visibility = 'hidden';
+        return;
+      }
+      // On fige d'abord la hauteur réelle : on ne peut pas animer depuis « auto ».
+      p.style.height = p.scrollHeight + 'px';
+      void p.offsetHeight;                       // force le calcul avant de repartir à zéro
+      p.style.height = '0px';
+      // Une réponse fermée sort du parcours de tabulation : un lien caché qui reçoit le
+      // focus fait disparaître le curseur du clavier dans une zone invisible.
+      p._minuteur = window.setTimeout(function(){ p.style.visibility = 'hidden'; }, duree + 40);
+    }
+
+    // Armement : le masquage vient du script, jamais de la feuille de style.
+    acc.classList.add('est-armee');
+    boutons.forEach(function(btn, i){
+      if (i === 0) ouvrir(btn, false); else fermer(btn, false);
+    });
+
+    boutons.forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var ouvert = btn.getAttribute('aria-expanded') === 'true';
+        // Une seule ouverte à la fois : on referme les autres avant d'ouvrir celle-ci.
+        boutons.forEach(function(autre){
+          if (autre !== btn && autre.getAttribute('aria-expanded') === 'true') fermer(autre, true);
+        });
+        if (ouvert) fermer(btn, true); else ouvrir(btn, true);
+      });
+
+      btn.addEventListener('keydown', function(e){
+        var i = boutons.indexOf(btn), cible = -1;
+        if (e.key === 'ArrowDown')      cible = (i + 1) % boutons.length;
+        else if (e.key === 'ArrowUp')   cible = (i - 1 + boutons.length) % boutons.length;
+        else if (e.key === 'Home')      cible = 0;
+        else if (e.key === 'End')       cible = boutons.length - 1;
+        if (cible < 0) return;
+        e.preventDefault();
+        boutons[cible].focus();
+      });
+    });
+
+    // Si la largeur change pendant qu'une réponse est ouverte, sa hauteur est déjà en
+    // « auto » : rien à recalculer. On se contente de garder les fermées bien fermées.
+    window.addEventListener('resize', function(){
+      boutons.forEach(function(btn){
+        if (btn.getAttribute('aria-expanded') !== 'true'){
+          var p = panneau(btn);
+          if (p) p.style.height = '0px';
+        }
+      });
+    }, {passive:true});
+  });
+})();
+</script>
+<!-- FX:COPY:END -->
+
+<div style="height:40vh"></div>
+<div class="demo-note">accordion-fluide · une seule réponse ouverte à la fois</div>
+
+</body>
+</html>

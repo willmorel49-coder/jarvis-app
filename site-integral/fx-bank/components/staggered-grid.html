@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FX-BANK · Staggered Grid</title>
+<!--
+/* FX-BANK · STAGGERED GRID
+   QUOI : Une grille de cartes qui se révèle en cascade à la descente. L'ordre suit la
+          DIAGONALE — haut-gauche vers bas-droite — et non la ligne par ligne : le regard
+          traverse la grille en biais, ce qui respire mieux qu'un balayage de machine à écrire.
+   QUAND : Services, métiers, points d'appui. Quatre à neuf cartes, pas plus : au-delà, la
+           cascade devient une attente et le lecteur passe devant sans lire.
+   DEPENDANCES : aucune
+   SAFARI : conforme. Aucun flou, aucun verre dépoli, aucun dégradé découpé dans du texte.
+            Le relief vient d'ombres empilées, pas d'un filtre.
+            Mouvement réduit = toutes les cartes en place immédiatement, sans cascade.
+   FILET : les cartes sont VISIBLES par défaut dans la feuille de style. C'est le script qui
+           les masque au démarrage, puis les révèle en relisant leur POSITION RÉELLE à chaque
+           défilement — jamais sur une notification unique. Une carte sans surface visible ne
+           serait jamais signalée comme entrée dans l'écran et resterait invisible pour
+           toujours. Si le script ne tourne pas du tout, la grille reste entièrement lisible.
+   LIMITE : le nombre de colonnes n'est pas codé en dur — il est relu dans la position réelle
+            des cartes, donc la diagonale reste juste sur mobile comme sur grand écran.
+   COPIER : le bloc entre FX:COPY:START et FX:COPY:END */
+-->
+<style>
+  body{margin:0;background:#FBFCFE;color:#0E1626;font:16px/1.6 ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif}
+  .demo-note{position:fixed;left:16px;bottom:16px;z-index:50;font-size:12px;letter-spacing:.1em;
+    text-transform:uppercase;color:#8B96AC;background:#FBFCFE;padding:8px 12px;border:1px solid #DCE5F4}
+
+  /* FX:COPY:START */
+  .fx-grille{
+    --fx-grille-accent:#0050E6;
+    --fx-grille-orange:#F39A1B;      /* accent rare : le point du sur-titre, rien d'autre */
+    --fx-grille-encre:#0E1626;
+    --fx-grille-doux:#54607A;
+    --fx-grille-bord:#DCE5F4;
+    --fx-grille-pas:85;              /* millisecondes entre deux diagonales successives */
+    max-width:1080px; margin:0 auto; padding:0 24px;
+
+    /* Vignettes de démonstration : SVG écrits ici même, aucun fichier distant. */
+    --fx-ico-livraison:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none' stroke='%230050E6' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M3 8h14v13H3z'/><path d='M17 12h5.5l4.5 4.5V21H17z'/><circle cx='9' cy='24' r='2.3'/><circle cx='22' cy='24' r='2.3'/></svg>");
+    --fx-ico-stock:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none' stroke='%230050E6' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M4 11l12-6 12 6v14H4z'/><path d='M11 25V15h10v10'/><path d='M4 11h24'/></svg>");
+    --fx-ico-froid:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none' stroke='%230050E6' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M16 3v26M6 8l20 16M26 8L6 24'/><path d='M16 9l-3-3 3-3 3 3z'/></svg>");
+    --fx-ico-commande:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none' stroke='%230050E6' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><rect x='4' y='5' width='24' height='18' rx='2'/><path d='M4 11h24M11 28h10'/><path d='M16 23v5'/></svg>");
+    --fx-ico-tracabilite:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none' stroke='%230050E6' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M5 6v20M9 6v20M13 6v14M17 6v20M21 6v14M25 6v20'/></svg>");
+    --fx-ico-contact:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none' stroke='%230050E6' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><circle cx='16' cy='11' r='5'/><path d='M6 27c0-5.2 4.5-8.5 10-8.5s10 3.3 10 8.5'/></svg>");
+  }
+
+  .fx-grille__chapeau{ margin:0 0 26px }
+  .fx-grille__sur{
+    display:inline-flex; align-items:center; gap:8px; margin:0 0 10px;
+    font-size:.76rem; letter-spacing:.14em; text-transform:uppercase; color:var(--fx-grille-doux);
+  }
+  .fx-grille__sur::before{
+    content:""; width:6px; height:6px; border-radius:50%;
+    background:var(--fx-grille-orange);
+  }
+  .fx-grille__titre{
+    margin:0; font-size:clamp(1.5rem,3.6vw,2.3rem); font-weight:650; letter-spacing:-.02em;
+    color:var(--fx-grille-encre);
+  }
+
+  .fx-grille__cartes{
+    display:grid; grid-template-columns:repeat(3,1fr); gap:18px;
+  }
+  .fx-grille__carte{
+    background:#fff; border:1px solid var(--fx-grille-bord); border-radius:3px;
+    padding:clamp(20px,2.4vw,28px);
+    /* ombre douce = plusieurs box-shadow empilées, jamais un filtre */
+    box-shadow:0 1px 1px rgba(14,22,38,.04),
+               0 6px 12px -8px rgba(14,22,38,.14),
+               0 22px 38px -30px rgba(14,22,38,.30);
+    transition:border-color .25s ease, box-shadow .25s ease;
+  }
+  .fx-grille__carte:hover{
+    border-color:#BFD2F5;
+    box-shadow:0 1px 1px rgba(14,22,38,.05),
+               0 10px 18px -10px rgba(0,80,230,.18),
+               0 30px 50px -34px rgba(14,22,38,.38);
+  }
+  .fx-grille__ico{
+    display:block; width:32px; height:32px; margin:0 0 16px;
+    background-repeat:no-repeat; background-position:center; background-size:contain;
+  }
+  .fx-grille__ico--livraison{ background-image:var(--fx-ico-livraison) }
+  .fx-grille__ico--stock{ background-image:var(--fx-ico-stock) }
+  .fx-grille__ico--froid{ background-image:var(--fx-ico-froid) }
+  .fx-grille__ico--commande{ background-image:var(--fx-ico-commande) }
+  .fx-grille__ico--tracabilite{ background-image:var(--fx-ico-tracabilite) }
+  .fx-grille__ico--contact{ background-image:var(--fx-ico-contact) }
+
+  .fx-grille__t{ margin:0 0 8px; font-size:1.06rem; font-weight:650; letter-spacing:-.012em }
+  .fx-grille__d{ margin:0; color:var(--fx-grille-doux); font-size:.95rem }
+
+  /* État ARMÉ : posé par le script uniquement. Sans script, rien de tout ceci ne s'applique
+     et les cartes restent à leur place, opaques et lisibles. */
+  .fx-grille.est-armee .fx-grille__carte{
+    opacity:0; transform:translateY(22px);
+    transition:opacity .60s cubic-bezier(.22,.61,.36,1),
+               transform .60s cubic-bezier(.22,.61,.36,1),
+               border-color .25s ease, box-shadow .25s ease;
+    will-change:opacity, transform;
+  }
+  .fx-grille.est-armee .fx-grille__carte.est-vue{ opacity:1; transform:none }
+
+  @media (max-width:900px){ .fx-grille__cartes{ grid-template-columns:repeat(2,1fr) } }
+  @media (max-width:560px){ .fx-grille__cartes{ grid-template-columns:1fr } }
+
+  @media (prefers-reduced-motion: reduce){
+    .fx-grille.est-armee .fx-grille__carte{
+      opacity:1!important; transform:none!important; transition:none!important;
+    }
+  }
+  /* FX:COPY:END */
+</style>
+</head>
+<body>
+
+<div style="height:70vh;display:grid;place-items:center;color:#8B96AC">↓ descendre</div>
+
+<!-- FX:COPY:START -->
+<section class="fx-grille" data-fx-grille>
+
+  <header class="fx-grille__chapeau">
+    <p class="fx-grille__sur">Le métier</p>
+    <h2 class="fx-grille__titre">Ce qui tient debout tous les jours</h2>
+  </header>
+
+  <div class="fx-grille__cartes">
+
+    <article class="fx-grille__carte">
+      <span class="fx-grille__ico fx-grille__ico--livraison" aria-hidden="true"></span>
+      <h3 class="fx-grille__t">Livraison quotidienne</h3>
+      <p class="fx-grille__d">Des tournées à heure fixe, préparées la nuit. La régularité vaut mieux que la promesse.</p>
+    </article>
+
+    <article class="fx-grille__carte">
+      <span class="fx-grille__ico fx-grille__ico--stock" aria-hidden="true"></span>
+      <h3 class="fx-grille__t">Stock de proximité</h3>
+      <p class="fx-grille__d">Chaque implantation garde son propre stock, au plus près des officines qu'elle sert.</p>
+    </article>
+
+    <article class="fx-grille__carte">
+      <span class="fx-grille__ico fx-grille__ico--froid" aria-hidden="true"></span>
+      <h3 class="fx-grille__t">Chaîne du froid</h3>
+      <p class="fx-grille__d">Températures relevées du quai au comptoir, sur des circuits dédiés aux produits sensibles.</p>
+    </article>
+
+    <article class="fx-grille__carte">
+      <span class="fx-grille__ico fx-grille__ico--commande" aria-hidden="true"></span>
+      <h3 class="fx-grille__t">Commande en ligne</h3>
+      <p class="fx-grille__d">Un catalogue tenu à jour, consultable depuis le comptoir, avec la disponibilité réelle.</p>
+    </article>
+
+    <article class="fx-grille__carte">
+      <span class="fx-grille__ico fx-grille__ico--tracabilite" aria-hidden="true"></span>
+      <h3 class="fx-grille__t">Traçabilité</h3>
+      <p class="fx-grille__d">Chaque lot suivi, chaque colis identifié. Un rappel se traite en heures, pas en jours.</p>
+    </article>
+
+    <article class="fx-grille__carte">
+      <span class="fx-grille__ico fx-grille__ico--contact" aria-hidden="true"></span>
+      <h3 class="fx-grille__t">Un interlocuteur</h3>
+      <p class="fx-grille__d">La même personne d'une visite à l'autre, qui connaît votre officine et votre secteur.</p>
+    </article>
+
+  </div>
+</section>
+
+<script>
+(function(){
+  var reduit = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  document.querySelectorAll('[data-fx-grille]').forEach(function(grille){
+    var cartes = Array.prototype.slice.call(grille.querySelectorAll('.fx-grille__carte'));
+    if (!cartes.length || reduit) return;
+
+    var pas = parseFloat(getComputedStyle(grille).getPropertyValue('--fx-grille-pas')) || 85;
+
+    // Le masquage vient du SCRIPT, jamais de la feuille de style : une page dont le script
+    // ne s'exécute pas doit rester lisible telle quelle.
+    grille.classList.add('est-armee');
+
+    // Ligne et colonne relues dans la position réelle : le nombre de colonnes change avec
+    // la largeur de l'écran, on ne peut pas le figer. Deux cartes qui partagent le même
+    // haut sont sur la même ligne ; leur rang dans cette ligne donne la colonne.
+    function ranger(){
+      var lignes = [], ref = null;
+      cartes.forEach(function(c){
+        var haut = c.offsetTop;
+        if (ref === null || Math.abs(haut - ref) > 4){ ref = haut; lignes.push([]); }
+        lignes[lignes.length - 1].push(c);
+      });
+      lignes.forEach(function(ligne, r){
+        ligne.forEach(function(c, col){ c._diag = r + col; });
+      });
+    }
+
+    var tic = false, restant = cartes.length;
+
+    function placer(){
+      tic = false;
+      // Décision prise sur la POSITION RÉELLE, relue à chaque défilement.
+      var seuil = window.innerHeight * 0.88;
+      var lot = [];
+      cartes.forEach(function(c){
+        if (c.classList.contains('est-vue')) return;
+        if (c.getBoundingClientRect().top < seuil) lot.push(c);
+      });
+
+      if (lot.length){
+        // La cascade part de la diagonale la plus haute du lot qui entre : c'est ce qui
+        // donne le mouvement en biais, et non un balayage ligne par ligne.
+        var mini = Infinity;
+        lot.forEach(function(c){ if (c._diag < mini) mini = c._diag; });
+        lot.forEach(function(c){
+          var retard = (c._diag - mini) * pas;
+          c.style.transitionDelay = retard + 'ms';
+          c.classList.add('est-vue');
+          restant--;
+          // Le retard ne doit pas survivre à la révélation, sinon le survol traînerait.
+          window.setTimeout(function(){ c.style.transitionDelay = ''; }, retard + 900);
+        });
+      }
+
+      if (restant <= 0){
+        window.removeEventListener('scroll', onScroll);
+        window.removeEventListener('resize', onResize);
+      }
+    }
+
+    function onScroll(){ if (!tic){ tic = true; requestAnimationFrame(placer); } }
+    function onResize(){ ranger(); onScroll(); }
+
+    ranger();
+    window.addEventListener('scroll', onScroll, {passive:true});
+    window.addEventListener('resize', onResize, {passive:true});
+    placer();
+  });
+})();
+</script>
+<!-- FX:COPY:END -->
+
+<div style="height:90vh;display:grid;place-items:center;color:#8B96AC">fin</div>
+<div class="demo-note">staggered-grid · la cascade suit la diagonale</div>
+
+</body>
+</html>

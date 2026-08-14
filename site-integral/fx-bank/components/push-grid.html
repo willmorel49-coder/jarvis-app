@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FX-BANK · Push Grid</title>
+<!--
+/* FX-BANK · PUSH GRID
+   QUOI : Une grille de cartes. Au survol d'une carte, ses voisines s'écartent de quelques
+          pixels pour lui laisser de la place, puis reviennent. Amplitude volontairement faible
+          et retour sans rebond : l'effet se remarque, il ne saute pas aux yeux.
+   QUAND : Une grille de services, de valeurs, de métiers. Donne du relief à un bloc froid sans
+           rien ajouter à l'écran ni allonger la page.
+   DEPENDANCES : aucune
+   SAFARI : conforme. Aucun flou, aucun verre dépoli, aucun dégradé découpé dans du texte.
+            Uniquement transform et opacity ; l'ombre est un empilement de box-shadow.
+   TACTILE : sur téléphone il n'y a pas de survol — la grille reste une grille, propre et lisible.
+             Aucun script n'est branché dans ce cas.
+   FILET : rien n'est masqué en attendant un script. Les cartes sont dans le HTML, visibles
+           et lisibles même si le JS ne tourne pas.
+   REGLAGES : --fx-pg-pousse (amplitude, 10 px) et --fx-pg-portee (portée exprimée en cases
+              de la grille : à 2, seules les voisines immédiates et les diagonales bougent).
+   COPIER : le bloc entre FX:COPY:START et FX:COPY:END */
+-->
+<style>
+  body{margin:0;background:#FBFCFE;color:#0E1626;font:16px/1.6 ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif}
+  .demo-note{position:fixed;left:16px;bottom:16px;z-index:50;font-size:12px;letter-spacing:.1em;
+    text-transform:uppercase;color:#8B96AC;background:#FBFCFE;padding:8px 12px;border:1px solid #DCE5F4}
+
+  /* FX:COPY:START */
+  .fx-pg{
+    --fx-pg-accent:#0050E6;
+    --fx-pg-orange:#F39A1B;
+    --fx-pg-ink:#0E1626;
+    --fx-pg-doux:#54607A;
+    --fx-pg-bord:#DCE5F4;
+    --fx-pg-carte:#FFFFFF;
+    --fx-pg-pousse:10;              /* amplitude en px — au-delà de 14 ça devient caoutchouteux */
+    --fx-pg-portee:2;               /* portée en CASES : à 2, la voisine de la voisine ne bouge plus */
+    max-width:1000px; margin:0 auto; padding:56px 24px;
+  }
+  .fx-pg__titre{
+    margin:0 0 6px; font-size:clamp(1.5rem,3.2vw,2.1rem); letter-spacing:-.025em;
+    font-weight:680; color:var(--fx-pg-ink);
+  }
+  .fx-pg__intro{ margin:0 0 30px; color:var(--fx-pg-doux); max-width:52ch }
+
+  .fx-pg__grille{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px }
+
+  .fx-pg__carte{
+    position:relative; display:block; padding:22px 20px 46px;
+    background:var(--fx-pg-carte); border:1px solid var(--fx-pg-bord); border-radius:3px;
+    text-decoration:none; color:inherit;
+    transform:translate3d(var(--dx,0px), var(--dy,0px), 0);
+    /* pas de rebond : une seule courbe qui sort vite et s'arrête net */
+    transition:transform .34s cubic-bezier(.22,.8,.25,1),
+               border-color .28s ease,
+               box-shadow .34s ease;
+    box-shadow:0 1px 1px rgba(14,22,38,.03);
+  }
+  /* l'ombre douce se fait en empilant plusieurs box-shadow, jamais autrement */
+  .fx-pg__carte.est-active{
+    border-color:#BFD2F5;
+    box-shadow:0 1px 2px rgba(14,22,38,.05),
+               0 6px 12px -6px rgba(14,22,38,.10),
+               0 20px 38px -20px rgba(14,22,38,.20);
+  }
+
+  .fx-pg__n{
+    display:block; font-family:ui-monospace,"SF Mono",Menlo,monospace; font-size:12px;
+    letter-spacing:.06em; color:var(--fx-pg-doux); font-variant-numeric:tabular-nums;
+    transition:color .28s ease;
+  }
+  .fx-pg__carte.est-active .fx-pg__n{ color:var(--fx-pg-accent) }
+
+  .fx-pg__t{ margin:14px 0 6px; font-size:1.05rem; font-weight:650; color:var(--fx-pg-ink) }
+  .fx-pg__d{ margin:0; font-size:.94rem; color:var(--fx-pg-doux) }
+
+  /* le liseré d'accent : présent au repos, il s'allonge quand la carte est active */
+  .fx-pg__carte::after{
+    content:""; position:absolute; left:20px; bottom:20px; height:2px; width:22px;
+    background:var(--fx-pg-bord);
+    transition:width .34s cubic-bezier(.22,.8,.25,1), background-color .28s ease;
+  }
+  .fx-pg__carte.est-active::after{ width:44px; background:var(--fx-pg-accent) }
+  .fx-pg__carte--phare.est-active::after{ background:var(--fx-pg-orange) }
+
+  @media (max-width:820px){ .fx-pg__grille{ grid-template-columns:repeat(2,1fr) } }
+  @media (max-width:540px){
+    .fx-pg{ padding:40px 18px }
+    .fx-pg__grille{ grid-template-columns:1fr }
+  }
+  @media (hover:none){
+    .fx-pg__carte{ transform:none }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .fx-pg__carte{ transform:none; transition:none }
+    .fx-pg__carte::after{ transition:none }
+  }
+  /* FX:COPY:END */
+</style>
+</head>
+<body>
+
+<div style="height:14vh"></div>
+
+<!-- FX:COPY:START -->
+<section class="fx-pg" data-fx-pg>
+  <h2 class="fx-pg__titre">Ce que fait un répartiteur</h2>
+  <p class="fx-pg__intro">Survolez une carte : les voisines s'écartent juste ce qu'il faut.</p>
+
+  <div class="fx-pg__grille">
+    <a class="fx-pg__carte" href="#">
+      <span class="fx-pg__n">01</span>
+      <h3 class="fx-pg__t">Stock</h3>
+      <p class="fx-pg__d">Des références tenues en permanence, y compris celles qui tournent peu.</p>
+    </a>
+    <a class="fx-pg__carte" href="#">
+      <span class="fx-pg__n">02</span>
+      <h3 class="fx-pg__t">Tournées</h3>
+      <p class="fx-pg__d">Des départs quotidiens, sur des secteurs tenus par les mêmes équipes.</p>
+    </a>
+    <a class="fx-pg__carte fx-pg__carte--phare" href="#">
+      <span class="fx-pg__n">03</span>
+      <h3 class="fx-pg__t">Interlocuteur</h3>
+      <p class="fx-pg__d">Un nom, un numéro direct, et quelqu'un qui connaît l'officine.</p>
+    </a>
+    <a class="fx-pg__carte" href="#">
+      <span class="fx-pg__n">04</span>
+      <h3 class="fx-pg__t">Chaîne du froid</h3>
+      <p class="fx-pg__d">Des flux dédiés et tracés, de l'entrepôt jusqu'au comptoir.</p>
+    </a>
+    <a class="fx-pg__carte" href="#">
+      <span class="fx-pg__n">05</span>
+      <h3 class="fx-pg__t">Tensions</h3>
+      <p class="fx-pg__d">Les ruptures repérées tôt, et l'officine prévenue avant de commander.</p>
+    </a>
+    <a class="fx-pg__carte" href="#">
+      <span class="fx-pg__n">06</span>
+      <h3 class="fx-pg__t">Retours</h3>
+      <p class="fx-pg__d">Une reprise cadrée, sans dossier à monter à chaque fois.</p>
+    </a>
+    <a class="fx-pg__carte" href="#">
+      <span class="fx-pg__n">07</span>
+      <h3 class="fx-pg__t">Traçabilité</h3>
+      <p class="fx-pg__d">Chaque lot suivi, chaque rappel traité dans la journée.</p>
+    </a>
+    <a class="fx-pg__carte" href="#">
+      <span class="fx-pg__n">08</span>
+      <h3 class="fx-pg__t">Proximité</h3>
+      <p class="fx-pg__d">Des équipes implantées dans la région qu'elles livrent.</p>
+    </a>
+    <a class="fx-pg__carte" href="#">
+      <span class="fx-pg__n">09</span>
+      <h3 class="fx-pg__t">Continuité</h3>
+      <p class="fx-pg__d">La même exigence les jours creux comme les jours de pointe.</p>
+    </a>
+  </div>
+</section>
+
+<script>
+(function(){
+  var reduit = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var survol = window.matchMedia('(hover:hover)').matches;
+  if (reduit || !survol) return;   // pas de survol, pas de poussée : la grille reste une grille
+
+  document.querySelectorAll('[data-fx-pg]').forEach(function(bloc){
+    var cartes = Array.prototype.slice.call(bloc.querySelectorAll('.fx-pg__carte'));
+    if (cartes.length < 2) return;
+
+    var st = getComputedStyle(bloc);
+    var AMPL   = parseFloat(st.getPropertyValue('--fx-pg-pousse')) || 10;
+    var PORTEE = parseFloat(st.getPropertyValue('--fx-pg-portee')) || 2;
+    var ETENDUE = Math.max(0.05, PORTEE - 1);  // garde-fou : une portée de 1 diviserait par zéro
+
+    var geo = [], pasX = 0, pasY = 0, active = -1;
+
+    // On mesure AU REPOS uniquement : mesurer pendant qu'une carte est décalée
+    // fausserait tous les centres et la poussée se mettrait à dériver.
+    function mesurer(){
+      if (active !== -1) return;
+      geo = cartes.map(function(c){
+        var r = c.getBoundingClientRect();
+        return { x:r.left + r.width / 2, y:r.top + r.height / 2, l:r.width, h:r.height };
+      });
+
+      // Le pas de la grille : l'écart réel entre deux cartes voisines, en largeur et en
+      // hauteur. Une carte est large et basse — raisonner en pixels ferait bouger les
+      // voisines du dessus et du dessous, et laisserait celles de gauche et de droite
+      // immobiles. On raisonne donc en « cases », jamais en pixels.
+      pasX = Infinity; pasY = Infinity;
+      for (var m = 0; m < geo.length; m++){
+        for (var n = m + 1; n < geo.length; n++){
+          var ex = Math.abs(geo[n].x - geo[m].x);
+          var ey = Math.abs(geo[n].y - geo[m].y);
+          if (ex > 1 && ex < pasX) pasX = ex;
+          if (ey > 1 && ey < pasY) pasY = ey;
+        }
+      }
+      if (!isFinite(pasX)) pasX = geo[0].l;   // une seule colonne
+      if (!isFinite(pasY)) pasY = geo[0].h;   // une seule ligne
+    }
+
+    function pousser(i){
+      if (!geo.length) mesurer();
+      var a = geo[i];
+      if (!a) return;
+      cartes.forEach(function(c, j){
+        if (j === i) return;
+        var b = geo[j];
+        var dx = b.x - a.x, dy = b.y - a.y;
+        var d = Math.sqrt(dx * dx + dy * dy);
+        if (!d){ placer(c, 0, 0); return; }
+
+        // distance exprimée en cases : 1 pour une voisine collée, ~1,41 en diagonale
+        var ux = dx / pasX, uy = dy / pasY;
+        var u = Math.sqrt(ux * ux + uy * uy);
+        var k = 1 - (u - 1) / ETENDUE;
+        if (k <= 0){ placer(c, 0, 0); return; }
+        if (k > 1) k = 1;
+
+        var force = AMPL * k;
+        placer(c, dx / d * force, dy / d * force);
+      });
+    }
+
+    function placer(c, x, y){
+      c.style.setProperty('--dx', x.toFixed(2) + 'px');
+      c.style.setProperty('--dy', y.toFixed(2) + 'px');
+    }
+
+    function reposer(){
+      active = -1;
+      cartes.forEach(function(c){ c.classList.remove('est-active'); placer(c, 0, 0); });
+    }
+
+    cartes.forEach(function(c, i){
+      c.addEventListener('mouseenter', function(){
+        active = i;
+        cartes.forEach(function(o){ o.classList.remove('est-active'); });
+        c.classList.add('est-active');
+        pousser(i);
+      });
+      // le clavier compte aussi : la carte focalisée se comporte comme survolée
+      c.addEventListener('focus', function(){
+        active = i;
+        cartes.forEach(function(o){ o.classList.remove('est-active'); });
+        c.classList.add('est-active');
+        pousser(i);
+      });
+      c.addEventListener('blur', reposer);
+    });
+
+    bloc.addEventListener('mouseleave', reposer);
+
+    window.addEventListener('resize', function(){ reposer(); mesurer(); }, {passive:true});
+    mesurer();
+  });
+})();
+</script>
+<!-- FX:COPY:END -->
+
+<div style="height:40vh"></div>
+<div class="demo-note">push-grid · les voisines s'écartent</div>
+
+</body>
+</html>
