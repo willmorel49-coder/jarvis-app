@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FX-BANK · Split Text Scroll</title>
+<!--
+/* FX-BANK · SPLIT TEXT SCROLL
+   QUOI : Un paragraphe dont les mots s'éclaircissent un à un au fil de la descente, comme si
+          la lecture allumait le texte. Deux variantes : par mot, ou par ligne.
+   QUAND : La phrase de manifeste, le paragraphe qui porte le récit. Un seul par page — répété,
+           l'effet devient un tic et ralentit la lecture au lieu de la porter.
+   DEPENDANCES : aucune
+   SAFARI : conforme. Aucun flou, aucun verre dépoli, aucun dégradé découpé dans du texte.
+            L'éclaircissement se joue sur la couleur, pas sur un masque.
+            Mouvement réduit = tout le texte à sa couleur finale, immédiatement lisible.
+   FILET : le texte n'est JAMAIS transparent au repos — il part d'un gris lisible et se fonce.
+           Si le script ne tourne pas, le paragraphe reste parfaitement lisible.
+   COPIER : le bloc entre FX:COPY:START et FX:COPY:END */
+-->
+<style>
+  body{margin:0;background:#FBFCFE;color:#0E1626;font:16px/1.6 ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif}
+  .demo-note{position:fixed;left:16px;bottom:16px;z-index:50;font-size:12px;letter-spacing:.1em;
+    text-transform:uppercase;color:#8B96AC;background:#FBFCFE;padding:8px 12px;border:1px solid #DCE5F4}
+
+  /* FX:COPY:START */
+  .fx-split{
+    --fx-split-eteint:#B9C4D6;      /* gris de repos : lisible, jamais transparent */
+    --fx-split-allume:#0E1626;
+    max-width:860px; margin:0 auto; padding:0 24px;
+  }
+  .fx-split__p{
+    font-size:clamp(1.35rem,3.4vw,2.35rem); line-height:1.38; font-weight:600;
+    letter-spacing:-.018em; margin:0; color:var(--fx-split-eteint);
+    text-wrap:pretty;
+  }
+  .fx-split__m{
+    color:var(--fx-split-eteint);
+    transition:color .28s ease;
+  }
+  .fx-split__m.est-lu{ color:var(--fx-split-allume) }
+
+  @media (prefers-reduced-motion: reduce){
+    .fx-split__p, .fx-split__m{ color:var(--fx-split-allume); transition:none }
+  }
+  /* FX:COPY:END */
+</style>
+</head>
+<body>
+
+<div style="height:70vh;display:grid;place-items:center;color:#8B96AC">↓ descendre lentement</div>
+
+<!-- FX:COPY:START -->
+<section class="fx-split">
+  <p class="fx-split__p" data-fx-split>
+    Intégral Pharma n'a pas ouvert des entrepôts : il a réuni des maisons qui tournaient déjà.
+    Chacune livre sa région depuis des années, avec ses équipes et ses habitudes. Elles avancent
+    ensemble, et votre commande part toujours de la plus proche de votre comptoir.
+  </p>
+</section>
+
+<script>
+(function(){
+  var reduit = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  document.querySelectorAll('[data-fx-split]').forEach(function(p){
+    if (reduit) return;                       // le texte reste à sa couleur finale, rien à faire
+
+    // On découpe en mots en gardant les espaces : sans ça, la césure des lignes change
+    // et le paragraphe « saute » au chargement.
+    var mots = p.textContent.trim().split(/(\s+)/);
+    p.textContent = '';
+    var spans = [];
+    mots.forEach(function(bout){
+      if (/^\s+$/.test(bout)) { p.appendChild(document.createTextNode(bout)); return; }
+      var s = document.createElement('span');
+      s.className = 'fx-split__m';
+      s.textContent = bout;
+      p.appendChild(s);
+      spans.push(s);
+    });
+
+    var tic = false;
+    function placer(){
+      tic = false;
+      var vue = window.innerHeight;
+      // La zone de lecture : entre 62 % et 28 % de la hauteur d'écran. Un mot qui entre
+      // dans cette bande s'allume et le reste — on ne rééteint jamais ce qui a été lu.
+      var haut = vue * 0.62, bas = vue * 0.28;
+      var reste = false;
+      spans.forEach(function(s){
+        if (s.classList.contains('est-lu')) return;
+        var r = s.getBoundingClientRect();
+        if (r.top < haut && r.bottom > bas - vue) s.classList.add('est-lu');
+        else reste = true;
+      });
+      if (!reste) window.removeEventListener('scroll', onScroll);
+    }
+    function onScroll(){ if (!tic){ tic = true; requestAnimationFrame(placer); } }
+    window.addEventListener('scroll', onScroll, {passive:true});
+    window.addEventListener('resize', onScroll, {passive:true});
+    placer();
+  });
+})();
+</script>
+<!-- FX:COPY:END -->
+
+<div style="height:90vh;display:grid;place-items:center;color:#8B96AC">fin</div>
+<div class="demo-note">split-text-scroll · la lecture allume le texte</div>
+
+</body>
+</html>

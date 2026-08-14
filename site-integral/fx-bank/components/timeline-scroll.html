@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FX-BANK · Timeline Scroll</title>
+<!--
+/* FX-BANK · TIMELINE SCROLL
+   QUOI : Frise verticale dont le trait se remplit à la descente. Chaque jalon s'allume quand
+          le trait l'atteint, et le reste — on ne « re-masque » jamais ce qui est déjà passé.
+   QUAND : Une histoire par dates, un parcours en étapes, une feuille de route. C'est le bloc
+           le plus solide quand les dates sont vérifiables : personne ne peut copier vos dates.
+   DEPENDANCES : aucune
+   SAFARI : conforme. Aucun flou, aucun verre dépoli, aucun dégradé découpé dans du texte.
+            Uniquement transform, opacity et scaleY.
+            Mouvement réduit = trait plein et tous les jalons allumés d'emblée.
+   FILET : un jalon ne peut pas rester invisible. La révélation se décide au défilement à partir
+           de la position réelle, jamais d'une seule notification qui pourrait ne jamais venir.
+   COPIER : le bloc entre FX:COPY:START et FX:COPY:END */
+-->
+<style>
+  body{margin:0;background:#FBFCFE;color:#0E1626;font:16px/1.6 ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif}
+  .demo-note{position:fixed;left:16px;bottom:16px;z-index:50;font-size:12px;letter-spacing:.1em;
+    text-transform:uppercase;color:#8B96AC;background:#FBFCFE;padding:8px 12px;border:1px solid #DCE5F4}
+
+  /* FX:COPY:START */
+  .fx-tl{
+    --fx-tl-accent:#0050E6;
+    --fx-tl-trait:#DCE5F4;
+    --fx-tl-ink:#0E1626;
+    --fx-tl-doux:#54607A;
+    --fx-tl-gouttiere:112px;        /* largeur de la colonne des années */
+    --fx-tl-gap:38px;               /* espace entre l'année et le texte : le rail passe au milieu */
+    --fx-tl-pad:24px;
+    position:relative; max-width:820px; margin:0 auto; padding:40px var(--fx-tl-pad);
+  }
+  /* Le rail : un trait gris, et par-dessus un trait bleu qui grandit avec la lecture.
+     Il est centré dans la gouttière, sinon les pastilles mordent sur les années. */
+  .fx-tl__rail{
+    position:absolute; top:40px; bottom:40px;
+    left:calc(var(--fx-tl-pad) + var(--fx-tl-gouttiere) + var(--fx-tl-gap) / 2 - 1px);
+    width:2px; background:var(--fx-tl-trait);
+  }
+  .fx-tl__rail i{
+    position:absolute; inset:0; background:var(--fx-tl-accent);
+    transform-origin:top; transform:scaleY(var(--p,0));
+    transition:transform .18s linear;
+  }
+
+  .fx-tl__jalon{
+    position:relative; display:grid;
+    grid-template-columns:var(--fx-tl-gouttiere) 1fr; gap:0 var(--fx-tl-gap);
+    padding:22px 0 26px;
+    opacity:.34; transform:translateY(10px);
+    transition:opacity .55s ease, transform .55s cubic-bezier(.22,.8,.25,1);
+  }
+  .fx-tl__jalon.est-vu{ opacity:1; transform:none }
+
+  .fx-tl__an{
+    font-variant-numeric:tabular-nums; font-weight:650; font-size:1.02rem;
+    color:var(--fx-tl-doux); text-align:right; padding-top:2px;
+    transition:color .45s ease;
+  }
+  .fx-tl__jalon.est-vu .fx-tl__an{ color:var(--fx-tl-accent) }
+
+  /* La pastille est posée sur le rail, au centre de la gouttière, à hauteur du titre */
+  .fx-tl__jalon::before{
+    content:""; position:absolute; top:27px;
+    left:calc(var(--fx-tl-gouttiere) + var(--fx-tl-gap) / 2 - 6px);
+    width:12px; height:12px; border-radius:50%;
+    background:#fff; border:2px solid var(--fx-tl-trait); box-sizing:border-box;
+    transition:border-color .45s ease, transform .45s cubic-bezier(.22,.8,.25,1);
+  }
+  .fx-tl__jalon.est-vu::before{ border-color:var(--fx-tl-accent); transform:scale(1.25) }
+  .fx-tl__jalon.est-phare::before{ background:var(--fx-tl-accent); border-color:var(--fx-tl-accent) }
+
+  .fx-tl__t{ margin:0 0 5px; font-size:1.05rem; font-weight:650; color:var(--fx-tl-ink) }
+  .fx-tl__d{ margin:0; color:var(--fx-tl-doux); font-size:.96rem; max-width:52ch }
+  .fx-tl__jalon.est-phare .fx-tl__t{ font-size:1.2rem }
+
+  @media (max-width:620px){
+    .fx-tl{ --fx-tl-gouttiere:52px; --fx-tl-gap:26px; --fx-tl-pad:18px }
+    .fx-tl__an{ font-size:.92rem }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .fx-tl__jalon{ opacity:1; transform:none; transition:none }
+    .fx-tl__rail i{ transform:scaleY(1); transition:none }
+    .fx-tl__jalon::before{ border-color:var(--fx-tl-accent); transition:none }
+  }
+  /* FX:COPY:END */
+</style>
+</head>
+<body>
+
+<div style="height:50vh;display:grid;place-items:center;color:#8B96AC">↓ descendre</div>
+
+<!-- FX:COPY:START -->
+<section class="fx-tl" data-fx-tl>
+  <div class="fx-tl__rail"><i></i></div>
+
+  <div class="fx-tl__jalon">
+    <div class="fx-tl__an">2006</div>
+    <div><h3 class="fx-tl__t">La première maison</h3>
+      <p class="fx-tl__d">Une région, une équipe, des tournées qui partent chaque matin.</p></div>
+  </div>
+
+  <div class="fx-tl__jalon">
+    <div class="fx-tl__an">2008</div>
+    <div><h3 class="fx-tl__t">La deuxième</h3>
+      <p class="fx-tl__d">Même métier, autre territoire — et déjà la même exigence.</p></div>
+  </div>
+
+  <div class="fx-tl__jalon est-phare">
+    <div class="fx-tl__an">2018</div>
+    <div><h3 class="fx-tl__t">Le groupe se forme</h3>
+      <p class="fx-tl__d">Aucune maison ne change de nom, d'équipe ni d'adresse. Elles avancent ensemble.</p></div>
+  </div>
+
+  <div class="fx-tl__jalon">
+    <div class="fx-tl__an">2024</div>
+    <div><h3 class="fx-tl__t">Une implantation de plus</h3>
+      <p class="fx-tl__d">Le maillage se resserre, région par région.</p></div>
+  </div>
+
+  <div class="fx-tl__jalon">
+    <div class="fx-tl__an">2025</div>
+    <div><h3 class="fx-tl__t">La dernière née</h3>
+      <p class="fx-tl__d">Neuf implantations, et la carte n'est pas figée.</p></div>
+  </div>
+</section>
+
+<script>
+(function(){
+  var reduit = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  document.querySelectorAll('[data-fx-tl]').forEach(function(frise){
+    var rail   = frise.querySelector('.fx-tl__rail i');
+    var jalons = Array.prototype.slice.call(frise.querySelectorAll('.fx-tl__jalon'));
+    if (!jalons.length) return;
+
+    if (reduit) { jalons.forEach(function(j){ j.classList.add('est-vu'); }); return; }
+
+    var tic = false;
+
+    function placer(){
+      tic = false;
+      var vue = window.innerHeight;
+      var ligne = vue * 0.62;               // la ligne de lecture : un peu sous le milieu
+
+      // 1) le trait se remplit selon la position de la frise dans l'écran
+      var r = frise.getBoundingClientRect();
+      var p = (ligne - r.top) / r.height;
+      if (rail) rail.style.setProperty('--p', Math.min(1, Math.max(0, p)).toFixed(3));
+
+      // 2) chaque jalon s'allume quand sa pastille passe la ligne — et ne s'éteint jamais.
+      //    On lit la position réelle à chaque défilement : aucun jalon ne peut rester
+      //    invisible parce qu'une notification ne serait jamais arrivée.
+      var reste = false;
+      jalons.forEach(function(j){
+        if (j.classList.contains('est-vu')) return;
+        var rj = j.getBoundingClientRect();
+        if (rj.top + 40 < ligne) j.classList.add('est-vu');
+        else reste = true;
+      });
+      if (!reste && p >= 1) window.removeEventListener('scroll', onScroll);
+    }
+
+    function onScroll(){ if (!tic){ tic = true; requestAnimationFrame(placer); } }
+    window.addEventListener('scroll', onScroll, {passive:true});
+    window.addEventListener('resize', onScroll, {passive:true});
+    placer();
+  });
+})();
+</script>
+<!-- FX:COPY:END -->
+
+<div style="height:70vh;display:grid;place-items:center;color:#8B96AC">fin</div>
+<div class="demo-note">timeline-scroll · le trait se remplit à la lecture</div>
+
+</body>
+</html>

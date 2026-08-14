@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FX-BANK · Number Odometer</title>
+<!--
+/* FX-BANK · NUMBER ODOMETER
+   QUOI : Des chiffres qui roulent verticalement, chaque rang tournant à sa vitesse — le geste
+          d'un compteur mécanique. Plus matériel qu'un simple compteur qui s'incrémente.
+   QUAND : Deux ou trois chiffres-clés, pas davantage. C'est un effet coûteux à l'œil : au-delà,
+           la page devient une machine à sous.
+   DEPENDANCES : aucune
+   SAFARI : conforme. Aucun flou, aucun verre dépoli, aucun dégradé découpé dans du texte.
+            Chaque rouleau est un translateY, composé par le GPU.
+   ⚠️ ANNEE : un millésime ne prend JAMAIS de séparateur de milliers. Le repère est l'attribut
+      data-brut, jamais une devinette sur la valeur — « entre 1900 et 2100 » attrape aussi
+      2 000 officines et l'écrit « 2000 ». Erreur payée le 14/08/2026.
+   FILET : la valeur finale est écrite en clair dans le HTML. Si le script ne tourne pas,
+           le chiffre reste juste et lisible.
+   COPIER : le bloc entre FX:COPY:START et FX:COPY:END */
+-->
+<style>
+  body{margin:0;background:#FBFCFE;color:#0E1626;font:16px/1.6 ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif}
+  .demo-note{position:fixed;left:16px;bottom:16px;z-index:50;font-size:12px;letter-spacing:.1em;
+    text-transform:uppercase;color:#8B96AC;background:#FBFCFE;padding:8px 12px;border:1px solid #DCE5F4}
+
+  /* FX:COPY:START */
+  .fx-odo{
+    --fx-odo-accent:#0050E6;
+    --fx-odo-doux:#54607A;
+    --fx-odo-taille:clamp(2.4rem,7vw,4.6rem);
+    display:grid; gap:1px; background:#DCE5F4; border:1px solid #DCE5F4;
+    grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
+    max-width:1000px; margin:0 auto;
+  }
+  .fx-odo__case{ background:#fff; padding:30px 24px }
+  .fx-odo__n{
+    display:flex; align-items:flex-end; line-height:1;
+    font-size:var(--fx-odo-taille); font-weight:650; letter-spacing:-.03em;
+    color:var(--fx-odo-accent); font-variant-numeric:tabular-nums;
+    height:1em; overflow:hidden;
+  }
+  /* un rouleau = une colonne de 0 à 9 qu'on fait glisser */
+  .fx-odo__rang{ display:block; height:1em; overflow:hidden }
+  .fx-odo__rang i{
+    display:block; font-style:normal;
+    transform:translateY(var(--y,0));
+    transition:transform 1.15s cubic-bezier(.22,.8,.25,1);
+    transition-delay:var(--d,0ms);
+  }
+  .fx-odo__rang i b{ display:block; height:1em; font-weight:inherit }
+  .fx-odo__fixe{ display:block }          /* séparateur, « + », « % »… ne roulent pas */
+  .fx-odo__l{
+    display:block; margin-top:12px; font-size:12.5px; letter-spacing:.1em;
+    text-transform:uppercase; color:var(--fx-odo-doux);
+  }
+  @media (prefers-reduced-motion: reduce){
+    .fx-odo__rang i{ transition:none }
+  }
+  /* FX:COPY:END */
+</style>
+</head>
+<body>
+
+<div style="height:70vh;display:grid;place-items:center;color:#8B96AC">↓ descendre</div>
+
+<!-- FX:COPY:START -->
+<section class="fx-odo" data-fx-odo>
+  <!-- La valeur finale est écrite en clair : si le script ne tourne pas, elle reste juste. -->
+  <div class="fx-odo__case">
+    <div class="fx-odo__n" data-odo data-brut>2006</div>
+    <span class="fx-odo__l">année de création</span>
+  </div>
+  <div class="fx-odo__case">
+    <div class="fx-odo__n" data-odo>9</div>
+    <span class="fx-odo__l">implantations</span>
+  </div>
+  <div class="fx-odo__case">
+    <div class="fx-odo__n" data-odo>2 000</div>
+    <span class="fx-odo__l">officines livrées</span>
+  </div>
+  <div class="fx-odo__case">
+    <div class="fx-odo__n" data-odo>14 000</div>
+    <span class="fx-odo__l">références</span>
+  </div>
+</section>
+
+<script>
+(function(){
+  var reduit = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function monter(el){
+    if (el.dataset.odoPret) return;
+    el.dataset.odoPret = '1';
+
+    var brut = el.textContent.trim();
+    // Une année garde sa graphie exacte. Le repère est l'attribut, jamais la valeur :
+    // se fier à « entre 1900 et 2100 » casse les 2 000 officines.
+    var estAnnee = el.hasAttribute('data-brut');
+    var cible = parseInt(brut.replace(/[^\d]/g, ''), 10);
+    if (!isFinite(cible)) return;
+
+    var texte = estAnnee ? String(cible) : cible.toLocaleString('fr-FR');
+    el.textContent = '';
+
+    var rangs = [];
+    Array.prototype.forEach.call(texte, function(c, i){
+      if (!/\d/.test(c)) {                       // espace de milliers, symbole… ne roule pas
+        var f = document.createElement('span');
+        f.className = 'fx-odo__fixe'; f.textContent = c;
+        el.appendChild(f); return;
+      }
+      var rang = document.createElement('span');
+      rang.className = 'fx-odo__rang';
+      var col = document.createElement('i');
+      for (var d = 0; d <= 9; d++){
+        var b = document.createElement('b'); b.textContent = d; col.appendChild(b);
+      }
+      rang.appendChild(col); el.appendChild(rang);
+      rangs.push({col: col, chiffre: parseInt(c, 10), i: i});
+    });
+
+    if (reduit){                                  // pas de roulement : on pose la valeur
+      rangs.forEach(function(r){ r.col.style.setProperty('--y', (-r.chiffre) + 'em'); });
+      return;
+    }
+
+    // chaque rang part de zéro et roule jusqu'à son chiffre, avec un léger décalage
+    requestAnimationFrame(function(){
+      rangs.forEach(function(r, k){
+        r.col.style.setProperty('--d', (k * 85) + 'ms');
+        r.col.style.setProperty('--y', (-r.chiffre) + 'em');
+      });
+    });
+  }
+
+  var cibles = Array.prototype.slice.call(document.querySelectorAll('[data-odo]'));
+  if (!cibles.length) return;
+
+  // Déclenchement à l'apparition, doublé d'un contrôle au défilement : un compteur qui
+  // ne part jamais laisse un chiffre faux à l'écran, ce qui est pire que pas d'animation.
+  var tic = false;
+  function verifier(){
+    tic = false;
+    var reste = false;
+    cibles.forEach(function(el){
+      if (el.dataset.odoPret) return;
+      var r = el.getBoundingClientRect();
+      if (r.top < window.innerHeight * 0.9 && r.bottom > 0) monter(el);
+      else reste = true;
+    });
+    if (!reste) window.removeEventListener('scroll', onScroll);
+  }
+  function onScroll(){ if (!tic){ tic = true; requestAnimationFrame(verifier); } }
+  window.addEventListener('scroll', onScroll, {passive:true});
+  window.addEventListener('resize', onScroll, {passive:true});
+  verifier();
+})();
+</script>
+<!-- FX:COPY:END -->
+
+<div style="height:80vh;display:grid;place-items:center;color:#8B96AC">fin</div>
+<div class="demo-note">number-odometer · les rangs roulent</div>
+
+</body>
+</html>

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FX-BANK · Reading Progress</title>
+<!--
+/* FX-BANK · READING PROGRESS
+   QUOI : Barre de progression de lecture en haut de page, plus un repère de section qui nomme
+          l'endroit où l'on se trouve. Deux informations d'un coup : combien il reste, et où on est.
+   QUAND : Page longue, dossier, article. Sur une page courte c'est du bruit — en dessous de
+           deux écrans et demi, le composant se désactive tout seul.
+   DEPENDANCES : aucune
+   SAFARI : conforme. Aucun flou, aucun verre dépoli, aucun dégradé découpé dans du texte.
+            La barre est un scaleX, composé par le GPU, jamais un recalcul de largeur.
+   COPIER : le bloc entre FX:COPY:START et FX:COPY:END */
+-->
+<style>
+  body{margin:0;background:#FBFCFE;color:#0E1626;font:16px/1.6 ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif}
+  .bloc{max-width:760px;margin:0 auto;padding:70px 24px}
+  .bloc h2{font-size:1.6rem;letter-spacing:-.02em;margin:0 0 12px}
+  .bloc p{color:#54607A}
+
+  /* FX:COPY:START */
+  .fx-prog{
+    --fx-prog-accent:#0050E6;
+    --fx-prog-rail:rgba(14,22,38,.08);
+    position:fixed; inset:0 0 auto 0; z-index:70; pointer-events:none;
+  }
+  .fx-prog__rail{ height:3px; background:var(--fx-prog-rail) }
+  .fx-prog__jauge{
+    height:100%; background:var(--fx-prog-accent);
+    transform-origin:left; transform:scaleX(var(--p,0));
+  }
+  .fx-prog__ou{
+    position:absolute; right:14px; top:12px;
+    font-size:11px; letter-spacing:.13em; text-transform:uppercase; font-weight:600;
+    color:var(--fx-prog-accent); background:#fff; padding:5px 11px;
+    border:1px solid rgba(14,22,38,.1); border-radius:2px;
+    opacity:0; transform:translateY(-6px); transition:opacity .3s ease, transform .3s ease;
+  }
+  .fx-prog.est-actif .fx-prog__ou{ opacity:1; transform:none }
+
+  @media (prefers-reduced-motion: reduce){
+    .fx-prog__jauge{ transition:none }
+    .fx-prog__ou{ transition:none }
+  }
+  /* FX:COPY:END */
+</style>
+</head>
+<body>
+
+<!-- FX:COPY:START -->
+<div class="fx-prog" data-fx-prog>
+  <div class="fx-prog__rail"><div class="fx-prog__jauge"></div></div>
+  <div class="fx-prog__ou" aria-hidden="true"></div>
+</div>
+
+<script>
+(function(){
+  // Ce composant se place en haut de page : au moment où son script s'exécute, les
+  // sections qu'il doit nommer n'existent pas encore dans le document. Les chercher tout
+  // de suite renvoie une liste vide et le repère reste muet — constaté le 14/08/2026.
+  // On attend donc que le document soit complet.
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+
+  function init(){
+  document.querySelectorAll('[data-fx-prog]').forEach(function(prog){
+    var jauge = prog.querySelector('.fx-prog__jauge');
+    var ou    = prog.querySelector('.fx-prog__ou');
+    // Le repère nomme la section : on lit les <section data-titre> de la page.
+    var sections = Array.prototype.slice.call(document.querySelectorAll('[data-titre]'));
+    var tic = false, dernier = '';
+
+    function placer(){
+      tic = false;
+      var doc = document.documentElement;
+      var course = doc.scrollHeight - window.innerHeight;
+
+      // Sur une page courte, une barre de progression n'apprend rien : on l'efface.
+      if (course < window.innerHeight * 1.5) { prog.style.display = 'none'; return; }
+      prog.style.display = '';
+
+      jauge.style.setProperty('--p', Math.min(1, Math.max(0, window.scrollY / course)).toFixed(4));
+
+      if (!ou || !sections.length) return;
+      var ligne = window.innerHeight * 0.3, courante = '';
+      sections.forEach(function(s){
+        if (s.getBoundingClientRect().top <= ligne) courante = s.getAttribute('data-titre') || '';
+      });
+      if (courante !== dernier){
+        dernier = courante;
+        ou.textContent = courante;
+        prog.classList.toggle('est-actif', !!courante);
+      }
+    }
+    function onScroll(){ if (!tic){ tic = true; requestAnimationFrame(placer); } }
+    window.addEventListener('scroll', onScroll, {passive:true});
+    window.addEventListener('resize', onScroll, {passive:true});
+    placer();
+  });
+  }
+})();
+</script>
+<!-- FX:COPY:END -->
+
+<section class="bloc" data-titre="Le groupe">
+  <h2>Le groupe</h2>
+  <p>Descendre pour voir la barre avancer et le repère changer de nom.</p>
+  <p style="height:70vh"></p>
+</section>
+<section class="bloc" data-titre="Le réseau">
+  <h2>Le réseau</h2><p style="height:80vh"></p>
+</section>
+<section class="bloc" data-titre="Le métier">
+  <h2>Le métier</h2><p style="height:80vh"></p>
+</section>
+<section class="bloc" data-titre="Nous écrire">
+  <h2>Nous écrire</h2><p style="height:60vh"></p>
+</section>
+
+</body>
+</html>

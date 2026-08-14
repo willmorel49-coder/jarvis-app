@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FX-BANK · Fullscreen Menu</title>
+<!--
+/* FX-BANK · FULLSCREEN MENU
+   QUOI : Menu plein écran. Le panneau descend d'un bloc, les entrées arrivent en cascade,
+          le bouton se transforme en croix. Fermeture au clic, à la touche Échap, ou en
+          choisissant une entrée.
+   QUAND : Sur téléphone, dès qu'il y a plus de trois entrées. Neuf maquettes livrées n'avaient
+           AUCUN menu mobile : la navigation disparaissait purement et simplement.
+   DEPENDANCES : aucune
+   SAFARI : conforme. Aucun flou, aucun verre dépoli, aucun dégradé découpé dans du texte.
+            Le panneau est OPAQUE — un menu translucide laisse le texte de la page défiler
+            au travers et devient illisible.
+   ACCESSIBILITE : aria-expanded tenu à jour, focus renvoyé au bouton à la fermeture,
+                   défilement de la page bloqué tant que le menu est ouvert.
+   COPIER : le bloc entre FX:COPY:START et FX:COPY:END */
+-->
+<style>
+  body{margin:0;background:#FBFCFE;color:#0E1626;font:16px/1.6 ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif}
+  .faux-contenu{max-width:820px;margin:0 auto;padding:120px 24px;color:#54607A}
+  .faux-contenu h1{color:#0E1626;font-size:clamp(1.8rem,5vw,3rem);letter-spacing:-.02em;margin:0 0 16px}
+
+  /* FX:COPY:START */
+  .fx-menu{
+    --fx-menu-fond:#0A1020;         /* OPAQUE, jamais translucide */
+    --fx-menu-ink:#F8FAFC;
+    --fx-menu-accent:#0050E6;
+    --fx-menu-haut:64px;
+  }
+  /* La barre est AU-DESSUS du panneau (62 > 61), sinon le bouton de fermeture passe
+     dessous et le menu ne peut plus se refermer qu'au clavier. Quand le menu s'ouvre,
+     elle devient transparente pour laisser voir le panneau. */
+  .fx-menu__barre{
+    position:fixed; inset:0 0 auto 0; height:var(--fx-menu-haut); z-index:62;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:0 20px; background:#fff; border-bottom:1px solid #DCE5F4;
+    transition:background-color .35s ease, border-color .35s ease;
+  }
+  .fx-menu.est-ouvert .fx-menu__barre{ background:transparent; border-color:transparent }
+  .fx-menu__marque{ font-weight:650; letter-spacing:-.01em; transition:color .35s ease }
+  .fx-menu.est-ouvert .fx-menu__marque{ color:var(--fx-menu-ink) }
+
+  .fx-menu__btn{
+    position:relative; z-index:62; width:46px; height:46px; border:0; background:transparent;
+    cursor:pointer; border-radius:3px;
+  }
+  .fx-menu__btn:focus-visible{ outline:2px solid var(--fx-menu-accent); outline-offset:2px }
+  /* Les trois barres sont posées en absolu par rapport au bouton, toutes centrées sur le
+     même point : c'est la seule façon d'obtenir une croix nette. Empilées en flux, elles
+     se croisent à côté et dessinent un chevron. */
+  .fx-menu__btn i{
+    position:absolute; left:50%; top:50%; width:22px; height:2px; margin-left:-11px;
+    background:#0E1626; border-radius:2px;
+    transition:transform .38s cubic-bezier(.22,.8,.25,1), opacity .2s ease, background-color .3s ease;
+  }
+  .fx-menu__btn i:nth-child(1){ transform:translateY(-8px) }
+  .fx-menu__btn i:nth-child(2){ transform:translateY(0) }
+  .fx-menu__btn i:nth-child(3){ transform:translateY(6px) }
+  .fx-menu.est-ouvert .fx-menu__btn i{ background:var(--fx-menu-ink) }
+  .fx-menu.est-ouvert .fx-menu__btn i:nth-child(1){ transform:translateY(-1px) rotate(45deg) }
+  .fx-menu.est-ouvert .fx-menu__btn i:nth-child(2){ opacity:0 }
+  .fx-menu.est-ouvert .fx-menu__btn i:nth-child(3){ transform:translateY(-1px) rotate(-45deg) }
+
+  .fx-menu__panneau{
+    position:fixed; inset:0; z-index:61; background:var(--fx-menu-fond);
+    display:grid; align-content:center; gap:6px; padding:0 28px;
+    transform:translateY(-100%);
+    transition:transform .5s cubic-bezier(.76,0,.24,1);
+    visibility:hidden;
+  }
+  .fx-menu.est-ouvert .fx-menu__panneau{ transform:none; visibility:visible }
+
+  .fx-menu__lien{
+    display:block; color:var(--fx-menu-ink); text-decoration:none;
+    font-size:clamp(1.7rem,7vw,3.1rem); font-weight:650; letter-spacing:-.025em;
+    padding:9px 0; max-width:16ch;
+    opacity:0; transform:translateY(20px);
+    transition:opacity .4s ease, transform .5s cubic-bezier(.22,.8,.25,1), color .25s ease;
+    transition-delay:var(--d,0ms);
+  }
+  .fx-menu.est-ouvert .fx-menu__lien{ opacity:1; transform:none }
+  .fx-menu__lien:hover, .fx-menu__lien:focus-visible{ color:var(--fx-menu-accent) }
+
+  .fx-menu__pied{
+    position:absolute; left:28px; bottom:34px; color:#7C8AA5; font-size:.9rem;
+    opacity:0; transition:opacity .4s ease .3s;
+  }
+  .fx-menu.est-ouvert .fx-menu__pied{ opacity:1 }
+
+  body.fx-menu-fige{ overflow:hidden }
+
+  @media (prefers-reduced-motion: reduce){
+    .fx-menu__panneau{ transition:none }
+    .fx-menu__lien{ transition:none; opacity:1; transform:none }
+    .fx-menu__btn i{ transition:none }
+  }
+  /* FX:COPY:END */
+</style>
+</head>
+<body>
+
+<!-- FX:COPY:START -->
+<div class="fx-menu" data-fx-menu>
+  <div class="fx-menu__barre">
+    <span class="fx-menu__marque">Intégral Pharma</span>
+    <button class="fx-menu__btn" type="button" aria-expanded="false" aria-controls="fx-menu-panneau" aria-label="Ouvrir le menu">
+      <i></i><i></i><i></i>
+    </button>
+  </div>
+
+  <nav class="fx-menu__panneau" id="fx-menu-panneau" aria-label="Navigation principale">
+    <a class="fx-menu__lien" href="#groupe">Le groupe</a>
+    <a class="fx-menu__lien" href="#reseau">Le réseau</a>
+    <a class="fx-menu__lien" href="#metier">Le métier</a>
+    <a class="fx-menu__lien" href="#valeurs">Nos valeurs</a>
+    <a class="fx-menu__lien" href="#contact">Nous écrire</a>
+    <p class="fx-menu__pied">contact@integralpharma.fr</p>
+  </nav>
+</div>
+
+<script>
+(function(){
+  document.querySelectorAll('[data-fx-menu]').forEach(function(menu){
+    var btn   = menu.querySelector('.fx-menu__btn');
+    var liens = Array.prototype.slice.call(menu.querySelectorAll('.fx-menu__lien'));
+    if (!btn) return;
+
+    // cascade d'apparition des entrées
+    liens.forEach(function(a, i){ a.style.setProperty('--d', (120 + i * 55) + 'ms'); });
+
+    function basculer(ouvrir){
+      menu.classList.toggle('est-ouvert', ouvrir);
+      btn.setAttribute('aria-expanded', ouvrir ? 'true' : 'false');
+      btn.setAttribute('aria-label', ouvrir ? 'Fermer le menu' : 'Ouvrir le menu');
+      // Bloquer le défilement de la page : sans ça, le contenu bouge derrière le panneau
+      // et on ne sait plus où on en était à la fermeture.
+      document.body.classList.toggle('fx-menu-fige', ouvrir);
+      if (ouvrir) { var p = liens[0]; if (p) p.focus({preventScroll:true}); }
+      else btn.focus({preventScroll:true});
+    }
+
+    btn.addEventListener('click', function(){
+      basculer(!menu.classList.contains('est-ouvert'));
+    });
+
+    // Choisir une entrée referme : sinon on atterrit sur l'ancre avec le panneau encore ouvert.
+    liens.forEach(function(a){
+      a.addEventListener('click', function(){ basculer(false); });
+    });
+
+    document.addEventListener('keydown', function(e){
+      if (e.key === 'Escape' && menu.classList.contains('est-ouvert')) basculer(false);
+    });
+  });
+})();
+</script>
+<!-- FX:COPY:END -->
+
+<div class="faux-contenu">
+  <h1>Le menu s'ouvre en plein écran</h1>
+  <p>Cliquer sur le bouton en haut à droite. Échap referme, choisir une entrée aussi.
+  Le panneau est opaque : le texte de cette page ne défile pas au travers.</p>
+  <p style="margin-top:200vh">Fin de la démonstration.</p>
+</div>
+
+</body>
+</html>
