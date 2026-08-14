@@ -106,10 +106,19 @@
     var miennes = (V2.pharmacies || []).filter(function (p) {
       return (p.comms || []).indexOf(comm) >= 0;
     });
+    // Son secteur = les départements de ses clientes. Sans ce repli, l'option
+    // « Prospects » ne rendait JAMAIS rien : 16 850 des 17 367 prospects de la
+    // base n'ont aucun commercial attribué.
+    var depts = {}, dl = [];
+    miennes.forEach(function (p) {
+      var d = String(p.cp || '').slice(0, 2);
+      if (d.length === 2 && !depts[d]) { depts[d] = 1; dl.push(d); }
+    });
     return window.V2CIBLE.recenser({
       pharmacies: miennes,
       national: D ? { p: D.p, seg: D.seg, grp: D.grp, comm: D.comm } : null,
       commercial: comm,
+      departements: dl,
       info: function (cip) { return V2.rdvInfo(cip); }
     });
   }
