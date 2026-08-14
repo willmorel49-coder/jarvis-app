@@ -65,14 +65,30 @@ for r in ws.iter_rows(min_row=2, values_only=True):
 # qu'Intégral n'abandonne de marge sur AUCUN d'eux. Retirer Biogaran, Mylan ou
 # Sandoz reclasserait leurs produits en princeps et leur collerait un abandon
 # fictif — exactement le bug que ce filet existe pour éviter.
+#
+# 14/08/2026 — quatre suffixes ajoutés (BGA, ARL, CRT, ARG) après les avoir trouvés
+# par leur volume dans les ventes nationales : des présentations de paracétamol BGA
+# à très gros volume étaient classées à tort en princeps.
+# Chacun a été contrôlé contre `artnature` du catalogue avant d'être ajouté :
+#   BGA 794 réf. → 743 génériques · ARL 168 → 131 · CRT 359 → 339 · ARG 69 → 54,
+#   et AUCUN « Referent » sauf LEVONORGESTREL BGA (produit Biogaran, doute levé
+#   dans le sens générique, conformément à la règle ci-dessus).
+# ⚠️ Deux candidats ont été REJETÉS par ce même contrôle, ne pas les rajouter :
+#   « REF » attrape les numéros de référence des dispositifs (MEPILEX … T REF 58122,
+#   CONTOUR XT … REF 9000807) et « FRF » du sérum physiologique Fresenius —
+#   aucun des deux n'est un génériqueur.
 SUFFIXES_GENERIQUEURS = [
     "BGR", "EG", "TEVA", "MYL", "SDZ", "ZTL", "ARW", "CRS", "ZDS", "ACD", "KRK",
     "ALM", "EVP", "SUN", "BIOGARAN", "VIATRIS", "SANDOZ", "ZENTIVA", "ARROW",
     "CRISTERS", "MYLAN", "ACCORD", "ZYDUS", "ALMUS", "EVOLUPHARM", "SUBSTIPHARM",
-    "REDDY", "EUGIA", "KRKA",
+    "REDDY", "EUGIA", "KRKA", "BGA", "ARL", "CRT", "ARG",
 ]
+# Le point et la barre oblique comptent comme séparateurs : sans eux, les désignations
+# du type « ATOVAQ/PROGUAN.EG » ou « AMLODIP/VALS.ARW » passaient pour des princeps.
+# Effet mesuré des deux corrections réunies : 1 760 références nouvellement détectées,
+# dont 1 759 confirmées génériques par le catalogue.
 RX_GENERIQUEUR = re.compile(
-    r"(?:^|[\s\-])(" + "|".join(SUFFIXES_GENERIQUEURS) + r")(?:[\s\-]|$)")
+    r"(?:^|[\s\-./])(" + "|".join(SUFFIXES_GENERIQUEURS) + r")(?:[\s\-./]|$)")
 
 RATTRAPES = []   # journal des reclassements, affiché en fin de génération
 
