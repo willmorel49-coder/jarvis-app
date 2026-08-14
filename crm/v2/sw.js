@@ -10,8 +10,21 @@
 
    ⚠️ Bumper VER à chaque déploiement (aligné sur le ?v= de index.html).
    ═══════════════════════════════════════════════════════════════════ */
-var VER = '20260815d';
+var VER = '20260815f';
 var CACHE = 'jarvis-' + VER;
+
+/* ── Le cache des DONNÉES, qui survit aux déploiements ──────────────────
+   ⚠️ 14/08/2026 — Will : « ça marche plus, c'était l'app parfaite avant ».
+   Avant le 13/08, le fichier de ventes était servi par ce service worker et
+   restait donc sur le téléphone. En le passant en espace privé, je lui ai
+   retiré ce cache SANS le remplacer : depuis, l'app retéléchargeait 17 Mo à
+   CHAQUE ouverture, et sur un téléphone ça ne passe pas toujours.
+
+   Ce cache-ci porte un nom qui ne contient PAS `VER` : il n'est donc pas purgé
+   à chaque déploiement. Sans ça, le moindre correctif de code recommencerait à
+   coûter 17 Mo de téléchargement à tout le monde. Il se vide seulement quand la
+   VERSION DES DONNÉES change (`DONNEES_VER`). */
+var CACHE_DONNEES = 'jarvis-donnees-20260813s';
 
 self.addEventListener('install', function (e) {
   self.skipWaiting(); // le nouveau SW prend la main tout de suite
@@ -20,7 +33,10 @@ self.addEventListener('install', function (e) {
 self.addEventListener('activate', function (e) {
   e.waitUntil(
     caches.keys().then(function (keys) {
-      return Promise.all(keys.map(function (k) { if (k !== CACHE) return caches.delete(k); }));
+      return Promise.all(keys.map(function (k) {
+        // On garde le cache courant ET le cache des données (qui a sa propre vie).
+        if (k !== CACHE && k !== CACHE_DONNEES) return caches.delete(k);
+      }));
     }).then(function () { return self.clients.claim(); })
   );
 });
