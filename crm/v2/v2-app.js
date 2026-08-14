@@ -965,6 +965,9 @@
             rest.map(function (p) { return '<a class="v2-lch-mini" onclick="V2.go(\'' + p.k + '\')">' + ICO(p.ico, 15) + esc(p.t) + '</a>'; }).join('') +
             // Espace Groupements : listes des groupements + listings produits (renderGroupementsList via pharma?groupements)
             '<a class="v2-lch-mini" onclick="V2.go(\'pharma\',\'groupements\')">' + ICO('list', 15) + 'Groupements</a>' +
+            // Document privé : s'ouvre par une adresse signée valable 1 h, jamais servi
+            // par le dépôt public. Le fichier porte du CA réseau, il reste dans Supabase.
+            '<a class="v2-lch-mini" onclick="V2.ouvrirDocProtege(\'reforme2027\')">' + ICO('pilo', 15) + 'Réforme 2027</a>' +
             // Tournée prospect : vit désormais dans le Copilote (Organisateur de tournée sur la carte).
             '</div>';
         }
