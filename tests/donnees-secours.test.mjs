@@ -25,9 +25,13 @@ const ICI = dirname(fileURLToPath(import.meta.url));
 const SOURCE = readFileSync(join(ICI, '..', 'crm', 'v2', 'v2-boot.js'), 'utf8');
 
 /* `contenu` décide de ce que « exécuter le fichier » produit :
-   'plein'  = le fichier pose bien ses données sur window (cas normal)
-   'vide'   = la réponse était vide : le script s'exécute, mais ne pose RIEN
-              (c'est le cas de Will) */
+   'plein'   = le fichier pose bien ses données sur window (cas de wml, qui finit
+               par `try{window.WML_OFFICINES=WML_OFFICINES;…}`)
+   'lexical' = le fichier déclare `const SAGITTA_SHORTLIST = …` et RIEN d'autre :
+               une liaison lexicale, qui n'est PAS une propriété de window. C'est
+               `bridge()` qui l'y recopie. Cas réel de sagitta, bench, clients…
+   'vide'    = la réponse était vide : le script s'exécute, mais ne pose RIEN
+               (c'est le cas de Will) */
 function monter(contenu) {
   const journal = { scripts: 0 };
   const client = {
@@ -48,9 +52,12 @@ function monter(contenu) {
   const head = {
     appendChild: (s) => {
       journal.scripts++;
-      // Le fichier « s'exécute ». Plein → il pose ses données. Vide → il ne pose rien.
+      // Le fichier « s'exécute ».
       if (contenu === 'plein') { win.WML_OFFICINES = [{ id: '1' }]; win.WML_SALES = [['1', 6, 'Will', 'x', 1, 1, 1]]; }
-      s.onload && s.onload();          // onload se déclenche dans LES DEUX cas
+      // Liaison lexicale : visible du code du même contexte (donc de `bridge()`),
+      // mais absente de `window` — exactement ce que fait le vrai fichier sagitta.
+      if (contenu === 'lexical') { vm.runInContext('const SAGITTA_SHORTLIST = [1, 2, 3];', win); }
+      s.onload && s.onload();          // onload se déclenche dans TOUS les cas
     }
   };
   win.document = {
@@ -86,6 +93,18 @@ test('une reponse vide est signalee comme un echec, pas avalee', async () => {
   await V2.loadFiles(['wml']);
   assert.deepEqual([...V2.donneesProtegeesKO()], ['wml'],
     'l ecran doit pouvoir le dire');
+});
+
+test('un fichier qui declare `const X` sans le poser sur window est bien CHARGE', async () => {
+  // ⚠️ Regression du 14/08/2026 : la verification du temoin passait AVANT
+  // `bridge()`, qui est justement l'etape qui recopie ces `const` sur window.
+  // Resultat : sagitta etait declare en echec et se reteledchargeait a chaque
+  // ouverture, alors qu'il etait parfaitement charge.
+  const { V2 } = monter('lexical');
+  await V2.loadFiles(['sagitta']);
+  assert.equal(V2.dataLoaded('sagitta'), true,
+    'une liaison lexicale recopiee par bridge() compte comme chargee');
+  assert.deepEqual([...V2.donneesProtegeesKO()], []);
 });
 
 test('le temoin couvre aussi les autres fichiers proteges', async () => {
