@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Sérigraphie — DA 3 · Intégral Pharma</title>
+<title>Sérigraphie — Intégral Pharma · choix de typographie</title>
 <meta name="da-nom" content="Sérigraphie">
 <meta name="description" content="Direction artistique 3 pour le site vitrine d'Intégral Pharma : chaque écran est une affiche autonome, une idée, une composition franche.">
 
@@ -34,13 +34,36 @@
 
 <style>
 /* ─────────────────────────────────────────────────────────────────────────
+   0. POLICES — servies par nous, licence OFL, aucun appel extérieur
+   Archivo et Bricolage Grotesque sont variables : un seul fichier porte
+   toutes les graisses, donc un titre en 700 est un VRAI 700 et non un gras
+   simulé par le navigateur.
+   ───────────────────────────────────────────────────────────────────────── */
+@font-face{
+  font-family:"Archivo"; src:url("polices/archivo.woff2") format("woff2");
+  font-weight:100 900; font-stretch:100%; font-style:normal; font-display:swap;
+}
+@font-face{
+  font-family:"Bricolage Grotesque"; src:url("polices/bricolage.woff2") format("woff2");
+  font-weight:200 800; font-stretch:100%; font-style:normal; font-display:swap;
+}
+@font-face{
+  font-family:"Instrument Serif"; src:url("polices/instrument-serif.woff2") format("woff2");
+  font-weight:400; font-style:normal; font-display:swap;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
    1. SOCLE
    ───────────────────────────────────────────────────────────────────────── */
 *,*::before,*::after{ box-sizing:border-box }
 
 html{
-  scroll-snap-type:y mandatory;
+  scroll-snap-type:y proximity;
   scroll-padding-top:var(--barre);
+  /* `proximity` et non `mandatory` : l'accrochage AIDE à se caler sur une planche,
+     il ne happe plus la page. Avec `mandatory`, la moindre impulsion arrachait
+     l'écran d'un aplat clair à un aplat plein bleu en passant à toute vitesse par
+     un état à moitié blanc à moitié bleu — le clignotement signalé le 14/08/2026. */
   /* Pas de défilement doux posé sur le document : combiné à un accrochage obligatoire il
      se bat avec lui et la page revient en arrière toute seule. Il est demandé au clic. */
   -webkit-text-size-adjust:100%;
@@ -63,7 +86,9 @@ html{
   --marge:clamp(20px,5vw,84px);
   --pt:.82rem;               /* jamais moins : 13,1 px */
 
-  --dis:ui-sans-serif,-apple-system,"SF Pro Display","Helvetica Neue",Arial,sans-serif;
+  --pile:ui-sans-serif,-apple-system,"Helvetica Neue",Arial,sans-serif;
+  --dis:"Archivo",var(--pile);   /* le texte courant */
+  --tit:"Archivo",var(--pile);   /* les titres — change avec le jeu A/B/C */
   --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
   --sortie:cubic-bezier(.22,.8,.25,1);
 }
@@ -99,7 +124,7 @@ img,svg{ max-width:100% }
 }
 .aff-marque{
   display:flex; align-items:center; gap:10px; text-decoration:none; min-height:44px;
-  font:800 clamp(.95rem,1.5vw,1.05rem)/1 var(--dis); letter-spacing:-.02em;
+  font:700 clamp(.95rem,1.5vw,1.05rem)/1 var(--dis); letter-spacing:-.02em;
   white-space:nowrap;
 }
 .aff-marque i{ display:block; width:15px; height:15px; background:var(--bleu); flex:0 0 auto }
@@ -137,7 +162,7 @@ img,svg{ max-width:100% }
 .aff-panneau.ouvert{ display:flex }
 .aff-panneau a{
   display:flex; align-items:center; min-height:56px; text-decoration:none;
-  font:800 clamp(1.5rem,7vw,2.1rem)/1.1 var(--dis); letter-spacing:-.03em;
+  font:var(--tit-w) clamp(1.5rem,7vw,2.1rem)/1.1 var(--tit); letter-spacing:var(--tit-ls);
   border-bottom:1px solid var(--bord);
 }
 .aff-panneau a:last-child{ color:var(--bleu) }
@@ -172,7 +197,7 @@ img,svg{ max-width:100% }
 .aff-trame{
   position:absolute; z-index:1; pointer-events:none;
   width:min(46%,520px); height:min(58%,560px); right:0; bottom:0;
-  background:radial-gradient(circle, rgba(0,80,230,.20) 1.05px, rgba(0,80,230,0) 1.15px) 0 0/9px 9px;
+  background:radial-gradient(circle, rgba(0,80,230,.17) 1.7px, rgba(0,80,230,0) 2.1px) 0 0/13px 13px;
   /* la trame s'éteint vers l'intérieur de la planche : un aplat de points qui
      s'arrête net ferait une découpe rectangulaire visible */
   -webkit-mask-image:radial-gradient(105% 105% at 100% 100%, #000 22%, rgba(0,0,0,0) 74%);
@@ -181,7 +206,7 @@ img,svg{ max-width:100% }
 .aff-trame--gauche{ right:auto; left:0; top:0; bottom:auto;
   -webkit-mask-image:radial-gradient(105% 105% at 0% 0%, #000 22%, rgba(0,0,0,0) 74%);
   mask-image:radial-gradient(105% 105% at 0% 0%, #000 22%, rgba(0,0,0,0) 74%) }
-.aff-trame--orange{ background:radial-gradient(circle, rgba(243,154,27,.34) 1.05px, rgba(243,154,27,0) 1.15px) 0 0/9px 9px }
+.aff-trame--orange{ background:radial-gradient(circle, rgba(243,154,27,.30) 1.7px, rgba(243,154,27,0) 2.1px) 0 0/13px 13px }
 
 /* Aplats de couleur : le geste franc de l'affiche. */
 .aff-aplat{ position:absolute; z-index:1; background:var(--bleu); pointer-events:none }
@@ -199,8 +224,8 @@ img,svg{ max-width:100% }
 .aff-p--bleute .aff-lum{ background:radial-gradient(115% 80% at 88% -5%, #FFFFFF 0%, rgba(255,255,255,0) 58%) }
 
 .aff-p--bleu{ background:var(--bleu); border-bottom-color:var(--bleu) }
-.aff-p--bleu .aff-lum{ background:radial-gradient(95% 70% at 80% 0%, #2C79FF 0%, rgba(44,121,255,0) 60%) }
-.aff-p--bleu .aff-trame{ background:radial-gradient(circle, rgba(255,255,255,.34) 1.05px, rgba(255,255,255,0) 1.15px) 0 0/9px 9px }
+.aff-p--bleu .aff-lum{ background:radial-gradient(78% 58% at 82% -3%, #2A6DEE 0%, rgba(42,109,238,0) 64%) }
+.aff-p--bleu .aff-trame{ background:radial-gradient(circle, rgba(255,255,255,.28) 1.7px, rgba(255,255,255,0) 2.1px) 0 0/13px 13px }
 .aff-p--bleu,
 .aff-p--bleu .aff-t{ color:#fff }
 .aff-p--bleu .aff-sur{ color:#B9D2FF }
@@ -219,11 +244,11 @@ img,svg{ max-width:100% }
 .aff-sur span{ color:var(--gris) }
 
 .aff-t{
-  margin:0; font-family:var(--dis); font-weight:800;
-  font-size:clamp(1.92rem,6.4vw,4.6rem); line-height:.98; letter-spacing:-.038em;
+  margin:0; font-family:var(--tit); font-weight:var(--tit-w);
+  font-size:clamp(1.92rem,6.4vw,4.6rem); line-height:.98; letter-spacing:var(--tit-ls);
   text-wrap:balance; max-width:20ch;
 }
-.aff-t--geant{ font-size:clamp(2.3rem,8.6vw,7rem); line-height:.9; letter-spacing:-.05em; max-width:13ch }
+.aff-t--geant{ font-size:clamp(2.3rem,8.6vw,7rem); line-height:.9; letter-spacing:var(--tit-ls-g); max-width:13ch }
 .aff-t--large{ max-width:26ch }
 
 /* Le calage : une couche de couleur posée sous le texte, décalée puis rattrapée. */
@@ -292,7 +317,7 @@ img,svg{ max-width:100% }
 .aff-nombres div:last-child{ border-right:0 }
 .aff-nombres div + div{ padding-left:clamp(14px,2.2vw,30px) }
 .aff-nombres b{
-  display:block; font:800 clamp(2.6rem,7.4vw,5.6rem)/.86 var(--dis); letter-spacing:-.055em;
+  display:block; font:var(--tit-w) clamp(2.6rem,7.4vw,5.6rem)/.86 var(--tit); letter-spacing:var(--tit-ls-g);
   font-variant-numeric:tabular-nums; white-space:nowrap;
 }
 .aff-nombres b em{ font-style:normal; color:var(--orange) }
@@ -322,13 +347,13 @@ img,svg{ max-width:100% }
 .aff-gestes div:last-child{ border-right:0 }
 .aff-gestes b{ display:block; font:700 var(--pt)/1 var(--mono); letter-spacing:.16em; color:var(--bleu) }
 .aff-gestes h3{
-  margin:12px 0 10px; font:800 clamp(1.15rem,2.3vw,1.75rem)/1.05 var(--dis); letter-spacing:-.03em;
+  margin:12px 0 10px; font:var(--tit-w) clamp(1.15rem,2.3vw,1.75rem)/1.05 var(--tit); letter-spacing:var(--tit-ls);
 }
 .aff-gestes p{ margin:0; color:var(--gris); font-size:.98rem }
 
 /* — La centrale : chiffres évidés — */
 .aff-evide{
-  font:800 clamp(3.2rem,13vw,9.5rem)/.82 var(--dis); letter-spacing:-.055em;
+  font:var(--tit-w) clamp(3.2rem,13vw,9.5rem)/.82 var(--tit); letter-spacing:var(--tit-ls-g);
   color:var(--bleu);
   font-variant-numeric:tabular-nums; white-space:nowrap; display:block;
 }
@@ -349,7 +374,7 @@ img,svg{ max-width:100% }
 .aff-labos span{
   background:var(--papier); display:flex; align-items:center; justify-content:center;
   padding:clamp(20px,4vh,40px) 12px;
-  font:800 clamp(1.1rem,2.4vw,1.9rem)/1 var(--dis); letter-spacing:-.03em; text-align:center;
+  font:var(--tit-w) clamp(1.1rem,2.4vw,1.9rem)/1 var(--tit); letter-spacing:var(--tit-ls); text-align:center;
 }
 
 /* — Valeurs — */
@@ -357,7 +382,7 @@ img,svg{ max-width:100% }
   border-top:2px solid var(--encre) }
 .aff-valeurs div{ padding:clamp(18px,3vh,30px) 20px 0 0; border-right:1px solid var(--bord) }
 .aff-valeurs div:last-child{ border-right:0 }
-.aff-valeurs h3{ margin:0 0 12px; font:800 clamp(1.5rem,3.6vw,2.7rem)/1 var(--dis); letter-spacing:-.04em }
+.aff-valeurs h3{ margin:0 0 12px; font:var(--tit-w) clamp(1.5rem,3.6vw,2.7rem)/1 var(--tit); letter-spacing:var(--tit-ls) }
 .aff-valeurs h3 u{ text-decoration:none; color:var(--bleu) }
 .aff-valeurs p{ margin:0; color:var(--gris); font-size:1rem; max-width:30ch }
 
@@ -515,9 +540,51 @@ img,svg{ max-width:100% }
   .aff-repere i,.aff-repere b{ transition:none }
   .aff-reperes{ display:none }
 }
+
+/* Les trois jeux. Le sélecteur en bas à gauche pose t-a / t-b / t-c sur <html>. */
+html{ --tit-w:700; --tit-ls:-.022em; --tit-ls-g:-.032em }
+html.t-b{ --tit:"Bricolage Grotesque",var(--pile);
+          --tit-w:700; --tit-ls:-.028em; --tit-ls-g:-.04em }
+html.t-c{ --tit:"Instrument Serif",Georgia,"Times New Roman",serif;
+          --tit-w:400; --tit-ls:-.005em; --tit-ls-g:-.015em }
+
+/* ── Sélecteur de typographie — OUTIL DE CHOIX, à retirer du site final ── */
+.typo-choix{
+  position:fixed; left:16px; bottom:16px; z-index:120;
+  display:flex; align-items:center; gap:6px;
+  background:var(--blanc); border:1px solid var(--bord);
+  box-shadow:4px 4px 0 rgba(16,22,35,.12);
+  padding:7px 10px; font:600 12px/1 var(--mono); letter-spacing:.1em;
+}
+.typo-choix > span{ color:var(--gris); text-transform:uppercase }
+.typo-choix button{
+  width:30px; height:30px; cursor:pointer; padding:0;
+  background:var(--blanc); border:1px solid var(--bord); color:var(--encre);
+  font:700 13px/1 var(--mono);
+}
+.typo-choix button:hover{ border-color:var(--bleu); color:var(--bleu) }
+.typo-choix button.on{ background:var(--bleu); border-color:var(--bleu); color:#fff }
+.typo-choix em{
+  font:500 12px/1 var(--mono); font-style:normal; color:var(--gris);
+  letter-spacing:.04em; min-width:112px;
+}
+@media (max-width:640px){ .typo-choix em{ display:none } }
+
 </style>
 </head>
 <body>
+
+<!-- SÉLECTEUR DE TYPOGRAPHIE — outil de décision, pas un élément du site.
+     Will bascule A/B/C à l'écran et retient une lettre ; le jeu choisi devient
+     ensuite la typographie de la page et ce bloc disparaît. -->
+<div class="typo-choix" role="group" aria-label="Choix de la typographie">
+  <span>Typo</span>
+  <button type="button" data-t="a" class="on" aria-pressed="true">A</button>
+  <button type="button" data-t="b" aria-pressed="false">B</button>
+  <button type="button" data-t="c" aria-pressed="false">C</button>
+  <em id="typo-nom">Archivo</em>
+</div>
+
 
 <a class="aff-skip" href="#aff-2">Aller au contenu</a>
 
@@ -916,6 +983,33 @@ img,svg{ max-width:100% }
   } catch(e){
     desarmer();
   }
+})();
+</script>
+
+
+<script>
+/* Sélecteur de typographie — outil de décision. */
+(function(){
+  var boite = document.querySelector('.typo-choix');
+  if (!boite) return;
+  var nom = document.getElementById('typo-nom');
+  var noms = { a:'Archivo', b:'Bricolage Grot.', c:'Instrument Serif' };
+  boite.addEventListener('click', function(e){
+    var b = e.target.closest('button[data-t]');
+    if (!b) return;
+    var t = b.getAttribute('data-t');
+    /* On retire les trois classes avant de poser la bonne : sans ça, deux jeux
+       cohabitent sur <html> et c'est le dernier écrit dans la feuille qui gagne,
+       pas celui qu'on vient de cliquer. */
+    document.documentElement.classList.remove('t-a','t-b','t-c');
+    document.documentElement.classList.add('t-' + t);
+    boite.querySelectorAll('button[data-t]').forEach(function(x){
+      var actif = x === b;
+      x.classList.toggle('on', actif);
+      x.setAttribute('aria-pressed', actif ? 'true' : 'false');
+    });
+    if (nom) nom.textContent = noms[t] || '';
+  });
 })();
 </script>
 
