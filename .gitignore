@@ -130,31 +130,26 @@ reports/
 OFFILOG/
 CONCURRENTS/
 
-# ── Le fichier de ventes (13/08/2026) ───────────────────────────────
-# `wml-officines-data.js` porte 691 officines CLIENTES avec leur chiffre
-# d'affaires, le commercial qui les suit, et 437 848 lignes de ventes avec
-# les prix nets. Autrement dit tout le sell-in d'Intégral. L'audit du même
-# jour l'a trouvé téléchargeable par n'importe qui, sans mot de passe
-# (HTTP 200 sur 27 Mo, mesuré).
+# ── Les fichiers de données (15/08/2026) ────────────────────────────
+# Le 13/08 j'ai sorti `wml-officines-data.js`, `establishments-aggregate.js`
+# et `sagitta-shortlist-data.js` du dépôt, vers un espace Supabase fermé.
+# Intention correcte, effet non mesuré : ces fichiers étaient servis par le
+# service worker et RESTAIENT sur l'appareil. En les déplaçant, l'app s'est
+# mise à retélécharger 17 Mo À CHAQUE OUVERTURE — ce qui passe sur un
+# ordinateur et pas sur un iPhone. JARVIS est devenu inutilisable en mobilité
+# pendant deux jours.
 #
-# Il vit maintenant dans l'espace Supabase FERMÉ `donnees-protegees` :
-# l'app en demande une adresse signée valable une heure, délivrée seulement
-# à une personne connectée. Le fichier reste sur ce Mac, `generate_wml_v2.py`
-# continue de le produire — mais il ne repart plus dans le dépôt.
+# Will a tranché le 15/08, en connaissance de cause : « oui refait comme avant ».
+# Les fichiers reviennent donc dans le dépôt. Il sait que le CA par officine
+# redevient téléchargeable publiquement — et que, de toute façon, il l'était
+# resté : effacer un fichier d'un dépôt public ne l'ôte pas de son historique.
 #
-# ⚠️ Après l'avoir régénéré, le redéposer :
-#   voir la procédure dans ~/.claude/ (mémoire « données protégées JARVIS »).
-crm/v2/wml-officines-data.js
-
-# Même motif, même traitement (13/08/2026) :
-#   establishments-aggregate.js — agrégats de CA par établissement Intégral
-#   ops-aggregate.js            — 5 935 produits, 16 232 476 € de CA OPS Nantes
-#   sagitta-shortlist-data.js   — porte des pourcentages de remise
-# Les deux premiers passent par l'espace fermé ; `ops-aggregate.js` n'est
-# chargé par AUCUNE app (vérifié) : il sort simplement du dépôt.
-crm/establishments-aggregate.js
+# ⚠️ NE PAS « re-sécuriser » ces fichiers sans traiter d'abord leur POIDS
+# (13,4 Mo de ventes sur une seule ligne + 3,6 Mo de logos en base64 dans le
+# fichier de ventes). Reprotéger sans découper reproduirait la panne.
+#
+# `ops-aggregate.js` reste dehors : il n'est chargé par AUCUNE app (vérifié).
 crm/ops-aggregate.js
-crm/sagitta-shortlist-data.js
 
 # Aucun classeur, aucun PDF ne doit plus partir dans un dépôt PUBLIC.
 # Le mot de passe Offilog est resté lisible en ligne pendant trois mois

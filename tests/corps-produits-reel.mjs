@@ -22,6 +22,12 @@ function charger(...fichiers) {
     '\n;globalThis.__X = {' +
     '  WML_OFFICINES: typeof WML_OFFICINES !== "undefined" ? WML_OFFICINES : window.WML_OFFICINES,' +
     '  WML_SALES: typeof WML_SALES !== "undefined" ? WML_SALES : window.WML_SALES,' +
+    // Dictionnaires du format compacte (13/08/2026) — sans eux, chaque vente
+    // porte un NUMERO DE RANG au lieu d'un code, et plus aucune ne retrouve
+    // son officine ni son produit.
+    '  D_OFF: typeof WML_D_OFFICINES !== "undefined" ? WML_D_OFFICINES : window.WML_D_OFFICINES,' +
+    '  D_COM: typeof WML_D_COMMERCIAUX !== "undefined" ? WML_D_COMMERCIAUX : window.WML_D_COMMERCIAUX,' +
+    '  D_PRO: typeof WML_D_PRODUITS !== "undefined" ? WML_D_PRODUITS : window.WML_D_PRODUITS,' +
     '  STOCK_IP: window.STOCK_IP, PROD_STATS: window.PROD_STATS };';
   vm.runInContext(src, sb);
   return sb.__X;
@@ -33,11 +39,19 @@ const D = charger(
   '../crm/v2/prod-stats-data.js'
 );
 const OFFICINES = D.WML_OFFICINES;
-const SALES = D.WML_SALES;
 const STOCK = D.STOCK_IP.data;
 const PS = D.PROD_STATS;
 
-// WML_SALES est au format compact : [phId, mois, commercial, cip13, qte, puNet, mntNetHt]
+// ⚠️ Depuis le 13/08/2026 le fichier est COMPACTE : les trois colonnes repetees
+// 437 848 fois — officine, commercial, produit — ne sont plus ecrites en clair
+// mais remplacees par un NUMERO DE RANG dans trois listes livrees en tete.
+// On refait ici exactement ce que fait `V2.loadData()`. Sans ce decodage, aucune
+// vente ne retrouve son officine : le test voyait 691 officines a zero produit.
+const SALES = (D.D_OFF && D.D_COM && D.D_PRO && D.WML_SALES.length && typeof D.WML_SALES[0][0] === 'number')
+  ? D.WML_SALES.map((s) => [D.D_OFF[s[0]], s[1], D.D_COM[s[2]], D.D_PRO[s[3]], s[4], s[5], s[6]])
+  : D.WML_SALES;
+
+// format tableau : [phId, mois, commercial, cip13, qte, puNet, mntNetHt]
 const VENTES = SALES.map((s) => ({
   pharmacyId: String(s[0]), artCode: s[3], qte: s[4] || 0, mntNetHt: s[6] || 0,
 }));

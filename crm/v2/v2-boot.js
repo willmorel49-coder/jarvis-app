@@ -291,25 +291,26 @@
     wml: 'v2/wml-officines-data.js',
   };
 
-  // ── Les fichiers qui ne doivent PLUS être servis en clair ───────────
-  // `wml-officines-data.js` contient 691 officines clientes avec leur chiffre
-  // d'affaires, le commercial qui les suit, et 437 848 lignes de ventes avec
-  // les prix nets. Le dépôt est public : n'importe qui pouvait le télécharger
-  // sans mot de passe (constaté le 13/08/2026, HTTP 200 sur 27 Mo).
+  // ── Les fichiers de données reviennent dans le dépôt (15/08/2026) ────
+  // Le 13/08, `wml-officines-data.js`, `establishments-aggregate.js` et
+  // `sagitta-shortlist-data.js` sont partis dans un espace Supabase fermé,
+  // chargés par adresse signée. Intention correcte, effet non mesuré : ces
+  // fichiers étaient servis par le service worker et RESTAIENT sur l'appareil.
+  // En les déplaçant, l'app s'est mise à retélécharger 17 Mo À CHAQUE
+  // OUVERTURE. Sur l'iPhone de Will, ça ne passait pas : app inutilisable
+  // deux jours, et — avant qu'on s'en aperçoive — de FAUX chiffres affichés.
   //
-  // Il est désormais déposé dans un espace Supabase FERMÉ. On demande une
-  // adresse signée, valable une heure, et seulement si la personne est
-  // connectée. Sans session, il n'y a pas d'adresse — donc pas de fichier.
-  // ⚠️ N'ajouter ici QUE des fichiers chargés par ce chargeur. Un fichier
-  // encore appelé par une balise <script> ailleurs (ancien CRM, opso/,
-  // essentiels-pharma/) casserait cette app-là au moment où on le retire du
-  // dépôt. Vérifier avec : git grep 'script src=.*<nom-du-fichier>'
-  var PROTEGES = {
-    wml: 'wml-officines-data.js',              // 691 officines · CA · 437 848 ventes
-    establishments: 'establishments-aggregate.js', // agrégats par établissement IP
-    sagitta: 'sagitta-shortlist-data.js',      // porte des % de remise
-  };
-  var SEAU_PROTEGE = 'donnees-protegees';
+  // Will a tranché le 15/08 en connaissance de cause (« oui refait comme
+  // avant ») : les fichiers reviennent dans le dépôt et repassent par le
+  // service worker, comme tous les autres. `PROTEGES` reste, VIDE, parce que
+  // tout le mécanisme de garde autour (témoin de chargement, signalement des
+  // échecs) sert encore et ne dépend pas de Supabase.
+  //
+  // ⚠️ NE PAS reprotéger ces fichiers sans traiter d'abord leur POIDS :
+  // 13,4 Mo de ventes sur une seule ligne + 3,6 Mo de logos en base64 logés
+  // dans le fichier de ventes. Reprotéger sans découper referait la panne.
+  var PROTEGES = {};
+  var SEAU_PROTEGE = 'donnees-protegees';   // sert encore aux DOCUMENTS privés
 
   // Fichiers protégés dont l'adresse a été refusée pour de bon. Lu par l'écran
   // pour PRÉVENIR au lieu d'afficher des zéros. Vidé dès qu'un essai réussit.
@@ -501,57 +502,6 @@
     try { if (typeof HP_AGGREGATE !== 'undefined') window.HP_AGGREGATE = HP_AGGREGATE; } catch (e) {}
     V2.applyPPHT();
   }
-  // ── Le rangement local des fichiers protégés ────────────────────────────
-  // Nom du cache et jeton de données : ils doivent rester alignés avec `sw.js`
-  // (`CACHE_DONNEES`). Bumper les DEUX quand les données changent — c'est ce qui
-  // fait re-télécharger tout le monde.
-  var CACHE_DONNEES = 'jarvis-donnees-20260813s';
-  var DONNEES_VER = '20260813s';
-
-  // Adresse LOCALE, stable, sous notre propre domaine : c'est elle qu'on range
-  // dans le cache, et c'est elle que la balise <script> demande. Le fichier
-  // n'existe pas sur le serveur — seul le cache peut y répondre.
-  function adresseLocale(cle) {
-    return (window.V2_DATA_BASE || '../') + 'donnees/' + PROTEGES[cle] + '?d=' + DONNEES_VER;
-  }
-
-  // ⚠️ L'adresse locale n'existe PAS sur le serveur : seul le service worker peut
-  // y répondre, depuis son cache. S'il ne contrôle pas la page (première visite,
-  // navigation privée, service worker désactivé), la demander donnerait un 404.
-  // On ne s'en sert donc que sous son contrôle.
-  function sousControleSW() {
-    try { return !!(navigator.serviceWorker && navigator.serviceWorker.controller); }
-    catch (e) { return false; }
-  }
-
-  function essayerLocal(url) {
-    try {
-      if (!window.caches || !sousControleSW()) return Promise.resolve(false);
-      return caches.open(CACHE_DONNEES)
-        .then(function (c) { return c.match(url); })
-        .then(function (r) { return !!(r && r.ok); })
-        .catch(function () { return false; });
-    } catch (e) { return Promise.resolve(false); }
-  }
-
-  // Télécharge une fois depuis l'adresse signée et RANGE le résultat sous
-  // l'adresse locale. On passe la réponse directement au cache, sans la
-  // transformer en texte : c'est ce qui évite d'occuper 17 Mo de plus en
-  // mémoire au moment le plus critique, sur un téléphone.
-  function ranger(cle, urlSignee) {
-    try {
-      if (!window.caches) return Promise.resolve(false);
-      return fetch(urlSignee)
-        .then(function (rep) {
-          if (!rep || !rep.ok) return false;
-          return caches.open(CACHE_DONNEES).then(function (c) {
-            return c.put(adresseLocale(cle), rep).then(function () { return true; });
-          });
-        })
-        .catch(function () { return false; });
-    } catch (e) { return Promise.resolve(false); }
-  }
-
   V2.loadFiles = function (keys) {
     // chemins relatifs au dossier parent crm/ (les data files sont dans crm/)
     // Jeton PROPRE aux fichiers de données, distinct du ?v= global.
@@ -567,48 +517,22 @@
       if (loaded[src]) return Promise.resolve();
       if (pending[src]) return pending[src];
       var p = new Promise(function (resolve) {
-        // Un fichier protégé n'a pas d'adresse fixe : on va la demander, et
-        // elle n'est délivrée qu'à une personne connectée. Le reste du
-        // chargement est identique — même balise, même gestion d'échec.
+        // Tous les fichiers de données vivent de nouveau dans le dépôt et
+        // passent par le service worker : une seule adresse, versionnée, mise
+        // en cache et servie depuis l'appareil aux ouvertures suivantes.
+        // `PROTEGES` est vide depuis le 15/08 — le détour par l'adresse signée
+        // n'existe plus que pour les DOCUMENTS privés (V2.ouvrirDocProtege).
         if (!PROTEGES[k]) { poser(src + V, resolve); return; }
 
-        // ── Fichier protégé : la mémoire du téléphone d'abord ───────────────
-        // ⚠️ 14/08/2026 — Will : « ça marche plus, c'était l'app parfaite avant ».
-        // Avant le 13/08, ce fichier était servi par le service worker : il
-        // restait sur l'appareil. En le passant en espace privé, je lui ai retiré
-        // ce cache sans le remplacer — 17 Mo retéléchargés à CHAQUE ouverture,
-        // ce qui ne passe pas toujours sur un téléphone.
-        //
-        // On rétablit donc l'ordre d'avant : on tente d'abord une adresse LOCALE
-        // (que le service worker sert depuis son cache) ; on ne va demander
-        // l'adresse signée que si l'appareil ne l'a pas encore.
-        var local = adresseLocale(k);
-        essayerLocal(local).then(function (ok) {
-          // Le rangement peut être là mais illisible (entrée abîmée, service
-          // worker arrêté en cours de route). Dans ce cas on ne renonce pas :
-          // on repart sur le téléchargement, comme s'il n'avait rien été rangé.
-          if (ok) { poser(local, resolve, telechargerEtPoser); return; }
-          telechargerEtPoser();
-
-          function telechargerEtPoser() {
-            adresseProtegee(k).then(function (url) {
-              if (!url) {
-                // adresseProtegee a déjà réessayé 3 fois et noté l'échec dans
-                // V2.protegeEchec — l'écran doit le DIRE, pas afficher des zéros.
-                delete pending[src];
-                resolve();
-                return;
-              }
-              // On télécharge une fois, on RANGE, puis on lit depuis le rangement :
-              // les ouvertures suivantes ne coûteront plus rien.
-              ranger(k, url).then(function (range) {
-                // Rangé ET sous contrôle du service worker → on lit le rangement
-                // (déjà sur l'appareil, rien ne repart sur le réseau). Sinon on
-                // lit l'adresse signée, comme avant.
-                poser(range && sousControleSW() ? local : url, resolve);
-              });
-            });
+        adresseProtegee(k).then(function (url) {
+          if (!url) {
+            // adresseProtegee a déjà réessayé 3 fois et noté l'échec dans
+            // V2.protegeEchec — l'écran doit le DIRE, pas afficher des zéros.
+            delete pending[src];
+            resolve();
+            return;
           }
+          poser(url, resolve);
         });
       });
       pending[src] = p;
@@ -641,7 +565,7 @@
           if (TEMOIN[k] && typeof window[TEMOIN[k]] === 'undefined') {
             console.warn('[V2] ' + src + ' chargé mais ' + TEMOIN[k] + ' absent — réponse vide ou tronquée');
             if (secours) { secours(); return; }
-            if (PROTEGES[k]) V2.protegeEchec[k] = true;
+            V2.protegeEchec[k] = true;   // tout fichier de donnees, plus seulement les proteges
             delete pending[src];
             resolve();
             return;
@@ -653,7 +577,7 @@
           // Adresse obtenue mais téléchargement échoué (réseau coupé en cours,
           // adresse signée périmée) : pour un fichier protégé, c'est le même
           // résultat qu'un refus — l'écran doit le dire.
-          if (PROTEGES[k]) V2.protegeEchec[k] = true;
+          V2.protegeEchec[k] = true;   // tout fichier de donnees, plus seulement les proteges
           // On résout SANS marquer le fichier comme chargé : c'est à l'appelant
           // de constater l'échec (V2.dataLoaded reste faux).
           // ⚠️ Et on RETIRE la promesse en attente. Sans ça, une nouvelle
