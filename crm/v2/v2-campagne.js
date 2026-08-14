@@ -170,6 +170,14 @@
           return String(x && x.cip != null ? x.cip : x);   // la fonction renvoie des CIP bruts
         });
         ETAT.tous = recenser();
+        // Arrivée depuis le planning : la liste est déjà faite, on la coche.
+        // Ici et pas ailleurs — « viser » remet la sélection à zéro quand on
+        // change de commercial, et cocher avant serait sans effet.
+        if (V2.campagnePreselection && V2.campagnePreselection.length) {
+          ETAT.choisis = {};
+          V2.campagnePreselection.forEach(function (cip) { ETAT.choisis[String(cip)] = 1; });
+          V2.campagnePreselection = null;
+        }
         V2.campagne.rafraichir();
       }).catch(function () {
         if (z) z.innerHTML = '<p class="v2-camp-note">Chargement impossible. Réessaie.</p>';
@@ -413,6 +421,15 @@
       // L'aperçu s'affiche dès l'ouverture : on doit voir le mail AVANT de
       // préparer une liste, pas après avoir tout choisi.
       V2.campagne.apercu();
+
+      // Arrivée depuis le planning, la liste déjà choisie : on la charge tout
+      // de suite. Ailleurs le bouton « Voir les officines » reste manuel — la
+      // liste coûte 2,8 Mo — mais ici le commercial vient justement de
+      // demander ces officines-là, le laisser devant un écran vide n'aurait
+      // aucun sens.
+      if (V2.campagnePreselection && V2.campagnePreselection.length) {
+        V2.campagne.chercher();
+      }
     }
   };
 })();

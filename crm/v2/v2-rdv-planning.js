@@ -101,6 +101,62 @@
     return { porte: R.indexer(porte), nat: R.indexer(nat), idsPorte: idsPorte };
   }
 
+  // ── Qui reste-t-il à contacter ? Tout le portefeuille, moins :
+  //   · celles qui ont déjà un RDV à venir (JARVIS ou reconnu dans l'agenda),
+  //   · celles qui ont demandé à ne plus être sollicitées,
+  //   · celles vues il y a moins de REPOS_JOURS — le passé de l'agenda est la
+  //     SEULE source de cette information, elle n'existe nulle part ailleurs.
+  var REPOS_JOURS = 60;
+  var LOT_MAX = 25;          // ce qu'on pré-coche dans une campagne
+
+  // ⚠️ Le CA se calcule en UN passage sur les ventes, pas une fois par
+  // officine : V2.rdvCA balaie les 437 000 lignes à chaque appel, et 691
+  // appels figeraient l'écran plusieurs secondes sur un téléphone.
+  function caParOfficine() {
+    var m = {}, s = V2.sales || [];
+    for (var i = 0; i < s.length; i++) {
+      var k = String(s[i].pharmacyId);
+      m[k] = (m[k] || 0) + (s[i].mntNetHt || 0);
+    }
+    return m;
+  }
+
+  function aContacter(rdvs, reconnus, opposes) {
+    var pris = {}, i;
+    for (i = 0; i < rdvs.length; i++) if (rdvs[i].cip) pris[String(rdvs[i].cip)] = 1;
+    for (i = 0; i < reconnus.length; i++) pris[String(reconnus[i].cip)] = 1;
+    var nonSollicite = {};
+    for (i = 0; i < (opposes || []).length; i++) nonSollicite[String(opposes[i])] = 1;
+
+    var limite = isoPlus(-REPOS_JOURS);   // setDate accepte les jours négatifs
+    var vues = V2.planningDerniereVisite || {};
+    var ca = caParOfficine();
+    // ⚠️ Ses officines à LUI. Le fichier porte celles de toute l'équipe :
+    // sans ce filtre, l'écran proposait d'écrire aux clients de Karine.
+    // Même règle que l'écran Campagne, qui refuse de recenser sans commercial.
+    var moi = (V2.user && V2.user.commercial) ? String(V2.user.commercial) : '';
+    var out = [], liste = V2.pharmacies || [];
+    for (i = 0; i < liste.length; i++) {
+      var cip = String(liste[i].id);
+      if (pris[cip] || nonSollicite[cip]) continue;
+      if (moi && (liste[i].comms || []).indexOf(moi) === -1) continue;
+      var vue = vues[cip] || null;
+      if (vue && vue > limite) continue;
+      out.push({ cip: cip, nom: liste[i].name || '', ville: liste[i].ville || '',
+                 ca: ca[cip] || 0, vue: vue });
+    }
+    out.sort(function (a, b) { return b.ca - a.ca; });
+    return out;
+  }
+
+  function depuis(iso) {
+    if (!iso) return 'jamais vue dans ton agenda';
+    var j = Math.round((Date.now() - new Date(iso + 'T12:00:00').getTime()) / 86400000);
+    if (j < 31) return 'vue il y a ' + j + ' j';
+    if (j < 365) return 'vue il y a ' + Math.round(j / 30) + ' mois';
+    return 'vue il y a plus d’un an';
+  }
+
   function ensureCss() {
     if (document.getElementById('v2-agp-css')) return;
     var s = document.createElement('style'); s.id = 'v2-agp-css';
@@ -148,6 +204,7 @@
       '.agp-a{width:100%;display:flex;flex-wrap:wrap;gap:10px;font-size:13px}',
       '.agp-a a{color:var(--ip-blue);font-weight:700;text-decoration:none;min-height:44px;display:flex;align-items:center}',
       '.agp-rien{color:var(--muted);font-size:13.5px;margin:9px 0 0}',
+      '.agp-vide-jour{margin:11px 0 0;padding:11px 0 0;border-top:1px solid var(--line-2,#EEF1F6)}',
       /* une officine reconnue dans l'agenda, et son étiquette */
       '.agp-l.agp-doute{border-left:3px solid #C7791A;padding-left:9px}',
       '.agp-eti{font-size:11px;font-weight:800;border-radius:6px;padding:2px 7px;',
@@ -220,6 +277,15 @@
 
     // « C'est bien elle » sur une ligne douteuse : le rattachement devient
     // définitif, et la ligne ne redemandera plus rien.
+    // Bascule vers la Campagne existante avec la liste deja cochee. On ne
+    // reecrit pas l'envoi : JARVIS prepare les mails, le commercial relit et
+    // envoie depuis SA boite, et coche « envoye » lui-meme.
+    contacter: function () {
+      V2.campagnePreselection = (V2.planningAContacter || []).slice(0, LOT_MAX)
+        .map(function (x) { return x.cip; });
+      V2.go('campagne');
+    },
+
     confirmer: function (cle, cip) {
       if (!V2.rdvAlias) return;
       V2.rdvAlias.poser(cle, cip).then(function () { V2.go('rdvplanning'); });
@@ -380,6 +446,28 @@
 
     lignes.sort(function (a, b) { return a.deb - b.deb; });
 
+    // Ce que le commercial vient chercher sur une journée vide : à qui écrire.
+    // Le lien de prise de RDV laisse le pharmacien choisir son créneau
+    // lui-même — c'est l'écran Campagne, déjà en place, qu'on ne réécrit pas.
+    // ⚠️ UNE SEULE FOIS, sur la première journée libre. Le mettre sur chacune
+    // en affichait dix-sept identiques, ce qui laissait croire à une liste
+    // par journée alors que c'est la même — du bruit qui cache le planning.
+    var appel = '';
+    var aFaire = V2.planningAContacter || [];
+    if (!mesRdv.length && !recoJour.length && libre >= 120 && aFaire.length && !V2._agpAppelPose) {
+      V2._agpAppelPose = 1;
+      var apercu = aFaire.slice(0, 3).map(function (o) {
+        return esc(o.nom) + ' <span class="agp-sm">(' + esc(depuis(o.vue)) + ')</span>';
+      }).join(' · ');
+      appel = '<div class="agp-vide-jour">' +
+        '<p class="agp-sm" style="margin:0 0 8px">Première journée libre. ' +
+        'Tes plus gros clients sans rendez-vous : ' + apercu + '…</p>' +
+        '<button class="v2-btn v2-btn-primary" style="min-height:44px" onclick="V2.rdvPlanning.contacter()">' +
+        'Proposer des créneaux à ' + Math.min(aFaire.length, LOT_MAX) + ' officines</button>' +
+        '<p class="agp-sm" style="margin:8px 0 0">' + aFaire.length +
+        ' officines à toi n’ont aucun rendez-vous prévu.</p></div>';
+    }
+
     return '<div class="agp-jour"><div class="agp-jt"><b>' + esc(libelle(iso)) + '</b>' +
       (iso === auj ? ' <span class="agp-auj">aujourd’hui</span>' : '') +
       '<span class="agp-resume">' + esc(resume) + '</span></div>' +
@@ -387,6 +475,7 @@
       '<div class="agp-ech"><span>8h</span><span>12h</span><span>15h</span><span>19h</span></div>' +
       (lignes.length ? lignes.map(function (l) { return l.html; }).join('')
                      : '<p class="agp-rien">Journée entièrement libre.</p>') +
+      appel +
       '</div>';
   }
 
@@ -424,7 +513,14 @@
           (V2.rdvAgenda ? V2.rdvAgenda.charger() : Promise.resolve(null)),
           // Les titres : ils arrivent dans cette réponse et n'y survivent pas.
           appelerAgenda({ action: 'mes_evenements' }),
-          (V2.rdvAlias ? V2.rdvAlias.charger() : Promise.resolve({}))
+          (V2.rdvAlias ? V2.rdvAlias.charger() : Promise.resolve({})),
+          // Liste d'opposition COMMUNE a l'equipe : une officine qui dit stop
+          // a Karine ne doit plus recevoir les mails de Morgane non plus.
+          c.rpc('rdv_opposes').then(function (o) {
+            return ((o && o.data) || []).map(function (x) {
+              return String(x && x.cip != null ? x.cip : x);
+            });
+          }).catch(function () { return []; })
         ]);
       }).then(function (r) {
         var st = r[0], dispo = st.dispo, blocages = st.blocages || [];
@@ -480,6 +576,9 @@
               '<button class="v2-btn" id="agp-annu" onclick="V2.rdvPlanning.annuaire()">' +
               'Chercher dans l’annuaire (2,8 Mo)</button></div>'
           : '';
+
+        V2.planningAContacter = aContacter(rdvs, reconnus, r[6] || []);
+        V2._agpAppelPose = 0;   // un seul bloc d'appel par rendu
 
         var jours = '';
         for (var i = 0; i < JOURS_AFFICHES; i++) {
