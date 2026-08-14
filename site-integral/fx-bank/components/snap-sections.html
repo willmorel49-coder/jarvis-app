@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FX-BANK · Snap Sections</title>
+<!--
+/* FX-BANK · SNAP SECTIONS
+   QUOI : Chaque section occupe l'écran entier et le défilement s'y accroche — accrochage
+          natif du navigateur (scroll-snap), aucun script ne détourne la molette. Un
+          indicateur de position discret sur le côté dit où on en est, et y emmène au clic.
+          C'est une architecture de page complète, pas un bloc : elle décide de tout l'ordre.
+   QUAND : Un récit à cinq temps où chaque idée doit être vue seule, sans voisine à l'écran.
+           À éviter dès que la page contient des tableaux, des formulaires longs ou des
+           textes qui dépassent une hauteur d'écran : l'accrochage devient une prison.
+   DEPENDANCES : aucune. Aucune image, aucune police, aucun script distant.
+                 Les visuels de démonstration sont des SVG écrits dans le fichier.
+   SAFARI : conforme. Aucun flou, aucun verre dépoli, aucun dégradé découpé dans du texte.
+            Uniquement transform et opacity. `100svh` évite le saut de la barre d'adresse iOS.
+            Mouvement réduit = sections empilées à hauteur libre, aucun accrochage.
+   SORTIE : la dernière section ne piège personne. Le pied de page porte un point d'ancrage
+            aligné sur la FIN, donc atteignable même en accrochage obligatoire, et il n'a
+            pas de hauteur imposée.
+   HAUTEUR : sous 700 px de haut d'écran — un téléphone en paysage, un petit portable —
+             l'accrochage se coupe tout seul et la page redevient un défilement normal.
+   FILET : la section active se décide sur la position réelle relue à chaque défilement,
+           jamais sur une notification unique. Aucun texte transparent au repos.
+   COPIER : le bloc entre FX:COPY:START et FX:COPY:END */
+-->
+<style>
+  body{margin:0;background:#FBFCFE;color:#0E1626;font:16px/1.6 ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif}
+  .demo-note{position:fixed;left:16px;bottom:16px;z-index:60;font-size:12px;letter-spacing:.1em;
+    text-transform:uppercase;color:#8B96AC;background:#FBFCFE;padding:8px 12px;border:1px solid #DCE5F4}
+
+  /* FX:COPY:START */
+  /* L'accrochage se déclare sur le document : cette page EST l'architecture, elle ne
+     cohabite pas avec un autre défilement. */
+  html{
+    scroll-snap-type:y mandatory;
+    scroll-padding-top:0;
+    /* Pas de `scroll-behavior:smooth` ici : combiné à un accrochage obligatoire, il se
+       bat avec lui à chaque saut de position et la page revient en arrière toute seule.
+       Le défilement doux est demandé au coup par coup dans le script, au clic seulement. */
+  }
+
+  .fx-snap{
+    --fx-snap-bleu:#0050E6;
+    --fx-snap-orange:#F39A1B;      /* accent rare : un seul emploi sur toute la page */
+    --fx-snap-encre:#0E1626;
+    --fx-snap-gris:#54607A;
+    --fx-snap-bord:#DCE5F4;
+    --fx-snap-fond:#FBFCFE;
+    --fx-snap-marge:clamp(20px,5vw,80px);
+    color:var(--fx-snap-encre);
+  }
+
+  .fx-snap__section{
+    min-height:100vh; min-height:100svh;
+    scroll-snap-align:start;
+    scroll-snap-stop:normal;          /* on peut traverser deux écrans d'un geste franc */
+    display:grid; align-content:center;
+    padding:96px var(--fx-snap-marge) 110px;
+    box-sizing:border-box;
+    background:var(--fx-snap-fond);
+    border-bottom:1px solid var(--fx-snap-bord);
+  }
+  .fx-snap__inner{ width:100%; max-width:1120px; margin:0 auto }
+
+  /* Rythme des fonds : clair partout, un seul écran plein bleu pour marquer le sommet. */
+  .fx-snap__section--pale{ background:#F2F7FE }
+  .fx-snap__section--bleu{ background:var(--fx-snap-bleu); border-bottom-color:var(--fx-snap-bleu) }
+  .fx-snap__section--bleu .fx-snap__sur{ color:#BFD6FF }
+  .fx-snap__section--bleu .fx-snap__t,
+  .fx-snap__section--bleu .fx-snap__chiffre{ color:#FFFFFF }
+  /* Le sous-titre du chiffre a sa propre couleur : sans cette ligne il reste gris
+     ardoise sur fond bleu, donc illisible. */
+  .fx-snap__section--bleu .fx-snap__chiffre small{ color:#CFE0FF }
+  .fx-snap__section--bleu .fx-snap__p{ color:#DCE8FF }
+  .fx-snap__section--bleu .fx-snap__carte{ background:rgba(255,255,255,.10); border-color:rgba(255,255,255,.28) }
+  .fx-snap__section--bleu .fx-snap__carte h3{ color:#FFFFFF }
+  .fx-snap__section--bleu .fx-snap__carte p{ color:#DCE8FF }
+
+  .fx-snap__sur{
+    margin:0 0 18px; font-size:.78rem; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--fx-snap-bleu); font-weight:650;
+  }
+  .fx-snap__t{
+    margin:0 0 20px; font-size:clamp(2rem,6vw,4.2rem); line-height:1.05;
+    letter-spacing:-.028em; font-weight:660; text-wrap:balance; max-width:18ch;
+  }
+  .fx-snap__t em{ font-style:normal; color:var(--fx-snap-bleu) }
+  .fx-snap__p{
+    margin:0 0 14px; max-width:56ch; color:var(--fx-snap-gris);
+    font-size:clamp(1rem,1.7vw,1.18rem);
+  }
+  .fx-snap__p:last-child{ margin-bottom:0 }
+
+  .fx-snap__duo{ display:grid; grid-template-columns:1.05fr .95fr; gap:clamp(28px,5vw,72px); align-items:center }
+
+  .fx-snap__cartes{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:38px }
+  .fx-snap__carte{
+    border:1px solid var(--fx-snap-bord); background:#fff; padding:20px 20px 22px;
+  }
+  .fx-snap__carte h3{
+    margin:0 0 6px; font-size:.76rem; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--fx-snap-bleu); font-weight:650;
+  }
+  .fx-snap__carte p{ margin:0; color:var(--fx-snap-gris); font-size:.95rem }
+
+  .fx-snap__chiffre{
+    display:block; font-variant-numeric:tabular-nums; line-height:1;
+    font-size:clamp(3.4rem,11vw,7.5rem); font-weight:660; letter-spacing:-.04em;
+    color:var(--fx-snap-encre);
+  }
+  .fx-snap__chiffre small{ font-size:.19em; letter-spacing:.14em; text-transform:uppercase;
+    display:block; margin-top:14px; color:var(--fx-snap-gris); font-weight:650;
+    line-height:1.4; max-width:22ch }
+
+  /* Visuels de démonstration : SVG écrits dans le fichier, zéro requête réseau. */
+  .fx-snap__visuel{
+    height:clamp(200px,34vh,360px); border:1px solid var(--fx-snap-bord); background:#fff;
+    background-repeat:no-repeat; background-position:center; background-size:cover;
+  }
+  .fx-snap__visuel--carte{
+    background-image:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 620 420'><rect width='620' height='420' fill='%23F4F8FE'/><g stroke='%23DCE5F4' stroke-width='1.4'><path d='M0 70h620M0 140h620M0 210h620M0 280h620M0 350h620'/><path d='M78 0v420M156 0v420M234 0v420M312 0v420M390 0v420M468 0v420M546 0v420'/></g><g stroke='%230050E6' stroke-width='1.8' opacity='.4' fill='none'><path d='M150 120 L300 200'/><path d='M300 200 L246 316'/><path d='M300 200 L430 130'/><path d='M300 200 L470 262'/><path d='M300 200 L188 236'/><path d='M300 200 L360 330'/></g><g fill='%230050E6'><circle cx='150' cy='120' r='9'/><circle cx='246' cy='316' r='9'/><circle cx='430' cy='130' r='9'/><circle cx='470' cy='262' r='9'/><circle cx='188' cy='236' r='9'/><circle cx='360' cy='330' r='9'/></g><circle cx='300' cy='200' r='19' fill='%23FFFFFF' stroke='%230050E6' stroke-width='5'/></svg>");
+  }
+  .fx-snap__visuel--horloge{
+    background-image:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 620 420'><rect width='620' height='420' fill='%23F4F8FE'/><g stroke='%23DCE5F4' stroke-width='2'><path d='M60 320h500'/></g><g stroke='%230050E6' stroke-width='3' stroke-linecap='round'><path d='M140 320V150'/><path d='M420 320V196'/></g><g fill='%230050E6'><circle cx='140' cy='150' r='11'/><circle cx='420' cy='196' r='11'/></g><g fill='%2354607A' font-family='sans-serif' font-size='19'><text x='112' y='360'>07 h</text><text x='392' y='360'>16 h</text></g><path d='M170 254 L390 254' stroke='%23F39A1B' stroke-width='3' stroke-dasharray='8 9' stroke-linecap='round'/></svg>");
+  }
+  .fx-snap__visuel--froid{
+    background-image:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 620 420'><rect width='620' height='420' fill='%23F4F8FE'/><g stroke='%23DCE5F4' stroke-width='1.6' stroke-dasharray='5 8'><path d='M50 132h520'/><path d='M50 300h520'/></g><path d='M50 252 L152 240 L254 262 L356 228 L458 248 L560 236' fill='none' stroke='%230050E6' stroke-width='4' stroke-linejoin='round' stroke-linecap='round'/><g fill='%230050E6'><circle cx='152' cy='240' r='7'/><circle cx='254' cy='262' r='7'/><circle cx='356' cy='228' r='7'/><circle cx='458' cy='248' r='7'/></g><g fill='%2354607A' font-family='sans-serif' font-size='19'><text x='50' y='122'>8 °C</text><text x='50' y='330'>2 °C</text></g></svg>");
+  }
+
+  /* ---- L'indicateur de position : discret, cliquable, atteignable au doigt ---- */
+  .fx-snap__reperes{
+    position:fixed; right:clamp(10px,2vw,26px); top:50%; translate:0 -50%;
+    z-index:40; display:flex; flex-direction:column; gap:2px;
+  }
+  .fx-snap__repere{
+    appearance:none; border:0; background:none; cursor:pointer;
+    display:flex; align-items:center; justify-content:flex-end; gap:10px;
+    width:auto; min-width:44px; min-height:44px; padding:0 4px;
+    font:inherit; color:var(--fx-snap-gris);
+  }
+  .fx-snap__repere i{
+    display:block; width:26px; height:2px; background:#B7C4DD; flex:0 0 auto;
+    transition:width .35s cubic-bezier(.22,.8,.25,1), background-color .35s ease;
+  }
+  .fx-snap__repere b{
+    font-size:.72rem; letter-spacing:.1em; text-transform:uppercase; font-weight:650;
+    opacity:0; transition:opacity .3s ease; white-space:nowrap;
+  }
+  .fx-snap__repere[aria-current="true"] i{ width:42px; background:var(--fx-snap-bleu) }
+  .fx-snap__repere[aria-current="true"] b{ opacity:1; color:var(--fx-snap-bleu) }
+  .fx-snap__reperes:hover .fx-snap__repere b{ opacity:1 }
+  .fx-snap__repere:focus-visible{ outline:2px solid var(--fx-snap-bleu); outline-offset:2px }
+  /* Sur l'écran bleu, les traits doivent rester visibles */
+  .fx-snap__reperes.sur-bleu .fx-snap__repere i{ background:rgba(255,255,255,.45) }
+  .fx-snap__reperes.sur-bleu .fx-snap__repere b{ color:#fff }
+  .fx-snap__reperes.sur-bleu .fx-snap__repere[aria-current="true"] i{ background:#fff }
+
+  /* ---- La sortie : ancrage aligné sur la fin, hauteur libre. Rien ne retient. ---- */
+  .fx-snap__sortie{
+    scroll-snap-align:end;
+    background:#FFFFFF; border-top:1px solid var(--fx-snap-bord);
+    padding:clamp(56px,10vh,110px) var(--fx-snap-marge);
+  }
+  .fx-snap__sortie > div{ max-width:1120px; margin:0 auto }
+  .fx-snap__sortie h2{ margin:0 0 12px; font-size:clamp(1.5rem,3.4vw,2.5rem); letter-spacing:-.02em; font-weight:650 }
+  .fx-snap__sortie p{ margin:0 0 28px; color:var(--fx-snap-gris); max-width:52ch }
+  .fx-snap__cta{
+    display:inline-block; padding:14px 26px; background:var(--fx-snap-bleu); color:#fff;
+    text-decoration:none; font-weight:640; min-height:44px; box-sizing:border-box;
+  }
+  .fx-snap__cta:hover{ background:#0043C4 }
+  /* Sélecteur aussi précis que `.fx-snap__sortie p`, sinon la marge du paragraphe
+     générique l'emporte et la mention se colle sous le bouton. */
+  .fx-snap__sortie .fx-snap__legal{ margin:34px 0 0; font-size:.85rem; color:#8B96AC }
+
+  @media (max-width:880px){
+    .fx-snap__duo{ grid-template-columns:1fr; gap:26px }
+    .fx-snap__cartes{ grid-template-columns:1fr; gap:12px; margin-top:26px }
+    /* On réserve la bande de droite : sans cette marge, une ligne de texte passe
+       sous les traits de l'indicateur. */
+    .fx-snap__section{ padding:84px calc(var(--fx-snap-marge) + 26px) 96px var(--fx-snap-marge) }
+    .fx-snap__repere b{ display:none }
+    .fx-snap__repere i{ width:16px }
+    .fx-snap__repere[aria-current="true"] i{ width:26px }
+  }
+
+  /* ---- Écran bas (téléphone en paysage, petit portable) : l'accrochage se coupe.
+         Sous 700 px de haut, forcer un écran plein rendrait la page intenable. ---- */
+  @media (max-height:700px){
+    html{ scroll-snap-type:none }
+    .fx-snap__section{ min-height:0; padding:64px var(--fx-snap-marge) 72px }
+    .fx-snap__visuel{ height:220px }
+  }
+
+  /* ---- Repli : sections simples empilées, aucun accrochage, aucun défilement animé ---- */
+  @media (prefers-reduced-motion: reduce){
+    html{ scroll-snap-type:none }
+    .fx-snap__section{ min-height:0; padding:64px var(--fx-snap-marge) 72px }
+    .fx-snap__repere i,
+    .fx-snap__repere b{ transition:none }
+  }
+  /* FX:COPY:END */
+</style>
+</head>
+<body>
+
+<!-- FX:COPY:START -->
+<main class="fx-snap" data-fx-snap>
+
+  <!-- 1 ---------------------------------------------------------------------->
+  <section class="fx-snap__section" id="fx-snap-1" data-titre="Ouverture">
+    <div class="fx-snap__inner">
+      <p class="fx-snap__sur">Grossiste-répartiteur pharmaceutique</p>
+      <h1 class="fx-snap__t">Le médicament <em>n'attend pas</em> le patient.</h1>
+      <p class="fx-snap__p">C'est l'inverse. Et entre le laboratoire qui produit et l'officine
+        qui délivre, il faut quelqu'un dont c'est le seul métier.</p>
+      <p class="fx-snap__p">Cette page se lit écran par écran. Descendez.</p>
+    </div>
+  </section>
+
+  <!-- 2 ---------------------------------------------------------------------->
+  <section class="fx-snap__section fx-snap__section--pale" id="fx-snap-2" data-titre="Le réseau">
+    <div class="fx-snap__inner fx-snap__duo">
+      <div>
+        <p class="fx-snap__sur">01 — Le maillage</p>
+        <h2 class="fx-snap__t">Un groupe national. Des équipes que vous connaissez.</h2>
+        <p class="fx-snap__p">Chaque implantation garde son nom, son entrepôt et ses chauffeurs.
+          Ce qui est mis en commun, ce sont les moyens : les systèmes, les achats, la capacité
+          à tenir une nuit difficile.</p>
+        <p class="fx-snap__p">Le pharmacien, lui, continue d'appeler la même personne.</p>
+      </div>
+      <div class="fx-snap__visuel fx-snap__visuel--carte" role="img"
+           aria-label="Schéma d'un réseau : un point central relié à six implantations."></div>
+    </div>
+  </section>
+
+  <!-- 3 — l'écran plein bleu, le sommet du récit ------------------------------>
+  <section class="fx-snap__section fx-snap__section--bleu" id="fx-snap-3" data-titre="Les tournées">
+    <div class="fx-snap__inner">
+      <p class="fx-snap__sur">02 — Le rythme</p>
+      <span class="fx-snap__chiffre">2<small>passages par jour, toute l'année</small></span>
+      <div class="fx-snap__cartes">
+        <div class="fx-snap__carte">
+          <h3>Le matin</h3>
+          <p>La commande passée la veille au soir attend sur le comptoir avant l'ouverture.</p>
+        </div>
+        <div class="fx-snap__carte">
+          <h3>L'après-midi</h3>
+          <p>Ce qui a été demandé dans la matinée est livré le jour même.</p>
+        </div>
+        <div class="fx-snap__carte">
+          <h3>La garde</h3>
+          <p>Un dimanche soir, quelqu'un décroche et un véhicule peut partir.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 ---------------------------------------------------------------------->
+  <section class="fx-snap__section" id="fx-snap-4" data-titre="Le froid">
+    <div class="fx-snap__inner fx-snap__duo">
+      <div>
+        <p class="fx-snap__sur">03 — Ce qui ne se voit pas</p>
+        <h2 class="fx-snap__t">Entre 2 et 8 °C, sans un seul écart.</h2>
+        <p class="fx-snap__p">Vaccins, insulines, biosimilaires : une rupture de chaîne du froid
+          ne se voit pas à l'œil nu. Le produit paraît intact et ne l'est plus.</p>
+        <p class="fx-snap__p">La température est relevée en continu, en chambre froide comme en
+          transport, et l'historique est conservé. On ne le promet pas : on le sort sur demande.</p>
+      </div>
+      <div class="fx-snap__visuel fx-snap__visuel--froid" role="img"
+           aria-label="Courbe de température restant entre 2 et 8 degrés sur tout le trajet."></div>
+    </div>
+  </section>
+
+  <!-- 5 ---------------------------------------------------------------------->
+  <section class="fx-snap__section fx-snap__section--pale" id="fx-snap-5" data-titre="Les manquants">
+    <div class="fx-snap__inner fx-snap__duo">
+      <div>
+        <p class="fx-snap__sur">04 — Les jours difficiles</p>
+        <h2 class="fx-snap__t">Et le jour où le produit n'existe plus nulle part ?</h2>
+        <p class="fx-snap__p">Les tensions d'approvisionnement font partie du métier. Ce qui change
+          d'un répartiteur à l'autre, c'est le moment où le pharmacien l'apprend : à la livraison,
+          ou assez tôt pour prévenir son patient et chercher une solution.</p>
+        <p class="fx-snap__p">Un manquant annoncé la veille au soir n'est pas le même problème
+          qu'un manquant découvert devant le comptoir.</p>
+      </div>
+      <div class="fx-snap__visuel fx-snap__visuel--horloge" role="img"
+           aria-label="Deux jalons horaires, sept heures et seize heures, reliés par un trait discontinu."></div>
+    </div>
+  </section>
+
+  <!-- Sortie : ancrée sur la FIN, sans hauteur imposée. On ne peut pas s'y coincer. -->
+  <footer class="fx-snap__sortie" id="fx-snap-sortie" data-titre="Nous joindre">
+    <div>
+      <h2>Le mieux, c'est de venir voir.</h2>
+      <p>Un matin de semaine, sur le quai, pendant le départ des tournées. C'est là que tout
+        se juge en dix minutes.</p>
+      <a class="fx-snap__cta" href="#">Prendre rendez-vous</a>
+      <p class="fx-snap__legal">Répartition pharmaceutique — obligations de service public.</p>
+    </div>
+  </footer>
+
+</main>
+
+<script>
+(function(){
+  var reduit = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  document.querySelectorAll('[data-fx-snap]').forEach(function(page){
+    var etapes = Array.prototype.slice.call(page.querySelectorAll('[data-titre]'));
+    if (!etapes.length) return;
+
+    // L'indicateur est construit ici : s'il manque, la page reste entièrement lisible
+    // et l'accrochage — qui est natif — continue de fonctionner sans lui.
+    var barre = document.createElement('nav');
+    barre.className = 'fx-snap__reperes';
+    barre.setAttribute('aria-label', 'Position dans la page');
+
+    var boutons = etapes.map(function(sec, i){
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'fx-snap__repere';
+      b.setAttribute('aria-current', i === 0 ? 'true' : 'false');
+      b.innerHTML = '<b></b><i></i>';
+      b.querySelector('b').textContent = sec.getAttribute('data-titre') || ('Écran ' + (i + 1));
+      b.title = b.querySelector('b').textContent;
+      b.addEventListener('click', function(){
+        sec.scrollIntoView({ behavior: reduit ? 'auto' : 'smooth', block: 'start' });
+      });
+      barre.appendChild(b);
+      return b;
+    });
+    page.appendChild(barre);
+
+    var tic = false;
+
+    function placer(){
+      tic = false;
+      var vue = window.innerHeight;
+      var ligne = vue * 0.4;      // ligne de décision : au premier tiers de l'écran
+
+      // Le filet : on relit la position réelle de chaque écran à CHAQUE défilement.
+      // Une notification unique pourrait ne jamais arriver — un clavier, un ancrage
+      // direct, un retour arrière — et l'indicateur resterait faux ou muet.
+      var actif = 0;
+      for (var i = 0; i < etapes.length; i++){
+        if (etapes[i].getBoundingClientRect().top <= ligne) actif = i;
+      }
+      // Fin de page : le dernier repère s'allume même si la sortie est courte.
+      if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4){
+        actif = etapes.length - 1;
+      }
+
+      boutons.forEach(function(b, i){
+        b.setAttribute('aria-current', i === actif ? 'true' : 'false');
+      });
+      barre.classList.toggle('sur-bleu',
+        etapes[actif].classList.contains('fx-snap__section--bleu'));
+    }
+
+    function onScroll(){ if (!tic){ tic = true; requestAnimationFrame(placer); } }
+    window.addEventListener('scroll', onScroll, {passive:true});
+    window.addEventListener('resize', onScroll, {passive:true});
+    placer();
+  });
+})();
+</script>
+<!-- FX:COPY:END -->
+
+<div class="demo-note">snap-sections · un écran, une idée</div>
+
+</body>
+</html>

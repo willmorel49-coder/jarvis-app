@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FX-BANK · Curtain Reveal</title>
+<!--
+/* FX-BANK · CURTAIN REVEAL
+   QUOI : Architecture de page complète. Chaque section monte par-dessus la précédente
+          comme un rideau et la recouvre entièrement. Celle du dessous reste strictement
+          immobile pendant que la nouvelle glisse : des couches qui se posent l'une sur
+          l'autre, jamais un défilement ordinaire.
+   QUAND : Un discours en quatre ou cinq temps où chaque idée s'appuie sur la précédente
+           sans l'effacer. Le lecteur a la sensation d'empiler, pas de feuilleter.
+   DEPENDANCES : aucune
+   SAFARI : conforme. Aucun flou, aucun verre dépoli, aucun dégradé découpé dans du texte.
+            Le recouvrement est un simple collage en haut d'écran, l'assombrissement de la
+            couche du dessous est un aplat plein en surimpression.
+            Mouvement réduit = sections empilées normalement, aucune superposition.
+   SECURITE : l'état de départ du CSS est une page ORDINAIRE, toutes sections visibles et
+              lisibles. C'est le script qui active le recouvrement, et seulement après avoir
+              vérifié que chaque section tient dans l'écran. Script absent, en panne ou
+              erreur JS = page entièrement lisible, rien ne disparaît.
+   LIMITE : si une section devient plus haute que l'écran (texte long, petit mobile), le
+            mécanisme se désactive tout seul — sinon le bas de cette section deviendrait
+            inatteignable. Compter cinq sections au maximum.
+   COPIER : le bloc entre FX:COPY:START et FX:COPY:END */
+-->
+<style>
+  body{margin:0;background:#FBFCFE;color:#0E1626;font:16px/1.6 ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif}
+  .demo-note{position:fixed;left:16px;bottom:16px;z-index:60;font-size:12px;letter-spacing:.1em;
+    text-transform:uppercase;color:#8B96AC;background:#FBFCFE;padding:8px 12px;border:1px solid #DCE5F4}
+
+  /* FX:COPY:START */
+  .fx-curtain{
+    --fx-curtain-accent:#0050E6;
+    --fx-curtain-orange:#F39A1B;
+    --fx-curtain-encre:#0E1626;
+    --fx-curtain-doux:#54607A;
+    --fx-curtain-bord:#DCE5F4;
+    --fx-curtain-papier:#FBFCFE;
+    --fx-curtain-voile:.18;          /* assombrissement maxi de la couche recouverte */
+    position:relative;
+  }
+
+  /* ── ÉTAT DE DÉPART : une page normale. Rien n'est masqué, rien n'est collé. ────────
+     Si le script ne tourne pas, c'est CET état qui reste — et il est parfaitement lisible. */
+  .fx-curtain__sec{
+    position:relative;
+    display:grid; place-items:center;
+    padding:clamp(52px,8vh,96px) clamp(20px,5vw,64px);
+    background:var(--fond,#FFFFFF);
+    color:var(--encre,var(--fx-curtain-encre));
+    border-top:1px solid var(--fx-curtain-bord);
+  }
+  .fx-curtain__sec:first-child{ border-top:0 }
+
+  /* ── ÉTAT ACTIF : posé par le script uniquement ─────────────────────────────────── */
+  .fx-curtain--actif .fx-curtain__sec{
+    position:sticky; top:0;
+    min-height:100vh; min-height:100svh;
+    border-top:0;
+    /* la tranche du rideau : un liseré net + une ombre portée vers le haut,
+       c'est ce qui fait lire « une couche se pose sur une autre » */
+    box-shadow:0 -1px 0 rgba(14,22,38,.10), 0 -22px 44px -26px rgba(14,22,38,.45);
+  }
+  .fx-curtain--actif .fx-curtain__sec:first-child{ box-shadow:none }
+  /* la dernière ne colle pas : la page se termine proprement sur elle */
+  .fx-curtain--actif .fx-curtain__sec:last-child{ position:relative }
+
+  /* le voile d'assombrissement — un aplat plein, jamais un filtre */
+  .fx-curtain__sec::after{
+    content:""; position:absolute; inset:0; background:#0E1626;
+    opacity:var(--fx-voile,0); pointer-events:none;
+  }
+
+  .fx-curtain__inner{ width:100%; max-width:940px }
+  .fx-curtain__eti{
+    display:inline-flex; align-items:center; gap:9px; margin:0 0 20px;
+    font-size:.74rem; letter-spacing:.16em; text-transform:uppercase; font-weight:650;
+    color:var(--accent,var(--fx-curtain-accent));
+  }
+  .fx-curtain__eti b{
+    font-variant-numeric:tabular-nums; font-weight:650;
+    padding:3px 8px; border:1px solid currentColor; border-radius:2px;
+  }
+  .fx-curtain__t{
+    margin:0 0 18px; font-size:clamp(2rem,5.4vw,3.9rem); line-height:1.05;
+    letter-spacing:-.025em; font-weight:650; text-wrap:balance;
+  }
+  .fx-curtain__t em{ font-style:normal; color:var(--accent,var(--fx-curtain-accent)) }
+  .fx-curtain__p{
+    margin:0; max-width:56ch; font-size:clamp(1rem,2vw,1.2rem);
+    color:var(--doux,var(--fx-curtain-doux)); text-wrap:pretty;
+  }
+  .fx-curtain__liste{
+    margin:30px 0 0; padding:0; list-style:none;
+    display:grid; gap:12px 30px; grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
+    max-width:760px;
+  }
+  .fx-curtain__liste li{
+    display:flex; gap:11px; align-items:flex-start;
+    padding-top:12px; border-top:1px solid var(--trait,var(--fx-curtain-bord));
+    font-size:.96rem; color:var(--doux,var(--fx-curtain-doux));
+  }
+  .fx-curtain__liste svg{ flex:0 0 auto; width:17px; height:17px; margin-top:3px; color:var(--accent,var(--fx-curtain-accent)) }
+  .fx-curtain__cta{
+    display:inline-flex; align-items:center; gap:10px; margin-top:32px;
+    padding:15px 26px; border-radius:3px; text-decoration:none; font-weight:650;
+    background:var(--accent,var(--fx-curtain-accent)); color:#fff;
+    box-shadow:0 12px 26px -16px rgba(0,80,230,.9);
+  }
+  .fx-curtain__cta:hover{ background:var(--fx-curtain-encre); box-shadow:none }
+
+  /* fond décoratif : trame de points, SVG écrit dans le fichier, aucune requête réseau */
+  .fx-curtain__sec--trame{
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='34' height='34'%3E%3Ccircle cx='2' cy='2' r='1.1' fill='%23C9D8F2'/%3E%3C/svg%3E");
+    background-repeat:repeat; background-position:0 0;
+  }
+  /* fond décoratif : réseau de lignes, même principe */
+  .fx-curtain__sec--reseau{
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cg fill='none' stroke='rgba(255,255,255,.20)' stroke-width='1'%3E%3Cpath d='M0 60h120M60 0v120M0 0l120 120M120 0L0 120'/%3E%3C/g%3E%3Ccircle cx='60' cy='60' r='3' fill='rgba(255,255,255,.34)'/%3E%3C/svg%3E");
+    background-repeat:repeat; background-position:center;
+  }
+
+  /* repères de progression, visibles seulement quand le mécanisme est actif */
+  .fx-curtain__reperes{
+    display:none;
+    position:fixed; right:22px; top:50%; translate:0 -50%; z-index:40;
+    grid-auto-flow:row; gap:11px;
+  }
+  .fx-curtain--actif .fx-curtain__reperes{ display:grid }
+  .fx-curtain__pt{
+    width:8px; height:8px; border-radius:50%; background:rgba(14,22,38,.20);
+    transition:background .18s linear, transform .18s ease-out;
+  }
+  .fx-curtain__pt[data-on="1"]{ background:var(--fx-curtain-accent); transform:scale(1.55) }
+
+  @media (max-width:720px){
+    .fx-curtain__reperes{ display:none!important }
+    .fx-curtain__liste{ grid-template-columns:1fr }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .fx-curtain--actif .fx-curtain__sec{ position:relative; min-height:0; box-shadow:none; border-top:1px solid var(--fx-curtain-bord) }
+    .fx-curtain__sec::after{ display:none }
+    .fx-curtain__reperes{ display:none!important }
+  }
+  /* FX:COPY:END */
+</style>
+</head>
+<body>
+
+<!-- FX:COPY:START -->
+<div class="fx-curtain" data-fx-curtain>
+
+  <!-- 1 · l'accroche -->
+  <section class="fx-curtain__sec fx-curtain__sec--trame" style="--fond:#FBFCFE">
+    <div class="fx-curtain__inner">
+      <p class="fx-curtain__eti"><b>01</b> Intégral Pharma</p>
+      <h1 class="fx-curtain__t">Avant l'ouverture,<br><em>tout est déjà là.</em></h1>
+      <p class="fx-curtain__p">Grossiste-répartiteur. Nous préparons et livrons les officines
+        françaises chaque jour ouvré, à heure fixe, depuis l'implantation la plus proche de
+        votre comptoir.</p>
+    </div>
+  </section>
+
+  <!-- 2 · le réseau -->
+  <section class="fx-curtain__sec" style="--fond:#FFFFFF">
+    <div class="fx-curtain__inner">
+      <p class="fx-curtain__eti"><b>02</b> Le réseau</p>
+      <h2 class="fx-curtain__t">Un groupe national.<br><em>Un interlocuteur régional.</em></h2>
+      <p class="fx-curtain__p">Chaque implantation garde ses équipes, ses tournées et ses
+        habitudes. Ce qui est commun, c'est le catalogue, les outils et la façon de tenir
+        les engagements.</p>
+      <ul class="fx-curtain__liste">
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 12h16M13 5l7 7-7 7"/></svg>Des implantations réparties sur le territoire</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 12h16M13 5l7 7-7 7"/></svg>Un référent commercial identifié, joignable</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 12h16M13 5l7 7-7 7"/></svg>Une astreinte pour les urgences du week-end</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 3 · la disponibilité — la couche la plus contrastée, c'est elle qui fait voir le rideau -->
+  <section class="fx-curtain__sec fx-curtain__sec--reseau"
+           style="--fond:#0050E6;--encre:#FFFFFF;--accent:#FFFFFF;--doux:rgba(255,255,255,.82);--trait:rgba(255,255,255,.26)">
+    <div class="fx-curtain__inner">
+      <p class="fx-curtain__eti"><b>03</b> La disponibilité</p>
+      <h2 class="fx-curtain__t">Ce qui manque ici<br>existe souvent <em>à côté.</em></h2>
+      <p class="fx-curtain__p">Les stocks sont répartis, pas centralisés. Quand une référence
+        est introuvable dans une implantation, elle est cherchée dans les autres avant que
+        vous ayez à rappeler.</p>
+      <ul class="fx-curtain__liste">
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 13l4 4L19 7"/></svg>Recherche inter-implantations automatique</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 13l4 4L19 7"/></svg>Manquants signalés le jour même</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 13l4 4L19 7"/></svg>Alternatives proposées, jamais imposées</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 4 · la chaîne du froid -->
+  <section class="fx-curtain__sec" style="--fond:#FFFFFF;--accent:#F39A1B">
+    <div class="fx-curtain__inner">
+      <p class="fx-curtain__eti"><b>04</b> La chaîne du froid</p>
+      <h2 class="fx-curtain__t">De la chambre froide<br><em>au comptoir,</em> sans rupture.</h2>
+      <p class="fx-curtain__p">Enceintes suivies en continu, conditionnements isothermes
+        contrôlés au départ, traçabilité conservée pour chaque colis sensible. Le relevé est
+        consultable si vous le demandez.</p>
+    </div>
+  </section>
+
+  <!-- 5 · la dernière : elle ne colle pas, la page se termine dessus -->
+  <section class="fx-curtain__sec fx-curtain__sec--trame" style="--fond:#FBFCFE">
+    <div class="fx-curtain__inner">
+      <p class="fx-curtain__eti"><b>05</b> Parlons-en</p>
+      <h2 class="fx-curtain__t">Un échange d'une heure<br><em>à votre officine.</em></h2>
+      <p class="fx-curtain__p">Nous venons voir votre organisation, vos volumes et vos
+        contraintes de livraison. Les modalités se discutent en rendez-vous, jamais sur une
+        page web.</p>
+      <a class="fx-curtain__cta" href="#">Demander une visite
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M4 12h15M12 5l7 7-7 7"/></svg>
+      </a>
+    </div>
+  </section>
+
+  <nav class="fx-curtain__reperes" aria-hidden="true">
+    <i class="fx-curtain__pt"></i><i class="fx-curtain__pt"></i><i class="fx-curtain__pt"></i>
+    <i class="fx-curtain__pt"></i><i class="fx-curtain__pt"></i>
+  </nav>
+</div>
+
+<script>
+(function(){
+  var reduit = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  document.querySelectorAll('[data-fx-curtain]').forEach(function(bloc){
+    var secs = Array.prototype.slice.call(bloc.querySelectorAll('.fx-curtain__sec'));
+    var pts  = Array.prototype.slice.call(bloc.querySelectorAll('.fx-curtain__pt'));
+    if (secs.length < 2 || reduit) return;
+
+    var actif = false, tic = false, attente = null;
+
+    // ── Garde-fou ────────────────────────────────────────────────────────────────────
+    // Une section collée en haut d'écran ne peut plus défiler : tout ce qui dépasse la
+    // hauteur de l'écran deviendrait inatteignable. On mesure donc la hauteur NATURELLE
+    // (mécanisme désactivé) et on n'active que si tout tient.
+    function tientDansEcran(){
+      bloc.classList.remove('fx-curtain--actif');
+      var maxi = 0;
+      for (var i = 0; i < secs.length; i++){
+        var h = secs[i].getBoundingClientRect().height;
+        if (h > maxi) maxi = h;
+      }
+      return maxi <= window.innerHeight - 4;
+    }
+
+    // ── Placement : on LIT la position réelle à chaque défilement. ────────────────────
+    // Aucune notification, aucun observateur : un élément recouvert ne « signale » rien,
+    // c'est exactement le piège qui laisse une page blanche pour toujours.
+    function placer(){
+      tic = false;
+      if (!actif) return;
+      var vh = window.innerHeight, courant = 0;
+
+      for (var i = 0; i < secs.length; i++){
+        var haut = secs[i].getBoundingClientRect().top;
+        if (haut <= 1) courant = i;               // la dernière arrivée en haut est celle du dessus
+
+        var suiv = secs[i + 1];
+        if (!suiv){ secs[i].style.setProperty('--fx-voile', 0); continue; }
+
+        // la section du dessous ne bouge pas : elle s'assombrit à mesure que la suivante
+        // la recouvre, et retrouve sa couleur si on remonte
+        var d = suiv.getBoundingClientRect().top / vh;   // 1 = pas encore là, 0 = recouverte
+        var t = 1 - Math.min(1, Math.max(0, d));
+        secs[i].style.setProperty('--fx-voile', (t * 0.18).toFixed(3));
+      }
+
+      for (var j = 0; j < pts.length; j++){
+        pts[j].setAttribute('data-on', j === courant ? '1' : '0');
+      }
+    }
+
+    function evaluer(){
+      actif = tientDansEcran();
+      if (actif) bloc.classList.add('fx-curtain--actif');
+      else secs.forEach(function(s){ s.style.setProperty('--fx-voile', 0); });
+      placer();
+    }
+
+    function auDefilement(){ if (!tic){ tic = true; requestAnimationFrame(placer); } }
+
+    try {
+      evaluer();
+    } catch (e) {
+      // en cas d'imprévu on revient à la page ordinaire plutôt que de laisser un écran vide
+      bloc.classList.remove('fx-curtain--actif');
+      return;
+    }
+
+    window.addEventListener('scroll', auDefilement, {passive:true});
+    window.addEventListener('resize', function(){
+      clearTimeout(attente);
+      attente = setTimeout(evaluer, 140);
+    }, {passive:true});
+  });
+})();
+</script>
+<!-- FX:COPY:END -->
+
+<div style="height:60vh;display:grid;place-items:center;color:#8B96AC">fin de page</div>
+<div class="demo-note">curtain-reveal · les sections se posent en couches</div>
+
+</body>
+</html>
