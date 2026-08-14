@@ -108,6 +108,27 @@ async function telecharger(url: string) {
 
 type Plage = { date: string; debut: string; fin: string; jour_entier: boolean }
 
+// ⚠️ CORRIGÉ LE 14/08/2026 — décalage de deux heures en production.
+//
+// Google exporte les horaires en UTC (« 20260818T070000Z »). Cette fonction
+// tourne sur un serveur réglé en UTC, et `toTimeString()` rend l'heure LOCALE
+// DU SERVEUR : un rendez-vous de 9 h à Paris était donc enregistré « 07:00 ».
+// Un commercial qui bloquait 9 h–10 h 30 apparaissait libre à cette heure-là,
+// et un pharmacien pouvait réserver par-dessus — exactement ce que la relève
+// d'agenda existe pour empêcher. Constaté sur la vraie table : l'événement du
+// 18/08 était stocké 07:00-08:30 au lieu de 09:00-10:30.
+//
+// Le fuseau est celui des officines, pas celui du serveur : on l'impose.
+const FUSEAU = 'Europe/Paris'
+const JOUR_PARIS = new Intl.DateTimeFormat('en-CA', {
+  timeZone: FUSEAU, year: 'numeric', month: '2-digit', day: '2-digit',
+})
+const HEURE_PARIS = new Intl.DateTimeFormat('en-GB', {
+  timeZone: FUSEAU, hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+})
+const jourParis = (d: Date) => JOUR_PARIS.format(d)
+const heureParis = (d: Date) => HEURE_PARIS.format(d)
+
 /** Transforme un flux iCal en plages occupées, sans rien retenir d'autre. */
 function plagesOccupees(ics: string, jours: number): { lus: number; plages: Plage[] } {
   const cal = new ICAL.Component(ICAL.parse(ics))
@@ -129,12 +150,19 @@ function plagesOccupees(ics: string, jours: number): { lus: number; plages: Plag
     if (String(vevent.getFirstPropertyValue('status') || '') === 'CANCELLED') continue
 
     const pousser = (deb: ICAL.Time, fin: ICAL.Time) => {
+      // Un événement « journée entière » n'a pas d'heure : sa date est déjà la
+      // bonne, la convertir la ferait glisser d'un jour. Les autres passent
+      // par le fuseau de Paris — voir l'avertissement plus haut.
+      if (deb.isDate) {
+        plages.push({ date: deb.toString().slice(0, 10), debut: '00:00', fin: '23:59', jour_entier: true })
+        return
+      }
       const d = deb.toJSDate(), f = fin.toJSDate()
       plages.push({
-        date: deb.toString().slice(0, 10),
-        debut: deb.isDate ? '00:00' : d.toTimeString().slice(0, 5),
-        fin: deb.isDate ? '23:59' : f.toTimeString().slice(0, 5),
-        jour_entier: !!deb.isDate,
+        date: jourParis(d),
+        debut: heureParis(d),
+        fin: heureParis(f),
+        jour_entier: false,
       })
     }
 
@@ -157,6 +185,74 @@ function plagesOccupees(ics: string, jours: number): { lus: number; plages: Plag
     }
   }
   return { lus, plages }
+}
+
+type Evenement = Plage & { titre: string }
+
+/**
+ * Comme plagesOccupees, mais garde le TITRE — et uniquement pour le renvoyer
+ * au propriétaire de l'agenda, dans sa réponse HTTP. Rien n'est écrit en base :
+ * il n'existe toujours aucune colonne pour ranger un titre, donc la promesse
+ * ne peut pas être trahie par accident.
+ *
+ * Fenêtre différente de la relève : on regarde aussi le PASSÉ, parce que la
+ * date de dernière visite d'une officine ne se trouve nulle part ailleurs —
+ * mesuré le 14/08/2026, 504 des 531 événements de l'agenda sont passés.
+ */
+function evenementsAvecTitre(ics: string, joursAvant: number, joursApres: number) {
+  const cal = new ICAL.Component(ICAL.parse(ics))
+  const debut = ICAL.Time.now()
+  debut.addDuration(ICAL.Duration.fromSeconds(-joursAvant * 86400))
+  const fin = ICAL.Time.now()
+  fin.addDuration(ICAL.Duration.fromSeconds(joursApres * 86400))
+
+  const evenements: Evenement[] = []
+  let lus = 0
+
+  for (const vevent of cal.getAllSubcomponents('vevent')) {
+    const ev = new ICAL.Event(vevent)
+    lus++
+    if (String(vevent.getFirstPropertyValue('status') || '') === 'CANCELLED') continue
+    const titre = String(vevent.getFirstPropertyValue('summary') || '').trim()
+    if (!titre) continue
+
+    const pousser = (d: ICAL.Time, f: ICAL.Time) => {
+      // Même règle de fuseau que la relève : l'écran doit apparier une plage
+      // occupée avec son titre sur l'heure de début. Si les deux ne comptaient
+      // pas les heures pareil, aucun nom ne s'afficherait jamais.
+      if (d.isDate) {
+        evenements.push({ date: d.toString().slice(0, 10), debut: '00:00', fin: '23:59',
+                          jour_entier: true, titre: titre.slice(0, 200) })
+        return
+      }
+      const dj = d.toJSDate(), fj = f.toJSDate()
+      evenements.push({
+        date: jourParis(dj),
+        debut: heureParis(dj),
+        fin: heureParis(fj),
+        jour_entier: false,
+        titre: titre.slice(0, 200),
+      })
+    }
+
+    if (ev.isRecurring()) {
+      // Même itérateur que la relève : il applique RRULE, EXDATE et les
+      // occurrences déplacées. Un analyseur maison rate ces trois cas.
+      const it = ev.iterator()
+      let occ, garde = 0
+      while ((occ = it.next()) && garde++ < 500) {
+        if (occ.compare(fin) > 0) break
+        if (occ.compare(debut) < 0) continue
+        const det = ev.getOccurrenceDetails(occ)
+        pousser(det.startDate, det.endDate)
+      }
+    } else {
+      if (ev.endDate.compare(debut) < 0) continue
+      if (ev.startDate.compare(fin) > 0) continue
+      pousser(ev.startDate, ev.endDate)
+    }
+  }
+  return { lus, evenements }
 }
 
 const admin = () => createClient(URL_SB, CLE_SERVICE, { auth: { persistSession: false } })
@@ -302,6 +398,25 @@ Deno.serve(async (req) => {
   // éviter qu'un aller-retour entre deux écrans relance une lecture complète —
   // et à ne pas s'ajouter au rythme du robot au point de fâcher l'hébergeur.
   if (action === 'relever_moi') return reponse(await relever(userId, false, 5 * 60 * 1000))
+
+  // ─── Le commercial ouvre son planning : il veut voir le NOM des officines
+  // qu'il a notées dans son agenda. Les titres partent dans CETTE réponse et
+  // nulle part ailleurs — aucune écriture en base, aucune colonne pour eux.
+  //
+  // Réservé au propriétaire : `userId` vient du jeton de session, jamais d'un
+  // paramètre d'appel. Personne ne peut demander l'agenda d'un collègue.
+  if (action === 'mes_evenements') {
+    const db = admin()
+    const { data: a } = await db.from('rdv_agenda')
+      .select('url, actif').eq('user_id', userId).maybeSingle()
+    if (!a || !a.actif) return reponse({ ok: false, raison: 'pas_d_agenda' })
+    const t = await telecharger(a.url)
+    if ('erreur' in t) return reponse({ ok: false, raison: t.erreur })
+    // 400 jours en arrière : de quoi dire « vue il y a 8 mois » sur une
+    // officine. 60 jours en avant : au-delà, le planning n'affiche rien.
+    const { lus, evenements } = evenementsAvecTitre(t.ics, 400, 60)
+    return reponse({ ok: true, lus, evenements })
+  }
 
   if (action === 'debrancher') {
     // Le déclencheur en base efface aussi les plages relevées.
