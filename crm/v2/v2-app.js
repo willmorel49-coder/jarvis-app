@@ -339,7 +339,7 @@
       '<div class="v2-wrap"><div class="v2-empty">' +
         '<div class="v2-empty-t">Données non chargées</div>' +
         '<div class="v2-empty-d">Les données du réseau n’ont pas pu être téléchargées ' +
-        '(27 Mo). Vérifie ta connexion — le Wi-Fi si tu peux — puis réessaie.</div>' +
+        '(17 Mo). Vérifie ta connexion — le Wi-Fi si tu peux — puis réessaie.</div>' +
         '<button class="v2-btn v2-btn-primary" style="min-height:48px" ' +
           'onclick="V2.render()">Réessayer</button>' +
       '</div></div>';
@@ -380,7 +380,11 @@
           // exceeded » en bandeau rouge. Une connexion imparfaite suffisait —
           // et l'app installée y était plus exposée, son service worker ayant
           // vidé les caches au changement de version.
-          if (!V2.dataLoaded('wml')) { ecranDonneesIndisponibles(root); return; }
+          // ⚠️ 14/08/2026 — `V2.donneesSecours` compte autant que `dataLoaded`.
+          // Le fichier pouvait être marqué « chargé » alors qu'il était vide :
+          // `loadData()` retombait sur les anciennes tables Supabase et l'app
+          // affichait 22 officines au lieu de 690, sans rien dire.
+          if (!V2.dataLoaded('wml') || V2.donneesSecours) { ecranDonneesIndisponibles(root); return; }
           V2.render();
         });
       return;

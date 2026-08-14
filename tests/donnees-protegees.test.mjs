@@ -43,7 +43,20 @@ function monter(reponses) {
     }
   };
 
-  const head = { appendChild: (s) => { journal.scripts.push(s.src); s.onload && s.onload(); } };
+  // Un fichier qui se charge POSE ses données sur `window`. Sans ça, le chargeur
+  // le refuse — à juste titre depuis le 14/08/2026 (voir `donnees-secours.test.mjs` :
+  // une réponse vide n'est pas un chargement). Ici on ne teste PAS ce point : on
+  // simule donc un fichier qui pose bien ce qu'il doit poser.
+  const head = {
+    appendChild: (s) => {
+      journal.scripts.push(s.src);
+      win.WML_OFFICINES = [{ id: '1' }];
+      win.WML_SALES = [['1', 6, 'Will', 'x', 1, 1, 1]];
+      win.ESTABLISHMENTS = { a: 1 };
+      win.SAGITTA_SHORTLIST = [1];
+      s.onload && s.onload();
+    }
+  };
   const win = {
     fetch: () => Promise.resolve({ ok: false, json: () => Promise.resolve({}) }),
     setTimeout, clearTimeout, console, Promise, Date, Math, JSON, URL, Blob: function () {},

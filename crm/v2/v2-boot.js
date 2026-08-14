@@ -227,12 +227,25 @@
       });
       V2.imports = [];
       V2.applyOpsoPerimeter();
+      V2.donneesSecours = false;   // les vraies données ont pris la place du repli
       V2.ready = true;
       // Corrections manuelles (ex. groupement changé depuis une fiche) — appliquées en arrière-plan.
       try { if (V2.profil && V2.profil.applyOverrides) V2.profil.applyOverrides(function () { if (V2.render) V2.render(); }); } catch (e) {}
       return;
     }
 
+    // ── Repli sur les anciennes tables Supabase ─────────────────────────────
+    // ⚠️ 14/08/2026 — c'est CE repli qui a fait dire à l'app « 22 officines
+    // actives » sur l'iPhone de Will, au lieu de 690. Ces tables datent de la
+    // V1 : dernier import le 19/05/2026, ventes arrêtées à avril. Et l'API
+    // Supabase plafonne une requête à 1 000 lignes (`max_rows`) : les 20 001
+    // ventes reviennent tronquées aux 1 000 premières, qui ne touchent que
+    // **22 officines**. Le compte affiché correspondait exactement.
+    //
+    // Rien ne signalait la substitution. On la marque désormais : `V2.donneesSecours`
+    // est lu par l'écran, qui doit prévenir plutôt que servir ces chiffres comme
+    // s'ils étaient ceux du jour. Des chiffres périmés qu'on croit sont pires
+    // que pas de chiffres du tout.
     var c = getSb(); if (!c) return;
     var res = await Promise.all([
       c.from('pharmacies').select('*').order('name'),
@@ -256,6 +269,10 @@
       V2.sales = V2.sales.filter(function (s) { return allowed.has(String(s.pharmacyId)); });
     }
     V2.applyOpsoPerimeter();
+    V2.donneesSecours = true;
+    console.warn('[V2] données de SECOURS (anciennes tables) : ' + V2.pharmacies.length
+      + ' officines, ' + V2.sales.length + ' ventes'
+      + (sales.length >= 1000 ? ' — TRONQUÉ à 1 000 lignes par l’API' : ''));
     V2.ready = true;
   };
 
@@ -457,6 +474,20 @@
     V2._pphtDone = true;
     try { console.log('[V2] PPHT appliqué à ' + n + ' produits · abandon barème reconstitué sur ' + fixedAband + ' princeps'); } catch (e) {}
   };
+  // Témoin de chargement : le nom que CHAQUE fichier doit avoir posé sur `window`
+  // une fois lu. Sert à distinguer « le navigateur a fini de télécharger » de
+  // « les données sont là » — voir le commentaire de `s.onload`.
+  var TEMOIN = {
+    bench: 'BENCHMARK',
+    establishments: 'ESTABLISHMENTS',
+    offilog: 'OFFILOG',
+    drakkars: 'DRAKKARS',
+    cap3000: 'CAP3000',
+    sagitta: 'SAGITTA_SHORTLIST',
+    clients: 'CLIENTS',
+    wml: 'WML_OFFICINES'
+  };
+
   function bridge() {
     try { if (typeof BENCHMARK !== 'undefined') window.BENCHMARK = BENCHMARK; } catch (e) {}
     try { if (typeof OFFILOG !== 'undefined') window.OFFILOG = OFFILOG; } catch (e) {}
@@ -508,7 +539,25 @@
       function poser(url, resolve) {
         var s = document.createElement('script');
         s.src = url; s.async = false;
-        s.onload = function () { loaded[src] = true; bridge(); resolve(); };
+        s.onload = function () {
+          // ⚠️ 14/08/2026 — « 22 officines actives » sur l'iPhone de Will.
+          // `onload` dit seulement que le navigateur a fini de lire la réponse,
+          // PAS qu'elle contenait les données. Une réponse vide, tronquée, ou un
+          // message d'erreur servi en HTTP 200 déclenche `onload` exactement
+          // comme un fichier valide. On marquait alors le fichier « chargé »,
+          // `loadData()` ne trouvait pas `WML_OFFICINES`, tombait sur les
+          // vieilles tables Supabase — et l'app affichait ces données périmées
+          // comme si c'était la vérité, sans un mot.
+          // On vérifie donc que la donnée attendue est VRAIMENT là.
+          if (TEMOIN[k] && typeof window[TEMOIN[k]] === 'undefined') {
+            console.warn('[V2] ' + src + ' chargé mais ' + TEMOIN[k] + ' absent — réponse vide ou tronquée');
+            if (PROTEGES[k]) V2.protegeEchec[k] = true;
+            delete pending[src];
+            resolve();
+            return;
+          }
+          loaded[src] = true; bridge(); resolve();
+        };
         s.onerror = function () {
           // Adresse obtenue mais téléchargement échoué (réseau coupé en cours,
           // adresse signée périmée) : pour un fichier protégé, c'est le même
