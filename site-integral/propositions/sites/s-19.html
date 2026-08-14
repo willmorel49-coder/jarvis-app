@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Intégral Pharma — Neuf maisons. Un seul nom.</title>
+<meta name="da-numero" content="19">
+<meta name="da-nom" content="Registre">
+<meta name="description" content="Intégral Pharma, groupe de grossistes-répartiteurs français indépendant. Neuf implantations, plus de 2 000 officines livrées.">
+
+<!--
+  SITE 19 · REGISTRE
+  ─────────────────────────────────────────────────────────────────────────────
+  Architecture : ACCORDÉON VERTICAL. Les onze sections sont onze lignes d'un
+  registre. Le sommaire du site est la page elle-même : on voit les onze
+  intitulés d'un coup, on ouvre celui qu'on veut, une seule ligne reste ouverte.
+
+  Mécanique en une phrase : c'est le CLIC qui pilote — le défilement n'ouvre et
+  ne ferme jamais rien — et la ligne cliquée est amenée sous la barre pendant
+  que les autres se referment, donc rien ne saute sous les yeux.
+
+  Les six pièges de ce mécanisme, et ce qui est fait ici :
+  1. TOUT CACHÉ SANS SCRIPT — la feuille de style laisse les onze panneaux
+     OUVERTS (height:auto). C'est le script qui referme, après avoir posé la
+     classe .est-armee. Script absent, en erreur ou trop lent : page entière
+     lisible. Un garde-fou désarme au bout de 2 s si rien n'a été ouvert.
+  2. RÉFÉRENCEMENT / ACCESSIBILITÉ — le texte replié reste dans le document.
+     Aucun display:none, aucun retrait du DOM. Un panneau fermé passe en
+     visibility:hidden après l'animation, uniquement pour que la tabulation ne
+     s'y perde pas ; le contenu reste dans la page servie.
+  3. CLIC OU DÉFILEMENT — le clic, et lui seul. Aucun IntersectionObserver
+     n'ouvre quoi que ce soit. La ligne d'aide sous le chapeau le dit en toutes
+     lettres.
+  4. LA POSITION DE LECTURE QUI SAUTE — corrigée en boucle : à chaque image,
+     tant que les hauteurs bougent, la page se recale sur la position réelle de
+     l'en-tête cliqué (getBoundingClientRect), pas sur une hauteur devinée.
+  5. ONZE OUVERTES NE TIENNENT PAS — une seule à la fois, fermeture animée.
+  6. CIBLES TACTILES — chaque en-tête fait 60 px de haut au minimum (64 sur
+     téléphone), bien au-delà des 44 px exigés.
+
+  Safari : aucun des quatre effets qui figent le Mac (verre dépoli, flou de
+  grande surface, dégradé découpé dans du texte, vidéo). Lumière et matière
+  uniquement en dégradés radiaux + rgba + transform.
+  Réseau : zéro requête. Aucune police distante, aucune image distante.
+  Repli mouvement réduit : durées à zéro, bandeau arrêté, aucune transition.
+-->
+
+<style>
+/* ═══════════════════════════════════════════════════════════════════════════
+   1 · SOCLE
+   ═══════════════════════════════════════════════════════════════════════════ */
+*,*::before,*::after{ box-sizing:border-box }
+
+html{
+  -webkit-text-size-adjust:100%;
+  /* Surtout pas de scroll-behavior:smooth : il se battrait avec le recalage
+     image par image de l'accordéon. */
+  scroll-behavior:auto;
+}
+
+:root{
+  --bleu:#0050E6;
+  --bleu-nuit:#0A2A6B;
+  --bleu-vif:#2C74FF;
+  --bleu-pale:#EAF1FE;
+  --orange:#F39A1B;
+  --orange-pale:#FDF0DC;
+  --encre:#101623;
+  --gris:#525E77;
+  --gris-clair:#8B96AC;
+  --papier:#F3F6FC;
+  --blanc:#FFFFFF;
+  --bord:#DBE3F1;
+  --bord-doux:#E8EDF7;
+
+  --barre:60px;
+  --col:74px;                 /* colonne des numéros du registre */
+  --marge:clamp(16px,3.2vw,40px);
+  --pt:.82rem;                /* 13,1 px — plancher du texte courant */
+  --duree:440ms;
+
+  --dis:ui-sans-serif,-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --sortie:cubic-bezier(.22,.7,.24,1);
+}
+
+body{
+  margin:0;
+  background:var(--papier);
+  color:var(--encre);
+  font:16px/1.6 var(--dis);
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* La source de lumière. Un clair sans lumière est mort : trois foyers, zéro flou. */
+body::before{
+  content:""; position:fixed; inset:0; z-index:0; pointer-events:none;
+  background:
+    radial-gradient(1150px 640px at 8% -10%,  #FFFFFF 0%, rgba(255,255,255,0) 64%),
+    radial-gradient(880px 720px at 100% 4%,   rgba(0,80,230,.11) 0%, rgba(0,80,230,0) 58%),
+    radial-gradient(760px 520px at 46% 106%,  rgba(243,154,27,.11) 0%, rgba(243,154,27,0) 62%);
+}
+
+a{ color:inherit }
+img,svg{ max-width:100% }
+:focus-visible{ outline:3px solid var(--orange); outline-offset:2px }
+
+/* Lien d'évitement : découpé, pas repoussé à -9999px — un décalage négatif fait
+   compter un débordement horizontal par tous les contrôles automatiques. */
+.reg-evite{
+  position:absolute; left:8px; top:8px; z-index:200;
+  width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap;
+  background:var(--bleu); color:#fff; padding:0; font-weight:700; text-decoration:none;
+}
+.reg-evite:focus{
+  width:auto; height:auto; overflow:visible; clip:auto;
+  padding:14px 20px; min-height:44px; display:inline-flex; align-items:center;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   2 · LA BARRE — cartouche fixe, fond plein, jamais transparente
+   ═══════════════════════════════════════════════════════════════════════════ */
+.reg-barre{
+  position:fixed; inset:0 0 auto 0; z-index:80;
+  height:var(--barre);
+  background:var(--blanc);
+  border-bottom:1px solid var(--bord);
+  box-shadow:0 1px 0 rgba(16,22,35,.03), 0 10px 22px -20px rgba(16,22,35,.5);
+  display:flex; align-items:center; gap:14px;
+  padding:0 var(--marge);
+}
+.reg-jauge{
+  position:absolute; left:0; bottom:-1px; height:2px; width:0;
+  background:linear-gradient(90deg,var(--bleu) 0%,var(--bleu-vif) 100%);
+  transition:width .5s var(--sortie);
+}
+
+.reg-marque{
+  display:inline-flex; align-items:center; gap:9px; text-decoration:none;
+  min-height:44px; white-space:nowrap;
+  font:800 clamp(.98rem,1.5vw,1.08rem)/1 var(--dis); letter-spacing:-.022em;
+}
+.reg-marque i{
+  display:block; width:16px; height:16px; flex:0 0 auto;
+  background:linear-gradient(140deg,var(--bleu-vif) 0%,var(--bleu) 52%,var(--bleu-nuit) 100%);
+}
+.reg-marque b{ font-weight:800 }
+.reg-marque span{ font-weight:500; color:var(--gris) }
+
+.reg-nav{ margin-left:auto; display:flex; align-items:center; gap:2px }
+.reg-nav button{
+  appearance:none; -webkit-appearance:none; background:none; border:0; cursor:pointer;
+  display:inline-flex; align-items:center; min-height:44px; padding:0 11px;
+  font:600 .94rem/1 var(--dis); color:var(--encre); letter-spacing:-.008em;
+}
+.reg-nav button:hover{ color:var(--bleu) }
+
+.reg-compte{
+  margin-left:12px; padding-left:14px; border-left:1px solid var(--bord);
+  font:700 var(--pt)/1 var(--mono); letter-spacing:.1em; color:var(--gris-clair);
+  font-variant-numeric:tabular-nums; white-space:nowrap;
+}
+.reg-compte b{ color:var(--bleu); font-weight:700 }
+
+.reg-burger{
+  margin-left:auto; width:46px; height:46px; display:none; place-items:center;
+  background:var(--blanc); border:1px solid var(--bord); cursor:pointer; padding:0;
+}
+.reg-burger i{ display:block; width:20px; height:2px; background:var(--encre); position:relative }
+.reg-burger i::before,.reg-burger i::after{
+  content:""; position:absolute; left:0; width:20px; height:2px; background:var(--encre);
+}
+.reg-burger i::before{ top:-6px } .reg-burger i::after{ top:6px }
+
+/* Panneau mobile — fond PLEIN, rien ne défile au travers */
+.reg-menu{
+  position:fixed; inset:0; z-index:95; background:var(--blanc);
+  display:none; flex-direction:column;
+  padding:calc(var(--barre) + 14px) var(--marge) 30px;
+}
+.reg-menu.ouvert{ display:flex }
+.reg-menu button{
+  appearance:none; -webkit-appearance:none; background:none; border:0; cursor:pointer;
+  display:flex; align-items:center; gap:14px; width:100%; text-align:left;
+  min-height:60px; padding:0; border-bottom:1px solid var(--bord-doux);
+  font:800 clamp(1.4rem,6.4vw,2rem)/1.15 var(--dis); letter-spacing:-.03em; color:var(--encre);
+}
+.reg-menu button em{
+  font:700 .8rem/1 var(--mono); font-style:normal; color:var(--gris-clair);
+  letter-spacing:.1em; flex:none; width:30px;
+}
+.reg-menu button:last-of-type{ color:var(--bleu) }
+.reg-fermer{
+  position:absolute; top:7px; right:var(--marge); width:46px; height:46px;
+  background:var(--blanc); border:1px solid var(--bord); cursor:pointer;
+  font:400 1.5rem/1 var(--dis); color:var(--encre);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   3 · LE CHAPEAU
+   ═══════════════════════════════════════════════════════════════════════════ */
+.reg-page{ position:relative; z-index:1; padding-top:var(--barre) }
+.reg-centre{ width:100%; max-width:1080px; margin:0 auto; padding:0 var(--marge) }
+
+.reg-chapeau{ padding:clamp(20px,3vw,34px) 0 clamp(12px,1.6vw,18px) }
+.reg-chapeau__sur{
+  display:inline-flex; align-items:center; gap:9px; margin:0 0 9px;
+  font:700 var(--pt)/1 var(--mono); letter-spacing:.13em; text-transform:uppercase;
+  color:var(--gris);
+}
+.reg-chapeau__sur::before{ content:""; width:7px; height:7px; background:var(--orange); flex:none }
+.reg-chapeau__aide{ margin:0; font:500 var(--pt)/1.5 var(--dis); color:var(--gris) }
+.reg-chapeau__aide b{ color:var(--encre); font-weight:700 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   4 · LE REGISTRE — la pile de bandes
+   ═══════════════════════════════════════════════════════════════════════════ */
+.reg-pile{
+  position:relative;
+  background:var(--blanc);
+  border:1px solid var(--bord);
+  box-shadow:
+    0 1px 2px rgba(16,22,35,.05),
+    0 12px 26px -18px rgba(16,22,35,.24),
+    0 46px 80px -56px rgba(16,22,35,.42);
+}
+/* Le filet vertical du registre : la colonne des numéros, d'un bout à l'autre. */
+.reg-pile::before{
+  content:""; position:absolute; z-index:1; top:0; bottom:0; left:var(--col);
+  width:1px; background:var(--bord-doux); pointer-events:none;
+}
+
+.reg-item{ position:relative }
+.reg-item + .reg-item{ border-top:1px solid var(--bord-doux) }
+
+/* le tranchant bleu de la ligne ouverte */
+.reg-item::after{
+  content:""; position:absolute; left:0; top:0; bottom:0; width:3px; z-index:3;
+  background:linear-gradient(180deg,var(--bleu-vif),var(--bleu) 40%,var(--bleu-nuit));
+  transform:scaleY(0); transform-origin:0 0;
+  transition:transform var(--duree) var(--sortie);
+}
+.reg-item.est-ouverte::after{ transform:scaleY(1) }
+.reg-item.est-ouverte{ background:linear-gradient(180deg,#FFFFFF 0%, #F7FAFF 100%) }
+
+/* ── l'en-tête cliquable ─────────────────────────────────────────────────── */
+.reg-h{ margin:0; font:inherit }
+.reg-tete{
+  appearance:none; -webkit-appearance:none;
+  display:flex; align-items:center; width:100%;
+  background:none; border:0; margin:0; padding:0 clamp(16px,2.4vw,26px) 0 0;
+  text-align:left; cursor:pointer; color:var(--encre);
+  min-height:60px;                       /* cible tactile : très au-dessus de 44 px */
+  font:inherit;
+  transition:background-color .22s ease, color .22s ease;
+}
+.reg-tete:hover{ background:#F6F9FF }
+.reg-tete:focus-visible{ outline:3px solid var(--orange); outline-offset:-3px }
+
+.reg-num{
+  flex:0 0 var(--col); align-self:stretch;
+  display:flex; align-items:center; justify-content:center; gap:6px;
+  font:700 .78rem/1 var(--mono); letter-spacing:.08em; color:var(--gris-clair);
+  font-variant-numeric:tabular-nums;
+  transition:color .24s ease;
+}
+.reg-num s{ display:none; width:5px; height:5px; background:var(--orange); text-decoration:none }
+.reg-item.est-lue .reg-num{ color:var(--bleu) }
+.reg-item.est-lue .reg-num s{ display:block }
+.reg-item.est-ouverte .reg-num{ color:var(--bleu) }
+
+.reg-label{
+  flex:1; min-width:0;
+  padding:16px clamp(12px,2vw,22px) 16px clamp(14px,2vw,24px);
+  font:700 clamp(1.02rem,1.9vw,1.28rem)/1.28 var(--dis); letter-spacing:-.024em;
+  transition:font-size var(--duree) var(--sortie), letter-spacing var(--duree) var(--sortie);
+}
+.reg-item.est-ouverte .reg-label{ color:var(--bleu-nuit) }
+
+/* LA UNE. La première ligne du registre est le titre de la page : quand elle est
+   ouverte, elle prend la taille d'un titre. Refermée, elle redevient une ligne
+   comme les dix autres. C'est le seul endroit où l'intitulé change de corps. */
+#s1.est-ouverte .reg-label{
+  padding-top:clamp(20px,2.4vw,30px); padding-bottom:clamp(8px,1vw,14px);
+  font-size:clamp(2rem,4.6vw,3.35rem); line-height:1.02; letter-spacing:-.045em;
+  color:var(--encre);
+}
+#s1.est-ouverte .reg-signe{ align-self:flex-start; margin-top:clamp(26px,3vw,40px) }
+#s1.est-ouverte .reg-num{ align-items:flex-start; padding-top:clamp(26px,3vw,40px) }
+
+/* le signe + / − , tracé en CSS, animé en transform seulement */
+.reg-signe{ position:relative; flex:none; width:15px; height:15px; margin-left:8px; color:var(--gris) }
+.reg-signe::before,.reg-signe::after{ content:""; position:absolute; background:currentColor }
+.reg-signe::before{ left:0; right:0; top:6.5px; height:2px }
+.reg-signe::after{
+  top:0; bottom:0; left:6.5px; width:2px;
+  transition:transform var(--duree) var(--sortie), opacity calc(var(--duree) * .6) ease;
+}
+.reg-tete[aria-expanded="true"] .reg-signe{ color:var(--bleu) }
+.reg-tete[aria-expanded="true"] .reg-signe::after{ transform:scaleY(0); opacity:0 }
+
+/* ── le panneau ──────────────────────────────────────────────────────────── */
+/* OUVERT PAR DÉFAUT. Sans script, les onze textes sont lisibles. */
+.reg-vol{ height:auto }
+.reg-pile.est-armee .reg-vol{
+  overflow:hidden;
+  transition:height var(--duree) var(--sortie);
+}
+.reg-corps{
+  --pg:calc(var(--col) + clamp(14px,2vw,24px));   /* rembourrage gauche, aligné sur le filet */
+  --pd:clamp(16px,2.6vw,34px);
+  padding:2px var(--pd) clamp(26px,3.2vw,38px) var(--pg);
+}
+/* la ligne 01 se termine sur son bandeau, bord à bord */
+#s1 .reg-corps{ padding-bottom:0 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   5 · TYPOGRAPHIE DE L'INTÉRIEUR
+   ═══════════════════════════════════════════════════════════════════════════ */
+.reg-titre{
+  margin:0 0 16px; max-width:22ch;
+  font:800 clamp(1.55rem,3.4vw,2.4rem)/1.1 var(--dis); letter-spacing:-.038em;
+  color:var(--encre);
+}
+.reg-titre--large{ max-width:25ch }
+
+.reg-txt{ margin:0; max-width:62ch; color:var(--gris); font-size:clamp(.96rem,1.25vw,1.03rem) }
+#s1 .reg-txt{ font-size:clamp(1rem,1.55vw,1.16rem); line-height:1.55; max-width:54ch; color:#3E4A63 }
+.reg-txt + .reg-txt{ margin-top:12px }
+.reg-txt strong{ color:var(--encre); font-weight:650 }
+.reg-txt--fort{ color:var(--encre); font-weight:650 }
+
+.reg-boutons{ display:flex; flex-wrap:wrap; gap:10px; margin-top:22px }
+.reg-btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:9px;
+  min-height:50px; padding:0 22px; cursor:pointer; text-decoration:none;
+  border:1px solid var(--bleu); background:var(--bleu); color:#fff;
+  font:700 .96rem/1 var(--dis); letter-spacing:-.01em;
+  box-shadow:0 1px 0 rgba(255,255,255,.32) inset, 0 10px 20px -14px rgba(0,80,230,.9);
+  transition:transform .18s var(--sortie), background-color .18s ease;
+}
+.reg-btn:hover{ background:var(--bleu-nuit); transform:translateY(-1px) }
+.reg-btn--vide{ background:var(--blanc); color:var(--encre); border-color:var(--bord); box-shadow:none }
+.reg-btn--vide:hover{ background:var(--bleu-pale); border-color:var(--bleu); color:var(--bleu-nuit) }
+.reg-btn i{
+  width:7px; height:7px; flex:none; background:currentColor;
+  transform:rotate(45deg) scale(.9); opacity:.85;
+}
+
+/* ── le bandeau qui défile ───────────────────────────────────────────────── */
+.reg-def{
+  /* il sort du rembourrage du corps pour occuper toute la largeur de la ligne */
+  margin:28px calc(-1 * var(--pd)) 0 calc(-1 * var(--pg));
+  overflow:hidden;
+  border-top:1px solid var(--bord);
+  background:linear-gradient(90deg,var(--bleu-pale),#F6F9FF 55%,var(--bleu-pale));
+}
+.reg-def__piste{ display:flex; width:max-content; animation:reg-defile 42s linear infinite }
+.reg-def__lot{
+  display:flex; align-items:center; padding:11px 0; white-space:nowrap;
+  font:600 var(--pt)/1 var(--dis); color:var(--bleu-nuit); letter-spacing:.01em;
+}
+.reg-def__lot span{ padding:0 17px; position:relative }
+.reg-def__lot span::after{
+  content:""; position:absolute; right:-2.5px; top:50%; width:5px; height:5px;
+  margin-top:-2.5px; background:var(--orange);
+}
+@keyframes reg-defile{ from{ transform:translate3d(0,0,0) } to{ transform:translate3d(-50%,0,0) } }
+
+/* ── les compteurs ───────────────────────────────────────────────────────── */
+.reg-chiffres{
+  display:grid; gap:1px; margin-top:26px; max-width:760px;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  background:var(--bord-doux); border:1px solid var(--bord-doux);
+}
+.reg-chiffres--duo{ grid-template-columns:repeat(2,minmax(0,1fr)); max-width:440px }
+.reg-chiffre{ background:var(--blanc); padding:16px 14px }
+.reg-chiffre b{
+  display:block; font:800 clamp(1.35rem,2.8vw,1.95rem)/1 var(--dis); letter-spacing:-.04em;
+  color:var(--bleu); font-variant-numeric:tabular-nums;
+}
+.reg-chiffre span{
+  display:block; margin-top:7px; font:600 var(--pt)/1.35 var(--dis); color:var(--gris);
+}
+
+/* ── la liste des implantations ──────────────────────────────────────────── */
+.reg-imp{
+  list-style:none; margin:24px 0 0; padding:0;
+  display:grid; gap:1px; background:var(--bord-doux);
+  border:1px solid var(--bord-doux);
+  grid-template-columns:repeat(2,minmax(0,1fr));
+}
+/* neuf implantations sur deux colonnes : la neuvième prend la ligne entière,
+   sinon la grille laisse une case vide qui se lit comme un trou. */
+.reg-imp li:last-child{ grid-column:1 / -1 }
+.reg-imp li{
+  background:var(--blanc); display:flex; align-items:center; gap:11px;
+  padding:13px 14px; min-width:0;
+  transition:background-color .2s ease;
+}
+.reg-imp li:hover{ background:var(--bleu-pale) }
+.reg-imp li.est-siege{ background:linear-gradient(120deg,#FFFFFF,var(--bleu-pale)) }
+.reg-imp__n{
+  flex:none; align-self:flex-start; padding-top:2px;
+  font:700 .74rem/1.3 var(--mono); color:var(--gris-clair); letter-spacing:.06em;
+  font-variant-numeric:tabular-nums;
+}
+.reg-imp__t{ flex:1; min-width:0 }
+.reg-imp__nom{ display:block; font:700 .98rem/1.25 var(--dis); letter-spacing:-.018em }
+.reg-imp__nom em{ font:600 var(--pt)/1.3 var(--dis); font-style:normal; color:var(--bleu) }
+.reg-imp__v{ display:block; margin-top:3px; font-size:var(--pt); color:var(--gris) }
+.reg-imp__d{
+  flex:none; min-width:34px; text-align:center; padding:4px 6px;
+  background:var(--bleu-pale); color:var(--bleu-nuit);
+  font:700 .74rem/1 var(--mono); letter-spacing:.05em;
+}
+.reg-mention{
+  margin:14px 0 0; padding:13px 15px;
+  background:var(--orange-pale); border-left:3px solid var(--orange);
+  font-size:var(--pt); line-height:1.55; color:#6B4A12; max-width:62ch;
+}
+.reg-mention strong{ color:#4A3208 }
+.reg-mention em{ font-style:normal; color:#8A6318 }
+
+/* ── les quatre métiers ──────────────────────────────────────────────────── */
+.reg-etapes{
+  display:grid; gap:1px; margin-top:26px;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  background:var(--bord-doux); border:1px solid var(--bord-doux);
+}
+.reg-etape{ background:var(--blanc); padding:18px 18px 20px }
+.reg-etape b{
+  display:block; font:700 .76rem/1 var(--mono); letter-spacing:.1em; color:var(--bleu);
+  margin-bottom:9px;
+}
+.reg-etape h4{ margin:0 0 8px; font:700 1.02rem/1.25 var(--dis); letter-spacing:-.022em }
+.reg-etape p{ margin:0; font-size:var(--pt); line-height:1.55; color:var(--gris) }
+
+.reg-cloture{
+  margin:20px 0 0; padding:16px 18px; max-width:64ch;
+  background:linear-gradient(120deg,var(--bleu-pale),#FFFFFF);
+  border-left:3px solid var(--bleu);
+  font-size:clamp(.94rem,1.2vw,1rem); line-height:1.55; color:var(--bleu-nuit);
+}
+
+/* ── laboratoires ────────────────────────────────────────────────────────── */
+.reg-labos{ display:flex; flex-wrap:wrap; gap:10px; margin:24px 0 0; padding:0; list-style:none }
+.reg-labos li{
+  display:inline-flex; align-items:center; min-height:52px; padding:0 20px;
+  background:var(--blanc); border:1px solid var(--bord);
+  font:700 1rem/1 var(--dis); letter-spacing:-.02em; color:var(--encre);
+  box-shadow:0 1px 0 #fff inset, 0 8px 16px -14px rgba(16,22,35,.5);
+}
+.reg-labos li::before{
+  content:""; width:8px; height:8px; margin-right:11px; background:var(--bleu);
+  transform:rotate(45deg); flex:none;
+}
+
+/* ── villes qui recrutent ────────────────────────────────────────────────── */
+.reg-villes{ display:flex; flex-wrap:wrap; gap:8px; margin:20px 0 0; padding:0; list-style:none }
+.reg-villes li{
+  padding:8px 13px; background:var(--bleu-pale); color:var(--bleu-nuit);
+  font:600 var(--pt)/1.3 var(--dis);
+}
+
+/* ── valeurs ─────────────────────────────────────────────────────────────── */
+.reg-valeurs{
+  display:grid; gap:1px; margin-top:26px;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  background:var(--bord-doux); border:1px solid var(--bord-doux);
+}
+.reg-valeur{ background:var(--blanc); padding:20px 18px 22px; position:relative }
+.reg-valeur::before{
+  content:""; position:absolute; left:0; top:0; width:100%; height:3px;
+  background:linear-gradient(90deg,var(--bleu),rgba(0,80,230,0));
+}
+.reg-valeur h4{
+  margin:0 0 9px; font:800 1.16rem/1.15 var(--dis); letter-spacing:-.03em; color:var(--bleu-nuit);
+}
+.reg-valeur p{ margin:0; font-size:var(--pt); line-height:1.55; color:var(--gris) }
+
+/* ── coordonnées ─────────────────────────────────────────────────────────── */
+.reg-coord{ display:grid; gap:22px; grid-template-columns:1.25fr 1fr; align-items:start }
+.reg-coord dl{ margin:0 }
+.reg-coord dt{
+  font:700 var(--pt)/1 var(--mono); letter-spacing:.12em; text-transform:uppercase;
+  color:var(--gris-clair); margin-bottom:6px;
+}
+.reg-coord dd{ margin:0 0 16px; font-size:clamp(.94rem,1.2vw,1rem); line-height:1.5 }
+.reg-coord dd:last-child{ margin-bottom:0 }
+/* cibles tactiles : ces deux liens sont dans une phrase, on leur donne quand même
+   les 44 px de haut exigés en les passant en bloc en ligne avec du rembourrage */
+.reg-coord dd a{
+  color:var(--bleu); font-weight:650;
+  display:inline-flex; align-items:center; min-height:44px; padding:0 2px;
+}
+.reg-ligne{
+  display:flex; flex-wrap:wrap; gap:6px 14px; margin:0; padding:14px 16px; list-style:none;
+  background:var(--bleu-pale); font:600 var(--pt)/1.4 var(--dis); color:var(--bleu-nuit);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   6 · PIED DE PAGE
+   ═══════════════════════════════════════════════════════════════════════════ */
+.reg-pied{
+  margin-top:clamp(28px,4.5vw,50px); padding:24px 0 clamp(60px,16vh,180px);
+  border-top:1px solid var(--bord);
+  display:flex; flex-wrap:wrap; align-items:center; gap:10px 18px;
+  font-size:var(--pt); line-height:1.5; color:var(--gris);
+}
+.reg-pied__da{
+  margin-left:auto; font:700 var(--pt)/1 var(--mono); letter-spacing:.12em;
+  color:var(--gris-clair); text-transform:uppercase;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   7 · TÉLÉPHONE
+   ═══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 880px){
+  :root{ --col:44px; --barre:56px }
+  .reg-nav{ display:none }
+  .reg-burger{ display:grid }
+  .reg-tete{ min-height:64px }
+  .reg-label{ padding:15px 10px 15px 12px; font-size:1.04rem }
+  /* le corps repart exactement sous l'intitulé, jamais décalé par rapport à lui */
+  .reg-corps{ --pg:56px; --pd:18px; padding:2px var(--pd) 30px var(--pg) }
+  .reg-pile::before{ display:none }
+  .reg-chiffres{ grid-template-columns:repeat(2,minmax(0,1fr)) }
+  .reg-imp{ grid-template-columns:1fr }
+  .reg-etapes{ grid-template-columns:1fr }
+  .reg-valeurs{ grid-template-columns:1fr }
+  .reg-coord{ grid-template-columns:1fr }
+  .reg-boutons .reg-btn{ flex:1 1 100% }
+  .reg-titre{ max-width:none }
+  /* les deux liens passent l'un sous l'autre : le point de séparation n'a plus de sens */
+  .reg-sep{ display:none }
+  .reg-coord dd a{ display:flex }
+}
+@media (max-width: 420px){
+  .reg-labos li{ flex:1 1 calc(50% - 5px); padding:0 12px; font-size:.92rem }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   8 · MOUVEMENT RÉDUIT — repli obligatoire
+   ═══════════════════════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{
+    animation-duration:.001ms !important; animation-iteration-count:1 !important;
+    transition-duration:.001ms !important; scroll-behavior:auto !important;
+  }
+  .reg-def__piste{ animation:none }
+  .reg-def{ overflow-x:auto }
+  .reg-item::after{ transform:scaleY(1) }
+}
+</style>
+</head>
+
+<body>
+
+<a class="reg-evite" href="#reg-pile">Aller au sommaire</a>
+
+<!-- ═══════════════ BARRE ═══════════════ -->
+<header class="reg-barre">
+  <a class="reg-marque" href="#reg-pile"><i aria-hidden="true"></i><b>Intégral</b>&nbsp;<span>Pharma</span></a>
+
+  <nav class="reg-nav" aria-label="Sections du site">
+    <button type="button" data-ouvre="p2">Le groupe</button>
+    <button type="button" data-ouvre="p3">Le réseau</button>
+    <button type="button" data-ouvre="p4">Le métier</button>
+    <button type="button" data-ouvre="p9">Nos valeurs</button>
+    <button type="button" data-ouvre="p10">Nous écrire</button>
+    <span class="reg-compte" id="reg-compte" aria-live="polite"><b>1</b>/11 lues</span>
+  </nav>
+
+  <button class="reg-burger" type="button" id="reg-burger" aria-expanded="false" aria-controls="reg-menu" aria-label="Ouvrir le menu">
+    <i aria-hidden="true"></i>
+  </button>
+
+  <span class="reg-jauge" id="reg-jauge" aria-hidden="true"></span>
+</header>
+
+<!-- ═══════════════ MENU TÉLÉPHONE — fond plein ═══════════════ -->
+<div class="reg-menu" id="reg-menu" hidden>
+  <button class="reg-fermer" type="button" id="reg-menu-fermer" aria-label="Fermer le menu">&times;</button>
+  <button type="button" data-ouvre="p2"><em>02</em>Le groupe</button>
+  <button type="button" data-ouvre="p3"><em>03</em>Le réseau</button>
+  <button type="button" data-ouvre="p4"><em>04</em>Le métier</button>
+  <button type="button" data-ouvre="p9"><em>09</em>Nos valeurs</button>
+  <button type="button" data-ouvre="p10"><em>10</em>Nous écrire</button>
+</div>
+
+<main class="reg-page">
+<div class="reg-centre">
+
+  <!-- ═══════════════ CHAPEAU ═══════════════ -->
+  <div class="reg-chapeau">
+    <p class="reg-chapeau__sur">Groupe de grossistes-répartiteurs français indépendant</p>
+    <p class="reg-chapeau__aide">Le site tient en onze lignes. <b>Cliquez une ligne pour l'ouvrir</b> — une seule reste ouverte à la fois, le défilement n'ouvre rien.</p>
+  </div>
+
+  <!-- ═══════════════ LE REGISTRE ═══════════════ -->
+  <div class="reg-pile" id="reg-pile">
+
+    <!-- ─────────── 01 · L'ouverture ─────────── -->
+    <section class="reg-item" id="s1">
+      <h1 class="reg-h">
+        <button class="reg-tete" type="button" id="t1" aria-expanded="true" aria-controls="p1">
+          <span class="reg-num" aria-hidden="true">01<s></s></span>
+          <span class="reg-label">Neuf maisons. Un seul nom.</span>
+          <span class="reg-signe" aria-hidden="true"></span>
+        </button>
+      </h1>
+      <div class="reg-vol" id="p1" role="region" aria-labelledby="t1">
+        <div class="reg-corps">
+          <p class="reg-txt">Chacune livre sa région depuis des années, avec ses équipes et ses habitudes. Depuis 2006, elles avancent ensemble sous le nom d'Intégral Pharma — et votre commande part toujours de la plus proche de votre comptoir.</p>
+
+          <div class="reg-boutons">
+            <button class="reg-btn" type="button" data-ouvre="p3">Découvrir le réseau <i aria-hidden="true"></i></button>
+            <button class="reg-btn reg-btn--vide" type="button" data-ouvre="p10">Nous écrire</button>
+          </div>
+
+          <div class="reg-def" aria-label="Repères">
+            <div class="reg-def__piste">
+              <div class="reg-def__lot">
+                <span>Indépendant</span><span>Neuf implantations</span><span>Un réseau national</span><span>Plus de 2&#8239;000 officines livrées</span><span>Confiance, Engagement, Respect</span><span>Une alternative aux grossistes historiques</span>
+              </div>
+              <div class="reg-def__lot" aria-hidden="true">
+                <span>Indépendant</span><span>Neuf implantations</span><span>Un réseau national</span><span>Plus de 2&#8239;000 officines livrées</span><span>Confiance, Engagement, Respect</span><span>Une alternative aux grossistes historiques</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────── 02 · Notre histoire ─────────── -->
+    <section class="reg-item" id="s2">
+      <h2 class="reg-h">
+        <button class="reg-tete" type="button" id="t2" aria-expanded="true" aria-controls="p2">
+          <span class="reg-num" aria-hidden="true">02<s></s></span>
+          <span class="reg-label">Notre histoire</span>
+          <span class="reg-signe" aria-hidden="true"></span>
+        </button>
+      </h2>
+      <div class="reg-vol" id="p2" role="region" aria-labelledby="t2">
+        <div class="reg-corps">
+          <h3 class="reg-titre">Rendre la marge à l'officine française.</h3>
+          <p class="reg-txt">C'est la raison d'être d'Intégral Pharma depuis 2006&nbsp;: redistribuer directement la marge aux officines françaises, en toute transparence, avec des prix nets visibles sur facture.</p>
+          <p class="reg-txt">Neuf implantations aujourd'hui, plus de deux mille officines livrées chaque jour, et la même idée qu'au premier jour — un groupe de répartiteurs indépendants qui a choisi de se mettre du côté du comptoir.</p>
+
+          <div class="reg-chiffres">
+            <div class="reg-chiffre"><b>2006</b><span>année de création</span></div>
+            <div class="reg-chiffre"><b>9</b><span>implantations</span></div>
+            <div class="reg-chiffre"><b>2&#8239;000&nbsp;+</b><span>officines livrées</span></div>
+            <div class="reg-chiffre"><b>20</b><span>ans d'indépendance</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────── 03 · Le réseau ─────────── -->
+    <section class="reg-item" id="s3">
+      <h2 class="reg-h">
+        <button class="reg-tete" type="button" id="t3" aria-expanded="true" aria-controls="p3">
+          <span class="reg-num" aria-hidden="true">03<s></s></span>
+          <span class="reg-label">Le réseau</span>
+          <span class="reg-signe" aria-hidden="true"></span>
+        </button>
+      </h2>
+      <div class="reg-vol" id="p3" role="region" aria-labelledby="t3">
+        <div class="reg-corps">
+          <h3 class="reg-titre reg-titre--large">Neuf implantations. Laquelle est la vôtre&nbsp;?</h3>
+          <p class="reg-txt">C'est la seule question qui compte vraiment. Celle qui prépare votre commande, qui vous livre chaque matin, et dont vous connaissez l'équipe par son prénom.</p>
+          <p class="reg-txt">Les huit autres sont là pour qu'elle ne soit jamais prise au dépourvu — de la Bretagne à la Méditerranée, le stock d'une maison est le stock de toutes.</p>
+
+          <ol class="reg-imp">
+            <li class="est-siege"><span class="reg-imp__n">01</span><span class="reg-imp__t"><span class="reg-imp__nom">Hyères Pharma <em>· siège du groupe</em></span><span class="reg-imp__v">Hyères</span></span><span class="reg-imp__d">83</span></li>
+            <li><span class="reg-imp__n">02</span><span class="reg-imp__t"><span class="reg-imp__nom">SR Pharma</span><span class="reg-imp__v">Palaiseau</span></span><span class="reg-imp__d">91</span></li>
+            <li><span class="reg-imp__n">03</span><span class="reg-imp__t"><span class="reg-imp__nom">Mistral Santé Pharma</span><span class="reg-imp__v">Flassans-sur-Issole</span></span><span class="reg-imp__d">83</span></li>
+            <li><span class="reg-imp__n">04</span><span class="reg-imp__t"><span class="reg-imp__nom">Sud Ouest Pharma</span><span class="reg-imp__v">Montayral</span></span><span class="reg-imp__d">47</span></li>
+            <li><span class="reg-imp__n">05</span><span class="reg-imp__t"><span class="reg-imp__nom">Comptoir Pharmaceutique du Rhône</span><span class="reg-imp__v">Saint-Maurice-l'Exil</span></span><span class="reg-imp__d">38</span></li>
+            <li><span class="reg-imp__n">06</span><span class="reg-imp__t"><span class="reg-imp__nom">Escale Pharma</span><span class="reg-imp__v">Chilly-Mazarin</span></span><span class="reg-imp__d">91</span></li>
+            <li><span class="reg-imp__n">07</span><span class="reg-imp__t"><span class="reg-imp__nom">Ouest Pharma Services</span><span class="reg-imp__v">Saint-Étienne-de-Montluc</span></span><span class="reg-imp__d">44</span></li>
+            <li><span class="reg-imp__n">08</span><span class="reg-imp__t"><span class="reg-imp__nom">Pharm'Occitanie Services</span><span class="reg-imp__v">Villeneuve-lès-Béziers</span></span><span class="reg-imp__d">34</span></li>
+            <li><span class="reg-imp__n">09</span><span class="reg-imp__t"><span class="reg-imp__nom">Sud Est Pharma</span><span class="reg-imp__v">Le Cannet-des-Maures</span></span><span class="reg-imp__d">83</span></li>
+          </ol>
+
+          <p class="reg-mention">Et à l'Est, notre partenaire <strong>Pharmest</strong> (Metz, 57) prolonge le maillage. <em>Neuf implantations et un partenaire.</em></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────── 04 · Le métier ─────────── -->
+    <section class="reg-item" id="s4">
+      <h2 class="reg-h">
+        <button class="reg-tete" type="button" id="t4" aria-expanded="true" aria-controls="p4">
+          <span class="reg-num" aria-hidden="true">04<s></s></span>
+          <span class="reg-label">Le métier</span>
+          <span class="reg-signe" aria-hidden="true"></span>
+        </button>
+      </h2>
+      <div class="reg-vol" id="p4" role="region" aria-labelledby="t4">
+        <div class="reg-corps">
+          <h3 class="reg-titre reg-titre--large">Ce qui se passe entre votre commande et votre comptoir.</h3>
+          <p class="reg-txt">Quelques heures, quatre métiers, et une chaîne qui ne s'arrête jamais. Référencer, stocker, préparer, livrer&nbsp;: c'est invisible depuis l'officine, et c'est tout notre travail.</p>
+
+          <div class="reg-etapes">
+            <div class="reg-etape">
+              <b>01</b>
+              <h4>Le référencement</h4>
+              <p>Le groupe référence pour ses neuf maisons à la fois&nbsp;: un même catalogue, tenu à jour, disponible dans toutes les implantations. C'est ce qui permet à une maison de taille humaine de proposer la profondeur de gamme d'un réseau national.</p>
+            </div>
+            <div class="reg-etape">
+              <b>02</b>
+              <h4>La disponibilité</h4>
+              <p>Des stocks répartis sur neuf implantations, au plus près de votre officine. Quand le comptoir a besoin, le réseau répond — et quand une référence manque quelque part, elle existe souvent ailleurs dans le réseau.</p>
+            </div>
+            <div class="reg-etape">
+              <b>03</b>
+              <h4>La préparation</h4>
+              <p>Chaque commande est préparée dans l'implantation la plus proche de chez vous, par une équipe qui connaît votre officine et ses saisons.</p>
+            </div>
+            <div class="reg-etape">
+              <b>04</b>
+              <h4>La livraison</h4>
+              <p>Tous les jours, les tournées partent vers les officines. La régularité d'un service tenu — c'est elle qui fait la confiance, pas les promesses.</p>
+            </div>
+          </div>
+
+          <p class="reg-cloture">Et quand la vie de votre officine change — transfert, agrandissement, cession de parts — votre interlocuteur ajuste l'approvisionnement avec vous, sans à-coup au comptoir.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────── 05 · La centrale ─────────── -->
+    <section class="reg-item" id="s5">
+      <h2 class="reg-h">
+        <button class="reg-tete" type="button" id="t5" aria-expanded="true" aria-controls="p5">
+          <span class="reg-num" aria-hidden="true">05<s></s></span>
+          <span class="reg-label">La centrale</span>
+          <span class="reg-signe" aria-hidden="true"></span>
+        </button>
+      </h2>
+      <div class="reg-vol" id="p5" role="region" aria-labelledby="t5">
+        <div class="reg-corps">
+          <h3 class="reg-titre reg-titre--large">Et pour tout ce qui n'est pas le médicament.</h3>
+          <p class="reg-txt">Notre centrale de parapharmacie référence pour l'officine plus de 14&#8239;000 produits et plus de 480 marques.</p>
+          <p class="reg-txt">C'est une structure à part, avec son propre fonctionnement — sa commande, sa livraison — et la même exigence que le reste du groupe.</p>
+
+          <div class="reg-chiffres reg-chiffres--duo">
+            <div class="reg-chiffre"><b>14&#8239;000&nbsp;+</b><span>références</span></div>
+            <div class="reg-chiffre"><b>480&nbsp;+</b><span>marques</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────── 06 · Vos factures ─────────── -->
+    <section class="reg-item" id="s6">
+      <h2 class="reg-h">
+        <button class="reg-tete" type="button" id="t6" aria-expanded="true" aria-controls="p6">
+          <span class="reg-num" aria-hidden="true">06<s></s></span>
+          <span class="reg-label">Vos factures</span>
+          <span class="reg-signe" aria-hidden="true"></span>
+        </button>
+      </h2>
+      <div class="reg-vol" id="p6" role="region" aria-labelledby="t6">
+        <div class="reg-corps">
+          <h3 class="reg-titre reg-titre--large">Elles arrivent déjà là où vous les gérez.</h3>
+          <p class="reg-txt">Nous sommes connectés à Digipharmacie&nbsp;: vos factures Intégral s'y retrouvent automatiquement, avec celles de vos autres fournisseurs.</p>
+          <p class="reg-txt reg-txt--fort">Rien à saisir, rien à classer, rien à réclamer.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────── 07 · Nos partenaires ─────────── -->
+    <section class="reg-item" id="s7">
+      <h2 class="reg-h">
+        <button class="reg-tete" type="button" id="t7" aria-expanded="true" aria-controls="p7">
+          <span class="reg-num" aria-hidden="true">07<s></s></span>
+          <span class="reg-label">Nos partenaires</span>
+          <span class="reg-signe" aria-hidden="true"></span>
+        </button>
+      </h2>
+      <div class="reg-vol" id="p7" role="region" aria-labelledby="t7">
+        <div class="reg-corps">
+          <h3 class="reg-titre reg-titre--large">Les laboratoires qui nous font confiance.</h3>
+          <ul class="reg-labos">
+            <li>EG Labo</li><li>Zentiva</li><li>Zydus</li><li>Viatris</li><li>ITP</li><li>Santestat</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────── 08 · Nous rejoindre ─────────── -->
+    <section class="reg-item" id="s8">
+      <h2 class="reg-h">
+        <button class="reg-tete" type="button" id="t8" aria-expanded="true" aria-controls="p8">
+          <span class="reg-num" aria-hidden="true">08<s></s></span>
+          <span class="reg-label">Nous rejoindre</span>
+          <span class="reg-signe" aria-hidden="true"></span>
+        </button>
+      </h2>
+      <div class="reg-vol" id="p8" role="region" aria-labelledby="t8">
+        <div class="reg-corps">
+          <h3 class="reg-titre">Neuf implantations qui embauchent.</h3>
+          <p class="reg-txt">Préparateur-chauffeur, technicien approvisionnement, commercial, pharmacien responsable&nbsp;: les métiers de la répartition s'apprennent chez nous.</p>
+          <ul class="reg-villes">
+            <li>Hyères (83)</li><li>Villeneuve-lès-Béziers (34)</li><li>Montayral (47)</li><li>Saint-Maurice-l'Exil (38)</li>
+          </ul>
+          <div class="reg-boutons">
+            <a class="reg-btn" href="https://www.integralpharma.fr/" rel="noopener">Voir les offres <i aria-hidden="true"></i></a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────── 09 · Nos valeurs ─────────── -->
+    <section class="reg-item" id="s9">
+      <h2 class="reg-h">
+        <button class="reg-tete" type="button" id="t9" aria-expanded="true" aria-controls="p9">
+          <span class="reg-num" aria-hidden="true">09<s></s></span>
+          <span class="reg-label">Nos valeurs</span>
+          <span class="reg-signe" aria-hidden="true"></span>
+        </button>
+      </h2>
+      <div class="reg-vol" id="p9" role="region" aria-labelledby="t9">
+        <div class="reg-corps">
+          <h3 class="reg-titre reg-titre--large">Trois mots qui se vérifient au téléphone.</h3>
+          <div class="reg-valeurs">
+            <div class="reg-valeur">
+              <h4>Confiance</h4>
+              <p>La personne qui décroche connaît votre officine, vos saisons et vos habitudes.</p>
+            </div>
+            <div class="reg-valeur">
+              <h4>Engagement</h4>
+              <p>C'est la même d'une année sur l'autre. Dans ce métier, c'est devenu rare.</p>
+            </div>
+            <div class="reg-valeur">
+              <h4>Respect</h4>
+              <p>Elle ne vous vendra pas ce dont vous n'avez pas besoin — parce qu'elle vous reverra le mois suivant, et l'année d'après.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────── 10 · Nous écrire ─────────── -->
+    <section class="reg-item" id="s10">
+      <h2 class="reg-h">
+        <button class="reg-tete" type="button" id="t10" aria-expanded="true" aria-controls="p10">
+          <span class="reg-num" aria-hidden="true">10<s></s></span>
+          <span class="reg-label">Nous écrire</span>
+          <span class="reg-signe" aria-hidden="true"></span>
+        </button>
+      </h2>
+      <div class="reg-vol" id="p10" role="region" aria-labelledby="t10">
+        <div class="reg-corps">
+          <h3 class="reg-titre reg-titre--large">Posez-nous la question qui vous intéresse.</h3>
+          <p class="reg-txt">Sur nos conditions, sur nos délais, sur la façon dont nous travaillons. Vous aurez une réponse claire, et le nom de l'implantation qui livre votre secteur.</p>
+          <div class="reg-boutons">
+            <a class="reg-btn" href="mailto:contact@integralpharma.fr">contact@integralpharma.fr <i aria-hidden="true"></i></a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────── 11 · Nos coordonnées ─────────── -->
+    <section class="reg-item" id="s11">
+      <h2 class="reg-h">
+        <button class="reg-tete" type="button" id="t11" aria-expanded="true" aria-controls="p11">
+          <span class="reg-num" aria-hidden="true">11<s></s></span>
+          <span class="reg-label">Nos coordonnées</span>
+          <span class="reg-signe" aria-hidden="true"></span>
+        </button>
+      </h2>
+      <div class="reg-vol" id="p11" role="region" aria-labelledby="t11">
+        <div class="reg-corps">
+          <div class="reg-coord">
+            <dl>
+              <dt>Siège</dt>
+              <dd>Intégral Pharma — 758 chemin de la Source, ZI Saint-Martin, 83400 Hyères</dd>
+              <dt>Écrire</dt>
+              <dd><a href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a><span class="reg-sep"> · </span><a href="https://www.integralpharma.fr/" rel="noopener">Mentions légales</a></dd>
+            </dl>
+            <ul class="reg-ligne">
+              <li>9 implantations</li>
+              <li>plus de 2&#8239;000 officines livrées</li>
+              <li>indépendant depuis 2006</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div><!-- /reg-pile -->
+
+  <footer class="reg-pied">
+    <span>Intégral Pharma</span>
+    <span class="reg-pied__da">19 · Registre</span>
+  </footer>
+
+</div>
+</main>
+
+<script>
+(function(){
+  "use strict";
+
+  var pile = document.getElementById('reg-pile');
+  if (!pile) return;
+
+  var barre  = document.querySelector('.reg-barre');
+  var jauge  = document.getElementById('reg-jauge');
+  var compte = document.getElementById('reg-compte');
+  var totes  = [].slice.call(pile.querySelectorAll('.reg-tete'));
+  if (!totes.length) return;
+
+  var reduit = false;
+  try { reduit = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch(e){}
+  var DUREE = reduit ? 0 : 440;
+
+  var lues = 0;
+
+  function volet(btn){ return document.getElementById(btn.getAttribute('aria-controls')); }
+  function bloc(btn){
+    var n = btn;
+    while (n && !(n.classList && n.classList.contains('reg-item'))) n = n.parentNode;
+    return n;
+  }
+  function ancre(){ return (barre ? barre.offsetHeight : 60) + 10; }
+
+  function majCompteur(){
+    if (compte) compte.innerHTML = '<b>' + lues + '</b>/' + totes.length + ' lues';
+    if (jauge)  jauge.style.width = (lues / totes.length * 100) + '%';
+  }
+
+  /* ── ouverture / fermeture ────────────────────────────────────────────── */
+  function ouvrir(btn, anime){
+    var p = volet(btn), b = bloc(btn);
+    if (!p) return;
+    btn.setAttribute('aria-expanded','true');
+    if (b){
+      b.classList.add('est-ouverte');
+      if (!b.classList.contains('est-lue')){ b.classList.add('est-lue'); lues++; majCompteur(); }
+    }
+    p.style.visibility = '';
+    window.clearTimeout(p._min);
+    if (!anime || DUREE === 0){ p.style.height = 'auto'; return; }
+    p.style.height = p.scrollHeight + 'px';
+    /* Retour en hauteur automatique une fois l'animation finie : sinon une rotation
+       du téléphone couperait le texte au ras de l'ancienne hauteur. */
+    p._min = window.setTimeout(function(){ p.style.height = 'auto'; }, DUREE + 60);
+  }
+
+  function fermer(btn, anime){
+    var p = volet(btn), b = bloc(btn);
+    if (!p) return;
+    btn.setAttribute('aria-expanded','false');
+    if (b) b.classList.remove('est-ouverte');
+    window.clearTimeout(p._min);
+    if (!anime || DUREE === 0){ p.style.height = '0px'; p.style.visibility = 'hidden'; return; }
+    p.style.height = p.scrollHeight + 'px';
+    void p.offsetHeight;                 /* on fige la hauteur réelle avant de repartir à 0 */
+    p.style.height = '0px';
+    /* Un volet fermé sort du parcours de tabulation — sinon le curseur clavier
+       disparaît dans une zone invisible. Le texte, lui, reste dans le document. */
+    p._min = window.setTimeout(function(){ p.style.visibility = 'hidden'; }, DUREE + 60);
+  }
+
+  /* ── PIÈGE 4 · la position de lecture ne doit pas sauter ───────────────
+     On ne devine aucune hauteur : à chaque image, tant que les volets
+     s'animent, on lit la position RÉELLE de l'en-tête cliqué et on recale la
+     page dessus. La dernière image pose la valeur exacte. Le lecteur reprend
+     la main dès qu'il touche la molette ou l'écran.                        */
+  var boucle = null, lachez = null;
+
+  function amener(el){
+    if (boucle){ cancelAnimationFrame(boucle); boucle = null; }
+    if (lachez){ lachez(); lachez = null; }
+
+    if (DUREE === 0){
+      window.scrollBy(0, el.getBoundingClientRect().top - ancre());
+      return;
+    }
+
+    var maintenant = (window.performance && performance.now) ? performance.now() : Date.now();
+    var fin = maintenant + DUREE + 90;
+    var stop = false;
+
+    function coupe(){ stop = true; }
+    window.addEventListener('wheel', coupe, {passive:true});
+    window.addEventListener('touchmove', coupe, {passive:true});
+    lachez = function(){
+      window.removeEventListener('wheel', coupe);
+      window.removeEventListener('touchmove', coupe);
+    };
+
+    function fini(){ boucle = null; if (lachez){ lachez(); lachez = null; } }
+
+    function pas(t){
+      if (stop){ fini(); return; }
+      var d = el.getBoundingClientRect().top - ancre();
+      if (t >= fin){ window.scrollBy(0, d); fini(); return; }
+      window.scrollBy(0, d * 0.22);
+      boucle = requestAnimationFrame(pas);
+    }
+    boucle = requestAnimationFrame(pas);
+  }
+
+  /* ── bascule : une seule ligne ouverte à la fois ──────────────────────── */
+  function basculer(btn, forcer){
+    var etait = btn.getAttribute('aria-expanded') === 'true';
+    totes.forEach(function(a){
+      if (a !== btn && a.getAttribute('aria-expanded') === 'true') fermer(a, true);
+    });
+    if (etait && !forcer) fermer(btn, true);
+    else                  ouvrir(btn, true);
+    amener(bloc(btn) || btn);
+  }
+
+  /* ── ARMEMENT — le masquage vient du script, jamais de la feuille de style ─ */
+  pile.classList.add('est-armee');
+  totes.forEach(function(btn, i){ if (i === 0) ouvrir(btn, false); else fermer(btn, false); });
+
+  /* Filet : si l'armement a échoué, on rouvre tout plutôt que de laisser
+     onze bandes muettes. */
+  window.setTimeout(function(){
+    if (!pile.querySelector('.reg-tete[aria-expanded="true"]')){
+      pile.classList.remove('est-armee');
+      totes.forEach(function(btn){
+        var p = volet(btn);
+        if (p){ p.style.height = 'auto'; p.style.visibility = ''; }
+        btn.setAttribute('aria-expanded','true');
+      });
+    }
+  }, 2000);
+
+  totes.forEach(function(btn){
+    btn.addEventListener('click', function(){ basculer(btn, false); });
+    btn.addEventListener('keydown', function(e){
+      var i = totes.indexOf(btn), c = -1;
+      if      (e.key === 'ArrowDown') c = (i + 1) % totes.length;
+      else if (e.key === 'ArrowUp')   c = (i - 1 + totes.length) % totes.length;
+      else if (e.key === 'Home')      c = 0;
+      else if (e.key === 'End')       c = totes.length - 1;
+      if (c < 0) return;
+      e.preventDefault();
+      totes[c].focus();
+    });
+  });
+
+  /* ── menu téléphone ───────────────────────────────────────────────────── */
+  var burger = document.getElementById('reg-burger');
+  var menu   = document.getElementById('reg-menu');
+  function ouvrirMenu(){
+    if (!menu) return;
+    menu.hidden = false; menu.classList.add('ouvert');
+    if (burger) burger.setAttribute('aria-expanded','true');
+    document.body.style.overflow = 'hidden';
+  }
+  function fermerMenu(){
+    if (!menu || !menu.classList.contains('ouvert')) return;
+    menu.classList.remove('ouvert'); menu.hidden = true;
+    if (burger) burger.setAttribute('aria-expanded','false');
+    document.body.style.overflow = '';
+  }
+  if (burger) burger.addEventListener('click', ouvrirMenu);
+  var fx = document.getElementById('reg-menu-fermer');
+  if (fx) fx.addEventListener('click', fermerMenu);
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape') fermerMenu(); });
+
+  /* ── raccourcis (barre, menu, boutons du contenu) ─────────────────────── */
+  function versVolet(id){
+    var p = document.getElementById(id);
+    if (!p) return;
+    var btn = document.getElementById(p.getAttribute('aria-labelledby'));
+    if (btn) basculer(btn, true);
+  }
+  [].slice.call(document.querySelectorAll('[data-ouvre]')).forEach(function(el){
+    el.addEventListener('click', function(){
+      fermerMenu();
+      versVolet(el.getAttribute('data-ouvre'));
+    });
+  });
+
+  /* ── largeur qui change : les fermés restent fermés ───────────────────── */
+  window.addEventListener('resize', function(){
+    totes.forEach(function(btn){
+      if (btn.getAttribute('aria-expanded') !== 'true'){
+        var p = volet(btn);
+        if (p) p.style.height = '0px';
+      }
+    });
+  }, {passive:true});
+
+  /* ── adresse avec ancre ───────────────────────────────────────────────── */
+  if (location.hash){
+    var cible = document.querySelector(location.hash + ' .reg-tete');
+    if (cible) basculer(cible, true);
+  }
+
+  majCompteur();
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Intégral Pharma — Neuf maisons. Un seul nom.</title>
+<meta name="da-nom" content="Altitudes">
+<meta name="description" content="Intégral Pharma, groupe de grossistes-répartiteurs français indépendant. Neuf implantations, plus de 2 000 officines livrées.">
+
+<!--
+  SITE 12 · ALTITUDES
+  ─────────────────────────────────────────────────────────────────────────────
+  Architecture imposée : LES COUCHES EN PARALLAXE.
+
+  Ce que le décalage SIGNIFIE ici — sinon c'est un tic :
+  chaque section est faite de trois plans superposés (le fond lointain, le décor
+  intermédiaire, le texte). L'écart de vitesse entre ces plans est MAXIMAL en haut
+  de page et DIMINUE section après section, jusqu'à s'annuler presque complètement
+  au comptoir. On commence par voir le réseau de très haut — les plans glissent
+  franchement les uns sur les autres — et on descend jusqu'à l'officine, où il n'y
+  a plus de distance entre les plans du tout.
+  Les amplitudes sont écrites en clair dans data-amp, section par section :
+      01 −46 / +118   …   06 −26 / +66   …   11 −6 / +14
+  C'est l'altitude, pas un effet.
+
+  Le trou en haut/bas d'une couche (piège n°2) :
+  chaque plan déborde de 170 px au-dessus ET au-dessous de sa section
+  (.alt-plan { top:-170px; bottom:-170px }), et son déplacement est BORNÉ par
+  construction : ty = p × amp avec p ∈ [−1,+1] et |amp| ≤ 120. 120 < 170, donc
+  aucun plan ne peut découvrir le vide, quelle que soit la hauteur de la section
+  ou de la fenêtre. Le fond coloré, lui, est porté par la section elle-même.
+
+  Le Mac qui rame (piège n°3) :
+  seules les sections réellement à l'écran (± 0,6 hauteur d'écran) sont calculées
+  et reçoivent will-change. 3 plans animés par section au maximum, plus le texte.
+
+  Mouvement réduit (piège n°4) :
+  tous les plans reviennent à leur position de repos (transform:none), le texte
+  est lisible, le bandeau s'arrête, aucune section n'est décalée.
+
+  Zéro requête réseau : aucune police, aucune image, aucun script distant.
+  Safari : aucun découpage de fond sur le texte, aucun filtre d'arrière-plan,
+  aucun flou, aucune vidéo. La lumière est faite en dégradés radiaux.
+-->
+
+<script>
+  /* Armement AVANT le premier rendu. Sans la classe js-motion, TOUT le contenu est
+     visible : si ce script ou le script principal échoue, la page reste entière.
+     Le garde-fou retire la classe si rien n'a été révélé au bout de 2 secondes. */
+  (function () {
+    var d = document.documentElement;
+    try {
+      if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        d.className += ' js-motion';
+      }
+      setTimeout(function () {
+        if (!document.querySelector('.vu')) {
+          d.className = d.className.replace(' js-motion', '');
+        }
+      }, 2000);
+    } catch (e) {
+      d.className = d.className.replace(' js-motion', '');
+    }
+  })();
+</script>
+
+<style>
+/* ═══════════════════════════════════════════════════════════════════════════
+   1 · SOCLE
+   ═══════════════════════════════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box }
+
+:root {
+  --bleu:       #0050E6;
+  --bleu-nuit:  #0A2A6B;
+  --bleu-vif:   #2E7BFF;
+  --bleu-pale:  #C9DCFB;
+  --orange:     #F39A1B;
+  --encre:      #101623;
+  --gris:       #53617C;
+  --gris-clair: #8A97AE;
+
+  --ciel:   #EFF4FD;   /* fond froid, le plus haut */
+  --blanc:  #FFFFFF;
+  --sable:  #FAF6EE;   /* fond chaud, plus bas dans la descente */
+  --bord:   #D9E2F2;
+  --bord-chaud: #E8DFCF;
+
+  --barre: 66px;
+  --marge: clamp(20px, 5.2vw, 92px);
+  --pb:    clamp(70px, 9vh, 128px);   /* respiration basse — sert aussi de repère au bandeau */
+  --pt:    .82rem;                    /* 13,1 px — jamais moins */
+
+  --titre: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, "Times New Roman", serif;
+  --texte: ui-sans-serif, -apple-system, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --sortie: cubic-bezier(.22, .78, .26, 1);
+}
+
+html { -webkit-text-size-adjust: 100% }
+
+body {
+  margin: 0;
+  background: var(--ciel);
+  color: var(--encre);
+  font: 16px/1.6 var(--texte);
+  overflow-x: hidden;
+}
+
+a { color: inherit }
+svg { display: block; max-width: 100% }
+
+:focus-visible { outline: 3px solid var(--orange); outline-offset: 3px }
+
+.alt-saut {
+  position: absolute; left: -9999px; top: 0; z-index: 200;
+  background: var(--bleu); color: #fff; padding: 14px 20px;
+  font-weight: 700; text-decoration: none;
+}
+.alt-saut:focus { left: 0 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   2 · LA BARRE + L'ÉCHELLE D'ALTITUDE
+   ═══════════════════════════════════════════════════════════════════════════ */
+.alt-barre {
+  position: fixed; inset: 0 0 auto 0; height: var(--barre); z-index: 90;
+  background: var(--blanc);
+  border-bottom: 1px solid var(--bord);
+  display: flex; align-items: center; gap: 16px;
+  padding: 0 clamp(14px, 3vw, 30px);
+}
+
+.alt-marque {
+  display: flex; align-items: center; gap: 11px; min-height: 44px;
+  text-decoration: none; white-space: nowrap;
+  font: 700 clamp(1rem, 1.5vw, 1.12rem)/1 var(--texte); letter-spacing: -.02em;
+}
+/* Le sigle : trois barres empilées = trois plans. La marque dit l'architecture. */
+.alt-sigle { flex: 0 0 auto; width: 22px; height: 22px }
+
+.alt-nav { margin-left: auto; display: flex; align-items: center; gap: 2px }
+.alt-nav a {
+  display: inline-flex; align-items: center; min-height: 44px; padding: 0 13px;
+  text-decoration: none; font-size: .94rem; font-weight: 600; color: var(--encre);
+}
+.alt-nav a:hover { color: var(--bleu) }
+
+/* L'échelle : onze traits, un par plan. Le trait actif s'allonge et se colore.
+   Elle existe en HTML : sans script, elle est simplement figée sur le premier. */
+.alt-ech {
+  display: flex; align-items: center; gap: 14px;
+  margin-left: 18px; padding-left: 18px; border-left: 1px solid var(--bord);
+}
+.alt-ech__pistes { display: flex; align-items: center; gap: 3px }
+.alt-ech__t {
+  appearance: none; -webkit-appearance: none; border: 0; background: none;
+  cursor: pointer; padding: 0; margin: 0;
+  width: 13px; min-height: 44px;
+  display: flex; align-items: center; justify-content: center;
+}
+.alt-ech__t i {
+  display: block; width: 2px; height: 11px; background: var(--bord);
+  transition: height .34s var(--sortie), background-color .34s ease;
+}
+.alt-ech__t[aria-current="true"] i { height: 26px; background: var(--bleu) }
+.alt-ech__t:hover i { background: var(--gris-clair) }
+.alt-ech__n {
+  font: 700 var(--pt)/1 var(--texte); letter-spacing: .1em;
+  color: var(--gris); font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.alt-ech__n b { color: var(--bleu) }
+
+.alt-burger {
+  margin-left: auto; width: 46px; height: 46px; display: none; place-items: center;
+  background: var(--blanc); border: 1px solid var(--bord); border-radius: 2px;
+  cursor: pointer; padding: 0;
+}
+.alt-burger i { display: block; width: 20px; height: 2px; background: var(--encre); position: relative }
+.alt-burger i::before, .alt-burger i::after {
+  content: ""; position: absolute; left: 0; width: 20px; height: 2px; background: var(--encre);
+}
+.alt-burger i::before { top: -6px }
+.alt-burger i::after  { top:  6px }
+
+/* Panneau mobile — fond PLEIN. Rien ne défile au travers. */
+.alt-panneau {
+  position: fixed; inset: 0; z-index: 100; background: var(--blanc);
+  display: none; flex-direction: column;
+  padding: calc(var(--barre) + 16px) 22px 30px;
+}
+.alt-panneau.ouvert { display: flex }
+.alt-panneau a {
+  display: flex; align-items: center; min-height: 58px; text-decoration: none;
+  font: 400 clamp(1.6rem, 7vw, 2.2rem)/1.1 var(--titre); letter-spacing: -.02em;
+  border-bottom: 1px solid var(--bord);
+}
+.alt-panneau a:last-child { color: var(--bleu) }
+.alt-fermer {
+  position: absolute; top: 10px; right: 14px; width: 46px; height: 46px;
+  background: var(--blanc); border: 1px solid var(--bord); border-radius: 2px;
+  cursor: pointer; font: 400 1.5rem/1 var(--texte); color: var(--encre);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   3 · LA SECTION ET SES PLANS
+   ═══════════════════════════════════════════════════════════════════════════ */
+.alt-sec {
+  position: relative; overflow: hidden; isolation: isolate;
+  padding: calc(var(--barre) + clamp(56px, 8vh, 104px)) var(--marge) var(--pb);
+  background: var(--ciel);
+  border-bottom: 1px solid var(--bord);
+}
+#alt-1 { padding-top: calc(var(--barre) + clamp(44px, 7vh, 86px)) }
+
+/* PLAN — déborde de 170 px en haut et en bas : son déplacement (≤ 120 px)
+   ne peut jamais découvrir le vide à l'une des deux extrémités. */
+.alt-plan {
+  position: absolute; left: 0; right: 0; top: -170px; bottom: -170px;
+  z-index: 1; pointer-events: none;
+  transform: translate3d(0, calc(var(--ty, 0) * 1px), 0);
+}
+.alt-plan--milieu { z-index: 2 }
+/* .alt-boite recale les formes sur la boîte RÉELLE de la section, pas sur le plan étendu. */
+.alt-boite { position: absolute; left: 0; right: 0; top: 170px; bottom: 170px }
+/* will-change n'est posé que sur les sections réellement à l'écran (voir script). */
+.alt-sec.actif .alt-plan { will-change: transform }
+
+/* Le jour : la source de lumière. Elle ne bouge pas — c'est le soleil, pas un plan. */
+.alt-jour {
+  position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background: radial-gradient(118% 82% at 10% -8%, #FFFFFF 0%, rgba(255,255,255,0) 64%);
+}
+
+.alt-in {
+  position: relative; z-index: 3; width: 100%; max-width: 1160px; margin: 0 auto;
+  transform: translate3d(0, calc(var(--ty, 0) * 1px), 0);
+}
+
+/* — Matières de plan (aucun flou : trames, aplats, contours) — */
+.alt-trame {
+  position: absolute; inset: 0;
+  background: radial-gradient(circle, rgba(0,80,230,.20) 1.1px, rgba(0,80,230,0) 1.2px) 0 0 / 26px 26px;
+  -webkit-mask-image: radial-gradient(120% 88% at 78% 42%, #000 12%, rgba(0,0,0,0) 76%);
+          mask-image: radial-gradient(120% 88% at 78% 42%, #000 12%, rgba(0,0,0,0) 76%);
+}
+.alt-trame--serree { background-size: 15px 15px }
+.alt-trame--gauche {
+  -webkit-mask-image: radial-gradient(110% 86% at 14% 50%, #000 10%, rgba(0,0,0,0) 74%);
+          mask-image: radial-gradient(110% 86% at 14% 50%, #000 10%, rgba(0,0,0,0) 74%);
+}
+.alt-trame--claire { background-image: radial-gradient(circle, rgba(255,255,255,.34) 1.1px, rgba(255,255,255,0) 1.2px) }
+.alt-trame--chaude { background-image: radial-gradient(circle, rgba(196,150,60,.26) 1.1px, rgba(196,150,60,0) 1.2px) }
+
+/* Lignes de niveau : le relief d'une carte d'altitude, en traits nets. */
+.alt-niveaux {
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0,80,230,.10) 0 1px,
+    rgba(0,80,230,0) 1px 46px);
+  -webkit-mask-image: linear-gradient(to right, #000 0%, rgba(0,0,0,0) 62%);
+          mask-image: linear-gradient(to right, #000 0%, rgba(0,0,0,0) 62%);
+}
+.alt-niveaux--droite {
+  -webkit-mask-image: linear-gradient(to left, #000 0%, rgba(0,0,0,0) 62%);
+          mask-image: linear-gradient(to left, #000 0%, rgba(0,0,0,0) 62%);
+}
+.alt-niveaux--claire { background-image: repeating-linear-gradient(to bottom, rgba(255,255,255,.16) 0 1px, rgba(255,255,255,0) 1px 46px) }
+
+.alt-forme { position: absolute; display: block }
+.alt-carre  { background: var(--bleu) }
+.alt-vide   { border: 2px solid var(--bleu); background: none }
+.alt-vide-o { border: 2px solid var(--orange); background: none }
+.alt-orange { background: var(--orange) }
+.alt-pale   { background: var(--bleu-pale) }
+.alt-clair  { background: rgba(255,255,255,.22) }
+.alt-clair-v{ border: 2px solid rgba(255,255,255,.42); background: none }
+.alt-halo   { background: radial-gradient(circle at 50% 50%, rgba(0,80,230,.13), rgba(0,80,230,0) 66%); border-radius: 50% }
+.alt-halo-o { background: radial-gradient(circle at 50% 50%, rgba(243,154,27,.20), rgba(243,154,27,0) 66%); border-radius: 50% }
+.alt-halo-c { background: radial-gradient(circle at 50% 50%, rgba(255,255,255,.30), rgba(255,255,255,0) 68%); border-radius: 50% }
+
+/* — Variantes de fond, du plus froid (haut) au plus chaud (bas) — */
+.alt-sec--blanc { background: var(--blanc) }
+.alt-sec--sable { background: var(--sable); border-bottom-color: var(--bord-chaud) }
+.alt-sec--sable .alt-jour { background: radial-gradient(116% 80% at 12% -6%, #FFFFFF 0%, rgba(255,255,255,0) 60%) }
+
+.alt-sec--bleu { background: var(--bleu); border-bottom-color: var(--bleu) }
+.alt-sec--bleu .alt-jour { background: radial-gradient(102% 74% at 16% -6%, #3D86FF 0%, rgba(61,134,255,0) 62%) }
+.alt-sec--bleu, .alt-sec--bleu .alt-t { color: #fff }
+.alt-sec--bleu .alt-sur { color: #A9CBFF }
+.alt-sec--bleu .alt-p   { color: #DCE9FF }
+.alt-sec--bleu .alt-p--fort { color: #fff }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   4 · TYPOGRAPHIE
+   ═══════════════════════════════════════════════════════════════════════════ */
+.alt-sur {
+  margin: 0 0 clamp(16px, 2.4vh, 26px);
+  font: 700 var(--pt)/1.5 var(--texte);
+  letter-spacing: .2em; text-transform: uppercase; color: var(--bleu);
+}
+
+.alt-t {
+  margin: 0; font-family: var(--titre); font-weight: 400;
+  font-size: clamp(2.05rem, 5.4vw, 4.15rem); line-height: 1.03; letter-spacing: -.022em;
+  text-wrap: balance; max-width: 21ch;
+}
+.alt-t--geant { font-size: clamp(2.3rem, 7.2vw, 5.4rem); line-height: .99; max-width: 15ch }
+.alt-t--large { max-width: 27ch }
+.alt-t em { font-style: italic; color: var(--bleu) }
+.alt-sec--bleu .alt-t em { color: #FFD79A }
+
+.alt-p {
+  margin: clamp(20px, 2.8vh, 30px) 0 0; max-width: 56ch; color: var(--gris);
+  font-size: clamp(1rem, 1.35vw, 1.13rem);
+}
+.alt-p + .alt-p { margin-top: 15px }
+.alt-p--fort { color: var(--encre); font-weight: 500; max-width: 48ch; font-size: clamp(1.06rem, 1.6vw, 1.26rem) }
+.alt-p--note {
+  margin-top: clamp(22px, 3vh, 34px); max-width: 62ch;
+  font-size: .96rem; color: var(--gris);
+  padding-left: 18px; border-left: 2px solid var(--bleu-pale);
+}
+.alt-sec--bleu .alt-p--note { border-left-color: rgba(255,255,255,.4); color: #DCE9FF }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   5 · BOUTONS
+   ═══════════════════════════════════════════════════════════════════════════ */
+.alt-btns { display: flex; flex-wrap: wrap; gap: 12px; margin-top: clamp(26px, 3.6vh, 40px) }
+.alt-btn {
+  display: inline-flex; align-items: center; min-height: 52px; padding: 0 26px;
+  background: var(--bleu); color: #fff; text-decoration: none;
+  font: 600 1rem/1 var(--texte); border: 2px solid var(--bleu); border-radius: 2px;
+  transition: background-color .2s var(--sortie), transform .2s var(--sortie);
+}
+.alt-btn:hover { background: var(--bleu-nuit); border-color: var(--bleu-nuit); transform: translateY(-2px) }
+.alt-btn--vide { background: transparent; color: var(--bleu); border-color: var(--bord) }
+.alt-btn--vide:hover { background: transparent; border-color: var(--bleu); color: var(--bleu) }
+.alt-sec--bleu .alt-btn { background: #fff; color: var(--bleu); border-color: #fff }
+.alt-sec--bleu .alt-btn:hover { background: #EAF1FF; border-color: #EAF1FF; color: var(--bleu-nuit) }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   6 · COMPOSITIONS
+   ═══════════════════════════════════════════════════════════════════════════ */
+.alt-duo { display: grid; grid-template-columns: 1.15fr .85fr; gap: clamp(30px, 5vw, 76px); align-items: center }
+
+/* — Compteurs — */
+.alt-nb { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; margin-top: clamp(26px, 4vh, 46px) }
+.alt-nb > div { padding: 0 18px 0 0; border-right: 1px solid var(--bord) }
+.alt-nb > div:last-child { border-right: 0 }
+.alt-nb > div + div { padding-left: clamp(16px, 2.4vw, 34px) }
+.alt-nb b {
+  display: block; font: 400 clamp(2.7rem, 7vw, 5.2rem)/.92 var(--titre);
+  letter-spacing: -.03em; font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.alt-nb b em { font-style: normal; color: var(--orange) }
+.alt-nb small {
+  display: block; margin-top: 14px; max-width: 15ch;
+  font: 600 var(--pt)/1.4 var(--texte); letter-spacing: .1em;
+  text-transform: uppercase; color: var(--gris);
+}
+
+/* — Les neuf implantations — */
+.alt-liste { list-style: none; margin: clamp(22px, 3vh, 34px) 0 0; padding: 0; max-width: 760px }
+.alt-liste li {
+  display: grid; grid-template-columns: 3em 1fr auto; gap: 14px; align-items: baseline;
+  padding: clamp(9px, 1.3vh, 13px) 0; border-bottom: 1px solid var(--bord);
+}
+.alt-liste b { font: 600 var(--pt)/1.3 var(--texte); color: var(--bleu); letter-spacing: .1em }
+.alt-liste span { font-size: clamp(1rem, 1.5vw, 1.16rem); font-weight: 600; letter-spacing: -.01em }
+.alt-liste span small { display: block; font: 500 var(--pt)/1.4 var(--texte); color: var(--gris-clair); letter-spacing: .04em }
+.alt-liste i { font: 500 var(--pt)/1.4 var(--texte); font-style: normal; color: var(--gris); white-space: nowrap }
+.alt-liste li.est-part { border-bottom-color: var(--orange) }
+.alt-liste li.est-part b { color: var(--orange) }
+
+/* — Les quatre gestes du métier — */
+.alt-gestes { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px; margin-top: clamp(26px, 4vh, 44px); background: var(--bord) }
+.alt-gestes > div { background: var(--blanc); padding: clamp(22px, 3.2vh, 34px) clamp(20px, 2.6vw, 34px) }
+.alt-gestes b { display: block; font: 700 var(--pt)/1 var(--texte); letter-spacing: .18em; color: var(--bleu) }
+.alt-gestes h3 { margin: 14px 0 10px; font: 400 clamp(1.3rem, 2.4vw, 1.85rem)/1.1 var(--titre); letter-spacing: -.02em }
+.alt-gestes p { margin: 0; color: var(--gris); font-size: 1rem; max-width: 40ch }
+
+/* — La centrale : deux chiffres tenus par un filet — */
+.alt-para { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(20px, 3vw, 48px); max-width: 720px; margin-top: clamp(24px, 3.4vh, 38px) }
+.alt-para > div { border-top: 2px solid var(--encre); padding-top: 18px }
+.alt-para b {
+  display: block; font: 400 clamp(2.4rem, 6.6vw, 4.6rem)/.94 var(--titre);
+  letter-spacing: -.03em; color: var(--bleu); font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.alt-para b em { font-style: normal; color: var(--orange) }
+.alt-para small { display: block; margin-top: 12px; font: 600 var(--pt)/1.3 var(--texte); letter-spacing: .12em; text-transform: uppercase; color: var(--gris) }
+
+/* — Les six laboratoires — */
+.alt-labos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--bord); border: 1px solid var(--bord); margin-top: clamp(26px, 4vh, 44px) }
+.alt-labos span {
+  background: var(--blanc); display: flex; align-items: center; justify-content: center;
+  min-height: 112px; padding: 22px 14px; text-align: center;
+  font: 400 clamp(1.15rem, 2.2vw, 1.75rem)/1.1 var(--titre); letter-spacing: -.02em;
+}
+
+/* — Les villes qui recrutent — */
+.alt-villes { display: flex; flex-wrap: wrap; gap: 9px; margin-top: clamp(22px, 3vh, 30px) }
+.alt-villes span {
+  border: 1px solid rgba(255,255,255,.45); border-radius: 2px; padding: 11px 16px;
+  font: 600 var(--pt)/1.2 var(--texte); letter-spacing: .05em;
+}
+
+/* — Les trois valeurs — */
+.alt-valeurs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; margin-top: clamp(26px, 4vh, 44px); border-top: 2px solid var(--encre) }
+.alt-valeurs > div { padding: clamp(20px, 3vh, 30px) 24px 0 0; border-right: 1px solid var(--bord) }
+.alt-valeurs > div:last-child { border-right: 0 }
+.alt-valeurs > div + div { padding-left: clamp(18px, 2.4vw, 32px) }
+.alt-valeurs h3 { margin: 0 0 12px; font: 400 clamp(1.6rem, 3.4vw, 2.6rem)/1 var(--titre); letter-spacing: -.025em; color: var(--bleu) }
+.alt-valeurs p { margin: 0; color: var(--gris); font-size: 1rem; max-width: 32ch }
+
+/* — Le bandeau qui défile (une seule fois dans la page) —
+   Il est HORS du bloc de texte : le texte se décale, lui reste collé au bas de
+   la section. Sinon, un vide apparaîtrait sous lui. */
+.alt-band {
+  position: relative; z-index: 3;
+  margin: clamp(44px, 6vh, 76px) calc(var(--marge) * -1) calc(var(--pb) * -1);
+  background: var(--blanc); border-top: 1px solid var(--bord);
+  overflow: hidden; padding: 14px 0;
+}
+.alt-band__piste { display: flex; width: max-content; animation: alt-defile 52s linear infinite }
+.alt-band__piste span {
+  padding: 0 20px; white-space: nowrap;
+  font: 600 var(--pt)/1.3 var(--texte); letter-spacing: .14em; text-transform: uppercase;
+}
+.alt-band__piste span::after { content: "·"; margin-left: 20px; color: var(--bleu) }
+@keyframes alt-defile { from { transform: translate3d(0,0,0) } to { transform: translate3d(-50%,0,0) } }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   7 · LE PIED
+   ═══════════════════════════════════════════════════════════════════════════ */
+.alt-pied {
+  margin-top: clamp(44px, 7vh, 82px); padding-top: 24px; border-top: 1px solid var(--bord);
+  display: flex; flex-wrap: wrap; gap: 8px 28px; align-items: baseline;
+  font: 500 var(--pt)/1.7 var(--texte); color: var(--gris);
+}
+.alt-pied a { color: var(--bleu); display: inline-flex; align-items: center; min-height: 44px }
+.alt-pied .alt-chiffres { width: 100%; color: var(--encre); letter-spacing: .05em }
+.alt-signature {
+  width: 100%; margin-top: 6px; color: var(--gris-clair);
+  font: 600 var(--pt)/1.6 var(--texte); letter-spacing: .14em; text-transform: uppercase;
+}
+.alt-signature em { font-style: normal; color: var(--bleu) }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   8 · RÉVÉLATION — le contenu est visible par défaut, seul le script l'arme
+   ═══════════════════════════════════════════════════════════════════════════ */
+.js-motion [data-r] {
+  opacity: 0; transform: translateY(16px);
+  transition: opacity .62s var(--sortie), transform .72s var(--sortie);
+  transition-delay: calc(var(--i, 0) * 65ms);
+}
+.js-motion .vu [data-r] { opacity: 1; transform: none }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   9 · ÉCRANS
+   ═══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 1240px) { .alt-ech { display: none } }
+
+@media (max-width: 1000px) {
+  .alt-duo { grid-template-columns: 1fr; gap: 30px }
+  .alt-figure { display: none }         /* la figure d'appoint sort avant de se tasser */
+  .alt-valeurs { grid-template-columns: 1fr }
+  .alt-valeurs > div { border-right: 0; border-bottom: 1px solid var(--bord); padding: 20px 0 20px }
+  .alt-valeurs > div + div { padding-left: 0 }
+  .alt-valeurs > div:last-child { border-bottom: 0 }
+}
+
+@media (max-width: 880px) {
+  :root { --barre: 58px }
+  .alt-nav { display: none }
+  .alt-burger { display: grid }
+  .alt-nb { grid-template-columns: repeat(2, 1fr); row-gap: 30px }
+  .alt-nb > div:nth-child(2) { border-right: 0 }
+  .alt-nb > div:nth-child(3) { padding-left: 0 }
+  .alt-labos { grid-template-columns: repeat(2, 1fr) }
+  .alt-gestes { grid-template-columns: 1fr }
+  .alt-t, .alt-t--geant, .alt-t--large { max-width: none }
+}
+
+@media (max-width: 560px) {
+  .alt-liste li { grid-template-columns: 2.4em 1fr; row-gap: 2px; padding: 9px 0 }
+  .alt-liste i { grid-column: 2 }
+  .alt-labos { grid-template-columns: 1fr }
+  .alt-labos span { min-height: 84px }
+  .alt-para { grid-template-columns: 1fr; gap: 26px }
+  .alt-btn { width: 100%; justify-content: center }
+  .alt-pied { gap: 4px 20px }
+}
+
+/* Repli mouvement réduit : plans au repos, texte lisible, rien de décalé. */
+@media (prefers-reduced-motion: reduce) {
+  .alt-plan, .alt-in { transform: none !important }
+  .alt-band__piste { animation: none }
+  .alt-band { overflow-x: auto }
+  .alt-btn, .alt-ech__t i { transition: none }
+}
+</style>
+</head>
+<body>
+
+<a class="alt-saut" href="#alt-2">Aller au contenu</a>
+
+<header class="alt-barre">
+  <a class="alt-marque" href="#alt-1">
+    <svg class="alt-sigle" viewBox="0 0 22 22" aria-hidden="true">
+      <rect x="0" y="0"  width="22" height="6" fill="#C9DCFB"/>
+      <rect x="0" y="8"  width="22" height="6" fill="#0050E6"/>
+      <rect x="0" y="16" width="14" height="6" fill="#F39A1B"/>
+    </svg>
+    <span>Intégral Pharma</span>
+  </a>
+
+  <nav class="alt-nav" aria-label="Navigation principale">
+    <a href="#alt-2">Le groupe</a>
+    <a href="#alt-4">Le réseau</a>
+    <a href="#alt-5">Le métier</a>
+    <a href="#alt-10">Nos valeurs</a>
+    <a href="#alt-11">Nous écrire</a>
+  </nav>
+
+  <nav class="alt-ech" id="alt-ech" aria-label="Position dans la page">
+    <div class="alt-ech__pistes">
+      <button class="alt-ech__t" type="button" data-va="alt-1"  aria-current="true"  title="Ouverture"><i aria-hidden="true"></i></button>
+      <button class="alt-ech__t" type="button" data-va="alt-2"  aria-current="false" title="Notre histoire"><i aria-hidden="true"></i></button>
+      <button class="alt-ech__t" type="button" data-va="alt-3"  aria-current="false" title="Les chiffres"><i aria-hidden="true"></i></button>
+      <button class="alt-ech__t" type="button" data-va="alt-4"  aria-current="false" title="Le réseau"><i aria-hidden="true"></i></button>
+      <button class="alt-ech__t" type="button" data-va="alt-5"  aria-current="false" title="Le métier"><i aria-hidden="true"></i></button>
+      <button class="alt-ech__t" type="button" data-va="alt-6"  aria-current="false" title="La centrale"><i aria-hidden="true"></i></button>
+      <button class="alt-ech__t" type="button" data-va="alt-7"  aria-current="false" title="Vos factures"><i aria-hidden="true"></i></button>
+      <button class="alt-ech__t" type="button" data-va="alt-8"  aria-current="false" title="Nos partenaires"><i aria-hidden="true"></i></button>
+      <button class="alt-ech__t" type="button" data-va="alt-9"  aria-current="false" title="Nous rejoindre"><i aria-hidden="true"></i></button>
+      <button class="alt-ech__t" type="button" data-va="alt-10" aria-current="false" title="Nos valeurs"><i aria-hidden="true"></i></button>
+      <button class="alt-ech__t" type="button" data-va="alt-11" aria-current="false" title="Nous écrire"><i aria-hidden="true"></i></button>
+    </div>
+    <span class="alt-ech__n" aria-hidden="true"><b id="alt-num">01</b>/11</span>
+  </nav>
+
+  <button class="alt-burger" type="button" id="alt-burger" aria-expanded="false" aria-controls="alt-panneau" aria-label="Ouvrir le menu">
+    <i aria-hidden="true"></i>
+  </button>
+</header>
+
+<div class="alt-panneau" id="alt-panneau">
+  <button class="alt-fermer" type="button" id="alt-fermer" aria-label="Fermer le menu">✕</button>
+  <a href="#alt-2">Le groupe</a>
+  <a href="#alt-4">Le réseau</a>
+  <a href="#alt-5">Le métier</a>
+  <a href="#alt-10">Nos valeurs</a>
+  <a href="#alt-11">Nous écrire</a>
+</div>
+
+<main id="alt-page">
+
+<!-- ═══ 01 · L'OUVERTURE ─ altitude maximale : −46 / +118 ══════════════════ -->
+<section class="alt-sec" id="alt-1" data-sec="Ouverture">
+  <div class="alt-jour" aria-hidden="true"></div>
+
+  <div class="alt-plan" data-amp="-46" aria-hidden="true">
+    <div class="alt-trame"></div>
+    <div class="alt-boite">
+      <span class="alt-forme alt-halo" style="right:-14%;top:-6%;width:62vmin;height:62vmin"></span>
+      <span class="alt-forme alt-pale" style="right:6%;top:8%;width:15vmin;height:15vmin"></span>
+      <span class="alt-forme alt-pale" style="right:26%;top:52%;width:9vmin;height:9vmin"></span>
+    </div>
+  </div>
+
+  <div class="alt-plan alt-plan--milieu" data-amp="118" aria-hidden="true">
+    <div class="alt-boite">
+      <span class="alt-forme alt-vide"   style="right:4%;top:14%;width:13vmin;height:13vmin"></span>
+      <span class="alt-forme alt-carre"  style="right:22%;top:26%;width:9vmin;height:9vmin"></span>
+      <span class="alt-forme alt-vide"   style="right:12%;top:46%;width:7vmin;height:7vmin"></span>
+      <span class="alt-forme alt-orange" style="right:31%;top:12%;width:4.5vmin;height:4.5vmin"></span>
+      <span class="alt-forme alt-carre"  style="right:2%;top:64%;width:5vmin;height:5vmin"></span>
+    </div>
+  </div>
+
+  <div class="alt-in" data-amp="22">
+    <p class="alt-sur" data-r style="--i:0">Groupe de grossistes-répartiteurs français indépendant</p>
+    <h1 class="alt-t alt-t--geant" data-r style="--i:1">Neuf maisons.<br><em>Un seul nom.</em></h1>
+    <p class="alt-p alt-p--fort" data-r style="--i:2">Chacune livre sa région depuis des années, avec ses équipes et ses habitudes. Depuis 2006, elles avancent ensemble sous le nom d'Intégral Pharma — et votre commande part toujours de la plus proche de votre comptoir.</p>
+    <div class="alt-btns" data-r style="--i:3">
+      <a class="alt-btn" href="#alt-4">Découvrir le réseau</a>
+      <a class="alt-btn alt-btn--vide" href="mailto:contact@integralpharma.fr">Nous écrire</a>
+    </div>
+  </div>
+
+  <div class="alt-band" aria-hidden="true">
+    <div class="alt-band__piste">
+      <span>Indépendant</span><span>Neuf implantations</span><span>Un réseau national</span><span>Plus de 2 000 officines livrées</span><span>Confiance, Engagement, Respect</span><span>Une alternative aux grossistes historiques</span>
+      <span>Indépendant</span><span>Neuf implantations</span><span>Un réseau national</span><span>Plus de 2 000 officines livrées</span><span>Confiance, Engagement, Respect</span><span>Une alternative aux grossistes historiques</span>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 02 · NOTRE HISTOIRE ─ −42 / +106 ══════════════════════════════════ -->
+<section class="alt-sec alt-sec--bleu" id="alt-2" data-sec="Notre histoire">
+  <div class="alt-jour" aria-hidden="true"></div>
+
+  <div class="alt-plan" data-amp="-42" aria-hidden="true">
+    <div class="alt-trame alt-trame--claire alt-trame--gauche"></div>
+    <div class="alt-boite">
+      <span class="alt-forme alt-halo-c" style="left:-10%;top:-14%;width:58vmin;height:58vmin"></span>
+    </div>
+  </div>
+
+  <div class="alt-plan alt-plan--milieu" data-amp="106" aria-hidden="true">
+    <div class="alt-niveaux alt-niveaux--claire alt-niveaux--droite"></div>
+    <div class="alt-boite">
+      <span class="alt-forme alt-clair-v" style="right:6%;top:16%;width:16vmin;height:16vmin"></span>
+      <span class="alt-forme alt-clair"   style="right:20%;top:58%;width:8vmin;height:8vmin"></span>
+      <span class="alt-forme alt-orange"  style="right:4%;top:70%;width:4vmin;height:4vmin"></span>
+    </div>
+  </div>
+
+  <div class="alt-in" data-amp="20">
+    <p class="alt-sur" data-r style="--i:0">Notre histoire</p>
+    <h2 class="alt-t alt-t--geant" data-r style="--i:1">Rendre la marge à l'officine française.</h2>
+    <p class="alt-p alt-p--fort" data-r style="--i:2">C'est la raison d'être d'Intégral Pharma depuis 2006 : redistribuer directement la marge aux officines françaises, en toute transparence, avec des prix nets visibles sur facture.</p>
+    <p class="alt-p" data-r style="--i:3">Neuf implantations aujourd'hui, plus de deux mille officines livrées chaque jour, et la même idée qu'au premier jour — un groupe de répartiteurs indépendants qui a choisi de se mettre du côté du comptoir.</p>
+  </div>
+</section>
+
+<!-- ═══ 03 · LES CHIFFRES ─ −38 / +96 ═════════════════════════════════════ -->
+<section class="alt-sec alt-sec--blanc" id="alt-3" data-sec="Les chiffres">
+  <div class="alt-jour" aria-hidden="true"></div>
+
+  <div class="alt-plan" data-amp="-38" aria-hidden="true">
+    <div class="alt-niveaux"></div>
+  </div>
+
+  <div class="alt-plan alt-plan--milieu" data-amp="96" aria-hidden="true">
+    <div class="alt-boite">
+      <span class="alt-forme alt-halo-o" style="right:-6%;top:6%;width:46vmin;height:46vmin"></span>
+      <span class="alt-forme alt-vide-o" style="right:8%;top:20%;width:10vmin;height:10vmin"></span>
+      <span class="alt-forme alt-pale"   style="right:26%;top:62%;width:6vmin;height:6vmin"></span>
+    </div>
+  </div>
+
+  <div class="alt-in" data-amp="18">
+    <p class="alt-sur" data-r style="--i:0">Notre histoire</p>
+    <div class="alt-nb">
+      <div data-r style="--i:1"><b>2006</b><small>année de création</small></div>
+      <div data-r style="--i:2"><b>9</b><small>implantations</small></div>
+      <div data-r style="--i:3"><b>2 000 <em>+</em></b><small>officines livrées</small></div>
+      <div data-r style="--i:4"><b>20</b><small>ans d'indépendance</small></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 04 · LE RÉSEAU ─ −34 / +40 / +86 ══════════════════════════════════
+     Ici les couches s'ADDITIONNENT : deux groupes de carrés, à deux vitesses,
+     qui se rassemblent en une seule constellation à mesure qu'on descend.
+     Carrés bleus = les neuf maisons ; le carré orange détaché = le partenaire. -->
+<section class="alt-sec" id="alt-4" data-sec="Le réseau">
+  <div class="alt-jour" aria-hidden="true"></div>
+
+  <div class="alt-plan" data-amp="-34" aria-hidden="true">
+    <div class="alt-trame alt-trame--serree"></div>
+  </div>
+
+  <div class="alt-plan" data-amp="40" aria-hidden="true">
+    <div class="alt-boite">
+      <span class="alt-forme alt-vide" style="right:8%;top:14%;width:8vmin;height:8vmin"></span>
+      <span class="alt-forme alt-vide" style="right:22%;top:34%;width:8vmin;height:8vmin"></span>
+      <span class="alt-forme alt-vide" style="right:4%;top:54%;width:8vmin;height:8vmin"></span>
+    </div>
+  </div>
+
+  <div class="alt-plan alt-plan--milieu" data-amp="86" aria-hidden="true">
+    <div class="alt-boite">
+      <span class="alt-forme alt-carre"  style="right:16%;top:8%;width:6vmin;height:6vmin"></span>
+      <span class="alt-forme alt-carre"  style="right:30%;top:22%;width:5vmin;height:5vmin"></span>
+      <span class="alt-forme alt-carre"  style="right:11%;top:40%;width:5.5vmin;height:5.5vmin"></span>
+      <span class="alt-forme alt-carre"  style="right:26%;top:62%;width:4.5vmin;height:4.5vmin"></span>
+      <span class="alt-forme alt-carre"  style="right:2%;top:74%;width:4vmin;height:4vmin"></span>
+      <span class="alt-forme alt-carre"  style="right:34%;top:78%;width:3.5vmin;height:3.5vmin"></span>
+      <span class="alt-forme alt-vide-o" style="right:3%;top:26%;width:7vmin;height:7vmin"></span>
+    </div>
+  </div>
+
+  <div class="alt-in" data-amp="16">
+    <p class="alt-sur" data-r style="--i:0">Le réseau</p>
+    <h2 class="alt-t" data-r style="--i:1">Neuf implantations. <em>Laquelle est la vôtre&nbsp;?</em></h2>
+    <p class="alt-p alt-p--fort" data-r style="--i:2">C'est la seule question qui compte vraiment. Celle qui prépare votre commande, qui vous livre chaque matin, et dont vous connaissez l'équipe par son prénom.</p>
+    <p class="alt-p" data-r style="--i:3">Les huit autres sont là pour qu'elle ne soit jamais prise au dépourvu — de la Bretagne à la Méditerranée, le stock d'une maison est le stock de toutes.</p>
+
+    <ol class="alt-liste" data-r style="--i:4">
+      <li><b>01</b><span>Hyères Pharma<small>siège du groupe</small></span><i>Hyères · 83</i></li>
+      <li><b>02</b><span>SR Pharma</span><i>Palaiseau · 91</i></li>
+      <li><b>03</b><span>Mistral Santé Pharma</span><i>Flassans-sur-Issole · 83</i></li>
+      <li><b>04</b><span>Sud Ouest Pharma</span><i>Montayral · 47</i></li>
+      <li><b>05</b><span>Comptoir Pharmaceutique du Rhône</span><i>Saint-Maurice-l'Exil · 38</i></li>
+      <li><b>06</b><span>Escale Pharma</span><i>Chilly-Mazarin · 91</i></li>
+      <li><b>07</b><span>Ouest Pharma Services</span><i>Saint-Étienne-de-Montluc · 44</i></li>
+      <li><b>08</b><span>Pharm'Occitanie Services</span><i>Villeneuve-lès-Béziers · 34</i></li>
+      <li><b>09</b><span>Sud Est Pharma</span><i>Le Cannet-des-Maures · 83</i></li>
+      <li class="est-part"><b>+</b><span>Pharmest<small>partenaire</small></span><i>Metz · 57</i></li>
+    </ol>
+    <p class="alt-p alt-p--note" data-r style="--i:5">Et à l'Est, notre partenaire <strong>Pharmest</strong> (Metz, 57) prolonge le maillage.</p>
+  </div>
+</section>
+
+<!-- ═══ 05 · LE MÉTIER ─ −30 / +76 ════════════════════════════════════════ -->
+<section class="alt-sec alt-sec--blanc" id="alt-5" data-sec="Le métier">
+  <div class="alt-jour" aria-hidden="true"></div>
+
+  <div class="alt-plan" data-amp="-30" aria-hidden="true">
+    <div class="alt-niveaux alt-niveaux--droite"></div>
+  </div>
+
+  <div class="alt-plan alt-plan--milieu" data-amp="76" aria-hidden="true">
+    <div class="alt-boite">
+      <!-- la chaîne : trois segments verticaux qui glissent sur les lignes de niveau -->
+      <span class="alt-forme alt-pale"   style="left:2%;top:6%;width:3px;height:34%"></span>
+      <span class="alt-forme alt-carre"  style="left:2%;top:44%;width:3px;height:22%"></span>
+      <span class="alt-forme alt-orange" style="left:2%;top:70%;width:3px;height:12%"></span>
+      <span class="alt-forme alt-halo"   style="right:-8%;bottom:-10%;width:48vmin;height:48vmin"></span>
+    </div>
+  </div>
+
+  <div class="alt-in" data-amp="14">
+    <p class="alt-sur" data-r style="--i:0">Le métier</p>
+    <h2 class="alt-t alt-t--large" data-r style="--i:1">Ce qui se passe entre votre commande et votre comptoir.</h2>
+    <p class="alt-p alt-p--fort" data-r style="--i:2">Quelques heures, quatre métiers, et une chaîne qui ne s'arrête jamais. Référencer, stocker, préparer, livrer : c'est invisible depuis l'officine, et c'est tout notre travail.</p>
+
+    <div class="alt-gestes">
+      <div data-r style="--i:3"><b>01</b><h3>Le référencement</h3><p>Le groupe référence pour ses neuf maisons à la fois : un même catalogue, tenu à jour, disponible dans toutes les implantations. C'est ce qui permet à une maison de taille humaine de proposer la profondeur de gamme d'un réseau national.</p></div>
+      <div data-r style="--i:4"><b>02</b><h3>La disponibilité</h3><p>Des stocks répartis sur neuf implantations, au plus près de votre officine. Quand le comptoir a besoin, le réseau répond — et quand une référence manque quelque part, elle existe souvent ailleurs dans le réseau.</p></div>
+      <div data-r style="--i:5"><b>03</b><h3>La préparation</h3><p>Chaque commande est préparée dans l'implantation la plus proche de chez vous, par une équipe qui connaît votre officine et ses saisons.</p></div>
+      <div data-r style="--i:6"><b>04</b><h3>La livraison</h3><p>Tous les jours, les tournées partent vers les officines. La régularité d'un service tenu — c'est elle qui fait la confiance, pas les promesses.</p></div>
+    </div>
+
+    <p class="alt-p alt-p--note" data-r style="--i:7">Et quand la vie de votre officine change — transfert, agrandissement, cession de parts — votre interlocuteur ajuste l'approvisionnement avec vous, sans à-coup au comptoir.</p>
+  </div>
+</section>
+
+<!-- ═══ 06 · LA CENTRALE ─ −26 / +66 ══════════════════════════════════════ -->
+<section class="alt-sec alt-sec--sable" id="alt-6" data-sec="La centrale">
+  <div class="alt-jour" aria-hidden="true"></div>
+
+  <div class="alt-plan" data-amp="-26" aria-hidden="true">
+    <div class="alt-trame alt-trame--chaude alt-trame--serree"></div>
+  </div>
+
+  <div class="alt-plan alt-plan--milieu" data-amp="66" aria-hidden="true">
+    <div class="alt-boite">
+      <span class="alt-forme alt-vide-o" style="right:9%;top:16%;width:12vmin;height:12vmin"></span>
+      <span class="alt-forme alt-orange" style="right:24%;top:48%;width:5vmin;height:5vmin"></span>
+      <span class="alt-forme alt-vide"   style="right:5%;top:62%;width:7vmin;height:7vmin"></span>
+    </div>
+  </div>
+
+  <div class="alt-in" data-amp="13">
+    <p class="alt-sur" data-r style="--i:0">La centrale</p>
+    <h2 class="alt-t alt-t--large" data-r style="--i:1">Et pour tout ce qui n'est pas le médicament.</h2>
+    <p class="alt-p alt-p--fort" data-r style="--i:2">Notre centrale de parapharmacie référence pour l'officine plus de 14 000 produits et plus de 480 marques.</p>
+    <p class="alt-p" data-r style="--i:3">C'est une structure à part, avec son propre fonctionnement — sa commande, sa livraison — et la même exigence que le reste du groupe.</p>
+
+    <div class="alt-para">
+      <div data-r style="--i:4"><b>14 000 <em>+</em></b><small>références</small></div>
+      <div data-r style="--i:5"><b>480 <em>+</em></b><small>marques</small></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 07 · VOS FACTURES ─ −22 / +56 ═════════════════════════════════════ -->
+<section class="alt-sec" id="alt-7" data-sec="Vos factures">
+  <div class="alt-jour" aria-hidden="true"></div>
+
+  <div class="alt-plan" data-amp="-22" aria-hidden="true">
+    <div class="alt-trame"></div>
+  </div>
+
+  <div class="alt-plan alt-plan--milieu" data-amp="56" aria-hidden="true">
+    <div class="alt-boite">
+      <span class="alt-forme alt-halo" style="right:-4%;top:0%;width:44vmin;height:44vmin"></span>
+    </div>
+  </div>
+
+  <div class="alt-in alt-duo" data-amp="12">
+    <div>
+      <p class="alt-sur" data-r style="--i:0">Vos factures</p>
+      <h2 class="alt-t" data-r style="--i:1">Elles arrivent déjà là où vous les gérez.</h2>
+      <p class="alt-p" data-r style="--i:2">Nous sommes connectés à Digipharmacie : vos factures Intégral s'y retrouvent automatiquement, avec celles de vos autres fournisseurs.</p>
+      <p class="alt-p alt-p--fort" data-r style="--i:3">Rien à saisir, rien à classer, rien à réclamer.</p>
+    </div>
+    <div class="alt-figure" data-r style="--i:4" aria-hidden="true">
+      <svg viewBox="0 0 260 200" width="100%" style="max-width:320px;margin-left:auto">
+        <rect x="10" y="8"   width="112" height="50" fill="#fff" stroke="#0050E6" stroke-width="3"/>
+        <rect x="10" y="74"  width="112" height="50" fill="#fff" stroke="#0050E6" stroke-width="3"/>
+        <rect x="10" y="140" width="112" height="50" fill="#fff" stroke="#0050E6" stroke-width="3"/>
+        <g stroke="#C9DCFB" stroke-width="4">
+          <path d="M24 26h52M24 40h78M24 92h52M24 106h78M24 158h52M24 172h78"/>
+        </g>
+        <path d="M122 33h40v66h28M122 99h68M122 165h40v-66" fill="none" stroke="#0050E6" stroke-width="3"/>
+        <rect x="190" y="78" width="44" height="44" fill="#0050E6"/>
+        <path d="M201 100l8 8 15-17" fill="none" stroke="#fff" stroke-width="4"/>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 08 · NOS PARTENAIRES ─ −18 / +46 ══════════════════════════════════ -->
+<section class="alt-sec alt-sec--blanc" id="alt-8" data-sec="Nos partenaires">
+  <div class="alt-jour" aria-hidden="true"></div>
+
+  <div class="alt-plan" data-amp="-18" aria-hidden="true">
+    <div class="alt-niveaux"></div>
+  </div>
+
+  <div class="alt-plan alt-plan--milieu" data-amp="46" aria-hidden="true">
+    <div class="alt-boite">
+      <span class="alt-forme alt-halo"   style="left:-12%;bottom:-14%;width:52vmin;height:52vmin"></span>
+      <span class="alt-forme alt-orange" style="right:7%;top:12%;width:4vmin;height:4vmin"></span>
+    </div>
+  </div>
+
+  <div class="alt-in" data-amp="10">
+    <p class="alt-sur" data-r style="--i:0">Nos partenaires</p>
+    <h2 class="alt-t alt-t--large" data-r style="--i:1">Les laboratoires qui nous font confiance.</h2>
+    <div class="alt-labos">
+      <span data-r style="--i:2">EG Labo</span>
+      <span data-r style="--i:3">Zentiva</span>
+      <span data-r style="--i:4">Zydus</span>
+      <span data-r style="--i:5">Viatris</span>
+      <span data-r style="--i:6">ITP</span>
+      <span data-r style="--i:7">Santestat</span>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 09 · NOUS REJOINDRE ─ −15 / +38 ═══════════════════════════════════ -->
+<section class="alt-sec alt-sec--bleu" id="alt-9" data-sec="Nous rejoindre">
+  <div class="alt-jour" aria-hidden="true"></div>
+
+  <div class="alt-plan" data-amp="-15" aria-hidden="true">
+    <div class="alt-trame alt-trame--claire alt-trame--gauche"></div>
+  </div>
+
+  <div class="alt-plan alt-plan--milieu" data-amp="38" aria-hidden="true">
+    <div class="alt-boite">
+      <span class="alt-forme alt-halo-c"  style="right:-8%;top:-8%;width:50vmin;height:50vmin"></span>
+      <span class="alt-forme alt-clair-v" style="right:8%;top:24%;width:12vmin;height:12vmin"></span>
+      <span class="alt-forme alt-orange"  style="right:26%;top:60%;width:4vmin;height:4vmin"></span>
+    </div>
+  </div>
+
+  <div class="alt-in" data-amp="9">
+    <p class="alt-sur" data-r style="--i:0">Nous rejoindre</p>
+    <h2 class="alt-t alt-t--geant" data-r style="--i:1">Neuf implantations qui embauchent.</h2>
+    <p class="alt-p" data-r style="--i:2">Préparateur-chauffeur, technicien approvisionnement, commercial, pharmacien responsable : les métiers de la répartition s'apprennent chez nous.</p>
+    <div class="alt-villes" data-r style="--i:3">
+      <span>Hyères · 83</span><span>Villeneuve-lès-Béziers · 34</span><span>Montayral · 47</span><span>Saint-Maurice-l'Exil · 38</span>
+    </div>
+    <div class="alt-btns" data-r style="--i:4">
+      <a class="alt-btn" href="https://www.integralpharma.fr/" target="_blank" rel="noopener">Voir les offres</a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 10 · NOS VALEURS ─ −11 / +28 ══════════════════════════════════════ -->
+<section class="alt-sec" id="alt-10" data-sec="Nos valeurs">
+  <div class="alt-jour" aria-hidden="true"></div>
+
+  <div class="alt-plan" data-amp="-11" aria-hidden="true">
+    <div class="alt-trame alt-trame--gauche"></div>
+  </div>
+
+  <div class="alt-plan alt-plan--milieu" data-amp="28" aria-hidden="true">
+    <div class="alt-boite">
+      <span class="alt-forme alt-halo-o" style="right:-6%;top:10%;width:40vmin;height:40vmin"></span>
+      <span class="alt-forme alt-vide"   style="right:6%;top:66%;width:9vmin;height:9vmin"></span>
+    </div>
+  </div>
+
+  <div class="alt-in" data-amp="7">
+    <p class="alt-sur" data-r style="--i:0">Nos valeurs</p>
+    <h2 class="alt-t alt-t--large" data-r style="--i:1">Trois mots qui se vérifient au téléphone.</h2>
+    <div class="alt-valeurs">
+      <div data-r style="--i:2"><h3>Confiance</h3><p>La personne qui décroche connaît votre officine, vos saisons et vos habitudes.</p></div>
+      <div data-r style="--i:3"><h3>Engagement</h3><p>C'est la même d'une année sur l'autre. Dans ce métier, c'est devenu rare.</p></div>
+      <div data-r style="--i:4"><h3>Respect</h3><p>Elle ne vous vendra pas ce dont vous n'avez pas besoin — parce qu'elle vous reverra le mois suivant, et l'année d'après.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 11 · NOUS ÉCRIRE ─ −6 / +14 : au comptoir, les plans se rejoignent ══ -->
+<footer class="alt-sec alt-sec--blanc" id="alt-11" data-sec="Nous écrire">
+  <div class="alt-jour" aria-hidden="true"></div>
+
+  <div class="alt-plan" data-amp="-6" aria-hidden="true">
+    <div class="alt-trame alt-trame--serree alt-trame--gauche"></div>
+  </div>
+
+  <div class="alt-plan alt-plan--milieu" data-amp="14" aria-hidden="true">
+    <div class="alt-boite">
+      <span class="alt-forme alt-halo"   style="right:-6%;top:-6%;width:44vmin;height:44vmin"></span>
+      <span class="alt-forme alt-orange" style="right:10%;top:14%;width:3.5vmin;height:3.5vmin"></span>
+    </div>
+  </div>
+
+  <div class="alt-in" data-amp="4">
+    <h2 class="alt-t alt-t--geant" data-r style="--i:0">Posez-nous la question qui vous intéresse.</h2>
+    <p class="alt-p alt-p--fort" data-r style="--i:1">Sur nos conditions, sur nos délais, sur la façon dont nous travaillons. Vous aurez une réponse claire, et le nom de l'implantation qui livre votre secteur.</p>
+    <div class="alt-btns" data-r style="--i:2">
+      <a class="alt-btn" href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a>
+    </div>
+
+    <div class="alt-pied">
+      <span>Intégral Pharma — 758 chemin de la Source, ZI Saint-Martin, 83400 Hyères</span>
+      <a href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a>
+      <a href="#alt-1">Mentions légales</a>
+      <span class="alt-chiffres">9 implantations · plus de 2 000 officines livrées · indépendant depuis 2006</span>
+      <span class="alt-signature">Site 12 · <em>Altitudes</em></span>
+    </div>
+  </div>
+</footer>
+
+</main>
+
+<script>
+(function () {
+  var doc = document.documentElement;
+  var reduit = false;
+  try { reduit = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
+
+  /* Filet : si quoi que ce soit casse, on retire l'armement → tout redevient visible. */
+  function desarmer() { doc.className = doc.className.replace(' js-motion', ''); }
+
+  try {
+    var page = document.getElementById('alt-page');
+    if (!page) { desarmer(); return; }
+
+    var sections = Array.prototype.slice.call(page.querySelectorAll('[data-sec]'));
+    var num = document.getElementById('alt-num');
+    var ticks = Array.prototype.slice.call(document.querySelectorAll('.alt-ech__t'));
+
+    /* ── Menu du téléphone : panneau plein, fermé au clic, à Échap et à la navigation ── */
+    var burger  = document.getElementById('alt-burger');
+    var fermer  = document.getElementById('alt-fermer');
+    var panneau = document.getElementById('alt-panneau');
+
+    function menu(ouvert) {
+      if (!panneau || !burger) return;
+      panneau.classList.toggle('ouvert', ouvert);
+      burger.setAttribute('aria-expanded', ouvert ? 'true' : 'false');
+      document.body.style.overflow = ouvert ? 'hidden' : '';
+    }
+    if (burger) burger.addEventListener('click', function () {
+      menu(!panneau.classList.contains('ouvert'));
+    });
+    if (fermer) fermer.addEventListener('click', function () { menu(false); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') menu(false); });
+
+    /* ── Défilement doux demandé au clic seulement, jamais posé sur le document ── */
+    Array.prototype.forEach.call(document.querySelectorAll('a[href^="#"]'), function (a) {
+      a.addEventListener('click', function (e) {
+        var id = a.getAttribute('href');
+        if (!id || id === '#') return;
+        var cible = document.querySelector(id);
+        if (!cible) return;
+        e.preventDefault();
+        menu(false);
+        cible.scrollIntoView({ behavior: reduit ? 'auto' : 'smooth', block: 'start' });
+      });
+    });
+    ticks.forEach(function (t) {
+      t.addEventListener('click', function () {
+        var cible = document.getElementById(t.getAttribute('data-va'));
+        if (cible) cible.scrollIntoView({ behavior: reduit ? 'auto' : 'smooth', block: 'start' });
+      });
+    });
+
+    /* ── Les plans de chaque section ──────────────────────────────────────────
+       amp = amplitude en pixels, lue dans data-amp. Elle décroît de section en
+       section : c'est la descente. Le déplacement vaut p × amp avec p borné à
+       [−1, +1], donc |déplacement| ≤ |amp| ≤ 120 px, toujours inférieur au
+       débordement de 170 px des plans → aucun trou possible. */
+    var scenes = sections.map(function (sec) {
+      var plans = Array.prototype.slice.call(sec.querySelectorAll('[data-amp]'));
+      return {
+        sec: sec,
+        plans: plans.map(function (el) {
+          var a = parseFloat(el.getAttribute('data-amp')) || 0;
+          if (a >  120) a =  120;
+          if (a < -120) a = -120;
+          return { el: el, amp: a };
+        }),
+        actif: false
+      };
+    });
+
+    var tic = false;
+
+    function placer() {
+      tic = false;
+      try {
+        var vue = window.innerHeight || doc.clientHeight;
+        var ligneActive = vue * 0.42;   /* au-dessus de ce trait, la section est « la » section */
+        var ligneVue    = vue * 0.88;   /* au-dessus de ce trait, la section se révèle */
+        var actif = 0;
+
+        for (var i = 0; i < scenes.length; i++) {
+          var S = scenes[i];
+          var r = S.sec.getBoundingClientRect();
+
+          /* Position RÉELLE relue à chaque défilement : une notification unique
+             d'IntersectionObserver peut ne jamais arriver. Une section révélée
+             ne se re-masque jamais. */
+          if (r.top <= ligneVue) S.sec.classList.add('vu');
+          if (r.top <= ligneActive) actif = i;
+
+          /* Hors champ (± 0,6 écran) : on ne calcule rien et on rend le
+             will-change — c'est ce qui empêche le Mac de ramer. */
+          var dedans = (r.bottom > -vue * 0.6) && (r.top < vue * 1.6);
+          if (!dedans) {
+            if (S.actif) { S.sec.classList.remove('actif'); S.actif = false; }
+            continue;
+          }
+          if (!S.actif) { S.sec.classList.add('actif'); S.actif = true; }
+          if (reduit) continue;
+
+          var centre = r.top + r.height / 2 - vue / 2;
+          var portee = (r.height + vue) / 2;
+          var p = portee > 0 ? centre / portee : 0;
+          if (p >  1) p =  1;
+          if (p < -1) p = -1;
+
+          for (var k = 0; k < S.plans.length; k++) {
+            S.plans[k].el.style.setProperty('--ty', (p * S.plans[k].amp).toFixed(1));
+          }
+        }
+
+        /* Bas de page : le dernier repère s'allume même si la section est courte. */
+        if (window.innerHeight + window.pageYOffset >= doc.scrollHeight - 4) {
+          actif = scenes.length - 1;
+          scenes[actif].sec.classList.add('vu');
+        }
+
+        for (var j = 0; j < ticks.length; j++) {
+          ticks[j].setAttribute('aria-current', j === actif ? 'true' : 'false');
+        }
+        if (num) num.textContent = ('0' + (actif + 1)).slice(-2);
+
+      } catch (err) {
+        desarmer();
+      }
+    }
+
+    function auDefilement() {
+      if (!tic) { tic = true; window.requestAnimationFrame(placer); }
+    }
+
+    window.addEventListener('scroll', auDefilement, { passive: true });
+    window.addEventListener('resize', auDefilement, { passive: true });
+    window.addEventListener('orientationchange', auDefilement, { passive: true });
+    window.addEventListener('load', placer);
+    placer();
+
+  } catch (e) {
+    desarmer();
+  }
+})();
+</script>
+
+</body>
+</html>
