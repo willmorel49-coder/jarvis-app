@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sérigraphie — DA 3 · Intégral Pharma</title>
+<meta name="da-nom" content="Sérigraphie">
+<meta name="description" content="Direction artistique 3 pour le site vitrine d'Intégral Pharma : chaque écran est une affiche autonome, une idée, une composition franche.">
+
+<!--
+  DA 3 · SÉRIGRAPHIE
+  Architecture : snap-sections (fx-bank). Un écran = une affiche. L'accrochage est natif.
+  Mécanique en une phrase : chaque planche s'imprime — la couche de couleur vient se caler
+  sous le texte, et rien d'autre ne bouge.
+  Zéro dépendance : aucune image, aucune police, aucun script distant. SVG écrits ici.
+  Safari : aucun effet coûteux, uniquement transform / opacity. Repli mouvement réduit.
+-->
+
+<script>
+  /* Armement du mouvement AVANT le premier rendu : sans cette classe, tout le contenu est
+     visible. Si le script principal échoue, le garde-fou ci-dessous la retire. */
+  (function(){
+    var d = document.documentElement;
+    try {
+      if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        d.className += ' js-motion';
+      }
+      setTimeout(function(){
+        if (!document.querySelector('.vu')) d.className = d.className.replace(' js-motion','');
+      }, 2000);
+    } catch(e) { d.className = d.className.replace(' js-motion',''); }
+  })();
+</script>
+
+<style>
+/* ─────────────────────────────────────────────────────────────────────────
+   1. SOCLE
+   ───────────────────────────────────────────────────────────────────────── */
+*,*::before,*::after{ box-sizing:border-box }
+
+html{
+  scroll-snap-type:y mandatory;
+  scroll-padding-top:var(--barre);
+  /* Pas de défilement doux posé sur le document : combiné à un accrochage obligatoire il
+     se bat avec lui et la page revient en arrière toute seule. Il est demandé au clic. */
+  -webkit-text-size-adjust:100%;
+}
+
+:root{
+  --bleu:#0050E6;
+  --bleu-nuit:#00318F;
+  --bleu-vif:#1A6BFF;
+  --orange:#F39A1B;
+  --encre:#101623;
+  --gris:#4E5A72;
+  --papier:#FBFAF6;          /* blanc chaud : un papier, pas un écran */
+  --papier-bleu:#E9F0FD;
+  --blanc:#FFFFFF;
+  --bord:#DCE3EF;
+  --bord-bleu:#C6D8F7;
+
+  --barre:64px;
+  --marge:clamp(20px,5vw,84px);
+  --pt:.82rem;               /* jamais moins : 13,1 px */
+
+  --dis:ui-sans-serif,-apple-system,"SF Pro Display","Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
+  --sortie:cubic-bezier(.22,.8,.25,1);
+}
+
+body{
+  margin:0;
+  background:var(--papier);
+  color:var(--encre);
+  font:16px/1.55 var(--dis);
+  overflow-x:hidden;
+}
+
+a{ color:inherit }
+img,svg{ max-width:100% }
+
+.aff-skip{
+  position:absolute; left:-9999px; top:0; z-index:200;
+  background:var(--bleu); color:#fff; padding:14px 20px; font-weight:700; text-decoration:none;
+}
+.aff-skip:focus{ left:0 }
+
+:focus-visible{ outline:3px solid var(--orange); outline-offset:3px }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   2. LA BARRE (cartouche fixe, jamais transparente)
+   ───────────────────────────────────────────────────────────────────────── */
+.aff-barre{
+  position:fixed; inset:0 0 auto 0; height:var(--barre); z-index:80;
+  background:var(--papier);
+  border-bottom:1px solid var(--bord);
+  display:flex; align-items:center; gap:18px;
+  padding:0 clamp(14px,3vw,32px);
+}
+.aff-marque{
+  display:flex; align-items:center; gap:10px; text-decoration:none; min-height:44px;
+  font:800 clamp(.95rem,1.5vw,1.05rem)/1 var(--dis); letter-spacing:-.02em;
+  white-space:nowrap;
+}
+.aff-marque i{ display:block; width:15px; height:15px; background:var(--bleu); flex:0 0 auto }
+.aff-marque b{ font-weight:800 }
+.aff-marque span{ font-weight:500; color:var(--gris) }
+
+.aff-nav{ margin-left:auto; display:flex; align-items:center; gap:4px }
+.aff-nav a{
+  display:inline-flex; align-items:center; min-height:44px; padding:0 12px;
+  text-decoration:none; font-size:.95rem; font-weight:600; color:var(--encre);
+}
+.aff-nav a:hover{ color:var(--bleu) }
+
+.aff-planche{
+  font:700 var(--pt)/1 var(--mono); letter-spacing:.14em; color:var(--gris);
+  font-variant-numeric:tabular-nums; white-space:nowrap;
+}
+.aff-nav .aff-planche{ margin-left:14px; padding-left:16px; border-left:1px solid var(--bord) }
+
+.aff-burger{
+  margin-left:auto; width:46px; height:46px; display:none; place-items:center;
+  background:var(--blanc); border:1px solid var(--bord); cursor:pointer; padding:0;
+}
+.aff-burger i{ display:block; width:20px; height:2px; background:var(--encre); position:relative }
+.aff-burger i::before,.aff-burger i::after{
+  content:""; position:absolute; left:0; width:20px; height:2px; background:var(--encre);
+}
+.aff-burger i::before{ top:-6px } .aff-burger i::after{ top:6px }
+
+/* Panneau mobile — fond PLEIN, jamais du texte qui défile au travers */
+.aff-panneau{
+  position:fixed; inset:0; z-index:90; background:var(--papier);
+  display:none; flex-direction:column; padding:calc(var(--barre) + 12px) 22px 28px;
+}
+.aff-panneau.ouvert{ display:flex }
+.aff-panneau a{
+  display:flex; align-items:center; min-height:56px; text-decoration:none;
+  font:800 clamp(1.5rem,7vw,2.1rem)/1.1 var(--dis); letter-spacing:-.03em;
+  border-bottom:1px solid var(--bord);
+}
+.aff-panneau a:last-child{ color:var(--bleu) }
+.aff-fermer{
+  position:absolute; top:9px; right:14px; width:46px; height:46px;
+  background:var(--blanc); border:1px solid var(--bord); cursor:pointer;
+  font:400 1.5rem/1 var(--dis); color:var(--encre);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   3. LA PLANCHE — un écran, une affiche
+   ───────────────────────────────────────────────────────────────────────── */
+.aff-p{
+  position:relative; overflow:hidden;
+  min-height:calc(100vh - var(--barre));
+  min-height:calc(100svh - var(--barre));
+  scroll-snap-align:start; scroll-snap-stop:normal;
+  display:grid; align-content:center;
+  padding:calc(var(--barre) + 30px) var(--marge) 84px;
+  background:var(--papier);
+  border-bottom:1px solid var(--bord);
+}
+#aff-1{ min-height:100vh; min-height:100svh; padding-bottom:104px }
+
+.aff-in{ position:relative; z-index:3; width:100%; max-width:1180px; margin:0 auto }
+
+/* Source de lumière : un blanc qui vient d'un angle. Le clair sans lumière est plat. */
+.aff-lum{ position:absolute; inset:0; z-index:0; pointer-events:none;
+  background:radial-gradient(120% 85% at 12% -5%, #FFFFFF 0%, rgba(255,255,255,0) 62%) }
+
+/* Trame de sérigraphie : des points imprimés, taille fixe, surface bornée. */
+.aff-trame{
+  position:absolute; z-index:1; pointer-events:none;
+  width:min(46%,520px); height:min(58%,560px); right:0; bottom:0;
+  background:radial-gradient(circle, rgba(0,80,230,.20) 1.05px, rgba(0,80,230,0) 1.15px) 0 0/9px 9px;
+  /* la trame s'éteint vers l'intérieur de la planche : un aplat de points qui
+     s'arrête net ferait une découpe rectangulaire visible */
+  -webkit-mask-image:radial-gradient(105% 105% at 100% 100%, #000 22%, rgba(0,0,0,0) 74%);
+  mask-image:radial-gradient(105% 105% at 100% 100%, #000 22%, rgba(0,0,0,0) 74%);
+}
+.aff-trame--gauche{ right:auto; left:0; top:0; bottom:auto;
+  -webkit-mask-image:radial-gradient(105% 105% at 0% 0%, #000 22%, rgba(0,0,0,0) 74%);
+  mask-image:radial-gradient(105% 105% at 0% 0%, #000 22%, rgba(0,0,0,0) 74%) }
+.aff-trame--orange{ background:radial-gradient(circle, rgba(243,154,27,.34) 1.05px, rgba(243,154,27,0) 1.15px) 0 0/9px 9px }
+
+/* Aplats de couleur : le geste franc de l'affiche. */
+.aff-aplat{ position:absolute; z-index:1; background:var(--bleu); pointer-events:none }
+.aff-filet{ position:absolute; z-index:2; background:var(--encre); pointer-events:none }
+
+/* Cartouche d'angle (numéro de planche) */
+.aff-cart{
+  position:absolute; z-index:4; top:calc(var(--barre) + 22px); right:var(--marge);
+  font:700 var(--pt)/1 var(--mono); letter-spacing:.16em; color:var(--gris);
+  font-variant-numeric:tabular-nums;
+}
+
+/* Variantes de fond */
+.aff-p--bleute{ background:var(--papier-bleu) }
+.aff-p--bleute .aff-lum{ background:radial-gradient(115% 80% at 88% -5%, #FFFFFF 0%, rgba(255,255,255,0) 58%) }
+
+.aff-p--bleu{ background:var(--bleu); border-bottom-color:var(--bleu) }
+.aff-p--bleu .aff-lum{ background:radial-gradient(95% 70% at 80% 0%, #2C79FF 0%, rgba(44,121,255,0) 60%) }
+.aff-p--bleu .aff-trame{ background:radial-gradient(circle, rgba(255,255,255,.34) 1.05px, rgba(255,255,255,0) 1.15px) 0 0/9px 9px }
+.aff-p--bleu,
+.aff-p--bleu .aff-t{ color:#fff }
+.aff-p--bleu .aff-sur{ color:#B9D2FF }
+.aff-p--bleu .aff-txt{ color:#DCE8FF }
+.aff-p--bleu .aff-cart{ color:#9CBEFF }
+.aff-p--bleu .aff-filet{ background:rgba(255,255,255,.5) }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   4. TYPOGRAPHIE D'AFFICHE
+   ───────────────────────────────────────────────────────────────────────── */
+.aff-sur{
+  margin:0 0 clamp(14px,2.2vh,26px);
+  font:700 var(--pt)/1.5 var(--mono); letter-spacing:.22em; text-transform:uppercase;
+  color:var(--bleu);
+}
+.aff-sur span{ color:var(--gris) }
+
+.aff-t{
+  margin:0; font-family:var(--dis); font-weight:800;
+  font-size:clamp(1.92rem,6.4vw,4.6rem); line-height:.98; letter-spacing:-.038em;
+  text-wrap:balance; max-width:20ch;
+}
+.aff-t--geant{ font-size:clamp(2.3rem,8.6vw,7rem); line-height:.9; letter-spacing:-.05em; max-width:13ch }
+.aff-t--large{ max-width:26ch }
+
+/* Le calage : une couche de couleur posée sous le texte, décalée puis rattrapée. */
+.aff-t--calage{ position:relative; isolation:isolate }
+.aff-t__c,.aff-t__n{ display:block }
+.aff-t__c{
+  position:absolute; inset:0; color:var(--orange); z-index:0;
+  translate:.055em .055em; transition:translate .85s var(--sortie) .12s;
+}
+.aff-t__n{ position:relative; z-index:1 }
+.js-motion .aff-t__c{ translate:.28em .2em }
+.js-motion .vu .aff-t__c{ translate:.055em .055em }
+.aff-p--bleu .aff-t__c{ color:#3D82FF }
+.aff-sortie .aff-t__c{ color:#B7CFF8 }
+
+.aff-txt{
+  margin:clamp(18px,2.6vh,30px) 0 0; max-width:52ch; color:var(--gris);
+  font-size:clamp(1rem,1.45vw,1.16rem);
+}
+.aff-txt + .aff-txt{ margin-top:14px }
+.aff-txt--fort{ color:var(--encre); font-weight:600; max-width:44ch }
+.aff-p--bleu .aff-txt--fort{ color:#fff }
+
+.aff-note{
+  margin:clamp(18px,2.4vh,28px) 0 0; max-width:60ch;
+  font:500 var(--pt)/1.5 var(--mono); color:var(--gris); letter-spacing:.01em;
+}
+.aff-p--bleu .aff-note{ color:#B9D2FF }
+
+.aff-crayon{
+  display:inline-block; margin-bottom:10px;
+  font:700 var(--pt)/1 var(--mono); letter-spacing:.16em; color:var(--bleu);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   5. BOUTONS
+   ───────────────────────────────────────────────────────────────────────── */
+.aff-btns{ display:flex; flex-wrap:wrap; gap:12px; margin-top:clamp(22px,3.4vh,38px) }
+.aff-btn{
+  display:inline-flex; align-items:center; min-height:52px; padding:0 26px;
+  background:var(--bleu); color:#fff; text-decoration:none; font-weight:700; font-size:1rem;
+  border:2px solid var(--bleu);
+  box-shadow:5px 5px 0 var(--bleu-nuit);
+  transition:transform .18s var(--sortie), box-shadow .18s var(--sortie);
+}
+.aff-btn:hover{ transform:translate(2px,2px); box-shadow:3px 3px 0 var(--bleu-nuit) }
+.aff-btn--vide{ background:transparent; color:var(--bleu); box-shadow:5px 5px 0 var(--bord-bleu) }
+.aff-btn--vide:hover{ box-shadow:3px 3px 0 var(--bord-bleu) }
+.aff-p--bleu .aff-btn{ background:#fff; color:var(--bleu); border-color:#fff; box-shadow:5px 5px 0 var(--bleu-nuit) }
+.aff-p--bleu .aff-btn:hover{ box-shadow:3px 3px 0 var(--bleu-nuit) }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   6. COMPOSITIONS DE PLANCHES
+   ───────────────────────────────────────────────────────────────────────── */
+.aff-duo{ display:grid; grid-template-columns:1.25fr .75fr; gap:clamp(26px,4.5vw,72px); align-items:center }
+.aff-duo--inv{ grid-template-columns:.8fr 1.2fr }
+
+/* — Compteurs — */
+.aff-nombres{ display:grid; grid-template-columns:repeat(4,1fr); gap:0; margin-top:clamp(20px,3vh,34px);
+  border-top:2px solid var(--encre) }
+.aff-nombres div{
+  display:flex; flex-direction:column; justify-content:flex-end;
+  min-height:clamp(200px,44vh,400px);
+  padding:clamp(18px,3vh,30px) 16px clamp(4px,1vh,10px) 0; border-right:1px solid var(--bord);
+}
+.aff-nombres div:last-child{ border-right:0 }
+.aff-nombres div + div{ padding-left:clamp(14px,2.2vw,30px) }
+.aff-nombres b{
+  display:block; font:800 clamp(2.6rem,7.4vw,5.6rem)/.86 var(--dis); letter-spacing:-.055em;
+  font-variant-numeric:tabular-nums; white-space:nowrap;
+}
+.aff-nombres b em{ font-style:normal; color:var(--orange) }
+.aff-nombres small{
+  display:block; margin-top:12px; font:700 var(--pt)/1.35 var(--mono);
+  letter-spacing:.1em; text-transform:uppercase; color:var(--gris); max-width:14ch;
+}
+
+/* — Liste des implantations — */
+.aff-liste{ list-style:none; margin:clamp(16px,2.4vh,26px) 0 0; padding:0 }
+.aff-liste li{
+  display:grid; grid-template-columns:3.1em 1fr auto; gap:12px; align-items:baseline;
+  padding:clamp(7px,1.1vh,11px) 0; border-bottom:1px solid var(--bord-bleu);
+  break-inside:avoid;
+}
+.aff-liste b{ font:700 var(--pt)/1.3 var(--mono); color:var(--bleu); letter-spacing:.08em }
+.aff-liste span{ font-weight:700; font-size:clamp(.95rem,1.5vw,1.12rem); letter-spacing:-.01em }
+.aff-liste span small{ display:block; font:500 var(--pt)/1.3 var(--mono); color:var(--gris); letter-spacing:.04em }
+.aff-liste i{ font:500 var(--pt)/1.3 var(--mono); font-style:normal; color:var(--gris); white-space:nowrap }
+.aff-liste li.est-partenaire{ border-bottom-color:var(--orange) }
+.aff-liste li.est-partenaire b{ color:var(--orange) }
+
+/* — Le métier : quatre gestes — */
+.aff-gestes{ display:grid; grid-template-columns:repeat(4,1fr); gap:0; margin-top:clamp(20px,3vh,34px);
+  border-top:2px solid var(--encre) }
+.aff-gestes div{ padding:clamp(16px,2.6vh,26px) 18px 0 0; border-right:1px solid var(--bord) }
+.aff-gestes div:last-child{ border-right:0 }
+.aff-gestes b{ display:block; font:700 var(--pt)/1 var(--mono); letter-spacing:.16em; color:var(--bleu) }
+.aff-gestes h3{
+  margin:12px 0 10px; font:800 clamp(1.15rem,2.3vw,1.75rem)/1.05 var(--dis); letter-spacing:-.03em;
+}
+.aff-gestes p{ margin:0; color:var(--gris); font-size:.98rem }
+
+/* — La centrale : chiffres évidés — */
+.aff-evide{
+  font:800 clamp(3.2rem,13vw,9.5rem)/.82 var(--dis); letter-spacing:-.055em;
+  color:var(--bleu);
+  font-variant-numeric:tabular-nums; white-space:nowrap; display:block;
+}
+/* Chiffre évidé — seulement là où le contour est réellement dessiné : sans cette
+   condition, le navigateur qui l'ignore afficherait un chiffre invisible. */
+@supports (-webkit-text-stroke: 2px #000){
+  .aff-evide{ color:transparent; -webkit-text-stroke:2px var(--bleu) }
+  .aff-evide--plein{ color:var(--bleu); -webkit-text-stroke:0 }
+}
+.aff-para{ display:grid; grid-template-columns:1.15fr .85fr; gap:clamp(20px,4vw,56px); align-items:end;
+  margin-top:clamp(16px,2.4vh,28px) }
+.aff-para small{ display:block; margin-top:10px; font:700 var(--pt)/1.3 var(--mono);
+  letter-spacing:.14em; text-transform:uppercase; color:var(--gris) }
+
+/* — Partenaires — */
+.aff-labos{ display:grid; grid-template-columns:repeat(3,1fr); gap:1px; margin-top:clamp(20px,3vh,34px);
+  background:var(--bord); border:1px solid var(--bord) }
+.aff-labos span{
+  background:var(--papier); display:flex; align-items:center; justify-content:center;
+  padding:clamp(20px,4vh,40px) 12px;
+  font:800 clamp(1.1rem,2.4vw,1.9rem)/1 var(--dis); letter-spacing:-.03em; text-align:center;
+}
+
+/* — Valeurs — */
+.aff-valeurs{ display:grid; grid-template-columns:repeat(3,1fr); gap:0; margin-top:clamp(20px,3vh,34px);
+  border-top:2px solid var(--encre) }
+.aff-valeurs div{ padding:clamp(18px,3vh,30px) 20px 0 0; border-right:1px solid var(--bord) }
+.aff-valeurs div:last-child{ border-right:0 }
+.aff-valeurs h3{ margin:0 0 12px; font:800 clamp(1.5rem,3.6vw,2.7rem)/1 var(--dis); letter-spacing:-.04em }
+.aff-valeurs h3 u{ text-decoration:none; color:var(--bleu) }
+.aff-valeurs p{ margin:0; color:var(--gris); font-size:1rem; max-width:30ch }
+
+/* — Villes qui recrutent — */
+.aff-villes{ display:flex; flex-wrap:wrap; gap:8px; margin-top:clamp(18px,2.6vh,28px) }
+.aff-villes span{
+  border:1px solid rgba(255,255,255,.45); padding:9px 14px;
+  font:700 var(--pt)/1.2 var(--mono); letter-spacing:.06em;
+}
+
+/* — Bandeau qui défile (une seule fois sur la page) — */
+.aff-band{
+  position:absolute; left:0; right:0; bottom:0; z-index:5;
+  background:var(--blanc); border-top:1px solid var(--bord);
+  overflow:hidden; padding:13px 0;
+}
+.aff-band__piste{ display:flex; width:max-content; animation:aff-defile 46s linear infinite }
+.aff-band__piste span{
+  padding:0 20px; white-space:nowrap;
+  font:700 var(--pt)/1.2 var(--mono); letter-spacing:.15em; text-transform:uppercase;
+}
+.aff-band__piste span::after{ content:"·"; margin-left:20px; color:var(--bleu) }
+@keyframes aff-defile{ from{ transform:translate3d(0,0,0) } to{ transform:translate3d(-50%,0,0) } }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   7. INDICATEUR DE POSITION (construit par le script)
+   ───────────────────────────────────────────────────────────────────────── */
+.aff-reperes{
+  position:fixed; right:clamp(8px,1.6vw,22px); top:50%; translate:0 -50%; z-index:70;
+  display:flex; flex-direction:column; gap:1px;
+}
+.aff-repere{
+  appearance:none; -webkit-appearance:none; border:0; background:none; cursor:pointer;
+  display:flex; align-items:center; justify-content:flex-end; gap:10px;
+  min-width:44px; min-height:44px; padding:0 4px; font:inherit; color:var(--gris);
+}
+.aff-repere b{
+  font:700 var(--pt)/1 var(--mono); letter-spacing:.1em; text-transform:uppercase;
+  opacity:0; transition:opacity .25s ease; white-space:nowrap;
+}
+.aff-repere i{ display:block; width:22px; height:2px; background:#AFBED8; flex:0 0 auto;
+  transition:width .35s var(--sortie), background-color .35s ease }
+.aff-repere[aria-current="true"] i{ width:40px; background:var(--bleu) }
+.aff-repere[aria-current="true"] b{ opacity:1; color:var(--bleu) }
+.aff-reperes:hover .aff-repere b{ opacity:1 }
+.aff-reperes.sur-bleu .aff-repere i{ background:rgba(255,255,255,.5) }
+.aff-reperes.sur-bleu .aff-repere b{ color:#fff }
+.aff-reperes.sur-bleu .aff-repere[aria-current="true"] i{ background:#fff }
+
+/* Signature de la direction, en petit dans un coin */
+.aff-signature{
+  position:fixed; left:10px; bottom:10px; z-index:75; pointer-events:none;
+  background:var(--blanc); border:1px solid var(--bord); padding:7px 11px;
+  font:700 var(--pt)/1 var(--mono); letter-spacing:.16em; text-transform:uppercase; color:var(--encre);
+}
+.aff-signature em{ font-style:normal; color:var(--bleu) }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   8. LA SORTIE — ancrée sur la fin, hauteur libre : on ne s'y coince pas
+   ───────────────────────────────────────────────────────────────────────── */
+.aff-sortie{
+  position:relative; scroll-snap-align:end;
+  background:var(--blanc); border-top:2px solid var(--encre);
+  /* le bas garde de la place pour la pastille de signature, en bas à gauche */
+  padding:clamp(60px,11vh,120px) var(--marge) clamp(76px,8vh,96px);
+}
+.aff-sortie > div{ max-width:1180px; margin:0 auto; position:relative; z-index:3 }
+.aff-pied{
+  margin-top:clamp(38px,7vh,72px); padding-top:22px; border-top:1px solid var(--bord);
+  display:flex; flex-wrap:wrap; gap:10px 26px; align-items:baseline;
+  font:500 var(--pt)/1.6 var(--mono); color:var(--gris);
+}
+.aff-pied a{ color:var(--bleu); display:inline-flex; align-items:center; min-height:44px }
+.aff-pied .aff-chiffres{ width:100%; color:var(--encre); letter-spacing:.06em }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   9. RÉVÉLATION — le contenu est visible par défaut ; seul le script l'arme
+   ───────────────────────────────────────────────────────────────────────── */
+.js-motion [data-r]{
+  opacity:0; transform:translateY(18px);
+  transition:opacity .6s var(--sortie), transform .7s var(--sortie);
+  transition-delay:calc(var(--i,0) * 70ms);
+}
+.js-motion .vu [data-r]{ opacity:1; transform:none }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   10. TÉLÉPHONE
+   ───────────────────────────────────────────────────────────────────────── */
+/* Sur grand écran, on réserve la bande de droite : sans elle, l'étiquette de
+   l'indicateur de position vient se poser sur la fin des lignes de texte. */
+@media (min-width:1024px){
+  .aff-p,.aff-sortie{ padding-right:calc(var(--marge) + 96px) }
+  .aff-in,.aff-sortie > div{ max-width:1100px }
+  .aff-cart{ right:calc(var(--marge) + 96px) }
+}
+
+@media (max-width:1000px){
+  .aff-duo,.aff-duo--inv{ grid-template-columns:1fr; gap:26px }
+  .aff-gestes,.aff-valeurs{ grid-template-columns:repeat(2,1fr) }
+  .aff-gestes div:nth-child(2),.aff-valeurs div:nth-child(2){ border-right:0 }
+  .aff-para{ grid-template-columns:1fr; gap:18px }
+  .aff-figure{ display:none }
+}
+@media (max-width:880px){
+  :root{ --barre:56px }
+  .aff-nav{ display:none }
+  .aff-burger{ display:grid }
+  .aff-reperes{ display:none }
+  .aff-nombres{ grid-template-columns:repeat(2,1fr) }
+  .aff-nombres div{ min-height:clamp(130px,19vh,190px) }
+  .aff-nombres div:nth-child(2){ border-right:0 }
+  .aff-nombres div:nth-child(-n+2){ border-bottom:1px solid var(--bord) }
+  .aff-labos{ grid-template-columns:repeat(2,1fr) }
+  .aff-cart{ top:calc(var(--barre) + 16px) }
+  .aff-t{ max-width:none } .aff-t--geant{ max-width:none }
+  /* la bande qui défile remonte : elle laisse en bas une marge de papier où se
+     pose la pastille de signature, au lieu de passer dessous */
+  .aff-band{ bottom:46px; border-bottom:1px solid var(--bord) }
+}
+@media (max-width:560px){
+  .aff-gestes,.aff-valeurs{ grid-template-columns:1fr; border-top-width:2px }
+  .aff-gestes div,.aff-valeurs div{ border-right:0; border-bottom:1px solid var(--bord);
+    padding:12px 0 }
+  .aff-gestes h3{ margin:7px 0 6px }
+  .aff-valeurs h3{ margin:0 0 7px }
+  .aff-gestes div:last-child,.aff-valeurs div:last-child{ border-bottom:0 }
+  .aff-liste li{ grid-template-columns:2.6em 1fr; row-gap:1px; padding:6px 0 }
+  .aff-liste i{ grid-column:2 }
+  .aff-liste{ margin-top:14px }
+  .aff-labos{ grid-template-columns:1fr }
+  .aff-labos span{ padding:16px 12px }
+  .aff-p{ padding-bottom:96px }
+  .aff-sur{ letter-spacing:.12em }
+  .aff-signature{ letter-spacing:.1em; padding:6px 9px }
+}
+
+/* Écran bas — téléphone en paysage, petit portable : l'accrochage se coupe. */
+@media (max-height:700px){
+  html{ scroll-snap-type:none }
+  .aff-p,#aff-1{ min-height:0; padding:calc(var(--barre) + 26px) var(--marge) 56px }
+  .aff-band{ position:relative; inset:auto; margin:32px calc(var(--marge) * -1) -56px }
+  .aff-cart{ display:none }
+  .aff-reperes{ display:none }
+}
+
+/* Repli mouvement réduit : rien ne s'accroche, rien ne bouge, tout se lit. */
+@media (prefers-reduced-motion: reduce){
+  html{ scroll-snap-type:none }
+  .aff-p,#aff-1{ min-height:0; padding:calc(var(--barre) + 30px) var(--marge) 60px }
+  .aff-cart{ display:none }
+  .aff-band{ position:relative; inset:auto; margin:32px calc(var(--marge) * -1) -60px; overflow-x:auto }
+  .aff-band__piste{ animation:none }
+  .aff-t__c{ transition:none }
+  .aff-btn{ transition:none }
+  .aff-repere i,.aff-repere b{ transition:none }
+  .aff-reperes{ display:none }
+}
+</style>
+</head>
+<body>
+
+<a class="aff-skip" href="#aff-2">Aller au contenu</a>
+
+<header class="aff-barre">
+  <a class="aff-marque" href="#aff-1"><i aria-hidden="true"></i><b>Intégral</b> <span>Pharma</span></a>
+  <nav class="aff-nav" aria-label="Navigation principale">
+    <a href="#aff-2">Le groupe</a>
+    <a href="#aff-4">Le réseau</a>
+    <a href="#aff-5">Le métier</a>
+    <a href="#aff-10">Nos valeurs</a>
+    <a href="#aff-sortie">Nous écrire</a>
+    <span class="aff-planche" id="aff-compteur" aria-hidden="true">01/11</span>
+  </nav>
+  <button class="aff-burger" type="button" id="aff-burger" aria-expanded="false" aria-controls="aff-panneau" aria-label="Ouvrir le menu">
+    <i aria-hidden="true"></i>
+  </button>
+</header>
+
+<div class="aff-panneau" id="aff-panneau">
+  <button class="aff-fermer" type="button" id="aff-fermer" aria-label="Fermer le menu">✕</button>
+  <a href="#aff-2">Le groupe</a>
+  <a href="#aff-4">Le réseau</a>
+  <a href="#aff-5">Le métier</a>
+  <a href="#aff-10">Nos valeurs</a>
+  <a href="#aff-sortie">Nous écrire</a>
+</div>
+
+<main class="aff" data-aff>
+
+<!-- PLANCHE 01 ─ L'ouverture ─────────────────────────────────────────────── -->
+<section class="aff-p" id="aff-1" data-titre="Ouverture">
+  <div class="aff-lum" aria-hidden="true"></div>
+  <div class="aff-trame" aria-hidden="true"></div>
+  <p class="aff-cart" aria-hidden="true">Planche 01</p>
+  <div class="aff-in aff-duo">
+    <div>
+      <p class="aff-sur" data-r style="--i:0">Groupe de grossistes-répartiteurs français indépendant</p>
+      <h1 class="aff-t aff-t--geant aff-t--calage" data-r style="--i:1">
+        <span class="aff-t__c" aria-hidden="true">Neuf maisons. Un seul nom.</span>
+        <span class="aff-t__n">Neuf maisons. Un seul nom.</span>
+      </h1>
+      <p class="aff-txt aff-txt--fort" data-r style="--i:2">Depuis 2006, elles avancent ensemble sous le nom d'Intégral Pharma — et votre commande part toujours de la plus proche de votre comptoir.</p>
+      <div class="aff-btns" data-r style="--i:3">
+        <a class="aff-btn" href="#aff-4">Découvrir le réseau</a>
+        <a class="aff-btn aff-btn--vide" href="mailto:contact@integralpharma.fr">Nous écrire</a>
+      </div>
+    </div>
+    <div class="aff-figure" data-r style="--i:2" aria-hidden="true">
+      <svg viewBox="0 0 240 240" width="100%" style="max-width:340px;display:block;margin-left:auto">
+        <rect x="5" y="5" width="230" height="230" fill="none" stroke="#0050E6" stroke-width="9"/>
+        <g fill="#0050E6">
+          <rect x="30" y="30" width="52" height="52"/><rect x="94" y="30" width="52" height="52"/><rect x="158" y="30" width="52" height="52"/>
+          <rect x="30" y="94" width="52" height="52"/><rect x="94" y="94" width="52" height="52"/><rect x="158" y="94" width="52" height="52"/>
+          <rect x="30" y="158" width="52" height="52"/><rect x="94" y="158" width="52" height="52"/><rect x="158" y="158" width="52" height="52"/>
+        </g>
+      </svg>
+    </div>
+  </div>
+  <div class="aff-band" aria-hidden="true">
+    <div class="aff-band__piste">
+      <span>Indépendant</span><span>Neuf implantations</span><span>Un réseau national</span><span>Plus de 2 000 officines livrées</span><span>Confiance, Engagement, Respect</span><span>Une alternative aux grossistes historiques</span>
+      <span>Indépendant</span><span>Neuf implantations</span><span>Un réseau national</span><span>Plus de 2 000 officines livrées</span><span>Confiance, Engagement, Respect</span><span>Une alternative aux grossistes historiques</span>
+    </div>
+  </div>
+</section>
+
+<!-- PLANCHE 02 ─ La raison d'être (l'affiche manifeste) ───────────────────── -->
+<section class="aff-p aff-p--bleu" id="aff-2" data-titre="Le groupe">
+  <div class="aff-lum" aria-hidden="true"></div>
+  <div class="aff-trame" aria-hidden="true"></div>
+  <p class="aff-cart" aria-hidden="true">Planche 02</p>
+  <div class="aff-in">
+    <p class="aff-sur" data-r style="--i:0">Notre histoire</p>
+    <h2 class="aff-t aff-t--geant aff-t--calage" data-r style="--i:1">
+      <span class="aff-t__c" aria-hidden="true">Rendre la marge à l'officine française.</span>
+      <span class="aff-t__n">Rendre la marge à l'officine française.</span>
+    </h2>
+    <p class="aff-txt aff-txt--fort" data-r style="--i:2">C'est la raison d'être d'Intégral Pharma depuis 2006 : redistribuer directement la marge aux officines françaises, en toute transparence, avec des prix nets visibles sur facture.</p>
+    <p class="aff-txt" data-r style="--i:3">Neuf implantations aujourd'hui, plus de deux mille officines livrées chaque jour, et la même idée qu'au premier jour — un groupe de répartiteurs indépendants qui a choisi de se mettre du côté du comptoir.</p>
+  </div>
+</section>
+
+<!-- PLANCHE 03 ─ Les compteurs ────────────────────────────────────────────── -->
+<section class="aff-p" id="aff-3" data-titre="En chiffres">
+  <div class="aff-lum" aria-hidden="true"></div>
+  <div class="aff-trame aff-trame--gauche aff-trame--orange" aria-hidden="true"></div>
+  <p class="aff-cart" aria-hidden="true">Planche 03</p>
+  <div class="aff-in">
+    <p class="aff-sur" data-r style="--i:0">Notre histoire <span>— ce qui se vérifie</span></p>
+    <div class="aff-nombres">
+      <div data-r style="--i:1"><b>2006</b><small>année de création</small></div>
+      <div data-r style="--i:2"><b>9</b><small>implantations</small></div>
+      <div data-r style="--i:3"><b>2 000 <em>+</em></b><small>officines livrées</small></div>
+      <div data-r style="--i:4"><b>20</b><small>ans d'indépendance</small></div>
+    </div>
+  </div>
+</section>
+
+<!-- PLANCHE 04 ─ Le réseau ────────────────────────────────────────────────── -->
+<section class="aff-p aff-p--bleute" id="aff-4" data-titre="Le réseau">
+  <div class="aff-lum" aria-hidden="true"></div>
+  <p class="aff-cart" aria-hidden="true">Planche 04</p>
+  <div class="aff-in aff-duo aff-duo--inv">
+    <div>
+      <p class="aff-sur" data-r style="--i:0">Le réseau</p>
+      <h2 class="aff-t" data-r style="--i:1">Neuf implantations. Laquelle est la vôtre&nbsp;?</h2>
+      <p class="aff-txt aff-txt--fort" data-r style="--i:2">C'est la seule question qui compte vraiment.</p>
+      <div class="aff-figure" data-r style="--i:3" aria-hidden="true">
+        <svg viewBox="0 0 300 224" width="100%" style="max-width:320px;display:block;margin-top:26px">
+          <rect x="4" y="8" width="196" height="204" fill="none" stroke="#0050E6" stroke-width="7"/>
+          <g fill="#0050E6">
+            <rect x="27" y="35" width="42" height="42"/><rect x="81" y="35" width="42" height="42"/><rect x="135" y="35" width="42" height="42"/>
+            <rect x="27" y="89" width="42" height="42"/><rect x="81" y="89" width="42" height="42"/><rect x="135" y="89" width="42" height="42"/>
+            <rect x="27" y="143" width="42" height="42"/><rect x="81" y="143" width="42" height="42"/><rect x="135" y="143" width="42" height="42"/>
+          </g>
+          <rect x="240" y="89" width="42" height="42" fill="none" stroke="#F39A1B" stroke-width="5"/>
+          <path d="M204 110h30" stroke="#F39A1B" stroke-width="3" stroke-dasharray="6 6"/>
+          <text x="261" y="152" fill="#F39A1B" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="12" font-weight="700">PHARMEST</text>
+        </svg>
+      </div>
+    </div>
+    <div>
+      <ol class="aff-liste" data-r style="--i:2">
+        <li><b>01</b><span>Hyères Pharma<small>siège du groupe</small></span><i>Hyères · 83</i></li>
+        <li><b>02</b><span>SR Pharma</span><i>Palaiseau · 91</i></li>
+        <li><b>03</b><span>Mistral Santé Pharma</span><i>Flassans-sur-Issole · 83</i></li>
+        <li><b>04</b><span>Sud Ouest Pharma</span><i>Montayral · 47</i></li>
+        <li><b>05</b><span>Comptoir Pharmaceutique du Rhône</span><i>Saint-Maurice-l'Exil · 38</i></li>
+        <li><b>06</b><span>Escale Pharma</span><i>Chilly-Mazarin · 91</i></li>
+        <li><b>07</b><span>Ouest Pharma Services</span><i>Saint-Étienne-de-Montluc · 44</i></li>
+        <li><b>08</b><span>Pharm'Occitanie Services</span><i>Villeneuve-lès-Béziers · 34</i></li>
+        <li><b>09</b><span>Sud Est Pharma</span><i>Le Cannet-des-Maures · 83</i></li>
+        <li class="est-partenaire"><b>+</b><span>Pharmest<small>partenaire — prolonge le maillage à l'Est</small></span><i>Metz · 57</i></li>
+      </ol>
+      <p class="aff-note" data-r style="--i:3">Neuf implantations et un partenaire. De la Bretagne à la Méditerranée, le stock d'une maison est le stock de toutes.</p>
+    </div>
+  </div>
+</section>
+
+<!-- PLANCHE 05 ─ Le métier ────────────────────────────────────────────────── -->
+<section class="aff-p" id="aff-5" data-titre="Le métier">
+  <div class="aff-lum" aria-hidden="true"></div>
+  <div class="aff-trame" aria-hidden="true"></div>
+  <p class="aff-cart" aria-hidden="true">Planche 05</p>
+  <div class="aff-in">
+    <p class="aff-sur" data-r style="--i:0">Le métier</p>
+    <h2 class="aff-t aff-t--large" data-r style="--i:1">Ce qui se passe entre votre commande et votre comptoir.</h2>
+    <p class="aff-txt aff-txt--fort" data-r style="--i:2">Quelques heures, quatre métiers, et une chaîne qui ne s'arrête jamais.</p>
+    <div class="aff-gestes">
+      <div data-r style="--i:3"><b>01</b><h3>Référencer</h3><p>Un même catalogue, tenu à jour, disponible dans toutes les implantations.</p></div>
+      <div data-r style="--i:4"><b>02</b><h3>Stocker</h3><p>Quand le comptoir a besoin, le réseau répond.</p></div>
+      <div data-r style="--i:5"><b>03</b><h3>Préparer</h3><p>Chaque commande est préparée dans l'implantation la plus proche de chez vous.</p></div>
+      <div data-r style="--i:6"><b>04</b><h3>Livrer</h3><p>Tous les jours, les tournées partent vers les officines.</p></div>
+    </div>
+    <p class="aff-note" data-r style="--i:7">Et quand la vie de votre officine change, votre interlocuteur ajuste l'approvisionnement avec vous, sans à-coup au comptoir.</p>
+  </div>
+</section>
+
+<!-- PLANCHE 06 ─ La centrale ──────────────────────────────────────────────── -->
+<section class="aff-p" id="aff-6" data-titre="La centrale">
+  <div class="aff-lum" aria-hidden="true"></div>
+  <div class="aff-trame aff-trame--gauche" aria-hidden="true"></div>
+  <p class="aff-cart" aria-hidden="true">Planche 06</p>
+  <div class="aff-in">
+    <p class="aff-sur" data-r style="--i:0">La centrale</p>
+    <h2 class="aff-t aff-t--large" data-r style="--i:1">Et pour tout ce qui n'est pas le médicament.</h2>
+    <div class="aff-para">
+      <div data-r style="--i:2">
+        <span class="aff-evide">14 000 +</span>
+        <small>références</small>
+      </div>
+      <div data-r style="--i:3">
+        <span class="aff-evide aff-evide--plein" style="font-size:clamp(2.4rem,8vw,5.4rem)">480 +</span>
+        <small>marques</small>
+      </div>
+    </div>
+    <p class="aff-txt" data-r style="--i:4">Notre centrale de parapharmacie référence pour l'officine. C'est une structure à part, avec son propre fonctionnement — sa commande, sa livraison — et la même exigence que le reste du groupe.</p>
+  </div>
+</section>
+
+<!-- PLANCHE 07 ─ Vos factures ─────────────────────────────────────────────── -->
+<section class="aff-p aff-p--bleute" id="aff-7" data-titre="Vos factures">
+  <div class="aff-lum" aria-hidden="true"></div>
+  <p class="aff-cart" aria-hidden="true">Planche 07</p>
+  <div class="aff-in aff-duo">
+    <div>
+      <p class="aff-sur" data-r style="--i:0">Vos factures</p>
+      <h2 class="aff-t" data-r style="--i:1">Elles arrivent déjà là où vous les gérez.</h2>
+      <p class="aff-txt" data-r style="--i:2">Nous sommes connectés à Digipharmacie : vos factures Intégral s'y retrouvent automatiquement, avec celles de vos autres fournisseurs.</p>
+      <p class="aff-txt aff-txt--fort" data-r style="--i:3">Rien à saisir, rien à classer, rien à réclamer.</p>
+    </div>
+    <div class="aff-figure" data-r style="--i:4" aria-hidden="true">
+      <svg viewBox="0 0 260 220" width="100%" style="max-width:300px;display:block;margin-left:auto">
+        <rect x="14" y="10" width="120" height="58" fill="#fff" stroke="#0050E6" stroke-width="4"/>
+        <rect x="14" y="80" width="120" height="58" fill="#fff" stroke="#0050E6" stroke-width="4"/>
+        <rect x="14" y="150" width="120" height="58" fill="#fff" stroke="#0050E6" stroke-width="4"/>
+        <g stroke="#C6D8F7" stroke-width="4"><path d="M28 30h58M28 44h84M28 100h58M28 114h84M28 170h58M28 184h84"/></g>
+        <path d="M134 39h44v70h30M134 109h74M134 179h44v-70" fill="none" stroke="#0050E6" stroke-width="4"/>
+        <rect x="200" y="86" width="48" height="48" fill="#0050E6"/>
+        <path d="M212 110l9 9 16-18" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="square"/>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- PLANCHE 08 ─ Nos partenaires ──────────────────────────────────────────── -->
+<section class="aff-p" id="aff-8" data-titre="Partenaires">
+  <div class="aff-lum" aria-hidden="true"></div>
+  <div class="aff-trame" aria-hidden="true"></div>
+  <p class="aff-cart" aria-hidden="true">Planche 08</p>
+  <div class="aff-in">
+    <p class="aff-sur" data-r style="--i:0">Nos partenaires</p>
+    <h2 class="aff-t aff-t--large" data-r style="--i:1">Les laboratoires qui nous font confiance.</h2>
+    <div class="aff-labos">
+      <span data-r style="--i:2">EG Labo</span>
+      <span data-r style="--i:3">Zentiva</span>
+      <span data-r style="--i:4">Zydus</span>
+      <span data-r style="--i:5">Viatris</span>
+      <span data-r style="--i:6">ITP</span>
+      <span data-r style="--i:7">Santestat</span>
+    </div>
+  </div>
+</section>
+
+<!-- PLANCHE 09 ─ Nous rejoindre ───────────────────────────────────────────── -->
+<section class="aff-p aff-p--bleu" id="aff-9" data-titre="Nous rejoindre">
+  <div class="aff-lum" aria-hidden="true"></div>
+  <div class="aff-trame aff-trame--gauche" aria-hidden="true"></div>
+  <p class="aff-cart" aria-hidden="true">Planche 09</p>
+  <div class="aff-in">
+    <p class="aff-sur" data-r style="--i:0">Nous rejoindre</p>
+    <h2 class="aff-t aff-t--geant" data-r style="--i:1">Neuf implantations qui embauchent.</h2>
+    <p class="aff-txt" data-r style="--i:2">Préparateur-chauffeur, technicien approvisionnement, commercial, pharmacien responsable : les métiers de la répartition s'apprennent chez nous.</p>
+    <div class="aff-villes" data-r style="--i:3">
+      <span>Hyères · 83</span><span>Villeneuve-lès-Béziers · 34</span><span>Montayral · 47</span><span>Saint-Maurice-l'Exil · 38</span>
+    </div>
+    <div class="aff-btns" data-r style="--i:4">
+      <a class="aff-btn" href="https://www.integralpharma.fr/" target="_blank" rel="noopener">Voir les offres</a>
+    </div>
+  </div>
+</section>
+
+<!-- PLANCHE 10 ─ Les valeurs ──────────────────────────────────────────────── -->
+<section class="aff-p" id="aff-10" data-titre="Nos valeurs">
+  <div class="aff-lum" aria-hidden="true"></div>
+  <div class="aff-trame aff-trame--orange" aria-hidden="true"></div>
+  <p class="aff-cart" aria-hidden="true">Planche 10</p>
+  <div class="aff-in">
+    <p class="aff-sur" data-r style="--i:0">Nos valeurs</p>
+    <h2 class="aff-t aff-t--large" data-r style="--i:1">Trois mots qui se vérifient au téléphone.</h2>
+    <div class="aff-valeurs">
+      <div data-r style="--i:2"><h3><u>Confiance</u></h3><p>La personne qui décroche connaît votre officine, vos saisons et vos habitudes.</p></div>
+      <div data-r style="--i:3"><h3><u>Engagement</u></h3><p>C'est la même d'une année sur l'autre. Dans ce métier, c'est devenu rare.</p></div>
+      <div data-r style="--i:4"><h3><u>Respect</u></h3><p>Elle ne vous vendra pas ce dont vous n'avez pas besoin — parce qu'elle vous reverra le mois suivant, et l'année d'après.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- SORTIE ─ ancrée sur la fin, hauteur libre ─────────────────────────────── -->
+<footer class="aff-sortie" id="aff-sortie" data-titre="Nous écrire">
+  <div class="aff-lum" aria-hidden="true"></div>
+  <div>
+    <h2 class="aff-t aff-t--large aff-t--calage" data-r style="--i:0">
+      <span class="aff-t__c" aria-hidden="true">Posez-nous la question qui vous intéresse.</span>
+      <span class="aff-t__n">Posez-nous la question qui vous intéresse.</span>
+    </h2>
+    <p class="aff-txt" data-r style="--i:1">Sur nos conditions, sur nos délais, sur la façon dont nous travaillons. Vous aurez une réponse claire, et le nom de l'implantation qui livre votre secteur.</p>
+    <div class="aff-btns" data-r style="--i:2">
+      <a class="aff-btn" href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a>
+    </div>
+    <div class="aff-pied">
+      <span>Intégral Pharma — 758 chemin de la Source, ZI Saint-Martin, 83400 Hyères</span>
+      <a href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a>
+      <a href="#aff-1">Mentions légales</a>
+      <span class="aff-chiffres">9 implantations · plus de 2 000 officines livrées · indépendant depuis 2006</span>
+    </div>
+  </div>
+</footer>
+
+</main>
+
+<p class="aff-signature">DA&nbsp;3 · <em>Sérigraphie</em></p>
+
+<script>
+(function(){
+  var doc = document.documentElement;
+  var reduit = false;
+  try { reduit = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch(e){}
+
+  function desarmer(){ doc.className = doc.className.replace(' js-motion',''); }
+
+  try{
+    var page = document.querySelector('[data-aff]');
+    if (!page) { desarmer(); return; }
+
+    var etapes = Array.prototype.slice.call(page.querySelectorAll('[data-titre]'));
+    var compteur = document.getElementById('aff-compteur');
+    var total = etapes.length;
+
+    /* ---- Le menu du téléphone : panneau plein, fermé au clic et à Échap ---- */
+    var burger  = document.getElementById('aff-burger');
+    var fermer  = document.getElementById('aff-fermer');
+    var panneau = document.getElementById('aff-panneau');
+
+    function menu(ouvert){
+      if (!panneau || !burger) return;
+      panneau.classList.toggle('ouvert', ouvert);
+      burger.setAttribute('aria-expanded', ouvert ? 'true' : 'false');
+      document.body.style.overflow = ouvert ? 'hidden' : '';
+    }
+    if (burger) burger.addEventListener('click', function(){
+      menu(!panneau.classList.contains('ouvert'));
+    });
+    if (fermer) fermer.addEventListener('click', function(){ menu(false); });
+    document.addEventListener('keydown', function(e){ if (e.key === 'Escape') menu(false); });
+
+    /* ---- Défilement doux demandé AU CLIC seulement (jamais sur le document) ---- */
+    Array.prototype.forEach.call(document.querySelectorAll('a[href^="#"]'), function(a){
+      a.addEventListener('click', function(e){
+        var id = a.getAttribute('href');
+        if (!id || id === '#') return;
+        var cible = document.querySelector(id);
+        if (!cible) return;
+        e.preventDefault();
+        menu(false);
+        cible.scrollIntoView({ behavior: reduit ? 'auto' : 'smooth', block: 'start' });
+      });
+    });
+
+    /* ---- L'indicateur de position : s'il manque, la page reste entière ---- */
+    var barre = document.createElement('nav');
+    barre.className = 'aff-reperes';
+    barre.setAttribute('aria-label', 'Position dans la page');
+
+    var boutons = etapes.map(function(sec, i){
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'aff-repere';
+      b.setAttribute('aria-current', i === 0 ? 'true' : 'false');
+      var num = ('0' + (i + 1)).slice(-2);
+      b.innerHTML = '<b></b><i></i>';
+      b.querySelector('b').textContent = num + ' ' + (sec.getAttribute('data-titre') || '');
+      b.title = b.querySelector('b').textContent;
+      b.addEventListener('click', function(){
+        sec.scrollIntoView({ behavior: reduit ? 'auto' : 'smooth', block: 'start' });
+      });
+      barre.appendChild(b);
+      return b;
+    });
+    page.appendChild(barre);
+
+    var tic = false;
+
+    function placer(){
+      tic = false;
+      try{
+        var vue = window.innerHeight;
+        var ligneActive = vue * 0.42;   // au-dessus de ce trait, la planche est « la » planche
+        var ligneVue    = vue * 0.86;   // au-dessus de ce trait, la planche se révèle
+        var actif = 0;
+
+        // On relit la position RÉELLE de chaque planche à chaque défilement : une
+        // notification unique peut ne jamais arriver (ancrage direct, clavier, retour arrière).
+        for (var i = 0; i < etapes.length; i++){
+          var haut = etapes[i].getBoundingClientRect().top;
+          if (haut <= ligneActive) actif = i;
+          // Une planche révélée ne se re-masque JAMAIS : la classe ne s'enlève pas.
+          if (haut <= ligneVue) etapes[i].classList.add('vu');
+        }
+
+        // Bas de page : le dernier repère s'allume même si la sortie est courte.
+        if (window.innerHeight + window.pageYOffset >= doc.scrollHeight - 4){
+          actif = etapes.length - 1;
+          etapes[etapes.length - 1].classList.add('vu');
+        }
+
+        for (var j = 0; j < boutons.length; j++){
+          boutons[j].setAttribute('aria-current', j === actif ? 'true' : 'false');
+        }
+        barre.classList.toggle('sur-bleu', etapes[actif].classList.contains('aff-p--bleu'));
+        if (compteur) compteur.textContent = ('0' + (actif + 1)).slice(-2) + '/' + total;
+      } catch(err){
+        // Filet : si quoi que ce soit casse ici, on rend TOUT le contenu visible.
+        desarmer();
+      }
+    }
+
+    function auDefilement(){ if (!tic){ tic = true; window.requestAnimationFrame(placer); } }
+
+    window.addEventListener('scroll', auDefilement, {passive:true});
+    window.addEventListener('resize', auDefilement, {passive:true});
+    window.addEventListener('orientationchange', auDefilement, {passive:true});
+    window.addEventListener('load', placer);
+    placer();
+
+  } catch(e){
+    desarmer();
+  }
+})();
+</script>
+
+</body>
+</html>

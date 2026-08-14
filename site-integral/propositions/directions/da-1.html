@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="da-nom" content="Colonne">
+<meta name="description" content="Intégral Pharma — groupe de grossistes-répartiteurs français indépendant. Neuf maisons, un seul nom.">
+<title>Colonne — Intégral Pharma</title>
+<!--
+  DIRECTION ARTISTIQUE « COLONNE » — site vitrine Intégral Pharma
+  ────────────────────────────────────────────────────────────────
+  ARCHITECTURE : split-sticky, et elle seule. L'écran est coupé en deux du haut en bas de
+    la page. À gauche le blanc de marge : folio, titre courant, jauge du palier — il se fige
+    et ne change qu'au palier suivant. À droite la feuille imprimée qui défile. Huit paliers
+    se relaient en se poussant l'un l'autre. Aucun empilement, aucun défilé horizontal,
+    aucun carrousel : une seule mécanique tenue du haut en bas.
+  PARTI PRIS : le dossier de fond. Grande typographie à empattements, colonne de lecture
+    tenue à 60 signes, beaucoup de blanc, filets fins. Le luxe vient de la mise en page,
+    jamais du mouvement.
+  LUMIÈRE ET MATIÈRE : un plan de travail ivoire éclairé du haut à gauche, et par-dessus
+    une feuille blanche réellement posée — décollée par des ombres empilées. Un grain de
+    papier très léger casse l'aplat. C'est là que se joue le relief : il n'y a pas un seul
+    aplat plat sur la page.
+  TECHNIQUE : aucune image, aucune police, aucun script distant. Visuels en SVG écrits ici.
+    Polices système uniquement. Aucun estompage, aucun verre dépoli, aucun dégradé découpé
+    dans du texte, aucune vidéo. Les ombres sont des empilements de box-shadow.
+  FILET : la révélation au défilement se décide sur la position réelle relue à chaque
+    défilement, jamais sur une notification unique. Aucun texte transparent au repos :
+    script cassé, la page reste entièrement lisible. Le sommaire de couverture donne accès
+    à toutes les sections sans script.
+  REPLI : mouvement réduit = huit sections simples empilées, rien de figé, rien de retenu.
+-->
+<style>
+/* ═══════════════════════ 1. Fondations ═══════════════════════ */
+*{box-sizing:border-box}
+:root{
+  --serif: ui-serif, "New York", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
+  --sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  --bleu:#0050E6;
+  --bleu-sombre:#0039A8;
+  --orange:#F39A1B;
+
+  --encre:#14171E;
+  --encre-douce:#3A4152;
+  --gris:#5D6478;
+  --gris-clair:#8A8FA0;
+
+  --fond:#F1EEE7;              /* le plan de travail, ivoire chaud */
+  --feuille:#FFFEFC;           /* la feuille imprimée */
+  --filet:#DFD8C9;             /* filet chaud, visible */
+  --filet-fin:#EBE6DA;         /* filet chaud, discret */
+
+  --marge:clamp(20px,4.2vw,64px);
+  --gouttiere:clamp(24px,3.4vw,60px);
+  --volet:37%;
+  --nav-h:62px;
+  --lisible:62ch;
+}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;
+  background:var(--fond);
+  color:var(--encre);
+  font-family:var(--serif);
+  font-size:17px;
+  line-height:1.7;
+  overflow-x:hidden;
+}
+img,svg{max-width:100%}
+a{color:inherit}
+::selection{background:rgba(0,80,230,.16)}
+
+/* La lumière : une source haute à gauche, une ombre froide en bas à droite, et un grain
+   de papier. Trois couches fixes, aucune ne bouge, aucune ne coûte au défilement. */
+.col-lumiere{
+  position:fixed; inset:0; z-index:0; pointer-events:none;
+  background:
+    radial-gradient(120% 90% at 8% -10%, rgba(255,255,255,.95) 0%, rgba(255,255,255,0) 58%),
+    radial-gradient(90% 70% at 100% 105%, rgba(0,80,230,.07) 0%, rgba(0,80,230,0) 62%);
+}
+.col-grain{
+  position:fixed; inset:0; z-index:1; pointer-events:none; opacity:.055;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size:170px 170px;
+}
+.col-page{position:relative; z-index:2}
+
+/* Étiquettes, folios, chiffres : la seule police sans empattements de la page. */
+.etiq{
+  font-family:var(--sans); font-size:.82rem; font-weight:640;
+  letter-spacing:.17em; text-transform:uppercase; line-height:1.45;
+}
+
+/* ═══════════════════════ 2. Barre de tête ═══════════════════════ */
+.col-nav{
+  position:fixed; top:0; left:0; right:0; z-index:60;
+  height:var(--nav-h);
+  background:var(--fond);                 /* opaque : rien ne défile au travers */
+  border-bottom:1px solid var(--filet);
+  box-shadow:0 1px 0 rgba(255,255,255,.7) inset, 0 8px 18px -18px rgba(20,23,30,.5);
+}
+.col-nav__in{
+  max-width:1280px; margin:0 auto; height:100%;
+  padding:0 var(--marge);
+  display:flex; align-items:center; justify-content:space-between; gap:16px;
+}
+.col-marque{
+  display:flex; align-items:center; gap:11px; text-decoration:none; min-height:44px;
+}
+.col-marque__signet{
+  width:7px; height:26px; background:var(--orange);
+  box-shadow:0 1px 0 rgba(0,0,0,.12), 0 4px 8px -6px rgba(243,154,27,.9);
+}
+.col-marque__nom{
+  font-family:var(--serif); font-size:1.06rem; font-weight:600;
+  letter-spacing:.02em; line-height:1;
+}
+.col-marque__nom em{font-style:normal; color:var(--bleu)}
+.col-liens{display:flex; align-items:center; gap:2px}
+.col-liens a{
+  font-family:var(--sans); font-size:.83rem; font-weight:560; letter-spacing:.01em;
+  color:var(--encre-douce); text-decoration:none;
+  padding:12px 13px; min-height:44px; display:inline-flex; align-items:center;
+  border-bottom:2px solid transparent;
+}
+.col-liens a:hover{color:var(--bleu); border-bottom-color:var(--bleu)}
+.col-liens a.est-mail{color:var(--bleu)}
+.col-nav__jauge{position:absolute; left:0; bottom:-1px; height:2px; width:100%; overflow:hidden}
+.col-nav__jauge i{
+  display:block; height:100%; width:100%; background:var(--bleu);
+  transform:scaleX(var(--lu,0)); transform-origin:left;
+}
+.col-burger{
+  display:none; width:48px; height:48px; padding:0;
+  background:none; border:1px solid var(--filet); cursor:pointer;
+  align-items:center; justify-content:center; flex-direction:column; gap:5px;
+}
+.col-burger span{display:block; width:20px; height:1.5px; background:var(--encre)}
+.col-menu{
+  display:none;
+  position:fixed; top:var(--nav-h); left:0; right:0; z-index:59;
+  background:var(--fond);                 /* panneau OPAQUE */
+  border-bottom:1px solid var(--filet);
+  box-shadow:0 18px 30px -26px rgba(20,23,30,.7);
+  padding:10px var(--marge) 22px;
+}
+.col-menu.est-ouvert{display:block}
+.col-menu a{
+  display:flex; align-items:center; min-height:52px;
+  font-family:var(--sans); font-size:1rem; font-weight:560;
+  color:var(--encre); text-decoration:none;
+  border-bottom:1px solid var(--filet-fin);
+}
+.col-menu a:last-child{border-bottom:0; color:var(--bleu)}
+
+/* ═══════════════════════ 3. La couverture ═══════════════════════ */
+.col-une{
+  max-width:1280px; margin:0 auto;
+  padding:calc(var(--nav-h) + clamp(56px,10vh,112px)) var(--marge) clamp(40px,7vh,74px);
+  display:grid; grid-template-columns:minmax(0,1fr) 290px; gap:clamp(28px,5vw,72px);
+  align-items:end;
+}
+.col-une__sur{margin:0 0 26px; color:var(--bleu)}
+.col-une__sur::before{
+  content:""; display:block; width:54px; height:2px; background:var(--bleu); margin-bottom:14px;
+}
+.col-une h1{
+  margin:0 0 26px;
+  font-size:clamp(2.7rem,7vw,5.4rem); line-height:1.02; letter-spacing:-.022em;
+  font-weight:600; text-wrap:balance; max-width:14ch;
+}
+.col-une__chapo{
+  margin:0 0 32px; max-width:52ch; font-size:clamp(1.06rem,1.5vw,1.2rem);
+  line-height:1.68; color:var(--encre-douce);
+}
+.col-actions{display:flex; flex-wrap:wrap; gap:12px}
+.btn{
+  display:inline-flex; align-items:center; justify-content:center;
+  min-height:50px; padding:13px 26px;
+  font-family:var(--sans); font-size:.94rem; font-weight:600; letter-spacing:.01em;
+  text-decoration:none; border:1px solid transparent;
+}
+.btn--plein{
+  background:var(--bleu); color:#fff;
+  box-shadow:0 1px 0 rgba(255,255,255,.25) inset, 0 10px 18px -14px rgba(0,57,168,.9), 0 2px 4px -2px rgba(0,57,168,.4);
+}
+.btn--plein:hover{background:var(--bleu-sombre)}
+.btn--fil{border-color:var(--filet); background:var(--feuille); color:var(--encre);
+  box-shadow:0 1px 0 rgba(255,255,255,.9) inset, 0 8px 16px -14px rgba(20,23,30,.7)}
+.btn--fil:hover{border-color:var(--bleu); color:var(--bleu)}
+
+/* Le sommaire de couverture : la table des matières du dossier. Elle donne accès à tout
+   sans script — c'est aussi le filet de navigation du téléphone. */
+.col-sommaire{border-top:1px solid var(--encre); padding-top:12px}
+.col-sommaire__t{margin:0 0 4px; color:var(--gris)}
+.col-sommaire ol{margin:0; padding:0; list-style:none}
+.col-sommaire li{border-bottom:1px solid var(--filet-fin)}
+.col-sommaire a{
+  display:flex; align-items:baseline; gap:12px; min-height:44px; padding:11px 0;
+  text-decoration:none; color:var(--encre);
+}
+.col-sommaire a:hover{color:var(--bleu)}
+.col-sommaire b{
+  font-family:var(--sans); font-size:.82rem; font-weight:640; letter-spacing:.1em;
+  color:var(--gris-clair); font-variant-numeric:tabular-nums;
+}
+.col-sommaire span{font-size:.99rem}
+
+/* Le bandeau : posé, pas défilant. Un site sérieux ne fait pas courir ses mots. */
+.col-bandeau{
+  border-top:1px solid var(--filet); border-bottom:1px solid var(--filet);
+  background:rgba(255,255,255,.5);
+}
+.col-bandeau ul{
+  max-width:1280px; margin:0 auto; padding:15px var(--marge);
+  display:flex; flex-wrap:wrap; gap:8px 26px; list-style:none;
+}
+.col-bandeau li{color:var(--gris)}
+.col-bandeau li::before{content:"·"; color:var(--orange); margin-right:10px; font-weight:700}
+.col-bandeau li:first-child::before{content:""; margin:0}
+
+/* ═══════════════════════ 4. Le squelette split-sticky ═══════════════════════ */
+/* --bord : ce qui reste entre la colonne de texte et le bord de l'écran. La feuille le
+   récupère pour aller mourir sur le bord droit, comme une page qui déborde du cahier. */
+.col-sec{
+  --bord:max(0px, (100vw - 1280px) / 2);
+  display:grid; grid-template-columns:var(--volet) minmax(0,1fr);
+  max-width:1280px; margin:0 auto; padding:0 var(--marge);
+  min-height:116vh;                        /* plancher : le palier a de quoi tenir */
+  scroll-margin-top:var(--nav-h);
+}
+/* Le volet fait exactement une hauteur d'écran sous la barre de tête : c'est ce qui donne
+   le relais propre — le palier sortant est chassé par le palier entrant, et il n'y a
+   jamais deux titres à l'écran en même temps. */
+.col-sec__marge{
+  position:sticky; top:var(--nav-h); align-self:start;
+  height:calc(100vh - var(--nav-h)); height:calc(100svh - var(--nav-h));
+  padding:clamp(48px,13vh,130px) var(--gouttiere) 0 0;
+  display:flex; flex-direction:column;
+}
+.col-folio{display:flex; align-items:baseline; gap:14px; margin-bottom:20px}
+.col-folio__num{
+  font-family:var(--sans); font-variant-numeric:tabular-nums; line-height:1;
+  font-size:clamp(2.2rem,3.6vw,3.1rem); font-weight:620; letter-spacing:-.04em;
+  color:var(--filet); transition:color .45s ease;
+}
+.col-sec.est-actif .col-folio__num{color:var(--bleu)}
+.col-folio__sur{color:var(--gris)}
+.col-sec.est-actif .col-folio__sur{color:var(--encre-douce)}
+.col-sec__titre{
+  margin:0; font-size:clamp(1.55rem,2.5vw,2.35rem); line-height:1.14;
+  letter-spacing:-.014em; font-weight:600; text-wrap:balance; max-width:17ch;
+}
+.col-sec__jauge{margin-top:26px; width:104px; height:2px; background:var(--filet); overflow:hidden}
+.col-sec__jauge i{
+  display:block; width:100%; height:100%; background:var(--bleu);
+  transform:scaleX(var(--p,0)); transform-origin:left;
+}
+
+/* La feuille : blanche, posée sur le plan de travail, décollée par des ombres empilées.
+   L'ombre ne déborde jamais en haut ni en bas — les paliers se suivent sans couture. */
+.col-sec__feuille{
+  background:var(--feuille);
+  padding:clamp(48px,11vh,110px) clamp(24px,3vw,52px) clamp(56px,12vh,120px) var(--gouttiere);
+  margin-right:calc(-1 * (var(--marge) + var(--bord)));
+  padding-right:calc(clamp(24px,3vw,52px) + var(--marge) + var(--bord));
+  /* Le liseré haut/bas est de la couleur de la feuille : il bouche le cheveu qui
+     apparaîtrait entre deux paliers au demi-pixel près. Puis deux ombres empilées
+     décollent la feuille du plan de travail, éclairée du haut à gauche. */
+  box-shadow:
+    0 1px 0 0 var(--feuille), 0 -1px 0 0 var(--feuille),
+    -1px 0 0 0 var(--filet-fin),
+    -10px 0 16px -14px rgba(20,23,30,.30),
+    -26px 0 44px -30px rgba(20,23,30,.34);
+}
+/* La dernière feuille se termine : marge de pied normale, et une ombre posée sous elle.
+   Sans ça, le cahier s'arrête sur une coupe franche. */
+.col-sec:last-of-type{min-height:100vh}
+.col-sec:last-of-type .col-sec__feuille{
+  border-bottom:1px solid var(--filet-fin);
+  box-shadow:
+    0 -1px 0 0 var(--feuille),
+    -1px 0 0 0 var(--filet-fin),
+    -10px 0 16px -14px rgba(20,23,30,.30),
+    -26px 0 44px -30px rgba(20,23,30,.34),
+    0 16px 28px -24px rgba(20,23,30,.45);
+}
+
+.col-bloc{max-width:var(--lisible)}
+.col-bloc + .col-bloc{margin-top:clamp(34px,6.5vh,72px)}
+/* Le filet : au repos le bloc est PLEINEMENT lisible. La mise en retrait n'existe que si
+   le script a démarré — il pose lui-même la classe `est-anime`. */
+.col-page.est-anime .col-bloc{
+  opacity:.4; transform:translateY(12px);
+  transition:opacity .55s ease, transform .55s cubic-bezier(.22,.8,.25,1);
+}
+.col-page.est-anime .col-bloc.est-vu{opacity:1; transform:none}
+
+/* ═══════════════════════ 5. Matière éditoriale ═══════════════════════ */
+.p{margin:0 0 1.15em; font-size:1.07rem; line-height:1.76; color:var(--encre-douce)}
+.p:last-child{margin-bottom:0}
+.p strong{font-weight:640; color:var(--encre)}
+.p--grand{font-size:clamp(1.16rem,1.7vw,1.32rem); color:var(--encre); line-height:1.6}
+
+/* L'attaque : lettrine orange, l'un des deux seuls emplois de l'accent sur la page. */
+.p--attaque::first-letter{
+  float:left; font-family:var(--serif); font-size:4.3em; line-height:.78;
+  font-weight:600; color:var(--orange);
+  padding:.04em .1em 0 0;
+}
+
+.exergue{
+  margin:0; padding:26px 0 0; border-top:1px solid var(--encre);
+  font-size:clamp(1.3rem,2.1vw,1.72rem); line-height:1.34; letter-spacing:-.012em;
+  font-weight:600; text-wrap:balance;
+}
+.exergue cite{display:block; margin-top:14px; font-style:normal}
+.exergue cite span{
+  font-family:var(--sans); font-size:.82rem; font-weight:640; letter-spacing:.17em;
+  text-transform:uppercase; color:var(--gris);
+}
+
+/* Chiffres : filets fins, chiffres tabulaires, aucune animation de compteur —
+   rien qui puisse être surpris à zéro en cours de descente. */
+.chiffres{margin:0; padding:0; display:grid; grid-template-columns:repeat(4,1fr); gap:0;
+  border-top:1px solid var(--encre); border-bottom:1px solid var(--filet)}
+.chiffres--duo{grid-template-columns:repeat(2,1fr)}
+.chiffres > div{padding:20px 16px 20px 0; border-right:1px solid var(--filet-fin)}
+.chiffres > div:last-child{border-right:0}
+.chiffres dt{
+  font-family:var(--sans); font-variant-numeric:tabular-nums;
+  font-size:clamp(1.5rem,2.5vw,2.05rem); font-weight:620; letter-spacing:-.035em;
+  line-height:1; color:var(--encre);
+}
+.chiffres dd{margin:9px 0 0; font-size:.9rem; line-height:1.42; color:var(--gris)}
+
+/* La liste des implantations : un tableau de dossier, pas une carte. */
+.maisons{margin:0; padding:0; list-style:none; border-top:1px solid var(--encre)}
+.maisons li{
+  display:grid; grid-template-columns:34px minmax(0,1fr) auto;
+  gap:6px 14px; align-items:baseline;
+  padding:13px 0; border-bottom:1px solid var(--filet-fin);
+}
+.maisons b{
+  font-family:var(--sans); font-size:.82rem; font-weight:640; letter-spacing:.08em;
+  color:var(--gris-clair); font-variant-numeric:tabular-nums;
+}
+.maisons .nom{font-size:1.03rem; font-weight:600; letter-spacing:-.005em}
+.maisons .nom i{font-style:italic; font-weight:400; color:var(--gris); font-size:.92rem}
+.maisons .lieu{
+  font-family:var(--sans); font-size:.82rem; color:var(--gris); white-space:nowrap;
+  font-variant-numeric:tabular-nums;
+}
+.note{
+  margin:18px 0 0; font-size:.95rem; line-height:1.6; color:var(--gris);
+  padding-left:22px; text-indent:-22px;
+}
+.note .marque{color:var(--orange); font-weight:700; font-style:normal}
+.note strong{color:var(--encre-douce); font-weight:640}
+
+/* Les quatre métiers : numéro en potence, comme un dossier paginé. */
+.etape{display:grid; grid-template-columns:66px minmax(0,1fr); gap:0 18px; align-items:start}
+.etape + .etape{margin-top:clamp(26px,4.4vh,44px); padding-top:clamp(26px,4.4vh,44px); border-top:1px solid var(--filet-fin)}
+.etape__n{
+  font-family:var(--sans); font-variant-numeric:tabular-nums;
+  font-size:1.02rem; font-weight:640; letter-spacing:.04em; color:var(--bleu); padding-top:.34em;
+}
+.etape h3{margin:0 0 8px; font-size:1.2rem; font-weight:600; letter-spacing:-.01em}
+.etape p{margin:0; font-size:1.02rem; line-height:1.72; color:var(--encre-douce)}
+.cloture{
+  margin:0; padding:22px 0 0; border-top:1px solid var(--encre);
+  font-size:1.06rem; line-height:1.68; font-style:italic; color:var(--encre);
+}
+
+/* Planches : SVG écrits dans le fichier, aucune requête réseau. */
+.planche{margin:0}
+.planche svg{display:block; width:100%; height:auto; background:#FAF8F3;
+  border:1px solid var(--filet-fin)}
+.planche figcaption{
+  margin-top:11px; font-family:var(--sans); font-size:.83rem; letter-spacing:.04em;
+  color:var(--gris);
+}
+
+.display{
+  margin:0; font-size:clamp(1.5rem,2.8vw,2.15rem); line-height:1.2; letter-spacing:-.018em;
+  font-weight:600; text-wrap:balance;
+}
+.display::after{content:""; display:block; width:64px; height:2px; background:var(--bleu); margin-top:22px}
+
+/* Le mur des laboratoires */
+.labos{margin:0; padding:0; list-style:none; border-top:1px solid var(--encre)}
+.labos li{
+  display:flex; align-items:baseline; gap:18px;
+  padding:clamp(18px,2.6vh,26px) 0; border-bottom:1px solid var(--filet-fin);
+}
+.labos b{
+  font-family:var(--sans); font-size:.82rem; font-weight:640; letter-spacing:.1em;
+  color:var(--gris-clair); font-variant-numeric:tabular-nums; min-width:24px;
+}
+.labos span{font-size:clamp(1.35rem,2.6vw,2.05rem); font-weight:600; letter-spacing:-.016em}
+
+.villes{margin:0; padding:0; list-style:none; border-top:1px solid var(--filet)}
+.villes li{
+  display:flex; justify-content:space-between; gap:16px;
+  padding:13px 0; border-bottom:1px solid var(--filet-fin); font-size:1.03rem;
+}
+.villes em{
+  font-family:var(--sans); font-style:normal; font-size:.82rem; color:var(--gris);
+  font-variant-numeric:tabular-nums;
+}
+
+/* Les trois valeurs */
+.valeur + .valeur{margin-top:clamp(28px,4.6vh,50px); padding-top:clamp(28px,4.6vh,50px); border-top:1px solid var(--filet-fin)}
+.valeur h3{
+  margin:0 0 10px; font-size:clamp(1.6rem,2.6vw,2.1rem); font-weight:600; letter-spacing:-.018em;
+}
+.valeur p{margin:0; font-size:1.06rem; line-height:1.7; color:var(--encre-douce); max-width:46ch}
+
+/* ═══════════════════════ 6. Fin de page ═══════════════════════ */
+.col-fin{border-top:1px solid var(--filet); margin-top:clamp(40px,7vh,80px)}
+.col-fin__in{
+  max-width:1280px; margin:0 auto; padding:clamp(56px,10vh,110px) var(--marge) clamp(34px,5vh,54px);
+  display:grid; grid-template-columns:minmax(0,1fr) minmax(0,.82fr); gap:clamp(28px,5vw,72px);
+  align-items:start;
+}
+.col-fin h2{
+  margin:0; font-size:clamp(1.9rem,4vw,3.1rem); line-height:1.08; letter-spacing:-.022em;
+  font-weight:600; text-wrap:balance; max-width:15ch;
+}
+.col-fin__d p{margin:0 0 26px; font-size:1.07rem; line-height:1.72; color:var(--encre-douce); max-width:44ch}
+.col-pied{
+  max-width:1280px; margin:0 auto; padding:22px var(--marge) 30px;
+  border-top:1px solid var(--filet);
+  display:flex; flex-wrap:wrap; gap:14px 32px; justify-content:space-between; align-items:flex-start;
+}
+.col-pied p{margin:0; font-size:.9rem; line-height:1.6; color:var(--gris); max-width:46ch}
+.col-pied a{color:var(--gris); text-decoration:underline; text-underline-offset:3px;
+  display:inline-flex; align-items:center; padding:10px 0; min-height:44px}
+.col-pied a:hover{color:var(--bleu)}
+.col-pied__chiffres{font-family:var(--sans); font-size:.83rem; letter-spacing:.04em; color:var(--gris-clair)}
+.col-signature{
+  max-width:1280px; margin:0 auto; padding:0 var(--marge) 26px;
+  font-family:var(--sans); font-size:.82rem; letter-spacing:.17em; text-transform:uppercase;
+  color:var(--gris-clair);
+}
+.col-signature b{color:var(--gris); font-weight:640}
+
+/* ═══════════════════════ 7. Téléphone ═══════════════════════ */
+@media (max-width:1000px){
+  :root{--volet:41%}
+  .col-liens a{padding:12px 9px; font-size:.79rem}
+}
+@media (max-width:880px){
+  .col-liens{display:none}
+  .col-burger{display:flex}
+  .col-une{grid-template-columns:1fr; gap:38px; align-items:start}
+  .col-une h1{max-width:none}
+  .col-sommaire{max-width:none}
+  .col-sec, .col-sec:last-of-type{grid-template-columns:1fr; min-height:0; padding-top:42px}
+  .col-sec__marge{
+    position:static; height:auto; display:block;
+    padding:0 0 20px; border-bottom:1px solid var(--filet);
+  }
+  .col-folio{margin-bottom:12px}
+  .col-folio__num{font-size:1.6rem; color:var(--bleu)}
+  .col-sec__titre{font-size:1.42rem; max-width:none}
+  .col-sec__jauge{display:none}
+  .col-sec__feuille,
+  .col-sec:last-of-type .col-sec__feuille{
+    padding:26px 20px 40px; margin:0 calc(var(--marge) * -1);
+    padding-left:var(--marge); padding-right:var(--marge);
+    box-shadow:0 -1px 0 0 var(--filet-fin); border-bottom:0;
+  }
+  .col-bloc{max-width:none}
+  .col-bloc + .col-bloc{margin-top:30px}
+  .chiffres{grid-template-columns:repeat(2,1fr)}
+  .chiffres > div:nth-child(2n){border-right:0}
+  .chiffres > div:nth-child(-n+2){border-bottom:1px solid var(--filet-fin)}
+  .maisons li{grid-template-columns:30px minmax(0,1fr); }
+  .maisons .lieu{grid-column:2; white-space:normal}
+  .etape{grid-template-columns:1fr; gap:6px}
+  .etape__n{padding-top:0}
+  .col-fin__in{grid-template-columns:1fr; gap:26px}
+  .p--attaque::first-letter{font-size:3.4em}
+}
+@media (max-width:420px){
+  body{font-size:16px}
+  .col-marque__nom{font-size:.97rem}
+}
+
+/* ═══════════════════════ 8. Repli mouvement réduit ═══════════════════════ */
+@media (prefers-reduced-motion: reduce){
+  .col-sec, .col-sec:last-of-type{grid-template-columns:1fr; min-height:0; padding-top:42px}
+  .col-sec__marge{position:static; height:auto; display:block; padding:0 0 20px; border-bottom:1px solid var(--filet)}
+  .col-folio__num{font-size:1.6rem; color:var(--bleu)}
+  .col-sec__jauge{display:none}
+  .col-sec__feuille,
+  .col-sec:last-of-type .col-sec__feuille{
+    box-shadow:0 -1px 0 0 var(--filet-fin); border-bottom:0;
+    margin-right:0; padding-left:0; padding-right:0;
+  }
+  .col-bloc{max-width:var(--lisible)}
+  .col-bloc + .col-bloc{margin-top:30px}
+  .col-page.est-anime .col-bloc{opacity:1; transform:none; transition:none}
+  .col-folio__num, .col-nav__jauge i{transition:none}
+}
+</style>
+</head>
+<body>
+
+<div class="col-lumiere" aria-hidden="true"></div>
+<div class="col-grain" aria-hidden="true"></div>
+
+<!-- ─────────────────── Barre de tête ─────────────────── -->
+<header class="col-nav">
+  <div class="col-nav__in">
+    <a class="col-marque" href="#haut">
+      <span class="col-marque__signet" aria-hidden="true"></span>
+      <span class="col-marque__nom">Intégral <em>Pharma</em></span>
+    </a>
+    <nav class="col-liens" aria-label="Navigation principale">
+      <a href="#groupe">Le groupe</a>
+      <a href="#reseau">Le réseau</a>
+      <a href="#metier">Le métier</a>
+      <a href="#valeurs">Nos valeurs</a>
+      <a class="est-mail" href="#ecrire">Nous écrire</a>
+    </nav>
+    <button class="col-burger" id="burger" type="button" aria-expanded="false" aria-controls="menu" aria-label="Ouvrir le menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+  <div class="col-nav__jauge" aria-hidden="true"><i id="jaugeLue"></i></div>
+</header>
+
+<nav class="col-menu" id="menu" aria-label="Navigation téléphone">
+  <a href="#groupe">Le groupe</a>
+  <a href="#reseau">Le réseau</a>
+  <a href="#metier">Le métier</a>
+  <a href="#valeurs">Nos valeurs</a>
+  <a href="#ecrire">Nous écrire</a>
+</nav>
+
+<main class="col-page" id="haut" data-col>
+
+  <!-- ─────────────────── La couverture ─────────────────── -->
+  <header class="col-une">
+    <div>
+      <p class="col-une__sur etiq">Groupe de grossistes-répartiteurs français indépendant</p>
+      <h1>Neuf maisons. Un seul nom.</h1>
+      <p class="col-une__chapo">Chacune livre sa région depuis des années, avec ses équipes et ses
+        habitudes. Depuis 2006, elles avancent ensemble sous le nom d'Intégral Pharma — et votre
+        commande part toujours de la plus proche de votre comptoir.</p>
+      <div class="col-actions">
+        <a class="btn btn--plein" href="#reseau">Découvrir le réseau</a>
+        <a class="btn btn--fil" href="mailto:contact@integralpharma.fr">Nous écrire</a>
+      </div>
+    </div>
+
+    <div class="col-sommaire">
+      <p class="col-sommaire__t etiq">Au sommaire</p>
+      <ol>
+        <li><a href="#groupe"><b>01</b><span>Notre histoire</span></a></li>
+        <li><a href="#reseau"><b>02</b><span>Le réseau</span></a></li>
+        <li><a href="#metier"><b>03</b><span>Le métier</span></a></li>
+        <li><a href="#centrale"><b>04</b><span>La centrale</span></a></li>
+        <li><a href="#factures"><b>05</b><span>Vos factures</span></a></li>
+        <li><a href="#partenaires"><b>06</b><span>Nos partenaires</span></a></li>
+        <li><a href="#rejoindre"><b>07</b><span>Nous rejoindre</span></a></li>
+        <li><a href="#valeurs"><b>08</b><span>Nos valeurs</span></a></li>
+      </ol>
+    </div>
+  </header>
+
+  <div class="col-bandeau">
+    <ul class="etiq">
+      <li>Indépendant</li>
+      <li>Neuf implantations</li>
+      <li>Un réseau national</li>
+      <li>Plus de 2 000 officines livrées</li>
+      <li>Confiance, Engagement, Respect</li>
+      <li>Une alternative aux grossistes historiques</li>
+    </ul>
+  </div>
+
+  <!-- ─────────────────── 01 · Notre histoire ─────────────────── -->
+  <section class="col-sec" id="groupe" aria-labelledby="t01">
+    <div class="col-sec__marge">
+      <div class="col-folio">
+        <span class="col-folio__num">01</span>
+        <span class="col-folio__sur etiq">Notre histoire</span>
+      </div>
+      <h2 class="col-sec__titre" id="t01">Rendre la marge à l'officine française.</h2>
+      <div class="col-sec__jauge" aria-hidden="true"><i></i></div>
+    </div>
+    <div class="col-sec__feuille">
+      <div class="col-bloc">
+        <p class="p p--grand p--attaque">C'est la raison d'être d'Intégral Pharma depuis 2006 :
+          redistribuer directement la marge aux officines françaises, en toute transparence, avec
+          des prix nets visibles sur facture.</p>
+      </div>
+      <div class="col-bloc">
+        <p class="p">Neuf implantations aujourd'hui, plus de deux mille officines livrées chaque
+          jour, et la même idée qu'au premier jour — un groupe de répartiteurs indépendants qui a
+          choisi de <strong>se mettre du côté du comptoir</strong>.</p>
+      </div>
+      <div class="col-bloc">
+        <dl class="chiffres">
+          <div><dt>2006</dt><dd>année de création</dd></div>
+          <div><dt>9</dt><dd>implantations</dd></div>
+          <div><dt>2&nbsp;000&nbsp;+</dt><dd>officines livrées</dd></div>
+          <div><dt>20</dt><dd>ans d'indépendance</dd></div>
+        </dl>
+      </div>
+      <div class="col-bloc">
+        <blockquote class="exergue">
+          « Un groupe de répartiteurs indépendants qui a choisi de se mettre du côté du comptoir. »
+          <cite><span>Notre raison d'être</span></cite>
+        </blockquote>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────── 02 · Le réseau ─────────────────── -->
+  <section class="col-sec" id="reseau" aria-labelledby="t02">
+    <div class="col-sec__marge">
+      <div class="col-folio">
+        <span class="col-folio__num">02</span>
+        <span class="col-folio__sur etiq">Le réseau</span>
+      </div>
+      <h2 class="col-sec__titre" id="t02">Neuf implantations. Laquelle est la vôtre ?</h2>
+      <div class="col-sec__jauge" aria-hidden="true"><i></i></div>
+    </div>
+    <div class="col-sec__feuille">
+      <div class="col-bloc">
+        <p class="p p--grand">C'est la seule question qui compte vraiment. Celle qui prépare votre
+          commande, qui vous livre chaque matin, et dont vous connaissez l'équipe par son prénom.</p>
+        <p class="p">Les huit autres sont là pour qu'elle ne soit jamais prise au dépourvu — de la
+          Bretagne à la Méditerranée, le stock d'une maison est le stock de toutes.</p>
+      </div>
+
+      <div class="col-bloc">
+        <figure class="planche">
+          <svg viewBox="0 0 640 300" role="img" aria-label="Schéma : une implantation au centre, huit autres autour d'elle, et un partenaire relié par un trait discontinu.">
+            <g stroke="#0050E6" stroke-width="1.3" opacity=".34" fill="none">
+              <path d="M300 152 L112 68"/><path d="M300 152 L86 186"/><path d="M300 152 L196 258"/>
+              <path d="M300 152 L292 52"/><path d="M300 152 L438 62"/><path d="M300 152 L508 118"/>
+              <path d="M300 152 L462 236"/><path d="M300 152 L370 268"/>
+            </g>
+            <path d="M300 152 L586 96" stroke="#5D6478" stroke-width="1.2" stroke-dasharray="5 6" opacity=".55" fill="none"/>
+            <g fill="#0050E6">
+              <circle cx="112" cy="68" r="6.5"/><circle cx="86" cy="186" r="6.5"/>
+              <circle cx="196" cy="258" r="6.5"/><circle cx="292" cy="52" r="6.5"/>
+              <circle cx="438" cy="62" r="6.5"/><circle cx="508" cy="118" r="6.5"/>
+              <circle cx="462" cy="236" r="6.5"/><circle cx="370" cy="268" r="6.5"/>
+            </g>
+            <circle cx="586" cy="96" r="6" fill="#FAF8F3" stroke="#5D6478" stroke-width="1.6"/>
+            <circle cx="300" cy="152" r="21" fill="#FFFEFC" stroke="#0050E6" stroke-width="4"/>
+            <circle cx="300" cy="152" r="5" fill="#F39A1B"/>
+            <g font-family="-apple-system, Segoe UI, Roboto, sans-serif" font-size="13" letter-spacing="1.4" fill="#5D6478">
+              <text x="300" y="196" text-anchor="middle">LA VÔTRE</text>
+              <text x="586" y="76" text-anchor="middle">PARTENAIRE</text>
+            </g>
+          </svg>
+          <figcaption>Neuf implantations et un partenaire.</figcaption>
+        </figure>
+      </div>
+
+      <div class="col-bloc">
+        <ul class="maisons">
+          <li><b>01</b><span class="nom">Hyères Pharma <i>(siège du groupe)</i></span><span class="lieu">Hyères · 83</span></li>
+          <li><b>02</b><span class="nom">SR Pharma</span><span class="lieu">Palaiseau · 91</span></li>
+          <li><b>03</b><span class="nom">Mistral Santé Pharma</span><span class="lieu">Flassans-sur-Issole · 83</span></li>
+          <li><b>04</b><span class="nom">Sud Ouest Pharma</span><span class="lieu">Montayral · 47</span></li>
+          <li><b>05</b><span class="nom">Comptoir Pharmaceutique du Rhône</span><span class="lieu">Saint-Maurice-l'Exil · 38</span></li>
+          <li><b>06</b><span class="nom">Escale Pharma</span><span class="lieu">Chilly-Mazarin · 91</span></li>
+          <li><b>07</b><span class="nom">Ouest Pharma Services</span><span class="lieu">Saint-Étienne-de-Montluc · 44</span></li>
+          <li><b>08</b><span class="nom">Pharm'Occitanie Services</span><span class="lieu">Villeneuve-lès-Béziers · 34</span></li>
+          <li><b>09</b><span class="nom">Sud Est Pharma</span><span class="lieu">Le Cannet-des-Maures · 83</span></li>
+        </ul>
+        <p class="note"><i class="marque">†</i> Et à l'Est, notre partenaire <strong>Pharmest</strong>
+          (Metz, 57) prolonge le maillage.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────── 03 · Le métier ─────────────────── -->
+  <section class="col-sec" id="metier" aria-labelledby="t03">
+    <div class="col-sec__marge">
+      <div class="col-folio">
+        <span class="col-folio__num">03</span>
+        <span class="col-folio__sur etiq">Le métier</span>
+      </div>
+      <h2 class="col-sec__titre" id="t03">Ce qui se passe entre votre commande et votre comptoir.</h2>
+      <div class="col-sec__jauge" aria-hidden="true"><i></i></div>
+    </div>
+    <div class="col-sec__feuille">
+      <div class="col-bloc">
+        <p class="p p--grand">Quelques heures, quatre métiers, et une chaîne qui ne s'arrête jamais.
+          Référencer, stocker, préparer, livrer : c'est invisible depuis l'officine, et c'est tout
+          notre travail.</p>
+      </div>
+      <div class="col-bloc">
+        <article class="etape">
+          <span class="etape__n">01</span>
+          <div>
+            <h3>Le référencement</h3>
+            <p>Le groupe référence pour ses neuf maisons à la fois : un même catalogue, tenu à jour,
+              disponible dans toutes les implantations. C'est ce qui permet à une maison de taille
+              humaine de proposer la profondeur de gamme d'un réseau national.</p>
+          </div>
+        </article>
+        <article class="etape">
+          <span class="etape__n">02</span>
+          <div>
+            <h3>La disponibilité</h3>
+            <p>Des stocks répartis sur neuf implantations, au plus près de votre officine. Quand le
+              comptoir a besoin, le réseau répond — et quand une référence manque quelque part, elle
+              existe souvent ailleurs dans le réseau.</p>
+          </div>
+        </article>
+        <article class="etape">
+          <span class="etape__n">03</span>
+          <div>
+            <h3>La préparation</h3>
+            <p>Chaque commande est préparée dans l'implantation la plus proche de chez vous, par une
+              équipe qui connaît votre officine et ses saisons.</p>
+          </div>
+        </article>
+        <article class="etape">
+          <span class="etape__n">04</span>
+          <div>
+            <h3>La livraison</h3>
+            <p>Tous les jours, les tournées partent vers les officines. La régularité d'un service
+              tenu — c'est elle qui fait la confiance, pas les promesses.</p>
+          </div>
+        </article>
+      </div>
+      <div class="col-bloc">
+        <p class="cloture">Et quand la vie de votre officine change — transfert, agrandissement,
+          cession de parts — votre interlocuteur ajuste l'approvisionnement avec vous, sans à-coup
+          au comptoir.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────── 04 · La centrale ─────────────────── -->
+  <section class="col-sec" id="centrale" aria-labelledby="t04">
+    <div class="col-sec__marge">
+      <div class="col-folio">
+        <span class="col-folio__num">04</span>
+        <span class="col-folio__sur etiq">La centrale</span>
+      </div>
+      <h2 class="col-sec__titre" id="t04">Et pour tout ce qui n'est pas le médicament.</h2>
+      <div class="col-sec__jauge" aria-hidden="true"><i></i></div>
+    </div>
+    <div class="col-sec__feuille">
+      <div class="col-bloc">
+        <p class="p p--grand">Notre centrale de parapharmacie référence pour l'officine plus de
+          14 000 produits et plus de 480 marques.</p>
+        <p class="p">C'est une structure à part, avec son propre fonctionnement — sa commande, sa
+          livraison — et la même exigence que le reste du groupe.</p>
+      </div>
+      <div class="col-bloc">
+        <dl class="chiffres chiffres--duo">
+          <div><dt>14&nbsp;000&nbsp;+</dt><dd>références</dd></div>
+          <div><dt>480&nbsp;+</dt><dd>marques</dd></div>
+        </dl>
+      </div>
+      <div class="col-bloc">
+        <figure class="planche">
+          <svg viewBox="0 0 640 250" role="img" aria-label="Trame de références : une grille dense de petits carrés, quelques-uns marqués.">
+            <defs>
+              <pattern id="trame" width="26" height="26" patternUnits="userSpaceOnUse">
+                <rect x="0" y="0" width="7" height="7" fill="#D9D3C6"/>
+              </pattern>
+            </defs>
+            <rect x="26" y="26" width="588" height="200" fill="url(#trame)"/>
+            <g fill="#0050E6">
+              <rect x="78" y="52" width="7" height="7"/><rect x="182" y="78" width="7" height="7"/>
+              <rect x="286" y="52" width="7" height="7"/><rect x="130" y="130" width="7" height="7"/>
+              <rect x="364" y="104" width="7" height="7"/><rect x="442" y="156" width="7" height="7"/>
+              <rect x="520" y="78" width="7" height="7"/><rect x="234" y="182" width="7" height="7"/>
+              <rect x="546" y="182" width="7" height="7"/><rect x="416" y="52" width="7" height="7"/>
+              <rect x="104" y="208" width="7" height="7"/><rect x="338" y="208" width="7" height="7"/>
+            </g>
+            <rect x="286" y="130" width="7" height="7" fill="#F39A1B"/>
+          </svg>
+          <figcaption>Une trame de références, tenue pour l'officine.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────── 05 · Vos factures ─────────────────── -->
+  <section class="col-sec" id="factures" aria-labelledby="t05">
+    <div class="col-sec__marge">
+      <div class="col-folio">
+        <span class="col-folio__num">05</span>
+        <span class="col-folio__sur etiq">Vos factures</span>
+      </div>
+      <h2 class="col-sec__titre" id="t05">Elles arrivent déjà là où vous les gérez.</h2>
+      <div class="col-sec__jauge" aria-hidden="true"><i></i></div>
+    </div>
+    <div class="col-sec__feuille">
+      <div class="col-bloc">
+        <p class="p p--grand">Nous sommes connectés à Digipharmacie : vos factures Intégral s'y
+          retrouvent automatiquement, avec celles de vos autres fournisseurs.</p>
+      </div>
+      <div class="col-bloc">
+        <p class="display">Rien à saisir, rien à classer, rien à réclamer.</p>
+      </div>
+      <div class="col-bloc">
+        <figure class="planche">
+          <svg viewBox="0 0 640 260" role="img" aria-label="Schéma : plusieurs feuillets de fournisseurs différents convergent vers un même classeur.">
+            <g stroke="#DFD8C9" stroke-width="1.4" fill="#FFFEFC">
+              <rect x="42" y="26" width="104" height="70" rx="2" transform="rotate(-5 94 61)"/>
+              <rect x="42" y="98" width="104" height="70" rx="2" transform="rotate(3 94 133)"/>
+              <rect x="42" y="170" width="104" height="70" rx="2" transform="rotate(-2 94 205)"/>
+            </g>
+            <g stroke="#C9C2B2" stroke-width="1.2">
+              <path d="M58 50h64M58 62h48M58 122h64M58 134h40M58 194h64M58 206h52"/>
+            </g>
+            <g stroke="#0050E6" stroke-width="1.4" fill="none" opacity=".55">
+              <path d="M156 60 C 260 60, 300 128, 396 128"/>
+              <path d="M156 132 C 250 132, 300 128, 396 128"/>
+              <path d="M156 204 C 260 204, 300 128, 396 128"/>
+            </g>
+            <g>
+              <rect x="398" y="70" width="200" height="118" rx="3" fill="#FFFEFC" stroke="#0050E6" stroke-width="2"/>
+              <rect x="398" y="70" width="200" height="12" fill="#0050E6"/>
+              <g stroke="#DFD8C9" stroke-width="1.3">
+                <path d="M424 110h148M424 128h148M424 146h110"/>
+              </g>
+              <rect x="424" y="160" width="34" height="6" fill="#F39A1B"/>
+            </g>
+          </svg>
+          <figcaption>Vos factures rejoignent celles de vos autres fournisseurs.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────── 06 · Nos partenaires ─────────────────── -->
+  <section class="col-sec" id="partenaires" aria-labelledby="t06">
+    <div class="col-sec__marge">
+      <div class="col-folio">
+        <span class="col-folio__num">06</span>
+        <span class="col-folio__sur etiq">Nos partenaires</span>
+      </div>
+      <h2 class="col-sec__titre" id="t06">Les laboratoires qui nous font confiance.</h2>
+      <div class="col-sec__jauge" aria-hidden="true"><i></i></div>
+    </div>
+    <div class="col-sec__feuille">
+      <div class="col-bloc">
+        <ul class="labos">
+          <li><b>01</b><span>EG Labo</span></li>
+          <li><b>02</b><span>Zentiva</span></li>
+          <li><b>03</b><span>Zydus</span></li>
+          <li><b>04</b><span>Viatris</span></li>
+          <li><b>05</b><span>ITP</span></li>
+          <li><b>06</b><span>Santestat</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────── 07 · Nous rejoindre ─────────────────── -->
+  <section class="col-sec" id="rejoindre" aria-labelledby="t07">
+    <div class="col-sec__marge">
+      <div class="col-folio">
+        <span class="col-folio__num">07</span>
+        <span class="col-folio__sur etiq">Nous rejoindre</span>
+      </div>
+      <h2 class="col-sec__titre" id="t07">Neuf implantations qui embauchent.</h2>
+      <div class="col-sec__jauge" aria-hidden="true"><i></i></div>
+    </div>
+    <div class="col-sec__feuille">
+      <div class="col-bloc">
+        <p class="p p--grand">Préparateur-chauffeur, technicien approvisionnement, commercial,
+          pharmacien responsable : les métiers de la répartition s'apprennent chez nous.</p>
+      </div>
+      <div class="col-bloc">
+        <ul class="villes">
+          <li><span>Hyères</span><em>83</em></li>
+          <li><span>Villeneuve-lès-Béziers</span><em>34</em></li>
+          <li><span>Montayral</span><em>47</em></li>
+          <li><span>Saint-Maurice-l'Exil</span><em>38</em></li>
+        </ul>
+      </div>
+      <div class="col-bloc">
+        <a class="btn btn--fil" href="https://www.integralpharma.fr/jobs">Voir les offres</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────── 08 · Nos valeurs ─────────────────── -->
+  <section class="col-sec" id="valeurs" aria-labelledby="t08">
+    <div class="col-sec__marge">
+      <div class="col-folio">
+        <span class="col-folio__num">08</span>
+        <span class="col-folio__sur etiq">Nos valeurs</span>
+      </div>
+      <h2 class="col-sec__titre" id="t08">Trois mots qui se vérifient au téléphone.</h2>
+      <div class="col-sec__jauge" aria-hidden="true"><i></i></div>
+    </div>
+    <div class="col-sec__feuille">
+      <div class="col-bloc">
+        <article class="valeur">
+          <h3>Confiance</h3>
+          <p>La personne qui décroche connaît votre officine, vos saisons et vos habitudes.</p>
+        </article>
+        <article class="valeur">
+          <h3>Engagement</h3>
+          <p>C'est la même d'une année sur l'autre. Dans ce métier, c'est devenu rare.</p>
+        </article>
+        <article class="valeur">
+          <h3>Respect</h3>
+          <p>Elle ne vous vendra pas ce dont vous n'avez pas besoin — parce qu'elle vous reverra le
+            mois suivant, et l'année d'après.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────── Fin de page ─────────────────── -->
+  <footer class="col-fin" id="ecrire">
+    <div class="col-fin__in">
+      <h2>Posez-nous la question qui vous intéresse.</h2>
+      <div class="col-fin__d">
+        <p>Sur nos conditions, sur nos délais, sur la façon dont nous travaillons. Vous aurez une
+          réponse claire, et le nom de l'implantation qui livre votre secteur.</p>
+        <a class="btn btn--plein" href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a>
+      </div>
+    </div>
+    <div class="col-pied">
+      <p><strong>Intégral Pharma</strong> — 758 chemin de la Source, ZI Saint-Martin, 83400 Hyères<br>
+        <a href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a> ·
+        <a href="https://www.integralpharma.fr/mentions-l%C3%A9gales">Mentions légales</a></p>
+      <p class="col-pied__chiffres">9 implantations · plus de 2 000 officines livrées · indépendant depuis 2006</p>
+    </div>
+    <p class="col-signature">Direction artistique <b>« Colonne »</b> — le dossier de fond</p>
+  </footer>
+
+</main>
+
+<script>
+(function(){
+  "use strict";
+  var reduit = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---- Menu téléphone : panneau opaque, ouvert/fermé, fermé à l'Échap et au clic ---- */
+  var burger = document.getElementById('burger');
+  var menu   = document.getElementById('menu');
+  if (burger && menu) {
+    var basculer = function(ouvrir){
+      menu.classList.toggle('est-ouvert', ouvrir);
+      burger.setAttribute('aria-expanded', ouvrir ? 'true' : 'false');
+      burger.setAttribute('aria-label', ouvrir ? 'Fermer le menu' : 'Ouvrir le menu');
+    };
+    burger.addEventListener('click', function(){
+      basculer(!menu.classList.contains('est-ouvert'));
+    });
+    menu.addEventListener('click', function(e){
+      if (e.target.tagName === 'A') basculer(false);
+    });
+    document.addEventListener('keydown', function(e){
+      if (e.key === 'Escape') basculer(false);
+    });
+    window.addEventListener('resize', function(){
+      if (window.innerWidth > 880) basculer(false);
+    }, {passive:true});
+  }
+
+  /* ---- Le défilement : tout se décide sur la position réelle, relue à chaque fois ---- */
+  var page     = document.querySelector('[data-col]');
+  var sections = Array.prototype.slice.call(document.querySelectorAll('.col-sec'));
+  var blocs    = Array.prototype.slice.call(document.querySelectorAll('.col-bloc'));
+  var jaugeLue = document.getElementById('jaugeLue');
+  if (!page || !sections.length) return;
+
+  // Mouvement réduit : tout est posé à son état final. Rien n'est retenu, rien n'est masqué.
+  if (reduit) {
+    blocs.forEach(function(b){ b.classList.add('est-vu'); });
+    sections.forEach(function(s){ s.classList.add('est-actif'); });
+    if (jaugeLue) jaugeLue.style.setProperty('--lu', 1);
+    return;
+  }
+
+  // C'est le script qui autorise la mise en retrait. Tant qu'il n'a pas tourné, la page
+  // est simplement lisible : c'est le filet.
+  page.classList.add('est-anime');
+
+  var navH = 62, tic = false;
+
+  function placer(){
+    tic = false;
+    var vue   = window.innerHeight;
+    var utile = vue - navH;              // la hauteur réellement occupée par un volet
+    var ligne = vue * 0.86;              // ligne de lecture basse : on révèle avant d'arriver
+
+    sections.forEach(function(s, i){
+      var r = s.getBoundingClientRect();
+
+      // On ne mesure jamais le volet collé : une fois collé il rend toujours la même
+      // position, donc aucune progression. Le repère est le haut de la section SUIVANTE,
+      // la seule chose qui bouge encore à ce moment-là.
+      var suivante = sections[i + 1];
+      var repere = suivante ? suivante.getBoundingClientRect().top : r.bottom;
+
+      var course = s.offsetHeight - utile;
+      var p = course > 0 ? (s.offsetHeight - repere) / course : 1;
+      p = Math.min(1, Math.max(0, p));
+      s.style.setProperty('--p', p.toFixed(3));
+
+      var actif = r.top <= vue * 0.5 && repere > vue * 0.4;
+      s.classList.toggle('est-actif', actif);
+    });
+
+    // Chaque bloc est révélé d'après sa position réelle. Aucun bloc ne peut rester en
+    // retrait parce qu'une notification ne serait jamais venue.
+    blocs.forEach(function(b){
+      if (b.classList.contains('est-vu')) return;
+      if (b.getBoundingClientRect().top < ligne) b.classList.add('est-vu');
+    });
+
+    // Jauge de lecture du dossier.
+    if (jaugeLue) {
+      var total = document.documentElement.scrollHeight - vue;
+      var lu = total > 0 ? window.pageYOffset / total : 0;
+      jaugeLue.style.setProperty('--lu', Math.min(1, Math.max(0, lu)).toFixed(3));
+    }
+  }
+
+  function auDefilement(){ if (!tic){ tic = true; requestAnimationFrame(placer); } }
+  window.addEventListener('scroll', auDefilement, {passive:true});
+  window.addEventListener('resize', auDefilement, {passive:true});
+  window.addEventListener('load', placer);
+  placer();
+})();
+</script>
+
+</body>
+</html>
