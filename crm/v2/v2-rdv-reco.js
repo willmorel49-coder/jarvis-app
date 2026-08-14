@@ -182,7 +182,13 @@
       // ⚠️ Sans le mot « pharmacie », l'annuaire national reste fermé et le
       // portefeuille n'est accepté que sur une correspondance exacte.
       if (!(p.officine && (seg.texte === p.dist || p.score >= 0.95))) return rien;
-    } else if (!p.officine || p.score < 0.80) {
+    } else if (!p.officine || p.score < 0.95) {
+      // ⚠️ Le seuil était à 0,80, et c'était trop bas : « Voir Clement phie
+      // des plantes » trouvait « PHARMACIE DU JARDIN DES PLANTES » à Grenoble
+      // dans le portefeuille (0,88, par simple inclusion du mot « plantes »)
+      // et n'allait donc jamais voir « PHARMACIE DES PLANTES » à Angers, à
+      // deux pas du secteur. On ne s'arrête au portefeuille que si la
+      // correspondance y est quasi parfaite ; sinon on compare les deux.
       var n = chercher(seg.texte, seg.marqueur, indexNational || []);
       if (n.officine && n.score > p.score) meilleur = { r: n, source: 'annuaire' };
     }

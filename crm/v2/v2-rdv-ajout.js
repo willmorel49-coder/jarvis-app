@@ -169,6 +169,18 @@
     },
 
     choisir: function (cip) {
+      // Arrivée depuis « ce n'est pas la bonne » du planning : on ne crée pas
+      // un rendez-vous, on retient la correspondance et on repart sur le
+      // planning, corrigé. L'agenda Google n'est pas touché.
+      if (V2.rdvPlanningCleEnCours && V2.rdvAlias) {
+        var k = V2.rdvPlanningCleEnCours;
+        V2.rdvPlanningCleEnCours = null;
+        V2.rdvAlias.poser(k, cip).then(function () {
+          if (V2.toast) V2.toast('Rattachement retenu.');
+          V2.go('rdvplanning');
+        });
+        return;
+      }
       choisie = V2.rdvInfo ? V2.rdvInfo(cip) : { cip: cip, nom: '', ville: '' };
       V2.go('rdvajout', cip);
     },
@@ -328,6 +340,17 @@
       var corps;
       if (!choisie) {
         corps =
+          // Arrivée depuis « ce n'est pas la bonne » : on le DIT. Sans ça,
+          // l'écran promet un rendez-vous alors qu'il va poser un
+          // rattachement — et le commercial ne comprend pas ce qu'il vient
+          // de faire en cliquant sur une officine.
+          (V2.rdvPlanningCleEnCours
+            ? '<div class="rda-box" style="border-left:3px solid #C7791A">' +
+                '<b>Tu corriges un rattachement</b><br>' +
+                '<span style="color:var(--muted);font-size:13.5px">Ton agenda dit ' +
+                '« ' + esc(V2.rdvPlanningCleEnCours) + ' ». Choisis la vraie officine : ' +
+                'JARVIS la retiendra, et ton agenda ne sera pas modifié.</span></div>'
+            : '') +
           '<div class="rda-sec">Quelle officine ?</div>' +
           '<div class="rda-box">' +
             '<input id="rda-q" type="search" autocomplete="off" placeholder="Nom, ville, ou début de CIP" ' +
