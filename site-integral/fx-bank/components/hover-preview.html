@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FX-BANK · Hover Preview</title>
+<!--
+/* FX-BANK · HOVER PREVIEW
+   QUOI : Une liste sobre de noms. Au survol, une image apparaît et suit le curseur — la liste
+          reste lisible, l'image ne prend de la place que quand on la demande.
+   QUAND : Une liste d'implantations, de réalisations, de références. C'est LA façon de montrer
+           des photos sans transformer la page en galerie, et sans allonger le défilement.
+   POURQUOI C'EST UTILE ICI : neuf implantations avec neuf photos en pleine largeur, c'est un
+           tunnel. Ici les neuf tiennent en un écran et chaque photo est à un mouvement de souris.
+   DEPENDANCES : aucune
+   SAFARI : conforme. Aucun flou, aucun verre dépoli, aucun dégradé découpé dans du texte.
+            L'aperçu bouge en transform, jamais en top/left, et n'existe pas sur écran tactile.
+   TACTILE : sur téléphone il n'y a pas de survol — la vignette s'affiche alors dans la ligne,
+             en petit. Le composant reste utile, il ne se contente pas de « ne rien faire ».
+   COPIER : le bloc entre FX:COPY:START et FX:COPY:END */
+-->
+<style>
+  body{margin:0;background:#FBFCFE;color:#0E1626;font:16px/1.6 ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif}
+  .demo-note{position:fixed;left:16px;bottom:16px;z-index:50;font-size:12px;letter-spacing:.1em;
+    text-transform:uppercase;color:#8B96AC;background:#FBFCFE;padding:8px 12px;border:1px solid #DCE5F4}
+
+  /* FX:COPY:START */
+  .fx-hp{
+    --fx-hp-accent:#0050E6;
+    --fx-hp-bord:#DCE5F4;
+    --fx-hp-doux:#54607A;
+    --fx-hp-vign:300px;
+    position:relative; max-width:900px; margin:0 auto; padding:0 24px;
+  }
+  .fx-hp__ligne{
+    position:relative; display:grid; grid-template-columns:auto 1fr auto; gap:0 22px;
+    align-items:center; padding:20px 4px; border-top:1px solid var(--fx-hp-bord);
+    text-decoration:none; color:inherit; cursor:pointer;
+  }
+  .fx-hp__ligne:last-child{ border-bottom:1px solid var(--fx-hp-bord) }
+  .fx-hp__n{
+    font-family:ui-monospace,"SF Mono",Menlo,monospace; font-size:12.5px;
+    color:var(--fx-hp-doux); font-variant-numeric:tabular-nums;
+    transition:color .3s ease;
+  }
+  .fx-hp__t{
+    font-size:clamp(1.15rem,2.6vw,1.7rem); font-weight:650; letter-spacing:-.02em;
+    transition:transform .38s cubic-bezier(.22,.8,.25,1), color .3s ease;
+  }
+  .fx-hp__v{ font-size:.94rem; color:var(--fx-hp-doux); white-space:nowrap; transition:color .3s ease }
+  .fx-hp__ligne:hover .fx-hp__t{ transform:translateX(14px); color:var(--fx-hp-accent) }
+  .fx-hp__ligne:hover .fx-hp__n,
+  .fx-hp__ligne:hover .fx-hp__v{ color:var(--fx-hp-accent) }
+
+  /* l'aperçu : un seul élément, réutilisé par toutes les lignes */
+  .fx-hp__apercu{
+    position:fixed; top:0; left:0; z-index:40; pointer-events:none;
+    width:var(--fx-hp-vign); aspect-ratio:4/3; overflow:hidden; border-radius:2px;
+    box-shadow:0 24px 60px -24px rgba(14,22,38,.5);
+    opacity:0; transform:translate3d(var(--x,0),var(--y,0),0) scale(.92);
+    transition:opacity .25s ease, transform .35s cubic-bezier(.22,.8,.25,1);
+  }
+  .fx-hp__apercu.est-visible{ opacity:1; transform:translate3d(var(--x,0),var(--y,0),0) scale(1) }
+  .fx-hp__apercu img{ width:100%; height:100%; object-fit:cover; display:block }
+
+  /* repli tactile : la vignette vit dans la ligne */
+  .fx-hp__mini{ display:none; width:54px; height:40px; object-fit:cover; border-radius:2px }
+  @media (hover:none){
+    .fx-hp__apercu{ display:none }
+    .fx-hp__mini{ display:block }
+    .fx-hp__ligne{ grid-template-columns:auto auto 1fr; gap:0 14px }
+    .fx-hp__ligne:hover .fx-hp__t{ transform:none }
+    .fx-hp__v{ display:none }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .fx-hp__apercu{ transition:opacity .2s ease }
+    .fx-hp__ligne:hover .fx-hp__t{ transform:none }
+  }
+  /* FX:COPY:END */
+</style>
+</head>
+<body>
+
+<div style="height:16vh"></div>
+
+<!-- FX:COPY:START -->
+<section class="fx-hp" data-fx-hp>
+  <!-- Les vignettes sont des SVG générés sur place : aucune requête réseau, aucun
+       service tiers. Remplacer les data-img par les vraies photos. Sans photo, la ligne reste parfaitement
+       utilisable : l'aperçu ne s'affiche simplement pas. -->
+  <a class="fx-hp__ligne" href="#" data-img="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20400%20300%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%230050E6%22/%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%230A1F5C%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%22400%22%20height%3D%22300%22%20fill%3D%22url%28%23g%29%22/%3E%3Crect%20x%3D%220%22%20y%3D%22210%22%20width%3D%22400%22%20height%3D%2290%22%20fill%3D%22rgba%2810%2C16%2C32%2C.55%29%22/%3E%3Ctext%20x%3D%2226%22%20y%3D%22258%22%20font-family%3D%22system-ui%2Csans-serif%22%20font-size%3D%2217%22%20font-weight%3D%22600%22%20fill%3D%22%23fff%22%3EHy%C3%A8res%20%C2%B7%2083%3C/text%3E%3Ctext%20x%3D%2226%22%20y%3D%2252%22%20font-family%3D%22ui-monospace%2Cmonospace%22%20font-size%3D%2215%22%20fill%3D%22rgba%28255%2C255%2C255%2C.72%29%22%3E01%3C/text%3E%3C/svg%3E">
+    <span class="fx-hp__n">01</span>
+    <span class="fx-hp__t">Hyères Pharma</span>
+    <span class="fx-hp__v">Hyères · 83</span>
+    <img class="fx-hp__mini" src="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20400%20300%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%230050E6%22/%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%230A1F5C%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%22400%22%20height%3D%22300%22%20fill%3D%22url%28%23g%29%22/%3E%3Crect%20x%3D%220%22%20y%3D%22210%22%20width%3D%22400%22%20height%3D%2290%22%20fill%3D%22rgba%2810%2C16%2C32%2C.55%29%22/%3E%3Ctext%20x%3D%2226%22%20y%3D%22258%22%20font-family%3D%22system-ui%2Csans-serif%22%20font-size%3D%2217%22%20font-weight%3D%22600%22%20fill%3D%22%23fff%22%3EHy%C3%A8res%20%C2%B7%2083%3C/text%3E%3Ctext%20x%3D%2226%22%20y%3D%2252%22%20font-family%3D%22ui-monospace%2Cmonospace%22%20font-size%3D%2215%22%20fill%3D%22rgba%28255%2C255%2C255%2C.72%29%22%3E01%3C/text%3E%3C/svg%3E" alt="">
+  </a>
+  <a class="fx-hp__ligne" href="#" data-img="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20400%20300%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%231663F0%22/%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%230B2A6B%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%22400%22%20height%3D%22300%22%20fill%3D%22url%28%23g%29%22/%3E%3Crect%20x%3D%220%22%20y%3D%22210%22%20width%3D%22400%22%20height%3D%2290%22%20fill%3D%22rgba%2810%2C16%2C32%2C.55%29%22/%3E%3Ctext%20x%3D%2226%22%20y%3D%22258%22%20font-family%3D%22system-ui%2Csans-serif%22%20font-size%3D%2217%22%20font-weight%3D%22600%22%20fill%3D%22%23fff%22%3EPalaiseau%20%C2%B7%2091%3C/text%3E%3Ctext%20x%3D%2226%22%20y%3D%2252%22%20font-family%3D%22ui-monospace%2Cmonospace%22%20font-size%3D%2215%22%20fill%3D%22rgba%28255%2C255%2C255%2C.72%29%22%3E02%3C/text%3E%3C/svg%3E">
+    <span class="fx-hp__n">02</span>
+    <span class="fx-hp__t">SR Pharma</span>
+    <span class="fx-hp__v">Palaiseau · 91</span>
+    <img class="fx-hp__mini" src="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20400%20300%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%231663F0%22/%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%230B2A6B%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%22400%22%20height%3D%22300%22%20fill%3D%22url%28%23g%29%22/%3E%3Crect%20x%3D%220%22%20y%3D%22210%22%20width%3D%22400%22%20height%3D%2290%22%20fill%3D%22rgba%2810%2C16%2C32%2C.55%29%22/%3E%3Ctext%20x%3D%2226%22%20y%3D%22258%22%20font-family%3D%22system-ui%2Csans-serif%22%20font-size%3D%2217%22%20font-weight%3D%22600%22%20fill%3D%22%23fff%22%3EPalaiseau%20%C2%B7%2091%3C/text%3E%3Ctext%20x%3D%2226%22%20y%3D%2252%22%20font-family%3D%22ui-monospace%2Cmonospace%22%20font-size%3D%2215%22%20fill%3D%22rgba%28255%2C255%2C255%2C.72%29%22%3E02%3C/text%3E%3C/svg%3E" alt="">
+  </a>
+  <a class="fx-hp__ligne" href="#" data-img="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20400%20300%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%230E4FD1%22/%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%2308306E%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%22400%22%20height%3D%22300%22%20fill%3D%22url%28%23g%29%22/%3E%3Crect%20x%3D%220%22%20y%3D%22210%22%20width%3D%22400%22%20height%3D%2290%22%20fill%3D%22rgba%2810%2C16%2C32%2C.55%29%22/%3E%3Ctext%20x%3D%2226%22%20y%3D%22258%22%20font-family%3D%22system-ui%2Csans-serif%22%20font-size%3D%2217%22%20font-weight%3D%22600%22%20fill%3D%22%23fff%22%3EFlassans-sur-Issole%20%C2%B7%2083%3C/text%3E%3Ctext%20x%3D%2226%22%20y%3D%2252%22%20font-family%3D%22ui-monospace%2Cmonospace%22%20font-size%3D%2215%22%20fill%3D%22rgba%28255%2C255%2C255%2C.72%29%22%3E03%3C/text%3E%3C/svg%3E">
+    <span class="fx-hp__n">03</span>
+    <span class="fx-hp__t">Mistral Santé Pharma</span>
+    <span class="fx-hp__v">Flassans-sur-Issole · 83</span>
+    <img class="fx-hp__mini" src="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20400%20300%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%230E4FD1%22/%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%2308306E%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%22400%22%20height%3D%22300%22%20fill%3D%22url%28%23g%29%22/%3E%3Crect%20x%3D%220%22%20y%3D%22210%22%20width%3D%22400%22%20height%3D%2290%22%20fill%3D%22rgba%2810%2C16%2C32%2C.55%29%22/%3E%3Ctext%20x%3D%2226%22%20y%3D%22258%22%20font-family%3D%22system-ui%2Csans-serif%22%20font-size%3D%2217%22%20font-weight%3D%22600%22%20fill%3D%22%23fff%22%3EFlassans-sur-Issole%20%C2%B7%2083%3C/text%3E%3Ctext%20x%3D%2226%22%20y%3D%2252%22%20font-family%3D%22ui-monospace%2Cmonospace%22%20font-size%3D%2215%22%20fill%3D%22rgba%28255%2C255%2C255%2C.72%29%22%3E03%3C/text%3E%3C/svg%3E" alt="">
+  </a>
+  <a class="fx-hp__ligne" href="#" data-img="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20400%20300%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%232A6BF2%22/%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%230C2E70%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%22400%22%20height%3D%22300%22%20fill%3D%22url%28%23g%29%22/%3E%3Crect%20x%3D%220%22%20y%3D%22210%22%20width%3D%22400%22%20height%3D%2290%22%20fill%3D%22rgba%2810%2C16%2C32%2C.55%29%22/%3E%3Ctext%20x%3D%2226%22%20y%3D%22258%22%20font-family%3D%22system-ui%2Csans-serif%22%20font-size%3D%2217%22%20font-weight%3D%22600%22%20fill%3D%22%23fff%22%3EMontayral%20%C2%B7%2047%3C/text%3E%3Ctext%20x%3D%2226%22%20y%3D%2252%22%20font-family%3D%22ui-monospace%2Cmonospace%22%20font-size%3D%2215%22%20fill%3D%22rgba%28255%2C255%2C255%2C.72%29%22%3E04%3C/text%3E%3C/svg%3E">
+    <span class="fx-hp__n">04</span>
+    <span class="fx-hp__t">Sud Ouest Pharma</span>
+    <span class="fx-hp__v">Montayral · 47</span>
+    <img class="fx-hp__mini" src="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20400%20300%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%232A6BF2%22/%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%230C2E70%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%22400%22%20height%3D%22300%22%20fill%3D%22url%28%23g%29%22/%3E%3Crect%20x%3D%220%22%20y%3D%22210%22%20width%3D%22400%22%20height%3D%2290%22%20fill%3D%22rgba%2810%2C16%2C32%2C.55%29%22/%3E%3Ctext%20x%3D%2226%22%20y%3D%22258%22%20font-family%3D%22system-ui%2Csans-serif%22%20font-size%3D%2217%22%20font-weight%3D%22600%22%20fill%3D%22%23fff%22%3EMontayral%20%C2%B7%2047%3C/text%3E%3Ctext%20x%3D%2226%22%20y%3D%2252%22%20font-family%3D%22ui-monospace%2Cmonospace%22%20font-size%3D%2215%22%20fill%3D%22rgba%28255%2C255%2C255%2C.72%29%22%3E04%3C/text%3E%3C/svg%3E" alt="">
+  </a>
+  <a class="fx-hp__ligne" href="#" data-img="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20400%20300%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%230846B8%22/%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%23071F52%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%22400%22%20height%3D%22300%22%20fill%3D%22url%28%23g%29%22/%3E%3Crect%20x%3D%220%22%20y%3D%22210%22%20width%3D%22400%22%20height%3D%2290%22%20fill%3D%22rgba%2810%2C16%2C32%2C.55%29%22/%3E%3Ctext%20x%3D%2226%22%20y%3D%22258%22%20font-family%3D%22system-ui%2Csans-serif%22%20font-size%3D%2217%22%20font-weight%3D%22600%22%20fill%3D%22%23fff%22%3ESaint-Maurice-l%27Exil%20%C2%B7%2038%3C/text%3E%3Ctext%20x%3D%2226%22%20y%3D%2252%22%20font-family%3D%22ui-monospace%2Cmonospace%22%20font-size%3D%2215%22%20fill%3D%22rgba%28255%2C255%2C255%2C.72%29%22%3E05%3C/text%3E%3C/svg%3E">
+    <span class="fx-hp__n">05</span>
+    <span class="fx-hp__t">Comptoir Pharmaceutique du Rhône</span>
+    <span class="fx-hp__v">Saint-Maurice-l'Exil · 38</span>
+    <img class="fx-hp__mini" src="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20400%20300%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%230846B8%22/%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%23071F52%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%22400%22%20height%3D%22300%22%20fill%3D%22url%28%23g%29%22/%3E%3Crect%20x%3D%220%22%20y%3D%22210%22%20width%3D%22400%22%20height%3D%2290%22%20fill%3D%22rgba%2810%2C16%2C32%2C.55%29%22/%3E%3Ctext%20x%3D%2226%22%20y%3D%22258%22%20font-family%3D%22system-ui%2Csans-serif%22%20font-size%3D%2217%22%20font-weight%3D%22600%22%20fill%3D%22%23fff%22%3ESaint-Maurice-l%27Exil%20%C2%B7%2038%3C/text%3E%3Ctext%20x%3D%2226%22%20y%3D%2252%22%20font-family%3D%22ui-monospace%2Cmonospace%22%20font-size%3D%2215%22%20fill%3D%22rgba%28255%2C255%2C255%2C.72%29%22%3E05%3C/text%3E%3C/svg%3E" alt="">
+  </a>
+
+  <div class="fx-hp__apercu" aria-hidden="true"><img alt=""></div>
+</section>
+
+<script>
+(function(){
+  document.querySelectorAll('[data-fx-hp]').forEach(function(liste){
+    var apercu = liste.querySelector('.fx-hp__apercu');
+    var img    = apercu ? apercu.querySelector('img') : null;
+    var lignes = Array.prototype.slice.call(liste.querySelectorAll('.fx-hp__ligne'));
+    if (!apercu || !img) return;
+
+    // Sur écran tactile il n'y a pas de survol : on ne branche rien et la vignette
+    // en ligne prend le relais (voir @media hover:none).
+    if (!window.matchMedia('(hover:hover)').matches) return;
+
+    var x = 0, y = 0, cx = 0, cy = 0, actif = false, brut = null;
+
+    lignes.forEach(function(l){
+      var src = l.getAttribute('data-img');
+      if (!src) return;
+      l.addEventListener('mouseenter', function(){
+        if (img.getAttribute('src') !== src) img.setAttribute('src', src);
+        actif = true; apercu.classList.add('est-visible');
+        if (!brut) brut = requestAnimationFrame(suivre);
+      });
+      l.addEventListener('mouseleave', function(){
+        actif = false; apercu.classList.remove('est-visible');
+      });
+    });
+
+    liste.addEventListener('mousemove', function(e){
+      // décalage pour que l'aperçu ne soit jamais sous le curseur, et qu'il ne sorte
+      // pas de l'écran quand on survole une ligne près du bord droit
+      var l = apercu.offsetWidth, h = apercu.offsetHeight;
+      cx = Math.min(e.clientX + 26, window.innerWidth  - l - 14);
+      cy = Math.min(Math.max(e.clientY - h / 2, 14), window.innerHeight - h - 14);
+    });
+
+    function suivre(){
+      // léger retard : l'aperçu glisse derrière le curseur au lieu de le coller
+      x += (cx - x) * 0.16;
+      y += (cy - y) * 0.16;
+      apercu.style.setProperty('--x', x.toFixed(1) + 'px');
+      apercu.style.setProperty('--y', y.toFixed(1) + 'px');
+      if (actif || Math.abs(cx - x) > 0.5) brut = requestAnimationFrame(suivre);
+      else { cancelAnimationFrame(brut); brut = null; }
+    }
+  });
+})();
+</script>
+<!-- FX:COPY:END -->
+
+<div style="height:40vh"></div>
+<div class="demo-note">hover-preview · la photo suit le curseur</div>
+
+</body>
+</html>
