@@ -302,6 +302,68 @@
       .catch(function () { return null; });
   }
 
+  // ── Documents privés ────────────────────────────────────────────────────
+  // Des pages entières (analyses, notes chiffrées) déposées dans le même seau
+  // protégé. Volontairement SÉPARÉ de PROTEGES : ces fichiers ne sont pas des
+  // données chargées au démarrage, ils s'ouvrent à la demande dans un onglet.
+  // Les mettre dans PROTEGES ferait tenter au chargeur d'exécuter du HTML.
+  // Aucun chiffre ne vit dans ce dépôt : seulement le nom du fichier.
+  var DOCS_PROTEGES = {
+    reforme2027: {
+      fichier: 'tranches-marge-grossiste-2027.html',
+      titre: 'Réforme 2027'
+    }
+  };
+  V2.docsProteges = DOCS_PROTEGES;
+
+  V2.ouvrirDocProtege = function (cle) {
+    var d = DOCS_PROTEGES[cle];
+    if (!d) return;
+    var c = (V2.sb && V2.sb()) || null;
+    if (!c || !c.storage) {
+      alert('Connecte-toi pour ouvrir ce document.');
+      return;
+    }
+    // L'onglet est ouvert AVANT l'appel réseau : ouvrir après une promesse
+    // fait bloquer le navigateur, qui n'y voit plus un geste de l'utilisateur.
+    var onglet = window.open('', '_blank');
+    if (onglet && onglet.document && onglet.document.body) {
+      onglet.document.title = d.titre;
+      var att = onglet.document.createElement('p');
+      att.textContent = 'Ouverture du document privé…';
+      att.setAttribute('style', 'margin:0;font:15px system-ui;color:#414E63;text-align:center;padding-top:40vh');
+      onglet.document.body.setAttribute('style', 'margin:0;background:#F4F6FA');
+      onglet.document.body.appendChild(att);
+    }
+    // ⚠️ Supabase Storage sert TOUJOURS un .html en `text/plain` — sécurité de leur
+    // côté, pour qu'on ne puisse pas héberger de page exécutable sur leur domaine.
+    // Mesuré le 14/08/2026 : l'adresse signée renvoie bien 33 097 octets, mais le
+    // navigateur affiche le code source. On récupère donc le texte et on le rend
+    // nous-mêmes via un blob : la page s'affiche, et elle n'a jamais transité par
+    // le dépôt public.
+    c.storage.from(SEAU_PROTEGE).createSignedUrl(d.fichier, 3600)
+      .then(function (r) {
+        var url = r && r.data && r.data.signedUrl;
+        if (!url) throw new Error('adresse refusée');
+        return fetch(url);
+      })
+      .then(function (rep) {
+        if (!rep.ok) throw new Error('HTTP ' + rep.status);
+        return rep.text();
+      })
+      .then(function (html) {
+        var blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+        var burl = URL.createObjectURL(blob);
+        if (onglet) onglet.location.replace(burl); else window.location.href = burl;
+        // Laisser le temps à l'onglet de charger avant de libérer la mémoire.
+        setTimeout(function () { URL.revokeObjectURL(burl); }, 60000);
+      })
+      .catch(function () {
+        if (onglet) onglet.close();
+        alert('Document indisponible. Vérifie que ta session est ouverte.');
+      });
+  };
+
   var loaded = {}, pending = {};
   // Corrige le prix NR au tarif officiel PPHT (window.PPHT) directement dans le
   // benchmark : impacte partout (groupements, fiches, catalogue, listes).
