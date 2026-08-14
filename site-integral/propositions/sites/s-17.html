@@ -1,0 +1,1286 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Contre-Courant — Intégral Pharma</title>
+<meta name="da-numero" content="17">
+<meta name="da-nom" content="Contre-Courant">
+<meta name="description" content="Site 17 pour Intégral Pharma : deux bandes verticales qui défilent en sens inverse — on lit à gauche, le repère remonte à droite.">
+
+<!--
+  SITE 17 · CONTRE-COURANT
+  ────────────────────────
+  Architecture imposée : deux colonnes à contre-sens.
+
+  Mécanique en une phrase : la bande de gauche est le texte et défile normalement ;
+  la bande de droite est une piste de repères montée à l'envers dans une fenêtre
+  collée à l'écran, si bien qu'elle DESCEND pendant qu'on descend — et malgré ce
+  contre-sens, le repère affiché est toujours celui du paragraphe qu'on lit.
+
+  Comment l'association tient (piège n°4) :
+    · la piste contient les douze repères dans l'ordre naturel du DOM, retournés
+      visuellement par `flex-direction: column-reverse` ;
+    · le repère i occupe donc la position visuelle (n-1-i) ;
+    · à chaque image on lit la position RÉELLE des sections, on calcule un indice
+      continu, et on pose translateY = -(n-1-i) x hauteur_fenêtre.
+      i = 0  → translate -11H (piste tirée tout en haut)
+      i = 11 → translate 0    (piste redescendue à zéro)
+      L'indice monte ⇒ le translate monte ⇒ la piste DESCEND. Contre-sens réel,
+      et alignement exact au centre de chaque section.
+    · une courbe en S (smoothstep) fait tenir l'alignement au centre des sections
+      et concentre le mouvement dans les entre-deux.
+
+  Hauteurs (piège n°2) : la colonne de droite n'a AUCUNE hauteur propre. C'est une
+  fenêtre de 100vh collée, alimentée par une piste dont la longueur ne dépend que
+  du nombre de repères. Aucune des deux colonnes ne peut finir avant l'autre.
+
+  Sans script (piège n°5) : les repères restent DANS leur section, la grille reste
+  à une colonne, la fenêtre collée est masquée. Flux vertical normal, ordre de
+  lecture correct, aucun texte transparent.
+
+  Sous 900 px (piège n°3) : la mécanique est démontée, les repères retournent dans
+  leur section, colonne unique ordinaire.
+
+  Zéro requête réseau : aucune police distante, aucune image distante, aucun CDN.
+  Sécurité d'affichage : aucune des quatre propriétés qui figent le Mac sous Safari,
+  aucune vidéo, uniquement transform / opacity / dégradés.
+-->
+
+<script>
+  /* Armement AVANT le premier rendu. Sans la classe, TOUT est visible et lisible.
+     Filet : si rien n'a été révélé au bout de 2 s, on désarme. */
+  (function(){
+    var d = document.documentElement;
+    try {
+      if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        d.className += ' js-mvt';
+      }
+      setTimeout(function(){
+        if (!document.querySelector('.est-vu')) d.className = d.className.replace(' js-mvt','');
+      }, 2000);
+    } catch(e){ d.className = d.className.replace(' js-mvt',''); }
+  })();
+</script>
+
+<style>
+/* ═══════════════════════════════════════════════════════════════════════════
+   1 · SOCLE
+   ═══════════════════════════════════════════════════════════════════════════ */
+*,*::before,*::after{ box-sizing:border-box }
+
+:root{
+  --bleu:#0050E6;
+  --bleu-nuit:#002F86;
+  --bleu-vif:#2A72FF;
+  --orange:#F39A1B;
+  --orange-fonce:#B96C00;
+  --encre:#101623;
+  --gris:#586278;
+  --gris-clair:#8B95A9;
+
+  --papier:#F6F7FA;          /* bande de lecture : papier froid */
+  --papier-contre:#EAF0FC;   /* bande de repères : bleu très clair */
+  --blanc:#FFFFFF;
+  --bord:#DCE2EE;
+  --bord-bleu:#C3D5F5;
+
+  --barre:66px;
+  --marge:clamp(20px,4.4vw,74px);
+  --pt:.82rem;               /* 13,1 px — jamais moins */
+
+  --sans:ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI","Helvetica Neue",Arial,sans-serif;
+  --serif:ui-serif,Georgia,"Iowan Old Style","Palatino Linotype",Palatino,"Times New Roman",serif;
+  --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
+  --sortie:cubic-bezier(.22,.85,.24,1);
+}
+
+html{ -webkit-text-size-adjust:100%; scroll-behavior:auto }
+
+body{
+  margin:0;
+  background:var(--papier);
+  color:var(--encre);
+  font:16px/1.6 var(--sans);
+  overflow-x:clip;           /* `clip` et non `hidden` : `hidden` casserait position:sticky */
+}
+
+a{ color:inherit }
+svg{ display:block; max-width:100% }
+:focus-visible{ outline:3px solid var(--orange); outline-offset:3px }
+
+.cc-skip{
+  position:absolute; left:-9999px; top:0; z-index:200;
+  background:var(--bleu); color:#fff; padding:14px 20px; font-weight:700; text-decoration:none;
+}
+.cc-skip:focus{ left:0 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   2 · LA BARRE — cartouche fixe, fond plein
+   ═══════════════════════════════════════════════════════════════════════════ */
+.cc-barre{
+  position:fixed; inset:0 0 auto 0; height:var(--barre); z-index:90;
+  background:var(--blanc);
+  border-bottom:1px solid var(--bord);
+  display:flex; align-items:center; gap:16px;
+  padding:0 clamp(14px,3vw,30px);
+}
+.cc-marque{
+  display:flex; align-items:center; gap:11px; text-decoration:none; min-height:44px;
+  font:700 clamp(.98rem,1.5vw,1.08rem)/1 var(--sans); letter-spacing:-.02em; white-space:nowrap;
+}
+.cc-marque .cc-sceau{ flex:0 0 auto }
+.cc-marque b{ font-weight:800 }
+.cc-marque span{ font-weight:500; color:var(--gris) }
+
+.cc-nav{ margin-left:auto; display:flex; align-items:center; gap:2px }
+.cc-nav a{
+  display:inline-flex; align-items:center; min-height:44px; padding:0 12px;
+  text-decoration:none; font-size:.94rem; font-weight:600; color:var(--encre);
+  border-bottom:2px solid transparent;
+}
+.cc-nav a:hover{ color:var(--bleu); border-bottom-color:var(--bleu) }
+
+.cc-jauge{
+  position:absolute; left:0; bottom:-1px; height:2px; width:100%;
+  transform:scaleX(var(--avance,0)); transform-origin:left;
+  background:linear-gradient(90deg,var(--bleu),var(--bleu-vif) 62%,var(--orange));
+}
+
+.cc-burger{
+  margin-left:auto; width:46px; height:46px; display:none; place-items:center;
+  background:var(--blanc); border:1px solid var(--bord); border-radius:3px; cursor:pointer; padding:0;
+}
+.cc-burger i{ display:block; width:20px; height:2px; background:var(--encre); position:relative }
+.cc-burger i::before,.cc-burger i::after{
+  content:""; position:absolute; left:0; width:20px; height:2px; background:var(--encre);
+}
+.cc-burger i::before{ top:-6px } .cc-burger i::after{ top:6px }
+
+/* Panneau mobile — fond PLEIN et opaque, rien ne défile au travers */
+.cc-panneau{
+  position:fixed; inset:0; z-index:100; background:var(--blanc);
+  display:none; flex-direction:column; padding:calc(var(--barre) + 14px) 22px 30px;
+}
+.cc-panneau.ouvert{ display:flex }
+.cc-panneau a{
+  display:flex; align-items:center; min-height:58px; text-decoration:none;
+  font:700 clamp(1.55rem,7vw,2.15rem)/1.12 var(--serif); letter-spacing:-.02em;
+  border-bottom:1px solid var(--bord);
+}
+.cc-panneau a:last-of-type{ color:var(--bleu) }
+.cc-panneau__pied{ margin-top:auto; padding-top:22px; font:500 var(--pt)/1.5 var(--mono);
+  letter-spacing:.04em; color:var(--gris) }
+.cc-fermer{
+  position:absolute; top:10px; right:14px; width:46px; height:46px;
+  background:var(--blanc); border:1px solid var(--bord); border-radius:3px; cursor:pointer;
+  font:400 1.5rem/1 var(--sans); color:var(--encre);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   3 · TYPOGRAPHIE COMMUNE
+   ═══════════════════════════════════════════════════════════════════════════ */
+.cc-sur{
+  margin:0 0 16px; font:700 var(--pt)/1.3 var(--mono);
+  letter-spacing:.15em; text-transform:uppercase; color:var(--bleu);
+  display:flex; align-items:center; gap:11px;
+}
+.cc-sur::before{ content:""; width:26px; height:2px; background:var(--orange); flex:0 0 auto }
+
+h1,h2,h3{ margin:0; font-family:var(--serif); font-weight:600; letter-spacing:-.018em }
+.cc-t{ font-size:clamp(1.9rem,3.5vw,3.1rem); line-height:1.06; margin:0 0 22px; max-width:20ch }
+.cc-t--geant{ font-size:clamp(2.4rem,6.4vw,4.9rem); line-height:1.02; max-width:13ch }
+.cc-t em{ font-style:italic; color:var(--bleu) }
+
+.cc-txt{ margin:0 0 17px; font-size:clamp(1rem,1.15vw,1.09rem); line-height:1.66; color:var(--gris); max-width:48ch }
+.cc-txt--fort{ color:var(--encre); font-size:clamp(1.06rem,1.35vw,1.2rem) }
+.cc-txt strong{ color:var(--encre); font-weight:650 }
+.cc-txt:last-child{ margin-bottom:0 }
+
+.cc-btns{ display:flex; flex-wrap:wrap; gap:12px; margin-top:26px }
+.cc-btn{
+  display:inline-flex; align-items:center; min-height:52px; padding:0 26px;
+  background:var(--bleu); color:#fff; text-decoration:none; border-radius:3px;
+  font:700 .97rem/1 var(--sans); letter-spacing:-.01em;
+  border:1px solid var(--bleu);
+  box-shadow:0 10px 22px -14px rgba(0,49,134,.85);
+  transition:transform .22s var(--sortie), background .22s ease;
+}
+.cc-btn:hover{ background:var(--bleu-nuit); transform:translateY(-2px) }
+.cc-btn--vide{ background:var(--blanc); color:var(--encre); border-color:var(--bord); box-shadow:none }
+.cc-btn--vide:hover{ background:var(--blanc); border-color:var(--bleu); color:var(--bleu) }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   4 · L'OUVERTURE — la géométrie des deux bandes, à l'arrêt
+   ═══════════════════════════════════════════════════════════════════════════ */
+.cc-hero{
+  position:relative; overflow:hidden;
+  padding:calc(var(--barre) + clamp(46px,7vh,84px)) 0 0;
+  background:var(--papier);
+  border-bottom:1px solid var(--bord);
+}
+.cc-hero__lum{
+  position:absolute; inset:0; z-index:0; pointer-events:none;
+  background:
+    radial-gradient(78% 62% at 8% -8%, #FFFFFF 0%, rgba(255,255,255,0) 60%),
+    radial-gradient(58% 52% at 96% 6%, rgba(0,80,230,.10) 0%, rgba(0,80,230,0) 64%),
+    radial-gradient(46% 40% at 78% 96%, rgba(243,154,27,.13) 0%, rgba(243,154,27,0) 66%);
+}
+.cc-hero__in{
+  position:relative; z-index:2; max-width:1420px; margin:0 auto;
+  padding:0 var(--marge) clamp(30px,5vh,58px);
+  display:grid; grid-template-columns:minmax(0,1.08fr) minmax(0,.92fr); gap:clamp(28px,4vw,60px);
+  align-items:center;
+}
+.cc-hero h1{ margin:0 0 24px }
+.cc-hero .cc-txt{ max-width:44ch }
+
+.cc-hero__emb{ position:relative; display:grid; place-items:center; min-height:min(52vh,430px) }
+.cc-hero__emb svg{ width:100%; max-width:390px }
+
+/* Bandeau qui défile */
+.cc-bande{
+  position:relative; z-index:2;
+  border-top:1px solid var(--bord); border-bottom:1px solid var(--bord);
+  background:var(--blanc); overflow:hidden;
+}
+.cc-bande__piste{ display:flex; width:max-content; animation:cc-glisse 42s linear infinite }
+.cc-bande__piste > span{
+  display:flex; align-items:center; gap:34px; padding:14px 17px;
+  font:600 var(--pt)/1 var(--mono); letter-spacing:.12em; text-transform:uppercase;
+  color:var(--gris); white-space:nowrap;
+}
+.cc-bande__piste b{ display:flex; align-items:center; gap:34px; font-weight:600 }
+.cc-bande__piste i{ width:5px; height:5px; background:var(--orange); flex:0 0 auto; transform:rotate(45deg) }
+@keyframes cc-glisse{ from{ transform:translate3d(0,0,0) } to{ transform:translate3d(-50%,0,0) } }
+.cc-bande:hover .cc-bande__piste{ animation-play-state:paused }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   5 · LA CROISÉE — le cœur de l'architecture
+   ═══════════════════════════════════════════════════════════════════════════ */
+.cc-croix{
+  position:relative;
+  display:grid;
+  grid-template-columns:minmax(0,1fr);   /* sans script : UNE colonne */
+}
+body.cc-actif .cc-croix{ grid-template-columns:minmax(0,1fr) minmax(0,1fr) }
+
+/* — colonne de LECTURE : sens naturel, toujours — */
+.cc-lect{ position:relative; z-index:2; padding-bottom:clamp(40px,10vh,120px) }
+/* En mode croisé, aucune queue sous la dernière section : ces pixels-là
+   faisaient sortir la fenêtre collée de son alignement et laissaient une
+   bande vide sur toute la largeur avant le pied de page. Mesuré, corrigé. */
+body.cc-actif .cc-lect{ padding-bottom:0 }
+.cc-sec{
+  position:relative;
+  padding:clamp(52px,8vh,86px) var(--marge);
+  border-bottom:1px solid var(--bord);
+  /* Une source de lumière par écran : un aplat clair sans lumière est mort. */
+  background:
+    radial-gradient(88% 62% at 4% 0%, #FFFFFF 0%, rgba(255,255,255,0) 58%),
+    var(--papier);
+}
+.cc-sec:nth-child(even){
+  background:
+    radial-gradient(84% 58% at 22% 2%, #FFFFFF 0%, rgba(255,255,255,0) 56%),
+    radial-gradient(60% 44% at 96% 98%, rgba(243,154,27,.07) 0%, rgba(243,154,27,0) 70%),
+    var(--papier);
+}
+body.cc-actif .cc-sec{
+  min-height:calc(100vh - var(--barre));
+  display:grid; align-content:center;
+  padding-right:clamp(30px,3.4vw,58px);
+}
+.cc-sec__in{ width:100%; max-width:620px; margin-left:auto; margin-right:0 }
+.cc-sec:last-child{ border-bottom:0 }
+
+.cc-num{
+  font:700 var(--pt)/1 var(--mono); letter-spacing:.16em; color:var(--gris-clair);
+  font-variant-numeric:tabular-nums; margin:0 0 12px;
+}
+
+/* — colonne à CONTRE-SENS : masquée sans script — */
+.cc-contre{ display:none; position:relative; z-index:1; background:var(--papier-contre) }
+body.cc-actif .cc-contre{ display:block }
+.cc-contre__lum{
+  position:absolute; inset:0; z-index:0; pointer-events:none;
+  background:
+    radial-gradient(62% 34% at 84% 2%, #FFFFFF 0%, rgba(255,255,255,0) 62%),
+    radial-gradient(70% 44% at 12% 100%, rgba(0,80,230,.10) 0%, rgba(0,80,230,0) 70%);
+}
+.cc-hublot{
+  position:sticky; top:var(--barre);
+  height:calc(100vh - var(--barre));
+  overflow:hidden;
+}
+.cc-piste{
+  display:flex; flex-direction:column-reverse;   /* le premier repère du DOM va EN BAS */
+  will-change:transform;
+}
+
+/* Un repère = une fenêtre pleine. Sans script, il reste dans sa section. */
+.cc-rep{
+  flex:0 0 auto;
+  display:grid; place-items:center; align-content:center; gap:20px;
+  padding:clamp(26px,4vh,54px) clamp(24px,3.6vw,64px);
+  margin:34px 0 0;
+  background:var(--papier-contre); border:1px solid var(--bord-bleu); border-radius:5px;
+}
+body.cc-actif .cc-rep{
+  height:calc(100vh - var(--barre));
+  margin:0; border:0; border-radius:0; border-left:1px solid var(--bord-bleu);
+  background:transparent;
+}
+.cc-rep__cadre{
+  position:relative; width:100%; max-width:420px;
+  display:grid; gap:18px; justify-items:center;
+}
+.cc-rep svg{ width:100%; max-width:330px }
+.cc-rep__chip{
+  margin:0; display:inline-flex; align-items:center; gap:9px;
+  font:700 var(--pt)/1 var(--mono); letter-spacing:.15em; text-transform:uppercase;
+  color:var(--bleu-nuit); background:var(--blanc);
+  border:1px solid var(--bord-bleu); border-radius:99px; padding:9px 15px;
+}
+.cc-rep__chip b{ color:var(--orange-fonce); font-weight:700 }
+.cc-rep__leg{
+  margin:0; text-align:center; max-width:34ch;
+  font:500 .92rem/1.5 var(--sans); color:var(--gris);
+}
+
+/* — le rail : la preuve visible du contre-sens — */
+.cc-rail{ display:none }
+body.cc-actif .cc-rail{
+  display:block; position:absolute; z-index:3; top:0; bottom:0; left:50%;
+  width:1px; margin-left:-.5px; background:var(--bord-bleu); pointer-events:none;
+}
+.cc-rail::before,.cc-rail::after{
+  content:""; position:absolute; top:0; bottom:0; width:7px;
+  background-image:repeating-linear-gradient(to bottom,
+    var(--bord-bleu) 0 1px, rgba(0,0,0,0) 1px 22px);
+}
+.cc-rail::before{ right:4px; background-position-y:calc(var(--tic,0) * -1px) }  /* monte */
+.cc-rail::after { left:4px;  background-position-y:calc(var(--tic,0) * 1px) }   /* descend */
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   6 · PIÈCES DE CONTENU
+   ═══════════════════════════════════════════════════════════════════════════ */
+.cc-compteurs{ display:grid; grid-template-columns:repeat(4,1fr); margin-top:30px;
+  border-top:1px solid var(--bord); }
+.cc-compteurs div{ padding:18px 12px 4px 0 }
+.cc-compteurs b{
+  display:block; font:600 clamp(1.5rem,2.6vw,2.2rem)/1 var(--serif);
+  letter-spacing:-.03em; color:var(--bleu); font-variant-numeric:tabular-nums;
+}
+.cc-compteurs i{ display:block; margin-top:8px; font:500 var(--pt)/1.35 var(--mono);
+  letter-spacing:.06em; color:var(--gris); font-style:normal }
+.cc-compteurs--duo{ grid-template-columns:repeat(2,1fr) }
+
+.cc-liste{ list-style:none; margin:22px 0 0; padding:0;
+  display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:0 26px }
+.cc-liste li{ display:grid; grid-template-columns:2.5em 1fr; align-items:baseline;
+  gap:0 10px; padding:9px 0; border-top:1px solid var(--bord) }
+.cc-liste u{ font:700 var(--pt)/1.4 var(--mono); color:var(--orange-fonce);
+  text-decoration:none; font-variant-numeric:tabular-nums }
+.cc-liste b{ font-weight:650; font-size:.97rem; letter-spacing:-.01em }
+.cc-liste i{ grid-column:2; display:block; font-style:normal;
+  font:500 var(--pt)/1.4 var(--mono); color:var(--gris); letter-spacing:.03em }
+.cc-mention{ margin:18px 0 0; font-size:.95rem; color:var(--gris) }
+.cc-mention strong{ color:var(--encre) }
+
+.cc-labos{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-top:26px }
+.cc-labos span{
+  display:grid; place-items:center; min-height:74px; padding:14px 10px; text-align:center;
+  background:var(--blanc); border:1px solid var(--bord); border-radius:4px;
+  font:650 1rem/1.2 var(--sans); letter-spacing:-.01em;
+}
+.cc-villes{ display:flex; flex-wrap:wrap; gap:9px; margin-top:22px }
+.cc-villes span{
+  display:inline-flex; align-items:center; min-height:44px; padding:0 15px;
+  background:var(--blanc); border:1px solid var(--bord); border-radius:99px;
+  font:600 .9rem/1 var(--sans); color:var(--encre);
+}
+.cc-valeurs{ margin-top:24px; border-top:1px solid var(--bord) }
+.cc-valeurs > div{ padding:19px 0; border-bottom:1px solid var(--bord) }
+.cc-valeurs h3{ font-size:1.3rem; margin:0 0 7px }
+.cc-valeurs h3 span{ color:var(--bleu) }
+.cc-valeurs p{ margin:0; color:var(--gris); font-size:1rem; line-height:1.6 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   7 · LA SORTIE
+   ═══════════════════════════════════════════════════════════════════════════ */
+.cc-sortie{
+  position:relative; overflow:hidden; background:var(--blanc);
+  border-top:1px solid var(--bord);
+  padding:clamp(64px,11vh,120px) var(--marge) clamp(34px,5vh,54px);
+}
+.cc-sortie__lum{
+  position:absolute; inset:0; z-index:0; pointer-events:none;
+  background:
+    radial-gradient(64% 60% at 88% -10%, rgba(0,80,230,.11) 0%, rgba(0,80,230,0) 62%),
+    radial-gradient(50% 46% at 6% 104%, rgba(243,154,27,.14) 0%, rgba(243,154,27,0) 66%);
+}
+.cc-sortie__in{ position:relative; z-index:2; max-width:1180px; margin:0 auto }
+.cc-pied{
+  margin-top:clamp(44px,7vh,86px); padding-top:22px; border-top:1px solid var(--bord);
+  display:flex; flex-wrap:wrap; gap:8px 26px; align-items:center;
+  font:500 var(--pt)/1.6 var(--mono); letter-spacing:.03em; color:var(--gris);
+}
+/* cibles tactiles : ces deux liens faisaient 22 px de haut, mesuré et corrigé */
+.cc-pied a{ display:inline-flex; align-items:center; min-height:44px;
+  text-decoration:none; border-bottom:1px solid var(--bord-bleu) }
+.cc-pied a:hover{ color:var(--bleu) }
+.cc-pied__chiffres{ width:100%; color:var(--gris-clair) }
+.cc-signature{
+  margin:0 auto; max-width:1180px; padding:0 var(--marge) 26px;
+  font:600 var(--pt)/1.5 var(--mono); letter-spacing:.12em; text-transform:uppercase;
+  color:var(--gris-clair);
+}
+.cc-signature em{ font-style:normal; color:var(--bleu) }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   8 · RÉVÉLATION — armée par JS. Sans la classe, tout est visible.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.js-mvt [data-r]{
+  opacity:.001;
+  transform:translateY(16px);
+  transition:opacity .68s var(--sortie), transform .68s var(--sortie);
+  transition-delay:calc(var(--i,0) * 65ms);
+}
+.js-mvt .est-vu [data-r]{ opacity:1; transform:none }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   9 · RESPONSIVE — sous 900 px la mécanique est démontée
+   ═══════════════════════════════════════════════════════════════════════════ */
+@media (max-width:1180px){
+  .cc-hero__in{ grid-template-columns:minmax(0,1fr) minmax(0,.8fr) }
+  .cc-labos{ grid-template-columns:repeat(2,1fr) }
+}
+@media (max-width:960px){
+  .cc-nav{ display:none }
+  .cc-burger{ display:grid }
+}
+@media (max-width:900px){
+  :root{ --barre:58px }
+  /* La mécanique n'existe plus : colonne unique, ordinaire et propre. */
+  body.cc-actif .cc-croix{ grid-template-columns:minmax(0,1fr) }
+  body.cc-actif .cc-contre,
+  body.cc-actif .cc-rail{ display:none }
+  body.cc-actif .cc-sec{ min-height:0; display:block; padding:clamp(44px,7vh,68px) var(--marge) }
+  body.cc-actif .cc-rep{
+    height:auto; margin:30px 0 0; border:1px solid var(--bord-bleu); border-radius:5px;
+    background:var(--papier-contre);
+  }
+  .cc-sec__in{ max-width:none; margin-left:0 }
+  .cc-hero__in{ grid-template-columns:minmax(0,1fr); gap:26px }
+  .cc-hero__emb{ min-height:0; justify-items:start }
+  .cc-hero__emb svg{ max-width:260px }
+}
+@media (max-width:680px){
+  .cc-compteurs{ grid-template-columns:repeat(2,1fr) }
+  .cc-compteurs div{ padding:16px 12px 12px 0; border-bottom:1px solid var(--bord) }
+  .cc-compteurs div:nth-last-child(-n+2){ border-bottom:0 }
+  .cc-liste{ grid-template-columns:1fr }
+  .cc-labos{ grid-template-columns:repeat(2,1fr) }
+  .cc-t{ max-width:none } .cc-t--geant{ max-width:none }
+  .cc-txt{ max-width:none }
+  .cc-btn{ width:100%; justify-content:center }
+  .cc-rep{ padding:24px 18px }
+  .cc-rep svg{ max-width:250px }
+}
+@media (max-width:400px){
+  .cc-labos{ grid-template-columns:1fr }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   10 · MOUVEMENT RÉDUIT — tout se lit, plus rien ne bouge
+   ═══════════════════════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce){
+  .cc-bande__piste{ animation:none }
+  .cc-bande{ overflow-x:auto }
+  .cc-btn{ transition:none }
+  .cc-btn:hover{ transform:none }
+  [data-r]{ opacity:1 !important; transform:none !important; transition:none !important }
+}
+</style>
+</head>
+<body>
+
+<a class="cc-skip" href="#histoire">Aller au contenu</a>
+
+<header class="cc-barre">
+  <a class="cc-marque" href="#haut">
+    <svg class="cc-sceau" width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
+      <rect x="0" y="0" width="20" height="9" fill="#0050E6"/>
+      <rect x="0" y="11" width="20" height="9" fill="#F39A1B"/>
+    </svg>
+    <b>Intégral</b> <span>Pharma</span>
+  </a>
+  <nav class="cc-nav" aria-label="Navigation principale">
+    <a href="#histoire">Le groupe</a>
+    <a href="#reseau">Le réseau</a>
+    <a href="#metier">Le métier</a>
+    <a href="#valeurs">Nos valeurs</a>
+    <a href="#ecrire">Nous écrire</a>
+  </nav>
+  <button class="cc-burger" type="button" id="cc-burger" aria-expanded="false" aria-controls="cc-panneau" aria-label="Ouvrir le menu">
+    <i aria-hidden="true"></i>
+  </button>
+  <span class="cc-jauge" id="cc-jauge" aria-hidden="true"></span>
+</header>
+
+<div class="cc-panneau" id="cc-panneau">
+  <button class="cc-fermer" type="button" id="cc-fermer" aria-label="Fermer le menu">✕</button>
+  <a href="#histoire">Le groupe</a>
+  <a href="#reseau">Le réseau</a>
+  <a href="#metier">Le métier</a>
+  <a href="#valeurs">Nos valeurs</a>
+  <a href="#ecrire">Nous écrire</a>
+  <p class="cc-panneau__pied">Groupe de grossistes-répartiteurs<br>français indépendant</p>
+</div>
+
+<main id="haut">
+
+<!-- ══ OUVERTURE ═══════════════════════════════════════════════════════════ -->
+<section class="cc-hero est-vu" id="ouverture">
+  <div class="cc-hero__lum" aria-hidden="true"></div>
+  <div class="cc-hero__in">
+    <div>
+      <p class="cc-sur" data-r style="--i:0">Groupe de grossistes-répartiteurs français indépendant</p>
+      <h1 class="cc-t cc-t--geant" data-r style="--i:1">Neuf maisons.<br>Un seul <em>nom</em>.</h1>
+      <p class="cc-txt cc-txt--fort" data-r style="--i:2">Chacune livre sa région depuis des années, avec ses équipes et ses habitudes. Depuis 2006, elles avancent ensemble sous le nom d'Intégral Pharma — et votre commande part toujours de la plus proche de votre comptoir.</p>
+      <div class="cc-btns" data-r style="--i:3">
+        <a class="cc-btn" href="#reseau">Découvrir le réseau</a>
+        <a class="cc-btn cc-btn--vide" href="mailto:contact@integralpharma.fr">Nous écrire</a>
+      </div>
+    </div>
+
+    <!-- L'emblème : les deux bandes, l'une monte, l'autre descend. -->
+    <div class="cc-hero__emb" data-r style="--i:2" aria-hidden="true">
+      <svg viewBox="0 0 300 300">
+        <rect x="6" y="6" width="132" height="288" fill="#FFFFFF" stroke="#DCE2EE" stroke-width="2"/>
+        <rect x="162" y="6" width="132" height="288" fill="#EAF0FC" stroke="#C3D5F5" stroke-width="2"/>
+        <g stroke="#C3D5F5" stroke-width="5" stroke-linecap="square">
+          <path d="M26 46h74M26 68h92M26 90h60M26 152h92M26 174h74M26 240h60M26 262h92"/>
+        </g>
+        <path d="M118 268V118" stroke="#0050E6" stroke-width="5"/>
+        <path d="M104 132l14-16 14 16" fill="none" stroke="#0050E6" stroke-width="5" stroke-linecap="square"/>
+        <g fill="#FFFFFF" stroke="#0050E6" stroke-width="5">
+          <rect x="196" y="36" width="64" height="46"/>
+          <rect x="196" y="126" width="64" height="46"/>
+          <rect x="196" y="216" width="64" height="46"/>
+        </g>
+        <rect x="212" y="232" width="32" height="14" fill="#F39A1B"/>
+        <path d="M182 32v150" stroke="#F39A1B" stroke-width="5"/>
+        <path d="M168 168l14 16 14-16" fill="none" stroke="#F39A1B" stroke-width="5" stroke-linecap="square"/>
+        <rect x="138" y="0" width="24" height="300" fill="#F6F7FA"/>
+        <path d="M150 0v300" stroke="#DCE2EE" stroke-width="2"/>
+      </svg>
+    </div>
+  </div>
+
+  <div class="cc-bande" aria-label="Intégral Pharma en quelques mots">
+    <div class="cc-bande__piste">
+      <span>
+        <b>Indépendant<i aria-hidden="true"></i>Neuf implantations<i aria-hidden="true"></i>Un réseau national<i aria-hidden="true"></i>Plus de 2 000 officines livrées<i aria-hidden="true"></i>Confiance, Engagement, Respect<i aria-hidden="true"></i>Une alternative aux grossistes historiques<i aria-hidden="true"></i></b>
+      </span>
+      <span aria-hidden="true">
+        <b>Indépendant<i></i>Neuf implantations<i></i>Un réseau national<i></i>Plus de 2 000 officines livrées<i></i>Confiance, Engagement, Respect<i></i>Une alternative aux grossistes historiques<i></i></b>
+      </span>
+    </div>
+  </div>
+</section>
+
+<!-- ══ LA CROISÉE ══════════════════════════════════════════════════════════ -->
+<div class="cc-croix" id="cc-croix">
+
+  <span class="cc-rail" id="cc-rail" aria-hidden="true"></span>
+
+  <!-- ─── COLONNE DE LECTURE (sens naturel) ─────────────────────────────── -->
+  <div class="cc-lect" id="cc-lect">
+
+    <!-- 01 · Notre histoire -->
+    <section class="cc-sec" id="histoire" data-pas="Notre histoire">
+      <div class="cc-sec__in">
+        <p class="cc-num" data-r style="--i:0">01 / 12</p>
+        <p class="cc-sur" data-r style="--i:0">Notre histoire</p>
+        <h2 class="cc-t" data-r style="--i:1">Rendre la marge à l'officine <em>française</em>.</h2>
+        <p class="cc-txt cc-txt--fort" data-r style="--i:2">C'est la raison d'être d'Intégral Pharma depuis 2006 : redistribuer directement la marge aux officines françaises, en toute transparence, avec des prix nets visibles sur facture.</p>
+        <p class="cc-txt" data-r style="--i:3">Neuf implantations aujourd'hui, plus de deux mille officines livrées chaque jour, et la même idée qu'au premier jour — un groupe de répartiteurs indépendants qui a choisi de se mettre du côté du comptoir.</p>
+        <div class="cc-compteurs" data-r style="--i:4">
+          <div><b data-cible="2006">2006</b><i>année de création</i></div>
+          <div><b data-cible="9">9</b><i>implantations</i></div>
+          <div><b data-cible="2000" data-suffixe=" +">2&#8239;000 +</b><i>officines livrées</i></div>
+          <div><b data-cible="20">20</b><i>ans d'indépendance</i></div>
+        </div>
+      </div>
+      <div class="cc-rep" data-rep aria-hidden="true">
+        <div class="cc-rep__cadre">
+          <p class="cc-rep__chip"><b>01</b> Notre histoire</p>
+          <svg viewBox="0 0 300 240">
+            <rect x="24" y="18" width="252" height="52" fill="#0050E6"/>
+            <text x="150" y="52" text-anchor="middle" fill="#FFFFFF" font-family="ui-monospace,Menlo,monospace" font-size="19" font-weight="700" letter-spacing="2">LA MARGE</text>
+            <g stroke="#0050E6" stroke-width="5" stroke-linecap="square" fill="none">
+              <path d="M70 78v52M150 78v52M230 78v52"/>
+              <path d="M58 116l12 16 12-16M138 116l12 16 12-16M218 116l12 16 12-16"/>
+            </g>
+            <rect x="24" y="146" width="252" height="14" fill="#F39A1B"/>
+            <rect x="40" y="168" width="220" height="54" fill="#FFFFFF" stroke="#101623" stroke-width="4"/>
+            <g stroke="#C3D5F5" stroke-width="4"><path d="M58 188h84M58 204h140"/></g>
+            <text x="252" y="205" text-anchor="end" fill="#0050E6" font-family="ui-monospace,Menlo,monospace" font-size="17" font-weight="700">2006</text>
+          </svg>
+          <p class="cc-rep__leg">La marge redescend jusqu'au comptoir, sans détour.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 02 · Le réseau -->
+    <section class="cc-sec" id="reseau" data-pas="Le réseau">
+      <div class="cc-sec__in">
+        <p class="cc-num" data-r style="--i:0">02 / 12</p>
+        <p class="cc-sur" data-r style="--i:0">Le réseau</p>
+        <h2 class="cc-t" data-r style="--i:1">Neuf implantations. <em>Laquelle est la vôtre&nbsp;?</em></h2>
+        <p class="cc-txt cc-txt--fort" data-r style="--i:2">C'est la seule question qui compte vraiment. Celle qui prépare votre commande, qui vous livre chaque matin, et dont vous connaissez l'équipe par son prénom.</p>
+        <p class="cc-txt" data-r style="--i:3">Les huit autres sont là pour qu'elle ne soit jamais prise au dépourvu — de la Bretagne à la Méditerranée, le stock d'une maison est le stock de toutes.</p>
+        <ul class="cc-liste" data-r style="--i:4">
+          <li><u>01</u><b>Hyères Pharma</b><i>Hyères · 83 · siège du groupe</i></li>
+          <li><u>02</u><b>SR Pharma</b><i>Palaiseau · 91</i></li>
+          <li><u>03</u><b>Mistral Santé Pharma</b><i>Flassans-sur-Issole · 83</i></li>
+          <li><u>04</u><b>Sud Ouest Pharma</b><i>Montayral · 47</i></li>
+          <li><u>05</u><b>Comptoir Pharmaceutique du Rhône</b><i>Saint-Maurice-l'Exil · 38</i></li>
+          <li><u>06</u><b>Escale Pharma</b><i>Chilly-Mazarin · 91</i></li>
+          <li><u>07</u><b>Ouest Pharma Services</b><i>Saint-Étienne-de-Montluc · 44</i></li>
+          <li><u>08</u><b>Pharm'Occitanie Services</b><i>Villeneuve-lès-Béziers · 34</i></li>
+          <li><u>09</u><b>Sud Est Pharma</b><i>Le Cannet-des-Maures · 83</i></li>
+        </ul>
+        <p class="cc-mention" data-r style="--i:5">Et à l'Est, notre partenaire <strong>Pharmest</strong> (Metz, 57) prolonge le maillage.</p>
+      </div>
+      <div class="cc-rep" data-rep aria-hidden="true">
+        <div class="cc-rep__cadre">
+          <p class="cc-rep__chip"><b>02</b> Le réseau</p>
+          <svg viewBox="0 0 300 240">
+            <g fill="#C3D5F5">
+              <circle cx="42" cy="34" r="6"/><circle cx="96" cy="58" r="6"/><circle cx="42" cy="112" r="6"/>
+              <circle cx="112" cy="150" r="6"/><circle cx="58" cy="196" r="6"/><circle cx="146" cy="34" r="6"/>
+              <circle cx="152" cy="206" r="6"/><circle cx="106" cy="212" r="6"/>
+            </g>
+            <circle cx="238" cy="200" r="6" fill="#F39A1B"/>
+            <circle cx="200" cy="96" r="72" fill="#FFFFFF" stroke="#0050E6" stroke-width="6"/>
+            <circle cx="200" cy="96" r="20" fill="#0050E6"/>
+            <path d="M200 40v-14M200 166v14M144 96h-14M256 96h14" stroke="#0050E6" stroke-width="4" stroke-linecap="square"/>
+            <path d="M148 148L106 190" stroke="#0050E6" stroke-width="6" stroke-linecap="square"/>
+            <text x="200" y="102" text-anchor="middle" fill="#FFFFFF" font-family="ui-monospace,Menlo,monospace" font-size="15" font-weight="700">01</text>
+            <text x="238" y="228" text-anchor="middle" fill="#B96C00" font-family="ui-monospace,Menlo,monospace" font-size="12" font-weight="700">PARTENAIRE</text>
+          </svg>
+          <p class="cc-rep__leg">Neuf implantations et un partenaire — on regarde la vôtre de près, pas la carte de loin.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 03 · Le métier -->
+    <section class="cc-sec" id="metier" data-pas="Le métier">
+      <div class="cc-sec__in">
+        <p class="cc-num" data-r style="--i:0">03 / 12</p>
+        <p class="cc-sur" data-r style="--i:0">Le métier</p>
+        <h2 class="cc-t" data-r style="--i:1">Ce qui se passe entre votre commande et <em>votre comptoir</em>.</h2>
+        <p class="cc-txt cc-txt--fort" data-r style="--i:2">Quelques heures, quatre métiers, et une chaîne qui ne s'arrête jamais. Référencer, stocker, préparer, livrer : c'est invisible depuis l'officine, et c'est tout notre travail.</p>
+      </div>
+      <div class="cc-rep" data-rep aria-hidden="true">
+        <div class="cc-rep__cadre">
+          <p class="cc-rep__chip"><b>03</b> Le métier</p>
+          <svg viewBox="0 0 300 240">
+            <g fill="#FFFFFF" stroke="#0050E6" stroke-width="5">
+              <rect x="16" y="88" width="56" height="56"/>
+              <rect x="90" y="88" width="56" height="56"/>
+              <rect x="164" y="88" width="56" height="56"/>
+              <rect x="238" y="88" width="46" height="56"/>
+            </g>
+            <g stroke="#F39A1B" stroke-width="5" stroke-linecap="square">
+              <path d="M72 116h18M146 116h18M220 116h18"/>
+            </g>
+            <g fill="#0050E6" font-family="ui-monospace,Menlo,monospace" font-size="15" font-weight="700" text-anchor="middle">
+              <text x="44" y="122">01</text><text x="118" y="122">02</text><text x="192" y="122">03</text><text x="261" y="122">04</text>
+            </g>
+            <path d="M16 64h268" stroke="#C3D5F5" stroke-width="4"/>
+            <path d="M16 172h268" stroke="#C3D5F5" stroke-width="4"/>
+            <path d="M16 172v18M284 172v18" stroke="#C3D5F5" stroke-width="4"/>
+            <text x="150" y="46" text-anchor="middle" fill="#101623" font-family="ui-monospace,Menlo,monospace" font-size="14" font-weight="700" letter-spacing="2">VOTRE COMMANDE</text>
+            <text x="150" y="212" text-anchor="middle" fill="#101623" font-family="ui-monospace,Menlo,monospace" font-size="14" font-weight="700" letter-spacing="2">VOTRE COMPTOIR</text>
+          </svg>
+          <p class="cc-rep__leg">Quatre métiers, une chaîne qui ne s'arrête jamais.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 04 · Le référencement -->
+    <section class="cc-sec" data-pas="Le référencement">
+      <div class="cc-sec__in">
+        <p class="cc-num" data-r style="--i:0">04 / 12</p>
+        <p class="cc-sur" data-r style="--i:0">01 — Le référencement</p>
+        <h2 class="cc-t" data-r style="--i:1">Un catalogue pour <em>neuf maisons</em>.</h2>
+        <p class="cc-txt cc-txt--fort" data-r style="--i:2">Le groupe référence pour ses neuf maisons à la fois : un même catalogue, tenu à jour, disponible dans toutes les implantations.</p>
+        <p class="cc-txt" data-r style="--i:3">C'est ce qui permet à une maison de taille humaine de proposer la profondeur de gamme d'un réseau national.</p>
+      </div>
+      <div class="cc-rep" data-rep aria-hidden="true">
+        <div class="cc-rep__cadre">
+          <p class="cc-rep__chip"><b>04</b> Le référencement</p>
+          <svg viewBox="0 0 300 240">
+            <rect x="94" y="14" width="112" height="66" fill="#0050E6"/>
+            <g stroke="#FFFFFF" stroke-width="4"><path d="M112 38h52M112 54h76"/></g>
+            <path d="M150 84v22" stroke="#0050E6" stroke-width="5"/>
+            <path d="M28 106h244" stroke="#0050E6" stroke-width="5"/>
+            <g stroke="#0050E6" stroke-width="5" stroke-linecap="square">
+              <path d="M28 106v18M69 106v18M110 106v18M150 106v18M191 106v18M232 106v18M272 106v18"/>
+            </g>
+            <g fill="#FFFFFF" stroke="#0050E6" stroke-width="4">
+              <rect x="12" y="128" width="34" height="44"/><rect x="53" y="128" width="34" height="44"/>
+              <rect x="94" y="128" width="34" height="44"/><rect x="134" y="128" width="34" height="44"/>
+              <rect x="175" y="128" width="34" height="44"/><rect x="216" y="128" width="34" height="44"/>
+              <rect x="256" y="128" width="34" height="44"/>
+            </g>
+            <g fill="#FFFFFF" stroke="#F39A1B" stroke-width="4">
+              <rect x="53" y="182" width="34" height="44"/><rect x="216" y="182" width="34" height="44"/>
+            </g>
+            <path d="M70 172v10M233 172v10" stroke="#F39A1B" stroke-width="4"/>
+          </svg>
+          <p class="cc-rep__leg">Un même catalogue, tenu à jour, dans toutes les implantations.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 05 · La disponibilité -->
+    <section class="cc-sec" data-pas="La disponibilité">
+      <div class="cc-sec__in">
+        <p class="cc-num" data-r style="--i:0">05 / 12</p>
+        <p class="cc-sur" data-r style="--i:0">02 — La disponibilité</p>
+        <h2 class="cc-t" data-r style="--i:1">Quand le comptoir a besoin, <em>le réseau répond</em>.</h2>
+        <p class="cc-txt cc-txt--fort" data-r style="--i:2">Des stocks répartis sur neuf implantations, au plus près de votre officine.</p>
+        <p class="cc-txt" data-r style="--i:3">Et quand une référence manque quelque part, elle existe souvent ailleurs dans le réseau.</p>
+      </div>
+      <div class="cc-rep" data-rep aria-hidden="true">
+        <div class="cc-rep__cadre">
+          <p class="cc-rep__chip"><b>05</b> La disponibilité</p>
+          <svg viewBox="0 0 300 240">
+            <g fill="#FFFFFF" stroke="#0050E6" stroke-width="4">
+              <rect x="14" y="60" width="44" height="130"/><rect x="72" y="60" width="44" height="130"/>
+              <rect x="130" y="60" width="44" height="130"/><rect x="188" y="60" width="44" height="130"/>
+              <rect x="246" y="60" width="40" height="130"/>
+            </g>
+            <g fill="#C3D5F5">
+              <rect x="18" y="98" width="36" height="88"/><rect x="76" y="120" width="36" height="66"/>
+              <rect x="192" y="86" width="36" height="100"/><rect x="250" y="112" width="32" height="74"/>
+            </g>
+            <rect x="134" y="168" width="36" height="18" fill="#F39A1B"/>
+            <path d="M188 122h-14v42h-22" fill="none" stroke="#F39A1B" stroke-width="5" stroke-linecap="square"/>
+            <path d="M164 152l-12 12 12 12" fill="none" stroke="#F39A1B" stroke-width="5" stroke-linecap="square"/>
+            <path d="M14 42h272" stroke="#0050E6" stroke-width="5"/>
+            <path d="M36 42v18M94 42v18M152 42v18M210 42v18M266 42v18" stroke="#0050E6" stroke-width="4"/>
+            <text x="150" y="26" text-anchor="middle" fill="#101623" font-family="ui-monospace,Menlo,monospace" font-size="14" font-weight="700" letter-spacing="2">LE RÉSEAU</text>
+          </svg>
+          <p class="cc-rep__leg">Le stock d'une maison est le stock de toutes.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 06 · La préparation -->
+    <section class="cc-sec" data-pas="La préparation">
+      <div class="cc-sec__in">
+        <p class="cc-num" data-r style="--i:0">06 / 12</p>
+        <p class="cc-sur" data-r style="--i:0">03 — La préparation</p>
+        <h2 class="cc-t" data-r style="--i:1">Préparée <em>à côté de chez vous</em>.</h2>
+        <p class="cc-txt cc-txt--fort" data-r style="--i:2">Chaque commande est préparée dans l'implantation la plus proche de chez vous, par une équipe qui connaît votre officine et ses saisons.</p>
+      </div>
+      <div class="cc-rep" data-rep aria-hidden="true">
+        <div class="cc-rep__cadre">
+          <p class="cc-rep__chip"><b>06</b> La préparation</p>
+          <svg viewBox="0 0 300 240">
+            <path d="M46 92h208v122H46z" fill="#FFFFFF" stroke="#0050E6" stroke-width="5"/>
+            <path d="M46 92l24-34h160l24 34" fill="#EAF0FC" stroke="#0050E6" stroke-width="5" stroke-linejoin="round"/>
+            <path d="M150 58v156" stroke="#0050E6" stroke-width="5"/>
+            <g fill="#C3D5F5"><rect x="66" y="112" width="66" height="30"/><rect x="66" y="152" width="66" height="46"/>
+              <rect x="168" y="112" width="66" height="46"/></g>
+            <rect x="168" y="168" width="66" height="30" fill="#F39A1B"/>
+            <rect x="96" y="14" width="108" height="34" fill="#FFFFFF" stroke="#101623" stroke-width="4"/>
+            <g stroke="#101623" stroke-width="4"><path d="M112 26h50M112 38h74"/></g>
+            <path d="M150 48v10" stroke="#101623" stroke-width="4"/>
+          </svg>
+          <p class="cc-rep__leg">Une équipe qui connaît votre officine et ses saisons.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 07 · La livraison -->
+    <section class="cc-sec" data-pas="La livraison">
+      <div class="cc-sec__in">
+        <p class="cc-num" data-r style="--i:0">07 / 12</p>
+        <p class="cc-sur" data-r style="--i:0">04 — La livraison</p>
+        <h2 class="cc-t" data-r style="--i:1">La régularité d'un <em>service tenu</em>.</h2>
+        <p class="cc-txt cc-txt--fort" data-r style="--i:2">Tous les jours, les tournées partent vers les officines. La régularité d'un service tenu — c'est elle qui fait la confiance, pas les promesses.</p>
+        <p class="cc-txt" data-r style="--i:3">Et quand la vie de votre officine change — transfert, agrandissement, cession de parts — votre interlocuteur ajuste l'approvisionnement avec vous, sans à-coup au comptoir.</p>
+      </div>
+      <div class="cc-rep" data-rep aria-hidden="true">
+        <div class="cc-rep__cadre">
+          <p class="cc-rep__chip"><b>07</b> La livraison</p>
+          <svg viewBox="0 0 300 240">
+            <path d="M16 176h268" stroke="#0050E6" stroke-width="5"/>
+            <g stroke="#C3D5F5" stroke-width="4"><path d="M40 176v20M92 176v20M144 176v20M196 176v20M248 176v20"/></g>
+            <g fill="#FFFFFF" stroke="#0050E6" stroke-width="5">
+              <rect x="34" y="126" width="66" height="44"/>
+              <path d="M100 140h34l20 30h-54z"/>
+            </g>
+            <circle cx="62" cy="176" r="13" fill="#FFFFFF" stroke="#101623" stroke-width="5"/>
+            <circle cx="136" cy="176" r="13" fill="#FFFFFF" stroke="#101623" stroke-width="5"/>
+            <rect x="46" y="140" width="40" height="16" fill="#F39A1B"/>
+            <rect x="196" y="118" width="72" height="52" fill="#FFFFFF" stroke="#0050E6" stroke-width="4"/>
+            <path d="M196 118l36-24 36 24" fill="#EAF0FC" stroke="#0050E6" stroke-width="4" stroke-linejoin="round"/>
+            <rect x="222" y="140" width="20" height="30" fill="#0050E6"/>
+            <g stroke="#F39A1B" stroke-width="5" stroke-linecap="square">
+              <path d="M40 62h34M92 62h34M144 62h34M196 62h34M248 62h20"/>
+            </g>
+            <text x="150" y="42" text-anchor="middle" fill="#B96C00" font-family="ui-monospace,Menlo,monospace" font-size="13" font-weight="700" letter-spacing="2">TOUS LES JOURS</text>
+          </svg>
+          <p class="cc-rep__leg">Les tournées partent, chaque jour, vers les officines.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 08 · La centrale -->
+    <section class="cc-sec" data-pas="La centrale">
+      <div class="cc-sec__in">
+        <p class="cc-num" data-r style="--i:0">08 / 12</p>
+        <p class="cc-sur" data-r style="--i:0">La centrale</p>
+        <h2 class="cc-t" data-r style="--i:1">Et pour tout ce qui n'est pas <em>le médicament</em>.</h2>
+        <p class="cc-txt cc-txt--fort" data-r style="--i:2">Notre centrale de parapharmacie référence pour l'officine plus de 14 000 produits et plus de 480 marques.</p>
+        <p class="cc-txt" data-r style="--i:3">C'est une structure à part, avec son propre fonctionnement — sa commande, sa livraison — et la même exigence que le reste du groupe.</p>
+        <div class="cc-compteurs cc-compteurs--duo" data-r style="--i:4">
+          <div><b data-cible="14000" data-suffixe=" +">14&#8239;000 +</b><i>références</i></div>
+          <div><b data-cible="480" data-suffixe=" +">480 +</b><i>marques</i></div>
+        </div>
+      </div>
+      <div class="cc-rep" data-rep aria-hidden="true">
+        <div class="cc-rep__cadre">
+          <p class="cc-rep__chip"><b>08</b> La centrale</p>
+          <svg viewBox="0 0 300 240">
+            <g fill="#FFFFFF" stroke="#C3D5F5" stroke-width="4">
+              <rect x="14" y="40" width="46" height="46"/><rect x="14" y="100" width="46" height="46"/>
+              <rect x="14" y="160" width="46" height="46"/>
+            </g>
+            <text x="37" y="30" text-anchor="middle" fill="#8B95A9" font-family="ui-monospace,Menlo,monospace" font-size="11" font-weight="700">GROUPE</text>
+            <path d="M92 24v198" stroke="#DCE2EE" stroke-width="4" stroke-dasharray="8 10"/>
+            <rect x="120" y="40" width="166" height="166" fill="#FFFFFF" stroke="#0050E6" stroke-width="6"/>
+            <text x="203" y="30" text-anchor="middle" fill="#0050E6" font-family="ui-monospace,Menlo,monospace" font-size="11" font-weight="700" letter-spacing="1">STRUCTURE À PART</text>
+            <g fill="#C3D5F5">
+              <rect x="140" y="62" width="58" height="28"/><rect x="208" y="62" width="58" height="28"/>
+              <rect x="140" y="102" width="58" height="28"/>
+            </g>
+            <rect x="208" y="102" width="58" height="28" fill="#F39A1B"/>
+            <g stroke="#0050E6" stroke-width="5" stroke-linecap="square" fill="none">
+              <path d="M138 152h24M138 182h24"/>
+              <path d="M156 142l10 10-10 10M156 172l10 10-10 10"/>
+            </g>
+            <text x="234" y="157" text-anchor="middle" fill="#101623" font-family="ui-monospace,Menlo,monospace" font-size="12" font-weight="700">SA COMMANDE</text>
+            <text x="234" y="187" text-anchor="middle" fill="#101623" font-family="ui-monospace,Menlo,monospace" font-size="12" font-weight="700">SA LIVRAISON</text>
+          </svg>
+          <p class="cc-rep__leg">Une structure à part, avec son propre fonctionnement.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 09 · Vos factures -->
+    <section class="cc-sec" data-pas="Vos factures">
+      <div class="cc-sec__in">
+        <p class="cc-num" data-r style="--i:0">09 / 12</p>
+        <p class="cc-sur" data-r style="--i:0">Vos factures</p>
+        <h2 class="cc-t" data-r style="--i:1">Elles arrivent déjà là où <em>vous les gérez</em>.</h2>
+        <p class="cc-txt cc-txt--fort" data-r style="--i:2">Nous sommes connectés à Digipharmacie : vos factures Intégral s'y retrouvent automatiquement, avec celles de vos autres fournisseurs.</p>
+        <p class="cc-txt" data-r style="--i:3">Rien à saisir, rien à classer, rien à réclamer.</p>
+      </div>
+      <div class="cc-rep" data-rep aria-hidden="true">
+        <div class="cc-rep__cadre">
+          <p class="cc-rep__chip"><b>09</b> Vos factures</p>
+          <svg viewBox="0 0 300 240">
+            <g fill="#FFFFFF" stroke="#C3D5F5" stroke-width="4">
+              <rect x="18" y="26" width="62" height="42"/><rect x="18" y="82" width="62" height="42"/>
+            </g>
+            <rect x="18" y="138" width="62" height="42" fill="#FFFFFF" stroke="#0050E6" stroke-width="5"/>
+            <g stroke="#0050E6" stroke-width="4"><path d="M32 152h30M32 164h20"/></g>
+            <text x="49" y="200" text-anchor="middle" fill="#0050E6" font-family="ui-monospace,Menlo,monospace" font-size="11" font-weight="700">INTÉGRAL</text>
+            <g stroke="#F39A1B" stroke-width="5" stroke-linecap="square" fill="none">
+              <path d="M88 47h32M88 103h32M88 159h32"/>
+              <path d="M112 35l12 12-12 12M112 91l12 12-12 12M112 147l12 12-12 12"/>
+            </g>
+            <rect x="146" y="26" width="140" height="188" fill="#FFFFFF" stroke="#101623" stroke-width="5"/>
+            <rect x="146" y="26" width="140" height="32" fill="#101623"/>
+            <g fill="#C3D5F5">
+              <rect x="164" y="76" width="104" height="22"/><rect x="164" y="108" width="104" height="22"/>
+              <rect x="164" y="140" width="104" height="22"/>
+            </g>
+            <rect x="164" y="172" width="104" height="22" fill="#0050E6"/>
+            <text x="216" y="48" text-anchor="middle" fill="#FFFFFF" font-family="ui-monospace,Menlo,monospace" font-size="12" font-weight="700" letter-spacing="1">VOTRE OFFICINE</text>
+          </svg>
+          <p class="cc-rep__leg">Rien à saisir, rien à classer, rien à réclamer.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 10 · Nos partenaires -->
+    <section class="cc-sec" data-pas="Nos partenaires">
+      <div class="cc-sec__in">
+        <p class="cc-num" data-r style="--i:0">10 / 12</p>
+        <p class="cc-sur" data-r style="--i:0">Nos partenaires</p>
+        <h2 class="cc-t" data-r style="--i:1">Les laboratoires qui nous <em>font confiance</em>.</h2>
+        <div class="cc-labos" data-r style="--i:2">
+          <span>EG Labo</span><span>Zentiva</span><span>Zydus</span>
+          <span>Viatris</span><span>ITP</span><span>Santestat</span>
+        </div>
+      </div>
+      <div class="cc-rep" data-rep aria-hidden="true">
+        <div class="cc-rep__cadre">
+          <p class="cc-rep__chip"><b>10</b> Nos partenaires</p>
+          <svg viewBox="0 0 300 240">
+            <g fill="#FFFFFF" stroke="#0050E6" stroke-width="4">
+              <rect x="18" y="34" width="80" height="56"/><rect x="110" y="34" width="80" height="56"/><rect x="202" y="34" width="80" height="56"/>
+              <rect x="18" y="106" width="80" height="56"/><rect x="110" y="106" width="80" height="56"/><rect x="202" y="106" width="80" height="56"/>
+            </g>
+            <g fill="#C3D5F5">
+              <rect x="34" y="56" width="48" height="12"/><rect x="126" y="56" width="48" height="12"/><rect x="218" y="56" width="48" height="12"/>
+              <rect x="34" y="128" width="48" height="12"/><rect x="126" y="128" width="48" height="12"/><rect x="218" y="128" width="48" height="12"/>
+            </g>
+            <path d="M18 190h264" stroke="#F39A1B" stroke-width="5"/>
+            <text x="150" y="220" text-anchor="middle" fill="#101623" font-family="ui-monospace,Menlo,monospace" font-size="13" font-weight="700" letter-spacing="2">SIX LABORATOIRES</text>
+          </svg>
+          <p class="cc-rep__leg">Six laboratoires référencés pour l'ensemble du réseau.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 11 · Nous rejoindre -->
+    <section class="cc-sec" data-pas="Nous rejoindre">
+      <div class="cc-sec__in">
+        <p class="cc-num" data-r style="--i:0">11 / 12</p>
+        <p class="cc-sur" data-r style="--i:0">Nous rejoindre</p>
+        <h2 class="cc-t" data-r style="--i:1">Neuf implantations <em>qui embauchent</em>.</h2>
+        <p class="cc-txt cc-txt--fort" data-r style="--i:2">Préparateur-chauffeur, technicien approvisionnement, commercial, pharmacien responsable : les métiers de la répartition s'apprennent chez nous.</p>
+        <div class="cc-villes" data-r style="--i:3">
+          <span>Hyères · 83</span><span>Villeneuve-lès-Béziers · 34</span><span>Montayral · 47</span><span>Saint-Maurice-l'Exil · 38</span>
+        </div>
+        <div class="cc-btns" data-r style="--i:4">
+          <a class="cc-btn" href="https://www.integralpharma.fr/" target="_blank" rel="noopener">Voir les offres</a>
+        </div>
+      </div>
+      <div class="cc-rep" data-rep aria-hidden="true">
+        <div class="cc-rep__cadre">
+          <p class="cc-rep__chip"><b>11</b> Nous rejoindre</p>
+          <svg viewBox="0 0 300 240">
+            <text x="150" y="28" text-anchor="middle" fill="#101623" font-family="ui-monospace,Menlo,monospace" font-size="13" font-weight="700" letter-spacing="2">QUATRE VILLES</text>
+            <g fill="#FFFFFF" stroke="#0050E6" stroke-width="5">
+              <rect x="24" y="46" width="100" height="70"/><rect x="176" y="46" width="100" height="70"/>
+              <rect x="24" y="150" width="100" height="70"/><rect x="176" y="150" width="100" height="70"/>
+            </g>
+            <g fill="#C3D5F5">
+              <rect x="42" y="66" width="64" height="10"/><rect x="194" y="66" width="64" height="10"/>
+              <rect x="42" y="170" width="64" height="10"/><rect x="194" y="170" width="64" height="10"/>
+            </g>
+            <g fill="#F39A1B">
+              <rect x="42" y="86" width="26" height="12"/><rect x="194" y="86" width="26" height="12"/>
+              <rect x="42" y="190" width="26" height="12"/><rect x="194" y="190" width="26" height="12"/>
+            </g>
+            <!-- le « + » vit dans la gouttière entre les quatre cadres : plus rien ne se croise -->
+            <path d="M150 118v30M135 133h30" stroke="#0050E6" stroke-width="7" stroke-linecap="square"/>
+          </svg>
+          <p class="cc-rep__leg">Quatre villes qui recrutent aujourd'hui.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 12 · Nos valeurs -->
+    <section class="cc-sec" id="valeurs" data-pas="Nos valeurs">
+      <div class="cc-sec__in">
+        <p class="cc-num" data-r style="--i:0">12 / 12</p>
+        <p class="cc-sur" data-r style="--i:0">Nos valeurs</p>
+        <h2 class="cc-t" data-r style="--i:1">Trois mots qui se vérifient <em>au téléphone</em>.</h2>
+        <div class="cc-valeurs">
+          <div data-r style="--i:2"><h3><span>Confiance</span></h3><p>La personne qui décroche connaît votre officine, vos saisons et vos habitudes.</p></div>
+          <div data-r style="--i:3"><h3><span>Engagement</span></h3><p>C'est la même d'une année sur l'autre. Dans ce métier, c'est devenu rare.</p></div>
+          <div data-r style="--i:4"><h3><span>Respect</span></h3><p>Elle ne vous vendra pas ce dont vous n'avez pas besoin — parce qu'elle vous reverra le mois suivant, et l'année d'après.</p></div>
+        </div>
+      </div>
+      <div class="cc-rep" data-rep aria-hidden="true">
+        <div class="cc-rep__cadre">
+          <p class="cc-rep__chip"><b>12</b> Nos valeurs</p>
+          <svg viewBox="0 0 300 240">
+            <circle cx="150" cy="122" r="94" fill="none" stroke="#C3D5F5" stroke-width="3"/>
+            <circle cx="150" cy="122" r="72" fill="none" stroke="#C3D5F5" stroke-width="3"/>
+            <circle cx="150" cy="122" r="50" fill="#FFFFFF" stroke="#0050E6" stroke-width="6"/>
+            <path d="M132 102c0 26 12 38 36 40l6-14-16-10-8 8c-8-4-12-8-16-16l8-8-10-16z" fill="#0050E6"/>
+            <circle cx="150" cy="28" r="9" fill="#0050E6"/>
+            <circle cx="231" cy="169" r="9" fill="#0050E6"/>
+            <circle cx="69" cy="169" r="9" fill="#F39A1B"/>
+            <text x="150" y="16" text-anchor="middle" fill="#101623" font-family="ui-monospace,Menlo,monospace" font-size="12" font-weight="700">CONFIANCE</text>
+            <text x="248" y="200" text-anchor="middle" fill="#101623" font-family="ui-monospace,Menlo,monospace" font-size="12" font-weight="700">ENGAGEMENT</text>
+            <text x="58" y="200" text-anchor="middle" fill="#101623" font-family="ui-monospace,Menlo,monospace" font-size="12" font-weight="700">RESPECT</text>
+          </svg>
+          <p class="cc-rep__leg">Trois mots qui se vérifient au téléphone.</p>
+        </div>
+      </div>
+    </section>
+
+  </div><!-- /.cc-lect -->
+
+  <!-- ─── COLONNE À CONTRE-SENS (fenêtre collée + piste retournée) ───────── -->
+  <aside class="cc-contre" id="cc-contre" aria-hidden="true">
+    <div class="cc-contre__lum"></div>
+    <div class="cc-hublot" id="cc-hublot">
+      <div class="cc-piste" id="cc-piste"></div>
+    </div>
+  </aside>
+
+</div><!-- /.cc-croix -->
+
+<!-- ══ SORTIE ══════════════════════════════════════════════════════════════ -->
+<footer class="cc-sortie est-vu" id="ecrire">
+  <div class="cc-sortie__lum" aria-hidden="true"></div>
+  <div class="cc-sortie__in">
+    <p class="cc-sur" data-r style="--i:0">Nous écrire</p>
+    <h2 class="cc-t cc-t--geant" data-r style="--i:1">Posez-nous la question qui vous <em>intéresse</em>.</h2>
+    <p class="cc-txt cc-txt--fort" data-r style="--i:2">Sur nos conditions, sur nos délais, sur la façon dont nous travaillons. Vous aurez une réponse claire, et le nom de l'implantation qui livre votre secteur.</p>
+    <div class="cc-btns" data-r style="--i:3">
+      <a class="cc-btn" href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a>
+    </div>
+    <div class="cc-pied">
+      <span>Intégral Pharma — 758 chemin de la Source, ZI Saint-Martin, 83400 Hyères</span>
+      <a href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a>
+      <a href="#haut">Mentions légales</a>
+      <span class="cc-pied__chiffres">9 implantations · plus de 2 000 officines livrées · indépendant depuis 2006</span>
+    </div>
+  </div>
+</footer>
+
+<p class="cc-signature">Site&nbsp;17 · <em>Contre-Courant</em></p>
+
+</main>
+
+<script>
+(function(){
+  var doc = document.documentElement;
+  var reduit = false;
+  try { reduit = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch(e){}
+
+  function desarmer(){ doc.className = doc.className.replace(' js-mvt',''); }
+
+  try{
+
+  /* ─────────────────────────────────────────────────────────────────────
+     A · MENU DU TÉLÉPHONE — panneau plein, fermé au clic, à Échap, au lien
+     ───────────────────────────────────────────────────────────────────── */
+  var burger  = document.getElementById('cc-burger');
+  var fermer  = document.getElementById('cc-fermer');
+  var panneau = document.getElementById('cc-panneau');
+
+  function menu(ouvert){
+    if (!panneau || !burger) return;
+    panneau.classList.toggle('ouvert', ouvert);
+    burger.setAttribute('aria-expanded', ouvert ? 'true' : 'false');
+    document.body.style.overflow = ouvert ? 'hidden' : '';
+  }
+  if (burger) burger.addEventListener('click', function(){ menu(!panneau.classList.contains('ouvert')); });
+  if (fermer) fermer.addEventListener('click', function(){ menu(false); });
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape') menu(false); });
+
+  Array.prototype.forEach.call(document.querySelectorAll('a[href^="#"]'), function(a){
+    a.addEventListener('click', function(e){
+      var id = a.getAttribute('href');
+      if (!id || id === '#') return;
+      var cible = document.querySelector(id);
+      if (!cible) return;
+      e.preventDefault();
+      menu(false);
+      cible.scrollIntoView({ behavior: reduit ? 'auto' : 'smooth', block: 'start' });
+    });
+  });
+
+  /* ─────────────────────────────────────────────────────────────────────
+     B · LA CROISÉE
+     Les repères vivent DANS leur section (ordre de lecture correct, page
+     lisible sans script). Au-dessus de 900 px on les déménage dans la piste,
+     en dessous on les remet chez eux. Une seule table d'origines.
+     ───────────────────────────────────────────────────────────────────── */
+  var croix    = document.getElementById('cc-croix');
+  var lect     = document.getElementById('cc-lect');
+  var piste    = document.getElementById('cc-piste');
+  var rail     = document.getElementById('cc-rail');
+  var jauge    = document.getElementById('cc-jauge');
+  var sections = Array.prototype.slice.call(lect.querySelectorAll('.cc-sec'));
+
+  var reperes = sections.map(function(sec){
+    return { sec: sec, fig: sec.querySelector('[data-rep]') };
+  }).filter(function(o){ return !!o.fig; });
+
+  var N = reperes.length;
+  var modeCroise = null;              // null = jamais posé
+  var centres = null, hautRep = 0;
+
+  function poserMode(croise){
+    if (croise === modeCroise) return;
+    modeCroise = croise;
+    if (croise){
+      /* ordre naturel dans le DOM ; `column-reverse` les retourne à l'écran */
+      for (var i=0;i<N;i++) piste.appendChild(reperes[i].fig);
+      document.body.classList.add('cc-actif');
+    } else {
+      for (var j=0;j<N;j++) reperes[j].sec.appendChild(reperes[j].fig);
+      document.body.classList.remove('cc-actif');
+      piste.style.transform = '';
+    }
+    centres = null;
+  }
+
+  function mesurer(){
+    var y = window.pageYOffset || doc.scrollTop || 0;
+    centres = [];
+    for (var i=0;i<N;i++){
+      var r = reperes[i].sec.getBoundingClientRect();
+      centres.push(r.top + y + r.height/2);
+    }
+    hautRep = (modeCroise && piste.firstElementChild)
+      ? piste.firstElementChild.getBoundingClientRect().height
+      : 0;
+  }
+
+  function lisse(t){ return t*t*(3-2*t); }   // courbe en S : l'alignement tient au centre
+
+  var tic = false;
+
+  function placer(){
+    tic = false;
+    try{
+      var y   = window.pageYOffset || doc.scrollTop || 0;
+      var vue = window.innerHeight || doc.clientHeight;
+
+      /* Jauge de lecture */
+      if (jauge){
+        var tot = Math.max(1, doc.scrollHeight - vue);
+        jauge.style.setProperty('--avance', Math.min(1, Math.max(0, y/tot)).toFixed(4));
+      }
+
+      /* Révélation : décision prise sur la POSITION RÉELLE relue à chaque image,
+         jamais sur une notification unique. Une section vue ne se re-masque JAMAIS. */
+      var ligne = vue * 0.88;
+      for (var k=0;k<sections.length;k++){
+        if (sections[k].getBoundingClientRect().top <= ligne) sections[k].classList.add('est-vu');
+      }
+      if (vue + y >= doc.scrollHeight - 4){
+        for (var z=0;z<sections.length;z++) sections[z].classList.add('est-vu');
+      }
+
+      if (!modeCroise) return;
+      if (!centres || centres.length !== N || !hautRep) mesurer();
+      if (!hautRep) return;
+
+      /* Point de mire : le centre de la fenêtre de lecture (sous la barre). */
+      var barre = vue - hautRep;                 // = hauteur de la barre fixe
+      var mire  = y + barre + hautRep/2;
+
+      var idx;
+      if (mire <= centres[0])        idx = 0;
+      else if (mire >= centres[N-1]) idx = N-1;
+      else {
+        idx = N-1;
+        for (var i=0;i<N-1;i++){
+          if (mire >= centres[i] && mire <= centres[i+1]){
+            var f = (mire - centres[i]) / Math.max(1,(centres[i+1]-centres[i]));
+            idx = i + lisse(f);
+            break;
+          }
+        }
+      }
+
+      /* CONTRE-SENS.
+         Le repère i occupe la position visuelle (N-1-i) dans la piste retournée.
+         translateY = -(N-1-idx) x H : quand idx monte, translateY monte,
+         donc la piste DESCEND pendant que la lecture monte. */
+      var ty = -(N - 1 - idx) * hautRep;
+      piste.style.transform = 'translate3d(0,' + ty.toFixed(2) + 'px,0)';
+
+      /* Le rail : ses deux séries de traits partent en sens opposés. */
+      if (rail) croix.style.setProperty('--tic', (y * 0.34).toFixed(1));
+
+      /* Repère courant — lisible depuis la console pour le contrôle. */
+      croix.setAttribute('data-repere-actif', String(Math.round(idx)));
+    } catch(err){
+      desarmer();
+      document.body.classList.remove('cc-actif');
+    }
+  }
+
+  function auDefilement(){ if (!tic){ tic = true; window.requestAnimationFrame(placer); } }
+
+  /* ─────────────────────────────────────────────────────────────────────
+     C · LES COMPTEURS — jamais de séparateur de milliers sur une année
+     ───────────────────────────────────────────────────────────────────── */
+  function ecrire(n, cible, suffixe){
+    var t;
+    if (cible >= 1900 && cible <= 2100 && !suffixe) t = String(n);     // 2006, pas « 2 006 »
+    else t = String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    return t + (suffixe || '');
+  }
+  function lancerCompteurs(racine){
+    Array.prototype.forEach.call(racine.querySelectorAll('b[data-cible]'), function(el){
+      if (el.getAttribute('data-fait')) return;
+      el.setAttribute('data-fait','1');
+      var cible   = parseInt(el.getAttribute('data-cible'), 10);
+      var suffixe = el.getAttribute('data-suffixe') || '';
+      if (reduit || !isFinite(cible)) { el.textContent = ecrire(cible, cible, suffixe); return; }
+      var depart = (cible >= 1900 && cible <= 2100 && !suffixe) ? cible - 26 : 0;
+      var t0 = 0, duree = 1100;
+      function pas(ts){
+        if (!t0) t0 = ts;
+        var p = Math.min(1, (ts - t0)/duree);
+        var e = 1 - Math.pow(1-p, 3);
+        el.textContent = ecrire(Math.round(depart + (cible-depart)*e), cible, suffixe);
+        if (p < 1) requestAnimationFrame(pas);
+      }
+      requestAnimationFrame(pas);
+    });
+  }
+  var secCompteurs = sections.filter(function(s){ return s.querySelector('b[data-cible]'); });
+  function veillerCompteurs(){
+    var vue = window.innerHeight || 0;
+    for (var i=0;i<secCompteurs.length;i++){
+      var r = secCompteurs[i].getBoundingClientRect();
+      if (r.top < vue * 0.9 && r.bottom > 0) lancerCompteurs(secCompteurs[i]);
+    }
+  }
+
+  var ticC = false;
+  function auDefilement2(){
+    auDefilement();
+    if (!ticC){ ticC = true; requestAnimationFrame(function(){ ticC = false; veillerCompteurs(); }); }
+  }
+
+  function ajuster(){
+    /* Mouvement réduit : la mécanique de contre-sens est démontée, pas seulement
+       ralentie. On retombe sur la colonne unique, la même que sous 900 px. */
+    poserMode(window.innerWidth >= 900 && !reduit);
+    mesurer();
+    placer();
+  }
+
+  window.addEventListener('scroll', auDefilement2, {passive:true});
+  window.addEventListener('resize', ajuster, {passive:true});
+  window.addEventListener('orientationchange', ajuster, {passive:true});
+  window.addEventListener('load', function(){ ajuster(); veillerCompteurs(); });
+
+  ajuster();
+  veillerCompteurs();
+  if (sections[0]) sections[0].classList.add('est-vu');
+
+  } catch(e){
+    desarmer();
+    document.body.classList.remove('cc-actif');
+  }
+})();
+</script>
+
+</body>
+</html>

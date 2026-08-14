@@ -1,0 +1,1375 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cadence — Intégral Pharma</title>
+<meta name="da-nom" content="Cadence">
+<meta name="description" content="Site 13 pour Intégral Pharma : la page descend, se fige sur une section, joue sa séquence au rythme du défilement, puis repart.">
+
+<!--
+  SITE 13 · CADENCE
+  ─────────────────────────────────────────────────────────────────────────────
+  ARCHITECTURE (imposée) : la section figée qui s'anime.
+  Trois sections sur dix se figent — le réseau (9 étapes), le métier (4 étapes),
+  les valeurs (3 étapes). Ce sont les seules dont le contenu est une SUITE.
+  Les sept autres défilent normalement : sans ça, la page devient un tunnel.
+
+  LA COURSE N'EST JAMAIS DEVINÉE. Le JS compte les étapes réellement présentes
+  dans le DOM et pose --n ; le CSS calcule hauteur = 1 écran + --n × --pas.
+  Une étape ajoutée ou retirée rallonge ou raccourcit la piste toute seule.
+
+  SORTIE PROPRE : la progression se mesure sur la course réelle
+  (hauteur de piste − hauteur de scène collée), en unités svh donc stables
+  quand la barre d'adresse du téléphone se replie. Aucun saut en sortie.
+
+  SANS SCRIPT : la classe .js-scene n'est jamais posée, aucune section ne se
+  fige, toutes les étapes s'empilent et se lisent d'affilée.
+  MOUVEMENT RÉDUIT : idem, tout à plat.
+
+  Zéro requête réseau · un seul fichier · aucun flou, aucun filtre de fond,
+  aucun dégradé découpé dans les lettres, aucune vidéo.
+-->
+
+<script>
+/* Armement AVANT le premier rendu. Sans cette classe, la page est la version à plat,
+   entièrement lisible. Le chien de garde la retire si le script principal n'a pas
+   confirmé son démarrage — une page figée sans moteur serait un piège. */
+(function () {
+  var d = document.documentElement;
+  try {
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      d.className += ' js-scene';
+    }
+    setTimeout(function () {
+      if (!d.hasAttribute('data-pret')) {
+        d.className = d.className.replace(' js-scene', '');
+      }
+    }, 2500);
+  } catch (e) {
+    d.className = d.className.replace(' js-scene', '');
+  }
+})();
+</script>
+
+<style>
+/* ═══════════════════════════════════════════════════════════════════════════
+   1 · SOCLE
+   ═══════════════════════════════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box }
+
+:root{
+  --bleu:#0050E6;
+  --bleu-nuit:#002E86;
+  --bleu-vif:#2C79FF;
+  --bleu-pale:#E4EDFE;
+  --bleu-brume:#F0F5FE;
+  --orange:#F39A1B;
+  --orange-fonce:#B96D00;
+  --encre:#101623;
+  --gris:#525F79;
+  --gris-clair:#8592AC;
+  --papier:#EFF3FA;
+  --blanc:#FFFFFF;
+  --bord:#D8E1F0;
+  --bord-fort:#B9C8E2;
+
+  --barre:64px;
+  --marge:clamp(20px,5vw,90px);
+  --pt:.82rem;                        /* 13,1 px — jamais moins */
+
+  --sans:ui-sans-serif,-apple-system,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  --sortie:cubic-bezier(.22,.75,.24,1);
+
+  --ombre-basse:0 1px 2px rgba(16,22,35,.05), 0 6px 18px rgba(16,22,35,.05);
+  --ombre-haute:0 2px 4px rgba(16,22,35,.06), 0 18px 48px rgba(16,22,35,.10);
+}
+
+html{
+  -webkit-text-size-adjust:100%;
+  scroll-padding-top:calc(var(--barre) + 14px);
+  scroll-behavior:smooth;
+}
+
+body{
+  margin:0;
+  background:var(--papier);
+  color:var(--encre);
+  font:16px/1.6 var(--sans);
+  overflow-x:hidden;                 /* filet : rien ne doit sortir, ceci ne fait que le garantir */
+}
+
+a{ color:inherit }
+img,svg{ max-width:100%; display:block }
+h1,h2,h3,p,ul{ margin:0 }
+ul{ list-style:none; padding:0 }
+button{ font:inherit; color:inherit }
+
+:focus-visible{ outline:3px solid var(--orange); outline-offset:3px; border-radius:2px }
+
+.cd-saut{
+  position:absolute; left:-9999px; top:0; z-index:300;
+  background:var(--bleu); color:#fff; padding:14px 22px; font-weight:700; text-decoration:none;
+}
+.cd-saut:focus{ left:0 }
+
+.visuellement-cache{
+  position:absolute; width:1px; height:1px; margin:-1px; padding:0;
+  overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   2 · LA BARRE ET LE MENU
+   ═══════════════════════════════════════════════════════════════════════════ */
+.cd-barre{
+  position:fixed; inset:0 0 auto 0; z-index:120; height:var(--barre);
+  background:var(--blanc);
+  border-bottom:1px solid var(--bord);
+  display:flex; align-items:center; gap:16px;
+  padding:0 clamp(14px,3vw,30px);
+}
+.cd-marque{
+  display:flex; align-items:center; gap:11px; text-decoration:none;
+  min-height:44px; white-space:nowrap;
+  font:800 clamp(.98rem,1.5vw,1.08rem)/1 var(--sans); letter-spacing:-.025em;
+}
+.cd-marque svg{ width:22px; height:22px; flex:0 0 auto }
+.cd-marque span{ font-weight:500; color:var(--gris) }
+
+.cd-nav{ margin-left:auto; display:flex; align-items:center; gap:2px }
+.cd-nav a{
+  display:inline-flex; align-items:center; min-height:44px; padding:0 13px;
+  text-decoration:none; font-size:.95rem; font-weight:600; color:var(--encre);
+  border-radius:8px;
+}
+.cd-nav a:hover{ background:var(--bleu-brume); color:var(--bleu) }
+.cd-nav a.cd-nav__fort{ background:var(--bleu); color:#fff; margin-left:10px; padding:0 18px }
+.cd-nav a.cd-nav__fort:hover{ background:var(--bleu-nuit); color:#fff }
+
+/* Jauge d'avancement : le fil rouge de la direction, posé sous la barre. */
+.cd-jauge{
+  position:absolute; left:0; bottom:-1px; height:2px; width:100%;
+  transform:scaleX(var(--avancee,0)); transform-origin:left;
+  background:linear-gradient(90deg,var(--bleu),var(--orange));
+}
+html:not(.js-scene) .cd-jauge{ display:none }
+
+.cd-burger{
+  margin-left:auto; width:46px; height:46px; display:none; place-items:center;
+  background:var(--blanc); border:1px solid var(--bord); border-radius:10px; cursor:pointer; padding:0;
+}
+.cd-burger i{ display:block; width:20px; height:2px; background:var(--encre); position:relative }
+.cd-burger i::before,.cd-burger i::after{
+  content:""; position:absolute; left:0; width:20px; height:2px; background:var(--encre);
+}
+.cd-burger i::before{ top:-6px } .cd-burger i::after{ top:6px }
+
+/* Panneau mobile : fond PLEIN, aucun texte ne défile au travers. */
+.cd-panneau{
+  position:fixed; inset:0; z-index:130; background:var(--papier);
+  display:none; flex-direction:column; padding:calc(var(--barre) + 18px) 22px 30px;
+}
+.cd-panneau.ouvert{ display:flex }
+.cd-panneau a{
+  display:flex; align-items:center; min-height:58px; text-decoration:none;
+  font:800 clamp(1.5rem,7vw,2.1rem)/1.1 var(--sans); letter-spacing:-.03em;
+  border-bottom:1px solid var(--bord);
+}
+.cd-panneau a:last-of-type{ color:var(--bleu) }
+.cd-fermer{
+  position:absolute; top:9px; right:14px; width:46px; height:46px;
+  background:var(--blanc); border:1px solid var(--bord); border-radius:10px; cursor:pointer;
+  font:400 1.45rem/1 var(--sans);
+}
+body.bloque{ overflow:hidden }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   3 · SECTIONS ORDINAIRES — celles qui défilent
+   ═══════════════════════════════════════════════════════════════════════════ */
+.cd-s{
+  position:relative;
+  padding:clamp(72px,11vh,132px) var(--marge);
+  border-top:1px solid var(--bord);
+}
+.cd-s:first-of-type{ border-top:0 }
+.cd-in{ position:relative; z-index:2; width:100%; max-width:1200px; margin:0 auto }
+
+/* La lumière : elle vient toujours d'un angle. Un aplat clair sans source est mort. */
+.cd-lum{ position:absolute; inset:0; z-index:0; pointer-events:none;
+  background:
+    radial-gradient(1100px 640px at 8% -14%, #FFFFFF 0%, rgba(255,255,255,0) 62%),
+    radial-gradient(780px 520px at 96% 108%, rgba(0,80,230,.07) 0%, rgba(0,80,230,0) 66%);
+}
+.cd-lum--droite{
+  background:
+    radial-gradient(1000px 620px at 94% -12%, #FFFFFF 0%, rgba(255,255,255,0) 60%),
+    radial-gradient(720px 480px at 4% 104%, rgba(243,154,27,.10) 0%, rgba(243,154,27,0) 64%);
+}
+.cd-s--blanc{ background:var(--blanc) }
+.cd-s--brume{ background:var(--bleu-brume) }
+
+/* Numéro de séquence en angle — le repère de cadence. */
+.cd-num{
+  position:absolute; top:calc(clamp(72px,11vh,132px) - 34px); right:var(--marge); z-index:3;
+  font:700 var(--pt)/1 var(--mono); letter-spacing:.18em; color:var(--gris-clair);
+  font-variant-numeric:tabular-nums;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   4 · TYPOGRAPHIE
+   ═══════════════════════════════════════════════════════════════════════════ */
+.cd-sur{
+  display:inline-flex; align-items:center; gap:10px; margin:0 0 clamp(16px,2.4vh,26px);
+  font:700 var(--pt)/1 var(--mono); letter-spacing:.2em; text-transform:uppercase; color:var(--bleu);
+}
+.cd-sur::before{ content:""; width:26px; height:2px; background:var(--orange); flex:0 0 auto }
+
+.cd-t{
+  font-family:var(--sans); font-weight:800;
+  font-size:clamp(1.95rem,5.4vw,3.9rem); line-height:1.02; letter-spacing:-.038em;
+  text-wrap:balance; max-width:19ch;
+}
+.cd-t--geant{ font-size:clamp(2.5rem,8.2vw,6.2rem); line-height:.93; letter-spacing:-.05em; max-width:12ch }
+.cd-t--large{ max-width:25ch }
+
+.cd-p{ margin-top:clamp(18px,2.6vh,28px); max-width:56ch; color:var(--gris); font-size:clamp(1rem,1.35vw,1.14rem) }
+.cd-p + .cd-p{ margin-top:15px }
+.cd-p--fort{ color:var(--encre); font-weight:600; max-width:46ch; font-size:clamp(1.05rem,1.6vw,1.28rem) }
+.cd-note{ margin-top:clamp(16px,2.2vh,24px); max-width:62ch; font:500 var(--pt)/1.6 var(--mono); color:var(--gris) }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   5 · BOUTONS
+   ═══════════════════════════════════════════════════════════════════════════ */
+.cd-btns{ display:flex; flex-wrap:wrap; gap:12px; margin-top:clamp(26px,3.6vh,40px) }
+.cd-btn{
+  display:inline-flex; align-items:center; gap:10px; min-height:52px; padding:0 26px;
+  background:var(--bleu); color:#fff; text-decoration:none; border-radius:12px;
+  font-weight:700; font-size:1rem; border:1px solid var(--bleu);
+  box-shadow:0 1px 0 rgba(255,255,255,.35) inset, 0 10px 24px rgba(0,80,230,.22);
+  transition:transform .18s var(--sortie), box-shadow .18s var(--sortie), background .18s var(--sortie);
+}
+.cd-btn:hover{ background:var(--bleu-nuit); transform:translateY(-2px); box-shadow:0 14px 30px rgba(0,80,230,.26) }
+.cd-btn--vide{
+  background:var(--blanc); color:var(--encre); border-color:var(--bord-fort);
+  box-shadow:var(--ombre-basse);
+}
+.cd-btn--vide:hover{ background:var(--blanc); color:var(--bleu); border-color:var(--bleu) }
+.cd-btn__fl{ width:16px; height:16px; flex:0 0 auto }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   6 · OUVERTURE
+   ═══════════════════════════════════════════════════════════════════════════ */
+.cd-hero{
+  position:relative; overflow:hidden;
+  min-height:100svh; display:grid; align-content:center;
+  padding:calc(var(--barre) + 74px) var(--marge) 96px;
+  background:var(--papier);
+}
+.cd-hero__lum{ position:absolute; inset:0; z-index:0; pointer-events:none;
+  background:
+    radial-gradient(1250px 780px at 10% -16%, #FFFFFF 0%, rgba(255,255,255,0) 58%),
+    radial-gradient(900px 700px at 88% 16%, rgba(0,80,230,.10) 0%, rgba(0,80,230,0) 62%),
+    radial-gradient(680px 460px at 68% 112%, rgba(243,154,27,.14) 0%, rgba(243,154,27,0) 66%);
+}
+/* Trame de graduations : la matière de la direction, une règle imprimée. */
+.cd-hero__trame{
+  position:absolute; z-index:1; pointer-events:none;
+  left:0; right:0; bottom:0; height:min(46%,420px);
+  background:repeating-linear-gradient(90deg, rgba(0,80,230,.16) 0 1px, rgba(0,80,230,0) 1px 22px);
+  -webkit-mask-image:linear-gradient(to top, #000 0%, rgba(0,0,0,0) 92%);
+  mask-image:linear-gradient(to top, #000 0%, rgba(0,0,0,0) 92%);
+}
+.cd-hero__in{ position:relative; z-index:3; width:100%; max-width:1200px; margin:0 auto }
+.cd-hero__sous{ margin-top:clamp(20px,3vh,30px); max-width:58ch; color:var(--gris); font-size:clamp(1.02rem,1.5vw,1.2rem) }
+
+.cd-amorce{
+  margin-top:clamp(34px,5vh,58px); display:inline-flex; align-items:center; gap:12px;
+  font:700 var(--pt)/1 var(--mono); letter-spacing:.16em; text-transform:uppercase; color:var(--gris);
+}
+.cd-amorce em{ font-style:normal; color:var(--bleu) }
+.cd-amorce__fil{ display:block; width:64px; height:2px; background:var(--bord-fort); position:relative }
+.cd-amorce__fil::after{ content:""; position:absolute; left:0; top:0; width:22px; height:2px; background:var(--bleu) }
+html.js-scene .cd-amorce__fil::after{ animation:cd-glisse 2.6s var(--sortie) infinite }
+@keyframes cd-glisse{ 0%{transform:translateX(0)} 55%{transform:translateX(42px)} 100%{transform:translateX(0)} }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   7 · BANDEAU QUI DÉFILE
+   ═══════════════════════════════════════════════════════════════════════════ */
+.cd-bandeau{
+  position:relative; overflow:hidden; background:var(--encre); color:#fff;
+  border-top:1px solid var(--encre); border-bottom:1px solid var(--encre);
+  padding:15px 0;
+}
+.cd-bandeau__piste{ display:flex; width:max-content }
+html.js-scene .cd-bandeau__piste{ animation:cd-bande 42s linear infinite }
+@keyframes cd-bande{ from{transform:translate3d(0,0,0)} to{transform:translate3d(-50%,0,0)} }
+.cd-bandeau ul{ display:flex; align-items:center; gap:0 }
+.cd-bandeau li{
+  display:flex; align-items:center; white-space:nowrap;
+  font:700 .9rem/1 var(--mono); letter-spacing:.1em; text-transform:uppercase;
+}
+.cd-bandeau li::after{ content:"·"; margin:0 22px; color:var(--orange); font-size:1.2rem }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   8 · COMPTEURS
+   ═══════════════════════════════════════════════════════════════════════════ */
+.cd-chiffres{
+  display:grid; grid-template-columns:repeat(4,1fr); gap:0;
+  margin-top:clamp(34px,5vh,56px); border-top:2px solid var(--encre);
+}
+.cd-chiffres--duo{ grid-template-columns:repeat(2,1fr); max-width:640px }
+.cd-chiffres li{
+  padding:clamp(20px,3vh,30px) 14px clamp(10px,1.6vh,18px) 0;
+  border-right:1px solid var(--bord);
+}
+.cd-chiffres li:last-child{ border-right:0 }
+.cd-chiffres li + li{ padding-left:clamp(14px,2.2vw,28px) }
+.cd-chiffres b{
+  display:block; font:800 clamp(2.1rem,5.2vw,3.9rem)/.9 var(--sans);
+  letter-spacing:-.05em; font-variant-numeric:tabular-nums; white-space:nowrap;
+}
+.cd-chiffres b em{ font-style:normal; color:var(--orange) }
+.cd-chiffres small{
+  display:block; margin-top:12px; font:600 var(--pt)/1.4 var(--mono);
+  letter-spacing:.1em; text-transform:uppercase; color:var(--gris);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   9 · L'ARCHITECTURE — LA PISTE ET LA SCÈNE
+   ───────────────────────────────────────────────────────────────────────────
+   Par défaut (aucun script, ou mouvement réduit) : la piste n'a pas de hauteur
+   imposée, la scène ne colle pas, les étapes s'empilent et se lisent d'affilée.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.cd-piste{ position:relative; border-top:1px solid var(--bord) }
+.cd-scene{ position:relative; overflow:visible; padding:clamp(48px,7vh,80px) var(--marge) clamp(56px,8vh,90px) }
+.cd-scene__in{ position:relative; z-index:2; width:100%; max-width:1200px; margin:0 auto; height:100% }
+
+html.js-scene .cd-piste{
+  /* LA COURSE : un écran collé + une longueur PAR ÉTAPE. --n est posé par le JS
+     à partir du nombre d'étapes réellement présentes. Jamais un chiffre écrit à la main. */
+  height:calc(100svh + var(--n,1) * var(--pas,60svh));
+}
+html.js-scene .cd-scene{
+  position:sticky; top:var(--barre);
+  height:calc(100svh - var(--barre));
+  overflow:hidden;
+  display:grid; align-content:center;
+}
+
+/* Le rail gradué : la signature de la direction. Décoratif, construit par le JS. */
+.cd-rail{ display:none }
+html.js-scene .cd-rail{
+  display:block; position:absolute; z-index:4;
+  left:var(--marge); right:var(--marge); top:clamp(26px,4.4vh,44px); height:24px;
+}
+.cd-rail__ligne{ position:absolute; left:0; right:0; top:11px; height:1px; background:var(--bord-fort) }
+.cd-rail__crans{ position:absolute; inset:0; display:flex; justify-content:space-between }
+.cd-rail__cran{
+  width:1px; height:12px; margin-top:6px; background:var(--bord-fort);
+  transform:scaleY(calc(1 + var(--a,0) * 1.1)); transform-origin:center;
+}
+.cd-rail__cran[data-actif="1"]{ background:var(--bleu) }
+.cd-rail__curseur{
+  position:absolute; top:6px; left:calc(var(--p,0) * 100%);
+  width:12px; height:12px; margin-left:-6px; border-radius:50%;
+  background:var(--orange); box-shadow:0 0 0 4px rgba(243,154,27,.20);
+}
+.cd-compteur{ display:none }
+html.js-scene .cd-compteur{
+  display:block; position:absolute; z-index:4; right:var(--marge); bottom:clamp(22px,3.6vh,38px);
+  font:700 var(--pt)/1 var(--mono); letter-spacing:.16em; color:var(--gris);
+  font-variant-numeric:tabular-nums;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   10 · SCÈNE A — LE RÉSEAU : la liste qui zoome sur une maison
+   ═══════════════════════════════════════════════════════════════════════════ */
+.cd-imps{ margin-top:clamp(22px,3vh,34px) }
+.cd-imp{
+  position:relative;
+  display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:clamp(12px,2vw,26px);
+  padding:14px 0; border-bottom:1px solid var(--bord);
+}
+.cd-imp__i{
+  font:700 var(--pt)/1 var(--mono); letter-spacing:.14em; color:var(--gris-clair);
+  font-variant-numeric:tabular-nums;
+}
+.cd-imp__n{
+  font-weight:800; letter-spacing:-.03em; line-height:1.05;
+  font-size:clamp(1.15rem,2.4vw,1.6rem);
+}
+.cd-imp__v{
+  font:600 var(--pt)/1.3 var(--mono); letter-spacing:.06em; color:var(--gris);
+  text-align:right; white-space:nowrap;
+}
+.cd-imp__t{
+  display:inline-block; margin-left:10px; padding:3px 9px; border-radius:99px;
+  background:var(--bleu-pale); color:var(--bleu-nuit);
+  font:700 var(--pt)/1.5 var(--mono); letter-spacing:.1em; text-transform:uppercase;
+  vertical-align:middle; white-space:nowrap;
+}
+
+/* Version scénique : hauteur de ligne FIXE (la colonne peut donc être centrée au pixel),
+   et c'est la taille du texte qui grandit — pas un scale, qui déborderait de l'écran. */
+html.js-scene .cd-imps{
+  --slot:clamp(62px,9.4vh,88px);
+  --nmax:clamp(1.5rem,4.6vw,3.3rem);
+  position:relative; margin:0; height:calc(var(--slot) * 3);
+  overflow:visible;
+}
+html.js-scene .cd-imps__col{
+  position:absolute; left:0; right:0; top:calc(var(--slot) * 1);
+  will-change:transform;
+}
+html.js-scene .cd-imp{
+  height:var(--slot); padding:0; border-bottom:0;
+  opacity:calc(.30 + var(--a,0) * .70);
+}
+html.js-scene .cd-imp__i{
+  color:var(--bleu); opacity:calc(.35 + var(--a,0) * .65);
+}
+html.js-scene .cd-imp__n{
+  font-size:calc(1.02rem + var(--a,0) * (var(--nmax) - 1.02rem));
+  color:rgb(
+    calc(82 - var(--a,0) * 66),
+    calc(95 - var(--a,0) * 73),
+    calc(121 - var(--a,0) * 86)
+  );
+  white-space:nowrap;
+}
+html.js-scene .cd-imp__v{ opacity:calc(.25 + var(--a,0) * .75) }
+html.js-scene .cd-imp__t{ opacity:var(--a,0) }
+
+/* Le voile haut/bas : les lignes voisines s'effacent au bord de la scène,
+   fait en dégradé opaque — aucun flou. */
+html.js-scene .cd-imps::before,
+html.js-scene .cd-imps::after{
+  content:""; position:absolute; left:-6px; right:-6px; height:calc(var(--slot) * .9); z-index:3;
+  pointer-events:none;
+}
+html.js-scene .cd-imps::before{ top:calc(var(--slot) * -.2);
+  background:linear-gradient(to bottom, var(--papier) 12%, rgba(239,243,250,0) 100%) }
+html.js-scene .cd-imps::after{ bottom:calc(var(--slot) * -.2);
+  background:linear-gradient(to top, var(--papier) 12%, rgba(239,243,250,0) 100%) }
+
+.cd-reseau-pied{
+  margin-top:clamp(26px,4vh,42px); display:flex; flex-wrap:wrap; align-items:center; gap:10px 18px;
+}
+.cd-reseau-pied p{ font:600 var(--pt)/1.5 var(--mono); color:var(--gris); letter-spacing:.06em }
+html.js-scene .cd-reseau-pied{ position:absolute; left:var(--marge); right:var(--marge); bottom:clamp(22px,3.6vh,38px); margin:0; z-index:4 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   11 · SCÈNE B — LE MÉTIER : le convoi horizontal
+   ═══════════════════════════════════════════════════════════════════════════ */
+.cd-conv{ margin-top:clamp(20px,3vh,30px); display:grid; gap:16px }
+.cd-vol{
+  background:var(--blanc); border:1px solid var(--bord); border-radius:18px;
+  padding:clamp(22px,3.4vw,38px); box-shadow:var(--ombre-basse);
+}
+.cd-vol__i{
+  display:flex; align-items:baseline; gap:12px; margin-bottom:14px;
+  font:700 var(--pt)/1 var(--mono); letter-spacing:.18em; color:var(--bleu);
+}
+.cd-vol__i b{ font:800 clamp(1.9rem,4.6vw,3.2rem)/1 var(--sans); letter-spacing:-.05em; color:var(--encre) }
+.cd-vol h3{ font-size:clamp(1.35rem,3vw,2.1rem); font-weight:800; letter-spacing:-.035em; line-height:1.06 }
+.cd-vol p{ margin-top:14px; color:var(--gris); font-size:clamp(1rem,1.35vw,1.1rem); max-width:46ch }
+
+html.js-scene .cd-conv{
+  position:relative; margin:0; display:block; overflow:hidden;
+}
+html.js-scene .cd-conv__rangee{
+  display:grid; grid-auto-flow:column; grid-auto-columns:100%;
+  width:100%; will-change:transform;
+}
+html.js-scene .cd-vol{
+  min-height:clamp(300px,46svh,430px);
+  display:flex; flex-direction:column; justify-content:center;
+  opacity:calc(.16 + var(--a,0) * .84);
+  transform:scale(calc(.94 + var(--a,0) * .06));
+  transform-origin:center;
+}
+
+/* Le trajet : de la commande au comptoir, avec le colis qui avance. */
+.cd-trajet{ display:none }
+html.js-scene .cd-trajet{
+  display:flex; align-items:center; justify-content:space-between; gap:14px;
+  position:absolute; left:var(--marge); right:var(--marge); bottom:clamp(22px,3.6vh,40px); z-index:4;
+}
+.cd-trajet span{ font:700 var(--pt)/1 var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--gris) }
+.cd-trajet__voie{ position:relative; flex:1; height:2px; background:var(--bord-fort) }
+.cd-trajet__voie::before{
+  content:""; position:absolute; left:0; top:0; height:2px; width:calc(var(--p,0) * 100%);
+  background:linear-gradient(90deg,var(--bleu),var(--bleu-vif));
+}
+.cd-trajet__colis{
+  position:absolute; top:-8px; left:calc(var(--p,0) * 100%); width:18px; height:18px;
+  margin-left:-9px; border-radius:5px; background:var(--orange);
+  box-shadow:0 0 0 4px rgba(243,154,27,.18);
+  transform:rotate(calc(var(--p,0) * 180deg));
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   12 · SCÈNE C — LES VALEURS : trois mots, un seul développé à la fois
+   ═══════════════════════════════════════════════════════════════════════════ */
+.cd-vals{ margin-top:clamp(22px,3vh,34px); display:grid; gap:18px }
+.cd-val{ border-top:1px solid var(--bord); padding-top:18px }
+.cd-val h3{
+  font-weight:800; letter-spacing:-.04em; line-height:1;
+  font-size:clamp(2rem,6vw,3.4rem);
+}
+.cd-val p{ margin-top:14px; color:var(--gris); font-size:clamp(1.02rem,1.5vw,1.2rem); max-width:44ch }
+
+html.js-scene .cd-vals{ gap:clamp(10px,2.4vh,26px); --vmax:clamp(2.4rem,6.4vw,4.4rem) }
+html.js-scene .cd-val h3{
+  font-size:calc(1.6rem + var(--a,0) * (var(--vmax) - 1.6rem));
+  color:rgb(
+    calc(82 - var(--a,0) * 66),
+    calc(95 - var(--a,0) * 73),
+    calc(121 - var(--a,0) * 86)
+  );
+}
+html.js-scene .cd-val p{
+  max-height:0; overflow:hidden; opacity:0; margin-top:0;
+  will-change:max-height;
+}
+html.js-scene .cd-val[data-ouvert="1"] p{ margin-top:14px }
+html.js-scene .cd-val{ border-top-color:rgba(0,80,230,calc(.08 + var(--a,0) * .5)) }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   13 · BLOCS ÉDITORIAUX
+   ═══════════════════════════════════════════════════════════════════════════ */
+.cd-duo{ display:grid; grid-template-columns:1.05fr .95fr; gap:clamp(28px,5vw,80px); align-items:start }
+.cd-duo--serre{ grid-template-columns:1.15fr .85fr; align-items:center }
+
+.cd-carte{
+  background:var(--blanc); border:1px solid var(--bord); border-radius:20px;
+  padding:clamp(24px,3.4vw,40px); box-shadow:var(--ombre-haute);
+}
+
+.cd-labos{ display:flex; flex-wrap:wrap; gap:12px; margin-top:clamp(26px,4vh,40px) }
+.cd-labos li{
+  display:flex; align-items:center; min-height:56px; padding:0 24px;
+  background:var(--blanc); border:1px solid var(--bord); border-radius:14px;
+  font-weight:700; font-size:clamp(1rem,1.6vw,1.18rem); letter-spacing:-.015em;
+  box-shadow:var(--ombre-basse);
+}
+.cd-labos li::before{
+  content:""; width:8px; height:8px; border-radius:2px; background:var(--bleu);
+  margin-right:12px; flex:0 0 auto;
+}
+
+.cd-villes{ display:flex; flex-wrap:wrap; gap:10px; margin-top:clamp(22px,3vh,32px) }
+.cd-villes li{
+  display:flex; align-items:center; min-height:46px; padding:0 16px; border-radius:99px;
+  background:var(--bleu-pale); color:var(--bleu-nuit);
+  font:700 .9rem/1 var(--mono); letter-spacing:.05em;
+}
+
+.cd-facture{
+  display:grid; grid-template-columns:auto 1fr; gap:clamp(18px,3vw,34px); align-items:center;
+}
+.cd-facture__ico{
+  width:clamp(64px,8vw,96px); height:clamp(64px,8vw,96px); border-radius:20px;
+  background:var(--bleu); display:grid; place-items:center; flex:0 0 auto;
+  box-shadow:0 12px 30px rgba(0,80,230,.24);
+}
+.cd-facture__ico svg{ width:52%; height:52% }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   14 · FIN DE PAGE
+   ═══════════════════════════════════════════════════════════════════════════ */
+.cd-fin{
+  position:relative; overflow:hidden; background:var(--bleu); color:#fff;
+  padding:clamp(80px,13vh,150px) var(--marge);
+}
+.cd-fin__lum{ position:absolute; inset:0; z-index:0; pointer-events:none;
+  background:
+    radial-gradient(900px 620px at 14% -20%, rgba(255,255,255,.34) 0%, rgba(255,255,255,0) 60%),
+    radial-gradient(700px 500px at 92% 112%, rgba(243,154,27,.28) 0%, rgba(243,154,27,0) 64%);
+}
+.cd-fin .cd-p{ color:#D9E6FF }
+.cd-fin .cd-sur{ color:#BBD3FF }
+.cd-fin .cd-sur::before{ background:var(--orange) }
+.cd-fin .cd-btn{ background:#fff; color:var(--bleu-nuit); border-color:#fff; box-shadow:0 14px 34px rgba(0,20,60,.26) }
+.cd-fin .cd-btn:hover{ background:#fff; color:var(--bleu-nuit); transform:translateY(-2px) }
+
+.cd-pied{ background:var(--encre); color:#C4CDDE; padding:clamp(44px,7vh,72px) var(--marge) }
+.cd-pied__in{ max-width:1200px; margin:0 auto; display:grid; gap:22px }
+.cd-pied__h{ display:flex; flex-wrap:wrap; gap:18px 30px; align-items:baseline; justify-content:space-between }
+.cd-pied strong{ color:#fff; font-size:1.05rem; letter-spacing:-.02em }
+.cd-pied a{ color:#fff; text-decoration:none; border-bottom:1px solid rgba(255,255,255,.34);
+  display:inline-block; min-height:24px }
+.cd-pied a:hover{ border-bottom-color:var(--orange) }
+.cd-pied__liens{ display:flex; flex-wrap:wrap; gap:12px 26px; align-items:center }
+.cd-pied__liens a{ min-height:44px; display:inline-flex; align-items:center; border-bottom:0 }
+.cd-pied__liens a:hover{ color:var(--orange) }
+.cd-pied__chiffres{
+  border-top:1px solid rgba(255,255,255,.16); padding-top:20px;
+  font:600 var(--pt)/1.6 var(--mono); letter-spacing:.06em; color:#8C99B2;
+}
+.cd-signature{
+  display:flex; flex-wrap:wrap; gap:8px 14px; align-items:center;
+  font:600 var(--pt)/1.5 var(--mono); letter-spacing:.14em; text-transform:uppercase; color:#6F7C96;
+}
+.cd-signature b{ color:#fff; font-weight:800 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   15 · RÉVÉLATIONS — armées par classe, jamais transparentes au repos
+   ═══════════════════════════════════════════════════════════════════════════ */
+html.js-scene [data-vu]{
+  opacity:0; transform:translate3d(0,20px,0);
+  transition:opacity .72s var(--sortie), transform .72s var(--sortie);
+}
+html.js-scene [data-vu].vu{ opacity:1; transform:none }
+html.js-scene [data-vu][data-delai="1"]{ transition-delay:.08s }
+html.js-scene [data-vu][data-delai="2"]{ transition-delay:.16s }
+html.js-scene [data-vu][data-delai="3"]{ transition-delay:.24s }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   16 · ADAPTATIONS
+   ═══════════════════════════════════════════════════════════════════════════ */
+@media (max-width:1080px){
+  .cd-duo,.cd-duo--serre{ grid-template-columns:1fr; gap:34px }
+  .cd-chiffres{ grid-template-columns:repeat(2,1fr) }
+  .cd-chiffres li:nth-child(2){ border-right:0 }
+  .cd-chiffres li:nth-child(3),.cd-chiffres li:nth-child(4){ border-top:1px solid var(--bord) }
+  .cd-chiffres li:nth-child(3){ padding-left:0 }
+}
+@media (max-width:820px){
+  :root{ --barre:58px }
+  .cd-nav{ display:none }
+  .cd-burger{ display:grid }
+  .cd-num{ display:none }
+  .cd-facture{ grid-template-columns:1fr }
+  html.js-scene .cd-imps{ --slot:clamp(56px,8.6vh,74px); --nmax:clamp(1.28rem,5.4vw,2rem) }
+  html.js-scene .cd-vals{ --vmax:clamp(2.1rem,8.4vw,3rem) }
+  .cd-imp{ grid-template-columns:auto 1fr; row-gap:2px }
+  .cd-imp__v{ grid-column:2; text-align:left }
+  html.js-scene .cd-imp{ align-items:center }
+  html.js-scene .cd-imp__v{ grid-column:2; grid-row:2 }
+  .cd-trajet span{ display:none }
+  .cd-reseau-pied p{ font-size:.78rem }
+}
+@media (max-width:520px){
+  .cd-chiffres{ grid-template-columns:1fr }
+  .cd-chiffres li{ border-right:0; border-top:1px solid var(--bord); padding-left:0 }
+  .cd-chiffres li:first-child{ border-top:0 }
+  .cd-chiffres li + li{ padding-left:0 }
+  .cd-chiffres--duo{ grid-template-columns:1fr }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   17 · MOUVEMENT RÉDUIT — tout à plat, rien ne se fige
+   ═══════════════════════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce){
+  html{ scroll-behavior:auto }
+  *,*::before,*::after{
+    animation-duration:.001ms !important; animation-iteration-count:1 !important;
+    transition-duration:.001ms !important; scroll-behavior:auto !important;
+  }
+  .cd-piste{ height:auto !important }
+  .cd-scene{ position:static !important; height:auto !important; overflow:visible !important }
+  .cd-bandeau__piste{ animation:none !important }
+}
+</style>
+</head>
+
+<body>
+<a class="cd-saut" href="#contenu">Aller au contenu</a>
+
+<!-- ═══ BARRE ═══════════════════════════════════════════════════════════════ -->
+<header class="cd-barre">
+  <a class="cd-marque" href="#haut" aria-label="Intégral Pharma, accueil">
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <rect x="1" y="9" width="3.4" height="6" rx="1" fill="#0050E6"></rect>
+      <rect x="7" y="5" width="3.4" height="14" rx="1" fill="#0050E6"></rect>
+      <rect x="13" y="1.5" width="3.4" height="21" rx="1" fill="#101623"></rect>
+      <rect x="19" y="7" width="3.4" height="10" rx="1" fill="#F39A1B"></rect>
+    </svg>
+    Intégral <span>Pharma</span>
+  </a>
+
+  <nav class="cd-nav" aria-label="Navigation principale">
+    <a href="#groupe">Le groupe</a>
+    <a href="#reseau">Le réseau</a>
+    <a href="#metier">Le métier</a>
+    <a href="#valeurs">Nos valeurs</a>
+    <a class="cd-nav__fort" href="#ecrire">Nous écrire</a>
+  </nav>
+
+  <button class="cd-burger" type="button" aria-expanded="false" aria-controls="menu-mobile" aria-label="Ouvrir le menu">
+    <i aria-hidden="true"></i>
+  </button>
+
+  <span class="cd-jauge" aria-hidden="true"></span>
+</header>
+
+<div class="cd-panneau" id="menu-mobile" role="dialog" aria-modal="true" aria-label="Menu">
+  <button class="cd-fermer" type="button" aria-label="Fermer le menu">✕</button>
+  <a href="#groupe">Le groupe</a>
+  <a href="#reseau">Le réseau</a>
+  <a href="#metier">Le métier</a>
+  <a href="#valeurs">Nos valeurs</a>
+  <a href="#ecrire">Nous écrire</a>
+</div>
+
+<main id="contenu">
+
+<!-- ═══ 01 · L'OUVERTURE ═════════════════════════════════════════════════════ -->
+<section class="cd-hero" id="haut">
+  <span class="cd-hero__lum" aria-hidden="true"></span>
+  <span class="cd-hero__trame" aria-hidden="true"></span>
+  <div class="cd-hero__in">
+    <p class="cd-sur" data-vu>Groupe de grossistes-répartiteurs français indépendant</p>
+    <h1 class="cd-t cd-t--geant" data-vu data-delai="1">Neuf maisons.<br>Un seul nom.</h1>
+    <p class="cd-hero__sous" data-vu data-delai="2">
+      Chacune livre sa région depuis des années, avec ses équipes et ses habitudes. Depuis 2006,
+      elles avancent ensemble sous le nom d'Intégral Pharma — et votre commande part toujours de
+      la plus proche de votre comptoir.
+    </p>
+    <div class="cd-btns" data-vu data-delai="3">
+      <a class="cd-btn" href="#reseau">
+        Découvrir le réseau
+        <svg class="cd-btn__fl" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+          <path d="M8 1v14M2.5 9.5L8 15l5.5-5.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+        </svg>
+      </a>
+      <a class="cd-btn cd-btn--vide" href="#ecrire">Nous écrire</a>
+    </div>
+    <p class="cd-amorce" data-vu data-delai="3">
+      <span class="cd-amorce__fil" aria-hidden="true"></span>
+      Le défilement fait avancer <em>la scène</em>
+    </p>
+  </div>
+</section>
+
+<!-- ═══ BANDEAU ══════════════════════════════════════════════════════════════ -->
+<div class="cd-bandeau" aria-hidden="true">
+  <div class="cd-bandeau__piste">
+    <ul>
+      <li>Indépendant</li><li>Neuf implantations</li><li>Un réseau national</li>
+      <li>Plus de 2 000 officines livrées</li><li>Confiance, Engagement, Respect</li>
+      <li>Une alternative aux grossistes historiques</li>
+    </ul>
+    <ul>
+      <li>Indépendant</li><li>Neuf implantations</li><li>Un réseau national</li>
+      <li>Plus de 2 000 officines livrées</li><li>Confiance, Engagement, Respect</li>
+      <li>Une alternative aux grossistes historiques</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ═══ 02 · L'HISTOIRE ══════════════════════════════════════════════════════ -->
+<section class="cd-s cd-s--blanc" id="groupe">
+  <span class="cd-lum" aria-hidden="true"></span>
+  <span class="cd-num" aria-hidden="true">02 / 10</span>
+  <div class="cd-in">
+    <div class="cd-duo">
+      <div>
+        <p class="cd-sur" data-vu>Notre histoire</p>
+        <h2 class="cd-t" data-vu>Rendre la marge à l'officine française.</h2>
+      </div>
+      <div>
+        <p class="cd-p cd-p--fort" data-vu data-delai="1">
+          C'est la raison d'être d'Intégral Pharma depuis 2006 : redistribuer directement la marge
+          aux officines françaises, en toute transparence, avec des prix nets visibles sur facture.
+        </p>
+        <p class="cd-p" data-vu data-delai="2">
+          Neuf implantations aujourd'hui, plus de deux mille officines livrées chaque jour, et la
+          même idée qu'au premier jour — un groupe de répartiteurs indépendants qui a choisi de se
+          mettre du côté du comptoir.
+        </p>
+      </div>
+    </div>
+
+    <ul class="cd-chiffres" data-vu data-delai="1">
+      <li><b>2006</b><small>année de création</small></li>
+      <li><b>9</b><small>implantations</small></li>
+      <li><b>2&nbsp;000<em>&nbsp;+</em></b><small>officines livrées</small></li>
+      <li><b>20</b><small>ans d'indépendance</small></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ═══ 03 · LE RÉSEAU — introduction (défile normalement) ════════════════════ -->
+<section class="cd-s" id="reseau">
+  <span class="cd-lum cd-lum--droite" aria-hidden="true"></span>
+  <span class="cd-num" aria-hidden="true">03 / 10</span>
+  <div class="cd-in">
+    <div class="cd-duo cd-duo--serre">
+      <div>
+        <p class="cd-sur" data-vu>Le réseau</p>
+        <h2 class="cd-t cd-t--large" data-vu>Neuf implantations. Laquelle est la vôtre ?</h2>
+      </div>
+      <div>
+        <p class="cd-p cd-p--fort" data-vu data-delai="1">
+          C'est la seule question qui compte vraiment. Celle qui prépare votre commande, qui vous
+          livre chaque matin, et dont vous connaissez l'équipe par son prénom.
+        </p>
+        <p class="cd-p" data-vu data-delai="2">
+          Les huit autres sont là pour qu'elle ne soit jamais prise au dépourvu — de la Bretagne à
+          la Méditerranée, le stock d'une maison est le stock de toutes.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ SCÈNE A — LA SECTION SE FIGE : les neuf maisons, une par une ═════════ -->
+<div class="cd-piste" data-piste="reseau" style="--pas:52svh">
+  <div class="cd-scene" data-scene>
+    <span class="cd-lum" aria-hidden="true"></span>
+    <div class="cd-rail" data-rail aria-hidden="true">
+      <span class="cd-rail__ligne"></span>
+      <span class="cd-rail__crans"></span>
+      <span class="cd-rail__curseur"></span>
+    </div>
+    <span class="cd-compteur" data-compteur aria-hidden="true"></span>
+
+    <div class="cd-scene__in">
+      <h2 class="visuellement-cache">Les neuf implantations</h2>
+      <div class="cd-imps">
+        <ul class="cd-imps__col" data-col>
+          <li class="cd-imp" data-etape>
+            <span class="cd-imp__i">01</span>
+            <span class="cd-imp__n">Hyères Pharma<span class="cd-imp__t">siège du groupe</span></span>
+            <span class="cd-imp__v">Hyères · 83</span>
+          </li>
+          <li class="cd-imp" data-etape>
+            <span class="cd-imp__i">02</span>
+            <span class="cd-imp__n">SR Pharma</span>
+            <span class="cd-imp__v">Palaiseau · 91</span>
+          </li>
+          <li class="cd-imp" data-etape>
+            <span class="cd-imp__i">03</span>
+            <span class="cd-imp__n">Mistral Santé Pharma</span>
+            <span class="cd-imp__v">Flassans-sur-Issole · 83</span>
+          </li>
+          <li class="cd-imp" data-etape>
+            <span class="cd-imp__i">04</span>
+            <span class="cd-imp__n">Sud Ouest Pharma</span>
+            <span class="cd-imp__v">Montayral · 47</span>
+          </li>
+          <li class="cd-imp" data-etape>
+            <span class="cd-imp__i">05</span>
+            <span class="cd-imp__n">Comptoir Pharmaceutique du Rhône</span>
+            <span class="cd-imp__v">Saint-Maurice-l'Exil · 38</span>
+          </li>
+          <li class="cd-imp" data-etape>
+            <span class="cd-imp__i">06</span>
+            <span class="cd-imp__n">Escale Pharma</span>
+            <span class="cd-imp__v">Chilly-Mazarin · 91</span>
+          </li>
+          <li class="cd-imp" data-etape>
+            <span class="cd-imp__i">07</span>
+            <span class="cd-imp__n">Ouest Pharma Services</span>
+            <span class="cd-imp__v">Saint-Étienne-de-Montluc · 44</span>
+          </li>
+          <li class="cd-imp" data-etape>
+            <span class="cd-imp__i">08</span>
+            <span class="cd-imp__n">Pharm'Occitanie Services</span>
+            <span class="cd-imp__v">Villeneuve-lès-Béziers · 34</span>
+          </li>
+          <li class="cd-imp" data-etape>
+            <span class="cd-imp__i">09</span>
+            <span class="cd-imp__n">Sud Est Pharma</span>
+            <span class="cd-imp__v">Le Cannet-des-Maures · 83</span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="cd-reseau-pied">
+        <p>Neuf implantations et un partenaire</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Mention Pharmest — hors scène, elle se lit posément ══════════════════ -->
+<section class="cd-s cd-s--brume">
+  <span class="cd-lum cd-lum--droite" aria-hidden="true"></span>
+  <div class="cd-in">
+    <p class="cd-p cd-p--fort" style="margin-top:0" data-vu>
+      Et à l'Est, notre partenaire <strong>Pharmest</strong> (Metz, 57) prolonge le maillage.
+    </p>
+  </div>
+</section>
+
+<!-- ═══ 04 · LE MÉTIER — introduction (défile normalement) ═══════════════════ -->
+<section class="cd-s cd-s--blanc" id="metier">
+  <span class="cd-lum" aria-hidden="true"></span>
+  <span class="cd-num" aria-hidden="true">04 / 10</span>
+  <div class="cd-in">
+    <div class="cd-duo cd-duo--serre">
+      <div>
+        <p class="cd-sur" data-vu>Le métier</p>
+        <h2 class="cd-t" data-vu>Ce qui se passe entre votre commande et votre comptoir.</h2>
+      </div>
+      <div>
+        <p class="cd-p" data-vu data-delai="1">
+          Quelques heures, quatre métiers, et une chaîne qui ne s'arrête jamais. Référencer,
+          stocker, préparer, livrer : c'est invisible depuis l'officine, et c'est tout notre travail.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ SCÈNE B — LA SECTION SE FIGE : le convoi, de la commande au comptoir ═ -->
+<div class="cd-piste" data-piste="metier" style="--pas:82svh">
+  <div class="cd-scene" data-scene>
+    <span class="cd-lum cd-lum--droite" aria-hidden="true"></span>
+    <div class="cd-rail" data-rail aria-hidden="true">
+      <span class="cd-rail__ligne"></span>
+      <span class="cd-rail__crans"></span>
+      <span class="cd-rail__curseur"></span>
+    </div>
+    <span class="cd-compteur" data-compteur aria-hidden="true"></span>
+
+    <div class="cd-scene__in">
+      <h2 class="visuellement-cache">Les quatre métiers de la chaîne</h2>
+      <div class="cd-conv">
+        <div class="cd-conv__rangee" data-rangee>
+          <article class="cd-vol" data-etape>
+            <p class="cd-vol__i"><b>01</b> Le référencement</p>
+            <h3>Un catalogue tenu pour neuf maisons.</h3>
+            <p>
+              Le groupe référence pour ses neuf maisons à la fois : un même catalogue, tenu à jour,
+              disponible dans toutes les implantations. C'est ce qui permet à une maison de taille
+              humaine de proposer la profondeur de gamme d'un réseau national.
+            </p>
+          </article>
+          <article class="cd-vol" data-etape>
+            <p class="cd-vol__i"><b>02</b> La disponibilité</p>
+            <h3>Le stock est là où vous êtes.</h3>
+            <p>
+              Des stocks répartis sur neuf implantations, au plus près de votre officine. Quand le
+              comptoir a besoin, le réseau répond — et quand une référence manque quelque part, elle
+              existe souvent ailleurs dans le réseau.
+            </p>
+          </article>
+          <article class="cd-vol" data-etape>
+            <p class="cd-vol__i"><b>03</b> La préparation</p>
+            <h3>Préparée par ceux qui vous connaissent.</h3>
+            <p>
+              Chaque commande est préparée dans l'implantation la plus proche de chez vous, par une
+              équipe qui connaît votre officine et ses saisons.
+            </p>
+          </article>
+          <article class="cd-vol" data-etape>
+            <p class="cd-vol__i"><b>04</b> La livraison</p>
+            <h3>Tous les jours, sans exception.</h3>
+            <p>
+              Tous les jours, les tournées partent vers les officines. La régularité d'un service tenu —
+              c'est elle qui fait la confiance, pas les promesses.
+            </p>
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="cd-trajet" aria-hidden="true">
+      <span>Votre commande</span>
+      <span class="cd-trajet__voie"><span class="cd-trajet__colis"></span></span>
+      <span>Votre comptoir</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Phrase de clôture du métier ══════════════════════════════════════════ -->
+<section class="cd-s cd-s--brume">
+  <span class="cd-lum" aria-hidden="true"></span>
+  <div class="cd-in">
+    <p class="cd-p cd-p--fort" style="margin-top:0;max-width:62ch" data-vu>
+      Et quand la vie de votre officine change — transfert, agrandissement, cession de parts —
+      votre interlocuteur ajuste l'approvisionnement avec vous, sans à-coup au comptoir.
+    </p>
+  </div>
+</section>
+
+<!-- ═══ 05 · LA CENTRALE ═════════════════════════════════════════════════════ -->
+<section class="cd-s cd-s--blanc" id="centrale">
+  <span class="cd-lum cd-lum--droite" aria-hidden="true"></span>
+  <span class="cd-num" aria-hidden="true">05 / 10</span>
+  <div class="cd-in">
+    <div class="cd-duo">
+      <div>
+        <p class="cd-sur" data-vu>La centrale</p>
+        <h2 class="cd-t" data-vu>Et pour tout ce qui n'est pas le médicament.</h2>
+        <ul class="cd-chiffres cd-chiffres--duo" data-vu data-delai="2">
+          <li><b>14&nbsp;000<em>&nbsp;+</em></b><small>références</small></li>
+          <li><b>480<em>&nbsp;+</em></b><small>marques</small></li>
+        </ul>
+      </div>
+      <div class="cd-carte" data-vu data-delai="1">
+        <p class="cd-p cd-p--fort" style="margin-top:0">
+          Notre centrale de parapharmacie référence pour l'officine plus de 14 000 produits et plus
+          de 480 marques.
+        </p>
+        <p class="cd-p">
+          C'est une structure à part, avec son propre fonctionnement — sa commande, sa livraison —
+          et la même exigence que le reste du groupe.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 06 · LES FACTURES ════════════════════════════════════════════════════ -->
+<section class="cd-s" id="factures">
+  <span class="cd-lum" aria-hidden="true"></span>
+  <span class="cd-num" aria-hidden="true">06 / 10</span>
+  <div class="cd-in">
+    <div class="cd-facture" data-vu>
+      <span class="cd-facture__ico" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 2.5h14v19l-3.5-2-3.5 2-3.5-2-3.5 2z"></path>
+          <path d="M9 8h6M9 12h6M9 16h3"></path>
+        </svg>
+      </span>
+      <div>
+        <p class="cd-sur">Vos factures</p>
+        <h2 class="cd-t">Elles arrivent déjà là où vous les gérez.</h2>
+        <p class="cd-p cd-p--fort">
+          Nous sommes connectés à Digipharmacie : vos factures Intégral s'y retrouvent
+          automatiquement, avec celles de vos autres fournisseurs.
+        </p>
+        <p class="cd-p">Rien à saisir, rien à classer, rien à réclamer.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 07 · LES PARTENAIRES ═════════════════════════════════════════════════ -->
+<section class="cd-s cd-s--blanc" id="partenaires">
+  <span class="cd-lum cd-lum--droite" aria-hidden="true"></span>
+  <span class="cd-num" aria-hidden="true">07 / 10</span>
+  <div class="cd-in">
+    <p class="cd-sur" data-vu>Nos partenaires</p>
+    <h2 class="cd-t" data-vu>Les laboratoires qui nous font confiance.</h2>
+    <ul class="cd-labos" data-vu data-delai="1">
+      <li>EG Labo</li><li>Zentiva</li><li>Zydus</li>
+      <li>Viatris</li><li>ITP</li><li>Santestat</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ═══ 08 · NOUS REJOINDRE ══════════════════════════════════════════════════ -->
+<section class="cd-s cd-s--brume" id="rejoindre">
+  <span class="cd-lum" aria-hidden="true"></span>
+  <span class="cd-num" aria-hidden="true">08 / 10</span>
+  <div class="cd-in">
+    <div class="cd-duo cd-duo--serre">
+      <div>
+        <p class="cd-sur" data-vu>Nous rejoindre</p>
+        <h2 class="cd-t" data-vu>Neuf implantations qui embauchent.</h2>
+        <p class="cd-p" data-vu data-delai="1">
+          Préparateur-chauffeur, technicien approvisionnement, commercial, pharmacien responsable :
+          les métiers de la répartition s'apprennent chez nous.
+        </p>
+      </div>
+      <div data-vu data-delai="2">
+        <ul class="cd-villes">
+          <li>Hyères (83)</li>
+          <li>Villeneuve-lès-Béziers (34)</li>
+          <li>Montayral (47)</li>
+          <li>Saint-Maurice-l'Exil (38)</li>
+        </ul>
+        <div class="cd-btns">
+          <a class="cd-btn" href="https://www.integralpharma.fr/jobs" rel="noopener">Voir les offres</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 09 · LES VALEURS — introduction (défile normalement) ═════════════════ -->
+<section class="cd-s cd-s--blanc" id="valeurs">
+  <span class="cd-lum cd-lum--droite" aria-hidden="true"></span>
+  <span class="cd-num" aria-hidden="true">09 / 10</span>
+  <div class="cd-in">
+    <p class="cd-sur" data-vu>Nos valeurs</p>
+    <h2 class="cd-t" data-vu>Trois mots qui se vérifient au téléphone.</h2>
+  </div>
+</section>
+
+<!-- ═══ SCÈNE C — LA SECTION SE FIGE : trois mots, un seul développé ════════ -->
+<div class="cd-piste" data-piste="valeurs" style="--pas:74svh">
+  <div class="cd-scene" data-scene>
+    <span class="cd-lum" aria-hidden="true"></span>
+    <div class="cd-rail" data-rail aria-hidden="true">
+      <span class="cd-rail__ligne"></span>
+      <span class="cd-rail__crans"></span>
+      <span class="cd-rail__curseur"></span>
+    </div>
+    <span class="cd-compteur" data-compteur aria-hidden="true"></span>
+
+    <div class="cd-scene__in">
+      <ul class="cd-vals">
+        <li class="cd-val" data-etape>
+          <h3>Confiance</h3>
+          <p>La personne qui décroche connaît votre officine, vos saisons et vos habitudes.</p>
+        </li>
+        <li class="cd-val" data-etape>
+          <h3>Engagement</h3>
+          <p>C'est la même d'une année sur l'autre. Dans ce métier, c'est devenu rare.</p>
+        </li>
+        <li class="cd-val" data-etape>
+          <h3>Respect</h3>
+          <p>Elle ne vous vendra pas ce dont vous n'avez pas besoin — parce qu'elle vous reverra le mois suivant, et l'année d'après.</p>
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 10 · LA FIN DE PAGE ══════════════════════════════════════════════════ -->
+<section class="cd-fin" id="ecrire">
+  <span class="cd-fin__lum" aria-hidden="true"></span>
+  <div class="cd-in">
+    <p class="cd-sur" data-vu>Nous écrire</p>
+    <h2 class="cd-t cd-t--large" data-vu>Posez-nous la question qui vous intéresse.</h2>
+    <p class="cd-p" data-vu data-delai="1">
+      Sur nos conditions, sur nos délais, sur la façon dont nous travaillons. Vous aurez une
+      réponse claire, et le nom de l'implantation qui livre votre secteur.
+    </p>
+    <div class="cd-btns" data-vu data-delai="2">
+      <a class="cd-btn" href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="cd-pied">
+  <div class="cd-pied__in">
+    <div class="cd-pied__h">
+      <div>
+        <strong>Intégral Pharma</strong>
+        <p style="margin-top:8px">758 chemin de la Source, ZI Saint-Martin, 83400 Hyères</p>
+      </div>
+      <div class="cd-pied__liens">
+        <a href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a>
+        <a href="https://www.integralpharma.fr/mentions-l%C3%A9gales" rel="noopener">Mentions légales</a>
+      </div>
+    </div>
+    <p class="cd-pied__chiffres">
+      9 implantations · plus de 2 000 officines livrées · indépendant depuis 2006
+    </p>
+    <p class="cd-signature"><b>13</b> · Cadence — la section qui se fige et joue sa séquence</p>
+  </div>
+</footer>
+
+<script>
+/* ═════════════════════════════════════════════════════════════════════════════
+   LE MOTEUR — une seule architecture : la scène collée dont le contenu se joue
+   au rythme du défilement.
+
+   1. La course de chaque scène vient du NOMBRE D'ÉTAPES trouvées dans le DOM.
+   2. La progression se mesure sur la course réelle (piste − scène collée) :
+      elle vaut exactement 0 à l'entrée et 1 à la sortie, donc aucun saut.
+   3. Chaque étape dispose d'un PALIER : elle reste pleinement lisible sur les
+      deux tiers de son intervalle, au lieu de traverser en un éclair.
+   ═════════════════════════════════════════════════════════════════════════════ */
+(function () {
+  'use strict';
+  var racine = document.documentElement;
+  racine.setAttribute('data-pret', '1');
+
+  /* ---- Menu mobile : il doit marcher même si le reste est désactivé -------- */
+  (function () {
+    var burger  = document.querySelector('.cd-burger');
+    var panneau = document.getElementById('menu-mobile');
+    if (!burger || !panneau) return;
+    var fermer = panneau.querySelector('.cd-fermer');
+
+    function ouvre(o) {
+      panneau.classList.toggle('ouvert', o);
+      burger.setAttribute('aria-expanded', o ? 'true' : 'false');
+      document.body.classList.toggle('bloque', o);
+      if (o && fermer) fermer.focus();
+      else if (!o) burger.focus();
+    }
+    burger.addEventListener('click', function () { ouvre(true); });
+    if (fermer) fermer.addEventListener('click', function () { ouvre(false); });
+    panneau.addEventListener('click', function (e) {
+      if (e.target.tagName === 'A') ouvre(false);
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && panneau.classList.contains('ouvert')) ouvre(false);
+    });
+  })();
+
+  if (!racine.classList.contains('js-scene')) return;   /* mouvement réduit : rien d'autre */
+
+  /* ---- Utilitaires -------------------------------------------------------- */
+  function borne(v, a, b) { return v < a ? a : (v > b ? b : v); }
+
+  /* Progression continue AVEC PALIER.
+     n étapes → n−1 intervalles. Dans chaque intervalle, l'étape courante tient
+     les 28 premiers pour cent, la bascule occupe 44 %, l'étape suivante tient
+     les 28 derniers. Aucune étape ne peut donc être « sautée ». */
+  function curseur(p, n) {
+    if (n <= 1) return 0;
+    var k = p * (n - 1);
+    var i = Math.floor(k);
+    if (i > n - 2) i = n - 2;
+    var f = k - i;
+    var t = borne((f - 0.28) / 0.44, 0, 1);
+    t = t * t * (3 - 2 * t);
+    return i + t;
+  }
+  function poids(k, i) {
+    var d = Math.abs(k - i);
+    return d >= 1 ? 0 : 1 - d;
+  }
+
+  /* ---- Construction des scènes ------------------------------------------- */
+  var scenes = [];
+  [].forEach.call(document.querySelectorAll('[data-piste]'), function (piste) {
+    var scene  = piste.querySelector('[data-scene]');
+    var etapes = [].slice.call(piste.querySelectorAll('[data-etape]'));
+    if (!scene || etapes.length === 0) return;
+
+    /* LA COURSE EST CALCULÉE, PAS DEVINÉE : elle vaut --pas × nombre d'étapes. */
+    piste.style.setProperty('--n', etapes.length);
+
+    var o = {
+      type: piste.getAttribute('data-piste'),
+      piste: piste, scene: scene, etapes: etapes, n: etapes.length,
+      col: piste.querySelector('[data-col]'),
+      rangee: piste.querySelector('[data-rangee]'),
+      compteur: piste.querySelector('[data-compteur]'),
+      crans: [], hauteurs: [], k: -1
+    };
+
+    /* Rail gradué : autant de crans que d'étapes. */
+    var boite = piste.querySelector('.cd-rail__crans');
+    if (boite) {
+      for (var j = 0; j < o.n; j++) {
+        var c = document.createElement('span');
+        c.className = 'cd-rail__cran';
+        boite.appendChild(c);
+        o.crans.push(c);
+      }
+    }
+    scenes.push(o);
+  });
+
+  /* ---- Mesures (refaites au redimensionnement) ---------------------------- */
+  function mesurer() {
+    scenes.forEach(function (o) {
+      o.haut   = parseFloat(getComputedStyle(o.scene).top) || 0;
+      o.course = o.piste.offsetHeight - o.scene.offsetHeight;
+      if (o.course < 1) o.course = 1;
+      o.largeur = o.scene.clientWidth;
+      if (o.type === 'reseau' && o.etapes[0]) o.slot = o.etapes[0].offsetHeight || 1;
+      if (o.type === 'valeurs') {
+        o.hauteurs = o.etapes.map(function (e) {
+          var p = e.querySelector('p');
+          return p ? p.scrollHeight : 0;
+        });
+      }
+      o.k = -1;   /* force un redessin */
+    });
+  }
+
+  /* ---- Rendu -------------------------------------------------------------- */
+  function rendre() {
+    scenes.forEach(function (o) {
+      var r = o.piste.getBoundingClientRect();
+      var p = borne((o.haut - r.top) / o.course, 0, 1);
+      var k = curseur(p, o.n);
+
+      o.scene.style.setProperty('--p', p.toFixed(4));
+
+      if (o.k >= 0 && Math.abs(k - o.k) < 0.0008) return;
+      o.k = k;
+
+      var actif = Math.round(k);
+
+      for (var i = 0; i < o.n; i++) {
+        var a = poids(k, i);
+        var e = o.etapes[i];
+        e.style.setProperty('--a', a.toFixed(4));
+        e.style.zIndex = a > 0.5 ? 3 : 1;
+
+        if (o.crans[i]) {
+          o.crans[i].style.setProperty('--a', a.toFixed(3));
+          o.crans[i].setAttribute('data-actif', a > 0.5 ? '1' : '0');
+        }
+
+        if (o.type === 'valeurs') {
+          var texte = e.querySelector('p');
+          if (texte) {
+            texte.style.maxHeight = (a * (o.hauteurs[i] || 0) + 2) + 'px';
+            texte.style.opacity = a.toFixed(3);
+          }
+          e.setAttribute('data-ouvert', a > 0.05 ? '1' : '0');
+        }
+      }
+
+      if (o.type === 'reseau' && o.col && o.slot) {
+        o.col.style.transform = 'translate3d(0,' + (-k * o.slot).toFixed(2) + 'px,0)';
+      }
+      if (o.type === 'metier' && o.rangee) {
+        o.rangee.style.transform = 'translate3d(' + (-k * o.largeur).toFixed(2) + 'px,0,0)';
+      }
+      if (o.compteur) {
+        o.compteur.textContent = ('0' + (actif + 1)).slice(-2) + ' / ' + ('0' + o.n).slice(-2);
+      }
+    });
+  }
+
+  /* ---- Révélations : décidées sur la POSITION RÉELLE, jamais sur une seule
+         notification d'observateur. Tout ce qui est au-dessus de la ligne de
+         flottaison est révélé, y compris ce qu'on a dépassé d'un bond. ------- */
+  var aVoir = [].slice.call(document.querySelectorAll('[data-vu]'));
+  function reveler() {
+    var h = window.innerHeight;
+    for (var i = aVoir.length - 1; i >= 0; i--) {
+      if (aVoir[i].getBoundingClientRect().top < h * 0.92) {
+        aVoir[i].classList.add('vu');
+        aVoir.splice(i, 1);
+      }
+    }
+  }
+
+  /* ---- Jauge d'avancement de la page ------------------------------------- */
+  function jauge() {
+    var total = document.documentElement.scrollHeight - window.innerHeight;
+    var v = total > 0 ? borne(window.pageYOffset / total, 0, 1) : 0;
+    racine.style.setProperty('--avancee', v.toFixed(4));
+  }
+
+  var enAttente = false;
+  function boucle() {
+    rendre(); reveler(); jauge();
+    enAttente = false;
+  }
+  function auDefilement() {
+    if (!enAttente) { enAttente = true; requestAnimationFrame(boucle); }
+  }
+
+  var largeurConnue = window.innerWidth;
+  window.addEventListener('scroll', auDefilement, { passive: true });
+  window.addEventListener('resize', function () {
+    /* Sur téléphone, la barre d'adresse qui se replie change la hauteur sans
+       changer la mise en page : on ne remesure que si la largeur bouge. */
+    if (window.innerWidth === largeurConnue) { auDefilement(); return; }
+    largeurConnue = window.innerWidth;
+    mesurer(); auDefilement();
+  });
+  window.addEventListener('orientationchange', function () {
+    setTimeout(function () { mesurer(); auDefilement(); }, 220);
+  });
+  window.addEventListener('load', function () { mesurer(); boucle(); });
+
+  mesurer();
+  boucle();
+})();
+</script>
+
+</body>
+</html>

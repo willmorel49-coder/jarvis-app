@@ -1,0 +1,1461 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Intégral Pharma — 15 · Le Repère</title>
+<meta name="da-nom" content="Le Repère">
+<meta name="description" content="Site 15 pour Intégral Pharma : défilement fluide à ancrages. Une planche à dessin — horizons réglés, réglette d'ancrage, typographie mesurée.">
+
+<!--
+  SITE 15 · LE REPÈRE
+  ─────────────────────────────────────────────────────────────────────────────
+  ARCHITECTURE : le défilement fluide à ancrages.
+    · Le défilement natif n'est JAMAIS détourné : molette, pavé tactile, barre de
+      défilement et clavier pilotent le document comme d'habitude. On amortit
+      seulement le RENDU — le contenu vit dans un cadre fixe qu'on rattrape par
+      interpolation (lerp court, ~0,20/frame, soit ~340 ms de stabilisation).
+    · Des repères d'ancrage portent la lecture : une réglette graduée fixée en bas
+      de l'écran, dix traits, dix sections. Ce sont de vrais liens d'ancre — ils
+      fonctionnent au clavier et sans script.
+
+  POURQUOI CETTE DA : la mécanique est la plus discrète des vingt, donc tout le
+  poids est sur la composition. Le site est construit comme une planche à dessin :
+  des horizons réglés qui traversent la page, une graduation qui revient partout,
+  une typographie à deux voix (grand corps maigre / mono à graisse) et une source
+  de lumière franche en haut de chaque bande.
+
+  GARDE-FOUS
+    · Aucun texte n'est transparent au repos : les apparitions sont armées par la
+      classe .rp-anim posée en JS. Sans script → tout est visible.
+    · Filet double sur les apparitions : décision prise sur la position RÉELLE
+      lue au défilement (getBoundingClientRect), + révélation forcée à 2,5 s.
+    · Aucun clip-path masquant, aucun IntersectionObserver seul.
+    · L'amortissement est coupé sur pointeur grossier (tactile) et sous 900 px :
+      le défilement natif y est déjà excellent et le cadre fixe y est risqué.
+    · Mouvement réduit → aucune inertie, aucune apparition, défilement natif pur.
+    · Zéro requête réseau : pas de police distante, pas d'image, SVG en clair.
+  ─────────────────────────────────────────────────────────────────────────────
+-->
+
+<script>
+/* Armement AVANT le premier rendu. Sans cette classe, tout le contenu est visible.
+   Deux filets : si le script principal ne s'annonce pas, on désarme tout. */
+(function () {
+  var d = document.documentElement;
+  try {
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      d.className += ' rp-anim';
+      setTimeout(function () {
+        if (!window.__rpVivant) d.className = d.className.replace(' rp-anim', '');
+      }, 2500);
+    }
+  } catch (e) { d.className = d.className.replace(' rp-anim', ''); }
+})();
+</script>
+
+<style>
+/* ═══════════════════════════════════════════════════════════════════════════
+   1 · SOCLE
+   ═══════════════════════════════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box }
+
+:root{
+  /* marque */
+  --bleu:#0050E6;
+  --bleu-nuit:#00317F;
+  --bleu-vif:#2E78FF;
+  --bleu-pale:#E8EFFD;
+  --bleu-brume:#F0F4FC;
+  --orange:#F39A1B;
+  --orange-fonce:#B96D00;
+
+  /* matière : un clair FROID, porcelaine, avec une lumière franche */
+  --encre:#0E1420;
+  --gris:#5B657A;
+  --gris-clair:#8B95A8;
+  --papier:#F4F6FA;
+  --blanc:#FFFFFF;
+  --trait:#D2D9E6;
+  --trait-fin:#E3E8F1;
+
+  --barre:64px;          /* bandeau du haut */
+  --reglette:56px;       /* réglette d'ancrage du bas */
+  --marge:clamp(20px,5vw,88px);
+  --large:1240px;
+
+  --pt:.82rem;           /* 13,1 px — jamais moins */
+  --dis:ui-sans-serif,-apple-system,"SF Pro Display","Helvetica Neue","Segoe UI",Arial,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --sortie:cubic-bezier(.22,.75,.24,1);
+}
+
+html{
+  -webkit-text-size-adjust:100%;
+  scroll-behavior:smooth;            /* sans script : ancres douces natives */
+  scroll-padding-top:calc(var(--barre) + 18px);
+  background:var(--papier);
+}
+html.rp-js{ scroll-behavior:auto }   /* en mode amorti, c'est le script qui mène */
+
+body{
+  margin:0;
+  background:var(--papier);
+  color:var(--encre);
+  font:16px/1.6 var(--dis);
+  overflow-x:hidden;
+}
+
+h1,h2,h3,p,ol,ul,figure{ margin:0 }
+ol,ul{ padding:0; list-style:none }
+a{ color:inherit }
+svg{ display:block; max-width:100% }
+
+:focus-visible{ outline:3px solid var(--orange); outline-offset:3px; border-radius:2px }
+
+.rp-saut{
+  position:absolute; left:-9999px; top:0; z-index:300;
+  background:var(--bleu); color:#fff; padding:14px 22px; font-weight:700; text-decoration:none;
+}
+.rp-saut:focus{ left:8px; top:8px }
+
+.rp-lu{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   2 · LE CADRE AMORTI
+   Le contenu vit dans #rp-glisse. En mode amorti il sort du flux (position fixe)
+   et on le rattrape par transform ; le <body> reçoit la hauteur réelle pour que
+   la barre de défilement native existe et se comporte normalement.
+   ═══════════════════════════════════════════════════════════════════════════ */
+html.rp-js #rp-glisse{
+  position:fixed; top:0; left:0; width:100%;
+  will-change:transform;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   3 · LE BANDEAU DU HAUT
+   ═══════════════════════════════════════════════════════════════════════════ */
+.rp-barre{
+  position:fixed; inset:0 0 auto 0; z-index:120; height:var(--barre);
+  display:flex; align-items:center; gap:16px;
+  padding:0 clamp(14px,3vw,32px);
+  background:var(--papier);
+  border-bottom:1px solid var(--trait);
+}
+.rp-marque{
+  display:inline-flex; align-items:center; gap:11px; min-height:44px;
+  text-decoration:none; white-space:nowrap;
+  font:700 clamp(.98rem,1.5vw,1.08rem)/1 var(--dis); letter-spacing:-.022em;
+}
+/* le sigle : trois traits de graduation — le repère, en petit */
+.rp-sigle{ display:block; width:18px; height:20px; flex:0 0 auto }
+.rp-marque b{ font-weight:800 }
+.rp-marque span{ font-weight:500; color:var(--gris) }
+
+.rp-nav{ margin-left:auto; display:flex; align-items:center; gap:2px }
+.rp-nav a{
+  display:inline-flex; align-items:center; min-height:44px; padding:0 13px;
+  text-decoration:none; font-size:.95rem; font-weight:600; color:var(--encre);
+  position:relative;
+}
+.rp-nav a::after{
+  content:""; position:absolute; left:13px; right:13px; bottom:12px; height:2px;
+  background:var(--bleu); transform:scaleX(0); transform-origin:left;
+  transition:transform .28s var(--sortie);
+}
+.rp-nav a:hover::after,.rp-nav a:focus-visible::after{ transform:scaleX(1) }
+.rp-nav .rp-nav__mail{ color:var(--bleu) }
+
+.rp-burger{
+  margin-left:auto; width:46px; height:46px; display:none; place-items:center;
+  background:var(--blanc); border:1px solid var(--trait); cursor:pointer; padding:0;
+}
+.rp-burger i{ display:block; width:20px; height:2px; background:var(--encre); position:relative }
+.rp-burger i::before,.rp-burger i::after{
+  content:""; position:absolute; left:0; width:20px; height:2px; background:var(--encre);
+}
+.rp-burger i::before{ top:-6px } .rp-burger i::after{ top:6px }
+
+/* Panneau mobile — fond PLEIN, rien ne défile au travers */
+.rp-panneau{
+  position:fixed; inset:0; z-index:200; background:var(--papier);
+  display:none; flex-direction:column; padding:calc(var(--barre) + 16px) 22px 30px;
+}
+.rp-panneau.est-ouvert{ display:flex }
+.rp-panneau a{
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  min-height:60px; text-decoration:none; border-bottom:1px solid var(--trait);
+  font:600 clamp(1.35rem,6.4vw,1.9rem)/1.15 var(--dis); letter-spacing:-.03em;
+}
+.rp-panneau a em{ font:700 var(--pt)/1 var(--mono); font-style:normal; color:var(--gris-clair) }
+.rp-panneau a:last-of-type{ color:var(--bleu) }
+.rp-panneau__pied{ margin-top:auto; padding-top:24px; font:500 var(--pt)/1.6 var(--mono); color:var(--gris) }
+.rp-fermer{
+  position:absolute; top:9px; right:14px; width:46px; height:46px;
+  background:var(--blanc); border:1px solid var(--trait); cursor:pointer;
+  font:400 1.45rem/1 var(--dis); color:var(--encre);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   4 · LA RÉGLETTE D'ANCRAGE (bas d'écran) — les repères
+   ═══════════════════════════════════════════════════════════════════════════ */
+.rp-reglette{
+  position:fixed; inset:auto 0 0 0; z-index:120; height:var(--reglette);
+  display:flex; align-items:stretch; gap:clamp(12px,2.4vw,30px);
+  padding:0 clamp(14px,3vw,32px);
+  background:var(--papier);
+  border-top:1px solid var(--trait);
+}
+.rp-reglette__lu{
+  display:flex; align-items:center; gap:10px; white-space:nowrap;
+  font:700 var(--pt)/1 var(--mono); letter-spacing:.1em; text-transform:uppercase;
+  font-variant-numeric:tabular-nums;
+}
+.rp-reglette__lu b{ color:var(--bleu); font-weight:700 }
+.rp-reglette__lu span{ color:var(--gris) }
+.rp-reglette__lu i{ width:7px; height:7px; background:var(--orange); flex:0 0 auto }
+
+.rp-reglette ol{ flex:1; display:flex; align-items:stretch; min-width:0 }
+.rp-reglette li{ flex:1; display:flex; min-width:0 }
+.rp-reglette li a{
+  position:relative; flex:1; min-width:0;
+  display:flex; align-items:flex-end; justify-content:center;
+  min-height:44px; padding-bottom:16px; text-decoration:none;
+}
+/* le trait de graduation */
+.rp-reglette li a::after{
+  content:""; width:1px; height:11px; background:var(--trait);
+  transition:height .3s var(--sortie), background-color .3s var(--sortie);
+}
+.rp-reglette li:nth-child(odd) a::after{ height:16px }
+.rp-reglette li a:hover::after,
+.rp-reglette li a:focus-visible::after{ height:24px; background:var(--encre) }
+.rp-reglette li a[aria-current="true"]::after{ height:28px; background:var(--bleu); width:2px }
+/* la bulle : nom de la section */
+.rp-reglette li a span{
+  position:absolute; bottom:calc(100% + 10px); left:50%; transform:translate(-50%,6px);
+  background:var(--encre); color:#fff; padding:7px 12px; white-space:nowrap;
+  font:600 var(--pt)/1 var(--dis); letter-spacing:-.01em;
+  opacity:0; pointer-events:none;
+  transition:opacity .2s var(--sortie), transform .2s var(--sortie);
+}
+.rp-reglette li a:hover span,
+.rp-reglette li a:focus-visible span{ opacity:1; transform:translate(-50%,0) }
+.rp-reglette__fin{
+  display:flex; align-items:center; white-space:nowrap;
+  font:600 var(--pt)/1 var(--mono); letter-spacing:.08em; color:var(--gris-clair);
+  font-variant-numeric:tabular-nums;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   5 · LES BANDES ET LEURS HORIZONS
+   ═══════════════════════════════════════════════════════════════════════════ */
+.rp-bande{
+  position:relative; overflow:hidden;
+  padding:clamp(72px,10vh,124px) var(--marge);
+  background:var(--papier);
+  border-top:1px solid var(--trait);
+  scroll-margin-top:calc(var(--barre) + 18px);
+}
+.rp-bande--blanche{ background:var(--blanc) }
+.rp-bande--brume{ background:var(--bleu-brume) }
+.rp-bande--bleue{ background:var(--bleu); border-top-color:var(--bleu) }
+
+/* La source de lumière. Un aplat clair sans lumière est mort. */
+.rp-jour{
+  position:absolute; inset:0; z-index:0; pointer-events:none;
+  background:radial-gradient(120% 74% at 18% -8%, #FFFFFF 0%, rgba(255,255,255,0) 60%);
+}
+.rp-bande--blanche .rp-jour{
+  background:radial-gradient(105% 62% at 78% -10%, #EAF0FD 0%, rgba(234,240,253,0) 58%);
+}
+.rp-bande--brume .rp-jour{
+  background:radial-gradient(115% 70% at 26% -6%, #FFFFFF 0%, rgba(255,255,255,0) 62%);
+}
+.rp-bande--bleue .rp-jour{
+  background:radial-gradient(96% 72% at 24% -6%, #4C8CFF 0%, rgba(76,140,255,0) 62%);
+}
+
+.rp-in{ position:relative; z-index:2; width:100%; max-width:var(--large); margin:0 auto }
+
+/* L'HORIZON : le geste répété du site. Un titre courant posé sur un trait qui
+   traverse toute la largeur, et le numéro de section au bout. */
+.rp-horizon{
+  display:flex; align-items:center; gap:clamp(14px,2vw,24px);
+  margin-bottom:clamp(30px,4.4vh,50px);
+}
+.rp-horizon__t{
+  font:700 var(--pt)/1 var(--mono); letter-spacing:.2em; text-transform:uppercase;
+  color:var(--bleu); white-space:nowrap;
+}
+.rp-horizon__l{ flex:1; height:1px; background:var(--trait); min-width:24px }
+.rp-horizon__n{
+  font:700 var(--pt)/1 var(--mono); letter-spacing:.14em; color:var(--gris-clair);
+  font-variant-numeric:tabular-nums;
+}
+.rp-bande--bleue .rp-horizon__t{ color:#BBD4FF }
+.rp-bande--bleue .rp-horizon__l{ background:rgba(255,255,255,.34) }
+.rp-bande--bleue .rp-horizon__n{ color:#9BC0FF }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   6 · TYPOGRAPHIE — deux voix : grand corps maigre / mono à graisse
+   ═══════════════════════════════════════════════════════════════════════════ */
+.rp-t{
+  font-family:var(--dis); font-weight:300;
+  font-size:clamp(1.9rem,5.1vw,3.75rem); line-height:1.04; letter-spacing:-.035em;
+  max-width:22ch; text-wrap:balance;
+}
+.rp-t b{ font-weight:800; letter-spacing:-.045em }
+.rp-t--geant{ font-size:clamp(2.35rem,8.2vw,6.2rem); line-height:.96; letter-spacing:-.045em; max-width:13ch }
+.rp-t--large{ max-width:28ch }
+
+.rp-txt{ margin-top:clamp(18px,2.4vh,26px); max-width:56ch; color:var(--gris); font-size:clamp(1rem,1.35vw,1.14rem) }
+.rp-txt + .rp-txt{ margin-top:15px }
+.rp-txt--fort{ color:var(--encre); font-weight:500; max-width:46ch }
+.rp-bande--bleue .rp-txt{ color:#D5E4FF }
+.rp-bande--bleue .rp-txt--fort{ color:#fff }
+.rp-bande--bleue{ color:#fff }
+
+.rp-note{
+  font:500 var(--pt)/1.65 var(--mono); color:var(--gris); letter-spacing:.005em; max-width:64ch;
+}
+.rp-bande--bleue .rp-note{ color:#B7D1FF }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   7 · BOUTONS
+   ═══════════════════════════════════════════════════════════════════════════ */
+.rp-btns{ display:flex; flex-wrap:wrap; gap:12px; margin-top:clamp(26px,3.6vh,42px) }
+.rp-btn{
+  display:inline-flex; align-items:center; gap:12px; min-height:52px; padding:0 24px;
+  background:var(--bleu); color:#fff; text-decoration:none;
+  font-weight:600; font-size:1rem; letter-spacing:-.01em;
+  border:1px solid var(--bleu);
+  transition:background-color .2s var(--sortie), transform .2s var(--sortie);
+}
+.rp-btn:hover{ background:var(--bleu-nuit); border-color:var(--bleu-nuit); transform:translateY(-2px) }
+.rp-btn__fl{ width:16px; height:10px; flex:0 0 auto }
+.rp-btn--creux{ background:transparent; color:var(--encre); border-color:var(--trait) }
+.rp-btn--creux:hover{ background:var(--blanc); border-color:var(--encre); color:var(--encre) }
+.rp-btn--clair{ background:#fff; color:var(--bleu-nuit); border-color:#fff }
+.rp-btn--clair:hover{ background:#E4EEFF; border-color:#E4EEFF; color:var(--bleu-nuit) }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   8 · SECTION 01 — L'OUVERTURE
+   ═══════════════════════════════════════════════════════════════════════════ */
+.rp-ouv{
+  position:relative; overflow:hidden;
+  min-height:100vh; min-height:100svh;
+  display:flex; flex-direction:column; justify-content:center;
+  padding:calc(var(--barre) + clamp(48px,8vh,96px)) var(--marge) 0;
+  background:var(--papier);
+  scroll-margin-top:0;
+}
+.rp-ouv__jour{
+  position:absolute; inset:0; z-index:0; pointer-events:none;
+  background:
+    radial-gradient(78% 58% at 16% -12%, #FFFFFF 0%, rgba(255,255,255,0) 58%),
+    radial-gradient(70% 52% at 92% 8%, #E3ECFC 0%, rgba(227,236,252,0) 62%),
+    linear-gradient(180deg,#FAFBFE 0%, #F2F5FB 58%, #EDF1F9 100%);
+}
+/* trame de graduation, surface bornée, éteinte sur les bords */
+.rp-ouv__trame{
+  position:absolute; z-index:1; pointer-events:none;
+  right:0; top:0; width:min(52%,620px); height:min(76%,660px);
+  background:repeating-linear-gradient(90deg, rgba(0,80,230,.16) 0 1px, rgba(0,80,230,0) 1px 14px);
+  -webkit-mask-image:radial-gradient(100% 100% at 100% 0%, #000 12%, rgba(0,0,0,0) 72%);
+  mask-image:radial-gradient(100% 100% at 100% 0%, #000 12%, rgba(0,0,0,0) 72%);
+}
+.rp-ouv__in{ position:relative; z-index:2; width:100%; max-width:var(--large); margin:0 auto }
+
+.rp-sur{
+  display:flex; align-items:center; gap:12px;
+  font:700 var(--pt)/1.4 var(--mono); letter-spacing:.19em; text-transform:uppercase;
+  color:var(--bleu);
+}
+.rp-sur::before{ content:""; width:26px; height:2px; background:var(--orange); flex:0 0 auto }
+
+.rp-ouv h1{
+  margin:clamp(20px,3vh,34px) 0 0;
+  font-family:var(--dis); font-weight:300;
+  font-size:clamp(2.6rem,9.4vw,7rem); line-height:.94; letter-spacing:-.045em;
+  max-width:15ch;
+}
+.rp-ouv h1 b{ display:block; font-weight:800; letter-spacing:-.055em }
+
+/* La mesure : neuf traits pleins, un trait creux — neuf implantations, un partenaire */
+.rp-mesure{ margin-top:clamp(30px,4.6vh,54px); max-width:640px }
+.rp-mesure__rail{
+  position:relative; display:flex; align-items:flex-end; justify-content:space-between;
+  height:30px; border-bottom:1px solid var(--trait);
+}
+.rp-mesure__rail i{ display:block; width:2px; height:26px; background:var(--bleu) }
+.rp-mesure__rail i.est-part{ width:2px; height:14px; background:var(--orange); margin-left:26px }
+.rp-mesure__lg{
+  display:flex; justify-content:space-between; gap:16px; margin-top:11px;
+  font:600 var(--pt)/1.4 var(--mono); letter-spacing:.09em; color:var(--gris);
+}
+.rp-mesure__lg b{ color:var(--encre); font-weight:700 }
+.rp-mesure__lg span:last-child{ color:var(--orange-fonce) }
+
+.rp-ouv__bas{
+  margin-top:clamp(26px,4vh,44px);
+  display:grid; grid-template-columns:minmax(0,1fr) auto; gap:clamp(24px,4vw,64px); align-items:end;
+}
+.rp-ouv__bas p{ max-width:54ch; color:var(--gris); font-size:clamp(1rem,1.35vw,1.16rem) }
+
+/* Bandeau qui défile */
+.rp-bandeau{
+  position:relative; z-index:2; margin:clamp(38px,6vh,72px) calc(var(--marge) * -1) 0;
+  border-top:1px solid var(--trait); border-bottom:1px solid var(--trait);
+  background:rgba(255,255,255,.62);
+  overflow:hidden;
+}
+.rp-bandeau__piste{
+  display:flex; width:max-content;
+  animation:rp-defile 46s linear infinite;
+}
+.rp-bandeau__piste ul{ display:flex; align-items:center }
+.rp-bandeau__piste li{
+  display:flex; align-items:center; gap:clamp(20px,3vw,42px);
+  padding:0 clamp(10px,1.6vw,21px); height:56px; white-space:nowrap;
+  font:600 var(--pt)/1 var(--mono); letter-spacing:.13em; text-transform:uppercase; color:var(--encre);
+}
+.rp-bandeau__piste li::after{ content:""; width:5px; height:5px; background:var(--bleu); flex:0 0 auto }
+.rp-bandeau__piste li:nth-child(3n)::after{ background:var(--orange) }
+@keyframes rp-defile{ from{ transform:translate3d(0,0,0) } to{ transform:translate3d(-50%,0,0) } }
+
+.rp-ouv__fleche{
+  display:inline-flex; align-items:center; gap:10px; min-height:44px; text-decoration:none;
+  font:700 var(--pt)/1 var(--mono); letter-spacing:.16em; text-transform:uppercase; color:var(--gris);
+}
+.rp-ouv__fleche svg{ width:12px; height:20px }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   9 · SECTION 02 — L'HISTOIRE + COMPTEURS
+   ═══════════════════════════════════════════════════════════════════════════ */
+.rp-duo{ display:grid; grid-template-columns:minmax(0,1.05fr) minmax(0,1fr); gap:clamp(28px,5vw,84px); align-items:start }
+.rp-duo--inv{ grid-template-columns:minmax(0,1fr) minmax(0,1.05fr) }
+
+.rp-compteurs{
+  margin-top:clamp(44px,6vh,78px);
+  display:grid; grid-template-columns:repeat(4,minmax(0,1fr));
+  border-top:1px solid var(--trait);
+}
+.rp-compteurs div{
+  padding:clamp(20px,3vh,30px) clamp(12px,2vw,26px) 0;
+  border-right:1px solid var(--trait-fin);
+}
+.rp-compteurs div:first-child{ padding-left:0 }
+.rp-compteurs div:last-child{ border-right:0 }
+.rp-compteurs b{
+  display:block; font-family:var(--mono); font-weight:400;
+  font-size:clamp(1.85rem,4.4vw,3.1rem); line-height:1; letter-spacing:-.035em;
+  color:var(--encre); font-variant-numeric:tabular-nums;
+}
+.rp-compteurs b em{ font-style:normal; color:var(--bleu) }
+.rp-compteurs small{
+  display:block; margin-top:12px;
+  font:600 var(--pt)/1.4 var(--mono); letter-spacing:.06em; color:var(--gris);
+}
+
+.rp-duo--deux{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:clamp(20px,4vw,64px) }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   10 · SECTION 03 — LE RÉSEAU (le registre réglé)
+   ═══════════════════════════════════════════════════════════════════════════ */
+.rp-registre{ margin-top:clamp(34px,5vh,58px); border-top:1px solid var(--trait) }
+.rp-registre li{
+  position:relative;
+  display:grid; grid-template-columns:56px minmax(0,1fr) auto 58px;
+  align-items:center; gap:clamp(10px,1.6vw,20px);
+  min-height:66px; padding:12px 0;
+  border-bottom:1px solid var(--trait-fin);
+  transition:background-color .22s var(--sortie), padding-left .22s var(--sortie);
+}
+.rp-registre li::before{
+  content:""; position:absolute; left:0; top:0; bottom:-1px; width:2px;
+  background:var(--bleu); transform:scaleY(0); transform-origin:top;
+  transition:transform .26s var(--sortie);
+}
+.rp-registre li:hover{ background:rgba(255,255,255,.9); padding-left:16px }
+.rp-registre li:hover::before{ transform:scaleY(1) }
+.rp-registre__n{
+  font:600 var(--pt)/1 var(--mono); letter-spacing:.1em; color:var(--gris-clair);
+  font-variant-numeric:tabular-nums;
+}
+.rp-registre li:hover .rp-registre__n{ color:var(--bleu) }
+.rp-registre__nom{ font-size:clamp(1.02rem,1.75vw,1.32rem); font-weight:600; letter-spacing:-.02em }
+.rp-registre__nom em{
+  display:block; margin-top:3px; font:600 var(--pt)/1.3 var(--mono); font-style:normal;
+  letter-spacing:.06em; color:var(--orange-fonce);
+}
+.rp-registre__v{ font-size:.98rem; color:var(--gris); text-align:right }
+.rp-registre__d{
+  justify-self:end; min-width:46px; text-align:center; padding:5px 0;
+  font:700 var(--pt)/1 var(--mono); letter-spacing:.06em; color:var(--gris);
+  border:1px solid var(--trait); background:rgba(255,255,255,.7);
+  font-variant-numeric:tabular-nums;
+}
+.rp-registre li:hover .rp-registre__d{ color:#fff; background:var(--bleu); border-color:var(--bleu) }
+
+.rp-registre li.est-part{ border-bottom:0; border-top:1px dashed var(--trait); margin-top:14px }
+.rp-registre li.est-part::before{ background:var(--orange) }
+.rp-registre li.est-part .rp-registre__n{ color:var(--orange-fonce) }
+.rp-registre li.est-part:hover .rp-registre__d{ background:var(--orange-fonce); border-color:var(--orange-fonce) }
+
+.rp-legende{
+  margin-top:20px; display:flex; flex-wrap:wrap; gap:10px 26px; align-items:center;
+  font:600 var(--pt)/1.5 var(--mono); letter-spacing:.05em; color:var(--gris);
+}
+.rp-legende i{ display:inline-block; width:10px; height:10px; background:var(--bleu); margin-right:9px; vertical-align:-1px }
+.rp-legende i.est-orange{ background:var(--orange) }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   11 · SECTION 04 — LE MÉTIER (la chaîne)
+   ═══════════════════════════════════════════════════════════════════════════ */
+.rp-chaine{
+  margin-top:clamp(40px,5.6vh,66px);
+  display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:0;
+  border-top:1px solid var(--trait);
+}
+.rp-chaine article{
+  position:relative;
+  padding:clamp(22px,3vh,34px) clamp(14px,2vw,30px) 0;
+  border-right:1px solid var(--trait-fin);
+}
+.rp-chaine article:first-child{ padding-left:0 }
+.rp-chaine article:last-child{ border-right:0 }
+.rp-chaine article::before{
+  content:""; position:absolute; top:-1px; left:0; width:0; height:3px; background:var(--bleu);
+  transition:width .5s var(--sortie);
+}
+.rp-chaine article:hover::before{ width:100% }
+.rp-chaine b{
+  display:block; font:600 var(--pt)/1 var(--mono); letter-spacing:.14em; color:var(--bleu);
+  font-variant-numeric:tabular-nums;
+}
+.rp-chaine h3{
+  margin:14px 0 12px; font-size:clamp(1.08rem,1.9vw,1.42rem); font-weight:600; letter-spacing:-.025em;
+}
+.rp-chaine p{ color:var(--gris); font-size:.985rem; line-height:1.6 }
+
+.rp-cloture{
+  margin-top:clamp(34px,4.6vh,54px); padding:clamp(22px,3vh,32px) clamp(22px,3vw,36px);
+  background:var(--blanc); border:1px solid var(--trait); border-left:3px solid var(--orange);
+  max-width:78ch;
+}
+.rp-cloture p{ font-size:clamp(1.02rem,1.5vw,1.2rem); font-weight:500; letter-spacing:-.015em }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   12 · SECTION 05 — LA CENTRALE (deux grands compteurs)
+   ═══════════════════════════════════════════════════════════════════════════ */
+.rp-gros{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:clamp(24px,4vw,60px); margin-top:clamp(30px,4vh,46px) }
+.rp-gros div{ border-top:2px solid var(--bleu); padding-top:clamp(16px,2.4vh,24px) }
+.rp-gros div:last-child{ border-top-color:var(--orange) }
+.rp-gros b{
+  display:block; font-family:var(--mono); font-weight:400;
+  font-size:clamp(2.3rem,7vw,4.6rem); line-height:1; letter-spacing:-.05em;
+  font-variant-numeric:tabular-nums;
+}
+.rp-gros div:last-child b{ color:var(--orange-fonce) }
+.rp-gros small{ display:block; margin-top:12px; font:600 var(--pt)/1.4 var(--mono); letter-spacing:.09em; color:var(--gris) }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   13 · SECTION 06 — VOS FACTURES (la bande bleue)
+   ═══════════════════════════════════════════════════════════════════════════ */
+.rp-fig{ width:100%; max-width:340px; margin-left:auto }
+@media (max-width:900px){ .rp-fig{ margin:26px 0 0 } }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   14 · SECTION 07 — LES PARTENAIRES
+   ═══════════════════════════════════════════════════════════════════════════ */
+.rp-labos{
+  margin-top:clamp(34px,4.6vh,54px);
+  display:grid; grid-template-columns:repeat(3,minmax(0,1fr));
+  border-top:1px solid var(--trait); border-left:1px solid var(--trait);
+}
+.rp-labos span{
+  display:flex; align-items:center; justify-content:center; min-height:118px; padding:20px 14px;
+  border-right:1px solid var(--trait); border-bottom:1px solid var(--trait);
+  background:var(--blanc);
+  font-size:clamp(1.1rem,2vw,1.5rem); font-weight:600; letter-spacing:-.028em; text-align:center;
+  transition:color .22s var(--sortie), background-color .22s var(--sortie);
+}
+.rp-labos span:hover{ color:var(--bleu); background:#FBFCFF }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   15 · SECTION 08 — NOUS REJOINDRE
+   ═══════════════════════════════════════════════════════════════════════════ */
+.rp-villes{ display:flex; flex-wrap:wrap; gap:10px; margin-top:clamp(24px,3.2vh,34px) }
+.rp-villes span{
+  display:inline-flex; align-items:center; min-height:44px; padding:0 16px;
+  background:var(--blanc); border:1px solid var(--trait);
+  font:600 var(--pt)/1 var(--mono); letter-spacing:.05em; color:var(--encre);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   16 · SECTION 09 — LES VALEURS
+   ═══════════════════════════════════════════════════════════════════════════ */
+.rp-valeurs{
+  margin-top:clamp(40px,5.4vh,64px);
+  display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:0;
+  border-top:1px solid var(--trait);
+}
+.rp-valeurs article{ padding:clamp(24px,3.2vh,36px) clamp(16px,2.4vw,34px) 0; border-right:1px solid var(--trait-fin) }
+.rp-valeurs article:first-child{ padding-left:0 }
+.rp-valeurs article:last-child{ border-right:0 }
+.rp-valeurs h3{
+  font-weight:300; font-size:clamp(1.55rem,3.4vw,2.5rem); letter-spacing:-.038em; line-height:1.05;
+}
+.rp-valeurs h3 i{ display:block; width:34px; height:3px; background:var(--bleu); margin-bottom:18px }
+.rp-valeurs article:nth-child(2) h3 i{ background:var(--orange) }
+.rp-valeurs article:nth-child(3) h3 i{ background:var(--encre) }
+.rp-valeurs p{ margin-top:16px; color:var(--gris); font-size:1rem; line-height:1.62 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   17 · SECTION 10 — LA FIN DE PAGE + PIED
+   ═══════════════════════════════════════════════════════════════════════════ */
+.rp-fin{ text-align:left }
+.rp-mail{
+  display:inline-flex; align-items:center; gap:14px; min-height:60px; padding:0 26px;
+  background:var(--encre); color:#fff; text-decoration:none;
+  font:600 clamp(1rem,1.9vw,1.28rem)/1 var(--dis); letter-spacing:-.02em;
+  border:1px solid var(--encre);
+  transition:background-color .2s var(--sortie), transform .2s var(--sortie);
+}
+.rp-mail:hover{ background:var(--bleu); border-color:var(--bleu); transform:translateY(-2px) }
+.rp-mail i{ width:8px; height:8px; background:var(--orange); flex:0 0 auto }
+
+.rp-pied{
+  position:relative; z-index:2;
+  padding:clamp(40px,6vh,62px) var(--marge) calc(clamp(38px,5vh,58px) + var(--reglette));
+  background:var(--papier); border-top:1px solid var(--trait);
+}
+.rp-pied__in{ max-width:var(--large); margin:0 auto; display:grid; gap:26px }
+.rp-pied__haut{ display:flex; flex-wrap:wrap; gap:18px 32px; align-items:baseline; justify-content:space-between }
+.rp-pied address{ font-style:normal; color:var(--gris); font-size:.98rem; line-height:1.7 }
+.rp-pied address b{ color:var(--encre); font-weight:600 }
+.rp-pied a{ color:var(--bleu); text-decoration:none; font-weight:600 }
+.rp-pied a:hover{ text-decoration:underline }
+.rp-pied__liens{ display:flex; flex-wrap:wrap; gap:8px 24px; align-items:center }
+.rp-pied__liens a{ display:inline-flex; align-items:center; min-height:44px }
+.rp-pied__chiffres{
+  padding-top:22px; border-top:1px solid var(--trait);
+  display:flex; flex-wrap:wrap; gap:8px 26px; align-items:center; justify-content:space-between;
+  font:600 var(--pt)/1.6 var(--mono); letter-spacing:.07em; color:var(--gris);
+}
+.rp-pied__sign{ color:var(--gris-clair); letter-spacing:.12em }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   18 · APPARITIONS — armées par .rp-anim, jamais transparentes au repos
+   ═══════════════════════════════════════════════════════════════════════════ */
+.rp-anim .rp-up{
+  opacity:0; transform:translate3d(0,18px,0);
+}
+.rp-anim .rp-up.est-vu{
+  opacity:1; transform:none;
+  transition:opacity .58s var(--sortie), transform .58s var(--sortie);
+  transition-delay:calc(var(--i,0) * 55ms);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   19 · ADAPTATIONS
+   ═══════════════════════════════════════════════════════════════════════════ */
+/* La réglette est fixée en bas : elle mangeait la moitié du bandeau défilant de
+   l'ouverture (constaté à l'écran, 1440×900). On lui réserve sa hauteur. */
+@media (min-width:901px){
+  .rp-ouv{ padding-bottom:var(--reglette) }
+}
+@media (max-width:1180px){
+  .rp-reglette__fin{ display:none }
+}
+@media (max-width:1040px){
+  .rp-chaine{ grid-template-columns:repeat(2,minmax(0,1fr)) }
+  .rp-chaine article{ padding-bottom:26px; border-bottom:1px solid var(--trait-fin) }
+  .rp-chaine article:nth-child(2n){ border-right:0 }
+  .rp-chaine article:nth-child(3){ padding-left:0 }
+  .rp-chaine article:nth-child(n+3){ border-bottom:0 }
+  .rp-compteurs{ grid-template-columns:repeat(2,minmax(0,1fr)) }
+  .rp-compteurs div:nth-child(2){ border-right:0 }
+  .rp-compteurs div:nth-child(3){ padding-left:0; border-top:1px solid var(--trait-fin); margin-top:22px; padding-top:22px }
+  .rp-compteurs div:nth-child(4){ border-top:1px solid var(--trait-fin); margin-top:22px; padding-top:22px }
+}
+@media (max-width:900px){
+  .rp-nav{ display:none }
+  .rp-burger{ display:grid }
+  .rp-reglette{ display:none }
+  .rp-pied{ padding-bottom:clamp(38px,5vh,58px) }
+  .rp-duo, .rp-duo--inv, .rp-duo--deux{ grid-template-columns:minmax(0,1fr) }
+  .rp-ouv__bas{ grid-template-columns:minmax(0,1fr) }
+  .rp-ouv__fleche{ display:none }
+  .rp-valeurs{ grid-template-columns:minmax(0,1fr) }
+  .rp-valeurs article{ padding:26px 0 26px; border-right:0; border-bottom:1px solid var(--trait-fin) }
+  .rp-valeurs article:last-child{ border-bottom:0; padding-bottom:0 }
+  .rp-labos{ grid-template-columns:repeat(2,minmax(0,1fr)) }
+  .rp-registre li{ grid-template-columns:40px minmax(0,1fr) 46px; row-gap:2px }
+  .rp-registre__v{ grid-column:2; text-align:left; font-size:.92rem }
+  .rp-registre__d{ grid-column:3; grid-row:1 / span 2 }
+  .rp-registre__nom{ grid-column:2 }
+  .rp-registre__n{ grid-row:1 / span 2 }
+}
+@media (max-width:620px){
+  .rp-gros{ grid-template-columns:minmax(0,1fr) }
+  .rp-labos{ grid-template-columns:minmax(0,1fr) }
+  .rp-labos span{ min-height:88px }
+  .rp-chaine{ grid-template-columns:minmax(0,1fr) }
+  .rp-chaine article{ padding:26px 0; border-right:0; border-bottom:1px solid var(--trait-fin) }
+  .rp-chaine article:last-child{ border-bottom:0; padding-bottom:0 }
+  .rp-compteurs{ grid-template-columns:repeat(2,minmax(0,1fr)) }
+  .rp-mesure__rail i.est-part{ margin-left:14px }
+  .rp-pied__haut{ flex-direction:column; gap:8px }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   20 · MOUVEMENT RÉDUIT — aucune inertie, aucune apparition, natif pur
+   ═══════════════════════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce){
+  html{ scroll-behavior:auto }
+  *,*::before,*::after{ animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important }
+  .rp-bandeau{ overflow:visible }
+  .rp-bandeau__piste{ animation:none; width:100%; flex-wrap:wrap }
+  .rp-bandeau__piste ul{ flex-wrap:wrap }
+  .rp-bandeau__piste ul[aria-hidden="true"]{ display:none }
+  .rp-bandeau__piste li{ height:auto; padding:10px clamp(10px,1.6vw,21px) }
+}
+</style>
+</head>
+<body>
+
+<a class="rp-saut" href="#contenu">Aller au contenu</a>
+
+<!-- ══ BANDEAU DU HAUT ═══════════════════════════════════════════════════ -->
+<header class="rp-barre" id="rp-barre">
+  <a class="rp-marque" href="#ouverture">
+    <svg class="rp-sigle" viewBox="0 0 18 20" aria-hidden="true" focusable="false">
+      <rect x="0" y="0" width="3" height="20" fill="#0050E6"/>
+      <rect x="6" y="5" width="3" height="15" fill="#0050E6"/>
+      <rect x="12" y="10" width="3" height="10" fill="#F39A1B"/>
+    </svg>
+    <b>Intégral</b> <span>Pharma</span>
+  </a>
+
+  <nav class="rp-nav" aria-label="Navigation principale">
+    <a href="#groupe">Le groupe</a>
+    <a href="#reseau">Le réseau</a>
+    <a href="#metier">Le métier</a>
+    <a href="#valeurs">Nos valeurs</a>
+    <a class="rp-nav__mail" href="#contact">Nous écrire</a>
+  </nav>
+
+  <button class="rp-burger" id="rp-burger" type="button" aria-expanded="false" aria-controls="rp-panneau" aria-label="Ouvrir le menu">
+    <i aria-hidden="true"></i>
+  </button>
+</header>
+
+<!-- ══ PANNEAU MOBILE (fond plein) ═══════════════════════════════════════ -->
+<div class="rp-panneau" id="rp-panneau" role="dialog" aria-modal="true" aria-label="Menu">
+  <button class="rp-fermer" id="rp-fermer" type="button" aria-label="Fermer le menu">✕</button>
+  <a href="#groupe">Le groupe <em>02</em></a>
+  <a href="#reseau">Le réseau <em>03</em></a>
+  <a href="#metier">Le métier <em>04</em></a>
+  <a href="#valeurs">Nos valeurs <em>09</em></a>
+  <a href="#contact">Nous écrire <em>10</em></a>
+  <p class="rp-panneau__pied">Intégral Pharma<br>758 chemin de la Source, ZI Saint-Martin<br>83400 Hyères</p>
+</div>
+
+<!-- ══ LE CADRE AMORTI — tout le contenu défilant vit ici ════════════════ -->
+<div id="rp-glisse">
+<main id="contenu">
+
+<!-- ══ 01 · L'OUVERTURE ══════════════════════════════════════════════════ -->
+<section class="rp-ouv" id="ouverture" data-nom="Ouverture" data-n="01">
+  <div class="rp-ouv__jour" aria-hidden="true"></div>
+  <div class="rp-ouv__trame" aria-hidden="true"></div>
+
+  <div class="rp-ouv__in">
+    <p class="rp-sur rp-up">Groupe de grossistes-répartiteurs français indépendant</p>
+
+    <h1 class="rp-up" style="--i:1">Neuf maisons. <b>Un seul nom.</b></h1>
+
+    <div class="rp-mesure rp-up" style="--i:2">
+      <div class="rp-mesure__rail" aria-hidden="true">
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="est-part"></i>
+      </div>
+      <p class="rp-mesure__lg"><span><b>Neuf</b> implantations</span><span>et un partenaire</span></p>
+    </div>
+
+    <div class="rp-ouv__bas rp-up" style="--i:3">
+      <p>Chacune livre sa région depuis des années, avec ses équipes et ses habitudes. Depuis 2006, elles avancent ensemble sous le nom d'Intégral&nbsp;Pharma — et votre commande part toujours de la plus proche de votre comptoir.</p>
+      <a class="rp-ouv__fleche" href="#groupe">
+        Faites défiler
+        <svg viewBox="0 0 12 20" aria-hidden="true" focusable="false">
+          <path d="M6 0v17M1 12l5 6 5-6" fill="none" stroke="#5B657A" stroke-width="1.6"/>
+        </svg>
+      </a>
+    </div>
+
+    <div class="rp-btns rp-up" style="--i:4">
+      <a class="rp-btn" href="#reseau">
+        Découvrir le réseau
+        <svg class="rp-btn__fl" viewBox="0 0 16 10" aria-hidden="true" focusable="false">
+          <path d="M0 5h14M10 1l4 4-4 4" fill="none" stroke="#fff" stroke-width="1.6"/>
+        </svg>
+      </a>
+      <a class="rp-btn rp-btn--creux" href="#contact">Nous écrire</a>
+    </div>
+  </div>
+
+  <!-- Bandeau qui défile — il dépasse par nature, il est borné par overflow -->
+  <div class="rp-bandeau" aria-label="Repères du groupe">
+    <div class="rp-bandeau__piste">
+      <ul>
+        <li>Indépendant</li>
+        <li>Neuf implantations</li>
+        <li>Un réseau national</li>
+        <li>Plus de 2 000 officines livrées</li>
+        <li>Confiance, Engagement, Respect</li>
+        <li>Une alternative aux grossistes historiques</li>
+      </ul>
+      <ul aria-hidden="true">
+        <li>Indépendant</li>
+        <li>Neuf implantations</li>
+        <li>Un réseau national</li>
+        <li>Plus de 2 000 officines livrées</li>
+        <li>Confiance, Engagement, Respect</li>
+        <li>Une alternative aux grossistes historiques</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ══ 02 · L'HISTOIRE ═══════════════════════════════════════════════════ -->
+<section class="rp-bande rp-bande--blanche" id="groupe" data-nom="Le groupe" data-n="02">
+  <div class="rp-jour" aria-hidden="true"></div>
+  <div class="rp-in">
+
+    <div class="rp-horizon rp-up">
+      <span class="rp-horizon__t">Notre histoire</span>
+      <span class="rp-horizon__l"></span>
+      <span class="rp-horizon__n">02 / 10</span>
+    </div>
+
+    <div class="rp-duo">
+      <h2 class="rp-t rp-up">Rendre la marge <b>à l'officine française.</b></h2>
+      <div>
+        <p class="rp-txt rp-txt--fort rp-up" style="--i:1">C'est la raison d'être d'Intégral Pharma depuis 2006 : redistribuer directement la marge aux officines françaises, en toute transparence, avec des prix nets visibles sur facture.</p>
+        <p class="rp-txt rp-up" style="--i:2">Neuf implantations aujourd'hui, plus de deux mille officines livrées chaque jour, et la même idée qu'au premier jour — un groupe de répartiteurs indépendants qui a choisi de se mettre du côté du comptoir.</p>
+      </div>
+    </div>
+
+    <div class="rp-compteurs">
+      <div class="rp-up" style="--i:1"><b>2006</b><small>année de création</small></div>
+      <div class="rp-up" style="--i:2"><b>9</b><small>implantations</small></div>
+      <div class="rp-up" style="--i:3"><b>2 000 <em>+</em></b><small>officines livrées</small></div>
+      <div class="rp-up" style="--i:4"><b>20</b><small>ans d'indépendance</small></div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══ 03 · LE RÉSEAU ════════════════════════════════════════════════════ -->
+<section class="rp-bande" id="reseau" data-nom="Le réseau" data-n="03">
+  <div class="rp-jour" aria-hidden="true"></div>
+  <div class="rp-in">
+
+    <div class="rp-horizon rp-up">
+      <span class="rp-horizon__t">Le réseau</span>
+      <span class="rp-horizon__l"></span>
+      <span class="rp-horizon__n">03 / 10</span>
+    </div>
+
+    <div class="rp-duo rp-duo--inv">
+      <h2 class="rp-t rp-up">Neuf implantations. <b>Laquelle est la vôtre&nbsp;?</b></h2>
+      <div>
+        <p class="rp-txt rp-txt--fort rp-up" style="--i:1">C'est la seule question qui compte vraiment. Celle qui prépare votre commande, qui vous livre chaque matin, et dont vous connaissez l'équipe par son prénom.</p>
+        <p class="rp-txt rp-up" style="--i:2">Les huit autres sont là pour qu'elle ne soit jamais prise au dépourvu — de la Bretagne à la Méditerranée, le stock d'une maison est le stock de toutes.</p>
+      </div>
+    </div>
+
+    <ol class="rp-registre rp-up" style="--i:1">
+      <li>
+        <span class="rp-registre__n">01</span>
+        <span class="rp-registre__nom">Hyères Pharma<em>siège du groupe</em></span>
+        <span class="rp-registre__v">Hyères</span>
+        <span class="rp-registre__d">83</span>
+      </li>
+      <li>
+        <span class="rp-registre__n">02</span>
+        <span class="rp-registre__nom">SR Pharma</span>
+        <span class="rp-registre__v">Palaiseau</span>
+        <span class="rp-registre__d">91</span>
+      </li>
+      <li>
+        <span class="rp-registre__n">03</span>
+        <span class="rp-registre__nom">Mistral Santé Pharma</span>
+        <span class="rp-registre__v">Flassans-sur-Issole</span>
+        <span class="rp-registre__d">83</span>
+      </li>
+      <li>
+        <span class="rp-registre__n">04</span>
+        <span class="rp-registre__nom">Sud Ouest Pharma</span>
+        <span class="rp-registre__v">Montayral</span>
+        <span class="rp-registre__d">47</span>
+      </li>
+      <li>
+        <span class="rp-registre__n">05</span>
+        <span class="rp-registre__nom">Comptoir Pharmaceutique du Rhône</span>
+        <span class="rp-registre__v">Saint-Maurice-l'Exil</span>
+        <span class="rp-registre__d">38</span>
+      </li>
+      <li>
+        <span class="rp-registre__n">06</span>
+        <span class="rp-registre__nom">Escale Pharma</span>
+        <span class="rp-registre__v">Chilly-Mazarin</span>
+        <span class="rp-registre__d">91</span>
+      </li>
+      <li>
+        <span class="rp-registre__n">07</span>
+        <span class="rp-registre__nom">Ouest Pharma Services</span>
+        <span class="rp-registre__v">Saint-Étienne-de-Montluc</span>
+        <span class="rp-registre__d">44</span>
+      </li>
+      <li>
+        <span class="rp-registre__n">08</span>
+        <span class="rp-registre__nom">Pharm'Occitanie Services</span>
+        <span class="rp-registre__v">Villeneuve-lès-Béziers</span>
+        <span class="rp-registre__d">34</span>
+      </li>
+      <li>
+        <span class="rp-registre__n">09</span>
+        <span class="rp-registre__nom">Sud Est Pharma</span>
+        <span class="rp-registre__v">Le Cannet-des-Maures</span>
+        <span class="rp-registre__d">83</span>
+      </li>
+      <li class="est-part">
+        <span class="rp-registre__n">+</span>
+        <span class="rp-registre__nom">Pharmest<em>partenaire — prolonge le maillage à l'Est</em></span>
+        <span class="rp-registre__v">Metz</span>
+        <span class="rp-registre__d">57</span>
+      </li>
+    </ol>
+
+    <p class="rp-legende rp-up" style="--i:2">
+      <span><i aria-hidden="true"></i>Neuf implantations</span>
+      <span><i class="est-orange" aria-hidden="true"></i>Et un partenaire</span>
+    </p>
+
+  </div>
+</section>
+
+<!-- ══ 04 · LE MÉTIER ════════════════════════════════════════════════════ -->
+<section class="rp-bande rp-bande--blanche" id="metier" data-nom="Le métier" data-n="04">
+  <div class="rp-jour" aria-hidden="true"></div>
+  <div class="rp-in">
+
+    <div class="rp-horizon rp-up">
+      <span class="rp-horizon__t">Le métier</span>
+      <span class="rp-horizon__l"></span>
+      <span class="rp-horizon__n">04 / 10</span>
+    </div>
+
+    <div class="rp-duo">
+      <h2 class="rp-t rp-t--large rp-up">Ce qui se passe entre votre commande <b>et votre comptoir.</b></h2>
+      <p class="rp-txt rp-txt--fort rp-up" style="--i:1">Quelques heures, quatre métiers, et une chaîne qui ne s'arrête jamais. Référencer, stocker, préparer, livrer : c'est invisible depuis l'officine, et c'est tout notre travail.</p>
+    </div>
+
+    <div class="rp-chaine">
+      <article class="rp-up" style="--i:1">
+        <b>01</b>
+        <h3>Le référencement</h3>
+        <p>Le groupe référence pour ses neuf maisons à la fois : un même catalogue, tenu à jour, disponible dans toutes les implantations. C'est ce qui permet à une maison de taille humaine de proposer la profondeur de gamme d'un réseau national.</p>
+      </article>
+      <article class="rp-up" style="--i:2">
+        <b>02</b>
+        <h3>La disponibilité</h3>
+        <p>Des stocks répartis sur neuf implantations, au plus près de votre officine. Quand le comptoir a besoin, le réseau répond — et quand une référence manque quelque part, elle existe souvent ailleurs dans le réseau.</p>
+      </article>
+      <article class="rp-up" style="--i:3">
+        <b>03</b>
+        <h3>La préparation</h3>
+        <p>Chaque commande est préparée dans l'implantation la plus proche de chez vous, par une équipe qui connaît votre officine et ses saisons.</p>
+      </article>
+      <article class="rp-up" style="--i:4">
+        <b>04</b>
+        <h3>La livraison</h3>
+        <p>Tous les jours, les tournées partent vers les officines. La régularité d'un service tenu — c'est elle qui fait la confiance, pas les promesses.</p>
+      </article>
+    </div>
+
+    <div class="rp-cloture rp-up" style="--i:1">
+      <p>Et quand la vie de votre officine change — transfert, agrandissement, cession de parts — votre interlocuteur ajuste l'approvisionnement avec vous, sans à-coup au comptoir.</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══ 05 · LA CENTRALE ══════════════════════════════════════════════════ -->
+<section class="rp-bande rp-bande--brume" id="centrale" data-nom="La centrale" data-n="05">
+  <div class="rp-jour" aria-hidden="true"></div>
+  <div class="rp-in">
+
+    <div class="rp-horizon rp-up">
+      <span class="rp-horizon__t">La centrale</span>
+      <span class="rp-horizon__l"></span>
+      <span class="rp-horizon__n">05 / 10</span>
+    </div>
+
+    <div class="rp-duo">
+      <h2 class="rp-t rp-up">Et pour tout ce qui <b>n'est pas le médicament.</b></h2>
+      <div>
+        <p class="rp-txt rp-txt--fort rp-up" style="--i:1">Notre centrale de parapharmacie référence pour l'officine plus de 14 000 produits et plus de 480 marques.</p>
+        <p class="rp-txt rp-up" style="--i:2">C'est une structure à part, avec son propre fonctionnement — sa commande, sa livraison — et la même exigence que le reste du groupe.</p>
+      </div>
+    </div>
+
+    <div class="rp-gros">
+      <div class="rp-up" style="--i:1"><b>14 000 +</b><small>références</small></div>
+      <div class="rp-up" style="--i:2"><b>480 +</b><small>marques</small></div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══ 06 · VOS FACTURES ═════════════════════════════════════════════════ -->
+<section class="rp-bande rp-bande--bleue" id="factures" data-nom="Vos factures" data-n="06">
+  <div class="rp-jour" aria-hidden="true"></div>
+  <div class="rp-in">
+
+    <div class="rp-horizon rp-up">
+      <span class="rp-horizon__t">Vos factures</span>
+      <span class="rp-horizon__l"></span>
+      <span class="rp-horizon__n">06 / 10</span>
+    </div>
+
+    <div class="rp-duo">
+      <div>
+        <h2 class="rp-t rp-up">Elles arrivent déjà <b>là où vous les gérez.</b></h2>
+        <p class="rp-txt rp-up" style="--i:1">Nous sommes connectés à Digipharmacie : vos factures Intégral s'y retrouvent automatiquement, avec celles de vos autres fournisseurs.</p>
+        <p class="rp-txt rp-txt--fort rp-up" style="--i:2">Rien à saisir, rien à classer, rien à réclamer.</p>
+      </div>
+      <div class="rp-up" style="--i:3">
+        <svg class="rp-fig" viewBox="0 0 300 210" aria-hidden="true" focusable="false">
+          <g stroke="rgba(255,255,255,.34)" stroke-width="1">
+            <path d="M0 30h300M0 70h300M0 110h300M0 150h300M0 190h300"/>
+          </g>
+          <g fill="#fff">
+            <rect x="10" y="16" width="104" height="44"/>
+            <rect x="10" y="80" width="104" height="44"/>
+            <rect x="10" y="144" width="104" height="44"/>
+          </g>
+          <g stroke="#B9D2FF" stroke-width="3">
+            <path d="M24 32h50M24 44h74M24 96h50M24 108h74M24 160h50M24 172h74"/>
+          </g>
+          <path d="M114 38h48v64h32M114 102h80M114 166h48v-64" fill="none" stroke="#F39A1B" stroke-width="2.5"/>
+          <rect x="192" y="80" width="46" height="46" fill="#F39A1B"/>
+          <path d="M203 103l8 8 15-17" fill="none" stroke="#00317F" stroke-width="4" stroke-linecap="square"/>
+          <g stroke="#BBD4FF" stroke-width="2.5"><path d="M252 96h34M252 110h22"/></g>
+        </svg>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══ 07 · NOS PARTENAIRES ══════════════════════════════════════════════ -->
+<section class="rp-bande" id="partenaires" data-nom="Partenaires" data-n="07">
+  <div class="rp-jour" aria-hidden="true"></div>
+  <div class="rp-in">
+
+    <div class="rp-horizon rp-up">
+      <span class="rp-horizon__t">Nos partenaires</span>
+      <span class="rp-horizon__l"></span>
+      <span class="rp-horizon__n">07 / 10</span>
+    </div>
+
+    <h2 class="rp-t rp-t--large rp-up">Les laboratoires <b>qui nous font confiance.</b></h2>
+
+    <div class="rp-labos">
+      <span class="rp-up" style="--i:1">EG Labo</span>
+      <span class="rp-up" style="--i:2">Zentiva</span>
+      <span class="rp-up" style="--i:3">Zydus</span>
+      <span class="rp-up" style="--i:4">Viatris</span>
+      <span class="rp-up" style="--i:5">ITP</span>
+      <span class="rp-up" style="--i:6">Santestat</span>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══ 08 · NOUS REJOINDRE ═══════════════════════════════════════════════ -->
+<section class="rp-bande rp-bande--blanche" id="rejoindre" data-nom="Nous rejoindre" data-n="08">
+  <div class="rp-jour" aria-hidden="true"></div>
+  <div class="rp-in">
+
+    <div class="rp-horizon rp-up">
+      <span class="rp-horizon__t">Nous rejoindre</span>
+      <span class="rp-horizon__l"></span>
+      <span class="rp-horizon__n">08 / 10</span>
+    </div>
+
+    <div class="rp-duo">
+      <h2 class="rp-t rp-up">Neuf implantations <b>qui embauchent.</b></h2>
+      <div>
+        <p class="rp-txt rp-txt--fort rp-up" style="--i:1">Préparateur-chauffeur, technicien approvisionnement, commercial, pharmacien responsable : les métiers de la répartition s'apprennent chez nous.</p>
+        <div class="rp-villes rp-up" style="--i:2">
+          <span>Hyères · 83</span>
+          <span>Villeneuve-lès-Béziers · 34</span>
+          <span>Montayral · 47</span>
+          <span>Saint-Maurice-l'Exil · 38</span>
+        </div>
+        <div class="rp-btns rp-up" style="--i:3">
+          <a class="rp-btn" href="https://www.integralpharma.fr/" target="_blank" rel="noopener">
+            Voir les offres
+            <svg class="rp-btn__fl" viewBox="0 0 16 10" aria-hidden="true" focusable="false">
+              <path d="M0 5h14M10 1l4 4-4 4" fill="none" stroke="#fff" stroke-width="1.6"/>
+            </svg>
+          </a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══ 09 · NOS VALEURS ══════════════════════════════════════════════════ -->
+<section class="rp-bande" id="valeurs" data-nom="Nos valeurs" data-n="09">
+  <div class="rp-jour" aria-hidden="true"></div>
+  <div class="rp-in">
+
+    <div class="rp-horizon rp-up">
+      <span class="rp-horizon__t">Nos valeurs</span>
+      <span class="rp-horizon__l"></span>
+      <span class="rp-horizon__n">09 / 10</span>
+    </div>
+
+    <h2 class="rp-t rp-t--large rp-up">Trois mots qui <b>se vérifient au téléphone.</b></h2>
+
+    <div class="rp-valeurs">
+      <article class="rp-up" style="--i:1">
+        <h3><i aria-hidden="true"></i>Confiance</h3>
+        <p>La personne qui décroche connaît votre officine, vos saisons et vos habitudes.</p>
+      </article>
+      <article class="rp-up" style="--i:2">
+        <h3><i aria-hidden="true"></i>Engagement</h3>
+        <p>C'est la même d'une année sur l'autre. Dans ce métier, c'est devenu rare.</p>
+      </article>
+      <article class="rp-up" style="--i:3">
+        <h3><i aria-hidden="true"></i>Respect</h3>
+        <p>Elle ne vous vendra pas ce dont vous n'avez pas besoin — parce qu'elle vous reverra le mois suivant, et l'année d'après.</p>
+      </article>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══ 10 · NOUS ÉCRIRE ══════════════════════════════════════════════════ -->
+<section class="rp-bande rp-bande--brume" id="contact" data-nom="Nous écrire" data-n="10">
+  <div class="rp-jour" aria-hidden="true"></div>
+  <div class="rp-in rp-fin">
+
+    <div class="rp-horizon rp-up">
+      <span class="rp-horizon__t">Nous écrire</span>
+      <span class="rp-horizon__l"></span>
+      <span class="rp-horizon__n">10 / 10</span>
+    </div>
+
+    <h2 class="rp-t rp-t--geant rp-up">Posez-nous la question <b>qui vous intéresse.</b></h2>
+    <p class="rp-txt rp-txt--fort rp-up" style="--i:1">Sur nos conditions, sur nos délais, sur la façon dont nous travaillons. Vous aurez une réponse claire, et le nom de l'implantation qui livre votre secteur.</p>
+
+    <div class="rp-btns rp-up" style="--i:2">
+      <a class="rp-mail" href="mailto:contact@integralpharma.fr">
+        <i aria-hidden="true"></i>contact@integralpharma.fr
+      </a>
+    </div>
+
+  </div>
+</section>
+
+</main>
+
+<!-- ══ PIED DE PAGE ══════════════════════════════════════════════════════ -->
+<footer class="rp-pied">
+  <div class="rp-pied__in">
+    <div class="rp-pied__haut">
+      <address>
+        <b>Intégral Pharma</b><br>
+        758 chemin de la Source, ZI Saint-Martin, 83400 Hyères
+      </address>
+      <p class="rp-pied__liens">
+        <a href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a>
+        <a href="#ouverture">Mentions légales</a>
+      </p>
+    </div>
+    <p class="rp-pied__chiffres">
+      <span>9 implantations · plus de 2 000 officines livrées · indépendant depuis 2006</span>
+      <span class="rp-pied__sign">15 · Le Repère</span>
+    </p>
+  </div>
+</footer>
+
+</div><!-- /#rp-glisse -->
+
+<!-- ══ RÉGLETTE D'ANCRAGE ════════════════════════════════════════════════ -->
+<nav class="rp-reglette" id="rp-reglette" aria-label="Repères de lecture">
+  <p class="rp-reglette__lu" id="rp-lecture"><i aria-hidden="true"></i><b>01</b> <span>Ouverture</span></p>
+  <ol>
+    <li><a href="#ouverture"><span>Ouverture</span></a></li>
+    <li><a href="#groupe"><span>Le groupe</span></a></li>
+    <li><a href="#reseau"><span>Le réseau</span></a></li>
+    <li><a href="#metier"><span>Le métier</span></a></li>
+    <li><a href="#centrale"><span>La centrale</span></a></li>
+    <li><a href="#factures"><span>Vos factures</span></a></li>
+    <li><a href="#partenaires"><span>Partenaires</span></a></li>
+    <li><a href="#rejoindre"><span>Nous rejoindre</span></a></li>
+    <li><a href="#valeurs"><span>Nos valeurs</span></a></li>
+    <li><a href="#contact"><span>Nous écrire</span></a></li>
+  </ol>
+  <p class="rp-reglette__fin">Défilement amorti</p>
+</nav>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   LE REPÈRE · mécanique
+   ───────────────────────────────────────────────────────────────────────────
+   1. Amortissement du RENDU, jamais du geste. Le document défile nativement
+      (molette, pavé tactile, barre, clavier) ; on rattrape le cadre par lerp.
+   2. Ancrages : tween court sur la position native, annulé au premier geste.
+   3. Focus : le cadre étant fixe, le navigateur ne le remonte pas tout seul —
+      on le fait, sous la barre du haut et au-dessus de la réglette.
+   4. Clavier : Page haut/bas, Début, Fin, flèches. On ne prend la main QUE si
+      le navigateur n'a rien fait (contrôle à la frame suivante).
+   5. Apparitions : décision sur la position réelle lue au défilement + filet.
+   ═══════════════════════════════════════════════════════════════════════════ */
+(function () {
+  'use strict';
+  window.__rpVivant = true;
+
+  var doc     = document.documentElement;
+  var cadre   = document.getElementById('rp-glisse');
+  var barre   = document.getElementById('rp-barre');
+  var regl    = document.getElementById('rp-reglette');
+  var lecture = document.getElementById('rp-lecture');
+  var reduit  = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var finPtr  = window.matchMedia('(pointer:fine)').matches;
+
+  /* Amortissement : jamais sur pointeur grossier ni sur petit écran. */
+  var amorti = !!cadre && !reduit && finPtr && window.innerWidth >= 900;
+
+  /* EASE : mesuré, pas deviné. À 0,20 il fallait 42 images pour se stabiliser au
+     centième de pixel (~700 ms) et le retard en défilement continu montait à
+     ~160 px — c'est exactement le « ça continue après le geste » qui donne la
+     nausée. À 0,28 : 23 images (~380 ms), retard ~50 px. Court et sec. */
+  var EASE = 0.28;
+  var SNAP = 0.30;              /* sous le pixel : inutile d'aller plus loin */
+  var cible = 0, pos = 0, enAttente = false;
+
+  function hautBarre(){ return barre ? barre.offsetHeight : 64; }
+  function basRegl(){ return (regl && getComputedStyle(regl).display !== 'none') ? regl.offsetHeight : 0; }
+  function maxi(){ return Math.max(0, document.body.scrollHeight - window.innerHeight); }
+  function borne(y){ return Math.max(0, Math.min(maxi(), y)); }
+
+  /* ── 1 · le cadre ─────────────────────────────────────────────────────── */
+  function hauteurCorps(){
+    if (!amorti) return;
+    document.body.style.height = Math.round(cadre.getBoundingClientRect().height) + 'px';
+  }
+  if (amorti) {
+    doc.className += ' rp-js';
+    hauteurCorps();
+    pos = cible = window.scrollY || 0;
+    cadre.style.transform = 'translate3d(0,' + (-pos) + 'px,0)';
+  }
+
+  /* ── 2 · apparitions : position réelle + filet ────────────────────────── */
+  var aMonter = [].slice.call(document.querySelectorAll('.rp-up'));
+  var animArmee = doc.className.indexOf('rp-anim') !== -1;
+
+  function montrerTout(){
+    for (var i = 0; i < aMonter.length; i++) aMonter[i].className += ' est-vu';
+    aMonter.length = 0;
+  }
+  function monter(){
+    if (!animArmee || !aMonter.length) return;
+    var h = window.innerHeight, reste = [];
+    for (var i = 0; i < aMonter.length; i++) {
+      var el = aMonter[i];
+      var r  = el.getBoundingClientRect();          /* position RÉELLE, transform comprise */
+      if (r.top < h * 0.92 && r.bottom > -h * 0.6) el.className += ' est-vu';
+      else if (r.top <= 0) el.className += ' est-vu';   /* déjà dépassé : jamais laissé blanc */
+      else reste.push(el);
+    }
+    aMonter = reste;
+  }
+  if (!animArmee) montrerTout();
+  /* Filet dur : quoi qu'il arrive, plus rien d'invisible après 2,5 s. */
+  setTimeout(montrerTout, 2500);
+  window.addEventListener('load', function(){ hauteurCorps(); demander(); });
+
+  /* ── 3 · repère actif ─────────────────────────────────────────────────── */
+  var sections = [].slice.call(document.querySelectorAll('[data-nom]'));
+  var ancres   = regl ? [].slice.call(regl.querySelectorAll('a')) : [];
+  var actifCourant = -1;
+
+  function actif(){
+    if (!sections.length) return;
+    var seuil = hautBarre() + 90, k = 0;
+    for (var i = 0; i < sections.length; i++) {
+      if (sections[i].getBoundingClientRect().top <= seuil) k = i;
+    }
+    if (k === actifCourant) return;
+    actifCourant = k;
+    for (var j = 0; j < ancres.length; j++) {
+      if (j === k) ancres[j].setAttribute('aria-current', 'true');
+      else ancres[j].removeAttribute('aria-current');
+    }
+    if (lecture) {
+      lecture.children[1].textContent = sections[k].getAttribute('data-n');
+      lecture.children[2].textContent = sections[k].getAttribute('data-nom');
+    }
+  }
+
+  /* ── 4 · la boucle ────────────────────────────────────────────────────── */
+  function frame(){
+    enAttente = false;
+    if (amorti) {
+      cible = window.scrollY || 0;
+      pos += (cible - pos) * EASE;
+      if (Math.abs(cible - pos) < SNAP) pos = cible; else demander();
+      cadre.style.transform = 'translate3d(0,' + (-pos).toFixed(2) + 'px,0)';
+    }
+    monter();
+    actif();
+  }
+  function demander(){ if (!enAttente) { enAttente = true; requestAnimationFrame(frame); } }
+
+  window.addEventListener('scroll', demander, { passive: true });
+  window.addEventListener('resize', function(){ hauteurCorps(); actifCourant = -1; demander(); });
+  if ('ResizeObserver' in window && amorti) {
+    try { new ResizeObserver(hauteurCorps).observe(cadre); } catch (e) {}
+  }
+  demander();
+
+  /* ── 5 · ancrages : tween court sur la position native ────────────────── */
+  var tween = null;
+  function stop(){ if (tween) { cancelAnimationFrame(tween); tween = null; } }
+
+  function allerA(y, apres){
+    stop();
+    var d0 = window.scrollY || 0, d1 = borne(y), ecart = d1 - d0;
+    if (Math.abs(ecart) < 2) { if (apres) apres(); return; }
+    var duree = Math.max(320, Math.min(760, Math.abs(ecart) * 0.5));
+    var t0 = (window.performance && performance.now) ? performance.now() : Date.now();
+    (function pas(){
+      var maintenant = (window.performance && performance.now) ? performance.now() : Date.now();
+      var t = Math.min(1, (maintenant - t0) / duree);
+      var e = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;   /* easeInOutCubic */
+      window.scrollTo(0, d0 + ecart * e);
+      if (t < 1) tween = requestAnimationFrame(pas);
+      else { tween = null; if (apres) apres(); }
+    })();
+  }
+
+  function ordonnee(el){
+    var r = el.getBoundingClientRect();
+    var y = r.top + (amorti ? pos : (window.scrollY || 0));
+    return y - hautBarre() - 14;
+  }
+
+  function surAncre(e){
+    var a = e.target.closest ? e.target.closest('a[href^="#"]') : null;
+    if (!a) return;
+    var id = a.getAttribute('href');
+    if (!id || id === '#' || id.length < 2) return;
+    var el = document.getElementById(id.slice(1));
+    if (!el) return;
+    e.preventDefault();
+    fermerPanneau();
+    allerA(ordonnee(el), function(){
+      if (history.replaceState) history.replaceState(null, '', id);
+      el.setAttribute('tabindex', '-1');
+      try { el.focus({ preventScroll: true }); } catch (err) { el.focus(); }
+    });
+  }
+  document.addEventListener('click', surAncre);
+
+  /* Le premier geste reprend toujours la main sur le tween. */
+  ['wheel', 'touchstart', 'mousedown'].forEach(function (n) {
+    window.addEventListener(n, stop, { passive: true });
+  });
+
+  /* ── 6 · focus : le cadre est fixe, on remonte la cible nous-mêmes ────── */
+  document.addEventListener('focusin', function (e) {
+    if (!amorti) return;
+    var el = e.target;
+    if (!el || !cadre.contains(el) || !el.getBoundingClientRect) return;
+    var r    = el.getBoundingClientRect();
+    var haut = r.top + pos, bas = r.bottom + pos;
+    var y    = window.scrollY || 0;
+    var zh   = hautBarre() + 16, zb = window.innerHeight - basRegl() - 16;
+    var vise = y;
+    if (haut - y < zh) vise = haut - zh;
+    else if (bas - y > zb) vise = Math.min(bas - zb, haut - zh);
+    if (Math.abs(vise - y) > 2) { stop(); window.scrollTo(0, borne(vise)); }
+  });
+
+  /* ── 7 · clavier : filet, uniquement si le navigateur n'a rien fait ───── */
+  var TOUCHES = { PageUp: 1, PageDown: 1, Home: 1, End: 1, ArrowUp: 1, ArrowDown: 1, ' ': 1 };
+  document.addEventListener('keydown', function (e) {
+    if (!amorti || e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (!TOUCHES[e.key]) return;
+    var t = e.target, tag = t && t.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (t && t.isContentEditable)) return;
+    if (e.key === ' ' && (tag === 'A' || tag === 'BUTTON')) return;
+    var avant = window.scrollY || 0;
+    requestAnimationFrame(function () {
+      if ((window.scrollY || 0) !== avant) return;         /* le navigateur l'a fait */
+      var vh = window.innerHeight, d = 0;
+      if (e.key === 'PageDown' || e.key === ' ') d = vh * 0.86;
+      else if (e.key === 'PageUp') d = -vh * 0.86;
+      else if (e.key === 'ArrowDown') d = 64;
+      else if (e.key === 'ArrowUp') d = -64;
+      else if (e.key === 'Home') d = -1e9;
+      else if (e.key === 'End') d = 1e9;
+      var apres = borne(avant + d);
+      if (apres !== avant) { stop(); window.scrollTo(0, apres); }
+    });
+  });
+
+  /* ── 8 · menu mobile ─────────────────────────────────────────────────── */
+  var burger  = document.getElementById('rp-burger');
+  var panneau = document.getElementById('rp-panneau');
+  var fermer  = document.getElementById('rp-fermer');
+
+  function ouvrirPanneau(){
+    if (!panneau) return;
+    panneau.className = 'rp-panneau est-ouvert';
+    burger.setAttribute('aria-expanded', 'true');
+    doc.style.overflow = 'hidden';
+    if (fermer) fermer.focus();
+  }
+  function fermerPanneau(){
+    if (!panneau || panneau.className.indexOf('est-ouvert') === -1) return;
+    panneau.className = 'rp-panneau';
+    burger.setAttribute('aria-expanded', 'false');
+    doc.style.overflow = '';
+  }
+  if (burger) burger.addEventListener('click', ouvrirPanneau);
+  if (fermer) fermer.addEventListener('click', function(){ fermerPanneau(); burger.focus(); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { fermerPanneau(); }
+  });
+
+  /* ── 9 · arrivée sur une ancre au chargement ─────────────────────────── */
+  if (location.hash && location.hash.length > 1) {
+    var dep = document.getElementById(location.hash.slice(1));
+    if (dep) setTimeout(function(){ window.scrollTo(0, borne(ordonnee(dep))); demander(); }, 60);
+  }
+})();
+</script>
+
+</body>
+</html>

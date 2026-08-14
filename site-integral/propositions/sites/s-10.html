@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Intégral Pharma — Éventail</title>
+<meta name="da-nom" content="Éventail">
+<meta name="description" content="Site vitrine Intégral Pharma, direction 10 « Éventail » : onze cartes tenues en profondeur, que le défilement fait pivoter une à une vers le lecteur.">
+
+<!--
+  SITE 10 · ÉVENTAIL
+  Architecture imposée : les cartes en profondeur.
+  Mécanique : les onze sections sont onze cartes tenues en éventail dans l'espace.
+  Le défilement vertical fait tourner la file : celle du centre se cale STRICTEMENT
+  de face et se lit, les deux voisines s'inclinent de part et d'autre et reculent.
+
+  Quatre pièges traités explicitement dans le code, voir les repères [P1]..[P4] :
+  [P1] la carte lue est plate — un plateau d'immobilité (fonction `plateau`) tient
+       l'angle à zéro pendant les deux tiers de chaque cran de défilement.
+  [P2] la perspective est posée UNE fois sur la piste, jamais sur les cartes, et son
+       point de fuite est recalculé à chaque image pour rester à hauteur d'œil.
+  [P3] au plus QUATRE cartes composées à la fois — les autres sont retirées du rendu.
+  [P4] l'écartement latéral n'est pas choisi : il est RÉSOLU au chargement à partir
+       du débordement réellement projeté des cartes tournées.
+
+  Zéro requête réseau : aucune police distante, aucune image distante, aucun script tiers.
+  Safari : aucun voile dépoli, aucun flou, aucun dégradé découpé dans du texte, aucune vidéo.
+  La profondeur vient de la perspective, d'aplats et d'ombres empilées. Rien d'autre.
+  Sans script : les onze cartes se lisent empilées, tout est opaque et visible.
+-->
+
+<style>
+/* ═══════════════════════════════════════════════════════════════════════════
+   1 · SOCLE
+   ═══════════════════════════════════════════════════════════════════════════ */
+*,*::before,*::after{ box-sizing:border-box }
+
+:root{
+  --bleu:#0050E6;
+  --bleu-nuit:#00307F;
+  --bleu-pale:#E8F0FE;
+  --bleu-bord:#C9DBFA;
+  --orange:#F39A1B;
+  --encre:#101623;
+  --gris:#57617A;
+  --papier:#FAF7F1;          /* papier chaud : une table, pas un écran */
+  --blanc:#FFFFFF;
+  --bord:#E7E0D4;
+
+  --barre:64px;
+  --marge:clamp(18px,4vw,64px);
+  --pt:.82rem;               /* 13,1 px — jamais moins */
+
+  /* Réglages de l'éventail. Les médias-queries les font varier ; le script les lit. */
+  --ev-angle:36;             /* degrés d'inclinaison par cran */
+  --ev-recul:280;            /* pixels de recul par cran */
+  --ev-persp:1250px;         /* profondeur de la scène */
+  --ev-w:min(88vw,420px);    /* largeur d'une carte */
+  --ev-h:min(78vh,620px);    /* hauteur d'une carte, identique pour les onze */
+
+  --serif:"Iowan Old Style","Charter","Palatino Linotype",Palatino,Georgia,"Times New Roman",serif;
+  --sans:ui-sans-serif,-apple-system,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
+  --sortie:cubic-bezier(.22,.78,.24,1);
+}
+
+/* ⚠️ Jamais `overflow-x:hidden` ici : sur html ou body il crée une boîte de
+   défilement et TUE `position:sticky` de tous les descendants — mesuré le
+   14/08/2026, la scène ne se collait pas et le point de fuite partait à 6 339 px.
+   `overflow-x:clip` rogne sans créer de boîte de défilement : le collage survit. */
+html{ -webkit-text-size-adjust:100% }
+body{
+  margin:0; background:var(--papier); color:var(--encre);
+  font:16px/1.58 var(--sans); overflow-x:clip;
+}
+a{ color:inherit }
+h1,h2,h3{ margin:0 }
+
+/* La source de lumière. Un clair sans lumière est mort : trois foyers, aucun flou. */
+.ev-jour{
+  position:fixed; inset:0; z-index:0; pointer-events:none;
+  background:
+    radial-gradient(118% 88% at 16% -12%, #FFFFFF 0%, rgba(255,255,255,0) 56%),
+    radial-gradient(86% 66% at 94% 6%, rgba(0,80,230,.075) 0%, rgba(0,80,230,0) 62%),
+    radial-gradient(104% 58% at 46% 116%, rgba(243,154,27,.11) 0%, rgba(243,154,27,0) 62%);
+}
+
+.ev-saut{ position:absolute; left:-9999px; top:0; z-index:200;
+  background:var(--bleu); color:#fff; padding:14px 20px; font-weight:700; text-decoration:none }
+.ev-saut:focus{ left:0 }
+:focus-visible{ outline:3px solid var(--orange); outline-offset:3px }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   2 · LA BARRE — cartouche opaque, jamais transparente
+   ═══════════════════════════════════════════════════════════════════════════ */
+.ev-barre{
+  position:fixed; inset:0 0 auto 0; height:var(--barre); z-index:80;
+  background:var(--papier); border-bottom:1px solid var(--bord);
+  display:flex; align-items:center; gap:16px; padding:0 clamp(12px,3vw,30px);
+}
+.ev-marque{
+  display:flex; align-items:center; gap:9px; text-decoration:none; min-height:44px;
+  font:700 clamp(1rem,1.6vw,1.15rem)/1 var(--serif); letter-spacing:-.01em; white-space:nowrap;
+}
+.ev-marque i{ display:block; width:13px; height:17px; background:var(--bleu); flex:0 0 auto;
+  transform:skewX(-9deg) }
+.ev-marque span{ font-family:var(--sans); font-weight:500; font-size:.92em; color:var(--gris) }
+
+.ev-nav{ margin-left:auto; display:flex; align-items:center; gap:2px }
+.ev-nav a{
+  display:inline-flex; align-items:center; min-height:44px; padding:0 11px;
+  text-decoration:none; font-size:.94rem; font-weight:550; color:var(--encre);
+}
+.ev-nav a:hover{ color:var(--bleu) }
+.ev-compteur{
+  margin-left:12px; padding-left:14px; border-left:1px solid var(--bord);
+  font:650 var(--pt)/1 var(--mono); letter-spacing:.12em; color:var(--gris);
+  font-variant-numeric:tabular-nums; white-space:nowrap;
+}
+.ev-jauge{ position:absolute; left:0; bottom:-1px; height:2px; width:0; background:var(--bleu) }
+
+.ev-burger{
+  margin-left:auto; width:46px; height:46px; display:none; place-items:center;
+  background:var(--blanc); border:1px solid var(--bord); border-radius:3px; cursor:pointer; padding:0;
+}
+.ev-burger i{ display:block; width:20px; height:2px; background:var(--encre); position:relative }
+.ev-burger i::before,.ev-burger i::after{ content:""; position:absolute; left:0; width:20px; height:2px; background:var(--encre) }
+.ev-burger i::before{ top:-6px } .ev-burger i::after{ top:6px }
+
+/* Panneau mobile : fond PLEIN, rien ne défile au travers */
+.ev-panneau{
+  position:fixed; inset:0; z-index:90; background:var(--papier);
+  display:none; flex-direction:column; padding:calc(var(--barre) + 14px) 22px 28px;
+}
+.ev-panneau.ouvert{ display:flex }
+.ev-panneau a{
+  display:flex; align-items:center; min-height:58px; text-decoration:none;
+  font:700 clamp(1.5rem,7vw,2.1rem)/1.1 var(--serif); letter-spacing:-.015em;
+  border-bottom:1px solid var(--bord);
+}
+.ev-panneau a:last-child{ color:var(--bleu) }
+.ev-fermer{
+  position:absolute; top:9px; right:14px; width:46px; height:46px;
+  background:var(--blanc); border:1px solid var(--bord); border-radius:3px; cursor:pointer;
+  font:400 1.4rem/1 var(--sans); color:var(--encre);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   3 · LE JEU DE CARTES — état de repos (aucun script) : une pile lisible
+   ═══════════════════════════════════════════════════════════════════════════ */
+/* L'ancrage automatique du navigateur essaie de « garder la place » quand le
+   script donne d'un coup 740 vh à la section : il renvoie la page en bas. On le coupe. */
+.ev-deck{ position:relative; z-index:1; overflow-anchor:none }
+.ev-scene{ position:relative; padding:calc(var(--barre) + 34px) var(--marge) 40px }
+.ev-piste{ display:flex; flex-direction:column; align-items:center; gap:26px }
+
+.ev-c{
+  position:relative; width:min(94vw,760px); background:var(--blanc);
+  border:1px solid var(--bord); border-radius:5px;
+  padding:clamp(20px,3.2vw,38px);
+  box-shadow:0 1px 1px rgba(16,22,35,.05),
+             0 10px 20px -14px rgba(16,22,35,.18),
+             0 34px 58px -42px rgba(16,22,35,.34);
+}
+/* Lumière posée sur le carton lui-même : un lavis en dégradé, jamais un filtre. */
+.ev-c::before{
+  content:""; position:absolute; inset:0; z-index:0; border-radius:5px; pointer-events:none;
+  background:
+    linear-gradient(168deg, rgba(255,255,255,.9) 0%, rgba(255,255,255,0) 44%),
+    radial-gradient(78% 46% at 10% 0%, rgba(0,80,230,.055) 0%, rgba(0,80,230,0) 72%);
+}
+/* Voile de recul : un APLAT couleur papier posé par-dessus, opacité pilotée par le
+   script. Aucun flou — la carte reste opaque, deux cartes qui se croisent ne se mêlent pas. */
+.ev-c::after{
+  content:""; position:absolute; inset:0; z-index:3; border-radius:5px; pointer-events:none;
+  background:var(--papier); opacity:var(--voile,0);
+}
+.ev-c__in{ position:relative; z-index:2; display:flex; flex-direction:column;
+  justify-content:center; height:100% }
+/* `safe` : si un contenu dépassait malgré la hauteur calculée, c'est le BAS qui
+   sort du cadre, jamais le titre par le haut. */
+.ev-c__in{ justify-content:safe center }
+
+.ev-c--bleu{ background:var(--bleu); border-color:var(--bleu-nuit); color:#fff }
+.ev-c--bleu::before{
+  background:
+    linear-gradient(168deg, rgba(255,255,255,.26) 0%, rgba(255,255,255,0) 46%),
+    radial-gradient(84% 52% at 88% 4%, rgba(255,255,255,.20) 0%, rgba(255,255,255,0) 70%);
+}
+.ev-c--sable{ background:#FFFDF8 }
+
+/* — typographie de carte — */
+.ev-tete{ display:flex; align-items:baseline; gap:12px; margin:0 0 clamp(12px,2vh,20px) }
+.ev-num{
+  font:650 var(--pt)/1 var(--mono); letter-spacing:.16em; color:var(--bleu);
+  font-variant-numeric:tabular-nums; flex:0 0 auto;
+}
+.ev-c--bleu .ev-num{ color:#A9C8FF }
+.ev-sur{
+  font:650 var(--pt)/1.4 var(--mono); letter-spacing:.19em; text-transform:uppercase;
+  color:var(--gris);
+}
+.ev-c--bleu .ev-sur{ color:#BBD3FF }
+
+.ev-t{
+  font-family:var(--serif); font-weight:700; letter-spacing:-.018em; line-height:1.05;
+  font-size:clamp(1.5rem,2.5vw,2.4rem); text-wrap:balance;
+}
+.ev-t--geant{ font-size:clamp(1.9rem,4.2vw,3.2rem); line-height:1; letter-spacing:-.026em }
+.ev-t em{ font-style:italic; color:var(--bleu) }
+.ev-c--bleu .ev-t em{ color:#FFCE86 }
+
+.ev-p{ margin:clamp(12px,1.8vh,20px) 0 0; color:var(--gris); font-size:clamp(.95rem,1.1vw,1.04rem) }
+.ev-p--fort{ color:var(--encre); font-weight:550 }
+.ev-c--bleu .ev-p{ color:#D6E5FF }
+.ev-c--bleu .ev-p--fort{ color:#fff }
+.ev-note{
+  margin:clamp(12px,1.8vh,18px) 0 0; font:500 var(--pt)/1.5 var(--mono); color:var(--gris);
+}
+.ev-c--bleu .ev-note{ color:#BBD3FF }
+
+.ev-btns{ display:flex; flex-wrap:wrap; gap:10px; padding-top:clamp(16px,2.4vh,26px) }
+.ev-btn{
+  display:inline-flex; align-items:center; min-height:48px; padding:0 22px; border-radius:3px;
+  background:var(--bleu); color:#fff; text-decoration:none; font-weight:650; font-size:.98rem;
+  border:1px solid var(--bleu);
+  box-shadow:0 1px 0 rgba(255,255,255,.5) inset, 0 8px 16px -10px rgba(0,80,230,.6);
+  transition:transform .18s var(--sortie), box-shadow .18s var(--sortie);
+}
+.ev-btn:hover{ transform:translateY(-2px); box-shadow:0 1px 0 rgba(255,255,255,.5) inset, 0 12px 22px -10px rgba(0,80,230,.65) }
+.ev-btn--vide{ background:transparent; color:var(--bleu); border-color:var(--bleu-bord); box-shadow:none }
+.ev-btn--vide:hover{ background:var(--bleu-pale); box-shadow:none }
+.ev-c--bleu .ev-btn{ background:#fff; color:var(--bleu-nuit); border-color:#fff }
+.ev-c--bleu .ev-btn--vide{ background:transparent; color:#fff; border-color:rgba(255,255,255,.55) }
+.ev-c--bleu .ev-btn--vide:hover{ background:rgba(255,255,255,.12) }
+
+/* — compteurs — */
+.ev-chiffres{ display:grid; grid-template-columns:repeat(2,1fr); gap:1px; margin-top:clamp(14px,2vh,22px);
+  background:var(--bord); border:1px solid var(--bord); border-radius:4px; overflow:hidden }
+.ev-chiffres div{ background:var(--blanc); padding:clamp(14px,2.2vh,24px) clamp(12px,1.6vw,20px) }
+.ev-chiffres b{
+  display:block; font:700 clamp(2rem,4.4vw,3.4rem)/.94 var(--serif); letter-spacing:-.03em;
+  font-variant-numeric:tabular-nums; white-space:nowrap;
+}
+.ev-chiffres b i{ font-style:normal; color:var(--orange) }
+.ev-chiffres small{
+  display:block; margin-top:8px; font:650 var(--pt)/1.35 var(--mono);
+  letter-spacing:.1em; text-transform:uppercase; color:var(--gris);
+}
+
+/* — les neuf implantations — */
+.ev-liste{ list-style:none; margin:clamp(12px,1.8vh,18px) 0 0; padding:0 }
+.ev-liste li{
+  display:grid; grid-template-columns:2.4em 1fr auto; gap:4px 10px; align-items:baseline;
+  padding:6px 0; border-bottom:1px solid var(--bord); break-inside:avoid;
+}
+.ev-liste b{ font:650 var(--pt)/1.3 var(--mono); color:var(--bleu); letter-spacing:.06em }
+.ev-liste span{ font-weight:650; font-size:.98rem; letter-spacing:-.005em }
+.ev-liste span small{ display:block; font:500 var(--pt)/1.3 var(--mono); color:var(--gris); letter-spacing:.03em }
+.ev-liste i{ font:500 var(--pt)/1.3 var(--mono); font-style:normal; color:var(--gris); white-space:nowrap }
+.ev-liste li.est-partenaire{ border-bottom-color:var(--orange) }
+.ev-liste li.est-partenaire b{ color:var(--orange) }
+
+/* — les quatre gestes du métier — */
+.ev-gestes{ display:grid; grid-template-columns:1fr; gap:1px; margin-top:clamp(12px,1.8vh,18px);
+  background:var(--bord); border:1px solid var(--bord); border-radius:4px; overflow:hidden }
+.ev-gestes div{ background:var(--blanc); padding:clamp(11px,1.6vh,16px) clamp(12px,1.6vw,18px) }
+.ev-gestes b{ font:650 var(--pt)/1 var(--mono); letter-spacing:.16em; color:var(--bleu) }
+.ev-gestes h3{ margin:6px 0 5px; font:700 clamp(1.02rem,1.5vw,1.25rem)/1.15 var(--serif); letter-spacing:-.012em }
+.ev-gestes p{ margin:0; color:var(--gris); font-size:.9rem; line-height:1.45 }
+
+/* — laboratoires — */
+.ev-labos{ display:grid; grid-template-columns:repeat(2,1fr); gap:1px; margin-top:clamp(14px,2vh,22px);
+  background:var(--bord); border:1px solid var(--bord); border-radius:4px; overflow:hidden }
+.ev-labos span{
+  background:var(--blanc); display:flex; align-items:center; justify-content:center;
+  padding:clamp(15px,2.6vh,26px) 10px; text-align:center;
+  font:700 clamp(1rem,1.7vw,1.4rem)/1.1 var(--serif); letter-spacing:-.012em;
+}
+
+/* — valeurs — */
+.ev-valeurs{ margin-top:clamp(12px,1.8vh,18px) }
+.ev-valeurs div{ padding:clamp(10px,1.6vh,15px) 0; border-top:1px solid var(--bord) }
+.ev-valeurs h3{ font:700 clamp(1.15rem,2vw,1.6rem)/1 var(--serif); letter-spacing:-.02em; color:var(--bleu) }
+.ev-valeurs p{ margin:6px 0 0; color:var(--gris); font-size:.94rem }
+
+/* — villes qui recrutent — */
+.ev-villes{ display:flex; flex-wrap:wrap; gap:7px; margin-top:clamp(12px,1.8vh,18px) }
+.ev-villes span{
+  border:1px solid rgba(255,255,255,.45); border-radius:2px; padding:8px 12px;
+  font:650 var(--pt)/1.2 var(--mono); letter-spacing:.05em; color:#fff;
+}
+
+/* — le numéro de la carte, en filigrane — */
+.ev-tampon{
+  position:absolute; right:clamp(14px,2.4vw,26px); bottom:clamp(12px,2vh,22px); z-index:1;
+  font:700 clamp(2.6rem,6vw,4.6rem)/1 var(--serif); letter-spacing:-.04em;
+  color:rgba(16,22,35,.05); font-variant-numeric:tabular-nums; pointer-events:none;
+}
+.ev-c--bleu .ev-tampon{ color:rgba(255,255,255,.13) }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   4 · BANDEAU DÉFILANT — un seul sur la page
+   ═══════════════════════════════════════════════════════════════════════════ */
+.ev-bandeau{
+  position:relative; margin-top:34px; z-index:6;
+  background:var(--blanc); border-top:1px solid var(--bord); border-bottom:1px solid var(--bord);
+  overflow:hidden; padding:12px 0;
+}
+.ev-bandeau__piste{ display:flex; width:max-content; animation:ev-defile 52s linear infinite }
+.ev-bandeau__piste span{
+  padding:0 18px; white-space:nowrap;
+  font:650 var(--pt)/1.2 var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--encre);
+}
+.ev-bandeau__piste span::after{ content:"·"; margin-left:18px; color:var(--bleu) }
+@keyframes ev-defile{ from{ transform:translate3d(0,0,0) } to{ transform:translate3d(-50%,0,0) } }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   5 · ÉTAT ARMÉ — posé par le script uniquement
+   ═══════════════════════════════════════════════════════════════════════════ */
+.ev-deck.est-armee .ev-scene{
+  position:sticky; top:0; height:100vh; height:100svh; padding:0;
+  overflow:hidden;                  /* ceinture : la résolution [P4] fait déjà tenir les cartes */
+}
+.ev-deck.est-armee .ev-piste{
+  position:absolute; inset:var(--barre) 0 0 0; display:block; gap:0;
+  perspective:var(--ev-persp);      /* [P2] la perspective vit ICI, une seule fois */
+  perspective-origin:50% 50%;       /* recalculée à chaque image par le script */
+}
+.ev-deck.est-armee .ev-c{
+  position:absolute; left:50%; top:50%; margin:0;
+  width:var(--ev-w); height:var(--ev-h);
+  transform-origin:50% 50%;
+  transform:translate(-50%,-50%);
+  overflow:hidden;
+}
+.ev-deck.est-armee .ev-c.est-centre{
+  box-shadow:0 1px 1px rgba(16,22,35,.06),
+             0 16px 30px -16px rgba(0,80,230,.24),
+             0 52px 78px -48px rgba(16,22,35,.44);
+}
+/* Le sol : l'ombre portée de l'éventail, en dégradé radial — jamais un flou. */
+.ev-sol{ display:none }
+.ev-deck.est-armee .ev-sol{
+  display:block; position:absolute; left:50%; bottom:9%; z-index:0;
+  width:min(86vw,980px); height:150px; transform:translateX(-50%); pointer-events:none;
+  background:radial-gradient(50% 50% at 50% 50%, rgba(16,22,35,.15) 0%, rgba(16,22,35,0) 70%);
+}
+.ev-deck.est-armee .ev-bandeau{
+  position:absolute; left:0; right:0; bottom:0; margin:0; border-bottom:0;
+}
+
+/* Jalons — construits par le script, visibles seulement une fois armé */
+.ev-jalons{ display:none }
+.ev-deck.est-armee .ev-jalons{
+  display:flex; flex-direction:column; gap:0; z-index:8;
+  position:absolute; right:clamp(6px,1.4vw,18px); top:50%; transform:translateY(-50%);
+}
+.ev-jalon{
+  appearance:none; -webkit-appearance:none; border:0; background:none; cursor:pointer;
+  display:flex; align-items:center; justify-content:flex-end; gap:9px;
+  min-width:44px; min-height:44px; padding:0 3px; font:inherit; color:var(--gris);
+}
+.ev-jalon b{ font:650 var(--pt)/1 var(--mono); letter-spacing:.1em; text-transform:uppercase;
+  opacity:0; transition:opacity .25s ease; white-space:nowrap }
+.ev-jalon i{ display:block; width:20px; height:2px; background:#BFC8D8; flex:0 0 auto;
+  transition:width .35s var(--sortie), background-color .35s ease }
+.ev-jalon[aria-current="true"] i{ width:38px; background:var(--bleu) }
+.ev-jalon[aria-current="true"] b{ color:var(--bleu) }
+/* L'étiquette n'apparaît qu'à la demande : affichée en permanence, elle se posait
+   sur la carte voisine inclinée (mesuré : 67 px de recouvrement à 1440 px). */
+.ev-jalons:hover .ev-jalon b,
+.ev-jalon:focus-visible b{ opacity:1 }
+
+/* Révélation du contenu d'une carte : armée par le script, jamais par la feuille seule.
+   Une carte révélée ne se re-masque JAMAIS. */
+.ev-deck.est-armee .ev-c [data-r]{
+  opacity:0; transform:translateY(12px);
+  transition:opacity .55s var(--sortie), transform .6s var(--sortie);
+  transition-delay:calc(var(--i,0) * 55ms);
+}
+.ev-deck.est-armee .ev-c.est-lu [data-r]{ opacity:1; transform:none }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   6 · PIED DE PAGE
+   ═══════════════════════════════════════════════════════════════════════════ */
+.ev-pied{
+  position:relative; z-index:1; background:var(--blanc); border-top:1px solid var(--bord);
+  padding:clamp(34px,6vh,64px) var(--marge) clamp(58px,7vh,78px);
+}
+.ev-pied > div{ max-width:1100px; margin:0 auto; display:flex; flex-wrap:wrap; gap:10px 26px;
+  align-items:baseline; font:500 var(--pt)/1.65 var(--mono); color:var(--gris) }
+.ev-pied a{ color:var(--bleu); display:inline-flex; align-items:center; min-height:44px }
+.ev-pied .ev-pied__chiffres{ width:100%; color:var(--encre); letter-spacing:.05em }
+
+/* La signature vit DANS le pied de page : en pastille fixe, elle recouvrait le
+   bandeau défilant en bas d'écran. */
+.ev-signature{
+  width:100%; margin:0; padding-top:14px; border-top:1px solid var(--bord);
+  font:650 var(--pt)/1 var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--encre);
+}
+.ev-signature em{ font-style:normal; color:var(--bleu) }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   7 · ÉCRANS
+   ═══════════════════════════════════════════════════════════════════════════ */
+@media (min-width:760px){
+  :root{ --ev-w:min(72vw,560px); --ev-h:min(76vh,600px) }
+  .ev-gestes{ grid-template-columns:repeat(2,1fr) }
+  .ev-labos{ grid-template-columns:repeat(3,1fr) }
+}
+@media (min-width:1200px){
+  :root{ --ev-w:min(54vw,700px); --ev-h:min(74vh,620px); --ev-angle:34; --ev-recul:270 }
+  .ev-liste{ columns:2; column-gap:26px }
+  .ev-liste li{ break-inside:avoid }
+}
+@media (max-width:880px){
+  :root{ --barre:56px; --ev-angle:30; --ev-recul:320 }
+  .ev-nav{ display:none }
+  .ev-burger{ display:grid }
+  .ev-deck.est-armee .ev-jalons{ display:none }
+}
+@media (max-width:520px){
+  .ev-labos{ grid-template-columns:repeat(2,1fr) }
+  /* Les dix implantations sont la charge la plus lourde de la page : mesurée à
+     776 px de contenu pour 580 px utiles sur un 390×844. On resserre la liste
+     plutôt que de couper une seule ligne du texte validé. */
+  .ev-liste li{ grid-template-columns:2.1em 1fr; padding:2px 0; gap:0 8px }
+  .ev-liste i{ grid-column:2 }
+  .ev-liste span{ font-size:.92rem; line-height:1.3 }
+  .ev-liste span small{ line-height:1.2 }
+  .ev-tampon{ display:none }
+}
+
+/* Écran très bas (téléphone en paysage) : le script refuse d'armer, la pile revient. */
+@media (max-height:560px){
+  .ev-deck.est-armee .ev-scene{ position:relative; height:auto; overflow:visible }
+}
+
+/* Repli mouvement réduit : rien ne tourne, les onze cartes s'empilent et se lisent. */
+@media (prefers-reduced-motion: reduce){
+  .ev-bandeau__piste{ animation:none }
+  .ev-bandeau{ overflow-x:auto }
+  .ev-btn{ transition:none }
+  .ev-jalon i,.ev-jalon b{ transition:none }
+  .ev-deck.est-armee .ev-c [data-r]{ transition:none }
+}
+</style>
+</head>
+<body>
+
+<div class="ev-jour" aria-hidden="true"></div>
+<a class="ev-saut" href="#ev-2">Aller au contenu</a>
+
+<header class="ev-barre">
+  <a class="ev-marque" href="#ev-1"><i aria-hidden="true"></i>Intégral <span>Pharma</span></a>
+  <nav class="ev-nav" aria-label="Navigation principale">
+    <a href="#ev-2">Le groupe</a>
+    <a href="#ev-4">Le réseau</a>
+    <a href="#ev-5">Le métier</a>
+    <a href="#ev-10">Nos valeurs</a>
+    <a href="#ev-11">Nous écrire</a>
+    <span class="ev-compteur" id="ev-compteur" aria-hidden="true">01/11</span>
+  </nav>
+  <button class="ev-burger" type="button" id="ev-burger" aria-expanded="false" aria-controls="ev-panneau" aria-label="Ouvrir le menu">
+    <i aria-hidden="true"></i>
+  </button>
+  <span class="ev-jauge" id="ev-jauge" aria-hidden="true"></span>
+</header>
+
+<div class="ev-panneau" id="ev-panneau">
+  <button class="ev-fermer" type="button" id="ev-fermer" aria-label="Fermer le menu">✕</button>
+  <a href="#ev-2">Le groupe</a>
+  <a href="#ev-4">Le réseau</a>
+  <a href="#ev-5">Le métier</a>
+  <a href="#ev-10">Nos valeurs</a>
+  <a href="#ev-11">Nous écrire</a>
+</div>
+
+<main>
+
+<section class="ev-deck" id="ev-deck">
+  <div class="ev-scene" id="ev-scene">
+    <div class="ev-sol" aria-hidden="true"></div>
+
+    <div class="ev-piste" id="ev-piste">
+
+      <!-- CARTE 01 ─ L'ouverture ─────────────────────────────────────────── -->
+      <article class="ev-c" id="ev-1" data-titre="Ouverture">
+        <div class="ev-c__in">
+          <p class="ev-tete" data-r style="--i:0"><span class="ev-num">01</span><span class="ev-sur">Groupe de grossistes-répartiteurs français indépendant</span></p>
+          <h1 class="ev-t ev-t--geant" data-r style="--i:1">Neuf maisons.<br><em>Un seul nom.</em></h1>
+          <p class="ev-p ev-p--fort" data-r style="--i:2">Chacune livre sa région depuis des années, avec ses équipes et ses habitudes. Depuis 2006, elles avancent ensemble sous le nom d'Intégral Pharma — et votre commande part toujours de la plus proche de votre comptoir.</p>
+          <div class="ev-btns" data-r style="--i:3">
+            <a class="ev-btn" href="#ev-4">Découvrir le réseau</a>
+            <a class="ev-btn ev-btn--vide" href="mailto:contact@integralpharma.fr">Nous écrire</a>
+          </div>
+        </div>
+        <span class="ev-tampon" aria-hidden="true">01</span>
+      </article>
+
+      <!-- CARTE 02 ─ L'histoire du groupe ────────────────────────────────── -->
+      <article class="ev-c ev-c--bleu" id="ev-2" data-titre="Le groupe">
+        <div class="ev-c__in">
+          <p class="ev-tete" data-r style="--i:0"><span class="ev-num">02</span><span class="ev-sur">Notre histoire</span></p>
+          <h2 class="ev-t ev-t--geant" data-r style="--i:1">Rendre la marge à l'officine française.</h2>
+          <p class="ev-p ev-p--fort" data-r style="--i:2">C'est la raison d'être d'Intégral Pharma depuis 2006 : redistribuer directement la marge aux officines françaises, en toute transparence, avec des prix nets visibles sur facture.</p>
+          <p class="ev-p" data-r style="--i:3">Neuf implantations aujourd'hui, plus de deux mille officines livrées chaque jour, et la même idée qu'au premier jour — un groupe de répartiteurs indépendants qui a choisi de se mettre du côté du comptoir.</p>
+        </div>
+        <span class="ev-tampon" aria-hidden="true">02</span>
+      </article>
+
+      <!-- CARTE 03 ─ Les compteurs ───────────────────────────────────────── -->
+      <article class="ev-c ev-c--sable" id="ev-3" data-titre="En chiffres">
+        <div class="ev-c__in">
+          <p class="ev-tete" data-r style="--i:0"><span class="ev-num">03</span><span class="ev-sur">Notre histoire — ce qui se vérifie</span></p>
+          <h2 class="ev-t" data-r style="--i:1">Vingt ans d'indépendance, <em>en quatre chiffres.</em></h2>
+          <div class="ev-chiffres">
+            <div data-r style="--i:2"><b>2006</b><small>année de création</small></div>
+            <div data-r style="--i:3"><b>9</b><small>implantations</small></div>
+            <div data-r style="--i:4"><b>2 000 <i>+</i></b><small>officines livrées</small></div>
+            <div data-r style="--i:5"><b>20</b><small>ans d'indépendance</small></div>
+          </div>
+        </div>
+        <span class="ev-tampon" aria-hidden="true">03</span>
+      </article>
+
+      <!-- CARTE 04 ─ Le réseau ───────────────────────────────────────────── -->
+      <article class="ev-c" id="ev-4" data-titre="Le réseau">
+        <div class="ev-c__in">
+          <p class="ev-tete" data-r style="--i:0"><span class="ev-num">04</span><span class="ev-sur">Le réseau</span></p>
+          <h2 class="ev-t" data-r style="--i:1">Neuf implantations. <em>Laquelle est la vôtre&nbsp;?</em></h2>
+          <p class="ev-p ev-p--fort" data-r style="--i:2">C'est la seule question qui compte vraiment. Celle qui prépare votre commande, qui vous livre chaque matin, et dont vous connaissez l'équipe par son prénom.</p>
+          <ol class="ev-liste" data-r style="--i:3">
+            <li><b>01</b><span>Hyères Pharma<small>siège du groupe</small></span><i>Hyères · 83</i></li>
+            <li><b>02</b><span>SR Pharma</span><i>Palaiseau · 91</i></li>
+            <li><b>03</b><span>Mistral Santé Pharma</span><i>Flassans-sur-Issole · 83</i></li>
+            <li><b>04</b><span>Sud Ouest Pharma</span><i>Montayral · 47</i></li>
+            <li><b>05</b><span>Comptoir Pharmaceutique du Rhône</span><i>Saint-Maurice-l'Exil · 38</i></li>
+            <li><b>06</b><span>Escale Pharma</span><i>Chilly-Mazarin · 91</i></li>
+            <li><b>07</b><span>Ouest Pharma Services</span><i>Saint-Étienne-de-Montluc · 44</i></li>
+            <li><b>08</b><span>Pharm'Occitanie Services</span><i>Villeneuve-lès-Béziers · 34</i></li>
+            <li><b>09</b><span>Sud Est Pharma</span><i>Le Cannet-des-Maures · 83</i></li>
+            <li class="est-partenaire"><b>+</b><span>Pharmest<small>partenaire — prolonge le maillage à l'Est</small></span><i>Metz · 57</i></li>
+          </ol>
+          <p class="ev-note" data-r style="--i:4">Neuf implantations et un partenaire. De la Bretagne à la Méditerranée, le stock d'une maison est le stock de toutes.</p>
+        </div>
+        <span class="ev-tampon" aria-hidden="true">04</span>
+      </article>
+
+      <!-- CARTE 05 ─ Le métier ───────────────────────────────────────────── -->
+      <article class="ev-c" id="ev-5" data-titre="Le métier">
+        <div class="ev-c__in">
+          <p class="ev-tete" data-r style="--i:0"><span class="ev-num">05</span><span class="ev-sur">Le métier</span></p>
+          <h2 class="ev-t" data-r style="--i:1">Ce qui se passe entre votre commande et votre comptoir.</h2>
+          <p class="ev-p ev-p--fort" data-r style="--i:2">Quelques heures, quatre métiers, et une chaîne qui ne s'arrête jamais.</p>
+          <div class="ev-gestes">
+            <div data-r style="--i:3"><b>01</b><h3>Le référencement</h3><p>Un même catalogue, tenu à jour, disponible dans toutes les implantations.</p></div>
+            <div data-r style="--i:4"><b>02</b><h3>La disponibilité</h3><p>Des stocks répartis sur neuf implantations, au plus près de votre officine.</p></div>
+            <div data-r style="--i:5"><b>03</b><h3>La préparation</h3><p>Chaque commande est préparée dans l'implantation la plus proche de chez vous.</p></div>
+            <div data-r style="--i:6"><b>04</b><h3>La livraison</h3><p>Tous les jours, les tournées partent vers les officines.</p></div>
+          </div>
+          <p class="ev-note" data-r style="--i:7">Et quand la vie de votre officine change — transfert, agrandissement, cession de parts — votre interlocuteur ajuste l'approvisionnement avec vous, sans à-coup au comptoir.</p>
+        </div>
+        <span class="ev-tampon" aria-hidden="true">05</span>
+      </article>
+
+      <!-- CARTE 06 ─ La centrale ─────────────────────────────────────────── -->
+      <article class="ev-c ev-c--sable" id="ev-6" data-titre="La centrale">
+        <div class="ev-c__in">
+          <p class="ev-tete" data-r style="--i:0"><span class="ev-num">06</span><span class="ev-sur">La centrale</span></p>
+          <h2 class="ev-t" data-r style="--i:1">Et pour tout ce qui <em>n'est pas le médicament.</em></h2>
+          <p class="ev-p ev-p--fort" data-r style="--i:2">Notre centrale de parapharmacie référence pour l'officine plus de 14 000 produits et plus de 480 marques.</p>
+          <div class="ev-chiffres">
+            <div data-r style="--i:3"><b>14 000 <i>+</i></b><small>références</small></div>
+            <div data-r style="--i:4"><b>480 <i>+</i></b><small>marques</small></div>
+          </div>
+          <p class="ev-p" data-r style="--i:5">C'est une structure à part, avec son propre fonctionnement — sa commande, sa livraison — et la même exigence que le reste du groupe.</p>
+        </div>
+        <span class="ev-tampon" aria-hidden="true">06</span>
+      </article>
+
+      <!-- CARTE 07 ─ Vos factures ────────────────────────────────────────── -->
+      <article class="ev-c" id="ev-7" data-titre="Vos factures">
+        <div class="ev-c__in">
+          <p class="ev-tete" data-r style="--i:0"><span class="ev-num">07</span><span class="ev-sur">Vos factures</span></p>
+          <h2 class="ev-t" data-r style="--i:1">Elles arrivent déjà là où vous les gérez.</h2>
+          <p class="ev-p" data-r style="--i:2">Nous sommes connectés à Digipharmacie : vos factures Intégral s'y retrouvent automatiquement, avec celles de vos autres fournisseurs.</p>
+          <p class="ev-p ev-p--fort" data-r style="--i:3">Rien à saisir, rien à classer, rien à réclamer.</p>
+          <div class="ev-schema" data-r style="--i:4" aria-hidden="true">
+            <svg viewBox="0 0 300 118" width="100%" style="max-width:340px;display:block;margin:20px auto 0" role="presentation">
+              <rect x="6" y="6" width="86" height="40" rx="2" fill="#FFFFFF" stroke="#0050E6" stroke-width="2.6"/>
+              <rect x="6" y="56" width="86" height="40" rx="2" fill="#FFFFFF" stroke="#0050E6" stroke-width="2.6"/>
+              <g stroke="#C9DBFA" stroke-width="3" stroke-linecap="round"><path d="M18 21h40M18 31h60M18 71h40M18 81h60"/></g>
+              <path d="M92 26h44v25h34M92 76h44V51" fill="none" stroke="#0050E6" stroke-width="2.6"/>
+              <rect x="176" y="28" width="46" height="46" rx="3" fill="#0050E6"/>
+              <path d="M188 51l7 7 13-15" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+              <text x="199" y="94" fill="#57617A" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="10" font-weight="700" letter-spacing="1.4">DIGIPHARMACIE</text>
+            </svg>
+          </div>
+        </div>
+        <span class="ev-tampon" aria-hidden="true">07</span>
+      </article>
+
+      <!-- CARTE 08 ─ Nos partenaires ─────────────────────────────────────── -->
+      <article class="ev-c" id="ev-8" data-titre="Partenaires">
+        <div class="ev-c__in">
+          <p class="ev-tete" data-r style="--i:0"><span class="ev-num">08</span><span class="ev-sur">Nos partenaires</span></p>
+          <h2 class="ev-t" data-r style="--i:1">Les laboratoires qui nous font confiance.</h2>
+          <div class="ev-labos">
+            <span data-r style="--i:2">EG Labo</span>
+            <span data-r style="--i:3">Zentiva</span>
+            <span data-r style="--i:4">Zydus</span>
+            <span data-r style="--i:5">Viatris</span>
+            <span data-r style="--i:6">ITP</span>
+            <span data-r style="--i:7">Santestat</span>
+          </div>
+        </div>
+        <span class="ev-tampon" aria-hidden="true">08</span>
+      </article>
+
+      <!-- CARTE 09 ─ Nous rejoindre ──────────────────────────────────────── -->
+      <article class="ev-c ev-c--bleu" id="ev-9" data-titre="Nous rejoindre">
+        <div class="ev-c__in">
+          <p class="ev-tete" data-r style="--i:0"><span class="ev-num">09</span><span class="ev-sur">Nous rejoindre</span></p>
+          <h2 class="ev-t ev-t--geant" data-r style="--i:1">Neuf implantations qui embauchent.</h2>
+          <p class="ev-p" data-r style="--i:2">Préparateur-chauffeur, technicien approvisionnement, commercial, pharmacien responsable : les métiers de la répartition s'apprennent chez nous.</p>
+          <div class="ev-villes" data-r style="--i:3">
+            <span>Hyères · 83</span><span>Villeneuve-lès-Béziers · 34</span><span>Montayral · 47</span><span>Saint-Maurice-l'Exil · 38</span>
+          </div>
+          <div class="ev-btns" data-r style="--i:4">
+            <a class="ev-btn" href="https://www.integralpharma.fr/" target="_blank" rel="noopener">Voir les offres</a>
+          </div>
+        </div>
+        <span class="ev-tampon" aria-hidden="true">09</span>
+      </article>
+
+      <!-- CARTE 10 ─ Les valeurs ─────────────────────────────────────────── -->
+      <article class="ev-c" id="ev-10" data-titre="Nos valeurs">
+        <div class="ev-c__in">
+          <p class="ev-tete" data-r style="--i:0"><span class="ev-num">10</span><span class="ev-sur">Nos valeurs</span></p>
+          <h2 class="ev-t" data-r style="--i:1">Trois mots qui se vérifient <em>au téléphone.</em></h2>
+          <div class="ev-valeurs">
+            <div data-r style="--i:2"><h3>Confiance</h3><p>La personne qui décroche connaît votre officine, vos saisons et vos habitudes.</p></div>
+            <div data-r style="--i:3"><h3>Engagement</h3><p>C'est la même d'une année sur l'autre. Dans ce métier, c'est devenu rare.</p></div>
+            <div data-r style="--i:4"><h3>Respect</h3><p>Elle ne vous vendra pas ce dont vous n'avez pas besoin — parce qu'elle vous reverra le mois suivant, et l'année d'après.</p></div>
+          </div>
+        </div>
+        <span class="ev-tampon" aria-hidden="true">10</span>
+      </article>
+
+      <!-- CARTE 11 ─ Nous écrire ─────────────────────────────────────────── -->
+      <article class="ev-c ev-c--sable" id="ev-11" data-titre="Nous écrire">
+        <div class="ev-c__in">
+          <p class="ev-tete" data-r style="--i:0"><span class="ev-num">11</span><span class="ev-sur">Nous écrire</span></p>
+          <h2 class="ev-t ev-t--geant" data-r style="--i:1">Posez-nous la question qui vous intéresse.</h2>
+          <p class="ev-p ev-p--fort" data-r style="--i:2">Sur nos conditions, sur nos délais, sur la façon dont nous travaillons. Vous aurez une réponse claire, et le nom de l'implantation qui livre votre secteur.</p>
+          <div class="ev-btns" data-r style="--i:3">
+            <a class="ev-btn" href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a>
+          </div>
+        </div>
+        <span class="ev-tampon" aria-hidden="true">11</span>
+      </article>
+
+    </div><!-- /.ev-piste -->
+
+    <nav class="ev-jalons" id="ev-jalons" aria-label="Position dans le jeu de cartes"></nav>
+
+    <div class="ev-bandeau" aria-hidden="true">
+      <div class="ev-bandeau__piste">
+        <span>Indépendant</span><span>Neuf implantations</span><span>Un réseau national</span><span>Plus de 2 000 officines livrées</span><span>Confiance, Engagement, Respect</span><span>Une alternative aux grossistes historiques</span>
+        <span>Indépendant</span><span>Neuf implantations</span><span>Un réseau national</span><span>Plus de 2 000 officines livrées</span><span>Confiance, Engagement, Respect</span><span>Une alternative aux grossistes historiques</span>
+      </div>
+    </div>
+
+  </div><!-- /.ev-scene -->
+</section>
+
+<footer class="ev-pied">
+  <div>
+    <span>Intégral Pharma — 758 chemin de la Source, ZI Saint-Martin, 83400 Hyères</span>
+    <a href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a>
+    <a href="#ev-1">Mentions légales</a>
+    <span class="ev-pied__chiffres">9 implantations · plus de 2 000 officines livrées · indépendant depuis 2006</span>
+    <span class="ev-signature">Site&nbsp;10 · <em>Éventail</em></span>
+  </div>
+</footer>
+
+</main>
+
+<script>
+(function(){
+  "use strict";
+
+  var deck    = document.getElementById('ev-deck');
+  var piste   = document.getElementById('ev-piste');
+  var jalonsN = document.getElementById('ev-jalons');
+  var jauge   = document.getElementById('ev-jauge');
+  var compteur= document.getElementById('ev-compteur');
+  var cartes  = deck ? Array.prototype.slice.call(piste.querySelectorAll('.ev-c')) : [];
+  var n       = cartes.length;
+
+  var PAS      = 64;     // vh de défilement par cran
+  var FENETRE  = 1.9;    // [P3] au-delà, la carte est retirée du rendu (≤ 4 couches vivantes)
+  var FONDU    = 1.45;   // début de l'effacement
+  var ECART_MAX= 0.62;   // écartement plafond, en fraction de largeur de carte
+  var PLAT     = 0.34;   // [P1] part de chaque cran passée strictement de face
+
+  var reduit = false;
+  try { reduit = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch(e){}
+
+  /* ── Menu du téléphone : actif armé ou non ────────────────────────────── */
+  (function(){
+    var burger  = document.getElementById('ev-burger');
+    var fermer  = document.getElementById('ev-fermer');
+    var panneau = document.getElementById('ev-panneau');
+    if (!burger || !panneau) return;
+    function menu(ouvert){
+      panneau.classList.toggle('ouvert', ouvert);
+      burger.setAttribute('aria-expanded', ouvert ? 'true' : 'false');
+      document.body.style.overflow = ouvert ? 'hidden' : '';
+    }
+    burger.addEventListener('click', function(){ menu(!panneau.classList.contains('ouvert')); });
+    if (fermer) fermer.addEventListener('click', function(){ menu(false); });
+    document.addEventListener('keydown', function(e){ if (e.key === 'Escape') menu(false); });
+    window.evFermerMenu = function(){ menu(false); };
+  })();
+
+  if (!deck || n < 2) return;
+
+  var armee = false, ecartEff = 0.5, largeurC = 320, actifCourant = 0, tic = false;
+  var boutons = [];
+
+  /* ── Désarmement : la page redevient une pile de cartes, tout est lisible ── */
+  function desarmer(){
+    armee = false;
+    deck.classList.remove('est-armee');
+    deck.style.height = '';
+    deck.style.removeProperty('--ev-h');
+    piste.style.perspectiveOrigin = '';
+    for (var i = 0; i < n; i++){
+      cartes[i].style.cssText = '';
+      cartes[i].classList.remove('est-centre');
+      cartes[i].classList.add('est-lu');
+      try { cartes[i].inert = false; } catch(e){}
+    }
+  }
+
+  /* ── [P1] Plateau : la carte lue reste STRICTEMENT de face pendant 2/3 du cran ── */
+  function plateau(f){
+    var u = (f - PLAT) / (1 - 2 * PLAT);
+    if (u <= 0) return 0;
+    if (u >= 1) return 1;
+    return u * u * (3 - 2 * u);
+  }
+
+  function varNum(nom, defaut){
+    var v = parseFloat(getComputedStyle(deck).getPropertyValue(nom));
+    return isNaN(v) ? defaut : v;
+  }
+
+  /* ── [P4] Débordement réellement projeté d'une carte tournée ──────────────
+     On projette les deux bords verticaux de la carte à travers la perspective
+     et on rend le plus grand écart au centre, en pixels d'écran.               */
+  function extension(d, e, w, angle, recul, persp){
+    var ry = -Math.max(-2, Math.min(2, d)) * angle * Math.PI / 180;
+    var dx = d * w * e;
+    var dz = -Math.min(Math.abs(d), 2) * recul;
+    var cos = Math.cos(ry), sin = Math.sin(ry);
+    var m = 0;
+    for (var s = -1; s <= 1; s += 2){
+      var x = s * w / 2;
+      var X = dx + x * cos;
+      var Z = dz - x * sin;
+      var f = persp / Math.max(1, persp - Z);
+      var sx = Math.abs(X * f);
+      if (sx > m) m = sx;
+    }
+    return m;
+  }
+
+  /* On ne CHOISIT pas l'écartement : on le résout pour que la carte la plus
+     tournée encore visible tienne dans la piste, marge comprise. */
+  function calibrer(){
+    var angle = varNum('--ev-angle', 34);
+    var recul = varNum('--ev-recul', 270);
+    var persp = parseFloat(getComputedStyle(piste).perspective) || 1250;
+    var limite = piste.clientWidth / 2 - 18;      // 18 px de marge respirable
+    var essais = [1, -1, 1.4, -1.4, 1.85, -1.85];
+    var bas = 0.02, haut = 1.2, i, j;
+    for (i = 0; i < 30; i++){
+      var mid = (bas + haut) / 2, max = 0;
+      for (j = 0; j < essais.length; j++){
+        var v = extension(essais[j], mid, largeurC, angle, recul, persp);
+        if (v > max) max = v;
+      }
+      if (max <= limite) bas = mid; else haut = mid;
+    }
+    ecartEff = Math.min(bas, ECART_MAX);
+  }
+
+  /* ── Placement, appelé à chaque image de défilement ───────────────────── */
+  function placer(){
+    tic = false;
+    if (!armee) return;
+    try {
+      var r = deck.getBoundingClientRect();
+      var vue = window.innerHeight;
+      var course = r.height - vue;
+      var p = course > 0 ? (-r.top) / course : 0;
+      p = Math.min(1, Math.max(0, p));
+
+      var t = p * (n - 1);
+      var k = Math.floor(t);
+      if (k > n - 2) k = n - 2;
+      if (k < 0) k = 0;
+      var pos = k + plateau(t - k);
+
+      /* [P2] Le point de fuite est recalculé : il reste à hauteur d'œil, au milieu
+         de l'ÉCRAN, même quand la scène n'est pas encore collée. */
+      var pr = piste.getBoundingClientRect();
+      var oy = vue / 2 - pr.top;
+      /* Borné à la piste : si le collage venait à lâcher, un point de fuite à
+         plusieurs milliers de pixels étirerait les cartes jusqu'à l'absurde. */
+      if (oy < 0) oy = 0;
+      if (oy > pr.height) oy = pr.height;
+      piste.style.perspectiveOrigin = '50% ' + Math.round(oy) + 'px';
+
+      var angle = varNum('--ev-angle', 34);
+      var recul = varNum('--ev-recul', 270);
+      var actif = Math.round(pos);
+      if (actif < 0) actif = 0;
+      if (actif > n - 1) actif = n - 1;
+
+      for (var i = 0; i < n; i++){
+        var c = cartes[i];
+        var d = i - pos, ad = Math.abs(d);
+
+        /* [P3] Hors fenêtre : la carte quitte le rendu. Pas de couche composée. */
+        if (ad > FENETRE){
+          if (c.style.display !== 'none'){
+            c.style.display = 'none';
+            c.style.willChange = 'auto';
+            c.classList.remove('est-centre');
+            try { c.inert = true; } catch(e){}
+          }
+          continue;
+        }
+        if (c.style.display === 'none'){
+          c.style.display = '';
+          c.style.willChange = 'transform, opacity';
+        }
+
+        var dx = d * largeurC * ecartEff;
+        var dz = -Math.min(ad, 2) * recul;
+        var ry = -Math.max(-2, Math.min(2, d)) * angle;
+        var voile = Math.min(0.60, ad * 0.32);
+        var op = ad <= FONDU ? 1 : Math.max(0, (FENETRE - ad) / (FENETRE - FONDU));
+
+        c.style.transform =
+          'translate(-50%,-50%) translateX(' + dx.toFixed(1) + 'px)' +
+          ' translateZ(' + dz.toFixed(1) + 'px)' +
+          ' rotateY(' + ry.toFixed(2) + 'deg)';
+        c.style.setProperty('--voile', voile.toFixed(3));
+        c.style.opacity = op.toFixed(3);
+        c.style.zIndex = String(1000 - Math.round(ad * 100));
+        c.style.pointerEvents = ad < 0.18 ? 'auto' : 'none';
+        c.classList.toggle('est-centre', i === actif);
+        try { c.inert = (ad >= 0.18); } catch(e){}
+
+        /* Révélation décidée sur la POSITION RÉELLE lue à chaque image, jamais sur
+           une notification unique — et jamais retirée une fois posée. */
+        if (ad < 1.5) c.classList.add('est-lu');
+      }
+
+      if (actif !== actifCourant){
+        actifCourant = actif;
+        for (var b = 0; b < boutons.length; b++){
+          boutons[b].setAttribute('aria-current', b === actif ? 'true' : 'false');
+        }
+        if (compteur) compteur.textContent = ('0' + (actif + 1)).slice(-2) + '/' + ('0' + n).slice(-2);
+      }
+      if (jauge) jauge.style.width = (p * 100).toFixed(2) + '%';
+
+    } catch(err){
+      desarmer();               // filet : au moindre incident, tout redevient lisible
+    }
+  }
+
+  function auDefilement(){ if (!tic){ tic = true; window.requestAnimationFrame(placer); } }
+
+  /* ── Navigation : une ancre vise une POSITION de défilement, pas un élément ── */
+  function allerA(idx){
+    if (window.evFermerMenu) window.evFermerMenu();
+    if (!armee){
+      cartes[idx].scrollIntoView({ behavior: reduit ? 'auto' : 'smooth', block: 'start' });
+      return;
+    }
+    var haut = deck.getBoundingClientRect().top + window.pageYOffset;
+    var course = Math.max(0, deck.offsetHeight - window.innerHeight);
+    var y = haut + (idx / (n - 1)) * course;
+    window.scrollTo({ top: Math.round(y), behavior: reduit ? 'auto' : 'smooth' });
+  }
+
+  /* ── Jalons ───────────────────────────────────────────────────────────── */
+  for (var i = 0; i < n; i++){
+    (function(idx){
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'ev-jalon';
+      b.setAttribute('aria-current', idx === 0 ? 'true' : 'false');
+      b.innerHTML = '<b></b><i></i>';
+      var lib = ('0' + (idx + 1)).slice(-2) + ' ' + (cartes[idx].getAttribute('data-titre') || '');
+      b.querySelector('b').textContent = lib;
+      b.title = lib;
+      b.addEventListener('click', function(){ allerA(idx); });
+      jalonsN.appendChild(b);
+      boutons.push(b);
+    })(i);
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll('a[href^="#ev-"]'), function(a){
+    a.addEventListener('click', function(e){
+      var id = a.getAttribute('href').slice(1);
+      for (var j = 0; j < n; j++){
+        if (cartes[j].id === id){ e.preventDefault(); allerA(j); return; }
+      }
+    });
+  });
+
+  /* ── Armement / désarmement selon l'écran ─────────────────────────────── */
+  function peutArmer(){ return !reduit && window.innerHeight >= 560 && window.innerWidth >= 320; }
+
+  function mesurer(){
+    var c = cartes[actifCourant] || cartes[0];
+    if (c.style.display === 'none') c.style.display = '';
+    var w = c.offsetWidth;
+    if (w > 40) largeurC = w;
+  }
+
+  /* ── Hauteur des cartes : MESURÉE, pas devinée ────────────────────────────
+     Les onze cartes gardent la même hauteur — c'est ce qui tient l'éventail —
+     mais cette hauteur vient du contenu réel le plus haut. Réglée en dur, elle
+     rognait la liste des implantations de 196 px sur un téléphone. */
+  function hauteurCartes(){
+    deck.style.setProperty('--ev-h', 'auto');
+    var caches = [], i, besoin = 0;
+    for (i = 0; i < n; i++){
+      if (cartes[i].style.display === 'none'){ caches.push(i); cartes[i].style.display = ''; }
+    }
+    var pad = 0;
+    try { pad = 2 * parseFloat(getComputedStyle(cartes[0]).paddingTop) || 0; } catch(e){}
+    for (i = 0; i < n; i++){
+      var inn = cartes[i].querySelector('.ev-c__in');
+      if (inn && inn.scrollHeight > besoin) besoin = inn.scrollHeight;
+    }
+    for (i = 0; i < caches.length; i++) cartes[caches[i]].style.display = 'none';
+
+    var bandeau = 0;
+    var bEl = deck.querySelector('.ev-bandeau');
+    if (bEl) bandeau = bEl.offsetHeight;
+    var barre = 0;
+    try { barre = parseFloat(getComputedStyle(deck).getPropertyValue('--barre')) || 0; } catch(e){}
+    var place = window.innerHeight - barre - bandeau - 24;   // ce que l'écran offre vraiment
+
+    var h = Math.ceil(besoin + pad);
+    if (h > place) h = Math.floor(place);
+    if (h < 320) h = 320;
+    deck.style.setProperty('--ev-h', h + 'px');
+    return h;
+  }
+
+  function armer(){
+    if (armee) return;
+    deck.classList.add('est-armee');
+    deck.style.height = (100 + (n - 1) * PAS) + 'vh';
+    armee = true;
+    placer();          // monte les bonnes cartes
+    hauteurCartes();   // hauteur commune, tirée du contenu réel le plus haut
+    mesurer();         // largeur mesurée sur une carte réellement affichée
+    calibrer();        // [P4] résout l'écartement
+    placer();          // replace avec la hauteur et l'écartement résolus
+  }
+
+  function ajuster(){
+    if (peutArmer()){
+      if (!armee) { armer(); return; }
+      deck.style.height = (100 + (n - 1) * PAS) + 'vh';
+      placer(); hauteurCartes(); mesurer(); calibrer(); placer();
+    } else if (armee){
+      desarmer();
+    }
+  }
+
+  try {
+    if (peutArmer()) armer(); else desarmer();
+  } catch(e){ desarmer(); }
+
+  window.addEventListener('scroll', auDefilement, { passive:true });
+  window.addEventListener('resize', ajuster, { passive:true });
+  window.addEventListener('orientationchange', ajuster, { passive:true });
+  window.addEventListener('load', function(){ ajuster(); });
+
+  /* Filet de sécurité : si rien n'a été révélé après 2,5 s, on rend tout visible. */
+  setTimeout(function(){
+    if (armee && !deck.querySelector('.ev-c.est-lu')) desarmer();
+  }, 2500);
+
+  /* Outil de relevé — sert au contrôle à l'écran, ne change rien à la page. */
+  window.EV = {
+    etat: function(){
+      var montees = 0;
+      for (var i = 0; i < n; i++){ if (cartes[i].style.display !== 'none') montees++; }
+      return {
+        armee: armee, cartes: n, ecart: +ecartEff.toFixed(3), largeurCarte: largeurC,
+        montees: montees, actif: actifCourant,
+        hauteurPage: document.documentElement.scrollHeight
+      };
+    },
+    debordement: function(){
+      var droite = 0, gauche = 0;
+      for (var i = 0; i < n; i++){
+        var c = cartes[i];
+        if (c.style.display === 'none') continue;
+        if (parseFloat(c.style.opacity || '1') < 0.05) continue;
+        var r = c.getBoundingClientRect();
+        if (r.right - window.innerWidth > droite) droite = r.right - window.innerWidth;
+        if (r.left < gauche) gauche = r.left;
+      }
+      return { droite: Math.round(droite), gauche: Math.round(gauche) };
+    },
+    rognage: function(){          // une carte dont le contenu dépasse son cadre
+      var liste = [], i;
+      var caches = [];
+      for (i = 0; i < n; i++){
+        if (cartes[i].style.display === 'none'){ caches.push(i); cartes[i].style.display = ''; }
+      }
+      for (i = 0; i < n; i++){
+        var inn = cartes[i].querySelector('.ev-c__in');
+        var trop = inn.scrollHeight - inn.clientHeight;
+        if (trop > 1) liste.push({ carte: i + 1, depasse: Math.round(trop) });
+      }
+      for (i = 0; i < caches.length; i++) cartes[caches[i]].style.display = 'none';
+      return liste;
+    },
+    angleCentre: function(){
+      var c = cartes[actifCourant];
+      var m = (c.style.transform || '').match(/rotateY\(([-\d.]+)deg\)/);
+      return m ? parseFloat(m[1]) : null;
+    }
+  };
+})();
+</script>
+
+</body>
+</html>

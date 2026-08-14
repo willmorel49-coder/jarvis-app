@@ -1,0 +1,1587 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Intégral Pharma — l'ouvrage en onze chapitres</title>
+<meta name="da-numero" content="16">
+<meta name="da-nom" content="Fascicule">
+<meta name="description" content="Site vitrine d'Intégral Pharma, groupe de grossistes-répartiteurs français indépendant. Onze chapitres, onze pages de garde.">
+
+<!--
+  SITE 16 · FASCICULE
+  ─────────────────────────────────────────────────────────────────────────────
+  Architecture imposée : les chapitres numérotés plein écran.
+  Le site se lit comme un ouvrage broché : onze chapitres, onze pages de garde.
+
+  MÉCANIQUE (une phrase) : la page de garde se fige en haut de l'écran, la page
+  de texte remonte et vient la recouvrir comme on tourne une page — et pendant
+  ce recouvrement le chiffre géant du chapitre rétrécit et se range vers la
+  marge, jusqu'à ne plus être que le folio de la barre.
+
+  POURQUOI LES NUMÉROS SONT VRAIS ICI :
+   · un vrai sommaire est une page du site (chapitre 01), pas un survol ;
+   · la réglette des onze numéros est présente en permanence dans la barre :
+     on sait toujours où on en est et combien il reste ;
+   · on saute au chapitre 7 en un geste, depuis la barre ou depuis le sommaire ;
+   · chaque garde porte un lien « Aller au texte » : on ne subit jamais la garde.
+
+  SANS SCRIPT : le recouvrement est du CSS pur (position:sticky), les gardes et
+  les onze chapitres restent lisibles à la suite, tous les liens du sommaire et
+  de la réglette sont des ancres natives. Rien n'est transparent au repos.
+
+  SAFARI : aucun verre dépoli, aucun flou, aucun dégradé découpé dans du texte,
+  aucune vidéo. La lumière est faite de dégradés radiaux et d'ombres portées.
+  Repli mouvement réduit complet.
+
+  RÉSEAU : zéro requête. Aucune police distante, aucune image distante.
+  Les deux figures sont des SVG écrits en clair dans le fichier.
+-->
+
+<script>
+  /* Armement du mouvement AVANT le premier rendu. Sans la classe `js-motion`,
+     aucun bloc n'est mis en retrait : la page est lisible telle quelle.
+     Trois filets successifs plus bas dans le script principal. */
+  (function(){
+    var d = document.documentElement;
+    try {
+      if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        d.className += ' js-motion';
+      }
+      /* Garde-fou : si le script principal n'a rien révélé au bout de 2,5 s,
+         on retire l'armement et tout redevient visible. */
+      setTimeout(function(){
+        if (!document.querySelector('.rev.est-vu')) {
+          d.className = d.className.replace(' js-motion','');
+        }
+      }, 2500);
+    } catch(e){ d.className = d.className.replace(' js-motion',''); }
+  })();
+</script>
+
+<style>
+/* ══════════════════════════════════════════════════════════════════════════
+   1 · SOCLE
+   ══════════════════════════════════════════════════════════════════════════ */
+*,*::before,*::after{ box-sizing:border-box }
+
+:root{
+  /* Marque */
+  --bleu:#0050E6;
+  --bleu-fonce:#0039A8;
+  --bleu-pale:#E7EEFC;
+  --orange:#F39A1B;
+  --orange-pale:#FBEFD8;
+  --encre:#111823;
+  --gris:#555E71;
+  --gris-clair:#8A93A5;
+
+  /* Matière : deux papiers. L'ivoire est la couverture, le blanc est la page. */
+  --ivoire:#F6F2EA;
+  --ivoire-fort:#EFE9DD;
+  --page:#FFFDF8;
+  --bord:#E2DBCC;
+  --bord-bleu:#CCDCF8;
+
+  /* 60 (haut) + 44 (réglette) + 1 (filet bas) — mesuré, pas estimé */
+  --barre:105px;
+  --marge:clamp(20px,5vw,80px);
+  --colonne:1140px;
+  --gouttiere:clamp(0px,10vw,156px);   /* la marge de l'ouvrage, à gauche du texte */
+  --pt:.82rem;                          /* 13,1 px — jamais moins */
+
+  --serif:ui-serif,"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,"Times New Roman",serif;
+  --sans:ui-sans-serif,-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
+  --sortie:cubic-bezier(.22,.8,.25,1);
+}
+
+html{
+  scroll-padding-top:calc(var(--barre) + 8px);
+  -webkit-text-size-adjust:100%;
+  background:var(--page);
+}
+@media (prefers-reduced-motion: no-preference){
+  html{ scroll-behavior:smooth }
+}
+
+body{
+  margin:0;
+  background:var(--page);
+  color:var(--encre);
+  font:16px/1.62 var(--sans);
+  overflow-x:clip;
+  -webkit-font-smoothing:antialiased;
+}
+
+a{ color:inherit }
+svg{ max-width:100% }
+h1,h2,h3,h4,p,ul,ol,dl,figure,blockquote{ margin:0 }
+ul,ol{ padding:0; list-style:none }
+
+:focus-visible{ outline:3px solid var(--orange); outline-offset:3px }
+
+.evite{
+  position:absolute; left:-9999px; top:0; z-index:200;
+  background:var(--bleu); color:#fff; padding:14px 22px; font-weight:700; text-decoration:none;
+}
+.evite:focus{ left:0 }
+
+.lu-seul{
+  position:absolute; width:1px; height:1px; margin:-1px; padding:0;
+  overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   2 · LA BARRE — titre courant + réglette des onze chapitres
+   ══════════════════════════════════════════════════════════════════════════ */
+.barre{
+  position:fixed; inset:0 0 auto 0; z-index:80;
+  background:var(--page);
+  border-bottom:1px solid var(--bord);
+}
+
+.barre__haut{
+  height:60px; display:flex; align-items:center; gap:16px;
+  padding:0 clamp(14px,3vw,34px);
+}
+
+.marque{
+  display:inline-flex; align-items:center; gap:11px; text-decoration:none;
+  min-height:44px; white-space:nowrap;
+}
+.marque__sceau{
+  display:grid; place-items:center; width:30px; height:30px; flex:0 0 auto;
+  background:var(--bleu); color:#fff;
+  font:700 var(--pt)/1 var(--mono); letter-spacing:.02em;
+}
+.marque__nom{
+  font:600 clamp(.98rem,1.5vw,1.1rem)/1 var(--serif); letter-spacing:-.005em;
+}
+.marque__nom em{ font-style:normal; color:var(--gris) }
+
+.barre__nav{ margin-left:auto; display:flex; align-items:center; gap:2px }
+.barre__nav a{
+  display:inline-flex; align-items:center; min-height:44px; padding:0 11px;
+  text-decoration:none; font-size:.94rem; font-weight:500; color:var(--encre);
+  border-bottom:2px solid transparent;
+}
+.barre__nav a:hover{ color:var(--bleu); border-bottom-color:var(--bord-bleu) }
+
+/* Titre courant : ce que porte l'en-tête d'un livre ouvert. */
+.courant{
+  margin-left:22px; padding-left:20px; border-left:1px solid var(--bord);
+  display:flex; align-items:baseline; gap:9px; white-space:nowrap;
+  font:500 var(--pt)/1 var(--mono); letter-spacing:.1em; color:var(--gris);
+  text-transform:uppercase;
+}
+.courant b{ font-weight:700; color:var(--bleu); font-variant-numeric:tabular-nums }
+.courant i{ font-style:normal; color:var(--gris-clair) }
+.courant__nom{
+  font:600 .9rem/1 var(--serif); letter-spacing:0; text-transform:none; color:var(--encre);
+  max-width:22ch; overflow:hidden; text-overflow:ellipsis;
+}
+
+/* Réglette : les onze chapitres, en permanence, cliquables. */
+.reglette{
+  height:44px; border-top:1px solid var(--bord);   /* la cible tactile fait toute la hauteur */
+  display:flex; align-items:stretch;
+  padding:0 clamp(14px,3vw,34px);
+  overflow-x:auto; overflow-y:hidden;
+  scrollbar-width:none; -webkit-overflow-scrolling:touch;
+}
+.reglette::-webkit-scrollbar{ display:none }
+.reglette__t{
+  display:flex; align-items:center; flex:0 0 auto; padding-right:14px; margin-right:12px;
+  border-right:1px solid var(--bord);
+  font:500 var(--pt)/1 var(--mono); letter-spacing:.14em; text-transform:uppercase;
+  color:var(--gris-clair);
+}
+.reglette__l{ display:flex; align-items:stretch; flex:1 1 auto; min-width:0 }
+.reglette__l li{ flex:1 1 0; min-width:44px; display:flex }
+.reglette__a{
+  flex:1 1 auto; display:flex; align-items:center; justify-content:center;
+  text-decoration:none; position:relative;
+  font:600 var(--pt)/1 var(--mono); letter-spacing:.06em;
+  color:var(--gris-clair); font-variant-numeric:tabular-nums;
+  border-bottom:3px solid transparent;
+  transition:color .25s ease, border-color .25s ease;
+}
+.reglette__a:hover{ color:var(--encre) }
+.reglette__a.est-lu{ color:var(--gris); border-bottom-color:var(--bord) }
+.reglette__a.est-actif{ color:var(--bleu); border-bottom-color:var(--bleu) }
+
+.brg{
+  margin-left:auto; width:46px; height:46px; flex:0 0 auto;
+  display:none; place-items:center; text-decoration:none;
+  background:var(--page); border:1px solid var(--bord);
+}
+.brg i{ display:block; width:19px; height:2px; background:var(--encre); position:relative }
+.brg i::before,.brg i::after{
+  content:""; position:absolute; left:0; width:19px; height:2px; background:var(--encre);
+}
+.brg i::before{ top:-6px } .brg i::after{ top:6px }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   3 · LE PANNEAU (mobile) — fond plein, jamais de texte au travers
+   ══════════════════════════════════════════════════════════════════════════ */
+.panneau{
+  position:fixed; inset:0; z-index:95; display:none;
+  background:var(--ivoire);
+  overflow-y:auto; -webkit-overflow-scrolling:touch;
+  padding:18px 20px 40px;
+}
+.panneau.est-ouvert{ display:block }
+.panneau__haut{ display:flex; align-items:center; justify-content:space-between; min-height:46px }
+.panneau__t{ font:500 var(--pt)/1 var(--mono); letter-spacing:.16em; text-transform:uppercase; color:var(--gris) }
+.panneau__x{
+  width:46px; height:46px; display:grid; place-items:center;
+  background:var(--page); border:1px solid var(--bord); cursor:pointer;
+  font:400 1.45rem/1 var(--sans); color:var(--encre);
+}
+.panneau__l{ margin-top:16px; border-top:1px solid var(--bord) }
+.panneau__l a{
+  display:flex; align-items:center; gap:16px; min-height:58px;
+  padding:8px 2px; text-decoration:none; border-bottom:1px solid var(--bord);
+}
+.panneau__l b{
+  flex:0 0 auto; width:2.4em;
+  font:600 var(--pt)/1 var(--mono); color:var(--bleu); font-variant-numeric:tabular-nums;
+}
+.panneau__l span{ font:600 1.12rem/1.2 var(--serif); letter-spacing:-.01em }
+.panneau__ecrire{
+  display:flex; align-items:center; justify-content:center; min-height:54px; margin-top:22px;
+  background:var(--bleu); color:#fff; text-decoration:none; font-weight:650; font-size:1rem;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   4 · LE CHAPITRE — garde qui se fige, page qui la recouvre
+   ══════════════════════════════════════════════════════════════════════════ */
+.ch{
+  --p:0;                         /* avancement du recouvrement, posé par le script */
+  position:relative; z-index:1;  /* chaque chapitre passe au-dessus du précédent */
+}
+
+/* — La page de garde — */
+.ch__garde{
+  position:sticky; top:var(--barre); z-index:1;
+  min-height:calc(100vh - var(--barre));
+  min-height:calc(100svh - var(--barre));
+  display:grid; align-content:center;
+  padding:clamp(30px,5vh,64px) var(--marge);
+  /* Une source de lumière, jamais un aplat : le blanc entre par le haut-gauche,
+     l'angle opposé retombe dans l'ombre. Dégradés seulement, aucun flou. */
+  background:
+    radial-gradient(118% 95% at 6% -10%, #FFFFFF 0%, rgba(255,255,255,.62) 26%, rgba(255,255,255,0) 60%),
+    radial-gradient(85% 70% at 104% 112%, rgba(17,24,35,.075) 0%, rgba(17,24,35,0) 62%),
+    var(--ivoire);
+  border-top:1px solid var(--bord);
+}
+/* La garde est collée : à mesure que la page de texte la recouvre par le bas,
+   son contenu remonte pour rester centré dans ce qu'il reste d'elle. Sans ça,
+   le haut de l'écran devient une bande ivoire vide au milieu du passage. */
+.garde__in{
+  width:100%; max-width:var(--colonne); margin:0 auto;
+  transform:translate3d(0, calc(var(--p) * (var(--barre) - 100vh) / 2), 0);
+  transform:translate3d(0, calc(var(--p) * (var(--barre) - 100svh) / 2), 0);
+}
+
+.garde__cle{
+  font:500 var(--pt)/1 var(--mono); letter-spacing:.24em; text-transform:uppercase;
+  color:var(--gris-clair); margin-bottom:clamp(18px,3.4vh,38px);
+  display:flex; align-items:center; gap:14px;
+}
+.garde__cle::after{
+  content:""; flex:1 1 auto; height:1px; background:var(--bord); max-width:280px;
+}
+
+.garde__grille{
+  display:grid; grid-template-columns:auto 1fr;
+  gap:clamp(22px,4vw,58px); align-items:center;
+}
+
+/* Le chiffre géant. Serré ? Non : à cette taille l'espacement fait la lisibilité. */
+.ch__num{
+  font:400 clamp(4.6rem,17vw,15.5rem)/.82 var(--serif);
+  letter-spacing:-.018em; font-variant-numeric:lining-nums tabular-nums;
+  color:var(--encre);
+  transform-origin:left center;
+  transform:scale(calc(1 - .42 * var(--p)));   /* la remontée est portée par .garde__in */
+}
+.ch__num span{ color:var(--bleu) }   /* le second chiffre passe au bleu : un repère, pas un décor */
+
+.garde__mot{
+  border-left:1px solid var(--bord); padding-left:clamp(20px,3.4vw,54px);
+  min-width:0;
+}
+.garde__sur{
+  font:600 var(--pt)/1 var(--mono); letter-spacing:.18em; text-transform:uppercase;
+  color:var(--bleu); margin-bottom:clamp(12px,2vh,20px);
+}
+.garde__t{
+  font:400 clamp(1.72rem,3.5vw,3.05rem)/1.1 var(--serif);
+  letter-spacing:-.016em; text-wrap:balance; max-width:19ch;
+}
+.garde__saut{
+  display:inline-flex; align-items:center; gap:9px; min-height:46px; margin-top:clamp(16px,2.6vh,30px);
+  text-decoration:none; color:var(--gris);
+  font:600 var(--pt)/1 var(--mono); letter-spacing:.14em; text-transform:uppercase;
+  border-bottom:1px solid var(--bord);
+}
+.garde__saut:hover{ color:var(--bleu); border-bottom-color:var(--bleu) }
+.garde__saut svg{ width:11px; height:13px; flex:0 0 auto }
+
+/* — Le corps : la page qui remonte et recouvre la garde — */
+.ch__corps{
+  position:relative; z-index:2;
+  background:var(--page);
+  border-top:1px solid var(--bord);
+  box-shadow:0 -18px 34px -26px rgba(17,24,35,.42);
+  min-height:calc(100vh - var(--barre));
+  min-height:calc(100svh - var(--barre));
+  scroll-margin-top:calc(var(--barre) + 2px);
+}
+/* Le pli de la reliure : une ombre franche dans la marge, jamais un flou. */
+.ch__corps::before{
+  content:""; position:absolute; left:0; top:0; bottom:0; width:30px; pointer-events:none;
+  background:linear-gradient(to right, rgba(17,24,35,.06), rgba(17,24,35,0));
+}
+.corps__in{
+  width:100%; max-width:var(--colonne); margin:0 auto;
+  padding:clamp(44px,7vh,92px) var(--marge) clamp(56px,10vh,116px);
+}
+
+/* La double colonne de l'ouvrage : marge de renvoi + colonne de texte. */
+.bloc{ display:grid; grid-template-columns:var(--gouttiere) minmax(0,1fr); gap:0 clamp(0px,3vw,44px) }
+.bloc + .bloc{ margin-top:clamp(30px,4.6vh,54px) }
+.bloc__ref{
+  font:500 var(--pt)/1.5 var(--mono); letter-spacing:.1em; color:var(--gris-clair);
+  padding-top:.4em;
+}
+.bloc__c{ min-width:0 }
+
+/* Le filet : au repos le bloc est PLEINEMENT lisible. Le retrait n'existe que
+   si le script a démarré, et la révélation se décide sur la position réelle. */
+.js-motion .rev{
+  opacity:0; transform:translateY(15px);
+  transition:opacity .62s ease, transform .62s var(--sortie);
+}
+.js-motion .rev.est-vu{ opacity:1; transform:none }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   5 · TYPOGRAPHIE DU TEXTE COURANT
+   ══════════════════════════════════════════════════════════════════════════ */
+.txt{ max-width:60ch; color:var(--gris); font-size:clamp(1.02rem,1.35vw,1.14rem) }
+.txt + .txt{ margin-top:1.05em }
+.txt strong{ color:var(--encre); font-weight:600 }
+.txt--fort{
+  color:var(--encre); font-family:var(--serif); font-weight:400;
+  font-size:clamp(1.18rem,1.95vw,1.5rem); line-height:1.45; max-width:44ch;
+}
+.txt--petit{ font-size:1rem }
+
+.st{
+  font:600 var(--pt)/1 var(--mono); letter-spacing:.18em; text-transform:uppercase;
+  color:var(--bleu); margin-bottom:16px;
+}
+.h3{
+  font:400 clamp(1.28rem,2.2vw,1.72rem)/1.18 var(--serif); letter-spacing:-.014em;
+  text-wrap:balance;
+}
+
+.regle{ height:1px; background:var(--bord); border:0; margin:clamp(26px,4vh,46px) 0 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   6 · BOUTONS
+   ══════════════════════════════════════════════════════════════════════════ */
+.btns{ display:flex; flex-wrap:wrap; gap:12px; margin-top:clamp(22px,3.4vh,34px) }
+.btn{
+  display:inline-flex; align-items:center; min-height:52px; padding:0 26px;
+  background:var(--bleu); color:#fff; text-decoration:none;
+  font-weight:650; font-size:1rem; letter-spacing:-.005em;
+  border:1px solid var(--bleu);
+  box-shadow:0 10px 22px -14px rgba(0,80,230,.85);
+  transition:background .2s ease, transform .2s var(--sortie);
+}
+.btn:hover{ background:var(--bleu-fonce); transform:translateY(-2px) }
+.btn--vide{
+  background:transparent; color:var(--encre); border-color:var(--bord);
+  box-shadow:none;
+}
+.btn--vide:hover{ background:var(--ivoire); border-color:var(--encre) }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   7 · CHAPITRE 01 — bandeau, sommaire
+   ══════════════════════════════════════════════════════════════════════════ */
+.ban{
+  position:relative; overflow:hidden;
+  border-top:1px solid var(--bord); border-bottom:1px solid var(--bord);
+  background:var(--ivoire);
+  padding:15px 0; margin:clamp(30px,5vh,52px) 0 0;
+}
+.ban__piste{
+  display:flex; width:max-content; align-items:center;
+  animation:ban 46s linear infinite;
+}
+.ban__g{ display:flex; align-items:center; flex:0 0 auto }
+.ban__g span{
+  display:inline-flex; align-items:center; padding:0 clamp(16px,2.4vw,30px);
+  font:500 var(--pt)/1.5 var(--mono); letter-spacing:.13em; text-transform:uppercase;
+  color:var(--gris); white-space:nowrap;
+}
+.ban__g span::after{
+  content:""; display:block; width:5px; height:5px; margin-left:clamp(16px,2.4vw,30px);
+  background:var(--orange);
+}
+@keyframes ban{ from{ transform:translate3d(0,0,0) } to{ transform:translate3d(-50%,0,0) } }
+
+/* Le sommaire : une vraie page de l'ouvrage, pas un survol. */
+.som{ margin-top:clamp(38px,6vh,70px) }
+.som__l{ border-top:1px solid var(--encre) }
+.som__l li{ border-bottom:1px solid var(--bord) }
+.som__a{
+  display:flex; align-items:baseline; gap:clamp(10px,1.6vw,20px);
+  min-height:56px; padding:11px 2px; text-decoration:none;
+}
+.som__n{
+  flex:0 0 auto; width:2.6em;
+  font:600 var(--pt)/1 var(--mono); letter-spacing:.06em; color:var(--bleu);
+  font-variant-numeric:tabular-nums;
+}
+.som__t{
+  font:400 clamp(1.08rem,2vw,1.45rem)/1.2 var(--serif); letter-spacing:-.012em;
+  color:var(--encre);
+}
+.som__pt{
+  flex:1 1 auto; min-width:14px; height:0;
+  border-bottom:1px dotted var(--bord); transform:translateY(-.35em);
+}
+.som__g{
+  flex:0 0 auto; max-width:38%; text-align:right;
+  font-size:.92rem; color:var(--gris-clair);
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.som__a:hover .som__t{ color:var(--bleu) }
+.som__a:hover .som__pt{ border-bottom-color:var(--bleu) }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   8 · COMPOSANTS DE CONTENU
+   ══════════════════════════════════════════════════════════════════════════ */
+/* — Les compteurs, imprimés : aucun défilement de chiffres, aucun séparateur
+     de milliers sur une année. — */
+.nbs{ display:grid; grid-template-columns:repeat(4,1fr); border-top:1px solid var(--encre) }
+.nbs--duo{ grid-template-columns:repeat(2,1fr) }
+.nbs > div{
+  padding:clamp(18px,3vh,30px) 14px clamp(14px,2vh,20px) 0;
+  border-right:1px solid var(--bord);
+}
+.nbs > div:last-child{ border-right:0 }
+.nbs > div + div{ padding-left:clamp(14px,2.4vw,30px) }
+.nbs b{
+  display:block;
+  font:400 clamp(2.1rem,5.4vw,3.9rem)/.95 var(--serif); letter-spacing:-.028em;
+  font-variant-numeric:lining-nums tabular-nums; white-space:nowrap; color:var(--encre);
+}
+.nbs b em{ font-style:normal; color:var(--orange) }
+.nbs small{
+  display:block; margin-top:12px; max-width:15ch;
+  font:500 var(--pt)/1.4 var(--mono); letter-spacing:.09em; text-transform:uppercase;
+  color:var(--gris);
+}
+
+/* — La figure (planche) — */
+.fig{
+  border:1px solid var(--bord); background:var(--ivoire);
+  padding:clamp(18px,3vw,34px);
+}
+.fig svg{ display:block; width:100%; height:auto }
+.fig figcaption{
+  margin-top:16px; padding-top:14px; border-top:1px solid var(--bord);
+  font:500 var(--pt)/1.5 var(--mono); letter-spacing:.06em; color:var(--gris);
+}
+.fig figcaption b{ color:var(--encre); font-weight:700; letter-spacing:.12em; text-transform:uppercase }
+/* La légende vit en HTML, jamais dans le SVG : une étiquette dessinée dans une
+   planche de 700 unités tombe à 5 px de haut sur un téléphone. */
+.fig__leg{ display:flex; flex-wrap:wrap; gap:10px 26px; margin-top:18px }
+.fig__leg li{
+  display:flex; align-items:center; gap:9px;
+  font:500 var(--pt)/1.4 var(--mono); letter-spacing:.08em; text-transform:uppercase;
+  color:var(--gris);
+}
+.fig__leg i{ display:block; width:13px; height:13px; flex:0 0 auto; background:var(--bleu); opacity:.55 }
+.fig__leg li.est-vous i{ opacity:1 }
+.fig__leg li.est-part i{ background:transparent; border:2.5px solid var(--orange) }
+.fig__leg li.est-vous{ color:var(--bleu) }
+.fig__leg li.est-part{ color:var(--orange) }
+
+/* — Le répertoire des implantations — */
+.rep{ border-top:1px solid var(--encre) }
+.rep li{
+  display:grid; grid-template-columns:3.2em minmax(0,1fr) auto;
+  gap:clamp(10px,1.6vw,22px); align-items:baseline;
+  padding:clamp(11px,1.7vh,16px) 2px; border-bottom:1px solid var(--bord);
+}
+.rep b{
+  font:600 var(--pt)/1.4 var(--mono); letter-spacing:.08em; color:var(--bleu);
+  font-variant-numeric:tabular-nums;
+}
+.rep__n{ font:400 clamp(1.04rem,1.8vw,1.28rem)/1.25 var(--serif); letter-spacing:-.01em; color:var(--encre) }
+.rep__n i{ font-style:italic; color:var(--gris); font-size:.86em }
+.rep__v{
+  font:500 var(--pt)/1.4 var(--mono); letter-spacing:.06em; color:var(--gris);
+  white-space:nowrap; text-align:right;
+}
+.rep__v em{ font-style:normal; color:var(--gris-clair) }
+.rep li.est-part{ border-bottom-color:var(--orange); background:linear-gradient(to right, var(--orange-pale), rgba(251,239,216,0) 62%) }
+.rep li.est-part b{ color:var(--orange) }
+
+/* — Les quatre gestes du métier — */
+.gestes{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:0; border-top:1px solid var(--encre) }
+.gestes > div{
+  padding:clamp(20px,3vh,30px) clamp(18px,2.4vw,34px) clamp(22px,3vh,32px) 0;
+  border-bottom:1px solid var(--bord);
+}
+.gestes > div:nth-child(odd){ border-right:1px solid var(--bord) }
+.gestes > div:nth-child(even){ padding-left:clamp(18px,2.4vw,34px) }
+.gestes b{
+  display:block; margin-bottom:10px;
+  font:600 var(--pt)/1 var(--mono); letter-spacing:.14em; color:var(--bleu);
+  font-variant-numeric:tabular-nums;
+}
+.gestes h3{ margin-bottom:11px }
+.gestes p{ color:var(--gris); font-size:1rem; max-width:44ch }
+
+/* — Les six laboratoires — */
+.labos{ border-top:1px solid var(--encre) }
+.labos li{
+  display:flex; align-items:baseline; gap:16px;
+  padding:clamp(13px,2vh,20px) 2px; border-bottom:1px solid var(--bord);
+}
+.labos i{
+  flex:0 0 auto; width:2.6em; font-style:normal;
+  font:600 var(--pt)/1 var(--mono); color:var(--gris-clair); font-variant-numeric:tabular-nums;
+}
+.labos span{ font:400 clamp(1.3rem,3vw,2.05rem)/1.1 var(--serif); letter-spacing:-.018em }
+
+/* — Les villes qui recrutent — */
+.villes{ display:flex; flex-wrap:wrap; gap:10px; margin-top:22px }
+.villes li{
+  display:inline-flex; align-items:center; min-height:44px; padding:0 16px;
+  border:1px solid var(--bord); background:var(--ivoire);
+  font:500 .95rem/1 var(--sans); color:var(--encre);
+}
+.villes li em{ font-style:normal; color:var(--gris-clair); margin-left:6px }
+
+/* — Les trois valeurs — */
+.vals{ border-top:1px solid var(--encre) }
+.vals > div{
+  display:grid; grid-template-columns:minmax(0,7.5em) minmax(0,1fr);
+  gap:clamp(14px,3vw,44px); align-items:baseline;
+  padding:clamp(20px,3.2vh,32px) 2px; border-bottom:1px solid var(--bord);
+}
+.vals dt{ font:400 clamp(1.3rem,2.6vw,1.85rem)/1.1 var(--serif); letter-spacing:-.018em; color:var(--bleu) }
+.vals dd{ margin:0; color:var(--gris); font-size:clamp(1.02rem,1.4vw,1.14rem); max-width:48ch }
+
+/* — Chapitre 11 : l'adresse — */
+.ecrire{
+  border:1px solid var(--encre); background:var(--ivoire);
+  padding:clamp(26px,4.6vw,54px);
+}
+.ecrire .h3{ max-width:34ch; font-size:clamp(1.32rem,2.6vw,2.05rem) }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   9 · LE COLOPHON (pied de page)
+   ══════════════════════════════════════════════════════════════════════════ */
+.colo{
+  position:relative; z-index:3;
+  background:var(--ivoire-fort); border-top:1px solid var(--bord);
+  padding:clamp(40px,6vh,72px) var(--marge) clamp(28px,4vh,44px);
+}
+.colo__in{ max-width:var(--colonne); margin:0 auto }
+.colo__g{
+  display:grid; grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);
+  gap:clamp(24px,4vw,60px);
+}
+.colo__ad{ font-size:1rem; color:var(--gris); line-height:1.75 }
+.colo__ad strong{ display:block; color:var(--encre); font-weight:600; font-family:var(--serif); font-size:1.16rem; margin-bottom:6px }
+.colo__ad a{ color:var(--bleu); text-decoration:none; border-bottom:1px solid var(--bord-bleu) }
+.colo__l{ display:flex; flex-direction:column; align-items:flex-start }
+.colo__l a{
+  display:inline-flex; align-items:center; min-height:44px; text-decoration:none;
+  color:var(--encre); font-size:.98rem;
+}
+.colo__l a:hover{ color:var(--bleu) }
+.colo__chiffres{
+  margin-top:clamp(26px,4vh,44px); padding-top:18px; border-top:1px solid var(--bord);
+  font:500 var(--pt)/1.6 var(--mono); letter-spacing:.1em; text-transform:uppercase; color:var(--gris);
+}
+.colo__sig{
+  margin-top:14px; display:flex; flex-wrap:wrap; gap:10px 18px; align-items:baseline;
+  font:500 var(--pt)/1.6 var(--mono); letter-spacing:.1em; color:var(--gris-clair);
+}
+.colo__sig b{ color:var(--gris); font-weight:600 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   10 · MOBILE
+   ══════════════════════════════════════════════════════════════════════════ */
+@media (max-width:1080px){
+  .courant__nom{ display:none }
+}
+@media (max-width:900px){
+  :root{ --gouttiere:0px }                 /* 56 + 48 + 1 = 105 : la barre garde sa hauteur */
+  .barre__haut{ height:56px }
+  .barre__nav{ display:none }
+  .courant{ margin-left:auto; padding-left:0; border-left:0 }
+  .brg{ display:grid; margin-left:14px }
+  .reglette{ height:48px }
+  .reglette__t{ display:none }
+  .reglette__l{ flex:0 0 auto }
+  .reglette__l li{ flex:0 0 auto; min-width:46px }
+
+  .garde__grille{ grid-template-columns:1fr; gap:clamp(14px,2.6vh,26px) }
+  .garde__mot{ border-left:0; border-top:1px solid var(--bord); padding-left:0; padding-top:clamp(16px,2.6vh,26px) }
+  .ch__num{ font-size:clamp(4.4rem,29vw,9rem); transform:none }
+  .ch__corps::before{ display:none }   /* pas de marge libre : pas de pli */
+
+  .bloc{ grid-template-columns:1fr }
+  .bloc__ref{ padding-top:0; margin-bottom:10px }
+
+  .nbs{ grid-template-columns:repeat(2,1fr) }
+  .nbs > div{ border-bottom:1px solid var(--bord) }
+  .nbs > div:nth-child(2n){ border-right:0; padding-left:clamp(14px,4vw,26px) }
+  .nbs > div:nth-child(2n+1){ padding-left:0 }
+
+  .gestes{ grid-template-columns:1fr }
+  .gestes > div{ padding-right:0; border-right:0 !important; padding-left:0 !important }
+
+  .rep li{ grid-template-columns:2.9em minmax(0,1fr); row-gap:4px }
+  .rep__v{ grid-column:2; text-align:left }
+
+  .vals > div{ grid-template-columns:1fr; gap:8px }
+
+  .colo__g{ grid-template-columns:1fr }
+  .som__g{ display:none }
+}
+@media (max-width:520px){
+  .som__a{ flex-wrap:wrap }
+  .som__pt{ min-width:10px }
+  .labos span{ font-size:clamp(1.25rem,7vw,1.7rem) }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   11 · REPLI MOUVEMENT RÉDUIT — rien ne bouge, rien ne se colle
+   ══════════════════════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce){
+  html{ scroll-behavior:auto }
+  .ch__garde{ position:static; min-height:0; padding-top:clamp(40px,7vh,80px); padding-bottom:clamp(40px,7vh,80px) }
+  .ch__corps{ min-height:0; box-shadow:none }
+  .ch__corps::before{ display:none }
+  .ch__num,.garde__in{ transform:none }
+  .ban__piste{ animation:none; width:auto; flex-wrap:wrap }
+  .ban{ overflow:visible }
+  .ban__g:nth-child(2){ display:none }
+  .ban__g{ flex-wrap:wrap }
+  .js-motion .rev{ opacity:1; transform:none; transition:none }
+  .btn{ transition:none }
+  .btn:hover{ transform:none }
+}
+</style>
+</head>
+<body>
+
+<a class="evite" href="#ch-01-texte">Aller au contenu</a>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     LA BARRE
+     ═══════════════════════════════════════════════════════════════════════ -->
+<header class="barre">
+  <div class="barre__haut">
+    <a class="marque" href="#haut">
+      <span class="marque__sceau" aria-hidden="true">IP</span>
+      <span class="marque__nom">Intégral <em>Pharma</em></span>
+    </a>
+
+    <nav class="barre__nav" aria-label="Navigation principale">
+      <a href="#ch-02">Le groupe</a>
+      <a href="#ch-03">Le réseau</a>
+      <a href="#ch-05">Le métier</a>
+      <a href="#ch-10">Nos valeurs</a>
+      <a href="#ch-11">Nous écrire</a>
+    </nav>
+
+    <p class="courant" aria-live="polite">
+      <span class="lu-seul">Chapitre en cours&nbsp;:</span>
+      <b id="folio-n">01</b><i>/ 11</i>
+      <span class="courant__nom" id="folio-nom">L'ouverture</span>
+    </p>
+
+    <a class="brg" id="brg" href="#sommaire" aria-label="Sommaire de l'ouvrage" aria-expanded="false">
+      <i aria-hidden="true"></i>
+    </a>
+  </div>
+
+  <nav class="reglette" aria-label="Les onze chapitres">
+    <span class="reglette__t">Onze chapitres</span>
+    <ul class="reglette__l">
+      <li><a class="reglette__a" href="#ch-01" aria-label="Chapitre 01 — L'ouverture">01</a></li>
+      <li><a class="reglette__a" href="#ch-02" aria-label="Chapitre 02 — Notre histoire">02</a></li>
+      <li><a class="reglette__a" href="#ch-03" aria-label="Chapitre 03 — Le réseau">03</a></li>
+      <li><a class="reglette__a" href="#ch-04" aria-label="Chapitre 04 — Les neuf implantations">04</a></li>
+      <li><a class="reglette__a" href="#ch-05" aria-label="Chapitre 05 — Le métier">05</a></li>
+      <li><a class="reglette__a" href="#ch-06" aria-label="Chapitre 06 — La centrale">06</a></li>
+      <li><a class="reglette__a" href="#ch-07" aria-label="Chapitre 07 — Vos factures">07</a></li>
+      <li><a class="reglette__a" href="#ch-08" aria-label="Chapitre 08 — Nos partenaires">08</a></li>
+      <li><a class="reglette__a" href="#ch-09" aria-label="Chapitre 09 — Nous rejoindre">09</a></li>
+      <li><a class="reglette__a" href="#ch-10" aria-label="Chapitre 10 — Nos valeurs">10</a></li>
+      <li><a class="reglette__a" href="#ch-11" aria-label="Chapitre 11 — Nous écrire">11</a></li>
+    </ul>
+  </nav>
+</header>
+
+<!-- Panneau mobile : fond plein, jamais de texte qui défile au travers. -->
+<div class="panneau" id="panneau" role="dialog" aria-modal="true" aria-label="Sommaire de l'ouvrage">
+  <div class="panneau__haut">
+    <p class="panneau__t">Sommaire</p>
+    <button class="panneau__x" id="panneau-x" type="button" aria-label="Fermer le sommaire">&#215;</button>
+  </div>
+  <ul class="panneau__l">
+    <li><a href="#ch-01"><b>01</b><span>L'ouverture</span></a></li>
+    <li><a href="#ch-02"><b>02</b><span>Notre histoire</span></a></li>
+    <li><a href="#ch-03"><b>03</b><span>Le réseau</span></a></li>
+    <li><a href="#ch-04"><b>04</b><span>Les neuf implantations</span></a></li>
+    <li><a href="#ch-05"><b>05</b><span>Le métier</span></a></li>
+    <li><a href="#ch-06"><b>06</b><span>La centrale</span></a></li>
+    <li><a href="#ch-07"><b>07</b><span>Vos factures</span></a></li>
+    <li><a href="#ch-08"><b>08</b><span>Nos partenaires</span></a></li>
+    <li><a href="#ch-09"><b>09</b><span>Nous rejoindre</span></a></li>
+    <li><a href="#ch-10"><b>10</b><span>Nos valeurs</span></a></li>
+    <li><a href="#ch-11"><b>11</b><span>Nous écrire</span></a></li>
+  </ul>
+  <a class="panneau__ecrire" href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a>
+</div>
+
+<main id="haut">
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     CHAPITRE 01 · L'OUVERTURE
+     ═══════════════════════════════════════════════════════════════════════ -->
+<section class="ch" id="ch-01" data-ch="01" data-nom="L'ouverture">
+  <div class="ch__garde">
+    <div class="garde__in">
+      <p class="garde__cle">Chapitre</p>
+      <div class="garde__grille">
+        <p class="ch__num" aria-hidden="true">0<span>1</span></p>
+        <div class="garde__mot">
+          <p class="garde__sur">Groupe de grossistes-répartiteurs français indépendant</p>
+          <h1 class="garde__t">Neuf maisons. Un seul nom.</h1>
+          <a class="garde__saut" href="#ch-01-texte">
+            Aller au texte
+            <svg viewBox="0 0 12 14" fill="none" aria-hidden="true"><path d="M6 0v12M1 7.5l5 5 5-5" stroke="currentColor" stroke-width="1.6"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ch__corps" id="ch-01-texte">
+    <div class="corps__in">
+
+      <div class="bloc rev">
+        <p class="bloc__ref">Ouverture</p>
+        <div class="bloc__c">
+          <p class="txt txt--fort">Chacune livre sa région depuis des années, avec ses équipes et
+            ses habitudes. Depuis 2006, elles avancent ensemble sous le nom d'Intégral Pharma —
+            et votre commande part toujours de la plus proche de votre comptoir.</p>
+          <div class="btns">
+            <a class="btn" href="#ch-03">Découvrir le réseau</a>
+            <a class="btn btn--vide" href="mailto:contact@integralpharma.fr">Nous écrire</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="ban" role="region" aria-label="Repères">
+        <div class="ban__piste">
+          <div class="ban__g">
+            <span>Indépendant</span><span>Neuf implantations</span><span>Un réseau national</span><span>Plus de 2 000 officines livrées</span><span>Confiance, Engagement, Respect</span><span>Une alternative aux grossistes historiques</span>
+          </div>
+          <div class="ban__g" aria-hidden="true">
+            <span>Indépendant</span><span>Neuf implantations</span><span>Un réseau national</span><span>Plus de 2 000 officines livrées</span><span>Confiance, Engagement, Respect</span><span>Une alternative aux grossistes historiques</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Le sommaire : une page de l'ouvrage, pas un menu déroulant. -->
+      <div class="bloc som rev" id="sommaire">
+        <p class="bloc__ref">Sommaire</p>
+        <div class="bloc__c">
+          <p class="st">Onze chapitres</p>
+          <ul class="som__l">
+            <li><a class="som__a" href="#ch-01"><span class="som__n">01</span><span class="som__t">L'ouverture</span><span class="som__pt"></span><span class="som__g">Neuf maisons. Un seul nom.</span></a></li>
+            <li><a class="som__a" href="#ch-02"><span class="som__n">02</span><span class="som__t">Notre histoire</span><span class="som__pt"></span><span class="som__g">Rendre la marge à l'officine française.</span></a></li>
+            <li><a class="som__a" href="#ch-03"><span class="som__n">03</span><span class="som__t">Le réseau</span><span class="som__pt"></span><span class="som__g">Neuf implantations. Laquelle est la vôtre ?</span></a></li>
+            <li><a class="som__a" href="#ch-04"><span class="som__n">04</span><span class="som__t">Les neuf implantations</span><span class="som__pt"></span><span class="som__g">Le répertoire</span></a></li>
+            <li><a class="som__a" href="#ch-05"><span class="som__n">05</span><span class="som__t">Le métier</span><span class="som__pt"></span><span class="som__g">Ce qui se passe entre votre commande et votre comptoir.</span></a></li>
+            <li><a class="som__a" href="#ch-06"><span class="som__n">06</span><span class="som__t">La centrale</span><span class="som__pt"></span><span class="som__g">Et pour tout ce qui n'est pas le médicament.</span></a></li>
+            <li><a class="som__a" href="#ch-07"><span class="som__n">07</span><span class="som__t">Vos factures</span><span class="som__pt"></span><span class="som__g">Elles arrivent déjà là où vous les gérez.</span></a></li>
+            <li><a class="som__a" href="#ch-08"><span class="som__n">08</span><span class="som__t">Nos partenaires</span><span class="som__pt"></span><span class="som__g">Les laboratoires qui nous font confiance.</span></a></li>
+            <li><a class="som__a" href="#ch-09"><span class="som__n">09</span><span class="som__t">Nous rejoindre</span><span class="som__pt"></span><span class="som__g">Neuf implantations qui embauchent.</span></a></li>
+            <li><a class="som__a" href="#ch-10"><span class="som__n">10</span><span class="som__t">Nos valeurs</span><span class="som__pt"></span><span class="som__g">Trois mots qui se vérifient au téléphone.</span></a></li>
+            <li><a class="som__a" href="#ch-11"><span class="som__n">11</span><span class="som__t">Nous écrire</span><span class="som__pt"></span><span class="som__g">Posez-nous la question qui vous intéresse.</span></a></li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     CHAPITRE 02 · NOTRE HISTOIRE
+     ═══════════════════════════════════════════════════════════════════════ -->
+<section class="ch" id="ch-02" data-ch="02" data-nom="Notre histoire">
+  <div class="ch__garde">
+    <div class="garde__in">
+      <p class="garde__cle">Chapitre</p>
+      <div class="garde__grille">
+        <p class="ch__num" aria-hidden="true">0<span>2</span></p>
+        <div class="garde__mot">
+          <p class="garde__sur">Notre histoire</p>
+          <h2 class="garde__t">Rendre la marge à l'officine française.</h2>
+          <a class="garde__saut" href="#ch-02-texte">
+            Aller au texte
+            <svg viewBox="0 0 12 14" fill="none" aria-hidden="true"><path d="M6 0v12M1 7.5l5 5 5-5" stroke="currentColor" stroke-width="1.6"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ch__corps" id="ch-02-texte">
+    <div class="corps__in">
+
+      <div class="bloc rev">
+        <p class="bloc__ref">§ 2.1</p>
+        <div class="bloc__c">
+          <p class="txt txt--fort">C'est la raison d'être d'Intégral Pharma depuis 2006 :
+            redistribuer directement la marge aux officines françaises, en toute transparence,
+            avec des prix nets visibles sur facture.</p>
+          <hr class="regle">
+          <p class="txt">Neuf implantations aujourd'hui, plus de deux mille officines livrées
+            chaque jour, et la même idée qu'au premier jour — un groupe de répartiteurs
+            indépendants qui a choisi de se mettre du côté du comptoir.</p>
+        </div>
+      </div>
+
+      <div class="bloc rev">
+        <p class="bloc__ref">Les compteurs</p>
+        <div class="bloc__c">
+          <div class="nbs">
+            <div><b>2006</b><small>année de création</small></div>
+            <div><b>9</b><small>implantations</small></div>
+            <div><b>2 000<em>&nbsp;+</em></b><small>officines livrées</small></div>
+            <div><b>20</b><small>ans d'indépendance</small></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     CHAPITRE 03 · LE RÉSEAU
+     ═══════════════════════════════════════════════════════════════════════ -->
+<section class="ch" id="ch-03" data-ch="03" data-nom="Le réseau">
+  <div class="ch__garde">
+    <div class="garde__in">
+      <p class="garde__cle">Chapitre</p>
+      <div class="garde__grille">
+        <p class="ch__num" aria-hidden="true">0<span>3</span></p>
+        <div class="garde__mot">
+          <p class="garde__sur">Le réseau</p>
+          <h2 class="garde__t">Neuf implantations. Laquelle est la vôtre ?</h2>
+          <a class="garde__saut" href="#ch-03-texte">
+            Aller au texte
+            <svg viewBox="0 0 12 14" fill="none" aria-hidden="true"><path d="M6 0v12M1 7.5l5 5 5-5" stroke="currentColor" stroke-width="1.6"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ch__corps" id="ch-03-texte">
+    <div class="corps__in">
+
+      <div class="bloc rev">
+        <p class="bloc__ref">§ 3.1</p>
+        <div class="bloc__c">
+          <p class="txt txt--fort">C'est la seule question qui compte vraiment. Celle qui prépare
+            votre commande, qui vous livre chaque matin, et dont vous connaissez l'équipe par son
+            prénom.</p>
+          <hr class="regle">
+          <p class="txt">Les huit autres sont là pour qu'elle ne soit jamais prise au dépourvu —
+            de la Bretagne à la Méditerranée, le stock d'une maison est le stock de toutes.</p>
+        </div>
+      </div>
+
+      <div class="bloc rev">
+        <p class="bloc__ref">fig. 1</p>
+        <div class="bloc__c">
+          <figure class="fig">
+            <svg viewBox="0 0 700 180" role="img"
+                 aria-label="Planche : huit implantations de même taille, une neuvième dessinée en grand — celle qui vous livre — et, séparé, un partenaire.">
+              <line x1="46" y1="152" x2="668" y2="152" stroke="#E2DBCC" stroke-width="2"/>
+              <g fill="#0050E6" opacity=".55">
+                <rect x="60" y="134" width="18" height="18"/>
+                <rect x="116" y="134" width="18" height="18"/>
+                <rect x="172" y="134" width="18" height="18"/>
+                <rect x="352" y="134" width="18" height="18"/>
+                <rect x="408" y="134" width="18" height="18"/>
+                <rect x="464" y="134" width="18" height="18"/>
+                <rect x="520" y="134" width="18" height="18"/>
+                <rect x="576" y="134" width="18" height="18"/>
+              </g>
+              <g stroke="#CCDCF8" stroke-width="1.5">
+                <path d="M228 46 L206 134"/>
+                <path d="M316 46 L338 134"/>
+              </g>
+              <rect x="228" y="46" width="88" height="106" fill="#0050E6"/>
+              <g stroke="#E2DBCC" stroke-width="1.5" stroke-dasharray="4 5">
+                <path d="M602 143 L636 143"/>
+              </g>
+              <rect x="642" y="134" width="18" height="18" fill="none" stroke="#F39A1B" stroke-width="2.5"/>
+            </svg>
+            <ul class="fig__leg">
+              <li><i></i>Huit maisons</li>
+              <li class="est-vous"><i></i>La vôtre</li>
+              <li class="est-part"><i></i>Un partenaire</li>
+            </ul>
+            <figcaption><b>fig. 1</b> — Neuf implantations et un partenaire.</figcaption>
+          </figure>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     CHAPITRE 04 · LES NEUF IMPLANTATIONS
+     ═══════════════════════════════════════════════════════════════════════ -->
+<section class="ch" id="ch-04" data-ch="04" data-nom="Les neuf implantations">
+  <div class="ch__garde">
+    <div class="garde__in">
+      <p class="garde__cle">Chapitre</p>
+      <div class="garde__grille">
+        <p class="ch__num" aria-hidden="true">0<span>4</span></p>
+        <div class="garde__mot">
+          <p class="garde__sur">Le réseau</p>
+          <h2 class="garde__t">Les neuf implantations</h2>
+          <a class="garde__saut" href="#ch-04-texte">
+            Aller au texte
+            <svg viewBox="0 0 12 14" fill="none" aria-hidden="true"><path d="M6 0v12M1 7.5l5 5 5-5" stroke="currentColor" stroke-width="1.6"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ch__corps" id="ch-04-texte">
+    <div class="corps__in">
+
+      <div class="bloc rev">
+        <p class="bloc__ref">Répertoire</p>
+        <div class="bloc__c">
+          <ul class="rep">
+            <li><b>01</b><span class="rep__n">Hyères Pharma <i>(siège du groupe)</i></span><span class="rep__v">Hyères <em>· 83</em></span></li>
+            <li><b>02</b><span class="rep__n">SR Pharma</span><span class="rep__v">Palaiseau <em>· 91</em></span></li>
+            <li><b>03</b><span class="rep__n">Mistral Santé Pharma</span><span class="rep__v">Flassans-sur-Issole <em>· 83</em></span></li>
+            <li><b>04</b><span class="rep__n">Sud Ouest Pharma</span><span class="rep__v">Montayral <em>· 47</em></span></li>
+            <li><b>05</b><span class="rep__n">Comptoir Pharmaceutique du Rhône</span><span class="rep__v">Saint-Maurice-l'Exil <em>· 38</em></span></li>
+            <li><b>06</b><span class="rep__n">Escale Pharma</span><span class="rep__v">Chilly-Mazarin <em>· 91</em></span></li>
+            <li><b>07</b><span class="rep__n">Ouest Pharma Services</span><span class="rep__v">Saint-Étienne-de-Montluc <em>· 44</em></span></li>
+            <li><b>08</b><span class="rep__n">Pharm'Occitanie Services</span><span class="rep__v">Villeneuve-lès-Béziers <em>· 34</em></span></li>
+            <li><b>09</b><span class="rep__n">Sud Est Pharma</span><span class="rep__v">Le Cannet-des-Maures <em>· 83</em></span></li>
+            <li class="est-part"><b>+</b><span class="rep__n">Pharmest <i>(partenaire)</i></span><span class="rep__v">Metz <em>· 57</em></span></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="bloc rev">
+        <p class="bloc__ref">Note</p>
+        <div class="bloc__c">
+          <p class="txt txt--petit">Et à l'Est, notre partenaire <strong>Pharmest</strong> (Metz, 57)
+            prolonge le maillage.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     CHAPITRE 05 · LE MÉTIER
+     ═══════════════════════════════════════════════════════════════════════ -->
+<section class="ch" id="ch-05" data-ch="05" data-nom="Le métier">
+  <div class="ch__garde">
+    <div class="garde__in">
+      <p class="garde__cle">Chapitre</p>
+      <div class="garde__grille">
+        <p class="ch__num" aria-hidden="true">0<span>5</span></p>
+        <div class="garde__mot">
+          <p class="garde__sur">Le métier</p>
+          <h2 class="garde__t">Ce qui se passe entre votre commande et votre comptoir.</h2>
+          <a class="garde__saut" href="#ch-05-texte">
+            Aller au texte
+            <svg viewBox="0 0 12 14" fill="none" aria-hidden="true"><path d="M6 0v12M1 7.5l5 5 5-5" stroke="currentColor" stroke-width="1.6"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ch__corps" id="ch-05-texte">
+    <div class="corps__in">
+
+      <div class="bloc rev">
+        <p class="bloc__ref">§ 5.0</p>
+        <div class="bloc__c">
+          <p class="txt txt--fort">Quelques heures, quatre métiers, et une chaîne qui ne s'arrête
+            jamais. Référencer, stocker, préparer, livrer : c'est invisible depuis l'officine, et
+            c'est tout notre travail.</p>
+        </div>
+      </div>
+
+      <div class="bloc rev">
+        <p class="bloc__ref">§ 5.1 — 5.4</p>
+        <div class="bloc__c">
+          <div class="gestes">
+            <div>
+              <b>5.1</b>
+              <h3 class="h3">Le référencement</h3>
+              <p>Le groupe référence pour ses neuf maisons à la fois : un même catalogue, tenu à
+                jour, disponible dans toutes les implantations. C'est ce qui permet à une maison
+                de taille humaine de proposer la profondeur de gamme d'un réseau national.</p>
+            </div>
+            <div>
+              <b>5.2</b>
+              <h3 class="h3">La disponibilité</h3>
+              <p>Des stocks répartis sur neuf implantations, au plus près de votre officine. Quand
+                le comptoir a besoin, le réseau répond — et quand une référence manque quelque
+                part, elle existe souvent ailleurs dans le réseau.</p>
+            </div>
+            <div>
+              <b>5.3</b>
+              <h3 class="h3">La préparation</h3>
+              <p>Chaque commande est préparée dans l'implantation la plus proche de chez vous, par
+                une équipe qui connaît votre officine et ses saisons.</p>
+            </div>
+            <div>
+              <b>5.4</b>
+              <h3 class="h3">La livraison</h3>
+              <p>Tous les jours, les tournées partent vers les officines. La régularité d'un
+                service tenu — c'est elle qui fait la confiance, pas les promesses.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bloc rev">
+        <p class="bloc__ref">Clôture</p>
+        <div class="bloc__c">
+          <p class="txt txt--fort">Et quand la vie de votre officine change — transfert,
+            agrandissement, cession de parts — votre interlocuteur ajuste l'approvisionnement avec
+            vous, sans à-coup au comptoir.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     CHAPITRE 06 · LA CENTRALE
+     ═══════════════════════════════════════════════════════════════════════ -->
+<section class="ch" id="ch-06" data-ch="06" data-nom="La centrale">
+  <div class="ch__garde">
+    <div class="garde__in">
+      <p class="garde__cle">Chapitre</p>
+      <div class="garde__grille">
+        <p class="ch__num" aria-hidden="true">0<span>6</span></p>
+        <div class="garde__mot">
+          <p class="garde__sur">La centrale</p>
+          <h2 class="garde__t">Et pour tout ce qui n'est pas le médicament.</h2>
+          <a class="garde__saut" href="#ch-06-texte">
+            Aller au texte
+            <svg viewBox="0 0 12 14" fill="none" aria-hidden="true"><path d="M6 0v12M1 7.5l5 5 5-5" stroke="currentColor" stroke-width="1.6"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ch__corps" id="ch-06-texte">
+    <div class="corps__in">
+
+      <div class="bloc rev">
+        <p class="bloc__ref">§ 6.1</p>
+        <div class="bloc__c">
+          <p class="txt txt--fort">Notre centrale de parapharmacie référence pour l'officine plus
+            de 14 000 produits et plus de 480 marques.</p>
+          <hr class="regle">
+          <p class="txt">C'est une structure à part, avec son propre fonctionnement — sa commande,
+            sa livraison — et la même exigence que le reste du groupe.</p>
+        </div>
+      </div>
+
+      <div class="bloc rev">
+        <p class="bloc__ref">Les compteurs</p>
+        <div class="bloc__c">
+          <div class="nbs nbs--duo">
+            <div><b>14 000<em>&nbsp;+</em></b><small>références</small></div>
+            <div><b>480<em>&nbsp;+</em></b><small>marques</small></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     CHAPITRE 07 · VOS FACTURES
+     ═══════════════════════════════════════════════════════════════════════ -->
+<section class="ch" id="ch-07" data-ch="07" data-nom="Vos factures">
+  <div class="ch__garde">
+    <div class="garde__in">
+      <p class="garde__cle">Chapitre</p>
+      <div class="garde__grille">
+        <p class="ch__num" aria-hidden="true">0<span>7</span></p>
+        <div class="garde__mot">
+          <p class="garde__sur">Vos factures</p>
+          <h2 class="garde__t">Elles arrivent déjà là où vous les gérez.</h2>
+          <a class="garde__saut" href="#ch-07-texte">
+            Aller au texte
+            <svg viewBox="0 0 12 14" fill="none" aria-hidden="true"><path d="M6 0v12M1 7.5l5 5 5-5" stroke="currentColor" stroke-width="1.6"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ch__corps" id="ch-07-texte">
+    <div class="corps__in">
+
+      <div class="bloc rev">
+        <p class="bloc__ref">§ 7.1</p>
+        <div class="bloc__c">
+          <p class="txt txt--fort">Nous sommes connectés à Digipharmacie : vos factures Intégral
+            s'y retrouvent automatiquement, avec celles de vos autres fournisseurs.</p>
+          <hr class="regle">
+          <p class="txt">Rien à saisir, rien à classer, rien à réclamer.</p>
+        </div>
+      </div>
+
+      <div class="bloc rev">
+        <p class="bloc__ref">fig. 2</p>
+        <div class="bloc__c">
+          <figure class="fig">
+            <svg viewBox="0 0 700 190" role="img"
+                 aria-label="Planche : les factures de plusieurs fournisseurs, dont celles d'Intégral, se rangent au même endroit — celui où l'officine les gère déjà.">
+              <g fill="none" stroke="#CCDCF8" stroke-width="1.5">
+                <path d="M150 46 C 250 46, 250 95, 330 95"/>
+                <path d="M150 95 L 330 95"/>
+                <path d="M150 144 C 250 144, 250 95, 330 95"/>
+              </g>
+              <g fill="#FFFDF8" stroke="#E2DBCC" stroke-width="2">
+                <rect x="40" y="28" width="110" height="36"/>
+                <rect x="40" y="77" width="110" height="36"/>
+              </g>
+              <rect x="40" y="126" width="110" height="36" fill="#FFFDF8" stroke="#0050E6" stroke-width="2.5"/>
+              <rect x="330" y="40" width="280" height="110" fill="#0050E6"/>
+              <g fill="#FFFDF8" opacity=".32">
+                <rect x="356" y="64" width="228" height="8"/>
+                <rect x="356" y="84" width="228" height="8"/>
+                <rect x="356" y="104" width="228" height="8"/>
+                <rect x="356" y="124" width="146" height="8"/>
+              </g>
+              <g stroke="#E2DBCC" stroke-width="1.5" stroke-dasharray="4 5"><path d="M626 95 L666 95"/></g>
+            </svg>
+            <ul class="fig__leg">
+              <li><i></i>Vos autres fournisseurs</li>
+              <li class="est-vous"><i></i>Intégral</li>
+              <li><i style="background:#0050E6;opacity:1"></i>Là où vous les gérez</li>
+            </ul>
+            <figcaption><b>fig. 2</b> — Rien à saisir, rien à classer, rien à réclamer.</figcaption>
+          </figure>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     CHAPITRE 08 · NOS PARTENAIRES
+     ═══════════════════════════════════════════════════════════════════════ -->
+<section class="ch" id="ch-08" data-ch="08" data-nom="Nos partenaires">
+  <div class="ch__garde">
+    <div class="garde__in">
+      <p class="garde__cle">Chapitre</p>
+      <div class="garde__grille">
+        <p class="ch__num" aria-hidden="true">0<span>8</span></p>
+        <div class="garde__mot">
+          <p class="garde__sur">Nos partenaires</p>
+          <h2 class="garde__t">Les laboratoires qui nous font confiance.</h2>
+          <a class="garde__saut" href="#ch-08-texte">
+            Aller au texte
+            <svg viewBox="0 0 12 14" fill="none" aria-hidden="true"><path d="M6 0v12M1 7.5l5 5 5-5" stroke="currentColor" stroke-width="1.6"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ch__corps" id="ch-08-texte">
+    <div class="corps__in">
+      <div class="bloc rev">
+        <p class="bloc__ref">La liste</p>
+        <div class="bloc__c">
+          <ul class="labos">
+            <li><i>01</i><span>EG Labo</span></li>
+            <li><i>02</i><span>Zentiva</span></li>
+            <li><i>03</i><span>Zydus</span></li>
+            <li><i>04</i><span>Viatris</span></li>
+            <li><i>05</i><span>ITP</span></li>
+            <li><i>06</i><span>Santestat</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     CHAPITRE 09 · NOUS REJOINDRE
+     ═══════════════════════════════════════════════════════════════════════ -->
+<section class="ch" id="ch-09" data-ch="09" data-nom="Nous rejoindre">
+  <div class="ch__garde">
+    <div class="garde__in">
+      <p class="garde__cle">Chapitre</p>
+      <div class="garde__grille">
+        <p class="ch__num" aria-hidden="true">0<span>9</span></p>
+        <div class="garde__mot">
+          <p class="garde__sur">Nous rejoindre</p>
+          <h2 class="garde__t">Neuf implantations qui embauchent.</h2>
+          <a class="garde__saut" href="#ch-09-texte">
+            Aller au texte
+            <svg viewBox="0 0 12 14" fill="none" aria-hidden="true"><path d="M6 0v12M1 7.5l5 5 5-5" stroke="currentColor" stroke-width="1.6"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ch__corps" id="ch-09-texte">
+    <div class="corps__in">
+
+      <div class="bloc rev">
+        <p class="bloc__ref">§ 9.1</p>
+        <div class="bloc__c">
+          <p class="txt txt--fort">Préparateur-chauffeur, technicien approvisionnement, commercial,
+            pharmacien responsable : les métiers de la répartition s'apprennent chez nous.</p>
+        </div>
+      </div>
+
+      <div class="bloc rev">
+        <p class="bloc__ref">Les villes qui recrutent</p>
+        <div class="bloc__c">
+          <ul class="villes">
+            <li>Hyères <em>(83)</em></li>
+            <li>Villeneuve-lès-Béziers <em>(34)</em></li>
+            <li>Montayral <em>(47)</em></li>
+            <li>Saint-Maurice-l'Exil <em>(38)</em></li>
+          </ul>
+          <div class="btns">
+            <a class="btn" href="https://www.integralpharma.fr/jobs">Voir les offres</a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     CHAPITRE 10 · NOS VALEURS
+     ═══════════════════════════════════════════════════════════════════════ -->
+<section class="ch" id="ch-10" data-ch="10" data-nom="Nos valeurs">
+  <div class="ch__garde">
+    <div class="garde__in">
+      <p class="garde__cle">Chapitre</p>
+      <div class="garde__grille">
+        <p class="ch__num" aria-hidden="true">1<span>0</span></p>
+        <div class="garde__mot">
+          <p class="garde__sur">Nos valeurs</p>
+          <h2 class="garde__t">Trois mots qui se vérifient au téléphone.</h2>
+          <a class="garde__saut" href="#ch-10-texte">
+            Aller au texte
+            <svg viewBox="0 0 12 14" fill="none" aria-hidden="true"><path d="M6 0v12M1 7.5l5 5 5-5" stroke="currentColor" stroke-width="1.6"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ch__corps" id="ch-10-texte">
+    <div class="corps__in">
+      <div class="bloc rev">
+        <p class="bloc__ref">§ 10.1 — 10.3</p>
+        <div class="bloc__c">
+          <dl class="vals">
+            <div>
+              <dt>Confiance</dt>
+              <dd>La personne qui décroche connaît votre officine, vos saisons et vos habitudes.</dd>
+            </div>
+            <div>
+              <dt>Engagement</dt>
+              <dd>C'est la même d'une année sur l'autre. Dans ce métier, c'est devenu rare.</dd>
+            </div>
+            <div>
+              <dt>Respect</dt>
+              <dd>Elle ne vous vendra pas ce dont vous n'avez pas besoin — parce qu'elle vous
+                reverra le mois suivant, et l'année d'après.</dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     CHAPITRE 11 · NOUS ÉCRIRE
+     ═══════════════════════════════════════════════════════════════════════ -->
+<section class="ch" id="ch-11" data-ch="11" data-nom="Nous écrire">
+  <div class="ch__garde">
+    <div class="garde__in">
+      <p class="garde__cle">Chapitre</p>
+      <div class="garde__grille">
+        <p class="ch__num" aria-hidden="true">1<span>1</span></p>
+        <div class="garde__mot">
+          <p class="garde__sur">Nous écrire</p>
+          <h2 class="garde__t">Posez-nous la question qui vous intéresse.</h2>
+          <a class="garde__saut" href="#ch-11-texte">
+            Aller au texte
+            <svg viewBox="0 0 12 14" fill="none" aria-hidden="true"><path d="M6 0v12M1 7.5l5 5 5-5" stroke="currentColor" stroke-width="1.6"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ch__corps" id="ch-11-texte">
+    <div class="corps__in">
+      <div class="bloc rev">
+        <p class="bloc__ref">Fin de l'ouvrage</p>
+        <div class="bloc__c">
+          <div class="ecrire">
+            <p class="st">Nous écrire</p>
+            <p class="h3">Sur nos conditions, sur nos délais, sur la façon dont nous travaillons.
+              Vous aurez une réponse claire, et le nom de l'implantation qui livre votre secteur.</p>
+            <div class="btns">
+              <a class="btn" href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     COLOPHON
+     ═══════════════════════════════════════════════════════════════════════ -->
+<footer class="colo">
+  <div class="colo__in">
+    <div class="colo__g">
+      <p class="colo__ad">
+        <strong>Intégral Pharma</strong>
+        758 chemin de la Source, ZI Saint-Martin, 83400 Hyères<br>
+        <a href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a>
+      </p>
+      <nav class="colo__l" aria-label="Liens de pied de page">
+        <a href="#sommaire">Sommaire de l'ouvrage</a>
+        <a href="https://www.integralpharma.fr/mentions-legales/">Mentions légales</a>
+        <a href="#haut">Revenir à la couverture</a>
+      </nav>
+    </div>
+    <p class="colo__chiffres">9 implantations · plus de 2 000 officines livrées · indépendant depuis 2006</p>
+    <p class="colo__sig"><b>Proposition 16 — Fascicule</b> <span>Onze chapitres, onze pages de garde.</span></p>
+  </div>
+</footer>
+
+<script>
+(function(){
+  'use strict';
+
+  var reduit = false;
+  try { reduit = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch(e){}
+
+  var racine   = document.documentElement;
+  var chaps    = Array.prototype.slice.call(document.querySelectorAll('.ch'));
+  var onglets  = Array.prototype.slice.call(document.querySelectorAll('.reglette__a'));
+  var reglette = document.querySelector('.reglette');
+  var folioN   = document.getElementById('folio-n');
+  var folioNom = document.getElementById('folio-nom');
+  var blocs    = Array.prototype.slice.call(document.querySelectorAll('.rev'));
+  var barre    = 100;
+
+  function hauteurBarre(){
+    var b = document.querySelector('.barre');
+    if (b) barre = b.getBoundingClientRect().height;
+  }
+  hauteurBarre();
+
+  /* ── Le panneau (mobile) ─────────────────────────────────────────────── */
+  var brg  = document.getElementById('brg');
+  var pan  = document.getElementById('panneau');
+  var panX = document.getElementById('panneau-x');
+
+  function ouvrir(){
+    pan.classList.add('est-ouvert');
+    brg.setAttribute('aria-expanded','true');
+    document.body.style.overflow = 'hidden';
+  }
+  function fermer(){
+    pan.classList.remove('est-ouvert');
+    brg.setAttribute('aria-expanded','false');
+    document.body.style.overflow = '';
+  }
+  if (brg && pan){
+    /* Sans script, ce bouton reste un lien d'ancre vers le sommaire, qui est
+       une vraie page du site : la navigation ne dépend pas de ce panneau. */
+    brg.addEventListener('click', function(e){ e.preventDefault(); ouvrir(); });
+    if (panX) panX.addEventListener('click', fermer);
+    pan.addEventListener('click', function(e){ if (e.target.closest('a')) fermer(); });
+    document.addEventListener('keydown', function(e){
+      if (e.key === 'Escape' && pan.classList.contains('est-ouvert')) fermer();
+    });
+  }
+
+  /* ── Défilement doux au clic, l'ancre native reste la vérité ─────────── */
+  if (!reduit){
+    document.addEventListener('click', function(e){
+      var a = e.target.closest('a[href^="#"]');
+      if (!a) return;
+      var id = a.getAttribute('href');
+      if (id.length < 2) return;
+      var cible = document.querySelector(id);
+      if (!cible) return;
+      e.preventDefault();
+      var y = window.pageYOffset + cible.getBoundingClientRect().top - barre - 2;
+      window.scrollTo({ top: Math.max(0, y), behavior:'smooth' });
+      if (history.replaceState) history.replaceState(null, '', id);
+    });
+  }
+
+  /* ── Mouvement réduit : tout est posé, rien ne se calcule ────────────── */
+  if (reduit){
+    blocs.forEach(function(b){ b.classList.add('est-vu'); });
+    racine.className = racine.className.replace(' js-motion','');
+    return;
+  }
+
+  /* ── La mécanique ────────────────────────────────────────────────────── */
+  var tic = false, dernier = -1;
+
+  function placer(){
+    tic = false;
+    var vue = window.innerHeight;
+    var ligneRevele   = vue * 0.88;          /* ligne basse : révélation du bloc */
+    var ligneChapitre = barre + vue * 0.30;  /* ligne haute : chapitre en cours */
+
+    /* 1. Le recouvrement, chapitre par chapitre.
+          Mesuré sur le CORPS, qui bouge : la garde est collée, sa position
+          d'écran est constante et n'apprendrait rien. */
+    for (var i = 0; i < chaps.length; i++){
+      var ch = chaps[i];
+      var r  = ch.getBoundingClientRect();
+      if (r.bottom < -vue || r.top > vue * 2) continue;   /* hors champ, large marge */
+      var corps = ch.lastElementChild;                     /* .ch__corps */
+      var haut  = Math.max(1, vue - barre);                /* hauteur visible d'une garde */
+      var p = (vue - corps.getBoundingClientRect().top) / haut;
+      if (p < 0) p = 0; else if (p > 1) p = 1;
+      ch.style.setProperty('--p', p.toFixed(3));
+    }
+
+    /* 2. Le chapitre en cours : décidé sur la position réelle, relue à chaque
+          défilement. Le dernier reste allumé quand on touche le bas de page. */
+    var actif = 0;
+    for (var j = 0; j < chaps.length; j++){
+      if (chaps[j].getBoundingClientRect().top <= ligneChapitre) actif = j;
+    }
+    if (vue + window.pageYOffset >= document.documentElement.scrollHeight - 4){
+      actif = chaps.length - 1;
+    }
+
+    if (actif !== dernier){
+      dernier = actif;
+      if (folioN)   folioN.textContent   = chaps[actif].getAttribute('data-ch');
+      if (folioNom) folioNom.textContent = chaps[actif].getAttribute('data-nom');
+      for (var k = 0; k < onglets.length; k++){
+        onglets[k].classList.toggle('est-actif', k === actif);
+        onglets[k].classList.toggle('est-lu', k < actif);
+        if (k === actif) onglets[k].setAttribute('aria-current','true');
+        else onglets[k].removeAttribute('aria-current');
+      }
+      /* Réglette mobile : on ramène le chapitre en cours dans le champ, sans
+         jamais toucher au défilement vertical de la page. */
+      if (reglette && reglette.scrollWidth > reglette.clientWidth + 4){
+        var o = onglets[actif];
+        reglette.scrollLeft = Math.max(0, o.offsetLeft - reglette.clientWidth * 0.4);
+      }
+    }
+
+    /* 3. Le filet. Révélation décidée sur la position réelle lue au
+          défilement, jamais sur une notification unique : un bloc masqué n'a
+          aucune aire visible et ne serait jamais signalé comme entré. */
+    for (var m = blocs.length - 1; m >= 0; m--){
+      if (blocs[m].getBoundingClientRect().top < ligneRevele){
+        blocs[m].classList.add('est-vu');
+        blocs.splice(m, 1);
+      }
+    }
+  }
+
+  function auDefilement(){ if (!tic){ tic = true; requestAnimationFrame(placer); } }
+
+  window.addEventListener('scroll', auDefilement, {passive:true});
+  window.addEventListener('resize', function(){
+    hauteurBarre(); dernier = -1; auDefilement();
+  }, {passive:true});
+  window.addEventListener('orientationchange', function(){
+    hauteurBarre(); dernier = -1; auDefilement();
+  }, {passive:true});
+
+  placer();
+  window.addEventListener('load', function(){ hauteurBarre(); placer(); });
+  setTimeout(placer, 400);
+
+  /* Dernier filet : au bout de 3 s, tout ce qui approche le champ est ouvert,
+     quoi qu'il soit arrivé au calcul. */
+  setTimeout(function(){
+    for (var i = blocs.length - 1; i >= 0; i--){
+      if (blocs[i].getBoundingClientRect().top < window.innerHeight * 1.2){
+        blocs[i].classList.add('est-vu'); blocs.splice(i,1);
+      }
+    }
+  }, 3000);
+
+})();
+</script>
+
+</body>
+</html>
