@@ -498,7 +498,7 @@
           htmlPro +
 
           '<div class="v2-hub-grille">' +
-            (V2.pages.rdvplanning ? entree('rdvplanning', 'Mon agenda', '15 jours, heure par heure', IC.agenda) : '') +
+            (V2.pages.rdvplanning ? entree('rdvplanning', 'Mon agenda', '4 semaines, heure par heure', IC.agenda) : '') +
             (V2.pages.rdvajout ? entree('rdvajout', 'Noter un RDV', 'pris au téléphone', IC.noter) : '') +
             (V2.pages.campagne ? entree('campagne', 'Envoyer un lien', 'il choisit son créneau', IC.envoyer) : '') +
             entree('rdvdispo', 'Mes dispos', 'jours, horaires, agenda', IC.dispos) +

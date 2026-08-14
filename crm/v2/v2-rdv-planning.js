@@ -8,9 +8,15 @@
      · les demi-journées qu'il s'est bloquées à la main —
    et, en creux, ce qui reste réellement réservable.
 
-   Des plages de l'agenda personnel, on n'a QUE des heures. Aucun titre,
-   aucun lieu : la base n'a pas de colonne pour les ranger. L'écran dit donc
-   « occupé », jamais de quoi il s'agit — et c'est la vérité, pas une pudeur.
+   Depuis le 14/08/2026, l'écran NOMME aussi les officines : les titres de
+   l'agenda sont lus à l'ouverture, comparés au fichier, et affichés. Mais
+   ils ne sont écrits NULLE PART — la base n'a toujours aucune colonne pour
+   les ranger, et c'est ce qui rend la promesse tenable. Un titre que le
+   commercial n'a pas désigné comme une officine reste « occupé », point.
+
+   Seule exception, consentie ligne par ligne : quand il corrige un
+   rattachement, la correspondance (et elle seule) part dans
+   `rdv_agenda_alias`, pour ne pas être redemandée à chaque ouverture.
    ═══════════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
@@ -22,7 +28,10 @@
   var MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin',
               'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
 
-  var JOURS_AFFICHES = 14;
+  // Quatre semaines, pas quinze jours : le planning à venir est presque vide
+  // (5 RDV pharmacie sur les 4 prochaines semaines, mesuré le 14/08/2026).
+  // Un horizon court donnerait un écran sans usage.
+  var JOURS_AFFICHES = 28;
   var H_DEB = 8 * 60;        // la barre commence à 8 h
   var H_FIN = 19 * 60;       // et finit à 19 h
   var LARGEUR = H_FIN - H_DEB;
@@ -51,6 +60,46 @@
   }
   function numero(s) { return String(s || '').replace(/[^0-9+]/g, ''); }
   function escArg(s) { return esc(String(s == null ? '' : s).replace(/[\\'"<>&]/g, '')); }
+
+  // Les officines reconnues dans l'agenda. Rempli à chaque rendu, jamais
+  // persisté : les titres ne sont pas à nous.
+  V2.planningOfficines = [];
+  V2.planningDerniereVisite = {};
+
+  function appelerAgenda(corps) {
+    var c = sb();
+    if (!c) return Promise.resolve(null);
+    return c.auth.getSession().then(function (s) {
+      var acces = s && s.data && s.data.session && s.data.session.access_token;
+      if (!acces) return null;
+      return fetch(c.supabaseUrl + '/functions/v1/agenda', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + acces },
+        body: JSON.stringify(corps)
+      }).then(function (r) { return r.json(); });
+    }).catch(function () { return null; });
+  }
+
+  // Index construits une fois par rendu : 691 + 19 667 officines, c'est trop
+  // pour les reconstruire à chaque événement.
+  function indexOfficines() {
+    var R = window.V2RECO;
+    if (!R) return null;
+    var porte = (V2.pharmacies || []).map(function (p) {
+      return { id: p.id, name: p.name, ville: p.ville || '' };
+    });
+    var idsPorte = {}, k;
+    for (k = 0; k < porte.length; k++) idsPorte[String(porte[k].id)] = 1;
+    var nat = [], D = window.PHARMA_FR;
+    if (D && D.p) {
+      // [lat, lng, uga, grp, seg, comm, nom, ville, cp, tel, titulaire, email, ca, id]
+      for (var i = 0; i < D.p.length; i++) {
+        var l = D.p[i];
+        if (l[6] && l[13] != null) nat.push({ id: String(l[13]), name: l[6], ville: l[7] || '' });
+      }
+    }
+    return { porte: R.indexer(porte), nat: R.indexer(nat), idsPorte: idsPorte };
+  }
 
   function ensureCss() {
     if (document.getElementById('v2-agp-css')) return;
@@ -99,6 +148,13 @@
       '.agp-a{width:100%;display:flex;flex-wrap:wrap;gap:10px;font-size:13px}',
       '.agp-a a{color:var(--ip-blue);font-weight:700;text-decoration:none;min-height:44px;display:flex;align-items:center}',
       '.agp-rien{color:var(--muted);font-size:13.5px;margin:9px 0 0}',
+      /* une officine reconnue dans l'agenda, et son étiquette */
+      '.agp-l.agp-doute{border-left:3px solid #C7791A;padding-left:9px}',
+      '.agp-eti{font-size:11px;font-weight:800;border-radius:6px;padding:2px 7px;',
+      '  text-transform:uppercase;letter-spacing:.04em}',
+      '.agp-cli{background:#DCE7FA;color:#0050E6}',
+      '.agp-pro{background:#F3EAD8;color:#8A5A12}',
+      '.agp-dte{background:#FBEFD9;color:#8A5A12;border:1px solid #E4C489}',
       '@media (max-width:430px){.agp-jt .agp-resume{margin-left:0;width:100%;text-align:left}}'
     ].join('');
     document.head.appendChild(s);
@@ -138,7 +194,36 @@
       else suite();
     },
 
-    ics: function (id) { if (V2.rdv && V2.rdv.ics) V2.rdv.ics(id); }
+    ics: function (id) { if (V2.rdv && V2.rdv.ics) V2.rdv.ics(id); },
+
+    // L'annuaire national pèse 2,8 Mo : on ne le télécharge PAS tout seul,
+    // l'app s'y refuse partout ailleurs pour ne pas plomber un téléphone en
+    // tournée. Mais sans lui, seules les officines déjà clientes sont
+    // nommées — et la moitié des visites sont des prospects. D'où ce bouton :
+    // le coût est annoncé, le choix est au commercial.
+    annuaire: function () {
+      var b = document.getElementById('agp-annu');
+      if (b) { b.disabled = true; b.textContent = 'Téléchargement…'; }
+      if (!V2.ensurePharmaFr) { V2.go('rdvplanning'); return; }
+      V2.ensurePharmaFr(function () { V2.go('rdvplanning'); });
+    },
+
+    // « Ce n'est pas la bonne » : on ouvre la recherche d'officine déjà
+    // écrite pour l'ajout manuel, et on retient le choix au retour.
+    // L'agenda Google n'est jamais modifié — on corrige côté JARVIS.
+    corriger: function (cle) {
+      V2.rdvPlanningCleEnCours = cle;
+      var suite = function () { V2.go('rdvajout'); };
+      if (V2.rdvAlias) V2.rdvAlias.retirer(cle).then(suite, suite);
+      else suite();
+    },
+
+    // « C'est bien elle » sur une ligne douteuse : le rattachement devient
+    // définitif, et la ligne ne redemandera plus rien.
+    confirmer: function (cle, cip) {
+      if (!V2.rdvAlias) return;
+      V2.rdvAlias.poser(cle, cip).then(function () { V2.go('rdvplanning'); });
+    }
   };
 
   function etatAgenda(a) {
@@ -169,7 +254,7 @@
       '<button class="v2-btn" id="agp-maj" onclick="V2.rdvPlanning.actualiser()">Actualiser</button>';
   }
 
-  function rendreJour(iso, dispo, blocages, rdvs, occupes, auj) {
+  function rendreJour(iso, dispo, blocages, rdvs, occupes, auj, reconnus) {
     var plages = (dispo.jours && dispo.jours[String(dow(iso))]) || null;
     var bl = blocages.filter(function (b) { return b.date === iso; });
     var mesRdv = rdvs.filter(function (r) { return r.date === iso; });
@@ -216,15 +301,45 @@
         '</span></div>' });
     });
 
-    // Heures venues de l'agenda personnel : des heures, rien d'autre.
+    // Heures venues de l'agenda personnel. Quand le titre désigne une
+    // officine, on la nomme ; sinon on s'en tient à « occupé », qui est la
+    // vérité et pas une pudeur — rien de ce titre n'est connu de la base.
+    var recoJour = (reconnus || []).filter(function (x) { return x.date === iso; });
     mesOcc.forEach(function (o) {
       var d = o.jour_entier ? H_DEB : hm2min(o.debut);
       var f = o.jour_entier ? H_FIN : hm2min(o.fin);
-      pris.push({ deb: d, fin: f, cls: 'agp-s-occ' });
-      lignes.push({ deb: d, html: '<div class="agp-l">' +
+      // Les plages et les titres viennent de deux lectures du même agenda :
+      // on les apparie sur l'heure de début.
+      var reco = null;
+      for (var i = 0; i < recoJour.length; i++) {
+        if (!!recoJour[i].jour_entier === !!o.jour_entier &&
+            (o.jour_entier || recoJour[i].debut === String(o.debut).slice(0, 5))) {
+          reco = recoJour[i]; break;
+        }
+      }
+      pris.push({ deb: d, fin: f, cls: reco ? 'agp-s-rdv' : 'agp-s-occ' });
+      if (!reco) {
+        lignes.push({ deb: d, html: '<div class="agp-l">' +
+          '<span class="agp-h">' + (o.jour_entier ? 'jour' : esc(hhmm(o.debut))) + '</span>' +
+          '<span class="agp-sm">occupé' + (o.jour_entier ? ' toute la journée' :
+            ' jusqu’à ' + esc(hhmm(o.fin))) + ' — ton agenda personnel</span></div>' });
+        return;
+      }
+      var douteux = reco.etat === 'confirmer';
+      lignes.push({ deb: d, html: '<div class="agp-l' + (douteux ? ' agp-doute' : '') + '">' +
         '<span class="agp-h">' + (o.jour_entier ? 'jour' : esc(hhmm(o.debut))) + '</span>' +
-        '<span class="agp-sm">occupé' + (o.jour_entier ? ' toute la journée' :
-          ' jusqu’à ' + esc(hhmm(o.fin))) + ' — ton agenda personnel</span></div>' });
+        '<span class="agp-n">' + esc(reco.nom) + '</span>' +
+        (reco.ville ? '<span class="agp-sm">· ' + esc(reco.ville) + '</span>' : '') +
+        '<span class="agp-eti ' + (reco.client ? 'agp-cli' : 'agp-pro') + '">' +
+          (reco.client ? 'client' : 'prospect') + '</span>' +
+        // Le liseré orange ne se lit pas tout seul : on écrit ce qui se passe.
+        (douteux ? '<span class="agp-eti agp-dte">à confirmer</span>' : '') +
+        '<span class="agp-a">' +
+          (douteux ? '<a href="#" onclick="V2.rdvPlanning.confirmer(\'' + escArg(reco.cle) +
+            '\',\'' + escArg(reco.cip) + '\');return false">c’est bien elle</a>' : '') +
+          '<a href="#" onclick="V2.rdvPlanning.corriger(\'' + escArg(reco.cle) +
+            '\');return false">ce n’est pas la bonne</a>' +
+        '</span></div>' });
     });
 
     // Temps réellement réservable = plages travaillées moins tout le reste.
@@ -278,6 +393,9 @@
   V2.pages.rdvplanning = {
     render: function (root) {
       ensureCss();
+      // Revenir ici annule une correction commencée puis abandonnée : sans ça,
+      // le prochain « Noter un rendez-vous » deviendrait un rattachement.
+      V2.rdvPlanningCleEnCours = null;
       var top = V2.topbar ? V2.topbar({ back: true, backTo: 'rdv', backLabel: 'Rendez-vous' }) : '';
       root.innerHTML = top + '<div class="v2-wrap narrow"><div class="agp-hero">' +
         '<h1>Mon agenda</h1><p>Lecture de ton agenda…</p></div></div>';
@@ -303,7 +421,10 @@
             .gte('date', auj).lte('date', fin).order('date').order('heure'),
           c.from('rdv_occupe').select('date,debut,fin,jour_entier').eq('user_id', u)
             .gte('date', auj).lte('date', fin).order('date'),
-          (V2.rdvAgenda ? V2.rdvAgenda.charger() : Promise.resolve(null))
+          (V2.rdvAgenda ? V2.rdvAgenda.charger() : Promise.resolve(null)),
+          // Les titres : ils arrivent dans cette réponse et n'y survivent pas.
+          appelerAgenda({ action: 'mes_evenements' }),
+          (V2.rdvAlias ? V2.rdvAlias.charger() : Promise.resolve({}))
         ]);
       }).then(function (r) {
         var st = r[0], dispo = st.dispo, blocages = st.blocages || [];
@@ -311,21 +432,72 @@
         var occupes = (r[2] && r[2].data) || [];
         var ag = r[3];
 
+        // ── Reconnaître les officines. Tout se passe ici, dans le navigateur :
+        // rien de ce qui suit n'est renvoyé au serveur.
+        var brut = (r[4] && r[4].ok && r[4].evenements) || [];
+        var alias = r[5] || {};
+        var idx = indexOfficines();
+        var R = window.V2RECO;
+        var reconnus = [];          // ce qui tombe dans la fenêtre affichée
+        var derniereVisite = {};    // cip -> date la plus récente dans le passé
+        if (idx && R) {
+          for (var b = 0; b < brut.length; b++) {
+            var ev = brut[b];
+            var m = R.apparier(ev.titre, idx.porte, idx.nat, alias);
+            if (!m.officine) continue;
+            var cipEv = String(m.officine.id);
+            if (ev.date < auj) {
+              if (!derniereVisite[cipEv] || ev.date > derniereVisite[cipEv]) {
+                derniereVisite[cipEv] = ev.date;
+              }
+            } else if (ev.date <= fin) {
+              reconnus.push({
+                date: ev.date, debut: ev.debut, fin: ev.fin, jour_entier: ev.jour_entier,
+                cle: R.cleAlias(ev.titre), cip: cipEv,
+                nom: m.officine.name, ville: m.officine.ville || '',
+                etat: m.etat, source: m.source, client: !!idx.idsPorte[cipEv]
+              });
+            }
+          }
+        }
+        V2.planningOfficines = reconnus;
+        V2.planningDerniereVisite = derniereVisite;
+
+        // Combien de créneaux occupés restent sans nom ? C'est ce qui décide
+        // de proposer, ou non, le téléchargement de l'annuaire national.
+        var nommes = {}, sansNom = 0;
+        for (var q = 0; q < reconnus.length; q++) nommes[reconnus[q].date + ' ' + reconnus[q].debut] = 1;
+        for (var w = 0; w < occupes.length; w++) {
+          if (occupes[w].date < auj || occupes[w].date > fin) continue;
+          if (!nommes[occupes[w].date + ' ' + String(occupes[w].debut).slice(0, 5)]) sansNom++;
+        }
+        var offreAnnuaire = (!window.PHARMA_FR && sansNom > 0)
+          ? '<div class="agp-etat" style="margin-top:-6px">' +
+              '<span class="agp-pastille agp-off"></span>' +
+              '<span>' + sansNom + (sansNom > 1 ? ' créneaux occupés ne sont pas identifiés' :
+                ' créneau occupé n’est pas identifié') +
+              '. Tes officines <b>prospects</b> ne sont pas dans ton fichier clients.</span>' +
+              '<button class="v2-btn" id="agp-annu" onclick="V2.rdvPlanning.annuaire()">' +
+              'Chercher dans l’annuaire (2,8 Mo)</button></div>'
+          : '';
+
         var jours = '';
         for (var i = 0; i < JOURS_AFFICHES; i++) {
-          jours += rendreJour(isoPlus(i), dispo, blocages, rdvs, occupes, auj);
+          jours += rendreJour(isoPlus(i), dispo, blocages, rdvs, occupes, auj, reconnus);
         }
 
         root.innerHTML = top + '<div class="v2-wrap narrow">' +
           '<div class="agp-hero"><h1>Mon agenda</h1>' +
-            '<p>Tes quinze prochains jours, exactement comme le pharmacien les voit ' +
+            '<p>Tes quatre prochaines semaines, exactement comme le pharmacien les voit ' +
             'quand il ouvre ton lien. Ce qui est en couleur ne peut plus être réservé.</p></div>' +
 
           '<div class="agp-etat">' + etatAgenda(ag) + '</div>' +
 
+          offreAnnuaire +
+
           '<div class="agp-leg">' +
-            '<span><i class="agp-pot agp-p-rdv"></i>rendez-vous JARVIS</span>' +
-            '<span><i class="agp-pot agp-p-occ"></i>ton agenda personnel</span>' +
+            '<span><i class="agp-pot agp-p-rdv"></i>rendez-vous pharmacie</span>' +
+            '<span><i class="agp-pot agp-p-occ"></i>autre occupation</span>' +
             '<span><i class="agp-pot agp-p-blo"></i>tu t’es bloqué</span>' +
             '<span><i class="agp-pot agp-p-lib"></i>réservable</span>' +
           '</div>' +
