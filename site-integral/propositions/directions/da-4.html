@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Feuillets — direction artistique · Intégral Pharma</title>
+<meta name="da-nom" content="Feuillets">
+<meta name="da-mecanique" content="Neuf feuillets de papier se posent l'un sur l'autre, du haut en bas de la page : chaque section monte et recouvre la précédente, qui reste immobile dessous.">
+<meta name="description" content="Direction artistique « Feuillets » — site vitrine Intégral Pharma, groupe de grossistes-répartiteurs français indépendant.">
+<meta name="theme-color" content="#FBFCFE">
+<style>
+/* ══════════════════════════════════════════════════════════════════════════════
+   DA « FEUILLETS » — Intégral Pharma
+   Architecture : curtain-reveal (fx-bank). Chaque section est un feuillet de
+   papier qui monte et recouvre le précédent. Celui du dessous ne bouge pas :
+   il s'assombrit et recule très légèrement, comme une feuille qui passe dessous.
+   Neuf feuillets, neuf maisons.
+
+   SÉCURITÉ (le piège payé le 14/08/2026 — quatre pages restées blanches) :
+   l'état de départ ci-dessous est une page ORDINAIRE. Aucune section n'est
+   masquée, aucune n'attend une classe. Le script ARME le mécanisme s'il tourne.
+   Script absent, désactivé ou en erreur = page entièrement lisible.
+
+   SAFARI : aucun estompage, aucun verre dépoli, aucun dégradé découpé dans du
+   texte, aucune vidéo. L'épaisseur du papier est faite d'ombres portées
+   empilées ; le grain est un SVG écrit dans le fichier.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+:root{
+  --bleu:#0050E6;
+  --bleu-profond:#0A3FA8;
+  --bleu-pale:#E7EFFD;
+  --orange:#F39A1B;
+  --encre:#0C1626;
+  --doux:#4E5B75;
+  --tres-doux:#8492AC;
+  --trait:#DCE5F4;
+  --papier:#FBFCFE;
+  --entete:64px;
+
+  --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --serif:ui-serif,"New York",Georgia,"Times New Roman",serif;
+}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0; background:var(--papier); color:var(--encre);
+  font:16px/1.62 var(--sans);
+  -webkit-text-size-adjust:100%;
+  text-rendering:optimizeLegibility;
+}
+img,svg{max-width:100%}
+a{color:inherit}
+
+/* ── LE GRAIN ────────────────────────────────────────────────────────────────
+   Un SVG de bruit écrit dans le fichier, rastérisé une fois en tuile de 140 px
+   puis répété. Aucune requête réseau, aucun coût de rendu continu. */
+.grain{
+  position:absolute; inset:0; pointer-events:none; z-index:1;
+  opacity:.055;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23g)'/%3E%3C/svg%3E");
+  background-repeat:repeat;
+}
+
+/* ══ EN-TÊTE ═══════════════════════════════════════════════════════════════ */
+.entete{
+  position:fixed; top:0; left:0; right:0; z-index:70;
+  height:var(--entete);
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 clamp(16px,3.4vw,44px);
+  background:#FFFFFF;                /* opaque : le texte ne défile pas au travers */
+  box-shadow:0 1px 0 var(--trait), 0 8px 22px -20px rgba(12,22,38,.55);
+}
+.logo{
+  display:flex; align-items:baseline; gap:9px;
+  font-weight:700; letter-spacing:-.02em; font-size:1.06rem; text-decoration:none;
+}
+.logo span{color:var(--bleu)}
+.logo i{
+  font-style:normal; font-size:.62rem; letter-spacing:.2em; text-transform:uppercase;
+  color:var(--tres-doux); font-weight:650;
+}
+.nav{display:flex; align-items:center; gap:clamp(14px,2vw,30px)}
+.nav a{
+  text-decoration:none; font-size:.9rem; font-weight:550; color:var(--doux);
+  padding:10px 2px; border-bottom:2px solid transparent;
+}
+.nav a:hover{color:var(--encre); border-bottom-color:var(--bleu)}
+.nav a.ecrire{
+  color:#fff; background:var(--bleu); border:0; border-radius:3px;
+  padding:11px 17px; font-weight:650;
+  box-shadow:0 1px 0 rgba(255,255,255,.35) inset, 0 10px 20px -14px rgba(0,80,230,.95);
+}
+.nav a.ecrire:hover{background:var(--encre); box-shadow:none}
+
+.burger{
+  display:none; width:46px; height:46px; align-items:center; justify-content:center;
+  background:#fff; border:1px solid var(--trait); border-radius:3px; cursor:pointer;
+  padding:0;
+}
+.burger b{display:block; width:20px; height:2px; background:var(--encre); position:relative}
+.burger b::before,.burger b::after{
+  content:""; position:absolute; left:0; width:20px; height:2px; background:var(--encre);
+}
+.burger b::before{top:-6px} .burger b::after{top:6px}
+
+/* Panneau mobile — fond OPAQUE, plein écran sous l'en-tête */
+.panneau{
+  display:none; position:fixed; z-index:69;
+  top:var(--entete); left:0; right:0; bottom:0;
+  background:#FFFFFF;
+  padding:14px clamp(16px,5vw,28px) 28px;
+  overflow-y:auto;
+}
+.panneau[data-ouvert="1"]{display:block}
+.panneau a{
+  display:flex; align-items:center; min-height:56px;
+  text-decoration:none; font-size:1.12rem; font-weight:600;
+  border-bottom:1px solid var(--trait);
+}
+.panneau a:last-child{
+  border-bottom:0; margin-top:18px; justify-content:center;
+  background:var(--bleu); color:#fff; border-radius:3px; min-height:56px;
+}
+
+/* ══ LA PILE DE FEUILLETS ══════════════════════════════════════════════════ */
+.pile-page{position:relative}
+
+/* ÉTAT DE DÉPART — page ordinaire, tout est visible, rien n'est collé.
+   C'est cet état qui reste si le script ne tourne pas. */
+.feuillet{
+  position:relative;
+  display:grid; place-items:center;
+  padding:calc(var(--entete) + clamp(46px,6vh,72px)) clamp(20px,5vw,56px) clamp(46px,6vh,72px);
+  background-color:var(--fond,#FFFFFF);
+  background-image:radial-gradient(115% 78% at 14% -12%, rgba(255,255,255,.92), rgba(255,255,255,0) 62%);
+  color:var(--encre);
+  border-top:1px solid var(--trait);
+  overflow:hidden;
+}
+.feuillet:first-child{border-top:0}
+
+/* ÉTAT ARMÉ — posé par le script, feuillet par feuillet, et seulement sur ceux
+   qui tiennent dans l'écran. Un feuillet trop haut garde son défilement normal. */
+.feuillet--pose{
+  position:sticky; top:0;
+  min-height:100vh; min-height:100svh;
+  border-top:0;
+  /* la tranche du papier : un liseré net, une lumière au ras du pli,
+     puis une ombre portée vers le haut — trois couches empilées, aucun estompage */
+  box-shadow:
+    0 -1px 0 rgba(12,22,38,.13),
+    0 -3px 0 rgba(12,22,38,.045),
+    0 -26px 50px -30px rgba(12,22,38,.55);
+}
+.feuillet--pose::first-line{}
+
+/* le voile d'assombrissement du feuillet recouvert : un aplat plein */
+.voile{
+  position:absolute; inset:0; z-index:2; pointer-events:none;
+  background:#0C1626; opacity:var(--fx-voile,0);
+}
+
+.dedans{
+  position:relative; z-index:3;
+  width:100%; max-width:1060px;
+  transform:scale(var(--fx-recul,1));
+  transform-origin:50% 42%;
+}
+
+/* ══ TYPOGRAPHIE ═══════════════════════════════════════════════════════════ */
+.surtitre{
+  display:inline-flex; align-items:center; gap:11px; margin:0 0 22px;
+  font-size:.72rem; letter-spacing:.19em; text-transform:uppercase; font-weight:700;
+  color:var(--accent,var(--bleu));
+}
+.surtitre b{
+  font-variant-numeric:tabular-nums; font-weight:700; font-size:.7rem;
+  padding:4px 8px; border:1px solid currentColor; border-radius:2px;
+}
+.titre{
+  margin:0 0 20px; font-weight:680;
+  font-size:clamp(2rem,5.1vw,4rem); line-height:1.04; letter-spacing:-.028em;
+  text-wrap:balance;
+}
+/* la signature typographique : un mot par titre passe en serif italique */
+.titre em{
+  font-family:var(--serif); font-style:italic; font-weight:500;
+  color:var(--accent,var(--bleu)); letter-spacing:-.012em;
+}
+.texte{
+  margin:0 0 14px; max-width:60ch;
+  font-size:clamp(1rem,1.25vw,1.14rem); color:var(--doux); text-wrap:pretty;
+}
+.texte:last-child{margin-bottom:0}
+.texte strong{color:var(--encre); font-weight:640}
+
+.boutons{display:flex; flex-wrap:wrap; gap:12px; margin-top:30px}
+.bouton{
+  display:inline-flex; align-items:center; justify-content:center; gap:10px;
+  min-height:52px; padding:0 24px; border-radius:3px;
+  text-decoration:none; font-weight:650; font-size:.98rem;
+  background:var(--bleu); color:#fff;
+  box-shadow:0 1px 0 rgba(255,255,255,.34) inset, 0 14px 26px -18px rgba(0,80,230,.95);
+}
+.bouton:hover{background:var(--encre); box-shadow:none}
+.bouton--creux{
+  background:#fff; color:var(--encre);
+  box-shadow:0 0 0 1px var(--trait) inset, 0 10px 20px -18px rgba(12,22,38,.7);
+}
+.bouton--creux:hover{background:#fff; color:var(--bleu); box-shadow:0 0 0 1px var(--bleu) inset}
+
+/* ══ 01 · LA TRANCHE — l'image signature de la direction ═══════════════════
+   Neuf feuilles de papier posées les unes sur les autres, la dernière arrivée
+   au-dessus. Faite d'ombres empilées, aucune image, aucun estompage.
+   L'entrée est une animation CSS pure : elle ne dépend d'aucun script, et son
+   état d'arrivée est l'état normal de l'élément. */
+.ouverture{display:grid; gap:clamp(28px,4vw,56px); align-items:center}
+@media (min-width:1000px){ .ouverture{grid-template-columns:minmax(0,1.12fr) minmax(0,.88fr)} }
+.tranche{position:relative; height:292px; max-width:392px; margin-left:auto; width:100%}
+.tranche i{
+  position:absolute; left:0; right:calc(var(--i) * 11px);
+  top:calc(var(--i) * 28px); height:40px;
+  display:flex; align-items:center; gap:12px; padding:0 15px;
+  font-style:normal; font-family:var(--serif); font-size:.86rem; color:var(--doux);
+  font-variant-numeric:tabular-nums; letter-spacing:.02em;
+  background:#FFFFFF; border-left:3px solid var(--bleu);
+  z-index:calc(12 - var(--i));
+  box-shadow:
+    0 0 0 1px var(--trait) inset,
+    0 1px 0 rgba(255,255,255,.95) inset,
+    0 -1px 0 rgba(12,22,38,.09),
+    0 16px 26px -18px rgba(12,22,38,.85);
+  animation:sePoser .52s cubic-bezier(.22,.61,.36,1) backwards;
+  animation-delay:calc((9 - var(--i)) * .055s);
+}
+.tranche i::after{ content:""; flex:1; height:1px; background:var(--trait) }
+.tranche i b{font-weight:650; font-size:.76rem; color:var(--tres-doux); font-family:var(--sans)}
+.tranche i:nth-child(even){background:#FCFDFF}
+/* la feuille du dessus : celle qui porte le nom */
+.tranche i.nom{
+  background:var(--bleu); color:#fff; border-left-color:var(--orange);
+  font-family:var(--sans); font-weight:700; font-size:.9rem; letter-spacing:-.01em;
+  box-shadow:
+    0 1px 0 rgba(255,255,255,.28) inset,
+    0 -1px 0 rgba(12,22,38,.18),
+    0 20px 34px -20px rgba(0,80,230,.95);
+}
+.tranche i.nom::after{background:rgba(255,255,255,.32)}
+@keyframes sePoser{
+  from{opacity:0; transform:translateY(16px)}
+  to{opacity:1; transform:translateY(0)}
+}
+@media (max-width:999px){ .tranche{display:none} }
+
+/* ══ 01 · LA BANDE ÉTIQUETTE ═══════════════════════════════════════════════ */
+.bande{
+  margin-top:34px; padding:15px 20px;
+  background:#FFFFFF; border-radius:3px;
+  box-shadow:0 0 0 1px var(--trait) inset, 0 1px 0 rgba(255,255,255,.9) inset,
+             0 12px 26px -22px rgba(12,22,38,.75);
+  display:flex; flex-wrap:wrap; align-items:center; gap:9px 16px;
+  font-size:.83rem; color:var(--doux); font-weight:550;
+}
+.bande i{display:inline-block; width:5px; height:5px; background:var(--orange); border-radius:1px}
+
+/* ══ 02 · LES COMPTEURS ════════════════════════════════════════════════════ */
+.compteurs{
+  display:grid; gap:2px; margin-top:36px;
+  grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+  background:var(--trait);
+  box-shadow:0 0 0 1px var(--trait), 0 18px 34px -30px rgba(12,22,38,.8);
+}
+.compteurs div{background:#fff; padding:20px 18px}
+.compteurs b{
+  display:block; font-family:var(--serif); font-weight:600;
+  font-size:clamp(2rem,3.6vw,2.9rem); line-height:1; letter-spacing:-.02em;
+  color:var(--encre); font-variant-numeric:tabular-nums;
+}
+.compteurs span{
+  display:block; margin-top:9px;
+  font-size:.72rem; letter-spacing:.13em; text-transform:uppercase;
+  color:var(--tres-doux); font-weight:650;
+}
+
+/* ══ 03 · LA PILE DES NEUF MAISONS ═════════════════════════════════════════ */
+.maisons{list-style:none; margin:26px 0 0; padding:0}
+/* au-delà de 900 px la pile se tient en deux colonnes : le feuillet tient dans
+   l'écran, condition pour qu'il puisse se poser sur le précédent */
+@media (min-width:900px){
+  .maisons{columns:2; column-gap:26px}
+  .maisons li{break-inside:avoid}
+}
+.maisons li{
+  display:grid; align-items:center; gap:0 12px;
+  grid-template-columns:30px 1fr auto;
+  padding:7px 12px 7px 11px;
+  background:#FFFFFF;
+  border-left:3px solid var(--bleu);
+  box-shadow:0 0 0 1px var(--trait) inset, 0 6px 14px -14px rgba(12,22,38,.9);
+  margin-bottom:3px;
+}
+.maisons li:nth-child(even){background:#FCFDFF}
+.maisons .n{
+  font-family:var(--serif); font-size:.9rem; color:var(--tres-doux);
+  font-variant-numeric:tabular-nums;
+}
+.maisons .nom{font-weight:640; font-size:.97rem; letter-spacing:-.008em}
+.maisons .nom small{
+  display:inline-block; margin-left:8px; font-weight:600; font-size:.7rem;
+  letter-spacing:.09em; text-transform:uppercase; color:var(--orange);
+}
+.maisons .ou{font-size:.86rem; color:var(--doux); white-space:nowrap}
+.maisons li.partenaire{border-left-color:var(--orange); background:#FFFCF6}
+.legende{
+  margin:14px 0 0; font-size:.82rem; color:var(--tres-doux);
+  display:flex; flex-wrap:wrap; gap:6px 18px;
+}
+.legende b{font-weight:650; color:var(--doux)}
+
+/* ══ 04 · LES QUATRE TEMPS DU MÉTIER ═══════════════════════════════════════ */
+.temps{
+  display:grid; gap:2px; margin-top:30px;
+  grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
+  background:var(--trait);
+  box-shadow:0 0 0 1px var(--trait), 0 20px 38px -34px rgba(12,22,38,.85);
+}
+.temps article{background:#fff; padding:20px 18px}
+.temps b{
+  display:block; font-family:var(--serif); font-size:1.4rem; color:var(--bleu);
+  line-height:1; margin-bottom:10px; font-variant-numeric:tabular-nums;
+}
+.temps h3{margin:0 0 8px; font-size:.98rem; font-weight:660; letter-spacing:-.01em}
+.temps p{margin:0; font-size:.88rem; line-height:1.55; color:var(--doux)}
+.cloture{
+  margin:20px 0 0; padding-top:16px; border-top:1px solid var(--trait);
+  font-size:.94rem; color:var(--doux); max-width:76ch;
+}
+
+/* ══ 06 · DEUX VOLETS SUR UN MÊME FEUILLET ═════════════════════════════════ */
+.volets{display:grid; gap:2px; grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
+  background:var(--trait); box-shadow:0 0 0 1px var(--trait), 0 20px 38px -34px rgba(12,22,38,.85)}
+.volets section{background:#fff; padding:clamp(22px,3vw,34px)}
+.volets .titre{font-size:clamp(1.5rem,2.5vw,2.05rem); margin-bottom:14px}
+.labos{list-style:none; margin:22px 0 0; padding:0; display:flex; flex-wrap:wrap; gap:8px}
+.labos li{
+  padding:10px 15px; font-weight:640; font-size:.9rem; letter-spacing:-.005em;
+  background:#FFFFFF; border-radius:3px;
+  box-shadow:0 0 0 1px var(--trait) inset, 0 1px 0 rgba(255,255,255,.9) inset,
+             0 9px 18px -16px rgba(12,22,38,.85);
+}
+.note{margin:16px 0 0; font-size:.8rem; color:var(--tres-doux)}
+
+/* ══ 07 · LES VILLES QUI RECRUTENT ═════════════════════════════════════════ */
+.villes{list-style:none; margin:26px 0 0; padding:0; display:flex; flex-wrap:wrap; gap:8px}
+.villes li{
+  padding:10px 15px; font-size:.9rem; font-weight:600; color:var(--doux);
+  background:#fff; border-radius:3px;
+  box-shadow:0 0 0 1px var(--trait) inset, 0 9px 18px -16px rgba(12,22,38,.85);
+}
+
+/* ══ 08 · LE FEUILLET D'ENCRE BLEUE ════════════════════════════════════════ */
+.feuillet--encre{
+  --accent:#FFFFFF; --encre:#FFFFFF; --doux:rgba(255,255,255,.84);
+  color:#fff;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='128'%3E%3Cg fill='none' stroke='rgba(255,255,255,.13)' stroke-width='1'%3E%3Cpath d='M0 32h128M0 64h128M0 96h128M32 0v128M64 0v128M96 0v128'/%3E%3C/g%3E%3C/svg%3E"),
+    radial-gradient(105% 72% at 16% -8%, rgba(255,255,255,.34), rgba(255,255,255,0) 58%);
+  background-repeat:repeat,no-repeat;
+}
+.feuillet--encre .titre em{color:#BFD5FF}
+.valeurs{display:grid; gap:2px; margin-top:34px;
+  grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
+  background:rgba(255,255,255,.22)}
+.valeurs article{background:var(--bleu); padding:24px 22px}
+.valeurs h3{
+  margin:0 0 12px; font-size:.76rem; letter-spacing:.19em; text-transform:uppercase;
+  font-weight:750; color:#fff;
+}
+.valeurs h3::after{
+  content:""; display:block; width:26px; height:2px; margin-top:11px;
+  background:var(--orange);
+}
+.valeurs p{margin:0; font-size:.95rem; line-height:1.58; color:rgba(255,255,255,.86)}
+
+/* ══ 09 · LA FIN ═══════════════════════════════════════════════════════════ */
+.pied{
+  margin-top:44px; padding-top:22px; border-top:1px solid var(--trait);
+  display:grid; gap:8px; font-size:.83rem; color:var(--tres-doux);
+}
+.pied a{color:var(--doux)}
+.pied .chiffres{display:flex; flex-wrap:wrap; gap:6px 16px; color:var(--doux); font-weight:550}
+.pied .signature{margin-top:6px; font-size:.72rem; letter-spacing:.16em; text-transform:uppercase}
+.pied .signature b{color:var(--bleu)}
+
+/* ══ LE RAIL — la tranche de la pile, visible seulement si le mécanisme tourne ══ */
+.rail{
+  display:none;
+  position:fixed; right:20px; top:50%; transform:translateY(-50%); z-index:60;
+  gap:8px; grid-auto-flow:row;
+}
+.pile-page--armee .rail{display:grid}
+.rail a{
+  display:block; width:26px; height:3px; background:rgba(12,22,38,.17); border-radius:1px;
+  transition:background .18s linear, width .18s ease-out;
+}
+.rail a[data-on="1"]{background:var(--bleu); width:38px}
+.rail a[data-on="1"].sur-encre{background:#fff}
+
+/* le petit cartouche du nom de la direction */
+.cartouche{
+  position:fixed; left:18px; bottom:16px; z-index:60;
+  font-size:.64rem; letter-spacing:.18em; text-transform:uppercase; font-weight:700;
+  color:var(--tres-doux); background:#fff; padding:8px 12px; border-radius:2px;
+  box-shadow:0 0 0 1px var(--trait) inset, 0 10px 20px -18px rgba(12,22,38,.9);
+}
+.cartouche b{color:var(--bleu)}
+
+/* ══ MOBILE ════════════════════════════════════════════════════════════════ */
+@media (max-width:900px){
+  .nav{display:none}
+  .burger{display:flex}
+  .rail{display:none!important}
+  .cartouche{display:none}
+}
+@media (max-width:620px){
+  .titre{font-size:clamp(1.85rem,7.6vw,2.5rem)}
+  .maisons li{grid-template-columns:28px 1fr; gap:0 10px; padding:8px 10px}
+  .maisons .ou{grid-column:2; font-size:.79rem}
+  .compteurs{grid-template-columns:1fr 1fr}
+  .valeurs,.temps,.volets{grid-template-columns:1fr}
+  .boutons .bouton{flex:1 1 100%}
+}
+
+/* ══ REPLI MOUVEMENT RÉDUIT — sections empilées, aucun recouvrement ════════ */
+@media (prefers-reduced-motion: reduce){
+  html{scroll-behavior:auto}
+  .feuillet,.feuillet--pose{
+    position:relative!important; top:auto!important;
+    min-height:0!important; box-shadow:none!important;
+    border-top:1px solid var(--trait)!important;
+  }
+  .pile-page .feuillet:first-child{border-top:0!important}
+  .voile{display:none!important}
+  .rail{display:none!important}
+  .dedans{transform:none!important}
+  .tranche i{animation:none!important; opacity:1!important; transform:none!important}
+}
+</style>
+</head>
+<body>
+
+<header class="entete">
+  <a class="logo" href="#ouverture">Intégral <span>Pharma</span> <i>Feuillets</i></a>
+  <nav class="nav">
+    <a href="#histoire">Le groupe</a>
+    <a href="#reseau">Le réseau</a>
+    <a href="#metier">Le métier</a>
+    <a href="#valeurs">Nos valeurs</a>
+    <a class="ecrire" href="mailto:contact@integralpharma.fr">Nous écrire</a>
+  </nav>
+  <button class="burger" id="burger" type="button" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="panneau"><b></b></button>
+</header>
+
+<nav class="panneau" id="panneau" data-ouvert="0">
+  <a href="#histoire">Le groupe</a>
+  <a href="#reseau">Le réseau</a>
+  <a href="#metier">Le métier</a>
+  <a href="#valeurs">Nos valeurs</a>
+  <a href="mailto:contact@integralpharma.fr">Nous écrire</a>
+</nav>
+
+<main class="pile-page" id="pile">
+
+  <!-- ══ FEUILLET 01 · L'OUVERTURE ══════════════════════════════════════════ -->
+  <section class="feuillet" id="ouverture" style="--fond:#FCFDFF">
+    <div class="grain"></div><div class="voile"></div>
+    <div class="dedans">
+      <div class="ouverture">
+        <div>
+          <p class="surtitre"><b>01</b> Groupe de grossistes-répartiteurs français indépendant</p>
+          <h1 class="titre">Neuf maisons. <em>Un seul nom.</em></h1>
+          <p class="texte">Chacune livre sa région depuis des années, avec ses équipes et ses
+            habitudes. Depuis 2006, elles avancent ensemble sous le nom d'Intégral Pharma —
+            et votre commande part toujours de la plus proche de votre comptoir.</p>
+          <div class="boutons">
+            <a class="bouton" href="#reseau">Découvrir le réseau</a>
+            <a class="bouton bouton--creux" href="mailto:contact@integralpharma.fr">Nous écrire</a>
+          </div>
+        </div>
+        <div class="tranche" aria-hidden="true">
+          <i class="nom" style="--i:0">Intégral Pharma</i>
+          <i style="--i:1">01<b>83</b></i><i style="--i:2">02<b>91</b></i><i style="--i:3">03<b>83</b></i>
+          <i style="--i:4">04<b>47</b></i><i style="--i:5">05<b>38</b></i><i style="--i:6">06<b>91</b></i>
+          <i style="--i:7">07<b>44</b></i><i style="--i:8">08<b>34</b></i><i style="--i:9">09<b>83</b></i>
+        </div>
+      </div>
+      <p class="bande">
+        Indépendant <i></i> Neuf implantations <i></i> Un réseau national <i></i>
+        Plus de 2 000 officines livrées <i></i> Confiance, Engagement, Respect <i></i>
+        Une alternative aux grossistes historiques
+      </p>
+    </div>
+  </section>
+
+  <!-- ══ FEUILLET 02 · NOTRE HISTOIRE ═══════════════════════════════════════ -->
+  <section class="feuillet" id="histoire" style="--fond:#FFFFFF">
+    <div class="grain"></div><div class="voile"></div>
+    <div class="dedans">
+      <p class="surtitre"><b>02</b> Notre histoire</p>
+      <h2 class="titre">Rendre la marge <em>à l'officine française.</em></h2>
+      <p class="texte">C'est la raison d'être d'Intégral Pharma depuis 2006 : redistribuer
+        directement la marge aux officines françaises, en toute transparence, avec des prix
+        nets visibles sur facture.</p>
+      <p class="texte">Neuf implantations aujourd'hui, plus de deux mille officines livrées
+        chaque jour, et la même idée qu'au premier jour — un groupe de répartiteurs
+        indépendants qui a choisi de se mettre du côté du comptoir.</p>
+      <div class="compteurs">
+        <div><b>2006</b><span>année de création</span></div>
+        <div><b>9</b><span>implantations</span></div>
+        <div><b>2 000 +</b><span>officines livrées</span></div>
+        <div><b>20</b><span>ans d'indépendance</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ FEUILLET 03 · LE RÉSEAU ════════════════════════════════════════════ -->
+  <section class="feuillet" id="reseau" style="--fond:#F3F7FE">
+    <div class="grain"></div><div class="voile"></div>
+    <div class="dedans">
+      <p class="surtitre"><b>03</b> Le réseau</p>
+      <h2 class="titre">Neuf implantations. <em>Laquelle est la vôtre ?</em></h2>
+      <p class="texte">C'est la seule question qui compte vraiment. Celle qui prépare votre
+        commande, qui vous livre chaque matin, et dont vous connaissez l'équipe par son prénom.
+        Les huit autres sont là pour qu'elle ne soit jamais prise au dépourvu — de la Bretagne
+        à la Méditerranée, le stock d'une maison est le stock de toutes.</p>
+      <ol class="maisons">
+        <li><span class="n">01</span><span class="nom">Hyères Pharma <small>siège du groupe</small></span><span class="ou">Hyères · 83</span></li>
+        <li><span class="n">02</span><span class="nom">SR Pharma</span><span class="ou">Palaiseau · 91</span></li>
+        <li><span class="n">03</span><span class="nom">Mistral Santé Pharma</span><span class="ou">Flassans-sur-Issole · 83</span></li>
+        <li><span class="n">04</span><span class="nom">Sud Ouest Pharma</span><span class="ou">Montayral · 47</span></li>
+        <li><span class="n">05</span><span class="nom">Comptoir Pharmaceutique du Rhône</span><span class="ou">Saint-Maurice-l'Exil · 38</span></li>
+        <li><span class="n">06</span><span class="nom">Escale Pharma</span><span class="ou">Chilly-Mazarin · 91</span></li>
+        <li><span class="n">07</span><span class="nom">Ouest Pharma Services</span><span class="ou">Saint-Étienne-de-Montluc · 44</span></li>
+        <li><span class="n">08</span><span class="nom">Pharm'Occitanie Services</span><span class="ou">Villeneuve-lès-Béziers · 34</span></li>
+        <li><span class="n">09</span><span class="nom">Sud Est Pharma</span><span class="ou">Le Cannet-des-Maures · 83</span></li>
+        <li class="partenaire"><span class="n">+</span><span class="nom">Pharmest <small>partenaire</small></span><span class="ou">Metz · 57</span></li>
+      </ol>
+      <p class="legende"><span>Et à l'Est, notre partenaire <b>Pharmest</b> (Metz, 57) prolonge le maillage.</span>
+        <span>Neuf implantations et un partenaire.</span></p>
+    </div>
+  </section>
+
+  <!-- ══ FEUILLET 04 · LE MÉTIER ════════════════════════════════════════════ -->
+  <section class="feuillet" id="metier" style="--fond:#FFFFFF">
+    <div class="grain"></div><div class="voile"></div>
+    <div class="dedans">
+      <p class="surtitre"><b>04</b> Le métier</p>
+      <h2 class="titre">Ce qui se passe entre votre commande <em>et votre comptoir.</em></h2>
+      <p class="texte">Quelques heures, quatre métiers, et une chaîne qui ne s'arrête jamais.
+        Référencer, stocker, préparer, livrer : c'est invisible depuis l'officine, et c'est
+        tout notre travail.</p>
+      <div class="temps">
+        <article><b>01</b><h3>Le référencement</h3>
+          <p>Le groupe référence pour ses neuf maisons à la fois : un même catalogue, tenu à
+            jour, disponible dans toutes les implantations. C'est ce qui permet à une maison
+            de taille humaine de proposer la profondeur de gamme d'un réseau national.</p></article>
+        <article><b>02</b><h3>La disponibilité</h3>
+          <p>Des stocks répartis sur neuf implantations, au plus près de votre officine. Quand
+            le comptoir a besoin, le réseau répond — et quand une référence manque quelque part,
+            elle existe souvent ailleurs dans le réseau.</p></article>
+        <article><b>03</b><h3>La préparation</h3>
+          <p>Chaque commande est préparée dans l'implantation la plus proche de chez vous, par
+            une équipe qui connaît votre officine et ses saisons.</p></article>
+        <article><b>04</b><h3>La livraison</h3>
+          <p>Tous les jours, les tournées partent vers les officines. La régularité d'un service
+            tenu — c'est elle qui fait la confiance, pas les promesses.</p></article>
+      </div>
+      <p class="cloture">Et quand la vie de votre officine change — transfert, agrandissement,
+        cession de parts — votre interlocuteur ajuste l'approvisionnement avec vous, sans
+        à-coup au comptoir.</p>
+    </div>
+  </section>
+
+  <!-- ══ FEUILLET 05 · LA CENTRALE ══════════════════════════════════════════ -->
+  <section class="feuillet" id="centrale" style="--fond:#F7F4EE">
+    <div class="grain"></div><div class="voile"></div>
+    <div class="dedans">
+      <p class="surtitre"><b>05</b> La centrale</p>
+      <h2 class="titre">Et pour tout ce qui <em>n'est pas le médicament.</em></h2>
+      <p class="texte">Notre centrale de parapharmacie référence pour l'officine plus de
+        14 000 produits et plus de 480 marques.</p>
+      <p class="texte">C'est une structure à part, avec son propre fonctionnement — sa commande,
+        sa livraison — et la même exigence que le reste du groupe.</p>
+      <div class="compteurs">
+        <div><b>14 000 +</b><span>références</span></div>
+        <div><b>480 +</b><span>marques</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ FEUILLET 06 · VOS FACTURES + NOS PARTENAIRES ═══════════════════════ -->
+  <section class="feuillet" id="factures" style="--fond:#FFFFFF">
+    <div class="grain"></div><div class="voile"></div>
+    <div class="dedans">
+      <p class="surtitre"><b>06</b> Vos factures · Nos partenaires</p>
+      <div class="volets">
+        <section>
+          <h2 class="titre">Elles arrivent déjà <em>là où vous les gérez.</em></h2>
+          <p class="texte">Nous sommes connectés à Digipharmacie : vos factures Intégral s'y
+            retrouvent automatiquement, avec celles de vos autres fournisseurs.</p>
+          <p class="texte"><strong>Rien à saisir, rien à classer, rien à réclamer.</strong></p>
+        </section>
+        <section>
+          <h2 class="titre">Les laboratoires <em>qui nous font confiance.</em></h2>
+          <ul class="labos">
+            <li>EG Labo</li><li>Zentiva</li><li>Zydus</li>
+            <li>Viatris</li><li>ITP</li><li>Santestat</li>
+          </ul>
+        </section>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ FEUILLET 07 · NOUS REJOINDRE ═══════════════════════════════════════ -->
+  <section class="feuillet" id="rejoindre" style="--fond:#EDF3FD">
+    <div class="grain"></div><div class="voile"></div>
+    <div class="dedans">
+      <p class="surtitre"><b>07</b> Nous rejoindre</p>
+      <h2 class="titre">Neuf implantations <em>qui embauchent.</em></h2>
+      <p class="texte">Préparateur-chauffeur, technicien approvisionnement, commercial,
+        pharmacien responsable : les métiers de la répartition s'apprennent chez nous.</p>
+      <ul class="villes">
+        <li>Hyères · 83</li><li>Villeneuve-lès-Béziers · 34</li>
+        <li>Montayral · 47</li><li>Saint-Maurice-l'Exil · 38</li>
+      </ul>
+      <div class="boutons">
+        <a class="bouton" href="https://www.integralpharma.fr/jobs" target="_blank" rel="noopener">Voir les offres</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ FEUILLET 08 · NOS VALEURS — LE FEUILLET D'ENCRE ════════════════════ -->
+  <section class="feuillet feuillet--encre" id="valeurs" style="--fond:#0050E6">
+    <div class="grain" style="opacity:.075"></div><div class="voile"></div>
+    <div class="dedans">
+      <p class="surtitre"><b>08</b> Nos valeurs</p>
+      <h2 class="titre">Trois mots qui se vérifient <em>au téléphone.</em></h2>
+      <div class="valeurs">
+        <article><h3>Confiance</h3>
+          <p>La personne qui décroche connaît votre officine, vos saisons et vos habitudes.</p></article>
+        <article><h3>Engagement</h3>
+          <p>C'est la même d'une année sur l'autre. Dans ce métier, c'est devenu rare.</p></article>
+        <article><h3>Respect</h3>
+          <p>Elle ne vous vendra pas ce dont vous n'avez pas besoin — parce qu'elle vous reverra
+            le mois suivant, et l'année d'après.</p></article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ FEUILLET 09 · LA FIN — ne colle jamais, la page se termine dessus ══ -->
+  <section class="feuillet" id="ecrire" style="--fond:#FBFCFE">
+    <div class="grain"></div><div class="voile"></div>
+    <div class="dedans">
+      <p class="surtitre"><b>09</b> Parlons-en</p>
+      <h2 class="titre">Posez-nous <em>la question qui vous intéresse.</em></h2>
+      <p class="texte">Sur nos conditions, sur nos délais, sur la façon dont nous travaillons.
+        Vous aurez une réponse claire, et le nom de l'implantation qui livre votre secteur.</p>
+      <div class="boutons">
+        <a class="bouton" href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a>
+      </div>
+      <div class="pied">
+        <p style="margin:0">Intégral Pharma — 758 chemin de la Source, ZI Saint-Martin, 83400 Hyères</p>
+        <p style="margin:0"><a href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a> · <a href="#ouverture">Mentions légales</a></p>
+        <p class="chiffres" style="margin:0"><span>9 implantations</span><span>plus de 2 000 officines livrées</span><span>indépendant depuis 2006</span></p>
+        <p class="signature" style="margin:0">Direction artistique <b>Feuillets</b></p>
+      </div>
+    </div>
+  </section>
+
+  <nav class="rail" aria-label="Progression dans la pile">
+    <a href="#ouverture" aria-label="L'ouverture"></a>
+    <a href="#histoire" aria-label="Notre histoire"></a>
+    <a href="#reseau" aria-label="Le réseau"></a>
+    <a href="#metier" aria-label="Le métier"></a>
+    <a href="#centrale" aria-label="La centrale"></a>
+    <a href="#factures" aria-label="Vos factures et nos partenaires"></a>
+    <a href="#rejoindre" aria-label="Nous rejoindre"></a>
+    <a href="#valeurs" aria-label="Nos valeurs"></a>
+    <a href="#ecrire" aria-label="Nous écrire"></a>
+  </nav>
+</main>
+
+<p class="cartouche">Direction <b>Feuillets</b></p>
+
+<script>
+/* ════════════════════════════════════════════════════════════════════════════
+   LE RIDEAU — armé par le script, jamais par le CSS.
+   Rien n'est masqué au départ : si ce script ne tourne pas, la page reste
+   une page ordinaire, entièrement lisible, toutes sections visibles.
+   La révélation se décide sur la POSITION RÉELLE relue à chaque défilement,
+   jamais sur une notification : un élément recouvert ne signale rien.
+   ════════════════════════════════════════════════════════════════════════════ */
+(function () {
+  'use strict';
+
+  /* ── Menu mobile — indépendant du rideau, il doit marcher même si le reste tombe ── */
+  try {
+    var burger = document.getElementById('burger');
+    var panneau = document.getElementById('panneau');
+    if (burger && panneau) {
+      burger.addEventListener('click', function () {
+        var ouvert = panneau.getAttribute('data-ouvert') === '1';
+        panneau.setAttribute('data-ouvert', ouvert ? '0' : '1');
+        burger.setAttribute('aria-expanded', ouvert ? 'false' : 'true');
+        burger.setAttribute('aria-label', ouvert ? 'Ouvrir le menu' : 'Fermer le menu');
+      });
+      panneau.addEventListener('click', function (e) {
+        if (e.target.tagName === 'A') {
+          panneau.setAttribute('data-ouvert', '0');
+          burger.setAttribute('aria-expanded', 'false');
+          burger.setAttribute('aria-label', 'Ouvrir le menu');
+        }
+      });
+    }
+  } catch (e) { /* le menu de bureau reste utilisable */ }
+
+  /* ── Le mécanisme des feuillets ──────────────────────────────────────────── */
+  try {
+    var reduit = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var pile = document.getElementById('pile');
+    if (!pile) return;
+
+    var secs = Array.prototype.slice.call(pile.querySelectorAll('.feuillet'));
+    var marques = Array.prototype.slice.call(pile.querySelectorAll('.rail a'));
+    if (secs.length < 2 || reduit) return;
+
+    var armee = false, tic = false, minuteur = null;
+
+    /* GARDE-FOU — un feuillet collé en haut d'écran ne défile plus : tout ce qui
+       dépasse la hauteur de l'écran deviendrait inatteignable. On mesure donc la
+       hauteur NATURELLE (mécanisme retiré) feuillet par feuillet, et on n'arme
+       QUE ceux qui tiennent. Un feuillet trop haut garde son défilement normal —
+       il recouvre quand même celui du dessous, rien n'est perdu. */
+    function armer() {
+      secs.forEach(function (s) { s.classList.remove('feuillet--pose'); });
+      var dispo = window.innerHeight - 4;
+      var poses = 0;
+      for (var i = 0; i < secs.length - 1; i++) {          /* le dernier ne colle jamais */
+        if (secs[i].getBoundingClientRect().height <= dispo) {
+          secs[i].classList.add('feuillet--pose');
+          poses++;
+        }
+      }
+      armee = poses > 0;
+      pile.classList.toggle('pile-page--armee', armee);
+      if (!armee) {
+        secs.forEach(function (s) {
+          s.style.setProperty('--fx-voile', 0);
+          s.style.setProperty('--fx-recul', 1);
+        });
+      }
+    }
+
+    /* PLACEMENT — position réelle relue à chaque défilement. */
+    function placer() {
+      tic = false;
+      var vh = window.innerHeight, courant = 0;
+
+      for (var i = 0; i < secs.length; i++) {
+        var haut = secs[i].getBoundingClientRect().top;
+        if (haut <= 2) courant = i;
+
+        var suiv = secs[i + 1];
+        if (!suiv) {
+          secs[i].style.setProperty('--fx-voile', 0);
+          secs[i].style.setProperty('--fx-recul', 1);
+          continue;
+        }
+        /* 1 = le feuillet suivant n'est pas encore là · 0 = il recouvre entièrement */
+        var d = suiv.getBoundingClientRect().top / vh;
+        var t = 1 - Math.min(1, Math.max(0, d));
+        secs[i].style.setProperty('--fx-voile', (t * 0.17).toFixed(3));
+        secs[i].style.setProperty('--fx-recul', (1 - t * 0.022).toFixed(4));
+      }
+
+      for (var j = 0; j < marques.length; j++) {
+        var on = j === courant;
+        marques[j].setAttribute('data-on', on ? '1' : '0');
+        marques[j].classList.toggle('sur-encre', on && secs[j] && secs[j].classList.contains('feuillet--encre'));
+      }
+    }
+
+    function auDefilement() {
+      if (!tic) { tic = true; requestAnimationFrame(placer); }
+    }
+
+    armer();
+    placer();
+
+    window.addEventListener('scroll', auDefilement, { passive: true });
+    window.addEventListener('resize', function () {
+      clearTimeout(minuteur);
+      minuteur = setTimeout(function () { armer(); placer(); }, 150);
+    }, { passive: true });
+  } catch (e) {
+    /* Imprévu : on revient à la page ordinaire plutôt que de laisser un écran vide. */
+    try {
+      var p = document.getElementById('pile');
+      if (p) {
+        p.classList.remove('pile-page--armee');
+        Array.prototype.forEach.call(p.querySelectorAll('.feuillet'), function (s) {
+          s.classList.remove('feuillet--pose');
+          s.style.setProperty('--fx-voile', 0);
+          s.style.setProperty('--fx-recul', 1);
+        });
+      }
+    } catch (e2) {}
+  }
+})();
+</script>
+
+</body>
+</html>
