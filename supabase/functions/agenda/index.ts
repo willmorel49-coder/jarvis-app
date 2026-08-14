@@ -317,11 +317,28 @@ async function relever(userId: string, forcer = false, fraicheur = FRAICHEUR_MIN
   }
 
   // Remplacement complet : on ne conserve aucun historique de sa vie privée.
-  await db.from('rdv_occupe').delete().eq('user_id', userId)
-  if (plages.length) {
-    await db.from('rdv_occupe').insert(plages.map((p) => ({
-      user_id: userId, date: p.date, debut: p.debut, fin: p.fin, jour_entier: p.jour_entier,
-    })))
+  //
+  // ⚠️ CORRIGÉ LE 14/08/2026 — doublons en production. C'était un DELETE puis
+  // un INSERT, deux ordres séparés que rien n'empêchait de s'entrelacer :
+  //     A supprime · B supprime · A insère 25 · B insère 25  →  50 lignes,
+  // chaque créneau en double, et chaque rendez-vous affiché deux fois.
+  // Et les relèves SE croisent vraiment : le robot passe toutes les 15 min,
+  // l'app relève à l'ouverture d'un écran, le pharmacien en déclenche une en
+  // ouvrant son lien. Tout est maintenant fait dans une seule transaction,
+  // sérialisée par commercial (verrou consultatif côté base).
+  //
+  // ⚠️ Et on REGARDE l'erreur. Sans ce contrôle, un refus de droits sur la
+  // fonction (42501) laissait la relève annoncer « 25 plages gardées » alors
+  // que la base ne bougeait pas d'une ligne. Un échec muet est pire qu'une
+  // panne : rien ne le signale, et les créneaux proposés deviennent faux.
+  const { error: errRempl } = await db.rpc('rdv_occupe_remplacer',
+    { p_user: userId, p_plages: plages })
+  if (errRempl) {
+    await db.from('rdv_agenda').update({
+      dernier_essai: new Date().toISOString(),
+      derniere_erreur: 'ecriture_impossible: ' + String(errRempl.message || errRempl).slice(0, 100),
+    }).eq('user_id', userId)
+    return { ok: false, raison: 'ecriture_impossible' }
   }
   const maintenant = new Date().toISOString()
   await db.from('rdv_agenda').update({
