@@ -294,12 +294,62 @@
   };
   var SEAU_PROTEGE = 'donnees-protegees';
 
-  function adresseProtegee(cle) {
+  // Fichiers protégés dont l'adresse a été refusée pour de bon. Lu par l'écran
+  // pour PRÉVENIR au lieu d'afficher des zéros. Vidé dès qu'un essai réussit.
+  V2.protegeEchec = {};
+  V2.donneesProtegeesKO = function () { return Object.keys(V2.protegeEchec); };
+
+  function attendre(ms) {
+    return new Promise(function (r) { setTimeout(r, ms); });
+  }
+
+  // ── Adresse signée d'un fichier protégé ─────────────────────────────────
+  // ⚠️ 14/08/2026 — Will : « ya plus aucune données sur jarvis ». Cette fonction
+  // ne réessayait RIEN et avalait toute erreur (`.catch(-> null)`). Un seul
+  // refus — jeton pas encore renouvelé au réveil de l'app installée, réseau
+  // absent une seconde sur l'iPhone, rotation du jeton côté Supabase — et le
+  // fichier ne se chargeait jamais, SANS message. L'app s'affichait entière et
+  // vide. Depuis le 13/08 ces fichiers portent TOUS les chiffres (officines, CA,
+  // pilotage) : un échec silencieux ici, c'est une app sans données.
+  //
+  // Trois essais, avec renouvellement FORCÉ de la session entre chaque : la
+  // cause la plus fréquente est un jeton expiré que le client n'a pas encore
+  // rafraîchi. Si les trois échouent, on le NOTE — l'appelant doit le dire.
+  function adresseProtegee(cle, essai) {
+    essai = essai || 1;
     var c = (V2.sb && V2.sb()) || null;
     if (!c || !c.storage) return Promise.resolve(null);
-    return c.storage.from(SEAU_PROTEGE).createSignedUrl(PROTEGES[cle], 3600)
-      .then(function (r) { return (r && r.data && r.data.signedUrl) || null; })
-      .catch(function () { return null; });
+
+    function echouer() {
+      if (essai >= 3) {
+        V2.protegeEchec[cle] = true;
+        console.warn('[V2] adresse protégée refusée pour ' + cle + ' après 3 essais');
+        return Promise.resolve(null);
+      }
+      // Renouvellement forcé : sans ça, les 3 essais échouent pour la MÊME
+      // raison et la répétition ne sert à rien.
+      return rafraichirSession(c)
+        .then(function () { return attendre(essai * 400); })
+        .then(function () { return adresseProtegee(cle, essai + 1); });
+    }
+
+    try {
+      return c.storage.from(SEAU_PROTEGE).createSignedUrl(PROTEGES[cle], 3600)
+        .then(function (r) {
+          var url = (r && r.data && r.data.signedUrl) || null;
+          if (!url) return echouer();
+          delete V2.protegeEchec[cle];
+          return url;
+        })
+        .catch(echouer);
+    } catch (e) { return echouer(); }
+  }
+
+  function rafraichirSession(c) {
+    try {
+      if (!c.auth || !c.auth.refreshSession) return Promise.resolve();
+      return Promise.resolve(c.auth.refreshSession()).catch(function () {});
+    } catch (e) { return Promise.resolve(); }
   }
 
   // ── Documents privés ────────────────────────────────────────────────────
@@ -443,7 +493,8 @@
           : Promise.resolve(src + V);
         prepare.then(function (url) {
           if (!url) {
-            console.warn('[V2] adresse protégée refusée pour ' + k + ' — pas de session ?');
+            // adresseProtegee a déjà réessayé 3 fois et noté l'échec dans
+            // V2.protegeEchec — l'écran doit le DIRE, pas afficher des zéros.
             delete pending[src];
             resolve();
             return;
@@ -459,6 +510,10 @@
         s.src = url; s.async = false;
         s.onload = function () { loaded[src] = true; bridge(); resolve(); };
         s.onerror = function () {
+          // Adresse obtenue mais téléchargement échoué (réseau coupé en cours,
+          // adresse signée périmée) : pour un fichier protégé, c'est le même
+          // résultat qu'un refus — l'écran doit le dire.
+          if (PROTEGES[k]) V2.protegeEchec[k] = true;
           // On résout SANS marquer le fichier comme chargé : c'est à l'appelant
           // de constater l'échec (V2.dataLoaded reste faux).
           // ⚠️ Et on RETIRE la promesse en attente. Sans ça, une nouvelle
