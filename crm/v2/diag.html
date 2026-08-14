@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>JARVIS · Diagnostic données</title>
+<!--
+  Page de diagnostic — 14/08/2026.
+  Will voit « 22 officines actives » sur son iPhone (Safari ET app installée),
+  là où le même compte affiche 690 sur un ordinateur. Aucune hypothèse testée à
+  distance n'a reproduit ce chiffre. Cette page charge les données PAR LE MÊME
+  CHEMIN que l'app et affiche ce que l'appareil reçoit réellement.
+
+  Elle ne modifie rien. Elle n'écrit rien. Elle ne fait que lire et compter.
+  À supprimer une fois la panne comprise.
+-->
+<style>
+  :root{ --bleu:#0050E6; --encre:#10131C; --gris:#737A8C; --ligne:#E4E8F0; --fond:#FBFCFE;
+         --vert:#12A150; --rouge:#D92D20; --ambre:#B54708; }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--fond);color:var(--encre);
+    font:16px/1.5 -apple-system,system-ui,sans-serif;-webkit-text-size-adjust:100%}
+  .w{max-width:640px;margin:0 auto;padding:20px 16px 60px}
+  h1{font-size:21px;margin:0 0 4px}
+  .sub{color:var(--gris);font-size:14px;margin:0 0 20px}
+  .c{background:#fff;border:1px solid var(--ligne);border-radius:14px;padding:16px;margin-bottom:14px}
+  .c h2{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--gris);margin:0 0 12px;font-weight:600}
+  .l{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid var(--ligne);font-size:15px}
+  .l:last-child{border-bottom:none}
+  .l b{font-variant-numeric:tabular-nums;text-align:right}
+  .ok{color:var(--vert)} .ko{color:var(--rouge)} .att{color:var(--ambre)}
+  input,button{font:inherit}
+  input{width:100%;padding:13px;border:1px solid var(--ligne);border-radius:11px;margin-bottom:10px;font-size:16px}
+  button{width:100%;min-height:48px;background:var(--bleu);color:#fff;border:none;border-radius:11px;font-weight:600;cursor:pointer}
+  #res{white-space:pre-wrap;font:13px/1.45 ui-monospace,Menlo,monospace;background:#F2F5FA;
+       border:1px solid var(--ligne);border-radius:11px;padding:13px;word-break:break-word}
+  .etape{color:var(--gris);font-size:14px;padding:5px 0}
+</style>
+</head>
+<body>
+<div class="w">
+  <h1>Diagnostic des données</h1>
+  <p class="sub">Cette page ne modifie rien. Elle lit, elle compte, elle affiche.</p>
+
+  <div class="c" id="boite-connexion">
+    <h2>1 · Connexion</h2>
+    <input id="mail" type="email" placeholder="Ton email" autocomplete="username" />
+    <input id="mdp" type="password" placeholder="Ton mot de passe" autocomplete="current-password" />
+    <button id="go">Lancer le diagnostic</button>
+    <p class="etape" id="etat"></p>
+  </div>
+
+  <div class="c" id="boite-appareil">
+    <h2>2 · Cet appareil</h2>
+    <div id="appareil"></div>
+  </div>
+
+  <div class="c" id="boite-donnees" style="display:none">
+    <h2>3 · Les données reçues</h2>
+    <div id="donnees"></div>
+  </div>
+
+  <div class="c" id="boite-copie" style="display:none">
+    <h2>4 · À m'envoyer</h2>
+    <div id="res"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function () {
+  var URL_SB = 'https://iyvavhnlhxksokkerkos.supabase.co';
+  var ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5dmF2aG5saHhrc29ra2Vya29zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1NjU2NTYsImV4cCI6MjA5MzE0MTY1Nn0.eMdW6vUdoyVpZbqKXp6FNYTajwKEf4x-Xyj5zj1igO4';
+  var lignes = [];
+
+  function ligne(hote, label, valeur, etat) {
+    var d = document.createElement('div');
+    d.className = 'l';
+    d.innerHTML = '<span>' + label + '</span><b class="' + (etat || '') + '">' + valeur + '</b>';
+    document.getElementById(hote).appendChild(d);
+    lignes.push(label + ' = ' + valeur);
+  }
+
+  // ── 2. L'appareil, avant toute connexion ──────────────────────────────
+  var ua = navigator.userAgent || '';
+  var installee = false;
+  try { installee = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true; } catch (e) {}
+  ligne('appareil', 'Navigateur', /CriOS/.test(ua) ? 'Chrome iOS' : /Safari/.test(ua) && /iPhone|iPad/.test(ua) ? 'Safari iOS' : /Safari/.test(ua) ? 'Safari' : 'autre');
+  ligne('appareil', 'Depuis l’icône installée', installee ? 'oui' : 'non');
+  ligne('appareil', 'Mémoire annoncée', (navigator.deviceMemory ? navigator.deviceMemory + ' Go' : 'non communiquée'));
+  ligne('appareil', 'Connexion', (navigator.connection && navigator.connection.effectiveType) || 'inconnue');
+  try {
+    navigator.storage.estimate().then(function (q) {
+      ligne('appareil', 'Place utilisée par le site', Math.round(q.usage / 1e6) + ' Mo sur ' + Math.round(q.quota / 1e6) + ' Mo');
+    });
+  } catch (e) {}
+  try {
+    navigator.serviceWorker.getRegistrations().then(function (r) {
+      ligne('appareil', 'Service worker actif', r.length ? r.length + ' (' + (r[0].active ? r[0].active.scriptURL.split('/').pop() : '?') + ')' : 'aucun');
+    });
+  } catch (e) {}
+  try { caches.keys().then(function (k) { ligne('appareil', 'Caches gardés', k.length ? k.join(', ') : 'aucun'); }); } catch (e) {}
+
+  // La version que CET appareil reçoit pour index.html
+  fetch('index.html?diag=' + Date.now(), { cache: 'no-store' })
+    .then(function (r) { return r.text(); })
+    .then(function (t) {
+      var m = t.match(/\?v=([0-9a-z]+)/);
+      ligne('appareil', 'Version reçue de l’app', m ? m[1] : 'introuvable', m && m[1] >= '20260815c' ? 'ok' : 'att');
+    })
+    .catch(function () { ligne('appareil', 'Version reçue de l’app', 'échec réseau', 'ko'); });
+
+  // ── 1 + 3. Connexion, puis chargement par le MÊME chemin que l'app ─────
+  document.getElementById('go').onclick = function () {
+    var etat = document.getElementById('etat');
+    var mail = document.getElementById('mail').value.trim();
+    var mdp = document.getElementById('mdp').value;
+    if (!mail || !mdp) { etat.textContent = 'Il manque l’email ou le mot de passe.'; return; }
+    etat.textContent = 'Connexion…';
+
+    var c = window.supabase.createClient(URL_SB, ANON);
+    c.auth.signInWithPassword({ email: mail, password: mdp })
+      .then(function (r) {
+        if (r.error) throw new Error(r.error.message);
+        etat.textContent = 'Connecté. Téléchargement des données (17 Mo, ça peut prendre un moment)…';
+        document.getElementById('boite-donnees').style.display = '';
+        return c.storage.from('donnees-protegees').createSignedUrl('wml-officines-data.js', 3600);
+      })
+      .then(function (r) {
+        var u = r && r.data && r.data.signedUrl;
+        ligne('donnees', 'Adresse du fichier obtenue', u ? 'oui' : 'NON', u ? 'ok' : 'ko');
+        if (!u) throw new Error('adresse refusée');
+        var t0 = Date.now();
+        return fetch(u).then(function (rep) {
+          ligne('donnees', 'Téléchargement', 'HTTP ' + rep.status, rep.ok ? 'ok' : 'ko');
+          if (!rep.ok) throw new Error('HTTP ' + rep.status);
+          return rep.text().then(function (txt) {
+            ligne('donnees', 'Taille reçue', Math.round(txt.length / 1e6 * 10) / 10 + ' Mo', txt.length > 15e6 ? 'ok' : 'ko');
+            ligne('donnees', 'Durée', Math.round((Date.now() - t0) / 1000) + ' s');
+            return txt;
+          });
+        });
+      })
+      .then(function (txt) {
+        etat.textContent = 'Lecture du fichier…';
+        // On l'exécute exactement comme le fait l'app : une balise <script>.
+        return new Promise(function (res, rej) {
+          var blob = new Blob([txt], { type: 'application/javascript' });
+          var s = document.createElement('script');
+          s.src = URL.createObjectURL(blob);
+          s.onload = function () { res(); };
+          s.onerror = function () { rej(new Error('le fichier n’a pas pu être lu')); };
+          document.head.appendChild(s);
+        });
+      })
+      .then(function () {
+        var OFF = window.WML_OFFICINES, VEN = window.WML_SALES;
+        var dOff = window.WML_D_OFFICINES, dCom = window.WML_D_COMMERCIAUX, dPro = window.WML_D_PRODUITS;
+        ligne('donnees', 'Officines dans le fichier', OFF ? OFF.length : 'ABSENT', OFF && OFF.length > 600 ? 'ok' : 'ko');
+        ligne('donnees', 'Lignes de vente', VEN ? VEN.length : 'ABSENT', VEN && VEN.length > 400000 ? 'ok' : 'ko');
+        ligne('donnees', 'Dictionnaires présents', (dOff && dCom && dPro) ? 'oui' : 'NON', (dOff && dCom && dPro) ? 'ok' : 'ko');
+
+        if (!OFF || !VEN) throw new Error('données incomplètes');
+
+        // Décodage du format compacté — identique à V2.loadData()
+        var compacte = VEN.length && typeof VEN[0][0] === 'number';
+        ligne('donnees', 'Format compacté', compacte ? 'oui' : 'non (déjà en clair)');
+        var ventes = VEN;
+        if (dOff && dCom && dPro && compacte) {
+          ventes = VEN.map(function (s) { return [dOff[s[0]], s[1], dCom[s[2]], dPro[s[3]], s[4], s[5], s[6]]; });
+          ligne('donnees', 'Décodage', 'fait', 'ok');
+        }
+
+        // LE chiffre en cause : officines ayant au moins une vente
+        var actives = {};
+        for (var i = 0; i < ventes.length; i++) if ((ventes[i][6] || 0) > 0) actives[String(ventes[i][0])] = 1;
+        var n = 0, ids = {};
+        for (var j = 0; j < OFF.length; j++) ids[String(OFF[j].id)] = 1;
+        for (var k in actives) if (ids[k]) n++;
+        ligne('donnees', 'OFFICINES ACTIVES', n, n > 600 ? 'ok' : 'ko');
+
+        // Mois présents : dit tout de suite si le fichier est ancien
+        var mois = {};
+        for (var m = 0; m < ventes.length; m++) mois[ventes[m][1]] = (mois[ventes[m][1]] || 0) + 1;
+        ligne('donnees', 'Mois présents', Object.keys(mois).sort(function (a, b) { return a - b; }).join(', '));
+
+        etat.textContent = 'Terminé.';
+        document.getElementById('boite-copie').style.display = '';
+        document.getElementById('res').textContent = lignes.join('\n');
+      })
+      .catch(function (e) {
+        etat.textContent = 'Arrêté : ' + (e && e.message ? e.message : 'erreur');
+        ligne('donnees', 'ERREUR', (e && e.message) || 'inconnue', 'ko');
+        document.getElementById('boite-donnees').style.display = '';
+        document.getElementById('boite-copie').style.display = '';
+        document.getElementById('res').textContent = lignes.join('\n');
+      });
+  };
+
+  // Une erreur JS non rattrapée (mémoire saturée sur iPhone, par exemple)
+  // doit être VUE, pas disparaître dans la console.
+  window.addEventListener('error', function (e) {
+    ligne('appareil', 'Erreur du navigateur', (e && e.message) || 'inconnue', 'ko');
+  });
+})();
+</script>
+</body>
+</html>
