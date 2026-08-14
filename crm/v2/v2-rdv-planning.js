@@ -128,25 +128,72 @@
     var nonSollicite = {};
     for (i = 0; i < (opposes || []).length; i++) nonSollicite[String(opposes[i])] = 1;
 
+    // ⚠️ Ses officines à LUI. Le fichier porte celles de toute l'équipe :
+    // sans ce filtre, l'écran proposait d'écrire aux clients d'une collègue.
+    var moi = (V2.user && V2.user.commercial) ? String(V2.user.commercial) : '';
+    if (!moi || !window.V2CIBLE) return [];
+    var siennes = (V2.pharmacies || []).filter(function (p) {
+      return (p.comms || []).indexOf(moi) >= 0;
+    });
+    // CLIENTS *ET* PROSPECTS. Mesuré le 14/08/2026 : sur 95 rendez-vous
+    // reconnus dans l'agenda, 46 sont des officines absentes du fichier
+    // clients. Une liste limitée aux clientes raterait la moitié du travail.
+    // Le recensement est celui de l'écran Campagne — un seul endroit décide
+    // qui appartient à qui, et le CIP dédoublonne les deux sources.
+    var D = window.PHARMA_FR || null;
+    // Son secteur = les départements où il a déjà des clientes. C'est ce qui
+    // lui rend les prospects : 16 850 des 17 367 prospects de la base
+    // n'appartiennent à personne, le filtre par commercial les écartait tous.
+    var depts = {}, dl = [];
+    for (i = 0; i < siennes.length; i++) {
+      var dp = String(siennes[i].cp || '').slice(0, 2);
+      if (dp.length === 2 && !depts[dp]) { depts[dp] = 1; dl.push(dp); }
+    }
+    var pool = window.V2CIBLE.recenser({
+      pharmacies: siennes,
+      national: D ? { p: D.p, seg: D.seg, grp: D.grp, comm: D.comm } : null,
+      commercial: moi,
+      departements: dl,
+      info: function (cip) { return V2.rdvInfo ? V2.rdvInfo(cip) : {}; }
+    });
+
     var limite = isoPlus(-REPOS_JOURS);   // setDate accepte les jours négatifs
     var vues = V2.planningDerniereVisite || {};
     var ca = caParOfficine();
-    // ⚠️ Ses officines à LUI. Le fichier porte celles de toute l'équipe :
-    // sans ce filtre, l'écran proposait d'écrire aux clients de Karine.
-    // Même règle que l'écran Campagne, qui refuse de recenser sans commercial.
-    var moi = (V2.user && V2.user.commercial) ? String(V2.user.commercial) : '';
-    var out = [], liste = V2.pharmacies || [];
-    for (i = 0; i < liste.length; i++) {
-      var cip = String(liste[i].id);
+    var out = [];
+    for (i = 0; i < pool.length; i++) {
+      var o = pool[i], cip = String(o.cip);
       if (pris[cip] || nonSollicite[cip]) continue;
-      if (moi && (liste[i].comms || []).indexOf(moi) === -1) continue;
       var vue = vues[cip] || null;
       if (vue && vue > limite) continue;
-      out.push({ cip: cip, nom: liste[i].name || '', ville: liste[i].ville || '',
+      out.push({ cip: cip, nom: o.nom || '', ville: o.ville || '',
+                 type: o.type || 'client', email: o.email || '',
                  ca: ca[cip] || 0, vue: vue });
     }
-    out.sort(function (a, b) { return b.ca - a.ca; });
+    // Les clientes par chiffre d'affaires ; les prospects joignables d'abord.
+    out.sort(function (a, b) {
+      if (a.type !== b.type) return a.type === 'client' ? -1 : 1;
+      if (a.type === 'client') return b.ca - a.ca;
+      if (!!a.email !== !!b.email) return a.email ? -1 : 1;
+      return a.nom.localeCompare(b.nom);
+    });
     return out;
+  }
+
+  // Le lot proposé ALTERNE client et prospect. Trier par chiffre d'affaires
+  // et couper à 25 ne donnerait que des clientes, alors que la moitié des
+  // visites réelles sont de la prospection : le lot doit ressembler au métier.
+  function lotMixte(liste, taille) {
+    var cl = [], pr = [], i;
+    for (i = 0; i < liste.length; i++) {
+      (liste[i].type === 'prospect' ? pr : cl).push(liste[i]);
+    }
+    var lot = [], a = 0, b = 0;
+    while (lot.length < taille && (a < cl.length || b < pr.length)) {
+      if (a < cl.length) lot.push(cl[a++]);
+      if (lot.length < taille && b < pr.length) lot.push(pr[b++]);
+    }
+    return lot;
   }
 
   function depuis(iso) {
@@ -281,7 +328,7 @@
     // reecrit pas l'envoi : JARVIS prepare les mails, le commercial relit et
     // envoie depuis SA boite, et coche « envoye » lui-meme.
     contacter: function () {
-      V2.campagnePreselection = (V2.planningAContacter || []).slice(0, LOT_MAX)
+      V2.campagnePreselection = lotMixte(V2.planningAContacter || [], LOT_MAX)
         .map(function (x) { return x.cip; });
       V2.go('campagne');
     },
@@ -456,16 +503,23 @@
     var aFaire = V2.planningAContacter || [];
     if (!mesRdv.length && !recoJour.length && libre >= 120 && aFaire.length && !V2._agpAppelPose) {
       V2._agpAppelPose = 1;
-      var apercu = aFaire.slice(0, 3).map(function (o) {
-        return esc(o.nom) + ' <span class="agp-sm">(' + esc(depuis(o.vue)) + ')</span>';
+      var lot = lotMixte(aFaire, LOT_MAX);
+      var nCli = 0, nPro = 0, z;
+      for (z = 0; z < lot.length; z++) { if (lot[z].type === 'prospect') nPro++; else nCli++; }
+      var totCli = 0, totPro = 0;
+      for (z = 0; z < aFaire.length; z++) { if (aFaire[z].type === 'prospect') totPro++; else totCli++; }
+      var apercu = lot.slice(0, 3).map(function (o) {
+        return esc(o.nom) + ' <span class="agp-sm">(' +
+          (o.type === 'prospect' ? 'prospect' : esc(depuis(o.vue))) + ')</span>';
       }).join(' · ');
       appel = '<div class="agp-vide-jour">' +
         '<p class="agp-sm" style="margin:0 0 8px">Première journée libre. ' +
-        'Tes plus gros clients sans rendez-vous : ' + apercu + '…</p>' +
+        'À qui écrire : ' + apercu + '…</p>' +
         '<button class="v2-btn v2-btn-primary" style="min-height:44px" onclick="V2.rdvPlanning.contacter()">' +
-        'Proposer des créneaux à ' + Math.min(aFaire.length, LOT_MAX) + ' officines</button>' +
-        '<p class="agp-sm" style="margin:8px 0 0">' + aFaire.length +
-        ' officines à toi n’ont aucun rendez-vous prévu.</p></div>';
+        'Proposer des créneaux à ' + lot.length + ' officines</button>' +
+        '<p class="agp-sm" style="margin:8px 0 0">' + nCli + ' clientes · ' + nPro +
+        ' prospects. Au total, ' + totCli + ' clientes et ' + totPro +
+        ' prospects de ton secteur n’ont aucun rendez-vous prévu.</p></div>';
     }
 
     return '<div class="agp-jour"><div class="agp-jt"><b>' + esc(libelle(iso)) + '</b>' +

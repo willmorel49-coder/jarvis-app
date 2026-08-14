@@ -40,6 +40,10 @@
    *   national    : {p:[], seg:[], grp:[], comm:[]} — PHARMA_FR, facultatif
    *   commercial  : nom du commercial pour filtrer les prospects, facultatif
    *                 (vide = on prend tous les prospects de la base)
+   *   departements: ['44','49'] — secteur du commercial. Sert de repli pour
+   *                 les prospects que PERSONNE ne s'est attribué, c'est-à-dire
+   *                 16 850 des 17 367 prospects de la base. Sans lui, l'option
+   *                 « Prospects » de l'écran Campagne ne rendait jamais rien.
    *   info        : fonction(cip) -> {nom, ville, cp, email}, facultative
    * @returns {Array} officines normalisées, sans doublon de CIP
    */
@@ -101,9 +105,25 @@
         var l = nat.p[j], cip2 = txt(l[COL.id]);
         if (!cip2 || parCip[cip2]) continue;
         if (txt(nat.seg[l[COL.seg]]) !== 'Prospect') continue;
+        // ⚠️ 14/08/2026 — sans le repli géographique, l'option « Prospects »
+        // n'affichait JAMAIS rien, pour aucun commercial. Mesuré : sur les
+        // 19 671 officines de la base, 16 850 prospects n'ont AUCUN
+        // commercial attribué, et les 40 « prospects » marqués « Will »
+        // se révèlent être ses clients (ils sont dans ses ventes, la
+        // réconciliation les repasse en Client A/B/C). Le filtre par
+        // commercial vidait donc la liste à chaque fois.
+        // Le repli : un prospect que personne ne s'est attribué revient à
+        // celui dont c'est le département.
         if (vise) {
           var c = nat.comm ? pliage(nat.comm[l[COL.comm]]) : '';
-          if (c !== vise) continue;
+          var secteur = src.departements || [];
+          if (c) {
+            if (c !== vise) continue;                       // attribué à quelqu'un d'autre
+          } else if (secteur.length) {
+            if (secteur.indexOf(dept(l[COL.cp])) === -1) continue;   // pas mon secteur
+          } else {
+            continue;                                        // sans secteur, on ne devine pas
+          }
         }
         var inf2 = info(cip2) || {};
         ajouter({

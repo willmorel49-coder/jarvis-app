@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
-const M = require('../crm/v2/v2-campagne-cible.js');
+const M = require("../crm/v2/v2-campagne-cible.js");
+const C = M;
 
 // PHARMA_FR : [lat, lng, uga, grp, seg, comm, nom, ville, cp, tel, titulaire, email, ca, id]
 const L = (grp, seg, comm, nom, ville, cp, email, id) =>
@@ -112,4 +113,45 @@ test('la base nationale seule suffit (commercial sans aucun client)', () => {
   const l = M.recenser({ pharmacies: [], national: NAT, commercial: 'KARINE V' });
   assert.deepEqual(l.map(o => o.cip), ['444']);
   assert.equal(l[0].type, 'prospect');
+});
+
+// ── Le repli géographique (14/08/2026) ────────────────────────────────
+// Mesuré sur la vraie base : 16 850 des 17 367 prospects n'ont AUCUN
+// commercial attribué. Le filtre par commercial les écartait tous, et
+// l'option « Prospects » ne rendait jamais rien, pour personne.
+const NAT_ORPHELINS = {
+  p: [
+    // [lat,lng,uga,grp,seg,comm,nom,ville,cp,tel,titulaire,email,ca,id]
+    [0, 0, 0, 0, 0, 0, 'PHARMACIE DU LOUET', 'ANGERS', '49000', '', '', 'a@b.fr', 0, '4900001'],
+    [0, 0, 0, 0, 0, 0, 'PHARMACIE DE LA GARE', 'NANTES', '44000', '', '', 'c@d.fr', 0, '4400001'],
+    [0, 0, 0, 0, 0, 0, 'PHARMACIE DU PORT', 'MARSEILLE', '13000', '', '', 'e@f.fr', 0, '1300001'],
+    [0, 0, 0, 0, 0, 1, 'PHARMACIE DE KARINE', 'RENNES', '35000', '', '', 'g@h.fr', 0, '3500001'],
+  ],
+  seg: ['Prospect'], grp: ['—'], comm: ['', 'Karine']
+};
+
+test('prospect sans commercial : rendu si le département est dans le secteur', () => {
+  const r = C.recenser({ pharmacies: [], national: NAT_ORPHELINS, commercial: 'Will',
+                         departements: ['49', '44'] });
+  const cips = r.map(o => o.cip).sort();
+  assert.deepEqual(cips, ['4400001', '4900001']);
+  assert.equal(r.every(o => o.type === 'prospect'), true);
+});
+
+test('prospect sans commercial : écarté hors du secteur', () => {
+  const r = C.recenser({ pharmacies: [], national: NAT_ORPHELINS, commercial: 'Will',
+                         departements: ['49'] });
+  assert.deepEqual(r.map(o => o.cip), ['4900001']);
+});
+
+test('le repli ne vole PAS le prospect d’un collègue', () => {
+  // 35000 est dans le secteur demandé, mais il est attribué à Karine.
+  const r = C.recenser({ pharmacies: [], national: NAT_ORPHELINS, commercial: 'Will',
+                         departements: ['35', '49'] });
+  assert.equal(r.some(o => o.cip === '3500001'), false);
+});
+
+test('sans secteur fourni, on ne devine pas : aucun prospect orphelin', () => {
+  const r = C.recenser({ pharmacies: [], national: NAT_ORPHELINS, commercial: 'Will' });
+  assert.deepEqual(r, []);
 });
