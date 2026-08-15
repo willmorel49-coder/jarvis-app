@@ -8,7 +8,8 @@
    ou si on n'est pas connecté, la note reste sur l'appareil et rien ne
    casse.
 
-   Les pages elles-mêmes vivent dans site-integral/propositions/nouvelles/,
+   Chaque maquette porte son propre chemin (`page`, `apercu`) : elles ne vivent
+   plus toutes dans le même dossier depuis le 15/08/2026.
    servies par GitHub Pages comme le reste de l'app — même origine, donc
    l'iframe fonctionne sans bricolage.
 
@@ -23,7 +24,10 @@
   var ICO = function (n, s, w) { return V2.ICO ? V2.ICO(n, s, w) : ''; };
 
   var TABLE = 'maquette_notes', LS = 'jarvis_maquette_notes_v1';
-  var BASE = '../../site-integral/propositions/nouvelles/';
+  // Repli pour une entrée ancienne qui n'aurait pas de chemin explicite.
+  var BASE = '../../site-integral/propositions/';
+  function pageDe(m) { return (m && m.page) || (BASE + (m && m.id) + '.html'); }
+  function apercuDe(m) { return (m && m.apercu) || (BASE + 'vignettes/' + (m && m.id) + '.jpg'); }
   var backend = 'local';
   var notes = [];            // toutes les notes, tous auteurs confondus
   var tri = 'note';          // 'note' | 'numero'
@@ -174,9 +178,9 @@
       '<div class="mq-ov-bar">' +
         '<button class="mq-ov-x" onclick="V2.maquetteFermer()" aria-label="Fermer">' + ICO('chev', 18, 2) + ' Retour</button>' +
         '<div class="mq-ov-t"><b>' + m.n + ' · ' + esc(m.palette) + '</b><span>' + esc(m.accroche) + ' · ' + esc(m.defile) + '</span></div>' +
-        '<a class="mq-ov-out" href="' + BASE + id + '.html" target="_blank" rel="noopener">Plein écran</a>' +
+        '<a class="mq-ov-out" href="' + pageDe(m) + '" target="_blank" rel="noopener">Plein écran</a>' +
       '</div>' +
-      '<iframe class="mq-ov-f" src="' + BASE + id + '.html" title="Maquette ' + m.n + '"></iframe>' +
+      '<iframe class="mq-ov-f" src="' + pageDe(m) + '" title="Maquette ' + m.n + '"></iframe>' +
       '<div class="mq-ov-note">' + notesHtml(id, true) + '</div>';
     document.body.appendChild(ov);
     document.body.style.overflow = 'hidden';
@@ -216,7 +220,7 @@
     return '<div class="mq-card">' +
       '<button class="mq-shot" onclick="V2.maquetteOuvrir(\'' + m.id + '\')" aria-label="Ouvrir la maquette ' + m.n + '">' +
         med +
-        '<img src="' + BASE + 'vignettes/' + m.id + '.jpg" loading="lazy" decoding="async" width="1280" height="960" alt="Aperçu de la maquette ' + m.n + '">' +
+        '<img src="' + apercuDe(m) + '" loading="lazy" decoding="async" width="1280" height="960" alt="Aperçu de la maquette ' + m.n + '">' +
         '<span class="mq-open">Ouvrir</span>' +
       '</button>' +
       '<div class="mq-body">' +
@@ -240,7 +244,7 @@
       top.map(function (m, i) {
         return '<button class="mq-pod" onclick="V2.maquetteOuvrir(\'' + m.id + '\')">' +
           '<span class="mq-rank mq-rank-' + (i + 1) + '">' + (i + 1) + '</span>' +
-          '<img src="' + BASE + 'vignettes/' + m.id + '.jpg" loading="lazy" alt="">' +
+          '<img src="' + apercuDe(m) + '" loading="lazy" alt="">' +
           '<span class="mq-pod-t"><b>' + m.n + ' · ' + esc(m.palette) + '</b>' +
           '<i>' + (Math.round(moyenne(m.id) * 10) / 10).toFixed(1) + '/10 · ' + pour(m.id).length + ' avis</i></span>' +
         '</button>';
