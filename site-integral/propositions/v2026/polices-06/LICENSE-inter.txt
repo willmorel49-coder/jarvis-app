@@ -1,0 +1,46 @@
+POLICES AUTO-HÉBERGÉES — ALLEZ.
+================================
+
+Les trois familles présentes dans ce dossier sont publiées sous la
+SIL Open Font License, Version 1.1 (OFL-1.1).
+
+L'OFL autorise explicitement l'usage, la modification, la redistribution
+et l'INCORPORATION dans un produit — y compris l'auto-hébergement sur un
+site web ou dans une application. Aucun paiement, aucune autorisation
+particulière, aucune attribution obligatoire dans l'interface ne sont
+requis. La seule contrainte : ces fichiers ne peuvent pas être vendus
+seuls, et toute version modifiée ne peut pas porter les noms réservés.
+
+Fichiers et provenance
+----------------------
+
+Barlow Condensed — © 2017 The Barlow Project Authors
+  https://github.com/jpt/barlow
+  SIL Open Font License 1.1
+  barlow-condensed-600-latin.woff2
+  barlow-condensed-800-latin.woff2
+
+Inter — © 2016 The Inter Project Authors
+  https://github.com/rsms/inter
+  SIL Open Font License 1.1
+  inter-variable-latin.woff2   (fonte variable, graisses 100 à 900)
+
+IBM Plex Mono — © 2017 IBM Corp.
+  https://github.com/IBM/plex
+  SIL Open Font License 1.1
+  ibm-plex-mono-500-latin.woff2
+  ibm-plex-mono-600-latin.woff2
+
+Sous-ensemble
+-------------
+
+Les fichiers sont les découpes « latin » distribuées par Google Fonts
+(fonts.gstatic.com), récupérées le 11 août 2026. Elles couvrent
+U+0000-00FF ainsi que Œ/œ, les guillemets français et l'euro : tout le
+français est présent. Les jeux cyrillique, grec et vietnamien ont été
+écartés — ils n'auraient servi à rien et pesaient le double.
+
+Texte complet de la licence
+---------------------------
+
+https://openfontlicense.org/open-font-license-official-text/

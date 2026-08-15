@@ -1,0 +1,20 @@
+Polices employées par m-14.html — toutes en licence libre SIL Open Font License 1.1.
+
+schibsted.woff2  Schibsted Grotesk (Schibsted / Sindre Bremnes, Monokrom) — SIL OFL 1.1
+                 Sous-ensemble « latin » seulement, variable 400..600.
+                 Substitut libre d'Aeonik Pro (police propriétaire de la charte
+                 « revolut », éditée par CoType Foundry, non redistribuable).
+                 Même famille : grotesque géométrique à chasse resserrée,
+                 terminaisons horizontales, g à boucle ouverte.
+
+inter.woff2      Inter (Rasmus Andersson) — SIL OFL 1.1
+                 Sous-ensemble « latin » seulement, variable 400..600.
+                 C'est la police de texte nommée par la charte elle-même.
+
+jbmono.woff2     JetBrains Mono (JetBrains) — SIL OFL 1.1
+                 Sous-ensemble « latin » seulement, variable 400..600.
+                 Employée uniquement pour les libellés en petites capitales
+                 et les numéros d'implantation.
+
+Aucun appel à un service extérieur : les trois fichiers sont servis par le
+même hôte que la page.

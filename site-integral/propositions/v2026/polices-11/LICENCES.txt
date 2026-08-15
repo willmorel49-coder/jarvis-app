@@ -1,0 +1,7 @@
+Archivo — SIL Open Font License 1.1 (Omnibus-Type)
+https://github.com/Omnibus-Type/Archivo
+
+IBM Plex Mono — SIL Open Font License 1.1 (IBM)
+https://github.com/IBM/plex
+
+Sous-ensemble latin uniquement, servi localement. Aucun appel exterieur.

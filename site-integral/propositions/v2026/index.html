@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vingt maquettes — Intégral Pharma</title>
+<style>
+  :root{
+    --noir:#0B0D12; --carte:#141821; --releve:#1B2029;
+    --encre:#E8EAEE; --doux:#9AA1AD; --sourd:#5A6270; --filet:rgba(232,234,238,.13);
+    --bleu:#2C79FF; --orange:#F39A1B; --vert:#4ECB92;
+    --dis:ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--noir);color:var(--encre);
+    font:16px/1.6 var(--dis);-webkit-font-smoothing:antialiased}
+  .page{max-width:1240px;margin:0 auto;padding:0 24px 100px}
+  header{padding:66px 0 28px;border-bottom:1px solid var(--filet)}
+  .kick{font:600 11.5px/1 var(--mono);letter-spacing:.18em;text-transform:uppercase;
+    color:var(--orange);margin:0 0 18px}
+  h1{font-weight:400;font-size:clamp(2rem,5vw,3.3rem);line-height:1.05;
+    letter-spacing:-.035em;margin:0 0 18px}
+  .chapeau{color:var(--doux);max-width:68ch;margin:0;font-size:1.03rem}
+
+  .etat{display:flex;gap:26px;flex-wrap:wrap;margin:28px 0 0;padding:18px 22px;
+    background:var(--carte);border:1px solid var(--filet);border-radius:3px}
+  .etat div{font-size:13px;color:var(--doux)}
+  .etat b{display:block;font:600 1.6rem/1 var(--mono);color:var(--encre);letter-spacing:-.02em}
+
+  h2{font-size:1.1rem;font-weight:600;margin:48px 0 6px}
+  .role{color:var(--doux);font-size:14px;margin:0 0 20px;max-width:74ch}
+
+  .grille{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(268px,1fr))}
+  .m{background:var(--carte);border:1px solid var(--filet);border-radius:4px;
+    display:flex;flex-direction:column;overflow:hidden}
+  .m__h{padding:18px 20px 0;flex:1}
+  .m__n{font:600 11.5px/1 var(--mono);letter-spacing:.1em;color:var(--sourd)}
+  .m__t{font-size:1.32rem;font-weight:400;letter-spacing:-.025em;margin:7px 0 3px}
+  .m__c{font:600 11px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;
+    color:var(--bleu);margin:0 0 12px}
+  .m__d{color:var(--doux);font-size:13.5px;margin:0 0 16px}
+  .m__p{border-top:1px solid var(--filet);padding:10px 20px;display:flex;
+    justify-content:space-between;gap:10px;flex-wrap:wrap;
+    font:11.5px/1.5 var(--mono);color:var(--sourd)}
+  .ok{color:var(--vert)}
+  .m__v{display:block;margin:0 20px 18px;padding:11px 16px;text-align:center;
+    background:var(--encre);color:var(--noir);text-decoration:none;border-radius:999px;
+    font:600 12px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;
+    transition:transform .25s cubic-bezier(.22,.8,.25,1)}
+  .m__v:hover{transform:translateY(-2px)}
+
+  .m--attente{background:transparent;border-style:dashed}
+  .m--attente .m__t{color:var(--sourd)}
+  .m__w{margin:0 20px 18px;padding:11px 16px;text-align:center;border:1px dashed var(--filet);
+    border-radius:999px;font:11.5px/1 var(--mono);color:var(--sourd);letter-spacing:.06em}
+
+  .note{margin:36px 0 0;padding:18px 22px;background:var(--releve);
+    border:1px solid var(--filet);border-radius:3px;font-size:14px;max-width:82ch;color:var(--doux)}
+  .note b{color:var(--encre)}
+  footer{margin-top:48px;padding-top:26px;border-top:1px solid var(--filet);
+    color:var(--sourd);font-size:12.5px}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="page">
+
+<header>
+  <p class="kick">Intégral Pharma · nouveau site</p>
+  <h1>Vingt maquettes, vingt chartes réelles</h1>
+  <p class="chapeau">Chacune est bâtie sur le <b>système de design d'une marque existante</b> —
+  pris dans votre librairie JARVIS Design — dont elle reprend l'échelle typographique, le rythme
+  et la densité, jamais les couleurs ni l'identité. Le texte est celui que vous avez validé, mot
+  pour mot. Le niveau visé est celui d'Awwwards.</p>
+</header>
+
+<div class="etat">
+  <div><b>11</b>livrées</div>
+  <div><b>9</b>en cours</div>
+  <div><b>11</b>sections chacune</div>
+  <div><b>1</b>vidéo par page, jamais plus</div>
+</div>
+
+<h2>Ce qui change par rapport à la série précédente</h2>
+<p class="role">La série d'hier n'avait <b>aucune photographie</b> — mon brief interdisait les
+images par erreur. Ici chaque maquette porte une vidéo et trois à six images, et chaque chef
+chiffre ce que sa page coûte pour que vous jugiez sur votre machine.</p>
+
+<div class="grille">
+
+  <article class="m"><div class="m__h"><span class="m__n">MAQUETTE 01</span>
+    <h3 class="m__t">Cimaise</h3><p class="m__c">Charte Apple</p>
+    <p class="m__d">Une enfilade de tuiles pleine largeur qui alternent blanc, parchemin et noir.
+    La photographie commande, l'habillage s'efface.</p></div>
+    <div class="m__p"><span>5,2 Mo · 4 images</span><span class="ok">0 bloc invisible</span></div>
+    <a class="m__v" href="m-01.html">Ouvrir</a></article>
+
+  <article class="m"><div class="m__h"><span class="m__n">MAQUETTE 02</span>
+    <h3 class="m__t">Continuum</h3><p class="m__c">Charte Stripe</p>
+    <p class="m__d">Un dégradé atmosphérique qui traverse la page et revient trois fois, découpé
+    par des arêtes obliques. Entre deux, du blanc dense tenu par des filets d'un pixel.</p></div>
+    <div class="m__p"><span>6,0 Mo · 6 images</span><span class="ok">0 bloc invisible</span></div>
+    <a class="m__v" href="m-02.html">Ouvrir</a></article>
+
+  <article class="m"><div class="m__h"><span class="m__n">MAQUETTE 03</span>
+    <h3 class="m__t">Veilleuse</h3><p class="m__c">Charte Linear</p>
+    <p class="m__d">Quasi noire, traversée de cinq filets verticaux : une seule feuille, pas une
+    pile de blocs. Le titre est coupé par la bande vidéo ; le réseau se parcourt en zoom.</p></div>
+    <div class="m__p"><span>6,6 Mo · 3 images</span><span class="ok">0 bloc invisible</span></div>
+    <a class="m__v" href="m-03.html">Ouvrir</a></article>
+
+  <article class="m"><div class="m__h"><span class="m__n">MAQUETTE 04</span>
+    <h3 class="m__t">Cadence</h3><p class="m__c">Charte Nike</p>
+    <p class="m__d">Quatre plans plein cadre, le texte posé dessus, jamais à côté. Des capitales
+    jusqu'à 168 px — mais en graisse moyenne, jamais en gras.</p></div>
+    <div class="m__p"><span>6,9 Mo · 5 images</span><span class="ok">0 bloc invisible</span></div>
+    <a class="m__v" href="m-04.html">Ouvrir</a></article>
+
+  <article class="m"><div class="m__h"><span class="m__n">MAQUETTE 05</span>
+    <h3 class="m__t">Plein Sud</h3><p class="m__c">Charte Mistral</p>
+    <p class="m__d">La seule où l'orange mène et le bleu suit. Son geste : une bande solaire qui
+    va du jaune au bleu Intégral, et ferme la page.</p></div>
+    <div class="m__p"><span>6,1 Mo · 4 images</span><span class="ok">0 bloc invisible</span></div>
+    <a class="m__v" href="m-05.html">Ouvrir</a></article>
+
+  <article class="m"><div class="m__h"><span class="m__n">MAQUETTE 06</span>
+    <h3 class="m__t">—</h3><p class="m__c">Charte Figma</p>
+    <p class="m__d">Le pari du clair spectaculaire : des couleurs franches qui se répondent, une
+    page accueillante, une source de lumière sur chaque surface.</p></div>
+    <div class="m__p"><span>44 Ko · 5 images</span><span class="ok">0 bloc invisible</span></div>
+    <a class="m__v" href="m-06.html">Ouvrir</a></article>
+
+  <article class="m"><div class="m__h"><span class="m__n">MAQUETTE 07</span>
+    <h3 class="m__t">Filet</h3><p class="m__c">Charte Vercel</p>
+    <p class="m__d">Noir et blanc radical. Le bleu Intégral n'apparaît que trois ou quatre fois
+    sur toute la page — et chaque apparition compte.</p></div>
+    <div class="m__p"><span>45 Ko · 5 images</span><span class="ok">0 bloc invisible</span></div>
+    <a class="m__v" href="m-07.html">Ouvrir</a></article>
+
+  <article class="m"><div class="m__h"><span class="m__n">MAQUETTE 08</span>
+    <h3 class="m__t">—</h3><p class="m__c">Charte Airbnb</p>
+    <p class="m__d">Les neuf implantations traitées comme neuf lieux à découvrir. Beaucoup d'air,
+    une échelle typographique volontairement modeste.</p></div>
+    <div class="m__p"><span>87 Ko · 5 images</span><span class="ok">0 bloc invisible</span></div>
+    <a class="m__v" href="m-08.html">Ouvrir</a></article>
+
+  <article class="m"><div class="m__h"><span class="m__n">MAQUETTE 09</span>
+    <h3 class="m__t">—</h3><p class="m__c">Charte SpaceX</p>
+    <p class="m__d">Le spectacle : image plein écran bord à bord, très peu de texte, la grandeur
+    obtenue par le cadrage plutôt que par la décoration.</p></div>
+    <div class="m__p"><span>43 Ko · 4 images</span><span class="ok">0 bloc invisible</span></div>
+    <a class="m__v" href="m-09.html">Ouvrir</a></article>
+
+  <article class="m"><div class="m__h"><span class="m__n">MAQUETTE 10</span>
+    <h3 class="m__t">—</h3><p class="m__c">Charte Wired</p>
+    <p class="m__d">Le seul registre imprimé des vingt : grille de magazine, chapeau, intertitres,
+    légendes sous les photos. Un dossier, pas une plaquette.</p></div>
+    <div class="m__p"><span>63 Ko · 3 images</span><span class="ok">0 bloc invisible</span></div>
+    <a class="m__v" href="m-10.html">Ouvrir</a></article>
+
+  <article class="m"><div class="m__h"><span class="m__n">MAQUETTE 15</span>
+    <h3 class="m__t">Le Plan</h3><p class="m__c">Charte IBM</p>
+    <p class="m__d">La grille rendue visible : des filets de colonne courent sur toute la page,
+    photos comprises, et chaque séparateur tombe exactement sur un filet.</p></div>
+    <div class="m__p"><span>5,9 Mo · 4 images</span><span class="ok">0 bloc invisible</span></div>
+    <a class="m__v" href="m-15.html">Ouvrir</a></article>
+
+  <article class="m m--attente"><div class="m__h"><span class="m__n">11 · 12 · 13 · 14</span>
+    <h3 class="m__t">En cours</h3><p class="m__c">BMW · Supabase · Notion · Revolut</p>
+    <p class="m__d">L'ingénierie · l'accent électrique sur fond sombre · la douceur lettrée ·
+    le challenger.</p></div>
+    <div class="m__w">à construire</div></article>
+
+  <article class="m m--attente"><div class="m__h"><span class="m__n">16 · 17 · 18 · 19 · 20</span>
+    <h3 class="m__t">En cours</h3><p class="m__c">Shopify · Uber · Wise · Raycast · Cursor</p>
+    <p class="m__d">Le commerce · le mouvement et les tournées · la transparence · l'outil de
+    précision · la plus contemporaine.</p></div>
+    <div class="m__w">à construire</div></article>
+
+</div>
+
+<div class="note">
+  <b>Ce qui est identique dans toutes.</b> Le texte que vous avez validé, mot pour mot, ses onze
+  sections, et vos deux arbitrages — l'année 2006 et la phrase sur la marge — repris tels quels.
+  Aucune n'affiche de condition commerciale, aucune n'emploie les mots proscrits, aucune ne tient
+  plus d'une vidéo en lecture automatique. <b>Ce qui change, c'est le système de design</b> — et
+  c'est lui qu'il faut choisir.
+</div>
+
+<footer>
+  Série écrite le 15 août 2026, un directeur artistique par maquette, sur les chartes de la
+  librairie JARVIS Design et le contenu validé de <code>CONTENU-SITE-2026.md</code>. Chiffres de
+  poids donnés par leurs auteurs, contrôle du code repassé par-dessus. Le parcours à l'écran
+  maquette par maquette reste à faire — c'est lui qui a rattrapé les défauts des séries
+  précédentes.
+</footer>
+
+</div>
+</body>
+</html>
