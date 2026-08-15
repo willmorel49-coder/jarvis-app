@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Intégral Pharma — Neuf maisons. Un seul nom.</title>
+<meta name="description" content="Groupe de grossistes-répartiteurs français indépendant. Neuf implantations, plus de 2 000 officines livrées chaque jour.">
+
+<!--
+  ══════════════════════════════════════════════════════════════════════════════
+  MAQUETTE 08 — « MAISONS »
+  Charte de travail : airbnb (~/jarvis-design/app/chartes.js)
+
+  CE QUE JE PRENDS À LA CHARTE (sa méthode, pas son identité) :
+    · l'échelle typographique MODESTE — display 22/28 px en graisse 500-600.
+      Aucun titre géant, nulle part. Dans un lot où tout le monde monte à 90 px,
+      la retenue est le parti pris ;
+    · le rôle « rating-display » (64 px, graisse 700) : c'est le SEUL grand corps
+      autorisé, et il est réservé aux chiffres — comme la note d'un logement ;
+    · le canevas blanc, les surfaces douces à peine détachées, le filet fin,
+      les angles très arrondis, l'ombre de carte au survol ;
+    · la barre de navigation en pilule bordée, façon barre de recherche ;
+    · la rangée de pastilles qui défile sous l'en-tête, façon rangée de catégories ;
+    · et surtout sa mécanique maîtresse : la LISTE DE LIEUX à gauche, la CARTE à
+      droite, qui se recadre sur le lieu survolé. C'est exactement ce que demande
+      la section « Neuf implantations. Laquelle est la vôtre ? » — et ça règle la
+      consigne « ce bloc se joue en zoom, jamais en carte posée en pièce maîtresse ».
+
+  CE QUE JE N'EN PRENDS PAS :
+    · sa couleur de marque (un rose) — remplacée par le bleu Intégral #0050E6 ;
+    · sa police propriétaire Airbnb Cereal — remplacée par Figtree (OFL, servie
+      par nous, sous-ensemble latin, 19,7 Ko). C'est l'équivalent libre le plus
+      proche : même grotesque géométrique-humaniste, mêmes terminaisons douces ;
+    · ses formes signature (le cœur, la pastille de note, le badge « Coup de cœur »).
+
+  LES IMAGES :
+    · une seule vidéo dans toute la page (band.mp4), avec son image d'attente ;
+    · deux photographies du site d'Hyères (siege-web.jpg, siege-solaire.jpg) ;
+    · les neuf façades sont DESSINÉES, jamais photographiées : nous n'avons de
+      photo que du siège, et Will a explicitement refusé les photos d'implantations
+      le 14/08. Une image de banque derrière une porte serait un mensonge visuel ;
+    · le tracé de France vient de l'IGN (Licence Ouverte), les dix points sont
+      les coordonnées réelles des communes.
+
+  LE TEXTE est celui validé par Will le 14/08 (CONTENU-SITE-2026.md), mot pour mot.
+  Ses deux arbitrages assumés — l'année 2006, et la phrase sur la marge rendue à
+  l'officine — sont repris tels quels et ne doivent pas être « corrigés ».
+  ══════════════════════════════════════════════════════════════════════════════
+-->
+
+<style>
+/* ═══ 1 · LA POLICE — servie par nous, licence OFL, aucun appel extérieur ═══ */
+@font-face{
+  font-family:"Figtree";
+  src:url("polices-08/figtree.woff2") format("woff2");
+  font-weight:300 900; font-style:normal; font-display:swap;
+}
+
+/* ═══ 2 · LE SOCLE ═══ */
+:root{
+  /* Le canevas clair et chaud. Jamais de gris froid : c'est ce qui rend la
+     charte accueillante plutôt qu'administrative. */
+  --blanc:#FFFFFF;
+  --doux:#F7F6F3;
+  --doux-2:#F0EFEA;
+  --encre:#1B1E26;
+  --corps:#4A4F5A;
+  --sourd:#767C88;
+  --filet:#DEDDD8;
+  --filet-clair:#EDECE7;
+
+  /* La marque Intégral remplace la voltage de la charte. */
+  --bleu:#0050E6;
+  --bleu-fonce:#0039A8;
+  --bleu-pale:#EDF3FF;
+  --bleu-pale-2:#DFEAFF;
+  --orange:#F39A1B;
+  --orange-pale:#FEF3E1;
+
+  --accent:#0050E6;   /* lues par les façades dessinées */
+  --meta:#F39A1B;
+
+  --pol:"Figtree",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --sortie:cubic-bezier(.2,.8,.2,1);
+  --barre:80px;
+  --marge:clamp(20px,5vw,80px);
+  --r-carte:20px;
+  --ombre:0 1px 2px rgba(27,30,38,.06), 0 6px 16px rgba(27,30,38,.07);
+  --ombre-forte:0 2px 4px rgba(27,30,38,.08), 0 14px 34px rgba(27,30,38,.13);
+}
+*,*::before,*::after{ box-sizing:border-box }
+html{ -webkit-text-size-adjust:100%; scroll-behavior:smooth }
+body{
+  margin:0; background:var(--blanc); color:var(--encre);
+  font:400 16px/1.6 var(--pol); overflow-x:clip;
+  -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+}
+a{ color:inherit }
+img,svg,video{ max-width:100%; display:block }
+button{ font:inherit; color:inherit }
+:focus-visible{ outline:2px solid var(--bleu); outline-offset:3px; border-radius:6px }
+
+.saut{ position:absolute; left:-9999px; top:0; z-index:400;
+  background:var(--encre); color:#fff; padding:14px 22px; border-radius:999px; font-weight:600 }
+.saut:focus{ left:12px; top:12px }
+
+/* ═══ 3 · L'EN-TÊTE — la barre en pilule bordée de la charte ═══ */
+.barre{
+  position:sticky; top:0; z-index:120; height:var(--barre);
+  display:flex; align-items:center; gap:16px;
+  padding:0 clamp(16px,3.4vw,40px);
+  background:var(--blanc); border-bottom:1px solid var(--filet-clair);
+}
+.marque{ display:flex; align-items:center; gap:10px; text-decoration:none;
+  min-height:44px; flex:0 0 auto }
+.marque img{ height:30px; width:auto }
+.marque span{ font-size:16.5px; font-weight:700; letter-spacing:-.015em; white-space:nowrap }
+.marque em{ font-style:normal; font-weight:500; color:var(--sourd) }
+
+.nav{
+  margin:0 auto; display:flex; align-items:center; gap:2px;
+  border:1px solid var(--filet); border-radius:999px; padding:4px;
+  box-shadow:0 1px 2px rgba(27,30,38,.06);
+}
+.nav a{
+  display:inline-flex; align-items:center; min-height:44px; padding:0 18px;
+  border-radius:999px; text-decoration:none; font-size:15px; font-weight:600;
+  color:var(--encre); transition:background-color .22s ease;
+}
+.nav a:hover{ background:var(--doux) }
+
+.bt{
+  display:inline-flex; align-items:center; justify-content:center; gap:9px;
+  min-height:48px; padding:0 24px; border-radius:999px; text-decoration:none;
+  font-size:15.5px; font-weight:600; border:1px solid transparent; cursor:pointer;
+  background:var(--bleu); color:#fff;
+  transition:background-color .22s ease, transform .22s var(--sortie), box-shadow .22s ease;
+}
+.bt:hover{ background:var(--bleu-fonce); transform:translateY(-1px); box-shadow:var(--ombre) }
+.bt svg{ width:15px; height:15px; flex:0 0 auto }
+.bt--clair{ background:var(--blanc); color:var(--encre); border-color:var(--filet) }
+.bt--clair:hover{ background:var(--doux); border-color:var(--encre) }
+.barre .bt{ flex:0 0 auto; min-height:44px; padding:0 20px }
+
+.burger{ display:none; margin-left:auto; width:48px; height:48px; border-radius:999px;
+  background:var(--blanc); border:1px solid var(--filet); cursor:pointer; padding:0;
+  place-items:center; box-shadow:0 1px 2px rgba(27,30,38,.06) }
+.burger i{ display:block; width:18px; height:1.8px; background:var(--encre);
+  border-radius:2px; position:relative }
+.burger i::before,.burger i::after{ content:""; position:absolute; left:0; width:18px;
+  height:1.8px; border-radius:2px; background:var(--encre) }
+.burger i::before{ top:-6px } .burger i::after{ top:6px }
+
+/* Le panneau téléphone : fond BLANC PLEIN, rien ne défile au travers. */
+.panneau{
+  position:fixed; inset:0; z-index:200; background:var(--blanc);
+  display:none; flex-direction:column; padding:22px 22px 32px; overflow:auto;
+}
+.panneau.ouvert{ display:flex }
+.panneau__h{ display:flex; align-items:center; justify-content:space-between;
+  min-height:48px; margin-bottom:18px }
+.panneau__f{ width:48px; height:48px; border-radius:999px; background:var(--blanc);
+  border:1px solid var(--filet); cursor:pointer; font-size:20px; line-height:1 }
+.panneau a{
+  display:flex; align-items:center; min-height:60px; text-decoration:none;
+  font-size:22px; font-weight:600; letter-spacing:-.02em;
+  border-bottom:1px solid var(--filet-clair);
+}
+.panneau .bt{ margin-top:26px; border-bottom:0 }
+
+/* ═══ 4 · TYPOGRAPHIE — la retenue est le parti pris ═══
+   La charte plafonne son display à 28 px en graisse 500-600. Je m'y tiens :
+   le titre d'ouverture ne dépasse pas 40 px, les titres de section 30 px.
+   Le seul grand corps de la page est le rôle « rating-display » (64 px),
+   réservé aux chiffres. */
+.sur{
+  display:inline-flex; align-items:center; gap:9px; margin:0 0 18px;
+  font-size:14.5px; font-weight:600; color:var(--bleu);
+}
+.sur::before{ content:""; width:8px; height:8px; border-radius:50%;
+  background:var(--orange); flex:0 0 auto }
+
+.t1{ margin:0; font-size:clamp(28px,3.2vw,40px); font-weight:600; line-height:1.14;
+  letter-spacing:-.028em; text-wrap:balance; max-width:16ch }
+.t2{ margin:0; font-size:clamp(24px,2.3vw,30px); font-weight:600; line-height:1.2;
+  letter-spacing:-.024em; text-wrap:balance; max-width:22ch }
+.t3{ margin:0; font-size:19px; font-weight:600; line-height:1.28; letter-spacing:-.014em }
+.t1 b,.t2 b{ font-weight:600; color:var(--bleu) }
+
+.p{ margin:20px 0 0; max-width:56ch; font-size:16.5px; line-height:1.68; color:var(--corps) }
+.p--fort{ color:var(--encre); font-size:17.5px; max-width:52ch }
+.p + .p{ margin-top:14px }
+.btns{ display:flex; flex-wrap:wrap; gap:12px; margin-top:30px }
+
+/* ═══ 5 · LES SECTIONS ═══ */
+.sec{ position:relative; padding:clamp(64px,8vh,110px) var(--marge) }
+.in{ max-width:1220px; margin:0 auto; position:relative; z-index:2 }
+.sec--doux{ background:var(--doux) }
+
+/* La source de lumière : deux dégradés radiaux, jamais un flou.
+   C'est ce qui empêche le clair d'être plat. */
+.jour{ position:absolute; inset:0; z-index:0; pointer-events:none; overflow:hidden }
+.jour::before,.jour::after{ content:""; position:absolute; border-radius:50% }
+.jour::before{ width:min(70vw,860px); height:min(70vw,860px); right:-16%; top:-42%;
+  background:radial-gradient(circle, rgba(0,80,230,.09) 0%, rgba(0,80,230,0) 66%) }
+.jour::after{ width:min(56vw,660px); height:min(56vw,660px); left:-18%; bottom:-36%;
+  background:radial-gradient(circle, rgba(243,154,27,.13) 0%, rgba(243,154,27,0) 68%) }
+
+.tete{ display:flex; flex-wrap:wrap; gap:24px 40px; align-items:flex-end;
+  justify-content:space-between; margin-bottom:clamp(30px,4vh,52px) }
+.tete .p{ margin-top:0 }
+
+/* ═══ 6 · L'OUVERTURE ═══ */
+.ouv{ padding-top:clamp(46px,6vh,80px) }
+.ouv__g{ display:grid; gap:clamp(30px,4vw,64px); align-items:center;
+  grid-template-columns:minmax(0,1fr) minmax(0,.86fr) }
+.jeton{ display:inline-flex; align-items:center; gap:10px; padding:9px 16px 9px 12px;
+  border:1px solid var(--filet); border-radius:999px; background:var(--blanc);
+  font-size:13.5px; font-weight:600; color:var(--corps); margin-bottom:22px;
+  box-shadow:0 1px 2px rgba(27,30,38,.05) }
+.jeton b{ display:inline-flex; align-items:center; justify-content:center;
+  height:24px; padding:0 10px; border-radius:999px; background:var(--bleu-pale);
+  color:var(--bleu); font-size:12.5px; font-weight:700; letter-spacing:.01em }
+
+/* Le grand média arrondi : une seule vidéo dans toute la page. */
+.media{ position:relative; border-radius:26px; overflow:hidden; background:var(--doux-2);
+  aspect-ratio:4/5; box-shadow:var(--ombre) }
+.media video,.media img{ width:100%; height:100%; object-fit:cover }
+.media__voile{ position:absolute; inset:auto 0 0 0; height:52%; pointer-events:none;
+  background:linear-gradient(to top, rgba(15,18,24,.66), rgba(15,18,24,0)) }
+/* La fiche blanche posée sur l'image — la carte de logement de la charte. */
+.fiche{ position:absolute; left:16px; right:16px; bottom:16px; z-index:3;
+  background:var(--blanc); border-radius:16px; padding:14px 16px;
+  display:flex; align-items:center; gap:12px; box-shadow:var(--ombre-forte) }
+.fiche__p{ width:40px; height:40px; border-radius:12px; background:var(--bleu-pale);
+  display:grid; place-items:center; flex:0 0 auto }
+.fiche__p svg{ width:20px; height:20px; color:var(--bleu) }
+.fiche b{ display:block; font-size:15px; font-weight:600; letter-spacing:-.01em }
+.fiche span{ display:block; font-size:13.5px; color:var(--sourd); margin-top:2px }
+
+/* ═══ 7 · LA RANGÉE DE PASTILLES QUI DÉFILE ═══ */
+.rangee{ border-top:1px solid var(--filet-clair); border-bottom:1px solid var(--filet-clair);
+  padding:18px 0; overflow:hidden; background:var(--blanc) }
+.rangee__p{ display:flex; width:max-content; gap:12px; padding-left:12px;
+  animation:defile 44s linear infinite }
+.rangee__p span{ display:inline-flex; align-items:center; gap:9px; white-space:nowrap;
+  padding:11px 20px; border:1px solid var(--filet); border-radius:999px;
+  font-size:14.5px; font-weight:600; color:var(--corps); background:var(--blanc) }
+.rangee__p span::before{ content:""; width:7px; height:7px; border-radius:50%;
+  background:var(--orange); flex:0 0 auto }
+.rangee__p span:nth-child(even)::before{ background:var(--bleu) }
+@keyframes defile{ from{ transform:translate3d(0,0,0) } to{ transform:translate3d(-50%,0,0) } }
+
+/* ═══ 8 · LES CHIFFRES — le seul grand corps de la page ═══ */
+.chiffres{ display:grid; grid-template-columns:repeat(2,1fr); gap:1px;
+  background:var(--filet-clair); border:1px solid var(--filet-clair);
+  border-radius:var(--r-carte); overflow:hidden }
+.chiffres div{ background:var(--blanc); padding:clamp(22px,3vw,32px) }
+.chiffres .n{ margin:0; display:flex; align-items:baseline; gap:.05em;
+  font-size:clamp(38px,4.6vw,64px); font-weight:700; line-height:1.06;
+  letter-spacing:-.035em; font-variant-numeric:tabular-nums; color:var(--encre) }
+.chiffres .n b{ font-weight:700 }
+.chiffres .n i{ font-style:normal; color:var(--orange); font-size:.58em; font-weight:700 }
+.chiffres span{ display:block; margin-top:8px; font-size:14.5px; color:var(--sourd) }
+.sec--doux .chiffres{ background:var(--filet); border-color:var(--filet) }
+
+.duo{ display:grid; gap:clamp(30px,4vw,64px); align-items:center;
+  grid-template-columns:minmax(0,1fr) minmax(0,.92fr) }
+
+/* ═══ 9 · LE RÉSEAU — la liste de lieux et la carte qui se recadre ═══ */
+.reseau{ display:grid; gap:clamp(24px,3vw,44px);
+  grid-template-columns:minmax(0,1fr) minmax(0,.92fr); align-items:start }
+.lieux{ list-style:none; margin:0; padding:0; display:grid; gap:8px }
+.lieu{
+  width:100%; text-align:left; display:grid; gap:14px; align-items:center;
+  grid-template-columns:78px minmax(0,1fr) auto;
+  padding:10px; border:1px solid var(--filet-clair); border-radius:16px;
+  background:var(--blanc); cursor:pointer;
+  transition:box-shadow .25s ease, border-color .25s ease, transform .25s var(--sortie);
+}
+.lieu:hover,.lieu.actif{ border-color:var(--filet); box-shadow:var(--ombre); transform:translateY(-1px) }
+.lieu.actif{ border-color:var(--bleu) }
+.lieu__v{ border-radius:12px; overflow:hidden; background:linear-gradient(160deg,#F4F8FF,#E7EFFF);
+  aspect-ratio:1/1; display:grid; place-items:center; padding:6px }
+.lieu.actif .lieu__v{ background:linear-gradient(160deg,#EAF1FF,#D9E6FF) }
+.lieu__v svg{ width:100%; height:100% }
+.lieu__t{ display:block; font-size:16.5px; font-weight:600; letter-spacing:-.012em;
+  line-height:1.25 }
+.lieu__c{ display:block; margin-top:4px; font-size:14px; color:var(--sourd) }
+.lieu__e{ display:inline-flex; align-items:center; gap:6px; margin-top:7px;
+  padding:4px 10px; border-radius:999px; font-size:12.5px; font-weight:600 }
+.lieu__e--siege{ background:var(--orange-pale); color:#96590A }
+.lieu__e--part{ background:var(--bleu-pale); color:var(--bleu-fonce) }
+.lieu__n{ font-size:13px; font-weight:700; color:var(--sourd);
+  font-variant-numeric:tabular-nums; padding-right:8px }
+
+.note{ margin:20px 0 0; font-size:15px; line-height:1.7; color:var(--corps); max-width:60ch }
+.note b{ color:var(--encre); font-weight:600 }
+
+/* La carte : un panneau collant, arrondi, avec sa fiche blanche. */
+.carte{ position:sticky; top:calc(var(--barre) + 16px); z-index:2 }
+.carte__c{ position:relative; border-radius:var(--r-carte); overflow:hidden;
+  border:1px solid var(--filet); background:linear-gradient(170deg,#FBFCFF,#F2F5FB);
+  aspect-ratio:1/1; box-shadow:var(--ombre) }
+.carte__c svg.plan{ width:100%; height:100% }
+.carte__f{ position:absolute; left:14px; right:14px; bottom:14px; z-index:3;
+  background:var(--blanc); border-radius:14px; padding:13px 16px; box-shadow:var(--ombre-forte) }
+.carte__f b{ display:block; font-size:15.5px; font-weight:600; letter-spacing:-.012em }
+.carte__f span{ display:block; font-size:13.5px; color:var(--sourd); margin-top:3px }
+.carte__l{ position:absolute; left:14px; top:14px; z-index:3; background:var(--blanc);
+  border-radius:999px; padding:8px 14px; font-size:12.5px; font-weight:600;
+  color:var(--corps); box-shadow:0 1px 3px rgba(27,30,38,.14) }
+/* Le tracé : un filet qui garde la MÊME épaisseur à l'écran quel que soit le
+   rapprochement. Sans `non-scaling-stroke`, le contour s'épaissit d'un facteur
+   quatre au zoom maximal et la carte devient une tache. */
+.fx-pays path{ fill:var(--bleu); fill-opacity:.06; stroke:var(--bleu);
+  stroke-opacity:.42; stroke-width:1; stroke-linejoin:round;
+  vector-effect:non-scaling-stroke }
+.pt{ fill:var(--orange); transition:fill .3s ease }
+.pt--siege{ fill:var(--bleu) }
+.pt--part{ fill:var(--bleu); fill-opacity:.45 }
+.pt.on{ fill:var(--bleu) }
+.halo{ fill:none; stroke:var(--bleu); stroke-opacity:0; transition:stroke-opacity .3s ease }
+.halo.on{ stroke-opacity:.55 }
+
+/* ═══ 10 · LES CARTES ═══ */
+.grille{ display:grid; gap:16px; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)) }
+.carton{ background:var(--blanc); border:1px solid var(--filet-clair);
+  border-radius:var(--r-carte); padding:clamp(22px,2.6vw,30px);
+  transition:box-shadow .28s ease, transform .28s var(--sortie), border-color .28s ease }
+.carton:hover{ box-shadow:var(--ombre); transform:translateY(-2px); border-color:var(--filet) }
+.carton__n{ display:inline-flex; align-items:center; justify-content:center;
+  min-width:38px; height:38px; padding:0 12px; border-radius:999px;
+  background:var(--bleu-pale); color:var(--bleu); font-size:14px; font-weight:700;
+  margin-bottom:18px }
+.carton h3{ margin:0 0 10px; font-size:19px; font-weight:600; letter-spacing:-.014em }
+.carton p{ margin:0; font-size:15.5px; line-height:1.66; color:var(--corps) }
+.sec--doux .carton{ border-color:var(--filet) }
+
+/* La photographie en bandeau large — un LIEU, jamais une image de banque. */
+.photo{ position:relative; border-radius:26px; overflow:hidden; margin-top:clamp(30px,4vh,52px);
+  aspect-ratio:21/9; background:var(--doux-2); box-shadow:var(--ombre) }
+.photo img{ width:100%; height:100%; object-fit:cover }
+.photo__l{ position:absolute; left:16px; bottom:16px; z-index:3; background:var(--blanc);
+  border-radius:999px; padding:10px 18px; font-size:13.5px; font-weight:600;
+  color:var(--encre); box-shadow:var(--ombre-forte) }
+
+.marques{ display:flex; flex-wrap:wrap; gap:12px; margin-top:clamp(28px,3.4vh,44px) }
+.marques span{ display:inline-flex; align-items:center; min-height:52px; padding:0 26px;
+  border:1px solid var(--filet); border-radius:999px; background:var(--blanc);
+  font-size:16px; font-weight:600; letter-spacing:-.012em;
+  transition:box-shadow .25s ease, transform .25s var(--sortie) }
+.marques span:hover{ box-shadow:var(--ombre); transform:translateY(-2px) }
+
+.villes{ display:flex; flex-wrap:wrap; gap:10px; margin-top:24px }
+.villes span{ display:inline-flex; align-items:center; min-height:44px; padding:0 18px;
+  border:1px solid var(--filet); border-radius:999px; background:var(--blanc);
+  font-size:14.5px; font-weight:600; color:var(--corps) }
+
+/* Le bloc facture : une seule carte large, très arrondie. */
+.large{ background:var(--bleu-pale); border:1px solid var(--bleu-pale-2);
+  border-radius:26px; padding:clamp(28px,4vw,54px); display:grid; gap:clamp(24px,3vw,48px);
+  grid-template-columns:minmax(0,1fr) minmax(0,.8fr); align-items:center }
+.large .p{ color:#3B4658 }
+.recu{ background:var(--blanc); border-radius:18px; padding:22px 24px; box-shadow:var(--ombre) }
+.recu__l{ display:flex; align-items:center; gap:12px; padding:12px 0;
+  border-bottom:1px solid var(--filet-clair); font-size:14.5px; color:var(--corps) }
+.recu__l:last-child{ border-bottom:0 }
+.recu__l svg{ width:20px; height:20px; color:var(--bleu); flex:0 0 auto }
+.recu__l b{ color:var(--encre); font-weight:600 }
+
+/* ═══ 11 · LE CONTACT ET LE PIED ═══ */
+.final{ background:var(--doux); border:1px solid var(--filet); border-radius:26px;
+  padding:clamp(34px,5vw,70px); text-align:center }
+.final .t2{ margin:0 auto; max-width:20ch }
+.final .p{ margin:20px auto 0; max-width:52ch }
+.final .btns{ justify-content:center }
+
+.pied{ border-top:1px solid var(--filet); padding:clamp(44px,6vh,72px) var(--marge) 34px }
+.pied__g{ max-width:1220px; margin:0 auto; display:flex; flex-wrap:wrap; gap:28px 48px;
+  justify-content:space-between; align-items:flex-start }
+.pied__g p{ margin:0; font-size:15.5px; line-height:1.7; color:var(--corps); max-width:34ch }
+.pied a{ color:var(--encre) }
+.pied__b{ max-width:1220px; margin:34px auto 0; padding-top:22px;
+  border-top:1px solid var(--filet-clair); display:flex; flex-wrap:wrap; gap:12px 28px;
+  justify-content:space-between; align-items:center; font-size:13.5px; color:var(--sourd) }
+.pied__b a{ display:inline-flex; align-items:center; min-height:44px; color:var(--corps) }
+.sign{ font-size:13px; color:var(--sourd) }
+.sign b{ color:var(--encre); font-weight:600 }
+
+/* ═══ 12 · APPARITIONS — armées par une classe posée en JS ═══
+   Sans script, AUCUN bloc n'est transparent : la page reste entière. */
+.js-mv [data-r]{ opacity:0; transform:translate3d(0,20px,0) }
+.js-mv [data-r].vu{ opacity:1; transform:none;
+  transition:opacity .7s var(--sortie), transform .7s var(--sortie);
+  transition-delay:calc(var(--i,0) * 70ms) }
+
+/* ═══ 13 · LE TÉLÉPHONE ═══ */
+@media (max-width:1080px){
+  .nav{ display:none }
+  .barre .bt{ display:none }
+  .burger{ display:grid }
+  .ouv__g,.duo,.large{ grid-template-columns:minmax(0,1fr) }
+  .reseau{ grid-template-columns:minmax(0,1fr) }
+  .media{ aspect-ratio:16/11 }
+  /* La carte passe AU-DESSUS de la liste et reste collée : on voit le
+     recadrage pendant qu'on parcourt les lieux. */
+  .carte{ order:-1; top:calc(var(--barre) + 8px) }
+  .carte__c{ aspect-ratio:5/4 }
+}
+@media (max-width:560px){
+  .chiffres{ grid-template-columns:minmax(0,1fr) }
+  .lieu{ grid-template-columns:64px minmax(0,1fr) auto; gap:12px }
+  .photo{ aspect-ratio:4/3 }
+  .final{ text-align:left }
+  .final .t2,.final .p{ margin-left:0 }
+  .final .btns{ justify-content:flex-start }
+  .btns .bt{ width:100% }
+}
+@media (prefers-reduced-motion:reduce){
+  html{ scroll-behavior:auto }
+  *{ animation:none !important; transition:none !important }
+  .js-mv [data-r]{ opacity:1 !important; transform:none !important }
+  .media video{ display:none }
+}
+</style>
+</head>
+<body>
+
+<a class="saut" href="#contenu">Aller au contenu</a>
+
+<!-- ═══ LES DESSINS : façades des implantations + tracé de France ═══════════════
+     Tout est en ligne dans la page : un <use> ne franchit pas la frontière d'un
+     fichier externe sous Chrome, et une maquette doit rester autonome. -->
+<svg width="0" height="0" style="position:absolute;left:-9999px" aria-hidden="true" focusable="false">
+<defs>
+    <!-- Les couleurs passent par des variables CSS avec repli sur la
+         charte Intégral. Les variables personnalisées traversent la
+         frontière du <use>, contrairement aux règles de classe : chaque
+         façade prend donc automatiquement les couleurs du système de
+         design chargé par la page. -->
+    <style>
+      .fx-m { fill: none; stroke: var(--accent, #0050e6); stroke-opacity: .55; stroke-width: 1.6; stroke-linejoin: round; stroke-linecap: round; }
+      .fx-f { fill: var(--accent, #0050e6); fill-opacity: .05; }
+      .fx-o { fill: var(--meta, #f39a1b); fill-opacity: .85; }
+      .fx-g { fill: none; stroke: var(--accent, #0050e6); stroke-opacity: .22; stroke-width: 1; }
+      .fx-s { fill: var(--accent, #0050e6); fill-opacity: .14; }
+    </style>
+  </defs>
+
+  <!-- 1 · Hyères Pharma — le siège : long bâtiment, panneaux solaires, auvent -->
+  <symbol id="f1" viewBox="0 0 120 160">
+    <path class="fx-g" d="M0 132 H120" />
+    <path class="fx-f" d="M14 78 H106 V132 H14 Z" />
+    <path class="fx-m" d="M14 78 H106 V132 H14 Z" />
+    <path class="fx-m" d="M14 78 L24 66 H116 L106 78" />
+    <path class="fx-s" d="M30 69 H62 V75 H30 Z M68 69 H104 V75 H68 Z" />
+    <path class="fx-m" d="M8 100 H112" />
+    <path class="fx-m" d="M26 104 H42 V132 H26 Z M52 104 H68 V132 H52 Z M78 104 H94 V132 H78 Z" />
+    <rect class="fx-o" x="26" y="126" width="16" height="3" />
+    <path class="fx-g" d="M0 140 C24 136 44 144 68 138 S104 142 120 138" />
+  </symbol>
+
+  <!-- 2 · SR Pharma — Palaiseau : deux corps, toit à redents -->
+  <symbol id="f2" viewBox="0 0 120 160">
+    <path class="fx-g" d="M0 132 H120" />
+    <path class="fx-f" d="M12 84 H60 V132 H12 Z M64 74 H108 V132 H64 Z" />
+    <path class="fx-m" d="M12 84 H60 V132 H12 Z M64 74 H108 V132 H64 Z" />
+    <path class="fx-m" d="M12 84 L22 74 L32 84 L42 74 L52 84 L60 74" />
+    <path class="fx-m" d="M22 100 H50 M22 110 H50" />
+    <path class="fx-m" d="M74 90 H98 V132 H74 Z" />
+    <rect class="fx-o" x="74" y="90" width="24" height="4" />
+    <path class="fx-g" d="M0 142 H120" />
+  </symbol>
+
+  <!-- 3 · Mistral Santé Pharma — Flassans : pins, toit bas, grande porte -->
+  <symbol id="f3" viewBox="0 0 120 160">
+    <path class="fx-g" d="M0 132 H120" />
+    <path class="fx-m" d="M16 60 L22 74 H10 Z M22 74 L28 88 H16 Z M22 88 V96" />
+    <path class="fx-f" d="M36 88 H108 V132 H36 Z" />
+    <path class="fx-m" d="M36 88 H108 V132 H36 Z" />
+    <path class="fx-m" d="M36 88 L44 80 H116 L108 88" />
+    <path class="fx-m" d="M54 100 H90 V132 H54 Z" />
+    <rect class="fx-o" x="54" y="100" width="36" height="3" />
+    <path class="fx-m" d="M72 100 V132" />
+    <path class="fx-g" d="M0 141 C30 137 60 145 90 139 S116 141 120 140" />
+  </symbol>
+
+  <!-- 4 · Sud Ouest Pharma — Montayral : halle à pignon, quai latéral -->
+  <symbol id="f4" viewBox="0 0 120 160">
+    <path class="fx-g" d="M0 132 H120" />
+    <path class="fx-f" d="M20 86 H92 V132 H20 Z" />
+    <path class="fx-m" d="M20 86 H92 V132 H20 Z" />
+    <path class="fx-m" d="M20 86 L56 66 L92 86" />
+    <path class="fx-m" d="M92 96 H110 V132 H92 Z" />
+    <path class="fx-m" d="M34 104 H50 V132 H34 Z M62 104 H78 V132 H62 Z" />
+    <rect class="fx-o" x="96" y="104" width="10" height="3" />
+    <circle class="fx-s" cx="56" cy="82" r="7" />
+    <path class="fx-g" d="M0 143 H120" />
+  </symbol>
+
+  <!-- 5 · Comptoir Pharmaceutique du Rhône — Saint-Maurice-l'Exil : bâtiment large, tour technique -->
+  <symbol id="f5" viewBox="0 0 120 160">
+    <path class="fx-g" d="M0 132 H120" />
+    <path class="fx-f" d="M10 90 H96 V132 H10 Z" />
+    <path class="fx-m" d="M10 90 H96 V132 H10 Z" />
+    <path class="fx-m" d="M96 62 H112 V132 H96 Z" />
+    <path class="fx-m" d="M96 62 H112" />
+    <rect class="fx-o" x="99" y="68" width="10" height="3" />
+    <path class="fx-m" d="M10 90 H96" />
+    <path class="fx-m" d="M22 102 H38 V132 H22 Z M46 102 H62 V132 H46 Z M70 102 H86 V132 H70 Z" />
+    <path class="fx-s" d="M16 94 H90 V99 H16 Z" />
+    <path class="fx-g" d="M0 142 H120" />
+  </symbol>
+
+  <!-- 6 · Escale Pharma — Chilly-Mazarin : bloc urbain, étage vitré -->
+  <symbol id="f6" viewBox="0 0 120 160">
+    <path class="fx-g" d="M0 132 H120" />
+    <path class="fx-f" d="M16 72 H104 V132 H16 Z" />
+    <path class="fx-m" d="M16 72 H104 V132 H16 Z" />
+    <path class="fx-m" d="M16 92 H104" />
+    <path class="fx-s" d="M22 78 H98 V88 H22 Z" />
+    <path class="fx-m" d="M28 78 V88 M44 78 V88 M60 78 V88 M76 78 V88 M92 78 V88" />
+    <path class="fx-m" d="M30 100 H50 V132 H30 Z M62 100 H82 V132 H62 Z" />
+    <rect class="fx-o" x="62" y="100" width="20" height="3" />
+    <path class="fx-g" d="M0 141 H120" />
+  </symbol>
+
+  <!-- 7 · Ouest Pharma Services — Saint-Étienne-de-Montluc : long quai, auvent en avancée -->
+  <symbol id="f7" viewBox="0 0 120 160">
+    <path class="fx-g" d="M0 132 H120" />
+    <path class="fx-f" d="M8 84 H100 V132 H8 Z" />
+    <path class="fx-m" d="M8 84 H100 V132 H8 Z" />
+    <path class="fx-m" d="M4 96 H116 L108 104 H4 Z" />
+    <path class="fx-m" d="M20 108 H36 V132 H20 Z M44 108 H60 V132 H44 Z M68 108 H84 V132 H68 Z" />
+    <rect class="fx-o" x="44" y="108" width="16" height="3" />
+    <path class="fx-m" d="M100 84 V132" />
+    <path class="fx-s" d="M14 88 H94 V93 H14 Z" />
+    <path class="fx-g" d="M0 142 C26 139 52 145 78 140 S110 142 120 141" />
+  </symbol>
+
+  <!-- 8 · Pharm'Occitanie Services — Villeneuve-lès-Béziers : toit-terrasse, ombrières -->
+  <symbol id="f8" viewBox="0 0 120 160">
+    <path class="fx-g" d="M0 132 H120" />
+    <path class="fx-f" d="M14 88 H106 V132 H14 Z" />
+    <path class="fx-m" d="M14 88 H106 V132 H14 Z" />
+    <path class="fx-m" d="M14 88 H106" />
+    <path class="fx-m" d="M22 74 H50 L46 82 H18 Z M62 74 H90 L86 82 H58 Z" />
+    <path class="fx-m" d="M30 82 V88 M74 82 V88" />
+    <path class="fx-m" d="M32 100 H56 V132 H32 Z M66 100 H90 V132 H66 Z" />
+    <rect class="fx-o" x="32" y="100" width="24" height="3" />
+    <path class="fx-g" d="M0 141 H120" />
+  </symbol>
+
+  <!-- 9 · Sud Est Pharma — Le Cannet-des-Maures : le plus récent, volume net -->
+  <symbol id="f9" viewBox="0 0 120 160">
+    <path class="fx-g" d="M0 132 H120" />
+    <path class="fx-f" d="M18 76 H102 V132 H18 Z" />
+    <path class="fx-m" d="M18 76 H102 V132 H18 Z" />
+    <path class="fx-m" d="M18 76 L28 68 H112 L102 76" />
+    <path class="fx-s" d="M34 70 H104 V74 H34 Z" />
+    <path class="fx-m" d="M18 104 H102" />
+    <path class="fx-m" d="M34 108 H56 V132 H34 Z M66 108 H88 V132 H66 Z" />
+    <rect class="fx-o" x="66" y="108" width="22" height="3" />
+    <path class="fx-m" d="M60 76 V104" />
+    <path class="fx-g" d="M0 142 H120" />
+  </symbol>
+
+  <!-- 10 · Pharmest — Metz, partenaire : trait plus léger, orange dominant -->
+  <symbol id="f10" viewBox="0 0 120 160">
+    <path class="fx-g" d="M0 132 H120" />
+    <path class="fx-f" d="M20 82 H100 V132 H20 Z" />
+    <path class="fx-m" d="M20 82 H100 V132 H20 Z" stroke-dasharray="5 4" />
+    <path class="fx-m" d="M20 82 L30 72 H110 L100 82" stroke-dasharray="5 4" />
+    <path class="fx-m" d="M36 100 H58 V132 H36 Z M66 100 H88 V132 H66 Z" />
+    <rect class="fx-o" x="36" y="100" width="52" height="3" />
+    <circle class="fx-o" cx="60" cy="90" r="3" />
+    <path class="fx-g" d="M0 141 H120" />
+  </symbol>
+<symbol id="fr-contour" viewBox="0 0 100 100">
+    <g class="fx-pays">
+      <path d="M68.10 69.57 L67.46 69.49 L67.32 69.08 L68.04 68.20 L68.74 68.72 L68.10 69.57 Z"/>
+      <path d="M68.41 69.57 L68.66 69.45 L68.99 69.77 L69.41 69.39 L69.31 70.24 L70.71 70.40 L70.90 71.00 L71.27 71.03 L71.40 71.37 L72.00 71.23 L72.43 70.63 L72.63 71.05 L72.96 71.10 L72.72 70.85 L73.02 70.60 L73.02 69.87 L72.47 69.47 L72.63 69.19 L71.67 69.16 L71.24 68.81 L71.15 68.27 L71.71 68.15 L71.43 67.51 L72.49 67.82 L72.87 67.49 L72.39 67.07 L72.71 65.97 L73.74 65.95 L74.02 65.58 L73.82 65.41 L74.00 64.87 L74.86 64.88 L75.06 64.66 L74.85 64.42 L75.32 64.10 L75.59 64.31 L76.13 63.81 L76.94 63.94 L77.21 63.72 L77.67 63.92 L77.45 62.45 L76.62 62.31 L76.91 61.22 L77.53 61.19 L77.74 61.73 L78.36 61.91 L78.76 61.33 L79.49 61.21 L79.89 62.24 L80.39 62.29 L80.43 63.39 L81.22 63.95 L81.69 63.82 L82.34 64.23 L82.16 64.57 L82.70 65.67 L81.91 65.70 L81.95 66.30 L81.15 67.22 L81.81 68.22 L81.42 68.31 L81.38 68.91 L82.23 70.19 L83.48 70.54 L84.12 71.15 L84.57 71.10 L84.66 71.40 L86.89 70.78 L86.81 71.25 L87.18 71.74 L86.71 72.84 L86.13 73.11 L86.08 73.60 L85.63 73.88 L85.86 74.76 L85.56 75.12 L84.64 75.41 L84.47 75.88 L84.36 75.55 L83.84 75.75 L83.65 76.15 L83.25 76.10 L83.13 77.18 L82.85 76.93 L82.44 77.29 L81.90 77.23 L81.63 78.15 L81.16 78.54 L80.37 78.38 L80.19 79.19 L79.21 79.95 L80.06 80.01 L79.71 81.02 L79.12 80.80 L78.64 81.19 L77.89 81.25 L77.74 81.84 L76.61 81.53 L76.28 81.90 L76.29 82.45 L75.84 82.36 L76.11 82.26 L76.07 81.91 L75.35 81.92 L74.60 81.45 L74.47 81.88 L74.86 81.98 L74.43 81.92 L74.11 82.24 L73.76 82.01 L73.88 81.56 L73.08 81.26 L73.02 80.89 L72.59 80.82 L72.45 81.09 L71.98 80.54 L70.58 80.55 L70.84 79.73 L70.49 79.09 L69.83 79.38 L68.49 79.37 L68.21 78.64 L69.19 78.67 L69.84 78.00 L69.67 77.73 L69.22 78.06 L69.03 77.42 L68.55 77.43 L68.38 77.06 L68.24 77.90 L68.60 78.01 L68.65 78.59 L68.11 78.70 L67.77 78.32 L67.49 78.61 L67.58 78.35 L67.19 78.14 L67.37 78.55 L67.04 78.36 L67.27 78.66 L66.89 78.82 L67.34 78.76 L67.04 78.91 L67.42 79.11 L67.66 78.85 L67.09 79.39 L65.33 79.04 L65.11 78.80 L65.36 78.43 L65.01 78.14 L62.87 78.05 L62.94 77.65 L63.53 77.36 L63.46 77.08 L63.60 77.29 L64.48 76.74 L64.56 76.51 L64.24 76.38 L64.65 75.63 L65.64 75.77 L65.91 74.13 L65.74 73.92 L67.15 72.69 L66.75 71.90 L66.20 71.53 L66.30 70.68 L65.80 69.93 L65.80 69.23 L66.70 69.34 L67.02 70.26 L68.41 69.57 Z"/>
+      <path d="M67.73 47.24 L67.83 47.03 L68.63 47.40 L69.64 47.15 L69.73 47.55 L70.43 47.79 L70.32 48.11 L70.87 48.43 L71.06 49.16 L71.19 48.77 L71.28 49.11 L71.49 49.02 L71.53 49.62 L72.01 49.56 L72.72 48.80 L73.21 49.17 L73.29 49.66 L74.29 49.61 L75.59 48.08 L75.88 48.15 L76.39 48.58 L75.91 49.41 L76.07 49.75 L75.02 50.12 L75.17 50.46 L74.90 51.00 L76.15 50.86 L77.25 50.02 L77.36 49.70 L77.06 49.79 L76.86 49.49 L77.31 48.59 L77.92 48.85 L78.78 48.19 L80.81 48.30 L80.58 48.75 L81.23 49.46 L80.75 50.89 L81.47 51.04 L81.27 51.78 L81.73 51.65 L82.43 52.76 L82.10 53.64 L81.33 53.82 L81.24 54.08 L80.90 53.96 L80.83 55.06 L81.57 55.83 L82.17 55.95 L82.17 57.32 L83.46 58.31 L82.93 59.13 L83.12 59.85 L82.70 60.30 L81.93 60.33 L81.80 60.71 L81.41 60.74 L81.43 61.05 L80.55 60.82 L79.59 61.33 L78.76 61.33 L78.59 61.87 L77.74 61.73 L77.53 61.19 L76.82 61.31 L76.62 62.31 L77.45 62.45 L77.67 63.92 L77.21 63.72 L76.94 63.94 L76.13 63.81 L75.59 64.31 L75.32 64.10 L74.85 64.42 L75.06 64.66 L74.86 64.88 L74.00 64.87 L73.82 65.41 L74.02 65.58 L73.74 65.95 L72.71 65.97 L72.39 67.07 L72.87 67.49 L72.49 67.82 L71.43 67.52 L71.71 68.15 L71.15 68.27 L71.24 68.81 L71.67 69.16 L72.63 69.19 L72.47 69.47 L73.02 69.87 L73.02 70.60 L72.72 70.85 L72.96 71.10 L72.63 71.05 L72.43 70.63 L72.00 71.23 L71.40 71.37 L71.27 71.03 L70.90 71.00 L70.71 70.40 L69.31 70.24 L69.40 69.38 L68.99 69.77 L68.66 69.45 L67.03 70.26 L66.58 69.28 L65.80 69.23 L65.79 69.84 L64.79 69.09 L64.43 69.14 L64.34 69.70 L64.06 69.66 L63.97 69.06 L63.29 69.37 L63.07 69.90 L62.17 69.16 L61.63 69.36 L61.75 68.47 L60.61 66.57 L60.41 65.07 L59.48 64.07 L58.92 64.16 L58.69 63.65 L58.44 63.69 L58.41 64.20 L57.64 64.37 L56.90 62.68 L56.30 63.18 L55.99 63.09 L55.96 63.59 L55.64 63.83 L55.29 63.42 L55.02 63.59 L54.17 66.04 L53.33 63.71 L52.73 63.91 L52.48 63.03 L51.54 64.03 L51.24 65.27 L50.70 65.98 L49.80 66.09 L49.61 65.78 L48.84 65.98 L48.78 66.33 L48.54 66.13 L48.59 65.74 L48.24 65.49 L48.51 64.36 L47.92 63.59 L48.09 63.35 L47.78 62.68 L48.30 62.50 L48.00 61.87 L48.56 61.61 L48.58 61.06 L48.96 60.76 L48.66 60.18 L49.84 59.03 L49.78 58.25 L50.66 58.68 L50.98 58.57 L50.73 58.19 L50.94 56.84 L50.55 56.39 L50.97 55.93 L50.99 55.23 L50.04 54.05 L50.77 53.68 L51.60 52.58 L50.93 49.87 L50.07 48.95 L49.88 49.15 L49.43 48.83 L49.68 48.56 L49.34 48.42 L49.27 47.99 L49.70 47.19 L51.59 46.72 L51.31 45.62 L51.71 45.62 L51.68 45.31 L52.32 44.74 L52.62 45.03 L53.24 44.93 L54.02 44.15 L54.53 44.24 L54.75 44.72 L55.68 45.41 L56.18 45.03 L56.72 45.36 L57.33 45.08 L57.49 45.69 L58.21 45.32 L58.12 44.97 L58.47 44.96 L58.44 44.56 L59.35 45.95 L59.47 46.83 L60.14 46.91 L60.34 47.34 L60.96 47.31 L61.28 47.62 L61.30 48.98 L60.55 49.33 L60.50 50.13 L61.08 50.24 L61.20 50.59 L62.72 50.32 L63.23 50.72 L63.88 50.41 L64.24 49.23 L64.78 49.59 L65.17 49.31 L65.58 49.61 L65.70 49.25 L66.10 49.23 L66.00 49.67 L66.40 49.94 L66.34 50.48 L66.71 50.51 L67.73 47.24 Z"/>
+      <path d="M64.03 69.63 L64.34 69.70 L64.43 69.14 L64.78 69.09 L65.70 69.70 L66.30 70.68 L66.29 71.74 L66.57 71.69 L67.15 72.70 L65.74 73.92 L65.91 74.13 L65.64 75.77 L64.65 75.63 L64.24 76.38 L64.56 76.51 L64.48 76.74 L63.60 77.29 L63.46 77.08 L63.53 77.36 L62.94 77.65 L62.87 78.05 L62.14 77.76 L62.24 77.24 L61.98 77.09 L61.09 77.17 L58.81 78.80 L57.83 80.00 L57.00 79.83 L55.55 80.96 L54.66 82.87 L54.47 85.72 L54.63 87.37 L55.29 87.62 L55.52 88.44 L54.90 88.54 L54.59 88.05 L53.93 87.97 L53.74 88.23 L53.18 88.20 L52.91 88.61 L52.03 88.75 L52.02 89.40 L51.31 89.22 L51.05 89.48 L50.35 88.86 L49.13 88.41 L48.37 88.59 L47.93 89.19 L47.45 89.33 L46.90 88.25 L45.46 87.86 L45.49 87.28 L45.85 87.03 L45.43 86.88 L45.50 86.61 L44.55 86.51 L44.20 86.20 L43.71 86.25 L43.69 86.64 L43.42 86.74 L42.86 85.56 L41.53 85.67 L40.92 84.86 L39.86 84.85 L38.34 84.12 L38.00 84.35 L37.86 85.20 L38.12 85.85 L36.35 85.85 L35.91 85.51 L35.46 86.03 L35.22 85.59 L34.63 85.38 L33.34 85.91 L32.66 85.54 L32.29 84.76 L32.09 84.88 L31.22 84.24 L31.40 82.66 L32.14 82.18 L32.05 81.55 L32.59 80.89 L32.93 80.92 L32.89 80.45 L33.29 79.96 L33.09 79.63 L33.61 79.21 L33.36 78.93 L33.40 78.20 L32.94 78.55 L32.95 78.02 L33.28 77.93 L32.73 76.82 L31.72 76.80 L31.46 76.44 L31.66 75.54 L32.05 75.25 L31.82 74.52 L32.07 74.50 L32.11 73.93 L31.73 73.61 L32.15 73.20 L32.74 73.29 L33.15 72.74 L33.45 73.04 L33.24 73.29 L33.81 73.62 L33.80 72.97 L34.29 72.55 L34.50 72.85 L34.90 72.34 L35.52 72.67 L37.53 71.77 L38.03 72.33 L38.97 71.46 L38.90 71.11 L39.63 71.18 L39.35 70.71 L39.72 70.65 L40.03 69.79 L39.46 69.44 L39.65 68.71 L39.96 69.08 L40.80 68.87 L40.24 67.06 L41.09 66.78 L41.39 65.78 L42.57 65.07 L42.45 64.50 L43.45 63.67 L43.22 62.37 L43.90 62.03 L44.87 62.15 L45.95 63.25 L46.70 62.66 L46.99 62.92 L47.78 62.68 L48.09 63.35 L47.92 63.59 L48.51 64.36 L48.24 65.49 L48.78 66.33 L48.84 65.98 L49.32 65.82 L49.80 66.09 L50.71 65.98 L51.24 65.27 L51.54 64.03 L52.48 63.03 L52.73 63.91 L53.33 63.71 L54.17 66.04 L55.02 63.59 L55.29 63.42 L55.64 63.83 L55.96 63.59 L55.99 63.09 L56.30 63.18 L56.90 62.68 L57.64 64.37 L58.41 64.20 L58.44 63.69 L58.69 63.65 L58.92 64.16 L59.48 64.07 L60.41 65.07 L60.61 66.57 L61.75 68.47 L61.60 69.34 L62.17 69.16 L63.07 69.90 L63.29 69.37 L63.97 69.06 L64.03 69.63 Z"/>
+      <path d="M27.65 27.20 L26.90 26.80 L26.42 27.06 L24.69 26.51 L23.79 27.40 L23.03 27.06 L22.46 25.67 L24.00 25.62 L23.65 25.35 L23.84 25.00 L23.33 25.39 L22.47 24.48 L22.44 23.69 L22.16 23.57 L22.59 22.52 L22.62 22.96 L22.56 21.62 L22.92 21.68 L22.54 21.50 L22.39 21.89 L22.20 21.17 L22.16 19.66 L22.49 19.64 L22.17 19.51 L22.05 19.73 L21.65 18.53 L21.44 18.37 L21.39 18.57 L21.06 18.03 L20.80 18.11 L20.25 16.47 L20.60 16.04 L20.54 15.55 L19.84 15.04 L19.88 14.52 L21.82 15.07 L22.12 15.40 L23.04 15.11 L23.14 14.82 L24.59 14.82 L24.84 15.74 L24.66 15.67 L24.54 16.10 L24.38 15.97 L24.30 16.41 L25.31 17.83 L24.81 18.82 L25.25 18.26 L25.62 18.39 L25.47 18.76 L25.75 18.65 L25.61 18.25 L25.90 17.95 L26.67 17.86 L28.14 18.35 L30.65 18.51 L31.68 18.92 L31.67 19.25 L31.81 18.98 L32.63 18.99 L33.38 18.59 L34.31 17.79 L35.75 17.49 L34.14 17.20 L34.65 17.26 L34.16 17.15 L34.03 16.97 L34.63 17.11 L33.87 16.71 L34.47 15.35 L34.23 15.15 L37.40 13.27 L40.97 12.48 L43.38 11.01 L45.10 12.59 L45.85 14.16 L45.59 14.14 L45.17 14.84 L45.60 14.84 L45.24 15.35 L45.39 15.99 L45.18 16.00 L45.58 16.42 L45.36 16.78 L45.88 16.78 L45.34 17.76 L45.67 18.17 L45.88 19.38 L45.31 19.20 L44.62 21.09 L43.91 21.02 L43.87 21.29 L43.49 21.34 L43.65 22.14 L43.98 22.10 L43.49 22.65 L43.58 23.18 L42.88 23.58 L42.98 24.10 L41.93 24.34 L41.22 24.02 L41.16 24.46 L40.82 24.32 L40.61 24.64 L39.61 24.72 L39.05 25.26 L39.11 25.84 L40.14 26.71 L39.92 27.20 L40.21 27.55 L39.74 28.27 L38.76 28.75 L38.67 28.98 L39.03 29.08 L39.04 30.02 L38.68 30.20 L38.16 29.44 L37.87 29.37 L37.82 29.65 L37.14 29.50 L36.82 28.88 L36.16 28.78 L36.07 27.71 L35.50 27.15 L34.42 27.38 L33.83 28.17 L33.39 27.99 L33.06 28.22 L33.05 27.43 L32.38 27.39 L32.20 26.85 L32.40 26.67 L31.95 26.30 L31.69 26.28 L31.51 26.88 L31.18 26.72 L30.95 27.12 L30.64 26.85 L29.85 26.86 L28.87 27.52 L28.77 27.10 L28.31 27.23 L28.43 27.47 L28.12 27.60 L27.65 27.20 Z"/>
+      <path d="M51.45 21.07 L51.21 20.63 L50.75 20.81 L49.50 19.99 L48.95 20.35 L48.86 20.05 L48.51 20.22 L47.90 19.75 L46.52 20.24 L45.53 20.05 L45.30 19.21 L45.66 19.12 L45.88 19.38 L45.96 19.13 L45.35 17.73 L45.88 16.78 L45.35 16.76 L45.58 16.42 L45.18 16.00 L45.40 15.91 L45.24 15.35 L45.60 14.84 L45.17 14.84 L45.59 14.14 L45.85 14.16 L45.10 12.59 L43.54 11.36 L43.50 11.04 L43.02 11.09 L44.06 9.60 L45.17 9.84 L44.13 9.07 L44.23 8.06 L44.87 8.19 L44.24 7.69 L44.45 6.28 L44.86 6.58 L44.39 5.94 L44.29 4.39 L44.56 4.41 L44.60 3.93 L44.43 2.91 L46.32 1.80 L48.09 1.57 L48.48 1.16 L49.77 0.99 L49.95 1.18 L51.14 0.70 L51.75 2.15 L51.45 2.43 L51.51 3.14 L51.76 3.50 L52.38 3.53 L52.84 4.39 L53.65 4.73 L53.96 4.12 L55.35 3.74 L55.73 4.53 L56.12 4.64 L55.98 5.07 L56.31 6.42 L56.93 6.77 L57.61 6.34 L57.93 6.44 L57.79 6.81 L58.54 6.71 L58.92 7.12 L58.88 8.01 L59.25 8.67 L59.51 8.19 L60.58 8.43 L61.44 8.10 L62.09 8.67 L62.21 9.14 L62.44 9.12 L62.40 8.82 L62.72 8.98 L62.15 10.37 L62.66 10.39 L62.88 11.02 L62.21 11.59 L62.26 11.97 L62.89 12.17 L62.78 12.62 L63.05 12.72 L62.70 14.00 L63.01 14.21 L62.89 14.48 L62.15 15.01 L62.08 15.47 L61.44 15.59 L61.80 16.10 L61.52 18.24 L60.74 17.75 L60.03 17.80 L60.30 17.97 L60.24 18.39 L59.72 18.28 L58.79 18.71 L58.87 19.73 L59.52 20.29 L58.63 20.36 L58.48 20.66 L58.75 21.10 L58.38 21.49 L58.83 21.45 L59.02 21.74 L57.53 23.54 L56.96 23.19 L56.87 22.61 L56.60 22.81 L55.47 21.76 L55.45 20.87 L54.80 20.69 L54.76 21.02 L53.40 21.17 L52.97 20.90 L52.45 21.27 L51.75 20.78 L51.45 21.07 Z"/>
+      <path d="M44.71 24.52 L44.39 24.90 L45.01 25.80 L45.35 25.79 L45.31 26.16 L45.86 26.41 L45.95 27.30 L46.44 27.56 L46.85 27.39 L46.84 27.91 L47.19 27.95 L47.14 29.10 L48.48 29.00 L48.76 28.53 L49.05 29.00 L49.55 28.66 L50.14 28.77 L50.29 29.38 L50.95 29.71 L50.94 30.33 L50.41 30.76 L52.25 30.77 L52.60 30.54 L52.47 30.34 L52.88 30.31 L53.06 30.71 L53.98 30.35 L54.51 30.67 L54.65 31.29 L55.17 31.71 L55.19 32.35 L54.37 32.98 L54.48 34.18 L53.30 34.44 L53.25 34.80 L53.79 35.25 L53.86 36.08 L54.14 36.39 L53.22 36.64 L53.83 37.70 L53.40 38.73 L54.19 39.52 L54.86 42.60 L54.53 44.24 L53.70 44.28 L53.23 44.93 L52.62 45.03 L52.32 44.74 L51.68 45.31 L51.71 45.62 L51.29 45.67 L51.62 46.69 L51.08 47.03 L49.85 47.06 L49.30 48.03 L47.96 48.15 L46.71 47.80 L46.22 47.98 L45.84 47.68 L45.58 47.73 L45.44 48.34 L45.13 48.06 L44.83 48.40 L44.62 48.01 L44.18 48.31 L44.01 47.97 L43.27 48.78 L42.85 48.24 L42.49 48.54 L41.64 48.49 L41.86 47.91 L41.43 47.75 L41.39 47.17 L39.79 46.25 L39.77 44.94 L38.32 43.15 L38.23 42.42 L37.36 42.10 L37.58 42.61 L35.67 42.87 L35.53 41.63 L34.63 41.55 L34.68 40.99 L33.97 40.96 L33.77 40.17 L33.95 39.28 L34.68 38.30 L34.47 38.12 L34.94 37.07 L34.75 36.71 L35.01 35.97 L36.04 36.40 L36.07 35.64 L36.54 35.88 L36.64 35.62 L37.56 35.34 L37.72 35.14 L37.45 34.93 L38.31 34.38 L38.80 33.65 L38.70 33.04 L38.91 32.91 L39.06 33.15 L39.32 32.62 L39.11 32.16 L39.27 31.72 L38.96 31.65 L38.94 31.32 L39.28 31.28 L39.06 31.06 L39.33 30.67 L39.79 30.61 L38.95 30.12 L39.19 29.89 L38.89 29.37 L39.03 29.08 L38.67 28.98 L38.88 28.57 L39.79 28.23 L40.21 27.55 L39.92 27.20 L40.14 26.71 L39.11 25.84 L39.05 25.26 L39.61 24.72 L40.61 24.64 L40.82 24.32 L41.16 24.46 L41.22 24.02 L42.67 24.31 L42.98 24.10 L42.89 23.57 L43.60 23.15 L43.49 22.65 L43.72 22.49 L44.30 22.99 L44.17 23.20 L44.54 23.52 L44.43 24.30 L44.71 24.52 Z"/>
+      <path d="M58.77 30.15 L58.31 30.11 L58.65 29.43 L58.23 28.77 L57.77 28.28 L57.28 28.39 L56.98 27.16 L57.33 27.05 L57.13 26.67 L57.66 26.53 L57.54 26.24 L58.20 25.76 L58.02 25.47 L57.44 25.59 L57.58 24.54 L57.08 24.37 L57.39 24.00 L57.12 23.82 L57.70 23.76 L57.66 23.24 L59.02 21.74 L58.83 21.45 L58.38 21.49 L58.75 21.10 L58.48 20.66 L58.63 20.36 L59.52 20.29 L58.87 19.73 L58.79 18.71 L59.72 18.28 L60.24 18.39 L60.30 17.97 L60.03 17.80 L60.74 17.75 L61.52 18.24 L61.80 16.10 L61.44 15.59 L62.08 15.47 L62.15 15.01 L63.01 14.21 L62.70 14.00 L63.03 13.07 L62.89 12.17 L63.43 12.06 L64.37 12.38 L66.10 11.79 L66.00 11.06 L67.01 10.03 L67.52 10.35 L66.98 11.08 L67.13 11.36 L66.78 12.06 L67.47 12.67 L67.17 13.08 L67.37 13.58 L67.20 13.84 L68.19 13.77 L68.89 14.14 L69.38 14.85 L70.12 14.83 L70.55 15.25 L70.41 15.68 L70.69 15.49 L71.22 15.84 L71.47 16.83 L72.11 16.52 L72.49 16.75 L72.72 16.30 L73.44 16.42 L73.63 16.17 L74.27 16.82 L74.81 16.81 L75.06 17.30 L75.49 17.34 L76.88 16.66 L77.53 17.15 L78.18 17.05 L78.97 17.50 L79.40 18.16 L79.15 18.36 L79.87 19.04 L80.35 20.23 L81.01 20.35 L81.20 20.07 L81.04 19.72 L81.74 19.63 L82.41 19.94 L82.53 20.74 L82.87 20.30 L83.28 20.66 L84.21 20.72 L84.71 20.14 L85.27 20.02 L85.19 20.21 L85.61 20.17 L85.85 20.90 L86.57 21.33 L87.44 21.43 L87.70 21.22 L88.20 21.55 L88.67 21.30 L89.75 21.99 L90.75 22.23 L89.76 23.86 L88.94 24.34 L87.76 26.05 L87.78 26.80 L87.27 28.04 L87.35 28.71 L87.00 28.97 L86.19 30.82 L86.13 31.67 L86.50 32.30 L86.04 33.27 L85.98 34.75 L85.73 35.09 L86.30 36.11 L85.64 36.69 L85.87 36.81 L85.64 36.88 L85.73 37.12 L85.18 37.12 L85.34 37.39 L84.85 37.78 L83.88 37.90 L83.35 37.67 L83.57 37.15 L83.07 37.06 L82.73 36.12 L82.21 36.06 L82.50 35.25 L82.28 34.62 L81.23 34.21 L81.09 33.81 L79.42 32.58 L78.53 33.18 L77.92 32.42 L76.63 32.71 L76.12 31.78 L75.49 31.98 L74.85 32.68 L74.76 32.24 L74.01 33.52 L73.54 33.45 L73.40 33.85 L73.04 33.86 L73.05 35.22 L72.39 35.35 L72.19 34.99 L71.93 35.34 L71.16 35.29 L70.74 36.14 L70.48 35.95 L70.02 36.32 L70.04 35.85 L69.45 35.55 L69.48 35.26 L69.11 35.60 L68.61 35.39 L68.44 34.96 L68.02 35.21 L67.95 34.44 L67.66 34.28 L68.19 33.85 L67.56 32.82 L67.07 32.96 L67.30 32.63 L66.75 32.39 L66.77 31.94 L65.35 31.72 L65.00 31.95 L65.13 32.35 L63.45 32.40 L63.31 32.77 L62.69 32.29 L62.61 32.64 L62.43 32.43 L62.03 32.77 L61.69 32.57 L61.58 32.78 L60.60 32.78 L60.65 32.21 L60.53 32.01 L60.22 32.19 L60.37 31.85 L59.82 30.83 L59.46 30.68 L59.53 30.36 L59.28 30.25 L58.96 30.61 L58.77 30.15 Z"/>
+      <path d="M44.69 24.56 L44.39 24.08 L44.54 23.52 L43.91 22.62 L43.98 22.10 L43.59 22.03 L43.49 21.34 L43.87 21.29 L43.91 21.02 L44.71 21.01 L45.31 19.44 L45.63 20.11 L46.55 20.23 L47.90 19.75 L48.51 20.22 L48.86 20.05 L49.02 20.35 L49.50 19.99 L50.75 20.81 L51.19 20.62 L51.40 21.08 L51.75 20.78 L52.45 21.27 L52.97 20.90 L53.40 21.17 L54.76 21.02 L54.80 20.69 L55.45 20.87 L55.47 21.76 L56.60 22.81 L56.87 22.61 L56.96 23.19 L57.53 23.54 L57.68 23.39 L57.70 23.76 L57.13 23.81 L57.39 24.06 L57.06 24.33 L57.58 24.54 L57.44 25.59 L58.02 25.47 L58.20 25.76 L57.54 26.24 L57.66 26.53 L57.13 26.67 L57.34 26.99 L56.98 27.16 L57.19 28.07 L54.65 28.37 L54.41 28.92 L54.63 29.49 L53.86 30.37 L53.06 30.71 L52.88 30.31 L52.47 30.34 L52.60 30.54 L52.25 30.77 L51.23 30.59 L50.50 30.78 L50.94 30.33 L50.95 29.71 L50.29 29.38 L50.14 28.77 L49.55 28.66 L49.05 29.00 L48.76 28.53 L48.48 29.00 L47.14 29.10 L47.19 27.95 L46.84 27.91 L46.85 27.39 L46.44 27.56 L45.95 27.30 L45.86 26.41 L45.31 26.16 L45.35 25.79 L45.01 25.80 L44.39 24.90 L44.69 24.56 Z"/>
+      <path d="M67.74 47.19 L66.71 50.51 L66.34 50.48 L66.40 49.94 L66.00 49.68 L66.22 49.48 L66.00 49.19 L65.58 49.61 L65.17 49.31 L64.78 49.59 L64.10 49.30 L63.88 50.41 L63.23 50.72 L62.72 50.32 L61.20 50.59 L61.08 50.24 L60.50 50.13 L60.51 49.41 L61.30 48.98 L61.26 47.59 L60.96 47.31 L60.35 47.35 L60.14 46.91 L59.47 46.83 L59.35 45.95 L58.66 44.67 L58.40 44.58 L58.47 44.96 L58.12 44.97 L58.21 45.32 L57.66 45.70 L57.38 45.59 L57.33 45.08 L56.72 45.36 L56.18 45.03 L55.73 45.42 L54.64 44.61 L54.83 41.86 L54.44 41.47 L54.19 39.52 L53.44 38.90 L53.83 37.70 L53.22 36.64 L54.14 36.39 L53.79 35.25 L53.25 34.89 L53.27 34.48 L54.47 34.19 L54.37 32.98 L55.20 32.32 L55.17 31.71 L54.65 31.29 L54.51 30.67 L53.85 30.33 L54.63 29.49 L54.41 28.92 L54.65 28.37 L56.79 28.26 L56.97 27.97 L57.28 28.39 L57.77 28.28 L58.65 29.39 L58.31 30.11 L58.71 30.11 L58.96 30.61 L59.51 30.34 L59.46 30.68 L59.82 30.83 L60.37 31.85 L60.22 32.19 L60.53 32.01 L60.65 32.21 L60.60 32.78 L61.58 32.78 L61.69 32.57 L62.03 32.77 L62.43 32.43 L62.61 32.64 L62.69 32.29 L63.31 32.77 L63.45 32.40 L65.13 32.35 L65.00 31.95 L65.35 31.72 L66.77 31.94 L66.75 32.39 L67.30 32.63 L67.07 32.96 L67.56 32.82 L68.19 33.85 L67.66 34.28 L67.95 34.44 L68.02 35.21 L68.44 34.96 L68.61 35.39 L69.11 35.60 L69.48 35.26 L69.45 35.55 L70.04 35.85 L70.00 36.31 L70.48 35.95 L70.74 36.14 L71.16 35.29 L71.93 35.34 L72.19 34.99 L72.39 35.35 L73.05 35.22 L73.06 33.83 L73.40 33.85 L73.54 33.45 L74.01 33.52 L74.72 32.26 L74.85 32.68 L75.49 31.98 L76.12 31.78 L76.63 32.71 L77.92 32.42 L78.53 33.18 L79.43 32.59 L81.09 33.81 L81.23 34.21 L82.28 34.62 L82.50 35.25 L82.21 36.06 L82.73 36.12 L83.17 36.84 L82.95 37.14 L82.05 37.15 L82.18 37.56 L81.75 37.77 L81.32 38.58 L82.28 38.38 L82.56 38.77 L81.76 39.25 L81.86 39.70 L80.10 41.33 L80.21 41.64 L78.22 42.88 L78.44 43.27 L78.35 44.45 L75.97 46.46 L76.27 46.86 L74.57 49.42 L73.29 49.66 L73.21 49.17 L72.72 48.80 L72.01 49.56 L71.53 49.62 L71.49 49.02 L71.28 49.11 L71.19 48.77 L71.06 49.16 L70.87 48.43 L70.32 48.11 L70.43 47.79 L69.73 47.55 L69.64 47.15 L68.63 47.40 L68.31 47.12 L67.74 47.19 Z"/>
+      <path d="M17.95 42.53 L17.64 42.57 L17.33 41.91 L17.90 41.99 L17.76 42.31 L18.45 42.83 L18.39 43.22 L17.95 42.53 Z"/>
+      <path d="M32.45 41.59 L32.16 41.45 L32.42 41.11 L32.15 41.06 L30.65 41.23 L30.06 41.62 L30.20 41.33 L29.97 41.32 L29.52 41.51 L29.63 41.83 L29.26 42.18 L28.42 42.32 L27.93 42.11 L27.11 42.45 L27.78 42.97 L27.61 43.33 L27.96 43.75 L28.54 44.08 L28.34 44.52 L28.83 45.19 L28.66 45.33 L28.97 45.57 L28.82 45.85 L29.13 46.00 L29.21 46.74 L28.92 47.01 L29.17 47.69 L28.94 48.27 L29.16 48.11 L29.66 48.38 L28.38 49.23 L27.81 48.82 L26.91 49.15 L26.70 49.03 L26.93 48.53 L26.07 48.76 L25.77 49.14 L25.28 48.93 L24.99 49.59 L24.13 48.76 L24.45 49.39 L23.95 48.77 L23.19 48.83 L22.87 48.21 L21.90 48.03 L20.78 47.29 L19.93 45.24 L18.48 43.99 L18.39 43.28 L19.64 41.87 L18.79 40.99 L17.75 40.82 L18.30 40.49 L18.29 39.45 L17.39 39.80 L16.82 39.32 L16.36 39.51 L15.67 39.22 L16.23 39.13 L15.91 39.11 L15.93 38.68 L15.58 38.37 L16.46 37.97 L16.28 37.62 L16.48 37.34 L17.27 37.48 L17.39 36.93 L17.78 37.15 L18.19 36.97 L18.33 37.20 L18.39 36.87 L18.78 36.75 L18.84 35.65 L19.65 35.12 L19.78 35.36 L20.46 34.98 L21.85 34.97 L22.10 34.42 L23.16 34.02 L23.11 33.69 L24.73 34.29 L25.36 32.37 L26.33 31.99 L25.73 29.36 L26.13 28.70 L25.86 27.63 L26.01 26.80 L26.42 27.06 L26.75 26.78 L27.51 26.96 L28.12 27.60 L28.43 27.47 L28.31 27.23 L28.77 27.10 L28.87 27.52 L29.85 26.86 L30.64 26.85 L30.95 27.12 L31.18 26.72 L31.51 26.88 L31.69 26.28 L31.95 26.30 L32.40 26.67 L32.20 26.85 L32.38 27.39 L33.05 27.43 L33.05 28.22 L33.39 27.99 L33.83 28.17 L34.42 27.38 L35.50 27.15 L36.07 27.71 L36.16 28.78 L36.82 28.88 L37.14 29.50 L37.82 29.65 L37.87 29.37 L38.16 29.44 L38.59 30.15 L38.96 30.05 L39.79 30.61 L39.33 30.67 L39.06 31.06 L39.28 31.28 L38.94 31.32 L38.96 31.65 L39.27 31.72 L39.11 32.16 L39.32 32.62 L39.06 33.15 L38.91 32.91 L38.70 33.04 L38.80 33.65 L38.31 34.38 L37.45 34.93 L37.69 35.24 L36.64 35.62 L36.54 35.88 L36.07 35.64 L36.04 36.40 L35.01 35.97 L34.75 36.71 L34.94 37.07 L34.47 38.12 L34.68 38.30 L33.95 39.28 L33.81 40.45 L33.54 40.38 L33.16 41.28 L32.81 41.14 L32.45 41.59 Z"/>
+      <path d="M24.32 53.30 L23.74 52.76 L23.57 51.82 L24.80 52.46 L25.07 54.04 L24.80 54.28 L24.32 53.30 Z"/>
+      <path d="M23.86 50.60 L22.71 50.25 L22.52 49.82 L22.95 49.68 L23.14 49.94 L22.85 49.92 L22.88 50.18 L23.55 49.96 L23.46 50.24 L24.39 50.40 L24.68 50.65 L24.50 50.84 L23.86 50.60 Z"/>
+      <path d="M32.29 41.47 L32.55 41.59 L32.81 41.14 L33.16 41.28 L33.54 40.38 L33.97 40.96 L34.68 40.99 L34.63 41.55 L35.53 41.63 L35.67 42.87 L37.58 42.61 L37.36 42.10 L38.23 42.42 L38.32 43.15 L39.77 44.94 L39.75 46.20 L40.47 46.54 L40.53 46.86 L41.37 47.15 L41.43 47.75 L41.86 47.91 L41.61 48.41 L41.90 48.59 L42.55 48.52 L42.77 48.23 L43.28 48.78 L44.03 47.97 L44.18 48.31 L44.62 48.01 L44.83 48.40 L45.13 48.06 L45.44 48.34 L45.58 47.73 L45.84 47.68 L46.22 47.98 L46.71 47.80 L47.96 48.15 L49.30 48.04 L49.34 48.42 L49.69 48.61 L49.43 48.83 L49.88 49.15 L50.07 48.95 L50.93 49.87 L51.60 52.58 L50.77 53.68 L50.04 54.05 L50.99 55.23 L50.97 55.93 L50.55 56.39 L50.94 56.84 L50.73 58.19 L50.98 58.57 L50.66 58.68 L49.77 58.26 L49.84 59.03 L48.66 60.18 L48.96 60.76 L48.58 61.06 L48.56 61.61 L48.00 61.87 L48.27 62.58 L46.99 62.92 L46.70 62.66 L45.95 63.25 L44.76 62.10 L44.12 61.97 L43.22 62.37 L43.45 63.67 L42.45 64.50 L42.57 65.07 L41.39 65.78 L41.09 66.78 L40.24 67.06 L40.80 68.87 L39.96 69.08 L39.65 68.71 L39.46 69.44 L40.03 69.79 L39.72 70.65 L39.35 70.71 L39.63 71.18 L38.90 71.11 L38.97 71.46 L38.03 72.33 L37.53 71.77 L35.52 72.67 L34.90 72.34 L34.50 72.85 L34.29 72.55 L33.80 72.97 L33.81 73.62 L33.24 73.29 L33.45 73.04 L33.15 72.74 L32.74 73.29 L32.15 73.20 L31.81 73.48 L32.11 73.93 L32.07 74.50 L31.82 74.52 L32.05 75.25 L31.66 75.54 L31.45 76.44 L31.72 76.80 L32.73 76.82 L33.28 77.93 L32.95 78.02 L32.94 78.55 L33.40 78.20 L33.36 78.93 L33.61 79.21 L33.09 79.63 L33.29 79.96 L32.89 80.45 L32.93 80.92 L32.59 80.89 L32.05 81.55 L32.14 82.18 L31.40 82.66 L31.15 84.39 L30.33 84.79 L29.88 84.47 L29.56 84.97 L28.31 83.77 L28.16 83.04 L26.82 83.19 L25.64 82.47 L25.45 82.64 L24.28 82.01 L24.56 81.52 L24.12 81.62 L23.97 82.43 L23.37 82.25 L23.14 81.84 L23.55 81.41 L23.77 80.15 L22.71 79.73 L22.20 80.16 L22.09 79.61 L21.35 79.72 L20.92 78.96 L21.79 78.78 L22.27 78.34 L23.31 76.25 L24.28 71.70 L24.65 67.20 L25.08 65.92 L26.45 66.06 L25.30 64.71 L24.62 66.10 L25.52 57.23 L26.01 56.62 L26.21 57.31 L27.75 58.82 L28.62 61.59 L29.43 62.37 L28.75 61.15 L28.32 58.81 L27.82 57.78 L26.31 56.15 L25.02 55.38 L24.88 55.53 L25.15 55.59 L24.87 55.62 L24.78 55.28 L24.75 54.51 L25.51 54.31 L25.21 53.78 L25.60 53.76 L25.92 53.22 L25.59 52.27 L26.07 52.25 L25.55 51.02 L25.23 50.90 L25.39 50.70 L24.75 50.70 L25.69 49.64 L25.51 49.23 L26.07 48.76 L26.93 48.53 L26.70 49.03 L26.91 49.15 L27.81 48.82 L28.38 49.23 L29.66 48.38 L29.16 48.11 L28.94 48.27 L29.17 47.69 L28.92 47.01 L29.21 46.74 L29.13 46.00 L28.82 45.85 L28.97 45.57 L28.66 45.33 L28.83 45.19 L28.34 44.52 L28.54 44.08 L27.96 43.75 L27.61 43.33 L27.78 42.97 L27.11 42.45 L27.93 42.11 L28.42 42.32 L29.26 42.18 L29.63 41.83 L29.52 41.51 L29.97 41.32 L30.20 41.33 L30.06 41.62 L30.65 41.23 L32.12 41.06 L32.42 41.11 L32.29 41.47 Z"/>
+      <path d="M11.67 38.88 L12.11 39.02 L11.86 39.34 L10.96 39.18 L10.77 38.23 L11.41 38.47 L11.67 38.88 Z"/>
+      <path d="M24.51 26.82 L24.61 26.55 L25.00 26.52 L25.97 26.90 L26.13 28.70 L25.73 29.36 L26.29 32.07 L25.36 32.37 L24.73 34.29 L23.11 33.69 L23.16 34.02 L22.10 34.42 L21.85 34.97 L20.46 34.98 L19.78 35.36 L19.65 35.12 L18.84 35.65 L18.78 36.75 L18.39 36.87 L18.33 37.20 L18.19 36.97 L17.78 37.15 L17.39 36.93 L17.30 37.45 L17.01 37.55 L16.53 37.32 L16.13 37.69 L16.00 37.14 L16.53 37.24 L16.78 36.99 L16.41 37.11 L15.76 36.80 L15.15 37.04 L14.85 36.89 L14.77 37.18 L13.66 37.18 L13.10 36.51 L14.39 36.65 L14.47 36.09 L14.04 35.86 L14.34 35.94 L14.28 35.75 L13.41 35.87 L13.47 36.11 L13.07 36.26 L12.67 35.47 L13.01 36.54 L12.54 36.17 L12.59 36.42 L12.33 36.16 L12.38 36.41 L11.84 36.45 L11.61 36.10 L11.63 36.96 L11.95 37.40 L11.60 37.37 L11.38 36.79 L11.53 36.29 L11.04 35.67 L11.45 35.14 L11.00 35.11 L11.02 35.64 L10.46 35.19 L10.00 35.21 L10.55 35.20 L10.49 34.98 L9.96 34.96 L10.58 34.07 L10.19 34.63 L9.97 34.45 L9.85 35.02 L9.35 35.11 L8.81 34.40 L8.86 34.07 L8.75 34.43 L8.01 34.31 L8.06 34.12 L7.79 34.30 L7.47 34.02 L7.97 33.83 L7.64 33.73 L7.40 34.02 L7.30 33.50 L7.34 34.08 L6.55 34.15 L5.92 32.98 L5.60 33.07 L5.70 33.51 L4.85 33.42 L4.53 32.94 L4.78 32.61 L5.06 32.70 L4.98 32.47 L4.78 32.61 L4.74 32.19 L4.76 32.67 L4.53 33.06 L4.31 32.96 L4.75 33.42 L4.36 33.65 L4.30 33.24 L4.30 33.54 L4.00 33.36 L4.43 33.73 L4.33 33.98 L2.99 34.09 L3.02 33.19 L2.40 32.21 L1.81 31.77 L1.60 32.03 L0.38 31.62 L0.56 31.36 L2.64 30.94 L3.41 31.12 L3.68 30.70 L3.43 30.03 L2.53 29.61 L2.07 29.66 L1.65 30.30 L1.55 29.63 L1.76 29.50 L1.21 29.46 L1.15 29.18 L1.57 29.16 L1.68 28.59 L1.81 29.14 L2.01 28.87 L2.03 29.17 L2.78 29.24 L3.53 28.99 L3.66 29.41 L4.11 29.61 L3.59 29.20 L4.30 29.02 L3.58 28.85 L3.85 28.69 L3.21 28.85 L3.72 28.36 L2.35 28.71 L3.66 27.51 L1.30 28.60 L0.80 28.42 L0.16 28.68 L0.08 27.50 L0.55 27.27 L0.14 27.11 L0.30 26.51 L1.17 26.15 L2.02 26.49 L1.28 26.16 L1.37 25.85 L1.95 26.08 L1.58 25.85 L1.76 25.56 L2.77 25.57 L2.51 25.37 L3.12 25.15 L3.48 25.28 L3.48 25.61 L4.64 24.96 L5.15 25.24 L5.17 24.86 L5.66 24.61 L5.85 25.47 L6.30 25.22 L6.59 25.90 L6.48 25.22 L6.79 24.73 L8.02 24.95 L7.90 25.38 L8.16 25.06 L8.52 25.18 L8.45 24.67 L9.27 24.61 L8.43 24.33 L8.99 23.50 L9.53 23.69 L9.51 23.94 L10.67 23.56 L10.85 23.23 L11.12 23.73 L11.91 23.22 L11.81 23.60 L12.01 23.60 L11.62 24.34 L12.00 23.71 L12.45 23.72 L12.19 24.07 L13.01 24.37 L12.89 24.72 L13.78 25.44 L13.71 25.93 L14.50 26.39 L14.33 26.68 L14.74 27.07 L14.72 26.63 L15.16 26.77 L15.61 25.95 L16.18 25.71 L16.07 25.48 L16.60 25.61 L17.26 25.04 L17.50 25.24 L17.12 25.74 L17.78 25.49 L17.90 26.57 L18.11 25.83 L18.32 26.17 L18.43 25.75 L18.61 25.89 L18.43 25.58 L19.14 25.55 L19.66 26.50 L19.52 27.03 L19.90 26.59 L19.68 26.59 L19.56 26.10 L19.79 26.16 L19.38 25.95 L19.27 25.42 L19.91 24.90 L20.56 24.80 L20.54 25.76 L22.46 25.67 L23.03 27.06 L23.46 27.34 L23.79 27.40 L24.51 26.82 Z"/>
+      <path d="M98.94 82.66 L99.33 82.86 L99.53 84.68 L99.21 86.01 L99.81 87.33 L99.96 91.59 L98.98 93.32 L98.78 96.45 L98.04 96.94 L98.66 97.00 L98.00 97.62 L98.03 98.28 L97.56 98.80 L97.91 98.80 L97.36 99.28 L96.75 99.00 L97.01 98.45 L96.61 98.51 L96.66 98.11 L96.38 98.36 L94.63 97.34 L94.67 96.58 L95.19 96.45 L95.50 95.99 L94.59 95.90 L94.53 95.47 L94.06 95.67 L93.72 95.49 L94.21 95.14 L94.09 94.86 L94.51 94.77 L94.36 94.42 L94.73 93.93 L94.34 93.53 L93.36 93.91 L93.26 93.21 L93.70 93.13 L93.70 92.76 L94.34 92.34 L94.01 91.71 L93.73 91.83 L93.02 91.37 L93.27 91.16 L93.04 91.11 L93.19 90.77 L92.90 90.45 L93.99 90.16 L93.35 89.75 L93.42 89.31 L92.99 89.47 L92.92 89.11 L93.38 88.93 L93.36 88.63 L93.71 88.62 L93.87 88.09 L93.66 88.00 L93.78 87.62 L94.15 87.53 L94.18 86.93 L94.20 87.16 L94.63 87.21 L94.72 86.75 L96.21 86.35 L96.97 85.44 L97.65 85.40 L98.18 86.00 L98.51 85.39 L98.26 84.40 L98.62 83.48 L98.47 82.78 L98.94 82.66 Z"/>
+    </g>
+  </symbol>
+</svg>
+
+<header class="barre">
+  <a class="marque" href="#haut">
+    <img src="../../assets/logo-web.png" alt="" aria-hidden="true">
+    <span>Intégral <em>Pharma</em></span>
+  </a>
+  <nav class="nav" aria-label="Navigation principale">
+    <a href="#histoire">Le groupe</a>
+    <a href="#reseau">Le réseau</a>
+    <a href="#metier">Le métier</a>
+    <a href="#valeurs">Nos valeurs</a>
+  </nav>
+  <a class="bt" href="#contact">Nous écrire</a>
+  <button class="burger" id="burger" type="button" aria-label="Ouvrir le menu" aria-expanded="false"><i></i></button>
+</header>
+
+<div class="panneau" id="panneau">
+  <div class="panneau__h">
+    <a class="marque" href="#haut">
+      <img src="../../assets/logo-web.png" alt="" aria-hidden="true">
+      <span>Intégral <em>Pharma</em></span>
+    </a>
+    <button class="panneau__f" id="fermer" type="button" aria-label="Fermer le menu">✕</button>
+  </div>
+  <a href="#histoire">Le groupe</a>
+  <a href="#reseau">Le réseau</a>
+  <a href="#metier">Le métier</a>
+  <a href="#valeurs">Nos valeurs</a>
+  <a class="bt" href="#contact">Nous écrire</a>
+</div>
+
+<main id="contenu">
+
+<!-- ═══ 01 · L'OUVERTURE ═══ -->
+<section class="sec ouv" id="haut">
+  <div class="jour" aria-hidden="true"></div>
+  <div class="in">
+    <div class="ouv__g">
+      <div>
+        <span class="jeton" data-r style="--i:0"><b>2006</b> Groupe de grossistes-répartiteurs français indépendant</span>
+        <h1 class="t1" data-r style="--i:1">Neuf maisons.<br>Un seul <b>nom</b>.</h1>
+        <p class="p p--fort" data-r style="--i:2">Chacune livre sa région depuis des années, avec ses
+        équipes et ses habitudes. Depuis 2006, elles avancent ensemble sous le nom d'Intégral Pharma
+        — et votre commande part toujours de la plus proche de votre comptoir.</p>
+        <div class="btns" data-r style="--i:3">
+          <a class="bt" href="#reseau">Découvrir le réseau
+            <svg viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M7 2v10M2.5 7.5 7 12l4.5-4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
+          <a class="bt bt--clair" href="#contact">Nous écrire</a>
+        </div>
+      </div>
+
+      <figure class="media" data-r style="--i:4; margin:0">
+        <video src="../../assets/band.mp4" poster="../../assets/poster.jpg"
+               autoplay muted loop playsinline aria-hidden="true"></video>
+        <span class="media__voile" aria-hidden="true"></span>
+        <figcaption class="fiche">
+          <span class="fiche__p" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M12 21s7-5.4 7-11a7 7 0 1 0-14 0c0 5.6 7 11 7 11Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="12" cy="10" r="2.6" stroke="currentColor" stroke-width="1.7"/></svg>
+          </span>
+          <span>
+            <b>Hyères, Var</b>
+            <span>Le siège du groupe, vu du ciel</span>
+          </span>
+        </figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 02 · LA RANGÉE QUI DÉFILE ═══ -->
+<div class="rangee" aria-hidden="true">
+  <div class="rangee__p">
+    <span>Indépendant</span><span>Neuf implantations</span><span>Un réseau national</span><span>Plus de 2 000 officines livrées</span><span>Confiance, Engagement, Respect</span><span>Une alternative aux grossistes historiques</span><span>Indépendant</span><span>Neuf implantations</span><span>Un réseau national</span><span>Plus de 2 000 officines livrées</span><span>Confiance, Engagement, Respect</span><span>Une alternative aux grossistes historiques</span>
+  </div>
+</div>
+
+<!-- ═══ 03 · NOTRE HISTOIRE ═══ -->
+<section class="sec" id="histoire">
+  <div class="jour" aria-hidden="true"></div>
+  <div class="in">
+    <div class="duo">
+      <div>
+        <p class="sur" data-r style="--i:0">Notre histoire</p>
+        <h2 class="t2" data-r style="--i:1">Rendre la marge à l'officine <b>française</b>.</h2>
+        <p class="p p--fort" data-r style="--i:2">C'est la raison d'être d'Intégral Pharma depuis
+        2006 : redistribuer directement la marge aux officines françaises, en toute transparence,
+        avec des prix nets visibles sur facture.</p>
+        <p class="p" data-r style="--i:3">Neuf implantations aujourd'hui, plus de deux mille
+        officines livrées chaque jour, et la même idée qu'au premier jour — un groupe de
+        répartiteurs indépendants qui a choisi de se mettre du côté du comptoir.</p>
+      </div>
+      <div class="chiffres" data-r style="--i:4">
+        <div><p class="n"><b data-compte="2006" data-brut>2006</b></p><span>Année de création</span></div>
+        <div><p class="n"><b data-compte="9">9</b></p><span>Implantations</span></div>
+        <div><p class="n"><b data-compte="2000">2 000</b><i>+</i></p><span>Officines livrées</span></div>
+        <div><p class="n"><b data-compte="20">20</b></p><span>Ans d'indépendance</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 04 · LE RÉSEAU — le cœur de la direction ═══ -->
+<section class="sec sec--doux" id="reseau">
+  <div class="in">
+    <div class="tete">
+      <div>
+        <p class="sur" data-r style="--i:0">Le réseau</p>
+        <h2 class="t2" data-r style="--i:1">Neuf implantations. Laquelle est <b>la vôtre</b> ?</h2>
+      </div>
+      <p class="p" data-r style="--i:2">C'est la seule question qui compte vraiment. Celle qui
+      prépare votre commande, qui vous livre chaque matin, et dont vous connaissez l'équipe par son
+      prénom.<br><br>Les huit autres sont là pour qu'elle ne soit jamais prise au dépourvu — de la
+      Bretagne à la Méditerranée, le stock d'une maison est le stock de toutes.</p>
+    </div>
+
+    <div class="reseau">
+      <div>
+        <ul class="lieux" id="lieux">
+          <li><button class="lieu" type="button" data-i="0">
+            <span class="lieu__v" aria-hidden="true"><svg viewBox="0 0 120 160"><use href="#f1"/></svg></span>
+            <span><span class="lieu__t">Hyères Pharma</span><span class="lieu__c">Hyères · Var (83)</span><span class="lieu__e lieu__e--siege">Siège du groupe</span></span>
+            <span class="lieu__n">01</span>
+          </button></li>
+          <li><button class="lieu" type="button" data-i="1">
+            <span class="lieu__v" aria-hidden="true"><svg viewBox="0 0 120 160"><use href="#f2"/></svg></span>
+            <span><span class="lieu__t">SR Pharma</span><span class="lieu__c">Palaiseau · Essonne (91)</span></span>
+            <span class="lieu__n">02</span>
+          </button></li>
+          <li><button class="lieu" type="button" data-i="2">
+            <span class="lieu__v" aria-hidden="true"><svg viewBox="0 0 120 160"><use href="#f3"/></svg></span>
+            <span><span class="lieu__t">Mistral Santé Pharma</span><span class="lieu__c">Flassans-sur-Issole · Var (83)</span></span>
+            <span class="lieu__n">03</span>
+          </button></li>
+          <li><button class="lieu" type="button" data-i="3">
+            <span class="lieu__v" aria-hidden="true"><svg viewBox="0 0 120 160"><use href="#f4"/></svg></span>
+            <span><span class="lieu__t">Sud Ouest Pharma</span><span class="lieu__c">Montayral · Lot-et-Garonne (47)</span></span>
+            <span class="lieu__n">04</span>
+          </button></li>
+          <li><button class="lieu" type="button" data-i="4">
+            <span class="lieu__v" aria-hidden="true"><svg viewBox="0 0 120 160"><use href="#f5"/></svg></span>
+            <span><span class="lieu__t">Comptoir Pharmaceutique du Rhône</span><span class="lieu__c">Saint-Maurice-l'Exil · Isère (38)</span></span>
+            <span class="lieu__n">05</span>
+          </button></li>
+          <li><button class="lieu" type="button" data-i="5">
+            <span class="lieu__v" aria-hidden="true"><svg viewBox="0 0 120 160"><use href="#f6"/></svg></span>
+            <span><span class="lieu__t">Escale Pharma</span><span class="lieu__c">Chilly-Mazarin · Essonne (91)</span></span>
+            <span class="lieu__n">06</span>
+          </button></li>
+          <li><button class="lieu" type="button" data-i="6">
+            <span class="lieu__v" aria-hidden="true"><svg viewBox="0 0 120 160"><use href="#f7"/></svg></span>
+            <span><span class="lieu__t">Ouest Pharma Services</span><span class="lieu__c">Saint-Étienne-de-Montluc · Loire-Atlantique (44)</span></span>
+            <span class="lieu__n">07</span>
+          </button></li>
+          <li><button class="lieu" type="button" data-i="7">
+            <span class="lieu__v" aria-hidden="true"><svg viewBox="0 0 120 160"><use href="#f8"/></svg></span>
+            <span><span class="lieu__t">Pharm'Occitanie Services</span><span class="lieu__c">Villeneuve-lès-Béziers · Hérault (34)</span></span>
+            <span class="lieu__n">08</span>
+          </button></li>
+          <li><button class="lieu" type="button" data-i="8">
+            <span class="lieu__v" aria-hidden="true"><svg viewBox="0 0 120 160"><use href="#f9"/></svg></span>
+            <span><span class="lieu__t">Sud Est Pharma</span><span class="lieu__c">Le Cannet-des-Maures · Var (83)</span></span>
+            <span class="lieu__n">09</span>
+          </button></li>
+          <li><button class="lieu" type="button" data-i="9">
+            <span class="lieu__v" aria-hidden="true"><svg viewBox="0 0 120 160"><use href="#f10"/></svg></span>
+            <span><span class="lieu__t">Pharmest</span><span class="lieu__c">Metz · Moselle (57)</span><span class="lieu__e lieu__e--part">Partenaire</span></span>
+            <span class="lieu__n">10</span>
+          </button></li>
+        </ul>
+        <p class="note">Et à l'Est, notre partenaire <b>Pharmest</b> (Metz, 57) prolonge le
+        maillage — neuf implantations et un partenaire.</p>
+      </div>
+
+      <div class="carte">
+        <div class="carte__c">
+          <span class="carte__l">Neuf implantations et un partenaire</span>
+          <svg class="plan" id="plan" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet"
+               role="img" aria-label="Tracé de la France métropolitaine et emplacement des neuf implantations du groupe, plus celui du partenaire Pharmest à Metz.">
+            <use href="#fr-contour" x="0" y="0" width="100" height="100"/>
+            <g id="pts">
+              <circle class="halo" data-h="0" cx="76.61" cy="81.53" r="4"/><circle class="pt pt--siege" data-p="0" cx="76.61" cy="81.53" r="1.9"/>
+              <circle class="halo" data-h="1" cx="48.96" cy="24.76" r="4"/><circle class="pt" data-p="1" cx="48.96" cy="24.76" r="1.4"/>
+              <circle class="halo" data-h="2" cx="76.69" cy="78.92" r="4"/><circle class="pt" data-p="2" cx="76.69" cy="78.92" r="1.4"/>
+              <circle class="halo" data-h="3" cx="40.27" cy="67.81" r="4"/><circle class="pt" data-p="3" cx="40.27" cy="67.81" r="1.4"/>
+              <circle class="halo" data-h="4" cx="66.74" cy="58.48" r="4"/><circle class="pt" data-p="4" cx="66.74" cy="58.48" r="1.4"/>
+              <circle class="halo" data-h="5" cx="49.51" cy="24.89" r="4"/><circle class="pt" data-p="5" cx="49.51" cy="24.89" r="1.4"/>
+              <circle class="halo" data-h="6" cx="20.98" cy="39.40" r="4"/><circle class="pt" data-p="6" cx="20.98" cy="39.40" r="1.4"/>
+              <circle class="halo" data-h="7" cx="56.26" cy="79.42" r="4"/><circle class="pt" data-p="7" cx="56.26" cy="79.42" r="1.4"/>
+              <circle class="halo" data-h="8" cx="77.67" cy="78.64" r="4"/><circle class="pt" data-p="8" cx="77.67" cy="78.64" r="1.4"/>
+              <circle class="halo" data-h="9" cx="76.56" cy="20.79" r="4"/><circle class="pt pt--part" data-p="9" cx="76.56" cy="20.79" r="1.4"/>
+            </g>
+          </svg>
+          <div class="carte__f" id="fiche">
+            <b id="ficheT">De la Bretagne à la Méditerranée</b>
+            <span id="ficheS">Survolez une maison pour la voir de plus près</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 05 · LE MÉTIER ═══ -->
+<section class="sec" id="metier">
+  <div class="jour" aria-hidden="true"></div>
+  <div class="in">
+    <div class="tete">
+      <div>
+        <p class="sur" data-r style="--i:0">Le métier</p>
+        <h2 class="t2" data-r style="--i:1">Ce qui se passe entre votre commande et votre <b>comptoir</b>.</h2>
+      </div>
+      <p class="p" data-r style="--i:2">Quelques heures, quatre métiers, et une chaîne qui ne
+      s'arrête jamais. Référencer, stocker, préparer, livrer : c'est invisible depuis l'officine,
+      et c'est tout notre travail.</p>
+    </div>
+
+    <div class="grille" data-r style="--i:3">
+      <article class="carton">
+        <span class="carton__n">01</span>
+        <h3>Le référencement</h3>
+        <p>Le groupe référence pour ses neuf maisons à la fois : un même catalogue, tenu à jour,
+        disponible dans toutes les implantations. C'est ce qui permet à une maison de taille
+        humaine de proposer la profondeur de gamme d'un réseau national.</p>
+      </article>
+      <article class="carton">
+        <span class="carton__n">02</span>
+        <h3>La disponibilité</h3>
+        <p>Des stocks répartis sur neuf implantations, au plus près de votre officine. Quand le
+        comptoir a besoin, le réseau répond — et quand une référence manque quelque part, elle
+        existe souvent ailleurs dans le réseau.</p>
+      </article>
+      <article class="carton">
+        <span class="carton__n">03</span>
+        <h3>La préparation</h3>
+        <p>Chaque commande est préparée dans l'implantation la plus proche de chez vous, par une
+        équipe qui connaît votre officine et ses saisons.</p>
+      </article>
+      <article class="carton">
+        <span class="carton__n">04</span>
+        <h3>La livraison</h3>
+        <p>Tous les jours, les tournées partent vers les officines. La régularité d'un service
+        tenu — c'est elle qui fait la confiance, pas les promesses.</p>
+      </article>
+    </div>
+
+    <figure class="photo" data-r style="--i:4; margin-inline:0">
+      <img src="../../assets/siege-web.jpg" alt="Le site du siège d'Intégral Pharma, à Hyères." loading="lazy">
+      <figcaption class="photo__l">Hyères (83) — 758 chemin de la Source, ZI Saint-Martin</figcaption>
+    </figure>
+
+    <p class="p" data-r style="--i:5">Et quand la vie de votre officine change — transfert,
+    agrandissement, cession de parts — votre interlocuteur ajuste l'approvisionnement avec vous,
+    sans à-coup au comptoir.</p>
+  </div>
+</section>
+
+<!-- ═══ 06 · LA CENTRALE ═══ -->
+<section class="sec sec--doux" id="centrale">
+  <div class="in">
+    <div class="duo">
+      <div>
+        <p class="sur" data-r style="--i:0">La centrale</p>
+        <h2 class="t2" data-r style="--i:1">Et pour tout ce qui n'est pas le <b>médicament</b>.</h2>
+        <p class="p p--fort" data-r style="--i:2">Notre centrale de parapharmacie référence pour
+        l'officine plus de 14 000 produits et plus de 480 marques.</p>
+        <p class="p" data-r style="--i:3">C'est une structure à part, avec son propre
+        fonctionnement — sa commande, sa livraison — et la même exigence que le reste du groupe.</p>
+      </div>
+      <div class="chiffres" data-r style="--i:4">
+        <div><p class="n"><b data-compte="14000">14 000</b><i>+</i></p><span>Références</span></div>
+        <div><p class="n"><b data-compte="480">480</b><i>+</i></p><span>Marques</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 07 · VOS FACTURES ═══ -->
+<section class="sec" id="factures">
+  <div class="in">
+    <div class="large" data-r style="--i:0">
+      <div>
+        <p class="sur">Vos factures</p>
+        <h2 class="t2">Elles arrivent déjà là où vous les <b>gérez</b>.</h2>
+        <p class="p p--fort">Nous sommes connectés à Digipharmacie : vos factures Intégral s'y
+        retrouvent automatiquement, avec celles de vos autres fournisseurs.</p>
+        <p class="p">Rien à saisir, rien à classer, rien à réclamer.</p>
+      </div>
+      <div class="recu" aria-hidden="true">
+        <p class="recu__l"><svg viewBox="0 0 24 24" fill="none"><path d="M5 4h9l5 5v11H5V4Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M14 4v5h5" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg><span><b>Rien à saisir</b></span></p>
+        <p class="recu__l"><svg viewBox="0 0 24 24" fill="none"><path d="M4 7h16M4 12h16M4 17h9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span><b>Rien à classer</b></span></p>
+        <p class="recu__l"><svg viewBox="0 0 24 24" fill="none"><path d="m5 12.5 4.5 4.5L19 7.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b>Rien à réclamer</b></span></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 08 · NOS PARTENAIRES ═══ -->
+<section class="sec sec--doux" id="partenaires">
+  <div class="in">
+    <p class="sur" data-r style="--i:0">Nos partenaires</p>
+    <h2 class="t2" data-r style="--i:1">Les laboratoires qui nous font <b>confiance</b>.</h2>
+    <div class="marques" data-r style="--i:2">
+      <span>EG Labo</span><span>Zentiva</span><span>Zydus</span>
+      <span>Viatris</span><span>ITP</span><span>Santestat</span>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 09 · NOUS REJOINDRE ═══ -->
+<section class="sec" id="rejoindre">
+  <div class="jour" aria-hidden="true"></div>
+  <div class="in">
+    <div class="duo">
+      <div>
+        <p class="sur" data-r style="--i:0">Nous rejoindre</p>
+        <h2 class="t2" data-r style="--i:1">Neuf implantations qui <b>embauchent</b>.</h2>
+        <p class="p p--fort" data-r style="--i:2">Préparateur-chauffeur, technicien
+        approvisionnement, commercial, pharmacien responsable : les métiers de la répartition
+        s'apprennent chez nous.</p>
+        <div class="villes" data-r style="--i:3">
+          <span>Hyères (83)</span><span>Villeneuve-lès-Béziers (34)</span>
+          <span>Montayral (47)</span><span>Saint-Maurice-l'Exil (38)</span>
+        </div>
+        <div class="btns" data-r style="--i:4">
+          <a class="bt" href="https://www.integralpharma.fr/">Voir les offres
+            <svg viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 11 11 3M11 3H4.5M11 3v6.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
+        </div>
+      </div>
+      <figure class="photo" data-r style="--i:5; margin:0; aspect-ratio:4/3">
+        <img src="../../assets/siege-solaire.jpg" alt="Les toitures du site d'Hyères, équipées de panneaux solaires." loading="lazy">
+        <figcaption class="photo__l">Les toitures du siège, à Hyères</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 10 · NOS VALEURS ═══ -->
+<section class="sec sec--doux" id="valeurs">
+  <div class="in">
+    <p class="sur" data-r style="--i:0">Nos valeurs</p>
+    <h2 class="t2" data-r style="--i:1">Trois mots qui se vérifient au <b>téléphone</b>.</h2>
+    <div class="grille" data-r style="--i:2">
+      <article class="carton">
+        <h3 class="t3" style="margin-bottom:12px">Confiance</h3>
+        <p>La personne qui décroche connaît votre officine, vos saisons et vos habitudes.</p>
+      </article>
+      <article class="carton">
+        <h3 class="t3" style="margin-bottom:12px">Engagement</h3>
+        <p>C'est la même d'une année sur l'autre. Dans ce métier, c'est devenu rare.</p>
+      </article>
+      <article class="carton">
+        <h3 class="t3" style="margin-bottom:12px">Respect</h3>
+        <p>Elle ne vous vendra pas ce dont vous n'avez pas besoin — parce qu'elle vous reverra le
+        mois suivant, et l'année d'après.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 11 · LE CONTACT ═══ -->
+<section class="sec" id="contact">
+  <div class="jour" aria-hidden="true"></div>
+  <div class="in">
+    <div class="final" data-r style="--i:0">
+      <h2 class="t2">Posez-nous la question qui vous <b>intéresse</b>.</h2>
+      <p class="p">Sur nos conditions, sur nos délais, sur la façon dont nous travaillons. Vous
+      aurez une réponse claire, et le nom de l'implantation qui livre votre secteur.</p>
+      <div class="btns">
+        <a class="bt" href="mailto:contact@integralpharma.fr">contact@integralpharma.fr
+          <svg viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 11 11 3M11 3H4.5M11 3v6.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="pied">
+  <div class="pied__g">
+    <div>
+      <a class="marque" href="#haut" style="margin-bottom:14px">
+        <img src="../../assets/logo-web.png" alt="" aria-hidden="true">
+        <span>Intégral <em>Pharma</em></span>
+      </a>
+      <p>758 chemin de la Source, ZI Saint-Martin, 83400 Hyères</p>
+    </div>
+    <div>
+      <p><a href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a></p>
+      <p style="margin-top:8px"><a href="https://www.integralpharma.fr/">Mentions légales</a></p>
+    </div>
+    <p>9 implantations · plus de 2 000 officines livrées · indépendant depuis 2006</p>
+  </div>
+  <div class="pied__b">
+    <span class="sign">Maquette <b>08 · Maisons</b> — direction artistique</span>
+    <span>Tracé de France : IGN, Licence Ouverte (Etalab). Façades dessinées.</span>
+  </div>
+</footer>
+
+<script>
+(function(){
+  "use strict";
+  var doc = document.documentElement;
+  var reduit = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ── Menu téléphone : fond blanc plein, défilement du corps verrouillé ─────── */
+  var burger  = document.getElementById("burger");
+  var panneau = document.getElementById("panneau");
+  var fermer  = document.getElementById("fermer");
+  function menu(ouvert){
+    panneau.classList.toggle("ouvert", ouvert);
+    burger.setAttribute("aria-expanded", ouvert ? "true" : "false");
+    document.body.style.overflow = ouvert ? "hidden" : "";
+  }
+  burger.addEventListener("click", function(){ menu(!panneau.classList.contains("ouvert")); });
+  fermer.addEventListener("click", function(){ menu(false); });
+  panneau.addEventListener("click", function(e){ if (e.target.closest("a")) menu(false); });
+  document.addEventListener("keydown", function(e){ if (e.key === "Escape") menu(false); });
+
+  /* ── La carte qui se recadre ───────────────────────────────────────────────
+     Le geste central de cette direction : la liste à gauche, le plan à droite,
+     qui se rapproche du lieu désigné. Sans script, le plan montre la France
+     entière et la fiche affiche son texte par défaut — rien ne disparaît. */
+  var plan   = document.getElementById("plan");
+  var fiche  = { t:document.getElementById("ficheT"), s:document.getElementById("ficheS") };
+  var boutons = [].slice.call(document.querySelectorAll(".lieu"));
+  var LIEUX = [
+    ["Hyères Pharma","Hyères · Var (83) — siège du groupe",76.61,81.53],
+    ["SR Pharma","Palaiseau · Essonne (91)",48.96,24.76],
+    ["Mistral Santé Pharma","Flassans-sur-Issole · Var (83)",76.69,78.92],
+    ["Sud Ouest Pharma","Montayral · Lot-et-Garonne (47)",40.27,67.81],
+    ["Comptoir Pharmaceutique du Rhône","Saint-Maurice-l'Exil · Isère (38)",66.74,58.48],
+    ["Escale Pharma","Chilly-Mazarin · Essonne (91)",49.51,24.89],
+    ["Ouest Pharma Services","Saint-Étienne-de-Montluc · Loire-Atlantique (44)",20.98,39.40],
+    ["Pharm'Occitanie Services","Villeneuve-lès-Béziers · Hérault (34)",56.26,79.42],
+    ["Sud Est Pharma","Le Cannet-des-Maures · Var (83)",77.67,78.64],
+    ["Pharmest","Metz · Moselle (57) — partenaire",76.56,20.79]
+  ];
+  var DEFAUT = ["De la Bretagne à la Méditerranée","Survolez une maison pour la voir de plus près"];
+  var PLEIN  = [0,0,100,100];
+  var vue = PLEIN.slice(), butVue = PLEIN.slice(), anim = null, courant = -1;
+
+  function poserVue(v){
+    plan.setAttribute("viewBox", v[0].toFixed(2)+" "+v[1].toFixed(2)+" "+v[2].toFixed(2)+" "+v[3].toFixed(2));
+    /* Les points gardent leur taille à l'écran quel que soit le rapprochement :
+       sans cette correction, un point devient une tache au zoom maximal. */
+    var k = v[2] / 100;
+    [].forEach.call(plan.querySelectorAll("[data-p]"), function(c){
+      c.setAttribute("r", ((c.getAttribute("data-p") === "0" ? 1.9 : 1.4) * k).toFixed(3));
+    });
+    [].forEach.call(plan.querySelectorAll("[data-h]"), function(c){
+      c.setAttribute("r", (4 * k).toFixed(3));
+      c.setAttribute("stroke-width", (0.9 * k).toFixed(3));
+    });
+  }
+  poserVue(PLEIN);
+
+  function versVue(v){
+    butVue = v.slice();
+    if (reduit){ vue = butVue.slice(); poserVue(vue); return; }
+    if (anim) return;
+    var t0 = null, dep = vue.slice(), duree = 620;
+    anim = requestAnimationFrame(function pas(t){
+      if (t0 === null) t0 = t;
+      var p = Math.min(1, (t - t0) / duree);
+      var e = 1 - Math.pow(1 - p, 3);
+      for (var i = 0; i < 4; i++) vue[i] = dep[i] + (butVue[i] - dep[i]) * e;
+      poserVue(vue);
+      if (p < 1){ anim = requestAnimationFrame(pas); }
+      else {
+        anim = null;
+        /* Si la cible a changé pendant le vol, on repart vers la nouvelle. */
+        if (Math.abs(vue[0]-butVue[0]) > .01 || Math.abs(vue[2]-butVue[2]) > .01) versVue(butVue);
+      }
+    });
+  }
+
+  function viser(i){
+    if (i === courant) return;
+    courant = i;
+    boutons.forEach(function(b,j){ b.classList.toggle("actif", j === i); });
+    [].forEach.call(plan.querySelectorAll("[data-p]"), function(c,j){ c.classList.toggle("on", j === i); });
+    [].forEach.call(plan.querySelectorAll("[data-h]"), function(c,j){ c.classList.toggle("on", j === i); });
+    if (i < 0){ fiche.t.textContent = DEFAUT[0]; fiche.s.textContent = DEFAUT[1]; versVue(PLEIN); return; }
+    var L = LIEUX[i], z = 24;
+    fiche.t.textContent = L[0]; fiche.s.textContent = L[1];
+    var x = Math.min(Math.max(L[2] - z/2, 0), 100 - z);
+    var y = Math.min(Math.max(L[3] - z/2, 0), 100 - z);
+    versVue([x, y, z, z]);
+  }
+
+  boutons.forEach(function(b){
+    var i = parseInt(b.getAttribute("data-i"), 10);
+    b.addEventListener("mouseenter", function(){ viser(i); });
+    b.addEventListener("focus",      function(){ viser(i); });
+    b.addEventListener("click",      function(){ viser(courant === i ? -1 : i); });
+  });
+  var liste = document.getElementById("lieux");
+  liste.addEventListener("mouseleave", function(){ viser(-1); });
+
+  if (reduit) return;
+
+  /* ── Apparitions ───────────────────────────────────────────────────────────
+     La classe n'est posée QUE si le script tourne : sans lui, aucun bloc n'est
+     transparent et la page reste entière. */
+  doc.classList.add("js-mv");
+  var cibles = [].slice.call(document.querySelectorAll("[data-r]"));
+  function reveler(el){ if (!el.classList.contains("vu")) el.classList.add("vu"); }
+
+  if ("IntersectionObserver" in window){
+    var obs = new IntersectionObserver(function(entrees){
+      entrees.forEach(function(e){ if (e.isIntersecting){ reveler(e.target); obs.unobserve(e.target); } });
+    }, { rootMargin:"0px 0px -10% 0px", threshold:0.03 });
+    cibles.forEach(function(el){ obs.observe(el); });
+  }
+
+  /* FILET OBLIGATOIRE. La décision se prend sur la POSITION RÉELLE lue au
+     défilement, jamais sur la seule notification de l'observateur : un élément
+     sans aire visible n'est jamais signalé comme entré à l'écran, et le bloc
+     resterait blanc à vie. Quatre maquettes l'ont déjà payé le 14/08. */
+  function filet(){
+    var reste = false;
+    cibles.forEach(function(el){
+      if (el.classList.contains("vu")) return;
+      var r = el.getBoundingClientRect();
+      if (r.top < window.innerHeight * 0.95 && r.bottom > -40) reveler(el);
+      else reste = true;
+    });
+    if (!reste) window.removeEventListener("scroll", filet);
+  }
+  window.addEventListener("scroll", filet, { passive:true });
+  window.addEventListener("load", filet);
+  filet();
+
+  /* ── Les compteurs ─────────────────────────────────────────────────────────
+     ⚠️ Une ANNÉE ne prend pas de séparateur de milliers. Le repère est
+     l'attribut `data-brut` posé dans le HTML, jamais la valeur : deviner
+     « entre 1900 et 2100 » attrapait aussi les 2 000 officines livrées, qui
+     s'affichaient alors « 2000 ». Constaté le 14/08/2026. */
+  function monter(el){
+    var cible = parseFloat(el.getAttribute("data-compte"));
+    if (!isFinite(cible)) return;
+    var brut = el.hasAttribute("data-brut");
+    var t0 = null, duree = 1300;
+    requestAnimationFrame(function pas(t){
+      if (t0 === null) t0 = t;
+      var p = Math.min(1, (t - t0) / duree);
+      var v = Math.round(cible * (1 - Math.pow(1 - p, 3)));
+      el.textContent = brut ? String(v) : v.toLocaleString("fr-FR");
+      if (p < 1) requestAnimationFrame(pas);
+    });
+  }
+  var compteurs = [].slice.call(document.querySelectorAll("[data-compte]"));
+  if ("IntersectionObserver" in window){
+    var obsC = new IntersectionObserver(function(entrees){
+      entrees.forEach(function(e){ if (e.isIntersecting){ monter(e.target); obsC.unobserve(e.target); } });
+    }, { threshold:0.5 });
+    compteurs.forEach(function(el){ obsC.observe(el); });
+  }
+})();
+</script>
+</body>
+</html>
