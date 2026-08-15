@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import vm from 'node:vm';
 
 const require = createRequire(import.meta.url);
@@ -33,8 +33,19 @@ function charger(...fichiers) {
   return sb.__X;
 }
 
+// ⚠️ Depuis le 15/08/2026 les ventes vivent dans `wml-ventes-NN.js` : un iPhone
+// ne pouvait pas lire 13 Mo d'un seul tenant. On les retrouve toutes ici, dans
+// l'ordre — et sans coder leur nombre en dur, pour que le test suive tout seul
+// si `decouper_wml.py` en produit plus ou moins.
+const DOSSIER_V2 = new URL('../crm/v2/', import.meta.url);
+const TRANCHES = readdirSync(DOSSIER_V2)
+  .filter((f) => /^wml-ventes-\d+\.js$/.test(f))
+  .sort()
+  .map((f) => '../crm/v2/' + f);
+
 const D = charger(
   '../crm/v2/wml-officines-data.js',
+  ...TRANCHES,
   '../crm/v2/stock-data.js',
   '../crm/v2/prod-stats-data.js'
 );

@@ -5,7 +5,7 @@
    se verifie sur ce que le commercial VOIT, pas sur les donnees en amont. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import vm from 'node:vm';
 
 const B = new URL('../crm/v2/', import.meta.url);
@@ -33,8 +33,15 @@ sb.window = sb;
 sb.globalThis = sb;
 vm.createContext(sb);
 
+// ⚠️ Depuis le 15/08/2026 les ventes sont découpées en `wml-ventes-NN.js` :
+// un iPhone ne pouvait pas lire 13 Mo d'un seul tenant. On les charge toutes,
+// dans l'ordre, sans coder leur nombre en dur.
+const TRANCHES = readdirSync(new URL('../crm/v2/', import.meta.url))
+  .filter((f) => /^wml-ventes-\d+\.js$/.test(f)).sort();
+
 vm.runInContext(
-  ['groupement-alias.js', 'grp-logos-plus.js', 'wml-officines-data.js', 'stock-data.js', 'prod-stats-data.js',
+  ['groupement-alias.js', 'grp-logos-plus.js', 'wml-officines-data.js', ...TRANCHES,
+   'stock-data.js', 'prod-stats-data.js',
    'ruptures-data.js', 'generiqueurs-data.js', 'biosimilaires-data.js', '../marketing-offers.js']
     .map(lire).join('\n;\n') +
   '\n;window.WML_OFFICINES = typeof WML_OFFICINES !== "undefined" ? WML_OFFICINES : window.WML_OFFICINES;' +
