@@ -2063,6 +2063,15 @@
   }
   function groupName(p) { return (String(p.groupement || '').trim()) || '— Sans groupement'; }
   function grpLogo(name, big) {
+    // ⚠️ 15/08/2026 — les 3,6 Mo de logos ont quitté le fichier de ventes.
+    // Ils ne se chargent plus au démarrage mais ICI, au premier écran qui en
+    // affiche. En attendant, on montre les initiales : personne ne voit un
+    // écran vide, et l'iPhone n'a pas à digérer 3,6 Mo d'images pour ouvrir
+    // l'app. Une fois arrivés, on redessine.
+    if (!window.GRP_LOGOS && !V2._grpLogosDemande && V2.loadFiles) {
+      V2._grpLogosDemande = true;
+      V2.loadFiles(['grplogos']).then(function () { if (V2.render) V2.render(); });
+    }
     var l = window.GRP_LOGOS && window.GRP_LOGOS[name];
     var cls = 'grp-logo' + (big ? ' grp-logo-big' : '');
     if (l) return '<span class="' + cls + '"><img src="' + esc(l) + '" alt=""></span>';

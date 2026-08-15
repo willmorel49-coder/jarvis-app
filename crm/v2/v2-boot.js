@@ -213,11 +213,18 @@
       // Le gain visé était le POIDS DU TÉLÉCHARGEMENT, pas la mémoire : après
       // décodage on occupe exactement ce qu'on occupait avant. Aucune régression.
       var dOff = window.WML_D_OFFICINES, dCom = window.WML_D_COMMERCIAUX, dPro = window.WML_D_PRODUITS;
+      // ⚠️ 15/08/2026 — décodage SUR PLACE, et non plus par `.map()`.
+      // `.map()` fabriquait un SECOND tableau de 437 848 lignes pendant que le
+      // premier était encore en mémoire : le pic doublait, au pire moment, sur
+      // l'appareil qui a le moins de mémoire. Une boucle qui réécrit les trois
+      // cases concernées donne exactement le même résultat sans rien allouer.
       if (dOff && dCom && dPro && window.WML_SALES.length &&
           typeof window.WML_SALES[0][0] === 'number') {
-        window.WML_SALES = window.WML_SALES.map(function (s) {
-          return [dOff[s[0]], s[1], dCom[s[2]], dPro[s[3]], s[4], s[5], s[6]];
-        });
+        var W = window.WML_SALES;
+        for (var iw = 0; iw < W.length; iw++) {
+          var s = W[iw];
+          s[0] = dOff[s[0]]; s[2] = dCom[s[2]]; s[3] = dPro[s[3]];
+        }
       }
       // format tableau : [pharmacyId, mois, commercial, cip13, qte, puNet, mntNetHt]
       V2.sales = window.WML_SALES.map(function (s) {
@@ -289,6 +296,10 @@
     // plus au boot (sortait 27 Mo du chargement initial = écran blanc figé 30 s).
     // ⚠️ dans crm/v2/, pas crm/ → chemin préfixé v2/ (base loadFiles = '../').
     wml: 'v2/wml-officines-data.js',
+    // Les logos de groupements (3,6 Mo d'images) ont quitte le fichier de
+    // ventes le 15/08/2026 : charges a la demande par le premier ecran qui
+    // en affiche, jamais au demarrage.
+    grplogos: 'v2/grp-logos-wml.js',
   };
 
   // ── Les fichiers de données reviennent dans le dépôt (15/08/2026) ────
@@ -486,7 +497,8 @@
     cap3000: 'CAP3000',
     sagitta: 'SAGITTA_SHORTLIST',
     clients: 'CLIENTS',
-    wml: 'WML_OFFICINES'
+    wml: 'WML_OFFICINES',
+    grplogos: 'GRP_LOGOS'
   };
 
   function bridge() {
@@ -502,6 +514,34 @@
     try { if (typeof HP_AGGREGATE !== 'undefined') window.HP_AGGREGATE = HP_AGGREGATE; } catch (e) {}
     V2.applyPPHT();
   }
+  // ── Les ventes arrivent en TRANCHES (15/08/2026) ────────────────────────
+  // ⚠️ Mesuré sur l'iPhone de Will : un fichier de 13,4 Mo de ventes sur une
+  // seule ligne **n'est pas lu jusqu'au bout** par Safari. Le fichier arrive
+  // entier, la lecture s'arrête en route, et comme les données n'étaient
+  // publiées qu'à la dernière ligne, il ne restait RIEN.
+  //
+  // `decouper_wml.py` produit donc 9 tranches d'environ 1,5 Mo. Elles se
+  // chargent l'une APRÈS l'autre : le pic mémoire vaut une tranche, et le
+  // ramasse-miettes respire entre deux.
+  //
+  // ⚠️ Le nombre de tranches n'est PAS écrit ici. C'est `decouper_wml.py`, le
+  // script qui les fabrique, qui le pose dans `window.WML_TRANCHES` — donc il
+  // ne peut pas se désaligner. Un nombre recopié à la main, c'est une tranche
+  // oubliée un jour, et des ventes manquantes SANS erreur visible : exactement
+  // le genre de panne muette qui a coûté deux jours les 13 et 14/08.
+  // Ce repli ne sert que si l'en-tête est d'une version antérieure au 15/08.
+  var WML_TRANCHES_REPLI = 9;
+
+  function urlsTranches(V) {
+    var base = (window.V2_DATA_BASE || '../');
+    var n = window.WML_TRANCHES || WML_TRANCHES_REPLI;
+    var l = [];
+    for (var i = 1; i <= n; i++) {
+      l.push(base + 'v2/wml-ventes-' + (i < 10 ? '0' + i : i) + '.js' + V);
+    }
+    return l;
+  }
+
   V2.loadFiles = function (keys) {
     // chemins relatifs au dossier parent crm/ (les data files sont dans crm/)
     // Jeton PROPRE aux fichiers de données, distinct du ?v= global.
@@ -511,7 +551,7 @@
     // de le servir, et le lecteur compacté ne trouverait pas ses dictionnaires.
     // Pas besoin de le suivre à chaque déploiement en revanche : quand `VER` de
     // sw.js change, l'activation du service worker efface tous les caches.
-    var V = '?v=20260813s';
+    var V = '?v=20260815d';
     var promises = keys.map(function (k) {
       var src = (window.V2_DATA_BASE || '../') + DATA_FILES[k];
       if (loaded[src]) return Promise.resolve();
@@ -522,7 +562,7 @@
         // en cache et servie depuis l'appareil aux ouvertures suivantes.
         // `PROTEGES` est vide depuis le 15/08 — le détour par l'adresse signée
         // n'existe plus que pour les DOCUMENTS privés (V2.ouvrirDocProtege).
-        if (!PROTEGES[k]) { poser(src + V, resolve); return; }
+        if (!PROTEGES[k]) { poserSuite([src + V], resolve); return; }
 
         adresseProtegee(k).then(function (url) {
           if (!url) {
@@ -537,6 +577,59 @@
       });
       pending[src] = p;
       return p;
+
+      // Enchaîne les adresses UNE PAR UNE, jamais en parallèle : c'est tout
+      // l'intérêt du découpage. Deux tranches lues en même temps, et le pic
+      // mémoire double — on retomberait sur la panne qu'on vient de corriger.
+      // Le contrôle « la donnée est-elle là ? » n'a lieu qu'à la fin.
+      function poserSuite(urls, resolve) {
+        var i = 0, tranchesFaites = false;
+        (function suivant() {
+          if (i >= urls.length) {
+            // Les ventes arrivent APRÈS l'en-tête, qui vient de nous dire
+            // combien de tranches l'attendre. On les enchaîne à la suite.
+            if (k === 'wml' && !tranchesFaites) {
+              tranchesFaites = true;
+              urls = urls.concat(urlsTranches(V));
+              suivant();
+              return;
+            }
+            finir();
+            return;
+          }
+          var url = urls[i++];
+          var s = document.createElement('script');
+          s.src = url; s.async = false;
+          s.onload = suivant;
+          s.onerror = function () {
+            console.warn('[V2] échec ' + url);
+            V2.protegeEchec[k] = true;
+            delete pending[src];
+            resolve();
+          };
+          document.head.appendChild(s);
+        })();
+
+        function finir() {
+          bridge();   // recopie les `const` sur window (voir poser())
+          var manque = TEMOIN[k] && typeof window[TEMOIN[k]] === 'undefined';
+          // Pour les ventes, la présence du tableau ne suffit pas : il est créé
+          // VIDE par le premier fichier et rempli par les tranches. Un tableau
+          // vide ici veut dire qu'aucune tranche n'a été lue jusqu'au bout.
+          if (!manque && k === 'wml') {
+            manque = !(window.WML_SALES && window.WML_SALES.length);
+          }
+          if (manque) {
+            console.warn('[V2] ' + src + ' : données absentes après ' + urls.length + ' fichier(s)');
+            V2.protegeEchec[k] = true;
+            delete pending[src];
+            resolve();
+            return;
+          }
+          loaded[src] = true;
+          resolve();
+        }
+      }
 
       // `secours` : que faire si CETTE adresse ne donne rien. Sert au rangement
       // local — une entrée de cache abîmée ne doit pas condamner le chargement,

@@ -554,3 +554,18 @@ with open(OUT, 'w', encoding='utf-8') as f:
 size = os.path.getsize(OUT)
 print('\nOK -> {}'.format(OUT))
 print('  {} officines · {} ventes · {:.0f} Ko'.format(len(officines), len(sales), size / 1024))
+
+# ── 5. Découpage OBLIGATOIRE ──────────────────────────────────────────────
+# ⚠️ 15/08/2026 — ne PAS retirer cet appel.
+# Le fichier écrit ci-dessus fait ~17 Mo, dont 13 Mo de ventes sur UNE SEULE
+# LIGNE. Mesuré sur l'iPhone de Will : Safari n'arrive pas à le lire jusqu'au
+# bout, abandonne en route, et comme les données ne sont publiées qu'à la
+# dernière ligne, il ne reste RIEN — l'app affichait alors 22 officines au lieu
+# de 690, en puisant dans de vieilles tables, sans le moindre message.
+# JARVIS a été inutilisable en mobilité pendant deux jours à cause de ça.
+#
+# `decouper_wml.py` casse ce fichier en tranches de 1,5 Mo et sort les logos.
+# Sans lui, la panne revient à la première régénération.
+import sys, subprocess  # noqa: E402  (import tardif : ce script est un outil, pas une lib)
+print('\n── Découpage pour les téléphones ──')
+subprocess.run([sys.executable, os.path.join(BASE, 'decouper_wml.py'), OUT], check=True)
