@@ -410,18 +410,21 @@
     // trois vrais aperçus et l'avancement des notes.
     var mqZone = '';
     if (window.MAQUETTES_SITE && window.MAQUETTES_SITE.length) {
-      var mqL = window.MAQUETTES_SITE, mqB = '../../site-integral/propositions/nouvelles/vignettes/';
+      // Chaque maquette porte son propre chemin d'aperçu depuis le 15/08/2026 :
+      // le dossier `nouvelles/vignettes/` a été retiré avec les vingt directions.
+      var mqL = window.MAQUETTES_SITE;
       var mqApercus = '';
       for (var mqi = 0; mqi < 3 && mqi < mqL.length; mqi++) {
-        mqApercus += '<img src="' + mqB + mqL[mqi].id + '.jpg" loading="lazy" decoding="async" alt="">';
+        var mqA = mqL[mqi].apercu || ('../../site-integral/propositions/vignettes/' + mqL[mqi].id + '.jpg');
+        mqApercus += '<img src="' + mqA + '" loading="lazy" decoding="async" alt="">';
       }
       mqZone =
         '<button class="mkt-site" onclick="V2.go(\'marketing\',\'propositions\')">' +
           '<span class="mkt-site-shots">' + mqApercus + '</span>' +
           '<span class="mkt-site-txt">' +
             '<span class="mkt-site-kick">À choisir</span>' +
-            '<span class="mkt-site-t">Le nouveau site — ' + mqL.length + ' directions</span>' +
-            '<span class="mkt-site-s">Ouvre-les en vrai, elles défilent et elles répondent. Mets une note sur 10 : la moyenne est partagée entre vous.</span>' +
+            '<span class="mkt-site-t">Le nouveau site' + (mqL.length > 1 ? ' — ' + mqL.length + ' directions' : '') + '</span>' +
+            '<span class="mkt-site-s">' + (mqL.length > 1 ? 'Ouvre-les en vrai, elles défilent et elles répondent. Mets une note sur 10 : la moyenne est partagée entre vous.' : 'La maquette retenue. Ouvre-la en vrai, elle défile et elle répond. Mets une note sur 10 : la moyenne est partagée entre vous.') + '</span>' +
             '<span class="mkt-site-cta">Voir et noter ' + ICO('chev', 17, 2.2) + '</span>' +
           '</span>' +
         '</button>';
@@ -562,7 +565,7 @@
     if (V2.maquettes && V2.maquettes.render) { V2.maquettes.render(root); return; }
     root.innerHTML = V2.topbar({ back: true, backTo: 'marketing', backLabel: 'Marketing' }) +
       '<div style="width:100%;height:calc(100vh - 66px);min-height:520px;background:#FAFAF8">' +
-        '<iframe src="../../site-integral/propositions/nouvelles/index.html?v=20260813q" title="Les vingt directions du nouveau site" loading="lazy" style="width:100%;height:100%;border:0;display:block"></iframe>' +
+        '<iframe src="../../site-integral/propositions/trionn/index.html?v=20260815a" title="La maquette du nouveau site" loading="lazy" style="width:100%;height:100%;border:0;display:block"></iframe>' +
       '</div>';
   }
 
