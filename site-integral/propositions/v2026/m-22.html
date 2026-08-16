@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Intégral Pharma — Neuf maisons. Un seul nom.</title>
+<meta name="description" content="Groupe de grossistes-répartiteurs français indépendant. Neuf implantations, plus de 2 000 officines livrées chaque jour.">
+<meta name="theme-color" content="#0A0B0D">
+
+<!--
+  ══════════════════════════════════════════════════════════════════════════════
+  m-22 · « CARACTÈRE »  —  phénomène : LA TYPOGRAPHIE CINÉTIQUE
+  ══════════════════════════════════════════════════════════════════════════════
+
+  LE GESTE
+  Le texte n'est pas posé sur le décor : le texte EST le décor. Une seule police
+  variable (Archivo, axes wdth 62→125 et wght 100→900) compose toute la page, de
+  la ligne de 13 px au mot de 300 px. Les mots entrent COMPRIMÉS et s'ouvrent en
+  largeur jusqu'à leur chasse normale — puis ils s'ARRÊTENT. Le mouvement est une
+  entrée, jamais un état. Au moment où l'œil se pose, chaque mot est immobile et
+  net.
+
+  LA PHOTOGRAPHIE EST DANS LES LETTRES
+  Le premier écran ne montre pas une vidéo « derrière » un titre : la vidéo vit
+  À L'INTÉRIEUR des lettres. Technique : une plaque opaque en `mix-blend-mode:
+  multiply` par-dessus la vidéo — noir × vidéo = noir, blanc × vidéo = vidéo.
+  Le texte reste du VRAI texte, sélectionnable et lisible par un lecteur d'écran.
+  ⚠️ La découpe d'un dégradé dans du grand texte est INTERDITE sur ce Mac : il
+  n'y en a aucune ici, ni verre dépoli, ni flou de grande surface. Tout passe par
+  le mélange de calques et par des transformations — c'est-à-dire par le GPU.
+
+  RÉFÉRENCES REGARDÉES AVANT DE CODER
+   · Codrops — « Creating 3D Scroll-Driven Text Animations with CSS and GSAP »
+     (04/11/2025). Ce que j'en prends : la transformation est PILOTÉE par le
+     défilement (scrub), donc l'utilisateur est maître de l'image ; à tout point
+     d'arrêt, le texte est net. Ce que je n'en prends pas : le cylindre 3D, où le
+     mot ne s'immobilise jamais — exactement le piège du brief.
+   · Mat Voyce (Awwwards SOTD · nommé GSAP Site of the Year 2025) — « letters
+     stretch, snap and recombine on scroll ». Ce que j'en prends : l'étirement
+     sur l'axe de chasse comme geste principal, et surtout le SNAP — le mouvement
+     se termine par un verrou, pas par un fondu mou.
+   · By-Kin (Awwwards SOTD) — typographie éditoriale assumée, défilement lissé
+     « pondéré ». Ce que j'en prends : Lenis en lerp bas, et la retenue —
+     beaucoup de typographie, presque aucun ornement.
+
+  L'ARCHITECTURE (aucune des vingt mécaniques 01→20)
+   1. Premier écran : vidéo dans les lettres, entrée en compression de chasse.
+   2. Bandeau : lentille en `mix-blend-mode: difference` — les mots s'inversent
+      en traversant le centre de l'écran.
+   3. Histoire : révélation mot par mot, chasse 64 % → 112 %, verrouillée.
+   4. Réseau : LE ZOOM TYPOGRAPHIQUE. « NEUF » grandit et se resserre en chasse
+      jusqu'à céder la place aux neuf noms. Pas de carte de France (cliché du
+      secteur), pas de photo d'implantation (refusé par Will le 14/08).
+   5. Métier : rail horizontal piloté par le défilement vertical, quatre verbes
+      géants ; la photographie zénithale sert de matière graphique.
+   6. Centrale : bascule sur papier — la page respire, les chiffres comptent.
+   7→9. Factures, partenaires, recrutement : composition éditoriale.
+   10. Valeurs : trois mots pleine page, découpés lettre par lettre.
+   11. Fin : la photographie du siège en pleine page, l'adresse dessous.
+
+  ROBUSTESSE (les quatre maquettes blanches du 14/08 sont dans ma tête)
+   · L'état CSS par défaut est l'état FINAL, lisible. Rien n'est masqué tant que
+     le script n'a pas confirmé que GSAP est chargé (classe `.anim`).
+   · Script coupé, GSAP absent, mouvement réduit demandé : la page est
+     intégralement lisible, tout est en place, aucun bloc ne manque.
+   · Un chien de garde à 6 s réaffiche de force tout bloc resté masqué.
+   · Zéro appel réseau sortant : police et librairies servies depuis polices-22/
+     et libs-22/.
+
+  POLICE     Archivo (Omnibus-Type) — SIL Open Font License 1.1, auto-hébergement
+             autorisé. Un seul fichier variable, 90 Ko, sous-ensemble latin.
+  LIBRAIRIES GSAP + ScrollTrigger (gratuits), Lenis (MIT), Splitting.js (MIT).
+  MÉDIAS     hero.mp4 (la seule vidéo de la page), siege-solaire.jpg,
+             siege-web.jpg — trois registres, trois traitements différents.
+  ══════════════════════════════════════════════════════════════════════════════
+-->
+
+<link rel="stylesheet" href="libs-22/splitting.css">
+<style>
+/* ══ 1 · LA POLICE ══════════════════════════════════════════════════════════ */
+@font-face{
+  font-family:'Archivo';
+  src:url('polices-22/archivo-var.woff2') format('woff2');
+  font-weight:100 900;
+  font-stretch:62% 125%;
+  font-style:normal;
+  font-display:swap;
+}
+
+/* ══ 2 · LE SYSTÈME ═════════════════════════════════════════════════════════ */
+:root{
+  --encre:#0A0B0D;
+  --encre-2:#141619;
+  --encre-3:#1E2126;
+  --papier:#F1EDE6;
+  --papier-2:#E3DCD0;
+  --blanc:#FFFFFF;
+  --gris:#9CA1AA;          /* 6,9:1 sur --encre  */
+  --gris-papier:#5A5F68;   /* 6,4:1 sur --papier */
+  --signal:#2E5BFF;
+  --signal-clair:#8DA6FF;  /* 8,0:1 sur --encre  */
+  --signal-fonce:#1A3FCC;  /* 6,3:1 sur --papier */
+  --filet:rgba(255,255,255,.13);
+  --filet-papier:rgba(10,11,13,.14);
+
+  --gx:clamp(20px,5vw,88px);          /* gouttière latérale     */
+  --nav-h:64px;
+
+  --t-mega:clamp(2rem,9.6vw,9rem);    /* calibré pour tenir en DEUX lignes  */
+  --t-giant:clamp(2.05rem,5.6vw,5rem);
+  --t-big:clamp(1.55rem,3.3vw,2.9rem);
+  --t-lead:clamp(1.05rem,1.45vw,1.35rem);
+  --t-body:clamp(0.97rem,1.02vw,1.06rem);
+  --t-small:0.8125rem;                /* 13 px pile             */
+
+  --e:cubic-bezier(.16,1,.3,1);
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;overflow-x:clip}   /* clip ≠ hidden : `sticky` continue de marcher */
+body{
+  margin:0;
+  background:var(--encre);
+  color:var(--blanc);
+  font-family:'Archivo',system-ui,-apple-system,'Helvetica Neue',sans-serif;
+  font-size:var(--t-body);
+  font-weight:400;
+  line-height:1.6;
+  /* ⚠️ `clip` et JAMAIS `hidden` ici. `overflow-x:hidden` sur <body> fait du body
+     une zone de defilement : tout `position:sticky` a l'interieur cesse de coller.
+     C'est ce qui faisait remonter la scene du zoom hors de l'ecran et laissait
+     un ecran entierement noir apres le mot « Neuf » — signale par Will.
+     Le meme commentaire etait deja ecrit sur <html> deux regles plus haut. */
+  overflow-x:clip;
+  -webkit-font-smoothing:antialiased;
+}
+img,video{max-width:100%;display:block}
+a{color:inherit}
+::selection{background:var(--signal);color:#fff}
+
+/* la typographie d'affichage : chasse large, interlettrage serré, verrouillée */
+.display{
+  font-weight:760;
+  font-stretch:112%;
+  line-height:.85;
+  letter-spacing:-.028em;
+  text-transform:uppercase;
+  margin:0;
+}
+.editorial{
+  font-weight:620;
+  font-stretch:104%;
+  line-height:.98;
+  letter-spacing:-.022em;
+  margin:0;
+}
+.eyebrow{
+  font-size:var(--t-small);
+  font-weight:640;
+  font-stretch:78%;
+  letter-spacing:.24em;
+  text-transform:uppercase;
+  color:var(--signal-clair);
+  margin:0 0 1.4rem;
+  display:flex;align-items:center;gap:.85rem;
+}
+.eyebrow::before{
+  content:"";width:clamp(28px,4vw,64px);height:1px;background:currentColor;flex:none;opacity:.6;
+}
+.lead{font-size:var(--t-lead);line-height:1.5;color:var(--gris);max-width:56ch;margin:0}
+p{margin:0 0 1.15em}
+p:last-child{margin-bottom:0}
+
+.wrap{padding-inline:var(--gx)}
+section{position:relative}
+.sect{padding-block:clamp(88px,13vh,168px)}
+/* les trois sections qui portent un halo le clipent : sinon le halo déborde
+   de 122 px à droite et crée une barre de défilement horizontale. */
+#groupe,#factures,#valeurs{overflow:hidden}
+
+/* La lumière : un halo qui dérive, obtenu par mélange de calques (aucun flou).
+   ⚠️ Il ne fait que se DÉPLACER. La première version ajoutait un scale(1.18) :
+   mesuré, la section Valeurs tombait à 26 img/s — un calque en `mix-blend-mode`
+   redimensionné se re-rasterise à chaque image. Translate seul = gratuit. */
+.glow{
+  position:absolute;inset:-12% -6%;
+  pointer-events:none;z-index:1;
+  mix-blend-mode:screen;
+  background:radial-gradient(48% 42% at 50% 45%,rgba(46,91,255,.44) 0%,rgba(46,91,255,.16) 38%,rgba(46,91,255,0) 72%);
+  will-change:transform;
+}
+.anim .glow{animation:derive 19s var(--e) infinite alternate}
+@keyframes derive{
+  0%  {transform:translate3d(-9%,-4%,0)}
+  50% {transform:translate3d(7%,5%,0)}
+  100%{transform:translate3d(-3%,-7%,0)}
+}
+
+/* ══ 3 · NAVIGATION ═════════════════════════════════════════════════════════ */
+.nav{
+  position:fixed;inset:0 0 auto;z-index:90;
+  height:var(--nav-h);
+  display:flex;align-items:center;justify-content:space-between;
+  padding-inline:var(--gx);
+  transition:background .45s var(--e),border-color .45s var(--e);
+  border-bottom:1px solid transparent;
+}
+.nav.solide{background:rgba(10,11,13,.94);border-bottom-color:var(--filet)}
+.nav-logo{display:flex;align-items:center;gap:.7rem;text-decoration:none;flex:none;min-height:44px}
+.nav-logo img{height:26px;width:auto}
+.nav-logo b{
+  font-size:var(--t-small);font-weight:700;font-stretch:80%;
+  letter-spacing:.2em;text-transform:uppercase;
+}
+.nav-liens{display:flex;gap:clamp(14px,2vw,34px);align-items:center}
+.nav-liens a{
+  font-size:var(--t-small);font-weight:560;font-stretch:88%;
+  letter-spacing:.06em;text-decoration:none;color:var(--gris);
+  padding:14px 4px;min-height:44px;display:inline-flex;align-items:center;
+  transition:color .3s var(--e),font-stretch .45s var(--e);
+}
+.nav-liens a:hover,.nav-liens a:focus-visible{color:var(--blanc);font-stretch:104%}
+.burger{
+  display:none;background:none;border:1px solid var(--filet);color:var(--blanc);
+  width:46px;height:46px;border-radius:2px;cursor:pointer;
+  align-items:center;justify-content:center;flex:none;
+}
+.burger span{display:block;width:20px;height:1.5px;background:currentColor;position:relative}
+.burger span::before,.burger span::after{
+  content:"";position:absolute;left:0;width:20px;height:1.5px;background:currentColor;
+}
+.burger span::before{top:-6px}
+.burger span::after{top:6px}
+
+.menu{
+  position:fixed;inset:0;z-index:95;
+  background:var(--encre);          /* fond PLEIN, opaque — jamais transparent */
+  display:none;flex-direction:column;justify-content:center;
+  padding:var(--gx);
+}
+.menu.ouvert{display:flex}
+.menu a{
+  font-size:clamp(2rem,9vw,3.4rem);
+  font-weight:700;font-stretch:106%;letter-spacing:-.02em;
+  text-transform:uppercase;text-decoration:none;
+  padding:.28em 0;min-height:44px;border-bottom:1px solid var(--filet);
+}
+.menu a:last-of-type{border-bottom:none}
+.menu-fermer{
+  position:absolute;top:9px;right:var(--gx);
+  width:46px;height:46px;background:none;border:1px solid var(--filet);
+  color:var(--blanc);font-size:22px;line-height:1;cursor:pointer;border-radius:2px;
+}
+
+/* ══ 4 · BOUTONS ════════════════════════════════════════════════════════════ */
+.btn{
+  display:inline-flex;align-items:center;gap:.7rem;
+  min-height:48px;padding:0 1.5rem;
+  font-size:var(--t-small);font-weight:660;font-stretch:88%;
+  letter-spacing:.12em;text-transform:uppercase;text-decoration:none;
+  border:1px solid currentColor;border-radius:2px;
+  transition:background .35s var(--e),color .35s var(--e),font-stretch .4s var(--e);
+  cursor:pointer;background:none;color:inherit;font-family:inherit;
+}
+.btn:hover,.btn:focus-visible{font-stretch:100%}
+.btn-plein{background:var(--signal);border-color:var(--signal);color:#fff}
+.btn-plein:hover,.btn-plein:focus-visible{background:var(--blanc);border-color:var(--blanc);color:var(--encre)}
+.btn-vide:hover,.btn-vide:focus-visible{background:var(--blanc);border-color:var(--blanc);color:var(--encre)}
+.papier .btn-vide:hover,.papier .btn-vide:focus-visible{background:var(--encre);border-color:var(--encre);color:var(--papier)}
+:focus-visible{outline:2px solid var(--signal-clair);outline-offset:3px}
+
+/* ══ 5 · PREMIER ÉCRAN — la vidéo vit DANS les lettres ══════════════════════ */
+.hero{
+  height:100svh;min-height:600px;
+  position:relative;overflow:hidden;isolation:isolate;
+}
+.hero-film{position:absolute;inset:0;z-index:0;background:#4A5058}
+/* Aucun `filter` sur la vidéo : mesuré, il coûtait une passe de rendu par image
+   et faisait tomber le premier écran sous 40 img/s. La prise de vue est déjà
+   lumineuse, la plaque de mélange fait tout le contraste. */
+.hero-film video{width:100%;height:100%;object-fit:cover;transform:translateZ(0)}
+
+/* La plaque : noir opaque × vidéo = noir ; blanc × vidéo = vidéo.
+   Aucune découpe de dégradé — le titre reste du texte réel et sélectionnable. */
+.hero-plaque{
+  position:absolute;inset:0;z-index:2;
+  background:#08090C;
+  mix-blend-mode:multiply;
+  display:flex;align-items:center;
+  padding-inline:var(--gx);
+  pointer-events:none;
+}
+.hero-titre{
+  font-size:var(--t-mega);
+  color:#fff;
+  width:100%;
+  pointer-events:auto;
+}
+.hero-titre .ln{display:block}
+/* Mesuré : ce halo, en plein écran ET redimensionné à chaque image, coûtait
+   8 images/s à lui seul (52 → 60 sans lui). Il est maintenant deux fois plus
+   petit et ne fait plus que se DÉPLACER — un translate sur un calque composé
+   est gratuit, un scale force un nouveau rendu à chaque image. */
+.hero-halo{
+  position:absolute;left:-10%;top:2%;width:84%;height:92%;
+  z-index:3;pointer-events:none;
+  mix-blend-mode:screen;
+  background:radial-gradient(44% 38% at 42% 52%,rgba(46,91,255,.56) 0%,rgba(46,91,255,.13) 46%,rgba(46,91,255,0) 74%);
+  will-change:transform;
+}
+.anim .hero-halo{animation:derive-plat 17s var(--e) infinite alternate}
+@keyframes derive-plat{
+  0%  {transform:translate3d(-5%,-3%,0)}
+  50% {transform:translate3d(8%,4%,0)}
+  100%{transform:translate3d(-1%,-6%,0)}
+}
+
+.hero-ui{position:absolute;inset:0;z-index:4;pointer-events:none;padding-inline:var(--gx)}
+.hero-ui > *{pointer-events:auto}
+.hero-sur{position:absolute;top:calc(var(--nav-h) + 5vh);left:var(--gx);right:var(--gx);margin:0}
+.hero-bas{
+  position:absolute;left:var(--gx);right:var(--gx);bottom:5vh;
+  display:flex;flex-wrap:wrap;align-items:flex-end;gap:clamp(20px,3vw,56px);
+}
+.hero-bas .lead{flex:1 1 380px;max-width:52ch;color:#D6D9DE}
+.hero-actions{display:flex;gap:12px;flex-wrap:wrap;flex:none}
+.hero-fleche{
+  position:absolute;right:var(--gx);top:50%;transform:translateY(-50%);
+  writing-mode:vertical-rl;
+  font-size:var(--t-small);font-weight:600;font-stretch:78%;letter-spacing:.3em;
+  text-transform:uppercase;color:var(--gris);
+}
+
+/* ══ 6 · BANDEAU — lentille à inversion ═════════════════════════════════════ */
+.bandeau{
+  position:relative;overflow:hidden;
+  border-block:1px solid var(--filet);
+  background:var(--encre-2);
+  padding-block:clamp(16px,2.4vh,26px);
+  isolation:isolate;
+}
+.piste{display:flex;width:max-content;will-change:transform}
+.anim .piste{animation:defile 46s linear infinite}
+@keyframes defile{from{transform:translate3d(0,0,0)}to{transform:translate3d(-50%,0,0)}}
+.piste-grp{display:flex;flex:none}
+.piste span{
+  font-size:clamp(1.2rem,2.6vw,2.4rem);
+  font-weight:700;font-stretch:96%;letter-spacing:-.01em;text-transform:uppercase;
+  padding-inline:clamp(18px,2.4vw,44px);white-space:nowrap;
+  display:flex;align-items:center;gap:clamp(18px,2.4vw,44px);
+}
+.piste span::after{content:"";width:7px;height:7px;background:var(--signal);flex:none;border-radius:50%}
+/* la lentille : les mots s'inversent en traversant le centre */
+.lentille{
+  position:absolute;top:0;bottom:0;left:50%;width:clamp(120px,17vw,300px);
+  transform:translateX(-50%);
+  background:#fff;mix-blend-mode:difference;pointer-events:none;z-index:2;
+}
+
+/* ══ 7 · RÉVÉLATIONS ════════════════════════════════════════════════════════ */
+/* Par défaut TOUT est visible. Seule la classe .anim (posée par le script,
+   après confirmation que GSAP est là) autorise un état masqué. */
+.anim .rv{
+  opacity:0;transform:translate3d(0,26px,0);
+  transition:opacity .85s var(--e),transform .95s var(--e);
+  transition-delay:var(--d,0s);
+}
+.anim .rv.in{opacity:1;transform:none}
+
+/* Le geste typographique : la chasse s'ouvre, mot par mot, puis se verrouille. */
+.anim .kt .word{
+  display:inline-block;
+  font-stretch:64%;
+  opacity:0;
+  transform:translate3d(0,.36em,0);
+  transition:font-stretch 1s var(--e),opacity .7s var(--e),transform 1s var(--e);
+  transition-delay:calc(var(--word-index,0) * 52ms);
+}
+.anim .kt.in .word{font-stretch:104%;opacity:1;transform:none}
+.anim .kt.kt-display .word{font-stretch:70%}
+.anim .kt.kt-display.in .word{font-stretch:112%}
+
+/* ══ 8 · SECTIONS PAPIER ════════════════════════════════════════════════════ */
+.papier{background:var(--papier);color:var(--encre)}
+.papier .lead{color:var(--gris-papier)}
+.papier .eyebrow{color:var(--signal-fonce)}
+.filet{height:1px;background:var(--filet);border:0;margin:0}
+
+/* ══ 9 · HISTOIRE ═══════════════════════════════════════════════════════════ */
+.duo{
+  display:grid;gap:clamp(28px,4vw,72px);
+  grid-template-columns:minmax(0,1fr);
+  align-items:start;
+}
+@media(min-width:900px){.duo{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr)}}
+.histoire .titre{font-size:var(--t-giant);margin-bottom:clamp(24px,3vw,44px)}
+.histoire-txt{max-width:54ch;color:var(--gris);font-size:var(--t-lead);line-height:1.55}
+
+.compteurs{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:1px;background:var(--filet);border:1px solid var(--filet);
+  margin-top:clamp(48px,7vh,96px);
+}
+@media(min-width:760px){.compteurs{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.cnt{background:var(--encre);padding:clamp(20px,3vw,34px)}
+.cnt-n{
+  display:block;
+  font-size:clamp(2.4rem,6vw,4.6rem);
+  font-weight:740;font-stretch:118%;line-height:.9;letter-spacing:-.03em;
+  font-variant-numeric:tabular-nums;
+  color:var(--blanc);
+}
+.cnt-l{
+  display:block;margin-top:.7rem;
+  font-size:var(--t-small);font-weight:560;font-stretch:82%;
+  letter-spacing:.16em;text-transform:uppercase;color:var(--gris);
+}
+.papier .cnt{background:var(--papier)}
+.papier .cnt-n{color:var(--encre)}
+.papier .cnt-l{color:var(--gris-papier)}
+.papier .compteurs{background:var(--filet-papier);border-color:var(--filet-papier)}
+
+/* ══ 10 · RÉSEAU — le zoom typographique ════════════════════════════════════ */
+.zoom-wrap{position:relative}
+.zoom-stage{
+  position:relative;overflow:hidden;isolation:isolate;
+  padding-block:clamp(60px,9vh,110px);
+}
+.zoom-word{
+  position:relative;z-index:2;
+  font-size:clamp(3.2rem,17vw,15rem);
+  color:var(--blanc);
+  text-align:center;width:100%;
+  will-change:transform,font-stretch;
+  padding-inline:var(--gx);
+  margin-bottom:clamp(28px,5vh,60px);
+}
+.zoom-cible{position:relative;z-index:3;width:100%;padding-inline:var(--gx)}
+
+/* La scène collante et le zoom n'existent QU'AU-DESSUS de 901 px. En dessous,
+   les deux blocs s'empilent normalement — sinon le mot géant reste posé sous
+   le texte, invisible, dans une section de 300 vh à moitié vide. */
+@media(min-width:901px){
+  .anim .zoom-wrap{height:300vh}
+  .anim .zoom-stage{position:sticky;top:0;height:100svh;display:flex;align-items:center;padding-block:0}
+  .anim .zoom-word{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);margin-bottom:0}
+  .anim .zoom-cible{opacity:0}
+}
+
+.reseau-tete{margin-bottom:clamp(30px,4vh,54px)}
+.reseau-tete .titre{font-size:clamp(1.7rem,4.4vw,3.4rem);margin-bottom:clamp(20px,3vh,34px);max-width:22ch}
+.reseau-tete p{color:var(--gris)}
+.reseau-para{display:grid;gap:clamp(18px,2.4vw,52px)}
+@media(min-width:900px){.reseau-para{grid-template-columns:1fr 1fr}}
+
+/* l'échelle des neuf : la chasse dit qui est actif */
+.echelle{border-top:1px solid var(--filet)}
+.imp{
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr) auto;
+  gap:clamp(12px,2vw,28px);align-items:baseline;
+  padding:clamp(11px,1.5vh,17px) 0;
+  border-bottom:1px solid var(--filet);
+  min-height:44px;
+  transition:padding-left .5s var(--e);
+}
+.imp:hover,.imp:focus-within{padding-left:clamp(8px,1.4vw,22px)}
+.imp-i{
+  font-size:var(--t-small);font-weight:600;font-stretch:80%;letter-spacing:.16em;
+  color:var(--signal-clair);font-variant-numeric:tabular-nums;
+}
+.imp-n{
+  font-size:clamp(1.1rem,2.5vw,2.05rem);
+  font-weight:660;font-stretch:92%;letter-spacing:-.015em;line-height:1.1;
+  transition:font-stretch .55s var(--e),color .4s var(--e);
+}
+.imp:hover .imp-n,.imp:focus-within .imp-n{font-stretch:118%}
+.imp-v{
+  font-size:var(--t-small);font-weight:520;font-stretch:84%;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--gris);text-align:right;white-space:nowrap;
+}
+.imp-siege{
+  font-size:var(--t-small);font-weight:600;font-stretch:80%;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--signal-clair);
+  border:1px solid currentColor;border-radius:2px;padding:1px 7px;margin-left:.7rem;
+  display:inline-block;vertical-align:middle;
+}
+.partenaire{
+  margin-top:clamp(22px,3vh,34px);
+  font-size:var(--t-body);color:var(--gris);max-width:60ch;
+}
+.partenaire b{color:var(--blanc);font-weight:680;font-stretch:100%}
+
+/* ══ 11 · MÉTIER — rail horizontal ══════════════════════════════════════════ */
+.rail-wrap{position:relative}
+.rail-stage{position:relative;overflow:hidden}
+.rail{display:grid;gap:clamp(40px,6vh,72px)}
+.panneau{position:relative}
+.panneau-i{
+  font-size:var(--t-small);font-weight:640;font-stretch:80%;letter-spacing:.24em;
+  color:var(--signal-clair);margin-bottom:.8rem;display:block;
+}
+.panneau-t{
+  font-size:clamp(2.1rem,6.6vw,5.6rem);
+  margin-bottom:1.1rem;color:var(--blanc);
+}
+.panneau-s{
+  display:block;font-size:var(--t-small);font-weight:520;font-stretch:84%;
+  letter-spacing:.2em;text-transform:uppercase;color:var(--gris);
+  margin-bottom:.35rem;
+}
+.panneau p{color:var(--gris);max-width:44ch;font-size:var(--t-body)}
+
+@media(min-width:901px){
+  .anim .rail-wrap{height:340vh}
+  .anim .rail-stage{position:sticky;top:0;height:100svh;display:flex;align-items:center}
+  .anim .rail{
+    display:flex;width:max-content;gap:clamp(60px,7vw,130px);
+    padding-inline:var(--gx);will-change:transform;
+  }
+  .anim .rail .panneau{width:min(52vw,640px);flex:none}
+}
+/* La photographie zénithale : elle DOIT se voir. Première version à 20 %
+   d'opacité sous un dégradé à 90 % — elle était invisible, donc la maquette
+   n'avait plus qu'une seule photo réelle. Remontée et le dégradé assoupli. */
+.metier-fond{position:absolute;inset:0;z-index:0;overflow:hidden}
+.metier-fond img{
+  width:100%;height:100%;object-fit:cover;object-position:center top;
+  opacity:.5;filter:saturate(.55) contrast(1.1);
+}
+.metier-fond::after{
+  content:"";position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(10,11,13,.5) 0%,rgba(10,11,13,.78) 34%,rgba(10,11,13,.96) 62%,var(--encre) 100%);
+}
+.metier-tete{position:relative;z-index:2}
+.metier-cloture{
+  position:relative;z-index:2;
+  margin-top:clamp(40px,6vh,72px);
+  padding-top:clamp(24px,3vh,36px);border-top:1px solid var(--filet);
+  font-size:var(--t-lead);color:var(--blanc);max-width:62ch;font-weight:500;
+}
+
+/* ══ 12 · CENTRALE / FACTURES / PARTENAIRES / RECRUTEMENT ═══════════════════ */
+/* Calibré pour tenir sur UNE ligne dans une demi-colonne : à 14vw, « 14 000 + »
+   passait à la ligne et le « + » tombait tout seul sous le nombre. */
+.chiffre-geant{
+  font-size:clamp(2.3rem,6.4vw,5.8rem);
+  font-weight:780;font-stretch:118%;line-height:.9;letter-spacing:-.04em;
+  font-variant-numeric:tabular-nums;margin:0;white-space:nowrap;
+}
+.chiffres-duo{display:grid;gap:clamp(30px,5vh,64px);margin-top:clamp(36px,5vh,64px)}
+@media(min-width:760px){.chiffres-duo{grid-template-columns:1fr 1fr;gap:clamp(30px,4vw,80px)}}
+.chiffre-l{
+  display:block;margin-top:.9rem;
+  font-size:var(--t-small);font-weight:580;font-stretch:82%;
+  letter-spacing:.2em;text-transform:uppercase;color:var(--gris-papier);
+}
+
+.facture-t{font-size:var(--t-giant);margin-bottom:clamp(22px,3vh,38px)}
+.facture-liste{
+  display:flex;flex-wrap:wrap;gap:0;margin-top:clamp(28px,4vh,48px);
+  border-top:1px solid var(--filet);
+}
+.facture-liste span{
+  flex:1 1 220px;padding:1.1rem 0;border-bottom:1px solid var(--filet);
+  font-size:clamp(1.05rem,2vw,1.5rem);font-weight:620;font-stretch:98%;
+}
+
+.labos{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+  gap:1px;background:var(--filet-papier);border:1px solid var(--filet-papier);
+  margin-top:clamp(34px,5vh,60px);
+}
+.labo{
+  background:var(--papier);padding:clamp(24px,3.4vw,44px) clamp(16px,2vw,24px);
+  display:flex;align-items:center;justify-content:center;min-height:110px;
+  font-size:clamp(1.05rem,2vw,1.55rem);font-weight:680;font-stretch:92%;
+  letter-spacing:-.01em;text-align:center;
+  transition:font-stretch .55s var(--e),background .4s var(--e),color .4s var(--e);
+}
+.labo:hover{font-stretch:118%;background:var(--encre);color:var(--papier)}
+
+.villes{display:flex;flex-wrap:wrap;gap:10px;margin-top:clamp(24px,3vh,38px)}
+.ville{
+  border:1px solid var(--filet);border-radius:2px;
+  padding:11px 16px;min-height:44px;display:inline-flex;align-items:center;
+  font-size:var(--t-small);font-weight:580;font-stretch:88%;letter-spacing:.08em;
+  transition:font-stretch .45s var(--e),border-color .4s var(--e);
+}
+.ville:hover{font-stretch:106%;border-color:var(--blanc)}
+
+/* ══ 13 · VALEURS — trois mots pleine page ══════════════════════════════════ */
+/* Le mot occupe TOUTE la largeur : à 12,5 vw dans une colonne de 60 %,
+   « CONFIANCE » se coupait en CONFI / ANCE. */
+.valeur{
+  border-top:1px solid var(--filet);
+  padding-block:clamp(38px,6vh,78px);
+}
+.valeur-m{font-size:clamp(2.4rem,10vw,9rem);color:var(--blanc);margin:0}
+.valeur-p{
+  color:var(--gris);font-size:var(--t-lead);line-height:1.5;max-width:46ch;
+  margin:clamp(14px,2.4vh,30px) 0 0;
+}
+@media(min-width:900px){.valeur-p{margin-left:auto}}
+.anim .valeur-m .char{
+  display:inline-block;opacity:0;transform:translate3d(0,.5em,0);
+  transition:opacity .55s var(--e),transform .9s var(--e);
+  transition-delay:calc(var(--char-index,0) * 34ms);
+}
+.anim .valeur-m.in .char{opacity:1;transform:none}
+
+/* ══ 14 · FIN DE PAGE ═══════════════════════════════════════════════════════ */
+.fin{position:relative;overflow:hidden;isolation:isolate}
+.fin-photo{position:absolute;inset:0;z-index:0}
+.fin-photo img{width:100%;height:100%;object-fit:cover;filter:saturate(.28) contrast(1.16) brightness(.62)}
+.fin-photo::after{
+  content:"";position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(10,11,13,.9) 0%,rgba(10,11,13,.62) 45%,rgba(10,11,13,.95) 100%);
+}
+.fin-in{position:relative;z-index:2}
+.fin-t{font-size:var(--t-giant);margin-bottom:clamp(20px,3vh,34px);max-width:16ch}
+.mail{
+  display:inline-flex;align-items:center;gap:1rem;margin-top:clamp(28px,4vh,48px);
+  font-size:clamp(1.15rem,3.6vw,2.9rem);
+  font-weight:700;font-stretch:96%;letter-spacing:-.02em;
+  text-decoration:none;color:var(--blanc);
+  border-bottom:2px solid var(--signal);padding-bottom:.15em;min-height:48px;
+  transition:font-stretch .55s var(--e),color .4s var(--e);
+  word-break:break-word;
+}
+.mail:hover,.mail:focus-visible{font-stretch:114%;color:var(--signal-clair)}
+
+.pied{background:var(--encre);border-top:1px solid var(--filet);padding-block:clamp(40px,6vh,72px)}
+.pied-grille{display:grid;gap:clamp(22px,3vw,54px)}
+@media(min-width:760px){.pied-grille{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr)}}
+.pied p{color:var(--gris);font-size:var(--t-small);line-height:1.85;margin:0}
+.pied a{color:var(--gris);text-decoration:none;border-bottom:1px solid var(--filet);
+  display:inline-flex;align-items:center;min-height:44px}
+.pied a:hover{color:var(--blanc)}
+.pied-chiffres{
+  margin-top:clamp(30px,4vh,52px);padding-top:clamp(18px,2.4vh,28px);
+  border-top:1px solid var(--filet);
+  display:flex;flex-wrap:wrap;gap:.5rem 1.6rem;
+  font-size:var(--t-small);font-weight:560;font-stretch:84%;
+  letter-spacing:.13em;text-transform:uppercase;color:var(--gris);
+}
+.signature{
+  margin-top:clamp(24px,3vh,40px);
+  font-size:.75rem;font-weight:560;font-stretch:80%;letter-spacing:.22em;
+  text-transform:uppercase;color:#6E737C;
+}
+
+/* ══ 15 · TÉLÉPHONE ═════════════════════════════════════════════════════════ */
+@media(max-width:900px){
+  :root{--nav-h:58px}
+  .nav-liens{display:none}
+  .burger{display:inline-flex}
+  .hero{min-height:560px}
+  .hero-fleche{display:none}
+  .hero-bas{bottom:3.5vh;gap:16px}
+  .hero-bas .lead{font-size:.97rem;line-height:1.5;flex:1 1 100%}
+  .hero-actions{width:100%}
+  .hero-actions .btn{flex:1 1 auto;justify-content:center}
+  .hero-sur{top:calc(var(--nav-h) + 3vh);font-size:.7rem;letter-spacing:.16em}
+  .imp{grid-template-columns:auto minmax(0,1fr);row-gap:2px}
+  .imp-v{grid-column:2;text-align:left}
+  .metier-fond img{opacity:.14}
+  .metier-fond::after{background:linear-gradient(180deg,rgba(10,11,13,.82),rgba(10,11,13,.95))}
+}
+@media(max-width:420px){
+  :root{--t-mega:clamp(2.5rem,14.5vw,4rem)}
+}
+
+/* ══ 16 · MOUVEMENT RÉDUIT — tout se pose net, rien ne bouge ════════════════ */
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{
+    animation-duration:.001ms!important;animation-iteration-count:1!important;
+    transition-duration:.001ms!important;scroll-behavior:auto!important;
+  }
+  .anim .rv,.anim .kt .word,.anim .valeur-m .char{opacity:1!important;transform:none!important}
+  .anim .zoom-cible{opacity:1!important}
+}
+</style>
+</head>
+
+<body>
+
+<!-- ═══ NAVIGATION ═══════════════════════════════════════════════════════════ -->
+<nav class="nav" id="nav">
+  <a class="nav-logo" href="#haut" aria-label="Intégral Pharma, retour en haut">
+    <img src="../../assets/logo-web.png" alt="" width="260" height="206">
+    <b>Intégral Pharma</b>
+  </a>
+  <div class="nav-liens">
+    <a href="#groupe">Le groupe</a>
+    <a href="#reseau">Le réseau</a>
+    <a href="#metier">Le métier</a>
+    <a href="#valeurs">Nos valeurs</a>
+    <a href="#ecrire">Nous écrire</a>
+  </div>
+  <button class="burger" id="burger" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="menu">
+    <span></span>
+  </button>
+</nav>
+
+<div class="menu" id="menu" role="dialog" aria-modal="true" aria-label="Menu">
+  <button class="menu-fermer" id="menu-fermer" aria-label="Fermer le menu">✕</button>
+  <a href="#groupe">Le groupe</a>
+  <a href="#reseau">Le réseau</a>
+  <a href="#metier">Le métier</a>
+  <a href="#valeurs">Nos valeurs</a>
+  <a href="#ecrire">Nous écrire</a>
+</div>
+
+<main id="haut">
+
+<!-- ═══ 1 · PREMIER ÉCRAN ════════════════════════════════════════════════════ -->
+<section class="hero">
+  <div class="hero-film">
+    <video id="film" muted loop playsinline autoplay preload="metadata" aria-hidden="true" tabindex="-1">
+      <source src="../../assets/hero.mp4" type="video/mp4">
+    </video>
+  </div>
+
+  <div class="hero-plaque">
+    <h1 class="hero-titre display" id="hero-titre">
+      <span class="ln" data-chars>Neuf maisons.</span>
+      <span class="ln" data-chars>Un seul nom.</span>
+    </h1>
+  </div>
+  <div class="hero-halo" aria-hidden="true"></div>
+
+  <div class="hero-ui">
+    <p class="eyebrow hero-sur">Groupe de grossistes-répartiteurs français indépendant</p>
+    <span class="hero-fleche" aria-hidden="true">Défiler</span>
+    <div class="hero-bas">
+      <p class="lead">Chacune livre sa région depuis des années, avec ses équipes et ses habitudes. Depuis 2006, elles avancent ensemble sous le nom d'Intégral&nbsp;Pharma — et votre commande part toujours de la plus proche de votre comptoir.</p>
+      <div class="hero-actions">
+        <a class="btn btn-plein" href="#reseau">Découvrir le réseau</a>
+        <a class="btn btn-vide" href="#ecrire">Nous écrire</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 2 · BANDEAU ═════════════════════════════════════════════════════════ -->
+<section class="bandeau" aria-label="Repères">
+  <div class="piste" id="piste">
+    <div class="piste-grp">
+      <span>Indépendant</span><span>Neuf implantations</span><span>Un réseau national</span><span>Plus de 2 000 officines livrées</span><span>Confiance, Engagement, Respect</span><span>Une alternative aux grossistes historiques</span>
+    </div>
+    <div class="piste-grp" aria-hidden="true">
+      <span>Indépendant</span><span>Neuf implantations</span><span>Un réseau national</span><span>Plus de 2 000 officines livrées</span><span>Confiance, Engagement, Respect</span><span>Une alternative aux grossistes historiques</span>
+    </div>
+  </div>
+  <div class="lentille" aria-hidden="true"></div>
+</section>
+
+<!-- ═══ 3 · L'HISTOIRE ══════════════════════════════════════════════════════ -->
+<section class="sect wrap histoire" id="groupe">
+  <div class="glow" aria-hidden="true"></div>
+  <div style="position:relative;z-index:2">
+    <p class="eyebrow rv">Notre histoire</p>
+    <div class="duo">
+      <h2 class="titre editorial kt kt-display" data-words>Rendre la marge à l'officine française.</h2>
+      <div class="histoire-txt rv" style="--d:.12s">
+        <p>C'est la raison d'être d'Intégral&nbsp;Pharma depuis 2006 : redistribuer directement la marge aux officines françaises, en toute transparence, avec des prix nets visibles sur facture.</p>
+        <p>Neuf implantations aujourd'hui, plus de deux mille officines livrées chaque jour, et la même idée qu'au premier jour — un groupe de répartiteurs indépendants qui a choisi de se mettre du côté du comptoir.</p>
+      </div>
+    </div>
+
+    <div class="compteurs rv" style="--d:.2s">
+      <div class="cnt"><span class="cnt-n" data-to="2006">2006</span><span class="cnt-l">année de création</span></div>
+      <div class="cnt"><span class="cnt-n" data-to="9">9</span><span class="cnt-l">implantations</span></div>
+      <div class="cnt"><span class="cnt-n" data-to="2000" data-suffixe=" +">2 000 +</span><span class="cnt-l">officines livrées</span></div>
+      <div class="cnt"><span class="cnt-n" data-to="20">20</span><span class="cnt-l">ans d'indépendance</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 4 · LE RÉSEAU — le zoom typographique ═══════════════════════════════ -->
+<section id="reseau" aria-labelledby="reseau-titre">
+  <div class="zoom-wrap" id="zoom-wrap">
+    <div class="zoom-stage" id="zoom-stage">
+      <div class="glow" aria-hidden="true"></div>
+      <p class="zoom-word display" id="zoom-word" aria-hidden="true">Neuf</p>
+
+      <div class="zoom-cible" id="zoom-cible">
+        <div class="reseau-tete">
+          <p class="eyebrow">Le réseau</p>
+          <h2 class="titre editorial" id="reseau-titre">Neuf implantations. Laquelle est la vôtre&nbsp;?</h2>
+          <div class="reseau-para">
+            <p>C'est la seule question qui compte vraiment. Celle qui prépare votre commande, qui vous livre chaque matin, et dont vous connaissez l'équipe par son prénom.</p>
+            <p>Les huit autres sont là pour qu'elle ne soit jamais prise au dépourvu — de la Bretagne à la Méditerranée, le stock d'une maison est le stock de toutes.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sect wrap" style="padding-top:0">
+    <div class="echelle">
+      <div class="imp rv"><span class="imp-i">01</span><span class="imp-n">Hyères Pharma<span class="imp-siege">Siège du groupe</span></span><span class="imp-v">Hyères · 83</span></div>
+      <div class="imp rv" style="--d:.04s"><span class="imp-i">02</span><span class="imp-n">SR Pharma</span><span class="imp-v">Palaiseau · 91</span></div>
+      <div class="imp rv" style="--d:.08s"><span class="imp-i">03</span><span class="imp-n">Mistral Santé Pharma</span><span class="imp-v">Flassans-sur-Issole · 83</span></div>
+      <div class="imp rv" style="--d:.12s"><span class="imp-i">04</span><span class="imp-n">Sud Ouest Pharma</span><span class="imp-v">Montayral · 47</span></div>
+      <div class="imp rv" style="--d:.16s"><span class="imp-i">05</span><span class="imp-n">Comptoir Pharmaceutique du Rhône</span><span class="imp-v">Saint-Maurice-l'Exil · 38</span></div>
+      <div class="imp rv" style="--d:.2s"><span class="imp-i">06</span><span class="imp-n">Escale Pharma</span><span class="imp-v">Chilly-Mazarin · 91</span></div>
+      <div class="imp rv" style="--d:.24s"><span class="imp-i">07</span><span class="imp-n">Ouest Pharma Services</span><span class="imp-v">Saint-Étienne-de-Montluc · 44</span></div>
+      <div class="imp rv" style="--d:.28s"><span class="imp-i">08</span><span class="imp-n">Pharm'Occitanie Services</span><span class="imp-v">Villeneuve-lès-Béziers · 34</span></div>
+      <div class="imp rv" style="--d:.32s"><span class="imp-i">09</span><span class="imp-n">Sud Est Pharma</span><span class="imp-v">Le Cannet-des-Maures · 83</span></div>
+    </div>
+    <p class="partenaire rv" style="--d:.36s">Et à l'Est, notre partenaire <b>Pharmest</b> (Metz, 57) prolonge le maillage. <span style="color:#6E737C">Neuf implantations et un partenaire.</span></p>
+  </div>
+</section>
+
+<!-- ═══ 5 · LE MÉTIER — rail horizontal ═════════════════════════════════════ -->
+<section id="metier" aria-labelledby="metier-titre">
+  <div class="sect wrap" style="padding-bottom:clamp(40px,6vh,72px)">
+    <div class="metier-fond" aria-hidden="true">
+      <img src="../../assets/siege-solaire.jpg" alt="" width="1280" height="720" loading="lazy" decoding="async">
+    </div>
+    <div class="metier-tete">
+      <p class="eyebrow rv">Le métier</p>
+      <h2 class="titre editorial kt kt-display" id="metier-titre" data-words style="font-size:var(--t-giant);max-width:20ch">Ce qui se passe entre votre commande et votre comptoir.</h2>
+      <p class="lead rv" style="--d:.14s;margin-top:clamp(20px,3vh,34px)">Quelques heures, quatre métiers, et une chaîne qui ne s'arrête jamais. Référencer, stocker, préparer, livrer&nbsp;: c'est invisible depuis l'officine, et c'est tout notre travail.</p>
+    </div>
+  </div>
+
+  <div class="rail-wrap" id="rail-wrap">
+    <div class="rail-stage" id="rail-stage">
+      <div class="rail wrap" id="rail">
+        <article class="panneau">
+          <span class="panneau-i">01</span>
+          <span class="panneau-s">Le</span>
+          <h3 class="panneau-t display">Référencement</h3>
+          <p>Le groupe référence pour ses neuf maisons à la fois&nbsp;: un même catalogue, tenu à jour, disponible dans toutes les implantations. C'est ce qui permet à une maison de taille humaine de proposer la profondeur de gamme d'un réseau national.</p>
+        </article>
+        <article class="panneau">
+          <span class="panneau-i">02</span>
+          <span class="panneau-s">La</span>
+          <h3 class="panneau-t display">Disponibilité</h3>
+          <p>Des stocks répartis sur neuf implantations, au plus près de votre officine. Quand le comptoir a besoin, le réseau répond — et quand une référence manque quelque part, elle existe souvent ailleurs dans le réseau.</p>
+        </article>
+        <article class="panneau">
+          <span class="panneau-i">03</span>
+          <span class="panneau-s">La</span>
+          <h3 class="panneau-t display">Préparation</h3>
+          <p>Chaque commande est préparée dans l'implantation la plus proche de chez vous, par une équipe qui connaît votre officine et ses saisons.</p>
+        </article>
+        <article class="panneau">
+          <span class="panneau-i">04</span>
+          <span class="panneau-s">La</span>
+          <h3 class="panneau-t display">Livraison</h3>
+          <p>Tous les jours, les tournées partent vers les officines. La régularité d'un service tenu — c'est elle qui fait la confiance, pas les promesses.</p>
+        </article>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap" style="padding-bottom:clamp(88px,13vh,168px)">
+    <p class="metier-cloture rv">Et quand la vie de votre officine change — transfert, agrandissement, cession de parts — votre interlocuteur ajuste l'approvisionnement avec vous, sans à-coup au comptoir.</p>
+  </div>
+</section>
+
+<!-- ═══ 6 · LA CENTRALE (papier) ════════════════════════════════════════════ -->
+<section class="sect wrap papier" id="centrale">
+  <p class="eyebrow rv">La centrale</p>
+  <div class="duo">
+    <h2 class="titre editorial kt kt-display" data-words style="font-size:var(--t-giant)">Et pour tout ce qui n'est pas le médicament.</h2>
+    <div class="rv" style="--d:.12s">
+      <p class="lead">Notre centrale de parapharmacie référence pour l'officine plus de 14 000 produits et plus de 480 marques.</p>
+      <p class="lead" style="margin-top:1.15em">C'est une structure à part, avec son propre fonctionnement — sa commande, sa livraison — et la même exigence que le reste du groupe.</p>
+    </div>
+  </div>
+  <div class="chiffres-duo">
+    <div class="rv">
+      <p class="chiffre-geant"><span data-to="14000" data-suffixe=" +">14 000 +</span></p>
+      <span class="chiffre-l">références</span>
+    </div>
+    <div class="rv" style="--d:.1s">
+      <p class="chiffre-geant"><span data-to="480" data-suffixe=" +">480 +</span></p>
+      <span class="chiffre-l">marques</span>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 7 · VOS FACTURES ════════════════════════════════════════════════════ -->
+<section class="sect wrap" id="factures">
+  <div class="glow" aria-hidden="true"></div>
+  <div style="position:relative;z-index:2">
+    <p class="eyebrow rv">Vos factures</p>
+    <h2 class="facture-t editorial kt kt-display" data-words>Elles arrivent déjà là où vous les gérez.</h2>
+    <p class="lead rv" style="--d:.14s;max-width:60ch">Nous sommes connectés à Digipharmacie&nbsp;: vos factures Intégral s'y retrouvent automatiquement, avec celles de vos autres fournisseurs.</p>
+    <div class="facture-liste rv" style="--d:.2s">
+      <span>Rien à saisir</span><span>Rien à classer</span><span>Rien à réclamer</span>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 8 · NOS PARTENAIRES (papier) ════════════════════════════════════════ -->
+<section class="sect wrap papier" id="partenaires">
+  <p class="eyebrow rv">Nos partenaires</p>
+  <h2 class="titre editorial kt kt-display" data-words style="font-size:var(--t-giant);max-width:18ch">Les laboratoires qui nous font confiance.</h2>
+  <div class="labos rv" style="--d:.14s">
+    <div class="labo">EG&nbsp;Labo</div>
+    <div class="labo">Zentiva</div>
+    <div class="labo">Zydus</div>
+    <div class="labo">Viatris</div>
+    <div class="labo">ITP</div>
+    <div class="labo">Santestat</div>
+  </div>
+</section>
+
+<!-- ═══ 9 · NOUS REJOINDRE ══════════════════════════════════════════════════ -->
+<section class="sect wrap" id="rejoindre">
+  <div class="duo">
+    <div>
+      <p class="eyebrow rv">Nous rejoindre</p>
+      <h2 class="titre editorial kt kt-display" data-words style="font-size:var(--t-giant)">Neuf implantations qui embauchent.</h2>
+    </div>
+    <div class="rv" style="--d:.12s">
+      <p class="lead">Préparateur-chauffeur, technicien approvisionnement, commercial, pharmacien responsable&nbsp;: les métiers de la répartition s'apprennent chez nous.</p>
+      <div class="villes">
+        <span class="ville">Hyères&nbsp;(83)</span>
+        <span class="ville">Villeneuve-lès-Béziers&nbsp;(34)</span>
+        <span class="ville">Montayral&nbsp;(47)</span>
+        <span class="ville">Saint-Maurice-l'Exil&nbsp;(38)</span>
+      </div>
+      <p style="margin-top:clamp(24px,3vh,38px)"><a class="btn btn-vide" href="#ecrire">Voir les offres</a></p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 10 · LES VALEURS ════════════════════════════════════════════════════ -->
+<section class="sect wrap" id="valeurs">
+  <div class="glow" aria-hidden="true"></div>
+  <div style="position:relative;z-index:2">
+    <p class="eyebrow rv">Nos valeurs</p>
+    <h2 class="titre editorial kt kt-display" data-words style="font-size:var(--t-giant);max-width:16ch;margin-bottom:clamp(30px,5vh,64px)">Trois mots qui se vérifient au téléphone.</h2>
+
+    <div class="valeur">
+      <p class="valeur-m display" data-caracteres>Confiance</p>
+      <p class="valeur-p rv">La personne qui décroche connaît votre officine, vos saisons et vos habitudes.</p>
+    </div>
+    <div class="valeur">
+      <p class="valeur-m display" data-caracteres>Engagement</p>
+      <p class="valeur-p rv">C'est la même d'une année sur l'autre. Dans ce métier, c'est devenu rare.</p>
+    </div>
+    <div class="valeur">
+      <p class="valeur-m display" data-caracteres>Respect</p>
+      <p class="valeur-p rv">Elle ne vous vendra pas ce dont vous n'avez pas besoin — parce qu'elle vous reverra le mois suivant, et l'année d'après.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 11 · LA FIN DE PAGE ═════════════════════════════════════════════════ -->
+<section class="fin sect wrap" id="ecrire">
+  <div class="fin-photo" aria-hidden="true">
+    <img src="../../assets/siege-web.jpg" alt="" width="1600" height="900" loading="lazy" decoding="async">
+  </div>
+  <div class="fin-in">
+    <h2 class="fin-t editorial kt kt-display" data-words>Posez-nous la question qui vous intéresse.</h2>
+    <p class="lead rv" style="--d:.14s;color:#C9CDD3">Sur nos conditions, sur nos délais, sur la façon dont nous travaillons. Vous aurez une réponse claire, et le nom de l'implantation qui livre votre secteur.</p>
+    <p><a class="mail" href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a></p>
+  </div>
+</section>
+
+</main>
+
+<!-- ═══ PIED DE PAGE ════════════════════════════════════════════════════════ -->
+<footer class="pied wrap">
+  <div class="pied-grille">
+    <div>
+      <p>
+        <b style="color:#fff;font-weight:700;font-stretch:100%">Intégral Pharma</b><br>
+        758 chemin de la Source, ZI Saint-Martin, 83400 Hyères
+      </p>
+    </div>
+    <div>
+      <p>
+        <a href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a><br>
+        <a href="#ecrire">Mentions légales</a>
+      </p>
+    </div>
+  </div>
+  <div class="pied-chiffres">
+    <span>9 implantations</span>
+    <span>Plus de 2 000 officines livrées</span>
+    <span>Indépendant depuis 2006</span>
+  </div>
+  <p class="signature">22 — Caractère</p>
+</footer>
+
+<script src="libs-22/gsap.min.js"></script>
+<script src="libs-22/ScrollTrigger.min.js"></script>
+<script src="libs-22/lenis.min.js"></script>
+<script src="libs-22/splitting.min.js"></script>
+<script>
+/* ════════════════════════════════════════════════════════════════════════════
+   m-22 « CARACTÈRE » — le mouvement
+   Règle de survie : l'état CSS par défaut est l'état FINAL. La classe .anim
+   n'est posée QUE si GSAP et Splitting ont répondu présents. Si quoi que ce
+   soit échoue en route, la page reste entièrement lisible — c'est ce qui a
+   manqué aux quatre maquettes blanches du 14/08.
+   ══════════════════════════════════════════════════════════════════════════ */
+(function(){
+  'use strict';
+  var html   = document.documentElement;
+  var reduit = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var pret   = !!(window.gsap && window.ScrollTrigger && window.Splitting) && !reduit;
+
+  /* ── Menu téléphone : marche TOUJOURS, même sans GSAP ──────────────────── */
+  var menu = document.getElementById('menu');
+  var burger = document.getElementById('burger');
+  function ouvrir(o){
+    menu.classList.toggle('ouvert', o);
+    burger.setAttribute('aria-expanded', o ? 'true' : 'false');
+    document.body.style.overflow = o ? 'hidden' : '';
+    if (window.__lenis) { o ? window.__lenis.stop() : window.__lenis.start(); }
+  }
+  burger.addEventListener('click', function(){ ouvrir(!menu.classList.contains('ouvert')); });
+  document.getElementById('menu-fermer').addEventListener('click', function(){ ouvrir(false); });
+  Array.prototype.forEach.call(menu.querySelectorAll('a'), function(a){
+    a.addEventListener('click', function(){ ouvrir(false); });
+  });
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape') ouvrir(false); });
+
+  /* ── Barre de navigation ───────────────────────────────────────────────── */
+  var nav = document.getElementById('nav');
+  function majNav(){ nav.classList.toggle('solide', window.scrollY > 40); }
+  majNav();
+  window.addEventListener('scroll', majNav, {passive:true});
+
+  /* ── Compteurs — règle du fichier de contenu : une ANNÉE ne prend jamais
+       le séparateur de milliers (le bug « 2 018 » du 14/08). ─────────────── */
+  function ecrire(el, v, cible, suffixe){
+    var annee = (cible >= 1900 && cible <= 2100 && !suffixe);
+    var n = Math.round(v);
+    el.textContent = (annee ? String(n) : n.toLocaleString('fr-FR')) + (suffixe || '');
+  }
+  var compteurs = document.querySelectorAll('[data-to]');
+  if (!reduit && 'IntersectionObserver' in window){
+    var oc = new IntersectionObserver(function(entrees){
+      entrees.forEach(function(e){
+        if (!e.isIntersecting) return;
+        oc.unobserve(e.target);
+        var el = e.target;
+        var cible = parseFloat(el.getAttribute('data-to'));
+        var suffixe = el.getAttribute('data-suffixe') || '';
+        var t0 = null, duree = 1500;
+        function pas(t){
+          if (t0 === null) t0 = t;
+          var p = Math.min((t - t0) / duree, 1);
+          var eased = 1 - Math.pow(1 - p, 4);
+          ecrire(el, cible * eased, cible, suffixe);
+          /* la chasse s'ouvre pendant que le chiffre monte, puis se verrouille */
+          el.style.fontStretch = (86 + 34 * eased).toFixed(1) + '%';
+          if (p < 1) requestAnimationFrame(pas);
+          else { ecrire(el, cible, cible, suffixe); el.style.fontStretch = ''; }
+        }
+        requestAnimationFrame(pas);
+      });
+    }, {threshold:.45});
+    Array.prototype.forEach.call(compteurs, function(el){ oc.observe(el); });
+  }
+
+  /* ── Sans GSAP / mouvement réduit : on s'arrête ici, la page est complète ── */
+  if (!pret) return;
+
+  try {
+    Splitting({ target:'[data-words]',      by:'words' });
+    Splitting({ target:'[data-caracteres]', by:'chars' });
+    Splitting({ target:'[data-chars]',      by:'chars' });
+    html.classList.add('anim');
+  } catch(err){
+    console.error('[m-22] decoupe impossible :', err);
+    return;
+  }
+
+  /* ── Révélations : IntersectionObserver, pas ScrollTrigger. Une seule fois,
+       jamais de retour en arrière (le défaut « animation qui se re-masque »). ─ */
+  var cibles = document.querySelectorAll('.rv, .kt, .valeur-m');
+  var ov = new IntersectionObserver(function(entrees){
+    entrees.forEach(function(e){
+      if (e.isIntersecting){ e.target.classList.add('in'); ov.unobserve(e.target); }
+    });
+  }, {rootMargin:'0px 0px -8% 0px', threshold:.12});
+  Array.prototype.forEach.call(cibles, function(el){ ov.observe(el); });
+
+  /* Chien de garde : à 6 s, tout ce qui est encore masqué ET dans l'écran est
+     réaffiché de force. Un contrôle qui rate ne doit jamais cacher un bloc. */
+  setTimeout(function(){
+    Array.prototype.forEach.call(cibles, function(el){
+      if (el.classList.contains('in')) return;
+      var r = el.getBoundingClientRect();
+      if (r.top < window.innerHeight && r.bottom > 0) el.classList.add('in');
+    });
+  }, 6000);
+
+  /* ── Défilement lissé (Lenis) ──────────────────────────────────────────── */
+  var lenis = new Lenis({ lerp:.085, wheelMultiplier:.95, touchMultiplier:1.6 });
+  window.__lenis = lenis;
+  lenis.on('scroll', ScrollTrigger.update);
+  gsap.ticker.add(function(t){ lenis.raf(t * 1000); });
+  gsap.ticker.lagSmoothing(0);
+  Array.prototype.forEach.call(document.querySelectorAll('a[href^="#"]'), function(a){
+    a.addEventListener('click', function(e){
+      var c = document.querySelector(a.getAttribute('href'));
+      if (!c) return;
+      e.preventDefault();
+      lenis.scrollTo(c, { offset:-64, duration:1.15 });
+    });
+  });
+
+  /* ── PREMIER ÉCRAN : les lettres entrent comprimées et s'ouvrent en chasse.
+       Réglage par un objet intermédiaire : aucune dépendance à la capacité de
+       GSAP à interpoler `font-variation-settings`, donc rien ne peut échouer à
+       moitié. À la fin on efface le style en ligne : le mot retombe sur sa
+       valeur CSS, net et verrouillé. ───────────────────────────────────────── */
+  var lettres = document.querySelectorAll('#hero-titre .char');
+  Array.prototype.forEach.call(lettres, function(c, i){
+    var s = { w:64, g:900 };
+    var d = i * 0.026;
+    gsap.set(c, { display:'inline-block', yPercent:78, opacity:0 });
+    c.style.fontVariationSettings = '"wdth" 64, "wght" 900';
+    gsap.to(c, { yPercent:0, opacity:1, duration:1.05, ease:'expo.out', delay:.25 + d });
+    gsap.to(s, {
+      w:112, g:760, duration:1.15, ease:'expo.out', delay:.25 + d,
+      onUpdate:function(){
+        c.style.fontVariationSettings = '"wdth" ' + s.w.toFixed(1) + ', "wght" ' + s.g.toFixed(0);
+      },
+      onComplete:function(){
+        c.style.fontVariationSettings = '';   /* verrou : retour à la valeur CSS */
+        gsap.set(c, { clearProps:'transform,opacity' });
+      }
+    });
+  });
+  var film = document.getElementById('film');
+  if (film){
+    var pl = film.play();
+    if (pl && pl.catch) pl.catch(function(){ /* lecture refusée : le fond gris reste lisible */ });
+    /* La vidéo s'arrête dès qu'on quitte le premier écran : plus rien à décoder
+       pour les dix sections suivantes (et la batterie du portable respire). */
+    new IntersectionObserver(function(e){
+      if (e[0].isIntersecting){ var q = film.play(); if (q && q.catch) q.catch(function(){}); }
+      else { film.pause(); }
+    }, {threshold:.05}).observe(document.querySelector('.hero'));
+  }
+
+  /* ── LE ZOOM TYPOGRAPHIQUE : « NEUF » grandit et se resserre en chasse, puis
+       cède la place aux neuf noms. Piloté par le défilement (scrub) : à tout
+       point d'arrêt, l'image est nette. ────────────────────────────────────── */
+  var mm = gsap.matchMedia();
+
+  mm.add('(min-width: 901px)', function(){
+    var w = { s:1, x:118 };
+    var mot = document.getElementById('zoom-word');
+    var zt = gsap.timeline({
+      scrollTrigger:{ trigger:'#zoom-wrap', start:'top top', end:'bottom bottom', scrub:.7 }
+    });
+    zt.to(w, {
+      s:9.5, x:66, ease:'power2.in', duration:.58,
+      onUpdate:function(){
+        mot.style.transform = 'translateY(-50%) scale(' + w.s.toFixed(3) + ')';
+        mot.style.fontStretch = w.x.toFixed(1) + '%';
+      }
+    }, 0)
+      .to(mot, { opacity:0, ease:'power1.in', duration:.2 }, .42)
+      .fromTo('#zoom-cible', { opacity:0, y:44 }, { opacity:1, y:0, ease:'power2.out', duration:.28 }, .5);
+
+    /* LE RAIL : quatre verbes géants poussés par le défilement vertical. */
+    var rail = document.getElementById('rail');
+    var course = function(){ return Math.max(0, rail.scrollWidth - window.innerWidth); };
+    var rt = gsap.to(rail, {
+      x:function(){ return -course(); },
+      ease:'none',
+      scrollTrigger:{
+        trigger:'#rail-wrap', start:'top top', end:'bottom bottom',
+        scrub:.6, invalidateOnRefresh:true
+      }
+    });
+
+    return function(){ /* nettoyage au changement de format */
+      mot.style.transform = ''; mot.style.fontStretch = '';
+      gsap.set('#zoom-cible', { clearProps:'all' });
+      gsap.set(rail, { clearProps:'all' });
+      if (rt && rt.scrollTrigger) rt.scrollTrigger.kill();
+      if (zt.scrollTrigger) zt.scrollTrigger.kill();
+    };
+  });
+
+  /* En dessous de 901 px : pas de scène collante, pas de rail. Le zoom devient
+     une simple arrivée, et les quatre panneaux s'empilent. */
+  mm.add('(max-width: 900px)', function(){
+    gsap.set('#zoom-cible', { opacity:1 });
+    var mot = document.getElementById('zoom-word');
+    gsap.fromTo(mot,
+      { scale:.72, opacity:0 },
+      { scale:1, opacity:1, duration:1, ease:'expo.out',
+        scrollTrigger:{ trigger:'#zoom-wrap', start:'top 78%', once:true } });
+  });
+
+  /* ── La lentille du bandeau suit le pointeur sur grand écran ────────────── */
+  var lentille = document.querySelector('.lentille');
+  var bandeau  = document.querySelector('.bandeau');
+  if (lentille && bandeau && window.matchMedia('(pointer:fine)').matches){
+    bandeau.addEventListener('pointermove', function(e){
+      var r = bandeau.getBoundingClientRect();
+      lentille.style.left = ((e.clientX - r.left) / r.width * 100) + '%';
+    });
+  }
+
+  ScrollTrigger.refresh();
+  window.addEventListener('load', function(){ ScrollTrigger.refresh(); });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1360 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Intégral Pharma — Neuf maisons. Un seul nom.</title>
+<meta name="description" content="Groupe de grossistes-répartiteurs français indépendant. Neuf implantations, plus de 2 000 officines livrées chaque jour.">
+
+<!--
+  ══════════════════════════════════════════════════════════════════════════════
+  MAQUETTE 29 · « RÉFRACTION »                    phénomène reçu : la réfraction
+  ══════════════════════════════════════════════════════════════════════════════
+
+  LE GESTE
+    Du verre épais est posé sur la page. Ce qui passe dessous est dévié, étiré,
+    et décomposé en franges colorées sur les bords — la dispersion. Rien n'est
+    jamais caché : on voit à travers, déformé, et c'est tout l'argument.
+
+  POURQUOI ICI, ET NULLE PART AILLEURS
+    Le texte validé dit « en toute transparence, avec des prix nets visibles sur
+    facture ». Sur ce site, la transparence n'est pas un mot dans un paragraphe :
+    c'est la matière de la page. La preuve est optique, pas déclarative.
+
+  TROIS MOMENTS DE VERRE, PAS UN HABILLAGE
+    1. L'OUVERTURE  — le film du siège passe sous quatre lentilles qui dérivent ;
+                      la quatrième suit le curseur. Le titre est DANS la matière,
+                      pas posé dessus : il se déforme avec le reste.
+    2. LA RAISON D'ÊTRE — une plaque de verre traverse le manifeste au défilement.
+                      Elle passe sur « en toute transparence », et le texte reste
+                      lisible d'un bout à l'autre de la traversée.
+    3. LE RÉSEAU    — une loupe barre la liste des neuf implantations et se cale
+                      sur une ligne à la fois : « laquelle est la vôtre ? ».
+                      Le verre ne masque pas la liste, il en désigne une ligne.
+    Partout ailleurs : aucun verre. Net, opaque, contrasté. Le glassmorphism de
+    2021 est mort d'avoir mis du verre partout — c'est exactement le piège évité.
+
+  LA TECHNIQUE, ET POURQUOI ELLE EST FAITE AINSI
+    · Tout est calculé dans un shader GLSL sur canvas WebGL 1. `backdrop-filter`
+      est proscrit (il fige le Mac de Will) et de toute façon il ne sait pas
+      décomposer la lumière : il floute, il ne réfracte pas.
+    · Le shader construit une hauteur de verre à partir d'un SDF de rectangle
+      arrondi, en tire une normale, puis appelle `refract()` TROIS FOIS avec un
+      indice différent par canal (rouge 1,455 · vert 1,500 · bleu 1,545). C'est
+      la dispersion, au sens physique : le bleu dévie plus que le rouge.
+      S'y ajoutent un liseré de Fresnel, un éclat spéculaire, et l'ombre portée
+      de la plaque, décalée comme si la lumière venait d'en haut à gauche.
+    · Le texte sous le verre est du VRAI texte du DOM : il est mesuré
+      (getBoundingClientRect + getComputedStyle) puis redessiné dans un canvas 2D
+      qui sert de texture. Le DOM reste en place pour le lecteur d'écran, la
+      sélection et le repli. Aucun `html2canvas`, aucune image de texte figée.
+    · Zéro librairie. Zéro CDN. Zéro appel réseau sortant. Les polices sont
+      servies depuis `polices-29/`. La page marche depuis une clé USB.
+
+  LES REPLIS, TESTÉS
+    · WebGL absent ou contexte perdu → le canvas n'est jamais révélé, le DOM
+      d'origine reste affiché : film + texte net, carte blanche, liste claire.
+      Jamais un trou, jamais un rectangle vide.
+    · JavaScript coupé → la page entière est lisible, le film joue, la
+      navigation fonctionne (ancres pures).
+    · `prefers-reduced-motion` → les lentilles ne dérivent plus, le film
+      s'arrête sur image, le verre reste (c'est une matière, pas une animation).
+
+  RÉFÉRENCES REGARDÉES AVANT DE CODER (brief §7)
+    · Codrops — « Progressively Enhanced WebGL Lens Refraction » (10/2023) :
+      j'en prends la doctrine, pas le code — le DOM d'abord, le WebGL par-dessus,
+      et un interrupteur qui rend le DOM si le WebGL n'est pas là.
+    · Codrops — « Inside HAOQI.DESIGN » (15/08/2026) : la scène est rendue dans
+      une texture, le verre échantillonne cette texture selon des directions de
+      réfraction légèrement différentes ; liseré réactif ; budget mobile décidé
+      d'avance et non rattrapé après coup.
+    · Codrops — « Real-time Multiside Refraction in Three Steps » (2019) pour
+      Fresnel et l'indice de réfraction. Aucune ligne n'en est copiée : LYGIA est
+      sous licence non commerciale et Shadertoy en CC BY-NC — le shader ci-dessous
+      est écrit ici, pour ce fichier.
+
+  MÉDIAS — trois registres, pas quatre fois le même bâtiment
+    · hero.mp4 (plongée verticale sur la toiture) → LA seule vidéo de la page,
+      et c'est elle qui passe sous le verre de l'ouverture.
+    · siege-solaire.jpg (panneaux, à la verticale) → matière graphique du réseau.
+    · siege-web.jpg (vue trois quarts) → la seule photographie montrée nette.
+
+  TEXTE — source unique : site-integral/CONTENU-SITE-2026.md, mot pour mot.
+    Aucun chiffre ajouté, aucun taux, aucun témoignage. « 2006 » et la phrase sur
+    la redistribution de la marge sont maintenus : décisions de Will du 14/08.
+-->
+
+<style>
+/* ═══════════════════ 1 · POLICES (auto-hébergées, OFL) ═══════════════════ */
+@font-face{
+  font-family:"Instr"; src:url("polices-29/instrumentserif.woff2") format("woff2");
+  font-weight:400; font-style:normal; font-display:swap;
+}
+@font-face{
+  font-family:"Instr"; src:url("polices-29/instrumentserif-italic.woff2") format("woff2");
+  font-weight:400; font-style:italic; font-display:swap;
+}
+@font-face{
+  font-family:"Inter29"; src:url("polices-29/inter.woff2") format("woff2");
+  font-weight:400 700; font-style:normal; font-display:swap;
+}
+@font-face{
+  font-family:"Mono29"; src:url("polices-29/geistmono.woff2") format("woff2");
+  font-weight:400 600; font-style:normal; font-display:swap;
+}
+
+/* ═══════════════════ 2 · JETONS ═══════════════════
+   Page CLAIRE avec une source de lumière franche (halo haut), et deux
+   respirations sombres — celles où le verre travaille. Les deux couleurs
+   « impossibles » (cyan, magenta) n'existent que dans les franges : ce sont
+   les couleurs que la dispersion fabrique, jamais des aplats.                */
+:root{
+  --papier:#EDF1F5;
+  --papier-h:#FFFFFF;
+  --papier-b:#DFE6EC;
+  --carte:#FFFFFF;
+  --nuit:#070B11;
+  --nuit-2:#0D141C;
+  --encre:#080D13;
+  --gris:#5A6672;
+  --gris-l:#8A96A2;
+  --bleu:#0050E6;
+  --bleu-c:#2E7BFF;
+  --cyan:#2FD3FF;
+  --magenta:#FF3FA8;
+  --or:#F39A1B;
+  --trait:rgba(8,13,19,.12);
+  --trait-n:rgba(255,255,255,.14);
+  --rx:1px;
+  --max:1240px;
+  --pad:clamp(20px,5vw,64px);
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;max-width:100%;overflow-x:clip}   /* clip et jamais hidden : hidden fait du body une zone de defilement et annule tout position:sticky a l interieur */
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{
+  background:var(--papier);
+  color:var(--encre);
+  font-family:"Inter29",system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-size:17px; line-height:1.62;
+  -webkit-font-smoothing:antialiased;
+}
+img,video,canvas{display:block;max-width:100%}
+a{color:inherit}
+
+/* la lumière : un halo haut, franc, qui donne son relief au papier */
+.lumiere{
+  position:fixed; inset:0; z-index:0; pointer-events:none;
+  background:
+    radial-gradient(1100px 620px at 50% -14%, #FFFFFF 0%, rgba(255,255,255,0) 68%),
+    radial-gradient(760px 520px at 88% 8%, rgba(47,211,255,.12) 0%, rgba(47,211,255,0) 70%),
+    radial-gradient(700px 500px at 6% 26%, rgba(0,80,230,.07) 0%, rgba(0,80,230,0) 72%);
+}
+.enveloppe{position:relative;z-index:1}
+
+/* ═══════════════════ 3 · TYPOGRAPHIE ═══════════════════ */
+.sur{
+  font-family:"Mono29",ui-monospace,monospace;
+  font-size:12px; font-weight:500; letter-spacing:.16em; text-transform:uppercase;
+  color:var(--bleu); margin:0 0 18px;
+}
+.sur.clair{color:var(--cyan)}
+h1,h2,h3{margin:0;font-weight:400}
+.titre{
+  font-family:"Instr",Georgia,serif; font-weight:400;
+  font-size:clamp(38px,6.6vw,84px); line-height:.98; letter-spacing:-.015em;
+}
+.titre-xl{
+  font-family:"Instr",Georgia,serif; font-weight:400;
+  font-size:clamp(46px,9.4vw,116px); line-height:.92; letter-spacing:-.022em;
+}
+.lead{font-size:clamp(17px,1.6vw,21px); line-height:1.62; color:var(--gris)}
+.corps{font-size:16.5px; line-height:1.72; color:var(--gris)}
+.mono{font-family:"Mono29",ui-monospace,monospace; font-variant-numeric:tabular-nums}
+
+/* le filet prismatique : un trait qui porte sa frange colorée.
+   Trois lignes de 1 px empilées — aucun filtre, aucun flou. */
+.filet{position:relative;height:1px;background:var(--trait);border:0;margin:0}
+.filet::before,.filet::after{content:"";position:absolute;left:0;right:0;height:1px}
+.filet::before{top:-1px;background:rgba(47,211,255,.42)}
+.filet::after{top:1px;background:rgba(255,63,168,.30)}
+.filet.n{background:var(--trait-n)}
+.filet.n::before{background:rgba(47,211,255,.34)}
+.filet.n::after{background:rgba(255,63,168,.26)}
+
+/* ═══════════════════ 4 · BARRE ═══════════════════ */
+.barre{
+  position:sticky; top:0; z-index:60;
+  background:var(--papier-h);
+  border-bottom:1px solid var(--trait);
+}
+.barre::after{content:"";position:absolute;left:0;right:0;bottom:-2px;height:1px;background:rgba(47,211,255,.38)}
+.barre-in{
+  max-width:var(--max); margin:0 auto; padding:0 var(--pad);
+  height:66px; display:flex; align-items:center; justify-content:space-between; gap:16px;
+}
+.barre-in>a:first-child{display:inline-flex;align-items:center;height:44px}
+.barre img{height:30px;width:auto}
+.nav{display:flex;align-items:center;gap:4px}
+.nav a{
+  display:inline-flex;align-items:center;height:44px;padding:0 13px;
+  font-size:14.5px;text-decoration:none;color:var(--encre);opacity:.78;
+  border-radius:2px;transition:opacity .2s,background .2s;
+}
+.nav a:hover{opacity:1;background:rgba(0,80,230,.06)}
+.nav a.cta{
+  background:var(--encre);color:#fff;opacity:1;margin-left:10px;padding:0 20px;font-weight:500;
+}
+.nav a.cta:hover{background:var(--bleu)}
+.burger{
+  display:none;width:44px;height:44px;border:1px solid var(--trait);background:transparent;
+  align-items:center;justify-content:center;cursor:pointer;border-radius:2px;
+}
+.burger span{display:block;width:18px;height:1px;background:var(--encre);position:relative}
+.burger span::before,.burger span::after{content:"";position:absolute;left:0;width:18px;height:1px;background:var(--encre)}
+.burger span::before{top:-6px} .burger span::after{top:6px}
+.volet{display:none}
+
+/* ═══════════════════ 5 · OUVERTURE ═══════════════════ */
+.hero{padding:0 0 0}
+.panneau{
+  position:relative; overflow:hidden; background:var(--nuit);
+  height:clamp(360px,calc(100svh - 268px),640px);
+}
+@supports not (height:100svh){ .panneau{height:clamp(360px,calc(100vh - 268px),640px)} }
+.panneau video{
+  position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+}
+/* voile de lisibilité du repli sans WebGL — un dégradé, pas un flou */
+.voile{
+  position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(7,11,17,.72) 0%,rgba(7,11,17,.52) 46%,rgba(7,11,17,.78) 100%);
+}
+.hero-txt{
+  position:absolute;inset:0;
+  max-width:var(--max);margin:0 auto;padding:clamp(26px,4.4vw,52px) var(--pad);
+  display:flex;flex-direction:column;justify-content:center;
+}
+.hero-txt .sur{color:var(--cyan);margin-bottom:clamp(14px,2vw,22px)}
+.hero-txt h1{color:#fff;max-width:16ch}
+.hero-txt h1 .ln{display:block}
+.hero-txt .sous{
+  margin:clamp(18px,2.6vw,30px) 0 0;max-width:60ch;
+  color:rgba(255,255,255,.80);font-size:clamp(15px,1.35vw,18.5px);line-height:1.6;
+}
+.verre{position:absolute;inset:0;width:100%;height:100%;opacity:0;transition:opacity .5s ease}
+.verre.on{opacity:1}
+
+.hero-bas{
+  max-width:var(--max);margin:0 auto;padding:22px var(--pad) 26px;
+  display:flex;flex-wrap:wrap;align-items:center;gap:14px 18px;
+}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;height:52px;padding:0 26px;
+  font-size:15px;font-weight:500;text-decoration:none;border-radius:2px;
+  background:var(--encre);color:#fff;border:1px solid var(--encre);
+  transition:background .22s,border-color .22s,transform .22s;
+}
+.btn:hover{background:var(--bleu);border-color:var(--bleu);transform:translateY(-1px)}
+.btn.creux{background:transparent;color:var(--encre);border-color:var(--trait)}
+.btn.creux:hover{background:transparent;color:var(--bleu);border-color:var(--bleu)}
+.note-hero{
+  margin-left:auto;font-family:"Mono29",monospace;font-size:12px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--gris-l);
+}
+
+/* bandeau défilant */
+.bandeau{overflow:hidden;border-top:1px solid var(--trait);border-bottom:1px solid var(--trait);background:var(--papier-h)}
+.defile{display:flex;width:max-content;animation:glisse 46s linear infinite}
+.defile>span{
+  display:flex;align-items:center;gap:26px;padding:14px 26px 14px 0;white-space:nowrap;
+  font-family:"Mono29",monospace;font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gris);
+}
+.defile b{font-weight:400;color:var(--encre)}
+.defile i{font-style:normal;color:var(--cyan)}
+@keyframes glisse{from{transform:translate3d(0,0,0)}to{transform:translate3d(-50%,0,0)}}
+
+/* ═══════════════════ 6 · SECTIONS ═══════════════════ */
+.sec{max-width:var(--max);margin:0 auto;padding:clamp(64px,8vw,120px) var(--pad);scroll-margin-top:80px}
+.sec.large{max-width:none;padding-left:0;padding-right:0}
+.duo{display:grid;grid-template-columns:minmax(0,.36fr) minmax(0,.64fr);gap:clamp(28px,5vw,72px);align-items:start}
+
+/* — la raison d'être : carte blanche + plaque de verre — */
+.plaque-hote{position:relative;margin-top:clamp(26px,3.4vw,42px)}
+.plaque{
+  position:relative;background:var(--carte);border:1px solid var(--trait);
+  padding:clamp(28px,4.4vw,60px);
+}
+.plaque p{margin:0 0 22px;font-size:clamp(18px,1.9vw,24px);line-height:1.55;color:var(--encre)}
+.plaque p:last-child{margin-bottom:0;color:var(--gris)}
+.plaque .verre{inset:0}
+
+.compteurs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--trait);margin-top:1px}
+.compteurs>div{background:var(--papier-h);padding:clamp(18px,2.4vw,30px)}
+.compteurs .n{font-family:"Mono29",monospace;font-size:clamp(28px,3.6vw,46px);line-height:1;letter-spacing:-.02em}
+.compteurs .l{margin-top:9px;font-size:13px;color:var(--gris)}
+
+/* — le réseau : nuit, matière solaire, loupe — */
+.nuit-bloc{background:var(--nuit);color:#fff;position:relative}
+.nuit-bloc .corps,.nuit-bloc .lead{color:rgba(255,255,255,.72)}
+.liste-hote{position:relative;margin-top:clamp(26px,3.4vw,40px);border-top:1px solid var(--trait-n)}
+.liste{list-style:none;margin:0;padding:0;position:relative}
+.liste li{
+  display:grid;grid-template-columns:56px minmax(0,1fr) auto;align-items:center;gap:14px;
+  padding:0 clamp(14px,2vw,22px);height:64px;border-bottom:1px solid var(--trait-n);
+}
+.liste .num{font-family:"Mono29",monospace;font-size:12.5px;color:var(--cyan);letter-spacing:.08em}
+.liste .nom{font-size:clamp(15px,1.5vw,19px);font-weight:500;color:#fff}
+.liste .nom em{font-style:normal;font-weight:400;color:rgba(255,255,255,.5);font-size:.82em}
+.liste .ville{font-family:"Mono29",monospace;font-size:12px;color:rgba(255,255,255,.55);letter-spacing:.06em;text-align:right}
+.mention{margin:22px 0 0;font-size:14.5px;color:rgba(255,255,255,.66)}
+.mention b{font-weight:600;color:#fff}
+
+/* — le métier — */
+.etapes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;background:var(--trait);margin-top:clamp(26px,3.4vw,44px)}
+.etapes>div{background:var(--papier-h);padding:clamp(22px,3vw,38px)}
+.etapes h3{font-family:"Mono29",monospace;font-size:12.5px;letter-spacing:.14em;color:var(--bleu);margin-bottom:12px}
+.etapes h3 b{display:block;font-family:"Inter29",sans-serif;font-size:19px;font-weight:600;letter-spacing:0;color:var(--encre);margin-top:9px}
+.photo{position:relative;margin-top:clamp(30px,4vw,56px);overflow:hidden;background:var(--papier-b)}
+.photo img{width:100%;height:clamp(220px,42vw,520px);object-fit:cover}
+.photo figcaption{
+  position:absolute;left:0;bottom:0;padding:12px 18px;background:var(--encre);color:#fff;
+  font-family:"Mono29",monospace;font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;
+}
+.cloture{margin-top:clamp(26px,3.2vw,40px);font-size:clamp(17px,1.7vw,21px);line-height:1.6;max-width:62ch}
+
+/* — centrale / factures / partenaires / emploi — */
+.bloc-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;background:var(--trait)}
+.bloc-2>div{background:var(--papier-h);padding:clamp(24px,3.4vw,46px)}
+.chiffre-duo{display:flex;gap:clamp(20px,3vw,44px);margin-top:26px;flex-wrap:wrap}
+.chiffre-duo .n{font-family:"Mono29",monospace;font-size:clamp(26px,3.2vw,40px);line-height:1}
+.chiffre-duo .l{font-size:13px;color:var(--gris);margin-top:7px}
+.labos{display:flex;flex-wrap:wrap;gap:10px 0;margin-top:clamp(22px,3vw,34px);border-top:1px solid var(--trait)}
+.labos span{
+  flex:1 1 auto;min-width:160px;padding:22px 0;font-family:"Instr",Georgia,serif;
+  font-size:clamp(22px,2.6vw,32px);border-bottom:1px solid var(--trait);
+}
+.villes{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+.villes span{
+  font-family:"Mono29",monospace;font-size:12.5px;letter-spacing:.08em;
+  border:1px solid var(--trait);padding:9px 14px;color:var(--gris);
+}
+
+/* — valeurs — */
+.valeurs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--trait-n);margin-top:clamp(26px,3.4vw,44px)}
+.valeurs>div{background:var(--nuit);padding:clamp(24px,3.2vw,42px)}
+.valeurs h3{font-family:"Instr",Georgia,serif;font-size:clamp(26px,3.2vw,40px);color:#fff;margin-bottom:14px}
+.valeurs p{margin:0;font-size:15.5px;line-height:1.66;color:rgba(255,255,255,.70)}
+
+/* — fin — */
+.fin{text-align:left}
+.fin .titre{max-width:20ch}
+.mail{
+  display:inline-flex;align-items:center;height:58px;padding:0 28px;margin-top:30px;
+  font-family:"Mono29",monospace;font-size:15px;letter-spacing:.02em;text-decoration:none;
+  background:var(--bleu);color:#fff;border-radius:2px;transition:background .22s,transform .22s;
+}
+.mail:hover{background:var(--encre);transform:translateY(-1px)}
+.pied{background:var(--nuit);color:rgba(255,255,255,.62);font-size:14px}
+.pied-in{max-width:var(--max);margin:0 auto;padding:clamp(34px,4.6vw,56px) var(--pad)}
+.pied-l{display:flex;flex-wrap:wrap;gap:14px 30px;align-items:baseline;justify-content:space-between}
+.pied a{display:inline-flex;align-items:center;min-height:44px;color:rgba(255,255,255,.82)}
+.pied .chiffres{font-family:"Mono29",monospace;font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:rgba(255,255,255,.45);margin-top:26px}
+.signature{
+  margin-top:22px;padding-top:18px;border-top:1px solid var(--trait-n);
+  font-family:"Mono29",monospace;font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;
+  color:rgba(255,255,255,.34);
+}
+
+/* — révélations — */
+.rv{opacity:0;transform:translateY(16px);transition:opacity .7s ease,transform .7s cubic-bezier(.2,.7,.2,1)}
+.rv.vu{opacity:1;transform:none}
+.saut{position:absolute;left:-9999px;top:0}
+.saut:focus{left:12px;top:12px;z-index:200;background:var(--encre);color:#fff;padding:12px 16px}
+a:focus-visible,button:focus-visible{outline:2px solid var(--bleu);outline-offset:3px}
+
+/* ═══════════════════ 7 · TÉLÉPHONE ═══════════════════ */
+@media (max-width:900px){
+  .duo{grid-template-columns:1fr;gap:22px}
+  .compteurs{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .etapes,.bloc-2{grid-template-columns:1fr}
+  .valeurs{grid-template-columns:1fr}
+  .nav{display:none}
+  .burger{display:flex}
+  .volet{
+    display:block;position:fixed;left:0;right:0;top:66px;bottom:0;z-index:59;
+    background:var(--papier-h);   /* fond PLEIN, jamais translucide */
+    transform:translateY(-8px);opacity:0;pointer-events:none;transition:opacity .22s,transform .22s;
+    padding:8px var(--pad) 32px;overflow-y:auto;
+  }
+  .volet.ouvert{opacity:1;transform:none;pointer-events:auto}
+  .volet a{
+    display:flex;align-items:center;min-height:56px;text-decoration:none;font-size:18px;
+    border-bottom:1px solid var(--trait);
+  }
+  .volet a.cta{color:var(--bleu)}
+  .panneau{height:clamp(330px,calc(100svh - 296px),560px)}
+  .liste li{grid-template-columns:40px minmax(0,1fr);height:auto;padding:14px clamp(12px,3vw,18px);row-gap:2px}
+  .liste .ville{grid-column:2;text-align:left}
+  .note-hero{margin-left:0;width:100%}
+  .hero-bas .btn{flex:1 1 auto}
+  .labos span{min-width:44%}
+}
+@media (max-width:520px){
+  .compteurs{grid-template-columns:1fr 1fr}
+  .photo img{height:230px}
+}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .rv{opacity:1;transform:none;transition:none}
+  .defile{animation:none}
+  .verre{transition:none}
+}
+</style>
+</head>
+<body>
+<div class="lumiere" aria-hidden="true"></div>
+<div class="enveloppe">
+
+<a class="saut" href="#groupe">Aller au contenu</a>
+
+<!-- ═══════════ BARRE ═══════════ -->
+<header class="barre">
+  <div class="barre-in">
+    <a href="#" aria-label="Intégral Pharma, accueil"><img src="../../assets/logo-web.png" alt="Intégral Pharma" width="112" height="28"></a>
+    <nav class="nav" aria-label="Navigation principale">
+      <a href="#groupe">Le groupe</a>
+      <a href="#reseau">Le réseau</a>
+      <a href="#metier">Le métier</a>
+      <a href="#valeurs">Nos valeurs</a>
+      <a class="cta" href="mailto:contact@integralpharma.fr">Nous écrire</a>
+    </nav>
+    <button class="burger" id="burger" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="volet"><span></span></button>
+  </div>
+</header>
+<nav class="volet" id="volet" aria-label="Navigation">
+  <a href="#groupe">Le groupe</a>
+  <a href="#reseau">Le réseau</a>
+  <a href="#metier">Le métier</a>
+  <a href="#valeurs">Nos valeurs</a>
+  <a class="cta" href="mailto:contact@integralpharma.fr">Nous écrire</a>
+</nav>
+
+<main>
+
+<!-- ═══════════ 1 · L'OUVERTURE — premier moment de verre ═══════════ -->
+<section class="hero">
+  <div class="panneau" id="pan1">
+    <video id="film" src="../../assets/hero.mp4" poster="../../assets/poster.jpg"
+           autoplay muted loop playsinline preload="auto" aria-hidden="true"></video>
+    <div class="voile" id="voile1" aria-hidden="true"></div>
+    <div class="hero-txt" id="txt1">
+      <p class="sur" data-verre>Groupe de grossistes-répartiteurs français indépendant</p>
+      <h1 class="titre-xl"><span class="ln" data-verre>Neuf maisons.</span><span class="ln" data-verre>Un seul nom.</span></h1>
+      <p class="sous" data-verre>Chacune livre sa région depuis des années, avec ses équipes et ses habitudes. Depuis 2006, elles avancent ensemble sous le nom d'Intégral Pharma — et votre commande part toujours de la plus proche de votre comptoir.</p>
+    </div>
+    <canvas class="verre" id="cv1" aria-hidden="true"></canvas>
+  </div>
+  <div class="hero-bas">
+    <a class="btn" href="#reseau">Découvrir le réseau</a>
+    <a class="btn creux" href="mailto:contact@integralpharma.fr">Nous écrire</a>
+    <span class="note-hero" id="note-hero">Réfraction — le titre est sous le verre</span>
+  </div>
+</section>
+
+<div class="bandeau" aria-hidden="true">
+  <div class="defile">
+    <span><b>Indépendant</b><i>◆</i><b>Neuf implantations</b><i>◆</i><b>Un réseau national</b><i>◆</i><b>Plus de 2 000 officines livrées</b><i>◆</i><b>Confiance, Engagement, Respect</b><i>◆</i><b>Une alternative aux grossistes historiques</b><i>◆</i></span>
+    <span><b>Indépendant</b><i>◆</i><b>Neuf implantations</b><i>◆</i><b>Un réseau national</b><i>◆</i><b>Plus de 2 000 officines livrées</b><i>◆</i><b>Confiance, Engagement, Respect</b><i>◆</i><b>Une alternative aux grossistes historiques</b><i>◆</i></span>
+  </div>
+</div>
+
+<!-- ═══════════ 2 · LA RAISON D'ÊTRE — deuxième moment de verre ═══════════ -->
+<section class="sec" id="groupe">
+  <div class="duo rv">
+    <div>
+      <p class="sur">Notre histoire</p>
+      <hr class="filet">
+    </div>
+    <div>
+      <h2 class="titre">Rendre la marge à l'officine française.</h2>
+    </div>
+  </div>
+
+  <div class="plaque-hote rv" id="hote2">
+    <div class="plaque" id="plaque2">
+      <p data-verre>C'est la raison d'être d'Intégral Pharma depuis 2006 : redistribuer directement la marge aux officines françaises, en toute transparence, avec des prix nets visibles sur facture.</p>
+      <p data-verre>Neuf implantations aujourd'hui, plus de deux mille officines livrées chaque jour, et la même idée qu'au premier jour — un groupe de répartiteurs indépendants qui a choisi de se mettre du côté du comptoir.</p>
+      <canvas class="verre" id="cv2" aria-hidden="true"></canvas>
+    </div>
+  </div>
+
+  <div class="compteurs rv">
+    <div><div class="n" data-cible="2006">2006</div><div class="l">année de création</div></div>
+    <div><div class="n" data-cible="9">9</div><div class="l">implantations</div></div>
+    <div><div class="n" data-cible="2000" data-suffixe=" +">2 000 +</div><div class="l">officines livrées</div></div>
+    <div><div class="n" data-cible="20">20</div><div class="l">ans d'indépendance</div></div>
+  </div>
+</section>
+
+<!-- ═══════════ 3 · LE RÉSEAU — troisième moment de verre ═══════════ -->
+<div class="nuit-bloc">
+  <section class="sec" id="reseau">
+    <div class="duo rv">
+      <div>
+        <p class="sur clair">Le réseau</p>
+        <hr class="filet n">
+      </div>
+      <div>
+        <h2 class="titre" style="color:#fff">Neuf implantations.<br>Laquelle est la vôtre&nbsp;?</h2>
+        <p class="lead" style="margin:26px 0 0;max-width:56ch">C'est la seule question qui compte vraiment. Celle qui prépare votre commande, qui vous livre chaque matin, et dont vous connaissez l'équipe par son prénom.</p>
+        <p class="corps" style="margin:16px 0 0;max-width:56ch">Les huit autres sont là pour qu'elle ne soit jamais prise au dépourvu — de la Bretagne à la Méditerranée, le stock d'une maison est le stock de toutes.</p>
+      </div>
+    </div>
+
+    <div class="liste-hote rv" id="hote3">
+      <ul class="liste" id="liste3">
+        <li><span class="num" data-verre>01</span><span class="nom" data-verre>Hyères Pharma <em>— siège du groupe</em></span><span class="ville" data-verre>Hyères · 83</span></li>
+        <li><span class="num" data-verre>02</span><span class="nom" data-verre>SR Pharma</span><span class="ville" data-verre>Palaiseau · 91</span></li>
+        <li><span class="num" data-verre>03</span><span class="nom" data-verre>Mistral Santé Pharma</span><span class="ville" data-verre>Flassans-sur-Issole · 83</span></li>
+        <li><span class="num" data-verre>04</span><span class="nom" data-verre>Sud Ouest Pharma</span><span class="ville" data-verre>Montayral · 47</span></li>
+        <li><span class="num" data-verre>05</span><span class="nom" data-verre>Comptoir Pharmaceutique du Rhône</span><span class="ville" data-verre>Saint-Maurice-l'Exil · 38</span></li>
+        <li><span class="num" data-verre>06</span><span class="nom" data-verre>Escale Pharma</span><span class="ville" data-verre>Chilly-Mazarin · 91</span></li>
+        <li><span class="num" data-verre>07</span><span class="nom" data-verre>Ouest Pharma Services</span><span class="ville" data-verre>Saint-Étienne-de-Montluc · 44</span></li>
+        <li><span class="num" data-verre>08</span><span class="nom" data-verre>Pharm'Occitanie Services</span><span class="ville" data-verre>Villeneuve-lès-Béziers · 34</span></li>
+        <li><span class="num" data-verre>09</span><span class="nom" data-verre>Sud Est Pharma</span><span class="ville" data-verre>Le Cannet-des-Maures · 83</span></li>
+      </ul>
+      <canvas class="verre" id="cv3" aria-hidden="true"></canvas>
+    </div>
+    <p class="mention rv">Et à l'Est, notre partenaire <b>Pharmest</b> (Metz, 57) prolonge le maillage.</p>
+  </section>
+</div>
+
+<!-- ═══════════ 4 · LE MÉTIER ═══════════ -->
+<section class="sec" id="metier">
+  <div class="duo rv">
+    <div>
+      <p class="sur">Le métier</p>
+      <hr class="filet">
+    </div>
+    <div>
+      <h2 class="titre">Ce qui se passe entre votre commande et votre comptoir.</h2>
+      <p class="lead" style="margin:26px 0 0;max-width:58ch">Quelques heures, quatre métiers, et une chaîne qui ne s'arrête jamais. Référencer, stocker, préparer, livrer&nbsp;: c'est invisible depuis l'officine, et c'est tout notre travail.</p>
+    </div>
+  </div>
+
+  <div class="etapes rv">
+    <div><h3>01<b>Le référencement</b></h3><p class="corps" style="margin:0">Le groupe référence pour ses neuf maisons à la fois&nbsp;: un même catalogue, tenu à jour, disponible dans toutes les implantations. C'est ce qui permet à une maison de taille humaine de proposer la profondeur de gamme d'un réseau national.</p></div>
+    <div><h3>02<b>La disponibilité</b></h3><p class="corps" style="margin:0">Des stocks répartis sur neuf implantations, au plus près de votre officine. Quand le comptoir a besoin, le réseau répond — et quand une référence manque quelque part, elle existe souvent ailleurs dans le réseau.</p></div>
+    <div><h3>03<b>La préparation</b></h3><p class="corps" style="margin:0">Chaque commande est préparée dans l'implantation la plus proche de chez vous, par une équipe qui connaît votre officine et ses saisons.</p></div>
+    <div><h3>04<b>La livraison</b></h3><p class="corps" style="margin:0">Tous les jours, les tournées partent vers les officines. La régularité d'un service tenu — c'est elle qui fait la confiance, pas les promesses.</p></div>
+  </div>
+
+  <figure class="photo rv" style="margin-left:0;margin-right:0">
+    <img src="../../assets/siege-web.jpg" alt="Vue aérienne du siège d'Intégral Pharma à Hyères" loading="lazy" width="1600" height="900">
+    <figcaption>Hyères (83) — siège du groupe</figcaption>
+  </figure>
+
+  <p class="cloture rv">Et quand la vie de votre officine change — transfert, agrandissement, cession de parts — votre interlocuteur ajuste l'approvisionnement avec vous, sans à-coup au comptoir.</p>
+</section>
+
+<!-- ═══════════ 5 · LA CENTRALE + LES FACTURES ═══════════ -->
+<section class="sec">
+  <div class="bloc-2 rv">
+    <div>
+      <p class="sur">La centrale</p>
+      <h2 class="titre" style="font-size:clamp(28px,3.6vw,44px)">Et pour tout ce qui n'est pas le médicament.</h2>
+      <p class="corps" style="margin:22px 0 0">Notre centrale de parapharmacie référence pour l'officine plus de 14 000 produits et plus de 480 marques.</p>
+      <p class="corps" style="margin:14px 0 0">C'est une structure à part, avec son propre fonctionnement — sa commande, sa livraison — et la même exigence que le reste du groupe.</p>
+      <div class="chiffre-duo">
+        <div><div class="n" data-cible="14000" data-suffixe=" +">14 000 +</div><div class="l">références</div></div>
+        <div><div class="n" data-cible="480" data-suffixe=" +">480 +</div><div class="l">marques</div></div>
+      </div>
+    </div>
+    <div>
+      <p class="sur">Vos factures</p>
+      <h2 class="titre" style="font-size:clamp(28px,3.6vw,44px)">Elles arrivent déjà là où vous les gérez.</h2>
+      <p class="corps" style="margin:22px 0 0">Nous sommes connectés à Digipharmacie&nbsp;: vos factures Intégral s'y retrouvent automatiquement, avec celles de vos autres fournisseurs.</p>
+      <p class="lead" style="margin:18px 0 0;color:var(--encre)">Rien à saisir, rien à classer, rien à réclamer.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 6 · LES PARTENAIRES ═══════════ -->
+<section class="sec">
+  <div class="duo rv">
+    <div>
+      <p class="sur">Nos partenaires</p>
+      <hr class="filet">
+    </div>
+    <div>
+      <h2 class="titre">Les laboratoires qui nous font confiance.</h2>
+      <div class="labos">
+        <span>EG&nbsp;Labo</span><span>Zentiva</span><span>Zydus</span>
+        <span>Viatris</span><span>ITP</span><span>Santestat</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 7 · NOUS REJOINDRE ═══════════ -->
+<section class="sec">
+  <div class="duo rv">
+    <div>
+      <p class="sur">Nous rejoindre</p>
+      <hr class="filet">
+    </div>
+    <div>
+      <h2 class="titre">Neuf implantations qui embauchent.</h2>
+      <p class="lead" style="margin:24px 0 0;max-width:58ch">Préparateur-chauffeur, technicien approvisionnement, commercial, pharmacien responsable&nbsp;: les métiers de la répartition s'apprennent chez nous.</p>
+      <div class="villes">
+        <span>Hyères (83)</span><span>Villeneuve-lès-Béziers (34)</span>
+        <span>Montayral (47)</span><span>Saint-Maurice-l'Exil (38)</span>
+      </div>
+      <p style="margin:28px 0 0"><a class="btn" href="https://www.integralpharma.fr/jobs">Voir les offres</a></p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 8 · LES VALEURS ═══════════ -->
+<div class="nuit-bloc">
+  <section class="sec" id="valeurs">
+    <div class="duo rv">
+      <div>
+        <p class="sur clair">Nos valeurs</p>
+        <hr class="filet n">
+      </div>
+      <div><h2 class="titre" style="color:#fff">Trois mots qui se vérifient au téléphone.</h2></div>
+    </div>
+    <div class="valeurs rv">
+      <div><h3>Confiance</h3><p>La personne qui décroche connaît votre officine, vos saisons et vos habitudes.</p></div>
+      <div><h3>Engagement</h3><p>C'est la même d'une année sur l'autre. Dans ce métier, c'est devenu rare.</p></div>
+      <div><h3>Respect</h3><p>Elle ne vous vendra pas ce dont vous n'avez pas besoin — parce qu'elle vous reverra le mois suivant, et l'année d'après.</p></div>
+    </div>
+  </section>
+</div>
+
+<!-- ═══════════ 9 · LA FIN DE PAGE ═══════════ -->
+<section class="sec fin" id="ecrire">
+  <div class="rv">
+    <h2 class="titre-xl" style="font-size:clamp(38px,6.2vw,80px)">Posez-nous la question qui vous intéresse.</h2>
+    <p class="lead" style="margin:28px 0 0;max-width:56ch">Sur nos conditions, sur nos délais, sur la façon dont nous travaillons. Vous aurez une réponse claire, et le nom de l'implantation qui livre votre secteur.</p>
+    <a class="mail" href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a>
+  </div>
+</section>
+
+</main>
+
+<footer class="pied">
+  <div class="pied-in">
+    <div class="pied-l">
+      <div>
+        <div style="color:#fff;font-size:16px;margin-bottom:8px">Intégral Pharma</div>
+        758 chemin de la Source, ZI Saint-Martin, 83400 Hyères
+      </div>
+      <div>
+        <a href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a> ·
+        <a href="https://www.integralpharma.fr/">Mentions légales</a>
+      </div>
+    </div>
+    <div class="chiffres">9 implantations · plus de 2 000 officines livrées · indépendant depuis 2006</div>
+    <div class="signature">29 · Réfraction</div>
+  </div>
+</footer>
+
+</div><!-- /enveloppe -->
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     LE SHADER DE VERRE
+     Une passe, un triangle plein écran. Pour chaque lentille : SDF de rectangle
+     arrondi → normale de la surface → refract() une fois par canal de couleur.
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<script id="fs-verre" type="x-shader/x-fragment">
+precision highp float;
+
+varying vec2 vUv;
+
+uniform vec2  uRes;      /* taille CSS du canvas, en pixels */
+uniform sampler2D uTxt;  /* le texte du DOM, redessiné dans un canvas 2D */
+uniform sampler2D uImg;  /* la photographie ou l'image du film */
+uniform float uImgOn;    /* 1 s'il y a une image dessous */
+uniform vec4  uImgXf;    /* échelle.xy, décalage.xy — recadrage « cover » */
+uniform vec3  uFond;     /* couleur de fond quand il n'y a pas d'image */
+uniform float uGrade;    /* 1 = image assombrie et refroidie */
+uniform float uAssombri; /* fondu supplémentaire vers uFond, pour la lisibilité */
+uniform float uEclaircit;/* sous le verre, on rend à l'image sa lumière */
+uniform float uOmbre;    /* force de l'ombre portée de la plaque */
+uniform int   uN;        /* nombre de lentilles actives */
+uniform vec4  uL[4];     /* centre.xy (px, y vers le bas) · demi-taille.xy (px) */
+uniform vec4  uP[4];     /* rayon de coin · biseau · force · grossissement */
+uniform float uIor;      /* indice de réfraction du verre */
+uniform float uDisp;     /* écart d'indice entre le rouge et le bleu = dispersion */
+uniform float uEclat;    /* intensité du liseré et de l'éclat */
+
+/* px (y vers le bas) → coordonnée de texture */
+vec2 versUv(vec2 p){ return vec2(p.x / uRes.x, 1.0 - p.y / uRes.y); }
+
+vec3 fond(vec2 uv, float clair){
+  vec3 c = uFond;
+  if(uImgOn > 0.5){
+    vec2 b = clamp(uv * uImgXf.xy + uImgXf.zw, 0.0, 1.0);
+    c = texture2D(uImg, b).rgb;
+    if(uGrade > 0.5){
+      float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
+      c = mix(vec3(l), c, 0.55);          /* désaturation partielle */
+      c = c * vec3(0.46, 0.53, 0.66);     /* assombri, refroidi vers le bleu */
+    }
+    /* Le texte blanc doit tenir sur la photo : on la ramène vers la nuit.
+       MAIS sous le verre, on lui rend sa lumière — c'est ainsi que la loupe
+       du réseau DÉSIGNE une ligne sans avoir à la grossir (un grossissement
+       vertical étirait les lettres et se lisait comme un défaut d'affichage). */
+    c = mix(c, uFond, uAssombri * (1.0 - clair * uEclaircit));
+  }
+  return c;
+}
+
+/* la scène telle qu'elle serait SANS verre : image + texte par-dessus */
+vec3 scene(vec2 p, float clair){
+  vec2 uv = versUv(p);
+  vec4 t = texture2D(uTxt, uv);
+  return mix(fond(uv, clair), t.rgb, t.a);
+}
+
+/* distance signée à un rectangle arrondi */
+float sdf(vec2 p, vec2 b, float r){
+  vec2 q = abs(p) - b + r;
+  return min(max(q.x, q.y), 0.0) + length(max(q, 0.0)) - r;
+}
+
+/* déviation du rayon, projetée sur le plan du contenu */
+vec2 devie(vec3 n, float eta, float prof){
+  vec3 R = refract(vec3(0.0, 0.0, -1.0), n, eta);
+  if(R.z > -0.02) return vec2(0.0);       /* réflexion totale : on ne dévie pas */
+  return R.xy * (prof / -R.z);
+}
+
+void main(){
+  vec2 p = vec2(vUv.x * uRes.x, (1.0 - vUv.y) * uRes.y);
+
+  vec2 dR = vec2(0.0), dG = vec2(0.0), dB = vec2(0.0);
+  float liseret = 0.0, eclat = 0.0, ombre = 0.0, dedans = 0.0;
+
+  for(int i = 0; i < 4; i++){
+    if(i >= uN) break;
+
+    vec2  c   = uL[i].xy;
+    vec2  b   = uL[i].zw;
+    float r   = uP[i].x;
+    float biz = uP[i].y;
+    float f   = uP[i].z;
+    float gro = uP[i].w;
+
+    vec2 q = p - c;
+
+    /* l'ombre portée : la même forme, décalée vers le bas, lue en dehors du verre.
+       Décalage strictement vertical — un décalage latéral fabriquait une barre
+       sombre de 7 px le long des plaques hautes, qui se lisait comme un défaut. */
+    float ds = sdf(q - vec2(0.0, 18.0), b, r);
+    ombre += (1.0 - smoothstep(0.0, 36.0, max(ds, 0.0)));
+
+    float d = sdf(q, b, r);
+    if(d > 1.0) continue;
+
+    /* normale : gradient du SDF × pente du biseau */
+    float e = 1.0;
+    vec2 g = vec2(sdf(q + vec2(e, 0.0), b, r) - sdf(q - vec2(e, 0.0), b, r),
+                  sdf(q + vec2(0.0, e), b, r) - sdf(q - vec2(0.0, e), b, r));
+    float gl = length(g);
+    g = gl > 1e-5 ? g / gl : vec2(0.0);
+
+    float t = clamp(-d / biz, 0.0, 1.0);          /* 0 au bord, 1 à plat */
+    float pente = cos(t * 1.5707963) * 1.45;      /* nulle au centre, forte au bord */
+    vec3 n = normalize(vec3(g * pente, 1.0));
+
+    float bord = smoothstep(0.0, 1.6, -d);        /* adoucit la découpe du bord */
+    dedans += bord;
+
+    /* Grossissement. Une lentille allongée est un CYLINDRE : elle ne grossit que
+       perpendiculairement à son axe. Sans ça, la loupe du réseau poussait les
+       villes hors du canvas — « Hyères · 83 » était tronqué en « Hyèr ». */
+    vec2 axe = vec2(1.0);
+    if(b.x > b.y * 2.5) axe = vec2(0.0, 1.0);
+    else if(b.y > b.x * 2.5) axe = vec2(1.0, 0.0);
+    vec2 loupe = (q / gro - q) * axe * bord;
+
+    /* LA DISPERSION : trois indices, trois déviations */
+    vec2 oR = devie(n, 1.0 / (uIor - uDisp), f) * bord + loupe;
+    vec2 oG = devie(n, 1.0 / uIor,           f) * bord + loupe;
+    vec2 oB = devie(n, 1.0 / (uIor + uDisp), f) * bord + loupe;
+    dR += oR; dG += oG; dB += oB;
+
+    liseret += pow(1.0 - n.z, 3.0) * bord;
+    vec3 refl = reflect(vec3(0.0, 0.0, -1.0), n);
+    eclat += pow(max(dot(refl, normalize(vec3(-0.42, 0.58, 0.70))), 0.0), 46.0) * bord;
+  }
+
+  dedans = clamp(dedans, 0.0, 1.0);
+  ombre  = clamp(ombre, 0.0, 1.0) * (1.0 - dedans);
+
+  /* hors du verre, un seul échantillon suffit : c'est ce qui garde la page fluide,
+     la dispersion ne coûte ses trois échantillons que sous les lentilles */
+  vec3 col;
+  if(dedans < 0.002) col = scene(p, 0.0);
+  else col = vec3(scene(p + dR, dedans).r, scene(p + dG, dedans).g, scene(p + dB, dedans).b);
+
+  col *= (1.0 - uOmbre * ombre);                            /* la plaque porte son ombre */
+  col  = mix(col, col * vec3(0.965, 1.0, 1.02), dedans);    /* teinte du verre, très faible */
+  col += liseret * vec3(0.46, 0.70, 1.0) * uEclat * 1.9;    /* Fresnel sur la tranche */
+  col += eclat  * vec3(1.0, 0.98, 0.94) * uEclat * 1.35;    /* éclat spéculaire */
+
+  gl_FragColor = vec4(col, 1.0);
+}
+</script>
+
+<script>
+(function(){
+"use strict";
+
+/* ═══════════ 0 · réglages généraux ═══════════ */
+var SOBRE = window.matchMedia && window.matchMedia("(prefers-reduced-motion:reduce)").matches;
+var TACTILE = window.matchMedia && window.matchMedia("(hover:none)").matches;
+var ECHELLE = Math.min(window.devicePixelRatio || 1, 2);   /* baissée si ça rame */
+
+/* ═══════════ 1 · menu téléphone ═══════════ */
+var burger = document.getElementById("burger"), volet = document.getElementById("volet");
+if(burger && volet){
+  burger.addEventListener("click", function(){
+    var o = volet.classList.toggle("ouvert");
+    burger.setAttribute("aria-expanded", o ? "true" : "false");
+    burger.setAttribute("aria-label", o ? "Fermer le menu" : "Ouvrir le menu");
+    document.body.style.overflow = o ? "hidden" : "";
+  });
+  [].slice.call(volet.querySelectorAll("a")).forEach(function(a){
+    a.addEventListener("click", function(){
+      volet.classList.remove("ouvert");
+      burger.setAttribute("aria-expanded","false");
+      document.body.style.overflow = "";
+    });
+  });
+}
+
+/* ═══════════ 2 · révélations (posées une fois, jamais retirées) ═══════════ */
+var aRev = [].slice.call(document.querySelectorAll(".rv"));
+function toutReveler(){ aRev.forEach(function(el){ el.classList.add("vu"); }); }
+if(SOBRE || !("IntersectionObserver" in window)){
+  toutReveler();
+}else{
+  var ioR = new IntersectionObserver(function(es){
+    es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add("vu"); ioR.unobserve(e.target); } });
+  }, {rootMargin:"0px 0px -8% 0px", threshold:0.01});
+  aRev.forEach(function(el){ ioR.observe(el); });
+  /* filet de sécurité : si un observateur ne se déclenche jamais, rien ne reste caché */
+  setTimeout(toutReveler, 2600);
+}
+
+/* ═══════════ 3 · compteurs ═══════════ */
+function ecrit(v, cible, suf){
+  /* règle du 14/08 : jamais de séparateur de milliers sur une ANNÉE */
+  var annee = (cible >= 1900 && cible <= 2100 && !suf);
+  var s = annee ? String(v) : String(v).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+  return s + (suf || "");
+}
+function anime(el){
+  var cible = parseInt(el.getAttribute("data-cible"), 10);
+  var suf = el.getAttribute("data-suffixe") || "";
+  if(isNaN(cible)) return;
+  if(SOBRE){ el.textContent = ecrit(cible, cible, suf); return; }
+  var dep = (cible >= 1900 && cible <= 2100 && !suf) ? cible - 26 : 0;
+  var t0 = null, duree = 1250;
+  function pas(ts){
+    if(t0 === null) t0 = ts;
+    var k = Math.min((ts - t0) / duree, 1), e = 1 - Math.pow(1 - k, 3);
+    el.textContent = ecrit(Math.round(dep + (cible - dep) * e), cible, suf);
+    if(k < 1) requestAnimationFrame(pas);
+  }
+  requestAnimationFrame(pas);
+}
+var compteurs = [].slice.call(document.querySelectorAll("[data-cible]"));
+if("IntersectionObserver" in window){
+  var ioC = new IntersectionObserver(function(es){
+    es.forEach(function(e){ if(e.isIntersecting){ anime(e.target); ioC.unobserve(e.target); } });
+  }, {threshold:0.4});
+  compteurs.forEach(function(el){ ioC.observe(el); });
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   4 · LE MOTEUR DE VERRE
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+var SRC_VS = [
+  "attribute vec2 aPos;",
+  "varying vec2 vUv;",
+  "void main(){ vUv = aPos * 0.5 + 0.5; gl_Position = vec4(aPos, 0.0, 1.0); }"
+].join("\n");
+var SRC_FS = (document.getElementById("fs-verre") || {}).textContent || "";
+
+function compile(gl, type, src){
+  var s = gl.createShader(type);
+  gl.shaderSource(s, src); gl.compileShader(s);
+  if(!gl.getShaderParameter(s, gl.COMPILE_STATUS)){
+    if(window.console) console.warn("verre — shader :", gl.getShaderInfoLog(s));
+    return null;
+  }
+  return s;
+}
+
+function contexte(canvas){
+  var o = {alpha:false, antialias:false, depth:false, stencil:false,
+           premultipliedAlpha:false, preserveDrawingBuffer:false,
+           powerPreference:"high-performance", failIfMajorPerformanceCaveat:false};
+  var gl = null;
+  try{ gl = canvas.getContext("webgl", o) || canvas.getContext("experimental-webgl", o); }catch(e){ gl = null; }
+  return gl;
+}
+
+/* ── 4.1 · le calque de texte : on remesure le DOM et on le redessine ──
+   Aucune image de texte figée : la texture est reconstruite à chaque
+   redimensionnement et après le chargement des polices.                      */
+function peintTexte(cv2d, hote, noeuds, ech){
+  var rh = hote.getBoundingClientRect();
+  var w = Math.max(1, Math.round(rh.width * ech)), h = Math.max(1, Math.round(rh.height * ech));
+  if(cv2d.width !== w || cv2d.height !== h){ cv2d.width = w; cv2d.height = h; }
+  var c = cv2d.getContext("2d");
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  c.clearRect(0, 0, w, h);
+  c.scale(ech, ech);
+  c.textBaseline = "middle";
+
+  for(var i = 0; i < noeuds.length; i++){
+    var el = noeuds[i];
+    var r = el.getBoundingClientRect();
+    if(r.width < 1 || r.height < 1) continue;
+    var st = getComputedStyle(el);
+    var taille = parseFloat(st.fontSize) || 16;
+    var interligne = parseFloat(st.lineHeight);
+    if(!interligne || isNaN(interligne)) interligne = taille * 1.35;
+    var esp = parseFloat(st.letterSpacing);
+    if(isNaN(esp)) esp = 0;
+
+    c.font = st.fontStyle + " " + st.fontWeight + " " + taille + "px " + st.fontFamily;
+    c.fillStyle = st.color;
+
+    var texte = (el.textContent || "").replace(/\s+/g, " ").trim();
+    if(st.textTransform === "uppercase") texte = texte.toUpperCase();
+    if(!texte) continue;
+
+    /* découpe en lignes, avec la largeur réelle du bloc */
+    var lignes = [], mots = texte.split(" "), ligne = "";
+    var largeur = r.width + 0.5;
+    function mesure(s){
+      var w0 = c.measureText(s).width;
+      return esp ? w0 + esp * s.length : w0;
+    }
+    for(var m = 0; m < mots.length; m++){
+      var essai = ligne ? ligne + " " + mots[m] : mots[m];
+      if(ligne && mesure(essai) > largeur){ lignes.push(ligne); ligne = mots[m]; }
+      else ligne = essai;
+    }
+    if(ligne) lignes.push(ligne);
+
+    var x0 = r.left - rh.left, y0 = r.top - rh.top;
+    var centre = (st.textAlign === "center"), droite = (st.textAlign === "right" || st.textAlign === "end");
+    for(var L = 0; L < lignes.length; L++){
+      var s = lignes[L];
+      var y = y0 + L * interligne + interligne / 2;
+      var x = x0;
+      if(centre) x = x0 + (r.width - mesure(s)) / 2;
+      else if(droite) x = x0 + (r.width - mesure(s));
+      if(esp){
+        var cx = x;
+        for(var k = 0; k < s.length; k++){
+          c.fillText(s[k], cx, y);
+          cx += c.measureText(s[k]).width + esp;
+        }
+      }else{
+        c.fillText(s, x, y);
+      }
+    }
+  }
+  return {w:w, h:h, cssW:rh.width, cssH:rh.height};
+}
+
+/* ── 4.2 · une instance de verre ── */
+function Verre(opt){
+  var canvas = opt.canvas, hote = opt.hote;
+  var gl = contexte(canvas);
+  if(!gl) return null;
+
+  var vs = compile(gl, gl.VERTEX_SHADER, SRC_VS);
+  var fs = compile(gl, gl.FRAGMENT_SHADER, SRC_FS);
+  if(!vs || !fs) return null;
+  var prog = gl.createProgram();
+  gl.attachShader(prog, vs); gl.attachShader(prog, fs); gl.linkProgram(prog);
+  if(!gl.getProgramParameter(prog, gl.LINK_STATUS)){
+    if(window.console) console.warn("verre — lien :", gl.getProgramInfoLog(prog));
+    return null;
+  }
+  gl.useProgram(prog);
+
+  var buf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 3,-1, -1,3]), gl.STATIC_DRAW);
+  var aPos = gl.getAttribLocation(prog, "aPos");
+  gl.enableVertexAttribArray(aPos);
+  gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+
+  var u = {};
+  ["uRes","uTxt","uImg","uImgOn","uImgXf","uFond","uGrade","uAssombri","uEclaircit","uOmbre",
+   "uN","uIor","uDisp","uEclat"]
+    .forEach(function(k){ u[k] = gl.getUniformLocation(prog, k); });
+  u.uL = gl.getUniformLocation(prog, "uL[0]");
+  u.uP = gl.getUniformLocation(prog, "uP[0]");
+
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+  gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+
+  function texture(){
+    var t = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, t);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE,
+                  new Uint8Array([0,0,0,0]));
+    return t;
+  }
+
+  var v = {
+    canvas:canvas, hote:hote, gl:gl, prog:prog, u:u,
+    cv2d:document.createElement("canvas"),
+    texTxt:texture(), texImg:null,
+    noeuds:opt.noeuds || [],
+    image:opt.image || null,        /* <img> ou <video> */
+    fond:opt.fond || [1,1,1],
+    grade:opt.grade ? 1 : 0,
+    assombri:opt.assombri || 0,
+    eclaircit:opt.eclaircit || 0,
+    ombreF:(opt.ombre === undefined ? 0.30 : opt.ombre),
+    ior:opt.ior || 1.50, disp:opt.disp || 0.045, eclat:(opt.eclat === undefined ? 1 : opt.eclat),
+    lentilles:[], maj:opt.maj, etat:{},
+    cssW:0, cssH:0, imgOk:false, dernierT:-1,
+    vivant:true, visible:false, premier:false
+  };
+
+  if(v.image) v.texImg = texture();
+
+  v.mesure = function(){
+    var d = peintTexte(v.cv2d, v.hote, v.noeuds, ECHELLE);
+    v.cssW = d.cssW; v.cssH = d.cssH;
+    canvas.width  = Math.max(1, Math.round(d.cssW * ECHELLE));
+    canvas.height = Math.max(1, Math.round(d.cssH * ECHELLE));
+    gl.bindTexture(gl.TEXTURE_2D, v.texTxt);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, v.cv2d);
+  };
+
+  v.majImage = function(){
+    if(!v.image || !v.texImg) return;
+    var el = v.image, w, h;
+    if(el.tagName === "VIDEO"){
+      if(el.readyState < 2) return;
+      w = el.videoWidth; h = el.videoHeight;
+      if(!w || !h) return;
+      if(el.currentTime === v.dernierT && v.imgOk) return;   /* pas de nouvelle image */
+      v.dernierT = el.currentTime;
+    }else{
+      if(!el.complete || !el.naturalWidth) return;
+      if(v.imgOk) return;                                     /* une photo : une fois */
+      w = el.naturalWidth; h = el.naturalHeight;
+    }
+    gl.bindTexture(gl.TEXTURE_2D, v.texImg);
+    try{
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, el);
+      v.imgOk = true; v.imgW = w; v.imgH = h;
+    }catch(e){ v.imgOk = false; }
+  };
+
+  v.dessine = function(temps){
+    v.majImage();
+    var L = [], P = [];
+    v.lentilles.length = 0;
+    v.maj(v, temps);
+    var n = Math.min(v.lentilles.length, 4);
+    for(var i = 0; i < 4; i++){
+      var l = v.lentilles[i];
+      if(l){ L.push(l.x, l.y, l.w / 2, l.h / 2); P.push(l.r, l.biseau, l.force, l.gross); }
+      else  { L.push(0,0,0,0); P.push(1,1,0,1); }
+    }
+
+    gl.useProgram(prog);
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.enableVertexAttribArray(aPos);
+    gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, v.texTxt);
+    gl.uniform1i(u.uTxt, 0);
+    if(v.texImg){ gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, v.texImg); gl.uniform1i(u.uImg, 1); }
+
+    gl.uniform2f(u.uRes, v.cssW, v.cssH);
+    gl.uniform3f(u.uFond, v.fond[0], v.fond[1], v.fond[2]);
+    gl.uniform1f(u.uGrade, v.grade);
+    gl.uniform1f(u.uAssombri, v.assombri);
+    gl.uniform1f(u.uEclaircit, v.eclaircit);
+    gl.uniform1f(u.uOmbre, v.ombreF);
+    gl.uniform1i(u.uN, n);
+    gl.uniform1f(u.uIor, v.ior);
+    gl.uniform1f(u.uDisp, v.disp);
+    gl.uniform1f(u.uEclat, v.eclat);
+    gl.uniform4fv(u.uL, new Float32Array(L));
+    gl.uniform4fv(u.uP, new Float32Array(P));
+
+    if(v.imgOk){
+      /* recadrage « cover » : on garde le centre, on ne déforme jamais */
+      var ra = (v.cssW / v.cssH), ri = (v.imgW / v.imgH), sx = 1, sy = 1;
+      if(ri > ra) sx = ra / ri; else sy = ri / ra;
+      gl.uniform1f(u.uImgOn, 1);
+      gl.uniform4f(u.uImgXf, sx, sy, (1 - sx) / 2, (1 - sy) / 2);
+    }else{
+      gl.uniform1f(u.uImgOn, 0);
+      gl.uniform4f(u.uImgXf, 1, 1, 0, 0);
+    }
+
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+    if(!v.premier){
+      v.premier = true;
+      canvas.classList.add("on");          /* révélé SEULEMENT après une vraie image */
+      if(opt.apresPremier) opt.apresPremier(v);
+    }
+  };
+
+  canvas.addEventListener("webglcontextlost", function(e){
+    e.preventDefault(); v.vivant = false; canvas.classList.remove("on");
+  }, false);
+
+  return v;
+}
+
+/* ── 4.3 · la boucle unique ── */
+var instances = [], pointeur = {x:-9999, y:-9999, dedans:0, cible:0};
+var img30 = [], derniereMesure = 0, ips = 0, degrade = false;
+
+function boucle(ts){
+  if(!boucle.t0) boucle.t0 = ts;
+  var t = (ts - boucle.t0) / 1000;
+
+  /* mesure honnête des images par seconde : moyenne glissante sur 30 images */
+  img30.push(ts);
+  if(img30.length > 31) img30.shift();
+  if(img30.length > 5) ips = 1000 * (img30.length - 1) / (img30[img30.length - 1] - img30[0]);
+  window.__ips = Math.round(ips * 10) / 10;
+
+  pointeur.dedans += (pointeur.cible - pointeur.dedans) * 0.09;
+
+  var actif = false;
+  for(var i = 0; i < instances.length; i++){
+    var v = instances[i];
+    if(!v.vivant || !v.visible) continue;
+    actif = true;
+    try{ v.dessine(t); }catch(e){ v.vivant = false; v.canvas.classList.remove("on"); }
+  }
+
+  /* dégradation automatique : sous 42 im/s pendant 2 s, on baisse la définition */
+  if(actif && !degrade && ips > 0 && ips < 42 && ts - (derniereMesure || ts) > 2000){
+    degrade = true; ECHELLE = 1;
+    instances.forEach(function(v){ if(v.vivant) v.mesure(); });
+  }
+  if(ips >= 42) derniereMesure = ts;
+
+  requestAnimationFrame(boucle);
+}
+
+/* ═══════════ 5 · LES TROIS MOMENTS ═══════════ */
+
+function noeudsDe(hote){ return [].slice.call(hote.querySelectorAll("[data-verre]")); }
+
+/* ── 5.1 · l'ouverture : quatre lentilles sur le film ── */
+var pan1 = document.getElementById("pan1"), cv1 = document.getElementById("cv1"),
+    film = document.getElementById("film"), txt1 = document.getElementById("txt1"),
+    voile1 = document.getElementById("voile1");
+
+var v1 = (pan1 && cv1) ? Verre({
+  canvas:cv1, hote:pan1, noeuds:noeudsDe(txt1), image:film,
+  fond:[0.03,0.04,0.06], grade:true, assombri:0.16, ombre:0.32,
+  ior:1.50, disp:0.105, eclat:1,
+  maj:function(v, t){
+    var W = v.cssW, H = v.cssH;
+    var k = SOBRE ? 0 : t;
+    var petit = W < 720;
+    /* Deux formes seulement, plus celle du curseur. À trois formes dérivantes,
+       elles se superposaient en une flaque laiteuse : le verre doit garder un
+       centre PARFAITEMENT net, c'est ce qui le distingue d'un dépoli.
+       Aucun grossissement sur les formes allongées : elles étireraient les
+       lettres. Seule la lentille ronde du curseur grossit — comme une vraie loupe. */
+    /* 1 · la barre horizontale — elle traverse le titre, et RIEN QUE le titre */
+    /* Sur téléphone la lentille est plus petite ET plus douce : à 390 px de large,
+       un biseau de 29 px et une force de 40 traversaient le milieu des mots d'un
+       titre de 46 px. La déformation doit rester une caresse, pas une coupure. */
+    v.disp = petit ? 0.075 : 0.105;
+    var bw = petit ? W * 0.46 : Math.min(W * 0.50, 540), bh = petit ? 84 : 178;
+    v.lentilles.push({
+      x: W * (petit ? (0.50 + 0.30 * Math.sin(k * 0.12)) : (0.46 + 0.40 * Math.sin(k * 0.10))),
+      y: H * (petit ? 0.40 : 0.44) + (petit ? 6 : 20) * Math.sin(k * 0.19),
+      w: bw, h: bh, r: bh / 2, biseau: bh * (petit ? 0.36 : 0.19),
+      force: petit ? 28 : 62, gross: 1.0
+    });
+    /* 2 · le barreau vertical — une vraie tranche de verre, plein cadre.
+       Sur téléphone : rien de plus. Deux lentilles sur 390 px de large
+       rendaient le sous-titre illisible — le verre ne doit jamais cacher. */
+    if(!petit){
+      var lw = 118;
+      v.lentilles.push({
+        x: W * (0.5 + 0.44 * Math.sin(k * 0.067 + 2.3)), y: H * 0.5,
+        w: lw, h: H * 1.3, r: lw / 2, biseau: lw * 0.30, force: 58, gross: 1.0
+      });
+    }
+    /* 3 · la lentille du curseur — la seule qui grossit */
+    if(!TACTILE && !petit){
+      var r4 = 200 * v.etat.suivi;
+      if(r4 > 4) v.lentilles.push({
+        x:v.etat.px, y:v.etat.py, w:r4, h:r4, r:r4 / 2, biseau:r4 * 0.26, force:54, gross:1.10
+      });
+    }
+  }
+}) : null;
+
+if(v1){
+  v1.etat = {px:-999, py:-999, suivi:0};
+  var _maj1 = v1.maj;
+  v1.maj = function(v, t){
+    var r = pan1.getBoundingClientRect();
+    var cx = pointeur.x - r.left, cy = pointeur.y - r.top;
+    var dedans = (pointeur.x > -9000 && cx > -80 && cy > -80 && cx < r.width + 80 && cy < r.height + 80);
+    v.etat.px += ((dedans ? cx : v.etat.px) - v.etat.px) * 0.16;
+    v.etat.py += ((dedans ? cy : v.etat.py) - v.etat.py) * 0.16;
+    if(!dedans && v.etat.px < -900){ v.etat.px = r.width / 2; v.etat.py = r.height / 2; }
+    v.etat.suivi += ((dedans ? 1 : 0) - v.etat.suivi) * 0.07;
+    _maj1(v, t);
+  };
+}
+
+/* ── 5.2 · la raison d'être : une plaque traverse le manifeste ── */
+var hote2 = document.getElementById("plaque2"), cv2 = document.getElementById("cv2");
+var v2 = (hote2 && cv2) ? Verre({
+  canvas:cv2, hote:hote2, noeuds:noeudsDe(hote2),
+  fond:[1,1,1], grade:false, ombre:0.13, ior:1.52, disp:0.085, eclat:0.7,
+  maj:function(v, t){
+    var W = v.cssW, H = v.cssH;
+    var r = hote2.getBoundingClientRect();
+    /* progression : de l'entrée du bloc dans l'écran à sa sortie */
+    var p = (window.innerHeight - r.top) / (window.innerHeight + r.height);
+    p = Math.max(0, Math.min(1, p));
+    /* La plaque doit rester LISIBLE de bout en bout : force modérée, biseau large,
+       aucun grossissement. Une première version à force 56 rendait deux bandes de
+       30 px illisibles — c'est exactement ce que la direction interdit. */
+    var pw = Math.min(W * 0.46, 380);
+    v.lentilles.push({
+      x: -pw * 0.6 + p * (W + pw * 1.2),
+      y: H * 0.5,
+      w: pw, h: H + 140, r: 24, biseau: 62, force: 24, gross: 1.0
+    });
+  }
+}) : null;
+
+/* ── 5.3 · le réseau : la loupe cale une ligne à la fois ── */
+var hote3 = document.getElementById("hote3"), cv3 = document.getElementById("cv3"),
+    liste3 = document.getElementById("liste3");
+var v3 = (hote3 && cv3) ? Verre({
+  canvas:cv3, hote:hote3, noeuds:noeudsDe(hote3),
+  image:(function(){ var i = new Image(); i.src = "../../assets/siege-solaire.jpg"; return i; })(),
+  fond:[0.027,0.043,0.067], grade:true, assombri:0.50, eclaircit:0.85, ombre:0.24,
+  ior:1.50, disp:0.080, eclat:0.8,
+  maj:function(v, t){
+    var W = v.cssW, H = v.cssH;
+    var rh = hote3.getBoundingClientRect();
+    var lignes = [].slice.call(liste3.children);
+    var vise = 0;
+    if(!TACTILE && pointeur.y > rh.top && pointeur.y < rh.bottom){
+      vise = pointeur.y - rh.top;                        /* la souris désigne */
+    }else{
+      var p = (window.innerHeight * 0.62 - rh.top) / rh.height;
+      vise = Math.max(0, Math.min(1, p)) * rh.height;    /* sinon le défilement */
+    }
+    /* on se cale sur la ligne la plus proche : le verre DÉSIGNE, il ne flotte pas */
+    var best = null, bd = 1e9, hb = 60;
+    for(var i = 0; i < lignes.length; i++){
+      var rl = lignes[i].getBoundingClientRect();
+      var c = rl.top - rh.top + rl.height / 2;
+      var d = Math.abs(c - vise);
+      if(d < bd){ bd = d; best = c; hb = rl.height; }
+    }
+    if(best === null) best = H / 2;
+    if(v.etat.y === undefined) v.etat.y = best;
+    v.etat.y += (best - v.etat.y) * (SOBRE ? 1 : 0.14);
+    if(v.etat.h === undefined) v.etat.h = hb;
+    v.etat.h += (hb - v.etat.h) * 0.2;
+    /* La barre est plus HAUTE que la ligne, et son biseau est court : le plat du
+       verre couvre entièrement le texte, les deux tranches colorées tombent dans
+       les interlignes. La ligne désignée est donc éclairée et intacte — c'est la
+       correction qui a rendu la liste lisible sur téléphone. */
+    var hl = v.etat.h + 40;
+    v.lentilles.push({
+      x: W / 2, y: v.etat.y, w: W + 80, h: hl,
+      r: Math.min(hl / 2, 30), biseau: 24, force: 30, gross: 1.0
+    });
+  }
+}) : null;
+
+/* ═══════════ 6 · branchement ═══════════ */
+[v1, v2, v3].forEach(function(v){ if(v) instances.push(v); });
+
+if(instances.length){
+  function mesurerTout(){ instances.forEach(function(v){ if(v.vivant) v.mesure(); }); }
+  mesurerTout();
+
+  if(document.fonts && document.fonts.ready){
+    document.fonts.ready.then(function(){ mesurerTout(); });
+  }
+  window.addEventListener("load", function(){ setTimeout(mesurerTout, 60); });
+
+  var tR = null;
+  window.addEventListener("resize", function(){
+    clearTimeout(tR); tR = setTimeout(mesurerTout, 180);
+  });
+
+  if(!TACTILE){
+    window.addEventListener("pointermove", function(e){
+      pointeur.x = e.clientX; pointeur.y = e.clientY; pointeur.cible = 1;
+    }, {passive:true});
+  }
+
+  /* on ne calcule que ce qui est à l'écran */
+  if("IntersectionObserver" in window){
+    var ioV = new IntersectionObserver(function(es){
+      es.forEach(function(e){
+        for(var i = 0; i < instances.length; i++){
+          if(instances[i].canvas === e.target) instances[i].visible = e.isIntersecting;
+        }
+      });
+    }, {rootMargin:"140px 0px 140px 0px", threshold:0});
+    instances.forEach(function(v){ ioV.observe(v.canvas); });
+  }else{
+    instances.forEach(function(v){ v.visible = true; });
+  }
+
+  if(SOBRE && film){ try{ film.pause(); }catch(e){} }
+  else if(film){ var pr = film.play(); if(pr && pr.catch) pr.catch(function(){}); }
+
+  requestAnimationFrame(boucle);
+}
+
+/* si aucun verre n'a pu démarrer, la page reste exactement ce qu'elle est
+   sans script : film + texte net, carte blanche, liste claire. */
+if(!instances.length && window.console) console.info("Réfraction — WebGL indisponible, repli net affiché.");
+
+})();
+</script>
+</body>
+</html>

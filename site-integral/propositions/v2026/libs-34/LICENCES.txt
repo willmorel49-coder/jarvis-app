@@ -1,0 +1,36 @@
+Librairies employées par m-34.html — « L'Étoffe »
+Tout est auto-hébergé ici. Aucun CDN, aucune clé d'API, aucun appel réseau sortant.
+
+── Code ──────────────────────────────────────────────────────────────────────
+
+three.module.min.js   Three.js r169 — licence MIT — https://threejs.org
+                      Build ES module officiel. Copié depuis libs-23/ (récupéré
+                      sur unpkg le 16/08/2026).
+                      ⚠️ C'est le build WEBGL classique. Le build WebGPU de
+                      Three.js n'est PAS dans ce dossier et ne doit jamais y
+                      entrer : il tente WebGPU en premier et fige ce Mac.
+
+lenis.min.js          Lenis 1.x — licence MIT — https://github.com/darkroomengineering/lenis
+                      Copié depuis libs-25/. Défilement lissé. Il ne sert pas
+                      qu'au confort : c'est sa vitesse instantanée qui alimente
+                      le « souffle » du shader (uniforme uGust).
+                      Texte de licence complet : lenis-LICENSE.txt
+
+── Matières ──────────────────────────────────────────────────────────────────
+
+AUCUNE. Le lin, le tissage chaîne/trame, les plis, la lumière rasante et la
+lueur des nœuds sont entièrement calculés dans le shader de m-34.html. Rien à
+télécharger, rien à créditer, aucun octet de texture au chargement.
+
+── Médias (hors de ce dossier, appelés en relatif) ──────────────────────────
+
+../../assets/siege-web.jpg   photo du siège, imprimée sur l'étoffe au chapitre
+                             « Le métier ». Chargée seulement à l'approche.
+../../assets/band.mp4        seule vidéo de la page, imprimée elle aussi.
+                             Chargée à l'approche, lue et mise en pause par un
+                             IntersectionObserver — aucun attribut de lecture
+                             automatique dans le HTML.
+../../assets/logo-web.png    logo, en-tête.
+
+`siege-solaire.jpg` est volontairement écarté : c'est une image extraite de
+`clip3.mp4`, et c'est le même bâtiment que `siege-web.jpg`.

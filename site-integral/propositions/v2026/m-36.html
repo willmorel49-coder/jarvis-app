@@ -1,0 +1,1435 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Intégral Pharma — 36 · GRANDE OUVERTURE</title>
+<meta name="description" content="Intégral Pharma, groupe de grossistes-répartiteurs français indépendant. Neuf implantations, un seul nom.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23080B14'/%3E%3Ccircle cx='16' cy='16' r='10' fill='none' stroke='%23FFD2A0' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='3' fill='%232E6BFF'/%3E%3C/svg%3E">
+
+<style>
+/* ═══════════════════════════════════════════════════════════════════════════
+   36 · GRANDE OUVERTURE — Intégral Pharma
+   ───────────────────────────────────────────────────────────────────────────
+   LE PHÉNOMÈNE : la profondeur de champ.
+   La page a douze couches à des distances différentes. Le plan de mise au
+   point se déplace au fil du défilement ; ce qui n'est pas au point est doux,
+   ce qui arrive au point attire l'œil. C'est un objectif ouvert, pas un fond.
+
+   COMMENT LE DOUX EST OBTENU SANS LA PROPRIÉTÉ CSS QUI FIGE SAFARI :
+   deux parades, aucune n'utilise de propriété de filtre CSS.
+     1. Les images (photo du siège, film) sont dessinées dans un canvas WebGL,
+        puis adoucies par un flou séparable gaussien à NEUF prises, en DEUX
+        passes (horizontale puis verticale) sur des tampons hors écran à
+        demi puis quart de résolution. Le rayon vient du cercle de confusion
+        |z − point|, exactement comme un objectif. Deux à cinq itérations
+        selon l'écart, l'écartement des prises restant sous 3,2 texels — au
+        delà, les neuf prises se voient une par une et l'image se dédouble.
+        Réduction par boîte de quatre prises entre chaque niveau.
+        Coût : quelques passes sur 1/4 puis 1/16 des pixels, sur le GPU.
+     2. Les points lumineux (poussières, les dix implantations) ne sont pas
+        floutés du tout : leur disque est calculé analytiquement dans le
+        nuanceur — bord franc au point, disque large et pâle hors du point,
+        avec le liseré d'un vrai bokeh. Zéro passe supplémentaire.
+
+   LE TEXTE N'EST JAMAIS ADOUCI : il vit dans le document, au-dessus du
+   canvas. Il est net, ou il n'est pas là.
+
+   Zéro librairie, zéro CDN, zéro clé d'API, aucun appel réseau sortant.
+   Un seul contexte WebGL. Une seule vidéo.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@font-face{font-family:'Archivo';src:url('polices-36/archivo-var.woff2') format('woff2-variations');
+  font-weight:100 900;font-stretch:62% 125%;font-style:normal;font-display:swap}
+@font-face{font-family:'Instrument';src:url('polices-36/instrumentserif.woff2') format('woff2');
+  font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:'Instrument';src:url('polices-36/instrumentserif-italic.woff2') format('woff2');
+  font-weight:400;font-style:italic;font-display:swap}
+@font-face{font-family:'Plex';src:url('polices-36/plexmono-400.woff2') format('woff2');
+  font-weight:400;font-style:normal;font-display:swap}
+
+:root{
+  --papier:#F3EEE5;      /* l'encre du jour */
+  --encre:#14121A;
+  --encre-2:#393442;   /* mesuré : #4A4550 tombait sous 4,5:1 dès que la
+                          source de lumière passait derrière la colonne */
+  --nuit:#080B14;
+  --nuit-2:#CFD7E7;
+  --bleu:#2E6BFF;        /* la marque Intégral, portée à la lumière */
+  --ambre:#FFC98A;
+  --dis:'Archivo',ui-sans-serif,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --ser:'Instrument',Georgia,'Times New Roman',serif;
+  --mono:'Plex',ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+  --marge:clamp(20px,5vw,84px);
+  --barre:64px;
+}
+
+*{box-sizing:border-box}
+html{overflow-x:clip;scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:#EEE9E0;color:var(--encre);
+  font:400 17px/1.62 var(--dis);
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  overflow-x:clip;
+}
+img,canvas,video{display:block;max-width:100%}
+a{color:inherit}
+button{font:inherit;color:inherit}
+
+/* ── L'appareil : le canvas est le décor, jamais le texte ──────────────── */
+#scene{position:fixed;inset:0;width:100%;height:100%;z-index:0;
+  opacity:0;transition:opacity .9s ease}
+#scene.vu{opacity:1}
+/* Repli si WebGL manque ou si le script est coupé : une vraie lumière en CSS,
+   jamais une page noire. */
+#repli{position:fixed;inset:0;z-index:0;
+  background:
+    radial-gradient(120% 90% at 72% 26%, rgba(255,214,164,.85) 0%, rgba(255,214,164,0) 58%),
+    radial-gradient(90% 70% at 14% 92%, rgba(46,107,255,.20) 0%, rgba(46,107,255,0) 62%),
+    linear-gradient(178deg,#F6F1E7 0%,#E7E2D8 52%,#DCD7CD 100%);
+}
+#film{position:fixed;top:0;left:0;width:2px;height:2px;opacity:.01;
+  z-index:-1;pointer-events:none}
+
+/* ── Le relevé d'objectif ──────────────────────────────────────────────── */
+/* Le relevé est fixe : partout ailleurs il finirait par recouvrir une ligne de
+   texte. Il ne s'allume donc que dans « Le réseau », là où la mise au point est
+   le sujet — et il porte sa propre plaque opaque. */
+.releve{position:fixed;left:var(--marge);bottom:20px;z-index:40;
+  opacity:0;visibility:hidden;
+  font-family:var(--mono);font-size:13px;letter-spacing:.02em;
+  color:var(--encre-2);pointer-events:none;
+  display:flex;align-items:center;gap:12px;
+  padding:9px 16px;border-radius:100px;
+  background:rgba(243,238,229,.90);border:1px solid rgba(20,18,26,.10);
+  transition:color .5s ease,background .5s ease,border-color .5s ease,
+             opacity .45s ease,visibility .45s}
+.releve.allume{opacity:1;visibility:visible}
+.releve.sombre{color:rgba(216,224,240,.80);
+  background:rgba(8,11,20,.86);border-color:rgba(243,238,229,.14)}
+.releve .jauge{position:relative;width:118px;height:2px;
+  background:currentColor;opacity:.34}
+.releve .curseur{position:absolute;top:-4px;width:2px;height:10px;
+  background:currentColor;opacity:1;transform:translateX(-1px);
+  transition:left .12s linear}
+@media (max-width:860px){.releve{display:none}}
+
+/* ── Barre ─────────────────────────────────────────────────────────────── */
+.barre{position:fixed;top:0;left:0;right:0;height:var(--barre);z-index:60;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 var(--marge);
+  transition:color .5s ease}
+.barre.sombre{color:var(--papier)}
+.barre::before{content:'';position:absolute;inset:0;z-index:-1;
+  background:linear-gradient(to bottom,rgba(243,238,229,.92),rgba(243,238,229,0));
+  transition:opacity .5s ease}
+.barre.sombre::before{background:linear-gradient(to bottom,rgba(8,11,20,.94),rgba(8,11,20,0))}
+.marque{display:flex;align-items:center;gap:11px;text-decoration:none;
+  min-height:44px}
+.marque img{width:34px;height:auto}
+.marque b{font-weight:700;font-size:15px;letter-spacing:.10em;text-transform:uppercase;
+  font-stretch:88%}
+.nav{display:flex;gap:4px;align-items:center}
+.nav a{text-decoration:none;font-size:14px;letter-spacing:.01em;
+  padding:12px 13px;min-height:44px;display:flex;align-items:center;
+  border-radius:2px;opacity:.78;transition:opacity .25s ease}
+.nav a:hover,.nav a:focus-visible{opacity:1}
+.nav a.fort{opacity:1;font-weight:600}
+.brg{display:none;width:46px;height:46px;align-items:center;justify-content:center;
+  background:none;border:1px solid currentColor;border-radius:2px;cursor:pointer}
+.brg span{display:block;width:19px;height:1.5px;background:currentColor;position:relative}
+.brg span::before,.brg span::after{content:'';position:absolute;left:0;width:19px;
+  height:1.5px;background:currentColor}
+.brg span::before{top:-6px}.brg span::after{top:6px}
+
+.tiroir{position:fixed;inset:0;z-index:70;background:#0B0E18;
+  display:flex;flex-direction:column;justify-content:center;gap:6px;
+  padding:0 var(--marge);
+  transform:translateY(-100%);transition:transform .48s cubic-bezier(.7,0,.2,1);
+  color:var(--papier)}
+.tiroir.ouvert{transform:translateY(0)}
+.tiroir a{text-decoration:none;font-size:clamp(26px,7.5vw,40px);font-weight:600;
+  font-stretch:88%;padding:12px 0;min-height:44px;letter-spacing:-.02em}
+.tiroir .fermer{position:absolute;top:9px;right:var(--marge);
+  width:46px;height:46px;background:none;border:1px solid rgba(243,238,229,.4);
+  border-radius:2px;font-size:22px;cursor:pointer;line-height:1}
+
+/* ── Structure ─────────────────────────────────────────────────────────── */
+main{position:relative;z-index:10;overflow-x:clip}
+.sec{position:relative;padding-left:var(--marge);padding-right:var(--marge);
+  padding-top:clamp(96px,14vh,168px);padding-bottom:clamp(96px,14vh,168px)}
+.dedans{max-width:1220px;margin:0 auto}
+.sec.jour{color:var(--encre)}
+.sec.nuit{color:var(--papier)}
+
+.sur{font-family:var(--mono);font-size:13px;letter-spacing:.20em;
+  text-transform:uppercase;opacity:.74;margin:0 0 22px}
+.sec.nuit .sur{color:var(--ambre);opacity:.9}
+
+h1,h2,h3{margin:0;font-weight:700;font-stretch:88%;letter-spacing:-.035em;
+  line-height:.98}
+h1{font-size:clamp(44px,8.6vw,124px)}
+h2{font-size:clamp(32px,5.4vw,74px);line-height:1.02}
+h3{font-size:clamp(20px,2.2vw,27px);letter-spacing:-.02em;line-height:1.14}
+
+.plomb{font-size:clamp(17px,1.55vw,21px);line-height:1.62;max-width:46ch;
+  color:var(--encre-2)}
+.sec.nuit .plomb{color:var(--nuit-2)}
+.plomb p{margin:0 0 20px}
+.plomb p:last-child{margin-bottom:0}
+
+/* ── Boutons ───────────────────────────────────────────────────────────── */
+.btns{display:flex;flex-wrap:wrap;gap:12px;margin-top:38px}
+.btn{display:inline-flex;align-items:center;gap:10px;min-height:52px;
+  padding:0 26px;border-radius:100px;text-decoration:none;
+  font-size:15px;font-weight:600;letter-spacing:.01em;cursor:pointer;
+  border:1px solid currentColor;background:none;
+  transition:transform .3s cubic-bezier(.2,.8,.2,1),background .3s ease,color .3s ease}
+.btn:hover,.btn:focus-visible{transform:translateY(-2px)}
+.btn.plein{background:var(--encre);color:var(--papier);border-color:var(--encre)}
+.btn.plein:hover{background:var(--bleu);border-color:var(--bleu)}
+.sec.nuit .btn.plein{background:var(--papier);color:var(--nuit);border-color:var(--papier)}
+.sec.nuit .btn.plein:hover{background:var(--ambre);border-color:var(--ambre);color:var(--nuit)}
+.btn .pt{width:7px;height:7px;border-radius:50%;background:currentColor;opacity:.6}
+
+/* ── Ouverture ─────────────────────────────────────────────────────────── */
+#ouverture{min-height:100svh;display:flex;align-items:center;
+  padding-top:calc(var(--barre) + 40px);padding-bottom:120px}
+#ouverture h1{max-width:14ch}
+#ouverture .sous{margin-top:30px;max-width:48ch;font-size:clamp(16px,1.5vw,20px);
+  line-height:1.6;color:var(--encre-2)}
+.filet-sur{display:inline-flex;align-items:center;gap:12px}
+.filet-sur::before{content:'';width:clamp(26px,5vw,64px);height:1px;
+  background:currentColor;opacity:.5}
+
+/* ── Bandeau qui défile ────────────────────────────────────────────────── */
+.bandeau{position:relative;z-index:10;overflow:hidden;
+  border-top:1px solid rgba(20,18,26,.14);border-bottom:1px solid rgba(20,18,26,.14);
+  padding:15px 0;color:var(--encre)}
+.bandeau .rail{display:flex;width:max-content;gap:0;
+  animation:defile 42s linear infinite}
+.bandeau span{font-family:var(--mono);font-size:13px;letter-spacing:.14em;
+  text-transform:uppercase;padding:0 26px;white-space:nowrap;opacity:.72}
+.bandeau span::after{content:'·';margin-left:26px;opacity:.5}
+@keyframes defile{from{transform:translate3d(0,0,0)}to{transform:translate3d(-50%,0,0)}}
+.bandeau:hover .rail{animation-play-state:paused}
+
+/* ── Histoire ──────────────────────────────────────────────────────────── */
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:clamp(32px,6vw,90px);align-items:center}
+.plaque-nette{position:relative;border-radius:2px;overflow:hidden;
+  box-shadow:0 1px 1px rgba(20,18,26,.05),0 8px 18px rgba(20,18,26,.07),
+             0 34px 60px rgba(20,18,26,.10)}
+.plaque-nette img{width:100%;height:auto}
+.plaque-nette figcaption{position:absolute;left:0;bottom:0;right:0;
+  padding:14px 16px;font-family:var(--mono);font-size:13px;letter-spacing:.04em;
+  color:#fff;background:linear-gradient(to top,rgba(8,11,20,.82),rgba(8,11,20,0))}
+
+.compteurs{display:grid;grid-template-columns:repeat(4,1fr);gap:22px;
+  margin-top:clamp(52px,7vw,84px);
+  border-top:1px solid currentColor;padding-top:30px}
+.compteurs>div{border-left:1px solid rgba(20,18,26,.16);padding-left:18px}
+.sec.nuit .compteurs>div{border-left-color:rgba(243,238,229,.22)}
+.compteurs>div:first-child{border-left:0;padding-left:0}
+.compteurs b{display:block;font-size:clamp(30px,4.2vw,58px);font-weight:700;
+  font-stretch:82%;letter-spacing:-.045em;line-height:1;font-variant-numeric:tabular-nums}
+.compteurs i{display:block;font-style:normal;font-family:var(--mono);font-size:13px;
+  letter-spacing:.08em;text-transform:uppercase;opacity:.78;margin-top:11px;line-height:1.35}
+
+/* ── Le réseau : le plan de mise au point traverse les dix points ──────── */
+#reseau{padding-top:0;padding-bottom:0}
+.rail-reseau{position:relative;height:420vh}
+.colle{position:sticky;top:0;height:100svh;display:flex;align-items:center;
+  padding-top:var(--barre)}
+.colle .dedans{width:100%}
+.grille-reseau{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  gap:clamp(28px,5vw,70px);align-items:center}
+.liste-imp{list-style:none;margin:0;padding:0}
+.liste-imp li{display:grid;grid-template-columns:38px 1fr auto;gap:14px;
+  align-items:baseline;padding:7px 0;
+  border-bottom:1px solid rgba(243,238,229,.10);
+  opacity:.78;transition:opacity .45s ease}
+.liste-imp li .num{font-family:var(--mono);font-size:13px;opacity:.82}
+.liste-imp li .nom{font-size:clamp(15px,1.5vw,19px);font-weight:600;
+  letter-spacing:-.015em;line-height:1.3}
+.liste-imp li .ou{font-family:var(--mono);font-size:13px;opacity:.78;
+  text-align:right;white-space:nowrap}
+.liste-imp li.actif{opacity:1}
+.liste-imp li.actif .num{color:var(--ambre);opacity:1}
+.liste-imp li.actif .nom{color:var(--papier)}
+.liste-imp li .siege{font-family:var(--mono);font-size:13px;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--ambre);opacity:.8;display:block;margin-top:2px}
+.note-part{margin-top:22px;font-size:15px;line-height:1.55;color:var(--nuit-2);max-width:44ch}
+.note-part b{color:var(--papier);font-weight:600}
+
+/* ── Le métier ─────────────────────────────────────────────────────────── */
+.etapes{display:grid;grid-template-columns:repeat(2,1fr);
+  gap:clamp(22px,3vw,44px);margin-top:clamp(46px,6vw,76px)}
+.etape{padding:26px 0 0;border-top:1px solid rgba(243,238,229,.20);
+  transition:border-color .5s ease}
+.etape.actif{border-top-color:var(--ambre)}
+.etape .n{font-family:var(--mono);font-size:13px;letter-spacing:.16em;
+  opacity:.82;display:block;margin-bottom:14px;transition:color .5s ease}
+.etape.actif .n{color:var(--ambre);opacity:1}
+.etape p{margin:12px 0 0;font-size:15.5px;line-height:1.62;color:var(--nuit-2);max-width:40ch}
+.cloture{margin-top:clamp(44px,6vw,72px);font-family:var(--ser);
+  font-size:clamp(21px,2.7vw,34px);line-height:1.32;letter-spacing:-.012em;
+  max-width:26ch;color:var(--papier)}
+
+/* ── Centrale, factures, partenaires ───────────────────────────────────── */
+.deux-comp{display:grid;grid-template-columns:repeat(2,1fr);gap:26px;
+  max-width:520px;margin-top:clamp(42px,6vw,68px);
+  border-top:1px solid rgba(20,18,26,.18);padding-top:30px}
+.deux-comp b{display:block;font-size:clamp(32px,4.6vw,60px);font-weight:700;
+  font-stretch:82%;letter-spacing:-.045em;line-height:1;font-variant-numeric:tabular-nums}
+.deux-comp i{display:block;font-style:normal;font-family:var(--mono);font-size:13px;
+  letter-spacing:.08em;text-transform:uppercase;opacity:.78;margin-top:11px}
+
+.labos{display:flex;flex-wrap:wrap;gap:10px;margin-top:clamp(38px,5vw,58px)}
+.labos span{display:inline-flex;align-items:center;min-height:52px;padding:0 24px;
+  border:1px solid rgba(20,18,26,.20);border-radius:100px;
+  font-size:16px;font-weight:600;letter-spacing:-.005em;
+  transition:transform .3s cubic-bezier(.2,.8,.2,1),border-color .3s ease}
+.labos span:hover{transform:translateY(-3px);border-color:var(--bleu);color:var(--bleu)}
+
+.villes{display:flex;flex-wrap:wrap;gap:9px;margin-top:28px}
+.villes span{font-family:var(--mono);font-size:13px;letter-spacing:.04em;
+  padding:9px 15px;border:1px solid rgba(20,18,26,.18);border-radius:2px}
+
+/* ── Valeurs ───────────────────────────────────────────────────────────── */
+.trois{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(24px,4vw,54px);
+  margin-top:clamp(48px,6vw,80px)}
+.trois>div{border-top:1px solid rgba(243,238,229,.22);padding-top:24px}
+.trois h3{margin-bottom:14px}
+.trois p{margin:0;font-size:15.5px;line-height:1.62;color:var(--nuit-2)}
+
+/* ── Fin de page ───────────────────────────────────────────────────────── */
+#fin{text-align:left}
+#fin h2{max-width:16ch}
+.mail{display:inline-flex;align-items:center;gap:12px;min-height:60px;
+  padding:0 30px;border-radius:100px;text-decoration:none;
+  background:var(--papier);color:var(--nuit);font-weight:600;
+  font-size:clamp(15px,1.6vw,19px);margin-top:38px;
+  transition:transform .3s cubic-bezier(.2,.8,.2,1),background .3s ease}
+.mail:hover,.mail:focus-visible{transform:translateY(-3px);background:var(--ambre)}
+
+.pied{position:relative;z-index:10;color:var(--papier);
+  padding:clamp(56px,8vw,90px) var(--marge) 34px;
+  border-top:1px solid rgba(243,238,229,.16)}
+.pied .dedans{display:flex;flex-wrap:wrap;gap:26px;justify-content:space-between;
+  align-items:flex-end}
+.pied p{margin:0 0 8px;font-size:14.5px;line-height:1.6;color:var(--nuit-2)}
+/* la zone touchable fait 44 px, le décor visible reste une ligne de texte */
+.pied a{color:var(--papier);display:inline-block;padding:14px 3px;margin:-14px 0}
+.pied .chiffres{font-family:var(--mono);font-size:13px;letter-spacing:.06em;
+  color:rgba(207,215,231,.92)}
+.signature{margin-top:34px;padding-top:18px;border-top:1px solid rgba(243,238,229,.10);
+  font-family:var(--mono);font-size:13px;letter-spacing:.08em;
+  color:rgba(207,215,231,.72);display:flex;justify-content:space-between;
+  flex-wrap:wrap;gap:10px}
+
+/* ── Révélations : le masquage est posé PAR le script, jamais en CSS seul ─ */
+.js-reveal .rv{opacity:0;transform:translateY(20px)}
+.js-reveal .rv.vu{opacity:1;transform:none;
+  transition:opacity .9s cubic-bezier(.22,.8,.2,1),transform .9s cubic-bezier(.22,.8,.2,1)}
+.js-reveal .rv.d1.vu{transition-delay:.09s}
+.js-reveal .rv.d2.vu{transition-delay:.18s}
+.js-reveal .rv.d3.vu{transition-delay:.27s}
+
+/* ── Téléphone ─────────────────────────────────────────────────────────── */
+@media (max-width:980px){
+  .duo,.grille-reseau,.etapes,.trois{grid-template-columns:1fr}
+  .compteurs{grid-template-columns:repeat(2,1fr);row-gap:28px}
+  .compteurs>div:nth-child(3){border-left:0;padding-left:0}
+  .rail-reseau{height:340vh}
+}
+@media (max-width:760px){
+  .nav{display:none}
+  .brg{display:flex}
+  .deux-comp{grid-template-columns:1fr 1fr;gap:18px}
+  .colle{align-items:flex-start;padding-top:calc(var(--barre) + 18px)}
+  .grille-reseau{gap:24px}
+  .liste-imp li{grid-template-columns:32px 1fr;row-gap:2px}
+  .liste-imp li .ou{grid-column:2;text-align:left}
+  #ouverture{padding-bottom:80px}
+  .pied .dedans{flex-direction:column;align-items:flex-start}
+}
+@media (max-width:380px){
+  .deux-comp{grid-template-columns:1fr}
+}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;
+    transition-duration:.01ms !important;scroll-behavior:auto !important}
+  .bandeau .rail{animation:none}
+}
+</style>
+</head>
+<body>
+
+<div id="repli" aria-hidden="true"></div>
+<canvas id="scene" aria-hidden="true"></canvas>
+<video id="film" src="../../assets/clip3.mp4" muted loop playsinline autoplay preload="auto" aria-hidden="true" tabindex="-1"></video>
+
+<div class="releve" id="releve" aria-hidden="true">
+  <span>f/1.4</span>
+  <span class="jauge"><span class="curseur" id="curseur"></span></span>
+  <span id="dist">MISE AU POINT 0,30</span>
+</div>
+
+<header class="barre" id="barre">
+  <a class="marque" href="#ouverture">
+    <img src="../../assets/logo-web.png" alt="Intégral Pharma" width="34">
+    <b>Intégral Pharma</b>
+  </a>
+  <nav class="nav">
+    <a href="#histoire">Le groupe</a>
+    <a href="#reseau">Le réseau</a>
+    <a href="#metier">Le métier</a>
+    <a href="#valeurs">Nos valeurs</a>
+    <a class="fort" href="#fin">Nous écrire</a>
+  </nav>
+  <button class="brg" id="brg" aria-label="Ouvrir le menu" aria-expanded="false"><span></span></button>
+</header>
+
+<div class="tiroir" id="tiroir" role="dialog" aria-label="Menu" aria-modal="true">
+  <button class="fermer" id="fermer" aria-label="Fermer le menu">✕</button>
+  <a href="#histoire">Le groupe</a>
+  <a href="#reseau">Le réseau</a>
+  <a href="#metier">Le métier</a>
+  <a href="#valeurs">Nos valeurs</a>
+  <a href="#fin">Nous écrire</a>
+</div>
+
+<main>
+
+  <!-- ══ 1 · L'ouverture ══════════════════════════════════════════════ -->
+  <section class="sec jour" id="ouverture" data-scene="ouverture">
+    <div class="dedans">
+      <p class="sur rv"><span class="filet-sur">Groupe de grossistes-répartiteurs français indépendant</span></p>
+      <h1 class="rv d1">Neuf maisons.<br>Un seul nom.</h1>
+      <p class="sous rv d2">Chacune livre sa région depuis des années, avec ses équipes et ses habitudes.
+        Depuis 2006, elles avancent ensemble sous le nom d'Intégral Pharma — et votre commande part
+        toujours de la plus proche de votre comptoir.</p>
+      <div class="btns rv d3">
+        <a class="btn plein" href="#reseau"><span class="pt"></span>Découvrir le réseau</a>
+        <a class="btn" href="#fin">Nous écrire</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ Le bandeau ═══════════════════════════════════════════════════ -->
+  <div class="bandeau" aria-hidden="true">
+    <div class="rail">
+      <span>Indépendant</span><span>Neuf implantations</span><span>Un réseau national</span>
+      <span>Plus de 2 000 officines livrées</span><span>Confiance, Engagement, Respect</span>
+      <span>Une alternative aux grossistes historiques</span>
+      <span>Indépendant</span><span>Neuf implantations</span><span>Un réseau national</span>
+      <span>Plus de 2 000 officines livrées</span><span>Confiance, Engagement, Respect</span>
+      <span>Une alternative aux grossistes historiques</span>
+    </div>
+  </div>
+
+  <!-- ══ 2 · L'histoire ═══════════════════════════════════════════════ -->
+  <section class="sec jour" id="histoire" data-scene="histoire">
+    <div class="dedans">
+      <div class="duo">
+        <div>
+          <p class="sur rv">Notre histoire</p>
+          <h2 class="rv d1">Rendre la marge à l'officine française.</h2>
+          <div class="plomb rv d2" style="margin-top:30px">
+            <p>C'est la raison d'être d'Intégral Pharma depuis 2006 : redistribuer directement la
+              marge aux officines françaises, en toute transparence, avec des prix nets visibles
+              sur facture.</p>
+            <p>Neuf implantations aujourd'hui, plus de deux mille officines livrées chaque jour, et
+              la même idée qu'au premier jour — un groupe de répartiteurs indépendants qui a choisi
+              de se mettre du côté du comptoir.</p>
+          </div>
+        </div>
+        <figure class="plaque-nette rv d2" style="margin:0">
+          <img src="../../assets/siege-web.jpg" alt="Vue aérienne du siège d'Intégral Pharma à Hyères" width="1600" height="900" loading="lazy" decoding="async">
+          <figcaption>Le siège — Hyères, ZI Saint-Martin</figcaption>
+        </figure>
+      </div>
+
+      <div class="compteurs rv">
+        <div><b data-cible="2006">2006</b><i>année de création</i></div>
+        <div><b data-cible="9">9</b><i>implantations</i></div>
+        <div><b data-cible="2000" data-suffixe=" +">2 000 +</b><i>officines livrées</i></div>
+        <div><b data-cible="20">20</b><i>ans d'indépendance</i></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ 3 · Le réseau — le plan de mise au point traverse les dix points ══ -->
+  <section class="sec nuit" id="reseau" data-scene="reseau">
+    <div class="rail-reseau" id="rail-reseau">
+      <div class="colle">
+        <div class="dedans">
+          <div class="grille-reseau">
+            <div>
+              <p class="sur">Le réseau</p>
+              <h2 style="max-width:12ch">Neuf implantations. Laquelle est la vôtre&nbsp;?</h2>
+              <div class="plomb" style="margin-top:26px">
+                <p>C'est la seule question qui compte vraiment. Celle qui prépare votre commande,
+                  qui vous livre chaque matin, et dont vous connaissez l'équipe par son prénom.</p>
+                <p>Les huit autres sont là pour qu'elle ne soit jamais prise au dépourvu — de la
+                  Bretagne à la Méditerranée, le stock d'une maison est le stock de toutes.</p>
+              </div>
+              <p class="note-part">Et à l'Est, notre partenaire <b>Pharmest</b> (Metz, 57) prolonge
+                le maillage. Neuf implantations et un partenaire.</p>
+            </div>
+            <ol class="liste-imp" id="liste-imp">
+              <li data-i="0"><span class="num">01</span><span class="nom">Hyères Pharma<span class="siege">Siège du groupe</span></span><span class="ou">Hyères · 83</span></li>
+              <li data-i="1"><span class="num">02</span><span class="nom">SR Pharma</span><span class="ou">Palaiseau · 91</span></li>
+              <li data-i="2"><span class="num">03</span><span class="nom">Mistral Santé Pharma</span><span class="ou">Flassans-sur-Issole · 83</span></li>
+              <li data-i="3"><span class="num">04</span><span class="nom">Sud Ouest Pharma</span><span class="ou">Montayral · 47</span></li>
+              <li data-i="4"><span class="num">05</span><span class="nom">Comptoir Pharmaceutique du Rhône</span><span class="ou">Saint-Maurice-l'Exil · 38</span></li>
+              <li data-i="5"><span class="num">06</span><span class="nom">Escale Pharma</span><span class="ou">Chilly-Mazarin · 91</span></li>
+              <li data-i="6"><span class="num">07</span><span class="nom">Ouest Pharma Services</span><span class="ou">Saint-Étienne-de-Montluc · 44</span></li>
+              <li data-i="7"><span class="num">08</span><span class="nom">Pharm'Occitanie Services</span><span class="ou">Villeneuve-lès-Béziers · 34</span></li>
+              <li data-i="8"><span class="num">09</span><span class="nom">Sud Est Pharma</span><span class="ou">Le Cannet-des-Maures · 83</span></li>
+              <li data-i="9"><span class="num">—</span><span class="nom">Pharmest<span class="siege">Partenaire</span></span><span class="ou">Metz · 57</span></li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ 4 · Le métier ════════════════════════════════════════════════ -->
+  <section class="sec nuit" id="metier" data-scene="metier">
+    <div class="dedans">
+      <p class="sur rv">Le métier</p>
+      <h2 class="rv d1" style="max-width:15ch">Ce qui se passe entre votre commande et votre comptoir.</h2>
+      <div class="plomb rv d2" style="margin-top:28px">
+        <p>Quelques heures, quatre métiers, et une chaîne qui ne s'arrête jamais. Référencer,
+          stocker, préparer, livrer : c'est invisible depuis l'officine, et c'est tout notre travail.</p>
+      </div>
+
+      <div class="etapes" id="etapes">
+        <div class="etape rv" data-e="0"><span class="n">01 — Le référencement</span>
+          <p>Le groupe référence pour ses neuf maisons à la fois : un même catalogue, tenu à jour,
+            disponible dans toutes les implantations. C'est ce qui permet à une maison de taille
+            humaine de proposer la profondeur de gamme d'un réseau national.</p></div>
+        <div class="etape rv d1" data-e="1"><span class="n">02 — La disponibilité</span>
+          <p>Des stocks répartis sur neuf implantations, au plus près de votre officine. Quand le
+            comptoir a besoin, le réseau répond — et quand une référence manque quelque part, elle
+            existe souvent ailleurs dans le réseau.</p></div>
+        <div class="etape rv d2" data-e="2"><span class="n">03 — La préparation</span>
+          <p>Chaque commande est préparée dans l'implantation la plus proche de chez vous, par une
+            équipe qui connaît votre officine et ses saisons.</p></div>
+        <div class="etape rv d3" data-e="3"><span class="n">04 — La livraison</span>
+          <p>Tous les jours, les tournées partent vers les officines. La régularité d'un service
+            tenu — c'est elle qui fait la confiance, pas les promesses.</p></div>
+      </div>
+
+      <p class="cloture rv">Et quand la vie de votre officine change — transfert, agrandissement,
+        cession de parts — votre interlocuteur ajuste l'approvisionnement avec vous, sans à-coup
+        au comptoir.</p>
+    </div>
+  </section>
+
+  <!-- ══ 4 bis · La centrale ══════════════════════════════════════════ -->
+  <section class="sec jour" id="centrale" data-scene="centrale">
+    <div class="dedans">
+      <p class="sur rv">La centrale</p>
+      <h2 class="rv d1" style="max-width:14ch">Et pour tout ce qui n'est pas le médicament.</h2>
+      <div class="plomb rv d2" style="margin-top:28px">
+        <p>Notre centrale de parapharmacie référence pour l'officine plus de 14 000 produits et
+          plus de 480 marques.</p>
+        <p>C'est une structure à part, avec son propre fonctionnement — sa commande, sa livraison —
+          et la même exigence que le reste du groupe.</p>
+      </div>
+      <div class="deux-comp rv">
+        <div><b data-cible="14000" data-suffixe=" +">14 000 +</b><i>références</i></div>
+        <div><b data-cible="480" data-suffixe=" +">480 +</b><i>marques</i></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ 4 ter · Vos factures ═════════════════════════════════════════ -->
+  <section class="sec jour" id="factures" data-scene="factures">
+    <div class="dedans">
+      <p class="sur rv">Vos factures</p>
+      <h2 class="rv d1" style="max-width:13ch">Elles arrivent déjà là où vous les gérez.</h2>
+      <div class="plomb rv d2" style="margin-top:28px">
+        <p>Nous sommes connectés à Digipharmacie : vos factures Intégral s'y retrouvent
+          automatiquement, avec celles de vos autres fournisseurs.</p>
+        <p>Rien à saisir, rien à classer, rien à réclamer.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ 4 quater · Nos partenaires ═══════════════════════════════════ -->
+  <section class="sec jour" id="partenaires" data-scene="partenaires">
+    <div class="dedans">
+      <p class="sur rv">Nos partenaires</p>
+      <h2 class="rv d1" style="max-width:14ch">Les laboratoires qui nous font confiance.</h2>
+      <div class="labos rv d2">
+        <span>EG Labo</span><span>Zentiva</span><span>Zydus</span>
+        <span>Viatris</span><span>ITP</span><span>Santestat</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ 4 quinquies · Nous rejoindre ═════════════════════════════════ -->
+  <section class="sec jour" id="rejoindre" data-scene="rejoindre">
+    <div class="dedans">
+      <p class="sur rv">Nous rejoindre</p>
+      <h2 class="rv d1" style="max-width:13ch">Neuf implantations qui embauchent.</h2>
+      <div class="plomb rv d2" style="margin-top:28px">
+        <p>Préparateur-chauffeur, technicien approvisionnement, commercial, pharmacien responsable :
+          les métiers de la répartition s'apprennent chez nous.</p>
+      </div>
+      <div class="villes rv d2">
+        <span>Hyères (83)</span><span>Villeneuve-lès-Béziers (34)</span>
+        <span>Montayral (47)</span><span>Saint-Maurice-l'Exil (38)</span>
+      </div>
+      <div class="btns rv d3">
+        <a class="btn plein" href="https://www.integralpharma.fr/jobs"><span class="pt"></span>Voir les offres</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ 5 · Les valeurs ══════════════════════════════════════════════ -->
+  <section class="sec nuit" id="valeurs" data-scene="valeurs">
+    <div class="dedans">
+      <p class="sur rv">Nos valeurs</p>
+      <h2 class="rv d1" style="max-width:13ch">Trois mots qui se vérifient au téléphone.</h2>
+      <div class="trois">
+        <div class="rv"><h3>Confiance</h3><p>La personne qui décroche connaît votre officine,
+          vos saisons et vos habitudes.</p></div>
+        <div class="rv d1"><h3>Engagement</h3><p>C'est la même d'une année sur l'autre. Dans ce
+          métier, c'est devenu rare.</p></div>
+        <div class="rv d2"><h3>Respect</h3><p>Elle ne vous vendra pas ce dont vous n'avez pas
+          besoin — parce qu'elle vous reverra le mois suivant, et l'année d'après.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ 6 · La fin de page ═══════════════════════════════════════════ -->
+  <section class="sec nuit" id="fin" data-scene="fin">
+    <div class="dedans">
+      <h2 class="rv">Posez-nous la question qui vous intéresse.</h2>
+      <div class="plomb rv d1" style="margin-top:28px">
+        <p>Sur nos conditions, sur nos délais, sur la façon dont nous travaillons. Vous aurez une
+          réponse claire, et le nom de l'implantation qui livre votre secteur.</p>
+      </div>
+      <a class="mail rv d2" href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a>
+    </div>
+  </section>
+</main>
+
+<footer class="pied" data-scene="pied">
+  <div class="dedans">
+    <div>
+      <p><b>Intégral Pharma</b> — 758 chemin de la Source, ZI Saint-Martin, 83400 Hyères</p>
+      <p><a href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a> ·
+         <a href="https://www.integralpharma.fr/mentions-l%C3%A9gales">Mentions légales</a></p>
+    </div>
+    <p class="chiffres">9 implantations · plus de 2 000 officines livrées · indépendant depuis 2006</p>
+  </div>
+  <div class="dedans signature">
+    <span>36 · Grande ouverture</span>
+    <span>Profondeur de champ — le plan net se déplace</span>
+  </div>
+</footer>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   L'APPAREIL — un seul contexte WebGL, aucune librairie.
+   ═══════════════════════════════════════════════════════════════════════════ */
+(function(){
+'use strict';
+
+document.documentElement.classList.add('js-reveal');
+var DOUX = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ── 1. Le découpage : les scènes, une par section ─────────────────────── */
+/* nuit : 0 = pleine lumière du jour, 1 = nuit d'encre
+   pt   : le plan de mise au point (1 = très loin, 0 = collé à l'objectif)
+   cle  : la source de lumière, en fraction d'écran
+   cleR : son étalement
+   drap : le drapeau qui protège la colonne de texte  [cx,cy,rx,ry,force] */
+var SCENES = {
+  ouverture  :{nuit:.06, pt:.46, cle:[.76,.24], cleR:.58, drap:[.28,.56,.42,.48,.66],
+               siege:[ .74,-.10,.64,.52,.80], film:[0,0,.4,.3,0]},
+  histoire   :{nuit:.12, pt:.72, cle:[.12,.14], cleR:.56, drap:[.28,.56,.42,.52,.68],
+               siege:[ .52,-.04,.52,.36,.92], film:[0,0,.4,.3,0]},
+  reseau     :{nuit:.94, pt:.55, cle:[.50,.44], cleR:.80, drap:[.52,.50,.62,.66,.84],
+               siege:[ .30,-.10,.60,.40,0],   film:[0,0,.4,.3,0]},
+  metier     :{nuit:.82, pt:.40, cle:[.88,.24], cleR:.52, drap:[.44,.56,.58,.62,.82],
+               siege:[ .30,-.10,.60,.40,0],   film:[.60,.34,.38,.30,.92]},
+  centrale   :{nuit:.14, pt:.34, cle:[.22,.88], cleR:.50, drap:[.28,.48,.42,.52,.68],
+               siege:[-.62,.18,.32,.24,.34],  film:[.60,-.24,.38,.28,.62]},
+  factures   :{nuit:.09, pt:.58, cle:[.74,.14], cleR:.56, drap:[.28,.50,.42,.50,.64],
+               siege:[-.54,-.34,.30,.22,.26], film:[.58,.30,.32,.24,.42]},
+  partenaires:{nuit:.10, pt:.66, cle:[.46,.94], cleR:.68, drap:[.34,.46,.48,.46,.50],
+               siege:[ .58,.32,.40,.30,.36],  film:[0,0,.4,.3,0]},
+  rejoindre  :{nuit:.20, pt:.50, cle:[.14,.20], cleR:.50, drap:[.28,.50,.42,.52,.66],
+               siege:[ .60,-.08,.42,.32,.42], film:[0,0,.4,.3,0]},
+  valeurs    :{nuit:.88, pt:.22, cle:[.78,.12], cleR:.72, drap:[.46,.56,.62,.58,.80],
+               siege:[ .30,-.10,.60,.40,0],   film:[0,0,.4,.3,0]},
+  fin        :{nuit:.96, pt:.46, cle:[.74,.44], cleR:.48, drap:[.28,.48,.44,.58,.84],
+               siege:[ .66,.04,.62,.52,.52],  film:[0,0,.4,.3,0]},
+  pied       :{nuit:1.0, pt:.62, cle:[.72,.90], cleR:.42, drap:[.44,.50,.66,.62,.82],
+               siege:[ .70,.06,.56,.46,.26],  film:[0,0,.4,.3,0]}
+};
+
+/* Les dix points du réseau. x,y suivent grossièrement la géographie réelle
+   (longitude, latitude) — mais comme la caméra est DEDANS et que chacun est à
+   une distance différente, ça ne retombe jamais sur la carte de France posée
+   à plat, qui est le cliché du secteur. z = la distance à l'objectif. */
+var IMPLANTATIONS = [
+  {lon: 6.13, lat:43.12, z:.14},  /* 01 Hyères        — la plus proche */
+  {lon: 2.24, lat:48.71, z:.62},  /* 02 Palaiseau     */
+  {lon: 6.20, lat:43.36, z:.24},  /* 03 Flassans      */
+  {lon: 0.94, lat:44.48, z:.46},  /* 04 Montayral     */
+  {lon: 4.79, lat:45.40, z:.40},  /* 05 Saint-Maurice */
+  {lon: 2.31, lat:48.71, z:.68},  /* 06 Chilly        */
+  {lon:-1.78, lat:47.28, z:.56},  /* 07 Montluc       */
+  {lon: 3.27, lat:43.32, z:.32},  /* 08 Béziers       */
+  {lon: 6.34, lat:43.39, z:.20},  /* 09 Le Cannet     */
+  {lon: 6.18, lat:49.12, z:.80}   /* —  Pharmest      */
+];
+/* L'ordre de passage du plan net : du plus lointain au plus proche. */
+var ORDRE = IMPLANTATIONS.map(function(p,i){return i;})
+  .sort(function(a,b){return IMPLANTATIONS[b].z - IMPLANTATIONS[a].z;});
+
+/* ── 2. WebGL ──────────────────────────────────────────────────────────── */
+var cvs = document.getElementById('scene');
+var gl = null;
+try{
+  gl = cvs.getContext('webgl',{alpha:false,antialias:false,depth:false,stencil:false,
+        premultipliedAlpha:true,powerPreference:'high-performance'})
+    || cvs.getContext('experimental-webgl',{alpha:false,antialias:false,depth:false});
+}catch(e){ gl = null; }
+
+var V_QUAD =
+ 'attribute vec2 aP;varying vec2 vUv;void main(){vUv=aP*0.5+0.5;gl_Position=vec4(aP,0.0,1.0);}';
+
+/* Le fond : la base, la source de lumière, le contre-jour, le drapeau,
+   le vignettage et le grain de pellicule. Une seule passe plein écran. */
+var F_FOND = [
+'precision highp float;varying vec2 vUv;',
+'uniform vec2 uRes;uniform float uT,uNuit,uCleR,uStrie;',
+'uniform vec2 uCle;uniform vec4 uDrap;uniform float uDrapF;',
+'float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}',
+'void main(){',
+' vec2 uv=vUv;float asp=uRes.x/max(uRes.y,1.0);',
+' vec3 jr=vec3(0.945,0.926,0.890);vec3 nt=vec3(0.031,0.043,0.078);',
+' vec3 base=mix(jr,nt,uNuit);vec3 col=base;',
+' col*=mix(1.0+(uv.y-0.5)*0.10,1.0-(uv.y-0.5)*0.40,uNuit);',
+' vec2 d=uv-uCle;d.x*=asp;float r=length(d)/max(uCleR,0.01);',
+' float f=exp(-r*r*1.70);',
+' vec3 lum=mix(vec3(1.00,0.86,0.66),vec3(0.22,0.44,1.00),uNuit);',
+' col+=lum*f*mix(0.34,1.05,uNuit);',
+' col+=lum*pow(f,7.0)*mix(0.26,0.85,uNuit);',
+' col+=lum*exp(-pow(abs(r-1.30),2.0)*5.0)*0.12*uNuit;',
+/* le versant à l\'ombre : c\'est lui qui donne du modelé au jour, sinon la
+   page est un aplat crème — plus mort qu\'un noir */
+' vec2 dop=uv-vec2(1.0-uCle.x,1.0-uCle.y);dop.x*=asp;',
+' float fo=exp(-dot(dop,dop)*1.45);',
+' col-=mix(vec3(0.11,0.10,0.085),vec3(0.0),uNuit)*fo;',
+' vec2 d2=uv-vec2(0.10,0.06);d2.x*=asp;',
+' col+=vec3(1.00,0.60,0.26)*exp(-dot(d2,d2)*3.2)*uNuit*0.40;',
+/* les filets de lumière du plan 0,52 : leur douceur est calculée, pas filtrée */
+' float sf=clamp(uStrie,0.0,1.0);',
+' float bande=exp(-pow((uv.y-0.30)/(0.012+sf*0.16),2.0))',
+'            +exp(-pow((uv.y-0.63)/(0.008+sf*0.13),2.0))*0.7;',
+' col+=lum*bande*mix(0.06,0.16,uNuit)*(0.35+0.65*(1.0-sf));',
+/* le drapeau : on ramène la colonne de texte vers la base, pour que le contraste
+   ne dépende jamais de l\'endroit où la source se trouve */
+' vec2 s=(uv-uDrap.xy)/max(uDrap.zw,vec2(0.01));',
+' float e=1.0-smoothstep(0.50,1.30,length(s));',
+' col=mix(col,base*mix(1.0,0.90,uNuit),e*uDrapF);',
+' vec2 v=(uv-0.5)*vec2(asp,1.0);',
+' col*=1.0-smoothstep(0.40,1.10,length(v))*mix(0.16,0.58,uNuit);',
+' float g=hash(gl_FragCoord.xy+fract(uT*0.37)*211.0)-0.5;',
+' col+=g*mix(0.014,0.032,uNuit);',
+' gl_FragColor=vec4(col,1.0);}'
+].join('\n');
+
+/* Une plaque : une image posée à une distance donnée, étalonnée pour tenir
+   dans la lumière de la scène. Sortie en alpha prémultiplié — c'est ce qui
+   permet de l'adoucir ensuite sans halo noir sur les bords. */
+var V_PLAQUE =
+ 'attribute vec2 aP;varying vec2 vUv;uniform vec4 uRect;uniform vec4 uUv;'+
+ 'void main(){vUv=uUv.xy+(aP*0.5+0.5)*uUv.zw;'+
+ 'gl_Position=vec4(uRect.x+aP.x*uRect.z,uRect.y+aP.y*uRect.w,0.0,1.0);}';
+var F_PLAQUE = [
+'precision mediump float;varying vec2 vUv;uniform sampler2D uTex;',
+'uniform float uA,uNuit,uGris;uniform vec3 uTeinte;',
+'void main(){',
+' vec3 c=texture2D(uTex,clamp(vUv,0.001,0.999)).rgb;',
+' float l=dot(c,vec3(0.299,0.587,0.114));',
+' c=mix(c,vec3(l),uGris);',
+' c=mix(c,uTeinte*(0.18+l*1.05),uNuit*0.62);',
+' c=c*mix(1.0,0.66,uNuit)+mix(0.0,0.015,uNuit);',
+' vec2 q=abs(vUv-0.5)*2.0;',
+' float m=(1.0-smoothstep(0.52,1.0,q.x))*(1.0-smoothstep(0.52,1.0,q.y));',
+' float a=uA*m;',
+' gl_FragColor=vec4(c*a,a);}'
+].join('\n');
+
+/* Le flou : gaussienne séparable à neuf prises. Une passe horizontale,
+   une passe verticale, sur un tampon à demi-résolution. Le rayon vient du
+   cercle de confusion. Aucun filtre CSS n'est utilisé. */
+var F_FLOU = [
+'precision mediump float;varying vec2 vUv;uniform sampler2D uTex;uniform vec2 uPas;',
+'void main(){',
+' vec4 s=texture2D(uTex,vUv)*0.2270270270;',
+' s+=(texture2D(uTex,vUv+uPas)+texture2D(uTex,vUv-uPas))*0.1945945946;',
+' s+=(texture2D(uTex,vUv+uPas*2.0)+texture2D(uTex,vUv-uPas*2.0))*0.1216216216;',
+' s+=(texture2D(uTex,vUv+uPas*3.0)+texture2D(uTex,vUv-uPas*3.0))*0.0540540541;',
+' s+=(texture2D(uTex,vUv+uPas*4.0)+texture2D(uTex,vUv-uPas*4.0))*0.0162162162;',
+' gl_FragColor=s;}'
+].join('\n');
+
+var F_COPIE =
+ 'precision mediump float;varying vec2 vUv;uniform sampler2D uTex;uniform float uA;'+
+ 'void main(){gl_FragColor=texture2D(uTex,vUv)*uA;}';
+
+/* Réduction par boîte de quatre prises : sans elle, descendre d'un niveau
+   avec une seule prise fait scintiller les détails fins de la photo. */
+var F_REDUC = [
+'precision mediump float;varying vec2 vUv;uniform sampler2D uTex;uniform vec2 uTx;',
+'void main(){',
+' vec4 s=texture2D(uTex,vUv+uTx*vec2(-0.5,-0.5));',
+' s+=texture2D(uTex,vUv+uTx*vec2( 0.5,-0.5));',
+' s+=texture2D(uTex,vUv+uTx*vec2(-0.5, 0.5));',
+' s+=texture2D(uTex,vUv+uTx*vec2( 0.5, 0.5));',
+' gl_FragColor=s*0.25;}'
+].join('\n');
+
+/* Les points lumineux : leur disque est calculé, jamais flouté.
+   Net au plan de mise au point, disque pâle à liseré quand il s'en éloigne. */
+var V_PTS = [
+'attribute vec3 aPos;attribute vec3 aMeta;',
+'uniform float uPt,uOuv,uT,uDpr,uPara,uActif;',
+'varying float vCoc;varying float vS;varying float vAct;',
+'void main(){',
+' float z=aPos.z;float par=1.0-z;',
+' vec2 p=aPos.xy;',
+' p.x+=sin(uT*0.13+aMeta.y*6.283)*0.020*par;',
+' p.y+=cos(uT*0.11+aMeta.y*4.712)*0.024*par+uPara*par;',
+' p*=mix(1.0,1.14,par);',
+' gl_Position=vec4(p,0.0,1.0);',
+' float coc=clamp(abs(z-uPt)*uOuv,0.0,1.0);',
+' vCoc=coc;vS=aMeta.y;',
+' vAct=(uActif>=0.0)?(1.0-min(abs(aMeta.z-uActif),1.0)):0.0;',
+' gl_PointSize=max(1.0,(aMeta.x*(1.0+coc*27.0)+vAct*46.0)*uDpr);}'
+].join('\n');
+var F_PTS = [
+'precision mediump float;varying float vCoc;varying float vS;varying float vAct;',
+'uniform vec3 uCA,uCB;uniform float uOpac;',
+'void main(){',
+' vec2 q=gl_PointCoord-0.5;float d=length(q)*2.0;',
+' if(d>1.0){discard;}',
+' float e=mix(0.0,0.82,vCoc);',
+' float a=1.0-smoothstep(e,1.0,d);',
+' a+=smoothstep(0.68,0.94,d)*(1.0-smoothstep(0.94,1.0,d))*vCoc*0.30;',
+' a*=1.0/(1.0+vCoc*vCoc*5.5);',
+/* l\'implantation au point porte un repère de visée : un cercle tracé et un
+   halo, sinon on ne voit pas quel point la liste vient d\'allumer */
+' a+=smoothstep(0.46,0.60,d)*(1.0-smoothstep(0.68,0.84,d))*vAct*1.00;',
+' a+=(1.0-smoothstep(0.0,0.22,d))*vAct*0.95;',
+' a+=(1.0-smoothstep(0.84,1.0,d))*vAct*0.12;',
+' a*=uOpac;',
+' vec3 c=mix(uCA,uCB,vS);',
+' c=mix(c,vec3(1.0,0.86,0.62),vAct*0.7);',
+' gl_FragColor=vec4(c*a,a);}'
+].join('\n');
+
+var P={}, quadBuf=null, fboScene=null, fboA=null, fboB=null, fboC=null, fboD=null;
+var texSiege=null, texFilm=null, filmPret=false;
+var W=0,H=0,DPR=1,HW=0,HH=0,QW=0,QH=0;
+var pts={}, ptsReseau=null;
+var GL_OK = false;
+
+function compile(src,type){
+  var s=gl.createShader(type); gl.shaderSource(s,src); gl.compileShader(s);
+  if(!gl.getShaderParameter(s,gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
+  return s;
+}
+function prog(vs,fs,attrs){
+  var p=gl.createProgram();
+  gl.attachShader(p,compile(vs,gl.VERTEX_SHADER));
+  gl.attachShader(p,compile(fs,gl.FRAGMENT_SHADER));
+  gl.linkProgram(p);
+  if(!gl.getProgramParameter(p,gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+  var o={p:p,a:{},u:{}};
+  (attrs||[]).forEach(function(n){o.a[n]=gl.getAttribLocation(p,n);});
+  var n=gl.getProgramParameter(p,gl.ACTIVE_UNIFORMS);
+  for(var i=0;i<n;i++){var nm=gl.getActiveUniform(p,i).name.replace(/\[0\]$/,'');
+    o.u[nm]=gl.getUniformLocation(p,nm);}
+  return o;
+}
+function cible(w,h){
+  var t=gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D,t);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,w,h,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+  var f=gl.createFramebuffer();
+  gl.bindFramebuffer(gl.FRAMEBUFFER,f);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,t,0);
+  gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+  return {f:f,t:t,w:w,h:h};
+}
+function libere(o){ if(o){gl.deleteTexture(o.t);gl.deleteFramebuffer(o.f);} }
+
+function nuage(n,zMin,zMax,taille,varTaille){
+  var a=new Float32Array(n*3), m=new Float32Array(n*3);
+  for(var i=0;i<n;i++){
+    a[i*3]  =(Math.random()*2-1)*1.25;
+    a[i*3+1]=(Math.random()*2-1)*1.25;
+    a[i*3+2]=zMin+Math.random()*(zMax-zMin);
+    m[i*3]  =taille+Math.random()*varTaille;
+    m[i*3+1]=Math.random();
+    m[i*3+2]=-9;
+  }
+  return {n:n,bp:tampon(a),bm:tampon(m)};
+}
+function tampon(arr){
+  var b=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER,b);
+  gl.bufferData(gl.ARRAY_BUFFER,arr,gl.STATIC_DRAW); return b;
+}
+function nuageReseau(){
+  var n=IMPLANTATIONS.length;
+  var a=new Float32Array(n*3), m=new Float32Array(n*3);
+  for(var i=0;i<n;i++){
+    var p=IMPLANTATIONS[i];
+    /* cadrage volontairement resserré : au-delà, l'écartement en perspective
+       pousse Hyères et Pharmest hors du cadre et le repère de visée se coupe */
+    a[i*3]  =((p.lon+2.2)/9.6)*1.40-0.70;
+    a[i*3+1]=((p.lat-42.4)/7.2)*1.28-0.64;
+    a[i*3+2]=p.z;
+    m[i*3]  =3.4;
+    m[i*3+1]=0.15+(i/n)*0.7;
+    m[i*3+2]=i;
+  }
+  return {n:n,bp:tampon(a),bm:tampon(m)};
+}
+
+function texImage(src,cb){
+  var t=gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D,t);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,
+    new Uint8Array([200,196,188,255]));
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+  var im=new Image();
+  im.onload=function(){
+    gl.bindTexture(gl.TEXTURE_2D,t);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,im);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);
+    if(cb) cb(im.naturalWidth/im.naturalHeight);
+  };
+  im.onerror=function(){ /* la plaque reste sur sa couleur de secours */ };
+  im.src=src;
+  return t;
+}
+
+var ratioSiege=16/9, ratioFilm=16/9;
+
+function initGL(){
+  quadBuf=tampon(new Float32Array([-1,-1, 1,-1, -1,1, 1,1]));
+  P.fond  =prog(V_QUAD,F_FOND,['aP']);
+  P.plaque=prog(V_PLAQUE,F_PLAQUE,['aP']);
+  P.flou  =prog(V_QUAD,F_FLOU,['aP']);
+  P.copie =prog(V_QUAD,F_COPIE,['aP']);
+  P.reduc =prog(V_QUAD,F_REDUC,['aP']);
+  P.pts   =prog(V_PTS,F_PTS,['aPos','aMeta']);
+
+  /* Peu de points, et gros. Une nuée dense ne fait pas un objectif ouvert,
+     elle fait un papier peint à bulles — et elle mange le texte. */
+  var petit = window.innerWidth < 760;
+  pts.loin  =nuage(petit? 26:44, .74,.94, 1.0,1.3);
+  pts.proche=nuage(petit? 14:22, .09,.26, 2.0,1.8);
+  pts.flot  =nuage(petit?  4: 8, .03,.11, 3.4,2.6);
+  ptsReseau =nuageReseau();
+
+  texSiege=texImage('../../assets/siege-web.jpg',function(r){ratioSiege=r;});
+
+  texFilm=gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D,texFilm);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,
+    new Uint8Array([60,70,90,255]));
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+
+  gl.disable(gl.DEPTH_TEST);
+  gl.enable(gl.BLEND);
+  redim();
+  GL_OK=true;
+}
+
+function redim(){
+  DPR=Math.min(window.devicePixelRatio||1, window.innerWidth<760?1.5:1.6);
+  W=Math.max(2,Math.round(cvs.clientWidth*DPR));
+  H=Math.max(2,Math.round(cvs.clientHeight*DPR));
+  cvs.width=W; cvs.height=H;
+  HW=Math.max(2,W>>1); HH=Math.max(2,H>>1);
+  QW=Math.max(2,W>>2); QH=Math.max(2,H>>2);
+  libere(fboScene); libere(fboA); libere(fboB); libere(fboC); libere(fboD);
+  fboScene=cible(W,H);
+  fboA=cible(HW,HH); fboB=cible(HW,HH);
+  fboC=cible(QW,QH); fboD=cible(QW,QH);
+}
+
+function quad(o){
+  gl.bindBuffer(gl.ARRAY_BUFFER,quadBuf);
+  gl.enableVertexAttribArray(o.a.aP);
+  gl.vertexAttribPointer(o.a.aP,2,gl.FLOAT,false,0,0);
+  gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+}
+
+/* Le geste : une plaque est dessinée nette dans un tampon, puis adoucie
+   d'autant qu'elle est loin du plan de mise au point, puis recomposée. */
+function plaque(tex,rect,alpha,z,nuit,teinte,gris,ratio){
+  if(alpha<=0.004) return;
+  var coc=Math.min(1, Math.abs(z-etat.pt)*OUVERTURE);
+
+  gl.bindFramebuffer(gl.FRAMEBUFFER,fboScene.f);
+  gl.viewport(0,0,W,H);
+  gl.clearColor(0,0,0,0); gl.clear(gl.COLOR_BUFFER_BIT);
+  gl.blendFunc(gl.ONE,gl.ONE_MINUS_SRC_ALPHA);
+  gl.useProgram(P.plaque.p);
+  /* cadrage « couvrant » : l'image remplit la plaque sans être déformée */
+  var rp=(rect[2]*W)/(rect[3]*H), u=[0,0,1,1];
+  if(ratio>rp){ var w=rp/ratio; u=[(1-w)/2,0,w,1]; }
+  else        { var h=ratio/rp; u=[0,(1-h)/2,1,h]; }
+  gl.uniform4f(P.plaque.u.uRect,rect[0],rect[1],rect[2],rect[3]);
+  gl.uniform4f(P.plaque.u.uUv,u[0],u[1],u[2],u[3]);
+  gl.uniform1f(P.plaque.u.uA,alpha);
+  gl.uniform1f(P.plaque.u.uNuit,nuit);
+  gl.uniform1f(P.plaque.u.uGris,gris);
+  gl.uniform3f(P.plaque.u.uTeinte,teinte[0],teinte[1],teinte[2]);
+  gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D,tex);
+  gl.uniform1i(P.plaque.u.uTex,0);
+  quad(P.plaque);
+
+  var src=fboScene;
+  if(coc>0.012){
+    /* Descente d'un niveau, puis d'un second si l'écart au point est grand.
+       L'écartement des prises reste faible : c'est le nombre d'itérations qui
+       fait le rayon, pas l'écartement — sinon les neuf prises se comptent à
+       l'œil et la photo se dédouble en damier. */
+    reduire(fboScene,fboA,1/W,1/H,HW,HH);
+    var a=fboA,b=fboB,lw=HW,lh=HH;
+    if(coc>0.20){ reduire(fboA,fboC,1/HW,1/HH,QW,QH); a=fboC;b=fboD;lw=QW;lh=QH; }
+
+    var ecart = Math.min(3.2, 0.9 + coc*2.6);
+    var it = (coc<=0.20) ? 1 : Math.min(5, 2+Math.round(coc*3));
+    gl.blendFunc(gl.ONE,gl.ZERO);
+    gl.useProgram(P.flou.p);
+    for(var k=0;k<it;k++){
+      gl.bindFramebuffer(gl.FRAMEBUFFER,b.f); gl.viewport(0,0,lw,lh);
+      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D,a.t);
+      gl.uniform1i(P.flou.u.uTex,0);
+      gl.uniform2f(P.flou.u.uPas,ecart/lw,0);
+      quad(P.flou);
+      gl.bindFramebuffer(gl.FRAMEBUFFER,a.f); gl.viewport(0,0,lw,lh);
+      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D,b.t);
+      gl.uniform1i(P.flou.u.uTex,0);
+      gl.uniform2f(P.flou.u.uPas,0,ecart/lh);
+      quad(P.flou);
+    }
+    src=a;
+  }
+
+  gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+  gl.viewport(0,0,W,H);
+  gl.blendFunc(gl.ONE,gl.ONE_MINUS_SRC_ALPHA);
+  gl.useProgram(P.copie.p);
+  gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D,src.t);
+  gl.uniform1i(P.copie.u.uTex,0); gl.uniform1f(P.copie.u.uA,1);
+  quad(P.copie);
+}
+
+function reduire(de,vers,txx,txy,w,h){
+  gl.bindFramebuffer(gl.FRAMEBUFFER,vers.f);
+  gl.viewport(0,0,w,h);
+  gl.blendFunc(gl.ONE,gl.ZERO);
+  gl.useProgram(P.reduc.p);
+  gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D,de.t);
+  gl.uniform1i(P.reduc.u.uTex,0);
+  gl.uniform2f(P.reduc.u.uTx,txx,txy);
+  quad(P.reduc);
+}
+
+function semer(n,opac,cA,cB,para,actif,additif){
+  if(opac<=0.004) return;
+  gl.blendFunc(gl.ONE, additif? gl.ONE : gl.ONE_MINUS_SRC_ALPHA);
+  gl.useProgram(P.pts.p);
+  gl.bindBuffer(gl.ARRAY_BUFFER,n.bp);
+  gl.enableVertexAttribArray(P.pts.a.aPos);
+  gl.vertexAttribPointer(P.pts.a.aPos,3,gl.FLOAT,false,0,0);
+  gl.bindBuffer(gl.ARRAY_BUFFER,n.bm);
+  gl.enableVertexAttribArray(P.pts.a.aMeta);
+  gl.vertexAttribPointer(P.pts.a.aMeta,3,gl.FLOAT,false,0,0);
+  gl.uniform1f(P.pts.u.uPt,etat.pt);
+  gl.uniform1f(P.pts.u.uOuv,OUVERTURE);
+  gl.uniform1f(P.pts.u.uT,etat.t);
+  gl.uniform1f(P.pts.u.uDpr,DPR);
+  gl.uniform1f(P.pts.u.uPara,para);
+  gl.uniform1f(P.pts.u.uActif,actif);
+  gl.uniform1f(P.pts.u.uOpac,opac);
+  gl.uniform3f(P.pts.u.uCA,cA[0],cA[1],cA[2]);
+  gl.uniform3f(P.pts.u.uCB,cB[0],cB[1],cB[2]);
+  gl.drawArrays(gl.POINTS,0,n.n);
+}
+
+/* ── 3. L'état de la scène, lu au défilement ───────────────────────────── */
+var OUVERTURE = 1.30;               /* l'ouverture du diaphragme */
+var etat={nuit:.06,pt:.46,cle:[.76,.24],cleR:.58,drap:[.28,.56,.42,.48,.66],
+          siege:[.74,-.10,.64,.52,.80],film:[0,0,.4,.3,0],t:0,
+          ptLisse:.46,actif:-1,para:0,dansReseau:false};
+var ancres=[];   /* [{y, s:nomDeScène}] — la piste de montage */
+var sections=[];
+var railReseau=document.getElementById('rail-reseau');
+var listeImp=[].slice.call(document.querySelectorAll('#liste-imp li'));
+var etapesEl=[].slice.call(document.querySelectorAll('.etape'));
+
+function mesurer(){
+  sections=[].slice.call(document.querySelectorAll('[data-scene]')).map(function(el){
+    var r=el.getBoundingClientRect(), top=r.top+window.pageYOffset;
+    return {el:el, s:el.getAttribute('data-scene'), top:top, h:r.height};
+  });
+  ancres=[];
+  sections.forEach(function(sc){
+    /* deux ancres par section : la valeur TIENT sur tout le corps, et ne
+       bascule que dans les marges, là où il n'y a pas de texte */
+    var m=Math.min(sc.h*0.22, 260);
+    ancres.push({y:sc.top+m, s:sc.s});
+    ancres.push({y:sc.top+sc.h-m, s:sc.s});
+  });
+  ancres.sort(function(a,b){return a.y-b.y;});
+}
+
+function lerp(a,b,t){return a+(b-a)*t;}
+function lerpA(a,b,t){var o=[];for(var i=0;i<a.length;i++)o[i]=lerp(a[i],b[i],t);return o;}
+
+function lire(){
+  var y=window.pageYOffset+window.innerHeight*0.5;
+  var i=0;
+  while(i<ancres.length-1 && ancres[i+1].y<y) i++;
+  var A=ancres[i], B=ancres[Math.min(i+1,ancres.length-1)];
+  var t=(B.y>A.y)? Math.max(0,Math.min(1,(y-A.y)/(B.y-A.y))) : 0;
+  t=t*t*(3-2*t);
+  var a=SCENES[A.s], b=SCENES[B.s];
+  etat.nuit=lerp(a.nuit,b.nuit,t);
+  etat.pt  =lerp(a.pt,b.pt,t);
+  etat.cle =lerpA(a.cle,b.cle,t);
+  etat.cleR=lerp(a.cleR,b.cleR,t);
+  etat.drap=lerpA(a.drap,b.drap,t);
+  etat.siege=lerpA(a.siege,b.siege,t);
+  etat.film =lerpA(a.film,b.film,t);
+  etat.para = -(window.pageYOffset/Math.max(1,window.innerHeight))*0.10;
+  etat.actif=-1;
+  etat.dansReseau=false;
+
+  /* Le geste principal : dans « Le réseau », le plan net traverse les dix
+     points, du plus lointain au plus proche. */
+  if(railReseau){
+    var r=railReseau.getBoundingClientRect();
+    var course=r.height-window.innerHeight;
+    if(r.top<=0 && r.bottom>=window.innerHeight && course>0){
+      etat.dansReseau=true;
+      var p=Math.max(0,Math.min(1,(-r.top)/course));
+      var q=Math.max(0,Math.min(0.9999,(p-0.04)/0.92));
+      var idx=Math.floor(q*ORDRE.length);
+      idx=Math.max(0,Math.min(ORDRE.length-1,idx));
+      var cur=ORDRE[idx];
+      var frac=q*ORDRE.length-idx;
+      var suiv=ORDRE[Math.min(ORDRE.length-1,idx+1)];
+      var z0=IMPLANTATIONS[cur].z, z1=IMPLANTATIONS[suiv].z;
+      var f=Math.max(0,Math.min(1,(frac-0.55)/0.45));
+      etat.pt=lerp(z0,z1,f*f*(3-2*f));
+      etat.actif=(frac<0.72)? cur : -1;
+      etat.nuit=Math.max(etat.nuit,0.94);
+    }
+  }
+  majDOM();
+}
+
+var dernierActif=-2, dernierReseau=null;
+function majDOM(){
+  if(etat.dansReseau!==dernierReseau){
+    dernierReseau=etat.dansReseau;
+    releve.classList.toggle('allume',etat.dansReseau);
+  }
+  if(etat.actif!==dernierActif){
+    dernierActif=etat.actif;
+    for(var i=0;i<listeImp.length;i++)
+      listeImp[i].classList.toggle('actif', i===etat.actif);
+  }
+  /* Les quatre métiers : celui qui est au centre de l'écran se souligne */
+  for(var k=0;k<etapesEl.length;k++){
+    var b=etapesEl[k].getBoundingClientRect();
+    var au = b.top < window.innerHeight*0.72 && b.bottom > window.innerHeight*0.24;
+    etapesEl[k].classList.toggle('actif', au);
+  }
+}
+
+/* ── 4. Le rendu ───────────────────────────────────────────────────────── */
+var t0=performance.now(), imgs=0, fps=60, tFps=t0;
+/* Port de contrôle : permet de relire les pixels RÉELLEMENT affichés derrière
+   un bloc de texte, pour mesurer le contraste sur le rendu et non sur une
+   valeur déclarée dans la feuille de style. */
+var sondes=[];
+function lin1(c){ return c<=0.03928? c/12.92 : Math.pow((c+0.055)/1.055,2.4); }
+window.__grandeOuverture={fps:0,pt:0,nuit:0,couches:12,resultat:null,
+  sonder:function(rects){ sondes=rects.slice(); this.resultat=null; }};
+
+function rendu(now){
+  requestAnimationFrame(rendu);
+  if(!GL_OK) return;
+  etat.t=(now-t0)/1000;
+
+  /* le plan de mise au point est amorti : un point se « tire », il ne saute pas */
+  etat.ptLisse += (etat.pt-etat.ptLisse) * (DOUX? 1 : 0.11);
+  var vrai=etat.pt; etat.pt=etat.ptLisse;
+
+  if(filmPret){
+    try{
+      gl.bindTexture(gl.TEXTURE_2D,texFilm);
+      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
+      gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,film);
+      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);
+    }catch(e){ filmPret=false; }
+  }
+
+  gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+  gl.viewport(0,0,W,H);
+
+  /* couche 1-3 + 7 + 12 : base, source, contre-jour, filets, grain, vignettage */
+  gl.blendFunc(gl.ONE,gl.ZERO);
+  gl.useProgram(P.fond.p);
+  gl.uniform2f(P.fond.u.uRes,W,H);
+  gl.uniform1f(P.fond.u.uT,etat.t);
+  gl.uniform1f(P.fond.u.uNuit,etat.nuit);
+  gl.uniform2f(P.fond.u.uCle,etat.cle[0],1-etat.cle[1]);
+  gl.uniform1f(P.fond.u.uCleR,etat.cleR);
+  gl.uniform4f(P.fond.u.uDrap,etat.drap[0],1-etat.drap[1],etat.drap[2],etat.drap[3]);
+  gl.uniform1f(P.fond.u.uDrapF,etat.drap[4]);
+  gl.uniform1f(P.fond.u.uStrie,Math.min(1,Math.abs(0.52-etat.pt)*OUVERTURE));
+  quad(P.fond);
+
+  /* couche 4 : la poussière lointaine.
+     Le jour, le bokeh ne peut pas briller : il ne reste qu'un voile très
+     discret. Le disque lumineux, lui, se garde pour la nuit — c'est là qu'il
+     existe optiquement. */
+  var n=etat.nuit;
+  var jourA=[0.62,0.56,0.47], jourB=[0.80,0.70,0.55];
+  var nuitA=[1.00,0.79,0.50], nuitB=[0.42,0.60,1.00];
+  var oJour=1-Math.min(1,Math.max(0,(n-0.34)/0.26));
+  var oNuit=Math.min(1,Math.max(0,(n-0.34)/0.26));
+  semer(pts.loin, 0.13*oJour, jourA,jourB, etat.para,-1,false);
+  semer(pts.loin, 0.42*oNuit, nuitA,nuitB, etat.para,-1,true);
+
+  /* couche 5 : la plaque du siège */
+  plaque(texSiege,[etat.siege[0],etat.siege[1],etat.siege[2],etat.siege[3]],
+         etat.siege[4],0.72,n,[0.38,0.52,0.98],0.28,ratioSiege);
+
+  /* couche 6 : les dix points du réseau, chacun à sa distance */
+  var oRes=Math.min(1,Math.max(0,(n-0.55)/0.30));
+  semer(ptsReseau, 0.95*oRes, [1.00,0.82,0.54],[0.46,0.66,1.00],
+        etat.para*0.22, etat.actif, true);
+
+  /* couche 8 : la plaque du film */
+  if(etat.film[4]>0.004 && filmPret)
+    plaque(texFilm,[etat.film[0],etat.film[1],etat.film[2],etat.film[3]],
+           etat.film[4],0.40,n,[0.44,0.58,1.00],0.20,ratioFilm);
+
+  /* couches 9-11 : le voile, la poussière proche, les flottants */
+  semer(pts.proche, 0.09*oJour, jourA,jourB, etat.para*1.6,-1,false);
+  semer(pts.proche, 0.34*oNuit, nuitA,nuitB, etat.para*1.6,-1,true);
+  semer(pts.flot,   0.06*oJour, jourA,jourB, etat.para*2.4,-1,false);
+  semer(pts.flot,   0.24*oNuit, nuitA,nuitB, etat.para*2.4,-1,true);
+
+  etat.pt=vrai;
+
+  if(sondes.length){
+    var res=[];
+    for(var s=0;s<sondes.length;s++){
+      var q=sondes[s];
+      var gx=Math.max(0,Math.round(q.x*DPR)), gw=Math.max(1,Math.round(q.w*DPR));
+      var gh=Math.max(1,Math.round(q.h*DPR));
+      var gy=Math.max(0,Math.round((cvs.clientHeight-q.y-q.h)*DPR));
+      gw=Math.min(gw,W-gx); gh=Math.min(gh,H-gy);
+      var px=new Uint8Array(gw*gh*4);
+      gl.readPixels(gx,gy,gw,gh,gl.RGBA,gl.UNSIGNED_BYTE,px);
+      var lo=2, hi=-1, som=0, nb=0, hist=new Array(64);
+      for(var z=0;z<64;z++) hist[z]=0;
+      for(var i=0;i<px.length;i+=4){
+        var rr=px[i]/255, gg=px[i+1]/255, bb=px[i+2]/255;
+        var L=0.2126*lin1(rr)+0.7152*lin1(gg)+0.0722*lin1(bb);
+        if(L<lo) lo=L; if(L>hi) hi=L; som+=L; nb++;
+        var bi=Math.min(63,Math.floor(L*64)); hist[bi]++;
+      }
+      res.push({nom:q.nom, min:lo, max:hi, moy:som/Math.max(1,nb), hist:hist, nb:nb});
+    }
+    window.__grandeOuverture.resultat=res;
+    sondes=[];
+  }
+
+  imgs++;
+  if(now-tFps>=500){
+    fps=Math.round(imgs*1000/(now-tFps)); imgs=0; tFps=now;
+    window.__grandeOuverture.fps=fps;
+  }
+  window.__grandeOuverture.pt=etat.ptLisse;
+  window.__grandeOuverture.nuit=etat.nuit;
+
+  if(distEl && now-majReleve>90){
+    majReleve=now;
+    distEl.textContent='MISE AU POINT '+etat.ptLisse.toFixed(2).replace('.',',');
+    curseurEl.style.left=((1-etat.ptLisse)*100)+'%';
+  }
+}
+var distEl=document.getElementById('dist'), curseurEl=document.getElementById('curseur'),
+    majReleve=0;
+
+/* ── 5. Le film ────────────────────────────────────────────────────────── */
+var film=document.getElementById('film');
+function tenterFilm(){
+  var pr=film.play();
+  if(pr && pr.catch) pr.catch(function(){});
+}
+film.addEventListener('loadeddata',function(){
+  ratioFilm=(film.videoWidth||16)/(film.videoHeight||9);
+  filmPret=true; tenterFilm();
+});
+film.addEventListener('error',function(){ filmPret=false; });
+document.addEventListener('visibilitychange',function(){
+  if(!document.hidden) tenterFilm();
+});
+
+/* ── 6. Révélations, compteurs, menu ───────────────────────────────────── */
+var obs=null;
+if('IntersectionObserver' in window){
+  obs=new IntersectionObserver(function(ent){
+    ent.forEach(function(e){
+      if(e.isIntersecting){ e.target.classList.add('vu'); obs.unobserve(e.target); }
+    });
+  },{rootMargin:'0px 0px -8% 0px',threshold:0.01});
+  [].slice.call(document.querySelectorAll('.rv')).forEach(function(el){obs.observe(el);});
+}else{
+  [].slice.call(document.querySelectorAll('.rv')).forEach(function(el){el.classList.add('vu');});
+}
+
+function formater(v,annee,suf){
+  var s;
+  if(annee) s=String(Math.round(v));                       /* jamais « 2 018 » */
+  else s=String(Math.round(v)).replace(/\B(?=(\d{3})+(?!\d))/g,' ');
+  return s+(suf||'');
+}
+function compter(el){
+  var cible=parseFloat(el.getAttribute('data-cible'));
+  var suf=el.getAttribute('data-suffixe')||'';
+  var annee=(cible>=1900 && cible<=2100 && !suf);
+  if(DOUX){ el.textContent=formater(cible,annee,suf); return; }
+  var d=1500, t0c=performance.now();
+  (function pas(now){
+    var p=Math.min(1,(now-t0c)/d), e=1-Math.pow(1-p,3);
+    el.textContent=formater(cible*e,annee,suf);
+    if(p<1) requestAnimationFrame(pas);
+  })(t0c);
+}
+var obsC=null;
+if('IntersectionObserver' in window){
+  obsC=new IntersectionObserver(function(ent){
+    ent.forEach(function(e){
+      if(e.isIntersecting){ compter(e.target); obsC.unobserve(e.target); }
+    });
+  },{threshold:0.35});
+  [].slice.call(document.querySelectorAll('[data-cible]')).forEach(function(el){obsC.observe(el);});
+}
+
+var brg=document.getElementById('brg'), tiroir=document.getElementById('tiroir'),
+    fermer=document.getElementById('fermer');
+function basculer(o){
+  tiroir.classList.toggle('ouvert',o);
+  brg.setAttribute('aria-expanded',o?'true':'false');
+  document.body.style.overflow=o?'hidden':'';
+}
+brg.addEventListener('click',function(){basculer(true);});
+fermer.addEventListener('click',function(){basculer(false);});
+[].slice.call(tiroir.querySelectorAll('a')).forEach(function(a){
+  a.addEventListener('click',function(){basculer(false);});
+});
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape') basculer(false);
+});
+
+/* la barre et le relevé changent d'encre selon la lumière de la section */
+var barre=document.getElementById('barre'), releve=document.getElementById('releve');
+var sombreAvant=null;
+function tonBarre(){
+  var s=document.elementFromPoint(window.innerWidth*0.5, 8);
+  var sec=s? s.closest('[data-scene]') : null;
+  if(!sec){
+    var y=window.pageYOffset;
+    for(var i=sections.length-1;i>=0;i--){ if(sections[i].top<=y+10){ sec=sections[i].el; break; } }
+  }
+  var sombre = !!(sec && (sec.classList.contains('nuit')||sec.classList.contains('pied')));
+  if(sombre!==sombreAvant){
+    sombreAvant=sombre;
+    barre.classList.toggle('sombre',sombre);
+    releve.classList.toggle('sombre',sombre);
+  }
+}
+
+/* ── 7. Boucle de lecture ──────────────────────────────────────────────── */
+var enAttente=false;
+function auDefilement(){
+  if(enAttente) return; enAttente=true;
+  requestAnimationFrame(function(){ enAttente=false; lire(); tonBarre(); });
+}
+window.addEventListener('scroll',auDefilement,{passive:true});
+window.addEventListener('resize',function(){
+  if(GL_OK) redim();
+  mesurer(); lire(); tonBarre();
+});
+
+/* ── 8. Départ ─────────────────────────────────────────────────────────── */
+function demarrer(){
+  mesurer(); lire(); tonBarre();
+  if(gl){
+    try{
+      initGL();
+      etat.ptLisse=0.95;                 /* la première image arrive floue… */
+      requestAnimationFrame(rendu);
+      requestAnimationFrame(function(){ cvs.classList.add('vu'); });
+      /* …puis le point se fait sur la scène d'ouverture. Deux secondes maximum,
+         et rien n'attend : le texte est déjà lisible pendant ce temps. */
+    }catch(e){
+      GL_OK=false; cvs.style.display='none';
+    }
+  }else{
+    cvs.style.display='none';            /* le repli CSS reste visible */
+  }
+  /* les blocs déjà à l'écran se révèlent tout de suite, sans attendre un geste */
+  [].slice.call(document.querySelectorAll('.rv')).forEach(function(el){
+    var r=el.getBoundingClientRect();
+    if(r.top<window.innerHeight && r.bottom>0){ el.classList.add('vu'); if(obs) obs.unobserve(el); }
+  });
+}
+if(document.readyState==='loading')
+  document.addEventListener('DOMContentLoaded',demarrer);
+else demarrer();
+
+window.addEventListener('load',function(){ mesurer(); lire(); });
+})();
+</script>
+</body>
+</html>

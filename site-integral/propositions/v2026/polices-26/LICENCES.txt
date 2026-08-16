@@ -1,0 +1,20 @@
+POLICES — maquette 26 « MANUTENTION »
+=====================================
+
+archivo.woff2
+  Archivo (variable : wdth 62-125, wght 400-900), sous-ensemble latin
+  Auteur : Omnibus-Type
+  Licence : SIL Open Font License 1.1 (OFL)
+  Source  : https://fonts.google.com/specimen/Archivo
+  Usage   : titres, chiffres, étiquettes.
+
+inter.woff2
+  Inter (variable : wght 400-700), sous-ensemble latin
+  Auteur : Rasmus Andersson
+  Licence : SIL Open Font License 1.1 (OFL)
+  Source  : https://fonts.google.com/specimen/Inter
+  Usage   : texte courant.
+
+Les deux fichiers sont AUTO-HÉBERGÉS dans ce dossier.
+Aucun appel réseau sortant, aucun CDN, aucune clé d'API.
+L'OFL autorise l'auto-hébergement et l'usage commercial sans redevance.

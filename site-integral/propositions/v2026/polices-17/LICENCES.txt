@@ -1,0 +1,10 @@
+Polices de la maquette 17 « Tournée » — toutes sous SIL Open Font License 1.1 (OFL).
+Sous-ensemble « latin » uniquement, téléchargé depuis fonts.gstatic.com le 15/08/2026.
+
+figtree.woff2   — Figtree (Erik Kennedy), variable 300–900. OFL 1.1.
+                  Remplace UberMove / UberMoveText, polices propriétaires nommées
+                  par la charte de référence « uber » : même sans-serif géométrique
+                  à hauteur d'x très haute.
+
+geistmono.woff2 — Geist Mono (Vercel), variable 300–700. OFL 1.1.
+                  Chiffres et libellés à chasse fixe (index, départements, compteurs).

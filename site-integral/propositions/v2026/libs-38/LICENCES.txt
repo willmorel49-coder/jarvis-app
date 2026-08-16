@@ -1,0 +1,21 @@
+Librairies de la maquette 38 « CHAMP DE FORCE » — servies par nous,
+aucun CDN, aucune clé d'API, aucun appel réseau sortant.
+
+gsap.min.js
+  GSAP 3 — GreenSock (Webflow). Licence maison, GRATUITE depuis 2025,
+  tous les modules compris. https://gsap.com/community/standard-license/
+  Sert à : le retour élastique des boutons magnétiques et la montée
+  des compteurs. ScrollTrigger n'est PAS chargé : les révélations
+  passent par IntersectionObserver (42 Ko économisés).
+
+lenis.min.js
+  Lenis — darkroom.engineering. Licence MIT.
+  Sert à : le défilement lissé, et à fournir la vitesse de défilement
+  qui alimente l'agitation du champ (la seconde vie sur téléphone).
+
+Le calcul de forces (champ en 1/d², amortissement, constellation du
+réseau, relevé en limaille de la photo) est écrit à la main en canvas 2D.
+Aucune librairie de physique, aucun WebGL, aucun shader.
+
+Fichiers copiés depuis les dossiers libs-XX déjà présents dans le dépôt,
+aucun téléchargement au moment de l'affichage.

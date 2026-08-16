@@ -1,0 +1,16 @@
+Polices de la maquette 05. Servies localement, sous-ensemble latin uniquement,
+aucun appel exterieur au chargement de la page.
+
+Instrument Serif Italic (instrumentserif-italic.woff2) — SIL Open Font License 1.1 — Instrument
+  https://github.com/Instrument/instrument-serif
+
+Instrument Serif (instrumentserif.woff2) — SIL Open Font License 1.1 — Instrument
+  https://github.com/Instrument/instrument-serif
+
+Inter (inter.woff2) — SIL Open Font License 1.1 — Rasmus Andersson
+  https://github.com/rsms/inter
+
+La SIL Open Font License 1.1 autorise l'usage, la modification et la
+redistribution, y compris commerciale, a condition que les fontes ne soient
+pas vendues seules et que cette notice accompagne les fichiers.
+Texte complet : https://openfontlicense.org/

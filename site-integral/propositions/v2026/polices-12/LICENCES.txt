@@ -1,0 +1,21 @@
+Polices servies par la maquette 12 — direction « Console »
+=========================================================
+
+jakarta.woff2
+  Plus Jakarta Sans — Version 2.071 (gftools 0.9.30), fichier variable (axe wght 200–800)
+  Auteur : Tokotype / Gumpita Rahayu
+  Licence : SIL Open Font License 1.1 — https://scripts.sil.org/OFL
+  Rôle : police d'affichage et de labeur.
+  Pourquoi celle-ci : la charte « supabase » nomme Circular, qui est propriétaire
+  (Lineto). Plus Jakarta Sans en est l'équivalent libre le plus proche — même
+  géométrie humaniste, mêmes terminaisons horizontales, même « a » à double étage.
+
+jbmono.woff2
+  JetBrains Mono — Version 2.211, fichier variable (axe wght 100–800)
+  Auteur : JetBrains s.r.o.
+  Licence : SIL Open Font License 1.1 — https://scripts.sil.org/OFL
+  Rôle : tout l'étage technique — index du rail, console d'état, libellés de
+  cellules, badges de département, bandeau défilant, pied de page.
+
+Les deux fichiers sont des sous-ensembles latins, servis depuis ce dossier.
+Aucun appel à un service extérieur, aucun coût.

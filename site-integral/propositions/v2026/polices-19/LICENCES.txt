@@ -1,0 +1,19 @@
+Polices employées par m-19.html — toutes en licence libre SIL Open Font License 1.1.
+Servies par le même hôte que la page, aucun appel à un service extérieur.
+
+inter.woff2   Inter (Rasmus Andersson) — SIL OFL 1.1
+              Sous-ensemble « latin » seulement, variable 400..600.
+              C'est la police nommée par la charte « raycast » elle-même,
+              pour TOUS ses rôles (display-xl 64/600 … body-md 16/400).
+              La page ne dépasse jamais la graisse 600 : c'est la borne
+              haute de la charte, et c'est ce qui la rend sobre.
+
+jbmono.woff2  JetBrains Mono (JetBrains) — SIL OFL 1.1
+              Sous-ensemble « latin » seulement, variable 400..600.
+              Substitut libre de SF Mono (police système Apple, non
+              redistribuable) employée par Raycast pour ses libellés
+              techniques, ses touches de clavier et ses numéros.
+              Ici : sur-titres, numéros d'implantation, touches, légendes.
+
+Les deux fichiers sont repris tels quels de polices-14/ (mêmes sous-ensembles
+latins déjà téléchargés pour la série) — aucun nouveau téléchargement.

@@ -1,0 +1,1371 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Intégral Pharma — 39 · DELTA</title>
+<meta name="description" content="Intégral Pharma, groupe de grossistes-répartiteurs français indépendant. Neuf maisons, un seul nom.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%2304060B'/%3E%3Cpath d='M16 3v9m0 0-8 8m8-8 8 8M8 20v9M24 20v9' stroke='%237FE9FF' stroke-width='2' fill='none'/%3E%3C/svg%3E">
+<script>document.documentElement.className='js';</script>
+<style>
+/* ═══════════════════════════════════════════════════════════════════════════
+   39 · DELTA — Intégral Pharma
+   ───────────────────────────────────────────────────────────────────────────
+   PHÉNOMÈNE : la croissance.
+
+   Une structure ramifiée part d'un point unique en haut de page. Elle descend,
+   se divise huit fois — huit divisions, neuf lignées — et chaque lignée va
+   chercher une implantation. Passé son point d'arrivée, chaque lignée éclate
+   en capillaires. À la fin de la page, l'objet est un réseau entier.
+
+   La longueur dessinée est asservie au défilement. Le hasard est tiré d'une
+   graine fixe (mulberry32, graine 3902006) : le dessin est le même à chaque
+   visite, sur chaque machine.
+
+   PAS UN ARBRE. Le registre visé est le delta d'un fleuve et le lit d'une
+   veine : divisions dichotomiques, épaisseurs par la loi de Murray
+   (w_parent^2,3 = Σ w_enfants^2,3, la loi des vaisseaux sanguins), tracé au
+   trait fin et lumineux, jamais de feuillage, jamais de vert.
+
+   ZONE FRANCHE : la colonne de texte creuse un couloir dans le réseau. Les
+   branches sont repoussées hors de ce couloir comme un routage de circuit
+   contourne une zone interdite. Le texte n'est jamais posé sur le dessin :
+   il est dedans, et le dessin s'écarte.
+
+   TECHNIQUE : canvas 2D seul. Aucune librairie, aucun CDN, aucun appel réseau
+   sortant, aucune clé. Polices servies depuis polices-39/.
+   Les trois propriétés qui figent le Mac sous Safari sont absentes : la
+   lumière est faite de dégradés radiaux et de composition additive, c'est-à-
+   dire de choses gratuites pour le processeur graphique.
+   Une seule <video autoplay> sur la page.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@font-face{
+  font-family:'Archivo';
+  src:url('polices-39/archivo-var.woff2') format('woff2-variations');
+  font-weight:100 900; font-stretch:62% 125%; font-style:normal; font-display:swap;
+}
+@font-face{
+  font-family:'GeistMono';
+  src:url('polices-39/geistmono.woff2') format('woff2-variations');
+  font-weight:400 600; font-style:normal; font-display:swap;
+}
+
+:root{
+  --nuit:#04060B;
+  --abysse:#080D18;
+  --plaque:rgba(6,11,20,.80);
+
+  --lait:#E9EFF7;      /* 16,4:1 sur --nuit */
+  --brume:#93A3B8;     /*  7,6:1 sur --nuit */
+  --veine:#7FE9FF;     /* 13,4:1 sur --nuit */
+  --seve:#5B8CFF;
+  --braise:#FF8A52;    /*  7,4:1 sur --nuit */
+
+  --trait:rgba(120,200,255,.13);
+  --trait-fort:rgba(120,200,255,.26);
+
+  --dis:'Archivo',ui-sans-serif,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  --mono:'GeistMono',ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+
+  --marge:clamp(18px,4.6vw,72px);
+  --colonne:660px;
+  --barre:64px;
+  --courbe:cubic-bezier(.2,.7,.2,1);
+}
+
+*{box-sizing:border-box}
+html{overflow-x:clip;scroll-behavior:smooth;scroll-padding-top:calc(var(--barre) + 12px)}
+body{
+  margin:0;
+  color:var(--lait);
+  font:400 17px/1.62 var(--dis);
+  font-stretch:100%;
+  background:
+    radial-gradient(120% 62% at 50% -10%, #16243F 0%, rgba(11,17,30,0) 58%),
+    radial-gradient(90% 55% at 50% 108%, #0D1830 0%, rgba(11,17,30,0) 62%),
+    var(--nuit);
+  background-attachment:fixed;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+  overflow-x:clip;
+}
+/* Trame de papier de traceur — hairlines à 4 px, coût nul, donne du grain */
+body::before{
+  content:'';position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:repeating-linear-gradient(to bottom,
+    rgba(160,215,255,.020) 0 1px, rgba(0,0,0,0) 1px 4px);
+}
+img,video,canvas{display:block;max-width:100%}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--veine);outline-offset:3px;border-radius:2px}
+
+/* ── Le réseau ────────────────────────────────────────────────────────── */
+#reseauCanvas{
+  position:fixed;inset:0;width:100%;height:100%;
+  z-index:0;pointer-events:none;
+}
+
+/* ── Squelette ────────────────────────────────────────────────────────── */
+.enveloppe{position:relative;z-index:2}
+main{display:block}
+.sec{padding:clamp(84px,12vh,150px) var(--marge)}
+.col{max-width:var(--colonne);margin:0 auto}
+.large{max-width:1080px;margin:0 auto}
+
+/* ── Typographie ──────────────────────────────────────────────────────── */
+.surtitre{
+  font:500 11px/1.4 var(--mono);letter-spacing:.2em;text-transform:uppercase;
+  color:var(--veine);margin:0 0 22px;display:flex;align-items:center;gap:12px;
+}
+.surtitre::before{
+  content:'';width:26px;height:1px;background:var(--veine);opacity:.7;flex:none;
+}
+h1{
+  font:500 clamp(46px,8.6vw,124px)/.92 var(--dis);font-stretch:76%;
+  letter-spacing:-.022em;margin:0 0 26px;color:#fff;
+}
+h2{
+  font:500 clamp(30px,4.7vw,62px)/1.02 var(--dis);font-stretch:82%;
+  letter-spacing:-.018em;margin:0 0 26px;color:#fff;
+}
+h3{font:600 15px/1.35 var(--dis);font-stretch:96%;letter-spacing:.01em;margin:0 0 8px;color:var(--lait)}
+p{margin:0 0 18px;color:var(--brume)}
+.chapeau{font-size:clamp(18px,2.1vw,22px);line-height:1.5;color:var(--lait)}
+strong{color:var(--lait);font-weight:600}
+
+/* ── Plaques : le seul fond opaque de la page, avec sa source de lumière ── */
+.plaque{
+  position:relative;background:var(--plaque);border:1px solid var(--trait);
+  border-radius:3px;padding:clamp(22px,3.2vw,38px);
+}
+.plaque::before{
+  content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:radial-gradient(130% 100% at 10% -10%, rgba(91,140,255,.18), rgba(0,0,0,0) 58%);
+}
+.plaque > *{position:relative}
+
+/* ── Barre ────────────────────────────────────────────────────────────── */
+.barre{
+  position:fixed;top:0;left:0;right:0;height:var(--barre);z-index:60;
+  display:flex;align-items:center;gap:18px;
+  padding:0 var(--marge);
+  background:rgba(4,6,11,.92);
+  border-bottom:1px solid var(--trait);
+}
+.marque{display:flex;align-items:center;gap:11px;text-decoration:none;flex:none;min-height:44px}
+.marque img{width:30px;height:auto}
+.marque b{font:600 15px/1 var(--dis);font-stretch:88%;letter-spacing:.02em;color:#fff}
+.nav{margin-left:auto;display:flex;gap:26px}
+.nav a{
+  display:inline-flex;align-items:center;min-height:44px;
+  font:500 13px/1 var(--dis);letter-spacing:.03em;color:var(--brume);
+  text-decoration:none;transition:color .25s;
+}
+.nav a:hover{color:var(--veine)}
+.burger{
+  margin-left:auto;width:46px;height:46px;display:none;
+  background:none;border:1px solid var(--trait-fort);border-radius:3px;
+  color:var(--lait);cursor:pointer;align-items:center;justify-content:center;
+}
+.burger span{display:block;width:18px;height:1.5px;background:currentColor;position:relative}
+.burger span::before,.burger span::after{
+  content:'';position:absolute;left:0;width:18px;height:1.5px;background:currentColor;
+}
+.burger span::before{top:-6px}
+.burger span::after{top:6px}
+.tiroir{
+  position:fixed;inset:var(--barre) 0 auto 0;z-index:59;display:none;
+  background:var(--abysse);border-bottom:1px solid var(--trait);
+  padding:14px var(--marge) 26px;
+}
+.tiroir.ouvert{display:block}
+.tiroir a{
+  display:block;padding:15px 0;min-height:46px;
+  font:500 17px/1.3 var(--dis);color:var(--lait);text-decoration:none;
+  border-bottom:1px solid var(--trait);
+}
+
+/* ── Boutons ──────────────────────────────────────────────────────────── */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:10px;
+  min-height:46px;padding:0 24px;border-radius:3px;
+  font:600 13px/1 var(--dis);letter-spacing:.06em;text-transform:uppercase;
+  text-decoration:none;cursor:pointer;border:1px solid var(--veine);
+  color:var(--nuit);background:var(--veine);
+  transition:background .25s,color .25s,transform .25s var(--courbe);
+}
+.btn:hover{background:#fff;border-color:#fff;transform:translateY(-2px)}
+.btn.creux{background:none;color:var(--lait);border-color:var(--trait-fort)}
+.btn.creux:hover{background:none;color:var(--veine);border-color:var(--veine)}
+
+/* ── Hero ─────────────────────────────────────────────────────────────── */
+.hero{
+  min-height:100svh;display:flex;flex-direction:column;justify-content:flex-start;
+  padding:calc(var(--barre) + 26px) var(--marge) clamp(50px,9vh,110px);
+}
+.hero .actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:34px}
+.hero .sous{max-width:52ch}
+
+/* Repère de l'origine : posé exactement à l'aplomb du point unique d'où part
+   la ramure, juste sous la barre. */
+.origine{
+  display:flex;align-items:center;gap:10px;justify-content:center;
+  font:500 11px/1 var(--mono);letter-spacing:.22em;text-transform:uppercase;
+  color:rgba(147,163,184,.66);margin:0 0 clamp(64px,17vh,190px);
+}
+.origine i{
+  width:5px;height:5px;border-radius:50%;background:var(--veine);
+  box-shadow:0 0 0 4px rgba(127,233,255,.18);font-style:normal;
+}
+
+/* ── Bandeau défilant ─────────────────────────────────────────────────── */
+.bandeau{
+  position:relative;z-index:2;overflow:hidden;
+  border-top:1px solid var(--trait);border-bottom:1px solid var(--trait);
+  background:rgba(4,6,11,.72);margin-top:clamp(40px,8vh,90px);
+}
+.bandeau .piste{display:flex;width:max-content;animation:glisse 38s linear infinite}
+.bandeau ul{display:flex;margin:0;padding:0;list-style:none;flex:none}
+.bandeau li{
+  padding:15px 30px;white-space:nowrap;
+  font:500 12px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--brume);
+  display:flex;align-items:center;gap:30px;
+}
+.bandeau li::after{content:'';width:4px;height:4px;border-radius:50%;background:var(--veine);opacity:.55}
+@keyframes glisse{from{transform:translate3d(0,0,0)}to{transform:translate3d(-50%,0,0)}}
+.bandeau:hover .piste{animation-play-state:paused}
+
+/* ── Compteurs ────────────────────────────────────────────────────────── */
+.compteurs{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:1px;margin-top:44px;
+  background:var(--trait);border:1px solid var(--trait);border-radius:3px;overflow:hidden;
+}
+.compteurs.deux{grid-template-columns:repeat(2,1fr)}
+.compteurs div{background:var(--abysse);padding:22px 18px}
+.compteurs b{
+  display:block;font:500 clamp(28px,4.4vw,46px)/1 var(--dis);font-stretch:80%;
+  letter-spacing:-.02em;color:#fff;font-variant-numeric:tabular-nums;
+}
+.compteurs span{display:block;margin-top:9px;font:400 11.5px/1.35 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--brume)}
+
+/* ── Médias ───────────────────────────────────────────────────────────── */
+.media{position:relative;border:1px solid var(--trait);border-radius:3px;overflow:hidden;background:var(--abysse)}
+.media img,.media video{width:100%;height:100%;object-fit:cover;display:block}
+.media .cadre{aspect-ratio:16/9}
+.media figcaption{
+  position:absolute;left:0;bottom:0;right:0;padding:12px 16px;
+  background:linear-gradient(to top, rgba(4,6,11,.92), rgba(4,6,11,0));
+  font:400 11.5px/1.4 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--brume);
+}
+figure{margin:0}
+
+/* ── Les neuf implantations ───────────────────────────────────────────── */
+.liste9{list-style:none;margin:38px 0 0;padding:0;border-top:1px solid var(--trait)}
+.liste9 li{
+  display:grid;grid-template-columns:44px 1fr auto;gap:14px;align-items:baseline;
+  padding:15px 12px;border-bottom:1px solid var(--trait);
+  transition:background .2s,padding-left .25s var(--courbe);cursor:default;
+}
+.liste9 li:hover,.liste9 li:focus-visible{background:rgba(91,140,255,.10);padding-left:20px;outline:none}
+.liste9 li:hover .n,.liste9 li:focus-visible .n{color:var(--braise)}
+.liste9 .n{font:500 12px/1.6 var(--mono);letter-spacing:.08em;color:var(--veine);transition:color .2s}
+.liste9 .nom{font:600 16px/1.4 var(--dis);color:var(--lait)}
+.liste9 .nom em{font-style:normal;font-weight:500;color:var(--braise);font-size:12px;font-family:var(--mono);letter-spacing:.08em;margin-left:9px;white-space:nowrap}
+.liste9 .ville{font:400 13px/1.6 var(--mono);color:var(--brume);text-align:right;white-space:nowrap}
+.partenaire{margin-top:22px;font-size:15px}
+
+/* ── Le métier : quatre étapes ────────────────────────────────────────── */
+.etapes{display:grid;gap:1px;background:var(--trait);border:1px solid var(--trait);border-radius:3px;overflow:hidden;margin-top:40px}
+@media (min-width:900px){.etapes{grid-template-columns:repeat(2,1fr)}}
+.etapes article{background:var(--abysse);padding:clamp(22px,2.6vw,32px);position:relative}
+.etapes article::before{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(120% 100% at 0% 0%, rgba(91,140,255,.13), rgba(0,0,0,0) 55%);
+}
+.etapes article > *{position:relative}
+.etapes .n{display:block;font:500 11px/1 var(--mono);letter-spacing:.2em;color:var(--veine);margin-bottom:16px}
+.etapes p{margin:0;font-size:15.5px}
+
+/* ── Valeurs ──────────────────────────────────────────────────────────── */
+.valeurs{display:grid;gap:22px;margin-top:40px}
+@media (min-width:820px){.valeurs{grid-template-columns:repeat(3,1fr)}}
+.valeurs article{border-top:1px solid var(--trait-fort);padding-top:20px}
+.valeurs h3{font:500 clamp(22px,2.6vw,30px)/1.1 var(--dis);font-stretch:84%;color:#fff;margin-bottom:12px}
+.valeurs p{font-size:15.5px;margin:0}
+
+/* ── Partenaires ──────────────────────────────────────────────────────── */
+.labos{display:flex;flex-wrap:wrap;gap:10px;margin-top:34px;padding:0;list-style:none}
+.labos li{
+  border:1px solid var(--trait);border-radius:3px;padding:13px 20px;
+  font:600 14px/1 var(--dis);font-stretch:92%;letter-spacing:.03em;color:var(--lait);
+  background:rgba(8,13,24,.7);
+}
+.villes{display:flex;flex-wrap:wrap;gap:8px 18px;margin:26px 0 30px;padding:0;list-style:none}
+.villes li{font:400 13px/1.5 var(--mono);letter-spacing:.06em;color:var(--brume)}
+.villes li::before{content:'▸ ';color:var(--veine)}
+
+/* ── Fin ──────────────────────────────────────────────────────────────── */
+.fin{text-align:center}
+.fin .col{max-width:720px}
+.mail{
+  display:inline-flex;align-items:center;min-height:52px;padding:0 30px;margin-top:12px;
+  font:500 clamp(17px,2.4vw,26px)/1 var(--dis);font-stretch:88%;letter-spacing:-.01em;
+  color:var(--nuit);background:var(--veine);border-radius:3px;text-decoration:none;
+  transition:background .25s,transform .25s var(--courbe);
+}
+.mail:hover{background:#fff;transform:translateY(-2px)}
+
+.pied{
+  position:relative;z-index:2;padding:44px var(--marge) 34px;
+  border-top:1px solid var(--trait);background:rgba(4,6,11,.84);
+}
+.pied .dedans{max-width:1080px;margin:0 auto;display:grid;gap:26px}
+@media (min-width:820px){.pied .dedans{grid-template-columns:1.3fr 1fr}}
+.pied p{margin:0 0 8px;font-size:14.5px}
+.pied a{
+  display:inline-flex;align-items:center;min-height:44px;
+  color:var(--brume);text-decoration:none;
+  border-bottom:1px solid var(--trait-fort);
+}
+.pied a:hover{color:var(--veine)}
+.pied .chiffres{font:400 12px/1.7 var(--mono);letter-spacing:.09em;text-transform:uppercase;color:var(--brume)}
+.signature{
+  grid-column:1/-1;display:flex;justify-content:space-between;gap:16px;
+  margin-top:14px;padding-top:16px;border-top:1px solid var(--trait);
+  font:400 11px/1 var(--mono);letter-spacing:.18em;text-transform:uppercase;color:rgba(147,163,184,.55);
+}
+
+/* ── Révélations : visible par défaut, masqué seulement si le script tourne ─ */
+.js .rv{opacity:0;transform:translateY(22px);
+  transition:opacity .85s var(--courbe),transform .85s var(--courbe)}
+.js .rv.vu{opacity:1;transform:none}
+.js .rv.d1{transition-delay:.09s}
+.js .rv.d2{transition-delay:.18s}
+.js .rv.d3{transition-delay:.27s}
+
+/* ── Téléphone ────────────────────────────────────────────────────────── */
+@media (max-width:860px){
+  .nav{display:none}
+  .burger{display:flex}
+  .compteurs{grid-template-columns:repeat(2,1fr)}
+  .hero{padding-top:calc(var(--barre) + 15vh)}
+  .liste9 li{grid-template-columns:36px 1fr;row-gap:2px}
+  .liste9 .ville{grid-column:2;text-align:left}
+}
+@media (max-width:420px){
+  .bandeau li{padding:13px 18px;gap:18px;font-size:11px}
+}
+
+/* ── Mouvement réduit ─────────────────────────────────────────────────── */
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .bandeau .piste{animation:none}
+  .js .rv{opacity:1;transform:none;transition:none}
+  .btn:hover,.mail:hover{transform:none}
+}
+</style>
+</head>
+<body>
+
+<canvas id="reseauCanvas" aria-hidden="true"></canvas>
+
+<div class="enveloppe">
+
+<!-- ═══ BARRE ═══════════════════════════════════════════════════════════ -->
+<header class="barre">
+  <a class="marque" href="#haut">
+    <img src="../../assets/logo-web.png" alt="" width="30" height="24">
+    <b>Intégral Pharma</b>
+  </a>
+  <nav class="nav" aria-label="Principale">
+    <a href="#groupe">Le groupe</a>
+    <a href="#reseau">Le réseau</a>
+    <a href="#metier">Le métier</a>
+    <a href="#valeurs">Nos valeurs</a>
+    <a href="#ecrire">Nous écrire</a>
+  </nav>
+  <button class="burger" id="burger" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="tiroir">
+    <span></span>
+  </button>
+</header>
+<div class="tiroir" id="tiroir">
+  <a href="#groupe">Le groupe</a>
+  <a href="#reseau">Le réseau</a>
+  <a href="#metier">Le métier</a>
+  <a href="#valeurs">Nos valeurs</a>
+  <a href="#ecrire">Nous écrire</a>
+</div>
+
+<main id="haut">
+
+<!-- ═══ 1 · L'OUVERTURE ═════════════════════════════════════════════════ -->
+<section class="hero">
+  <p class="origine" aria-hidden="true"><i></i> Origine — 2006</p>
+  <div class="col">
+    <p class="surtitre rv">Groupe de grossistes-répartiteurs français indépendant</p>
+    <h1 class="rv d1">Neuf maisons.<br>Un seul nom.</h1>
+    <p class="chapeau sous rv d2">Chacune livre sa région depuis des années, avec ses équipes et
+      ses habitudes. Depuis 2006, elles avancent ensemble sous le nom d'Intégral Pharma — et votre
+      commande part toujours de la plus proche de votre comptoir.</p>
+    <div class="actions rv d3">
+      <a class="btn" href="#reseau">Découvrir le réseau</a>
+      <a class="btn creux" href="mailto:contact@integralpharma.fr">Nous écrire</a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ BANDEAU ═════════════════════════════════════════════════════════ -->
+<div class="bandeau" aria-hidden="true">
+  <div class="piste">
+    <ul>
+      <li>Indépendant</li><li>Neuf implantations</li><li>Un réseau national</li>
+      <li>Plus de 2 000 officines livrées</li><li>Confiance, Engagement, Respect</li>
+      <li>Une alternative aux grossistes historiques</li>
+    </ul>
+    <ul>
+      <li>Indépendant</li><li>Neuf implantations</li><li>Un réseau national</li>
+      <li>Plus de 2 000 officines livrées</li><li>Confiance, Engagement, Respect</li>
+      <li>Une alternative aux grossistes historiques</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ═══ 2 · L'HISTOIRE DU GROUPE ════════════════════════════════════════ -->
+<section class="sec" id="groupe">
+  <div class="col">
+    <p class="surtitre rv">Notre histoire</p>
+    <h2 class="rv">Rendre la marge à l'officine française.</h2>
+    <p class="chapeau rv d1">C'est la raison d'être d'Intégral Pharma depuis 2006 : redistribuer
+      directement la marge aux officines françaises, en toute transparence, avec des prix nets
+      visibles sur facture.</p>
+    <p class="rv d2">Neuf implantations aujourd'hui, plus de deux mille officines livrées chaque
+      jour, et la même idée qu'au premier jour — un groupe de répartiteurs indépendants qui a
+      choisi de se mettre du côté du comptoir.</p>
+
+    <div class="compteurs rv d2">
+      <div><b data-cible="2006">2006</b><span>année de création</span></div>
+      <div><b data-cible="9">9</b><span>implantations</span></div>
+      <div><b data-cible="2000" data-suffixe=" +">2 000 +</b><span>officines livrées</span></div>
+      <div><b data-cible="20">20</b><span>ans d'indépendance</span></div>
+    </div>
+
+    <figure class="media rv d3" style="margin-top:44px">
+      <div class="cadre"><img src="../../assets/siege-web.jpg" alt="Vue aérienne du siège d'Intégral Pharma, ZI Saint-Martin à Hyères." width="1600" height="900" loading="lazy" decoding="async"></div>
+      <figcaption>Le siège — Hyères (83)</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- ═══ 3 · LE RÉSEAU ═══════════════════════════════════════════════════ -->
+<section class="sec" id="reseau">
+  <div class="col">
+    <p class="surtitre rv">Le réseau</p>
+    <h2 class="rv">Neuf implantations.<br>Laquelle est la vôtre ?</h2>
+    <p class="chapeau rv d1">C'est la seule question qui compte vraiment. Celle qui prépare votre
+      commande, qui vous livre chaque matin, et dont vous connaissez l'équipe par son prénom.</p>
+    <p class="rv d2">Les huit autres sont là pour qu'elle ne soit jamais prise au dépourvu — de la
+      Bretagne à la Méditerranée, le stock d'une maison est le stock de toutes.</p>
+
+    <ul class="liste9 rv d2" id="liste9">
+      <li tabindex="0" data-i="0"><span class="n">01</span><span class="nom">Hyères Pharma <em>siège du groupe</em></span><span class="ville">Hyères · 83</span></li>
+      <li tabindex="0" data-i="1"><span class="n">02</span><span class="nom">SR Pharma</span><span class="ville">Palaiseau · 91</span></li>
+      <li tabindex="0" data-i="2"><span class="n">03</span><span class="nom">Mistral Santé Pharma</span><span class="ville">Flassans-sur-Issole · 83</span></li>
+      <li tabindex="0" data-i="3"><span class="n">04</span><span class="nom">Sud Ouest Pharma</span><span class="ville">Montayral · 47</span></li>
+      <li tabindex="0" data-i="4"><span class="n">05</span><span class="nom">Comptoir Pharmaceutique du Rhône</span><span class="ville">Saint-Maurice-l'Exil · 38</span></li>
+      <li tabindex="0" data-i="5"><span class="n">06</span><span class="nom">Escale Pharma</span><span class="ville">Chilly-Mazarin · 91</span></li>
+      <li tabindex="0" data-i="6"><span class="n">07</span><span class="nom">Ouest Pharma Services</span><span class="ville">Saint-Étienne-de-Montluc · 44</span></li>
+      <li tabindex="0" data-i="7"><span class="n">08</span><span class="nom">Pharm'Occitanie Services</span><span class="ville">Villeneuve-lès-Béziers · 34</span></li>
+      <li tabindex="0" data-i="8"><span class="n">09</span><span class="nom">Sud Est Pharma</span><span class="ville">Le Cannet-des-Maures · 83</span></li>
+    </ul>
+    <p class="partenaire rv d3">Et à l'Est, notre partenaire <strong>Pharmest</strong> (Metz, 57)
+      prolonge le maillage.</p>
+  </div>
+</section>
+
+<!-- ═══ 4 · LE MÉTIER ═══════════════════════════════════════════════════ -->
+<section class="sec" id="metier">
+  <div class="large">
+    <div class="col" style="margin:0 auto">
+      <p class="surtitre rv">Le métier</p>
+      <h2 class="rv">Ce qui se passe entre votre commande et votre comptoir.</h2>
+      <p class="chapeau rv d1">Quelques heures, quatre métiers, et une chaîne qui ne s'arrête
+        jamais. Référencer, stocker, préparer, livrer : c'est invisible depuis l'officine, et
+        c'est tout notre travail.</p>
+    </div>
+
+    <figure class="media rv d2" style="margin-top:40px">
+      <div class="cadre">
+        <!-- preload="none" : les 5,4 Mo ne se téléchargent qu'une fois la
+             fenêtre arrivée sur la section, pas au premier écran. -->
+        <video src="../../assets/hero.mp4" autoplay muted loop playsinline preload="none"
+               aria-label="Vue aérienne du site d'Hyères"></video>
+      </div>
+      <figcaption>La chaîne, vue de dessus</figcaption>
+    </figure>
+
+    <div class="etapes rv d2">
+      <article>
+        <span class="n">01 — Le référencement</span>
+        <p>Le groupe référence pour ses neuf maisons à la fois : un même catalogue, tenu à jour,
+          disponible dans toutes les implantations. C'est ce qui permet à une maison de taille
+          humaine de proposer la profondeur de gamme d'un réseau national.</p>
+      </article>
+      <article>
+        <span class="n">02 — La disponibilité</span>
+        <p>Des stocks répartis sur neuf implantations, au plus près de votre officine. Quand le
+          comptoir a besoin, le réseau répond — et quand une référence manque quelque part, elle
+          existe souvent ailleurs dans le réseau.</p>
+      </article>
+      <article>
+        <span class="n">03 — La préparation</span>
+        <p>Chaque commande est préparée dans l'implantation la plus proche de chez vous, par une
+          équipe qui connaît votre officine et ses saisons.</p>
+      </article>
+      <article>
+        <span class="n">04 — La livraison</span>
+        <p>Tous les jours, les tournées partent vers les officines. La régularité d'un service
+          tenu — c'est elle qui fait la confiance, pas les promesses.</p>
+      </article>
+    </div>
+
+    <div class="col" style="margin:38px auto 0">
+      <p class="chapeau rv d3">Et quand la vie de votre officine change — transfert,
+        agrandissement, cession de parts — votre interlocuteur ajuste l'approvisionnement avec
+        vous, sans à-coup au comptoir.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 4 bis · LA CENTRALE ═════════════════════════════════════════════ -->
+<section class="sec">
+  <div class="col">
+    <div class="plaque rv">
+      <p class="surtitre">La centrale</p>
+      <h2 style="margin-bottom:20px">Et pour tout ce qui n'est pas le médicament.</h2>
+      <p class="chapeau">Notre centrale de parapharmacie référence pour l'officine plus de
+        14 000 produits et plus de 480 marques.</p>
+      <p style="margin-bottom:0">C'est une structure à part, avec son propre fonctionnement —
+        sa commande, sa livraison — et la même exigence que le reste du groupe.</p>
+      <div class="compteurs deux">
+        <div><b data-cible="14000" data-suffixe=" +">14 000 +</b><span>références</span></div>
+        <div><b data-cible="480" data-suffixe=" +">480 +</b><span>marques</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 4 ter · VOS FACTURES ════════════════════════════════════════════ -->
+<section class="sec">
+  <div class="col">
+    <p class="surtitre rv">Vos factures</p>
+    <h2 class="rv">Elles arrivent déjà là où vous les gérez.</h2>
+    <p class="chapeau rv d1">Nous sommes connectés à Digipharmacie : vos factures Intégral s'y
+      retrouvent automatiquement, avec celles de vos autres fournisseurs.</p>
+    <p class="rv d2">Rien à saisir, rien à classer, rien à réclamer.</p>
+  </div>
+</section>
+
+<!-- ═══ 4 quater · NOS PARTENAIRES ══════════════════════════════════════ -->
+<section class="sec">
+  <div class="col">
+    <p class="surtitre rv">Nos partenaires</p>
+    <h2 class="rv">Les laboratoires qui nous font confiance.</h2>
+    <ul class="labos rv d1">
+      <li>EG Labo</li><li>Zentiva</li><li>Zydus</li><li>Viatris</li><li>ITP</li><li>Santestat</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ═══ 4 quinquies · NOUS REJOINDRE ════════════════════════════════════ -->
+<section class="sec">
+  <div class="col">
+    <div class="plaque rv">
+      <p class="surtitre">Nous rejoindre</p>
+      <h2 style="margin-bottom:20px">Neuf implantations qui embauchent.</h2>
+      <p class="chapeau">Préparateur-chauffeur, technicien approvisionnement, commercial,
+        pharmacien responsable : les métiers de la répartition s'apprennent chez nous.</p>
+      <ul class="villes">
+        <li>Hyères (83)</li><li>Villeneuve-lès-Béziers (34)</li>
+        <li>Montayral (47)</li><li>Saint-Maurice-l'Exil (38)</li>
+      </ul>
+      <a class="btn" href="https://www.integralpharma.fr/jobs">Voir les offres</a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 5 · LES VALEURS ═════════════════════════════════════════════════ -->
+<section class="sec" id="valeurs">
+  <div class="large">
+    <div class="col" style="margin:0 auto">
+      <p class="surtitre rv">Nos valeurs</p>
+      <h2 class="rv">Trois mots qui se vérifient au téléphone.</h2>
+    </div>
+    <div class="valeurs rv d1">
+      <article>
+        <h3>Confiance</h3>
+        <p>La personne qui décroche connaît votre officine, vos saisons et vos habitudes.</p>
+      </article>
+      <article>
+        <h3>Engagement</h3>
+        <p>C'est la même d'une année sur l'autre. Dans ce métier, c'est devenu rare.</p>
+      </article>
+      <article>
+        <h3>Respect</h3>
+        <p>Elle ne vous vendra pas ce dont vous n'avez pas besoin — parce qu'elle vous reverra le
+          mois suivant, et l'année d'après.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 6 · LA FIN DE PAGE ══════════════════════════════════════════════ -->
+<section class="sec fin" id="ecrire">
+  <div class="col">
+    <h2 class="rv">Posez-nous la question qui vous intéresse.</h2>
+    <p class="chapeau rv d1">Sur nos conditions, sur nos délais, sur la façon dont nous
+      travaillons. Vous aurez une réponse claire, et le nom de l'implantation qui livre votre
+      secteur.</p>
+    <a class="mail rv d2" href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a>
+  </div>
+</section>
+
+</main>
+
+<!-- ═══ PIED DE PAGE ════════════════════════════════════════════════════ -->
+<footer class="pied">
+  <div class="dedans">
+    <div>
+      <p><strong>Intégral Pharma</strong><br>758 chemin de la Source, ZI Saint-Martin, 83400 Hyères</p>
+      <p><a href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a> ·
+         <a href="https://www.integralpharma.fr/mentions-l%C3%A9gales">Mentions légales</a></p>
+    </div>
+    <div>
+      <p class="chiffres">9 implantations · plus de 2 000 officines livrées ·
+        indépendant depuis 2006</p>
+    </div>
+    <p class="signature"><span>Maquette 39</span><span>Delta</span></p>
+  </div>
+</footer>
+
+</div><!-- /enveloppe -->
+
+<script>
+(function(){
+'use strict';
+
+/* ───────────────────────────────────────────────────────────────────────
+   0 · Outils
+   ─────────────────────────────────────────────────────────────────────── */
+var DOUX = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* Générateur pseudo-aléatoire à graine fixe (mulberry32, domaine public).
+   C'est ce qui garantit que le dessin est identique à chaque visite :
+   une croissance vraiment aléatoire donnerait des ratés un jour sur trois. */
+function graine(a){
+  return function(){
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    var t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+function borne(v,a,b){ return v<a?a:(v>b?b:v); }
+
+/* ───────────────────────────────────────────────────────────────────────
+   1 · Les neuf implantations, et où pointe chaque extrémité de la ramure.
+       Coordonnées normalisées sur l'écran (0 → 1).
+       L'ordre est celui du texte validé : 01 = Hyères, le siège.
+   ─────────────────────────────────────────────────────────────────────── */
+/* Les neuf points forment un fer à cheval autour de la colonne de texte.
+   Contrainte dure : aucun ne doit tomber dans le champ de rejet du couloir,
+   sinon sa lignée est tiraillée entre sa ville et le mur, n'arrive jamais, et
+   deux étiquettes finissent l'une sur l'autre — défaut constaté et corrigé. */
+var IMPL = [
+  {c:'01', nom:'HYÈRES',         x:0.500, y:0.755},
+  {c:'02', nom:'PALAISEAU',      x:0.245, y:0.715},
+  {c:'03', nom:'FLASSANS',       x:0.755, y:0.715},
+  {c:'04', nom:'MONTAYRAL',      x:0.140, y:0.560},
+  {c:'05', nom:'ST-MAURICE',     x:0.860, y:0.560},
+  {c:'06', nom:'CHILLY-MAZARIN', x:0.085, y:0.420},
+  {c:'07', nom:'ST-ÉTIENNE',     x:0.915, y:0.420},
+  {c:'08', nom:'BÉZIERS',        x:0.045, y:0.265},
+  {c:'09', nom:'LE CANNET',      x:0.955, y:0.265}
+];
+
+/* ───────────────────────────────────────────────────────────────────────
+   2 · Construction de la ramure
+   ─────────────────────────────────────────────────────────────────────── */
+var toile = document.getElementById('reseauCanvas');
+var ctx = null;
+try { ctx = toile ? toile.getContext('2d', {alpha:true}) : null; } catch(e){ ctx = null; }
+
+var L=0, H=0, dpr=1, mobile=false;
+var SEGS = [], POINTES = [], COULOIR = null, RACINE = null;
+
+/* Épaisseur de la zone franche : la colonne de texte, plus une marge.
+   Le couloir s'ouvre SOUS la bande de dégagement (y0) et se referme AVANT le
+   pied de page (y1), pour qu'aucune des neuf extrémités ne finisse cachée
+   derrière un bloc opaque. */
+function calculerCouloir(){
+  if (L < 900) return null;                 /* écran trop étroit : pas de couloir */
+  var demi = Math.min(L*0.30, 660/2 + 50);
+  return { cx:L*0.5, demi:demi, y0:H*0.165, y1:H*0.620, marge:Math.max(64, L*0.05) };
+}
+/* Champ de rejet : 1 partout à l'intérieur du mur, décroissant dans la marge,
+   0 au-delà. Mesuré depuis le MUR, pas depuis le centre — c'est ce qui rend le
+   contournement franc au lieu de diagonal. */
+function enfoncement(x,y,c){
+  if (!c) return 0;
+  if (y < c.y0 - c.marge || y > c.y1 + c.marge) return 0;
+  var fy = 1;
+  if (y < c.y0)      fy = (y - (c.y0 - c.marge)) / c.marge;
+  else if (y > c.y1) fy = ((c.y1 + c.marge) - y) / c.marge;
+  var d = Math.abs(x - c.cx);
+  if (d > c.demi + c.marge) return 0;
+  var fx = (d < c.demi) ? 1 : (c.demi + c.marge - d) / c.marge;
+  return fx*fy;
+}
+
+function construire(){
+  var R = graine(3902006);
+  SEGS = []; POINTES = [];
+  COULOIR = calculerCouloir();
+  mobile = L < 760;
+
+  var PAS = mobile ? 11 : 14;
+  var compression = mobile ? 0.84 : 1;
+  var cibles = IMPL.map(function(o,i){
+    return { x:(0.5 + (o.x-0.5)*compression)*L, y:o.y*H, i:i };
+  });
+
+  /* L'origine est posée JUSTE SOUS la barre : elle doit se voir dès le
+     premier écran, sinon le phénomène n'existe pas à l'ouverture. */
+  RACINE = { x:L*0.5, y:H*0.095 };
+  var toutes = [];
+
+  var souche = {
+    x:RACINE.x, y:RACINE.y, dx:0, dy:1, ens:cibles, t:0, prof:0,
+    cote:1, enfants:[], segs:[], w:0
+  };
+  var file = [souche];
+  toutes.push(souche);
+
+  function centre(ens){
+    var sx=0, sy=0;
+    for (var i=0;i<ens.length;i++){ sx+=ens[i].x; sy+=ens[i].y; }
+    return {x:sx/ens.length, y:sy/ens.length};
+  }
+
+  /* Découpe k-d : on coupe le jeu de cibles selon son axe le plus étalé.
+     C'est ce qui donne une topologie de delta — jamais deux branches qui
+     partent chercher la même chose de deux côtés opposés. */
+  function couper(ens){
+    var minx=1e9,maxx=-1e9,miny=1e9,maxy=-1e9, i, p;
+    for (i=0;i<ens.length;i++){
+      p = ens[i];
+      if(p.x<minx)minx=p.x; if(p.x>maxx)maxx=p.x;
+      if(p.y<miny)miny=p.y; if(p.y>maxy)maxy=p.y;
+    }
+    var axeX = (maxx-minx) >= (maxy-miny);
+    var tri = ens.slice().sort(function(a,b){ return axeX ? a.x-b.x : a.y-b.y; });
+    var m = Math.floor(tri.length/2);
+    return [tri.slice(0,m), tri.slice(m)];
+  }
+
+  var tMax = 0;
+
+  while (file.length){
+    var b = file.shift();
+    var c = centre(b.ens);
+    var feuille = (b.ens.length === 1);
+    var x=b.x, y=b.y, dx=b.dx, dy=b.dy, t=b.t;
+
+    /* Combien de pas avant de se diviser ?
+       - la souche : juste assez pour se diviser AVANT d'entrer dans le
+         couloir de texte ;
+       - une feuille : jusqu'à toucher sa cible ;
+       - sinon : un tiers du chemin restant — troncs longs au début,
+         rameaux courts à la fin. */
+    var nPas;
+    if (b.prof === 0){
+      nPas = Math.max(2, Math.round((H*0.115 - y)/PAS));
+    } else if (feuille){
+      nPas = 150;
+    } else {
+      nPas = Math.max(4, Math.round(Math.sqrt((c.x-x)*(c.x-x)+(c.y-y)*(c.y-y))/PAS*0.34));
+    }
+
+    /* Dégagement : les deux premières branches courent presque à
+       l'horizontale, dans la bande située AU-DESSUS du couloir, jusqu'à
+       sortir de l'aplomb de la colonne de texte. C'est ce qui évite qu'un
+       tronc traverse un paragraphe en diagonale. */
+    var degage = (b.prof !== 1) || !COULOIR;
+    var meilleur = 1e9, stagne = 0;
+
+    for (var k=0;k<nPas;k++){
+      var vx=c.x-x, vy=c.y-y, d=Math.sqrt(vx*vx+vy*vy);
+      if (feuille){
+        /* 1,4 pas : en dessous, la pointe tourne autour de sa cible au lieu de
+           s'y arrêter — c'est ce qui dessinait des boucles. */
+        if (d < PAS*1.4) break;
+        /* et si elle n'approche plus (zone franche qui pousse à l'opposé de la
+           cible), on l'arrête net plutôt que de la laisser orbiter. */
+        if (d < meilleur - 0.5){ meilleur = d; stagne = 0; }
+        else if (++stagne > 14) break;
+      }
+      if (d > 1e-4){ vx/=d; vy/=d; }
+
+      var m, nx, ny;
+
+      if (!degage){
+        if (Math.abs(x - COULOIR.cx) > COULOIR.demi + 26 || y > COULOIR.y0){
+          degage = true;
+        } else {
+          dx = b.cote*(0.985 + (R()-0.5)*0.02);
+          dy = 0.135 + (R()-0.5)*0.05;
+          m = Math.sqrt(dx*dx+dy*dy); dx/=m; dy/=m;
+          nx = x + dx*PAS; ny = y + dy*PAS;
+          SEGS.push({x1:x, y1:y, x2:nx, y2:ny, t0:t, t1:t+PAS, w:1});
+          b.segs.push(SEGS.length-1);
+          x=nx; y=ny; t+=PAS;
+          if (t > tMax) tMax = t;
+          continue;
+        }
+      }
+
+      var att = feuille ? 0.42 : 0.15;
+      dx += (vx-dx)*att; dy += (vy-dy)*att;
+
+      /* bruit d'orientation : c'est lui qui empêche le trait rectiligne */
+      var a = (R()-0.5)*0.30, ca=Math.cos(a), sa=Math.sin(a);
+      var ndx = dx*ca - dy*sa, ndy = dx*sa + dy*ca;
+      dx = ndx; dy = ndy;
+
+      /* La zone franche repousse latéralement, du côté de la branche — mais
+         elle lâche prise à l'approche de la ville visée, sinon la pointe est
+         tiraillée entre deux forces contraires et tourne en rond. */
+      var e = enfoncement(x,y,COULOIR);
+      if (e > 0){
+        if (feuille) e *= Math.min(1, d/110);
+        dx += b.cote * e * 2.6;
+      }
+
+      m = Math.sqrt(dx*dx+dy*dy) || 1; dx/=m; dy/=m;
+      /* on n'impose une descente minimale que hors zone franche : dans le
+         couloir, sortir prime sur descendre */
+      if (!feuille && e < 0.25 && dy < 0.06){
+        dy = 0.06; m = Math.sqrt(dx*dx+dy*dy); dx/=m; dy/=m;
+      }
+
+      nx = x + dx*PAS; ny = y + dy*PAS;
+      if (nx < 10){ nx = 10; dx = Math.abs(dx)*0.35; }
+      if (nx > L-10){ nx = L-10; dx = -Math.abs(dx)*0.35; }
+
+      SEGS.push({x1:x, y1:y, x2:nx, y2:ny, t0:t, t1:t+PAS, w:1});
+      b.segs.push(SEGS.length-1);
+      x=nx; y=ny; t+=PAS;
+      if (t > tMax) tMax = t;
+    }
+
+    if (feuille){
+      POINTES.push({ x:x, y:y, dx:dx, dy:dy, t:t, i:b.ens[0].i });
+    } else {
+      var parts = couper(b.ens);
+      for (var q=0;q<2;q++){
+        var sc = centre(parts[q]);
+        var tx = sc.x - x, ty = sc.y - y;
+        var td = Math.sqrt(tx*tx+ty*ty) || 1;
+        tx/=td; ty/=td;
+        var enf = {
+          x:x, y:y,
+          dx: dx + (tx-dx)*0.62,
+          dy: dy + (ty-dy)*0.62,
+          ens: parts[q], t:t, prof:b.prof+1,
+          cote: (sc.x < L*0.5 ? -1 : 1),
+          enfants:[], segs:[], w:0
+        };
+        b.enfants.push(enf);
+        file.push(enf);
+        toutes.push(enf);
+      }
+    }
+  }
+
+  /* Fin de la charpente : c'est ici que les neuf implantations sont en place.
+     On garde ce repère pour lui donner la première moitié du défilement — sans
+     ça, la charpente occupe 94 % de la page et les capillaires 6 %. */
+  var tCharpente = tMax;
+
+  /* ── Épaisseurs : loi de Murray, exposant 2,3 ─────────────────────────
+     w_parent^2,3 = Σ w_enfants^2,3. C'est la règle des vaisseaux sanguins
+     et des lits de rivière ; c'est elle, et pas le dessin, qui empêche la
+     ramure de ressembler à un arbre de plaquette d'entreprise. */
+  var EXP = 2.3, INV = 1/EXP, ECH = 2.15;
+  function largeur(b2){
+    if (!b2.enfants.length){ b2.w = 1.05; return b2.w; }
+    var s = 0;
+    for (var i=0;i<b2.enfants.length;i++) s += Math.pow(largeur(b2.enfants[i]), EXP);
+    b2.w = Math.pow(s, INV);
+    return b2.w;
+  }
+  largeur(souche);
+  for (var i1=0;i1<toutes.length;i1++){
+    var br = toutes[i1], w1 = br.w*ECH;
+    for (var j1=0;j1<br.segs.length;j1++) SEGS[br.segs[j1]].w = w1;
+  }
+
+  /* ── Nervures : petites divisions greffées le long des troncs ────────── */
+  function nervure(x2,y2,dx2,dy2,t2,w2,niv,sens){
+    if (niv <= 0 || w2 < 0.3) return;
+    var ang = sens*(0.62 + R()*0.35), ca2=Math.cos(ang), sa2=Math.sin(ang);
+    var ndx2 = dx2*ca2 - dy2*sa2, ndy2 = dx2*sa2 + dy2*ca2;
+    var len = 9 + R()*13;
+    var nx2 = x2 + ndx2*len, ny2 = y2 + ndy2*len;
+    if (nx2 < 5 || nx2 > L-5 || ny2 > H+30) return;
+    if (enfoncement(nx2,ny2,COULOIR) > 0.02) return;
+    SEGS.push({x1:x2, y1:y2, x2:nx2, y2:ny2, t0:t2, t1:t2+len, w:w2*0.5});
+    if (t2+len > tMax) tMax = t2+len;
+    nervure(nx2, ny2, ndx2, ndy2, t2+len, w2*0.58, niv-1, sens);
+    if (niv > 1) nervure(nx2, ny2, ndx2, ndy2, t2+len, w2*0.52, niv-1, -sens);
+  }
+
+  var sens = 1;
+  for (var i2=0;i2<toutes.length;i2++){
+    var br2 = toutes[i2];
+    if (br2.prof < 1) continue;
+    for (var j2=2;j2<br2.segs.length;j2+=4){
+      var s2 = SEGS[br2.segs[j2]];
+      var ddx = s2.x2-s2.x1, ddy = s2.y2-s2.y1;
+      var dd = Math.sqrt(ddx*ddx+ddy*ddy)||1;
+      nervure(s2.x2, s2.y2, ddx/dd, ddy/dd, s2.t1, br2.w*ECH*0.55, mobile?2:3, sens);
+      sens = -sens;
+    }
+  }
+
+  /* ── Capillaires : ce qui part de chaque implantation ─────────────────
+     Registre visé : le lit d'une veine, pas un feuillage. Divisions
+     serrées, longueurs qui s'effondrent, jamais dans le couloir. */
+  var NIV = mobile ? 3 : 5;
+  var capMax = 1;
+  /* Le temps des capillaires est COMPTÉ DEPUIS LEUR PROPRE IMPLANTATION,
+     pas depuis l'origine. Sans ça, la lignée la plus courte finit son éventail
+     avant que la plus longue n'ait atteint sa ville, et la page s'ouvre sur un
+     réseau déjà fait — c'est le défaut qui a fallu corriger. */
+  function capillaire(x3,y3,dx3,dy3,t3,w3,niv){
+    if (niv <= 0 || w3 < 0.24) return;
+    var n = 2 + (R() < 0.26 ? 1 : 0);
+    for (var i=0;i<n;i++){
+      var ang = (i-(n-1)/2)*(0.40+R()*0.26) + (R()-0.5)*0.14;
+      var ca3=Math.cos(ang), sa3=Math.sin(ang);
+      var ndx3 = dx3*ca3 - dy3*sa3, ndy3 = dx3*sa3 + dy3*ca3;
+      var len = (7 + R()*9) * (0.45 + niv/NIV*0.75);
+      var nx3 = x3 + ndx3*len, ny3 = y3 + ndy3*len;
+      if (nx3 < 5 || nx3 > L-5 || ny3 < -20 || ny3 > H+40) continue;
+      if (enfoncement(nx3,ny3,COULOIR) > 0.45) continue;
+      SEGS.push({x1:x3, y1:y3, x2:nx3, y2:ny3, t0:t3, t1:t3+len, w:w3*0.76, cap:true});
+      if (t3+len > capMax) capMax = t3+len;
+      capillaire(nx3, ny3, ndx3, ndy3, t3+len, w3*0.76, niv-1);
+    }
+  }
+  /* Éclatement radial : depuis chaque implantation, cinq départs répartis sur
+     un large éventail — c'est ce qui occupe l'espace au lieu de prolonger
+     bêtement la direction d'arrivée. */
+  for (var p=0;p<POINTES.length;p++){
+    var pt0 = POINTES[p];
+    for (var e0=0;e0<5;e0++){
+      var a0 = (e0-2)*0.62 + (R()-0.5)*0.18;
+      var c0=Math.cos(a0), s0=Math.sin(a0);
+      capillaire(pt0.x, pt0.y,
+                 pt0.dx*c0 - pt0.dy*s0, pt0.dx*s0 + pt0.dy*c0,
+                 0, 1.02*ECH, NIV);
+    }
+  }
+
+  /* ── Temps de croissance, en deux moitiés ────────────────────────────
+     0 → 0,5 : la charpente, jusqu'aux neuf implantations
+     0,5 → 1 : les capillaires, qui partent tous ensemble des neuf points. */
+  var iA = 0.5/(tCharpente || 1), iB = 0.5/(capMax || 1);
+  for (var s3=0;s3<SEGS.length;s3++){
+    var sg = SEGS[s3];
+    if (sg.cap){ sg.t0 = 0.5 + sg.t0*iB; sg.t1 = 0.5 + sg.t1*iB; }
+    else { sg.t0 = Math.min(0.5, sg.t0*iA); sg.t1 = Math.min(0.5, sg.t1*iA); }
+  }
+  for (var p3=0;p3<POINTES.length;p3++) POINTES[p3].t = POINTES[p3].t*iA;
+
+  ranger();
+}
+
+/* ── Rangement par épaisseur : cinq passes de tracé, pas quatre mille ─── */
+var NIVEAUX = [
+  {seuil:4.2, w:4.8,  col:'rgba(64,118,255,.90)',  halo:'rgba(44,86,205,.055)', segs:[]},
+  {seuil:2.8, w:3.1,  col:'rgba(84,146,255,.86)',  halo:'rgba(48,104,215,.045)', segs:[]},
+  {seuil:1.7, w:1.95, col:'rgba(110,188,255,.78)', halo:null, segs:[]},
+  {seuil:0.95,w:1.15, col:'rgba(128,214,252,.60)', halo:null, segs:[]},
+  {seuil:0,   w:0.72, col:'rgba(142,232,255,.40)', halo:null, segs:[]}
+];
+function ranger(){
+  for (var n=0;n<NIVEAUX.length;n++) NIVEAUX[n].segs = [];
+  for (var i=0;i<SEGS.length;i++){
+    var w = SEGS[i].w || 0.6;
+    for (var n2=0;n2<NIVEAUX.length;n2++){
+      if (w >= NIVEAUX[n2].seuil){ NIVEAUX[n2].segs.push(SEGS[i]); break; }
+    }
+  }
+}
+
+/* ───────────────────────────────────────────────────────────────────────
+   3 · Les lueurs — dégradés radiaux pré-cuits sur un petit canevas.
+       Aucun flou : c'est un simple dessin d'image, gratuit pour le GPU.
+   ─────────────────────────────────────────────────────────────────────── */
+function lueur(r,g,b){
+  var c = document.createElement('canvas'); c.width = c.height = 64;
+  var k = c.getContext('2d');
+  var grad = k.createRadialGradient(32,32,0,32,32,32);
+  grad.addColorStop(0,   'rgba('+r+','+g+','+b+',.85)');
+  grad.addColorStop(0.32,'rgba('+r+','+g+','+b+',.28)');
+  grad.addColorStop(1,   'rgba('+r+','+g+','+b+',0)');
+  k.fillStyle = grad; k.fillRect(0,0,64,64);
+  return c;
+}
+var LUEUR_FROIDE = null, LUEUR_CHAUDE = null;
+
+/* ───────────────────────────────────────────────────────────────────────
+   4 · Tracé
+   ─────────────────────────────────────────────────────────────────────── */
+var surligne = -1;
+var policesPretes = false;
+
+function dessiner(g, tps){
+  if (!ctx) return;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,L,H);
+  ctx.globalAlpha = 1;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.globalCompositeOperation = 'lighter';
+
+  var attenue = mobile ? 0.60 : 1;
+  var front = [];
+  var n, N, arr, len, i, s, x2, y2, f;
+
+  for (n=0;n<NIVEAUX.length;n++){
+    N = NIVEAUX[n]; arr = N.segs; len = arr.length;
+    if (!len) continue;
+    ctx.beginPath();
+    for (i=0;i<len;i++){
+      s = arr[i];
+      if (s.t0 >= g) continue;
+      x2 = s.x2; y2 = s.y2;
+      if (s.t1 > g){
+        f = (g - s.t0) / (s.t1 - s.t0);
+        x2 = s.x1 + (s.x2-s.x1)*f;
+        y2 = s.y1 + (s.y2-s.y1)*f;
+        if (n < 4) front.push({x:x2, y:y2, w:N.w});
+      }
+      ctx.moveTo(s.x1, s.y1);
+      ctx.lineTo(x2, y2);
+    }
+    ctx.globalAlpha = attenue;
+    if (N.halo){ ctx.strokeStyle = N.halo; ctx.lineWidth = N.w*5.5; ctx.stroke(); }
+    ctx.strokeStyle = N.col; ctx.lineWidth = N.w; ctx.stroke();
+  }
+
+  /* front de croissance : c'est là qu'est la lumière */
+  if (LUEUR_FROIDE && g < 0.999){
+    var max = Math.min(front.length, 150);
+    for (var q=0;q<max;q++){
+      var pf = front[q];
+      var tf = 26 + pf.w*7;
+      ctx.globalAlpha = (0.30 + 0.16*Math.sin(tps*0.004 + q)) * attenue;
+      ctx.drawImage(LUEUR_FROIDE, pf.x-tf/2, pf.y-tf/2, tf, tf);
+    }
+  }
+
+  /* l'origine : un point unique, qui bat */
+  if (LUEUR_FROIDE && RACINE){
+    var yr = Math.max(RACINE.y, 3);
+    var bat = 34 + 7*Math.sin(tps*0.0018);
+    ctx.globalAlpha = 0.55 * attenue;
+    ctx.drawImage(LUEUR_FROIDE, RACINE.x-bat/2, yr-bat/2, bat, bat);
+  }
+
+  /* les neuf implantations */
+  ctx.globalCompositeOperation = 'source-over';
+  for (var k=0;k<POINTES.length;k++){
+    var pt = POINTES[k];
+    if (g < pt.t) continue;
+    var age = g - pt.t;
+    var vif = (surligne === pt.i);
+
+    if (LUEUR_CHAUDE){
+      ctx.globalCompositeOperation = 'lighter';
+      var tc = vif ? 78 : 46;
+      ctx.globalAlpha = (vif ? 0.85 : 0.42) * attenue;
+      ctx.drawImage(LUEUR_CHAUDE, pt.x-tc/2, pt.y-tc/2, tc, tc);
+      ctx.globalCompositeOperation = 'source-over';
+    }
+
+    /* éclosion : un anneau qui s'ouvre puis s'efface */
+    if (age < 0.030){
+      var f2 = age/0.030;
+      ctx.globalAlpha = (1-f2)*0.8;
+      ctx.strokeStyle = '#FF8A52'; ctx.lineWidth = 1.4;
+      ctx.beginPath(); ctx.arc(pt.x, pt.y, 6 + f2*40, 0, 6.2832); ctx.stroke();
+    }
+
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = vif ? '#FFD2B4' : 'rgba(255,138,82,.92)';
+    ctx.lineWidth = vif ? 2 : 1.4;
+    ctx.beginPath(); ctx.arc(pt.x, pt.y, vif ? 8.5 : 5.4, 0, 6.2832); ctx.stroke();
+    ctx.fillStyle = vif ? '#FFFFFF' : '#FF8A52';
+    ctx.beginPath(); ctx.arc(pt.x, pt.y, vif ? 3 : 2.1, 0, 6.2832); ctx.fill();
+
+    /* étiquette : seulement quand il y a la place, ou au survol */
+    if (policesPretes && (L >= 980 || vif)){
+      var gauche = pt.x < L*0.5;
+      ctx.font = '500 11px "GeistMono", ui-monospace, monospace';
+      ctx.textBaseline = 'middle';
+      ctx.globalAlpha = vif ? 1 : 0.78;
+      ctx.fillStyle = vif ? '#FFFFFF' : 'rgba(255,214,190,.88)';
+      ctx.strokeStyle = 'rgba(255,138,82,.5)'; ctx.lineWidth = 1;
+      var lx = pt.x + (gauche ? 15 : -15);
+      var ly = pt.y - 13 + (pt.decal || 0);
+      ctx.textAlign = gauche ? 'left' : 'right';
+      ctx.beginPath();
+      ctx.moveTo(pt.x + (gauche?8:-8), pt.y-4);
+      ctx.lineTo(pt.x + (gauche?13:-13), ly + 4);
+      ctx.stroke();
+      ctx.fillText(IMPL[pt.i].c + '  ' + IMPL[pt.i].nom, lx, ly);
+    }
+  }
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = 'source-over';
+}
+
+/* ───────────────────────────────────────────────────────────────────────
+   5 · Asservissement au défilement
+   ─────────────────────────────────────────────────────────────────────── */
+var sReseau = 0.36;   /* défilement auquel les neuf pointes sont atteintes */
+
+function repererReseau(){
+  var el = document.getElementById('reseau');
+  if (!el) return;
+  var doc = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+  var y = el.getBoundingClientRect().top + window.pageYOffset
+        + el.offsetHeight*0.55 - window.innerHeight*0.5;
+  sReseau = borne(y/doc, 0.18, 0.62);
+}
+function progression(){
+  var doc = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+  return borne(window.pageYOffset/doc, 0, 1);
+}
+/* Le temps de croissance n'est pas le défilement : les neuf pointes doivent
+   être en place quand le lecteur arrive sur la section « Le réseau ». */
+function tempsDeCroissance(s){
+  if (s <= sReseau) return 0.15 + 0.35*(s/sReseau);
+  return 0.50 + 0.50*((s-sReseau)/(1-sReseau));
+}
+
+var pLisse = 0, sale = true, tourne = false;
+
+function boucle(tps){
+  if (!tourne) return;
+  var pCible = progression();
+  var d = pCible - pLisse;
+  if (Math.abs(d) < 0.00035){ pLisse = pCible; }
+  else { pLisse += d*0.13; sale = true; }
+
+  var g = tempsDeCroissance(pLisse);
+  if (sale || (g > 0.001 && g < 0.999) || surligne >= 0){
+    dessiner(g, tps||0);
+    sale = false;
+  }
+  requestAnimationFrame(boucle);
+}
+
+/* ───────────────────────────────────────────────────────────────────────
+   6 · Dimensions
+   ─────────────────────────────────────────────────────────────────────── */
+function redimensionner(){
+  if (!ctx) return;
+  L = window.innerWidth;
+  H = window.innerHeight;
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  toile.width  = Math.round(L*dpr);
+  toile.height = Math.round(H*dpr);
+  toile.style.width  = L+'px';
+  toile.style.height = H+'px';
+  construire();
+  repererReseau();
+  sale = true;
+}
+
+/* ───────────────────────────────────────────────────────────────────────
+   7 · Démarrage du réseau
+   ─────────────────────────────────────────────────────────────────────── */
+if (ctx){
+  try{
+    LUEUR_FROIDE = lueur(130, 215, 255);
+    LUEUR_CHAUDE = lueur(255, 150, 90);
+    redimensionner();
+    if (DOUX){
+      dessiner(1, 0);                    /* mouvement réduit : réseau complet, figé */
+    } else {
+      tourne = true;
+      requestAnimationFrame(boucle);
+    }
+    if (document.fonts && document.fonts.ready){
+      document.fonts.ready.then(function(){
+        policesPretes = true; sale = true;
+        if (DOUX) dessiner(1, 0);
+      });
+    } else { policesPretes = true; }
+  } catch(err){
+    /* si le canevas refuse, la page reste entièrement lisible */
+    toile.style.display = 'none';
+  }
+} else if (toile){
+  toile.style.display = 'none';
+}
+
+var minuteur = null;
+window.addEventListener('resize', function(){
+  clearTimeout(minuteur);
+  minuteur = setTimeout(function(){
+    redimensionner();
+    if (DOUX) dessiner(1,0);
+  }, 220);
+}, {passive:true});
+
+document.addEventListener('visibilitychange', function(){
+  if (document.hidden){ tourne = false; }
+  else if (!DOUX && ctx){ tourne = true; sale = true; requestAnimationFrame(boucle); }
+});
+
+/* ───────────────────────────────────────────────────────────────────────
+   8 · Survol des neuf lignes → l'extrémité correspondante s'allume
+   ─────────────────────────────────────────────────────────────────────── */
+var liste = document.getElementById('liste9');
+if (liste){
+  liste.addEventListener('mouseover', function(e){
+    var li = e.target && e.target.closest ? e.target.closest('li[data-i]') : null;
+    surligne = li ? parseInt(li.getAttribute('data-i'), 10) : -1;
+    sale = true;
+  });
+  liste.addEventListener('mouseleave', function(){ surligne = -1; sale = true; });
+  liste.addEventListener('focusin', function(e){
+    var li = e.target && e.target.closest ? e.target.closest('li[data-i]') : null;
+    surligne = li ? parseInt(li.getAttribute('data-i'), 10) : -1;
+    sale = true;
+  });
+  liste.addEventListener('focusout', function(){ surligne = -1; sale = true; });
+}
+
+/* ───────────────────────────────────────────────────────────────────────
+   9 · Révélations — jamais de blanc : tout est visible sans script, et un
+       filet de sécurité rend tout visible au bout de 3 s quoi qu'il arrive
+   ─────────────────────────────────────────────────────────────────────── */
+var aReveler = [].slice.call(document.querySelectorAll('.rv'));
+function toutMontrer(){
+  for (var i=0;i<aReveler.length;i++) aReveler[i].classList.add('vu');
+}
+if (DOUX || !('IntersectionObserver' in window)){
+  toutMontrer();
+} else {
+  var oeil = new IntersectionObserver(function(entrees){
+    for (var i=0;i<entrees.length;i++){
+      if (entrees[i].isIntersecting){
+        entrees[i].target.classList.add('vu');   /* on n'enlève jamais « vu » */
+        oeil.unobserve(entrees[i].target);
+      }
+    }
+  }, {rootMargin:'0px 0px -8% 0px', threshold:0.01});
+  for (var i3=0;i3<aReveler.length;i3++) oeil.observe(aReveler[i3]);
+  setTimeout(toutMontrer, 3000);
+}
+
+/* ───────────────────────────────────────────────────────────────────────
+   10 · Compteurs
+        ⚠️ Une année ne prend jamais de séparateur de milliers.
+   ─────────────────────────────────────────────────────────────────────── */
+function formater(v, cible, suffixe){
+  var e = Math.round(v);
+  var annee = (cible >= 1900 && cible <= 2100 && !suffixe);
+  var s = annee ? String(e) : String(e).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  return s + (suffixe || '');
+}
+var compteurs = [].slice.call(document.querySelectorAll('[data-cible]'));
+function lancerCompteur(el){
+  if (el.getAttribute('data-fait')) return;
+  el.setAttribute('data-fait','1');
+  var cible = parseFloat(el.getAttribute('data-cible'));
+  var suffixe = el.getAttribute('data-suffixe') || '';
+  if (DOUX){ el.textContent = formater(cible, cible, suffixe); return; }
+  var t0 = null, duree = 1300;
+  function pas(t){
+    if (t0 === null) t0 = t;
+    var f = Math.min(1, (t-t0)/duree);
+    var e = 1 - Math.pow(1-f, 3);
+    el.textContent = formater(cible*e, cible, suffixe);
+    if (f < 1) requestAnimationFrame(pas);
+  }
+  requestAnimationFrame(pas);
+}
+if ('IntersectionObserver' in window && !DOUX){
+  var oeil2 = new IntersectionObserver(function(en){
+    for (var i=0;i<en.length;i++) if (en[i].isIntersecting){
+      lancerCompteur(en[i].target); oeil2.unobserve(en[i].target);
+    }
+  }, {threshold:0.3});
+  for (var c=0;c<compteurs.length;c++) oeil2.observe(compteurs[c]);
+  setTimeout(function(){
+    for (var c2=0;c2<compteurs.length;c2++) lancerCompteur(compteurs[c2]);
+  }, 4500);
+} else {
+  for (var c3=0;c3<compteurs.length;c3++) lancerCompteur(compteurs[c3]);
+}
+
+/* ───────────────────────────────────────────────────────────────────────
+   11 · Menu téléphone — fond plein, jamais transparent
+   ─────────────────────────────────────────────────────────────────────── */
+var bt = document.getElementById('burger'), tiroir = document.getElementById('tiroir');
+if (bt && tiroir){
+  bt.addEventListener('click', function(){
+    var ouvert = tiroir.classList.toggle('ouvert');
+    bt.setAttribute('aria-expanded', ouvert ? 'true' : 'false');
+    bt.setAttribute('aria-label', ouvert ? 'Fermer le menu' : 'Ouvrir le menu');
+  });
+  tiroir.addEventListener('click', function(e){
+    if (e.target.tagName === 'A'){
+      tiroir.classList.remove('ouvert');
+      bt.setAttribute('aria-expanded','false');
+      bt.setAttribute('aria-label','Ouvrir le menu');
+    }
+  });
+}
+
+/* ───────────────────────────────────────────────────────────────────────
+   12 · Sonde de contrôle (images par seconde, nombre de segments)
+   ─────────────────────────────────────────────────────────────────────── */
+window.__delta = {
+  segments: function(){ return SEGS.length; },
+  pointes:  function(){ return POINTES.length; },
+  mesurer:  function(ms){
+    return new Promise(function(ok){
+      var n = 0, t0 = performance.now();
+      function tick(){
+        n++;
+        var dt = performance.now()-t0;
+        if (dt < (ms||1000)) requestAnimationFrame(tick);
+        else ok(Math.round(n/(dt/1000)));
+      }
+      requestAnimationFrame(tick);
+    });
+  }
+};
+
+})();
+</script>
+</body>
+</html>

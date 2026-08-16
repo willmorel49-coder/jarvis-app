@@ -1,0 +1,15 @@
+Polices servies par la maquette m-20.html — toutes en licence libre.
+
+geist-latin.woff2      Geist (variable 300–600), Vercel — SIL Open Font License 1.1
+                       Sous-ensemble latin uniquement (U+0000–00FF + ponctuation).
+                       Source : fonts.gstatic.com (Google Fonts), récupéré le 15/08/2026.
+
+geistmono-latin.woff2  Geist Mono (variable 400–500), Vercel — SIL Open Font License 1.1
+                       Sous-ensemble latin uniquement.
+                       Source : fonts.gstatic.com (Google Fonts), récupéré le 15/08/2026.
+
+Pourquoi ces deux-là : la charte « cursor » nomme « CursorGothic », une police
+propriétaire. Geist est l'équivalent libre le plus proche — grotesque contemporaine,
+dessin neutre et légèrement chaud, qui tient la graisse 400 en très grand corps avec
+un interlettrage négatif, exactement ce que demande l'échelle de la charte.
+Geist Mono remplace la chasse fixe des libellés techniques.

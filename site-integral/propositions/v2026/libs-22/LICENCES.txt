@@ -1,0 +1,20 @@
+Librairies de la maquette 22 « Caractère » — servies par nous, aucun CDN,
+aucune clé d'API, aucun appel réseau sortant.
+
+gsap.min.js / ScrollTrigger.min.js
+  GSAP 3 — GreenSock (Webflow). Licence maison, GRATUITE depuis 2025,
+  tous les modules compris. https://gsap.com/community/standard-license/
+  Sert à : l'entrée lettre par lettre du premier écran, le zoom typographique
+  du réseau, le rail horizontal du métier.
+
+lenis.min.js
+  Lenis 1.1.14 — darkroom.engineering. Licence MIT.
+  Sert à : le défilement lissé « pondéré ».
+
+splitting.min.js / splitting.css
+  Splitting.js — Shaw (shshaw). Licence MIT.
+  Sert à : la découpe en mots et en lettres, avec les variables CSS
+  --word-index et --char-index qui pilotent les retards en CSS pur.
+
+Fichiers copiés depuis site-integral/vendor/ (déjà présents dans le dépôt),
+aucun téléchargement au moment de l'affichage.

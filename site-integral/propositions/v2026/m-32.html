@@ -1,0 +1,1477 @@
+<!DOCTYPE html>
+<html lang="fr" class="sansjs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Intégral Pharma — 32 · LA MÉTAMORPHOSE</title>
+<meta name="description" content="Intégral Pharma, groupe de grossistes-répartiteurs français indépendant. Neuf implantations, un seul nom.">
+<meta name="theme-color" content="#06070B">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%2306070B'/%3E%3Ccircle cx='16' cy='13' r='7' fill='none' stroke='%234C8BFF' stroke-width='3'/%3E%3Cpath d='M23 13c0 8-3 13-8 17' fill='none' stroke='%234C8BFF' stroke-width='3'/%3E%3C/svg%3E">
+<script>document.documentElement.className='js';</script>
+<style>
+/* ══════════════════════════════════════════════════════════════════════
+   32 · LA MÉTAMORPHOSE — Intégral Pharma
+
+   Mécanique : UNE seule forme, du premier au dernier écran. Elle ne
+   disparaît jamais. Elle est faite de 52 000 points qui gardent tous leur
+   place relative d'un état à l'autre — matière, boîte, bâtiment, chiffre
+   neuf, comptoir, dispersion. Six états, cinq métamorphoses, une prise.
+
+   Moteur : WebGL brut (aucune librairie, aucun CDN, aucun appel réseau).
+   Polices servies depuis polices-32/.
+   Replis prévus : sans JavaScript, et sans WebGL.
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* ── 0 · Polices ──────────────────────────────────────────────────── */
+@font-face{font-family:'Archivo';src:url('polices-32/archivo-var.woff2') format('woff2-variations');
+  font-weight:100 900;font-stretch:62% 125%;font-style:normal;font-display:swap}
+@font-face{font-family:'Instrument';src:url('polices-32/instrumentserif.woff2') format('woff2');
+  font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:'Instrument';src:url('polices-32/instrumentserif-italic.woff2') format('woff2');
+  font-weight:400;font-style:italic;font-display:swap}
+@font-face{font-family:'Plex';src:url('polices-32/plexmono-400.woff2') format('woff2');
+  font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:'Plex';src:url('polices-32/plexmono-500.woff2') format('woff2');
+  font-weight:500;font-style:normal;font-display:swap}
+
+/* ── 1 · Le système ───────────────────────────────────────────────── */
+:root{
+  /* La chambre noire. Tout contraste est mesuré sur --encre. */
+  --encre:#06070B;        /* fond de la chambre */
+  --encre-2:#0A0C14;
+  --craie:#EFEDE7;        /* craie sur encre : 16,9:1 */
+  --gris:#9AA0B2;         /* gris sur encre  :  7,5:1 */
+  --gris-b:#6E7488;       /* filets, jamais de texte courant dessus */
+
+  /* Les six températures de lumière — une par chapitre. */
+  --l0:#8FB6FF;  /* matière     — bleu froid */
+  --l1:#4C8BFF;  /* boîte       — bleu Intégral porté au clair */
+  --l2:#FFB25E;  /* bâtiment    — ambre, fin de journée */
+  --l3:#59E0FF;  /* neuf        — cyan électrique */
+  --l4:#FFD9A8;  /* comptoir    — crème chaude */
+  --l5:#C9D4FF;  /* dispersion  — blanc bleuté */
+
+  --accent:var(--l1);
+  --trait:rgba(239,237,231,.10);
+  --trait-f:rgba(239,237,231,.20);
+
+  --dis:'Archivo',ui-sans-serif,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --ser:'Instrument',Georgia,'Times New Roman',serif;
+  --mono:'Plex',ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+
+  --marge:clamp(20px,5vw,84px);
+  --barre:62px;
+  --col:min(560px,44vw);
+}
+
+*{box-sizing:border-box}
+html{overflow-x:clip;scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--encre);color:var(--craie);
+  font:400 17px/1.62 var(--dis);
+  font-variation-settings:'wght' 400,'wdth' 100;
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  overflow-x:clip;
+}
+img,canvas,video,svg{display:block;max-width:100%}
+a{color:inherit;text-decoration:none}
+h1,h2,h3,p,ul,ol,figure{margin:0}
+ul{list-style:none;padding:0}
+
+::selection{background:var(--l1);color:#04050A}
+
+/* ── 2 · La scène : la forme vit derrière tout le site ────────────── */
+#scene{position:fixed;inset:0;z-index:0;pointer-events:none;background:var(--encre)}
+#gl{width:100%;height:100%;opacity:0;transition:opacity 1.1s ease}
+#gl.vu{opacity:1}
+
+/* Vignette : referme la chambre sur la forme, sans aucun flou. */
+#scene::after{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(120% 88% at 50% 46%,transparent 38%,rgba(3,4,8,.55) 78%,rgba(3,4,8,.88) 100%);
+}
+
+/* ── 3 · Barre de navigation ──────────────────────────────────────── */
+.barre{
+  position:fixed;top:0;left:0;right:0;height:var(--barre);z-index:60;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 var(--marge);
+  background:linear-gradient(180deg,rgba(6,7,11,.94) 0%,rgba(6,7,11,.72) 60%,rgba(6,7,11,0) 100%);
+}
+.marque{display:flex;align-items:center;gap:11px;min-height:44px}
+.marque img{width:auto;height:22px;opacity:.94}
+.marque b{font:500 12px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--craie)}
+.liens{display:flex;gap:4px;align-items:center}
+.liens a{
+  font:400 13px/1 var(--dis);font-variation-settings:'wght' 500,'wdth' 96;
+  letter-spacing:.02em;color:var(--gris);
+  padding:14px 13px;min-height:44px;display:flex;align-items:center;
+  border-radius:2px;transition:color .25s ease,background .25s ease;
+}
+.liens a:hover,.liens a:focus-visible{color:var(--craie);background:rgba(239,237,231,.06)}
+.liens a.ecrire{color:var(--craie);border:1px solid var(--trait-f);margin-left:10px}
+.liens a.ecrire:hover{border-color:var(--craie)}
+
+#burger{display:none;width:46px;height:46px;align-items:center;justify-content:center;
+  background:none;border:1px solid var(--trait-f);border-radius:2px;cursor:pointer;padding:0}
+#burger span{display:block;width:19px;height:1.5px;background:var(--craie);position:relative}
+#burger span::before,#burger span::after{content:'';position:absolute;left:0;width:19px;height:1.5px;background:var(--craie)}
+#burger span::before{top:-6px}#burger span::after{top:6px}
+
+#panneau{
+  position:fixed;inset:0;z-index:70;background:var(--encre);   /* fond PLEIN, pas translucide */
+  display:none;flex-direction:column;padding:calc(var(--barre) + 26px) var(--marge) 36px;
+}
+#panneau[data-ouvert="1"]{display:flex}
+#panneau a{
+  font:400 26px/1.25 var(--dis);font-variation-settings:'wght' 500,'wdth' 92;
+  padding:17px 0;min-height:54px;display:flex;align-items:center;
+  border-bottom:1px solid var(--trait);color:var(--craie);
+}
+#fermer{position:absolute;top:9px;right:var(--marge);width:46px;height:46px;
+  background:none;border:1px solid var(--trait-f);color:var(--craie);
+  font:400 22px/1 var(--dis);cursor:pointer;border-radius:2px}
+
+/* ── 4 · Le carton d'état — la forme est toujours nommée ──────────
+   Il vit DANS la barre : c'est le seul endroit qui ne recouvre jamais
+   ni le bandeau du premier écran, ni une colonne de texte.          */
+#carton{
+  position:fixed;z-index:61;top:0;left:50%;transform:translateX(-50%);
+  height:var(--barre);display:flex;align-items:center;gap:11px;
+  opacity:0;transition:opacity .7s ease;pointer-events:none;
+}
+#carton.vu{opacity:1}
+#carton .sig{width:22px;height:22px;color:var(--accent);transition:color .8s ease;flex:0 0 auto}
+#carton .num{font:500 12px/1 var(--mono);letter-spacing:.14em;color:var(--gris-b)}
+#carton .nom{font:400 16px/1 var(--ser);font-style:italic;letter-spacing:.01em;
+  color:var(--craie);white-space:nowrap;display:flex;align-items:center;gap:11px}
+#carton .nom::before{content:'';width:4px;height:4px;border-radius:50%;background:var(--accent);
+  transition:background .8s ease}
+
+/* ── 5 · Trame commune des chapitres ──────────────────────────────── */
+main{position:relative;z-index:10}
+/* Le texte se pose EN HAUT du chapitre ; le bas du chapitre reste vide,
+   et c'est là que la métamorphose a lieu. Centrer verticalement faisait
+   passer les longs titres sous la barre — défaut vu à l'écran, corrigé. */
+.chap{
+  position:relative;min-height:150svh;
+  padding:calc(var(--barre) + 11svh) var(--marge) 14svh;
+  display:flex;flex-direction:column;justify-content:flex-start;
+}
+.chap.gauche .col{margin-right:auto}
+.chap.droite .col{margin-left:auto}
+.chap.centre .col{margin-inline:auto;text-align:center;max-width:min(880px,92vw)}
+.col{position:relative;width:var(--col);max-width:100%}
+
+/* Voile latéral : redonne du contraste au texte sans flouter la forme. */
+.chap.gauche::before,.chap.droite::before{
+  content:'';position:absolute;top:0;bottom:0;width:min(62vw,900px);z-index:-1;pointer-events:none;
+}
+.chap.gauche::before{left:0;background:linear-gradient(90deg,rgba(6,7,11,.90) 0%,rgba(6,7,11,.62) 45%,rgba(6,7,11,0) 100%)}
+.chap.droite::before{right:0;background:linear-gradient(270deg,rgba(6,7,11,.90) 0%,rgba(6,7,11,.62) 45%,rgba(6,7,11,0) 100%)}
+
+.etiq{
+  display:flex;align-items:baseline;gap:12px;margin-bottom:22px;
+  font:500 12px/1 var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--gris-b);
+}
+.etiq i{font:400 15px/1 var(--ser);font-style:italic;letter-spacing:0;text-transform:none;color:var(--accent-loc,var(--accent))}
+.etiq::before{content:'';width:26px;height:1px;background:var(--gris-b);align-self:center}
+
+h2{
+  font:400 clamp(34px,5.0vw,66px)/1.03 var(--dis);
+  font-variation-settings:'wght' 420,'wdth' 88;
+  letter-spacing:-.022em;margin-bottom:26px;text-wrap:balance;
+}
+h2 em{font-family:var(--ser);font-style:italic;font-variation-settings:normal;
+  font-weight:400;letter-spacing:-.005em;color:var(--accent-loc,var(--accent))}
+.txt{color:var(--gris);font-size:17px;line-height:1.72;max-width:52ch}
+.txt + .txt{margin-top:15px}
+.txt strong{color:var(--craie);font-variation-settings:'wght' 560}
+
+/* ── 6 · Boutons ──────────────────────────────────────────────────── */
+.actions{display:flex;flex-wrap:wrap;gap:11px;margin-top:32px}
+.btn{
+  display:inline-flex;align-items:center;gap:10px;min-height:48px;
+  padding:0 22px;border-radius:2px;
+  font:400 14px/1 var(--dis);font-variation-settings:'wght' 560,'wdth' 96;
+  letter-spacing:.01em;border:1px solid var(--trait-f);color:var(--craie);
+  transition:background .28s ease,border-color .28s ease,color .28s ease,transform .28s ease;
+}
+.btn:hover,.btn:focus-visible{transform:translateY(-2px);border-color:var(--craie)}
+.btn.plein{background:var(--craie);color:#06070B;border-color:var(--craie)}
+.btn.plein:hover{background:#fff}
+.btn .fl{font-family:var(--mono);font-size:13px;opacity:.65}
+
+/* ── 7 · Chapitre 1 — l'ouverture ─────────────────────────────────── */
+#ch1{min-height:100svh;justify-content:flex-end;padding-bottom:0}
+#ch1 .col{width:min(1000px,92vw);margin-inline:auto;text-align:center}
+.surtitre{
+  font:500 13px/1.4 var(--mono);letter-spacing:.20em;text-transform:uppercase;
+  color:var(--craie);margin-bottom:26px;
+}
+h1{
+  font:400 clamp(46px,10.2vw,148px)/.92 var(--dis);
+  font-variation-settings:'wght' 380,'wdth' 84;
+  letter-spacing:-.038em;margin-bottom:26px;
+}
+h1 .l2{display:block;font-family:var(--ser);font-style:italic;font-variation-settings:normal;
+  letter-spacing:-.02em;color:var(--l0)}
+#ch1 .txt{margin-inline:auto;text-align:center;max-width:56ch}
+#ch1 .actions{justify-content:center}
+
+/* Le bandeau qui défile — seul débordement horizontal autorisé */
+.bandeau{
+  margin-top:9svh;border-top:1px solid var(--trait);border-bottom:1px solid var(--trait);
+  overflow:hidden;padding:15px 0;
+  margin-left:calc(var(--marge) * -1);margin-right:calc(var(--marge) * -1);
+}
+.bandeau .ruban{display:flex;width:max-content;animation:defile 46s linear infinite}
+.bandeau span{
+  font:500 12px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;
+  color:var(--gris);padding:0 26px;white-space:nowrap;display:flex;align-items:center;gap:26px;
+}
+.bandeau span::after{content:'';width:5px;height:5px;background:var(--l0);border-radius:50%;opacity:.75}
+@keyframes defile{from{transform:translate3d(0,0,0)}to{transform:translate3d(-50%,0,0)}}
+.souris{
+  display:flex;align-items:center;gap:10px;justify-content:center;
+  padding:22px 0 26px;font:500 12px/1 var(--mono);letter-spacing:.2em;
+  text-transform:uppercase;color:var(--gris-b);
+}
+.souris i{display:block;width:1px;height:26px;background:linear-gradient(180deg,var(--gris-b),transparent);
+  animation:tombe 2.4s ease-in-out infinite}
+@keyframes tombe{0%,100%{transform:scaleY(.4);transform-origin:top}50%{transform:scaleY(1);transform-origin:top}}
+
+/* ── 8 · Compteurs ────────────────────────────────────────────────── */
+.compteurs{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;margin-top:40px;
+  background:var(--trait);border:1px solid var(--trait)}
+.compteurs div{background:var(--encre);padding:20px 18px}
+.compteurs b{display:block;font:400 clamp(30px,3.6vw,46px)/1 var(--dis);
+  font-variation-settings:'wght' 380,'wdth' 86;letter-spacing:-.03em;color:var(--craie)}
+.compteurs i{display:block;margin-top:9px;font:400 12px/1.4 var(--mono);
+  letter-spacing:.09em;text-transform:uppercase;color:var(--gris-b);font-style:normal}
+
+/* ── 9 · Média ────────────────────────────────────────────────────── */
+.media{position:relative;margin-top:40px;border:1px solid var(--trait);overflow:hidden}
+.media img,.media video{width:100%;height:auto;object-fit:cover;opacity:.86}
+.media figcaption{
+  position:absolute;left:0;right:0;bottom:0;padding:14px 16px;
+  background:linear-gradient(0deg,rgba(6,7,11,.92),rgba(6,7,11,0));
+  font:400 12px/1.4 var(--mono);letter-spacing:.06em;color:var(--gris);
+}
+.media.large{width:min(1180px,100%);margin-inline:auto}
+
+/* ── 10 · Les neuf implantations ──────────────────────────────────── */
+.maisons{margin-top:36px;border-top:1px solid var(--trait)}
+.maisons li{
+  display:grid;grid-template-columns:44px 1fr auto;align-items:baseline;gap:14px;
+  padding:15px 4px;border-bottom:1px solid var(--trait);
+  transition:background .3s ease,padding-left .3s ease;
+}
+.maisons li:hover{background:rgba(239,237,231,.045);padding-left:12px}
+.maisons .n{font:500 12px/1 var(--mono);letter-spacing:.1em;color:var(--gris-b)}
+.maisons .nm{font:400 18px/1.3 var(--dis);font-variation-settings:'wght' 520,'wdth' 96;color:var(--craie)}
+.maisons .nm s{display:block;text-decoration:none;margin-top:3px;
+  font:400 12.5px/1 var(--mono);letter-spacing:.08em;color:var(--l3)}
+.maisons .vl{font:400 13px/1 var(--mono);letter-spacing:.05em;color:var(--gris);text-align:right}
+.maisons .vl u{text-decoration:none;color:var(--gris-b);margin-left:9px;font-size:12px}
+.note{
+  margin-top:22px;padding:16px 18px;border:1px solid var(--trait);
+  font-size:15px;line-height:1.6;color:var(--gris);
+}
+.note b{color:var(--craie);font-variation-settings:'wght' 560}
+
+/* ── 11 · Le métier — quatre temps ────────────────────────────────── */
+.temps{margin-top:38px;display:grid;gap:1px;background:var(--trait);border:1px solid var(--trait)}
+.temps article{background:var(--encre);padding:24px 22px}
+.temps h3{
+  display:flex;align-items:baseline;gap:12px;margin-bottom:11px;
+  font:400 20px/1.25 var(--dis);font-variation-settings:'wght' 520,'wdth' 94;color:var(--craie);
+}
+.temps h3 u{text-decoration:none;font:500 12px/1 var(--mono);letter-spacing:.12em;color:var(--l4)}
+.temps p{color:var(--gris);font-size:15.5px;line-height:1.65}
+
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:1px;margin-top:38px;
+  background:var(--trait);border:1px solid var(--trait)}
+.duo section{background:var(--encre);padding:26px 24px}
+.duo h3{font:400 22px/1.25 var(--dis);font-variation-settings:'wght' 480,'wdth' 92;
+  letter-spacing:-.015em;margin-bottom:13px}
+.duo p{color:var(--gris);font-size:15.5px;line-height:1.65}
+.duo p + p{margin-top:11px}
+.paires{display:flex;gap:28px;margin-top:20px;flex-wrap:wrap}
+.paires b{display:block;font:400 30px/1 var(--dis);font-variation-settings:'wght' 380,'wdth' 88;
+  letter-spacing:-.03em}
+.paires i{display:block;margin-top:7px;font:400 12px/1.3 var(--mono);letter-spacing:.09em;
+  text-transform:uppercase;color:var(--gris-b);font-style:normal}
+
+/* ── 12 · Les valeurs ─────────────────────────────────────────────── */
+.valeurs{margin-top:38px;display:grid;gap:1px;background:var(--trait);border:1px solid var(--trait)}
+.valeurs article{background:var(--encre);padding:24px 22px;display:grid;
+  grid-template-columns:minmax(120px,150px) 1fr;gap:18px;align-items:start}
+.valeurs h3{font:400 22px/1.1 var(--ser);font-style:italic;color:var(--l4)}
+.valeurs p{color:var(--gris);font-size:15.5px;line-height:1.65}
+
+/* ── 13 · Partenaires · recrutement ───────────────────────────────── */
+.labos{display:flex;flex-wrap:wrap;gap:1px;margin-top:26px;background:var(--trait);
+  border:1px solid var(--trait)}
+.labos li{background:var(--encre);flex:1 1 170px;padding:22px 18px;text-align:center;
+  font:400 17px/1.2 var(--dis);font-variation-settings:'wght' 520,'wdth' 96;color:var(--craie)}
+.villes{display:flex;flex-wrap:wrap;gap:9px;margin-top:22px}
+.villes li{
+  padding:9px 14px;min-height:40px;display:flex;align-items:center;
+  border:1px solid var(--trait);font:400 13px/1 var(--mono);letter-spacing:.04em;color:var(--gris);
+}
+
+/* ── 14 · Fin de page ─────────────────────────────────────────────── */
+#ch6{min-height:130svh;justify-content:center}
+#ch6 h2{font-size:clamp(32px,5.4vw,72px)}
+.courriel{
+  display:inline-flex;align-items:center;gap:12px;min-height:56px;padding:0 26px;margin-top:30px;
+  border:1px solid var(--l5);color:var(--craie);border-radius:2px;
+  font:400 clamp(15px,1.6vw,20px)/1 var(--mono);letter-spacing:.02em;
+  transition:background .3s ease,color .3s ease;
+}
+.courriel:hover,.courriel:focus-visible{background:var(--l5);color:#06070B}
+.pied{
+  position:relative;z-index:10;border-top:1px solid var(--trait);
+  padding:36px var(--marge) 44px;background:rgba(6,7,11,.9);
+}
+.pied .rangee{display:flex;flex-wrap:wrap;gap:18px 34px;justify-content:space-between;align-items:flex-end}
+.pied p{font-size:15px;line-height:1.9;color:var(--gris);max-width:46ch}
+/* Cibles ≥ 44 px : les liens du pied faisaient 18 px de haut. Corrigé. */
+.pied a{display:inline-flex;align-items:center;min-height:44px;padding:0 2px;
+  color:var(--craie);box-shadow:inset 0 -1px 0 var(--trait-f)}
+.pied a:hover,.pied a:focus-visible{box-shadow:inset 0 -1px 0 var(--craie)}
+.chiffres{margin-top:24px;padding-top:20px;border-top:1px solid var(--trait);
+  display:flex;flex-wrap:wrap;gap:10px 26px;
+  font:400 12px/1.5 var(--mono);letter-spacing:.08em;color:var(--gris-b)}
+.signature{margin-top:22px;font:500 12px/1 var(--mono);letter-spacing:.18em;
+  text-transform:uppercase;color:var(--gris-b)}
+.signature b{color:var(--gris);font-weight:500}
+
+/* ── 15 · Révélation au défilement ────────────────────────────────── */
+.rv{opacity:0;transform:translateY(20px)}
+.rv.on{opacity:1;transform:none;
+  transition:opacity .85s cubic-bezier(.22,.61,.36,1),transform .85s cubic-bezier(.22,.61,.36,1)}
+.rv.d1{transition-delay:.09s}.rv.d2{transition-delay:.18s}.rv.d3{transition-delay:.27s}
+/* Trois filets de sécurité : sans JS, en secours, et sans animation. */
+html.sansjs .rv,html.secours .rv{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .rv{opacity:1;transform:none;transition:none}
+  .bandeau .ruban{animation:none}
+  .souris i{animation:none}
+}
+
+/* ── 16 · Repli sans WebGL : les six états, dessinés et empilés ───── */
+.planche{display:none}
+html.sansgl .planche,html.sansjs .planche{
+  display:flex;align-items:center;gap:20px;margin:0 0 34px;
+  padding:18px 20px;border:1px solid var(--trait);background:rgba(6,7,11,.7);
+}
+html.sansgl .planche svg,html.sansjs .planche svg{width:86px;height:86px;flex:0 0 auto;color:var(--accent-loc,var(--l0))}
+.planche .lg strong{display:block;font:400 19px/1.2 var(--ser);font-style:italic;color:var(--craie)}
+.planche .lg span{display:block;margin-top:6px;font:500 12px/1.4 var(--mono);
+  letter-spacing:.14em;text-transform:uppercase;color:var(--gris-b)}
+html.sansgl #scene,html.sansjs #scene{background:var(--encre)}
+html.sansgl #gl,html.sansjs #gl{display:none}
+html.sansgl #carton,html.sansjs #carton{display:none}
+html.sansgl .chap::before,html.sansjs .chap::before{display:none}
+html.sansgl .chap,html.sansjs .chap{min-height:0;padding-top:calc(var(--barre) + 6svh);padding-bottom:8svh}
+html.sansgl .col,html.sansjs .col{width:min(760px,100%);margin-inline:auto !important;text-align:left}
+html.sansgl #ch1,html.sansjs #ch1{min-height:auto}
+html.sansjs #burger{display:none}
+html.sansjs .liens{display:flex}
+
+/* ── 17 · Téléphone ───────────────────────────────────────────────── */
+@media (max-width:960px){
+  :root{--col:100%;--barre:58px}
+  .liens{display:none}
+  #burger{display:flex}
+  .chap{min-height:135svh;padding-left:var(--marge);padding-right:var(--marge)}
+  .chap.gauche::before,.chap.droite::before{display:none}
+  .chap.centre .col{text-align:left}
+  /* Le texte passe sur une plaque pleine : la forme reste derrière, lisible. */
+  .col{background:linear-gradient(180deg,rgba(6,7,11,.93) 0%,rgba(6,7,11,.88) 70%,rgba(6,7,11,.80) 100%);
+    border:1px solid var(--trait);padding:24px 20px}
+  #ch1 .col{text-align:center;background:linear-gradient(180deg,rgba(6,7,11,.86) 0%,rgba(6,7,11,.92) 60%)}
+  #ch1{justify-content:flex-end}
+  .bandeau{margin-left:-20px;margin-right:-20px;margin-top:26px}
+  .duo{grid-template-columns:1fr}
+  .valeurs article{grid-template-columns:1fr;gap:9px}
+  .maisons li{grid-template-columns:34px 1fr;gap:10px}
+  .maisons .vl{grid-column:2;text-align:left;margin-top:4px}
+  .compteurs{grid-template-columns:repeat(2,1fr)}
+  .media{margin-left:-20px;margin-right:-20px;border-left:0;border-right:0}
+  /* Sur téléphone la barre est trop étroite : le carton descend en pastille. */
+  #carton{top:auto;bottom:10px;left:50%;height:auto;justify-content:center;
+    padding:8px 14px;background:rgba(6,7,11,.90);border:1px solid var(--trait);border-radius:2px}
+  #carton .nom{font-size:15px}
+  #ch1{padding-bottom:62px}
+  .souris{padding:16px 0 4px}
+  .pied .rangee{flex-direction:column;align-items:flex-start}
+}
+@media (max-width:420px){
+  h1{font-size:clamp(38px,12vw,58px)}
+  .compteurs{grid-template-columns:1fr}
+  .labos li{flex:1 1 100%}
+}
+</style>
+</head>
+<body>
+
+<!-- Les six silhouettes : marqueur de chapitre, et repli si WebGL manque -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <g id="sig-0" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round">
+      <path d="M24 5.5c8.6-.4 15.9 5.2 17.6 12.9 1.6 7.4-2.4 15.4-9.6 19.6-7 4-16.4 3.4-21.4-2.2C5.4 30 4.2 20.5 8.4 13.6 11.9 7.8 17.6 5.8 24 5.5Z"/>
+      <path d="M14 20c3-2.4 7.4-2 10 .6 2.4 2.4 2 6.8-.6 9" opacity=".45"/>
+    </g>
+    <g id="sig-1" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round">
+      <path d="M24 5.5 41.5 14v20L24 42.5 6.5 34V14Z"/><path d="M6.5 14 24 22.5 41.5 14M24 22.5v20"/>
+    </g>
+    <g id="sig-2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round">
+      <path d="M4.5 43V22.5h16V9.5l23-4V43Z"/>
+      <path d="M25 15h4M34 14h4M25 22h4M34 21h4M25 29h4M34 28h4M9 28h7M9 35h7"/>
+    </g>
+    <g id="sig-3" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+      <circle cx="23" cy="17.5" r="9.5"/><path d="M32.5 17.5c0 10.5-3.6 18.6-11.5 25"/>
+    </g>
+    <g id="sig-4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round">
+      <path d="M4 26.5h40v5H4zM8.5 31.5V43M39.5 31.5V43"/>
+      <path d="M13 6h22M13 12.5h22M13 19h22" opacity=".62"/>
+    </g>
+    <g id="sig-5" fill="currentColor" stroke="none">
+      <circle cx="9" cy="12" r="1.9"/><circle cx="20" cy="7" r="1.3"/><circle cx="33" cy="13" r="2.1"/>
+      <circle cx="42" cy="8" r="1.1"/><circle cx="14" cy="24" r="1.5"/><circle cx="26" cy="21" r="2.3"/>
+      <circle cx="38" cy="27" r="1.4"/><circle cx="7" cy="34" r="1.2"/><circle cx="20" cy="36" r="1.9"/>
+      <circle cx="31" cy="40" r="1.3"/><circle cx="43" cy="37" r="1.7"/><circle cx="24" cy="30" r="1"/>
+    </g>
+  </defs>
+</svg>
+
+<!-- ═══ LA SCÈNE ═══ -->
+<div id="scene" aria-hidden="true"><canvas id="gl"></canvas></div>
+
+<!-- ═══ BARRE ═══ -->
+<header class="barre">
+  <a class="marque" href="#ch1" aria-label="Intégral Pharma, retour en haut">
+    <img src="../../assets/logo-web.png" alt="" width="120" height="22">
+    <b>Intégral Pharma</b>
+  </a>
+  <nav class="liens" aria-label="Navigation principale">
+    <a href="#groupe">Le groupe</a>
+    <a href="#reseau">Le réseau</a>
+    <a href="#metier">Le métier</a>
+    <a href="#valeurs">Nos valeurs</a>
+    <a class="ecrire" href="mailto:contact@integralpharma.fr">Nous écrire</a>
+  </nav>
+  <button id="burger" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="panneau"><span></span></button>
+</header>
+
+<div id="panneau" data-ouvert="0" role="dialog" aria-modal="true" aria-label="Menu">
+  <button id="fermer" aria-label="Fermer le menu">✕</button>
+  <a href="#groupe">Le groupe</a>
+  <a href="#reseau">Le réseau</a>
+  <a href="#metier">Le métier</a>
+  <a href="#valeurs">Nos valeurs</a>
+  <a href="mailto:contact@integralpharma.fr">Nous écrire</a>
+</div>
+
+<!-- ═══ CARTON D'ÉTAT ═══ -->
+<div id="carton" aria-hidden="true">
+  <svg class="sig" viewBox="0 0 48 48"><use href="#sig-0" id="cartonUse"></use></svg>
+  <span class="num" id="cartonNum">ÉTAT 01 / 06</span>
+  <span class="nom" id="cartonNom">la matière</span>
+</div>
+
+<main>
+
+<!-- ══════════ CHAPITRE 1 — LA MATIÈRE ══════════ -->
+<section class="chap centre" id="ch1" data-etat="0">
+  <div class="col">
+    <div class="planche"><svg viewBox="0 0 48 48"><use href="#sig-0"></use></svg>
+      <span class="lg"><strong>la matière</strong><span>État 01 sur 06</span></span></div>
+    <p class="surtitre rv">Groupe de grossistes-répartiteurs français indépendant</p>
+    <h1 class="rv d1">Neuf maisons.<span class="l2">Un seul nom.</span></h1>
+    <p class="txt rv d2">Chacune livre sa région depuis des années, avec ses équipes et ses
+      habitudes. Depuis 2006, elles avancent ensemble sous le nom d'Intégral Pharma — et votre
+      commande part toujours de la plus proche de votre comptoir.</p>
+    <div class="actions rv d3">
+      <a class="btn plein" href="#reseau">Découvrir le réseau <span class="fl">↓</span></a>
+      <a class="btn" href="mailto:contact@integralpharma.fr">Nous écrire <span class="fl">→</span></a>
+    </div>
+  </div>
+  <div class="bandeau rv" aria-hidden="true">
+    <div class="ruban">
+      <span>Indépendant</span><span>Neuf implantations</span><span>Un réseau national</span>
+      <span>Plus de 2 000 officines livrées</span><span>Confiance, Engagement, Respect</span>
+      <span>Une alternative aux grossistes historiques</span>
+      <span>Indépendant</span><span>Neuf implantations</span><span>Un réseau national</span>
+      <span>Plus de 2 000 officines livrées</span><span>Confiance, Engagement, Respect</span>
+      <span>Une alternative aux grossistes historiques</span>
+    </div>
+  </div>
+  <p class="souris"><i></i> Faites défiler — la forme ne s'arrête jamais</p>
+</section>
+
+<!-- ══════════ CHAPITRE 2 — LA BOÎTE ══════════ -->
+<section class="chap gauche" id="ch2" data-etat="1">
+  <div class="col">
+    <div class="planche"><svg viewBox="0 0 48 48"><use href="#sig-1"></use></svg>
+      <span class="lg"><strong>la boîte</strong><span>État 02 sur 06</span></span></div>
+    <span id="groupe" style="position:absolute;top:-90px"></span>
+    <p class="etiq rv">Notre histoire <i>la boîte</i></p>
+    <h2 class="rv d1">Rendre la marge<br><em>à l'officine française.</em></h2>
+    <p class="txt rv d2">C'est la raison d'être d'Intégral Pharma depuis 2006 : redistribuer
+      directement la marge aux officines françaises, en toute transparence, avec des prix nets
+      visibles sur facture.</p>
+    <p class="txt rv d2">Neuf implantations aujourd'hui, plus de deux mille officines livrées
+      chaque jour, et la même idée qu'au premier jour — <strong>un groupe de répartiteurs
+      indépendants qui a choisi de se mettre du côté du comptoir.</strong></p>
+
+    <div class="compteurs rv d3">
+      <div><b class="cpt" data-n="2006">2006</b><i>année de création</i></div>
+      <div><b class="cpt" data-n="9">9</b><i>implantations</i></div>
+      <div><b class="cpt" data-n="2000" data-suf=" +">2 000 +</b><i>officines livrées</i></div>
+      <div><b class="cpt" data-n="20">20</b><i>ans d'indépendance</i></div>
+    </div>
+
+    <figure class="media rv">
+      <img src="../../assets/siege-web.jpg" alt="Le siège du groupe Intégral Pharma, à Hyères."
+           width="1200" height="800" loading="lazy" decoding="async">
+      <figcaption>Le siège du groupe — Hyères, Var</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- ══════════ CHAPITRE 3 — LE BÂTIMENT ══════════ -->
+<section class="chap droite" id="ch3" data-etat="2">
+  <div class="col">
+    <div class="planche"><svg viewBox="0 0 48 48"><use href="#sig-2"></use></svg>
+      <span class="lg"><strong>le bâtiment</strong><span>État 03 sur 06</span></span></div>
+    <span id="reseau" style="position:absolute;top:-90px"></span>
+    <p class="etiq rv">Le réseau <i>le bâtiment</i></p>
+    <h2 class="rv d1">Neuf implantations.<br><em>Laquelle est la vôtre&nbsp;?</em></h2>
+    <p class="txt rv d2">C'est la seule question qui compte vraiment. Celle qui prépare votre
+      commande, qui vous livre chaque matin, et dont vous connaissez l'équipe par son prénom.</p>
+    <p class="txt rv d2">Les huit autres sont là pour qu'elle ne soit jamais prise au dépourvu —
+      <strong>de la Bretagne à la Méditerranée, le stock d'une maison est le stock de
+      toutes.</strong></p>
+  </div>
+</section>
+
+<!-- ══════════ CHAPITRE 4 — LE CHIFFRE NEUF ══════════ -->
+<section class="chap gauche" id="ch4" data-etat="3">
+  <div class="col">
+    <div class="planche"><svg viewBox="0 0 48 48"><use href="#sig-3"></use></svg>
+      <span class="lg"><strong>le chiffre neuf</strong><span>État 04 sur 06</span></span></div>
+    <p class="etiq rv">Le réseau <i>le chiffre neuf</i></p>
+    <h2 class="rv d1">Les <em>neuf</em> maisons.</h2>
+    <ul class="maisons rv d2">
+      <li><span class="n">01</span><span class="nm">Hyères Pharma<s>siège du groupe</s></span><span class="vl">Hyères<u>83</u></span></li>
+      <li><span class="n">02</span><span class="nm">SR Pharma</span><span class="vl">Palaiseau<u>91</u></span></li>
+      <li><span class="n">03</span><span class="nm">Mistral Santé Pharma</span><span class="vl">Flassans-sur-Issole<u>83</u></span></li>
+      <li><span class="n">04</span><span class="nm">Sud Ouest Pharma</span><span class="vl">Montayral<u>47</u></span></li>
+      <li><span class="n">05</span><span class="nm">Comptoir Pharmaceutique du Rhône</span><span class="vl">Saint-Maurice-l'Exil<u>38</u></span></li>
+      <li><span class="n">06</span><span class="nm">Escale Pharma</span><span class="vl">Chilly-Mazarin<u>91</u></span></li>
+      <li><span class="n">07</span><span class="nm">Ouest Pharma Services</span><span class="vl">Saint-Étienne-de-Montluc<u>44</u></span></li>
+      <li><span class="n">08</span><span class="nm">Pharm'Occitanie Services</span><span class="vl">Villeneuve-lès-Béziers<u>34</u></span></li>
+      <li><span class="n">09</span><span class="nm">Sud Est Pharma</span><span class="vl">Le Cannet-des-Maures<u>83</u></span></li>
+    </ul>
+    <p class="note rv d3">Et à l'Est, notre partenaire <b>Pharmest</b> (Metz, 57) prolonge le
+      maillage — neuf implantations et un partenaire.</p>
+  </div>
+</section>
+
+<!-- ══════════ CHAPITRE 5 — LE COMPTOIR ══════════ -->
+<section class="chap droite" id="ch5" data-etat="4">
+  <div class="col">
+    <div class="planche"><svg viewBox="0 0 48 48"><use href="#sig-4"></use></svg>
+      <span class="lg"><strong>le comptoir</strong><span>État 05 sur 06</span></span></div>
+    <span id="metier" style="position:absolute;top:-90px"></span>
+    <p class="etiq rv">Le métier <i>le comptoir</i></p>
+    <h2 class="rv d1">Ce qui se passe entre votre commande<br><em>et votre comptoir.</em></h2>
+    <p class="txt rv d2">Quelques heures, quatre métiers, et une chaîne qui ne s'arrête jamais.
+      Référencer, stocker, préparer, livrer : c'est invisible depuis l'officine, et c'est tout
+      notre travail.</p>
+
+    <div class="temps rv d3">
+      <article><h3><u>01</u> Le référencement</h3><p>Le groupe référence pour ses neuf maisons à
+        la fois : un même catalogue, tenu à jour, disponible dans toutes les implantations. C'est
+        ce qui permet à une maison de taille humaine de proposer la profondeur de gamme d'un
+        réseau national.</p></article>
+      <article><h3><u>02</u> La disponibilité</h3><p>Des stocks répartis sur neuf implantations,
+        au plus près de votre officine. Quand le comptoir a besoin, le réseau répond — et quand
+        une référence manque quelque part, elle existe souvent ailleurs dans le réseau.</p></article>
+      <article><h3><u>03</u> La préparation</h3><p>Chaque commande est préparée dans
+        l'implantation la plus proche de chez vous, par une équipe qui connaît votre officine et
+        ses saisons.</p></article>
+      <article><h3><u>04</u> La livraison</h3><p>Tous les jours, les tournées partent vers les
+        officines. La régularité d'un service tenu — c'est elle qui fait la confiance, pas les
+        promesses.</p></article>
+    </div>
+
+    <figure class="media rv" data-video="../../assets/hero.mp4">
+      <video muted loop playsinline autoplay preload="none" width="1280" height="720"
+             poster="../../assets/siege-solaire.jpg" aria-label="La chaîne logistique du groupe en mouvement"></video>
+      <figcaption>La chaîne, entre la commande et le comptoir</figcaption>
+    </figure>
+
+    <p class="txt rv" style="margin-top:26px">Et quand la vie de votre officine change —
+      transfert, agrandissement, cession de parts — <strong>votre interlocuteur ajuste
+      l'approvisionnement avec vous, sans à-coup au comptoir.</strong></p>
+
+    <div class="duo rv">
+      <section>
+        <p class="etiq" style="margin-bottom:14px">La centrale</p>
+        <h3>Et pour tout ce qui n'est pas le médicament.</h3>
+        <p>Notre centrale de parapharmacie référence pour l'officine plus de 14 000 produits et
+          plus de 480 marques.</p>
+        <p>C'est une structure à part, avec son propre fonctionnement — sa commande, sa
+          livraison — et la même exigence que le reste du groupe.</p>
+        <div class="paires">
+          <div><b class="cpt" data-n="14000" data-suf=" +">14 000 +</b><i>références</i></div>
+          <div><b class="cpt" data-n="480" data-suf=" +">480 +</b><i>marques</i></div>
+        </div>
+      </section>
+      <section>
+        <p class="etiq" style="margin-bottom:14px">Vos factures</p>
+        <h3>Elles arrivent déjà là où vous les gérez.</h3>
+        <p>Nous sommes connectés à Digipharmacie : vos factures Intégral s'y retrouvent
+          automatiquement, avec celles de vos autres fournisseurs.</p>
+        <p><strong>Rien à saisir, rien à classer, rien à réclamer.</strong></p>
+      </section>
+    </div>
+
+    <span id="valeurs" style="position:relative;display:block;height:1px;margin-top:56px"></span>
+    <p class="etiq rv">Nos valeurs <i>le comptoir</i></p>
+    <h2 class="rv d1" style="font-size:clamp(28px,3.8vw,50px)">Trois mots qui se vérifient
+      <em>au téléphone.</em></h2>
+    <div class="valeurs rv d2">
+      <article><h3>Confiance</h3><p>La personne qui décroche connaît votre officine, vos saisons
+        et vos habitudes.</p></article>
+      <article><h3>Engagement</h3><p>C'est la même d'une année sur l'autre. Dans ce métier, c'est
+        devenu rare.</p></article>
+      <article><h3>Respect</h3><p>Elle ne vous vendra pas ce dont vous n'avez pas besoin — parce
+        qu'elle vous reverra le mois suivant, et l'année d'après.</p></article>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ CHAPITRE 6 — LA DISPERSION ══════════ -->
+<section class="chap centre" id="ch6" data-etat="5">
+  <div class="col">
+    <div class="planche"><svg viewBox="0 0 48 48"><use href="#sig-5"></use></svg>
+      <span class="lg"><strong>la dispersion</strong><span>État 06 sur 06</span></span></div>
+
+    <p class="etiq rv" style="justify-content:center">Nos partenaires <i>la dispersion</i></p>
+    <h2 class="rv d1" style="font-size:clamp(28px,3.6vw,46px)">Les laboratoires
+      <em>qui nous font confiance.</em></h2>
+    <ul class="labos rv d2">
+      <li>EG Labo</li><li>Zentiva</li><li>Zydus</li><li>Viatris</li><li>ITP</li><li>Santestat</li>
+    </ul>
+
+    <p class="etiq rv" style="justify-content:center;margin-top:64px">Nous rejoindre</p>
+    <h2 class="rv d1" style="font-size:clamp(28px,3.6vw,46px)">Neuf implantations
+      <em>qui embauchent.</em></h2>
+    <p class="txt rv d2" style="margin-inline:auto">Préparateur-chauffeur, technicien
+      approvisionnement, commercial, pharmacien responsable : les métiers de la répartition
+      s'apprennent chez nous.</p>
+    <ul class="villes rv d3" style="justify-content:center">
+      <li>Hyères (83)</li><li>Villeneuve-lès-Béziers (34)</li><li>Montayral (47)</li>
+      <li>Saint-Maurice-l'Exil (38)</li>
+    </ul>
+    <div class="actions rv d3" style="justify-content:center">
+      <a class="btn" href="https://www.integralpharma.fr/jobs" target="_blank" rel="noopener">
+        Voir les offres <span class="fl">↗</span></a>
+    </div>
+
+    <span id="contact" style="position:relative;display:block;height:1px;margin-top:72px"></span>
+    <h2 class="rv d1">Posez-nous la question<br><em>qui vous intéresse.</em></h2>
+    <p class="txt rv d2" style="margin-inline:auto">Sur nos conditions, sur nos délais, sur la
+      façon dont nous travaillons. Vous aurez une réponse claire, et le nom de l'implantation qui
+      livre votre secteur.</p>
+    <a class="courriel rv d3" href="mailto:contact@integralpharma.fr">contact@integralpharma.fr
+      <span class="fl">→</span></a>
+  </div>
+</section>
+
+</main>
+
+<footer class="pied">
+  <div class="rangee">
+    <p><strong style="color:var(--craie)">Intégral Pharma</strong><br>
+      758 chemin de la Source, ZI Saint-Martin, 83400 Hyères<br>
+      <a href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a> ·
+      <a href="https://www.integralpharma.fr/mentions-l%C3%A9gales" target="_blank" rel="noopener">Mentions légales</a>
+    </p>
+    <p style="text-align:right">Groupe de grossistes-répartiteurs<br>français indépendant</p>
+  </div>
+  <div class="chiffres">
+    <span>9 implantations</span><span>plus de 2 000 officines livrées</span>
+    <span>indépendant depuis 2006</span>
+  </div>
+  <p class="signature">Maquette <b>32 · La métamorphose</b> — une seule forme, six états, une prise</p>
+</footer>
+
+<script>
+(function(){
+'use strict';
+
+var racine = document.documentElement;
+var secours = setTimeout(function(){ racine.classList.add('secours'); }, 3500);
+
+/* ══════════════════════════════════════════════════════════════════
+   1 · Petits outils
+   ══════════════════════════════════════════════════════════════════ */
+var TAU = Math.PI * 2;
+function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+function lissee(t){ t = clamp(t,0,1); return t*t*(3-2*t); }
+function melange(a,b,t){ return a+(b-a)*t; }
+
+/* Générateur pseudo-aléatoire déterministe : la même forme à chaque visite. */
+function grn(graine){
+  return function(){
+    graine |= 0; graine = graine + 0x6D2B79F5 | 0;
+    var t = Math.imul(graine ^ graine >>> 15, 1 | graine);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+function hh(x,y,z){ var n = Math.sin(x*127.1 + y*311.7 + z*74.7) * 43758.5453123; return n - Math.floor(n); }
+function bruit(x,y,z){
+  var xi = Math.floor(x), yi = Math.floor(y), zi = Math.floor(z);
+  var xf = x-xi, yf = y-yi, zf = z-zi;
+  var u = xf*xf*(3-2*xf), v = yf*yf*(3-2*yf), w = zf*zf*(3-2*zf);
+  function L(a,b,t){ return a+(b-a)*t; }
+  return L(
+    L(L(hh(xi,yi,zi),hh(xi+1,yi,zi),u), L(hh(xi,yi+1,zi),hh(xi+1,yi+1,zi),u), v),
+    L(L(hh(xi,yi,zi+1),hh(xi+1,yi,zi+1),u), L(hh(xi,yi+1,zi+1),hh(xi+1,yi+1,zi+1),u), v), w);
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   2 · Les six états de la forme
+   Chaque état produit exactement N points. Ils sont ensuite RANGÉS
+   par le même critère (angle autour de l'axe de la caméra, puis
+   distance au centre) : le point n° i occupe donc la même place
+   relative dans les six états. C'est ce classement — et lui seul —
+   qui empêche la métamorphose de tourner à la bouillie.
+   ══════════════════════════════════════════════════════════════════ */
+
+/* Écrivain de points : remplit un Float32Array en gardant le curseur. */
+function plume(tab){
+  var k = 0;
+  return {
+    p: function(x,y,z){ tab[k++]=x; tab[k++]=y; tab[k++]=z; },
+    reste: function(){ return (tab.length - k) / 3; },
+    faits: function(){ return k/3; }
+  };
+}
+
+/* Un pavé : surfaces pondérées par leur aire + arêtes soulignées.
+   Souligner les arêtes est ce qui rend un volume RECONNAISSABLE en points. */
+function pave(P, R, cx,cy,cz, hx,hy,hz, n, tauxArete){
+  var nA = Math.round(n * (tauxArete === undefined ? 0.20 : tauxArete));
+  var nF = n - nA;
+  var aires = [hy*hz, hy*hz, hx*hz, hx*hz, hx*hy, hx*hy];
+  var tot = aires[0]+aires[1]+aires[2]+aires[3]+aires[4]+aires[5];
+  var i, r, s, a, b, f;
+  for(i=0;i<nF;i++){
+    r = R()*tot; f = 0;
+    while(f<5 && r>aires[f]){ r -= aires[f]; f++; }
+    a = R()*2-1; b = R()*2-1;
+    if(f===0) P(cx-hx, cy+a*hy, cz+b*hz);
+    else if(f===1) P(cx+hx, cy+a*hy, cz+b*hz);
+    else if(f===2) P(cx+a*hx, cy-hy, cz+b*hz);
+    else if(f===3) P(cx+a*hx, cy+hy, cz+b*hz);
+    else if(f===4) P(cx+a*hx, cy+b*hy, cz-hz);
+    else P(cx+a*hx, cy+b*hy, cz+hz);
+  }
+  /* 12 arêtes, tirées au sort proportionnellement à leur longueur */
+  var ar = [
+    [-1,-1,0,'z'],[1,-1,0,'z'],[-1,1,0,'z'],[1,1,0,'z'],
+    [-1,0,-1,'y'],[1,0,-1,'y'],[-1,0,1,'y'],[1,0,1,'y'],
+    [0,-1,-1,'x'],[0,1,-1,'x'],[0,-1,1,'x'],[0,1,1,'x']
+  ];
+  var lg = ar.map(function(e){ return e[3]==='x'?hx:(e[3]==='y'?hy:hz); });
+  var lt = lg.reduce(function(s,v){ return s+v; },0);
+  for(i=0;i<nA;i++){
+    r = R()*lt; var j=0;
+    while(j<11 && r>lg[j]){ r -= lg[j]; j++; }
+    var e = ar[j], t = R()*2-1, jx=(R()-.5)*0.012, jy=(R()-.5)*0.012, jz=(R()-.5)*0.012;
+    var x = cx + e[0]*hx, y = cy + e[1]*hy, z = cz + e[2]*hz;
+    if(e[3]==='x') x = cx + t*hx; else if(e[3]==='y') y = cy + t*hy; else z = cz + t*hz;
+    P(x+jx, y+jy, z+jz);
+  }
+}
+
+/* Rotation d'un état entier (lacet puis tangage) : on choisit l'angle de vue. */
+function oriente(tab, lacet, tangage){
+  var cl = Math.cos(lacet), sl = Math.sin(lacet);
+  var ct = Math.cos(tangage), st = Math.sin(tangage);
+  for(var i=0;i<tab.length;i+=3){
+    var x = tab[i], y = tab[i+1], z = tab[i+2];
+    var x1 =  cl*x + sl*z, z1 = -sl*x + cl*z;
+    var y2 =  ct*y - st*z1, z2 = st*y + ct*z1;
+    tab[i]=x1; tab[i+1]=y2; tab[i+2]=z2;
+  }
+}
+
+/* ── État 0 · LA MATIÈRE ─────────────────────────────────────────── */
+function etatMatiere(N){
+  var t = new Float32Array(N*3), P = plume(t).p, R = grn(7717);
+  for(var i=0;i<N;i++){
+    var z = R()*2-1, a = R()*TAU, s = Math.sqrt(1-z*z);
+    var dx = s*Math.cos(a), dy = z, dz = s*Math.sin(a);
+    var r = 1.02
+      + 0.30*(bruit(dx*2.1+5, dy*2.1+9, dz*2.1+2)-0.5)
+      + 0.14*(bruit(dx*5.3+1, dy*5.3+3, dz*5.3+7)-0.5)
+      + 0.06*(bruit(dx*11+2, dy*11+6, dz*11+4)-0.5);
+    if(R() < 0.26) r *= 0.30 + 0.62*Math.sqrt(R());   /* un peu de chair à l'intérieur */
+    P(dx*r*1.16, dy*r*1.16, dz*r*1.16);
+  }
+  return t;
+}
+
+/* ── État 1 · LA BOÎTE ───────────────────────────────────────────── */
+function etatBoite(N){
+  var t = new Float32Array(N*3), P = plume(t).p, R = grn(3121);
+  pave(P, R, 0,0,0, 0.54, 0.86, 0.27, N, 0.24);
+  oriente(t, -0.42, 0.17);
+  return t;
+}
+
+/* ── État 2 · LE BÂTIMENT ────────────────────────────────────────── */
+function etatBatiment(N){
+  var t = new Float32Array(N*3), pl = plume(t), P = pl.p, R = grn(9059);
+  /* Les fenêtres : une trame RÉGULIÈRE, c'est elle qui dit « bâtiment ».
+     ⚠️ Leur part doit rester faible. À 22 % elles étaient dix-huit fois plus
+     denses que les murs : en fondu additif elles saturaient et le volume
+     disparaissait — le bâtiment ne se lisait plus. Défaut vu à l'écran. */
+  var nFen = Math.round(N*0.055);
+  var cols = 9, rgs = 6, parFen = Math.max(6, Math.floor(nFen/(cols*rgs)));
+  var fx, fy, k;
+  for(var c=0;c<cols;c++){
+    for(var g=0;g<rgs;g++){
+      fx = -0.88 + c*(1.76/(cols-1));
+      fy = -0.42 + g*(1.06/(rgs-1));
+      for(k=0;k<parFen;k++){
+        P(fx + (R()-0.5)*0.105, fy + (R()-0.5)*0.075, 0.455 + (R()-0.5)*0.010);
+      }
+    }
+  }
+  var reste = pl.reste();
+  /* corps principal */
+  pave(P, R, 0, -0.06, 0, 1.06, 0.72, 0.45, Math.round(reste*0.44), 0.38);
+  /* tour, décalée à droite */
+  pave(P, R, 0.72, 0.66, -0.04, 0.34, 1.02, 0.38, Math.round(reste*0.30), 0.40);
+  /* dalle et parvis */
+  pave(P, R, 0, -0.86, 0.06, 1.42, 0.09, 0.60, Math.round(reste*0.16), 0.34);
+  /* auvent d'entrée */
+  var fait = pl.faits(), manque = N - fait;
+  pave(P, R, -0.62, -0.52, 0.60, 0.34, 0.03, 0.20, manque, 0.34);
+  oriente(t, -0.30, 0.13);
+  return t;
+}
+
+/* ── État 3 · LE CHIFFRE NEUF ────────────────────────────────────── */
+/* Tracé procédural : un anneau + une hampe qui descend et se recourbe.
+   Pas de police à charger, donc pas de « 9 » qui tomberait en Times. */
+function etatNeuf(N){
+  var t = new Float32Array(N*3), pl = plume(t), P = pl.p, R = grn(5507);
+  var CY = 0.44, RE = 0.62, RI = 0.30, EP = 0.115;
+
+  function hampe(u){                       /* Bézier quadratique */
+    var x0=0.585, y0=0.40, x1=0.545, y1=-0.52, x2=-0.02, y2=-1.03;
+    var m = 1-u;
+    return [m*m*x0 + 2*m*u*x1 + u*u*x2, m*m*y0 + 2*m*u*y1 + u*u*y2];
+  }
+  var nAnn = Math.round(N*0.50), nHam = Math.round(N*0.30);
+  var i, a, r, u, c, x, y, z, ang, w;
+
+  for(i=0;i<nAnn;i++){                     /* anneau plein, faces + tranche */
+    a = R()*TAU;
+    r = Math.sqrt(melange(RI*RI, RE*RE, R()));
+    x = Math.cos(a)*r; y = CY + Math.sin(a)*r;
+    if(R() < 0.34){ z = (R()*2-1)*EP; r = (R()<0.5?RI:RE); x = Math.cos(a)*r; y = CY + Math.sin(a)*r; }
+    else z = (R()<0.5 ? -EP : EP) + (R()-0.5)*0.014;
+    P(x, y, z);
+  }
+  for(i=0;i<nHam;i++){                     /* hampe */
+    u = R(); c = hampe(u);
+    w = melange(0.155, 0.132, u);
+    ang = R()*TAU; r = Math.sqrt(R())*w;
+    x = c[0] + Math.cos(ang)*r; y = c[1] + Math.sin(ang)*r*0.86;
+    z = (R()<0.5 ? -EP : EP) + (R()-0.5)*0.014;
+    if(R() < 0.30) z = (R()*2-1)*EP;
+    P(x, y, z);
+  }
+  /* Le contour, appuyé : c'est ce qui rend le chiffre net à distance. */
+  var manque = pl.reste();
+  for(i=0;i<manque;i++){
+    if(R() < 0.62){ a = R()*TAU; r = (R()<0.55?RE:RI);
+      P(Math.cos(a)*r, CY + Math.sin(a)*r, (R()*2-1)*EP); }
+    else { u = R(); c = hampe(u); w = melange(0.155,0.132,u);
+      ang = (R()<0.5? 1 : -1) * (0.35 + R()*2.4);
+      P(c[0] + Math.cos(ang)*w, c[1] + Math.sin(ang)*w*0.86, (R()*2-1)*EP); }
+  }
+  for(i=0;i<t.length;i+=3){ t[i]*=1.30; t[i+1]*=1.30; t[i+2]*=1.30; }
+  oriente(t, -0.10, 0.03);
+  return t;
+}
+
+/* ── État 4 · LE COMPTOIR ────────────────────────────────────────── */
+function etatComptoir(N){
+  var t = new Float32Array(N*3), pl = plume(t), P = pl.p, R = grn(2287);
+  pave(P, R,  0.00,  0.06,  0.02, 1.22, 0.075, 0.44, Math.round(N*0.22), 0.30); /* plateau */
+  pave(P, R,  0.00, -0.46,  0.40, 1.20, 0.520, 0.05, Math.round(N*0.18), 0.26); /* face avant */
+  pave(P, R, -1.17, -0.46,  0.02, 0.03, 0.520, 0.40, Math.round(N*0.05), 0.30); /* joue gauche */
+  pave(P, R,  1.17, -0.46,  0.02, 0.03, 0.520, 0.40, Math.round(N*0.05), 0.30); /* joue droite */
+  pave(P, R,  0.00,  0.32, -0.72, 1.02, 0.035, 0.17, Math.round(N*0.09), 0.30); /* étagère 1 */
+  pave(P, R,  0.00,  0.70, -0.72, 1.02, 0.035, 0.17, Math.round(N*0.09), 0.30); /* étagère 2 */
+  pave(P, R,  0.00,  1.08, -0.72, 1.02, 0.035, 0.17, Math.round(N*0.09), 0.30); /* étagère 3 */
+  pave(P, R, -1.00,  0.62, -0.72, 0.035, 0.62, 0.17, Math.round(N*0.05), 0.30); /* montant g. */
+  pave(P, R,  1.00,  0.62, -0.72, 0.035, 0.62, 0.17, Math.round(N*0.05), 0.30); /* montant d. */
+  var manque = pl.reste();                                                       /* sol */
+  for(var i=0;i<manque;i++) P((R()*2-1)*1.70, -1.00 + (R()-0.5)*0.02, -0.95 + R()*1.55);
+  oriente(t, -0.26, 0.09);
+  return t;
+}
+
+/* ── État 5 · LA DISPERSION ──────────────────────────────────────── */
+function etatDispersion(N){
+  var t = new Float32Array(N*3), P = plume(t).p, R = grn(8863);
+  for(var i=0;i<N;i++){
+    var z = R()*2-1, a = R()*TAU, s = Math.sqrt(1-z*z);
+    var d = 0.55 + 3.30*Math.pow(R(), 0.55);
+    if(R() < 0.14) d = 0.28 + R()*0.45;            /* un noyau reste : rien ne disparaît */
+    var y = z*d + 0.85*Math.pow(R(), 2.2);
+    P(s*Math.cos(a)*d*1.25, y, s*Math.sin(a)*d*0.85);
+  }
+  return t;
+}
+
+/* Mise au cadre. Sans elle, la boîte fait 1,2 de large et le comptoir 3,4 :
+   la forme semble grandir et rapetisser d'un chapitre à l'autre, et les
+   grands états sortent de l'écran. On ramène les six au même encombrement,
+   mesuré au 98e centile pour qu'un point égaré ne commande pas l'échelle. */
+function cadre(tab, N, cible){
+  var m = new Float64Array(N), i;
+  for(i=0;i<N;i++){
+    var x = Math.abs(tab[i*3]), y = Math.abs(tab[i*3+1])*1.18;
+    m[i] = x > y ? x : y;
+  }
+  m.sort();
+  var ref = m[Math.floor(N*0.98)] || 1;
+  var k = cible / ref;
+  for(i=0;i<tab.length;i++) tab[i] *= k;
+  return tab;
+}
+
+/* ⚠️ Éparpillement — corrige un vrai défaut, vu à l'écran.
+   Le classement ci-dessous range les points par angle. En cas de baisse de
+   qualité on ne dessine que les N premiers : on retirait donc une PART DE
+   TARTE entière de la forme. Le bâtiment perdait tout son corps de gauche.
+   On applique aux six états la MÊME permutation en pas fixe : la continuité
+   est intacte (le point n° i reste le point n° i partout), mais n'importe
+   quel début de liste est désormais un échantillon réparti sur toute la forme. */
+function eparpille(etats, N){
+  function pgcd(a,b){ while(b){ var t=a%b; a=b; b=t; } return a; }
+  var pas = 0, cand = [30011, 27449, 22093, 16811, 10007, 7919];
+  for(var c=0;c<cand.length;c++){ if(pgcd(cand[c], N) === 1){ pas = cand[c]; break; } }
+  if(!pas) return etats;                       /* aucun pas premier avec N : on ne touche à rien */
+  var ordre = new Int32Array(N), k;
+  for(k=0;k<N;k++) ordre[k] = (k*pas) % N;
+  return etats.map(function(t){
+    var o = new Float32Array(N*3);
+    for(k=0;k<N;k++){ var j = ordre[k];
+      o[k*3]=t[j*3]; o[k*3+1]=t[j*3+1]; o[k*3+2]=t[j*3+2]; }
+    return o;
+  });
+}
+
+/* Classement commun — la clef de la continuité. */
+function range(tab, N){
+  var clefs = new Float64Array(N), i, x, y, rmax = 0.0001;
+  for(i=0;i<N;i++){ x=tab[i*3]; y=tab[i*3+1]; var r=Math.sqrt(x*x+y*y); if(r>rmax) rmax=r; }
+  for(i=0;i<N;i++){
+    x = tab[i*3]; y = tab[i*3+1];
+    var a = Math.atan2(y,x); if(a<0) a += TAU;
+    var sa = Math.min(511, (a/TAU*512)|0);
+    var sr = Math.min(63, (Math.sqrt(x*x+y*y)/rmax*64)|0);
+    clefs[i] = (sa*64 + sr)*65536 + i;
+  }
+  clefs.sort();
+  var out = new Float32Array(N*3);
+  for(i=0;i<N;i++){
+    var j = clefs[i] % 65536;
+    out[i*3] = tab[j*3]; out[i*3+1] = tab[j*3+1]; out[i*3+2] = tab[j*3+2];
+  }
+  return out;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   3 · Les chapitres — et la lumière qui va avec
+   ══════════════════════════════════════════════════════════════════ */
+/* dec = décalage à l'écran, en coordonnées normalisées : la forme se range
+   du côté opposé au texte. ech = ajustement d'auteur APRÈS la mise au cadre. */
+var CHAPS = [
+  { nom:'la matière',      col:[0.56,0.71,1.00], dec:[ 0.00, 0.02], ech:1.02, lacet: 0.00, gain:0.90 },
+  { nom:'la boîte',        col:[0.30,0.55,1.00], dec:[ 0.36, 0.14], ech:0.94, lacet: 0.22, gain:0.74 },
+  { nom:'le bâtiment',     col:[1.00,0.70,0.37], dec:[-0.34, 0.13], ech:0.94, lacet:-0.16, gain:1.30 },
+  { nom:'le chiffre neuf', col:[0.35,0.88,1.00], dec:[ 0.36, 0.14], ech:0.94, lacet: 0.08, gain:0.82 },
+  { nom:'le comptoir',     col:[1.00,0.85,0.66], dec:[-0.34, 0.12], ech:0.96, lacet:-0.22, gain:1.28 },
+  { nom:'la dispersion',   col:[0.79,0.83,1.00], dec:[ 0.00, 0.04], ech:1.85, lacet: 0.14, gain:1.30 }
+];
+var CSSCOL = ['--l0','--l1','--l2','--l3','--l4','--l5'];
+
+/* ══════════════════════════════════════════════════════════════════
+   4 · Le moteur WebGL
+   ══════════════════════════════════════════════════════════════════ */
+var toile = document.getElementById('gl');
+var gl = null, prog = null, progFond = null, marche = false;
+try{
+  var opts = { alpha:false, antialias:false, depth:false, stencil:false,
+               powerPreference:'high-performance', preserveDrawingBuffer:false,
+               failIfMajorPerformanceCaveat:false };
+  gl = toile.getContext('webgl2', opts) || toile.getContext('webgl', opts)
+       || toile.getContext('experimental-webgl', opts);
+}catch(e){ gl = null; }
+
+var VS = [
+'attribute vec3 aP0; attribute vec3 aP1; attribute vec3 aP2;',
+'attribute vec3 aP3; attribute vec3 aP4; attribute vec3 aP5;',
+'attribute vec3 aG;',
+'uniform vec4 uWa; uniform vec2 uWb;',
+'uniform mat4 uProj; uniform mat4 uVue;',
+'uniform float uTemps; uniform float uPx; uniform float uEch;',
+'uniform vec2 uDec; uniform vec3 uLum; uniform vec3 uColA; uniform vec3 uColB;',
+'uniform float uDisp; uniform float uGain;',
+'varying vec3 vCol; varying float vA;',
+'void main(){',
+'  vec3 p = aP0*uWa.x + aP1*uWa.y + aP2*uWa.z + aP3*uWa.w + aP4*uWb.x + aP5*uWb.y;',
+'  float ph = aG.x*6.2831853 + uTemps*0.85;',
+'  vec3 n = normalize(p + vec3(0.0001));',
+'  p += n * (sin(ph)*0.016 + 0.010*aG.y);',
+'  p *= uEch;',
+'  vec4 mv = uVue * vec4(p, 1.0);',
+'  vec4 cl = uProj * mv;',
+'  cl.xy += uDec * cl.w;',
+'  gl_Position = cl;',
+'  vec3 vl = normalize(uLum - p);',
+'  float lam = clamp(dot(n, vl), 0.0, 1.0);',
+'  float bord = 1.0 - abs(n.z);',
+'  float e = (0.64 + 0.52*pow(lam, 1.10) + 0.16*pow(bord, 3.0)) * uGain;',
+'  vCol = mix(uColA, uColB, clamp(pow(lam,1.1) + 0.18*aG.z, 0.0, 1.0)) * e;',
+'  float taille = uPx * (0.66 + 0.80*aG.y) / max(0.25, -mv.z);',
+'  gl_PointSize = clamp(taille, 0.80, 6.0);',
+'  vA = (0.21 + 0.32*aG.z) * (1.0 - uDisp*0.55*aG.x);',
+'}'].join('\n');
+
+var FS = [
+'precision mediump float;',
+'varying vec3 vCol; varying float vA;',
+'void main(){',
+'  vec2 c = gl_PointCoord - 0.5;',
+'  float d = dot(c, c);',
+'  if(d > 0.25) discard;',
+'  float a = smoothstep(0.25, 0.015, d);',
+'  gl_FragColor = vec4(vCol, a * vA);',
+'}'].join('\n');
+
+var VSF = [
+'attribute vec2 aXY;',
+'void main(){ gl_Position = vec4(aXY, 0.0, 1.0); }'].join('\n');
+
+var FSF = [
+'precision mediump float;',
+'uniform vec2 uRes; uniform vec2 uC; uniform vec3 uCol;',
+'void main(){',
+'  vec2 uv = gl_FragCoord.xy / uRes;',
+'  float asp = uRes.x / uRes.y;',
+'  vec2 a = vec2((uv.x - uC.x)*asp, uv.y - uC.y);',
+'  float g = exp(-dot(a,a)*2.0);',
+'  vec3 base = vec3(0.0225, 0.0265, 0.0420);',
+/* La chambre reste froide même quand la lumière est ambrée : sinon toute
+   la page vire au brun et le texte perd son contraste. Défaut vu à l'écran. */
+'  vec3 teinte = mix(uCol, vec3(0.42, 0.52, 0.82), 0.58);',
+'  vec3 col = base + teinte*g*0.16 + vec3(0.009,0.011,0.022)*(1.0-uv.y);',
+'  float n = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898,78.233)))*43758.5453);',
+'  col += (n - 0.5)*0.014;',                 /* grain : coupe le cerclage du dégradé */
+'  gl_FragColor = vec4(col, 1.0);',
+'}'].join('\n');
+
+function compile(src, type){
+  var s = gl.createShader(type);
+  gl.shaderSource(s, src); gl.compileShader(s);
+  if(!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
+  return s;
+}
+function lier(vs, fs){
+  var p = gl.createProgram();
+  gl.attachShader(p, compile(vs, gl.VERTEX_SHADER));
+  gl.attachShader(p, compile(fs, gl.FRAGMENT_SHADER));
+  gl.linkProgram(p);
+  if(!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+  return p;
+}
+
+/* Matrices — juste ce qu'il faut, écrit à la main. */
+function perspective(fov, asp, n, f){
+  var t = 1/Math.tan(fov/2);
+  return new Float32Array([t/asp,0,0,0, 0,t,0,0, 0,0,(f+n)/(n-f),-1, 0,0,2*f*n/(n-f),0]);
+}
+function vue(camZ, lacet, tangage, cibleY){
+  var cl=Math.cos(lacet), sl=Math.sin(lacet), ct=Math.cos(tangage), st=Math.sin(tangage);
+  var Ry = [cl,0,-sl, 0,1,0, sl,0,cl];
+  var Rx = [1,0,0, 0,ct,st, 0,-st,ct];
+  var M = new Float32Array(16), i, j, k;
+  var R = new Array(9);
+  for(i=0;i<3;i++) for(j=0;j<3;j++){
+    var s=0; for(k=0;k<3;k++) s += Rx[i*3+k]*Ry[k*3+j];
+    R[i*3+j]=s;
+  }
+  M[0]=R[0]; M[1]=R[3]; M[2]=R[6];  M[3]=0;
+  M[4]=R[1]; M[5]=R[4]; M[6]=R[7];  M[7]=0;
+  M[8]=R[2]; M[9]=R[5]; M[10]=R[8]; M[11]=0;
+  M[12]=0; M[13]=-cibleY; M[14]=-camZ; M[15]=1;
+  return M;
+}
+
+var N = 0, tampons = [], locP = [], locFond = 0, tamponG = null, locG = 0;
+var nDessin = 0, U = {}, UF = {}, aFond = null;
+
+function prepare(){
+  if(!gl) throw new Error('pas de contexte');
+  prog = lier(VS, FS);
+  progFond = lier(VSF, FSF);
+
+  var petit = Math.min(window.innerWidth, window.innerHeight) < 760 || window.innerWidth < 900;
+  N = petit ? 20000 : 52000;
+
+  var brut = [ etatMatiere(N), etatBoite(N), etatBatiment(N), etatNeuf(N),
+               etatComptoir(N), etatDispersion(N) ];
+  var etats = eparpille(brut.map(function(t){ return range(cadre(t, N, 1.05), N); }), N);
+
+  gl.useProgram(prog);
+  for(var s=0;s<6;s++){
+    var b = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, b);
+    gl.bufferData(gl.ARRAY_BUFFER, etats[s], gl.STATIC_DRAW);
+    var loc = gl.getAttribLocation(prog, 'aP'+s);
+    gl.enableVertexAttribArray(loc);
+    gl.vertexAttribPointer(loc, 3, gl.FLOAT, false, 0, 0);
+    tampons.push(b); locP.push(loc);
+  }
+  /* Graines : phase de respiration, taille, teinte. */
+  var g = new Float32Array(N*3), R = grn(4242);
+  for(var i=0;i<N;i++){ g[i*3]=R(); g[i*3+1]=R(); g[i*3+2]=R(); }
+  tamponG = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, tamponG);
+  gl.bufferData(gl.ARRAY_BUFFER, g, gl.STATIC_DRAW);
+  locG = gl.getAttribLocation(prog, 'aG');
+  gl.enableVertexAttribArray(locG);
+  gl.vertexAttribPointer(locG, 3, gl.FLOAT, false, 0, 0);
+
+  ['uWa','uWb','uProj','uVue','uTemps','uPx','uEch','uDec','uLum','uColA','uColB','uDisp','uGain']
+    .forEach(function(k){ U[k] = gl.getUniformLocation(prog, k); });
+
+  gl.useProgram(progFond);
+  ['uRes','uC','uCol'].forEach(function(k){ UF[k] = gl.getUniformLocation(progFond, k); });
+  locFond = gl.getAttribLocation(progFond, 'aXY');
+  aFond = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, aFond);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 3,-1, -1,3]), gl.STATIC_DRAW);
+
+  gl.disable(gl.DEPTH_TEST);
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE);     /* additif : la lumière s'additionne */
+  nDessin = N;
+  marche = true;
+}
+
+var L = 0, H = 0, dpr = 1;
+function dimensionne(){
+  if(!gl) return;
+  dpr = Math.min(window.devicePixelRatio || 1, 1.6);
+  L = Math.max(1, Math.round(toile.clientWidth * dpr));
+  H = Math.max(1, Math.round(toile.clientHeight * dpr));
+  if(toile.width !== L || toile.height !== H){ toile.width = L; toile.height = H; }
+  gl.viewport(0, 0, L, H);
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   5 · Le défilement pilote la métamorphose
+   ══════════════════════════════════════════════════════════════════ */
+var chapEls = [].slice.call(document.querySelectorAll('.chap'));
+var pCible = 0, pLisse = 0;
+
+function mesureProgression(){
+  var vh = window.innerHeight;
+  var sonde = window.scrollY + vh*0.5;
+  var i, el, haut, ht;
+  for(i=0;i<chapEls.length;i++){
+    el = chapEls[i]; haut = el.offsetTop; ht = el.offsetHeight;
+    if(sonde < haut + ht || i === chapEls.length-1){
+      var d = clamp(sonde - haut, 0, ht);
+      /* La zone de métamorphose est bornée en pixels : un chapitre très long
+         garde son état posé longtemps, puis bascule en un geste net. */
+      var zone = Math.min(ht*0.42, vh*1.05);
+      var debut = ht - zone;
+      var m = zone > 1 ? lissee((d - debut) / (zone*0.94)) : 0;
+      if(i === chapEls.length-1) m = 0;   /* le dernier état n'a pas de suite */
+      pCible = i + clamp(m, 0, 1);
+      return;
+    }
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   6 · La boucle
+   ══════════════════════════════════════════════════════════════════ */
+var t0 = performance.now(), ipsN = 0, ipsT = t0, ipsVal = 60, degrade = 0, lentes = 0;
+var douceur = matchMedia('(prefers-reduced-motion: reduce)').matches;
+var etatAffiche = -1;
+var carton = document.getElementById('carton');
+var cartonNum = document.getElementById('cartonNum');
+var cartonNom = document.getElementById('cartonNom');
+var cartonUse = document.getElementById('cartonUse');
+
+function poseCarton(i){
+  if(i === etatAffiche) return;
+  etatAffiche = i;
+  cartonNum.textContent = 'ÉTAT 0' + (i+1) + ' / 06';
+  cartonNom.textContent = CHAPS[i].nom;
+  cartonUse.setAttribute('href', '#sig-' + i);
+  var c = getComputedStyle(racine).getPropertyValue(CSSCOL[i]).trim();
+  carton.style.setProperty('--accent', c);
+  racine.style.setProperty('--accent', c);
+}
+
+function boucle(now){
+  requestAnimationFrame(boucle);
+  if(!marche) return;
+
+  ipsN++;
+  if(now - ipsT > 1000){
+    ipsVal = Math.round(ipsN * 1000 / (now - ipsT));
+    ipsN = 0; ipsT = now;
+    /* Qualité adaptative — plutôt moins de points qu'une page qui rame.
+       ⚠️ La première seconde contient la fabrication des 312 000 positions et
+       le calage des polices : elle mesurait 20 images/s et déclenchait une
+       baisse de qualité pour rien, sur une machine qui tenait 60. On ignore
+       donc le démarrage, et on exige DEUX secondes lentes d'affilée. */
+    if(now - t0 > 2600){
+      if(ipsVal < 34){ lentes++; if(lentes >= 2 && degrade < 2){ degrade++; lentes = 0;
+        nDessin = Math.round(N * (degrade === 1 ? 0.62 : 0.40)); } }
+      else { lentes = 0;
+        if(ipsVal > 56 && degrade > 0){ degrade--;
+          nDessin = Math.round(N * (degrade === 1 ? 0.62 : 1.0)); } }
+    }
+  }
+
+  var tps = douceur ? 0 : (now - t0) / 1000;
+  pLisse += (pCible - pLisse) * 0.11;
+
+  var i = Math.min(4, Math.floor(pLisse));
+  var f = clamp(pLisse - i, 0, 1);
+  var a = CHAPS[i], b = CHAPS[Math.min(5, i+1)];
+
+  /* Poids : seuls deux états pèsent à la fois. */
+  var w = [0,0,0,0,0,0];
+  w[i] = 1 - f; w[Math.min(5, i+1)] = f;
+  gl.useProgram(prog);
+  gl.uniform4f(U.uWa, w[0], w[1], w[2], w[3]);
+  gl.uniform2f(U.uWb, w[4], w[5]);
+
+  var colA = [ melange(a.col[0],b.col[0],f), melange(a.col[1],b.col[1],f), melange(a.col[2],b.col[2],f) ];
+  var decX = melange(a.dec[0], b.dec[0], f), decY = melange(a.dec[1], b.dec[1], f);
+  var ech  = melange(a.ech, b.ech, f);
+  var lacet = melange(a.lacet, b.lacet, f) + (douceur ? 0 : Math.sin(tps*0.11)*0.22);
+  var petit = window.innerWidth < 960;
+  if(petit){ decX = 0; decY = 0.03; ech *= 0.80; }
+
+  var asp = L / H;
+  gl.uniformMatrix4fv(U.uProj, false, perspective(0.66, asp, 0.1, 40));
+  gl.uniformMatrix4fv(U.uVue, false, vue(4.45, lacet, 0.10 + (douceur?0:Math.sin(tps*0.08)*0.05), 0.02));
+  gl.uniform1f(U.uTemps, tps);
+  gl.uniform1f(U.uPx, 8.2 * dpr * clamp((H/dpr)/900, 0.70, 1.45));
+  gl.uniform1f(U.uEch, ech);
+  gl.uniform2f(U.uDec, decX, decY);
+  gl.uniform1f(U.uDisp, w[5]);
+  gl.uniform1f(U.uGain, melange(a.gain, b.gain, f));
+
+  /* La source de lumière tourne lentement autour de la forme. */
+  var la = tps*0.13 + 0.6;
+  gl.uniform3f(U.uLum, Math.cos(la)*3.0, 1.7 + Math.sin(tps*0.14)*0.7, Math.sin(la)*2.2 + 1.6);
+  gl.uniform3f(U.uColA, colA[0]*0.30, colA[1]*0.32, colA[2]*0.42);
+  gl.uniform3f(U.uColB, Math.min(1, colA[0]*1.05 + 0.16), Math.min(1, colA[1]*1.02 + 0.14),
+                        Math.min(1, colA[2]*1.00 + 0.10));
+
+  /* Fond */
+  gl.useProgram(progFond);
+  gl.uniform2f(UF.uRes, L, H);
+  gl.uniform2f(UF.uC, 0.5 + decX*0.5, 0.5 + decY*0.5);
+  gl.uniform3f(UF.uCol, colA[0], colA[1], colA[2]);
+  gl.bindBuffer(gl.ARRAY_BUFFER, aFond);
+  gl.enableVertexAttribArray(locFond);
+  gl.vertexAttribPointer(locFond, 2, gl.FLOAT, false, 0, 0);
+  gl.disable(gl.BLEND);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+  gl.disableVertexAttribArray(locFond);
+  gl.enable(gl.BLEND);
+
+  /* La forme */
+  gl.useProgram(prog);
+  for(var s=0;s<6;s++){
+    gl.bindBuffer(gl.ARRAY_BUFFER, tampons[s]);
+    gl.enableVertexAttribArray(locP[s]);
+    gl.vertexAttribPointer(locP[s], 3, gl.FLOAT, false, 0, 0);
+  }
+  gl.bindBuffer(gl.ARRAY_BUFFER, tamponG);
+  gl.enableVertexAttribArray(locG);
+  gl.vertexAttribPointer(locG, 3, gl.FLOAT, false, 0, 0);
+  gl.drawArrays(gl.POINTS, 0, nDessin);
+
+  poseCarton(f > 0.5 ? Math.min(5, i+1) : i);
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   7 · Démarrage
+   ══════════════════════════════════════════════════════════════════ */
+function demarre(){
+  try{
+    prepare();
+    dimensionne();
+    mesureProgression();
+    pLisse = pCible;
+    requestAnimationFrame(boucle);
+    toile.classList.add('vu');
+    carton.classList.add('vu');
+  }catch(e){
+    marche = false;
+    racine.classList.add('sansgl');
+    if(window.console && console.warn) console.warn('WebGL indisponible, repli empilé :', e && e.message);
+  }
+}
+if(gl) requestAnimationFrame(function(){ setTimeout(demarre, 0); });
+else racine.classList.add('sansgl');
+
+window.addEventListener('resize', function(){ dimensionne(); mesureProgression(); }, {passive:true});
+window.addEventListener('orientationchange', function(){ setTimeout(function(){ dimensionne(); mesureProgression(); }, 260); });
+
+var enAttente = false;
+window.addEventListener('scroll', function(){
+  if(enAttente) return;
+  enAttente = true;
+  requestAnimationFrame(function(){ mesureProgression(); enAttente = false; });
+}, {passive:true});
+
+/* ══════════════════════════════════════════════════════════════════
+   8 · Révélation, compteurs, vidéo différée
+   ══════════════════════════════════════════════════════════════════ */
+var aReveler = [].slice.call(document.querySelectorAll('.rv'));
+if('IntersectionObserver' in window){
+  var oi = new IntersectionObserver(function(ents){
+    ents.forEach(function(e){
+      if(e.isIntersecting){ e.target.classList.add('on'); oi.unobserve(e.target); }
+    });
+  }, { rootMargin:'0px 0px -6% 0px', threshold:0 });
+  aReveler.forEach(function(el){ oi.observe(el); });
+}else{
+  aReveler.forEach(function(el){ el.classList.add('on'); });
+}
+/* Filet : quoi qu'il arrive, plus rien n'est invisible au bout de 3,5 s. */
+setTimeout(function(){ aReveler.forEach(function(el){ el.classList.add('on'); }); }, 3500);
+
+/* Compteurs. La règle 2006 : pas de séparateur de milliers sur une année. */
+function ecrit(v, brut){
+  if(brut) return String(v);
+  return String(v).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+}
+var cpts = [].slice.call(document.querySelectorAll('.cpt'));
+function lance(el){
+  if(el.dataset.fait) return;
+  el.dataset.fait = '1';
+  var cible = parseInt(el.dataset.n, 10);
+  var suf = el.dataset.suf || '';
+  var brut = (cible >= 1900 && cible <= 2100 && !suf);
+  if(douceur){ el.textContent = ecrit(cible, brut) + suf; return; }
+  var t0c = performance.now(), dur = 1250;
+  (function pas(now){
+    var k = clamp((now - t0c)/dur, 0, 1);
+    var e = 1 - Math.pow(1-k, 3);
+    el.textContent = ecrit(Math.round(cible*e), brut) + suf;
+    if(k < 1) requestAnimationFrame(pas); else el.textContent = ecrit(cible, brut) + suf;
+  })(performance.now());
+}
+if('IntersectionObserver' in window){
+  var oc = new IntersectionObserver(function(ents){
+    ents.forEach(function(e){ if(e.isIntersecting){ lance(e.target); oc.unobserve(e.target); } });
+  }, { threshold:0.4 });
+  cpts.forEach(function(el){ oc.observe(el); });
+}else cpts.forEach(lance);
+
+/* La vidéo n'est téléchargée que si on s'en approche : 5,3 Mo évités au démarrage. */
+var figV = document.querySelector('.media[data-video]');
+if(figV){
+  var vid = figV.querySelector('video');
+  var poser = function(){
+    if(vid.getAttribute('src')) return;
+    vid.setAttribute('src', figV.dataset.video);
+    var pr = vid.play(); if(pr && pr.catch) pr.catch(function(){});
+  };
+  if('IntersectionObserver' in window){
+    var ov = new IntersectionObserver(function(ents){
+      ents.forEach(function(e){ if(e.isIntersecting){ poser(); ov.disconnect(); } });
+    }, { rootMargin:'300px 0px' });
+    ov.observe(figV);
+  }else poser();
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   9 · Menu du téléphone — fond plein, échappement au clavier
+   ══════════════════════════════════════════════════════════════════ */
+var burger = document.getElementById('burger');
+var panneau = document.getElementById('panneau');
+var fermer = document.getElementById('fermer');
+function bascule(ouvrir){
+  panneau.setAttribute('data-ouvert', ouvrir ? '1' : '0');
+  burger.setAttribute('aria-expanded', ouvrir ? 'true' : 'false');
+  document.body.style.overflow = ouvrir ? 'hidden' : '';
+  if(ouvrir) fermer.focus(); else burger.focus();
+}
+burger.addEventListener('click', function(){ bascule(panneau.getAttribute('data-ouvert') !== '1'); });
+fermer.addEventListener('click', function(){ bascule(false); });
+panneau.addEventListener('click', function(e){ if(e.target.tagName === 'A') bascule(false); });
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Escape' && panneau.getAttribute('data-ouvert') === '1') bascule(false);
+});
+
+/* ══════════════════════════════════════════════════════════════════
+   10 · Sonde de contrôle — pour mesurer, pas pour deviner
+   ══════════════════════════════════════════════════════════════════ */
+window.__meta = {
+  ips: function(){ return ipsVal; },
+  mesure: function(duree){
+    duree = duree || 2000;
+    return new Promise(function(res){
+      var n = 0, d0 = performance.now();
+      (function b(){ n++;
+        if(performance.now() - d0 < duree) requestAnimationFrame(b);
+        else res(Math.round(n / ((performance.now() - d0)/1000)));
+      })();
+    });
+  },
+  etat: function(){ return { p: pLisse, etat: etatAffiche, nom: CHAPS[Math.max(0,etatAffiche)].nom }; },
+  points: function(){ return { total: N, dessines: nDessin, degrade: degrade, dpr: dpr }; },
+  webgl: function(){ return marche; },
+  vaA: function(p){ pCible = p; pLisse = p; }
+};
+
+clearTimeout(secours);
+setTimeout(function(){ racine.classList.add('secours'); }, 3600);
+})();
+</script>
+</body>
+</html>

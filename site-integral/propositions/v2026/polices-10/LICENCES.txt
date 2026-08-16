@@ -1,0 +1,19 @@
+Polices de la maquette 10. Servies localement, sous-ensemble latin uniquement,
+aucun appel exterieur au chargement de la page.
+
+Archivo (archivo.woff2) — SIL Open Font License 1.1 — Omnibus-Type
+  https://github.com/Omnibus-Type/Archivo
+
+Instrument Serif Italic (instrumentserif-italic.woff2) — SIL Open Font License 1.1 — Instrument
+  https://github.com/Instrument/instrument-serif
+
+Instrument Serif (instrumentserif.woff2) — SIL Open Font License 1.1 — Instrument
+  https://github.com/Instrument/instrument-serif
+
+Newsreader (newsreader.woff2) — SIL Open Font License 1.1 — Production Type
+  https://github.com/productiontype/Newsreader
+
+La SIL Open Font License 1.1 autorise l'usage, la modification et la
+redistribution, y compris commerciale, a condition que les fontes ne soient
+pas vendues seules et que cette notice accompagne les fichiers.
+Texte complet : https://openfontlicense.org/
