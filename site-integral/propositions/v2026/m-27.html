@@ -1,0 +1,1260 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Intégral Pharma — Neuf maisons. Un seul nom.</title>
+<meta name="description" content="Groupe de grossistes-répartiteurs français indépendant. Neuf implantations, plus de 2 000 officines livrées chaque jour.">
+
+<!--
+  ══════════════════════════════════════════════════════════════════════════════
+  MAQUETTE 27 — direction « PLEIN JOUR »
+  Phénomène : LA LUMIÈRE. Une seule source, et elle se déplace.
+
+  LA MÉCANIQUE
+    Toute la page est gouvernée par UN seul nombre : « t », l'heure du jour,
+    tirée de la position de défilement. De ce nombre unique descendent, en
+    cascade, la position du soleil, la couleur du ciel, la température de la
+    lumière, la direction de CHAQUE ombre portée et sa longueur.
+    On descend la page comme on traverse une journée de travail : on entre à
+    l'aube, bleu froid, ombres longues couchées vers la droite ; le jour se lève
+    d'un coup sur un panneau orange ; midi écrase les ombres sous les pieds et
+    blanchit tout ; puis la lumière repart vers l'ouest, se réchauffe, et la page
+    finit au couchant.
+
+  POURQUOI UNE SEULE DIRECTION D'OMBRE
+    L'illusion ne tient qu'à ça. Il n'existe dans cette feuille de style
+    AUCUNE ombre écrite à la main : toutes appellent --ombre, --ombre-courte ou
+    --ombre-longue, trois variables calculées au même instant à partir du même
+    vecteur solaire. Une ombre qui partirait ailleurs rendrait la page plate.
+
+  LE CONTRASTE AUX DEUX BOUTS
+    Le piège d'une page qui va du sombre au clair, c'est le croisement : au
+    moment où le fond devient clair, l'encre doit devenir sombre, et entre les
+    deux tout devient gris. Ici le croisement n'a pas lieu dans le gris mais
+    dans l'ORANGE saturé du levant (#C9531B), sur un panneau qui ne contient
+    QUE du très grand texte. Mesuré : 4,08:1 avec la crème et 4,30:1 avec
+    l'encre sombre — au-dessus du seuil du grand corps dans les deux sens.
+    Aux trois régimes stables : 16,35:1 la nuit, 15,91:1 le jour, 16,62:1 le soir.
+
+    Et une coïncidence heureuse, qui est en fait de la physique : le halo du
+    soleil n'est éclatant qu'au zénith — c'est-à-dire exactement quand l'encre
+    est sombre. À l'aube et au couchant le soleil est un charbon rouge et sombre,
+    quand l'encre est crème. Les deux ne se marchent jamais dessus.
+
+  CE QUI N'EST PAS UTILISÉ, ET POURQUOI
+    · Aucune librairie. Le geste demande UN orchestrateur d'images par seconde
+      qui lit une seule fois la position de défilement et écrit à la fois les
+      variables CSS et le dessin du ciel. Une librairie d'enchaînements aurait
+      ajouté 44 Ko pour tenir une variable. C'est la leçon prise à HAOQI.DESIGN
+      (Codrops, 15/08/2026) : fusionner les boucles d'animation dès le départ.
+    · Aucune 3D, aucun contexte GPU tenu en permanence. Le ciel est un canvas 2D.
+      Si le contexte échoue, la page garde ses couleurs (elles sont en CSS) et
+      reste entièrement lisible.
+    · Aucun appel réseau. Polices servies depuis polices-27/, médias en relatif.
+
+  MÉDIAS — trois registres distincts, aucune répétition
+    · band.mp4 (portrait) — la seule vidéo de la page, en fenêtre verticale dans
+      l'ouverture : la lumière du petit matin qui entre par une meurtrière.
+    · siege-solaire.jpg — la toiture solaire, placée à MIDI. C'est la seule image
+      du lot qui parle littéralement de soleil : elle est à sa place au zénith.
+    · siege-web.jpg — la vue trois quarts, au couchant, réchauffée.
+    clip3.mp4 est écarté : siege-solaire.jpg en est une image extraite.
+    poster.jpg est écarté : c'est le même fichier que siege-web.jpg.
+    hero.mp4 est écarté : une seule vidéo par page, et le format portrait de
+    band.mp4 est le seul qui tienne dans une fenêtre verticale.
+
+    Les trois médias reçoivent la MÊME lumière que le reste : chacun porte deux
+    calques, un chaud du côté du soleil et un froid du côté de l'ombre, tous
+    deux orientés par les mêmes variables que les ombres portées.
+
+  RÉFÉRENCES REGARDÉES AVANT DE CODER
+    · iventions.com — chaque projet traité comme une installation sous
+      projecteur, la lumière comme fil conducteur plutôt que comme décor.
+      J'en prends l'idée d'une source qui DÉSIGNE : ici, la lumière balaie la
+      liste des neuf implantations et n'en éclaire qu'une à la fois.
+    · Codrops — « Inside HAOQI.DESIGN », 15/08/2026. J'en prends l'architecture :
+      un seul bus de défilement, une seule boucle, un instantané par image lu à
+      la fois par le DOM et par le canvas. Aucune désynchronisation d'une image.
+    · minhpham.design — le rendu temps réel encadre le contenu sans le manger.
+      J'en prends la retenue : le ciel ne dépasse jamais l'alpha nécessaire.
+
+  TEXTE : site-integral/CONTENU-SITE-2026.md, validé par Will le 14/08/2026.
+  Aucune phrase réécrite, aucun chiffre ajouté. Année affichée 2006 et phrase
+  sur la marge : décisions de Will, appliquées telles quelles.
+  ══════════════════════════════════════════════════════════════════════════════
+-->
+
+<style>
+/* ═══ POLICES ═══ Toutes OFL, servies localement, sous-ensemble latin. */
+@font-face{font-family:'Instrument Serif';src:url('polices-27/instrumentserif.woff2') format('woff2');font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:'Instrument Serif';src:url('polices-27/instrumentserif-italic.woff2') format('woff2');font-weight:400;font-style:italic;font-display:swap}
+@font-face{font-family:'Archivo';src:url('polices-27/archivo-var.woff2') format('woff2');font-weight:100 900;font-stretch:62% 125%;font-style:normal;font-display:swap}
+@font-face{font-family:'Plex Mono';src:url('polices-27/plexmono-400.woff2') format('woff2');font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:'Plex Mono';src:url('polices-27/plexmono-500.woff2') format('woff2');font-weight:500;font-style:normal;font-display:swap}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LES VARIABLES DE LA LUMIÈRE
+   Écrites par le script, une seule fois par image. Les valeurs ci-dessous sont
+   l'état « fin de matinée » : c'est ce que voit quelqu'un dont le script ne
+   part pas. La page reste alors entièrement lisible et éclairée.
+   ═══════════════════════════════════════════════════════════════════════════ */
+:root{
+  /* position du soleil, quantifiée au pour-cent pour ne pas repeindre à chaque image */
+  --lx:44%; --ly:24%;
+  --I:.92;              /* intensité 0→1 */
+  --alt:.74;            /* hauteur du soleil sur l'horizon, 0 = rasant, 1 = zénith */
+  --angle:170deg;       /* direction OPPOSÉE au soleil, pour les dégradés directionnels */
+
+  /* les trois ombres : même vecteur, trois échelles */
+  --ombre:        10px 16px 30px rgba(26,18,10,.20);
+  --ombre-courte:  5px  8px 14px rgba(26,18,10,.16);
+  --ombre-longue: 22px 34px 66px rgba(26,18,10,.22);
+  --ombre-texte:   3px  6px 16px rgba(26,18,10,.26);
+
+  /* couleurs, pilotées par la phase du jour */
+  --sol:#F4F1EA;        /* la matière au sol : plaques, en-tête, filets */
+  --ink:#15171B;
+  --mut:#55606E;
+  --mono:#2F5FB8;
+  --trait:rgba(21,23,27,.16);
+  --plaque:rgba(255,255,255,.52);
+  --bleu:#0050E6;
+
+  --gouttiere:clamp(20px,5vw,72px);
+  --large:1240px;
+}
+/* les trois régimes stables. Le script pose l'une de ces classes sur <html>. */
+html.p-nuit{ --sol:#0B1220; --ink:#EAF0FA; --mut:#9FB2CE; --mono:#7FA8D8;
+             --trait:rgba(234,240,250,.18); --plaque:rgba(133,163,214,.10); --bleu:#8FB6FF; }
+html.p-jour{ --sol:#F4F1EA; --ink:#15171B; --mut:#55606E; --mono:#2F5FB8;
+             --trait:rgba(21,23,27,.16); --plaque:rgba(255,255,255,.52); --bleu:#0050E6; }
+html.p-soir{ --sol:#16100A; --ink:#FFEEDA; --mut:#C7A98A; --mono:#E8A45C;
+             --trait:rgba(255,238,218,.18); --plaque:rgba(232,164,92,.10); --bleu:#FFC078; }
+
+*,*::before,*::after{box-sizing:border-box}
+html{ -webkit-text-size-adjust:100%; scroll-behavior:smooth }
+body{
+  margin:0; background:#F4F1EA; color:var(--ink);
+  font-family:'Archivo','Helvetica Neue',Arial,sans-serif;
+  font-size:17px; line-height:1.62; font-weight:380;
+  -webkit-font-smoothing:antialiased;
+  transition:color .38s cubic-bezier(.4,0,.2,1);
+}
+html.p-nuit body,html.p-jour body,html.p-soir body{ background:transparent }
+img,video{max-width:100%;display:block}
+a{color:inherit}
+main{overflow-x:clip} /* jamais hidden : cela casserait les positions collantes */
+
+/* ═══ LE CIEL ═══ un canvas 2D plein écran, sous tout le reste. */
+#ciel{position:fixed;inset:0;width:100%;height:100%;z-index:0;display:block}
+.nociel{position:fixed;inset:0;z-index:0;background:
+  radial-gradient(70vmax 55vmax at var(--lx) var(--ly),rgba(255,244,220,.85) 0%,rgba(255,244,220,0) 62%),
+  linear-gradient(180deg,#EFEBE2 0%,#FBF9F4 100%);}
+
+/* ═══ LA LUMIÈRE QUI TOMBE SUR LE CONTENU ═══
+   Deux calques fixes AU-DESSUS du texte : la nappe chaude côté soleil, la
+   pénombre côté opposé. C'est ce qui fait que le texte, les plaques et les
+   photographies reçoivent la même lumière au même instant. Alpha faible, aucun
+   mélange de calque, et variables quantifiées : la surface ne se repeint que
+   lorsque le soleil a bougé d'un pour-cent. */
+.nappe,.penombre{position:fixed;inset:0;z-index:40;pointer-events:none}
+.nappe{background:radial-gradient(62vmax 62vmax at var(--lx) var(--ly),
+        rgba(255,231,190,calc(.14*var(--I))) 0%,
+        rgba(255,231,190,calc(.05*var(--I))) 34%,
+        rgba(255,231,190,0) 66%)}
+.penombre{background:linear-gradient(var(--angle),
+        rgba(10,14,28,0) 34%,
+        rgba(10,14,28,calc(.10 + .12*(1 - var(--alt)))) 100%)}
+
+/* ═══ L'HEURE ═══ petit repère fixe : où en est la journée. */
+.heure{position:fixed;left:clamp(14px,2.4vw,26px);bottom:clamp(14px,2.4vw,26px);z-index:60;
+  font-family:'Plex Mono',ui-monospace,monospace;font-size:12px;letter-spacing:.06em;
+  color:var(--mut);display:flex;align-items:center;gap:10px;pointer-events:none}
+.heure__arc{position:relative;width:74px;height:24px;overflow:hidden}
+.heure__arc svg{position:absolute;inset:0;width:74px;height:24px;overflow:visible}
+.heure__astre{fill:var(--mono)}
+@media (max-width:900px){.heure{display:none}}
+
+/* ═══ EN-TÊTE ═══ */
+.entete{position:sticky;top:0;z-index:50;
+  display:flex;align-items:center;justify-content:space-between;gap:16px;
+  padding:14px var(--gouttiere);
+  border-bottom:1px solid transparent;transition:border-color .3s,background-color .3s}
+.entete.pose{border-bottom-color:var(--trait);background:var(--sol)}
+.marque{display:flex;align-items:center;gap:12px;text-decoration:none;min-height:44px}
+.marque img{width:34px;height:auto;filter:drop-shadow(var(--ombre-courte))}
+.marque b{font-family:'Instrument Serif',Georgia,serif;font-weight:400;font-size:22px;letter-spacing:.005em;line-height:1}
+.marque span{display:block;font-family:'Plex Mono',ui-monospace,monospace;font-size:11px;
+  letter-spacing:.16em;text-transform:uppercase;color:var(--mut);margin-top:3px}
+.nav{display:flex;align-items:center;gap:4px}
+.nav a{display:inline-flex;align-items:center;min-height:44px;padding:0 13px;text-decoration:none;
+  font-size:14px;font-weight:520;letter-spacing:.005em;color:var(--ink);border-radius:2px;
+  opacity:.82;transition:opacity .2s,background-color .2s}
+.nav a:hover,.nav a:focus-visible{opacity:1;background:var(--plaque)}
+.nav a.cta{background:var(--ink);color:var(--sol);opacity:1;font-weight:600;
+  box-shadow:var(--ombre-courte);margin-left:8px}
+.burger{display:none;width:46px;height:46px;align-items:center;justify-content:center;
+  background:none;border:1px solid var(--trait);border-radius:2px;color:inherit;cursor:pointer}
+.burger i{display:block;width:19px;height:1.5px;background:currentColor;position:relative}
+.burger i::before,.burger i::after{content:'';position:absolute;left:0;width:19px;height:1.5px;background:currentColor}
+.burger i::before{top:-6px}.burger i::after{top:6px}
+@media (max-width:940px){
+  .nav{position:fixed;inset:0;z-index:70;flex-direction:column;justify-content:center;gap:6px;
+    background:var(--sol);          /* fond PLEIN, jamais transparent */
+    transform:translateY(-102%);transition:transform .42s cubic-bezier(.4,0,.2,1);}
+  html.menu-ouvert .nav{transform:translateY(0)}
+  .nav a{font-family:'Instrument Serif',Georgia,serif;font-size:30px;font-weight:400;opacity:1;padding:6px 20px;min-height:56px}
+  .nav a.cta{margin-top:18px;font-size:17px;font-family:'Archivo',sans-serif;padding:0 26px}
+  .burger{display:flex;position:relative;z-index:80}
+  html.menu-ouvert .burger i{background:transparent}
+  html.menu-ouvert .burger i::before{top:0;transform:rotate(45deg)}
+  html.menu-ouvert .burger i::after{top:0;transform:rotate(-45deg)}
+}
+
+/* ═══ TRAME ═══ */
+.bloc{position:relative;z-index:10;padding-top:clamp(74px,10vw,150px);padding-bottom:clamp(74px,10vw,150px)}
+.dedans{max-width:var(--large);margin:0 auto;padding-left:var(--gouttiere);padding-right:var(--gouttiere)}
+.surtitre{font-family:'Plex Mono',ui-monospace,monospace;font-size:12px;font-weight:500;
+  letter-spacing:.2em;text-transform:uppercase;color:var(--mono);margin:0 0 18px;max-width:none}
+.surtitre::before{content:attr(data-h) '\00a0\00a0\00a0';color:var(--mut);opacity:.78}
+h1,h2,h3{font-family:'Instrument Serif',Georgia,serif;font-weight:400;margin:0}
+h1{font-size:clamp(3.1rem,9.4vw,8.4rem);line-height:.92;letter-spacing:-.022em;
+   text-shadow:var(--ombre-texte)}
+h2{font-size:clamp(2.15rem,5.2vw,4.5rem);line-height:1.02;letter-spacing:-.018em;max-width:16ch;
+   text-shadow:var(--ombre-texte)}
+h3{font-size:clamp(1.35rem,2.5vw,2rem);line-height:1.12;letter-spacing:-.012em}
+.lead{font-size:clamp(1.08rem,1.85vw,1.4rem);line-height:1.55;max-width:56ch;color:var(--ink);margin:26px 0 0}
+p{margin:20px 0 0;max-width:62ch;color:var(--mut)}
+p strong{color:var(--ink);font-weight:600}
+.filet{height:1px;background:var(--trait);border:0;margin:0}
+
+/* la révélation est posée PAR le script : sans lui, tout est visible */
+.js .rvl{opacity:0;transform:translateY(20px)}
+.js .rvl.vu{opacity:1;transform:none;transition:opacity .85s cubic-bezier(.2,.7,.2,1),transform .85s cubic-bezier(.2,.7,.2,1)}
+
+/* ═══ 1 · OUVERTURE ═══ */
+.hero{min-height:calc(100svh - 76px);display:flex;align-items:flex-end;
+  padding-bottom:clamp(30px,5vh,60px);padding-top:clamp(24px,4vh,48px)}
+.hero__grille{display:grid;grid-template-columns:minmax(0,1fr) clamp(150px,17vw,264px);gap:clamp(24px,4vw,56px);align-items:end}
+.hero h1{margin:22px 0 0}
+.hero .lead{margin-top:30px;max-width:50ch}
+.boutons{display:flex;flex-wrap:wrap;gap:12px;margin-top:36px}
+.btn{display:inline-flex;align-items:center;min-height:52px;padding:0 26px;border-radius:2px;
+  text-decoration:none;font-size:15px;font-weight:600;letter-spacing:.005em;
+  box-shadow:var(--ombre);transition:transform .25s cubic-bezier(.2,.7,.2,1),box-shadow .25s}
+.btn:hover,.btn:focus-visible{transform:translateY(-2px);box-shadow:var(--ombre-longue)}
+.btn--plein{background:var(--ink);color:var(--sol)}
+.btn--creux{background:var(--plaque);color:var(--ink);border:1px solid var(--trait);box-shadow:var(--ombre-courte)}
+
+/* la fenêtre verticale : la seule vidéo de la page */
+.fenetre{position:relative;aspect-ratio:9/16;overflow:hidden;border-radius:2px;
+  background:#0A0E18;box-shadow:var(--ombre-longue)}
+.fenetre video{width:100%;height:100%;object-fit:cover}
+.fenetre__legende{position:absolute;left:12px;bottom:10px;z-index:3;
+  font-family:'Plex Mono',ui-monospace,monospace;font-size:11.5px;letter-spacing:.12em;
+  text-transform:uppercase;color:#FFEEDA;text-shadow:0 1px 3px rgba(0,0,0,.75)}
+@media (max-width:760px){
+  .hero{min-height:0;padding-top:26px;padding-bottom:44px}
+  .hero__grille{grid-template-columns:1fr}
+  .fenetre{aspect-ratio:16/11;order:-1;margin-bottom:6px}
+}
+
+/* les deux calques de lumière des médias — mêmes variables que les ombres */
+.media{position:relative;overflow:hidden}
+.media__chaud,.media__froid,.media__teinte{position:absolute;inset:0;pointer-events:none;z-index:2}
+/* la teinte : la photographie prend la couleur de l'heure. Mélange multiplicatif
+   (séparable, peu coûteux) — le mélange colorimétrique coûtait 30 images/seconde. */
+.media__teinte{background:var(--teinte,#FFE9BE);mix-blend-mode:multiply;
+  opacity:calc(.12 + .62*(1 - var(--alt)))}
+.media__chaud{mix-blend-mode:screen;
+  background:radial-gradient(130% 100% at var(--lx) 0%,
+    rgba(255,228,176,calc(.60*var(--I))) 0%,rgba(255,228,176,0) 64%)}
+.media__froid{mix-blend-mode:multiply;
+  background:linear-gradient(var(--angle),
+    rgba(255,255,255,0) 26%,
+    rgba(20,24,48,calc(.26 + .34*(1 - var(--alt)))) 100%)}
+
+/* ═══ BANDEAU DÉFILANT ═══ */
+.bandeau{position:relative;z-index:10;overflow:hidden;border-top:1px solid var(--trait);border-bottom:1px solid var(--trait);
+  padding:15px 0;background:var(--plaque)}
+.bandeau__piste{display:flex;width:max-content;animation:defile 42s linear infinite}
+.bandeau__piste span{font-family:'Plex Mono',ui-monospace,monospace;font-size:12.5px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--ink);white-space:nowrap;padding:0 22px;opacity:.9}
+.bandeau__piste span::after{content:'·';margin-left:22px;color:var(--mono)}
+@keyframes defile{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+/* ═══ COMPTEURS ═══ */
+.compteurs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;margin-top:clamp(46px,6vw,80px);
+  background:var(--trait);border:1px solid var(--trait);border-radius:2px;overflow:hidden;box-shadow:var(--ombre)}
+.compteurs--duo{grid-template-columns:repeat(2,minmax(0,1fr));max-width:640px}
+.cpt{background:var(--plaque);padding:clamp(20px,2.6vw,34px);position:relative;overflow:hidden}
+.cpt::after{content:'';position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(var(--angle),rgba(255,255,255,.14) 0%,rgba(0,0,0,.07) 100%)}
+.cpt b{display:block;font-family:'Instrument Serif',Georgia,serif;font-weight:400;
+  font-size:clamp(2.3rem,4.6vw,3.9rem);line-height:1;letter-spacing:-.02em;
+  font-variant-numeric:tabular-nums;text-shadow:var(--ombre-texte)}
+.cpt span{display:block;margin-top:9px;font-family:'Plex Mono',ui-monospace,monospace;
+  font-size:12px;letter-spacing:.13em;text-transform:uppercase;color:var(--mut)}
+@media (max-width:700px){.compteurs{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* ═══ PANNEAUX DE BASCULE ═══ le seul endroit où le fond traverse le milieu.
+   Rien d'autre qu'un très grand texte n'y vit : le contraste y est mesuré à
+   4,08:1 dans un sens et 4,30:1 dans l'autre, au-dessus du seuil du grand corps. */
+.bascule{position:relative;z-index:10;min-height:86svh;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;text-align:center;
+  padding:clamp(96px,13vh,140px) var(--gouttiere) clamp(48px,7vh,80px)}
+.bascule h2{font-size:clamp(2.6rem,8vw,7rem);max-width:none;line-height:.96;color:#FFF4E6;
+  text-shadow:0 4px 30px rgba(60,16,0,.55)}
+.bascule p{color:#FFE6CE;font-size:clamp(1.05rem,2vw,1.35rem);margin:24px auto 0;max-width:34ch;
+  text-shadow:0 2px 12px rgba(60,16,0,.5)}
+.bascule .surtitre{color:#FFD9B0;justify-content:center}
+.bascule .surtitre::before{color:#FFD9B0;opacity:.8}
+
+/* ═══ 3 · LE RÉSEAU ═══ la lumière balaie la liste et n'en désigne qu'une. */
+.reseau__tete{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.92fr);gap:clamp(26px,5vw,72px);align-items:end}
+@media (max-width:860px){.reseau__tete{grid-template-columns:1fr}}
+.liste{list-style:none;margin:clamp(44px,6vw,78px) 0 0;padding:0;border-top:1px solid var(--trait)}
+.imp{position:relative;display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:clamp(12px,2vw,26px);
+  align-items:center;padding:clamp(15px,2vw,22px) clamp(12px,2vw,20px);
+  border-bottom:1px solid var(--trait);
+  /* --eclat est écrit par le script : 1 = la ligne que la lumière désigne */
+  --eclat:0;
+  background:linear-gradient(var(--angle),
+     rgba(255,236,200,calc(.20*var(--eclat)*var(--I))) 0%,
+     rgba(255,236,200,0) 78%);
+  transform:translateX(calc(var(--eclat) * 8px));
+  transition:transform .4s cubic-bezier(.2,.7,.2,1);
+}
+.imp::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;
+  background:var(--mono);transform:scaleY(var(--eclat));transform-origin:center;
+  transition:transform .4s cubic-bezier(.2,.7,.2,1)}
+.imp__n{font-family:'Plex Mono',ui-monospace,monospace;font-size:12px;letter-spacing:.1em;
+  color:var(--mut);opacity:calc(.55 + .45*var(--eclat))}
+.imp__nom{font-family:'Instrument Serif',Georgia,serif;font-size:clamp(1.25rem,2.6vw,2.05rem);
+  line-height:1.1;letter-spacing:-.012em;
+  color:color-mix(in srgb,var(--ink) calc(58% + 42% * var(--eclat)),transparent);
+  text-shadow:var(--ombre-texte)}
+@supports not (color:color-mix(in srgb,red 50%,blue)){.imp__nom{color:var(--ink)}}
+.imp__nom em{font-style:italic;font-size:.62em;letter-spacing:0;color:var(--mut);white-space:nowrap}
+.imp__lieu{font-family:'Plex Mono',ui-monospace,monospace;font-size:12px;letter-spacing:.08em;
+  text-align:right;color:var(--mut);opacity:calc(.6 + .4*var(--eclat))}
+.imp__lieu b{display:block;font-weight:500;color:var(--ink);font-size:13px;opacity:calc(.5 + .5*var(--eclat))}
+@media (max-width:620px){
+  .imp{grid-template-columns:38px minmax(0,1fr);row-gap:4px}
+  .imp__lieu{grid-column:2;text-align:left}
+}
+.partenaire{margin-top:26px;padding:18px 20px;border:1px dashed var(--trait);border-radius:2px;
+  background:var(--plaque);box-shadow:var(--ombre-courte)}
+.partenaire p{margin:0;color:var(--ink);font-size:15px;max-width:none}
+.partenaire small{display:block;margin-top:7px;color:var(--mut);font-size:13px;
+  font-family:'Plex Mono',ui-monospace,monospace;letter-spacing:.05em}
+
+/* ═══ 4 · LE MÉTIER ═══ quatre plaques posées sous la même lumière */
+.plaques{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:clamp(14px,2vw,26px);
+  margin-top:clamp(44px,6vw,78px)}
+@media (max-width:800px){.plaques{grid-template-columns:1fr}}
+.plaque{position:relative;overflow:hidden;padding:clamp(24px,3vw,40px);border-radius:2px;
+  border:1px solid var(--trait);background:var(--plaque);box-shadow:var(--ombre);
+  transition:transform .35s cubic-bezier(.2,.7,.2,1),box-shadow .35s}
+.plaque::after{content:'';position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(var(--angle),
+    rgba(255,240,214,calc(.26*var(--I))) 0%,rgba(12,16,32,.10) 100%)}
+.plaque:hover{transform:translateY(-4px);box-shadow:var(--ombre-longue)}
+.plaque__n{font-family:'Plex Mono',ui-monospace,monospace;font-size:11.5px;font-weight:500;
+  letter-spacing:.2em;color:var(--mono);margin-bottom:14px}
+.plaque h3{margin-bottom:2px}
+.plaque p{margin-top:14px;font-size:15.5px}
+.cloture{margin-top:clamp(34px,4vw,54px);padding-top:26px;border-top:1px solid var(--trait);
+  font-size:clamp(1.02rem,1.7vw,1.28rem);line-height:1.55;color:var(--ink);max-width:62ch}
+
+/* ═══ BANDES PHOTOGRAPHIQUES ═══ */
+.bande{position:relative;z-index:10;height:clamp(58svh,64vw,84svh);overflow:hidden}
+.bande img{width:100%;height:100%;object-fit:cover}
+.bande__texte{position:absolute;z-index:3;left:0;right:0;bottom:0;
+  padding:clamp(26px,4vw,60px) var(--gouttiere);
+  background:linear-gradient(180deg,rgba(6,8,16,0) 0%,rgba(6,8,16,.72) 100%)}
+.bande__texte .surtitre{color:#FFD9B0;margin-bottom:12px}
+.bande__texte .surtitre::before{color:#FFD9B0;opacity:.75}
+.bande__texte p{color:#FFF4E6;font-size:clamp(1.02rem,2vw,1.42rem);line-height:1.48;
+  max-width:52ch;margin:0;text-shadow:0 2px 14px rgba(0,0,0,.6)}
+.bande__texte b{color:#fff}
+
+/* ═══ 8 · PARTENAIRES ═══ */
+.labos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;margin-top:clamp(40px,5vw,68px);
+  background:var(--trait);border:1px solid var(--trait);border-radius:2px;overflow:hidden;box-shadow:var(--ombre)}
+.labo{position:relative;overflow:hidden;background:var(--plaque);
+  display:flex;align-items:center;justify-content:center;min-height:110px;padding:20px 14px;
+  font-family:'Instrument Serif',Georgia,serif;font-size:clamp(1.2rem,2.3vw,1.8rem);
+  letter-spacing:-.01em;text-align:center;text-shadow:var(--ombre-texte)}
+.labo::after{content:'';position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(var(--angle),rgba(255,240,214,calc(.22*var(--I))) 0%,rgba(12,16,32,.09) 100%)}
+@media (max-width:680px){.labos{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* ═══ 9 · REJOINDRE ═══ */
+.villes{display:flex;flex-wrap:wrap;gap:10px;margin-top:28px}
+.ville{display:inline-flex;align-items:center;min-height:44px;padding:0 18px;border-radius:2px;
+  border:1px solid var(--trait);background:var(--plaque);box-shadow:var(--ombre-courte);
+  font-family:'Plex Mono',ui-monospace,monospace;font-size:12.5px;letter-spacing:.07em}
+
+/* ═══ VALEURS ═══ */
+.valeurs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(16px,2.4vw,34px);
+  margin-top:clamp(44px,6vw,78px)}
+@media (max-width:820px){.valeurs{grid-template-columns:1fr}}
+.valeur{position:relative;padding-top:26px;border-top:2px solid var(--mono)}
+.valeur h3{font-size:clamp(1.5rem,3vw,2.3rem);text-shadow:var(--ombre-texte)}
+.valeur p{margin-top:12px;font-size:15.5px}
+
+/* ═══ FIN ═══ */
+.fin{text-align:center}
+.fin h2{max-width:none;margin:0 auto}
+.fin p{margin:26px auto 0;text-align:center}
+.fin .btn{margin-top:38px;font-family:'Plex Mono',ui-monospace,monospace;letter-spacing:.04em;font-size:14.5px}
+.pied{position:relative;z-index:10;border-top:1px solid var(--trait);padding:clamp(38px,5vw,62px) 0 clamp(30px,4vw,46px)}
+.pied__grille{display:flex;flex-wrap:wrap;gap:20px 40px;justify-content:space-between;align-items:flex-start}
+.pied p{margin:0;font-size:14.5px;color:var(--mut);max-width:44ch}
+.pied a{color:var(--ink);display:inline-flex;align-items:center;min-height:44px}
+.pied__chiffres{margin-top:26px;padding-top:20px;border-top:1px solid var(--trait);
+  font-family:'Plex Mono',ui-monospace,monospace;font-size:12px;letter-spacing:.11em;
+  text-transform:uppercase;color:var(--mut);display:flex;flex-wrap:wrap;gap:8px 20px;justify-content:space-between}
+.signature{opacity:.62}
+
+/* ═══ MOUVEMENT RÉDUIT ═══ le soleil se fige en fin de matinée, la page reste
+   entièrement éclairée et lisible. */
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;
+    transition-duration:.01ms!important}
+  .js .rvl{opacity:1;transform:none}
+}
+</style>
+</head>
+
+<body>
+
+<canvas id="ciel" aria-hidden="true"></canvas>
+<div class="nappe" aria-hidden="true"></div>
+<div class="penombre" aria-hidden="true"></div>
+
+<div class="heure" aria-hidden="true">
+  <span class="heure__arc">
+    <svg viewBox="0 0 74 24" role="presentation">
+      <path d="M2 23 A 35 35 0 0 1 72 23" fill="none" stroke="currentColor" stroke-width="1" opacity=".38"/>
+      <circle class="heure__astre" id="astre" cx="2" cy="23" r="3"/>
+    </svg>
+  </span>
+  <span id="pendule">10:24</span>
+</div>
+
+<header class="entete" id="entete">
+  <a class="marque" href="#haut">
+    <img src="../../assets/logo-web.png" alt="Intégral Pharma">
+    <span>
+      <b>Intégral Pharma</b>
+      <span>Grossistes-répartiteurs</span>
+    </span>
+  </a>
+  <button class="burger" id="burger" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="nav"><i></i></button>
+  <nav class="nav" id="nav">
+    <a href="#groupe">Le groupe</a>
+    <a href="#reseau">Le réseau</a>
+    <a href="#metier">Le métier</a>
+    <a href="#valeurs">Nos valeurs</a>
+    <a class="cta" href="#ecrire">Nous écrire</a>
+  </nav>
+</header>
+
+<main id="haut">
+
+  <!-- ══ 1 · L'OUVERTURE — 05:40, le soleil est encore sous la ligne ══ -->
+  <section class="bloc hero">
+    <div class="dedans hero__grille">
+      <div>
+        <p class="surtitre rvl" data-h="05:40">Groupe de grossistes-répartiteurs français indépendant</p>
+        <h1 class="rvl">Neuf maisons.<br>Un seul nom.</h1>
+        <p class="lead rvl">Chacune livre sa région depuis des années, avec ses équipes et ses habitudes.
+          Depuis 2006, elles avancent ensemble sous le nom d'Intégral Pharma — et votre commande part
+          toujours de la plus proche de votre comptoir.</p>
+        <div class="boutons rvl">
+          <a class="btn btn--plein" href="#reseau">Découvrir le réseau</a>
+          <a class="btn btn--creux" href="#ecrire">Nous écrire</a>
+        </div>
+      </div>
+      <div class="fenetre media rvl">
+        <video src="../../assets/band.mp4" autoplay muted loop playsinline preload="metadata" aria-hidden="true"></video>
+        <span class="media__teinte"></span>
+        <span class="media__chaud"></span>
+        <span class="media__froid"></span>
+        <span class="fenetre__legende">Hyères · 05:40</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="bandeau" aria-hidden="true">
+    <div class="bandeau__piste" id="piste">
+      <span>Indépendant</span><span>Neuf implantations</span><span>Un réseau national</span><span>Plus de 2 000 officines livrées</span><span>Confiance, Engagement, Respect</span><span>Une alternative aux grossistes historiques</span>
+    </div>
+  </div>
+
+  <!-- ══ 2 · L'HISTOIRE — 07:10 ══ -->
+  <section class="bloc" id="groupe">
+    <div class="dedans">
+      <p class="surtitre rvl" data-h="07:10">Notre histoire</p>
+      <h2 class="rvl">Rendre la marge à l'officine française.</h2>
+      <p class="lead rvl">C'est la raison d'être d'Intégral Pharma depuis 2006 : redistribuer directement
+        la marge aux officines françaises, en toute transparence, avec des prix nets visibles sur facture.</p>
+      <p class="rvl">Neuf implantations aujourd'hui, plus de deux mille officines livrées chaque jour,
+        et la même idée qu'au premier jour — un groupe de répartiteurs indépendants qui a choisi de se
+        mettre du côté du comptoir.</p>
+
+      <div class="compteurs rvl">
+        <div class="cpt"><b data-cible="2006">2006</b><span>Année de création</span></div>
+        <div class="cpt"><b data-cible="9">9</b><span>Implantations</span></div>
+        <div class="cpt"><b data-cible="2000" data-suffixe=" +">2 000 +</b><span>Officines livrées</span></div>
+        <div class="cpt"><b data-cible="20">20</b><span>Ans d'indépendance</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ LE JOUR SE LÈVE — la bascule. Rien que du très grand texte ici. ══ -->
+  <section class="bascule" id="levant">
+    <p class="surtitre rvl" data-h="08:20">Le jour se lève</p>
+    <h2 class="rvl">Pendant que l'officine ouvre,<br>le réseau a déjà travaillé.</h2>
+    <p class="rvl">Neuf implantations, de la Bretagne à la Méditerranée.</p>
+  </section>
+
+  <!-- ══ 3 · LE RÉSEAU — 10:30, la lumière balaie la liste ══ -->
+  <section class="bloc" id="reseau">
+    <div class="dedans">
+      <div class="reseau__tete">
+        <div>
+          <p class="surtitre rvl" data-h="10:30">Le réseau</p>
+          <h2 class="rvl">Neuf implantations.<br>Laquelle est la vôtre&nbsp;?</h2>
+        </div>
+        <div>
+          <p class="rvl">C'est la seule question qui compte vraiment. Celle qui prépare votre commande,
+            qui vous livre chaque matin, et dont vous connaissez l'équipe par son prénom.</p>
+          <p class="rvl">Les huit autres sont là pour qu'elle ne soit jamais prise au dépourvu —
+            de la Bretagne à la Méditerranée, le stock d'une maison est le stock de toutes.</p>
+        </div>
+      </div>
+
+      <ul class="liste" id="liste">
+        <li class="imp"><span class="imp__n">01</span><span class="imp__nom">Hyères Pharma <em>(siège du groupe)</em></span><span class="imp__lieu"><b>Hyères</b>83</span></li>
+        <li class="imp"><span class="imp__n">02</span><span class="imp__nom">SR Pharma</span><span class="imp__lieu"><b>Palaiseau</b>91</span></li>
+        <li class="imp"><span class="imp__n">03</span><span class="imp__nom">Mistral Santé Pharma</span><span class="imp__lieu"><b>Flassans-sur-Issole</b>83</span></li>
+        <li class="imp"><span class="imp__n">04</span><span class="imp__nom">Sud Ouest Pharma</span><span class="imp__lieu"><b>Montayral</b>47</span></li>
+        <li class="imp"><span class="imp__n">05</span><span class="imp__nom">Comptoir Pharmaceutique du Rhône</span><span class="imp__lieu"><b>Saint-Maurice-l'Exil</b>38</span></li>
+        <li class="imp"><span class="imp__n">06</span><span class="imp__nom">Escale Pharma</span><span class="imp__lieu"><b>Chilly-Mazarin</b>91</span></li>
+        <li class="imp"><span class="imp__n">07</span><span class="imp__nom">Ouest Pharma Services</span><span class="imp__lieu"><b>Saint-Étienne-de-Montluc</b>44</span></li>
+        <li class="imp"><span class="imp__n">08</span><span class="imp__nom">Pharm'Occitanie Services</span><span class="imp__lieu"><b>Villeneuve-lès-Béziers</b>34</span></li>
+        <li class="imp"><span class="imp__n">09</span><span class="imp__nom">Sud Est Pharma</span><span class="imp__lieu"><b>Le Cannet-des-Maures</b>83</span></li>
+      </ul>
+
+      <div class="partenaire rvl">
+        <p>Et à l'Est, notre partenaire <strong>Pharmest</strong> (Metz, 57) prolonge le maillage.</p>
+        <small>Neuf implantations et un partenaire.</small>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ 4 · LE MÉTIER — 11:40 ══ -->
+  <section class="bloc" id="metier">
+    <div class="dedans">
+      <p class="surtitre rvl" data-h="11:40">Le métier</p>
+      <h2 class="rvl">Ce qui se passe entre votre commande et votre comptoir.</h2>
+      <p class="lead rvl">Quelques heures, quatre métiers, et une chaîne qui ne s'arrête jamais.
+        Référencer, stocker, préparer, livrer : c'est invisible depuis l'officine, et c'est tout notre travail.</p>
+
+      <div class="plaques">
+        <article class="plaque rvl">
+          <p class="plaque__n">01 — Le référencement</p>
+          <h3>Un catalogue pour neuf maisons.</h3>
+          <p>Le groupe référence pour ses neuf maisons à la fois : un même catalogue, tenu à jour,
+            disponible dans toutes les implantations. C'est ce qui permet à une maison de taille humaine
+            de proposer la profondeur de gamme d'un réseau national.</p>
+        </article>
+        <article class="plaque rvl">
+          <p class="plaque__n">02 — La disponibilité</p>
+          <h3>Le stock au plus près.</h3>
+          <p>Des stocks répartis sur neuf implantations, au plus près de votre officine. Quand le comptoir
+            a besoin, le réseau répond — et quand une référence manque quelque part, elle existe souvent
+            ailleurs dans le réseau.</p>
+        </article>
+        <article class="plaque rvl">
+          <p class="plaque__n">03 — La préparation</p>
+          <h3>Par une équipe qui vous connaît.</h3>
+          <p>Chaque commande est préparée dans l'implantation la plus proche de chez vous, par une équipe
+            qui connaît votre officine et ses saisons.</p>
+        </article>
+        <article class="plaque rvl">
+          <p class="plaque__n">04 — La livraison</p>
+          <h3>Tous les jours, sans exception.</h3>
+          <p>Tous les jours, les tournées partent vers les officines. La régularité d'un service tenu —
+            c'est elle qui fait la confiance, pas les promesses.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ MIDI — la toiture solaire, au zénith. Ombres les plus courtes. ══ -->
+  <section class="bande media" id="midi">
+    <img src="../../assets/siege-solaire.jpg" alt="Vue aérienne de la toiture solaire du siège d'Intégral Pharma à Hyères" loading="lazy" decoding="async">
+    <span class="media__teinte"></span>
+    <span class="media__chaud"></span>
+    <span class="media__froid"></span>
+    <div class="bande__texte">
+      <p class="surtitre" data-h="13:00">Midi</p>
+      <p>Et quand la vie de votre officine change — <b>transfert, agrandissement, cession de parts</b> —
+        votre interlocuteur ajuste l'approvisionnement avec vous, sans à-coup au comptoir.</p>
+    </div>
+  </section>
+
+  <!-- ══ 4 bis · LA CENTRALE — 14:10 ══ -->
+  <section class="bloc">
+    <div class="dedans">
+      <p class="surtitre rvl" data-h="14:10">La centrale</p>
+      <h2 class="rvl">Et pour tout ce qui n'est pas le médicament.</h2>
+      <p class="lead rvl">Notre centrale de parapharmacie référence pour l'officine plus de 14 000 produits
+        et plus de 480 marques.</p>
+      <p class="rvl">C'est une structure à part, avec son propre fonctionnement — sa commande, sa livraison —
+        et la même exigence que le reste du groupe.</p>
+
+      <div class="compteurs compteurs--duo rvl">
+        <div class="cpt"><b data-cible="14000" data-suffixe=" +">14 000 +</b><span>Références</span></div>
+        <div class="cpt"><b data-cible="480" data-suffixe=" +">480 +</b><span>Marques</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ 4 ter · LES FACTURES — 15:20 ══ -->
+  <section class="bloc">
+    <div class="dedans">
+      <p class="surtitre rvl" data-h="15:20">Vos factures</p>
+      <h2 class="rvl">Elles arrivent déjà là où vous les gérez.</h2>
+      <p class="lead rvl">Nous sommes connectés à Digipharmacie : vos factures Intégral s'y retrouvent
+        automatiquement, avec celles de vos autres fournisseurs.</p>
+      <p class="rvl"><strong>Rien à saisir, rien à classer, rien à réclamer.</strong></p>
+    </div>
+  </section>
+
+  <!-- ══ 4 quater · LES PARTENAIRES — 16:30 ══ -->
+  <section class="bloc" id="partenaires">
+    <div class="dedans">
+      <p class="surtitre rvl" data-h="16:30">Nos partenaires</p>
+      <h2 class="rvl">Les laboratoires qui nous font confiance.</h2>
+      <div class="labos rvl">
+        <div class="labo">EG&nbsp;Labo</div>
+        <div class="labo">Zentiva</div>
+        <div class="labo">Zydus</div>
+        <div class="labo">Viatris</div>
+        <div class="labo">ITP</div>
+        <div class="labo">Santestat</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ 4 quinquies · NOUS REJOINDRE — 17:30 ══ -->
+  <section class="bloc">
+    <div class="dedans">
+      <p class="surtitre rvl" data-h="17:30">Nous rejoindre</p>
+      <h2 class="rvl">Neuf implantations qui embauchent.</h2>
+      <p class="lead rvl">Préparateur-chauffeur, technicien approvisionnement, commercial, pharmacien
+        responsable : les métiers de la répartition s'apprennent chez nous.</p>
+      <!-- lien provisoire vers la page Carrières actuelle, à remplacer par son URL exacte -->
+      <div class="villes rvl">
+        <span class="ville">Hyères&nbsp;(83)</span>
+        <span class="ville">Villeneuve-lès-Béziers&nbsp;(34)</span>
+        <span class="ville">Montayral&nbsp;(47)</span>
+        <span class="ville">Saint-Maurice-l'Exil&nbsp;(38)</span>
+      </div>
+      <div class="boutons rvl">
+        <a class="btn btn--plein" href="https://www.integralpharma.fr/" rel="noopener">Voir les offres</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ LE SOLEIL PASSE — la seconde bascule ══ -->
+  <section class="bascule" id="couchant">
+    <p class="surtitre rvl" data-h="18:20">Le soleil passe</p>
+    <h2 class="rvl">La dernière tournée<br>rentre au dépôt.</h2>
+    <p class="rvl">Demain matin, la même équipe décrochera.</p>
+  </section>
+
+  <!-- ══ LE SIÈGE AU COUCHANT ══ -->
+  <section class="bande media">
+    <img src="../../assets/siege-web.jpg" alt="Le siège d'Intégral Pharma à Hyères, vue de trois quarts" loading="lazy" decoding="async">
+    <span class="media__teinte"></span>
+    <span class="media__chaud"></span>
+    <span class="media__froid"></span>
+    <div class="bande__texte">
+      <p class="surtitre" data-h="18:50">Hyères</p>
+      <p>758 chemin de la Source, ZI Saint-Martin — le siège du groupe, et l'une des neuf maisons
+        qui préparent, chaque matin, la commande de votre officine.</p>
+    </div>
+  </section>
+
+  <!-- ══ 5 · LES VALEURS — 19:10 ══ -->
+  <section class="bloc" id="valeurs">
+    <div class="dedans">
+      <p class="surtitre rvl" data-h="19:10">Nos valeurs</p>
+      <h2 class="rvl">Trois mots qui se vérifient au téléphone.</h2>
+      <div class="valeurs">
+        <div class="valeur rvl">
+          <h3>Confiance</h3>
+          <p>La personne qui décroche connaît votre officine, vos saisons et vos habitudes.</p>
+        </div>
+        <div class="valeur rvl">
+          <h3>Engagement</h3>
+          <p>C'est la même d'une année sur l'autre. Dans ce métier, c'est devenu rare.</p>
+        </div>
+        <div class="valeur rvl">
+          <h3>Respect</h3>
+          <p>Elle ne vous vendra pas ce dont vous n'avez pas besoin — parce qu'elle vous reverra
+            le mois suivant, et l'année d'après.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ 6 · LA FIN DE PAGE — 20:10 ══ -->
+  <section class="bloc fin" id="ecrire">
+    <div class="dedans">
+      <p class="surtitre rvl" data-h="20:10" style="justify-content:center">Nous écrire</p>
+      <h2 class="rvl">Posez-nous la question qui vous intéresse.</h2>
+      <p class="lead rvl" style="margin-left:auto;margin-right:auto">Sur nos conditions, sur nos délais,
+        sur la façon dont nous travaillons. Vous aurez une réponse claire, et le nom de l'implantation
+        qui livre votre secteur.</p>
+      <a class="btn btn--plein rvl" href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a>
+    </div>
+  </section>
+
+</main>
+
+<footer class="pied">
+  <div class="dedans">
+    <div class="pied__grille">
+      <p><strong>Intégral Pharma</strong><br>758 chemin de la Source, ZI Saint-Martin, 83400 Hyères</p>
+      <p><a href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a><br>
+         <a href="#">Mentions légales</a></p>
+    </div>
+    <div class="pied__chiffres">
+      <span>9 implantations · plus de 2 000 officines livrées · indépendant depuis 2006</span>
+      <span class="signature">27 · Plein jour</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function(){
+'use strict';
+var doc = document.documentElement;
+doc.classList.add('js');
+
+var douxOff = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LES ÉTAPES DU JOUR
+   Chaque étape porte TOUT ce que la lumière commande à cet instant. Entre deux
+   étapes, on interpole. Il n'existe pas d'autre source de vérité dans la page.
+   ══════════════════════════════════════════════════════════════════════════ */
+var ETAPES = [
+  /* p rempli plus bas par construireEtapes() */
+  {cle:'aube',     x: 8, y:74, alt:.04, min: 340, phase:'p-nuit',
+   haut:'#060B16', bas:'#0E1626', noyau:'#FF7A3D', halo:'#B3421C', I:.34, sol:'#0B1220'},
+  {cle:'matin0',   x:17, y:65, alt:.15, min: 430, phase:'p-nuit',
+   haut:'#0D1526', bas:'#1D2438', noyau:'#FF8A3A', halo:'#C2521E', I:.50, sol:'#141B2C'},
+  {cle:'levant',   x:27, y:51, alt:.33, min: 500, phase:'p-jour',
+   haut:'#7A2F14', bas:'#C9531B', noyau:'#FFD08A', halo:'#FF8A3A', I:.80, sol:'#C9531B'},
+  {cle:'matin',    x:38, y:30, alt:.66, min: 630, phase:'p-jour',
+   haut:'#E9E6DE', bas:'#F6F3EC', noyau:'#FFFFFF', halo:'#FFE9BE', I:.94, sol:'#F4F1EA'},
+  {cle:'midi',     x:50, y:13, alt:1,   min: 780, phase:'p-jour',
+   haut:'#F2EFE7', bas:'#FBF9F4', noyau:'#FFFFFF', halo:'#FFF4DC', I:1,   sol:'#FBF9F4'},
+  {cle:'aprem',    x:64, y:29, alt:.70, min: 940, phase:'p-jour',
+   haut:'#F5EFE3', bas:'#F9F4EA', noyau:'#FFFDF6', halo:'#FFE3AE', I:.94, sol:'#F7F2E8'},
+  {cle:'couchant', x:76, y:51, alt:.33, min:1100, phase:'p-soir',
+   haut:'#8C3A14', bas:'#C9531B', noyau:'#FFC46E', halo:'#FF7A28', I:.80, sol:'#C9531B'},
+  {cle:'soir',     x:93, y:75, alt:.04, min:1210, phase:'p-soir',
+   haut:'#0F0A06', bas:'#1B120A', noyau:'#FF9440', halo:'#8A3A12', I:.34, sol:'#16100A'}
+];
+
+/* Les étapes sont accrochées au CONTENU, pas à une répartition arbitraire :
+   le jour se lève exactement sur le panneau « Le jour se lève », midi tombe
+   exactement sur la toiture solaire. */
+var ANCRES = {aube:null, matin0:'#groupe', levant:'#levant', matin:'#reseau',
+              midi:'#midi', aprem:'#partenaires', couchant:'#couchant', soir:null};
+
+var hauteurDoc = 1, vh = 1;
+var SEUILS = {levant:.22, couchant:.82};
+
+function construireEtapes(){
+  vh = window.innerHeight;
+  hauteurDoc = Math.max(1, document.documentElement.scrollHeight - vh);
+  for (var i = 0; i < ETAPES.length; i++){
+    var e = ETAPES[i], sel = ANCRES[e.cle], p;
+    if (i === 0) p = 0;
+    else if (i === ETAPES.length - 1) p = 1;
+    else if (sel && document.querySelector(sel)){
+      var el = document.querySelector(sel);
+      var haut = el.getBoundingClientRect().top + window.pageYOffset;
+      /* on vise le milieu de l'élément pour les panneaux de bascule et les
+         bandes photographiques, son entrée pour les sections longues */
+      var centre = (e.cle === 'levant' || e.cle === 'couchant' || e.cle === 'midi')
+                 ? haut + el.offsetHeight / 2 - vh / 2
+                 : haut - vh * 0.45;
+      p = centre / hauteurDoc;
+    } else p = i / (ETAPES.length - 1);
+    e.p = Math.min(1, Math.max(0, p));
+  }
+  /* on garantit une suite strictement croissante */
+  for (var j = 1; j < ETAPES.length; j++){
+    if (ETAPES[j].p <= ETAPES[j-1].p) ETAPES[j].p = Math.min(1, ETAPES[j-1].p + 0.004);
+  }
+  for (var s1 = 0; s1 < ETAPES.length; s1++){
+    if (ETAPES[s1].cle === 'levant')   SEUILS.levant   = ETAPES[s1].p;
+    if (ETAPES[s1].cle === 'couchant') SEUILS.couchant = ETAPES[s1].p;
+  }
+  mesurerListe();
+}
+
+/* ── interpolation ─────────────────────────────────────────────────────── */
+function versRVB(h){ h = h.replace('#',''); return [parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16)]; }
+function melange(a, b, k){
+  var A = versRVB(a), B = versRVB(b);
+  return 'rgb(' + Math.round(A[0]+(B[0]-A[0])*k) + ',' + Math.round(A[1]+(B[1]-A[1])*k) + ',' + Math.round(A[2]+(B[2]-A[2])*k) + ')';
+}
+function lisse(k){ return k*k*(3-2*k); } /* adoucit l'entrée et la sortie de chaque étape */
+
+var etat = {x:44, y:24, alt:.74, I:.92, min:624, haut:'#E9E6DE', bas:'#F6F3EC',
+            noyau:'#FFFFFF', halo:'#FFE9BE', sol:'#F4F1EA', phase:'p-jour'};
+
+function calculer(p){
+  var i = 0;
+  while (i < ETAPES.length - 2 && p > ETAPES[i+1].p) i++;
+  var a = ETAPES[i], b = ETAPES[i+1];
+  var k = lisse(Math.min(1, Math.max(0, (p - a.p) / Math.max(1e-6, b.p - a.p))));
+  etat.x   = a.x   + (b.x   - a.x)   * k;
+  etat.y   = a.y   + (b.y   - a.y)   * k;
+  etat.alt = a.alt + (b.alt - a.alt) * k;
+  etat.I   = a.I   + (b.I   - a.I)   * k;
+  etat.min = a.min + (b.min - a.min) * k;
+  etat.haut  = melange(a.haut,  b.haut,  k);
+  etat.bas   = melange(a.bas,   b.bas,   k);
+  etat.noyau = melange(a.noyau, b.noyau, k);
+  etat.halo  = melange(a.halo,  b.halo,  k);
+  etat.sol   = melange(a.sol,   b.sol,   k);
+  /* la phase bascule EXACTEMENT sur l'étape orange (le panneau de bascule) :
+     c'est le seul instant où le fond tient les deux encres à la fois. */
+  etat.phase = (p < SEUILS.levant) ? 'p-nuit' : (p < SEUILS.couchant ? 'p-jour' : 'p-soir');
+}
+
+/* ── écriture des variables CSS, quantifiée ────────────────────────────── */
+var dernier = {};
+function poser(nom, valeur){
+  if (dernier[nom] === valeur) return;
+  dernier[nom] = valeur;
+  doc.style.setProperty(nom, valeur);
+}
+var phasePosee = '';
+
+function ecrire(){
+  var q = Math.round;
+  poser('--lx', (Math.round(etat.x / 2) * 2) + '%');
+  poser('--ly', (Math.round(etat.y / 2) * 2) + '%');
+  poser('--teinte', etat.halo);
+  poser('--I',  (Math.round(etat.I * 50) / 50).toString());
+  poser('--alt',(Math.round(etat.alt * 50) / 50).toString());
+
+  /* LE VECTEUR D'OMBRE — le cœur de la direction.
+     azimut = décalage horizontal du soleil par rapport au centre de l'écran.
+     Le soleil est toujours au-dessus : l'ombre part donc toujours vers le bas,
+     et d'autant plus loin que le soleil est bas. UNE seule direction, partout. */
+  var az  = (etat.x - 50) / 50;              /* -1 à gauche, +1 à droite */
+  var lon = 5 + 25 * Math.pow(1 - etat.alt, 1.4);
+  var pas2 = function(v){ return Math.round(v / 2) * 2; };
+  var dx  = pas2(-az * lon * 0.95);
+  var dy  = pas2(lon * 0.62 + 4);
+  var fl  = Math.round(lon * 1.25 + 10);
+  /* l'ombre est bleue le matin, neutre à midi, brune le soir */
+  var chaleur = Math.min(1, Math.max(0, (etat.x - 50) / 50));
+  var oR = q(18 + 30 * chaleur), oG = q(22 + 12 * chaleur), oB = q(46 - 30 * chaleur);
+  var oA = (0.13 + 0.13 * etat.alt).toFixed(2);
+  var base = oR + ',' + oG + ',' + oB;
+  poser('--ombre',        dx + 'px ' + dy + 'px ' + fl + 'px rgba(' + base + ',' + oA + ')');
+  poser('--ombre-courte', q(dx*.5) + 'px ' + q(dy*.5) + 'px ' + q(fl*.45) + 'px rgba(' + base + ',' + (oA*0.8).toFixed(2) + ')');
+  poser('--ombre-longue', q(dx*2.1) + 'px ' + q(dy*2.1) + 'px ' + q(fl*2.2) + 'px rgba(' + base + ',' + (oA*1.05).toFixed(2) + ')');
+
+  /* même vecteur, exprimé en angle de dégradé : 0deg = vers le haut, 90deg = vers la droite */
+  var ang = Math.atan2(dx, -dy) * 180 / Math.PI;
+  poser('--angle', (Math.round(ang / 3) * 3) + 'deg');
+
+  poser('--sol-vif', etat.sol);
+
+  if (etat.phase !== phasePosee){
+    doc.classList.remove('p-nuit','p-jour','p-soir');
+    doc.classList.add(etat.phase);
+    phasePosee = etat.phase;
+  }
+
+  /* l'heure */
+  var m = Math.round(etat.min);
+  var hh = Math.floor(m / 60), mm = m % 60;
+  var txt = (hh < 10 ? '0' : '') + hh + ':' + (mm < 10 ? '0' : '') + mm;
+  if (pendule && pendule.textContent !== txt) pendule.textContent = txt;
+  if (astre){
+    var t = etat.x / 100;
+    astre.setAttribute('cx', (2 + 70 * t).toFixed(1));
+    astre.setAttribute('cy', (23 - 21 * Math.sin(Math.PI * t)).toFixed(1));
+  }
+}
+var pendule = document.getElementById('pendule');
+var astre   = document.getElementById('astre');
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LE CIEL — canvas 2D. Aucun contexte GPU tenu, aucune 3D.
+   Si le contexte échoue, on retire le canvas et un fond CSS prend le relais.
+   ══════════════════════════════════════════════════════════════════════════ */
+var cv = document.getElementById('ciel');
+var ctx = null, dpr = 1, L = 0, H = 0, grain = null, poussieres = [];
+var fond = null, fctx = null, grainF = null;  /* la toile de côté */
+var dernierFond = {x:-99, y:-99, I:-1, img:-99};
+
+function initCiel(){
+  try { ctx = cv.getContext('2d', {alpha:false}); } catch(e){ ctx = null; }
+  if (!ctx){
+    if (cv && cv.parentNode) cv.parentNode.removeChild(cv);
+    var repli = document.createElement('div');
+    repli.className = 'nociel';
+    document.body.insertBefore(repli, document.body.firstChild);
+    return false;
+  }
+  fond = document.createElement('canvas');
+  fctx = fond.getContext('2d');
+  if (!fctx){ ctx = null; return false; }
+  /* la trame de grain, fabriquée une seule fois */
+  var g = document.createElement('canvas');
+  g.width = g.height = 96;
+  var gc = g.getContext('2d');
+  if (gc){
+    var im = gc.createImageData(96, 96);
+    for (var i = 0; i < im.data.length; i += 4){
+      var n = 118 + Math.random() * 74;
+      im.data[i] = im.data[i+1] = im.data[i+2] = n; im.data[i+3] = 255;
+    }
+    gc.putImageData(im, 0, 0);
+    grain = ctx.createPattern(g, 'repeat');
+    grainF = fctx.createPattern(g, 'repeat');
+  }
+  for (var j = 0; j < 60; j++){
+    poussieres.push({x:Math.random(), y:Math.random(), r:.4 + Math.random()*1.5,
+                     v:.00006 + Math.random()*.00022, d:Math.random()*Math.PI*2});
+  }
+  redimensionner();
+  return true;
+}
+
+function redimensionner(){
+  if (!ctx) return;
+  dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+  L = window.innerWidth; H = window.innerHeight;
+  cv.width  = Math.round(L * dpr);
+  cv.height = Math.round(H * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  if (fond){
+    fond.width = cv.width; fond.height = cv.height;
+    fctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  dernierFond.x = -99;
+}
+
+var horloge = 0, imagesFond = 0, imageNo = 0;
+/* ne peint jamais hors de l'écran : un carré de 1 800 px de côté pour un halo
+   coûtait le double de pixels utiles. */
+function boite(c, x, y, w, h){
+  var x0 = Math.max(0, x), y0 = Math.max(0, y);
+  var x1 = Math.min(L, x + w), y1 = Math.min(H, y + h);
+  if (x1 > x0 && y1 > y0) c.fillRect(x0, y0, x1 - x0, y1 - y0);
+}
+
+/* ── LA TOILE DE CÔTÉ : ciel, rais, halo, disque et grain ────────────────────
+   Refaite seulement quand le soleil a réellement bougé (0,6 % de l'écran) ou
+   toutes les six images pour la respiration des rais. Le reste du temps, la
+   page se contente de la recopier — une seule opération. */
+function peindreFond(){
+  var sx = etat.x / 100 * L, sy = etat.y / 100 * H;
+  var c = fctx;
+
+  var g1 = c.createLinearGradient(0, 0, 0, H);
+  g1.addColorStop(0, etat.haut);
+  g1.addColorStop(1, etat.bas);
+  c.globalCompositeOperation = 'source-over';
+  c.globalAlpha = 1;
+  c.fillStyle = g1;
+  c.fillRect(0, 0, L, H);
+
+  c.globalCompositeOperation = 'lighter';
+
+  /* les rais : sept coins partant du soleil, respiration lente */
+  var portee = Math.max(L, H) * 1.9;
+  var base = Math.atan2(H - sy, L * 0.5 - sx);
+  for (var i = 0; i < 7; i++){
+    var a = base + (i - 3) * 0.155 + Math.sin(horloge * 0.00016 + i) * 0.022;
+    var ouv = 0.030 + Math.sin(horloge * 0.00024 + i * 1.7) * 0.010;
+    var gr = c.createLinearGradient(sx, sy, sx + Math.cos(a) * portee, sy + Math.sin(a) * portee);
+    gr.addColorStop(0,   'rgba(255,240,214,' + (0.11 * etat.I).toFixed(3) + ')');
+    gr.addColorStop(.45, 'rgba(255,236,200,' + (0.045 * etat.I).toFixed(3) + ')');
+    gr.addColorStop(1,   'rgba(255,236,200,0)');
+    c.fillStyle = gr;
+    c.beginPath();
+    c.moveTo(sx, sy);
+    c.lineTo(sx + Math.cos(a - ouv) * portee, sy + Math.sin(a - ouv) * portee);
+    c.lineTo(sx + Math.cos(a + ouv) * portee, sy + Math.sin(a + ouv) * portee);
+    c.closePath();
+    c.fill();
+  }
+
+  /* le halo, trois couches. Il n'éclate qu'au zénith : c'est exactement le
+     moment où l'encre est sombre. À l'aube et au couchant, c'est un charbon. */
+  var force = 0.22 + 0.78 * etat.alt;
+  var rayons = [[Math.max(L,H) * 0.62, etat.halo, 0.34],
+                [Math.max(L,H) * 0.24, etat.halo, 0.46],
+                [70 + 60 * etat.alt,   etat.noyau, 0.95]];
+  for (var k = 0; k < rayons.length; k++){
+    var R = rayons[k][0], col = versRVB2(rayons[k][1]), al = rayons[k][2] * force * etat.I;
+    var g2 = c.createRadialGradient(sx, sy, 0, sx, sy, R);
+    g2.addColorStop(0,  'rgba(' + col + ',' + al.toFixed(3) + ')');
+    g2.addColorStop(.5, 'rgba(' + col + ',' + (al * 0.28).toFixed(3) + ')');
+    g2.addColorStop(1,  'rgba(' + col + ',0)');
+    c.fillStyle = g2;
+    boite(c, sx - R, sy - R, R * 2, R * 2);
+  }
+
+  /* le disque, net */
+  var rd = 16 + 12 * etat.alt;
+  var g3 = c.createRadialGradient(sx, sy, 0, sx, sy, rd);
+  g3.addColorStop(0,   'rgba(' + versRVB2(etat.noyau) + ',' + (0.95 * force).toFixed(3) + ')');
+  g3.addColorStop(.72, 'rgba(' + versRVB2(etat.noyau) + ',' + (0.55 * force).toFixed(3) + ')');
+  g3.addColorStop(1,   'rgba(' + versRVB2(etat.noyau) + ',0)');
+  c.fillStyle = g3;
+  boite(c, sx - rd, sy - rd, rd * 2, rd * 2);
+
+  /* le grain, qui empêche les dégradés de se rayer */
+  if (grainF){
+    c.globalCompositeOperation = 'overlay';
+    c.globalAlpha = 0.055;
+    c.save();
+    c.translate((horloge * 0.013) % 96 | 0, (horloge * 0.009) % 96 | 0);
+    c.fillStyle = grainF;
+    c.fillRect(-96, -96, L + 192, H + 192);
+    c.restore();
+    c.globalAlpha = 1;
+  }
+  c.globalCompositeOperation = 'source-over';
+  imagesFond++;
+}
+
+function dessinerCiel(){
+  if (!ctx) return;
+  var sx = etat.x / 100 * L, sy = etat.y / 100 * H;
+
+  if (Math.abs(etat.x - dernierFond.x) >= 0.6 || Math.abs(etat.y - dernierFond.y) >= 0.6 ||
+      Math.abs(etat.I - dernierFond.I) >= 0.02 || (imageNo - dernierFond.img) >= 6){
+    peindreFond();
+    dernierFond.x = etat.x; dernierFond.y = etat.y; dernierFond.I = etat.I; dernierFond.img = imageNo;
+  }
+
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.globalAlpha = 1;
+  ctx.drawImage(fond, 0, 0, L, H);
+
+  /* la poussière dans le faisceau — le seul dessin qui reste par image */
+  ctx.globalCompositeOperation = 'lighter';
+  var seuil = Math.max(L, H) * 0.85;
+  for (var d = 0; d < poussieres.length; d++){
+    var p = poussieres[d];
+    if (!douxOff){
+      p.x += Math.cos(p.d) * p.v; p.y += Math.sin(p.d) * p.v * 0.5 - 0.00004;
+      if (p.x < -.05) p.x = 1.05; if (p.x > 1.05) p.x = -.05;
+      if (p.y < -.05) p.y = 1.05; if (p.y > 1.05) p.y = -.05;
+    }
+    var px = p.x * L, py = p.y * H;
+    var dist = Math.sqrt((px - sx) * (px - sx) + (py - sy) * (py - sy));
+    if (dist > seuil) continue;
+    var pr = 1 - dist / seuil;
+    ctx.fillStyle = 'rgba(255,244,222,' + (pr * 0.5 * etat.I).toFixed(3) + ')';
+    ctx.beginPath(); ctx.arc(px, py, p.r, 0, 6.2832); ctx.fill();
+  }
+  ctx.globalCompositeOperation = 'source-over';
+}
+function versRVB2(c){
+  if (c.charAt(0) === '#'){ var a = versRVB(c); return a[0] + ',' + a[1] + ',' + a[2]; }
+  return c.replace('rgb(', '').replace(')', '');
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LA LISTE DES NEUF — la lumière n'en désigne qu'une à la fois.
+   Les positions sont mesurées une fois, jamais dans la boucle : aucune lecture
+   de mise en page par image.
+   ══════════════════════════════════════════════════════════════════════════ */
+var lignes = [], hauts = [];
+function mesurerListe(){
+  lignes = [].slice.call(document.querySelectorAll('.imp'));
+  hauts = lignes.map(function(el){
+    var r = el.getBoundingClientRect();
+    return r.top + window.pageYOffset + r.height / 2;
+  });
+}
+var eclatsPoses = [];
+function eclairerListe(y){
+  var ligne = y + vh * 0.46;   /* la ligne de lumière, à 46 % de l'écran */
+  for (var i = 0; i < lignes.length; i++){
+    var d = Math.abs(hauts[i] - ligne);
+    var e = Math.max(0, 1 - d / 140);
+    e = Math.round(e * 20) / 20;
+    if (eclatsPoses[i] !== e){ eclatsPoses[i] = e; lignes[i].style.setProperty('--eclat', e); }
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   UN SEUL ORCHESTRATEUR : une lecture du défilement, puis le DOM et le ciel
+   lisent le même instantané. C'est ce qui garantit qu'aucune ombre ne
+   retarde d'une image sur la lumière.
+   ══════════════════════════════════════════════════════════════════════════ */
+var entete = document.getElementById('entete');
+var poseeEntete = false;
+var derniereY = -1;
+
+function boucle(ts){
+  horloge = ts || 0; imageNo++;
+  var y = window.pageYOffset || doc.scrollTop || 0;
+  if (y !== derniereY){
+    derniereY = y;
+    calculer(hauteurDoc > 0 ? Math.min(1, Math.max(0, y / hauteurDoc)) : 0);
+    ecrire();
+    eclairerListe(y);
+    var p2 = y > 24;
+    if (p2 !== poseeEntete){ poseeEntete = p2; entete.classList.toggle('pose', p2); }
+  }
+  dessinerCiel();
+  requestAnimationFrame(boucle);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   RÉVÉLATION — le masquage est posé par le script (classe .js), jamais par la
+   feuille seule : sans script, tout est visible. Rien ne se re-masque, et une
+   passe est déclenchée tout de suite pour les blocs déjà à l'écran.
+   ══════════════════════════════════════════════════════════════════════════ */
+function revelation(){
+  var cibles = [].slice.call(document.querySelectorAll('.rvl'));
+  if (!('IntersectionObserver' in window)){
+    cibles.forEach(function(el){ el.classList.add('vu'); });
+    return;
+  }
+  var obs = new IntersectionObserver(function(entrees){
+    entrees.forEach(function(e){
+      if (!e.isIntersecting) return;
+      var el = e.target;
+      var i = +(el.getAttribute('data-i') || 0);
+      setTimeout(function(){ el.classList.add('vu'); }, i * 70);
+      obs.unobserve(el);              /* jamais de re-masquage */
+      if (el.querySelector('[data-cible]') || el.hasAttribute('data-cible')) compter(el);
+    });
+  }, {rootMargin:'0px 0px 0px 0px', threshold:0});
+  cibles.forEach(function(el){
+    var f = el.parentNode;
+    var freres = [].slice.call(f.children).filter(function(c){ return c.classList && c.classList.contains('rvl'); });
+    el.setAttribute('data-i', Math.min(5, freres.indexOf(el)));
+    obs.observe(el);
+  });
+  /* tout ce qui est DÉJÀ à l'écran se montre sans attendre un défilement */
+  cibles.forEach(function(el){
+    var r = el.getBoundingClientRect();
+    if (r.top < window.innerHeight && r.bottom > 0){
+      el.classList.add('vu'); obs.unobserve(el);
+      if (el.hasAttribute('data-cible') || el.querySelector('[data-cible]')) compter(el);
+    }
+  });
+}
+
+/* ── COMPTEURS ─────────────────────────────────────────────────────────────
+   Une année ne prend JAMAIS le séparateur de milliers. Le test est repris tel
+   quel du référentiel : cible >= 1900 && cible <= 2100 && pas de suffixe. */
+function formater(v, suffixe, cible){
+  var ref = (cible === undefined) ? v : cible;
+  var annee = (ref >= 1900 && ref <= 2100 && !suffixe);
+  var s = annee ? String(v) : String(v).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  return s + (suffixe || '');
+}
+function compter(portee){
+  var els = portee.hasAttribute('data-cible') ? [portee] : [].slice.call(portee.querySelectorAll('[data-cible]'));
+  els.forEach(function(el){
+    if (el.getAttribute('data-fait')) return;
+    el.setAttribute('data-fait', '1');
+    var cible = parseInt(el.getAttribute('data-cible'), 10);
+    var suf = el.getAttribute('data-suffixe') || '';
+    if (douxOff){ el.textContent = formater(cible, suf, cible); return; }
+    var t0 = 0, duree = 1250;
+    function pas(ts){
+      if (!t0) t0 = ts;
+      var k = Math.min(1, (ts - t0) / duree);
+      var e = 1 - Math.pow(1 - k, 3);
+      el.textContent = formater(Math.round(cible * e), suf, cible);
+      if (k < 1) requestAnimationFrame(pas); else el.textContent = formater(cible, suf, cible);
+    }
+    requestAnimationFrame(pas);
+  });
+}
+
+/* ── MENU TÉLÉPHONE ────────────────────────────────────────────────────── */
+var burger = document.getElementById('burger');
+var nav = document.getElementById('nav');
+if (burger){
+  burger.addEventListener('click', function(){
+    var ouvert = doc.classList.toggle('menu-ouvert');
+    burger.setAttribute('aria-expanded', ouvert ? 'true' : 'false');
+    burger.setAttribute('aria-label', ouvert ? 'Fermer le menu' : 'Ouvrir le menu');
+  });
+  nav.addEventListener('click', function(e){
+    if (e.target.tagName === 'A'){
+      doc.classList.remove('menu-ouvert');
+      burger.setAttribute('aria-expanded', 'false');
+    }
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && doc.classList.contains('menu-ouvert')){
+      doc.classList.remove('menu-ouvert');
+      burger.setAttribute('aria-expanded', 'false');
+    }
+  });
+}
+
+/* ── BANDEAU : on double la piste pour que la boucle soit invisible ─────── */
+var piste = document.getElementById('piste');
+if (piste) piste.innerHTML = piste.innerHTML + piste.innerHTML;
+
+/* ── DÉPART ────────────────────────────────────────────────────────────── */
+function demarrer(){
+  var ok = initCiel();
+  construireEtapes();
+  calculer(0);
+  ecrire();
+  eclairerListe(window.pageYOffset || 0);
+  revelation();
+  if (ok || true) requestAnimationFrame(boucle);
+}
+
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', demarrer);
+else demarrer();
+
+/* les images arrivant plus tard changent la hauteur du document : on remesure */
+window.addEventListener('load', function(){ construireEtapes(); derniereY = -1; });
+var minuteur = null;
+window.addEventListener('resize', function(){
+  if (minuteur) clearTimeout(minuteur);
+  minuteur = setTimeout(function(){ redimensionner(); construireEtapes(); derniereY = -1; }, 140);
+}, {passive:true});
+})();
+</script>
+
+</body>
+</html>

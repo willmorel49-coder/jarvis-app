@@ -1,0 +1,17 @@
+Polices de la maquette 37 « LE TRAIT » — toutes sous SIL Open Font License 1.1
+(OFL). Sous-ensemble « latin » uniquement. Servies depuis ce dossier, aucun CDN.
+
+instrumentserif.woff2 / instrumentserif-italic.woff2
+  Instrument Serif (Instrument / Rodrigo Fuenzalida). OFL 1.1.
+  Titres. Sa forte modulation plein/délié est la parente typographique du
+  trait tracé à la main : c'est la même main qui écrit et qui dessine.
+
+inter.woff2
+  Inter (Rasmus Andersson), variable 100–900. OFL 1.1.
+  Texte courant, boutons, navigation.
+
+geistmono.woff2
+  Geist Mono (Vercel), variable 300–700. OFL 1.1.
+  Numérotation des implantations et des étapes, compteurs, libellés.
+
+Copiées depuis propositions/v2026/polices-05/ et polices-17/.

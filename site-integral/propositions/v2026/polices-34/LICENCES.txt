@@ -1,0 +1,24 @@
+Polices employées par m-34.html — « L'Étoffe »
+Toutes auto-hébergées ici, sous-ensemble latin. Aucun appel à Google Fonts.
+
+bodonimoda.woff2      Bodoni Moda — SIL Open Font License 1.1
+                      https://fonts.google.com/specimen/Bodoni+Moda
+                      Fichier variable (axes opsz 6..96 + wght 400..900),
+                      sous-ensemble latin, récupéré sur fonts.gstatic.com le
+                      16/08/2026. 46 Ko.
+                      Pourquoi elle : c'est une didone à très fort contraste de
+                      graisse. Sur une étoffe qui ondule, ce sont ses pleins et
+                      ses déliés qui accrochent la lumière rasante du pli — une
+                      grotesque à graisse constante ne montrerait rien.
+
+archivo.woff2         Archivo — SIL Open Font License 1.1
+                      https://fonts.google.com/specimen/Archivo
+                      Fichier variable (wght 100..900). Copié depuis
+                      polices-22/. 90 Ko. Texte courant et navigation.
+
+plexmono-400.woff2    IBM Plex Mono 400 — SIL Open Font License 1.1
+                      https://fonts.google.com/specimen/IBM+Plex+Mono
+                      Copié depuis polices-21/. 10 Ko. Sur-titres, légendes,
+                      bandeau, chiffres du pied de page.
+
+Total servi : 146 Ko.

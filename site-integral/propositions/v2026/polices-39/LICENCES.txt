@@ -1,0 +1,20 @@
+Polices de la maquette 39 — direction « DELTA ».
+Servies depuis ce dossier, sous-ensemble latin, aucun appel réseau sortant.
+
+Archivo (archivo-var.woff2)
+  SIL Open Font License 1.1 — Omnibus-Type
+  https://github.com/Omnibus-Type/Archivo
+  Fonte variable, axes wght 100-900 et wdth 62-125.
+  Pourquoi elle : l'axe de chasse permet de resserrer les grands titres à 78 %
+  sans changer de fichier — le titre a la densité d'une condensée, le texte
+  courant garde la lisibilité d'une grotesque normale. Un seul fichier pour tout.
+
+Geist Mono (geistmono.woff2)
+  SIL Open Font License 1.1 — Vercel
+  https://github.com/vercel/geist-font   (variable 400-600, sous-ensemble latin)
+  Usage : numéros d'implantation, compteurs, sur-titres, étiquettes tracées
+  dans le canevas. Chiffres à chasse fixe, indispensables pour les compteurs
+  qui s'incrémentent sans faire sauter la mise en page.
+
+Les deux fichiers sont recopiés depuis polices-27/ et polices-29/ du même
+dossier : aucun téléchargement, aucune connexion extérieure.

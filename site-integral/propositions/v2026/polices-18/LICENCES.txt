@@ -1,0 +1,18 @@
+Polices de la maquette 18 « Le Relevé » — SIL Open Font License 1.1 (OFL).
+Sous-ensemble « latin » uniquement, téléchargé depuis fonts.gstatic.com le 15/08/2026.
+
+inter.woff2 — Inter (Rasmus Andersson), variable 100–900, latin. OFL 1.1.
+              https://github.com/rsms/inter — licence OFL 1.1.
+
+              Remplace « Wise Sans », police propriétaire nommée par la charte de
+              référence « wise ». Ce n'est pas un choix par défaut : la charte
+              elle-même déclare Inter comme repli immédiat dans chacun de ses neuf
+              rôles typographiques (« Wise Sans, Inter, system-ui »). Même
+              grotesque à hauteur d'x très haute, et surtout la même amplitude de
+              graisse — c'est elle qui porte toute la direction : 900 sur les
+              chiffres et les mots-clés, 400 sur la prose, à la même taille.
+
+              Un seul fichier variable sert les trois graisses employées
+              (400 / 600 / 900) : une seule requête, 48 Ko.
+
+Aucune autre police n'est servie, ni appelée depuis un service extérieur.

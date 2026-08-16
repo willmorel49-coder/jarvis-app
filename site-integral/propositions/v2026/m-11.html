@@ -1,0 +1,1311 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Intégral Pharma — Neuf maisons. Un seul nom.</title>
+<meta name="description" content="Groupe de grossistes-répartiteurs français indépendant. Neuf implantations, plus de 2 000 officines livrées chaque jour.">
+
+<!--
+  ══════════════════════════════════════════════════════════════════════════════
+  MAQUETTE 11 — direction « CADRAN »
+  Charte de travail : bmw (~/jarvis-design/app/chartes.js). Jouée en bleu Intégral.
+
+  L'IDÉE
+    La répartition pharmaceutique est une performance technique : 2 000 officines
+    livrées chaque matin, un stock tenu sur neuf sites, une commande préparée en
+    quelques heures. La page se lit comme la planche d'un constructeur — fond
+    clair, grille de colonnes apparente, chiffres posés sur une échelle graduée,
+    bandes sombres qui encadrent la photographie. Les quatre métiers ne sont pas
+    quatre cartes : c'est UNE ligne de production que le défilement fait avancer.
+
+  CE QUE JE PRENDS À LA CHARTE
+    · la toile CLAIRE par défaut, coupée par des bandes bleu-nuit qui encadrent
+      la photographie — c'est sa manière de construire une page ;
+    · UNE seule tension de couleur pour les appels à l'action, jamais deux ;
+    · sa graisse forte réservée aux PETITS corps (16→20 px en 700), le grand
+      display restant en 500 — c'est exactement ce que fait la charte, dont
+      l'échelle plafonne à 64 px, et cela évite le titre géant en 800 qui fait
+      scolaire ;
+    · la densité de filets : hairline #E2E6EC partout, rayon 2 px, jamais rond ;
+    · les chiffres de performance mis en scène.
+
+  CE QUE JE N'EN PRENDS PAS
+    · sa couleur de marque (#1c69d4) : c'est le bleu Intégral #0050E6 qui la
+      remplace, à la même place et au même rôle ;
+    · ni son nom, ni son logo, ni ses formes signature ;
+    · sa police propriétaire BMW Type Next Latin → remplacée par ARCHIVO
+      (Omnibus-Type, SIL OFL 1.1), grotesque à chasse variable, la plus proche
+      libre. Les libellés techniques sont en IBM PLEX MONO (IBM, SIL OFL 1.1).
+
+  MÉDIAS  (servis par le même hôte, appelés en relatif)
+    · hero.mp4 — vue verticale tournante sur la toiture, en fond d'ouverture ;
+      sur téléphone, le script bascule sur band.mp4, tourné en portrait.
+    · siege-solaire.jpg — la vue de dessus, traitée en « plan », section réseau ;
+    · siege-web.jpg — la vue trois quarts, en bande pleine largeur après la
+      ligne de production.
+    clip3.mp4 est ÉCARTÉ : c'est le même cadrage que siege-solaire.jpg.
+    poster.jpg est ÉCARTÉ : c'est le même fichier image que siege-web.jpg.
+    Trois cadrages distincts, aucune répétition.
+
+  LE PIÈGE DE LA BARRE, ÉVITÉ PAR CONSTRUCTION
+    La barre est BLANCHE ET PLEINE dans tous ses états, sans exception et sans
+    script. Aucune classe posée en JavaScript ne conditionne sa lisibilité : le
+    script ne fait qu'épaissir son filet et avancer sa jauge. Script coupé, la
+    barre est identique.
+
+  TEXTE : CONTENU-SITE-2026.md, validé par Will le 14/08, mot pour mot. Ses deux
+  arbitrages assumés — l'année 2006, la phrase sur la marge — sont repris tels
+  quels et ne doivent pas être « corrigés ».
+  ══════════════════════════════════════════════════════════════════════════════
+-->
+
+<style>
+/* ═══════════ 1 · POLICES — servies par nous, licences libres ═══════════ */
+@font-face{
+  font-family:"Archivo";
+  src:url("polices-11/archivo-var.woff2") format("woff2");
+  font-weight:100 900; font-stretch:62% 125%; font-style:normal; font-display:swap;
+}
+@font-face{
+  font-family:"PlexMono"; src:url("polices-11/plexmono-400.woff2") format("woff2");
+  font-weight:400; font-style:normal; font-display:swap;
+}
+@font-face{
+  font-family:"PlexMono"; src:url("polices-11/plexmono-500.woff2") format("woff2");
+  font-weight:500; font-style:normal; font-display:swap;
+}
+
+/* ═══════════ 2 · JETONS ═══════════ */
+:root{
+  /* La marque Intégral remplace le bleu de la charte, au même rôle. */
+  --bleu:#0050E6;
+  --bleu-actif:#003BB0;
+  --bleu-clair:#E6EEFE;
+  --orange:#F39A1B;        /* l'aiguille des instruments, rien d'autre */
+
+  --encre:#101722;
+  --corps:#3C4453;
+  --sourd:#6B7482;
+  --filet:#E2E6EC;
+  --filet-fort:#C7CFDA;
+
+  --papier:#FFFFFF;
+  --papier-2:#F5F7FA;
+  --papier-3:#EBEFF5;
+
+  --nuit:#0B1524;
+  --nuit-2:#132133;
+  --nuit-filet:rgba(255,255,255,.14);
+  --sur-nuit:#FFFFFF;
+  --sur-nuit-corps:#B6C4D8;
+  --sur-nuit-sourd:#8494AB;
+
+  --dis:"Archivo","Helvetica Neue",Arial,system-ui,sans-serif;
+  --mono:"PlexMono",ui-monospace,SFMono-Regular,Menlo,monospace;
+
+  --barre:74px;
+  --marge:clamp(20px,5vw,68px);
+  --large:1200px;
+  --sortie:cubic-bezier(.22,.61,.36,1);
+}
+
+*,*::before,*::after{ box-sizing:border-box }
+html{ scroll-behavior:smooth; -webkit-text-size-adjust:100% }
+body{
+  margin:0; background:var(--papier); color:var(--encre);
+  font-family:var(--dis); font-size:17px; font-weight:400; line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+  /* Pas d'overflow-x:hidden ici : il transforme le corps de page en conteneur de
+     défilement et casse `position:sticky`. Le débordement est traité à la source,
+     dans les blocs qui débordent (bandeau, ligne de production, bandes photo). */
+}
+img,video{ display:block; max-width:100% }
+a{ color:inherit }
+h1,h2,h3{ margin:0 }
+
+/* Le lien d'évitement est masqué par découpe, PAS par un left:-9999px : une
+   position hors-cadre agrandit la zone défilable et rouvre le débordement
+   horizontal que la page interdit. */
+.saut{
+  position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%);
+  white-space:nowrap; background:var(--bleu); color:#fff; text-decoration:none;
+}
+.saut:focus{
+  position:fixed; left:10px; top:10px; z-index:400; width:auto; height:auto;
+  min-height:46px; clip-path:none; padding:0 22px; display:inline-flex; align-items:center;
+  font:500 14px/1 var(--dis);
+}
+:focus-visible{ outline:2px solid var(--bleu); outline-offset:3px }
+
+/* ═══════════ 3 · LA BARRE — BLANCHE ET PLEINE, TOUJOURS ═══════════
+   Elle ne dépend d'aucune classe pour être lisible. Le script ne fait
+   qu'épaissir le filet du bas et avancer la jauge. */
+.barre{
+  position:fixed; top:0; left:0; right:0; z-index:120; height:var(--barre);
+  background:var(--papier); border-bottom:1px solid var(--filet);
+  display:flex; align-items:center; gap:18px;
+  padding:0 clamp(16px,3vw,34px);
+}
+.barre.est-posee{ border-bottom-color:var(--filet-fort) }
+.barre__jauge{
+  position:absolute; left:0; bottom:-1px; height:2px; width:0;
+  background:var(--bleu); transition:width .12s linear;
+}
+.marque{ display:flex; align-items:center; gap:13px; text-decoration:none; margin-right:auto; min-height:46px }
+/* Le pictogramme seul : à 44 px de haut, le mot du fichier logo tomberait à 7 px
+   de corps, illisible. Le nom est donc composé à côté, comme le fait la charte. */
+.marque__mq{ width:47px; height:44px; overflow:hidden; position:relative; flex:0 0 auto }
+.marque__mq img{ position:absolute; width:117px; max-width:none; height:auto; left:-35px; top:-16px }
+.marque__nom{ font:600 17.5px/1.1 var(--dis); letter-spacing:-.015em; color:var(--encre) }
+.marque__nom em{ font-style:normal; color:var(--bleu) }
+.marque__tag{
+  font:500 12px/1.25 var(--mono); letter-spacing:.14em; text-transform:uppercase;
+  color:var(--sourd); border-left:1px solid var(--filet); padding-left:13px;
+  max-width:14ch;
+}
+.barre__nav{ display:flex; align-items:center; gap:clamp(14px,2vw,30px) }
+.barre__nav a{
+  text-decoration:none; font:500 14.5px/1 var(--dis); letter-spacing:0;
+  color:var(--corps); padding:12px 2px; min-height:44px; display:inline-flex;
+  align-items:center; border-bottom:2px solid transparent; transition:color .25s, border-color .25s;
+}
+.barre__nav a:hover,.barre__nav a.est-vu{ color:var(--encre); border-bottom-color:var(--bleu) }
+
+.bt{
+  display:inline-flex; align-items:center; justify-content:center; gap:11px;
+  min-height:52px; padding:0 26px; border-radius:2px; text-decoration:none;
+  background:var(--bleu); color:#fff; border:1px solid var(--bleu);
+  font:600 15px/1 var(--dis); letter-spacing:.005em;
+  transition:background-color .25s ease, border-color .25s ease, transform .25s var(--sortie);
+}
+.bt:hover{ background:var(--bleu-actif); border-color:var(--bleu-actif); transform:translateY(-1px) }
+.bt svg{ width:14px; height:14px; flex:0 0 auto }
+.bt--vide{ background:transparent; color:var(--encre); border-color:var(--filet-fort) }
+.bt--vide:hover{ background:var(--papier-2); border-color:var(--encre); color:var(--encre) }
+.bt--nuit{ background:transparent; color:#fff; border-color:rgba(255,255,255,.4) }
+.bt--nuit:hover{ background:rgba(255,255,255,.1); border-color:#fff }
+.bt--menu{ min-height:44px; padding:0 20px; font-size:14px }
+
+.burger{
+  display:none; width:46px; height:46px; border:1px solid var(--filet-fort);
+  border-radius:2px; background:var(--papier); cursor:pointer; place-items:center;
+}
+.burger i{ display:block; width:18px; height:1.6px; background:var(--encre); position:relative }
+.burger i::before,.burger i::after{
+  content:""; position:absolute; left:0; width:18px; height:1.6px; background:var(--encre);
+}
+.burger i::before{ top:-6px } .burger i::after{ top:6px }
+
+/* Menu téléphone : fond PLEIN, rien ne défile au travers. */
+.panneau{
+  position:fixed; inset:0; z-index:130; background:var(--nuit); display:none;
+  flex-direction:column; padding:calc(var(--barre) + 22px) var(--marge) 34px;
+}
+.panneau.ouvert{ display:flex }
+.panneau a{
+  display:flex; align-items:center; justify-content:space-between; min-height:64px;
+  text-decoration:none; color:var(--sur-nuit);
+  font:500 clamp(1.6rem,7.4vw,2.2rem)/1.1 var(--dis); letter-spacing:-.025em;
+  border-bottom:1px solid var(--nuit-filet);
+}
+.panneau a em{ font:400 12px/1 var(--mono); font-style:normal; color:var(--sur-nuit-sourd); letter-spacing:.14em }
+.panneau a:last-of-type{ color:#fff; border-bottom:0 }
+.panneau__fermer{
+  position:absolute; top:14px; right:16px; width:46px; height:46px; border-radius:2px;
+  background:transparent; border:1px solid var(--nuit-filet); color:#fff;
+  font:400 1.3rem/1 var(--dis); cursor:pointer;
+}
+
+/* ═══════════ 4 · LE RAIL D'INSTRUMENTS (grand écran seulement) ═══════════ */
+.rail{
+  position:fixed; left:20px; top:50%; transform:translateY(-50%); z-index:110;
+  display:none; flex-direction:column; width:60px;
+}
+/* Le rail passe au-dessus des bandes claires ET des bandes sombres : ses deux
+   couleurs sont donc choisies pour tenir sur les deux fonds. Un gris d'encre
+   n'y suffirait pas — il disparaît sur le bleu-nuit. */
+.rail a{
+  display:flex; align-items:center; gap:9px; text-decoration:none; min-height:44px;
+  font:500 12px/1 var(--mono); letter-spacing:.1em; color:#8794A6;
+  transition:color .3s ease;
+}
+.rail a::before{
+  content:""; width:14px; height:1.5px; background:currentColor;
+  transition:width .35s var(--sortie), background-color .3s ease;
+  flex:0 0 auto;
+}
+.rail a:hover{ color:#5C6878 }
+.rail a.est-vu{ color:var(--orange) }
+.rail a.est-vu::before{ width:26px; background:var(--orange) }
+@media (min-width:1400px){ .rail{ display:flex } }
+
+/* ═══════════ 5 · TYPOGRAPHIE ═══════════ */
+.etiq{
+  display:flex; align-items:center; gap:12px; margin:0 0 clamp(20px,2.6vh,32px);
+  font:500 12px/1.4 var(--mono); letter-spacing:.18em; text-transform:uppercase;
+  color:var(--sourd);
+}
+.etiq i{
+  font-style:normal; color:var(--bleu); border:1px solid var(--filet-fort);
+  border-radius:2px; padding:5px 8px; letter-spacing:.08em;
+}
+.sur-nuit .etiq{ color:var(--sur-nuit-sourd) }
+.sur-nuit .etiq i{ color:#7FB0FF; border-color:var(--nuit-filet) }
+
+/* Le grand display reste en 500 : la charte réserve sa graisse forte aux petits corps. */
+.t{
+  font-family:var(--dis); font-weight:500;
+  font-size:clamp(2.05rem,5.1vw,4.05rem); line-height:1.04; letter-spacing:-.032em;
+  text-wrap:balance; max-width:20ch;
+}
+.t--geant{ font-size:clamp(2.5rem,6.9vw,5.4rem); line-height:.98; letter-spacing:-.038em; max-width:15ch }
+.t--petit{ font-size:clamp(1.7rem,3.4vw,2.6rem); max-width:24ch }
+.t b{ font-weight:500; color:var(--bleu) }
+.sur-nuit .t b{ color:#7FB0FF }
+
+.txt{ margin:clamp(18px,2.4vh,28px) 0 0; max-width:58ch; color:var(--corps); font-size:17px; line-height:1.68 }
+.txt--fort{ color:var(--encre); font-size:clamp(17px,1.5vw,19.5px); max-width:52ch }
+.txt + .txt{ margin-top:15px }
+.sur-nuit .txt{ color:var(--sur-nuit-corps) }
+.sur-nuit .txt--fort{ color:#fff }
+
+/* ═══════════ 6 · SECTIONS, GRILLE TECHNIQUE, LUMIÈRE ═══════════ */
+/* ⚠️ Aucune section ne porte `overflow:hidden` : une seule suffirait à annuler le
+   `position:sticky` de la ligne de production, qui se contenterait alors de
+   défiler avec la page. Les fonds décoratifs sont en `inset:0`, ils ne débordent
+   jamais ; ce qui déborde vraiment est enfermé dans son propre bloc. */
+.sec{ position:relative; padding:clamp(78px,11vh,152px) var(--marge) }
+.grille,.lueur{ overflow:hidden }
+.in{ max-width:var(--large); margin:0 auto; position:relative; z-index:3 }
+.sec--doux{ background:var(--papier-2) }
+.sec--fort{ background:var(--papier-3) }
+.sur-nuit{ background:var(--nuit); color:var(--sur-nuit) }
+
+/* La planche du constructeur : les colonnes de la grille restent visibles. */
+.grille{
+  position:absolute; inset:0; z-index:1; pointer-events:none;
+  background-image:repeating-linear-gradient(90deg,var(--filet) 0 1px,transparent 1px 12.5%);
+  opacity:.85;
+}
+.sur-nuit .grille,.pied .grille{
+  background-image:repeating-linear-gradient(90deg,rgba(255,255,255,.07) 0 1px,transparent 1px 12.5%);
+  opacity:1;
+}
+/* La source de lumière — des dégradés radiaux composés par le GPU, aucun flou. */
+.lueur{ position:absolute; inset:0; z-index:2; pointer-events:none }
+.lueur::before,.lueur::after{ content:""; position:absolute; inset:0 }
+.lueur::before{ background:radial-gradient(64% 58% at 76% -6%, rgba(0,80,230,.10) 0%, rgba(0,80,230,0) 68%) }
+.lueur::after{ background:radial-gradient(52% 46% at 4% 104%, rgba(243,154,27,.09) 0%, rgba(243,154,27,0) 66%) }
+.sur-nuit .lueur::before,.pied .lueur::before{ background:radial-gradient(72% 62% at 52% -12%, rgba(0,102,255,.36) 0%, rgba(0,102,255,0) 70%) }
+.sur-nuit .lueur::after,.pied .lueur::after{ background:radial-gradient(58% 52% at 96% 108%, rgba(243,154,27,.13) 0%, rgba(243,154,27,0) 68%) }
+
+.duo{
+  display:grid; gap:clamp(28px,4vw,72px);
+  grid-template-columns:minmax(0,1fr) minmax(0,1.08fr); align-items:start;
+}
+.duo--haut{ align-items:start }
+
+/* ═══════════ 7 · OUVERTURE ═══════════ */
+.ouv{
+  min-height:100vh; min-height:100svh; display:flex; flex-direction:column;
+  justify-content:flex-end; padding-top:calc(var(--barre) + 30px); padding-bottom:0;
+}
+.ouv__film{ position:absolute; inset:0; z-index:0; background:var(--nuit); overflow:hidden }
+.ouv__film video{ width:100%; height:100%; object-fit:cover; opacity:.62 }
+.ouv__voile{
+  position:absolute; inset:0; z-index:1; pointer-events:none;
+  background:
+    linear-gradient(180deg, rgba(11,21,36,.92) 0%, rgba(11,21,36,.42) 38%, rgba(11,21,36,.80) 78%, rgba(11,21,36,.97) 100%),
+    linear-gradient(90deg, rgba(11,21,36,.86) 0%, rgba(11,21,36,.18) 62%, rgba(11,21,36,.36) 100%);
+}
+.ouv .in{ padding-bottom:clamp(26px,4vh,44px) }
+.ouv__cart{
+  display:inline-flex; align-items:stretch; border:1px solid var(--nuit-filet);
+  border-radius:2px; overflow:hidden; margin-bottom:clamp(22px,3vh,34px);
+}
+.ouv__cart span{
+  padding:11px 15px; font:500 12px/1.4 var(--mono); letter-spacing:.14em;
+  text-transform:uppercase; color:var(--sur-nuit-corps);
+}
+.ouv__cart span:first-child{
+  border-right:1px solid var(--nuit-filet); color:#fff; background:rgba(255,255,255,.06);
+}
+.btns{ display:flex; flex-wrap:wrap; gap:12px; margin-top:clamp(26px,3.6vh,40px) }
+
+/* La réglette de relevés, en bas de l'ouverture. */
+.releve{
+  position:relative; z-index:3; max-width:var(--large); margin:clamp(34px,5vh,60px) auto 0;
+  border-top:1px solid var(--nuit-filet); display:grid; grid-template-columns:repeat(3,1fr);
+}
+.releve div{ padding:clamp(16px,2.2vh,24px) 18px clamp(20px,3vh,30px) 0 }
+.releve div + div{ border-left:1px solid var(--nuit-filet); padding-left:22px }
+.releve b{
+  display:block; font:500 clamp(1.15rem,2vw,1.55rem)/1.1 var(--dis);
+  letter-spacing:-.02em; color:#fff; font-variant-numeric:tabular-nums;
+}
+.releve span{
+  display:block; margin-top:9px; font:500 12px/1.4 var(--mono); letter-spacing:.14em;
+  text-transform:uppercase; color:var(--sur-nuit-sourd);
+}
+.ouv__fleche{
+  position:absolute; right:var(--marge); bottom:clamp(22px,4vh,40px); z-index:4;
+  width:44px; height:44px; display:grid; place-items:center; color:var(--sur-nuit-corps);
+  animation:respire 2.6s ease-in-out infinite;
+}
+@keyframes respire{ 0%,100%{ transform:translateY(0) } 50%{ transform:translateY(7px) } }
+
+/* ═══════════ 8 · BANDEAU DÉFILANT ═══════════ */
+.band{
+  border-bottom:1px solid var(--filet); background:var(--papier);
+  padding:clamp(16px,2.4vh,24px) 0; overflow:hidden; position:relative; z-index:5;
+}
+.band__piste{ display:flex; width:max-content; animation:defile 52s linear infinite }
+.band__piste span{
+  display:inline-flex; align-items:center; gap:.9em; white-space:nowrap; padding-right:.9em;
+  font:500 clamp(13px,1.5vw,16px)/1 var(--mono); letter-spacing:.16em;
+  text-transform:uppercase; color:var(--sourd);
+}
+.band__piste span::after{ content:"/"; color:var(--bleu); font-weight:500 }
+@keyframes defile{ from{ transform:translate3d(0,0,0) } to{ transform:translate3d(-50%,0,0) } }
+
+/* ═══════════ 9 · LES CADRANS (compteurs) ═══════════ */
+.cadrans{
+  display:grid; grid-template-columns:repeat(4,1fr);
+  margin-top:clamp(44px,6vh,78px); border-top:1px solid var(--filet-fort);
+}
+.cadrans--duo{ grid-template-columns:repeat(2,1fr); max-width:640px }
+.cadran{ padding:0 20px 4px 0; position:relative }
+.cadran + .cadran{ border-left:1px solid var(--filet); padding-left:22px }
+/* L'échelle graduée : c'est le geste « instrument » de la direction. */
+.cadran__ech{
+  display:block; height:11px; margin-bottom:clamp(20px,2.6vh,30px); position:relative;
+  background-image:repeating-linear-gradient(90deg,var(--filet-fort) 0 1px,transparent 1px 9px);
+  background-position:0 0; background-repeat:repeat-x; background-size:100% 6px;
+}
+.cadran__ech::before{
+  content:""; position:absolute; left:0; top:0; width:2px; height:11px; background:var(--orange);
+}
+.cadran b{
+  display:block; font:500 clamp(2.1rem,4.6vw,3.7rem)/1 var(--dis); letter-spacing:-.042em;
+  font-variant-numeric:tabular-nums; color:var(--encre);
+}
+.cadran b i{ font-style:normal; color:var(--bleu) }
+.cadran span{
+  display:block; margin-top:13px; font:500 12px/1.5 var(--mono); letter-spacing:.13em;
+  text-transform:uppercase; color:var(--sourd);
+}
+
+/* ═══════════ 10 · LA PLANCHE PHOTO (vue de dessus) ═══════════ */
+.planche{ position:relative; margin:0; border:1px solid var(--filet-fort); border-radius:2px; background:var(--papier) }
+.planche__img{ position:relative; overflow:hidden; aspect-ratio:4/3 }
+.planche__img img{ width:100%; height:100%; object-fit:cover }
+.planche__cadre{ position:absolute; inset:12px; border:1px solid rgba(255,255,255,.5); pointer-events:none }
+.planche__cadre::before,.planche__cadre::after{
+  content:""; position:absolute; width:14px; height:14px; border:solid var(--orange); border-width:2px 0 0 2px;
+}
+.planche__cadre::before{ left:-1px; top:-1px }
+.planche__cadre::after{ right:-1px; bottom:-1px; border-width:0 2px 2px 0 }
+.planche figcaption{
+  display:flex; justify-content:space-between; gap:14px; padding:14px 16px;
+  border-top:1px solid var(--filet); font:500 12px/1.5 var(--mono);
+  letter-spacing:.13em; text-transform:uppercase; color:var(--sourd);
+}
+.planche figcaption b{ color:var(--encre); font-weight:500 }
+
+/* Bande photo pleine largeur */
+.bande{ position:relative; height:clamp(300px,58vh,600px); overflow:hidden; background:var(--nuit) }
+.bande img{ width:100%; height:100%; object-fit:cover }
+.bande__voile{
+  position:absolute; inset:0;
+  background:linear-gradient(180deg, rgba(11,21,36,.55) 0%, rgba(11,21,36,0) 34%, rgba(11,21,36,.78) 100%);
+}
+.bande__leg{
+  position:absolute; left:var(--marge); right:var(--marge); bottom:clamp(20px,3.4vh,34px);
+  display:flex; flex-wrap:wrap; gap:12px 26px; align-items:baseline;
+  font:500 12px/1.5 var(--mono); letter-spacing:.14em; text-transform:uppercase;
+  color:var(--sur-nuit-corps);
+}
+.bande__leg b{ color:#fff; font-weight:500; font-size:13px }
+
+/* ═══════════ 11 · LE RÉSEAU ═══════════ */
+.maisons{ list-style:none; margin:clamp(30px,4vh,46px) 0 0; padding:0; border-top:1px solid var(--filet-fort) }
+.maisons li{
+  display:grid; grid-template-columns:44px minmax(0,1fr) auto; gap:16px; align-items:baseline;
+  padding:17px 6px 17px 0; border-bottom:1px solid var(--filet);
+  transition:padding-left .32s var(--sortie), background-color .32s ease;
+}
+.maisons li:hover{ padding-left:14px; background:rgba(0,80,230,.045) }
+.maisons li b{ font:500 12px/1.3 var(--mono); letter-spacing:.08em; color:var(--bleu) }
+.maisons li strong{ font:500 clamp(1rem,1.7vw,1.28rem)/1.3 var(--dis); letter-spacing:-.018em; color:var(--encre) }
+.maisons li strong em{
+  font-style:normal; font:500 12px/1 var(--mono); letter-spacing:.12em; text-transform:uppercase;
+  color:var(--bleu); background:var(--bleu-clair); border-radius:2px; padding:5px 7px;
+  margin-left:10px; white-space:nowrap; display:inline-block; vertical-align:middle;
+}
+.maisons li i{ font-style:normal; font:500 12.5px/1.4 var(--mono); letter-spacing:.06em; color:var(--sourd); white-space:nowrap }
+.note{
+  margin:20px 0 0; padding:16px 18px; border:1px solid var(--filet-fort); border-left:3px solid var(--orange);
+  border-radius:2px; background:var(--papier); font-size:15.5px; line-height:1.62; color:var(--corps); max-width:62ch;
+}
+.note b{ color:var(--encre); font-weight:600 }
+
+/* ═══════════ 12 · LA LIGNE DE PRODUCTION ═══════════
+   Par défaut (script coupé, ou petit écran) : les quatre postes sont EMPILÉS et
+   entièrement lisibles. Le défilement horizontal n'est armé que par le script,
+   via la classe .ligne--armee, et seulement au-dessus de 1000 px. */
+.ligne{ margin-top:clamp(40px,6vh,72px); position:relative }
+.ligne__piste{
+  display:grid; gap:1px; grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+  background:var(--nuit-filet); border:1px solid var(--nuit-filet); border-radius:2px;
+}
+.poste{
+  background:var(--nuit); padding:clamp(24px,3.2vh,36px) clamp(20px,2.4vw,32px);
+  display:flex; flex-direction:column; position:relative;
+}
+.poste__n{
+  display:inline-flex; align-items:center; gap:10px; margin-bottom:20px;
+  font:500 12px/1 var(--mono); letter-spacing:.16em; color:#7FB0FF;
+}
+.poste__n::before{ content:""; width:8px; height:8px; border-radius:50%; background:var(--orange) }
+/* Le grand chiffre fantôme ne sert qu'à la ligne armée : il occupe le haut du
+   panneau, qui sinon serait un vide de 260 px sur un écran de 900. */
+.poste__grand{ display:none }
+.poste h3{
+  font:500 clamp(1.3rem,2.2vw,1.72rem)/1.2 var(--dis); letter-spacing:-.026em;
+  color:#fff; margin-bottom:14px;
+}
+.poste p{ margin:0; color:var(--sur-nuit-corps); font-size:16px; line-height:1.68 }
+.jauge{ display:none }
+.cloture{
+  margin:clamp(30px,4vh,44px) 0 0; padding-top:24px; border-top:1px solid var(--nuit-filet);
+  color:#fff; font-size:clamp(16.5px,1.5vw,19px); line-height:1.62; max-width:66ch;
+}
+
+/* État armé par le script — grand écran uniquement */
+.ligne--armee{ margin-left:calc(var(--marge) * -1); margin-right:calc(var(--marge) * -1) }
+.ligne--armee .ligne__colle{
+  position:sticky; top:var(--barre); height:calc(100svh - var(--barre));
+  display:flex; flex-direction:column; overflow:hidden;
+  padding:clamp(18px,3vh,34px) 0 clamp(14px,2vh,24px);
+}
+.ligne--armee .ligne__piste{
+  display:flex; flex:1; min-height:0; width:max-content; gap:0;
+  background:transparent; border:0; border-radius:0;
+  padding:0 var(--marge); will-change:transform;
+}
+.ligne--armee .poste{
+  width:min(52vw,560px); flex:0 0 auto; border-top:1px solid var(--nuit-filet);
+  border-right:1px solid var(--nuit-filet); background:transparent;
+  padding:clamp(22px,2.8vh,32px) clamp(24px,2.6vw,38px) clamp(26px,3.4vh,40px);
+  justify-content:space-between;
+}
+.ligne--armee .poste:first-of-type{ border-left:1px solid var(--nuit-filet) }
+.ligne--armee .poste::before{
+  content:""; position:absolute; left:-4px; top:-4px; width:7px; height:7px;
+  background:var(--nuit); border:1px solid var(--orange); border-radius:50%;
+}
+.ligne--armee .poste__haut{ display:flex; flex-direction:column; align-items:flex-start; gap:4px }
+/* La même échelle graduée que les cadrans : c'est la signature de la direction. */
+.ligne--armee .poste__haut::after{
+  content:""; align-self:stretch; height:9px; margin-top:16px;
+  background-image:repeating-linear-gradient(90deg,rgba(255,255,255,.24) 0 1px,transparent 1px 11px);
+  background-size:100% 5px; background-repeat:repeat-x;
+}
+/* Les titres des quatre postes se calent sur la MÊME ligne : sans hauteur
+   minimale, les paragraphes de longueurs différentes les décalent tous. Le filet
+   du haut se prolonge alors d'un panneau à l'autre — c'est le convoyeur. */
+.ligne--armee .poste__bas{
+  min-height:clamp(168px,24vh,214px);
+  border-top:1px solid var(--nuit-filet); padding-top:clamp(18px,2.4vh,26px);
+  margin:0 calc(clamp(24px,2.6vw,38px) * -1);
+  padding-left:clamp(24px,2.6vw,38px); padding-right:clamp(24px,2.6vw,38px);
+}
+.ligne--armee .poste__grand{
+  display:block; font:500 clamp(4rem,9vh,7.4rem)/.82 var(--dis); letter-spacing:-.05em;
+  color:rgba(255,255,255,.085); font-variant-numeric:tabular-nums; margin-top:-6px;
+}
+.ligne--armee .jauge{
+  display:flex; align-items:center; gap:16px; max-width:var(--large);
+  width:100%; margin:clamp(16px,2.4vh,28px) auto 0; padding:0 var(--marge);
+  flex:0 0 auto;
+}
+.jauge__piste{ position:relative; flex:1; height:2px; background:var(--nuit-filet) }
+.jauge__fil{ position:absolute; left:0; top:0; height:2px; width:0; background:var(--orange); transition:width .1s linear }
+.jauge__n{
+  font:500 12px/1 var(--mono); letter-spacing:.16em; color:var(--sur-nuit-sourd);
+  white-space:nowrap;
+}
+.jauge__n b{ color:#fff; font-weight:500 }
+
+/* ═══════════ 13 · BLOCS COURTS ═══════════ */
+.chips{ display:flex; flex-wrap:wrap; gap:10px; margin-top:clamp(28px,3.6vh,44px) }
+.chips span{
+  display:inline-flex; align-items:center; min-height:48px; padding:0 22px;
+  border:1px solid var(--filet-fort); border-radius:2px; background:var(--papier);
+  font:500 14.5px/1 var(--dis); color:var(--encre);
+  transition:border-color .28s ease, transform .28s var(--sortie), background-color .28s ease;
+}
+.chips span:hover{ border-color:var(--bleu); background:var(--bleu-clair); transform:translateY(-2px) }
+.chips--mono span{ font:500 13px/1 var(--mono); letter-spacing:.1em; text-transform:uppercase; color:var(--corps) }
+
+/* Les laboratoires : une planche de six cellules, pas des pastilles qui laissent
+   un orphelin en deuxième ligne. */
+.labos{
+  display:grid; gap:1px; grid-template-columns:repeat(3,1fr);
+  background:var(--filet); border:1px solid var(--filet);
+}
+.labos span{
+  background:var(--papier); display:flex; align-items:center; justify-content:center;
+  min-height:104px; padding:14px; text-align:center;
+  font:500 clamp(16px,1.5vw,19px)/1.25 var(--dis); letter-spacing:-.012em; color:var(--encre);
+  transition:background-color .3s ease, color .3s ease;
+}
+.labos span:hover{ background:var(--bleu-clair); color:var(--bleu) }
+
+.pied__nav{ display:flex; flex-wrap:wrap; gap:9px }
+.pied__nav a{
+  display:inline-flex; align-items:center; min-height:46px; padding:0 18px;
+  border:1px solid var(--nuit-filet); border-radius:2px; text-decoration:none;
+  font:500 13px/1 var(--mono); letter-spacing:.1em; text-transform:uppercase;
+  color:var(--sur-nuit-corps); transition:border-color .28s ease, color .28s ease;
+}
+.pied__nav a:hover{ border-color:#fff; color:#fff }
+
+.valeurs{
+  display:grid; gap:1px; margin-top:clamp(40px,5.4vh,72px);
+  grid-template-columns:repeat(auto-fit,minmax(258px,1fr));
+  background:var(--filet); border:1px solid var(--filet);
+}
+.valeurs article{ background:var(--papier); padding:clamp(26px,3.4vh,40px) clamp(22px,2.4vw,32px) }
+.valeurs b{ display:block; font:500 12px/1 var(--mono); letter-spacing:.16em; color:var(--bleu); margin-bottom:18px }
+.valeurs h3{ font:500 clamp(1.45rem,2.6vw,1.95rem)/1.15 var(--dis); letter-spacing:-.03em; margin-bottom:13px }
+.valeurs p{ margin:0; color:var(--corps); font-size:16.5px; line-height:1.68 }
+
+.facture{
+  display:grid; gap:clamp(24px,3.4vw,56px); align-items:center;
+  grid-template-columns:minmax(0,1fr) minmax(0,.9fr);
+}
+.trace{
+  border:1px solid var(--filet-fort); border-radius:2px; background:var(--papier); padding:22px 24px;
+}
+.trace__pas{ display:flex; align-items:center; gap:14px; padding:13px 0; font-size:15.5px; color:var(--corps) }
+.trace__pas + .trace__pas{ border-top:1px solid var(--filet) }
+.trace__pas i{
+  font-style:normal; width:28px; height:28px; flex:0 0 auto; border-radius:50%;
+  border:1px solid var(--filet-fort); display:grid; place-items:center;
+  font:500 12px/1 var(--mono); color:var(--bleu);
+}
+.trace__pas:last-child i{ background:var(--bleu); border-color:var(--bleu); color:#fff }
+
+/* ═══════════ 14 · FIN DE PAGE ═══════════ */
+.fin{ text-align:left }
+.fin .bt{ margin-top:clamp(28px,3.6vh,42px); min-height:60px; padding:0 30px; font-size:16px }
+.pied{ background:var(--nuit); color:var(--sur-nuit-corps); padding:clamp(48px,6vh,76px) var(--marge) 34px; position:relative }
+.pied__in{ max-width:var(--large); margin:0 auto; position:relative; z-index:3 }
+.pied__h{ display:flex; flex-wrap:wrap; gap:26px 40px; justify-content:space-between; align-items:flex-end }
+.pied__adr{ font-size:16px; line-height:1.7; max-width:38ch; color:var(--sur-nuit-corps) }
+.pied__adr b{ display:block; color:#fff; font-weight:500; font-size:18px; margin-bottom:8px }
+.pied__adr a{
+  color:#fff; text-decoration:none; border-bottom:1px solid var(--nuit-filet);
+  display:inline-flex; align-items:center; min-height:46px;
+}
+.pied__chiffres{
+  margin-top:clamp(30px,4vh,48px); padding-top:22px; border-top:1px solid var(--nuit-filet);
+  display:flex; flex-wrap:wrap; gap:10px 28px;
+  font:500 12.5px/1.6 var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--sur-nuit-sourd);
+}
+.pied__b{
+  margin-top:24px; padding-top:20px; border-top:1px solid var(--nuit-filet);
+  display:flex; flex-wrap:wrap; gap:14px 26px; justify-content:space-between; align-items:center;
+  font:400 12.5px/1.6 var(--mono); letter-spacing:.08em; color:var(--sur-nuit-sourd);
+}
+.pied__b a{ color:var(--sur-nuit-corps); text-decoration:none; min-height:44px; display:inline-flex; align-items:center }
+.pied__b a:hover{ color:#fff }
+.pied__sig{ color:var(--sur-nuit-sourd) }
+.pied__sig b{ color:#fff; font-weight:500; letter-spacing:.16em }
+
+/* ═══════════ 15 · APPARITIONS — armées par le script uniquement ═══════════
+   Sans script, AUCUN élément n'est transparent : la page est entière. */
+.js-on [data-r]{ opacity:0; transform:translate3d(0,20px,0) }
+.js-on [data-r].vu{
+  opacity:1; transform:none;
+  transition:opacity .7s var(--sortie), transform .7s var(--sortie);
+  transition-delay:calc(var(--i,0) * 70ms);
+}
+
+/* ═══════════ 16 · ADAPTATIONS ═══════════ */
+@media (max-width:1000px){
+  .duo{ grid-template-columns:1fr; gap:clamp(26px,4vh,40px) }
+  .labos{ grid-template-columns:repeat(2,1fr) }
+  .facture{ grid-template-columns:1fr }
+  .cadrans{ grid-template-columns:repeat(2,1fr) }
+  .cadran:nth-child(3){ border-left:0; padding-left:0 }
+  .cadran:nth-child(-n+2){ padding-bottom:26px; margin-bottom:26px; border-bottom:1px solid var(--filet) }
+}
+@media (max-width:860px){
+  :root{ --barre:64px }
+  .barre__nav{ display:none }
+  .barre .bt:not(.burger){ display:none }
+  .burger{ display:grid }
+  /* Ne cacher QUE la mention technique : un sélecteur `.marque span` viserait
+     aussi le pictogramme et le nom, et la barre partirait sans logo. */
+  .marque__tag{ display:none }
+  .releve{ grid-template-columns:1fr }
+  .releve div{ padding-right:0 }
+  .releve div + div{ border-left:0; border-top:1px solid var(--nuit-filet); padding-left:0; padding-top:16px }
+  .maisons li{ grid-template-columns:38px minmax(0,1fr); row-gap:5px }
+  .maisons li i{ grid-column:2 }
+  .maisons li strong em{ margin-left:0; margin-top:7px; display:block; width:max-content }
+  .ouv__fleche{ display:none }
+  .planche__img{ aspect-ratio:3/2 }
+  .bande__leg{ gap:6px 18px }
+}
+@media (max-width:420px){
+  .cadrans{ grid-template-columns:1fr }
+  .cadran{ border-left:0 !important; padding-left:0 !important }
+  .cadran:not(:last-child){ padding-bottom:24px; margin-bottom:24px; border-bottom:1px solid var(--filet) }
+}
+@media (prefers-reduced-motion:reduce){
+  html{ scroll-behavior:auto }
+  *,*::before,*::after{ animation:none !important; transition:none !important }
+  .js-on [data-r]{ opacity:1 !important; transform:none !important }
+}
+</style>
+</head>
+<body>
+
+<a class="saut" href="#contenu">Aller au contenu</a>
+
+<!-- ═══ LA BARRE — blanche et pleine dans tous ses états ═══ -->
+<header class="barre" id="barre">
+  <a class="marque" href="#haut">
+    <span class="marque__mq"><img src="../../assets/logo-web.png" alt="" aria-hidden="true" width="260" height="206"></span>
+    <span class="marque__nom">Intégral <em>Pharma</em></span>
+    <span class="marque__tag">Grossistes-répartiteurs</span>
+  </a>
+  <nav class="barre__nav" aria-label="Navigation principale">
+    <a href="#histoire" data-lien="histoire">Le groupe</a>
+    <a href="#reseau" data-lien="reseau">Le réseau</a>
+    <a href="#metier" data-lien="metier">Le métier</a>
+    <a href="#valeurs" data-lien="valeurs">Nos valeurs</a>
+  </nav>
+  <a class="bt bt--menu" href="#contact">Nous écrire
+    <svg viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 11L11 3M11 3H4.5M11 3v6.5" stroke="currentColor" stroke-width="1.6"/></svg>
+  </a>
+  <button class="burger" id="burger" type="button" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="panneau"><i></i></button>
+  <span class="barre__jauge" id="jaugeBarre" aria-hidden="true"></span>
+</header>
+
+<div class="panneau" id="panneau">
+  <button class="panneau__fermer" id="fermer" type="button" aria-label="Fermer le menu">✕</button>
+  <a href="#histoire">Le groupe <em>01</em></a>
+  <a href="#reseau">Le réseau <em>02</em></a>
+  <a href="#metier">Le métier <em>03</em></a>
+  <a href="#valeurs">Nos valeurs <em>04</em></a>
+  <a href="#contact">Nous écrire <em>05</em></a>
+</div>
+
+<!-- Le rail d'instruments — repères de section, grand écran seulement -->
+<aside class="rail" id="rail" aria-label="Repères de section">
+  <a href="#haut" data-rail="haut">01</a>
+  <a href="#histoire" data-rail="histoire">02</a>
+  <a href="#reseau" data-rail="reseau">03</a>
+  <a href="#metier" data-rail="metier">04</a>
+  <a href="#centrale" data-rail="centrale">05</a>
+  <a href="#valeurs" data-rail="valeurs">06</a>
+  <a href="#contact" data-rail="contact">07</a>
+</aside>
+
+<main id="contenu">
+
+<!-- ═══════════ 01 · OUVERTURE ═══════════ -->
+<section class="sec ouv sur-nuit" id="haut">
+  <div class="ouv__film" aria-hidden="true">
+    <video id="film" src="../../assets/hero.mp4" autoplay muted loop playsinline preload="auto"></video>
+  </div>
+  <script>
+  /* Bascule immédiate, juste après la balise : hero.mp4 est cadré large et perd
+     tout sur un téléphone ; band.mp4 est tourné en portrait. Placé ici, le
+     remplacement se fait avant que le navigateur n'ait chargé plus de quelques
+     kilo-octets du mauvais fichier. Sans script, hero.mp4 reste servi. */
+  (function(){
+    var f = document.getElementById("film");
+    if (f && window.matchMedia("(max-width: 700px)").matches){
+      f.setAttribute("src", "../../assets/band.mp4"); f.load();
+    }
+  })();
+  </script>
+  <div class="ouv__voile" aria-hidden="true"></div>
+  <div class="grille" aria-hidden="true"></div>
+  <div class="lueur" aria-hidden="true"></div>
+
+  <div class="in">
+    <div class="ouv__cart" data-r style="--i:0">
+      <span>Est. 2006</span>
+      <span>Groupe de grossistes-répartiteurs français indépendant</span>
+    </div>
+    <h1 class="t t--geant" data-r style="--i:1">Neuf maisons.<br>Un seul <b>nom</b>.</h1>
+    <p class="txt txt--fort" data-r style="--i:2">Chacune livre sa région depuis des années, avec ses
+      équipes et ses habitudes. Depuis 2006, elles avancent ensemble sous le nom d'Intégral Pharma —
+      et votre commande part toujours de la plus proche de votre comptoir.</p>
+    <div class="btns" data-r style="--i:3">
+      <a class="bt" href="#reseau">Découvrir le réseau
+        <svg viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M7 2v10M2.5 7.5L7 12l4.5-4.5" stroke="currentColor" stroke-width="1.6"/></svg>
+      </a>
+      <a class="bt bt--nuit" href="#contact">Nous écrire</a>
+    </div>
+  </div>
+
+  <div class="releve" data-r style="--i:4">
+    <div><b>9</b><span>Implantations</span></div>
+    <div><b>2 000 +</b><span>Officines livrées</span></div>
+    <div><b>2006</b><span>Indépendant depuis</span></div>
+  </div>
+
+  <span class="ouv__fleche" aria-hidden="true">
+    <svg viewBox="0 0 16 16" fill="none" width="16" height="16"><path d="M8 1v13M3 9.5L8 14.5l5-5" stroke="currentColor" stroke-width="1.4"/></svg>
+  </span>
+</section>
+
+<!-- ═══════════ 02 · BANDEAU DÉFILANT ═══════════ -->
+<div class="band" aria-hidden="true">
+  <div class="band__piste">
+    <span>Indépendant</span><span>Neuf implantations</span><span>Un réseau national</span><span>Plus de 2 000 officines livrées</span><span>Confiance, Engagement, Respect</span><span>Une alternative aux grossistes historiques</span><span>Indépendant</span><span>Neuf implantations</span><span>Un réseau national</span><span>Plus de 2 000 officines livrées</span><span>Confiance, Engagement, Respect</span><span>Une alternative aux grossistes historiques</span>
+  </div>
+</div>
+
+<!-- ═══════════ 03 · NOTRE HISTOIRE ═══════════ -->
+<section class="sec" id="histoire">
+  <div class="grille" aria-hidden="true"></div>
+  <div class="lueur" aria-hidden="true"></div>
+  <div class="in">
+    <div class="duo">
+      <div>
+        <p class="etiq" data-r style="--i:0"><i>02</i> Notre histoire</p>
+        <h2 class="t" data-r style="--i:1">Rendre la marge à l'officine <b>française</b>.</h2>
+      </div>
+      <div>
+        <p class="txt txt--fort" data-r style="--i:2">C'est la raison d'être d'Intégral Pharma depuis
+          2006 : redistribuer directement la marge aux officines françaises, en toute transparence,
+          avec des prix nets visibles sur facture.</p>
+        <p class="txt" data-r style="--i:3">Neuf implantations aujourd'hui, plus de deux mille officines
+          livrées chaque jour, et la même idée qu'au premier jour — un groupe de répartiteurs
+          indépendants qui a choisi de se mettre du côté du comptoir.</p>
+      </div>
+    </div>
+
+    <div class="cadrans" data-r style="--i:4">
+      <div class="cadran">
+        <span class="cadran__ech" aria-hidden="true"></span>
+        <b data-compte="2006">2006</b><span>Année de création</span>
+      </div>
+      <div class="cadran">
+        <span class="cadran__ech" aria-hidden="true"></span>
+        <b data-compte="9">9</b><span>Implantations</span>
+      </div>
+      <div class="cadran">
+        <span class="cadran__ech" aria-hidden="true"></span>
+        <b data-compte="2000" data-suffixe=" +">2 000 +</b><span>Officines livrées</span>
+      </div>
+      <div class="cadran">
+        <span class="cadran__ech" aria-hidden="true"></span>
+        <b data-compte="20">20</b><span>Ans d'indépendance</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 04 · LE RÉSEAU ═══════════ -->
+<section class="sec sec--fort" id="reseau">
+  <div class="grille" aria-hidden="true"></div>
+  <div class="lueur" aria-hidden="true"></div>
+  <div class="in">
+    <div class="duo duo--haut">
+      <div>
+        <p class="etiq" data-r style="--i:0"><i>03</i> Le réseau</p>
+        <h2 class="t" data-r style="--i:1">Neuf implantations. Laquelle est <b>la vôtre</b> ?</h2>
+        <p class="txt txt--fort" data-r style="--i:2">C'est la seule question qui compte vraiment. Celle
+          qui prépare votre commande, qui vous livre chaque matin, et dont vous connaissez l'équipe par
+          son prénom.</p>
+        <p class="txt" data-r style="--i:3">Les huit autres sont là pour qu'elle ne soit jamais prise au
+          dépourvu — de la Bretagne à la Méditerranée, le stock d'une maison est le stock de toutes.</p>
+
+        <figure class="planche" data-r style="--i:4; margin-top:clamp(30px,4vh,46px)">
+          <div class="planche__img">
+            <img src="../../assets/siege-solaire.jpg" alt="Vue de dessus des toitures du site d'Hyères, couvertes de panneaux solaires" loading="lazy" width="1400" height="1050">
+            <span class="planche__cadre" aria-hidden="true"></span>
+          </div>
+          <figcaption><span>Hyères (83) — <b>vue de dessus</b></span><span>Plan 01</span></figcaption>
+        </figure>
+      </div>
+
+      <div>
+        <ul class="maisons" data-r style="--i:2">
+          <li><b>01</b><strong>Hyères Pharma <em>Siège du groupe</em></strong><i>Hyères · 83</i></li>
+          <li><b>02</b><strong>SR Pharma</strong><i>Palaiseau · 91</i></li>
+          <li><b>03</b><strong>Mistral Santé Pharma</strong><i>Flassans-sur-Issole · 83</i></li>
+          <li><b>04</b><strong>Sud Ouest Pharma</strong><i>Montayral · 47</i></li>
+          <li><b>05</b><strong>Comptoir Pharmaceutique du Rhône</strong><i>Saint-Maurice-l'Exil · 38</i></li>
+          <li><b>06</b><strong>Escale Pharma</strong><i>Chilly-Mazarin · 91</i></li>
+          <li><b>07</b><strong>Ouest Pharma Services</strong><i>Saint-Étienne-de-Montluc · 44</i></li>
+          <li><b>08</b><strong>Pharm'Occitanie Services</strong><i>Villeneuve-lès-Béziers · 34</i></li>
+          <li><b>09</b><strong>Sud Est Pharma</strong><i>Le Cannet-des-Maures · 83</i></li>
+        </ul>
+        <p class="note" data-r style="--i:3">Et à l'Est, notre partenaire <b>Pharmest</b> (Metz, 57)
+          prolonge le maillage. Neuf implantations et un partenaire.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 05 · LE MÉTIER — LA LIGNE DE PRODUCTION ═══════════ -->
+<section class="sec sur-nuit" id="metier">
+  <div class="grille" aria-hidden="true"></div>
+  <div class="lueur" aria-hidden="true"></div>
+  <div class="in">
+    <div class="duo">
+      <div>
+        <p class="etiq" data-r style="--i:0"><i>04</i> Le métier</p>
+        <h2 class="t" data-r style="--i:1">Ce qui se passe entre votre commande et votre <b>comptoir</b>.</h2>
+      </div>
+      <div>
+        <p class="txt txt--fort" data-r style="--i:2">Quelques heures, quatre métiers, et une chaîne qui
+          ne s'arrête jamais. Référencer, stocker, préparer, livrer : c'est invisible depuis l'officine,
+          et c'est tout notre travail.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="ligne" id="ligne">
+    <div class="ligne__colle" id="ligneColle">
+      <div class="ligne__piste" id="lignePiste">
+        <article class="poste">
+          <div class="poste__haut">
+            <span class="poste__n">Poste 01</span>
+            <span class="poste__grand" aria-hidden="true">01</span>
+          </div>
+          <div class="poste__bas">
+            <h3>Le référencement</h3>
+            <p>Le groupe référence pour ses neuf maisons à la fois : un même catalogue, tenu à jour,
+              disponible dans toutes les implantations. C'est ce qui permet à une maison de taille
+              humaine de proposer la profondeur de gamme d'un réseau national.</p>
+          </div>
+        </article>
+        <article class="poste">
+          <div class="poste__haut">
+            <span class="poste__n">Poste 02</span>
+            <span class="poste__grand" aria-hidden="true">02</span>
+          </div>
+          <div class="poste__bas">
+            <h3>La disponibilité</h3>
+            <p>Des stocks répartis sur neuf implantations, au plus près de votre officine. Quand le
+              comptoir a besoin, le réseau répond — et quand une référence manque quelque part, elle
+              existe souvent ailleurs dans le réseau.</p>
+          </div>
+        </article>
+        <article class="poste">
+          <div class="poste__haut">
+            <span class="poste__n">Poste 03</span>
+            <span class="poste__grand" aria-hidden="true">03</span>
+          </div>
+          <div class="poste__bas">
+            <h3>La préparation</h3>
+            <p>Chaque commande est préparée dans l'implantation la plus proche de chez vous, par une
+              équipe qui connaît votre officine et ses saisons.</p>
+          </div>
+        </article>
+        <article class="poste">
+          <div class="poste__haut">
+            <span class="poste__n">Poste 04</span>
+            <span class="poste__grand" aria-hidden="true">04</span>
+          </div>
+          <div class="poste__bas">
+            <h3>La livraison</h3>
+            <p>Tous les jours, les tournées partent vers les officines. La régularité d'un service
+              tenu — c'est elle qui fait la confiance, pas les promesses.</p>
+          </div>
+        </article>
+      </div>
+
+      <div class="jauge" aria-hidden="true">
+        <span class="jauge__n">Ligne de production</span>
+        <span class="jauge__piste"><i class="jauge__fil" id="jaugeFil"></i></span>
+        <span class="jauge__n">Poste <b>01</b> → <b>04</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="in">
+    <p class="cloture" data-r style="--i:0">Et quand la vie de votre officine change — transfert,
+      agrandissement, cession de parts — votre interlocuteur ajuste l'approvisionnement avec vous,
+      sans à-coup au comptoir.</p>
+  </div>
+</section>
+
+<!-- ═══════════ 06 · BANDE PHOTO ═══════════ -->
+<div class="bande">
+  <img src="../../assets/siege-web.jpg" alt="Le site d'Hyères vu du ciel, entre la zone d'activité et les vignes" loading="lazy" width="1600" height="900">
+  <span class="bande__voile" aria-hidden="true"></span>
+  <p class="bande__leg"><b>Hyères (83)</b><span>758 chemin de la Source — ZI Saint-Martin</span><span>Siège du groupe</span></p>
+</div>
+
+<!-- ═══════════ 07 · LA CENTRALE ═══════════ -->
+<section class="sec" id="centrale">
+  <div class="grille" aria-hidden="true"></div>
+  <div class="lueur" aria-hidden="true"></div>
+  <div class="in">
+    <div class="duo">
+      <div>
+        <p class="etiq" data-r style="--i:0"><i>05</i> La centrale</p>
+        <h2 class="t" data-r style="--i:1">Et pour tout ce qui n'est pas le <b>médicament</b>.</h2>
+      </div>
+      <div>
+        <p class="txt txt--fort" data-r style="--i:2">Notre centrale de parapharmacie référence pour
+          l'officine plus de 14 000 produits et plus de 480 marques.</p>
+        <p class="txt" data-r style="--i:3">C'est une structure à part, avec son propre fonctionnement —
+          sa commande, sa livraison — et la même exigence que le reste du groupe.</p>
+      </div>
+    </div>
+
+    <div class="cadrans cadrans--duo" data-r style="--i:4">
+      <div class="cadran">
+        <span class="cadran__ech" aria-hidden="true"></span>
+        <b data-compte="14000" data-suffixe=" +">14 000 +</b><span>Références</span>
+      </div>
+      <div class="cadran">
+        <span class="cadran__ech" aria-hidden="true"></span>
+        <b data-compte="480" data-suffixe=" +">480 +</b><span>Marques</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 08 · VOS FACTURES ═══════════ -->
+<section class="sec sec--doux" id="factures">
+  <div class="grille" aria-hidden="true"></div>
+  <div class="lueur" aria-hidden="true"></div>
+  <div class="in">
+    <div class="facture">
+      <div>
+        <p class="etiq" data-r style="--i:0"><i>06</i> Vos factures</p>
+        <h2 class="t t--petit" data-r style="--i:1">Elles arrivent déjà là où vous les <b>gérez</b>.</h2>
+        <p class="txt txt--fort" data-r style="--i:2">Nous sommes connectés à Digipharmacie : vos
+          factures Intégral s'y retrouvent automatiquement, avec celles de vos autres fournisseurs.</p>
+        <p class="txt" data-r style="--i:3">Rien à saisir, rien à classer, rien à réclamer.</p>
+      </div>
+      <div class="trace" data-r style="--i:4">
+        <p class="trace__pas"><i>1</i> Votre commande part de l'implantation la plus proche</p>
+        <p class="trace__pas"><i>2</i> La facture est émise par cette implantation</p>
+        <p class="trace__pas"><i>3</i> Elle rejoint Digipharmacie automatiquement</p>
+        <p class="trace__pas"><i>4</i> Vous la retrouvez là où vous gérez déjà les autres</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 09 · NOS PARTENAIRES ═══════════ -->
+<section class="sec" id="partenaires">
+  <div class="grille" aria-hidden="true"></div>
+  <div class="lueur" aria-hidden="true"></div>
+  <div class="in">
+    <div class="duo">
+      <div>
+        <p class="etiq" data-r style="--i:0"><i>07</i> Nos partenaires</p>
+        <h2 class="t t--petit" data-r style="--i:1">Les laboratoires qui nous font <b>confiance</b>.</h2>
+      </div>
+      <div>
+        <div class="labos" data-r style="--i:2">
+          <span>EG Labo</span><span>Zentiva</span><span>Zydus</span>
+          <span>Viatris</span><span>ITP</span><span>Santestat</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 10 · NOUS REJOINDRE ═══════════ -->
+<section class="sec sec--fort" id="rejoindre">
+  <div class="grille" aria-hidden="true"></div>
+  <div class="lueur" aria-hidden="true"></div>
+  <div class="in">
+    <div class="duo">
+      <div>
+        <p class="etiq" data-r style="--i:0"><i>08</i> Nous rejoindre</p>
+        <h2 class="t t--petit" data-r style="--i:1">Neuf implantations qui <b>embauchent</b>.</h2>
+      </div>
+      <div>
+        <p class="txt txt--fort" data-r style="--i:2">Préparateur-chauffeur, technicien
+          approvisionnement, commercial, pharmacien responsable : les métiers de la répartition
+          s'apprennent chez nous.</p>
+        <div class="chips chips--mono" data-r style="--i:3">
+          <span>Hyères (83)</span><span>Villeneuve-lès-Béziers (34)</span>
+          <span>Montayral (47)</span><span>Saint-Maurice-l'Exil (38)</span>
+        </div>
+        <div class="btns" data-r style="--i:4">
+          <a class="bt" href="https://www.integralpharma.fr/jobs" target="_blank" rel="noopener">Voir les offres
+            <svg viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 11L11 3M11 3H4.5M11 3v6.5" stroke="currentColor" stroke-width="1.6"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 11 · NOS VALEURS ═══════════ -->
+<section class="sec" id="valeurs">
+  <div class="grille" aria-hidden="true"></div>
+  <div class="lueur" aria-hidden="true"></div>
+  <div class="in">
+    <p class="etiq" data-r style="--i:0"><i>09</i> Nos valeurs</p>
+    <h2 class="t" data-r style="--i:1">Trois mots qui se vérifient au <b>téléphone</b>.</h2>
+
+    <div class="valeurs" data-r style="--i:2">
+      <article>
+        <b>01</b>
+        <h3>Confiance</h3>
+        <p>La personne qui décroche connaît votre officine, vos saisons et vos habitudes.</p>
+      </article>
+      <article>
+        <b>02</b>
+        <h3>Engagement</h3>
+        <p>C'est la même d'une année sur l'autre. Dans ce métier, c'est devenu rare.</p>
+      </article>
+      <article>
+        <b>03</b>
+        <h3>Respect</h3>
+        <p>Elle ne vous vendra pas ce dont vous n'avez pas besoin — parce qu'elle vous reverra le mois
+          suivant, et l'année d'après.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 12 · FIN DE PAGE ═══════════ -->
+<section class="sec sur-nuit fin" id="contact">
+  <div class="grille" aria-hidden="true"></div>
+  <div class="lueur" aria-hidden="true"></div>
+  <div class="in">
+    <p class="etiq" data-r style="--i:0"><i>10</i> Nous écrire</p>
+    <h2 class="t t--geant" data-r style="--i:1">Posez-nous la question qui vous <b>intéresse</b>.</h2>
+    <p class="txt txt--fort" data-r style="--i:2">Sur nos conditions, sur nos délais, sur la façon dont
+      nous travaillons. Vous aurez une réponse claire, et le nom de l'implantation qui livre votre
+      secteur.</p>
+    <a class="bt" href="mailto:contact@integralpharma.fr" data-r style="--i:3">contact@integralpharma.fr
+      <svg viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 11L11 3M11 3H4.5M11 3v6.5" stroke="currentColor" stroke-width="1.6"/></svg>
+    </a>
+  </div>
+</section>
+
+</main>
+
+<footer class="pied">
+  <div class="grille" aria-hidden="true"></div>
+  <div class="lueur" aria-hidden="true"></div>
+  <div class="pied__in">
+    <div class="pied__h">
+      <p class="pied__adr">
+        <b>Intégral Pharma</b>
+        758 chemin de la Source, ZI Saint-Martin, 83400 Hyères<br>
+        <a href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a>
+      </p>
+      <nav class="pied__nav" aria-label="Navigation de pied de page">
+        <a href="#histoire">Le groupe</a>
+        <a href="#reseau">Le réseau</a>
+        <a href="#metier">Le métier</a>
+        <a href="#valeurs">Nos valeurs</a>
+      </nav>
+    </div>
+
+    <p class="pied__chiffres">
+      <span>9 implantations</span><span>Plus de 2 000 officines livrées</span><span>Indépendant depuis 2006</span>
+    </p>
+
+    <div class="pied__b">
+      <a href="https://www.integralpharma.fr/mentions-l%C3%A9gales" target="_blank" rel="noopener">Mentions légales</a>
+      <span class="pied__sig">Maquette <b>11 — CADRAN</b></span>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  "use strict";
+  var doc = document.documentElement;
+  var reduit = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* Le script s'annonce : c'est LUI qui arme les apparitions, jamais le CSS seul. */
+  doc.classList.add("js-on");
+
+  /* ── 1 · Menu téléphone ────────────────────────────────────────────── */
+  var burger = document.getElementById("burger");
+  var panneau = document.getElementById("panneau");
+  var fermer = document.getElementById("fermer");
+  function menu(ouvert){
+    panneau.classList.toggle("ouvert", ouvert);
+    burger.setAttribute("aria-expanded", ouvert ? "true" : "false");
+    document.body.style.overflow = ouvert ? "hidden" : "";
+  }
+  burger.addEventListener("click", function(){ menu(!panneau.classList.contains("ouvert")); });
+  fermer.addEventListener("click", function(){ menu(false); });
+  Array.prototype.forEach.call(panneau.querySelectorAll("a"), function(a){
+    a.addEventListener("click", function(){ menu(false); });
+  });
+  document.addEventListener("keydown", function(e){ if (e.key === "Escape") menu(false); });
+
+  /* ── 2 · Barre : filet + jauge de progression (elle reste blanche et pleine) ── */
+  var barre = document.getElementById("barre");
+  var jaugeBarre = document.getElementById("jaugeBarre");
+
+  /* ── 3 · Apparitions ───────────────────────────────────────────────── */
+  var aReveler = document.querySelectorAll("[data-r]");
+  if ("IntersectionObserver" in window && !reduit){
+    var obs = new IntersectionObserver(function(entrees){
+      entrees.forEach(function(e){
+        if (e.isIntersecting){ e.target.classList.add("vu"); obs.unobserve(e.target); }
+      });
+    }, { rootMargin: "0px 0px -8% 0px", threshold: 0.04 });
+    Array.prototype.forEach.call(aReveler, function(el){ obs.observe(el); });
+  } else {
+    Array.prototype.forEach.call(aReveler, function(el){ el.classList.add("vu"); });
+  }
+
+  /* ── 4 · Les cadrans qui montent ───────────────────────────────────────
+     Règle héritée du 14/08 : un compteur d'ANNÉE ne prend jamais le séparateur
+     de milliers. Le test est : cible >= 1900 && cible <= 2100 && pas de suffixe. */
+  function formater(v, cible, suffixe){
+    var estAnnee = (cible >= 1900 && cible <= 2100 && !suffixe);
+    var s = estAnnee ? String(v) : String(v).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+    return s + (suffixe || "");
+  }
+  function monter(el){
+    var cible = parseInt(el.getAttribute("data-compte"), 10);
+    var suffixe = el.getAttribute("data-suffixe") || "";
+    if (isNaN(cible)) return;
+    if (reduit){ el.textContent = formater(cible, cible, suffixe); return; }
+    var depart = (cible >= 1900 && cible <= 2100 && !suffixe) ? cible - 24 : 0;
+    var t0 = null, duree = 1250;
+    function pas(t){
+      if (t0 === null) t0 = t;
+      var p = Math.min((t - t0) / duree, 1);
+      var e = 1 - Math.pow(1 - p, 3);
+      el.textContent = formater(Math.round(depart + (cible - depart) * e), cible, suffixe);
+      if (p < 1) requestAnimationFrame(pas);
+    }
+    requestAnimationFrame(pas);
+  }
+  var cadrans = document.querySelectorAll("[data-compte]");
+  if ("IntersectionObserver" in window){
+    var obsC = new IntersectionObserver(function(entrees){
+      entrees.forEach(function(e){
+        if (e.isIntersecting){ monter(e.target); obsC.unobserve(e.target); }
+      });
+    }, { threshold: 0.5 });
+    Array.prototype.forEach.call(cadrans, function(el){ obsC.observe(el); });
+  }
+
+  /* ── 5 · La ligne de production ────────────────────────────────────────
+     Elle n'est armée qu'au-dessus de 1000 px et hors mouvement réduit.
+     Dans tous les autres cas, les quatre postes restent EMPILÉS et lisibles. */
+  var ligne = document.getElementById("ligne");
+  var colle = document.getElementById("ligneColle");
+  var piste = document.getElementById("lignePiste");
+  var jFil = document.getElementById("jaugeFil");
+  var mqLarge = window.matchMedia("(min-width: 1001px)");
+  var course = 0;
+  /* Allonge du défilement : sans elle, toute la ligne défilerait en 900 px et le
+     geste passerait inaperçu. 1,45 donne une avance lisible sans étirer la page. */
+  var ALLONGE = 1.45;
+
+  function armerLigne(){
+    if (!mqLarge.matches || reduit){
+      ligne.classList.remove("ligne--armee");
+      ligne.style.height = "";
+      piste.style.transform = "";
+      course = 0;
+      return;
+    }
+    ligne.classList.add("ligne--armee");
+    ligne.style.height = "";
+    var vue = colle.clientWidth;
+    course = Math.max(0, piste.scrollWidth - vue);
+    ligne.style.height = (colle.offsetHeight + course * ALLONGE) + "px";
+    majLigne();
+  }
+  function majLigne(){
+    if (!ligne.classList.contains("ligne--armee")) return;
+    var haut = parseFloat(getComputedStyle(doc).getPropertyValue("--barre")) || 74;
+    var r = ligne.getBoundingClientRect();
+    var total = ligne.offsetHeight - colle.offsetHeight;
+    var p = total > 0 ? (haut - r.top) / total : 0;
+    p = Math.max(0, Math.min(1, p));
+    piste.style.transform = "translate3d(" + (-p * course).toFixed(1) + "px,0,0)";
+    if (jFil) jFil.style.width = (p * 100).toFixed(1) + "%";
+  }
+
+  /* ── 6 · Le rail d'instruments et le menu suivent la section lue ────── */
+  var reperes = ["haut","histoire","reseau","metier","centrale","valeurs","contact"];
+  var liensRail = document.querySelectorAll("[data-rail]");
+  var liensNav = document.querySelectorAll("[data-lien]");
+  function majReperes(){
+    var y = window.scrollY + window.innerHeight * 0.34;
+    var actif = reperes[0];
+    for (var i = 0; i < reperes.length; i++){
+      var el = document.getElementById(reperes[i]);
+      if (el && el.offsetTop <= y) actif = reperes[i];
+    }
+    Array.prototype.forEach.call(liensRail, function(a){
+      a.classList.toggle("est-vu", a.getAttribute("data-rail") === actif);
+    });
+    Array.prototype.forEach.call(liensNav, function(a){
+      a.classList.toggle("est-vu", a.getAttribute("data-lien") === actif);
+    });
+  }
+
+  /* ── 7 · Boucle de défilement, une seule par image ──────────────────── */
+  var enVol = false;
+  function surDefilement(){
+    if (enVol) return;
+    enVol = true;
+    requestAnimationFrame(function(){
+      var y = window.scrollY;
+      barre.classList.toggle("est-posee", y > 20);
+      var h = document.body.scrollHeight - window.innerHeight;
+      jaugeBarre.style.width = (h > 0 ? Math.min(100, (y / h) * 100) : 0) + "%";
+      majLigne();
+      majReperes();
+      enVol = false;
+    });
+  }
+  window.addEventListener("scroll", surDefilement, { passive: true });
+
+  var minuteur = null;
+  window.addEventListener("resize", function(){
+    clearTimeout(minuteur);
+    minuteur = setTimeout(function(){ armerLigne(); majReperes(); }, 160);
+  });
+  if (mqLarge.addEventListener) mqLarge.addEventListener("change", armerLigne);
+
+  /* ── 8 · Le film d'ouverture ───────────────────────────────────────────
+     Le choix du fichier est fait plus haut, juste après la balise. Ici, une
+     seule chose : en mouvement réduit, le film s'arrête sur sa première image.
+     On garde la photographie, on retire le mouvement. */
+  var film = document.getElementById("film");
+  if (film){
+    if (reduit){
+      var geler = function(){ film.pause(); };
+      film.addEventListener("loadeddata", geler);
+      film.addEventListener("play", geler);
+      geler();
+    }
+  }
+
+  /* ── 9 · Départ ────────────────────────────────────────────────────── */
+  function demarrer(){ armerLigne(); majReperes(); surDefilement(); }
+  if (document.readyState === "complete") demarrer();
+  else window.addEventListener("load", demarrer);
+  demarrer();
+})();
+</script>
+</body>
+</html>

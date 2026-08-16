@@ -1,0 +1,1496 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Intégral Pharma — 25 · La Déchirure</title>
+<meta name="description" content="Groupe de grossistes-répartiteurs français indépendant. Neuf maisons. Un seul nom.">
+<link rel="icon" href="../../assets/logo-web.png">
+
+<style>
+/* =========================================================================
+   25 — LA DÉCHIRURE
+   Neuf plans pleine page. On ne défile pas, on traverse : chaque chapitre
+   déchire le précédent dans un shader WebGL plein écran.
+
+   PRINCIPE DE SÛRETÉ — à ne jamais inverser :
+   la page ci-dessous est une page NORMALE, empilée, entièrement lisible,
+   sans une ligne de JavaScript. Tout le spectacle est ajouté par-dessus,
+   et uniquement si <html> reçoit les classes .js puis .gl.
+   Si le script tombe, si WebGL manque, si le lecteur a demandé moins
+   d'animation : il reste ce document-là, complet.
+   ========================================================================= */
+
+@font-face{font-family:"Syne";src:url("polices-25/syne.woff2") format("woff2");font-weight:400 800;font-style:normal;font-display:swap}
+@font-face{font-family:"Inter";src:url("polices-25/inter.woff2") format("woff2");font-weight:400 700;font-style:normal;font-display:swap}
+@font-face{font-family:"Space Mono";src:url("polices-25/spacemono-400.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:"Space Mono";src:url("polices-25/spacemono-700.woff2") format("woff2");font-weight:700;font-style:normal;font-display:swap}
+
+:root{
+  --encre:#07080C;
+  --encre-2:#0E1119;
+  --papier:#F5F1E8;
+  --papier-2:#E7E0D1;
+  --bleu:#1B4DFF;
+  --bleu-pale:#8FA8FF;
+  --braise:#FF6A2A;
+  --or:#F2A93B;
+
+  --dsp:"Syne","Syne Fallback",system-ui,sans-serif;
+  --txt:"Inter","Inter Fallback",system-ui,sans-serif;
+  --mono:"Space Mono","Space Mono Fallback",ui-monospace,monospace;
+
+  --barre-h:66px;
+  --marge:clamp(20px,5vw,84px);
+  --pas:clamp(14px,1.6vw,22px);
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;
+  background:var(--encre);
+  color:var(--papier);
+  font-family:var(--txt);
+  font-size:17px;
+  line-height:1.62;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+img,video,canvas{display:block;max-width:100%}
+a{color:inherit}
+::selection{background:var(--braise);color:#fff}
+
+/* ---------- Saut au contenu ---------- */
+.saut{
+  position:absolute;left:-9999px;top:0;z-index:200;
+  background:var(--braise);color:#fff;padding:16px 20px;font:600 15px/1 var(--txt);min-height:48px;display:flex;align-items:center;
+  border-radius:0 0 6px 0;
+}
+.saut:focus{left:0}
+
+:focus-visible{outline:2px solid var(--braise);outline-offset:3px}
+
+/* =========================================================================
+   1. BARRE
+   Sans JS : collante, fond plein, toujours lisible.
+   Avec JS : fixe et transparente, sa couleur suit le ton du plan actif.
+   ========================================================================= */
+.barre{
+  position:sticky;top:0;z-index:60;
+  height:var(--barre-h);
+  display:flex;align-items:center;gap:var(--pas);
+  padding:0 var(--marge);
+  background:var(--encre);
+  color:var(--papier);
+}
+html.js .barre{position:fixed;left:0;right:0;background:transparent}
+html.js .barre::before{
+  content:"";position:absolute;inset:0;z-index:-1;
+  background:linear-gradient(to bottom,rgba(7,8,12,.62),rgba(7,8,12,0));
+  opacity:1;transition:opacity .5s ease;
+}
+html.js[data-ton="clair"] .barre{color:var(--encre)}
+html.js[data-ton="clair"] .barre::before{
+  background:linear-gradient(to bottom,rgba(245,241,232,.72),rgba(245,241,232,0));
+}
+
+.marque{display:flex;align-items:center;gap:11px;text-decoration:none;margin-right:auto;min-height:44px}
+.marque img{width:30px;height:auto}
+.marque__t{display:block}
+.marque__t b{display:block;font:800 15px/1 var(--dsp);letter-spacing:-.01em}
+.marque__t i{display:block;font:400 9.5px/1 var(--mono);letter-spacing:.24em;text-transform:uppercase;opacity:.62;margin-top:4px}
+
+.menu{display:flex;gap:4px;align-items:center}
+.menu a{
+  display:inline-flex;align-items:center;min-height:44px;padding:0 13px;
+  font:500 13.5px/1 var(--txt);letter-spacing:.005em;text-decoration:none;opacity:.78;
+  transition:opacity .25s ease;
+}
+.menu a:hover{opacity:1}
+.menu a:last-child{
+  border:1px solid currentColor;border-radius:100px;padding:0 20px;opacity:1;margin-left:8px;
+}
+
+.burger{
+  display:none;width:46px;height:46px;border:0;background:none;color:inherit;cursor:pointer;
+  align-items:center;justify-content:center;
+}
+.burger i{display:block;width:22px;height:1.5px;background:currentColor;position:relative}
+.burger i::before,.burger i::after{content:"";position:absolute;left:0;width:22px;height:1.5px;background:currentColor;transition:transform .3s ease}
+.burger i::before{top:-7px}.burger i::after{top:7px}
+html.ouvert .burger i{background:transparent}
+html.ouvert .burger i::before{transform:translateY(7px) rotate(45deg)}
+html.ouvert .burger i::after{transform:translateY(-7px) rotate(-45deg)}
+
+/* Tiroir téléphone — fond OPAQUE, jamais translucide */
+.tiroir{display:none}
+
+/* =========================================================================
+   2. REPÈRES DE PROGRESSION
+   ========================================================================= */
+.jauge{display:none}
+html.js .jauge{
+  display:block;position:fixed;top:0;left:0;right:0;height:2px;z-index:70;
+  background:rgba(128,128,128,.22);
+}
+html.js .jauge i{
+  display:block;height:100%;width:0;transform-origin:0 50%;
+  background:linear-gradient(90deg,var(--bleu),var(--braise),var(--or));
+}
+
+.rail{display:none}
+html.js .rail{
+  display:flex;flex-direction:column;justify-content:center;
+  position:fixed;right:max(14px,env(safe-area-inset-right));top:0;bottom:0;z-index:55;
+}
+.rail a{
+  display:flex;align-items:center;justify-content:flex-end;
+  width:52px;height:44px;text-decoration:none;
+}
+.rail a i{
+  display:block;width:16px;height:1.5px;background:currentColor;opacity:.34;
+  transition:width .38s cubic-bezier(.16,1,.3,1),opacity .38s ease,background .38s ease;
+}
+html.js .rail{color:var(--papier)}
+html.js[data-ton="clair"] .rail{color:var(--encre)}
+.rail a:hover i{width:26px;opacity:.8}
+.rail a[aria-current="true"] i{width:34px;opacity:1;height:2px;background:var(--braise)}
+
+.repere{display:none}
+html.js .repere{
+  display:flex;align-items:baseline;gap:11px;
+  position:fixed;left:var(--marge);bottom:max(20px,env(safe-area-inset-bottom));z-index:55;
+  font:400 11px/1 var(--mono);letter-spacing:.15em;text-transform:uppercase;
+  pointer-events:none;color:var(--papier);
+}
+html.js[data-ton="clair"] .repere{color:var(--encre)}
+.repere b{font-weight:700;color:var(--braise);letter-spacing:.05em}
+.repere span{opacity:.66}
+
+/* =========================================================================
+   3. LES PLANS — état par défaut : page normale empilée
+   ========================================================================= */
+#toile{display:none}
+html.gl #toile{
+  display:block;position:fixed;inset:0;z-index:1;width:100%;height:100%;
+}
+
+main{position:relative;z-index:2}
+
+.plan{
+  position:relative;
+  padding:calc(var(--barre-h) + 6vh) var(--marge) 10vh;
+  overflow:hidden;
+  background:var(--encre);
+}
+.plan[data-ton="clair"]{background:var(--papier);color:var(--encre)}
+.plan__in{position:relative;z-index:3;max-width:1420px;margin:0 auto;width:100%}
+
+/* Fonds de repli (sans WebGL) : ce sont eux qui portent la photographie */
+.plan__fond{position:absolute;inset:0;z-index:1;background-size:cover;background-position:center}
+.plan__voile{position:absolute;inset:0;z-index:2}
+.plan video.plan__fond{width:100%;height:100%;object-fit:cover}
+
+#p1 .plan__voile{background:linear-gradient(180deg,rgba(7,8,12,.72),rgba(7,8,12,.5) 40%,rgba(7,8,12,.9))}
+#p3 .plan__fond{background-image:url("../../assets/siege-web.jpg")}
+#p3 .plan__voile{background:linear-gradient(105deg,rgba(4,8,26,.92),rgba(4,8,26,.55))}
+#p5 .plan__fond{background-image:url("../../assets/siege-solaire.jpg")}
+#p5 .plan__voile{background:linear-gradient(255deg,rgba(9,6,24,.9),rgba(9,6,24,.52))}
+#p4{background:linear-gradient(150deg,#0B1E6B,#070810 70%)}
+#p7{background:linear-gradient(150deg,#3A1206,#12060A 72%)}
+#p8{background:linear-gradient(200deg,#0E1220,#07080C)}
+#p2,#p6,#p9{background:linear-gradient(160deg,var(--papier),var(--papier-2))}
+
+/* Mode WebGL : les fonds passent la main au shader, la mise en page devient scénique.
+   ⚠️ overflow:visible est OBLIGATOIRE : un ancêtre en overflow:hidden annule
+   purement et simplement le position:sticky de l'enfant. */
+html.gl .plan{background:transparent;padding:0 var(--marge);min-height:185vh;overflow:visible}
+html.gl .plan[data-ton="clair"]{background:transparent}
+html.gl .plan__fond,html.gl .plan__voile{opacity:0;pointer-events:none}
+html.gl .plan__in{
+  position:sticky;top:0;
+  min-height:100vh;min-height:100svh;
+  display:flex;flex-direction:column;justify-content:center;
+  padding:calc(var(--barre-h) + 3.4vh) 0 8.5vh;
+}
+/* Filet de sécurité : un chapitre plus haut que l'écran sort du mode collant
+   plutôt que de laisser son bas inatteignable. Posé par le script, mesuré. */
+html.gl .plan[data-long] .plan__in{position:relative;min-height:0}
+html.gl .plan[data-long]{min-height:0;padding-bottom:105vh}
+
+/* Chorégraphie du texte — état par défaut VISIBLE.
+   Le script ne fait que piloter --op / --dy, jamais masquer par défaut. */
+html.gl .plan__txt{
+  opacity:var(--op,1);
+  transform:translate3d(0,var(--dy,0px),0);
+  will-change:opacity,transform;
+}
+
+/* =========================================================================
+   4. TYPOGRAPHIE COMMUNE
+   ========================================================================= */
+.sur{
+  display:flex;align-items:center;gap:12px;
+  font:400 13px/1.4 var(--mono);letter-spacing:.15em;text-transform:uppercase;
+  opacity:.78;margin:0 0 clamp(16px,2.4vw,26px);
+}
+.sur::before{content:"";width:clamp(26px,4vw,58px);height:1px;background:currentColor;opacity:.5;flex:none}
+.num{
+  font:700 11px/1 var(--mono);letter-spacing:.18em;color:var(--braise);
+}
+h1,h2{
+  font-family:var(--dsp);font-weight:800;
+  letter-spacing:-.03em;line-height:.94;margin:0;
+  text-wrap:balance;
+}
+h1{font-size:clamp(2.5rem,7.2vw,7rem)}
+h2{font-size:clamp(2rem,4.9vw,4.6rem)}
+/* Dans une colonne de moitié de largeur, le corps 4,6rem de Syne déborde de sa
+   cellule et vient se poser SUR le bloc voisin. Trouvé à l'écran sur trois
+   chapitres. Ici le titre est calibré pour sa colonne, pas pour la page. */
+.duo h2,.reseau h2,.cen h2,.fac h2,.rej h2{font-size:clamp(1.85rem,3.4vw,3.3rem);line-height:.98}
+h1,h2,h3{overflow-wrap:break-word}
+h3{font-family:var(--dsp);font-weight:700;letter-spacing:-.015em;margin:0}
+p{margin:0 0 1.05em}
+p:last-child{margin-bottom:0}
+.corps{font-size:clamp(15px,1.16vw,18.5px);line-height:1.66;max-width:56ch;opacity:.88}
+.corps--large{max-width:64ch}
+
+.btns{display:flex;flex-wrap:wrap;gap:12px;margin-top:clamp(26px,3.6vw,44px)}
+.btn{
+  display:inline-flex;align-items:center;gap:10px;min-height:52px;padding:0 26px;
+  border-radius:100px;text-decoration:none;
+  font:600 14.5px/1 var(--txt);letter-spacing:.005em;
+  border:1px solid currentColor;
+  transition:transform .3s cubic-bezier(.16,1,.3,1),background .3s ease,color .3s ease;
+}
+.btn:hover{transform:translateY(-2px)}
+.btn--plein{background:var(--braise);border-color:var(--braise);color:#fff}
+.btn--plein:hover{background:#ff7d45;border-color:#ff7d45}
+.btn i{font-style:normal;font-family:var(--mono);font-size:15px}
+
+/* =========================================================================
+   5. PLAN 01 — L'OUVERTURE
+   ========================================================================= */
+#p1 .plan__in{justify-content:flex-end}
+.ouv__h{margin-bottom:clamp(18px,2.4vw,30px)}
+.ouv__h em{
+  display:block;font-style:normal;
+  background:none;
+}
+.ouv__sous{max-width:52ch;font-size:clamp(15px,1.2vw,19px);opacity:.9}
+
+.ruban{
+  position:relative;overflow:hidden;margin-top:clamp(30px,4.4vw,56px);
+  border-top:1px solid rgba(255,255,255,.16);border-bottom:1px solid rgba(255,255,255,.16);
+  padding:14px 0;
+}
+[data-ton="clair"] .ruban{border-color:rgba(7,8,12,.16)}
+.ruban__piste{display:flex;width:max-content;animation:defile 46s linear infinite}
+.ruban__piste span{
+  display:inline-flex;align-items:center;white-space:nowrap;
+  font:400 13px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;opacity:.86;
+  padding:0 26px;
+}
+.ruban__piste span::after{content:"";width:5px;height:5px;border-radius:50%;background:var(--braise);margin-left:26px;flex:none}
+@keyframes defile{from{transform:translate3d(0,0,0)}to{transform:translate3d(-50%,0,0)}}
+
+/* =========================================================================
+   6. PLAN 02 — NOTRE HISTOIRE
+   ========================================================================= */
+.duo{
+  display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);
+  gap:clamp(24px,4.6vw,74px);align-items:start;
+}
+.compteurs{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:clamp(16px,2.4vw,34px);margin-top:clamp(30px,4vw,52px);
+}
+.cpt{border-top:1px solid currentColor;padding-top:14px}
+.cpt b{
+  display:block;font:800 clamp(1.9rem,3.9vw,3.4rem)/.92 var(--dsp);letter-spacing:-.035em;
+  font-variant-numeric:tabular-nums;white-space:nowrap;
+}
+.cpt span{display:block;font:400 12.5px/1.35 var(--mono);letter-spacing:.13em;text-transform:uppercase;opacity:.6;margin-top:9px}
+.cpt--braise b{color:var(--braise)}
+
+/* =========================================================================
+   7. PLAN 03 — LE RÉSEAU
+   ========================================================================= */
+.reseau{display:grid;grid-template-columns:minmax(0,.92fr) minmax(0,1.08fr);gap:clamp(24px,4.4vw,72px);align-items:start}
+.maisons{list-style:none;margin:0;padding:0;border-top:1px solid rgba(255,255,255,.2)}
+.maisons li{border-bottom:1px solid rgba(255,255,255,.2)}
+.maisons li>span{
+  display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:12px;align-items:baseline;
+  min-height:44px;padding:9px 0;
+  transition:padding-left .35s cubic-bezier(.16,1,.3,1);
+}
+.maisons li:hover>span{padding-left:9px}
+.maisons .m-n{font:700 11px/1.6 var(--mono);color:var(--braise);letter-spacing:.06em}
+.maisons .m-nom{font:600 clamp(14px,1.05vw,16.5px)/1.35 var(--txt)}
+.maisons .m-nom i{display:block;font-style:normal;font:400 12.5px/1.4 var(--mono);letter-spacing:.08em;opacity:.55;text-transform:uppercase;margin-top:3px}
+.maisons .m-v{font:400 13px/1.5 var(--mono);letter-spacing:.04em;opacity:.8;text-align:right}
+.mention{margin-top:18px;font-size:14.5px;opacity:.9}
+.mention b{color:var(--braise);font-weight:600}
+.legende{margin-top:9px;font:400 13px/1.5 var(--mono);letter-spacing:.1em;text-transform:uppercase;opacity:.62}
+
+/* =========================================================================
+   8. PLAN 04 — LE MÉTIER
+   ========================================================================= */
+.chaine{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:clamp(16px,2.2vw,30px);margin-top:clamp(28px,3.6vw,46px);
+}
+.etape{border-top:1px solid rgba(255,255,255,.24);padding-top:15px}
+.etape .num{display:block;margin-bottom:11px}
+.etape h3{font-size:clamp(16px,1.35vw,21px);margin-bottom:9px}
+.etape p{font-size:14.5px;line-height:1.62;opacity:.86}
+.cloture{
+  margin-top:clamp(24px,3vw,38px);max-width:66ch;
+  font-size:clamp(14.5px,1.05vw,17px);opacity:.9;
+  border-left:2px solid var(--braise);padding-left:18px;
+}
+
+/* =========================================================================
+   9. PLAN 05 — LA CENTRALE
+   ========================================================================= */
+.cen{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:clamp(24px,4.6vw,74px);align-items:end}
+.cen__chiffres{display:grid;gap:clamp(18px,2.4vw,30px)}
+.cen__chiffres .cpt b{font-size:clamp(2.4rem,5.4vw,4.6rem)}
+
+/* =========================================================================
+   10. PLAN 06 — VOS FACTURES + LES LABORATOIRES
+   ========================================================================= */
+.fac{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(24px,4.6vw,74px);align-items:end}
+.fac__net{
+  display:grid;gap:10px;margin-top:clamp(22px,3vw,34px);
+}
+.fac__net li{
+  list-style:none;display:flex;align-items:center;gap:13px;
+  font:500 15px/1.5 var(--txt);
+}
+.fac__net li::before{
+  content:"";width:9px;height:9px;flex:none;border-radius:50%;
+  border:2px solid var(--braise);
+}
+.labos{margin-top:clamp(34px,4.6vw,58px)}
+.labos .sur{margin-bottom:14px}
+.labos .ruban{margin-top:0}
+[data-ton="clair"] .ruban__piste span::after{background:var(--bleu)}
+
+/* =========================================================================
+   11. PLAN 07 — NOUS REJOINDRE
+   ========================================================================= */
+.rej{display:grid;grid-template-columns:minmax(0,1.06fr) minmax(0,.94fr);gap:clamp(24px,4.6vw,74px);align-items:end}
+.villes{display:flex;flex-wrap:wrap;gap:9px;margin-top:clamp(22px,3vw,32px)}
+.villes span{
+  display:inline-flex;align-items:center;min-height:44px;padding:0 17px;border-radius:100px;
+  border:1px solid rgba(255,255,255,.32);
+  font:400 13px/1 var(--mono);letter-spacing:.06em;
+}
+
+/* =========================================================================
+   12. PLAN 08 — NOS VALEURS
+   ========================================================================= */
+.valeurs{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:clamp(20px,3vw,44px);margin-top:clamp(30px,4vw,52px);
+}
+.val{border-top:1px solid rgba(255,255,255,.24);padding-top:17px}
+.val h3{
+  font-size:clamp(1.5rem,2.8vw,2.5rem);letter-spacing:-.025em;margin-bottom:12px;
+  color:var(--braise);
+}
+.val:nth-child(2) h3{color:var(--or)}
+.val:nth-child(3) h3{color:var(--bleu-pale)}
+.val p{font-size:15px;line-height:1.6;opacity:.86;max-width:36ch}
+
+/* =========================================================================
+   13. PLAN 09 — NOUS ÉCRIRE
+   ========================================================================= */
+.fin__mail{
+  display:inline-flex;align-items:center;gap:14px;min-height:60px;padding:0 30px;
+  border-radius:100px;background:var(--encre);color:var(--papier);text-decoration:none;
+  font:600 clamp(15px,1.5vw,21px)/1 var(--txt);letter-spacing:-.01em;
+  transition:transform .32s cubic-bezier(.16,1,.3,1),background .3s ease;
+}
+.fin__mail:hover{transform:translateY(-3px);background:var(--braise);color:#fff}
+.fin__mail i{font-style:normal;font-family:var(--mono);font-size:17px}
+
+/* =========================================================================
+   14. PIED DE PAGE — bloc opaque, il termine la page pour de bon
+   ========================================================================= */
+.pied{
+  position:relative;z-index:6;
+  background:var(--encre);color:var(--papier);
+  padding:clamp(46px,6vw,84px) var(--marge) clamp(30px,3.4vw,46px);
+  border-top:1px solid rgba(255,255,255,.14);
+}
+.pied__in{max-width:1420px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:clamp(24px,4vw,64px)}
+.pied address{font-style:normal;font-size:15px;line-height:1.75;opacity:.86}
+.pied address a{display:inline-flex;align-items:center;min-height:44px;text-decoration:none;border-bottom:1px solid rgba(255,255,255,.3)}
+.pied nav{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:16px}
+.pied nav a{
+  display:inline-flex;align-items:center;min-height:44px;padding:0 13px 0 0;
+  font-size:14px;text-decoration:none;opacity:.8;
+}
+.pied nav a:hover{opacity:1}
+.pied__chiffres{
+  margin-top:clamp(28px,3.4vw,44px);padding-top:18px;border-top:1px solid rgba(255,255,255,.14);
+  display:flex;flex-wrap:wrap;gap:8px 22px;align-items:center;justify-content:space-between;
+  font:400 11px/1.6 var(--mono);letter-spacing:.13em;text-transform:uppercase;opacity:.56;
+  max-width:1420px;margin-left:auto;margin-right:auto;
+}
+.pied__sign{color:var(--braise);opacity:1}
+
+/* =========================================================================
+   15. TÉLÉPHONE
+   ========================================================================= */
+@media (max-width:980px){
+  :root{--barre-h:58px}
+  .duo,.reseau,.cen,.fac,.rej,.pied__in{grid-template-columns:minmax(0,1fr)}
+  .chaine{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .valeurs{grid-template-columns:minmax(0,1fr);gap:20px}
+  .cen{align-items:start}
+  .fac,.rej{align-items:start}
+  html.js .rail{display:none}
+  .menu{display:none}
+  .burger{display:flex}
+  html.js .repere{font-size:10px;bottom:14px}
+
+  .tiroir{
+    display:block;position:fixed;inset:0;z-index:59;
+    background:var(--encre);color:var(--papier);
+    padding:calc(var(--barre-h) + 22px) var(--marge) 30px;
+    transform:translateY(-100%);transition:transform .5s cubic-bezier(.16,1,.3,1);
+    overflow-y:auto;overscroll-behavior:contain;
+    visibility:hidden;
+  }
+  html.ouvert .tiroir{transform:translateY(0);visibility:visible}
+  html.ouvert{overflow:hidden}
+  .tiroir ol{list-style:none;margin:0;padding:0}
+  .tiroir li{border-bottom:1px solid rgba(255,255,255,.14)}
+  .tiroir a{
+    display:grid;grid-template-columns:38px 1fr;gap:12px;align-items:center;
+    min-height:56px;text-decoration:none;
+    font:600 19px/1.2 var(--dsp);letter-spacing:-.02em;
+  }
+  .tiroir a b{font:700 11px/1 var(--mono);color:var(--braise);letter-spacing:.1em}
+  .tiroir .tiroir__mail{
+    display:inline-flex;align-items:center;min-height:52px;margin-top:24px;padding:0 22px;
+    border-radius:100px;background:var(--braise);color:#fff;text-decoration:none;
+    font:600 15px/1 var(--txt);
+  }
+}
+@media (max-width:620px){
+  body{font-size:16px}
+  .chaine{grid-template-columns:minmax(0,1fr)}
+  /* Quatre compteurs sur 390 px = 75 px par colonne : « 2 000 + » en Syne 800
+     et en white-space:nowrap débordait de 33 px, hors de l'écran.
+     Mesuré, pas supposé. Deux colonnes, et le nombre suit la largeur. */
+  .compteurs{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 18px}
+  .cpt b{font-size:clamp(1.7rem,7vw,2.6rem)}
+  html.gl .plan{min-height:168vh}
+  .maisons .m-nom{font-size:14.5px}
+  .maisons li>span{grid-template-columns:28px minmax(0,1fr);row-gap:2px}
+  .maisons .m-v{grid-column:2;text-align:left;margin-top:-2px}
+  .btns .btn{flex:1 1 100%;justify-content:center}
+}
+
+/* =========================================================================
+   16. MOINS D'ANIMATION — on rend la page sage, pas cassée
+   ========================================================================= */
+@media (prefers-reduced-motion:reduce){
+  .ruban__piste{animation:none}
+  *{transition-duration:.01ms !important;animation-duration:.01ms !important}
+}
+</style>
+</head>
+
+<body>
+<a class="saut" href="#p1">Aller au contenu</a>
+
+<!-- ================= BARRE ================= -->
+<header class="barre">
+  <a class="marque" href="#p1">
+    <img src="../../assets/logo-web.png" alt="" width="30" height="30">
+    <span class="marque__t">
+      <b>Intégral Pharma</b>
+      <i>Grossistes-répartiteurs</i>
+    </span>
+  </a>
+  <nav class="menu" aria-label="Navigation principale">
+    <a href="#p2">Le groupe</a>
+    <a href="#p3">Le réseau</a>
+    <a href="#p4">Le métier</a>
+    <a href="#p8">Nos valeurs</a>
+    <a href="#p9">Nous écrire</a>
+  </nav>
+  <button class="burger" type="button" aria-expanded="false" aria-controls="tiroir" aria-label="Ouvrir le menu"><i></i></button>
+</header>
+
+<!-- ================= TIROIR TÉLÉPHONE (fond opaque) ================= -->
+<div class="tiroir" id="tiroir">
+  <ol>
+    <li><a href="#p1"><b>01</b> L'ouverture</a></li>
+    <li><a href="#p2"><b>02</b> Notre histoire</a></li>
+    <li><a href="#p3"><b>03</b> Le réseau</a></li>
+    <li><a href="#p4"><b>04</b> Le métier</a></li>
+    <li><a href="#p5"><b>05</b> La centrale</a></li>
+    <li><a href="#p6"><b>06</b> Vos factures</a></li>
+    <li><a href="#p7"><b>07</b> Nous rejoindre</a></li>
+    <li><a href="#p8"><b>08</b> Nos valeurs</a></li>
+    <li><a href="#p9"><b>09</b> Nous écrire</a></li>
+  </ol>
+  <a class="tiroir__mail" href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a>
+</div>
+
+<!-- ================= REPÈRES ================= -->
+<div class="jauge" aria-hidden="true"><i></i></div>
+<nav class="rail" aria-label="Chapitres">
+  <a href="#p1" aria-label="Chapitre 1 — L'ouverture"><i></i></a>
+  <a href="#p2" aria-label="Chapitre 2 — Notre histoire"><i></i></a>
+  <a href="#p3" aria-label="Chapitre 3 — Le réseau"><i></i></a>
+  <a href="#p4" aria-label="Chapitre 4 — Le métier"><i></i></a>
+  <a href="#p5" aria-label="Chapitre 5 — La centrale"><i></i></a>
+  <a href="#p6" aria-label="Chapitre 6 — Vos factures"><i></i></a>
+  <a href="#p7" aria-label="Chapitre 7 — Nous rejoindre"><i></i></a>
+  <a href="#p8" aria-label="Chapitre 8 — Nos valeurs"><i></i></a>
+  <a href="#p9" aria-label="Chapitre 9 — Nous écrire"><i></i></a>
+</nav>
+<p class="repere" aria-hidden="true"><b>01</b><span>L'ouverture</span></p>
+
+<canvas id="toile" aria-hidden="true"></canvas>
+
+<main>
+
+<!-- ========== 01 · L'OUVERTURE ========== -->
+<section class="plan" id="p1" data-ton="sombre" data-plan="0">
+  <video class="plan__fond" src="../../assets/band.mp4" autoplay muted loop playsinline preload="auto" aria-hidden="true"></video>
+  <div class="plan__voile"></div>
+  <div class="plan__in">
+    <div class="plan__txt">
+      <p class="sur">Groupe de grossistes-répartiteurs français indépendant</p>
+      <h1 class="ouv__h" data-decoupe>Neuf maisons.<em>Un seul nom.</em></h1>
+      <p class="corps ouv__sous">Chacune livre sa région depuis des années, avec ses équipes et ses habitudes. Depuis 2006, elles avancent ensemble sous le nom d'Intégral Pharma — et votre commande part toujours de la plus proche de votre comptoir.</p>
+      <div class="btns">
+        <a class="btn btn--plein" href="#p3">Découvrir le réseau <i>↓</i></a>
+        <a class="btn" href="#p9">Nous écrire</a>
+      </div>
+      <div class="ruban" aria-hidden="true">
+        <div class="ruban__piste">
+          <span>Indépendant</span><span>Neuf implantations</span><span>Un réseau national</span><span>Plus de 2 000 officines livrées</span><span>Confiance, Engagement, Respect</span><span>Une alternative aux grossistes historiques</span>
+          <span>Indépendant</span><span>Neuf implantations</span><span>Un réseau national</span><span>Plus de 2 000 officines livrées</span><span>Confiance, Engagement, Respect</span><span>Une alternative aux grossistes historiques</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 02 · NOTRE HISTOIRE ========== -->
+<section class="plan" id="p2" data-ton="clair" data-plan="1">
+  <div class="plan__in">
+    <div class="plan__txt">
+      <p class="sur">Notre histoire</p>
+      <div class="duo">
+        <h2>Rendre la marge à l'officine française.</h2>
+        <div>
+          <div class="corps">
+            <p>C'est la raison d'être d'Intégral Pharma depuis 2006 : redistribuer directement la marge aux officines françaises, en toute transparence, avec des prix nets visibles sur facture.</p>
+            <p>Neuf implantations aujourd'hui, plus de deux mille officines livrées chaque jour, et la même idée qu'au premier jour — un groupe de répartiteurs indépendants qui a choisi de se mettre du côté du comptoir.</p>
+          </div>
+        </div>
+      </div>
+      <div class="compteurs">
+        <div class="cpt cpt--braise"><b data-cible="2006">2006</b><span>année de création</span></div>
+        <div class="cpt"><b data-cible="9">9</b><span>implantations</span></div>
+        <div class="cpt"><b data-cible="2000" data-suffixe=" +">2 000 +</b><span>officines livrées</span></div>
+        <div class="cpt"><b data-cible="20">20</b><span>ans d'indépendance</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 03 · LE RÉSEAU ========== -->
+<section class="plan" id="p3" data-ton="sombre" data-plan="2">
+  <div class="plan__fond"></div>
+  <div class="plan__voile"></div>
+  <div class="plan__in">
+    <div class="plan__txt">
+      <p class="sur">Le réseau</p>
+      <div class="reseau">
+        <div>
+          <h2>Neuf implantations.<br>Laquelle est la vôtre ?</h2>
+          <div class="corps" style="margin-top:clamp(18px,2.4vw,30px)">
+            <p>C'est la seule question qui compte vraiment. Celle qui prépare votre commande, qui vous livre chaque matin, et dont vous connaissez l'équipe par son prénom.</p>
+            <p>Les huit autres sont là pour qu'elle ne soit jamais prise au dépourvu — de la Bretagne à la Méditerranée, le stock d'une maison est le stock de toutes.</p>
+          </div>
+        </div>
+        <div>
+          <ul class="maisons">
+            <li><span><span class="m-n">01</span><span class="m-nom">Hyères Pharma <i>siège du groupe</i></span><span class="m-v">Hyères · 83</span></span></li>
+            <li><span><span class="m-n">02</span><span class="m-nom">SR Pharma</span><span class="m-v">Palaiseau · 91</span></span></li>
+            <li><span><span class="m-n">03</span><span class="m-nom">Mistral Santé Pharma</span><span class="m-v">Flassans-sur-Issole · 83</span></span></li>
+            <li><span><span class="m-n">04</span><span class="m-nom">Sud Ouest Pharma</span><span class="m-v">Montayral · 47</span></span></li>
+            <li><span><span class="m-n">05</span><span class="m-nom">Comptoir Pharmaceutique du Rhône</span><span class="m-v">Saint-Maurice-l'Exil · 38</span></span></li>
+            <li><span><span class="m-n">06</span><span class="m-nom">Escale Pharma</span><span class="m-v">Chilly-Mazarin · 91</span></span></li>
+            <li><span><span class="m-n">07</span><span class="m-nom">Ouest Pharma Services</span><span class="m-v">Saint-Étienne-de-Montluc · 44</span></span></li>
+            <li><span><span class="m-n">08</span><span class="m-nom">Pharm'Occitanie Services</span><span class="m-v">Villeneuve-lès-Béziers · 34</span></span></li>
+            <li><span><span class="m-n">09</span><span class="m-nom">Sud Est Pharma</span><span class="m-v">Le Cannet-des-Maures · 83</span></span></li>
+          </ul>
+          <p class="mention">Et à l'Est, notre partenaire <b>Pharmest</b> (Metz, 57) prolonge le maillage.</p>
+          <p class="legende">Neuf implantations et un partenaire</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 04 · LE MÉTIER ========== -->
+<section class="plan" id="p4" data-ton="sombre" data-plan="3">
+  <div class="plan__in">
+    <div class="plan__txt">
+      <p class="sur">Le métier</p>
+      <h2 style="max-width:20ch">Ce qui se passe entre votre commande et votre comptoir.</h2>
+      <p class="corps corps--large" style="margin-top:clamp(18px,2.4vw,28px)">Quelques heures, quatre métiers, et une chaîne qui ne s'arrête jamais. Référencer, stocker, préparer, livrer : c'est invisible depuis l'officine, et c'est tout notre travail.</p>
+      <div class="chaine">
+        <div class="etape">
+          <span class="num">01</span>
+          <h3>Le référencement</h3>
+          <p>Le groupe référence pour ses neuf maisons à la fois : un même catalogue, tenu à jour, disponible dans toutes les implantations. C'est ce qui permet à une maison de taille humaine de proposer la profondeur de gamme d'un réseau national.</p>
+        </div>
+        <div class="etape">
+          <span class="num">02</span>
+          <h3>La disponibilité</h3>
+          <p>Des stocks répartis sur neuf implantations, au plus près de votre officine. Quand le comptoir a besoin, le réseau répond — et quand une référence manque quelque part, elle existe souvent ailleurs dans le réseau.</p>
+        </div>
+        <div class="etape">
+          <span class="num">03</span>
+          <h3>La préparation</h3>
+          <p>Chaque commande est préparée dans l'implantation la plus proche de chez vous, par une équipe qui connaît votre officine et ses saisons.</p>
+        </div>
+        <div class="etape">
+          <span class="num">04</span>
+          <h3>La livraison</h3>
+          <p>Tous les jours, les tournées partent vers les officines. La régularité d'un service tenu — c'est elle qui fait la confiance, pas les promesses.</p>
+        </div>
+      </div>
+      <p class="cloture">Et quand la vie de votre officine change — transfert, agrandissement, cession de parts — votre interlocuteur ajuste l'approvisionnement avec vous, sans à-coup au comptoir.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 05 · LA CENTRALE ========== -->
+<section class="plan" id="p5" data-ton="sombre" data-plan="4">
+  <div class="plan__fond"></div>
+  <div class="plan__voile"></div>
+  <div class="plan__in">
+    <div class="plan__txt">
+      <p class="sur">La centrale</p>
+      <div class="cen">
+        <div>
+          <h2>Et pour tout ce qui n'est pas le médicament.</h2>
+          <div class="corps" style="margin-top:clamp(18px,2.4vw,30px)">
+            <p>Notre centrale de parapharmacie référence pour l'officine plus de 14 000 produits et plus de 480 marques.</p>
+            <p>C'est une structure à part, avec son propre fonctionnement — sa commande, sa livraison — et la même exigence que le reste du groupe.</p>
+          </div>
+        </div>
+        <div class="cen__chiffres">
+          <div class="cpt cpt--braise"><b data-cible="14000" data-suffixe=" +">14 000 +</b><span>références</span></div>
+          <div class="cpt"><b data-cible="480" data-suffixe=" +">480 +</b><span>marques</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 06 · VOS FACTURES ========== -->
+<section class="plan" id="p6" data-ton="clair" data-plan="5">
+  <div class="plan__in">
+    <div class="plan__txt">
+      <p class="sur">Vos factures</p>
+      <div class="fac">
+        <div>
+          <h2>Elles arrivent déjà là où vous les gérez.</h2>
+        </div>
+        <div>
+          <div class="corps">
+            <p>Nous sommes connectés à Digipharmacie : vos factures Intégral s'y retrouvent automatiquement, avec celles de vos autres fournisseurs.</p>
+          </div>
+          <ul class="fac__net">
+            <li>Rien à saisir</li>
+            <li>Rien à classer</li>
+            <li>Rien à réclamer</li>
+          </ul>
+        </div>
+      </div>
+      <div class="labos">
+        <p class="sur">Nos partenaires — les laboratoires qui nous font confiance</p>
+        <div class="ruban">
+          <div class="ruban__piste">
+            <span>EG Labo</span><span>Zentiva</span><span>Zydus</span><span>Viatris</span><span>ITP</span><span>Santestat</span>
+            <span>EG Labo</span><span>Zentiva</span><span>Zydus</span><span>Viatris</span><span>ITP</span><span>Santestat</span>
+            <span>EG Labo</span><span>Zentiva</span><span>Zydus</span><span>Viatris</span><span>ITP</span><span>Santestat</span>
+            <span>EG Labo</span><span>Zentiva</span><span>Zydus</span><span>Viatris</span><span>ITP</span><span>Santestat</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 07 · NOUS REJOINDRE ========== -->
+<section class="plan" id="p7" data-ton="sombre" data-plan="6">
+  <div class="plan__in">
+    <div class="plan__txt">
+      <p class="sur">Nous rejoindre</p>
+      <div class="rej">
+        <div>
+          <h2>Neuf implantations qui embauchent.</h2>
+          <p class="corps" style="margin-top:clamp(18px,2.4vw,30px)">Préparateur-chauffeur, technicien approvisionnement, commercial, pharmacien responsable : les métiers de la répartition s'apprennent chez nous.</p>
+        </div>
+        <div>
+          <p class="sur" style="margin-bottom:8px">Les villes qui recrutent</p>
+          <div class="villes">
+            <span>Hyères · 83</span><span>Villeneuve-lès-Béziers · 34</span><span>Montayral · 47</span><span>Saint-Maurice-l'Exil · 38</span>
+          </div>
+          <div class="btns">
+            <a class="btn btn--plein" href="https://www.integralpharma.fr/jobs" target="_blank" rel="noopener">Voir les offres <i>↗</i></a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 08 · NOS VALEURS ========== -->
+<section class="plan" id="p8" data-ton="sombre" data-plan="7">
+  <div class="plan__in">
+    <div class="plan__txt">
+      <p class="sur">Nos valeurs</p>
+      <h2 style="max-width:16ch">Trois mots qui se vérifient au téléphone.</h2>
+      <div class="valeurs">
+        <div class="val">
+          <h3>Confiance</h3>
+          <p>La personne qui décroche connaît votre officine, vos saisons et vos habitudes.</p>
+        </div>
+        <div class="val">
+          <h3>Engagement</h3>
+          <p>C'est la même d'une année sur l'autre. Dans ce métier, c'est devenu rare.</p>
+        </div>
+        <div class="val">
+          <h3>Respect</h3>
+          <p>Elle ne vous vendra pas ce dont vous n'avez pas besoin — parce qu'elle vous reverra le mois suivant, et l'année d'après.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 09 · NOUS ÉCRIRE ========== -->
+<section class="plan" id="p9" data-ton="clair" data-plan="8">
+  <div class="plan__in">
+    <div class="plan__txt">
+      <p class="sur">Nous écrire</p>
+      <h2 style="max-width:15ch">Posez-nous la question qui vous intéresse.</h2>
+      <p class="corps corps--large" style="margin-top:clamp(18px,2.4vw,30px)">Sur nos conditions, sur nos délais, sur la façon dont nous travaillons. Vous aurez une réponse claire, et le nom de l'implantation qui livre votre secteur.</p>
+      <p style="margin-top:clamp(26px,3.4vw,44px)">
+        <a class="fin__mail" href="mailto:contact@integralpharma.fr">contact@integralpharma.fr <i>→</i></a>
+      </p>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ================= PIED ================= -->
+<footer class="pied">
+  <div class="pied__in">
+    <address>
+      <strong>Intégral Pharma</strong><br>
+      758 chemin de la Source, ZI Saint-Martin, 83400 Hyères<br>
+      <a href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a>
+    </address>
+    <div>
+      <nav aria-label="Navigation de pied de page">
+        <a href="#p2">Le groupe</a>
+        <a href="#p3">Le réseau</a>
+        <a href="#p4">Le métier</a>
+        <a href="#p8">Nos valeurs</a>
+        <a href="#p9">Nous écrire</a>
+        <a href="https://www.integralpharma.fr/mentions-l%C3%A9gales" target="_blank" rel="noopener">Mentions légales</a>
+      </nav>
+    </div>
+  </div>
+  <div class="pied__chiffres">
+    <span>9 implantations · plus de 2 000 officines livrées · indépendant depuis 2006</span>
+    <span class="pied__sign">25 — La Déchirure</span>
+  </div>
+</footer>
+
+<script src="libs-25/gsap.min.js"></script>
+<script src="libs-25/lenis.min.js"></script>
+<script>
+/* =========================================================================
+   25 — LA DÉCHIRURE · pilotage
+   Rien ici n'est nécessaire à la lecture de la page. Tout est une couche
+   ajoutée par-dessus un document déjà complet.
+   ========================================================================= */
+(function(){
+  "use strict";
+
+  var racine = document.documentElement;
+  var sobre  = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ------------------------------------------------------------------
+     0. Menu téléphone — indépendant du reste, il doit marcher même si
+        le WebGL échoue trois lignes plus bas.
+     ------------------------------------------------------------------ */
+  var burger = document.querySelector(".burger");
+  var tiroir = document.getElementById("tiroir");
+  function fermerTiroir(){
+    racine.classList.remove("ouvert");
+    burger.setAttribute("aria-expanded","false");
+    burger.setAttribute("aria-label","Ouvrir le menu");
+  }
+  burger.addEventListener("click", function(){
+    var ouvert = racine.classList.toggle("ouvert");
+    burger.setAttribute("aria-expanded", ouvert ? "true" : "false");
+    burger.setAttribute("aria-label", ouvert ? "Fermer le menu" : "Ouvrir le menu");
+  });
+  tiroir.addEventListener("click", function(e){ if(e.target.closest("a")) fermerTiroir(); });
+  document.addEventListener("keydown", function(e){ if(e.key === "Escape") fermerTiroir(); });
+
+  racine.classList.add("js");
+
+  /* ------------------------------------------------------------------
+     1. Défilement fluide (Lenis) — jamais de capture du geste :
+        pas de syncTouch, pas de verrou, la molette et le doigt gardent
+        toujours la main. Le lecteur peut aller vite et revenir.
+     ------------------------------------------------------------------ */
+  var lenis = null;
+  if(!sobre && window.Lenis){
+    try{
+      lenis = new window.Lenis({ duration: 1.0, smoothWheel: true, syncTouch: false, touchMultiplier: 1.6 });
+    }catch(e){ lenis = null; }
+  }
+  function allerA(cible){
+    var el = typeof cible === "string" ? document.querySelector(cible) : cible;
+    if(!el) return;
+    var y = el.getBoundingClientRect().top + (window.scrollY || window.pageYOffset) + 4;
+    if(lenis) lenis.scrollTo(y, { duration: 1.1 });
+    else window.scrollTo({ top: y, behavior: sobre ? "instant" : "smooth" });
+  }
+  document.addEventListener("click", function(e){
+    var a = e.target.closest('a[href^="#"]');
+    if(!a) return;
+    var id = a.getAttribute("href");
+    if(id === "#" || !document.querySelector(id)) return;
+    e.preventDefault();
+    fermerTiroir();
+    allerA(id);
+  });
+
+  /* ------------------------------------------------------------------
+     2. Les neuf plans
+     ------------------------------------------------------------------ */
+  var sections = Array.prototype.slice.call(document.querySelectorAll(".plan"));
+  var NOMS = ["L'ouverture","Notre histoire","Le réseau","Le métier","La centrale",
+              "Vos factures","Nous rejoindre","Nos valeurs","Nous écrire"];
+
+  // c1 = ombres / fond de dégradé · c2 = lumières / haut de dégradé
+  // teinte = force du bichrome sur la photo · voile = assombrissement porteur du texte
+  var PLANS = [
+    { src:"video",   biais:0.50, teinte:0.80, voile:0.52, c1:[0.014,0.018,0.042], c2:[0.560,0.590,0.660] },
+    { src:"proc",                                          c1:[0.878,0.845,0.775], c2:[0.972,0.955,0.920] },
+    { src:"siege",   biais:0.50, teinte:0.90, voile:0.46, c1:[0.010,0.024,0.082], c2:[0.360,0.440,0.680] },
+    { src:"proc",                                          c1:[0.030,0.036,0.060], c2:[0.055,0.135,0.470] },
+    { src:"solaire", biais:0.50, teinte:0.86, voile:0.48, c1:[0.028,0.018,0.070], c2:[0.470,0.420,0.700] },
+    { src:"proc",                                          c1:[0.868,0.836,0.766], c2:[0.968,0.952,0.918] },
+    { src:"proc",                                          c1:[0.070,0.026,0.026], c2:[0.640,0.230,0.070] },
+    { src:"proc",                                          c1:[0.026,0.030,0.046], c2:[0.070,0.086,0.150] },
+    { src:"proc",                                          c1:[0.880,0.850,0.782], c2:[0.976,0.962,0.930] }
+  ];
+  // Les huit déchirures, dans l'ordre. 0 déchirure · 1 pixels · 2 grain
+  // · 3 torsion · 4 volets · 5 lame de lumière
+  var MODES  = [0, 2, 4, 1, 0, 3, 5, 2];
+  var LUEURS = [
+    [1.00,0.42,0.16],[0.16,0.36,1.00],[1.00,0.42,0.16],[0.95,0.66,0.23],
+    [0.16,0.36,1.00],[1.00,0.42,0.16],[0.95,0.66,0.23],[1.00,0.42,0.16]
+  ];
+
+  var video = document.querySelector("#p1 video");
+
+  /* ------------------------------------------------------------------
+     3. WebGL — strictement WebGL 1, jamais WebGPU.
+        Si quoi que ce soit échoue ici, on ne pose pas la classe .gl
+        et la page reste le document empilé normal.
+     ------------------------------------------------------------------ */
+  var VERT = [
+    "attribute vec2 aPos;",
+    "varying vec2 vUv;",
+    "void main(){ vUv = aPos*0.5 + 0.5; gl_Position = vec4(aPos,0.0,1.0); }"
+  ].join("\n");
+
+  var FRAG = [
+    "precision highp float;",
+    "varying vec2 vUv;",
+    "uniform vec2  uRes;",
+    "uniform float uTime;",
+    "uniform float uProg;",
+    "uniform int   uMode;",
+    "uniform vec3  uLueur;",
+    "uniform sampler2D uTexA;",
+    "uniform sampler2D uTexB;",
+    "uniform vec2  uSizeA;  uniform vec2  uSizeB;",
+    "uniform float uProcA;  uniform float uProcB;",
+    "uniform float uBiaisA; uniform float uBiaisB;",
+    "uniform float uTeinteA;uniform float uTeinteB;",
+    "uniform float uVoileA; uniform float uVoileB;",
+    "uniform vec3  uC1A; uniform vec3 uC2A;",
+    "uniform vec3  uC1B; uniform vec3 uC2B;",
+    "",
+    "float hash21(vec2 p){ p = fract(p*vec2(123.34,456.21)); p += dot(p,p+45.32); return fract(p.x*p.y); }",
+    "float bruit(vec2 p){",
+    "  vec2 i = floor(p), f = fract(p);",
+    "  f = f*f*(3.0-2.0*f);",
+    "  float a = hash21(i), b = hash21(i+vec2(1.,0.)), c = hash21(i+vec2(0.,1.)), d = hash21(i+vec2(1.,1.));",
+    "  return mix(mix(a,b,f.x), mix(c,d,f.x), f.y);",
+    "}",
+    "float fbm(vec2 p){ float v=0.0, a=0.5; for(int k=0;k<4;k++){ v += a*bruit(p); p *= 2.03; a *= 0.5; } return v; }",
+    "",
+    // recadrage « cover » : l'image remplit toujours l'écran, jamais de bande vide
+    "vec2 couvre(vec2 uv, vec2 sz, float biais){",
+    "  float ae = uRes.x/uRes.y;",
+    "  float ai = sz.x/max(sz.y,1.0);",
+    "  vec2 k = ae > ai ? vec2(1.0, ai/ae) : vec2(ae/ai, 1.0);",
+    "  vec2 p = (uv-0.5)*k + vec2(0.5, biais);",
+    "  return clamp(p, 0.0005, 0.9995);",
+    "}",
+    "",
+    // Le voile : c'est LUI qui rend le texte lisible par-dessus une photo.
+    // Sans lui la maquette était illisible sur les trois plans photographiques,
+    // et une photo de drone en plein soleil ne pardonne rien.
+    // 1.0 en bas à gauche (là où vit le texte), ~0.55 en haut à droite.
+    "float voile(vec2 uv){ return 0.55 + 0.45*smoothstep(0.0, 1.0, 1.0 - (uv.x*0.48 + uv.y*0.62)); }",
+    "",
+    "vec3 planA(vec2 uv){",
+    "  if(uProcA > 0.5){",
+    "    float g = clamp(uv.x*0.42 + (1.0-uv.y)*0.78, 0.0, 1.0);",
+    "    float n = fbm(uv*2.4 + uTime*0.014);",
+    "    return mix(uC1A, uC2A, smoothstep(0.02, 0.98, g + (n-0.5)*0.34));",
+    "  }",
+    "  vec3 c = texture2D(uTexA, couvre(uv, uSizeA, uBiaisA)).rgb;",
+    "  float l = dot(c, vec3(0.299,0.587,0.114));",
+    "  vec3 duo = mix(uC1A, uC2A, pow(clamp(l,0.0,1.0), 0.82));",
+    "  c = mix(c, duo, uTeinteA);",
+    "  return mix(c, uC1A, clamp(uVoileA*voile(uv), 0.0, 1.0));",
+    "}",
+    "vec3 planB(vec2 uv){",
+    "  if(uProcB > 0.5){",
+    "    float g = clamp(uv.x*0.42 + (1.0-uv.y)*0.78, 0.0, 1.0);",
+    "    float n = fbm(uv*2.4 + uTime*0.014);",
+    "    return mix(uC1B, uC2B, smoothstep(0.02, 0.98, g + (n-0.5)*0.34));",
+    "  }",
+    "  vec3 c = texture2D(uTexB, couvre(uv, uSizeB, uBiaisB)).rgb;",
+    "  float l = dot(c, vec3(0.299,0.587,0.114));",
+    "  vec3 duo = mix(uC1B, uC2B, pow(clamp(l,0.0,1.0), 0.82));",
+    "  c = mix(c, duo, uTeinteB);",
+    "  return mix(c, uC1B, clamp(uVoileB*voile(uv), 0.0, 1.0));",
+    "}",
+    "",
+    "void main(){",
+    "  float pp = clamp(uProg, 0.0, 1.0);",
+    "  float cloche = sin(pp*3.14159265);",
+    "  vec2 uvA = vUv, uvB = vUv;",
+    "  float m = 1.0;",      // 1 = plan A intact
+    "  float halo = 0.0;",
+    "",
+    "  if(uMode == 1){",
+    // PIXELS — d'après gl-transitions/pixelize (auteur : gre, licence MIT)
+    "    float d = min(pp, 1.0-pp);",
+    "    float pas = 42.0;",
+    "    float dist = ceil(d*pas)/pas;",
+    "    vec2 carre = 2.0*dist/vec2(30.0, 17.0);",
+    "    vec2 p = dist > 0.0 ? (floor(vUv/carre)+0.5)*carre : vUv;",
+    "    uvA = p; uvB = p;",
+    "    m = 1.0 - pp;",
+    "    halo = dist*1.5*cloche;",
+    "  } else if(uMode == 2){",
+    // GRAIN — fonte pixel par pixel
+    "    float v = hash21(floor(vUv*uRes/2.5))*0.55 + fbm(vUv*3.0)*0.45;",
+    "    float p = pp*1.24 - 0.12;",
+    "    m = smoothstep(p-0.07, p+0.07, v);",
+    "    halo = exp(-pow((v-p)/0.10, 2.0))*0.80*cloche;",
+    "  } else if(uMode == 3){",
+    // TORSION — d'après gl-transitions/crosswarp (auteur : Eke Péter, licence MIT)
+    "    float x = smoothstep(0.0, 1.0, pp*2.0 + vUv.x - 1.0);",
+    "    uvA = (vUv-0.5)*(1.0-x)+0.5;",
+    "    uvB = (vUv-0.5)*x+0.5;",
+    "    m = 1.0 - x;",
+    "    halo = exp(-pow((x-0.5)/0.30, 2.0))*0.45*cloche;",
+    "  } else if(uMode == 4){",
+    // VOLETS — d'après gl-transitions/windowslice (auteur : gre, licence MIT)
+    "    float nb = 9.0, doux = 0.42;",
+    "    float pr = smoothstep(-doux, 0.0, vUv.x - pp*(1.0+doux));",
+    "    float fr = fract(nb*vUv.x);",
+    "    float s = smoothstep(pr-0.022, pr+0.022, fr);",
+    "    m = 1.0 - s;",
+    "    halo = exp(-pow((fr-pr)/0.055, 2.0))*0.95*cloche;",
+    "  } else if(uMode == 5){",
+    // LAME DE LUMIÈRE
+    "    float y = vUv.y + (fbm(vec2(vUv.x*4.0, uTime*0.05))-0.5)*0.045;",
+    "    float p = pp*1.22 - 0.11;",
+    "    m = smoothstep(p-0.006, p+0.006, y);",
+    "    halo = exp(-pow((y-p)/0.030, 2.0))*1.70*cloche;",
+    "    uvB.y += (1.0-pp)*0.030;",
+    "  } else {",
+    // LA DÉCHIRURE — le geste maison : un front diagonal déchiqueté au bruit,
+    // avec la lumière qui passe par la déchirure.
+    "    vec2 dir = normalize(vec2(0.86, -0.51));",
+    "    float ae = uRes.x/uRes.y;",
+    "    vec2 q = (vUv-0.5)*vec2(ae, 1.0);",
+    "    float demi = 0.5*length(vec2(ae, 1.0));",
+    "    float t = dot(q, dir)/(2.0*demi) + 0.5;",
+    "    float n  = fbm(vUv*3.2 + uTime*0.018);",
+    "    float n2 = fbm(vUv*13.0)*0.055;",
+    "    float e = t + (n-0.5)*0.20 + n2;",
+    "    float p = pp*1.44 - 0.20;",
+    "    m = smoothstep(p-0.010, p+0.010, e);",
+    "    halo = exp(-pow((e-p)/0.042, 2.0))*1.85*cloche;",
+    "    uvA += dir*(pp*0.020);",
+    "    uvB -= dir*((1.0-pp)*0.020);",
+    "  }",
+    "",
+    "  vec3 col = mix(planB(uvB), planA(uvA), clamp(m,0.0,1.0));",
+    "  col += uLueur * halo;",
+    "",
+    // grain de film + vignette : la matière qui empêche l'aplat
+    "  float gr = hash21(vUv*uRes + fract(uTime)*197.0) - 0.5;",
+    "  col += gr*0.042;",
+    "  float ae2 = uRes.x/uRes.y;",
+    "  float vig = smoothstep(1.30, 0.34, length((vUv-0.5)*vec2(ae2,1.0)));",
+    "  col *= mix(0.87, 1.0, vig);",
+    "",
+    "  gl_FragColor = vec4(clamp(col,0.0,1.0), 1.0);",
+    "}"
+  ].join("\n");
+
+  var toile = document.getElementById("toile");
+  var gl = null, prog = null, U = {}, texs = {}, dpr = 1;
+
+  function compiler(type, src){
+    var s = gl.createShader(type);
+    gl.shaderSource(s, src);
+    gl.compileShader(s);
+    if(!gl.getShaderParameter(s, gl.COMPILE_STATUS)){
+      console.warn("[25] shader:", gl.getShaderInfoLog(s));
+      return null;
+    }
+    return s;
+  }
+
+  function texture(){
+    var t = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, t);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, 1, 1, 0, gl.RGB, gl.UNSIGNED_BYTE, new Uint8Array([20,22,30]));
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    return { tex:t, w:1, h:1, prete:false };
+  }
+
+  function chargerImage(cle, url){
+    var im = new Image();
+    im.onload = function(){
+      if(!gl) return;
+      gl.bindTexture(gl.TEXTURE_2D, texs[cle].tex);
+      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, im);
+      texs[cle].w = im.naturalWidth; texs[cle].h = im.naturalHeight; texs[cle].prete = true;
+    };
+    im.src = url;
+  }
+
+  function initGL(){
+    if(sobre) return false;
+    var opts = { alpha:false, antialias:false, depth:false, stencil:false,
+                 premultipliedAlpha:false, powerPreference:"default", failIfMajorPerformanceCaveat:false };
+    try{
+      gl = toile.getContext("webgl", opts) || toile.getContext("experimental-webgl", opts);
+    }catch(e){ gl = null; }
+    if(!gl) return false;
+
+    var vs = compiler(gl.VERTEX_SHADER, VERT);
+    var fs = compiler(gl.FRAGMENT_SHADER, FRAG);
+    if(!vs || !fs) return false;
+
+    prog = gl.createProgram();
+    gl.attachShader(prog, vs); gl.attachShader(prog, fs);
+    gl.bindAttribLocation(prog, 0, "aPos");
+    gl.linkProgram(prog);
+    if(!gl.getProgramParameter(prog, gl.LINK_STATUS)){
+      console.warn("[25] link:", gl.getProgramInfoLog(prog));
+      return false;
+    }
+    gl.useProgram(prog);
+
+    var buf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 3,-1, -1,3]), gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+
+    ["uRes","uTime","uProg","uMode","uLueur","uTexA","uTexB","uSizeA","uSizeB",
+     "uProcA","uProcB","uBiaisA","uBiaisB","uTeinteA","uTeinteB","uVoileA","uVoileB",
+     "uC1A","uC2A","uC1B","uC2B"].forEach(function(n){ U[n] = gl.getUniformLocation(prog, n); });
+
+    texs.video   = texture();
+    texs.siege   = texture();
+    texs.solaire = texture();
+    texs.vide    = texture();
+    chargerImage("siege",   "../../assets/siege-web.jpg");
+    chargerImage("solaire", "../../assets/siege-solaire.jpg");
+
+    gl.uniform1i(U.uTexA, 0);
+    gl.uniform1i(U.uTexB, 1);
+
+    toile.addEventListener("webglcontextlost", function(e){
+      e.preventDefault();
+      // Le contexte a sauté : on redevient une page normale, pas un écran noir.
+      racine.classList.remove("gl");
+      gl = null;
+    }, false);
+
+    return true;
+  }
+
+  function dimensionner(){
+    if(!gl) return;
+    var large = window.innerWidth >= 900;
+    dpr = Math.min(window.devicePixelRatio || 1, large ? 1.6 : 1.3);
+    var w = Math.round(window.innerWidth * dpr);
+    var h = Math.round(window.innerHeight * dpr);
+    if(toile.width !== w || toile.height !== h){
+      toile.width = w; toile.height = h;
+      gl.viewport(0, 0, w, h);
+    }
+  }
+
+  /* ------------------------------------------------------------------
+     4. Mesure : quel plan, quelle déchirure, à quel avancement
+     ------------------------------------------------------------------ */
+  var geo = [], vh = 0, hauteurDoc = 0;
+  var TENUE = 0.48; // part du parcours où le plan reste intact ; le reste déchire
+
+  function mesurer(){
+    vh = window.innerHeight;
+    // filet de sécurité : un chapitre plus haut que l'écran quitte le mode collant
+    // plutôt que de laisser son bas définitivement hors d'atteinte.
+    // ⚠️ on mesure le TEXTE, pas le conteneur : le conteneur porte un
+    // min-height:100vh, il serait toujours déclaré « trop haut ».
+    if(racine.classList.contains("gl")){
+      sections.forEach(function(s){
+        var inn = s.querySelector(".plan__in");
+        var txt = s.querySelector(".plan__txt");
+        s.removeAttribute("data-long");
+        var cs = window.getComputedStyle(inn);
+        var besoin = txt.scrollHeight + parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+        if(besoin > vh - 6) s.setAttribute("data-long","1");
+      });
+    }
+    geo = sections.map(function(s){
+      var r = s.getBoundingClientRect();
+      var top = r.top + (window.scrollY || window.pageYOffset);
+      return { top: top, h: s.offsetHeight, el: s, txt: s.querySelector(".plan__txt") };
+    });
+    hauteurDoc = Math.max(1, document.documentElement.scrollHeight - vh);
+  }
+
+  var jauge  = document.querySelector(".jauge i");
+  var railA  = Array.prototype.slice.call(document.querySelectorAll(".rail a"));
+  var repN   = document.querySelector(".repere b");
+  var repT   = document.querySelector(".repere span");
+  var actuel = -1;
+
+  function etat(y){
+    // renvoie { i, prog } : plan i, déchirure vers i+1 avancée de prog
+    var i = 0;
+    for(var k = 0; k < geo.length; k++){ if(y >= geo[k].top - 1) i = k; }
+    var g = geo[i];
+    var portee = Math.max(1, g.h - vh);
+    var s = y - g.top;
+    var p = 0;
+    if(i < geo.length - 1){
+      p = (s - portee*TENUE) / Math.max(1, portee*(1-TENUE));
+      p = p < 0 ? 0 : (p > 1 ? 1 : p);
+    }
+    return { i:i, prog:p, s:s, portee:portee };
+  }
+
+  // Sans WebGL les chapitres ne font plus deux écrans de haut : la progression
+  // de déchirure n'a plus de sens et donnait un repère décalé d'un chapitre
+  // (« 03 Le réseau » annoncé « 04 Le métier »). Vu à l'écran, corrigé ici.
+  function chapitreSimple(y){
+    var repere = y + vh*0.35, idx = 0;
+    for(var k = 0; k < geo.length; k++){ if(repere >= geo[k].top) idx = k; }
+    return idx;
+  }
+
+  function majReperes(e, y){
+    var frac = y / hauteurDoc;
+    if(jauge) jauge.style.width = (frac*100).toFixed(2) + "%";
+    var idx = racine.classList.contains("gl")
+      ? (e.prog > 0.6 ? Math.min(e.i+1, geo.length-1) : e.i)
+      : chapitreSimple(y);
+    if(idx !== actuel){
+      actuel = idx;
+      railA.forEach(function(a,k){ a.setAttribute("aria-current", k === idx ? "true" : "false"); });
+      if(repN) repN.textContent = "0" + (idx+1);
+      if(repT) repT.textContent = NOMS[idx];
+      var ton = sections[idx].getAttribute("data-ton");
+      racine.setAttribute("data-ton", ton);
+    }
+  }
+
+  /* ------------------------------------------------------------------
+     5. Chorégraphie du texte — on ne fait que poser --op et --dy.
+        L'état par défaut du CSS est VISIBLE : si cette fonction ne
+        tourne jamais, rien ne disparaît.
+     ------------------------------------------------------------------ */
+  function majTextes(y){
+    for(var k = 0; k < geo.length; k++){
+      var g = geo[k];
+      var loin = g.top - y;
+      if(loin > vh*1.3 || (y - (g.top + g.h)) > vh*0.4){
+        if(g.txt.dataset.pose !== "0"){ g.txt.style.setProperty("--op",1); g.txt.style.setProperty("--dy","0px"); g.txt.dataset.pose = "0"; }
+        continue;
+      }
+      var portee = Math.max(1, g.h - vh);
+      var s = y - g.top;
+      var arrive = Math.min(1, Math.max(0, (s + vh*0.62) / (vh*0.62)));
+      var sortie = 0;
+      if(k < geo.length - 1){
+        sortie = (s - portee*TENUE) / Math.max(1, portee*(1-TENUE));
+        sortie = sortie < 0 ? 0 : (sortie > 1 ? 1 : sortie);
+      }
+      var op = arrive * (1 - Math.min(1, sortie/0.62));
+      var dy = (1-arrive)*34 - sortie*54;
+      g.txt.style.setProperty("--op", op.toFixed(3));
+      g.txt.style.setProperty("--dy", dy.toFixed(1) + "px");
+      g.txt.dataset.pose = "1";
+    }
+  }
+
+  /* ------------------------------------------------------------------
+     6. Rendu
+     ------------------------------------------------------------------ */
+  function source(p){
+    if(p.src === "proc") return texs.vide;
+    if(p.src === "video") return texs.video;
+    if(p.src === "siege") return texs.siege;
+    return texs.solaire;
+  }
+
+  function poser(p, suffixe, unite){
+    var t = source(p);
+    var procedural = (p.src === "proc" || !t.prete) ? 1 : 0;
+    gl.activeTexture(unite === 0 ? gl.TEXTURE0 : gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, t.tex);
+    gl.uniform1f(U["uProc"+suffixe],  procedural);
+    gl.uniform2f(U["uSize"+suffixe],  t.w, t.h);
+    gl.uniform1f(U["uBiais"+suffixe], p.biais === undefined ? 0.5 : p.biais);
+    gl.uniform1f(U["uTeinte"+suffixe],p.teinte === undefined ? 0 : p.teinte);
+    gl.uniform1f(U["uVoile"+suffixe], p.voile === undefined ? 0 : p.voile);
+    gl.uniform3f(U["uC1"+suffixe], p.c1[0], p.c1[1], p.c1[2]);
+    gl.uniform3f(U["uC2"+suffixe], p.c2[0], p.c2[1], p.c2[2]);
+  }
+
+  var t0 = performance.now();
+  var imgs = 0, dernierIps = performance.now(), ips = 0;
+  window.__ips25 = 0;
+
+  function rendre(){
+    if(!gl) return;
+    var y = window.scrollY || window.pageYOffset;
+    var e = etat(y);
+
+    // La vidéo ne tourne que quand son plan est en vue : rien ne décode pour rien.
+    if(video){
+      var utile = (e.i === 0) || (e.i === 1 && e.prog < 0.02);
+      if(utile && video.paused) { var pr = video.play(); if(pr && pr.catch) pr.catch(function(){}); }
+      else if(!utile && !video.paused) video.pause();
+      if(utile && video.readyState >= 2){
+        gl.bindTexture(gl.TEXTURE_2D, texs.video.tex);
+        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+        try{
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, video);
+          texs.video.w = video.videoWidth || 1080;
+          texs.video.h = video.videoHeight || 1920;
+          texs.video.prete = true;
+        }catch(err){ /* vidéo pas encore exploitable : on garde le plan procédural */ }
+      }
+    }
+
+    var A = PLANS[e.i];
+    var B = PLANS[Math.min(e.i+1, PLANS.length-1)];
+    var b = Math.min(e.i, MODES.length-1);
+
+    gl.uniform2f(U.uRes, toile.width, toile.height);
+    gl.uniform1f(U.uTime, (performance.now()-t0)/1000);
+    gl.uniform1f(U.uProg, e.prog);
+    gl.uniform1i(U.uMode, MODES[b]);
+    gl.uniform3f(U.uLueur, LUEURS[b][0], LUEURS[b][1], LUEURS[b][2]);
+    poser(A, "A", 0);
+    poser(B, "B", 1);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+    majReperes(e, y);
+    majTextes(y);
+
+    // Repère de contrôle, en lecture seule : permet de vérifier à l'écran
+    // quel plan et quelle déchirure sont réellement rendus.
+    window.__plan25 = { plan: e.i, prog: +e.prog.toFixed(3), mode: MODES[b] };
+
+    imgs++;
+    var maintenant = performance.now();
+    if(maintenant - dernierIps >= 1000){
+      ips = Math.round(imgs*1000/(maintenant-dernierIps));
+      window.__ips25 = ips;
+      imgs = 0; dernierIps = maintenant;
+    }
+  }
+
+  /* ------------------------------------------------------------------
+     7. Boucle
+     ------------------------------------------------------------------ */
+  function boucle(temps){
+    if(lenis) lenis.raf(temps);
+    rendre();
+    requestAnimationFrame(boucle);
+  }
+
+  /* ------------------------------------------------------------------
+     8. Compteurs — la règle qui empêche « 2 018 »
+     ------------------------------------------------------------------ */
+  function formater(v, cible, suffixe){
+    var n = Math.round(v);
+    // une année ne prend JAMAIS le séparateur de milliers
+    var annee = (cible >= 1900 && cible <= 2100 && !suffixe);
+    var s = annee ? String(n) : String(n).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+    return s + (suffixe || "");
+  }
+  function compteurs(){
+    var els = Array.prototype.slice.call(document.querySelectorAll("[data-cible]"));
+    if(!window.gsap || sobre){ return; }
+    var obs = new IntersectionObserver(function(entrees){
+      entrees.forEach(function(en){
+        if(!en.isIntersecting) return;
+        var el = en.target;
+        obs.unobserve(el);
+        var cible = parseFloat(el.getAttribute("data-cible"));
+        var suffixe = el.getAttribute("data-suffixe") || "";
+        var obj = { v: 0 };
+        window.gsap.to(obj, {
+          v: cible, duration: 1.5, ease: "power2.out",
+          onUpdate: function(){ el.textContent = formater(obj.v, cible, suffixe); },
+          onComplete: function(){ el.textContent = formater(cible, cible, suffixe); }
+        });
+      });
+    }, { threshold: 0.35 });
+    els.forEach(function(el){ obs.observe(el); });
+  }
+
+  /* ------------------------------------------------------------------
+     9. Découpe du grand titre — ajoutée, jamais soustraite
+     ------------------------------------------------------------------ */
+  function ouverture(){
+    if(!window.gsap || sobre) return;
+    var h = document.querySelector("[data-decoupe]");
+    if(!h) return;
+    var mots = [];
+    Array.prototype.forEach.call(h.childNodes, function(n){
+      if(n.nodeType === 3){
+        var frag = document.createDocumentFragment();
+        n.textContent.split(/(\s+)/).forEach(function(w){
+          if(!w.trim()){ frag.appendChild(document.createTextNode(w)); return; }
+          var sp = document.createElement("span");
+          sp.style.display = "inline-block";
+          sp.textContent = w;
+          frag.appendChild(sp);
+          mots.push(sp);
+        });
+        n.parentNode.replaceChild(frag, n);
+      } else if(n.nodeType === 1){
+        n.style.display = "block";
+        mots.push(n);
+      }
+    });
+    if(!mots.length) return;
+    window.gsap.from(mots, {
+      yPercent: 108, opacity: 0, duration: 1.15, ease: "expo.out", stagger: 0.075, delay: 0.12,
+      clearProps: "all"   // on rend la main au CSS : rien ne reste figé par le script
+    });
+    var suite = document.querySelectorAll("#p1 .sur, #p1 .ouv__sous, #p1 .btns, #p1 .ruban");
+    window.gsap.from(suite, {
+      opacity: 0, y: 22, duration: 0.9, ease: "power3.out", stagger: 0.09, delay: 0.42, clearProps: "all"
+    });
+    // Filet : si une animation d'arrivée reste coincée (onglet en fond, erreur
+    // ailleurs), on rend la main au CSS. Rien ne doit rester à opacité 0.
+    setTimeout(function(){
+      Array.prototype.forEach.call(suite, function(el){ el.style.opacity = ""; el.style.transform = ""; });
+      mots.forEach(function(el){ el.style.opacity = ""; el.style.transform = ""; });
+    }, 3200);
+  }
+
+  /* ------------------------------------------------------------------
+     10. Démarrage
+     ------------------------------------------------------------------ */
+  function demarrer(){
+    compteurs();
+
+    var ok = initGL();
+    if(ok){
+      racine.classList.add("gl");
+      dimensionner();
+      mesurer();
+      // on pose l'état AVANT la première image : pas de saut à l'arrivée
+      var y0 = window.scrollY || window.pageYOffset;
+      majReperes(etat(y0), y0);
+      majTextes(y0);
+      rendre();
+      requestAnimationFrame(boucle);
+    }else{
+      // pas de WebGL : la page reste le document empilé, on garde juste
+      // la jauge, le rail et le repère, qui n'ont besoin de rien.
+      racine.classList.remove("gl");
+      mesurer();
+      var maj = function(){
+        var y = window.scrollY || window.pageYOffset;
+        var e = etat(y);
+        majReperes(e, y);
+      };
+      window.addEventListener("scroll", maj, { passive:true });
+      maj();
+      if(lenis){ (function r(t){ lenis.raf(t); requestAnimationFrame(r); })(0); }
+    }
+    ouverture();
+
+    var minuteur;
+    window.addEventListener("resize", function(){
+      clearTimeout(minuteur);
+      minuteur = setTimeout(function(){ dimensionner(); mesurer(); }, 140);
+    });
+    // les polices changent les hauteurs : on re-mesure quand elles arrivent
+    if(document.fonts && document.fonts.ready){ document.fonts.ready.then(function(){ mesurer(); }); }
+    window.addEventListener("load", function(){ setTimeout(mesurer, 60); });
+  }
+
+  if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", demarrer);
+  else demarrer();
+})();
+</script>
+</body>
+</html>

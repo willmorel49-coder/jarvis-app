@@ -1,0 +1,40 @@
+Librairies et matières employées par m-35.html — « L'ASSEMBLAGE »
+Tout est auto-hébergé ici. Aucun CDN, aucune clé d'API, aucun appel réseau sortant.
+
+── Code ──────────────────────────────────────────────────────────────────────
+
+three.module.min.js   Three.js r169 — licence MIT — https://threejs.org
+                      Build ES module officiel (copié depuis libs-23/, récupéré sur
+                      unpkg le 16/08/2026).
+                      ⚠️ C'est le build WEBGL classique. « three/webgpu » n'est PAS
+                      dans ce dossier et ne doit jamais y entrer : il tente WebGPU
+                      en premier et fige le Mac de Will.
+
+RGBELoader.js         Three.js r169, examples/jsm/loaders — licence MIT
+                      Lecteur de fichier .hdr (Radiance RGBE). Il importe « three » :
+                      la page le résout par une <script type="importmap"> vers le
+                      fichier ci-dessus, donc toujours en local.
+
+Aucune autre librairie. Pas de GSAP, pas de Lenis : la page tient sur UNE seule
+boucle requestAnimationFrame qui lit le défilement une fois par image. Deux boucles
+séparées (une pour le DOM, une pour la 3D) coûtent systématiquement une image de
+retard entre le texte et le volume — et ici le texte COMMENTE le volume, donc le
+décalage se verrait.
+
+── Matières ──────────────────────────────────────────────────────────────────
+
+studio.hdr            Poly Haven — « Studio Small 09 », 1k — CC0
+                      https://polyhaven.com/a/studio_small_09
+                      Carte d'environnement. Elle donne aux cartons leur reflet doux
+                      de studio et au bois de la palette son grain. 1,54 Mo.
+
+                      ⚠️ Elle n'est JAMAIS attendue : la scène démarre avec un
+                      environnement fabriqué en mémoire (PMREMGenerator.fromScene sur
+                      une boîte émissive), et la HDRI vient le remplacer quand elle
+                      arrive. Il n'y a donc aucun écran de chargement, ni de deux
+                      secondes ni d'une : la première image est rendue tout de suite.
+
+Le carton imprimé et le bois de la palette ne viennent d'aucun fichier : ce sont
+deux textures dessinées dans un <canvas> au démarrage (planche de 4 impressions
+neutres pour les cartons, veinage pour le bois). Rien à télécharger, rien à créditer,
+et aucun nom de laboratoire ni de marque n'y figure.

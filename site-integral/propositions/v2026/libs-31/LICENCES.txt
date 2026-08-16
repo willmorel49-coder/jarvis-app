@@ -1,0 +1,27 @@
+Librairies employées par m-31.html — « PORTIQUES »
+Tout est auto-hébergé ici. Aucun CDN, aucune clé d'API, aucun appel réseau sortant.
+
+── Code ──────────────────────────────────────────────────────────────────────
+
+three.module.min.js   Three.js r169 — licence MIT — https://threejs.org
+                      Build ES module officiel (WebGL). Copié depuis libs-23/,
+                      lui-même récupéré sur unpkg le 16/08/2026.
+                      ⚠️ C'est le build WEBGL classique. « three/webgpu » n'est PAS
+                      dans ce dossier et ne doit jamais y entrer : il tente WebGPU
+                      en premier et fige le Mac.
+
+── Matières ──────────────────────────────────────────────────────────────────
+
+Aucune. Le couloir n'utilise AUCUNE texture téléchargée : les parois, le sol et
+le plafond sont peints dans un <canvas> au chargement (tôle sombre, joints de
+panneaux, rivets, grain). Zéro octet réseau, et les joints restent nets à toutes
+les tailles parce qu'ils sont dessinés, pas photographiés.
+
+Les seules images de la page sont les médias du groupe, appelés en relatif
+depuis ../../assets/ : band.mp4 (une seule balise vidéo sur la page),
+siege-web.jpg et siege-solaire.jpg.
+
+⚠️ hero.mp4 a été écarté volontairement : c'est un survol serré du MÊME toit que
+siege-web.jpg. Les trois fichiers retenus donnent trois registres réellement
+distincts — une vue large à l'horizon (band.mp4), un trois-quarts aérien du
+bâtiment (siege-web.jpg), un aplomb sur les toitures solaires (siege-solaire.jpg).

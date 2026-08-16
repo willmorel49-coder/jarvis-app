@@ -1,0 +1,22 @@
+Polices employées par m-23.html — « La Traversée »
+Toutes en SIL Open Font License 1.1, servies par le même hôte que la page.
+Aucun appel à un service extérieur, aucune clé, aucun coût.
+
+instrumentserif.woff2         Instrument Serif (Instrument) — SIL OFL 1.1
+instrumentserif-italic.woff2  Sous-ensemble « latin » (U+0000-00FF …), une seule
+                              graisse 400 + son italique. Téléchargé depuis
+                              fonts.gstatic.com le 16/08/2026, puis servi en local.
+                              Rôle : les grands titres. Sa forte modulation de trait
+                              accroche la lumière comme une lettre gravée dans le
+                              métal — c'est exactement le sujet de cette direction.
+
+inter.woff2                   Inter (Rasmus Andersson) — SIL OFL 1.1
+                              Sous-ensemble « latin », variable 400..600.
+                              Repris tel quel de polices-16/ (aucun nouveau
+                              téléchargement). Rôle : tout le texte courant.
+
+jbmono.woff2                  JetBrains Mono (JetBrains) — SIL OFL 1.1
+                              Sous-ensemble « latin », variable 400..600.
+                              Repris tel quel de polices-19/. Rôle : les sur-titres,
+                              les numéros d'implantation gravés sur les seuils de la
+                              scène 3D, les compteurs et les légendes.

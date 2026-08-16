@@ -1,0 +1,1523 @@
+<!DOCTYPE html>
+<html lang="fr" class="nojs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Intégral Pharma — Neuf maisons. Un seul nom.</title>
+<meta name="description" content="Groupe de grossistes-répartiteurs français indépendant. Neuf implantations, plus de 2 000 officines livrées chaque jour.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23070A0F'/%3E%3Cg fill='none' stroke='%23E8A34D' stroke-width='1.6'%3E%3Crect x='7' y='19' width='18' height='7'/%3E%3Crect x='9' y='11' width='14' height='6'/%3E%3Crect x='11' y='4' width='10' height='5'/%3E%3C/g%3E%3C/svg%3E">
+
+<!--
+  ══════════════════════════════════════════════════════════════════════════════
+  m-35  ·  « L'ASSEMBLAGE »
+  ══════════════════════════════════════════════════════════════════════════════
+
+  LE PHÉNOMÈNE — la vue éclatée d'un plan technique.
+  Au premier écran, deux cents pièces flottent séparées dans le noir, chacune
+  cotée, chacune numérotée. Au fil du défilement elles se rapprochent et
+  s'emboîtent. À la fin de la page, tout est assemblé.
+
+  L'OBJET FINAL, ET POURQUOI CELUI-LÀ.
+  C'est le piège de la vue éclatée : si les pièces s'assemblent en un objet
+  quelconque, la mécanique est jolie et ne raconte rien. Ici l'objet est UNE
+  PALETTE DE CARTONS COMPLÈTE, montée sur son europalette bois. C'est l'objet du
+  métier : ce qui part de l'entrepôt chaque nuit et arrive au comptoir chaque
+  matin. Il est reconnaissable au premier coup d'œil, y compris par quelqu'un qui
+  n'a jamais mis les pieds dans un dépôt.
+
+  Et il est monté en NEUF COUCHES. Une couche = une implantation. Elles arrivent
+  l'une après l'autre, chacune avec son repère coté qui donne son nom et sa ville,
+  et à la dernière couche la palette ne fait plus qu'un bloc. « Neuf maisons. Un
+  seul nom. » n'est pas illustré : il est monté sous les yeux du lecteur.
+  Le stock d'une maison est le stock de toutes — c'est la même palette.
+
+  L'APPAREIL 2D PAR-DESSUS.
+  Un calque SVG tient le registre du plan coté : cadre d'angles, cote horizontale
+  (1200 mm, l'empreinte réelle d'une europalette), cote verticale qui GRANDIT avec
+  la pile et affiche sa hauteur en millimètres, neuf lignes de rappel qui viennent
+  chercher chaque couche, et un cartouche « ÉCLATÉ → ASSEMBLÉ » avec le pourcentage.
+  Les cotes sont vraies : 1200 × 800 mm au sol, 9 × 200 mm de couches.
+
+  LA MATIÈRE ET LA LUMIÈRE.
+  Cartons : MeshStandardMaterial, impression dessinée en canvas (planche de quatre
+  variantes, choisies par instance) — aucune marque, aucun nom de laboratoire.
+  Bois : veinage dessiné en canvas. Carte d'environnement HDRI Poly Haven (CC0)
+  pour le reflet doux, une directionnelle chaude qui porte les ombres, une
+  contre-lumière froide qui décolle les arêtes, et une brume qui avale les pièces
+  encore lointaines.
+
+  LE COÛT, MESURÉ ET PAS DEVINÉ.
+  Deux cents cartons + dix-sept planches = DEUX InstancedMesh, donc deux appels de
+  dessin, pas deux cent dix-sept. C'est toute la différence entre 60 images par
+  seconde et un diaporama. Les matrices sont recomposées à chaque image (200
+  compositions, coût négligeable) et la boucle s'arrête net dès que l'atelier sort
+  de l'écran, ainsi qu'à chaque changement d'onglet.
+
+  PAS D'ÉCRAN DE CHARGEMENT. La scène démarre sur un environnement fabriqué en
+  mémoire ; la HDRI le remplace quand elle arrive. Première image immédiate.
+
+  CE QUI EST PRÉVU QUAND ÇA NE MARCHE PAS.
+  Script coupé : les onze sections sont lisibles de bout en bout, rien n'est caché
+  par défaut. WebGL indisponible ou contexte perdu : le canevas disparaît et une
+  pile éclatée en CSS 3D prend sa place, avec les neuf noms. Aucune page noire.
+
+  RÉFÉRENCES REGARDÉES AVANT DE CODER
+  · Awwwards — « Interactive WebGL Exploded View » (iyo) : la leçon retenue, c'est
+    que l'éclaté ne tient que si CHAQUE pièce est annotée. Sans les lignes de rappel
+    et les cotes, une vue éclatée n'est qu'un tas d'objets qui flottent.
+  · Codrops — « How to Code an On-Scroll Folding 3D Cardboard Box Animation with
+    Three.js and GSAP » (13/12/2022) : le carton comme sujet, et surtout le
+    décalage d'entrée pièce par pièce plutôt qu'une interpolation unique — c'est ce
+    qui donne la lecture « ça se monte » au lieu de « ça se rétracte ».
+  · Codrops — « Exploding 3D Objects with Three.js » (26/03/2019) : la direction
+    d'éclatement calculée depuis le centre de l'objet, avec un facteur aléatoire par
+    pièce, et la rotation qui se résorbe en même temps que la translation.
+
+  TOUT EST LOCAL — libs-35/ et polices-35/, plus les deux photographies de
+  ../../assets/. Aucun CDN, aucune clé, aucun appel réseau sortant.
+  Three.js en WebGL classique ; « three/webgpu » n'est pas importé.
+  ══════════════════════════════════════════════════════════════════════════════
+-->
+
+<script type="importmap">
+{ "imports": { "three": "./libs-35/three.module.min.js" } }
+</script>
+
+<script>
+/* Posé avant tout rendu : les révélations au défilement ne s'appliquent QUE si le
+   script tourne. Sans lui, rien n'est masqué — c'est la règle qui a coûté quatre
+   maquettes blanches le 14/08. */
+document.documentElement.className = 'js';
+</script>
+
+<style>
+/* ═══ Polices ══════════════════════════════════════════════════════════════ */
+@font-face{font-family:'Archivo';src:url('polices-35/archivo-var.woff2') format('woff2');font-weight:100 900;font-stretch:62% 125%;font-style:normal;font-display:swap}
+@font-face{font-family:'Plex';src:url('polices-35/plexmono-400.woff2') format('woff2');font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:'Plex';src:url('polices-35/plexmono-500.woff2') format('woff2');font-weight:500;font-style:normal;font-display:swap}
+@font-face{font-family:'Inter';src:url('polices-35/inter.woff2') format('woff2');font-weight:300 700;font-style:normal;font-display:swap}
+
+/* ═══ Jetons ═══════════════════════════════════════════════════════════════ */
+:root{
+  --vide:#070A0F;
+  --nuit:#0B1017;
+  --nuit-2:#101823;
+  --trait:#22303F;
+  --trait-fort:#3C5266;
+  --cote:#9FC4D6;
+  --craie:#E9EEF3;
+  --craie-bas:#8B99A7;
+  --bleu:#2E6BFF;
+  --bleu-p:#0050E6;
+  --ambre:#E8A34D;
+  --ambre-clair:#F6D5A6;
+
+  --jour:#F4F2ED;
+  --jour-2:#E7E3DA;
+  --encre:#10151B;
+  --encre-bas:#5A636D;
+
+  --mono:'Plex',ui-monospace,SFMono-Regular,Menlo,monospace;
+  --dis:'Archivo',system-ui,-apple-system,'Helvetica Neue',sans-serif;
+  --txt:'Inter',system-ui,-apple-system,'Helvetica Neue',sans-serif;
+
+  --marge:clamp(18px,4.4vw,72px);
+  --entete:64px;
+}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--vide);color:var(--craie);
+  font-family:var(--txt);font-size:16px;line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+img,video,canvas,svg{display:block;max-width:100%}
+a{color:inherit}
+h1,h2,h3,h4,p,ul,ol,figure{margin:0}
+ul{padding:0;list-style:none}
+
+::selection{background:var(--ambre);color:#0A0D12}
+
+/* ═══ Petits objets de langage ═════════════════════════════════════════════ */
+.mono{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase}
+.surtitre{
+  font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--ambre);
+  display:flex;align-items:center;gap:12px;
+}
+.surtitre::before{content:'';width:26px;height:1px;background:var(--ambre);flex:none}
+
+.titre{
+  font-family:var(--dis);font-weight:600;font-stretch:96%;
+  letter-spacing:-.028em;line-height:1.03;
+  font-size:clamp(30px,4.6vw,62px);
+}
+.titre em{font-style:normal;color:var(--ambre)}
+
+.corps{color:var(--craie-bas);font-size:clamp(14px,1.05vw,17px);line-height:1.72;font-weight:350}
+.corps + .corps{margin-top:14px}
+.corps strong{color:var(--craie);font-weight:500}
+
+/* ═══ Boutons ══════════════════════════════════════════════════════════════ */
+.btn{
+  display:inline-flex;align-items:center;gap:10px;
+  min-height:48px;padding:0 22px;
+  font-family:var(--mono);font-size:12px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;
+  text-decoration:none;border:1px solid var(--trait-fort);
+  background:rgba(15,22,32,.72);color:var(--craie);
+  transition:background .25s,border-color .25s,color .25s,transform .25s;
+}
+.btn:hover{background:var(--craie);color:#0A0D12;border-color:var(--craie);transform:translateY(-2px)}
+.btn--plein{background:var(--ambre);border-color:var(--ambre);color:#12100B}
+.btn--plein:hover{background:var(--ambre-clair);border-color:var(--ambre-clair);color:#12100B}
+.btn--jour{border-color:rgba(16,21,27,.24);background:transparent;color:var(--encre)}
+.btn--jour:hover{background:var(--encre);color:var(--jour);border-color:var(--encre)}
+
+/* ═══ En-tête ══════════════════════════════════════════════════════════════ */
+.tete{
+  position:fixed;inset:0 0 auto 0;z-index:60;height:var(--entete);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 var(--marge);
+  background:linear-gradient(180deg,rgba(7,10,15,.94) 0%,rgba(7,10,15,.72) 62%,rgba(7,10,15,0) 100%);
+  transition:background .3s,border-color .3s;
+  border-bottom:1px solid transparent;
+}
+.tete.pose{background:rgba(7,10,15,.97);border-bottom-color:var(--trait)}
+.tete.jour{background:rgba(244,242,237,.97);border-bottom-color:rgba(16,21,27,.12)}
+.tete.jour .tete__nom,.tete.jour .nav a{color:var(--encre)}
+.tete.jour .tete__ref{color:var(--encre-bas)}
+.tete.jour .burger span{background:var(--encre)}
+
+.tete__marque{display:flex;align-items:center;gap:12px;text-decoration:none;min-height:44px}
+.tete__nom{font-family:var(--dis);font-weight:700;font-stretch:88%;letter-spacing:.02em;font-size:16px;color:var(--craie)}
+.tete__ref{font-family:var(--mono);font-size:10.5px;letter-spacing:.18em;color:var(--craie-bas)}
+.tete__logo{width:26px;height:26px;flex:none}
+
+.nav{display:flex;align-items:center;gap:4px}
+.nav a{
+  font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;
+  text-decoration:none;color:var(--craie);opacity:.72;
+  padding:0 12px;min-height:44px;display:inline-flex;align-items:center;
+  transition:opacity .2s;
+}
+.nav a:hover{opacity:1}
+.nav a.nav__cta{opacity:1;border:1px solid var(--trait-fort);margin-left:10px}
+.tete.jour .nav a.nav__cta{border-color:rgba(16,21,27,.24)}
+
+.burger{display:none;width:48px;height:48px;background:none;border:0;padding:12px;cursor:pointer}
+.burger span{display:block;height:1.5px;background:var(--craie);margin:5px 0;transition:transform .3s,opacity .3s}
+.burger.ouvert span:nth-child(1){transform:translateY(6.5px) rotate(45deg)}
+.burger.ouvert span:nth-child(2){opacity:0}
+.burger.ouvert span:nth-child(3){transform:translateY(-6.5px) rotate(-45deg)}
+
+.voile{
+  position:fixed;inset:0;z-index:55;background:var(--nuit);
+  display:flex;flex-direction:column;justify-content:center;gap:6px;
+  padding:var(--entete) var(--marge) var(--marge);
+  transform:translateY(-101%);transition:transform .42s cubic-bezier(.6,0,.2,1);
+}
+.voile.ouvert{transform:none}
+.voile a{
+  font-family:var(--dis);font-weight:600;font-stretch:92%;font-size:clamp(26px,7vw,42px);
+  text-decoration:none;color:var(--craie);letter-spacing:-.02em;
+  padding:10px 0;min-height:52px;display:flex;align-items:center;gap:16px;
+  border-bottom:1px solid var(--trait);
+}
+.voile a i{font-family:var(--mono);font-size:11px;font-style:normal;color:var(--ambre);letter-spacing:.14em}
+
+/* ═══ L'ATELIER — la zone 3D ═══════════════════════════════════════════════ */
+.atelier{position:relative;background:var(--vide)}
+
+.scene{
+  position:sticky;top:0;height:100svh;z-index:0;overflow:hidden;
+  background:
+    radial-gradient(120% 90% at 62% 42%, rgba(30,48,70,.42) 0%, rgba(7,10,15,0) 62%),
+    var(--vide);
+}
+#gl{position:absolute;inset:0;width:100%;height:100%}
+.nogl #gl{display:none}
+
+/* Vignettage — dégradés seulement, aucun flou : Safari tient. */
+.scene__vignette{
+  position:absolute;inset:0;pointer-events:none;z-index:3;
+  background:
+    radial-gradient(120% 100% at 50% 50%, rgba(7,10,15,0) 42%, rgba(7,10,15,.66) 100%),
+    linear-gradient(90deg, rgba(7,10,15,.90) 0%, rgba(7,10,15,.34) 34%, rgba(7,10,15,0) 56%);
+}
+@media (max-width:900px){
+  .scene__vignette{
+    background:
+      radial-gradient(120% 100% at 50% 40%, rgba(7,10,15,0) 40%, rgba(7,10,15,.6) 100%),
+      linear-gradient(0deg, rgba(7,10,15,.94) 0%, rgba(7,10,15,.55) 34%, rgba(7,10,15,0) 62%);
+  }
+}
+
+/* Le calque du plan coté */
+#plan{position:absolute;inset:0;z-index:4;pointer-events:none;overflow:visible}
+#plan text{font-family:var(--mono);font-size:10.5px;letter-spacing:.11em;fill:var(--cote)}
+#plan .num{fill:var(--ambre);font-weight:500}
+#plan line,#plan polyline,#plan path{fill:none;stroke:var(--cote);stroke-width:1;vector-effect:non-scaling-stroke}
+#plan .fin{stroke:rgba(159,196,214,.42)}
+@media (max-width:900px){ #plan .desk{display:none} }
+
+/* Cartouche technique — à DROITE sur grand écran : à gauche elle passait
+   par-dessus la liste des neuf implantations, relevé au contrôle. */
+.cartouche{
+  position:absolute;right:var(--marge);bottom:22px;z-index:5;
+  font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--craie-bas);display:flex;align-items:center;gap:12px;
+  border:1px solid var(--trait);background:rgba(9,13,19,.78);padding:9px 13px;
+}
+.cartouche b{color:var(--ambre);font-weight:500}
+.cartouche__jauge{width:110px;height:3px;background:var(--trait);position:relative;overflow:hidden}
+.cartouche__jauge i{position:absolute;inset:0 auto 0 0;width:0;background:var(--ambre);display:block}
+@media (max-width:900px){ .cartouche{left:14px;right:14px;bottom:14px;font-size:10px;letter-spacing:.1em;gap:8px}
+  .cartouche__jauge{flex:1;width:auto} }
+
+/* Étiquette mobile de la couche en cours */
+.puce{
+  position:absolute;left:14px;right:14px;top:calc(var(--entete) + 12px);z-index:5;
+  display:none;border:1px solid var(--trait);background:rgba(9,13,19,.82);
+  padding:8px 12px;font-family:var(--mono);font-size:10px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--craie);
+}
+.puce b{color:var(--ambre);font-weight:500}
+.puce s{text-decoration:none;color:var(--ambre);float:right;margin-left:10px}
+@media (max-width:900px){ .js .puce{display:block} }
+
+/* ═══ Repli sans WebGL — pile éclatée en CSS 3D ════════════════════════════ */
+.repli{display:none;position:absolute;inset:0;z-index:2;place-items:center;overflow:hidden}
+.nojs .repli,.nogl .repli{display:grid}
+.repli__pile{
+  width:min(76vw,460px);aspect-ratio:1/1;position:relative;
+  perspective:1200px;perspective-origin:50% 46%;
+}
+.repli__c{
+  position:absolute;left:12%;right:12%;height:30px;
+  border:1px solid #566E85;background:linear-gradient(180deg,rgba(214,226,238,.30),rgba(214,226,238,.12));
+  transform-style:preserve-3d;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 12px;font-family:var(--mono);font-size:10.5px;letter-spacing:.11em;
+  text-transform:uppercase;color:#DDE6EE;
+}
+.repli__c b{color:var(--ambre-clair);font-weight:500}
+.repli__socle{
+  position:absolute;left:6%;right:6%;height:16px;bottom:6%;
+  border:1px solid var(--ambre);background:rgba(232,163,77,.26);
+}
+.repli__t{
+  position:absolute;left:0;right:0;bottom:2%;text-align:center;
+  font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--craie-bas);
+}
+
+/* ═══ Les stations de texte ════════════════════════════════════════════════ */
+.stations{position:relative;z-index:2;margin-top:-100svh;pointer-events:none}
+.station{
+  min-height:132svh;display:flex;align-items:center;
+  padding:calc(var(--entete) + 26px) var(--marge) 74px;
+}
+/* La dernière station est la seule qu'on lise pendant que la palette est finie :
+   elle tient exactement dans un écran, sinon son titre passe sous l'en-tête au
+   moment précis où l'assemblage s'achève (relevé au contrôle, p = 1). */
+.station:last-child{min-height:104svh}
+.station .titre{font-size:clamp(28px,3.4vw,46px)}
+.station__in{width:min(520px,100%);pointer-events:auto}
+@media (min-width:901px){ .station__in{width:min(500px,42vw)} }
+/* La station « Le métier » porte quatre encarts : sur grand écran elle prend
+   deux colonnes, sinon son contenu dépasse la hauteur de l'écran et le titre
+   se retrouve caché derrière l'en-tête (relevé au contrôle 1440 × 900). */
+@media (min-width:1100px){ .station--large .station__in{width:min(660px,50vw)} }
+
+.hero__sur{margin-bottom:22px}
+.hero__t{
+  font-family:var(--dis);font-weight:600;font-stretch:92%;
+  font-size:clamp(38px,6.6vw,86px);line-height:.97;letter-spacing:-.038em;
+  margin:0 0 22px;
+}
+.hero__t span{display:block}
+.hero__t .b{color:var(--ambre)}
+.hero__s{max-width:44ch;margin-bottom:30px}
+.hero__b{display:flex;flex-wrap:wrap;gap:12px}
+
+/* Le bandeau qui défile */
+.bande{
+  position:relative;z-index:6;border-block:1px solid var(--trait);
+  background:rgba(9,13,19,.86);overflow:hidden;
+}
+.bande__p{display:flex;width:max-content;animation:glisse 46s linear infinite}
+.bande__p span{
+  font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--craie-bas);padding:13px 0;white-space:nowrap;
+  display:inline-flex;align-items:center;gap:26px;
+}
+.bande__p span::after{content:'';width:5px;height:5px;background:var(--ambre);transform:rotate(45deg);margin-left:26px}
+@keyframes glisse{to{transform:translateX(-50%)}}
+@media (prefers-reduced-motion:reduce){ .bande__p{animation:none} }
+
+/* ═══ Compteurs ════════════════════════════════════════════════════════════ */
+.chiffres{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--trait);border:1px solid var(--trait);margin-top:30px}
+.chiffres div{background:rgba(9,13,19,.9);padding:16px 13px}
+.chiffres b{
+  display:block;font-family:var(--dis);font-weight:600;font-stretch:84%;
+  font-size:clamp(22px,2.2vw,28px);letter-spacing:-.03em;color:var(--craie);line-height:1;
+  font-variant-numeric:tabular-nums;white-space:nowrap;
+}
+/* « 2 000 + » se cassait en trois lignes dans une colonne de 125 px. */
+.chiffres--jour b{font-size:clamp(26px,3vw,38px)}
+.chiffres--jour div{padding:18px 16px}
+.chiffres i{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--craie-bas);font-style:normal;margin-top:9px}
+@media (min-width:901px){ .chiffres{grid-template-columns:repeat(4,1fr)} }
+
+/* ═══ Liste des implantations ══════════════════════════════════════════════ */
+.impl{margin-top:26px;border-top:1px solid var(--trait)}
+.impl li{
+  display:grid;grid-template-columns:34px 1fr auto;gap:12px;align-items:baseline;
+  padding:11px 2px;border-bottom:1px solid var(--trait);
+  font-size:14px;
+}
+.impl li i{font-family:var(--mono);font-size:10.5px;color:var(--ambre);font-style:normal;letter-spacing:.1em}
+.impl li b{font-weight:500;color:var(--craie)}
+.impl li em{font-style:normal;color:var(--craie-bas);font-size:13px;display:block}
+.impl li s{text-decoration:none;font-family:var(--mono);font-size:10.5px;color:var(--craie-bas);letter-spacing:.08em}
+.impl li.siege b::after{content:'SIÈGE';font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;color:var(--ambre);border:1px solid var(--ambre);padding:2px 5px;margin-left:9px;vertical-align:2px}
+.impl__note{margin-top:14px;font-size:13px;color:var(--craie-bas)}
+.impl__note b{color:var(--craie);font-weight:500}
+.impl__leg{margin-top:8px;font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--craie-bas)}
+
+/* ═══ Les quatre métiers ═══════════════════════════════════════════════════ */
+.etapes{margin-top:22px;display:grid;gap:1px;background:var(--trait);border:1px solid var(--trait)}
+@media (min-width:1100px){ .etapes{grid-template-columns:1fr 1fr} }
+.etapes article{background:rgba(9,13,19,.9);padding:13px 15px}
+.etapes h4{display:flex;align-items:baseline;gap:10px;font-family:var(--dis);font-weight:600;font-size:15.5px;letter-spacing:-.01em;margin-bottom:6px}
+.etapes h4 i{font-family:var(--mono);font-size:10.5px;color:var(--ambre);font-style:normal;letter-spacing:.1em}
+.etapes p{font-size:13px;line-height:1.58;color:var(--craie-bas)}
+.cloture{margin-top:18px;padding-left:16px;border-left:2px solid var(--ambre);font-size:14px;color:var(--craie)}
+
+/* ═══ La salle claire ══════════════════════════════════════════════════════ */
+.jour{
+  position:relative;z-index:8;background:var(--jour);color:var(--encre);
+  background-image:
+    linear-gradient(rgba(16,21,27,.045) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(16,21,27,.045) 1px,transparent 1px);
+  background-size:34px 34px;
+}
+.jour .surtitre{color:#9A6520}
+.jour .surtitre::before{background:#9A6520}
+.jour .titre{color:var(--encre)}
+.jour .titre em{color:#9A6520}
+.jour .corps{color:var(--encre-bas)}
+.jour .corps strong{color:var(--encre)}
+
+.bloc{padding:clamp(56px,8vw,110px) var(--marge);border-bottom:1px solid rgba(16,21,27,.12)}
+.bloc__in{max-width:1180px;margin:0 auto}
+.duo{display:grid;gap:34px}
+@media (min-width:901px){ .duo{grid-template-columns:minmax(0,.92fr) minmax(0,1.08fr);gap:clamp(40px,5vw,80px);align-items:start} }
+
+.chiffres--jour div{background:rgba(255,255,255,.72)}
+.chiffres--jour{background:rgba(16,21,27,.14);border-color:rgba(16,21,27,.14)}
+.chiffres--jour b{color:var(--encre)}
+.chiffres--jour i{color:var(--encre-bas)}
+
+/* Photo en vue de dessus, traitée en relevé */
+.releve{position:relative;border:1px solid rgba(16,21,27,.18);background:#0B1017}
+.releve img{width:100%;height:100%;object-fit:cover;display:block;filter:saturate(.55) contrast(1.06) brightness(.92)}
+.releve__grille{
+  position:absolute;inset:0;pointer-events:none;
+  background-image:
+    linear-gradient(rgba(159,196,214,.20) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(159,196,214,.20) 1px,transparent 1px);
+  background-size:8.333% 12.5%;
+}
+.releve__c{
+  position:absolute;font-family:var(--mono);font-size:10.5px;letter-spacing:.11em;
+  text-transform:uppercase;color:#CFE4EE;background:rgba(7,10,15,.72);
+  border:1px solid rgba(159,196,214,.4);padding:4px 7px;
+}
+.releve figcaption{
+  padding:9px 12px;font-family:var(--mono);font-size:10px;letter-spacing:.13em;
+  text-transform:uppercase;color:#9FC4D6;border-top:1px solid rgba(159,196,214,.22);
+  display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;background:#0B1017;
+}
+
+.photo{border:1px solid rgba(16,21,27,.18)}
+.photo img{width:100%;display:block}
+.photo figcaption{
+  padding:9px 12px;font-family:var(--mono);font-size:10px;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--encre-bas);border-top:1px solid rgba(16,21,27,.14);
+  display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;
+}
+
+/* Partenaires */
+.labos{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:rgba(16,21,27,.14);border:1px solid rgba(16,21,27,.14);margin-top:24px}
+.labos div{
+  background:var(--jour);min-height:82px;display:flex;align-items:center;justify-content:center;
+  font-family:var(--dis);font-weight:600;font-stretch:90%;font-size:clamp(15px,1.7vw,21px);
+  letter-spacing:-.015em;color:var(--encre);text-align:center;padding:14px 10px;
+}
+@media (min-width:701px){ .labos{grid-template-columns:repeat(3,1fr)} }
+
+/* Valeurs */
+.valeurs{display:grid;gap:1px;background:rgba(16,21,27,.14);border:1px solid rgba(16,21,27,.14);margin-top:8px}
+@media (min-width:901px){ .valeurs{grid-template-columns:repeat(3,1fr)} }
+.valeurs article{background:var(--jour);padding:26px 22px}
+.valeurs h3{font-family:var(--dis);font-weight:600;font-size:clamp(20px,2.3vw,28px);letter-spacing:-.02em;margin-bottom:10px}
+.valeurs p{font-size:14.5px;line-height:1.65;color:var(--encre-bas)}
+.valeurs i{font-family:var(--mono);font-size:10px;letter-spacing:.16em;color:#9A6520;font-style:normal;display:block;margin-bottom:14px}
+
+/* Villes qui recrutent */
+.villes{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+.villes span{
+  font-family:var(--mono);font-size:11px;letter-spacing:.1em;
+  border:1px solid rgba(16,21,27,.2);padding:8px 12px;color:var(--encre);
+}
+
+/* Fin de page */
+.fin{background:var(--nuit);color:var(--craie);position:relative;z-index:8;border-top:1px solid var(--trait)}
+.fin__in{max-width:1180px;margin:0 auto;padding:clamp(60px,9vw,120px) var(--marge)}
+.fin .titre{max-width:16ch}
+.fin__mail{
+  display:inline-flex;align-items:center;gap:12px;min-height:56px;padding:0 26px;margin-top:26px;
+  font-family:var(--mono);font-size:clamp(12px,1.5vw,15px);letter-spacing:.05em;
+  text-decoration:none;background:var(--ambre);color:#12100B;
+  transition:background .25s,transform .25s;
+}
+.fin__mail:hover{background:var(--ambre-clair);transform:translateY(-2px)}
+.pied{border-top:1px solid var(--trait);padding:24px var(--marge);max-width:1180px;margin:0 auto;
+  display:flex;flex-wrap:wrap;gap:14px 26px;justify-content:space-between;align-items:baseline}
+.pied p{font-size:13px;color:var(--craie-bas);line-height:1.9}
+/* Les liens du pied faisaient 15 px de haut : sous la barre des 44 px, on ne les
+   attrape pas au pouce. Ils deviennent des cibles à part entière. */
+.pied a{color:var(--craie-bas);display:inline-flex;align-items:center;min-height:44px;
+  padding:0 10px;margin:0 -10px;text-underline-offset:4px}
+.pied a:hover{color:var(--craie)}
+.pied__sig{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:#5C6874}
+.pied__sig b{color:var(--ambre);font-weight:500}
+
+/* ═══ Révélations — uniquement si le script tourne ═════════════════════════ */
+.js .rv{opacity:0;transform:translateY(20px)}
+.js .rv.on{opacity:1;transform:none;transition:opacity .85s cubic-bezier(.2,.7,.2,1),transform .85s cubic-bezier(.2,.7,.2,1)}
+@media (prefers-reduced-motion:reduce){
+  .js .rv{opacity:1;transform:none}
+  html{scroll-behavior:auto}
+}
+
+/* ═══ Téléphone ════════════════════════════════════════════════════════════ */
+@media (max-width:900px){
+  .nav{display:none}
+  .burger{display:block}
+  /* Sur téléphone, l'objet occupe le haut de l'écran et le texte tient le bas.
+     Sans le panneau opaque ci-dessous, les cartons clairs passaient DERRIÈRE
+     les paragraphes et le texte devenait illisible — relevé à 390 px. */
+  .station{min-height:130svh;align-items:flex-end;
+    padding:calc(var(--entete) + 80px) var(--marge) 92px}
+  .station__in{
+    width:100%;background:rgba(7,10,15,.93);border:1px solid var(--trait);
+    padding:20px 16px;
+  }
+  .station .titre{font-size:clamp(27px,7.6vw,36px)}
+  .hero__t{font-size:clamp(34px,10.4vw,46px)}
+  /* Le premier écran doit montrer ses deux boutons : la station d'ouverture est
+     donc la plus courte, sinon « Découvrir le réseau » tombait sous la ligne. */
+  #ouverture{min-height:104svh;padding-top:calc(var(--entete) + 40px)}
+  /* Le cartouche du bas faisait doublon avec l'étiquette du haut et venait se
+     poser en travers de la liste des implantations. Une seule lecture d'état. */
+  .cartouche{display:none}
+}
+</style>
+</head>
+
+<body>
+
+<!-- ═══ EN-TÊTE ═══════════════════════════════════════════════════════════ -->
+<header class="tete" id="tete">
+  <a class="tete__marque" href="#haut">
+    <svg class="tete__logo" viewBox="0 0 32 32" aria-hidden="true">
+      <g fill="none" stroke="#E8A34D" stroke-width="1.6">
+        <rect x="6" y="20" width="20" height="7"/><rect x="8" y="12" width="16" height="6"/><rect x="11" y="5" width="10" height="5"/>
+      </g>
+    </svg>
+    <span>
+      <span class="tete__nom">Intégral Pharma</span><br>
+      <span class="tete__ref">IPH · 35 · L'ASSEMBLAGE</span>
+    </span>
+  </a>
+  <nav class="nav">
+    <a href="#groupe">Le groupe</a>
+    <a href="#reseau">Le réseau</a>
+    <a href="#metier">Le métier</a>
+    <a href="#valeurs">Nos valeurs</a>
+    <a class="nav__cta" href="mailto:contact@integralpharma.fr">Nous écrire</a>
+  </nav>
+  <button class="burger" id="burger" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="voile">
+    <span></span><span></span><span></span>
+  </button>
+</header>
+
+<div class="voile" id="voile">
+  <a href="#groupe"><i>01</i> Le groupe</a>
+  <a href="#reseau"><i>02</i> Le réseau</a>
+  <a href="#metier"><i>03</i> Le métier</a>
+  <a href="#valeurs"><i>04</i> Nos valeurs</a>
+  <a href="mailto:contact@integralpharma.fr"><i>05</i> Nous écrire</a>
+</div>
+
+<main id="haut">
+
+<!-- ═══ L'ATELIER ═════════════════════════════════════════════════════════ -->
+<section class="atelier" id="atelier">
+
+  <div class="scene" id="scene">
+    <canvas id="gl"></canvas>
+
+    <!-- Repli : ce qui s'affiche si WebGL manque ou si le script est coupé -->
+    <div class="repli" aria-hidden="true">
+      <div class="repli__pile" id="repliPile">
+        <div class="repli__c" style="bottom:74%;transform:rotateX(46deg) rotateZ(-19deg) translateZ(0)"><b>09</b><span>Sud Est Pharma</span></div>
+        <div class="repli__c" style="bottom:66%;transform:rotateX(46deg) rotateZ(-19deg)"><b>08</b><span>Pharm'Occitanie Services</span></div>
+        <div class="repli__c" style="bottom:58%;transform:rotateX(46deg) rotateZ(-19deg)"><b>07</b><span>Ouest Pharma Services</span></div>
+        <div class="repli__c" style="bottom:50%;transform:rotateX(46deg) rotateZ(-19deg)"><b>06</b><span>Escale Pharma</span></div>
+        <div class="repli__c" style="bottom:42%;transform:rotateX(46deg) rotateZ(-19deg)"><b>05</b><span>Comptoir Pharmaceutique du Rhône</span></div>
+        <div class="repli__c" style="bottom:34%;transform:rotateX(46deg) rotateZ(-19deg)"><b>04</b><span>Sud Ouest Pharma</span></div>
+        <div class="repli__c" style="bottom:26%;transform:rotateX(46deg) rotateZ(-19deg)"><b>03</b><span>Mistral Santé Pharma</span></div>
+        <div class="repli__c" style="bottom:18%;transform:rotateX(46deg) rotateZ(-19deg)"><b>02</b><span>SR Pharma</span></div>
+        <div class="repli__c" style="bottom:10%;transform:rotateX(46deg) rotateZ(-19deg)"><b>01</b><span>Hyères Pharma</span></div>
+        <div class="repli__socle" style="transform:rotateX(46deg) rotateZ(-19deg)"></div>
+        <div class="repli__t">Vue éclatée — neuf couches, une palette</div>
+      </div>
+    </div>
+
+    <svg id="plan" aria-hidden="true"></svg>
+    <div class="scene__vignette"></div>
+
+    <div class="puce" id="puce"><b>ÉCLATÉ</b> — 200 pièces en attente</div>
+
+    <div class="cartouche">
+      <span>Éclaté</span>
+      <span class="cartouche__jauge"><i id="jauge"></i></span>
+      <span>Assemblé</span>
+      <b id="pct">0 %</b>
+    </div>
+  </div>
+
+  <div class="stations">
+
+    <!-- 1 · L'ouverture -->
+    <article class="station" id="ouverture">
+      <div class="station__in">
+        <p class="surtitre hero__sur">Groupe de grossistes-répartiteurs français indépendant</p>
+        <h1 class="hero__t"><span>Neuf maisons.</span><span class="b">Un seul nom.</span></h1>
+        <p class="corps hero__s">Chacune livre sa région depuis des années, avec ses équipes et ses habitudes. Depuis 2006, elles avancent ensemble sous le nom d'Intégral Pharma — et votre commande part toujours de la plus proche de votre comptoir.</p>
+        <div class="hero__b">
+          <a class="btn btn--plein" href="#reseau">Découvrir le réseau</a>
+          <a class="btn" href="mailto:contact@integralpharma.fr">Nous écrire</a>
+        </div>
+      </div>
+    </article>
+
+    <!-- 2 · L'histoire -->
+    <article class="station" id="groupe">
+      <div class="station__in">
+        <p class="surtitre">Notre histoire</p>
+        <h2 class="titre" style="margin:18px 0 20px">Rendre la marge à<br><em>l'officine française.</em></h2>
+        <p class="corps">C'est la raison d'être d'Intégral Pharma depuis 2006 : redistribuer directement la marge aux officines françaises, en toute transparence, avec des prix nets visibles sur facture.</p>
+        <p class="corps">Neuf implantations aujourd'hui, plus de deux mille officines livrées chaque jour, et la même idée qu'au premier jour — un groupe de répartiteurs indépendants qui a choisi de se mettre du côté du comptoir.</p>
+        <div class="chiffres">
+          <div><b class="cpt" data-cible="2006">2006</b><i>année de création</i></div>
+          <div><b class="cpt" data-cible="9">9</b><i>implantations</i></div>
+          <div><b class="cpt" data-cible="2000" data-suffixe=" +">2 000 +</b><i>officines livrées</i></div>
+          <div><b class="cpt" data-cible="20">20</b><i>ans d'indépendance</i></div>
+        </div>
+      </div>
+    </article>
+
+    <!-- 3 · Le réseau -->
+    <article class="station" id="reseau">
+      <div class="station__in">
+        <p class="surtitre">Le réseau</p>
+        <h2 class="titre" style="margin:18px 0 20px">Neuf implantations.<br><em>Laquelle est la vôtre ?</em></h2>
+        <p class="corps">C'est la seule question qui compte vraiment. Celle qui prépare votre commande, qui vous livre chaque matin, et dont vous connaissez l'équipe par son prénom.</p>
+        <p class="corps">Les huit autres sont là pour qu'elle ne soit jamais prise au dépourvu — de la Bretagne à la Méditerranée, le stock d'une maison est le stock de toutes.</p>
+        <ul class="impl">
+          <li class="siege"><i>01</i><span><b>Hyères Pharma</b><em>Hyères</em></span><s>83</s></li>
+          <li><i>02</i><span><b>SR Pharma</b><em>Palaiseau</em></span><s>91</s></li>
+          <li><i>03</i><span><b>Mistral Santé Pharma</b><em>Flassans-sur-Issole</em></span><s>83</s></li>
+          <li><i>04</i><span><b>Sud Ouest Pharma</b><em>Montayral</em></span><s>47</s></li>
+          <li><i>05</i><span><b>Comptoir Pharmaceutique du Rhône</b><em>Saint-Maurice-l'Exil</em></span><s>38</s></li>
+          <li><i>06</i><span><b>Escale Pharma</b><em>Chilly-Mazarin</em></span><s>91</s></li>
+          <li><i>07</i><span><b>Ouest Pharma Services</b><em>Saint-Étienne-de-Montluc</em></span><s>44</s></li>
+          <li><i>08</i><span><b>Pharm'Occitanie Services</b><em>Villeneuve-lès-Béziers</em></span><s>34</s></li>
+          <li><i>09</i><span><b>Sud Est Pharma</b><em>Le Cannet-des-Maures</em></span><s>83</s></li>
+        </ul>
+        <p class="impl__note">Et à l'Est, notre partenaire <b>Pharmest</b> (Metz, 57) prolonge le maillage.</p>
+        <p class="impl__leg">Neuf implantations et un partenaire</p>
+      </div>
+    </article>
+
+    <!-- 4 · Le métier -->
+    <article class="station station--large" id="metier">
+      <div class="station__in">
+        <p class="surtitre">Le métier</p>
+        <h2 class="titre" style="margin:18px 0 20px">Ce qui se passe entre votre commande et <em>votre comptoir.</em></h2>
+        <p class="corps">Quelques heures, quatre métiers, et une chaîne qui ne s'arrête jamais. Référencer, stocker, préparer, livrer : c'est invisible depuis l'officine, et c'est tout notre travail.</p>
+        <div class="etapes">
+          <article><h4><i>01</i> Le référencement</h4><p>Le groupe référence pour ses neuf maisons à la fois : un même catalogue, tenu à jour, disponible dans toutes les implantations. C'est ce qui permet à une maison de taille humaine de proposer la profondeur de gamme d'un réseau national.</p></article>
+          <article><h4><i>02</i> La disponibilité</h4><p>Des stocks répartis sur neuf implantations, au plus près de votre officine. Quand le comptoir a besoin, le réseau répond — et quand une référence manque quelque part, elle existe souvent ailleurs dans le réseau.</p></article>
+          <article><h4><i>03</i> La préparation</h4><p>Chaque commande est préparée dans l'implantation la plus proche de chez vous, par une équipe qui connaît votre officine et ses saisons.</p></article>
+          <article><h4><i>04</i> La livraison</h4><p>Tous les jours, les tournées partent vers les officines. La régularité d'un service tenu — c'est elle qui fait la confiance, pas les promesses.</p></article>
+        </div>
+        <p class="cloture">Et quand la vie de votre officine change — transfert, agrandissement, cession de parts — votre interlocuteur ajuste l'approvisionnement avec vous, sans à-coup au comptoir.</p>
+      </div>
+    </article>
+
+  </div>
+</section>
+
+<!-- Le bandeau qui défile — charnière entre l'atelier et la salle claire -->
+<div class="bande">
+  <!-- Les six mentions sont écrites ICI, en dur. Le script se contente d'en
+       ajouter une seconde copie pour que la boucle se referme sans saut.
+       Sans lui, le bandeau reste donc lisible — auparavant il était construit
+       entièrement en JavaScript, et « Une alternative aux grossistes
+       historiques », qui appartient au texte validé, disparaissait de la page. -->
+  <div class="bande__p" id="bande">
+    <span>Indépendant</span><span>Neuf implantations</span><span>Un réseau national</span><span>Plus de 2 000 officines livrées</span><span>Confiance, Engagement, Respect</span><span>Une alternative aux grossistes historiques</span>
+  </div>
+</div>
+
+<!-- ═══ LA SALLE CLAIRE ═══════════════════════════════════════════════════ -->
+<div class="jour" id="jour">
+
+  <!-- Le relevé zénithal -->
+  <section class="bloc">
+    <div class="bloc__in duo">
+      <div class="rv">
+        <p class="surtitre">Le siège</p>
+        <h2 class="titre" style="margin:18px 0 20px">Hyères,<br><em>vu de dessus.</em></h2>
+        <p class="corps">Le siège du groupe, ZI Saint-Martin. C'est de là que part le référencement des neuf maisons — et c'est aussi une des quatre implantations qui recrutent en ce moment.</p>
+        <p class="corps">Le reste du réseau tient dans la liste que vous venez de lire : huit autres adresses, huit autres équipes, et un partenaire à l'Est.</p>
+      </div>
+      <figure class="releve rv">
+        <div style="position:relative">
+          <img src="../../assets/siege-solaire.jpg" alt="Vue aérienne verticale du site d'Intégral Pharma à Hyères, toitures couvertes de panneaux solaires" loading="lazy" width="1280" height="720">
+          <div class="releve__grille"></div>
+          <span class="releve__c" style="left:8px;top:8px">Vue en plan · 0°</span>
+          <span class="releve__c" style="right:8px;bottom:8px">Hyères (83)</span>
+        </div>
+        <figcaption><span>Relevé zénithal — siège du groupe</span><span>IPH-83-01</span></figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- 4 bis · La centrale -->
+  <section class="bloc">
+    <div class="bloc__in duo">
+      <div class="rv">
+        <p class="surtitre">La centrale</p>
+        <h2 class="titre" style="margin:18px 0 20px">Et pour tout ce qui<br><em>n'est pas le médicament.</em></h2>
+      </div>
+      <div class="rv">
+        <p class="corps">Notre centrale de parapharmacie référence pour l'officine plus de 14 000 produits et plus de 480 marques.</p>
+        <p class="corps">C'est une structure à part, avec son propre fonctionnement — sa commande, sa livraison — et la même exigence que le reste du groupe.</p>
+        <div class="chiffres chiffres--jour">
+          <div><b class="cpt" data-cible="14000" data-suffixe=" +">14 000 +</b><i>références</i></div>
+          <div><b class="cpt" data-cible="480" data-suffixe=" +">480 +</b><i>marques</i></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 ter · Vos factures -->
+  <section class="bloc">
+    <div class="bloc__in duo">
+      <div class="rv">
+        <p class="surtitre">Vos factures</p>
+        <h2 class="titre" style="margin:18px 0 20px">Elles arrivent déjà<br><em>là où vous les gérez.</em></h2>
+      </div>
+      <div class="rv">
+        <p class="corps">Nous sommes connectés à Digipharmacie : vos factures Intégral s'y retrouvent automatiquement, avec celles de vos autres fournisseurs.</p>
+        <p class="corps" style="color:var(--encre);font-size:clamp(17px,2vw,24px);font-family:var(--dis);font-weight:500;letter-spacing:-.02em;line-height:1.3;margin-top:22px">Rien à saisir, rien à classer, rien à réclamer.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 quater · Nos partenaires -->
+  <section class="bloc">
+    <div class="bloc__in rv">
+      <p class="surtitre">Nos partenaires</p>
+      <h2 class="titre" style="margin:18px 0 0;max-width:20ch">Les laboratoires qui <em>nous font confiance.</em></h2>
+      <div class="labos">
+        <div>EG&nbsp;Labo</div><div>Zentiva</div><div>Zydus</div>
+        <div>Viatris</div><div>ITP</div><div>Santestat</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 quinquies · Nous rejoindre -->
+  <section class="bloc">
+    <div class="bloc__in duo">
+      <div class="rv">
+        <p class="surtitre">Nous rejoindre</p>
+        <h2 class="titre" style="margin:18px 0 20px">Neuf implantations<br><em>qui embauchent.</em></h2>
+        <p class="corps">Préparateur-chauffeur, technicien approvisionnement, commercial, pharmacien responsable : les métiers de la répartition s'apprennent chez nous.</p>
+        <div class="villes">
+          <span>Hyères (83)</span><span>Villeneuve-lès-Béziers (34)</span><span>Montayral (47)</span><span>Saint-Maurice-l'Exil (38)</span>
+        </div>
+        <p style="margin-top:26px"><a class="btn btn--jour" href="https://www.integralpharma.fr/jobs" target="_blank" rel="noopener">Voir les offres</a></p>
+      </div>
+      <figure class="photo rv">
+        <img src="../../assets/siege-web.jpg" alt="Vue aérienne du site logistique d'Intégral Pharma à Hyères, quais de chargement et parc" loading="lazy" width="1600" height="900">
+        <figcaption><span>Le site d'Hyères, ZI Saint-Martin</span><span>Vue oblique</span></figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- 5 · Les valeurs -->
+  <section class="bloc" id="valeurs" style="border-bottom:0">
+    <div class="bloc__in">
+      <div class="rv">
+        <p class="surtitre">Nos valeurs</p>
+        <h2 class="titre" style="margin:18px 0 30px;max-width:18ch">Trois mots qui se vérifient <em>au téléphone.</em></h2>
+      </div>
+      <div class="valeurs rv">
+        <article><i>01</i><h3>Confiance</h3><p>La personne qui décroche connaît votre officine, vos saisons et vos habitudes.</p></article>
+        <article><i>02</i><h3>Engagement</h3><p>C'est la même d'une année sur l'autre. Dans ce métier, c'est devenu rare.</p></article>
+        <article><i>03</i><h3>Respect</h3><p>Elle ne vous vendra pas ce dont vous n'avez pas besoin — parce qu'elle vous reverra le mois suivant, et l'année d'après.</p></article>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- ═══ FIN DE PAGE ═══════════════════════════════════════════════════════ -->
+<footer class="fin" id="ecrire">
+  <div class="fin__in rv">
+    <p class="surtitre">Nous écrire</p>
+    <h2 class="titre" style="margin:18px 0 20px">Posez-nous la question <em>qui vous intéresse.</em></h2>
+    <p class="corps" style="max-width:52ch">Sur nos conditions, sur nos délais, sur la façon dont nous travaillons. Vous aurez une réponse claire, et le nom de l'implantation qui livre votre secteur.</p>
+    <a class="fin__mail" href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a>
+  </div>
+  <div class="pied">
+    <p>
+      Intégral Pharma — 758 chemin de la Source, ZI Saint-Martin, 83400 Hyères<br>
+      <a href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a> ·
+      <a href="https://www.integralpharma.fr/mentions-l%C3%A9gales" target="_blank" rel="noopener">Mentions légales</a><br>
+      <span style="color:#5C6874">9 implantations · plus de 2 000 officines livrées · indépendant depuis 2006</span>
+    </p>
+    <p class="pied__sig">Maquette <b>35</b> · L'Assemblage</p>
+  </div>
+</footer>
+
+</main>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!--  1. Ce qui marche SANS WebGL : menu, bandeau, compteurs, révélations     -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<script>
+(function(){
+  'use strict';
+  var doux = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ── Menu téléphone, fond opaque ────────────────────────────────────── */
+  var burger = document.getElementById('burger'), voile = document.getElementById('voile');
+  function fermer(){ voile.classList.remove('ouvert'); burger.classList.remove('ouvert');
+    burger.setAttribute('aria-expanded','false'); document.body.style.overflow=''; }
+  burger.addEventListener('click', function(){
+    var o = voile.classList.toggle('ouvert');
+    burger.classList.toggle('ouvert', o);
+    burger.setAttribute('aria-expanded', o ? 'true' : 'false');
+    document.body.style.overflow = o ? 'hidden' : '';
+  });
+  voile.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', fermer); });
+  document.addEventListener('keydown', function(e){ if(e.key === 'Escape') fermer(); });
+
+  /* ── Le bandeau : deux copies exactes, pour que -50 % boucle sans saut ── */
+  var MOTS = ['Indépendant','Neuf implantations','Un réseau national',
+              'Plus de 2 000 officines livrées','Confiance, Engagement, Respect',
+              'Une alternative aux grossistes historiques'];
+  var piste = document.getElementById('bande');
+  /* La premiere copie est deja dans le HTML : on n'efface plus, on ajoute
+     seulement la seconde. C'est ce qui rend le bandeau lisible sans script. */
+  for(var i = 0; i < MOTS.length; i++){
+    var s = document.createElement('span');
+    s.textContent = MOTS[i];
+    piste.appendChild(s);
+  }
+
+  /* ── En-tête : posée sur fond plein dès qu'on quitte le premier écran,
+        et en version claire quand la salle claire est sous elle. ───────── */
+  var tete = document.getElementById('tete'), jour = document.getElementById('jour');
+  function habilleTete(){
+    tete.classList.toggle('pose', window.scrollY > 40);
+    var r = jour.getBoundingClientRect();
+    tete.classList.toggle('jour', r.top <= 64 && r.bottom > 64);
+  }
+  habilleTete();
+  addEventListener('scroll', habilleTete, {passive:true});
+
+  /* ── Révélations + compteurs ─────────────────────────────────────────── */
+  function chiffre(n, suffixe){
+    /* Un compteur d'ANNÉE ne prend jamais le séparateur de milliers.
+       (fx.js écrivait « 2 018 » — corrigé le 14/08/2026, même test ici.) */
+    if(n >= 1900 && n <= 2100 && !suffixe) return String(n);
+    return n.toLocaleString('fr-FR').replace(/ | /g, ' ') + (suffixe || '');
+  }
+  function compte(el){
+    var cible = parseInt(el.getAttribute('data-cible'), 10);
+    var suffixe = el.getAttribute('data-suffixe') || '';
+    if(doux || !isFinite(cible)){ el.textContent = chiffre(cible, suffixe); return; }
+    var t0 = 0, duree = 1250;
+    function pas(t){
+      if(!t0) t0 = t;
+      var k = Math.min(1, (t - t0) / duree);
+      var e = 1 - Math.pow(1 - k, 3);
+      el.textContent = chiffre(Math.round(cible * e), suffixe);
+      if(k < 1) requestAnimationFrame(pas);
+    }
+    requestAnimationFrame(pas);
+  }
+
+  var aReveler = document.querySelectorAll('.rv');
+  var compteurs = document.querySelectorAll('.cpt');
+  if('IntersectionObserver' in window){
+    var oR = new IntersectionObserver(function(es){
+      es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('on'); oR.unobserve(e.target); } });
+    }, {rootMargin:'0px 0px -12% 0px', threshold:0.05});
+    aReveler.forEach(function(el){ oR.observe(el); });
+
+    var oC = new IntersectionObserver(function(es){
+      es.forEach(function(e){ if(e.isIntersecting){ compte(e.target); oC.unobserve(e.target); } });
+    }, {threshold:0.4});
+    compteurs.forEach(function(el){ oC.observe(el); });
+  } else {
+    aReveler.forEach(function(el){ el.classList.add('on'); });
+    compteurs.forEach(function(el){ compte(el); });
+  }
+
+  /* Filet de sécurité : si l'observateur ne se déclenche jamais (c'est ce qui a
+     laissé quatre maquettes blanches une journée entière), tout redevient
+     visible au bout de 3 secondes. Un bloc invisible est un bloc perdu. */
+  setTimeout(function(){ aReveler.forEach(function(el){ el.classList.add('on'); }); }, 3000);
+})();
+</script>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!--  2. L'ASSEMBLAGE — la scène WebGL                                       -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<script type="module">
+import * as THREE from 'three';
+import { RGBELoader } from './libs-35/RGBELoader.js';
+
+const H = document.documentElement;
+const cnv = document.getElementById('gl');
+const scEl = document.getElementById('scene');
+const atEl = document.getElementById('atelier');
+const svg = document.getElementById('plan');
+const jauge = document.getElementById('jauge');
+const pctEl = document.getElementById('pct');
+const puce = document.getElementById('puce');
+const doux = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ── Les neuf maisons, dans l'ordre du fichier de contenu ───────────────── */
+const MAISONS = [
+  ['01','Hyères Pharma','Hyères','83'],
+  ['02','SR Pharma','Palaiseau','91'],
+  ['03','Mistral Santé Pharma','Flassans-sur-Issole','83'],
+  ['04','Sud Ouest Pharma','Montayral','47'],
+  ['05','Comptoir Pharmaceutique du Rhône','Saint-Maurice-l\'Exil','38'],
+  ['06','Escale Pharma','Chilly-Mazarin','91'],
+  ['07','Ouest Pharma Services','Saint-Étienne-de-Montluc','44'],
+  ['08','Pharm\'Occitanie Services','Villeneuve-lès-Béziers','34'],
+  ['09','Sud Est Pharma','Le Cannet-des-Maures','83']
+];
+
+/* ── Le contexte : s'il manque, on part proprement et le repli s'affiche ── */
+let renderer;
+try{
+  renderer = new THREE.WebGLRenderer({ canvas: cnv, antialias: true, powerPreference: 'high-performance' });
+  if(!renderer.getContext()) throw new Error('pas de contexte');
+}catch(e){
+  H.classList.add('nogl');
+  console.warn('[m-35] WebGL indisponible — repli en CSS 3D affiché.', e);
+}
+
+if(renderer){
+  demarre();
+}
+
+function demarre(){
+
+  const petit = matchMedia('(max-width: 900px)').matches;
+  const dprMax = petit ? 1.5 : 1.75;
+
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, dprMax));
+  renderer.setSize(scEl.clientWidth, scEl.clientHeight, false);
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.02;
+  renderer.setClearColor(0x070A0F, 1);
+  if(!petit){
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  }
+
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.Fog(0x070A0F, 9, 30);
+
+  const cam = new THREE.PerspectiveCamera(petit ? 46 : 38, 1, 0.1, 90);
+  scene.add(cam);
+
+  /* ══ Les deux textures, dessinées ici même. Aucun fichier, aucune marque ══ */
+
+  /* Planche de quatre impressions de carton. Chaque instance en choisit une
+     par un décalage d'UV, donc les deux cents cartons restent UN seul appel
+     de dessin. Rien d'écrit n'est lisible : ce sont des barres, pas des mots. */
+  function planche(){
+    const T = 1024, d = document.createElement('canvas'); d.width = d.height = T;
+    const g = d.getContext('2d');
+    const fonds = ['#F2EFE8','#EDE9E0','#F5F3EE','#E9E5DB'];
+    const bandes = ['#2E6BFF','#E8A34D','#3E4C5A','#8FA6BC'];
+    for(let c = 0; c < 4; c++){
+      const ox = (c % 2) * 512, oy = Math.floor(c / 2) * 512;
+      g.fillStyle = fonds[c]; g.fillRect(ox, oy, 512, 512);
+      /* bande de tête */
+      g.fillStyle = bandes[c]; g.fillRect(ox + 34, oy + 40, 444, c === 1 ? 26 : 46);
+      /* fausses lignes de texte — aucune n'est un mot */
+      g.fillStyle = 'rgba(30,38,48,.62)';
+      for(let l = 0; l < 5; l++){
+        const w = 120 + ((c * 7 + l * 53) % 250);
+        g.fillRect(ox + 34, oy + 132 + l * 30, w, 9);
+      }
+      /* pavé de codes-barres, largeurs pseudo-aléatoires mais stables */
+      let x = ox + 34; let s = c * 991 + 17;
+      while(x < ox + 300){
+        s = (s * 1103515245 + 12345) % 2147483647;
+        const w = 3 + (s % 7);
+        g.fillStyle = 'rgba(20,26,34,.85)'; g.fillRect(x, oy + 320, w, 84);
+        x += w + 3 + (s % 5);
+      }
+      /* carré d'identification + cadre du carton */
+      g.fillStyle = bandes[c]; g.fillRect(ox + 402, oy + 320, 76, 76);
+      g.strokeStyle = 'rgba(24,30,38,.30)'; g.lineWidth = 6;
+      g.strokeRect(ox + 12, oy + 12, 488, 488);
+      /* rabat central, pour que le carton lise comme un carton */
+      g.strokeStyle = 'rgba(24,30,38,.18)'; g.lineWidth = 3;
+      g.beginPath(); g.moveTo(ox + 12, oy + 256); g.lineTo(ox + 500, oy + 256); g.stroke();
+    }
+    const t = new THREE.CanvasTexture(d);
+    t.colorSpace = THREE.SRGBColorSpace;
+    t.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+    t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
+    return t;
+  }
+
+  /* Bois de l'europalette : fond + veines. */
+  function bois(){
+    const d = document.createElement('canvas'); d.width = 512; d.height = 512;
+    const g = d.getContext('2d');
+    g.fillStyle = '#A8875C'; g.fillRect(0, 0, 512, 512);
+    let s = 7;
+    for(let i = 0; i < 220; i++){
+      s = (s * 1103515245 + 12345) % 2147483647;
+      const y = (s % 512), h = 1 + (s % 4), a = 0.05 + ((s >> 7) % 22) / 160;
+      g.fillStyle = 'rgba(86,62,36,' + a.toFixed(3) + ')';
+      g.fillRect(0, y, 512, h);
+    }
+    for(let i = 0; i < 40; i++){
+      s = (s * 1103515245 + 12345) % 2147483647;
+      g.fillStyle = 'rgba(220,200,168,.18)';
+      g.fillRect(0, s % 512, 512, 1);
+    }
+    const t = new THREE.CanvasTexture(d);
+    t.colorSpace = THREE.SRGBColorSpace;
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    return t;
+  }
+
+  /* Sol : quadrillage de plan technique. */
+  function quadrillage(){
+    const d = document.createElement('canvas'); d.width = d.height = 256;
+    const g = d.getContext('2d');
+    g.fillStyle = '#0C1218'; g.fillRect(0, 0, 256, 256);
+    g.strokeStyle = 'rgba(90,124,152,.30)'; g.lineWidth = 1;
+    for(let i = 0; i <= 256; i += 32){
+      g.beginPath(); g.moveTo(i + .5, 0); g.lineTo(i + .5, 256); g.stroke();
+      g.beginPath(); g.moveTo(0, i + .5); g.lineTo(256, i + .5); g.stroke();
+    }
+    g.strokeStyle = 'rgba(120,164,196,.52)'; g.lineWidth = 2;
+    g.strokeRect(1, 1, 254, 254);
+    const t = new THREE.CanvasTexture(d);
+    t.colorSpace = THREE.SRGBColorSpace;
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.repeat.set(20, 20);
+    t.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+    return t;
+  }
+
+  /* ══ Environnement immédiat, puis HDRI quand elle arrive ═══════════════ */
+  const pmrem = new THREE.PMREMGenerator(renderer);
+
+  function envDeSecours(){
+    /* Une boîte retournée, deux panneaux émissifs : de quoi éclairer
+       correctement dès la première image, sans attendre le moindre octet. */
+    const s = new THREE.Scene();
+    const boite = new THREE.Mesh(
+      new THREE.BoxGeometry(12, 8, 12),
+      new THREE.MeshBasicMaterial({ color: 0x2A3440, side: THREE.BackSide })
+    );
+    s.add(boite);
+    const p1 = new THREE.Mesh(new THREE.PlaneGeometry(7, 3),
+      new THREE.MeshBasicMaterial({ color: 0xFFF0D8 }));
+    p1.position.set(0, 3.4, -2.2); p1.rotation.x = -Math.PI / 2.6; s.add(p1);
+    const p2 = new THREE.Mesh(new THREE.PlaneGeometry(5, 4),
+      new THREE.MeshBasicMaterial({ color: 0x6E92C8 }));
+    p2.position.set(-4.6, 1.4, 1.4); p2.rotation.y = Math.PI / 2; s.add(p2);
+    /* 0,04 et pas 0,06 : au-delà, PMREM réclame 30 échantillons alors que le
+       maximum est 20, et Three prévient en console à chaque chargement. */
+    const t = pmrem.fromScene(s, 0.04).texture;
+    boite.geometry.dispose(); p1.geometry.dispose(); p2.geometry.dispose();
+    return t;
+  }
+  scene.environment = envDeSecours();
+  scene.environmentIntensity = 0.85;
+
+  new RGBELoader().load('./libs-35/studio.hdr',
+    tex => {
+      tex.mapping = THREE.EquirectangularReflectionMapping;
+      const anc = scene.environment;
+      scene.environment = pmrem.fromEquirectangular(tex).texture;
+      scene.environmentIntensity = 0.72;
+      tex.dispose();
+      if(anc) anc.dispose();
+      pmrem.dispose();
+    },
+    undefined,
+    () => { console.warn('[m-35] HDRI absente — on garde l\'environnement de secours.'); }
+  );
+
+  /* ══ Lumières ═════════════════════════════════════════════════════════ */
+  const solaire = new THREE.DirectionalLight(0xFFEBCF, 2.35);
+  solaire.position.set(4.6, 8.4, 3.8);
+  if(!petit){
+    solaire.castShadow = true;
+    solaire.shadow.mapSize.set(1024, 1024);
+    const sc = solaire.shadow.camera;
+    sc.left = -3.4; sc.right = 3.4; sc.top = 3.6; sc.bottom = -1.2; sc.near = 2; sc.far = 22;
+    solaire.shadow.bias = -0.0009;
+    solaire.shadow.normalBias = 0.022;
+  }
+  scene.add(solaire);
+
+  const contre = new THREE.DirectionalLight(0x6E9BFF, 0.62);
+  contre.position.set(-6.2, 3.2, -5.4);
+  scene.add(contre);
+
+  scene.add(new THREE.HemisphereLight(0x8FAECC, 0x05080C, 0.22));
+
+  /* ══ Le sol ═══════════════════════════════════════════════════════════ */
+  const sol = new THREE.Mesh(
+    new THREE.PlaneGeometry(56, 56),
+    new THREE.MeshStandardMaterial({ map: quadrillage(), color: 0x8494A4, roughness: 0.94, metalness: 0 })
+  );
+  sol.rotation.x = -Math.PI / 2;
+  sol.receiveShadow = !petit;
+  scene.add(sol);
+
+  /* ══ L'EUROPALETTE — 17 planches, un seul InstancedMesh ═══════════════ */
+  const PAL = { l: 1.2, p: 0.8, sol: 0.022, cale: 0.078 };
+  const HAUT_PAL = PAL.sol * 2 + PAL.cale;          /* 0,122 m — dessus de palette */
+
+  const planches = [];
+  /* semelles */
+  [-0.35, 0, 0.35].forEach(z => planches.push([0, PAL.sol / 2, z, PAL.l, PAL.sol, 0.10]));
+  /* dés */
+  [-0.55, 0, 0.55].forEach(x => [-0.35, 0, 0.35].forEach(z =>
+    planches.push([x, PAL.sol + PAL.cale / 2, z, 0.10, PAL.cale, 0.10])));
+  /* plateau */
+  [-0.39, -0.195, 0, 0.195, 0.39].forEach(z =>
+    planches.push([0, PAL.sol + PAL.cale + PAL.sol / 2, z, PAL.l, PAL.sol, 0.115]));
+
+  const geoP = new THREE.BoxGeometry(1, 1, 1);
+  const texBois = bois(); texBois.repeat.set(3, 1);
+  const matP = new THREE.MeshStandardMaterial({ map: texBois, color: 0xC8AE86, roughness: 0.86, metalness: 0 });
+  const palette = new THREE.InstancedMesh(geoP, matP, planches.length);
+  palette.castShadow = !petit; palette.receiveShadow = !petit;
+  palette.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  scene.add(palette);
+
+  /* ══ LES CARTONS — 200 pièces, un seul InstancedMesh ══════════════════ */
+  /* Palettisation croisée réelle : une couche sur deux change de calepinage.
+     Couche paire  6 × 4 = 24 cartons de 200 × 200 mm
+     Couche impaire 4 × 5 = 20 cartons de 300 × 160 mm
+     Neuf couches de 200 mm → 1 800 mm de charge, plus la palette. */
+  const NC = 9, HC = 0.20;
+  const pieces = [];
+  for(let k = 0; k < NC; k++){
+    const pair = (k % 2 === 0);
+    const cols = pair ? 6 : 4, rangs = pair ? 4 : 5;
+    const lx = PAL.l / cols, lz = PAL.p / rangs;
+    let n = 0;
+    for(let a = 0; a < cols; a++){
+      for(let b = 0; b < rangs; b++){
+        const x = -PAL.l / 2 + lx * (a + 0.5);
+        const z = -PAL.p / 2 + lz * (b + 0.5);
+        const hy = HC * (0.74 + ((a * 7 + b * 13 + k * 5) % 5) / 18);   /* 148 → 200 mm */
+        pieces.push({
+          k, n,
+          x, z,
+          sx: lx * 0.955, sy: hy, sz: lz * 0.955,
+          y: HAUT_PAL + k * HC + hy / 2,
+          uv: (a + b + k) % 4
+        });
+        n++;
+      }
+    }
+  }
+  const N = pieces.length;   /* 200 */
+
+  const geoC = new THREE.BoxGeometry(1, 1, 1);
+  const uvOff = new THREE.InstancedBufferAttribute(new Float32Array(N * 2), 2);
+  geoC.setAttribute('uvOff', uvOff);
+
+  const matC = new THREE.MeshStandardMaterial({ map: planche(), roughness: 0.84, metalness: 0.0 });
+  /* Choix de l'impression, par instance. Une planche 2 × 2 : on divise l'UV par
+     deux et on ajoute le décalage du quartier. */
+  matC.onBeforeCompile = sh => {
+    sh.vertexShader = 'attribute vec2 uvOff;\n' + sh.vertexShader.replace(
+      '#include <uv_vertex>',
+      '#include <uv_vertex>\n\t#ifdef USE_MAP\n\tvMapUv = vMapUv * 0.5 + uvOff;\n\t#endif'
+    );
+  };
+
+  const cartons = new THREE.InstancedMesh(geoC, matC, N);
+  cartons.castShadow = !petit; cartons.receiveShadow = !petit;
+  cartons.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  scene.add(cartons);
+
+  /* Teintes : neuf strates, du gris-bleu froid au crème chaud. La palette
+     finie reste UN objet, mais on y lit encore les neuf couches. */
+  const froid = new THREE.Color('#AFBECB'), chaud = new THREE.Color('#F0E3CB');
+  const signal = new THREE.Color('#4E7EE8'), pointe = new THREE.Color('#E8A34D');
+  const col = new THREE.Color();
+
+  /* Données d'animation, en tableaux plats pour ne rien allouer par image */
+  const aPos = new Float32Array(N * 3);   /* position assemblée */
+  const ePos = new Float32Array(N * 3);   /* position éclatée   */
+  const eQua = new Float32Array(N * 4);   /* rotation éclatée   */
+  const dim  = new Float32Array(N * 3);
+  const dep  = new Float32Array(N);       /* début du montage   */
+  const dur  = new Float32Array(N);
+  const pha  = new Float32Array(N);
+
+  const CENTRE = new THREE.Vector3(0, HAUT_PAL + NC * HC * 0.5, 0);
+  const tmpV = new THREE.Vector3(), tmpQ = new THREE.Quaternion(), tmpE = new THREE.Euler();
+  let graine = 20260816;
+  const rnd = () => { graine = (graine * 1103515245 + 12345) % 2147483647; return graine / 2147483647; };
+
+  for(let i = 0; i < N; i++){
+    const p = pieces[i];
+    aPos[i * 3] = p.x; aPos[i * 3 + 1] = p.y; aPos[i * 3 + 2] = p.z;
+    dim[i * 3] = p.sx; dim[i * 3 + 1] = p.sy; dim[i * 3 + 2] = p.sz;
+    uvOff.setXY(i, (p.uv % 2) * 0.5, Math.floor(p.uv / 2) * 0.5);
+
+    /* Direction d'éclatement : depuis le centre de la charge, plus une dérive.
+       Les couches hautes partent plus loin — l'éclaté se lit alors comme un
+       cône ouvert vers le haut, exactement comme sur un plan de montage. */
+    tmpV.set(p.x, p.y, p.z).sub(CENTRE);
+    if(tmpV.lengthSq() < 1e-5) tmpV.set(rnd() - .5, 0.4, rnd() - .5);
+    tmpV.normalize();
+    tmpV.x += (rnd() - 0.5) * 0.55;
+    tmpV.z += (rnd() - 0.5) * 0.55;
+    tmpV.y = tmpV.y * 0.62 + 0.30;
+    tmpV.normalize();
+    const d = 2.4 + rnd() * 4.4 + p.k * 0.30;
+    ePos[i * 3]     = p.x + tmpV.x * d;
+    ePos[i * 3 + 1] = Math.max(0.35, p.y + tmpV.y * d * 0.72);
+    ePos[i * 3 + 2] = p.z + tmpV.z * d;
+
+    tmpE.set((rnd() - .5) * 2.1, (rnd() - .5) * 3.1, (rnd() - .5) * 2.1);
+    tmpQ.setFromEuler(tmpE);
+    eQua[i * 4] = tmpQ.x; eQua[i * 4 + 1] = tmpQ.y; eQua[i * 4 + 2] = tmpQ.z; eQua[i * 4 + 3] = tmpQ.w;
+
+    /* Le décalage d'entrée : la couche k commence à s_k, et à l'intérieur d'une
+       couche les cartons se posent l'un après l'autre. C'est ce décalage — et
+       pas l'interpolation elle-même — qui donne la lecture « ça se monte ». */
+    dep[i] = 0.045 + p.k * 0.0815 + (p.n / 24) * 0.052;
+    dur[i] = 0.20;
+    pha[i] = rnd() * 6.283;
+
+    col.copy(froid).lerp(chaud, p.k / (NC - 1));
+    const r = rnd();
+    if(r > 0.93) col.copy(pointe); else if(r > 0.84) col.copy(signal);
+    cartons.setColorAt(i, col);
+  }
+  cartons.instanceColor.needsUpdate = true;
+
+  /* ══ Le calque du plan coté ══════════════════════════════════════════ */
+  const NS = 'http://www.w3.org/2000/svg';
+  const el = (n, at) => { const e = document.createElementNS(NS, n);
+    for(const k in at) e.setAttribute(k, at[k]); return e; };
+
+  /* cadre d'angles */
+  const cadre = el('g', { class: 'fin' });
+  svg.appendChild(cadre);
+  /* cote horizontale (empreinte au sol) */
+  const coteH = el('g', { class: 'desk' });
+  const chL = el('polyline', {}), chT = el('text', { 'text-anchor': 'middle' });
+  coteH.appendChild(chL); coteH.appendChild(chT); svg.appendChild(coteH);
+  /* cote verticale (hauteur de charge) */
+  const coteV = el('g', { class: 'desk' });
+  const cvL = el('polyline', {}), cvT = el('text', {});
+  coteV.appendChild(cvL); coteV.appendChild(cvT); svg.appendChild(coteV);
+  /* neuf lignes de rappel */
+  const rappels = MAISONS.map(m => {
+    const g = el('g', { class: 'desk', opacity: '0' });
+    const l = el('polyline', {});
+    const num = el('text', { class: 'num' }); num.textContent = m[0];
+    const nom = el('text', {}); nom.textContent = m[1] + ' · ' + m[2] + ' (' + m[3] + ')';
+    const pt = el('circle', { r: '2.5', fill: '#E8A34D', stroke: 'none' });
+    g.appendChild(l); g.appendChild(pt); g.appendChild(num); g.appendChild(nom);
+    svg.appendChild(g);
+    return { g, l, num, nom, pt };
+  });
+
+  let W = 0, Hh = 0, LARGE = true, RESERVE = 470;
+  function dimensionne(){
+    W = scEl.clientWidth; Hh = scEl.clientHeight;
+    renderer.setSize(W, Hh, false);
+    cam.aspect = W / Math.max(1, Hh);
+    cam.updateProjectionMatrix();
+    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + Hh);
+    svg.setAttribute('width', W); svg.setAttribute('height', Hh);
+    /* Largeur réservée à la nomenclature. Le plus long des neuf libellés fait
+       60 signes ; en Plex Mono 10,5 px avec 0,11 em d'interlettrage, un signe
+       occupe 7,5 px — soit 450 px, et non les 380 px qu'on obtient en oubliant
+       l'interlettrage. C'est cet oubli qui faisait mordre le nom sur son numéro. */
+    LARGE = (W >= 1340);
+    RESERVE = LARGE ? 470 : 300;
+    rappels.forEach((R, k) => {
+      const m = MAISONS[k];
+      R.nom.textContent = LARGE ? (m[1] + ' · ' + m[2] + ' (' + m[3] + ')') : (m[1] + ' (' + m[3] + ')');
+    });
+    const m = 22, b = 26;
+    cadre.innerHTML = '';
+    [[m, m, 1, 1], [W - m, m, -1, 1], [m, Hh - m, 1, -1], [W - m, Hh - m, -1, -1]].forEach(c => {
+      const p = el('polyline', { points: (c[0] + c[2] * b) + ',' + c[1] + ' ' + c[0] + ',' + c[1] + ' ' + c[0] + ',' + (c[1] + c[3] * b) });
+      cadre.appendChild(p);
+    });
+  }
+  dimensionne();
+  addEventListener('resize', dimensionne);
+
+  const pv = new THREE.Vector3();
+  function proj(x, y, z, out){
+    pv.set(x, y, z).project(cam);
+    out[0] = (pv.x * 0.5 + 0.5) * W;
+    out[1] = (-pv.y * 0.5 + 0.5) * Hh;
+    return out;
+  }
+  const A = [0, 0], B = [0, 0], C = [0, 0];
+
+  /* ══ Une seule boucle, une seule lecture du défilement par image ══════ */
+  let p = 0, pL = 0, tPrec = 0, tourne = false, dedans = true;
+  let imgs = 0, tFps = 0, fps = 0;
+  window.__m35 = { fps: () => fps, p: () => pL, appels: () => renderer.info.render.calls,
+                   triangles: () => renderer.info.render.triangles };
+
+  const ease = t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  const cl01 = t => t < 0 ? 0 : t > 1 ? 1 : t;
+
+  /* Courbe à points de passage, lissée entre chaque paire. Trois valeurs de
+     caméra en dépendent : distance, hauteur, point visé. */
+  function courbe(t, pts){
+    for(let i = 0; i < pts.length - 1; i++){
+      const a = pts[i], b = pts[i + 1];
+      if(t <= b[0] || i === pts.length - 2){
+        const u = cl01((t - a[0]) / (b[0] - a[0]));
+        const s = u * u * (3 - 2 * u);
+        return a[1] + (b[1] - a[1]) * s;
+      }
+    }
+    return pts[pts.length - 1][1];
+  }
+  const CAM_R     = [[0, 9.6], [0.45, 5.9], [0.80, 4.35], [1, 5.30]];
+  const CAM_H     = [[0, 4.55], [0.45, 3.15], [0.80, 2.05], [1, 2.55]];
+  const CAM_R_TEL = [[0, 11.2], [0.45, 7.2], [0.80, 5.5], [1, 6.6]];
+  const CAM_H_TEL = [[0, 5.10], [0.45, 3.60], [0.80, 2.45], [1, 3.05]];
+  const CAM_V     = [[0, 0.22], [0.5, 0.80], [1, 1.06]];
+
+  const mat4 = new THREE.Matrix4(), qA = new THREE.Quaternion(), qE = new THREE.Quaternion();
+  const vP = new THREE.Vector3(), vS = new THREE.Vector3();
+
+  function lisLeDefilement(){
+    const r = atEl.getBoundingClientRect();
+    const total = r.height - Hh;
+    p = total > 0 ? cl01(-r.top / total) : 0;
+  }
+
+  function image(t){
+    if(!tourne) return;
+    requestAnimationFrame(image);
+    const dt = tPrec ? Math.min(0.05, (t - tPrec) / 1000) : 0.016;
+    tPrec = t;
+    imgs++;
+    if(t - tFps > 500){ fps = Math.round(imgs * 1000 / (t - tFps)); imgs = 0; tFps = t; }
+
+    lisLeDefilement();
+    const k = doux ? 1 : (1 - Math.exp(-dt * 7.5));
+    pL += (p - pL) * k;
+    const temps = t / 1000;
+
+    /* — La palette se pose la première, dans les six premiers pour cent — */
+    const tp = ease(cl01(pL / 0.06));
+    for(let i = 0; i < planches.length; i++){
+      const b = planches[i];
+      const ang = (1 - tp) * (1.4 + i * 0.11);
+      vP.set(b[0] * (1 + (1 - tp) * 2.4), b[1] + (1 - tp) * (1.1 + i * 0.16), b[2] * (1 + (1 - tp) * 2.4));
+      qA.setFromEuler(tmpE.set(ang * 0.5, ang, ang * 0.3));
+      vS.set(b[3], b[4], b[5]);
+      mat4.compose(vP, qA, vS);
+      palette.setMatrixAt(i, mat4);
+    }
+    palette.instanceMatrix.needsUpdate = true;
+
+    /* — Les deux cents cartons — */
+    let posees = 0;
+    for(let i = 0; i < N; i++){
+      const ti = cl01((pL - dep[i]) / dur[i]);
+      const e = ease(ti);
+      if(ti > 0.985) posees++;
+      const w = 1 - e;
+      const i3 = i * 3;
+      vP.set(
+        ePos[i3]     + (aPos[i3]     - ePos[i3])     * e,
+        ePos[i3 + 1] + (aPos[i3 + 1] - ePos[i3 + 1]) * e,
+        ePos[i3 + 2] + (aPos[i3 + 2] - ePos[i3 + 2]) * e
+      );
+      if(w > 0.002 && !doux){
+        /* dérive lente tant que la pièce n'est pas posée */
+        const ph = pha[i];
+        vP.x += Math.sin(temps * 0.42 + ph) * 0.20 * w;
+        vP.y += Math.sin(temps * 0.33 + ph * 1.7) * 0.16 * w;
+        vP.z += Math.cos(temps * 0.38 + ph * 0.8) * 0.20 * w;
+      }
+      const i4 = i * 4;
+      qE.set(eQua[i4], eQua[i4 + 1], eQua[i4 + 2], eQua[i4 + 3]);
+      qA.identity();
+      qE.slerp(qA, e);
+      vS.set(dim[i3], dim[i3 + 1], dim[i3 + 2]);
+      mat4.compose(vP, qE, vS);
+      cartons.setMatrixAt(i, mat4);
+    }
+    cartons.instanceMatrix.needsUpdate = true;
+
+    /* — La caméra fait le tour, s'approche, puis RECULE pour présenter la
+         palette finie. Sans ce recul final, l'objet assemblé sortait du cadre
+         au moment précis où il fallait le voir en entier. — */
+    const theta = -0.62 + pL * 2.55;
+    const rayon = courbe(pL, petit ? CAM_R_TEL : CAM_R);
+    const haut  = courbe(pL, petit ? CAM_H_TEL : CAM_H) + 0.16 * Math.sin(pL * Math.PI * 2);
+    cam.position.set(Math.sin(theta) * rayon, haut, Math.cos(theta) * rayon);
+    cam.lookAt(0, courbe(pL, CAM_V), 0);
+    /* Sur téléphone la palette remonte dans le tiers haut : le texte occupe le
+       bas de l'écran, les deux ne se disputent plus la même surface. */
+    if(petit) cam.rotateX(-0.20);
+    /* ⚠️ Écrire cam.rotation.z après un lookAt DÉTRUIT le roulis calculé par
+       lookAt (l'ordre d'Euler est XYZ, et z n'y vaut pas zéro dès que la caméra
+       plonge). C'est ce qui faisait pencher toute la palette de trente degrés à
+       la fin. On compose la rotation au lieu de l'écraser. */
+    if(!petit) cam.rotateY(0.135);          /* l'objet glisse à droite, le texte tient à gauche */
+    cam.rotateZ(Math.sin(pL * Math.PI * 2.2) * 0.006);
+
+    /* — Le plan coté — */
+    const hautCharge = HAUT_PAL + Math.max(0, posees / (N / NC)) * HC;
+    const couches = Math.min(NC, Math.floor(posees / (N / NC) + 0.001));
+    if(W > 900){
+      proj(-PAL.l / 2, 0, PAL.p / 2, A); proj(PAL.l / 2, 0, PAL.p / 2, B);
+      const yb = Math.max(A[1], B[1]) + 34;
+      chL.setAttribute('points',
+        A[0] + ',' + (yb - 7) + ' ' + A[0] + ',' + (yb + 7) + ' ' + A[0] + ',' + yb + ' ' +
+        B[0] + ',' + yb + ' ' + B[0] + ',' + (yb - 7) + ' ' + B[0] + ',' + (yb + 7));
+      chT.setAttribute('x', (A[0] + B[0]) / 2); chT.setAttribute('y', yb - 12);
+      chT.textContent = '1200 mm — europalette';
+      coteH.setAttribute('opacity', tp > 0.7 ? '1' : '0');
+
+      proj(PAL.l / 2 + 0.10, 0, -PAL.p / 2, A);
+      proj(PAL.l / 2 + 0.10, hautCharge, -PAL.p / 2, B);
+      const xv = Math.max(A[0], B[0]) + 26;
+      cvL.setAttribute('points',
+        (xv - 7) + ',' + A[1] + ' ' + (xv + 7) + ',' + A[1] + ' ' + xv + ',' + A[1] + ' ' +
+        xv + ',' + B[1] + ' ' + (xv - 7) + ',' + B[1] + ' ' + (xv + 7) + ',' + B[1]);
+      cvT.setAttribute('x', xv + 12); cvT.setAttribute('y', (A[1] + B[1]) / 2);
+      cvT.textContent = Math.round(hautCharge * 1000) + ' mm';
+      coteV.setAttribute('opacity', couches > 0 ? '1' : '0');
+
+      /* La nomenclature. Premier jet : chaque étiquette flottait à côté de sa
+         couche — elles se chevauchaient entre elles ET passaient par-dessus le
+         titre. Un vrai plan ne fait pas ça : il aligne les repères en COLONNE au
+         bord de la feuille et tire une ligne jusqu'à la pièce. La colonne monte
+         du bas vers le haut, comme la pile. */
+      /* Deux colonnes fixes : le numéro à gauche, le nom aligné à droite sur le
+         bord. Sans la colonne réservée, le plus long des neuf noms passait
+         par-dessus son propre numéro — on lisait « 066mptoir Pharmaceutique ». */
+      const xLab = W - 30, xNum = xLab - RESERVE, ySocle = Hh - 122, pas = 22;
+      for(let k = 0; k < NC; k++){
+        const R = rappels[k];
+        const t0 = 0.045 + k * 0.0815, tk = cl01((pL - t0) / 0.16);
+        if(tk <= 0.02){ R.g.setAttribute('opacity', '0'); continue; }
+        R.g.setAttribute('opacity', (0.34 + 0.66 * tk).toFixed(3));
+        const cote = (k % 2 === 0) ? 1 : -1;
+        proj(cote * (PAL.l / 2 - 0.06), HAUT_PAL + k * HC + HC / 2, cote * (PAL.p / 2 - 0.08), C);
+        const yS = ySocle - k * pas;
+        const xCoude = Math.min(Math.max(C[0] + 30, 40), xNum - 20);
+        R.pt.setAttribute('cx', C[0]); R.pt.setAttribute('cy', C[1]);
+        R.l.setAttribute('points', C[0] + ',' + C[1] + ' ' + xCoude + ',' + yS + ' ' + (xLab - 2) + ',' + yS);
+        R.num.setAttribute('x', xNum); R.num.setAttribute('y', yS - 5);
+        R.num.setAttribute('text-anchor', 'start');
+        R.nom.setAttribute('x', xLab); R.nom.setAttribute('y', yS - 5);
+        R.nom.setAttribute('text-anchor', 'end');
+      }
+    } else {
+      coteH.setAttribute('opacity', '0'); coteV.setAttribute('opacity', '0');
+      const m = MAISONS[Math.max(0, Math.min(NC - 1, couches - 1))];
+      const q = Math.round(pL * 100) + ' %';
+      puce.innerHTML = (couches > 0
+        ? '<b>' + m[0] + '/09</b> — ' + m[1] + ' · ' + m[2]
+        : '<b>ÉCLATÉ</b> — 200 pièces en attente') + '<s>' + q + '</s>';
+    }
+
+    const pc = Math.round(pL * 100);
+    jauge.style.width = pc + '%';
+    pctEl.textContent = pc + ' %';
+
+    renderer.render(scene, cam);
+  }
+
+  function lance(){ if(tourne) return; tourne = true; tPrec = 0; tFps = 0; imgs = 0; requestAnimationFrame(image); }
+  function arrete(){ tourne = false; }
+
+  /* La boucle s'arrête net dès que l'atelier sort de l'écran : la salle claire
+     ne paie pas la scène 3D. Et l'onglet caché ne paie rien du tout. */
+  if('IntersectionObserver' in window){
+    new IntersectionObserver(es => {
+      dedans = es[0].isIntersecting;
+      if(dedans && !document.hidden) lance(); else arrete();
+    }, { rootMargin: '30% 0px 30% 0px' }).observe(atEl);
+  } else { lance(); }
+  document.addEventListener('visibilitychange', () => {
+    if(document.hidden) arrete(); else if(dedans) lance();
+  });
+  lance();
+
+  /* Contexte perdu (Safari le fait quand la machine chauffe) : on bascule sur
+     le repli au lieu de laisser un rectangle noir. */
+  cnv.addEventListener('webglcontextlost', ev => {
+    ev.preventDefault(); arrete(); H.classList.add('nogl');
+    console.warn('[m-35] contexte WebGL perdu — repli affiché.');
+  });
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,13 @@
+Polices de la maquette 07. Servies localement, sous-ensemble latin uniquement,
+aucun appel exterieur au chargement de la page.
+
+Geist (geist.woff2) — SIL Open Font License 1.1 — Vercel
+  https://github.com/vercel/geist-font
+
+Geist Mono (geistmono.woff2) — SIL Open Font License 1.1 — Vercel
+  https://github.com/vercel/geist-font
+
+La SIL Open Font License 1.1 autorise l'usage, la modification et la
+redistribution, y compris commerciale, a condition que les fontes ne soient
+pas vendues seules et que cette notice accompagne les fichiers.
+Texte complet : https://openfontlicense.org/

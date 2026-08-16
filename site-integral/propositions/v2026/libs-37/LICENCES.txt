@@ -1,0 +1,16 @@
+Librairies de la maquette 37 « LE TRAIT » — servies depuis ce dossier.
+Aucun CDN, aucune clé d'API, aucun appel réseau sortant.
+
+gsap.min.js / ScrollTrigger.min.js
+  GSAP 3 — GreenSock (Webflow). Licence maison, GRATUITE depuis 2025,
+  tous les modules compris. https://gsap.com/community/standard-license/
+  Sert à : les entrées de blocs au défilement, la boucle d'horloge unique
+  (gsap.ticker) qui pilote à la fois Lenis et le tracé du trait.
+
+lenis.min.js
+  Lenis 1.1.x — darkroom.engineering. Licence MIT.
+  Sert à : le défilement lissé, pour que le crayon avance sans à-coup.
+
+Fichiers copiés depuis propositions/v2026/libs-22/ (déjà présents dans le dépôt).
+Le tracé lui-même (SVG, stroke-dasharray / stroke-dashoffset) est écrit à la
+main dans m-37.html : aucune librairie de dessin.
