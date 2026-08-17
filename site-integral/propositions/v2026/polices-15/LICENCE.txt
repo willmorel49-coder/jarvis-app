@@ -1,4 +1,0 @@
-IBM Plex Sans & IBM Plex Mono — SIL Open Font License 1.1 (libre).
-Source : Google Fonts, sous-ensemble latin uniquement.
-https://github.com/IBM/plex — https://openfontlicense.org
-plexsans.woff2 = fichier variable (graisses 100-700).
