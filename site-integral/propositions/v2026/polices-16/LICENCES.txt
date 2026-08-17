@@ -1,9 +1,0 @@
-Inter — SIL Open Font License 1.1 — Rasmus Andersson
-  https://github.com/rsms/inter  (sous-ensemble latin, Google Fonts v20)
-Inter Tight — SIL Open Font License 1.1 — Rasmus Andersson
-  https://fonts.google.com/specimen/Inter+Tight  (sous-ensemble latin, v9)
-
-Substitution : la charte « shopify » nomme NeueHaasGrotesk Display (propriétaire,
-Linotype). Inter Tight en est l'équivalent libre le plus proche : grotesque néo-
-helvétique, chasse resserrée, variable 100–900 — donc capable de la graisse 330
-exacte de la charte sur les grands corps.
