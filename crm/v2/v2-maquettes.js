@@ -97,8 +97,17 @@
     for (var i = 0; i < notes.length; i++) if (notes[i].maquette === id) out.push(notes[i]);
     return out;
   }
+  /* ⚠️ Ne compter QUE les lignes qui portent une note. Depuis qu'on peut écrire
+     un avis sans noter, une ligne à note vide existe — la faire entrer dans la
+     moyenne la ferait tomber à zéro sans que personne comprenne pourquoi.
+     ⚠️ Nom `avecNote` et surtout PAS `notees` : une fonction `notees()` existe
+     déjà plus bas dans ce fichier, et la collision faisait s'appeler les deux
+     à l'infini — écran entièrement blanc. */
+  function avecNote(id) {
+    return pour(id).filter(function (x) { return typeof x.note === 'number' && x.note >= 1; });
+  }
   function moyenne(id) {
-    var a = pour(id); if (!a.length) return null;
+    var a = avecNote(id); if (!a.length) return null;
     var s = 0; for (var i = 0; i < a.length; i++) s += a[i].note;
     return s / a.length;
   }
@@ -119,7 +128,7 @@
       if (mx == null && my == null) return x.n - y.n;
       if (mx == null) return 1;
       if (my == null) return -1;
-      return (my - mx) || (pour(y.id).length - pour(x.id).length) || (x.n - y.n);
+      return (my - mx) || (avecNote(y.id).length - avecNote(x.id).length) || (x.n - y.n);
     });
   }
 
@@ -150,6 +159,34 @@
     if (V2.toast) V2.toast('Noté ' + n + '/10 — sur cet appareil');
     redessiner();
   };
+  /* Enregistrer un avis écrit. Même chemin que la note : partagé si on est
+     connecté, sinon gardé sur l'appareil. On ne touche JAMAIS à la note au
+     passage — un avis posé avant d'avoir noté ne doit pas l'effacer. */
+  V2.maquetteAvis = function (id) {
+    var z = document.getElementById('avt-' + id); if (!z) return;
+    var t = String(z.value || '').trim().slice(0, 600);
+    var c = sb(), u = moi(), n = maNote(id);
+    if (backend === 'supabase' && c && u) {
+      var ligne = { maquette: id, auteur_id: u, auteur_nom: (V2.user && V2.user.name) || '',
+                    avis: t, archive: false, maj: new Date().toISOString() };
+      if (n != null) ligne.note = n;
+      c.from(TABLE).upsert(ligne, { onConflict: 'maquette,auteur_id' })
+        .then(function (r) {
+          if (r && r.error) { if (V2.toast) V2.toast('Avis non enregistré — réessaie'); return; }
+          if (V2.toast) V2.toast(t ? 'Avis partagé avec l\'équipe' : 'Avis retiré');
+          recharger();
+        })
+        .catch(function () { if (V2.toast) V2.toast('Avis non enregistré — réessaie'); });
+      return;
+    }
+    var a = localAll(), vu = false;
+    for (var i = 0; i < a.length; i++) if (a[i].maquette === id) { a[i].avis = t; vu = true; break; }
+    if (!vu) a.push({ maquette: id, auteur: u || 'local', nom: (V2.user && V2.user.name) || '', note: null, avis: t });
+    localWrite(a); notes = a;
+    if (V2.toast) V2.toast('Avis gardé sur cet appareil');
+    redessiner();
+  };
+
   V2.maquetteTri = function (t) { tri = t; redessiner(); };
 
   function recharger() { charger().then(redessiner); }
@@ -177,7 +214,7 @@
     ov.innerHTML =
       '<div class="mq-ov-bar">' +
         '<button class="mq-ov-x" onclick="V2.maquetteFermer()" aria-label="Fermer">' + ICO('chev', 18, 2) + ' Retour</button>' +
-        '<div class="mq-ov-t"><b>' + m.n + ' · ' + esc(m.palette) + '</b><span>' + esc(m.accroche) + ' · ' + esc(m.defile) + '</span></div>' +
+        '<div class="mq-ov-t"><b>' + m.n + ' · ' + esc(m.nom) + '</b><span>' + esc(m.source) + ' · série ' + esc(String(m.serie)) + '</span></div>' +
         '<a class="mq-ov-out" href="' + pageDe(m) + '" target="_blank" rel="noopener">Plein écran</a>' +
       '</div>' +
       '<iframe class="mq-ov-f" src="' + pageDe(m) + '" title="Maquette ' + m.n + '"></iframe>' +
@@ -208,11 +245,36 @@
   }
 
   function badge(id) {
-    var m = moyenne(id), k = pour(id).length;
+    var m = moyenne(id), k = avecNote(id).length;
     if (m == null) return '<span class="mq-badge mq-badge-off">pas encore notée</span>';
     var cl = m >= 8 ? 'hi' : (m >= 6 ? 'mid' : 'lo');
     return '<span class="mq-badge mq-badge-' + cl + '"><b>' + (Math.round(m * 10) / 10).toFixed(1) + '</b>/10' +
-           '<i>' + k + ' avis</i></span>';
+           '<i>' + k + ' note' + (k > 1 ? 's' : '') + '</i></span>';
+  }
+
+  /* Les avis écrits, sous chaque maquette. C'est la partie qui sert à CORRIGER :
+     une note sur 10 dit qu'une direction plaît, elle ne dit jamais pourquoi. */
+  function avisHtml(id) {
+    var a = pour(id), lignes = [], u = moi(), mien = '';
+    for (var i = 0; i < a.length; i++) {
+      var t = (a[i].avis || '').trim();
+      var estMoi = (backend === 'local') || (a[i].auteur === u);
+      if (estMoi) mien = t;
+      if (!t) continue;
+      lignes.push('<li class="mq-av' + (estMoi ? ' mq-av-moi' : '') + '">' +
+        '<b>' + esc(a[i].nom || 'Quelqu\'un') + '</b>' +
+        (a[i].note ? '<i>' + a[i].note + '/10</i>' : '') +
+        '<span>' + esc(t) + '</span></li>');
+    }
+    return '<div class="mq-avis">' +
+      (lignes.length ? '<ul class="mq-avl">' + lignes.join('') + '</ul>'
+                     : '<p class="mq-av-vide">Personne n\'a encore écrit ce qui va ou ne va pas.</p>') +
+      '<div class="mq-avf">' +
+        '<textarea class="mq-avt" id="avt-' + id + '" rows="2" maxlength="600" ' +
+          'placeholder="Ce qui est bien, ce qui ne va pas — c\'est ça qui permet de corriger">' + esc(mien) + '</textarea>' +
+        '<button class="mq-avb" onclick="V2.maquetteAvis(\'' + id + '\')">Enregistrer mon avis</button>' +
+      '</div>' +
+    '</div>';
   }
 
   function carte(m, rang) {
@@ -224,14 +286,19 @@
         '<span class="mq-open">Ouvrir</span>' +
       '</button>' +
       '<div class="mq-body">' +
-        '<div class="mq-head"><b>' + m.n + ' · ' + esc(m.palette) + '</b>' + badge(m.id) + '</div>' +
+        '<div class="mq-head"><b>' + m.n + ' · ' + esc(m.nom) + '</b>' + badge(m.id) + '</div>' +
         '<div class="mq-tags">' +
-          '<span>' + esc(m.accroche) + '</span>' +
-          '<span>Défilé · ' + esc(m.defile) + '</span>' +
-          '<span>Mouvement · ' + esc(m.mouvement) + '</span>' +
-          '<span>3D · ' + esc(m.troisd) + '</span>' +
+          '<span>' + esc(m.source) + '</span>' +
+          '<span>Série ' + esc(String(m.serie)) + '</span>' +
         '</div>' +
+        '<p class="mq-geste">' + esc(m.geste) + '</p>' +
         notesHtml(m.id, false) +
+        (function () {
+          var nb = pour(m.id).filter(function (x) { return (x.avis || '').trim(); }).length;
+          return '<details class="mq-det"' + (nb ? ' open' : '') + '>' +
+            '<summary>' + (nb ? nb + ' avis écrit' + (nb > 1 ? 's' : '') : 'Écrire un avis') + '</summary>' +
+            avisHtml(m.id) + '</details>';
+        })() +
       '</div>' +
     '</div>';
   }
@@ -245,8 +312,8 @@
         return '<button class="mq-pod" onclick="V2.maquetteOuvrir(\'' + m.id + '\')">' +
           '<span class="mq-rank mq-rank-' + (i + 1) + '">' + (i + 1) + '</span>' +
           '<img src="' + apercuDe(m) + '" loading="lazy" alt="">' +
-          '<span class="mq-pod-t"><b>' + m.n + ' · ' + esc(m.palette) + '</b>' +
-          '<i>' + (Math.round(moyenne(m.id) * 10) / 10).toFixed(1) + '/10 · ' + pour(m.id).length + ' avis</i></span>' +
+          '<span class="mq-pod-t"><b>' + m.n + ' · ' + esc(m.nom) + '</b>' +
+          '<i>' + (Math.round(moyenne(m.id) * 10) / 10).toFixed(1) + '/10 · ' + avecNote(m.id).length + ' note' + (avecNote(m.id).length > 1 ? 's' : '') + '</i></span>' +
         '</button>';
       }).join('') + '</div></div>';
   }
@@ -272,8 +339,11 @@
             '<div class="mq-hero">' +
               '<div class="v2-page-title">Le nouveau site — ' + l.length + ' directions</div>' +
               '<p>Ouvre-les en vrai : elles défilent et elles répondent, ce ne sont pas des images. ' +
-              'Chacune a <b>une</b> accroche, <b>un</b> défilé, <b>un</b> mouvement et <b>un</b> geste 3D — ' +
-              'jamais plusieurs empilés. Mets une note sur 10 à celles que tu retiens.</p>' +
+              'Les <b>vingt premières</b> reprennent la méthode d\'une charte réelle ; les <b>trente suivantes</b> ' +
+              'n\'imitent personne — chacune part d\'un phénomène (un fluide, une lumière, une horlogerie) ' +
+              'qui devient la mécanique de toute la page.</p>' +
+              '<p>Mets une note sur 10, et surtout <b>écris ce qui va ou ne va pas</b> : ' +
+              'la note dit qu\'une direction plaît, elle ne dit jamais quoi corriger.</p>' +
               '<span class="mq-share">' + partage + '</span>' +
             '</div>' +
             podium() +
@@ -346,7 +416,21 @@
       '.mq-badge-lo{border-color:color-mix(in srgb,var(--c-rose) 35%,var(--line))}',
       '.mq-badge-lo b{color:#C7283D}',
       '.mq-badge-off{font-size:10.5px;letter-spacing:.02em}',
-      '.mq-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px}',
+      '.mq-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px}',
+      '.mq-geste{font-size:12.5px;line-height:1.5;color:var(--muted);margin:0 0 12px}',
+      '.mq-det{border-top:1px solid var(--line);margin-top:12px;padding-top:10px}',
+      '.mq-det>summary{cursor:pointer;font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);min-height:44px;display:flex;align-items:center}',
+      '.mq-avl{list-style:none;margin:0 0 10px;padding:0;display:grid;gap:8px}',
+      '.mq-av{background:var(--card-2);border:1px solid var(--line);border-radius:8px;padding:9px 11px}',
+      '.mq-av-moi{border-color:var(--ip-blue)}',
+      '.mq-av b{font-size:12px;font-weight:800}',
+      '.mq-av i{font-style:normal;font-size:11px;color:var(--muted);margin-left:7px}',
+      '.mq-av span{display:block;margin-top:4px;font-size:13px;line-height:1.5;white-space:pre-wrap}',
+      '.mq-av-vide{font-size:12.5px;color:var(--muted);margin:0 0 10px}',
+      '.mq-avf{display:grid;gap:8px}',
+      '.mq-avt{width:100%;box-sizing:border-box;font:inherit;font-size:16px;line-height:1.5;color:var(--ink);background:var(--card-2);border:1px solid var(--line);border-radius:8px;padding:10px 11px;resize:vertical}',
+      '.mq-avt:focus{outline:2px solid var(--ip-blue);outline-offset:1px}',
+      '.mq-avb{min-height:44px;padding:0 16px;border:0;border-radius:999px;cursor:pointer;background:var(--ip-blue);color:#fff;font-weight:800;font-size:13px;justify-self:start}',
       '.mq-tags span{font-size:11px;color:var(--muted);background:var(--card-2);border:1px solid var(--line);border-radius:6px;padding:3px 8px}',
       // la note sur 10
       '.mq-notes-l{display:block;font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}',

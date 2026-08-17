@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Intégral Pharma — Neuf maisons. Un seul nom.</title>
+<title>Intégral Pharma — Rendre la marge à l'officine française.</title>
 <meta name="description" content="Groupe de grossistes-répartiteurs français indépendant. Neuf implantations, plus de 2 000 officines livrées chaque jour.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23070A0F'/%3E%3Cg fill='none' stroke='%23E8A34D' stroke-width='1.6'%3E%3Crect x='7' y='19' width='18' height='7'/%3E%3Crect x='9' y='11' width='14' height='6'/%3E%3Crect x='11' y='4' width='10' height='5'/%3E%3C/g%3E%3C/svg%3E">
 
@@ -333,7 +333,14 @@ ul{padding:0;list-style:none}
 .hero__sur{margin-bottom:22px}
 .hero__t{
   font-family:var(--dis);font-weight:600;font-stretch:92%;
-  font-size:clamp(38px,6.6vw,86px);line-height:.97;letter-spacing:-.038em;
+  /* Le titre d'ouverture fait 39 signes au lieu de 26 : à 86 px dans la colonne
+     de 500 px il passait à quatre lignes et poussait les deux boutons sous la
+     ligne de flottaison (relevé au contrôle 1440 × 900 : bas des boutons à
+     912 px). Plafond ramené à 72 px, et second plafond en hauteur d'écran :
+     la station d'ouverture doit tenir dans un écran, y compris sur les écrans
+     larges mais courts (1100 × 760, 1366 × 768) où seule la largeur ne suffit
+     pas à décider de la taille. Le mobile garde sa propre règle plus bas. */
+  font-size:min(clamp(38px,6.6vw,72px), 8svh);line-height:.97;letter-spacing:-.038em;
   margin:0 0 22px;
 }
 .hero__t span{display:block}
@@ -607,7 +614,7 @@ ul{padding:0;list-style:none}
     <article class="station" id="ouverture">
       <div class="station__in">
         <p class="surtitre hero__sur">Groupe de grossistes-répartiteurs français indépendant</p>
-        <h1 class="hero__t"><span>Neuf maisons.</span><span class="b">Un seul nom.</span></h1>
+        <h1 class="hero__t"><span>Rendre la marge</span><span class="b">à l'officine française.</span></h1>
         <p class="corps hero__s">Chacune livre sa région depuis des années, avec ses équipes et ses habitudes. Depuis 2006, elles avancent ensemble sous le nom d'Intégral Pharma — et votre commande part toujours de la plus proche de votre comptoir.</p>
         <div class="hero__b">
           <a class="btn btn--plein" href="#reseau">Découvrir le réseau</a>
@@ -620,7 +627,7 @@ ul{padding:0;list-style:none}
     <article class="station" id="groupe">
       <div class="station__in">
         <p class="surtitre">Notre histoire</p>
-        <h2 class="titre" style="margin:18px 0 20px">Rendre la marge à<br><em>l'officine française.</em></h2>
+        <h2 class="titre" style="margin:18px 0 20px">Neuf maisons.<br><em>Un seul nom.</em></h2>
         <p class="corps">C'est la raison d'être d'Intégral Pharma depuis 2006 : redistribuer directement la marge aux officines françaises, en toute transparence, avec des prix nets visibles sur facture.</p>
         <p class="corps">Neuf implantations aujourd'hui, plus de deux mille officines livrées chaque jour, et la même idée qu'au premier jour — un groupe de répartiteurs indépendants qui a choisi de se mettre du côté du comptoir.</p>
         <div class="chiffres">
