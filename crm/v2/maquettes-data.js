@@ -1,4 +1,4 @@
-/* Les dix-neuf directions retenues pour le nouveau site Intégral Pharma.
+/* Les vingt directions retenues pour le nouveau site Intégral Pharma.
    Chaque entrée porte son chemin EXPLICITE (`page`, `apercu`), relatif à crm/v2/ :
    les maquettes ne vivent pas toutes dans le même dossier.
 
@@ -34,7 +34,8 @@ window.MAQUETTES_SITE = [
   { id:'m-39', n:17, nom:'Delta',          source:'La croissance',   serie:3, geste:'Une structure part d’un point et se ramifie jusqu’à devenir un réseau. Neuf extrémités.' },
 
   { id:'m-44', n:18, nom:'Le Cadran',      source:'Le temps',        serie:4, geste:'Ce n’est pas l’aiguille qui tourne, c’est le cadran. En bas de page, il a fait un tour.' },
-  { id:'m-46', n:19, nom:'Convoyeur',      source:'Le tapis',        serie:4, geste:'Une ligne de préparation traverse la page et tourne en permanence, se divise en neuf voies.' }
+  { id:'m-46', n:19, nom:'Convoyeur',      source:'Le tapis',        serie:4, geste:'Une ligne de préparation traverse la page et tourne en permanence, se divise en neuf voies.' },
+  { id:'m-51', n:20, nom:'Le Signe',        source:'Le logo en 3D',   serie:4, geste:'La gélule du logo en volume, matière pharmaceutique réelle, et le monogramme iP qui se forme en 3D. La plus poussée de la série.' }
 ].map(function (m) {
   m.page   = '../../site-integral/propositions/v2026/' + m.id + '.html';
   m.apercu = '../../site-integral/propositions/v2026/vignettes/' + m.id + '.jpg';

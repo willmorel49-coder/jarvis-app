@@ -1,0 +1,15 @@
+Polices de m-51.html — Direction 20 « Le Signe ».
+Servies localement, sous-ensemble latin, aucun appel extérieur au chargement.
+
+archivo-var.woff2       Archivo — SIL Open Font License 1.1 — Omnibus-Type
+                        https://github.com/Omnibus-Type/Archivo
+                        Fonte variable, axes wght 100-900 et wdth 62-125.
+                        Grotesque industrielle : elle tient la graisse 800 en très
+                        grand corps sans devenir molle, ce qu'il faut pour un titre
+                        posé par-dessus un objet en volume.
+
+inter.woff2             Inter — SIL Open Font License 1.1 — Rasmus Andersson
+                        https://rsms.me/inter/  — texte courant.
+
+geistmono-latin.woff2   Geist Mono — SIL Open Font License 1.1 — Vercel
+                        Chasse fixe des libellés techniques et des numérotations.
