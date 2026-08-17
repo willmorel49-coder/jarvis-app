@@ -61,10 +61,18 @@
       'SUMMARY:' + ech(r.titre),
       'LOCATION:' + ech(r.lieu),
       'DESCRIPTION:' + ech(r.description),
-      'ORGANIZER;CN=' + ech(r.organisateur) + ':MAILTO:noreply@integralpharma.fr',
+      'ORGANIZER;CN=' + ech(r.organisateur) + ':MAILTO:noreply@integralpharma.fr'
+    ];
+    // Le lien de gestion, quand il y en a un. C'est la SEULE chose que le
+    // pharmacien conserve : on n'a aucun service d'envoi, donc on ne peut rien
+    // lui écrire. Son agenda devient sa confirmation, et il l'aura encore dans
+    // trois mois. La propriété URL est affichée cliquable par la plupart des
+    // agendas ; ceux qui l'ignorent montrent quand même la description.
+    if (r.url) lignes.push('URL:' + ech(r.url));
+    lignes = lignes.concat([
       'END:VEVENT',
       'END:VCALENDAR'
-    ];
+    ]);
     var out = [];
     lignes.forEach(function (l) { out = out.concat(plier(l)); });
     return out.join('\r\n') + '\r\n';

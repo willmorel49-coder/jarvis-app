@@ -10,6 +10,7 @@
   var token = params.get('t') || '';        // lien de campagne : usage unique, officine connue
   var ctoken = params.get('c') || '';       // lien permanent d'un commercial : officine à déclarer
   var pslug = params.get('p') || '';        // même chose, mais par nom court (« william »)
+  var gcode = params.get('m') || '';        // MON rendez-vous : le voir, le déplacer, l'annuler
   var moi = null;                           // l'officine déclarée sur le lien permanent
   var sb = null;
   var F = null;      // la fenêtre renvoyée par rdv_fenetre
@@ -40,8 +41,13 @@
 
   function demarrer() {
     if (!window.supabase || !window.supabase.createClient) { secours(INDISPO); return; }
-    if (!token && !ctoken && !pslug) { secours('Ce lien est incomplet.'); return; }
+    if (!token && !ctoken && !pslug && !gcode) { secours('Ce lien est incomplet.'); return; }
     if (!sb) sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+
+    // « Mon rendez-vous » : le lien que le pharmacien garde dans son agenda.
+    // Il passe AVANT tout le reste — c'est un lien de gestion, pas un lien de
+    // réservation, et il vaut pour les deux chemins (campagne et permanent).
+    if (gcode) { monRendezVous(); return; }
     // Le lien du mail porte un CODE de 8 lettres, pas le jeton de 36 caractères :
     // 101 caractères se coupaient en deux lignes dans un mail en texte brut, et
     // le pharmacien atterrissait sur une adresse tronquée. On traduit ici.
@@ -372,21 +378,134 @@
     });
   }
 
-  function confirme(d) {
-    var r = d.rdv, c = d.commercial || {};
-    var ics = window.V2ICS.build({
+  // L'adresse courte que le pharmacien garde pour revenir sur SON rendez-vous.
+  // Construite depuis la racine du site, jamais depuis l'adresse courante :
+  // il peut être arrivé par /rdv/william, par /r?t=… ou par rdv.html.
+  function racineSite() {
+    return window.location.origin + window.location.pathname.replace(/crm\/v2\/[^/]*$/, '');
+  }
+  function lienGestion(code) {
+    return code ? racineSite() + 'r?m=' + encodeURIComponent(code) : '';
+  }
+
+  // Le fichier agenda, avec le lien de gestion DEDANS.
+  // C'est le seul canal de confirmation dont on dispose : sans service
+  // d'envoi, on ne peut écrire aucun mail au pharmacien. Son agenda garde
+  // donc la date ET le moyen de la changer, y compris dans trois mois.
+  function icsDuRdv(r, c, code) {
+    var lien = lienGestion(code);
+    return window.V2ICS.build({
       uid: r.id, date: r.date, heure: r.heure, duree_min: r.duree_min,
       titre: 'Rendez-vous ' + (c.prenom || '') + ' · Intégral Pharma',
-      lieu: r.adresse, description: 'Rendez-vous pris depuis le lien reçu par mail.',
-      organisateur: c.prenom || 'Intégral Pharma'
+      lieu: r.adresse,
+      // ⚠️ Un VRAI saut de ligne, pas la séquence « \n » écrite à la main :
+      // V2ICS échappe d'abord les antislashs, puis convertit les retours à la
+      // ligne. Un « \n » littéral ressortirait donc tel quel, en toutes
+      // lettres, dans l'agenda de chaque pharmacien.
+      description: 'Rendez-vous avec ' + (c.prenom || 'Intégral Pharma') +
+        (c.tel ? ' (' + c.tel + ')' : '') + '.' +
+        (lien ? '\nDéplacer ou annuler : ' + lien : ''),
+      organisateur: c.prenom || 'Intégral Pharma',
+      url: lien
     });
+  }
+
+  // Le bloc « gardez ce lien », affiché après réservation. On l'écrit en
+  // toutes lettres plutôt qu'en bouton : le pharmacien doit pouvoir le
+  // copier, et beaucoup impriment ou transfèrent cette page à leur équipe.
+  function blocGestion(code) {
+    var lien = lienGestion(code);
+    if (!lien) return '';
+    return '<p style="margin-top:20px">Pour <b>déplacer ou annuler</b>, revenez ici :</p>' +
+      '<p><a href="' + esc(lien) + '">' + esc(lien) + '</a></p>' +
+      '<p style="margin-top:8px;font-size:14px;color:#5B6577">' +
+      'Ce lien est aussi dans le fichier agenda ci-dessus — vous le retrouverez ' +
+      'dans votre calendrier, à la date du rendez-vous.</p>';
+  }
+
+  function confirme(d) {
+    var r = d.rdv, c = d.commercial || {};
+    var ics = icsDuRdv(r, c, r.code);
     app.innerHTML = carte(
       '<p class="ok">C’est noté : ' + esc(libelle(r.date)) + ' à ' + esc(hhh(r.heure)) + '.</p>' +
       '<p>' + esc(c.prenom) + ' vous attend à ' + esc(r.nom) + '.</p>' +
       '<p style="margin-top:18px"><a class="btn" download="rendez-vous.ics" href="' +
         window.V2ICS.dataUrl(ics) + '">Ajouter à mon agenda</a></p>' +
+      blocGestion(r.code) +
       (c.tel ? '<p style="margin-top:14px">Un empêchement ? Appelez ' + esc(c.prenom) +
         ' au <a href="tel:' + esc(numero(c.tel)) + '">' + esc(c.tel) + '</a>.</p>' : ''));
+  }
+
+  // ── MON RENDEZ-VOUS (lien ?m=…) ─────────────────────────────────
+  // Vaut pour les DEUX chemins. Jusqu'au 17/08/2026, un pharmacien venu du
+  // lien permanent — donc de tout envoi groupé — ne pouvait ni relire, ni
+  // déplacer, ni annuler : `rdv_mon_rdv` cherchait par (commercial, CIP), or
+  // une réservation par lien permanent enregistre CIP à vide. Elle était
+  // introuvable par conception. Qui ne peut pas annuler n'annule pas : il
+  // n'est simplement pas là le jour venu.
+  function monRendezVous() {
+    app.innerHTML = carte('<p>Nous ouvrons votre rendez-vous…</p>');
+    sb.rpc('rdv_gerer', { p_code: gcode }).then(function (rr) {
+      var d = (rr && rr.data) || {};
+      if (!d.ok) { secours('Ce lien ne correspond à aucun rendez-vous.'); return; }
+      var v = d.rdv, c = d.commercial || {};
+
+      if (d.statut !== 'confirme') {
+        app.innerHTML = carte(
+          '<h1>Rendez-vous annulé</h1>' +
+          '<p>Ce rendez-vous du ' + esc(libelle(v.date)) + ' a été annulé.</p>' +
+          (c.slug ? '<p style="margin-top:18px"><a class="btn" href="' +
+            esc(racineSite() + 'rdv/' + c.slug) +
+            '">Choisir un nouveau créneau</a></p>' : '') +
+          (c.tel ? '<p style="margin-top:14px">Ou appelez ' + esc(c.prenom) +
+            ' au <a href="tel:' + esc(numero(c.tel)) + '">' + esc(c.tel) + '</a>.</p>' : ''));
+        return;
+      }
+
+      var ics = icsDuRdv(v, c, gcode);
+      app.innerHTML = carte(
+        '<h1>Votre rendez-vous</h1>' +
+        '<p class="ok">' + esc(libelle(v.date)) + ' à ' + esc(hhh(v.heure)) + '.</p>' +
+        '<p>' + esc(c.prenom || 'Votre commercial') + ' vous attend à ' + esc(v.nom) + '.</p>' +
+        '<p style="margin-top:18px"><a class="btn" download="rendez-vous.ics" href="' +
+          window.V2ICS.dataUrl(ics) + '">Ajouter à mon agenda</a></p>' +
+        // Un rendez-vous passé ne s'annule plus : le proposer ne servirait
+        // qu'à produire une erreur. On le dit, et on laisse le téléphone.
+        (d.passe
+          ? '<p style="margin-top:16px;color:#5B6577">Ce rendez-vous est passé.</p>'
+          : '<p style="margin-top:16px"><button class="lien" id="annul">' +
+            'Annuler ou choisir un autre créneau</button></p>') +
+        (c.tel ? '<p style="margin-top:14px">Ou appelez ' + esc(c.prenom) +
+          ' au <a href="tel:' + esc(numero(c.tel)) + '">' + esc(c.tel) + '</a>.</p>' : ''));
+
+      var b = document.getElementById('annul');
+      if (b) b.addEventListener('click', function () { annulerParCode(c); });
+    }).catch(function () { secours(INDISPO); });
+  }
+
+  function annulerParCode(c) {
+    var b = document.getElementById('annul');
+    if (b) { b.disabled = true; b.textContent = 'Annulation…'; }
+    sb.rpc('rdv_annuler_code', { p_code: gcode, p_motif: null }).then(function (rr) {
+      var d = (rr && rr.data) || {};
+      if (!d.ok) {
+        if (b) { b.disabled = false; b.textContent = 'Annuler ou choisir un autre créneau'; }
+        secours(d.raison === 'passe' ? 'Ce rendez-vous est déjà passé.'
+              : d.raison === 'deja_annule' ? 'Ce rendez-vous est déjà annulé.'
+              : 'Annulation impossible. Appelez votre commercial.');
+        return;
+      }
+      // Annuler sert le plus souvent à DÉCALER : on le renvoie directement
+      // choisir un autre créneau, plutôt que de le laisser sur un cul-de-sac.
+      var racine = window.location.pathname.replace(/crm\/v2\/[^/]*$/, '');
+      if (d.slug) {
+        window.location.replace(window.location.origin + racine + 'rdv/' + d.slug);
+        return;
+      }
+      app.innerHTML = carte('<p class="ok">Votre rendez-vous est annulé.</p>' +
+        ((c && c.tel) ? '<p>Pour en reprendre un, appelez ' + esc(c.prenom) +
+          ' au <a href="tel:' + esc(numero(c.tel)) + '">' + esc(c.tel) + '</a>.</p>' : ''));
+    }).catch(function () { secours('Annulation impossible. Appelez votre commercial.'); });
   }
 
   // Le pharmacien revient sur son lien après avoir réservé.
