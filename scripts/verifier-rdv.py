@@ -13,6 +13,7 @@ que ce soit casse. GitHub prévient alors par mail.
 Python 3.9 strict, aucune dépendance, aucune clé.
 """
 import json
+import os
 import re
 import sys
 import urllib.error
@@ -36,9 +37,9 @@ def dire_ko(quoi, detail):
     print('  KO   %s  -> %s' % (quoi, detail))
 
 
-def lire(url, timeout=25):
+def lire(url, timeout=25, entetes=None):
     """Renvoie (code, texte). Ne lève jamais."""
-    req = urllib.request.Request(url, headers=UA)
+    req = urllib.request.Request(url, headers=dict(entetes or {}, **UA))
     try:
         r = urllib.request.urlopen(req, timeout=timeout)
         return r.getcode(), r.read().decode('utf-8', 'replace')
@@ -121,8 +122,22 @@ else:
 
 print('── Cohérence du cache ' + '─' * 37)
 
-# Un jeton désynchronisé = des navigateurs qui gardent l'ancienne version sans
-# que rien ne le signale. Vécu deux fois.
+# ⚠️ Réécrit le 17/08/2026. L'ancienne règle exigeait « UN SEUL jeton partout »
+# et échouait donc en permanence : ce robot a envoyé un mail d'échec deux fois
+# par jour pendant 5 jours (13 → 17/08), toujours pour le même faux motif. Un
+# voyant qui s'allume tous les jours sans qu'on puisse agir finit par être
+# ignoré — y compris le jour où il a raison.
+#
+# La vérité, c'est qu'il y a TROIS jetons indépendants, et c'est voulu :
+#   · `index.html` + `sw.js`  → l'appli du commercial. Ces deux-là DOIVENT
+#     être identiques : c'est le vrai verrou anti-cache, cassé deux fois.
+#   · `rdv.html`              → la page publique du pharmacien, qui a son
+#     propre lot de scripts et se déploie séparément.
+#   · `var V` de `v2-boot.js` → les gros fichiers de données. Le fichier dit
+#     lui-même « pas besoin de le suivre à chaque déploiement : quand VER de
+#     sw.js change, l'activation du service worker efface tous les caches. »
+# Comparer les trois entre eux n'a aucun sens. On ne contrôle donc que ce qui
+# doit vraiment coïncider, et on AFFICHE les autres sans échouer.
 jetons = {}
 for chemin, motif in [
         ('/crm/v2/index.html', r'\?v=(2026\d{4}[a-z])'),
@@ -130,16 +145,73 @@ for chemin, motif in [
         ('/crm/v2/sw.js', r"VER\s*=\s*'(2026\d{4}[a-z])'"),
         ('/crm/v2/v2-boot.js', r"var V = '\?v=(2026\d{4}[a-z])'")]:
     code, txt = lire(BASE + chemin)
-    trouves = set(re.findall(motif, txt or ''))
-    jetons[chemin] = trouves
+    jetons[chemin] = set(re.findall(motif, txt or ''))
 
-tous = set()
-for v in jetons.values():
-    tous |= v
-if len(tous) == 1:
-    dire_ok('un seul jeton de version partout (%s)' % list(tous)[0])
+app = jetons['/crm/v2/index.html'] | jetons['/crm/v2/sw.js']
+if not app:
+    dire_ko('jeton de version de l’appli', 'introuvable dans index.html et sw.js')
+elif len(app) == 1:
+    dire_ok('l’appli et son service worker portent le même jeton (%s)' % list(app)[0])
 else:
-    dire_ko('jetons de version désynchronisés', str({k: sorted(v) for k, v in jetons.items()}))
+    dire_ko('l’appli et son service worker divergent',
+            'index.html=%s, sw.js=%s — des navigateurs garderont l’ancienne version'
+            % (sorted(jetons['/crm/v2/index.html']), sorted(jetons['/crm/v2/sw.js'])))
+
+# Chaque page doit être cohérente AVEC ELLE-MÊME : tous les scripts d'une même
+# page portent le même jeton, sinon la page mélange deux générations de code.
+for chemin in ('/crm/v2/rdv.html',):
+    v = jetons[chemin]
+    if len(v) == 1:
+        dire_ok('la page du pharmacien est homogène (%s)' % list(v)[0])
+    elif not v:
+        dire_ko('jeton de %s' % chemin, 'aucun jeton trouvé')
+    else:
+        dire_ko('la page du pharmacien mélange %d jetons' % len(v), str(sorted(v)))
+
+for chemin in ('/crm/v2/v2-boot.js',):
+    v = sorted(jetons[chemin])
+    print('  ·    jeton des fichiers de données : %s (indépendant, par conception)'
+          % (v[0] if v else 'introuvable'))
+
+# ── Le vrai risque, celui que l'ancienne règle ne voyait pas ────
+# `v2-rdv-creneaux.js` et `v2-rdv-ics.js` sont chargés par LES DEUX pages, avec
+# des jetons différents. Si l'un d'eux est modifié sans que `rdv.html` soit
+# re-versionné, les pharmaciens qui ont déjà visité la page continuent de faire
+# tourner l'ANCIEN moteur de créneaux depuis leur cache, pendant que le
+# commercial voit le nouveau. Les deux ne proposent alors plus les mêmes
+# horaires, et rien ne le signale.
+# Ce contrôle a besoin de l'historique Git : il ne tourne que si on l'a.
+try:
+    import subprocess
+
+    racine = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+    def dernier_commit(chemin):
+        # `-C racine` plutôt qu'un chdir : le reste du script garde son
+        # répertoire courant, quoi qu'il arrive ici.
+        r = subprocess.run(['git', '-C', racine, 'log', '-1', '--format=%ct', '--', chemin],
+                           capture_output=True, text=True, timeout=20)
+        s = (r.stdout or '').strip()
+        return int(s) if s.isdigit() else None
+
+    t_page = dernier_commit('crm/v2/rdv.html')
+    partages = ['crm/v2/v2-rdv-creneaux.js', 'crm/v2/v2-rdv-ics.js', 'crm/v2/rdv-public.js']
+    if t_page is None:
+        print('  ·    historique Git indisponible — contrôle des modules partagés sauté')
+    else:
+        en_retard = []
+        for f in partages:
+            t = dernier_commit(f)
+            if t is not None and t > t_page:
+                en_retard.append(os.path.basename(f))
+        if en_retard:
+            dire_ko('la page du pharmacien n’a pas été re-versionnée',
+                    '%s a/ont changé après elle — les pharmaciens gardent l’ancien '
+                    'moteur en cache. Monter le ?v= de rdv.html.' % ', '.join(en_retard))
+        else:
+            dire_ok('les modules partagés avec la page du pharmacien sont à jour')
+except Exception as e:
+    print('  ·    contrôle des modules partagés impossible (%s) — non bloquant' % e)
 
 
 print('── Le service de réservation ' + '─' * 30)
@@ -160,6 +232,7 @@ else:
         dire_ko('la base de réservation', 'HTTP %s — %s' % (code, (txt or '')[:120]))
 
     # Les prénoms doivent se traduire en lien valide.
+    ouverts = []
     for n in noms:
         code, txt = poster(SB + '/rest/v1/rpc/rdv_slug_token', {'p_slug': n}, ent)
         try:
@@ -168,10 +241,80 @@ else:
             d = {}
         if code == 200 and d.get('ok'):
             dire_ok('le lien de %s est ouvert' % n)
+            ouverts.append(n)
         elif code == 200 and d.get('raison') == 'ferme':
             dire_ok('le lien de %s est fermé (choix du commercial)' % n)
         else:
             dire_ko('le lien de %s' % n, 'HTTP %s — %s' % (code, (txt or '')[:120]))
+
+    # ── LE CONTRÔLE QUI MANQUAIT ────────────────────────────────────
+    # Jusqu'au 17/08/2026, ce robot s'arrêtait ici : il vérifiait qu'un lien
+    # s'ouvre et que des créneaux existent, JAMAIS qu'on puisse réserver.
+    # C'est précisément le trou par lequel est passée la panne du 13/08 —
+    # `rdv_poser_public` écrivait une valeur que la table refusait, le
+    # pharmacien voyait ses créneaux puis se faisait jeter, et tous les
+    # contrôles restaient au vert pendant des semaines.
+    #
+    # `rdv_controle_reservation` rejoue le parcours ENTIER côté serveur :
+    # elle réserve vraiment, puis retire sa propre ligne dans la même
+    # transaction, sans réveiller personne (le déclencheur de notification
+    # reconnaît la transaction de contrôle).
+    print('── La réservation, pour de vrai ' + '─' * 27)
+
+    if not ouverts:
+        dire_ko('réservation de bout en bout', 'aucun lien ouvert à éprouver')
+
+    for n in ouverts:
+        code, txt = poster(SB + '/rest/v1/rpc/rdv_controle_reservation', {'p_slug': n}, ent)
+        try:
+            d = json.loads(txt)
+        except Exception:
+            d = {}
+
+        if code != 200 or not isinstance(d, dict):
+            dire_ko('réserver chez %s' % n, 'HTTP %s — %s' % (code, (txt or '')[:120]))
+            continue
+
+        if not d.get('ok'):
+            dire_ko('réserver chez %s' % n,
+                    'bloqué à l\'étape « %s » : %s' % (d.get('etape', '?'), d.get('raison', '?')))
+            continue
+
+        # ⚠️ Le cas le plus grave n'est PAS l'échec de réservation : c'est une
+        # réservation réussie dont la sonde n'a pas été retirée. Un faux
+        # rendez-vous dans l'agenda d'un commercial est pire que la panne
+        # qu'on cherchait — il faut le voir tout de suite.
+        if not d.get('menage'):
+            dire_ko('MÉNAGE APRÈS CONTRÔLE (%s)' % n,
+                    'un rendez-vous de contrôle est resté en base le %s — À SUPPRIMER À LA MAIN'
+                    % d.get('reserve_le', '?'))
+            continue
+
+        dire_ok('un pharmacien peut réserver chez %s (créneau %s, %s essai(s), rien laissé)'
+                % (n, d.get('reserve_le', '?'), d.get('essais', '?')))
+
+    # Filet de sécurité indépendant : même si la fonction jure avoir fait le
+    # ménage, on regarde. Un contrôle qui se contente de sa propre parole
+    # n'est pas un contrôle.
+    code, txt = lire(SB + '/rest/v1/rdv?select=id,date,heure&nom=eq.CONTROLE%20AUTOMATIQUE%20JARVIS',
+                     entetes=ent)
+    if code in (200, 401, 403):
+        # 401/403 = la table est bien fermée à la clé publique : c'est sain,
+        # et ça veut dire qu'on ne peut pas vérifier par ici. On ne condamne
+        # rien sur une lecture qu'on n'a pas le droit de faire.
+        if code == 200:
+            try:
+                restes = json.loads(txt)
+            except Exception:
+                restes = []
+            if restes:
+                dire_ko('sondes de contrôle oubliées', '%d rendez-vous « CONTROLE AUTOMATIQUE JARVIS » en base' % len(restes))
+            else:
+                dire_ok('aucune sonde de contrôle oubliée en base')
+        else:
+            dire_ok('la table des rendez-vous reste fermée à la clé publique')
+    else:
+        dire_ko('vérification des sondes', 'HTTP %s' % code)
 
 
 print('')
