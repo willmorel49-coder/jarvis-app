@@ -55,7 +55,6 @@ body{
 
 img,video,svg{max-width:100%; display:block}
 a{color:inherit}
-.cue{display:block; width:0; height:0; overflow:hidden}
 
 /* ── typographie ───────────────────────────────────────────────── */
 h1,h2,h3{font-family:'Archivo',system-ui,sans-serif; font-weight:700; margin:0;
@@ -358,7 +357,6 @@ footer .sign{margin-left:auto; color:var(--bleu)}
 <main id="haut">
 
   <!-- ══ 1 · L'OUVERTURE — la gélule seule, plein cadre ══ -->
-  <span class="cue" data-t="0" aria-hidden="true"></span>
   <section class="hero">
     <div class="wrap">
       <div class="hero__objet" aria-hidden="true">
@@ -392,7 +390,6 @@ footer .sign{margin-left:auto; color:var(--bleu)}
   </section>
 
   <!-- ══ 2 · NOTRE HISTOIRE — la gélule s'ouvre ══ -->
-  <span class="cue" data-t="1" aria-hidden="true"></span>
   <section class="scene histoire" id="groupe">
     <div class="scene__in">
       <div class="wrap">
@@ -417,7 +414,6 @@ footer .sign{margin-left:auto; color:var(--bleu)}
   </section>
 
   <!-- ══ 3 · LE SIGNE — le monogramme iP prend son volume ══ -->
-  <span class="cue" data-t="2" aria-hidden="true"></span>
   <section class="scene signe">
     <div class="scene__in">
       <div class="lgd">
@@ -425,12 +421,9 @@ footer .sign{margin-left:auto; color:var(--bleu)}
         <p class="m">iP · le signe</p>
       </div>
     </div>
-    <span class="cue" data-t="3" style="position:absolute;top:52%" aria-hidden="true"></span>
-    <span class="cue" data-t="3.75" style="position:absolute;top:97%" aria-hidden="true"></span>
   </section>
 
   <!-- ══ 4 · LE RÉSEAU — une gélule par maison ══ -->
-  <span class="cue" data-t="4" aria-hidden="true"></span>
   <section class="bloc reseau" id="reseau">
     <div class="wrap">
       <div class="grid">
@@ -462,7 +455,6 @@ footer .sign{margin-left:auto; color:var(--bleu)}
   </section>
 
   <!-- ══ 5 · LE MÉTIER ══ -->
-  <span class="cue" data-t="5" aria-hidden="true"></span>
   <section class="bloc" id="metier">
     <div class="wrap">
       <div class="rev">
@@ -500,7 +492,6 @@ footer .sign{margin-left:auto; color:var(--bleu)}
   <hr class="rule">
 
   <!-- ══ 6 · LA CENTRALE ══ -->
-  <span class="cue" data-t="6" aria-hidden="true"></span>
   <section class="bloc">
     <div class="wrap">
       <div class="duo">
@@ -590,7 +581,6 @@ footer .sign{margin-left:auto; color:var(--bleu)}
   </section>
 
   <!-- ══ 11 · LA FIN — la gélule se referme et se repose ══ -->
-  <span class="cue" data-t="7" aria-hidden="true"></span>
   <section class="bloc fin">
     <div class="wrap rev">
       <h2>Posez-nous la question qui vous intéresse.</h2>
@@ -735,29 +725,40 @@ document.querySelectorAll('#imp button').forEach(b=>{
 
 addEventListener('scroll', ()=>{ tete.classList.toggle('pose', scrollY > 40); }, {passive:true});
 
-/* ═══ 2 · LA LIGNE DE TEMPS ═════════════════════════════════════
-   Des repères invisibles portent une valeur T ; T s'interpole entre
-   eux. Aucun détournement du défilement : la page scrolle nativement,
-   seule la 3D est amortie. */
-const reperes = [...document.querySelectorAll('.cue')];
-let ancres = [];
-function mesurer(){
-  ancres = reperes.map(el=>({ t: parseFloat(el.dataset.t),
-                              y: el.getBoundingClientRect().top + scrollY }))
-                  .sort((a,b)=>a.y-b.y);
+/* ═══ 2 · LA LECTURE : QUELLE SECTION, ET OÙ DEDANS ? ════════════
+   L'ancienne version interpolait une valeur T entre neuf repères
+   `.cue` posés à la main. Quatre d'entre eux tombaient dans les deux
+   premières sections — l'objet changeait quatre fois d'état pendant
+   qu'on lisait un seul bloc — et les sections 6 à 9 n'en avaient
+   aucun : l'objet dérivait quatre sections durant sans rien raconter.
+   Les segments se chevauchaient, si bien que rien ne se posait jamais.
+
+   Ici, un seul repère : la section elle-même. Aucun détournement du
+   défilement — la page scrolle nativement, seule la 3D est amortie.
+   Les onze sections sont mesurées ; on en déduit `i` (celle qu'on
+   lit) et `p` (0→1 dedans). `u` est la part de transition : elle
+   monte de 0 à 1 sur l'ENTRÉE de la section (≈ 20 % de sa hauteur,
+   au moins 18 % de l'écran pour que les sections courtes ne claquent
+   pas), puis reste à 1 — la pose TIENT jusqu'au bord suivant. */
+const SECTIONS = [...document.querySelectorAll('main > section')];
+let MES = [];
+function lecture(){
+  if(!MES.length) return { i:0, p:0, u:1 };
+  const y = scrollY + innerHeight*0.5;      /* le point où l'œil lit */
+  let i = 0;
+  for(let k=0;k<MES.length;k++) if(y >= MES[k].y0) i = k;
+  const m = MES[i];
+  const p = Math.max(0, Math.min(1, (y - m.y0)/m.h));
+  const ent = Math.min(Math.max(m.h*0.20, innerHeight*0.18), m.h*0.5, innerHeight*0.9);
+  return { i, p, u: Math.max(0, Math.min(1, (p*m.h)/ent)) };
 }
-function calcT(){
-  if(ancres.length < 2) return 0;
-  const y = scrollY + innerHeight*0.5;
-  if(y <= ancres[0].y) return ancres[0].t;
-  for(let i=0;i<ancres.length-1;i++){
-    const a = ancres[i], b = ancres[i+1];
-    if(y <= b.y){
-      const k = (b.y - a.y) > 1 ? (y - a.y)/(b.y - a.y) : 0;
-      return a.t + k*(b.t - a.t);
-    }
-  }
-  return ancres[ancres.length-1].t;
+window.m51lec = lecture;
+
+function mesurer(){
+  MES = SECTIONS.map(el=>{
+    const r = el.getBoundingClientRect();
+    return { y0: r.top + scrollY, h: Math.max(1, r.height) };
+  });
 }
 addEventListener('resize', mesurer);
 addEventListener('load', mesurer);
@@ -924,7 +925,6 @@ if(OK3D){
   gelule.scale.setScalar(RAD);
   porteGelule.add(gelule);
   const POS_LOGO = new THREE.Vector3(-11.5*K, 16.5*K, 0.075);
-  const POS_CENTRE = new THREE.Vector3(0, 0, 0.10);   /* recalculé à chaque image */
   porteGelule.position.copy(POS_LOGO);
   mono.add(porteGelule);
 
@@ -984,13 +984,161 @@ if(OK3D){
     }, undefined, ()=>{ /* on garde le plateau provisoire */ });
   }).catch(()=>{});
 
-  /* ═══ 4 · LA CHORÉGRAPHIE ═════════════════════════════════════ */
+  /* ═══ 4 · LES ONZE ÉTATS ══════════════════════════════════════
+     Un état par section. La transition se joue à l'ENTRÉE de la
+     section ; le reste de la hauteur, la pose TIENT — seules la
+     respiration et la parallaxe au curseur continuent. On peut
+     s'arrêter n'importe où et voir une image voulue. */
   const lis  = (a,b,k)=> a + (b-a)*Math.max(0, Math.min(1, k));
-  const seg  = (T,a,b)=> Math.max(0, Math.min(1, (T-a)/(b-a)));
   const doux = k => k*k*(3-2*k);
   const dedans = k => 1 - Math.pow(1-k, 3);
+  const TAU  = Math.PI*2;
 
-  let Tc = 0;
+  /* Une pose = ces dix-neuf nombres, et rien d'autre ne pilote l'objet.
+     wx/wy/wz place le monde · ws l'échelle · rx/ry/rz l'orientation ·
+     tour le nombre de tours entiers déjà faits · cs/cx/cy la gélule ·
+     open son ouverture · lettres la présence du i et du P · net la
+     constellation · sep la gélule détachée · amp la respiration en
+     rotation · resp la respiration en échelle · par la parallaxe ·
+     om l'ombre portée. */
+  const CLES = ['wx','wy','wz','ws','rx','ry','rz','tour','cs','cx','cy',
+                'open','lettres','net','sep','amp','resp','par','om'];
+
+  let ETATS = [], FM = 1, GRAND = true;
+
+  function faireEtats(){
+    const A = innerWidth/innerHeight;
+    GRAND = innerWidth > 900;
+    /* deux facteurs d'échelle : le geste doit tenir aussi bien en 1440
+       qu'en 390 px, mais la gélule plein cadre et le monogramme n'ont
+       pas la même contrainte. */
+    const Fh = Math.min(1, Math.max(0.45, A/1.62));   /* gélule d'ouverture */
+    const Fm = Math.min(1, Math.max(0.60, A/1.55));   /* monogramme et réseau */
+    const SM = 1.62*Fm;
+    FM = Fm;
+    const G = (a,b)=> GRAND ? a : b;
+    const socle = { wx:0, wy:0, wz:0, ws:SM, rx:0, ry:0, rz:0, tour:1,
+                    cs:1, cx:POS_LOGO.x, cy:POS_LOGO.y,
+                    open:0, lettres:1, net:0, sep:0,
+                    amp:0.05, resp:0.02, par:0.14, om:0.22 };
+    const E = o => Object.assign({}, socle, o);
+
+    ETATS = [
+      /* 1 · L'OUVERTURE — « Rendre la marge à l'officine française. »
+         La gélule fermée, seule, énorme, couchée, posée dans le tiers
+         droit. ⚠️ wx = 1.28 sur grand écran : centrée, elle passait sous
+         le titre et le contraste tombait à 2,12:1 au contact des lettres,
+         contre 13,92:1 ici. Ne jamais la ramener sous la colonne de texte. */
+      E({ wx:G(1.28,0), wy:G(0,0.02), ws:1, tour:0, cs:G(2.95,2.55)*Fh,
+          cx:G(0.34,0), cy:G(0.99,1.41), lettres:0,
+          rx:0.06, ry:0.22, amp:0.30, resp:0.035, par:0.30, om:1 }),
+
+      /* 2 · L'HISTOIRE — « Neuf maisons. Un seul nom. » La gélule S'OUVRE
+         au bord de la section et reste ouverte, cœur allumé entre les deux
+         moitiés, pendant toute la lecture de la carte. Sur grand écran elle
+         SE REDRESSE (rz ≈ −82°) et occupe la colonne libre à droite de la
+         carte ; couchée, ses deux moitiés passaient derrière la carte
+         opaque et il ne restait qu'un halo. Sur téléphone la carte prend
+         tout : elle se pose couchée et petite dans la bande basse. */
+      E({ wx:G(2.05,0), wy:G(-0.02,0), ws:1, tour:0, cs:G(1.82,1.58)*Fh,
+          cx:0, cy:G(0,-1.82), open:1, lettres:0,
+          rx:0.05, ry:-0.22, rz:G(-1.44,0), amp:0.10, resp:0.028, par:0.20, om:0.8 }),
+
+      /* 3 · LE SIGNE — elle se referme, se glisse dans le bol du P, le i
+         et le P se posent : le monogramme complet, CENTRÉ, plein cadre.
+         Un tour entier pendant l'entrée, puis il se fige de face. Seule
+         pose de la page à occuper l'axe — la légende est en bas. */
+      E({ wx:0, wy:G(0.26,0.34), ws:SM, amp:0.03, resp:0.016, par:0.13, om:0.5 }),
+
+      /* 4 · LE RÉSEAU — le signe se démultiplie en dix gélules : neuf
+         maisons plus Pharmest. Elles tiennent en constellation ; celle
+         qu'on survole quitte le groupe et vient se présenter de face. */
+      E({ wx:G(1.60,0), wy:G(0,-1.10), ws:SM*0.9, net:1,
+          amp:0.03, resp:0.012, par:0.10, om:0 }),
+
+      /* 5 · LE MÉTIER — la constellation se rassemble ; le signe remonte
+         se ranger dans la marge haute, petit et BASCULÉ EN ARRIÈRE : on
+         le regarde de dessus, comme un plan de chaîne. Sur téléphone les
+         quatre étapes et la vidéo occupent tout l'écran : il ne reste que
+         la bande basse, il s'y range à moitié sorti du cadre. */
+      E({ wx:G(2.88,0), wy:G(1.30,-1.92), ws:SM*G(0.20,0.34),
+          rx:-0.54, ry:0.62, rz:-0.09, amp:0.035, resp:0.012, par:0.09, om:0.16 }),
+
+      /* 6 · LA CENTRALE — « une structure à part » : la gélule SE DÉTACHE
+         du monogramme, se redresse à la verticale et tourne sur son axe,
+         à côté du signe, dans la colonne laissée libre par le texte. */
+      E({ wx:G(1.52,0), wy:G(-0.04,-1.02), ws:SM*G(0.62,0.46), sep:1,
+          rx:0.03, ry:0.28, amp:0.04, resp:0.02, par:0.13, om:0.28 }),
+
+      /* 7 · LES FACTURES — l'état le plus calme de la page : le signe
+         refermé, PARFAITEMENT DE FACE, petit, à mi-hauteur, et strictement
+         immobile. « Rien à saisir, rien à classer, rien à réclamer. » */
+      E({ wx:G(2.60,0), wy:G(-0.04,1.34), ws:SM*0.24,
+          amp:0, resp:0, par:0.04, om:0.14 }),
+
+      /* 8 · LES PARTENAIRES — le signe pivote presque de profil : on ne
+         voit plus sa face, on voit son ÉPAISSEUR, la tranche extrudée. */
+      E({ wx:G(2.06,0), wy:G(-1.10,-0.78), ws:SM*G(0.38,0.34),
+          rx:0.06, ry:1.16, rz:0.05, amp:0.04, resp:0.018, par:0.11, om:0.24 }),
+
+      /* 9 · LE RECRUTEMENT — le signe se relève, GRAND et franchement
+         penché, à hauteur d'œil, et SORT DU CADRE par la droite : il ne
+         tient plus dans l'écran. C'est la seule pose de la page que le bord
+         coupe. Sur téléphone il se pose à côté du bouton « Voir les offres ». */
+      E({ wx:G(3.15,0.54), wy:G(0.24,-0.08), ws:SM*G(0.66,0.34),
+          rx:0.02, ry:-0.36, rz:0.24, amp:0.03, resp:0.035, par:0.07, om:0.16 }),
+
+      /* 10 · LES VALEURS — il redescend tout en bas du cadre et se donne
+         à voir PAR EN DESSOUS, en contre-plongée. */
+      E({ wx:G(2.30,0), wy:G(-1.46,-1.58), ws:SM*G(0.52,0.34),
+          rx:0.48, ry:-0.54, rz:-0.06, amp:0.04, resp:0.02, par:0.11, om:0.18 }),
+
+      /* 11 · LA FIN — il revient à hauteur d'œil, refermé, presque de
+         face, posé sur son ombre : la signature. Sur téléphone il se pose
+         sous le bouton de contact, comme une signature au bas d'une lettre. */
+      E({ wx:G(2.35,0), wy:G(0.34,-0.92), ws:SM*G(0.46,0.36),
+          rx:-0.05, ry:-0.27, amp:0.035, resp:0.03, par:0.17, om:0.34 })
+    ];
+  }
+  faireEtats();
+
+  const cible = {};
+  let cur = null, LEC = { i:0, p:0, u:1 };
+
+  /* la pose de la section qu'on lit, amortie */
+  function poser(){
+    LEC = lecture();
+    const av = ETATS[Math.max(0, LEC.i-1)], ap = ETATS[LEC.i] || ETATS[ETATS.length-1];
+    const k = LEC.i === 0 ? 1 : doux(LEC.u);
+    for(let n=0;n<CLES.length;n++){ const c = CLES[n]; cible[c] = av[c] + (ap[c]-av[c])*k; }
+    cible.ry += cible.tour * TAU;          /* le tour entier de la section 3 */
+    if(!cur) cur = Object.assign({}, cible);
+    const lam = RM ? 1 : 0.12;             /* seule la 3D est amortie */
+    for(let n=0;n<CLES.length;n++){ const c = CLES[n]; cur[c] += (cible[c]-cur[c])*lam; }
+    return cur;
+  }
+  window.m51etat = ()=>({ i:LEC.i+1, p:+LEC.p.toFixed(3), u:+LEC.u.toFixed(3),
+    pose: cur ? Object.fromEntries(CLES.map(c=>[c, +cur[c].toFixed(3)])) : null });
+
+  /* Le rectangle que l'objet occupe À L'ÉCRAN, en pixels. Sert au contrôle :
+     aucune ligne de texte ne doit tomber dedans. Appelé à la demande. */
+  window.m51bbox = ()=>{
+    scene.updateMatrixWorld(true);
+    const b = new THREE.Box3(); let vide = true;
+    const prendre = o => { if(o && o.visible){ b.expandByObject(o); vide = false; } };
+    if(monde.visible){ if(meshP.visible){ prendre(meshP); prendre(meshI); } prendre(gelule); }
+    if(reseau.visible) prendre(reseau);
+    if(vide || b.isEmpty()) return null;
+    const v = new THREE.Vector3();
+    let x0=1e9, y0=1e9, x1=-1e9, y1=-1e9;
+    for(let i=0;i<8;i++){
+      v.set(i&1?b.max.x:b.min.x, i&2?b.max.y:b.min.y, i&4?b.max.z:b.min.z).project(cam);
+      const px=(v.x+1)/2*innerWidth, py=(1-v.y)/2*innerHeight;
+      x0=Math.min(x0,px); x1=Math.max(x1,px); y0=Math.min(y0,py); y1=Math.max(y1,py);
+    }
+    return { x0:Math.round(x0), y0:Math.round(y0), x1:Math.round(x1), y1:Math.round(y1) };
+  };
+
   const souris = { x:0, y:0, cx:0, cy:0 };
   addEventListener('pointermove', e=>{
     souris.x = (e.clientX/innerWidth - .5)*2;
@@ -1000,82 +1148,82 @@ if(OK3D){
   let premiere = true;
   function dessine(ms){
     const t = ms*0.001;
-    Tc += (calcT() - Tc) * (RM ? 1 : 0.11);
-    const T = Tc, grand = innerWidth > 900;
-    /* deux facteurs d'échelle : le geste doit tenir aussi bien en 1440
-       qu'en 390 px, mais la gélule plein cadre et le monogramme n'ont
-       pas la même contrainte. */
-    const A  = innerWidth/innerHeight;
-    const Fh = Math.min(1, Math.max(0.45, A/1.62));   /* gélule d'ouverture */
-    const Fm = Math.min(1, Math.max(0.60, A/1.55));   /* monogramme et réseau */
+    const P = poser();                        /* la pose de la section qu'on lit */
     souris.cx += (souris.x - souris.cx)*0.06;
     souris.cy += (souris.y - souris.cy)*0.06;
 
-    /* --- 1 · la gélule seule, puis elle rejoint sa place --------- */
-    POS_CENTRE.set(grand ? 0.34 : 0.0, grand ? 0.99 : 1.06, 0.10);
-    const versLogo = doux(seg(T, 2.15, 2.95));
-    porteGelule.position.lerpVectors(POS_CENTRE, POS_LOGO, versLogo);
-    const grosseur = lis(2.95*Fh, 1.0, versLogo);
-    gelule.scale.setScalar(RAD * grosseur);
+    /* --- 1 · la gélule : sa place, sa taille, son ouverture ------ */
+    porteGelule.position.set(
+      P.cx + P.sep*0.96,
+      P.cy - P.sep*0.06,
+      0.075 + (1 - P.lettres)*0.025);
+    /* `sep` la détache du monogramme : elle se redresse à la verticale
+       (le −π/2 annule le π/2 posé à la construction) et tourne sur son
+       propre axe — c'est « une structure à part » de la centrale. */
+    porteGelule.rotation.set(0, t*0.55*P.sep, -Math.PI/2*P.sep);
+    gelule.scale.setScalar(RAD * P.cs);
 
-    /* --- 2 · elle s'ouvre --------------------------------------- */
-    const ouvre = doux(seg(T, 1.05, 1.75)) * (1 - doux(seg(T, 2.02, 2.40)));
     const cvc = gelule.userData.couvercle, crp = gelule.userData.corps;
-    cvc.position.y = ouvre * 2.15;
-    cvc.position.x = ouvre * 0.30;
-    cvc.rotation.z = ouvre * 0.20;
-    crp.position.y = -ouvre * 0.45;
-    coeur.material.opacity = ouvre * 0.5;
-    coeur.position.copy(porteGelule.position).setZ(porteGelule.position.z + 0.25);
-    coeur.scale.setScalar(lis(0.35, 1.15, ouvre) * grosseur * 0.55);
+    cvc.position.y = P.open * 2.15;
+    cvc.position.x = P.open * 0.30;
+    cvc.rotation.z = P.open * 0.20;
+    crp.position.y = -P.open * 0.45;
+    coeur.material.opacity = P.open * 0.42;
+    coeur.position.set(porteGelule.position.x, porteGelule.position.y,
+                       porteGelule.position.z + 0.25);
+    coeur.scale.setScalar(lis(0.35, 1.15, P.open) * P.cs * 0.40);
 
-    /* --- 3 · le monogramme prend corps -------------------------- */
-    const lettres = doux(seg(T, 2.28, 2.98));
-    meshP.visible = meshI.visible = lettres > 0.002;
+    /* --- 2 · le i et le P : présents ou non --------------------- */
+    meshP.visible = meshI.visible = P.lettres > 0.004;
     if(meshP.visible){
-      const lp = dedans(lettres);
+      const lp = dedans(P.lettres);
       meshP.scale.setScalar(lis(0.55, 1, lp));
       meshP.position.set(lis(0.60,0,lp), lis(-0.40,0,lp), lis(-1.60,0,lp));
       meshP.rotation.y = lis(-1.15, 0, lp);
-      const li2 = dedans(Math.max(0, (lettres-0.18)/0.82));
+      const li2 = dedans(Math.max(0, (P.lettres-0.18)/0.82));
       meshI.scale.setScalar(lis(0.55, 1, li2));
       meshI.position.set(lis(-0.55,0,li2), lis(-0.95,0,li2), lis(-1.30,0,li2));
       meshI.rotation.y = lis(1.25, 0, li2);
     }
 
-    /* --- 4 · plein volume : le signe tourne sur lui-même --------- */
-    const orbite = seg(T, 3.02, 3.80);
-    if(T < 2.28){
-      mono.rotation.y = Math.sin(t*0.32)*0.55 + souris.cx*0.45;
-      mono.rotation.x = Math.sin(t*0.24)*0.16 - souris.cy*0.24;
-    }else if(T < 3.02){
-      const k = doux(seg(T, 2.28, 3.02));
-      mono.rotation.y = lis(Math.sin(t*0.32)*0.55 + souris.cx*0.45, 0, k);
-      mono.rotation.x = lis(Math.sin(t*0.24)*0.16 - souris.cy*0.24, 0, k);
-    }else{
-      mono.rotation.y = orbite*Math.PI*2 + Math.sin(t*0.4)*0.06 + souris.cx*0.22;
-      mono.rotation.x = Math.sin(orbite*Math.PI*2)*0.13 - souris.cy*0.12;
-    }
+    /* --- 3 · l'orientation : la pose, plus la respiration -------- */
+    mono.rotation.set(
+      P.rx + Math.sin(t*0.24)*P.amp*0.55 - souris.cy*P.par*0.42,
+      P.ry + Math.sin(t*0.32)*P.amp      + souris.cx*P.par,
+      P.rz);
 
-    /* --- 5 · elle se démultiplie : neuf maisons ------------------ */
-    const eclate     = doux(seg(T, 3.86, 4.34));
-    const rassemble  = doux(seg(T, 4.75, 5.15));
-    const vieReseau  = eclate * (1 - rassemble);
-    const vieMono    = Math.max(1 - eclate, rassemble);
+    /* --- 4 · le monde : place, échelle, ombre -------------------- */
+    const vieMono = 1 - P.net;
+    monde.visible = vieMono > 0.10;
+    monde.scale.setScalar(P.ws * lis(0.08, 1, vieMono) * (1 + Math.sin(t*0.5)*P.resp));
+    monde.position.set(
+      P.wx + souris.cx*P.par*0.36,
+      P.wy + Math.sin(t*0.42)*P.resp*1.7 - souris.cy*P.par*0.30,
+      P.wz);
 
-    reseau.visible = vieReseau > 0.003;
+    /* ⚠️ Sur téléphone la gélule d'ouverture est centrée : son ombre tombait
+       pile sur le surtitre bleu et le contraste y descendait à 2,74:1 —
+       mesuré sur le rendu final, pixel par pixel, sur toute la ligne. Ombre
+       allégée de 60 % en dessous de 900 px : on remonte à 4,86:1. */
+    ombre.material.opacity = 0.30 * P.om * vieMono * (GRAND ? 1 : 0.40);
+    ombre.scale.setScalar(lis(3.4, 2.0, P.lettres));
+    ombre.position.set(porteGelule.position.x + 0.16,
+                       porteGelule.position.y - 0.22, -0.95);
+
+    /* --- 5 · la constellation des neuf maisons ------------------- */
+    reseau.visible = P.net > 0.004;
     if(reseau.visible){
       reseau.rotation.y = Math.sin(t*0.16)*0.28 + souris.cx*0.20;
       reseau.rotation.x = -souris.cy*0.12;
       /* sur téléphone la constellation descend derrière le panneau opaque
          des implantations : le texte reste lisible, seules les gélules du
          haut dépassent. */
-      reseau.scale.setScalar(lis(0.45, 1.15, vieReseau) * Fm * (grand ? 1 : 0.85));
-      reseau.position.set(grand ? 1.60 : 0, grand ? 0 : -1.10, 0);
+      reseau.scale.setScalar(lis(0.45, 1.15, P.net) * FM * (GRAND ? 1 : 0.72));
+      reseau.position.set(GRAND ? 1.90 : 0.45, GRAND ? 0 : 0.33, 0);
       for(let i=0;i<NOEUDS.length;i++){
         const g = NOEUDS[i], d = g.userData, b = d.base;
         d.mise += (((survol === i) ? 1 : 0) - d.mise) * 0.12;
-        const k = lis(0.22, 1, vieReseau);
+        const k = lis(0.22, 1, P.net);
         /* la maison survolée quitte la constellation et vient se présenter
            de face, au centre du bloc — c'est la réponse à « laquelle ? ». */
         g.position.set(
@@ -1090,45 +1238,6 @@ if(OK3D){
       }
     }
 
-    /* --- 6 · elle se retire, puis se repose ---------------------
-       Trois haltes : le coin haut-droit pendant la section dense du
-       métier, la case laissée libre en face de la centrale, puis la
-       descente vers le pied de page où elle redevient le logo plat. */
-    const k1 = doux(seg(T, 4.75, 5.30));       /* → coin haut-droit, dans la marge */
-    const k2 = doux(seg(T, 5.85, 6.35));       /* → case laissée libre par la centrale */
-    const k3 = doux(seg(T, 6.80, 7.35));       /* → pied de page */
-    const H0 = grand ? [ 1.60, 0.00, 1.00] : [ 0.00, -1.10, 1.00];  /* → le réseau */
-    const H1 = grand ? [ 2.68, 1.32, 0.26] : [ 0.00, 1.42, 0.22];
-    const H2 = grand ? [ 1.58, 0.02, 0.52] : [ 0.00, 1.22, 0.36];
-    const H3 = [0.00, -1.50, 0.14];
-    /* ⚠️ Sur grand écran, le monogramme partait centré (x = 0) : le titre
-       « Rendre la marge à l'officine française. » lui passait dessus et le
-       contraste tombait à 2,05:1 sur le P bleu — mesuré sur le rendu, très
-       en dessous des 3:1 exigés même pour du grand texte. On le pose dans
-       le tiers droit, la colonne de lecture reste libre. Le reste de sa
-       trajectoire (réseau, marge, centrale, pied) est inchangé : ces étapes
-       interpolent vers leurs propres cibles. */
-    const BASE_X = grand ? 1.28 : 0;
-    const px = lis(lis(lis(lis(BASE_X, H0[0], eclate), H1[0], k1), H2[0], k2), H3[0], k3);
-    const py = lis(lis(lis(lis(0, H0[1], eclate), H1[1], k1), H2[1], k2), H3[1], k3);
-    const ps = lis(lis(lis(1, H1[2], k1), H2[2], k2), H3[2], k3);
-
-    const SM = 1.62 * Fm;                      /* échelle du monogramme */
-    const leve = lis(0, 0.32, versLogo) * (1 - k1) * (1 - eclate); /* dégage la légende */
-
-    monde.visible = vieMono > 0.14;
-    monde.scale.setScalar(lis(1, SM, versLogo) * lis(0.05, 1, vieMono) * ps);
-    monde.position.set(
-      px + souris.cx*0.05,
-      py + leve - souris.cy*0.04,
-      lis(0, -1.0, k3));
-
-    /* --- l'ombre suit l'objet ----------------------------------- */
-    ombre.material.opacity = 0.30 * lis(0.12, 1, vieMono) * (1 - k3*0.8);
-    ombre.scale.setScalar(lis(3.4, 2.0, versLogo));
-    ombre.position.set(porteGelule.position.x + 0.16,
-                       porteGelule.position.y - 0.22, -0.95);
-
     rd.render(scene, cam);
     if(premiere){ premiere = false; finChargement(); }
     requestAnimationFrame(dessine);
@@ -1139,6 +1248,7 @@ if(OK3D){
     rd.setPixelRatio(Math.min(devicePixelRatio || 1, 1.75));
     rd.setSize(innerWidth, innerHeight, false);
     mesurer();
+    faireEtats();
   }
   addEventListener('resize', redim);
   redim();
