@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Intégral Pharma — Neuf maisons. Un seul nom.</title>
+<title>Intégral Pharma — Rendre la marge à l'officine française.</title>
 <meta name="description" content="Groupe de grossistes-répartiteurs français indépendant. Neuf implantations, plus de 2 000 officines livrées chaque jour.">
 <meta name="theme-color" content="#000000">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23000'/%3E%3Crect x='9' y='8' width='3' height='16' fill='%230050E6'/%3E%3Crect x='15' y='8' width='3' height='16' fill='%23fff'/%3E%3C/svg%3E">
@@ -236,7 +236,7 @@ ul{ list-style:none }
   padding:0 var(--marge) clamp(30px,5vh,60px);
   display:flex; flex-direction:column; gap:clamp(18px,2.4vw,30px);
 }
-.ouv__titre{ max-width:16ch }
+.ouv__titre{ max-width:18ch }
 .ouv__bas{ display:flex; flex-wrap:wrap; align-items:flex-end; gap:clamp(24px,4vw,64px) }
 .ouv__bas .lead{ max-width:46ch; flex:1 1 380px }
 .ouv__bas .actions{ flex:0 0 auto }
@@ -407,6 +407,7 @@ html.js .ap.d3.vu{ transition-delay:.24s }
 html.js .ligne > i{ transform:translate3d(0,102%,0) }
 html.js .ouv.pret .ligne > i{ transform:none; transition:transform 1.05s var(--sortie) }
 html.js .ouv.pret .ligne:nth-child(2) > i{ transition-delay:.1s }
+html.js .ouv.pret .ligne:nth-child(3) > i{ transition-delay:.2s }
 
 /* ═══ 19 · TÉLÉPHONE ═══ */
 @media (max-width:1080px){
@@ -512,8 +513,9 @@ html.js .ouv.pret .ligne:nth-child(2) > i{ transition-delay:.1s }
   <div class="ouv__corps">
     <p class="micro">Groupe de grossistes-répartiteurs français indépendant</p>
     <h1 class="dis-xxl ouv__titre">
-      <span class="ligne"><i>Neuf maisons.</i></span>
-      <span class="ligne"><i>Un seul nom.</i></span>
+      <span class="ligne"><i>Rendre la marge</i></span>
+      <span class="ligne"><i>à l'officine</i></span>
+      <span class="ligne"><i>française.</i></span>
     </h1>
     <div class="ouv__bas">
       <p class="lead ap d1">Chacune livre sa région depuis des années, avec ses équipes et ses habitudes. Depuis 2006, elles avancent ensemble sous le nom d'Intégral Pharma — et votre commande part toujours de la plus proche de votre comptoir.</p>
@@ -542,7 +544,7 @@ html.js .ouv.pret .ligne:nth-child(2) > i{ transition-delay:.1s }
 <section class="sec" id="groupe" data-index="02">
   <div class="entete">
     <p class="micro ap">Notre histoire</p>
-    <h2 class="dis-lg ap d1" style="max-width:18ch">Rendre la marge à l'officine française.</h2>
+    <h2 class="dis-lg ap d1" style="max-width:15ch">Neuf maisons. Un seul nom.</h2>
   </div>
 
   <div style="display:flex;flex-wrap:wrap;gap:clamp(24px,4vw,72px);margin-bottom:clamp(48px,6vw,84px)">

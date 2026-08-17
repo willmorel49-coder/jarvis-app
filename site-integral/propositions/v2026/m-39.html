@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Intégral Pharma — 39 · DELTA</title>
-<meta name="description" content="Intégral Pharma, groupe de grossistes-répartiteurs français indépendant. Neuf maisons, un seul nom.">
+<meta name="description" content="Intégral Pharma, groupe de grossistes-répartiteurs français indépendant. Rendre la marge à l'officine française.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%2304060B'/%3E%3Cpath d='M16 3v9m0 0-8 8m8-8 8 8M8 20v9M24 20v9' stroke='%237FE9FF' stroke-width='2' fill='none'/%3E%3C/svg%3E">
 <script>document.documentElement.className='js';</script>
 <style>
@@ -122,7 +122,14 @@ main{display:block}
   content:'';width:26px;height:1px;background:var(--veine);opacity:.7;flex:none;
 }
 h1{
-  font:500 clamp(46px,8.6vw,124px)/.92 var(--dis);font-stretch:76%;
+  /* Le titre d'ouverture fait 39 signes au lieu de 26 : à 124 px dans la colonne
+     de 660 px il passait à quatre lignes et poussait chapeau et boutons hors de
+     l'écran (relevé au contrôle 1440 × 900 : bas des boutons à 1008 px).
+     Plafond ramené à 104 px, et second plafond en hauteur d'écran : le hero est
+     en min-height:100svh et doit tenir dans un écran, y compris sur les écrans
+     larges mais courts (1280 × 800, 1366 × 768) où seule la largeur ne suffit
+     pas à décider de la taille. */
+  font:500 min(clamp(46px,8.6vw,104px), 11.6svh)/.92 var(--dis);font-stretch:76%;
   letter-spacing:-.022em;margin:0 0 26px;color:#fff;
 }
 h2{
@@ -404,7 +411,7 @@ figure{margin:0}
   <p class="origine" aria-hidden="true"><i></i> Origine — 2006</p>
   <div class="col">
     <p class="surtitre rv">Groupe de grossistes-répartiteurs français indépendant</p>
-    <h1 class="rv d1">Neuf maisons.<br>Un seul nom.</h1>
+    <h1 class="rv d1">Rendre la marge<br>à l'officine française.</h1>
     <p class="chapeau sous rv d2">Chacune livre sa région depuis des années, avec ses équipes et
       ses habitudes. Depuis 2006, elles avancent ensemble sous le nom d'Intégral Pharma — et votre
       commande part toujours de la plus proche de votre comptoir.</p>
@@ -435,7 +442,7 @@ figure{margin:0}
 <section class="sec" id="groupe">
   <div class="col">
     <p class="surtitre rv">Notre histoire</p>
-    <h2 class="rv">Rendre la marge à l'officine française.</h2>
+    <h2 class="rv">Neuf maisons. Un seul nom.</h2>
     <p class="chapeau rv d1">C'est la raison d'être d'Intégral Pharma depuis 2006 : redistribuer
       directement la marge aux officines françaises, en toute transparence, avec des prix nets
       visibles sur facture.</p>

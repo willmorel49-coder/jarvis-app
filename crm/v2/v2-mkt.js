@@ -495,6 +495,14 @@
           // Les maquettes ne sont plus ici : elles ont leur propre carte, en
           // haut de la page. En laisser une copie dans le tiroir ferait douter
           // qu'il s'agit du même écran.
+          // L'écran de vote existait, mais AUCUN bouton n'y menait : personne ne
+          // pouvait y arriver autrement qu'en tapant l'adresse à la main.
+          '<a class="mkt-link" onclick="V2.go(\'marketing\',\'propositions\')">' +
+            '<span class="mkt-link-ic mkt-link-ic-cat">' + ICO('cat', 18) + '</span>' +
+            '<span style="flex:1;min-width:0"><span class="mkt-link-t">Nouveau site — noter les 50 directions</span>' +
+            '<span class="mkt-link-s">Chacun ouvre les maquettes, met une note sur 10 et écrit ce qui va ou ne va pas. Le classement se fait tout seul.</span></span>' +
+            '<span class="v2-row-chev">' + ICO('chev', 17) + '</span>' +
+          '</a>' +
           '<a class="mkt-link" onclick="V2.go(\'marketing\',\'site\')">' +
             '<span class="mkt-link-ic mkt-link-ic-cat">' + ICO('cat', 18) + '</span>' +
             '<span style="flex:1;min-width:0"><span class="mkt-link-t">Le site actuel</span>' +

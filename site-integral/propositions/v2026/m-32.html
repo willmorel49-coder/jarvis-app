@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Intégral Pharma — 32 · LA MÉTAMORPHOSE</title>
-<meta name="description" content="Intégral Pharma, groupe de grossistes-répartiteurs français indépendant. Neuf implantations, un seul nom.">
+<meta name="description" content="Intégral Pharma, groupe de grossistes-répartiteurs français indépendant. Rendre la marge à l'officine française.">
 <meta name="theme-color" content="#06070B">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%2306070B'/%3E%3Ccircle cx='16' cy='13' r='7' fill='none' stroke='%234C8BFF' stroke-width='3'/%3E%3Cpath d='M23 13c0 8-3 13-8 17' fill='none' stroke='%234C8BFF' stroke-width='3'/%3E%3C/svg%3E">
 <script>document.documentElement.className='js';</script>
@@ -210,7 +210,12 @@ h2 em{font-family:var(--ser);font-style:italic;font-variation-settings:normal;
   color:var(--craie);margin-bottom:26px;
 }
 h1{
-  font:400 clamp(46px,10.2vw,148px)/.92 var(--dis);
+  /* Second plafond en hauteur d'écran : le titre d'ouverture fait 39 signes au
+     lieu de 26, sa deuxième ligne se replie donc en deux et le chapitre gagne
+     une ligne. Sur un écran large mais court (1366 × 768) les deux boutons
+     passaient sous la ligne de flottaison — seule la largeur ne suffit pas à
+     décider de la taille. Sans effet au-dessus de 900 px de haut. */
+  font:400 min(clamp(46px,10.2vw,148px), 16.2svh)/.92 var(--dis);
   font-variation-settings:'wght' 380,'wdth' 84;
   letter-spacing:-.038em;margin-bottom:26px;
 }
@@ -492,7 +497,7 @@ html.sansjs .liens{display:flex}
     <div class="planche"><svg viewBox="0 0 48 48"><use href="#sig-0"></use></svg>
       <span class="lg"><strong>la matière</strong><span>État 01 sur 06</span></span></div>
     <p class="surtitre rv">Groupe de grossistes-répartiteurs français indépendant</p>
-    <h1 class="rv d1">Neuf maisons.<span class="l2">Un seul nom.</span></h1>
+    <h1 class="rv d1">Rendre la marge<span class="l2">à l'officine française.</span></h1>
     <p class="txt rv d2">Chacune livre sa région depuis des années, avec ses équipes et ses
       habitudes. Depuis 2006, elles avancent ensemble sous le nom d'Intégral Pharma — et votre
       commande part toujours de la plus proche de votre comptoir.</p>
@@ -521,7 +526,7 @@ html.sansjs .liens{display:flex}
       <span class="lg"><strong>la boîte</strong><span>État 02 sur 06</span></span></div>
     <span id="groupe" style="position:absolute;top:-90px"></span>
     <p class="etiq rv">Notre histoire <i>la boîte</i></p>
-    <h2 class="rv d1">Rendre la marge<br><em>à l'officine française.</em></h2>
+    <h2 class="rv d1">Neuf maisons.<br><em>Un seul nom.</em></h2>
     <p class="txt rv d2">C'est la raison d'être d'Intégral Pharma depuis 2006 : redistribuer
       directement la marge aux officines françaises, en toute transparence, avec des prix nets
       visibles sur facture.</p>
