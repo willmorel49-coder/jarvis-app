@@ -1,0 +1,21 @@
+Polices de la maquette 45 « Point de Vue ». Servies localement, sous-ensemble
+latin uniquement, aucun appel exterieur au chargement de la page.
+
+Bodoni Moda (bodonimoda.woff2) — SIL Open Font License 1.1 — Owen Earl / Indestructible Type
+  https://github.com/indestructible-type/Bodoni
+  Fonte variable (graisse 400 a 900). C'est elle qui porte l'anamorphose :
+  ses deliés tres fins disparaissent quand la plaque est couchee et
+  reapparaissent d'un coup au point de vue.
+
+Schibsted Grotesk (schibsted.woff2) — SIL Open Font License 1.1 — Schibsted / Sindre Bremnes
+  https://github.com/schibsted/schibsted-grotesk
+  Toute la lecture courante. Elle n'est jamais deformee.
+
+DM Mono (dmmono-400.woff2, dmmono-500.woff2) — SIL Open Font License 1.1 — Colophon Foundry
+  https://github.com/googlefonts/dm-mono
+  Les reperes chiffres et l'indicateur d'alignement.
+
+La SIL Open Font License 1.1 autorise l'usage, la modification et la
+redistribution, y compris commerciale, a condition que les fontes ne soient
+pas vendues seules et que cette notice accompagne les fichiers.
+Texte complet : https://openfontlicense.org/

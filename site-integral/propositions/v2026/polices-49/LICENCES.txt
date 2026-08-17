@@ -1,0 +1,36 @@
+Polices de la maquette 49 « Le Négatif » — servies par nous, aucun appel extérieur,
+aucun CDN, aucune clé. Sous-ensemble latin uniquement.
+
+────────────────────────────────────────────────────────────────────────────────
+archivo-var.woff2  (88 Ko)
+  Archivo — Omnibus-Type (Héctor Gatti / Pablo Cosgaya), pour Google Fonts.
+  SIL Open Font License 1.1 — auto-hébergement autorisé, usage commercial autorisé.
+  Fichier VARIABLE à deux axes :  wght 100 → 900   ·   wdth 62 → 125
+  https://fonts.google.com/specimen/Archivo
+
+  Rôle ici : toute l'interface, le texte courant, les titres de section et les
+  compteurs. Sa chasse variable sert au titre du premier écran, qui s'élargit
+  quand la lentille passe dessus.
+
+────────────────────────────────────────────────────────────────────────────────
+instrumentserif.woff2  (14,7 Ko)
+  Instrument Serif — Rodrigo Fuenzalida & Jordan Egstad, pour Google Fonts.
+  SIL Open Font License 1.1 — auto-hébergement autorisé, usage commercial autorisé.
+  https://fonts.google.com/specimen/Instrument+Serif
+
+  Rôle ici : les grands titres. Une didone à contraste fort — pleins très noirs,
+  déliés très fins. C'est exactement la lettre qui gagne le plus à être inversée :
+  en négatif elle devient une lettre lumineuse sur fond noir, comme sur une plaque
+  photographique. C'est le motif du choix, pas le goût.
+
+────────────────────────────────────────────────────────────────────────────────
+plexmono-400.woff2  (9,8 Ko)
+  IBM Plex Mono — Mike Abbink / Bold Monday, pour IBM.
+  SIL Open Font License 1.1 — auto-hébergement autorisé, usage commercial autorisé.
+  https://fonts.google.com/specimen/IBM+Plex+Mono
+
+  Rôle ici : l'appareil de mesure — numéros de section, repères du cadre, étiquettes
+  de l'ossature révélée sous la lentille, légendes des compteurs.
+
+────────────────────────────────────────────────────────────────────────────────
+Total : 112,5 Ko de police pour toute la page. Aucune autre librairie.

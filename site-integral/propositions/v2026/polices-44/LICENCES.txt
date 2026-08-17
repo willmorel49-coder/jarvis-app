@@ -1,0 +1,15 @@
+Polices de la maquette 44 « Le Cadran ». Servies localement, sous-ensemble latin
+uniquement, aucun appel exterieur au chargement de la page.
+
+Archivo Variable (archivo-var.woff2) — SIL Open Font License 1.1 — Omnibus-Type
+  https://github.com/Omnibus-Type/Archivo
+
+Geist Mono (geistmono.woff2) — SIL Open Font License 1.1 — Vercel
+  https://github.com/vercel/geist-font
+
+Instrument Serif (instrumentserif.woff2) — SIL Open Font License 1.1 — Instrument
+  https://github.com/Instrument/instrument-serif
+
+La SIL Open Font License 1.1 autorise l'usage, la modification et la redistribution,
+y compris commerciale, a condition que les fontes ne soient pas vendues seules et que
+cette notice accompagne les fichiers. Texte complet : https://openfontlicense.org/

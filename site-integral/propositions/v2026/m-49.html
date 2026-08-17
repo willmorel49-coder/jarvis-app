@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="fr" class="sansjs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Intégral Pharma — 49 · LE NÉGATIF</title>
+<meta name="description" content="Intégral Pharma, groupe de grossistes-répartiteurs français indépendant. Neuf maisons, un seul nom.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23F2EFE8'/%3E%3Cpath d='M16 3a13 13 0 0 0 0 26z' fill='%230F1218'/%3E%3Cpath d='M16 3a13 13 0 0 1 0 26z' fill='%230A52E6'/%3E%3C/svg%3E">
+<script>document.documentElement.className='js';</script>
+<style>
+/* ═══════════════════════════════════════════════════════════════════════════
+   49 · LE NÉGATIF — Intégral Pharma
+   ───────────────────────────────────────────────────────────────────────────
+   MÉCANIQUE. Deux mondes occupent la même page. Une lentille suit le curseur
+   (ou le doigt, ou dérive toute seule) : sous elle, un disque blanc en
+   mix-blend-mode:difference inverse exactement chaque pixel. Le papier devient
+   encre, le bleu devient orange. Et au-dessus de la lentille — donc NON
+   inversée — une couche « souterraine » montre ce que la page normale ne
+   montre pas : les neuf implantations en constellation, la chaîne du métier.
+   À l'entrée du Réseau, un disque géant avale l'écran et le monde bascule
+   pour de bon : le négatif devient le monde principal.
+
+   LE VRAI TRAVAIL — LE CONTRASTE. Tous les jetons du monde inverse sont le
+   COMPLÉMENT EXACT (255-c) de leur jeton clair. Trois conséquences :
+     1. les rapports de contraste sont conservés dans les deux mondes ;
+     2. sous la lentille, le rendu est mathématiquement le monde inverse ;
+     3. au moment de la bascule, disque et jetons produisent les MÊMES pixels,
+        donc le relais est invisible.
+   Mesuré : texte courant 16,3:1 clair / 16,3:1 inverse · texte secondaire
+   6,7:1 / 8,4:1 · accent 5,4:1 / 9,9:1 · accent sur bande 4,8:1 / 8,6:1.
+   Aucun ton moyen n'est employé pour du texte : un gris moyen s'inverse en
+   lui-même et donnerait le fameux gris sur gris.
+
+   GARDE-FOUS. Aucun CDN, aucune librairie, aucun appel réseau sortant.
+   Une seule <video autoplay>. Pas de découpe de dégradé dans du texte, pas
+   de verre dépoli, pas de flou de grande surface. overflow-x:clip, jamais
+   hidden. Script coupé : la page reste entièrement lisible en monde clair.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@font-face{font-family:'Archivo';
+  src:url('polices-49/archivo-var.woff2') format('woff2-variations');
+  font-weight:100 900;font-stretch:62% 125%;font-style:normal;font-display:swap}
+@font-face{font-family:'Instrument';
+  src:url('polices-49/instrumentserif.woff2') format('woff2');
+  font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:'Plex';
+  src:url('polices-49/plexmono-400.woff2') format('woff2');
+  font-weight:400;font-style:normal;font-display:swap}
+
+/* ─────────────────────────── LES DEUX MONDES ─────────────────────────── */
+:root{
+  /* monde clair */
+  --papier:#F2EFE8;
+  --bande:#E6E1D6;
+  --encre:#0F1218;
+  --doux:#4C5462;
+  --accent:#0A52E6;      /* inverse exact : #F5AD19 */
+  --sur:#FFFFFF;         /* texte sur l'accent */
+  --filet:#B8AF9C;
+  --filet-fort:#9E9382;
+  /* la source de lumière — jamais un aplat mort. Peinte en rgba par-dessus le
+     fond : son complément exact suffit à la faire basculer avec le monde,
+     puisque 255 − (fond·(1−a) + c·a) = (255−fond)·(1−a) + (255−c)·a. */
+  --lueur:rgba(255,255,255,.92);
+  --lueur-acc:rgba(10,82,230,.11);
+  /* couche révélée (au-dessus de la lentille, donc jamais inversée) :
+     elle se lit sur le fond DÉJÀ inversé, donc elle est claire ici. */
+  --rev:#F2EFE8;
+  --rev-fond:#0D1017;   /* 255 − papier : la plaque se confond avec l'inversé */
+  --rev-acc:#F5AD19;
+  --rev-doux:#B3AB9D;
+  --rev-filet:#5A6472;
+}
+html.inverse{
+  --papier:#0D1017;      /* 255 − F2EFE8 */
+  --bande:#191E29;       /* 255 − E6E1D6 */
+  --encre:#F0EDE7;       /* 255 − 0F1218 */
+  --doux:#B3AB9D;        /* 255 − 4C5462 */
+  --accent:#F5AD19;      /* 255 − 0A52E6 */
+  --sur:#000000;
+  --filet:#475063;
+  --filet-fort:#616C7D;
+  --lueur:rgba(0,0,0,.92);        /* 255 − 255 */
+  --lueur-acc:rgba(245,173,25,.11);
+  --rev:#0F1218;
+  --rev-fond:#F2EFE8;
+  --rev-acc:#0A52E6;
+  --rev-doux:#4C5462;
+  --rev-filet:#A59B8D;
+}
+
+:root{
+  --dis:'Instrument',Georgia,'Times New Roman',serif;
+  --ui:'Archivo',ui-sans-serif,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --mono:'Plex',ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+  --marge:clamp(18px,5vw,80px);
+  --max:1320px;
+  --barre:66px;
+}
+
+*{box-sizing:border-box}
+html{
+  overflow-x:clip;                 /* jamais hidden : annulerait tout sticky */
+  background:var(--papier);        /* le fond du canevas racine */
+  scroll-behavior:smooth;
+  -webkit-text-size-adjust:100%;
+}
+body{
+  margin:0;
+  /* le fond est aussi peint ICI : sans ça, il appartient au canevas racine,
+     hors du contexte d'empilement, et la lentille en difference n'aurait
+     rien à inverser (elle resterait un disque blanc). */
+  background:var(--papier);
+  color:var(--encre);
+  font-family:var(--ui);
+  font-size:17px;line-height:1.6;
+  font-variation-settings:'wght' 400,'wdth' 100;
+  transition:background .18s linear,color .18s linear;
+}
+img,video,svg{max-width:100%;display:block}
+a{color:inherit}
+::selection{background:var(--accent);color:var(--sur)}
+
+.saut{position:absolute;left:-9999px;top:0;background:var(--encre);color:var(--papier);
+  padding:14px 20px;z-index:400;font-family:var(--mono);font-size:13px}
+.saut:focus{left:12px;top:12px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+
+.enveloppe{max-width:var(--max);margin:0 auto;padding-inline:var(--marge)}
+
+/* ───────────────────────────── TYPOGRAPHIE ───────────────────────────── */
+.sur-titre{
+  font-family:var(--mono);font-size:12px;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--doux);margin:0 0 22px;display:flex;align-items:flex-start;gap:12px;
+}
+.sur-titre::before{content:'';width:34px;height:1px;background:var(--accent);flex:none;
+  margin-top:.72em}
+h1,h2,h3{margin:0;font-weight:400;font-family:var(--dis);line-height:.95;
+  letter-spacing:-.018em;text-wrap:balance}
+h1{font-size:clamp(44px,7.8vw,112px)}
+h2{font-size:clamp(36px,5.6vw,80px)}
+h3{font-size:clamp(24px,2.6vw,34px);line-height:1.06}
+p{margin:0 0 20px;max-width:62ch}
+.grand-p{font-size:clamp(17px,1.35vw,21px);line-height:1.62;color:var(--doux)}
+.num{font-family:var(--mono);font-size:12px;letter-spacing:.1em;color:var(--accent)}
+
+/* ───────────────────────────── EN-TÊTE ───────────────────────────── */
+.tete{
+  position:fixed;top:0;left:0;right:0;height:var(--barre);z-index:60;
+  display:flex;align-items:center;gap:20px;
+  padding-inline:var(--marge);
+  background:var(--papier);
+  border-bottom:1px solid var(--filet);
+  transition:background .18s linear,border-color .18s linear,transform .35s cubic-bezier(.4,0,.2,1);
+}
+.tete.cachee{transform:translateY(-102%)}
+.logo{display:flex;align-items:center;gap:11px;text-decoration:none;flex:none;
+  min-height:44px;padding-right:6px}
+.logo img{height:26px;width:auto}
+html.inverse .logo img{filter:invert(1)}   /* le logo bascule avec le monde */
+.logo b{font-family:var(--mono);font-size:12.5px;letter-spacing:.12em;font-weight:400;
+  text-transform:uppercase}
+.nav{margin-left:auto;display:flex;gap:4px}
+.nav a{
+  font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;
+  text-decoration:none;padding:12px 13px;min-height:44px;display:inline-flex;align-items:center;
+  color:var(--doux);position:relative;
+}
+.nav a::after{content:'';position:absolute;left:13px;right:13px;bottom:16px;height:1px;
+  background:var(--accent);transform:scaleX(0);transform-origin:left;transition:transform .28s}
+.nav a:hover{color:var(--encre)}
+.nav a:hover::after{transform:scaleX(1)}
+.tete-cta{
+  margin-left:14px;font-family:var(--mono);font-size:12px;letter-spacing:.08em;
+  text-transform:uppercase;text-decoration:none;padding:0 18px;height:44px;
+  display:inline-flex;align-items:center;background:var(--accent);color:var(--sur);flex:none;
+}
+.burger{display:none;margin-left:auto;width:46px;height:46px;border:1px solid var(--filet-fort);
+  background:transparent;color:inherit;align-items:center;justify-content:center;cursor:pointer;flex:none}
+.burger span{display:block;width:19px;height:1px;background:currentColor;position:relative}
+.burger span::before,.burger span::after{content:'';position:absolute;left:0;width:19px;height:1px;
+  background:currentColor;transition:transform .25s,top .25s}
+.burger span::before{top:-6px}.burger span::after{top:6px}
+.menu-ouvert .burger span{background:transparent}
+.menu-ouvert .burger span::before{top:0;transform:rotate(45deg)}
+.menu-ouvert .burger span::after{top:0;transform:rotate(-45deg)}
+
+.voile{
+  position:fixed;inset:var(--barre) 0 0;z-index:59;background:var(--papier);
+  display:flex;flex-direction:column;justify-content:center;gap:6px;
+  padding:0 var(--marge) 40px;
+  transform:translateY(-102%);transition:transform .42s cubic-bezier(.5,0,.2,1);
+  visibility:hidden;
+}
+.menu-ouvert .voile{transform:none;visibility:visible}
+.voile a{
+  font-family:var(--dis);font-size:clamp(30px,8vw,46px);text-decoration:none;
+  padding:9px 0;min-height:52px;display:flex;align-items:center;gap:16px;
+  border-bottom:1px solid var(--filet);
+}
+.voile a i{font-family:var(--mono);font-size:12px;font-style:normal;color:var(--accent);width:26px}
+
+/* ───────────────────────── PREMIER ÉCRAN ───────────────────────── */
+.ecran{
+  position:relative;min-height:100svh;padding-top:calc(var(--barre) + clamp(30px,6vh,64px));
+  padding-bottom:clamp(30px,6vh,60px);
+  display:flex;align-items:center;overflow:clip;
+}
+/* le champ lumineux de la page entière — fixe, comme une lampe dans la pièce.
+   Il bascule avec le monde parce que ses couleurs sont des compléments exacts. */
+.champ{
+  position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(78% 62% at 12% 4%, var(--lueur) 0%, transparent 62%),
+    radial-gradient(64% 58% at 88% 96%, var(--lueur-acc) 0%, transparent 66%);
+  transition:background .18s linear;
+}
+main,footer{position:relative;z-index:1}   /* au-dessus du champ, sous la lentille */
+/* le halo propre au premier écran, par-dessus le champ */
+.ecran::before{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(120% 92% at 8% 0%, var(--lueur) 0%, transparent 56%);
+  opacity:.55;
+}
+/* la trame de mesure : une plaque photographique a toujours son quadrillage */
+.trame{
+  position:absolute;inset:0;pointer-events:none;opacity:.5;
+  background-image:
+    linear-gradient(to right,var(--filet) 1px,transparent 1px),
+    linear-gradient(to bottom,var(--filet) 1px,transparent 1px);
+  background-size:clamp(60px,7vw,96px) clamp(60px,7vw,96px);
+  -webkit-mask-image:radial-gradient(120% 100% at 50% 40%,#000 20%,transparent 78%);
+  mask-image:radial-gradient(120% 100% at 50% 40%,#000 20%,transparent 78%);
+}
+.ecran-grille{
+  position:relative;width:100%;max-width:var(--max);margin:0 auto;padding-inline:var(--marge);
+  display:grid;grid-template-columns:minmax(0,1.32fr) minmax(0,.82fr);
+  gap:clamp(26px,4vw,64px);align-items:center;
+}
+h1 .l2{display:block;color:var(--accent)}
+h1 .fin{font-family:var(--ui);font-variation-settings:'wght' 380,'wdth' 96;
+  font-size:clamp(15px,1.2vw,17.5px);letter-spacing:0;display:block;
+  margin-top:clamp(20px,2.2vw,30px);color:var(--doux);line-height:1.62;max-width:46ch}
+.boutons{display:flex;flex-wrap:wrap;gap:12px;margin-top:clamp(24px,3.4vw,40px)}
+.btn{
+  font-family:var(--mono);font-size:12.5px;letter-spacing:.1em;text-transform:uppercase;
+  text-decoration:none;padding:0 26px;height:52px;display:inline-flex;align-items:center;gap:10px;
+  border:1px solid var(--encre);position:relative;overflow:clip;
+}
+.btn i{font-style:normal;transition:transform .3s}
+.btn:hover i{transform:translateX(4px)}
+.btn--plein{background:var(--accent);border-color:var(--accent);color:var(--sur)}
+.btn--vide::after{content:'';position:absolute;inset:0;background:var(--encre);
+  transform:translateY(101%);transition:transform .34s cubic-bezier(.5,0,.2,1);z-index:-1}
+.btn--vide:hover{color:var(--papier)}
+.btn--vide:hover::after{transform:none}
+.btn--vide{z-index:0}
+
+/* la plaque : le seul film de la page */
+.plaque{
+  position:relative;margin:0;border:1px solid var(--filet-fort);padding:9px;background:var(--bande);
+}
+.plaque video{width:100%;aspect-ratio:3/4;object-fit:cover;background:var(--encre)}
+.plaque figcaption{
+  display:flex;justify-content:space-between;gap:10px;
+  font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--doux);padding:9px 2px 1px;
+}
+.coin{position:absolute;width:11px;height:11px;border:1px solid var(--accent)}
+.coin.a{top:-1px;left:-1px;border-right:0;border-bottom:0}
+.coin.b{top:-1px;right:-1px;border-left:0;border-bottom:0}
+.coin.c{bottom:-1px;left:-1px;border-right:0;border-top:0}
+.coin.d{bottom:-1px;right:-1px;border-left:0;border-top:0}
+
+.indice{
+  position:absolute;left:var(--marge);bottom:18px;z-index:3;
+  font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--doux);display:flex;align-items:center;gap:10px;
+}
+.indice s{display:block;width:26px;height:1px;background:var(--accent);text-decoration:none}
+.sansjs .indice{display:none}
+
+/* ───────────────────────── BANDEAU QUI DÉFILE ───────────────────────── */
+.ruban{
+  border-block:1px solid var(--filet-fort);background:var(--bande);
+  overflow:clip;padding:15px 0;position:relative;
+}
+.ruban-piste{display:flex;width:max-content;animation:defile 46s linear infinite}
+.ruban-piste>span{
+  display:flex;align-items:center;gap:26px;padding-right:26px;
+  font-family:var(--mono);font-size:12px;letter-spacing:.13em;text-transform:uppercase;
+  white-space:nowrap;color:var(--encre);
+}
+.ruban-piste em{font-style:normal;color:var(--accent)}
+@keyframes defile{to{transform:translateX(-50%)}}
+
+/* ───────────────────────────── SECTIONS ───────────────────────────── */
+section{position:relative}
+.bloc{padding-block:clamp(72px,11vh,150px)}
+.bloc--bande{background:var(--bande);border-block:1px solid var(--filet)}
+.duo{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(30px,5vw,88px)}
+.duo--haut{align-items:start}
+
+/* compteurs */
+.compteurs{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--filet);
+  border:1px solid var(--filet)}
+.compteurs div{background:var(--bande);padding:clamp(20px,2.4vw,32px)}
+.bloc--bande .compteurs div{background:var(--papier)}
+.compteurs b{
+  display:block;font-family:var(--dis);font-size:clamp(38px,5vw,66px);font-weight:400;
+  line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums;
+}
+.compteurs i{
+  display:block;font-style:normal;font-family:var(--mono);font-size:10.5px;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--doux);margin-top:12px;
+}
+.compteurs--deux{grid-template-columns:1fr 1fr;max-width:660px}
+
+/* ───────────────────── LA BASCULE (monde qui change) ───────────────────── */
+#reseau{--h-bascule:190vh}
+.bascule{height:var(--h-bascule);position:relative}
+.sansjs .bascule{height:auto}
+.bascule-scene{
+  position:sticky;top:0;height:100svh;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;text-align:center;
+  padding:calc(var(--barre) + 20px) var(--marge) 40px;gap:22px;
+}
+.sansjs .bascule-scene{position:static;height:auto;min-height:60vh}
+.bascule-scene h2{font-size:clamp(38px,7.4vw,104px);max-width:16ch}
+.bascule-scene .grand-p{max-width:52ch;text-align:center}
+.jauge{
+  width:min(300px,60vw);height:1px;background:var(--filet-fort);position:relative;margin-top:8px;
+}
+.jauge b{position:absolute;left:0;top:-1px;height:3px;width:var(--p,0%);background:var(--accent);
+  transition:width .1s linear}
+.jauge s{position:absolute;left:0;top:10px;font-family:var(--mono);font-size:10px;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--doux);text-decoration:none}
+.sansjs .jauge{display:none}
+
+/* liste des implantations */
+.maisons{list-style:none;margin:0;padding:0;border-top:1px solid var(--filet)}
+.maisons li{border-bottom:1px solid var(--filet)}
+.maisons button{
+  width:100%;background:transparent;border:0;color:inherit;font:inherit;text-align:left;
+  display:grid;grid-template-columns:52px minmax(0,1fr) auto;gap:clamp(12px,2vw,26px);
+  align-items:baseline;padding:clamp(15px,1.9vw,24px) 0;cursor:default;min-height:60px;
+  position:relative;
+}
+.maisons .n{font-family:var(--mono);font-size:12px;color:var(--accent);letter-spacing:.06em}
+.maisons .nom{font-family:var(--dis);font-size:clamp(21px,2.9vw,40px);line-height:1.02;
+  display:block;letter-spacing:-.012em}
+.maisons .siege{font-family:var(--mono);font-size:11px;letter-spacing:.11em;
+  text-transform:uppercase;color:var(--accent);margin-left:12px;vertical-align:middle}
+.maisons .lieu{font-family:var(--mono);font-size:12px;color:var(--doux);letter-spacing:.06em;
+  white-space:nowrap;text-align:right}
+.maisons button::before{
+  content:'';position:absolute;left:0;right:0;top:0;bottom:0;background:var(--accent);
+  opacity:0;transition:opacity .25s;z-index:-1
+}
+.maisons li:hover .nom,.maisons button:focus-visible .nom{font-style:italic}
+.maisons li:hover .n{font-size:14px}
+.partenaire{
+  margin-top:26px;font-family:var(--mono);font-size:12.5px;letter-spacing:.06em;color:var(--doux);
+  display:flex;gap:12px;align-items:baseline;line-height:1.65;
+}
+.partenaire s{flex:none;width:22px;height:1px;background:var(--accent);text-decoration:none;
+  transform:translateY(-5px)}
+.partenaire b{color:var(--encre);font-weight:400}
+
+/* bande photo */
+.bande-photo{position:relative;overflow:clip;border-block:1px solid var(--filet-fort)}
+.bande-photo img{width:100%;height:clamp(280px,58vh,620px);object-fit:cover;
+  transform:scale(1.06);transition:transform 1.2s cubic-bezier(.3,0,.2,1)}
+.bande-photo.vu img{transform:none}
+.bande-photo figcaption{
+  position:absolute;left:var(--marge);bottom:18px;right:var(--marge);
+  display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;
+  font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+  color:#F2EFE8;text-shadow:0 1px 14px rgba(0,0,0,.85);
+}
+
+/* métier */
+.etapes{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--filet);
+  border:1px solid var(--filet);margin-top:clamp(30px,4vw,54px)}
+.etapes article{background:var(--papier);padding:clamp(20px,2.2vw,30px);display:flex;
+  flex-direction:column;gap:12px}
+.bloc--bande .etapes article{background:var(--bande)}
+.etapes h3{font-family:var(--ui);font-variation-settings:'wght' 560,'wdth' 96;
+  font-size:clamp(17px,1.5vw,21px);letter-spacing:-.005em;line-height:1.2}
+.etapes p{font-size:15px;color:var(--doux);margin:0}
+.cloture{
+  margin-top:clamp(28px,3.4vw,46px);padding-top:26px;border-top:1px solid var(--filet-fort);
+  font-family:var(--dis);font-size:clamp(20px,2.5vw,32px);line-height:1.24;max-width:34ch;
+}
+
+/* valeurs */
+.valeurs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(22px,3vw,52px);
+  margin-top:clamp(30px,4vw,56px)}
+.valeurs article{border-top:2px solid var(--accent);padding-top:20px}
+.valeurs h3{font-family:var(--dis);font-size:clamp(26px,3.2vw,42px);margin-bottom:14px}
+.valeurs p{font-size:16px;color:var(--doux);margin:0}
+
+/* laboratoires */
+.labos{display:flex;flex-wrap:wrap;gap:10px 0;align-items:baseline;
+  margin-top:clamp(26px,3.4vw,44px);font-family:var(--dis);
+  font-size:clamp(26px,4.4vw,56px);line-height:1.1}
+.labos span{padding-right:.4em}
+.labos i{font-style:normal;color:var(--accent);padding-right:.4em;font-family:var(--ui);
+  font-size:.44em;transform:translateY(-.22em);display:inline-block}
+
+/* encart */
+.encart{border:1px solid var(--filet-fort);padding:clamp(24px,3.4vw,48px);
+  display:grid;grid-template-columns:minmax(0,1fr) auto;gap:clamp(20px,3vw,48px);align-items:center}
+.encart .sceau{
+  font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--accent);border:1px solid var(--accent);padding:10px 16px;white-space:nowrap;
+}
+
+/* villes qui recrutent */
+.villes{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 26px;padding:0;list-style:none}
+.villes li{font-family:var(--mono);font-size:12.5px;letter-spacing:.05em;
+  border:1px solid var(--filet-fort);padding:9px 14px;color:var(--doux)}
+
+/* fin de page */
+.final{text-align:center;padding-block:clamp(88px,15vh,190px)}
+.final h2{font-size:clamp(38px,6.6vw,96px);max-width:17ch;margin-inline:auto}
+.final .grand-p{margin-inline:auto;text-align:center;max-width:54ch;margin-top:24px}
+.final .btn{margin-top:34px;text-transform:none;letter-spacing:.04em;font-size:14px}
+
+footer{border-top:1px solid var(--filet-fort);padding-block:clamp(34px,5vh,60px);background:var(--bande)}
+.pied{display:flex;flex-wrap:wrap;gap:22px 40px;justify-content:space-between;align-items:flex-start;
+  font-family:var(--mono);font-size:13px;letter-spacing:.04em;color:var(--doux);line-height:1.75}
+.pied a{color:var(--doux);display:inline-flex;align-items:center;min-height:44px}
+.pied strong{display:block;color:var(--encre);font-weight:400;letter-spacing:.1em;
+  text-transform:uppercase;font-size:11px;margin-bottom:10px}
+.pied .chiffres{width:100%;border-top:1px solid var(--filet);padding-top:20px;margin-top:6px;
+  display:flex;flex-wrap:wrap;gap:8px 22px;justify-content:space-between}
+.signature{color:var(--accent);letter-spacing:.16em;text-transform:uppercase;font-size:11px}
+
+/* ─────────────────────── RÉVÉLATION AU DÉFILEMENT ─────────────────────── */
+.rev{opacity:0;transform:translateY(26px);
+  transition:opacity .8s cubic-bezier(.2,.6,.2,1),transform .8s cubic-bezier(.2,.6,.2,1)}
+.rev.vu{opacity:1;transform:none}
+.rev.d1{transition-delay:.09s}.rev.d2{transition-delay:.18s}.rev.d3{transition-delay:.27s}
+.sansjs .rev{opacity:1;transform:none}
+
+/* ═══════════════════════ LA LENTILLE ET LE SOUTERRAIN ═══════════════════ */
+/* le disque blanc : difference avec le blanc = complément exact, donc
+   inversion parfaite de tout ce qui est peint dessous. */
+.lentille{
+  position:fixed;left:0;top:0;z-index:90;pointer-events:none;
+  width:var(--d,320px);height:var(--d,320px);margin:calc(var(--d,320px)/-2);
+  border-radius:50%;background:#fff;
+  mix-blend-mode:difference;
+  box-shadow:inset 0 0 0 2px #C6C6C6;   /* la bague : un anneau plus doux dans l'inversé */
+  will-change:transform;
+  opacity:0;transition:opacity .5s ease;
+}
+.lentille.on{opacity:1}
+.sansjs .lentille,.sansjs .souterrain,.sansjs .avaleur{display:none}
+
+/* ce qu'on ne voit QUE dans l'inversé : au-dessus de la lentille, donc
+   jamais inversé, et découpé par le même disque. */
+.souterrain{
+  position:fixed;inset:0;z-index:95;pointer-events:none;
+  color:var(--rev);
+  --lx:50vw;--ly:45vh;--lr:160px;
+  -webkit-mask-image:radial-gradient(circle var(--lr) at var(--lx) var(--ly),#000 0 90%,transparent 100%);
+  mask-image:radial-gradient(circle var(--lr) at var(--lx) var(--ly),#000 0 90%,transparent 100%);
+  opacity:0;transition:opacity .45s ease;
+}
+.souterrain.on{opacity:1}
+.souterrain>*{position:absolute;inset:0;opacity:0;transition:opacity .5s ease}
+.souterrain>.actif{opacity:1}
+
+/* la trame du souterrain : le quadrillage de la plaque, plein cadre */
+.sout-trame{
+  background-image:
+    linear-gradient(to right,var(--rev-filet) 1px,transparent 1px),
+    linear-gradient(to bottom,var(--rev-filet) 1px,transparent 1px);
+  background-size:46px 46px;opacity:1 !important;
+}
+/* le viseur : deux fils et une bague au centre de la lentille.
+   Il garantit qu'il y a TOUJOURS quelque chose à lire dans l'inversé,
+   même là où la constellation ne passe pas. */
+.viseur{opacity:1 !important}
+.viseur i,.viseur u{position:absolute;background:var(--rev-acc);opacity:.75;display:block}
+.viseur i{left:0;right:0;top:var(--ly);height:1px;transform:translateY(-.5px)}
+.viseur u{top:0;bottom:0;left:var(--lx);width:1px;transform:translateX(-.5px)}
+.viseur b{
+  position:absolute;left:var(--lx);top:var(--ly);width:26px;height:26px;margin:-13px;
+  border:1px solid var(--rev-acc);border-radius:50%;opacity:.85;
+}
+.viseur b::after{content:'';position:absolute;inset:11px;background:var(--rev-acc);border-radius:50%}
+
+/* le cartouche : il suit la lentille, taille fixe, toujours ENTIER dans le
+   disque — l'étiquette posée sur le point se coupait en plein mot. */
+.cartouche{
+  /* inset:auto est indispensable : hérité de `.souterrain>*`, inset:0 forçait
+     la boîte à la hauteur de l'écran et le texte partait hors cadre. */
+  position:absolute;inset:auto;left:0;top:0;opacity:1 !important;
+  transform:translate(calc(var(--lx) - 50%), calc(var(--ly) + var(--lr) * .46 - 50%));
+  /* JS prend la main sur ce transform dès la première image (cadrage au bord) */
+  width:max-content;max-width:calc(var(--lr) * 1.5);text-align:center;
+  font-family:var(--mono);line-height:1.45;
+  /* plaque opaque OBLIGATOIRE : sans elle, la ligne d'accent tombait sur un
+     bouton inversé de la même couleur et disparaissait purement et simplement. */
+  background:var(--rev-fond);border:1px solid var(--rev-filet);padding:7px 12px 8px;
+}
+.cartouche b{display:block;font-size:clamp(12px,1vw,13px);font-weight:400;color:var(--rev);letter-spacing:.01em}
+.cartouche s{display:block;font-size:10.5px;text-decoration:none;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--rev-acc);margin-top:3px}
+.sout-legende{
+  position:absolute;left:0;right:0;bottom:0;padding:0;opacity:1 !important;
+  pointer-events:none;
+}
+.sout-legende span{
+  position:absolute;left:18px;bottom:16px;font-family:var(--mono);font-size:10px;
+  letter-spacing:.16em;text-transform:uppercase;color:var(--rev-doux);
+}
+.sout-legende em{
+  position:absolute;right:18px;bottom:16px;font-family:var(--mono);font-size:10px;
+  font-style:normal;letter-spacing:.16em;text-transform:uppercase;color:var(--rev-acc);
+}
+
+/* la constellation des implantations — coordonnées réelles des dix communes */
+.constel{width:100%;height:100%}
+.constel .pt{fill:var(--rev-acc)}
+.constel .pt-halo{fill:none;stroke:var(--rev-acc);stroke-width:.3;opacity:.45}
+.constel .siege{stroke:var(--rev);stroke-width:.45}
+.constel .part{fill:var(--rev-filet);stroke:var(--rev-acc);stroke-width:.5}
+.constel .lien{stroke:var(--rev-doux);stroke-width:.3;opacity:.7;stroke-dasharray:1.6 1.6}
+.constel .cercle{fill:none;stroke:var(--rev-doux);stroke-width:.22;opacity:.4}
+.constel .actif{opacity:1}
+.constel circle.vise{stroke:var(--rev);stroke-width:.8}
+
+/* la chaîne du métier — ce qui est invisible depuis l'officine */
+/* non-scaling-stroke : le SVG est mis à l'échelle « slice », les traits
+   restaient épais comme des câbles. Ici ils font 1 à 2 px à l'écran, toujours. */
+.chaine{width:100%;height:100%}
+.chaine path,.chaine circle{vector-effect:non-scaling-stroke}
+.chaine .rail{stroke:var(--rev-doux);stroke-width:1;fill:none;opacity:.6}
+.chaine .flux{stroke:var(--rev-acc);stroke-width:2;fill:none;stroke-dasharray:.9 2.4;
+  stroke-linecap:round;animation:flux 2.6s linear infinite}
+@keyframes flux{to{stroke-dashoffset:-6.6}}
+.chaine .noeud{fill:none;stroke:var(--rev-acc);stroke-width:1.4}
+.chaine .plein{fill:var(--rev-acc)}
+.chaine .idx{fill:var(--rev-acc);font-size:2.4px;font-family:var(--mono)}
+
+/* le disque qui avale la page à la bascule */
+.avaleur{
+  position:fixed;inset:0;z-index:88;pointer-events:none;background:#fff;
+  mix-blend-mode:difference;
+  clip-path:circle(0px at 50% 46%);
+  will-change:clip-path;
+}
+
+/* ───────────────────────────── TÉLÉPHONE ───────────────────────────── */
+@media (max-width:1000px){
+  .ecran-grille{grid-template-columns:1fr;gap:clamp(28px,6vw,44px)}
+  .plaque{max-width:420px}
+  .duo{grid-template-columns:1fr}
+  .etapes{grid-template-columns:1fr 1fr}
+  .valeurs{grid-template-columns:1fr}
+  .valeurs article{border-top-width:1px}
+  .encart{grid-template-columns:1fr;justify-items:start}
+}
+@media (max-width:760px){
+  :root{--barre:58px}
+  body{font-size:16px}
+  .nav,.tete-cta{display:none}
+  .burger{display:flex}
+  .etapes{grid-template-columns:1fr}
+  .compteurs{grid-template-columns:1fr 1fr}
+  .maisons button{grid-template-columns:34px minmax(0,1fr);row-gap:5px}
+  .maisons .lieu{grid-column:2;text-align:left}
+  .maisons .siege{display:block;margin:5px 0 0}
+  .plaque video{aspect-ratio:4/3}
+  .bande-photo figcaption{position:static;background:var(--bande);color:var(--doux);
+    text-shadow:none;padding:12px var(--marge);left:auto;right:auto;bottom:auto}
+  .pied{gap:20px}
+}
+@media (hover:none){
+  .lentille{box-shadow:inset 0 0 0 3px #C6C6C6}
+}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .ruban-piste{animation:none}
+  .chaine .flux{animation:none}
+  .rev{transition-duration:.01ms}
+  .bande-photo img{transition:none;transform:none}
+}
+</style>
+</head>
+<body>
+<div class="champ" aria-hidden="true"></div>
+<a class="saut" href="#groupe">Aller au contenu</a>
+
+<header class="tete" id="tete">
+  <a class="logo" href="#accueil">
+    <img src="../../assets/logo-web.png" alt="Intégral Pharma" width="120" height="26">
+    <b>Intégral&nbsp;Pharma</b>
+  </a>
+  <nav class="nav" aria-label="Principale">
+    <a href="#groupe">Le groupe</a>
+    <a href="#reseau">Le réseau</a>
+    <a href="#metier">Le métier</a>
+    <a href="#valeurs">Nos valeurs</a>
+  </nav>
+  <a class="tete-cta" href="mailto:contact@integralpharma.fr">Nous écrire</a>
+  <button class="burger" id="burger" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="voile">
+    <span></span>
+  </button>
+</header>
+<nav class="voile" id="voile" aria-label="Menu">
+  <a href="#groupe"><i>01</i>Le groupe</a>
+  <a href="#reseau"><i>02</i>Le réseau</a>
+  <a href="#metier"><i>03</i>Le métier</a>
+  <a href="#valeurs"><i>04</i>Nos valeurs</a>
+  <a href="mailto:contact@integralpharma.fr"><i>05</i>Nous écrire</a>
+</nav>
+
+<main id="haut">
+
+  <!-- ══════════════════ 01 · L'OUVERTURE ══════════════════ -->
+  <section class="ecran" id="accueil">
+    <div class="trame" aria-hidden="true"></div>
+    <div class="ecran-grille">
+      <div>
+        <p class="sur-titre rev">Groupe de grossistes-répartiteurs français indépendant</p>
+        <h1 class="rev d1">Neuf maisons.<span class="l2">Un seul nom.</span>
+          <span class="fin">Chacune livre sa région depuis des années, avec ses équipes et ses
+          habitudes. Depuis 2006, elles avancent ensemble sous le nom d'Intégral Pharma — et
+          votre commande part toujours de la plus proche de votre comptoir.</span>
+        </h1>
+        <div class="boutons rev d2">
+          <a class="btn btn--plein" href="#reseau">Découvrir le réseau <i>→</i></a>
+          <a class="btn btn--vide" href="mailto:contact@integralpharma.fr">Nous écrire <i>→</i></a>
+        </div>
+      </div>
+      <figure class="plaque rev d3">
+        <span class="coin a"></span><span class="coin b"></span>
+        <span class="coin c"></span><span class="coin d"></span>
+        <!-- pas d'affiche : poster.jpg est pixel pour pixel siege-web.jpg, déjà
+             employée en pleine largeur plus bas. Trois registres, pas deux. -->
+        <video src="../../assets/hero.mp4"
+               autoplay muted loop playsinline preload="metadata"
+               aria-label="Vues du siège et des équipes d'Intégral Pharma"></video>
+        <figcaption><span>Plaque 01 — le groupe</span><span>Hyères (83)</span></figcaption>
+      </figure>
+    </div>
+    <p class="indice" id="indice"><s></s><span>Promenez la lentille sur la page</span></p>
+  </section>
+
+  <!-- bandeau qui défile -->
+  <div class="ruban" aria-hidden="true">
+    <div class="ruban-piste" id="piste">
+      <span>Indépendant <em>·</em> Neuf implantations <em>·</em> Un réseau national <em>·</em>
+        Plus de 2 000 officines livrées <em>·</em> Confiance, Engagement, Respect <em>·</em>
+        Une alternative aux grossistes historiques <em>·</em></span>
+      <span>Indépendant <em>·</em> Neuf implantations <em>·</em> Un réseau national <em>·</em>
+        Plus de 2 000 officines livrées <em>·</em> Confiance, Engagement, Respect <em>·</em>
+        Une alternative aux grossistes historiques <em>·</em></span>
+    </div>
+  </div>
+
+  <!-- ══════════════════ 02 · L'HISTOIRE ══════════════════ -->
+  <section class="bloc" id="groupe">
+    <div class="enveloppe duo duo--haut">
+      <div>
+        <p class="sur-titre rev">Notre histoire</p>
+        <h2 class="rev d1">Rendre la marge à l'officine française.</h2>
+      </div>
+      <div>
+        <p class="grand-p rev d1">C'est la raison d'être d'Intégral Pharma depuis 2006 :
+          redistribuer directement la marge aux officines françaises, en toute transparence,
+          avec des prix nets visibles sur facture.</p>
+        <p class="grand-p rev d2">Neuf implantations aujourd'hui, plus de deux mille officines
+          livrées chaque jour, et la même idée qu'au premier jour — un groupe de répartiteurs
+          indépendants qui a choisi de se mettre du côté du comptoir.</p>
+        <div class="compteurs rev d3" style="margin-top:34px">
+          <div><b class="cpt" data-cible="2006">2006</b><i>année de création</i></div>
+          <div><b class="cpt" data-cible="9">9</b><i>implantations</i></div>
+          <div><b class="cpt" data-cible="2000" data-suffixe=" +">2 000 +</b><i>officines livrées</i></div>
+          <div><b class="cpt" data-cible="20">20</b><i>ans d'indépendance</i></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <figure class="bande-photo rev" style="margin:0">
+    <img src="../../assets/siege-web.jpg" alt="Le siège d'Intégral Pharma à Hyères" loading="lazy" decoding="async">
+    <figcaption><span>Siège du groupe — ZI Saint-Martin, Hyères (83)</span><span>Plaque 02</span></figcaption>
+  </figure>
+
+  <!-- ══════════════════ 03 · LE RÉSEAU (et la bascule) ══════════════════ -->
+  <section id="reseau">
+    <div class="bascule" id="bascule">
+      <div class="bascule-scene">
+        <p class="sur-titre" style="justify-content:center">Le réseau</p>
+        <h2>Neuf implantations. Laquelle est la vôtre&nbsp;?</h2>
+        <p class="grand-p">C'est la seule question qui compte vraiment. Celle qui prépare votre
+          commande, qui vous livre chaque matin, et dont vous connaissez l'équipe par son prénom.</p>
+        <div class="jauge" aria-hidden="true"><b id="jauge-b"></b><s id="jauge-s">Développement</s></div>
+      </div>
+    </div>
+
+    <div class="bloc" style="padding-top:clamp(40px,7vh,90px)">
+      <div class="enveloppe">
+        <p class="grand-p rev" style="max-width:56ch;margin-bottom:clamp(30px,4vw,52px)">
+          Les huit autres sont là pour qu'elle ne soit jamais prise au dépourvu — de la Bretagne
+          à la Méditerranée, le stock d'une maison est le stock de toutes.</p>
+        <ul class="maisons rev d1" id="maisons">
+          <li><button type="button" data-i="0"><span class="n">01</span><span><span class="nom">Hyères Pharma</span><span class="siege">siège du groupe</span></span><span class="lieu">Hyères · 83</span></button></li>
+          <li><button type="button" data-i="1"><span class="n">02</span><span class="nom">SR Pharma</span><span class="lieu">Palaiseau · 91</span></button></li>
+          <li><button type="button" data-i="2"><span class="n">03</span><span class="nom">Mistral Santé Pharma</span><span class="lieu">Flassans-sur-Issole · 83</span></button></li>
+          <li><button type="button" data-i="3"><span class="n">04</span><span class="nom">Sud Ouest Pharma</span><span class="lieu">Montayral · 47</span></button></li>
+          <li><button type="button" data-i="4"><span class="n">05</span><span class="nom">Comptoir Pharmaceutique du Rhône</span><span class="lieu">Saint-Maurice-l'Exil · 38</span></button></li>
+          <li><button type="button" data-i="5"><span class="n">06</span><span class="nom">Escale Pharma</span><span class="lieu">Chilly-Mazarin · 91</span></button></li>
+          <li><button type="button" data-i="6"><span class="n">07</span><span class="nom">Ouest Pharma Services</span><span class="lieu">Saint-Étienne-de-Montluc · 44</span></button></li>
+          <li><button type="button" data-i="7"><span class="n">08</span><span class="nom">Pharm'Occitanie Services</span><span class="lieu">Villeneuve-lès-Béziers · 34</span></button></li>
+          <li><button type="button" data-i="8"><span class="n">09</span><span class="nom">Sud Est Pharma</span><span class="lieu">Le Cannet-des-Maures · 83</span></button></li>
+        </ul>
+        <p class="partenaire rev d2"><s></s><span>Et à l'Est, notre partenaire <b>Pharmest</b>
+          (Metz, 57) prolonge le maillage.</span></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════ 04 · LE MÉTIER ══════════════════ -->
+  <section class="bloc bloc--bande" id="metier">
+    <div class="enveloppe">
+      <div class="duo duo--haut">
+        <div>
+          <p class="sur-titre rev">Le métier</p>
+          <h2 class="rev d1">Ce qui se passe entre votre commande et votre comptoir.</h2>
+        </div>
+        <p class="grand-p rev d2">Quelques heures, quatre métiers, et une chaîne qui ne s'arrête
+          jamais. Référencer, stocker, préparer, livrer : c'est invisible depuis l'officine, et
+          c'est tout notre travail.</p>
+      </div>
+      <div class="etapes rev d1">
+        <article><span class="num">01</span><h3>Le référencement</h3>
+          <p>Le groupe référence pour ses neuf maisons à la fois : un même catalogue, tenu à jour,
+            disponible dans toutes les implantations. C'est ce qui permet à une maison de taille
+            humaine de proposer la profondeur de gamme d'un réseau national.</p></article>
+        <article><span class="num">02</span><h3>La disponibilité</h3>
+          <p>Des stocks répartis sur neuf implantations, au plus près de votre officine. Quand le
+            comptoir a besoin, le réseau répond — et quand une référence manque quelque part, elle
+            existe souvent ailleurs dans le réseau.</p></article>
+        <article><span class="num">03</span><h3>La préparation</h3>
+          <p>Chaque commande est préparée dans l'implantation la plus proche de chez vous, par une
+            équipe qui connaît votre officine et ses saisons.</p></article>
+        <article><span class="num">04</span><h3>La livraison</h3>
+          <p>Tous les jours, les tournées partent vers les officines. La régularité d'un service
+            tenu — c'est elle qui fait la confiance, pas les promesses.</p></article>
+      </div>
+      <p class="cloture rev d2">Et quand la vie de votre officine change — transfert,
+        agrandissement, cession de parts — votre interlocuteur ajuste l'approvisionnement avec
+        vous, sans à-coup au comptoir.</p>
+    </div>
+  </section>
+
+  <figure class="bande-photo rev" style="margin:0">
+    <img src="../../assets/siege-solaire.jpg" alt="Les installations du groupe sous le soleil du Var" loading="lazy" decoding="async">
+    <figcaption><span>Le réseau, tous les matins</span><span>Plaque 03</span></figcaption>
+  </figure>
+
+  <!-- ══════════════════ 05 · LA CENTRALE ══════════════════ -->
+  <section class="bloc" id="centrale">
+    <div class="enveloppe duo duo--haut">
+      <div>
+        <p class="sur-titre rev">La centrale</p>
+        <h2 class="rev d1">Et pour tout ce qui n'est pas le médicament.</h2>
+      </div>
+      <div>
+        <p class="grand-p rev d1">Notre centrale de parapharmacie référence pour l'officine plus de
+          14 000 produits et plus de 480 marques.</p>
+        <p class="grand-p rev d2">C'est une structure à part, avec son propre fonctionnement — sa
+          commande, sa livraison — et la même exigence que le reste du groupe.</p>
+        <div class="compteurs compteurs--deux rev d3" style="margin-top:32px">
+          <div><b class="cpt" data-cible="14000" data-suffixe=" +">14 000 +</b><i>références</i></div>
+          <div><b class="cpt" data-cible="480" data-suffixe=" +">480 +</b><i>marques</i></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════ 06 · LES FACTURES ══════════════════ -->
+  <section class="bloc bloc--bande" id="factures">
+    <div class="enveloppe">
+      <div class="encart rev">
+        <div>
+          <p class="sur-titre">Vos factures</p>
+          <h2 style="font-size:clamp(30px,4.2vw,58px)">Elles arrivent déjà là où vous les gérez.</h2>
+          <p class="grand-p" style="margin-top:24px">Nous sommes connectés à Digipharmacie : vos
+            factures Intégral s'y retrouvent automatiquement, avec celles de vos autres
+            fournisseurs.</p>
+          <p class="grand-p" style="margin-bottom:0">Rien à saisir, rien à classer, rien à réclamer.</p>
+        </div>
+        <span class="sceau">Digipharmacie</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════ 07 · LES PARTENAIRES ══════════════════ -->
+  <section class="bloc" id="partenaires">
+    <div class="enveloppe">
+      <p class="sur-titre rev">Nos partenaires</p>
+      <h2 class="rev d1" style="max-width:18ch">Les laboratoires qui nous font confiance.</h2>
+      <div class="labos rev d2">
+        <span>EG Labo</span><i>·</i><span>Zentiva</span><i>·</i><span>Zydus</span><i>·</i>
+        <span>Viatris</span><i>·</i><span>ITP</span><i>·</i><span>Santestat</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════ 08 · NOUS REJOINDRE ══════════════════ -->
+  <section class="bloc bloc--bande" id="emploi">
+    <div class="enveloppe duo duo--haut">
+      <div>
+        <p class="sur-titre rev">Nous rejoindre</p>
+        <h2 class="rev d1">Neuf implantations qui embauchent.</h2>
+      </div>
+      <div>
+        <p class="grand-p rev d1">Préparateur-chauffeur, technicien approvisionnement, commercial,
+          pharmacien responsable : les métiers de la répartition s'apprennent chez nous.</p>
+        <ul class="villes rev d2">
+          <li>Hyères (83)</li><li>Villeneuve-lès-Béziers (34)</li>
+          <li>Montayral (47)</li><li>Saint-Maurice-l'Exil (38)</li>
+        </ul>
+        <a class="btn btn--vide rev d3" href="https://www.integralpharma.fr/jobs" target="_blank" rel="noopener">Voir les offres <i>→</i></a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════ 09 · LES VALEURS ══════════════════ -->
+  <section class="bloc" id="valeurs">
+    <div class="enveloppe">
+      <p class="sur-titre rev">Nos valeurs</p>
+      <h2 class="rev d1" style="max-width:20ch">Trois mots qui se vérifient au téléphone.</h2>
+      <div class="valeurs">
+        <article class="rev d1"><h3>Confiance</h3>
+          <p>La personne qui décroche connaît votre officine, vos saisons et vos habitudes.</p></article>
+        <article class="rev d2"><h3>Engagement</h3>
+          <p>C'est la même d'une année sur l'autre. Dans ce métier, c'est devenu rare.</p></article>
+        <article class="rev d3"><h3>Respect</h3>
+          <p>Elle ne vous vendra pas ce dont vous n'avez pas besoin — parce qu'elle vous reverra
+            le mois suivant, et l'année d'après.</p></article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════ 10 · LA FIN DE PAGE ══════════════════ -->
+  <section class="bloc final" id="contact">
+    <div class="enveloppe">
+      <h2 class="rev">Posez-nous la question qui vous intéresse.</h2>
+      <p class="grand-p rev d1">Sur nos conditions, sur nos délais, sur la façon dont nous
+        travaillons. Vous aurez une réponse claire, et le nom de l'implantation qui livre votre
+        secteur.</p>
+      <a class="btn btn--plein rev d2" href="mailto:contact@integralpharma.fr">contact@integralpharma.fr <i>→</i></a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="enveloppe pied">
+    <div><strong>Intégral Pharma</strong>
+      758 chemin de la Source<br>ZI Saint-Martin, 83400 Hyères</div>
+    <div><strong>Écrire</strong>
+      <a href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a><br>
+      <a href="https://www.integralpharma.fr/mentions-l%C3%A9gales" target="_blank" rel="noopener">Mentions légales</a></div>
+    <div><strong>Direction 49</strong>
+      <span class="signature">Le Négatif</span></div>
+    <div class="chiffres">
+      <span>9 implantations</span><span>plus de 2 000 officines livrées</span>
+      <span>indépendant depuis 2006</span>
+    </div>
+  </div>
+</footer>
+
+<!-- ═══════════ LES DEUX COUCHES DE L'INVERSION ═══════════ -->
+<div class="avaleur" id="avaleur" aria-hidden="true"></div>
+<div class="lentille" id="lentille" aria-hidden="true"></div>
+
+<div class="souterrain" id="souterrain" aria-hidden="true">
+  <div class="sout-trame"></div>
+
+  <!-- ce qui dort sous toute la page : le réseau -->
+  <div id="sout-carte" class="actif">
+    <svg class="constel" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" id="constel">
+      <g class="cercle" id="cercles"></g>
+      <g class="lien" id="liens"></g>
+      <g id="points"></g>
+    </svg>
+  </div>
+
+  <!-- ce qui est invisible depuis l'officine : la chaîne -->
+  <div id="sout-chaine">
+    <svg class="chaine" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">
+      <path class="rail" d="M2 22 H98 M2 36 H98 M2 50 H98 M2 64 H98 M2 78 H98"/>
+      <path class="flux" d="M2 22 H98"/><path class="flux" d="M98 36 H2"/>
+      <path class="flux" d="M2 50 H98"/><path class="flux" d="M98 64 H2"/>
+      <path class="flux" d="M2 78 H98"/>
+      <g id="noeuds"></g>
+    </svg>
+  </div>
+
+  <div class="viseur"><i></i><u></u><b></b></div>
+  <div class="cartouche" id="cartouche"><b>Hyères Pharma</b><s>Hyères · 83</s></div>
+  <div class="sout-legende"><span id="sout-lab">Neuf implantations et un partenaire</span><em>Négatif</em></div>
+</div>
+
+<script>
+(function(){
+'use strict';
+var root=document.documentElement, body=document.body;
+var PRM=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+var TACTILE=window.matchMedia('(hover:none)').matches;
+
+/* ───────── menu téléphone ───────── */
+var burger=document.getElementById('burger'), voile=document.getElementById('voile');
+function fermeMenu(){root.classList.remove('menu-ouvert');burger.setAttribute('aria-expanded','false');}
+burger.addEventListener('click',function(){
+  var o=root.classList.toggle('menu-ouvert');
+  burger.setAttribute('aria-expanded',o?'true':'false');
+});
+voile.addEventListener('click',function(e){if(e.target.tagName==='A')fermeMenu();});
+addEventListener('keydown',function(e){if(e.key==='Escape')fermeMenu();});
+
+/* ───────── révélation au défilement (opacité + translation seulement :
+   jamais de découpe qui annulerait l'aire visible et empêcherait
+   l'observateur de se déclencher) ───────── */
+var obs=new IntersectionObserver(function(es){
+  es.forEach(function(e){
+    if(e.isIntersecting){e.target.classList.add('vu');obs.unobserve(e.target);}
+  });
+},{threshold:.12,rootMargin:'0px 0px -6% 0px'});
+[].forEach.call(document.querySelectorAll('.rev,.bande-photo'),function(el){obs.observe(el);});
+
+/* ───────── compteurs ───────── */
+function espace(n){return String(n).replace(/\B(?=(\d{3})+(?!\d))/g,' ');}
+var obsC=new IntersectionObserver(function(es){
+  es.forEach(function(e){
+    if(!e.isIntersecting)return;
+    obsC.unobserve(e.target);
+    var el=e.target, cible=parseInt(el.dataset.cible,10), suf=el.dataset.suffixe||'';
+    /* une année ne prend JAMAIS le séparateur de milliers */
+    var annee = cible>=1900 && cible<=2100 && !suf;
+    if(PRM){el.textContent=(annee?String(cible):espace(cible))+suf;return;}
+    var t0=performance.now(), dur=1250;
+    (function pas(t){
+      var p=Math.min(1,(t-t0)/dur), e2=1-Math.pow(1-p,3);
+      var v=Math.round(cible*e2);
+      el.textContent=(annee?String(v):espace(v))+suf;
+      if(p<1)requestAnimationFrame(pas);
+    })(t0);
+  });
+},{threshold:.5});
+[].forEach.call(document.querySelectorAll('.cpt'),function(el){obsC.observe(el);});
+
+/* ───────── en-tête qui s'efface en descendant ───────── */
+var tete=document.getElementById('tete'), dernier=0;
+function majTete(y){
+  if(root.classList.contains('menu-ouvert')){tete.classList.remove('cachee');dernier=y;return;}
+  if(y>dernier+6 && y>360)tete.classList.add('cachee');
+  else if(y<dernier-6)tete.classList.remove('cachee');
+  dernier=y;
+}
+
+/* ═══════════ LA CONSTELLATION — coordonnées réelles des dix communes ═══════════
+   (contour IGN / géocodage BAN, projection équirectangulaire à 46,6°) */
+var MAISONS=[
+ {x:76.61,y:81.53,n:'Hyères Pharma',v:'Hyères',d:'83',siege:1},
+ {x:48.96,y:24.76,n:'SR Pharma',v:'Palaiseau',d:'91'},
+ {x:76.69,y:78.92,n:'Mistral Santé Pharma',v:'Flassans-sur-Issole',d:'83'},
+ {x:40.27,y:67.81,n:'Sud Ouest Pharma',v:'Montayral',d:'47'},
+ {x:66.74,y:58.48,n:'Comptoir Pharmaceutique du Rhône',v:"Saint-Maurice-l'Exil",d:'38'},
+ {x:49.51,y:24.89,n:'Escale Pharma',v:'Chilly-Mazarin',d:'91'},
+ {x:20.98,y:39.40,n:'Ouest Pharma Services',v:'Saint-Étienne-de-Montluc',d:'44'},
+ {x:56.26,y:79.42,n:"Pharm'Occitanie Services",v:'Villeneuve-lès-Béziers',d:'34'},
+ {x:77.67,y:78.64,n:'Sud Est Pharma',v:'Le Cannet-des-Maures',d:'83'},
+ {x:76.56,y:20.79,n:'Pharmest',v:'Metz',d:'57',part:1}
+];
+/* les quatre métiers, pour le cartouche du souterrain */
+var ETAPES=[{n:'Référencer',s:'01 — le référencement'},{n:'Stocker',s:'02 — la disponibilité'},
+            {n:'Préparer',s:'03 — la préparation'},{n:'Livrer',s:'04 — la livraison'}];
+var NOEUDS=[];
+
+var NS='http://www.w3.org/2000/svg';
+function el(n,a){var e=document.createElementNS(NS,n);for(var k in a)e.setAttribute(k,a[k]);return e;}
+(function batir(){
+  var gC=document.getElementById('cercles'),gL=document.getElementById('liens'),
+      gP=document.getElementById('points');
+  var s=MAISONS[0];
+  [12,26,42,60].forEach(function(r){gC.appendChild(el('circle',{cx:s.x,cy:s.y,r:r}));});
+  MAISONS.forEach(function(m,i){
+    if(i)gL.appendChild(el('line',{x1:s.x,y1:s.y,x2:m.x,y2:m.y}));
+    m.halo=el('circle',{'class':'pt-halo',cx:m.x,cy:m.y,r:m.siege?3.6:2.6});
+    gP.appendChild(m.halo);
+    m.pt=el('circle',{'class':'pt'+(m.siege?' siege':'')+(m.part?' part':''),
+      cx:m.x,cy:m.y,r:m.siege?1.7:1.2});
+    gP.appendChild(m.pt);
+  });
+  /* la chaîne du métier : trois rails, des nœuds partout, aucun texte —
+     le cartouche s'en charge, lui reste lisible quelle que soit l'échelle. */
+  var gN=document.getElementById('noeuds');
+  [22,36,50,64,78].forEach(function(y,r){
+    [10,30,50,70,90].forEach(function(x,c){
+      var i=(c+r)%4;
+      gN.appendChild(el('circle',{'class':'noeud',cx:x,cy:y,r:1.6}));
+      gN.appendChild(el('circle',{'class':'plein',cx:x,cy:y,r:.55}));
+      NOEUDS.push({x:x,y:y,i:i});
+    });
+  });
+})();
+var svgConstel=document.getElementById('constel');
+var svgChaine=document.querySelector('.chaine');
+var labSout=document.getElementById('sout-lab');
+var cartouche=document.getElementById('cartouche');
+var cartN=cartouche.querySelector('b'), cartS=cartouche.querySelector('s');
+var cartCle='',cartW=180,cartH=52;
+function majCartouche(titre,sous){
+  var c=titre+'|'+sous;
+  if(c===cartCle)return;
+  cartCle=c;cartN.textContent=titre;cartS.textContent=sous;
+  /* on ne mesure qu'au changement de texte : lire offsetWidth à chaque image
+     forcerait un calcul de mise en page soixante fois par seconde. */
+  cartW=cartouche.offsetWidth;cartH=cartouche.offsetHeight;
+}
+
+/* la liste des maisons éclaire son point dans le souterrain */
+var forcee=-1;
+[].forEach.call(document.querySelectorAll('#maisons button'),function(b){
+  var i=parseInt(b.dataset.i,10);
+  function on(){forcee=i;}
+  function off(){forcee=-1;}
+  b.addEventListener('mouseenter',on);b.addEventListener('mouseleave',off);
+  b.addEventListener('focus',on);b.addEventListener('blur',off);
+});
+
+/* ═══════════ LA LENTILLE ═══════════ */
+var lent=document.getElementById('lentille'), sout=document.getElementById('souterrain');
+var avaleur=document.getElementById('avaleur');
+var W=innerWidth,H=innerHeight;
+var cibleX=W*.5, cibleY=H*.44, lx=cibleX, ly=cibleY;
+var dernierGeste=-1e9, aTouche=false;
+var Dbase=0, D=0;
+function calibre(){
+  W=innerWidth;H=innerHeight;
+  Dbase=Math.max(190,Math.min(360, Math.min(W,H)*(W<760?0.54:0.34)));
+}
+calibre();
+addEventListener('resize',function(){calibre();},{passive:true});
+
+function geste(x,y){cibleX=x;cibleY=y;dernierGeste=performance.now();aTouche=true;}
+addEventListener('pointermove',function(e){geste(e.clientX,e.clientY);},{passive:true});
+addEventListener('pointerdown',function(e){geste(e.clientX,e.clientY);},{passive:true});
+addEventListener('touchmove',function(e){
+  if(e.touches&&e.touches[0])geste(e.touches[0].clientX,e.touches[0].clientY);
+},{passive:true});
+
+/* ═══════════ LA BASCULE ═══════════ */
+var secReseau=document.getElementById('reseau'), bascule=document.getElementById('bascule');
+var jaugeB=document.getElementById('jauge-b'), jaugeS=document.getElementById('jauge-s');
+var SEUIL=0.56;               /* le disque couvre l'écran : on passe le relais */
+var inverse=false, pBasc=0;
+
+/* ouverture : la page se développe comme une plaque (≤ 1 s, page utilisable) */
+var t0dev=performance.now(), DEV=PRM?0:900;
+
+/* mesure des images par seconde du geste principal */
+var fpsN=0,fpsT=0,fpsDernier=0;
+window.__fps=0;
+
+var yCourant=0, tickPrevu=false;
+addEventListener('scroll',function(){
+  yCourant=scrollY;
+  if(!tickPrevu){tickPrevu=true;requestAnimationFrame(function(){tickPrevu=false;});}
+},{passive:true});
+
+var sectionMetier=document.getElementById('metier');
+var carteEl=document.getElementById('sout-carte'), chaineEl=document.getElementById('sout-chaine');
+var enMetier=false;
+new IntersectionObserver(function(es){
+  es.forEach(function(e){
+    enMetier=e.isIntersecting;
+    carteEl.classList.toggle('actif',!enMetier);
+    chaineEl.classList.toggle('actif',enMetier);
+    labSout.textContent=enMetier?"Référencer, stocker, préparer, livrer"
+                                :"Neuf implantations et un partenaire";
+  });
+},{threshold:.45}).observe(sectionMetier);
+
+var indice=document.getElementById('indice'), indiceVu=false;
+
+function boucle(t){
+  /* ── ouverture : le disque plein cadre se referme ── */
+  if(DEV>0){
+    var pd=Math.min(1,(t-t0dev)/DEV);
+    var e=1-Math.pow(1-pd,3);
+    avaleur.style.clipPath='circle('+((1-e)*165)+'vmax at 50% 46%)';
+    if(pd>=1){DEV=0;avaleur.style.clipPath='circle(0px at 50% 46%)';
+      lent.classList.add('on');sout.classList.add('on');}
+  }
+
+  /* ── dérive : pas de curseur sur téléphone, la lentille vit toute seule ── */
+  var repos = (t-dernierGeste)>2600;
+  if(repos && !PRM){
+    var s=t/1000;
+    cibleX=W*(0.5+0.30*Math.sin(s*0.29)+0.09*Math.sin(s*0.71));
+    cibleY=H*(0.46+0.27*Math.sin(s*0.41+1.3));
+  }else if(repos && PRM){cibleX=W*.5;cibleY=H*.44;}
+  var k=PRM?1:0.13;
+  lx+=(cibleX-lx)*k; ly+=(cibleY-ly)*k;
+
+  /* le diamètre respire avec la vitesse de défilement */
+  var v=Math.abs(yCourant-dernier);
+  D+=(Dbase*(1+Math.min(.30,v/1400))-D)*0.12;
+  lent.style.setProperty('--d',D.toFixed(1)+'px');
+  lent.style.transform='translate3d('+lx.toFixed(1)+'px,'+ly.toFixed(1)+'px,0)';
+  sout.style.setProperty('--lx',lx.toFixed(1)+'px');
+  sout.style.setProperty('--ly',ly.toFixed(1)+'px');
+  var lr=D*0.5-6;
+  sout.style.setProperty('--lr',lr.toFixed(1)+'px');
+  /* le cartouche reste dans l'écran ET dans le disque : au bord de la fenêtre
+     il se faisait couper en plein mot par le masque. */
+  var lim=D*0.17;
+  var cx=Math.min(Math.max(lx,cartW*.5+12),W-cartW*.5-12);
+  cx=Math.min(lx+lim,Math.max(lx-lim,cx));
+  var cy=Math.min(Math.max(ly+lr*.46,cartH*.5+12),H-cartH*.5-12);
+  cy=Math.min(ly+lr*.52,Math.max(ly-lr*.10,cy));
+  cartouche.style.transform='translate('+(cx-cartW*.5).toFixed(1)+'px,'+(cy-cartH*.5).toFixed(1)+'px)';
+
+  /* ── le cartouche nomme ce que la lentille survole, une seule chose à la fois ── */
+  var i,px,py,dd,best=-1,bd=1e9,r;
+  if(enMetier){
+    r=svgChaine.getBoundingClientRect();
+    for(i=0;i<NOEUDS.length;i++){
+      px=r.left+NOEUDS[i].x/100*r.width; py=r.top+NOEUDS[i].y/100*r.height;
+      dd=(px-lx)*(px-lx)+(py-ly)*(py-ly);
+      if(dd<bd){bd=dd;best=i;}
+    }
+    if(best>=0){var e2=ETAPES[NOEUDS[best].i];majCartouche(e2.n,e2.s);}
+  }else{
+    r=svgConstel.getBoundingClientRect();
+    for(i=0;i<MAISONS.length;i++){
+      px=r.left+MAISONS[i].x/100*r.width; py=r.top+MAISONS[i].y/100*r.height;
+      dd=(px-lx)*(px-lx)+(py-ly)*(py-ly);
+      if(dd<bd){bd=dd;best=i;}
+    }
+    if(forcee>=0)best=forcee;
+    for(i=0;i<MAISONS.length;i++)MAISONS[i].pt.classList.toggle('vise',i===best);
+    if(best>=0){var m2=MAISONS[best];
+      majCartouche(m2.n, m2.v+' · '+m2.d+(m2.siege?' — siège':(m2.part?' — partenaire':'')));}
+  }
+
+  /* ── la bascule ── */
+  var rb=bascule.getBoundingClientRect();
+  var course=rb.height-H;
+  pBasc = course>0 ? Math.max(0,Math.min(1,-rb.top/course)) : (rb.top<0?1:0);
+  if(jaugeB){jaugeB.style.width=(Math.min(1,pBasc/SEUIL)*100).toFixed(1)+'%';}
+  if(jaugeS){jaugeS.textContent = pBasc<SEUIL?'Développement':'Négatif';}
+
+  if(DEV===0){
+    if(pBasc<SEUIL){
+      if(inverse){root.classList.remove('inverse');inverse=false;}
+      var rr=(pBasc/SEUIL)*165;
+      avaleur.style.clipPath='circle('+rr.toFixed(2)+'vmax at 50% 46%)';
+    }else{
+      if(!inverse){root.classList.add('inverse');inverse=true;}
+      avaleur.style.clipPath='circle(0px at 50% 46%)';
+    }
+    /* pendant le relais, on retire la couche révélée : son fond de
+       référence change, elle serait la seule chose à sauter. */
+    var enRelais = pBasc>0.03 && pBasc<0.80;
+    sout.classList.toggle('on',!enRelais);
+  }
+
+  majTete(yCourant);
+
+  /* indice de départ : il s'efface dès qu'on a compris */
+  if(!indiceVu && (aTouche || yCourant>200)){
+    indiceVu=true;indice.style.transition='opacity .6s';indice.style.opacity='0';
+  }
+
+  fpsN++;
+  if(t-fpsT>500){window.__fps=Math.round(fpsN*1000/(t-fpsT));fpsN=0;fpsT=t;}
+  requestAnimationFrame(boucle);
+}
+requestAnimationFrame(boucle);
+
+/* défilement instantané depuis le menu quand le mouvement est réduit */
+if(PRM)root.style.scrollBehavior='auto';
+})();
+</script>
+</body>
+</html>

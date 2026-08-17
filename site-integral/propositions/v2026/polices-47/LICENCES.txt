@@ -1,0 +1,18 @@
+Polices de la maquette 47 « Rémanence ». Servies localement, sous-ensemble latin
+uniquement, aucun appel exterieur au chargement de la page.
+
+Archivo Variable (archivo-var.woff2) — SIL Open Font License 1.1 — Omnibus-Type
+  https://github.com/Omnibus-Type/Archivo
+
+Instrument Serif (instrumentserif-italic.woff2) — SIL Open Font License 1.1 — Instrument
+  https://github.com/Instrument/instrument-serif
+
+Inter (inter.woff2) — SIL Open Font License 1.1 — Rasmus Andersson
+  https://github.com/rsms/inter
+
+IBM Plex Mono (plexmono-400.woff2, plexmono-500.woff2) — SIL Open Font License 1.1 — IBM
+  https://github.com/IBM/plex
+
+La SIL Open Font License 1.1 autorise l'usage, la modification et la redistribution,
+y compris commerciale, a condition que les fontes ne soient pas vendues seules et que
+cette notice accompagne les fichiers. Texte complet : https://openfontlicense.org/

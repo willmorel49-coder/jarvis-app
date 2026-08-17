@@ -1,0 +1,35 @@
+Polices employées par m-42.html — « L'ÉCLAIRCIE »
+Toutes auto-hébergées ici, sous-ensemble latin. Aucun appel réseau sortant,
+aucun CDN, aucune clé. Les trois fichiers sont servis par le même hôte que
+la page.
+
+bodonimoda.woff2      Bodoni Moda — SIL Open Font License 1.1
+                      https://fonts.google.com/specimen/Bodoni+Moda
+                      Fichier variable (axes opsz 6..96 + wght 400..900),
+                      sous-ensemble latin. Copié depuis polices-34/. 46 Ko.
+                      Pourquoi elle : c'est une didone à contraste extrême.
+                      Ses déliés sont des cheveux — dans une fumée traversée
+                      par une seule lumière, ce sont eux qui disparaissent les
+                      premiers et qui reviennent les derniers. Une grotesque à
+                      graisse constante ne montrerait pas l'émergence.
+
+schibsted.woff2       Schibsted Grotesk — SIL Open Font License 1.1
+                      https://fonts.google.com/specimen/Schibsted+Grotesk
+                      Variable 400..600, sous-ensemble latin. Copié depuis
+                      polices-14/. 46 Ko. Texte courant et navigation.
+                      Grotesque humaniste à chasse resserrée : elle tient sur
+                      un fond qui bouge mieux qu'un caractère à axe vertical
+                      parfait, dont les contreformes se referment.
+
+dmmono-400.woff2      DM Mono 400 et 500 — SIL Open Font License 1.1
+dmmono-500.woff2      https://fonts.google.com/specimen/DM+Mono
+                      Copiés depuis polices-33/. 17 Ko à eux deux.
+                      Sur-titres, légendes, graduations de la cheminée,
+                      bandeau, chiffres du pied de page.
+
+Total servi : 109 Ko.
+
+La SIL Open Font License 1.1 autorise l'usage, la modification et la
+redistribution, y compris commerciale, à condition que les fontes ne soient
+pas vendues seules et que cette notice accompagne les fichiers.
+Texte complet : https://openfontlicense.org/

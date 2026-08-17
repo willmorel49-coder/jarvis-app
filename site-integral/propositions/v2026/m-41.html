@@ -1,0 +1,1171 @@
+<!DOCTYPE html>
+<html lang="fr" class="sansjs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Intégral Pharma — 41 · LA ROSACE</title>
+<meta name="description" content="Intégral Pharma, groupe de grossistes-répartiteurs français indépendant. Neuf maisons, un seul nom.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230A0B10'/%3E%3Cg fill='none' stroke='%23E8B64C' stroke-width='1.4'%3E%3Ccircle cx='16' cy='16' r='10'/%3E%3Cpath d='M16 6v20M7.3 11v10M24.7 11v10'/%3E%3C/g%3E%3Ccircle cx='16' cy='16' r='3' fill='%232F6BF0'/%3E%3C/svg%3E">
+<script>document.documentElement.className='js';</script>
+<style>
+/* ═══════════════════════════════════════════════════════════════════════════
+   41 · LA ROSACE — Intégral Pharma
+   Mécanique : toute la page est vue à travers un kaléidoscope. Un shader
+   GLSL replie l'angle polaire modulo 2π/n et rééchantillonne l'image — une
+   photographie du siège devient un vitrail, une vidéo devient une rosace.
+   Le nombre de miroirs n'est jamais décoratif : il vaut le nombre de choses
+   dont on parle. Neuf maisons → neuf branches. Quatre métiers → quatre.
+   Six laboratoires → six. Trois valeurs → trois.
+   Et à chaque passage à lire, la symétrie SE DÉPLIE : l'image redevient
+   entière, le texte se pose dessus en clair, puis elle se replie.
+   Aucun texte, aucun chiffre, aucun nom n'est jamais replié.
+   WebGL brut (pas de Three.js), Lenis auto-hébergé, zéro CDN, zéro clé.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─── Polices (auto-hébergées, OFL) ───────────────────────────────────────── */
+@font-face{font-family:'Bodoni';src:url('polices-41/bodonimoda.woff2') format('woff2');
+  font-weight:400 900;font-style:normal;font-display:swap}
+@font-face{font-family:'Instrument';src:url('polices-41/instrumentsans.woff2') format('woff2');
+  font-weight:400 700;font-style:normal;font-display:swap}
+@font-face{font-family:'Mono';src:url('polices-41/plexmono-400.woff2') format('woff2');
+  font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:'Mono';src:url('polices-41/plexmono-500.woff2') format('woff2');
+  font-weight:500;font-style:normal;font-display:swap}
+
+/* ─── Jetons ──────────────────────────────────────────────────────────────── */
+:root{
+  --ink:#0A0B10;          /* le plomb */
+  --ink-2:#14161F;
+  --cream:#F4EFE6;        /* le parchemin */
+  --cream-2:#EAE2D4;
+  --line:#C9BCA5;
+  --bleu:#2F6BF0;         /* bleu de vitrail */
+  --or:#E8B64C;           /* jaune d'argent */
+  --rouge:#D9503A;
+  --vert:#2E8B72;
+  --txt-clair:#F6F2EA;
+  --txt-clair-2:rgba(246,242,234,.66);
+  --txt-sombre:#161821;
+  --txt-sombre-2:rgba(22,24,33,.68);
+  --pad:clamp(20px,5vw,84px);
+  --max:1240px;
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-behavior:auto}
+body{
+  margin:0;background:var(--ink);color:var(--txt-clair);
+  font-family:'Instrument',system-ui,-apple-system,sans-serif;
+  font-size:17px;line-height:1.62;
+  overflow-x:clip;                 /* JAMAIS hidden : ça tue les position:sticky */
+  -webkit-font-smoothing:antialiased;
+}
+img,video,canvas,svg{display:block;max-width:100%}
+a{color:inherit}
+h1,h2,h3,p,ul,ol,figure{margin:0}
+ul{list-style:none;padding:0}
+::selection{background:var(--or);color:var(--ink)}
+
+/* ─── Le verre : canvas fixe derrière tout ────────────────────────────────── */
+#verre{position:fixed;inset:0;width:100%;height:100%;z-index:0;background:#07080C}
+#verre-fallback{
+  position:fixed;inset:0;z-index:0;display:none;
+  background:
+    radial-gradient(circle at 62% 46%, rgba(255,226,160,.38), transparent 42%),
+    repeating-conic-gradient(from 0deg at 62% 46%,
+      rgba(47,107,240,.72)  0deg  20deg, rgba(10,11,16,.70)  20deg 40deg,
+      rgba(232,182,76,.66) 40deg  60deg, rgba(10,11,16,.74)  60deg 80deg,
+      rgba(217,80,58,.66)  80deg 100deg, rgba(10,11,16,.70) 100deg 120deg,
+      rgba(46,139,114,.62)120deg 140deg, rgba(10,11,16,.76) 140deg 160deg,
+      rgba(246,242,234,.42)160deg 180deg, rgba(10,11,16,.72) 180deg 200deg),
+    linear-gradient(rgba(10,11,16,.45), rgba(10,11,16,.45)),
+    url('../../assets/siege-web.jpg') center/cover no-repeat,
+    #0A0B10;
+}
+.nogl #verre{display:none}
+.nogl #verre-fallback{display:block}
+.sansjs #verre,.sansjs #verre-fallback{display:none}
+.sansjs body{background:var(--cream)}
+
+/* ─── En-tête ─────────────────────────────────────────────────────────────── */
+.hdr{
+  position:fixed;top:0;left:0;right:0;z-index:60;
+  display:flex;align-items:center;justify-content:space-between;
+  gap:16px;padding:14px var(--pad);
+  transition:color .5s ease, border-color .5s ease, background-color .5s ease;
+  border-bottom:1px solid rgba(246,242,234,.12);
+  color:var(--txt-clair);background:transparent;
+}
+.hdr.sur-clair{color:var(--txt-sombre);border-bottom-color:rgba(22,24,33,.14)}
+/* passé l'ouverture, l'en-tête prend un fond plein : sinon les titres
+   viennent se cogner dans le logo. Aplat opaque, pas de verre dépoli. */
+.hdr.pose{background:#0A0B10}
+.hdr.pose.sur-clair{background:#F4EFE6}
+.hdr__marque{display:flex;align-items:center;gap:12px;text-decoration:none;min-height:44px}
+.hdr__marque img{width:34px;height:auto}
+.hdr__nom{font-family:'Mono',monospace;font-size:12px;letter-spacing:.16em;text-transform:uppercase;opacity:.9}
+.nav{display:flex;gap:6px;align-items:center}
+.nav a{
+  font-size:14px;text-decoration:none;padding:12px 14px;min-height:44px;
+  display:inline-flex;align-items:center;opacity:.82;position:relative;
+}
+.nav a::after{
+  content:"";position:absolute;left:14px;right:14px;bottom:9px;height:1px;
+  background:currentColor;transform:scaleX(0);transform-origin:left;
+  transition:transform .38s cubic-bezier(.22,.8,.28,1);
+}
+.nav a:hover{opacity:1}
+.nav a:hover::after,.nav a:focus-visible::after{transform:scaleX(1)}
+.burger{display:none;width:46px;height:46px;border:1px solid currentColor;background:none;
+  color:inherit;border-radius:50%;align-items:center;justify-content:center;cursor:pointer}
+.burger span{display:block;width:16px;height:1px;background:currentColor;position:relative}
+.burger span::before,.burger span::after{content:"";position:absolute;left:0;width:16px;height:1px;background:currentColor}
+.burger span::before{top:-5px}.burger span::after{top:5px}
+
+/* menu téléphone : fond PLEIN, jamais translucide */
+.menu{
+  position:fixed;inset:0;z-index:70;background:var(--ink);
+  display:none;flex-direction:column;padding:80px var(--pad) 40px;
+}
+.menu.ouvert{display:flex}
+.menu a{
+  font-family:'Bodoni',Georgia,serif;font-size:clamp(30px,9vw,46px);
+  text-decoration:none;padding:14px 0;border-bottom:1px solid rgba(246,242,234,.14);
+  color:var(--txt-clair);
+}
+.menu__fermer{position:absolute;top:14px;right:var(--pad);width:46px;height:46px;
+  border:1px solid rgba(246,242,234,.4);background:none;color:var(--txt-clair);
+  border-radius:50%;font-size:20px;cursor:pointer}
+
+/* ─── Sections ────────────────────────────────────────────────────────────── */
+.sec{position:relative;z-index:10;padding:clamp(80px,12vh,140px) var(--pad)}
+.sec__in{max-width:var(--max);margin:0 auto;position:relative;z-index:2}
+
+/* le voile : c'est lui qui rend le texte lisible quand l'image se déplie.
+   Aucun backdrop-filter, aucun flou — un simple aplat translucide. */
+.sec--lire::before{
+  content:"";position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:linear-gradient(180deg,
+    rgba(244,239,230,.985) 0%, rgba(244,239,230,.88) 24%,
+    rgba(244,239,230,.88) 76%, rgba(244,239,230,.985) 100%);
+}
+.sec--lire{color:var(--txt-sombre)}
+/* sur les passages de verre, la composition est franche : l'encre à gauche
+   porte le texte, la rosace brûle à droite. Deux aplats superposés, aucun flou. */
+.sec--verre h2,.sec--verre .corps p,.sec--verre .sur,.hero h1,.hero .lede,
+.sec--verre .labo,.sec--verre .valeur h3,.sec--verre .valeur p{
+  text-shadow:0 1px 18px rgba(8,9,14,.72), 0 0 3px rgba(8,9,14,.5);
+}
+.sec--verre.sec--large::before{
+  background:linear-gradient(180deg, rgba(9,10,15,.94) 0%, rgba(9,10,15,.80) 16%,
+    rgba(9,10,15,.80) 84%, rgba(9,10,15,.94) 100%);
+}
+.sec--verre::before{
+  content:"";position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:
+    linear-gradient(180deg, rgba(10,11,16,.90) 0%, rgba(10,11,16,0) 22%,
+      rgba(10,11,16,0) 78%, rgba(10,11,16,.90) 100%),
+    linear-gradient(100deg, rgba(9,10,15,.96) 0%, rgba(9,10,15,.91) 32%,
+      rgba(9,10,15,.62) 54%, rgba(9,10,15,.20) 74%, rgba(9,10,15,.46) 100%);
+}
+
+/* ─── Typo ────────────────────────────────────────────────────────────────── */
+.sur{
+  font-family:'Mono',monospace;font-size:12px;letter-spacing:.2em;text-transform:uppercase;
+  display:flex;align-items:center;gap:12px;margin-bottom:22px;opacity:.85;
+}
+.sur::before{content:"";width:34px;height:1px;background:currentColor;opacity:.6}
+h1,h2{font-family:'Bodoni',Georgia,serif;font-weight:400;line-height:.98;letter-spacing:-.015em}
+h1{font-size:clamp(42px,8.4vw,116px)}
+h2{font-size:clamp(32px,5.4vw,74px)}
+.lede{font-size:clamp(17px,1.55vw,21px);max-width:60ch;opacity:.86}
+.corps p{max-width:62ch;margin-top:18px;opacity:.86}
+.corps p:first-child{margin-top:0}
+
+/* ─── Boutons ─────────────────────────────────────────────────────────────── */
+.btns{display:flex;flex-wrap:wrap;gap:12px;margin-top:34px}
+.btn{
+  display:inline-flex;align-items:center;gap:10px;min-height:50px;padding:0 26px;
+  border-radius:50px;text-decoration:none;font-size:15px;letter-spacing:.01em;
+  border:1px solid currentColor;transition:background .35s ease,color .35s ease,transform .35s ease;
+}
+.btn:hover{transform:translateY(-2px)}
+.btn--plein{background:var(--or);border-color:var(--or);color:var(--ink)}
+.btn--plein:hover{background:#F2C563;border-color:#F2C563}
+.btn--fil:hover{background:currentColor}
+.btn--fil:hover span{mix-blend-mode:normal}
+.sec--lire .btn--fil:hover{background:var(--txt-sombre);color:var(--cream)}
+.sec--verre .btn--fil:hover,.hero .btn--fil:hover{background:var(--txt-clair);color:var(--ink)}
+
+/* ─── Ouverture ───────────────────────────────────────────────────────────── */
+.hero{
+  position:relative;z-index:10;min-height:100svh;display:flex;align-items:flex-end;
+  padding:120px var(--pad) 0;
+}
+.hero::before{
+  content:"";position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:
+    linear-gradient(180deg, rgba(10,11,16,.80) 0%, rgba(10,11,16,.06) 26%,
+      rgba(10,11,16,.20) 60%, rgba(10,11,16,.92) 100%),
+    linear-gradient(100deg, rgba(9,10,15,.92) 0%, rgba(9,10,15,.80) 26%,
+      rgba(9,10,15,.34) 48%, rgba(9,10,15,0) 68%);
+}
+.hero__in{position:relative;z-index:2;max-width:var(--max);margin:0 auto;width:100%;padding-bottom:clamp(40px,8vh,90px)}
+.hero h1{margin:0 0 26px;text-shadow:0 2px 40px rgba(10,11,16,.5)}
+.hero h1 .l{display:inline-block}
+.hero .lede{max-width:52ch}
+.hero__pied{
+  display:flex;align-items:flex-end;justify-content:space-between;gap:24px;
+  margin-top:clamp(34px,6vh,64px);flex-wrap:wrap;
+}
+.hero__note{font-family:'Mono',monospace;font-size:12px;letter-spacing:.14em;text-transform:uppercase;opacity:.6;max-width:30ch;line-height:1.7}
+
+/* ─── Bandeau qui défile ──────────────────────────────────────────────────── */
+.bandeau{
+  position:relative;z-index:10;overflow:hidden;background:var(--or);color:var(--ink);
+  border-top:1px solid rgba(10,11,16,.2);border-bottom:1px solid rgba(10,11,16,.2);
+}
+.bandeau__piste{display:flex;width:max-content;animation:defile 46s linear infinite}
+.bandeau span{
+  font-family:'Mono',monospace;font-size:12.5px;letter-spacing:.18em;text-transform:uppercase;
+  padding:14px 26px;white-space:nowrap;display:inline-flex;align-items:center;gap:26px;
+}
+.bandeau span::after{content:"◆";font-size:8px;opacity:.55}
+@keyframes defile{from{transform:translate3d(0,0,0)}to{transform:translate3d(-50%,0,0)}}
+
+/* ─── Compteurs ───────────────────────────────────────────────────────────── */
+.compteurs{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;margin-top:clamp(44px,6vw,70px);
+  background:var(--line);border:1px solid var(--line)}
+.compteurs--duo{grid-template-columns:repeat(2,1fr)}
+.compteur{background:var(--cream);padding:26px 20px}
+.sec--verre .compteurs{background:rgba(246,242,234,.22);border-color:rgba(246,242,234,.22)}
+.sec--verre .compteur{background:var(--ink-2)}
+.compteur b{display:block;font-family:'Bodoni',Georgia,serif;font-weight:400;
+  font-size:clamp(34px,4.6vw,62px);line-height:1;letter-spacing:-.02em}
+.compteur small{display:block;margin-top:10px;font-family:'Mono',monospace;font-size:11.5px;
+  letter-spacing:.14em;text-transform:uppercase;opacity:.62}
+
+/* ─── Le réseau : la rosace et ses neuf branches ──────────────────────────── */
+.reseau{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(30px,5vw,72px);align-items:start;margin-top:clamp(36px,5vw,58px)}
+.maisons{border-top:1px solid rgba(246,242,234,.2)}
+.maison{
+  display:grid;grid-template-columns:44px 1fr auto;gap:14px;align-items:baseline;
+  width:100%;text-align:left;background:none;border:0;border-bottom:1px solid rgba(246,242,234,.2);
+  color:var(--txt-clair);padding:13px 8px;min-height:52px;cursor:pointer;
+  font:inherit;transition:background .3s ease,padding-left .35s ease;
+  text-shadow:0 1px 16px rgba(8,9,14,.85), 0 0 3px rgba(8,9,14,.6);
+}
+.maison:hover,.maison.actif{background:rgba(246,242,234,.09);padding-left:16px}
+.maison .n{font-family:'Mono',monospace;font-size:12px;opacity:.55;letter-spacing:.1em}
+.maison .nom{font-size:16.5px}
+.maison .nom em{font-style:normal;font-family:'Mono',monospace;font-size:11px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--or);display:block;margin-top:3px}
+.maison .ville{font-family:'Mono',monospace;font-size:12.5px;opacity:.8;white-space:nowrap}
+.maison.actif .n{color:var(--or);opacity:1}
+.partenaire-note{margin-top:20px;font-size:14.5px;opacity:.72;max-width:46ch}
+.partenaire-note b{color:var(--or);font-weight:400}
+
+.rosace{position:sticky;top:calc(50vh - 230px);align-self:start;
+  aspect-ratio:1;max-width:460px;margin:0 auto;width:100%}
+/* l'œil de la rosace : un médaillon d'encre pour que le schéma et son nom
+   restent lisibles quand le vitrail brûle derrière. Aucun flou, un aplat. */
+.rosace::before{
+  content:"";position:absolute;inset:-11%;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle at 50% 50%,
+    rgba(8,9,14,.86) 0%, rgba(8,9,14,.82) 46%, rgba(8,9,14,.58) 66%, rgba(8,9,14,0) 78%);
+}
+.rosace svg{width:100%;height:100%;overflow:hidden;position:relative;z-index:2}
+#branches{transform-origin:50% 50%;transition:transform .75s cubic-bezier(.22,.8,.28,1)}
+.rosace .branche{fill:rgba(246,242,234,.04);stroke:rgba(246,242,234,.5);stroke-width:.8;
+  transition:fill .4s ease,stroke .4s ease;cursor:pointer}
+.rosace .branche:hover{fill:rgba(232,182,76,.18)}
+.rosace .branche.actif{fill:rgba(232,182,76,.52);stroke:var(--or);stroke-width:1.8}
+.rosace:has(.branche.actif) .branche:not(.actif){stroke:rgba(246,242,234,.24);fill:rgba(8,9,14,.34)}
+.rosace__centre{font-family:'Mono',monospace;font-size:10px;letter-spacing:.16em;
+  text-transform:uppercase;fill:var(--txt-clair);opacity:.6;text-anchor:middle}
+.rosace__legende{
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);text-align:center;
+  pointer-events:none;width:64%;z-index:3;
+}
+.rosace__legende b{display:block;font-family:'Bodoni',Georgia,serif;font-weight:400;font-size:clamp(18px,2.2vw,26px);line-height:1.1;text-shadow:0 1px 14px rgba(8,9,14,.9)}
+.rosace__legende small{display:block;margin-top:8px;font-family:'Mono',monospace;font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;opacity:.82;text-shadow:0 1px 14px rgba(8,9,14,.9)}
+
+/* ─── Le métier : quatre temps ────────────────────────────────────────────── */
+.etapes{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;margin-top:clamp(40px,5vw,64px);
+  background:var(--line);border:1px solid var(--line)}
+.etape{background:var(--cream);padding:26px 22px 30px}
+.etape b{display:block;font-family:'Mono',monospace;font-size:11.5px;letter-spacing:.16em;color:#8A7A5E;margin-bottom:14px}
+.etape h3{font-family:'Bodoni',Georgia,serif;font-weight:400;font-size:clamp(21px,2.2vw,28px);line-height:1.06;margin-bottom:12px}
+.etape p{font-size:15px;opacity:.78;margin:0}
+.cloture{margin-top:clamp(34px,4vw,48px);font-family:'Bodoni',Georgia,serif;
+  font-size:clamp(20px,2.5vw,31px);line-height:1.28;max-width:34ch;letter-spacing:-.01em}
+
+/* ─── Partenaires ─────────────────────────────────────────────────────────── */
+.labos{display:flex;flex-wrap:wrap;gap:10px;margin-top:clamp(34px,4vw,52px);max-width:820px}
+.labo{
+  font-family:'Bodoni',Georgia,serif;font-size:clamp(22px,3.2vw,42px);line-height:1;
+  padding:16px 26px;border:1px solid rgba(246,242,234,.26);border-radius:60px;
+  transition:border-color .4s ease,color .4s ease,transform .4s ease;
+}
+.labo:hover{border-color:var(--or);color:var(--or);transform:translateY(-3px)}
+
+/* ─── Valeurs ─────────────────────────────────────────────────────────────── */
+.valeurs{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(20px,3vw,44px);margin-top:clamp(40px,5vw,66px)}
+.valeur{border-top:1px solid rgba(246,242,234,.28);padding-top:22px}
+.valeur h3{font-family:'Bodoni',Georgia,serif;font-weight:400;font-size:clamp(26px,3.4vw,44px);line-height:1;margin-bottom:14px}
+.valeur p{font-size:15.5px;opacity:.78;margin:0}
+
+/* ─── Villes qui recrutent ────────────────────────────────────────────────── */
+.villes{display:flex;flex-wrap:wrap;gap:8px;margin-top:26px}
+.villes .ville{font-family:'Mono',monospace;font-size:12.5px;letter-spacing:.08em;
+  padding:9px 15px;border:1px solid var(--line);border-radius:40px}
+
+/* ─── Fin de page ─────────────────────────────────────────────────────────── */
+.fin h2{max-width:16ch}
+.pied{
+  position:relative;z-index:10;background:var(--ink);color:var(--txt-clair);
+  padding:clamp(48px,7vw,80px) var(--pad) 34px;border-top:1px solid rgba(246,242,234,.14);
+}
+.pied__in{max-width:var(--max);margin:0 auto;display:grid;grid-template-columns:1.4fr 1fr;gap:32px}
+.pied a{text-decoration:none;border-bottom:1px solid rgba(246,242,234,.3);
+  display:inline-block;padding:13px 0;line-height:1.3}
+.pied p{opacity:.72;font-size:15px}
+.pied__chiffres{font-family:'Mono',monospace;font-size:11.5px;letter-spacing:.13em;
+  text-transform:uppercase;opacity:.5;margin-top:34px;padding-top:20px;
+  border-top:1px solid rgba(246,242,234,.14);display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.signature{font-family:'Mono',monospace;font-size:11px;letter-spacing:.13em;text-transform:uppercase;opacity:.42}
+
+/* ─── Apparition (jamais de masquage définitif : voir §défauts) ───────────── */
+.js .rev{opacity:0;transform:translateY(22px);transition:opacity .8s ease,transform .8s cubic-bezier(.22,.8,.28,1)}
+.js .rev.vu{opacity:1;transform:none}
+.sansjs .rev{opacity:1;transform:none}
+
+/* ─── Repli sans script : la page reste une page ──────────────────────────── */
+.sansjs .hero{display:block;min-height:auto;padding:130px var(--pad) 0;background:var(--ink)}
+.sansjs .sec--lire::before{background:var(--cream)}
+.sansjs .sec--verre::before{background:var(--ink)}
+.sansjs .burger{display:none}
+.sansjs .photo-repli{display:block}
+.photo-repli{display:none;position:relative;z-index:2;width:100%;
+  height:min(46vh,400px);object-fit:cover;margin:0 0 clamp(28px,4vw,44px)}
+
+/* ─── Téléphone ───────────────────────────────────────────────────────────── */
+@media (max-width:1040px){
+  .reseau{grid-template-columns:1fr}
+  .rosace{order:-1;max-width:296px;position:relative;top:auto}
+  .rosace::before{inset:-6%}
+  .etapes{grid-template-columns:repeat(2,1fr)}
+  .compteurs{grid-template-columns:repeat(2,1fr)}
+  .valeurs{grid-template-columns:1fr}
+  .valeur{border-top-width:1px}
+  .pied__in{grid-template-columns:1fr}
+}
+@media (max-width:900px){
+  .hero::before{
+    background:linear-gradient(180deg, rgba(10,11,16,.88) 0%, rgba(10,11,16,.40) 26%,
+      rgba(10,11,16,.58) 56%, rgba(10,11,16,.94) 100%);
+  }
+  .sec--verre::before{
+    background:linear-gradient(180deg, rgba(9,10,15,.94) 0%, rgba(9,10,15,.74) 16%,
+      rgba(9,10,15,.74) 84%, rgba(9,10,15,.94) 100%);
+  }
+}
+@media (max-width:760px){
+  body{font-size:16px}
+  .nav{display:none}
+  .burger{display:inline-flex}
+  .hero{min-height:92svh}
+  .etapes{grid-template-columns:1fr}
+  .maison{grid-template-columns:36px 1fr;grid-template-rows:auto auto}
+  .maison .ville{grid-column:2;font-size:11.5px}
+  .labo{font-size:22px;padding:13px 20px}
+  .pied__chiffres{flex-direction:column;gap:8px}
+}
+@media (prefers-reduced-motion:reduce){
+  .bandeau__piste{animation:none}
+  .js .rev{opacity:1;transform:none;transition:none}
+}
+</style>
+</head>
+<body>
+
+<canvas id="verre" aria-hidden="true"></canvas>
+<div id="verre-fallback" aria-hidden="true"></div>
+
+<!-- une seule vidéo autoplay sur toute la page : c'est la matière du kaléidoscope -->
+<video id="src-video" src="../../assets/hero.mp4" muted loop playsinline autoplay preload="auto"
+       crossorigin="anonymous" aria-hidden="true"
+       style="position:fixed;width:2px;height:2px;opacity:.001;pointer-events:none;left:0;top:0;z-index:-1"></video>
+
+<header class="hdr" id="hdr">
+  <a class="hdr__marque" href="#haut">
+    <img src="../../assets/logo-web.png" alt="Intégral Pharma">
+    <span class="hdr__nom">Intégral Pharma</span>
+  </a>
+  <nav class="nav" aria-label="Principal">
+    <a href="#groupe">Le groupe</a>
+    <a href="#reseau">Le réseau</a>
+    <a href="#metier">Le métier</a>
+    <a href="#valeurs">Nos valeurs</a>
+    <a href="#contact">Nous écrire</a>
+  </nav>
+  <button class="burger" id="burger" aria-label="Ouvrir le menu" aria-expanded="false"><span></span></button>
+</header>
+
+<div class="menu" id="menu" role="dialog" aria-modal="true" aria-label="Menu">
+  <button class="menu__fermer" id="menu-fermer" aria-label="Fermer le menu">✕</button>
+  <a href="#groupe">Le groupe</a>
+  <a href="#reseau">Le réseau</a>
+  <a href="#metier">Le métier</a>
+  <a href="#valeurs">Nos valeurs</a>
+  <a href="#contact">Nous écrire</a>
+</div>
+
+<main id="haut">
+
+  <!-- ═══ 1 · L'ouverture — neuf miroirs, parce que neuf maisons ═══ -->
+  <section class="hero sec-obs" id="ouverture"
+           data-fold="1" data-seg="9" data-src="v" data-ton="sombre"
+           data-zoom="1.55" data-rot="0.045" data-disp="0.006" data-glow="0.32" data-cx="0.68" data-cy="0.46" data-teinte="0.84">
+    <img class="photo-repli" src="../../assets/siege-web.jpg" alt="Le siège d'Intégral Pharma à Hyères">
+    <div class="hero__in">
+      <p class="sur">Groupe de grossistes-répartiteurs français indépendant</p>
+      <h1><span class="l">Neuf maisons.</span><br><span class="l">Un seul nom.</span></h1>
+      <p class="lede">Chacune livre sa région depuis des années, avec ses équipes et ses habitudes.
+        Depuis 2006, elles avancent ensemble sous le nom d'Intégral Pharma — et votre commande part
+        toujours de la plus proche de votre comptoir.</p>
+      <div class="btns">
+        <a class="btn btn--plein" href="#reseau">Découvrir le réseau</a>
+        <a class="btn btn--fil" href="mailto:contact@integralpharma.fr">Nous écrire</a>
+      </div>
+      <div class="hero__pied">
+        <p class="hero__note">Neuf miroirs, neuf maisons.<br>Faites défiler : la symétrie s'ouvre.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ Bandeau ═══ -->
+  <div class="bandeau" aria-label="Nos repères">
+    <div class="bandeau__piste" id="piste">
+      <span>Indépendant</span><span>Neuf implantations</span><span>Un réseau national</span>
+      <span>Plus de 2 000 officines livrées</span><span>Confiance, Engagement, Respect</span>
+      <span>Une alternative aux grossistes historiques</span>
+    </div>
+  </div>
+
+  <!-- ═══ 2 · L'histoire — la symétrie se déplie, on lit ═══ -->
+  <section class="sec sec--lire sec-obs" id="groupe"
+           data-fold="0" data-seg="4" data-src="a" data-ton="clair"
+           data-zoom="1.0" data-rot="0.006" data-disp="0" data-glow="0.05" data-cx="0.5" data-cy="0.5" data-teinte="0.5">
+    <img class="photo-repli" src="../../assets/siege-web.jpg" alt="">
+    <div class="sec__in">
+      <p class="sur">Notre histoire</p>
+      <h2 class="rev">Rendre la marge<br>à l'officine française.</h2>
+      <div class="corps rev" style="margin-top:30px">
+        <p>C'est la raison d'être d'Intégral Pharma depuis 2006 : redistribuer directement la marge
+          aux officines françaises, en toute transparence, avec des prix nets visibles sur facture.</p>
+        <p>Neuf implantations aujourd'hui, plus de deux mille officines livrées chaque jour, et la
+          même idée qu'au premier jour — un groupe de répartiteurs indépendants qui a choisi de se
+          mettre du côté du comptoir.</p>
+      </div>
+      <div class="compteurs rev">
+        <div class="compteur"><b data-cible="2006">2006</b><small>année de création</small></div>
+        <div class="compteur"><b data-cible="9">9</b><small>implantations</small></div>
+        <div class="compteur"><b data-cible="2000" data-suffixe=" +">2 000 +</b><small>officines livrées</small></div>
+        <div class="compteur"><b data-cible="20">20</b><small>ans d'indépendance</small></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 3 · Le réseau — neuf branches, et les noms POSÉS PAR-DESSUS ═══ -->
+  <section class="sec sec--verre sec-obs" id="reseau"
+           data-fold="1" data-seg="9" data-src="b" data-ton="sombre"
+           data-zoom="1.35" data-rot="0.028" data-disp="0.008" data-glow="0.28" data-axe="#rosace" data-cx="0.70" data-cy="0.48" data-teinte="0.86">
+    <div class="sec__in">
+      <p class="sur">Le réseau</p>
+      <h2 class="rev">Neuf implantations.<br>Laquelle est la vôtre ?</h2>
+      <div class="corps rev" style="margin-top:28px">
+        <p>C'est la seule question qui compte vraiment. Celle qui prépare votre commande, qui vous
+          livre chaque matin, et dont vous connaissez l'équipe par son prénom.</p>
+        <p>Les huit autres sont là pour qu'elle ne soit jamais prise au dépourvu — de la Bretagne à
+          la Méditerranée, le stock d'une maison est le stock de toutes.</p>
+      </div>
+
+      <div class="reseau">
+        <div>
+          <ul class="maisons" id="maisons">
+            <li><button class="maison" data-i="0"><span class="n">01</span><span class="nom">Hyères Pharma<em>Siège du groupe</em></span><span class="ville">Hyères · 83</span></button></li>
+            <li><button class="maison" data-i="1"><span class="n">02</span><span class="nom">SR Pharma</span><span class="ville">Palaiseau · 91</span></button></li>
+            <li><button class="maison" data-i="2"><span class="n">03</span><span class="nom">Mistral Santé Pharma</span><span class="ville">Flassans-sur-Issole · 83</span></button></li>
+            <li><button class="maison" data-i="3"><span class="n">04</span><span class="nom">Sud Ouest Pharma</span><span class="ville">Montayral · 47</span></button></li>
+            <li><button class="maison" data-i="4"><span class="n">05</span><span class="nom">Comptoir Pharmaceutique du Rhône</span><span class="ville">Saint-Maurice-l'Exil · 38</span></button></li>
+            <li><button class="maison" data-i="5"><span class="n">06</span><span class="nom">Escale Pharma</span><span class="ville">Chilly-Mazarin · 91</span></button></li>
+            <li><button class="maison" data-i="6"><span class="n">07</span><span class="nom">Ouest Pharma Services</span><span class="ville">Saint-Étienne-de-Montluc · 44</span></button></li>
+            <li><button class="maison" data-i="7"><span class="n">08</span><span class="nom">Pharm'Occitanie Services</span><span class="ville">Villeneuve-lès-Béziers · 34</span></button></li>
+            <li><button class="maison" data-i="8"><span class="n">09</span><span class="nom">Sud Est Pharma</span><span class="ville">Le Cannet-des-Maures · 83</span></button></li>
+          </ul>
+          <p class="partenaire-note">Et à l'Est, notre partenaire <b>Pharmest</b> (Metz, 57) prolonge le maillage.
+            Neuf implantations et un partenaire.</p>
+        </div>
+        <div class="rosace" id="rosace">
+          <svg viewBox="-100 -100 200 200" role="img" aria-label="Rosace des neuf implantations">
+            <g id="branches"></g>
+            <circle cx="0" cy="0" r="34" fill="none" stroke="rgba(246,242,234,.5)" stroke-width=".8"/>
+            <circle cx="0" cy="0" r="92" fill="none" stroke="rgba(246,242,234,.34)" stroke-width=".8"/>
+            <circle cx="0" cy="0" r="99" fill="none" stroke="rgba(232,182,76,.30)" stroke-width=".5"/>
+          </svg>
+          <div class="rosace__legende" id="legende">
+            <b>Neuf branches</b>
+            <small>choisissez une maison</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 4 · Le métier — on déplie pour lire, quatre miroirs en transit ═══ -->
+  <section class="sec sec--lire sec-obs" id="metier"
+           data-fold="0" data-seg="4" data-src="b" data-ton="clair"
+           data-zoom="0.62" data-rot="0.008" data-disp="0" data-glow="0.04" data-cx="0.5" data-cy="0.5" data-teinte="0.5" data-px="0.10" data-py="-0.06">
+    <img class="photo-repli" src="../../assets/siege-solaire.jpg" alt="">
+    <div class="sec__in">
+      <p class="sur">Le métier</p>
+      <h2 class="rev">Ce qui se passe entre votre<br>commande et votre comptoir.</h2>
+      <div class="corps rev" style="margin-top:28px">
+        <p>Quelques heures, quatre métiers, et une chaîne qui ne s'arrête jamais. Référencer,
+          stocker, préparer, livrer : c'est invisible depuis l'officine, et c'est tout notre travail.</p>
+      </div>
+      <div class="etapes rev">
+        <div class="etape"><b>01</b><h3>Le référencement</h3><p>Le groupe référence pour ses neuf maisons à la fois : un même catalogue, tenu à jour, disponible dans toutes les implantations. C'est ce qui permet à une maison de taille humaine de proposer la profondeur de gamme d'un réseau national.</p></div>
+        <div class="etape"><b>02</b><h3>La disponibilité</h3><p>Des stocks répartis sur neuf implantations, au plus près de votre officine. Quand le comptoir a besoin, le réseau répond — et quand une référence manque quelque part, elle existe souvent ailleurs dans le réseau.</p></div>
+        <div class="etape"><b>03</b><h3>La préparation</h3><p>Chaque commande est préparée dans l'implantation la plus proche de chez vous, par une équipe qui connaît votre officine et ses saisons.</p></div>
+        <div class="etape"><b>04</b><h3>La livraison</h3><p>Tous les jours, les tournées partent vers les officines. La régularité d'un service tenu — c'est elle qui fait la confiance, pas les promesses.</p></div>
+      </div>
+      <p class="cloture rev">Et quand la vie de votre officine change — transfert, agrandissement,
+        cession de parts — votre interlocuteur ajuste l'approvisionnement avec vous, sans à-coup au comptoir.</p>
+    </div>
+  </section>
+
+  <!-- ═══ 4 bis · La centrale — six miroirs ═══ -->
+  <section class="sec sec--verre sec-obs" id="centrale"
+           data-fold="0.9" data-seg="6" data-src="v" data-ton="sombre"
+           data-zoom="1.75" data-rot="0.035" data-disp="0.010" data-glow="0.26" data-cx="0.72" data-cy="0.48" data-teinte="0.88">
+    <div class="sec__in">
+      <p class="sur">La centrale</p>
+      <h2 class="rev">Et pour tout ce qui<br>n'est pas le médicament.</h2>
+      <div class="corps rev" style="margin-top:28px">
+        <p>Notre centrale de parapharmacie référence pour l'officine plus de 14 000 produits et plus
+          de 480 marques.</p>
+        <p>C'est une structure à part, avec son propre fonctionnement — sa commande, sa livraison —
+          et la même exigence que le reste du groupe.</p>
+      </div>
+      <div class="compteurs compteurs--duo rev">
+        <div class="compteur"><b data-cible="14000" data-suffixe=" +">14 000 +</b><small>références</small></div>
+        <div class="compteur"><b data-cible="480" data-suffixe=" +">480 +</b><small>marques</small></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 4 ter · Les factures — court, déplié ═══ -->
+  <section class="sec sec--lire sec-obs" id="factures"
+           data-fold="0" data-seg="5" data-src="a" data-ton="clair"
+           data-zoom="0.86" data-rot="0.006" data-disp="0" data-glow="0.04" data-cx="0.5" data-cy="0.5" data-teinte="0.5" data-px="-0.06" data-py="0.05">
+    <div class="sec__in">
+      <p class="sur">Vos factures</p>
+      <h2 class="rev">Elles arrivent déjà<br>là où vous les gérez.</h2>
+      <div class="corps rev" style="margin-top:28px">
+        <p>Nous sommes connectés à Digipharmacie : vos factures Intégral s'y retrouvent
+          automatiquement, avec celles de vos autres fournisseurs.</p>
+        <p style="font-family:'Bodoni',Georgia,serif;font-size:clamp(20px,2.4vw,30px);line-height:1.3;opacity:1;margin-top:26px">
+          Rien à saisir, rien à classer, rien à réclamer.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 4 quater · Partenaires — six laboratoires, six miroirs ═══ -->
+  <section class="sec sec--verre sec-obs" id="partenaires"
+           data-fold="0.85" data-seg="6" data-src="b" data-ton="sombre"
+           data-zoom="1.25" data-rot="-0.030" data-disp="0.009" data-glow="0.24" data-cx="0.71" data-cy="0.50" data-teinte="0.86">
+    <div class="sec__in">
+      <p class="sur">Nos partenaires</p>
+      <h2 class="rev">Les laboratoires<br>qui nous font confiance.</h2>
+      <div class="labos rev">
+        <span class="labo">EG Labo</span><span class="labo">Zentiva</span><span class="labo">Zydus</span>
+        <span class="labo">Viatris</span><span class="labo">ITP</span><span class="labo">Santestat</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 4 quinquies · Nous rejoindre ═══ -->
+  <section class="sec sec--lire sec-obs" id="rejoindre"
+           data-fold="0" data-seg="4" data-src="a" data-ton="clair"
+           data-zoom="0.52" data-rot="0.005" data-disp="0" data-glow="0.04" data-cx="0.5" data-cy="0.5" data-teinte="0.5" data-px="0.08" data-py="0.10">
+    <div class="sec__in">
+      <p class="sur">Nous rejoindre</p>
+      <h2 class="rev">Neuf implantations<br>qui embauchent.</h2>
+      <div class="corps rev" style="margin-top:28px">
+        <p>Préparateur-chauffeur, technicien approvisionnement, commercial, pharmacien responsable :
+          les métiers de la répartition s'apprennent chez nous.</p>
+      </div>
+      <div class="villes rev">
+        <span class="ville">Hyères (83)</span><span class="ville">Villeneuve-lès-Béziers (34)</span>
+        <span class="ville">Montayral (47)</span><span class="ville">Saint-Maurice-l'Exil (38)</span>
+      </div>
+      <div class="btns rev">
+        <a class="btn btn--fil" href="https://www.integralpharma.fr/jobs" target="_blank" rel="noopener">Voir les offres</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 5 · Les valeurs — trois mots, trois miroirs ═══ -->
+  <section class="sec sec--verre sec--large sec-obs" id="valeurs"
+           data-fold="1" data-seg="3" data-src="v" data-ton="sombre"
+           data-zoom="0.95" data-rot="0.018" data-disp="0.012" data-glow="0.32" data-cx="0.78" data-cy="0.50" data-teinte="0.88">
+    <div class="sec__in">
+      <p class="sur">Nos valeurs</p>
+      <h2 class="rev">Trois mots qui se<br>vérifient au téléphone.</h2>
+      <div class="valeurs">
+        <div class="valeur rev"><h3>Confiance</h3><p>La personne qui décroche connaît votre officine, vos saisons et vos habitudes.</p></div>
+        <div class="valeur rev"><h3>Engagement</h3><p>C'est la même d'une année sur l'autre. Dans ce métier, c'est devenu rare.</p></div>
+        <div class="valeur rev"><h3>Respect</h3><p>Elle ne vous vendra pas ce dont vous n'avez pas besoin — parce qu'elle vous reverra le mois suivant, et l'année d'après.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 6 · La fin de page ═══ -->
+  <section class="sec sec--lire fin sec-obs" id="contact"
+           data-fold="0" data-seg="9" data-src="a" data-ton="clair"
+           data-zoom="0.88" data-rot="0.004" data-disp="0" data-glow="0.04" data-cx="0.5" data-cy="0.5" data-teinte="0.5" data-px="0.04" data-py="-0.04">
+    <div class="sec__in">
+      <h2 class="rev">Posez-nous la question<br>qui vous intéresse.</h2>
+      <div class="corps rev" style="margin-top:28px">
+        <p>Sur nos conditions, sur nos délais, sur la façon dont nous travaillons. Vous aurez une
+          réponse claire, et le nom de l'implantation qui livre votre secteur.</p>
+      </div>
+      <div class="btns rev">
+        <a class="btn btn--plein" href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="pied">
+  <div class="pied__in">
+    <div>
+      <p style="font-family:'Bodoni',Georgia,serif;font-size:clamp(22px,3vw,34px);line-height:1.15;opacity:1;color:var(--txt-clair)">
+        Intégral Pharma</p>
+      <p style="margin-top:14px">758 chemin de la Source, ZI Saint-Martin, 83400 Hyères</p>
+    </div>
+    <div>
+      <p><a href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a></p>
+      <p style="margin-top:10px"><a href="https://www.integralpharma.fr/mentions-l%C3%A9gales" target="_blank" rel="noopener">Mentions légales</a></p>
+      <p style="margin-top:10px"><a href="https://www.integralpharma.fr/jobs" target="_blank" rel="noopener">Nous rejoindre</a></p>
+    </div>
+  </div>
+  <div class="pied__in pied__chiffres">
+    <span>9 implantations · plus de 2 000 officines livrées · indépendant depuis 2006</span>
+    <span class="signature">41 · La Rosace</span>
+  </div>
+</footer>
+
+<script src="libs-41/lenis.min.js"></script>
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   LE KALÉIDOSCOPE — WebGL brut, un quad plein écran, un fragment shader.
+   Repliement polaire : on passe en polaire, on replie l'angle modulo 2π/n,
+   on rééchantillonne. uFold interpole entre l'angle d'origine (image nette)
+   et l'angle replié (vitrail) : c'est ce qui donne le dépliage.
+   ═══════════════════════════════════════════════════════════════════════════ */
+(function(){
+'use strict';
+
+var doc = document, html = doc.documentElement;
+var reduit = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ─── Menu téléphone ─────────────────────────────────────────────────────── */
+var burger = doc.getElementById('burger'), menu = doc.getElementById('menu');
+function ouvrirMenu(o){
+  menu.classList.toggle('ouvert', o);
+  burger.setAttribute('aria-expanded', o ? 'true':'false');
+  doc.body.style.overflow = o ? 'hidden' : '';
+}
+burger.addEventListener('click', function(){ ouvrirMenu(true); });
+doc.getElementById('menu-fermer').addEventListener('click', function(){ ouvrirMenu(false); });
+menu.addEventListener('click', function(e){ if(e.target.tagName === 'A') ouvrirMenu(false); });
+doc.addEventListener('keydown', function(e){ if(e.key === 'Escape') ouvrirMenu(false); });
+
+/* ─── Bandeau : on duplique la piste pour un défilement sans couture ─────── */
+(function(){
+  var piste = doc.getElementById('piste');
+  var clone = piste.cloneNode(true);
+  clone.removeAttribute('id'); clone.setAttribute('aria-hidden','true');
+  piste.parentNode.appendChild(clone);
+  piste.parentNode.style.display = 'flex';
+  piste.style.animation = clone.style.animation = 'defile 46s linear infinite';
+  piste.style.width = clone.style.width = 'max-content';
+  piste.parentNode.classList.add('bandeau__double');
+})();
+
+/* ─── Défilement lissé ───────────────────────────────────────────────────── */
+var lenis = null;
+if (window.Lenis && !reduit){
+  lenis = new Lenis({ duration: 1.05, smoothWheel: true, touchMultiplier: 1.6 });
+  function boucleLenis(t){ lenis.raf(t); requestAnimationFrame(boucleLenis); }
+  requestAnimationFrame(boucleLenis);
+  doc.querySelectorAll('a[href^="#"]').forEach(function(a){
+    a.addEventListener('click', function(e){
+      var c = doc.querySelector(a.getAttribute('href'));
+      if(c){ e.preventDefault(); lenis.scrollTo(c, { offset: -10 }); }
+    });
+  });
+}
+
+/* ─── La rosace SVG (neuf secteurs, en clair, jamais repliés) ────────────── */
+var VILLES = [
+  ['Hyères Pharma','Hyères · 83'],['SR Pharma','Palaiseau · 91'],
+  ['Mistral Santé Pharma','Flassans-sur-Issole · 83'],['Sud Ouest Pharma','Montayral · 47'],
+  ['Comptoir Pharmaceutique du Rhône',"Saint-Maurice-l'Exil · 38"],['Escale Pharma','Chilly-Mazarin · 91'],
+  ['Ouest Pharma Services','Saint-Étienne-de-Montluc · 44'],["Pharm'Occitanie Services",'Villeneuve-lès-Béziers · 34'],
+  ['Sud Est Pharma','Le Cannet-des-Maures · 83']
+];
+(function(){
+  var g = doc.getElementById('branches'); if(!g) return;
+  var n = 9, R = 92, r0 = 34, pas = Math.PI*2/n, ns = 'http://www.w3.org/2000/svg';
+  for(var i=0;i<n;i++){
+    var a1 = -Math.PI/2 + i*pas - pas/2, a2 = a1 + pas;
+    var p = doc.createElementNS(ns,'path');
+    var x1=Math.cos(a1)*r0, y1=Math.sin(a1)*r0, x2=Math.cos(a1)*R, y2=Math.sin(a1)*R;
+    var x3=Math.cos(a2)*R, y3=Math.sin(a2)*R, x4=Math.cos(a2)*r0, y4=Math.sin(a2)*r0;
+    p.setAttribute('d','M'+x1.toFixed(2)+' '+y1.toFixed(2)+'L'+x2.toFixed(2)+' '+y2.toFixed(2)+
+      'A'+R+' '+R+' 0 0 1 '+x3.toFixed(2)+' '+y3.toFixed(2)+'L'+x4.toFixed(2)+' '+y4.toFixed(2)+
+      'A'+r0+' '+r0+' 0 0 0 '+x1.toFixed(2)+' '+y1.toFixed(2)+'Z');
+    p.setAttribute('class','branche'); p.setAttribute('data-i', i);
+    p.setAttribute('tabindex','0'); p.setAttribute('role','button');
+    p.setAttribute('aria-label', VILLES[i][0]+', '+VILLES[i][1]);
+    g.appendChild(p);
+  }
+})();
+
+var legende = doc.getElementById('legende');
+var brancheActive = -1;
+function choisirBranche(i){
+  brancheActive = i;
+  doc.querySelectorAll('.branche').forEach(function(b){ b.classList.toggle('actif', +b.dataset.i === i); });
+  doc.querySelectorAll('.maison').forEach(function(m){ m.classList.toggle('actif', +m.dataset.i === i); });
+  if(i >= 0 && legende) legende.innerHTML = '<b>'+VILLES[i][0]+'</b><small>'+VILLES[i][1]+'</small>';
+  else if(legende) legende.innerHTML = '<b>Neuf branches</b><small>choisissez une maison</small>';
+
+  // la rosace dessinée tourne pour amener la branche choisie en haut,
+  // et le verre se verrouille au même angle : le schéma et le vitrail
+  // désignent la même maison, au même instant.
+  var g = doc.getElementById('branches');
+  if(g) g.style.transform = i >= 0 ? 'rotate(' + (-i * 40) + 'deg)' : 'rotate(0deg)';
+  var seg9 = Math.PI*2/9;
+  etat.cible.rotFixe = i >= 0 ? (0.5*seg9 - Math.PI/2) : null;
+  etat.cible.hi = i >= 0 ? 1 : 0;
+}
+['mouseenter','focus','click'].forEach(function(ev){
+  doc.querySelectorAll('.maison, .branche').forEach(function(el){
+    el.addEventListener(ev, function(){ choisirBranche(+el.dataset.i); }, true);
+  });
+});
+var zoneReseau = doc.getElementById('reseau');
+if(zoneReseau) zoneReseau.addEventListener('mouseleave', function(){ choisirBranche(-1); });
+
+/* ─── Compteurs ──────────────────────────────────────────────────────────── */
+function formate(v, suffixe){
+  // ⚠️ jamais de séparateur de milliers sur une année
+  var annee = (v >= 1900 && v <= 2100 && !suffixe);
+  var s = annee ? String(v) : String(v).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  return s + (suffixe || '');
+}
+var obsCompteur = new IntersectionObserver(function(entrees){
+  entrees.forEach(function(e){
+    if(!e.isIntersecting) return;
+    obsCompteur.unobserve(e.target);
+    var el = e.target, cible = +el.dataset.cible, suf = el.dataset.suffixe || '';
+    var t0 = performance.now(), duree = 1300;
+    (function pas(t){
+      var k = Math.min(1, (t - t0)/duree), e2 = 1 - Math.pow(1-k, 3);
+      el.textContent = formate(Math.round(cible*e2), suf);
+      if(k < 1) requestAnimationFrame(pas); else el.textContent = formate(cible, suf);
+    })(t0);
+  });
+}, { threshold: .4 });
+doc.querySelectorAll('[data-cible]').forEach(function(el){ obsCompteur.observe(el); });
+
+/* ─── Apparitions ────────────────────────────────────────────────────────── */
+var obsRev = new IntersectionObserver(function(entrees){
+  entrees.forEach(function(e){
+    if(e.isIntersecting){ e.target.classList.add('vu'); obsRev.unobserve(e.target); }
+  });
+}, { threshold: .12, rootMargin: '0px 0px -6% 0px' });
+doc.querySelectorAll('.rev').forEach(function(el){ obsRev.observe(el); });
+// filet de sécurité : rien ne doit rester invisible plus de 3 s
+setTimeout(function(){ doc.querySelectorAll('.rev:not(.vu)').forEach(function(el){
+  var r = el.getBoundingClientRect();
+  if(r.top < innerHeight && r.bottom > 0) el.classList.add('vu');
+}); }, 3000);
+
+/* ═══ LE SHADER ══════════════════════════════════════════════════════════ */
+var VERT = [
+'attribute vec2 aPos;varying vec2 vUv;',
+'void main(){vUv=aPos*0.5+0.5;gl_Position=vec4(aPos,0.0,1.0);}'
+].join('\n');
+
+var FRAG = [
+'precision highp float;',
+'varying vec2 vUv;',
+'uniform vec2 uRes,uCtr,uFit,uPan;',
+'uniform float uTime,uFold,uSeg,uRot,uZoom,uDisp,uGlow,uSat,uVig,uLead,uTeinte,uHi;',
+'uniform float uWv,uWa,uWb;',
+'uniform sampler2D tV,tA,tB;',
+'const float TAU=6.28318530718;',
+
+/* Les six verres d'une rosace : cobalt, or, rubis, émeraude, verre clair,
+   améthyste. Un vitrail n'est PAS un arc-en-ciel — c'est une palette fermée. */
+'vec3 verre(float i){',
+'  float f=mod(i,6.0);',
+'  if(f<1.0) return vec3(0.16,0.33,0.92);',
+'  if(f<2.0) return vec3(0.96,0.74,0.26);',
+'  if(f<3.0) return vec3(0.85,0.25,0.17);',
+'  if(f<4.0) return vec3(0.11,0.56,0.46);',
+'  if(f<5.0) return vec3(0.95,0.93,0.87);',
+'  return vec3(0.38,0.22,0.60);',
+'}',
+
+/* échantillonnage de la source : trois textures mélangées par des poids.
+   Au repli, on renvoie une image en miroir infini (le vitrail se remplit) ;
+   dépliée, on borde proprement. */
+'vec3 srcAt(vec2 p){',
+'  vec2 st=0.5+uPan+uZoom*vec2(p.x*uFit.x,p.y*uFit.y);',
+'  vec2 stc=clamp(st,0.002,0.998);',
+'  vec2 stm=abs(mod(st,2.0)-1.0);',
+'  vec2 s=mix(stc,stm,clamp(uFold,0.0,1.0));',
+'  return texture2D(tV,s).rgb*uWv+texture2D(tA,s).rgb*uWa+texture2D(tB,s).rgb*uWb;',
+'}',
+
+'void main(){',
+'  float asp=uRes.x/uRes.y;',
+'  vec2 p=vUv-uCtr; p.x*=asp;',
+'  float r=length(p);',
+'  float a0=atan(p.y,p.x);',
+'  float seg=TAU/uSeg;',
+/* repliement : angle local dans le secteur, puis miroir */
+'  float ap=a0+uRot;',
+'  float lr=mod(ap,seg);',
+'  float m=abs(lr-seg*0.5);',
+'  float aF=m-uRot;',
+'  float as=mix(a0,aF,uFold);',
+'  vec2 dir=vec2(cos(as),sin(as));',
+/* dispersion du verre : le rouge et le bleu ne se réfractent pas au même rayon */
+'  vec3 c;',
+'  if(uDisp>0.0005){',
+'    c=vec3(srcAt(dir*(r*(1.0+uDisp))).r, srcAt(dir*r).g, srcAt(dir*(r*(1.0-uDisp))).b);',
+'  } else { c=srcAt(dir*r); }',
+/* Le verre coloré : la photo ne donne plus que la LUMIÈRE, le vitrail donne
+   la couleur. C'est exactement le fonctionnement d'une rosace éclairée. */
+'  float sect=floor(ap/seg);',
+'  float lum0=dot(c,vec3(0.2126,0.7152,0.0722));',
+'  float idx=sect+uTime*0.045;',
+'  vec3 g=mix(verre(floor(idx)),verre(floor(idx)+1.0),smoothstep(0.0,1.0,fract(idx)));',
+'  vec3 vitrail=(0.20+1.55*lum0)*g;',
+'  vitrail=mix(vitrail,vitrail*0.62+c*0.62,0.28);',      /* on garde du détail */
+'  c=mix(c,vitrail,uFold*uTeinte);',
+/* la branche survolée s'allume — c'est la maison qu'on regarde */
+'  float haut=floor((1.5707963+uRot)/seg);',
+'  float estHaut=1.0-smoothstep(0.35,0.55,abs(sect-haut));',
+'  c=mix(c,c*vec3(1.35,1.16,0.72)+vec3(0.10,0.075,0.03),estHaut*uHi*uFold);',
+/* le plomb : une ligne sombre sur chaque couture de miroir + les cercles */
+'  float d=min(lr,seg-lr)*r;',
+'  float plombA=smoothstep(0.0,0.0040,d);',
+'  float anneau=smoothstep(0.0,0.011,abs(fract(r*4.0)-0.5)*0.5);',
+'  float plomb=min(plombA,mix(1.0,anneau,0.6));',
+'  c*=mix(1.0,plomb,uFold*uLead);',
+/* saturation + la source de lumière au centre de la rosace */
+'  float lum=dot(c,vec3(0.2126,0.7152,0.0722));',
+'  c=mix(vec3(lum),c,uSat);',
+'  c+=vec3(1.0,0.88,0.66)*uGlow*exp(-r*2.8);',
+'  c*=mix(1.0,smoothstep(1.30,0.10,r),uVig);',
+'  gl_FragColor=vec4(c,1.0);',
+'}'
+].join('\n');
+
+var cv = doc.getElementById('verre');
+var gl = null;
+try{
+  gl = cv.getContext('webgl', { alpha:false, antialias:false, powerPreference:'high-performance', depth:false, stencil:false })
+    || cv.getContext('experimental-webgl', { alpha:false, antialias:false });
+}catch(e){ gl = null; }
+
+/* ─── État piloté par le défilement ──────────────────────────────────────── */
+var etat = {
+  cur:   { fold:1, seg:9, zoom:1.15, disp:.006, glow:.30, wv:0, wa:0, wb:1, cx:.5, cy:.5, hi:0, teinte:.82, px:0, py:0 },
+  cible: { fold:1, seg:9, zoom:1.15, disp:.006, glow:.30, wv:0, wa:0, wb:1, cx:.5, cy:.5, hi:0, teinte:.82, px:0, py:0,
+           rot:.045, rotFixe:null },
+  rot: 0
+};
+
+var sections = [].slice.call(doc.querySelectorAll('.sec-obs'));
+function lireSection(s){
+  return {
+    fold: parseFloat(s.dataset.fold),
+    seg:  parseFloat(s.dataset.seg),
+    zoom: parseFloat(s.dataset.zoom),
+    disp: parseFloat(s.dataset.disp),
+    glow: parseFloat(s.dataset.glow),
+    rot:  parseFloat(s.dataset.rot),
+    src:  s.dataset.src,
+    ton:  s.dataset.ton,
+    cx:   s.dataset.cx !== undefined ? parseFloat(s.dataset.cx) : 0.5,
+    cy:   s.dataset.cy !== undefined ? parseFloat(s.dataset.cy) : 0.5,
+    axe:  s.dataset.axe || null,
+    teinte: s.dataset.teinte !== undefined ? parseFloat(s.dataset.teinte) : 0.82,
+    px:   s.dataset.px !== undefined ? parseFloat(s.dataset.px) : 0,
+    py:   s.dataset.py !== undefined ? parseFloat(s.dataset.py) : 0
+  };
+}
+var hdr = doc.getElementById('hdr');
+var tonCourant = '';
+var posee = false;
+var videoPrete = false;
+
+function majCible(){
+  var mid = innerHeight/2, best = null, bd = 1e9;
+  for(var i=0;i<sections.length;i++){
+    var r = sections[i].getBoundingClientRect();
+    var d = Math.abs((r.top + r.bottom)/2 - mid);
+    // une section qui ne croise pas l'écran ne peut pas gagner
+    if(r.bottom < 0 || r.top > innerHeight) d += 1e6;
+    if(d < bd){ bd = d; best = sections[i]; }
+  }
+  if(!best) return;
+  var d2 = lireSection(best);
+  etat.cible.fold = d2.fold; etat.cible.seg = d2.seg; etat.cible.zoom = d2.zoom;
+  etat.cible.disp = reduit ? 0 : d2.disp; etat.cible.glow = d2.glow;
+  etat.cible.rot = reduit ? 0 : d2.rot;
+  etat.cible.teinte = d2.teinte;
+  etat.cible.px = d2.px; etat.cible.py = d2.py;
+
+  /* L'AXE : sur téléphone toujours au centre ; sur grand écran, l'axe suit la
+     rosace dessinée quand la section en a une — le schéma EST l'axe du verre. */
+  var etroit = innerWidth < 1040;
+  var cx = etroit ? 0.5 : d2.cx, cy = etroit ? 0.46 : d2.cy;
+  if(d2.axe && !etroit){
+    var ax = doc.querySelector(d2.axe);
+    if(ax){
+      var ra = ax.getBoundingClientRect();
+      if(ra.width > 0){
+        cx = (ra.left + ra.width/2) / innerWidth;
+        cy = (ra.top + ra.height/2) / innerHeight;
+        cy = Math.max(-0.4, Math.min(1.4, cy));
+      }
+    }
+  }
+  etat.cible.cx = cx; etat.cible.cy = cy;
+
+  var src = d2.src;
+  if(src === 'v' && !videoPrete) src = 'b';       // tant que la vidéo n'est pas là
+  etat.cible.wv = src === 'v' ? 1 : 0;
+  etat.cible.wa = src === 'a' ? 1 : 0;
+  etat.cible.wb = src === 'b' ? 1 : 0;
+  if(d2.ton !== tonCourant){
+    tonCourant = d2.ton;
+    hdr.classList.toggle('sur-clair', d2.ton === 'clair');
+  }
+  var doitPoser = (window.scrollY || window.pageYOffset) > innerHeight * 0.55;
+  if(doitPoser !== posee){ posee = doitPoser; hdr.classList.toggle('pose', posee); }
+}
+
+if(!gl){
+  html.classList.add('nogl');
+} else {
+
+  function compile(type, src){
+    var s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+    if(!gl.getShaderParameter(s, gl.COMPILE_STATUS)){ console.warn(gl.getShaderInfoLog(s)); return null; }
+    return s;
+  }
+  var vs = compile(gl.VERTEX_SHADER, VERT), fs = compile(gl.FRAGMENT_SHADER, FRAG);
+  var prog = null;
+  if(vs && fs){
+    prog = gl.createProgram(); gl.attachShader(prog, vs); gl.attachShader(prog, fs); gl.linkProgram(prog);
+    if(!gl.getProgramParameter(prog, gl.LINK_STATUS)){ console.warn(gl.getProgramInfoLog(prog)); prog = null; }
+  }
+  if(!prog){ html.classList.add('nogl'); gl = null; }
+
+  if(gl){
+    gl.useProgram(prog);
+    var buf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 3,-1, -1,3]), gl.STATIC_DRAW);
+    var aPos = gl.getAttribLocation(prog, 'aPos');
+    gl.enableVertexAttribArray(aPos);
+    gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+
+    var U = {};
+    ['uRes','uCtr','uFit','uPan','uTime','uFold','uSeg','uRot','uZoom','uDisp','uGlow','uSat','uVig','uLead','uTeinte','uHi','uWv','uWa','uWb','tV','tA','tB']
+      .forEach(function(n){ U[n] = gl.getUniformLocation(prog, n); });
+
+    function nouvelleTexture(unite){
+      var t = gl.createTexture();
+      gl.activeTexture(gl.TEXTURE0 + unite);
+      gl.bindTexture(gl.TEXTURE_2D, t);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, 1, 1, 0, gl.RGB, gl.UNSIGNED_BYTE, new Uint8Array([14,16,24]));
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      return t;
+    }
+    var texV = nouvelleTexture(0), texA = nouvelleTexture(1), texB = nouvelleTexture(2);
+    var propo = { v: 16/9, a: 3/2, b: 16/9 };   // proportions réelles, mises à jour au chargement
+    gl.uniform1i(U.tV, 0); gl.uniform1i(U.tA, 1); gl.uniform1i(U.tB, 2);
+
+    function chargerImage(url, tex, unite){
+      var im = new Image();
+      im.onload = function(){
+        if(im.naturalHeight) propo[unite === 1 ? 'a' : 'b'] = im.naturalWidth / im.naturalHeight;
+        gl.activeTexture(gl.TEXTURE0 + unite);
+        gl.bindTexture(gl.TEXTURE_2D, tex);
+        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, im);
+      };
+      im.src = url;
+    }
+    chargerImage('../../assets/siege-web.jpg', texA, 1);
+    chargerImage('../../assets/siege-solaire.jpg', texB, 2);
+
+    var vid = doc.getElementById('src-video');
+    function tenterLecture(){ var p = vid.play(); if(p && p.catch) p.catch(function(){}); }
+    vid.addEventListener('loadedmetadata', function(){
+      if(vid.videoHeight) propo.v = vid.videoWidth / vid.videoHeight;
+    });
+    vid.addEventListener('loadeddata', function(){ videoPrete = true; tenterLecture(); });
+    vid.addEventListener('canplay', function(){ videoPrete = true; });
+    tenterLecture();
+    ['click','touchstart','keydown'].forEach(function(ev){
+      doc.addEventListener(ev, tenterLecture, { once:true, passive:true });
+    });
+
+    var dpr = 1, W = 0, H = 0;
+    function redim(){
+      dpr = Math.min(window.devicePixelRatio || 1, 1.75);
+      W = Math.round(innerWidth * dpr); H = Math.round(innerHeight * dpr);
+      cv.width = W; cv.height = H;
+      cv.style.width = innerWidth + 'px'; cv.style.height = innerHeight + 'px';
+      gl.viewport(0, 0, W, H);
+    }
+    redim();
+    addEventListener('resize', redim);
+
+    /* ─── Mesure d'images par seconde, exposée pour le contrôle ─────────── */
+    var fpsN = 0, fpsT = performance.now();
+    window.__fps = 0; window.__fpsMin = 999;
+
+    function lerp(a, b, k){ return a + (b - a) * k; }
+    var t0 = performance.now(), dernier = t0;
+
+    function image(t){
+      requestAnimationFrame(image);
+      var dt = Math.min(0.05, (t - dernier)/1000); dernier = t;
+
+      majCible();
+
+      // vidéo → texture (une seule vidéo autoplay sur la page)
+      if(videoPrete && vid.readyState >= 2 && etat.cur.wv > 0.01){
+        gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, texV);
+        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+        try{ gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, vid); }catch(e){}
+      }
+
+      var k = 1 - Math.pow(0.001, dt);          // amortissement stable quel que soit dt
+      var c = etat.cur, cb = etat.cible;
+      c.fold = lerp(c.fold, cb.fold, k);
+      c.seg  = lerp(c.seg,  cb.seg,  k);
+      c.zoom = lerp(c.zoom, cb.zoom, k);
+      c.disp = lerp(c.disp, cb.disp, k);
+      c.glow = lerp(c.glow, cb.glow, k);
+      c.wv   = lerp(c.wv,   cb.wv,   k);
+      c.wa   = lerp(c.wa,   cb.wa,   k);
+      c.wb   = lerp(c.wb,   cb.wb,   k);
+      c.cx   = lerp(c.cx,   cb.cx,   1 - Math.pow(0.02, dt));
+      c.cy   = lerp(c.cy,   cb.cy,   1 - Math.pow(0.02, dt));
+      c.hi   = lerp(c.hi,   cb.hi,   1 - Math.pow(0.0005, dt));
+      c.teinte = lerp(c.teinte, cb.teinte, k);
+      c.px   = lerp(c.px,   cb.px,   k);
+      c.py   = lerp(c.py,   cb.py,   k);
+      var som = c.wv + c.wa + c.wb; if(som < 0.001) som = 1;
+
+      if(cb.rotFixe !== null){
+        // on verrouille la rosace : la maison regardée passe en haut
+        var diff = cb.rotFixe - etat.rot;
+        diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+        etat.rot += diff * Math.min(1, dt*3.6);
+      } else {
+        etat.rot += cb.rot * dt * 2.2;
+      }
+
+      /* cadrage « cover » : la zone lue dans la texture a la proportion de
+         l'écran et remplit l'image — sans ça, les bords s'étirent en traînées
+         dès que la symétrie est dépliée. Défaut trouvé à l'écran, pas au code. */
+      var asp = W / H;
+      var aIm = (c.wv*propo.v + c.wa*propo.a + c.wb*propo.b) / som;
+      var fw = asp >= aIm ? 1.0 : asp / aIm;
+      var fh = asp >= aIm ? aIm / asp : 1.0;
+
+      gl.uniform2f(U.uRes, W, H);
+      gl.uniform2f(U.uFit, fw / asp, fh);
+      gl.uniform2f(U.uPan, c.px, c.py);
+      gl.uniform2f(U.uCtr, c.cx, 1 - c.cy);   // vUv part du bas, l'écran du haut
+      gl.uniform1f(U.uTeinte, c.teinte);
+      gl.uniform1f(U.uHi, c.hi);
+      gl.uniform1f(U.uTime, (t - t0)/1000);
+      gl.uniform1f(U.uFold, c.fold);
+      gl.uniform1f(U.uSeg, Math.max(2.0, c.seg));
+      gl.uniform1f(U.uRot, etat.rot);
+      gl.uniform1f(U.uZoom, c.zoom);
+      gl.uniform1f(U.uDisp, c.disp);
+      gl.uniform1f(U.uGlow, c.glow);
+      gl.uniform1f(U.uSat, 1.0 + c.fold * 0.35);
+      gl.uniform1f(U.uVig, 0.55);
+      gl.uniform1f(U.uLead, 0.85);
+      gl.uniform1f(U.uWv, c.wv/som);
+      gl.uniform1f(U.uWa, c.wa/som);
+      gl.uniform1f(U.uWb, c.wb/som);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+      fpsN++;
+      if(t - fpsT >= 1000){
+        window.__fps = Math.round(fpsN * 1000 / (t - fpsT));
+        if(window.__fps < window.__fpsMin) window.__fpsMin = window.__fps;
+        fpsN = 0; fpsT = t;
+      }
+    }
+    requestAnimationFrame(image);
+
+    // le contexte peut être perdu (veille, mémoire) : on repasse au repli
+    cv.addEventListener('webglcontextlost', function(e){ e.preventDefault(); html.classList.add('nogl'); });
+  }
+}
+
+/* sans WebGL, l'en-tête doit quand même changer de ton */
+if(html.classList.contains('nogl')){
+  addEventListener('scroll', function(){
+    doc.getElementById('hdr').classList.toggle('pose',
+      (window.scrollY || window.pageYOffset) > innerHeight * 0.55);
+  }, { passive:true });
+  var obsTon = new IntersectionObserver(function(en){
+    en.forEach(function(e){
+      if(e.isIntersecting && e.intersectionRatio > .3){
+        doc.getElementById('hdr').classList.toggle('sur-clair', e.target.dataset.ton === 'clair');
+      }
+    });
+  }, { threshold:[.3,.6] });
+  sections.forEach(function(s){ obsTon.observe(s); });
+}
+
+})();
+</script>
+</body>
+</html>

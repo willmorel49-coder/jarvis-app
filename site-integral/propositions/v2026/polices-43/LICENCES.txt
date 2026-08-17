@@ -1,0 +1,26 @@
+Polices de la maquette 43 — « DISSOLUTION »
+Toutes sous SIL Open Font License 1.1 (OFL) : usage commercial et
+auto-hébergement autorisés, sans coût et sans clé d'API.
+
+archivo-var.woff2   Archivo (variable : wght 100-900, wdth 62-125)
+                    Omnibus-Type — https://fonts.google.com/specimen/Archivo
+                    OFL-1.1 — sous-ensemble latin
+                    Employée ici en largeur condensée (font-stretch 72-84 %),
+                    ce qui donne des titres en blocs verticaux pleins : c'est
+                    la forme qui se pixellise le mieux.
+
+intertight.woff2    Inter Tight 400/500/600 (variable)
+                    Rasmus Andersson — https://fonts.google.com/specimen/Inter+Tight
+                    OFL-1.1 — sous-ensemble latin
+                    Texte de lecture. Ne subit JAMAIS la pixellisation.
+
+geistmono.woff2     Geist Mono (variable)
+                    Vercel — https://fonts.google.com/specimen/Geist+Mono
+                    OFL-1.1 — sous-ensemble latin
+                    Étiquettes, numéros, chiffres, légendes techniques.
+
+Copiées le 16/08/2026 depuis d'autres dossiers polices-* du même projet (elles-mêmes téléchargées depuis fonts.gstatic.com), servies en
+local. Aucun CDN, aucun appel réseau sortant depuis la page.
+
+Aucune librairie externe : la maquette 43 n'a pas de dossier libs-43.
+Tout le moteur de dissolution est écrit à la main en canvas 2D.
