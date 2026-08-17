@@ -205,9 +205,29 @@
         // Ici et pas ailleurs — « viser » remet la sélection à zéro quand on
         // change de commercial, et cocher avant serait sans effet.
         if (V2.campagnePreselection && V2.campagnePreselection.length) {
+          var demandes = V2.campagnePreselection.map(String);
+          // On ne coche QUE ce qui est réellement dans la liste du commercial.
+          // Une officine relancée peut avoir quitté son portefeuille depuis
+          // l'envoi — et cocher une ligne qui n'existe pas ne se voit pas.
+          var presentes = {};
+          ETAT.tous.forEach(function (o) { presentes[String(o.cip)] = 1; });
           ETAT.choisis = {};
-          V2.campagnePreselection.forEach(function (cip) { ETAT.choisis[String(cip)] = 1; });
+          var trouvees = 0;
+          demandes.forEach(function (cip) {
+            if (presentes[cip]) { ETAT.choisis[cip] = 1; trouvees++; }
+          });
           V2.campagnePreselection = null;
+          // ⚠️ Le dire. Un écran qui affiche « 0 coché » après un clic sur
+          // « relancer les 24 » laisse croire à une panne ; pire, un écran qui
+          // n'en coche que 18 sans rien dire fait disparaître 6 officines en
+          // silence. On annonce l'écart et sa raison.
+          var perdues = demandes.length - trouvees;
+          if (perdues > 0) {
+            V2.toast(trouvees + ' officine' + (trouvees > 1 ? 's' : '') + ' sur ' +
+              demandes.length + ' — ' + perdues +
+              (perdues > 1 ? ' ne sont plus' : ' n’est plus') +
+              ' dans ta liste (portefeuille, filtre commercial ou opposition).');
+          }
         }
         V2.campagne.rafraichir();
       }).catch(function () {
@@ -318,7 +338,12 @@
                   'Les officines sans adresse mail et celles marquées « ne plus solliciter » ' +
                   'sont toujours écartées.</p>');
 
-      var bt = document.querySelectorAll('.cp-type button');
+      // ⚠️ `[data-t]` est indispensable : la classe `cp-type` habille AUSSI la
+      // rangée des commerciaux et celle du mode d'envoi. Sans ce filtre, le
+      // sélecteur attrapait 6 boutons au lieu de 3 et retirait leur état actif
+      // — le mode « groupé » restait choisi en mémoire mais plus rien ne
+      // l'indiquait à l'écran. Le défaut existait déjà pour le commercial.
+      var bt = document.querySelectorAll('.cp-type button[data-t]');
       for (var i = 0; i < bt.length; i++)
         bt[i].classList.toggle('on', bt[i].getAttribute('data-t') === ETAT.type);
       V2.campagne.majBarre();
@@ -414,6 +439,10 @@
       // (admin) arrive sans choix fait, et doit en faire un : c'est ce qui
       // évite d'écrire aux clients de toute l'équipe.
       if (ETAT.comm === null) ETAT.comm = moi() || null;
+      // Arrivée depuis une relance du suivi : le mode est déjà décidé, il
+      // serait absurde de faire rechoisir « groupé » à quelqu'un qui vient
+      // de cliquer « relancer les 24 sans réponse » d'un envoi groupé.
+      if (V2.campagneModeVoulu) { ETAT.mode = V2.campagneModeVoulu; V2.campagneModeVoulu = null; }
       var top = V2.topbar ? V2.topbar({ back: true, backTo: 'rdv', backLabel: 'Rendez-vous' }) : '';
       var mods = window.V2MOD.liste().map(function (m) {
         return '<option value="' + esc(m.cle) + '">' + esc(m.nom) + '</option>';

@@ -309,7 +309,11 @@
     },
 
     // Le pharmacien a répondu STOP : on l'écarte des campagnes futures.
-    nePlusSolliciter: function (cip, nom) {
+    // `apres` : où retourner une fois fait. Sans lui on revient au hub — mais
+    // depuis le suivi d'un envoi groupé, renvoyer au hub ferait perdre la
+    // liste qu'on était en train de traiter. Or c'est justement là qu'on
+    // honore le plus de STOP : chaque mail groupé le promet par écrit.
+    nePlusSolliciter: function (cip, nom, apres) {
       var c = sb(), u = uid();
       if (!c || !u || !cip) { V2.toast('Action impossible.'); return; }
       // Vaut pour TOUTE l'équipe : la fonction pose la clé par officine, et
@@ -321,7 +325,7 @@
         V2.toast(ok
           ? (nom || 'Cette officine') + ' ne sera plus sollicitée, par personne dans l’équipe.'
           : 'Enregistrement impossible.');
-        if (ok) V2.go('rdv');
+        if (ok) V2.go(apres || 'rdv');
       });
     },
 
