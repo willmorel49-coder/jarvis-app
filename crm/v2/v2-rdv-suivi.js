@@ -39,6 +39,14 @@
     return JOURS[d.getUTCDay()] + ' ' + (+p[2]) + ' ' + MOIS[+p[1] - 1];
   }
   function jour(iso) { return String(iso || '').slice(0, 10); }
+
+  // Valeur injectée dans un onclick="…('ICI')" : elle traverse l'analyseur
+  // HTML puis l'analyseur JavaScript. esc() seul ne suffit pas — il change '
+  // en &#39;, que le navigateur redécode AVANT que JS ne lise la chaîne, ce
+  // qui la referme. Même parade que dans v2-rdv.js.
+  function escArg(s) {
+    return esc(String(s == null ? '' : s).replace(/[\\'"<>&]/g, ''));
+  }
   function joursDepuis(iso) {
     if (!iso) return null;
     return Math.floor((Date.now() - new Date(iso).getTime()) / 864e5);
@@ -201,9 +209,19 @@
       // Les rendez-vous réellement pris — la seule preuve de conversion.
       c.from('rdv').select('cip, date, heure, statut, origine, cree_le, nom')
         .eq('user_id', u).order('cree_le', { ascending: false }).limit(500)
-        .then(function (r) { return (r && r.data) || []; }).catch(function () { return []; })
+        .then(function (r) { return (r && r.data) || []; }).catch(function () { return []; }),
+      // La liste d'opposition, COMMUNE à toute l'équipe : une officine qui a
+      // dit STOP ne doit plus être relancée par personne. Sans elle, le bouton
+      // STOP réapparaîtrait sur une officine déjà écartée, et une relance la
+      // reprendrait dans le lot.
+      c.rpc('rdv_opposes')
+        .then(function (r) {
+          return ((r && r.data) || []).map(function (x) {
+            return String(x && x.cip != null ? x.cip : x);
+          });
+        }).catch(function () { return []; })
     ]).then(function (r) {
-      return { envois: r[0], liens: r[1], rdv: r[2] };
+      return { envois: r[0], liens: r[1], rdv: r[2], opposes: r[3] };
     });
   }
 
@@ -271,6 +289,13 @@
       '.sv-dl span{flex:0 0 auto;font-size:12px;font-weight:700}',
       '.sv-dl span.g{color:#0E9E6A}',
       '.sv-dl span.m{color:var(--muted);font-weight:600}',
+      '.sv-dl span.s{color:#B03A2E;font-weight:700}',
+      // Le bouton STOP : discret mais atteignable au doigt (44 px de haut,
+      // marges négatives pour ne pas gonfler la ligne).
+      '.sv-stop{flex:0 0 auto;min-height:44px;margin:-11px -4px -11px 0;padding:0 9px;',
+      '  border:0;background:transparent;color:var(--muted);font:inherit;font-size:11px;',
+      '  font-weight:800;letter-spacing:.06em;cursor:pointer}',
+      '.sv-stop:hover{color:#B03A2E}',
       '.sv-vide{color:var(--muted);font-size:14px;margin:0 0 6px;line-height:1.55}',
       '.sv-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}',
       '.sv-acts .v2-btn{min-height:44px}',
@@ -293,6 +318,27 @@
       '</div></div>';
   }
 
+  V2.rdvSuivi = {
+    // Honorer un STOP. On reste sur le suivi : c'est là qu'on en traite
+    // plusieurs à la suite, en dépouillant ses réponses de mail.
+    stop: function (cip, nom) {
+      if (!window.confirm((nom || 'Cette officine') +
+          ' ne sera plus sollicitée, par personne dans l’équipe. Confirmer ?')) return;
+      V2.rdv.nePlusSolliciter(cip, nom, 'rdvsuivi');
+    },
+
+    // Reprendre un lot pour relancer ceux qui n'ont pas répondu. On repasse
+    // par l'écran Campagne — même ciblage, même aperçu, même garde-fous —
+    // avec la sélection déjà cochée et le mode groupé déjà choisi.
+    relancer: function (cips) {
+      if (!cips || !cips.length) { V2.toast('Personne à relancer.'); return; }
+      V2.campagnePreselection = cips.map(String);
+      V2.campagneModeVoulu = 'groupe';
+      V2.toast(cips.length + ' officine' + (cips.length > 1 ? 's' : '') + ' à relancer.');
+      V2.go('campagne');
+    }
+  };
+
   V2.pages.rdvsuivi = {
     render: function (root) {
       ensureCss();
@@ -309,27 +355,52 @@
 
       Promise.all([V2.rdvControle.verifier(), charger()]).then(function (res) {
         var controles = res[0] || [];
-        var D = res[1] || { envois: [], liens: [], rdv: [] };
+        var D = res[1] || { envois: [], liens: [], rdv: [], opposes: [] };
+        var opposes = D.opposes || [];
 
         // ── Le compte, canal par canal ────────────────────────
         var solGroupe = 0, cvGroupe = 0;
         var envHtml = D.envois.map(function (e) {
           var dests = e.rdv_envoi_dest || [];
           var nRes = 0;
+          var sansReponseIci = [];
           var lignes = dests.map(function (d) {
             var r = reservationApres(D.rdv, d.cip, e.envoye_le);
-            if (r) nRes++;
+            if (r) nRes++; else sansReponseIci.push(String(d.cip));
             var age = joursDepuis(e.envoye_le);
+            var opp = opposes.indexOf(String(d.cip)) >= 0;
             return '<li><b>' + esc(d.nom || d.cip) + '</b>' +
               (r ? '<span class="g">a réservé le ' + esc(jour(r.date)) + '</span>'
+                 : opp ? '<span class="s">ne plus solliciter</span>'
                  : '<span class="m">' + (age != null && age >= 7
                       ? 'sans réponse depuis ' + esc(age) + ' j'
-                      : 'en attente') + '</span>') + '</li>';
+                      : 'en attente') + '</span>') +
+              // ⚠️ CHAQUE mail groupé promet par écrit « Répondez STOP à ce
+              // message ». Jusqu'au 18/08/2026 cette promesse était intenable
+              // pour un destinataire de lot : le bouton n'existait que dans la
+              // liste des envois un-par-un. Une officine qui répondait STOP
+              // continuait donc de recevoir les campagnes suivantes.
+              (r || opp ? '' :
+                '<button class="sv-stop" title="Cette officine a répondu STOP" ' +
+                'onclick="V2.rdvSuivi.stop(\'' + escArg(d.cip) + '\',\'' +
+                escArg(d.nom || '') + '\')">STOP</button>') +
+              '</li>';
           }).join('');
           solGroupe += dests.length; cvGroupe += nRes;
 
           var mod = { bilan: 'Le bilan de son officine', offre: 'La nouveauté du moment',
                       routine: 'La visite de routine' }[e.modele] || e.modele;
+
+          // Relance : on ne reprend QUE ceux qui n'ont pas réservé et qui
+          // n'ont pas dit stop. Et pas avant 7 jours — en dessous, le
+          // pharmacien n'a simplement pas encore eu le temps, le relancer
+          // agace au lieu de convaincre. Même seuil que les envois un-par-un.
+          var aRelancer = sansReponseIci.filter(function (cip) {
+            return opposes.indexOf(cip) < 0;
+          });
+          var age = joursDepuis(e.envoye_le);
+          var mur = (age != null && age >= 7 && aRelancer.length);
+
           return '<div class="sv-env">' +
             '<div class="sv-env-h"><b>' + esc(jour(e.envoye_le)) + '</b>' +
               '<small>' + esc(mod) + ' · lot ' + esc(e.lot) + '/' + esc(e.lots_total) +
@@ -338,6 +409,17 @@
             '<p class="sv-env-r">' + (nRes
               ? '<span class="g">' + esc(nRes) + ' rendez-vous</span> pris depuis cet envoi.'
               : 'Aucune réservation pour l’instant.') + '</p>' +
+            (mur
+              ? '<div class="sv-acts" style="margin-top:8px">' +
+                  '<button class="v2-btn" onclick="V2.rdvSuivi.relancer(' +
+                    esc(JSON.stringify(aRelancer)).replace(/"/g, '&quot;') + ')">' +
+                    'Relancer les ' + esc(aRelancer.length) + ' sans réponse</button>' +
+                '</div>'
+              : (aRelancer.length && age != null && age < 7
+                  ? '<p class="sv-hon" style="margin-top:6px">Relance possible dans ' +
+                    esc(7 - age) + ' jour' + ((7 - age) > 1 ? 's' : '') +
+                    ' — en dessous de 7 jours, on n’a simplement pas laissé le temps.</p>'
+                  : '')) +
             (lignes ? '<ul class="sv-dl">' + lignes + '</ul>' : '') +
           '</div>';
         }).join('');
