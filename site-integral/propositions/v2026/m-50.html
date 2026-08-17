@@ -1,0 +1,1515 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Intégral Pharma — 50 · Le Mouvement</title>
+<meta name="description" content="Groupe de grossistes-répartiteurs français indépendant. Neuf maisons, un seul nom.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23EFE9DC'/%3E%3Ccircle cx='16' cy='16' r='11' fill='none' stroke='%23B9873A' stroke-width='4' stroke-dasharray='2.4 1.9'/%3E%3Ccircle cx='16' cy='16' r='3.2' fill='%23C0223F'/%3E%3C/svg%3E">
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     MAQUETTE 50 — « LE MOUVEMENT »
+     Intégral Pharma · site vitrine · proposition v2026 · dernière des cinquante
+
+     LA MÉCANIQUE
+     Un mouvement d'horlogerie à nu. Ce n'est pas un décor : c'est LUI qui
+     entraîne la page. La main du visiteur pousse une crémaillère ; la
+     crémaillère fait tourner un pignon ; le pignon fait tourner une grande
+     roue ; la grande roue avance le contenu. Chaque section est une pièce du
+     mouvement — barillet, rouage, excentriques, rubis.
+
+     LES RAPPORTS SONT JUSTES
+     Toutes les roues de la page partagent un même module (le pas de denture).
+     Un module m, une roue de N dents : rayon primitif = N·m/2, pas circonfé-
+     rentiel = π·m. C'est pour cela que les dentures sont dessinées par un
+     cercle au trait pointillé dont le tiret vaut exactement π·m — le compte de
+     dents est donc géométriquement exact, pas suggéré.
+     Train de l'ouverture, module 4 :
+         barillet 80 d. → roue moyenne 20 d. → roue de champ 40 d. → échappement 15 d.
+         entraxes 200 · 120 · 110 ; rapports ×4 ↺, ×2 ↻, ×5,33 ↺.
+     Colonne de gauche, module 1,5 :
+         crémaillère (pas 4,712) → pignon 14 d. → grande roue 70 d. ; rapport 1/5.
+     Réseau, module 1,6 : neuf roues engrenées, 72·24·36·18·30·20·28·22·32 dents.
+         Le rapport d'une roue k sur la roue 1 vaut N1/Nk, quel que soit le
+         nombre de roues intermédiaires — c'est ce qui est affiché sous chacune.
+     Métier : quatre excentriques calés à 90° sur un même arbre. Le déplacement
+         d'un poussoir vaut exactement e·(1−cos θ) — c'est la formule utilisée
+         pour animer les poussoirs, pas une approximation à l'œil.
+
+     POURQUOI LE MÉCANISME, ICI
+     Neuf maisons qui s'engrènent. Un groupe EST un mécanisme : si une roue
+     s'arrête, tout s'arrête. C'est exactement ce que dit le texte validé —
+     « le stock d'une maison est le stock de toutes ».
+
+     LES RÈGLES QU'ON S'EST DONNÉES
+     · Le mécanisme ne recouvre jamais le texte. Il vit dans la marge, en fond
+       très en retrait, ou en bandeau. Le texte est toujours posé sur une
+       platine nette, opaque.
+     · Trois ou quatre roues bien dessinées par écran, jamais quarante.
+     · L'échappement quantifie le train de l'ouverture : il avance dent par
+       dent (24° d'échappement = 4,5° de barillet). C'est le « tic » d'une
+       vraie montre, et c'est mécaniquement vrai.
+     · Aucun écran de chargement. L'armement du ressort dure 1,4 s et la page
+       est utilisable pendant.
+     · Sans JavaScript : le mouvement reste dessiné, à l'arrêt, ressort armé.
+       Tout le texte est lisible, la navigation fonctionne.
+     · `prefers-reduced-motion` : plus rien ne tourne, tout reste lisible.
+
+     TECHNIQUE
+     SVG statique + rotations `transform` pilotées par une seule boucle rAF.
+     Aucune librairie, aucun CDN, aucun appel réseau sortant, aucune clé.
+     Polices servies depuis polices-50/ (SIL OFL 1.1).
+     Une seule vidéo en lecture automatique, une seule photographie.
+     Aucun verre dépoli, aucune découpe de dégradé dans du texte, aucun flou
+     de grande surface — les quatre interdits Safari sont respectés.
+     ═══════════════════════════════════════════════════════════════════════ -->
+
+<style>
+/* ─── Polices, servies en local ─────────────────────────────────────────── */
+@font-face{font-family:'Instrument';src:url('polices-50/instrumentserif.woff2') format('woff2');font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:'Instrument';src:url('polices-50/instrumentserif-italic.woff2') format('woff2');font-weight:400;font-style:italic;font-display:swap}
+@font-face{font-family:'Inter';src:url('polices-50/inter.woff2') format('woff2');font-weight:400 600;font-style:normal;font-display:swap}
+@font-face{font-family:'Archivo';src:url('polices-50/archivo-var.woff2') format('woff2');font-weight:400 700;font-style:normal;font-display:swap}
+@font-face{font-family:'PlexMono';src:url('polices-50/plexmono-400.woff2') format('woff2');font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:'PlexMono';src:url('polices-50/plexmono-500.woff2') format('woff2');font-weight:500;font-style:normal;font-display:swap}
+
+/* ─── Jetons ────────────────────────────────────────────────────────────── */
+:root{
+  /* la platine : l'ivoire d'un établi d'horloger, trois tons, une lumière */
+  --fond:#EFE9DC;
+  --fond-h:#FBF7EE;
+  --fond-b:#DBD0B9;
+  --fond-c:#E5DECE;
+  /* les encres */
+  --encre:#14120D;
+  --encre-2:#57503F;
+  --encre-3:#8B8371;
+  /* les métaux */
+  --laiton:#B9873A;
+  --laiton-h:#F0D390;
+  --laiton-b:#6E4E1B;
+  --acier:#98A0AB;
+  --acier-h:#E3E8EE;
+  --acier-b:#5A626D;
+  --bleui:#23407F;
+  /* le rubis : la seule couleur vive de la page, et c'est une pierre */
+  --rubis:#C0223F;
+
+  --tete:66px;
+  --marge:clamp(20px,4vw,56px);
+  --col:0px;                 /* largeur de la colonne mécanique, 0 en dessous de 1180px */
+  --max:1180px;
+}
+@media (min-width:1180px){ :root{ --col:132px } }
+
+*{box-sizing:border-box}
+/* ⚠ le débordement se coupe sur <html>. Jamais `overflow-x:hidden` sur <body> :
+   cela ferait du body une zone de défilement et annulerait tout position:sticky. */
+html{overflow-x:clip;scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{
+  margin:0;padding:0;background:var(--fond);color:var(--encre);
+  font:400 17px/1.62 'Inter',system-ui,-apple-system,sans-serif;
+  overflow-x:clip;
+  -webkit-font-smoothing:antialiased;
+}
+img,video,svg{display:block;max-width:100%}
+a{color:inherit}
+h1,h2,h3,p,figure{margin:0}
+ul,ol{margin:0;padding:0;list-style:none}
+
+.saut{position:absolute;left:-9999px;top:0;background:var(--encre);color:var(--fond-h);
+  padding:12px 18px;z-index:200;border-radius:0 0 6px 0}
+.saut:focus{left:0}
+
+/* ─── Typo de service ───────────────────────────────────────────────────── */
+.sur{font-family:'PlexMono',ui-monospace,monospace;font-size:12px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--laiton-b);display:flex;align-items:center;gap:10px}
+.sur::before{content:"";width:26px;height:1px;background:var(--laiton);flex:0 0 auto}
+.tit{font-family:'Instrument',Georgia,serif;font-weight:400;line-height:1.02;
+  letter-spacing:-.012em;color:var(--encre)}
+.mono{font-family:'PlexMono',ui-monospace,monospace}
+
+/* ─── En-tête ───────────────────────────────────────────────────────────── */
+.tete{
+  position:fixed;inset:0 0 auto 0;height:var(--tete);z-index:90;
+  display:flex;align-items:center;gap:18px;
+  padding:0 var(--marge);
+  background:var(--fond);
+  border-bottom:1px solid var(--fond-b);
+}
+.tete__logo{display:flex;align-items:center;gap:11px;text-decoration:none;flex:0 0 auto}
+.tete__logo img{height:26px;width:auto}
+.tete__logo span{font-family:'Archivo',system-ui,sans-serif;font-weight:600;font-size:14px;
+  letter-spacing:.02em}
+.nav{margin-left:auto;display:flex;align-items:center;gap:4px}
+.nav a{
+  font-family:'Archivo',system-ui,sans-serif;font-size:13.5px;font-weight:500;
+  letter-spacing:.01em;text-decoration:none;color:var(--encre-2);
+  padding:12px 13px;min-height:44px;display:inline-flex;align-items:center;
+  border-radius:3px;transition:color .18s,background .18s;
+}
+.nav a:hover,.nav a:focus-visible{color:var(--encre);background:var(--fond-c)}
+.nav .nav__cta{
+  color:var(--fond-h);background:var(--encre);margin-left:8px;padding:12px 18px;
+}
+.nav .nav__cta:hover{background:var(--laiton-b);color:var(--fond-h)}
+/* le petit rouage de l'en-tête : il tourne exactement comme le pignon de la colonne */
+.tete__roue{width:26px;height:26px;flex:0 0 auto;margin-left:2px}
+
+.burger{display:none;margin-left:auto;width:46px;height:46px;border:1px solid var(--fond-b);
+  background:var(--fond-h);border-radius:4px;align-items:center;justify-content:center;
+  flex-direction:column;gap:5px;cursor:pointer;padding:0}
+.burger i{display:block;width:19px;height:1.5px;background:var(--encre);transition:transform .25s,opacity .2s}
+.burger[aria-expanded="true"] i:nth-child(1){transform:translateY(6.5px) rotate(45deg)}
+.burger[aria-expanded="true"] i:nth-child(2){opacity:0}
+.burger[aria-expanded="true"] i:nth-child(3){transform:translateY(-6.5px) rotate(-45deg)}
+
+@media (max-width:900px){
+  .nav{
+    position:fixed;inset:var(--tete) 0 auto 0;
+    flex-direction:column;align-items:stretch;gap:0;
+    background:var(--fond);           /* fond PLEIN, opaque */
+    border-bottom:1px solid var(--fond-b);
+    padding:8px var(--marge) 20px;margin:0;
+    transform:translateY(-118%);transition:transform .3s cubic-bezier(.3,.7,.2,1);
+    box-shadow:0 18px 30px -22px rgba(20,18,13,.5);
+  }
+  .nav[data-ouvert="1"]{transform:translateY(0)}
+  .nav a{font-size:17px;padding:15px 4px;border-bottom:1px solid var(--fond-b)}
+  .nav .nav__cta{margin:14px 0 0;justify-content:center;border-bottom:0}
+  .burger{display:flex}
+  .tete__roue{display:none}
+}
+
+/* ─── La colonne mécanique (marge gauche, ≥1180px) ─────────────────────── */
+.colonne{
+  position:fixed;left:0;top:var(--tete);bottom:0;width:var(--col);z-index:40;
+  display:none;pointer-events:none;
+  border-right:1px solid var(--fond-b);
+  background:linear-gradient(100deg,var(--fond-c),var(--fond) 60%);
+}
+@media (min-width:1180px){ .colonne{display:block} }
+.colonne svg{width:100%;height:100%}
+.colonne__idx{
+  position:absolute;right:16px;top:3%;width:34px;height:0;
+  border-top:1px solid var(--rubis);
+}
+.colonne__idx::after{
+  content:"";position:absolute;right:-1px;top:-5px;
+  border:5px solid transparent;border-right-color:var(--rubis);
+}
+.colonne__leg{
+  position:absolute;left:10px;bottom:14px;width:112px;
+  font-family:'PlexMono',ui-monospace,monospace;font-size:9.5px;line-height:1.5;
+  letter-spacing:.05em;color:var(--encre-3);text-transform:uppercase;
+}
+
+/* ─── Métal : les classes communes à tous les rouages ───────────────────── */
+.dents{fill:none;stroke:var(--laiton);stroke-linecap:butt}
+.dents--ac{stroke:var(--acier)}
+.corps{fill:var(--laiton);opacity:.30}
+.corps--ac{fill:var(--acier);opacity:.26}
+.jante{fill:none;stroke:var(--laiton-b);stroke-opacity:.55}
+.jante--ac{stroke:var(--acier-b);stroke-opacity:.5}
+.ev{fill:var(--fond);stroke:var(--laiton-b);stroke-opacity:.35;stroke-width:1}
+.ev--ac{fill:var(--fond);stroke:var(--acier-b);stroke-opacity:.35}
+.moyeu{fill:var(--laiton);opacity:.55}
+.arbre{fill:var(--encre);opacity:.8}
+.pierre{fill:var(--rubis)}
+.pierre--o{fill:none;stroke:var(--rubis);stroke-opacity:.45;stroke-width:1}
+.ressort{fill:none;stroke:var(--acier-b);stroke-width:2.2;stroke-opacity:.75;stroke-linecap:round}
+.trait{fill:none;stroke:var(--encre-3);stroke-opacity:.5;stroke-width:1}
+.etiq{font-family:'PlexMono',ui-monospace,monospace;font-size:11px;fill:var(--encre-2);
+  letter-spacing:.06em}
+.etiq--pt{font-size:9px;fill:var(--encre-3)}
+
+/* ─── Mise en page générale ─────────────────────────────────────────────── */
+main{padding-left:var(--col)}
+.env{max-width:var(--max);margin:0 auto;padding:0 var(--marge)}
+section{position:relative}
+
+/* la platine : le support net sur lequel le texte est toujours posé */
+.platine{
+  background:var(--fond-h);
+  border:1px solid var(--fond-b);
+  border-radius:3px;
+  box-shadow:0 1px 0 rgba(255,255,255,.9) inset, 0 22px 34px -30px rgba(20,18,13,.55);
+  position:relative;
+}
+/* les quatre vis bleuies aux coins d'une platine — le détail d'horlogerie */
+.platine::before,.platine::after{
+  content:"";position:absolute;width:9px;height:9px;border-radius:50%;
+  background:radial-gradient(circle at 34% 30%,#5C7CC4,var(--bleui) 58%,#152A5A);
+  box-shadow:0 0 0 1px rgba(20,18,13,.16);
+}
+.platine::before{left:11px;top:11px}
+.platine::after{right:11px;top:11px}
+.platine__vb{position:absolute;left:11px;bottom:11px;width:9px;height:9px;border-radius:50%;
+  background:radial-gradient(circle at 34% 30%,#5C7CC4,var(--bleui) 58%,#152A5A);
+  box-shadow:0 0 0 1px rgba(20,18,13,.16)}
+.platine__vb--d{left:auto;right:11px}
+
+/* ─── L'ouverture ───────────────────────────────────────────────────────── */
+.hero{
+  min-height:100svh;padding-top:var(--tete);
+  display:flex;align-items:center;position:relative;overflow:clip;
+}
+.hero__fond{
+  position:absolute;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(120% 90% at 12% 4%,#FFFDF7 0%,rgba(255,253,247,0) 62%),
+    radial-gradient(80% 70% at 88% 96%,#E1D7BF 0%,rgba(225,215,191,0) 70%),
+    var(--fond);
+}
+.hero__mec{position:absolute;inset:0;z-index:1;pointer-events:none}
+.hero__mec svg{width:100%;height:100%}
+.hero__in{position:relative;z-index:2;width:100%}
+.hero__pl{
+  max-width:730px;padding:clamp(28px,3.6vw,52px) clamp(24px,3.4vw,52px) clamp(28px,3.4vw,48px);
+}
+.hero h1{font-size:clamp(46px,7.4vw,104px);margin:16px 0 0}
+.hero h1 em{font-style:italic;color:var(--laiton-b)}
+.hero__sous{margin-top:20px;max-width:52ch;color:var(--encre-2);font-size:clamp(15px,1.24vw,18px)}
+.btns{display:flex;flex-wrap:wrap;gap:12px;margin-top:30px}
+.btn{
+  display:inline-flex;align-items:center;gap:10px;min-height:48px;padding:0 22px;
+  font-family:'Archivo',system-ui,sans-serif;font-size:14px;font-weight:600;letter-spacing:.01em;
+  text-decoration:none;border-radius:3px;border:1px solid var(--encre);
+  background:var(--encre);color:var(--fond-h);transition:background .2s,color .2s,transform .2s;
+}
+.btn:hover{background:var(--laiton-b);border-color:var(--laiton-b);transform:translateY(-1px)}
+.btn--v{background:transparent;color:var(--encre);border-color:var(--fond-b)}
+.btn--v:hover{background:var(--fond-c);color:var(--encre);border-color:var(--encre-3)}
+.btn svg{width:15px;height:15px;flex:0 0 auto}
+.hero__note{
+  margin-top:26px;padding-top:16px;border-top:1px solid var(--fond-b);
+  font-family:'PlexMono',ui-monospace,monospace;font-size:11px;letter-spacing:.05em;
+  color:var(--encre-3);text-transform:uppercase;display:flex;flex-wrap:wrap;gap:6px 20px;
+}
+.hero__note b{color:var(--laiton-b);font-weight:500}
+
+/* ─── Le bandeau-crémaillère ────────────────────────────────────────────── */
+.bande{
+  position:relative;overflow:clip;background:var(--encre);color:var(--fond-h);
+  border-top:1px solid var(--encre);border-bottom:1px solid var(--encre);
+}
+.bande__piste{display:flex;width:max-content;will-change:transform}
+.bande__grp{display:flex;align-items:center;flex:0 0 auto;padding:0}
+.bande__grp span{
+  font-family:'Archivo',system-ui,sans-serif;font-size:13px;font-weight:500;
+  letter-spacing:.13em;text-transform:uppercase;
+  padding:19px 26px;white-space:nowrap;display:inline-flex;align-items:center;gap:26px;
+}
+.bande__grp span::after{content:"";width:7px;height:7px;border-radius:50%;
+  background:var(--laiton);opacity:.85}
+/* la denture de la crémaillère, dessinée sous la piste : pas 26px */
+.bande__dents{
+  height:11px;background:
+    repeating-linear-gradient(90deg,var(--laiton-b) 0 14px,transparent 14px 26px);
+  opacity:.55;
+}
+
+/* ─── Bloc de section standard ─────────────────────────────────────────── */
+.sec{padding:clamp(74px,9vw,132px) 0}
+.sec--fin{padding-bottom:clamp(84px,10vw,150px)}
+.hd{max-width:760px}
+.hd h2{font-size:clamp(34px,4.5vw,62px);margin-top:16px}
+.hd p{margin-top:20px;color:var(--encre-2);max-width:60ch}
+.hd p + p{margin-top:14px}
+
+/* ─── §2 Notre histoire ────────────────────────────────────────────────── */
+.hist{display:grid;grid-template-columns:1.15fr .85fr;gap:clamp(28px,3.4vw,56px);align-items:start}
+.cpts{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--fond-b);
+  border:1px solid var(--fond-b);border-radius:3px;overflow:clip;margin-top:44px}
+.cpt{background:var(--fond-h);padding:24px 18px 20px;text-align:left}
+.cpt b{
+  display:block;font-family:'Instrument',Georgia,serif;font-weight:400;
+  font-size:clamp(34px,3.9vw,52px);line-height:1;letter-spacing:-.02em;
+  font-variant-numeric:tabular-nums;
+}
+.cpt i{display:block;font-style:normal;margin-top:10px;
+  font-family:'PlexMono',ui-monospace,monospace;font-size:10.5px;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--encre-3);line-height:1.4}
+/* le guichet : la photographie vue par une ouverture de la platine */
+.guichet{
+  position:relative;border:1px solid var(--fond-b);border-radius:3px;overflow:clip;
+  background:var(--fond-c);
+}
+.guichet img,.guichet video{width:100%;height:100%;object-fit:cover;display:block}
+.guichet__lg{
+  position:absolute;left:0;bottom:0;right:0;padding:12px 14px;
+  font-family:'PlexMono',ui-monospace,monospace;font-size:10px;letter-spacing:.08em;
+  text-transform:uppercase;color:#FBF7EE;
+  background:linear-gradient(to top,rgba(20,18,13,.82),rgba(20,18,13,0));
+}
+
+/* ─── §3 Le réseau ─────────────────────────────────────────────────────── */
+.train{
+  margin-top:44px;border:1px solid var(--fond-b);border-radius:3px;background:var(--fond-h);
+  padding:18px 10px 8px;overflow:clip;
+  box-shadow:0 22px 34px -34px rgba(20,18,13,.5);
+}
+.train svg{width:100%;height:auto}
+.train__lg{
+  padding:10px 12px 4px;font-family:'PlexMono',ui-monospace,monospace;font-size:10.5px;
+  letter-spacing:.06em;text-transform:uppercase;color:var(--encre-3);
+  display:flex;flex-wrap:wrap;gap:6px 22px;border-top:1px solid var(--fond-b);margin-top:6px;
+}
+.maisons{margin-top:34px;border-top:1px solid var(--fond-b)}
+.maison{
+  display:grid;grid-template-columns:52px minmax(0,1fr) auto 38px 112px;gap:16px;
+  align-items:baseline;
+  padding:15px 8px;border-bottom:1px solid var(--fond-b);
+  transition:background .2s;
+}
+.maison:hover,.maison[data-actif="1"]{background:var(--fond-c)}
+.maison b{font-weight:600;font-size:16.5px}
+.maison__n{font-family:'PlexMono',ui-monospace,monospace;font-size:12px;color:var(--laiton-b);
+  letter-spacing:.06em}
+.maison__v{color:var(--encre-2);font-size:15px}
+.maison__d{font-family:'PlexMono',ui-monospace,monospace;font-size:12px;color:var(--encre-3)}
+.maison__r{font-family:'PlexMono',ui-monospace,monospace;font-size:11.5px;color:var(--encre-3);
+  text-align:right;white-space:nowrap}
+.maison--sg b::after{content:"siège du groupe";display:inline-block;margin-left:10px;
+  font-family:'PlexMono',ui-monospace,monospace;font-size:9.5px;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--laiton-b);vertical-align:2px;font-weight:400}
+.partenaire{
+  margin-top:26px;padding:18px 20px;border:1px dashed var(--acier-b);border-radius:3px;
+  color:var(--encre-2);font-size:15.5px;background:var(--fond-c);
+}
+.partenaire b{color:var(--encre);font-weight:600}
+
+/* ─── §4 Le métier ─────────────────────────────────────────────────────── */
+.arbre-cames{margin-top:16px;border:1px solid var(--fond-b);border-radius:3px 3px 0 0;
+  background:var(--fond-h);padding:14px 10px 6px;overflow:clip}
+.arbre-cames svg{width:100%;height:auto}
+.etapes{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--fond-b);
+  border:1px solid var(--fond-b);border-top:0;border-radius:0 0 3px 3px;overflow:clip}
+.etape{background:var(--fond-h);padding:26px 22px 28px;position:relative;
+  transition:background .3s}
+.etape[data-haut="1"]{background:#FFFCF4}
+.etape__n{font-family:'PlexMono',ui-monospace,monospace;font-size:11px;letter-spacing:.1em;
+  color:var(--laiton-b)}
+.etape h3{font-family:'Instrument',Georgia,serif;font-weight:400;font-size:26px;
+  margin-top:12px;line-height:1.1}
+.etape p{margin-top:12px;font-size:14.6px;color:var(--encre-2);line-height:1.58}
+.etape__b{position:absolute;left:0;top:0;height:2px;background:var(--laiton);width:0;
+  transition:width .35s ease}
+.cloture{
+  margin-top:38px;padding:26px 28px;border-left:2px solid var(--laiton);
+  background:var(--fond-c);font-size:clamp(16px,1.5vw,19.5px);color:var(--encre);
+  max-width:74ch;
+}
+.metier__film{margin-top:44px}
+.metier__film .guichet{aspect-ratio:21/8}
+
+/* ─── §4bis La centrale (module détaché) ───────────────────────────────── */
+.centrale{
+  border:1px solid var(--fond-b);border-radius:3px;background:var(--fond-h);
+  display:grid;grid-template-columns:1fr auto;gap:clamp(24px,3vw,54px);
+  padding:clamp(30px,3.6vw,54px);align-items:center;
+  box-shadow:0 22px 34px -34px rgba(20,18,13,.5);
+}
+.centrale h2{font-size:clamp(28px,3.3vw,44px);margin-top:14px}
+.centrale p{margin-top:18px;color:var(--encre-2);max-width:56ch}
+.centrale__cpts{display:flex;gap:34px;margin-top:26px;flex-wrap:wrap}
+.centrale__mec{width:clamp(150px,17vw,220px)}
+.centrale__mec svg{width:100%;height:auto}
+
+/* ─── §4ter Vos factures ───────────────────────────────────────────────── */
+.fact{display:grid;grid-template-columns:auto 1fr;gap:clamp(22px,3vw,48px);align-items:center;
+  padding:clamp(26px,3vw,42px) 0;border-top:1px solid var(--fond-b);
+  border-bottom:1px solid var(--fond-b)}
+.fact__g{
+  width:132px;height:78px;border:1px solid var(--fond-b);border-radius:3px;
+  background:var(--fond-h);overflow:clip;position:relative;flex:0 0 auto;
+}
+.fact h2{font-size:clamp(24px,2.6vw,36px);margin-top:10px}
+.fact p{margin-top:14px;color:var(--encre-2);max-width:62ch}
+
+/* ─── §4quater Partenaires ─────────────────────────────────────────────── */
+.labos{display:grid;grid-template-columns:repeat(6,1fr);gap:1px;background:var(--fond-b);
+  border:1px solid var(--fond-b);border-radius:3px;overflow:clip;margin-top:32px}
+.labo{background:var(--fond-h);padding:30px 12px;text-align:center;
+  font-family:'Archivo',system-ui,sans-serif;font-weight:600;font-size:15px;letter-spacing:.01em;
+  display:flex;align-items:center;justify-content:center;min-height:92px;
+  transition:background .2s}
+.labo:hover{background:var(--fond-c)}
+
+/* ─── §4quinquies Nous rejoindre ───────────────────────────────────────── */
+.emploi{display:grid;grid-template-columns:1.1fr .9fr;gap:clamp(26px,3.4vw,58px);
+  align-items:center}
+.emploi__mec svg{width:100%;height:auto}
+.villes{display:flex;flex-wrap:wrap;gap:9px;margin-top:24px}
+.ville{border:1px solid var(--fond-b);border-radius:999px;padding:9px 16px;
+  font-family:'PlexMono',ui-monospace,monospace;font-size:12px;letter-spacing:.05em;
+  color:var(--encre-2);background:var(--fond-h)}
+
+/* ─── §5 Les valeurs — trois rubis sertis ──────────────────────────────── */
+.valeurs{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--fond-b);
+  border:1px solid var(--fond-b);border-radius:3px;overflow:clip;margin-top:44px}
+.valeur{background:var(--fond-h);padding:clamp(30px,3.2vw,46px) clamp(24px,2.6vw,38px) clamp(34px,3.4vw,50px);
+  position:relative}
+.valeur__ch{width:64px;height:64px}
+.valeur h3{font-family:'Instrument',Georgia,serif;font-weight:400;font-size:clamp(28px,3vw,40px);
+  margin-top:22px;line-height:1}
+.valeur p{margin-top:16px;color:var(--encre-2);font-size:15.6px}
+
+/* ─── §6 Fin de page ───────────────────────────────────────────────────── */
+.fin{position:relative;overflow:clip}
+.fin h2{font-size:clamp(32px,4.6vw,64px)}
+.fin p{margin-top:20px;color:var(--encre-2);max-width:52ch}
+.fin__g{display:grid;grid-template-columns:1.25fr .75fr;gap:clamp(26px,3.4vw,60px);
+  align-items:center}
+.fin__bal{justify-self:center;width:min(300px,80%);text-align:center}
+.fin__bal svg{width:100%;height:auto}
+.fin__lg{margin-top:18px;font-family:'PlexMono',ui-monospace,monospace;font-size:10.5px;
+  letter-spacing:.07em;text-transform:uppercase;color:var(--encre-3);line-height:1.7}
+.pied{
+  background:var(--encre);color:#CFC7B4;padding:clamp(44px,5vw,72px) 0 34px;
+  margin-left:var(--col);
+}
+.pied a{color:#FBF7EE;text-decoration:none;border-bottom:1px solid rgba(251,247,238,.3);
+  padding-bottom:1px}
+.pied a:hover{border-bottom-color:#FBF7EE}
+.pied__h{display:flex;flex-wrap:wrap;gap:26px 44px;align-items:flex-start;
+  justify-content:space-between}
+.pied__adr{font-size:15px;line-height:1.75;max-width:38ch}
+.pied__adr b{color:#FBF7EE;font-weight:600}
+.pied__ch{font-family:'PlexMono',ui-monospace,monospace;font-size:11px;letter-spacing:.07em;
+  text-transform:uppercase;color:#8D8574;margin-top:34px;padding-top:22px;
+  border-top:1px solid rgba(251,247,238,.14);
+  display:flex;flex-wrap:wrap;gap:8px 26px;justify-content:space-between}
+.pied__sig{color:#6E6757}
+.pied__liens{display:flex;flex-direction:column;font-size:14.5px}
+/* cibles tactiles : 44 px de haut minimum, y compris dans le pied de page */
+.pied__liens a{display:inline-flex;align-items:center;min-height:44px;width:fit-content;
+  border-bottom:0;box-shadow:0 1px 0 rgba(251,247,238,.3)}
+.pied__liens a:hover{box-shadow:0 1px 0 #FBF7EE}
+.pied__adr a{display:inline-flex;align-items:center;min-height:44px}
+.tete__logo{min-height:44px}
+
+/* ─── Révélation au défilement ─────────────────────────────────────────── */
+/* ⚠ jamais de masquage par clip-path : l'aire visible tomberait à zéro et
+   l'observateur ne se déclencherait jamais. Opacité + translation, point. */
+.rev{opacity:0;transform:translateY(16px);
+  transition:opacity .6s cubic-bezier(.22,.7,.25,1),transform .6s cubic-bezier(.22,.7,.25,1)}
+.rev[data-vu="1"]{opacity:1;transform:none}
+
+/* ─── Adaptations ──────────────────────────────────────────────────────── */
+@media (max-width:1020px){
+  .hist{grid-template-columns:1fr}
+  .emploi{grid-template-columns:1fr}
+  .centrale{grid-template-columns:1fr}
+  .centrale__mec{width:190px}
+  .labos{grid-template-columns:repeat(3,1fr)}
+  .etapes{grid-template-columns:repeat(2,1fr)}
+  .valeurs{grid-template-columns:1fr}
+  .fin__g{grid-template-columns:1fr}
+  .fin__bal{justify-self:start;margin-top:34px;width:min(240px,70%);text-align:left}
+}
+@media (max-width:760px){
+  :root{--tete:60px}
+  .cpts{grid-template-columns:repeat(2,1fr)}
+  .hero__pl{padding:26px 22px 30px}
+  /* Sur téléphone, la platine prend toute la largeur : le mouvement n'aurait
+     plus de place derrière. Il descend donc en BANDEAU sous la platine, et
+     c'est là qu'on voit le train entier tourner. */
+  .hero{align-items:flex-start;padding-top:calc(var(--tete) + 12px);
+    padding-bottom:min(34svh,290px);min-height:100svh}
+  .hero__mec{inset:auto 0 0 0;height:min(34svh,290px);
+    border-top:1px solid var(--fond-b)}
+  .hero__note{display:none}
+  .hero__sous{margin-top:16px;font-size:15.5px}
+  .hero h1{margin-top:12px}
+  .btns{margin-top:22px}
+  .hero__pl{padding:22px 20px 24px}
+  .sur{font-size:11px;letter-spacing:.1em}
+  .hero__fond{background:
+    radial-gradient(140% 60% at 20% 2%,#FFFDF7 0%,rgba(255,253,247,0) 60%),
+    radial-gradient(120% 46% at 80% 100%,#E1D7BF 0%,rgba(225,215,191,0) 72%),
+    var(--fond)}
+  .maison{grid-template-columns:44px 1fr;gap:6px 12px;padding:14px 4px}
+  .maison__v{grid-column:2}
+  .maison__d{grid-column:2}
+  .maison__r{grid-column:2;text-align:left;min-width:0;margin-top:2px}
+  .maison--sg b::after{display:block;margin:4px 0 0}
+  .fact{grid-template-columns:1fr}
+  .labos{grid-template-columns:repeat(2,1fr)}
+  .etapes{grid-template-columns:1fr}
+  .metier__film .guichet{aspect-ratio:16/10}
+  .bande__grp span{padding:15px 18px;font-size:11.5px;gap:18px}
+}
+@media (max-width:420px){
+  .hero h1{font-size:40px}
+  .cpt b{font-size:32px}
+}
+
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;
+    transition-duration:.001ms!important}
+  .rev{opacity:1;transform:none}
+}
+</style>
+</head>
+<body>
+
+<!-- ⚠ Sans JavaScript, l'observateur ne pose jamais data-vu : les blocs .rev
+     resteraient à opacité 0. Ce bloc les rend tous visibles d'emblée. -->
+<noscript><style>.rev{opacity:1!important;transform:none!important}
+.colonne__idx{display:none}</style></noscript>
+
+<a class="saut" href="#contenu">Aller au contenu</a>
+
+<!-- ══ EN-TÊTE ═══════════════════════════════════════════════════════════ -->
+<header class="tete">
+  <a class="tete__logo" href="#" aria-label="Intégral Pharma, accueil">
+    <img src="../../assets/logo-web.png" alt="" width="120" height="26">
+    <span>Intégral Pharma</span>
+  </a>
+  <svg class="tete__roue" viewBox="-15 -15 30 30" aria-hidden="true">
+    <g id="mec-tete">
+      <circle class="dents" r="10.5" stroke-dasharray="2.592 2.121" stroke-width="3.375"/>
+      <circle class="corps" r="8.8"/>
+      <circle class="jante" r="8.8" stroke-width="1"/>
+      <circle class="pierre" r="2.4"/>
+    </g>
+  </svg>
+  <button class="burger" type="button" aria-expanded="false" aria-controls="nav" aria-label="Ouvrir le menu">
+    <i></i><i></i><i></i>
+  </button>
+  <nav class="nav" id="nav" aria-label="Navigation principale">
+    <a href="#groupe">Le groupe</a>
+    <a href="#reseau">Le réseau</a>
+    <a href="#metier">Le métier</a>
+    <a href="#valeurs">Nos valeurs</a>
+    <a class="nav__cta" href="mailto:contact@integralpharma.fr">Nous écrire</a>
+  </nav>
+</header>
+
+<!-- ══ LA COLONNE MÉCANIQUE ══════════════════════════════════════════════
+     Crémaillère (pas 4,712) → pignon 14 d. → grande roue 70 d.
+     La crémaillère, c'est la main du visiteur. Rapport de transmission 1/5.  -->
+<aside class="colonne" aria-hidden="true">
+  <svg viewBox="0 0 132 900" preserveAspectRatio="xMidYMid slice">
+    <!-- grande roue 70 dents, module 1,5 → rayon primitif 52,5 -->
+    <g transform="translate(51,450)">
+      <g id="mec-grande">
+        <circle class="dents" r="52.5" stroke-dasharray="2.592 2.121" stroke-width="3.375"/>
+        <circle class="corps" r="50.8"/>
+        <circle class="jante" r="50.8" stroke-width="1.2"/>
+        <circle class="ev" cx="0.0" cy="-32.8" r="13.1"/><circle class="ev" cx="31.2" cy="-10.1" r="13.1"/><circle class="ev" cx="19.3" cy="26.5" r="13.1"/><circle class="ev" cx="-19.3" cy="26.5" r="13.1"/><circle class="ev" cx="-31.2" cy="-10.1" r="13.1"/>
+        <circle class="moyeu" r="10.3"/>
+        <circle class="jante" r="10.3" stroke-width="1"/>
+        <circle class="pierre" r="3.4"/>
+      </g>
+    </g>
+    <!-- pignon 14 dents → rayon primitif 10,5 ; entraxe 63 -->
+    <g transform="translate(114,450)">
+      <g id="mec-pignon">
+        <circle class="dents" r="10.5" stroke-dasharray="2.592 2.121" stroke-width="3.375"/>
+        <circle class="corps" r="8.8"/>
+        <circle class="jante" r="8.8" stroke-width="1"/>
+        <circle class="pierre" r="2.5"/>
+      </g>
+    </g>
+    <!-- la crémaillère : un trait au pas de 4,712, décalé par le défilement -->
+    <g id="mec-cremaillere" transform="translate(0,0)">
+      <line x1="128" y1="-160" x2="128" y2="1060" stroke="#98A0AB" stroke-width="1" stroke-opacity=".5"/>
+      <line class="dents dents--ac" x1="124.5" y1="-160" x2="124.5" y2="1060"
+            stroke-dasharray="2.592 2.121" stroke-width="3.375"/>
+    </g>
+  </svg>
+  <!-- l'index : où l'on en est dans la page. En HTML, pour qu'il suive
+       exactement la hauteur de l'écran quelle qu'elle soit. -->
+  <div class="colonne__idx" id="col-index"></div>
+  <div class="colonne__leg">Crémaillère&nbsp;→&nbsp;pignon&nbsp;14&nbsp;→&nbsp;roue&nbsp;70 · rapport&nbsp;1/5</div>
+</aside>
+
+<main id="contenu">
+
+<!-- ══ 1 · L'OUVERTURE ═══════════════════════════════════════════════════ -->
+<section class="hero">
+  <div class="hero__fond"></div>
+
+  <!-- Le train de l'ouverture. Module 4 pour toutes les roues.
+       barillet 80 d. (r 160) → moyenne 20 d. (r 40) → champ 40 d. (r 80) → échappement 15 d. (r 30)
+       entraxes 200 / 120 / 110 — les roues s'engrènent réellement. -->
+  <div class="hero__mec">
+    <svg viewBox="0 0 1440 900" preserveAspectRatio="xMaxYMid slice" aria-hidden="true">
+      <defs>
+        <radialGradient id="lum" cx="30%" cy="24%" r="72%">
+          <stop offset="0%" stop-color="#FFFFFF" stop-opacity=".85"/>
+          <stop offset="52%" stop-color="#FFFFFF" stop-opacity=".16"/>
+          <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+        </radialGradient>
+        <linearGradient id="ombreG" x1="0" y1="0" x2="0.7" y2="1">
+          <stop offset="0%" stop-color="#6E4E1B" stop-opacity="0"/>
+          <stop offset="100%" stop-color="#6E4E1B" stop-opacity=".26"/>
+        </linearGradient>
+      </defs>
+
+      <!-- deux traverses de pont, fixes : elles tiennent le mouvement -->
+      <path d="M840 128 L1440 332" class="trait" stroke-dasharray="7 6"/>
+      <path d="M900 620 L1440 382" class="trait" stroke-dasharray="7 6"/>
+
+      <!-- barillet 80 d. -->
+      <g transform="translate(1230,436)">
+        <circle r="168" fill="url(#ombreG)"/>
+        <g id="mec-barillet">
+          <circle class="dents" r="160" stroke-dasharray="6.912 5.655" stroke-width="9"/>
+          <circle class="corps" r="155.5"/>
+          <circle class="jante" r="155.5" stroke-width="1.6"/>
+          <circle class="ev" cx="0.0" cy="-100.0" r="40"/><circle class="ev" cx="86.6" cy="-50.0" r="40"/><circle class="ev" cx="86.6" cy="50.0" r="40"/><circle class="ev" cx="0.0" cy="100.0" r="40"/><circle class="ev" cx="-86.6" cy="50.0" r="40"/><circle class="ev" cx="-86.6" cy="-50.0" r="40"/>
+          <!-- le ressort moteur : une spirale d'Archimède, 6 tours 1/2 -->
+          <path id="mec-ressort" class="ressort" d="M30.0,0.0L30.1,3.2L29.9,6.4L29.4,9.5L28.5,12.7L27.2,15.7L25.7,18.6L23.8,21.4L21.6,24.0L19.2,26.4L16.4,28.5L13.5,30.3L10.3,31.8L7.0,33.0L3.6,33.8L0.0,34.3L-3.6,34.4L-7.3,34.1L-10.9,33.4L-14.4,32.4L-17.9,31.0L-21.2,29.1L-24.3,27.0L-27.2,24.5L-29.8,21.7L-32.2,18.6L-34.2,15.2L-35.9,11.7L-37.2,7.9L-38.1,4.0L-38.6,0.0L-38.7,-4.1L-38.3,-8.1L-37.5,-12.2L-36.3,-16.2L-34.7,-20.0L-32.6,-23.7L-30.2,-27.2L-27.4,-30.4L-24.2,-33.3L-20.7,-35.9L-17.0,-38.2L-13.0,-40.0L-8.8,-41.4L-4.5,-42.4L-0.0,-42.9L4.5,-43.0L9.0,-42.5L13.5,-41.6L17.9,-40.3L22.2,-38.4L26.2,-36.1L30.1,-33.4L33.6,-30.3L36.8,-26.7L39.7,-22.9L42.1,-18.7L44.1,-14.3L45.6,-9.7L46.7,-4.9L47.2,-0.0L47.3,5.0L46.8,9.9L45.7,14.9L44.2,19.7L42.1,24.3L39.6,28.8L36.6,32.9L33.1,36.8L29.3,40.3L25.1,43.4L20.5,46.0L15.7,48.2L10.6,49.9L5.4,51.0L0.0,51.5L-5.4,51.5L-10.8,51.0L-16.2,49.8L-21.4,48.1L-26.5,45.9L-31.3,43.1L-35.8,39.8L-40.0,36.0L-43.8,31.8L-47.1,27.2L-50.0,22.2L-52.3,17.0L-54.1,11.5L-55.3,5.8L-55.8,0.0L-55.8,-5.9L-55.2,-11.7L-53.9,-17.5L-52.1,-23.2L-49.6,-28.6L-46.6,-33.8L-43.0,-38.7L-38.9,-43.2L-34.3,-47.3L-29.4,-50.9L-24.0,-53.9L-18.3,-56.4L-12.4,-58.3L-6.3,-59.5L-0.0,-60.2L6.3,-60.1L12.6,-59.4L18.9,-58.0L24.9,-56.0L30.8,-53.3L36.4,-50.1L41.6,-46.2L46.4,-41.8L50.8,-36.9L54.6,-31.5L57.8,-25.8L60.5,-19.7L62.5,-13.3L63.8,-6.7L64.5,-0.0L64.4,6.8L63.6,13.5L62.1,20.2L59.9,26.7L57.1,32.9L53.5,38.9L49.4,44.5L44.7,49.6L39.4,54.2L33.7,58.3L27.5,61.8L21.0,64.6L14.2,66.7L7.2,68.1L0.0,68.8L-7.2,68.7L-14.4,67.8L-21.5,66.2L-28.4,63.9L-35.1,60.8L-41.4,57.0L-47.4,52.6L-52.8,47.6L-57.7,41.9L-62.0,35.8L-65.7,29.3L-68.7,22.3L-70.9,15.1L-72.4,7.6L-73.1,0.0L-73.0,-7.7L-72.0,-15.3L-70.3,-22.8L-67.8,-30.2L-64.5,-37.3L-60.5,-44.0L-55.8,-50.2L-50.4,-56.0L-44.5,-61.2L-38.0,-65.8L-31.0,-69.6L-23.6,-72.8L-16.0,-75.1L-8.1,-76.7L0.0,-77.4L8.1,-77.2L16.2,-76.3L24.2,-74.4L31.9,-71.7L39.4,-68.3L46.5,-64.0L53.1,-59.0L59.2,-53.3L64.7,-47.0L69.5,-40.1L73.6,-32.8L76.9,-25.0L79.3,-16.9L81.0,-8.5L81.7,-0.0L81.5,8.6L80.5,17.1L78.5,25.5L75.7,33.7L72.0,41.6L67.5,49.0L62.2,56.0L56.2,62.4L49.5,68.2L42.3,73.2L34.5,77.5L26.3,81.0L17.8,83.6L9.0,85.2L-0.0,86.0L-9.0,85.8L-18.0,84.7L-26.8,82.6L-35.4,79.6L-43.7,75.7L-51.6,71.0L-58.9,65.4L-65.6,59.1L-71.7,52.1L-77.0,44.4L-81.5,36.3L-85.1,27.6L-87.8,18.7L-89.5,9.4L-90.3,0.0L-90.1,-9.5L-88.9,-18.9L-86.7,-28.2L-83.5,-37.2L-79.5,-45.9L-74.5,-54.1L-68.6,-61.8L-62.0,-68.8L-54.6,-75.2L-46.6,-80.7L-38.0,-85.4L-29.0,-89.2L-19.6,-92.0L-9.9,-93.8L0.0,-94.6L9.9,-94.4L19.8,-93.1L29.5,-90.8L39.0,-87.5L48.0,-83.2L56.6,-77.9L64.7,-71.8L72.0,-64.8L78.6,-57.1L84.4,-48.7L89.3,-39.8L93.3,-30.3L96.2,-20.4L98.1,-10.3L98.9,-0.0L98.7,10.4L97.3,20.7L94.9,30.8L91.4,40.7L86.9,50.2L81.4,59.2L75.0,67.5L67.7,75.2L59.7,82.1L50.9,88.2L41.5,93.3L31.6,97.4L21.3,100.4L10.8,102.4L-0.0,103.2L-10.8,103.0L-21.6,101.5L-32.2,99.0L-42.5,95.4L-52.3,90.6L-61.7,84.9L-70.4,78.2L-78.4,70.6L-85.6,62.2L-91.9,53.1L-97.2,43.3L-101.5,33.0L-104.6,22.2L-106.7,11.2L-107.5,0.0L-107.2,-11.3L-105.8,-22.5L-103.1,-33.5L-99.3,-44.2L-94.4,-54.5L-88.4,-64.2L-81.4,-73.3L-73.5,-81.6L-64.7,-89.1L-55.2,-95.6L-45.0,-101.1L-34.3,-105.6L-23.1,-108.8L-11.7,-110.9L0.0,-111.8L11.7,-111.5L23.4,-110.0L34.8,-107.2L46.0,-103.2L56.6,-98.1L66.8,-91.9L76.2,-84.6L84.8,-76.4L92.6,-67.3L99.3,-57.4L105.1,-46.8L109.6,-35.6L113.1,-24.0L115.2,-12.1L116.2,-0.0L115.8,12.2L114.2,24.3L111.3,36.2L107.2,47.7L101.8,58.8L95.4,69.3L87.8,79.1L79.3,88.0L69.8,96.1L59.5,103.1L48.5,109.0L37.0,113.7L24.9,117.3L12.6,119.5L-0.0,120.5L-12.6,120.1L-25.2,118.4L-37.5,115.4L-49.5,111.1L-60.9,105.6L-71.8,98.8L-81.9,91.0L-91.2,82.1L-99.5,72.3L-106.8,61.7L-112.9,50.3L-117.8,38.3L-121.5,25.8L-123.8,13.0L-124.8,-0.0L-124.4,-13.1L-122.6,-26.1L-119.5,-38.8L-115.0,-51.2L-109.3,-63.1L-102.3,-74.4L-94.2,-84.8L-85.0,-94.4L-74.9,-103.0L-63.8,-110.5L-52.0,-116.9L-39.6,-121.9L-26.7,-125.7L-13.5,-128.1L-0.0,-129.1L13.5,-128.7L27.0,-126.8L40.2,-123.6L53.0,-119.0L65.3,-113.0L76.9,-105.8L87.7,-97.4L97.6,-87.9L106.5,-77.4L114.3,-66.0L120.8,-53.8L126.0,-41.0L129.9,-27.6L132.4,-13.9L133.4,-0.0L132.9,14.0L131.0,27.9L127.7,41.5L122.9,54.7L116.8,67.4L109.3,79.4L100.6,90.6L90.8,100.8L79.9,110.0L68.1,118.0L55.5,124.7L42.3,130.1L28.5,134.1L14.4,136.7L-0.0,137.7L-14.4,137.2L-28.7,135.2L-42.8,131.8L-56.5,126.8L-69.6,120.5L-81.9,112.8L-93.5,103.8L-104.0,93.7L-113.5,82.5L-121.7,70.3L-128.7,57.3L-134.2,43.6L-138.3,29.4L-140.9,14.8L-142.0,-0.0"/>
+          <circle class="moyeu" r="30"/>
+          <circle class="jante" r="30" stroke-width="1.4"/>
+          <circle class="arbre" r="10"/>
+        </g>
+        <circle r="164" fill="url(#lum)"/>
+        <text class="etiq" x="-40" y="196">80 d. · barillet</text>
+      </g>
+
+      <!-- roue moyenne 20 d. — entraxe 200 -->
+      <g transform="translate(1230,236)">
+        <g id="mec-moyenne">
+          <circle class="dents" r="40" stroke-dasharray="6.912 5.655" stroke-width="9"/>
+          <circle class="corps" r="35.5"/>
+          <circle class="jante" r="35.5" stroke-width="1.2"/>
+          <circle class="moyeu" r="11"/>
+          <circle class="pierre" r="4.4"/>
+        </g>
+        <circle r="42" fill="url(#lum)"/>
+        <text class="etiq" x="52" y="-40">20 d. · ×4</text>
+      </g>
+
+      <!-- roue de champ 40 d. — entraxe 120 depuis la moyenne -->
+      <g transform="translate(1116,199)">
+        <g id="mec-champ">
+          <circle class="dents" r="80" stroke-dasharray="6.912 5.655" stroke-width="9"/>
+          <circle class="corps" r="75.5"/>
+          <circle class="jante" r="75.5" stroke-width="1.3"/>
+          <circle class="ev" cx="0.0" cy="-50.0" r="20"/><circle class="ev" cx="47.6" cy="-15.5" r="20"/><circle class="ev" cx="29.4" cy="40.5" r="20"/><circle class="ev" cx="-29.4" cy="40.5" r="20"/><circle class="ev" cx="-47.6" cy="-15.5" r="20"/>
+          <circle class="moyeu" r="16"/>
+          <circle class="jante" r="16" stroke-width="1"/>
+          <circle class="pierre" r="5"/>
+        </g>
+        <circle r="82" fill="url(#lum)"/>
+      </g>
+
+      <!-- roue d'échappement 15 d. — entraxe 110 depuis la roue de champ -->
+      <g transform="translate(1010,170)">
+        <g id="mec-echap">
+          <circle class="dents" r="30" stroke-dasharray="6.912 5.655" stroke-width="9"/>
+          <circle class="corps" r="25.5"/>
+          <circle class="jante" r="25.5" stroke-width="1.1"/>
+          <circle class="pierre" r="4"/>
+        </g>
+        <circle r="32" fill="url(#lum)"/>
+      </g>
+      <!-- l'ancre : elle bascule d'un cran à chaque dent libérée -->
+      <g transform="translate(1010,126)">
+        <g id="mec-ancre">
+          <path d="M-34 6 L-30 -6 L0 -14 L30 -6 L34 6 L26 8 L22 -1 L0 -6 L-22 -1 L-26 8 Z"
+                fill="#5A626D" fill-opacity=".8"/>
+          <circle r="5" fill="#14120D" fill-opacity=".8"/>
+          <circle r="2" class="pierre"/>
+        </g>
+        <text class="etiq etiq--pt" x="-16" y="-24">ancre</text>
+      </g>
+    </svg>
+  </div>
+
+  <div class="hero__in">
+    <div class="env">
+      <div class="platine hero__pl">
+        <span class="platine__vb"></span><span class="platine__vb platine__vb--d"></span>
+        <p class="sur">Groupe de grossistes-répartiteurs français indépendant</p>
+        <h1 class="tit">Neuf maisons.<br><em>Un seul nom.</em></h1>
+        <p class="hero__sous">Chacune livre sa région depuis des années, avec ses équipes et
+          ses habitudes. Depuis 2006, elles avancent ensemble sous le nom d'Intégral&nbsp;Pharma
+          — et votre commande part toujours de la plus proche de votre comptoir.</p>
+        <div class="btns">
+          <a class="btn" href="#reseau">Découvrir le réseau
+            <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6">
+              <path d="M3 8h10M9 4l4 4-4 4"/></svg></a>
+          <a class="btn btn--v" href="mailto:contact@integralpharma.fr">Nous écrire</a>
+        </div>
+        <p class="hero__note">
+          <span>Train d'ouverture&nbsp;: <b>80 → 20 → 40 → 15 dents</b></span>
+          <span>module 4</span>
+          <span id="lect-tour">au repos</span>
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ LE BANDEAU-CRÉMAILLÈRE ════════════════════════════════════════════ -->
+<div class="bande">
+  <div class="bande__piste" id="bande-piste">
+    <div class="bande__grp">
+      <span>Indépendant</span><span>Neuf implantations</span><span>Un réseau national</span>
+      <span>Plus de 2 000 officines livrées</span><span>Confiance, Engagement, Respect</span>
+      <span>Une alternative aux grossistes historiques</span>
+    </div>
+    <div class="bande__grp" aria-hidden="true">
+      <span>Indépendant</span><span>Neuf implantations</span><span>Un réseau national</span>
+      <span>Plus de 2 000 officines livrées</span><span>Confiance, Engagement, Respect</span>
+      <span>Une alternative aux grossistes historiques</span>
+    </div>
+  </div>
+  <div class="bande__dents"></div>
+</div>
+
+<!-- ══ 2 · L'HISTOIRE DU GROUPE ══════════════════════════════════════════ -->
+<section class="sec" id="groupe">
+  <div class="env">
+    <div class="hist">
+      <div class="rev">
+        <p class="sur">Notre histoire</p>
+        <h2 class="tit" style="font-size:clamp(34px,4.5vw,62px);margin-top:16px">
+          Rendre la marge à l'officine française.</h2>
+        <p style="margin-top:24px;color:var(--encre-2);max-width:58ch">
+          C'est la raison d'être d'Intégral Pharma depuis 2006&nbsp;: redistribuer directement
+          la marge aux officines françaises, en toute transparence, avec des prix nets visibles
+          sur facture.</p>
+        <p style="margin-top:15px;color:var(--encre-2);max-width:58ch">
+          Neuf implantations aujourd'hui, plus de deux mille officines livrées chaque jour,
+          et la même idée qu'au premier jour — un groupe de répartiteurs indépendants qui a
+          choisi de se mettre du côté du comptoir.</p>
+      </div>
+      <!-- le guichet : la seule photographie de la page -->
+      <figure class="guichet rev" style="aspect-ratio:4/3">
+        <img src="../../assets/siege-web.jpg" alt="Le siège d'Intégral Pharma à Hyères."
+             width="1200" height="900" loading="lazy" decoding="async">
+        <figcaption class="guichet__lg">Hyères (83) · siège du groupe</figcaption>
+      </figure>
+    </div>
+
+    <div class="cpts rev">
+      <div class="cpt"><b data-cpt="2006" data-an="1">2006</b><i>année de création</i></div>
+      <div class="cpt"><b data-cpt="9">9</b><i>implantations</i></div>
+      <div class="cpt"><b data-cpt="2000" data-suf=" +">2 000 +</b><i>officines livrées</i></div>
+      <div class="cpt"><b data-cpt="20">20</b><i>ans d'indépendance</i></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ 3 · LE RÉSEAU ═════════════════════════════════════════════════════ -->
+<section class="sec" id="reseau" style="background:var(--fond-c);border-top:1px solid var(--fond-b);border-bottom:1px solid var(--fond-b)">
+  <div class="env">
+    <div class="hd rev">
+      <p class="sur">Le réseau</p>
+      <h2 class="tit">Neuf implantations.<br>Laquelle est la vôtre&nbsp;?</h2>
+      <p>C'est la seule question qui compte vraiment. Celle qui prépare votre commande, qui
+        vous livre chaque matin, et dont vous connaissez l'équipe par son prénom.</p>
+      <p>Les huit autres sont là pour qu'elle ne soit jamais prise au dépourvu — de la
+        Bretagne à la Méditerranée, le stock d'une maison est le stock de toutes.</p>
+    </div>
+
+    <!-- Neuf roues réellement engrenées. Module 1,6.
+         Le rapport d'une roue k sur la roue 01 vaut N01/Nk. -->
+    <div class="train rev">
+      <svg viewBox="52 136 500 172" aria-hidden="true" id="train-reseau">
+        <!-- liaison en pointillé vers le partenaire : il n'est pas engrené -->
+        <path d="M481 194 L497 208" class="trait" stroke-dasharray="3 4" stroke="#5A626D"/>
+        <g data-r="1" transform="translate(120,215)"><g class="tourne">
+          <circle class="dents" r="57.6" stroke-dasharray="2.765 2.262" stroke-width="3.6"/>
+          <circle class="corps" r="55.8"/><circle class="jante" r="55.8" stroke-width="1"/>
+          <circle class="ev" cx="0" cy="-36" r="14"/><circle class="ev" cx="34.2" cy="-11.1" r="14"/><circle class="ev" cx="21.2" cy="29.1" r="14"/><circle class="ev" cx="-21.2" cy="29.1" r="14"/><circle class="ev" cx="-34.2" cy="-11.1" r="14"/>
+          <circle class="moyeu" r="13"/><circle class="pierre" r="4"/></g>
+          <text class="etiq" x="0" y="-64" text-anchor="middle">01</text>
+          <text class="etiq etiq--pt" x="0" y="82" text-anchor="middle">72 dents · roue menante</text></g>
+        <g data-r="2" transform="translate(193.0,191.3)"><g class="tourne">
+          <circle class="dents" r="19.2" stroke-dasharray="2.765 2.262" stroke-width="3.6"/>
+          <circle class="corps" r="17.4"/><circle class="jante" r="17.4" stroke-width="1"/>
+          <circle class="moyeu" r="6"/><circle class="pierre" r="2.4"/></g>
+          <text class="etiq" x="0" y="-26" text-anchor="middle">02</text>
+          </g>
+        <g data-r="3" transform="translate(236.2,212.3)"><g class="tourne">
+          <circle class="dents" r="28.8" stroke-dasharray="2.765 2.262" stroke-width="3.6"/>
+          <circle class="corps" r="27"/><circle class="jante" r="27" stroke-width="1"/>
+          <circle class="ev" cx="0" cy="-16" r="6.4"/><circle class="ev" cx="15.2" cy="-4.9" r="6.4"/><circle class="ev" cx="9.4" cy="12.9" r="6.4"/><circle class="ev" cx="-9.4" cy="12.9" r="6.4"/><circle class="ev" cx="-15.2" cy="-4.9" r="6.4"/>
+          <circle class="moyeu" r="7"/><circle class="pierre" r="2.8"/></g>
+          <text class="etiq" x="0" y="-36" text-anchor="middle">03</text>
+          </g>
+        <g data-r="4" transform="translate(272.8,189.4)"><g class="tourne">
+          <circle class="dents" r="14.4" stroke-dasharray="2.765 2.262" stroke-width="3.6"/>
+          <circle class="corps" r="12.6"/><circle class="jante" r="12.6" stroke-width="1"/>
+          <circle class="pierre" r="2.6"/></g>
+          <text class="etiq" x="0" y="-22" text-anchor="middle">04</text>
+          </g>
+        <g data-r="5" transform="translate(308.9,202.6)"><g class="tourne">
+          <circle class="dents" r="24" stroke-dasharray="2.765 2.262" stroke-width="3.6"/>
+          <circle class="corps" r="22.2"/><circle class="jante" r="22.2" stroke-width="1"/>
+          <circle class="ev" cx="0" cy="-13" r="5.4"/><circle class="ev" cx="12.4" cy="-4" r="5.4"/><circle class="ev" cx="7.6" cy="10.5" r="5.4"/><circle class="ev" cx="-7.6" cy="10.5" r="5.4"/><circle class="ev" cx="-12.4" cy="-4" r="5.4"/>
+          <circle class="moyeu" r="6"/><circle class="pierre" r="2.4"/></g>
+          <text class="etiq" x="0" y="-31" text-anchor="middle">05</text>
+          </g>
+        <g data-r="6" transform="translate(344.9,185.0)"><g class="tourne">
+          <circle class="dents" r="16" stroke-dasharray="2.765 2.262" stroke-width="3.6"/>
+          <circle class="corps" r="14.2"/><circle class="jante" r="14.2" stroke-width="1"/>
+          <circle class="pierre" r="2.6"/></g>
+          <text class="etiq" x="0" y="-23" text-anchor="middle">06</text>
+          </g>
+        <g data-r="7" transform="translate(379.9,200.6)"><g class="tourne">
+          <circle class="dents" r="22.4" stroke-dasharray="2.765 2.262" stroke-width="3.6"/>
+          <circle class="corps" r="20.6"/><circle class="jante" r="20.6" stroke-width="1"/>
+          <circle class="ev" cx="0" cy="-12" r="5"/><circle class="ev" cx="11.4" cy="-3.7" r="5"/><circle class="ev" cx="7.1" cy="9.7" r="5"/><circle class="ev" cx="-7.1" cy="9.7" r="5"/><circle class="ev" cx="-11.4" cy="-3.7" r="5"/>
+          <circle class="moyeu" r="5.6"/><circle class="pierre" r="2.2"/></g>
+          <text class="etiq" x="0" y="-29" text-anchor="middle">07</text>
+          </g>
+        <g data-r="8" transform="translate(414.6,180.6)"><g class="tourne">
+          <circle class="dents" r="17.6" stroke-dasharray="2.765 2.262" stroke-width="3.6"/>
+          <circle class="corps" r="15.8"/><circle class="jante" r="15.8" stroke-width="1"/>
+          <circle class="pierre" r="2.6"/></g>
+          <text class="etiq" x="0" y="-25" text-anchor="middle">08</text>
+          </g>
+        <g data-r="9" transform="translate(455.7,194.0)"><g class="tourne">
+          <circle class="dents" r="25.6" stroke-dasharray="2.765 2.262" stroke-width="3.6"/>
+          <circle class="corps" r="23.8"/><circle class="jante" r="23.8" stroke-width="1"/>
+          <circle class="ev" cx="0" cy="-14" r="5.6"/><circle class="ev" cx="13.3" cy="-4.3" r="5.6"/><circle class="ev" cx="8.2" cy="11.3" r="5.6"/><circle class="ev" cx="-8.2" cy="11.3" r="5.6"/><circle class="ev" cx="-13.3" cy="-4.3" r="5.6"/>
+          <circle class="moyeu" r="6.4"/><circle class="pierre" r="2.6"/></g>
+          <text class="etiq" x="0" y="-33" text-anchor="middle">09</text>
+          <text class="etiq etiq--pt" x="-26" y="56" text-anchor="middle">32 dents · ×2,25</text></g>
+        <!-- le partenaire : en acier, désengrené, relié en pointillé -->
+        <g data-r="10" transform="translate(518,222)"><g class="tourne">
+          <circle class="dents dents--ac" r="20.8" stroke-dasharray="2.765 2.262" stroke-width="3.6"/>
+          <circle class="corps corps--ac" r="19"/><circle class="jante jante--ac" r="19" stroke-width="1"/>
+          <circle class="ev ev--ac" cx="0" cy="-11" r="4.6"/><circle class="ev ev--ac" cx="10.5" cy="-3.4" r="4.6"/><circle class="ev ev--ac" cx="6.5" cy="8.9" r="4.6"/><circle class="ev ev--ac" cx="-6.5" cy="8.9" r="4.6"/><circle class="ev ev--ac" cx="-10.5" cy="-3.4" r="4.6"/>
+          <circle class="pierre--o" r="4"/></g>
+          <text class="etiq etiq--pt" x="0" y="38" text-anchor="middle">partenaire</text></g>
+      </svg>
+      <p class="train__lg">
+        <span>Neuf implantations et un partenaire</span>
+        <span>module 1,6 · rapport&nbsp;= N01/Nk</span>
+        <span>si une roue s'arrête, tout s'arrête</span>
+      </p>
+    </div>
+
+    <ol class="maisons rev">
+      <li class="maison maison--sg" data-i="1"><span class="maison__n">01</span><b>Hyères Pharma</b><span class="maison__v">Hyères</span><span class="maison__d">83</span><span class="maison__r">72 d. · ×1,00</span></li>
+      <li class="maison" data-i="2"><span class="maison__n">02</span><b>SR Pharma</b><span class="maison__v">Palaiseau</span><span class="maison__d">91</span><span class="maison__r">24 d. · ×3,00</span></li>
+      <li class="maison" data-i="3"><span class="maison__n">03</span><b>Mistral Santé Pharma</b><span class="maison__v">Flassans-sur-Issole</span><span class="maison__d">83</span><span class="maison__r">36 d. · ×2,00</span></li>
+      <li class="maison" data-i="4"><span class="maison__n">04</span><b>Sud Ouest Pharma</b><span class="maison__v">Montayral</span><span class="maison__d">47</span><span class="maison__r">18 d. · ×4,00</span></li>
+      <li class="maison" data-i="5"><span class="maison__n">05</span><b>Comptoir Pharmaceutique du Rhône</b><span class="maison__v">Saint-Maurice-l'Exil</span><span class="maison__d">38</span><span class="maison__r">30 d. · ×2,40</span></li>
+      <li class="maison" data-i="6"><span class="maison__n">06</span><b>Escale Pharma</b><span class="maison__v">Chilly-Mazarin</span><span class="maison__d">91</span><span class="maison__r">20 d. · ×3,60</span></li>
+      <li class="maison" data-i="7"><span class="maison__n">07</span><b>Ouest Pharma Services</b><span class="maison__v">Saint-Étienne-de-Montluc</span><span class="maison__d">44</span><span class="maison__r">28 d. · ×2,57</span></li>
+      <li class="maison" data-i="8"><span class="maison__n">08</span><b>Pharm'Occitanie Services</b><span class="maison__v">Villeneuve-lès-Béziers</span><span class="maison__d">34</span><span class="maison__r">22 d. · ×3,27</span></li>
+      <li class="maison" data-i="9"><span class="maison__n">09</span><b>Sud Est Pharma</b><span class="maison__v">Le Cannet-des-Maures</span><span class="maison__d">83</span><span class="maison__r">32 d. · ×2,25</span></li>
+    </ol>
+
+    <p class="partenaire rev">Et à l'Est, notre partenaire <b>Pharmest</b> (Metz, 57) prolonge
+      le maillage.</p>
+  </div>
+</section>
+
+<!-- ══ 4 · LE MÉTIER ═════════════════════════════════════════════════════ -->
+<section class="sec" id="metier">
+  <div class="env">
+    <div class="hd rev">
+      <p class="sur">Le métier</p>
+      <h2 class="tit">Ce qui se passe entre votre commande et votre comptoir.</h2>
+      <p>Quelques heures, quatre métiers, et une chaîne qui ne s'arrête jamais. Référencer,
+        stocker, préparer, livrer&nbsp;: c'est invisible depuis l'officine, et c'est tout notre
+        travail.</p>
+    </div>
+
+    <!-- Quatre excentriques calés à 90° sur un arbre unique.
+         Course d'un poussoir = e·(1 − cos θ), e = 15. -->
+    <div class="arbre-cames rev">
+      <svg viewBox="0 0 1000 156" aria-hidden="true">
+        <line x1="20" y1="86" x2="980" y2="86" stroke="#5A626D" stroke-width="3" stroke-opacity=".55"/>
+        <!-- Un excentrique, c'est un disque dont l'AXE n'est pas le centre : le disque
+             est dessiné à la distance e = 15 de l'axe, et c'est cet écart qui soulève
+             le poussoir de e·(1 − cos θ). Rien n'est simulé. -->
+        <g transform="translate(140,86)">
+          <g class="came" data-ph="0">
+            <circle class="corps" cy="-15" r="34"/><circle class="jante" cy="-15" r="34" stroke-width="1.2"/>
+            <circle class="moyeu" cy="-15" r="8"/><circle class="pierre" cy="-15" r="3"/>
+          </g>
+          <circle class="arbre" r="4.5"/>
+        </g>
+        <g transform="translate(390,86)">
+          <g class="came" data-ph="90">
+            <circle class="corps" cy="-15" r="34"/><circle class="jante" cy="-15" r="34" stroke-width="1.2"/>
+            <circle class="moyeu" cy="-15" r="8"/><circle class="pierre" cy="-15" r="3"/>
+          </g>
+          <circle class="arbre" r="4.5"/>
+        </g>
+        <g transform="translate(640,86)">
+          <g class="came" data-ph="180">
+            <circle class="corps" cy="-15" r="34"/><circle class="jante" cy="-15" r="34" stroke-width="1.2"/>
+            <circle class="moyeu" cy="-15" r="8"/><circle class="pierre" cy="-15" r="3"/>
+          </g>
+          <circle class="arbre" r="4.5"/>
+        </g>
+        <g transform="translate(890,86)">
+          <g class="came" data-ph="270">
+            <circle class="corps" cy="-15" r="34"/><circle class="jante" cy="-15" r="34" stroke-width="1.2"/>
+            <circle class="moyeu" cy="-15" r="8"/><circle class="pierre" cy="-15" r="3"/>
+          </g>
+          <circle class="arbre" r="4.5"/>
+        </g>
+        <!-- les quatre poussoirs : leur pied repose sur le sommet du disque -->
+        <g class="pouss" data-x="140" transform="translate(140,0)">
+          <line x1="0" y1="0" x2="0" y2="37" stroke="#5A626D" stroke-width="3.4"/>
+          <rect x="-20" y="31" width="40" height="6" rx="2" fill="#5A626D"/>
+        </g>
+        <g class="pouss" data-x="390" transform="translate(390,0)">
+          <line x1="0" y1="0" x2="0" y2="37" stroke="#5A626D" stroke-width="3.4"/>
+          <rect x="-20" y="31" width="40" height="6" rx="2" fill="#5A626D"/>
+        </g>
+        <g class="pouss" data-x="640" transform="translate(640,0)">
+          <line x1="0" y1="0" x2="0" y2="37" stroke="#5A626D" stroke-width="3.4"/>
+          <rect x="-20" y="31" width="40" height="6" rx="2" fill="#5A626D"/>
+        </g>
+        <g class="pouss" data-x="890" transform="translate(890,0)">
+          <line x1="0" y1="0" x2="0" y2="37" stroke="#5A626D" stroke-width="3.4"/>
+          <rect x="-20" y="31" width="40" height="6" rx="2" fill="#5A626D"/>
+        </g>
+        <text class="etiq etiq--pt" x="20" y="150">quatre excentriques calés à 90° sur un même arbre · course d'un poussoir = e·(1 − cos θ), e = 15</text>
+      </svg>
+    </div>
+
+    <div class="etapes rev">
+      <article class="etape" data-e="0"><span class="etape__b"></span>
+        <p class="etape__n">01</p><h3>Le référencement</h3>
+        <p>Le groupe référence pour ses neuf maisons à la fois&nbsp;: un même catalogue, tenu à
+          jour, disponible dans toutes les implantations. C'est ce qui permet à une maison de
+          taille humaine de proposer la profondeur de gamme d'un réseau national.</p></article>
+      <article class="etape" data-e="1"><span class="etape__b"></span>
+        <p class="etape__n">02</p><h3>La disponibilité</h3>
+        <p>Des stocks répartis sur neuf implantations, au plus près de votre officine. Quand le
+          comptoir a besoin, le réseau répond — et quand une référence manque quelque part, elle
+          existe souvent ailleurs dans le réseau.</p></article>
+      <article class="etape" data-e="2"><span class="etape__b"></span>
+        <p class="etape__n">03</p><h3>La préparation</h3>
+        <p>Chaque commande est préparée dans l'implantation la plus proche de chez vous, par une
+          équipe qui connaît votre officine et ses saisons.</p></article>
+      <article class="etape" data-e="3"><span class="etape__b"></span>
+        <p class="etape__n">04</p><h3>La livraison</h3>
+        <p>Tous les jours, les tournées partent vers les officines. La régularité d'un service
+          tenu — c'est elle qui fait la confiance, pas les promesses.</p></article>
+    </div>
+
+    <p class="cloture rev">Et quand la vie de votre officine change — transfert, agrandissement,
+      cession de parts — votre interlocuteur ajuste l'approvisionnement avec vous, sans à-coup
+      au comptoir.</p>
+
+    <!-- le guichet large : la seule vidéo en lecture automatique de la page -->
+    <div class="metier__film rev">
+      <figure class="guichet">
+        <video src="../../assets/band.mp4" autoplay muted loop playsinline
+               preload="metadata" poster="../../assets/siege-solaire.jpg"
+               aria-label="Vue des installations du groupe"></video>
+        <figcaption class="guichet__lg">La chaîne, entre la commande et le comptoir</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<!-- ══ 4 BIS · LA CENTRALE ═══════════════════════════════════════════════ -->
+<section class="sec" style="padding-top:0">
+  <div class="env">
+    <div class="centrale rev">
+      <div>
+        <p class="sur">La centrale</p>
+        <h2 class="tit">Et pour tout ce qui n'est pas le médicament.</h2>
+        <p>Notre centrale de parapharmacie référence pour l'officine plus de 14 000 produits et
+          plus de 480 marques.</p>
+        <p>C'est une structure à part, avec son propre fonctionnement — sa commande, sa
+          livraison — et la même exigence que le reste du groupe.</p>
+        <div class="centrale__cpts">
+          <div class="cpt" style="background:transparent;padding:0">
+            <b data-cpt="14000" data-suf=" +">14 000 +</b><i>références</i></div>
+          <div class="cpt" style="background:transparent;padding:0">
+            <b data-cpt="480" data-suf=" +">480 +</b><i>marques</i></div>
+        </div>
+      </div>
+      <!-- un module à part : sa roue n'est engrenée à rien -->
+      <div class="centrale__mec">
+        <svg viewBox="-72 -72 144 150" aria-hidden="true">
+          <g id="mec-centrale">
+            <circle class="dents dents--ac" r="48" stroke-dasharray="2.765 2.262" stroke-width="3.6"/>
+            <circle class="corps corps--ac" r="46.2"/>
+            <circle class="jante jante--ac" r="46.2" stroke-width="1.2"/>
+            <circle class="ev ev--ac" cx="0" cy="-29" r="11"/><circle class="ev ev--ac" cx="27.6" cy="-9" r="11"/><circle class="ev ev--ac" cx="17" cy="23.5" r="11"/><circle class="ev ev--ac" cx="-17" cy="23.5" r="11"/><circle class="ev ev--ac" cx="-27.6" cy="-9" r="11"/>
+            <circle class="moyeu" r="9" style="fill:var(--acier)"/>
+            <circle class="pierre" r="3.4"/>
+          </g>
+          <circle r="60" fill="none" stroke="#5A626D" stroke-opacity=".35" stroke-width="1" stroke-dasharray="3 5"/>
+          <text class="etiq etiq--pt" x="0" y="72" text-anchor="middle">module indépendant</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ 4 TER · VOS FACTURES ══════════════════════════════════════════════ -->
+<section class="sec" style="padding-top:0;padding-bottom:clamp(50px,6vw,80px)">
+  <div class="env">
+    <div class="fact rev">
+      <div class="fact__g">
+        <svg viewBox="0 0 132 78" aria-hidden="true">
+          <rect x="0" y="0" width="132" height="78" fill="none"/>
+          <g id="mec-guichet">
+            <text x="66" y="16" text-anchor="middle" class="etiq etiq--pt">émise</text>
+            <text x="66" y="40" text-anchor="middle" class="etiq" style="font-size:15px;fill:var(--encre)">reçue</text>
+            <text x="66" y="64" text-anchor="middle" class="etiq etiq--pt">classée</text>
+          </g>
+          <line x1="0" y1="26" x2="132" y2="26" stroke="#DBD0B9" stroke-width="1"/>
+          <line x1="0" y1="52" x2="132" y2="52" stroke="#DBD0B9" stroke-width="1"/>
+        </svg>
+      </div>
+      <div>
+        <p class="sur">Vos factures</p>
+        <h2 class="tit">Elles arrivent déjà là où vous les gérez.</h2>
+        <p>Nous sommes connectés à Digipharmacie&nbsp;: vos factures Intégral s'y retrouvent
+          automatiquement, avec celles de vos autres fournisseurs.</p>
+        <p style="margin-top:8px"><strong>Rien à saisir, rien à classer, rien à réclamer.</strong></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ 4 QUATER · NOS PARTENAIRES ════════════════════════════════════════ -->
+<section class="sec" style="padding-top:clamp(40px,5vw,70px);padding-bottom:clamp(50px,6vw,80px)">
+  <div class="env">
+    <div class="hd rev">
+      <p class="sur">Nos partenaires</p>
+      <h2 class="tit" style="font-size:clamp(28px,3.3vw,44px)">Les laboratoires qui nous font
+        confiance.</h2>
+    </div>
+    <div class="labos rev">
+      <div class="labo">EG Labo</div><div class="labo">Zentiva</div><div class="labo">Zydus</div>
+      <div class="labo">Viatris</div><div class="labo">ITP</div><div class="labo">Santestat</div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ 4 QUINQUIES · NOUS REJOINDRE ══════════════════════════════════════ -->
+<section class="sec" style="background:var(--fond-c);border-top:1px solid var(--fond-b);border-bottom:1px solid var(--fond-b);padding-top:clamp(56px,6vw,90px);padding-bottom:clamp(56px,6vw,90px)">
+  <div class="env">
+    <div class="emploi">
+      <div class="rev">
+        <p class="sur">Nous rejoindre</p>
+        <h2 class="tit" style="font-size:clamp(28px,3.4vw,46px);margin-top:14px">Neuf
+          implantations qui embauchent.</h2>
+        <p style="margin-top:20px;color:var(--encre-2);max-width:56ch">Préparateur-chauffeur,
+          technicien approvisionnement, commercial, pharmacien responsable&nbsp;: les métiers de
+          la répartition s'apprennent chez nous.</p>
+        <div class="villes">
+          <span class="ville">Hyères (83)</span><span class="ville">Villeneuve-lès-Béziers (34)</span>
+          <span class="ville">Montayral (47)</span><span class="ville">Saint-Maurice-l'Exil (38)</span>
+        </div>
+        <div class="btns"><a class="btn" href="https://www.integralpharma.fr/jobs" target="_blank" rel="noopener">Voir les offres
+          <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6">
+            <path d="M3 8h10M9 4l4 4-4 4"/></svg></a></div>
+      </div>
+      <div class="rev emploi__mec" style="justify-self:end;width:min(340px,100%)">
+        <svg viewBox="-136 -78 210 176" aria-hidden="true">
+          <g id="mec-emploi">
+            <circle class="dents" r="60" stroke-dasharray="2.765 2.262" stroke-width="3.6"/>
+            <circle class="corps" r="58.2"/><circle class="jante" r="58.2" stroke-width="1.2"/>
+            <circle class="ev" cx="0" cy="-36" r="13"/><circle class="ev" cx="34.2" cy="-11.1" r="13"/><circle class="ev" cx="21.2" cy="29.1" r="13"/><circle class="ev" cx="-21.2" cy="29.1" r="13"/><circle class="ev" cx="-34.2" cy="-11.1" r="13"/>
+            <circle class="moyeu" r="12"/><circle class="pierre" r="4.2"/>
+          </g>
+          <!-- ⚠ le déplacement vit sur le groupe PARENT : le script écrase
+               l'attribut transform du groupe qu'il fait tourner. -->
+          <g transform="translate(-92,0)">
+            <g id="mec-emploi2">
+              <circle class="dents" r="32" stroke-dasharray="2.765 2.262" stroke-width="3.6"/>
+              <circle class="corps" r="30.2"/><circle class="jante" r="30.2" stroke-width="1.1"/>
+              <circle class="moyeu" r="8"/><circle class="pierre" r="3"/>
+            </g>
+          </g>
+          <text class="etiq etiq--pt" x="-36" y="84" text-anchor="middle">75 d. → 40 d. · ×1,88</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ 5 · LES VALEURS ═══════════════════════════════════════════════════ -->
+<section class="sec" id="valeurs">
+  <div class="env">
+    <div class="hd rev">
+      <p class="sur">Nos valeurs</p>
+      <h2 class="tit">Trois mots qui se vérifient au téléphone.</h2>
+    </div>
+    <div class="valeurs rev">
+      <article class="valeur">
+        <svg class="valeur__ch" viewBox="-32 -32 64 64" aria-hidden="true">
+          <circle r="27" fill="none" stroke="#B9873A" stroke-width="3" stroke-opacity=".55"/>
+          <circle r="21" fill="#C0223F" fill-opacity=".13"/>
+          <circle r="21" fill="none" stroke="#C0223F" stroke-width="1.4" stroke-opacity=".5"/>
+          <circle r="12" fill="#C0223F"/>
+          <circle cx="-4" cy="-4" r="3.4" fill="#FFFFFF" fill-opacity=".55"/>
+        </svg>
+        <h3>Confiance</h3>
+        <p>La personne qui décroche connaît votre officine, vos saisons et vos habitudes.</p>
+      </article>
+      <article class="valeur">
+        <svg class="valeur__ch" viewBox="-32 -32 64 64" aria-hidden="true">
+          <circle r="27" fill="none" stroke="#B9873A" stroke-width="3" stroke-opacity=".55"/>
+          <circle r="21" fill="#C0223F" fill-opacity=".13"/>
+          <circle r="21" fill="none" stroke="#C0223F" stroke-width="1.4" stroke-opacity=".5"/>
+          <circle r="12" fill="#C0223F"/>
+          <circle cx="-4" cy="-4" r="3.4" fill="#FFFFFF" fill-opacity=".55"/>
+        </svg>
+        <h3>Engagement</h3>
+        <p>C'est la même d'une année sur l'autre. Dans ce métier, c'est devenu rare.</p>
+      </article>
+      <article class="valeur">
+        <svg class="valeur__ch" viewBox="-32 -32 64 64" aria-hidden="true">
+          <circle r="27" fill="none" stroke="#B9873A" stroke-width="3" stroke-opacity=".55"/>
+          <circle r="21" fill="#C0223F" fill-opacity=".13"/>
+          <circle r="21" fill="none" stroke="#C0223F" stroke-width="1.4" stroke-opacity=".5"/>
+          <circle r="12" fill="#C0223F"/>
+          <circle cx="-4" cy="-4" r="3.4" fill="#FFFFFF" fill-opacity=".55"/>
+        </svg>
+        <h3>Respect</h3>
+        <p>Elle ne vous vendra pas ce dont vous n'avez pas besoin — parce qu'elle vous reverra
+          le mois suivant, et l'année d'après.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ══ 6 · LA FIN DE PAGE ════════════════════════════════════════════════ -->
+<section class="sec sec--fin fin" id="contact" style="background:var(--fond-c);border-top:1px solid var(--fond-b)">
+  <div class="env">
+    <div class="fin__g">
+      <div class="rev">
+        <h2 class="tit">Posez-nous la question qui vous intéresse.</h2>
+        <p>Sur nos conditions, sur nos délais, sur la façon dont nous travaillons. Vous aurez une
+          réponse claire, et le nom de l'implantation qui livre votre secteur.</p>
+        <div class="btns">
+          <a class="btn" href="mailto:contact@integralpharma.fr">contact@integralpharma.fr
+            <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6">
+              <path d="M3 8h10M9 4l4 4-4 4"/></svg></a>
+        </div>
+      </div>
+      <!-- LE BALANCIER — la dernière pièce du mouvement, et la dernière des cinquante.
+           Il fait exactement une demi-oscillation par dent d'échappement libérée :
+           angle = 44° · cos(π · θ_échappement / pas d'une dent). -->
+      <div class="rev fin__bal">
+        <svg viewBox="-80 -80 160 160" aria-hidden="true">
+          <circle r="72" fill="none" stroke="#DBD0B9" stroke-width="1"/>
+          <g id="mec-balancier">
+            <!-- la serge : une jante d'acier tenue par deux bras -->
+            <circle r="64" fill="none" stroke="#98A0AB" stroke-width="9" stroke-opacity=".85"/>
+            <circle r="68.5" fill="none" stroke="#5A626D" stroke-width="1" stroke-opacity=".4"/>
+            <circle r="59.5" fill="none" stroke="#5A626D" stroke-width="1" stroke-opacity=".4"/>
+            <rect x="-64" y="-3" width="128" height="6" rx="3" fill="#98A0AB" fill-opacity=".8"/>
+            <rect x="-3" y="-64" width="6" height="128" rx="3" fill="#98A0AB" fill-opacity=".8"/>
+            <circle cx="39.6" cy="39.6" r="5" fill="#23407F"/>
+            <circle cx="-39.6" cy="39.6" r="5" fill="#23407F"/>
+            <circle cx="-39.6" cy="-39.6" r="5" fill="#23407F"/>
+            <circle cx="39.6" cy="-39.6" r="5" fill="#23407F"/>
+            <!-- le spiral : une spirale d'Archimède, 3 tours 1/2 -->
+            <path class="ressort" style="stroke-width:1.8" d="M9.0,0.0L9.1,1.3L9.0,2.6L8.7,3.9L8.3,5.2L7.6,6.4L6.8,7.5L5.8,8.5L4.6,9.4L3.3,10.1L1.9,10.7L0.4,11.0L-1.2,11.2L-2.8,11.1L-4.3,10.7L-5.9,10.2L-7.4,9.4L-8.7,8.4L-10.0,7.2L-11.0,5.9L-11.9,4.3L-12.6,2.7L-13.0,0.9L-13.2,-0.9L-13.1,-2.8L-12.8,-4.7L-12.2,-6.5L-11.3,-8.2L-10.2,-9.8L-8.8,-11.3L-7.3,-12.6L-5.5,-13.7L-3.6,-14.5L-1.6,-15.0L0.5,-15.3L2.7,-15.2L4.8,-14.9L6.9,-14.2L9.0,-13.3L10.8,-12.0L12.6,-10.5L14.1,-8.8L15.3,-6.8L16.3,-4.7L17.0,-2.4L17.3,-0.0L17.3,2.4L17.0,4.9L16.3,7.3L15.3,9.6L14.0,11.7L12.3,13.7L10.4,15.4L8.2,16.9L5.9,18.0L3.3,18.9L0.7,19.3L-2.0,19.4L-4.8,19.1L-7.5,18.4L-10.0,17.4L-12.5,16.0L-14.7,14.2L-16.7,12.1L-18.4,9.8L-19.7,7.2L-20.7,4.4L-21.3,1.5L-21.5,-1.5L-21.3,-4.5L-20.6,-7.5L-19.5,-10.4L-18.0,-13.1L-16.2,-15.6L-14.0,-17.9L-11.4,-19.8L-8.6,-21.4L-5.6,-22.5L-2.4,-23.3L0.8,-23.6L4.1,-23.4L7.4,-22.8L10.6,-21.7L13.6,-20.2L16.4,-18.2L18.9,-15.9L21.1,-13.2L22.9,-10.2L24.3,-7.0L25.2,-3.5L25.6,-0.0L25.6,3.6L25.0,7.2L23.9,10.6L22.4,14.0L20.3,17.1L17.9,19.9L15.1,22.3L11.9,24.4L8.4,26.0L4.8,27.1L1.0,27.6L-2.9,27.7L-6.8,27.2L-10.6,26.2L-14.2,24.6L-17.6,22.5L-20.7,20.0L-23.4,17.0L-25.7,13.7L-27.6,10.0L-28.9,6.1L-29.6,2.1L-29.8,-2.1L-29.4,-6.2L-28.4,-10.3L-26.9,-14.3L-24.8,-18.0L-22.2,-21.4L-19.1,-24.4L-15.6,-27.0L-11.7,-29.1L-7.6,-30.6L-3.3,-31.5L1.1,-31.9L5.6,-31.6L10.0,-30.7L14.2,-29.2L18.3,-27.1L22.0,-24.4L25.3,-21.2L28.2,-17.6L30.5,-13.6L32.3,-9.3L33.4,-4.7L33.9,-0.0L33.8,4.7L33.0,9.5L31.5,14.0L29.4,18.4L26.7,22.4L23.4,26.0L19.7,29.2L15.5,31.8L11.0,33.9L6.2,35.2L1.3,35.9L-3.8,36.0L-8.8,35.3L-13.7,33.9L-18.4,31.8L-22.7,29.1L-26.7,25.8L-30.1,21.9L-33.1,17.6L-35.4,12.9L-37.0,7.9L-37.9,2.7"/>
+            <circle r="7" fill="#14120D" fill-opacity=".85"/>
+            <circle class="pierre" r="3"/>
+          </g>
+        </svg>
+        <p class="fin__lg">Balancier — une demi-oscillation<br>par dent d'échappement libérée</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="pied">
+  <div class="env">
+    <div class="pied__h">
+      <div class="pied__adr">
+        <b>Intégral Pharma</b><br>
+        758 chemin de la Source, ZI Saint-Martin<br>83400 Hyères<br>
+        <a href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a>
+      </div>
+      <div class="pied__liens">
+        <a href="#groupe">Le groupe</a>
+        <a href="#reseau">Le réseau</a>
+        <a href="#metier">Le métier</a>
+        <a href="#valeurs">Nos valeurs</a>
+        <a href="https://www.integralpharma.fr/jobs" target="_blank" rel="noopener">Nous rejoindre</a>
+        <a href="https://www.integralpharma.fr/mentions-l%C3%A9gales" target="_blank" rel="noopener">Mentions légales</a>
+      </div>
+    </div>
+    <div class="pied__ch">
+      <span>9 implantations · plus de 2 000 officines livrées · indépendant depuis 2006</span>
+      <span class="pied__sig">50 · Le Mouvement</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   LE MOUVEMENT — un seul pilote : le défilement.
+   Aucune librairie. Une seule boucle rAF, qui s'endort quand l'onglet est caché.
+   ═══════════════════════════════════════════════════════════════════════════ */
+(function(){
+  "use strict";
+  var D = document, W = window;
+  var doux = W.matchMedia && W.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ── Menu téléphone ─────────────────────────────────────────────────── */
+  var burger = D.querySelector('.burger'), nav = D.getElementById('nav');
+  if (burger && nav){
+    burger.addEventListener('click', function(){
+      var o = burger.getAttribute('aria-expanded') === 'true';
+      burger.setAttribute('aria-expanded', o ? 'false' : 'true');
+      nav.setAttribute('data-ouvert', o ? '0' : '1');
+      burger.setAttribute('aria-label', o ? 'Ouvrir le menu' : 'Fermer le menu');
+    });
+    nav.addEventListener('click', function(e){
+      if (e.target.tagName === 'A'){
+        burger.setAttribute('aria-expanded','false');
+        nav.setAttribute('data-ouvert','0');
+      }
+    });
+  }
+
+  /* ── Révélation ─────────────────────────────────────────────────────── */
+  var revs = [].slice.call(D.querySelectorAll('.rev'));
+  if ('IntersectionObserver' in W){
+    var io = new IntersectionObserver(function(es){
+      es.forEach(function(e){
+        if (e.isIntersecting){ e.target.setAttribute('data-vu','1'); io.unobserve(e.target); }
+      });
+    }, {rootMargin:'0px 0px -6% 0px', threshold:0.02});
+    revs.forEach(function(el){ io.observe(el); });
+    /* filet de sécurité : au bout de 2,5 s, tout ce qui n'a pas été vu est montré */
+    setTimeout(function(){ revs.forEach(function(e){ e.setAttribute('data-vu','1'); }); }, 2500);
+  } else {
+    revs.forEach(function(el){ el.setAttribute('data-vu','1'); });
+  }
+
+  /* ── Les compteurs ──────────────────────────────────────────────────── */
+  function fmt(v, an, suf){
+    var s;
+    /* ⚠ jamais de séparateur de milliers sur une année */
+    if (an || (v >= 1900 && v <= 2100 && !suf)) s = String(Math.round(v));
+    else s = String(Math.round(v)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    return s + (suf || '');
+  }
+  var cpts = [].slice.call(D.querySelectorAll('[data-cpt]'));
+  function lanceCpt(el){
+    var cible = parseFloat(el.getAttribute('data-cpt'));
+    var an = el.getAttribute('data-an') === '1';
+    var suf = el.getAttribute('data-suf') || '';
+    var dep = an ? cible - 24 : 0;
+    var t0 = 0, dur = 1100;
+    if (doux){ el.textContent = fmt(cible, an, suf); return; }
+    function pas(t){
+      if (!t0) t0 = t;
+      var k = Math.min(1, (t - t0) / dur);
+      var e = 1 - Math.pow(1 - k, 3);
+      el.textContent = fmt(dep + (cible - dep) * e, an, suf);
+      if (k < 1) requestAnimationFrame(pas);
+    }
+    requestAnimationFrame(pas);
+  }
+  if ('IntersectionObserver' in W){
+    var io2 = new IntersectionObserver(function(es){
+      es.forEach(function(e){ if (e.isIntersecting){ lanceCpt(e.target); io2.unobserve(e.target); } });
+    }, {threshold:0.3});
+    cpts.forEach(function(el){ io2.observe(el); });
+  }
+
+  /* ── Le mécanisme ───────────────────────────────────────────────────── */
+  function g(id){ return D.getElementById(id); }
+  var el = {
+    barillet:g('mec-barillet'), moyenne:g('mec-moyenne'), champ:g('mec-champ'),
+    echap:g('mec-echap'), ancre:g('mec-ancre'), ressort:g('mec-ressort'),
+    grande:g('mec-grande'), pignon:g('mec-pignon'), crema:g('mec-cremaillere'),
+    index:g('col-index'), tete:g('mec-tete'), centrale:g('mec-centrale'),
+    emploi:g('mec-emploi'), emploi2:g('mec-emploi2'), balancier:g('mec-balancier'),
+    piste:g('bande-piste'), lect:g('lect-tour')
+  };
+  var roues  = [].slice.call(D.querySelectorAll('#train-reseau [data-r] .tourne'));
+  var cames  = [].slice.call(D.querySelectorAll('.came'));
+  var pouss  = [].slice.call(D.querySelectorAll('.pouss'));
+  var etapes = [].slice.call(D.querySelectorAll('.etape'));
+
+  var Lres = 0;
+  if (el.ressort && el.ressort.getTotalLength){
+    try { Lres = el.ressort.getTotalLength(); } catch(e){ Lres = 0; }
+  }
+
+  /* Géométrie — strictement celle dessinée dans le SVG */
+  var MOD_COL = 1.5;                       /* module de la colonne de gauche */
+  var N_BAR = 80, N_MOY = 20, N_CHA = 40, N_ECH = 15;
+  var R_PIGNON = 14 * MOD_COL / 2;         /* 10,5 */
+  var PAS_CREMA = Math.PI * MOD_COL;       /* 4,7124 */
+  var DENTS_RES = [72,24,36,18,30,20,28,22,32,26];
+  var RAD = 180 / Math.PI;
+
+  var K_CREMA = 0.052;   /* unités SVG de crémaillère par pixel défilé */
+  var K_HERO  = 0.0013;  /* radians de barillet par pixel défilé */
+  var E_CAME  = 15;      /* excentricité des cames, en unités SVG */
+
+  var courant = 0, cible = 0, actif = true, dernier = -99999, hMax = 1;
+
+  function mesureMax(){
+    hMax = Math.max(1, D.documentElement.scrollHeight - W.innerHeight);
+  }
+  mesureMax();
+  W.addEventListener('resize', mesureMax, {passive:true});
+  W.addEventListener('load', mesureMax);
+
+  function rot(n, deg){ if (n) n.setAttribute('transform','rotate(' + deg.toFixed(3) + ')'); }
+
+  function pose(y){
+    /* ═════ 1. LA COLONNE : crémaillère → pignon 14 → grande roue 70 ═════ */
+    var d = y * K_CREMA;
+    var thP = d / R_PIGNON;                 /* le pignon roule sans glisser sur la crémaillère */
+    var thG = -thP * 14 / 70;               /* rapport 14/70, sens inversé */
+    if (el.crema) el.crema.setAttribute('transform',
+      'translate(0,' + (-(d % PAS_CREMA)).toFixed(2) + ')');
+    rot(el.pignon, thP * RAD);
+    rot(el.grande, thG * RAD);
+    rot(el.tete,   thP * RAD);
+
+    if (el.index){
+      var p = Math.min(1, Math.max(0, y / hMax));
+      el.index.style.top = (3 + p * 90).toFixed(2) + '%';
+    }
+
+    /* ═════ 2. L'OUVERTURE ═════
+       L'échappement quantifie tout le train : il n'avance que d'une dent à la
+       fois (360/15 = 24°), soit 4,5° de barillet. C'est le « tic ». */
+    var thB  = y * K_HERO;
+    var pasE = 2 * Math.PI / N_ECH;
+    var thEc = -thB * N_BAR / N_ECH;              /* échappement, avant quantification */
+    var nD   = Math.round(thEc / pasE);
+    var thEq = nD * pasE;
+    var thBq = -thEq * N_ECH / N_BAR;
+    rot(el.barillet,  thBq * RAD);
+    rot(el.moyenne,  -thBq * N_BAR / N_MOY * RAD);
+    rot(el.champ,     thBq * N_BAR / N_CHA * RAD);
+    rot(el.echap,     thEq * RAD);
+    rot(el.ancre,    (nD % 2 === 0 ? -7 : 7));
+    /* le balancier : une demi-oscillation par dent d'échappement, exactement */
+    rot(el.balancier, 44 * Math.cos(Math.PI * thEc / pasE));
+
+    if (el.lect){
+      var tours = Math.abs(thBq) / (2 * Math.PI);
+      el.lect.textContent = tours < 0.02 ? 'au repos'
+        : 'barillet ' + tours.toFixed(2).replace('.', ',') + (tours >= 2 ? ' tours' : ' tour');
+    }
+
+    /* ═════ 3. LE RÉSEAU : neuf roues, rapport N01/Nk ═════ */
+    for (var i = 0; i < roues.length; i++){
+      var a;
+      if (i === 9) a = thB * 1.9 * (DENTS_RES[0] / DENTS_RES[9]) * -0.32;  /* désengrené */
+      else a = thB * 1.9 * (DENTS_RES[0] / DENTS_RES[i]) * (i % 2 === 0 ? 1 : -1);
+      rot(roues[i], a * RAD);
+    }
+
+    /* ═════ 4. LE MÉTIER : quatre excentriques calés à 90° ═════ */
+    var thC = thB * 3.1;
+    for (var c = 0; c < cames.length; c++){
+      var ang = thC + parseFloat(cames[c].getAttribute('data-ph')) / RAD;
+      rot(cames[c], ang * RAD);
+      var lev = E_CAME * (1 - Math.cos(ang));      /* course exacte du poussoir */
+      if (pouss[c]) pouss[c].setAttribute('transform',
+        'translate(' + pouss[c].getAttribute('data-x') + ',' + lev.toFixed(2) + ')');
+      /* le poussoir est en HAUT quand la course est faible : c'est là que
+         l'excentrique soulève, et c'est là que l'étape s'allume. */
+      if (etapes[c]){
+        var h = 1 - lev / (2 * E_CAME);           /* 1 = poussoir au sommet */
+        etapes[c].setAttribute('data-haut', h > 0.72 ? '1' : '0');
+        var b = etapes[c].querySelector('.etape__b');
+        if (b) b.style.width = Math.round(h * 100) + '%';
+      }
+    }
+
+    /* ═════ 5. Rouages secondaires ═════ */
+    rot(el.centrale, thB * 1.1 * RAD);
+    rot(el.emploi,   thB * 1.4 * RAD);
+    rot(el.emploi2, -thB * 1.4 * 75 / 40 * RAD);
+
+    /* ═════ 6. Le bandeau EST une crémaillère : il avance avec la page ═════ */
+    if (el.piste && el.piste.firstElementChild){
+      var L = el.piste.firstElementChild.offsetWidth || 1200;
+      el.piste.style.transform =
+        'translate3d(' + (-((y * 0.22) % L)).toFixed(1) + 'px,0,0)';
+    }
+  }
+
+  /* ── Boucle ─────────────────────────────────────────────────────────── */
+  function boucle(){
+    cible = W.scrollY || W.pageYOffset || 0;
+    courant += (cible - courant) * 0.16;          /* l'élasticité du train */
+    if (Math.abs(cible - courant) < 0.05) courant = cible;
+    if (Math.abs(courant - dernier) > 0.02){ pose(courant); dernier = courant; }
+    if (actif) requestAnimationFrame(boucle);
+  }
+
+  D.addEventListener('visibilitychange', function(){
+    if (D.hidden){ actif = false; }
+    else if (!actif){ actif = true; dernier = -99999; requestAnimationFrame(boucle); }
+  });
+
+  pose(0);                                        /* le mouvement est dessiné, à l'arrêt */
+
+  if (doux){
+    etapes.forEach(function(e){
+      e.setAttribute('data-haut','0');
+      var b = e.querySelector('.etape__b'); if (b) b.style.width = '100%';
+    });
+  } else {
+    requestAnimationFrame(boucle);
+    /* armement du ressort : 1,4 s, la page reste utilisable pendant */
+    if (el.ressort && Lres){
+      el.ressort.style.strokeDasharray = Lres;
+      el.ressort.style.strokeDashoffset = Lres;
+      requestAnimationFrame(function(){ requestAnimationFrame(function(){
+        el.ressort.style.transition = 'stroke-dashoffset 1.4s cubic-bezier(.2,.7,.2,1)';
+        el.ressort.style.strokeDashoffset = '0';
+        setTimeout(function(){
+          el.ressort.style.transition = 'none';
+          el.ressort.style.strokeDasharray = 'none';
+        }, 1600);
+      }); });
+    }
+  }
+
+  /* ── Le survol d'une maison éclaire sa roue, et réciproquement ──────── */
+  var lignes = [].slice.call(D.querySelectorAll('.maison'));
+  function marque(i, on){
+    var l = lignes[i - 1]; if (l) l.setAttribute('data-actif', on ? '1' : '0');
+    var gr = D.querySelector('#train-reseau [data-r="' + i + '"]');
+    if (!gr) return;
+    var dts = gr.querySelector('.dents'); if (dts) dts.style.stroke = on ? '#C0223F' : '';
+    var co  = gr.querySelector('.corps'); if (co)  co.style.opacity = on ? '.55' : '';
+  }
+  lignes.forEach(function(l, k){
+    var i = k + 1;
+    l.addEventListener('mouseenter', function(){ marque(i, true); });
+    l.addEventListener('mouseleave', function(){ marque(i, false); });
+  });
+
+  /* ── Mesure des images par seconde, depuis la console ───────────────── */
+  W.__fps = function(ms){
+    ms = ms || 3000;
+    var n = 0, t0 = performance.now();
+    return new Promise(function(res){
+      (function tic(){
+        n++;
+        if (performance.now() - t0 < ms) requestAnimationFrame(tic);
+        else res(Math.round(n / ((performance.now() - t0) / 1000)));
+      })();
+    });
+  };
+})();
+</script>
+</body>
+</html>

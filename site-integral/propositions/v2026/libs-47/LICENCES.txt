@@ -1,0 +1,10 @@
+Librairies auto-hebergees — maquette 47 « Remanence »
+=====================================================
+
+lenis.min.js — Lenis
+  Defilement lisse. Licence MIT (Studio Freight / darkroom.engineering).
+  https://github.com/darkroomengineering/lenis
+  La trainee de la direction se cale sur la vitesse de defilement : sans cette
+  librairie le defilement reste natif, la page fonctionne normalement.
+
+AUCUN CDN, AUCUNE CLE D'API, AUCUN APPEL RESEAU SORTANT.

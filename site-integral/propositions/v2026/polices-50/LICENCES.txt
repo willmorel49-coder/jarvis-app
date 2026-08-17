@@ -1,0 +1,34 @@
+Polices employées par m-50.html — « Le Mouvement ».
+Toutes en licence libre SIL Open Font License 1.1, servies par le même hôte
+que la page. Aucun CDN, aucun appel à un service extérieur.
+
+instrumentserif.woff2         Instrument Serif (Rodrigo Fuenzalida, Jordan Egstad)
+instrumentserif-italic.woff2  SIL OFL 1.1 — sous-ensemble latin.
+                              Rôle : tous les grands titres, les chiffres des
+                              compteurs et les intitulés d'étape. Un serif à
+                              fort contraste, qui est la lettre des cadrans
+                              d'horlogerie. L'italique porte « Un seul nom. »
+                              et rien d'autre.
+
+inter.woff2                   Inter (Rasmus Andersson) — SIL OFL 1.1
+                              Sous-ensemble latin, variable 400..600.
+                              Rôle : tout le texte courant.
+
+archivo-var.woff2             Archivo (Omnibus-Type) — SIL OFL 1.1
+                              Sous-ensemble latin, variable 400..700.
+                              Rôle : navigation, boutons, bandeau défilant,
+                              noms de laboratoires. Une grotesque un peu
+                              serrée, qui tient sans crier à côté du serif.
+
+plexmono-400.woff2            IBM Plex Mono (IBM / Mike Abbink, Bold Monday)
+plexmono-500.woff2            SIL OFL 1.1 — sous-ensemble latin.
+                              Rôle : TOUTES les annotations mécaniques —
+                              nombres de dents, rapports de transmission,
+                              formules, sur-titres, légendes de guichet.
+                              C'est la police du relevé technique : elle
+                              sépare visuellement ce qui est mesuré de ce
+                              qui est écrit.
+
+Les six fichiers étaient déjà présents dans ce dossier (sous-ensembles latins
+téléchargés pour la série) — aucun nouveau téléchargement, aucune requête
+réseau sortante.

@@ -1,0 +1,18 @@
+Librairies auto-hébergées — maquette 44 « Le Cadran »
+=====================================================
+
+UTILISÉE PAR LA PAGE
+--------------------
+lenis.min.js — Lenis 1.3.23
+  Défilement lissé. Licence MIT (Studio Freight / darkroom.engineering).
+  https://github.com/darkroomengineering/lenis
+  Chargement progressif : si le fichier manque, la page défile normalement.
+  Désactivée d'office sur écran tactile et en « mouvement réduit ».
+
+AUCUN CDN, AUCUNE CLÉ D'API, AUCUN APPEL RÉSEAU SORTANT.
+
+POLICES (polices-44/) — toutes sous SIL Open Font License 1.1
+-------------------------------------------------------------
+archivo-var.woff2       Archivo Variable — Omnibus-Type
+geistmono.woff2         Geist Mono — Vercel
+instrumentserif.woff2   Instrument Serif — Instrument

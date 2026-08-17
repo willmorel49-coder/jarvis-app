@@ -1,0 +1,12 @@
+Polices de la maquette 46 « Convoyeur ». Servies localement, sous-ensemble latin
+uniquement, aucun appel exterieur au chargement de la page.
+
+Archivo Variable (archivo-var.woff2) — SIL Open Font License 1.1 — Omnibus-Type
+  https://github.com/Omnibus-Type/Archivo
+
+JetBrains Mono (jbmono.woff2) — SIL Open Font License 1.1 — JetBrains
+  https://github.com/JetBrains/JetBrainsMono
+
+La SIL Open Font License 1.1 autorise l'usage, la modification et la redistribution,
+y compris commerciale, a condition que les fontes ne soient pas vendues seules et que
+cette notice accompagne les fichiers. Texte complet : https://openfontlicense.org/
