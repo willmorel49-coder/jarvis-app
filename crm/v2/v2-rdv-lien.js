@@ -73,6 +73,15 @@
         .catch(function () { return null; });
     },
 
+    // L'adresse publique du commercial, telle qu'un pharmacien la verra.
+    // Exposée parce que l'envoi groupé en repose entièrement : un mail en
+    // copie cachée ne peut pas porter de jeton par officine, c'est CE lien
+    // qu'il colle dans le corps. Une seule règle d'URL, un seul endroit.
+    url: function (l) {
+      if (!l) return '';
+      return l.slug ? joli(l.slug) : brut(l.token);
+    },
+
     bloc: function (l) {
       css();
       if (!l) {

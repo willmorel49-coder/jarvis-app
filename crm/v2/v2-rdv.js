@@ -167,10 +167,23 @@
       /* ── Le hub (direction 3, choisie le 13/08/2026) ──────────────
          L'en-tête porte l'identité du module : on doit sentir qu'on est
          ENTRÉ quelque part, pas qu'on a ouvert une page de plus. */
-      '.v2-hub-cap{margin:-8px -16px 0;padding:26px 20px 74px;color:#fff;',
+      // ⚠️ Corrigé le 17/08/2026 : la marge était de -16px alors que le padding
+      // de .v2-wrap vaut 26px, et 14px sous 640px (v2.css). Le bandeau débordait
+      // donc de 2px sur mobile et provoquait un défilement horizontal sur tout
+      // l'écran. La marge négative doit valoir exactement le padding.
+      '.v2-hub-cap{margin:-8px -26px 0;padding:26px 30px 74px;color:#fff;',
       '  background:linear-gradient(165deg,#0B5BEE,#0039A8)}',
+      '@media(max-width:640px){.v2-hub-cap{margin:-8px -14px 0;padding:26px 20px 74px}}',
       '.v2-hub-cap h1{font-size:clamp(24px,5vw,30px);font-weight:800;letter-spacing:-.03em;margin:0 0 6px}',
       '.v2-hub-cap p{margin:0;font-size:14px;color:rgba(255,255,255,.84)}',
+      // Le module est en essai : le dire en tête, et pas en petit en bas.
+      // Un outil annoncé « bêta » qui a un défaut est un outil en essai ;
+      // le même défaut sur un outil annoncé fini est une panne.
+      '.v2-hub-beta{display:inline-block;margin:0 0 9px;padding:4px 10px;border-radius:20px;',
+      '  font-size:11.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;',
+      '  color:#fff;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.4)}',
+      '.v2-hub-essai{color:var(--muted);font-size:13px;line-height:1.55;margin:18px 0 0}',
+      '.v2-hub-essai a{color:var(--ip-blue);font-weight:700;text-decoration:none}',
       '.v2-hub-pro{background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);',
       '  padding:15px;margin:-58px 0 16px;position:relative;',
       '  box-shadow:0 1px 0 #fff inset,0 10px 26px -12px rgba(16,19,28,.28)}',
@@ -379,7 +392,11 @@
     envoyer: '<path d="M4 6h16v12H4z"/><path d="m4 7 8 6 8-6"/>',
     dispos: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
     lien: '<path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/>' +
-          '<path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/>'
+          '<path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/>',
+    groupe: '<path d="M16 20v-1.5a3.5 3.5 0 0 0-3.5-3.5h-5A3.5 3.5 0 0 0 4 18.5V20"/>' +
+            '<circle cx="10" cy="8" r="3.5"/><path d="M20 20v-1.5a3.5 3.5 0 0 0-2.6-3.4"/>' +
+            '<path d="M15.5 4.6a3.5 3.5 0 0 1 0 6.8"/>',
+    suivi: '<path d="M4 19V5"/><path d="M4 19h16"/><path d="m7.5 14 3.5-4 3 2.5L19 7"/>'
   };
 
   function ligneRdv(d) {
@@ -491,7 +508,7 @@
               'pour qu’elle choisisse elle-même son créneau.</p></div>';
 
         root.innerHTML = top + '<div class="v2-wrap narrow">' +
-          '<div class="v2-hub-cap"><h1>Rendez-vous</h1>' +
+          '<div class="v2-hub-cap"><span class="v2-hub-beta">Bêta</span><h1>Rendez-vous</h1>' +
             '<p>' + esc(venir.length) + ' à venir · ' + esc(semaine) + ' cette semaine' +
             (attente.length ? ' · ' + esc(attente.length) + ' lien(s) sans réponse' : '') + '</p></div>' +
 
@@ -500,7 +517,13 @@
           '<div class="v2-hub-grille">' +
             (V2.pages.rdvplanning ? entree('rdvplanning', 'Mon agenda', '4 semaines, heure par heure', IC.agenda) : '') +
             (V2.pages.rdvajout ? entree('rdvajout', 'Noter un RDV', 'pris au téléphone', IC.noter) : '') +
-            (V2.pages.campagne ? entree('campagne', 'Envoyer un lien', 'il choisit son créneau', IC.envoyer) : '') +
+            (V2.pages.campagne ? entree('campagne', 'Envoyer un lien', 'un par un, personnalisé', IC.envoyer) : '') +
+            // L'envoi groupé entre par la campagne, mode « groupé » : c'est le
+            // même ciblage et la même sélection, seule la dernière étape change.
+            (V2.pages.campagne && V2.rdvGroupe
+              ? entree('campagne', 'Envoi groupé', '25 officines en copie cachée', IC.groupe) : '') +
+            (V2.pages.rdvsuivi
+              ? entree('rdvsuivi', 'Suivi & contrôle', 'qui a réservé, et si tout marche', IC.suivi) : '') +
             entree('rdvdispo', 'Mes dispos', 'jours, horaires, agenda', IC.dispos) +
             entree('rdvdispo', 'Mon lien permanent', 'à envoyer à la main — même écran, plus bas', IC.lien, true) +
           '</div>' +
@@ -514,6 +537,15 @@
           '<div class="v2-rdv-sec">À venir</div>' + htmlVenir +
           '<div class="v2-rdv-sec">À rappeler</div>' + htmlRappeler +
           '<div class="v2-rdv-sec">Sans réponse</div>' + htmlAttente +
+
+          '<p class="v2-hub-essai">Ce module est <b>en essai</b>. Tout y est réel — les mails ' +
+            'partent de ta boîte, les rendez-vous s’enregistrent — mais il bouge encore. ' +
+            'Si quelque chose cloche ou te manque, ' +
+            (V2.pages.remontees
+              ? '<a href="#" onclick="V2.go(\'remontees\');return false">dis-le dans les remontées</a>.'
+              : 'dis-le à Will.') +
+            ' Le <a href="#" onclick="V2.go(\'rdvsuivi\');return false">suivi</a> te dit à tout ' +
+            'moment si la chaîne complète fonctionne.</p>' +
         '</div>';
       });
     }
