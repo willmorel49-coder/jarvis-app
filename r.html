@@ -34,6 +34,7 @@
   var q = new URLSearchParams(window.location.search);
   var t = q.get('t') || '';        // lien de campagne, à usage unique
   var p = q.get('p') || '';        // lien permanent d'un commercial
+  var m = q.get('m') || '';        // MON rendez-vous : le revoir, le déplacer, l'annuler
   var cible = '';
   // Deux formats acceptés : le CODE court de 8 lettres (les liens d'aujourd'hui)
   // et l'ancien jeton de 36 caractères (les mails déjà partis avant ce
@@ -42,6 +43,9 @@
     cible = 'crm/v2/rdv.html?t=' + encodeURIComponent(t);
   }
   else if (/^[a-z0-9][a-z0-9-]{0,31}$/i.test(p)) cible = 'crm/v2/rdv.html?p=' + encodeURIComponent(p.toLowerCase());
+  // Le lien que le pharmacien garde dans son agenda. Même exigence de
+  // brièveté : il voyage dans un fichier .ics, souvent affiché en texte brut.
+  else if (/^[a-z0-9]{6,16}$/i.test(m)) cible = 'crm/v2/rdv.html?m=' + encodeURIComponent(m.toLowerCase());
 
   if (cible) {
     var racine = window.location.pathname.replace(/[^/]*$/, '');
