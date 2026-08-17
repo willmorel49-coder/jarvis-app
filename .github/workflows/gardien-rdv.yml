@@ -32,6 +32,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Historique complet : le contrôle « la page du pharmacien a-t-elle
+          # été re-versionnée après ses modules partagés ? » compare des dates
+          # de commit. Avec la profondeur 1 par défaut, il se sauterait tout
+          # seul sans que personne le remarque.
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
