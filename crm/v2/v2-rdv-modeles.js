@@ -111,6 +111,71 @@
     }
   };
 
+  // ── Les mêmes motifs, pour un envoi GROUPÉ en copie cachée ───────
+  // Un mail parti vers 25 officines en Cci ne peut nommer personne et ne
+  // peut afficher aucun chiffre : le corps est le MÊME pour tout le lot.
+  // Écrire « Bonjour Monsieur Dupont » ou « vos 12 400 € » à 25 officines
+  // à la fois serait faux pour 24 d'entre elles.
+  //
+  // Le lien n'est pas non plus le même objet : c'est le lien PERMANENT du
+  // commercial, celui qui ne connaît pas l'officine. La page publique lui
+  // demande donc de se déclarer avant d'afficher le moindre créneau — on
+  // le dit dans le mail, pour que le clic ne surprenne pas.
+  var GROUPE = {
+    bilan: function (ctx) {
+      return {
+        objet: 'Le point sur vos chiffres',
+        corps: 'Bonjour,\n\n' +
+          'J’aimerais faire le point avec vous sur ce que nous faisons ensemble.\n\n' +
+          'Trois choses que je voudrais voir avec vous :\n\n' +
+          '• vos chiffres de l’année, ligne par ligne\n' +
+          '• ce que vous pourriez récupérer sans changer vos habitudes\n' +
+          '• les références en tension que nous avons en stock\n\n' +
+          'Quinze minutes suffisent. Je vous laisse choisir le moment :\n' +
+          txt(ctx.lien) + '\n\n' +
+          'Vous indiquez votre officine, vous choisissez l’horaire.'
+      };
+    },
+    offre: function (ctx) {
+      var libre = txt(ctx.texte_libre);
+      var refuse = M.texteRefuse(libre);
+      if (refuse || !libre) libre = 'J’ai du nouveau à vous présenter.';
+      var out = {
+        objet: 'Du nouveau chez Intégral Pharma',
+        corps: 'Bonjour,\n\n' + libre + '\n\n' +
+          'Je passe dans votre secteur prochainement. Trois choses à voir ensemble :\n\n' +
+          '• la nouveauté en question, et ce qu’elle change pour vous\n' +
+          '• ce que vous faites déjà avec nous, chiffres à l’appui\n' +
+          '• les références en tension que nous avons en stock\n\n' +
+          'Plutôt que de tomber au mauvais moment, je vous laisse choisir :\n' +
+          txt(ctx.lien) + '\n\n' +
+          'Vous indiquez votre officine, vous choisissez l’horaire.'
+      };
+      if (refuse) {
+        out.avertissement = 'Ton texte contenait un pourcentage : il a été retiré. ' +
+          'Les conditions commerciales ne s’écrivent pas dans un mail.';
+      }
+      return out;
+    },
+    routine: function (ctx) {
+      return {
+        objet: 'Je passe dans votre secteur',
+        corps: 'Bonjour,\n\n' +
+          'Je passe prochainement dans votre secteur et j’aimerais m’arrêter chez vous.\n\n' +
+          'Trois choses que je voudrais voir avec vous :\n\n' +
+          '• ce que vous faites déjà avec nous, chiffres à l’appui\n' +
+          '• les références en tension que nous avons en stock\n' +
+          '• ce que vous pourriez récupérer sans changer vos habitudes\n\n' +
+          'Plutôt que de tomber au mauvais moment, je vous laisse choisir votre créneau :\n' +
+          txt(ctx.lien) + '\n\n' +
+          'Vous indiquez votre officine, vous choisissez l’horaire, ça prend dix secondes.' +
+          (txt(ctx.tel_commercial)
+            ? '\nEt si aucun créneau ne vous convient, appelez-moi, mon numéro est juste en dessous.'
+            : '')
+      };
+    }
+  };
+
   M.liste = function () {
     return ['bilan', 'offre', 'routine'].map(function (k) {
       return { cle: k, nom: MODELES[k].nom, description: MODELES[k].description };
@@ -120,6 +185,16 @@
   M.rendre = function (cle, ctx) {
     var m = MODELES[cle] || MODELES.routine;
     return m.rendre(ctx || {});
+  };
+
+  // Version groupée. Même signature, mêmes clés de motif : l'écran choisit
+  // l'une ou l'autre selon le mode, sans rien savoir de leur contenu.
+  M.rendreGroupe = function (cle, ctx) {
+    ctx = ctx || {};
+    var f = GROUPE[cle] || GROUPE.routine;
+    var m = f(ctx);
+    m.corps += signature(ctx) + STOP;
+    return m;
   };
 
   // ── Version mise en forme ────────────────────────────────────────
@@ -136,9 +211,9 @@
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 
-  M.rendreHtml = function (cle, ctx) {
-    var m = M.rendre(cle, ctx || {});
-    var lien = txt((ctx || {}).lien);
+  // Le convertisseur, isolé : les deux modes (un par un, groupé) partagent
+  // exactement la même mise en forme. Il prend un mail déjà rendu.
+  function enHtml(m, lien) {
     var lignes = m.corps.split('\n');
     var out = [], i, l, mode = '';   // '' | 'p' | 'ul'
 
@@ -188,6 +263,14 @@
       html: '<div style="font:15px/1.65 -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial,sans-serif;' +
             'color:#10131C;max-width:560px">' + out.join('') + '</div>'
     };
+  }
+
+  M.rendreHtml = function (cle, ctx) {
+    return enHtml(M.rendre(cle, ctx || {}), txt((ctx || {}).lien));
+  };
+
+  M.rendreGroupeHtml = function (cle, ctx) {
+    return enHtml(M.rendreGroupe(cle, ctx || {}), txt((ctx || {}).lien));
   };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = M;

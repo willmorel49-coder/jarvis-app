@@ -857,6 +857,39 @@
       '.v2-home-x .v2-lch-meta{display:flex;flex-direction:column;gap:4px}',
       '.v2-home-x .v2-lch-t{font-size:18px;font-weight:700;letter-spacing:-.01em}',
       '.v2-home-x .v2-lch-d{font-size:13.5px;color:var(--muted);line-height:1.35}',
+      // ── Bandeau « nouveauté en essai » ────────────────────────────────
+      // La bannière Copilote avait été retirée le 12/08 : c'était un chantier,
+      // il n'avait pas à occuper la tête de l'accueil. Celle-ci est d'une autre
+      // nature — l'outil est complet et en service, il est en essai, et Will a
+      // demandé le 17/08 qu'il soit mis en avant à ce titre.
+      // Le dégradé porte une source de lumière en haut à gauche : un aplat bleu
+      // serait plus mort qu'utile.
+      '.v2-home-x .v2-lch-beta{position:relative;display:flex;flex-wrap:wrap;align-items:center;',
+      '  gap:16px;margin-top:10px;padding:20px 22px;border-radius:var(--r-lg,20px);',
+      '  border:1px solid rgba(255,255,255,.16);cursor:pointer;overflow:hidden;color:#fff;',
+      '  background:radial-gradient(760px circle at 12% -20%,rgba(255,255,255,.30),transparent 58%),',
+      '  linear-gradient(158deg,#0B5BEE,#0031A0);',
+      '  box-shadow:0 14px 34px -18px rgba(11,58,160,.75);',
+      '  transition:transform .28s var(--mo-ease-soft),box-shadow .28s var(--mo-ease-soft)}',
+      '.v2-home-x .v2-lch-beta:hover{transform:translateY(-3px);',
+      '  box-shadow:0 20px 44px -18px rgba(11,58,160,.85)}',
+      '.v2-home-x .v2-lch-beta .ic{flex:0 0 auto;width:46px;height:46px;border-radius:13px;',
+      '  display:flex;align-items:center;justify-content:center;color:#fff;',
+      '  background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.26)}',
+      '.v2-home-x .v2-lch-beta .tx{flex:1 1 220px;min-width:0}',
+      '.v2-home-x .v2-lch-beta .chip{display:inline-block;margin:0 0 7px;padding:3px 9px;',
+      '  border-radius:20px;font-size:11px;font-weight:800;letter-spacing:.09em;',
+      '  text-transform:uppercase;background:rgba(255,255,255,.20);',
+      '  border:1px solid rgba(255,255,255,.42)}',
+      '.v2-home-x .v2-lch-beta .t{display:block;font-size:18px;font-weight:800;letter-spacing:-.01em}',
+      '.v2-home-x .v2-lch-beta .d{display:block;font-size:13.5px;line-height:1.45;margin-top:4px;',
+      '  color:rgba(255,255,255,.86)}',
+      '.v2-home-x .v2-lch-beta .go{flex:0 0 auto;font-size:19px;font-weight:700;line-height:1;',
+      '  color:rgba(255,255,255,.9)}',
+      '@media(max-width:640px){.v2-home-x .v2-lch-beta{padding:18px}',
+      '  .v2-home-x .v2-lch-beta .go{display:none}}',
+      '@media(prefers-reduced-motion:reduce){.v2-home-x .v2-lch-beta{transition:none}',
+      '  .v2-home-x .v2-lch-beta:hover{transform:none}}',
       '.v2-home-x .v2-lch-more{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:24px;padding-top:18px;border-top:1px solid var(--line)}',
       '.v2-home-x .v2-lch-more .lbl{font-size:12.5px;color:var(--muted);margin-right:4px;font-weight:600}',
       '.v2-home-x .v2-lch-mini{display:inline-flex;align-items:center;gap:7px;padding:7px 13px;border:1px solid var(--line);border-radius:var(--r-pill);background:var(--card);color:var(--ip-ink);font-size:13px;font-weight:500;text-decoration:none;cursor:pointer;transition:border-color .2s,transform .2s,box-shadow .2s}',
@@ -1013,7 +1046,24 @@
         // Bannière « Nouveau · Copilote » retirée le 12/08/2026 : c'est un
         // chantier, il n'a pas à occuper la tête de l'accueil. Il reste
         // accessible dans « Autres outils » et par ⌘K.
-        pilHtml = '<div class="v2-lch-grid">' + big + '</div>';
+        //
+        // Rendez-vous, lui, prend le bandeau (17/08/2026, demande de Will) :
+        // l'outil est complet et en service, il est en essai. On le sort donc
+        // d'« Autres outils » — un module qu'on veut faire essayer ne peut pas
+        // vivre dans une pastille grise en bas de page.
+        var beta = '';
+        if (pmap.rdv) {
+          used.rdv = 1;
+          beta = '<a class="v2-lch-beta" onclick="V2.go(\'rdv\')">' +
+            '<span class="ic">' + ICO('cal', 24) + '</span>' +
+            '<span class="tx"><span class="chip">Nouveau · en essai</span>' +
+              '<span class="t">Rendez-vous</span>' +
+              '<span class="d">Envoie un lien à une officine, ou un seul mail à 25 en copie ' +
+              'cachée : elles choisissent leur créneau, calé sur la géographie de ta journée. ' +
+              'L’invitation part dans ton agenda.</span></span>' +
+            '<span class="go">→</span></a>';
+        }
+        pilHtml = beta + '<div class="v2-lch-grid">' + big + '</div>';
         var rest = P.filter(function (p) { return !used[p.k]; });
         if (rest.length) {
           pilHtml += '<div class="v2-lch-more"><span class="lbl">Autres outils</span>' +
@@ -1066,6 +1116,15 @@
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.biosimilaires) PAGES.splice(4, 0, ['biosimilaires', 'Base Biosimilaires (marché FR)', 'cat']);
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.audit) PAGES.push(['audit', 'Audit Marge (par pharmacie)', 'pilo']);
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.presentation) PAGES.push(['presentation', 'Présentation Intégral Pharma', 'pharma']);
+    // Le module Rendez-vous n'était atteignable que par sa tuile. Mis en avant
+    // le 17/08, il doit aussi se trouver au clavier — c'est le chemin de ceux
+    // qui l'utiliseront tous les jours.
+    if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.rdv) {
+      PAGES.splice(1, 0, ['rdv', 'Rendez-vous · prise de RDV & campagnes', 'cal']);
+      if (V2.pages.campagne) PAGES.push(['campagne', 'Campagne de rendez-vous · un par un ou groupé en copie cachée', 'cal']);
+      if (V2.pages.rdvsuivi) PAGES.push(['rdvsuivi', 'Suivi & contrôle des rendez-vous', 'cal']);
+      if (V2.pages.rdvdispo) PAGES.push(['rdvdispo', 'Mes disponibilités & mon lien de réservation', 'cal']);
+    }
     PAGES.forEach(function (p) { idx.push({ grp: 'Pages', label: p[1], ico: p[2], action: function () { V2.go(p[0]); } }); });
     // Espace Groupements (sous-vue de pharma avec param) — recherchable dans ⌘K
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.pharma) {

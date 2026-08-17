@@ -61,8 +61,11 @@
     /**
      * Calcule et affiche l'aperçu dans l'élément #<cible>.
      * pid facultatif : sans lui, on montre un exemple neutre plutôt que rien.
+     * groupe : aperçu du mail en COPIE CACHÉE — même corps pour tout le lot,
+     *   donc ni nom de contact ni chiffres. Le pid est alors ignoré : montrer
+     *   les chiffres d'une officine sur un mail qui part à 25 serait faux.
      */
-    montrer: function (cible, modele, texteLibre, pid) {
+    montrer: function (cible, modele, texteLibre, pid, groupe) {
       css();
       var z = document.getElementById(cible);
       if (!z) return;
@@ -70,7 +73,7 @@
 
       Promise.all([V2.rdvSources(), V2.rdvTelCharger(), lienDemo()]).then(function (res) {
         var lien = res[2] || '';
-        var o = pid ? V2.rdvInfo(pid) : null;
+        var o = (pid && !groupe) ? V2.rdvInfo(pid) : null;
         var ctx = {
           contact: o ? o.contact : '',
           nom_officine: o ? o.nom : 'VOTRE OFFICINE',
@@ -83,8 +86,9 @@
           lien: lien,
           texte_libre: texteLibre || ''
         };
-        var m = window.V2MOD.rendre(modele || 'routine', ctx);
-        DERNIER = { ctx: ctx, modele: modele || 'routine', objet: m.objet };
+        var m = groupe ? window.V2MOD.rendreGroupe(modele || 'routine', ctx)
+                       : window.V2MOD.rendre(modele || 'routine', ctx);
+        DERNIER = { ctx: ctx, modele: modele || 'routine', objet: m.objet, groupe: !!groupe };
 
         // Le lien est rendu cliquable dans l'aperçu, le reste est échappé :
         // le nom d'une officine vient d'un fichier, pas de nous.
@@ -104,7 +108,9 @@
             '</div>' +
           '</div>' +
           '<p class="v2-ap-note">C’est exactement ce que recevra le pharmacien' +
-            (o ? '' : ' — ici avec une officine d’exemple') + '. ' +
+            (groupe ? ' — le même corps pour tout le lot, sans nom ni chiffres, ' +
+                      'puisqu’un mail en copie cachée part vers 25 officines à la fois'
+                    : (o ? '' : ' — ici avec une officine d’exemple')) + '. ' +
             'Le lien affiché est le tien, il fonctionne.' +
             (m.avertissement ? '<br><b>' + esc(m.avertissement) + '</b>' : '') + '</p>' +
           '<p class="v2-ap-note"><b>Mis en forme</b> : ta messagerie n’accepte que du texte brut ' +
@@ -120,8 +126,10 @@
     // colle le second au lieu de coller du code.
     copierHtml: function () {
       if (!DERNIER) { V2.toast('Ouvre d’abord l’aperçu.'); return; }
-      var m = window.V2MOD.rendreHtml(DERNIER.modele, DERNIER.ctx);
-      var brut = window.V2MOD.rendre(DERNIER.modele, DERNIER.ctx).corps;
+      var m = DERNIER.groupe ? window.V2MOD.rendreGroupeHtml(DERNIER.modele, DERNIER.ctx)
+                             : window.V2MOD.rendreHtml(DERNIER.modele, DERNIER.ctx);
+      var brut = (DERNIER.groupe ? window.V2MOD.rendreGroupe(DERNIER.modele, DERNIER.ctx)
+                                 : window.V2MOD.rendre(DERNIER.modele, DERNIER.ctx)).corps;
       if (window.ClipboardItem && navigator.clipboard && navigator.clipboard.write) {
         navigator.clipboard.write([new window.ClipboardItem({
           'text/html': new Blob([m.html], { type: 'text/html' }),
@@ -146,7 +154,8 @@
       if (!DERNIER) { V2.toast('Ouvre d’abord l’aperçu.'); return; }
       var moi = (V2.user && V2.user.email) || '';
       if (!moi) { V2.toast('Adresse inconnue pour ton compte.'); return; }
-      var m = window.V2MOD.rendre(DERNIER.modele, DERNIER.ctx);
+      var m = DERNIER.groupe ? window.V2MOD.rendreGroupe(DERNIER.modele, DERNIER.ctx)
+                             : window.V2MOD.rendre(DERNIER.modele, DERNIER.ctx);
       V2.rdv._ouvrir('mailto:' + encodeURIComponent(moi) +
         '?subject=' + encodeURIComponent('[TEST] ' + m.objet) +
         '&body=' + encodeURIComponent(m.corps));

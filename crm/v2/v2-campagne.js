@@ -13,6 +13,12 @@
   var ICO = window.ICO || function () { return ''; };
 
   var ETAT = {
+    // Le mode d'envoi. 'un' = un mail personnalisé par officine, avec un
+    // lien à usage unique (le mode d'origine). 'groupe' = un seul mail vers
+    // 25 officines en copie cachée, avec le lien permanent du commercial.
+    // Tout ce qui précède l'envoi — motif, ciblage, sélection — est commun :
+    // seule la dernière étape change, et elle vit dans v2-rdv-groupe.js.
+    mode: 'un',
     modele: 'routine', texte: '', file: [], i: 0, envoyes: 0, passes: 0,
     tous: [],          // tout ce que le commercial peut viser, recensé une fois
     opposes: [],       // « ne plus solliciter »
@@ -139,6 +145,22 @@
     }).join('');
   }
 
+  // Ce que le mode choisi change concrètement, écrit sous les deux boutons.
+  // Les deux limites citées sont mesurées : 2 048 caractères d'URL `mailto:`
+  // sous Outlook (dépassés dès 25 adresses), et le lot de 25 au-delà duquel
+  // les messageries d'officine trient un envoi caché en indésirable.
+  function noteMode() {
+    return ETAT.mode === 'groupe'
+      ? 'Un seul mail part vers 25 officines à la fois, toutes en copie cachée. ' +
+        'Elles ne se voient pas entre elles. Le mail ne peut nommer personne ni ' +
+        'porter de chiffres : il contient ton lien permanent, et c’est le pharmacien ' +
+        'qui déclare son officine avant de choisir son créneau. Beaucoup plus rapide, ' +
+        'un peu moins personnel.'
+      : 'Un mail par officine, avec son nom, ses chiffres, et un lien à usage unique. ' +
+        'Tu ouvres, tu relis, tu envoies, officine après officine. Le plus efficace, ' +
+        'mais compte 20 à 40 officines dans une session.';
+  }
+
   // Filtres courants de l'écran.
   function filtres() {
     return {
@@ -210,7 +232,8 @@
       if (!window.V2rdvApercuPret) { window.V2rdvApercuPret = 1; }
       var cips = Object.keys(ETAT.choisis);
       V2.rdvApercu.montrer('cp-apercu', val('cp-modele') || 'routine',
-                           val('cp-texte') || '', cips.length ? cips[0] : null);
+                           val('cp-texte') || '', cips.length ? cips[0] : null,
+                           ETAT.mode === 'groupe');
     },
 
     typer: function (t) { ETAT.type = t; V2.campagne.rafraichir(); },
@@ -242,9 +265,15 @@
     majBarre: function () {
       var n = Object.keys(ETAT.choisis).length;
       var b = document.getElementById('cp-envoi');
-      if (b) {
-        b.disabled = !n;
-        b.textContent = n ? 'Préparer ' + n + ' mail' + (n > 1 ? 's' : '') : 'Sélectionne des officines';
+      if (!b) return;
+      b.disabled = !n;
+      if (!n) { b.textContent = 'Sélectionne des officines'; return; }
+      if (ETAT.mode === 'groupe') {
+        var lots = Math.ceil(n / 25);
+        b.textContent = 'Préparer ' + lots + ' envoi' + (lots > 1 ? 's' : '') +
+                        ' groupé' + (lots > 1 ? 's' : '') + ' · ' + n + ' officines';
+      } else {
+        b.textContent = 'Préparer ' + n + ' mail' + (n > 1 ? 's' : '');
       }
     },
 
@@ -295,6 +324,20 @@
       V2.campagne.majBarre();
     },
 
+    // Bascule un par un / groupé. Elle ne touche NI la sélection NI les
+    // filtres : on doit pouvoir changer d'avis sur la façon d'envoyer sans
+    // refaire sa liste.
+    mode: function (m) {
+      ETAT.mode = m;
+      var bt = document.querySelectorAll('.cp-mode button');
+      for (var i = 0; i < bt.length; i++)
+        bt[i].classList.toggle('on', bt[i].getAttribute('data-m') === m);
+      var e = document.getElementById('cp-mode-note');
+      if (e) e.innerHTML = noteMode();
+      V2.campagne.apercu();
+      V2.campagne.majBarre();
+    },
+
     lancer: function () {
       ETAT.modele = val('cp-modele') || 'routine';
       ETAT.texte = val('cp-texte');
@@ -307,6 +350,11 @@
       ETAT.file = ETAT.tous.filter(function (o) { return ETAT.choisis[o.cip]; });
       ETAT.i = 0; ETAT.envoyes = 0; ETAT.passes = 0;
       if (!ETAT.file.length) { V2.toast('Coche au moins une officine.'); return; }
+      if (ETAT.mode === 'groupe') {
+        if (!V2.rdvGroupe) { V2.toast('Envoi groupé indisponible — recharge la page.'); return; }
+        V2.rdvGroupe.demarrer(ETAT.file, ETAT.modele, ETAT.texte);
+        return;
+      }
       V2.campagne.afficherFile();
     },
 
@@ -373,7 +421,19 @@
       r.innerHTML = top + '<div class="v2-wrap narrow">' +
         '<div class="v2-camp-hero"><h1>Campagne de rendez-vous</h1>' +
           '<p>Le mail part de ta boîte, signé de ton nom. Tu relis, tu envoies. ' +
-          'Compte 20 à 40 officines dans une session.</p></div>' +
+          'JARVIS prépare, il n’envoie jamais à ta place.</p></div>' +
+
+        '<div class="v2-camp-sec">Comment tu envoies</div>' +
+        '<div class="v2-camp-box">' +
+          '<div class="cp-type cp-mode">' +
+            '<button data-m="un" class="' + (ETAT.mode === 'un' ? 'on' : '') +
+              '" onclick="V2.campagne.mode(\'un\')">Un par un, personnalisé</button>' +
+            '<button data-m="groupe" class="' + (ETAT.mode === 'groupe' ? 'on' : '') +
+              '" onclick="V2.campagne.mode(\'groupe\')">Groupé en copie cachée</button>' +
+          '</div>' +
+          '<p id="cp-mode-note" style="color:var(--muted);font-size:12.5px;margin:10px 0 0;' +
+            'line-height:1.55">' + noteMode() + '</p>' +
+        '</div>' +
 
         '<div class="v2-camp-sec">Le motif</div>' +
         '<div class="v2-camp-box">' +
