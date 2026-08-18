@@ -888,6 +888,32 @@
       '  color:rgba(255,255,255,.9)}',
       '@media(max-width:640px){.v2-home-x .v2-lch-beta{padding:18px}',
       '  .v2-home-x .v2-lch-beta .go{display:none}}',
+      // ── « Bientôt · bêta test » : les deux apps sœurs ────────────────
+      // Will, 18/08/2026 : « mettre sur l'app JARVIS l'app JARVIS Academy et
+      // JARVIS Design en nouveautés bientôt (bêta test) ».
+      // ⚠️ Volontairement SOUS le lanceur et non au-dessus : ce sont des outils
+      // qui n'existent pas encore pour l'équipe. Un module qu'on annonce ne
+      // prend pas la place d'un module qui sert tous les jours.
+      '.v2-home-x .v2-lch-soon{margin-top:22px}',
+      '.v2-home-x .v2-lch-soon-h{display:flex;align-items:center;gap:10px;margin-bottom:10px}',
+      '.v2-home-x .v2-lch-soon-h .lbl{font-size:12.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--ip-ink-3,#6B7280)}',
+      '.v2-home-x .v2-lch-soon-h .ln{flex:1;height:1px;background:var(--line,#E4E8F0)}',
+      '.v2-home-x .v2-lch-soon-g{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}',
+      '.v2-home-x .v2-lch-soon-c{position:relative;display:flex;gap:13px;padding:16px 17px;border-radius:var(--r-card,16px);text-decoration:none;color:inherit;border:1px dashed color-mix(in srgb,var(--ip-blue,#0050E6) 30%,var(--line,#E4E8F0));background:linear-gradient(180deg,var(--card,#fff),var(--card-2,#F7F9FC));box-shadow:var(--sh-1)}',
+      // La lumière vient d'en haut : un filet clair sur l'arête, jamais de flou.
+      '.v2-home-x .v2-lch-soon-c::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;box-shadow:0 1px 0 rgba(255,255,255,.7) inset}',
+      '@media(hover:hover){.v2-home-x .v2-lch-soon-c{transition:transform .24s var(--mo-ease-soft),box-shadow .24s var(--mo-ease-soft),border-color .24s var(--mo-ease-soft)}',
+      '  .v2-home-x .v2-lch-soon-c:hover{transform:translateY(-2px);box-shadow:var(--sh-2);border-color:color-mix(in srgb,var(--ip-blue,#0050E6) 55%,transparent)}}',
+      '.v2-home-x .v2-lch-soon-c .ic{flex:none;width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--ip-blue,#0050E6) 10%,#fff);color:var(--ip-blue,#0050E6);border:1px solid color-mix(in srgb,var(--ip-blue,#0050E6) 18%,transparent)}',
+      '.v2-home-x .v2-lch-soon-c .chip{display:inline-block;margin-bottom:5px;padding:3px 9px;border-radius:99px;font-size:11.5px;font-weight:800;letter-spacing:.04em;background:color-mix(in srgb,var(--ip-blue,#0050E6) 12%,#fff);color:var(--ip-blue,#0050E6)}',
+      '.v2-home-x .v2-lch-soon-c .t{display:block;font-size:16px;font-weight:800;letter-spacing:-.01em}',
+      '.v2-home-x .v2-lch-soon-c .d{display:block;margin-top:3px;font-size:13.5px;line-height:1.45;color:var(--ip-ink-2,#4B5563)}',
+      // ⚠️ 13 px : cette ligne dit COMMENT obtenir l'accès. Le reste de l'app
+      // descend à 11-12,5 px sur des étiquettes, mais une information utile ne
+      // se met pas en petit.
+      '.v2-home-x .v2-lch-soon-n{margin-top:10px;font-size:13px;line-height:1.5;color:var(--ip-ink-3,#6B7280)}',
+      '@media(max-width:640px){.v2-home-x .v2-lch-soon-g{grid-template-columns:1fr}}',
+      '@media(prefers-reduced-motion:reduce){.v2-home-x .v2-lch-soon-c{transition:none}}',
       '@media(prefers-reduced-motion:reduce){.v2-home-x .v2-lch-beta{transition:none}',
       '  .v2-home-x .v2-lch-beta:hover{transform:none}}',
       '.v2-home-x .v2-lch-more{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:24px;padding-top:18px;border-top:1px solid var(--line)}',
@@ -1064,6 +1090,7 @@
             '<span class="go">→</span></a>';
         }
         pilHtml = beta + '<div class="v2-lch-grid">' + big + '</div>';
+
         var rest = P.filter(function (p) { return !used[p.k]; });
         if (rest.length) {
           pilHtml += '<div class="v2-lch-more"><span class="lbl">Autres outils</span>' +
@@ -1076,7 +1103,35 @@
             // Tournée prospect : vit désormais dans le Copilote (Organisateur de tournée sur la carte).
             '</div>';
         }
+
       }
+
+      // ── Bientôt · bêta test ──────────────────────────────────────────
+      // ⚠️ CE DÉPÔT EST PUBLIC : aucun code d'accès n'est écrit ici. Les deux
+      // apps sont protégées par un code partagé qui se demande de vive voix.
+      // ⚠️ L'adresse de JARVIS Design est la LONGUE : « jarvis-design.vercel.app »
+      // appartient à quelqu'un d'autre et sert un 404 — vérifié le 18/08/2026,
+      // même piège que « allez-app.vercel.app ».
+      pilHtml +=
+        '<div class="v2-lch-soon">' +
+            '<div class="v2-lch-soon-h"><span class="lbl">Bientôt</span><span class="ln"></span></div>' +
+            '<div class="v2-lch-soon-g">' +
+              '<a class="v2-lch-soon-c" href="https://jarvis-academy-nu.vercel.app/" target="_blank" rel="noopener">' +
+                '<span class="ic">' + ICO('spark', 22) + '</span>' +
+                '<span><span class="chip">Bêta test</span>' +
+                  '<span class="t">JARVIS Academy ↗</span>' +
+                  '<span class="d">L\'école interne de l\'IA. Trois choses par semaine, trente minutes, ' +
+                  'et un geste à faire sur ton vrai travail. Ni cours, ni note, ni niveau.</span></span></a>' +
+              '<a class="v2-lch-soon-c" href="https://jarvis-design-willmorel49-coders-projects.vercel.app/app/" target="_blank" rel="noopener">' +
+                '<span class="ic">' + ICO('grid', 22) + '</span>' +
+                '<span><span class="chip">Bêta test</span>' +
+                  '<span class="t">JARVIS Design ↗</span>' +
+                  '<span class="d">La boîte à outils du beau : polices, palettes, icônes, composants. ' +
+                  'Chaque ressource ouverte une par une, avec son coût et sa licence réels.</span></span></a>' +
+            '</div>' +
+            '<p class="v2-lch-soon-n">Deux outils en cours d\'essai, ouverts à qui veut les tester. ' +
+            'Le code d\'accès se demande à Will — il n\'est écrit nulle part.</p>' +
+        '</div>';
 
       var firstName = (V2.user && V2.user.name ? V2.user.name.split(' ')[0] : 'Will');
 
