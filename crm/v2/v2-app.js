@@ -1115,10 +1115,14 @@
       //    « allez-app.vercel.app ». À ne jamais écrire.
       //  · « jarvis-design-willmorel49-coders-projects.vercel.app » marche,
       //    mais expose le nom de l'équipe Vercel — et ce dépôt est PUBLIC.
-      //  · « jarvis-design-delta.vercel.app » : celle-ci. Même déploiement,
-      //    courte, retapable, sans nom d'équipe. Vérifiée dans un navigateur
-      //    vierge le 18/08/2026 : elle sert bien l'app, pas un écran Vercel.
-      // ⚠️ Et c'est « /app/ » : la racine du même domaine sert les maquettes.
+      //  · « jarvis-design-delta.vercel.app » : celle-ci, À LA RACINE.
+      // ⚠️ LE CHEMIN A CHANGÉ LE 18/08/2026. Le catalogue vivait sous « /app/ » ;
+      //    le projet sert désormais ce dossier COMME racine (`outputDirectory`),
+      //    donc « /app/ » rend un 404 et la racine sert le catalogue. Les vingt
+      //    maquettes de direction, qui occupaient la racine, ont déménagé sous
+      //    « /directions/ » et répondent toujours.
+      //    Vérifié dans un navigateur vierge : racine 200 « la boîte à outils
+      //    du beau », /directions/ 200, /app/ 404.
       pilHtml +=
         '<div class="v2-lch-soon">' +
             '<div class="v2-lch-soon-h"><span class="lbl">Bientôt</span><span class="ln"></span></div>' +
@@ -1129,7 +1133,7 @@
                   '<span class="t">JARVIS Academy ↗</span>' +
                   '<span class="d">L\'école interne de l\'IA. Trois choses par semaine, trente minutes, ' +
                   'et un geste à faire sur ton vrai travail. Ni cours, ni note, ni niveau.</span></span></a>' +
-              '<a class="v2-lch-soon-c" href="https://jarvis-design-delta.vercel.app/app/" target="_blank" rel="noopener">' +
+              '<a class="v2-lch-soon-c" href="https://jarvis-design-delta.vercel.app/" target="_blank" rel="noopener">' +
                 '<span class="ic">' + ICO('grid', 22) + '</span>' +
                 '<span><span class="chip">Bêta test</span>' +
                   '<span class="t">JARVIS Design ↗</span>' +
