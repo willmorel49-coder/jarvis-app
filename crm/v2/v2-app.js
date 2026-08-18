@@ -1109,9 +1109,16 @@
       // ── Bientôt · bêta test ──────────────────────────────────────────
       // ⚠️ CE DÉPÔT EST PUBLIC : aucun code d'accès n'est écrit ici. Les deux
       // apps sont protégées par un code partagé qui se demande de vive voix.
-      // ⚠️ L'adresse de JARVIS Design est la LONGUE : « jarvis-design.vercel.app »
-      // appartient à quelqu'un d'autre et sert un 404 — vérifié le 18/08/2026,
-      // même piège que « allez-app.vercel.app ».
+      // ⚠️ TROIS ADRESSES EXISTENT POUR JARVIS DESIGN, une seule convient :
+      //  · « jarvis-design.vercel.app » APPARTIENT À QUELQU'UN D'AUTRE — elle
+      //    sert un 404 d'une app tierce de 470 octets. Même piège que
+      //    « allez-app.vercel.app ». À ne jamais écrire.
+      //  · « jarvis-design-willmorel49-coders-projects.vercel.app » marche,
+      //    mais expose le nom de l'équipe Vercel — et ce dépôt est PUBLIC.
+      //  · « jarvis-design-delta.vercel.app » : celle-ci. Même déploiement,
+      //    courte, retapable, sans nom d'équipe. Vérifiée dans un navigateur
+      //    vierge le 18/08/2026 : elle sert bien l'app, pas un écran Vercel.
+      // ⚠️ Et c'est « /app/ » : la racine du même domaine sert les maquettes.
       pilHtml +=
         '<div class="v2-lch-soon">' +
             '<div class="v2-lch-soon-h"><span class="lbl">Bientôt</span><span class="ln"></span></div>' +
@@ -1122,7 +1129,7 @@
                   '<span class="t">JARVIS Academy ↗</span>' +
                   '<span class="d">L\'école interne de l\'IA. Trois choses par semaine, trente minutes, ' +
                   'et un geste à faire sur ton vrai travail. Ni cours, ni note, ni niveau.</span></span></a>' +
-              '<a class="v2-lch-soon-c" href="https://jarvis-design-willmorel49-coders-projects.vercel.app/app/" target="_blank" rel="noopener">' +
+              '<a class="v2-lch-soon-c" href="https://jarvis-design-delta.vercel.app/app/" target="_blank" rel="noopener">' +
                 '<span class="ic">' + ICO('grid', 22) + '</span>' +
                 '<span><span class="chip">Bêta test</span>' +
                   '<span class="t">JARVIS Design ↗</span>' +
