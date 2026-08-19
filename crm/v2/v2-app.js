@@ -363,7 +363,7 @@
     if (V2.loadFiles && !V2.dataLoaded('wml') && !V2._wmlAsked) {
       V2._wmlAsked = true;
       root.innerHTML =
-        '<div class="v2-boot-splash"><div class="v2-boot-brand">Intégral Pharma</div>'
+        '<div class="v2-boot-splash"><div class="v2-boot-brand">' + ((window.V2_BRAND && window.V2_BRAND.name) || 'Intégral Pharma') + '</div>'
         + '<div class="v2-spinner"></div>'
         + '<div class="v2-boot-msg">Chargement des données réseau…</div></div>';
       V2.loadFiles(['wml'])
