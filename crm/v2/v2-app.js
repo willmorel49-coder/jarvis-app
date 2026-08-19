@@ -1127,7 +1127,7 @@
         '<div class="v2-lch-soon">' +
             '<div class="v2-lch-soon-h"><span class="lbl">Bientôt</span><span class="ln"></span></div>' +
             '<div class="v2-lch-soon-g">' +
-              '<a class="v2-lch-soon-c" href="https://jarvis-academy-nu.vercel.app/" target="_blank" rel="noopener">' +
+              '<a class="v2-lch-soon-c" href="https://jarvis-academy-fr.vercel.app/" target="_blank" rel="noopener">' +
                 '<span class="ic">' + ICO('spark', 22) + '</span>' +
                 '<span><span class="chip">Bêta test</span>' +
                   '<span class="t">JARVIS Academy ↗</span>' +
