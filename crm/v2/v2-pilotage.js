@@ -457,8 +457,11 @@
       // ── Confidentialité inter-commerciaux (Pilotage uniquement) ──
       // Un utilisateur relié à un commercial ne voit que SON périmètre ou le global national,
       // jamais le tableau de bord d'un collègue. Super-admin (commercial vide) = accès total.
+      // `voit_tous_commerciaux` (profil Supabase) lève la restriction pour la direction, sans
+      // vider son `commercial` — qui reste son repère dans les campagnes et le planning RDV.
       var myComm = (V2.user && V2.user.commercial) ? String(V2.user.commercial) : '';
-      if (myComm) {
+      var voitTous = !!(V2.user && V2.user.voitTous);
+      if (myComm && !voitTous) {
         if (!V2._piloScopedInit) { V2.commFilter = myComm; V2._piloScopedInit = true; }   // atterrit sur « Moi »
         if (V2.commFilter !== '' && V2.commFilter !== myComm) V2.commFilter = myComm;       // jamais un collègue
       }
@@ -779,7 +782,7 @@
       if (opso) {
         // Mode OPSO (Normandie Pharma) : pas de découpage par commercial Intégral
         commSeg = '';
-      } else if (myComm) {
+      } else if (myComm && !voitTous) {
         // Restreint : uniquement son périmètre ou le global national (jamais un collègue nommé)
         commSeg = '<div class="pilo-seg" style="margin-right:8px">' + cb(myComm, 'Moi') + cb('', 'Global national') + '</div>';
       } else if (comms.length > 1) {

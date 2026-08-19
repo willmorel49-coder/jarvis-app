@@ -87,7 +87,10 @@
       }
       // `commercial` (nom exact dans les données de ventes) = périmètre du Pilotage.
       // Vide/NULL = super-admin (voit tous les commerciaux). Sinon = restreint à SON CA + le global.
-      V2.user = { id: user.id, email: user.email, name: pr.data.name, role: pr.data.role, pharmacyIds: pr.data.pharmacy_ids, commercial: pr.data.commercial || '', opsoOnly: !!pr.data.opso_only };
+      // `voit_tous_commerciaux` ouvre le Pilotage complet SANS vider `commercial` : ce champ sert
+      // aussi aux campagnes et au planning RDV, le vider ferait perdre le repère « moi ».
+      // ⚠️ `role` ne peut pas servir à ça : toute l'équipe commerciale est en `admin`.
+      V2.user = { id: user.id, email: user.email, name: pr.data.name, role: pr.data.role, pharmacyIds: pr.data.pharmacy_ids, commercial: pr.data.commercial || '', opsoOnly: !!pr.data.opso_only, voitTous: pr.data.voit_tous_commerciaux === true };
       return true;
     } catch (e) { return false; }
   };
