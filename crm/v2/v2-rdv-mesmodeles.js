@@ -359,10 +359,12 @@
 
   function liste() {
     var l = V2.rdvModeles.liste();
-    var depart = ['routine', 'bilan', 'offre'].map(function (k) {
-      var n = window.V2MOD.liste().filter(function (m) { return m.cle === k; })[0];
-      return '<button class="v2-btn" onclick="V2.rdvModelesUI.nouveau(\'' + k + '\')">' +
-        'Partir de « ' + esc(n ? n.nom : k) + ' »</button>';
+    // Construit depuis la liste réelle des motifs livrés : depuis le 19/08 il
+    // n'y en a qu'un, et trois boutons écrits en dur auraient survécu au
+    // changement en proposant deux modèles qui n'existent plus.
+    var depart = window.V2MOD.liste().map(function (n) {
+      return '<button class="v2-btn" onclick="V2.rdvModelesUI.nouveau(\'' + esc(n.cle) + '\')">' +
+        'Partir de « ' + esc(n.nom) + ' »</button>';
     }).join('');
 
     return '<div class="mm-sec">Mes modèles</div>' +
