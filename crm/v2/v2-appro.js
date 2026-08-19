@@ -125,6 +125,11 @@
     return (j >= 0 && j <= CMD_JOURS) ? d : null;
   }
 
+  // Nombre de mois couverts par les exports (WML_MOIS, écrit par le générateur).
+  // Les compteurs ci-dessous somment TOUTES les ventes : écrire « 6 mois » en dur
+  // affichait une période fausse dès qu'un mois entrait dans la base.
+  function nMoisCouverts() { return (window.WML_MOIS && window.WML_MOIS.length) || 6; }
+
   // ═══ MOIS COMPLETS ═══
   // Le dernier mois d'un export est souvent PARTIEL (toutes les officines n'ont pas encore
   // remonté). Le diviser comme un mois plein sous-évalue la vitesse de vente, donc SURÉVALUE
@@ -167,7 +172,7 @@
     return Math.min(SAIS_MAX, Math.max(SAIS_MIN, v));
   }
 
-  // Index par CIP : demande mensuelle réseau (6 mois) + stock plateforme → vitesse, couverture, qté conseillée.
+  // Index par CIP : demande mensuelle réseau (mois complets) + stock plateforme → vitesse, couverture, qté conseillée.
   // Construit une seule fois et mis en cache (pattern salesByPid de v2-audit.js, transposé cip13).
   function cipIndex() {
     var S = window.WML_SALES;
@@ -469,7 +474,7 @@
     var b = basculesGx().slice(0, 12); if (!b.length) return '';
     var rows = b.map(function (o) {
       return '<div class="ap-row"><div class="ap-nm">' + esc(cap(o.d)) + '<small>princeps acheté par le réseau — un générique existe</small></div>' +
-        '<div class="ap-mini">' + fmt(o.q) + ' u/6 mois</div><div class="ap-st ok">bascule Gx</div></div>';
+        '<div class="ap-mini">' + fmt(o.q) + ' u/' + nMoisCouverts() + ' mois</div><div class="ap-st ok">bascule Gx</div></div>';
     }).join('');
     return '<div class="v2-card ap-card"><div class="ap-hd"><div class="ap-ic" style="background:#6D5AE6">G</div><div><h3>Bascules génériques à faire</h3>' +
       '<div class="ap-sub">' + (_generData.meta ? _generData.meta.nAvecGenerique : '') + ' groupes avec générique (BDPM) — les princeps que TU achètes encore et qui ont un générique dispo, top 12 par volume</div></div></div>' + rows + '</div>';
@@ -641,7 +646,7 @@
     var rows = cand.slice(0, 12).map(function (x) {
       return '<div class="ap-row"><div class="ap-nm">' + esc(cap(((ps[x.c] && ps[x.c].d) || x.c).toLowerCase())) +
         '<small>pic en ' + MOIS_L[x.pm - 1] + ' · +' + Math.round((x.pv - 1) * 100) + ' % vs moyenne (Medic\'AM 2 ans)</small></div>' +
-        '<div class="ap-mini">' + fmt(x.q) + ' u/6 mois réseau</div>' +
+        '<div class="ap-mini">' + fmt(x.q) + ' u/' + nMoisCouverts() + ' mois réseau</div>' +
         '<div class="ap-st ok">pré-commander</div></div>';
     }).join('');
     return '<div class="v2-card ap-card"><div class="ap-hd"><div class="ap-ic" style="background:#6D5AE6">☀</div><div><h3>Pré-commander avant le pic</h3>' +
@@ -1160,11 +1165,16 @@
     var o = cipIndex()[cip]; if (!o) return;
     var P = window.PROD_STATS || [], p = null; for (var i = 0; i < P.length; i++) if (String(P[i].c) === cip) { p = P[i]; break; }
     var name = (p && p.d) || cip;
-    // demande 6 mois (WML)
-    var series = [0, 0, 0, 0, 0, 0], S = window.WML_SALES || [];
-    for (var j = 0; j < S.length; j++) { var r = S[j]; if (String(r[3]) === cip && r[4] > 0 && r[1] >= 1 && r[1] <= 6) series[r[1] - 1] += r[4]; }
+    // Demande sur TOUTE la période couverte (WML_MOIS, écrit par le générateur).
+    // Bornée en dur à 6, la courbe perdait le dernier mois importé sans aucun message.
+    var MOIS = (window.WML_MOIS || []).map(function (ym) { return +ym.split('-')[1]; });
+    if (!MOIS.length) MOIS = [1, 2, 3, 4, 5, 6];
+    var rang = {}; MOIS.forEach(function (m, k) { rang[m] = k; });
+    var series = MOIS.map(function () { return 0; }), S = window.WML_SALES || [];
+    for (var j = 0; j < S.length; j++) { var r = S[j]; if (String(r[3]) === cip && r[4] > 0 && rang[r[1]] !== undefined) series[rang[r[1]]] += r[4]; }
     var mx = Math.max.apply(null, series) || 1;
-    var MS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin'];
+    var MSA = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+    var MS = MOIS.map(function (m) { return MSA[m - 1]; });
     var spark = '<div class="tk-spark">' + series.map(function (v, k) {
       return '<div class="tk-bar"><i style="height:' + Math.round(6 + v / mx * 66) + 'px"></i><b>' + fmt(v) + '</b><span>' + MS[k] + '</span></div>';
     }).join('') + '</div>';
@@ -1242,7 +1252,7 @@
       '<div class="tk-cip">CIP ' + esc(cip) + (p && p.f ? ' · ' + esc(p.f) : '') + '</div>' +
       (sig.length ? '<div class="tk-sig">' + sig.join(' ') + '</div>' : '') +
       kpis + priceLine + proj +
-      '<div class="tk-h">Demande réseau (6 mois)</div>' + spark +
+      '<div class="tk-h">Demande réseau (' + MOIS.length + ' mois)</div>' + spark +
       marcheLine + sitesHtml + '</div>';
     var el = document.getElementById('appro-ticket');
     if (!el) { el = document.createElement('div'); el.id = 'appro-ticket'; el.className = 'tk-ov'; el.onclick = function (e) { if (e.target === el) V2.approTicketClose(); }; document.body.appendChild(el); }
@@ -1818,7 +1828,7 @@
             '<div class="ap-foot" style="padding:10px 18px 12px;margin:0">Vitesse = ventes réseau/mois (WML, mois complets uniquement). Cible ' + CIBLE + ' j, portée à ' + CIBLE_TENSION + ' j si tension ANSM ou marché en hausse. Sur la base du dernier stock importé' + (window.STOCK_IP && window.STOCK_IP.meta && window.STOCK_IP.meta.gen ? ' (' + fdate(window.STOCK_IP.meta.gen) + ')' : '') + '.</div></div>';
 
           var rosRows = rossignols().map(function (o) {
-            var cv = o.vM > 0 ? Math.round(o.cov) + ' j de stock' : 'aucune vente sur 6 mois';
+            var cv = o.vM > 0 ? Math.round(o.cov) + ' j de stock' : 'aucune vente sur les mois complets';
             return '<div class="ap-row"><div class="ap-nm">' + esc(cap(o.d)) + (o.stale ? ' <span class="ap-tag ru">tarif à rafraîchir</span>' : '') +
               '<small>' + cv + ' · stock ' + fmt(o.st) + '</small></div>' +
               '<div class="ap-vol mono">' + (V2.fmtEur ? V2.fmtEur(o.cap) : fmt(o.cap)) + '</div>' +
@@ -1859,9 +1869,9 @@
         return '<div class="neg-row">' +
           '<div class="neg-top"><span class="neg-lab">' + esc(x.lab) + '</span>' +
             '<span class="neg-share">' + x.pct + ' % du volume Gx</span>' + pctHtml(x.g) + '</div>' +
-          '<div class="neg-nums"><b>' + (V2.fmtEur ? V2.fmtEur(x.ca) : fmt(x.ca)) + '</b> · ' + fmt(x.q) + ' u/6 mois · ' + x.nref + ' réfs</div>' +
+          '<div class="neg-nums"><b>' + (V2.fmtEur ? V2.fmtEur(x.ca) : fmt(x.ca)) + '</b> · ' + fmt(x.q) + ' u/' + nMoisCouverts() + ' mois · ' + x.nref + ' réfs</div>' +
           (x.tops.length ? '<div class="neg-tops">top : ' + x.tops.map(function (d) { return esc(cap(d)); }).join(' · ') + '</div>' : '') +
-          '<div class="neg-line">Levier : ' + fmt(x.q) + ' u/6 mois, ' + x.pct + ' % de notre volume générique' +
+          '<div class="neg-line">Levier : ' + fmt(x.q) + ' u/' + nMoisCouverts() + ' mois, ' + x.pct + ' % de notre volume générique' +
             (x.g != null && x.g > 0 ? ', en croissance de +' + Math.round(x.g) + ' %' : '') + ' → obtenir de meilleures conditions</div>' +
         '</div>';
       }).join('') || '<div class="ap-empty">Données génériqueurs indisponibles.</div>';

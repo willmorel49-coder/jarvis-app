@@ -82,6 +82,9 @@ def main():
     d_com = lire_declaration(lignes, 'WML_D_COMMERCIAUX')
     d_pro = lire_declaration(lignes, 'WML_D_PRODUITS')
     logos = lire_declaration(lignes, 'GRP_LOGOS')
+    # Période couverte (ex. ['2026-01'..'2026-07']). Le front s'en sert pour ne plus
+    # écrire « 6 mois » en dur : sans cette reprise, la découpe l'effacerait en silence.
+    mois = lire_declaration(lignes, 'WML_MOIS')
 
     print('Lu : {} officines · {} ventes · logos {}'.format(
         len(officines), len(ventes), 'oui' if logos else 'non'))
@@ -117,6 +120,8 @@ def main():
     # ⚠️ WML_SALES est créé VIDE ici. Les tranches le remplissent ensuite.
     # Sans cette ligne, `loadData()` ne trouverait pas le tableau et retomberait
     # sur les anciennes tables — exactement la panne du 14/08.
+    if mois is not None:
+        tete.append('const WML_MOIS = ' + compact(mois) + ';')
     tete.append('window.WML_SALES = window.WML_SALES || [];')
     # ⚠️ Le NOMBRE de tranches est écrit ICI, par le script qui les fabrique.
     # Il ne doit surtout pas être recopié à la main dans v2-boot.js : une
@@ -124,6 +129,8 @@ def main():
     # — le genre de panne muette qui a coûté deux jours les 13 et 14/08.
     tete.append('window.WML_TRANCHES = {};'.format(len(tranches)))
     assigns = 'try{window.WML_OFFICINES=WML_OFFICINES;'
+    if mois is not None:
+        assigns += 'window.WML_MOIS=WML_MOIS;'
     if d_off is not None:
         assigns += ('window.WML_D_OFFICINES=WML_D_OFFICINES;'
                     'window.WML_D_COMMERCIAUX=WML_D_COMMERCIAUX;'

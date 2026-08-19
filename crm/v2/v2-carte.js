@@ -12,7 +12,7 @@
   V2.pages = V2.pages || {};
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
 
-  var CB = '?v=20260804c';
+  var CB = '?v=20260819b';
   var map = null, cluster = null, markers = null, D = null, canvas = null;
   var displayMode = 'points';    // points | bulles (taille = CA)
   var tourLayer = null;          // tracé de la tournée (polyline + n° d'arrêts)
@@ -1868,9 +1868,17 @@
     ensureDetail(function () { renderFiche(i); });
   };
   V2.carteFicheClose = function () { var el = document.getElementById('cn-fiche'); if (el) el.remove(); };
-  var FMO = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin'];
+  // Libellés des mois RÉELLEMENT couverts par les exports (WML_MOIS, écrit par le
+  // générateur). Écrits en dur, un mois ajouté à la base sortait une barre sans étiquette.
+  var _MAB = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
+  function moisLbls() {
+    var m = window.WML_MOIS || [];
+    return m.length ? m.map(function (ym) { return _MAB[+ym.split('-')[1] - 1]; })
+                    : ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin'];
+  }
   function renderFiche(i) {
     var el = document.getElementById('cn-fiche'); if (!el) return;
+    var FMO = moisLbls();
     var p = D.p[i], det = (DETAIL && p[13]) ? DETAIL[p[13]] : null;
     var comm = p[5] ? D.comm[p[5]] : '', inT = inTour(i);
     var inWml = !!(p[13] && (V2.pharmacies || []).some(function (x) { return String(x.id) === String(p[13]); }));   // une de tes 630 officines → lien fiche complète
@@ -1889,7 +1897,7 @@
           (D.grp[p[3]] && D.grp[p[3]] !== '—' ? '<span class="cn-tag">' + esc(D.grp[p[3]]) + '</span>' : '') +
         '</div>' +
         '<div class="cn-fkpis">' +
-          '<div class="cn-fkpi"><b>' + eurK(caOf(p)) + '</b><span>CA (6 mois)</span></div>' +
+          '<div class="cn-fkpi"><b>' + eurK(caOf(p)) + '</b><span>CA (' + FMO.length + ' mois)</span></div>' +
           (det ? '<div class="cn-fkpi"><b>' + (det.np || 0) + '</b><span>références</span></div>' : '') +
           (det && det.pot ? '<div class="cn-fkpi"><b>' + eurK(det.pot) + '</b><span>potentiel</span></div>' : '') +
         '</div>' +

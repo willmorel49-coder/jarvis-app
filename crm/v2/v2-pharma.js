@@ -1020,7 +1020,10 @@
     var meCa = (meRec && meRec.ca) || V2.sumCA(sales) || 0;
     var caPct = offs.length ? Math.round(offs.filter(function (o) { return o.ca < meCa; }).length / offs.length * 100) : 0;
     var mca = monthlyCA(sales), nAct = mca.filter(function (m) { return m.ca > 0; }).length;
-    var regul = Math.min(100, Math.round(nAct / 6 * 100));
+    // Dénominateur = mois réellement couverts (WML_MOIS). En dur, la régularité
+    // d'une officine passait au-dessus de 100 % dès qu'un mois entrait dans la base.
+    var nMoisWml = (window.WML_MOIS && window.WML_MOIS.length) || 6;
+    var regul = Math.min(100, Math.round(nAct / nMoisWml * 100));
     var score = Math.max(0, Math.min(100, Math.round(0.40 * penet + 0.35 * caPct + 0.25 * regul)));
     // ── ruptures ANSM sur ses achats (actionnable : nom + stock Intégral) ──
     var seen = {}, ruptList = [];
@@ -1067,7 +1070,7 @@
     var axes = [
       { lab: 'Pénétration réseau', v: penet, txt: nOwn + '/' + nRows },
       { lab: 'Poids CA vs réseau', v: caPct, txt: (caPct >= 99 ? '1er du réseau' : caPct >= 50 ? 'top ' + Math.max(1, 100 - caPct) + '%' : caPct + 'e centile') },
-      { lab: 'Régularité d\'achat', v: regul, txt: nAct + '/6 mois' }
+      { lab: 'Régularité d\'achat', v: regul, txt: nAct + '/' + nMoisWml + ' mois' }
     ];
     var axHtml = axes.map(function (a) {
       var c = diagColor(a.v);

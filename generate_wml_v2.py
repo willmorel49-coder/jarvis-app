@@ -9,7 +9,7 @@
 # -*- coding: utf-8 -*-
 """
 Génère crm/v2/wml-officines-data.js pour le CRM V2.
-Source : STATS/WML_pharmacies.xlsx (officines) + STATS/WML_01..05_2026.xlsx (ventes).
+Source : STATS/WML_pharmacies.xlsx (officines) + STATS/WML_01..07_2026.xlsx (ventes).
 Ne garde que les officines AYANT des ventes (clients actifs).
 Clé produit = ARTCODEBARRE (CIP13) pour matcher BENCHMARK.cip13.
 Python 3.9 compatible.
@@ -198,7 +198,7 @@ STATS = os.path.join(BASE, 'STATS')
 # Tous les masters pharmacies (WML + MD + futurs commerciaux) — WML d'abord (prioritaire)
 PHARM_FILES = sorted(glob.glob(os.path.join(STATS, '*_pharmacies.xlsx')),
                      key=lambda p: (not os.path.basename(p).startswith('WML_'), p))
-# (commercial, préfixe fichier) — chaque source = 5 mois
+# (commercial, préfixe fichier) — chaque source : les mois de MONTHS_NUM réellement déposés
 SOURCES = [
     ('Will', 'WML'),
     ('Pauline G.', 'PGN'),   # Pauline Guillaumin
@@ -209,7 +209,10 @@ SOURCES = [
     ('Morgane', 'MDC'),      # Morgane
     ('Arthur', 'ALH'),       # Arthur Lehouerou
 ]
-MONTHS_NUM = [1, 2, 3, 4, 5, 6]
+MONTHS_NUM = [1, 2, 3, 4, 5, 6, 7]
+NB_MOIS = len(MONTHS_NUM)
+MOIS_ABBR = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil',
+             'Août', 'Sep', 'Oct', 'Nov', 'Déc']
 OUT = os.path.join(BASE, 'crm', 'v2', 'wml-officines-data.js')
 PALETTE = ['#1E9E6A', '#0050E6', '#C7791A', '#6D4FC4', '#00B5D8',
            '#E0556E', '#0034A0', '#13794F', '#A65F12', '#4F3A99']
@@ -517,8 +520,8 @@ pot_by_code = {o['id']: o.get('potentiel') for o in officines}
 _det = {}
 for srow in sales:
     code, mois, comm, cip, qte, pu, mnt = srow
-    d = _det.setdefault(code, {'m': [0] * 6, 'prod': {}})
-    if isinstance(mois, int) and 1 <= mois <= 6:
+    d = _det.setdefault(code, {'m': [0] * NB_MOIS, 'prod': {}})
+    if isinstance(mois, int) and 1 <= mois <= NB_MOIS:
         d['m'][mois - 1] += (mnt or 0)
     d['prod'][cip] = d['prod'].get(cip, 0) + (mnt or 0)
 CARTE_DETAIL = {}
@@ -534,22 +537,26 @@ for code, d in _det.items():
 DET_OUT = os.path.join(BASE, 'crm', 'v2', 'carte-detail.js')
 with open(DET_OUT, 'w', encoding='utf-8') as f:
     f.write('// Détail par officine pour la fiche de la carte Copilote (CA mensuel, top produits).\n')
-    f.write('// {id: {m:[jan..juin], top:[[nom,ca]...], np:nbProduits, pot:potentiel}}\n')
+    f.write('// {id: {m:[%s..%s], top:[[nom,ca]...], np:nbProduits, pot:potentiel}}\n'
+        % (MOIS_ABBR[MONTHS_NUM[0] - 1].lower(), MOIS_ABBR[MONTHS_NUM[-1] - 1].lower()))
     f.write('window.CARTE_DETAIL=' + json.dumps(CARTE_DETAIL, ensure_ascii=False, separators=(',', ':')) + ';\n')
 print('  [fiche] carte-detail.js : {} officines, {:.0f} Ko'.format(len(CARTE_DETAIL), os.path.getsize(DET_OUT) / 1024))
 
 # ── 4. Écriture JS ──
-months_lbl = 'Jan-Juin 2026'
+months_lbl = '%s-%s 2026' % (MOIS_ABBR[MONTHS_NUM[0] - 1], MOIS_ABBR[MONTHS_NUM[-1] - 1])
+WML_MOIS = ['2026-%02d' % m for m in MONTHS_NUM]   # période couverte, lue par le front
 with open(OUT, 'w', encoding='utf-8') as f:
     f.write('// WML Officines + Ventes — source de vérité CRM V2\n')
     f.write('// {} officines actives · {} lignes de ventes · {}\n'.format(
         len(officines), len(sales), months_lbl))
-    f.write('// Généré par generate_wml_v2.py depuis STATS/WML_pharmacies + WML_01..05_2026\n')
+    f.write('// Généré par generate_wml_v2.py depuis STATS/WML_pharmacies + WML_%02d..%02d_2026\n'
+        % (MONTHS_NUM[0], MONTHS_NUM[-1]))
     f.write('// WML_SALES format compact : [pharmacyId, mois, commercial, cip13, qte, puNet, mntNetHt]\n')
     f.write('const WML_OFFICINES = ' + json.dumps(officines, ensure_ascii=False, separators=(',', ':')) + ';\n')
     f.write('const WML_SALES = ' + json.dumps(sales, ensure_ascii=False, separators=(',', ':')) + ';\n')
     f.write('const GRP_LOGOS = ' + json.dumps(grp_logos, ensure_ascii=False, separators=(',', ':')) + ';\n')
-    f.write('try{window.WML_OFFICINES=WML_OFFICINES;window.WML_SALES=WML_SALES;window.GRP_LOGOS=GRP_LOGOS;}catch(e){}\n')
+    f.write('const WML_MOIS = ' + json.dumps(WML_MOIS) + ';\n')
+    f.write('try{window.WML_OFFICINES=WML_OFFICINES;window.WML_SALES=WML_SALES;window.GRP_LOGOS=GRP_LOGOS;window.WML_MOIS=WML_MOIS;}catch(e){}\n')
 
 size = os.path.getsize(OUT)
 print('\nOK -> {}'.format(OUT))
@@ -567,5 +574,13 @@ print('  {} officines · {} ventes · {:.0f} Ko'.format(len(officines), len(sale
 # `decouper_wml.py` casse ce fichier en tranches de 1,5 Mo et sort les logos.
 # Sans lui, la panne revient à la première régénération.
 import sys, subprocess  # noqa: E402  (import tardif : ce script est un outil, pas une lib)
+# ⚠️ Le COMPACTAGE passe AVANT le découpage : il a besoin du fichier ENTIER.
+# Sans lui on republie 27 Mo de ventes en clair — la panne iPhone des 13-14/08.
+# Il manquait à ce pipeline : seul un lancement à la main le faisait, donc le
+# robot `stats-commercial` produisait un fichier non compacté sans rien signaler.
+# `compacter_wml.py` lit un chemin RELATIF, d'où le cwd explicite.
+print('\n── Compactage (officine/commercial/produit → rang) ──')
+subprocess.run([sys.executable, os.path.join(BASE, 'compacter_wml.py')], cwd=BASE, check=True)
+
 print('\n── Découpage pour les téléphones ──')
 subprocess.run([sys.executable, os.path.join(BASE, 'decouper_wml.py'), OUT], check=True)

@@ -21,8 +21,11 @@ LISTING_JS = os.path.join(BASE, 'opso', 'opso-listing-2026.js')
 OUT_SALES = os.path.join(BASE, 'opso', 'wml-sales-data.js')
 OUT_ADH = os.path.join(BASE, 'opso', 'opso-adherents.js')
 OUT_DATA = os.path.join(BASE, 'opso', 'wml-data.js')
-MONTHS = [1, 2, 3, 4, 5, 6]
+MONTHS = [1, 2, 3, 4, 5, 6, 7]
 WML_MONTHS = ['2026-%02d' % m for m in MONTHS]
+MOIS_ABBR = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil',
+             'Août', 'Sep', 'Oct', 'Nov', 'Déc']
+PERIODE = '%s-%s 2026' % (MOIS_ABBR[MONTHS[0] - 1], MOIS_ABBR[MONTHS[-1] - 1])
 
 
 def classify(nature, afm, pu_net):
@@ -336,7 +339,7 @@ print('  [GLP-1] %.0f EUR (%.1f%% du CA) · %d u · %d pharmacies' % (glp1['ca']
 # ── 4. wml-sales-data.js ──
 lines = [
     '// WML Sales Data — app OPSO Santé (généré par generate_wml_sales.py)',
-    '// %d lignes · %d adhérents actifs · Jan-Juin 2026 (William + Karine…)' % (len(all_sales), len(agg)),
+    '// %d lignes · %d adhérents actifs · %s (William + Karine…)' % (len(all_sales), len(agg), PERIODE),
     '// pharmacyCode = CIP, mappé à pharmacyId au chargement (initApp)',
     'const WML_STATIC_SALES = [',
 ]
