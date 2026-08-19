@@ -227,8 +227,9 @@
       '  padding:13px 14px;margin-bottom:9px}',
       '.agp-jour.agp-off-jour{background:var(--card-2);opacity:.72}',
       /* Le secteur du jour */
-      '.agp-sect{margin:0 0 10px}',
-      '.agp-sect-b{min-height:38px;padding:0 12px;border-radius:9px;border:1px dashed var(--line);',
+      '.agp-sect{margin:0 0 10px;display:flex;flex-wrap:wrap;align-items:center;gap:8px}',
+      '.agp-sect > .agp-sect-p{flex:1 0 100%}',
+      '.agp-sect-b{min-height:44px;padding:0 13px;border-radius:9px;border:1px dashed var(--line);',
       '  background:transparent;color:var(--muted);font:inherit;font-size:12.5px;cursor:pointer}',
       '.agp-sect-b.on{border-style:solid;border-color:var(--ip-blue);color:var(--ip-blue);font-weight:700}',
       '.agp-sect-p{background:var(--card-2);border:1px solid var(--line);border-radius:var(--r-md);',
@@ -237,6 +238,33 @@
       '.agp-sect-c button{min-width:46px;min-height:44px;border-radius:9px;border:1px solid var(--line);',
       '  background:var(--card);color:var(--fg);font:inherit;font-size:14px;font-weight:600;cursor:pointer}',
       '.agp-sect-c button.on{background:var(--ip-blue);border-color:var(--ip-blue);color:#fff}',
+      '.agp-sect-ou{display:inline-block;font-size:12.5px;color:var(--muted);margin-right:10px;',
+      '  line-height:44px;vertical-align:middle}',
+      '.agp-sect-ou b{color:var(--fg)}',
+      '.agp-sect-sug{min-height:44px;padding:0 12px;border-radius:9px;',
+      '  border:1px solid var(--ip-blue);background:transparent;color:var(--ip-blue);',
+      '  font:inherit;font-size:12.5px;font-weight:600;cursor:pointer}',
+      /* Vue d'ensemble des quatre semaines */
+      '.agp-ap{background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);',
+      '  padding:13px 14px;margin:0 0 16px}',
+      '.agp-ap-t{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;',
+      '  color:var(--muted);margin:0 0 10px}',
+      '.agp-ap-l{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:6px}',
+      '.agp-ap-c{min-height:46px;border-radius:9px;border:1px solid var(--line);background:var(--card-2);',
+      '  color:var(--muted);font:inherit;cursor:pointer;display:flex;flex-direction:column;',
+      '  align-items:center;justify-content:center;gap:1px;padding:4px 2px}',
+      '.agp-ap-c.agp-ap-vide{border-style:dashed;opacity:.35;cursor:default}',
+      '.agp-ap-j{font-size:10.5px;letter-spacing:.02em}',
+      '.agp-ap-d{font-size:13px;font-weight:700;line-height:1.15;text-align:center;word-break:break-all}',
+      /* Il Y SERA : plein, c est un fait. SOUHAITÉ : encadré, c est une intention. */
+      '.agp-ap-c.agp-ap-sur{background:var(--ip-blue);border-color:var(--ip-blue);color:#fff}',
+      '.agp-ap-c.agp-ap-sur .agp-ap-j{opacity:.8}',
+      '.agp-ap-c.agp-ap-voulu{border-color:var(--ip-blue);border-style:dashed;color:var(--ip-blue)}',
+      '.agp-ap-c.agp-ap-auj{outline:2px solid var(--fg);outline-offset:1px}',
+      '.agp-ap-c.agp-ap-ferme{opacity:.45;border-style:dashed}',
+      '.agp-ap-leg{font-size:11.5px;color:var(--muted);margin:8px 0 0;line-height:1.5}',
+      '.agp-ap-leg b{background:var(--ip-blue);color:#fff;padding:1px 5px;border-radius:4px}',
+      '.agp-ap-voulu-l{border:1px dashed var(--ip-blue);color:var(--ip-blue);padding:0 5px;border-radius:4px}',
       '.agp-jt{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;margin:0 0 9px}',
       // `capitalize` mettrait une majuscule à CHAQUE mot — « Jeudi 13 Août ».
       // On ne relève que la première lettre.
@@ -381,6 +409,24 @@
       }, function () { V2.toast('Enregistrement impossible.'); });
     },
 
+    // Reprend tel quel le secteur OBSERVÉ et le déclare. Le geste évident
+    // d'une journée déjà orientée, en un clic au lieu de trois.
+    secteurPoser: function (iso, liste) {
+      var c = sb(), u = uid();
+      if (!c || !u) { V2.toast('Connecte-toi.'); return; }
+      var deps = String(liste || '').split(',').filter(Boolean).sort();
+      if (!deps.length) return;
+      c.from('rdv_secteur_jour')
+        .upsert({ user_id: u, date: iso, departements: deps }, { onConflict: 'user_id,date' })
+        .then(function (r) {
+          if (r && r.error) { V2.toast('Enregistrement impossible.'); return; }
+          V2.planningSecteurs = V2.planningSecteurs || {};
+          V2.planningSecteurs[iso] = deps;
+          V2.toast('Ce jour n’est plus réservable que depuis le ' + deps.join(' et le ') + '.');
+          V2.go('rdvplanning');
+        }, function () { V2.toast('Enregistrement impossible.'); });
+    },
+
     secteurEffacer: function (iso) {
       var c = sb(), u = uid();
       if (!c || !u) return;
@@ -464,23 +510,86 @@
     return out;
   }
 
-  function blocSecteur(iso) {
+  // ── OÙ TU SERAS / OÙ TU AIMERAIS ÊTRE ────────────────────────────
+  // Deux choses différentes, et les confondre serait une faute :
+  //
+  //   · OBSERVÉ — les départements des rendez-vous déjà posés ce jour-là.
+  //     C'est un FAIT, il se lit, il ne se règle pas. Il ne contraint rien
+  //     non plus : la règle « aimant » s'occupe déjà du voisinage, et fermer
+  //     automatiquement une journée dès le premier rendez-vous rendrait
+  //     l'agenda impossible à remplir.
+  //
+  //   · SOUHAITÉ — ce que le commercial déclare sur une journée encore vide.
+  //     C'est LUI qui l'écrit, et c'est la seule chose qui écarte des
+  //     officines. « Si rien de prévu dans la journée, on doit pouvoir dire
+  //     où on aimerait être » (Will, 19/08).
+  var _cpParCip = null;
+  function cpDuCip(cip) {
+    if (!_cpParCip) {
+      _cpParCip = {};
+      (V2.pharmacies || []).forEach(function (p) {
+        if (p && p.id != null) _cpParCip[String(p.id)] = p.cp || '';
+      });
+    }
+    var c = _cpParCip[String(cip)];
+    if (c) return c;
+    // Prospect hors portefeuille : l'annuaire national le connaît.
+    try { var o = V2.rdvInfo ? V2.rdvInfo(cip) : null; return (o && o.cp) || ''; }
+    catch (e) { return ''; }
+  }
+
+  function dep(v) {
+    return window.V2RDV ? window.V2RDV.departement(v) : String(v || '').slice(0, 2);
+  }
+
+  // Les départements où il sera VRAIMENT ce jour-là, d'après ce qui est posé :
+  // les rendez-vous JARVIS, et les officines reconnues dans son agenda perso.
+  function secteurObserve(iso, rdvs, reconnus) {
+    var out = [];
+    function ajouter(cp) {
+      var d = dep(cp);
+      if (d && out.indexOf(d) === -1) out.push(d);
+    }
+    (rdvs || []).forEach(function (r) { if (r.date === iso) ajouter(r.cp || cpDuCip(r.cip)); });
+    (reconnus || []).forEach(function (o) { if (o.date === iso) ajouter(cpDuCip(o.cip)); });
+    return out.sort();
+  }
+
+  function blocSecteur(iso, observe, vide) {
     var deps = (V2.planningSecteurs || {})[iso] || [];
     var ouvert = V2._agpSecteurOuvert === iso;
-    var etiquette = deps.length
-      ? 'Secteur : ' + deps.join(' · ')
-      : 'Secteur : tout le portefeuille';
+    observe = observe || [];
 
-    var h = '<div class="agp-sect">' +
-      '<button class="agp-sect-b' + (deps.length ? ' on' : '') +
+    // Ce qui est OBSERVÉ se lit à gauche, en clair : c'est la réponse à
+    // « sur quel secteur je serai ce jour-là ».
+    var h = '<div class="agp-sect">';
+    if (observe.length) {
+      h += '<span class="agp-sect-ou">Tu y seras : <b>' + esc(observe.join(' · ')) + '</b></span>';
+    }
+
+    var etiquette = deps.length
+      ? (vide ? 'Tu aimerais : ' : 'Réservable seulement depuis : ') + deps.join(' · ')
+      : (vide ? 'Dire où tu aimerais être' : 'Ouvert à tout ton portefeuille');
+
+    h += '<button class="agp-sect-b' + (deps.length ? ' on' : '') +
         '" onclick="V2.rdvPlanning.secteur(\'' + escArg(iso) + '\')">' +
         esc(etiquette) + '</button>';
+
+    // Une journée déjà orientée par des rendez-vous, mais non déclarée : le
+    // geste utile est à un clic. Sans ce raccourci, personne ne penserait à
+    // fermer la journée sur le département où il est déjà attendu.
+    if (!ouvert && !deps.length && observe.length) {
+      h += '<button class="agp-sect-sug" onclick="V2.rdvPlanning.secteurPoser(\'' +
+        escArg(iso) + '\',\'' + escArg(observe.join(',')) + '\')">' +
+        'n’ouvrir que le ' + esc(observe.join(' et le ')) + '</button>';
+    }
 
     if (ouvert) {
       var liste = sesDepartements();
       h += '<div class="agp-sect-p">' +
-        '<p class="agp-sm" style="margin:0 0 8px">Où seras-tu ce jour-là ? Seules ' +
-          'les officines de ces départements pourront réserver. ' +
+        '<p class="agp-sm" style="margin:0 0 8px">' +
+          (vide ? 'Où aimerais-tu être ce jour-là ? ' : 'Où seras-tu ce jour-là ? ') +
+          'Seules les officines de ces départements pourront réserver. ' +
           '<b>Ne rien cocher = aucune contrainte.</b></p>' +
         '<div class="agp-sect-c">' +
           liste.map(function (d) {
@@ -497,6 +606,59 @@
         '</div>';
     }
     return h + '</div>';
+  }
+
+  // ── LA VUE D'ENSEMBLE ────────────────────────────────────────────
+  // « On doit pouvoir voir sur quel secteur on sera tel ou tel jour » (Will).
+  // Le secteur existait déjà, mais journée par journée, à quatre semaines de
+  // défilement : personne n'aurait vu sa quinzaine d'un coup d'œil. Ici, tout
+  // tient en un bloc — et chaque case mène à sa journée.
+  var JOURS_COURTS = ['L', 'M', 'M', 'J', 'V'];
+
+  function apercuSecteurs(rdvs, reconnus, auj, dispo) {
+    var cases = [], i;
+    for (i = 0; i < JOURS_AFFICHES; i++) {
+      var iso = isoPlus(i), j = dow(iso);
+      if (j < 1 || j > 5) continue;                    // le week-end ne se réserve pas
+      var obs = secteurObserve(iso, rdvs, reconnus);
+      var voulu = (V2.planningSecteurs || {})[iso] || [];
+      // ⚠️ L'UNION des deux, pas seulement l'observé. Un jour où il a un
+      // rendez-vous dans le 49 mais a déclaré « 49 et 35 » couvre bien deux
+      // départements : n'afficher que le 49 cacherait la moitié de sa journée.
+      var tout = obs.slice();
+      voulu.forEach(function (d) { if (tout.indexOf(d) === -1) tout.push(d); });
+      // Un jour qu'il ne travaille pas ne se réserve pas : la case reste, mais
+      // en retrait. La supprimer casserait l'alignement des colonnes.
+      var plages = (dispo && dispo.jours && dispo.jours[String(j)]) || null;
+      cases.push({ iso: iso, jour: j, num: +String(iso).slice(8, 10),
+                   obs: obs, voulu: voulu, tout: tout.sort(),
+                   ferme: !(plages && plages.length) });
+    }
+    if (!cases.length) return '';
+
+    // Une ligne par semaine, cinq colonnes. Les jours manquants en début de
+    // première semaine sont comblés : sinon les colonnes ne s'alignent plus et
+    // « mardi » se lit sous « lundi ».
+    var html = '', ouvert = false, attendu = 1;
+    cases.forEach(function (c, k) {
+      if (!ouvert) { html += '<div class="agp-ap-l">'; ouvert = true; attendu = 1; }
+      while (attendu < c.jour) { html += '<div class="agp-ap-c agp-ap-vide"></div>'; attendu++; }
+      var etiq = c.tout.length ? c.tout.join(' ') : (c.ferme ? '—' : '·');
+      var cls = c.ferme ? ' agp-ap-ferme'
+              : (c.obs.length ? ' agp-ap-sur' : (c.voulu.length ? ' agp-ap-voulu' : ''));
+      html += '<button class="agp-ap-c' + cls + (c.iso === auj ? ' agp-ap-auj' : '') +
+        '" onclick="V2.rdvPlanning.secteur(\'' + escArg(c.iso) + '\')">' +
+        '<span class="agp-ap-j">' + JOURS_COURTS[c.jour - 1] + ' ' + c.num + '</span>' +
+        '<span class="agp-ap-d">' + esc(etiq) + '</span></button>';
+      attendu++;
+      if (c.jour === 5 || k === cases.length - 1) { html += '</div>'; ouvert = false; }
+    });
+
+    return '<div class="agp-ap">' +
+      '<p class="agp-ap-t">Où tu seras</p>' + html +
+      '<p class="agp-ap-leg"><b>44</b> = tu y as des rendez-vous · ' +
+      '<span class="agp-ap-voulu-l">44</span> = tu l’as souhaité · ' +
+      '· = ouvert à tout ton portefeuille · — = tu ne travailles pas</p></div>';
   }
 
   function rendreJour(iso, dispo, blocages, rdvs, occupes, auj, reconnus) {
@@ -657,7 +819,7 @@
     return '<div class="agp-jour"><div class="agp-jt"><b>' + esc(libelle(iso)) + '</b>' +
       (iso === auj ? ' <span class="agp-auj">aujourd’hui</span>' : '') +
       '<span class="agp-resume">' + esc(resume) + '</span></div>' +
-      blocSecteur(iso) +
+      blocSecteur(iso, secteurObserve(iso, rdvs, reconnus), !mesRdv.length && !recoJour.length) +
       '<div class="agp-bar' + (libre > 0 ? '' : ' agp-vide') + '">' + peinture + '</div>' +
       '<div class="agp-ech"><span>8h</span><span>12h</span><span>15h</span><span>19h</span></div>' +
       (lignes.length ? lignes.map(function (l) { return l.html; }).join('')
@@ -790,6 +952,8 @@
           '<div class="agp-etat">' + etatAgenda(ag) + '</div>' +
 
           offreAnnuaire +
+
+          apercuSecteurs(rdvs, reconnus, auj, dispo) +
 
           '<div class="agp-leg">' +
             '<span><i class="agp-pot agp-p-rdv"></i>rendez-vous pharmacie</span>' +
