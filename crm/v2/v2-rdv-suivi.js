@@ -130,6 +130,10 @@
             blocages: F.blocages || [],
             occupes: F.occupes || [],
             agenda: F.agenda || [],
+            // Le contrôle rejoue EXACTEMENT le calcul de la page publique :
+            // omettre les secteurs déclarés ici ferait dire « tout va bien » à
+            // un écran qui, chez le pharmacien, serait vide.
+            secteurs: F.secteurs || [],
             aujourdhui: new Date().toISOString().slice(0, 10)
           }) || [];
         } catch (e) { jours = null; }
