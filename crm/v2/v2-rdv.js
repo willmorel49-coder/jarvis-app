@@ -96,6 +96,107 @@
     return s.length ? V2.sumCA(s) : null;
   };
 
+  // ═══════════════════════════════════════════════════════════════
+  //  CE QU'ON SAIT DE CETTE OFFICINE — et qui doit entrer dans le mail
+  // ═══════════════════════════════════════════════════════════════
+  // ⚠️ Jusqu'au 19/08/2026, l'écran appelait le moteur de modèles avec
+  // `mois_derniere_visite: null` et ne lui passait aucune rupture. Le moteur
+  // savait écrire « cela fait 7 mois » : il écrivait « cela fait un moment »,
+  // pour tout le monde, depuis le premier jour. La donnée existait pourtant,
+  // à trois endroits différents. C'est ce trou-là que les fonctions qui
+  // suivent bouchent — elles ne calculent rien de neuf, elles vont chercher.
+
+  // Ses références en tension à l'ANSM, et celles qu'on a en stock. Un seul
+  // passage sur ses ventes ; le code vivait en double dans `prepa()`.
+  V2.rdvTension = function (cip) {
+    var out = { n: 0, dispo: 0 };
+    if (!cip) return out;
+    try {
+      var vus = {};
+      (V2.sales || []).forEach(function (s) {
+        if (String(s.pharmacyId) !== String(cip) || !(s.qte > 0)) return;
+        var c = String(s.artCode || '');
+        if (c.length < 7 || vus[c]) return;
+        vus[c] = 1;
+        if (V2.rupture && V2.rupture(c)) {
+          out.n++;
+          if (V2.stock && V2.stock(c) > 0) out.dispo++;
+        }
+      });
+    } catch (e) {}
+    return out;
+  };
+
+  // Trois sources disent « quand l'a-t-on vue », aucune ne les réunissait :
+  //   1. `V2.visite`            — le « vu le… » coché par l'équipe, partagé
+  //   2. les RDV JARVIS passés  — les rendez-vous réellement tenus
+  //   3. `V2.planningDerniereVisite` — les titres reconnus dans l'agenda perso,
+  //      seule source pour les visites qui n'ont jamais transité par JARVIS
+  // On garde la plus récente. Une date manquante ne vaut jamais « jamais vue » :
+  // elle vaut « je ne sais pas », et le mail retombe alors sur « un moment ».
+  var _rdvPasses = null, _vuPromesse = null;
+  V2.rdvVuCharger = function () {
+    if (_vuPromesse) return _vuPromesse;
+    var c = sb(), u = uid();
+    var auj = new Date().toISOString().slice(0, 10);
+    var pVisites = new Promise(function (ok) {
+      if (!V2.visite || !V2.visite.load) { ok(); return; }
+      V2.visite.load(function () { ok(); });
+    });
+    var pRdv = (c && u)
+      ? c.from('rdv').select('cip, date').eq('user_id', u).eq('statut', 'confirme')
+          .lt('date', auj).then(function (r) {
+            var m = {};
+            ((r && r.data) || []).forEach(function (d) {
+              var k = String(d.cip || ''); if (!k) return;
+              if (!m[k] || d.date > m[k]) m[k] = d.date;
+            });
+            _rdvPasses = m;
+          }, function () { _rdvPasses = {}; })
+      : Promise.resolve();
+    _vuPromesse = Promise.all([pVisites, pRdv]).then(function () { return true; })
+      .catch(function () { return false; });
+    return _vuPromesse;
+  };
+
+  V2.rdvVuLe = function (cip) {
+    var k = String(cip || ''), best = null;
+    function garder(d) { if (d && (!best || d > best)) best = d; }
+    try { if (V2.visite && V2.visite.last) garder(V2.visite.last(k)); } catch (e) {}
+    if (_rdvPasses) garder(_rdvPasses[k]);
+    try { garder((V2.planningDerniereVisite || {})[k]); } catch (e) {}
+    return best || null;
+  };
+
+  // En MOIS entiers, parce que c'est ce qu'on écrit dans le mail. En dessous
+  // d'un mois on ne dit rien : « cela fait 0 mois » n'est pas une phrase.
+  V2.rdvMoisDepuis = function (cip) {
+    var d = V2.rdvVuLe(cip);
+    if (!d) return null;
+    var j = Math.round((Date.now() - new Date(d + 'T12:00:00').getTime()) / 864e5);
+    var m = Math.round(j / 30.4);
+    return m >= 1 ? m : null;
+  };
+
+  // Le contexte complet d'un mail à UNE officine. Un seul endroit le compose :
+  // la fiche, la campagne et l'aperçu doivent montrer exactement le même mail,
+  // sinon l'aperçu ne prouve plus rien.
+  V2.rdvContexte = function (pid, extra) {
+    var o = V2.rdvInfo(pid) || {};
+    var t = V2.rdvTension(pid);
+    var ctx = {
+      contact: o.contact, nom_officine: o.nom, ville: o.ville,
+      ca_annee: V2.rdvCA(pid),
+      mois_derniere_visite: V2.rdvMoisDepuis(pid),
+      ruptures_tension: t.n, ruptures_stock: t.dispo,
+      prenom_commercial: prenom(),
+      nom_complet_commercial: (V2.user && V2.user.name) || '',
+      tel_commercial: V2.rdvTel || ''
+    };
+    if (extra) for (var k in extra) if (extra.hasOwnProperty(k)) ctx[k] = extra[k];
+    return ctx;
+  };
+
   // Téléphone du commercial, lu une fois depuis ses disponibilités et gardé.
   // Chargé à la demande : le mail peut partir de la fiche comme de la campagne,
   // sans dépendre de l'écran par lequel on est passé.
@@ -109,6 +210,27 @@
       .then(function (d) { V2.rdvTel = (d && d.data && d.data.tel) || ''; return V2.rdvTel; })
       .catch(function () { return ''; });
     return _telPromesse;
+  };
+
+  // Le lien permanent du commercial — celui de sa signature de mail. Il vit
+  // ICI et nulle part ailleurs : deux endroits qui construisent la même
+  // adresse finissent par en construire deux différentes, et c'est la famille
+  // de pannes du 13/08 (le lien s'ouvrait, il ne réservait pas).
+  var _lienPerm = null;
+  V2.rdvLienPermanent = function () {
+    if (_lienPerm) return _lienPerm;
+    var c = sb(), u = uid();
+    if (!c || !u) return Promise.resolve('');
+    _lienPerm = c.from('rdv_lien_public').select('slug, token').eq('user_id', u).maybeSingle()
+      .then(function (r) {
+        var d = (r && r.data) || null;
+        if (!d) return '';
+        var p = window.location.pathname.replace(/crm\/v2\/[^/]*$/, '');
+        return d.slug ? (window.location.origin + p + 'rdv/' + d.slug)
+                      : (V2.rdv.BASE_URL + '?c=' + d.token);
+      })
+      .catch(function () { return ''; });
+    return _lienPerm;
   };
 
   // Les deux jeux de données nécessaires aux coordonnées, chargés à la demande.
@@ -232,7 +354,11 @@
       var fini = cb || function () {};
       var c = sb(), u = uid();
       if (!c || !u) { V2.toast('Connecte-toi pour proposer un rendez-vous.'); fini(false); return; }
-      var pret = Promise.all([V2.rdvSources(), V2.rdvTelCharger()]);
+      // ⚠️ Les modèles personnels doivent être en mémoire AVANT de composer :
+      // sans le cache, un motif « perso:… » ne se résoudrait pas et le mail
+      // partirait en « routine » sans que personne le remarque.
+      var pret = Promise.all([V2.rdvSources(), V2.rdvTelCharger(), V2.rdvVuCharger(),
+        V2.rdvModeles ? V2.rdvModeles.charger() : null]);
       pret.then(function () {
         var o = V2.rdvInfo(pid);
         if (!o.email) { V2.toast('Cette officine n’a pas d’adresse mail connue.'); fini(false); return; }
@@ -248,14 +374,15 @@
           }).select('token, code').single();
         }).then(function (r) {
           if (!r || r.error || !r.data) { V2.toast('Création du lien impossible.'); fini(false); return; }
-          var m = window.V2MOD.rendre(modele || 'routine', {
-            contact: o.contact, nom_officine: o.nom, ville: o.ville,
-            ca_annee: V2.rdvCA(pid), mois_derniere_visite: null,
-            prenom_commercial: prenom(),
-            nom_complet_commercial: (V2.user && V2.user.name) || '',
-            tel_commercial: V2.rdvTel || '',
-            lien: V2.rdv.BASE_URL + '?t=' + (r.data.code || r.data.token), texte_libre: texteLibre || ''
+          var ctx = V2.rdvContexte(pid, {
+            lien: V2.rdv.BASE_URL + '?t=' + (r.data.code || r.data.token),
+            texte_libre: texteLibre || ''
           });
+          // `modele` peut désigner un modèle personnel (« perso:<id> ») : c'est
+          // le même contexte, seul le texte change.
+          var m = V2.rdvModeleRendre
+            ? V2.rdvModeleRendre(modele || 'routine', ctx, false)
+            : window.V2MOD.rendre(modele || 'routine', ctx);
           if (m.avertissement) V2.toast(m.avertissement);
           V2.rdv._ouvrir('mailto:' + encodeURIComponent(o.email) +
             '?subject=' + encodeURIComponent(m.objet) + '&body=' + encodeURIComponent(m.corps));
@@ -329,6 +456,86 @@
       });
     },
 
+    // ── LA JOURNÉE QUI SE REMPLIT ──────────────────────────────
+    // Un rendez-vous posé fixe une zone. Faire 300 km pour un seul arrêt est
+    // la façon la plus coûteuse de travailler, et c'est ce qui arrive quand
+    // rien ne propose les voisines au moment où la journée s'ouvre.
+    completer: function (dateISO) {
+      var c = sb(), u = uid();
+      if (!c || !u || !V2.rdvRadar) { V2.toast('Indisponible.'); return; }
+      V2.toast('Recherche des officines autour de cette journée…');
+      c.from('rdv').select('cip, nom, lat, lon').eq('user_id', u)
+        .eq('statut', 'confirme').eq('date', dateISO)
+        .then(function (r) {
+          var jour = (r && r.data) || [];
+          return V2.rdvRadar.voisines(jour);
+        })
+        .then(function (v) {
+          if (v.sansPosition) {
+            V2.toast('Les rendez-vous de ce jour n’ont pas de position connue : ' +
+                     'impossible de chercher autour.');
+            return;
+          }
+          if (!v.liste.length) {
+            V2.toast('Aucune officine joignable par mail à moins de 25 km, ' +
+                     'hors celles qui ont déjà un rendez-vous.');
+            return;
+          }
+          // On s'arrête à 8 : au-delà, ce ne sont plus des voisines, et une
+          // journée ne tient de toute façon pas douze arrêts.
+          var lot = v.liste.slice(0, 8);
+          V2.toast(lot.length + ' officine' + (lot.length > 1 ? 's' : '') + ' à moins de ' +
+            Math.round(lot[lot.length - 1].km) + ' km — liste prête dans la campagne.');
+          V2.rdvRadar.versCampagne(lot.map(function (x) { return x.cip; }));
+        });
+    },
+
+    // ── APRÈS la visite ────────────────────────────────────────
+    // Le mot de remerciement, pré-rempli. Il part de SA boîte, comme tout
+    // le reste : JARVIS n'envoie jamais de mail à la place de quelqu'un.
+    remercier: function (id) {
+      var c = sb();
+      if (!c) return;
+      var perm = '';
+      Promise.all([V2.rdvSources(), V2.rdvTelCharger(), V2.rdvLienPermanent()])
+        .then(function (res) {
+          perm = res[2] || '';
+          return c.from('rdv').select('*').eq('id', id).single();
+        }).then(function (r) {
+        if (!r || r.error || !r.data) { V2.toast('Rendez-vous introuvable.'); return; }
+        var d = r.data;
+        var o = d.cip ? V2.rdvInfo(d.cip) : {};
+        // Le contact du jour vaut mieux que le titulaire du fichier : c'est la
+        // personne qui était en face, elle a donné son nom elle-même.
+        var contact = d.contact_nom || o.contact || '';
+        var mail = String(o.email || '').trim();
+        if (!mail) {
+          V2.toast('Pas d’adresse mail connue pour ' + (d.nom || 'cette officine') + '.');
+          return;
+        }
+        var m = window.V2MOD.remerciement({
+          contact: contact, nom_officine: d.nom, date_visite: libelle(d.date),
+          prenom_commercial: prenom(),
+          nom_complet_commercial: (V2.user && V2.user.name) || '',
+          tel_commercial: V2.rdvTel || '',
+          lien: perm
+        });
+        V2.rdv._ouvrir('mailto:' + encodeURIComponent(mail) +
+          '?subject=' + encodeURIComponent(m.objet) + '&body=' + encodeURIComponent(m.corps));
+      });
+    },
+
+    // « J'y suis allé » : c'est CE geste qui alimente « pas vue depuis 7 mois »
+    // dans les mails et dans le radar. Sans lui, la boucle ne se referme pas.
+    // Partagé avec toute l'équipe, comme le « vu le… » des fiches officine.
+    jySuisAlle: function (cip, nom) {
+      if (!cip || !V2.visite) { V2.toast('Officine non identifiée.'); return; }
+      V2.visite.mark(cip, function () {
+        V2.toast('Visite notée pour ' + (nom || 'cette officine') + '.');
+        V2.go('rdv');
+      });
+    },
+
     // Télécharge l'invitation agenda d'un rendez-vous déjà pris.
     ics: function (id) {
       var c = sb();
@@ -365,17 +572,11 @@
     } catch (e) {}
     try {
       // Ruptures ANSM sur ce qu'elle achète, dont ce qu'Intégral a en stock :
-      // c'est l'argument le plus concret à poser sur le comptoir.
-      var vus = {}, n = 0, dispo = 0;
-      (V2.sales || []).forEach(function (s) {
-        if (String(s.pharmacyId) !== String(cip) || !(s.qte > 0)) return;
-        var c = String(s.artCode || '');
-        if (c.length < 7 || vus[c]) return;
-        vus[c] = 1;
-        if (V2.rupture && V2.rupture(c)) { n++; if (V2.stock && V2.stock(c) > 0) dispo++; }
-      });
-      if (n) bouts.push('<b>' + n + '</b> rupture' + (n > 1 ? 's' : '') + ' sur ses achats' +
-                        (dispo ? ' · <b>' + dispo + '</b> en stock chez nous' : ''));
+      // c'est l'argument le plus concret à poser sur le comptoir. Le calcul
+      // vit dans V2.rdvTension — le mail et cette ligne doivent dire pareil.
+      var t = V2.rdvTension(cip);
+      if (t.n) bouts.push('<b>' + t.n + '</b> rupture' + (t.n > 1 ? 's' : '') + ' sur ses achats' +
+                        (t.dispo ? ' · <b>' + t.dispo + '</b> en stock chez nous' : ''));
     } catch (e) {}
     if (!bouts.length) return '';
     return '<div class="v2-rdv-prep">' + bouts.join(' — ') +
@@ -400,7 +601,10 @@
     groupe: '<path d="M16 20v-1.5a3.5 3.5 0 0 0-3.5-3.5h-5A3.5 3.5 0 0 0 4 18.5V20"/>' +
             '<circle cx="10" cy="8" r="3.5"/><path d="M20 20v-1.5a3.5 3.5 0 0 0-2.6-3.4"/>' +
             '<path d="M15.5 4.6a3.5 3.5 0 0 1 0 6.8"/>',
-    suivi: '<path d="M4 19V5"/><path d="M4 19h16"/><path d="m7.5 14 3.5-4 3 2.5L19 7"/>'
+    suivi: '<path d="M4 19V5"/><path d="M4 19h16"/><path d="m7.5 14 3.5-4 3 2.5L19 7"/>',
+    radar: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/>' +
+           '<path d="M12 3v3M12 18v3M3 12h3M18 12h3"/>',
+    plume: '<path d="M20 4C13 4 8 8 6.5 14.5L4 20"/><path d="M20 4c0 8-5 12-11 12H6.5"/>'
   };
 
   function ligneRdv(d) {
@@ -444,11 +648,18 @@
         c.from('rdv_lien').select('*').eq('user_id', u).is('consomme_le', null)
           .not('envoye_le', 'is', null)
           .lte('envoye_le', new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString())
-          .order('envoye_le', { ascending: false })
+          .order('envoye_le', { ascending: false }),
+        // Les quinze derniers jours. Un rendez-vous tenu n'avait aucune suite
+        // dans JARVIS : il restait « confirmé » à vie, et le mot de
+        // remerciement comme la date de visite dépendaient de la mémoire.
+        c.from('rdv').select('*').eq('user_id', u).eq('statut', 'confirme')
+          .lt('date', auj).gte('date', new Date(Date.now() - 15 * 864e5).toISOString().slice(0, 10))
+          .order('date', { ascending: false })
       ]).then(function (r) {
         var venir = (r[0] && r[0].data) || [];
         var rappeler = (r[1] && r[1].data) || [];
         var attente = (r[2] && r[2].data) || [];
+        var passes = (r[3] && r[3].data) || [];
 
         var parJour = {}, ordre = [];
         venir.forEach(function (d) {
@@ -457,10 +668,18 @@
         });
         var htmlVenir = ordre.length ? ordre.sort().map(function (date) {
           // La tournée n'a de sens qu'à partir de deux arrêts.
-          var tournee = (parJour[date].length > 1 && V2.carteTourFromIds)
-            ? '<div class="v2-rdv-acts"><button class="v2-btn v2-btn-primary" onclick="V2.rdv.tourneeDuJour(\'' +
-              escArg(date) + '\')">' + ICO('pilo', 15) + ' Composer ma tournée de ce jour</button></div>'
-            : '';
+          var actes = [];
+          if (parJour[date].length > 1 && V2.carteTourFromIds) {
+            actes.push('<button class="v2-btn v2-btn-primary" onclick="V2.rdv.tourneeDuJour(\'' +
+              escArg(date) + '\')">' + ICO('pilo', 15) + ' Composer ma tournée de ce jour</button>');
+          }
+          // Une journée entamée mérite d'être remplie : les voisines à moins
+          // de 25 km sont exactement celles qui coûtent le moins cher à voir.
+          if (V2.rdvRadar) {
+            actes.push('<button class="v2-btn" onclick="V2.rdv.completer(\'' + escArg(date) +
+              '\')">Compléter cette journée</button>');
+          }
+          var tournee = actes.length ? '<div class="v2-rdv-acts">' + actes.join('') + '</div>' : '';
           return '<div class="v2-rdv-jour"><p class="v2-rdv-jt">' + esc(libelle(date)) + '</p>' +
             parJour[date].map(ligneRdv).join('') + tournee + '</div>';
         }).join('') : '<p class="v2-rdv-vide">Aucun rendez-vous pour l’instant. Ouvre une fiche officine et propose un créneau.</p>';
@@ -473,6 +692,26 @@
             (tel ? '<div class="v2-rdv-acts"><a class="v2-btn" href="tel:' + esc(tel) + '">Appeler ' + esc(d.contact_tel) + '</a></div>' : '') +
             '</div>';
         }).join('') : '<p class="v2-rdv-vide">Personne à rappeler.</p>';
+
+        // ⚠️ Deux boutons seulement, et jamais de suppression : « Remercier »
+        // ouvre un mail dans SA boîte, « J'y suis allé » écrit la date de
+        // visite partagée — celle qui fera dire « pas vue depuis 7 mois » au
+        // prochain mail. C'est le seul endroit où cette boucle se referme.
+        var htmlPasses = passes.length ? passes.map(function (d) {
+          var n = String(d.nom || '').replace(/'/g, '');
+          return '<div class="v2-rdv-item"><b>' + esc(d.nom) + '</b>' +
+            '<span class="sm">' + esc(libelle(d.date)) +
+              (d.ville ? ' · ' + esc(d.ville) : '') +
+              (d.contact_nom ? ' · ' + esc(d.contact_nom) : '') + '</span>' +
+            '<div class="v2-rdv-acts">' +
+              '<button class="v2-btn" onclick="V2.rdv.remercier(\'' + escArg(d.id) +
+                '\')">Remercier</button>' +
+              (d.cip
+                ? '<button class="v2-btn v2-btn-ghost" onclick="V2.rdv.jySuisAlle(\'' +
+                  escArg(String(d.cip)) + '\',\'' + escArg(n) + '\')">J’y suis allé</button>'
+                : '') +
+            '</div></div>';
+        }).join('') : '<p class="v2-rdv-vide">Aucun rendez-vous ces quinze derniers jours.</p>';
 
         var htmlAttente = attente.length ? attente.map(function (l) {
           var n = String(l.nom || '').replace(/'/g, '');
@@ -526,6 +765,10 @@
             // même ciblage et la même sélection, seule la dernière étape change.
             (V2.pages.campagne && V2.rdvGroupe
               ? entree('campagne', 'Envoi groupé', '25 officines en copie cachée', IC.groupe) : '') +
+            (V2.pages.rdvradar
+              ? entree('rdvradar', 'Qui inviter', 'la liste se fait toute seule', IC.radar) : '') +
+            (V2.pages.rdvmodeles
+              ? entree('rdvmodeles', 'Mes modèles', 'écris tes propres mails', IC.plume) : '') +
             (V2.pages.rdvsuivi
               ? entree('rdvsuivi', 'Suivi & contrôle', 'qui a réservé, et si tout marche', IC.suivi) : '') +
             entree('rdvdispo', 'Mes dispos', 'jours, horaires, agenda', IC.dispos) +
@@ -539,6 +782,7 @@
           '</div>' +
 
           '<div class="v2-rdv-sec">À venir</div>' + htmlVenir +
+          '<div class="v2-rdv-sec">Vus récemment</div>' + htmlPasses +
           '<div class="v2-rdv-sec">À rappeler</div>' + htmlRappeler +
           '<div class="v2-rdv-sec">Sans réponse</div>' + htmlAttente +
 

@@ -1188,6 +1188,8 @@
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.rdv) {
       PAGES.splice(1, 0, ['rdv', 'Rendez-vous · prise de RDV & campagnes', 'cal']);
       if (V2.pages.campagne) PAGES.push(['campagne', 'Campagne de rendez-vous · un par un ou groupé en copie cachée', 'cal']);
+      if (V2.pages.rdvradar) PAGES.push(['rdvradar', 'Qui inviter · les officines à relancer en priorité', 'cal']);
+      if (V2.pages.rdvmodeles) PAGES.push(['rdvmodeles', 'Mes modèles de mail de rendez-vous', 'cal']);
       if (V2.pages.rdvsuivi) PAGES.push(['rdvsuivi', 'Suivi & contrôle des rendez-vous', 'cal']);
       if (V2.pages.rdvdispo) PAGES.push(['rdvdispo', 'Mes disponibilités & mon lien de réservation', 'cal']);
     }
