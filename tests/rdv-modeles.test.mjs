@@ -12,10 +12,37 @@ const CTX = {
   lien: 'https://exemple.fr/rdv.html?t=abc', texte_libre: 'La gamme diabète arrive en septembre.'
 };
 
-test('trois modeles sont proposes', () => {
+test('UNE seule proposition est offerte au commercial', () => {
+  // 19/08/2026, Will : « une seule propo, ultra carre, pas besoin de
+  // differents motifs ». Trois textes, c etaient trois occasions de diverger.
   const l = MOD.liste();
-  assert.equal(l.length, 3);
-  assert.deepEqual(l.map(m => m.cle).sort(), ['bilan', 'offre', 'routine']);
+  assert.equal(l.length, 1, JSON.stringify(l));
+  assert.equal(l[0].cle, 'routine');
+});
+
+test('les anciennes cles rendent quand meme le mail', () => {
+  // Des jetons crees avant le 19/08 vivent encore 21 jours et portent
+  // modele='bilan' ou 'offre'. Ils ne doivent pas tomber sur du vide.
+  ['bilan', 'offre', 'inconnu'].forEach(k => {
+    const r = MOD.rendre(k, CTX);
+    assert.ok(r.corps.includes('Trois points au programme'), k);
+    assert.ok(r.corps.includes(CTX.lien), k);
+  });
+});
+
+test('les trois points sont ceux que Will a dictes, dans l ordre', () => {
+  const c = MOD.rendre('routine', { ...CTX, ruptures_stock: 5 }).corps;
+  assert.ok(c.includes('• Vos chiffres —'), c);
+  assert.ok(c.includes('• Votre liste personnalisée —'), c);
+  assert.ok(c.includes('• L’actualité du secteur —'), c);
+  assert.ok(c.indexOf('Vos chiffres') < c.indexOf('Votre liste personnalisée'), c);
+  assert.ok(c.indexOf('Votre liste personnalisée') < c.indexOf('L’actualité du secteur'), c);
+});
+
+test('le mot d introduction entre avant les trois points', () => {
+  const c = MOD.rendre('routine', { ...CTX, texte_libre: 'Nous référençons la gamme diabète.' }).corps;
+  assert.ok(c.includes('Nous référençons la gamme diabète.'), c);
+  assert.ok(c.indexOf('Nous référençons') < c.indexOf('Trois points au programme'), c);
 });
 
 test('chaque modele produit un objet et un corps non vides', () => {
@@ -111,41 +138,39 @@ test('l abandon de marge ne sort JAMAIS chiffre dans un mail', () => {
   // pour l ecrire. Un mail est un document remis au pharmacien : aucune
   // condition commerciale chiffree ne s y imprime.
   MOD.liste().forEach(m => {
-    const c = MOD.rendre(m.cle, CTX).corps;
+    const c = MOD.rendre(m.cle, CTX).corps + MOD.rendreGroupe(m.cle, CTX).corps;
     assert.ok(!/12\s?000/.test(c), `montant d abandon present dans ${m.cle}`);
-    assert.ok(!/recuperer\s*$/i.test(c), 'phrase tronquee');
+    assert.ok(!/%/.test(c), `pourcentage present dans ${m.cle}`);
   });
-  assert.ok(MOD.rendre('bilan', CTX).corps.includes('sans rien changer à vos habitudes'));
 });
 
-test('on annonce NOTRE stock, jamais « vos 79 references sont en tension »', () => {
-  const ctx = { ...CTX, ruptures_tension: 79, ruptures_stock: 50 };
-  const c = MOD.rendre('routine', ctx).corps;
-  // Le fichier ANSM est une liste de SIGNALEMENTS sur ~18 mois : « sont en
-  // tension » serait faux, et un pharmacien le verrait.
+test('on annonce NOTRE stock, jamais le nombre de tensions', () => {
+  const c = MOD.rendre('routine', { ...CTX, ruptures_tension: 79, ruptures_stock: 50 }).corps;
+  // 79 = ce qu elle achete et qui a ete signale un jour. 50 = ce que NOUS
+  // avons. Seul le second est verifiable, et actionnable.
   assert.ok(!/79/.test(c), 'le nombre de tensions ne doit pas sortir : ' + c);
-  assert.ok(!/sont en tension/.test(c), c);
-  assert.ok(c.includes('50 de vos références signalées en tension par l’ANSM'), c);
-  assert.ok(c.includes('en stock à ce jour'), c);
+  assert.ok(c.includes('50 de vos références sont aujourd’hui signalées en tension'), c);
 });
 
-test('sans stock a annoncer, on retombe sur la phrase generique', () => {
-  // Annoncer un probleme sans solution ne sert personne.
+test('sans stock a annoncer, on promet la liste, pas un chiffre absent', () => {
   const c = MOD.rendre('routine', { ...CTX, ruptures_tension: 12, ruptures_stock: 0 }).corps;
-  assert.ok(c.includes('vos références signalées en tension par l’ANSM, que nous avons en stock'), c);
+  assert.ok(c.includes('Votre liste personnalisée — établie avant ma venue'), c);
   assert.ok(!/12 de vos références/.test(c), c);
-  const g = MOD.rendre('routine', CTX).corps;
-  assert.ok(g.includes('vos références signalées en tension par l’ANSM, que nous avons en stock'), g);
-  assert.ok(!/\b0 référence/.test(g));
+  assert.ok(!/0 de vos références/.test(c), c);
 });
 
-test('singulier correct pour une seule reference en stock', () => {
-  const c = MOD.rendre('routine', { ...CTX, ruptures_tension: 4, ruptures_stock: 1 }).corps;
-  assert.ok(c.includes('1 de vos références signalées en tension'), c);
+test('l etiquette {{tension}} reste utilisable dans un modele personnel', () => {
+  // Elle ne sert plus a la proposition livree, mais les modeles personnels
+  // l offrent toujours : la retirer casserait ceux qui l utilisent deja.
+  const mod = { nom: 'X', objet: 'O', corps: 'Voici {{tension}}.\n{{lien}}' };
+  assert.ok(MOD.rendrePerso(mod, { ...CTX, ruptures_stock: 3 }).corps
+    .includes('3 de vos références signalées en tension'));
+  assert.ok(MOD.rendrePerso(mod, { ...CTX, ruptures_stock: 0 }).corps
+    .includes('vos références signalées en tension par l’ANSM'));
 });
 
-test('le CA de l officine entre dans routine et offre', () => {
-  ['routine', 'offre'].forEach(k => {
+test('le CA de l officine entre dans la proposition', () => {
+  ['routine'].forEach(k => {
     const c = MOD.rendre(k, CTX).corps;
     assert.ok(c.includes('43 812 €'), `CA absent de ${k}`);
     assert.ok(c.includes('depuis le début de l’année'), k);

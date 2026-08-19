@@ -394,7 +394,7 @@
     lancer: function () {
       ETAT.modele = val('cp-modele') || 'routine';
       ETAT.texte = val('cp-texte');
-      if (ETAT.modele === 'offre' && window.V2MOD.texteRefuse(ETAT.texte)) {
+      if (window.V2MOD.texteRefuse(ETAT.texte)) {
         V2.toast('Retire le pourcentage : les conditions commerciales ne s’écrivent pas dans un mail.');
         return;
       }
@@ -492,16 +492,17 @@
             'line-height:1.55">' + noteMode() + '</p>' +
         '</div>' +
 
-        '<div class="v2-camp-sec">Le motif</div>' +
+        '<div class="v2-camp-sec">Le message</div>' +
         '<div class="v2-camp-box">' +
-          '<label for="cp-modele">Pourquoi tu leur écris</label>' +
+          '<label for="cp-modele">Le modèle utilisé</label>' +
           '<select id="cp-modele" onchange="V2.campagne.apercu()">' + mods + '</select>' +
           (V2.pages.rdvmodeles
             ? '<p style="margin:8px 0 0"><button class="v2-btn v2-btn-ghost" ' +
               'onclick="V2.go(\'rdvmodeles\')">Écrire mes propres modèles</button></p>' : '') +
-          '<label for="cp-texte" style="margin-top:14px">Ton texte (modèle « nouveauté » uniquement)</label>' +
-          '<p>Deux lignes, réutilisées pour toute la liste. Aucun pourcentage : ' +
-            'les conditions commerciales ne s’écrivent pas dans un mail.</p>' +
+          '<label for="cp-texte" style="margin-top:14px">Ton mot d’introduction (facultatif)</label>' +
+          '<p>Deux lignes, réutilisées pour toute la liste — une nouveauté, un ' +
+            'événement. Aucun pourcentage : les conditions commerciales ne ' +
+            's’écrivent pas dans un mail.</p>' +
           '<textarea id="cp-texte" rows="2" oninput="V2.campagne.apercu()" placeholder="Ex. La gamme diabète arrive en septembre."></textarea>' +
         '</div>' +
 
