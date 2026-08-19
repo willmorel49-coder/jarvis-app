@@ -178,6 +178,16 @@ for n in noms:
     else:
         dire_ko('ancienne adresse · /rdv/%s' % n, 'HTTP %s' % code)
 
+# ⚠️ Le même filet, sur le SITE PUBLIC. Il y manquait au premier déploiement du
+# 19/08 : un commercial sans page générée retrouvait le 404 sec de Pascale.
+# Trouvé à l'épreuve, pas par relecture — d'où ce contrôle.
+code, html = lire(PUBLIC + '/rdv/zzz-controle-automatique')
+if 'crm/v2/rdv.html?p=' in (html or ''):
+    dire_ok('site public · un prénom sans page est quand même redirigé')
+else:
+    dire_ko('site public · filet des prénoms sans page',
+            'HTTP %s — un nouveau commercial aurait un lien mort' % code)
+
 # Un prénom qui n'a PAS de page doit quand même atterrir sur la réservation :
 # c'est le filet posé après l'incident. S'il tombe, un nouveau commercial se
 # retrouve avec un lien mort sans que personne le sache.

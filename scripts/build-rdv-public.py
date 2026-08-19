@@ -51,6 +51,13 @@ CIBLE = os.path.join(RACINE, 'rdv-public')
 # Vérifié en lisant rdv.html : quatre scripts, deux icônes.
 FICHIERS = [
     'r.html',
+    # ⚠️ LE FILET, oublié au premier déploiement du 19/08 et retrouvé à
+    # l'épreuve : sur GitHub Pages, une adresse /rdv/<prénom> sans page générée
+    # tombait sur 404.html, qui redirige vers la prise de rendez-vous. Sans lui
+    # ici, un nouveau commercial retrouvait le 404 sec de Pascale, le 12/08 —
+    # l'incident qui a fait naître ce fichier. Vercel sert /404.html pour toute
+    # adresse inconnue, exactement comme GitHub Pages.
+    '404.html',
     'rdv/william.html',
     'rdv/pascale.html',
     'crm/v2/rdv.html',

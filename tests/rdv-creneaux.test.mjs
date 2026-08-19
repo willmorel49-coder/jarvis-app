@@ -287,3 +287,107 @@ test('calendrier : plafonne le nombre de dates rendues', () => {
                            aujourdhui: '2026-08-10', max_jours: 5 });
   assert.equal(c.length, 5);
 });
+
+// ═══════════════════════════════════════════════════════════════════
+//  19/08/2026 — le secteur du jour
+//  « Je dois pouvoir choisir aussi par jour vers quel département je serai
+//    sur mon planning, que ça puisse adapter la géolocalisation. » (Will)
+// ═══════════════════════════════════════════════════════════════════
+
+test('departement : code postal metropolitain', () => {
+  assert.equal(M.departement('44000'), '44');
+  assert.equal(M.departement('49100'), '49');
+  assert.equal(M.departement('01000'), '01');
+  assert.equal(M.departement(' 35 700 '), '35');
+});
+
+test('departement : Corse et outre-mer', () => {
+  // Le code postal corse porte « 20 » ; « 2A » et « 2B » s y ramenent.
+  assert.equal(M.departement('20000'), '20');
+  assert.equal(M.departement('2A'), '20');
+  assert.equal(M.departement('2B'), '20');
+  assert.equal(M.departement('97400'), '974');
+  assert.equal(M.departement('98800'), '988');
+});
+
+test('departement : rien d exploitable rend une chaine vide', () => {
+  ['', null, undefined, '4', '  '].forEach(v =>
+    assert.equal(M.departement(v), '', JSON.stringify(v)));
+});
+
+const SECT = [{ date: '2026-09-01', departements: ['44', '49'] }];
+
+test('un jour declare n accepte que ses departements', () => {
+  assert.equal(M.secteurOk('2026-09-01', { cp: '44000' }, SECT), true);
+  assert.equal(M.secteurOk('2026-09-01', { cp: '49100' }, SECT), true);
+  assert.equal(M.secteurOk('2026-09-01', { cp: '61000' }, SECT), false);
+});
+
+test('PRUDENCE 1 : un jour non declare n a aucune contrainte', () => {
+  // Declarer un mardi ne doit pas fermer les lundis : sinon une seule
+  // declaration viderait six mois d agenda sans que personne comprenne.
+  assert.equal(M.secteurOk('2026-09-02', { cp: '61000' }, SECT), true);
+  assert.equal(M.secteurOk('2026-09-01', { cp: '61000' }, []), true);
+  assert.equal(M.secteurOk('2026-09-01', { cp: '61000' }, null), true);
+});
+
+test('PRUDENCE 2 : une declaration vide ne ferme rien', () => {
+  const vide = [{ date: '2026-09-01', departements: [] }];
+  assert.equal(M.secteurOk('2026-09-01', { cp: '61000' }, vide), true);
+  const nulle = [{ date: '2026-09-01', departements: null }];
+  assert.equal(M.secteurOk('2026-09-01', { cp: '61000' }, nulle), true);
+});
+
+test('PRUDENCE 3 : un code postal inconnu passe', () => {
+  // Dans le doute on garde. Un controle qui n aboutit pas ne condamne rien.
+  assert.equal(M.secteurOk('2026-09-01', {}, SECT), true);
+  assert.equal(M.secteurOk('2026-09-01', { cp: '' }, SECT), true);
+  assert.equal(M.secteurOk('2026-09-01', { cp: null }, SECT), true);
+});
+
+test('le secteur ecarte la journee AVANT de regarder les heures', () => {
+  const base = {
+    dispo: { jours: { '1': [['09:00', '12:30'], ['14:00', '18:00']],
+                      '2': [['09:00', '12:30'], ['14:00', '18:00']],
+                      '3': [['09:00', '12:30'], ['14:00', '18:00']],
+                      '4': [['09:00', '12:30'], ['14:00', '18:00']],
+                      '5': [['09:00', '12:30'], ['14:00', '18:00']] },
+             duree_min: 45, delai_min_jours: 1, horizon_jours: 30 },
+    officine: { cp: '61000', lat: 48.4, lon: 0.09 },
+    aujourdhui: '2026-08-31'
+  };
+  const sans = M.proposer(base);
+  assert.ok(sans.length > 0, 'sans declaration, des dates sortent');
+
+  // On declare TOUS les jours de l horizon sur le 44 : plus une seule date
+  // ne peut convenir a une officine du 61.
+  const secteurs = [];
+  for (let i = 0; i <= 31; i++) {
+    const d = new Date(Date.UTC(2026, 7, 31));
+    d.setUTCDate(d.getUTCDate() + i);
+    secteurs.push({ date: d.toISOString().slice(0, 10), departements: ['44'] });
+  }
+  assert.equal(M.proposer({ ...base, secteurs }).length, 0);
+  // La meme officine, mais dans le 44 : tout redevient possible.
+  assert.ok(M.proposer({ ...base, officine: { cp: '44000' }, secteurs }).length > 0);
+});
+
+test('« Voir d autres dates » applique la MEME regle', () => {
+  // Sans ca, le pharmacien voit trois dates coherentes puis, d un clic, cent
+  // trente dates qui ne le sont plus.
+  const base = {
+    dispo: { jours: { '1': [['09:00', '12:30']], '2': [['09:00', '12:30']],
+                      '3': [['09:00', '12:30']], '4': [['09:00', '12:30']],
+                      '5': [['09:00', '12:30']] },
+             duree_min: 45, delai_min_jours: 1, horizon_jours: 20 },
+    officine: { cp: '61000' }, aujourdhui: '2026-08-31'
+  };
+  assert.ok(M.calendrier(base).length > 0);
+  const secteurs = [];
+  for (let i = 0; i <= 21; i++) {
+    const d = new Date(Date.UTC(2026, 7, 31));
+    d.setUTCDate(d.getUTCDate() + i);
+    secteurs.push({ date: d.toISOString().slice(0, 10), departements: ['44'] });
+  }
+  assert.equal(M.calendrier({ ...base, secteurs }).length, 0);
+});

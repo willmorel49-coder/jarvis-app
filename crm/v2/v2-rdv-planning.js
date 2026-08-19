@@ -226,6 +226,17 @@
       '.agp-jour{background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);',
       '  padding:13px 14px;margin-bottom:9px}',
       '.agp-jour.agp-off-jour{background:var(--card-2);opacity:.72}',
+      /* Le secteur du jour */
+      '.agp-sect{margin:0 0 10px}',
+      '.agp-sect-b{min-height:38px;padding:0 12px;border-radius:9px;border:1px dashed var(--line);',
+      '  background:transparent;color:var(--muted);font:inherit;font-size:12.5px;cursor:pointer}',
+      '.agp-sect-b.on{border-style:solid;border-color:var(--ip-blue);color:var(--ip-blue);font-weight:700}',
+      '.agp-sect-p{background:var(--card-2);border:1px solid var(--line);border-radius:var(--r-md);',
+      '  padding:12px;margin-top:9px}',
+      '.agp-sect-c{display:flex;flex-wrap:wrap;gap:7px}',
+      '.agp-sect-c button{min-width:46px;min-height:44px;border-radius:9px;border:1px solid var(--line);',
+      '  background:var(--card);color:var(--fg);font:inherit;font-size:14px;font-weight:600;cursor:pointer}',
+      '.agp-sect-c button.on{background:var(--ip-blue);border-color:var(--ip-blue);color:#fff}',
       '.agp-jt{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;margin:0 0 9px}',
       // `capitalize` mettrait une majuscule à CHAQUE mot — « Jeudi 13 Août ».
       // On ne relève que la première lettre.
@@ -333,6 +344,54 @@
       V2.go('campagne');
     },
 
+    // Ouvre ou referme le choix des départements d'une journée. Une seule
+    // ouverte à la fois : quatre semaines à l'écran, ça ferait vingt panneaux.
+    secteur: function (iso) {
+      V2._agpSecteurOuvert = (V2._agpSecteurOuvert === iso) ? null : iso;
+      V2.go('rdvplanning');
+    },
+
+    // ⚠️ Écriture IMMÉDIATE, sans bouton « enregistrer ». Un réglage qu'on
+    // croit posé et qui ne l'est pas, c'est un pharmacien qui réserve à
+    // 300 km — exactement ce que cet écran est censé empêcher. En cas
+    // d'échec, on le DIT et on ne touche pas à l'affichage local : montrer
+    // un département coché qui n'est pas en base serait pire que le refus.
+    secteurBasculer: function (iso, dep) {
+      var c = sb(), u = uid();
+      if (!c || !u) { V2.toast('Connecte-toi.'); return; }
+      var courant = ((V2.planningSecteurs || {})[iso] || []).slice();
+      var i = courant.indexOf(dep);
+      if (i >= 0) courant.splice(i, 1); else courant.push(dep);
+      courant.sort();
+
+      // Plus aucun département : la ligne disparaît. Garder une ligne vide
+      // reviendrait au même — le moteur ne la contraint pas — mais l'écran
+      // afficherait « Secteur : » suivi de rien.
+      var q = courant.length
+        ? c.from('rdv_secteur_jour')
+            .upsert({ user_id: u, date: iso, departements: courant }, { onConflict: 'user_id,date' })
+        : c.from('rdv_secteur_jour').delete().eq('user_id', u).eq('date', iso);
+
+      q.then(function (r) {
+        if (r && r.error) { V2.toast('Enregistrement impossible.'); return; }
+        V2.planningSecteurs = V2.planningSecteurs || {};
+        if (courant.length) V2.planningSecteurs[iso] = courant;
+        else delete V2.planningSecteurs[iso];
+        V2.go('rdvplanning');
+      }, function () { V2.toast('Enregistrement impossible.'); });
+    },
+
+    secteurEffacer: function (iso) {
+      var c = sb(), u = uid();
+      if (!c || !u) return;
+      c.from('rdv_secteur_jour').delete().eq('user_id', u).eq('date', iso).then(function (r) {
+        if (r && r.error) { V2.toast('Suppression impossible.'); return; }
+        if (V2.planningSecteurs) delete V2.planningSecteurs[iso];
+        V2.toast('Ce jour redevient ouvert à tout ton portefeuille.');
+        V2.go('rdvplanning');
+      }, function () { V2.toast('Suppression impossible.'); });
+    },
+
     confirmer: function (cle, cip) {
       if (!V2.rdvAlias) return;
       V2.rdvAlias.poser(cle, cip).then(function () { V2.go('rdvplanning'); });
@@ -365,6 +424,79 @@
       '<span><b>' + esc(a.hote) + '</b> — lu ' + esc(quand) +
       '. Relecture automatique toutes les 15 minutes.</span>' +
       '<button class="v2-btn" id="agp-maj" onclick="V2.rdvPlanning.actualiser()">Actualiser</button>';
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  //  LE SECTEUR DU JOUR (19/08/2026)
+  // ═══════════════════════════════════════════════════════════════
+  // Jusqu'ici, la géographie d'une journée n'existait qu'À PARTIR du premier
+  // rendez-vous posé. Le mardi où le commercial sait qu'il sera dans le 44,
+  // une officine du 61 pouvait réserver — et c'est lui qui le découvrait après.
+  //
+  // Il le déclare ici, sur la journée elle-même : c'est le seul écran où il
+  // regarde son mois. Le moteur de créneaux écarte alors ces journées pour les
+  // officines d'ailleurs, sur la page publique comme dans « Voir d'autres
+  // dates », et le serveur refuse une réservation qui passerait outre.
+  //
+  // ⚠️ Un jour NON DÉCLARÉ n'a aucune contrainte. Déclarer un mardi ne ferme
+  // pas les lundis — sinon une seule déclaration viderait six mois d'agenda.
+
+  // Les départements de SES officines, dans l'ordre de son portefeuille :
+  // celui où il a le plus de clientes en premier. Proposer les 101
+  // départements français serait une liste à faire défiler ; proposer les
+  // siens, c'est un geste.
+  function sesDepartements() {
+    var moi = (V2.user && V2.user.commercial) ? String(V2.user.commercial) : '';
+    var compte = {}, i;
+    (V2.pharmacies || []).forEach(function (ph) {
+      if (moi && (ph.comms || []).indexOf(moi) < 0) return;
+      var d = window.V2RDV ? window.V2RDV.departement(ph.cp) : String(ph.cp || '').slice(0, 2);
+      if (d) compte[d] = (compte[d] || 0) + 1;
+    });
+    var out = Object.keys(compte).sort(function (a, b) { return compte[b] - compte[a]; });
+    // Un département déjà déclaré doit rester proposé même si son officine a
+    // quitté le portefeuille depuis : sinon on ne pourrait plus le décocher.
+    var dejà = V2.planningSecteurs || {};
+    for (var k in dejà) {
+      if (!dejà.hasOwnProperty(k)) continue;
+      (dejà[k] || []).forEach(function (d) { if (out.indexOf(d) < 0) out.push(d); });
+    }
+    return out;
+  }
+
+  function blocSecteur(iso) {
+    var deps = (V2.planningSecteurs || {})[iso] || [];
+    var ouvert = V2._agpSecteurOuvert === iso;
+    var etiquette = deps.length
+      ? 'Secteur : ' + deps.join(' · ')
+      : 'Secteur : tout le portefeuille';
+
+    var h = '<div class="agp-sect">' +
+      '<button class="agp-sect-b' + (deps.length ? ' on' : '') +
+        '" onclick="V2.rdvPlanning.secteur(\'' + escArg(iso) + '\')">' +
+        esc(etiquette) + '</button>';
+
+    if (ouvert) {
+      var liste = sesDepartements();
+      h += '<div class="agp-sect-p">' +
+        '<p class="agp-sm" style="margin:0 0 8px">Où seras-tu ce jour-là ? Seules ' +
+          'les officines de ces départements pourront réserver. ' +
+          '<b>Ne rien cocher = aucune contrainte.</b></p>' +
+        '<div class="agp-sect-c">' +
+          liste.map(function (d) {
+            return '<button class="' + (deps.indexOf(d) >= 0 ? 'on' : '') +
+              '" onclick="V2.rdvPlanning.secteurBasculer(\'' + escArg(iso) + '\',\'' +
+              escArg(d) + '\')">' + esc(d) + '</button>';
+          }).join('') +
+        '</div>' +
+        (deps.length
+          ? '<button class="v2-btn v2-btn-ghost" style="min-height:44px;margin-top:10px" ' +
+            'onclick="V2.rdvPlanning.secteurEffacer(\'' + escArg(iso) + '\')">' +
+            'Retirer la contrainte de ce jour</button>'
+          : '') +
+        '</div>';
+    }
+    return h + '</div>';
   }
 
   function rendreJour(iso, dispo, blocages, rdvs, occupes, auj, reconnus) {
@@ -525,6 +657,7 @@
     return '<div class="agp-jour"><div class="agp-jt"><b>' + esc(libelle(iso)) + '</b>' +
       (iso === auj ? ' <span class="agp-auj">aujourd’hui</span>' : '') +
       '<span class="agp-resume">' + esc(resume) + '</span></div>' +
+      blocSecteur(iso) +
       '<div class="agp-bar' + (libre > 0 ? '' : ' agp-vide') + '">' + peinture + '</div>' +
       '<div class="agp-ech"><span>8h</span><span>12h</span><span>15h</span><span>19h</span></div>' +
       (lignes.length ? lignes.map(function (l) { return l.html; }).join('')
@@ -574,7 +707,12 @@
             return ((o && o.data) || []).map(function (x) {
               return String(x && x.cip != null ? x.cip : x);
             });
-          }).catch(function () { return []; })
+          }).catch(function () { return []; }),
+          // Les journées où il a déclaré dans quels départements il serait.
+          c.from('rdv_secteur_jour').select('date, departements')
+            .eq('user_id', u).gte('date', auj).lte('date', fin)
+            .then(function (r) { return (r && r.data) || []; },
+                  function () { return []; })
         ]);
       }).then(function (r) {
         var st = r[0], dispo = st.dispo, blocages = st.blocages || [];
@@ -610,6 +748,11 @@
             }
           }
         }
+        // date -> ['44','49']. Vide = jour non déclaré, donc sans contrainte.
+        V2.planningSecteurs = {};
+        ((r[7]) || []).forEach(function (x) {
+          if (x && x.date) V2.planningSecteurs[String(x.date)] = x.departements || [];
+        });
         V2.planningOfficines = reconnus;
         V2.planningDerniereVisite = derniereVisite;
 

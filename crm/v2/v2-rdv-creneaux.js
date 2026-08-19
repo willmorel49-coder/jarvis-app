@@ -75,6 +75,58 @@
     return 2 * R * Math.asin(Math.min(1, Math.sqrt(s))) * (coef == null ? 1.3 : coef);
   };
 
+  // ═══════════════════════════════════════════════════════════════
+  //  LE SECTEUR DU JOUR (19/08/2026)
+  // ═══════════════════════════════════════════════════════════════
+  // Jusqu'ici, la géographie d'une journée n'existait qu'À PARTIR du premier
+  // rendez-vous posé — la règle « aimant ». Une journée encore vide n'avait
+  // pour seule limite que le temps de route depuis le point de départ : le
+  // mardi où le commercial sait qu'il sera dans le 44, une officine du 61
+  // pouvait réserver, et c'est lui qui découvrait le problème après coup.
+  //
+  // Il déclare donc, jour par jour, les départements où il sera. Le moteur
+  // écarte alors les journées qui ne correspondent pas — avant même de
+  // regarder les heures.
+  //
+  // ⚠️ TROIS PRUDENCES, chacune pour ne jamais fermer un calendrier par erreur.
+  //   1. Un jour NON DÉCLARÉ n'a aucune contrainte. Déclarer un mardi ne
+  //      ferme pas les lundis : sinon, une seule déclaration viderait six mois
+  //      d'agenda sans que personne comprenne pourquoi.
+  //   2. Une déclaration VIDE ne ferme rien non plus. Effacer les
+  //      départements d'un jour, c'est retirer la contrainte, pas se rendre
+  //      injoignable.
+  //   3. Un code postal INCONNU passe. Dans le doute on garde et on signale —
+  //      un contrôle qui n'aboutit pas ne condamne jamais.
+  //
+  // Corse : « 2A » et « 2B » se ramènent à « 20 », qui est ce que porte le code
+  // postal. Outre-mer : trois chiffres (971…976, 984…988).
+  M.departement = function (v) {
+    var t = String(v == null ? '' : v).replace(/[^0-9A-Za-z]/g, '').toUpperCase();
+    if (t.length < 2) return '';
+    if (t.charAt(0) === '2' && (t.charAt(1) === 'A' || t.charAt(1) === 'B')) return '20';
+    var deux = t.slice(0, 2);
+    if (t.length >= 3 && (deux === '97' || deux === '98')) return t.slice(0, 3);
+    return deux;
+  };
+
+  M.secteurOk = function (dateISO, officine, secteurs) {
+    var liste = secteurs || [], i, decl = null;
+    for (i = 0; i < liste.length; i++) {
+      if (liste[i] && liste[i].date === dateISO) { decl = liste[i]; break; }
+    }
+    if (!decl) return true;                                    // prudence 1
+    var deps = [];
+    (decl.departements || []).forEach(function (x) {
+      var d = M.departement(x);
+      if (d && deps.indexOf(d) === -1) deps.push(d);
+    });
+    if (!deps.length) return true;                             // prudence 2
+    var o = officine || {};
+    var mien = M.departement(o.cp != null && o.cp !== '' ? o.cp : o.dept);
+    if (!mien) return true;                                    // prudence 3
+    return deps.indexOf(mien) !== -1;
+  };
+
   M.trajetMin = function (km, dispo) {
     var d = fusionner(dispo);
     return Math.round(km / d.vitesse_kmh * 60) + d.marge_route_min;
@@ -235,6 +287,8 @@
     var blocages = (p && p.blocages) || [];
     // Plages venues de l'agenda personnel du commercial (heures seulement).
     var agenda = (p && p.agenda) || [];
+    // Les journées où le commercial a déclaré où il sera.
+    var secteurs = (p && p.secteurs) || [];
     var aujourdhui = (p && p.aujourdhui) || new Date().toISOString().slice(0, 10);
 
     var parDate = {};
@@ -246,6 +300,9 @@
     var jours = [];
     for (var i = d.delai_min_jours; i <= d.horizon_jours; i++) {
       var iso = isoPlus(aujourdhui, i);
+      // Avant même de regarder les heures : ce jour-là, est-il dans le
+      // département de cette officine ?
+      if (!M.secteurOk(iso, officine, secteurs)) continue;
       var plages = plagesDuJour(iso, d, blocages, agenda);
       if (!plages) continue;
       var j = M.jour(iso, parDate[iso] || [], officine, d, plages);
@@ -282,6 +339,11 @@
     var occupes = (p && p.occupes) || [];
     var blocages = (p && p.blocages) || [];
     var agenda = (p && p.agenda) || [];
+    // ⚠️ La même règle de secteur qu'en haut, et c'est indispensable : « Voir
+    // d'autres dates » ouvre le calendrier complet. Sans ce filtre ici, le
+    // pharmacien verrait trois dates cohérentes puis, d'un clic, cent trente
+    // dates qui ne le sont plus — dont celles où le commercial est à 300 km.
+    var secteurs = (p && p.secteurs) || [];
     var aujourdhui = (p && p.aujourdhui) || new Date().toISOString().slice(0, 10);
     // 180 jours d'horizon ne font qu'environ 130 jours OUVRÉS : ce plafond
     // doit rester au-dessus, sinon la liste s'arrête avant la fin des six mois
@@ -299,6 +361,7 @@
     var out = [];
     for (var i = d.delai_min_jours; i <= d.horizon_jours && out.length < maxJours; i++) {
       var iso = isoPlus(aujourdhui, i);
+      if (!M.secteurOk(iso, officine, secteurs)) continue;
       var plages = plagesDuJour(iso, d, blocages, agenda);
       if (!plages) continue;
       var j = M.jour(iso, parDate[iso] || [], officine, d, plages);

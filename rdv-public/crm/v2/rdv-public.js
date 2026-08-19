@@ -163,7 +163,10 @@
           : 'Ce lien n’est pas valide.');
         return;
       }
-      F.officine = { nom: moi.nom, lat: moi.lat, lon: moi.lon, ville: moi.ville };
+      // ⚠️ `cp` compris : le pharmacien vient de le saisir, et c'est LUI qui
+      // porte le département. Sans lui, le secteur du jour ne s'applique pas
+      // au chemin le plus fréquent — celui de tous les envois groupés.
+      F.officine = { nom: moi.nom, cp: moi.cp, lat: moi.lat, lon: moi.lon, ville: moi.ville };
       afficherCreneaux();
     }).catch(function () { secours(INDISPO); });
   }
@@ -200,6 +203,9 @@
       blocages: F.blocages || [],
       occupes: F.occupes || [],
       agenda: F.agenda || [],
+      // Les journées où le commercial a déclaré dans quels départements il
+      // serait. Un jour non déclaré reste sans contrainte.
+      secteurs: F.secteurs || [],
       aujourdhui: new Date().toISOString().slice(0, 10)
     });
     var h = carte('<h1>Prendre rendez-vous</h1>' +
@@ -214,8 +220,7 @@
       var cx = F.commercial || {};
       h += carte(ctoken
         ? '<p>Aucun créneau ne se libère dans les six prochains mois — ' +
-          'votre officine est peut-être hors du secteur que ' + esc(cx.prenom) +
-          ' couvre habituellement.</p>' +
+          esc(cx.prenom) + ' n’a pas encore de journée prévue près de chez vous.</p>' +
           (cx.tel
             ? '<p style="margin-top:14px">Appelez-le au <a href="tel:' + esc(numero(cx.tel)) +
               '">' + esc(cx.tel) + '</a>, il verra ce qu’il peut faire.</p>'
@@ -270,6 +275,9 @@
       blocages: F.blocages || [],
       occupes: F.occupes || [],
       agenda: F.agenda || [],
+      // ⚠️ La même règle qu'au-dessus. Sans elle, « Voir d'autres dates »
+      // rouvrirait les journées que les trois propositions viennent d'écarter.
+      secteurs: F.secteurs || [],
       aujourdhui: new Date().toISOString().slice(0, 10)
     });
 
