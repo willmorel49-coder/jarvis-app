@@ -402,14 +402,21 @@
     secteur: function (iso) {
       var ouvre = V2._agpSecteurOuvert !== iso;
       V2._agpSecteurOuvert = ouvre ? iso : null;
-      V2.go('rdvplanning');
+      rafraichirSecteurs();
       // Le panneau vit tout en haut : depuis une journée du planning, il
-      // s'ouvrirait hors de l'écran. On y amène l'œil.
+      // s'ouvrirait hors de l'écran. On y amène l'œil — mais SEULEMENT s'il
+      // n'y est pas déjà. Faire défiler une page qui n'a pas bougé, c'est
+      // exactement la sensation de « retour en arrière » qu'on vient d'ôter.
       if (ouvre) {
         setTimeout(function () {
           var e = document.getElementById('agp-panneau');
-          if (e && e.scrollIntoView) e.scrollIntoView({ block: 'center' });
-        }, 60);
+          if (!e || !e.getBoundingClientRect) return;
+          var r = e.getBoundingClientRect();
+          var h = window.innerHeight || document.documentElement.clientHeight;
+          if (r.top < 0 || r.bottom > h) {
+            if (e.scrollIntoView) e.scrollIntoView({ block: 'center' });
+          }
+        }, 30);
       }
     },
 
@@ -465,7 +472,7 @@
             ', jusqu’au ' + libelle(cibles[cibles.length - 1]) + '.'
           : 'Contrainte retirée sur ' + cibles.length + ' journée' +
             (cibles.length > 1 ? 's' : '') + '.');
-        V2.go('rdvplanning');
+        rafraichirSecteurs();
       }, function () { V2.toast('Enregistrement impossible.'); });
     },
 
@@ -490,13 +497,27 @@
             .upsert({ user_id: u, date: iso, departements: courant }, { onConflict: 'user_id,date' })
         : c.from('rdv_secteur_jour').delete().eq('user_id', u).eq('date', iso);
 
+      // ⚠️ L'écran bouge TOUT DE SUITE, l'enregistrement suit. Attendre la
+      // base avant de cocher donnait un bouton mou pendant 200 ms, et deux
+      // clics rapides se perdaient. En cas d'échec on REMET la case dans son
+      // état d'avant : un département coché qui n'est pas en base, c'est un
+      // pharmacien qui réserve à 300 km.
+      var avant = ((V2.planningSecteurs || {})[iso] || []).slice();
+      V2.planningSecteurs = V2.planningSecteurs || {};
+      if (courant.length) V2.planningSecteurs[iso] = courant;
+      else delete V2.planningSecteurs[iso];
+      rafraichirSecteurs();
+
       q.then(function (r) {
-        if (r && r.error) { V2.toast('Enregistrement impossible.'); return; }
-        V2.planningSecteurs = V2.planningSecteurs || {};
-        if (courant.length) V2.planningSecteurs[iso] = courant;
-        else delete V2.planningSecteurs[iso];
-        V2.go('rdvplanning');
-      }, function () { V2.toast('Enregistrement impossible.'); });
+        if (!r || !r.error) return;
+        if (avant.length) V2.planningSecteurs[iso] = avant; else delete V2.planningSecteurs[iso];
+        rafraichirSecteurs();
+        V2.toast('Enregistrement impossible — la case est revenue comme avant.');
+      }, function () {
+        if (avant.length) V2.planningSecteurs[iso] = avant; else delete V2.planningSecteurs[iso];
+        rafraichirSecteurs();
+        V2.toast('Enregistrement impossible — la case est revenue comme avant.');
+      });
     },
 
     // Reprend tel quel le secteur OBSERVÉ et le déclare. Le geste évident
@@ -513,7 +534,7 @@
           V2.planningSecteurs = V2.planningSecteurs || {};
           V2.planningSecteurs[iso] = deps;
           V2.toast('Ce jour n’est plus réservable que depuis le ' + deps.join(' et le ') + '.');
-          V2.go('rdvplanning');
+          rafraichirSecteurs();
         }, function () { V2.toast('Enregistrement impossible.'); });
     },
 
@@ -524,7 +545,7 @@
         if (r && r.error) { V2.toast('Suppression impossible.'); return; }
         if (V2.planningSecteurs) delete V2.planningSecteurs[iso];
         V2.toast('Ce jour redevient ouvert à tout ton portefeuille.');
-        V2.go('rdvplanning');
+        rafraichirSecteurs();
       }, function () { V2.toast('Suppression impossible.'); });
     },
 
@@ -770,6 +791,55 @@
     return false;
   }
 
+  // ═══════════════════════════════════════════════════════════════
+  //  RAFRAÎCHIR SANS RECHARGER (19/08/2026)
+  // ═══════════════════════════════════════════════════════════════
+  // « En direct, ça devrait pas faire d'actualisation ; là ça fait revenir en
+  //   arrière, c'est chiant » (Will).
+  //
+  // Chaque clic sur un département rejouait `V2.go('rdvplanning')` : l'écran
+  // entier se reconstruisait, et la page repartait du haut. Cocher trois
+  // départements demandait donc trois fois de redescendre. Sur un trimestre à
+  // soixante-cinq journées, c'est la fonction entière qui devient pénible.
+  //
+  // Ici on remplace DEUX morceaux et rien d'autre : l'agenda du haut, et la
+  // ligne « secteur » de chaque journée du planning. Le navigateur garde sa
+  // position, et il n'y a rien à recharger — les données du trimestre sont
+  // déjà en mémoire.
+  //
+  // ⚠️ REPLI HONNÊTE : sans ces données en mémoire (premier rendu pas encore
+  // terminé, ou écran rouvert autrement), on retombe sur le rendu complet.
+  // Mieux vaut un écran qui remonte qu'un écran qui ment.
+  function estVide(iso, D) {
+    var i;
+    for (i = 0; i < D.rdvs.length; i++) if (D.rdvs[i].date === iso) return false;
+    for (i = 0; i < D.reconnus.length; i++) if (D.reconnus[i].date === iso) return false;
+    return true;
+  }
+
+  function rafraichirSecteurs() {
+    var D = V2.planningDonnees;
+    if (!D) { V2.go('rdvplanning'); return; }
+
+    var vieux = document.getElementById('agp-apercu');
+    if (!vieux) { V2.go('rdvplanning'); return; }
+    var tmp = document.createElement('div');
+    tmp.innerHTML = apercuSecteurs(D.rdvs, D.reconnus, D.auj, D.dispo);
+    if (tmp.firstChild) vieux.parentNode.replaceChild(tmp.firstChild, vieux);
+
+    // Les journées du planning détaillé affichent l'état, elles ne l'éditent
+    // plus : on ne remplace que leur ligne « secteur ».
+    var blocs = document.querySelectorAll('.agp-jour[data-iso]');
+    Array.prototype.forEach.call(blocs, function (el) {
+      var iso = el.getAttribute('data-iso');
+      var sect = el.querySelector('.agp-sect');
+      if (!sect) return;
+      var t = document.createElement('div');
+      t.innerHTML = blocSecteur(iso, secteurObserve(iso, D.rdvs, D.reconnus), estVide(iso, D));
+      if (t.firstChild) sect.parentNode.replaceChild(t.firstChild, sect);
+    });
+  }
+
   function panneauSecteur(iso) {
     var deps = (V2.planningSecteurs || {})[iso] || [];
     var liste = sesDepartements();
@@ -973,7 +1043,8 @@
         ' prospects de ton secteur n’ont aucun rendez-vous prévu.</p></div>';
     }
 
-    return '<div class="agp-jour"><div class="agp-jt"><b>' + esc(libelle(iso)) + '</b>' +
+    return '<div class="agp-jour" data-iso="' + escArg(iso) + '"><div class="agp-jt"><b>' +
+      esc(libelle(iso)) + '</b>' +
       (iso === auj ? ' <span class="agp-auj">aujourd’hui</span>' : '') +
       '<span class="agp-resume">' + esc(resume) + '</span></div>' +
       blocSecteur(iso, secteurObserve(iso, rdvs, reconnus), !mesRdv.length && !recoJour.length) +
@@ -1098,6 +1169,8 @@
               'Chercher dans l’annuaire (2,8 Mo)</button></div>'
           : '';
 
+        // Ce dont `rafraichirSecteurs` a besoin pour redessiner sans recharger.
+        V2.planningDonnees = { rdvs: rdvs, reconnus: reconnus, auj: auj, dispo: dispo };
         V2.planningAContacter = aContacter(rdvs, reconnus, r[6] || []);
         V2._agpAppelPose = 0;   // un seul bloc d'appel par rendu
 
