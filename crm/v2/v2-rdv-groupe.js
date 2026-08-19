@@ -78,14 +78,35 @@
   }
 
   // ── Le mail du lot, rendu une fois ────────────────────────────
-  function mail() {
-    return window.V2MOD.rendreGroupe(E.modele, {
+  // Le contexte n'a NI nom NI chiffre : un seul corps part vers 25 officines.
+  // C'est aussi ce qui fait qu'un modèle personnel nominatif est refusé ici,
+  // par le moteur — voir `ctxGroupe` plus bas.
+  function ctxGroupe() {
+    return {
       lien: E.url,
       texte_libre: E.texte,
       prenom_commercial: String((V2.user && V2.user.name) || '').split(' ')[0] || '',
       nom_complet_commercial: (V2.user && V2.user.name) || '',
       tel_commercial: V2.rdvTel || ''
-    });
+    };
+  }
+  function rendu(html) {
+    var f = html
+      ? (V2.rdvModeleRendreHtml || function (c, x) { return window.V2MOD.rendreGroupeHtml(c, x); })
+      : (V2.rdvModeleRendre     || function (c, x) { return window.V2MOD.rendreGroupe(c, x); });
+    return f(E.modele, ctxGroupe(), true);
+  }
+  // ⚠️ Un refus ne doit jamais ressortir en mail vide. L'écran de choix du
+  // motif l'empêche déjà, mais un modèle peut être modifié entre-temps :
+  // ici on le dit, et on rend le motif « routine » plutôt que du blanc.
+  function mail() {
+    var m = rendu(false);
+    if (m && m.refus) {
+      if (V2.toast) V2.toast('Ce modèle nomme l’officine : impossible en copie cachée. ' +
+        'Motif « routine » utilisé.');
+      return window.V2MOD.rendreGroupe('routine', ctxGroupe());
+    }
+    return m;
   }
 
   // Les adresses d'un lot, dédoublonnées. Deux officines d'un même
@@ -471,12 +492,8 @@
     copierObjet: function () { copierTexte(mail().objet, 'Objet'); },
     copierMessage: function () { copierTexte(mail().corps, 'Message'); },
     copierRiche: function () {
-      var h = window.V2MOD.rendreGroupeHtml(E.modele, {
-        lien: E.url, texte_libre: E.texte,
-        prenom_commercial: String((V2.user && V2.user.name) || '').split(' ')[0] || '',
-        nom_complet_commercial: (V2.user && V2.user.name) || '',
-        tel_commercial: V2.rdvTel || ''
-      });
+      var h = rendu(true);
+      if (h && h.refus) { mail(); h = window.V2MOD.rendreGroupeHtml('routine', ctxGroupe()); }
       copierMiseEnForme(h.html);
     },
 

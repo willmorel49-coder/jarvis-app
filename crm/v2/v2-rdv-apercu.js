@@ -42,19 +42,25 @@
 
   var DERNIER = null;   // le dernier aperçu calculé, pour la copie mise en forme
 
+  // Un seul aiguillage vers le moteur : motif standard ou modèle personnel.
+  // Il est doublé de son repli `window.V2MOD` pour que l'aperçu continue de
+  // marcher si le module des modèles personnels n'est pas chargé.
+  function rendre(cle, ctx, groupe) {
+    if (V2.rdvModeleRendre) return V2.rdvModeleRendre(cle, ctx, !!groupe);
+    return groupe ? window.V2MOD.rendreGroupe(cle, ctx) : window.V2MOD.rendre(cle, ctx);
+  }
+  function rendreHtml(cle, ctx, groupe) {
+    if (V2.rdvModeleRendreHtml) return V2.rdvModeleRendreHtml(cle, ctx, !!groupe);
+    return groupe ? window.V2MOD.rendreGroupeHtml(cle, ctx) : window.V2MOD.rendreHtml(cle, ctx);
+  }
+
   // Le lien permanent du commercial : réel, et sans effet de bord.
+  // Le lien permanent vit dans v2-rdv.js — une seule adresse construite à un
+  // seul endroit. Le repli garde l'aperçu fonctionnel si l'ordre de chargement
+  // change un jour.
   function lienDemo() {
-    var c = sb(), u = uid();
-    if (!c || !u) return Promise.resolve('');
-    return c.from('rdv_lien_public').select('slug, token').eq('user_id', u).maybeSingle()
-      .then(function (r) {
-        var d = (r && r.data) || null;
-        if (!d) return '';
-        var p = window.location.pathname.replace(/crm\/v2\/[^/]*$/, '');
-        return d.slug ? (window.location.origin + p + 'rdv/' + d.slug)
-                      : (V2.rdv.BASE_URL + '?c=' + d.token);
-      })
-      .catch(function () { return ''; });
+    if (V2.rdvLienPermanent) return V2.rdvLienPermanent();
+    return Promise.resolve('');
   }
 
   V2.rdvApercu = {
@@ -71,23 +77,34 @@
       if (!z) return;
       z.innerHTML = '<div class="v2-ap"><div class="v2-ap-corps">Préparation de l’aperçu…</div></div>';
 
-      Promise.all([V2.rdvSources(), V2.rdvTelCharger(), lienDemo()]).then(function (res) {
+      Promise.all([V2.rdvSources(), V2.rdvTelCharger(), lienDemo(), V2.rdvVuCharger()])
+        .then(function (res) {
         var lien = res[2] || '';
-        var o = (pid && !groupe) ? V2.rdvInfo(pid) : null;
-        var ctx = {
-          contact: o ? o.contact : '',
-          nom_officine: o ? o.nom : 'VOTRE OFFICINE',
-          ville: o ? o.ville : '',
-          ca_annee: pid ? V2.rdvCA(pid) : null,
-          mois_derniere_visite: null,
-          prenom_commercial: String((V2.user && V2.user.name) || '').split(' ')[0] || '',
-          nom_complet_commercial: (V2.user && V2.user.name) || '',
-          tel_commercial: V2.rdvTel || '',
-          lien: lien,
-          texte_libre: texteLibre || ''
-        };
-        var m = groupe ? window.V2MOD.rendreGroupe(modele || 'routine', ctx)
-                       : window.V2MOD.rendre(modele || 'routine', ctx);
+        // ⚠️ L'aperçu doit composer le mail par le MÊME chemin que l'envoi,
+        // sinon il ne prouve rien. D'où V2.rdvContexte des deux côtés — et
+        // c'est aussi ce qui fait entrer ici les mois et les ruptures.
+        var ctx = (pid && !groupe)
+          ? V2.rdvContexte(pid, { lien: lien, texte_libre: texteLibre || '' })
+          : {
+              contact: '', nom_officine: 'VOTRE OFFICINE', ville: '',
+              ca_annee: null, mois_derniere_visite: null,
+              ruptures_tension: 0, ruptures_stock: 0,
+              prenom_commercial: String((V2.user && V2.user.name) || '').split(' ')[0] || '',
+              nom_complet_commercial: (V2.user && V2.user.name) || '',
+              tel_commercial: V2.rdvTel || '',
+              lien: lien, texte_libre: texteLibre || ''
+            };
+        var m = rendre(modele || 'routine', ctx, !!groupe);
+        // Un modèle personnel nominatif refusé en groupé : on le DIT, au lieu
+        // d'afficher un aperçu vide qui passerait pour une panne.
+        if (m && m.refus === 'nominatif') {
+          z.innerHTML = '<div class="v2-ap"><div class="v2-ap-corps">' +
+            'Ce modèle nomme ou chiffre l’officine ({{' + esc(m.etiquettes.join('}}, {{')) +
+            '}}). En envoi groupé, un seul texte part vers 25 officines : il serait ' +
+            'faux pour 24 d’entre elles.<br><br>Choisis un motif standard, ou passe ' +
+            'en envoi « un par un ».</div></div>';
+          return;
+        }
         DERNIER = { ctx: ctx, modele: modele || 'routine', objet: m.objet, groupe: !!groupe };
 
         // Le lien est rendu cliquable dans l'aperçu, le reste est échappé :
@@ -110,8 +127,17 @@
           '<p class="v2-ap-note">C’est exactement ce que recevra le pharmacien' +
             (groupe ? ' — le même corps pour tout le lot, sans nom ni chiffres, ' +
                       'puisqu’un mail en copie cachée part vers 25 officines à la fois'
-                    : (o ? '' : ' — ici avec une officine d’exemple')) + '. ' +
-            'Le lien affiché est le tien, il fonctionne.' +
+                    : (pid ? '' : ' — ici avec une officine d’exemple')) + '. ' +
+            // ⚠️ Sans lien permanent créé, l'aperçu n'en montre aucun — et
+            // annoncer « le lien affiché est le tien » serait alors faux. Le
+            // vrai envoi, lui, fabrique un jeton par officine : il aura
+            // toujours son lien. On dit exactement ça.
+            (lien
+              ? 'Le lien affiché est le tien, il fonctionne.'
+              : '<b>Tu n’as pas encore de lien permanent</b>, l’aperçu en est donc dépourvu. ' +
+                'Les mails envoyés un par un porteront quand même leur lien — ' +
+                'il est créé pour chaque officine. Pour l’envoi groupé, en revanche, ' +
+                'crée-le dans « Mes dispos ».') +
             (m.avertissement ? '<br><b>' + esc(m.avertissement) + '</b>' : '') + '</p>' +
           '<p class="v2-ap-note"><b>Mis en forme</b> : ta messagerie n’accepte que du texte brut ' +
             'quand JARVIS l’ouvre pour toi. Pour un mail avec un vrai bouton, clique ' +
@@ -126,10 +152,8 @@
     // colle le second au lieu de coller du code.
     copierHtml: function () {
       if (!DERNIER) { V2.toast('Ouvre d’abord l’aperçu.'); return; }
-      var m = DERNIER.groupe ? window.V2MOD.rendreGroupeHtml(DERNIER.modele, DERNIER.ctx)
-                             : window.V2MOD.rendreHtml(DERNIER.modele, DERNIER.ctx);
-      var brut = (DERNIER.groupe ? window.V2MOD.rendreGroupe(DERNIER.modele, DERNIER.ctx)
-                                 : window.V2MOD.rendre(DERNIER.modele, DERNIER.ctx)).corps;
+      var m = rendreHtml(DERNIER.modele, DERNIER.ctx, DERNIER.groupe);
+      var brut = rendre(DERNIER.modele, DERNIER.ctx, DERNIER.groupe).corps;
       if (window.ClipboardItem && navigator.clipboard && navigator.clipboard.write) {
         navigator.clipboard.write([new window.ClipboardItem({
           'text/html': new Blob([m.html], { type: 'text/html' }),
@@ -154,8 +178,7 @@
       if (!DERNIER) { V2.toast('Ouvre d’abord l’aperçu.'); return; }
       var moi = (V2.user && V2.user.email) || '';
       if (!moi) { V2.toast('Adresse inconnue pour ton compte.'); return; }
-      var m = DERNIER.groupe ? window.V2MOD.rendreGroupe(DERNIER.modele, DERNIER.ctx)
-                             : window.V2MOD.rendre(DERNIER.modele, DERNIER.ctx);
+      var m = rendre(DERNIER.modele, DERNIER.ctx, DERNIER.groupe);
       V2.rdv._ouvrir('mailto:' + encodeURIComponent(moi) +
         '?subject=' + encodeURIComponent('[TEST] ' + m.objet) +
         '&body=' + encodeURIComponent(m.corps));

@@ -256,6 +256,32 @@
                            ETAT.mode === 'groupe');
     },
 
+    // Recompose la liste des motifs : trois livrés + ceux du commercial.
+    // Rappelée à chaque changement de mode, parce qu'un modèle qui nomme
+    // l'officine se désactive en copie cachée.
+    majModeles: function () {
+      if (!V2.rdvModeles) return;
+      V2.rdvModeles.charger().then(function () {
+        var sel = document.getElementById('cp-modele');
+        if (!sel) return;
+        var garde = sel.value || ETAT.modele || 'routine';
+        var base = window.V2MOD.liste().map(function (m) {
+          return '<option value="' + esc(m.cle) + '">' + esc(m.nom) + '</option>';
+        }).join('');
+        sel.innerHTML = base + V2.rdvModeles.options(ETAT.mode === 'groupe');
+        // Le motif gardé peut être devenu indisponible (modèle archivé, ou
+        // nominatif alors qu'on vient de passer en groupé) : on retombe sur
+        // « routine » et on le DIT, plutôt que de laisser un choix fantôme.
+        sel.value = garde;
+        if (sel.value !== garde) {
+          sel.value = 'routine';
+          ETAT.modele = 'routine';
+          V2.toast('Ce modèle ne peut pas partir en copie cachée — motif « routine » repris.');
+        }
+        V2.campagne.apercu();
+      });
+    },
+
     typer: function (t) { ETAT.type = t; V2.campagne.rafraichir(); },
 
     groupe: function (g) {
@@ -359,6 +385,8 @@
         bt[i].classList.toggle('on', bt[i].getAttribute('data-m') === m);
       var e = document.getElementById('cp-mode-note');
       if (e) e.innerHTML = noteMode();
+      // majModeles rappelle apercu() une fois la liste recomposée.
+      V2.campagne.majModeles();
       V2.campagne.apercu();
       V2.campagne.majBarre();
     },
@@ -468,6 +496,9 @@
         '<div class="v2-camp-box">' +
           '<label for="cp-modele">Pourquoi tu leur écris</label>' +
           '<select id="cp-modele" onchange="V2.campagne.apercu()">' + mods + '</select>' +
+          (V2.pages.rdvmodeles
+            ? '<p style="margin:8px 0 0"><button class="v2-btn v2-btn-ghost" ' +
+              'onclick="V2.go(\'rdvmodeles\')">Écrire mes propres modèles</button></p>' : '') +
           '<label for="cp-texte" style="margin-top:14px">Ton texte (modèle « nouveauté » uniquement)</label>' +
           '<p>Deux lignes, réutilisées pour toute la liste. Aucun pourcentage : ' +
             'les conditions commerciales ne s’écrivent pas dans un mail.</p>' +
@@ -515,6 +546,11 @@
         '<p class="v2-camp-note">Les officines sans adresse mail et celles marquées ' +
           '« ne plus solliciter » sont écartées automatiquement.</p>' +
       '</div>';
+
+      // Les modèles personnels arrivent de la base : on les injecte dès qu'ils
+      // sont là, en gardant le motif déjà choisi. Le sélecteur reste utilisable
+      // pendant ce temps — les trois motifs livrés y sont déjà.
+      V2.campagne.majModeles();
 
       // L'aperçu s'affiche dès l'ouverture : on doit voir le mail AVANT de
       // préparer une liste, pas après avoir tout choisi.
