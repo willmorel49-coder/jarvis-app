@@ -9,7 +9,13 @@
   'use strict';
   var M = {};
 
-  var STOP = '\n\n—\nVous ne souhaitez plus recevoir ces propositions ? Répondez STOP à ce message.';
+  // ⚠️ « Répondez STOP à ce message » : le registre d'un SMS publicitaire, dans
+  // un mail signé d'un responsable à un pharmacien. La promesse est la même —
+  // et elle est réellement honorée par l'écran de suivi — seule la formulation
+  // change. Aucun automatisme ne lit le mot « STOP » : c'est un bouton que le
+  // commercial actionne à la main.
+  var STOP = '\n\n—\nSi vous ne souhaitez plus recevoir ces propositions, ' +
+             'indiquez-le moi en réponse à ce message.';
   var CHIFFRE_PCT = /\d+(?:[.,]\d+)?\s*%/;
 
   function txt(v, repli) {
@@ -20,17 +26,69 @@
     if (n == null || n === '' || isNaN(n)) return '';
     return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' €';
   }
+  // ── LA CASSE — le détail qui trahissait le mail automatique ──────
+  // Les noms viennent des fichiers, et les fichiers sont EN MAJUSCULES :
+  // « Bonjour JUSTINE ONILLON, », « Vos chiffres, PHARMACIE RIVE SUD ».
+  // Aucune autre correction de style ne compte tant que celle-là n'est pas
+  // faite — c'est le premier signal qu'un pharmacien lit.
+  //
+  // ⚠️ On ne retouche QUE ce qui est écrit tout en capitales. Un nom déjà
+  // correctement saisi par l'équipe (« Mme Tritsch », « de La Rochefoucauld »)
+  // ne doit pas être « corrigé » : on abîmerait une vraie donnée pour rien.
+  var PARTICULES = { DE: 1, DU: 1, DES: 1, LA: 1, LE: 1, LES: 1, ET: 1,
+                     AU: 1, AUX: 1, SUR: 1, EN: 1, A: 1, D: 1, L: 1 };
+  // Sigles et civilités qui gardent leur forme : les abaisser serait une faute.
+  var GARDE = { CIP: 1, SA: 1, SAS: 1, SARL: 1, SELARL: 1, EURL: 1, SNC: 1,
+                CHU: 1, CH: 1, MM: 1 };
+
+  M.nomPropre = function (v) {
+    var t = String(v == null ? '' : v).trim();
+    if (!t) return '';
+    // Écrit en capitales ? Sinon on n'y touche pas.
+    var lettres = t.replace(/[^A-Za-zÀ-ÿ]/g, '');
+    if (!lettres || lettres !== lettres.toUpperCase()) return t;
+
+    var mots = t.toLowerCase().split(/(\s+|-|')/);   // on garde les séparateurs
+    var premier = true;
+    for (var i = 0; i < mots.length; i++) {
+      var m = mots[i];
+      if (!m || /^(\s+|-|')$/.test(m)) continue;
+      var haut = m.toUpperCase();
+      if (GARDE[haut]) { mots[i] = haut; premier = false; continue; }
+      // Une particule reste en bas de casse — sauf en tout début de nom.
+      if (!premier && PARTICULES[haut]) { mots[i] = m; continue; }
+      mots[i] = m.charAt(0).toUpperCase() + m.slice(1);
+      premier = false;
+    }
+    return mots.join('');
+  };
+
   function salut(ctx) {
-    var c = txt(ctx.contact);
+    var c = M.nomPropre(txt(ctx.contact));
     return 'Bonjour' + (c ? ' ' + c : '') + ',';
+  }
+
+  // La durée réelle du rendez-vous, réglée par le commercial dans ses dispos.
+  // ⚠️ Le modèle « bilan » annonçait « Quinze minutes suffisent » — un nombre
+  // écrit en dur, alors que le créneau bloqué vaut 45 minutes par défaut, et
+  // 60 pour certains. On promettait au pharmacien le quart de ce qu'on lui
+  // prenait. Un chiffre affiché doit être le chiffre appliqué.
+  function duree(ctx) {
+    var d = parseInt(ctx.duree_min, 10);
+    if (!(d > 0)) d = 45;
+    return d + ' minutes';
   }
   // Signature complète. Elle ne contient QUE des faits : nom du commercial,
   // sa maison, son numéro. Aucune fonction inventée — un titre faux dans un
   // mail à un pharmacien se remarque, et décrédibilise tout le reste.
   function signature(ctx) {
     var t = txt(ctx.tel_commercial);
-    var nom = txt(ctx.nom_complet_commercial) || txt(ctx.prenom_commercial);
-    return '\n\nBien à vous,\n\n' + nom +
+    var nom = M.nomPropre(txt(ctx.nom_complet_commercial) || txt(ctx.prenom_commercial));
+    // La fonction est saisie par le commercial dans « Mes dispos ». Sans
+    // saisie, PAS DE LIGNE : on n'invente aucun titre.
+    var f = txt(ctx.fonction_commercial).trim();
+    return '\n\nCordialement,\n\n' + nom +
+           (f ? '\n' + f : '') +
            '\nIntégral Pharma' + (t ? '\n' + t : '');
   }
 
@@ -54,8 +112,8 @@
   // unique part vers 25 officines en copie cachée, il serait faux pour 24.
   function faitAvecNous(ctx) {
     var ca = eur(ctx.ca_annee);
-    return ca ? 'ce que vous faites déjà avec nous — ' + ca + ' cette année'
-              : 'ce que vous faites déjà avec nous, chiffres à l’appui';
+    return ca ? 'votre activité avec nous — ' + ca + ' depuis le début de l’année'
+              : 'votre activité avec nous, chiffres à l’appui';
   }
   // ⚠️ DEUX FAUTES ÉVITÉES ICI, mesurées le 19/08/2026 sur les vraies données.
   //
@@ -76,10 +134,13 @@
   // rendez-vous est dans trois semaines. On date ce qu'on affirme.
   function tension(ctx) {
     var d = parseInt(ctx.ruptures_stock, 10) || 0;
-    if (!d) return 'les références en tension que nous avons en stock';
-    return 'nous avons en stock, à ce jour, ' + d + ' référence' + (d > 1 ? 's' : '') +
-           ' que vous achetez et qui ' + (d > 1 ? 'figurent' : 'figure') +
-           ' sur la liste de tension de l’ANSM';
+    if (!d) return 'vos références signalées en tension par l’ANSM, que nous avons en stock';
+    // ⚠️ Un groupe nominal, comme les deux autres puces. La version du 19/08
+    // au matin écrivait une phrase complète (« nous avons en stock, à ce jour,
+    // 5 références que… ») au milieu de trois puces nominales : ça cassait le
+    // rythme, et une liste au rythme cassé se lit comme un mailing.
+    return d + ' de vos références signalées en tension par l’ANSM, ' +
+           'que nous avons en stock à ce jour';
   }
 
   // ── Les trois motifs ─────────────────────────────────────────────
@@ -97,19 +158,18 @@
       rendre: function (ctx) {
         var ca = eur(ctx.ca_annee);
         var corps = salut(ctx) + '\n\n' +
-          'J’ai repris le détail de ce que nous faisons ensemble' +
-          (ca ? ', et j’aimerais vous le montrer' : ' et j’aimerais faire le point avec vous') +
-          '.\n\nTrois choses que je voudrais voir avec vous :\n\n' +
-          '• ' + (ca ? 'vos chiffres de l’année — ' + ca + ' à ce jour' : 'vos chiffres de l’année, ligne par ligne') + '\n' +
-          // ⚠️ Cet emplacement portait « les 12 400 € que vous pourriez
-          // récupérer », alimentés par notre abandon de marge. Il est retiré :
-          // le chiffrer par écrit à un pharmacien est interdit. La phrase reste,
-          // sans le montant — il se montre à l'écran, en rendez-vous.
-          '• ce que vous pourriez récupérer sans changer vos habitudes\n' +
+          'J’ai repris le détail de votre activité avec Intégral Pharma, ' +
+          'et je souhaiterais vous la présenter.\n\n' +
+          'Trois points que je vous propose d’aborder :\n\n' +
+          '• ' + (ca ? 'vos chiffres depuis le début de l’année — ' + ca + ' à ce jour'
+                     : 'vos chiffres depuis le début de l’année, ligne par ligne') + '\n' +
+          // ⚠️ Le montant de l'abandon de marge ne s'écrit pas : un mail est un
+          // document remis au pharmacien. Il se montre à l'écran, en rendez-vous.
+          '• ce que vous pouvez récupérer sans rien changer à vos habitudes d’achat\n' +
           '• ' + tension(ctx) + '\n\n' +
-          'Quinze minutes suffisent. Je vous laisse choisir le moment :\n' +
+          'Comptez ' + duree(ctx) + '. Vous choisissez la date et l’heure qui vous conviennent :\n' +
           txt(ctx.lien) + signature(ctx) + STOP;
-        return { objet: 'Vos chiffres, ' + txt(ctx.nom_officine, 'votre officine'), corps: corps };
+        return { objet: 'Faire le point sur votre activité', corps: corps };
       }
     },
     offre: {
@@ -118,15 +178,15 @@
       rendre: function (ctx) {
         var libre = txt(ctx.texte_libre);
         var refuse = M.texteRefuse(libre);
-        if (refuse || !libre) libre = 'J’ai du nouveau à vous présenter.';
-        var corps = salut(ctx) + '\n\n' + libre +
-          '\n\nJe passe dans votre secteur prochainement. Trois choses à voir ensemble :\n\n' +
-          '• la nouveauté en question, et ce qu’elle change pour vous\n' +
+        if (refuse || !libre) libre = 'Nous référençons une nouveauté qui pourrait vous intéresser.';
+        var corps = salut(ctx) + '\n\n' + libre + '\n\n' +
+          'Je serai prochainement dans votre secteur et je souhaiterais vous en dire un mot. ' +
+          'Nous pourrions en profiter pour revoir :\n\n' +
           '• ' + faitAvecNous(ctx) + '\n' +
           '• ' + tension(ctx) + '\n\n' +
-          'Plutôt que de tomber au mauvais moment, je vous laisse choisir :\n' +
-          txt(ctx.lien) + '\n\nÇa prend dix secondes.' + signature(ctx) + STOP;
-        var out = { objet: 'Du nouveau pour ' + txt(ctx.nom_officine, 'votre officine'), corps: corps };
+          'Comptez ' + duree(ctx) + '. Vous choisissez la date et l’heure qui vous conviennent :\n' +
+          txt(ctx.lien) + signature(ctx) + STOP;
+        var out = { objet: 'Une nouveauté à vous présenter', corps: corps };
         if (refuse) {
           out.avertissement = 'Ton texte contenait un pourcentage : il a été retiré. ' +
             'Les conditions commerciales ne s’écrivent pas dans un mail.';
@@ -138,65 +198,53 @@
       nom: 'La visite de routine',
       description: '« Ça fait X mois qu’on ne s’est pas vus. »',
       rendre: function (ctx) {
-        var m = ctx.mois_derniere_visite;
+        var m = parseInt(ctx.mois_derniere_visite, 10);
         var corps = salut(ctx) + '\n\n' +
-          'Je passe dans le secteur prochainement et j’aimerais m’arrêter chez vous. ' +
-          (m ? 'Cela fait ' + m + ' mois que nous ne nous sommes pas vus.'
-             : 'Cela fait un moment que nous ne nous sommes pas vus.') +
-          '\n\nTrois choses que je voudrais voir avec vous :\n\n' +
+          'Je serai prochainement dans votre secteur et je souhaiterais passer vous voir. ' +
+          (m > 0 ? 'Notre dernier échange remonte à ' + m + ' mois.'
+                 : 'Cela fait un certain temps que nous ne nous sommes pas rencontrés.') +
+          '\n\nTrois points que je vous propose d’aborder :\n\n' +
           '• ' + faitAvecNous(ctx) + '\n' +
           '• ' + tension(ctx) + '\n' +
-          '• ce que vous pourriez récupérer sans changer vos habitudes\n\n' +
-          'Plutôt que de tomber au mauvais moment, je vous laisse choisir :\n' +
-          txt(ctx.lien) + '\n\nTrois créneaux vous seront proposés, ça prend dix secondes.' +
+          '• ce que vous pouvez récupérer sans rien changer à vos habitudes d’achat\n\n' +
+          'Comptez ' + duree(ctx) + '. Vous choisissez la date et l’heure qui vous conviennent :\n' +
+          txt(ctx.lien) +
           (txt(ctx.tel_commercial)
-            ? '\nEt si aucun ne vous va, appelez-moi, mon numéro est juste en dessous.'
+            ? '\n\nSi aucun créneau ne convient, mon numéro figure ci-dessous.'
             : '') +
           signature(ctx) + STOP;
-        return { objet: 'Je passe dans votre secteur', corps: corps };
+        return { objet: 'Passage dans votre secteur', corps: corps };
       }
     }
   };
 
-  // ── Les mêmes motifs, pour un envoi GROUPÉ en copie cachée ───────
-  // Un mail parti vers 25 officines en Cci ne peut nommer personne et ne
-  // peut afficher aucun chiffre : le corps est le MÊME pour tout le lot.
-  // Écrire « Bonjour Monsieur Dupont » ou « vos 12 400 € » à 25 officines
-  // à la fois serait faux pour 24 d'entre elles.
-  //
-  // Le lien n'est pas non plus le même objet : c'est le lien PERMANENT du
-  // commercial, celui qui ne connaît pas l'officine. La page publique lui
-  // demande donc de se déclarer avant d'afficher le moindre créneau — on
-  // le dit dans le mail, pour que le clic ne surprenne pas.
   var GROUPE = {
     bilan: function (ctx) {
       return {
-        objet: 'Le point sur vos chiffres',
+        objet: 'Faire le point sur votre activité',
         corps: 'Bonjour,\n\n' +
-          'J’aimerais faire le point avec vous sur ce que nous faisons ensemble.\n\n' +
-          'Trois choses que je voudrais voir avec vous :\n\n' +
-          '• vos chiffres de l’année, ligne par ligne\n' +
-          '• ce que vous pourriez récupérer sans changer vos habitudes\n' +
-          '• les références en tension que nous avons en stock\n\n' +
-          'Quinze minutes suffisent. Je vous laisse choisir le moment :\n' +
-          txt(ctx.lien) + '\n\n' +
-          'Vous indiquez votre officine, vous choisissez l’horaire.'
+          'Je souhaiterais faire le point avec vous sur votre activité avec Intégral Pharma.\n\n' +
+          'Trois points que je vous propose d’aborder :\n\n' +
+          '• vos chiffres depuis le début de l’année, ligne par ligne\n' +
+          '• ce que vous pouvez récupérer sans rien changer à vos habitudes d’achat\n' +
+          '• vos références signalées en tension par l’ANSM, que nous avons en stock\n\n' +
+          'Comptez ' + duree(ctx) + '. Vous indiquez votre officine, ' +
+          'puis vous choisissez la date et l’heure :\n' + txt(ctx.lien)
       };
     },
     offre: function (ctx) {
       var libre = txt(ctx.texte_libre);
       var refuse = M.texteRefuse(libre);
-      if (refuse || !libre) libre = 'J’ai du nouveau à vous présenter.';
+      if (refuse || !libre) libre = 'Nous référençons une nouveauté qui pourrait vous intéresser.';
       var out = {
-        objet: 'Du nouveau chez Intégral Pharma',
+        objet: 'Une nouveauté à vous présenter',
         corps: 'Bonjour,\n\n' + libre + '\n\n' +
-          'Je passe dans votre secteur prochainement. Trois choses à voir ensemble :\n\n' +
-          '• la nouveauté en question, et ce qu’elle change pour vous\n' +
-          '• ce que vous faites déjà avec nous, chiffres à l’appui\n' +
-          '• les références en tension que nous avons en stock\n\n' +
-          'Plutôt que de tomber au mauvais moment, je vous laisse choisir :\n' +
-          txt(ctx.lien) + '\n\n' +
-          'Vous indiquez votre officine, vous choisissez l’horaire.'
+          'Je serai prochainement dans votre secteur et je souhaiterais vous en dire un mot. ' +
+          'Nous pourrions en profiter pour revoir :\n\n' +
+          '• votre activité avec nous, chiffres à l’appui\n' +
+          '• vos références signalées en tension par l’ANSM, que nous avons en stock\n\n' +
+          'Comptez ' + duree(ctx) + '. Vous indiquez votre officine, ' +
+          'puis vous choisissez la date et l’heure :\n' + txt(ctx.lien)
       };
       if (refuse) {
         out.avertissement = 'Ton texte contenait un pourcentage : il a été retiré. ' +
@@ -206,18 +254,17 @@
     },
     routine: function (ctx) {
       return {
-        objet: 'Je passe dans votre secteur',
+        objet: 'Passage dans votre secteur',
         corps: 'Bonjour,\n\n' +
-          'Je passe prochainement dans votre secteur et j’aimerais m’arrêter chez vous.\n\n' +
-          'Trois choses que je voudrais voir avec vous :\n\n' +
-          '• ce que vous faites déjà avec nous, chiffres à l’appui\n' +
-          '• les références en tension que nous avons en stock\n' +
-          '• ce que vous pourriez récupérer sans changer vos habitudes\n\n' +
-          'Plutôt que de tomber au mauvais moment, je vous laisse choisir votre créneau :\n' +
-          txt(ctx.lien) + '\n\n' +
-          'Vous indiquez votre officine, vous choisissez l’horaire, ça prend dix secondes.' +
+          'Je serai prochainement dans votre secteur et je souhaiterais passer vous voir.\n\n' +
+          'Trois points que je vous propose d’aborder :\n\n' +
+          '• votre activité avec nous, chiffres à l’appui\n' +
+          '• vos références signalées en tension par l’ANSM, que nous avons en stock\n' +
+          '• ce que vous pouvez récupérer sans rien changer à vos habitudes d’achat\n\n' +
+          'Comptez ' + duree(ctx) + '. Vous indiquez votre officine, ' +
+          'puis vous choisissez la date et l’heure :\n' + txt(ctx.lien) +
           (txt(ctx.tel_commercial)
-            ? '\nEt si aucun créneau ne vous convient, appelez-moi, mon numéro est juste en dessous.'
+            ? '\n\nSi aucun créneau ne convient, mon numéro figure ci-dessous.'
             : '')
       };
     }
@@ -335,16 +382,17 @@
     var refuse = M.texteRefuse(libre);
     if (refuse) libre = '';
     var corps = salut(ctx) + '\n\n' +
-      'Merci pour le temps que vous m’avez accordé' +
+      'Je vous remercie pour le temps que vous m’avez accordé' +
       (txt(ctx.date_visite) ? ' ' + txt(ctx.date_visite) : '') + '.' +
       (libre ? '\n\n' + libre : '') +
-      '\n\nSi une question vous revient, mon numéro est juste en dessous — ' +
-      'et vous pouvez reprendre un moment quand vous voulez :\n' +
+      '\n\nSi une question vous revient, mon numéro figure ci-dessous. ' +
+      'Vous pouvez également convenir d’un prochain rendez-vous quand vous le souhaitez :\n' +
       txt(ctx.lien) + signature(ctx);
     // ⚠️ PAS de mention STOP ici. Elle appartient aux mails de sollicitation.
     // La coller sous un remerciement transformerait un mot poli en publicité,
     // et c'est ce détail-là qu'un pharmacien remarque.
     var out = { objet: 'Merci pour votre accueil', corps: corps };
+    if (txt(ctx.nom_officine)) out.objet = 'Merci pour votre accueil';
     if (refuse) {
       out.avertissement = 'Ton mot contenait un pourcentage : il a été retiré. ' +
         'Les conditions commerciales ne s’écrivent pas dans un mail.';
@@ -376,6 +424,7 @@
     { cle: 'mois',     quoi: 'Le temps depuis ta dernière visite',       ex: '7 mois' },
     { cle: 'ca',       quoi: 'Ce qu’elle fait avec nous cette année',    ex: '12 400 € cette année' },
     { cle: 'tension',  quoi: 'Ses références en tension, et notre stock', ex: '3 références que vous achetez sont en tension — nous en avons 2 en stock à ce jour' },
+    { cle: 'duree',    quoi: 'La durée que tu as réglée',               ex: '45 minutes' },
     { cle: 'prenom',   quoi: 'Ton prénom',                               ex: 'William' },
     { cle: 'tel',      quoi: 'Ton téléphone',                            ex: '06 12 34 56 78' },
     { cle: 'lien',     quoi: 'Le lien de réservation (obligatoire)',     ex: 'le lien vers tes créneaux' }
@@ -399,17 +448,19 @@
   function valeurs(ctx) {
     var mois = parseInt(ctx.mois_derniere_visite, 10);
     return {
-      officine: txt(ctx.nom_officine, 'votre officine'),
+      officine: M.nomPropre(txt(ctx.nom_officine, 'votre officine')),
       contact:  txt(ctx.contact),
-      ville:    txt(ctx.ville),
+      ville:    M.nomPropre(txt(ctx.ville)),
       mois:     (mois > 0) ? (mois + ' mois') : 'un moment',
       // ⚠️ La valeur porte « cette année » AVEC elle. Sinon un modèle écrit
       // « — {{ca}} cette année » produit « — cette année » sur une officine
       // sans chiffre : une phrase amputée, envoyée à un vrai pharmacien.
       // Même famille que « Bonjour , » — une étiquette vide ne doit jamais
       // laisser derrière elle les mots qui l'entouraient.
-      ca:       eur(ctx.ca_annee) ? (eur(ctx.ca_annee) + ' cette année') : '',
+      ca:       eur(ctx.ca_annee) ? (eur(ctx.ca_annee) + ' depuis le début de l’année') : '',
       tension:  tension(ctx),
+      // Jamais figée : elle sort du réglage « Durée d'un rendez-vous ».
+      duree:    duree(ctx),
       prenom:   txt(ctx.prenom_commercial),
       tel:      txt(ctx.tel_commercial),
       lien:     txt(ctx.lien)

@@ -125,6 +125,11 @@
           duree_min: parseInt(val('rd-duree'), 10) || 45,
           marge_route_min: parseInt(val('rd-marge'), 10) || 15,
           tel: val('rd-tel') || null,
+          // Sa fonction, telle qu'il l'écrit. Elle apparaît dans la signature
+          // de ses mails, sous son nom. Vide = pas de ligne : le moteur de
+          // modèles n'invente aucun titre, et un titre faux dans un mail à un
+          // pharmacien décrédibilise tout le reste.
+          fonction: (val('rd-fonction') || '').trim() || null,
           depart_label: depart || null,
           depart_lat: (g && g.lat != null) ? g.lat : null,
           depart_lon: (g && g.lon != null) ? g.lon : null,
@@ -222,11 +227,18 @@
           '<div class="v2-rdvd-sec">Réglages</div>' +
           '<div class="v2-rdvd-num">' +
             '<div><b>Durée d’un rendez-vous</b><input type="number" id="rd-duree" min="15" max="180" step="15" value="' +
-              esc(d.duree_min || 45) + '" /><small>minutes</small></div>' +
+              esc(d.duree_min || 45) + '" /><small>minutes — ce chiffre est <b>annoncé</b> ' +
+              'dans tes mails et bloqué dans ton agenda</small></div>' +
             '<div><b>Marge de route</b><input type="number" id="rd-marge" min="0" max="60" step="5" value="' +
               esc(d.marge_route_min || 15) + '" /><small>minutes entre deux RDV</small></div>' +
             '<div><b>Mon téléphone</b><input type="tel" id="rd-tel" value="' + esc(d.tel || '') +
               '" placeholder="06 12 34 56 78" /><small>donné au pharmacien en cas d’empêchement</small></div>' +
+            '<div><b>Ma fonction</b><input type="text" id="rd-fonction" maxlength="80" value="' +
+              esc(d.fonction || '') + '" placeholder="Responsable de secteur" /><small>' +
+              (d.fonction
+                ? 'apparaît sous ton nom dans la signature de tes mails'
+                : 'sans elle, ta signature n’affiche que ton nom — rien n’est inventé') +
+              '</small></div>' +
             '<div><b>Je pars de</b><input type="text" id="rd-depart" value="' + esc(d.depart_label || '') +
               '" placeholder="Nantes" /><small>' +
               (d.depart_lat != null
