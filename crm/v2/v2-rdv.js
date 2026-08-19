@@ -191,7 +191,9 @@
       ruptures_tension: t.n, ruptures_stock: t.dispo,
       prenom_commercial: prenom(),
       nom_complet_commercial: (V2.user && V2.user.name) || '',
-      tel_commercial: V2.rdvTel || ''
+      fonction_commercial: V2.rdvFonction || '',
+      tel_commercial: V2.rdvTel || '',
+      duree_min: V2.rdvDuree || 45
     };
     if (extra) for (var k in extra) if (extra.hasOwnProperty(k)) ctx[k] = extra[k];
     return ctx;
@@ -200,14 +202,29 @@
   // Téléphone du commercial, lu une fois depuis ses disponibilités et gardé.
   // Chargé à la demande : le mail peut partir de la fiche comme de la campagne,
   // sans dépendre de l'écran par lequel on est passé.
+  // ⚠️ Cette lecture ne rapportait que le téléphone, et le mail annonçait donc
+  // « Quinze minutes suffisent » — un nombre écrit en dur — alors que le
+  // créneau réellement bloqué vaut 45 minutes par défaut, 60 pour certains.
+  // On promettait au pharmacien le quart de ce qu'on lui prenait. La durée et
+  // la fonction viennent maintenant de la même ligne que le numéro : ce qui
+  // est annoncé est ce qui est appliqué.
   V2.rdvTel = '';
+  V2.rdvDuree = 45;
+  V2.rdvFonction = '';
   var _telPromesse = null;
   V2.rdvTelCharger = function () {
     if (_telPromesse) return _telPromesse;
     var c = sb(), u = uid();
     if (!c || !u) return Promise.resolve('');
-    _telPromesse = c.from('rdv_dispo').select('tel').eq('user_id', u).maybeSingle()
-      .then(function (d) { V2.rdvTel = (d && d.data && d.data.tel) || ''; return V2.rdvTel; })
+    _telPromesse = c.from('rdv_dispo').select('tel, duree_min, fonction')
+      .eq('user_id', u).maybeSingle()
+      .then(function (d) {
+        var r = (d && d.data) || {};
+        V2.rdvTel = r.tel || '';
+        V2.rdvDuree = parseInt(r.duree_min, 10) || 45;
+        V2.rdvFonction = r.fonction || '';
+        return V2.rdvTel;
+      })
       .catch(function () { return ''; });
     return _telPromesse;
   };

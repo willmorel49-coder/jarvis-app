@@ -87,7 +87,11 @@
       texte_libre: E.texte,
       prenom_commercial: String((V2.user && V2.user.name) || '').split(' ')[0] || '',
       nom_complet_commercial: (V2.user && V2.user.name) || '',
-      tel_commercial: V2.rdvTel || ''
+      fonction_commercial: V2.rdvFonction || '',
+      tel_commercial: V2.rdvTel || '',
+      // La durée est celle du commercial : un seul expéditeur, donc elle vaut
+      // pour tout le lot. Contrairement au nom de l'officine et à ses chiffres.
+      duree_min: V2.rdvDuree || 45
     };
   }
   function rendu(html) {

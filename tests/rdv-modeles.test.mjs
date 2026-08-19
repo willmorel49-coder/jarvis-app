@@ -32,9 +32,17 @@ test('le lien figure dans les trois modeles', () => {
   });
 });
 
-test('la mention STOP figure dans les trois modeles', () => {
+test('la promesse de desinscription figure dans les trois modeles', () => {
+  // Le mot « STOP » a disparu le 19/08 (registre de SMS publicitaire dans un
+  // mail signe). La PROMESSE, elle, ne peut pas disparaitre : l ecran de suivi
+  // l honore reellement, et chaque mail groupe la porte par ecrit.
   MOD.liste().forEach(m => {
-    assert.ok(/STOP/.test(MOD.rendre(m.cle, CTX).corps), `mention STOP absente de ${m.cle}`);
+    const c = MOD.rendre(m.cle, CTX).corps;
+    assert.ok(/ne souhaitez plus recevoir/.test(c), `promesse absente de ${m.cle}`);
+    assert.ok(!/STOP/.test(c), `« STOP » est revenu dans ${m.cle}`);
+  });
+  ['bilan', 'offre', 'routine'].forEach(k => {
+    assert.ok(/ne souhaitez plus recevoir/.test(MOD.rendreGroupe(k, CTX).corps), k);
   });
 });
 
@@ -107,7 +115,7 @@ test('l abandon de marge ne sort JAMAIS chiffre dans un mail', () => {
     assert.ok(!/12\s?000/.test(c), `montant d abandon present dans ${m.cle}`);
     assert.ok(!/recuperer\s*$/i.test(c), 'phrase tronquee');
   });
-  assert.ok(MOD.rendre('bilan', CTX).corps.includes('sans changer vos habitudes'));
+  assert.ok(MOD.rendre('bilan', CTX).corps.includes('sans rien changer à vos habitudes'));
 });
 
 test('on annonce NOTRE stock, jamais « vos 79 references sont en tension »', () => {
@@ -117,30 +125,30 @@ test('on annonce NOTRE stock, jamais « vos 79 references sont en tension »', (
   // tension » serait faux, et un pharmacien le verrait.
   assert.ok(!/79/.test(c), 'le nombre de tensions ne doit pas sortir : ' + c);
   assert.ok(!/sont en tension/.test(c), c);
-  assert.ok(c.includes('nous avons en stock, à ce jour, 50 références'), c);
-  assert.ok(c.includes('liste de tension de l’ANSM'), c);
+  assert.ok(c.includes('50 de vos références signalées en tension par l’ANSM'), c);
+  assert.ok(c.includes('en stock à ce jour'), c);
 });
 
 test('sans stock a annoncer, on retombe sur la phrase generique', () => {
   // Annoncer un probleme sans solution ne sert personne.
   const c = MOD.rendre('routine', { ...CTX, ruptures_tension: 12, ruptures_stock: 0 }).corps;
-  assert.ok(c.includes('les références en tension que nous avons en stock'), c);
-  assert.ok(!/12 référence/.test(c), c);
+  assert.ok(c.includes('vos références signalées en tension par l’ANSM, que nous avons en stock'), c);
+  assert.ok(!/12 de vos références/.test(c), c);
   const g = MOD.rendre('routine', CTX).corps;
-  assert.ok(g.includes('les références en tension que nous avons en stock'), g);
+  assert.ok(g.includes('vos références signalées en tension par l’ANSM, que nous avons en stock'), g);
   assert.ok(!/\b0 référence/.test(g));
 });
 
 test('singulier correct pour une seule reference en stock', () => {
   const c = MOD.rendre('routine', { ...CTX, ruptures_tension: 4, ruptures_stock: 1 }).corps;
-  assert.ok(c.includes('1 référence que vous achetez et qui figure sur'), c);
+  assert.ok(c.includes('1 de vos références signalées en tension'), c);
 });
 
 test('le CA de l officine entre dans routine et offre', () => {
   ['routine', 'offre'].forEach(k => {
     const c = MOD.rendre(k, CTX).corps;
     assert.ok(c.includes('43 812 €'), `CA absent de ${k}`);
-    assert.ok(c.includes('cette année'), k);
+    assert.ok(c.includes('depuis le début de l’année'), k);
   });
 });
 
@@ -166,18 +174,22 @@ const PERSO = {
 
 test('un modele personnel remplit toutes ses etiquettes', () => {
   const r = MOD.rendrePerso(PERSO, CTX);
-  assert.ok(r.objet.includes('PHARMACIE RIVE SUD'), r.objet);
+  // ⚠️ Remis en casse propre : les fichiers sont EN MAJUSCULES, et
+  // « Un café, PHARMACIE RIVE SUD ? » criait « mail automatique ».
+  assert.ok(r.objet.includes('Pharmacie Rive Sud'), r.objet);
+  assert.ok(!/PHARMACIE/.test(r.objet + r.corps), r.objet);
   assert.ok(r.corps.includes('Mme Tritsch'), r.corps);
   assert.ok(r.corps.includes('7 mois'), r.corps);
-  assert.ok(r.corps.includes('43 812 €'), r.corps);
+  assert.ok(r.corps.includes('43 812 € depuis le début de l’année'), r.corps);
   assert.ok(r.corps.includes(CTX.lien), r.corps);
   assert.ok(!/\{\{/.test(r.corps + r.objet), 'etiquette non remplie');
 });
 
-test('signature et mention STOP sont ajoutees, jamais oubliables', () => {
+test('signature et desinscription sont ajoutees, jamais oubliables', () => {
   const r = MOD.rendrePerso(PERSO, CTX);
+  assert.ok(r.corps.includes('Cordialement,'), r.corps);
   assert.ok(r.corps.includes('Intégral Pharma'), r.corps);
-  assert.ok(/STOP/.test(r.corps), r.corps);
+  assert.ok(/ne souhaitez plus recevoir/.test(r.corps), r.corps);
 });
 
 test('un modele personnel sans {{lien}} recoit quand meme le lien', () => {
@@ -213,7 +225,7 @@ test('en envoi GROUPE, un modele neutre passe', () => {
   const r = MOD.rendrePerso(neutre, CTX, { groupe: true });
   assert.equal(r.refus, undefined);
   assert.ok(r.corps.includes(CTX.lien));
-  assert.ok(/STOP/.test(r.corps));
+  assert.ok(/ne souhaitez plus recevoir/.test(r.corps));
 });
 
 test('un pourcentage dans un modele personnel est refuse a l enregistrement', () => {
@@ -245,7 +257,8 @@ test('le remerciement est court, signe, et sans mention STOP', () => {
   assert.ok(r.corps.includes('Mme Tritsch'), r.corps);
   assert.ok(r.corps.includes('mardi 12 août'), r.corps);
   assert.ok(r.corps.includes('Intégral Pharma'), r.corps);
-  assert.ok(!/STOP/.test(r.corps), 'un remerciement n est pas une sollicitation');
+  assert.ok(!/ne souhaitez plus recevoir/.test(r.corps),
+    'un remerciement n est pas une sollicitation');
   assert.ok(r.corps.length < 700, `trop long : ${r.corps.length}`);
 });
 
@@ -263,7 +276,7 @@ test('une etiquette vide ne laisse ni tiret ni deux-points orphelins', () => {
   const mod = { nom: 'X', objet: 'Test',
                 corps: 'Bonjour {{contact}},\n\n• ce que vous faites avec nous — {{ca}}\n• {{tension}}\n{{lien}}' };
   const r = MOD.rendrePerso(mod, { lien: 'https://x.fr/r' });
-  const ecrit = r.corps.split('Bien à vous,')[0];
+  const ecrit = r.corps.split('Cordialement,')[0];
   assert.ok(!/[—–:-]\s*$/m.test(ecrit), 'separateur orphelin : ' + ecrit);
   assert.ok(!/cette année/.test(r.corps), 'phrase amputee : ' + r.corps);
   assert.ok(r.corps.startsWith('Bonjour,'), r.corps);
@@ -282,5 +295,85 @@ test('les deux-points francais gardent leur espace', () => {
 
 test('{{ca}} porte sa propre phrase', () => {
   const r = MOD.rendrePerso({ nom: 'X', objet: 'O', corps: 'Vous faites {{ca}}.\n{{lien}}' }, CTX);
-  assert.ok(r.corps.includes('43 812 € cette année.'), r.corps);
+  assert.ok(r.corps.includes('43 812 € depuis le début de l’année.'), r.corps);
+});
+
+
+// ═══════════════════════════════════════════════════════════════════
+//  19/08/2026 — « les mails ne sont pas assez pro » (Will)
+// ═══════════════════════════════════════════════════════════════════
+
+test('la duree annoncee est la duree REELLE, jamais un nombre en dur', () => {
+  // Le modele bilan promettait « Quinze minutes suffisent » alors que le
+  // creneau bloque vaut 45 min par defaut, et 60 pour certains commerciaux.
+  MOD.liste().forEach(m => {
+    const c45 = MOD.rendre(m.cle, { ...CTX, duree_min: 45 }).corps;
+    const c60 = MOD.rendre(m.cle, { ...CTX, duree_min: 60 }).corps;
+    assert.ok(c45.includes('Comptez 45 minutes'), `45 min absent de ${m.cle} : ` + c45);
+    assert.ok(c60.includes('Comptez 60 minutes'), `60 min absent de ${m.cle}`);
+    assert.ok(!/[Qq]uinze minutes/.test(c45), `« quinze minutes » est revenu dans ${m.cle}`);
+  });
+  // Sans reglage connu, on retombe sur le defaut du moteur — jamais sur 15.
+  assert.ok(MOD.rendre('bilan', { ...CTX, duree_min: null }).corps.includes('Comptez 45 minutes'));
+});
+
+test('la duree vaut aussi pour l envoi groupe', () => {
+  // Un seul expediteur : sa duree vaut pour tout le lot, contrairement au nom
+  // de l officine et a ses chiffres.
+  ['bilan', 'offre', 'routine'].forEach(k => {
+    assert.ok(MOD.rendreGroupe(k, { ...CTX, duree_min: 60 }).corps.includes('Comptez 60 minutes'), k);
+  });
+});
+
+test('les noms EN MAJUSCULES sont remis en casse propre', () => {
+  const c = MOD.rendre('routine', { ...CTX, contact: 'JUSTINE ONILLON',
+                                    nom_officine: 'PHARMACIE DU MAY' }).corps;
+  assert.ok(c.startsWith('Bonjour Justine Onillon,'), c.slice(0, 60));
+  assert.ok(!/ONILLON/.test(c), c.slice(0, 80));
+});
+
+test('un nom deja bien saisi n est PAS retouche', () => {
+  // Abimer une vraie donnee pour « corriger » ce qui est deja correct serait pire.
+  assert.equal(MOD.nomPropre('Mme Tritsch'), 'Mme Tritsch');
+  assert.equal(MOD.nomPropre('de La Rochefoucauld'), 'de La Rochefoucauld');
+  assert.equal(MOD.nomPropre(''), '');
+  assert.equal(MOD.nomPropre(null), '');
+});
+
+test('les particules restent en bas de casse, les sigles en haut', () => {
+  assert.equal(MOD.nomPropre('PHARMACIE DU MAY'), 'Pharmacie du May');
+  assert.equal(MOD.nomPropre('PHARMACIE D\'ANJOU'), 'Pharmacie d\'Anjou');
+  assert.equal(MOD.nomPropre('SELARL PHARMACIE DES HALLES'), 'SELARL Pharmacie des Halles');
+  assert.equal(MOD.nomPropre('GICQUEL - DEROCHE'), 'Gicquel - Deroche');
+  // Une particule en tete de nom garde sa majuscule.
+  assert.equal(MOD.nomPropre('LA GRANDE PHARMACIE'), 'La Grande Pharmacie');
+});
+
+test('la fonction entre dans la signature — et rien n est invente sans elle', () => {
+  // CTX n a pas de nom complet : la signature retombe sur le prenom, et c est
+  // le comportement d origine — on verifie la FONCTION, pas le nom.
+  const nom = { ...CTX, nom_complet_commercial: 'William Morel' };
+  const avec = MOD.rendre('routine', { ...nom, fonction_commercial: 'Responsable de secteur' }).corps;
+  assert.ok(/William Morel\nResponsable de secteur\nIntégral Pharma/.test(avec), avec);
+  const sans = MOD.rendre('routine', nom).corps;
+  assert.ok(/William Morel\nIntégral Pharma/.test(sans), sans);
+  assert.ok(!/Responsable/.test(sans), sans);
+});
+
+test('plus aucun tic de mailing de masse', () => {
+  const interdits = [/dix secondes/i, /tomber au mauvais moment/i, /Répondez STOP/i,
+                     /Quinze minutes/i, /Bien à vous/];
+  ['bilan', 'offre', 'routine'].forEach(k => {
+    const un = MOD.rendre(k, CTX).corps;
+    const gr = MOD.rendreGroupe(k, CTX).corps;
+    interdits.forEach(rx => {
+      assert.ok(!rx.test(un), `${rx} encore present dans ${k}`);
+      assert.ok(!rx.test(gr), `${rx} encore present dans le groupe ${k}`);
+    });
+  });
+});
+
+test('l etiquette {{duree}} suit le reglage', () => {
+  const mod = { nom: 'X', objet: 'O', corps: 'Comptez {{duree}}.\n{{lien}}' };
+  assert.ok(MOD.rendrePerso(mod, { ...CTX, duree_min: 60 }).corps.includes('Comptez 60 minutes.'));
 });
