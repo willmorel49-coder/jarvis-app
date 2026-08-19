@@ -2,7 +2,7 @@
    CRM V2 · Rendez-vous (pages.rdv)
    Crée le lien de réservation, ouvre le mail pré-rempli dans la boîte du
    commercial, et affiche ce que les pharmaciens ont réservé.
-   Le lien public sort d'UNE constante : BASE_URL. Le jour où le domaine
+   Le lien public sort d'UNE constante : SITE_PUBLIC. Le jour où le domaine
    rdv.integralpharma.fr sera branché, c'est la seule ligne à changer.
    ═══════════════════════════════════════════════════════════════════ */
 (function () {
@@ -225,8 +225,7 @@
       .then(function (r) {
         var d = (r && r.data) || null;
         if (!d) return '';
-        var p = window.location.pathname.replace(/crm\/v2\/[^/]*$/, '');
-        return d.slug ? (window.location.origin + p + 'rdv/' + d.slug)
+        return d.slug ? V2.rdv.lienSlug(d.slug)
                       : (V2.rdv.BASE_URL + '?c=' + d.token);
       })
       .catch(function () { return ''; });
@@ -341,7 +340,34 @@
     // 101 caractères, or un mail en texte brut est replié vers 76. Le lien se
     // coupait en deux lignes et menait à une adresse tronquée — c'est ce qui a
     // fait échouer le test de Will le 12/08. Mesuré, pas supposé.
-    BASE_URL: 'https://willmorel49-coder.github.io/jarvis-app/r',
+    // ═══════════════════════════════════════════════════════════
+    //  L'ADRESSE QUE VOIT LE PHARMACIEN — une seule ligne (19/08/2026)
+    // ═══════════════════════════════════════════════════════════
+    // Elle valait `https://willmorel49-coder.github.io/jarvis-app/…`, ce qui
+    // affichait dans chaque mail le pseudo GitHub de l'expéditeur ET le nom
+    // d'un dépôt PUBLIC contenant tout le CRM. Recopier l'adresse dans GitHub
+    // suffisait à tout ouvrir : ce n'était pas une question d'apparence.
+    //
+    // Le site pointé ici ne contient QUE la page de réservation — 13 fichiers,
+    // aucune donnée client (voir scripts/build-rdv-public.py). Il n'y a donc
+    // rien d'autre à trouver sur cette adresse, et c'est ce qui fait la
+    // différence avec un simple habillage.
+    //
+    // ⚠️ L'ANCIENNE ADRESSE RESTE VIVANTE, et doit le rester : des liens de
+    // campagne (21 jours) et des liens de gestion glissés dans les fichiers
+    // agenda des pharmaciens y pointent déjà. On change ce qu'on ÉMET, jamais
+    // ce qui est déjà parti.
+    SITE_PUBLIC: 'https://prendre-rendez-vous.vercel.app/',
+
+    // Gardé : tout le module l'utilise, et un mail déjà écrit peut le citer.
+    get BASE_URL() { return V2.rdv.SITE_PUBLIC + 'r'; },
+
+    // L'adresse courte d'un commercial, celle de sa signature de mail.
+    // ⚠️ Elle se construisait à DEUX endroits (ici et v2-rdv-lien.js) à partir
+    // de `window.location.origin` — donc de l'adresse du CRM. Deux chemins qui
+    // fabriquent la même adresse finissent par en fabriquer deux différentes :
+    // c'est la famille de pannes du 13/08. Un seul endroit, désormais.
+    lienSlug: function (slug) { return V2.rdv.SITE_PUBLIC + 'rdv/' + slug; },
 
     // Seul endroit qui ouvre la messagerie. Isolé pour pouvoir vérifier le mail
     // produit sans réellement lancer Mail/Outlook pendant un contrôle.
