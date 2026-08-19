@@ -30,14 +30,15 @@
   // …/crm/v2/rdv.html?c=a5517181-9568-43bf-bf79-6ab011555df8.
   // C'est ce qu'un commercial colle dans sa signature — l'identifiant
   // technique n'a rien à faire sous les yeux d'un pharmacien.
-  function joli(slug) {
-    var p = window.location.pathname.replace(/crm\/v2\/[^/]*$/, '');
-    return window.location.origin + p + 'rdv/' + slug;
-  }
+  // ⚠️ Elle se construisait ICI **et** dans v2-rdv.js, chacune à partir de
+  // `window.location.origin` — donc de l'adresse du CRM. Depuis le 19/08/2026
+  // la page du pharmacien vit sur un autre site (neutre), et deux fabriques
+  // pour une même adresse en auraient produit deux différentes : exactement la
+  // panne du 13/08. Une seule source : V2.rdv.lienSlug / V2.rdv.BASE_URL.
+  function joli(slug) { return V2.rdv.lienSlug(slug); }
   // Repli si le nom court manque encore (commercial sans prénom en base).
   function brut(token) {
-    var p = window.location.pathname.replace(/[^/]*$/, '');
-    return window.location.origin + p + 'rdv.html?c=' + token;
+    return V2.rdv.BASE_URL + '?c=' + token;
   }
 
   function css() {

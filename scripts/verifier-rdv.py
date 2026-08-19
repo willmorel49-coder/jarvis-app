@@ -20,6 +20,18 @@ import urllib.error
 import urllib.request
 
 BASE = 'https://willmorel49-coder.github.io/jarvis-app'
+# ⚠️ Depuis le 19/08/2026, la page du pharmacien n'est PLUS servie depuis
+# l'adresse ci-dessus. Ce robot existe parce que « la brique que voient les
+# pharmaciens était la seule non surveillée » — il aurait donc recommencé la
+# même faute en continuant de ne contrôler que BASE.
+#
+# Les deux adresses sont surveillées, et c'est voulu :
+#   · PUBLIC — ce que reçoivent les nouveaux mails. Si elle tombe, plus
+#     personne ne peut réserver.
+#   · BASE   — les liens DÉJÀ PARTIS y pointent encore : campagnes de 21 jours,
+#     et liens de gestion glissés dans les fichiers agenda des pharmaciens,
+#     qui vivent aussi longtemps que leur rendez-vous. Elle doit rester debout.
+PUBLIC = 'https://prendre-rendez-vous.vercel.app'
 SB = 'https://iyvavhnlhxksokkerkos.supabase.co'
 UA = {'User-Agent': 'Mozilla/5.0 (compatible; JARVIS-gardien/1.0)'}
 
@@ -78,14 +90,62 @@ print('── Pages publiques ' + '─' * 40)
 
 for chemin, quoi in [
         ('/crm/v2/index.html', 'le CRM répond'),
-        ('/crm/v2/rdv.html', 'la page du pharmacien répond'),
-        ('/r.html', 'la page des liens courts répond'),
+        ('/crm/v2/rdv.html', 'l’ANCIENNE page du pharmacien répond (liens déjà partis)'),
+        ('/r.html', 'l’ANCIENNE page des liens courts répond'),
         ('/404.html', 'le filet des adresses inconnues répond')]:
     code, _ = lire(BASE + chemin)
     if code == 200:
         dire_ok('%s (%s)' % (quoi, chemin))
     else:
         dire_ko('%s (%s)' % (quoi, chemin), 'HTTP %s' % code)
+
+print('── Site public (ce que reçoivent les nouveaux mails) ' + '─' * 6)
+
+for chemin, quoi in [
+        ('/', 'la racine répond'),
+        ('/r', 'l’adresse courte des campagnes répond'),
+        ('/crm/v2/rdv.html', 'la page de réservation répond')]:
+    code, _ = lire(PUBLIC + chemin)
+    if code == 200:
+        dire_ok('%s (%s)' % (quoi, chemin))
+    else:
+        dire_ko('%s (%s)' % (quoi, chemin), 'HTTP %s' % code)
+
+# ⚠️ CHEZ VERCEL, UN 200 NE PROUVE RIEN : quand la protection de déploiement
+# est active, l'hébergeur répond 200 avec SA page de connexion. Un pharmacien
+# verrait un écran de login au lieu de ses créneaux, et ce robot dirait « tout
+# va bien ». On regarde donc ce que la page contient vraiment.
+code, html = lire(PUBLIC + '/crm/v2/rdv.html')
+if 'rdv-public.js' in (html or '') and 'SUPABASE_URL' in (html or ''):
+    dire_ok('la page servie est bien la nôtre, pas un écran de connexion')
+else:
+    dire_ko('page publique remplacée',
+            'ni rdv-public.js ni SUPABASE_URL dans la réponse — protection de '
+            'déploiement Vercel réactivée ?')
+
+# ⚠️ Le site public est une COPIE des fichiers du dépôt (scripts/build-rdv-public.py).
+# Deux copies dérivent toujours. Ici on compare ce qui est RÉELLEMENT SERVI au
+# fichier du dépôt : c'est le seul contrôle qui attrape « on a corrigé la source
+# et oublié de redéployer », le scénario le plus probable de tous.
+import hashlib
+for rel in ['crm/v2/rdv-public.js', 'crm/v2/v2-rdv-creneaux.js', 'crm/v2/v2-rdv-ics.js']:
+    code, servi = lire(PUBLIC + '/' + rel)
+    if code != 200 or servi is None:
+        dire_ko('lecture de %s sur le site public' % rel, 'HTTP %s' % code)
+        continue
+    local = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), rel)
+    try:
+        attendu = open(local, 'r', encoding='utf-8').read()
+    except Exception as e:
+        dire_ko('lecture locale de %s' % rel, str(e))
+        continue
+    if hashlib.sha256(servi.encode('utf-8')).hexdigest() == \
+       hashlib.sha256(attendu.encode('utf-8')).hexdigest():
+        dire_ok('%s servi = %s du dépôt' % (rel, rel))
+    else:
+        dire_ko('%s a dérivé' % rel,
+                'le site public sert une version différente du dépôt — '
+                'rejoue scripts/build-rdv-public.py puis redéploie rdv-public/')
 
 
 print('── Liens des commerciaux ' + '─' * 34)
@@ -104,11 +164,19 @@ except Exception as e:
 if not noms:
     dire_ko('liens des commerciaux', 'aucune page dans rdv/ — plus personne ne peut réserver')
 for n in noms:
+    # La nouvelle adresse d'abord : c'est celle qui part dans les mails du jour.
+    code, html_n = lire('%s/rdv/%s' % (PUBLIC, n))
+    if code == 200 and 'rdv.html?p=' in (html_n or ''):
+        dire_ok('site public · /rdv/%s' % n)
+    else:
+        dire_ko('site public · /rdv/%s' % n,
+                'HTTP %s%s' % (code, '' if code != 200 else ' — la redirection a disparu'))
+    # L'ancienne ensuite : des signatures de mail la portent encore.
     code, _ = lire('%s/rdv/%s' % (BASE, n))
     if code == 200:
-        dire_ok('/rdv/%s' % n)
+        dire_ok('ancienne adresse · /rdv/%s' % n)
     else:
-        dire_ko('/rdv/%s' % n, 'HTTP %s' % code)
+        dire_ko('ancienne adresse · /rdv/%s' % n, 'HTTP %s' % code)
 
 # Un prénom qui n'a PAS de page doit quand même atterrir sur la réservation :
 # c'est le filet posé après l'incident. S'il tombe, un nouveau commercial se

@@ -41,7 +41,7 @@
     contact: 'M. Dupont', nom_officine: 'PHARMACIE DU MARCHÉ', ville: 'Angers',
     ca_annee: 43812, mois_derniere_visite: 7,
     ruptures_tension: 3, ruptures_stock: 2,
-    lien: 'https://willmorel49-coder.github.io/jarvis-app/rdv/exemple'
+    lien: 'https://prendre-rendez-vous.vercel.app/rdv/exemple'
   };
 
   function ctxDemo() {
