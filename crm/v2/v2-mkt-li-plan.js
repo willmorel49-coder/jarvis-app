@@ -91,6 +91,10 @@
       '.lip-libre{font-size:11px;font-weight:800;padding:3px 8px;border-radius:20px;background:#f1eafe;color:#5B2ED6}',
       '.lip-apercu img{max-width:100%;max-height:300px;border-radius:11px;display:block;margin-bottom:10px;cursor:zoom-in;box-shadow:0 2px 12px rgba(10,14,26,.12)}',
       '.lip-imgacts{display:flex;gap:8px;flex-wrap:wrap}',
+      '.lip-swatch{display:flex;gap:12px;align-items:flex-start;margin-bottom:11px;font-size:12.5px;line-height:1.5;color:var(--lip-ink70)}',
+      '.lip-swatch span{width:42px;height:42px;border-radius:9px;flex:none;border:1px solid rgba(10,14,26,.14)}',
+      '.lip-swatch code{font-size:11.5px;color:var(--lip-ink35)}',
+      '.lip-prompt{background:#12122e;color:#e7e9f5;border-radius:11px;padding:13px 15px;font:400 12.5px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap;word-break:break-word;max-height:210px;overflow:auto;-webkit-overflow-scrolling:touch}',
 
       /* drawer */
       '#lip-drawer .lip-scrim{position:fixed;inset:0;background:rgba(12,17,28,.42);opacity:0;transition:opacity .3s var(--lip-ease);z-index:900}',
@@ -322,6 +326,133 @@
   // définies ici sont plus haut dans le fichier, il faut donc créer l'objet.
   V2.lip = V2.lip || {};
 
+  /* ────────── prompts pour le générateur d'images ──────────
+     La DA est décrite dans mkt-li-da-data.js, à partir de nos 39 visuels publiés.
+     Le prompt se construit à la volée depuis l'idée de visuel RETENUE : il suit
+     donc le choix de la direction au lieu d'être figé dans les données. */
+  function da() { return window.LI_DA || null; }
+  function familleDA(idee) {
+    var t = String(idee || '').toLowerCase();
+    // La vidéo passe en premier : sinon « vidéo … contre-jour » tombait dans
+    // « photo » et on envoyait « Vidéo 30-40 s » à un générateur d'images.
+    if (/vid[ée]o|time-?lapse|photogramme/.test(t)) return 'video';
+    if (/typographique|affiche|citation|phrase en (tr[eè]s )?grand|lettrage/.test(t)) return 'typo';
+    if (/photo|macro|contre-jour|clich[ée]|reportage|portrait/.test(t)) return 'photo';
+    return 'illustration';
+  }
+  // La phrase entre guillemets d'un visuel typographique ne doit PAS partir dans
+  // le prompt : la famille « typo » interdit tout texte dans l'image. On la sort
+  // pour l'afficher à côté, à poser ensuite dans l'outil de mise en page.
+  function phraseAPoser(idee) {
+    var m = String(idee || '').match(/«\s*([^»]{6,220})\s*»/);
+    return m ? m[1].trim() : '';
+  }
+  function familleDe(k) {
+    var d = da(); if (!d) return null;
+    for (var i = 0; i < d.familles.length; i++) if (d.familles[i].k === k) return d.familles[i];
+    return d.familles[0];
+  }
+  // Le sujet donné au générateur : l'idée de visuel, débarrassée des consignes
+  // de production qui ne le concernent pas (accords à signer, sous-titres…).
+  // Une idée de visuel contient deux choses : ce qu'on veut VOIR, et des
+  // consignes de tournage qui s'adressent à nous (durée, son, sous-titres,
+  // autorisations, format d'export). Seule la première part au générateur.
+  var PARASITES = [
+    /[^.]*sous-titres[^.]*\.?/gi,
+    /[^.]*(accord|autorisation)s? [ée]crite?s?[^.]*\.?/gi,
+    /[^.]*lisible en petit[^.]*\.?/gi,
+    /[^.]*pens[ée] pour [êe]tre[^.]*\.?/gi,
+    /[^.]*[àa] (imprimer|enregistrer|afficher en officine)[^.]*\.?/gi,
+    /[^.]*(son d.ambiance|musique|voix off|bande[- ]son)[^.]*\.?/gi,
+    /[^.]*(gif l[ée]ger|animation possible)[^.]*\.?/gi
+  ];
+  function sujetPropre(idee, fam) {
+    var t = String(idee || '');
+    PARASITES.forEach(function (rx) { t = t.replace(rx, ''); });
+    // « Vidéo 30-40 s », « Vidéo verticale 45 s » -> « Scène » : une durée n'a
+    // aucun sens pour un générateur d'images.
+    t = t.replace(/\bVid[ée]os?\b(\s+(verticale|courte))?\s*\d*\s*[-–]?\s*\d*\s*s?\b/gi, 'Scène');
+    if (fam === 'typo') {
+      t = t.replace(/«[^»]*»/g, '')
+           .replace(/\s*en (tr[eè]s )?grand/gi, '')
+           .replace(/[^.]*mention de la journ[ée]e[^.]*\.?/gi, '');
+    }
+    // ponctuation laissée orpheline par les retraits : « fort : , fond crème »
+    t = t.replace(/\s*:\s*[,;.]+/g, ' :')
+         .replace(/\s*,\s*(?=[,;.])/g, '')
+         .replace(/\s+([,;.!?])/g, '$1')
+         .replace(/([,;:])\s*\1+/g, '$1')
+         .replace(/\s{2,}/g, ' ')
+         .replace(/^[\s,;:.\-—]+/, '')
+         .replace(/[\s,;:]+$/, '')
+         .trim();
+    if (t && !/[.!?]$/.test(t)) t += '.';
+    return t;
+  }
+  function promptPour(p, idx) {
+    var d = da(); if (!d || !p) return '';
+    var idee = (p.v && p.v[idx]) ? p.v[idx] : (p.v && p.v[0]) || '';
+    var k = familleDA(idee);
+    var fam = familleDe(k);
+    var sujet = sujetPropre(idee, k);
+    var contexte = 'Post LinkedIn d’un grossiste-répartiteur pharmaceutique, sur le thème « ' + p.titre + ' ». ';
+    return fam.prompt + contexte + sujet;
+  }
+  V2.lip.copierPrompt = function () {
+    if (!ouvert) return;
+    var idx = (ouvert.e.visuel === null) ? 0 : ouvert.e.visuel;
+    var txt = promptPour(ouvert.p, idx);
+    if (!txt) { toast('La fiche de direction artistique n’est pas chargée', 'error'); return; }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(txt).then(
+        function () { toast('Prompt copié — collez-le dans votre générateur d’images'); },
+        function () { window.prompt('Copiez le prompt :', txt); });
+    } else window.prompt('Copiez le prompt :', txt);
+  };
+  V2.lip.voirDA = function () {
+    var d = da();
+    if (!d) { chargerDA(); toast('Chargement de la direction artistique…'); return; }
+    monter(daHtml());
+  };
+  function chargerDA() { charger('mkt-li-da-data.js', da).then(function (ok) { if (ok) monter(daHtml()); }); }
+
+  function daHtml() {
+    var d = da();
+    var pastilles = d.palette.map(function (c) {
+      return '<div class="lip-swatch"><span style="background:' + c.hex + '"></span>' +
+        '<div><b>' + esc(c.nom) + '</b> <code>' + esc(c.hex) + '</code><br>' + esc(c.role) + '</div></div>';
+    }).join('');
+    var mesures = d.constat.map(function (c) {
+      return '<div class="lip-srow" style="align-items:flex-start"><span class="lip-sk" style="min-width:92px">' + esc(c.k) + '</span>' +
+        '<span style="flex:1;text-align:right"><b>' + esc(c.v) + '</b><br><span style="color:var(--lip-ink35);font-size:12px">' + esc(c.d) + '</span></span></div>';
+    }).join('');
+    var fam = d.familles.map(function (f) {
+      return '<div class="lip-var" style="cursor:default"><div class="lip-vtop"><span class="lip-vton">' + esc(f.label) + '</span></div>' +
+        '<div class="lip-vaide" style="font-style:normal;color:var(--lip-ink70);margin:0 0 9px">' + esc(f.quand) + (f.quandPlus ? ' ' + esc(f.quandPlus) : '') + '</div>' +
+        '<div class="lip-vtxt" style="font-size:12.5px;background:#fff;border:1px solid var(--lip-line);border-radius:9px;padding:11px 12px">' + esc(f.prompt) + '…</div></div>';
+    }).join('');
+    var liste = function (a) { return '<ul style="margin:0;padding-left:19px;font-size:13.5px;line-height:1.65;color:var(--lip-ink70)">' +
+      a.map(function (x) { return '<li style="margin-bottom:6px">' + esc(x) + '</li>'; }).join('') + '</ul>'; };
+    return '<div class="lip-scrim" onclick="V2.lip.fermer()"></div>' +
+      '<aside class="lip-dr" role="dialog" aria-modal="true" aria-label="Direction artistique image">' +
+        '<div class="lip-drh"><div style="flex:1;min-width:0">' +
+          '<div class="lip-eyebrow">Direction artistique · image</div>' +
+          '<h2>Ce à quoi ressemblent nos visuels</h2>' +
+          '<div class="lip-sub" style="margin-top:6px">Relevé sur ' + esc(d.corpus) + '.</div>' +
+        '</div><button class="lip-close" onclick="V2.lip.fermer()" aria-label="Fermer">' + ICO('close', 18, 2) + '</button></div>' +
+        '<div class="lip-drb">' +
+          '<div class="lip-field"><span class="lip-flab">Ce qui a été mesuré</span>' +
+            '<div class="lip-scard" style="box-shadow:none">' + mesures + '</div></div>' +
+          '<div class="lip-field"><span class="lip-flab">La palette</span>' + pastilles + '</div>' +
+          '<div class="lip-field"><span class="lip-flab">Trois familles de visuel</span>' + fam + '</div>' +
+          '<div class="lip-field"><span class="lip-flab">Les règles</span>' + liste(d.regles) + '</div>' +
+          '<div class="lip-field"><span class="lip-flab">Ce qu’on évite</span>' + liste(d.aEviter) + '</div>' +
+        '</div>' +
+        '<div class="lip-drf"><span class="lip-spacer"></span>' +
+          '<button class="lip-btn lip-btn-p" onclick="V2.lip.fermer()">Fermer</button></div>' +
+      '</aside>';
+  }
+
   /* ────────── visuel réellement attaché au post du plan ────────── */
   // L'adresse publique est calculée par le module LinkedIn : une seule
   // implémentation, un seul endroit à corriger si l'espace de stockage change.
@@ -482,6 +613,7 @@
         '<select class="lip-sel" onchange="V2.lip.setStatut(this.value)">' + optSt + '</select>' +
         '<input class="lip-inp" type="search" placeholder="Rechercher un sujet…" value="' + esc(flt.q) + '" oninput="V2.lip.setQ(this.value)">' +
         '<span class="lip-spacer"></span>' +
+        '<button class="lip-btn" onclick="V2.lip.voirDA()">' + ICO('spark', 16) + 'Notre DA image</button>' +
         '<button class="lip-btn" onclick="V2.lip.nouveauLibre()">' + ICO('plus', 16, 2.2) + 'Nouveau post libre</button>' +
         '<button class="lip-btn" onclick="V2.lip.exportCsv()">' + ICO('download', 16, 2) + 'Export CSV</button>' +
       '</div>' +
@@ -529,6 +661,8 @@
     if (!charge) {
       charge = true;
       chargerEtats().then(function () { redessine(); });
+      // la DA alimente l'encart « prompt » de chaque fiche : on la charge d'emblée
+      charger('mkt-li-da-data.js', da).then(function (ok) { if (ok) redessine(); });
     }
     // une seule chronologie : les posts du plan et les posts libres mélangés,
     // triés par date. Un post reste un post, quelle que soit son origine.
@@ -649,6 +783,19 @@
           '<div class="lip-field"><span class="lip-flab">Décision de la direction</span><div class="lip-stats">' + stats + '</div></div>' +
           '<div class="lip-field"><span class="lip-flab">Choix du texte — 3 propositions</span>' + vars + '</div>' +
           '<div class="lip-field"><span class="lip-flab">Choix du visuel — 2 propositions</span>' + vis + '</div>' +
+          '<div class="lip-field"><span class="lip-flab">Prompt pour le générateur d’images</span>' +
+            '<div class="lip-prompt">' + esc(promptPour(p, (e.visuel === null ? 0 : e.visuel))) + '</div>' +
+            '<div class="lip-imgacts" style="margin-top:9px">' +
+              '<button class="lip-btn" onclick="V2.lip.copierPrompt()">Copier le prompt</button>' +
+              '<button class="lip-btn" onclick="V2.lip.voirDA()">Voir notre DA</button></div>' +
+            (function () {
+              var idee = (p.v && p.v[(e.visuel === null ? 0 : e.visuel)]) || '';
+              var ph = (familleDA(idee) === 'typo') ? phraseAPoser(idee) : '';
+              return ph ? '<div class="lip-note" style="margin-top:9px"><b>Phrase à poser ensuite</b>, dans Canva ou équivalent — elle n’est volontairement pas dans le prompt :<br>« ' + esc(ph) + ' »</div>' : '';
+            })() +
+            '<div class="lip-hint">Construit à partir du visuel choisi ci-dessus et de notre direction artistique. ' +
+              'Il ne demande <b>aucun texte dans l’image</b> : les générateurs ratent les accents français. La phrase se pose après.</div>' +
+          '</div>' +
           '<div class="lip-field"><span class="lip-flab">Visuel du post</span>' +
             (ouvert.envoi
               ? '<div class="lip-note">' + esc(ouvert.envoi) + '</div>'
