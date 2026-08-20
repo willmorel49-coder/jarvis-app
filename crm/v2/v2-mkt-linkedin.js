@@ -444,7 +444,8 @@
   function viewSeg() {
     var due = dueCount();
     var badge = due ? '<span class="li-segbadge">' + due + '</span>' : '';
-    var items = [['queue', 'File', badge], ['cal', 'Mois', ''], ['pipeline', 'Pipeline', ''], ['list', 'Liste', '']];
+    var items = [['queue', 'File', badge], ['cal', 'Mois', ''], ['pipeline', 'Pipeline', ''], ['list', 'Liste', ''],
+                 ['plan', 'Rétro-planning 12 mois', ''], ['veille', 'Veille secteur', '']];
     return '<div class="li-seg" role="tablist">' + items.map(function (it) {
       return '<button class="' + (view === it[0] ? 'on' : '') + '" onclick="V2.li.setView(\'' + it[0] + '\')">' + it[1] + it[2] + '</button>';
     }).join('') + '</div>';
@@ -692,6 +693,8 @@
       loaded = true;
       loadPosts().then(function () { if (V2.route && V2.route.name === 'marketing' && V2.route.param === 'linkedin') V2.render(); });
     }
+    if (view === 'plan') { if (V2.liPlan) return V2.liPlan.render(root); root.innerHTML = ''; return; }
+    if (view === 'veille') { if (V2.liVeille) return V2.liVeille.render(root); root.innerHTML = ''; return; }
     if (view === 'cal') return renderCal(root);
     if (view === 'pipeline') return renderPipeline(root);
     if (view === 'list') return renderList(root);
@@ -794,6 +797,7 @@
     loadPosts: loadPosts, savePost: savePost, removePost: removePost, _posts: function () { return posts; }, newId: newId,
     goCal: function (d) { view = 'cal'; if (d) { calRef = new Date(d); calRef.setDate(1); } V2.render(); } };
   V2.mktLinkedin.dueCount = dueCount;
+  V2.mktLinkedin.viewSeg = viewSeg;              // réutilisé par v2-mkt-li-plan.js
   V2.li = V2.li || {};
 
   // ── Vue / navigation / filtres ──
