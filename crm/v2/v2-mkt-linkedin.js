@@ -747,10 +747,12 @@
     var stat = STATUSES.map(function (s) {
       return '<button class="' + (e.status === s.k ? 'on' : '') + '" onclick="V2.li.editField(\'status\',\'' + s.k + '\')">' + statusMark(s.k, e.pillar || 'causes') + esc(s.label) + '</button>';
     }).join('');
-    var img = e.image_path
+    var img = e._imgUp
+      ? '<div class="li-note">' + esc(e._imgUp) + '</div>'
+      : e.image_path
       ? '<div class="li-imgprev"><img src="' + esc(imgUrl(e.image_path)) + '" alt=""><button class="li-btn" onclick="V2.li.editField(\'image_path\',\'\')">Retirer le visuel</button></div>'
       : '<label class="li-btn">' + IMGICO.replace(/#fff/g, '#6b7280') + 'Ajouter un visuel<input type="file" accept="image/*" style="display:none" onchange="V2.li.uploadImg(this)"></label>' +
-        '<input class="li-inp" placeholder="…ou coller une URL d\'image" value="" oninput="V2.li.editField(\'image_path\',this.value)">';
+        '<input class="li-inp" placeholder="…ou coller une adresse d\'image (https://…)" value="" oninput="V2.li.editField(\'image_path\',this.value)">';
     return '<div class="li-scrim' + oc + '" onclick="V2.li.closeEditor()"></div>' +
       '<aside class="li-drawer' + oc + '">' +
         '<div class="li-dr-head"><div style="flex:1;min-width:0">' +
@@ -851,7 +853,7 @@
   V2.li.imageIdea = function () {
     if (!editing || !V2.lis || !V2.lis.genImageIdea) return;
     editing._imgv = (editing._imgv == null) ? 0 : editing._imgv + 1;
-    editing.image_brief = V2.lis.genImageIdea(editing.pillar || 'causes', editing._imgv);
+    editing.image_brief = V2.lis.genImageIdea(editing.pillar || 'causes', editing._imgv, editing._brief || editing.title || '');
     redrawEditor();
   };
   V2.li.closeEditor = function () { closeDrawer(); };
@@ -866,15 +868,59 @@
     var id = editing.id; closeDrawer();
     removePost(id).then(function () { V2.render(); });
   };
+  // 20/08/2026 — l'envoi d'image ne marchait pas : l'espace de stockage
+  // `marketing-media` n'existait tout simplement pas côté Supabase. Il est créé
+  // (public en lecture, écriture réservée aux comptes connectés). Le garde
+  // portait aussi sur `backend`, qui reste à 'local' si le chargement des posts
+  // a échoué pour une autre raison — on teste maintenant le client lui-même.
+  var MAX_IMG = 25 * 1024 * 1024;
   V2.li.uploadImg = function (input) {
     var f = input.files && input.files[0]; if (!f || !editing) return;
     var c = sb();
-    if (!(c && c.storage) || backend !== 'supabase') { alert('Upload d\'image indisponible hors-ligne. Collez une URL d\'image à la place.'); return; }
-    var path = 'linkedin/' + Date.now() + '_' + f.name.replace(/[^a-zA-Z0-9._-]/g, '');
-    c.storage.from('marketing-media').upload(path, f, { upsert: true }).then(function (r) {
-      if (r.error) { alert('Échec de l\'upload : ' + r.error.message); return; }
-      editing.image_path = path; redrawEditor();
-    });
+    if (!(c && c.storage)) {
+      alert('Envoi impossible : vous n’êtes pas connecté à la base.\n\nReconnectez-vous, ou collez l’adresse d’une image déjà en ligne dans le champ juste en dessous.');
+      input.value = ''; return;
+    }
+    if (!/^image\//.test(f.type)) {
+      alert('Ce fichier n’est pas une image (' + (f.type || 'type inconnu') + ').\nFormats acceptés : JPEG, PNG, WebP, GIF, AVIF.');
+      input.value = ''; return;
+    }
+    if (f.size > MAX_IMG) {
+      alert('Image trop lourde : ' + (f.size / 1048576).toFixed(1) + ' Mo.\nLa limite est de 25 Mo — réduisez-la avant de l’envoyer.');
+      input.value = ''; return;
+    }
+    editing._imgUp = 'Envoi de « ' + f.name +' » en cours…';
+    redrawEditor();
+    var ext = (f.name.match(/\.[a-zA-Z0-9]+$/) || [''])[0].toLowerCase();
+    // « photo entrepôt.JPG » -> « photo-entrepot.jpg » : on translittère les
+    // accents au lieu de les remplacer par des tirets, sinon le nom devient
+    // illisible dans l'espace de stockage.
+    var base = f.name.replace(/\.[a-zA-Z0-9]+$/, '');
+    if (base.normalize) base = base.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    base = base.replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'visuel';
+    var path = 'linkedin/' + Date.now() + '_' + base + ext;
+    c.storage.from('marketing-media').upload(path, f, { upsert: true, contentType: f.type })
+      .then(function (r) {
+        editing._imgUp = '';
+        if (r && r.error) {
+          // On DIT la vraie cause : un « échec » sans motif renvoie l'utilisateur
+          // vers le support sans qu'il puisse rien faire.
+          var m = r.error.message || 'raison inconnue';
+          if (/bucket/i.test(m)) m = 'l’espace de stockage est introuvable côté serveur';
+          else if (/policy|permission|unauthor|403/i.test(m)) m = 'votre compte n’a pas le droit d’écrire ici';
+          else if (/size|large|413/i.test(m)) m = 'le fichier est trop lourd pour le serveur';
+          alert('L’image n’a pas été envoyée : ' + m + '.');
+          redrawEditor(); return;
+        }
+        editing.image_path = path;
+        redrawEditor();
+        if (V2.toast) V2.toast('Visuel ajouté au post');
+      })
+      .catch(function (e) {
+        editing._imgUp = '';
+        alert('L’image n’a pas été envoyée : ' + (String(e.message || e).slice(0, 140)) + '.');
+        redrawEditor();
+      });
   };
 
   // ── Pipeline drag & drop (bonus, robuste) ──

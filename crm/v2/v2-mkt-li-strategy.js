@@ -521,12 +521,210 @@
     document.body.appendChild(t); setTimeout(function () { t.remove(); }, 2600);
   }
 
+
+  /* ═══════════════════════════════════════════════════════════════════
+     Rédaction PILOTÉE PAR L'IDÉE (20/08/2026)
+     Avant : l'idée servait uniquement d'accroche, et tout le reste du post
+     venait d'un fond générique par pilier. « lancement gamme solaire »
+     produisait « • S'informer sur la cause / • Soutenir les initiatives » et
+     une idée de visuel « ruban rose, moustache ». Incohérent, signalé par Will.
+     Maintenant : on détecte le sujet, et TOUS les blocs — développement,
+     puces, clôture, hashtags, idée de visuel — en découlent.
+     ═══════════════════════════════════════════════════════════════════ */
+  var SUJETS = [
+    { k: 'recrutement',
+      rx: /recrut|embauch|\bposte\b|\bcdi\b|\bcdd\b|altern|apprenti|\bstage\b|offre d.emploi|rejoin|candidat|\btalent|profil recherch/i,
+      ouv: ['Nous recrutons — {s}.', '{S} : le poste est ouvert.', '{S} — et si c’était vous ?'],
+      dev: ['Rejoindre la répartition pharmaceutique, c’est travailler sur un maillon que peu de gens connaissent, et dont dépend l’ouverture des officines chaque matin.',
+            'Ce qu’on cherche avant tout, c’est de la rigueur : dans nos métiers, une erreur ne se mesure pas en euros, elle se mesure en patients.'],
+      puces: [['Un métier concret, au cœur de la chaîne du médicament', 'Une équipe qui forme avant de laisser seul', 'Un cadre où la rigueur compte autant que le diplôme'],
+              ['Des journées qui ne se ressemblent pas', 'Un travail dont on voit le résultat le lendemain matin', 'Des collègues qui expliquent volontiers']],
+      fin: ['Le poste vous parle, ou vous connaissez la bonne personne ? Écrivez-nous en message privé.',
+            'Intéressé, ou vous pensez à quelqu’un ? Un message suffit.'],
+      tags: ['#Recrutement', '#Emploi', '#Pharmacie'],
+      vis: ['Photo de l’équipe ou du poste de travail concerné, lumière naturelle, visage souriant — accord écrit de la personne. Intitulé du poste incrusté en bas, sobre.',
+            'Visuel typographique : l’intitulé « {s} » en très grand sur fond crème, une seule couleur d’accent, et la ville en petit dessous.'] },
+
+    { k: 'evenement',
+      rx: /salon|congr[eè]s|\bstand\b|pharmagora|portes ouvertes|inaugur|anniversaire|soir[ée]e|convention|forum|assembl[ée]e|rendez-vous|\bjourn[ée]e d/i,
+      ouv: ['{S} : rendez-vous pris.', 'On y sera — {s}.', '{S}. On a hâte.'],
+      dev: ['Ces moments-là ont un intérêt simple : se parler en vrai, sans écran ni fil de discussion.',
+            'C’est souvent là qu’on comprend le mieux ce dont les officines ont réellement besoin — en écoutant, pas en présentant.'],
+      puces: [['Échanger avec les équipes sur le terrain', 'Poser les questions qu’on n’écrit pas dans un mail', 'Repartir avec des idées concrètes'],
+              ['Se voir en vrai', 'Prendre le temps', 'Écouter plus que parler']],
+      fin: ['Vous y serez aussi ? Dites-le en commentaire, on se croisera.',
+            'Si vous passez, venez nous voir — on est plus bavards en vrai que sur LinkedIn.'],
+      tags: ['#Événement', '#Pharmacie'],
+      vis: ['Photo du lieu ou du stand, plan large, avec du monde en mouvement — flou léger pour ne rendre personne identifiable. Date et lieu incrustés.',
+            'Carton d’annonce sobre : « {s} » en grand, date et lieu en dessous, une seule couleur d’accent, fond crème.'] },
+
+    { k: 'froid',
+      rx: /cha[iî]ne du froid|thermosensib|isotherm|r[ée]frig[ée]r|chambre froide|\+?2\s*°|conservation au froid|temp[ée]rature dirig/i,
+      ouv: ['{S} — parlons de ce qui ne se voit pas.', 'Derrière {s}, il y a une contrainte que personne ne remarque : la température.', '{S}. Et une seule règle : ne jamais sortir de la fenêtre.'],
+      dev: ['Un produit thermosensible doit rester entre +2 °C et +8 °C, du laboratoire jusqu’à l’officine. Pas une fois, pas dix minutes.',
+            'Le piège, c’est qu’un produit abîmé par la chaleur ou par le gel n’a l’air de rien : même flacon, même liquide, même étiquette.'],
+      puces: [['Des chambres froides sous surveillance permanente', 'Des enceintes isothermes avec sonde embarquée', 'Un relevé de température lu à l’arrivée, jamais supposé'],
+              ['+2 °C : en dessous, le gel', '+8 °C : au-dessus, la perte d’efficacité', 'Entre les deux : tout le métier']],
+      fin: ['Une chaîne du froid, ça ne se déclare pas. Ça se prouve.',
+            'Ce qui n’est pas enregistré n’a pas eu lieu. C’est toute la discipline de ce métier.'],
+      tags: ['#ChaîneDuFroid', '#Logistique', '#Pharmacie'],
+      vis: ['Photo macro d’un afficheur de sonde en chambre froide, chiffres nets, buée légère sur l’objectif. Aucun texte incrusté.',
+            'Visuel-thermomètre : bande verticale dégradée, la zone +2/+8 °C surlignée, deux flèches légendées « gel » et « perte d’efficacité ». Fond crème.'] },
+
+    { k: 'vaccination',
+      rx: /vaccin|grippe|campagne vaccinale|rappel vaccinal|antigrippal/i,
+      ouv: ['{S} : quelques repères.', '{S}. Ce qu’il faut savoir, sans vous dire quoi faire.'],
+      dev: ['Un vaccin est un produit thermosensible : il doit rester entre +2 °C et +8 °C, sans interruption, jusqu’au bras du patient.',
+            'Une campagne, logistiquement, c’est un pic : des volumes concentrés sur quelques semaines, sur des produits qui ne pardonnent pas un écart.'],
+      puces: [['Des volumes qui arrivent d’un coup', 'Une capacité en froid qui doit absorber le pic', 'Une traçabilité lot par lot']],
+      fin: ['Pour toute question sur la vaccination elle-même — qui, quand, comment — votre pharmacien est la bonne porte.',
+            'On explique la logistique, pas le bien-fondé : sur le fond, votre pharmacien et votre médecin répondront mieux que nous.'],
+      tags: ['#Vaccination', '#Pharmacie'],
+      vis: ['Photo d’une chambre froide en période de pic, palettes filmées, lumière froide bleutée. Aucune marque de laboratoire visible.',
+            'Frise simple : « injection » puis, deux semaines plus tard, « protection installée ». Un seul accent, fond crème.'] },
+
+    { k: 'prevention',
+      rx: /d[ée]pistag|pr[ée]vention|journ[ée]e mondiale|octobre rose|mars bleu|movember|\bcancer|diab[eè]te|\bavc\b|sant[ée] publique|sensibilisation|mois sans tabac|t[ée]l[ée]thon/i,
+      ouv: ['{S}.', '{S} — et le message tient en peu de mots.'],
+      dev: ['Le principe de la prévention est toujours le même : agir avant que ça ne se voie.',
+            'Ce genre de rendez-vous ne sert pas à faire peur. Il sert à rendre une question ordinaire, pour qu’on ose la poser.'],
+      puces: [['S’informer sans dramatiser', 'En parler autour de soi', 'Poser la question à son pharmacien']],
+      fin: ['Une question ? Votre pharmacien saura vous orienter, et il a l’habitude de celles qu’on n’ose pas poser.',
+            'On informe, on n’impose rien. Le reste appartient à chacun et à son médecin.'],
+      tags: ['#Prévention', '#Santé'],
+      vis: ['Visuel typographique : une phrase forte du post en très grand sur fond crème, une seule couleur d’accent, beaucoup d’air.',
+            'Illustration au trait, douce et non médicalisée, sur le thème « {s} ». Surtout pas d’imagerie anxiogène.'] },
+
+    { k: 'logistique',
+      rx: /entrep[oô]t|livraison|tourn[ée]e|pr[ée]paration|commande|colis|plateforme|camion|chauffeur|logistique|quai|\bbac\b|exp[ée]dition|automate/i,
+      ouv: ['{S} : ce qui se passe en coulisses.', 'Derrière {s}, il y a du monde.', '{S}. Et une nuit de travail que personne ne voit.'],
+      dev: ['Entre la commande passée en fin de journée et l’ouverture de l’officine le lendemain matin, il se passe une nuit entière.',
+            'Ce métier ne se mesure pas en palettes. Il se mesure en boîtes : la plupart des bacs qui partent contiennent un ou deux articles, commandés pour quelqu’un de précis.'],
+      puces: [['Réception et contrôle de chaque livraison', 'Préparation ligne par ligne, bac par bac', 'Départ des tournées avant le lever du jour'],
+              ['19h : le pharmacien commande', '21h : on prépare', '7h : il ouvre, tout est là']],
+      fin: ['Un métier qu’on ne voit que le jour où il s’arrête.',
+            'Merci aux équipes qui font tourner tout ça pendant que le pays dort.'],
+      tags: ['#Logistique', '#Pharmacie', '#RépartitionPharmaceutique'],
+      vis: ['Photo prise du sol : le couloir d’un entrepôt en enfilade, rayonnages qui filent vers le point de fuite. Texte court incrusté en bas.',
+            'Vidéo courte en time-lapse nocturne sur un quai de chargement, horloge incrustée qui défile. Sous-titres obligatoires.'] },
+
+    { k: 'equipe',
+      rx: /[ée]quipe|collaborateur|bienvenue|f[ée]licitation|bravo|d[ée]part|promotion|anniversaire de|merci [aà]|nos agences|arriv[ée]e de|portrait/i,
+      ouv: ['{S} 👏', '{S} — on avait envie de le dire ici.', '{S}.'],
+      dev: ['Ce sont ces moments-là qui font une équipe : pas les grands discours, les petites choses répétées.',
+            'On parle beaucoup de process et d’organisation. Au bout du compte, ce qui tient, ce sont les gens.'],
+      puces: [],
+      fin: ['Merci à toutes les équipes, ici et sur les autres sites.',
+            'Bravo, et merci pour ce que vous faites au quotidien.'],
+      tags: ['#Équipe', '#Merci'],
+      vis: ['Portrait ou photo de groupe en situation de travail, lumière naturelle, sourires — accord écrit des personnes filmées.',
+            'Visuel typographique chaleureux : « {s} » en grand, très travaillé, fond crème, un seul accent. Aucun cliché de confettis.'] },
+
+    { k: 'produit',
+      rx: /gamme|nouveaut[ée]|lancement|catalogue|r[ée]f[ée]rencement|disponible|nouvelle offre|nouveau service|mise [aà] disposition/i,
+      ouv: ['{S}.', 'Nouveauté — {s}.', '{S} : c’est disponible.'],
+      dev: ['L’objectif est simple : que les officines trouvent ce dont elles ont besoin, au moment où elles en ont besoin.',
+            'Rien de spectaculaire, mais c’est exactement ce qu’on attend d’un répartiteur : que ce soit là.'],
+      puces: [['Disponible à la commande', 'Livré sur les tournées habituelles', 'Votre interlocuteur habituel répond à vos questions']],
+      fin: ['Votre interlocuteur habituel est à votre disposition pour les détails.',
+            'Une question ? Votre contact habituel vous répondra.'],
+      tags: ['#Pharmacie', '#Officine'],
+      vis: ['Photo produit sur fond neutre, lumière douce, cadrage serré. Aucune mention de prix ni de condition commerciale.',
+            'Visuel sobre annonçant « {s} », typographie large, fond crème, une seule couleur d’accent.'] },
+
+    { k: 'defaut',
+      rx: /.^/,
+      ouv: ['{S}.', '{S} — on en parle ici.'],
+      dev: ['On avait envie de le partager ici, simplement.'],
+      puces: [],
+      fin: ['Et vous, qu’en pensez-vous ? Dites-le en commentaire.',
+            'Si le sujet vous parle, on lit tous les commentaires.'],
+      tags: ['#Pharmacie', '#Santé'],
+      vis: ['Photo sobre et lumineuse illustrant « {s} », cadrage simple, aucun texte incrusté — tout le message dans la légende.',
+            'Visuel typographique : la phrase la plus forte du post en très grand, fond crème, une seule couleur d’accent.'] }
+  ];
+
+  function sujetDe(brief) {
+    var t = String(brief || '');
+    for (var i = 0; i < SUJETS.length; i++) if (SUJETS[i].k !== 'defaut' && SUJETS[i].rx.test(t)) return SUJETS[i];
+    return SUJETS[SUJETS.length - 1];
+  }
+  // « lancement gamme solaire, disponible tout l'été » -> « lancement gamme solaire, disponible tout l'été » (nettoyé)
+  function nettoie(brief) {
+    var s = String(brief || '').trim().replace(/\s+/g, ' ');
+    return s.replace(/[.…]+$/, '');
+  }
+  function majuscule(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
+  // hashtags tirés des mots de l'idée elle-même, pour que le post lui reste attaché
+  var VIDES = /^(avec|dans|pour|tout|tous|toute|notre|nos|leur|leurs|cette|celui|celle|plus|moins|chez|sans|sous|entre|depuis|apres|avant|entre|quand|entre|aussi|meme|encore|deja|bien|tres|etre|avoir|faire|nous|vous|elle|elles|ils|disponible|nouveau|nouvelle)$/;
+  function sansAccent(x) { return x.normalize ? x.normalize('NFD').replace(/[\u0300-\u036f]/g, '') : x; }
+  function tagsDeLIdee(brief, max, dejaPris) {
+    var mots = String(brief || '').toLowerCase()
+      .replace(/[^a-zàâäéèêëîïôöùûüçœ\s-]/g, ' ').split(/[\s-]+/);
+    var out = [], vus = {};
+    // les hashtags du thème sont déjà posés : ne pas les redire (#Vaccination ×2)
+    (dejaPris || []).forEach(function (t) { vus[sansAccent(t.replace('#', '').toLowerCase())] = 1; });
+    for (var i = 0; i < mots.length && out.length < (max || 2); i++) {
+      var m = mots[i];
+      if (m.length < 5) continue;
+      // un verbe à l'infinitif fait un mauvais hashtag (« #Encourager »)
+      if (m.length >= 7 && /er$/.test(m)) continue;
+      var nu = sansAccent(m);
+      if (VIDES.test(nu) || vus[nu]) continue;
+      vus[nu] = 1;
+      out.push('#' + m.charAt(0).toUpperCase() + m.slice(1));
+    }
+    return out;
+  }
+  // « Nous recrutons — on recrute un préparateur… » : si l'accroche redit ce que
+  // l'idée annonce déjà, on prend une accroche neutre.
+  function ouvertureNonRedondante(th, s, v) {
+    var brefNu = sansAccent(s.toLowerCase());
+    for (var pas = 0; pas < th.ouv.length; pas++) {
+      var tpl = th.ouv[(v + pas) % th.ouv.length];
+      var fixe = tpl.replace(/\{s\}/gi, ' ').toLowerCase();
+      var mots = sansAccent(fixe).match(/[a-z]{6,}/g) || [];
+      var collision = mots.some(function (m) { return brefNu.indexOf(m.slice(0, 6)) >= 0; });
+      if (!collision) return tpl;
+    }
+    return '{S}.';
+  }
+
+  function redigerDepuisIdee(brief, v) {
+    var s = nettoie(brief);
+    if (!s) return '';
+    v = v || 0;
+    var th = sujetDe(s);
+    var inject = function (tpl) { return tpl.replace(/\{S\}/g, majuscule(s)).replace(/\{s\}/g, s); };
+    var parts = [];
+    parts.push(inject(ouvertureNonRedondante(th, s, v)));
+    parts.push(pickA(th.dev, v));
+    if (th.dev.length > 1) { var d2 = pickA(th.dev, v + 1); if (d2 && d2 !== parts[1]) parts.push(d2); }
+    if (th.puces && th.puces.length) {
+      var jeu = th.puces[((v % th.puces.length) + th.puces.length) % th.puces.length];
+      if (jeu && jeu.length) parts.push(jeu.map(function (x) { return '• ' + x; }).join('\n'));
+    }
+    parts.push(pickA(th.fin, v));
+    parts.push(th.tags.concat(tagsDeLIdee(s, 2, th.tags)).join(' '));
+    return parts.filter(Boolean).join('\n\n');
+  }
+
+  function ideeVisuelDepuisIdee(brief, v) {
+    var s = nettoie(brief);
+    var th = sujetDe(s);
+    var tpl = pickA(th.vis, v || 0);
+    return tpl.replace(/\{S\}/g, majuscule(s)).replace(/\{s\}/g, s || 'le sujet du post');
+  }
+
   // Génération de texte pour l'éditeur d'un post (depuis le calendrier)
   V2.lis.genForEditor = function (pillar, title, v) {
-    return generateFull({ hook: title || '', core: '', pillar: pillar || 'causes', tone: 'proche', v: v || 0 });
+    // Le titre EST l'idée : on rédige à partir de lui, pas d'un fond générique.
+    if (String(title || '').trim()) return redigerDepuisIdee(title, v || 0);
+    return generateFull({ hook: '', core: '', pillar: pillar || 'causes', tone: 'proche', v: v || 0 });
   };
   // Rédiger un post complet à partir d'une idée courte de l'utilisateur
   V2.lis.genFromBrief = function (pillar, brief, v) {
+    if (String(brief || '').trim()) return redigerDepuisIdee(brief, v || 0);
     return generateFromBrief(brief, pillar || 'causes', 'proche', v || 0);
   };
   // Proposer une idée de post (accroche + angle) pour un pilier
@@ -536,7 +734,12 @@
     return { h: a.h, core: a.core, format: a.f };
   };
   // Proposer une idée / description de visuel pour un pilier
-  V2.lis.genImageIdea = function (pillar, v) { return generateImageIdea(pillar || 'causes', v || 0); };
+  // brief = l'idée saisie (ou le titre) : sans elle on retombait sur « ruban rose,
+  // moustache » quel que soit le sujet réel du post.
+  V2.lis.genImageIdea = function (pillar, v, brief) {
+    if (String(brief || '').trim()) return ideeVisuelDepuisIdee(brief, v || 0);
+    return generateImageIdea(pillar || 'causes', v || 0);
+  };
 
   V2.liStrategy = { open: function () { V2.lis.open(); }, _cfg: function () { return cfg; }, _plan: function () { return plan; }, _build: buildPlan, generateFull: generateFull };
 })();
