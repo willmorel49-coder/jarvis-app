@@ -36,6 +36,9 @@
       '.li-seg{display:inline-flex;background:var(--li-line2);border-radius:10px;padding:3px;gap:2px}',
       '.li-seg button{padding:6px 13px;border-radius:8px;border:0;background:transparent;font:600 13px/1 inherit;color:var(--li-ink50);cursor:pointer;transition:all .15s var(--li-ease);display:inline-flex;align-items:center;gap:6px}',
       '.li-seg button.on{background:var(--li-panel);color:var(--li-ink);box-shadow:var(--li-sh-sm)}',
+      /* Ces deux onglets sont devenus la navigation principale du module :
+         28 px de haut, c'est trop petit pour le doigt. */
+      '@media(max-width:760px){#v2-root .li-seg{width:100%}#v2-root .li-seg button{flex:1;min-height:44px;justify-content:center}}',
       '.li-segbadge{background:var(--li-orange);color:#fff;font:800 10px/1 inherit;padding:2px 6px;border-radius:20px;min-width:16px;text-align:center}',
 
       /* ── buttons ── */
@@ -248,7 +251,16 @@
       '.li-ta:focus{border-color:#0057FF;box-shadow:0 0 0 3px #eef3ff}',
       '.li-ta-wrap{position:relative}',
       '.li-imgrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}',
-      '.li-imgprev img{max-width:180px;border-radius:10px;display:block;margin-bottom:8px}',
+      '.li-imgprev img{max-width:100%;max-height:280px;border-radius:10px;display:block;margin-bottom:10px;box-shadow:0 2px 10px rgba(10,14,26,.10)}',
+      '.li-imgacts{display:flex;gap:8px;flex-wrap:wrap}',
+      '#li-zoom .li-zwrap{position:fixed;inset:0;z-index:1200;background:rgba(10,14,26,.90);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:26px;opacity:0;transition:opacity .22s ease;cursor:zoom-out}',
+      '#li-zoom .li-zwrap.li-open{opacity:1}',
+      '#li-zoom .li-zimg{max-width:min(1200px,94vw);max-height:80vh;border-radius:12px;box-shadow:0 30px 90px rgba(0,0,0,.5);cursor:default;background:#fff}',
+      '#li-zoom .li-zcap{color:#fff;font:600 14px/1.5 inherit;text-align:center;max-width:760px}',
+      '#li-zoom .li-zdl{color:#cbd5e1;font:600 13px/1 inherit;text-decoration:underline;text-underline-offset:3px}',
+      '#li-zoom .li-zdl:hover{color:#fff}',
+      '#li-zoom .li-zclose{position:absolute;top:16px;right:16px;width:46px;height:46px;border-radius:12px;border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.10);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center}',
+      '#li-zoom .li-zclose:hover{background:rgba(255,255,255,.20)}',
       '.li-dr-foot{padding:14px 22px;border-top:1px solid #E6E9F0;display:flex;align-items:center;gap:12px;background:#fff}',
       '.li-dr-foot .li-btn-primary{flex:1;justify-content:center;height:42px}',
       '.li-del{border:0;background:transparent;font:600 13px/1 inherit;color:#e0455f;padding:8px 10px;border-radius:8px;cursor:pointer}',
@@ -267,7 +279,7 @@
   function sb() { return (V2.sb && V2.sb()) || null; }
 
   // ── État de vue ──
-  var view = 'queue';               // 'queue' | 'cal' | 'pipeline' | 'list'
+  var view = 'plan';                // 'plan' | 'veille' — écran d'accueil du module
   var calRef = new Date();          // mois affiché (1er du mois)
   calRef.setDate(1);
 
@@ -444,8 +456,10 @@
   function viewSeg() {
     var due = dueCount();
     var badge = due ? '<span class="li-segbadge">' + due + '</span>' : '';
-    var items = [['queue', 'File', badge], ['cal', 'Mois', ''], ['pipeline', 'Pipeline', ''], ['list', 'Liste', ''],
-                 ['plan', 'Rétro-planning 12 mois', ''], ['veille', 'Veille secteur', '']];
+    // 20/08/2026 — Will : « y a trop de sous-onglets ». Deux, et c'est tout.
+    // Les vues 'queue' | 'cal' | 'pipeline' | 'list' restent dans le code : elles
+    // ne sont plus atteignables, mais c'est la porte de sortie si on revient dessus.
+    var items = [['plan', 'Rétro-planning', badge], ['veille', 'Veille secteur', '']];
     return '<div class="li-seg" role="tablist">' + items.map(function (it) {
       return '<button class="' + (view === it[0] ? 'on' : '') + '" onclick="V2.li.setView(\'' + it[0] + '\')">' + it[1] + it[2] + '</button>';
     }).join('') + '</div>';
@@ -750,7 +764,10 @@
     var img = e._imgUp
       ? '<div class="li-note">' + esc(e._imgUp) + '</div>'
       : e.image_path
-      ? '<div class="li-imgprev"><img src="' + esc(imgUrl(e.image_path)) + '" alt=""><button class="li-btn" onclick="V2.li.editField(\'image_path\',\'\')">Retirer le visuel</button></div>'
+      ? '<div class="li-imgprev"><img src="' + esc(imgUrl(e.image_path)) + '" alt="Visuel du post" style="cursor:zoom-in" ' +
+        'title="Cliquez pour voir en grand" onclick="V2.li.zoomEdit()">' +
+        '<div class="li-imgacts"><button class="li-btn" onclick="V2.li.zoomEdit()">Voir en grand</button>' +
+        '<button class="li-btn" onclick="V2.li.editField(\'image_path\',\'\')">Retirer le visuel</button></div></div>'
       : '<label class="li-btn">' + IMGICO.replace(/#fff/g, '#6b7280') + 'Ajouter un visuel<input type="file" accept="image/*" style="display:none" onchange="V2.li.uploadImg(this)"></label>' +
         '<input class="li-inp" placeholder="…ou coller une adresse d\'image (https://…)" value="" oninput="V2.li.editField(\'image_path\',this.value)">';
     return '<div class="li-scrim' + oc + '" onclick="V2.li.closeEditor()"></div>' +
@@ -922,6 +939,36 @@
         redrawEditor();
       });
   };
+
+  // ── Visionneuse plein écran ──
+  // Un aperçu de 180 px ne permet pas de juger un visuel. Un clic l'ouvre en grand.
+  V2.li.zoom = function (url, legende) {
+    if (!url) return;
+    var h = document.getElementById('li-zoom');
+    if (!h) { h = document.createElement('div'); h.id = 'li-zoom'; document.body.appendChild(h); }
+    h.innerHTML =
+      '<div class="li-zwrap" onclick="V2.li.zoomOff()" role="dialog" aria-modal="true" aria-label="Visuel en grand">' +
+        '<button class="li-zclose" onclick="V2.li.zoomOff()" aria-label="Fermer">' + ICO('close', 20, 2.2) + '</button>' +
+        '<img class="li-zimg" src="' + esc(url) + '" alt="' + esc(legende || 'Visuel du post') + '" onclick="event.stopPropagation()">' +
+        (legende ? '<div class="li-zcap">' + esc(legende) + '</div>' : '') +
+        '<a class="li-zdl" href="' + esc(url) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">Ouvrir l\'image dans un onglet</a>' +
+      '</div>';
+    void h.offsetWidth;
+    var w2 = h.querySelector('.li-zwrap'); if (w2) w2.className += ' li-open';
+    document.addEventListener('keydown', zoomEsc);
+  };
+  function zoomEsc(e) { if (e.key === 'Escape') V2.li.zoomOff(); }
+  V2.li.zoomOff = function () {
+    document.removeEventListener('keydown', zoomEsc);
+    var h = document.getElementById('li-zoom'); if (!h) return;
+    var w2 = h.querySelector('.li-zwrap');
+    if (w2) w2.className = w2.className.replace(' li-open', '');
+    setTimeout(function () { h.innerHTML = ''; }, 220);
+  };
+  // On lit l'état courant plutôt que d'injecter l'URL dans un attribut onclick :
+  // une apostrophe dans un nom de fichier casserait le HTML.
+  V2.li.zoomEdit = function () { if (editing && editing.image_path) V2.li.zoom(imgUrl(editing.image_path), editing.title || ''); };
+  V2.li.imgUrl = imgUrl;   // réutilisé par le rétro-planning
 
   // ── Pipeline drag & drop (bonus, robuste) ──
   var dragId = null;
