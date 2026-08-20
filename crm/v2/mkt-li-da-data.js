@@ -27,57 +27,46 @@ var LI_DA = {
     { nom: 'Noir',         hex: '#000000', role: 'Traits fins des visages et des mains, uniquement.' }
   ],
 
-  // Trois familles. On choisit selon le sujet, pas selon l'humeur.
-  familles: [
-    { k: 'illustration',
-      label: 'Illustration à plat',
-      quand: 'Le choix par défaut, et notre signature. Pour tout ce qui met en scène des personnes, un geste, une idée abstraite.',
-      prompt:
-'Illustration vectorielle à plat, style éditorial corporate, format carré 1:1 en 1200×1200 px.\n' +
-'Fond crème uni #FEFDF9 avec beaucoup d’espace vide.\n' +
-'Deux formes organiques arrondies en indigo profond #111143 qui débordent des angles haut-gauche et bas-droite, contours souples, comme deux vagues.\n' +
-'Palette strictement limitée à : orange ocre #D97A1C, jaune doré #FFD249, indigo #111143, gris moyen #545454, noir, blanc.\n' +
-'Personnages simplifiés, sans contour sur les corps, traits noirs fins uniquement pour les visages et les mains. Âges et origines variés. Expressions calmes et chaleureuses.\n' +
-'Aucun dégradé, aucune ombre portée, aucun effet 3D, aucun photoréalisme.\n' +
-'Le tiers inférieur reste vide pour recevoir une légende.\n' +
-'SUJET : ' },
-    { k: 'photo',
-      label: 'Photographie',
-      quand: 'Pour les coulisses, les métiers, les lieux. Tout ce qui doit se sentir réel et vécu.',
-      quandPlus: 'Ne jamais mettre de visage identifiable sans autorisation écrite de la personne.',
-      prompt:
-'Photographie documentaire, format carré 1:1 en 1200×1200 px.\n' +
-'Lumière naturelle, chaude, rasante. Ambiance sobre et vécue, jamais publicitaire ni « stock photo » souriante.\n' +
-'Dominante froide bleu-gris pour les intérieurs techniques, dominante chaude pour les scènes humaines.\n' +
-'Profondeur de champ courte, mise au point sur le geste ou l’objet, arrière-plan flou.\n' +
-'Aucun visage net et identifiable : cadrer sur les mains, de dos, ou à contre-jour.\n' +
-'Aucun logo, aucune marque, aucun nom de produit lisible.\n' +
-'Aucun texte incrusté dans l’image.\n' +
-'SUJET : ' },
-    { k: 'video',
-      label: 'Image d’ouverture de vidéo',
-      quand: 'Quand l’idée de visuel est une vidéo. On ne génère pas la vidéo : on génère sa première image, celle qui s’affiche dans le fil avant le clic.',
-      quandPlus: 'La vidéo elle-même se tourne au téléphone. Cette image sert de repère de cadrage.',
-      prompt:
-'Photogramme d’ouverture d’une vidéo courte, format carré 1:1 en 1200×1200 px.\n' +
-'Photographie documentaire, lumière naturelle, ambiance réelle et sobre.\n' +
-'Cadrage large qui pose la scène en une seconde, sujet clairement identifiable au centre.\n' +
-'Profondeur de champ courte, arrière-plan flou.\n' +
-'Aucun visage net et identifiable, aucun logo, aucune marque lisible.\n' +
-'Aucun texte, aucun sous-titre, aucune interface incrustée dans l’image.\n' +
-'SCÈNE : ' },
-    { k: 'typo',
-      label: 'Affiche typographique',
-      quand: 'Quand la phrase EST le visuel. Une idée forte, très peu de mots.',
-      quandPlus: 'Le texte est ajouté après, dans Canva : les générateurs d’images écrivent mal le français accentué.',
-      prompt:
-'Affiche typographique minimaliste, format carré 1:1 en 1200×1200 px.\n' +
-'Fond crème uni #FEFDF9. Aucune illustration, aucune photo.\n' +
-'Deux formes organiques arrondies en indigo profond #111143 qui débordent des angles haut-gauche et bas-droite.\n' +
-'Une seule couleur d’accent : orange ocre #D97A1C.\n' +
-'Composition très aérée, large marge, centre de l’image laissé VIDE pour que la phrase soit posée ensuite.\n' +
-'Aucun texte, aucune lettre, aucun caractère dans l’image générée.\n' +
-'AMBIANCE : ' }
+  // TROIS APPROCHES, sur le modèle des trois textes : ce ne sont pas des
+  // variantes d'un même prompt, ce sont trois façons de traiter le même post.
+  // Toutes restent dans notre DA. On copie celle qui va, on ne choisit pas au hasard.
+  approches: [
+    { k: 'gabarit',
+      label: 'Notre gabarit',
+      aide: 'Notre signature. Le choix par défaut : c’est lui qui rend un post reconnaissable comme le nôtre au premier coup d’œil dans le fil.',
+      tpl:
+'RENDU — Illustration vectorielle à plat, style éditorial corporate. Formes pleines, aucun contour sur les corps, traits noirs fins uniquement pour les visages et les mains. Aucun dégradé, aucune ombre portée, aucun relief, aucun photoréalisme.\n\n' +
+'COMPOSITION — Sujet centré, largement détouré. Deux formes organiques arrondies en indigo débordent de l’angle haut-gauche et de l’angle bas-droite, contours souples, comme deux vagues. Le tiers inférieur reste vide : la légende s’y posera. L’angle haut-droite reste libre pour le logo.\n\n' +
+'PALETTE — Fond crème #FEFDF9. Indigo #111143 pour les formes d’angle. Accents : orange ocre #D97A1C et jaune doré #FFD249. Neutres : gris #545454, noir, blanc. Aucune autre couleur.\n\n' +
+'PERSONNAGES — Silhouettes simplifiées, proportions naturelles, âges et origines variés, expressions calmes et chaleureuses. Jamais de sourire commercial.\n\n' +
+'INTENTION — {SUJET}\n' +
+'(Cette intention dit ce qu’il faut faire comprendre. C’est le RENDU ci-dessus qui commande la forme : réinterpréter librement si les deux se contredisent.)\n\n' +
+'À ÉVITER — Blanc pur, dégradés, ombres portées, effet 3D, texte, lettres, chiffres, logo, visage photoréaliste, imagerie médicale anxiogène.\n\n' +
+'FORMAT — Carré 1:1, 1200 × 1200 px.' },
+
+    { k: 'concret',
+      label: 'Le concret',
+      aide: 'La vraie chose, le vrai geste, le vrai lieu. À prendre quand le sujet est un métier, une coulisse, un objet — tout ce qui gagne à se sentir vécu plutôt que dessiné.',
+      tpl:
+'RENDU — Photographie documentaire prise sur le vif. Léger grain, rien de retouché, rien de publicitaire. Si la scène décrit un mouvement, produire l’image d’ouverture, celle qui s’affiche avant le clic.\n\n' +
+'COMPOSITION — Cadrage serré sur le geste ou sur l’objet. Profondeur de champ courte, arrière-plan flou. Un tiers de l’image laissé calme pour recevoir la légende.\n\n' +
+'LUMIÈRE — Naturelle et rasante. Chaude sur les scènes humaines, bleu-gris froide sur les zones techniques et tout ce qui touche au froid. Jamais de flash frontal.\n\n' +
+'INTENTION — {SUJET}\n' +
+'(Cette intention dit ce qu’il faut faire comprendre. C’est le RENDU ci-dessus qui commande la forme : réinterpréter librement si les deux se contredisent.)\n\n' +
+'À ÉVITER — Visage net et identifiable, sourire posé, blouse immaculée, logo, marque ou nom de produit lisible, texte incrusté, ambiance « photo de banque d’images ».\n\n' +
+'FORMAT — Carré 1:1, 1200 × 1200 px.' },
+
+    { k: 'idee',
+      label: 'L’idée forte',
+      aide: 'Un seul objet, isolé, et beaucoup de vide. À prendre quand la phrase porte déjà tout le message et que l’image doit juste faire s’arrêter le pouce.',
+      tpl:
+'RENDU — Image conceptuelle minimaliste. Un seul objet ou un seul signe, isolé, traité avec évidence. Soit une photographie très épurée, soit une illustration au trait — jamais les deux mélangées.\n\n' +
+'COMPOSITION — Le sujet occupe moins d’un quart de l’image. Tout le reste est vide. Le vide fait partie du message. Centre de l’image laissé libre si une phrase doit s’y poser ensuite.\n\n' +
+'PALETTE — Fond crème #FEFDF9. Une seule couleur d’accent : orange ocre #D97A1C, ou indigo #111143 si le sujet est grave.\n\n' +
+'INTENTION — {SUJET}\n' +
+'(Cette intention dit ce qu’il faut faire comprendre. C’est le RENDU ci-dessus qui commande la forme : réinterpréter librement si les deux se contredisent.)\n\n' +
+'À ÉVITER — Toute lettre, tout chiffre, tout texte. Le moindre encombrement. Plus d’un objet dans le cadre. Toute symbolique médicale convenue (stéthoscope, croix verte, gélules en tas).\n\n' +
+'FORMAT — Carré 1:1, 1200 × 1200 px.' }
   ],
 
   regles: [

@@ -94,6 +94,10 @@
       '.lip-swatch{display:flex;gap:12px;align-items:flex-start;margin-bottom:11px;font-size:12.5px;line-height:1.5;color:var(--lip-ink70)}',
       '.lip-swatch span{width:42px;height:42px;border-radius:9px;flex:none;border:1px solid rgba(10,14,26,.14)}',
       '.lip-swatch code{font-size:11.5px;color:var(--lip-ink35)}',
+      '.lip-aptabs{display:flex;gap:6px;background:var(--lip-line2);border-radius:10px;padding:4px;margin-bottom:9px;flex-wrap:wrap}',
+      '.lip-apbtn{flex:1;min-width:104px;min-height:38px;padding:0 12px;border-radius:8px;border:0;background:transparent;font:700 12.5px/1.25 inherit;color:var(--lip-ink50);cursor:pointer;transition:all .15s var(--lip-ease)}',
+      '.lip-apbtn.on{background:var(--lip-panel);color:var(--lip-ink);box-shadow:var(--lip-sh)}',
+      '.lip-apaide{font-size:12.5px;line-height:1.55;color:var(--lip-ink35);margin-bottom:10px}',
       '.lip-prompt{background:#12122e;color:#e7e9f5;border-radius:11px;padding:13px 15px;font:400 12.5px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap;word-break:break-word;max-height:210px;overflow:auto;-webkit-overflow-scrolling:touch}',
 
       /* drawer */
@@ -182,7 +186,7 @@
       '.lip-inp{flex:1 1 100%;min-width:0;width:100%}',
       '.lip-sel{flex:1 1 44%;min-width:0}',
       '.lip-drh,.lip-drb,.lip-drf{padding-left:16px;padding-right:16px}',
-      '.lip-btn,.lip-stbtn,.lip-close{min-height:44px}',
+      '.lip-btn,.lip-stbtn,.lip-close,.lip-apbtn{min-height:44px}',
       /* 44 px partout au doigt, champs de saisie compris : à 36 px on rate la cible */
       '.lip-chip{height:44px}',
       '.lip-sel,.lip-inp{height:44px}',
@@ -331,32 +335,35 @@
      Le prompt se construit à la volée depuis l'idée de visuel RETENUE : il suit
      donc le choix de la direction au lieu d'être figé dans les données. */
   function da() { return window.LI_DA || null; }
-  function familleDA(idee) {
+  function approcheDe(k) {
+    var d = da(); if (!d) return null;
+    for (var i = 0; i < d.approches.length; i++) if (d.approches[i].k === k) return d.approches[i];
+    return d.approches[0];
+  }
+  // L'approche pré-sélectionnée suit la nature de l'idée de visuel : inutile de
+  // proposer « Le concret » en premier quand l'idée dit « visuel typographique ».
+  function approcheSuggeree(idee) {
     var t = String(idee || '').toLowerCase();
-    // La vidéo passe en premier : sinon « vidéo … contre-jour » tombait dans
-    // « photo » et on envoyait « Vidéo 30-40 s » à un générateur d'images.
-    if (/vid[ée]o|time-?lapse|photogramme/.test(t)) return 'video';
-    if (/typographique|affiche|citation|phrase en (tr[eè]s )?grand|lettrage/.test(t)) return 'typo';
-    if (/photo|macro|contre-jour|clich[ée]|reportage|portrait/.test(t)) return 'photo';
-    return 'illustration';
+    // ⚠️ limites de mot obligatoires : « afficheur de sonde » contient « affiche »
+    // et basculait à tort sur l'approche typographique.
+    if (/typographique|\baffiche\b|\bcitation\b|phrase en (tr[eè]s )?grand|lettrage/.test(t)) return 'idee';
+    if (/photo|macro|contre-jour|vid[ée]o|time-?lapse|clich[ée]|reportage|portrait/.test(t)) return 'concret';
+    return 'gabarit';
   }
   // La phrase entre guillemets d'un visuel typographique ne doit PAS partir dans
-  // le prompt : la famille « typo » interdit tout texte dans l'image. On la sort
-  // pour l'afficher à côté, à poser ensuite dans l'outil de mise en page.
-  function phraseAPoser(idee) {
-    var m = String(idee || '').match(/«\s*([^»]{6,220})\s*»/);
-    return m ? m[1].trim() : '';
+  // le prompt : toutes les approches interdisent le texte dans l'image. On la
+  // sort pour l'afficher à côté, à poser ensuite dans l'outil de mise en page.
+  // Tout ce qui est entre guillemets dans une idée de visuel est du TEXTE : une
+  // phrase à composer, ou l'étiquette d'un schéma. Aucun des trois prompts ne
+  // fait écrire de texte — on sort donc tout, et on le liste à côté.
+  function motsAPoser(idee) {
+    var out = [], rx = /«\s*([^»]{2,220}?)\s*»/g, m;
+    while ((m = rx.exec(String(idee || '')))) out.push(m[1].trim());
+    return out;
   }
-  function familleDe(k) {
-    var d = da(); if (!d) return null;
-    for (var i = 0; i < d.familles.length; i++) if (d.familles[i].k === k) return d.familles[i];
-    return d.familles[0];
-  }
-  // Le sujet donné au générateur : l'idée de visuel, débarrassée des consignes
-  // de production qui ne le concernent pas (accords à signer, sous-titres…).
   // Une idée de visuel contient deux choses : ce qu'on veut VOIR, et des
   // consignes de tournage qui s'adressent à nous (durée, son, sous-titres,
-  // autorisations, format d'export). Seule la première part au générateur.
+  // autorisations). Seule la première part au générateur.
   var PARASITES = [
     /[^.]*sous-titres[^.]*\.?/gi,
     /[^.]*(accord|autorisation)s? [ée]crite?s?[^.]*\.?/gi,
@@ -366,18 +373,17 @@
     /[^.]*(son d.ambiance|musique|voix off|bande[- ]son)[^.]*\.?/gi,
     /[^.]*(gif l[ée]ger|animation possible)[^.]*\.?/gi
   ];
-  function sujetPropre(idee, fam) {
+  function sujetPropre(idee, appr) {
     var t = String(idee || '');
     PARASITES.forEach(function (rx) { t = t.replace(rx, ''); });
-    // « Vidéo 30-40 s », « Vidéo verticale 45 s » -> « Scène » : une durée n'a
-    // aucun sens pour un générateur d'images.
     t = t.replace(/\bVid[ée]os?\b(\s+(verticale|courte))?\s*\d*\s*[-–]?\s*\d*\s*s?\b/gi, 'Scène');
-    if (fam === 'typo') {
-      t = t.replace(/«[^»]*»/g, '')
-           .replace(/\s*en (tr[eè]s )?grand/gi, '')
-           .replace(/[^.]*mention de la journ[ée]e[^.]*\.?/gi, '');
-    }
-    // ponctuation laissée orpheline par les retraits : « fort : , fond crème »
+    // Aucune approche n'écrit de texte. Une étiquette courte devient un
+    // emplacement — « deux flèches légendées « gel » et « perte » » doit rester
+    // « deux flèches légendées (étiquette) et (étiquette) », pas « légendées et ».
+    t = t.replace(/«\s*[^»]{2,220}?\s*»/g, function (x) {
+      return x.length > 34 ? '' : '(étiquette)';
+    }).replace(/\s*en (tr[eè]s )?grand/gi, '');
+    if (appr === 'idee') t = t.replace(/[^.]*mention de la journ[ée]e[^.]*\.?/gi, '');
     t = t.replace(/\s*:\s*[,;.]+/g, ' :')
          .replace(/\s*,\s*(?=[,;.])/g, '')
          .replace(/\s+([,;.!?])/g, '$1')
@@ -389,23 +395,35 @@
     if (t && !/[.!?]$/.test(t)) t += '.';
     return t;
   }
-  function promptPour(p, idx) {
+  function promptPour(p, idxVisuel, appr) {
     var d = da(); if (!d || !p) return '';
-    var idee = (p.v && p.v[idx]) ? p.v[idx] : (p.v && p.v[0]) || '';
-    var k = familleDA(idee);
-    var fam = familleDe(k);
-    var sujet = sujetPropre(idee, k);
-    var contexte = 'Post LinkedIn d’un grossiste-répartiteur pharmaceutique, sur le thème « ' + p.titre + ' ». ';
-    return fam.prompt + contexte + sujet;
+    var idee = (p.v && p.v[idxVisuel]) ? p.v[idxVisuel] : (p.v && p.v[0]) || '';
+    var a = approcheDe(appr);
+    // Le thème n'est PAS mis entre guillemets : un générateur prend volontiers
+    // une chaîne citée pour du texte à écrire dans l'image.
+    var sujet = 'Contexte : post LinkedIn d’un grossiste-répartiteur pharmaceutique. Thème du post : ' +
+      String(p.titre || '').replace(/[«»]/g, '').replace(/\s{2,}/g, ' ').replace(/\s+([,.])/g, '$1').trim() +
+      '. ' + sujetPropre(idee, appr);
+    return a.tpl.replace('{SUJET}', sujet);
+  }
+  // Quelle approche est affichée dans la fiche ouverte
+  var apprVue = null;
+  V2.lip.setApproche = function (k) { apprVue = k; redessineTiroir(); };
+  function apprCourante() {
+    if (!ouvert) return 'gabarit';
+    if (apprVue) return apprVue;
+    var i = (ouvert.e.visuel === null) ? 0 : ouvert.e.visuel;
+    return approcheSuggeree((ouvert.p.v && ouvert.p.v[i]) || '');
   }
   V2.lip.copierPrompt = function () {
     if (!ouvert) return;
-    var idx = (ouvert.e.visuel === null) ? 0 : ouvert.e.visuel;
-    var txt = promptPour(ouvert.p, idx);
+    var i = (ouvert.e.visuel === null) ? 0 : ouvert.e.visuel;
+    var txt = promptPour(ouvert.p, i, apprCourante());
     if (!txt) { toast('La fiche de direction artistique n’est pas chargée', 'error'); return; }
+    var a = approcheDe(apprCourante());
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(txt).then(
-        function () { toast('Prompt copié — collez-le dans votre générateur d’images'); },
+        function () { toast('Prompt « ' + a.label + ' » copié'); },
         function () { window.prompt('Copiez le prompt :', txt); });
     } else window.prompt('Copiez le prompt :', txt);
   };
@@ -426,10 +444,10 @@
       return '<div class="lip-srow" style="align-items:flex-start"><span class="lip-sk" style="min-width:92px">' + esc(c.k) + '</span>' +
         '<span style="flex:1;text-align:right"><b>' + esc(c.v) + '</b><br><span style="color:var(--lip-ink35);font-size:12px">' + esc(c.d) + '</span></span></div>';
     }).join('');
-    var fam = d.familles.map(function (f) {
+    var fam = d.approches.map(function (f) {
       return '<div class="lip-var" style="cursor:default"><div class="lip-vtop"><span class="lip-vton">' + esc(f.label) + '</span></div>' +
-        '<div class="lip-vaide" style="font-style:normal;color:var(--lip-ink70);margin:0 0 9px">' + esc(f.quand) + (f.quandPlus ? ' ' + esc(f.quandPlus) : '') + '</div>' +
-        '<div class="lip-vtxt" style="font-size:12.5px;background:#fff;border:1px solid var(--lip-line);border-radius:9px;padding:11px 12px">' + esc(f.prompt) + '…</div></div>';
+        '<div class="lip-vaide" style="font-style:normal;color:var(--lip-ink70);margin:0 0 9px">' + esc(f.aide) + '</div>' +
+        '<div class="lip-prompt" style="max-height:240px">' + esc(f.tpl.replace('{SUJET}', '(le sujet du post s’insère ici)')) + '</div></div>';
     }).join('');
     var liste = function (a) { return '<ul style="margin:0;padding-left:19px;font-size:13.5px;line-height:1.65;color:var(--lip-ink70)">' +
       a.map(function (x) { return '<li style="margin-bottom:6px">' + esc(x) + '</li>'; }).join('') + '</ul>'; };
@@ -444,7 +462,7 @@
           '<div class="lip-field"><span class="lip-flab">Ce qui a été mesuré</span>' +
             '<div class="lip-scard" style="box-shadow:none">' + mesures + '</div></div>' +
           '<div class="lip-field"><span class="lip-flab">La palette</span>' + pastilles + '</div>' +
-          '<div class="lip-field"><span class="lip-flab">Trois familles de visuel</span>' + fam + '</div>' +
+          '<div class="lip-field"><span class="lip-flab">Trois approches</span>' + fam + '</div>' +
           '<div class="lip-field"><span class="lip-flab">Les règles</span>' + liste(d.regles) + '</div>' +
           '<div class="lip-field"><span class="lip-flab">Ce qu’on évite</span>' + liste(d.aEviter) + '</div>' +
         '</div>' +
@@ -783,19 +801,30 @@
           '<div class="lip-field"><span class="lip-flab">Décision de la direction</span><div class="lip-stats">' + stats + '</div></div>' +
           '<div class="lip-field"><span class="lip-flab">Choix du texte — 3 propositions</span>' + vars + '</div>' +
           '<div class="lip-field"><span class="lip-flab">Choix du visuel — 2 propositions</span>' + vis + '</div>' +
-          '<div class="lip-field"><span class="lip-flab">Prompt pour le générateur d’images</span>' +
-            '<div class="lip-prompt">' + esc(promptPour(p, (e.visuel === null ? 0 : e.visuel))) + '</div>' +
-            '<div class="lip-imgacts" style="margin-top:9px">' +
-              '<button class="lip-btn" onclick="V2.lip.copierPrompt()">Copier le prompt</button>' +
-              '<button class="lip-btn" onclick="V2.lip.voirDA()">Voir notre DA</button></div>' +
-            (function () {
-              var idee = (p.v && p.v[(e.visuel === null ? 0 : e.visuel)]) || '';
-              var ph = (familleDA(idee) === 'typo') ? phraseAPoser(idee) : '';
-              return ph ? '<div class="lip-note" style="margin-top:9px"><b>Phrase à poser ensuite</b>, dans Canva ou équivalent — elle n’est volontairement pas dans le prompt :<br>« ' + esc(ph) + ' »</div>' : '';
-            })() +
-            '<div class="lip-hint">Construit à partir du visuel choisi ci-dessus et de notre direction artistique. ' +
-              'Il ne demande <b>aucun texte dans l’image</b> : les générateurs ratent les accents français. La phrase se pose après.</div>' +
-          '</div>' +
+          (function () {
+            var d = da();
+            if (!d) return '<div class="lip-field"><span class="lip-flab">Prompt pour le générateur d’images</span>' +
+                            '<div class="lip-hint">Chargement de la direction artistique…</div></div>';
+            var iv = (e.visuel === null) ? 0 : e.visuel;
+            var k = apprCourante();
+            var a = approcheDe(k);
+            var onglets = d.approches.map(function (x) {
+              return '<button class="lip-apbtn' + (x.k === k ? ' on' : '') + '" onclick="V2.lip.setApproche(\'' + x.k + '\')">' + esc(x.label) + '</button>';
+            }).join('');
+            var mots = motsAPoser((p.v && p.v[iv]) || '');
+            return '<div class="lip-field"><span class="lip-flab">Prompt pour le générateur d’images — 3 approches</span>' +
+              '<div class="lip-aptabs">' + onglets + '</div>' +
+              '<div class="lip-apaide">' + esc(a.aide) + '</div>' +
+              '<div class="lip-prompt">' + esc(promptPour(p, iv, k)) + '</div>' +
+              '<div class="lip-imgacts" style="margin-top:9px">' +
+                '<button class="lip-btn lip-btn-p" onclick="V2.lip.copierPrompt()">Copier ce prompt</button>' +
+                '<button class="lip-btn" onclick="V2.lip.voirDA()">Voir notre DA</button></div>' +
+              (mots.length ? '<div class="lip-note" style="margin-top:9px"><b>Texte à poser ensuite</b>, dans Canva ou équivalent — il n’est volontairement dans aucun des trois prompts :<br>' +
+                mots.map(function (x) { return '« ' + esc(x) + ' »'; }).join('<br>') + '</div>' : '') +
+              '<div class="lip-hint">Les trois restent dans notre direction artistique : même fond crème, mêmes couleurs, même format. ' +
+                'Aucun ne fait écrire de texte par le générateur — les accents français sont ratés, la phrase se pose après.</div>' +
+            '</div>';
+          })() +
           '<div class="lip-field"><span class="lip-flab">Visuel du post</span>' +
             (ouvert.envoi
               ? '<div class="lip-note">' + esc(ouvert.envoi) + '</div>'
@@ -1033,6 +1062,7 @@
     var p = null; for (var i = 0; i < P.length; i++) if (P[i].n === n) { p = P[i]; break; }
     if (!p) return;
     var e = etat(n);
+    apprVue = null;
     ouvert = { n: n, p: p, envoi: '', e: { statut: e.statut, variante: e.variante, visuel: e.visuel, commentaire: e.commentaire || '', image_path: e.image_path || '' } };
     monter(drawerHtml());
   };
@@ -1040,6 +1070,7 @@
   V2.lip.setChamp = function (champ, val) {
     if (!ouvert) return;
     ouvert.e[champ] = val;
+    if (champ === 'visuel') apprVue = null;   // l'approche suggérée suit le visuel choisi
     if (champ === 'commentaire') return;          // ne pas redessiner sous les doigts
     redessineTiroir();   // conserve la position de défilement
   };
