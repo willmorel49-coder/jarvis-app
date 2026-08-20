@@ -87,6 +87,10 @@
       '.lip-right{display:flex;flex-direction:column;align-items:flex-end;gap:7px;white-space:nowrap}',
       '.lip-st{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:5px 11px;border-radius:20px}',
       '.lip-pick{font-size:11.5px;color:var(--lip-ink35);font-weight:600}',
+      '.lip-vig{width:56px;height:56px;border-radius:9px;object-fit:cover;display:block;margin-top:9px;cursor:zoom-in;box-shadow:0 1px 4px rgba(10,14,26,.18)}',
+      '.lip-libre{font-size:11px;font-weight:800;padding:3px 8px;border-radius:20px;background:#f1eafe;color:#5B2ED6}',
+      '.lip-apercu img{max-width:100%;max-height:300px;border-radius:11px;display:block;margin-bottom:10px;cursor:zoom-in;box-shadow:0 2px 12px rgba(10,14,26,.12)}',
+      '.lip-imgacts{display:flex;gap:8px;flex-wrap:wrap}',
 
       /* drawer */
       '#lip-drawer .lip-scrim{position:fixed;inset:0;background:rgba(12,17,28,.42);opacity:0;transition:opacity .3s var(--lip-ease);z-index:900}',
@@ -250,7 +254,7 @@
   var etats = {};          // plan_id -> {statut, variante, visuel, commentaire}
   var charge = false;
 
-  function vide() { return { statut: 'attente', variante: null, visuel: null, commentaire: '' }; }
+  function vide() { return { statut: 'attente', variante: null, visuel: null, commentaire: '', image_path: '' }; }
   function etat(n) { return etats[n] || vide(); }
   function localTout() { try { var o = JSON.parse(localStorage.getItem(LS) || '{}'); return (o && typeof o === 'object') ? o : {}; } catch (e) { return {}; } }
   function localEcrire(o) { try { localStorage.setItem(LS, JSON.stringify(o)); } catch (e) {} }
@@ -264,6 +268,7 @@
       r.data.forEach(function (x) {
         etats[x.plan_id] = { statut: x.statut || 'attente', variante: (x.variante === null || x.variante === undefined) ? null : x.variante,
           visuel: (x.visuel === null || x.visuel === undefined) ? null : x.visuel, commentaire: x.commentaire || '',
+          image_path: x.image_path || '',
           qui: x.qui || '', updated_at: x.updated_at || null };
       });
       remonterLocal();
@@ -288,7 +293,8 @@
 
   function ligne(n, e) {
     return { plan_id: n, statut: e.statut, variante: e.variante, visuel: e.visuel,
-      commentaire: e.commentaire || '', qui: (V2.user && V2.user.email) || '', updated_at: new Date().toISOString() };
+      commentaire: e.commentaire || '', image_path: e.image_path || '',
+      qui: (V2.user && V2.user.email) || '', updated_at: new Date().toISOString() };
   }
 
   function enregistrer(n, e) {
@@ -312,6 +318,67 @@
     return Promise.resolve(etats);
   }
 
+  // ⚠️ V2.lip est peuplé plus bas (section « API publique ») : les fonctions
+  // définies ici sont plus haut dans le fichier, il faut donc créer l'objet.
+  V2.lip = V2.lip || {};
+
+  /* ────────── visuel réellement attaché au post du plan ────────── */
+  // L'adresse publique est calculée par le module LinkedIn : une seule
+  // implémentation, un seul endroit à corriger si l'espace de stockage change.
+  function urlImage(chemin) {
+    if (!chemin) return '';
+    if (/^https?:/.test(chemin)) return chemin;
+    if (V2.li && V2.li.imgUrl) return V2.li.imgUrl(chemin);
+    var c = sb();
+    if (c && c.storage) { try { return c.storage.from('marketing-media').getPublicUrl(chemin).data.publicUrl; } catch (e) {} }
+    return chemin;
+  }
+  var MAX_IMG = 25 * 1024 * 1024;
+  V2.lip.envoyerImage = function (input) {
+    var f = input.files && input.files[0]; if (!f || !ouvert) return;
+    var c = sb();
+    if (!(c && c.storage)) { alert('Envoi impossible : vous n’êtes pas connecté à la base.\n\nReconnectez-vous, ou collez l’adresse d’une image déjà en ligne.'); input.value = ''; return; }
+    if (!/^image\//.test(f.type)) { alert('Ce fichier n’est pas une image (' + (f.type || 'type inconnu') + ').\nFormats acceptés : JPEG, PNG, WebP, GIF, AVIF.'); input.value = ''; return; }
+    if (f.size > MAX_IMG) { alert('Image trop lourde : ' + (f.size / 1048576).toFixed(1) + ' Mo.\nLa limite est de 25 Mo.'); input.value = ''; return; }
+    ouvert.envoi = 'Envoi de « ' + f.name + ' » en cours…';
+    redessineTiroir();
+    var ext = (f.name.match(/\.[a-zA-Z0-9]+$/) || [''])[0].toLowerCase();
+    var base = f.name.replace(/\.[a-zA-Z0-9]+$/, '');
+    if (base.normalize) base = base.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    base = base.replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'visuel';
+    var chemin = 'linkedin/plan' + ouvert.n + '_' + Date.now() + '_' + base + ext;
+    c.storage.from('marketing-media').upload(chemin, f, { upsert: true, contentType: f.type })
+      .then(function (r) {
+        ouvert.envoi = '';
+        if (r && r.error) {
+          var m = r.error.message || 'raison inconnue';
+          if (/bucket/i.test(m)) m = 'l’espace de stockage est introuvable côté serveur';
+          else if (/policy|permission|unauthor|403/i.test(m)) m = 'votre compte n’a pas le droit d’écrire ici';
+          else if (/size|large|413/i.test(m)) m = 'le fichier est trop lourd pour le serveur';
+          alert('L’image n’a pas été envoyée : ' + m + '.'); redessineTiroir(); return;
+        }
+        ouvert.e.image_path = chemin;
+        redessineTiroir();
+        toast('Visuel ajouté — pensez à enregistrer');
+      })
+      .catch(function (err) {
+        ouvert.envoi = '';
+        alert('L’image n’a pas été envoyée : ' + String(err.message || err).slice(0, 140) + '.');
+        redessineTiroir();
+      });
+  };
+  V2.lip.retirerImage = function () { if (ouvert) { ouvert.e.image_path = ''; redessineTiroir(); } };
+  V2.lip.zoomTiroir = function () {
+    if (ouvert && ouvert.e.image_path && V2.li && V2.li.zoom) V2.li.zoom(urlImage(ouvert.e.image_path), ouvert.p.titre);
+  };
+  // depuis une vignette de carte : on retrouve le post par son numéro
+  V2.lip.zoomPost = function (n) {
+    var e = etat(n); if (!e.image_path || !V2.li || !V2.li.zoom) return;
+    var P = plan(), t = '';
+    for (var i = 0; P && i < P.length; i++) if (P[i].n === n) { t = P[i].titre; break; }
+    V2.li.zoom(urlImage(e.image_path), t);
+  };
+
   /* ───────────────── filtres ───────────────── */
   var flt = { mois: '', statut: '', cache: {}, q: '' };
 
@@ -323,6 +390,51 @@
       var q = flt.q.toLowerCase();
       var foin = (p.titre + ' ' + p.angle + ' ' + p.tags + ' ' + p.t.map(function (t) { return t.txt; }).join(' ')).toLowerCase();
       if (foin.indexOf(q) < 0) return false;
+    }
+    return true;
+  }
+
+  /* ────────── posts libres (hors plan) ──────────
+     Depuis le 20/08 le module n'a plus que deux onglets : tout se passe ici.
+     Les posts créés à la main — et les 13 déjà en base — doivent donc apparaître
+     dans la même liste que le plan, sinon ils deviennent invisibles. */
+  var libresCharges = false;
+  function libres() {
+    var LI = V2.mktLinkedin;
+    if (!LI || !LI._posts) return [];
+    return LI._posts().filter(function (x) { return x && x.date; });
+  }
+  function chargerLibres() {
+    var LI = V2.mktLinkedin;
+    if (libresCharges || !LI || !LI.loadPosts) return;
+    libresCharges = true;
+    LI.loadPosts().then(function () { redessine(); });
+  }
+  function carteLibre(x) {
+    var d = new Date(x.date);
+    var st = (V2.mktLinkedin && V2.mktLinkedin.statusOf) ? V2.mktLinkedin.statusOf(x.status) : { label: x.status };
+    var extrait = String(x.body || '').replace(/\s+/g, ' ').slice(0, 150);
+    var vign = x.image_path ? '<img class="lip-vig" src="' + esc(urlImage(x.image_path)) + '" alt="Visuel" title="Voir en grand" ' +
+      'onclick="event.stopPropagation();V2.lip.zoomLibre(\'' + esc(String(x.id)) + '\')">' : '';
+    return '<div class="lip-card" style="--pc:#7C4DFF" tabindex="0" role="button" ' +
+      'onclick="V2.lip.ouvrirLibre(\'' + esc(String(x.id)) + '\')" ' +
+      'onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();V2.lip.ouvrirLibre(\'' + esc(String(x.id)) + '\')}">' +
+      '<div class="lip-when"><div class="lip-dnum">' + d.getDate() + '</div>' +
+        '<div class="lip-ddow">' + DOW[d.getDay()] + '</div>' +
+        '<div class="lip-dh">' + pad2(d.getHours()) + ':' + pad2(d.getMinutes()) + '</div>' + vign + '</div>' +
+      '<div class="lip-body"><div class="lip-meta"><span class="lip-libre">Hors plan</span>' +
+        '<span class="lip-fmt">' + esc(x.format || 'post libre') + '</span></div>' +
+        '<h3 class="lip-titre">' + esc(x.title || '(sans titre)') + '</h3>' +
+        '<div class="lip-angle">' + esc(extrait || 'Pas encore de texte.') + '</div></div>' +
+      '<div class="lip-right"><span class="lip-st" style="background:#f1eafe;color:#5B2ED6">' + esc(st.label || '') + '</span></div></div>';
+  }
+  function pad2(n) { return ('0' + n).slice(-2); }
+  function libreVisible(x) {
+    if (flt.mois && String(x.date).slice(0, 7) !== flt.mois) return false;
+    if (flt.statut) return false;            // les statuts du plan ne s'appliquent pas aux posts libres
+    if (flt.q) {
+      var q = flt.q.toLowerCase();
+      if (((x.title || '') + ' ' + (x.body || '')).toLowerCase().indexOf(q) < 0) return false;
     }
     return true;
   }
@@ -370,6 +482,7 @@
         '<select class="lip-sel" onchange="V2.lip.setStatut(this.value)">' + optSt + '</select>' +
         '<input class="lip-inp" type="search" placeholder="Rechercher un sujet…" value="' + esc(flt.q) + '" oninput="V2.lip.setQ(this.value)">' +
         '<span class="lip-spacer"></span>' +
+        '<button class="lip-btn" onclick="V2.lip.nouveauLibre()">' + ICO('plus', 16, 2.2) + 'Nouveau post libre</button>' +
         '<button class="lip-btn" onclick="V2.lip.exportCsv()">' + ICO('download', 16, 2) + 'Export CSV</button>' +
       '</div>' +
       '<div class="lip-tools" style="margin-top:2px"><span class="lip-lab">Piliers</span>' + chips + '</div>';
@@ -385,7 +498,10 @@
     return '<div class="lip-card" style="--pc:' + pl.color + '" tabindex="0" role="button" ' +
       'onclick="V2.lip.ouvrir(' + p.n + ')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();V2.lip.ouvrir(' + p.n + ')}">' +
       '<div class="lip-when"><div class="lip-dnum">' + d.getDate() + '</div>' +
-        '<div class="lip-ddow">' + DOW[d.getDay()] + '</div><div class="lip-dh">' + esc(p.h) + '</div></div>' +
+        '<div class="lip-ddow">' + DOW[d.getDay()] + '</div><div class="lip-dh">' + esc(p.h) + '</div>' +
+        (e.image_path ? '<img class="lip-vig" src="' + esc(urlImage(e.image_path)) + '" alt="Visuel" ' +
+          'title="Voir en grand" onclick="event.stopPropagation();V2.lip.zoomPost(' + p.n + ')">' : '') +
+      '</div>' +
       '<div class="lip-body">' +
         '<div class="lip-meta">' +
           '<span class="lip-num">#' + p.n + '</span>' +
@@ -414,19 +530,26 @@
       charge = true;
       chargerEtats().then(function () { redessine(); });
     }
-    var P = plan().filter(visible);
+    // une seule chronologie : les posts du plan et les posts libres mélangés,
+    // triés par date. Un post reste un post, quelle que soit son origine.
+    chargerLibres();
+    var lignes = plan().filter(visible).map(function (p) {
+      return { cle: p.d + 'T' + p.h, mois: p.d.slice(0, 7), html: carte(p) };
+    }).concat(libres().filter(libreVisible).map(function (x) {
+      return { cle: String(x.date).slice(0, 16), mois: String(x.date).slice(0, 7), html: carteLibre(x) };
+    }));
+    lignes.sort(function (a, b) { return a.cle < b.cle ? -1 : (a.cle > b.cle ? 1 : 0); });
     var corps = '';
-    if (!P.length) corps = '<div class="lip-empty">Aucun post ne correspond à ces filtres.</div>';
+    if (!lignes.length) corps = '<div class="lip-empty">Aucun post ne correspond à ces filtres.</div>';
     else {
       var courant = '';
-      P.forEach(function (p) {
-        var m = p.d.slice(0, 7);
-        if (m !== courant) {
-          courant = m;
-          var n = P.filter(function (x) { return x.d.slice(0, 7) === m; }).length;
-          corps += '<div class="lip-mois"><h2>' + esc(moisLabel(m)) + '</h2><div class="lip-mline"></div><span class="lip-mcount">' + n + ' post' + (n > 1 ? 's' : '') + '</span></div>';
+      lignes.forEach(function (l) {
+        if (l.mois !== courant) {
+          courant = l.mois;
+          var n = lignes.filter(function (x) { return x.mois === l.mois; }).length;
+          corps += '<div class="lip-mois"><h2>' + esc(moisLabel(l.mois)) + '</h2><div class="lip-mline"></div><span class="lip-mcount">' + n + ' post' + (n > 1 ? 's' : '') + '</span></div>';
         }
-        corps += carte(p);
+        corps += l.html;
       });
     }
     root.innerHTML = coquille(jauge() + outils() + corps);
@@ -473,6 +596,15 @@
     setTimeout(function () { if (!ouvert) h.innerHTML = ''; }, 340);
   }
 
+  function redessineTiroir() {
+    if (!ouvert) return;
+    var corps = document.querySelector('#lip-drawer .lip-drb');
+    var y = corps ? corps.scrollTop : 0;
+    monter(drawerHtml(), true);
+    var c2 = document.querySelector('#lip-drawer .lip-drb');
+    if (c2) c2.scrollTop = y;
+  }
+
   function drawerHtml() {
     var p = ouvert.p, e = ouvert.e, pl = pilier(p.p);
     var d = new Date(p.d + 'T12:00:00');
@@ -517,6 +649,17 @@
           '<div class="lip-field"><span class="lip-flab">Décision de la direction</span><div class="lip-stats">' + stats + '</div></div>' +
           '<div class="lip-field"><span class="lip-flab">Choix du texte — 3 propositions</span>' + vars + '</div>' +
           '<div class="lip-field"><span class="lip-flab">Choix du visuel — 2 propositions</span>' + vis + '</div>' +
+          '<div class="lip-field"><span class="lip-flab">Visuel du post</span>' +
+            (ouvert.envoi
+              ? '<div class="lip-note">' + esc(ouvert.envoi) + '</div>'
+              : e.image_path
+                ? '<div class="lip-apercu"><img src="' + esc(urlImage(e.image_path)) + '" alt="Visuel du post" title="Cliquez pour voir en grand" onclick="V2.lip.zoomTiroir()">' +
+                  '<div class="lip-imgacts"><button class="lip-btn" onclick="V2.lip.zoomTiroir()">Voir en grand</button>' +
+                  '<button class="lip-btn" onclick="V2.lip.retirerImage()">Retirer le visuel</button></div></div>'
+                : '<label class="lip-btn">Envoyer une image' +
+                  '<input type="file" accept="image/*" style="display:none" onchange="V2.lip.envoyerImage(this)"></label>' +
+                  '<div class="lip-hint">JPEG, PNG, WebP, GIF ou AVIF — 25 Mo maximum. L’image est partagée avec l’équipe.</div>') +
+          '</div>' +
           '<div class="lip-field"><span class="lip-flab">Commentaire</span>' +
             '<textarea class="lip-ta" placeholder="Ce qu\'il faut changer, préciser, éviter…" oninput="V2.lip.setChamp(\'commentaire\',this.value)">' + esc(e.commentaire || '') + '</textarea>' +
             '<div class="lip-hint">Visible par toute l\'équipe. Utile surtout pour « à retravailler ».</div>' +
@@ -525,7 +668,7 @@
         '</div>' +
         '<div class="lip-drf">' +
           '<button class="lip-btn" onclick="V2.lip.copier()">' + ICO('fiche', 16, 1.8) + 'Copier le texte choisi</button>' +
-          '<button class="lip-btn" onclick="V2.lip.versCalendrier()">' + ICO('cal', 16, 1.8) + 'Envoyer au calendrier</button>' +
+          '<button class="lip-btn" onclick="V2.lip.publier()">' + ICO('spark', 16) + 'Ouvrir LinkedIn</button>' +
           '<span class="lip-spacer"></span>' +
           '<button class="lip-btn lip-btn-p" onclick="V2.lip.enregistrer()">' + ICO('check', 17, 2.4) + 'Enregistrer</button>' +
         '</div>' +
@@ -721,6 +864,18 @@
   V2.liVeille = { render: function (r) { return render(r, 'veille'); } };
   V2.lip = V2.lip || {};
 
+  V2.lip.nouveauLibre = function () {
+    if (V2.li && V2.li.newAt) V2.li.newAt(new Date().toISOString().slice(0, 10));
+    else toast('L’éditeur de post n’est pas chargé', 'error');
+  };
+  V2.lip.ouvrirLibre = function (id) { if (V2.li && V2.li.openPost) V2.li.openPost(id); };
+  V2.lip.zoomLibre = function (id) {
+    var l = libres(); for (var i = 0; i < l.length; i++) {
+      if (String(l[i].id) === String(id) && l[i].image_path && V2.li && V2.li.zoom) {
+        V2.li.zoom(urlImage(l[i].image_path), l[i].title || ''); return;
+      }
+    }
+  };
   V2.lip.setMois = function (v) { flt.mois = v; redessine(); };
   V2.lip.setStatut = function (v) { flt.statut = v; redessine(); };
   V2.lip.setQ = function (v) { flt.q = v; clearTimeout(V2.lip._t); V2.lip._t = setTimeout(redessine, 260); };
@@ -731,7 +886,7 @@
     var p = null; for (var i = 0; i < P.length; i++) if (P[i].n === n) { p = P[i]; break; }
     if (!p) return;
     var e = etat(n);
-    ouvert = { n: n, p: p, e: { statut: e.statut, variante: e.variante, visuel: e.visuel, commentaire: e.commentaire || '' } };
+    ouvert = { n: n, p: p, envoi: '', e: { statut: e.statut, variante: e.variante, visuel: e.visuel, commentaire: e.commentaire || '', image_path: e.image_path || '' } };
     monter(drawerHtml());
   };
   V2.lip.fermer = fermer;
@@ -739,13 +894,7 @@
     if (!ouvert) return;
     ouvert.e[champ] = val;
     if (champ === 'commentaire') return;          // ne pas redessiner sous les doigts
-    // Redessiner remet le tiroir en haut : sur un post long, l'utilisateur qui
-    // clique « Visuel 2 » se retrouvait propulsé au titre. On garde la position.
-    var corps = document.querySelector('#lip-drawer .lip-drb');
-    var y = corps ? corps.scrollTop : 0;
-    monter(drawerHtml(), true);
-    var corps2 = document.querySelector('#lip-drawer .lip-drb');
-    if (corps2) corps2.scrollTop = y;
+    redessineTiroir();   // conserve la position de défilement
   };
   V2.lip.enregistrer = function () {
     if (!ouvert) return;
@@ -764,24 +913,24 @@
       navigator.clipboard.writeText(txt).then(function () { toast('Texte copié'); }, function () { window.prompt('Copiez le texte :', txt); });
     } else window.prompt('Copiez le texte :', txt);
   };
-  V2.lip.versCalendrier = function () {
+  V2.lip.publier = function () {
     if (!ouvert) return;
-    var LI = V2.mktLinkedin;
-    if (!LI || !LI.savePost) { toast('Le calendrier LinkedIn n\'est pas chargé', 'error'); return; }
     var i = ouvert.e.variante;
-    if (i === null) { toast('Choisissez d\'abord une des trois propositions de texte', 'error'); return; }
-    var p = ouvert.p, e = ouvert.e;
-    if (e.statut !== 'valide') { if (!confirm('Ce post n\'est pas encore validé. L\'envoyer quand même au calendrier ?')) return; }
-    var visuel = (e.visuel !== null && p.v[e.visuel]) ? p.v[e.visuel] : (p.v[0] || '');
-    LI.savePost({
-      id: '', date: new Date(p.d + 'T' + p.h + ':00').toISOString(), status: 'pret', pillar: 'causes',
-      title: p.titre, body: p.t[i].txt, image_path: '', linkedin_url: '',
-      format: p.f, image_brief: visuel, event_id: 'plan12m', event_name: 'Rétro-planning 12 mois',
-      source: 'retroplanning'
-    }).then(function () {
-      toast('Post #' + p.n + ' envoyé dans le calendrier LinkedIn');
-      fermer(); redessine();
-    });
+    if (i === null) { toast('Choisissez d’abord une des trois propositions de texte', 'error'); return; }
+    if (ouvert.e.statut !== 'valide' && !confirm('Ce post n’est pas encore validé par la direction.\n\nL’ouvrir quand même dans LinkedIn ?')) return;
+    var txt = ouvert.p.t[i].txt;
+    var suite = function () {
+      window.open('https://www.linkedin.com/feed/?shareActive=true', '_blank');
+      if (ouvert && ouvert.e.image_path) {
+        // LinkedIn ne peut pas recevoir l'image automatiquement : on l'ouvre à côté
+        // pour qu'elle soit sous la main au moment de la glisser dans le post.
+        window.open(urlImage(ouvert.e.image_path), '_blank');
+      }
+      toast('Texte copié. Collez-le dans LinkedIn, puis ajoutez le visuel.');
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(txt).then(suite, function () { window.prompt('Copiez le texte :', txt); suite(); });
+    } else { window.prompt('Copiez le texte :', txt); suite(); }
   };
 
   V2.lip.setOnglet = function (o) { veilleVue.onglet = o; veilleVue.limite = 30; redessine(); };
