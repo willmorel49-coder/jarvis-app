@@ -40,6 +40,10 @@
 
   var LOT = 25;             // ce qu'on pré-coche dans une campagne
   var REPOS_JOURS = 7;      // on ne re-sollicite pas sous 7 jours
+  // ⚠️ Un appel se repose plus longtemps qu'un mail. Un mail se laisse de
+  // côté ; un téléphone qui sonne deux fois dans la semaine, c'est du
+  // harcèlement, et un pharmacien s'en souvient.
+  var REPOS_APPEL_JOURS = 21;
   var RAYON_KM = 25;        // « voisine » d'une journée déjà commencée
 
   // ── Le portefeuille du commercial connecté ───────────────────────
@@ -207,7 +211,13 @@
         // 7 jours n'est pas de l'insistance, c'est du bruit. Même seuil que
         // le hub et que l'envoi groupé.
         c.from('rdv_lien').select('cip, envoye_le').eq('user_id', u)
-          .gte('envoye_le', new Date(Date.now() - REPOS_JOURS * 864e5).toISOString())
+          .gte('envoye_le', new Date(Date.now() - REPOS_JOURS * 864e5).toISOString()),
+        // Les appels récents de TOUTE l'équipe : deux commerciaux peuvent
+        // couvrir un même département, et deux appels le même jour depuis la
+        // même maison, c'est pire que pas d'appel du tout.
+        c.from('rdv_appel').select('cip, appele_le, issue')
+          .gte('appele_le', new Date(Date.now() - REPOS_APPEL_JOURS * 864e5).toISOString())
+          .then(function (x) { return (x && x.data) || []; }, function () { return []; })
       ]).then(function (r) {
         var stop = {}, pris = {}, recent = {};
         ((r[2] && r[2].data) || []).forEach(function (x) {
@@ -215,21 +225,35 @@
         });
         ((r[3] && r[3].data) || []).forEach(function (x) { if (x.cip) pris[String(x.cip)] = 1; });
         ((r[4] && r[4].data) || []).forEach(function (x) { if (x.cip) recent[String(x.cip)] = 1; });
+        var appeles = {};
+        (r[5] || []).forEach(function (x) { if (x && x.cip) appeles[String(x.cip)] = x; });
 
         var pool = recenser();
         var ach = achats();
-        var ec = { stop: 0, sansMail: 0, rdvPris: 0, relanceRecente: 0 };
-        var out = [], i, retenues = [], vues = 0;
+        var ec = { stop: 0, sansMail: 0, rdvPris: 0, relanceRecente: 0,
+                   sansRien: 0, appelRecent: 0, sansSignalMail: 0, sansSignalTel: 0 };
+        var out = [], i, retenues = [], aAppeler = [], vues = 0;
 
         for (i = 0; i < pool.length; i++) {
           var o = pool[i], cip = String(o.cip);
           if (stop[cip])   { ec.stop++; continue; }
           if (pris[cip])   { ec.rdvPris++; continue; }
+
+          // ⚠️ SANS ADRESSE MAIL N'EST PLUS SYNONYME DE PERDUE.
+          // Mesuré le 20/08 : 1 514 officines du secteur n'ont pas d'e-mail,
+          // et 1 380 d'entre elles ont un téléphone. Elles sortaient de tout
+          // le module — pas parce qu'on ne peut pas les joindre, mais parce
+          // qu'il ne savait faire que du mail. Elles vont dans leur propre
+          // liste, avec les mêmes raisons écrites.
+          if (!o.email) {
+            if (!o.tel) { ec.sansRien++; continue; }
+            if (appeles[cip]) { ec.appelRecent++; continue; }
+            aAppeler.push(o);
+            if (moisDepuis(cip) != null) vues++;
+            continue;
+          }
+
           if (recent[cip]) { ec.relanceRecente++; continue; }
-          // Sans adresse mail, on ne peut pas l'inviter : elle sort de CETTE
-          // liste, et l'écran le dit. Elle n'est pas perdue — elle relève du
-          // téléphone, pas d'une campagne.
-          if (!o.email) { ec.sansMail++; continue; }
           retenues.push(o);
           if (moisDepuis(cip) != null) vues++;
         }
@@ -237,27 +261,56 @@
         // Deux passages, et c'est nécessaire : le poids de « aucune visite
         // connue » dépend de la couverture GLOBALE, qu'on ne connaît qu'après
         // avoir parcouru toute la liste.
-        var couverture = retenues.length ? vues / retenues.length : 0;
+        var total = retenues.length + aAppeler.length;
+        var couverture = total ? vues / total : 0;
         var datesUtiles = vues >= 3 && couverture >= 0.05;
 
-        for (i = 0; i < retenues.length; i++) {
-          var r2 = retenues[i], c2 = String(r2.cip);
-          var tens = V2.rdvTension ? V2.rdvTension(c2) : { n: 0, dispo: 0 };
-          var n = noter(r2, ach, tens, datesUtiles);
-          if (!n.raisons.length) continue;      // aucune raison = aucune ligne
-          out.push({
-            cip: c2, nom: r2.nom || '', ville: r2.ville || '',
-            type: r2.type || 'client', email: r2.email,
-            pts: n.pts, raisons: n.raisons, ca: n.ca
-          });
+        // Les deux listes se notent exactement pareil : ce qui change, c'est
+        // le canal, pas l'urgence.
+        // ⚠️ CE QUI N'A AUCUNE RAISON N'EST PAS PERDU, IL EST MIS DE CÔTÉ.
+        // Mesuré le 21/08 : sur ~518 officines joignables par téléphone, 5
+        // seulement portaient un signal. Les 513 autres — des prospects sans
+        // achat, donc sans chiffre, sans rupture, sans date de visite — étaient
+        // écartées SANS QUE L'ÉCRAN LE DISE. Une liste de 5 qui prétend
+        // couvrir le secteur est un mensonge par omission. On les garde à
+        // part, on les compte, et l'écran les propose quand la liste motivée
+        // est épuisée.
+        function classer(source, dedans, reste, compteur) {
+          for (var k = 0; k < source.length; k++) {
+            var o2 = source[k], c2 = String(o2.cip);
+            var tens = V2.rdvTension ? V2.rdvTension(c2) : { n: 0, dispo: 0 };
+            var n = noter(o2, ach, tens, datesUtiles);
+            if (!n.raisons.length) {
+              ec[compteur]++;
+              reste.push({ cip: c2, nom: o2.nom || '', ville: o2.ville || '',
+                           type: o2.type || 'client', email: o2.email, tel: o2.tel || '',
+                           pts: 0, raisons: [], ca: n.ca });
+              continue;
+            }
+            dedans.push({
+              cip: c2, nom: o2.nom || '', ville: o2.ville || '',
+              type: o2.type || 'client', email: o2.email, tel: o2.tel || '',
+              pts: n.pts, raisons: n.raisons, ca: n.ca
+            });
+          }
+          dedans.sort(function (a, b) { return b.pts - a.pts; });
+          // Sans signal, le seul ordre honnête est le poids : ce qu'elle
+          // achète déjà, puis le nom. Prétendre les classer autrement serait
+          // inventer une priorité qu'on n'a pas.
+          reste.sort(function (a, b) { return (b.ca - a.ca) || a.nom.localeCompare(b.nom); });
         }
-        out.sort(function (a, b) { return b.pts - a.pts; });
-        return { liste: out, ecartes: ec, comparable: ach.comparable,
+        var resteMail = [], resteTel = [];
+        classer(retenues, out, resteMail, 'sansSignalMail');
+        var appels = [];
+        classer(aAppeler, appels, resteTel, 'sansSignalTel');
+        return { liste: out, appels: appels,
+                 resteMail: resteMail, resteTel: resteTel,
+                 ecartes: ec, comparable: ach.comparable,
                  periode: ach.periode, moisEcartes: ach.moisEcartes,
-                 vues: vues, retenues: retenues.length, datesUtiles: datesUtiles,
+                 vues: vues, retenues: total, datesUtiles: datesUtiles,
                  total: pool.length };
       }).catch(function () {
-        return { liste: [], ecartes: {}, panne: true };
+        return { liste: [], appels: [], resteMail: [], resteTel: [], ecartes: {}, panne: true };
       });
     },
 
@@ -378,8 +431,15 @@
     if (ec.rdvPris) b.push(ec.rdvPris + ' ' + (ec.rdvPris > 1 ? 'ont' : 'a') + ' déjà un rendez-vous');
     if (ec.relanceRecente) b.push(ec.relanceRecente + ' ' + (ec.relanceRecente > 1 ? 'ont' : 'a') +
       ' reçu un lien il y a moins de 7 jours');
-    if (ec.sansMail) b.push(ec.sansMail + ' ' + (ec.sansMail > 1 ? 'n’ont' : 'n’a') +
-      ' pas d’adresse mail connue — celles-là se travaillent au téléphone');
+    // ⚠️ « Sans adresse mail » a disparu de cette liste le 21/08 : ces
+    // officines ne sont plus écartées, elles ont leur propre écran. Ne restent
+    // ici que celles qu'on ne peut joindre par AUCUN canal.
+    if (ec.sansRien) b.push(ec.sansRien + ' ' + (ec.sansRien > 1 ? 'n’ont' : 'n’a') +
+      ' ni adresse mail ni téléphone connus');
+    if (ec.appelRecent) b.push(ec.appelRecent + ' ' + (ec.appelRecent > 1 ? 'ont' : 'a') +
+      ' été appelée' + (ec.appelRecent > 1 ? 's' : '') + ' il y a moins de trois semaines');
+    if (ec.sansSignalMail) b.push(ec.sansSignalMail + ' ' + (ec.sansSignalMail > 1 ? 'n’ont' : 'n’a') +
+      ' aucun signal aujourd’hui (ni retard, ni baisse, ni rupture en stock)');
     if (ec.stop) b.push(ec.stop + ' ' + (ec.stop > 1 ? 'ont' : 'a') + ' demandé à ne plus être sollicitée');
     var t = b.length
       ? '<p class="rad-note"><b>Écartées de cette liste :</b> ' + esc(b.join(' · ')) + '.</p>'
@@ -465,6 +525,11 @@
                 'et au-delà les messageries d’officine trient en indésirable.</p>'
               : '') +
             ecartesTexte(r.ecartes || {}, r.comparable, r.periode, r.moisEcartes) +
+            (r.appels && r.appels.length
+              ? '<p class="rad-note"><b>' + r.appels.length + ' autres officines n’ont pas ' +
+                'd’adresse mail mais ont un téléphone.</b> Elles ne sont pas perdues — ' +
+                '<a href="#" onclick="V2.go(\'rdvappels\');return false">voir qui appeler</a>.</p>'
+              : '') +
             '<div class="rad-bar">' +
               '<button class="v2-btn v2-btn-primary" onclick="V2.rdvRadar.versCampagne(' +
                 esc(JSON.stringify(cips)).replace(/"/g, '&quot;') + ')">' +

@@ -21,7 +21,7 @@
 
   // Colonnes de PHARMA_FR :
   // [lat, lng, uga, grp, seg, comm, nom, ville, cp, tel, titulaire, email, ca, id]
-  var COL = { grp: 3, seg: 4, comm: 5, nom: 6, ville: 7, cp: 8, email: 11, id: 13 };
+  var COL = { grp: 3, seg: 4, comm: 5, nom: 6, ville: 7, cp: 8, tel: 9, email: 11, id: 13 };
 
   function txt(v) { return String(v == null ? '' : v).trim(); }
   function dept(cp) { return txt(cp).slice(0, 2); }
@@ -59,6 +59,7 @@
       if (parCip[cle]) {                       // déjà vu : on complète les trous
         var d = parCip[cle];
         if (!d.email && o.email) d.email = o.email;
+        if (!d.tel && o.tel) d.tel = o.tel;
         if (!d.groupement && o.groupement) d.groupement = o.groupement;
         if (!d.ville && o.ville) d.ville = o.ville;
         if (!d.cp && o.cp) { d.cp = o.cp; d.dept = dept(o.cp); }
@@ -92,6 +93,12 @@
         cp: txt(p.cp || inf.cp || (n ? n[COL.cp] : '')),
         dept: dept(p.cp || inf.cp || (n ? n[COL.cp] : '')),
         email: txt(inf.email || (n ? n[COL.email] : '')),
+        // ⚠️ Le téléphone, ajouté le 21/08/2026. Mesuré la veille : 1 514
+        // officines du secteur n'ont AUCUNE adresse mail, et 1 380 d'entre
+        // elles (91 %) ont un numéro. Sans lui ici, elles restaient
+        // injoignables pour tout le module — pas faute de coordonnées, faute
+        // de les avoir transportées jusqu'ici.
+        tel: txt(inf.tel || (n ? n[COL.tel] : '')),
         type: 'client',
         groupement: grpDe(n)
       });
@@ -133,6 +140,7 @@
           cp: txt(l[COL.cp] || inf2.cp),
           dept: dept(l[COL.cp] || inf2.cp),
           email: txt(inf2.email || l[COL.email]),
+          tel: txt(inf2.tel || l[COL.tel]),
           type: 'prospect',
           groupement: grpDe(l)
         });
