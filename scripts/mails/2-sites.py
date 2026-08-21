@@ -18,6 +18,7 @@ Compatible Python 3.9.
 """
 import json
 import re
+import signal
 import sys
 import time
 import urllib.error
@@ -41,13 +42,62 @@ REJET = re.compile(r"(sentry|wixpress|example|sentry\.io|@2x|\.png|\.jpg|\.gif|\
                    r"webmaster@|noreply|no-reply|donotreply)", re.I)
 
 
+# ⚠️ UNE LIMITE DE TEMPS PAR SITE, ET ELLE EST INDISPENSABLE.
+# Mesure du 21/08/2026 : le script a tourne 34 minutes sur 21 sites, puis
+# 10 de plus sans avancer d'un seul. Le `timeout=` d'urlopen ne couvre QUE
+# les operations de socket — un serveur qui repond au compte-gouttes tient la
+# lecture du corps ouverte indefiniment. Et `RobotFileParser.read()` n'avait,
+# lui, aucun delai du tout.
+# `signal.alarm` coupe le site entier, quoi qu'il fasse. Unix uniquement, ce
+# qui est le cas ici comme en CI.
+# ⚠️ BaseException, PAS Exception. `robots_ok` et `lire` finissent toutes
+# deux par `except Exception: ...` — une alarme qui hérite d'Exception s'y
+# fait avaler, le reveil est consomme, et le site continue de bloquer comme
+# si de rien n'etait. Mesure : 45 s sans une seule ligne de progression.
+class TropLong(BaseException):
+    pass
+
+
+def _sonner(signum, frame):
+    raise TropLong()
+
+
+class limite_de_temps(object):
+    """with limite_de_temps(25): ... — leve TropLong au-dela."""
+
+    def __init__(self, secondes):
+        self.s = secondes
+
+    def __enter__(self):
+        self.avant = signal.signal(signal.SIGALRM, _sonner)
+        signal.alarm(self.s)
+
+    def __exit__(self, *a):
+        signal.alarm(0)
+        signal.signal(signal.SIGALRM, self.avant)
+        return False
+
+
 def robots_ok(base, chemin):
     """robots.txt fait foi. En cas de doute (fichier illisible), on s'autorise
-    la page d'accueil et de contact : ce sont des pages publiques de contact."""
+    la page d'accueil et de contact : ce sont des pages publiques de contact.
+
+    ⚠️ ON NE PASSE PLUS PAR rp.read(). Mesuré le 21/08/2026 : la methode de la
+    bibliotheque standard appelle urlopen SANS delai maximum. Un serveur qui
+    accepte la connexion et ne repond jamais bloque le script pour toujours —
+    il a tourne 34 minutes sur 21 sites, sans une seule connexion ouverte,
+    avant qu'on comprenne. On lit le fichier soi-meme, avec un delai, et on
+    le donne a parse()."""
+    try:
+        r = urllib.request.Request(urllib.parse.urljoin(base, "/robots.txt"),
+                                   headers={"User-Agent": UA})
+        with urllib.request.urlopen(r, timeout=TIMEOUT) as rep:
+            texte = rep.read(65536).decode("utf-8", "replace")
+    except Exception:
+        return True                      # illisible : on s'autorise le contact
     try:
         rp = urllib.robotparser.RobotFileParser()
-        rp.set_url(urllib.parse.urljoin(base, "/robots.txt"))
-        rp.read()
+        rp.parse(texte.splitlines())
         return rp.can_fetch(UA, urllib.parse.urljoin(base, chemin or "/"))
     except Exception:
         return True
@@ -119,15 +169,22 @@ def main():
         domaine = p.netloc.lower()
 
         mail, source = "", ""
-        for chemin in CHEMINS:
-            if not robots_ok(base, chemin):
-                continue
-            url = base + chemin if chemin else site
-            adresses = extraire(lire(url), domaine)
-            if adresses:
-                mail, source = adresses[0], url
-                break
-            time.sleep(0.4)
+        # Un site entier ne bloque pas la liste : au-dela de 25 s toutes pages
+        # confondues, on passe. Une officine muette coute moins cher qu'un
+        # script qui ne finit jamais.
+        try:
+            with limite_de_temps(25):
+                for chemin in CHEMINS:
+                    if not robots_ok(base, chemin):
+                        continue
+                    url = base + chemin if chemin else site
+                    adresses = extraire(lire(url), domaine)
+                    if adresses:
+                        mail, source = adresses[0], url
+                        break
+                    time.sleep(0.4)
+        except TropLong:
+            mail, source = "", ""
 
         faits[cip] = {"email": mail, "source": source, "site": site}
         if mail:
