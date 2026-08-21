@@ -136,6 +136,21 @@
       '.lip-vtxt{font-size:13.5px;line-height:1.62;color:var(--lip-ink70);white-space:pre-wrap;word-break:break-word}',
       '.lip-vaide{font-size:11.5px;color:var(--lip-ink35);margin-top:7px;font-style:italic}',
 
+      /* sujets — 3 propositions de post pour un même créneau */
+      '.lip-suj{display:flex;gap:10px;align-items:flex-start;border:1.5px solid var(--lip-line);border-radius:12px;padding:13px 15px;margin-bottom:9px;cursor:pointer;background:#fff;transition:all .15s var(--lip-ease)}',
+      '.lip-suj:hover{border-color:#c9d3e2;background:#fcfdff}',
+      '.lip-suj.on{border-color:var(--lip-blue);background:var(--lip-blue050);box-shadow:0 0 0 3px rgba(0,87,255,.09)}',
+      '.lip-suj .lip-radio{margin-top:2px}',
+      '.lip-suj.on .lip-radio{border-color:var(--lip-blue)}',
+      '.lip-suj.on .lip-radio::after{content:"";width:9px;height:9px;border-radius:50%;background:var(--lip-blue)}',
+      '.lip-sujc{min-width:0;flex:1}',
+      '.lip-sujn{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--lip-ink35);margin-bottom:3px}',
+      '.lip-sujt{font-size:14.5px;font-weight:800;letter-spacing:-.015em;line-height:1.35;color:var(--lip-ink)}',
+      '.lip-suja{font-size:12.5px;line-height:1.55;color:var(--lip-ink50);margin-top:5px}',
+      '.lip-sujm{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:8px}',
+      '.lip-badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:800;background:var(--lip-blue050);color:var(--lip-blue)}',
+      '.lip-nsuj{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:800;color:var(--lip-blue);background:var(--lip-blue050);padding:3px 9px;border-radius:20px;white-space:nowrap}',
+
       '.lip-ta{width:100%;min-height:96px;padding:12px 14px;border-radius:10px;border:1.5px solid var(--lip-line);font:400 16px/1.55 inherit;color:var(--lip-ink);resize:vertical;background:#fff;box-sizing:border-box}',
       '.lip-ta:focus{outline:none;border-color:var(--lip-blue);box-shadow:0 0 0 3px rgba(0,87,255,.09)}',
       '.lip-hint{font-size:12px;color:var(--lip-ink35);margin-top:7px;line-height:1.5}',
@@ -218,6 +233,27 @@
   function pilier(k) { var a = piliers(); for (var i = 0; i < a.length; i++) if (a[i].k === k) return a[i]; return { k: k, label: k, color: '#ccc', bg: '#eee' }; }
   function meta() { return window.LI_PLAN_META || {}; }
 
+  /* ────────── les 3 sujets d'un même créneau ──────────
+     LI_PLAN porte le sujet d'origine ; mkt-li-plan-alt-data.js porte les deux
+     autres, rangés par numéro de créneau. Le fichier est lourd (206 sujets) :
+     il se charge à côté, sans bloquer l'affichage de la chronologie.
+     La date, l'heure et le pilier appartiennent au CRÉNEAU, pas au sujet :
+     changer de sujet ne déplace jamais un post ni ne déséquilibre le plan. */
+  function alts() { return window.LI_PLAN_ALT || null; }
+  function sujetsDe(p) {
+    var A = alts(), out = [p];
+    if (A && A[p.n]) {
+      for (var i = 0; i < A[p.n].length; i++) {
+        var a = A[p.n][i];
+        out.push({ n: p.n, d: p.d, h: p.h, p: p.p, f: a.f || p.f, titre: a.titre,
+          angle: a.angle, t: a.t, v: a.v, tags: a.tags || p.tags, alt: true });
+      }
+    }
+    return out;
+  }
+  function sujetDe(p, i) { var S = sujetsDe(p); return S[i] || S[0]; }
+  function sujetOuvert() { return ouvert ? sujetDe(ouvert.p, ouvert.e.sujet || 0) : null; }
+
   /* ────────── chargement paresseux des données ────────── */
   // Le jeton de cache est repris du <script src> de CE fichier : il suit donc
   // automatiquement le bump global de index.html. Sans jeton, le navigateur
@@ -259,10 +295,10 @@
   /* ─────────────── état de validation ─────────────── */
   var LS = 'jarvis_li_plan_valid';
   var backend = 'local';
-  var etats = {};          // plan_id -> {statut, variante, visuel, commentaire}
+  var etats = {};          // plan_id -> {sujet, statut, variante, visuel, commentaire}
   var charge = false;
 
-  function vide() { return { statut: 'attente', variante: null, visuel: null, commentaire: '', image_path: '' }; }
+  function vide() { return { sujet: 0, statut: 'attente', variante: null, visuel: null, commentaire: '', image_path: '' }; }
   function etat(n) { return etats[n] || vide(); }
   function localTout() { try { var o = JSON.parse(localStorage.getItem(LS) || '{}'); return (o && typeof o === 'object') ? o : {}; } catch (e) { return {}; } }
   function localEcrire(o) { try { localStorage.setItem(LS, JSON.stringify(o)); } catch (e) {} }
@@ -274,7 +310,7 @@
       if (r.error || !r.data) { backend = 'local'; etats = localTout(); return etats; }
       backend = 'supabase'; etats = {};
       r.data.forEach(function (x) {
-        etats[x.plan_id] = { statut: x.statut || 'attente', variante: (x.variante === null || x.variante === undefined) ? null : x.variante,
+        etats[x.plan_id] = { sujet: x.sujet || 0, statut: x.statut || 'attente', variante: (x.variante === null || x.variante === undefined) ? null : x.variante,
           visuel: (x.visuel === null || x.visuel === undefined) ? null : x.visuel, commentaire: x.commentaire || '',
           image_path: x.image_path || '',
           qui: x.qui || '', updated_at: x.updated_at || null };
@@ -300,7 +336,7 @@
   }
 
   function ligne(n, e) {
-    return { plan_id: n, statut: e.statut, variante: e.variante, visuel: e.visuel,
+    return { plan_id: n, sujet: e.sujet || 0, statut: e.statut, variante: e.variante, visuel: e.visuel,
       commentaire: e.commentaire || '', image_path: e.image_path || '',
       qui: (V2.user && V2.user.email) || '', updated_at: new Date().toISOString() };
   }
@@ -413,12 +449,13 @@
     if (!ouvert) return 'gabarit';
     if (apprVue) return apprVue;
     var i = (ouvert.e.visuel === null) ? 0 : ouvert.e.visuel;
-    return approcheSuggeree((ouvert.p.v && ouvert.p.v[i]) || '');
+    var c = sujetOuvert();
+    return approcheSuggeree((c && c.v && c.v[i]) || '');
   }
   V2.lip.copierPrompt = function () {
     if (!ouvert) return;
     var i = (ouvert.e.visuel === null) ? 0 : ouvert.e.visuel;
-    var txt = promptPour(ouvert.p, i, apprCourante());
+    var txt = promptPour(sujetOuvert(), i, apprCourante());
     if (!txt) { toast('La fiche de direction artistique n’est pas chargée', 'error'); return; }
     var a = approcheDe(apprCourante());
     if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -537,7 +574,9 @@
     if (flt.statut && etat(p.n).statut !== flt.statut) return false;
     if (flt.q) {
       var q = flt.q.toLowerCase();
-      var foin = (p.titre + ' ' + p.angle + ' ' + p.tags + ' ' + p.t.map(function (t) { return t.txt; }).join(' ')).toLowerCase();
+      var foin = sujetsDe(p).map(function (c) {
+        return c.titre + ' ' + c.angle + ' ' + c.tags + ' ' + c.t.map(function (t) { return t.txt; }).join(' ');
+      }).join(' ').toLowerCase();
       if (foin.indexOf(q) < 0) return false;
     }
     return true;
@@ -640,9 +679,11 @@
 
   function carte(p) {
     var e = etat(p.n), st = statut(e.statut), pl = pilier(p.p);
+    var S = sujetsDe(p), si = e.sujet || 0, cur = S[si] || S[0];
     var d = new Date(p.d + 'T12:00:00');
     var choix = [];
-    if (e.variante !== null && p.t[e.variante]) choix.push('Texte ' + (e.variante + 1));
+    if (S.length > 1 && si > 0) choix.push('Sujet ' + String.fromCharCode(65 + si));
+    if (e.variante !== null && cur.t[e.variante]) choix.push('Texte ' + (e.variante + 1));
     if (e.visuel !== null) choix.push('Visuel ' + (e.visuel + 1));
     if (e.commentaire) choix.push('commentaire');
     return '<div class="lip-card" style="--pc:' + pl.color + '" tabindex="0" role="button" ' +
@@ -656,10 +697,11 @@
         '<div class="lip-meta">' +
           '<span class="lip-num">#' + p.n + '</span>' +
           '<span class="lip-tag" style="background:' + pl.bg + ';color:' + (pl.txt || pl.color) + '"><span class="lip-cd" style="background:' + pl.color + '"></span>' + esc(pl.label) + '</span>' +
-          '<span class="lip-fmt">' + esc(p.f) + '</span>' +
+          '<span class="lip-fmt">' + esc(cur.f) + '</span>' +
+          (S.length > 1 ? '<span class="lip-nsuj">' + S.length + ' sujets au choix</span>' : '') +
         '</div>' +
-        '<h3 class="lip-titre">' + esc(p.titre) + '</h3>' +
-        '<div class="lip-angle">' + esc(p.angle) + '</div>' +
+        '<h3 class="lip-titre">' + esc(cur.titre) + '</h3>' +
+        '<div class="lip-angle">' + esc(cur.angle) + '</div>' +
       '</div>' +
       '<div class="lip-right">' +
         '<span class="lip-st" style="background:' + st.bg + ';color:' + st.txt + '">' + esc(st.label) + '</span>' +
@@ -681,6 +723,11 @@
       chargerEtats().then(function () { redessine(); });
       // la DA alimente l'encart « prompt » de chaque fiche : on la charge d'emblée
       charger('mkt-li-da-data.js', da).then(function (ok) { if (ok) redessine(); });
+      // les 2 sujets supplémentaires par créneau : fichier lourd, chargé à côté,
+      // sans bloquer la chronologie. Tant qu'il n'est pas là, un seul sujet.
+      charger('mkt-li-plan-alt-data.js', alts).then(function (ok) {
+        if (ok) { redessine(); if (ouvert) redessineTiroir(); }
+      });
     }
     // une seule chronologie : les posts du plan et les posts libres mélangés,
     // triés par date. Un post reste un post, quelle que soit son origine.
@@ -759,6 +806,8 @@
 
   function drawerHtml() {
     var p = ouvert.p, e = ouvert.e, pl = pilier(p.p);
+    // Le créneau donne la date et le pilier ; le sujet retenu donne tout le reste.
+    var S = sujetsDe(p), si = e.sujet || 0, cur = S[si] || S[0];
     var d = new Date(p.d + 'T12:00:00');
     var quand = JOURS[(d.getDay() + 6) % 7] + ' ' + d.getDate() + ' ' + MOIS[d.getMonth()] + ' ' + d.getFullYear() + ' à ' + p.h.replace(':', 'h');
 
@@ -769,9 +818,30 @@
         '<span class="lip-kd" style="background:' + (on ? '#fff' : s.color) + '"></span>' + esc(s.label) + '</button>';
     }).join('');
 
+    var sujs = S.map(function (c, i) {
+      var extrait = String((c.t && c.t[0] && c.t[0].txt) || '').replace(/\s+/g, ' ').slice(0, 130);
+      // couper au dernier espace : « les con… » se lit mal
+      var esp = extrait.lastIndexOf(' ');
+      if (esp > 90) extrait = extrait.slice(0, esp);
+      // le texte ouvre parfois lui-même sur un guillemet : ne pas en mettre deux
+      var cite = extrait.charAt(0) === '«';
+      return '<div class="lip-suj' + (si === i ? ' on' : '') + '" onclick="V2.lip.setChamp(\'sujet\',' + i + ')">' +
+        '<span class="lip-radio"></span><div class="lip-sujc">' +
+        '<div class="lip-sujn">Sujet ' + String.fromCharCode(65 + i) + (i === 0 ? ' · proposition d’origine' : '') + '</div>' +
+        '<div class="lip-sujt">' + esc(c.titre) + '</div>' +
+        '<div class="lip-suja">' + esc(c.angle) + '</div>' +
+        '<div class="lip-sujm"><span class="lip-fmt">' + esc(c.f) + '</span>' +
+          '<span class="lip-badge">' + (c.t ? c.t.length : 0) + ' textes</span>' +
+          '<span class="lip-badge">' + (c.v ? c.v.length : 0) + ' visuels</span></div>' +
+        (si === i ? '' : '<div class="lip-suja" style="margin-top:7px;font-style:italic">' +
+          (cite ? esc(extrait) + '… »' : '« ' + esc(extrait) + '… »') + '</div>') +
+      '</div></div>';
+    }).join('');
+    var chargeAlt = !alts();
+
     var tons = (meta().tons || []);
     function tonMeta(k) { for (var i = 0; i < tons.length; i++) if (tons[i].k === k) return tons[i]; return { label: k, aide: '' }; }
-    var vars = p.t.map(function (t, i) {
+    var vars = cur.t.map(function (t, i) {
       var tm = tonMeta(t.ton);
       return '<div class="lip-var' + (e.variante === i ? ' on' : '') + '" onclick="V2.lip.setChamp(\'variante\',' + i + ')">' +
         '<div class="lip-vtop"><span class="lip-radio"></span><span class="lip-vton">Texte ' + (i + 1) + ' — ' + esc(tm.label) + '</span>' +
@@ -781,7 +851,7 @@
         '</div>';
     }).join('');
 
-    var vis = p.v.map(function (v, i) {
+    var vis = cur.v.map(function (v, i) {
       return '<div class="lip-var' + (e.visuel === i ? ' on' : '') + '" onclick="V2.lip.setChamp(\'visuel\',' + i + ')">' +
         '<div class="lip-vtop"><span class="lip-radio"></span><span class="lip-vton">Visuel ' + (i + 1) + '</span></div>' +
         '<div class="lip-vtxt">' + esc(v) + '</div></div>';
@@ -791,16 +861,22 @@
       '<aside class="lip-dr" role="dialog" aria-modal="true" aria-label="Validation du post ' + p.n + '">' +
         '<div class="lip-drh"><div style="flex:1;min-width:0">' +
           '<div class="lip-eyebrow">Post #' + p.n + ' · ' + esc(quand) + '</div>' +
-          '<h2>' + esc(p.titre) + '</h2>' +
+          '<h2>' + esc(cur.titre) + '</h2>' +
           '<div class="lip-meta" style="margin-top:9px">' +
             '<span class="lip-tag" style="background:' + pl.bg + ';color:' + (pl.txt || pl.color) + '"><span class="lip-cd" style="background:' + pl.color + '"></span>' + esc(pl.label) + '</span>' +
-            '<span class="lip-fmt">' + esc(p.f) + '</span></div>' +
+            '<span class="lip-fmt">' + esc(cur.f) + '</span></div>' +
         '</div><button class="lip-close" onclick="V2.lip.fermer()" aria-label="Fermer">' + ICO('close', 18, 2) + '</button></div>' +
         '<div class="lip-drb">' +
-          '<div class="lip-field"><span class="lip-flab">Angle éditorial</span><div class="lip-note">' + esc(p.angle) + '</div></div>' +
+          '<div class="lip-field"><span class="lip-flab">Choix du sujet — ' + S.length + ' proposition' + (S.length > 1 ? 's' : '') + ' pour ce créneau</span>' +
+            sujs +
+            (chargeAlt
+              ? '<div class="lip-hint">Chargement des autres sujets proposés pour cette date…</div>'
+              : '<div class="lip-hint">Même date, même pilier éditorial : seul le sujet change. ' +
+                'Les textes, les visuels et le prompt image ci-dessous suivent le sujet retenu.</div>') +
+          '</div>' +
           '<div class="lip-field"><span class="lip-flab">Décision de la direction</span><div class="lip-stats">' + stats + '</div></div>' +
-          '<div class="lip-field"><span class="lip-flab">Choix du texte — 3 propositions</span>' + vars + '</div>' +
-          '<div class="lip-field"><span class="lip-flab">Choix du visuel — 2 propositions</span>' + vis + '</div>' +
+          '<div class="lip-field"><span class="lip-flab">Choix du texte — ' + cur.t.length + ' propositions</span>' + vars + '</div>' +
+          '<div class="lip-field"><span class="lip-flab">Choix du visuel — ' + cur.v.length + ' propositions</span>' + vis + '</div>' +
           (function () {
             var d = da();
             if (!d) return '<div class="lip-field"><span class="lip-flab">Prompt pour le générateur d’images</span>' +
@@ -808,14 +884,15 @@
             var iv = (e.visuel === null) ? 0 : e.visuel;
             var k = apprCourante();
             var a = approcheDe(k);
+            var pv = cur.v;
             var onglets = d.approches.map(function (x) {
               return '<button class="lip-apbtn' + (x.k === k ? ' on' : '') + '" onclick="V2.lip.setApproche(\'' + x.k + '\')">' + esc(x.label) + '</button>';
             }).join('');
-            var mots = motsAPoser((p.v && p.v[iv]) || '');
+            var mots = motsAPoser((pv && pv[iv]) || '');
             return '<div class="lip-field"><span class="lip-flab">Prompt pour le générateur d’images — 3 approches</span>' +
               '<div class="lip-aptabs">' + onglets + '</div>' +
               '<div class="lip-apaide">' + esc(a.aide) + '</div>' +
-              '<div class="lip-prompt">' + esc(promptPour(p, iv, k)) + '</div>' +
+              '<div class="lip-prompt">' + esc(promptPour(cur, iv, k)) + '</div>' +
               '<div class="lip-imgacts" style="margin-top:9px">' +
                 '<button class="lip-btn lip-btn-p" onclick="V2.lip.copierPrompt()">Copier ce prompt</button>' +
                 '<button class="lip-btn" onclick="V2.lip.voirDA()">Voir notre DA</button></div>' +
@@ -839,7 +916,7 @@
           '<div class="lip-field"><span class="lip-flab">Commentaire</span>' +
             '<textarea class="lip-ta" placeholder="Ce qu\'il faut changer, préciser, éviter…" oninput="V2.lip.setChamp(\'commentaire\',this.value)">' + esc(e.commentaire || '') + '</textarea>' +
             '<div class="lip-hint">Visible par toute l\'équipe. Utile surtout pour « à retravailler ».</div>' +
-            '<div class="lip-tags">Hashtags prévus : ' + esc(p.tags) + '</div>' +
+            '<div class="lip-tags">Hashtags prévus : ' + esc(cur.tags) + '</div>' +
           '</div>' +
         '</div>' +
         '<div class="lip-drf">' +
@@ -1063,13 +1140,18 @@
     if (!p) return;
     var e = etat(n);
     apprVue = null;
-    ouvert = { n: n, p: p, envoi: '', e: { statut: e.statut, variante: e.variante, visuel: e.visuel, commentaire: e.commentaire || '', image_path: e.image_path || '' } };
+    ouvert = { n: n, p: p, envoi: '', e: { sujet: e.sujet || 0, statut: e.statut, variante: e.variante, visuel: e.visuel, commentaire: e.commentaire || '', image_path: e.image_path || '' } };
     monter(drawerHtml());
   };
   V2.lip.fermer = fermer;
   V2.lip.setChamp = function (champ, val) {
     if (!ouvert) return;
     ouvert.e[champ] = val;
+    if (champ === 'sujet') {
+      // Texte 2 du sujet A n'a rien à voir avec Texte 2 du sujet B : garder
+      // l'ancien numéro ferait valider un texte que personne n'a lu.
+      ouvert.e.variante = null; ouvert.e.visuel = null; apprVue = null;
+    }
     if (champ === 'visuel') apprVue = null;   // l'approche suggérée suit le visuel choisi
     if (champ === 'commentaire') return;          // ne pas redessiner sous les doigts
     redessineTiroir();   // conserve la position de défilement
@@ -1084,19 +1166,19 @@
   };
   V2.lip.copier = function () {
     if (!ouvert) return;
-    var i = ouvert.e.variante;
-    if (i === null || !ouvert.p.t[i]) { toast('Choisissez d\'abord une des trois propositions de texte', 'error'); return; }
-    var txt = ouvert.p.t[i].txt;
+    var cur = sujetOuvert(), i = ouvert.e.variante;
+    if (i === null || !cur.t[i]) { toast('Choisissez d\'abord une des propositions de texte', 'error'); return; }
+    var txt = cur.t[i].txt;
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(txt).then(function () { toast('Texte copié'); }, function () { window.prompt('Copiez le texte :', txt); });
     } else window.prompt('Copiez le texte :', txt);
   };
   V2.lip.publier = function () {
     if (!ouvert) return;
-    var i = ouvert.e.variante;
-    if (i === null) { toast('Choisissez d’abord une des trois propositions de texte', 'error'); return; }
+    var cur = sujetOuvert(), i = ouvert.e.variante;
+    if (i === null || !cur.t[i]) { toast('Choisissez d’abord une des propositions de texte', 'error'); return; }
     if (ouvert.e.statut !== 'valide' && !confirm('Ce post n’est pas encore validé par la direction.\n\nL’ouvrir quand même dans LinkedIn ?')) return;
-    var txt = ouvert.p.t[i].txt;
+    var txt = cur.t[i].txt;
     var suite = function () {
       window.open('https://www.linkedin.com/feed/?shareActive=true', '_blank');
       if (ouvert && ouvert.e.image_path) {
@@ -1120,15 +1202,17 @@
   V2.lip.exportCsv = function () {
     var P = plan(); if (!P) return;
     var q = function (s) { return '"' + String(s == null ? '' : s).replace(/"/g, '""') + '"'; };
-    var l = [['N','Date','Heure','Pilier','Format','Titre','Angle','Statut','Texte choisi','Visuel choisi','Commentaire','Hashtags','Texte 1','Texte 2','Texte 3','Visuel 1','Visuel 2'].map(q).join(';')];
+    var l = [['N','Date','Heure','Pilier','Sujet retenu','Format','Titre','Angle','Statut','Texte choisi','Visuel choisi','Commentaire','Hashtags','Texte 1','Texte 2','Texte 3','Visuel 1','Visuel 2','Autres sujets proposés'].map(q).join(';')];
     P.forEach(function (p) {
-      var e = etat(p.n);
-      l.push([p.n, p.d, p.h, pilier(p.p).label, p.f, p.titre, p.angle, statut(e.statut).label,
+      var e = etat(p.n), S = sujetsDe(p), si = e.sujet || 0, c = S[si] || S[0];
+      var autres = S.filter(function (x, i) { return i !== si; })
+        .map(function (x, i) { return x.titre; }).join(' | ');
+      l.push([p.n, p.d, p.h, pilier(p.p).label, 'Sujet ' + String.fromCharCode(65 + si), c.f, c.titre, c.angle, statut(e.statut).label,
         e.variante === null ? '' : 'Texte ' + (e.variante + 1),
         e.visuel === null ? '' : 'Visuel ' + (e.visuel + 1),
-        e.commentaire || '', p.tags,
-        p.t[0] ? p.t[0].txt : '', p.t[1] ? p.t[1].txt : '', p.t[2] ? p.t[2].txt : '',
-        p.v[0] || '', p.v[1] || ''].map(q).join(';'));
+        e.commentaire || '', c.tags,
+        c.t[0] ? c.t[0].txt : '', c.t[1] ? c.t[1].txt : '', c.t[2] ? c.t[2].txt : '',
+        c.v[0] || '', c.v[1] || '', autres].map(q).join(';'));
     });
     var blob = new Blob(['﻿' + l.join('\r\n')], { type: 'text/csv;charset=utf-8' });
     var a = document.createElement('a');
