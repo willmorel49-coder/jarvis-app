@@ -647,6 +647,7 @@
     suivi: '<path d="M4 19V5"/><path d="M4 19h16"/><path d="m7.5 14 3.5-4 3 2.5L19 7"/>',
     radar: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/>' +
            '<path d="M12 3v3M12 18v3M3 12h3M18 12h3"/>',
+    tel: '<path d="M6.5 3h3l1.5 4-2 1.5a12 12 0 0 0 5.5 5.5L16 12l4 1.5v3a2 2 0 0 1-2.2 2C10.6 17.9 6.1 13.4 4.5 5.2A2 2 0 0 1 6.5 3z"/>',
     plume: '<path d="M20 4C13 4 8 8 6.5 14.5L4 20"/><path d="M20 4c0 8-5 12-11 12H6.5"/>'
   };
 
@@ -810,6 +811,10 @@
               ? entree('campagne', 'Envoi groupé', '25 officines en copie cachée', IC.groupe) : '') +
             (V2.pages.rdvradar
               ? entree('rdvradar', 'Qui inviter', 'la liste se fait toute seule', IC.radar) : '') +
+            // 1 380 officines du secteur n'ont pas d'adresse mail mais ont un
+            // téléphone. Elles étaient invisibles pour tout le module.
+            (V2.pages.rdvappels
+              ? entree('rdvappels', 'Qui appeler', 'celles qui n’ont pas de mail', IC.tel) : '') +
             (V2.pages.rdvmodeles
               ? entree('rdvmodeles', 'Mes modèles', 'écris tes propres mails', IC.plume) : '') +
             (V2.pages.rdvsuivi
