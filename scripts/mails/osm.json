@@ -1,87 +1,483 @@
 {
- "2059384": {
-  "email": "ph.escalier@gmail.com",
+ "2010899": {
+  "email": "",
+  "site": "https://www.pharmaciengiphar.com",
+  "tel": "+332 96 33 15 93",
+  "nom_osm": "Pharmacie d'Armor"
+ },
+ "2245658": {
+  "email": "",
+  "site": "https://www.pharmaciederobien-stbrieuc.fr/",
+  "tel": "+33 2 96 94 05 81",
+  "nom_osm": "Pharmacie de Robien"
+ },
+ "2286060": {
+  "email": "pharmajgrenier@orange.fr",
   "site": "",
-  "tel": "+33 4 92 81 04 43",
-  "nom_osm": "Pharmacie Escallier"
+  "tel": "+33 2 96 93 01 20",
+  "nom_osm": "Pharmacie de l'Espace Saint-Lambert"
  },
- "2003792": {
-  "email": "pharmaciecarnot07@gmail.com",
-  "site": "https://www.pharmacie-carnot-guilherand-granges.fr",
-  "tel": "+33 4 75 44 79 03",
-  "nom_osm": "Pharmacie Carnot"
- },
- "2006621": {
+ "2083050": {
   "email": "",
-  "site": "https://pharmaciedesaintmartin.epharmacie.pro/",
-  "tel": "+33 2 96 31 97 74",
-  "nom_osm": "Pharmacie de St Martin"
+  "site": "https://www.pharmacie-even-lebellec.fr/",
+  "tel": "+33 2 96 45 20 36",
+  "nom_osm": "Pharmacie Even Le Bellec"
  },
- "2007200": {
+ "2084054": {
   "email": "",
-  "site": "https://pharmaciedelafrette.fr/",
-  "tel": "+33 4 74 54 61 88",
-  "nom_osm": "Pharmacie de La Frette"
+  "site": "https://www.pharmaciengiphar.com",
+  "tel": "+332 96 33 15 93",
+  "nom_osm": "Pharmacie d'Armor"
  },
- "2009921": {
-  "email": "pharmacie.saintjeannaise@orange.fr",
-  "site": "",
-  "tel": "+334 76 35 37 48",
-  "nom_osm": "Pharmacie Saint Jeanneaise"
- },
- "2021104": {
+ "2083218": {
   "email": "",
-  "site": "https://pharmacie-colombier-voiron.mesoigner.fr/",
+  "site": "https://www.pharmacie-du-lie-la-cheze.com/",
   "tel": "",
-  "nom_osm": "Pharmacie du Colombier"
+  "nom_osm": "Pharmacie Du Lie"
  },
- "2115485": {
-  "email": "pharmacie.ponthieu@yahoo.fr",
-  "site": "https://www.pharmaciereference.fr/pharmacie/0-point-conseil-grenoble",
-  "tel": "+33 4 76 96 51 51",
-  "nom_osm": "Pharmacie du Vercors"
- },
- "2116447": {
-  "email": "pharmaciedesaintclair@leadersante.fr",
-  "site": "http://ordonnances.leadersante.fr/pharmacie-acomat-saint-clair-du-rhone/",
-  "tel": "+33474564010",
-  "nom_osm": "Pharmacie Acomat"
- },
- "2269113": {
-  "email": "contact@pharmacievillarddelans.com",
-  "site": "https://www.pharmacie-villard-de-lans.fr/",
-  "tel": "+33 4 76 95 11 03",
-  "nom_osm": "Pharmacie de Villard de Lans"
- },
- "2123454": {
+ "2262521": {
   "email": "",
-  "site": "https://pharmaciemichel-unieux.fr/",
-  "tel": "+33 4 77 56 15 34",
-  "nom_osm": "Pharmacie Michel"
+  "site": "https://pharmacies.pharmaciengiphar.com/pharmacie/pharmacie-des-quais/0150066000",
+  "tel": "+33296924227",
+  "nom_osm": "Pharmacie des Quais"
  },
- "2002466": {
-  "email": "",
-  "site": "https://pharmaciedelongchamp44.pharminfo.fr",
-  "tel": "+33 2 40 76 58 38",
-  "nom_osm": "Pharmacie de Longchamp"
- },
- "2007326": {
-  "email": "pharmaciepad@gmail.com",
+ "2010878": {
+  "email": "pharmaciesaintcast@gmail.com",
   "site": "",
-  "tel": "+33 2 40 69 74 59",
-  "nom_osm": "Pharmacie Prairie au Duc"
+  "tel": "+33 2 96 41 80 69",
+  "nom_osm": "Pharmacie des Mielles"
  },
- "2011018": {
-  "email": "",
-  "site": "http://www.la-pharmacie-beaulieu.com/",
-  "tel": "+33 2 40 47 48 47",
-  "nom_osm": "Pharmacie Beaulieu"
+ "2263703": {
+  "email": "pharmacieduchalet22@gmail.com",
+  "site": "https://pharmacieduchaletlamballe.fr",
+  "tel": "+33 2 96 31 16 78",
+  "nom_osm": "Pharmacie du Chalet"
  },
- "2022595": {
+ "2280179": {
   "email": "",
-  "site": "http://www.pharmacie-haute-goulaine.fr/",
-  "tel": "+33 2 40 54 91 35",
-  "nom_osm": "Pharmacie Beau Soleil"
+  "site": "https://pharmaciedeploubalay.epharmacie.pro",
+  "tel": "+33 2 96 27 27 58",
+  "nom_osm": "Pharmacie de Ploubalay"
+ },
+ "2083354": {
+  "email": "",
+  "site": "https://www.pharmacie-terre-et-mer.net/",
+  "tel": "+33 2 96 70 61 40",
+  "nom_osm": "Pharmacie Terre et Mer"
+ },
+ "2085126": {
+  "email": "",
+  "site": "https://www.pharmaciedarmor-penvenan.fr/",
+  "tel": "+33 2 96 92 65 70",
+  "nom_osm": "Pharmacie d'Armor"
+ },
+ "2263022": {
+  "email": "",
+  "site": "http://www.pharmaciedumoulinvert.fr",
+  "tel": "+33 2 98 55 39 44",
+  "nom_osm": "Pharmacie du Moulin Vert"
+ },
+ "2093378": {
+  "email": "",
+  "site": "https://pharmacies.pharmaciengiphar.com/bretagne/finistere/combrit/pharmacie-blassel-412",
+  "tel": "",
+  "nom_osm": "Pharmacie Blassel"
+ },
+ "2242217": {
+  "email": "",
+  "site": "https://pharmacies.pharmaciengiphar.com/pharmacie/pharmacie-houeix/0150205000",
+  "tel": "",
+  "nom_osm": "Pharmacie Houeix"
+ },
+ "2262888": {
+  "email": "contact@chezmapharmacienne.fr",
+  "site": "https://www.chezmapharmacienne.fr/",
+  "tel": "",
+  "nom_osm": "Chez ma Pharmacienne"
+ },
+ "2092704": {
+  "email": "",
+  "site": "https://pharmaciedeliroise-brest.pharmabest.com",
+  "tel": "+33 2 98 45 09 95",
+  "nom_osm": "Pharmacie de l'Iroise"
+ },
+ "2092699": {
+  "email": "",
+  "site": "https://www.pharmacieblanchardbellevue.fr/",
+  "tel": "+332 98 03 41 97",
+  "nom_osm": "Pharmacie Blanchard"
+ },
+ "2092751": {
+  "email": "",
+  "site": "https://www.pharmacie-douric.com/",
+  "tel": "+33 2 98 02 32 27",
+  "nom_osm": "Pharmacie du Douric"
+ },
+ "2094083": {
+  "email": "",
+  "site": "https://www.pharmacieroudaut-lesneven.fr/",
+  "tel": "+33 2 98 83 00 48",
+  "nom_osm": "Pharmacie Roudaut"
+ },
+ "2263001": {
+  "email": "",
+  "site": "https://www.pharmacieducoatkaer.fr",
+  "tel": "+33 2 98 96 00 07",
+  "nom_osm": "Pharmacie du Coat-Kaër"
+ },
+ "2095506": {
+  "email": "",
+  "site": "https://pharmaciedumoulindor.com/",
+  "tel": "+33 2 98391100",
+  "nom_osm": "Pharmacie du Moulin d'Or"
+ },
+ "2005277": {
+  "email": "",
+  "site": "https://pharmacie-kerhor-quimperle.fr/",
+  "tel": "+33 2 98 96 02 16",
+  "nom_osm": "Pharmacie du Kerhor"
+ },
+ "2095422": {
+  "email": "",
+  "site": "https://www.pharmacie-delisole.fr",
+  "tel": "+33298594057",
+  "nom_osm": "Pharmacie de l’Isole"
+ },
+ "2277454": {
+  "email": "",
+  "site": "https://pharmacienotredamedekerellon.fr/",
+  "tel": "",
+  "nom_osm": "Pharmacie Notre-Dame de Kerellon"
+ },
+ "2095595": {
+  "email": "",
+  "site": "https://pharmaciedebretagne.com/",
+  "tel": "+33298882171",
+  "nom_osm": "Pharmacie de Bretagne"
+ },
+ "2265700": {
+  "email": "",
+  "site": "https://www.pharmaciedesjacobins.net/",
+  "tel": "+33 298880375",
+  "nom_osm": "Pharmacie des Jacobins"
+ },
+ "2005938": {
+  "email": "",
+  "site": "https://www.pharmaciedeguerlesquin.fr/",
+  "tel": "+33 2 98 72 87 89",
+  "nom_osm": "Pharmacie de Guerlesquin"
+ },
+ "2000320": {
+  "email": "",
+  "site": "https://pharmaciedesdeuxbaies.fr/",
+  "tel": "+33 298670028",
+  "nom_osm": "Pharmacie des Deux Baies"
+ },
+ "2095265": {
+  "email": "pharmaciedelaposte29@offisecure.fr",
+  "site": "https://www.pharmacieroscoff.com/",
+  "tel": "+33 2 98 69 70 34",
+  "nom_osm": "Pharmacie de la Poste"
+ },
+ "2094408": {
+  "email": "pharmacieducentre29@orange.fr",
+  "site": "https://www.pharmaciederenne.fr",
+  "tel": "+33298876110",
+  "nom_osm": "Pharmacie du Centre"
+ },
+ "2094633": {
+  "email": "",
+  "site": "https://pharmacie-lenestour.fr/",
+  "tel": "+33 2 98 70 78 76",
+  "nom_osm": "Pharmacie Le Nestour"
+ },
+ "2093954": {
+  "email": "",
+  "site": "https://www.pharmacie-gare-landerneau.fr/",
+  "tel": "+33298852931",
+  "nom_osm": "Pharmacie de la Gare"
+ },
+ "2095490": {
+  "email": "pharmacie.despierresdebout@orange.fr",
+  "site": "",
+  "tel": "+33 2 98 97 62 33",
+  "nom_osm": "Pharmacie des Pierres Debout"
+ },
+ "2019692": {
+  "email": "",
+  "site": "https://www.pharmacie-des-lices-rennes.com",
+  "tel": "",
+  "nom_osm": "Pharmacie des Lices"
+ },
+ "2111365": {
+  "email": "pharmacie.notredame35@gmail.com",
+  "site": "https://pharmacienotredame35.fr/",
+  "tel": "+33 2 99 38 74 89",
+  "nom_osm": "Pharmacie Notre-Dame"
+ },
+ "2111370": {
+  "email": "pharmacie.pascal@perso.alliadis.net",
+  "site": "http://pascal-rennes.pharmaciereference.com",
+  "tel": "+33 2 99 30 44 94",
+  "nom_osm": "Pharmacie Pascal"
+ },
+ "2255844": {
+  "email": "pharma.cleunay@gmail.com",
+  "site": "",
+  "tel": "+33299673129",
+  "nom_osm": "Pharmacie Cleunay"
+ },
+ "2110623": {
+  "email": "",
+  "site": "https://www.pharmacie-hotel-dieu-rennes.fr/",
+  "tel": "+33 2 99 30 79 96",
+  "nom_osm": "Pharmacie de l'Hôtel Dieu"
+ },
+ "2007732": {
+  "email": "",
+  "site": "https://www.doctolib.fr/pharmacie/rennes/pharmacie-du-landry",
+  "tel": "+33 2 99 51 37 19",
+  "nom_osm": "Pharmacie du Landry"
+ },
+ "2019603": {
+  "email": "pharmaciesalmon.sylvie@orange.fr",
+  "site": "",
+  "tel": "+33 2 99 59 18 91",
+  "nom_osm": "Pharmacie Salmon"
+ },
+ "2111234": {
+  "email": "pharmaciedumuguet35@gmail.com",
+  "site": "",
+  "tel": "+33299645633",
+  "nom_osm": "Pharmacie du Muguet"
+ },
+ "2108965": {
+  "email": "pharmaciedesmarelles@gmail.com",
+  "site": "https://www.pharmaciedesmarelles.com",
+  "tel": "+33 2 99 41 42 54",
+  "nom_osm": "Pharmacie des Marelles"
+ },
+ "2111501": {
+  "email": "",
+  "site": "https://pharmaciedelapoterie.epharmacie.pro",
+  "tel": "+33 2 99 53 66 45",
+  "nom_osm": "Pharmacie de la Poterie"
+ },
+ "2110162": {
+  "email": "",
+  "site": "http://www.phcormier.fr/",
+  "tel": "+332 99 50 89 67",
+  "nom_osm": "Pharmacie du Cormier"
+ },
+ "2110487": {
+  "email": "",
+  "site": "https://www.pharmacie-kerangal.com/",
+  "tel": "+33 2 99 50 12 02",
+  "nom_osm": "Pharmacie Kerangal"
+ },
+ "2002483": {
+  "email": "",
+  "site": "https://www.mypharmactiv.fr/pharmacie/pharmacie-sarah-bernhardt-rennes",
+  "tel": "+33 2 99 50 64 48",
+  "nom_osm": "Pharmacie Sarah Bernhardt"
+ },
+ "2007021": {
+  "email": "",
+  "site": "https://www.pharmacie-chatillon-en-vendelais.fr/",
+  "tel": "",
+  "nom_osm": "Pharmacie du Vendelais"
+ },
+ "2109026": {
+  "email": "",
+  "site": "http://www.pharmacie-centre-bobille.com/",
+  "tel": "+33 2 99 00 31 18",
+  "nom_osm": "Pharmacie du Centre"
+ },
+ "2109340": {
+  "email": "",
+  "site": "https://www.pharmacie-laposte-fougeres.fr/",
+  "tel": "+33 2 99 99 07 57",
+  "nom_osm": "Pharmacie de la Poste"
+ },
+ "2256455": {
+  "email": "",
+  "site": "https://pharmacies.pharmaciengiphar.com/bretagne/ille-et-vilaine/breal-sous-montfort/pharmacie-du-pommeret-777",
+  "tel": "+33299600682",
+  "nom_osm": "Pharmacie du Pommeret"
+ },
+ "2019446": {
+  "email": "",
+  "site": "https://pharmacie-saintmalo.com/",
+  "tel": "",
+  "nom_osm": "Pharmacie de la Gare"
+ },
+ "2108944": {
+  "email": "pharmacie.beausoleil@orange.fr",
+  "site": "https://www.pharmacie-beausoleil-cesson-sevigne.fr",
+  "tel": "+33 2 99 83 74 60",
+  "nom_osm": "Pharmacie Beausoleil"
+ },
+ "2246756": {
+  "email": "lebret.pharmacie@laposte.net",
+  "site": "",
+  "tel": "+33 2 99 83 27 76",
+  "nom_osm": "Pharmacie Lebret"
+ },
+ "2013116": {
+  "email": "",
+  "site": "https://www.pharmaciedelamonniais.fr/",
+  "tel": "+33 2 99 83 23 18",
+  "nom_osm": "Pharmacie de la Monniais"
+ },
+ "2287897": {
+  "email": "",
+  "site": "https://www.pharmacie-baulon.fr/",
+  "tel": "",
+  "nom_osm": "Pharmacie Pierre"
+ },
+ "2005618": {
+  "email": "",
+  "site": "https://www.pharmacie-montagut-redon.fr/",
+  "tel": "",
+  "nom_osm": "Pharmacie Montagut"
+ },
+ "2251661": {
+  "email": "pharmacie.barbin@wanadoo.fr",
+  "site": "https://pharmacie-barbin-redon.giropharm.fr/",
+  "tel": "+33 2 99 71 11 02",
+  "nom_osm": "Pharmacie Barbin"
+ },
+ "2288691": {
+  "email": "",
+  "site": "https://www.facebook.com/pharmaciedusemnon/",
+  "tel": "+33 2 99 47 96 32",
+  "nom_osm": "Pharmacie du Semnon"
+ },
+ "2019582": {
+  "email": "pharma-lc@hotmail.fr",
+  "site": "https://www.pharmacie-des-longs-champs-rennes.com/",
+  "tel": "+33 2 99 38 41 50",
+  "nom_osm": "Pharmacie des Longs Champs"
+ },
+ "2110094": {
+  "email": "",
+  "site": "http://www.pharmaciedugroschene-rennes.fr",
+  "tel": "+33 2 99 63 10 02",
+  "nom_osm": "Pharmacie du Gros Chêne"
+ },
+ "2110068": {
+  "email": "",
+  "site": "https://www.mypharmactiv.fr/pharmacie/pharmacie-de-la-bellangerais",
+  "tel": "+33 2 99 38 43 34",
+  "nom_osm": "Pharmacie de la Bellangerais"
+ },
+ "2110010": {
+  "email": "",
+  "site": "https://www.pharmaciedelestuairepleurtuit.bzh/",
+  "tel": "+33299884107",
+  "nom_osm": "Pharmacie de l'Estuaire"
+ },
+ "2109890": {
+  "email": "",
+  "site": "https://www.pharmaciedelmasuretemple.fr/",
+  "tel": "+33 2 99 60 61 13",
+  "nom_osm": "Pharmacie Delmasure - Templé"
+ },
+ "2111229": {
+  "email": "pharmaciemairievern@gmail.com",
+  "site": "",
+  "tel": "+33 2 99 62 89 96",
+  "nom_osm": "Pharmacie de la Mairie"
+ },
+ "2113996": {
+  "email": "pharmaciedelagare37@gmail.com",
+  "site": "",
+  "tel": "+33 2 47 05 57 88",
+  "nom_osm": "Pharmacie de la gare"
+ },
+ "2020048": {
+  "email": "contact@pharmacie.me;pharmaciemaginot.tours@giphar.fr",
+  "site": "https://www.pharmacie.me/",
+  "tel": "+33 2 47 54 23 40",
+  "nom_osm": "Pharmacie Maginot"
+ },
+ "1371003": {
+  "email": "pharmacie.tno.cvl@vyv3.fr",
+  "site": "https://cvl.vyv3.fr/ma-pharmacie-mutualiste-tours-nord",
+  "tel": "+33 2 47 31 22 60",
+  "nom_osm": "Pharmacie Mutualiste"
+ },
+ "2004296": {
+  "email": "",
+  "site": "http://www.pharmaciemonconseil-tours.com/",
+  "tel": "+33 9 83 37 62 28",
+  "nom_osm": "Pharmacie Monconseil"
+ },
+ "2019844": {
+  "email": "pharm.hautes.roches@orange.fr",
+  "site": "https://pharmacie-des-hautes-roches.pharmaciereference.fr/",
+  "tel": "+33 2 47 49 98 33",
+  "nom_osm": "Pharmacie des Hautes Roches"
+ },
+ "2114167": {
+  "email": "loustanauveigne@perso.alliadis.net",
+  "site": "",
+  "tel": "+33 2 47 26 27 13",
+  "nom_osm": "Pharmacie Loustanau Veigné"
+ },
+ "2113210": {
+  "email": "loustanauveigne@perso.alliadis.net",
+  "site": "",
+  "tel": "+33 2 47 26 27 13",
+  "nom_osm": "Pharmacie Loustanau Veigné"
+ },
+ "2014618": {
+  "email": "pharmacie-chenoffe@giphar.fr",
+  "site": "https://pharmacies.giphar.fr/centre-val-de-loire/indre-et-loire/neuille-pont-pierre/pharmacie-chenoffe-523",
+  "tel": "+33 2 47 24 32 33",
+  "nom_osm": "Pharmacie Chenoffe"
+ },
+ "2113509": {
+  "email": "pharmaciedelavenir37@gmail.com",
+  "site": "",
+  "tel": "+33 2 47 27 01 67",
+  "nom_osm": "Pharmacie de l'Avenir"
+ },
+ "2113158": {
+  "email": "pharmaciedumarcheauxfleurs@yahoo.fr",
+  "site": "",
+  "tel": "+33 2 47 59 02 35",
+  "nom_osm": "Pharmacie du Marché aux Fleurs"
+ },
+ "2023122": {
+  "email": "contact@pharmacie-verte.com",
+  "site": "https://www.monherbo.fr",
+  "tel": "+33 2 40 74 02 22",
+  "nom_osm": "Pharmacie Verte"
+ },
+ "2125886": {
+  "email": "phie.hauville@perso.alliadis.net",
+  "site": "http://www.pharmacie-sainte-therese-nantes.com",
+  "tel": "+33 2 40 76 95 84",
+  "nom_osm": "Pharmacie Sainte-Thérèse"
+ },
+ "2277559": {
+  "email": "phie.leforestier@orange.fr",
+  "site": "https://pharmacie-leforestier-aigrefeuillesurmaine-44.fr/",
+  "tel": "+33 2 40 06 61 05",
+  "nom_osm": "Pharmacie Le Forestier"
+ },
+ "2126366": {
+  "email": "",
+  "site": "https://pharmacie-arcades-nozay44.mesoigner.fr/",
+  "tel": "+33 2 40 79 44 18",
+  "nom_osm": "Pharmacie les Arcades"
+ },
+ "2285072": {
+  "email": "",
+  "site": "https://www.pharmaciedumoulin-clisson.fr/",
+  "tel": "+33240039744",
+  "nom_osm": "Pharmacie du Moulin"
  },
  "2022768": {
   "email": "pharmaciechaminant@gmail.com",
@@ -95,46 +491,358 @@
   "tel": "+33 2 40 49 71 53",
   "nom_osm": "Pharmacie De Montbazon"
  },
- "2126738": {
+ "2002716": {
   "email": "",
-  "site": "https://pharmacieatoutsud.fr/",
-  "tel": "+33 2 40 84 18 52",
-  "nom_osm": "Pharmacie Atout sud"
+  "site": "https://www.pharmaciedesforges-vallet.fr/",
+  "tel": "+33240339275",
+  "nom_osm": "Pharmacie des Forges"
  },
- "2288005": {
-  "email": "pharmaciemalakoff@yahoo.fr",
-  "site": "https://www.pharmacie-de-malakoff.com",
-  "tel": "+33 2 40 47 53 37",
-  "nom_osm": "Pharmacie de Malakoff"
+ "2247131": {
+  "email": "",
+  "site": "https://pharmacie-des-trois-moulins.pharmaciereference.fr/",
+  "tel": "+33 2 40 75 63 10",
+  "nom_osm": "Pharmacie des 3 Moulins"
  },
- "2261727": {
-  "email": "pharmacieduter@gmail.com",
+ "2124678": {
+  "email": "",
+  "site": "http://www.pharmacie-des-rainettes.fr/",
+  "tel": "+33 2 40 50 88 18",
+  "nom_osm": "Pharmacie des Rainettes"
+ },
+ "2126696": {
+  "email": "",
+  "site": "https://www.pharmacie-du-centre-le-pouliguen.fr/",
+  "tel": "+33 2 40 42 31 36",
+  "nom_osm": "Pharmacie du Centre"
+ },
+ "2126675": {
+  "email": "pharmacie-du-port@orange.fr",
+  "site": "https://www.pharmacie-du-port-le-pouliguen.com/",
+  "tel": "+33 2 40 42 33 71",
+  "nom_osm": "Pharmacie du Port"
+ },
+ "2126942": {
+  "email": "",
+  "site": "https://www.pharmaciemasek.fr/",
+  "tel": "+332 40 01 40 30",
+  "nom_osm": "Pharmacie Masek"
+ },
+ "2127197": {
+  "email": "",
+  "site": "http://pharmacie-saintmarslajaille.com/",
+  "tel": "+33 2 40 97 00 23",
+  "nom_osm": "Pharmacie du Val d'Erdre"
+ },
+ "2284959": {
+  "email": "",
+  "site": "https://www.pharmacielerol.fr/",
+  "tel": "+33 240900314",
+  "nom_osm": "Pharmacie Le Rol"
+ },
+ "2127333": {
+  "email": "",
+  "site": "https://pharmacie-rochefort-audu.giropharm.fr/",
+  "tel": "+33 2 40 22 59 85",
+  "nom_osm": "Rochefort -Audu"
+ },
+ "2127396": {
+  "email": "",
+  "site": "https://www.pharmaciesorel.fr/",
+  "tel": "+33240611928",
+  "nom_osm": "Pharmacie Sorel"
+ },
+ "2127883": {
+  "email": "pharmaciedesaintmarcsurmer@gmail.com",
+  "site": "https://www.pharmacie-saint-marc-sur-mer.fr/",
+  "tel": "+33 2 40 91 90 53",
+  "nom_osm": "Pharmacie de Saint-Marc-sur-Mer"
+ },
+ "2128159": {
+  "email": "",
+  "site": "http://www.pharmacie-du-tillay.com/",
+  "tel": "",
+  "nom_osm": "Pharmacie du Tillay"
+ },
+ "2126963": {
+  "email": "",
+  "site": "https://pharmacies.giphar.fr/pays-de-la-loire/loire-atlantique/saint-herblain/pharmacie-de-lhotel-de-ville-saint-herblain-1327",
+  "tel": "+33240380500",
+  "nom_osm": "Pharmacie de l'Hôtel de Ville"
+ },
+ "2022815": {
+  "email": "",
+  "site": "https://www.pharmacie-chene-vert.fr/",
+  "tel": "+33 2 40 76 92 38",
+  "nom_osm": "Pharmacie du Chêne Vert"
+ },
+ "2009444": {
+  "email": "pharmacie.bouaye@hotmail.com",
+  "site": "https://www.pharmacie-oliveira-bouaye.com/",
+  "tel": "+33 2 40 65 40 68",
+  "nom_osm": "Pharmacie Oliveira"
+ },
+ "2132605": {
+  "email": "pharmacie.arboretum@gmail.com",
+  "site": "https://www.pharmacie-arboretum-angers.fr",
+  "tel": "",
+  "nom_osm": "Pharmacie de l’Arboretum"
+ },
+ "2007840": {
+  "email": "",
+  "site": "https://pharmacie-des-vignes.fr/",
+  "tel": "",
+  "nom_osm": "Pharmacie des Vignes"
+ },
+ "2134529": {
+  "email": "",
+  "site": "https://pharmacie-des-rives-du-loir.fr/",
+  "tel": "+33 2 41 32 23 04",
+  "nom_osm": "Pharmacie des Rives du Loir"
+ },
+ "2000939": {
+  "email": "",
+  "site": "https://www.pharmacie-montfaucon.fr/",
+  "tel": "+33 2 41 64 70 68",
+  "nom_osm": "Pharmacie Le Scrill-Corbel"
+ },
+ "2134382": {
+  "email": "",
+  "site": "https://www.pharmacie-gare-saumur.fr",
+  "tel": "+33 2 41 67 36 79",
+  "nom_osm": "Pharmacie de la Gare"
+ },
+ "2134335": {
+  "email": "",
+  "site": "https://pharmaciecholetaise.fr/",
+  "tel": "+33 2 41 55 31 42",
+  "nom_osm": "Pharmacie Choletaise"
+ },
+ "2132474": {
+  "email": "",
+  "site": "https://pharmacieandard.fr/",
+  "tel": "+33 2 41 54 96 34",
+  "nom_osm": "Pharmacie d'Andard"
+ },
+ "2015020": {
+  "email": "",
+  "site": "https://www.pharmaciedelarchipel-cherbourg.fr/",
+  "tel": "+33233520238",
+  "nom_osm": "Pharmacie de l'Archipel"
+ },
+ "2009363": {
+  "email": "pharmaciedesportes.cherbourg@totum.fr",
+  "site": "https://www.totum.fr/pharmacie/cherbourg-en-cotentin-pharmacie-des-portes",
+  "tel": "+33 2 33 93 25 08",
+  "nom_osm": "Pharmacie des Portes"
+ },
+ "2135742": {
+  "email": "",
+  "site": "https://www.pharmacie-prisiaise.fr/",
+  "tel": "+33233765858",
+  "nom_osm": "Pharmacie Prisiaise"
+ },
+ "2135522": {
+  "email": "pharmaciedelahaye50250@offisecure.com",
   "site": "",
-  "tel": "+33 2 97 37 28 97",
-  "nom_osm": "Pharmacie du Ter"
+  "tel": "+33 2 33 46 04 32",
+  "nom_osm": "Pharmacie de la Haye"
  },
- "2265983": {
-  "email": "",
-  "site": "https://pharmacie-saint-colomban.fr/",
-  "tel": "+33 2 97 60 53 95",
-  "nom_osm": "Pharmacie Saint Colomban"
- },
- "2037046": {
-  "email": "pharmaciedupradian@gmail.com",
-  "site": "https://pharmaciedupradian.apothical.fr/",
-  "tel": "+33479333041",
-  "nom_osm": "Pharmacie du Pradian"
- },
- "2184213": {
-  "email": "fsalbertville@gmail.com",
+ "2136374": {
+  "email": "secretariat@pharmaciedessalinesbrehal.com",
   "site": "",
-  "tel": "+33 4 79 32 12 94",
-  "nom_osm": "Pharmacie du Val des Roses"
+  "tel": "+33233909116",
+  "nom_osm": "Pharmacie des Salines"
  },
- "2184564": {
+ "2135962": {
   "email": "",
-  "site": "https://pharmaciedescascades.pharminfo.fr/",
-  "tel": "+33 4 79 34 82 82",
-  "nom_osm": "Pharmacie des Cascades"
+  "site": "https://pharmacie-letard.fr",
+  "tel": "+33 2 33 51 34 16",
+  "nom_osm": "Pharmacie Letard"
+ },
+ "2135758": {
+  "email": "",
+  "site": "https://pharmaciedeladouve.giropharm.fr/",
+  "tel": "+33233410492",
+  "nom_osm": "Pharmacie de la Douve"
+ },
+ "2024372": {
+  "email": "pharmadike@orange.fr",
+  "site": "https://pharmacie-lehaguedike.fr/",
+  "tel": "+33 2 33 52 77 30",
+  "nom_osm": "Pharmacie Le Hague Dike"
+ },
+ "2135412": {
+  "email": "clickandcollect@pharmacie-du-centre-cherbourg.fr",
+  "site": "https://pharmacie-du-centre-cherbourg.fr/",
+  "tel": "+33 2 33 53 12 86",
+  "nom_osm": "Pharmacie du Centre"
+ },
+ "2143842": {
+  "email": "",
+  "site": "https://www.pharmacie-de-merville.fr/",
+  "tel": "+33 2 97 37 25 13",
+  "nom_osm": "Pharmacie de Merville"
+ },
+ "2004572": {
+  "email": "",
+  "site": "https://www.pharmacie-kermario-carnac.com",
+  "tel": "",
+  "nom_osm": "Pharmacie de Kermario"
+ },
+ "2002989": {
+  "email": "",
+  "site": "https://www.pharmaciedegrandchamp.fr/",
+  "tel": "+33 2 97 66 77 39",
+  "nom_osm": "Pharmacie de Grand-Champ"
+ },
+ "2025973": {
+  "email": "",
+  "site": "https://www.pharmacie-tikaol.fr/upload/pharmacyMedias/slides-default/Slide5.jpg",
+  "tel": "+33 2 97 76 05 36",
+  "nom_osm": "Pharmacie Ti Kaol"
+ },
+ "2001420": {
+  "email": "",
+  "site": "https://www.pharmacieriantec.com/",
+  "tel": "",
+  "nom_osm": "Pharmacie de la Petite Mer"
+ },
+ "2254327": {
+  "email": "contact@pharmacie-kergroix.fr",
+  "site": "https://www.pharmacie-kergroix.fr/",
+  "tel": "+33 2 97 36 21 83",
+  "nom_osm": "Pharmacie Kergroix"
+ },
+ "2267708": {
+  "email": "",
+  "site": "https://www.alphega-pharmacie.fr/pharmacie/merlevenez/pharmacie-de-la-madeleine/notre-pharmacie",
+  "tel": "+33 2 97 65 75 24",
+  "nom_osm": "Pharmacie de la Madeleine"
+ },
+ "2144275": {
+  "email": "",
+  "site": "https://www.pagesjaunes.fr/pros/04202542",
+  "tel": "",
+  "nom_osm": "Pharmacie Brabant Le Corre"
+ },
+ "2028796": {
+  "email": "pharmacie.lepleux@wanadoo.fr",
+  "site": "",
+  "tel": "+33 2 33 39 76 30",
+  "nom_osm": "Pharmacie du Rond-point"
+ },
+ "2014250": {
+  "email": "",
+  "site": "http://www.pharmacie-laigle.fr/",
+  "tel": "+33 2 33 24 20 56",
+  "nom_osm": "Pharmacie Lemanissier"
+ },
+ "2008598": {
+  "email": "",
+  "site": "https://www.pharmacie-gambetta-le-mans.fr/",
+  "tel": "+33 2 43 28 50 82",
+  "nom_osm": "Pharmacie Gambetta"
+ },
+ "2183267": {
+  "email": "",
+  "site": "https://www.doctolib.fr/pharmacie/le-mans/pharmacie-de-maupertuis",
+  "tel": "+33243511478",
+  "nom_osm": "Pharmacie de Maupertuis"
+ },
+ "2183398": {
+  "email": "ph.bothorel@pharmagarelemans.fr",
+  "site": "",
+  "tel": "+33 2 43 24 59 06",
+  "nom_osm": "Pharmacie de la gare"
+ },
+ "2183204": {
+  "email": "",
+  "site": "https://pharmacieisaure.site-solocal.com/",
+  "tel": "+33243855818",
+  "nom_osm": "Pharmacie Isaure"
+ },
+ "2000310": {
+  "email": "",
+  "site": "https://pharmacies.pharmaciengiphar.com/pharmacie/pharmacie-de-montreux/0130407000",
+  "tel": "+33 2 43 95 78 44",
+  "nom_osm": "Pharmacie de Montreux"
+ },
+ "2182499": {
+  "email": "pharmacieprincipale72@yahoo.fr",
+  "site": "",
+  "tel": "+33 2 43 44 42 58",
+  "nom_osm": "Nouvelle Pharmacie Principale"
+ },
+ "2182394": {
+  "email": "pharmacie.bouloire@gmail.com",
+  "site": "http://www.pharmacie-bouloire.com",
+  "tel": "+33 2 43 35 40 20",
+  "nom_osm": "Pharmacie de Bouloire"
+ },
+ "2005133": {
+  "email": "",
+  "site": "https://www.pharmacie-du-chene-vert-chateauduloir.fr/",
+  "tel": "+33 2 43 79 42 78",
+  "nom_osm": "Pharmacie du chêne vert"
+ },
+ "2216009": {
+  "email": "pharmaciefontainedubienetre@gmail.com",
+  "site": "https://pharmacie-fontainedubienetre.fr/",
+  "tel": "+33 2 51 01 72 03",
+  "nom_osm": "Pharmacie de la Fontaine du Bien-être"
+ },
+ "2215272": {
+  "email": "",
+  "site": "https://pharmacie-bevillon.giropharm.fr/",
+  "tel": "",
+  "nom_osm": "Pharmacie Bevillon"
+ },
+ "2044535": {
+  "email": "",
+  "site": "https://pharmacies.giphar.fr/pays-de-la-loire/vendee/aizenay/pharmacie-du-rond-point-aizenay-178?q=Aizenay&p=46.739844%2C-1.6077026&s=autocomplete&b=46.68961484230095%2C-1.725184246843614%2C46.78367796766831%2C-1.529034688866511&__xhr=1",
+  "tel": "+33251946449",
+  "nom_osm": "Pharmacie du Ront-point"
+ },
+ "2261858": {
+  "email": "",
+  "site": "http://pharmacie-sion-saint-hilaire-de-riez.fr",
+  "tel": "+33 2 51 54 32 71",
+  "nom_osm": "Pharmacie de Sion"
+ },
+ "2215749": {
+  "email": "",
+  "site": "https://www.pharmacieduport-noirmoutier.fr/",
+  "tel": "+33 2 51 39 23 55",
+  "nom_osm": "Pharmacie du Port"
+ },
+ "2215733": {
+  "email": "pharmaciehoteldeville@outlook.com",
+  "site": "https://leadersante-pharmacie.fr/pharmacie/view/detail/id/1778/;https://www.sante.fr/pharmacie-dofficine/noirmoutier-en-lile/pharmacie-mandin",
+  "tel": "+33 2 51 39 13 37",
+  "nom_osm": "Pharmacie Mandin"
+ },
+ "2006514": {
+  "email": "",
+  "site": "https://pharmaciedelavalleeverte-lessablesolonne.fr/",
+  "tel": "+33 2 51 23 81 91",
+  "nom_osm": "Pharmacie de la Vallée Verte"
+ },
+ "2278945": {
+  "email": "pharmaciedesclouzeaux@giphar.fr",
+  "site": "",
+  "tel": "",
+  "nom_osm": "Pharmacie des Clouzeaux"
+ },
+ "2216276": {
+  "email": "",
+  "site": "https://wellpharma.com/",
+  "tel": "+33 2 51 94 08 36",
+  "nom_osm": "Pharmacie des Jardins"
+ },
+ "2250186": {
+  "email": "",
+  "site": "https://pharmacies.pharmaciengiphar.com/pharmacie/pharmacie-brieau/0130247000",
+  "tel": "+33 2 51 48 82 39",
+  "nom_osm": "Pharmacie Brieau"
  }
 }

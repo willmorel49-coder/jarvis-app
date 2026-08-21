@@ -10,8 +10,10 @@ Fusionne, par ordre de confiance :
 Sortie : crm/v2/mails-complement-data.js  (convention <sujet>-data.js)
 Le CRM le lit comme une source de repli, apres CLIENTS et avant PHARMA_FR.
 
-⚠️ Apres regeneration, monter le jeton des donnees lazy dans v2-boot.js
-   (`var V = '?v=...'`), sinon le cache ressert l'ancien fichier.
+⚠️ Apres regeneration, monter le jeton de l'APP (index.html + sw.js), sinon le
+   cache ressert l'ancien fichier. Verifie le 21/08/2026 : `mails-complement-data.js`
+   est charge par index.html avec le jeton de l'app, PAS par le chargeur paresseux
+   de v2-boot.js — la consigne d'origine visait le mauvais jeton.
 Compatible Python 3.9.
 """
 import json
@@ -30,12 +32,67 @@ def charger(nom):
     return json.loads(f.read_text(encoding="utf-8")) if f.exists() else {}
 
 
+
+# ═══════════════════════════════════════════════════════════════
+#  LE FILTRE — ce qui ressemble a une adresse et n'en est pas une
+# ═══════════════════════════════════════════════════════════════
+# Mesure du 21/08/2026 sur 88 adresses ramassees : QUATRE auraient fait
+# ecrire a la mauvaise personne, et RX_MAIL les acceptait toutes.
+#   · email@domaine.com, monadresse@email.com — exemples laisses dans un gabarit
+#   · 5e227d…@exceptions.doctolib.fr — une adresse technique d'un prestataire
+#   · assistance@mypharmactiv.fr — le support d'un editeur de logiciel
+#   · loustanauveigne@perso.alliadis.net attribuee a DEUX officines
+#   · contact@pharmacie.me;pharmacie…@giphar.fr — deux adresses collees
+#
+# Un mail qui part au mauvais destinataire coute plus cher qu'une officine
+# sans adresse : le pharmacien ne le lit pas, et celui qui le recoit se
+# demande qui nous sommes. On jette au moindre doute.
+#
+# ⚠️ On ne jette PAS les domaines de groupement (giphar.fr, offisecure.com,
+# perso.alliadis.net) : c'est la boite de l'officine chez son editeur, et
+# chaque officine y a la sienne. Seule l'adresse EN DOUBLE est suspecte.
+
+RX_GABARIT = re.compile(
+    r"@(domaine|example|exemple|test|monsite|votresite|email|mail)\.|"
+    r"^(email|mail|nom|prenom|votre|mon)(adresse)?@", re.I)
+
+# Prestataires : leur adresse figure sur le site de l'officine, mais elle ne
+# mene pas au pharmacien.
+DOMAINES_TIERS = (
+    "doctolib.fr", "mypharmactiv.fr", "wixpress.com", "sentry.io",
+    "sitew.com", "wordpress.com", "googlemail.com",
+)
+
+# Boites de service d'un prestataire, jamais celles d'une officine.
+LOCAUX_TIERS = ("assistance", "support", "webmaster", "noreply", "no-reply",
+                "postmaster", "abuse", "privacy", "rgpd", "dpo")
+
+
+def adresse_douteuse(mail):
+    """Renvoie la raison du rejet, ou '' si l'adresse est acceptable."""
+    if ";" in mail or "," in mail or " " in mail:
+        return "plusieurs adresses collees"
+    if RX_GABARIT.search(mail):
+        return "exemple de gabarit"
+    local, _, domaine = mail.partition("@")
+    if any(domaine == d or domaine.endswith("." + d) for d in DOMAINES_TIERS):
+        return "domaine d'un prestataire, pas de l'officine"
+    if local in LOCAUX_TIERS:
+        return "boite de service, pas celle du pharmacien"
+    # 32 caracteres hexadecimaux : un identifiant technique, pas un nom.
+    if re.fullmatch(r"[0-9a-f]{16,}", local):
+        return "identifiant technique"
+    return ""
+
+
 def main():
     sites = charger("sites.json")
     navig = charger("navigateur.json")
     osm = charger("osm.json")
 
-    fiches = {}
+    # Premier passage : on rassemble, on filtre, et on COMPTE les rejets —
+    # un filtre muet finit par jeter la moitie du fichier sans qu'on le sache.
+    candidats, rejets = {}, {}
     for source, jeu, champ in (("site", sites, "email"),
                                ("site", navig, "email"),
                                ("osm", osm, "email")):
@@ -43,7 +100,35 @@ def main():
             mail = (v.get(champ) or "").strip().lower()
             if not mail or not RX_MAIL.match(mail):
                 continue
-            fiches.setdefault(cip, {"email": mail, "source": source})
+            raison = adresse_douteuse(mail)
+            if raison:
+                rejets.setdefault(raison, []).append("%s %s" % (cip, mail))
+                continue
+            candidats.setdefault(cip, (mail, source))
+
+    # ⚠️ UNE MEME ADRESSE POUR DEUX OFFICINES : l'une des deux est fausse, et
+    # rien ne dit laquelle. On les jette TOUTES LES DEUX — ecrire au hasard a
+    # l'une des deux serait pire que de n'ecrire a aucune.
+    vus = {}
+    for cip, (mail, _) in candidats.items():
+        vus.setdefault(mail, []).append(cip)
+    for mail, cips in vus.items():
+        if len(cips) > 1:
+            rejets.setdefault("meme adresse pour plusieurs officines", []).append(
+                "%s -> %s" % (mail, ", ".join(cips)))
+            for c in cips:
+                candidats.pop(c, None)
+
+    fiches = {}
+    for cip, (mail, source) in candidats.items():
+        fiches[cip] = {"email": mail, "source": source}
+
+    if rejets:
+        print("Adresses ecartees :")
+        for raison, liste in sorted(rejets.items()):
+            print("  %-44s %d" % (raison, len(liste)))
+            for x in liste[:3]:
+                print("      %s" % x)
 
     # les telephones trouves au passage : c'est cadeau, on les garde
     for cip, v in osm.items():
