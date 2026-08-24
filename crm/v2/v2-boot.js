@@ -91,6 +91,10 @@
       // aussi aux campagnes et au planning RDV, le vider ferait perdre le repère « moi ».
       // ⚠️ `role` ne peut pas servir à ça : toute l'équipe commerciale est en `admin`.
       V2.user = { id: user.id, email: user.email, name: pr.data.name, role: pr.data.role, pharmacyIds: pr.data.pharmacy_ids, commercial: pr.data.commercial || '', opsoOnly: !!pr.data.opso_only, voitTous: pr.data.voit_tous_commerciaux === true };
+      // 24/08/2026 — l'écran de DÉPART ne passe pas par V2.go() : sans cette
+      // ligne, l'accueil (l'écran le plus ouvert de tous) serait le seul
+      // à n'être jamais mesuré.
+      try { if (V2.mesurer && V2.route) V2.mesurer(V2.route.name); } catch (e) {}
       return true;
     } catch (e) { return false; }
   };

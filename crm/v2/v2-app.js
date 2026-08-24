@@ -72,6 +72,46 @@
   };
 
   // ── NAVIGATION ────────────────────────────────
+  /* ── MESURE D'USAGE ────────────────────────────────────────────────
+     Ajoutée le 24/08/2026. Avant, RIEN ne mesurait quel écran servait :
+     aucune librairie d'audience, aucun journal de connexion, et le trafic
+     de GitHub Pages ne laisse aucune trace. Compter les écritures en base
+     ne mesure que ce qu'on SAISIT, pas ce qu'on CONSULTE — or l'usage
+     principal du CRM est la consultation. Toute refonte se décidait donc
+     à l'aveugle.
+
+     Une ligne par ouverture d'écran, jamais deux fois le même en moins de
+     5 minutes : faire des allers-retours entre deux onglets ne doit pas
+     gonfler le compte.
+
+     Nominatif — décision de Will du 24/08 : « on peut identifier qui, c'est
+     pas dérangeant, au contraire ». À annoncer à l'équipe (information CNIL).
+
+     La mesure ne doit JAMAIS casser ni ralentir l'app : pas d'await, échec
+     silencieux. Une statistique perdue n'est rien ; un écran qui plante, si. */
+  V2._vus = V2._vus || {};
+  V2.mesurer = function (ecran) {
+    try {
+      if (!ecran || !V2.user) return;
+      var t = Date.now();
+      if (V2._vus[ecran] && t - V2._vus[ecran] < 5 * 60 * 1000) return;
+      V2._vus[ecran] = t;
+      var c = V2.sb && V2.sb();
+      if (!c) return;
+      var s = '';
+      try {
+        s = sessionStorage.getItem('jarvis_session') || '';
+        if (!s) { s = Math.random().toString(36).slice(2, 10); sessionStorage.setItem('jarvis_session', s); }
+      } catch (e) { s = 'sans-stockage'; }
+      c.from('usage_ecran').insert({
+        ecran: ecran,
+        session: s,
+        user_id: V2.user.id,
+        user_name: V2.user.name
+      }).then(function () {}, function () {});
+    } catch (e) { /* silence : la mesure ne casse jamais l'app */ }
+  };
+
   V2._navStack = V2._navStack || ['home'];
   V2.go = function (name, param) {
     // sens de navigation (pour la transition) : si on revient sur l'écran
@@ -83,6 +123,7 @@
       else { st.push(key); if (st.length > 30) st.shift(); window.__navDir = 'fwd'; }
     } catch (e) { window.__navDir = 'fwd'; }
     V2.route = { name: name, param: param || null };
+    V2.mesurer(name);   // 24/08/2026 — mesure d'usage, silencieuse et sans await
     try { location.hash = '#' + name + (param ? '/' + encodeURIComponent(param) : ''); } catch (e) {}
     V2.render();
     try { document.querySelector('.v2-wrap, .v2-content')?.scrollTo?.({ top: 0 }); window.scrollTo({ top: 0, behavior: 'instant' }); } catch (e) {}
