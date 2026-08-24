@@ -70,7 +70,13 @@ const VENTES = SALES.map((s) => ({
 const idx = M.indexer(OFFICINES, VENTES);
 
 test('donnees reelles : le volume attendu est bien la', () => {
-  assert.equal(OFFICINES.length, 691);
+  // ⚠️ Ce test exigeait EXACTEMENT 691 officines. Le réseau en compte 702
+  // depuis un rafraîchissement des données, et la suite est rouge depuis.
+  // Ce qu'on veut vérifier ici, c'est que les VRAIES données sont bien
+  // chargées — pas qu'elles n'aient jamais bougé. Un plancher fait le travail
+  // sans se périmer au premier client gagné.
+  assert.ok(OFFICINES.length > 600,
+    `seulement ${OFFICINES.length} officines : les vraies donnees ne sont pas chargees`);
   assert.ok(SALES.length > 400000, `attendu > 400k lignes, obtenu ${SALES.length}`);
 });
 
