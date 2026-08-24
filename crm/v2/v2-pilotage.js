@@ -111,28 +111,111 @@
       .sort(function (a, b) { return mkey(a.year, a.month) - mkey(b.year, b.month); });
   }
 
-  // renvoie {label, prevLabel, inPeriod(sale), inPrev(sale)}
-  function periodFilter(sales, mode) {
+  var MN = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+  function nomMois(k) { return MN[((k % 12) + 12) % 12] + ' ' + Math.floor(k / 12); }
+
+  // ── QUELS MOIS SONT VRAIMENT COMPARABLES ? ──────────────────────
+  // ⚠️ Mesuré le 24/08/2026 sur l'intégralité des ventes : les fichiers ne
+  // s'arrêtent PAS au même mois selon le commercial. À cette date, deux
+  // secteurs s'arrêtaient deux mois avant les autres, quatre un mois avant,
+  // et deux allaient jusqu'au bout.
+  //
+  // Le total réseau s'effondre donc sur les derniers mois — non pas parce que
+  // le réseau perd des ventes, mais parce que la plupart des secteurs ne sont
+  // plus dans le fichier. La vue « Tous » annonçait ainsi une chute de près de
+  // 40 % sur 3 mois à un réseau qui n'avait rien perdu. Un signal faux est
+  // pire qu'un signal absent, parce qu'on le croit.
+  //
+  // ⚠️ ET LA PARADE ÉVIDENTE — « écarter le dernier mois » — EST FAUSSE AUSSI.
+  // Ce dernier mois est PLEIN pour les secteurs dont le fichier va jusqu'au
+  // bout : c'était même le meilleur mois de l'un d'eux. L'écarter d'office
+  // leur cachait leur mois le plus récent. Un garde-fou qui supprime de la
+  // vraie donnée ne vaut pas mieux que le défaut qu'il corrige.
+  //
+  // La règle qui marche dans les deux cas : un mois de queue n'est retenu que
+  // si TOUS les secteurs du périmètre regardé y figurent. Sur un seul
+  // commercial, il n'y a qu'un secteur : rien n'est écarté, il voit tout son
+  // fichier. Sur le réseau, les mois amputés sortent d'eux-mêmes.
+  // Un second filet, la médiane, attrape le cas restant : un fichier arrêté en
+  // PLEIN mois, où le secteur est présent mais avec une poignée de lignes.
+  function ancreComplete(ventes) {
+    var parMois = {}, i;
+    for (i = 0; i < ventes.length; i++) {
+      var s = ventes[i];
+      if (!s.month || !s.year) continue;
+      var k = mkey(s.year, s.month);
+      var o = parMois[k] || (parMois[k] = { ca: 0, sect: {} });
+      o.ca += (s.mntNetHt || 0);
+      o.sect[s.commercial || '—'] = 1;
+    }
+    var cles = Object.keys(parMois).map(Number).sort(function (a, b) { return a - b; });
+    if (!cles.length) return null;
+
+    var nbSect = {}, maxSect = 0;
+    cles.forEach(function (k) {
+      nbSect[k] = Object.keys(parMois[k].sect).length;
+      if (nbSect[k] > maxSect) maxSect = nbSect[k];
+    });
+
+    var complets = cles.slice(), ecartes = [], raison = '';
+    // 1. mois de queue auxquels il manque des secteurs
+    while (complets.length > 1 && nbSect[complets[complets.length - 1]] < maxSect) {
+      ecartes.push(complets.pop());
+      raison = 'secteurs';
+    }
+    // 2. mois de queue manifestement arrêté en cours de route
+    var tri = complets.map(function (k) { return parMois[k].ca; }).sort(function (a, b) { return a - b; });
+    var med = tri[Math.floor(tri.length / 2)];
+    while (complets.length > 1 && parMois[complets[complets.length - 1]].ca < med * 0.6) {
+      ecartes.push(complets.pop());
+      raison = raison || 'partiel';
+    }
+
+    var dispo = {};
+    complets.forEach(function (k) { dispo[k] = 1; });
+    return {
+      ancre: complets[complets.length - 1],
+      dispo: dispo,
+      maxSect: maxSect,
+      raison: raison,
+      ecartes: ecartes.sort(function (a, b) { return a - b; }).map(nomMois)
+    };
+  }
+
+  // La phrase qui dit ce qui a été écarté, et POURQUOI. Un mois retiré en
+  // silence, c'est un écran qui a l'air de couvrir une période qu'il ne couvre pas.
+  function phraseEcart(anc) {
+    if (!anc || !anc.ecartes.length) return '';
+    var pluriel = anc.ecartes.length > 1;
+    return anc.ecartes.join(', ') + (pluriel ? ' sont écartés : ' : ' est écarté : ') +
+      (anc.raison === 'secteurs'
+        ? 'les ventes de tous les secteurs n\'y sont pas encore.'
+        : 'le fichier de ventes s\'arrête en cours de mois.');
+  }
+
+  // renvoie {label, prevLabel, inPeriod(sale), inPrev(sale), prevComplet}
+  function periodFilter(sales, mode, anc) {
     var months = availableMonths(sales);
     if (!months.length) return null;
-    var last = months[months.length - 1];
-    var lastK = mkey(last.year, last.month);
-    var MN = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+    var lastK = anc && anc.ancre != null
+      ? anc.ancre
+      : mkey(months[months.length - 1].year, months[months.length - 1].month);
+    var dispo = (anc && anc.dispo) || null;
+    function couvert(a, b) {
+      if (!dispo) return true;
+      for (var k = a; k <= b; k++) { if (!dispo[k]) return false; }
+      return true;
+    }
 
     if (mode === 'current') {
-      // Même garde-fou que le graphe : si le dernier mois pèse < 40 % du précédent,
-      // c'est un mois partiel (début de mois) → on affiche le dernier mois COMPLET.
-      // Évite un « CA net » riquiqui et un « −89 % » trompeur en tête de page.
+      // Le dernier mois retenu du périmètre regardé.
       var idx = months.length - 1;
-      if (idx > 0) {
-        var sA = V2.sumCA(sales.filter(function (s) { return mkey(s.year, s.month) === mkey(months[idx].year, months[idx].month); }));
-        var sB = V2.sumCA(sales.filter(function (s) { return mkey(s.year, s.month) === mkey(months[idx - 1].year, months[idx - 1].month); }));
-        if (sB > 0 && sA > 0 && sA < sB * 0.4) idx = idx - 1;
-      }
+      while (idx > 0 && mkey(months[idx].year, months[idx].month) > lastK) idx--;
       var cur = months[idx], curK = mkey(cur.year, cur.month);
       return {
         label: cap(MN[cur.month - 1]) + ' ' + cur.year,
         prevLabel: 'mois précédent',
+        prevComplet: couvert(curK - 1, curK - 1),
         inPeriod: function (s) { return mkey(s.year, s.month) === curK; },
         inPrev: function (s) { return mkey(s.year, s.month) === curK - 1; },
       };
@@ -142,16 +225,21 @@
       return {
         label: '3 derniers mois',
         prevLabel: '3 mois précédents',
+        // ⚠️ Le fichier ne remonte qu'à janvier : la fenêtre précédente peut
+        // n'en contenir que deux. Comparer 3 mois à 2 fabrique un +50 % sorti
+        // de nulle part. On le DIT plutôt que de l'afficher.
+        prevComplet: couvert(pStart, pEnd),
         inPeriod: function (s) { var k = mkey(s.year, s.month); return k >= startK && k <= lastK; },
         inPrev: function (s) { var k = mkey(s.year, s.month); return k >= pStart && k <= pEnd; },
       };
     }
-    // year = année du mois courant
-    var y = last.year;
+    // year = année du dernier mois retenu, arrêtée à ce mois-là
+    var y = Math.floor(lastK / 12);
     return {
       label: 'Année ' + y,
       prevLabel: 'année ' + (y - 1),
-      inPeriod: function (s) { return s.year === y; },
+      prevComplet: false,
+      inPeriod: function (s) { return s.year === y && mkey(s.year, s.month) <= lastK; },
       inPrev: function (s) { return s.year === y - 1; },
     };
   }
@@ -169,7 +257,16 @@
     return (p && p.color) || fallback;
   }
 
-  function deltaHtml(cur, prev, prevLabel) {
+  // ⚠️ `complet` : la période de comparaison est-elle vraiment couverte par le
+  // fichier ? Sinon on ne calcule RIEN. Comparer trois mois à deux fabrique un
+  // écart qui n'existe pas, et personne ne peut le deviner à l'écran.
+  // Optionnel et vrai par défaut : la fiche officine (v2-pharma.js) appelle
+  // cette fonction avec trois arguments.
+  function deltaHtml(cur, prev, prevLabel, complet) {
+    if (complet === false) {
+      return '<div class="v2-kpi-d" style="color:var(--muted)">pas de comparaison : ' +
+        esc(prevLabel || 'la période précédente') + ' — le fichier de ventes ne remonte pas jusque-là</div>';
+    }
     if (!isFinite(prev) || prev === 0) {
       if (cur > 0) return '<div class="v2-kpi-d up">Nouvelle période</div>';
       return '<div class="v2-kpi-d" style="color:var(--muted)">—</div>';
@@ -179,6 +276,210 @@
     var arrow = up ? '▲' : '▼';
     return '<div class="v2-kpi-d ' + (up ? 'up' : 'dn') + '">' + arrow + ' ' +
       (up ? '+' : '') + d.toFixed(1).replace('.', ',') + ' % vs ' + esc(prevLabel || 'préc.') + '</div>';
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // « MOI vs LE RÉSEAU » — repère de répartition
+  // Une seule barre : la mienne remplie, et un trait là où se tient le
+  // réseau entier. Deux barres empilées, ce serait deux fois plus d'encre
+  // pour la même information.
+  // ═══════════════════════════════════════════════════════════════
+  function legendeReseau(actif, label) {
+    if (!actif) return '';
+    return '<div class="pilo-legende">Le trait sur chaque barre, c\'est le réseau' +
+      (label ? ' — ' + esc(label) : '') + '. ' +
+      'L\'euro indiqué, c\'est ce que la ligne pèserait en plus ou en moins si tu étais réparti comme lui, ' +
+      'à chiffre d\'affaires identique.</div>';
+  }
+
+  function barreComparee(pct, ref, color) {
+    var bar = '<div class="pilo-bar' + (ref == null ? '' : ' cmp') + '">' +
+      '<span class="pilo-bar-fill" data-w="' + pct.toFixed(1) + '" style="width:0;background:' + color + '"></span>';
+    if (ref != null) {
+      bar += '<span class="pilo-ref" style="left:' + Math.min(100, Math.max(0, ref)).toFixed(1) + '%" ' +
+        'title="Réseau : ' + ref.toFixed(1).replace('.', ',') + ' %"></span>';
+    }
+    return bar + '</div>';
+  }
+
+  // « réseau 12,9 % · −4,2 pts · N € sous le réseau »
+  // Le montant est une différence de RÉPARTITION à CA total identique, pas une
+  // prévision : c'est ce que la ligne pèserait si mon mélange était celui du
+  // réseau. Le dire, sinon on le lit comme un manque à gagner promis.
+  function ecartLigne(pct, ref, monTotal, suffixe) {
+    if (ref == null) return suffixe ? '<div class="pilo-tier-meta mono">' + suffixe + '</div>' : '';
+    var pts = pct - ref;
+    var euros = monTotal * ref / 100 - monTotal * pct / 100;   // = monTotal * (ref - pct) / 100
+    var sens = pts >= 0 ? 'au-dessus du réseau' : 'sous le réseau';
+    var cls = Math.abs(pts) < 1 ? 'eq' : (pts >= 0 ? 'up' : 'dn');
+    return '<div class="pilo-tier-meta mono">' +
+      '<span class="pilo-ecart ' + cls + '">' + (pts >= 0 ? '+' : '−') + Math.abs(pts).toFixed(1).replace('.', ',') + ' pts</span>' +
+      ' réseau ' + ref.toFixed(1).replace('.', ',') + ' %' +
+      (Math.abs(euros) >= 1 ? ' · ' + V2.fmtNum(Math.abs(euros)) + ' € ' + sens : '') +
+      (suffixe ? ' · ' + suffixe : '') +
+      '</div>';
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // LE MARCHÉ FRANCE — ce que le pays achète de plus, et de moins
+  //
+  // Source : Medic'AM (boîtes remboursées en ville, tous régimes, toutes
+  // officines). ⚠️ Ce bloc ne parle PAS du réseau Intégral : c'est le marché
+  // français. Les deux repères de cette page sont volontairement séparés et
+  // étiquetés — les confondre, c'est annoncer une tendance nationale sur un
+  // chiffre maison.
+  //
+  // Trois filtres, et leur raison :
+  //  · PRINCEPS uniquement. Sur un générique, un −95 % ou un +300 % est
+  //    presque toujours un TRANSFERT entre génériqueurs : la molécule ne
+  //    bouge pas, c'est le laboratoire qui change de main. L'afficher comme
+  //    une tendance du marché serait faux. Même règle que le Copilote.
+  //  · POIDS : au moins POIDS_MINI boîtes par pharmacie et par an en France.
+  //    Demande de Will — « vraiment des produits qui ont du poids, pas des
+  //    petits trucs sans utilité ». Sans ce plancher, la liste se remplit de
+  //    références à +300 % qui pèsent 34 boîtes par an.
+  //  · MOUVEMENT : au moins MOUVEMENT_MINI % d'écart sur un an.
+  // Classement par POIDS × AMPLEUR, pas par pourcentage : sinon un produit
+  // minuscule qui double passe devant le Doliprane qui recule de 7 %.
+  //
+  // ⚠️ Les valeurs de TENDANCE sont BORNÉES par leur générateur à +300 et
+  // −95 (generate_tendance.py). On ne les affiche donc jamais comme des
+  // mesures exactes : « ≥ +300 % » et « ≤ −95 % ».
+  // ═══════════════════════════════════════════════════════════════
+  var POIDS_MINI = 150;        // boîtes / pharmacie / an, marché France
+  var MOUVEMENT_MINI = 5;      // % sur un an
+  var BORNE_HAUT = 300, BORNE_BAS = -95;   // bornes du générateur
+
+  function estPrinceps(f) { return f === 'pr_low' || f === 'pr_mid' || f === 'pr_high'; }
+  function tendanceFr(cip) {
+    var T = window.TENDANCE;
+    if (!T || !T.data) return null;
+    var v = T.data[String(cip)];
+    return v == null ? null : v;
+  }
+  function poidsFr(cip) {
+    var A = window.AMELI_AVG;
+    if (!A || !A.data) return null;
+    var v = A.data[String(cip)];
+    return v == null ? null : v;
+  }
+  function stockIp(cip) {
+    var S = window.STOCK_IP;
+    return (S && S.data && S.data[String(cip)]) || 0;
+  }
+
+  // « 01/02/03/04 » → « janv., févr., mars, avr. » — LU dans la donnée,
+  // jamais écrit en dur : le jour où le générateur ajoute un mois, la phrase
+  // à l'écran doit bouger toute seule.
+  function moisLisibles(txt) {
+    if (!txt) return '';
+    return String(txt).split('/').map(function (m) {
+      var i = parseInt(m, 10);
+      return (i >= 1 && i <= 12) ? MN[i - 1] : m;
+    }).join(' ');
+  }
+
+  function buildMarcheFranceCard(cur) {
+    var PS = window.PROD_STATS;
+    if (!PS || !PS.length || !window.TENDANCE || !window.AMELI_AVG) return '';
+
+    // Mes ventes de la période, par produit
+    var monCa = {}, mesOff = {}, monTotal = 0;
+    cur.forEach(function (s) {
+      var c = normCip(s.artCode); if (!c) return;
+      monCa[c] = (monCa[c] || 0) + (s.mntNetHt || 0);
+      (mesOff[c] || (mesOff[c] = {}))[s.pharmacyId] = 1;
+      monTotal += (s.mntNetHt || 0);
+    });
+
+    var lignes = [];
+    for (var i = 0; i < PS.length; i++) {
+      var r = PS[i];
+      if (!r || !estPrinceps(r.f)) continue;
+      var c = normCip(r.c); if (!c) continue;
+      var g = tendanceFr(c); if (g == null || Math.abs(g) < MOUVEMENT_MINI) continue;
+      var poids = poidsFr(c); if (!(poids >= POIDS_MINI)) continue;
+      lignes.push({
+        cip: c, nom: r.d || c, g: g, poids: poids,
+        score: poids * Math.abs(g),
+        stock: stockIp(c),
+        ca: monCa[c] || 0,
+        nbOff: Object.keys(mesOff[c] || {}).length
+      });
+    }
+    if (!lignes.length) return '';
+
+    // Mon exposition : la part de mon CA posée sur ces marchés-là.
+    var expoUp = 0, expoDn = 0;
+    lignes.forEach(function (l) { if (l.g > 0) expoUp += l.ca; else expoDn += l.ca; });
+
+    var hausse = lignes.filter(function (l) { return l.g > 0; }).sort(function (a, b) { return b.score - a.score; });
+    var baisse = lignes.filter(function (l) { return l.g < 0; }).sort(function (a, b) { return b.score - a.score; });
+
+    function pctTxt(g) {
+      if (g >= BORNE_HAUT) return '≥ +' + BORNE_HAUT + ' %';
+      if (g <= BORNE_BAS) return '≤ ' + String(BORNE_BAS).replace('-', '−') + ' %';
+      return (g > 0 ? '+' : '−') + Math.abs(g) + ' %';
+    }
+    function ligne(l) {
+      var up = l.g > 0;
+      return '<div class="pilo-mf-row">' +
+        '<span class="pilo-mf-pct ' + (up ? 'up' : 'dn') + ' mono">' + (up ? '▲' : '▼') + ' ' + pctTxt(l.g) + '</span>' +
+        '<span class="pilo-mf-main">' +
+          '<span class="pilo-mf-nom">' + esc(l.nom) + '</span>' +
+          '<span class="pilo-mf-meta mono">' + V2.fmtNum(l.poids) + ' boîtes/pharmacie/an en France' +
+            // La pastille stock ne s'affiche QUE sur les hausses : là elle veut
+            // dire « proposable dès demain ». Sur une baisse elle n'apprend rien
+            // à un commercial, et répétée seize fois elle ne fait que du bruit.
+            (up && l.stock > 0 ? '<span class="pilo-mf-stk">en stock Intégral</span>' : '') +
+          '</span>' +
+        '</span>' +
+        '<span class="pilo-mf-moi mono">' +
+          (l.ca > 0
+            ? '<b>' + V2.fmtNum(l.ca) + ' €</b><small>' + l.nbOff + ' officine' + (l.nbOff > 1 ? 's' : '') + '</small>'
+            : '<b class="zero">tu n\'en vends pas</b><small>&nbsp;</small>') +
+        '</span>' +
+      '</div>';
+    }
+    function colonne(titre, sousTitre, arr, cls) {
+      if (!arr.length) return '<div class="pilo-mf-col"><div class="pilo-mf-h ' + cls + '">' + esc(titre) + '</div>' +
+        '<div class="v2-empty"><div class="v2-empty-d">Aucun mouvement marqué sur la période.</div></div></div>';
+      var vus = arr.slice(0, 8), reste = arr.slice(8, 25);
+      return '<div class="pilo-mf-col">' +
+        '<div class="pilo-mf-h ' + cls + '"><span>' + esc(titre) + '<small>' + esc(sousTitre) + '</small></span>' +
+          '<span class="pilo-mf-h-moi">toi<small>sur la période</small></span></div>' +
+        vus.map(ligne).join('') +
+        (reste.length
+          ? '<details class="pilo-mf-more"><summary>Voir ' + reste.length + ' produit' + (reste.length > 1 ? 's' : '') + ' de plus</summary>' +
+            reste.map(ligne).join('') + '</details>'
+          : '') +
+      '</div>';
+    }
+
+    var mT = (window.TENDANCE.meta) || {}, mA = (window.AMELI_AVG.meta) || {};
+    var fenetre = moisLisibles(mT.mois);
+    var expoTxt = monTotal > 0
+      ? '<div class="pilo-mf-expo">' +
+          '<span><b class="up">' + (expoUp / monTotal * 100).toFixed(1).replace('.', ',') + ' %</b> de ton chiffre d\'affaires ' +
+            'est sur des produits que la France achète de plus en plus</span>' +
+          '<span><b class="dn">' + (expoDn / monTotal * 100).toFixed(1).replace('.', ',') + ' %</b> sur des produits en recul</span>' +
+        '</div>'
+      : '';
+
+    return '<div class="v2-card pilo-mf">' +
+      '<div class="pilo-mf-src">' + ICO('spark', 15) + 'Medic\'AM' + (fenetre ? ' · ' + esc(fenetre) + ' 2026 vs 2025' : '') + '</div>' +
+      expoTxt +
+      '<div class="pilo-mf-grid">' +
+        colonne('Ce que la France achète de plus', 'les plus gros mouvements à la hausse', hausse, 'up') +
+        colonne('Ce que la France achète de moins', 'les plus gros mouvements à la baisse', baisse, 'dn') +
+      '</div>' +
+      '<div class="pilo-mf-note">Boîtes remboursées en ville sur toute la France' +
+        (fenetre ? ', ' + esc(fenetre) + ' 2026 comparés aux mêmes mois de 2025' : '') + '. ' +
+        'Le poids est une moyenne par officine' + (mA.periode ? ' sur ' + esc(String(mA.periode).replace('→', ' → ')) : '') + '. ' +
+        'Princeps uniquement : sur un générique, une variation de cette ampleur est presque toujours un changement de génériqueur, ' +
+        'pas un mouvement du marché. Classement par poids du marché multiplié par l\'ampleur du mouvement — ' +
+        'seuls les produits au-dessus de ' + POIDS_MINI + ' boîtes par pharmacie et par an y figurent.</div>' +
+    '</div>';
   }
 
   // ── Détection mode OPSO ───────────────────────
@@ -332,7 +633,7 @@
         '<div class="v2-kpi k1">' +
           '<div class="v2-kpi-l">CA groupement</div>' +
           '<div class="v2-kpi-v mono">' + V2.fmtEur(caGrp) + '</div>' +
-          deltaHtml(caGrp, caGrpPrev, pf && pf.prevLabel) +
+          deltaHtml(caGrp, caGrpPrev, pf && pf.prevLabel, !pf || pf.prevComplet !== false) +
         '</div>' +
         '<div class="v2-kpi k4">' +
           '<div class="v2-kpi-l">Panier moyen clientes actives</div>' +
@@ -487,12 +788,43 @@
       }
 
       var idx = productIndex();
-      var pf = periodFilter(sales, PERIOD);
+      var anc = ancreComplete(sales);
+      var pf = periodFilter(sales, PERIOD, anc);
       var inP = pf ? pf.inPeriod : function () { return true; };
       var inPrev = pf ? pf.inPrev : function () { return false; };
 
       var cur = sales.filter(inP);
       var prev = sales.filter(inPrev);
+
+      // ── Le RÉSEAU sur la MÊME période, pour se situer ────────────────
+      // « Réseau » = les huit secteurs réunis. C'est la seule base qui partage
+      // les tranches de prix et l'abandon de marge Intégral. Le marché FRANCE,
+      // lui, a son propre bloc plus bas et vient de Medic'AM : les deux ne se
+      // mélangent jamais dans un même chiffre.
+      // ── Le repère réseau ────────────────────────────────────────────
+      // Rien à comparer quand on regarde déjà le réseau entier.
+      //
+      // ⚠️ ET LE REPÈRE NE SE PREND PAS SUR LA PÉRIODE AFFICHÉE. Les fichiers
+      // de ventes s'arrêtent à des mois différents selon le commercial : sur le
+      // dernier mois, deux secteurs seulement ont des lignes. Un « repère
+      // réseau » calculé là-dessus, ce serait se comparer à soi-même en
+      // l'appelant le réseau.
+      // On prend donc TOUS les mois où le réseau est au complet. C'est une répartition,
+      // pas un niveau : elle bouge peu d'un mois sur l'autre, et une base de
+      // cinq mois est plus solide qu'un mois isolé. L'écran DIT sur quoi elle
+      // porte, sinon « le réseau » ne veut rien dire.
+      var ancRes = ancreComplete(V2.sales || []);
+      var sectTotal = (V2.commercials ? V2.commercials().length : 0);
+      var reseauCur = null, repereLabel = '';
+      if (V2.commFilter && sectTotal > 1 && ancRes) {
+        reseauCur = (V2.sales || []).filter(function (s) { return ancRes.dispo[mkey(s.year, s.month)]; });
+        var bornes = Object.keys(ancRes.dispo).map(Number).sort(function (a, b) { return a - b; });
+        repereLabel = 'les ' + ancRes.maxSect + ' secteurs réunis, ' +
+          (bornes.length > 1 ? 'de ' + nomMois(bornes[0]) + ' à ' + nomMois(bornes[bornes.length - 1])
+                             : 'sur ' + nomMois(bornes[0]));
+      }
+      var compare = !!(reseauCur && reseauCur.length);
+      if (!compare) reseauCur = null;
 
       // ── KPI 1 : CA net HT ──
       var caCur = V2.sumCA(cur), caPrev = V2.sumCA(prev);
@@ -522,7 +854,7 @@
           '<div class="pilo-hero-main">' +
             '<div class="pilo-hero-l">CA net HT · ' + (pf ? esc(pf.label) : '') + '</div>' +
             '<div class="pilo-hero-v mono" data-count>' + V2.fmtEur(caCur) + '</div>' +
-            '<div class="pilo-hero-delta">' + deltaHtml(caCur, caPrev, pf && pf.prevLabel) + '</div>' +
+            '<div class="pilo-hero-delta">' + deltaHtml(caCur, caPrev, pf && pf.prevLabel, !pf || pf.prevComplet !== false) + '</div>' +
           '</div>' +
           (caTrend ? '<div class="pilo-hero-trend"><div class="pilo-hero-trend-t">12 derniers mois</div>' + caTrend + '</div>' : '') +
         '</div>';
@@ -544,7 +876,7 @@
         '</div>';
 
       // ── Chart 13 mois ──
-      var chart = build13MonthChart(sales);
+      var chart = build13MonthChart(sales, anc);
 
       // ── Top pharmacies par CA (période) + marge MDL par pharma ──
       var phRows = activePh.map(function (id) {
@@ -580,10 +912,16 @@
           (topCaHtml || '<div class="v2-empty"><div class="v2-empty-d">Aucune pharmacie active sur la période.</div></div>') +
         '</div>';
 
-      // ── Répartition par famille ──
+      // ── Répartition par famille (+ repère réseau) ──
       var famTotals = {}; FAM.forEach(function (f) { famTotals[f.key] = 0; });
       cur.forEach(function (s) { famTotals[familyOf(s, idx)] += (s.mntNetHt || 0); });
       var famTotal = FAM.reduce(function (a, f) { return a + famTotals[f.key]; }, 0) || 1;
+      var famRes = null, famResTotal = 1;
+      if (compare) {
+        famRes = {}; FAM.forEach(function (f) { famRes[f.key] = 0; });
+        reseauCur.forEach(function (s) { famRes[familyOf(s, idx)] += (s.mntNetHt || 0); });
+        famResTotal = FAM.reduce(function (a, f) { return a + famRes[f.key]; }, 0) || 1;
+      }
       var famSorted = FAM.slice().sort(function (a, b) { return famTotals[b.key] - famTotals[a.key]; });
       var famHtml = famSorted.map(function (f) {
         var v = famTotals[f.key];
@@ -595,7 +933,8 @@
             '<span class="pilo-fam-v"><span class="mono" style="font-weight:700">' + V2.fmtEur(v) + '</span>' +
               '<span class="mono pilo-fam-pct">' + pct.toFixed(1).replace('.', ',') + ' %</span></span>' +
           '</div>' +
-          '<div class="pilo-bar"><span class="pilo-bar-fill" data-w="' + pct.toFixed(1) + '" style="width:0;background:' + f.color + '"></span></div>' +
+          barreComparee(pct, famRes ? famRes[f.key] / famResTotal * 100 : null, f.color) +
+          ecartLigne(pct, famRes ? famRes[f.key] / famResTotal * 100 : null, famTotal) +
         '</div>';
       }).join('');
       var famCard =
@@ -612,17 +951,30 @@
         tierRefs[t][normCip(s.artCode)] = 1;
       });
       var tierTotal = tierCA.reduce(function (a, b) { return a + b; }, 0) || 1;
+      // Le même découpage sur le réseau entier : c'est le repère.
+      var tierRes = null, tierResTotal = 1;
+      if (compare) {
+        tierRes = [0, 0, 0, 0];
+        reseauCur.forEach(function (s) { tierRes[priceTier(s.puNet)] += (s.mntNetHt || 0); });
+        tierResTotal = tierRes.reduce(function (a, b) { return a + b; }, 0) || 1;
+      }
       var tierHtml = TIERS.map(function (t, i) {
         var v = tierCA[i], pct = v / tierTotal * 100, nref = Object.keys(tierRefs[i]).length;
+        var ref = tierRes ? tierRes[i] / tierResTotal * 100 : null;
         return '<div class="pilo-fam">' +
           '<div class="pilo-fam-top">' +
-            '<span class="pilo-fam-l"><span class="pilo-tier-dot" style="background:' + t.color + '"></span>' + t.label +
-              ' <span style="color:var(--muted);font-weight:500;font-size:11.5px">· ' + t.sub + '</span></span>' +
+            // La borne de tranche ne se coupe jamais en deux (« 4,33 – / 468 € ») :
+            // c'est un seul repère chiffré. Le qualificatif, lui, peut passer à la ligne.
+            '<span class="pilo-fam-l"><span class="pilo-tier-dot" style="background:' + t.color + '"></span>' +
+              '<span class="pilo-tier-lbl">' + t.label + '</span>' +
+              '<span class="pilo-tier-sub">· ' + t.sub + '</span></span>' +
             '<span class="pilo-fam-v"><span class="mono" style="font-weight:700">' + V2.fmtEur(v) + '</span>' +
               '<span class="mono pilo-fam-pct">' + pct.toFixed(1).replace('.', ',') + ' %</span></span>' +
           '</div>' +
-          '<div class="pilo-bar"><span class="pilo-bar-fill" data-w="' + pct.toFixed(1) + '" style="width:0;background:' + t.color + '"></span></div>' +
-          '<div class="pilo-tier-meta mono">' + nref + ' référence' + (nref > 1 ? 's' : '') + '</div>' +
+          barreComparee(pct, ref, t.color) +
+          (ref == null
+            ? '<div class="pilo-tier-meta mono">' + nref + ' référence' + (nref > 1 ? 's' : '') + '</div>'
+            : ecartLigne(pct, ref, tierTotal, nref + ' référence' + (nref > 1 ? 's' : ''))) +
         '</div>';
       }).join('');
       var tierCard =
@@ -794,6 +1146,11 @@
           '<div>' +
             '<div class="v2-page-title">Pilotage</div>' +
             '<div class="v2-page-sub" style="margin-bottom:0">' + (pf ? esc(pf.label) : '') + (V2.commFilter ? ' · ' + esc(V2.commFilter) : (opso ? ' · Groupement OPSO Santé' : ' · ton tableau de bord commercial')) + '</div>' +
+            // Un mois écarté doit se DIRE : sinon l'écran a l'air de couvrir
+            // une période qu'il ne couvre pas.
+            (anc && anc.ecartes.length
+              ? '<div class="pilo-ecarte">' + ICO('alert', 13) + esc(phraseEcart(anc)) + '</div>'
+              : '') +
           '</div>' +
           '<div style="display:flex;gap:0;flex-wrap:wrap;align-items:center">' + commSeg +
             '<div class="pilo-seg">' + seg('current', 'Dernier mois') + seg('3m', '3 mois') + seg('year', 'Année') + '</div>' +
@@ -819,7 +1176,8 @@
       // Détail : répartition du CA (familles + tranches de prix + génériqueurs)
       // `sales` = V2.commSales() → respecte le périmètre commercial (confidentialité).
       var gnqCard = V2.generiqueurCard ? V2.generiqueurCard(sales, { title: 'CA par génériqueur', max: 15 }) : '';
-      var repartition = '<div class="pilo-grid2" data-reveal>' + famCard + tierCard + '</div>' +
+      var repartition = legendeReseau(compare, repereLabel) +
+        '<div class="pilo-grid2" data-reveal>' + famCard + tierCard + '</div>' +
         (gnqCard ? '<div data-reveal style="margin-top:14px">' + gnqCard + '</div>' : '');
       // Détail : classements (top pharmacies + groupements)
       var classements = grpCard ? ('<div class="pilo-grid2" data-reveal>' + topCaCard + grpCard + '</div>') : ('<div data-reveal>' + topCaCard + '</div>');
@@ -829,6 +1187,9 @@
 
       // Repères pour les intitulés dépliables (aide à la lecture, pas des objectifs)
       var nbGrp = grpList.length;
+
+      // Le marché France (Medic'AM) — hors OPSO, qui a son propre tableau de bord.
+      var marcheFr = opso ? '' : buildMarcheFranceCard(cur);
 
       var marcheLink = (V2.pages && V2.pages.marche && !opso)
         ? '<a class="pilo-marche" onclick="V2.go(\'marche\')">' + ICO('spark', 17) +
@@ -844,7 +1205,10 @@
           kpis +
           chart.html +
           // ── DÉTAIL, replié par défaut : Will déplie au besoin ──
-          disc('Répartition de mon chiffre d\'affaires', 'familles de produits et tranches de prix', repartition, false) +
+          disc('Répartition de mon chiffre d\'affaires',
+               compare ? 'tranches de prix et familles, avec le repère du réseau' : 'familles de produits et tranches de prix',
+               repartition, false) +
+          (marcheFr ? disc('Le marché France', 'ce que le pays achète de plus, et de moins', '<div data-reveal>' + marcheFr + '</div>', false) : '') +
           disc('Mes pharmacies', (nbActive ? nbActive + ' active' + (nbActive > 1 ? 's' : '') + ' sur la période' : '') + (nbGrp >= 2 && !opso ? ' · ' + nbGrp + ' groupements' : ''), classements, false) +
           (marche ? disc('Marché Ameli & pharmacies à relancer', 'ce que je ne commande pas encore, et qui décroche', marche, false) : '') +
         '</div>';
@@ -936,7 +1300,14 @@
   };
 
   // ── Mini bar chart CSS 13 mois ────────────────
-  function build13MonthChart(sales) {
+  // `anc` (optionnel) = résultat d'ancreComplete() sur le même périmètre. Les
+  // mois qu'il a écartés restent DESSINÉS — on ne supprime pas de la donnée —
+  // mais en gris, sans variation, et hors de la moyenne, du mois record et du
+  // compte des mois actifs. Sinon le graphe affiche « −24 % » juste sous un
+  // bandeau qui explique que ce mois-là n'est pas comparable.
+  // ⚠️ Sans ce 2ᵉ argument, le comportement est celui d'avant : la fiche
+  // officine (v2-pharma.js) appelle cette fonction avec un seul argument.
+  function build13MonthChart(sales, anc) {
     injectStyles();   // garantit les styles du chart même hors page Pilotage (ex : fiche officine)
     var months = availableMonths(sales);
     if (!months.length) return { html: '', bind: function () {} };
@@ -962,13 +1333,19 @@
     // Retire les mois VIDES en tête (avant le 1er mois avec des ventes) : pas de colonnes fantômes.
     var _f = 0; while (_f < bars.length - 1 && bars[_f].ca <= 0) _f++;
     if (_f > 0) bars = bars.slice(_f);
+    // Marque les mois que l'ancre a écartés : présents, mais pas comparables.
+    var partiel = 0;
+    bars.forEach(function (b) {
+      b.partiel = !!(anc && anc.dispo && b.ca > 0 && !anc.dispo[mkey(b.year, b.month)]);
+      if (b.partiel) partiel++;
+    });
     var maxCa = bars.reduce(function (a, b) { return Math.max(a, b.ca); }, 0) || 1;
 
     // Repères dérivés des vraies ventes : moyenne (mois actifs), mois record
-    var nonEmpty = bars.filter(function (b) { return b.ca > 0; });
+    var nonEmpty = bars.filter(function (b) { return b.ca > 0 && !b.partiel; });
     var avg = nonEmpty.length ? nonEmpty.reduce(function (a, b) { return a + b.ca; }, 0) / nonEmpty.length : 0;
     var best = null;
-    bars.forEach(function (b) { if (b.ca > 0 && (!best || b.ca > best.ca)) best = b; });
+    bars.forEach(function (b) { if (b.ca > 0 && !b.partiel && (!best || b.ca > best.ca)) best = b; });
 
     // Grammaire fiche officine : valeur k€ au-dessus, barre qui pousse depuis
     // la base, mois en dessous. Mois record = seul accent fort ; dernier mois marqué.
@@ -978,12 +1355,15 @@
       var hot = best && b.year === best.year && b.month === best.month;
       // évolution vs mois précédent (si les deux mois ont des ventes)
       var pc = i > 0 ? bars[i - 1].ca : 0, dchip = '', dtip = '';
-      if (b.ca > 0 && pc > 0) {
+      if (b.partiel) {
+        dchip = '<span class="pilo-cbar-d part">incomplet</span>';
+        dtip = ' · mois incomplet, non comparable';
+      } else if (b.ca > 0 && pc > 0 && !bars[i - 1].partiel) {
         var dd = (b.ca - pc) / pc * 100, up = dd >= 0;
         dchip = '<span class="pilo-cbar-d ' + (up ? 'up' : 'dn') + '">' + (up ? '+' : '') + Math.round(dd) + '%</span>';
         dtip = ' · ' + (up ? '▲ +' : '▼ ') + Math.round(dd) + '% vs mois préc.';
       }
-      return '<div class="pilo-cbar' + (hot ? ' pilo-cbar-hot' : '') + (isLast ? ' pilo-cbar-cur' : '') + '" data-i="' + i + '" data-tip="' + esc(cap(b.full) + ' ' + b.year + ' · ' + V2.fmtEur(b.ca) + dtip) + '">' +
+      return '<div class="pilo-cbar' + (hot ? ' pilo-cbar-hot' : '') + (b.partiel ? ' pilo-cbar-part' : '') + (isLast ? ' pilo-cbar-cur' : '') + '" data-i="' + i + '" data-tip="' + esc(cap(b.full) + ' ' + b.year + ' · ' + V2.fmtEur(b.ca) + dtip) + '">' +
         '<span class="pilo-cbar-v mono">' + V2.fmtK(b.ca) + '</span>' + dchip +
         '<div class="pilo-cbar-track">' +
           '<span class="pilo-cbar-fill' + (isLast ? ' cur' : '') + '" style="height:' + h.toFixed(1) + '%"></span>' +
@@ -1001,7 +1381,7 @@
       '<div class="pilo-kfs">' +
         (avg > 0 ? kf('Moyenne', V2.fmtEur(avg) + '<small>/mois</small>') : '') +
         (best ? kf('Meilleur mois', esc(cap(best.full)) + ' · ' + V2.fmtEur(best.ca)) : '') +
-        kf('Mois actifs', V2.fmtNum(nonEmpty.length) + '<small>/' + bars.length + '</small>') +
+        kf('Mois complets', V2.fmtNum(nonEmpty.length) + '<small>/' + bars.length + '</small>') +
       '</div>';
 
     var range = cap(bars[0].full) + ' ' + bars[0].year + ' → ' + cap(bars[bars.length - 1].full) + ' ' + bars[bars.length - 1].year;
@@ -1045,11 +1425,16 @@
         if (!readout) return;
         var prev = i > 0 ? bars[i - 1].ca : 0;
         var evHtml;
-        if (b.ca > 0 && prev > 0) {
+        // Un mois incomplet ne se compare à rien : ni au mois d'avant, ni à la
+        // moyenne. Afficher « −24 % » sur un mois amputé, c'est inventer une
+        // baisse — et l'encart est l'endroit le plus lu du graphe.
+        if (b.partiel) {
+          evHtml = '<span class="pilo-ro-d mut">mois incomplet · pas de comparaison</span>';
+        } else if (b.ca > 0 && prev > 0 && !bars[i - 1].partiel) {
           var up = b.ca >= prev, pct = Math.round(Math.abs((b.ca - prev) / prev * 100));
           evHtml = '<span class="pilo-ro-d ' + (up ? 'up' : 'dn') + '">' + (up ? '▲ +' : '▼ ') + pct + ' % vs mois préc.</span>';
         } else { evHtml = '<span class="pilo-ro-d mut">' + (b.ca > 0 ? 'premier mois' : 'pas de vente') + '</span>'; }
-        var avgHtml = (b.ca > 0 && avg > 0)
+        var avgHtml = (b.ca > 0 && avg > 0 && !b.partiel)
           ? '<span class="pilo-ro-a mono">' + (b.ca >= avg ? '+' : '−') + Math.round(Math.abs((b.ca - avg) / avg * 100)) + ' % vs moyenne</span>' : '';
         readout.innerHTML = '<span class="pilo-ro-m">' + esc(cap(b.full) + ' ' + b.year) + '</span>' +
           '<span class="pilo-ro-v mono">' + V2.fmtEur(b.ca) + '</span>' + evHtml + avgHtml;
@@ -1057,9 +1442,10 @@
       Array.prototype.forEach.call(barEls, function (el) {
         el.addEventListener('click', function () { selectMonth(+el.dataset.i); });
       });
-      // Défaut = dernier mois ; mais si le dernier semble PARTIEL (chute >60% vs préc.),
-      // on sélectionne le dernier mois complet — évite un « −89% » trompeur à l'ouverture.
+      // Défaut = dernier mois COMPLET. À l'ouverture, l'encart doit porter un
+      // chiffre comparable ; les mois incomplets restent cliquables.
       var defI = bars.length - 1;
+      while (defI > 0 && bars[defI].partiel) defI--;
       if (defI > 0 && bars[defI].ca > 0 && bars[defI - 1].ca > 0 && bars[defI].ca < bars[defI - 1].ca * 0.4) defI = defI - 1;
       selectMonth(defI);
 
@@ -1089,7 +1475,7 @@
       '.pilo-vals .mono,.pilo-fam-v .mono,.pilo-rank,.pilo-cbar-lbl,.pilo-cbar-v,.pilo-kf-v,.pilo-chart-period,.pilo-tier-meta,.pilo-tip,.opso-chip-n,.opso-perim-nums .mono,.opso-gauge-labels .mono{font-feature-settings:"tnum" 1,"lnum" 1;font-variant-numeric:tabular-nums lining-nums;letter-spacing:-.02em}' +
       '.pilo-vals .v2-row-val,.pilo-vals .v2-row-meta{font-variant-numeric:tabular-nums lining-nums}' +
       '.pilo-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px}' +
-      '.pilo-seg{display:inline-flex;gap:3px;background:var(--card);border:1px solid var(--line);border-radius:13px;padding:4px;box-shadow:var(--sh-1)}' +
+      '.pilo-seg{display:inline-flex;flex-wrap:wrap;gap:3px;background:var(--card);border:1px solid var(--line);border-radius:13px;padding:4px;box-shadow:var(--sh-1)}' +'@media(max-width:560px){.pilo-head>div:last-child{width:100%}.pilo-seg{width:100%;justify-content:flex-start}}' +
       '.pilo-segbtn{border:none;background:transparent;border-radius:9px;padding:8px 15px;font-family:var(--font);font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;transition:.18s var(--ease);white-space:nowrap}' +
       '.pilo-segbtn:hover{color:var(--ip-ink)}' +
       '.pilo-segbtn.on{background:var(--ip-blue);color:#fff;box-shadow:0 2px 8px rgba(0,80,230,.28)}' +
@@ -1131,12 +1517,73 @@
       // familles
       '.pilo-fam{margin-bottom:15px}.pilo-fam:last-child{margin-bottom:2px}' +
       '.pilo-fam-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;font-size:13.5px}' +
-      '.pilo-fam-l{display:flex;align-items:center;gap:8px;font-weight:600}' +
+      '.pilo-fam-l{display:flex;align-items:center;gap:8px;font-weight:600;min-width:0;flex:1}' +
       '.pilo-fam-ico{display:inline-flex;align-items:center}' +
-      '.pilo-fam-v{display:flex;align-items:baseline;gap:9px}' +
+      // `flex:none` + `nowrap` : sans eux, « 4,33 – 468 € · intermédiaires »
+      // poussait le « € » de sa valeur à la ligne suivante sur iPhone.
+      '.pilo-fam-v{display:flex;align-items:baseline;gap:9px;flex:none;white-space:nowrap}' +
       '.pilo-fam-pct{font-size:11.5px;color:var(--muted)}' +
+      // ── Repère réseau sur la barre + ligne d'écart ─────────────
+      '.pilo-legende{font-size:11.5px;line-height:1.45;color:var(--muted);margin:0 0 14px;max-width:52ch}' +
+      '.pilo-legende-vide{color:var(--c-amber-txt,#9A5B12);font-weight:600}' +
+      '.pilo-bar{position:relative}' +
+      '.pilo-bar.cmp{height:8px}' +
+      // Le trait « réseau ». Pas de backdrop-filter, pas de mix-blend : il doit
+      // rester visible sur la barre pleine comme sur le fond creux, sous Safari.
+      '.pilo-ref{position:absolute;top:0;bottom:0;width:2px;border-radius:2px;background:var(--ip-ink);opacity:.55;transform:translateX(-1px);pointer-events:none}' +
+      '.pilo-ecart{font-weight:700;letter-spacing:-.01em}' +
+      '.pilo-ecart.up{color:var(--c-mint-txt,#0F7A52)}' +
+      '.pilo-ecart.dn{color:var(--c-rose-txt,#C7283D)}' +
+      '.pilo-ecart.eq{color:var(--muted)}' +
+      // ── Mois écarté (fichier de ventes arrêté en cours de mois) ─
+      '.pilo-ecarte{display:flex;align-items:center;gap:6px;margin-top:8px;font-size:11.5px;font-weight:600;color:var(--c-amber-txt,#9A5B12)}' +
+      '.pilo-ecarte svg{flex-shrink:0}' +
+      // ── Le marché France ───────────────────────────────────────
+      '.pilo-mf{padding:18px 20px}' +
+      '.pilo-mf-expo{display:flex;flex-wrap:wrap;gap:6px 22px;margin:2px 0 18px;font-size:13px;color:var(--ip-ink-2);line-height:1.5}' +
+      '.pilo-mf-expo b{font-variant-numeric:tabular-nums lining-nums;font-weight:800}' +
+      '.pilo-mf-expo b.up{color:var(--c-mint-txt,#0F7A52)}' +
+      '.pilo-mf-expo b.dn{color:var(--c-rose-txt,#C7283D)}' +
+      '.pilo-mf-src{display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;color:var(--muted);margin-bottom:12px}' +
+      // ⚠️ `min-width:0` sur les colonnes : sans lui, une désignation produit
+      // sans espace (« EFFERALGANMED 1000MG C.EFFV T8 ») pousse la colonne
+      // au-delà de sa part et la valeur de droite sort de la carte.
+      '.pilo-mf-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 26px}' +
+      '.pilo-mf-col{min-width:0}' +
+      '@media(max-width:900px){.pilo-mf-grid{grid-template-columns:1fr;gap:22px}}' +
+      '.pilo-mf-h{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;font-size:13px;font-weight:800;letter-spacing:-.01em;padding-bottom:9px;margin-bottom:4px;border-bottom:2px solid var(--line-strong)}' +
+      '.pilo-mf-h-moi{flex:none;font-size:11px;font-weight:700;color:var(--muted);text-align:right;letter-spacing:0}' +
+      '.pilo-mf-h-moi small{display:block;font-size:10px;font-weight:500;color:var(--muted-2);margin-top:1px}' +
+      '.pilo-mf-h small{display:block;font-size:11px;font-weight:500;color:var(--muted);margin-top:2px;letter-spacing:0}' +
+      '.pilo-mf-h.up{border-bottom-color:color-mix(in srgb,#0F7A52 45%,transparent);color:var(--c-mint-txt,#0F7A52)}' +
+      '.pilo-mf-h.dn{border-bottom-color:color-mix(in srgb,#C7283D 45%,transparent);color:var(--c-rose-txt,#C7283D)}' +
+      '.pilo-mf-row{display:flex;align-items:flex-start;gap:11px;padding:10px 0;border-bottom:1px solid var(--line-2)}' +
+      '.pilo-mf-row:last-child{border-bottom:none}' +
+      '.pilo-mf-pct{flex:none;width:74px;font-size:12.5px;font-weight:800;padding-top:1px;letter-spacing:-.02em}' +
+      '.pilo-mf-pct.up{color:var(--c-mint-txt,#0F7A52)}' +
+      '.pilo-mf-pct.dn{color:var(--c-rose-txt,#C7283D)}' +
+      '.pilo-mf-main{flex:1;min-width:0}' +
+      '.pilo-mf-nom{display:block;font-size:13px;font-weight:600;color:var(--ip-ink);line-height:1.3;overflow-wrap:anywhere}' +
+      '.pilo-mf-meta{display:block;font-size:10.5px;color:var(--muted-2);margin-top:3px}' +
+      '.pilo-mf-stk{display:inline-block;margin-left:7px;padding:1px 6px;border-radius:999px;background:color-mix(in srgb,var(--ip-blue) 9%,transparent);color:var(--ip-blue);font-weight:700;letter-spacing:0}' +
+      '.pilo-mf-moi{flex:none;text-align:right;min-width:92px}' +
+      '.pilo-mf-moi b{display:block;font-size:13px;font-weight:700;color:var(--ip-ink);letter-spacing:-.02em}' +
+      '.pilo-mf-moi b.zero{font-size:11.5px;font-weight:600;color:var(--c-amber-txt,#9A5B12)}' +
+      '.pilo-mf-moi small{display:block;font-size:10.5px;color:var(--muted-2);margin-top:2px}' +
+      '.pilo-mf-more{margin-top:6px}' +
+      '.pilo-mf-more>summary{display:flex;align-items:center;min-height:44px;cursor:pointer;list-style:none;font-size:12.5px;font-weight:700;color:var(--ip-blue)}' +
+      '.pilo-mf-more>summary::-webkit-details-marker{display:none}' +
+      '.pilo-mf-note{margin-top:16px;padding-top:13px;border-top:1px solid var(--line);font-size:11px;line-height:1.55;color:var(--muted-2)}' +
+      '@media(max-width:480px){.pilo-mf-pct{width:64px;font-size:11.5px}.pilo-mf-moi{min-width:76px}}' +
       // tranches de prix
+      // Mois incomplet : dessiné, mais visiblement mis de côté (gris, hachuré).
+      '.pilo-cbar-part .pilo-cbar-fill{background:var(--line-strong)!important;background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.55) 0 3px,transparent 3px 6px)}' +
+      '.pilo-cbar-part .pilo-cbar-v,.pilo-cbar-part .pilo-cbar-lbl{color:var(--muted-2)}' +
+      '.pilo-cbar-d.part{color:var(--muted-2);background:var(--card-2);font-weight:600}' +
       '.pilo-tier-dot{display:inline-block;width:9px;height:9px;border-radius:3px;flex-shrink:0}' +
+      '.pilo-fam-l{flex-wrap:wrap;gap:4px 8px}' +
+      '.pilo-tier-lbl{white-space:nowrap}' +
+      '.pilo-tier-sub{color:var(--muted);font-weight:500;font-size:11.5px;white-space:nowrap}' +
       '.pilo-tier-meta{font-size:10.5px;color:var(--muted-2);margin-top:4px}' +
       '.pilo-ameli-sub{font-size:12px;font-weight:600;color:var(--muted);margin-bottom:10px;letter-spacing:.005em}' +
       // ── Blocs dépliables (progressive disclosure) : le détail reste calme et rangé ──

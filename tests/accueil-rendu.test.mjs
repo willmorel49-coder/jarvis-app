@@ -47,13 +47,27 @@ const h = root.innerHTML;
 const grandes = [...h.matchAll(/v2-lch-t">([^<]+)</g)].map((m) => m[1]);
 const autres = [...h.matchAll(/v2-lch-mini"[^>]*>([^<]*)</g)].map((m) => m[1].trim()).filter(Boolean);
 
-test('accueil : la grille compte bien QUATRE grandes cartes', () => {
-  assert.equal((h.match(/v2-lch-card/g) || []).length, 4,
+test('accueil : la grille compte bien CINQ grandes cartes', () => {
+  // Passe de 4 a 5 le 24/08/2026 : Pilotage remonte des « Autres outils ».
+  assert.equal((h.match(/v2-lch-card/g) || []).length, 5,
     `grille incomplete : ${grandes.join(' · ')}`);
 });
 
 test('accueil : Produits est une grande carte', () => {
   assert.ok(grandes.includes('Produits'), `grandes cartes : ${grandes.join(' · ')}`);
+});
+
+test('accueil : Pilotage est une grande carte, plus une pastille grise', () => {
+  assert.ok(grandes.includes('Pilotage'), `grandes cartes : ${grandes.join(' · ')}`);
+  assert.ok(!autres.includes('Pilotage'),
+    `Pilotage est reste dans « Autres outils » : ${autres.join(' · ')}`);
+});
+
+test('accueil : la carte esseulee d une grille impaire prend les deux colonnes', () => {
+  // Sans cette regle, la 5e carte occupe une demi-ligne et la grille boite.
+  const src = readFileSync(new URL('v2-app.js', B), 'utf8');
+  assert.ok(/last-child:nth-child\(odd\)\{grid-column:1\/-1/.test(src),
+    'la regle CSS de la carte esseulee a disparu');
 });
 
 test('accueil : Officines reste en premier', () => {
