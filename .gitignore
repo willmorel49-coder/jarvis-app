@@ -114,6 +114,11 @@ L'INTEGRAL COMPLET*.pdf
 # Fiche biosimilaires INTERNE (conditions commerciales — ne jamais publier)
 biosim-poster-interne.pdf
 biosim-poster-*interne.pdf
+# 24/08/2026 — le HTML aussi. La règle ne visait que le PDF, alors que le HTML
+# qui le fabrique porte exactement les mêmes chiffres : prix net IP ET taux
+# d'abandon, référence par référence. Ignorer la sortie mais pas sa source,
+# c'est fermer la porte et laisser la fenêtre.
+biosim-poster-*interne.html
 
 # Comptes utilisateurs : contiennent des mots de passe en clair — NE JAMAIS publier
 crm/v2/_sql/create-user-*.sql

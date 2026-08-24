@@ -70,7 +70,13 @@ function synthese(mode) {
     let bioP = '<span class="np">n.c.</span>';
     if (gp) bioP = interne
       ? '<b>' + eur(gp.ppht) + '</b> <span class="u">PPHT</span> · <span class="net">' + eur(gp.net) + '</span> <span class="u">net IP</span> <span class="ab">' + pct(gp.ab) + '</span>'
-      : '<b>' + eur(gp.ppht) + '</b> <span class="u">PPHT</span> · <span class="ab">abandon ' + pct(gp.ab) + '</span>';
+      // 24/08/2026 — le taux d'abandon ne s'imprime PLUS sur la version pharmacien.
+      // Regle non negociable : on montre les conditions a l'ecran en rendez-vous,
+      // jamais sur un document remis au pharmacien ni sur un support public. Or ce
+      // PDF etait les deux a la fois -- il partait avec les commerciaux ET il etait
+      // telechargeable depuis le depot public (11 taux imprimes, mesures le 24/08).
+      // Le bas de page dit deja « prix net sur demande a votre commercial ».
+      : '<b>' + eur(gp.ppht) + '</b> <span class="u">PPHT</span>';
     return '<tr><td class="sub"><div class="dci">' + esc(m.dci) + '</div><div class="atc">' + esc(m.atc) + '</div><div class="aire">' + esc(m.aire) + '</div></td>'
       + '<td class="ref"><div class="rn">' + esc(m.reference) + '</div><div class="rl">' + esc(m.reference_labo) + '</div><div class="rp">' + refP + '</div></td>'
       + '<td class="bio"><div class="bp">' + bioP + '</div><div class="cc">' + chips(m) + '</div></td></tr>';
@@ -96,10 +102,13 @@ function synthese(mode) {
 function detail(mode) {
   const interne = mode === "interne";
   const cards = molecules.filter((m) => m.substituable).map((m) => {
-    const th = interne ? '<th class="num">PPHT</th><th class="num">Net IP</th><th class="num">Abandon</th>' : '<th class="num">PPHT</th><th class="num">Abandon de marge</th>';
+    // 24/08/2026 — colonne « Abandon de marge » retiree de la version pharmacien
+    // (voir le commentaire dans synthese()). 98 taux etaient imprimes sur les
+    // 3 pages du PDF public. La version interne, elle, garde tout.
+    const th = interne ? '<th class="num">PPHT</th><th class="num">Net IP</th><th class="num">Abandon</th>' : '<th class="num">PPHT</th>';
     const rows = (m.presentations || []).map((p) => {
       const c = interne ? '<td class="num">' + eur(p.ppht) + '</td><td class="num net">' + eur(p.net) + '</td><td class="num ab">' + pct(p.abandon) + '</td>'
-        : '<td class="num">' + eur(p.ppht) + '</td><td class="num ab">' + pct(p.abandon) + '</td>';
+        : '<td class="num">' + eur(p.ppht) + '</td>';
       return '<tr><td class="form">' + esc(p.form) + '</td>' + c + '</tr>';
     }).join("");
     const n = (m.presentations || []).length;
