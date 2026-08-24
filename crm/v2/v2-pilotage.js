@@ -484,29 +484,38 @@
   }
 
   // ═══════════════════════════════════════════════════════════════
-  // MES PRODUITS — le visu « secteur × catégorie de prix »
+  // MES PRODUITS — mon secteur, les collègues, la France
   //
   // Le Pilotage ne montrait aucun produit : on savait combien on vendait,
-  // jamais quoi. Ce bloc répond aux deux questions ensemble — QUOI, et OÙ —
-  // parce que séparées elles ne servent à rien : un top produits national ne
-  // dit pas où pousser, et un classement de secteurs ne dit pas quoi proposer.
+  // jamais quoi. Ce bloc répond aux deux questions ensemble.
   //
-  // La matrice est l'entrée : une ligne par secteur, une colonne par
-  // catégorie de prix. On touche une case, la liste dessous ne garde que ces
-  // produits-là. Toucher un intitulé de ligne prend tout le secteur, un
-  // intitulé de colonne toute la catégorie.
+  // ⚠️ REFONTE DU 24/08/2026 (demande de Will, mot pour mot) : « comparatif
+  // entre mon secteur, secteur des collègues commerciaux au global et aussi
+  // France avec les stats Ameli ». La première version croisait les
+  // DÉPARTEMENTS et les catégories de prix — un découpage géographique, pas
+  // un comparatif. Trois lignes de référence remplacent la grille :
   //
-  // L'AXE SECTEUR se choisit tout seul selon ce qu'on a le droit de voir :
-  //  · « Par département » — toujours disponible, y compris pour un
-  //    commercial qui ne regarde que son propre périmètre ;
-  //  · « Par commercial » — seulement en vue réseau, où la page montre déjà
-  //    les huit secteurs. Un commercial restreint n'y a pas accès, exactement
-  //    comme il n'a pas accès au tableau de bord d'un collègue.
+  //   · Mon secteur
+  //   · Les autres secteurs réunis   ← jamais un collègue nommé
+  //   · La France                    ← marché remboursable, Medic'AM
+  //
+  // On touche une catégorie de prix, la liste dessous ne garde que ces
+  // produits. Les LIGNES ne sont pas cliquables : filtrer sur « les autres
+  // secteurs » afficherait le détail produit des collègues, et cet écran ne
+  // montre jamais le portefeuille de quelqu'un d'autre.
+  //
+  // ⚠️ LES DEUX CÔTÉS DOIVENT MESURER LA MÊME CHOSE.
+  // Medic'AM ne connaît que le REMBOURSABLE. Comparer tout mon chiffre
+  // d'affaires — NR et parapharmacie comprises — à un marché qui les ignore
+  // donnerait un écart entièrement fabriqué par la différence de périmètre.
+  // Par défaut, les trois lignes portent donc sur le seul univers Medic'AM,
+  // et l'écran DIT quelle part du chiffre d'affaires cela représente.
+  // Le bouton « Tout mon chiffre » rend la vue complète — et retire alors la
+  // ligne France, parce qu'elle ne serait plus comparable.
   // ═══════════════════════════════════════════════════════════════
-  var AXE = 'comm';                 // 'comm' | 'dep'
-  var CELL = { s: null, t: null };  // secteur / tranche retenus (null = tout)
+  var BASE = 'ameli';               // 'ameli' (comparable France) | 'tout'
+  var CELL = { t: null };           // catégorie de prix retenue (null = toutes)
   var PROD_MAX = 25;                // produits montrés avant dépliage
-  var SECT_MAX = 12;                // lignes de matrice avant dépliage
 
   // Désignation d'un produit. PROD_STATS couvre 98,6 % du chiffre d'affaires,
   // BENCHMARK complète. ⚠️ Le reste n'a de nom NULLE PART : on affiche alors
@@ -535,110 +544,154 @@
     return null;
   }
 
-  // Département depuis le code postal de l'officine. Corse comprise (2A/2B
-  // partagent le préfixe « 20 » dans les codes postaux, on garde « 20 »).
-  function depDe(ph) {
-    var cp = ph && ph.cp ? String(ph.cp).replace(/\D/g, '') : '';
-    if (cp.length < 4) return '';
-    if (cp.length === 4) cp = '0' + cp;
-    return cp.slice(0, 2);
+  // Un produit est-il suivi par Medic'AM ? C'est la définition de l'univers
+  // comparable : même liste de produits des deux côtés, pas une approximation.
+  function suiviAmeli(cip) {
+    var A = window.AMELI_AVG;
+    return !!(A && A.data && A.data[String(cip)] > 0);
   }
 
-  function buildProduitsCard(cur, phById, axesDispo) {
+  // ── LA FRANCE, par catégorie de prix ────────────────────────────
+  // Medic'AM donne des BOÎTES remboursées par pharmacie et par an ; le
+  // Pilotage raisonne en euros. On valorise donc chaque produit à son tarif
+  // grossiste officiel (window.PPHT) et on range le résultat dans la même
+  // catégorie de prix que les ventes. 96,5 % des produits Medic'AM ont un
+  // tarif ; les autres sortent du calcul, ils ne sont pas devinés.
+  //
+  // ⚠️ Le total obtenu (~36 Md€ par an) est un ORDRE DE GRANDEUR du marché
+  // officine remboursable valorisé au tarif grossiste, pas un chiffre
+  // officiel. On ne l'affiche pas : seules les PARTS servent ici.
+  var _frCache = null;
+  function franceParTranche() {
+    if (_frCache) return _frCache;
+    var A = window.AMELI_AVG, P = window.PPHT;
+    if (!A || !A.data || !P) return null;
+    var base = (A.meta && A.meta.base) || 20000;
+    var t = [0, 0, 0, 0], n = 0, sansPrix = 0;
+    for (var c in A.data) {
+      var pp = P[c];
+      if (!(pp > 0)) { sansPrix++; continue; }
+      t[priceTier(pp)] += A.data[c] * base * pp;
+      n++;
+    }
+    var tot = t[0] + t[1] + t[2] + t[3];
+    if (!(tot > 0)) return null;
+    _frCache = { t: t, tot: tot, n: n, sansPrix: sansPrix, meta: A.meta || {} };
+    return _frCache;
+  }
+
+  function buildProduitsCard(cur, monSecteur, periodeLabel) {
     if (!cur.length) return '';
     var noms = prodNoms();
-    var axe = (axesDispo.indexOf(AXE) >= 0) ? AXE : axesDispo[0];
+    var fr = franceParTranche();
+    var comparable = BASE === 'ameli' && !!fr;
 
-    // ── Secteur d'une ligne de vente ────────────────────────────
-    function sectDe(s) {
-      if (axe === 'comm') return s.commercial || '—';
-      var d = depDe(phById[s.pharmacyId]);
-      return d || '—';
-    }
+    // ── Les trois répartitions, en une seule passe ──────────────
+    // `retenu` = la ligne entre-t-elle dans l'univers mesuré ? Une seule
+    // définition, appliquée aux trois lignes ET à la liste de produits :
+    // c'est ce qui garantit que les pourcentages affichés et les produits
+    // affichés parlent du même ensemble.
+    function retenu(s) { return BASE !== 'ameli' || suiviAmeli(normCip(s.artCode)); }
 
-    // ── Matrice : secteur × catégorie de prix, en une seule passe ──
-    var mat = {}, totT = [0, 0, 0, 0], grand = 0, i;
+    var moiT = [0, 0, 0, 0], autresT = [0, 0, 0, 0], i;
+    var nAutres = {}, caRetenu = 0, caTotal = 0;
     for (i = 0; i < cur.length; i++) {
-      var v = cur[i], k = sectDe(v), t = priceTier(v.puNet), m = (v.mntNetHt || 0);
-      var row = mat[k] || (mat[k] = { k: k, t: [0, 0, 0, 0], tot: 0, off: {} });
-      row.t[t] += m; row.tot += m; row.off[v.pharmacyId] = 1;
-      totT[t] += m; grand += m;
+      var v = cur[i], m = (v.mntNetHt || 0);
+      caTotal += m;
+      if (!retenu(v)) continue;
+      caRetenu += m;
+      var t = priceTier(v.puNet);
+      if (monSecteur && v.commercial !== monSecteur) {
+        autresT[t] += m;
+        if (v.commercial) nAutres[v.commercial] = 1;
+      } else {
+        moiT[t] += m;
+      }
     }
-    var lignes = Object.keys(mat).map(function (k) { return mat[k]; })
-      .sort(function (a, b) { return b.tot - a.tot; });
-    if (!lignes.length) return '';
+    var moiTot = moiT[0] + moiT[1] + moiT[2] + moiT[3];
+    var autresTot = autresT[0] + autresT[1] + autresT[2] + autresT[3];
+    if (!(moiTot > 0)) return '';
 
-    // La case retenue doit encore exister : un changement de période ou d'axe
-    // peut la faire disparaître, et on filtrerait alors dans le vide.
-    if (CELL.s != null && !mat[CELL.s]) CELL.s = null;
-
-    function cellule(row, ti) {
-      var val = row.t[ti];
-      var part = row.tot > 0 ? val / row.tot : 0;
-      var on = (CELL.s === row.k || CELL.s == null) && (CELL.t === ti || CELL.t == null);
-      var vise = (CELL.s === row.k && CELL.t === ti);
-      // Teinte = part de la catégorie DANS le secteur : c'est la structure
-      // qu'on compare d'un secteur à l'autre, pas la taille du secteur.
-      var alpha = val > 0 ? Math.round(6 + part * 62) : 0;
-      return '<button type="button" class="pilo-mx-c' + (vise ? ' vise' : '') + (on ? '' : ' pale') + '"' +
-        ' data-s="' + esc(row.k) + '" data-t="' + ti + '"' +
-        ' style="background:' + (val > 0 ? 'color-mix(in srgb,' + TIERS[ti].color + ' ' + alpha + '%,var(--card))' : 'var(--card)') + '"' +
-        ' title="' + esc(row.k + ' · ' + TIERS[ti].label + ' · ' + V2.fmtEur(val) + ' · ' +
-          (part * 100).toFixed(1).replace('.', ',') + ' % du secteur') + '">' +
-        '<span class="mono">' + (val > 0 ? V2.fmtK(val) : '·') + '</span>' +
-      '</button>';
+    var lignes = [];
+    lignes.push({
+      cle: 'moi',
+      nom: monSecteur ? 'Mon secteur' : 'Le réseau Intégral',
+      sous: monSecteur ? esc(monSecteur) : (V2.commercials ? V2.commercials().length + ' secteurs' : ''),
+      t: moiT, tot: moiTot, fort: true
+    });
+    if (monSecteur && autresTot > 0) {
+      var nb = Object.keys(nAutres).length;
+      lignes.push({
+        cle: 'autres',
+        nom: 'Les autres secteurs',
+        sous: nb + (nb > 1 ? ' commerciaux réunis' : ' commercial'),
+        t: autresT, tot: autresTot
+      });
+    }
+    if (comparable) {
+      lignes.push({
+        cle: 'france',
+        nom: 'La France',
+        sous: 'marché remboursable · Medic\'AM',
+        t: fr.t, tot: fr.tot, france: true
+      });
     }
 
-    function ligneHtml(row) {
-      var nOff = Object.keys(row.off).length;
-      return '<div class="pilo-mx-r' + (CELL.s === row.k ? ' vise' : '') + '">' +
-        '<button type="button" class="pilo-mx-h" data-s="' + esc(row.k) + '" data-t="">' +
-          '<span class="pilo-mx-hn">' + esc(axe === 'dep' ? 'Dép. ' + row.k : row.k) + '</span>' +
-          '<span class="pilo-mx-ho mono">' + nOff + ' off.</span>' +
-        '</button>' +
-        TIERS.map(function (t, ti) { return cellule(row, ti); }).join('') +
-        '<span class="pilo-mx-tot mono">' + V2.fmtK(row.tot) + '</span>' +
+    // ── Le tableau ──────────────────────────────────────────────
+    function caseHtml(l, ti) {
+      var part = l.tot > 0 ? l.t[ti] / l.tot : 0;
+      var pct = part * 100;
+      // Écart en points face à la référence France : c'est LUI qui se lit,
+      // pas le pourcentage brut.
+      var ecart = (comparable && !l.france && fr.tot > 0)
+        ? pct - (fr.t[ti] / fr.tot * 100) : null;
+      var alpha = Math.round(6 + part * 62);
+      var pale = (CELL.t != null && CELL.t !== ti);
+      return '<div class="pilo-cmp-c' + (pale ? ' pale' : '') + (l.fort ? ' fort' : '') + '"' +
+        ' style="background:color-mix(in srgb,' + TIERS[ti].color + ' ' + alpha + '%,var(--card))"' +
+        ' title="' + esc(l.nom + ' · ' + TIERS[ti].label + ' · ' + pct.toFixed(1).replace('.', ',') + ' %' +
+          (l.france ? '' : ' · ' + V2.fmtEur(l.t[ti]))) + '">' +
+        '<span class="pilo-cmp-p mono">' + pct.toFixed(1).replace('.', ',') + ' %</span>' +
+        (ecart != null && Math.abs(ecart) >= 0.1
+          ? '<span class="pilo-cmp-e mono ' + (ecart >= 0 ? 'up' : 'dn') + '">' +
+            (ecart >= 0 ? '+' : '−') + Math.abs(ecart).toFixed(1).replace('.', ',') + ' pts</span>'
+          : '') +
       '</div>';
     }
 
-    var vues = lignes.slice(0, SECT_MAX), reste = lignes.slice(SECT_MAX);
     var enTete =
-      '<div class="pilo-mx-r pilo-mx-head">' +
-        '<button type="button" class="pilo-mx-h" data-s="" data-t=""><span class="pilo-mx-hn">' +
-          (axe === 'dep' ? 'Département' : 'Secteur') + '</span></button>' +
+      '<div class="pilo-cmp-r pilo-cmp-head">' +
+        '<span class="pilo-cmp-h"></span>' +
         TIERS.map(function (t, ti) {
-          return '<button type="button" class="pilo-mx-ch' + (CELL.t === ti ? ' vise' : '') + '" data-s="" data-t="' + ti + '">' +
+          return '<button type="button" class="pilo-cmp-ch' + (CELL.t === ti ? ' vise' : '') + '" data-t="' + ti + '">' +
             '<span class="pilo-mx-dot" style="background:' + t.color + '"></span>' +
             '<span class="pilo-mx-cl">' + t.label + '</span>' +
             '<span class="pilo-mx-cs">' + t.sub + '</span></button>';
         }).join('') +
-        '<span class="pilo-mx-tot pilo-mx-toth">Total</span>' +
-      '</div>';
-    var pied =
-      '<div class="pilo-mx-r pilo-mx-foot">' +
-        '<span class="pilo-mx-h"><span class="pilo-mx-hn">Ensemble</span></span>' +
-        TIERS.map(function (t, ti) {
-          return '<span class="pilo-mx-c pilo-mx-cf mono">' + (grand > 0 ? (totT[ti] / grand * 100).toFixed(1).replace('.', ',') + ' %' : '—') + '</span>';
-        }).join('') +
-        '<span class="pilo-mx-tot mono">' + V2.fmtK(grand) + '</span>' +
       '</div>';
 
-    var matrice =
-      '<div class="pilo-mx-wrap"><div class="pilo-mx" style="--cols:' + TIERS.length + '">' +
-        enTete + vues.map(ligneHtml).join('') + pied +
-      '</div></div>' +
-      (reste.length
-        ? '<details class="pilo-mf-more"><summary>Voir ' + reste.length + ' ' +
-            (axe === 'dep' ? 'département' : 'secteur') + (reste.length > 1 ? 's' : '') + ' de plus</summary>' +
-          '<div class="pilo-mx-wrap"><div class="pilo-mx" style="--cols:' + TIERS.length + '">' +
-            reste.map(ligneHtml).join('') + '</div></div></details>'
-        : '');
+    var corps = lignes.map(function (l) {
+      return '<div class="pilo-cmp-r' + (l.france ? ' fr' : '') + '">' +
+        '<span class="pilo-cmp-h"><span class="pilo-cmp-hn">' + esc(l.nom) + '</span>' +
+          (l.sous ? '<span class="pilo-cmp-hs">' + l.sous + '</span>' : '') +
+          (l.france ? '' : '<span class="pilo-cmp-hv mono">' + V2.fmtK(l.tot) + ' €</span>') +
+        '</span>' +
+        TIERS.map(function (t, ti) { return caseHtml(l, ti); }).join('') +
+      '</div>';
+    }).join('');
+
+    var tableau = '<div class="pilo-cmp-wrap"><div class="pilo-cmp" style="--cols:' + TIERS.length + '">' +
+      enTete + corps + '</div></div>';
 
     // ── La liste des produits de la case retenue ────────────────
+    // ⚠️ MÊME UNIVERS que les trois lignes du dessus (`retenu`), et MON
+    // secteur uniquement : la liste ne montre jamais le détail produit d'un
+    // collègue, seulement l'agrégat de la ligne « Les autres secteurs ».
     var agg = {}, nLignes = 0, caSel = 0;
     for (i = 0; i < cur.length; i++) {
       var w = cur[i];
-      if (CELL.s != null && sectDe(w) !== CELL.s) continue;
+      if (monSecteur && w.commercial !== monSecteur) continue;
+      if (!retenu(w)) continue;
       var tw = priceTier(w.puNet);
       if (CELL.t != null && tw !== CELL.t) continue;
       var c = normCip(w.artCode); if (!c) continue;
@@ -712,34 +765,53 @@
           : '')
       : '<div class="v2-empty"><div class="v2-empty-d">Aucun produit sur cette sélection.</div></div>';
 
-    var quoi = [];
-    if (CELL.s != null) quoi.push(axe === 'dep' ? 'département ' + CELL.s : CELL.s);
-    if (CELL.t != null) quoi.push(TIERS[CELL.t].label);
-    var titreListe = quoi.length ? 'Produits · ' + quoi.join(' · ') : 'Tous les produits';
+    var aMoi = monSecteur ? 'Mes produits' : 'Les produits du réseau';
+    var titreListe = CELL.t != null ? aMoi + ' · ' + TIERS[CELL.t].label : aMoi;
 
-    var axeBtns = axesDispo.length > 1
+    var baseBtns = fr
       ? '<div class="pilo-seg pilo-axeseg">' +
-          axesDispo.map(function (a) {
-            return '<button type="button" class="pilo-segbtn pilo-axebtn' + (a === axe ? ' on' : '') + '" data-axe="' + a + '">' +
-              (a === 'comm' ? 'Par secteur' : 'Par département') + '</button>';
-          }).join('') +
+          '<button type="button" class="pilo-segbtn pilo-basebtn' + (BASE === 'ameli' ? ' on' : '') + '" data-base="ameli">' +
+            'Comparable à la France</button>' +
+          '<button type="button" class="pilo-segbtn pilo-basebtn' + (BASE === 'tout' ? ' on' : '') + '" data-base="tout">' +
+            (monSecteur ? 'Tout mon chiffre' : 'Tout le chiffre') + '</button>' +
         '</div>'
       : '';
 
+    // La note dit sur quoi on compte, et ce qu'on a laissé dehors. Un
+    // pourcentage sans son périmètre ne veut rien dire.
+    var partRetenue = caTotal > 0 ? caRetenu / caTotal * 100 : 0;
+    var leCa = monSecteur ? 'ton chiffre d\'affaires' : 'le chiffre d\'affaires du réseau';
+    var nbLignes = lignes.length === 3 ? 'Les trois lignes' : (lignes.length === 2 ? 'Les deux lignes' : 'Les lignes');
+    var note = comparable
+      ? nbLignes + ' comptent les <b>mêmes produits</b> : ceux que Medic\'AM suit, ' +
+        'c\'est-à-dire les remboursables — <b>' + partRetenue.toFixed(1).replace('.', ',') + ' %</b> ' +
+        'de ' + leCa + ' sur cette fenêtre. Les NR et la parapharmacie n\'y sont pas : ' +
+        'la France ne les connaît pas, les compter d\'un seul côté fabriquerait un écart qui n\'existe pas. ' +
+        'Côté France, chaque boîte remboursée est valorisée à son tarif grossiste' +
+        (fr.meta && fr.meta.periode ? ' (' + esc(String(fr.meta.periode).replace('→', ' → ')) + ')' : '') + '.'
+      : 'Vue complète : ' + leCa + ' en entier, NR et parapharmacie comprises. ' +
+        (franceParTranche()
+          ? 'La ligne France disparaît — Medic\'AM ne connaît que le remboursable, elle ne serait plus comparable.'
+          : 'La référence France n\'est pas disponible : les données Medic\'AM ne sont pas chargées.');
+
     return '<div class="v2-card pilo-prod">' +
       '<div class="pilo-prod-h">' +
-        '<div class="pilo-prod-t">' + ICO('grid', 16) + 'Où se fait le chiffre, et sur quels prix</div>' + axeBtns +
+        '<div class="pilo-prod-t">' + ICO('grid', 16) +
+          (monSecteur ? 'Mon secteur, les collègues, la France' : 'Le réseau et la France') + '</div>' + baseBtns +
       '</div>' +
-      '<div class="pilo-legende">Chaque case croise un ' + (axe === 'dep' ? 'département' : 'secteur') +
-        ' et une catégorie de prix. Plus la case est foncée, plus cette catégorie pèse dans ce ' +
-        (axe === 'dep' ? 'département' : 'secteur') + '. Touche une case — ou un intitulé de ligne ou de colonne — ' +
-        'pour ne garder que ces produits dans la liste dessous.</div>' +
-      matrice +
+      '<div class="pilo-legende">Comment se répartit le chiffre d\'affaires entre les quatre catégories ' +
+        'de prix' + (comparable ? (monSecteur ? ', chez moi, chez les autres, et en France' : ', dans le réseau et en France') : '') + '. ' +
+        (comparable ? 'Le petit chiffre sous chaque part est l\'écart avec la France, en points. ' : '') +
+        'Touche une catégorie pour ne garder que ces produits dans la liste dessous.' +
+        (periodeLabel ? '<br><b>Mesuré sur ' + esc(periodeLabel) + '</b> — pas sur la période choisie en haut : ' +
+          'sur les derniers mois, tous les secteurs ne sont pas encore dans le fichier de ventes.' : '') +
+      '</div>' +
+      tableau +
+      '<div class="pilo-cmp-note">' + note + '</div>' +
       '<div class="pilo-prod-sep"><span class="pilo-prod-lt">' + esc(titreListe) + '</span>' +
         '<span class="pilo-prod-lc mono">' + V2.fmtNum(prods.length) + ' référence' + (prods.length > 1 ? 's' : '') +
           ' · ' + V2.fmtEur(caSel) + '</span>' +
-        (CELL.s != null || CELL.t != null
-          ? '<button type="button" class="pilo-prod-raz" data-raz="1">Tout revoir</button>' : '') +
+        (CELL.t != null ? '<button type="button" class="pilo-prod-raz" data-raz="1">Toutes les catégories</button>' : '') +
       '</div>' +
       listeHtml +
     '</div>';
@@ -1091,14 +1163,15 @@
       // porte, sinon « le réseau » ne veut rien dire.
       var ancRes = ancreComplete(V2.sales || []);
       var sectTotal = (V2.commercials ? V2.commercials().length : 0);
-      var reseauCur = null, repereLabel = '';
-      if (V2.commFilter && sectTotal > 1 && ancRes) {
-        reseauCur = (V2.sales || []).filter(function (s) { return ancRes.dispo[mkey(s.year, s.month)]; });
+      var reseauComplet = null, repereLabel = '';
+      if (sectTotal > 1 && ancRes) {
+        reseauComplet = (V2.sales || []).filter(function (s) { return ancRes.dispo[mkey(s.year, s.month)]; });
         var bornes = Object.keys(ancRes.dispo).map(Number).sort(function (a, b) { return a - b; });
         repereLabel = 'les ' + ancRes.maxSect + ' secteurs réunis, ' +
           (bornes.length > 1 ? 'de ' + nomMois(bornes[0]) + ' à ' + nomMois(bornes[bornes.length - 1])
                              : 'sur ' + nomMois(bornes[0]));
       }
+      var reseauCur = V2.commFilter ? reseauComplet : null;
       var compare = !!(reseauCur && reseauCur.length);
       if (!compare) reseauCur = null;
 
@@ -1480,13 +1553,20 @@
       // commercial restreint n'a pas à voir le découpage de ses collègues,
       // même agrégé. Le découpage par département, lui, reste toujours
       // disponible — c'est sa propre géographie.
-      // Mode OPSO : pas ce bloc. Le tableau de bord groupement a déjà son
-      // « Top produits groupement », et le vocabulaire de secteur commercial
-      // Intégral n'a rien à faire sous la marque Normandie Pharma.
-      var axesDispo = [];
-      if (!V2.commFilter && (V2.commercials ? V2.commercials().length : 0) > 1) axesDispo.push('comm');
-      axesDispo.push('dep');
-      var produitsCard = opso ? '' : buildProduitsCard(cur, phById, axesDispo);
+      // Mode OPSO : pas ce bloc.
+      // « Mon secteur » = le commercial actuellement regardé. En vue réseau
+      // (« Tous »), il n'y a pas de « moi » : le bloc compare alors le réseau
+      // entier à la France, sans ligne « les autres ».
+      // ⚠️ CE BLOC NE SUIT PAS LE SÉLECTEUR DE PÉRIODE, et c'est voulu.
+      // « Les autres secteurs » n'existe que si les autres secteurs ont des
+      // ventes : sur le dernier mois du fichier, deux commerciaux sur huit
+      // seulement en ont, la ligne comparerait à une poignée de gens.
+      // Le bloc travaille donc sur la fenêtre où le réseau est AU COMPLET —
+      // la même que le repère des tranches — et il l'écrit en toutes lettres.
+      // C'est une comparaison de STRUCTURE, pas un indicateur de période.
+      var monSecteur = V2.commFilter ? String(V2.commFilter) : '';
+      var produitsCard = (opso || !reseauComplet || !reseauComplet.length)
+        ? '' : buildProduitsCard(reseauComplet, monSecteur, repereLabel);
 
       var marcheLink = (V2.pages && V2.pages.marche && !opso)
         ? '<a class="pilo-marche" onclick="V2.go(\'marche\')">' + ICO('spark', 17) +
@@ -1516,8 +1596,8 @@
       // ── Bind segmented ──
       Array.prototype.forEach.call(root.querySelectorAll('.pilo-segbtn'), function (b) {
         b.onclick = function () {
-          if (b.classList.contains('pilo-axebtn')) return;   // géré sans rerendre la page
-          if (b.classList.contains('pilo-commbtn')) { V2.commFilter = b.dataset.c || ''; CELL = { s: null, t: null }; }
+          if (b.classList.contains('pilo-basebtn')) return;   // géré sans rerendre la page
+          if (b.classList.contains('pilo-commbtn')) { V2.commFilter = b.dataset.c || ''; CELL = { t: null }; }
           else { PERIOD = b.dataset.p; }
           V2.render();
         };
@@ -1537,24 +1617,22 @@
       var hote = root.querySelector('#pilo-prod-host');
       function brancherProduits() {
         if (!hote) return;
-        Array.prototype.forEach.call(hote.querySelectorAll('button.pilo-mx-c,button.pilo-mx-h,button.pilo-mx-ch'), function (b) {
+        Array.prototype.forEach.call(hote.querySelectorAll('button.pilo-cmp-ch'), function (b) {
           b.onclick = function () {
-            var ns = b.dataset.s === '' ? null : b.dataset.s;
-            var nt = b.dataset.t === '' ? null : +b.dataset.t;
-            if (CELL.s === ns && CELL.t === nt) { CELL = { s: null, t: null }; }
-            else { CELL = { s: ns, t: nt }; }
+            var nt = +b.dataset.t;
+            CELL = { t: (CELL.t === nt ? null : nt) };   // deuxième appui = on relâche
             refaireProduits();
           };
         });
-        Array.prototype.forEach.call(hote.querySelectorAll('.pilo-axebtn'), function (b) {
-          b.onclick = function () { AXE = b.dataset.axe; CELL = { s: null, t: null }; refaireProduits(); };
+        Array.prototype.forEach.call(hote.querySelectorAll('.pilo-basebtn'), function (b) {
+          b.onclick = function () { BASE = b.dataset.base; refaireProduits(); };
         });
         var raz = hote.querySelector('.pilo-prod-raz');
-        if (raz) raz.onclick = function () { CELL = { s: null, t: null }; refaireProduits(); };
+        if (raz) raz.onclick = function () { CELL = { t: null }; refaireProduits(); };
       }
       function refaireProduits() {
         if (!hote) return;
-        hote.innerHTML = buildProduitsCard(cur, phById, axesDispo);
+        hote.innerHTML = buildProduitsCard(reseauComplet, monSecteur, repereLabel);
         brancherProduits();
         Array.prototype.forEach.call(hote.querySelectorAll('.pilo-bar-fill'), function (el) {
           el.style.width = (el.dataset.w || 0) + '%';
@@ -1915,38 +1993,40 @@
       '.pilo-mf-more>summary::-webkit-details-marker{display:none}' +
       '.pilo-mf-note{margin-top:16px;padding-top:13px;border-top:1px solid var(--line);font-size:11px;line-height:1.55;color:var(--muted-2)}' +
       '@media(max-width:480px){.pilo-mf-pct{width:64px;font-size:11.5px}.pilo-mf-moi{min-width:76px}}' +
-      // ── Mes produits : matrice + liste ─────────────────────────
+      // ── Comparatif « mon secteur / les autres / la France » ────
       '.pilo-prod{padding:18px 20px}' +
       '.pilo-prod-h{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px}' +
       '.pilo-prod-t{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:800;letter-spacing:-.01em;color:var(--ip-ink)}' +
       '.pilo-axeseg{box-shadow:none}' +
-      '.pilo-axebtn{padding:6px 12px;font-size:12.5px}' +
-      // La matrice défile DANS son cadre : la page, elle, ne défile jamais
+      '.pilo-axebtn,.pilo-basebtn{padding:6px 12px;font-size:12.5px}' +
+      // Le tableau défile DANS son cadre : la page, elle, ne défile jamais
       // latéralement — c'est la règle iPhone.
-      '.pilo-mx-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -4px;padding:0 4px}' +
-      '.pilo-mx{min-width:560px}' +
-      '.pilo-mx-r{display:grid;grid-template-columns:132px repeat(var(--cols),1fr) 74px;gap:4px;align-items:stretch;margin-bottom:4px}' +
-      '.pilo-mx-head{margin-bottom:6px}' +
-      '.pilo-mx-h{display:flex;flex-direction:column;justify-content:center;gap:1px;text-align:left;padding:6px 9px;border:1px solid transparent;border-radius:9px;background:transparent;font-family:var(--font);cursor:pointer;min-width:0;transition:background .15s var(--ease),border-color .15s var(--ease)}' +
-      'button.pilo-mx-h:hover{background:var(--card-2);border-color:var(--line)}' +
-      '.pilo-mx-r.vise .pilo-mx-h{background:var(--halo);border-color:color-mix(in srgb,var(--ip-blue) 26%,transparent)}' +
-      '.pilo-mx-hn{font-size:12.5px;font-weight:700;color:var(--ip-ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
-      '.pilo-mx-ho{font-size:10px;color:var(--muted-2)}' +
-      '.pilo-mx-ch{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:6px 8px;border:1px solid transparent;border-radius:9px;background:transparent;font-family:var(--font);cursor:pointer;text-align:left;transition:background .15s var(--ease),border-color .15s var(--ease)}' +
-      '.pilo-mx-ch:hover{background:var(--card-2);border-color:var(--line)}' +
-      '.pilo-mx-ch.vise{background:var(--halo);border-color:color-mix(in srgb,var(--ip-blue) 26%,transparent)}' +
+      '.pilo-cmp-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -4px;padding:0 4px}' +
+      '.pilo-cmp{min-width:520px}' +
+      '.pilo-cmp-r{display:grid;grid-template-columns:150px repeat(var(--cols),1fr);gap:5px;align-items:stretch;margin-bottom:5px}' +
+      '.pilo-cmp-head{margin-bottom:7px}' +
+      '.pilo-cmp-h{display:flex;flex-direction:column;justify-content:center;gap:1px;padding:6px 9px 6px 0;min-width:0}' +
+      '.pilo-cmp-hn{font-size:13px;font-weight:800;color:var(--ip-ink);letter-spacing:-.01em}' +
+      '.pilo-cmp-hs{font-size:10.5px;color:var(--muted-2)}' +
+      '.pilo-cmp-hv{font-size:10.5px;color:var(--muted);font-weight:700;margin-top:2px}' +
+      '.pilo-cmp-ch{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:6px 8px;border:1px solid transparent;border-radius:9px;background:transparent;font-family:var(--font);cursor:pointer;text-align:left;min-height:44px;justify-content:center;transition:background .15s var(--ease),border-color .15s var(--ease)}' +
+      '.pilo-cmp-ch:hover{background:var(--card-2);border-color:var(--line)}' +
+      '.pilo-cmp-ch.vise{background:var(--halo);border-color:color-mix(in srgb,var(--ip-blue) 26%,transparent)}' +
       '.pilo-mx-dot{width:8px;height:8px;border-radius:3px;flex-shrink:0}' +
       '.pilo-mx-cl{font-size:11.5px;font-weight:700;color:var(--ip-ink);white-space:nowrap}' +
       '.pilo-mx-cs{font-size:10px;color:var(--muted-2);white-space:nowrap}' +
-      '.pilo-mx-c{display:flex;align-items:center;justify-content:center;min-height:38px;padding:4px 6px;border:1px solid var(--line);border-radius:9px;font-family:var(--mono);font-size:12px;font-weight:700;color:var(--ip-ink);cursor:pointer;transition:opacity .15s var(--ease),border-color .15s var(--ease),transform .15s var(--ease)}' +
-      'button.pilo-mx-c:hover{border-color:color-mix(in srgb,var(--ip-blue) 40%,transparent);transform:translateY(-1px)}' +
-      '.pilo-mx-c.pale{opacity:.34}' +
-      '.pilo-mx-c.vise{border-color:var(--ip-blue);box-shadow:0 0 0 2px color-mix(in srgb,var(--ip-blue) 22%,transparent)}' +
-      '.pilo-mx-cf{background:transparent!important;border-color:transparent;color:var(--muted);font-weight:700;cursor:default}' +
-      '.pilo-mx-tot{display:flex;align-items:center;justify-content:flex-end;padding-right:4px;font-size:12.5px;font-weight:800;color:var(--ip-ink)}' +
-      '.pilo-mx-toth{font-size:10.5px;font-weight:700;color:var(--muted-2);text-transform:uppercase;letter-spacing:.05em}' +
-      '.pilo-mx-foot{margin-top:6px;padding-top:6px;border-top:1px solid var(--line)}' +
-      '.pilo-mx-foot .pilo-mx-hn{color:var(--muted)}' +
+      '.pilo-cmp-c{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-height:52px;padding:6px;border:1px solid var(--line);border-radius:10px;transition:opacity .15s var(--ease)}' +
+      '.pilo-cmp-c.pale{opacity:.34}' +
+      '.pilo-cmp-c.fort{border-color:color-mix(in srgb,var(--ip-blue) 26%,var(--line))}' +
+      '.pilo-cmp-p{font-size:14px;font-weight:800;color:var(--ip-ink);letter-spacing:-.02em}' +
+      '.pilo-cmp-e{font-size:10px;font-weight:700}' +
+      '.pilo-cmp-e.up{color:var(--c-mint-txt,#0F7A52)}' +
+      '.pilo-cmp-e.dn{color:var(--c-rose-txt,#C7283D)}' +
+      // La ligne France est la référence : trait plein au-dessus, jamais un accent de couleur.
+      '.pilo-cmp-r.fr{margin-top:9px;padding-top:9px;border-top:1px solid var(--line-strong)}' +
+      '.pilo-cmp-r.fr .pilo-cmp-p{color:var(--muted)}' +
+      '.pilo-cmp-note{margin-top:14px;font-size:11.5px;line-height:1.55;color:var(--muted-2);max-width:78ch}' +
+      '.pilo-cmp-note b{color:var(--muted);font-weight:700}' +
       // séparateur + liste produits
       '.pilo-prod-sep{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:20px 0 4px;padding-top:15px;border-top:1px solid var(--line)}' +
       '.pilo-prod-lt{font-size:13.5px;font-weight:800;color:var(--ip-ink);letter-spacing:-.01em}' +
@@ -1965,7 +2045,7 @@
       '.pilo-prod-reste{margin-top:14px;padding-top:12px;border-top:1px solid var(--line);font-size:11px;line-height:1.5;color:var(--muted-2)}' +
       '.pilo-pr-fr.up{color:var(--c-mint-txt,#0F7A52)}' +
       '.pilo-pr-fr.dn{color:var(--c-rose-txt,#C7283D)}' +
-      '@media(max-width:560px){.pilo-prod{padding:16px 14px}.pilo-mx-r{grid-template-columns:112px repeat(var(--cols),1fr) 62px}}' +
+      '@media(max-width:560px){.pilo-prod{padding:16px 14px}.pilo-cmp-r{grid-template-columns:118px repeat(var(--cols),1fr)}}' +
       // tranches de prix
       // Mois incomplet : dessiné, mais visiblement mis de côté (gris, hachuré).
       '.pilo-cbar-part .pilo-cbar-fill{background:var(--line-strong)!important;background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.55) 0 3px,transparent 3px 6px)}' +
