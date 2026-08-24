@@ -66,7 +66,7 @@ function faireFenetre() {
 const win = faireFenetre();
 win.ICO = () => '';
 // données réelles du dépôt
-for (const f of ['prod-stats-data.js', 'ameli-avg-data.js', 'tendance-data.js', 'stock-data.js',
+for (const f of ['prod-stats-data.js', 'ameli-avg-data.js', 'ppht-data.js', 'tendance-data.js', 'stock-data.js',
                  'wml-officines-data.js',
                  ...Array.from({ length: 10 }, (_, i) => `wml-ventes-${String(i + 1).padStart(2, '0')}.js`)]) {
   executer(lire(f), win);
@@ -333,38 +333,107 @@ test('le lecteur de nombres du test lit juste — sinon tout ce qui suit ment', 
   }
 });
 
-test('la matrice couvre TOUT le chiffre d affaires de la periode, sans perte', () => {
-  const h = rendre('');
-  // chaque case porte sa valeur exacte dans son title
-  const cases = [...h.matchAll(/class="pilo-mx-c[^"]*"[^>]*title="[^"·]*·[^·]*·\s*([^·"]+?)\s*·/g)];
-  assert.ok(cases.length >= 4, `seulement ${cases.length} cases dans la matrice`);
-  const sommeMatrice = cases.reduce((s, m) => s + (lireEuro(m[1].replace('€', '')) || 0), 0);
-  // CA de la periode, recalcule a part
-  const moisWill = null;
-  const ancre = ancreReseau;
-  let attendu = 0;
-  for (const v of VENTES) if (v.month === ancre) attendu += v.mntNetHt;
-  assert.ok(Math.abs(sommeMatrice - attendu) / attendu < 0.005,
-    `la matrice totalise ${Math.round(sommeMatrice)} € pour ${Math.round(attendu)} € de ventes : des lignes se perdent`);
-});
-
-test('les cases portent ce que le filtre consomme : un secteur et une tranche', () => {
-  const h = rendre('');
-  const avecData = [...h.matchAll(/class="pilo-mx-c[^"]*"\s+data-s="([^"]*)"\s+data-t="(\d)"/g)];
-  assert.ok(avecData.length >= 4, 'les cases ne portent pas data-s / data-t');
-  for (const [, , t] of avecData) assert.ok(+t >= 0 && +t <= 3, `tranche hors bornes : ${t}`);
-});
-
-test('un commercial restreint n a PAS l axe « par secteur » — que sa geographie', () => {
+test('le comparatif porte bien TROIS lignes : moi, les autres, la France', () => {
   const h = rendre(SECTEUR);
-  assert.ok(!/data-axe="comm"/.test(h),
-    'l axe par commercial est propose a un utilisateur qui ne voit que son perimetre');
-  assert.ok(/Dép\. /.test(h), 'le decoupage par departement est absent');
+  const noms = [...h.matchAll(/class="pilo-cmp-hn">([^<]+)</g)].map((m) => m[1]);
+  assert.deepEqual(noms, ['Mon secteur', 'Les autres secteurs', 'La France'],
+    `lignes du comparatif : ${noms.join(' · ')}`);
 });
 
-test('vue reseau : les deux axes sont proposes', () => {
+test('vue reseau : le reseau face a la France, sans ligne « les autres »', () => {
   const h = rendre('');
-  assert.ok(/data-axe="comm"/.test(h) && /data-axe="dep"/.test(h), 'un axe manque en vue reseau');
+  const noms = [...h.matchAll(/class="pilo-cmp-hn">([^<]+)</g)].map((m) => m[1]);
+  assert.deepEqual(noms, ['Le réseau Intégral', 'La France'],
+    `lignes du comparatif : ${noms.join(' · ')}`);
+});
+
+test('les trois lignes comptent le MEME univers de produits', () => {
+  // C est le coeur de l honnetete du bloc : Medic AM ne connait que le
+  // remboursable. Comparer tout mon chiffre a un marche qui ignore les NR
+  // fabriquerait un ecart entierement du a la difference de perimetre.
+  const h = rendre(SECTEUR);
+  assert.ok(/comptent les <b>mêmes produits<\/b>/.test(h), 'la note ne dit pas que l univers est commun');
+  assert.ok(/Medic'AM suit/.test(h), 'la definition de l univers n est pas donnee');
+  assert.ok(/% du chiffre|% de ton chiffre/.test(h), 'la part du CA couverte n est pas chiffree');
+});
+
+test('la ligne France DISPARAIT des qu on repasse en vue complete', () => {
+  // Elle ne serait plus comparable : on la retire au lieu de la laisser mentir.
+  const src = lire('v2-pilotage.js');
+  assert.ok(/if \(comparable\) \{\s*lignes\.push\(\{\s*cle: 'france'/.test(src.replace(/\n\s*/g, ' ')),
+    'la ligne France n est plus conditionnee a la base comparable');
+  assert.ok(/La ligne France disparaît/.test(src), 'rien n explique la disparition de la ligne France');
+});
+
+test('la France se calcule sur Medic AM valorise au tarif grossiste', () => {
+  const h = rendre(SECTEUR);
+  const parts = [...h.matchAll(/class="pilo-cmp-r fr"[\s\S]*?$/g)];
+  assert.ok(/marché remboursable · Medic'AM/.test(h), 'la source de la ligne France n est pas dite');
+  // recalcul independant de la repartition France
+  const A = win.AMELI_AVG.data, P = win.PPHT;
+  assert.ok(P && Object.keys(P).length, 'window.PPHT absent : la ligne France ne peut pas etre verifiee');
+  const base = (win.AMELI_AVG.meta && win.AMELI_AVG.meta.base) || 20000;
+  const t = [0, 0, 0, 0];
+  const tr = (pu) => (pu < 4.33 ? 0 : pu < 468 ? 1 : pu < 2000 ? 2 : 3);
+  for (const c in A) { const pp = P[c]; if (pp > 0) t[tr(pp)] += A[c] * base * pp; }
+  const tot = t.reduce((a, b) => a + b, 0);
+  const attendus = t.map((v) => (v / tot * 100).toFixed(1).replace('.', ','));
+  const bloc = h.slice(h.indexOf('pilo-cmp-r fr'));
+  for (const a of attendus) {
+    assert.ok(bloc.includes(a + ' %'), `part France ${a} % absente de la ligne — attendues : ${attendus.join(' / ')}`);
+  }
+});
+
+test('mes lignes comptent le MEME univers que la France — recalcul independant', () => {
+  // ⚠️ Le piege que ce test verrouille : laisser les lignes Integral compter
+  // TOUT le chiffre d affaires (NR et parapharmacie comprises) face a un
+  // marche France qui ne connait que le remboursable. L ecart affiche serait
+  // alors entierement fabrique par la difference de perimetre.
+  const h = rendre(SECTEUR);
+  const A = win.AMELI_AVG.data;
+  const tr = (pu) => (pu < 4.33 ? 0 : pu < 468 ? 1 : pu < 2000 ? 2 : 3);
+  const fenetre = new Set(moisReseau);
+  const t = [0, 0, 0, 0];
+  for (const v of VENTES) {
+    if (v.commercial !== SECTEUR) continue;
+    if (!fenetre.has(v.month)) continue;
+    if (!(A[v.artCode] > 0)) continue;            // univers Medic AM
+    t[tr(v.puNet)] += v.mntNetHt;
+  }
+  const tot = t.reduce((a, b) => a + b, 0);
+  assert.ok(tot > 0, 'aucune vente retenue : le test ne prouve rien');
+  const attendus = t.map((v) => (v / tot * 100).toFixed(1).replace('.', ','));
+  // on ne lit QUE la ligne « Mon secteur »
+  const debut = h.indexOf('Mon secteur');
+  const bloc = h.slice(debut, h.indexOf('Les autres secteurs'));
+  for (const a of attendus) {
+    assert.ok(bloc.includes('>' + a + ' %<'),
+      `part ${a} % absente de « Mon secteur » — attendues : ${attendus.join(' / ')} ; `
+      + 'les lignes Integral ne comptent pas le meme univers que la France');
+  }
+});
+
+test('les categories de prix sont cliquables, et elles seules', () => {
+  const h = rendre(SECTEUR);
+  const cols = [...h.matchAll(/class="pilo-cmp-ch[^"]*" data-t="(\d)"/g)];
+  assert.equal(cols.length, 4, `${cols.length} categories cliquables au lieu de 4`);
+  // ⚠️ Les LIGNES ne doivent pas etre cliquables : filtrer sur « les autres
+  // secteurs » afficherait le detail produit des collegues.
+  assert.ok(!/<button[^>]*class="pilo-cmp-h/.test(h),
+    'les lignes du comparatif sont cliquables : on exposerait le portefeuille des collegues');
+});
+
+test('l ecart avec la France est affiche en points, sur les lignes Integral seulement', () => {
+  const h = rendre(SECTEUR);
+  const ecarts = [...h.matchAll(/class="pilo-cmp-e mono (up|dn)">([^<]+)</g)];
+  assert.ok(ecarts.length >= 4, `seulement ${ecarts.length} ecarts affiches`);
+  for (const [, sens, txt] of ecarts) {
+    assert.match(txt.trim(), /^[+−][\d,]+ pts$/, `ecart mal forme : « ${txt} »`);
+    assert.equal(sens, txt.trim()[0] === '+' ? 'up' : 'dn', `couleur incoherente pour « ${txt} »`);
+  }
+  // la ligne France ne se compare pas a elle-meme
+  const blocFr = h.slice(h.indexOf('pilo-cmp-r fr'));
+  assert.ok(!/pilo-cmp-e/.test(blocFr), 'la ligne France porte un ecart avec elle-meme');
 });
 
 test('aucune troncature silencieuse : ce qui n est pas liste est DIT', () => {
@@ -404,17 +473,20 @@ test('tranche DOMINANTE et prix PONDERE — sur un cas dont on connait la repons
   const bac = faireFenetre();
   bac.PROD_STATS = [{ c: '7777777777777', d: 'PRODUIT A DEUX PRIX', n: 2, f: 'pr_mid', ppht: 10, net: 9 }];
   bac.TENDANCE = { meta: { mois: '01' }, data: {} };
-  bac.AMELI_AVG = { meta: {}, data: {} };
+  // Le produit doit entrer dans l univers Medic AM, sinon le bloc l ecarte.
+  bac.AMELI_AVG = { meta: { base: 20000 }, data: { 7777777777777: 10 } };
+  bac.PPHT = { 7777777777777: 60 };
   bac.STOCK_IP = { meta: {}, data: {} };
   bac.ICO = () => '';
   const v2 = bac.V2 = {
-    pages: {}, user: null, commFilter: '',
+    pages: {}, user: null, commFilter: 'Moi',
     pharmacies: [{ id: 'p1', name: 'Off', cp: '49000', groupement: 'X' }],
     sales: [
       { pharmacyId: 'p1', month: 1, year: 2026, commercial: 'Moi', artCode: '7777777777777', qte: 1, puNet: 5000, mntNetHt: 5000 },
       { pharmacyId: 'p1', month: 1, year: 2026, commercial: 'Moi', artCode: '7777777777777', qte: 100, puNet: 10, mntNetHt: 1000 },
+      { pharmacyId: 'p1', month: 2, year: 2026, commercial: 'Autre', artCode: '7777777777777', qte: 1, puNet: 10, mntNetHt: 10 },
     ],
-    commSales() { return v2.sales; }, commercials() { return ['Moi']; },
+    commSales() { return v2.sales.filter((x) => x.commercial === 'Moi'); }, commercials() { return ['Moi', 'Autre']; },
     esc: (s) => String(s == null ? '' : s), sumCA: (a) => a.reduce((s, x) => s + x.mntNetHt, 0),
     fmtEur: (n) => (Math.abs(n) >= 1000 ? Math.round(n).toLocaleString('fr-FR') : n.toFixed(2).replace('.', ',')) + ' €',
     fmtNum: (n) => String(Math.round(n)), fmtK: (n) => String(Math.round(n)),
