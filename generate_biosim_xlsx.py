@@ -48,10 +48,14 @@ wb = Workbook()
 # ---------------- Onglet 1 : Synthèse molécules ----------------
 ws = wb.active
 ws.title = "Synthèse molécules"
+# ⚠️ 24/08/2026 — `CA/pharma/an (molécule)` RETIRÉ. Ce classeur est proposé au
+# téléchargement aux pharmaciens depuis crm/v2/v2-biosimilaires.js, donc servi
+# publiquement par un dépôt public. Aucune donnée de chiffre d'affaires ni aucune
+# condition commerciale d'Intégral n'y figure. Voir aussi l'onglet 2 (prix net).
 cols = ["DCI (molécule)", "ATC", "Aire thérapeutique", "Princeps réf.", "Labo princeps",
         "Canal", "Substituable officine", "Date arrêté", "Nb biosim.",
         "Réf. chez Intégral", "Partenaire dispo", "Pénétration biosim. (%)",
-        "Boîtes biosim. (Ameli)", "CA/pharma/an (molécule)", "Note"]
+        "Boîtes biosim. (Ameli)", "Note"]
 ws.append(cols)
 style_header(ws, len(cols))
 for m in molecules:
@@ -64,7 +68,6 @@ for m in molecules:
         "OUI" if m["has_partenaire"] else "",
         m["penetration"] if m["penetration"] is not None else "",
         m["biosim_ameli_boxes"] or "",
-        ms.get("ca_pharma_an", "") if ms else "",
         m.get("note") or "",
     ])
     r = ws.max_row
@@ -74,17 +77,20 @@ for m in molecules:
     if m["has_partenaire"]:
         ws.cell(row=r, column=11).fill = part_fill
         ws.cell(row=r, column=11).font = Font(bold=True, color=ORANGE)
-autosize(ws, [22, 9, 26, 20, 20, 9, 13, 12, 9, 15, 12, 13, 15, 16, 40])
+autosize(ws, [22, 9, 26, 20, 20, 9, 13, 12, 9, 15, 12, 13, 15, 40])
 for row in ws.iter_rows(min_row=2, max_row=ws.max_row, max_col=len(cols)):
     for c in row:
         c.border = border
 
 # ---------------- Onglet 2 : Biosimilaires (détail) ----------------
 ws2 = wb.create_sheet("Biosimilaires (détail)")
+# ⚠️ 24/08/2026 — `Prix net IP (€)` RETIRÉ : c'est une condition commerciale
+# chiffrée, et ce classeur part dans un dépôt PUBLIC via le bouton de
+# téléchargement. `Prix PPHT (€)` reste : c'est un prix public officiel.
 cols2 = ["DCI", "ATC", "Aire", "Substituable", "Canal", "Type", "Marque", "Laboratoire",
          "Année", "Partenaire IP", "Acteur majeur", "Dispo Intégral",
          "Boîtes Ameli (France)", "CA Ameli (€)", "Qté vendue IP", "Stock dispo",
-         "Prix PPHT (€)", "Prix net IP (€)", "Boîtes/pharma/an", "Labo réel (données IP)", "CIP13 liés"]
+         "Prix PPHT (€)", "Boîtes/pharma/an", "Labo réel (données IP)", "CIP13 liés"]
 ws2.append(cols2)
 style_header(ws2, len(cols2))
 
@@ -98,7 +104,6 @@ def add_line(m, typ, name, labo, annee, e):
         e.get("ameli_boxes") or "", e.get("ameli_ca") or "",
         e.get("ip_qty") or "", e.get("stock_dispo") or "",
         e.get("prix_ppht") if e.get("prix_ppht") is not None else "",
-        e.get("prix_ip") if e.get("prix_ip") is not None else "",
         e.get("boites_par_pharma_an") or "",
         " / ".join(e.get("labos_reels") or []),
         ", ".join(e.get("cips") or []),
@@ -116,7 +121,7 @@ for m in molecules:
     add_line(m, "Princeps", m["reference"], m["reference_labo"], "", m["reference_enrich"])
     for b in m["biosimilaires"]:
         add_line(m, "Biosimilaire", b["nom"], b["labo"], b.get("annee"), b)
-autosize(ws2, [20, 8, 22, 11, 8, 12, 22, 22, 7, 12, 12, 12, 16, 14, 12, 11, 12, 12, 14, 24, 26])
+autosize(ws2, [20, 8, 22, 11, 8, 12, 22, 22, 7, 12, 12, 12, 16, 14, 12, 11, 12, 14, 24, 26])
 for row in ws2.iter_rows(min_row=2, max_row=ws2.max_row, max_col=len(cols2)):
     for c in row:
         c.border = border
