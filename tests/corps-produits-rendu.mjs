@@ -477,15 +477,41 @@ test('suivi : une proposition enregistree se relit sur la fiche de l officine', 
 });
 
 test('suivi : sur les vraies donnees, des references entrent bien en cours d annee', () => {
+  // ⚠️ CE TEST S ANCRAIT SUR `idx.moisMax`, LE DERNIER MOIS DU FICHIER.
+  // Les fichiers de ventes ne s arretent pas au meme mois selon le commercial :
+  // sur ce dernier mois, deux secteurs sur huit seulement ont des lignes. Les
+  // officines des six autres n avaient donc AUCUNE nouveaute possible, et le
+  // test tombait a 22 officines sur 200 — un echec du a la forme du fichier,
+  // pas au moteur.
+  // On s ancre donc sur le dernier mois ou TOUS les secteurs sont presents.
   const idx = sb.V2.produits.index();
+  const secteursParMois = {};
+  for (const v of sb.window.WML_SALES) {
+    const mo = v[1], com = v[2];
+    (secteursParMois[mo] = secteursParMois[mo] || new Set()).add(com);
+  }
+  const mois = Object.keys(secteursParMois).map(Number).sort((a, b) => a - b);
+  const maxSect = Math.max(...mois.map((m) => secteursParMois[m].size));
+  const complets = mois.slice();
+  while (complets.length > 1 && secteursParMois[complets[complets.length - 1]].size < maxSect) complets.pop();
+  const ancre = complets[complets.length - 1];
+  assert.ok(ancre < idx.moisMax,
+    'tous les secteurs vont jusqu au bout du fichier : ce garde-fou n est plus eprouve');
+
   let officinesAvecEntree = 0;
   for (const o of sb.V2.pharmacies.slice(0, 200)) {
-    const n = sb.V2PRODUITS.nouveautesOfficine(idx, o.id, idx.moisMax);
+    const n = sb.V2PRODUITS.nouveautesOfficine(idx, o.id, ancre);
     if (n.length) officinesAvecEntree++;
   }
   assert.ok(officinesAvecEntree > 50,
-    `seulement ${officinesAvecEntree} officines avec une nouvelle reference le dernier mois`);
+    `seulement ${officinesAvecEntree} officines avec une nouvelle reference sur le mois ${ancre}`);
 });
+
+// ⚠️ CODE MORT SIGNALÉ, PAS SUPPRIMÉ (24/08/2026) : `nouveautesOfficine` n est
+// appelée NULLE PART dans l application — seulement ici. Le moteur l expose,
+// l ecran Produits ne s en sert pas. Soit elle attend un ecran qui n a jamais
+// ete construit, soit elle a perdu son appelant. A trancher avec Will avant
+// toute suppression.
 
 // ── L'apercu modifiable ────────────────────────────────────────────
 function ouvrirApercu(sm) {

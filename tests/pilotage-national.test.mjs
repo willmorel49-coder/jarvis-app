@@ -24,7 +24,7 @@ import { fileURLToPath } from 'node:url';
 
 const RACINE = dirname(dirname(fileURLToPath(import.meta.url)));
 const DIR = join(RACINE, 'crm', 'v2');
-const lire = (f) => readFileSync(join(DIR, f), 'utf8');
+const lire = (f) => readFileSync(join(DIR, f), 'utf8');   // `f` peut remonter d un cran (« ../benchmark-data.js »)
 
 // Les modules de l'app parlent à `document`, `requestAnimationFrame` et
 // `IntersectionObserver` SANS les préfixer de `window.` : il faut donc les leur
@@ -66,10 +66,18 @@ function faireFenetre() {
 const win = faireFenetre();
 win.ICO = () => '';
 // données réelles du dépôt
-for (const f of ['prod-stats-data.js', 'ameli-avg-data.js', 'ppht-data.js', 'tendance-data.js', 'stock-data.js',
+// ⚠️ Le catalogue est chargé ICI comme il l est au démarrage de l app
+// (v2-app.js charge 'bench' avant le premier rendu). Sans lui, le gisement
+// retombe sur le tarif grossiste au lieu du prix net Intégral — et le test
+// laissait passer cette confusion sans rien voir.
+for (const f of ['../benchmark-data.js', 'prod-stats-data.js', 'ameli-avg-data.js', 'ppht-data.js', 'tendance-data.js', 'stock-data.js',
                  'wml-officines-data.js',
                  ...Array.from({ length: 10 }, (_, i) => `wml-ventes-${String(i + 1).padStart(2, '0')}.js`)]) {
-  executer(lire(f), win);
+  // ⚠️ benchmark-data.js déclare `const BENCHMARK` : une liaison LEXICALE, qui
+  // ne devient pas une propriété de window et qui meurt avec la portée du
+  // fichier. La passerelle doit donc être collée au MÊME source, pas exécutée
+  // après — c'est exactement ce que fait bridge() en production.
+  executer(lire(f) + (/benchmark-data/.test(f) ? ';try{window.BENCHMARK=BENCHMARK;}catch(e){}' : ''), win);
 }
 
 // ── Les ventes, remises dans la forme que l'app leur donne au démarrage ────
@@ -95,6 +103,33 @@ const V2 = win.V2 = {
   tint: () => 'var(--muted)',
   topbar: () => '', go() {}, render() {},
 };
+
+// ⚠️ LES HELPERS SONT EXTRAITS DU FICHIER LIVRÉ, PAS RÉÉCRITS ICI.
+// Deux faux-nez ont failli faire condamner du code juste :
+//  · un `bestPrice` absent rendait le tarif grossiste au lieu du prix net —
+//    36 % d'écart sur le potentiel du gisement ;
+//  · un `fmtEur` qui arrondissait à l'entier affichait « 1 € » pour 1,06 €,
+//    et le test lisait 1.
+// Un banc d'essai qui simplifie ce qu'il mesure ne mesure plus rien. On
+// éprouve le vrai chemin, ou on n'éprouve rien.
+{
+  const boot = readFileSync(join(DIR, 'v2-boot.js'), 'utf8');
+  for (const nom of ['bestPrice', 'fmtEur', 'fmtK', 'fmtNum', 'sumCA', 'margeMDLboite', 'tint']) {
+    const i = boot.indexOf('V2.' + nom + ' = function');
+    assert.ok(i > 0, `V2.${nom} introuvable dans v2-boot.js`);
+    let p = 0, j = boot.indexOf('{', i), fin = j;
+    for (; j < boot.length; j++) {
+      if (boot[j] === '{') p++;
+      else if (boot[j] === '}') { p--; if (p === 0) { fin = j; break; } }
+    }
+    new Function('V2', boot.slice(i, fin + 1) + ';')(V2);
+  }
+  // contrôles sur des cas dont on connaît déjà la réponse
+  assert.equal(V2.bestPrice({ prix_ht: 1.06, prix_ip: 0.88, offre_ip: 0.78 }).ip, 0.78,
+    'bestPrice extraite ne se comporte pas comme attendu');
+  assert.equal(V2.fmtEur(1.06), '1,06 €', 'fmtEur extraite perd les centimes');
+  assert.equal(V2.fmtEur(10155), '10 155 €'.replace(' ', '\u202f'), 'fmtEur extraite formate mal les milliers');
+}
 executer(lire('v2-pilotage.js'), win);
 
 function rendre(commercial) {
@@ -504,4 +539,198 @@ test('tranche DOMINANTE et prix PONDERE — sur un cas dont on connait la repons
   assert.ok(pu, 'aucun prix unitaire affiche');
   assert.ok(Math.abs(lireEuro(pu) - 6000 / 101) < 0.02,
     `prix unitaire ${pu} au lieu de ${(6000 / 101).toFixed(2)} : il n est pas pondere par les quantites`);
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 6. Le gisement — ce que la France achète et pas mes officines
+// ═══════════════════════════════════════════════════════════════════════════
+const STOCK = win.STOCK_IP && win.STOCK_IP.data ? win.STOCK_IP.data : {};
+
+// ⚠️ Les separateurs de milliers francais sont des espaces FINES INSECABLES
+// (U+202F / U+00A0), jamais l espace ordinaire. Une classe de caracteres qui
+// accepte `\s` avale le texte d avant : « deja pris par 10 · 9 boites » se
+// lisait « 109 boites », et le test denoncait un potentiel douze fois trop
+// grand — alors que l ecran disait juste.
+const NOMBRE = '[\\d\\u202f\\u00a0,]+';
+function nb(txt, apres) {
+  const m = String(txt).match(new RegExp('(' + NOMBRE + ')\\s*' + apres));
+  return m ? lireEuro(m[1]) : null;
+}
+
+test('le lecteur de nombres du gisement lit juste — teste sur le VRAI chemin', () => {
+  // ⚠️ La premiere version de ce controle fabriquait sa chaine a la main et
+  // passait au vert, alors que la mesure reelle traversait une normalisation
+  // qui detruisait les separateurs de milliers. Un controle qui ne suit pas le
+  // chemin de la mesure ne controle rien. On fait donc passer l echantillon
+  // par lignesGisement(), comme une vraie ligne.
+  const faux =
+    '<div class="pilo-pr"><span class="mono pilo-rank">1</span><div class="pilo-pr-main">' +
+    '<div class="pilo-pr-n">PRODUIT TEMOIN</div>' +
+    '<div class="pilo-pr-meta mono"><span>468 – 2 000 €</span>' +
+    '<span>47 officines sur 57 ne le prennent pas</span><span>déjà pris par 10</span>' +
+    '<span>' + V2.fmtNum(9) + ' boîtes/pharmacie/an en France</span>' +
+    '<span>' + V2.fmtEur(2646.44) + ' net/boîte</span></div></div>' +
+    '<div class="pilo-vals"><div class="v2-row-val mono">' + V2.fmtEur(1119444) + '</div></div></div>';
+  const [x] = lignesGisement('pilo-gis' + faux);
+  assert.ok(x, 'la ligne temoin n est pas reconnue');
+  assert.equal(nb(x.meta, 'boîtes?/pharmacie'), 9, `boites mal lues dans « ${x.meta} »`);
+  // fmtEur arrondit à l euro au-dessus de 1 000 € : c est 2 646 qui s affiche,
+  // et c est donc 2 646 qu on doit lire. Le test suit l ecran, pas l inverse.
+  assert.equal(nb(x.meta, '€ net/boîte'), 2646, `prix net mal lu dans « ${x.meta} »`);
+  assert.equal(x.potentiel, 1119444, 'potentiel mal lu');
+});
+
+function lignesGisement(h) {
+  const bloc = h.slice(h.indexOf('pilo-gis'));
+  const fin = bloc.indexOf('pilo-gis-note');
+  const zone = bloc.slice(0, fin > 0 ? fin : bloc.length);
+  return [...zone.matchAll(
+    /pilo-pr-n">([\s\S]*?)<\/div>[\s\S]*?pilo-pr-meta mono">([\s\S]*?)<\/div>[\s\S]*?v2-row-val mono">([^<]+)</g
+  )].map(([, nom, meta, val]) => ({
+    nom: nom.replace(/<[^>]+>/g, '').replace(/référence non répertoriée/, '').trim(),
+    // ⚠️ `\s+` avale AUSSI les espaces fines insécables (U+202F) qui séparent
+    // les milliers : « 2 646 € » devenait « 2 646 € » avec une espace
+    // ordinaire, et le lecteur de nombres n y voyait plus que « 646 ».
+    // On ne replie que l espace ordinaire, la tabulation et le saut de ligne.
+    meta: meta.replace(/<[^>]+>/g, ' ').replace(/[ \t\n\r]+/g, ' ').trim(),
+    potentiel: lireEuro(val.replace('€', '')),
+  }));
+}
+
+test('le gisement se rend, et il est nomme pour ce qu il est', () => {
+  const h = rendre(SECTEUR);
+  assert.ok(/pilo-gis/.test(h), 'le bloc gisement ne se rend pas');
+  assert.ok(/Ce que la France achète et que tes officines ne commandent pas/.test(h),
+    'la carte ne dit pas ce qu elle montre');
+});
+
+test('il ne propose QUE des produits en stock Integral', () => {
+  // Un produit qu on n a pas n est pas une piste, c est une frustration.
+  const h = rendre(SECTEUR);
+  const noms = lignesGisement(h).map((l) => l.nom);
+  assert.ok(noms.length >= 5, `seulement ${noms.length} lignes`);
+  const cipParNom = {};
+  for (const r of PS) cipParNom[r.d] = String(r.c);
+  for (const n of noms) {
+    const cip = cipParNom[n] || (/^\d+$/.test(n) ? n : null);
+    if (!cip) continue;   // designation absente des referentiels : rien a verifier
+    assert.ok(STOCK[cip] > 0, `« ${n} » est propose sans stock Integral`);
+  }
+});
+
+test('le classement suit les EUROS, pas le nombre de boites', () => {
+  // C est tout l objet de la refonte : classee au volume, la carte ne pouvait
+  // pas montrer le trou sur les produits chers.
+  const h = rendre(SECTEUR);
+  const l = lignesGisement(h);
+  for (let i = 1; i < l.length; i++) {
+    assert.ok(l[i].potentiel <= l[i - 1].potentiel + 1,
+      `classement casse a la ligne ${i + 1} : ${l[i].potentiel} apres ${l[i - 1].potentiel}`);
+  }
+  // et le premier n est PAS le plus gros volume de boites
+  const boites = l.map((x) => nb(x.meta, 'boîtes?/pharmacie') || 0);
+  const maxB = Math.max(...boites);
+  assert.ok(boites[0] < maxB,
+    'la premiere ligne est aussi le plus gros volume : le classement pourrait etre celui des boites');
+});
+
+test('le potentiel vaut bien manquantes x boites France x prix net', () => {
+  const h = rendre(SECTEUR);
+  const l = lignesGisement(h);
+  let verifiees = 0;
+  for (const x of l.slice(0, 6)) {
+    const m = x.meta.match(/([\d]+) officines? sur (\d+) ne le prennent pas/);
+    const b = nb(x.meta, 'boîtes?/pharmacie/an');
+    const n = nb(x.meta, '€ net/boîte');
+    if (!m || b == null || n == null) continue;
+    const attendu = (+m[1]) * b * n;
+    const ecart = Math.abs(attendu - x.potentiel) / attendu;
+    assert.ok(ecart < 0.02,
+      `« ${x.nom} » : ${x.potentiel} € affiche pour ${Math.round(attendu)} € attendus`);
+    verifiees++;
+  }
+  assert.ok(verifiees >= 4, `seulement ${verifiees} lignes verifiables`);
+});
+
+test('le potentiel se chiffre au prix NET Integral, pas au tarif grossiste', () => {
+  // ⚠️ Verifier que « potentiel = manquantes x boites x prix affiche » ne
+  // suffit PAS : si le code prend le tarif grossiste des deux cotes, l egalite
+  // tient toujours et le chiffre est faux de 20 a 40 %. Il faut comparer le
+  // prix affiche au prix NET du catalogue.
+  assert.ok(win.BENCHMARK && win.BENCHMARK.length,
+    'le catalogue n est pas charge : ce controle ne prouverait rien');
+  const h = rendre(SECTEUR);
+  const l = lignesGisement(h);
+  const cipParNom = {};
+  for (const r of PS) cipParNom[r.d] = String(r.c);
+  const bench = {};
+  for (const b of win.BENCHMARK) { const c = String(b.cip13 || '').replace(/\D/g, ''); if (c) bench[c] = b; }
+  let differents = 0, verifies = 0;
+  for (const x of l) {
+    const cip = cipParNom[x.nom]; if (!cip || !bench[cip]) continue;
+    const affiche = nb(x.meta, '€ net/boîte'); if (affiche == null) continue;
+    const net = V2.bestPrice(bench[cip]).ip;
+    const ppht = win.PPHT[cip];
+    if (!(net > 0)) continue;
+    verifies++;
+    const arrondi = Math.abs(net) >= 1000 ? Math.round(net) : Math.round(net * 100) / 100;
+    assert.ok(Math.abs(affiche - arrondi) < 0.02,
+      `« ${x.nom} » : ${affiche} € affiche, ${arrondi} € de prix net Integral`);
+    if (ppht > 0 && Math.abs(ppht - net) > 0.01) differents++;
+  }
+  assert.ok(verifies >= 3, `seulement ${verifies} lignes verifiables`);
+  assert.ok(differents >= 1,
+    'aucune ligne ou le prix net differe du tarif grossiste : le controle ne discrimine rien');
+});
+
+test('le total affiche ne somme QUE les lignes montrees', () => {
+  // ⚠️ Additionner le potentiel des 4 000 references donnait 35 M€ pour un
+  // seul commercial : le calcul suppose que CHAQUE officine atteint la moyenne
+  // France sur CHAQUE produit. Un chiffre absurde discredite le reste.
+  const h = rendre(SECTEUR);
+  const l = lignesGisement(h);
+  const note = (h.match(/pilo-gis-note">([\s\S]*?)<\/div>/) || [])[1] || '';
+  const somme = l.reduce((s, x) => s + x.potentiel, 0);
+  const affiche = lireEuro((note.replace(/<[^>]+>/g, '').match(/pèsent ensemble ([\d\s  ,]+) €/) || [])[1] || '0');
+  assert.ok(affiche > 0, 'aucun total affiche');
+  assert.ok(Math.abs(affiche - somme) / somme < 0.02,
+    `total affiche ${affiche} € pour ${Math.round(somme)} € de lignes montrees : il somme autre chose`);
+  assert.ok(/CALCUL, pas une prévision/.test(note.replace(/<[^>]+>/g, '')),
+    'le montant n est pas signale comme un calcul');
+  assert.ok(/ne s.additionnent pas sur toute la liste/.test(note.replace(/<[^>]+>/g, '')),
+    'rien n avertit que les montants ne se somment pas');
+});
+
+test('« deja pris par N » dit vrai, et « aucune » aussi', () => {
+  const h = rendre(SECTEUR);
+  const l = lignesGisement(h);
+  const cipParNom = {};
+  for (const r of PS) cipParNom[r.d] = String(r.c);
+  // qui prend quoi, recalcule a part sur tout le fichier, dans le perimetre
+  const mesOff = new Set();
+  const pris = {};
+  for (const v of VENTES) {
+    if (v.commercial !== SECTEUR || !(v.qte > 0)) continue;
+    mesOff.add(v.pharmacyId);
+    (pris[v.artCode] = pris[v.artCode] || new Set()).add(v.pharmacyId);
+  }
+  let n = 0;
+  for (const x of l) {
+    const cip = cipParNom[x.nom] || (/^\d+$/.test(x.nom) ? x.nom : null);
+    if (!cip) continue;
+    const dejaVrai = (pris[cip] || new Set()).size;
+    const dit = x.meta.match(/déjà pris par (\d+)/);
+    const aucune = /aucune ne le prend encore/.test(x.meta);
+    if (dejaVrai === 0) assert.ok(aucune, `« ${x.nom} » : aucune officine ne le prend, l ecran dit autre chose`);
+    else assert.equal(dit && +dit[1], dejaVrai, `« ${x.nom} » : l ecran annonce ${dit && dit[1]} preneuses pour ${dejaVrai}`);
+    n++;
+  }
+  assert.ok(n >= 5, `seulement ${n} lignes verifiees`);
+});
+
+test('les quatre categories de prix sont proposées en filtre', () => {
+  const h = rendre(SECTEUR);
+  const chips = [...h.matchAll(/class="pilo-gis-chip[^"]*" data-gt="(\d?)"/g)].map((m) => m[1]);
+  assert.equal(chips.length, 5, `${chips.length} puces au lieu de 5 (toutes + 4 categories)`);
+  assert.deepEqual(chips, ['', '0', '1', '2', '3']);
 });

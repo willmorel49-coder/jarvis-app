@@ -515,6 +515,7 @@
   // ═══════════════════════════════════════════════════════════════
   var BASE = 'ameli';               // 'ameli' (comparable France) | 'tout'
   var CELL = { t: null };           // catégorie de prix retenue (null = toutes)
+  var GIS_TIER = null;              // catégorie de prix du gisement (null = toutes)
   var PROD_MAX = 25;                // produits montrés avant dépliage
 
   // Désignation d'un produit. PROD_STATS couvre 98,6 % du chiffre d'affaires,
@@ -1378,51 +1379,156 @@
           '</div>';
       }
 
-      // ── Pénétration du marché Ameli (couverture de gamme + marchés non couverts) ──
-      var B = window.BENCHMARK || [];
-      var ameliMkt = {};
-      B.forEach(function (b) {
-        if (!b.has_ameli) return;
-        var c = normCip(b.cip13); if (!c) return;
-        ameliMkt[c] = { desc: (b.designation || c), market: +b.ameli_total || 0 };
-      });
-      var ameliCips = Object.keys(ameliMkt);
+      // ── LE GISEMENT : ce que la France achète, et pas tes officines ──
+      //
+      // ⚠️ CETTE CARTE CLASSAIT PAR NOMBRE DE BOÎTES (24/08/2026, refonte).
+      // Le comparatif du dessus a montré que le réseau fait deux fois moins de
+      // chiffre que la France sur les produits à 468–2 000 € ; classée au
+      // volume, cette carte-là ne pouvait PAS le montrer — les petits prix à
+      // gros volume écrasent tout, et le gisement restait invisible là où on
+      // serait allé le chercher. Elle classe donc par EUROS de potentiel, et
+      // se filtre par catégorie de prix.
+      //
+      // Trois conditions pour qu'une ligne serve à quelque chose :
+      //  · la France en achète (Medic'AM) ;
+      //  · Intégral l'a EN STOCK — sinon ce n'est pas une piste, c'est une
+      //    frustration ;
+      //  · au moins une de mes officines ne le commande pas.
+      //
+      // ⚠️ ET LE « POTENTIEL » EST UN CALCUL, PAS UNE PRÉVISION.
+      // C'est : le nombre de mes officines qui n'en prennent pas × ce qu'une
+      // pharmacie française moyenne en achète en un an × le prix net Intégral.
+      // Rien ne dit qu'elles achèteront. L'écran le dit en toutes lettres —
+      // un chiffre qui a l'air d'une promesse et n'en est pas est le pire
+      // service qu'on puisse rendre à un commercial en rendez-vous.
+      //
+      // « Ne commande pas » se mesure sur TOUT le fichier de ventes, pas sur
+      // la période choisie : un produit acheté en mars n'est pas un trou parce
+      // qu'il n'a pas été racheté en mai.
       var ameliCard = '';
-      if (ameliCips.length) {
-        var myQ = {}; cur.forEach(function (s) { var c = normCip(s.artCode); if (c) myQ[c] = (myQ[c] || 0) + (s.qte || 0); });
-        var coveredN = 0; ameliCips.forEach(function (c) { if (myQ[c] > 0) coveredN++; });
-        var totalN = ameliCips.length;
-        var covBar = Math.round(totalN ? coveredN / totalN * 100 : 0);
-        var gaps = ameliCips.filter(function (c) { return !myQ[c] && ameliMkt[c].market > 0; })
-          .map(function (c) { return ameliMkt[c]; })
-          .sort(function (a, b) { return b.market - a.market; }).slice(0, 10);
-        var maxGap = gaps.length ? Math.max(gaps[0].market, 1) : 1;
-        var gapHtml = gaps.length ? gaps.map(function (r, i) {
-          var pct = Math.max(3, r.market / maxGap * 100);
-          return '<div class="v2-row" style="cursor:default">' +
-            '<span class="mono pilo-rank">' + (i + 1) + '</span>' +
-            '<div style="flex:1;min-width:0">' +
-              '<div class="v2-row-name">' + esc(r.desc) + '</div>' +
-              '<div class="pilo-bar"><span class="pilo-bar-fill" data-w="' + pct.toFixed(1) + '" style="width:0;background:var(--c-amber)"></span></div>' +
-            '</div>' +
-            '<div class="pilo-vals">' +
-              '<div class="v2-row-val mono">' + V2.fmtNum(r.market) + '</div>' +
-              '<div class="v2-row-meta mono" style="color:var(--c-amber)">non commandé</div>' +
-            '</div>' +
+      var AV = window.AMELI_AVG, PP = window.PPHT, SK = window.STOCK_IP;
+      if (AV && AV.data && PP) {
+        var B = window.BENCHMARK || [];
+        var prixNet = {};
+        B.forEach(function (b) {
+          var c = normCip(b.cip13); if (!c) return;
+          var bp = V2.bestPrice ? V2.bestPrice(b) : null;
+          if (bp && bp.ip > 0) prixNet[c] = bp.ip;
+        });
+
+        // Qui commande quoi, sur tout le périmètre et tout le fichier.
+        var pris = {}, mesOffSet = {};
+        sales.forEach(function (v) {
+          if (!(v.qte > 0)) return;
+          var c = normCip(v.artCode); if (!c) return;
+          (pris[c] || (pris[c] = {}))[v.pharmacyId] = 1;
+          mesOffSet[v.pharmacyId] = 1;
+        });
+        var nOffTotal = Object.keys(mesOffSet).length;
+
+        var gis = [], couvert = 0, connus = 0;
+        for (var cg in AV.data) {
+          if (!Object.prototype.hasOwnProperty.call(AV.data, cg)) continue;
+          var boites = AV.data[cg]; if (!(boites > 0)) continue;
+          connus++;
+          var dejaPris = pris[cg] ? Object.keys(pris[cg]).length : 0;
+          if (dejaPris > 0) couvert++;
+          if (!(SK && SK.data && SK.data[cg] > 0)) continue;   // pas en stock = pas une piste
+          var manquantes = nOffTotal - dejaPris;
+          if (manquantes <= 0) continue;
+          var pn = prixNet[cg] || PP[cg]; if (!(pn > 0)) continue;
+          gis.push({
+            c: cg, boites: boites, net: pn, tier: priceTier(PP[cg] || pn),
+            manquantes: manquantes, dejaPris: dejaPris,
+            potentiel: manquantes * boites * pn
+          });
+        }
+
+        if (gis.length && nOffTotal > 0) {
+          var noms2 = prodNoms();
+          // ⚠️ On compte des RÉFÉRENCES par catégorie, pas des euros.
+          // Additionner le potentiel de milliers de produits donnait des dizaines
+          // de millions pour un seul commercial : le calcul suppose que CHAQUE officine atteint la
+          // moyenne France sur CHAQUE produit, ce qui est impossible en somme.
+          // Un chiffre absurde discrédite tout le reste de l'écran, y compris
+          // ce qui est juste.
+          var nParTier = [0, 0, 0, 0];
+          gis.forEach(function (g) { nParTier[g.tier]++; });
+          var retenues = (GIS_TIER == null) ? gis : gis.filter(function (g) { return g.tier === GIS_TIER; });
+          retenues = retenues.sort(function (a, b) { return b.potentiel - a.potentiel; });
+          var vues = retenues.slice(0, 12), potVues = 0;
+          vues.forEach(function (g) { potVues += g.potentiel; });
+          var maxPot = vues.length ? vues[0].potentiel : 1;
+          var covBar = Math.round(connus ? couvert / connus * 100 : 0);
+
+          var chips = '<div class="pilo-gis-chips">' +
+            '<button type="button" class="pilo-gis-chip' + (GIS_TIER == null ? ' on' : '') + '" data-gt="">Toutes catégories</button>' +
+            TIERS.map(function (t, ti) {
+              return '<button type="button" class="pilo-gis-chip' + (GIS_TIER === ti ? ' on' : '') + '" data-gt="' + ti + '">' +
+                '<span class="pilo-tier-dot" style="background:' + t.color + '"></span>' + t.label +
+                '<span class="pilo-gis-chipv mono">' + V2.fmtNum(nParTier[ti]) + '</span></button>';
+            }).join('') +
           '</div>';
-        }).join('') : '<div class="v2-empty"><div class="v2-empty-d">Tu couvres tous les marchés Ameli disponibles.</div></div>';
-        ameliCard =
-          '<div class="v2-card" style="margin-bottom:14px">' +
-            '<div class="v2-card-head"><div class="v2-card-t">' + ICO('pilo', 17) + 'Pénétration du marché Ameli</div>' +
-              '<span class="v2-card-link" style="color:var(--muted);cursor:default">couverture de gamme</span></div>' +
-            '<div class="opso-gauge-track" style="margin-top:2px"><div class="opso-gauge-fill" data-w="' + covBar + '" style="width:0"></div></div>' +
-            '<div class="opso-gauge-labels" style="margin-bottom:18px">' +
-              '<span class="mono" style="font-size:13px;font-weight:700;color:' + V2.tint(covBar, 30, 60) + '">' + covBar + ' %</span>' +
-              '<span style="font-size:12px;color:var(--muted)">' + V2.fmtNum(coveredN) + ' / ' + V2.fmtNum(totalN) + ' produits Ameli commandés</span>' +
-            '</div>' +
-            '<div class="pilo-ameli-sub">Plus gros marchés Ameli que tu ne commandes pas <span style="color:var(--muted-2)">— volume national</span></div>' +
-            gapHtml +
-          '</div>';
+
+          var gapHtml = vues.length ? vues.map(function (g, i) {
+            var info = noms2[g.c] || null;
+            var nom = (info && info.nom) || '';
+            var t = TIERS[g.tier];
+            var pct = maxPot > 0 ? Math.max(3, g.potentiel / maxPot * 100) : 0;
+            return '<div class="pilo-pr">' +
+              '<span class="mono pilo-rank">' + (i + 1) + '</span>' +
+              '<div class="pilo-pr-main">' +
+                '<div class="pilo-pr-n">' + (nom ? esc(nom) : '<span class="pilo-pr-anon mono">' + esc(g.c) + '</span>') +
+                  (nom ? '' : '<small>référence non répertoriée</small>') + '</div>' +
+                '<div class="pilo-bar"><span class="pilo-bar-fill" data-w="' + pct.toFixed(1) + '" style="width:0;background:' + t.color + '"></span></div>' +
+                '<div class="pilo-pr-meta mono">' +
+                  '<span class="pilo-pr-tag" style="color:' + t.color + '"><span class="pilo-tier-dot" style="background:' + t.color + '"></span>' + t.label + '</span>' +
+                  '<span><b>' + g.manquantes + '</b> officine' + (g.manquantes > 1 ? 's' : '') + ' sur ' + nOffTotal + ' ne le prennent pas</span>' +
+                  // La traction locale est le vrai signal de confiance : un produit
+                  // que personne ne prend est une piste plus fragile qu'un produit
+                  // déjà installé chez quelques-unes.
+                  (g.dejaPris > 0
+                    ? '<span class="pilo-gis-ok">déjà pris par ' + g.dejaPris + '</span>'
+                    : '<span class="pilo-gis-neuf">aucune ne le prend encore</span>') +
+                  '<span>' + V2.fmtNum(g.boites) + ' boîte' + (g.boites > 1 ? 's' : '') + '/pharmacie/an en France</span>' +
+                  '<span>' + V2.fmtEur(g.net) + ' net/boîte</span>' +
+                '</div>' +
+              '</div>' +
+              '<div class="pilo-vals"><div class="v2-row-val mono">' + V2.fmtEur(g.potentiel) + '</div>' +
+                '<div class="v2-row-meta mono">par an</div></div>' +
+            '</div>';
+          }).join('') : '<div class="v2-empty"><div class="v2-empty-d">Aucun produit en stock Intégral ne manque à tes officines dans cette catégorie.</div></div>';
+
+          ameliCard =
+            '<div class="v2-card pilo-gis" style="margin-bottom:14px">' +
+              '<div class="v2-card-head"><div class="v2-card-t">' + ICO('pilo', 17) + 'Le gisement</div>' +
+                '<span class="v2-card-link" style="color:var(--muted);cursor:default">' +
+                  V2.fmtNum(nOffTotal) + ' officines · en stock Intégral</span></div>' +
+              '<div class="pilo-legende">Ce que la France achète et que tes officines ne commandent pas — ' +
+                'uniquement ce qu\'Intégral a en stock. Classé par euros, pas par nombre de boîtes : ' +
+                'sinon les petits prix à gros volume écrasent tout et le gisement reste invisible.</div>' +
+              chips +
+              '<div class="opso-gauge-track" style="margin-top:2px"><div class="opso-gauge-fill" data-w="' + covBar + '" style="width:0"></div></div>' +
+              '<div class="opso-gauge-labels" style="margin-bottom:16px">' +
+                // Pas de couleur d'alerte : 57 officines ne couvriront jamais
+                // 7 786 références, il n'y a aucun objectif à tenir ici.
+                '<span class="mono" style="font-size:13px;font-weight:700;color:var(--ip-ink)">' + covBar + ' %</span>' +
+                '<span style="font-size:12px;color:var(--muted)">' + V2.fmtNum(couvert) + ' / ' + V2.fmtNum(connus) +
+                  ' produits du marché remboursable déjà commandés au moins une fois</span>' +
+              '</div>' +
+              gapHtml +
+              '<div class="pilo-gis-note">' +
+                (GIS_TIER == null ? 'Toutes catégories' : 'Catégorie ' + TIERS[GIS_TIER].label) + ' : ' +
+                '<b>' + V2.fmtNum(retenues.length) + '</b> référence' + (retenues.length > 1 ? 's' : '') +
+                ' en stock manquent à au moins une de tes officines. Les <b>' + vues.length + '</b> lignes ci-dessus ' +
+                'pèsent ensemble <b>' + V2.fmtEur(potVues) + '</b>. ' +
+                '⚠️ Ce montant est un CALCUL, pas une prévision : le nombre de tes officines qui n\'en prennent pas, ' +
+                'multiplié par ce qu\'une pharmacie française moyenne en achète en un an, au prix net Intégral. ' +
+                'Rien ne dit qu\'elles achèteront, et ces montants ne s\'additionnent pas sur toute la liste — ' +
+                'c\'est un ordre de grandeur pour choisir par où commencer, pas un objectif.' +
+              '</div>' +
+            '</div>';
+        }
       }
 
       // ── Alerte : Top 10 pharmacies en BAISSE (CA décline sur les mois) ──
@@ -1539,8 +1645,10 @@
       // Détail : classements (top pharmacies + groupements)
       var classements = grpCard ? ('<div class="pilo-grid2" data-reveal>' + topCaCard + grpCard + '</div>') : ('<div data-reveal>' + topCaCard + '</div>');
       // Détail : marché Ameli & pharmacies à relancer
-      var marche = (ameliCard && mdlCard) ? ('<div class="pilo-grid2" data-reveal>' + ameliCard + mdlCard + '</div>')
-        : (ameliCard || mdlCard ? '<div data-reveal>' + (ameliCard || mdlCard) + '</div>' : '');
+      // Le gisement prend toute la largeur : il porte une liste de produits
+      // avec quatre chiffres par ligne, il ne tient pas dans une demi-colonne.
+      var marche = (ameliCard || mdlCard)
+        ? '<div data-reveal>' + ameliCard + mdlCard + '</div>' : '';
 
       // Repères pour les intitulés dépliables (aide à la lecture, pas des objectifs)
       var nbGrp = grpList.length;
@@ -1590,7 +1698,8 @@
                '<div data-reveal id="pilo-prod-host">' + produitsCard + '</div>', false) : '') +
           (marcheFr ? disc('Le marché France', 'ce que le pays achète de plus, et de moins', '<div data-reveal>' + marcheFr + '</div>', false) : '') +
           disc('Mes pharmacies', (nbActive ? nbActive + ' active' + (nbActive > 1 ? 's' : '') + ' sur la période' : '') + (nbGrp >= 2 && !opso ? ' · ' + nbGrp + ' groupements' : ''), classements, false) +
-          (marche ? disc('Marché Ameli & pharmacies à relancer', 'ce que je ne commande pas encore, et qui décroche', marche, false) : '') +
+          (marche ? disc('Le gisement & les pharmacies à relancer',
+               'ce que la France achète et pas mes officines, et qui décroche', marche, false) : '') +
         '</div>';
 
       // ── Bind segmented ──
@@ -1639,6 +1748,16 @@
         });
       }
       brancherProduits();
+
+      // ── Le gisement : filtre par catégorie de prix ──────────────────
+      // Il vit dans un dépliable ; grâce à OUVERTS, un V2.render() le laisse
+      // ouvert et ne remonte pas la page.
+      Array.prototype.forEach.call(root.querySelectorAll('.pilo-gis-chip'), function (b) {
+        b.onclick = function () {
+          GIS_TIER = b.dataset.gt === '' ? null : +b.dataset.gt;
+          V2.render();
+        };
+      });
 
       // ── Animate bars at mount ──
       requestAnimationFrame(function () {
@@ -2046,6 +2165,16 @@
       '.pilo-pr-fr.up{color:var(--c-mint-txt,#0F7A52)}' +
       '.pilo-pr-fr.dn{color:var(--c-rose-txt,#C7283D)}' +
       '@media(max-width:560px){.pilo-prod{padding:16px 14px}.pilo-cmp-r{grid-template-columns:118px repeat(var(--cols),1fr)}}' +
+      // ── Le gisement ────────────────────────────────────────────
+      '.pilo-gis-chips{display:flex;flex-wrap:wrap;gap:7px;margin:0 0 16px}' +
+      '.pilo-gis-chip{display:inline-flex;align-items:center;gap:7px;min-height:36px;padding:6px 12px;border:1px solid var(--line);border-radius:999px;background:var(--card);font-family:var(--font);font-size:12px;font-weight:700;color:var(--ip-ink);cursor:pointer;transition:border-color .15s var(--ease),background .15s var(--ease)}' +
+      '.pilo-gis-chip:hover{border-color:color-mix(in srgb,var(--ip-blue) 40%,transparent)}' +
+      '.pilo-gis-chip.on{background:var(--halo);border-color:color-mix(in srgb,var(--ip-blue) 34%,transparent)}' +
+      '.pilo-gis-chipv{font-size:11px;color:var(--muted);font-weight:700}' +
+      '.pilo-gis-ok{color:var(--c-mint-txt,#0F7A52);font-weight:700}' +
+      '.pilo-gis-neuf{color:var(--c-amber-txt,#9A5B12);font-weight:700}' +
+      '.pilo-gis-note{margin-top:16px;padding-top:13px;border-top:1px solid var(--line);font-size:11px;line-height:1.55;color:var(--muted-2)}' +
+      '.pilo-gis-note b{color:var(--muted);font-weight:800}' +
       // tranches de prix
       // Mois incomplet : dessiné, mais visiblement mis de côté (gris, hachuré).
       '.pilo-cbar-part .pilo-cbar-fill{background:var(--line-strong)!important;background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.55) 0 3px,transparent 3px 6px)}' +
