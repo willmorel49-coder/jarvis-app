@@ -94,12 +94,33 @@
   // rien changé. Un signal faux est pire qu'un signal absent, parce qu'on le
   // croit.
   //
-  // On écarte donc les mois de queue dont le total RÉSEAU tombe sous 60 % de
-  // la médiane — le réseau entier ne perd pas 40 % en un mois, c'est un mois
-  // tronqué. Le dernier mois retenu ancre les deux fenêtres, et l'écran DIT
+  // On écarte donc les mois de queue dont le total tombe sous 60 % de la
+  // médiane. Le dernier mois retenu ancre les deux fenêtres, et l'écran DIT
   // lesquelles il a comparées.
+  //
+  // ⚠️⚠️ ET LA FENÊTRE SE CALCULE SUR LES VENTES DU COMMERCIAL CONNECTÉ, PAS
+  // SUR CELLES DU RÉSEAU — corrigé le 24/08/2026.
+  // Les fichiers de ventes ne s'arrêtent pas au même mois selon le commercial :
+  // certains vont deux mois plus loin que d'autres. Cet écran ne montre que LES
+  // OFFICINES DU COMMERCIAL CONNECTÉ, mais il prenait son ancre sur le total
+  // réseau — donc sur un mois où le fichier de ce commercial-là s'était déjà
+  // arrêté. Ses officines n'avaient aucune vente dans la fenêtre « récente » et
+  // ressortaient toutes en chute.
+  // Mesuré avant correction : 37 % et 34 % des officines de deux secteurs
+  // étaient annoncées « en forte baisse », contre 14 à 20 % ailleurs — pour la
+  // seule raison que leur fichier s'arrêtait plus tôt.
+  // Une fois l'ancre prise sur son propre fichier, la règle des six mois
+  // complets fait le reste : un commercial dont le fichier n'en couvre pas six
+  // ne reçoit PAS de signal de baisse, et l'écran lui dit pourquoi. Mieux vaut
+  // une raison de moins qu'une raison fausse.
   function achats() {
-    var s = V2.sales || [], m = {}, i, parMois = {};
+    var moiC = moi();
+    var toutes = V2.sales || [];
+    // Sans commercial rattaché, le portefeuille est vide de toute façon
+    // (`recenser()` rend une liste vide) : on garde le réseau pour ne pas
+    // diviser par zéro, aucun officine ne sera noté.
+    var s = moiC ? toutes.filter(function (v) { return v.commercial === moiC; }) : toutes;
+    var m = {}, i, parMois = {};
     for (i = 0; i < s.length; i++) {
       if (!s[i].month || !s[i].year) continue;
       var mk0 = s[i].year * 12 + (s[i].month - 1);
@@ -118,11 +139,17 @@
     // mieux vaut une raison de moins qu'une raison fausse.
     var comparable = complets.length >= 6 && ancre != null;
 
-    for (i = 0; i < s.length; i++) {
-      var v = s[i], k = String(v.pharmacyId);
+    // `total` reste le chiffre d'affaires COMPLET de l'officine, tous
+    // commerciaux confondus — c'est ce qu'affiche la fiche, ça ne doit pas
+    // changer de sens. Seules les deux fenêtres de comparaison se limitent aux
+    // ventes du commercial connecté : 5 officines sur 702 sont couvertes par
+    // deux commerciaux, et le fichier de l'autre peut s'arrêter plus tôt — sa
+    // part disparaîtrait de la fenêtre récente et rejouerait la fausse baisse.
+    for (i = 0; i < toutes.length; i++) {
+      var v = toutes[i], k = String(v.pharmacyId);
       if (!m[k]) m[k] = { total: 0, recent: 0, avant: 0 };
       m[k].total += (v.mntNetHt || 0);
-      if (comparable && v.month && v.year) {
+      if (comparable && v.month && v.year && (!moiC || v.commercial === moiC)) {
         var mk = v.year * 12 + (v.month - 1);
         if (mk <= ancre && mk > ancre - 3) m[k].recent += (v.mntNetHt || 0);
         else if (mk <= ancre - 3 && mk > ancre - 6) m[k].avant += (v.mntNetHt || 0);
@@ -307,6 +334,7 @@
                  resteMail: resteMail, resteTel: resteTel,
                  ecartes: ec, comparable: ach.comparable,
                  periode: ach.periode, moisEcartes: ach.moisEcartes,
+                 moisComplets: ach.moisComplets,
                  vues: vues, retenues: total, datesUtiles: datesUtiles,
                  total: pool.length };
       }).catch(function () {
@@ -426,7 +454,7 @@
       '</div></div>';
   }
 
-  function ecartesTexte(ec, comparable, per, ecMois) {
+  function ecartesTexte(ec, comparable, per, ecMois, nbMois) {
     var b = [];
     if (ec.rdvPris) b.push(ec.rdvPris + ' ' + (ec.rdvPris > 1 ? 'ont' : 'a') + ' déjà un rendez-vous');
     if (ec.relanceRecente) b.push(ec.relanceRecente + ' ' + (ec.relanceRecente > 1 ? 'ont' : 'a') +
@@ -445,8 +473,14 @@
       ? '<p class="rad-note"><b>Écartées de cette liste :</b> ' + esc(b.join(' · ')) + '.</p>'
       : '';
     if (!comparable) {
+      // On dit ce qui manque, et de combien. « Pas calculée » sans raison
+      // chiffrée se lit comme une panne ; là, c'est le fichier de ventes de
+      // CE commercial qui ne remonte pas assez loin — les fichiers ne
+      // s'arrêtent pas au même mois d'un secteur à l'autre.
       t += '<p class="rad-note">La baisse d’achats n’est <b>pas</b> calculée : il faut six mois ' +
-           'complets de ventes pour comparer deux trimestres.</p>';
+           'complets de ventes pour comparer deux trimestres' +
+           (nbMois ? ', et ton fichier en couvre <b>' + nbMois + '</b>' : '') + '. ' +
+           'Toutes les autres raisons, elles, sont bien là.</p>';
     } else if (per) {
       t += '<p class="rad-note">Baisse mesurée sur <b>' + esc(per.recent[0]) + ' – ' +
            esc(per.recent[1]) + '</b> contre <b>' + esc(per.avant[0]) + ' – ' +
@@ -494,7 +528,7 @@
           corps = '<p class="rad-vide">Aucune officine ne ressort aujourd’hui. C’est plutôt ' +
             'bon signe : celles que tu n’as pas vues depuis longtemps ont déjà un rendez-vous ' +
             'ou un lien en cours.</p>' +
-            ecartesTexte(r.ecartes || {}, r.comparable, r.periode, r.moisEcartes);
+            ecartesTexte(r.ecartes || {}, r.comparable, r.periode, r.moisEcartes, r.moisComplets);
         } else {
           // ⚠️ « Aucune visite connue » sur TOUTES les lignes n'est pas un
           // résultat, c'est une donnée manquante. Mesuré le 19/08/2026 : la
@@ -524,7 +558,7 @@
                 'aussi. On s’arrête à ' + LOT + ' : c’est la taille d’un lot d’envoi groupé, ' +
                 'et au-delà les messageries d’officine trient en indésirable.</p>'
               : '') +
-            ecartesTexte(r.ecartes || {}, r.comparable, r.periode, r.moisEcartes) +
+            ecartesTexte(r.ecartes || {}, r.comparable, r.periode, r.moisEcartes, r.moisComplets) +
             (r.appels && r.appels.length
               ? '<p class="rad-note"><b>' + r.appels.length + ' autres officines n’ont pas ' +
                 'd’adresse mail mais ont un téléphone.</b> Elles ne sont pas perdues — ' +
