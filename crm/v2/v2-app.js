@@ -89,13 +89,31 @@
 
      La mesure ne doit JAMAIS casser ni ralentir l'app : pas d'await, échec
      silencieux. Une statistique perdue n'est rien ; un écran qui plante, si. */
-  V2._vus = V2._vus || {};
+  /* ⚠️ L'anti-doublon DOIT survivre au rechargement de page.
+     Mesuré en prod le 24/08 dès les premières lignes : « home » a été compté
+     deux fois à 6 secondes d'intervalle, dans la MÊME session. Cause : la
+     mémoire vive (un simple objet JS) repart à vide à chaque rechargement,
+     alors que la session, elle, tient dans sessionStorage.
+     Conséquence, et c'est ce qui rendait la mesure trompeuse : tout
+     rechargement retombe sur l'ACCUEIL, donc « home » était systématiquement
+     sur-compté par rapport aux autres écrans — précisément le classement
+     qu'on cherche à lire. L'état de l'anti-doublon vit donc au même endroit
+     que la session. */
+  function _vusLire() {
+    try { return JSON.parse(sessionStorage.getItem('jarvis_vus') || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function _vusEcrire(m) {
+    try { sessionStorage.setItem('jarvis_vus', JSON.stringify(m)); } catch (e) {}
+  }
   V2.mesurer = function (ecran) {
     try {
       if (!ecran || !V2.user) return;
       var t = Date.now();
-      if (V2._vus[ecran] && t - V2._vus[ecran] < 5 * 60 * 1000) return;
-      V2._vus[ecran] = t;
+      var vus = _vusLire();
+      if (vus[ecran] && t - vus[ecran] < 5 * 60 * 1000) return;
+      vus[ecran] = t;
+      _vusEcrire(vus);
       var c = V2.sb && V2.sb();
       if (!c) return;
       var s = '';
