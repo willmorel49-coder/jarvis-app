@@ -316,3 +316,120 @@ test('une valeur BORNEE par le generateur ne s affiche jamais comme une mesure',
   assert.ok(!/TEST TROP LEGER/.test(h), 'un produit sous le plancher de poids est passe');
   assert.ok(!/TEST GENERIQUE/.test(h), 'un generique est passe malgre la regle princeps');
 });
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 5. Mes produits — la matrice secteur × catégorie de prix
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ⚠️ Lecteur de nombres à la française. `fmtEur` sépare les milliers par une
+// espace fine insécable (U+202F). Une première version de ce contrôle lisait
+// « 6 994,38 € » comme 994 et dénonçait 29 fausses incohérences : l'outil de
+// mesure se teste AVANT de mesurer, sur des cas dont on connaît la réponse.
+const lireEuro = (t) => parseFloat(String(t).replace(/[\s   ]/g, '').replace(',', '.'));
+
+test('le lecteur de nombres du test lit juste — sinon tout ce qui suit ment', () => {
+  for (const [txt, attendu] of [['6 994,38', 6994.38], ['1 065', 1065], ['0,78', 0.78], ['65 129', 65129]]) {
+    assert.ok(Math.abs(lireEuro(txt) - attendu) < 0.001, `« ${txt} » lu ${lireEuro(txt)} au lieu de ${attendu}`);
+  }
+});
+
+test('la matrice couvre TOUT le chiffre d affaires de la periode, sans perte', () => {
+  const h = rendre('');
+  // chaque case porte sa valeur exacte dans son title
+  const cases = [...h.matchAll(/class="pilo-mx-c[^"]*"[^>]*title="[^"·]*·[^·]*·\s*([^·"]+?)\s*·/g)];
+  assert.ok(cases.length >= 4, `seulement ${cases.length} cases dans la matrice`);
+  const sommeMatrice = cases.reduce((s, m) => s + (lireEuro(m[1].replace('€', '')) || 0), 0);
+  // CA de la periode, recalcule a part
+  const moisWill = null;
+  const ancre = ancreReseau;
+  let attendu = 0;
+  for (const v of VENTES) if (v.month === ancre) attendu += v.mntNetHt;
+  assert.ok(Math.abs(sommeMatrice - attendu) / attendu < 0.005,
+    `la matrice totalise ${Math.round(sommeMatrice)} € pour ${Math.round(attendu)} € de ventes : des lignes se perdent`);
+});
+
+test('les cases portent ce que le filtre consomme : un secteur et une tranche', () => {
+  const h = rendre('');
+  const avecData = [...h.matchAll(/class="pilo-mx-c[^"]*"\s+data-s="([^"]*)"\s+data-t="(\d)"/g)];
+  assert.ok(avecData.length >= 4, 'les cases ne portent pas data-s / data-t');
+  for (const [, , t] of avecData) assert.ok(+t >= 0 && +t <= 3, `tranche hors bornes : ${t}`);
+});
+
+test('un commercial restreint n a PAS l axe « par secteur » — que sa geographie', () => {
+  const h = rendre(SECTEUR);
+  assert.ok(!/data-axe="comm"/.test(h),
+    'l axe par commercial est propose a un utilisateur qui ne voit que son perimetre');
+  assert.ok(/Dép\. /.test(h), 'le decoupage par departement est absent');
+});
+
+test('vue reseau : les deux axes sont proposes', () => {
+  const h = rendre('');
+  assert.ok(/data-axe="comm"/.test(h) && /data-axe="dep"/.test(h), 'un axe manque en vue reseau');
+});
+
+test('aucune troncature silencieuse : ce qui n est pas liste est DIT', () => {
+  const h = rendre('');
+  const nRef = (h.match(/([\d\s  ]+) références ·/) || [])[1];
+  assert.ok(nRef && lireEuro(nRef) > 200, `seulement ${nRef} references : le cas de la troncature n est pas represente`);
+  assert.ok(/autres références ne sont pas listées/.test(h),
+    'l ecran laisse croire que la liste est complete');
+  assert.ok(/% du chiffre d.affaires de cette sélection/.test(h),
+    'le poids de ce qui EST liste n est pas dit');
+});
+
+test('un produit sans designation affiche son CIP, jamais un blanc', () => {
+  const h = rendre('');
+  // ⚠️ On capture le CONTENU du repere, pas un CIP bien forme : sinon, le jour
+  // ou le code cesse d ecrire le CIP, la regex ne trouve plus rien, le test se
+  // desactive tout seul et passe au vert sur le defaut qu il devait attraper.
+  const spans = [...h.matchAll(/class="pilo-pr-anon mono">([^<]*)</g)];
+  if (!spans.length) return;   // toutes les references sont nommees : rien a prouver
+  // Le code affiche est celui du fichier de ventes, tel quel. Mesure le
+  // 24/08/2026 : 12 references sur 7 950 y portent 12 chiffres au lieu de 13,
+  // et AUCUNE ne se retrouve en completant par des zeros — ce ne sont pas des
+  // codes tronques, ce sont des references absentes de tous les referentiels
+  // (1,27 % du chiffre d affaires). On verifie donc qu on affiche bien un code,
+  // pas qu il fasse une longueur qu on aurait decidee.
+  for (const [, txt] of spans) {
+    assert.match(txt.trim(), /^\d+$/, `repere de reference vide ou malforme : « ${txt} »`);
+  }
+  assert.ok(/référence non répertoriée/.test(h), 'le CIP nu n est pas signale comme tel');
+});
+
+test('tranche DOMINANTE et prix PONDERE — sur un cas dont on connait la reponse', () => {
+  // Un produit vendu 2 fois : 1 boîte à 5 000 € et 100 boîtes à 10 €.
+  //   → chiffre d'affaires 6 000 €, dont 5 000 € en « > 2 000 € » : tranche dominante
+  //   → prix moyen pondéré = 6 000 / 101 = 59,41 €
+  // Prendre la DERNIÈRE ligne au lieu du poids donnerait « 4,33 – 468 € », faux.
+  const bac = faireFenetre();
+  bac.PROD_STATS = [{ c: '7777777777777', d: 'PRODUIT A DEUX PRIX', n: 2, f: 'pr_mid', ppht: 10, net: 9 }];
+  bac.TENDANCE = { meta: { mois: '01' }, data: {} };
+  bac.AMELI_AVG = { meta: {}, data: {} };
+  bac.STOCK_IP = { meta: {}, data: {} };
+  bac.ICO = () => '';
+  const v2 = bac.V2 = {
+    pages: {}, user: null, commFilter: '',
+    pharmacies: [{ id: 'p1', name: 'Off', cp: '49000', groupement: 'X' }],
+    sales: [
+      { pharmacyId: 'p1', month: 1, year: 2026, commercial: 'Moi', artCode: '7777777777777', qte: 1, puNet: 5000, mntNetHt: 5000 },
+      { pharmacyId: 'p1', month: 1, year: 2026, commercial: 'Moi', artCode: '7777777777777', qte: 100, puNet: 10, mntNetHt: 1000 },
+    ],
+    commSales() { return v2.sales; }, commercials() { return ['Moi']; },
+    esc: (s) => String(s == null ? '' : s), sumCA: (a) => a.reduce((s, x) => s + x.mntNetHt, 0),
+    fmtEur: (n) => (Math.abs(n) >= 1000 ? Math.round(n).toLocaleString('fr-FR') : n.toFixed(2).replace('.', ',')) + ' €',
+    fmtNum: (n) => String(Math.round(n)), fmtK: (n) => String(Math.round(n)),
+    margeMDLboite: () => 0, tint: () => '', topbar: () => '', go() {}, render() {},
+  };
+  executer(lire('v2-pilotage.js'), bac);
+  const root = { innerHTML: '', querySelectorAll: () => [], querySelector: () => null };
+  v2.pages.pilotage.render(root);
+  const h = root.innerHTML;
+  const ligne = h.slice(h.indexOf('PRODUIT A DEUX PRIX'));
+  const tag = (ligne.match(/class="pilo-pr-tag"[^>]*>.*?<\/span>\s*([^<]+)</) || [])[1] || '';
+  assert.ok(/> 2 000/.test(ligne.slice(0, 700)),
+    'la tranche affichee n est pas celle qui porte le chiffre d affaires');
+  const pu = (ligne.match(/>([\d\s ,\.]+)\s*€\/boîte</) || [])[1];
+  assert.ok(pu, 'aucun prix unitaire affiche');
+  assert.ok(Math.abs(lireEuro(pu) - 6000 / 101) < 0.02,
+    `prix unitaire ${pu} au lieu de ${(6000 / 101).toFixed(2)} : il n est pas pondere par les quantites`);
+});
