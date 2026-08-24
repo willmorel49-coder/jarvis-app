@@ -985,7 +985,12 @@
       '.v2-home-x .v2-lch-mini svg{color:var(--muted-2,#98a1b4);width:15px;height:15px;flex-shrink:0}',
       '.v2-home-x .v2-lch-mini:hover{border-color:color-mix(in srgb,var(--ip-blue) 40%,var(--line));transform:translateY(-1px);box-shadow:var(--sh-1)}',
       '.v2-home-x .v2-lch-card,.v2-home-x .v2-lch-more{animation:v2homeIn .5s var(--mo-ease-in) both}',
-      '.v2-home-x .v2-lch-card:nth-of-type(1){animation-delay:.10s}.v2-home-x .v2-lch-card:nth-of-type(2){animation-delay:.14s}.v2-home-x .v2-lch-card:nth-of-type(3){animation-delay:.18s}.v2-home-x .v2-lch-card:nth-of-type(4){animation-delay:.22s}.v2-home-x .v2-lch-more{animation-delay:.28s}',
+      '.v2-home-x .v2-lch-card:nth-of-type(1){animation-delay:.10s}.v2-home-x .v2-lch-card:nth-of-type(2){animation-delay:.14s}.v2-home-x .v2-lch-card:nth-of-type(3){animation-delay:.18s}.v2-home-x .v2-lch-card:nth-of-type(4){animation-delay:.22s}.v2-home-x .v2-lch-card:nth-of-type(5){animation-delay:.26s}.v2-home-x .v2-lch-more{animation-delay:.30s}',
+      // Nombre impair de grandes entrées : la dernière resterait seule sur une
+      // demi-ligne. Elle prend les deux colonnes. Règle générale, pas un
+      // rattrapage pour 5 : elle vaut pour 3, 5, 7… sans rien à maintenir.
+      '.v2-home-x .v2-lch-card:last-child:nth-child(odd){grid-column:1/-1;min-height:120px;gap:28px}',
+      '@media(max-width:640px){.v2-home-x .v2-lch-card:last-child:nth-child(odd){min-height:150px;gap:42px}}',
       '@media(prefers-reduced-motion:reduce){.v2-home-x .v2-lch-card,.v2-home-x .v2-lch-more{animation:none}.v2-home-x .v2-lch-card,.v2-home-x .v2-lch-arrow{transition:none}.v2-home-x .v2-lch-card::after{display:none}}',
       // ─── Carte vedette « Copilote » (pleine largeur, en tête de l\'accueil)
       '.v2-home-x .v2-lch-feat{position:relative;display:flex;align-items:center;gap:18px;padding:22px 24px;margin-bottom:16px;border-radius:var(--r-lg,20px);text-decoration:none;color:#fff;cursor:pointer;overflow:hidden;background:linear-gradient(120deg,var(--ip-blue),#0034A0);box-shadow:0 14px 34px color-mix(in srgb,var(--ip-blue) 30%,transparent);transition:transform .28s var(--mo-ease-soft),box-shadow .28s var(--mo-ease-soft);animation:v2homeIn .5s var(--mo-ease-in) both}',
@@ -1109,19 +1114,28 @@
         if (pmap.molecules) { pmap.molecules.t = 'Catalogue & prix'; }
         if (pmap.presentation) { pmap.presentation.t = 'Présentation'; }
         if (pmap.offilog) { pmap.offilog.t = 'Concurrents'; }
-        // ── Accueil « Launcher » (choix Will) : 4 grandes entrées, tout le reste en « Autres outils »
+        // ── Accueil « Launcher » (choix Will) : les grandes entrées, tout le reste en « Autres outils »
         // ⚠️ 'molecules' figurait ici alors que sa tuile avait ete retiree le
         // 11/08 : la grille n'affichait plus que 3 cartes sur 4. Produits,
         // l'outil le plus utilise, prend la place.
-        var ESSENTIAL = ['pharma', 'produits', 'marketing', 'infos'];
-        var ACC = { pharma: 'var(--ip-blue)', produits: 'var(--ip-blue)', marketing: '#F39A1B', infos: '#F39A1B' };
+        //
+        // Pilotage remonte ici le 24/08/2026 (demande de Will : « aussi
+        // importante que les 4 autres »). Il vivait dans une pastille grise
+        // d'« Autres outils » alors que c'est le seul écran qui répond à
+        // « où j'en suis ». Il prend la 3ᵉ place, pas la dernière : même
+        // taille et même traitement que les autres, mais dans le premier
+        // regard. La grille étant à 2 colonnes, la 5ᵉ carte occupe toute la
+        // largeur — une règle CSS s'en charge, aucun ordre à maintenir.
+        var ESSENTIAL = ['pharma', 'produits', 'pilotage', 'marketing', 'infos'];
+        var ACC = { pharma: 'var(--ip-blue)', produits: 'var(--ip-blue)', pilotage: 'var(--ip-blue)', marketing: '#F39A1B', infos: '#F39A1B' };
         var SUB = {
           pharma: 'Fiches, visites & suivi terrain',
           produits: 'Client, groupement ou prospect — la liste à proposer',
+          pilotage: 'CA, marge, tranches de prix & marché France',
           marketing: 'Supports & sélections à pousser',
           infos: 'Ruptures, actu & opportunités du jour'
         };
-        var ICOK = { pharma: 'pharma', produits: 'cat', marketing: 'fiche', infos: 'spark' };
+        var ICOK = { pharma: 'pharma', produits: 'cat', pilotage: 'pilo', marketing: 'fiche', infos: 'spark' };
         // catalogue grossiste médicaments replié · fiches retiré · audit fusionné dans la fiche pharmacie
         var used = { catalogue: 1, fiches: 1, audit: 1 };
         function bigCard(k) {
