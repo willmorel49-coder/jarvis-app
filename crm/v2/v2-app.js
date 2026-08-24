@@ -218,7 +218,11 @@
         (V2.user && V2.user.email ? '<div class="v2-um-mail">' + esc(V2.user.email) + '</div>' : '') +
       '</div>' +
       (installed ? '' : '<button class="v2-um-item" onclick="V2.installApp()">' + ICO('plus', 16, 2) + 'Installer l\'app</button>') +
-      '<button class="v2-um-item" onclick="V2.signOut()">' + ICO('logout', 16, 2) + 'Se déconnecter</button>';
+      '<button class="v2-um-item" onclick="V2.signOut()">' + ICO('logout', 16, 2) + 'Se déconnecter</button>' +
+      // 24/08/2026 — information de l'équipe sur la mesure d'usage (obligation
+      // CNIL dès lors qu'elle est nominative). Volontairement factuelle et
+      // sans jargon : on dit ce qui est enregistré et à quoi ça sert, rien de plus.
+      '<div class="v2-um-note">Les écrans que vous ouvrez sont enregistrés (votre nom et l\'heure), pour savoir lesquels améliorer en priorité.</div>';
     document.body.appendChild(m);
     requestAnimationFrame(function () { m.classList.add('open'); });
     setTimeout(function () {
