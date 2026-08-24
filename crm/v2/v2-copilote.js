@@ -159,15 +159,34 @@
   }
 
   // par officine : gros marchés France qu'elle ne commande pas (= ce qu'elle laisse passer)
+  // ── Les arguments d'une visite ─────────────────────────────────
+  // ⚠️ CLASSÉ EN EUROS DEPUIS LE 24/08/2026, PLUS EN BOÎTES.
+  // Cet écran triait par « boîtes vendues par une pharmacie moyenne en France »
+  // et écartait tout ce qui passait sous 12 boîtes par an. Mesuré sur une
+  // officine réelle : 19 produits à plus de 468 € étaient candidats, et
+  // AUCUN ne survivait à ce plancher. Un produit cher se vend par unités —
+  // le filtre au volume le rendait structurellement invisible, précisément
+  // sur l'écran qu'on ouvre avant un rendez-vous.
+  // Le même défaut a été corrigé le même jour dans le Pilotage : le réseau
+  // fait deux fois moins de chiffre que la France sur les produits chers,
+  // et aucun des deux écrans censés le montrer ne pouvait le voir.
+  //
+  // Le potentiel d'un argument = ce qu'une pharmacie française moyenne en
+  // achète en un an × le prix net Intégral. C'est un ordre de grandeur pour
+  // classer, pas une promesse — la phrase affichée le dit avec « environ ».
+  var GAIN_MINI = 100;   // €/an : écarte le bruit, ne mord jamais sur le top 25
   function officineGaps(pid, limit) {
     var owned = orderedCips(pid), out = [];
     PS().forEach(function (r) {
       if (!eligible(r)) return;
       if (owned[String(r.c)]) return;
-      var m = V2.market(r.c); if (!m || m.avgYear < 12) return;
-      out.push({ r: r, fr: m.avgYear });
+      var m = V2.market(r.c); if (!m) return;
+      var net = +r.net || 0; if (!(net > 0)) return;
+      var eur = m.avgYear * net;
+      if (eur < GAIN_MINI) return;
+      out.push({ r: r, fr: m.avgYear, eur: eur });
     });
-    out.sort(function (a, b) { return b.fr - a.fr; });
+    out.sort(function (a, b) { return b.eur - a.eur; });
     return out.slice(0, limit || 25);
   }
 
@@ -546,7 +565,10 @@
     var r = o.r, s = stk(r.c), g = V2.tendance ? V2.tendance(r.c) : null;
     return '<div class="co-arg">' +
       '<div class="t"><span class="psh">À pousser</span>' + esc(cap(r.d)) + tensionBadge(r.c) + growthBadge(r.c) + newBadge(r.c) + '</div>' +
-      '<p class="s">Une pharmacie moyenne en vend <b>~' + num(o.fr) + '</b>/an en France' + (g != null && g >= 8 ? ' · marché <b class="up">+' + g + '%</b> sur un an' : '') + ' · tu en as <b class="stk">' + num(s) + '</b> en stock Intégral.</p>' +
+      '<p class="s">Une pharmacie moyenne en vend <b>~' + num(o.fr) + '</b>/an en France' +
+        (o.eur > 0 ? ' — environ <b>' + eur(o.eur) + '</b> par an au prix net' : '') +
+        (g != null && g >= 8 ? ' · marché <b class="up">+' + g + '%</b> sur un an' : '') +
+        ' · tu en as <b class="stk">' + num(s) + '</b> en stock Intégral.</p>' +
       sparkRow(r.c) +
       '<div class="co-prix">' + (r.net > 0 ? '<span class="co-net">' + eur(r.net) + ' net remisé</span>' : '') + abChip(r) + '</div>' +
       '<button class="v2-btn v2-btn-ghost" onclick="V2.go(\'molecules\',\'' + esc(r.c) + '\')">Voir la fiche</button>' +

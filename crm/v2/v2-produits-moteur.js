@@ -404,19 +404,13 @@
     };
   };
 
-  // Ce que l'officine a commence a prendre depuis un mois donne, sans qu'on
-  // lui ait rien propose : la mesure marche meme sans proposition enregistree.
-  M.nouveautesOfficine = function (idx, phId, depuisMois) {
-    var pm = (idx.premierMois || {})[String(phId)] || {};
-    depuisMois = +depuisMois || 0;
-    var out = [], c;
-    for (c in pm) {
-      if (!Object.prototype.hasOwnProperty.call(pm, c)) continue;
-      if (pm[c] >= depuisMois) out.push({ cip: c, mois: pm[c] });
-    }
-    out.sort(function (a, b) { return b.mois - a.mois || (a.cip < b.cip ? -1 : 1); });
-    return out;
-  };
+  // ⚠️ `nouveautesOfficine` a été RETIRÉE le 24/08/2026 (décision de Will).
+  // Elle rendait « ce que l'officine a commencé à prendre depuis un mois
+  // donné ». Elle était définie ici et appelée NULLE PART dans l'application —
+  // seulement par deux tests, qui éprouvaient donc du code que personne
+  // n'exécutait. `idx.premierMois`, qu'elle lisait, RESTE : `suiviProposition`
+  // s'en sert, et celle-là est bien affichée (v2-produits.js).
+  // Si un écran « nouveautés de l'officine » revient un jour, tout est là.
 
   // Taille une liste DÉJÀ classée à N produits par catégorie, sans en changer
   // l'ordre. C'est ce qui permet d'appliquer le même composeur (« 50 petits

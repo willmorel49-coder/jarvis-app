@@ -310,13 +310,6 @@ test('suivi : officine inconnue rend un suivi vide, pas une erreur', () => {
   assert.deepEqual(r.enAttente, ['AAA']);
 });
 
-test('nouveautes : ce que l officine a commence a prendre recemment', () => {
-  const idx = M.indexer(OFFICINES, VENTES_M);
-  const n = M.nouveautesOfficine(idx, 'G1', 5);
-  assert.deepEqual(n.map((x) => x.cip), ['CCC', 'BBB'], 'du plus recent au plus ancien');
-  assert.equal(n[0].mois, 6);
-});
-
 test('index : le champ mois s appelle `month` dans l app, `mois` dans les tests', () => {
   // v2-boot.js construit V2.sales avec `month`. Si le moteur ne lisait que
   // `mois`, le suivi d'effet serait vide en production sans qu'un test le voie.
