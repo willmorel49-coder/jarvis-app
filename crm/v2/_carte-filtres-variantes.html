@@ -1,0 +1,1049 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Carte des officines — 4 directions de filtrage</title>
+<style>
+/* ============ TOKENS ============ */
+:root{
+  --bg:#FBFCFE;
+  --card:#FFFFFF;
+  --blue:#0050E6;
+  --blue-050:rgba(0,80,230,.05);
+  --blue-100:rgba(0,80,230,.10);
+  --blue-200:rgba(0,80,230,.18);
+  --orange:#F39A1B;
+  --orange-100:rgba(243,154,27,.12);
+  --ink:#0E1726;
+  --ink-2:#3B475C;
+  --ink-3:#6A7688;
+  --line:#E4E9F0;
+  --line-2:#EEF2F7;
+  --ok:#12A150;
+  --warn:#E0473B;
+  --purple:#7A5AF8;
+  --radius:14px;
+  --radius-sm:10px;
+  --shadow-sm:0 1px 2px rgba(14,23,38,.05), 0 1px 3px rgba(14,23,38,.06);
+  --shadow-md:0 6px 16px rgba(14,23,38,.08), 0 2px 6px rgba(14,23,38,.05);
+  --shadow-lg:0 18px 48px rgba(14,23,38,.14), 0 6px 16px rgba(14,23,38,.08);
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:var(--font);
+  background:var(--bg);
+  color:var(--ink);
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+  font-size:14px;
+  line-height:1.45;
+}
+button{font-family:inherit;cursor:pointer}
+input,select{font-family:inherit}
+
+/* ============ GALLERY HEADER / SWITCHER ============ */
+.gbar{
+  position:sticky;top:0;z-index:60;
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  padding:12px 18px;
+  background:var(--card);
+  border-bottom:1px solid var(--line);
+  box-shadow:var(--shadow-sm);
+}
+.gbar .brand{display:flex;align-items:center;gap:10px;min-width:0}
+.gbar .dot{width:26px;height:26px;border-radius:8px;
+  background:
+    radial-gradient(120% 120% at 20% 15%, rgba(255,255,255,.55), rgba(255,255,255,0) 45%),
+    linear-gradient(135deg,var(--blue),#2E6BFF);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.25), var(--shadow-sm);
+}
+.gbar h1{font-size:15px;font-weight:700;margin:0;letter-spacing:-.01em;white-space:nowrap}
+.gbar .sub{font-size:12px;color:var(--ink-3);margin:0}
+.switcher{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
+.switcher button{
+  border:1px solid var(--line);background:var(--card);color:var(--ink-2);
+  padding:8px 12px;border-radius:10px;font-size:12.5px;font-weight:600;
+  display:flex;align-items:center;gap:8px;transition:all .16s ease;
+}
+.switcher button .num{
+  width:20px;height:20px;border-radius:6px;display:grid;place-items:center;
+  background:var(--line-2);color:var(--ink-2);font-size:11px;font-weight:800;
+}
+.switcher button:hover{border-color:var(--blue-200);color:var(--blue)}
+.switcher button[aria-selected="true"]{
+  border-color:var(--blue);background:var(--blue-050);color:var(--blue);
+  box-shadow:0 0 0 3px var(--blue-100);
+}
+.switcher button[aria-selected="true"] .num{background:var(--blue);color:#fff}
+
+/* variant caption */
+.caption{
+  padding:12px 18px;display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap;
+  background:linear-gradient(180deg,var(--card),var(--bg));
+  border-bottom:1px solid var(--line-2);
+}
+.caption .tag{
+  flex:0 0 auto;font-weight:800;font-size:12px;color:#fff;background:var(--blue);
+  padding:6px 10px;border-radius:8px;letter-spacing:.02em;
+}
+.caption b{color:var(--ink)}
+.caption p{margin:0;font-size:12.5px;color:var(--ink-2);max-width:70ch}
+.caption .who{color:var(--orange);font-weight:700}
+
+/* ============ STAGE ============ */
+.stage{padding:16px 18px 28px}
+.frame{
+  position:relative;
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:20px;
+  box-shadow:var(--shadow-md);
+  overflow:hidden;
+  height:min(74vh,720px);
+  min-height:520px;
+}
+
+/* ============ MAP ============ */
+.map{
+  position:absolute;inset:0;
+  background:
+    radial-gradient(80% 60% at 78% 18%, rgba(0,80,230,.05), rgba(0,80,230,0) 60%),
+    radial-gradient(70% 70% at 15% 88%, rgba(243,154,27,.05), rgba(243,154,27,0) 60%),
+    linear-gradient(180deg,#F4F8FF,#EFF3FA);
+}
+.map .grid{
+  position:absolute;inset:0;opacity:.5;
+  background-image:
+    linear-gradient(rgba(0,80,230,.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,80,230,.05) 1px, transparent 1px);
+  background-size:46px 46px;
+}
+.map .roads{position:absolute;inset:0;opacity:.55}
+.map .land{
+  position:absolute;border-radius:44% 56% 52% 48%/48% 44% 56% 52%;
+  background:radial-gradient(120% 120% at 30% 25%, rgba(255,255,255,.7), rgba(255,255,255,0) 60%),
+    linear-gradient(160deg,#FFFFFF,#F1F5FB);
+  box-shadow:inset 0 0 0 1px rgba(0,80,230,.06), 0 8px 30px rgba(14,23,38,.05);
+}
+.land.a{left:8%;top:14%;width:52%;height:58%}
+.land.b{right:6%;top:34%;width:44%;height:54%}
+.land.c{left:34%;bottom:6%;width:40%;height:40%}
+
+/* officine points */
+.pt{
+  position:absolute;width:15px;height:15px;border-radius:50%;
+  transform:translate(-50%,-50%);
+  background:var(--orange);
+  border:2px solid #fff;
+  box-shadow:0 1px 4px rgba(14,23,38,.35);
+  transition:opacity .2s ease, transform .16s ease, box-shadow .2s ease;
+  cursor:pointer;z-index:2;
+}
+.pt.client{background:var(--blue)}
+.pt.prospect{background:#fff;border-color:var(--orange);box-shadow:0 1px 4px rgba(14,23,38,.25), inset 0 0 0 3px var(--orange)}
+.pt:hover{transform:translate(-50%,-50%) scale(1.4);z-index:5;box-shadow:0 4px 12px rgba(14,23,38,.4)}
+.pt.is-hidden{opacity:0;pointer-events:none;transform:translate(-50%,-50%) scale(.4)}
+.pt.dim{opacity:.22}
+/* signal rings */
+.pt.sig::after{
+  content:"";position:absolute;inset:-6px;border-radius:50%;
+  border:2px solid var(--ring,var(--warn));
+  animation:ring 1.8s ease-out infinite;
+}
+@keyframes ring{0%{transform:scale(.7);opacity:.9}100%{transform:scale(1.5);opacity:0}}
+.pt.sig-rup{--ring:var(--warn)}
+.pt.sig-opp{--ring:var(--ok)}
+.pt.sig-gen{--ring:var(--purple)}
+
+/* map legend (bottom-right) */
+.legend{
+  position:absolute;right:14px;bottom:14px;z-index:6;
+  background:var(--card);border:1px solid var(--line);border-radius:12px;
+  padding:10px 12px;box-shadow:var(--shadow-md);font-size:11.5px;color:var(--ink-2);
+  display:grid;gap:6px;max-width:180px;
+}
+.legend .row{display:flex;align-items:center;gap:8px}
+.legend .k{width:11px;height:11px;border-radius:50%;flex:0 0 auto}
+.k.client{background:var(--blue)}
+.k.prospect{background:#fff;box-shadow:inset 0 0 0 3px var(--orange)}
+.k.rup{background:transparent;border:2px solid var(--warn)}
+.k.opp{background:transparent;border:2px solid var(--ok)}
+.k.gen{background:transparent;border:2px solid var(--purple)}
+
+/* result counter pill (shared) */
+.counter{
+  display:inline-flex;align-items:baseline;gap:6px;
+  font-weight:800;color:var(--ink);
+}
+.counter b{color:var(--blue);font-size:1.25em;font-variant-numeric:tabular-nums}
+.counter span{font-size:12px;font-weight:600;color:var(--ink-3)}
+
+/* ============ FORM CONTROLS (shared) ============ */
+.field label,.flabel{display:block;font-size:11px;font-weight:700;color:var(--ink-3);
+  text-transform:uppercase;letter-spacing:.04em;margin:0 0 7px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{
+  border:1px solid var(--line);background:var(--card);color:var(--ink-2);
+  padding:6px 11px;border-radius:999px;font-size:12px;font-weight:600;
+  transition:all .14s ease;white-space:nowrap;
+}
+.chip:hover{border-color:var(--blue-200);color:var(--blue)}
+.chip[aria-pressed="true"]{background:var(--blue);border-color:var(--blue);color:#fff;box-shadow:0 2px 6px var(--blue-200)}
+.chip.orange[aria-pressed="true"]{background:var(--orange);border-color:var(--orange)}
+.txt{
+  width:100%;border:1px solid var(--line);border-radius:10px;padding:9px 11px;font-size:13px;
+  color:var(--ink);background:var(--card);transition:border-color .14s, box-shadow .14s;
+}
+.txt::placeholder{color:var(--ink-3)}
+.txt:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-100)}
+select.txt{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2 4l4 4 4-4' stroke='%236A7688' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");background-repeat:no-repeat;background-position:right 11px center;padding-right:30px}
+
+/* dual range */
+.range{display:flex;flex-direction:column;gap:8px}
+.range .vals{display:flex;justify-content:space-between;font-size:12px;font-weight:700;color:var(--ink)}
+.range .sliders{position:relative;height:26px}
+.range input[type=range]{
+  -webkit-appearance:none;appearance:none;position:absolute;left:0;right:0;top:8px;width:100%;height:4px;
+  background:transparent;pointer-events:none;margin:0;
+}
+.range .track{position:absolute;left:0;right:0;top:8px;height:4px;border-radius:4px;background:var(--line)}
+.range .fill{position:absolute;top:8px;height:4px;border-radius:4px;background:var(--blue)}
+.range input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;appearance:none;width:18px;height:18px;border-radius:50%;
+  background:#fff;border:2px solid var(--blue);box-shadow:var(--shadow-sm);pointer-events:auto;cursor:grab;
+}
+.range input[type=range]::-moz-range-thumb{
+  width:18px;height:18px;border-radius:50%;background:#fff;border:2px solid var(--blue);
+  box-shadow:var(--shadow-sm);pointer-events:auto;cursor:grab;
+}
+
+.btn{
+  border:1px solid var(--line);background:var(--card);color:var(--ink-2);
+  padding:8px 12px;border-radius:10px;font-size:12.5px;font-weight:700;
+  display:inline-flex;align-items:center;gap:7px;transition:all .14s;
+}
+.btn:hover{border-color:var(--blue-200);color:var(--blue)}
+.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn.primary:hover{background:#0047cc}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--ink-3)}
+.btn.ghost:hover{color:var(--warn)}
+
+/* active-filter chips (removable) */
+.active-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.afchip{
+  display:inline-flex;align-items:center;gap:6px;
+  background:var(--blue-050);border:1px solid var(--blue-200);color:var(--blue);
+  padding:5px 6px 5px 10px;border-radius:999px;font-size:12px;font-weight:700;
+}
+.afchip .x{width:16px;height:16px;border-radius:50%;display:grid;place-items:center;
+  background:var(--blue-100);color:var(--blue);font-size:11px;line-height:1;border:none}
+.afchip .x:hover{background:var(--blue);color:#fff}
+.afchip .cat{font-weight:600;color:var(--blue);opacity:.65}
+
+/* section header inside panels */
+.pgroup{border-bottom:1px solid var(--line-2);padding:14px 0}
+.pgroup:first-child{padding-top:0}
+.pgroup:last-child{border-bottom:none}
+
+/* ===================================================================
+   VARIANT 1 — Panneau latéral gauche repliable
+   =================================================================== */
+.v1{display:grid;grid-template-columns:288px 1fr;height:100%}
+.v1.collapsed{grid-template-columns:56px 1fr}
+.v1 .side{
+  border-right:1px solid var(--line);background:var(--card);
+  display:flex;flex-direction:column;min-height:0;
+}
+.v1 .side-head{
+  display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line-2);
+}
+.v1 .side-head .ttl{font-weight:800;font-size:13px}
+.v1 .collapse{margin-left:auto;width:30px;height:30px;border-radius:8px;border:1px solid var(--line);
+  background:var(--card);display:grid;place-items:center;color:var(--ink-3)}
+.v1 .collapse:hover{color:var(--blue);border-color:var(--blue-200)}
+.v1 .side-scroll{overflow-y:auto;padding:14px 16px;flex:1;min-height:0}
+.v1 .side-foot{padding:12px 16px;border-top:1px solid var(--line-2);display:flex;gap:8px;align-items:center;
+  background:linear-gradient(180deg,rgba(0,80,230,.03),var(--card))}
+.v1.collapsed .side-scroll,.v1.collapsed .side-foot,.v1.collapsed .side-head .ttl{display:none}
+.v1 .mapwrap{position:relative}
+.v1 .rail{display:none}
+.v1.collapsed .rail{display:flex;flex-direction:column;gap:10px;padding:12px 0;align-items:center}
+.v1 .rail button{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:var(--card);
+  display:grid;place-items:center;color:var(--ink-3)}
+.v1 .rail button:hover{color:var(--blue);border-color:var(--blue-200)}
+.v1 .rail .badge{position:absolute}
+.v1 .floatcount{
+  position:absolute;left:16px;top:16px;z-index:6;background:var(--card);border:1px solid var(--line);
+  border-radius:12px;padding:9px 14px;box-shadow:var(--shadow-md);
+}
+
+/* ===================================================================
+   VARIANT 2 — Barre du haut + chips actifs (facettes e-commerce)
+   =================================================================== */
+.v2{display:flex;flex-direction:column;height:100%}
+.v2 .topbar{
+  background:var(--card);border-bottom:1px solid var(--line);
+}
+.v2 .facet-row{
+  display:flex;gap:8px;align-items:center;padding:12px 16px;flex-wrap:wrap;
+  border-bottom:1px solid var(--line-2);
+}
+.v2 .facet{position:relative}
+.v2 .facet>button{
+  border:1px solid var(--line);background:var(--card);color:var(--ink-2);
+  padding:8px 12px;border-radius:10px;font-size:12.5px;font-weight:600;
+  display:inline-flex;align-items:center;gap:8px;transition:all .14s;
+}
+.v2 .facet>button:hover{border-color:var(--blue-200);color:var(--blue)}
+.v2 .facet>button .cnt{background:var(--blue);color:#fff;font-size:10.5px;font-weight:800;
+  padding:1px 6px;border-radius:999px;min-width:17px;text-align:center}
+.v2 .facet>button[aria-expanded="true"]{border-color:var(--blue);color:var(--blue);box-shadow:0 0 0 3px var(--blue-100)}
+.v2 .facet .pop{
+  position:absolute;top:calc(100% + 8px);left:0;z-index:30;width:250px;
+  background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow-lg);
+  padding:14px;display:none;
+}
+.v2 .facet.open .pop{display:block}
+.v2 .search-inline{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.v2 .search-inline .txt{width:160px}
+.v2 .active-bar{
+  display:flex;gap:8px;align-items:center;padding:10px 16px;flex-wrap:wrap;min-height:46px;
+  background:linear-gradient(180deg,var(--blue-050),var(--card));
+}
+.v2 .active-bar .lbl{font-size:11px;font-weight:800;color:var(--ink-3);text-transform:uppercase;letter-spacing:.04em}
+.v2 .mapwrap{position:relative;flex:1;min-height:0}
+
+/* ===================================================================
+   VARIANT 3 — Tiroir "Filtres" qui glisse par-dessus
+   =================================================================== */
+.v3{position:relative;height:100%}
+.v3 .mapwrap{position:absolute;inset:0}
+.v3 .fab{
+  position:absolute;left:16px;top:16px;z-index:20;
+  background:var(--blue);color:#fff;border:none;border-radius:12px;padding:11px 16px;
+  font-weight:700;font-size:13px;display:inline-flex;align-items:center;gap:9px;box-shadow:var(--shadow-md);
+}
+.v3 .fab .cnt{background:rgba(255,255,255,.22);padding:1px 7px;border-radius:999px;font-size:11px}
+.v3 .fab:hover{background:#0047cc}
+.v3 .floatcount{
+  position:absolute;right:16px;top:16px;z-index:6;background:var(--card);border:1px solid var(--line);
+  border-radius:12px;padding:9px 14px;box-shadow:var(--shadow-md);
+}
+.v3 .scrim{
+  position:absolute;inset:0;z-index:25;background:rgba(14,23,38,.28);
+  opacity:0;visibility:hidden;transition:opacity .22s ease,visibility .22s;
+}
+.v3.open .scrim{opacity:1;visibility:visible}
+.v3 .drawer{
+  position:absolute;left:0;top:0;bottom:0;z-index:30;width:330px;max-width:88%;
+  background:var(--card);border-right:1px solid var(--line);box-shadow:var(--shadow-lg);
+  transform:translateX(-104%);transition:transform .26s cubic-bezier(.4,0,.2,1);
+  display:flex;flex-direction:column;
+}
+.v3.open .drawer{transform:translateX(0)}
+.v3 .drawer-head{display:flex;align-items:center;gap:10px;padding:16px;border-bottom:1px solid var(--line-2)}
+.v3 .drawer-head .ttl{font-weight:800;font-size:15px}
+.v3 .drawer-head .close{margin-left:auto;width:32px;height:32px;border-radius:9px;border:1px solid var(--line);
+  background:var(--card);color:var(--ink-3);display:grid;place-items:center}
+.v3 .drawer-head .close:hover{color:var(--warn);border-color:var(--line)}
+.v3 .drawer-scroll{overflow-y:auto;padding:16px;flex:1;min-height:0}
+.v3 .drawer-foot{padding:14px 16px;border-top:1px solid var(--line-2);display:flex;gap:8px}
+
+/* ===================================================================
+   VARIANT 4 — Barre compacte + menus déroulants (minimaliste)
+   =================================================================== */
+.v4{display:flex;flex-direction:column;height:100%}
+.v4 .combar{
+  display:flex;align-items:center;gap:8px;padding:11px 14px;background:var(--card);
+  border-bottom:1px solid var(--line);flex-wrap:nowrap;overflow-x:auto;
+}
+.v4 .combar::-webkit-scrollbar{height:0}
+.v4 .searchbox{position:relative;flex:0 0 auto;width:210px}
+.v4 .searchbox .txt{padding-left:32px}
+.v4 .searchbox svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--ink-3)}
+.v4 .mini{position:relative;flex:0 0 auto}
+.v4 .mini>button{
+  border:1px solid var(--line);background:var(--card);color:var(--ink-2);
+  padding:8px 11px;border-radius:9px;font-size:12.5px;font-weight:600;white-space:nowrap;
+  display:inline-flex;align-items:center;gap:6px;transition:all .14s;
+}
+.v4 .mini>button:hover{border-color:var(--blue-200);color:var(--blue)}
+.v4 .mini>button.active{border-color:var(--blue);background:var(--blue-050);color:var(--blue)}
+.v4 .mini>button svg{transition:transform .16s}
+.v4 .mini.open>button svg{transform:rotate(180deg)}
+.v4 .mini .drop{
+  position:absolute;top:calc(100% + 7px);left:0;z-index:30;min-width:210px;
+  background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow-lg);
+  padding:12px;display:none;
+}
+.v4 .mini.open .drop{display:block}
+.v4 .divider{width:1px;height:24px;background:var(--line);flex:0 0 auto;margin:0 2px}
+.v4 .combar .count-inline{margin-left:auto;flex:0 0 auto;padding-left:10px}
+.v4 .mapwrap{position:relative;flex:1;min-height:0}
+.v4 .sigbar{
+  position:absolute;left:16px;top:16px;z-index:6;display:flex;gap:6px;flex-wrap:wrap;
+}
+.v4 .sigbar .sigtog{
+  background:var(--card);border:1px solid var(--line);border-radius:999px;padding:6px 11px;
+  font-size:11.5px;font-weight:700;color:var(--ink-2);display:inline-flex;align-items:center;gap:6px;
+  box-shadow:var(--shadow-sm);
+}
+.v4 .sigbar .sigtog .d{width:9px;height:9px;border-radius:50%}
+.v4 .sigbar .sigtog[aria-pressed="true"]{color:#fff}
+.v4 .sigbar .sigtog.rup[aria-pressed="true"]{background:var(--warn);border-color:var(--warn)}
+.v4 .sigbar .sigtog.opp[aria-pressed="true"]{background:var(--ok);border-color:var(--ok)}
+.v4 .sigbar .sigtog.gen[aria-pressed="true"]{background:var(--purple);border-color:var(--purple)}
+
+/* signal group styling shared */
+.sig-group .sig-opt{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--line);
+  border-radius:10px;margin-bottom:7px;cursor:pointer;transition:all .14s}
+.sig-group .sig-opt:hover{border-color:var(--blue-200)}
+.sig-group .sig-opt.on{border-color:var(--blue);background:var(--blue-050)}
+.sig-group .sig-opt .d{width:11px;height:11px;border-radius:50%;flex:0 0 auto}
+.sig-group .sig-opt .d.rup{background:var(--warn)}
+.sig-group .sig-opt .d.opp{background:var(--ok)}
+.sig-group .sig-opt .d.gen{background:var(--purple)}
+.sig-group .sig-opt .t{font-size:12.5px;font-weight:600;color:var(--ink-2)}
+.sig-group .sig-opt .n{margin-left:auto;font-size:11px;color:var(--ink-3);font-weight:700}
+.sig-note{font-size:11px;color:var(--ink-3);margin:8px 2px 0;line-height:1.4}
+
+/* mobile filter FAB (v1 & v2) */
+.mobfab{display:none}
+
+/* ============ RESPONSIVE 390px ============ */
+@media (max-width:760px){
+  .stage{padding:10px}
+  .frame{height:82vh;border-radius:16px}
+  .caption{padding:10px 12px}
+  .caption p{font-size:12px}
+
+  /* V1 -> side becomes slide-over drawer */
+  .v1{grid-template-columns:1fr}
+  .v1 .side{position:absolute;left:0;top:0;bottom:0;z-index:40;width:86%;max-width:320px;
+    transform:translateX(-104%);transition:transform .25s ease;box-shadow:var(--shadow-lg)}
+  .v1.msopen .side{transform:translateX(0)}
+  .v1 .collapse{display:none}
+  .v1 .rail{display:none !important}
+  .v1.collapsed{grid-template-columns:1fr}
+  .v1.collapsed .side-scroll,.v1.collapsed .side-foot,.v1.collapsed .side-head .ttl{display:flex}
+  .v1.collapsed .side-scroll{display:block}
+
+  /* V2 -> facet row scrolls, search full width */
+  .v2 .facet-row{flex-wrap:nowrap;overflow-x:auto}
+  .v2 .search-inline{margin-left:0;width:100%;order:5}
+  .v2 .search-inline .txt{flex:1;width:auto}
+  .v2 .facet .pop{position:fixed;left:8px;right:8px;width:auto;top:auto;bottom:8px}
+
+  /* V4 combar already scrolls */
+  .v4 .searchbox{width:150px}
+
+  /* generic mobile FAB */
+  .mobfab{
+    display:inline-flex;position:absolute;left:12px;bottom:12px;z-index:22;align-items:center;gap:8px;
+    background:var(--blue);color:#fff;border:none;border-radius:999px;padding:11px 16px;font-weight:700;
+    font-size:13px;box-shadow:var(--shadow-lg);
+  }
+  .mobfab .cnt{background:rgba(255,255,255,.22);padding:1px 7px;border-radius:999px;font-size:11px}
+  .switcher button .lbl{display:none}
+}
+
+/* reduced motion */
+@media (prefers-reduced-motion:reduce){
+  *{animation:none !important;transition:none !important}
+  .pt.sig::after{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="gbar">
+  <div class="brand">
+    <div class="dot" aria-hidden="true"></div>
+    <div>
+      <h1>Carte des officines — filtrage</h1>
+      <p class="sub">Maquette · 4 directions à comparer · données fictives</p>
+    </div>
+  </div>
+  <nav class="switcher" role="tablist" aria-label="Choix de la direction">
+    <button role="tab" data-v="1" aria-selected="true"><span class="num">1</span><span class="lbl">Panneau latéral</span></button>
+    <button role="tab" data-v="2" aria-selected="false"><span class="num">2</span><span class="lbl">Barre + chips</span></button>
+    <button role="tab" data-v="3" aria-selected="false"><span class="num">3</span><span class="lbl">Tiroir</span></button>
+    <button role="tab" data-v="4" aria-selected="false"><span class="num">4</span><span class="lbl">Compacte</span></button>
+  </nav>
+</header>
+
+<div class="caption" id="caption"></div>
+
+<main class="stage">
+  <div class="frame" id="frame"></div>
+</main>
+
+<script>
+/* =====================================================================
+   DONNÉES FICTIVES (réalistes) — générées de façon déterministe
+   ===================================================================== */
+const COMMERCIAUX = ["Karine V.","Pauline G.","Manon D.","Florent M.","Arthur L."];
+const GROUPEMENTS = ["Giphar","Aprium","Pharmabest","Leadersanté","Wellpharma","Elsie Santé","Indépendant"];
+const UGAS = ["UGA Loire-Nord","UGA Vilaine","UGA Bretagne-Sud","UGA Ouest-Océan","UGA Anjou"];
+const DEPTS = ["44","49","35","56","29","85"];
+const VILLES = {
+  "44":["Nantes","Saint-Nazaire","Rezé","Saint-Herblain","Vertou","Guérande"],
+  "49":["Angers","Cholet","Saumur","Trélazé","Avrillé"],
+  "35":["Rennes","Saint-Malo","Fougères","Vitré","Cesson-Sévigné"],
+  "56":["Vannes","Lorient","Lanester","Ploemeur","Auray"],
+  "29":["Brest","Quimper","Concarneau","Morlaix","Landerneau"],
+  "85":["La Roche-sur-Yon","Les Sables-d'Olonne","Challans","Fontenay-le-Comte"]
+};
+const NOMS_PHARMA = ["Pharmacie du Centre","Pharmacie des Halles","Pharmacie de la Gare","Grande Pharmacie",
+  "Pharmacie du Marché","Pharmacie de la Mairie","Pharmacie Saint-Michel","Pharmacie de l'Océan",
+  "Pharmacie du Port","Pharmacie de la Place","Pharmacie Centrale","Pharmacie des Lices",
+  "Pharmacie de la Fontaine","Pharmacie du Château","Pharmacie de l'Église","Pharmacie du Parc"];
+const TITULAIRES = ["M. Berthier","Mme Le Guen","M. Caron","Mme Dubois","M. Renaud","Mme Faure",
+  "M. Guillou","Mme Moreau","M. Tanguy","Mme Colin","M. Rossi","Mme Perrin","M. Léost","Mme Aubry"];
+
+// déterministe
+let seed=42; function rnd(){seed=(seed*1103515245+12345)&0x7fffffff;return seed/0x7fffffff;}
+function pick(a){return a[Math.floor(rnd()*a.length)];}
+
+const OFFICINES=[];
+for(let i=0;i<48;i++){
+  const dept=pick(DEPTS);
+  const ville=pick(VILLES[dept]);
+  const statut=rnd()<0.58?"client":"prospect";
+  const o={
+    id:i,
+    nom:pick(NOMS_PHARMA)+" — "+ville,
+    ville, dept,
+    statut,
+    commercial:pick(COMMERCIAUX),
+    groupement:pick(GROUPEMENTS),
+    uga:pick(UGAS),
+    titulaire:pick(TITULAIRES),
+    ca: Math.round((60+rnd()*440))*1000, // 60k -> 500k
+    sig:{
+      rup: rnd()<0.20,
+      opp: rnd()<0.26,
+      gen: rnd()<0.22
+    },
+    x: 8+rnd()*84,
+    y: 12+rnd()*76
+  };
+  OFFICINES.push(o);
+}
+
+/* =====================================================================
+   ÉTAT DES FILTRES (partagé entre les 4 variantes)
+   ===================================================================== */
+const CA_MIN=0, CA_MAX=500000;
+const state={
+  statut:new Set(),
+  commercial:new Set(),
+  uga:new Set(),
+  groupement:new Set(),
+  dept:new Set(),
+  caMin:CA_MIN, caMax:CA_MAX,
+  titulaire:"",
+  ville:"",
+  signaux:new Set() // rup / opp / gen (couche de mise en évidence)
+};
+
+function eur(n){return (n/1000).toFixed(0)+" k€";}
+
+function matches(o){
+  if(state.statut.size && !state.statut.has(o.statut)) return false;
+  if(state.commercial.size && !state.commercial.has(o.commercial)) return false;
+  if(state.uga.size && !state.uga.has(o.uga)) return false;
+  if(state.groupement.size && !state.groupement.has(o.groupement)) return false;
+  if(state.dept.size && !state.dept.has(o.dept)) return false;
+  if(o.ca<state.caMin || o.ca>state.caMax) return false;
+  if(state.titulaire && !o.titulaire.toLowerCase().includes(state.titulaire.toLowerCase())) return false;
+  if(state.ville && !o.ville.toLowerCase().includes(state.ville.toLowerCase())) return false;
+  return true;
+}
+function signalOn(o){
+  if(!state.signaux.size) return true; // pas de couche => tout le monde "normal"
+  return (state.signaux.has("rup")&&o.sig.rup) ||
+         (state.signaux.has("opp")&&o.sig.opp) ||
+         (state.signaux.has("gen")&&o.sig.gen);
+}
+function activeCount(){
+  return state.statut.size+state.commercial.size+state.uga.size+
+    state.groupement.size+state.dept.size+
+    (state.caMin>CA_MIN||state.caMax<CA_MAX?1:0)+
+    (state.titulaire?1:0)+(state.ville?1:0);
+}
+
+/* liste des filtres actifs pour les chips retirables */
+function activeChips(){
+  const c=[];
+  const addSet=(cat,set,color)=>{ set.forEach(v=>c.push({cat,label:v,color,clear:()=>set.delete(v)})); };
+  addSet("Statut",state.statut);
+  addSet("Commercial",state.commercial);
+  addSet("UGA",state.uga);
+  addSet("Groupement",state.groupement);
+  addSet("Dépt",state.dept);
+  if(state.caMin>CA_MIN||state.caMax<CA_MAX)
+    c.push({cat:"CA",label:eur(state.caMin)+" – "+eur(state.caMax),clear:()=>{state.caMin=CA_MIN;state.caMax=CA_MAX;}});
+  if(state.titulaire) c.push({cat:"Titulaire",label:state.titulaire,clear:()=>state.titulaire=""});
+  if(state.ville) c.push({cat:"Ville",label:state.ville,clear:()=>state.ville=""});
+  return c;
+}
+function resetAll(){
+  ["statut","commercial","uga","groupement","dept","signaux"].forEach(k=>state[k].clear());
+  state.caMin=CA_MIN;state.caMax=CA_MAX;state.titulaire="";state.ville="";
+}
+
+/* =====================================================================
+   RENDU CARTE + RAFRAÎCHISSEMENT (commun)
+   ===================================================================== */
+function mapHTML(){
+  let pts="";
+  OFFICINES.forEach(o=>{
+    pts+=`<button class="pt ${o.statut}" data-id="${o.id}" style="left:${o.x}%;top:${o.y}%"
+      title="${o.nom}"></button>`;
+  });
+  return `<div class="map">
+    <div class="grid"></div>
+    <svg class="roads" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M4,30 C30,20 55,42 96,28" stroke="rgba(0,80,230,.10)" stroke-width="1.1" fill="none"/>
+      <path d="M10,72 C40,62 60,80 92,66" stroke="rgba(0,80,230,.10)" stroke-width="1.1" fill="none"/>
+      <path d="M50,4 C46,35 58,60 52,96" stroke="rgba(0,80,230,.08)" stroke-width="1" fill="none"/>
+    </svg>
+    <div class="land a"></div><div class="land b"></div><div class="land c"></div>
+    ${pts}
+    <div class="legend" aria-hidden="true">
+      <div class="row"><span class="k client"></span> Client</div>
+      <div class="row"><span class="k prospect"></span> Prospect</div>
+      <div class="row"><span class="k rup"></span> Rupture</div>
+      <div class="row"><span class="k opp"></span> Opportunité</div>
+      <div class="row"><span class="k gen"></span> Potentiel génériques</div>
+    </div>
+  </div>`;
+}
+
+/* met à jour les points, les compteurs, les chips — sur toute la scène active */
+function refresh(){
+  const scene=document.getElementById("frame");
+  const layerOn=state.signaux.size>0;
+  let n=0;
+  scene.querySelectorAll(".pt").forEach(el=>{
+    const o=OFFICINES[+el.dataset.id];
+    const ok=matches(o);
+    el.classList.toggle("is-hidden",!ok);
+    if(ok) n++;
+    // couche signaux
+    el.classList.remove("sig","sig-rup","sig-opp","sig-gen","dim");
+    if(ok && layerOn){
+      const hi=signalOn(o);
+      if(hi){
+        el.classList.add("sig");
+        if(state.signaux.has("rup")&&o.sig.rup) el.classList.add("sig-rup");
+        else if(state.signaux.has("opp")&&o.sig.opp) el.classList.add("sig-opp");
+        else if(state.signaux.has("gen")&&o.sig.gen) el.classList.add("sig-gen");
+      } else {
+        el.classList.add("dim");
+      }
+    }
+  });
+  // compteurs
+  scene.querySelectorAll("[data-count]").forEach(el=>{
+    el.innerHTML=`<span class="counter"><b>${n}</b><span>officine${n>1?"s":""}</span></span>`;
+  });
+  // badge nb filtres actifs
+  const ac=activeCount();
+  scene.querySelectorAll("[data-activebadge]").forEach(el=>{
+    el.textContent=ac; el.style.display=ac?"":"none";
+  });
+  // chips actifs
+  scene.querySelectorAll("[data-activechips]").forEach(box=>{
+    const chips=activeChips();
+    if(!chips.length){box.innerHTML='<span style="font-size:12px;color:var(--ink-3)">Aucun filtre actif — toutes les officines sont affichées.</span>';return;}
+    box.innerHTML=chips.map((c,i)=>
+      `<span class="afchip"><span class="cat">${c.cat} :</span> ${c.label}
+        <button class="x" data-chip="${i}" aria-label="Retirer">✕</button></span>`).join("")
+      +`<button class="btn ghost" data-resetchips>Tout effacer</button>`;
+    box._chips=chips;
+  });
+  // reflète l'état visuel des contrôles (chips/selects/toggles) sur la scène
+  syncControls(scene);
+}
+
+/* synchronise l'apparence des contrôles avec state (utile après reset/retrait) */
+function syncControls(scene){
+  scene.querySelectorAll("[data-facet][data-val]").forEach(btn=>{
+    const set=state[btn.dataset.facet];
+    if(set&&set.add) btn.setAttribute("aria-pressed", set.has(btn.dataset.val)?"true":"false");
+  });
+  scene.querySelectorAll("[data-selfacet]").forEach(sel=>{
+    // selects multiples représentés par <select> simple => on garde tel quel
+  });
+  scene.querySelectorAll("[data-txt]").forEach(inp=>{ if(document.activeElement!==inp) inp.value=state[inp.dataset.txt]; });
+  scene.querySelectorAll("[data-sig]").forEach(btn=>{
+    btn.setAttribute("aria-pressed", state.signaux.has(btn.dataset.sig)?"true":"false");
+    btn.closest(".sig-opt")?.classList.toggle("on",state.signaux.has(btn.dataset.sig));
+  });
+  // compteurs par facette (v2)
+  scene.querySelectorAll("[data-facetcount]").forEach(el=>{
+    const s=state[el.dataset.facetcount];
+    const has = s&&s.size;
+    el.textContent=has||"";
+    el.style.display=has?"":"none";
+  });
+}
+
+/* =====================================================================
+   BLOCS DE FILTRES RÉUTILISABLES (HTML)
+   ===================================================================== */
+function chipSet(facet,values,orange){
+  return `<div class="chips">`+values.map(v=>
+    `<button class="chip ${orange?'orange':''}" data-facet="${facet}" data-val="${v}"
+      aria-pressed="false">${v}</button>`).join("")+`</div>`;
+}
+function rangeBlock(){
+  return `<div class="range" data-range>
+    <div class="vals"><span data-rlow>${eur(state.caMin)}</span><span data-rhigh>${eur(state.caMax)}</span></div>
+    <div class="sliders">
+      <div class="track"></div><div class="fill" data-rfill></div>
+      <input type="range" min="${CA_MIN}" max="${CA_MAX}" step="10000" value="${state.caMin}" data-rmin>
+      <input type="range" min="${CA_MIN}" max="${CA_MAX}" step="10000" value="${state.caMax}" data-rmax>
+    </div>
+  </div>`;
+}
+function signalBlock(){
+  return `<div class="sig-group">
+    <label class="sig-opt"><span class="d rup"></span><span class="t">Rupture en cours</span>
+      <span class="n">${OFFICINES.filter(o=>o.sig.rup).length}</span>
+      <input type="checkbox" data-sig="rup" hidden></label>
+    <label class="sig-opt"><span class="d opp"></span><span class="t">Opportunité détectée</span>
+      <span class="n">${OFFICINES.filter(o=>o.sig.opp).length}</span>
+      <input type="checkbox" data-sig="opp" hidden></label>
+    <label class="sig-opt"><span class="d gen"></span><span class="t">Potentiel génériques</span>
+      <span class="n">${OFFICINES.filter(o=>o.sig.gen).length}</span>
+      <input type="checkbox" data-sig="gen" hidden></label>
+    <p class="sig-note">Couche d'affichage : met en évidence les officines concernées sur la carte, sans masquer les autres.</p>
+  </div>`;
+}
+
+/* ensemble complet des filtres (empilés) — utilisé par V1 & V3 */
+function fullFilters(){
+  return `
+    <div class="pgroup"><span class="flabel">Statut</span>${chipSet("statut",["client","prospect"],true)}</div>
+    <div class="pgroup"><span class="flabel">Commercial</span>${chipSet("commercial",COMMERCIAUX)}</div>
+    <div class="pgroup"><span class="flabel">Département</span>${chipSet("dept",DEPTS)}</div>
+    <div class="pgroup"><span class="flabel">UGA</span>${chipSet("uga",UGAS)}</div>
+    <div class="pgroup"><span class="flabel">Groupement</span>${chipSet("groupement",GROUPEMENTS)}</div>
+    <div class="pgroup"><span class="flabel">Tranche de CA annuel</span>${rangeBlock()}</div>
+    <div class="pgroup"><span class="flabel">Recherche</span>
+      <div style="display:grid;gap:8px">
+        <input class="txt" data-txt="ville" placeholder="Ville…">
+        <input class="txt" data-txt="titulaire" placeholder="Titulaire…">
+      </div>
+    </div>
+    <div class="pgroup"><span class="flabel">Signaux</span>${signalBlock()}</div>
+  `;
+}
+
+/* =====================================================================
+   VARIANTE 1 — Panneau latéral gauche repliable
+   ===================================================================== */
+function renderV1(){
+  const frame=document.getElementById("frame");
+  frame.innerHTML=`
+  <div class="v1" id="v1">
+    <aside class="side">
+      <div class="side-head">
+        <span class="ttl">Filtres</span>
+        <span class="afchip" style="padding:3px 9px"><b data-activebadge>0</b></span>
+        <button class="collapse" id="v1collapse" title="Replier">‹</button>
+      </div>
+      <div class="side-scroll">${fullFilters()}</div>
+      <div class="side-foot">
+        <div data-count style="flex:1"></div>
+        <button class="btn ghost" data-reset>Réinitialiser</button>
+      </div>
+    </aside>
+    <div class="rail" title="Panneau replié">
+      <button id="v1expand" title="Déplier les filtres">☰</button>
+    </div>
+    <div class="mapwrap">
+      ${mapHTML()}
+      <div class="floatcount" data-count></div>
+      <button class="mobfab" data-msopen>Filtres <span class="cnt" data-activebadge>0</span></button>
+    </div>
+  </div>`;
+  wireFilters(frame);
+  const v1=document.getElementById("v1");
+  document.getElementById("v1collapse").onclick=()=>v1.classList.add("collapsed");
+  document.getElementById("v1expand").onclick=()=>v1.classList.remove("collapsed");
+  frame.querySelector("[data-msopen]").onclick=()=>v1.classList.toggle("msopen");
+  refresh();
+}
+
+/* =====================================================================
+   VARIANTE 2 — Barre du haut + chips actifs (facettes e-commerce)
+   ===================================================================== */
+function facetPop(facet,label,values,orange){
+  return `<div class="facet" data-facetwrap>
+    <button data-facettoggle aria-expanded="false">${label}
+      <span class="cnt" data-facetcount="${facet}" style="display:none"></span></button>
+    <div class="pop">
+      <span class="flabel">${label}</span>${chipSet(facet,values,orange)}
+    </div>
+  </div>`;
+}
+function renderV2(){
+  const frame=document.getElementById("frame");
+  frame.innerHTML=`
+  <div class="v2">
+    <div class="topbar">
+      <div class="facet-row">
+        ${facetPop("statut","Statut",["client","prospect"],true)}
+        ${facetPop("commercial","Commercial",COMMERCIAUX)}
+        ${facetPop("dept","Département",DEPTS)}
+        ${facetPop("uga","UGA",UGAS)}
+        ${facetPop("groupement","Groupement",GROUPEMENTS)}
+        <div class="facet" data-facetwrap>
+          <button data-facettoggle aria-expanded="false">Tranche de CA
+            <span class="cnt" data-facetcount="ca" style="display:none"></span></button>
+          <div class="pop"><span class="flabel">CA annuel</span>${rangeBlock()}</div>
+        </div>
+        <div class="facet" data-facetwrap>
+          <button data-facettoggle aria-expanded="false">Signaux
+            <span class="cnt" data-facetcount="signaux" style="display:none"></span></button>
+          <div class="pop"><span class="flabel">Signaux</span>${signalBlock()}</div>
+        </div>
+        <div class="search-inline">
+          <input class="txt" data-txt="ville" placeholder="Ville…">
+          <input class="txt" data-txt="titulaire" placeholder="Titulaire…">
+        </div>
+      </div>
+      <div class="active-bar">
+        <span class="lbl">Actifs</span>
+        <div class="active-row" data-activechips style="flex:1"></div>
+        <span data-count></span>
+      </div>
+    </div>
+    <div class="mapwrap">
+      ${mapHTML()}
+    </div>
+  </div>`;
+  wireFilters(frame);
+  // facet toggles
+  frame.querySelectorAll("[data-facetwrap]").forEach(w=>{
+    const btn=w.querySelector("[data-facettoggle]");
+    btn.onclick=(e)=>{
+      e.stopPropagation();
+      const open=w.classList.contains("open");
+      frame.querySelectorAll("[data-facetwrap]").forEach(x=>{x.classList.remove("open");x.querySelector("[data-facettoggle]").setAttribute("aria-expanded","false")});
+      if(!open){w.classList.add("open");btn.setAttribute("aria-expanded","true")}
+    };
+  });
+  document.addEventListener("click",closeV2Pops);
+  refresh();
+}
+function closeV2Pops(e){
+  document.querySelectorAll("#frame [data-facetwrap].open").forEach(w=>{
+    if(!w.contains(e.target)){w.classList.remove("open");w.querySelector("[data-facettoggle]").setAttribute("aria-expanded","false")}
+  });
+}
+
+/* =====================================================================
+   VARIANTE 3 — Tiroir qui glisse par-dessus
+   ===================================================================== */
+function renderV3(){
+  const frame=document.getElementById("frame");
+  frame.innerHTML=`
+  <div class="v3" id="v3">
+    <div class="mapwrap">
+      ${mapHTML()}
+      <button class="fab" id="v3open">☰ Filtres <span class="cnt" data-activebadge>0</span></button>
+      <div class="floatcount" data-count></div>
+    </div>
+    <div class="scrim" id="v3scrim"></div>
+    <aside class="drawer">
+      <div class="drawer-head">
+        <span class="ttl">Filtres</span>
+        <span data-count></span>
+        <button class="close" id="v3close">✕</button>
+      </div>
+      <div class="drawer-scroll">${fullFilters()}</div>
+      <div class="drawer-foot">
+        <button class="btn primary" id="v3apply" style="flex:1">Voir les résultats</button>
+        <button class="btn" data-reset>Réinitialiser</button>
+      </div>
+    </aside>
+  </div>`;
+  wireFilters(frame);
+  const v3=document.getElementById("v3");
+  const open=()=>v3.classList.add("open"), close=()=>v3.classList.remove("open");
+  document.getElementById("v3open").onclick=open;
+  document.getElementById("v3close").onclick=close;
+  document.getElementById("v3scrim").onclick=close;
+  document.getElementById("v3apply").onclick=close;
+  refresh();
+}
+
+/* =====================================================================
+   VARIANTE 4 — Barre compacte + menus déroulants (minimaliste)
+   ===================================================================== */
+function miniDrop(facet,label,values,orange){
+  return `<div class="mini" data-miniwrap>
+    <button data-minitoggle>${label}
+      <svg width="11" height="11" viewBox="0 0 12 12"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <div class="drop"><span class="flabel">${label}</span>${chipSet(facet,values,orange)}</div>
+  </div>`;
+}
+function renderV4(){
+  const frame=document.getElementById("frame");
+  frame.innerHTML=`
+  <div class="v4" id="v4">
+    <div class="combar">
+      <div class="searchbox">
+        <svg width="15" height="15" viewBox="0 0 16 16"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M11 11l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <input class="txt" data-txt="ville" placeholder="Ville ou titulaire…" data-searchboth>
+      </div>
+      <div class="divider"></div>
+      ${miniDrop("statut","Statut",["client","prospect"],true)}
+      ${miniDrop("commercial","Commercial",COMMERCIAUX)}
+      ${miniDrop("dept","Dépt",DEPTS)}
+      ${miniDrop("uga","UGA",UGAS)}
+      ${miniDrop("groupement","Groupement",GROUPEMENTS)}
+      <div class="mini" data-miniwrap>
+        <button data-minitoggle>CA
+          <svg width="11" height="11" viewBox="0 0 12 12"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <div class="drop" style="min-width:230px"><span class="flabel">Tranche de CA annuel</span>${rangeBlock()}</div>
+      </div>
+      <button class="btn ghost" data-reset>Effacer</button>
+      <div class="count-inline" data-count></div>
+    </div>
+    <div class="mapwrap">
+      ${mapHTML()}
+      <div class="sigbar">
+        <button class="sigtog rup" data-sig="rup" aria-pressed="false"><span class="d" style="background:var(--warn)"></span>Ruptures</button>
+        <button class="sigtog opp" data-sig="opp" aria-pressed="false"><span class="d" style="background:var(--ok)"></span>Opportunités</button>
+        <button class="sigtog gen" data-sig="gen" aria-pressed="false"><span class="d" style="background:var(--purple)"></span>Génériques</button>
+      </div>
+    </div>
+  </div>`;
+  wireFilters(frame);
+  // menus
+  frame.querySelectorAll("[data-miniwrap]").forEach(w=>{
+    const btn=w.querySelector("[data-minitoggle]");
+    btn.onclick=(e)=>{
+      e.stopPropagation();
+      const open=w.classList.contains("open");
+      frame.querySelectorAll("[data-miniwrap]").forEach(x=>x.classList.remove("open"));
+      if(!open) w.classList.add("open");
+    };
+  });
+  document.addEventListener("click",closeV4Drops);
+  // recherche combinée ville+titulaire
+  const sb=frame.querySelector("[data-searchboth]");
+  sb.oninput=()=>{state.ville=sb.value;state.titulaire=sb.value;refreshKeepFocus(sb);};
+  refresh();
+}
+function closeV4Drops(e){
+  document.querySelectorAll("#frame [data-miniwrap].open").forEach(w=>{if(!w.contains(e.target))w.classList.remove("open")});
+}
+
+/* =====================================================================
+   CÂBLAGE COMMUN DES CONTRÔLES
+   ===================================================================== */
+function refreshKeepFocus(inp){ refresh(); if(inp) inp.focus(); }
+
+function wireFilters(scope){
+  // chips multi-select
+  scope.querySelectorAll("[data-facet][data-val]").forEach(btn=>{
+    btn.onclick=()=>{
+      const set=state[btn.dataset.facet];
+      if(set.has(btn.dataset.val)) set.delete(btn.dataset.val); else set.add(btn.dataset.val);
+      refresh();
+    };
+  });
+  // textes
+  scope.querySelectorAll("[data-txt]").forEach(inp=>{
+    if(inp.hasAttribute("data-searchboth")) return; // géré à part
+    inp.value=state[inp.dataset.txt];
+    inp.oninput=()=>{state[inp.dataset.txt]=inp.value;refreshKeepFocus(inp);};
+  });
+  // signaux
+  scope.querySelectorAll("[data-sig]").forEach(el=>{
+    const handler=()=>{
+      const k=el.dataset.sig;
+      if(state.signaux.has(k)) state.signaux.delete(k); else state.signaux.add(k);
+      refresh();
+    };
+    if(el.tagName==="INPUT"){ el.onchange=handler; }
+    else { el.onclick=handler; }
+  });
+  // dual range
+  scope.querySelectorAll("[data-range]").forEach(r=>{
+    const min=r.querySelector("[data-rmin]"), max=r.querySelector("[data-rmax]");
+    const low=r.querySelector("[data-rlow]"), high=r.querySelector("[data-rhigh]");
+    const fill=r.querySelector("[data-rfill]");
+    min.value=state.caMin; max.value=state.caMax;
+    const paint=()=>{
+      let a=+min.value,b=+max.value;
+      if(a>b-10000){ if(document.activeElement===min){a=b-10000;min.value=a;} else {b=a+10000;max.value=b;} }
+      state.caMin=a;state.caMax=b;
+      low.textContent=eur(a);high.textContent=eur(b);
+      const pa=(a-CA_MIN)/(CA_MAX-CA_MIN)*100, pb=(b-CA_MIN)/(CA_MAX-CA_MIN)*100;
+      fill.style.left=pa+"%";fill.style.width=(pb-pa)+"%";
+      refresh();
+    };
+    min.oninput=paint;max.oninput=paint;paint();
+  });
+  // reset
+  scope.querySelectorAll("[data-reset]").forEach(b=>b.onclick=()=>{resetAll();rerenderCurrent();});
+  // retrait de chips actifs (délégation)
+  scope.querySelectorAll("[data-activechips]").forEach(box=>{
+    box.onclick=(e)=>{
+      const x=e.target.closest("[data-chip]");
+      if(x){ box._chips[+x.dataset.chip].clear(); rerenderCurrent(); return; }
+      if(e.target.closest("[data-resetchips]")){ resetAll(); rerenderCurrent(); }
+    };
+  });
+}
+
+/* =====================================================================
+   ROUTAGE DES VARIANTES
+   ===================================================================== */
+const CAPTIONS={
+  1:{tag:"Direction 1",name:"Panneau latéral repliable",
+     desc:"Tous les filtres empilés dans une colonne à gauche, avec compteur de résultats en direct. On replie la colonne pour rendre la carte plein écran.",
+     who:"Pour un usage bureau quotidien : on garde les filtres sous les yeux et on affine en continu."},
+  2:{tag:"Direction 2",name:"Barre du haut + chips actifs",
+     desc:"Chaque filtre est un bouton en haut qui ouvre un petit menu ; les filtres choisis s'affichent en pastilles retirables, façon site e-commerce.",
+     who:"Pour ceux qui aiment voir d'un coup d'œil ce qui est filtré et retirer un critère en un clic."},
+  3:{tag:"Direction 3",name:"Tiroir qui glisse par-dessus",
+     desc:"La carte occupe tout l'écran. Un bouton « Filtres » ouvre un tiroir latéral au-dessus de la carte ; on valide et le tiroir se referme.",
+     who:"Pour privilégier la carte au maximum, idéal en présentation et sur mobile."},
+  4:{tag:"Direction 4",name:"Barre compacte + menus déroulants",
+     desc:"Une seule barre fine : recherche à gauche, filtres en menus déroulants, et les signaux en interrupteurs directement sur la carte.",
+     who:"Pour un rendu épuré et rapide, quand on filtre par petites touches sans encombrer l'écran."}
+};
+const RENDERERS={1:renderV1,2:renderV2,3:renderV3,4:renderV4};
+let current=1;
+
+function setVariant(n){
+  current=n;
+  document.querySelectorAll(".switcher button").forEach(b=>b.setAttribute("aria-selected", (+b.dataset.v===n)?"true":"false"));
+  const c=CAPTIONS[n];
+  document.getElementById("caption").innerHTML=
+    `<span class="tag">${c.tag}</span>
+     <p><b>${c.name}.</b> ${c.desc} <span class="who">${c.who}</span></p>`;
+  RENDERERS[n]();
+}
+function rerenderCurrent(){ RENDERERS[current](); }
+
+document.querySelectorAll(".switcher button").forEach(b=>b.onclick=()=>{location.hash=b.dataset.v;setVariant(+b.dataset.v)});
+window.addEventListener("hashchange",()=>{const n=+location.hash.replace("#","");if(RENDERERS[n])setVariant(n)});
+const start=+location.hash.replace("#","");
+setVariant(RENDERERS[start]?start:1);
+</script>
+</body>
+</html>
