@@ -46,11 +46,49 @@
   function numero(s) { return String(s || '').replace(/[^0-9+]/g, ''); }
   function carte(html) { return '<div class="carte">' + html + '</div>'; }
 
+  // ── L'en-tête « qui vous écrit », commun à TOUS les écrans ──────
+  // ⚠️ Seul l'écran des créneaux le portait ; les cinq autres — le formulaire
+  // d'identification, la confirmation, « mon rendez-vous », les préférences,
+  // les messages d'erreur — restaient anonymes. Un pharmacien qui a lu un nom
+  // sur le premier écran et plus rien ensuite se demande où il est tombé.
+  //
+  // Le prénom vient de la fenêtre quand elle est chargée ; avant ça, il est
+  // dans l'adresse elle-même (« /rdv/william »), qui n'est rien d'autre que
+  // le prénom du commercial. À défaut, on signe au moins de la maison.
+  function prenomConnu() {
+    var c = (F && F.commercial) || {};
+    if (c.prenom) return c.prenom;
+    if (pslug) return pslug.charAt(0).toUpperCase() + pslug.slice(1);
+    return '';
+  }
+
+  function enTete() {
+    var nom = prenomConnu();
+    var ini = (nom || 'IP').charAt(0).toUpperCase();
+    return '<div class="qui"><span class="av">' + esc(ini) + '</span>' +
+      '<span><b>' + esc(nom || 'Intégral Pharma') + '</b>' +
+      '<small>' + (nom ? 'Intégral Pharma · votre secteur' : 'Prise de rendez-vous') +
+      '</small></span></div>';
+  }
+
+  // Les recours, toujours sous la même forme : de vrais boutons de 48 px,
+  // jamais un mot souligné de 17 px au milieu d'un paragraphe.
+  function recours(boutons) {
+    var b = (boutons || []).filter(Boolean);
+    return b.length ? '<div class="secours">' + b.join('') + '</div>' : '';
+  }
+  function boutonTel() {
+    var c = (F && F.commercial) || {};
+    return c.tel ? '<a href="tel:' + esc(numero(c.tel)) + '">' + esc(telLisible(c.tel)) + '</a>' : '';
+  }
+
   function secours(msg) {
-    var c = F && F.commercial;
-    app.innerHTML = carte('<p class="err">' + esc(msg) + '</p>' +
-      (c && c.tel ? '<p>Vous pouvez joindre ' + esc(c.prenom) +
-        ' au <a href="tel:' + esc(numero(c.tel)) + '">' + esc(c.tel) + '</a>.</p>' : ''));
+    var c = (F && F.commercial) || {};
+    app.innerHTML = enTete() +
+      carte('<p class="err">' + esc(msg) + '</p>' +
+        (c.tel ? '<p style="margin-top:10px">Vous pouvez joindre ' + esc(c.prenom) +
+          ' directement.</p>' : '')) +
+      recours([boutonTel()]);
   }
 
   function demarrer() {
@@ -127,9 +165,10 @@
 
   // ─── Lien permanent : qui êtes-vous ? ────────────────────────────
   function formulaireOfficine() {
-    app.innerHTML = carte(
+    app.innerHTML = enTete() +
       '<h1>Prendre rendez-vous</h1>' +
-      '<p>Deux informations, et vous voyez les créneaux disponibles.</p>' +
+      '<p class="sub">Deux informations, et vous voyez mes créneaux.</p>' +
+      carte(
       '<label for="of">Nom de votre officine</label>' +
       '<input id="of" autocomplete="organization" placeholder="Pharmacie du Marché" />' +
       '<label for="cp">Code postal</label>' +
@@ -542,9 +581,14 @@
   function blocGestion(code) {
     var lien = lienGestion(code);
     if (!lien) return '';
-    return '<p style="margin-top:20px">Pour <b>déplacer ou annuler</b>, revenez ici :</p>' +
-      '<p><a href="' + esc(lien) + '">' + esc(lien) + '</a></p>' +
-      '<p style="margin-top:8px;font-size:14px;color:#5B6577">' +
+    // ⚠️ L'adresse s'affichait EN TOUTES LETTRES, coupée sur deux lignes :
+    // illisible, impossible à recopier à la main, et en rupture avec le reste
+    // de la page. Elle reste cliquable — c'est le même lien — mais elle porte
+    // maintenant sa fonction plutôt que ses caractères.
+    return '<p style="margin-top:20px">Besoin de le <b>déplacer ou de l’annuler</b>&nbsp;?</p>' +
+      '<p style="margin-top:10px"><a class="btn btn-clair" href="' + esc(lien) + '">' +
+      'Gérer mon rendez-vous</a></p>' +
+      '<p style="margin-top:12px;font-size:14px;color:#5B6577">' +
       'Ce lien est aussi dans le fichier agenda ci-dessus — vous le retrouverez ' +
       'dans votre calendrier, à la date du rendez-vous.</p>';
   }
@@ -552,14 +596,21 @@
   function confirme(d) {
     var r = d.rdv, c = d.commercial || {};
     var ics = icsDuRdv(r, c, r.code);
-    app.innerHTML = carte(
-      '<p class="ok">C’est noté : ' + esc(libelle(r.date)) + ' à ' + esc(hhh(r.heure)) + '.</p>' +
-      '<p>' + esc(c.prenom) + ' vous attend à ' + esc(r.nom) + '.</p>' +
-      '<p style="margin-top:18px"><a class="btn" download="rendez-vous.ics" href="' +
-        window.V2ICS.dataUrl(ics) + '">Ajouter à mon agenda</a></p>' +
-      blocGestion(r.code) +
-      (c.tel ? '<p style="margin-top:14px">Un empêchement ? Appelez ' + esc(c.prenom) +
-        ' au <a href="tel:' + esc(numero(c.tel)) + '">' + esc(c.tel) + '</a>.</p>' : ''));
+    // Le bandeau reprend exactement la forme du récapitulatif vu juste avant
+    // de confirmer : le pharmacien retrouve ce qu'il a choisi, au même endroit.
+    app.innerHTML = enTete() +
+      '<h1>C’est noté&nbsp;!</h1>' +
+      '<div class="recap ok">' +
+        '<p class="quand">' + esc(capit(libelle(r.date))) + '</p>' +
+        '<p class="heure">' + esc(hhh(r.heure)) +
+          (r.duree_min ? ' <span>· ' + esc(r.duree_min) + ' minutes</span>' : '') + '</p>' +
+        '<p class="lieu">' + esc(c.prenom || 'Votre commercial') + ' vous attend à ' +
+          esc(r.nom) + '</p>' +
+      '</div>' +
+      carte('<a class="btn" download="rendez-vous.ics" href="' +
+        window.V2ICS.dataUrl(ics) + '">Ajouter à mon agenda</a>' + blocGestion(r.code)) +
+      '<div class="pied">Un empêchement&nbsp;?' +
+        recours([boutonTel()]) + '</div>';
   }
 
   // ── MON RENDEZ-VOUS (lien ?m=…) ─────────────────────────────────
@@ -646,16 +697,20 @@
         lieu: v.adresse, description: 'Rendez-vous pris depuis le lien reçu par mail.',
         organisateur: c.prenom || 'Intégral Pharma'
       });
-      app.innerHTML = carte(
+      app.innerHTML = enTete() +
         '<h1>Votre rendez-vous</h1>' +
-        '<p class="ok">' + esc(libelle(v.date)) + ' à ' + esc(hhh(v.heure)) + '.</p>' +
-        '<p>' + esc(c.prenom || 'Votre commercial') + ' vous attend à ' + esc(v.nom) + '.</p>' +
-        '<p style="margin-top:18px"><a class="btn" download="rendez-vous.ics" href="' +
-          window.V2ICS.dataUrl(ics) + '">Ajouter à mon agenda</a></p>' +
-        '<p style="margin-top:16px"><button class="lien" id="annul">' +
-          'Annuler ou choisir un autre créneau</button></p>' +
-        (c.tel ? '<p style="margin-top:14px">Ou appelez ' + esc(c.prenom) +
-          ' au <a href="tel:' + esc(numero(c.tel)) + '">' + esc(c.tel) + '</a>.</p>' : ''));
+        '<div class="recap">' +
+          '<p class="quand">' + esc(capit(libelle(v.date))) + '</p>' +
+          '<p class="heure">' + esc(hhh(v.heure)) +
+            (v.duree_min ? ' <span>· ' + esc(v.duree_min) + ' minutes</span>' : '') + '</p>' +
+          '<p class="lieu">' + esc(c.prenom || 'Votre commercial') + ' vous attend à ' +
+            esc(v.nom) + '</p>' +
+        '</div>' +
+        carte('<a class="btn" download="rendez-vous.ics" href="' +
+          window.V2ICS.dataUrl(ics) + '">Ajouter à mon agenda</a>') +
+        '<div class="pied">Besoin de changer&nbsp;?' +
+          recours(['<button id="annul">Annuler ou déplacer</button>', boutonTel()]) +
+        '</div>';
       document.getElementById('annul').addEventListener('click', annuler);
     }).catch(function () { secours('Ce rendez-vous est déjà confirmé. Merci !'); });
   }
@@ -673,14 +728,18 @@
   }
 
   function formulairePreference() {
-    app.innerHTML = carte(
-      '<h1>Quand cela vous arrangerait-il ?</h1>' +
+    app.innerHTML = enTete() +
+      '<h1>Quand cela vous arrangerait-il&nbsp;?</h1>' +
+      '<p class="sub">Dites-le avec vos mots, je m’adapte.</p>' +
+      carte(
       '<label for="pt">Votre préférence</label>' +
       '<textarea id="pt" rows="3" placeholder="Ex. plutôt les mardis matin, ou après le 15 septembre"></textarea>' +
       '<label for="pn">Votre nom</label><input id="pn" autocomplete="name" />' +
       '<label for="pp">Votre téléphone</label><input id="pp" type="tel" autocomplete="tel" />' +
-      '<p style="margin-top:18px"><button class="btn" id="pgo">Envoyer</button></p>' +
-      '<button class="lien" id="pretour">← revenir aux créneaux</button>');
+      '<p style="margin-top:18px"><button class="btn" id="pgo">Envoyer</button></p>') +
+      '<div class="pied">' +
+        recours(['<button id="pretour">← Revoir les créneaux</button>', boutonTel()]) +
+      '</div>';
     document.getElementById('pretour').addEventListener('click', afficherCreneaux);
     document.getElementById('pgo').addEventListener('click', function () {
       var b = this;
@@ -693,8 +752,11 @@
         p_tel: document.getElementById('pp').value || ''
       }).then(function (r) {
         if (r.error || !r.data || !r.data.ok) { rendre(); secours('Envoi impossible. Merci de réessayer.'); return; }
-        app.innerHTML = carte('<p class="ok">C’est transmis.</p><p>' +
-          esc(F.commercial.prenom) + ' vous rappelle pour convenir d’un moment.</p>');
+        app.innerHTML = enTete() +
+          '<h1>C’est transmis&nbsp;!</h1>' +
+          carte('<p>' + esc(prenomConnu() || 'Votre commercial') +
+            ' vous rappelle pour convenir d’un moment.</p>') +
+          '<div class="pied">Une urgence&nbsp;?' + recours([boutonTel()]) + '</div>';
       }).catch(function () { rendre(); secours('Envoi impossible. Merci de réessayer.'); });
     });
   }
