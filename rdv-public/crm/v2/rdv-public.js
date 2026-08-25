@@ -398,10 +398,18 @@
   // désormais pour de bon, et un seul mois est construit à la fois.
   // Le commentaire d'origine parlait de « douze mille pixels » pour trois
   // mois ; l'horizon est passé à six mois depuis, et personne n'a remesuré.
+  // ── Toutes les dates : UNE GRILLE DE MOIS ────────────────────────
+  // Repris de ce que Cal.com fait de mieux (vu à l'écran le 25/08/2026) : une
+  // vraie grille calendaire, où l'on voit d'un coup QUELS jours sont ouverts,
+  // plutôt qu'une liste qu'il faut parcourir. On garde ce qu'ils font MAL en
+  // tête : leur page empile tous les créneaux de la journée sur 3 155 px.
+  // Ici, la grille montre le mois, et seuls les horaires du jour choisi
+  // s'affichent dessous. Septembre passait de 5 550 px à un écran.
   var TOUTES = null;      // les jours rendus par le moteur, calculés une fois
   var MOIS_VU = null;     // le mois affiché
+  var JOUR_VU = null;     // le jour ouvert dans ce mois
 
-  function afficherToutesLesDates(moisChoisi) {
+  function afficherToutesLesDates(moisChoisi, jourChoisi) {
     if (!TOUTES) {
       TOUTES = window.V2RDV.calendrier({
         officine: F.officine,
@@ -409,16 +417,14 @@
         blocages: F.blocages || [],
         occupes: F.occupes || [],
         agenda: F.agenda || [],
-        // ⚠️ La même règle qu'au-dessus. Sans elle, « Voir d'autres dates »
-        // rouvrirait les journées que les trois propositions viennent d'écarter.
+        // ⚠️ Sans les secteurs, « Voir d'autres dates » rouvrirait les
+        // journées que les trois propositions viennent d'écarter.
         secteurs: F.secteurs || [],
         aujourdhui: new Date().toISOString().slice(0, 10)
       });
     }
-    var jours = TOUTES;
-    var cx = F.commercial || {};
+    var jours = TOUTES, cx = F.commercial || {};
 
-    // Les mois qui ont au moins une date, dans l'ordre.
     var mois = [];
     jours.forEach(function (j) {
       var q = String(j.date).split('-'), cle = q[0] + '-' + q[1];
@@ -426,64 +432,104 @@
     });
     MOIS_VU = (moisChoisi && mois.indexOf(moisChoisi) >= 0) ? moisChoisi : mois[0];
 
-    var h = '<div class="qui"><span class="av">' +
-        esc(String(cx.prenom || '?').charAt(0).toUpperCase()) + '</span>' +
-        '<span><b>' + esc(cx.prenom || '') + '</b>' +
-        '<small>Intégral Pharma · votre secteur</small></span></div>' +
-      '<h1>Toutes mes dates</h1>';
+    var h = enTete() + '<h1>Toutes mes dates</h1>';
 
     if (!jours.length) {
       h += '<p class="sub">Aucune date ne se libère sur les six prochains mois.</p>';
-    } else {
-      var q0 = String(MOIS_VU).split('-');
-      var duMois = jours.filter(function (j) { return String(j.date).indexOf(MOIS_VU) === 0; });
-      var nbCr = duMois.reduce(function (n, j) { return n + j.creneaux.length; }, 0);
-
-      h += '<p class="sub">Choisissez d’abord un mois.</p>' +
-        '<div class="mois-choix">' + mois.map(function (cle) {
-          var q = cle.split('-');
-          var n = jours.filter(function (j) { return String(j.date).indexOf(cle) === 0; }).length;
-          return '<button class="mc' + (cle === MOIS_VU ? ' on' : '') + '" data-mois="' + esc(cle) + '">' +
-            esc(capit(MOIS[+q[1] - 1])) + '<small>' + n + ' jour' + (n > 1 ? 's' : '') + '</small></button>';
-        }).join('') + '</div>' +
-        '<p class="lbl">' + esc(capit(MOIS[+q0[1] - 1])) + ' ' + esc(q0[0]) + ' · ' +
-          esc(duMois.length) + ' jour' + (duMois.length > 1 ? 's' : '') + ', ' +
-          esc(nbCr) + ' horaire' + (nbCr > 1 ? 's' : '') + '</p>';
-
-      duMois.forEach(function (j) {
-        var q = String(j.date).split('-');
-        h += '<div class="jc">' +
-          '<div class="jc-t">' +
-            '<span class="cal"><span class="m">' + esc(MOIS[+q[1] - 1].slice(0, 4)) + '</span>' +
-              '<span class="d">' + esc(+q[2]) + '</span></span>' +
-            '<span><b>' + esc(capit(libelle(j.date))) + '</b>' +
-              '<small>' + esc(j.creneaux.length) + ' horaire' +
-              (j.creneaux.length > 1 ? 's possibles' : ' possible') + '</small></span>' +
-          '</div>' +
-          '<div class="creneaux">' +
-            j.creneaux.map(function (c) {
-              return '<button class="cr" data-d="' + esc(j.date) + '" data-h="' + esc(c) + '">' +
-                esc(hhh(c)) + '</button>';
-            }).join('') +
-          '</div></div>';
-      });
+      h += '<div class="pied">' + recours(['<button id="retour3">← Revenir aux dates proposées</button>',
+                                            boutonTel()]) + '</div>';
+      app.innerHTML = h;
+      var r0 = document.getElementById('retour3');
+      if (r0) r0.addEventListener('click', function () { afficherCreneaux(); window.scrollTo(0, 0); });
+      return;
     }
 
-    h += '<div class="pied"><div class="secours">' +
-      '<button id="retour3">← Revenir aux dates proposées</button>' +
-      (cx.tel ? '<a href="tel:' + esc(numero(cx.tel)) + '">' + esc(telLisible(cx.tel)) + '</a>' : '') +
+    var duMois = jours.filter(function (j) { return String(j.date).indexOf(MOIS_VU) === 0; });
+    var ouverts = {};
+    duMois.forEach(function (j) { ouverts[j.date] = j; });
+    // Le jour ouvert par défaut : le premier disponible du mois affiché.
+    JOUR_VU = (jourChoisi && ouverts[jourChoisi]) ? jourChoisi : duMois[0].date;
+
+    var q0 = String(MOIS_VU).split('-');
+    var an = +q0[0], moisNum = +q0[1];
+    var auj = new Date().toISOString().slice(0, 10);
+
+    // Position du 1er du mois, en semaine commençant LUNDI (dimanche = 7).
+    var premier = new Date(Date.UTC(an, moisNum - 1, 1));
+    var decalage = (premier.getUTCDay() + 6) % 7;
+    var nbJours = new Date(Date.UTC(an, moisNum, 0)).getUTCDate();
+
+    h += '<p class="sub">Les jours en bleu sont ceux où je peux passer.</p>';
+
+    // Le mois, et de quoi en changer.
+    var iMois = mois.indexOf(MOIS_VU);
+    h += '<div class="cal-tete">' +
+      '<b>' + esc(capit(MOIS[moisNum - 1])) + ' ' + esc(an) + '</b>' +
+      '<span class="cal-nav">' +
+        '<button id="mois-prec" aria-label="Mois précédent"' + (iMois <= 0 ? ' disabled' : '') +
+          '>&#8249;</button>' +
+        '<button id="mois-suiv" aria-label="Mois suivant"' +
+          (iMois >= mois.length - 1 ? ' disabled' : '') + '>&#8250;</button>' +
+      '</span></div>';
+
+    h += '<div class="cal-grille" role="grid">';
+    ['l', 'm', 'm', 'j', 'v', 's', 'd'].forEach(function (x, k) {
+      h += '<span class="cal-jl" aria-hidden="true">' + esc(x) + (k === 1 ? '' : '') + '</span>';
+    });
+    var k;
+    for (k = 0; k < decalage; k++) h += '<span class="cal-c vide"></span>';
+    for (k = 1; k <= nbJours; k++) {
+      var iso = an + '-' + (moisNum < 10 ? '0' : '') + moisNum + '-' + (k < 10 ? '0' : '') + k;
+      var libre = !!ouverts[iso];
+      var cls = 'cal-c' + (libre ? ' libre' : '') + (iso === JOUR_VU ? ' sel' : '') +
+                (iso === auj ? ' auj' : '');
+      if (libre) {
+        var nH = ouverts[iso].creneaux.length;
+        h += '<button class="' + cls + '" data-j="' + esc(iso) + '"' +
+             (iso === JOUR_VU ? ' aria-current="date"' : '') + '>' + k +
+             '<span class="v2-sr-only">' + esc(nH) + ' horaire' + (nH > 1 ? 's' : '') +
+             ' ce jour</span></button>';
+      } else {
+        h += '<span class="' + cls + '">' + k + '</span>';
+      }
+    }
+    h += '</div>';
+
+    // Les horaires du SEUL jour choisi.
+    var jour = ouverts[JOUR_VU];
+    h += '<div class="jc" id="cal-jour">' +
+      '<div class="jc-t">' +
+        '<span><b>' + esc(capit(libelle(JOUR_VU))) + '</b>' +
+          '<small>' + pourquoiCeJour(jour) + '</small></span>' +
+      '</div>' +
+      '<div class="creneaux">' +
+        jour.creneaux.map(function (c) {
+          return '<button class="cr" data-d="' + esc(JOUR_VU) + '" data-h="' + esc(c) + '">' +
+            esc(hhh(c)) + '</button>';
+        }).join('') +
       '</div></div>';
+
+    h += '<div class="pied">' +
+      recours(['<button id="retour3">← Revenir aux dates proposées</button>', boutonTel()]) +
+      '</div>';
 
     app.innerHTML = h;
 
-    Array.prototype.forEach.call(app.querySelectorAll('.mc'), function (b) {
+    // Changer de jour ne relit rien : on repeint, et on reste où l'on est.
+    Array.prototype.forEach.call(app.querySelectorAll('.cal-c.libre'), function (b) {
       b.addEventListener('click', function () {
-        // On reconstruit le mois demandé sans relire quoi que ce soit, et on
-        // remonte en tête : rester au milieu de la page après un changement
-        // de mois donne l'impression que rien ne s'est passé.
-        afficherToutesLesDates(b.getAttribute('data-mois'));
-        window.scrollTo(0, 0);
+        afficherToutesLesDates(MOIS_VU, b.getAttribute('data-j'));
+        var z = document.getElementById('cal-jour');
+        if (z && z.scrollIntoView) z.scrollIntoView({ block: 'nearest' });
       });
+    });
+    var pr = document.getElementById('mois-prec');
+    if (pr) pr.addEventListener('click', function () {
+      afficherToutesLesDates(mois[iMois - 1]); window.scrollTo(0, 0);
+    });
+    var su = document.getElementById('mois-suiv');
+    if (su) su.addEventListener('click', function () {
+      afficherToutesLesDates(mois[iMois + 1]); window.scrollTo(0, 0);
     });
     Array.prototype.forEach.call(app.querySelectorAll('.cr'), function (b) {
       b.addEventListener('click', function () {

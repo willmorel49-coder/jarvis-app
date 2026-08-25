@@ -104,18 +104,46 @@
            border:1px solid var(--bord); background:#fff; color:var(--encre); font-size:15.5px;
            font-weight:650; cursor:pointer; font-family:inherit; }
 
-  /* ── Le choix du mois. Il FILTRE, il ne fait pas défiler. ──
-     Avant, les six mois étaient tous construits : 25 683 px et 511 créneaux,
-     soit trente écrans de défilement. Un seul mois est bâti à la fois. */
-  .mois-choix { display:grid; grid-template-columns:1fr 1fr 1fr; gap:9px; margin:0 0 22px; }
-  .mc { min-height:60px; padding:9px 6px; border-radius:14px; border:1.5px solid var(--bord);
-        background:#fff; color:var(--encre); font:inherit; font-size:15px; font-weight:700;
-        cursor:pointer; text-align:center; line-height:1.2;
-        box-shadow:0 1px 0 #fff inset, 0 6px 16px -12px rgba(16,19,28,.3); }
-  .mc small { display:block; font-size:13px; font-weight:500; color:var(--gris); margin-top:3px; }
-  .mc.on { border-color:var(--bleu); background:linear-gradient(150deg,#0B5BEE,#0039A8); color:#fff;
-           box-shadow:0 1px 0 rgba(255,255,255,.3) inset, 0 10px 22px -11px rgba(0,57,168,.85); }
-  .mc.on small { color:rgba(255,255,255,.82); }
+  /* Texte réservé aux lecteurs d'écran. ⚠️ Utilisée par la grille : sans
+     cette règle, « 4 horaires ce jour » s'affiche dans chaque case et fait
+     éclater la mise en page. rdv.html ne charge pas v2.css : tout ce qu'on
+     y emploie doit y être défini. */
+  .v2-sr-only { position:absolute; width:1px; height:1px; overflow:hidden;
+    clip:rect(0 0 0 0); clip-path:inset(50%); white-space:nowrap; }
+
+  /* ── La grille du mois ────────────────────────────────────────
+     Reprise de ce que Cal.com fait de mieux : on voit d'un coup QUELS jours
+     sont ouverts. Ce qu'on ne reprend PAS : leur page empile tous les
+     créneaux du jour sur 3 155 px. Ici, seuls les horaires du jour choisi
+     s'affichent — septembre passait de 5 550 px à un écran. */
+  .cal-tete { display:flex; align-items:center; justify-content:space-between; margin:0 0 12px; }
+  .cal-tete b { font-size:18px; font-weight:750; letter-spacing:-.02em; }
+  .cal-nav { display:flex; gap:7px; }
+  .cal-nav button { width:44px; height:44px; border-radius:12px; border:1px solid var(--bord);
+    background:#fff; color:var(--encre); font-size:20px; line-height:1; cursor:pointer;
+    font-family:inherit; box-shadow:0 1px 0 #fff inset, 0 5px 14px -11px rgba(16,19,28,.3); }
+  .cal-nav button[disabled] { opacity:.35; cursor:default; }
+
+  .cal-grille { display:grid; grid-template-columns:repeat(7,1fr); gap:5px; margin:0 0 16px; }
+  .cal-jl { text-align:center; font-size:13px; font-weight:800; text-transform:uppercase;
+    color:var(--gris-c); padding:0 0 6px; }
+  /* Une case fait 44 px de haut au minimum : c'est une cible tactile. */
+  .cal-c { min-height:44px; display:flex; align-items:center; justify-content:center;
+    border-radius:12px; border:1.5px solid transparent; background:none; color:var(--gris-c);
+    font:inherit; font-size:15.5px; font-weight:600; font-variant-numeric:tabular-nums;
+    padding:0; position:relative; }
+  .cal-c.vide { min-height:0; }
+  /* Les jours où il peut passer : ce sont les SEULS qui se touchent. */
+  .cal-c.libre { color:var(--encre); font-weight:750; background:#fff; border-color:#D8E5FD;
+    cursor:pointer; box-shadow:0 4px 10px -8px rgba(0,80,230,.55); }
+  .cal-c.libre:hover { border-color:var(--bleu); background:var(--bleu-c); }
+  .cal-c.sel { background:linear-gradient(150deg,#0B5BEE,#0039A8); color:#fff;
+    border-color:transparent;
+    box-shadow:0 1px 0 rgba(255,255,255,.3) inset, 0 8px 18px -9px rgba(0,57,168,.95); }
+  /* Le repère « aujourd'hui », comme chez eux : un point, pas un cadre. */
+  .cal-c.auj::after { content:''; position:absolute; bottom:5px; left:50%;
+    transform:translateX(-50%); width:4px; height:4px; border-radius:99px;
+    background:currentColor; opacity:.75; }
 
   /* ── Le récapitulatif, juste avant de demander un engagement. ── */
   .recap { padding:18px 20px; margin:0 0 16px; border-radius:18px; color:#fff; position:relative;
@@ -168,14 +196,14 @@
   <!-- Servi depuis chez nous, pas depuis un CDN : cette page s'ouvre DANS une
        officine, dont le réseau filtre parfois les domaines extérieurs. Fichier
        identique au bit près à celui de jsdelivr (même empreinte sha384 qu'avant). -->
-  <script src="vendor/supabase/supabase-2.112.2.min.js?v=20260825j"
+  <script src="vendor/supabase/supabase-2.112.2.min.js?v=20260825k"
           integrity="sha384-B2duOBIryCXbX4eDE4BdJwtNkQMRQde3o6IsjfPW28E6aH1CYE96hHeZRG3zY56O"></script>
   <script>
     window.SUPABASE_URL = 'https://iyvavhnlhxksokkerkos.supabase.co';
     window.SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5dmF2aG5saHhrc29ra2Vya29zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1NjU2NTYsImV4cCI6MjA5MzE0MTY1Nn0.eMdW6vUdoyVpZbqKXp6FNYTajwKEf4x-Xyj5zj1igO4';
   </script>
-  <script src="v2-rdv-creneaux.js?v=20260825j"></script>
-  <script src="v2-rdv-ics.js?v=20260825j"></script>
-  <script src="rdv-public.js?v=20260825j"></script>
+  <script src="v2-rdv-creneaux.js?v=20260825k"></script>
+  <script src="v2-rdv-ics.js?v=20260825k"></script>
+  <script src="rdv-public.js?v=20260825k"></script>
 </body>
 </html>
