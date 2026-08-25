@@ -15,7 +15,12 @@ from collections import defaultdict
 warnings.filterwarnings('ignore')
 import openpyxl
 
-BASE = '/Users/williammorel/JARVIS/APP'
+# Le dossier du script LUI-MÊME. Écrit en dur, BASE ramenait toujours vers
+# ~/JARVIS/APP — resté 439 commits en arrière : le robot des stats y a ignoré
+# juillet 2026 en silence et republié 27 Mo de ventes non compactées (25/08/2026).
+# Le robot travaille désormais dans une copie propre de la version en ligne
+# (~/JARVIS/APP-atelier), et ce script la suit sans rien avoir à régler.
+BASE = os.path.dirname(os.path.abspath(__file__))
 STATS = os.path.join(BASE, 'STATS')
 LISTING_JS = os.path.join(BASE, 'opso', 'opso-listing-2026.js')
 OUT_SALES = os.path.join(BASE, 'opso', 'wml-sales-data.js')

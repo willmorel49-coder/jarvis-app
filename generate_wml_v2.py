@@ -193,7 +193,12 @@ def load_groupements():
     print('  [grp] {} CIP + {} noms -> groupement'.format(len(cipm), len(namem)))
     return cipm, namem
 
-BASE = '/Users/williammorel/JARVIS/APP'
+# Le dossier du script LUI-MÊME. Écrit en dur, BASE ramenait toujours vers
+# ~/JARVIS/APP — resté 439 commits en arrière : le robot des stats y a ignoré
+# juillet 2026 en silence et republié 27 Mo de ventes non compactées (25/08/2026).
+# Le robot travaille désormais dans une copie propre de la version en ligne
+# (~/JARVIS/APP-atelier), et ce script la suit sans rien avoir à régler.
+BASE = os.path.dirname(os.path.abspath(__file__))
 STATS = os.path.join(BASE, 'STATS')
 # Tous les masters pharmacies (WML + MD + futurs commerciaux) — WML d'abord (prioritaire)
 PHARM_FILES = sorted(glob.glob(os.path.join(STATS, '*_pharmacies.xlsx')),
