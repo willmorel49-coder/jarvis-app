@@ -372,6 +372,23 @@
       '  color:inherit;font-family:inherit;cursor:pointer}',
       '.v2-sem-r .act a.tel{color:var(--ip-blue);border-color:#CFDFFB;background:#EAF0FE}',
 
+      /* ── Ce que dit l'agenda perso ────────────────────────────────
+         ⚠️ Ajouté le 25/08/2026 après un retour de Will : « je vois plus mon
+         agenda synchronisé, comme si j'avais rien chaque jour ». L'agenda
+         était pourtant relu (30 plages, aucune erreur) — c'est CET ÉCRAN qui
+         ne lisait que la table `rdv`. Avec 0 rendez-vous JARVIS à venir, il
+         affirmait « Rien de prévu ce jour-là » sur des journées pleines.
+         Un écran qui annonce le vide sur des données qu'il n'a pas lues est
+         pire qu'un écran absent. Voir [[feedback-verifier-tout-le-perimetre]].
+         Sourd et sans bouton : ce n'est pas une visite, c'est une contrainte.
+         ⚠️ Aucun titre n'est affiché — la table n'en stocke aucun, par
+         conception. On ne montre que l'heure. */
+      '.v2-sem-occ{display:flex;gap:14px;align-items:center;padding:11px 14px;margin-bottom:8px;',
+      '  background:var(--card-2);border:1px dashed var(--line-strong);border-radius:var(--r-md)}',
+      '.v2-sem-occ .h{flex:0 0 54px;font-size:14.5px;font-weight:700;color:var(--muted);',
+      '  font-variant-numeric:tabular-nums}',
+      '.v2-sem-occ .q{font-size:14px;color:var(--muted)}',
+      '.v2-sem-j .pt.perso{background:var(--muted-2);width:6px}',
       '.v2-sem-tour{display:flex;align-items:center;gap:12px;padding:14px;',
       '  border-radius:var(--r-md);margin-bottom:10px;color:#fff;border:0;width:100%;',
       '  text-align:left;font:inherit;cursor:pointer;',
@@ -771,14 +788,22 @@
     return '<nav class="v2-sem-b" aria-label="Les trois prochaines semaines">' +
       jours.map(function (d) {
         var n = (parJour[d] || []).length;
+        var o = ((ETAT && ETAT.occupeParJour) || {})[d];
+        var nOcc = o ? o.length : 0;
+        // Trois états, et jamais deux qui se ressemblent : une visite JARVIS
+        // (barre bleue), une journée seulement occupée par l'agenda perso
+        // (point sourd), une journée réellement libre (point clair).
+        var pastille = n ? ' on' : (nOcc ? ' perso' : '');
+        var dit = n
+          ? n + ' visite' + (n > 1 ? 's' : '') + (nOcc ? ', et ' + nOcc + ' créneau' + (nOcc > 1 ? 'x' : '') + ' pris dans ton agenda' : '')
+          : (nOcc ? nOcc + ' créneau' + (nOcc > 1 ? 'x' : '') + ' pris dans ton agenda' : 'journée libre');
         return '<button class="v2-sem-j" type="button"' +
           (d === choisi ? ' aria-current="true"' : '') +
           ' onclick="V2.rdv.jour(\'' + escArg(d) + '\')">' +
           '<span class="d">' + esc(JOURS[jourSem(d)].slice(0, 3)) + '</span>' +
           '<span class="n">' + esc(+String(d).split('-')[2]) + '</span>' +
-          '<span class="pt' + (n ? ' on' : '') + '"></span>' +
-          '<span class="v2-sr-only">' + (n ? n + ' visite' + (n > 1 ? 's' : '') : 'aucune visite') +
-          '</span></button>';
+          '<span class="pt' + pastille + '"></span>' +
+          '<span class="v2-sr-only">' + esc(dit) + '</span></button>';
       }).join('') + '</nav>';
   }
 
@@ -803,16 +828,46 @@
       '</div></article>';
   }
 
+  // Une plage prise dans l'agenda personnel. Aucune action, aucun titre :
+  // la table `rdv_occupe` ne stocke QUE des heures, par conception.
+  function ligneOccupe(o) {
+    var quand = o.jour_entier
+      ? 'Toute la journée'
+      : hhmm(o.debut) + (o.fin ? ' – ' + hhmm(o.fin) : '');
+    return '<div class="v2-sem-occ">' +
+      '<div class="h">' + esc(o.jour_entier ? '—' : hhmm(o.debut)) + '</div>' +
+      '<div class="q">' + esc(o.jour_entier ? 'Toute la journée' : quand) +
+        ' · ton agenda</div></div>';
+  }
+
   function journeeHtml(date) {
     if (!ETAT) return '';
     var liste = (ETAT.parJour[date] || []).slice().sort(function (a, b) {
       return String(a.heure) < String(b.heure) ? -1 : 1;
     });
+    var occ = ((ETAT.occupeParJour || {})[date] || []).slice().sort(function (a, b) {
+      if (a.jour_entier) return -1;
+      if (b.jour_entier) return 1;
+      return String(a.debut) < String(b.debut) ? -1 : 1;
+    });
+
     var lib = libelle(date);
     lib = lib.charAt(0).toUpperCase() + lib.slice(1);
-    var h = '<p class="v2-sem-t">' + esc(lib) + ' <span>· ' +
-      (liste.length ? liste.length + ' visite' + (liste.length > 1 ? 's' : '') : 'aucune visite') +
-      '</span></p>';
+    // Le sous-titre doit décrire la journée RÉELLE, pas seulement la part
+    // que JARVIS connaît. « aucune visite » sur une journée où l'agenda
+    // porte trois réunions est un mensonge par omission.
+    var dit;
+    if (liste.length && occ.length) {
+      dit = liste.length + ' visite' + (liste.length > 1 ? 's' : '') +
+            ' · ' + occ.length + ' créneau' + (occ.length > 1 ? 'x' : '') + ' pris';
+    } else if (liste.length) {
+      dit = liste.length + ' visite' + (liste.length > 1 ? 's' : '');
+    } else if (occ.length) {
+      dit = occ.length + ' créneau' + (occ.length > 1 ? 'x' : '') + ' déjà pris';
+    } else {
+      dit = 'journée libre';
+    }
+    var h = '<p class="v2-sem-t">' + esc(lib) + ' <span>· ' + esc(dit) + '</span></p>';
 
     // La tournée n'a de sens qu'à partir de deux arrêts.
     if (liste.length > 1 && V2.carteTourFromIds) {
@@ -822,16 +877,32 @@
         '<span class="go">Ouvrir</span></button>';
     }
 
+    // Visites et plages d'agenda dans le MÊME ordre chronologique : c'est
+    // ainsi que la journée se vit, pas en deux listes séparées.
+    var tout = liste.map(function (d) {
+        return { t: String(d.heure || ''), html: ligneJour(d) };
+      }).concat(occ.map(function (o) {
+        return { t: o.jour_entier ? '' : String(o.debut || ''), html: ligneOccupe(o) };
+      }));
+    tout.sort(function (a, b) { return a.t < b.t ? -1 : (a.t > b.t ? 1 : 0); });
+    h += tout.map(function (x) { return x.html; }).join('');
+
     if (liste.length) {
-      h += liste.map(ligneJour).join('');
       if (V2.rdvRadar) {
         h += '<div class="v2-rdv-acts"><button class="v2-btn" type="button" onclick="V2.rdv.completer(\'' +
           escArg(date) + '\')">Compléter cette journée</button></div>';
       }
+    } else if (occ.length) {
+      // Occupée mais sans visite : on propose de la remplir autour, sans
+      // prétendre qu'elle est vide.
+      if (V2.rdvRadar) {
+        h += '<div class="v2-rdv-acts"><button class="v2-btn" type="button" onclick="V2.rdv.completer(\'' +
+          escArg(date) + '\')">Caler une visite ce jour-là</button></div>';
+      }
     } else {
       h += '<div class="v2-sem-vide"><b>Rien de prévu ce jour-là</b>' +
-        'Les officines proches que tu n’as pas vues depuis longtemps sont les moins ' +
-        'chères à aller voir.' +
+        'Ni visite, ni rendez-vous dans ton agenda. Les officines proches que tu n’as pas ' +
+        'vues depuis longtemps sont les moins chères à aller voir.' +
         (V2.rdvRadar
           ? '<div style="margin-top:14px"><button class="v2-btn" type="button" onclick="V2.rdv.completer(\'' +
             escArg(date) + '\')">Remplir cette journée</button></div>'
@@ -983,7 +1054,15 @@
         // dans JARVIS : il restait « confirmé » à vie.
         c.from('rdv').select('*').eq('user_id', u).eq('statut', 'confirme')
           .lt('date', auj).gte('date', new Date(Date.now() - 15 * 864e5).toISOString().slice(0, 10))
-          .order('date', { ascending: false })
+          .order('date', { ascending: false }),
+        // ⚠️ Les plages de l'agenda personnel, sur la fenêtre de la bande.
+        // Sans cette lecture, l'écran annonçait « Rien de prévu ce jour-là »
+        // à quelqu'un qui avait 30 créneaux pris — il ne lisait que la table
+        // `rdv`. La table ne contient QUE des heures : aucun titre n'en sort,
+        // et c'est voulu (voir docs/supabase/rdv-socle.sql).
+        c.from('rdv_occupe').select('date, debut, fin, jour_entier').eq('user_id', u)
+          .gte('date', auj).lte('date', jourPlus(auj, 21))
+          .order('date').order('debut')
       ]).then(function (r) {
         var venir = (r[0] && r[0].data) || [];
         var parJour = {};
@@ -997,8 +1076,15 @@
         // À défaut, aujourd'hui — jamais un jour vide choisi au hasard.
         var choisi = venir.length ? venir[0].date : (jours.indexOf(auj) >= 0 ? auj : jours[0] || auj);
 
+        var occupeParJour = {};
+        ((r[4] && r[4].data) || []).forEach(function (o) {
+          if (!o || !o.date) return;
+          if (!occupeParJour[o.date]) occupeParJour[o.date] = [];
+          occupeParJour[o.date].push(o);
+        });
+
         ETAT = {
-          parJour: parJour, jours: jours, choisi: choisi,
+          parJour: parJour, occupeParJour: occupeParJour, jours: jours, choisi: choisi,
           rappeler: (r[1] && r[1].data) || [],
           attente: (r[2] && r[2].data) || [],
           passes: (r[3] && r[3].data) || []
