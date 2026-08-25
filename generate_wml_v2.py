@@ -289,7 +289,8 @@ for pf in PHARM_FILES:
 # Certains exports bruts (ex. Karine / KV) n'ont pas la colonne ARTCODEBARRE (EAN).
 # On la reconstruit à partir des fichiers déjà enrichis (98,9% des lignes KV couvertes).
 ART2EAN = {}
-for _p in sorted(glob.glob(os.path.join(STATS, '*_0[1-6]_2026*.xlsx'))):
+for _p in sorted(_f for _m in MONTHS_NUM
+                 for _f in glob.glob(os.path.join(STATS, '*_%02d_2026*.xlsx' % _m))):
     _wb = openpyxl.load_workbook(_p, read_only=True, data_only=True)
     _ws = _wb.active
     _it = _ws.iter_rows(values_only=True)
