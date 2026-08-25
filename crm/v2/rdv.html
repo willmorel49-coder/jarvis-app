@@ -4,6 +4,8 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="robots" content="noindex, nofollow" />
+<!-- La barre du navigateur prend la couleur du fond de page. -->
+<meta name="theme-color" content="#F7F9FC" />
 <title>Prendre rendez-vous</title>
 <!-- Sans ça le navigateur du pharmacien réclame /favicon.ico à la racine du
      domaine et se prend un 404 : page nue dans l'onglet, erreur dans la console. -->
@@ -134,6 +136,29 @@
   /* Second bouton d'une carte : présent sans concurrencer l'action principale. */
   .btn.btn-clair { background:#fff; color:var(--bleu); border:1.5px solid #CFDFFB;
                    box-shadow:0 1px 0 #fff inset, 0 6px 16px -12px rgba(16,19,28,.3); }
+
+  /* ── Ce qui manquait, relevé par la revue d'interface (25/08/2026) ── */
+
+  /* Aucun anneau de focus n'existait sur cette page : un pharmacien qui
+     navigue au clavier — ou avec un lecteur d'écran — ne voyait jamais où il
+     était. `:focus-visible` et non `:focus` : pas d'anneau au clic souris. */
+  :where(a, button, input, textarea, select):focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--bleu);
+    border-radius: 12px;
+  }
+
+  /* Sans ça, certains mobiles attendent 300 ms au tap pour voir si c'est un
+     double-tap de zoom. Chaque bouton paraît mou. */
+  button, .btn, .cr, a { touch-action: manipulation; }
+  /* Le halo gris par défaut d'Android déborde des coins arrondis. */
+  button, .btn, .cr, a { -webkit-tap-highlight-color: rgba(0,80,230,.12); }
+
+  /* Les états au survol : un bouton doit répondre avant qu'on clique. */
+  .cr:hover { border-color: var(--bleu-f); background: var(--bleu-c); }
+  .btn:hover { filter: none; background: var(--bleu-f); }
+  .secours a:hover, .secours button:hover { border-color: var(--bleu); }
+  .jc:hover { border-color: #CFDFFB; }
   @media (prefers-reduced-motion: reduce) { * { animation:none !important; transition:none !important; } }
 </style>
 </head>
@@ -143,14 +168,14 @@
   <!-- Servi depuis chez nous, pas depuis un CDN : cette page s'ouvre DANS une
        officine, dont le réseau filtre parfois les domaines extérieurs. Fichier
        identique au bit près à celui de jsdelivr (même empreinte sha384 qu'avant). -->
-  <script src="vendor/supabase/supabase-2.112.2.min.js?v=20260825g"
+  <script src="vendor/supabase/supabase-2.112.2.min.js?v=20260825j"
           integrity="sha384-B2duOBIryCXbX4eDE4BdJwtNkQMRQde3o6IsjfPW28E6aH1CYE96hHeZRG3zY56O"></script>
   <script>
     window.SUPABASE_URL = 'https://iyvavhnlhxksokkerkos.supabase.co';
     window.SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5dmF2aG5saHhrc29ra2Vya29zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1NjU2NTYsImV4cCI6MjA5MzE0MTY1Nn0.eMdW6vUdoyVpZbqKXp6FNYTajwKEf4x-Xyj5zj1igO4';
   </script>
-  <script src="v2-rdv-creneaux.js?v=20260825g"></script>
-  <script src="v2-rdv-ics.js?v=20260825g"></script>
-  <script src="rdv-public.js?v=20260825g"></script>
+  <script src="v2-rdv-creneaux.js?v=20260825j"></script>
+  <script src="v2-rdv-ics.js?v=20260825j"></script>
+  <script src="rdv-public.js?v=20260825j"></script>
 </body>
 </html>
