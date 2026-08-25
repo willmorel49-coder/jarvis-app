@@ -329,89 +329,146 @@
   // déroule simplement le calendrier, pour l'officine qui a besoin de se
   // projeter plus loin — et rien n'y est affiché qui ne soit réellement
   // tenable (mêmes règles de route, d'agenda et de blocage).
-  function afficherToutesLesDates() {
-    var jours = window.V2RDV.calendrier({
-      officine: F.officine,
-      dispo: F.dispo,
-      blocages: F.blocages || [],
-      occupes: F.occupes || [],
-      agenda: F.agenda || [],
-      // ⚠️ La même règle qu'au-dessus. Sans elle, « Voir d'autres dates »
-      // rouvrirait les journées que les trois propositions viennent d'écarter.
-      secteurs: F.secteurs || [],
-      aujourdhui: new Date().toISOString().slice(0, 10)
-    });
+  // ── Toutes les dates, UN MOIS À LA FOIS ──────────────────────────
+  // ⚠️ Cet écran affichait les six mois d'un coup : mesuré en production le
+  // 25/08/2026, **25 683 px de haut et 511 créneaux** — trente écrans de
+  // défilement. Les raccourcis de mois existaient déjà, mais ils ne faisaient
+  // que faire DÉFILER vers une ancre : tout restait dessous. Ils filtrent
+  // désormais pour de bon, et un seul mois est construit à la fois.
+  // Le commentaire d'origine parlait de « douze mille pixels » pour trois
+  // mois ; l'horizon est passé à six mois depuis, et personne n'a remesuré.
+  var TOUTES = null;      // les jours rendus par le moteur, calculés une fois
+  var MOIS_VU = null;     // le mois affiché
 
-    var h = carte('<h1>Toutes les dates</h1>' +
-      '<p class="sub">Les disponibilités de ' + esc(F.commercial.prenom) +
-      ' sur les six prochains mois.</p>');
-
-    if (!jours.length) {
-      h += carte('<p>Aucune date ne se libère sur les six prochains mois.</p>');
-    } else {
-      // Trois mois de dates font une page de douze mille pixels : atteindre
-      // novembre demandait quatorze écrans de défilement. Ces raccourcis y
-      // mènent en un geste — c'est la différence entre une liste consultable
-      // et une liste qu'on abandonne.
-      var mois = [];
-      jours.forEach(function (j) {
-        var q = String(j.date).split('-');
-        var cle = q[0] + '-' + q[1];
-        if (mois.indexOf(cle) === -1) mois.push(cle);
-      });
-      if (mois.length > 1) {
-        h += '<div class="carte" style="display:flex;flex-wrap:wrap;gap:8px">' +
-          mois.map(function (cle) {
-            var q = cle.split('-');
-            return '<button class="cr" data-mois="' + esc(cle) + '" style="text-transform:capitalize">' +
-              esc(MOIS[+q[1] - 1]) + '</button>';
-          }).join('') + '</div>';
-      }
-      var moisCourant = '';
-      jours.forEach(function (j) {
-        var p = String(j.date).split('-');
-        var m = MOIS[+p[1] - 1] + ' ' + p[0];
-        if (m !== moisCourant) {
-          moisCourant = m;
-          h += '<p class="jour" id="m-' + esc(p[0] + '-' + p[1]) + '"' +
-               ' style="margin:22px 0 8px;text-transform:capitalize">' + esc(m) + '</p>';
-        }
-        h += '<div class="carte"><p class="jour">' + esc(libelle(j.date)) + '</p><div class="creneaux">' +
-          j.creneaux.map(function (c) {
-            return '<button class="cr" data-d="' + esc(j.date) + '" data-h="' + esc(c) + '">' +
-              esc(hhh(c)) + '</button>';
-          }).join('') + '</div></div>';
+  function afficherToutesLesDates(moisChoisi) {
+    if (!TOUTES) {
+      TOUTES = window.V2RDV.calendrier({
+        officine: F.officine,
+        dispo: F.dispo,
+        blocages: F.blocages || [],
+        occupes: F.occupes || [],
+        agenda: F.agenda || [],
+        // ⚠️ La même règle qu'au-dessus. Sans elle, « Voir d'autres dates »
+        // rouvrirait les journées que les trois propositions viennent d'écarter.
+        secteurs: F.secteurs || [],
+        aujourdhui: new Date().toISOString().slice(0, 10)
       });
     }
-    h += carte('<button class="lien" id="retour3">← revenir aux dates proposées</button>');
+    var jours = TOUTES;
+    var cx = F.commercial || {};
+
+    // Les mois qui ont au moins une date, dans l'ordre.
+    var mois = [];
+    jours.forEach(function (j) {
+      var q = String(j.date).split('-'), cle = q[0] + '-' + q[1];
+      if (mois.indexOf(cle) === -1) mois.push(cle);
+    });
+    MOIS_VU = (moisChoisi && mois.indexOf(moisChoisi) >= 0) ? moisChoisi : mois[0];
+
+    var h = '<div class="qui"><span class="av">' +
+        esc(String(cx.prenom || '?').charAt(0).toUpperCase()) + '</span>' +
+        '<span><b>' + esc(cx.prenom || '') + '</b>' +
+        '<small>Intégral Pharma · votre secteur</small></span></div>' +
+      '<h1>Toutes mes dates</h1>';
+
+    if (!jours.length) {
+      h += '<p class="sub">Aucune date ne se libère sur les six prochains mois.</p>';
+    } else {
+      var q0 = String(MOIS_VU).split('-');
+      var duMois = jours.filter(function (j) { return String(j.date).indexOf(MOIS_VU) === 0; });
+      var nbCr = duMois.reduce(function (n, j) { return n + j.creneaux.length; }, 0);
+
+      h += '<p class="sub">Choisissez d’abord un mois.</p>' +
+        '<div class="mois-choix">' + mois.map(function (cle) {
+          var q = cle.split('-');
+          var n = jours.filter(function (j) { return String(j.date).indexOf(cle) === 0; }).length;
+          return '<button class="mc' + (cle === MOIS_VU ? ' on' : '') + '" data-mois="' + esc(cle) + '">' +
+            esc(capit(MOIS[+q[1] - 1])) + '<small>' + n + ' jour' + (n > 1 ? 's' : '') + '</small></button>';
+        }).join('') + '</div>' +
+        '<p class="lbl">' + esc(capit(MOIS[+q0[1] - 1])) + ' ' + esc(q0[0]) + ' · ' +
+          esc(duMois.length) + ' jour' + (duMois.length > 1 ? 's' : '') + ', ' +
+          esc(nbCr) + ' horaire' + (nbCr > 1 ? 's' : '') + '</p>';
+
+      duMois.forEach(function (j) {
+        var q = String(j.date).split('-');
+        h += '<div class="jc">' +
+          '<div class="jc-t">' +
+            '<span class="cal"><span class="m">' + esc(MOIS[+q[1] - 1].slice(0, 4)) + '</span>' +
+              '<span class="d">' + esc(+q[2]) + '</span></span>' +
+            '<span><b>' + esc(capit(libelle(j.date))) + '</b>' +
+              '<small>' + esc(j.creneaux.length) + ' horaire' +
+              (j.creneaux.length > 1 ? 's possibles' : ' possible') + '</small></span>' +
+          '</div>' +
+          '<div class="creneaux">' +
+            j.creneaux.map(function (c) {
+              return '<button class="cr" data-d="' + esc(j.date) + '" data-h="' + esc(c) + '">' +
+                esc(hhh(c)) + '</button>';
+            }).join('') +
+          '</div></div>';
+      });
+    }
+
+    h += '<div class="pied"><div class="secours">' +
+      '<button id="retour3">← Revenir aux dates proposées</button>' +
+      (cx.tel ? '<a href="tel:' + esc(numero(cx.tel)) + '">' + esc(telLisible(cx.tel)) + '</a>' : '') +
+      '</div></div>';
 
     app.innerHTML = h;
+
+    Array.prototype.forEach.call(app.querySelectorAll('.mc'), function (b) {
+      b.addEventListener('click', function () {
+        // On reconstruit le mois demandé sans relire quoi que ce soit, et on
+        // remonte en tête : rester au milieu de la page après un changement
+        // de mois donne l'impression que rien ne s'est passé.
+        afficherToutesLesDates(b.getAttribute('data-mois'));
+        window.scrollTo(0, 0);
+      });
+    });
     Array.prototype.forEach.call(app.querySelectorAll('.cr'), function (b) {
-      var cible = b.getAttribute('data-mois');
-      if (cible) {
-        // Raccourci de mois : on descend jusqu'au titre correspondant.
-        b.addEventListener('click', function () {
-          var t = document.getElementById('m-' + cible);
-          if (t && t.scrollIntoView) t.scrollIntoView({ block: 'start' });
-        });
-        return;
-      }
       b.addEventListener('click', function () {
         formulaire(b.getAttribute('data-d'), b.getAttribute('data-h'));
       });
     });
-    document.getElementById('retour3').addEventListener('click', afficherCreneaux);
-    try { window.scrollTo(0, 0); } catch (e) {}
+    var r3 = document.getElementById('retour3');
+    if (r3) r3.addEventListener('click', function () { afficherCreneaux(); window.scrollTo(0, 0); });
   }
 
+  // ── Le dernier pas : on récapitule avant de demander quoi que ce soit ──
+  // ⚠️ Cet écran affichait « vendredi 28 août à 10h15 » et deux champs, rien
+  // d'autre : le pharmacien perdait d'un coup le nom de l'expéditeur, la
+  // durée et le lieu — tout ce que l'écran précédent venait d'établir. Et le
+  // titre était en minuscule alors que le précédent met la capitale.
+  // C'est le moment où l'on demande un engagement : c'est celui où il faut
+  // rappeler ce qu'on engage, pas celui où il faut se taire.
   function formulaire(date, heure) {
-    app.innerHTML = carte(
-      '<h1>' + esc(libelle(date)) + ' à ' + esc(hhh(heure)) + '</h1>' +
-      '<label for="nom">Votre nom</label><input id="nom" autocomplete="name" />' +
-      '<label for="tel">Votre téléphone (facultatif)</label><input id="tel" type="tel" autocomplete="tel" />' +
-      '<p style="margin-top:18px"><button class="btn" id="go">Confirmer ce rendez-vous</button></p>' +
-      '<button class="lien" id="retour">← revenir aux créneaux</button>');
-    document.getElementById('retour').addEventListener('click', afficherCreneaux);
+    var cx = F.commercial || {};
+    var duree = (F.dispo && F.dispo.duree_min != null)
+      ? F.dispo.duree_min
+      : ((window.V2RDV && window.V2RDV.DEFAUT_DISPO && window.V2RDV.DEFAUT_DISPO.duree_min) || null);
+    var ou = (F.officine && F.officine.nom) ? F.officine.nom : '';
+
+    app.innerHTML =
+      '<div class="qui"><span class="av">' +
+        esc(String(cx.prenom || '?').charAt(0).toUpperCase()) + '</span>' +
+        '<span><b>' + esc(cx.prenom || '') + '</b>' +
+        '<small>Intégral Pharma · votre secteur</small></span></div>' +
+      '<h1>Plus qu’une chose&nbsp;: votre nom</h1>' +
+      '<div class="recap">' +
+        '<p class="quand">' + esc(capit(libelle(date))) + '</p>' +
+        '<p class="heure">' + esc(hhh(heure)) +
+          (duree ? ' <span>· ' + esc(duree) + ' minutes</span>' : '') + '</p>' +
+        (ou ? '<p class="lieu">Chez vous, ' + esc(ou) + '</p>' : '') +
+      '</div>' +
+      carte(
+        '<label for="nom">Votre nom</label><input id="nom" autocomplete="name" />' +
+        '<label for="tel">Votre téléphone (facultatif)</label><input id="tel" type="tel" autocomplete="tel" />' +
+        '<p style="margin-top:18px"><button class="btn" id="go">Confirmer ce rendez-vous</button></p>') +
+      '<div class="pied"><div class="secours">' +
+        '<button id="retour">← Choisir un autre horaire</button>' +
+      '</div></div>';
+    document.getElementById('retour').addEventListener('click', function () {
+      afficherCreneaux(); window.scrollTo(0, 0);
+    });
     document.getElementById('go').addEventListener('click', function () {
       var b = this;
       function rendre() { b.disabled = false; b.textContent = 'Confirmer ce rendez-vous'; }

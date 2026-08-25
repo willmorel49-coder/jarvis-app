@@ -31,8 +31,8 @@
   h1 { font-size:22px; margin:0 0 6px; letter-spacing:-.01em; }
   .sub { color:var(--gris); margin:0 0 4px; }
   .jour { font-weight:600; margin:0 0 10px; }
-  .creneaux { display:flex; flex-wrap:wrap; gap:10px; }
-  .cr { min-height:48px; min-width:96px; padding:12px 16px; font-size:17px; font-weight:600;
+  .creneaux { display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; }
+  .cr { min-height:48px; padding:12px 8px; font-size:17px; font-weight:600;
         background:#fff; color:var(--bleu); border:1.5px solid var(--bleu); border-radius:12px;
         cursor:pointer; font-family:inherit; }
   .cr:active { background:var(--bleu); color:#fff; }
@@ -101,6 +101,32 @@
   .autre { display:block; width:100%; min-height:52px; margin-top:4px; border-radius:14px;
            border:1px solid var(--bord); background:#fff; color:var(--encre); font-size:15.5px;
            font-weight:650; cursor:pointer; font-family:inherit; }
+
+  /* ── Le choix du mois. Il FILTRE, il ne fait pas défiler. ──
+     Avant, les six mois étaient tous construits : 25 683 px et 511 créneaux,
+     soit trente écrans de défilement. Un seul mois est bâti à la fois. */
+  .mois-choix { display:grid; grid-template-columns:1fr 1fr 1fr; gap:9px; margin:0 0 22px; }
+  .mc { min-height:60px; padding:9px 6px; border-radius:14px; border:1.5px solid var(--bord);
+        background:#fff; color:var(--encre); font:inherit; font-size:15px; font-weight:700;
+        cursor:pointer; text-align:center; line-height:1.2;
+        box-shadow:0 1px 0 #fff inset, 0 6px 16px -12px rgba(16,19,28,.3); }
+  .mc small { display:block; font-size:13px; font-weight:500; color:var(--gris); margin-top:3px; }
+  .mc.on { border-color:var(--bleu); background:linear-gradient(150deg,#0B5BEE,#0039A8); color:#fff;
+           box-shadow:0 1px 0 rgba(255,255,255,.3) inset, 0 10px 22px -11px rgba(0,57,168,.85); }
+  .mc.on small { color:rgba(255,255,255,.82); }
+
+  /* ── Le récapitulatif, juste avant de demander un engagement. ── */
+  .recap { padding:18px 20px; margin:0 0 16px; border-radius:18px; color:#fff; position:relative;
+           overflow:hidden; background:linear-gradient(160deg,#0B5BEE,#0039A8);
+           box-shadow:0 14px 30px -16px rgba(0,57,168,.9); }
+  .recap::after { content:''; position:absolute; inset:0; pointer-events:none;
+    background:radial-gradient(90% 120% at 12% -20%, rgba(255,255,255,.28), rgba(255,255,255,0) 60%); }
+  .recap p { margin:0; position:relative; }
+  .recap .quand { font-size:14px; color:rgba(255,255,255,.86); }
+  .recap .heure { font-size:30px; font-weight:800; letter-spacing:-.035em; margin-top:2px; }
+  .recap .heure span { font-size:15px; font-weight:600; color:rgba(255,255,255,.84);
+                       letter-spacing:0; }
+  .recap .lieu { font-size:14.5px; color:rgba(255,255,255,.90); margin-top:6px; }
   @media (prefers-reduced-motion: reduce) { * { animation:none !important; transition:none !important; } }
 </style>
 </head>
@@ -110,14 +136,14 @@
   <!-- Servi depuis chez nous, pas depuis un CDN : cette page s'ouvre DANS une
        officine, dont le réseau filtre parfois les domaines extérieurs. Fichier
        identique au bit près à celui de jsdelivr (même empreinte sha384 qu'avant). -->
-  <script src="vendor/supabase/supabase-2.112.2.min.js?v=20260825c"
+  <script src="vendor/supabase/supabase-2.112.2.min.js?v=20260825d"
           integrity="sha384-B2duOBIryCXbX4eDE4BdJwtNkQMRQde3o6IsjfPW28E6aH1CYE96hHeZRG3zY56O"></script>
   <script>
     window.SUPABASE_URL = 'https://iyvavhnlhxksokkerkos.supabase.co';
     window.SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5dmF2aG5saHhrc29ra2Vya29zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1NjU2NTYsImV4cCI6MjA5MzE0MTY1Nn0.eMdW6vUdoyVpZbqKXp6FNYTajwKEf4x-Xyj5zj1igO4';
   </script>
-  <script src="v2-rdv-creneaux.js?v=20260825c"></script>
-  <script src="v2-rdv-ics.js?v=20260825c"></script>
-  <script src="rdv-public.js?v=20260825c"></script>
+  <script src="v2-rdv-creneaux.js?v=20260825d"></script>
+  <script src="v2-rdv-ics.js?v=20260825d"></script>
+  <script src="rdv-public.js?v=20260825d"></script>
 </body>
 </html>
