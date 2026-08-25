@@ -127,6 +127,32 @@
     return deps.indexOf(mien) !== -1;
   };
 
+  // ═══════════════════════════════════════════════════════════════
+  //  LES JOURNÉES OUVERTES À LA RÉSERVATION (25/08/2026)
+  // ═══════════════════════════════════════════════════════════════
+  // Will : « on doit pouvoir choisir de donner accès à la prise de rdv que
+  // aux jours où il y a 0 rdv », puis « je veux décider jour par jour ».
+  //
+  // ⚠️ Cette fonction DOIT rendre le même verdict que `rdv_jour_ouvert()` en
+  // base. Le serveur seul fait foi — ici on ne fait qu'éviter d'afficher un
+  // créneau qui serait refusé au clic. Deux chemins qui décident la même
+  // chose finissent par décider différemment : si l'un des deux change, c'est
+  // l'autre qu'il faut corriger, pas contourner.
+  //
+  // Les mêmes prudences qu'ailleurs :
+  //   1. mode normal (défaut) : une journée sans avis reste OUVERTE ;
+  //   2. `ouvert === false` ferme une journée ponctuellement ;
+  //   3. mode « je choisis mes jours » : il faut un oui explicite.
+  M.jourOuvert = function (dateISO, secteurs, joursChoisis) {
+    var liste = secteurs || [], decl = null, i;
+    for (i = 0; i < liste.length; i++) {
+      if (liste[i] && liste[i].date === dateISO) { decl = liste[i]; break; }
+    }
+    var avis = decl ? decl.ouvert : null;
+    if (joursChoisis) return avis === true;
+    return avis !== false;
+  };
+
   M.trajetMin = function (km, dispo) {
     var d = fusionner(dispo);
     return Math.round(km / d.vitesse_kmh * 60) + d.marge_route_min;
@@ -289,6 +315,7 @@
     var agenda = (p && p.agenda) || [];
     // Les journées où le commercial a déclaré où il sera.
     var secteurs = (p && p.secteurs) || [];
+    var joursChoisis = !!(p && p.dispo && p.dispo.jours_choisis);
     var aujourdhui = (p && p.aujourdhui) || new Date().toISOString().slice(0, 10);
 
     var parDate = {};
@@ -303,6 +330,8 @@
       // Avant même de regarder les heures : ce jour-là, est-il dans le
       // département de cette officine ?
       if (!M.secteurOk(iso, officine, secteurs)) continue;
+      // Une journée que le commercial n'ouvre pas ne doit pas même apparaître.
+      if (!M.jourOuvert(iso, secteurs, joursChoisis)) continue;
       var plages = plagesDuJour(iso, d, blocages, agenda);
       if (!plages) continue;
       var j = M.jour(iso, parDate[iso] || [], officine, d, plages);
@@ -344,6 +373,7 @@
     // pharmacien verrait trois dates cohérentes puis, d'un clic, cent trente
     // dates qui ne le sont plus — dont celles où le commercial est à 300 km.
     var secteurs = (p && p.secteurs) || [];
+    var joursChoisis = !!(p && p.dispo && p.dispo.jours_choisis);
     var aujourdhui = (p && p.aujourdhui) || new Date().toISOString().slice(0, 10);
     // 180 jours d'horizon ne font qu'environ 130 jours OUVRÉS : ce plafond
     // doit rester au-dessus, sinon la liste s'arrête avant la fin des six mois
@@ -362,6 +392,8 @@
     for (var i = d.delai_min_jours; i <= d.horizon_jours && out.length < maxJours; i++) {
       var iso = isoPlus(aujourdhui, i);
       if (!M.secteurOk(iso, officine, secteurs)) continue;
+      // Une journée que le commercial n'ouvre pas ne doit pas même apparaître.
+      if (!M.jourOuvert(iso, secteurs, joursChoisis)) continue;
       var plages = plagesDuJour(iso, d, blocages, agenda);
       if (!plages) continue;
       var j = M.jour(iso, parDate[iso] || [], officine, d, plages);

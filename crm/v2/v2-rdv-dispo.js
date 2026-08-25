@@ -57,7 +57,41 @@
       '.v2-rdvd-vide{color:var(--muted);font-size:14px;margin:10px 0 0}',
       '.v2-rdvd-actions{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0 0}',
       '.v2-rdvd-actions .v2-btn{min-height:48px}',
-      '@media (max-width:430px){.v2-rdvd-jour label{min-width:100%}}'
+      '@media (max-width:430px){.v2-rdvd-jour label{min-width:100%}}',
+      // ── Les journées que j'ouvre ────────────────────────────────
+      '.v2-rdvj-tete{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;',
+      '  background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);',
+      '  margin-bottom:12px}',
+      '.v2-rdvj-tete .tx{flex:1;min-width:0}',
+      '.v2-rdvj-tete b{display:block;font-size:15px;font-weight:700}',
+      '.v2-rdvj-tete small{display:block;font-size:13.5px;color:var(--muted);margin-top:3px;',
+      '  line-height:1.5}',
+      // L'interrupteur : la case fait 44 px de haut, quoi qu'il arrive.
+      '.v2-rdvj-bascule{flex:0 0 auto;display:flex;align-items:center;min-height:44px;',
+      '  gap:9px;cursor:pointer;font-size:14px;font-weight:650}',
+      '.v2-rdvj-bascule input{width:22px;height:22px;accent-color:var(--ip-blue)}',
+      '.v2-rdvj-compte{font-size:14px;color:var(--muted);margin:0 0 12px;line-height:1.5}',
+      '.v2-rdvj-compte b{color:var(--text);font-weight:800}',
+      '.v2-rdvj-grille{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}',
+      '@media(max-width:430px){.v2-rdvj-grille{grid-template-columns:repeat(4,1fr)}}',
+      '.v2-rdvj-c{min-height:62px;padding:7px 4px;border-radius:12px;border:1.5px solid var(--line);',
+      '  background:var(--card);color:inherit;font:inherit;cursor:pointer;text-align:center;',
+      '  display:flex;flex-direction:column;justify-content:center;line-height:1.15;',
+      '  box-shadow:0 1px 0 #fff inset,0 5px 14px -11px rgba(16,19,28,.3)}',
+      '.v2-rdvj-c .j{font-size:13px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;',
+      '  color:var(--muted)}',
+      '.v2-rdvj-c .n{font-size:19px;font-weight:800;letter-spacing:-.02em;',
+      '  font-variant-numeric:tabular-nums}',
+      '.v2-rdvj-c .m{font-size:13px;color:var(--muted)}',
+      // Ouverte : la couleur de la marque. Fermée : sourde et barrée — on doit
+      // voir d'un coup d'œil ce qu'un pharmacien peut réellement choisir.
+      '.v2-rdvj-c.on{border-color:var(--ip-blue);background:#EAF0FE}',
+      '.v2-rdvj-c.on .j,.v2-rdvj-c.on .m{color:var(--ip-blue)}',
+      '.v2-rdvj-c.on .n{color:var(--ip-blue-d)}',
+      '.v2-rdvj-c.off{opacity:.55;border-style:dashed}',
+      '.v2-rdvj-c.off .n{text-decoration:line-through}',
+      '.v2-sr-only{position:absolute;width:1px;height:1px;overflow:hidden;',
+      '  clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}'
     ].join('');
     document.head.appendChild(s);
   }
@@ -176,6 +210,151 @@
       '</div>';
   }
 
+  // ═══════════════════════════════════════════════════════════════
+  //  LES JOURNÉES QUE J'OUVRE À LA RÉSERVATION (25/08/2026)
+  // ═══════════════════════════════════════════════════════════════
+  // Will : « on doit pouvoir choisir de donner accès à la prise de rdv que
+  // aux jours où il y a 0 rdv » → « je veux décider jour par jour ».
+  //
+  // ⚠️ La règle qui décide vit EN BASE (`rdv_jour_ouvert`, appelée par
+  // `rdv_poser`). Cet écran ne fait qu'écrire l'avis du commercial ; le
+  // moteur du navigateur ne fait que refléter. Un seul endroit décide.
+  //
+  // ⚠️ L'interrupteur est à OFF pour tout le monde au départ : la
+  // fonctionnalité est livrée à toute l'équipe, mais tant que personne ne
+  // l'active, rien ne change — surtout pas se rendre injoignable sans le
+  // savoir. C'est la même prudence que le secteur du jour.
+  var JOURS_ETAT = { mode: false, avis: {}, travaille: null };
+
+  function isoPlusJours(n) {
+    var d = new Date();
+    d.setDate(d.getDate() + n);
+    return d.toISOString().slice(0, 10);
+  }
+
+  V2.rdvJours = {
+    charger: function () {
+      var c = sb(), u = uid();
+      if (!c || !u) return Promise.resolve(JOURS_ETAT);
+      return c.from('rdv_secteur_jour').select('date, ouvert').eq('user_id', u)
+        .gte('date', isoPlusJours(0)).lte('date', isoPlusJours(56))
+        .then(function (r) {
+          JOURS_ETAT.avis = {};
+          ((r && r.data) || []).forEach(function (x) {
+            if (x && x.ouvert != null) JOURS_ETAT.avis[x.date] = x.ouvert;
+          });
+          return JOURS_ETAT;
+        }, function () { return JOURS_ETAT; });
+    },
+
+    // Bascule le mode. Affichage optimiste puis retour arrière si l'écriture
+    // échoue : une action ne recharge jamais l'écran.
+    mode: function (actif) {
+      var c = sb(), u = uid();
+      if (!c || !u) { V2.toast('Connecte-toi pour régler tes journées.'); return; }
+      var avant = JOURS_ETAT.mode;
+      JOURS_ETAT.mode = !!actif;
+      V2.rdvJours.repeindre();
+      c.from('rdv_dispo').upsert({ user_id: u, jours_choisis: !!actif },
+                                 { onConflict: 'user_id' })
+        .then(function (r) {
+          if (r && r.error) throw r.error;
+          V2.toast(actif
+            ? 'Seules les journées que tu coches seront proposées.'
+            : 'Toutes tes journées redeviennent proposables.');
+        })
+        .catch(function () {
+          JOURS_ETAT.mode = avant;
+          V2.rdvJours.repeindre();
+          V2.toast('Impossible d’enregistrer ce réglage.');
+        });
+    },
+
+    // Coche / décoche UNE journée.
+    basculer: function (iso) {
+      var c = sb(), u = uid();
+      if (!c || !u) { V2.toast('Connecte-toi pour régler tes journées.'); return; }
+      var avant = JOURS_ETAT.avis[iso];
+      // En mode « je choisis », on bascule entre ouvert et rien.
+      // En mode normal, on bascule entre fermé et rien.
+      var neuf = JOURS_ETAT.mode ? (avant === true ? null : true)
+                                 : (avant === false ? null : false);
+      if (neuf === null) delete JOURS_ETAT.avis[iso]; else JOURS_ETAT.avis[iso] = neuf;
+      V2.rdvJours.repeindre();
+      // ⚠️ On écrit `ouvert = null` plutôt que d'effacer la ligne : elle peut
+      // porter un secteur du jour, qu'une suppression emporterait avec elle.
+      c.from('rdv_secteur_jour').upsert({ user_id: u, date: iso, ouvert: neuf },
+                                        { onConflict: 'user_id,date' })
+        .then(function (r) { if (r && r.error) throw r.error; })
+        .catch(function () {
+          if (avant === undefined) delete JOURS_ETAT.avis[iso];
+          else JOURS_ETAT.avis[iso] = avant;
+          V2.rdvJours.repeindre();
+          V2.toast('Impossible d’enregistrer cette journée.');
+        });
+    },
+
+    repeindre: function () {
+      var z = document.getElementById('v2-rdvj-zone');
+      if (z) z.innerHTML = V2.rdvJours.corps();
+      var i = document.getElementById('v2-rdvj-mode');
+      if (i) i.checked = JOURS_ETAT.mode;
+    },
+
+    corps: function () {
+      var JJ = ['dim', 'lun', 'mar', 'mer', 'jeu', 'ven', 'sam'];
+      var MM = ['janv', 'févr', 'mars', 'avr', 'mai', 'juin',
+                'juil', 'août', 'sept', 'oct', 'nov', 'déc'];
+      // Les journées où ce commercial travaille, d'après SA grille horaire.
+      // Sans repli en dur : si la grille est vide, il n'y a rien à ouvrir.
+      var trav = JOURS_ETAT.travaille || {};
+      function ouvrable(js) { return !!(trav[String(js)] && trav[String(js)].length); }
+
+      var cases = '', n = 0, i, iso, d, js, avis, cls, dit;
+      for (i = 0; i < 70 && n < 25; i++) {
+        iso = isoPlusJours(i);
+        d = new Date(iso + 'T12:00:00');
+        js = d.getDay();
+        if (!ouvrable(js)) continue;              // pas un jour où il travaille
+        n++;
+        avis = JOURS_ETAT.avis[iso];
+        // Ce que le pharmacien verra vraiment — même règle qu'en base.
+        var ouvert = JOURS_ETAT.mode ? (avis === true) : (avis !== false);
+        cls = ouvert ? 'v2-rdvj-c on' : 'v2-rdvj-c off';
+        dit = ouvert ? 'ouverte à la réservation' : 'fermée';
+        cases += '<button type="button" class="' + cls + '" ' +
+          'aria-pressed="' + (ouvert ? 'true' : 'false') + '" ' +
+          'onclick="V2.rdvJours.basculer(\'' + esc(iso) + '\')">' +
+          '<span class="j">' + esc(JJ[js]) + '</span>' +
+          '<span class="n">' + esc(d.getDate()) + '</span>' +
+          '<span class="m">' + esc(MM[d.getMonth()]) + '</span>' +
+          '<span class="v2-sr-only">' + esc(dit) + '</span></button>';
+      }
+      var ouvertes = 0, total = 0;
+      (function () {
+        var k, iso2, dd, j2;
+        for (k = 0; k < 70 && total < 25; k++) {
+          iso2 = isoPlusJours(k); dd = new Date(iso2 + 'T12:00:00'); j2 = dd.getDay();
+          if (!ouvrable(j2)) continue;
+          total++;
+          var a = JOURS_ETAT.avis[iso2];
+          if (JOURS_ETAT.mode ? (a === true) : (a !== false)) ouvertes++;
+        }
+      })();
+      if (!total) {
+        return '<p class="v2-rdvj-compte">Renseigne d’abord tes journées de travail ' +
+          'ci-dessous — c’est parmi elles que tu choisiras.</p>';
+      }
+      return '<p class="v2-rdvj-compte"><b>' + ouvertes + '</b> journée' +
+          (ouvertes > 1 ? 's' : '') + ' ouverte' + (ouvertes > 1 ? 's' : '') +
+          ' sur les ' + total + ' prochaines' +
+          (ouvertes === 0
+            ? ' — <b>aucun pharmacien ne peut réserver</b>. Coche au moins une journée.'
+            : '') + '</p>' +
+        '<div class="v2-rdvj-grille">' + cases + '</div>';
+    }
+  };
+
   V2.pages.rdvdispo = {
     render: function (root) {
       ensureCss();
@@ -190,9 +369,13 @@
         (V2.rdvAgenda ? V2.rdvAgenda.charger() : Promise.resolve(null)),
         (V2.rdvLien ? V2.rdvLien.charger() : Promise.resolve(null)),
         (V2.rdvNotif ? V2.rdvNotif.charger() : Promise.resolve(null)),
-        (V2.rdvFlux ? V2.rdvFlux.charger() : Promise.resolve(null))
+        (V2.rdvFlux ? V2.rdvFlux.charger() : Promise.resolve(null)),
+        (V2.rdvJours ? V2.rdvJours.charger() : Promise.resolve(null))
       ]).then(function (res) {
         var st = res[0], ag = res[1], lien = res[2], notif = res[3], flux = res[4];
+        // Le mode vit dans rdv_dispo, déjà lu par charger().
+        JOURS_ETAT.mode = !!(st.dispo && st.dispo.jours_choisis);
+        JOURS_ETAT.travaille = (st.dispo && st.dispo.jours) || {};
         var d = st.dispo, k, jours = '';
         for (k = 1; k <= 5; k++) jours += ligneJour(String(k), d.jours && d.jours[String(k)]);
 
@@ -250,6 +433,18 @@
           '<div class="v2-rdvd-actions">' +
             '<button class="v2-btn v2-btn-primary" onclick="V2.rdvDispo.enregistrer()">Enregistrer</button>' +
           '</div>' +
+
+          '<div class="v2-rdvd-sec">Les journées que j’ouvre</div>' +
+          '<div class="v2-rdvj-tete">' +
+            '<span class="tx"><b>Je choisis moi-même mes journées</b>' +
+            '<small>Décoché, toutes tes journées de travail sont proposées aux ' +
+            'pharmaciens, sauf celles que tu fermes. Coché, seules celles que tu ' +
+            'coches le sont.</small></span>' +
+            '<label class="v2-rdvj-bascule"><input type="checkbox" id="v2-rdvj-mode" ' +
+              (JOURS_ETAT.mode ? 'checked ' : '') +
+              'onchange="V2.rdvJours.mode(this.checked)" /> Activer</label>' +
+          '</div>' +
+          '<div id="v2-rdvj-zone">' + (V2.rdvJours ? V2.rdvJours.corps() : '') + '</div>' +
 
           '<div class="v2-rdvd-sec">Je ne suis pas disponible</div>' +
           '<div class="v2-rdvd-bl">' +
