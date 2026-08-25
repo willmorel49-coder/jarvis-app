@@ -490,7 +490,10 @@ try:
                 logo_idx.setdefault(v, b64)
 
     grps_all = set(o['groupement'] for o in officines if o.get('groupement'))
-    for g in grps_all:
+    # `sorted` et pas l'ordre du set : sans lui, GRP_LOGOS sortait dans un ordre
+    # différent à chaque exécution et les 3,6 Mo de logos apparaissaient comme
+    # modifiés à chaque passage du robot, alors que rien n'avait bougé.
+    for g in sorted(grps_all):
         hit = None
         for v in _logo_variants(_gkey(g)):
             if v in logo_idx and v not in _STOP:
