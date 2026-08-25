@@ -412,9 +412,6 @@
     if (document.getElementById('v2-rad-css')) return;
     var s = document.createElement('style'); s.id = 'v2-rad-css';
     s.textContent = [
-      '.rad-hero{margin:8px 0 16px}',
-      '.rad-hero h1{font-size:clamp(24px,4vw,32px);font-weight:800;letter-spacing:-.03em;margin:0 0 6px}',
-      '.rad-hero p{color:var(--muted);font-size:14px;max-width:60ch;margin:0;line-height:1.55}',
       '.rad-sec{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;',
       '  color:var(--muted);margin:22px 0 9px}',
       '.rad-l{background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);',
@@ -508,7 +505,7 @@
     render: function (root) {
       css();
       var top = V2.topbar ? V2.topbar({ back: true, backTo: 'rdv', backLabel: 'Rendez-vous' }) : '';
-      var hero = '<div class="rad-hero"><h1>Qui inviter</h1>' +
+      var hero = '<div class="v2-rdv-cap"><h1>Qui inviter</h1>' +
         '<p>La liste se compose toute seule : depuis quand tu ne l’as pas vue, si ses ' +
         'achats décrochent, et si elle achète des références aujourd’hui en tension ' +
         'dont nous avons du stock. Chaque ligne dit pourquoi elle est là.</p></div>';

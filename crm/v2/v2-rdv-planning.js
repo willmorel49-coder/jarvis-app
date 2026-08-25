@@ -224,9 +224,6 @@
     if (document.getElementById('v2-agp-css')) return;
     var s = document.createElement('style'); s.id = 'v2-agp-css';
     s.textContent = [
-      '.agp-hero{margin:8px 0 14px}',
-      '.agp-hero h1{font-size:clamp(24px,4vw,32px);font-weight:800;letter-spacing:-.03em;margin:0 0 6px}',
-      '.agp-hero p{color:var(--muted);font-size:14px;max-width:56ch;margin:0;line-height:1.5}',
       '.agp-etat{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;font-size:13.5px;',
       '  background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);padding:11px 14px;margin:0 0 16px}',
       '.agp-pastille{display:inline-block;width:9px;height:9px;border-radius:50%;flex:0 0 auto}',
@@ -1063,12 +1060,12 @@
       // le prochain « Noter un rendez-vous » deviendrait un rattachement.
       V2.rdvPlanningCleEnCours = null;
       var top = V2.topbar ? V2.topbar({ back: true, backTo: 'rdv', backLabel: 'Rendez-vous' }) : '';
-      root.innerHTML = top + '<div class="v2-wrap narrow"><div class="agp-hero">' +
+      root.innerHTML = top + '<div class="v2-wrap narrow"><div class="v2-rdv-cap">' +
         '<h1>Mon agenda</h1><p>Lecture de ton agenda…</p></div></div>';
 
       var c = sb(), u = uid();
       if (!c || !u) {
-        root.innerHTML = top + '<div class="v2-wrap narrow"><div class="agp-hero">' +
+        root.innerHTML = top + '<div class="v2-wrap narrow"><div class="v2-rdv-cap">' +
           '<h1>Mon agenda</h1><p>Connecte-toi pour voir ton planning.</p></div></div>';
         return;
       }
@@ -1180,7 +1177,7 @@
         }
 
         root.innerHTML = top + '<div class="v2-wrap narrow">' +
-          '<div class="agp-hero"><h1>Mon agenda</h1>' +
+          '<div class="v2-rdv-cap"><h1>Mon agenda</h1>' +
             '<p>Ton trimestre en haut : touche un jour pour dire où tu seras. ' +
             'En dessous, tes quatre prochaines semaines heure par heure, exactement ' +
             'comme le pharmacien les voit quand il ouvre ton lien — ce qui est en ' +
@@ -1211,7 +1208,7 @@
               'Mes rendez-vous</button>' +
           '</div></div>';
       }).catch(function () {
-        root.innerHTML = top + '<div class="v2-wrap narrow"><div class="agp-hero">' +
+        root.innerHTML = top + '<div class="v2-wrap narrow"><div class="v2-rdv-cap">' +
           '<h1>Mon agenda</h1><p>Ton planning n’a pas pu être chargé. Réessaie dans un instant.</p>' +
           '</div></div>';
       });

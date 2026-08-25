@@ -37,9 +37,6 @@
     if (document.getElementById('v2-rdva-css')) return;
     var s = document.createElement('style'); s.id = 'v2-rdva-css';
     s.textContent = [
-      '.rda-hero{margin:8px 0 16px}',
-      '.rda-hero h1{font-size:clamp(24px,4vw,32px);font-weight:800;letter-spacing:-.03em;margin:0 0 6px}',
-      '.rda-hero p{color:var(--muted);font-size:14px;max-width:56ch;margin:0;line-height:1.5}',
       '.rda-sec{font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;',
       '  color:var(--muted);margin:24px 0 10px}',
       '.rda-box{background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);padding:14px 16px}',
@@ -308,7 +305,7 @@
 
       var c = sb(), u = uid();
       if (!c || !u) {
-        root.innerHTML = top + '<div class="v2-wrap narrow"><div class="rda-hero">' +
+        root.innerHTML = top + '<div class="v2-wrap narrow"><div class="v2-rdv-cap">' +
           '<h1>Noter un rendez-vous</h1><p>Connecte-toi d’abord.</p></div></div>';
         return;
       }
@@ -403,7 +400,7 @@
       }
 
       root.innerHTML = top + '<div class="v2-wrap narrow">' +
-        '<div class="rda-hero"><h1>Noter un rendez-vous</h1>' +
+        '<div class="v2-rdv-cap"><h1>Noter un rendez-vous</h1>' +
           '<p>Pour un rendez-vous décroché au téléphone. L’officine est reprise du fichier — ' +
           'adresse, ville et téléphone compris — et le créneau devient occupé : ' +
           'plus personne ne pourra réserver par-dessus.</p></div>' +

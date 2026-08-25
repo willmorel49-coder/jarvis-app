@@ -655,3 +655,31 @@ html{-webkit-tap-highlight-color:transparent}
   letter-spacing:-.02em;color:var(--ip-blue)}
 .v2-boot-msg{color:var(--muted);font-size:14px}
 @media (prefers-reduced-motion: reduce){.v2-boot-splash .v2-spinner{animation:none}}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   L'en-tête commun des écrans « Rendez-vous » (25/08/2026)
+   ═══════════════════════════════════════════════════════════════
+   Huit écrans du module portaient huit classes différentes — .rda-hero,
+   .app-hero, .rad-hero, .agp-hero, .mm-hero, .rg-hero, .v2-camp-hero,
+   .v2-rdvd-hero — qui faisaient toutes exactement la même chose : un titre
+   plat, `margin:8px 0 16px`. Huit noms pour un seul objet, c'est huit
+   endroits à corriger le jour où l'on change d'avis.
+
+   Version compacte du bandeau de l'accueil (.v2-sem-cap) : même identité,
+   même source de lumière, moins de hauteur — un sous-écran ne doit pas
+   crier aussi fort que la page d'accueil du module.
+
+   ⚠️ La marge négative doit valoir EXACTEMENT le padding de .v2-wrap
+   (26px, 14px sous 640px), sinon la page défile de côté. */
+.v2-rdv-cap{position:relative;overflow:hidden;color:#fff;
+  margin:-8px -26px 18px;padding:16px 30px 17px;
+  background:linear-gradient(168deg,#0B5BEE,#0039A8)}
+.v2-rdv-cap::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(90% 120% at 12% -20%,rgba(255,255,255,.28),rgba(255,255,255,0) 60%)}
+.v2-rdv-cap h1{position:relative;margin:0;font-size:clamp(20px,4.5vw,24px);
+  font-weight:800;letter-spacing:-.03em}
+.v2-rdv-cap p{position:relative;margin:4px 0 0;font-size:14px;line-height:1.5;
+  color:rgba(255,255,255,.86);max-width:56ch}
+.v2-rdv-cap a{color:#fff;text-decoration:underline}
+@media(max-width:640px){.v2-rdv-cap{margin:-8px -14px 18px;padding:16px 20px 17px}}
