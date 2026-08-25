@@ -36,6 +36,27 @@
   function hhh(h) { return String(h).replace(':', 'h'); }
   // Capitale d'attaque, pour un libellé placé en tête de ligne.
   function capit(t) { return String(t).charAt(0).toUpperCase() + String(t).slice(1); }
+
+  // Pourquoi CE jour est proposé — et pas un autre. Toutes les études de
+  // conversion des pages de réservation disent la même chose : mettre en
+  // avant l'option recommandée, avec sa raison. « 3 horaires possibles » ne
+  // dit rien ; « je suis dans votre département ce jour-là » dit tout.
+  // ⚠️ On ne l'écrit QUE si le commercial a réellement déclaré son secteur
+  // ce jour-là. Rien inventé : sans déclaration, on retombe sur le nombre
+  // d'horaires, qui reste vrai.
+  function pourquoiCeJour(j) {
+    var n = j.creneaux.length;
+    var repli = esc(n) + ' horaire' + (n > 1 ? 's possibles' : ' possible');
+    try {
+      var deps = ((F.secteurs || []).filter(function (s) { return s.date === j.date; })[0] || {}).departements || [];
+      var cp = (F.officine && F.officine.cp) || (moi && moi.cp) || '';
+      var mien = (window.V2RDV && cp) ? window.V2RDV.departement(cp) : null;
+      if (mien && deps.indexOf(mien) !== -1) {
+        return 'Je suis dans votre secteur ce jour-là · ' + repli;
+      }
+    } catch (e) {}
+    return repli;
+  }
   // Un numéro français se lit par paires. Tout autre format (international,
   // longueur inhabituelle) est rendu inchangé plutôt que mal découpé.
   function telLisible(t) {
@@ -170,11 +191,13 @@
       '<p class="sub">Deux informations, et vous voyez mes créneaux.</p>' +
       carte(
       '<label for="of">Nom de votre officine</label>' +
-      '<input id="of" autocomplete="organization" placeholder="Pharmacie du Marché" />' +
+      '<input id="of" autocomplete="organization" spellcheck="false" ' +
+        'placeholder="Pharmacie du Marché…" />' +
       '<label for="cp">Code postal</label>' +
-      '<input id="cp" inputmode="numeric" maxlength="5" autocomplete="postal-code" placeholder="44000" />' +
+      '<input id="cp" inputmode="numeric" maxlength="5" autocomplete="postal-code" ' +
+        'spellcheck="false" placeholder="44000…" />' +
       '<p style="margin-top:18px"><button class="btn" id="ok">Voir les créneaux</button></p>' +
-      '<p id="err" style="color:#C7283D;margin-top:12px"></p>');
+      '<p id="err" role="alert" aria-live="polite" style="color:#C7283D;margin-top:12px"></p>');
     var b = document.getElementById('ok');
     b.addEventListener('click', function () {
       var nom = (document.getElementById('of').value || '').trim();
@@ -328,8 +351,7 @@
             '<span class="cal"><span class="m">' + esc(MOIS[+q[1] - 1].slice(0, 4)) + '</span>' +
               '<span class="d">' + esc(+q[2]) + '</span></span>' +
             '<span><b>' + esc(capit(libelle(j.date))) + '</b>' +
-              '<small>' + esc(j.creneaux.length) + ' horaire' +
-              (j.creneaux.length > 1 ? 's possibles' : ' possible') + '</small></span>' +
+              '<small>' + pourquoiCeJour(j) + '</small></span>' +
           '</div>' +
           '<div class="creneaux">' +
             j.creneaux.map(function (c) {
@@ -733,7 +755,7 @@
       '<p class="sub">Dites-le avec vos mots, je m’adapte.</p>' +
       carte(
       '<label for="pt">Votre préférence</label>' +
-      '<textarea id="pt" rows="3" placeholder="Ex. plutôt les mardis matin, ou après le 15 septembre"></textarea>' +
+      '<textarea id="pt" rows="3" placeholder="Ex. plutôt les mardis matin, ou après le 15 septembre…"></textarea>' +
       '<label for="pn">Votre nom</label><input id="pn" autocomplete="name" />' +
       '<label for="pp">Votre téléphone</label><input id="pp" type="tel" autocomplete="tel" />' +
       '<p style="margin-top:18px"><button class="btn" id="pgo">Envoyer</button></p>') +
