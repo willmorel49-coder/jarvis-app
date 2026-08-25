@@ -36,6 +36,13 @@
   function hhh(h) { return String(h).replace(':', 'h'); }
   // Capitale d'attaque, pour un libellé placé en tête de ligne.
   function capit(t) { return String(t).charAt(0).toUpperCase() + String(t).slice(1); }
+  // Un numéro français se lit par paires. Tout autre format (international,
+  // longueur inhabituelle) est rendu inchangé plutôt que mal découpé.
+  function telLisible(t) {
+    var n = String(t == null ? '' : t).replace(/[^0-9+]/g, '');
+    if (/^0[0-9]{9}$/.test(n)) return n.replace(/(..)(?=.)/g, '$1 ');
+    return String(t == null ? '' : t);
+  }
   function numero(s) { return String(s || '').replace(/[^0-9+]/g, ''); }
   function carte(html) { return '<div class="carte">' + html + '</div>'; }
 
@@ -269,7 +276,7 @@
           (ctoken
             ? (cx.tel
                 ? '<a href="tel:' + esc(numero(cx.tel)) + '">Appeler ' + esc(cx.prenom) +
-                  ' au ' + esc(cx.tel) + '</a>'
+                  ' au ' + esc(telLisible(cx.tel)) + '</a>'
                 : '')
             : '<button id="pref">Dites-moi ce qui vous arrange</button>') +
         '</div></div>';
@@ -300,7 +307,7 @@
       h += '<div class="pied">Aucun de ces moments ne vous va&nbsp;?' +
         '<div class="secours">' +
           (ctoken ? '' : '<button id="pref">Dites-moi ce qui vous arrange</button>') +
-          (cx.tel ? '<a href="tel:' + esc(numero(cx.tel)) + '">' + esc(cx.tel) + '</a>' : '') +
+          (cx.tel ? '<a href="tel:' + esc(numero(cx.tel)) + '">' + esc(telLisible(cx.tel)) + '</a>' : '') +
         '</div></div>';
     }
 
