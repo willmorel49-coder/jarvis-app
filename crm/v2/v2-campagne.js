@@ -37,9 +37,6 @@
     if (document.getElementById('v2-camp-css')) return;
     var s = document.createElement('style'); s.id = 'v2-camp-css';
     s.textContent = [
-      '.v2-camp-hero{margin:8px 0 18px}',
-      '.v2-camp-hero h1{font-size:clamp(24px,4vw,32px);font-weight:800;letter-spacing:-.03em;margin:0 0 6px}',
-      '.v2-camp-hero p{color:var(--muted);font-size:14px;max-width:56ch;margin:0;line-height:1.5}',
       '.v2-camp-sec{font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:24px 0 10px}',
       '.v2-camp-box{background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);padding:14px;margin-bottom:10px}',
       '.v2-camp-box label{display:block;font-weight:700;font-size:13px;margin:0 0 6px}',
@@ -415,7 +412,7 @@
       var r = root(); if (!r) return;
       var top = V2.topbar ? V2.topbar({ back: true, backTo: 'rdv', backLabel: 'Rendez-vous' }) : '';
       if (ETAT.i >= ETAT.file.length) {
-        r.innerHTML = top + '<div class="v2-wrap narrow"><div class="v2-camp-hero">' +
+        r.innerHTML = top + '<div class="v2-wrap narrow"><div class="v2-rdv-cap">' +
           '<h1>Campagne terminée</h1><p><b>' + ETAT.envoyes + '</b> mail(s) envoyé(s) sur ' +
           ETAT.file.length + (ETAT.passes ? ' · ' + ETAT.passes + ' passée(s)' : '') + '.</p></div>' +
           '<div class="v2-camp-acts">' +
@@ -476,7 +473,7 @@
         return '<option value="' + esc(m.cle) + '">' + esc(m.nom) + '</option>';
       }).join('');
       r.innerHTML = top + '<div class="v2-wrap narrow">' +
-        '<div class="v2-camp-hero"><h1>Campagne de rendez-vous</h1>' +
+        '<div class="v2-rdv-cap"><h1>Campagne de rendez-vous</h1>' +
           '<p>Le mail part de ta boîte, signé de ton nom. Tu relis, tu envoies. ' +
           'JARVIS prépare, il n’envoie jamais à ta place.</p></div>' +
 

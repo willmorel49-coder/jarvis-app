@@ -35,9 +35,6 @@
     if (document.getElementById('v2-rdvd-css')) return;
     var s = document.createElement('style'); s.id = 'v2-rdvd-css';
     s.textContent = [
-      '.v2-rdvd-hero{margin:8px 0 18px}',
-      '.v2-rdvd-hero h1{font-size:clamp(24px,4vw,32px);font-weight:800;letter-spacing:-.03em;margin:0 0 6px}',
-      '.v2-rdvd-hero p{color:var(--muted);font-size:14px;max-width:56ch;margin:0;line-height:1.5}',
       '.v2-rdvd-sec{font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:26px 0 10px}',
       '.v2-rdvd-jour{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:12px 14px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);margin-bottom:8px}',
       '.v2-rdvd-jour label{display:flex;align-items:center;gap:9px;min-height:44px;font-weight:700;min-width:120px;cursor:pointer}',
@@ -359,7 +356,7 @@
     render: function (root) {
       ensureCss();
       var top = V2.topbar ? V2.topbar({ back: true, backTo: 'rdv', backLabel: 'Rendez-vous' }) : '';
-      root.innerHTML = top + '<div class="v2-wrap narrow"><div class="v2-rdvd-hero">' +
+      root.innerHTML = top + '<div class="v2-wrap narrow"><div class="v2-rdv-cap">' +
         '<h1>Mes disponibilités</h1><p>Chargement…</p></div></div>';
 
       Promise.all([
@@ -389,7 +386,7 @@
         }).join('');
 
         root.innerHTML = top + '<div class="v2-wrap narrow">' +
-          '<div class="v2-rdvd-hero"><h1>Mes disponibilités</h1>' +
+          '<div class="v2-rdv-cap"><h1>Mes disponibilités</h1>' +
             '<p>Ce que les pharmaciens pourront réserver quand tu leur envoies un lien. ' +
             'Décoche un jour pour qu’il n’apparaisse jamais.</p></div>' +
 

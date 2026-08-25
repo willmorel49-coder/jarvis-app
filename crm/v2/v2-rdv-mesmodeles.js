@@ -150,9 +150,6 @@
     if (document.getElementById('v2-mm-css')) return;
     var s = document.createElement('style'); s.id = 'v2-mm-css';
     s.textContent = [
-      '.mm-hero{margin:8px 0 16px}',
-      '.mm-hero h1{font-size:clamp(24px,4vw,32px);font-weight:800;letter-spacing:-.03em;margin:0 0 6px}',
-      '.mm-hero p{color:var(--muted);font-size:14px;max-width:60ch;margin:0;line-height:1.55}',
       '.mm-sec{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;',
       '  color:var(--muted);margin:22px 0 9px}',
       '.mm-box{background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);padding:15px}',
@@ -395,7 +392,7 @@
     render: function (root) {
       css();
       var top = V2.topbar ? V2.topbar({ back: true, backTo: 'rdv', backLabel: 'Rendez-vous' }) : '';
-      var hero = '<div class="mm-hero"><h1>Mes modèles</h1>' +
+      var hero = '<div class="v2-rdv-cap"><h1>Mes modèles</h1>' +
         '<p>Tes mots à toi. Les étiquettes entre accolades sont remplacées par les ' +
         'informations de l’officine au moment de l’envoi : son nom, son titulaire, ' +
         'ce qu’elle fait avec nous, depuis combien de temps tu ne l’as pas vue.</p></div>';

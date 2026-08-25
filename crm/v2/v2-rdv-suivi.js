@@ -251,8 +251,17 @@
       // padding de .v2-wrap, sinon elle déborde et crée un défilement
       // horizontal. Ce padding vaut 26px, et 14px sous 640px (v2.css) —
       // mesuré, pas supposé : un -16px unique débordait de 2px sur mobile.
-      '.sv-cap{margin:-8px -26px 0;padding:24px 30px 66px;color:#fff;',
+      // ⚠️ Ce bandeau garde son padding de 66px : les trois chiffres (.sv-ch)
+      // remontent DEDANS avec une marge de -50px. Le remplacer par le bandeau
+      // commun .v2-rdv-cap, plus compact, ferait remonter les chiffres dans
+      // le vide. On l'aligne donc autrement : par la source de lumière, qui
+      // lui manquait — un aplat bleu sans lumière est un aplat mort.
+      '.sv-cap{position:relative;overflow:hidden;margin:-8px -26px 0;',
+      '  padding:24px 30px 66px;color:#fff;',
       '  background:linear-gradient(165deg,#0B5BEE,#0039A8)}',
+      '.sv-cap::after{content:"";position:absolute;inset:0;pointer-events:none;',
+      '  background:radial-gradient(90% 120% at 12% -20%,rgba(255,255,255,.28),rgba(255,255,255,0) 60%)}',
+      '.sv-cap h1,.sv-cap p{position:relative}',
       '@media(max-width:640px){.sv-cap{margin:-8px -14px 0;padding:24px 20px 66px}}',
       '.sv-cap h1{font-size:clamp(23px,5vw,29px);font-weight:800;letter-spacing:-.03em;margin:0 0 6px}',
       '.sv-cap p{margin:0;font-size:14px;color:rgba(255,255,255,.84)}',

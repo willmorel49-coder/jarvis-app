@@ -216,9 +216,6 @@
     if (document.getElementById('v2-rdvgrp-css')) return;
     var s = document.createElement('style'); s.id = 'v2-rdvgrp-css';
     s.textContent = [
-      '.rg-hero{margin:8px 0 16px}',
-      '.rg-hero h1{font-size:clamp(23px,4vw,30px);font-weight:800;letter-spacing:-.03em;margin:0 0 6px}',
-      '.rg-hero p{color:var(--muted);font-size:14px;margin:0;line-height:1.5;max-width:60ch}',
       '.rg-sec{font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;',
       '  color:var(--muted);margin:24px 0 10px}',
       '.rg-box{background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);',
@@ -266,7 +263,7 @@
       E.i = 0; E.envoyes = 0; E.passes = 0; E.doublons = 0;
 
       var r = root(); if (!r) return;
-      r.innerHTML = top() + '<div class="v2-wrap narrow"><div class="rg-hero">' +
+      r.innerHTML = top() + '<div class="v2-wrap narrow"><div class="v2-rdv-cap">' +
         '<h1>Envoi groupé</h1><p>Préparation…</p></div></div>';
 
       // Le lien permanent est la clé de voûte : sans lui, le mail part
@@ -381,7 +378,7 @@
 
       if (E.i >= E.lots.length) {
         var totalDest = E.lots.reduce(function (s, l) { return s + l.length; }, 0);
-        r.innerHTML = top() + '<div class="v2-wrap narrow"><div class="rg-hero">' +
+        r.innerHTML = top() + '<div class="v2-wrap narrow"><div class="v2-rdv-cap">' +
           '<h1>Envoi groupé terminé</h1>' +
           '<p><b>' + esc(E.envoyes) + '</b> lot' + (E.envoyes > 1 ? 's' : '') + ' envoyé' +
           (E.envoyes > 1 ? 's' : '') + ' sur ' + esc(E.lots.length) +

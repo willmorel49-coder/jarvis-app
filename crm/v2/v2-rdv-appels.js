@@ -160,9 +160,6 @@
     if (document.getElementById('v2-app-css')) return;
     var s = document.createElement('style'); s.id = 'v2-app-css';
     s.textContent = [
-      '.app-hero{margin:8px 0 16px}',
-      '.app-hero h1{font-size:clamp(24px,4vw,32px);font-weight:800;letter-spacing:-.03em;margin:0 0 6px}',
-      '.app-hero p{color:var(--muted);font-size:14px;max-width:60ch;margin:0;line-height:1.55}',
       '.app-sec{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;',
       '  color:var(--muted);margin:22px 0 9px}',
       '.app-l{background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);',
@@ -238,7 +235,7 @@
     render: function (root) {
       css();
       var top = V2.topbar ? V2.topbar({ back: true, backTo: 'rdv', backLabel: 'Rendez-vous' }) : '';
-      var hero = '<div class="app-hero"><h1>Qui appeler</h1>' +
+      var hero = '<div class="v2-rdv-cap"><h1>Qui appeler</h1>' +
         '<p>Les officines de ton secteur qui n’ont pas d’adresse mail mais ont un ' +
         'téléphone. Même classement que « Qui inviter » — seul le canal change. ' +
         'Chaque ligne dit pourquoi elle est là.</p></div>';
