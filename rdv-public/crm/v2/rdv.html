@@ -127,6 +127,13 @@
   .recap .heure span { font-size:15px; font-weight:600; color:rgba(255,255,255,.84);
                        letter-spacing:0; }
   .recap .lieu { font-size:14.5px; color:rgba(255,255,255,.90); margin-top:6px; }
+  .recap.ok { background:linear-gradient(160deg,#12A06B,#0B6B48);
+              box-shadow:0 14px 30px -16px rgba(11,107,72,.9); }
+  h1 + .recap { margin-top:4px; }
+  .carte .btn { display:block; text-align:center; }
+  /* Second bouton d'une carte : présent sans concurrencer l'action principale. */
+  .btn.btn-clair { background:#fff; color:var(--bleu); border:1.5px solid #CFDFFB;
+                   box-shadow:0 1px 0 #fff inset, 0 6px 16px -12px rgba(16,19,28,.3); }
   @media (prefers-reduced-motion: reduce) { * { animation:none !important; transition:none !important; } }
 </style>
 </head>
@@ -136,14 +143,14 @@
   <!-- Servi depuis chez nous, pas depuis un CDN : cette page s'ouvre DANS une
        officine, dont le réseau filtre parfois les domaines extérieurs. Fichier
        identique au bit près à celui de jsdelivr (même empreinte sha384 qu'avant). -->
-  <script src="vendor/supabase/supabase-2.112.2.min.js?v=20260825f"
+  <script src="vendor/supabase/supabase-2.112.2.min.js?v=20260825g"
           integrity="sha384-B2duOBIryCXbX4eDE4BdJwtNkQMRQde3o6IsjfPW28E6aH1CYE96hHeZRG3zY56O"></script>
   <script>
     window.SUPABASE_URL = 'https://iyvavhnlhxksokkerkos.supabase.co';
     window.SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5dmF2aG5saHhrc29ra2Vya29zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1NjU2NTYsImV4cCI6MjA5MzE0MTY1Nn0.eMdW6vUdoyVpZbqKXp6FNYTajwKEf4x-Xyj5zj1igO4';
   </script>
-  <script src="v2-rdv-creneaux.js?v=20260825f"></script>
-  <script src="v2-rdv-ics.js?v=20260825f"></script>
-  <script src="rdv-public.js?v=20260825f"></script>
+  <script src="v2-rdv-creneaux.js?v=20260825g"></script>
+  <script src="v2-rdv-ics.js?v=20260825g"></script>
+  <script src="rdv-public.js?v=20260825g"></script>
 </body>
 </html>
