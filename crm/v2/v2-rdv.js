@@ -439,6 +439,11 @@
       '.v2-sem-e svg{color:var(--ip-blue);flex:0 0 auto}',
       '.v2-sem-e b{display:block;font-size:14.5px;font-weight:700}',
       '.v2-sem-e small{display:block;color:var(--muted);font-size:13px;margin-top:2px}',
+      '.v2-rdv-etat{display:inline-flex;align-items:center;gap:7px;margin-top:7px;',
+      '  padding:5px 11px;border-radius:99px;font-size:13px;font-weight:700}',
+      '.v2-rdv-etat::before{content:"";width:7px;height:7px;border-radius:99px;background:currentColor}',
+      '.v2-rdv-etat.froid{background:var(--card-2);color:var(--muted)}',
+      '.v2-rdv-etat.chaud{background:#E6F5EE;color:var(--c-mint-txt,#0F7A52)}',
       '.v2-sem-essai{color:var(--muted);font-size:13px;line-height:1.55;margin:18px 0 0}',
       '.v2-sem-essai a{display:inline-flex;align-items:center;min-height:44px;',
       '  color:var(--ip-blue);font-weight:700;text-decoration:none}'
@@ -926,10 +931,28 @@
       entreeP('rdvdispo', 'Mes dispos', 'jours, horaires, agenda', IC.dispos) +
       entreeP('rdvdispo', 'Mon lien permanent', 'à envoyer à la main — même écran, plus bas', IC.lien, true);
 
+    // ⚠️ Ce que devient le lien, dit en clair. Avant, Will voyait « envoyé le
+    // 14 août » et rien d'autre : impossible de distinguer « le mail n'est
+    // jamais arrivé » de « il a regardé et n'a pas donné suite ». Les deux
+    // appellent pourtant des gestes opposés — vérifier l'adresse, ou appeler.
+    // ⚠️ « Jamais ouvert » ne veut PAS dire « pas lu » : un mail se lit sans
+    // qu'on clique. On dit ce qu'on mesure, pas ce qu'on en déduit.
+    function etatDuLien(l) {
+      var n = l.vues || 0;
+      if (!n) return '<span class="v2-rdv-etat froid">Lien jamais ouvert</span>';
+      // La date se lit « mercredi 23 août », pas « 2026-08-23 » : c'est un
+      // écran qu'on parcourt vite, pas un export.
+      var d = String(l.vu_dernier_le || l.vu_le || '').slice(0, 10);
+      return '<span class="v2-rdv-etat chaud">Ouvert ' +
+        (n > 1 ? esc(n) + ' fois' : '1 fois') +
+        (d ? ' · la dernière ' + esc(libelle(d)) : '') + '</span>';
+    }
+
     var sansReponse = e.attente.length
       ? e.attente.map(function (l) {
           return '<div class="v2-rdv-item"><b>' + esc(l.nom) + '</b>' +
-            '<span class="sm">envoyé le ' + esc(String(l.envoye_le).slice(0, 10)) + '</span>' +
+            '<span class="sm">envoyé ' + esc(libelle(String(l.envoye_le).slice(0, 10))) + '</span>' +
+            etatDuLien(l) +
             '<div class="v2-rdv-acts">' +
               '<button class="v2-btn" type="button" onclick="V2.rdv.relancer(\'' +
                 escArg(l.code || l.token) + '\',\'' + escArg(String(l.cip || '')) + '\')">Relancer</button>' +
