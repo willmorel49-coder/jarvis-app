@@ -206,7 +206,7 @@
         .not('envoye_le', 'is', null).order('envoye_le', { ascending: false }).limit(60)
         .then(function (r) { return (r && r.data) || []; }).catch(function () { return []; }),
       // Liens de campagne (un par un).
-      c.from('rdv_lien').select('cip, nom, ville, envoye_le, consomme_le, expire_le')
+      c.from('rdv_lien').select('cip, nom, ville, envoye_le, consomme_le, expire_le, vu_le, vues')
         .eq('user_id', u).not('envoye_le', 'is', null)
         .order('envoye_le', { ascending: false }).limit(400)
         .then(function (r) { return (r && r.data) || []; }).catch(function () { return []; }),
@@ -265,7 +265,11 @@
       '@media(max-width:640px){.sv-cap{margin:-8px -14px 0;padding:24px 20px 66px}}',
       '.sv-cap h1{font-size:clamp(23px,5vw,29px);font-weight:800;letter-spacing:-.03em;margin:0 0 6px}',
       '.sv-cap p{margin:0;font-size:14px;color:rgba(255,255,255,.84)}',
-      '.sv-ch{display:flex;gap:10px;margin:-50px 0 18px;position:relative}',
+      // ⚠️ Le quatrième chiffre ne tient pas en ligne à 390 px : la barre
+      // passe en grille de deux, qui s'étale en quatre dès qu'il y a la place.
+      '.sv-ch{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:-50px 0 18px;',
+      '  position:relative}',
+      '@media(min-width:560px){.sv-ch{grid-template-columns:repeat(4,1fr)}}',
       '.sv-ch > div{flex:1;padding:13px;background:var(--card);border:1px solid var(--line);',
       '  border-radius:var(--r-md);box-shadow:0 1px 0 #fff inset,0 8px 20px -12px rgba(16,19,28,.24)}',
       '.sv-ch b{display:block;font-size:22px;font-weight:800;letter-spacing:-.02em;',
@@ -448,6 +452,14 @@
         var total = solGroupe + solUn, conv = cvGroupe + cvUn;
         var taux = total ? Math.round(conv / total * 100) : 0;
 
+        // ⚠️ L'étape du milieu, qui manquait. « Sollicitées » puis « ont
+        // réservé » ne dit pas OÙ ça s'arrête : le mail n'arrive pas, ou la
+        // page ne convainc pas ? Ce sont deux problèmes opposés.
+        // ⚠️ Compté sur les liens un par un SEULEMENT : un envoi groupé
+        // partage un même lien permanent, on ne peut pas savoir qui l'a
+        // ouvert. Le libellé le dit, plutôt que de faire croire à un total.
+        var ouvertsUn = D.liens.filter(function (l) { return l.vu_le; }).length;
+
         // Rendez-vous pris sans aucune sollicitation traçable : le lien
         // permanent collé dans une signature de mail travaille tout seul.
         var spontanes = D.rdv.filter(function (d) {
@@ -466,6 +478,10 @@
 
           '<div class="sv-ch">' +
             '<div><b>' + esc(total) + '</b><small>officines sollicitées</small></div>' +
+            (solUn
+              ? '<div><b>' + esc(ouvertsUn) + '</b><small>ont ouvert le lien' +
+                (solGroupe ? ' (envois un par un)' : '') + '</small></div>'
+              : '') +
             '<div><b>' + esc(conv) + '</b><small>' + ontReserve(conv) + '</small></div>' +
             '<div><b>' + esc(taux) + ' %</b><small>de retour</small></div>' +
           '</div>' +
