@@ -24,11 +24,18 @@
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
+  // En français le premier jour du mois s'écrit « 1er », jamais « 1 ».
+  // La casse reste minuscule : ce libellé s'emploie aussi en milieu de phrase
+  // (« C'est noté : vendredi 28 août »), où la majuscule serait fautive. Les
+  // appelants qui le placent en tête de ligne mettent la capitale eux-mêmes.
   function libelle(iso) {
     var p = String(iso).split('-'), d = new Date(Date.UTC(+p[0], +p[1] - 1, +p[2]));
-    return JOURS[d.getUTCDay()] + ' ' + (+p[2]) + ' ' + MOIS[+p[1] - 1];
+    var q = +p[2];
+    return JOURS[d.getUTCDay()] + ' ' + (q === 1 ? '1er' : q) + ' ' + MOIS[+p[1] - 1];
   }
   function hhh(h) { return String(h).replace(':', 'h'); }
+  // Capitale d'attaque, pour un libellé placé en tête de ligne.
+  function capit(t) { return String(t).charAt(0).toUpperCase() + String(t).slice(1); }
   function numero(s) { return String(s || '').replace(/[^0-9+]/g, ''); }
   function carte(html) { return '<div class="carte">' + html + '</div>'; }
 
@@ -208,48 +215,95 @@
       secteurs: F.secteurs || [],
       aujourdhui: new Date().toISOString().slice(0, 10)
     });
-    var h = carte('<h1>Prendre rendez-vous</h1>' +
-      '<p class="sub">' + esc(F.commercial.prenom) + ' vous propose de passer à ' +
-      esc(F.officine.nom) + '. Choisissez le moment qui vous arrange.</p>');
+    // ── Direction « Trois moments » (p1), choisie par Will le 25/08/2026 ──
+    // La page était correcte mais anonyme : cinq cartes blanches identiques,
+    // ni le nom de l'expéditeur, ni la durée, ni ce qui se passe après.
+    var cx = F.commercial || {};
+    var ini = String(cx.prenom || '?').charAt(0).toUpperCase();
+
+    // ⚠️ LA DURÉE SE LIT, ELLE NE S'ÉCRIT PAS. Le 19/08/2026, le mail de
+    // prise de rendez-vous promettait « quinze minutes » au pharmacien
+    // pendant que l'agenda lui bloquait 45 — le quart de ce qu'on lui
+    // prenait, en dur depuis le premier jour. Ici la valeur vient du réglage
+    // du commercial, avec pour seul repli celui du moteur de créneaux : les
+    // deux mêmes sources que celles qui calculent les créneaux affichés.
+    var duree = (F.dispo && F.dispo.duree_min != null)
+      ? F.dispo.duree_min
+      : ((window.V2RDV && window.V2RDV.DEFAUT_DISPO && window.V2RDV.DEFAUT_DISPO.duree_min) || null);
+
+    function fait(tr, txt) {
+      return '<span class="fait"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" ' +
+        'stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">' +
+        tr + '</svg>' + esc(txt) + '</span>';
+    }
+    var ICO_H = '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>';
+    var ICO_L = '<path d="M12 21s7-5.5 7-11a7 7 0 1 0-14 0c0 5.5 7 11 7 11z"/><circle cx="12" cy="10" r="2.4"/>';
+    var ICO_V = '<path d="M4 12.5l5 5L20 6.5"/>';
+
+    var h =
+      '<div class="qui"><span class="av">' + esc(ini) + '</span>' +
+        '<span><b>' + esc(cx.prenom || '') + '</b>' +
+        '<small>Intégral Pharma · votre secteur</small></span></div>' +
+      '<h1>Quand puis-je passer vous voir&nbsp;?</h1>' +
+      '<p class="sub">Pour ' + esc(F.officine.nom) +
+        (F.officine.ville ? ', à ' + esc(F.officine.ville) : '') + '.</p>' +
+      '<div class="faits">' +
+        (duree ? fait(ICO_H, duree + ' minutes') : '') +
+        fait(ICO_L, 'Chez vous') +
+        // Vrai, et vérifié dans le code : la confirmation envoie un lien de
+        // gestion (blocGestion) qui permet de déplacer ou d'annuler.
+        fait(ICO_V, 'Déplaçable ou annulable') +
+      '</div>';
+
     if (!jours.length) {
       // Sur le lien permanent, « Dites-moi vos préférences » enregistre une
       // préférence rattachée à un jeton de campagne qui n'existe pas ici : le
       // bouton échouerait au clic. Et le cas est fréquent — une officine loin
       // du secteur du commercial ne rentre dans aucune journée. On explique
       // pourquoi, et on donne son numéro.
-      var cx = F.commercial || {};
-      h += carte(ctoken
-        ? '<p>Aucun créneau ne se libère dans les six prochains mois — ' +
-          esc(cx.prenom) + ' n’a pas encore de journée prévue près de chez vous.</p>' +
-          (cx.tel
-            ? '<p style="margin-top:14px">Appelez-le au <a href="tel:' + esc(numero(cx.tel)) +
-              '">' + esc(cx.tel) + '</a>, il verra ce qu’il peut faire.</p>'
-            : '<p style="margin-top:14px">Répondez à son mail, il vous recontactera.</p>')
-        : '<p>Aucun créneau ne se libère dans les six prochains mois.</p>' +
-          '<p><button class="btn" id="pref">Dites-moi vos préférences</button></p>');
+      h += '<div class="carte"><p>' + (ctoken
+        ? 'Aucun créneau ne se libère dans les six prochains mois — ' +
+          esc(cx.prenom) + ' n’a pas encore de journée prévue près de chez vous.'
+        : 'Aucun créneau ne se libère dans les six prochains mois.') + '</p>' +
+        '<div class="secours">' +
+          (ctoken
+            ? (cx.tel
+                ? '<a href="tel:' + esc(numero(cx.tel)) + '">Appeler ' + esc(cx.prenom) +
+                  ' au ' + esc(cx.tel) + '</a>'
+                : '')
+            : '<button id="pref">Dites-moi ce qui vous arrange</button>') +
+        '</div></div>';
     } else {
+      h += '<p class="lbl">' + (jours.length > 1 ? 'Les moments qui m’arrangent' : 'Le moment qui m’arrange') + '</p>';
       jours.forEach(function (j) {
-        h += '<div class="carte"><p class="jour">' + esc(libelle(j.date)) + '</p><div class="creneaux">' +
-          j.creneaux.map(function (c) {
-            return '<button class="cr" data-d="' + esc(j.date) + '" data-h="' + esc(c) + '">' +
-              esc(hhh(c)) + '</button>';
-          }).join('') + '</div></div>';
+        var q = String(j.date).split('-');
+        h += '<div class="jc">' +
+          '<div class="jc-t">' +
+            '<span class="cal"><span class="m">' + esc(MOIS[+q[1] - 1].slice(0, 4)) + '</span>' +
+              '<span class="d">' + esc(+q[2]) + '</span></span>' +
+            '<span><b>' + esc(capit(libelle(j.date))) + '</b>' +
+              '<small>' + esc(j.creneaux.length) + ' horaire' +
+              (j.creneaux.length > 1 ? 's possibles' : ' possible') + '</small></span>' +
+          '</div>' +
+          '<div class="creneaux">' +
+            j.creneaux.map(function (c) {
+              return '<button class="cr" data-d="' + esc(j.date) + '" data-h="' + esc(c) + '">' +
+                esc(hhh(c)) + '</button>';
+            }).join('') +
+          '</div></div>';
       });
-      // Avant de renvoyer au téléphone : toutes les autres dates, sur trois
-      // mois. Une officine qui ne peut pas dans les trois semaines qui
-      // viennent avait, sinon, pour seule issue de ne pas donner suite.
-      h += carte('<button class="lien" id="plus">Voir d’autres dates →</button>');
-      // « Aucun ne me convient » enregistre une préférence rattachée au jeton
-      // de campagne. Le lien permanent n'en a pas : on propose le téléphone
-      // du commercial plutôt qu'un bouton qui échouerait au clic.
-      var cm = F.commercial || {};
-      h += carte(ctoken
-        ? (cm.tel
-            ? 'Aucun créneau ne vous convient ? Appelez ' + esc(cm.prenom) +
-              ' au <a href="tel:' + esc(numero(cm.tel)) + '">' + esc(cm.tel) + '</a>.'
-            : 'Aucun créneau ne vous convient ? Répondez à son mail, il vous rappellera.')
-        : '<button class="lien" id="pref">Aucun ne me convient →</button>');
+
+      // Toutes les autres dates, sur six mois. Une officine qui ne peut pas
+      // dans les trois semaines qui viennent avait, sinon, pour seule issue
+      // de ne pas donner suite.
+      h += '<button class="autre" id="plus">Voir toutes les autres dates</button>';
+      h += '<div class="pied">Aucun de ces moments ne vous va&nbsp;?' +
+        '<div class="secours">' +
+          (ctoken ? '' : '<button id="pref">Dites-moi ce qui vous arrange</button>') +
+          (cx.tel ? '<a href="tel:' + esc(numero(cx.tel)) + '">' + esc(cx.tel) + '</a>' : '') +
+        '</div></div>';
     }
+
     app.innerHTML = h;
     Array.prototype.forEach.call(app.querySelectorAll('.cr'), function (b) {
       b.addEventListener('click', function () {
