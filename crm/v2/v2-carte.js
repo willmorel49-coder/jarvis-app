@@ -15,7 +15,7 @@
   V2.pages = V2.pages || {};
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
 
-  var CB = '?v=20260827d';
+  var CB = '?v=20260827e';
   var map = null, cluster = null, markers = null, D = null, canvas = null;
   var displayMode = 'points';    // points | bulles (taille = CA)
   var tourLayer = null;          // tracé de la tournée (polyline + n° d'arrêts)
@@ -195,7 +195,12 @@
     function openPop(e) { var i = e.layer._pi; if (D.p[i]) V2.carteFiche(i); }
     if (useCluster) {
       // Paquets : un seul style (blanc, filet bleu Intégral) au lieu des ronds vert/jaune/orange du plugin.
-      cluster = window.L.markerClusterGroup({ chunkedLoading: true, maxClusterRadius: 52, disableClusteringAtZoom: 8, removeOutsideVisibleBounds: true, spiderfyOnMaxZoom: true,
+      // ⚠️ 27/08/2026 (Will : « quand je clique sur un point ça ne fait rien ») : au zoom
+      // d'ouverture, un « point » est souvent un paquet ; avec `spiderfyOnMaxZoom` le clic le
+      // déployait en étoile au lieu de zoomer, et le plugin restait dans un état où PLUS AUCUN
+      // clic sur un point n'ouvrait la fiche (reproduit dans Chrome et WebKit). Un paquet
+      // cliqué ZOOME, point. Et un filet indépendant du plugin ouvre la fiche (voir boot()).
+      cluster = window.L.markerClusterGroup({ chunkedLoading: true, maxClusterRadius: 52, disableClusteringAtZoom: 8, removeOutsideVisibleBounds: true, spiderfyOnMaxZoom: false, zoomToBoundsOnClick: true,
         iconCreateFunction: function (c) { var n = c.getChildCount(); return window.L.divIcon({ html: '<div class="cn-cl' + (n >= 1000 ? ' big' : '') + '">' + (n >= 1000 ? (Math.round(n / 100) / 10).toLocaleString('fr') + ' k' : n) + '</div>', className: 'cn-clw', iconSize: [34, 34] }); } });
       cluster.on('click', openPop);
       cluster.on('clustermouseover', function (a) {   // survol d'un paquet : dire combien de pharmacies et comment les voir
@@ -1448,6 +1453,18 @@
     try { map.attributionControl.setPrefix(false); } catch (e) {}
     canvas = window.L.canvas({ padding: 0.5 });
     addBaseLayer();
+    // Filet : quel que soit l'état du plugin de paquets, un clic à ≤ 10 px d'un point ouvre sa fiche.
+    // (Le clic « officiel » du marqueur passe par openPop ; s'il a déjà ouvert la même fiche, ceci ne fait que la re-rendre.)
+    map.on('click', function (e) {
+      if (pickDepotMode || zonesOn || !markers || !markers.length || !e.containerPoint) return;
+      var best = null, bd = Infinity;
+      for (var k = 0; k < markers.length; k++) {
+        var m = markers[k], ll = m.getLatLng && m.getLatLng(); if (!ll) continue;
+        var d = map.latLngToContainerPoint(ll).distanceTo(e.containerPoint);
+        if (d < bd) { bd = d; best = m; }
+      }
+      if (best && bd <= 10 && D.p[best._pi]) V2.carteFiche(best._pi);
+    });
     map.on('click', function (e) {
       if (!pickDepotMode) return;
       pickDepotMode = false; var mp = document.getElementById('carte-map'); if (mp) mp.style.cursor = '';
