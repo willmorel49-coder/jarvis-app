@@ -216,7 +216,14 @@
       if (bulles && caOf(p) <= 0) continue;   // bulles = uniquement les officines avec du CA
       var m = window.L.circleMarker([p[0], p[1]], bulles ? bubbleStyle(p, ii) : markerStyle(p, ii));
       m._pi = ii; if (!useCluster) m.on('click', openPop);
-      m.on('mouseover', function () { if (!this._ntt) { this._ntt = 1; this.bindTooltip(tipHtml(D.p[this._pi]), { direction: 'top', offset: [0, -3], className: 'cn-tip' }); } this.openTooltip(); });
+      // Survol = l'officine s'affiche (info-bulle) ET le point grossit, comme un repère Google Maps.
+      m.on('mouseover', function () {
+        if (!this._ntt) { this._ntt = 1; this.bindTooltip(tipHtml(D.p[this._pi]), { direction: 'top', offset: [0, -6], className: 'cn-tip' }); }
+        var st = bulles ? bubbleStyle(D.p[this._pi], this._pi) : markerStyle(D.p[this._pi], this._pi);
+        this.setStyle({ radius: st.radius + 3, weight: 2.5, color: '#fff', fillOpacity: 1 }); this.bringToFront();
+        this.openTooltip();
+      });
+      m.on('mouseout', function () { this.setStyle(bulles ? bubbleStyle(D.p[this._pi], this._pi) : markerStyle(D.p[this._pi], this._pi)); });
       markers.push(m); arr.push(m);
     }
     if (useCluster) cluster.addLayers(arr); else for (var a = 0; a < arr.length; a++) cluster.addLayer(arr[a]);
@@ -1451,7 +1458,9 @@
     if (map) { try { map.remove(); } catch (e) {} map = null; cluster = null; markers = null; }
     map = window.L.map(root.querySelector('#carte-map'), { preferCanvas: true, zoomControl: true, attributionControl: true }).setView([46.6, 2.4], 6);
     try { map.attributionControl.setPrefix(false); } catch (e) {}
-    canvas = window.L.canvas({ padding: 0.5 });
+    // tolerance : la souris « attrape » un point jusqu'à 7 px autour (Will, 27/08 : « quand on passe
+    // sur un point que ça affiche l'officine, comme sur Google Maps » — un point fait 4 à 5 px, il fallait viser au pixel).
+    canvas = window.L.canvas({ padding: 0.5, tolerance: 7 });
     addBaseLayer();
     // Filet : quel que soit l'état du plugin de paquets, un clic à ≤ 10 px d'un point ouvre sa fiche.
     // (Le clic « officiel » du marqueur passe par openPop ; s'il a déjà ouvert la même fiche, ceci ne fait que la re-rendre.)
