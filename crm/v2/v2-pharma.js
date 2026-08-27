@@ -863,405 +863,6 @@
     }).filter(function (o) { return o.rows.length; });
   }
 
-  function topByCatSection(sales) {
-    var data = ownedTopByCat(sales, 5);
-    if (!data.length) return '';
-    var cards = data.map(function (o) {
-      var rows = o.rows.map(function (r, i) {
-        return '<div class="ph-top-row">' +
-          '<span class="ph-top-rank mono">' + (i + 1) + '</span>' +
-          '<span class="ph-top-name">' + esc(r.designation) + '</span>' +
-          '<span class="ph-top-val mono">' + V2.fmtEur(r.ca) + '<span class="ph-top-q"> · ' + V2.fmtNum(r.qte) + ' u</span></span>' +
-        '</div>';
-      }).join('');
-      return '<div class="ph-top-card">' +
-        '<div class="ph-top-head"><span class="ph-top-dot" style="background:' + o.cat.color + '"></span>' +
-          '<span class="ph-top-t">' + esc(o.cat.label) + '</span>' +
-          '<span class="ph-top-n mono">' + V2.fmtNum(o.total) + ' réf.</span></div>' +
-        rows + '</div>';
-    }).join('');
-    var open = sectionOpen('top5');
-    return '<div class="ph-topcats ph-section">' +
-        sectionHead('Top 5 par catégorie', 'ses meilleures références commandées, en valeur (CA)', 'top5', open) +
-        (open ? '<div class="ph-top-grid">' + cards + '</div>' : '') +
-      '</div>';
-  }
-
-  // ── Détail mois par mois × catégorie (CA net réel, WML Intégral) ──
-  function monthlyByCat(sales) {
-    var bIdx = benchIndex(), by = {};
-    sales.forEach(function (s) {
-      if (!s.month || !s.year) return;
-      var mk = s.year * 12 + (s.month - 1);
-      var cip = String(s.artCode || '');
-      var b = cip ? bIdx.get(cip) : null;
-      var cat = (b ? classify(b, cip) : null) || 'other';
-      if (!by[mk]) by[mk] = { mk: mk, year: s.year, month: s.month, total: 0, byCat: {} };
-      by[mk].byCat[cat] = (by[mk].byCat[cat] || 0) + (s.mntNetHt || 0);
-      by[mk].total += s.mntNetHt || 0;
-    });
-    return Object.keys(by).map(function (k) { return by[k]; }).sort(function (a, b) { return a.mk - b.mk; });
-  }
-
-  function monthCatSection(sales) {
-    var months = monthlyByCat(sales);
-    if (!months.length) return '';
-    var catTot = {}, othTot = 0;
-    months.forEach(function (m) {
-      Object.keys(m.byCat).forEach(function (c) {
-        if (c === 'other') othTot += m.byCat[c]; else catTot[c] = (catTot[c] || 0) + m.byCat[c];
-      });
-    });
-    var rowsCats = CATS.filter(function (c) { return (catTot[c.key] || 0) > 0; });
-    if (!rowsCats.length && othTot <= 0) return '';
-    var open = sectionOpen('monthcat');
-    var head = sectionHead('Détail mois par mois — par catégorie', 'le CA net réparti par tranche et par mois', 'monthcat', open);
-    if (!open) return '<div class="ph-section ph-mcat">' + head + '</div>';
-
-    // évolution du dernier mois vs le mois précédent (par catégorie)
-    function evolCell(vals) {
-      var n = vals.length;
-      if (n >= 2) {
-        var last = vals[n - 1], prev = vals[n - 2];
-        if (last > 0 && prev > 0) { var d = (last - prev) / prev * 100, up = d >= 0; return '<td class="ph-mcat-ev ' + (up ? 'up' : 'dn') + '">' + (up ? '▲ +' : '▼ ') + Math.round(d) + '%</td>'; }
-        if (last > 0 && prev === 0) return '<td class="ph-mcat-ev up">nouveau</td>';
-      }
-      return '<td class="ph-mcat-ev">—</td>';
-    }
-    function rowHtml(label, color, key) {
-      var vals = months.map(function (m) { return m.byCat[key] || 0; });
-      var maxv = vals.reduce(function (a, b) { return Math.max(a, b); }, 0);
-      var tot = (key === 'other') ? othTot : (catTot[key] || 0);
-      var cells = vals.map(function (v) {
-        var bg = (v > 0 && maxv > 0) ? ' style="background:color-mix(in srgb,' + color + ' ' + Math.max(9, Math.round(v / maxv * 46)) + '%,transparent)"' : '';
-        return '<td class="ph-mcat-c mono"' + bg + '>' + (v > 0 ? V2.fmtK(v) : '<span class="ph-mcat-z">·</span>') + '</td>';
-      }).join('');
-      return '<tr><th class="ph-mcat-rh"><span class="ph-mcat-dot" style="background:' + color + '"></span>' + esc(label) + '</th>' +
-        cells + '<td class="ph-mcat-tot mono">' + V2.fmtK(tot) + '</td>' + evolCell(vals) + '</tr>';
-    }
-    var body = rowsCats.map(function (c) { return rowHtml(c.label, c.color, c.key); }).join('');
-    if (othTot > 0) body += rowHtml('Hors catégories', '#9AA1B2', 'other');
-    var grand = months.reduce(function (a, m) { return a + m.total; }, 0);
-    body += '<tr class="ph-mcat-trow"><th class="ph-mcat-rh">Total</th>' +
-      months.map(function (m) { return '<td class="ph-mcat-c mono">' + V2.fmtK(m.total) + '</td>'; }).join('') +
-      '<td class="ph-mcat-tot mono">' + V2.fmtK(grand) + '</td>' + evolCell(months.map(function (m) { return m.total; })) + '</tr>';
-    var thMonths = months.map(function (m) { return '<th class="ph-mcat-mth">' + MN_SHORT[m.month - 1] + '</th>'; }).join('');
-    return '<div class="ph-section ph-mcat">' + head +
-      '<div class="ph-mcat-wrap"><table class="ph-mcat-table">' +
-        '<thead><tr><th class="ph-mcat-rh ph-mcat-corner">Catégorie</th>' + thMonths + '<th class="ph-mcat-tot">Total</th><th class="ph-mcat-ev-h">Évol</th></tr></thead>' +
-        '<tbody>' + body + '</tbody></table></div></div>';
-  }
-
-  // ── Bloc « Diagnostic officine » (money-first, choisi par Will — variante 3) ──
-  // En tête de fiche : chiffre-choc (abandon rendu/an) + score /100 vs réseau +
-  // plan d'action + alerte ruptures + repères nationaux. 100% données réelles,
-  // s'appuie sur les calculateurs existants (V2.audit, grpBestRotations, RUPTURES).
-  var REPERES_FR = { marge: '28–29 %', panier: '~41 €', subst: '92,5 %' }; // Interfimo/Fiducial 2025, contexte
-  function ensureDiagCss() {
-    if (document.getElementById('phd-css')) return;
-    var st = document.createElement('style'); st.id = 'phd-css';
-    st.textContent =
-      '.phd{margin:0 0 14px}' +
-      '.phd-hero{position:relative;overflow:hidden;border-radius:16px;padding:22px 24px;color:#fff;background:linear-gradient(135deg,#0B2E1E,#1E9E6A);box-shadow:0 6px 22px rgba(16,19,28,.10)}' +
-      '.phd-hero .lbl{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;opacity:.85}' +
-      '.phd-hero .big{font-size:44px;font-weight:800;letter-spacing:-.03em;line-height:1;margin:6px 0 4px;font-family:var(--mono)}' +
-      '.phd-hero .big small{font-size:18px;font-weight:700;opacity:.85}' +
-      '.phd-hero .sub{font-size:12.5px;opacity:.92;max-width:540px}' +
-      '.phd-flag{position:absolute;top:16px;right:18px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.32);border-radius:13px;padding:8px 13px;text-align:center;font-weight:800;font-size:16px}' +
-      '.phd-flag small{display:block;font-weight:600;font-size:10px;opacity:.9;margin-top:1px}' +
-      '.phd-card{background:var(--card);border:1px solid var(--line);border-radius:15px;margin-top:12px;overflow:hidden}' +
-      '.phd-sh{display:flex;align-items:center;gap:11px;padding:13px 18px;border-bottom:1px solid var(--line)}' +
-      '.phd-sh .ic{width:28px;height:28px;border-radius:8px;background:var(--c-opp);color:#fff;display:grid;place-items:center;font-weight:800;font-size:14px;flex:none}' +
-      '.phd-sh h3{margin:0;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--ip-ink)}' +
-      '.phd-sh .dsc{font-size:11.5px;color:var(--muted);font-weight:500}' +
-      '.phd-act{display:flex;align-items:center;gap:13px;padding:12px 18px;border-top:1px solid var(--line);width:100%;box-sizing:border-box;background:none;border-left:0;border-right:0;text-align:left;font:inherit;cursor:default}' +
-      '.phd-act.clk{cursor:pointer}.phd-act.clk:hover{background:var(--card-2)}' +
-      '.phd-act .rk{width:24px;height:24px;border-radius:7px;background:var(--card-2);border:1px solid var(--line);display:grid;place-items:center;font-weight:800;font-size:12px;color:var(--muted);flex:none}' +
-      '.phd-act .mn{flex:1;min-width:0}.phd-act .mn b{display:block;font-weight:700;font-size:13.5px;color:var(--ip-ink)}.phd-act .mn span{font-size:12px;color:var(--muted)}' +
-      '.phd-act .mt{font-weight:800;font-size:15px;white-space:nowrap;text-align:right;font-family:var(--mono)}' +
-      '.phd-act .mt small{display:block;font-size:10px;color:var(--muted);font-weight:600;font-family:var(--font)}' +
-      '.phd-ax{display:flex;align-items:center;gap:11px;padding:8px 18px}' +
-      '.phd-ax .lab{width:150px;font-size:12px;font-weight:600;flex:none;color:var(--ip-ink)}' +
-      '.phd-ax .track{flex:1;height:7px;border-radius:9px;background:rgba(16,19,28,.07);overflow:hidden}.phd-ax .fill{height:100%;border-radius:9px}' +
-      '.phd-ax .val{width:66px;text-align:right;font-weight:800;font-size:12px;flex:none}' +
-      '.phd-rupt{display:flex;align-items:flex-start;gap:11px;padding:12px 16px;border:1px solid #F0C9A8;background:#FFF6EC;border-radius:13px;margin-top:12px}' +
-      '.phd-rupt .ic{width:30px;height:30px;border-radius:9px;background:var(--c-amber);color:#fff;display:grid;place-items:center;font-size:16px;font-weight:800;flex:none}' +
-      '.phd-rupt b{color:#a8651a}.phd-rupt .chips{display:flex;gap:5px;flex-wrap:wrap;margin-top:4px}' +
-      '.phd-rupt .chips span{font-size:10.5px;font-weight:700;background:#fff;border:1px solid #F0D9C0;color:#8a5a1a;padding:2px 7px;border-radius:999px}' +
-      '.phd-rrow{display:flex;align-items:center;gap:10px;justify-content:space-between;padding:9px 18px;border-top:1px solid var(--line)}' +
-      '.phd-rnm{font-size:13px;font-weight:600;color:var(--ip-ink);min-width:0;flex:1}.phd-rnm small{color:var(--muted);font-weight:500}' +
-      '.phd-rok{flex:none;font-size:11px;font-weight:800;color:var(--c-opp);background:#E7F5EC;border:1px solid #BFE6CF;border-radius:999px;padding:3px 9px;white-space:nowrap}' +
-      '.phd-rko{flex:none;font-size:11px;font-weight:700;color:#a8651a;background:#FFF1DB;border:1px solid #F0C98A;border-radius:999px;padding:3px 9px;white-space:nowrap}' +
-      '.phd-rmore{display:block;width:100%;text-align:center;padding:10px;border:none;border-top:1px solid var(--line);background:none;color:var(--muted);font:inherit;font-size:12px;font-weight:600;cursor:pointer}.phd-rmore:hover{background:var(--card-2)}' +
-      '.phd-jum{padding:12px 18px 14px}' +
-      '.phd-jumrow{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:4px 0;font-size:13px;color:var(--ip-ink)}.phd-jumrow b small{font-size:10px;color:var(--muted);font-weight:600;font-family:var(--font)}' +
-      '.phd-jumtrack{height:8px;border-radius:9px;background:rgba(16,19,28,.07);overflow:hidden;margin:8px 0}.phd-jumtrack i{display:block;height:100%;border-radius:9px;background:linear-gradient(90deg,#8B7BEE,#6D5AE6)}' +
-      '.phd-jumgap{font-size:12.5px;color:var(--muted);font-weight:600}' +
-      '.phd-reps{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}' +
-      '.phd-rep{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:8px 12px;font-size:11px;font-weight:600;color:var(--muted)}' +
-      '.phd-rep b{display:block;color:var(--ip-ink);font-size:14px;font-weight:800}' +
-      '@media(max-width:560px){.phd-hero .big{font-size:34px}.phd-ax .lab{width:112px}.phd-flag{position:static;display:inline-block;margin-top:10px}}';
-    document.head.appendChild(st);
-  }
-  function diagColor(v) { return v >= 66 ? 'var(--c-opp)' : (v >= 40 ? 'var(--c-amber)' : '#E0556E'); }
-  function scoreWord(s) { return s >= 75 ? 'Excellent' : (s >= 55 ? 'Bon potentiel' : (s >= 35 ? 'À développer' : 'À reconquérir')); }
-  function diagnosticSection(pid, pharma, sales, rot) {
-    ensureDiagCss();
-    // ── abandon de marge rendu / an (le chiffre-choc, réel) ──
-    var aud = (V2.audit && window.WML_SALES && window.PROD_STATS) ? V2.audit.audit(pid) : null;
-    var annAb = aud ? aud.annAb : 0, rate = aud ? aud.rate : 0;
-    // ── score /100 (3 axes réels) ──
-    var nRows = (rot && rot.rows) ? rot.rows.length : 0;
-    var nOwn = (rot && rot.rows) ? rot.rows.filter(function (r) { return r.owned; }).length : 0;
-    var nGap = nRows - nOwn;
-    var penet = nRows ? Math.round(nOwn / nRows * 100) : 0;
-    var offs = (window.WML_OFFICINES || []).filter(function (o) { return o.ca > 0; });
-    var meRec = offs.find(function (o) { return String(o.id) === String(pid); });
-    var meCa = (meRec && meRec.ca) || V2.sumCA(sales) || 0;
-    var caPct = offs.length ? Math.round(offs.filter(function (o) { return o.ca < meCa; }).length / offs.length * 100) : 0;
-    var mca = monthlyCA(sales), nAct = mca.filter(function (m) { return m.ca > 0; }).length;
-    // Dénominateur = mois réellement couverts (WML_MOIS). En dur, la régularité
-    // d'une officine passait au-dessus de 100 % dès qu'un mois entrait dans la base.
-    var nMoisWml = (window.WML_MOIS && window.WML_MOIS.length) || 6;
-    var regul = Math.min(100, Math.round(nAct / nMoisWml * 100));
-    var score = Math.max(0, Math.min(100, Math.round(0.40 * penet + 0.35 * caPct + 0.25 * regul)));
-    // ── ruptures ANSM sur ses achats (actionnable : nom + stock Intégral) ──
-    var seen = {}, ruptList = [];
-    sales.forEach(function (s) {
-      var c = String(s.artCode || ''); if (!(s.qte > 0) || c.length < 7 || seen[c]) return;
-      var r = V2.rupture ? V2.rupture(c) : null;
-      if (r) {
-        seen[c] = 1;
-        var b = null; try { b = benchIndex().get(c); } catch (e) {}
-        ruptList.push({ cip: c, name: (b && b.designation) || r.d || c, dci: r.d || '', stock: (V2.stock ? V2.stock(c) : 0) });
-      }
-    });
-    var nRupt = ruptList.length;
-    ruptList.sort(function (a, b) { return (b.stock > 0 ? 1 : 0) - (a.stock > 0 ? 1 : 0); });   // dispo Intégral d'abord (actionnable)
-    var nRuptDispo = 0; for (var ri = 0; ri < ruptList.length; ri++) if (ruptList[ri].stock > 0) nRuptDispo++;
-
-    // ── HERO money-first ──
-    var pidJs = esc(String(pid));
-    var hero = annAb > 0
-      ? '<div class="phd-hero"><div class="phd-flag">' + score + '<small>/100 · ' + scoreWord(score) + '</small></div>' +
-          '<div class="lbl">Ce qu\'Intégral peut lui rendre</div>' +
-          '<div class="big">≈ ' + V2.fmtEur(annAb) + '<small> / an</small></div>' +
-          '<div class="sub">via l\'abandon de marge sur le princeps — ' + V2.fmtEur(annAb / 12) + '/mois net sur facture, cumulable, sans engagement ni franco</div></div>'
-      : '<div class="phd-hero"><div class="phd-flag">' + score + '<small>/100</small></div>' +
-          '<div class="lbl">Diagnostic officine</div><div class="big">' + score + '<small> /100 · ' + scoreWord(score) + '</small></div>' +
-          '<div class="sub">comparée aux officines du réseau Intégral</div></div>';
-
-    // ── PLAN D'ACTION (trié par impact) ──
-    var acts = [];
-    if (annAb > 0) acts.push('<div class="phd-act"><div class="rk">1</div><div class="mn"><b>Marge rendue par Intégral</b>' +
-      '<span>abandon de marge, net sur facture (' + (Math.round(rate * 10) / 10).toLocaleString('fr-FR') + ' % de ses achats princeps)</span></div>' +
-      '<div class="mt" style="color:var(--c-opp)">+' + V2.fmtEur(annAb) + '<small>/ an</small></div></div>');
-    if (nGap > 0) acts.push('<button class="phd-act clk" onclick="V2.pharmaListPdf(\'' + pidJs + '\',\'reseau\')"><div class="rk">' + (acts.length + 1) + '</div>' +
-      '<div class="mn"><b>Best-sellers du réseau à pousser</b><span>gammes que le réseau prend et pas elle — liste prête en PDF</span></div>' +
-      '<div class="mt" style="color:var(--c-amber)">' + nGap + '<small>réfs</small></div></button>');
-    if (nRupt > 0) acts.push('<button class="phd-act clk" onclick="V2.go(\'infos\')"><div class="rk">' + (acts.length + 1) + '</div>' +
-      '<div class="mn"><b>Ruptures à sécuriser</b><span>produits qu\'elle achète en tension ANSM — proposer une alternative Intégral</span></div>' +
-      '<div class="mt" style="color:var(--c-amber)">' + nRupt + '<small>produits</small></div></button>');
-    var planCard = acts.length ? '<div class="phd-card"><div class="phd-sh"><div class="ic">€</div><div><h3>Plan d\'action</h3><div class="dsc">trié par impact</div></div>' +
-      (annAb > 0 ? '<div class="tot" style="margin-left:auto;font-size:12.5px;font-weight:800;color:#fff;background:var(--c-opp);padding:4px 11px;border-radius:999px">+' + V2.fmtEur(annAb) + '/an</div>' : '') +
-      '</div>' + acts.join('') + '</div>' : '';
-
-    // ── SCORE EN DÉTAIL ──
-    var axes = [
-      { lab: 'Pénétration réseau', v: penet, txt: nOwn + '/' + nRows },
-      { lab: 'Poids CA vs réseau', v: caPct, txt: (caPct >= 99 ? '1er du réseau' : caPct >= 50 ? 'top ' + Math.max(1, 100 - caPct) + '%' : caPct + 'e centile') },
-      { lab: 'Régularité d\'achat', v: regul, txt: nAct + '/' + nMoisWml + ' mois' }
-    ];
-    var axHtml = axes.map(function (a) {
-      var c = diagColor(a.v);
-      return '<div class="phd-ax"><div class="lab">' + a.lab + '</div><div class="track"><div class="fill" style="width:' + a.v + '%;background:' + c + '"></div></div><div class="val" style="color:' + c + '">' + a.txt + '</div></div>';
-    }).join('');
-    var scoreCard = '<div class="phd-card"><div class="phd-sh"><div class="ic" style="background:var(--ip-blue)">%</div><div><h3>Son score en détail</h3><div class="dsc">vs les officines du réseau Intégral</div></div></div><div style="padding:6px 0">' + axHtml + '</div></div>';
-
-    // ── RUPTURES ACTIONNABLES : produits en tension qu'elle achète + dispo Intégral ──
-    var ruptBand = '';
-    if (nRupt > 0) {
-      var top = ruptList.slice(0, 8);
-      var rows = top.map(function (x) {
-        return '<div class="phd-rrow"><div class="phd-rnm">' + esc(cap((x.name || '').toLowerCase())) + (x.dci ? '<small> · ' + esc(x.dci) + '</small>' : '') + '</div>' +
-          (x.stock > 0
-            ? '<span class="phd-rok">✓ en stock Intégral</span>'
-            : '<span class="phd-rko">à sécuriser</span>') + '</div>';
-      }).join('');
-      var more = nRupt > top.length ? '<button class="phd-rmore" onclick="V2.go(\'infos\')">+ ' + (nRupt - top.length) + ' autres produits en tension · voir la veille</button>' : '';
-      ruptBand = '<div class="phd-card"><div class="phd-sh"><div class="ic" style="background:var(--c-amber)">!</div><div><h3>Ruptures à sécuriser</h3>' +
-        '<div class="dsc">' + nRupt + ' produit' + (nRupt > 1 ? 's' : '') + ' qu\'elle achète en tension ANSM' + (nRuptDispo > 0 ? ' · <b style="color:var(--c-opp)">' + nRuptDispo + ' dispo chez Intégral</b>' : '') + '</div></div></div>' +
-        rows + more + '</div>';
-    }
-
-    // ── REPÈRES nationaux (contexte) ──
-    var reps = '<div class="phd-reps">' +
-      '<div class="phd-rep">Marge brute moyenne<b>' + REPERES_FR.marge + '</b></div>' +
-      '<div class="phd-rep">Panier moyen<b>' + REPERES_FR.panier + '</b></div>' +
-      '<div class="phd-rep">Substitution nationale<b>' + REPERES_FR.subst + '</b></div>' +
-      '</div><div style="font-size:10.5px;color:var(--muted);margin-top:6px">Repères marché France (Interfimo/Fiducial 2025) — contexte, pas la performance de l\'officine.</div>';
-
-    // ── JUMEAU D'ACHATS : cohorte d'officines Intégral au profil comparable ──
-    var jumeauCard = '';
-    try {
-      if (meCa > 0 && offs.length >= 10) {
-        var band = offs.filter(function (o) { return String(o.id) !== String(pid) && o.ca >= meCa * 0.6 && o.ca <= meCa * 1.6; });
-        if (band.length >= 5) {
-          var bcas = band.map(function (o) { return o.ca; }).sort(function (a, b) { return a - b; });
-          var jumeau = bcas[Math.floor(bcas.length * 0.65)] || bcas[bcas.length - 1];   // un cran au-dessus (65e pct)
-          var gap = jumeau - meCa;
-          var pctPos = jumeau ? Math.min(100, Math.round(meCa / jumeau * 100)) : 100;
-          jumeauCard = '<div class="phd-card"><div class="phd-sh"><div class="ic" style="background:#6D5AE6">≈</div><div><h3>Ton jumeau</h3>' +
-            '<div class="dsc">' + band.length + ' officines au profil comparable — taille &amp; achats Intégral</div></div></div>' +
-            '<div class="phd-jum">' +
-              '<div class="phd-jumrow"><span>Officines comme la tienne</span><b class="mono">' + V2.fmtEur(jumeau) + '<small>/an</small></b></div>' +
-              '<div class="phd-jumrow"><span>Elle</span><b class="mono" style="color:' + (gap > 0 ? 'var(--c-amber)' : 'var(--c-opp)') + '">' + V2.fmtEur(meCa) + '<small>/an</small></b></div>' +
-              '<div class="phd-jumtrack"><i style="width:' + pctPos + '%"></i></div>' +
-              (gap > 0
-                ? '<div class="phd-jumgap">En se calant sur son jumeau : <b style="color:var(--c-opp)">+' + V2.fmtEur(gap) + '/an</b> de potentiel d\'achats Intégral</div>'
-                : '<div class="phd-jumgap" style="color:var(--c-opp)">✓ Au niveau (ou au-dessus) de son jumeau</div>') +
-            '</div></div>';
-        }
-      }
-    } catch (e) {}
-
-    // ── RESTE À CONQUÉRIR : best-sellers du réseau qu'elle n'achète PAS encore ──
-    // (concret, chiffré à la moyenne réseau — script de visite prêt à l'emploi)
-    var conqCard = '';
-    try {
-      var PSc = window.PROD_STATS;
-      if (PSc && PSc.length && offs.length >= 10) {
-        var bought = {};
-        sales.forEach(function (s) { var c = String(s.artCode || ''); if (s.qte > 0 && c.length >= 7) bought[c] = 1; });
-        var NBc = offs.length, thr = Math.max(60, Math.round(0.20 * NBc));
-        var cand = [];
-        for (var pi = 0; pi < PSc.length; pi++) {
-          var p = PSc[pi];
-          if (!p || p.n < thr || p.rota <= 0 || p.net <= 0) continue;
-          if (bought[String(p.c)]) continue;
-          cand.push(p);
-        }
-        // trié par « à quel point c'est un standard réseau » (pénétration), puis valeur
-        cand.sort(function (a, b) { return (b.n - a.n) || ((b.rota * b.net) - (a.rota * a.net)); });
-        if (cand.length >= 3) {
-          var topc = cand.slice(0, 6);
-          var crows = topc.map(function (p, i) {
-            var eu = Math.round(p.rota * p.net);
-            var badges = '';
-            if (typeof p.f === 'string' && p.f.indexOf('pr_') === 0 && p.rpct > 0)
-              badges += '<span class="phd-rok">abandon &minus;' + (Math.round(p.rpct * 10) / 10).toLocaleString('fr-FR') + ' %</span>';
-            if ((V2.stock ? V2.stock(p.c) : 0) > 0)
-              badges += '<span class="phd-rok">✓ en stock Intégral</span>';
-            var mo = V2.momentum ? V2.momentum(p.c) : null, te = V2.tendance ? V2.tendance(p.c) : null;
-            if ((mo != null && mo > 0) || (te != null && te > 8))
-              badges += '<span class="phd-rko">↑ marché</span>';
-            return '<div class="phd-act"><div class="rk">' + (i + 1) + '</div>' +
-              '<div class="mn"><b>' + esc(cap((p.d || '').toLowerCase())) + '</b>' +
-              '<span>' + p.n + ' officines du réseau le prennent' + (badges ? ' · ' : '') + '</span>' +
-              (badges ? '<div class="phd-rnm" style="margin-top:5px;display:flex;gap:5px;flex-wrap:wrap">' + badges + '</div>' : '') +
-              '</div>' +
-              '<div class="mt" style="color:var(--ip-ink)">' + V2.fmtEur(eu) + '<small>/an réseau</small></div></div>';
-          }).join('');
-          conqCard = '<div class="phd-card"><div class="phd-sh"><div class="ic" style="background:#6D5AE6">↗</div>' +
-            '<div><h3>Reste à conquérir</h3><div class="dsc">' + cand.length + ' best-sellers pris par &ge; 20 % du réseau qu\'elle n\'achète pas encore — les 6 plus répandus</div></div></div>' +
-            crows +
-            '<div style="font-size:10.5px;color:var(--muted);padding:8px 18px 12px">Montant = achat moyen /an d\'une officine du réseau qui prend ce produit (repère, pas un engagement).</div></div>';
-        }
-      }
-    } catch (e) {}
-
-    return '<div class="phd">' + hero + planCard + ruptBand + conqCard + scoreCard + jumeauCard + reps + '</div>';
-  }
-
-  function activitySection(sales, marge, ca) {
-    // 1. CA par mois — LE graphe, visible dès l'arrivée (plus de repli).
-    // Présentation « Launcher » : carte calme, mois record en accent, repères
-    // chiffrés dérivés des ventes réelles (aucune donnée inventée).
-    var months = monthlyCA(sales);
-    var best = null;
-    months.forEach(function (m) { if (m.ca > 0 && (!best || m.ca > best.ca)) best = m; });
-    var nAct = months.filter(function (m) { return m.ca > 0; }).length;
-    var avgM = nAct ? months.reduce(function (s, m) { return s + m.ca; }, 0) / nAct : 0;
-    var lastM = months.length ? months[months.length - 1] : null;
-    var prevM = months.length > 1 ? months[months.length - 2] : null;
-    var delta = V2.deltaHtml || function () { return ''; };
-
-    // ── Bandeau KPI + évolutions (homogénéisé avec Pilotage : .v2-kpis / .v2-kpi) ──
-    var kpiBand = lastM
-      ? '<div class="v2-kpis ph-kpis">' +
-          '<div class="v2-kpi"><div class="v2-kpi-l">CA ' + esc(cap(MN_SHORT[lastM.month - 1])) + ' ' + lastM.year + '</div>' +
-            '<div class="v2-kpi-v mono">' + V2.fmtEur(lastM.ca) + '</div>' +
-            delta(lastM.ca, prevM ? prevM.ca : NaN, 'mois dernier') + '</div>' +
-          '<div class="v2-kpi"><div class="v2-kpi-l">vs sa moyenne</div>' +
-            '<div class="v2-kpi-v mono">' + V2.fmtEur(avgM) + '<small>/mois</small></div>' +
-            delta(lastM.ca, avgM, 'moyenne') + '</div>' +
-          '<div class="v2-kpi"><div class="v2-kpi-l">Meilleur mois</div>' +
-            '<div class="v2-kpi-v mono">' + (best ? V2.fmtEur(best.ca) : '—') + '</div>' +
-            '<div class="v2-kpi-d" style="color:var(--muted)">' + (best ? esc(cap(MN_SHORT[best.month - 1]) + ' ' + best.year) : '') + '</div></div>' +
-          '<div class="v2-kpi"><div class="v2-kpi-l">Mois actifs</div>' +
-            '<div class="v2-kpi-v mono">' + V2.fmtNum(nAct) + '<small>/' + months.length + '</small></div>' +
-            '<div class="v2-kpi-d" style="color:var(--muted)">avec des ventes</div></div>' +
-        '</div>'
-      : '';
-
-    // ── Graphe CA par mois : LE MÊME que Pilotage (évolutions par mois incluses) ──
-    var chartCard;
-    if (months.length && V2.build13MonthChart) {
-      var chartObj = V2.build13MonthChart(sales);
-      _chartBind = chartObj.bind || null;
-      chartCard = chartObj.html;
-    } else {
-      _chartBind = null;
-      chartCard = '<div class="v2-card"><div class="ph-dash-head"><div class="v2-card-t">' + ICO('pilo', 17) + 'CA par mois</div></div>' +
-        '<div class="v2-cat-empty" style="border:none;padding:10px 0">Aucune vente sur la période.</div></div>';
-    }
-
-    // 2. Commandé par tranche
-    var oc = ownedByCat(sales);
-    var rowsArr = CATS.map(function (c) {
-      var b = oc.buckets[c.key];
-      return { c: c, refs: b.refs.size, qte: b.qte, ca: b.ca, mdl: b.mdl };
-    }).filter(function (r) { return r.refs > 0; })
-      .sort(function (a, b) { return b.ca - a.ca; });
-    var maxCa = rowsArr.reduce(function (m, r) { return Math.max(m, r.ca); }, 1);
-    var trRows = rowsArr.map(function (r) {
-      var pct = r.ca > 0 ? Math.max(3, r.ca / maxCa * 100) : 0;
-      return '<tr>' +
-        '<td><span class="ph-tr-cat"><span class="ph-tr-dot" style="background:' + r.c.color + '"></span>' + esc(r.c.label) +
-          (r.c.sub ? '<span class="ph-tr-sub">' + esc(r.c.sub) + '</span>' : '') + '</span>' +
-          '<div class="ph-tr-bar"><span style="width:' + pct.toFixed(1) + '%;background:' + r.c.color + '"></span></div></td>' +
-        '<td class="num">' + V2.fmtNum(r.refs) + '</td>' +
-        '<td class="num">' + V2.fmtNum(r.qte) + '</td>' +
-        '<td class="num" style="font-weight:700">' + V2.fmtEur(r.ca) + '</td>' +
-        '<td class="num" style="color:var(--c-opp);font-weight:700">' + (r.mdl > 0 ? V2.fmtEur(r.mdl) : '—') + '</td>' +
-        '</tr>';
-    }).join('');
-    if (oc.other.refs.size) {
-      trRows += '<tr><td><span class="ph-tr-cat"><span class="ph-tr-dot" style="background:var(--muted-2)"></span>Hors catégories</span></td>' +
-        '<td class="num">' + V2.fmtNum(oc.other.refs.size) + '</td><td class="num">' + V2.fmtNum(oc.other.qte) + '</td>' +
-        '<td class="num" style="font-weight:700">' + V2.fmtEur(oc.other.ca) + '</td><td class="num">—</td></tr>';
-    }
-    var trCard =
-      '<div class="v2-card" style="padding:0;overflow:hidden">' +
-        '<div class="v2-card-head"><div class="v2-card-t">' + ICO('cat', 17) + 'Ce qu\'elle commande déjà · par tranche</div>' +
-          '<span class="v2-card-link" style="cursor:default;color:var(--muted)">marge MDL ' + V2.fmtEur(marge) + '</span></div>' +
-        (trRows
-          ? '<div class="v2-cat-table-wrap" style="border-top:none"><table class="v2-table">' +
-            '<thead><tr><th>Tranche / famille</th><th class="num">Réfs</th><th class="num">Volume</th><th class="num">CA net</th><th class="num">Marge MDL</th></tr></thead>' +
-            '<tbody>' + trRows + '</tbody></table></div>'
-          : '<div class="v2-cat-empty">Aucun produit commandé identifié.</div>') +
-      '</div>';
-
-    // Tableau de bord OUVERT en permanence (demande Will : les stats et le graphe
-    // CA apparaissent proprement DÈS L'ARRIVÉE sur l'officine — plus de repli).
-    return '<div class="ph-activity ph-section">' +
-        sectionHead('Activité de l\'officine', 'son CA mois par mois, ce qu\'elle commande et sa marge') +
-        kpiBand +
-        chartCard +
-        '<div class="ph-act-below">' + trCard + '</div>' +
-      '</div>';
-  }
-
   // ── Rangée d'actions natives (44px) sous le nom : appeler / mailer / itinéraire ──
   // Friction terrain n°1 levée : un commercial debout en pharmacie appelle/route d'un pouce.
   // Chaque lien n'apparaît que si la donnée existe au modèle (tel/email/ville/cp).
@@ -1428,6 +1029,178 @@
 
   var _clientsAsked = false;   // évite de redemander clients-data.js à chaque rendu
 
+
+  // ══ Fiche d'ANALYSE (27/08/2026) — disposition « Cockpit » (ordinateur : l'humain à gauche,
+  // les chiffres à droite) et « Terrain » (téléphone : notes et infos d'abord, chiffres ensuite).
+  // Demande Will : CA par mois et évolution · CA par tranche + top 5 · détail par tranche face à
+  // l'officine moyenne du réseau et son évolution · TOUTES les infos officine et les notes.
+  // Plus de ruptures ni de « ce qu'Intégral peut lui rendre » : c'est une fiche d'analyse.
+  var _netCache = null, _netRef = null;
+  function networkByCat() {   // réseau entier (tous commerciaux), 1 passe sur V2.sales, mise en cache
+    if (_netCache && _netRef === V2.sales) return _netCache;
+    var bIdx = benchIndex(), S = V2.sales || [];
+    var months = {}, act = {}, caByPid = {};
+    for (var i = 0; i < S.length; i++) {
+      var s = S[i]; if (!s.month || !s.year) continue;
+      var mk = s.year * 12 + (s.month - 1);
+      var m = months[mk] || (months[mk] = { mk: mk, year: s.year, month: s.month, total: 0, byCat: {} });
+      var cip = String(s.artCode || ''); var b = cip ? bIdx.get(cip) : null;
+      var cat = (b ? classify(b, cip) : null) || 'other';
+      var v = s.mntNetHt || 0, pk = String(s.pharmacyId);
+      m.byCat[cat] = (m.byCat[cat] || 0) + v; m.total += v;
+      (act[mk] || (act[mk] = {}))[pk] = 1;
+      caByPid[pk] = (caByPid[pk] || 0) + v;
+    }
+    var list = Object.keys(months).map(function (k) { return months[k]; }).sort(function (x, y) { return x.mk - y.mk; });
+    list.forEach(function (m) {
+      m.n = Object.keys(act[m.mk] || {}).length || 1;   // officines actives ce mois-là
+      m.avg = m.total / m.n; m.avgByCat = {};
+      Object.keys(m.byCat).forEach(function (c) { m.avgByCat[c] = m.byCat[c] / m.n; });
+    });
+    var ranking = Object.keys(caByPid).sort(function (x, y) { return caByPid[y] - caByPid[x]; });
+    _netCache = { months: list, caByPid: caByPid, ranking: ranking }; _netRef = V2.sales;
+    return _netCache;
+  }
+  function pctOf(a, b) { return (b > 0) ? Math.round((a - b) / b * 100) : null; }
+  function evoHtml(p, suffix) {
+    if (p == null) return '<span class="pha-flat">—</span>';
+    var c = p > 2 ? 'pha-up' : (p < -2 ? 'pha-dn' : 'pha-flat');
+    return '<span class="' + c + ' mono">' + (p > 0 ? '+' : '') + p + ' %' + (suffix || '') + '</span>';
+  }
+  function monthLabel(m) { return MN_SHORT[m.month - 1]; }
+
+  // Courbe CA par mois : trait plein = l'officine, pointillé = officine moyenne du réseau.
+  function caChartSvg(pts, w, h) {
+    var n = pts.length; if (n < 2) return '';
+    var pad = { l: 44, r: 12, t: 18, b: 26 }, W = w - pad.l - pad.r, H = h - pad.t - pad.b;
+    var max = 0; pts.forEach(function (p) { max = Math.max(max, p.ca, p.net); }); max = (max || 1) * 1.12;
+    var x = function (i) { return pad.l + i * (W / (n - 1)); }, y = function (v) { return pad.t + H - (v / max) * H; };
+    var poly = function (key) { return pts.map(function (p, i) { return x(i).toFixed(1) + ',' + y(p[key]).toFixed(1); }).join(' '); };
+    var area = 'M' + poly('ca').split(' ').join(' L') + ' L' + x(n - 1).toFixed(1) + ',' + (pad.t + H) + ' L' + x(0).toFixed(1) + ',' + (pad.t + H) + 'Z';
+    var g = '<svg class="pha-chart" viewBox="0 0 ' + w + ' ' + h + '" role="img" aria-label="CA par mois, officine et officine moyenne du réseau">' +
+      '<defs><linearGradient id="phaGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0050E6" stop-opacity=".22"/><stop offset="1" stop-color="#0050E6" stop-opacity="0"/></linearGradient></defs>';
+    [0, .25, .5, .75, 1].forEach(function (f) {
+      var yy = (pad.t + H - f * H).toFixed(1);
+      g += '<line x1="' + pad.l + '" x2="' + (w - pad.r) + '" y1="' + yy + '" y2="' + yy + '" stroke="rgba(16,19,28,.07)"/>' +
+        '<text x="' + (pad.l - 8) + '" y="' + (+yy + 4) + '" font-size="10" text-anchor="end" fill="#9AA1B2" font-family="var(--mono)">' + Math.round(f * max / 1000) + 'k</text>';
+    });
+    g += '<path d="' + area + '" fill="url(#phaGrad)"/>';
+    g += '<polyline points="' + poly('net') + '" fill="none" stroke="#B9C4DB" stroke-width="2" stroke-dasharray="5 5" stroke-linecap="round"/>';
+    g += '<polyline points="' + poly('ca') + '" fill="none" stroke="#0050E6" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>';
+    pts.forEach(function (p, i) {
+      var last = i === n - 1;
+      g += '<circle cx="' + x(i).toFixed(1) + '" cy="' + y(p.ca).toFixed(1) + '" r="' + (last ? 5 : 3.5) + '" fill="#fff" stroke="#0050E6" stroke-width="2.2"/>' +
+        '<text x="' + x(i).toFixed(1) + '" y="' + (y(p.ca) - 10).toFixed(1) + '" font-size="10.5" font-weight="700" text-anchor="middle" fill="#10131C" font-family="var(--mono)">' + esc(V2.fmtK(p.ca)) + '</text>' +
+        '<text x="' + x(i).toFixed(1) + '" y="' + (h - 8) + '" font-size="11" text-anchor="middle" fill="#737A8C" font-weight="600">' + esc(p.label) + '</text>';
+    });
+    return g + '</svg>';
+  }
+
+  var top5Cat = null;   // catégorie ouverte dans « Top 5 par catégorie »
+  V2.pharmaTop5Cat = function (key) { top5Cat = key; V2.render(); };
+
+  // Tout ce que la fiche d'analyse calcule, en un seul objet (partagé ordinateur / téléphone).
+  function analyseData(pid, sales) {
+    var net = networkByCat();
+    var netMonths = net.months;
+    var byM = {}; sales.forEach(function (s) { if (s.month && s.year) { var k = s.year * 12 + (s.month - 1); byM[k] = (byM[k] || 0) + (s.mntNetHt || 0); } });
+    var pts = netMonths.map(function (m) { return { mk: m.mk, label: monthLabel(m), year: m.year, ca: byM[m.mk] || 0, net: m.avg }; });
+    var n = pts.length, last = pts[n - 1] || null, prev = pts[n - 2] || null;
+    var caTot = pts.reduce(function (a, p) { return a + p.ca; }, 0);
+    var netTot = pts.reduce(function (a, p) { return a + p.net; }, 0);
+    var oc = ownedByCat(sales);
+    var topAll = ownedTopByCat(sales, 5);
+    var cats = CATS.map(function (c) {
+      var bk = oc.buckets[c.key];
+      var netByM = netMonths.map(function (m) { return m.avgByCat[c.key] || 0; });
+      var t = topAll.filter(function (o) { return o.cat.key === c.key; })[0];
+      return { key: c.key, label: c.label, sub: c.sub, color: c.color, refs: bk.refs.size, qte: bk.qte, ca: bk.ca, mdl: bk.mdl,
+        netMoy: n ? netByM.reduce(function (a, v) { return a + v; }, 0) / n : 0, netByM: netByM, top: t ? t.rows : [], nbRefs: t ? t.total : 0 };
+    });
+    // CA par mois et par catégorie de l'officine (pour l'évolution du dernier mois)
+    var bIdx = benchIndex();
+    var mine = {}; sales.forEach(function (s) {
+      if (!s.month || !s.year) return; var k = s.year * 12 + (s.month - 1);
+      var cip = String(s.artCode || ''); var b = cip ? bIdx.get(cip) : null; var cat = (b ? classify(b, cip) : null) || 'other';
+      var mm = mine[cat] || (mine[cat] = {}); mm[k] = (mm[k] || 0) + (s.mntNetHt || 0);
+    });
+    cats.forEach(function (c) {
+      var mm = mine[c.key] || {};
+      c.moy = n ? c.ca / n : 0;
+      c.part = caTot > 0 ? c.ca / caTot * 100 : 0;
+      c.gap = pctOf(c.moy, c.netMoy);
+      c.evo = (last && prev) ? pctOf(mm[last.mk] || 0, mm[prev.mk] || 0) : null;
+      c.netEvo = (last && prev) ? pctOf(netMonths[n - 1].avgByCat[c.key] || 0, netMonths[n - 2].avgByCat[c.key] || 0) : null;
+    });
+    var rank = net.ranking.indexOf(String(pid)) + 1;
+    var pharma = (V2.pharmacies || []).find(function (p) { return String(p.id) === String(pid); }) || {};
+    var grpName = String(pharma.groupement || '').trim();
+    var grpPids = (grpName && grpName !== '—') ? (V2.pharmacies || []).filter(function (p) { return String(p.groupement || '').trim() === grpName; }).map(function (p) { return String(p.id); }) : [];
+    var grpRank = 0;
+    if (grpPids.length >= 2) { var sorted = grpPids.slice().sort(function (x, y) { return (net.caByPid[y] || 0) - (net.caByPid[x] || 0); }); grpRank = sorted.indexOf(String(pid)) + 1; }
+    return { pts: pts, n: n, last: last, prev: prev, caTot: caTot, caMoy: n ? caTot / n : 0, netMoy: n ? netTot / n : 0,
+      evoM: (last && prev) ? pctOf(last.ca, prev.ca) : null, evoNet: (last && prev) ? pctOf(last.net, prev.net) : null,
+      cats: cats, other: { refs: oc.other.refs.size, qte: oc.other.qte, ca: oc.other.ca },
+      rank: rank, nOff: net.ranking.length, grpName: grpName, grpRank: grpRank, nGrp: grpPids.length };
+  }
+
+  function analyseKpis(A, marge, nbRefs) {
+    var lastLbl = A.last ? cap(A.last.label) + ' ' + A.last.year : '—';
+    return '<div class="pha-kpis">' +
+      '<div class="pha-kpi" style="--a:var(--ip-blue)"><div class="pha-kl">CA ' + esc(lastLbl) + '</div><div class="pha-kval mono">' + (A.last ? V2.fmtEur(A.last.ca) : '—') + '</div><div class="pha-kd">' + evoHtml(A.evoM) + ' <span class="pha-sub">vs ' + (A.prev ? esc(A.prev.label) : 'mois précédent') + '</span></div></div>' +
+      '<div class="pha-kpi" style="--a:var(--c-opp)"><div class="pha-kl">Sa moyenne / mois</div><div class="pha-kval mono">' + V2.fmtEur(A.caMoy) + '</div><div class="pha-kd">' + evoHtml(pctOf(A.caMoy, A.netMoy)) + ' <span class="pha-sub">réseau ' + V2.fmtEur(A.netMoy) + '/mois</span></div></div>' +
+      '<div class="pha-kpi" style="--a:var(--c-amber)"><div class="pha-kl">Cumul ' + A.n + ' mois</div><div class="pha-kval mono">' + V2.fmtEur(A.caTot) + '</div><div class="pha-kd"><span class="pha-sub">marge MDL ' + V2.fmtEur(marge) + ' · ' + V2.fmtNum(nbRefs) + ' réf.</span></div></div>' +
+      '<div class="pha-kpi" style="--a:var(--c-cat)"><div class="pha-kl">Place dans le réseau</div><div class="pha-kval mono">' + (A.rank ? A.rank + '<small>/' + A.nOff + '</small>' : '—') + '</div><div class="pha-kd"><span class="pha-sub">' + (A.grpRank ? A.grpRank + 'e sur ' + A.nGrp + ' chez ' + esc(A.grpName) : 'hors groupement') + '</span></div></div>' +
+    '</div>';
+  }
+
+  function analyseChart(A) {
+    return '<div class="v2-card pha-card"><div class="pha-ch"><h3>Ce qu\'elle commande par mois</h3><span class="pha-sub">CA net Intégral' + (A.last ? ' · ' + esc(A.last.label) + ' = dernier mois reçu' : '') + '</span></div>' +
+      (A.n >= 2 ? caChartSvg(A.pts, 820, 250) : '<div class="v2-cat-empty" style="border:none">Pas assez de mois pour tracer une courbe.</div>') +
+      '<div class="pha-legend"><span><i style="background:#0050E6"></i>Cette officine</span><span><i style="background:#B9C4DB"></i>Officine moyenne du réseau (' + V2.fmtNum(A.nOff) + ')</span></div></div>';
+  }
+
+  function trancheRow(c, maxCa) {
+    var absent = c.ca <= 0;
+    return '<tr' + (absent ? ' class="pha-absent"' : '') + '><td><span class="ph-tr-dot" style="background:' + c.color + '"></span><b>' + esc(c.label) + '</b>' + (c.sub ? ' <span class="pha-sub">' + esc(c.sub) + '</span>' : '') + '</td>' +
+      '<td class="num">' + V2.fmtNum(c.refs) + '</td>' +
+      '<td class="num"><b>' + V2.fmtEur(c.ca) + '</b><div class="pha-bar"><i style="width:' + (maxCa > 0 ? Math.max(c.ca > 0 ? 3 : 0, c.ca / maxCa * 100) : 0).toFixed(1) + '%;background:' + c.color + '"></i></div></td>' +
+      '<td class="num">' + Math.round(c.part) + ' %</td>' +
+      '<td class="num" style="color:var(--c-opp);font-weight:700">' + (c.mdl > 0 ? V2.fmtEur(c.mdl) : '—') + '</td>' +
+      '<td class="num">' + V2.fmtEur(c.netMoy) + '</td>' +
+      '<td class="num">' + (absent ? (c.netMoy > 0 ? '<span class="pha-dn">absente</span>' : '—') : evoHtml(c.gap)) + '</td>' +
+      '<td class="num">' + evoHtml(c.evo) + '<div class="pha-sub">réseau ' + evoHtml(c.netEvo) + '</div></td></tr>';
+  }
+  function analyseTranches(A) {
+    var maxCa = A.cats.reduce(function (m, c) { return Math.max(m, c.ca); }, 0);
+    var rows = A.cats.map(function (c) { return trancheRow(c, maxCa); }).join('');
+    if (A.other.refs > 0) rows += '<tr><td><span class="ph-tr-dot" style="background:var(--muted-2)"></span>Hors catégories</td><td class="num">' + V2.fmtNum(A.other.refs) + '</td><td class="num"><b>' + V2.fmtEur(A.other.ca) + '</b></td><td class="num">' + Math.round(A.caTot > 0 ? A.other.ca / A.caTot * 100 : 0) + ' %</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td></tr>';
+    var desk = '<div class="v2-card pha-card pha-desk" style="padding:0;overflow:hidden"><div class="pha-ch" style="padding:16px 18px 6px"><h3>Son CA par tranche, face à l\'officine moyenne du réseau</h3><span class="pha-sub">écart = sa moyenne mensuelle vs celle du réseau · évolution = dernier mois vs le précédent</span></div>' +
+      '<div class="v2-cat-table-wrap" style="border-top:none"><table class="v2-table pha-table"><thead><tr><th>Tranche</th><th class="num">Réf.</th><th class="num">CA ' + A.n + ' mois</th><th class="num">Part</th><th class="num">Marge MDL</th><th class="num">Réseau / mois</th><th class="num">Écart</th><th class="num">Évol.</th></tr></thead><tbody>' + rows + '</tbody></table></div></div>';
+    // Téléphone : une ligne par tranche, dépliable sur son top 5
+    var on = A.cats.filter(function (c) { return c.ca > 0; }).sort(function (x, y) { return y.ca - x.ca; });
+    var mob = '<div class="v2-card pha-card pha-mob"><div class="pha-ch"><h3>Par tranche</h3><span class="pha-sub">' + A.n + ' mois · top 5 au clic</span></div>' +
+      on.map(function (c, i) {
+        return '<details class="pha-det"' + (i === 0 ? ' open' : '') + '><summary><span><span class="ph-tr-dot" style="background:' + c.color + '"></span>' + esc(c.label) + '</span><span class="mono">' + V2.fmtK(c.ca) + ' <span class="pha-sub">' + Math.round(c.part) + ' %</span> ' + ICO('chev', 14) + '</span></summary>' +
+          '<div class="pha-bar" style="margin:0 0 8px"><i style="width:' + (maxCa > 0 ? (c.ca / maxCa * 100).toFixed(1) : 0) + '%;background:' + c.color + '"></i></div>' +
+          c.top.map(function (t, j) { return '<div class="pha-r"><i>' + (j + 1) + '</i><span>' + esc(t.designation) + '</span><b class="mono">' + V2.fmtEur(t.ca) + '</b></div>'; }).join('') +
+          '<div class="pha-sub" style="padding:2px 0 8px">' + (c.mdl > 0 ? 'marge MDL ' + V2.fmtEur(c.mdl) + ' · ' : '') + 'réseau ' + V2.fmtEur(c.netMoy) + '/mois · ' + evoHtml(c.gap) + ' · évol. ' + evoHtml(c.evo) + ' (réseau ' + evoHtml(c.netEvo) + ')</div></details>';
+      }).join('') +
+      A.cats.filter(function (c) { return c.ca <= 0 && c.netMoy > 0; }).map(function (c) { return '<div class="pha-r pha-r1"><span><span class="ph-tr-dot" style="background:' + c.color + '"></span>' + esc(c.label) + '</span><b class="pha-dn">absente</b><span class="pha-sub" style="grid-column:1/-1">le réseau en fait ' + V2.fmtEur(c.netMoy) + '/mois</span></div>'; }).join('') +
+    '</div>';
+    return desk + mob;
+  }
+
+  function analyseTop5(A) {
+    var on = A.cats.filter(function (c) { return c.top.length; }).sort(function (x, y) { return y.ca - x.ca; });
+    if (!on.length) return '';
+    var cur = on.filter(function (c) { return c.key === top5Cat; })[0] || on[0];
+    return '<div class="v2-card pha-card pha-desk"><div class="pha-ch"><h3>Top 5 par catégorie</h3><span class="pha-sub">ses meilleures références, en valeur</span></div>' +
+      '<div class="pha-tabs">' + on.map(function (c) { return '<button class="pha-tab' + (c.key === cur.key ? ' on' : '') + '" onclick="V2.pharmaTop5Cat(\'' + c.key + '\')"><span class="ph-tr-dot" style="background:' + c.color + '"></span>' + esc(c.label.replace('Princeps · ', '')) + '</button>'; }).join('') + '</div>' +
+      cur.top.map(function (t, i) { return '<div class="pha-r"><i>' + (i + 1) + '</i><span>' + esc(t.designation) + '</span><b class="mono">' + V2.fmtEur(t.ca) + ' <small>· ' + V2.fmtNum(t.qte) + ' u</small></b></div>'; }).join('') +
+      '<div class="pha-sub" style="margin-top:6px">' + V2.fmtNum(cur.nbRefs) + ' référence' + (cur.nbRefs > 1 ? 's' : '') + ' commandée' + (cur.nbRefs > 1 ? 's' : '') + ' dans cette catégorie</div></div>';
+  }
+
   function renderDetail(root, pid) {
     var pharma = (V2.pharmacies || []).find(function (p) { return String(p.id) === String(pid); });
     if (!pharma) {
@@ -1480,75 +1253,71 @@
     var tel = (pharma.tel == null ? '' : String(pharma.tel)).trim();
     var email = (pharma.email == null ? '' : String(pharma.email)).trim();
 
-    // ── En-tête : identité + KPIs + contacts ──
-    var kpi = function (l, v, cls, raw) {
-      var dc = (raw != null && raw > 0) ? ' data-count="' + raw + '"' : '';
-      return '<div class="phf-hkpi"><span class="phf-hkpi-l">' + l + '</span><span class="phf-hkpi-v ' + (cls || '') + ' mono"' + dc + '>' + v + '</span></div>';
-    };
-    var head =
-      '<div class="phf-hcard">' +
-        '<div class="phf-hid">' +
-          (pharma.code ? '<span class="phf-code">' + esc(String(pharma.code)) + '</span>' : '') +
-          '<div class="phf-hname">' + esc(nameOf(pid, pharma.name)) + ficheBadge + repriseBadge + '</div>' +
-          (loc ? '<div class="phf-hloc">' + ICO('pharma', 13) + esc(loc) + '</div>' : '') +
-          (function () { var t = clientTitulaire(pid); return t ? '<div class="phf-htit">' + ICO('user', 12) + '<span>' + esc(t) + '</span></div>' : ''; })() +
+    // ── Colonne « humain » : identité + actions + listes + infos officine + notes ──
+    var pidSafe = esc(String(pid).replace(/[^0-9A-Za-z_-]/g, ''));
+    var infoRdv = (V2.rdvInfo ? V2.rdvInfo(pid) : null);
+    var mail = email || (infoRdv && infoRdv.email) || '';
+    var titulaire = clientTitulaire(pid);
+    var comms = (pharma.comms || []).join(', ');
+    var kv = function (l, v, empty) { return '<span>' + l + '</span><span' + (v ? '' : ' class="pha-empty"') + '>' + (v ? v : (empty || 'à compléter')) + '</span>'; };
+    var idCard =
+      '<div class="pha-id">' +
+        '<div class="pha-code mono">' + (pharma.code ? 'CIP ' + esc(String(pharma.code)) + ' · ' : '') + 'CLIENTE INTÉGRAL' + (comms ? ' · ' + esc(comms.toUpperCase()) : '') + '</div>' +
+        '<div class="pha-name">' + esc(nameOf(pid, pharma.name)) + ficheBadge + repriseBadge + '</div>' +
+        '<div class="pha-kv">' +
+          kv('Ville', esc(loc)) +
+          kv('Titulaire', esc(titulaire)) +
+          kv('Groupement', (pharma.groupement && pharma.groupement !== '—') ? esc(pharma.groupement) : '') +
+          kv('Téléphone', tel ? esc(tel) : '') +
+          kv('E-mail', mail ? esc(mail) : '') +
         '</div>' +
-        '<div class="phf-hkpis">' +
-          kpi('Opportunités', V2.fmtNum(nReseau), 'phf-push', nReseau) +
-          kpi('CA cumulé', V2.fmtEur(ca), '', ca) +
-          kpi('Marge MDL', V2.fmtEur(marge), 'phf-pos', marge) +
-          kpi('Références', V2.fmtNum(nbRefs), '', nbRefs) +
+        '<div class="pha-acts">' +
+          (tel ? '<a class="pha-btn" href="tel:' + esc(tel.replace(/[^+0-9]/g, '')) + '">' + ICO('phone', 15) + 'Appeler</a>' : '') +
+          (mail ? '<a class="pha-btn" href="mailto:' + esc(mail) + '">' + ICO('mail', 15) + 'E-mail</a>' : '') +
+          (mail && V2.rdv ? '<button class="pha-btn pha-btn-pri" onclick="V2.rdv.proposer(\'' + pidSafe + '\')" title="Elle choisit son créneau, calé sur la géographie de ta journée">' + ICO('cal', 15) + 'Proposer un RDV</button>' : '') +
+          (!tel && !mail ? '<span class="pha-sub" style="color:rgba(255,255,255,.7)">Téléphone et e-mail à renseigner dans « Infos officine »</span>' : '') +
         '</div>' +
-        (function () {
-          // E-mail : absent de WML_OFFICINES, il ne vit que dans CLIENTS (chargé
-          // à la demande). On le récupère par le CIP, qui est aussi l'id.
-          var infoRdv = (V2.rdvInfo ? V2.rdvInfo(pid) : null);
-          var mail = email || (infoRdv && infoRdv.email) || '';
-          if (!tel && !mail) return '';
-          return '<div class="phf-hcontacts">' +
-            (tel ? '<a class="phf-cbtn2" href="tel:' + esc(tel.replace(/[^+0-9]/g, '')) + '">' + ICO('phone', 15) + 'Appeler</a>' : '') +
-            (mail ? '<a class="phf-cbtn2" href="mailto:' + esc(mail) + '">' + ICO('mail', 15) + 'E-mail</a>' : '') +
-            // pid injecté dans un onclick : on le réduit à ce qu'il est réellement
-            // (un CIP), pour qu'aucune quote ne puisse refermer la chaîne JS.
-            (mail && V2.rdv ? '<button class="phf-cbtn2" onclick="V2.rdv.proposer(\'' + esc(String(pid).replace(/[^0-9A-Za-z_-]/g, '')) +
-              '\')" title="Elle choisit son créneau, calé sur la géographie de ta journée">' +
-              ICO('cal', 15) + 'Proposer un RDV</button>' : '') +
-          '</div>';
-        })() +
       '</div>';
 
-    // ── Tableau de bord de l'officine (VISIBLE dès l'arrivée) ──
-    // Demande Will : le graphe CA et les stats apparaissent proprement à l'ouverture.
-    // Le Top 5 par catégorie reste en secondaire, replié à un clic.
-    var dash = activitySection(sales, marge, ca);
-    var stats = '<div class="ph-stats">' + topByCatSection(sales) + monthCatSection(sales) + '</div>';
-
-    // ── Listes d'achats PDF : boutons COMPACTS en haut de la fiche (au lieu des grosses cartes) ──
+    // ── Listes à proposer (PDF réseau / groupement + écran Produits calé sur elle) ──
     var pdfBtn = function (scope, label, n, cls) {
       if (n <= 0) return '';
-      return '<button class="phf-actbtn ' + (cls || '') + '" onclick="V2.pharmaListPdf(\'' + esc(String(pid)) + '\',\'' + scope + '\')" title="ce qu\'elle n\'a pas encore, prêt en PDF">' +
+      return '<button class="pha-btn pha-btn-w ' + (cls || '') + '" onclick="V2.pharmaListPdf(\'' + esc(String(pid)) + '\',\'' + scope + '\')" title="ce qu\'elle n\'a pas encore, prêt en PDF">' +
         ICO('download', 15) + label + ' <b class="mono">' + V2.fmtNum(n) + '</b></button>';
     };
-    // Porte d'entrée vers l'écran Produits, déjà calé sur CETTE officine.
-    // Sans elle, le commercial devait revenir à l'accueil puis re-choisir
-    // l'officine dans une liste de 691.
     var btnProduits = V2.pages.produits
-      ? '<button class="phf-actbtn phf-actbtn-net" onclick="V2.go(\'produits\', \'' +
-        esc(String(pid).replace(/[\\'"<>&]/g, '')) + '\')">' +
-        ICO('cat', 14, 2) + ' Ce que ses confrères prennent</button>'
+      ? '<button class="pha-btn pha-btn-w pha-btn-opp" onclick="V2.go(\'produits\', \'' + pidSafe + '\')">' + ICO('cat', 14, 2) + ' Ce que ses confrères prennent</button>'
       : '';
-    // Conditions d'origine des 2 boutons PDF laissées telles quelles ; seule
-    // la présence du bouton Produits peut désormais faire apparaître la barre.
     var aDesPdf = (nReseau > 0 || (hasGrp && nGrp > 0));
-    var pdfButtons = (aDesPdf || btnProduits) ?
-      '<div class="phf-actions">' +
-        '<span class="phf-actions-l">Listes à proposer</span>' +
+    var listes = (aDesPdf || btnProduits) ?
+      '<div class="v2-card pha-card pha-lists"><div class="pha-kl">Listes à proposer</div>' +
         btnProduits +
-        (aDesPdf ? pdfBtn('reseau', 'Réseau Intégral', nReseau, 'phf-actbtn-net') : '') +
-        (aDesPdf && hasGrp ? pdfBtn('groupement', esc(g.name), nGrp, 'phf-actbtn-grp') : '') +
+        (aDesPdf ? pdfBtn('reseau', 'Réseau Intégral', nReseau, '') : '') +
+        (aDesPdf && hasGrp ? pdfBtn('groupement', esc(g.name), nGrp, 'pha-btn-grp') : '') +
       '</div>' : '';
 
-    // ── Listing : best rotations de son groupement, avec marqueur commande / ne commande pas ──
+    // ── Infos officine : TOUJOURS visibles (demande Will : les infos saisies doivent rester) ──
+    var infos = V2.profil ? (function () {
+      var cipLine = '<div class="pha-cip">CIP <b class="mono">' + esc(String(pharma.code || '—')) + '</b> · ' + esc(pharma.name || '') + '</div>';
+      var grps = {}; (V2.pharmacies || []).forEach(function (p) { var gg = String(p.groupement || '').trim(); if (gg && gg !== '—') grps[gg] = 1; });
+      var gopts = Object.keys(grps).sort(function (x, y) { return x.localeCompare(y, 'fr'); });
+      var cur = String(pharma.groupement || '').trim();
+      var grpEdit = '<label class="v2-profil-f v2-profil-f-wide" style="display:block;margin-bottom:12px"><span style="display:block;font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px">Groupement</span>' +
+        '<select style="width:100%;box-sizing:border-box;border:1px solid var(--line-strong);border-radius:10px;padding:9px 11px;font:inherit;font-size:13.5px;color:var(--ip-ink);background:var(--card-2);cursor:pointer" onchange="V2.setPharmaGroupement(\'' + esc(String(pid)) + '\', this)">' +
+          '<option value="">—</option>' +
+          gopts.map(function (gg) { return '<option' + (gg === cur ? ' selected' : '') + '>' + esc(gg) + '</option>'; }).join('') +
+          '<option value="__add__">➕ préciser…</option>' +
+        '</select></label>';
+      return '<div class="v2-card pha-card pha-infos"><div class="pha-ch"><h3>Infos officine</h3><span class="pha-sub">grossistes, génériqueurs, logiciel, robot… tout ce que l\'équipe a noté</span></div>' +
+        cipLine + nameEditor(pid, nameOf(pid, pharma.name)) + titEditor(pid, titulaire) + grpEdit + V2.profil.section('client', pid) + '</div>';
+    })() : '';
+    var notes = V2.notes ? '<div class="pha-notes">' + V2.notes.section('client', pid) + '</div>' : '';
+
+    // ── Colonne « chiffres » ──
+    var A = analyseData(pid, sales);
+    var chiffres = analyseKpis(A, marge, nbRefs) + analyseChart(A) + analyseTranches(A) + analyseTop5(A);
+
+    // Best rotations du groupement / réseau : détail produit par produit, replié (inchangé)
     var rot = grpBestRotations(pid, 60);
     var nOwn = rot.rows.filter(function (r) { return r.owned; }).length;
     var nGap = rot.rows.length - nOwn;
@@ -1580,7 +1349,6 @@
       '</tr></thead><tbody>' + rotRows + '</tbody></table></div>' +
       '<div class="phf-foot">' + ICO('check', 13) + ' ' + nOwn + ' déjà commandé' + (nOwn > 1 ? 's' : '') + ' · <b style="color:var(--c-amber);margin-left:4px">' + nGap + ' à pousser</b> — sur les ' + rot.rows.length + ' meilleures rotations ' + (rot.isGrp ? 'du groupement' : 'du réseau') + '.</div>' +
     '</div>' : '';
-    // Tableau détaillé = secondaire : replié derrière un « Voir plus », comme l'accueil Launcher.
     var listing = rot.rows.length ? (function () {
       var open = sectionOpen('bestrot');
       return '<div class="ph-section">' +
@@ -1588,32 +1356,7 @@
         (open ? listingBody : '') +
       '</div>';
     })() : '';
-
-    // ── Hub à onglets : l'en-tête reste fixe, le contenu bascule Vue d'ensemble / Audit ──
-    // Hiérarchie « Launcher » : 1) le tableau de bord (KPI en-tête + graphe CA +
-    // par tranche) VISIBLE dès l'arrivée ; 2) l'ACTION évidente (quoi lui proposer,
-    // en bleu) ; 3) le détail produit par produit et le Top 5, repliés à un clic.
-    // Profil « Infos officine » = repliable (ne pas encombrer la fiche)
-    var profilSec = V2.profil ? (function () {
-      var open = sectionOpen('profil');
-      // CIP de la pharmacie + son nom (demande équipe)
-      var cipLine = '<div style="font-size:12.5px;color:var(--muted);margin:0 0 12px;padding:8px 12px;background:var(--card-2);border-radius:10px">CIP <b style="color:var(--ip-ink);font-family:var(--mono)">' + esc(String(pharma.code || '—')) + '</b> · ' + esc(pharma.name || '') + '</div>';
-      // Groupement éditable (correction à la main → persistée)
-      var grps = {}; (V2.pharmacies || []).forEach(function (p) { var g = String(p.groupement || '').trim(); if (g && g !== '—') grps[g] = 1; });
-      var gopts = Object.keys(grps).sort(function (a, b) { return a.localeCompare(b, 'fr'); });
-      var cur = String(pharma.groupement || '').trim();
-      var grpEdit = '<label class="v2-profil-f v2-profil-f-wide" style="display:block;margin-bottom:12px"><span style="display:block;font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px">Groupement</span>' +
-        '<select style="width:100%;box-sizing:border-box;border:1px solid var(--line-strong);border-radius:10px;padding:9px 11px;font:inherit;font-size:13.5px;color:var(--ip-ink);background:var(--card-2);cursor:pointer" onchange="V2.setPharmaGroupement(\'' + esc(String(pid)) + '\', this)">' +
-          '<option value="">—</option>' +
-          gopts.map(function (g) { return '<option' + (g === cur ? ' selected' : '') + '>' + esc(g) + '</option>'; }).join('') +
-          '<option value="__add__">➕ préciser…</option>' +
-        '</select></label>';
-      return '<div class="ph-section">' +
-        sectionHead('Infos officine', 'CIP, groupement, grossistes, génériqueurs, robot…', 'profil', open) +
-        (open ? (cipLine + nameEditor(pid, nameOf(pid, pharma.name)) + titEditor(pid, clientTitulaire(pid)) + grpEdit + V2.profil.section('client', pid)) : '') +
-      '</div>';
-    })() : '';
-    // CA par génériqueur (Biogaran, Zentiva, EG…) — table BDPM ; section repliable
+    // CA par génériqueur (Biogaran, Zentiva, EG…) — table BDPM ; section repliable (inchangé)
     var generiqueurSec = (function () {
       var card = V2.generiqueurCard ? V2.generiqueurCard(sales, { title: 'Ses achats par génériqueur' }) : '';
       if (!card) return '';
@@ -1623,31 +1366,25 @@
         (open ? card : '') +
       '</div>';
     })();
+
     var apercu =
-      (function () { try { return diagnosticSection(pid, pharma, sales, rot); } catch (e) { return ''; } })() +
-      dash +
-      listing +
-      generiqueurSec +
-      stats +
-      profilSec +
-      (V2.notes ? V2.notes.section('client', pid) : '');
+      '<div class="pha">' +
+        '<div class="pha-rail">' + idCard + listes + infos + notes + '</div>' +
+        '<div class="pha-main">' + chiffres + listing + generiqueurSec + '</div>' +
+      '</div>';
     var auditTab = (V2.audit && window.WML_SALES && window.PROD_STATS)
       ? '<div id="aud">' + V2.audit.sheetFor(pid) + V2.audit.importSection() + '</div>' : '';
-    var tabs = '<div class="ph-fiche-tabs" style="display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 16px">' +
-      '<button class="ph-vtab on" id="phft-apercu" onclick="V2.phFicheTab(\'apercu\')">' + ICO('pharma', 15, 2) + 'Quoi lui proposer</button>' +
-      (auditTab ? '<button class="ph-vtab" id="phft-audit" onclick="V2.phFicheTab(\'audit\')">' + ICO('pilo', 15, 2) + 'Audit marge</button>' : '') +
-      '</div>';
+    var tabs = auditTab ? '<div class="ph-fiche-tabs" style="display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 16px">' +
+      '<button class="ph-vtab on" id="phft-apercu" onclick="V2.phFicheTab(\'apercu\')">' + ICO('pharma', 15, 2) + 'Analyse</button>' +
+      '<button class="ph-vtab" id="phft-audit" onclick="V2.phFicheTab(\'audit\')">' + ICO('pilo', 15, 2) + 'Audit marge</button>' +
+      '</div>' : '';
 
-    // Liseré / halo contextuel : le pilier Opportunités porte SA lumière (--pil-opp).
     root.innerHTML = V2.topbar({ back: true, backTo: 'pharma', backLabel: 'Officines' }) +
-      '<div class="v2-wrap ph-detail" style="--accent:var(--pil-opp)">' +
-        head +
-        pdfButtons +
+      '<div class="v2-wrap ph-detail pha-wrap" style="--accent:var(--pil-opp)">' +
         tabs +
         '<div id="phft-c-apercu">' + apercu + '</div>' +
         (auditTab ? '<div id="phft-c-audit" style="display:none">' + auditTab + '</div>' : '') +
       '</div>';
-    if (_chartBind) { try { _chartBind(root); } catch (e) {} _chartBind = null; }
     if (V2.profil) V2.profil.hydrate();
     if (V2.notes) V2.notes.hydrate();
   }
@@ -3298,6 +3035,70 @@
       '.phf-phead{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}',
       '.phf-ptitle{font-size:18px;font-weight:800;letter-spacing:-.01em;display:flex;align-items:center;gap:10px}',
       '.phf-pdot{width:11px;height:11px;border-radius:50%;flex:none}',
+      /* ══ Fiche d'analyse : Cockpit (≥ 901 px) / Terrain (téléphone) ══ */
+      '.pha{display:grid;grid-template-columns:330px minmax(0,1fr);gap:18px;align-items:start}',
+      '.pha-rail,.pha-main{display:flex;flex-direction:column;gap:14px;min-width:0}',
+      '.pha-card{padding:16px 18px}',
+      '.pha-ch{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px}',
+      '.pha-ch h3{margin:0;font-size:15px;font-weight:800;letter-spacing:-.01em}',
+      '.pha-sub{font-size:12px;color:var(--muted);font-weight:500}',
+      '.pha-up{color:var(--c-mint-txt)}.pha-dn{color:var(--c-rose-txt)}.pha-flat{color:var(--muted)}',
+      '.pha-id{border-radius:var(--r-card);padding:22px 22px 20px;color:#fff;position:relative;overflow:hidden;background:linear-gradient(160deg,#173FA8 0%,#0B1F4D 55%,#08163A 100%);box-shadow:0 18px 40px rgba(11,31,77,.30),inset 0 1px 0 rgba(255,255,255,.18)}',
+      '.pha-id::before{content:"";position:absolute;width:420px;height:420px;border-radius:50%;left:-120px;top:-260px;background:radial-gradient(closest-side,rgba(120,170,255,.55),rgba(120,170,255,0))}',
+      '.pha-id>*{position:relative}',
+      '.pha-code{font-size:11.5px;opacity:.75;font-weight:700;letter-spacing:.04em}',
+      '.pha-name{font-size:22px;font-weight:800;letter-spacing:-.02em;line-height:1.1;margin:6px 0 10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}',
+      '.pha-kv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:13px}',
+      '.pha-kv span:nth-child(odd){color:rgba(255,255,255,.62);font-weight:600}',
+      '.pha-kv span:nth-child(even){font-weight:700;text-align:right;overflow-wrap:anywhere}',
+      '.pha-kv .pha-empty{color:rgba(255,255,255,.45);font-weight:500}',
+      '.pha-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}',
+      '.pha-btn{display:inline-flex;align-items:center;gap:7px;min-height:var(--tap-min,44px);padding:0 14px;border-radius:var(--r-btn,12px);border:1px solid var(--line-strong);background:var(--card);font:inherit;font-weight:700;font-size:13px;color:var(--ip-ink);cursor:pointer;text-decoration:none;white-space:nowrap}',
+      '.pha-id .pha-btn{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.22);color:#fff}',
+      '.pha-id .pha-btn-pri{background:#fff;color:var(--ip-blue-d);border-color:#fff;box-shadow:0 6px 16px rgba(0,0,0,.25)}',
+      '.pha-btn-w{width:100%;justify-content:space-between;margin-top:8px}',
+      '.pha-btn-w b{background:rgba(16,19,28,.08);padding:1px 8px;border-radius:999px;font-size:12px}',
+      '.pha-btn-opp{background:var(--c-opp);border-color:var(--c-opp);color:#fff;justify-content:center}',
+      '.pha-btn-grp b{background:color-mix(in srgb,var(--c-opp) 18%,transparent);color:var(--c-mint-txt)}',
+      '.pha-lists .pha-kl{margin-bottom:2px}',
+      '.pha-cip{font-size:12.5px;color:var(--muted);margin:0 0 12px;padding:8px 12px;background:var(--card-2);border-radius:10px}',
+      '.pha-cip b{color:var(--ip-ink)}',
+      '.pha-infos .v2-profil-box{box-shadow:none;border:none;padding:12px 0 0;margin-top:6px;overflow:visible}',
+      '.pha-wrap{max-width:1280px}',
+      '.pha-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}',
+      '.pha-kpi{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-1);padding:14px 16px;position:relative;overflow:hidden;min-width:0}',
+      '.pha-kpi::after{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--a,var(--ip-blue))}',
+      '.pha-kl{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:800}',
+      '.pha-kval{font-size:24px;font-weight:800;letter-spacing:-.03em;margin-top:5px;line-height:1.1;color:var(--ip-ink)}',
+      '.pha-kval small{font-size:13px;color:var(--muted);font-weight:700}',
+      '.pha-kd{font-size:12px;font-weight:700;margin-top:3px}',
+      '.pha-chart{width:100%;height:auto;display:block}',
+      '.pha-legend{display:flex;gap:16px;font-size:12px;font-weight:700;color:var(--muted);margin-top:6px;flex-wrap:wrap}',
+      '.pha-legend i{display:inline-block;width:18px;height:3px;border-radius:2px;vertical-align:middle;margin-right:6px}',
+      '.pha-table{font-size:12.5px}.pha-table td,.pha-table th{white-space:nowrap;padding:8px 8px}',
+      '.pha-table td:first-child{white-space:normal;min-width:150px}.pha-table td:first-child .pha-sub{display:block;padding-left:17px}',
+      '.pha-table .ph-tr-dot{margin-right:8px}',
+      '.pha-absent td{color:var(--muted)}',
+      '.pha-bar{height:6px;border-radius:999px;background:var(--surf-sunken,#F4F6FB);overflow:hidden;margin-top:4px;width:64px;margin-left:auto}',
+      '.pha-bar i{display:block;height:100%;border-radius:999px}',
+      '.pha-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}',
+      '.pha-tab{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line-strong);background:var(--card);border-radius:999px;padding:7px 12px;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;min-height:36px;color:var(--ip-ink)}',
+      '.pha-tab.on{background:var(--ip-ink);color:#fff;border-color:var(--ip-ink)}',
+      '.pha-r{display:grid;grid-template-columns:20px 1fr auto;gap:8px;align-items:center;padding:8px 0;border-top:1px solid var(--line);font-size:13.5px}',
+      '.pha-r i{font-style:normal;font-family:var(--mono);font-weight:800;color:var(--muted)}',
+      '.pha-r b{white-space:nowrap}.pha-r b small{color:var(--muted);font-weight:600}',
+      '.pha-r1{grid-template-columns:1fr auto}',
+      '.pha-det{border-top:1px solid var(--line)}',
+      '.pha-det summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;min-height:46px;font-weight:800;font-size:13.5px;gap:8px}',
+      '.pha-det summary::-webkit-details-marker{display:none}',
+      '.pha-det summary .ph-tr-dot{margin-right:8px}',
+      '.pha-det[open] summary svg{transform:rotate(180deg)}',
+      '.pha-det .pha-bar{width:100%;margin-left:0}',
+      '.pha-mob{display:none}',
+      '.pha-notes .v2-notes-box{margin:0}',
+      '@media(max-width:900px){.pha{display:flex;flex-direction:column;gap:12px}.pha-rail,.pha-main{display:contents}',
+      '  .pha-id{order:-3}.pha-lists{order:-2}.pha-notes{order:-1}',
+      '  .pha-desk{display:none}.pha-mob{display:block}.pha-kpis{grid-template-columns:1fr 1fr}.pha-kval{font-size:20px}.pha-lists{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.pha-lists .pha-kl{width:100%}.pha-lists .pha-btn-w{width:auto;margin-top:0;flex:1 1 auto}}',
       '.phf-prange{color:var(--muted);font-weight:600;font-size:14px}',
       '.phf-psub{font-size:12.5px;color:var(--muted);font-weight:500;margin-top:5px;max-width:560px;line-height:1.4}',
       '.phf-pright{display:flex;align-items:center;gap:12px}',
