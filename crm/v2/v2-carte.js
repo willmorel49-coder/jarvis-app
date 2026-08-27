@@ -15,7 +15,7 @@
   V2.pages = V2.pages || {};
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
 
-  var CB = '?v=20260827a';
+  var CB = '?v=20260827b';
   var map = null, cluster = null, markers = null, D = null, canvas = null;
   var displayMode = 'points';    // points | bulles (taille = CA)
   var tourLayer = null;          // tracé de la tournée (polyline + n° d'arrêts)
@@ -122,35 +122,6 @@
     GRP_COL = {}; top.forEach(function (g, i) { GRP_COL[g] = PALETTE[i]; });
   }
 
-  function popupHtml(p, i) {
-    var q = encodeURIComponent((p[6] || '') + ' ' + (p[7] || '') + ' ' + (p[8] || ''));
-    var gmaps = 'https://www.google.com/maps/search/?api=1&query=' + q;
-    var dir = 'https://www.google.com/maps/dir/?api=1&destination=' + q;
-    var tel = (p[9] || '').replace(/[^0-9+]/g, '');
-    var mail = p[11] || '', comm = p[5] ? D.comm[p[5]] : '';
-    var inT = i != null && inTour(i);
-    return '<div class="cn-pop">' +
-      '<b class="cn-pop-n">' + esc(p[6] || 'Pharmacie') + '</b>' +
-      (p[10] ? '<div class="cn-pop-tit">' + esc(p[10]) + '</div>' : '') +
-      '<div class="cn-pop-a">' + esc(p[7]) + (p[8] ? ' · ' + esc(p[8]) : '') + '</div>' +
-      // LA CARTE (27/08/2026) : trois actions, pas six. La fiche complète garde tout le reste.
-      '<div class="cn-pop-tags">' +
-        '<span class="cn-tag ' + (isClient(p) ? 'cl' : (D.seg[p[4]] === 'Prospect' ? 'pr' : '')) + '">' + esc(D.seg[p[4]]) + '</span>' +
-        (window.REPRISES && REPRISES[String(p[13])] ? '<span class="cn-tag" style="background:#FFF1DB;color:#8a4b00;border:1px solid #F0C98A">🔄 Reprise</span>' : '') +
-        (caOf(p) > 0 ? '<span class="cn-tag ca">CA ' + eurK(caOf(p)) + '</span>' : '') +
-        (comm ? '<span class="cn-tag co">' + esc(comm) + '</span>' : '') +
-        (D.grp[p[3]] && D.grp[p[3]] !== '—' ? '<span class="cn-tag">' + esc(D.grp[p[3]]) + '</span>' : '') +
-      '</div>' +
-      (tel || mail ? '<div class="cn-pop-contact">' +
-        (tel ? '<a href="tel:' + esc(tel) + '">' + esc(p[9]) + '</a>' : '') +
-        (mail ? '<a href="mailto:' + esc(mail) + '">' + esc(mail) + '</a>' : '') + '</div>' : '') +
-      (i != null ? '<button class="cn-fiche-btn" onclick="V2.carteFiche(' + i + ')">Voir la fiche complète</button>' : '') +
-      (i != null ? '<button class="cn-tour-btn' + (inT ? ' in' : '') + '" id="cn-tour-' + i + '" onclick="V2.carteTour(' + i + ')">' + (inT ? '✓ Dans ma tournée' : '+ Ajouter à ma tournée') + '</button>' : '') +
-      '<div class="cn-pop-btns">' +
-        '<a class="cn-pop-btn" href="' + dir + '" target="_blank" rel="noopener">Itinéraire Google Maps</a>' +
-      '</div></div>';
-  }
-
   // Bulle de survol : lecture rapide sans cliquer (nom + titulaire + ville + statut + groupement + commercial + CA)
   function tipHtml(p) {
     if (!p) return '';
@@ -219,7 +190,9 @@
     // ── POINTS (marqueurs, cluster) ou BULLES CA (taille = CA, sans cluster, seulement le CA>0) ──
     var bulles = (displayMode === 'bulles');
     var useCluster = !bulles && !!window.L.markerClusterGroup;
-    function openPop(e) { var p = D.p[e.layer._pi]; if (p) e.layer.bindPopup(popupHtml(p, e.layer._pi), { minWidth: 216 }).openPopup(); }
+    // Will, 27/08/2026 : « quand on clique sur un point il faut qu'on voie l'officine et toutes
+    // les données » → plus de petite bulle : le clic ouvre directement la fiche, à côté de la carte.
+    function openPop(e) { var i = e.layer._pi; if (D.p[i]) V2.carteFiche(i); }
     if (useCluster) {
       // Paquets : un seul style (blanc, filet bleu Intégral) au lieu des ronds vert/jaune/orange du plugin.
       cluster = window.L.markerClusterGroup({ chunkedLoading: true, maxClusterRadius: 52, disableClusteringAtZoom: 8, removeOutsideVisibleBounds: true, spiderfyOnMaxZoom: true,
@@ -1313,7 +1286,6 @@
       '.cn-tag{font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:999px;background:#EEF1F6;color:#3A4150}',
       '.cn-tag.cl{background:#E3F3EB;color:#0B6E43}.cn-tag.pr{background:#E7EFFE;color:#1E5FD0}.cn-tag.co{background:#FFF0E6;color:#C2410C}',
       '.cn-tag.ca{background:#0A0E1A;color:#fff}',
-      '.cn-fiche-btn{display:block;width:100%;margin-top:9px;padding:9px;border:none;border-radius:9px;background:var(--ip-blue);color:#fff;font:700 13px/1 inherit;cursor:pointer}',
       '.cn-fkpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:6px 16px 12px}',
       '.cn-fkpi{text-align:center;background:var(--card-2,#F4F6FB);border-radius:10px;padding:9px 4px}',
       '.cn-fkpi b{display:block;font-size:15px;font-weight:800;color:var(--ip-blue,#0057FF)}',
@@ -1329,11 +1301,6 @@
       '.cn-sortseg button{font-size:12px;padding:5px 10px}',
       '.cn-pop-contact{display:flex;flex-direction:column;gap:2px;margin-top:8px}',
       '.cn-pop-contact a{font-size:12.5px;font-weight:700;color:#0050E6;text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
-      '.cn-pop-btns{display:flex;gap:6px;margin-top:10px}',
-      '.cn-pop-btn{flex:1;text-align:center;font-size:12px;font-weight:700;padding:7px 8px;border-radius:8px;text-decoration:none;border:1px solid #E2E7F0;color:#10131C}',
-      '.cn-pop-btn.on{background:#0050E6;color:#fff;border-color:#0050E6}',
-      '.cn-tour-btn{width:100%;margin-top:9px;padding:8px;border:1.5px solid #C2410C;background:#FFF7ED;color:#C2410C;font-weight:800;font-size:12.5px;border-radius:9px;cursor:pointer}',
-      '.cn-tour-btn.in{background:#0F7A52;border-color:#0F7A52;color:#fff}',
       // barre tournée flottante
       // Rappel de tournée : n'apparaît que si la tournée a au moins un arrêt
       '.cn-tourbar{position:absolute;left:50%;bottom:26px;transform:translateX(-50%) translateY(140%);z-index:600;display:flex;align-items:center;gap:8px;padding:6px 6px 6px 16px;background:var(--ip-ink,#10131C);color:#fff;border-radius:999px;box-shadow:0 12px 30px rgba(16,19,28,.35);transition:transform .22s var(--ease,ease);white-space:nowrap;max-width:calc(100% - 24px)}',
@@ -1350,6 +1317,14 @@
       '.cn-fedit .v2-profil-grid{grid-template-columns:1fr}',
       '@media(min-width:640px){.cn-panel{align-items:center}}',
       '.cn-pdialog{width:100%;max-width:460px;max-height:82vh;display:flex;flex-direction:column;background:var(--card,#fff);border-radius:18px 18px 0 0;overflow:hidden}',
+      // ── Fiche ancrée à la carte (clic sur un point) ──
+      '.cn-fiche{position:absolute;z-index:650;top:12px;right:12px;bottom:12px;width:min(400px,calc(100% - 24px));display:flex}',
+      '.cn-fiche .cn-pdialog{max-width:none;max-height:none;height:100%;border-radius:16px;box-shadow:0 1px 0 rgba(255,255,255,.9) inset,0 18px 44px -18px rgba(11,31,77,.45),0 0 0 1px var(--line)}',
+      '.cn-fiche .cn-phead{padding:14px 16px}',
+      '.cn-fiche .cn-pacts{flex-direction:column;gap:8px}',
+      '.cn-fiche .cn-pact-full{gap:8px;justify-content:center}',
+      // Téléphone : tiroir bas à hauteur FIXE (74 % de la carte) → le contenu défile dedans, les boutons restent visibles
+      '@media(max-width:760px){.cn-fiche{top:auto;left:0;right:0;bottom:0;width:100%;height:74%}.cn-fiche .cn-pdialog{border-radius:18px 18px 0 0}.cn-fiche .cn-pacts{padding:10px 12px}}',
       '@media(min-width:640px){.cn-pdialog{border-radius:18px}}',
       '.cn-phead{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--line)}',
       '.cn-phead b{font-size:16px;font-weight:800;color:var(--ip-ink)}.cn-phead small{display:block;font-size:12px;color:var(--muted);margin-top:2px}',
@@ -1772,8 +1747,8 @@
   V2.carteLocate = function (i) {
     var p = D.p[i]; if (!p || !map) return;
     map.setView([p[0], p[1]], 15, { animate: true });
-    window.L.popup({ minWidth: 216 }).setLatLng([p[0], p[1]]).setContent(popupHtml(p, i)).openOn(map);
     V2.carteListClose();
+    V2.carteFiche(i);
   };
   function statusLabel(p) { return D.seg[p[4]] || '—'; }
   // ── Cœur partagé : calcule la liste filtrée + triée (utilisé par le dock ET la modale) ──
@@ -1852,9 +1827,12 @@
   V2.carteFiche = function (i) {
     if (!D || !D.p[i]) return;
     if (!document.getElementById('cn-fiche')) {
-      var el = document.createElement('div'); el.id = 'cn-fiche'; el.className = 'cn-panel';
-      el.onclick = function (e) { if (e.target === el) V2.carteFicheClose(); };
-      document.body.appendChild(el);
+      // Fiche ANCRÉE à la carte (volet à droite sur ordinateur, tiroir bas sur téléphone) :
+      // la carte reste visible et cliquable, un autre point remplace simplement la fiche.
+      var host = document.querySelector('.cn-maparea');
+      var el = document.createElement('div'); el.id = 'cn-fiche'; el.className = host ? 'cn-fiche' : 'cn-panel';
+      if (!host) el.onclick = function (e) { if (e.target === el) V2.carteFicheClose(); };
+      (host || document.body).appendChild(el);
     }
     document.getElementById('cn-fiche').innerHTML = '<div class="cn-pdialog" onclick="event.stopPropagation()"><div class="cn-tempty">Chargement de la fiche…</div></div>';
     ensureDetail(function () { renderFiche(i); });
@@ -1884,9 +1862,11 @@
         '<div class="cn-pop-a" style="padding:12px 16px 0">' + esc(p[7]) + (p[8] ? ' · ' + esc(p[8]) : '') + '</div>' +
         '<div class="cn-pop-tags" style="padding:8px 16px">' +
           '<span class="cn-tag ' + (isClient(p) ? 'cl' : (isProspect(p) ? 'pr' : '')) + '">' + esc(D.seg[p[4]]) + '</span>' +
+          (window.REPRISES && REPRISES[String(p[13])] ? '<span class="cn-tag" style="background:#FFF1DB;color:#8a4b00;border:1px solid #F0C98A">🔄 Reprise</span>' : '') +
           (comm ? '<span class="cn-tag co">' + esc(comm) + '</span>' : '') +
           '<span class="cn-tag">UGA ' + esc(D.uga[p[2]] || '—') + '</span>' +
           (D.grp[p[3]] && D.grp[p[3]] !== '—' ? '<span class="cn-tag">' + esc(D.grp[p[3]]) + '</span>' : '') +
+          (p[13] ? '<span class="cn-tag" title="Identifiant officine">n° ' + esc(String(p[13])) + '</span>' : '') +
         '</div>' +
         '<div class="cn-fkpis">' +
           '<div class="cn-fkpi"><b>' + eurK(caOf(p)) + '</b><span>CA (' + FMO.length + ' mois)</span></div>' +
@@ -1899,10 +1879,11 @@
         // Infos client ÉDITABLES + notes — même id (p[13]) que l'onglet Pharmacies → même fiche, même sauvegarde
         (p[13] ? '<div class="cn-fedit">' + (V2.profil ? V2.profil.section('client', p[13]) : '') + (V2.notes ? V2.notes.section('client', p[13]) : '') + '</div>' : '') +
       '</div>' +
+      // Actions : la fiche CRM complète d'abord (quand l'officine est dans tes clients), la tournée, l'itinéraire.
       '<div class="cn-pacts">' +
-        '<button class="v2-btn ' + (inT ? 'v2-btn-ghost' : 'v2-btn-primary') + '" onclick="V2.carteTour(' + i + ');V2.carteFiche(' + i + ')">' + (inT ? '✓ Dans la tournée' : '+ Ajouter à la tournée') + '</button>' +
-        (inWml ? '<button class="v2-btn v2-btn-ghost" onclick="V2.carteFicheClose();V2.go(\'pharma\',\'' + esc(String(p[13])) + '\')">Fiche complète</button>' : '') +
-        '<a class="v2-btn v2-btn-ghost" href="https://www.google.com/maps/search/?api=1&query=' + q + '" target="_blank" rel="noopener">Google Maps</a>' +
+        (inWml ? '<button class="v2-btn v2-btn-primary cn-pact-full" onclick="V2.carteFicheClose();V2.go(\'pharma\',\'' + esc(String(p[13])) + '\')">' + ICO('pharma', 15) + 'Ouvrir la fiche complète</button>' : '') +
+        '<button class="v2-btn ' + (inT ? 'v2-btn-ghost' : (inWml ? 'v2-btn-ghost' : 'v2-btn-primary')) + '" onclick="V2.carteTour(' + i + ');V2.carteFiche(' + i + ')">' + (inT ? '✓ Dans ma tournée' : '+ Ajouter à ma tournée') + '</button>' +
+        '<a class="v2-btn v2-btn-ghost" href="https://www.google.com/maps/dir/?api=1&destination=' + q + '" target="_blank" rel="noopener">Itinéraire</a>' +
       '</div></div>';
     if (V2.profil) V2.profil.hydrate();   // charge/sauve les infos officine (Supabase profils), comme l'onglet Pharmacies
     if (V2.notes) V2.notes.hydrate();
