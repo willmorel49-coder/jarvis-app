@@ -15,7 +15,7 @@
   V2.pages = V2.pages || {};
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
 
-  var CB = '?v=20260827b';
+  var CB = '?v=20260827c';
   var map = null, cluster = null, markers = null, D = null, canvas = null;
   var displayMode = 'points';    // points | bulles (taille = CA)
   var tourLayer = null;          // tracé de la tournée (polyline + n° d'arrêts)
@@ -1826,6 +1826,10 @@
   }
   V2.carteFiche = function (i) {
     if (!D || !D.p[i]) return;
+    // ⚠️ Bug du 27/08/2026 (Will : « le clic sur une pharmacie ne fonctionne pas ») : depuis la
+    // « Liste », la fiche s'ouvrait DERRIÈRE le panneau de liste (z 3000) — invisible. Une fiche
+    // ancrée à la carte n'a de sens que carte visible : on ferme la liste avant de l'ouvrir.
+    V2.carteListClose();
     if (!document.getElementById('cn-fiche')) {
       // Fiche ANCRÉE à la carte (volet à droite sur ordinateur, tiroir bas sur téléphone) :
       // la carte reste visible et cliquable, un autre point remplace simplement la fiche.
