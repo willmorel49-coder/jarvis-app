@@ -1,8 +1,11 @@
 /* ═══════════════════════════════════════════════════════════════════
-   CRM V2 · Carte nationale des pharmacies (Copilote)
+   CRM V2 · LA CARTE — toutes les officines de France (ex-« Copilote »)
    ~19 500 officines actives (hors Corse) : nos clients par commercial,
-   prospects, UGA, groupements. Leaflet + clustering. Popup complet
-   (titulaire, tél, email, groupement, UGA, commercial) + Google Maps.
+   prospects, UGA, groupements. Leaflet + clustering. Popup court
+   (fiche · tournée · itinéraire) ; la fiche complète porte le reste.
+   Refonte 27/08/2026 (Will : « beaucoup plus simple ») : une seule barre
+   d'outils, plus de colonnes latérales, tout le secondaire sous
+   « Plus de filtres ». Fond Esri Light Gray (CARTO exige une clé).
    Données : pharma-fr-data.js (lazy). Point = [lat,lng,uga,grp,seg,comm,
    nom,ville,cp,tel,titulaire,email].
    ═══════════════════════════════════════════════════════════════════ */
@@ -12,7 +15,7 @@
   V2.pages = V2.pages || {};
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
 
-  var CB = '?v=20260826a';
+  var CB = '?v=20260827a';
   var map = null, cluster = null, markers = null, D = null, canvas = null;
   var displayMode = 'points';    // points | bulles (taille = CA)
   var tourLayer = null;          // tracé de la tournée (polyline + n° d'arrêts)
@@ -21,7 +24,6 @@
   var routeSig = '';             // signature (dépôt+arrêts) à laquelle routeInfo correspond
   var _routeFetching = '';       // signature en cours de récupération (anti-doublon)
   var _routeTO = null;           // debounce du fetch OSRM
-  var depotLayer = null;         // marqueurs des établissements Intégral
   var zoneLayer = null, zonesOn = false, zoneMetric = 'part';   // choroplèthe par département
   var depot = null;              // { n, lat, lng } point de départ/retour (optionnel)
   var pickDepotMode = false;     // clic carte suivant = définir le dépôt
@@ -60,8 +62,10 @@
   var COMM_COL = {}, GRP_COL = {};
   var PALETTE = ['#0050E6', '#EA580C', '#0F7A52', '#7C3AED', '#C7283D', '#00B5D8', '#C7791A',
     '#DB2777', '#2563EB', '#16A34A', '#9333EA', '#DC2626', '#0891B2', '#CA8A04'];
-  // segmentation (client/prospect) : dégradé vert pour les clients, bleu prospect
-  var SEG_COL = { 'Client A': '#0B6E43', 'Client B': '#16A34A', 'Client C': '#5CC98A', 'Prospect': '#3B82F6', 'Non défini': '#AEB6C4' };
+  // Segmentation (client/prospect) — LA CARTE, 27/08/2026 : UNE couleur, celle
+  // d'Intégral, pour les clients (le point grossit avec le palier) ; les prospects
+  // en gris neutre. Avant : trois verts + un bleu + un ambre — Will : « le bordel ».
+  var SEG_COL = { 'Client A': '#0034A0', 'Client B': '#0050E6', 'Client C': '#4D86F0', 'Prospect': '#A3ABBD', 'Non défini': '#C9CFD9' };
 
   function css(href) { var l = document.createElement('link'); l.rel = 'stylesheet'; l.href = href; document.head.appendChild(l); }
   function js(src, cb) { var s = document.createElement('script'); s.src = src; s.onload = cb; s.onerror = function () { cb('err'); }; document.head.appendChild(s); }
@@ -90,7 +94,7 @@
     }, 150);
   }
 
-  var PROSPECT_COL = '#F59E0B';   // ambre bien visible pour repérer les prospects
+  var PROSPECT_COL = '#A3ABBD';   // prospect = gris neutre (mode « par commercial » aussi)
   function hsl(str) { var h = 0, i; str = String(str || ''); for (i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) % 360; return 'hsl(' + h + ',62%,48%)'; }
   function isClient(p) { return (D.seg[p[4]] || '').indexOf('Client') === 0; }
   function isProspect(p) { return D.seg[p[4]] === 'Prospect'; }
@@ -129,12 +133,12 @@
       '<b class="cn-pop-n">' + esc(p[6] || 'Pharmacie') + '</b>' +
       (p[10] ? '<div class="cn-pop-tit">' + esc(p[10]) + '</div>' : '') +
       '<div class="cn-pop-a">' + esc(p[7]) + (p[8] ? ' · ' + esc(p[8]) : '') + '</div>' +
+      // LA CARTE (27/08/2026) : trois actions, pas six. La fiche complète garde tout le reste.
       '<div class="cn-pop-tags">' +
         '<span class="cn-tag ' + (isClient(p) ? 'cl' : (D.seg[p[4]] === 'Prospect' ? 'pr' : '')) + '">' + esc(D.seg[p[4]]) + '</span>' +
         (window.REPRISES && REPRISES[String(p[13])] ? '<span class="cn-tag" style="background:#FFF1DB;color:#8a4b00;border:1px solid #F0C98A">🔄 Reprise</span>' : '') +
         (caOf(p) > 0 ? '<span class="cn-tag ca">CA ' + eurK(caOf(p)) + '</span>' : '') +
         (comm ? '<span class="cn-tag co">' + esc(comm) + '</span>' : '') +
-        '<span class="cn-tag">UGA ' + esc(D.uga[p[2]] || '—') + '</span>' +
         (D.grp[p[3]] && D.grp[p[3]] !== '—' ? '<span class="cn-tag">' + esc(D.grp[p[3]]) + '</span>' : '') +
       '</div>' +
       (tel || mail ? '<div class="cn-pop-contact">' +
@@ -142,10 +146,8 @@
         (mail ? '<a href="mailto:' + esc(mail) + '">' + esc(mail) + '</a>' : '') + '</div>' : '') +
       (i != null ? '<button class="cn-fiche-btn" onclick="V2.carteFiche(' + i + ')">Voir la fiche complète</button>' : '') +
       (i != null ? '<button class="cn-tour-btn' + (inT ? ' in' : '') + '" id="cn-tour-' + i + '" onclick="V2.carteTour(' + i + ')">' + (inT ? '✓ Dans ma tournée' : '+ Ajouter à ma tournée') + '</button>' : '') +
-      (i != null ? '<button class="cn-tour-btn cn-tour-from" onclick="V2.carteTourFrom(' + i + ')">🧭 Partir d\'ici — composer une tournée</button>' : '') +
       '<div class="cn-pop-btns">' +
-        '<a class="cn-pop-btn on" href="' + gmaps + '" target="_blank" rel="noopener">Fiche Google Maps</a>' +
-        '<a class="cn-pop-btn" href="' + dir + '" target="_blank" rel="noopener">Itinéraire</a>' +
+        '<a class="cn-pop-btn" href="' + dir + '" target="_blank" rel="noopener">Itinéraire Google Maps</a>' +
       '</div></div>';
   }
 
@@ -187,9 +189,11 @@
 
   // taille du point : uniforme, sauf en mode « CA » où le rayon grandit avec le CA (grosses cibles = gros points)
   function caRadius(c) { if (!c || c <= 0) return 4; return Math.min(13, 4.5 + Math.sqrt(c / 1000) * 1.15); }
+  // Client/Prospect (défaut) : le point grossit avec le palier client (A > B > C > prospect)
+  function tierRadius(p) { var s = D.seg[p[4]] || ''; return s === 'Client A' ? 7.5 : s === 'Client B' ? 6 : s.indexOf('Client') === 0 ? 5 : 4.2; }
   function markerStyle(p, i) {
     var t = inTour(i);
-    var r = t ? 7 : (colorMode === 'ca' ? caRadius(caOf(p)) : 5.5);
+    var r = t ? 7 : (colorMode === 'ca' ? caRadius(caOf(p)) : colorMode === 'type' ? tierRadius(p) : 5.5);
     return { renderer: canvas, radius: r, color: t ? '#10131C' : '#fff', weight: t ? 2 : 0.9, fillColor: colorFor(p), fillOpacity: 0.95 };
   }
   // Mode « Bulles CA » : un seul bleu, translucide, rayon = CA (les grosses cibles ressortent)
@@ -199,17 +203,16 @@
   }
   function rebuild() {
     if (!map) return;
-    if (zonesOn) {   // zones affichées : pas de marqueurs sur la carte, on tient juste le compteur + le dock à jour
+    if (zonesOn) {   // zones affichées : pas de marqueurs sur la carte, on tient juste le compteur à jour
       if (cluster) { map.removeLayer(cluster); cluster = null; }
-      var cn0 = document.getElementById('carte-count'), n0 = 0;
+      var n0 = 0;
       for (var q = 0; q < D.p.length; q++) if (pass(D.p[q])) n0++;
-      if (cn0) cn0.textContent = n0.toLocaleString('fr') + ' pharmacies';
-      renderDock(); renderFbChips(n0);
+      renderFbChips(n0);
       return;
     }
     if (cluster) { map.removeLayer(cluster); cluster = null; }
     markers = [];
-    var pts = D.p, cn = document.getElementById('carte-count');
+    var pts = D.p;
     // indices filtrés
     var idx = []; for (var i = 0; i < pts.length; i++) if (pass(pts[i])) idx.push(i);
 
@@ -218,7 +221,9 @@
     var useCluster = !bulles && !!window.L.markerClusterGroup;
     function openPop(e) { var p = D.p[e.layer._pi]; if (p) e.layer.bindPopup(popupHtml(p, e.layer._pi), { minWidth: 216 }).openPopup(); }
     if (useCluster) {
-      cluster = window.L.markerClusterGroup({ chunkedLoading: true, maxClusterRadius: 40, disableClusteringAtZoom: 8, removeOutsideVisibleBounds: true, spiderfyOnMaxZoom: true });
+      // Paquets : un seul style (blanc, filet bleu Intégral) au lieu des ronds vert/jaune/orange du plugin.
+      cluster = window.L.markerClusterGroup({ chunkedLoading: true, maxClusterRadius: 52, disableClusteringAtZoom: 8, removeOutsideVisibleBounds: true, spiderfyOnMaxZoom: true,
+        iconCreateFunction: function (c) { var n = c.getChildCount(); return window.L.divIcon({ html: '<div class="cn-cl' + (n >= 1000 ? ' big' : '') + '">' + (n >= 1000 ? (Math.round(n / 100) / 10).toLocaleString('fr') + ' k' : n) + '</div>', className: 'cn-clw', iconSize: [34, 34] }); } });
       cluster.on('click', openPop);
       cluster.on('clustermouseover', function (a) {   // survol d'un paquet : dire combien de pharmacies et comment les voir
         var n = a.layer.getChildCount();
@@ -238,8 +243,6 @@
     }
     if (useCluster) cluster.addLayers(arr); else for (var a = 0; a < arr.length; a++) cluster.addLayer(arr[a]);
     map.addLayer(cluster);
-    if (cn) cn.textContent = markers.length.toLocaleString('fr') + (bulles ? ' officines avec CA' : ' pharmacies');
-    renderDock();   // dock (liste dockée) synchronisé avec les filtres de la carte
     renderFbChips(idx.length);   // barre de filtres : compteur live = officines qui passent pass()
   }
   function recolor() { if (zonesOn || !markers) return; for (var k = 0; k < markers.length; k++) markers[k].setStyle(markerStyle(D.p[markers[k]._pi], markers[k]._pi)); }
@@ -286,8 +289,7 @@
           layer.on('click', function () {   // drill-down : filtre + liste du département
             deptFocus = [depCode(f.properties.code)];
             renderFbRow(); renderFbChips();
-            renderLists();
-            var dk = document.getElementById('cn-dock'); if (!dk || !dk.offsetParent) V2.carteListOpen();   // dock masqué (mobile) → modale
+            V2.carteListOpen();   // la liste du département s'ouvre (plus de dock latéral depuis LA CARTE)
             try { map.fitBounds(layer.getBounds().pad(0.1)); } catch (e) {}
           });
         }
@@ -296,7 +298,7 @@
   }
   V2.carteZones = function (on) {
     zonesOn = (on === undefined ? !zonesOn : !!on);
-    var btn = document.getElementById('cn-zonebtn'); if (btn) { btn.classList.toggle('on', zonesOn); btn.textContent = zonesOn ? '✓ Zones affichées' : 'Afficher les zones (départements)'; }
+    var btn = document.getElementById('cn-zonebtn'); if (btn) { btn.classList.toggle('on', zonesOn); btn.textContent = zonesOn ? '✓ Zones par département' : 'Zones par département'; }
     var sel = document.getElementById('cn-zonemetric'); if (sel) sel.style.display = zonesOn ? 'block' : 'none';
     if (zonesOn) { if (cluster) map.removeLayer(cluster); drawZones(); }
     else { if (zoneLayer) { map.removeLayer(zoneLayer); zoneLayer = null; } rebuild(); }
@@ -318,7 +320,8 @@
   function updateTourBar() {
     var b = document.getElementById('cn-tourbar'); if (!b) return;
     b.classList.toggle('on', tour.length > 0);
-    var n = document.getElementById('cn-tourbar-n'); if (n) n.textContent = tour.length + ' pharmacie' + (tour.length > 1 ? 's' : '') + ' dans ta tournée';
+    var n = document.getElementById('cn-tourbar-n'); if (n) n.textContent = 'Ma tournée · ' + tour.length + ' arrêt' + (tour.length > 1 ? 's' : '');
+    var t = document.getElementById('cn-fb-tourn'); if (t) { t.textContent = String(tour.length); t.style.display = tour.length ? '' : 'none'; }
   }
   function haversine(a, b) {
     var R = 6371, r = Math.PI / 180;
@@ -794,12 +797,6 @@
     } else run(null);
   };
   // Depuis le popup d'une pharmacie : « partir d'ici » compose la tournée autour d'elle.
-  V2.carteTourFrom = function (i) {
-    if (!D || !D.p[i]) return;
-    V2.carteTourOpen();
-    var inp = document.getElementById('cn-tgen-start'); if (inp) inp.value = D.p[i][6] || D.p[i][7] || '';
-    V2.carteBuildTour();
-  };
   // Tracé de la tournée sur la carte (ligne + pastilles numérotées)
   function drawTourLine() {
     if (!map || !window.L) return;
@@ -897,19 +894,6 @@
     V2.carteDepotSet(bi);
     if (V2.toast) V2.toast('Dépôt le plus proche : ' + DEPOTS[bi].city);
   };
-  // Marqueurs des établissements Intégral (toujours visibles)
-  function drawDepots() {
-    if (!map || !window.L) return;
-    if (depotLayer) { map.removeLayer(depotLayer); depotLayer = null; }
-    depotLayer = window.L.layerGroup();
-    DEPOTS.forEach(function (d, i) {
-      var ic = window.L.divIcon({ className: 'cn-depmk', html: '<span>' + esc(d.s || '◆') + '</span>', iconSize: [30, 30], iconAnchor: [15, 15] });
-      window.L.marker([d.lat, d.lng], { icon: ic, zIndexOffset: 900 })
-        .bindPopup('<b>' + esc(d.n) + '</b><br>' + esc(d.city) + '<br><button class="cn-pop-btn" style="margin-top:8px;width:100%;cursor:pointer" onclick="V2.carteDepotSet(' + i + ')">Départ de ma tournée</button>')
-        .addTo(depotLayer);
-    });
-    depotLayer.addTo(map);
-  }
   V2.carteTourItinerary = function () {
     if (!tour.length) return;
     var stops = routeStops();   // inclut le dépôt en départ/retour si défini
@@ -1158,7 +1142,10 @@
     el.innerHTML = '<div class="cn-pdialog" onclick="event.stopPropagation()">' +
       '<div class="cn-phead"><div><b>Ma tournée</b><small>' + tour.length + ' arrêt' + (tour.length > 1 ? 's' : '') + (tour.length > 1 ? ' · ~' + kmTot + ' km' : '') + '</small></div>' +
         '<button class="cn-px" onclick="V2.carteTourClose()">✕</button></div>' +
-      tgenHtml() +
+      // Le générateur (adresse, zone, groupements) s'ouvre seul quand la tournée est vide ;
+      // dès qu'il y a des arrêts, il se replie pour laisser la place au listing et au GPS.
+      '<details class="cn-tgen-det"' + (tour.length ? '' : ' open') + '><summary class="cn-tgen-sum">' + ICO('pharma', 15) + '<span>Composer ma tournée du jour</span><small>adresse de départ · zone · groupements</small></summary>' +
+      tgenHtml() + '</details>' +
       metrics + depotRow +
       '<div class="cn-plist">' + rows + '</div>' +
       (tour.length >= 1 ? '<div class="cn-gps-wrap"><button class="v2-btn v2-btn-primary cn-gps-btn" onclick="V2.carteTourItinerary()">' + ICO('pharma', 17) + 'Ouvrir dans Google Maps (GPS)</button></div>' : '') +
@@ -1186,7 +1173,7 @@
       for (var k = 1; k < D.comm.length; k++) out += lg(COMM_COL[k], D.comm[k]);
       return out + lg(PROSPECT_COL, 'Prospect (à conquérir)') + lg('#D4DAE3', 'Hors réseau');
     }
-    if (colorMode === 'type') return lg(SEG_COL['Client A'], 'Client A · gros (≥ 40 k€)') + lg(SEG_COL['Client B'], 'Client B · moyen (12–40 k€)') + lg(SEG_COL['Client C'], 'Client C · petit (< 12 k€)') + lg(SEG_COL.Prospect, 'Prospect (à conquérir)');
+    if (colorMode === 'type') return lg(SEG_COL['Client A'], 'Client A · ≥ 40 k€') + lg(SEG_COL['Client B'], 'Client B · 12–40 k€') + lg(SEG_COL['Client C'], 'Client C · < 12 k€') + lg(SEG_COL.Prospect, 'Prospect');
     if (colorMode === 'grp') return Object.keys(GRP_COL).map(function (g) { return lg(GRP_COL[g], D.grp[g]); }).join('') + lg('#CBD2DD', 'Autres');
     if (colorMode === 'ca') return lg('#FCD34D', '< 2 k€') + lg('#F59E0B', '2–8 k€') + lg('#EA580C', '8–20 k€') + lg('#C7283D', '20–50 k€') + lg('#7A0C2E', '≥ 50 k€') + lg('#E2E6EC', 'Pas de CA');
     return '<span class="cn-lg-txt">' + (D ? D.uga.length : 0) + ' UGA · une couleur par secteur</span>';
@@ -1196,23 +1183,34 @@
     if (document.getElementById('v2-carte-css')) return;
     var s = document.createElement('style'); s.id = 'v2-carte-css';
     s.textContent = [
-      '.cn-shell{display:flex;flex-direction:column;height:calc(100vh - var(--topbar-h,60px));height:calc(100dvh - var(--topbar-h,60px));min-height:560px}',
-      '.cn-wrap{display:flex;flex-direction:row;flex:1 1 auto;min-height:0}',
-      // ── Barre de filtres « Direction 2 » ──
-      '.cn-fb{flex:none;background:var(--card);border-bottom:1px solid var(--line);padding:9px 16px 8px;display:flex;flex-direction:column;gap:8px}',
-      '.cn-fbtop{display:flex;align-items:center;gap:10px}',
-      '.cn-fbsearch{flex:1;min-width:0;max-width:420px}',
+      '.cn-shell{display:flex;flex-direction:column;height:calc(100vh - var(--topbar-h,60px));height:calc(100dvh - var(--topbar-h,60px));min-height:480px}',
+      // ── LA CARTE : une barre d'outils, éclairée par le haut (arête blanche), ombre vers le bas ──
+      '.cn-fb{position:relative;z-index:700;flex:none;background:var(--card);box-shadow:0 1px 0 rgba(255,255,255,.9) inset,0 1px 0 var(--line),0 8px 24px -14px rgba(11,31,77,.25);padding:10px 16px 9px;display:flex;flex-direction:column;gap:8px}',
+      '.cn-fbtop{display:flex;align-items:center;gap:12px}',
+      '.cn-h1{margin:0;font-size:19px;font-weight:800;letter-spacing:-.02em;color:var(--ip-ink);white-space:nowrap}',
+      '.cn-searchwrap{position:relative;flex:1;min-width:0;max-width:460px;display:flex;align-items:center;color:var(--muted-2)}',
+      '.cn-searchwrap svg{position:absolute;left:12px;pointer-events:none}',
+      // (sélecteur composé : gagne sur .cn-search déclaré plus bas — même liste, même feuille)
+      '.cn-searchwrap .cn-fbsearch{width:100%;min-width:0;padding:8px 12px 8px 38px;min-height:44px;font-size:16px;border-radius:12px}',
       '.cn-fbcount{margin-left:auto;font-size:13px;font-weight:800;color:var(--ip-blue,#0057FF);white-space:nowrap;font-variant-numeric:tabular-nums}',
-      '.cn-fb-toggle{display:none;font:inherit;font-size:13px;font-weight:700;color:var(--ip-ink);background:var(--card-2,#F4F6FB);border:1px solid var(--line);border-radius:999px;padding:7px 13px;cursor:pointer}',
+      '.cn-fbacts{display:inline-flex;align-items:center;gap:8px;flex:none}',
       '.cn-fbrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}',
+      '.cn-fbrow2{padding-top:8px;border-top:1px solid var(--line-2,rgba(16,19,28,.04))}',
+      '.cn-fbsep{width:1px;height:22px;background:var(--line);margin:0 2px}',
+      '.cn-statut button{min-height:36px;padding:6px 14px;font-size:13px}',
+      '.cn-fb-btn{min-height:40px}',
+      '.cn-fb-btn svg{flex:none}',
+      '.cn-fb-act{background:var(--card);border-color:var(--line-strong,rgba(16,19,28,.12))}',
+      '.cn-fb-tour b{min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:var(--ip-blue,#0057FF);color:#fff;font-size:11.5px;font-weight:800;display:inline-flex;align-items:center;justify-content:center}',
+      '.cn-fb-ghost{background:none;border-color:transparent;color:var(--muted)}',
+      '.cn-fb-lbl{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--muted)}',
+      '.cn-fb-sel{min-height:40px;max-width:230px}',
       '.cn-fb-item{position:relative}',
       '.cn-fb-btn{display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:12.5px;font-weight:700;color:var(--ip-ink);background:var(--card-2,#F4F6FB);border:1px solid var(--line);border-radius:999px;padding:7px 13px;cursor:pointer;transition:border-color .14s var(--ease,ease),background .14s var(--ease,ease)}',
       '.cn-fb-btn:hover{border-color:var(--ip-blue,#0057FF)}',
       '.cn-fb-btn.on{background:color-mix(in srgb,var(--ip-blue,#0057FF) 12%,var(--card));border-color:var(--ip-blue,#0057FF);color:var(--ip-blue,#0057FF)}',
       '.cn-fb-btn.open{border-color:var(--ip-blue,#0057FF)}',
       '.cn-fb-car{font-style:normal;font-size:10px;opacity:.6;margin-left:1px}',
-      '.cn-fb-soon{opacity:.5;cursor:not-allowed}',
-      '.cn-fb-soon:hover{border-color:var(--line)}',
       '.cn-fb-menu{position:absolute;top:calc(100% + 6px);left:0;z-index:1200;min-width:230px;max-width:min(320px,86vw);background:var(--card,#fff);border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 34px rgba(11,19,28,.22);padding:8px;display:flex;flex-direction:column;gap:6px}',
       '.cn-fb-msearch .cn-fb-tin,.cn-fb-txt .cn-fb-tin{width:100%}',
       '.cn-fb-tin{font:inherit;font-size:13px;color:var(--ip-ink);background:var(--card);border:1px solid var(--line);border-radius:9px;padding:8px 11px}',
@@ -1240,7 +1238,8 @@
       '.cn-fb-x:hover{background:color-mix(in srgb,var(--ip-blue,#0057FF) 18%,transparent)}',
       '.cn-fb-clear{border:none;background:none;color:var(--muted);font:inherit;font-size:11.5px;font-weight:700;cursor:pointer;text-decoration:underline;padding:3px 4px}',
       '.cn-fb-clear:hover{color:var(--ip-blue,#0057FF)}',
-      '@media(max-width:760px){.cn-fb-toggle{display:inline-flex}.cn-fbrow{display:none}.cn-fb.open .cn-fbrow{display:flex}.cn-fbsearch{max-width:none}.cn-fb-menu{min-width:200px;max-width:min(300px,80vw);right:auto}}',
+      // Téléphone : titre et compteur laissent toute la place à la recherche ; les boutons d'action gardent leur icône seule.
+      '@media(max-width:760px){.cn-fb{padding:8px 12px}.cn-h1{display:none}.cn-fbcount{display:none}.cn-searchwrap{max-width:none}.cn-fbacts{margin-left:auto;gap:6px}.cn-fbrow{gap:6px}.cn-fb-btn{min-height:44px}.cn-statut button{min-height:40px;padding:6px 10px;font-size:12.5px}.cn-fb-more{padding:7px 10px}.cn-fb-act span{display:none}.cn-fb-act{padding:7px 12px}.cn-fb-menu{min-width:200px;max-width:min(300px,80vw);right:auto}.cn-fb-sel{max-width:170px}.cn-tourbar button{min-height:40px}}',
       '@media(prefers-reduced-motion:reduce){.cn-fb-btn{transition:none}}',
       // Bulle de survol enrichie (multi-lignes)
       '.cn-tip{padding:7px 10px!important;border:none!important;border-radius:9px!important;box-shadow:0 6px 20px rgba(11,19,28,.22)!important;max-width:230px!important}',
@@ -1248,15 +1247,15 @@
       '.cn-tip i{display:block;font-style:normal;font-size:11px;color:#5A6472;margin-top:1px}',
       '.cn-tip span{display:block;font-size:11px;color:#5A6472;margin-top:2px}',
       '.cn-tip em{display:block;font-style:normal;font-size:10.5px;font-weight:600;color:#0057FF;margin-top:3px}',
-      '.cn-side{width:288px;flex:none;overflow-y:auto;background:var(--card);border-right:1px solid var(--line);padding:16px 15px 22px;display:flex;flex-direction:column;gap:16px}',
-      '.cn-sgroup{display:flex;flex-direction:column;gap:8px}',
-      '.cn-seg-wrap{flex-wrap:wrap}',
-      '.cn-side .cn-sel{max-width:none;width:100%}',
-      '.cn-side .cn-search{width:100%}',
-      '.cn-side .cn-legend{padding:0;border:none;background:none;flex-direction:column;gap:6px}',
       '.cn-lg-note{font-size:11.5px;color:var(--muted);font-weight:600;line-height:1.4}',
       // Générateur de tournée (dans le panneau « Ma tournée »)
-      '.cn-tgen{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:9px;background:color-mix(in srgb,var(--blue) 4%,var(--card))}',
+      '.cn-tgen-det{border-bottom:1px solid var(--line)}',
+      '.cn-tgen-sum{list-style:none;display:flex;align-items:center;gap:8px;min-height:48px;padding:0 16px;cursor:pointer;font-size:13.5px;font-weight:800;color:var(--ip-ink)}',
+      '.cn-tgen-sum::-webkit-details-marker{display:none}',
+      '.cn-tgen-sum svg{color:var(--ip-blue,#0057FF);flex:none}',
+      '.cn-tgen-sum small{margin-left:auto;font-size:11.5px;font-weight:600;color:var(--muted);white-space:nowrap}',
+      '.cn-tgen-det[open] .cn-tgen-sum small{display:none}',
+      '.cn-tgen{padding:4px 16px 14px;display:flex;flex-direction:column;gap:9px;background:color-mix(in srgb,var(--blue) 4%,var(--card))}',
       '.cn-tgen-t{font-size:13px;font-weight:800;letter-spacing:-.01em;color:var(--ip-ink)}',
       '.cn-tgen-in{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font:inherit;font-size:13.5px;background:var(--card);color:var(--ip-ink)}',
       '.cn-tgen-in:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px color-mix(in srgb,var(--blue) 14%,transparent)}',
@@ -1280,45 +1279,30 @@
       // Bouton GPS Google Maps : plein largeur, bien visible sous le listing
       '.cn-gps-wrap{padding:12px 16px 0}',
       '.cn-gps-btn{width:100%;justify-content:center;gap:8px;font-size:15px;font-weight:800;padding:13px}',
-      '.cn-tour-from{background:#fff!important;color:var(--blue)!important;border:1px solid color-mix(in srgb,var(--blue) 30%,var(--line))!important}',
       '.cn-listmore{display:block;width:calc(100% - 24px);margin:8px 12px 14px;padding:11px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--blue);font:inherit;font-size:13px;font-weight:700;cursor:pointer}',
       '.cn-listmore:hover{background:color-mix(in srgb,var(--blue) 8%,var(--card))}',
-      '.cn-side .cn-tools{padding:0;border:none;background:none;flex-direction:column;align-items:stretch;gap:8px}',
-      // Éditorial : « Ma tournée » = CTA clair, phrase d\'aide, export en lien discret
-      '.cn-tour-cta{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px 16px;border:none;border-radius:12px;background:linear-gradient(150deg,#0057FF,#0034A0);color:#fff;font:inherit;font-size:14px;font-weight:700;letter-spacing:-.01em;cursor:pointer;box-shadow:0 8px 20px rgba(0,52,160,.22);transition:transform .16s var(--ease),box-shadow .16s var(--ease)}',
-      '.cn-tour-cta svg{color:#fff}',
-      '.cn-tour-cta:hover{transform:translateY(-1px);box-shadow:0 12px 26px rgba(0,52,160,.28)}',
-      '.cn-tour-hint{margin:0;font-size:12px;line-height:1.45;color:var(--muted);text-align:left}',
-      '.cn-side .cn-tools .cn-export-link{display:inline-flex;align-items:center;gap:6px;width:auto;align-self:flex-start;padding:4px 2px;border:none;background:none;color:var(--muted);font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;text-align:left}',
-      '.cn-export-link svg{color:var(--muted)}',
-      '.cn-side .cn-tools .cn-export-link:hover{color:var(--ip-blue,#0057FF)}',
-      '.cn-export-link:hover svg{color:var(--ip-blue,#0057FF)}',
-      '@media(max-width:760px){.cn-wrap{flex-direction:column}.cn-side{width:100%;max-height:40vh;border-right:none;border-bottom:1px solid var(--line)}.cn-maparea{min-height:0}}',
-      '.cn-bar{display:flex;align-items:center;gap:8px 12px;flex-wrap:wrap;padding:9px 16px;border-bottom:1px solid var(--line);background:var(--card)}',
-      '.cn-title{font-weight:800;font-size:15px;color:var(--ip-ink);display:flex;align-items:baseline;gap:8px}',
-      '.cn-title small{font-weight:600;font-size:12px;color:var(--muted)}',
-      '.cn-grp{display:flex;align-items:center;gap:6px}',
-      '.cn-lbl{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--muted-2)}',
       '.cn-seg{display:inline-flex;background:var(--card-2);border:1px solid var(--line);border-radius:var(--r-pill);padding:2px;gap:2px}',
       '.cn-seg button{border:none;background:transparent;font:inherit;font-size:12px;font-weight:700;color:var(--muted);padding:6px 11px;border-radius:var(--r-pill);cursor:pointer}',
       '.cn-seg button.on{background:var(--ip-blue);color:#fff}',
       '.cn-sel{font:inherit;font-size:13px;font-weight:600;color:var(--ip-ink);background:var(--card);border:1px solid var(--line);border-radius:var(--r-control,10px);padding:7px 10px;max-width:190px}',
-      // petit toggle Points/Bulles sous le sélecteur « Colorer par »
-      '.cn-disp{display:inline-flex;margin-top:8px;align-self:flex-start;background:var(--card-2,#F4F6FB);border:1px solid var(--line);border-radius:var(--r-pill);padding:2px;gap:2px}',
-      '.cn-disp button{border:none;background:transparent;font:inherit;font-size:11.5px;font-weight:700;color:var(--muted);padding:5px 11px;border-radius:var(--r-pill);cursor:pointer}',
+      // Points / Bulles (sous « Plus de filtres »)
+      '.cn-disp{display:inline-flex;background:var(--card-2,#F4F6FB);border:1px solid var(--line);border-radius:var(--r-pill);padding:2px;gap:2px}',
+      '.cn-disp button{border:none;background:transparent;font:inherit;font-size:12px;font-weight:700;color:var(--muted);padding:6px 12px;min-height:34px;border-radius:var(--r-pill);cursor:pointer}',
       '.cn-disp button.on{background:var(--ip-blue,#0057FF);color:#fff}',
-      '.cn-spacer{margin-left:auto}',
-      '.cn-legend{display:flex;flex-wrap:wrap;gap:6px 14px;padding:8px 16px;border-bottom:1px solid var(--line);background:var(--card-2)}',
+      // Légende : flotte en bas à gauche de la carte, éclairée comme une carte Verrière
+      '.cn-legend{position:absolute;left:12px;bottom:26px;z-index:600;display:flex;flex-wrap:wrap;gap:5px 12px;max-width:min(360px,calc(100% - 24px));padding:8px 12px;border-radius:12px;background:rgba(255,255,255,.94);box-shadow:0 1px 0 rgba(255,255,255,.9) inset,0 6px 18px -8px rgba(11,31,77,.35);pointer-events:none}',
+      '.cn-legend:empty{display:none}',
       '.cn-lg{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;color:var(--ip-ink-2,#2A2F3C)}',
       '.cn-lg i{width:11px;height:11px;border-radius:50%;display:inline-block}',
       '.cn-lg-txt{font-size:12px;color:var(--muted);font-weight:600}',
-      '.cn-maparea{position:relative;flex:1 1 auto;min-height:60vh}',
-      '#carte-map{position:absolute;inset:0;background:#EAF0F6}',
-      // Bouton flottant TOUJOURS visible : ouvre l\'organisateur de tournée
-      '.cn-organiser{position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:600;display:inline-flex;align-items:center;gap:8px;padding:11px 18px;border:none;border-radius:999px;background:linear-gradient(150deg,#0057FF,#0034A0);color:#fff;font:inherit;font-size:14px;font-weight:800;letter-spacing:-.01em;cursor:pointer;box-shadow:0 10px 26px rgba(0,52,160,.34);transition:transform .16s var(--ease,ease),box-shadow .16s var(--ease,ease)}',
-      '.cn-organiser svg{color:#fff}',
-      '.cn-organiser:hover{transform:translateX(-50%) translateY(-1px);box-shadow:0 14px 32px rgba(0,52,160,.42)}',
-      '@media(max-width:640px){.cn-organiser{font-size:13px;padding:10px 14px;top:8px}.cn-organiser span{display:inline}}',
+      '.cn-maparea{position:relative;flex:1 1 auto;min-height:0}',
+      '#carte-map{position:absolute;inset:0;background:#F2F3F5}',
+      '.leaflet-container .leaflet-control-attribution{font-size:9.5px;color:#6b7280;background:rgba(255,255,255,.7)}',
+      // Paquets : blanc, filet Intégral, compte en encre — un seul style quelle que soit la taille
+      '.cn-clw{background:none;border:none}',
+      '.cn-cl{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.94);border:1.5px solid var(--ip-blue,#0050E6);color:var(--ip-blue-d,#0034A0);font:800 11.5px/1 var(--font,system-ui);font-variant-numeric:tabular-nums;box-shadow:0 1px 0 rgba(255,255,255,.9) inset,0 5px 14px -6px rgba(0,52,160,.45)}',
+      '.cn-cl.big{background:var(--ip-blue,#0050E6);color:#fff}',
+      '@media(max-width:760px){.cn-legend{bottom:20px;left:8px;gap:4px 9px;padding:6px 9px;max-width:calc(100% - 16px)}.cn-lg{font-size:11px}}',
       '.cn-load{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;color:var(--muted);z-index:5;background:var(--card)}',
       '.leaflet-popup-content{margin:12px 14px}',
       '.cn-pop{font-family:var(--font,system-ui);min-width:200px;max-width:250px}',
@@ -1351,10 +1335,13 @@
       '.cn-tour-btn{width:100%;margin-top:9px;padding:8px;border:1.5px solid #C2410C;background:#FFF7ED;color:#C2410C;font-weight:800;font-size:12.5px;border-radius:9px;cursor:pointer}',
       '.cn-tour-btn.in{background:#0F7A52;border-color:#0F7A52;color:#fff}',
       // barre tournée flottante
-      '.cn-tourbar{position:absolute;left:50%;bottom:16px;transform:translateX(-50%) translateY(120%);z-index:600;display:flex;align-items:center;gap:12px;padding:9px 12px 9px 16px;background:var(--ip-ink,#10131C);color:#fff;border-radius:999px;box-shadow:0 12px 30px rgba(16,19,28,.35);transition:transform .22s var(--ease,ease);white-space:nowrap}',
+      // Rappel de tournée : n'apparaît que si la tournée a au moins un arrêt
+      '.cn-tourbar{position:absolute;left:50%;bottom:26px;transform:translateX(-50%) translateY(140%);z-index:600;display:flex;align-items:center;gap:8px;padding:6px 6px 6px 16px;background:var(--ip-ink,#10131C);color:#fff;border-radius:999px;box-shadow:0 12px 30px rgba(16,19,28,.35);transition:transform .22s var(--ease,ease);white-space:nowrap;max-width:calc(100% - 24px)}',
       '.cn-tourbar.on{transform:translateX(-50%) translateY(0)}',
-      '.cn-tourbar b{font-weight:700}',
-      '.cn-tourbar button{border:none;background:#F59E0B;color:#10131C;font:inherit;font-weight:800;font-size:13px;padding:8px 14px;border-radius:999px;cursor:pointer}',
+      '.cn-tourbar b{font-weight:700;font-size:13.5px}',
+      '.cn-tourbar button{border:none;background:rgba(255,255,255,.14);color:#fff;font:inherit;font-weight:800;font-size:13px;min-height:36px;padding:0 14px;border-radius:999px;cursor:pointer}',
+      '.cn-tourbar button.cn-tourbar-gps{background:var(--ip-blue,#0050E6)}',
+      '@media(max-width:760px){.cn-tourbar{bottom:20px;padding-left:12px}.cn-tourbar b{font-size:12.5px}.cn-tourbar button{min-height:40px}}',
       // panneau tournée
       '.cn-panel{position:fixed;inset:0;z-index:3000;background:rgba(16,19,28,.48);display:flex;align-items:flex-end;justify-content:center}',
       // Bloc éditable (Infos officine + notes) dans le panneau fiche
@@ -1401,8 +1388,6 @@
       '.cn-tdepot svg{color:var(--muted);flex-shrink:0}',
       '.cn-tlink{background:none;border:none;color:var(--ip-blue,#0057FF);font:inherit;font-size:12px;font-weight:700;cursor:pointer;padding:2px 4px}',
       '.cn-depsel{flex:1;min-width:0;font:inherit;font-size:12.5px;font-weight:600;color:var(--ip-ink);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 8px}',
-      '.cn-depmk{background:none;border:none}',
-      '.cn-depmk span{display:flex;align-items:center;justify-content:center;width:30px;height:30px;background:#0A0E1A;color:#fff;border:2px solid #fff;border-radius:8px;font:800 10px/1 system-ui;box-shadow:0 2px 6px rgba(0,0,0,.35)}',
       '.cn-prosbar{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--line);font-size:12.5px;color:var(--ip-ink)}',
       '.cn-prosbar input{flex:1}',
       '.cn-prow{display:flex;align-items:center;gap:10px;padding:11px 16px;border-bottom:1px solid var(--line)}',
@@ -1412,8 +1397,6 @@
       '.cn-padd{font-size:12.5px;font-weight:800;color:#C2410C;white-space:nowrap}',
       '.cn-paddbtn{flex:0 0 auto;padding:7px 11px;font-size:12px}',
       '.cn-search{font:inherit;font-size:13px;color:var(--ip-ink);background:var(--card);border:1px solid var(--line);border-radius:var(--r-control,10px);padding:7px 11px;min-width:220px}',
-      '.cn-listbtn{font:inherit;font-size:13px;font-weight:700;color:var(--ip-blue,#0057FF);background:var(--card);border:1px solid var(--line);border-radius:var(--r-control,10px);padding:7px 13px;cursor:pointer}',
-      '.cn-listbtn:hover{border-color:var(--ip-blue,#0057FF)}',
       '.cn-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:7px 16px;border-bottom:1px solid var(--line);background:var(--card)}',
       '.cn-tools button{font:inherit;font-size:12px;font-weight:700;color:var(--ip-ink);background:var(--card-2,#F4F6FB);border:1px solid var(--line);border-radius:999px;padding:5px 12px;cursor:pointer}',
       '.cn-tools button:hover{border-color:var(--ip-blue,#0057FF);color:var(--ip-blue,#0057FF)}',
@@ -1429,18 +1412,6 @@
       '.cn-lloc:hover{border-color:var(--ip-blue,#0057FF);color:var(--ip-blue,#0057FF)}',
       '.cn-pacts{display:flex;flex-wrap:wrap;gap:8px;padding:14px 16px;border-top:1px solid var(--line)}',
       '.cn-pacts .v2-btn{flex:1 1 auto}',
-      // ── DOCK : liste toujours visible à droite de la carte (desktop) ──
-      '.cn-dock{width:324px;flex:none;display:flex;flex-direction:column;background:var(--card);border-left:1px solid var(--line);overflow:hidden}',
-      '.cn-dockhead{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line)}',
-      '.cn-dockhead b{font-size:14px;font-weight:800;color:var(--ip-ink)}.cn-dockhead small{display:block;font-size:11.5px;color:var(--muted);margin-top:1px}',
-      '.cn-dock .cn-plist{padding:4px 0}',
-      '.cn-dock .cn-lrow{padding:9px 12px}',
-      '.cn-dock .cn-sortseg button{font-size:11.5px;padding:4px 9px}',
-      '@media(max-width:980px){.cn-dock{display:none}}',
-      '@media(min-width:981px){.cn-listbtn-mob{display:none}}',   // dock présent : bouton liste redondant sur desktop
-      '.cn-dockflt{display:flex;flex-wrap:wrap;gap:5px;padding:0 14px 10px}',
-      '.cn-dockflt .cn-fchip{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:var(--ip-blue,#0057FF);background:color-mix(in srgb,var(--ip-blue,#0057FF) 10%,transparent);border:1px solid color-mix(in srgb,var(--ip-blue,#0057FF) 22%,transparent);border-radius:999px;padding:3px 9px}',
-      '.cn-dockflt .cn-fclear{border:none;background:none;color:var(--muted);font:inherit;font-size:11px;font-weight:700;cursor:pointer;text-decoration:underline;padding:3px 4px}',
     ].join('\n');
     document.head.appendChild(s);
   }
@@ -1498,9 +1469,10 @@
     renderFbRow(); renderFbChips();   // barre de filtres Direction 2
     // Nettoie une éventuelle carte précédente (évite l'accumulation d'instances Leaflet au fil des visites).
     if (map) { try { map.remove(); } catch (e) {} map = null; cluster = null; markers = null; }
-    map = window.L.map(root.querySelector('#carte-map'), { preferCanvas: true, zoomControl: true, attributionControl: false }).setView([46.6, 2.4], 6);
+    map = window.L.map(root.querySelector('#carte-map'), { preferCanvas: true, zoomControl: true, attributionControl: true }).setView([46.6, 2.4], 6);
+    try { map.attributionControl.setPrefix(false); } catch (e) {}
     canvas = window.L.canvas({ padding: 0.5 });
-    window.L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { maxZoom: 18, subdomains: 'abcd' }).addTo(map);
+    addBaseLayer();
     map.on('click', function (e) {
       if (!pickDepotMode) return;
       pickDepotMode = false; var mp = document.getElementById('carte-map'); if (mp) mp.style.cursor = '';
@@ -1509,9 +1481,41 @@
       drawTourLine(); if (document.getElementById('cn-tourpanel')) renderTourPanel();
       if (V2.toast) V2.toast('Dépôt défini');
     });
-    setTimeout(function () { map.invalidateSize(); rebuild(); updateTourBar(); drawDepots(); drawTourLine(); }, 60);
+    setTimeout(function () { map.invalidateSize(); rebuild(); updateTourBar(); drawTourLine(); homeView(); }, 60);
     setTimeout(function () { if (map) map.invalidateSize(); }, 420);
-    if (!V2._carteResize) { V2._carteResize = true; window.addEventListener('resize', function () { if (map && V2.route && V2.route.name === 'carte') map.invalidateSize(); }); }
+    if (!V2._carteResize) { V2._carteResize = true; window.addEventListener('resize', function () { if (map && V2.route && V2.route.name === 'carte') { map.invalidateSize(); renderFbRow(); } }); }
+  }
+  // Fond de carte. CARTO (light_all) exige une clé d'API depuis août 2026 : chaque
+  // tuile affichait « API KEY REQUIRED » en travers de la France (constaté le 27/08/2026).
+  // → Esri « Light Gray » (gratuit, sans clé, attribution obligatoire) : fond très calme,
+  // les points ressortent. Filet : si 3 tuiles échouent, on bascule sur le Plan IGN de la
+  // Géoplateforme (service public, sans clé — celui qui géocode déjà les adresses ici).
+  function addBaseLayer() {
+    var E = 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_';
+    var esriAttr = 'Fond : Esri, HERE, Garmin, © OpenStreetMap';
+    var base = window.L.tileLayer(E + 'Base/MapServer/tile/{z}/{y}/{x}', { maxNativeZoom: 16, maxZoom: 18, attribution: esriAttr }).addTo(map);
+    var ref = window.L.tileLayer(E + 'Reference/MapServer/tile/{z}/{y}/{x}', { maxNativeZoom: 16, maxZoom: 18 }).addTo(map);
+    var fails = 0, swapped = false;
+    base.on('tileerror', function () {
+      if (swapped || ++fails < 3) return;
+      swapped = true;
+      try { map.removeLayer(base); map.removeLayer(ref); } catch (e) {}
+      window.L.tileLayer('https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/png',
+        { maxZoom: 18, attribution: 'Fond : IGN — Géoplateforme' }).addTo(map);
+    });
+  }
+  // Vue d'ouverture : SES clients (le commercial connecté), pas la France entière.
+  // Le profil porte un prénom (« Will », « Pauline G. ») ; PHARMA_FR indexe le même.
+  function homeView() {
+    if (!map || !D) return;
+    var me = (V2.user && V2.user.commercial) ? norm(String(V2.user.commercial)).replace(/\./g, '').trim() : '';
+    var idx = 0;
+    if (me) for (var k = 1; k < D.comm.length; k++) { var c = norm(D.comm[k] || '').replace(/\./g, '').trim(); if (c && (c === me || c.split(' ')[0] === me.split(' ')[0])) { idx = k; break; } }
+    if (!idx) return;   // direction / profil sans commercial : la France
+    var pts = [];
+    for (var i = 0; i < D.p.length; i++) { var p = D.p[i]; if (p[5] === idx && isClient(p) && isFinite(p[0]) && isFinite(p[1]) && (p[0] || p[1])) pts.push([p[0], p[1]]); }
+    if (pts.length < 3) return;
+    try { map.fitBounds(pts, { padding: [40, 40], maxZoom: 10 }); } catch (e) {}
   }
 
   // ══ BARRE DE FILTRES « Direction 2 » ══════════════════════════════════
@@ -1561,19 +1565,51 @@
       (fbOpen === key ? '<div class="cn-fb-menu">' + fbMenuHtml(key) + '</div>' : '') +
       '</div>';
   }
+  // ── LA CARTE (27/08/2026) : une ligne, trois choses ──
+  // Tout | Clients | Prospects · Commercial · Groupement · « Plus de filtres ».
+  // Le reste (département, UGA, tranche de CA, ville, titulaire, couleur des points,
+  // bulles, zones, export) vit sous « Plus de filtres » : toujours là, jamais en travers.
+  var fbMore = false;
+  function fbSecondaryActive() { return !!(deptFocus.length || ugaFocus.length || caMin || caMax || villeFocus || titFocus || zonesOn || displayMode !== 'points' || colorMode !== 'type'); }
   function renderFbRow() {
     var el = document.getElementById('cn-fbrow'); if (!el) return;
+    var narrow = window.matchMedia && window.matchMedia('(max-width:760px)').matches;
+    var commItem = fbItem('comm', commFocus.length === 1 ? commFocus[0] : commFocus.length ? commFocus.length + ' commerciaux' : 'Commercial', commFocus.length > 0);
+    var grpItem = fbItem('grp', grpFocus.length === 1 ? grpFocus[0] : grpFocus.length ? grpFocus.length + ' groupements' : 'Groupement', grpFocus.length > 0);
+    var more = fbMore || fbSecondaryActive();
     el.innerHTML =
-      fbItem('statut', typeFocus === 'clients' ? 'Statut : Clients' : typeFocus === 'prospects' ? 'Statut : Prospects' : 'Statut', typeFocus !== 'all') +
-      fbItem('comm', commFocus.length === 1 ? commFocus[0] : commFocus.length ? commFocus.length + ' commerciaux' : 'Commercial', commFocus.length > 0) +
-      fbItem('uga', ugaFocus.length === 1 ? 'UGA ' + ugaFocus[0] : ugaFocus.length ? ugaFocus.length + ' UGA' : 'UGA', ugaFocus.length > 0) +
-      fbItem('grp', grpFocus.length === 1 ? grpFocus[0] : grpFocus.length ? grpFocus.length + ' groupements' : 'Groupement', grpFocus.length > 0) +
+      '<div class="cn-seg cn-statut" role="group" aria-label="Statut">' + typeBtn('all', 'Tout') + typeBtn('clients', 'Clients') + typeBtn('prospects', 'Prospects') + '</div>' +
+      (narrow ? '' : commItem + grpItem) +
+      '<button class="cn-fb-btn cn-fb-more' + (more ? ' on' : '') + '" aria-expanded="' + (more ? 'true' : 'false') + '" onclick="V2.carteFbMore()">' + (narrow ? 'Filtres' : 'Plus de filtres') + '<i class="cn-fb-car">' + (more ? '▴' : '▾') + '</i></button>';
+    // Les deux actions vivent sur la ligne de recherche (à droite) : elles ne bougent jamais,
+    // et sur téléphone la ligne des filtres ne passe pas à la ligne.
+    var acts = document.getElementById('cn-fbacts');
+    if (acts) acts.innerHTML =
+      '<button class="cn-fb-btn cn-fb-act" onclick="V2.carteListOpen()">' + ICO('list', 14) + '<span>Liste</span></button>' +
+      '<button class="cn-fb-btn cn-fb-act cn-fb-tour" onclick="V2.carteTourOpen()">' + ICO('pharma', 14) + '<span>Ma tournée</span><b id="cn-fb-tourn"' + (tour.length ? '' : ' style="display:none"') + '>' + tour.length + '</b></button>';
+    var el2 = document.getElementById('cn-fbrow2'); if (!el2) return;
+    el2.style.display = more ? '' : 'none';
+    el2.innerHTML = !more ? '' :
+      (narrow ? commItem + grpItem : '') +
       fbItem('dept', deptFocus.length === 1 ? 'Dépt ' + deptFocus[0] : deptFocus.length ? deptFocus.length + ' départements' : 'Département', deptFocus.length > 0) +
+      fbItem('uga', ugaFocus.length === 1 ? 'UGA ' + ugaFocus[0] : ugaFocus.length ? ugaFocus.length + ' UGA' : 'UGA', ugaFocus.length > 0) +
       fbItem('ca', caLabel(), !!(caMin || caMax)) +
       fbItem('ville', villeFocus ? 'Ville : ' + villeFocus : 'Ville', !!villeFocus) +
       fbItem('tit', titFocus ? 'Titulaire : ' + titFocus : 'Titulaire', !!titFocus) +
-      '<button class="cn-fb-btn cn-fb-soon" disabled title="Bientôt : ruptures & opportunités">Signaux · à venir</button>';
+      '<span class="cn-fbsep" aria-hidden="true"></span>' +
+      '<label class="cn-fb-lbl">Couleur <select class="cn-sel cn-fb-sel" onchange="V2.carteColor(this.value)">' +
+        [['type', 'Client / Prospect'], ['comm', 'Commercial'], ['ca', 'Tranche de CA'], ['grp', 'Groupement'], ['uga', 'UGA']]
+          .map(function (o) { return '<option value="' + o[0] + '"' + (colorMode === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') +
+      '</select></label>' +
+      '<div class="cn-disp">' + dispBtn('points', 'Points') + dispBtn('bulles', 'Bulles = CA') + '</div>' +
+      '<button id="cn-zonebtn" class="cn-fb-btn' + (zonesOn ? ' on' : '') + '" onclick="V2.carteZones()">' + (zonesOn ? '✓ Zones par département' : 'Zones par département') + '</button>' +
+      '<select id="cn-zonemetric" class="cn-sel cn-fb-sel" style="' + (zonesOn ? '' : 'display:none') + '" onchange="V2.carteZoneMetric(this.value)">' +
+        [['part', 'Colorer : part de clients'], ['densite', 'Colorer : densité d\'officines'], ['tension', 'Colorer : zone sous-dotée (hab./officine)'], ['potentiel', 'Colorer : potentiel (prospects)']]
+          .map(function (o) { return '<option value="' + o[0] + '"' + (zoneMetric === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') +
+      '</select>' +
+      '<button class="cn-fb-btn cn-fb-ghost" onclick="V2.carteExportKml()">' + ICO('download', 13) + '<span>Exporter vers Google My Maps</span></button>';
   }
+  V2.carteFbMore = function () { fbMore = !(fbMore || fbSecondaryActive()); if (!fbMore) fbOpen = ''; renderFbRow(); };
   function renderFbChips(n) {
     var cel = document.getElementById('cn-fbcount');
     if (cel) { if (n == null) { n = 0; if (D) for (var i = 0; i < D.p.length; i++) if (pass(D.p[i])) n++; } cel.textContent = n.toLocaleString('fr') + ' officine' + (n > 1 ? 's' : ''); }
@@ -1605,7 +1641,6 @@
     if (multi) { var si = document.querySelector('.cn-fb-menu .cn-fb-msearch .cn-fb-tin'); if (si) { si.focus(); var vl = si.value.length; try { si.setSelectionRange(vl, vl); } catch (e) {} } }
   };
   V2.carteFbMenuFilter = function (v) { fbFilter = v || ''; var l = document.getElementById('cn-fbmlist'); if (l) l.innerHTML = fbRenderMenuList(); };
-  V2.carteFbDrawer = function () { var b = document.getElementById('cn-fb'); if (b) b.classList.toggle('open'); };
   V2.carteUga = function (v) { ugaFocus = fbToggleArr(ugaFocus, v); applyFilters(); };
   V2.carteVille = function (v) { villeFocus = v || ''; var b = document.getElementById('cn-fbb-ville'); if (b) b.classList.toggle('on', !!villeFocus); fbApplyLight(); };
   V2.carteTit = function (v) { titFocus = v || ''; var b = document.getElementById('cn-fbb-tit'); if (b) b.classList.toggle('on', !!titFocus); fbApplyLight(); };
@@ -1639,48 +1674,33 @@
   V2.pages.carte = {
     render: function (root) {
       injectCss();
+      // ══ LA CARTE (27/08/2026, Will : « beaucoup plus simple, là c'est le bordel ») ══
+      // Avant : barre de 8 filtres + colonne de réglages à gauche + liste de 19 671
+      // officines à droite + deux boutons « Organisateur de tournée » + un bandeau.
+      // Maintenant : UNE ligne (recherche · Tout/Clients/Prospects · Commercial ·
+      // Groupement · Plus de filtres · Liste · Ma tournée) et la carte, plein cadre.
+      // La légende flotte sur la carte ; la tournée se rappelle par une pastille.
       root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
         '<div class="cn-shell">' +
-        // ── Barre de filtres « Direction 2 » : recherche + compteur live · boutons-critères · pastilles retirables ──
         '<div class="cn-fb" id="cn-fb">' +
           '<div class="cn-fbtop">' +
-            '<input id="cn-search" class="cn-search cn-fbsearch" type="search" placeholder="Chercher une pharmacie, une ville, un titulaire…" oninput="V2.carteSearch(this.value)">' +
-            '<button class="cn-fb-toggle" onclick="V2.carteFbDrawer()">Filtres ▾</button>' +
+            '<h1 class="cn-h1">La carte</h1>' +
+            '<label class="cn-searchwrap">' + ICO('search', 15, 2) +
+              '<input id="cn-search" class="cn-search cn-fbsearch" type="search" placeholder="Une pharmacie, une ville, un code postal…" aria-label="Chercher une officine" oninput="V2.carteSearch(this.value)">' +
+            '</label>' +
             '<span class="cn-fbcount" id="cn-fbcount">chargement…</span>' +
+            '<span class="cn-fbacts" id="cn-fbacts"></span>' +
           '</div>' +
           '<div class="cn-fbrow" id="cn-fbrow"></div>' +
+          '<div class="cn-fbrow cn-fbrow2" id="cn-fbrow2" style="display:none"></div>' +
           '<div class="cn-fbchips" id="cn-fbchips"></div>' +
         '</div>' +
-        '<div class="cn-wrap">' +
-          '<aside class="cn-side">' +
-            '<div class="cn-title">Carte nationale <small id="carte-count">chargement…</small></div>' +
-            '<div class="cn-sgroup"><span class="cn-lbl">Colorer par</span>' +
-              '<select class="cn-sel" onchange="V2.carteColor(this.value)">' +
-                [['comm', 'Commercial'], ['type', 'Client / Prospect'], ['ca', 'CA (taille des points)'], ['uga', 'UGA (zone)']]
-                  .map(function (o) { return '<option value="' + o[0] + '"' + (colorMode === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') +
-              '</select>' +
-              '<div class="cn-disp">' + dispBtn('points', 'Points') + dispBtn('bulles', 'Bulles (taille = CA)') + '</div>' +
-            '</div>' +
-            '<div class="cn-sgroup"><span class="cn-lbl">Zones par département</span>' +
-              '<button id="cn-zonebtn" class="cn-listbtn" onclick="V2.carteZones()">Afficher les zones (départements)</button>' +
-              '<select id="cn-zonemetric" class="cn-sel" style="display:none" onchange="V2.carteZoneMetric(this.value)">' +
-                '<option value="part">Colorer : part de clients</option><option value="densite">Colorer : densité d\'officines</option><option value="tension">Colorer : zone sous-dotée (hab./officine)</option><option value="potentiel">Colorer : potentiel (prospects)</option></select></div>' +
-            '<div class="cn-sgroup">' +
-              '<button class="cn-listbtn cn-listbtn-mob" onclick="V2.carteListOpen()">Liste des officines</button></div>' +
-            '<div class="cn-sgroup"><span class="cn-lbl">Légende</span><div class="cn-legend" id="carte-legend"></div></div>' +
-            '<div class="cn-sgroup cn-tools">' +
-              '<button class="cn-tour-cta" onclick="V2.carteTourOpen()">' + ICO('pharma', 16) + 'Organisateur de tournée</button>' +
-              '<p class="cn-tour-hint">Compose ta tournée du jour (adresse de départ + ville + groupements), vois le listing, puis ouvre-la dans Google Maps.</p>' +
-              '<button class="cn-export-link" onclick="V2.carteExportKml()">' + ICO('download', 14) + 'Exporter vers Google My Maps</button>' +
-            '</div>' +
-          '</aside>' +
-          '<div class="cn-maparea"><div id="carte-map"></div>' +
-            '<button class="cn-organiser" onclick="V2.carteTourOpen()">' + ICO('pharma', 17) + '<span>Organisateur de tournée</span></button>' +
-            '<div class="cn-tourbar" id="cn-tourbar"><b id="cn-tourbar-n">0 pharmacie</b>' +
-              '<button onclick="V2.carteTourOpen()">Voir / organiser</button></div>' +
-            '<div class="cn-load" id="carte-load"><div class="v2-spinner"></div><div>Chargement de la carte nationale…</div></div>' +
-          '</div>' +
-          '<aside class="cn-dock" id="cn-dock"></aside>' +
+        '<div class="cn-maparea"><div id="carte-map"></div>' +
+          '<div class="cn-legend" id="carte-legend"></div>' +
+          '<div class="cn-tourbar" id="cn-tourbar"><b id="cn-tourbar-n">Ma tournée</b>' +
+            '<button onclick="V2.carteTourOpen()">Voir</button>' +
+            '<button class="cn-tourbar-gps" onclick="V2.carteTourItinerary()">Google Maps</button></div>' +
+          '<div class="cn-load" id="carte-load"><div class="v2-spinner"></div><div>Chargement de la carte…</div></div>' +
         '</div>' +
         '</div>';
       // Fermer le menu ouvert au clic hors de la barre (une seule fois par session de page)
@@ -1792,39 +1812,12 @@
   function sortSegHtml() {
     return '<span class="cn-sortlbl">Trier :</span><div class="cn-seg cn-sortseg"><button' + (listSort === 'nom' ? ' class="on"' : '') + ' onclick="V2.carteListSort(\'nom\')">Nom</button><button' + (listSort === 'ca' ? ' class="on"' : '') + ' onclick="V2.carteListSort(\'ca\')">CA</button></div>';
   }
-  // Rappel des filtres actifs (rend la liste dockée auto-explicite)
-  function activeFiltersHtml() {
-    var chips = [];
-    if (typeFocus === 'clients') chips.push('Clients');
-    else if (typeFocus === 'prospects') chips.push('Prospects');
-    commFocus.forEach(function (v) { chips.push(esc(v)); });
-    deptFocus.forEach(function (v) { chips.push('Dépt ' + esc(v) + (DEPT_NAMES[v] ? ' · ' + esc(DEPT_NAMES[v]) : '')); });
-    grpFocus.forEach(function (v) { chips.push(esc(v)); });
-    ugaFocus.forEach(function (v) { chips.push('UGA ' + esc(v)); });
-    if (caMin || caMax) chips.push('CA ' + esc(caLabel()));
-    if (villeFocus) chips.push('Ville : ' + esc(villeFocus));
-    if (titFocus) chips.push('Titulaire : ' + esc(titFocus));
-    if (searchTerm) chips.push('« ' + esc(searchTerm) + ' »');
-    if (!chips.length) return '';
-    return '<div class="cn-dockflt">' + chips.map(function (t) { return '<span class="cn-fchip">' + t + '</span>'; }).join('') +
-      '<button class="cn-fclear" onclick="V2.carteClearFilters()">tout effacer</button></div>';
-  }
   V2.carteClearFilters = function () {
     typeFocus = 'all'; commFocus = []; grpFocus = []; deptFocus = []; searchTerm = '';
     ugaFocus = []; caMin = 0; caMax = 0; villeFocus = ''; titFocus = ''; fbOpen = ''; fbFilter = '';
     ['cn-search', 'cn-search2'].forEach(function (id) { var e = document.getElementById(id); if (e) e.value = ''; });
     applyFilters();
   };
-  // Dock : liste toujours visible à côté de la carte (desktop) — pas de recherche propre (la barre latérale l'a déjà)
-  function renderDock() {
-    var el = document.getElementById('cn-dock'); if (!el || !D) return;
-    var sc = el.querySelector('.cn-plist'); var y = sc ? sc.scrollTop : 0;
-    var c = listComputed();
-    el.innerHTML = '<div class="cn-dockhead"><div><b>Officines</b><small>' + c.total.toLocaleString('fr') + (c.total > 1 ? ' résultats' : ' résultat') + (c.remaining > 0 ? ' · ' + c.shown.length.toLocaleString('fr') + ' affichés' : '') + '</small></div>' + sortSegHtml() + '</div>' +
-      activeFiltersHtml() +
-      '<div class="cn-plist">' + c.rows + c.more + '</div>';
-    var sc2 = el.querySelector('.cn-plist'); if (sc2) sc2.scrollTop = y;
-  }
   function renderListPanel() {
     var el = document.getElementById('cn-listpanel'); if (!el) return;
     var c = listComputed();
@@ -1835,8 +1828,7 @@
         sortSegHtml() + '</div>' +
       '<div class="cn-plist">' + c.rows + c.more + '</div></div>';
   }
-  // Rafraîchit dock + modale d'un coup (chacun no-op si absent)
-  function renderLists() { renderDock(); renderListPanel(); }
+  function renderLists() { renderListPanel(); }   // (no-op si la modale liste est fermée)
   V2.carteListSort = function (s) { listSort = s; renderLists(); };
   V2.carteListMore = function () {
     var el = document.getElementById('cn-listpanel'), sc = el && el.querySelector('.cn-plist');

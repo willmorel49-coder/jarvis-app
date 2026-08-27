@@ -1042,10 +1042,10 @@
       if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.infos) {
         P.push({ k: 'infos', cls: 'p6', accent: 'var(--c-amber)', ico: 'spark', tag: 'Quotidien', t: 'Infos du matin', d: 'La veille du jour : ruptures ANSM, sécurité, réglementaire et actu officine — avec ton alternative IP pour chaque molécule en tension.', go: 'Voir la veille' });
       }
-      // Copilote : chantier en cours. Il reste dans la liste, mais il a perdu sa
-      // bannière en tête d'accueil (12/08/2026) et se range dans « Autres outils ».
-      if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.copilote) {
-        P.push({ k: 'copilote', cls: 'p1', accent: 'var(--ip-blue)', ico: 'spark', tag: 'Carte', t: 'Copilote', d: 'Toutes tes officines sur la carte, où tu filtres tout : client/prospect, commercial, UGA, groupement, département, tranche de CA, ville, titulaire — cumulables, avec le compte en direct.', go: 'Ouvrir la carte' });
+      // LA CARTE (ex-« Copilote », renommée le 27/08/2026 à la demande de Will).
+      // L'ancien nom reste une route valide (#copilote → carte) pour les favoris.
+      if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.carte) {
+        P.push({ k: 'carte', cls: 'p1', accent: 'var(--ip-blue)', ico: 'pharma', tag: 'Terrain', t: 'La carte', d: 'Toutes les officines de France : tes clients, les prospects autour, un clic pour la fiche, un autre pour la tournée du jour.', go: 'Ouvrir la carte' });
       }
       // Tuile « Par molécule » retirée le 11/08/2026 : l'écran existe toujours,
       // il est atteignable depuis Produits (lien de bas de page) et depuis ⌘K.
@@ -1248,8 +1248,8 @@
     if (window.V2_BRAND && window.V2_BRAND.opso) PAGES.splice(2, 0, ['fiches', 'Fiches commerciales', 'fiche']); // OPSO garde les fiches
     if (window.V2_BRAND && window.V2_BRAND.opso && V2.pages.marketing) PAGES.splice(2, 0, ['marketing', 'Fiches marketing OPSO', 'fiche']);
     else if (V2.pages.marketing) PAGES.splice(2, 0, ['marketing', 'Marketing', 'spark']);
-    if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.copilote) PAGES.splice(1, 0, ['copilote', 'Copilote · opportunités & tournée', 'spark']);
-    if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.carte) PAGES.splice(2, 0, ['carte', 'Carte des officines', 'pharma']);
+    // Une seule entrée « La carte » (l'entrée « Copilote » en doublon est retirée le 27/08/2026).
+    if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.carte) PAGES.splice(1, 0, ['carte', 'La carte · officines, clients, prospects, tournée', 'pharma']);
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.infos) PAGES.splice(1, 0, ['infos', 'Infos du matin', 'spark']);
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.produits) PAGES.splice(1, 0, ['produits', 'Produits · par officine et par groupement d\'achat', 'cat']);
     // molecules / catalogue / appro restent dans ⌘K : c'est le chemin de secours
