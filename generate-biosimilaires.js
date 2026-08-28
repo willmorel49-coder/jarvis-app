@@ -163,6 +163,26 @@ for (const [cip13, s] of Object.entries(byCip13)) {
   if (PPHT[cip13] != null) s.ppht_official = PPHT[cip13];
 }
 
+// Prix RÉELLEMENT facturés ces derniers mois (STATS/prix-recents.json, écrit par
+// generate_prix_recents.py depuis les fichiers de ventes des commerciaux).
+// C'est la source la plus fraîche pour le PPHT ET le net IP : priorité sur le
+// catalogue et le benchmark, plus anciens. Le dossier STATS n'est pas suivi par
+// git ; sans le fichier, on retombe sur les sources d'avant (et on le dit).
+let RECENT = {}, RECENT_META = null;
+try {
+  const j = JSON.parse(fs.readFileSync(path.join(ROOT, "STATS", "prix-recents.json"), "utf8"));
+  RECENT = j.data || {}; RECENT_META = j.meta || null;
+  console.log(`  prix facturés récents : ${Object.keys(RECENT).length} CIP13 (${(RECENT_META && RECENT_META.mois || []).join(", ")})`);
+} catch (e) {
+  console.warn("  ⚠ pas de STATS/prix-recents.json — lancer generate_prix_recents.py ; prix issus du catalogue/benchmark");
+}
+for (const [cip13, r] of Object.entries(RECENT)) {
+  const s = slot(cip13);
+  pushDesign(s, r.design);
+  pushLabo(s, r.labo);
+  s.recent_ppht = r.ppht; s.recent_net = r.net; s.recent_date = r.date;
+}
+
 // Barème d'abandon de marge Intégral : net = PPHT − (0,18€ ≤4,33€ / 3,89% ≤468€ / 19,50€ au-delà)
 function abBareme(pp) { if (pp <= 4.33) return 0.18; if (pp <= 468) return Math.round(pp * 0.0389 * 100) / 100; return 19.5; }
 
@@ -183,9 +203,14 @@ function brandKeys(nom) {
   if (!keys.length) keys = words.filter((w) => w.length >= 4);
   return [...new Set(keys)];
 }
-function partnerMatch(labo) {
+// Nom canonique du partenaire (celui du logo). « EG » en mot entier seulement :
+// l'ancien `includes("EG")` marquait « Regeneron » partenaire.
+const PARTENAIRE_CANON = [[/TEVA/, "Teva"], [/ZENTIVA/, "Zentiva"], [/\bEG\b/, "EG Labo"]];
+function partnerOf(labo) {
   const L = norm(labo);
-  return PARTENAIRES_IP.some((p) => L.includes(norm(p)) || norm(p).includes(L) && L.length > 1);
+  if (!L) return null;
+  for (const [re, nom] of PARTENAIRE_CANON) if (re.test(L)) return nom;
+  return null;
 }
 function majorMatch(labo) {
   const L = norm(labo);
@@ -195,9 +220,14 @@ function majorMatch(labo) {
 const atc2Of = (mol) => norm(mol.atc).slice(0, 3);
 
 // Trouve les CIP13 correspondant à une marque dans le contexte d'une molécule
-function matchProducts(brandNom, mol) {
+function matchProducts(brandNom, mol, matchKeys) {
   const wantAtc2 = atc2Of(mol);
   const wantMol = norm(mol.dci);
+  // clés explicites du référentiel (désignations Intégral abrégées : « ENOXAPARINE TVC »)
+  if (matchKeys && matchKeys.length) {
+    const ks = matchKeys.map(norm);
+    return Object.values(byCip13).filter((s) => s.designations.some((d) => ks.some((k) => norm(d).startsWith(k))));
+  }
   // mots de la DCI (génériques) : ne PAS matcher dessus seuls, sinon
   // "Enoxaparine Teva" attraperait TOUS les produits enoxaparine.
   const dciTokens = new Set(wantMol.split(/[^A-Z0-9]+/).filter((w) => w.length >= 4));
@@ -239,9 +269,10 @@ const molecules = BIOSIM_REFERENTIEL.map((mol) => {
   const refEnrich = roundE(enrichNoRound(refProducts, mol.reference_labo));
 
   const biosimilaires = mol.biosimilaires.map((bs) => {
-    const products = matchProducts(bs.nom, mol);
+    const products = matchProducts(bs.nom, mol, bs.match);
     const en = roundE(enrichNoRound(products, bs.labo, bs.distrib));
-    return { ...bs, partenaire: en.partenaire, acteur_majeur: en.acteur_majeur, ...en };
+    const { match, ...rest } = bs; // `match` ne sert qu'au croisement
+    return { ...rest, partenaire: en.partenaire, acteur_majeur: en.acteur_majeur, ...en };
   });
 
   // ── Pack STANDARD de la molécule (pour un poster comparable marque à marque) ──
@@ -282,16 +313,20 @@ const molecules = BIOSIM_REFERENTIEL.map((mol) => {
   function parseForm(d) {
     let s = " " + String(d || "").toUpperCase().replace(/,/g, ".").replace(/µ/g, "U") + " ";
     s = s.replace(/(\d)\s+(\d)/g, "$1$2"); // « 10 000UI » → « 10000UI »
-    const dm = s.match(/(\d+(?:\.\d+)?)\s*(MUI|MU|MG|MICROGRAMMES?|MCG|UG|UI)/);
+    // « 4000U/0,4ML » (enoxaparines) : U seul = UI. Sans ça, toutes les
+    // enoxaparines tombaient en « autre présentation » (vu le 28/08/2026).
+    const dm = s.match(/(\d+(?:\.\d+)?)\s*(MUI|MU|MG|MICROGRAMMES?|MCG|UG|UI|U(?![A-Z]))/);
     let dose = "";
     if (dm) {
       let u = dm[2];
-      if (u === "MU") u = "MUI"; else if (/MICROGRAMMES?|MCG|UG/.test(u)) u = "µg";
+      if (u === "MU") u = "MUI"; else if (u === "U") u = "UI"; else if (/MICROGRAMMES?|MCG|UG/.test(u)) u = "µg";
       dose = dm[1].replace(/\.0$/, "") + " " + u;
     }
-    const dev = /STYL/.test(s) ? "stylo" : (/SER|SRG|SERG/.test(s) ? "seringue" : (/CPR|COMP/.test(s) ? "comprimé" : ""));
+    // « S.6 » / « S6 » / « S10 » = seringue × nb (désignations abrégées Intégral)
+    const sn = s.match(/\bS\.?(\d+)\b/);
+    const dev = /STYL/.test(s) ? "stylo" : ((/SER|SRG|SERG/.test(s) || sn) ? "seringue" : (/CPR|COMP/.test(s) ? "comprimé" : ""));
     const nums = s.match(/\b\d+\b/g) || [];
-    let cnt = nums.length ? nums[nums.length - 1] : "";
+    let cnt = sn ? sn[1] : (nums.length ? nums[nums.length - 1] : "");
     if (cnt === "0") cnt = "";
     return { dose, dev, cnt };
   }
@@ -362,11 +397,11 @@ function enrichNoRound(products, refLabo, distrib) {
     e.ip_intern_qte += s.ip_intern_qte || 0;
     e.stock_dispo += (s.stock_dispo || 0) + (s.etab_stock || 0);
     e.boites_par_pharma_an += s.boites_par_pharma_an || 0;
-    // PPHT de la présentation (priorité : catalogue > benchmark > tarif PPHT officiel > étab > NR)
-    const ppht = s.cat_prix_ht ?? s.bench_prix_ht ?? s.ppht_official ?? s.etab_ppht ?? s.nr_prix;
+    // PPHT de la présentation (priorité : facturé récemment > catalogue > benchmark > tarif PPHT officiel > étab > NR)
+    const ppht = s.recent_ppht ?? s.cat_prix_ht ?? s.bench_prix_ht ?? s.ppht_official ?? s.etab_ppht ?? s.nr_prix;
     if (ppht == null) continue;
-    // net IP réel si connu (catalogue/benchmark), sinon calculé PPHT − barème d'abandon
-    const netReal = s.cat_prix_ip ?? s.bench_prix_ip ?? null;
+    // net IP réel si connu (facturé récemment > catalogue > benchmark), sinon calculé PPHT − barème d'abandon
+    const netReal = s.recent_net ?? s.cat_prix_ip ?? s.bench_prix_ip ?? null;
     const cand = { cip: s.cip13, ppht, net: netReal != null ? netReal : Math.round((ppht - abBareme(ppht)) * 100) / 100, boxes: s.ameli_boxes || 0, design: (s.designations[0] || "") };
     e.cands.push(cand);
     // pack dominant (page CRM) = la présentation la plus vendue ; départage par PPHT.
@@ -379,7 +414,11 @@ function enrichNoRound(products, refLabo, distrib) {
     e.abandon_pct = lead.ppht > 0 ? Math.round(((lead.ppht - lead.net) / lead.ppht) * 1000) / 10 : null;
   }
   const allLabos = [refLabo, distrib, ...e.labos_reels].filter(Boolean);
-  e.partenaire = allLabos.some(partnerMatch);
+  // Partenaire : si le référentiel nomme un distributeur, c'est LUI qui décide
+  // (Ratiograstim est un produit ratiopharm/Teva… distribué par Biogaran).
+  // Sinon le labo du référentiel, puis le labo réellement facturé.
+  e.partenaire_labo = distrib ? partnerOf(distrib) : ([refLabo, ...e.labos_reels].map(partnerOf).find(Boolean) || null);
+  e.partenaire = !!e.partenaire_labo;
   e.distrib = distrib || null;
   e.acteur_majeur = allLabos.some(majorMatch);
   e.disponible_ip = e.cips.length > 0 &&
@@ -389,7 +428,8 @@ function enrichNoRound(products, refLabo, distrib) {
 
 // ---- Méta & totaux ---------------------------------------------------------
 const meta = {
-  genere_le: process.env.GEN_DATE || "2026-07-10",
+  genere_le: process.env.GEN_DATE || new Date().toISOString().slice(0, 10),
+  prix_factures: RECENT_META ? { mois: RECENT_META.mois, nb_cip: RECENT_META.nb_cip } : null,
   source: "biosim-referentiel.js (ANSM/Ameli/EMA) × données JARVIS",
   nb_molecules: molecules.length,
   nb_biosimilaires: molecules.reduce((a, m) => a + m.biosimilaires.length, 0),
