@@ -5,227 +5,131 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Notre responsabilité — Intégral Pharma</title>
 <meta name="description" content="Une journée responsable, du toit du siège au comptoir de l'officine : proximité, énergie, équipes, service du médicament.">
-<meta name="theme-color" content="#060B16">
+<meta name="theme-color" content="#0B1220">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230050E6'/%3E%3Cpath d='M11 9h3.4v14H11zM17 9h3.4v14H17z' fill='%23fff'/%3E%3C/svg%3E">
+<script>document.documentElement.className+=" js";</script>
+<link rel="stylesheet" href="charte.css">
 
 <!--
   ═══════════════════════════════════════════════════════════════════════════════
-  PAGE RSE — « Une journée, du toit au comptoir »
+  PAGE RSE — « Une journée, du toit au comptoir » (harmonisée le 28/08/2026)
 
-  L'animation est la sœur du « soleil » de la direction 13 : UN seul nombre —
-  l'heure du jour, déduite du défilement — commande le ciel (un canvas 2D fixe
-  sous la page), la position du soleil, les ombres, la teinte des photos et
-  l'encre. Ce qui l'oriente RSE : le soleil monte sur LE TOIT SOLAIRE du siège,
-  et un second dessin, « le toit », s'allume cellule par cellule à mesure que
-  le soleil prend de la hauteur. La journée est celle d'une tournée : elle part
-  de la maison la plus proche à l'aube, le toit produit à midi, la dernière
-  tournée rentre au couchant.
+  Un seul nombre — l'heure du jour, déduite du défilement — commande le ciel
+  (canvas 2D fixe sous la page), la position du soleil, les ombres, la teinte des
+  photos et l'encre. Ce qui l'oriente RSE : le soleil monte sur le toit solaire
+  du siège, et « le toit » s'allume cellule par cellule avec la hauteur du soleil.
 
-  TEXTE : proposition à valider par Will — aucun chiffre qui n'ait déjà été
-  validé (neuf implantations, la commande part de la maison la plus proche,
-  les quatre villes qui recrutent, les métiers). Aucune condition commerciale.
-
-  POLICE : Inter (OFL), la même que l'accueil. MÉDIAS : ../assets/.
-  SÛRETÉ SAFARI : aucune des propriétés qui font figer le Mac ; aucune vidéo.
-  Sans script : fond clair fixe, tout le texte visible.
+  Les trois régimes (nuit / jour / soir) n'écrivent que les douze couleurs de la
+  charte. La lumière (nappe, pénombre) tombe SOUS le texte. Les grands panneaux
+  portent un voile de nuit pour que le blanc tienne sur le cœur du halo.
+  TEXTE : proposition à valider par Will — aucun chiffre non validé.
   ═══════════════════════════════════════════════════════════════════════════════
 -->
-
 <style>
-@font-face{font-family:"Inter";src:url("polices/inter.woff2") format("woff2");font-weight:100 900;font-style:normal;font-display:swap}
-
-/* ═══ LES VARIABLES DE LA LUMIÈRE — écrites par le script, une fois par image ═══
-   Les valeurs ci-dessous sont l'état « fin de matinée » : c'est ce que voit
-   quelqu'un dont le script ne part pas. */
+/* ═══ LES VARIABLES DE LA LUMIÈRE — écrites par le script, une fois par image ═══ */
 :root{
-  --lx:44%; --ly:24%;
-  --I:.92;
-  --alt:.74;
-  --angle:170deg;
-  --ombre:10px 16px 30px rgba(26,18,10,.20);
-  --ombre-courte:5px 8px 14px rgba(26,18,10,.16);
-  --ombre-longue:22px 34px 66px rgba(26,18,10,.22);
-  --teinte:#FFE9BE;
-
-  --sol:#F4F1EA;
-  --ink:#15171B;
-  --mut:#55606E;
-  --mono:#2F5FB8;
-  --trait:rgba(21,23,27,.16);
-  --plaque:rgba(255,255,255,.62);
-  --bleu:#0050E6;
-  --act:#0050E6;
-
-  --f:"Inter",ui-sans-serif,system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
-  --barre:48px;
-  --gout:clamp(20px,4.4vw,48px);
-  --large:1240px;
-  --sortie:cubic-bezier(.28,.11,.32,1);
-  --rond:22px;
+  --lx:44%; --ly:24%; --I:.92; --alt:.74; --angle:170deg; --teinte:#FFE9BE;
+  --ombre:10px 16px 30px rgba(var(--voile),.20);
+  --ombre-courte:5px 8px 14px rgba(var(--voile),.16);
+  --ombre-longue:22px 34px 66px rgba(var(--voile),.22);
+  --sol:var(--doux); --ink:var(--encre); --mut:var(--encre-80); --mono:var(--act);
+  --trait:var(--filet); --plaque:rgba(255,255,255,.62); --bleu:var(--act); --anneau:var(--act);
 }
-html.p-nuit{--sol:#0B1220;--ink:#EAF0FA;--mut:#9FB2CE;--mono:#7FA8D8;--trait:rgba(234,240,250,.18);--plaque:rgba(133,163,214,.10);--bleu:#8FB6FF}
-html.p-jour{--sol:#F4F1EA;--ink:#15171B;--mut:#55606E;--mono:#2F5FB8;--trait:rgba(21,23,27,.16);--plaque:rgba(255,255,255,.62);--bleu:#0050E6}
-html.p-soir{--sol:#16100A;--ink:#FFEEDA;--mut:#C7A98A;--mono:#E8A45C;--trait:rgba(255,238,218,.18);--plaque:rgba(232,164,92,.10);--bleu:#FFC078}
+html.p-nuit,html.p-soir{--sol:var(--nuit);--ink:var(--encre-nuit);--mut:var(--encre-nuit-doux);--bleu:var(--act-nuit);
+  --trait:var(--filet-nuit);--plaque:rgba(255,255,255,.06);--anneau:#fff}
+html.p-nuit{--mono:var(--act-nuit)}
+html.p-soir{--mono:var(--accent)}
+html.p-jour{--sol:var(--doux);--ink:var(--encre);--mut:var(--encre-80);--mono:var(--act);--trait:var(--filet);--plaque:rgba(255,255,255,.62);--bleu:var(--act);--anneau:var(--act)}
 
-*,*::before,*::after{box-sizing:border-box}
-html{-webkit-text-size-adjust:100%;overflow-x:clip;scroll-behavior:smooth}
-@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
-body{
-  margin:0;background:#F4F1EA;color:var(--ink);
-  font:400 17px/1.55 var(--f);letter-spacing:-.011em;
-  overflow-x:clip;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
-  transition:color .38s cubic-bezier(.4,0,.2,1);
-}
+body{background:var(--doux);color:var(--ink);transition:color var(--d-etat) var(--sortie)}
 html.p-nuit body,html.p-jour body,html.p-soir body{background:transparent}
-main{overflow-x:clip;position:relative;z-index:10}
-img{display:block;max-width:100%}
-a{color:inherit;text-decoration:none}
-button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
-:focus-visible{outline:2px solid var(--bleu);outline-offset:3px;border-radius:4px}
-.saut{position:absolute;left:-9999px;top:0;z-index:400;background:#fff;color:#111;padding:14px 22px;font-weight:600;border-radius:10px}
-.saut:focus{left:12px;top:12px}
+main{position:relative;z-index:10}
 
 /* ═══ LE CIEL — un canvas 2D plein écran, sous tout le reste ═══ */
 #ciel{position:fixed;inset:0;width:100%;height:100%;z-index:0;display:block}
 .nociel{position:fixed;inset:0;z-index:0;background:
   radial-gradient(70vmax 55vmax at var(--lx) var(--ly),rgba(255,244,220,.85) 0%,rgba(255,244,220,0) 62%),
-  linear-gradient(180deg,#EFEBE2 0%,#FBF9F4 100%)}
+  linear-gradient(180deg,var(--bleu-clair) 0%,var(--doux) 100%)}
 
-/* ═══ LA LUMIÈRE QUI TOMBE SUR LE CONTENU — deux calques fixes, alpha faible ═══ */
-.nappe,.penombre{position:fixed;inset:0;z-index:40;pointer-events:none}
+/* ═══ LA LUMIÈRE QUI TOMBE SUR LE SOL — sous le texte, jamais dessus ═══ */
+.nappe,.penombre{position:fixed;inset:0;z-index:5;pointer-events:none}
 .nappe{background:radial-gradient(62vmax 62vmax at var(--lx) var(--ly),
   rgba(255,231,190,calc(.14*var(--I))) 0%,rgba(255,231,190,calc(.05*var(--I))) 34%,rgba(255,231,190,0) 66%)}
-.penombre{background:linear-gradient(var(--angle),rgba(10,14,28,0) 34%,rgba(10,14,28,calc(.10 + .12*(1 - var(--alt)))) 100%)}
+.penombre{background:linear-gradient(var(--angle),rgba(var(--voile),0) 34%,rgba(var(--voile),calc(.10 + .12*(1 - var(--alt)))) 100%)}
 
-/* ═══ L'HEURE — petit repère fixe ═══ */
-.heure{position:fixed;left:clamp(14px,2.4vw,26px);bottom:clamp(14px,2.4vw,26px);z-index:60;
-  font-family:var(--f);font-variant-numeric:tabular-nums;font-size:12px;letter-spacing:.08em;font-weight:500;
-  color:var(--mut);display:flex;align-items:center;gap:10px;pointer-events:none}
+/* ═══ L'HEURE — repère fixe, à droite, là où aucune colonne ne commence ═══ */
+.heure{position:fixed;right:var(--gout);bottom:var(--e5);z-index:60;
+  font-size:14px;font-weight:500;letter-spacing:0;font-variant-numeric:tabular-nums;
+  color:var(--mut);display:flex;align-items:center;gap:var(--e3);pointer-events:none;
+  transition:opacity var(--d-etat) var(--sortie)}
+.heure.cachee{opacity:0}
 .heure__arc{position:relative;width:74px;height:24px;overflow:hidden}
 .heure__arc svg{position:absolute;inset:0;width:74px;height:24px;overflow:visible}
 .heure__astre{fill:var(--mono)}
 @media (max-width:900px){.heure{display:none}}
 
-/* ═══ LA BARRE — celle de l'accueil ═══ */
-.barre{position:fixed;inset:0 0 auto 0;height:var(--barre);z-index:200;display:flex;align-items:center;gap:16px;
-  padding:0 clamp(16px,3.4vw,34px);background:rgba(0,0,0,0);border-bottom:1px solid transparent;
-  transition:background .35s var(--sortie),border-color .35s var(--sortie),box-shadow .35s var(--sortie)}
-.barre.posee{background:rgba(255,255,255,.985);border-bottom-color:#E1E3E8;box-shadow:0 1px 12px rgba(0,0,0,.06)}
-.barre__nom{font-size:15px;font-weight:600;letter-spacing:-.016em;color:#fff;white-space:nowrap;transition:color .35s var(--sortie)}
-.barre.posee .barre__nom{color:#111318}
-.barre__nav{margin-left:auto;display:flex;align-items:center;gap:2px}
-.barre__nav a{display:inline-flex;align-items:center;height:var(--barre);padding:0 12px;font-size:13px;letter-spacing:-.006em;
-  color:rgba(255,255,255,.86);transition:color .35s var(--sortie),opacity .25s var(--sortie)}
-.barre.posee .barre__nav a{color:#3B3F48}
-.barre__nav a:hover{opacity:.6}
-.barre__nav .actif{color:#fff;font-weight:500}
-.barre.posee .barre__nav .actif{color:#111318}
-.barre__nav .bouton{margin-left:8px;height:32px;padding:0 14px;border-radius:980px;background:rgba(255,255,255,.14);color:#fff;font-weight:500}
-.barre__nav .bouton:hover{opacity:1;background:rgba(255,255,255,.26)}
-.barre.posee .barre__nav .bouton{background:#0050E6;color:#fff}
-.burger{display:none;margin-left:auto;width:48px;height:48px;flex-direction:column;align-items:center;justify-content:center}
-.burger span{display:block;width:17px;height:1.5px;background:#fff;border-radius:2px;transition:transform .3s var(--sortie),opacity .2s,background .35s var(--sortie)}
-.burger span + span{margin-top:5px}
-.barre.posee .burger span{background:#111318}
-.burger.ouvert span:nth-child(1){transform:translateY(6.5px) rotate(45deg)}
-.burger.ouvert span:nth-child(2){opacity:0}
-.burger.ouvert span:nth-child(3){transform:translateY(-6.5px) rotate(-45deg)}
-.panneau{position:fixed;inset:var(--barre) 0 auto 0;z-index:190;background:#fff;border-bottom:1px solid #E1E3E8;padding:8px var(--gout) 26px;display:none}
-.panneau.ouvert{display:block}
-.panneau a{display:flex;align-items:center;min-height:56px;font-size:24px;font-weight:500;letter-spacing:-.025em;color:#111318;border-bottom:1px solid #EFF0F3}
-.panneau a:last-of-type{border-bottom:0}
-.panneau .pilule{margin-top:20px;width:100%;border-bottom:0;background:#0050E6;color:#fff;justify-content:center;border-radius:980px;min-height:48px;font-size:17px}
-@media (max-width:900px){.barre__nav{display:none}.burger{display:flex}}
+/* ═══ LES RÔLES, COLORÉS PAR L'HEURE ═══ */
+.sur-titre{color:var(--mono);display:flex;gap:var(--e3);align-items:baseline}
+.sur-titre::before{content:attr(data-h);font-size:14px;font-weight:500;letter-spacing:0;font-variant-numeric:tabular-nums;color:var(--mut)}
+.t-hero,.t-lg{color:var(--ink)}
+.lead-aere{color:var(--ink)}
+.corps{color:var(--mut)}
+.lien{color:var(--bleu)}
+main .pilule{background:var(--bleu);color:#fff;box-shadow:var(--ombre-courte)}
+main .pilule:hover{background:var(--act-presse)}
+html.p-nuit main .pilule,html.p-soir main .pilule{color:var(--nuit)}
+html.p-nuit main .pilule:hover,html.p-soir main .pilule:hover{background:var(--act-nuit-presse)}
 
 /* ═══ TRAME ═══ */
-.bloc{position:relative;z-index:10;padding:clamp(74px,10vw,150px) var(--gout)}
-.dedans{max-width:var(--large);margin:0 auto}
-.surtitre{font-size:12px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--mono);margin:0 0 18px;display:flex;gap:14px;align-items:center}
-.surtitre::before{content:attr(data-h);color:var(--mut);opacity:.78;font-variant-numeric:tabular-nums;letter-spacing:.1em}
-h1,h2,h3{margin:0;font-weight:600;letter-spacing:-.03em;line-height:1.04}
-h1{font-size:clamp(40px,7.4vw,96px);max-width:14ch;text-shadow:var(--ombre-courte)}
-h2{font-size:clamp(30px,4.4vw,58px);max-width:16ch;text-shadow:var(--ombre-courte)}
-.lead{font-size:clamp(18px,1.8vw,24px);font-weight:300;line-height:1.5;color:var(--ink);margin:22px 0 0;max-width:56ch}
-p{margin:18px 0 0;max-width:62ch;color:var(--mut)}
-.duo{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(28px,5vw,80px);align-items:start}
-@media (max-width:900px){.duo{grid-template-columns:1fr}}
+.bloc{position:relative;z-index:10;padding:var(--sect) var(--gout);scroll-margin-top:var(--barre)}
+.ouv{min-height:100svh;display:flex;align-items:flex-end;padding-bottom:clamp(48px,8vh,72px)}
+.ouv .dedans{width:100%}
+.ouv .lead-aere{margin-top:var(--e6)}
+.duo .corps{margin-top:var(--e4)}
+.duo .lead-aere + .corps{margin-top:var(--e4)}
 
 /* les plaques : ce qui reçoit l'ombre du soleil */
-.plaque{background:var(--plaque);border:1px solid var(--trait);border-radius:var(--rond);padding:clamp(24px,3vw,40px);box-shadow:var(--ombre)}
-.plaques{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:clamp(36px,4vw,60px)}
-.plaques .plaque h3{font-size:clamp(20px,1.9vw,26px);margin-bottom:12px}
-.plaques .plaque p{margin:0;font-size:16px}
-@media (max-width:820px){.plaques{grid-template-columns:1fr}}
-.picto{position:relative;width:52px;height:52px;margin-bottom:20px;color:var(--bleu)}
-.picto::before{content:"";position:absolute;left:-7px;top:6px;width:48px;height:42px;background:var(--bleu);opacity:.14;border-radius:58% 42% 55% 45% / 48% 55% 45% 52%}
-.picto svg{position:relative;width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
-
-.pilule{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 26px;border-radius:980px;
-  background:var(--bleu);color:#fff;font-size:17px;font-weight:500;letter-spacing:-.011em;box-shadow:var(--ombre-courte);transition:transform .25s var(--sortie)}
-html.p-nuit .pilule,html.p-soir .pilule{color:#0B1220}
-.pilule:active{transform:scale(.97)}
-.lien{display:inline-flex;align-items:center;gap:6px;min-height:44px;color:var(--bleu);font-weight:500}
-.lien svg{width:9px;height:14px}
-.lien:hover{text-decoration:underline;text-underline-offset:3px}
-.actions{display:flex;flex-wrap:wrap;gap:14px 26px;align-items:center;margin-top:30px}
-
-/* ═══ L'OUVERTURE ═══ */
-.ouv{min-height:100svh;display:flex;align-items:flex-end;padding-bottom:clamp(56px,9vh,110px)}
+.carte{background:var(--plaque);border-color:var(--trait);box-shadow:var(--ombre)}
+.carte .corps{color:var(--mut)}
+.carte .t-carte{color:var(--ink)}
+.picto{color:var(--bleu)}
+.picto::before{background:var(--bleu);opacity:.14}
 
 /* ═══ PANNEAUX DE BASCULE — le seul endroit où le fond traverse le milieu ═══ */
 .bascule{position:relative;z-index:10;min-height:86svh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
-  padding:clamp(96px,13vh,140px) var(--gout) clamp(48px,7vh,80px)}
-.bascule h2{font-size:clamp(2.4rem,7vw,6.4rem);max-width:none;line-height:.98;color:#FFF4E6;text-shadow:0 4px 30px rgba(60,16,0,.55);font-weight:500;letter-spacing:-.035em}
-.bascule p{color:#FFE6CE;font-size:clamp(1.05rem,2vw,1.35rem);margin:24px auto 0;max-width:36ch;text-shadow:0 2px 12px rgba(60,16,0,.5)}
-.bascule .surtitre{color:#FFD9B0;justify-content:center}
-.bascule .surtitre::before{color:#FFD9B0;opacity:.8}
+  padding:var(--sect) var(--marge-colonne);scroll-margin-top:var(--barre)}
+.bascule::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background:linear-gradient(180deg,rgba(var(--voile),0) 0%,rgba(var(--voile),.38) 35%,rgba(var(--voile),.38) 65%,rgba(var(--voile),0) 100%)}
+.bascule .sur-titre{color:#fff;justify-content:center}
+.bascule .sur-titre::before{color:rgba(255,255,255,.82)}
+.bascule .t-hero{max-width:none;color:#fff;text-shadow:0 4px 30px rgba(var(--voile),.55)}
+.bascule .lead{color:#fff;margin:var(--e6) auto 0;text-shadow:0 2px 12px rgba(var(--voile),.5)}
 
 /* ═══ BANDES PHOTOGRAPHIQUES — elles reçoivent la lumière de l'heure ═══ */
-.bande{position:relative;z-index:10;height:clamp(58svh,64vw,84svh);overflow:hidden}
+.bande{position:relative;z-index:10;height:clamp(400px,72vh,760px);overflow:hidden;scroll-margin-top:var(--barre)}
 .bande img{width:100%;height:100%;object-fit:cover}
 .media__chaud,.media__froid,.media__teinte{position:absolute;inset:0;pointer-events:none;z-index:2}
 .media__teinte{background:var(--teinte);mix-blend-mode:multiply;opacity:calc(.12 + .62*(1 - var(--alt)))}
 .media__chaud{mix-blend-mode:screen;background:radial-gradient(130% 100% at var(--lx) 0%,rgba(255,228,176,calc(.60*var(--I))) 0%,rgba(255,228,176,0) 64%)}
-.media__froid{mix-blend-mode:multiply;background:linear-gradient(var(--angle),rgba(255,255,255,0) 26%,rgba(20,24,48,calc(.26 + .34*(1 - var(--alt)))) 100%)}
-.bande__texte{position:absolute;z-index:3;left:0;right:0;bottom:0;padding:clamp(26px,4vw,60px) var(--gout);
-  background:linear-gradient(180deg,rgba(6,8,16,0) 0%,rgba(6,8,16,.72) 100%)}
-.bande__texte .surtitre{color:#FFD9B0;margin-bottom:12px}
-.bande__texte .surtitre::before{color:#FFD9B0;opacity:.75}
-.bande__texte p{color:#FFF4E6;font-size:clamp(1.02rem,2vw,1.42rem);line-height:1.48;max-width:52ch;margin:0;text-shadow:0 2px 14px rgba(0,0,0,.6)}
-.bande__texte b{color:#fff;font-weight:600}
+.media__froid{mix-blend-mode:multiply;background:linear-gradient(var(--angle),rgba(255,255,255,0) 26%,rgba(var(--voile),calc(.26 + .34*(1 - var(--alt)))) 100%)}
+.bande__texte{position:absolute;z-index:3;left:0;right:0;bottom:0;padding:clamp(60px,9vw,120px) var(--gout) var(--e8);
+  background:linear-gradient(180deg,rgba(var(--voile),0) 0%,rgba(var(--voile),.82) 100%);color:#fff}
+.bande__texte .sur-titre{color:#fff}
+.bande__texte .sur-titre::before{color:rgba(255,255,255,.82)}
+.bande__texte .lead{color:#fff}
+.bande__texte b{color:#fff;font-weight:500}
 
 /* ═══ LE TOIT — le dessin propre à cette page ═══ */
-.toit{position:relative;border-radius:var(--rond);overflow:hidden;background:rgba(20,26,40,.92);box-shadow:var(--ombre-longue);aspect-ratio:4/3}
+.toit{position:relative;border-radius:var(--rond);overflow:hidden;background:var(--nuit);box-shadow:var(--ombre-longue);aspect-ratio:4/3}
 .toit canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
-.toit__legende{position:absolute;left:18px;right:18px;bottom:16px;z-index:2;display:flex;justify-content:space-between;align-items:flex-end;gap:12px;
-  color:rgba(255,244,222,.85);font-size:13px;letter-spacing:.02em;pointer-events:none}
-.toit__legende b{display:block;font-size:15px;font-weight:600;color:#fff;letter-spacing:-.01em}
+.toit__legende{position:absolute;left:var(--e4);right:var(--e4);bottom:var(--e4);z-index:2;display:flex;justify-content:space-between;align-items:flex-end;gap:var(--e3);
+  color:var(--encre-nuit-doux);pointer-events:none}
+.toit__legende b{display:block;font-size:17px;font-weight:500;letter-spacing:-.011em;color:#fff}
 .toit__jauge{width:min(180px,40%);height:4px;border-radius:4px;background:rgba(255,255,255,.18);overflow:hidden;flex:none}
-.toit__jauge i{display:block;height:100%;width:calc(var(--alt) * 100%);background:#FFD08A;border-radius:4px}
-
-/* ═══ LA RÉVÉLATION — posée par le script ; sans lui, tout est visible ═══ */
-html.js .rv{opacity:0;transform:translateY(20px)}
-html.js .rv.vu{opacity:1;transform:none;transition:opacity .85s cubic-bezier(.2,.7,.2,1),transform .85s cubic-bezier(.2,.7,.2,1);transition-delay:calc(var(--i,0) * 70ms)}
-
-/* ═══ LE PIED — celui de l'accueil ═══ */
-.pied{position:relative;z-index:10;background:#0B0F14;color:rgba(255,255,255,.62);padding:clamp(40px,5vw,72px) var(--gout)}
-.pied__in{display:grid;gap:26px;max-width:var(--large);margin-inline:auto}
-.pied__logo{display:inline-block;background:#fff;border-radius:14px;padding:10px 14px}
-.pied__logo img{height:34px;width:auto}
-.pied address{font-style:normal;font-size:15px;line-height:1.8;margin-top:18px;color:rgba(255,255,255,.62);max-width:none}
-.pied a{color:#fff;text-decoration:underline;text-decoration-color:rgba(255,255,255,.35);text-underline-offset:4px}
-.pied a:hover{text-decoration-color:#fff}
-.pied address a{display:inline-block;padding:11px 0}
-.pied__nav a{display:flex;align-items:center;min-height:44px;font-size:15px;text-decoration:none}
-.pied__nav a:hover{color:#fff;text-decoration:underline;text-underline-offset:4px}
-.micro{font-size:13px;font-weight:600;line-height:1;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.45);margin:0 0 10px}
-.pied__chif{list-style:none;margin:0;padding:24px 0 0;display:flex;flex-wrap:wrap;gap:8px 18px;font-size:13px;font-weight:500;border-top:1px solid rgba(255,255,255,.16)}
-.pied__sig{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.45);padding-top:22px;border-top:1px solid rgba(255,255,255,.16)}
-@media (min-width:820px){.pied__in{grid-template-columns:1fr 1fr;gap:26px 60px}.pied__chif,.pied__sig{grid-column:1/-1}}
+.toit__jauge i{display:block;height:100%;width:calc(var(--alt) * 100%);background:var(--accent);border-radius:4px}
 
 @media (prefers-reduced-motion:reduce){
-  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
-  html.js .rv{opacity:1;transform:none}
+  body{transition:none}
 }
 </style>
 </head>
@@ -244,7 +148,7 @@ html.js .rv.vu{opacity:1;transform:none;transition:opacity .85s cubic-bezier(.2,
     <a href="index.html#metier">Le métier</a>
     <a href="index.html#valeurs">Nos valeurs</a>
     <a href="rse.html" class="actif" aria-current="page">Notre responsabilité</a>
-    <a href="index.html#ecrire" class="bouton">Nous écrire</a>
+    <a href="index.html#ecrire" class="pilule pilule--barre">Nous écrire</a>
   </nav>
   <button class="burger" id="burger" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="panneau"><span></span><span></span><span></span></button>
 </header>
@@ -257,7 +161,7 @@ html.js .rv.vu{opacity:1;transform:none;transition:opacity .85s cubic-bezier(.2,
   <a class="pilule" href="index.html#ecrire">Nous écrire</a>
 </div>
 
-<div class="heure" aria-hidden="true">
+<div class="heure" id="heure" aria-hidden="true">
   <span class="heure__arc"><svg viewBox="0 0 74 24"><path d="M2 23 A35 35 0 0 1 72 23" fill="none" stroke="currentColor" stroke-opacity=".35"/><circle id="astre" class="heure__astre" cx="20" cy="8" r="3"/></svg></span>
   <span id="pendule">05:40</span>
 </div>
@@ -267,13 +171,13 @@ html.js .rv.vu{opacity:1;transform:none;transition:opacity .85s cubic-bezier(.2,
 <!-- ══ 05:40 · L'AUBE — l'ouverture ══════════════════════════════════════════ -->
 <section class="bloc ouv" id="haut">
   <div class="dedans">
-    <p class="surtitre rv" data-h="05:40">Notre responsabilité</p>
-    <h1 class="rv" style="--i:1">Une journée, du toit au comptoir.</h1>
-    <p class="lead rv" style="--i:2">
+    <p class="sur-titre" data-h="05:40">Notre responsabilité</p>
+    <h1 class="t-hero">Une journée, du toit au comptoir.</h1>
+    <p class="lead-aere">
       Livrer juste, livrer près, livrer proprement. Ce que nous devons à ceux que nous
       livrons se mesure sur une journée — celle-ci commence avant le jour.
     </p>
-    <div class="actions rv" style="--i:3">
+    <div class="actions">
       <a class="pilule" href="#proximite">Suivre la journée</a>
     </div>
   </div>
@@ -283,17 +187,17 @@ html.js .rv.vu{opacity:1;transform:none;transition:opacity .85s cubic-bezier(.2,
 <section class="bloc" id="proximite">
   <div class="dedans duo">
     <div>
-      <p class="surtitre rv" data-h="07:10">La proximité</p>
-      <h2 class="rv" style="--i:1">La tournée la plus courte est celle qui part d'à côté.</h2>
+      <p class="sur-titre rv" data-h="07:10">La proximité</p>
+      <h2 class="t-lg rv" style="--i:1">La tournée la plus courte est celle qui part d'à côté.</h2>
     </div>
     <div>
-      <p class="lead rv" style="--i:2">
+      <p class="lead-aere rv" style="--i:2">
         Neuf implantations, et votre commande part toujours de la plus proche de votre
         comptoir. C'est notre façon de faire depuis le premier jour — c'est aussi la plus
         sobre : moins de route par colis, des chauffeurs qui connaissent chaque officine et
         chaque virage.
       </p>
-      <p class="rv" style="--i:3">
+      <p class="corps rv" style="--i:3">
         Quand une référence manque dans une maison, elle existe souvent dans une autre.
         Le réseau se répond avant de commander plus loin.
       </p>
@@ -303,29 +207,29 @@ html.js .rv.vu{opacity:1;transform:none;transition:opacity .85s cubic-bezier(.2,
 
 <!-- ══ 08:20 · LE JOUR SE LÈVE ════════════════════════════════════════════════ -->
 <section class="bascule" id="levant">
-  <p class="surtitre" data-h="08:20">Le jour se lève</p>
-  <h2>Quand l'officine ouvre, la tournée est déjà partie.</h2>
-  <p>Depuis la maison la plus proche, de la Bretagne à la Méditerranée.</p>
+  <p class="sur-titre" data-h="08:20">Le jour se lève</p>
+  <h2 class="t-hero">Quand l'officine ouvre, la tournée est déjà partie.</h2>
+  <p class="lead">Depuis la maison la plus proche, de la Bretagne à la Méditerranée.</p>
 </section>
 
 <!-- ══ 10:30 · L'ÉNERGIE — le toit ════════════════════════════════════════════ -->
 <section class="bloc" id="energie">
-  <div class="dedans duo">
+  <div class="dedans duo duo--centre">
     <div>
-      <p class="surtitre rv" data-h="10:30">L'énergie</p>
-      <h2 class="rv" style="--i:1">À Hyères, le toit travaille avec le soleil.</h2>
-      <p class="lead rv" style="--i:2">
+      <p class="sur-titre rv" data-h="10:30">L'énergie</p>
+      <h2 class="t-lg rv" style="--i:1">À Hyères, le toit travaille avec le soleil.</h2>
+      <p class="lead-aere rv" style="--i:2;margin-top:var(--e6)">
         Le siège du groupe est couvert de panneaux solaires. À mesure que le jour monte,
         le toit produit une part de l'énergie qui prépare, stocke et expédie vos commandes.
       </p>
-      <p class="rv" style="--i:3">
+      <p class="corps rv" style="--i:3">
         Le dessin ci-contre suit le soleil de cette page : plus il est haut, plus le toit
         s'allume. Faites défiler, et regardez-le s'éteindre le soir.
       </p>
     </div>
     <div class="toit rv" style="--i:2" id="toit">
       <canvas id="toit-toile" aria-label="Le toit du siège, ses panneaux s'allument à mesure que le soleil monte"></canvas>
-      <div class="toit__legende">
+      <div class="toit__legende petit">
         <span><b>Le toit du siège</b>Il suit le soleil de la page</span>
         <span class="toit__jauge" aria-hidden="true"><i></i></span>
       </div>
@@ -338,36 +242,38 @@ html.js .rv.vu{opacity:1;transform:none;transition:opacity .85s cubic-bezier(.2,
   <img src="../assets/siege-solaire.jpg" alt="Les toitures du siège d'Hyères et leurs panneaux solaires, vues à la verticale" loading="lazy" decoding="async">
   <div class="media__teinte"></div><div class="media__chaud"></div><div class="media__froid"></div>
   <div class="bande__texte">
-    <p class="surtitre" data-h="12:00">Midi, Hyères</p>
-    <p><b>Le toit du siège, vu du ciel.</b> C'est là que la journée est la plus lumineuse — et que les préparations de l'après-midi commencent.</p>
+    <div class="dedans">
+      <p class="sur-titre" data-h="12:00">Midi, Hyères</p>
+      <p class="lead"><b>Le toit du siège, vu du ciel.</b> C'est là que la journée est la plus lumineuse — et que les préparations de l'après-midi commencent.</p>
+    </div>
   </div>
 </section>
 
 <!-- ══ 14:30 · LES ÉQUIPES ════════════════════════════════════════════════════ -->
 <section class="bloc" id="equipes">
   <div class="dedans">
-    <p class="surtitre rv" data-h="14:30">Les femmes et les hommes</p>
-    <h2 class="rv" style="--i:1">Des métiers qui s'apprennent ici, et qui restent ici.</h2>
-    <p class="lead rv" style="--i:2">
+    <p class="sur-titre rv" data-h="14:30">Les femmes et les hommes</p>
+    <h2 class="t-lg rv" style="--i:1">Des métiers qui s'apprennent ici, et qui restent ici.</h2>
+    <p class="lead-aere rv" style="--i:2;margin-top:var(--e6)">
       Préparateur-chauffeur, technicien approvisionnement, commercial, pharmacien
       responsable : les métiers de la répartition s'apprennent chez nous, dans chaque
       maison. Une implantation, ce sont des emplois qui ne se délocalisent pas.
     </p>
-    <div class="plaques">
-      <div class="plaque rv" style="--i:0">
+    <div class="cartes cartes--3">
+      <div class="carte rv" style="--i:0">
         <div class="picto" aria-hidden="true"><svg viewBox="0 0 52 52"><circle cx="26" cy="17" r="7"/><path d="M11 42c1.5-8 7.5-12 15-12s13.5 4 15 12"/><path d="M8 20c2-2 4-2.5 6-2.5M44 20c-2-2-4-2.5-6-2.5"/></svg></div>
-        <h3>Une équipe par maison</h3>
-        <p>La personne qui décroche connaît votre officine, vos saisons et vos habitudes — et c'est la même d'une année sur l'autre.</p>
+        <h3 class="t-carte">Une équipe par maison</h3>
+        <p class="corps">La personne qui décroche connaît votre officine, vos saisons et vos habitudes — et c'est la même d'une année sur l'autre.</p>
       </div>
-      <div class="plaque rv" style="--i:1">
+      <div class="carte rv" style="--i:1">
         <div class="picto" aria-hidden="true"><svg viewBox="0 0 52 52"><path d="M10 40V22l16-10 16 10v18"/><path d="M20 40V30h12v10"/><path d="M8 40h36"/></svg></div>
-        <h3>Recruter là où l'on livre</h3>
-        <p>Hyères, Villeneuve-lès-Béziers, Montayral, Saint-Maurice-l'Exil : les maisons embauchent dans leur propre bassin.</p>
+        <h3 class="t-carte">Recruter là où l'on livre</h3>
+        <p class="corps">Hyères, Villeneuve-lès-Béziers, Montayral, Saint-Maurice-l'Exil : les maisons embauchent dans leur propre bassin.</p>
       </div>
-      <div class="plaque rv" style="--i:2">
+      <div class="carte rv" style="--i:2">
         <div class="picto" aria-hidden="true"><svg viewBox="0 0 52 52"><path d="M12 36c6-2 9-8 9-16"/><path d="M40 36c-6-2-9-8-9-16"/><path d="M21 20c0-3 2-5 5-5s5 2 5 5"/><path d="M14 40h24"/><path d="M26 36v-8"/></svg></div>
-        <h3>Transmettre le métier</h3>
-        <p>La répartition ne s'apprend pas à l'école : elle se transmet sur le quai, dans les allées et sur la route, d'une génération à l'autre.</p>
+        <h3 class="t-carte">Transmettre le métier</h3>
+        <p class="corps">La répartition ne s'apprend pas à l'école : elle se transmet sur le quai, dans les allées et sur la route, d'une génération à l'autre.</p>
       </div>
     </div>
   </div>
@@ -377,16 +283,16 @@ html.js .rv.vu{opacity:1;transform:none;transition:opacity .85s cubic-bezier(.2,
 <section class="bloc" id="service">
   <div class="dedans duo">
     <div>
-      <p class="surtitre rv" data-h="16:30">Le médicament, jusqu'au bout</p>
-      <h2 class="rv" style="--i:1">Tous les jours, sans exception.</h2>
+      <p class="sur-titre rv" data-h="16:30">Le médicament, jusqu'au bout</p>
+      <h2 class="t-lg rv" style="--i:1">Tous les jours, sans exception.</h2>
     </div>
     <div>
-      <p class="lead rv" style="--i:2">
+      <p class="lead-aere rv" style="--i:2">
         Un répartiteur ne choisit ni ses jours ni ses officines : chaque matin, les tournées
         partent vers toutes celles qui comptent sur nous, grandes ou petites, en ville ou au
         bout d'une route.
       </p>
-      <p class="rv" style="--i:3">
+      <p class="corps rv" style="--i:3">
         La régularité d'un service tenu — c'est elle qui fait la confiance, pas les promesses.
         Et quand la vie de votre officine change, votre interlocuteur ajuste
         l'approvisionnement avec vous, sans à-coup au comptoir.
@@ -397,9 +303,9 @@ html.js .rv.vu{opacity:1;transform:none;transition:opacity .85s cubic-bezier(.2,
 
 <!-- ══ 18:20 · LE COUCHANT ════════════════════════════════════════════════════ -->
 <section class="bascule" id="couchant">
-  <p class="surtitre" data-h="18:20">La dernière tournée</p>
-  <h2>Ce soir, chaque comptoir a reçu ce qu'il attendait.</h2>
-  <p>Et demain, cela recommence — depuis la maison la plus proche.</p>
+  <p class="sur-titre" data-h="18:20">La dernière tournée</p>
+  <h2 class="t-hero">Ce soir, chaque comptoir a reçu ce qu'il attendait.</h2>
+  <p class="lead">Et demain, cela recommence — depuis la maison la plus proche.</p>
 </section>
 
 <!-- ══ 19:30 · LE SIÈGE AU COUCHANT ═══════════════════════════════════════════ -->
@@ -407,28 +313,30 @@ html.js .rv.vu{opacity:1;transform:none;transition:opacity .85s cubic-bezier(.2,
   <img src="../assets/siege-web.jpg" alt="Le bâtiment logistique d'Hyères et ses quais, vus du ciel" loading="lazy" decoding="async">
   <div class="media__teinte"></div><div class="media__chaud"></div><div class="media__froid"></div>
   <div class="bande__texte">
-    <p class="surtitre" data-h="19:30">Hyères, Var</p>
-    <p><b>Le siège, en fin de journée.</b> Les quais se vident, les stocks se recomplètent pour demain.</p>
+    <div class="dedans">
+      <p class="sur-titre" data-h="19:30">Hyères, Var</p>
+      <p class="lead"><b>Le siège, en fin de journée.</b> Les quais se vident, les stocks se recomplètent pour demain.</p>
+    </div>
   </div>
 </section>
 
 <!-- ══ 20:10 · LE SOIR — nos engagements ══════════════════════════════════════ -->
 <section class="bloc" id="engagements">
   <div class="dedans">
-    <p class="surtitre rv" data-h="20:10">Nos engagements</p>
-    <h2 class="rv" style="--i:1">Trois choses que nous tenons, jour après jour.</h2>
-    <div class="plaques">
-      <div class="plaque rv" style="--i:0">
-        <h3>Livrer de près</h3>
-        <p>Votre commande part de la maison la plus proche de votre comptoir. Toujours.</p>
+    <p class="sur-titre rv" data-h="20:10">Nos engagements</p>
+    <h2 class="t-lg rv" style="--i:1">Trois choses que nous tenons, jour après jour.</h2>
+    <div class="cartes cartes--3">
+      <div class="carte rv" style="--i:0">
+        <h3 class="t-carte">Livrer de près</h3>
+        <p class="corps">Votre commande part de la maison la plus proche de votre comptoir. Toujours.</p>
       </div>
-      <div class="plaque rv" style="--i:1">
-        <h3>Rester transparents</h3>
-        <p>Des prix nets visibles sur facture, et une réponse claire à chaque question.</p>
+      <div class="carte rv" style="--i:1">
+        <h3 class="t-carte">Rester transparents</h3>
+        <p class="corps">Des prix nets visibles sur facture, et une réponse claire à chaque question.</p>
       </div>
-      <div class="plaque rv" style="--i:2">
-        <h3>Faire durer</h3>
-        <p>Des équipes qui restent, des maisons qui recrutent chez elles, un toit qui produit son énergie.</p>
+      <div class="carte rv" style="--i:2">
+        <h3 class="t-carte">Faire durer</h3>
+        <p class="corps">Des équipes qui restent, des maisons qui recrutent chez elles, un toit qui produit son énergie.</p>
       </div>
     </div>
     <div class="actions rv" style="--i:3">
@@ -442,7 +350,7 @@ html.js .rv.vu{opacity:1;transform:none;transition:opacity .85s cubic-bezier(.2,
 
 </main>
 
-<footer class="pied">
+<footer class="pied" id="pied">
   <div class="pied__in">
     <div>
       <div class="pied__logo"><img src="../assets/logo-web.png" alt="Intégral Pharma" width="43" height="34"></div>
@@ -454,7 +362,7 @@ html.js .rv.vu{opacity:1;transform:none;transition:opacity .85s cubic-bezier(.2,
       </address>
     </div>
     <nav class="pied__nav" aria-label="Pied de page">
-      <p class="micro">Le site</p>
+      <p class="petit-titre">Le site</p>
       <a href="index.html#groupe">Le groupe</a>
       <a href="index.html#reseau">Le réseau</a>
       <a href="index.html#metier">Le métier</a>
@@ -469,44 +377,30 @@ html.js .rv.vu{opacity:1;transform:none;transition:opacity .85s cubic-bezier(.2,
   </div>
 </footer>
 
+<script src="commun.js" defer></script>
 <script>
 (function(){
 'use strict';
 var doc = document.documentElement;
-doc.classList.add('js');
 var DOUX = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-/* ── la barre et le menu ─────────────────────────────────────────────────── */
-var barre = document.getElementById('barre');
-function poser(){ barre.classList.toggle('posee', window.scrollY > 60); }
-var burger = document.getElementById('burger'), panneau = document.getElementById('panneau');
-function menu(ouvert){
-  burger.classList.toggle('ouvert', ouvert); panneau.classList.toggle('ouvert', ouvert);
-  burger.setAttribute('aria-expanded', ouvert ? 'true' : 'false');
-  if (ouvert) barre.classList.add('posee'); else poser();
-}
-burger.addEventListener('click', function(){ menu(!panneau.classList.contains('ouvert')); });
-panneau.addEventListener('click', function(e){ if (e.target.closest('a')) menu(false); });
-document.addEventListener('keydown', function(e){ if (e.key === 'Escape') menu(false); });
-poser();
 
 /* ══════════════════════════════════════════════════════════════════════════
    LES ÉTAPES DU JOUR — chaque étape porte tout ce que la lumière commande à
-   cet instant ; entre deux étapes, on interpole. Une seule source de vérité.
+   cet instant ; entre deux étapes, on interpole. Les couleurs du ciel sont
+   celles de la charte : la nuit, le bleu clair et le blanc du jour ; la
+   chaleur ne vient que du halo et du disque.
    ══════════════════════════════════════════════════════════════════════════ */
 var ETAPES = [
-  {cle:'aube',     x: 8, y:74, alt:.04, min: 340, haut:'#060B16', bas:'#0E1626', noyau:'#FF7A3D', halo:'#B3421C', I:.34},
-  {cle:'matin0',   x:17, y:65, alt:.15, min: 430, haut:'#0D1526', bas:'#1D2438', noyau:'#FF8A3A', halo:'#C2521E', I:.50},
+  {cle:'aube',     x: 8, y:62, alt:.04, min: 340, haut:'#0B1220', bas:'#141C30', noyau:'#FF7A3D', halo:'#B3421C', I:.34},
+  {cle:'matin0',   x:17, y:58, alt:.15, min: 430, haut:'#0B1220', bas:'#1D2438', noyau:'#FF8A3A', halo:'#C2521E', I:.50},
   {cle:'levant',   x:27, y:51, alt:.33, min: 500, haut:'#7A2F14', bas:'#C9531B', noyau:'#FFD08A', halo:'#FF8A3A', I:.80},
-  {cle:'matin',    x:38, y:30, alt:.66, min: 630, haut:'#E9E6DE', bas:'#F6F3EC', noyau:'#FFFFFF', halo:'#FFE9BE', I:.94},
-  {cle:'midi',     x:50, y:13, alt:1,   min: 720, haut:'#F2EFE7', bas:'#FBF9F4', noyau:'#FFFFFF', halo:'#FFF4DC', I:1},
-  {cle:'aprem',    x:64, y:29, alt:.70, min: 870, haut:'#F5EFE3', bas:'#F9F4EA', noyau:'#FFFDF6', halo:'#FFE3AE', I:.94},
-  {cle:'soiree',   x:71, y:40, alt:.50, min: 990, haut:'#EBD9C4', bas:'#F4E4CF', noyau:'#FFF3D6', halo:'#FFC98A', I:.88},
+  {cle:'matin',    x:38, y:30, alt:.66, min: 630, haut:'#E2EBFF', bas:'#F5F8FD', noyau:'#FFFFFF', halo:'#FFE9BE', I:.94},
+  {cle:'midi',     x:50, y:13, alt:1,   min: 720, haut:'#EDF3FF', bas:'#FFFFFF', noyau:'#FFFFFF', halo:'#FFF4DC', I:1},
+  {cle:'aprem',    x:64, y:29, alt:.70, min: 870, haut:'#E9F0FF', bas:'#F8FAFF', noyau:'#FFFDF6', halo:'#FFE3AE', I:.94},
+  {cle:'soiree',   x:71, y:40, alt:.50, min: 990, haut:'#F1E6D6', bas:'#F8F1E6', noyau:'#FFF3D6', halo:'#FFC98A', I:.88},
   {cle:'couchant', x:76, y:51, alt:.33, min:1100, haut:'#8C3A14', bas:'#C9531B', noyau:'#FFC46E', halo:'#FF7A28', I:.80},
-  {cle:'soir',     x:93, y:75, alt:.04, min:1210, haut:'#0F0A06', bas:'#1B120A', noyau:'#FF9440', halo:'#8A3A12', I:.34}
+  {cle:'soir',     x:93, y:60, alt:.04, min:1210, haut:'#0B1220', bas:'#1B120A', noyau:'#FF9440', halo:'#8A3A12', I:.34}
 ];
-/* les étapes sont accrochées au CONTENU : le jour se lève sur le panneau « Le jour se
-   lève », midi tombe sur la toiture solaire, la nuit sur les engagements */
 var ANCRES = {aube:null, matin0:'#proximite', levant:'#levant', matin:'#energie', midi:'#midi',
               aprem:'#equipes', soiree:'#service', couchant:'#couchant', soir:null};
 var hauteurDoc = 1, vh = 1, SEUILS = {levant:.22, couchant:.82};
@@ -539,7 +433,7 @@ function melange(a, b, k){
   return 'rgb(' + Math.round(A[0]+(B[0]-A[0])*k) + ',' + Math.round(A[1]+(B[1]-A[1])*k) + ',' + Math.round(A[2]+(B[2]-A[2])*k) + ')';
 }
 function lisse(k){ return k*k*(3-2*k); }
-var etat = {x:44, y:24, alt:.74, I:.92, min:624, haut:'#E9E6DE', bas:'#F6F3EC', noyau:'#FFFFFF', halo:'#FFE9BE', phase:'p-jour'};
+var etat = {x:44, y:24, alt:.74, I:.92, min:624, haut:'#E2EBFF', bas:'#F5F8FD', noyau:'#FFFFFF', halo:'#FFE9BE', phase:'p-jour'};
 function calculer(p){
   var i = 0;
   while (i < ETAPES.length - 2 && p > ETAPES[i+1].p) i++;
@@ -552,7 +446,7 @@ function calculer(p){
   etat.phase = (p < SEUILS.levant) ? 'p-nuit' : (p < SEUILS.couchant ? 'p-jour' : 'p-soir');
 }
 
-/* ── écriture des variables CSS, quantifiée ──────────────────────────────── */
+/* ── écriture des variables CSS, quantifiée — une seule teinte d'ombre ────── */
 var dernier = {};
 function poserVar(nom, valeur){ if (dernier[nom] === valeur) return; dernier[nom] = valeur; doc.style.setProperty(nom, valeur); }
 var phasePosee = '';
@@ -564,30 +458,27 @@ function ecrire(){
   poserVar('--teinte', etat.halo);
   poserVar('--I', (Math.round(etat.I * 50) / 50).toString());
   poserVar('--alt', (Math.round(etat.alt * 50) / 50).toString());
-  /* le vecteur d'ombre : une seule direction, partout */
   var az = (etat.x - 50) / 50;
   var lon = 5 + 25 * Math.pow(1 - etat.alt, 1.4);
   var pas2 = function(v){ return Math.round(v / 2) * 2; };
   var dx = pas2(-az * lon * 0.95), dy = pas2(lon * 0.62 + 4), fl = Math.round(lon * 1.25 + 10);
-  var chaleur = Math.min(1, Math.max(0, (etat.x - 50) / 50));
-  var oR = q(18 + 30 * chaleur), oG = q(22 + 12 * chaleur), oB = q(46 - 30 * chaleur);
-  var oA = (0.13 + 0.13 * etat.alt).toFixed(2), base = oR + ',' + oG + ',' + oB;
+  var oA = (0.13 + 0.13 * etat.alt).toFixed(2), base = '11,18,32';
   poserVar('--ombre', dx + 'px ' + dy + 'px ' + fl + 'px rgba(' + base + ',' + oA + ')');
   poserVar('--ombre-courte', q(dx*.5) + 'px ' + q(dy*.5) + 'px ' + q(fl*.45) + 'px rgba(' + base + ',' + (oA*0.8).toFixed(2) + ')');
   poserVar('--ombre-longue', q(dx*2.1) + 'px ' + q(dy*2.1) + 'px ' + q(fl*2.2) + 'px rgba(' + base + ',' + (oA*1.05).toFixed(2) + ')');
   var ang = Math.atan2(dx, -dy) * 180 / Math.PI;
   poserVar('--angle', (Math.round(ang / 3) * 3) + 'deg');
-  if (etat.phase !== phasePosee){ doc.classList.remove('p-nuit','p-jour','p-soir'); doc.classList.add(etat.phase); phasePosee = etat.phase; }
+  if (etat.phase !== phasePosee){
+    doc.classList.remove('p-nuit','p-jour','p-soir'); doc.classList.add(etat.phase); phasePosee = etat.phase;
+    if (window.__poser) window.__poser();
+  }
   var m = Math.round(etat.min), hh = Math.floor(m / 60), mm = m % 60;
   var txt = (hh < 10 ? '0' : '') + hh + ':' + (mm < 10 ? '0' : '') + mm;
   if (pendule && pendule.textContent !== txt) pendule.textContent = txt;
   if (astre){ var t = etat.x / 100; astre.setAttribute('cx', (2 + 70 * t).toFixed(1)); astre.setAttribute('cy', (23 - 21 * Math.sin(Math.PI * t)).toFixed(1)); }
 }
 
-/* ══════════════════════════════════════════════════════════════════════════
-   LE CIEL — canvas 2D. Aucun contexte 3D. Si la toile échoue, un fond CSS
-   prend le relais.
-   ══════════════════════════════════════════════════════════════════════════ */
+/* ══ LE CIEL — canvas 2D ; si la toile échoue, un fond CSS prend le relais ══ */
 var cv = document.getElementById('ciel');
 var ctx = null, dpr = 1, L = 0, H = 0, grainF = null, poussieres = [];
 var fond = null, fctx = null, dernierFond = {x:-99, y:-99, I:-1, img:-99};
@@ -628,7 +519,6 @@ function boite(c, x, y, w, h){
   if (x1 > x0 && y1 > y0) c.fillRect(x0, y0, x1 - x0, y1 - y0);
 }
 function versRVB2(c){ if (c.charAt(0) === '#'){ var a = versRVB(c); return a[0] + ',' + a[1] + ',' + a[2]; } return c.replace('rgb(', '').replace(')', ''); }
-/* la toile de côté : ciel, rais, halo, disque, grain — refaite seulement quand le soleil a bougé */
 function peindreFond(){
   var sx = etat.x / 100 * L, sy = etat.y / 100 * H, c = fctx;
   var g1 = c.createLinearGradient(0, 0, 0, H); g1.addColorStop(0, etat.haut); g1.addColorStop(1, etat.bas);
@@ -693,11 +583,7 @@ function dessinerCiel(){
   ctx.globalCompositeOperation = 'source-over';
 }
 
-/* ══════════════════════════════════════════════════════════════════════════
-   LE TOIT — le dessin propre à cette page : une nappe de panneaux, vue de
-   dessus, qui s'allume avec la hauteur du soleil. Chaque cellule a sa propre
-   petite réponse (un décalage fixe), et le reflet glisse avec l'azimut.
-   ══════════════════════════════════════════════════════════════════════════ */
+/* ══ LE TOIT — une nappe de panneaux qui s'allume avec la hauteur du soleil ══ */
 var toitCv = document.getElementById('toit-toile'), tctx = null, TL = 0, TH = 0, cellules = [];
 try { tctx = toitCv ? toitCv.getContext('2d') : null; } catch(e){ tctx = null; }
 var COLS = 14, LIGS = 6;
@@ -711,7 +597,6 @@ function preparerToit(){
   var s = 1234;
   function rnd(){ s = (s * 9301 + 49297) % 233280; return s / 233280; }
   for (var l = 0; l < LIGS; l++) for (var c = 0; c < COLS; c++){
-    /* quelques cellules absentes : les lanterneaux du vrai toit */
     var trou = ((l === 1 || l === 4) && (c === 3 || c === 9));
     cellules.push({l:l, c:c, trou:trou, seuil:0.10 + rnd() * 0.42, gain:0.85 + rnd() * 0.3});
   }
@@ -724,8 +609,7 @@ function dessinerToit(){
   dernierToit = cle;
   var c = tctx;
   c.clearRect(0, 0, TL, TH);
-  /* le toit lui-même, une dalle claire à peine plus chaude que la nuit */
-  c.fillStyle = melange('#2A3040', '#8E9AAE', etat.alt);
+  c.fillStyle = melange('#0B1220', '#2A3448', etat.alt);
   c.fillRect(0, 0, TL, TH);
   var marge = TL * 0.07, haut = TH * 0.12;
   var lw = (TL - marge * 2) / COLS, lh = (TH - haut * 2) / LIGS;
@@ -739,91 +623,66 @@ function dessinerToit(){
       c.fillRect(x + w * 0.22, y + h * 0.22, w * 0.56, h * 0.56);
       continue;
     }
-    /* l'allumage : au-dessus de son seuil, la cellule passe du bleu nuit au bleu vif */
     var k = Math.min(1, Math.max(0, (etat.alt - ce.seuil) / (1 - ce.seuil))) * ce.gain;
     k = Math.min(1, k);
     var g = c.createLinearGradient(x, y, x + w, y + h);
-    var teinte = melange('#14203A', '#2F6BFF', k);
-    var clair = melange('#1B2A4A', '#9CC6FF', k);
+    var teinte = melange('#0B1220', '#0050E6', k);
+    var clair = melange('#1B2A4A', '#5C97FF', k);
     g.addColorStop(0, az < 0 ? clair : teinte);
     g.addColorStop(1, az < 0 ? teinte : clair);
     c.fillStyle = g;
     c.fillRect(x, y, w, h);
-    /* le reflet du soleil, qui glisse avec l'heure */
     var rx = x + w * (0.5 + az * 0.35);
     var gr = c.createRadialGradient(rx, y + h * 0.4, 0, rx, y + h * 0.4, w * 0.9);
     gr.addColorStop(0, 'rgba(255,244,214,' + (0.55 * k * etat.I).toFixed(3) + ')');
     gr.addColorStop(1, 'rgba(255,244,214,0)');
     c.fillStyle = gr; c.fillRect(x, y, w, h);
-    /* le quadrillage des cellules du panneau */
     c.strokeStyle = 'rgba(8,14,30,' + (0.35 - 0.15 * k).toFixed(2) + ')'; c.lineWidth = 1;
     c.beginPath();
     for (var q = 1; q < 3; q++){ c.moveTo(x + w * q / 3, y); c.lineTo(x + w * q / 3, y + h); }
     c.moveTo(x, y + h / 2); c.lineTo(x + w, y + h / 2);
     c.stroke();
   }
-  /* l'ombre portée du bâtiment voisin, qui suit le soleil */
   var ombreW = TL * 0.18 * (1 - etat.alt);
   var og = c.createLinearGradient(az < 0 ? TL : 0, 0, az < 0 ? TL - ombreW : ombreW, 0);
-  og.addColorStop(0, 'rgba(6,10,22,' + (0.45 * (1 - etat.alt)).toFixed(2) + ')'); og.addColorStop(1, 'rgba(6,10,22,0)');
+  og.addColorStop(0, 'rgba(11,18,32,' + (0.45 * (1 - etat.alt)).toFixed(2) + ')'); og.addColorStop(1, 'rgba(11,18,32,0)');
   c.fillStyle = og; c.fillRect(0, 0, TL, TH);
 }
 
-/* ══════════════════════════════════════════════════════════════════════════
-   UN SEUL ORCHESTRATEUR : une lecture du défilement, puis le DOM, le ciel et
-   le toit lisent le même instantané.
-   ══════════════════════════════════════════════════════════════════════════ */
-var derniereY = -1;
+/* ══ UN SEUL ORCHESTRATEUR — qui s'arrête au repos et repart au défilement ══ */
+var derniereY = -1, dernierMouvement = 0, tourne = false;
+var heure = document.getElementById('heure'), pied = document.getElementById('pied');
 function boucle(ts){
   horloge = ts || 0; imageNo++;
   var y = window.pageYOffset || doc.scrollTop || 0;
   if (y !== derniereY){
-    derniereY = y;
+    derniereY = y; dernierMouvement = horloge;
     calculer(hauteurDoc > 0 ? Math.min(1, Math.max(0, y / hauteurDoc)) : 0);
-    ecrire(); poser();
+    ecrire();
+    if (heure && pied) heure.classList.toggle('cachee', pied.getBoundingClientRect().top < window.innerHeight);
   }
   dessinerCiel();
   dessinerToit();
+  if (document.hidden || (horloge - dernierMouvement > 600)){ tourne = false; return; }
   requestAnimationFrame(boucle);
 }
-
-/* ── révélation : jamais de re-masquage, et tout ce qui est déjà à l'écran se montre ── */
-function revelation(){
-  var cibles = [].slice.call(document.querySelectorAll('.rv'));
-  if (!('IntersectionObserver' in window) || DOUX){ cibles.forEach(function(el){ el.classList.add('vu'); }); return; }
-  var obs = new IntersectionObserver(function(entrees){
-    entrees.forEach(function(e){ if (e.isIntersecting){ e.target.classList.add('vu'); obs.unobserve(e.target); } });
-  }, {rootMargin:'0px 0px -6% 0px', threshold:0.02});
-  cibles.forEach(function(el){ obs.observe(el); });
-  function filet(){
-    var reste = false;
-    cibles.forEach(function(el){
-      if (el.classList.contains('vu')) return;
-      var r = el.getBoundingClientRect();
-      if (r.top < window.innerHeight * 0.96 && r.bottom > -40) el.classList.add('vu'); else reste = true;
-    });
-    if (!reste) window.removeEventListener('scroll', filet);
-  }
-  window.addEventListener('scroll', filet, {passive:true});
-  window.addEventListener('load', filet);
-  filet();
-  setTimeout(function(){ cibles.forEach(function(el){ el.classList.add('vu'); }); }, 6000);
-}
+function reveiller(){ if (!tourne){ tourne = true; dernierMouvement = performance.now(); requestAnimationFrame(boucle); } }
+window.addEventListener('scroll', reveiller, {passive:true});
+document.addEventListener('visibilitychange', function(){ if (!document.hidden) reveiller(); });
 
 function demarrer(){
   initCiel();
   preparerToit();
   construireEtapes();
   calculer(0); ecrire();
-  revelation();
-  requestAnimationFrame(boucle);
+  reveiller();
 }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', demarrer); else demarrer();
-window.addEventListener('load', function(){ construireEtapes(); derniereY = -1; });
+window.addEventListener('load', function(){ construireEtapes(); derniereY = -1; reveiller(); });
 var minuteur = null;
 window.addEventListener('resize', function(){
   if (minuteur) clearTimeout(minuteur);
-  minuteur = setTimeout(function(){ redimensionner(); preparerToit(); dernierToit = -1; construireEtapes(); derniereY = -1; }, 140);
+  minuteur = setTimeout(function(){ redimensionner(); preparerToit(); dernierToit = -1; construireEtapes(); derniereY = -1; reveiller(); }, 140);
 }, {passive:true});
 window.__rse = { heure:function(){ return pendule ? pendule.textContent : ''; }, alt:function(){ return etat.alt; }, phase:function(){ return etat.phase; } };
 })();

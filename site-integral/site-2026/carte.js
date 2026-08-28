@@ -243,11 +243,11 @@ function construire(){
 
 /* ── 2 · rangement par épaisseur : cinq passes de tracé ─────────────────── */
 var NIVEAUX = [
-  {seuil:3.4, w:4.0,  col:'rgba(64,118,255,.92)',  halo:'rgba(44,86,205,.07)', segs:[]},
-  {seuil:2.2, w:2.6,  col:'rgba(84,146,255,.88)',  halo:'rgba(48,104,215,.05)', segs:[]},
-  {seuil:1.4, w:1.7,  col:'rgba(110,188,255,.80)', halo:null, segs:[]},
-  {seuil:0.8, w:1.05, col:'rgba(128,214,252,.62)', halo:null, segs:[]},
-  {seuil:0,   w:0.7,  col:'rgba(142,232,255,.42)', halo:null, segs:[]}
+  {seuil:3.4, w:4.0,  col:'rgba(92,151,255,.92)', halo:'rgba(92,151,255,.07)', segs:[]},
+  {seuil:2.2, w:2.6,  col:'rgba(92,151,255,.84)', halo:'rgba(92,151,255,.05)', segs:[]},
+  {seuil:1.4, w:1.7,  col:'rgba(92,151,255,.72)', halo:null, segs:[]},
+  {seuil:0.8, w:1.05, col:'rgba(92,151,255,.56)', halo:null, segs:[]},
+  {seuil:0,   w:0.7,  col:'rgba(92,151,255,.40)', halo:null, segs:[]}
 ];
 function ranger(){
   for (var n=0;n<NIVEAUX.length;n++) NIVEAUX[n].segs = [];
@@ -267,7 +267,7 @@ function lueur(r,g,b){
   k.fillStyle = grad; k.fillRect(0,0,64,64);
   return c;
 }
-var LUEUR_FROIDE = lueur(130,215,255), LUEUR_CHAUDE = lueur(255,150,90);
+var LUEUR_FROIDE = lueur(92,151,255), LUEUR_CHAUDE = lueur(243,154,27);
 var surligne = -1;
 
 /* ── 3 · tracé ──────────────────────────────────────────────────────────── */
@@ -277,8 +277,8 @@ function dessinerFrance(){
   ctx.translate(OX, OY);
   ctx.scale(S/100, S/100);
   ctx.lineJoin = 'round';
-  ctx.fillStyle = 'rgba(70,120,230,.085)';
-  ctx.strokeStyle = 'rgba(120,168,255,.30)';
+  ctx.fillStyle = 'rgba(92,151,255,.08)';
+  ctx.strokeStyle = 'rgba(92,151,255,.30)';
   ctx.lineWidth = 0.75 * 100 / S;
   for (var i=0;i<CHEMINS.length;i++){ ctx.fill(CHEMINS[i]); ctx.stroke(CHEMINS[i]); }
   ctx.restore();
@@ -333,9 +333,9 @@ function dessiner(g, tps){
   ctx.globalCompositeOperation = 'source-over';
   var pp = PTS[9];
   ctx.globalAlpha = (surligne === 9) ? 1 : 0.7;
-  ctx.strokeStyle = 'rgba(140,180,255,.7)'; ctx.lineWidth = 1.2;
+  ctx.strokeStyle = 'rgba(92,151,255,.7)'; ctx.lineWidth = 1.2;
   ctx.beginPath(); ctx.arc(pp.x, pp.y, 5, 0, 6.2832); ctx.stroke();
-  ctx.fillStyle = (surligne === 9) ? '#fff' : 'rgba(140,180,255,.55)';
+  ctx.fillStyle = (surligne === 9) ? '#fff' : 'rgba(92,151,255,.55)';
   ctx.beginPath(); ctx.arc(pp.x, pp.y, 2.2, 0, 6.2832); ctx.fill();
   etiquette(9, surligne === 9);
 
@@ -358,27 +358,27 @@ function pointe(pt, g, siege){
   if (!siege && age < 0.035){
     var f2 = age/0.035;
     ctx.globalAlpha = (1-f2)*0.8;
-    ctx.strokeStyle = '#FF8A52'; ctx.lineWidth = 1.4;
+    ctx.strokeStyle = '#F39A1B'; ctx.lineWidth = 1.4;
     ctx.beginPath(); ctx.arc(pt.x, pt.y, 5 + f2*34, 0, 6.2832); ctx.stroke();
   }
   ctx.globalAlpha = 1;
-  ctx.strokeStyle = vif ? '#FFD2B4' : 'rgba(255,138,82,.92)';
+  ctx.strokeStyle = vif ? '#FFFFFF' : 'rgba(243,154,27,.92)';
   ctx.lineWidth = vif ? 2 : 1.4;
   ctx.beginPath(); ctx.arc(pt.x, pt.y, vif ? 8 : (siege ? 6.5 : 5), 0, 6.2832); ctx.stroke();
-  ctx.fillStyle = (vif || siege) ? '#FFFFFF' : '#FF8A52';
+  ctx.fillStyle = (vif || siege) ? '#FFFFFF' : '#F39A1B';
   ctx.beginPath(); ctx.arc(pt.x, pt.y, vif ? 3 : (siege ? 2.8 : 2), 0, 6.2832); ctx.fill();
   etiquette(pt.i, vif);
 }
 function etiquette(i, vif){
   if (petit && !vif) return;
   var o = LIEUX[i], p = PTS[i];
-  ctx.font = (vif ? '600 ' : '500 ') + (petit ? 11 : 12) + 'px Inter, ui-sans-serif, system-ui, sans-serif';
+  ctx.font = (vif ? '500 ' : '400 ') + (petit ? 13 : 14) + 'px Inter, ui-sans-serif, system-ui, sans-serif';
   ctx.textBaseline = 'middle';
   ctx.textAlign = o.ax > 0 ? 'left' : 'right';
   ctx.globalAlpha = vif ? 1 : 0.82;
-  ctx.fillStyle = vif ? '#FFFFFF' : (o.part ? 'rgba(170,196,255,.85)' : 'rgba(255,214,190,.9)');
-  var lx = p.x + o.ax * 13, ly = p.y + o.ay * 12;
-  ctx.strokeStyle = o.part ? 'rgba(140,180,255,.45)' : 'rgba(255,138,82,.5)'; ctx.lineWidth = 1;
+  ctx.fillStyle = vif ? '#FFFFFF' : 'rgba(255,255,255,.88)';
+  var lx = p.x + o.ax * 15, ly = p.y + o.ay * 13;
+  ctx.strokeStyle = o.part ? 'rgba(92,151,255,.45)' : 'rgba(243,154,27,.5)'; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(p.x + o.ax*7, p.y + o.ay*4); ctx.lineTo(p.x + o.ax*11, ly); ctx.stroke();
   ctx.fillText(o.eti, lx, ly);
 }
@@ -391,12 +391,13 @@ function progression(){
   if (debut - fin < 40) return r.top < vh ? 1 : 0;
   return borne((debut - r.top) / (debut - fin), 0, 1);
 }
-var pLisse = 0, sale = true, tourne = false, visible = false;
+var pLisse = 0, sale = true, tourne = false, visible = false, tPrec = 0;
 function boucle(tps){
   if (!tourne) return;
+  var dt = tPrec ? Math.min(50, tps - tPrec) : 16; tPrec = tps;
   var cible = progression();
   var d = cible - pLisse;
-  if (Math.abs(d) < 0.0004){ pLisse = cible; } else { pLisse += d*0.11; sale = true; }
+  if (Math.abs(d) < 0.0004){ pLisse = cible; } else { pLisse += d*(1 - Math.exp(-dt/120)); sale = true; }
   if (sale || (pLisse > 0.001 && pLisse < 0.999) || surligne >= 0 || visible){
     dessiner(pLisse, tps||0); sale = false;
   }
@@ -405,7 +406,7 @@ function boucle(tps){
 function redimensionner(){
   var r = toile.getBoundingClientRect();
   L = Math.max(1, Math.round(r.width)); H = Math.max(1, Math.round(r.height));
-  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  dpr = Math.min(window.devicePixelRatio || 1, 1.5);
   toile.width = Math.round(L*dpr); toile.height = Math.round(H*dpr);
   var marge = Math.round(Math.min(L,H) * 0.06);
   S = Math.min(L,H) - marge*2; OX = (L-S)/2; OY = (H-S)/2;
@@ -417,28 +418,50 @@ function redimensionner(){
 function viser(i){
   if (i === surligne) return;
   surligne = i; sale = true;
-  if (i < 0){ ficheT.textContent = DEFAUT[0]; ficheS.textContent = DEFAUT[1]; return; }
-  ficheT.textContent = LIEUX[i].c + ' · ' + LIEUX[i].nom;
-  ficheS.textContent = LIEUX[i].lieu;
+  var fiche = document.getElementById('carte-fiche');
+  var t, st;
+  if (i < 0){ t = DEFAUT[0]; st = DEFAUT[1]; }
+  else {
+    /* les maisons à moins de 12 px l'une de l'autre (Essonne, Var) sont nommées ensemble */
+    var voisines = [];
+    for (var k=0;k<PTS.length;k++){
+      if (k === i) continue;
+      var ddx = PTS[k].x-PTS[i].x, ddy = PTS[k].y-PTS[i].y;
+      if (ddx*ddx+ddy*ddy < 12*12) voisines.push(k);
+    }
+    t = LIEUX[i].c + ' · ' + LIEUX[i].nom;
+    st = LIEUX[i].lieu;
+    if (voisines.length){
+      t += voisines.map(function(k){ return ' — ' + LIEUX[k].c + ' · ' + LIEUX[k].nom; }).join('');
+      st = LIEUX[i].lieu.split(' — ')[0] + ' et ' + voisines.map(function(k){ return LIEUX[k].lieu.split(' — ')[0]; }).join(', ');
+    }
+  }
+  if (fiche && !DOUX){
+    fiche.classList.add('change');
+    setTimeout(function(){ ficheT.textContent = t; ficheS.textContent = st; fiche.classList.remove('change'); }, 200);
+  } else { ficheT.textContent = t; ficheS.textContent = st; }
 }
+var RAYON = ('ontouchstart' in window) ? 28 : 22;
 function plusProche(px, py){
   var meilleur = -1, dm = 1e9;
   for (var i=0;i<PTS.length;i++){
     var dx = PTS[i].x-px, dy = PTS[i].y-py, d = dx*dx+dy*dy;
     if (d < dm){ dm = d; meilleur = i; }
   }
-  return dm < 22*22 ? meilleur : -1;
+  return dm < RAYON*RAYON ? meilleur : -1;
 }
-toile.addEventListener('mousemove', function(e){
-  var r = toile.getBoundingClientRect();
-  viser(plusProche(e.clientX - r.left, e.clientY - r.top));
-});
-toile.addEventListener('mouseleave', function(){ viser(-1); });
+/* le survol propose, le clic ou le toucher verrouille */
+var verrou = -1;
+function position(e){ var r = toile.getBoundingClientRect(); return { x:e.clientX - r.left, y:e.clientY - r.top }; }
+toile.addEventListener('mousemove', function(e){ if (verrou < 0){ var q = position(e); viser(plusProche(q.x, q.y)); } });
+toile.addEventListener('mouseleave', function(){ if (verrou < 0) viser(-1); });
 toile.addEventListener('click', function(e){
-  var r = toile.getBoundingClientRect();
-  var i = plusProche(e.clientX - r.left, e.clientY - r.top);
-  viser(i === surligne ? -1 : i);
+  var q = position(e), i = plusProche(q.x, q.y);
+  verrou = (i === verrou) ? -1 : i;
+  viser(verrou);
 });
+var consigne = document.getElementById('carte-consigne');
+if (consigne && ('ontouchstart' in window)) consigne.textContent = 'Touchez une maison pour la retrouver sur la carte.';
 
 /* ── 6 · départ ─────────────────────────────────────────────────────────── */
 redimensionner();
