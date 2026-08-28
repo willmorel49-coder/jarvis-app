@@ -29,6 +29,7 @@
   --encre-nuit-doux:#A7ACB6;
   --act-nuit:#5C97FF;
   --accent:#F39A1B;
+  --accent-nuit:#FFC46B;
 
   /* dérivés : une règle, pas des couleurs nouvelles */
   --act-presse:#003FB4;
@@ -300,7 +301,7 @@ html.js .rv.vu{opacity:1;transform:none}
 
 /* a · les nappes qui dérivent sous les tuiles teintées (gradient-mesh) */
 .nappes{position:absolute;inset:0;z-index:0;overflow:hidden;pointer-events:none;isolation:isolate;
-  --n1:rgba(255,255,255,.55);--n2:rgba(0,80,230,.10);--n3:rgba(255,255,255,.40);--n4:rgba(243,154,27,.06);--nl:rgba(255,255,255,.85);--mel:multiply;--vit:56s}
+  --n1:rgba(255,255,255,.55);--n2:rgba(0,80,230,.10);--n3:rgba(255,255,255,.40);--n4:rgba(243,154,27,.11);--nl:rgba(255,255,255,.85);--mel:multiply;--vit:56s}
 .nappes span{position:absolute;will-change:transform;transform-origin:50% 50%;animation:none var(--vit) cubic-bezier(.45,.05,.55,.95) infinite alternate;mix-blend-mode:var(--mel)}
 .nappes .n1{left:-20vmax;top:-26vmax;width:92vmax;height:92vmax;background:radial-gradient(closest-side,var(--n1),transparent 70%);animation-name:nappe-a}
 .nappes .n2{right:-26vmax;top:-18vmax;width:88vmax;height:88vmax;background:radial-gradient(closest-side,var(--n2),transparent 72%);animation-name:nappe-b;animation-duration:calc(var(--vit) * 1.34)}
@@ -313,11 +314,11 @@ html.js .rv.vu{opacity:1;transform:none}
 @keyframes nappe-d{from{transform:scale(.94)}to{transform:translate3d(-20%,-9%,0) scale(1.18) rotate(-6deg)}}
 @keyframes nappe-l{from{transform:translate3d(-4%,-3%,0)}to{transform:translate3d(9%,6%,0) scale(1.14)}}
 .nappes.pause span{animation-play-state:paused}
-.bleu .nappes{--n1:rgba(44,116,255,.55);--n2:rgba(92,151,255,.28);--n3:rgba(0,63,180,.35);--n4:rgba(243,154,27,.10);--nl:rgba(180,210,255,.30);--mel:screen}
+.bleu .nappes{--n1:rgba(44,116,255,.55);--n2:rgba(92,151,255,.28);--n3:rgba(0,63,180,.35);--n4:rgba(243,154,27,.15);--nl:rgba(180,210,255,.30);--mel:screen}
 .bleu .nappes .nl{mix-blend-mode:screen}
-.nuit .nappes,.pied .nappes{--n1:rgba(92,151,255,.22);--n2:rgba(0,80,230,.18);--n3:rgba(120,150,210,.10);--n4:rgba(243,154,27,.07);--nl:rgba(140,180,255,.16);--mel:screen}
+.nuit .nappes,.pied .nappes{--n1:rgba(92,151,255,.22);--n2:rgba(0,80,230,.18);--n3:rgba(120,150,210,.10);--n4:rgba(243,154,27,.11);--nl:rgba(140,180,255,.16);--mel:screen}
 .nuit .nappes .nl,.pied .nappes .nl{mix-blend-mode:screen}
-.doux .nappes,.doux--droite .nappes{--n1:rgba(255,255,255,.7);--n2:rgba(0,80,230,.06);--n3:rgba(255,255,255,.5);--n4:rgba(243,154,27,.04);--nl:rgba(255,255,255,.9)}
+.doux .nappes,.doux--droite .nappes{--n1:rgba(255,255,255,.7);--n2:rgba(0,80,230,.06);--n3:rgba(255,255,255,.5);--n4:rgba(243,154,27,.08);--nl:rgba(255,255,255,.9)}
 .pied{overflow:hidden}
 .pied .pied__in{position:relative;z-index:1}
 
@@ -326,6 +327,8 @@ html.js .rv.vu{opacity:1;transform:none}
 .mot > i{display:inline-block;font-style:inherit;transform:translateY(110%);opacity:0;
   animation:mot-monte .9s cubic-bezier(.16,.84,.28,1) forwards;animation-delay:var(--d,0ms)}
 @keyframes mot-monte{to{transform:none;opacity:1}}
+html.js .rv .mot > i{animation-play-state:paused}
+html.js .rv.vu .mot > i{animation-play-state:running}
 .apres-titre{opacity:0;transform:translateY(12px);animation:apres-titre .8s var(--sortie) forwards;animation-delay:var(--d,600ms)}
 @keyframes apres-titre{to{opacity:1;transform:none}}
 
@@ -338,6 +341,7 @@ html.js .rv.vu{opacity:1;transform:none}
   will-change:transform,opacity;transform:translate3d(0,0,0);animation:reflet-passe 11s linear infinite}
 @keyframes reflet-passe{0%{transform:translate3d(0,0,0);opacity:0}8%{opacity:1}36%{opacity:1}44%{transform:translate3d(92%,0,0);opacity:0}100%{transform:translate3d(92%,0,0);opacity:0}}
 .reflet.pause > .reflet__lumiere{animation-play-state:paused}
+.nuit .reflet > .reflet__lumiere{background:radial-gradient(closest-side ellipse at 40% 50%,rgba(92,151,255,.30),transparent 76%),radial-gradient(closest-side ellipse at 64% 50%,rgba(243,154,27,.22),transparent 74%)}
 
 /* d · la carte qui s'incline sous le curseur, et son reflet (tilt-card-3d) — souris seulement */
 .carte{background:linear-gradient(158deg,#FFFFFF 0%,#F8FAFD 60%,#FFFFFF 100%);--rx:0deg;--ry:0deg;--mx:50%;--my:50%}
@@ -365,3 +369,41 @@ html.js .rv.vu.carte.penche{transform:perspective(900px) rotateX(var(--rx)) rota
   .reflet > .reflet__lumiere{animation:none;transform:translate3d(46%,0,0);opacity:.9}
   .carte.penche{transform:none!important}
 }
+
+/* ═════ 12 · L'ORANGE EN REPÈRE, LES SECTIONS NETTES ═════════════════════════
+   Une seule couleur d'accent, en petites touches : le trait qui ouvre chaque
+   section, celui qui coiffe chaque grand chiffre, le point devant chaque valeur.
+   Jamais un aplat orange, jamais un titre en deux couleurs. */
+
+/* a · chaque section s'ouvre par un trait orange qui se dessine */
+.sur-titre{display:flex;align-items:center;gap:var(--e3)}
+.sur-titre::before{content:"";flex:none;width:28px;height:3px;border-radius:2px;background:var(--accent);
+  transform-origin:0 50%;transition:transform var(--d-revel) var(--sortie) .15s}
+html.js .rv.sur-titre:not(.vu)::before,html.js .rv:not(.vu) .sur-titre::before{transform:scaleX(0)}
+.centre .sur-titre{justify-content:center}
+.sur-titre[data-h]::before{width:auto;height:auto;background:none;border-radius:0;transform:none;transition:none}
+.bleu .sur-titre::before{background:var(--accent-nuit)}
+
+/* b · le trait qui coiffe chaque grand chiffre, le « + » en orange */
+.compteur b{position:relative;padding-top:var(--e4)}
+.compteur b::before{content:"";position:absolute;left:50%;top:0;width:36px;height:3px;margin-left:-18px;border-radius:2px;
+  background:var(--accent);transform:scaleX(0);transition:transform var(--d-revel) var(--sortie)}
+html.js .rv.vu .compteur b::before{transform:scaleX(1)}
+html.js .rv.vu .compteur:nth-child(2) b::before{transition-delay:.1s}
+html.js .rv.vu .compteur:nth-child(3) b::before{transition-delay:.2s}
+html.js .rv.vu .compteur:nth-child(4) b::before{transition-delay:.3s}
+html:not(.js) .compteur b::before{transform:none}
+.compteur b i{color:var(--accent)}
+.bleu .compteur b::before{background:var(--accent-nuit)}
+.bleu .compteur b i{color:var(--accent-nuit)}
+
+/* c · un bloc de chiffres est un bloc : un cadre, jamais un simple filet */
+.compteurs{border-top:0 !important;border:1px solid var(--filet);border-radius:var(--rond);background:var(--blanc);overflow:hidden}
+.bleu .compteurs{border-color:var(--filet-act);background:rgba(255,255,255,.07)}
+.nuit .compteurs{border-color:var(--filet-nuit);background:rgba(255,255,255,.05)}
+.chiffres .compteurs{margin-top:var(--e7)}
+.chiffres .compteur b{font-size:clamp(40px,4.6vw,66px);white-space:nowrap}
+.chiffres .compteur{padding-inline:var(--e2)}
+
+/* d · le lien souligné d'orange au survol, la barre orange sous le logo survolé */
+.lien:hover,a:hover > .lien{text-decoration-color:var(--accent);text-decoration-thickness:2px}
