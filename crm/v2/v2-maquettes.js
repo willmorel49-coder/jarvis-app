@@ -214,7 +214,7 @@
     ov.innerHTML =
       '<div class="mq-ov-bar">' +
         '<button class="mq-ov-x" onclick="V2.maquetteFermer()" aria-label="Fermer">' + ICO('chev', 18, 2) + ' Retour</button>' +
-        '<div class="mq-ov-t"><b>' + m.n + ' · ' + esc(m.nom) + '</b><span>' + esc(m.source) + ' · série ' + esc(String(m.serie)) + '</span></div>' +
+        '<div class="mq-ov-t"><b>' + m.n + ' · ' + esc(m.nom) + '</b><span>' + esc(m.source) + (m.serie ? ' · série ' + esc(String(m.serie)) : '') + '</span></div>' +
         '<a class="mq-ov-out" href="' + pageDe(m) + '" target="_blank" rel="noopener">Plein écran</a>' +
       '</div>' +
       '<iframe class="mq-ov-f" src="' + pageDe(m) + '" title="Maquette ' + m.n + '"></iframe>' +
@@ -289,7 +289,7 @@
         '<div class="mq-head"><b>' + m.n + ' · ' + esc(m.nom) + '</b>' + badge(m.id) + '</div>' +
         '<div class="mq-tags">' +
           '<span>' + esc(m.source) + '</span>' +
-          '<span>Série ' + esc(String(m.serie)) + '</span>' +
+          (m.serie ? '<span>Série ' + esc(String(m.serie)) + '</span>' : '') +
         '</div>' +
         '<p class="mq-geste">' + esc(m.geste) + '</p>' +
         notesHtml(m.id, false) +
@@ -337,23 +337,27 @@
         root.innerHTML = top +
           '<div class="v2-wrap narrow mq-wrap">' +
             '<div class="mq-hero">' +
-              '<div class="v2-page-title">Le nouveau site — ' + l.length + ' directions</div>' +
-              '<p>Ouvre-les en vrai : elles défilent et elles répondent, ce ne sont pas des images. ' +
-              'Les <b>vingt premières</b> reprennent la méthode d\'une charte réelle ; les <b>trente suivantes</b> ' +
-              'n\'imitent personne — chacune part d\'un phénomène (un fluide, une lumière, une horlogerie) ' +
-              'qui devient la mécanique de toute la page.</p>' +
+              '<div class="v2-page-title">' + (l.length > 1 ? 'Le nouveau site — ' + l.length + ' directions' : 'Le nouveau site') + '</div>' +
+              (l.length > 1
+                ? '<p>Ouvre-les en vrai : elles défilent et elles répondent, ce ne sont pas des images. ' +
+                  'Les <b>vingt premières</b> reprennent la méthode d\'une charte réelle ; les <b>trente suivantes</b> ' +
+                  'n\'imitent personne — chacune part d\'un phénomène (un fluide, une lumière, une horlogerie) ' +
+                  'qui devient la mécanique de toute la page.</p>'
+                : '<p>La version unique, retenue le 28/08/2026 : la base Cimaise et les morceaux préférés des autres ' +
+                  'directions. Ouvre-la en vrai : elle défile, la carte pousse depuis Hyères, la page RSE suit le soleil. ' +
+                  'Ce n\'est pas une image.</p>') +
               '<p>Mets une note sur 10, et surtout <b>écris ce qui va ou ne va pas</b> : ' +
-              'la note dit qu\'une direction plaît, elle ne dit jamais quoi corriger.</p>' +
+              'la note dit que le site plaît, elle ne dit jamais quoi corriger.</p>' +
               '<span class="mq-share">' + partage + '</span>' +
             '</div>' +
-            podium() +
-            '<div class="mq-tools">' +
+            (l.length > 1 ? podium() : '') +
+            (l.length > 1 ? '<div class="mq-tools">' +
               '<span class="mq-count">' + notees() + ' notée' + (notees() > 1 ? 's' : '') + ' sur ' + l.length + '</span>' +
               '<div class="mq-seg">' +
                 '<button class="' + (tri === 'note' ? 'on' : '') + '" onclick="V2.maquetteTri(\'note\')">Les mieux notées</button>' +
                 '<button class="' + (tri === 'numero' ? 'on' : '') + '" onclick="V2.maquetteTri(\'numero\')">Dans l\'ordre</button>' +
               '</div>' +
-            '</div>' +
+            '</div>' : '') +
             '<div class="mq-grid">' + a.map(function (m, i) { return carte(m, i + 1); }).join('') + '</div>' +
           '</div>';
         if (V2.motion) V2.motion.stagger(root.querySelectorAll('.mq-card'), { step: 35, y: 10 });
