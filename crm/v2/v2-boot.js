@@ -439,7 +439,10 @@
     }
     // L'onglet est ouvert AVANT l'appel réseau : ouvrir après une promesse
     // fait bloquer le navigateur, qui n'y voit plus un geste de l'utilisateur.
-    var onglet = window.open('', '_blank');
+    // 29/08/2026 — un `fichier` (Excel…) ne s'affiche pas : le navigateur le
+    // télécharge et l'onglet restait blanc sur « Ouverture… » (mesuré). Pour lui,
+    // pas d'onglet : le téléchargement part d'une iframe invisible.
+    var onglet = d.type === 'fichier' ? null : window.open('', '_blank');
     if (onglet && onglet.document && onglet.document.body) {
       onglet.document.title = d.titre;
       var att = onglet.document.createElement('p');
@@ -463,7 +466,15 @@
         // sur l'adresse signée — pas de fetch ni de blob, qui échouaient sur
         // certains navigateurs (« les boutons font n'importe quoi », Will, 28/08).
         // Seul le .html garde le détour par le blob (servi en text/plain).
-        if (d.type === 'pdf' || d.type === 'fichier') {
+        if (d.type === 'fichier') {
+          var cadre = document.createElement('iframe');
+          cadre.setAttribute('style', 'display:none');
+          cadre.src = url;
+          document.body.appendChild(cadre);
+          setTimeout(function () { if (cadre.parentNode) cadre.parentNode.removeChild(cadre); }, 120000);
+          return null;
+        }
+        if (d.type === 'pdf') {
           if (onglet) onglet.location.replace(url); else window.location.href = url;
           return null;
         }
