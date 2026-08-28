@@ -422,9 +422,9 @@
         '<button class="mkt-site" onclick="V2.go(\'marketing\',\'propositions\')">' +
           '<span class="mkt-site-shots">' + mqApercus + '</span>' +
           '<span class="mkt-site-txt">' +
-            '<span class="mkt-site-kick">À choisir</span>' +
-            '<span class="mkt-site-t">Le nouveau site' + (mqL.length > 1 ? ' — ' + mqL.length + ' directions' : '') + '</span>' +
-            '<span class="mkt-site-s">' + (mqL.length > 1 ? 'Ouvre-les en vrai, elles défilent et elles répondent. Mets une note sur 10 : la moyenne est partagée entre vous.' : 'La maquette retenue. Ouvre-la en vrai, elle défile et elle répond. Mets une note sur 10 : la moyenne est partagée entre vous.') + '</span>' +
+            '<span class="mkt-site-kick">' + (mqL.length > 1 ? 'À choisir' : 'Le nouveau site') + '</span>' +
+            '<span class="mkt-site-t">' + (mqL.length > 1 ? 'Le nouveau site — ' + mqL.length + ' directions' : 'Intégral Pharma, version unique') + '</span>' +
+            '<span class="mkt-site-s">' + (mqL.length > 1 ? 'Ouvre-les en vrai, elles défilent et elles répondent. Mets une note sur 10 : la moyenne est partagée entre vous.' : 'La version unique, sur la base Cimaise. Ouvre-la en vrai : elle défile, la carte pousse depuis Hyères, la page RSE suit le soleil. Mets une note sur 10 : la moyenne est partagée entre vous.') + '</span>' +
             '<span class="mkt-site-cta">Voir et noter ' + ICO('chev', 17, 2.2) + '</span>' +
           '</span>' +
         '</button>';
@@ -499,14 +499,14 @@
           // pouvait y arriver autrement qu'en tapant l'adresse à la main.
           '<a class="mkt-link" onclick="V2.go(\'marketing\',\'propositions\')">' +
             '<span class="mkt-link-ic mkt-link-ic-cat">' + ICO('cat', 18) + '</span>' +
-            '<span style="flex:1;min-width:0"><span class="mkt-link-t">Nouveau site — noter les 50 directions</span>' +
-            '<span class="mkt-link-s">Chacun ouvre les maquettes, met une note sur 10 et écrit ce qui va ou ne va pas. Le classement se fait tout seul.</span></span>' +
+            '<span style="flex:1;min-width:0"><span class="mkt-link-t">Le nouveau site — le noter</span>' +
+            '<span class="mkt-link-s">Chacun l\'ouvre en vrai, met une note sur 10 et écrit ce qui va ou ne va pas.</span></span>' +
             '<span class="v2-row-chev">' + ICO('chev', 17) + '</span>' +
           '</a>' +
           '<a class="mkt-link" onclick="V2.go(\'marketing\',\'site\')">' +
             '<span class="mkt-link-ic mkt-link-ic-cat">' + ICO('cat', 18) + '</span>' +
-            '<span style="flex:1;min-width:0"><span class="mkt-link-t">Le site actuel</span>' +
-            '<span class="mkt-link-s">La vitrine en ligne aujourd\'hui — le point de comparaison.</span></span>' +
+            '<span style="flex:1;min-width:0"><span class="mkt-link-t">Le nouveau site, en plein écran</span>' +
+            '<span class="mkt-link-s">La version unique, servie telle qu\'elle sera en ligne — accueil et page RSE.</span></span>' +
             '<span class="v2-row-chev">' + ICO('chev', 17) + '</span>' +
           '</a>' +
           '<a class="mkt-link" onclick="V2.go(\'marketing\',\'fxbank\')">' +
@@ -558,7 +558,7 @@
   function renderSite(root) {
     root.innerHTML = V2.topbar({ back: true, backTo: 'marketing', backLabel: 'Marketing' }) +
       '<div style="width:100%;height:calc(100vh - 66px);min-height:520px;background:#fff">' +
-        '<iframe src="../../site-integral/index-typo.html?v=20260703d" title="Site vitrine Intégral Pharma" loading="lazy" style="width:100%;height:100%;border:0;display:block"></iframe>' +
+        '<iframe src="../../site-integral/site-2026/index.html?v=20260828c" title="Le nouveau site Intégral Pharma" loading="lazy" style="width:100%;height:100%;border:0;display:block"></iframe>' +
       '</div>';
   }
 
