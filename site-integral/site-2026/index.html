@@ -58,7 +58,7 @@
 /* ═════ LES COMPTEURS ═════════════════════════════════════════════════════════ */
 .compteurs{display:grid;grid-template-columns:repeat(4,1fr);margin-top:var(--e8);border-top:1px solid var(--filet)}
 .bleu .compteurs{border-top-color:var(--filet-act)}
-.compteurs--duo{grid-template-columns:repeat(2,1fr);max-width:var(--lire);margin-inline:auto}
+.compteurs--duo{grid-template-columns:repeat(2,1fr)}
 .compteur{padding:var(--carte-pad) var(--e3);border-right:1px solid var(--filet);text-align:center}
 .bleu .compteur{border-right-color:var(--filet-act)}
 .compteur:last-child{border-right:0}
@@ -81,43 +81,6 @@
 .bande .t-md{color:#fff}
 .bande .corps{margin-top:var(--e4);color:rgba(255,255,255,.92)}
 .bande .lien{margin-top:var(--e5)}
-
-.cine{position:relative;overflow:hidden;border-radius:var(--rond);background:var(--nuit);aspect-ratio:16/9;margin-top:var(--e8)}
-.cine__fond{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform var(--d-etat) var(--sortie)}
-.cine:hover .cine__fond{transform:scale(1.03)}
-.cine__voile{position:absolute;inset:0;background:radial-gradient(60% 60% at 50% 50%,rgba(var(--voile),.70),rgba(var(--voile),.25) 100%)}
-.cine__jouer{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--e4);color:#fff;width:100%}
-.cine__rond{width:76px;height:76px;border-radius:50%;background:rgba(255,255,255,.92);display:flex;align-items:center;justify-content:center;
-  transition:transform var(--d-micro) var(--sortie),background var(--d-micro) var(--sortie)}
-.cine__rond svg{width:22px;height:26px;margin-left:4px;fill:var(--nuit)}
-.cine__jouer:hover .cine__rond{transform:scale(1.07);background:#fff}
-.cine__jouer span{font-size:17px;font-weight:500;letter-spacing:-.011em}
-.cine video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-@media (max-width:640px){.cine{aspect-ratio:4/3}.cine__rond{width:64px;height:64px}}
-
-/* ═════ LE RÉSEAU — le grand 09 collant et la liste ═══════════════════════════ */
-#reseau{font-variant-numeric:tabular-nums}
-.zoom{position:sticky;top:calc(var(--barre) + 28px)}
-.zoom__n{font-size:clamp(96px,13vw,168px);font-weight:300;line-height:.86;letter-spacing:-.05em;color:var(--act);display:block;margin-bottom:var(--e2)}
-.zoom__u{display:block;color:var(--encre-48);margin-bottom:var(--e6)}
-.zoom .t-lg{max-width:12ch;margin-bottom:var(--e5)}
-.reg{border-top:1px solid var(--filet)}
-.reg__l{display:grid;grid-template-columns:44px minmax(0,1.05fr) minmax(0,.78fr) 40px;gap:var(--e4);align-items:baseline;
-  padding:var(--e4) var(--e3);border-bottom:1px solid var(--filet)}
-.reg__n{color:var(--act)}
-.reg__nom{font-size:17px;font-weight:500;letter-spacing:-.011em;color:var(--encre)}
-.reg__nom i{font-style:normal;font-weight:400;font-size:14px;letter-spacing:0;color:var(--encre-48);margin-left:var(--e2);white-space:nowrap}
-.reg__v{color:var(--encre-48)}
-.reg__d{color:var(--encre-48);text-align:right}
-.reg__note{margin-top:var(--e5);padding:var(--e4) var(--e5);border-radius:var(--rond-p);background:var(--bleu-clair);color:var(--encre-80)}
-.reg__note b{color:var(--encre);font-weight:500}
-@media (max-width:900px){.zoom{position:static}}
-@media (max-width:560px){
-  .reg__l{grid-template-columns:40px minmax(0,1fr) 46px;row-gap:var(--e1);padding:var(--e4) var(--e2)}
-  .reg__v{grid-column:2 / 3}
-  .reg__d{grid-row:1 / 2;grid-column:3 / 4}
-  .reg__nom i{display:block;margin-left:0;margin-top:3px}
-}
 
 /* ═════ LA CARTE — les neuf maisons, et le maillage qui pousse ═══════════════ */
 .carte-boite{
@@ -149,8 +112,12 @@
   .carte-fiche{position:static;order:1}
 }
 
-/* ═════ LE MÉTIER ═════════════════════════════════════════════════════════════ */
-.cloture{margin-top:var(--e8);padding-top:var(--e6);border-top:1px solid var(--filet)}
+/* ═════ LES ANNONCES EN COURS ═════════════════════════════════════════════════ */
+.annonces{margin-top:var(--e6);border-top:1px solid var(--filet)}
+.annonces li{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) auto;gap:var(--e4);align-items:baseline;padding:var(--e4) 0;border-bottom:1px solid var(--filet)}
+.annonces b{font-weight:500;color:var(--encre)}
+.annonces .petit{color:var(--encre-48)}
+@media (max-width:560px){.annonces li{grid-template-columns:1fr}}
 
 /* ═════ VALEURS ═══════════════════════════════════════════════════════════════ */
 .valeurs{display:grid;grid-template-columns:repeat(3,1fr);margin-top:var(--e8);border-top:1px solid var(--filet)}
@@ -165,13 +132,13 @@
 }
 
 /* ═════ LES PARTENAIRES — la grille ═══════════════════════════════════════════ */
-.labos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--filet);border:1px solid var(--filet);
+.labos{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:1px;background:var(--filet);border:1px solid var(--filet);
   margin-top:var(--e8);border-radius:var(--rond);overflow:hidden}
 .labo{background:#fff;min-height:150px;display:flex;align-items:center;justify-content:center;color:var(--encre);
   transition:background var(--d-micro) var(--sortie),color var(--d-micro) var(--sortie)}
 .labo:hover{background:var(--act);color:#fff}
-@media (max-width:820px){.labos{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media (max-width:400px){.labos{grid-template-columns:1fr}}
+@media (max-width:900px){.labos{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:560px){.labos{grid-template-columns:repeat(2,minmax(0,1fr))}.labo{min-height:110px}}
 
 /* ═════ MOUVEMENT RÉDUIT — ce qui est propre à cette page ═════════════════════ */
 @media (prefers-reduced-motion:reduce){
@@ -179,7 +146,6 @@
   .bandeau__piste{width:auto;flex-wrap:wrap;justify-content:center}
   .bandeau__lot{flex-wrap:wrap;justify-content:center}
   .bandeau__lot + .bandeau__lot{display:none}
-  .cine:hover .cine__fond,.cine__jouer:hover .cine__rond{transform:none}
 }
 </style>
 </head>
@@ -220,7 +186,7 @@
 <section class="scene" id="haut">
   <div class="scene__col">
     <video class="scene__film" id="film"
-           src="../assets/band.mp4" poster="../assets/poster.jpg"
+           src="../assets/hero.mp4" poster="poster-siege.jpg"
            autoplay muted loop playsinline preload="auto"
            aria-label="Vue aérienne du site d'Hyères et de son environnement"></video>
     <div class="scene__voile"></div>
@@ -263,11 +229,14 @@
 </div>
 
 <!-- ══ 3 · L'HISTOIRE ════════════════════════════════════════════════════════ -->
-<section class="tuile blanc centre" id="groupe">
+<section class="tuile blanc" id="groupe">
   <div class="dedans">
-    <p class="sur-titre rv">Notre histoire</p>
-    <h2 class="t-lg rv" style="--i:1">Neuf maisons. Un seul nom.</h2>
-    <div class="lire rv" style="--i:2;margin-top:var(--e6);text-align:left">
+   <div class="duo">
+    <div>
+      <p class="sur-titre rv">Notre histoire</p>
+      <h2 class="t-lg rv" style="--i:1">Neuf maisons. Un seul nom.</h2>
+    </div>
+    <div class="rv" style="--i:2">
       <p class="lead-aere">
         C'est la raison d'être d'Intégral Pharma depuis 2006 : redistribuer directement la
         marge aux officines françaises, en toute transparence, avec des prix nets visibles
@@ -280,6 +249,7 @@
         choisi de se mettre du côté du comptoir.
       </p>
     </div>
+   </div>
 
     <div class="compteurs rv" style="--i:3">
       <div class="compteur"><b data-cible="2006" data-depart="1986" data-brut>2006</b><small>année de création</small></div>
@@ -305,43 +275,19 @@
   </div>
 </a>
 
-<!-- ══ 5 · LE RÉSEAU ═════════════════════════════════════════════════════════ -->
-<section class="tuile doux filet-haut" id="reseau">
-  <div class="dedans duo">
-    <div class="zoom">
-      <p class="sur-titre rv">Le réseau</p>
-      <b class="zoom__n rv" style="--i:1">09</b>
-      <span class="zoom__u petit rv" style="--i:1">implantations</span>
-      <h2 class="t-lg rv" style="--i:2">Neuf implantations. Laquelle est la vôtre&nbsp;?</h2>
-      <p class="corps doux-txt rv" style="--i:3">C'est la seule question qui compte vraiment. Celle qui prépare votre commande, qui vous livre chaque matin, et dont vous connaissez l'équipe par son prénom.</p>
-      <p class="corps doux-txt rv" style="--i:4">Les huit autres sont là pour qu'elle ne soit jamais prise au dépourvu — de la Bretagne à la Méditerranée, le stock d'une maison est le stock de toutes.</p>
-    </div>
-    <div>
-      <ul class="reg rv" style="--i:1">
-        <li class="reg__l"><span class="reg__n petit-accent">01</span><span class="reg__nom">Hyères Pharma <i>(siège du groupe)</i></span><span class="reg__v petit">Hyères</span><span class="reg__d petit-accent">83</span></li>
-        <li class="reg__l"><span class="reg__n petit-accent">02</span><span class="reg__nom">SR Pharma</span><span class="reg__v petit">Palaiseau</span><span class="reg__d petit-accent">91</span></li>
-        <li class="reg__l"><span class="reg__n petit-accent">03</span><span class="reg__nom">Mistral Santé Pharma</span><span class="reg__v petit">Flassans-sur-Issole</span><span class="reg__d petit-accent">83</span></li>
-        <li class="reg__l"><span class="reg__n petit-accent">04</span><span class="reg__nom">Sud Ouest Pharma</span><span class="reg__v petit">Montayral</span><span class="reg__d petit-accent">47</span></li>
-        <li class="reg__l"><span class="reg__n petit-accent">05</span><span class="reg__nom">Comptoir Pharmaceutique du Rhône</span><span class="reg__v petit">Saint-Maurice-l'Exil</span><span class="reg__d petit-accent">38</span></li>
-        <li class="reg__l"><span class="reg__n petit-accent">06</span><span class="reg__nom">Escale Pharma</span><span class="reg__v petit">Chilly-Mazarin</span><span class="reg__d petit-accent">91</span></li>
-        <li class="reg__l"><span class="reg__n petit-accent">07</span><span class="reg__nom">Ouest Pharma Services</span><span class="reg__v petit">Saint-Étienne-de-Montluc</span><span class="reg__d petit-accent">44</span></li>
-        <li class="reg__l"><span class="reg__n petit-accent">08</span><span class="reg__nom">Pharm'Occitanie Services</span><span class="reg__v petit">Villeneuve-lès-Béziers</span><span class="reg__d petit-accent">34</span></li>
-        <li class="reg__l"><span class="reg__n petit-accent">09</span><span class="reg__nom">Sud Est Pharma</span><span class="reg__v petit">Le Cannet-des-Maures</span><span class="reg__d petit-accent">83</span></li>
-      </ul>
-      <p class="reg__note corps rv" style="--i:2">Et à l'Est, notre partenaire <b>Pharmest</b> (Metz, 57) prolonge le maillage.</p>
-    </div>
-  </div>
-</section>
-
 <!-- ══ 6 · LA CARTE — les neuf maisons sur la France, et le maillage qui pousse ═ -->
-<section class="tuile nuit" id="carte">
+<section class="tuile nuit" id="reseau">
   <div class="dedans duo duo--centre">
     <div>
-      <p class="sur-titre rv">Le maillage</p>
-      <h2 class="t-lg rv" style="--i:1">De la Bretagne à la Méditerranée.</h2>
+      <p class="sur-titre rv">Le réseau</p>
+      <h2 class="t-lg rv" style="--i:1">Neuf implantations. Laquelle est la vôtre&nbsp;?</h2>
       <p class="corps doux-txt rv" style="--i:2;margin-top:var(--e6)">
-        Le stock d'une maison est le stock de toutes. Depuis Hyères, le réseau s'est
-        étendu maison après maison — chacune livre sa région, et toutes se répondent.
+        C'est la seule question qui compte vraiment. Celle qui prépare votre commande, qui
+        vous livre chaque matin, et dont vous connaissez l'équipe par son prénom.
+      </p>
+      <p class="corps doux-txt rv" style="--i:2">
+        Les huit autres sont là pour qu'elle ne soit jamais prise au dépourvu — de la
+        Bretagne à la Méditerranée, le stock d'une maison est le stock de toutes.
       </p>
       <p class="corps doux-txt rv" style="--i:3" id="carte-consigne">
         Survolez une maison pour la retrouver sur la carte.
@@ -361,18 +307,6 @@
         <b id="carte-fiche-t">Neuf implantations et un partenaire</b>
         <span class="petit" id="carte-fiche-s">Le maillage part du siège, à Hyères</span>
       </div>
-    </div>
-  </div>
-</section>
-
-<!-- ══ 7 · BANDE PLEINE LARGEUR — le site d'Hyères ═══════════════════════════ -->
-<section class="bande" aria-label="Le site d'Hyères">
-  <img class="bande__img" src="../assets/siege-web.jpg" alt="Le bâtiment logistique d'Hyères et ses quais, vus du ciel" loading="lazy" decoding="async">
-  <div class="bande__voile"></div>
-  <div class="bande__mot">
-    <div class="dedans">
-      <p class="t-md">De la commande au comptoir.</p>
-      <p class="corps">Quelques heures, quatre métiers.</p>
     </div>
   </div>
 </section>
@@ -429,35 +363,18 @@
       </article>
     </div>
 
-    <div class="cloture rv">
-      <p class="lead">
-        Et quand la vie de votre officine change — transfert, agrandissement, cession de
-        parts — votre interlocuteur ajuste l'approvisionnement avec vous, sans à-coup au
-        comptoir.
-      </p>
-    </div>
-
-    <div class="rv">
-      <div class="cine" id="cine">
-        <img class="cine__fond" src="../assets/poster.jpg" alt="" loading="lazy" decoding="async">
-        <div class="cine__voile"></div>
-        <button class="cine__jouer" id="cine-jouer" aria-label="Voir le film du site d'Hyères">
-          <span class="cine__rond" aria-hidden="true">
-            <svg viewBox="0 0 22 26"><path d="M0 0l22 13L0 26z"/></svg>
-          </span>
-          <span>Voir le film — Hyères, vue du ciel</span>
-        </button>
-      </div>
-    </div>
   </div>
 </section>
 
 <!-- ══ 9 · LA CENTRALE — la tuile bleu franc ═════════════════════════════════ -->
-<section class="tuile bleu centre" id="centrale">
+<section class="tuile bleu" id="centrale">
   <div class="dedans">
-    <p class="sur-titre rv">La centrale</p>
-    <h2 class="t-lg rv" style="--i:1">Et pour tout ce qui n'est pas le médicament.</h2>
-    <div class="lire rv" style="--i:2;margin-top:var(--e6);text-align:left">
+   <div class="duo">
+    <div>
+      <p class="sur-titre rv">La centrale</p>
+      <h2 class="t-lg rv" style="--i:1">Et pour tout ce qui n'est pas le médicament.</h2>
+    </div>
+    <div class="rv" style="--i:2">
       <p class="lead-aere doux-txt">
         Notre centrale de parapharmacie référence pour l'officine plus de 14 000 produits et
         plus de 480 marques.
@@ -467,6 +384,7 @@
         livraison — et la même exigence que le reste du groupe.
       </p>
     </div>
+   </div>
     <div class="compteurs compteurs--duo rv" style="--i:3">
       <div class="compteur"><b data-cible="14000" data-suffixe="+">14 000<i>+</i></b><small>références</small></div>
       <div class="compteur"><b data-cible="480" data-suffixe="+">480<i>+</i></b><small>marques</small></div>
@@ -504,8 +422,7 @@
         <div class="labo t-carte">Zentiva</div>
         <div class="labo t-carte">Zydus</div>
         <div class="labo t-carte">Viatris</div>
-        <div class="labo t-carte">ITP</div>
-        <div class="labo t-carte">Santestat</div>
+        <div class="labo t-carte">Teva</div>
       </div>
     </div>
   </div>
@@ -517,18 +434,17 @@
     <div class="rv">
       <p class="sur-titre">Nous rejoindre</p>
       <h2 class="t-md">Neuf implantations qui embauchent.</h2>
+      <p class="petit rv" id="annonces-releve" style="margin-top:var(--e4);color:var(--encre-48)"></p>
     </div>
     <div class="rv" style="--i:1">
       <p class="corps doux-txt">
         Préparateur-chauffeur, technicien approvisionnement, commercial, pharmacien
         responsable : les métiers de la répartition s'apprennent chez nous.
       </p>
-      <div class="puces">
-        <span>Hyères (83)</span><span>Villeneuve-lès-Béziers (34)</span>
-        <span>Montayral (47)</span><span>Saint-Maurice-l'Exil (38)</span>
-      </div>
+      <ul class="annonces" id="annonces" aria-label="Les annonces en cours"></ul>
       <div class="actions">
-        <a class="pilule pilule--vide" href="https://www.integralpharma.fr/jobs" target="_blank" rel="noopener">Voir les offres</a>
+        <a class="pilule" id="annonces-linkedin" href="https://fr.linkedin.com/company/integralpharma/jobs" target="_blank" rel="noopener">Postuler sur LinkedIn</a>
+        <a class="pilule pilule--vide" href="https://www.integralpharma.fr/jobs" target="_blank" rel="noopener">Toutes les offres</a>
       </div>
     </div>
   </div>
@@ -538,7 +454,8 @@
 <section class="tuile doux--droite filet-haut" id="valeurs">
   <div class="dedans">
     <p class="sur-titre rv">Nos valeurs</p>
-    <h2 class="t-lg rv" style="--i:1">Trois mots qui se vérifient au téléphone.</h2>
+    <h2 class="t-lg rv" style="--i:1">Confiance. Engagement. Respect.</h2>
+    <p class="lead-aere doux-txt rv" style="--i:2;margin-top:var(--e6)">Trois mots qui se vérifient au téléphone.</p>
     <div class="valeurs">
       <div class="valeur rv" style="--i:0">
         <h3 class="t-carte">Confiance</h3>
@@ -553,6 +470,23 @@
         <p class="corps">Elle ne vous vendra pas ce dont vous n'avez pas besoin — parce qu'elle vous
         reverra le mois suivant, et l'année d'après.</p>
       </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ 13 bis · NOTRE VISION ═════════════════════════════════════════════════ -->
+<section class="tuile blanc" id="vision">
+  <div class="dedans">
+    <p class="sur-titre rv">Notre vision</p>
+    <h2 class="t-hero rv" style="--i:1;max-width:18ch">Coopérer et partager pour améliorer la santé et préserver le vivant.</h2>
+    <p class="lead-aere doux-txt rv" style="--i:2;margin-top:var(--e6)">
+      C'est la phrase qui guide le groupe, et le fil de notre responsabilité — quatre verbes,
+      quatre engagements, expliqués sur une journée.
+    </p>
+    <div class="actions rv" style="--i:3">
+      <a class="lien" href="rse.html">Notre responsabilité
+        <svg viewBox="0 0 9 14" aria-hidden="true"><path d="M1.5 1 7 7l-5.5 6" fill="none" stroke="currentColor" stroke-width="1.7"/></svg>
+      </a>
     </div>
   </div>
 </section>
@@ -605,6 +539,7 @@
   </div>
 </footer>
 
+<script src="annonces.js"></script>
 <script src="commun.js" defer></script>
 <script>
 (function(){
@@ -674,23 +609,18 @@
   window.addEventListener("resize", peindre);
   peindre();
 
-  /* ── la tuile cinéma — le second film ne se charge que sur demande ──────── */
-  var cine = document.getElementById("cine");
-  var jouer = document.getElementById("cine-jouer");
-  if (jouer){
-    jouer.addEventListener("click", function(){
-      var v = document.createElement("video");
-      v.src = "../assets/hero.mp4";
-      v.controls = true; v.playsInline = true; v.muted = true; v.loop = true;
-      v.setAttribute("muted", ""); v.setAttribute("preload", "auto"); v.tabIndex = 0;
-      v.setAttribute("aria-label", "Le film du site d'Hyères, vue du ciel");
-      cine.innerHTML = "";
-      cine.appendChild(v);
-      v.focus();
-      var p = v.play();
-      if (p && p.catch) p.catch(function(){ v.controls = true; });
-    });
+  /* ── les annonces en cours, lues dans annonces.js ──────────────────────── */
+  var ul = document.getElementById("annonces"), A = window.ANNONCES;
+  function esc(t){ return String(t).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+  if (ul && A && A.liste){
+    ul.innerHTML = A.liste.map(function(a){
+      return "<li><b>" + esc(a.poste) + "</b><span class=\"petit\">" + esc(a.maison) + " · " + esc(a.lieu) + "</span><span class=\"petit-accent\">" + esc(a.contrat) + "</span></li>";
+    }).join("");
+    var rel = document.getElementById("annonces-releve");
+    if (rel) rel.textContent = A.liste.length + " annonce" + (A.liste.length > 1 ? "s" : "") + " en cours sur notre page LinkedIn, relevée" + (A.liste.length > 1 ? "s" : "") + " le " + A.releve + ".";
+    var li = document.getElementById("annonces-linkedin"); if (li && A.linkedin) li.href = A.linkedin;
   }
+
 })();
 </script>
 <script src="carte.js" defer></script>
