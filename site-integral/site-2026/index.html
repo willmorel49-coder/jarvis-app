@@ -123,7 +123,8 @@
 .valeurs{display:grid;grid-template-columns:repeat(3,1fr);margin-top:var(--e8);border-top:1px solid var(--filet)}
 .valeur{padding:var(--carte-pad) var(--e5);border-right:1px solid var(--filet)}
 .valeur:last-child{border-right:0}
-.valeur .t-carte{margin-bottom:var(--e4)}
+.valeur .t-carte{margin-bottom:var(--e4);display:flex;align-items:center;gap:var(--e3)}
+.valeur .t-carte::before{content:"";flex:none;width:10px;height:10px;border-radius:50%;background:var(--accent)}
 .valeur .corps{color:var(--encre-80)}
 @media (max-width:820px){
   .valeurs{grid-template-columns:1fr}
@@ -136,7 +137,10 @@
   margin-top:var(--e8);border-radius:var(--rond);overflow:hidden}
 .labo{background:#fff;min-height:150px;display:flex;align-items:center;justify-content:center;color:var(--encre);
   transition:background var(--d-micro) var(--sortie),color var(--d-micro) var(--sortie)}
+.labo{position:relative}
+.labo::after{content:"";position:absolute;left:28px;right:28px;bottom:22px;height:3px;border-radius:2px;background:var(--accent);transform:scaleX(0);transform-origin:0 50%;transition:transform var(--d-etat) var(--sortie)}
 .labo:hover{background:var(--act);color:#fff}
+.labo:hover::after{transform:scaleX(1)}
 @media (max-width:900px){.labos{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media (max-width:560px){.labos{grid-template-columns:repeat(2,minmax(0,1fr))}.labo{min-height:110px}}
 
@@ -250,8 +254,14 @@
       </p>
     </div>
    </div>
+  </div>
+</section>
 
-    <div class="compteurs rv" style="--i:3">
+<!-- ══ 3 bis · EN CHIFFRES — une section à part, un cadre net ═══════════════ -->
+<section class="tuile pastel chiffres" id="chiffres">
+  <div class="dedans">
+    <p class="sur-titre rv">Le groupe en chiffres</p>
+    <div class="compteurs rv" style="--i:1">
       <div class="compteur"><b data-cible="2006" data-depart="1986" data-brut>2006</b><small>année de création</small></div>
       <div class="compteur"><b data-cible="9">9</b><small>implantations</small></div>
       <div class="compteur"><b data-cible="2000" data-suffixe="+">2 000<i>+</i></b><small>officines livrées</small></div>
@@ -280,7 +290,7 @@
   <div class="dedans duo duo--centre">
     <div>
       <p class="sur-titre rv">Le réseau</p>
-      <h2 class="t-lg rv" style="--i:1">Neuf implantations. Laquelle est la vôtre&nbsp;?</h2>
+      <h2 class="t-lg rv" style="--i:1" data-mots>Neuf implantations. Laquelle est la vôtre&nbsp;?</h2>
       <p class="corps doux-txt rv" style="--i:2;margin-top:var(--e6)">
         C'est la seule question qui compte vraiment. Celle qui prépare votre commande, qui
         vous livre chaque matin, et dont vous connaissez l'équipe par son prénom.
@@ -451,10 +461,10 @@
 </section>
 
 <!-- ══ 13 · LES VALEURS ══════════════════════════════════════════════════════ -->
-<section class="tuile doux--droite filet-haut" id="valeurs">
+<section class="tuile pastel--droite" id="valeurs">
   <div class="dedans">
     <p class="sur-titre rv">Nos valeurs</p>
-    <h2 class="t-lg rv" style="--i:1">Confiance. Engagement. Respect.</h2>
+    <h2 class="t-lg rv" style="--i:1" data-mots>Confiance. Engagement. Respect.</h2>
     <p class="lead-aere doux-txt rv" style="--i:2;margin-top:var(--e6)">Trois mots qui se vérifient au téléphone.</p>
     <div class="valeurs">
       <div class="valeur rv" style="--i:0">
@@ -475,7 +485,7 @@
 </section>
 
 <!-- ══ 13 bis · NOTRE VISION ═════════════════════════════════════════════════ -->
-<section class="tuile blanc" id="vision">
+<section class="tuile nuit" id="vision">
   <div class="dedans">
     <p class="sur-titre rv">Notre vision</p>
     <h2 class="t-hero rv" style="--i:1;max-width:18ch" data-reflet>Coopérer et partager pour améliorer la santé et préserver le vivant.</h2>
