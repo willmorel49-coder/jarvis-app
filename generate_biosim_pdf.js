@@ -37,7 +37,7 @@ const logo = (nom, h) => LOGOS[nom]
 
 const chips = (m) => m.biosimilaires.slice().sort((a, b) => alpha(a.nom, b.nom)).map((b) =>
   b.partenaire && b.partenaire_labo
-    ? '<span class="chip part">' + logo(b.partenaire_labo, 11) + esc(b.nom) + '</span>'
+    ? '<span class="chip part">' + logo(b.partenaire_labo, 7) + esc(b.nom) + '</span>'
     : '<span class="chip">' + esc(b.nom) + '</span>').join("");
 
 // prix « groupe biosimilaire » partagé (PPHT réglementé) d'une molécule
@@ -65,7 +65,7 @@ const moisFactures = (meta.prix_factures && meta.prix_factures.mois || []).map((
   return ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."][+mo - 1] + " " + y;
 });
 const FOOT = (interne) => `<div class="foot">
-    <span class="lgs"><b>Partenaires Intégral</b> ${["Teva", "Zentiva", "EG Labo"].map((n) => logo(n, 10)).join("")}</span> · ${interne
+    <span class="lgs"><b>Partenaires Intégral</b> ${["Teva", "Zentiva", "EG Labo"].map((n) => logo(n, 8)).join("")}</span> · ${interne
       ? 'PPHT = tarif grossiste HT · Net IP = votre prix après abandon de marge Intégral.'
       : 'PPHT = tarif grossiste HT · Net IP = votre prix Intégral, abandon de marge appliqué.'}<br>
     Le PPHT est un tarif réglementé commun à tous les biosimilaires d'une même présentation. Prix indicatifs${moisFactures.length ? ", constatés sur les factures Intégral de " + esc(moisFactures[0]) + " à " + esc(moisFactures[moisFactures.length - 1]) : ""}.<br>

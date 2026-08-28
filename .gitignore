@@ -168,3 +168,5 @@ crm/ops-aggregate.js
 *.xls
 *.csv
 *.pdf
+# 29/08/2026 — Excel biosimilaires (prix nets) : espace protégé, pas le dépôt
+base-biosimilaires.xlsx

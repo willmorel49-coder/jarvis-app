@@ -396,8 +396,10 @@
           '<span class="mkt-make-t">Biosimilaires substituables</span>' +
           '<span class="mkt-make-s">Tous les biosimilaires substituables en officine — PPHT, abandon de marge et prix net IP. Fiche façon Teva prête à présenter, + la base complète.</span>' +
           '<span class="mkt-make-t50btns">' +
-            '<a class="v2-btn v2-btn-primary" href="../../biosim-poster-synthese-pharmacien.pdf" download>' + ICO('download', 15) + ' Fiche PDF</a>' +
-            '<a class="v2-btn v2-btn-ghost" href="../../biosim-poster-detail-pharmacien.pdf" download>' + ICO('download', 15) + ' Toutes présentations</a>' +
+            // 29/08/2026 — les fiches portent le net IP : plus dans le dépôt public,
+            // servies depuis l'espace protégé (les anciens liens répondaient 404).
+            '<button class="v2-btn v2-btn-primary" onclick="V2.ouvrirDocProtege(\'biosimSynthesePharma\')">' + ICO('download', 15) + ' Fiche PDF</button>' +
+            '<button class="v2-btn v2-btn-ghost" onclick="V2.ouvrirDocProtege(\'biosimDetailPharma\')">' + ICO('download', 15) + ' Toutes présentations</button>' +
             (V2.pages && V2.pages.biosimilaires ? '<button class="v2-btn v2-btn-ghost" onclick="V2.go(\'biosimilaires\')">' + ICO('chev', 15, 2.2) + ' Ouvrir la base</button>' : '') +
           '</span>' +
         '</div>' +
