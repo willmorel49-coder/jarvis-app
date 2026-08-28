@@ -376,12 +376,12 @@ html.js .rv.vu.carte.penche{transform:perspective(900px) rotateX(var(--rx)) rota
    Jamais un aplat orange, jamais un titre en deux couleurs. */
 
 /* a · chaque section s'ouvre par un trait orange qui se dessine */
-.sur-titre{display:flex;align-items:center;gap:var(--e3)}
-.sur-titre::before{content:"";flex:none;width:28px;height:3px;border-radius:2px;background:var(--accent);
+.sur-titre{display:flex;align-items:flex-start;gap:var(--e3)}
+.sur-titre::before{content:"";flex:none;width:28px;height:3px;margin-top:.58em;border-radius:2px;background:var(--accent);
   transform-origin:0 50%;transition:transform var(--d-revel) var(--sortie) .15s}
 html.js .rv.sur-titre:not(.vu)::before,html.js .rv:not(.vu) .sur-titre::before{transform:scaleX(0)}
 .centre .sur-titre{justify-content:center}
-.sur-titre[data-h]::before{width:auto;height:auto;background:none;border-radius:0;transform:none;transition:none}
+.sur-titre[data-h]::before{width:auto;height:auto;margin-top:0;background:none;border-radius:0;transform:none;transition:none}
 .bleu .sur-titre::before{background:var(--accent-nuit)}
 
 /* b · le trait qui coiffe chaque grand chiffre, le « + » en orange */
