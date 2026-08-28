@@ -24,7 +24,10 @@ const BIOSIM_REFERENTIEL = [
       { nom: "Hyrimoz", labo: "Sandoz", annee: 2018 },
       { nom: "Idacio", labo: "Fresenius Kabi", annee: 2019 },
       { nom: "Amsparity", labo: "Pfizer", annee: 2020 },
-      { nom: "Yuflyma", labo: "Celltrion", annee: 2023 },
+      // 28/08/2026 — Will : Yuflyma, Steqeyma et Eydenzelt sont promus par ZENTIVA
+      // chez Intégral (mémo interne « Tableau biosimilaires ») même si la facture
+      // porte Celltrion / Bayer → `distrib` décide du logo partenaire.
+      { nom: "Yuflyma", labo: "Celltrion", annee: 2023, distrib: "Zentiva" },
       { nom: "Hukyndra", labo: "Stada / Alvotech", annee: 2023 },
       { nom: "Libmyris", labo: "Stada / Samsung Bioepis", annee: 2023 },
     ],
@@ -68,7 +71,7 @@ const BIOSIM_REFERENTIEL = [
       { nom: "Uzpruvo", labo: "Stada / Alvotech", annee: 2024 },
       { nom: "Wezenla", labo: "Amgen", annee: 2024 },
       { nom: "Pyzchiva", labo: "Sandoz / Samsung Bioepis", annee: 2024 },
-      { nom: "Steqeyma", labo: "Celltrion", annee: 2024 },
+      { nom: "Steqeyma", labo: "Celltrion", annee: 2024, distrib: "Zentiva" },
       { nom: "Otulfi", labo: "Fresenius Kabi / Formycon", annee: 2024 },
       { nom: "Imuldosa", labo: "Accord / Dong-A", annee: 2024 },
       { nom: "Yesintek", labo: "Biocon", annee: 2025 },
@@ -232,7 +235,7 @@ const BIOSIM_REFERENTIEL = [
       { nom: "Afqlir", labo: "Sandoz", annee: 2024 },
       { nom: "Yesafili", labo: "Biocon", annee: 2023, statut: "AMM UE" },
       { nom: "Opuviz", labo: "Biogen / Samsung Bioepis", annee: 2024, statut: "AMM UE" },
-      { nom: "Eydenzelt", labo: "Celltrion", annee: 2025, statut: "AMM UE" },
+      { nom: "Eydenzelt", labo: "Celltrion", annee: 2025, statut: "AMM UE", distrib: "Zentiva" },
       { nom: "Pavblu", labo: "Amgen", annee: 2025, statut: "AMM UE" },
       { nom: "Mynzepli", labo: "Advanz / Alvotech", annee: 2025, statut: "AMM UE" },
       { nom: "Ahzantive", labo: "Formycon / Klinge", annee: 2025, statut: "AMM UE" },
@@ -286,6 +289,8 @@ const BIOSIM_REFERENTIEL = [
       // absents du référentiel jusque-là.
       { nom: "Enoxaparine Zentiva", labo: "Zentiva", annee: null, match: ["ENOXAPARINE ZEN"] },
       { nom: "Enoxaparine EG", labo: "EG Labo", annee: null, match: ["ENOXAPARINE EG "] },
+      // 28/08/2026 — vendue chez Intégral (VENIPHARM), ajoutée à la demande de Will.
+      { nom: "Enoxaparine Venipharm", labo: "Venipharm", annee: null, match: ["ENOXAPARINE VNP"] },
     ],
   },
   {

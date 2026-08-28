@@ -114,6 +114,10 @@ L'INTEGRAL COMPLET*.pdf
 # Fiche biosimilaires INTERNE (conditions commerciales — ne jamais publier)
 biosim-poster-interne.pdf
 biosim-poster-*interne.pdf
+# 28/08/2026 — les fiches « pharmacien » portent aussi le net IP : plus aucune
+# fiche biosimilaires dans le dépôt public, toutes dans l'espace Supabase protégé
+biosim-poster-*.pdf
+biosim-poster-*.html
 # 24/08/2026 — le HTML aussi. La règle ne visait que le PDF, alors que le HTML
 # qui le fabrique porte exactement les mêmes chiffres : prix net IP ET taux
 # d'abandon, référence par référence. Ignorer la sortie mais pas sa source,

@@ -410,6 +410,16 @@
     biosimDetail: {
       fichier: 'biosim-poster-detail-interne.pdf',
       titre: 'Biosimilaires · toutes présentations (interne)', type: 'pdf'
+    },
+    // 28/08/2026 — Will : PPHT + net IP aussi sur la fiche remise au pharmacien.
+    // Elle porte donc des prix nets → sortie du dépôt public, servie ici.
+    biosimSynthesePharma: {
+      fichier: 'biosim-poster-synthese-pharmacien.pdf',
+      titre: 'Biosimilaires · synthèse (pharmacien)', type: 'pdf'
+    },
+    biosimDetailPharma: {
+      fichier: 'biosim-poster-detail-pharmacien.pdf',
+      titre: 'Biosimilaires · toutes présentations (pharmacien)', type: 'pdf'
     }
   };
   V2.docsProteges = DOCS_PROTEGES;
