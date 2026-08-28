@@ -3,7 +3,9 @@
 // Poster « Biosimilaires substituables en officine » (façon fiche Teva, brandé
 // Intégral). 2 mises en page × 2 versions = 4 PDF :
 //   synthese : 1 prix par molécule (compact)      detail : toutes les présentations
-//   interne  : PPHT + net IP + abandon (confidentiel)   pharmacien : PPHT seul
+//   interne  : PPHT + net IP + abandon (confidentiel)   pharmacien : PPHT + net IP
+// ⚠️ Depuis le 28/08/2026 les QUATRE PDF portent des prix nets : ils vivent dans
+// l'espace Supabase protégé (V2.ouvrirDocProtege), jamais dans le dépôt public.
 // Net IP = PPHT − abandon de marge Intégral.
 // 28/08/2026 : molécules ET marques en ordre alphabétique ; les biosimilaires
 // des labos partenaires portent le LOGO du labo (Teva / Zentiva / EG Labo) à la
@@ -65,7 +67,7 @@ const moisFactures = (meta.prix_factures && meta.prix_factures.mois || []).map((
 const FOOT = (interne) => `<div class="foot">
     <span class="lgs"><b>Partenaires Intégral</b> ${["Teva", "Zentiva", "EG Labo"].map((n) => logo(n, 10)).join("")}</span> · ${interne
       ? 'PPHT = tarif grossiste HT · Net IP = votre prix après abandon de marge Intégral.'
-      : 'PPHT = tarif grossiste HT · abandon de marge Intégral appliqué. Prix net sur demande à votre commercial.'}<br>
+      : 'PPHT = tarif grossiste HT · Net IP = votre prix Intégral, abandon de marge appliqué.'}<br>
     Le PPHT est un tarif réglementé commun à tous les biosimilaires d'une même présentation. Prix indicatifs${moisFactures.length ? ", constatés sur les factures Intégral de " + esc(moisFactures[0]) + " à " + esc(moisFactures[moisFactures.length - 1]) : ""}.<br>
     Source : référentiel ANSM / Ameli / EMA × tarif &amp; ventes réseau Intégral · édité le ${esc(meta.genere_le)}.
   </div>`;
@@ -95,17 +97,15 @@ function synthese(mode) {
   const rows = substituables.map((m) => {
     const r = m.reference_enrich, gp = groupBioPrice(m);
     const refP = r.prix_ppht_std == null ? '<span class="np">n.c.</span>'
-      : '<b>' + eur(r.prix_ppht_std) + '</b> <span class="u">PPHT</span>' + (interne && r.prix_ip_std != null ? '<br><span class="net">' + eur(r.prix_ip_std) + '</span> <span class="u">net IP</span>' : '');
+      : '<b>' + eur(r.prix_ppht_std) + '</b> <span class="u">PPHT</span>' + (r.prix_ip_std != null ? '<br><span class="net">' + eur(r.prix_ip_std) + '</span> <span class="u">net IP</span>' : '');
     let bioP = '<span class="np">n.c.</span>';
-    if (gp) bioP = interne
-      ? '<b>' + eur(gp.ppht) + '</b> <span class="u">PPHT</span> · <span class="net">' + eur(gp.net) + '</span> <span class="u">net IP</span> <span class="ab">' + pct(gp.ab) + '</span>'
-      // 24/08/2026 — le taux d'abandon ne s'imprime PLUS sur la version pharmacien.
-      // Regle non negociable : on montre les conditions a l'ecran en rendez-vous,
-      // jamais sur un document remis au pharmacien ni sur un support public. Or ce
-      // PDF etait les deux a la fois -- il partait avec les commerciaux ET il etait
-      // telechargeable depuis le depot public (11 taux imprimes, mesures le 24/08).
-      // Le bas de page dit deja « prix net sur demande a votre commercial ».
-      : '<b>' + eur(gp.ppht) + '</b> <span class="u">PPHT</span>';
+    // 28/08/2026 — Will : « mets les 2 prix, le PPHT et le prix net IP » sur la
+    // fiche remise au pharmacien. Le net IP y figure donc ; seul le TAUX d'abandon
+    // reste réservé à la version interne. En contrepartie, plus AUCUN de ces PDF
+    // ne passe par le dépôt public : les quatre sont servis depuis l'espace
+    // protégé (règle du 24/08 : aucune condition chiffrée sur un support public).
+    if (gp) bioP = '<b>' + eur(gp.ppht) + '</b> <span class="u">PPHT</span> · <span class="net">' + eur(gp.net) + '</span> <span class="u">net IP</span>'
+      + (interne ? ' <span class="ab">' + pct(gp.ab) + '</span>' : '');
     return '<tr><td class="sub"><div class="dci">' + esc(m.dci) + '</div><div class="atc">' + esc(m.atc) + '</div><div class="aire">' + esc(m.aire) + '</div></td>'
       + '<td class="ref"><div class="rn">' + esc(m.reference) + '</div><div class="rl">' + esc(m.reference_labo) + '</div><div class="rp">' + refP + '</div></td>'
       + '<td class="bio"><div class="bp">' + bioP + '</div><div class="cc">' + chips(m) + '</div></td></tr>';
@@ -113,14 +113,14 @@ function synthese(mode) {
   return `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><style>${CSS}
   table { width:100%; border-collapse:separate; border-spacing:0 4px; margin-top:6px; }
   thead th { font-size:8.5px; text-transform:uppercase; letter-spacing:.05em; color:#8894A6; font-weight:800; text-align:left; padding:0 10px 1px; }
-  td { background:#fff; border:1px solid #E6EAF0; vertical-align:top; padding:5px 10px; }
+  td { background:#fff; border:1px solid #E6EAF0; vertical-align:top; padding:4px 10px; }
   td.sub { width:20%; border-right:0; border-radius:10px 0 0 10px; background:${NAVY}; color:#fff; }
   td.ref { width:28%; border-left:0; border-right:0; } td.bio { width:52%; border-left:0; border-radius:0 10px 10px 0; }
   .dci { font-size:12px; font-weight:800; } .atc { font-family:monospace; font-size:8px; opacity:.7; } .aire { font-size:8.5px; opacity:.9; margin-top:2px; }
   .rn { font-weight:800; font-size:11px; } .rl { font-size:8.5px; color:#737A8C; } .rp { margin-top:4px; line-height:1.5; }
   .u { font-size:7.5px; color:#8894A6; text-transform:uppercase; font-weight:700; }
   .bp { background:#F4F7FE; border-radius:7px; padding:4px 9px; margin-bottom:4px; line-height:1.45; }
-  .cc { display:flex; flex-wrap:wrap; gap:4px; }
+  .cc { display:flex; flex-wrap:wrap; gap:3px; }
   tbody tr { page-break-inside:avoid; }
 </style></head><body>${HEAD("Synthèse", interne ? CONFID : "")}
   <table><thead><tr><th>Substance active</th><th>Médicament de référence</th><th>Biosimilaires &amp; prix Intégral</th></tr></thead>
@@ -131,13 +131,12 @@ function synthese(mode) {
 function detail(mode) {
   const interne = mode === "interne";
   const cards = substituables.map((m) => {
-    // 24/08/2026 — colonne « Abandon de marge » retiree de la version pharmacien
-    // (voir le commentaire dans synthese()). 98 taux etaient imprimes sur les
-    // 3 pages du PDF public. La version interne, elle, garde tout.
-    const th = interne ? '<th class="num">PPHT</th><th class="num">Net IP</th><th class="num">Abandon</th>' : '<th class="num">PPHT</th>';
+    // 28/08/2026 — PPHT + net IP sur les deux versions (Will) ; la colonne
+    // « Abandon » reste réservée à la version interne (voir synthese()).
+    const th = '<th class="num">PPHT</th><th class="num">Net IP</th>' + (interne ? '<th class="num">Abandon</th>' : '');
     const rows = (m.presentations || []).map((p) => {
-      const c = interne ? '<td class="num">' + eur(p.ppht) + '</td><td class="num net">' + eur(p.net) + '</td><td class="num ab">' + pct(p.abandon) + '</td>'
-        : '<td class="num">' + eur(p.ppht) + '</td>';
+      const c = '<td class="num">' + eur(p.ppht) + '</td><td class="num net">' + eur(p.net) + '</td>'
+        + (interne ? '<td class="num ab">' + pct(p.abandon) + '</td>' : '');
       return '<tr><td class="form">' + esc(p.form) + '</td>' + c + '</tr>';
     }).join("");
     const n = (m.presentations || []).length;

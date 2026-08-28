@@ -261,8 +261,10 @@
             // (PPHT seul) restent téléchargeables et remettables.
             '<a class="bs-dl" onclick="V2.ouvrirDocProtege(\'biosimSynthese\')">' + ICO('fiche', 15) + ' Fiche interne · synthèse (net IP)</a>' +
             '<a class="bs-dl" onclick="V2.ouvrirDocProtege(\'biosimDetail\')">' + ICO('fiche', 15) + ' Fiche interne · toutes présentations (net IP)</a>' +
-            '<a class="bs-dl alt" href="../../biosim-poster-synthese-pharmacien.pdf" download>' + ICO('fiche', 15) + ' Fiche pharmacien · synthèse</a>' +
-            '<a class="bs-dl alt" href="../../biosim-poster-detail-pharmacien.pdf" download>' + ICO('fiche', 15) + ' Fiche pharmacien · toutes présentations</a>' +
+            // 28/08/2026 — Will : PPHT + net IP aussi sur la fiche pharmacien → elle
+            // sort du dépôt public et se sert depuis l'espace protégé, comme l'interne.
+            '<a class="bs-dl alt" onclick="V2.ouvrirDocProtege(\'biosimSynthesePharma\')">' + ICO('fiche', 15) + ' Fiche pharmacien · synthèse</a>' +
+            '<a class="bs-dl alt" onclick="V2.ouvrirDocProtege(\'biosimDetailPharma\')">' + ICO('fiche', 15) + ' Fiche pharmacien · toutes présentations</a>' +
           '</div>' +
           stats + filters +
           '<div class="bs-count" id="bs-count">' + countLabel() + '</div>' +
