@@ -17,6 +17,14 @@
   function eur(n) { return (Math.round((+n || 0) * 100) / 100).toString().replace('.', ',') + ' €'; }
 
   var CANAL_LABEL = { ville: 'Ville', hopital: 'Hôpital', mixte: 'Ville + hôpital' };
+  // 28/08/2026 — le logo du labo partenaire remplace l'étoile (demande de Will).
+  // Chemins relatifs à crm/v2/index.html, seule page qui charge ce fichier.
+  var LOGO = { 'Teva': 'logos/teva.svg', 'Zentiva': 'logos/zentiva.svg', 'EG Labo': 'logos/eg-labo.png' };
+  var PARTENAIRES_ORDRE = ['Teva', 'Zentiva', 'EG Labo'];
+  function logoImg(nom, cls) {
+    if (!LOGO[nom]) return '';
+    return '<img class="' + cls + '" src="' + LOGO[nom] + '" alt="' + esc(nom) + '" title="Partenaire Intégral · ' + esc(nom) + '">';
+  }
   var PURPLE = '#6D4FC4', GREEN = '#1E9E5A', ORANGE = '#E8722B', NAVY = '#0F2A47';
 
   var S = { q: '', aire: '', canal: '', subOnly: false, partOnly: false, ipOnly: false, open: {} };
@@ -85,6 +93,9 @@
       '.bs-tag.ip{background:#EDE7FA;color:' + PURPLE + '}',
       '.bs-tag.no{background:#F1F4F8;color:#A0A9B8}',
       '.bs-tag.pr{background:#E7ECF3;color:#5A6b80}',
+      '.bs-logo{height:15px;width:auto;vertical-align:middle;margin-left:7px}',
+      '.bs-pill.part{display:inline-flex;align-items:center;gap:6px}',
+      '.bs-pill.part .bs-logo{height:12px;margin-left:0}',
       '.bs-dls{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}',
       '.bs-dl{display:inline-flex;align-items:center;gap:7px;background:' + NAVY + ';color:#fff;border-radius:11px;padding:9px 15px;font-size:13px;font-weight:700;text-decoration:none}',
       '.bs-dl.alt{background:#fff;color:' + NAVY + ';border:1.5px solid ' + NAVY + '}',
@@ -121,7 +132,13 @@
       ? '<span class="bs-pill sub">✓ Substituable officine</span>'
       : '<span class="bs-pill nosub">Non substituable</span>';
     out += '<span class="bs-pill ' + (m.canal === 'hopital' ? 'hosp' : 'canal') + '">' + esc(CANAL_LABEL[m.canal] || m.canal) + '</span>';
-    if (m.has_partenaire) out += '<span class="bs-pill part">★ Partenaire IP</span>';
+    if (m.has_partenaire) {
+      // les logos des partenaires présents sur cette molécule, dans un ordre fixe
+      var presents = PARTENAIRES_ORDRE.filter(function (p) {
+        return m.biosimilaires.some(function (b) { return b.partenaire && b.partenaire_labo === p; });
+      });
+      out += '<span class="bs-pill part">Partenaire IP' + presents.map(function (p) { return logoImg(p, 'bs-logo'); }).join('') + '</span>';
+    }
     out += '<span class="bs-pill aire">' + esc(m.aire) + '</span>';
     return out;
   }
@@ -129,7 +146,11 @@
   function tags(e, isPrinceps) {
     var t = '';
     if (isPrinceps) t += '<span class="bs-tag pr">Princeps</span>';
-    if (e.partenaire) t += '<span class="bs-tag part">Partenaire' + (e.distrib ? ' · ' + esc(e.distrib) : '') + '</span>';
+    if (e.partenaire) {
+      t += (!isPrinceps && LOGO[e.partenaire_labo])
+        ? logoImg(e.partenaire_labo, 'bs-logo')
+        : '<span class="bs-tag part">Partenaire' + (e.partenaire_labo ? ' · ' + esc(e.partenaire_labo) : '') + '</span>';
+    }
     if (!isPrinceps) t += e.disponible_ip ? '<span class="bs-tag ip">Chez Intégral</span>' : '<span class="bs-tag no">non réf.</span>';
     return t;
   }
@@ -217,13 +238,14 @@
         '<span class="bs-chip' + (S.canal === 'ville' ? ' on' : '') + '" onclick="V2.pages.biosimilaires.setChip(\'canal\',\'ville\')">Ville</span>' +
         '<span class="bs-chip' + (S.canal === 'hopital' ? ' on' : '') + '" onclick="V2.pages.biosimilaires.setChip(\'canal\',\'hopital\')">Hôpital</span>' +
         '<span class="bs-chip sub' + (S.subOnly ? ' on' : '') + '" onclick="V2.pages.biosimilaires.setChip(\'subOnly\')">✓ Substituables</span>' +
-        '<span class="bs-chip part' + (S.partOnly ? ' on' : '') + '" onclick="V2.pages.biosimilaires.setChip(\'partOnly\')">★ Partenaires (Zentiva/EG/Teva)</span>' +
+        '<span class="bs-chip part' + (S.partOnly ? ' on' : '') + '" onclick="V2.pages.biosimilaires.setChip(\'partOnly\')">Partenaires (Teva · Zentiva · EG Labo)</span>' +
         '<span class="bs-chip' + (S.ipOnly ? ' on' : '') + '" onclick="V2.pages.biosimilaires.setChip(\'ipOnly\')">Chez Intégral</span>' +
       '</div>';
 
       var legend = '<div class="bs-legend">' +
         '<b>Substituable officine</b> = le pharmacien peut délivrer un biosimilaire à la place du princeps (arrêté du 10 avr. 2026, 11 groupes). ' +
-        '<b>★ Partenaire IP</b> = biosimilaire d\'un labo partenaire Intégral (Zentiva, EG, Teva). ' +
+        '<b>Logo Teva / Zentiva / EG Labo</b> = biosimilaire d\'un labo partenaire Intégral (labo qui facture, ou distributeur en France). ' +
+        (meta.prix_factures && meta.prix_factures.mois ? '<b>PPHT et net IP</b> constatés sur les factures Intégral de ' + esc(meta.prix_factures.mois[0]) + ' à ' + esc(meta.prix_factures.mois[meta.prix_factures.mois.length - 1]) + '. ' : '') +
         'Pénétration = part des biosimilaires dans les ventes France (Ameli) de la molécule. ' +
         'Les molécules hospitalières hors circuit officine sont marquées « hôpital / hors périmètre ».' +
         '<br>Source : référentiel ANSM/Ameli/EMA × données réseau Intégral · généré le ' + esc(meta.genere_le || '') + '.</div>';
@@ -234,8 +256,13 @@
           '<p style="color:#737A8C;font-size:14px;margin:0 0 4px">Tous les biosimilaires disponibles en France, croisés à tes ventes et stocks réseau. Les <b style="color:' + GREEN + '">substituables en officine</b> et les <b style="color:' + ORANGE + '">labos partenaires</b> en tête.</p>' +
           '<div class="bs-dls">' +
             '<a class="bs-dl" href="../../base-biosimilaires.xlsx" download>' + ICO('fiche', 15) + ' Excel complet</a>' +
-            '<a class="bs-dl alt" href="../../biosim-poster-synthese-pharmacien.pdf" download>' + ICO('fiche', 15) + ' Fiche PDF · synthèse</a>' +
-            '<a class="bs-dl alt" href="../../biosim-poster-detail-pharmacien.pdf" download>' + ICO('fiche', 15) + ' Fiche PDF · toutes présentations</a>' +
+            // 28/08/2026 — fiches INTERNES (avec net IP) : servies depuis l'espace
+            // protégé, jamais depuis le dépôt public. Les versions « pharmacien »
+            // (PPHT seul) restent téléchargeables et remettables.
+            '<a class="bs-dl" onclick="V2.ouvrirDocProtege(\'biosimSynthese\')">' + ICO('fiche', 15) + ' Fiche interne · synthèse (net IP)</a>' +
+            '<a class="bs-dl" onclick="V2.ouvrirDocProtege(\'biosimDetail\')">' + ICO('fiche', 15) + ' Fiche interne · toutes présentations (net IP)</a>' +
+            '<a class="bs-dl alt" href="../../biosim-poster-synthese-pharmacien.pdf" download>' + ICO('fiche', 15) + ' Fiche pharmacien · synthèse</a>' +
+            '<a class="bs-dl alt" href="../../biosim-poster-detail-pharmacien.pdf" download>' + ICO('fiche', 15) + ' Fiche pharmacien · toutes présentations</a>' +
           '</div>' +
           stats + filters +
           '<div class="bs-count" id="bs-count">' + countLabel() + '</div>' +

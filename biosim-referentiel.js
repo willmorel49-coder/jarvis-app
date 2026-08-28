@@ -146,7 +146,8 @@ const BIOSIM_REFERENTIEL = [
     biosimilaires: [
       { nom: "Zarzio", labo: "Sandoz", annee: 2009 },
       { nom: "Tevagrastim", labo: "Teva", annee: 2008 },
-      { nom: "Ratiograstim", labo: "Teva / ratiopharm", annee: 2008 },
+      // 28/08/2026 — facturé par BIOGARAN (stock + ventes 2026), pas par Teva.
+      { nom: "Ratiograstim", labo: "ratiopharm", annee: 2008, distrib: "Biogaran" },
       { nom: "Nivestim", labo: "Pfizer / Hospira", annee: 2010 },
       { nom: "Accofil", labo: "Accord", annee: 2014 },
       { nom: "Grastofil", labo: "Accord / Apotex", annee: 2013 },
@@ -163,7 +164,9 @@ const BIOSIM_REFERENTIEL = [
       { nom: "Pelmeg", labo: "Mundipharma / Cinfa", annee: 2019 },
       { nom: "Fulphila", labo: "Viatris / Biocon", annee: 2019 },
       { nom: "Grasustek", labo: "Mundipharma", annee: 2019 },
-      { nom: "Nyvepria", labo: "Pfizer", annee: 2020 },
+      // 28/08/2026 — la moitié des lignes 2026 sont facturées TEVA SANTE ; le
+      // mémo interne « Tableau biosimilaires » le range aussi chez Teva.
+      { nom: "Nyvepria", labo: "Pfizer", annee: 2020, distrib: "Teva" },
       { nom: "Cegfila", labo: "Mundipharma", annee: 2020 },
       { nom: "Stimufend", labo: "Fresenius Kabi", annee: 2022, distrib: "Teva" },
       { nom: "Udenyca", labo: "Accord / Coherus", annee: 2019 },
@@ -273,10 +276,16 @@ const BIOSIM_REFERENTIEL = [
     biosimilaires: [
       { nom: "Inhixa", labo: "Techdow", annee: 2016 },
       { nom: "Ghemaxan", labo: "Techdow", annee: 2017 },
-      { nom: "Crusia (Becat)", labo: "Rovi", annee: 2017 },
-      { nom: "Enoxaparine Arrow", labo: "Arrow / Apotex", annee: 2021 },
-      { nom: "Enoxaparine Biogaran", labo: "Biogaran", annee: 2021 },
-      { nom: "Enoxaparine Teva", labo: "Teva", annee: 2021 },
+      { nom: "Crusia (Becat)", labo: "Rovi", annee: 2017, match: ["ENOXAPARINE CRU", "ENOXAPARINE BCT"] },
+      // `match` : les désignations Intégral abrègent le labo (« ENOXAPARINE TVC »),
+      // le nom de marque seul ne retrouve donc aucun produit → clés explicites.
+      { nom: "Enoxaparine Arrow", labo: "Arrow / Apotex", annee: 2021, match: ["ENOXAPARINE ARW"] },
+      { nom: "Enoxaparine Biogaran", labo: "Biogaran", annee: 2021, match: ["ENOXAPARINE BGA"] },
+      { nom: "Enoxaparine Teva", labo: "Teva", annee: 2021, match: ["ENOXAPARINE TVC"] },
+      // 28/08/2026 — présents au stock et facturés en 2026 (ZENTIVA FRANCE / EG LABO),
+      // absents du référentiel jusque-là.
+      { nom: "Enoxaparine Zentiva", labo: "Zentiva", annee: null, match: ["ENOXAPARINE ZEN"] },
+      { nom: "Enoxaparine EG", labo: "EG Labo", annee: null, match: ["ENOXAPARINE EG "] },
     ],
   },
   {
@@ -284,7 +293,9 @@ const BIOSIM_REFERENTIEL = [
     reference: "Gonal-F", reference_labo: "Merck Serono", canal: "ville",
     substituable: true, substituable_date: "2025-02-20",
     biosimilaires: [
-      { nom: "Ovaleap", labo: "Theramex / Teva", annee: 2013 },
+      // 28/08/2026 — Ovaleap est passé chez Theramex (facturé THERAMEX FRANCE) :
+      // ce n'est plus un produit Teva, donc plus un partenaire.
+      { nom: "Ovaleap", labo: "Theramex", annee: 2013 },
       { nom: "Bemfola", labo: "Gedeon Richter / Finox", annee: 2014 },
     ],
   },

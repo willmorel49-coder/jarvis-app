@@ -398,6 +398,18 @@
     reforme2027: {
       fichier: 'tranches-marge-grossiste-2027.html',
       titre: 'Réforme 2027'
+    },
+    // 28/08/2026 — fiches biosimilaires INTERNES (PPHT + net IP + abandon).
+    // Elles ne passent jamais par le dépôt public (.gitignore) : seules les
+    // versions « pharmacien », sans net IP, y sont. `type: 'pdf'` → on rend
+    // le fichier tel quel dans l'onglet, sans passer par le texte.
+    biosimSynthese: {
+      fichier: 'biosim-poster-synthese-interne.pdf',
+      titre: 'Biosimilaires · synthèse (interne)', type: 'pdf'
+    },
+    biosimDetail: {
+      fichier: 'biosim-poster-detail-interne.pdf',
+      titre: 'Biosimilaires · toutes présentations (interne)', type: 'pdf'
     }
   };
   V2.docsProteges = DOCS_PROTEGES;
@@ -435,10 +447,12 @@
       })
       .then(function (rep) {
         if (!rep.ok) throw new Error('HTTP ' + rep.status);
-        return rep.text();
+        return d.type === 'pdf' ? rep.blob() : rep.text();
       })
-      .then(function (html) {
-        var blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+      .then(function (contenu) {
+        var blob = d.type === 'pdf'
+          ? new Blob([contenu], { type: 'application/pdf' })
+          : new Blob([contenu], { type: 'text/html;charset=utf-8' });
         var burl = URL.createObjectURL(blob);
         if (onglet) onglet.location.replace(burl); else window.location.href = burl;
         // Laisser le temps à l'onglet de charger avant de libérer la mémoire.
