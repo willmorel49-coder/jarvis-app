@@ -126,8 +126,44 @@
 .valeur .t-carte{margin-bottom:var(--e4);display:flex;align-items:center;gap:var(--e3)}
 .valeur .t-carte::before{content:"";flex:none;width:10px;height:10px;border-radius:50%;background:var(--accent)}
 .valeur .corps{color:var(--encre-80)}
+
+/* les valeurs s'installent : un trait orange se tire au-dessus de chacune,
+   la pastille arrive en rebond, et la colonne s'éclaire au survol */
+.valeur{position:relative;transition:background var(--d-etat) var(--sortie)}
+.valeur::before{content:"";position:absolute;left:0;right:1px;top:-1px;height:2px;border-radius:2px;
+  background:var(--accent);transform:scaleX(0);transform-origin:0 50%;
+  transition:transform var(--d-revel) var(--sortie);transition-delay:calc(var(--i,0) * 110ms + 120ms)}
+html.js .rv.vu.valeur::before{transform:scaleX(1)}
+.valeur .t-carte::before{transform:scale(0);
+  transition:transform .55s cubic-bezier(.2,1.5,.4,1);transition-delay:calc(var(--i,0) * 110ms + 260ms)}
+html.js .rv.vu.valeur .t-carte::before{transform:scale(1)}
+.valeur:hover{background:rgba(255,255,255,.6)}
+html.js .rv.vu.valeur:hover .t-carte::before{transform:scale(1.5)}
+html:not(.js) .valeur::before,html:not(.js) .valeur .t-carte::before{transform:none}
+
+/* l'invitation à lire notre responsabilité */
+.invite{display:flex;align-items:center;justify-content:space-between;gap:var(--e5);flex-wrap:wrap;
+  margin-top:var(--e7);padding:var(--carte-pad);padding-left:calc(var(--carte-pad) + var(--e2));
+  position:relative;overflow:hidden;border:1px solid var(--filet);border-radius:var(--rond);
+  background:linear-gradient(140deg,#FFFFFF 0%,#F8FAFD 68%,#FFFFFF 100%);
+  transition:border-color var(--d-etat) var(--sortie)}
+.invite::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--accent);
+  transform:scaleY(0);transform-origin:50% 0;transition:transform var(--d-revel) var(--sortie) .2s}
+html.js .rv.vu.invite::before{transform:scaleY(1)}
+html:not(.js) .invite::before{transform:none}
+.invite:hover{border-color:var(--act)}
+.invite__mot{display:block;font-size:clamp(19px,1.7vw,24px);font-weight:500;letter-spacing:-.015em;
+  line-height:1.24;margin-bottom:var(--e2);color:var(--encre)}
+.invite .corps{color:var(--encre-48);max-width:56ch}
+.invite .pilule{pointer-events:none;flex:none}
+.invite:hover .pilule{background:var(--act-presse)}
+.invite:hover .pilule svg{transform:translateX(3px)}
+.invite .pilule svg{width:9px;height:14px;transition:transform var(--d-micro) var(--sortie)}
+@media (max-width:620px){.invite{align-items:flex-start}.invite .pilule{width:100%}}
+
 @media (max-width:820px){
   .valeurs{grid-template-columns:1fr}
+  .valeur::before{right:auto;width:40px}
   .valeur{border-right:0;border-bottom:1px solid var(--filet);padding-inline:0}
   .valeur:last-child{border-bottom:0}
 }
@@ -485,6 +521,16 @@
         reverra le mois suivant, et l'année d'après.</p>
       </div>
     </div>
+
+    <a class="invite rv" style="--i:3" href="rse.html">
+      <span>
+        <span class="invite__mot">Ces trois mots nous engagent au-delà du service.</span>
+        <span class="corps">Nos équipes, notre territoire, le vivant&nbsp;: notre responsabilité, expliquée sur une journée.</span>
+      </span>
+      <span class="pilule">Notre responsabilité
+        <svg viewBox="0 0 9 14" aria-hidden="true"><path d="M1.5 1 7 7l-5.5 6" fill="none" stroke="currentColor" stroke-width="1.7"/></svg>
+      </span>
+    </a>
   </div>
 </section>
 
@@ -497,11 +543,6 @@
       C'est la phrase qui guide le groupe, et le fil de notre responsabilité — quatre verbes,
       quatre engagements, expliqués sur une journée.
     </p>
-    <div class="actions rv" style="--i:3">
-      <a class="lien" href="rse.html">Notre responsabilité
-        <svg viewBox="0 0 9 14" aria-hidden="true"><path d="M1.5 1 7 7l-5.5 6" fill="none" stroke="currentColor" stroke-width="1.7"/></svg>
-      </a>
-    </div>
   </div>
 </section>
 
