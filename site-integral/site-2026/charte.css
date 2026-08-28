@@ -1,0 +1,286 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+   CHARTE — Intégral Pharma, site 2026. Partagée par index.html et rse.html.
+   Consolidée le 28/08/2026 à partir des relevés de cinq experts
+   (typographie · couleur et lumière · espace et rythme · composants · mouvement).
+
+   Une police (Inter, OFL, servie localement), quatre graisses (300 400 500 600),
+   neuf rôles de texte, aucune capitale espacée. Douze couleurs. Une échelle
+   d'espacement sur 8. Trois rayons. Deux durées, une courbe. Une seule révélation.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+@font-face{
+  font-family:"Inter";
+  src:url("polices/inter.woff2") format("woff2");
+  font-weight:100 900;font-style:normal;font-display:swap;
+}
+
+/* ═════ 1 · LES JETONS ════════════════════════════════════════════════════════ */
+:root{
+  /* les douze couleurs */
+  --blanc:#FFFFFF;
+  --doux:#F5F8FD;
+  --bleu-clair:#E2EBFF;
+  --act:#0050E6;
+  --nuit:#0B1220;
+  --encre:#111318;
+  --encre-80:#3B3F48;
+  --encre-48:#6B7079;
+  --encre-nuit:#FFFFFF;
+  --encre-nuit-doux:#A7ACB6;
+  --act-nuit:#5C97FF;
+  --accent:#F39A1B;
+
+  /* dérivés : une règle, pas des couleurs nouvelles */
+  --act-presse:#003FB4;
+  --act-nuit-presse:#7FAEFF;
+  --halo-act:#2C74FF;
+  --filet:rgba(17,19,24,.10);
+  --filet-nuit:rgba(255,255,255,.13);
+  --filet-act:rgba(255,255,255,.28);
+  --voile:11,18,32;                       /* la nuit en alpha : voiles, ombres */
+  --ombre-1:0 1px 12px rgba(var(--voile),.06);
+  --ombre-2:0 12px 30px -10px rgba(var(--voile),.35);
+  --ombre-3:0 18px 40px -22px rgba(var(--voile),.22);
+  --grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
+
+  /* l'échelle d'espacement */
+  --e1:4px;--e2:8px;--e3:12px;--e4:16px;--e5:24px;--e6:32px;--e7:48px;--e8:64px;
+  --sect:clamp(72px,10vw,144px);
+  --sect-demi:clamp(40px,5vw,72px);
+  --gout:clamp(20px,4.4vw,48px);
+  --large:1240px;
+  --lire:min(720px,100%);
+  --marge-colonne:max(var(--gout),calc((100% - var(--large)) / 2));
+  --carte-pad:clamp(24px,3vw,48px);
+
+  /* les rayons */
+  --rond:22px;
+  --rond-p:12px;
+  --pilule:999px;
+
+  /* le mouvement */
+  --sortie:cubic-bezier(.28,.11,.32,1);
+  --d-micro:.2s;
+  --d-etat:.4s;
+  --d-revel:.7s;
+
+  --f:"Inter",ui-sans-serif,system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+  --barre:48px;
+  --anneau:var(--act);
+}
+@media (max-width:640px){
+  :root{--e6:24px;--e7:32px;--e8:48px}
+}
+
+/* ═════ 2 · LE SOCLE ══════════════════════════════════════════════════════════ */
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;overflow-x:clip;scroll-behavior:smooth}
+body{
+  margin:0;background:var(--blanc);color:var(--encre);
+  font:400 17px/1.47 var(--f);letter-spacing:-.011em;
+  overflow-x:clip;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+}
+main{overflow-x:clip}
+img,video{display:block;max-width:100%}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+h1,h2,h3,p,ul{margin:0}
+ul{list-style:none;padding:0}
+:focus-visible{outline:2px solid var(--anneau);outline-offset:3px;border-radius:var(--e1)}
+.nuit,.bleu,.scene,.bande,.pied{--anneau:#fff}
+.barre.posee,.panneau{--anneau:var(--act)}
+.saut{position:absolute;left:-9999px;top:0;z-index:400;background:var(--blanc);
+  color:var(--encre);padding:var(--e4) var(--e5);font-weight:500;border-radius:var(--rond-p)}
+.saut:focus{left:var(--e3);top:var(--e3)}
+
+/* ═════ 3 · LES NEUF RÔLES DE TEXTE ═══════════════════════════════════════════ */
+.t-hero{font-size:clamp(42px,8.2vw,104px);font-weight:500;line-height:1.02;letter-spacing:-.036em;max-width:14ch}
+.t-lg{font-size:clamp(32px,4.7vw,64px);font-weight:600;line-height:1.06;letter-spacing:-.03em;max-width:16ch}
+.t-md{font-size:clamp(26px,3.1vw,40px);font-weight:600;line-height:1.1;letter-spacing:-.026em;max-width:14ch}
+.t-carte{font-size:clamp(21px,2vw,28px);font-weight:600;line-height:1.14;letter-spacing:-.026em}
+.lead{font-size:clamp(19px,2.1vw,28px);font-weight:400;line-height:1.24;letter-spacing:.007em;max-width:var(--lire)}
+.lead-aere{font-size:clamp(18px,1.7vw,24px);font-weight:300;line-height:1.5;letter-spacing:-.004em;max-width:var(--lire)}
+.corps{font-size:17px;line-height:1.47;letter-spacing:-.011em;max-width:var(--lire)}
+.corps + .corps,.lead-aere + .lead-aere{margin-top:var(--e4)}
+.sur-titre{font-size:clamp(16px,1.4vw,19px);font-weight:600;line-height:1.2;letter-spacing:-.008em;color:var(--act);margin:0 0 var(--e4)}
+.petit{font-size:14px;font-weight:400;line-height:1.45;letter-spacing:0}
+.petit-accent{font-size:14px;font-weight:500;line-height:1.45;letter-spacing:0;font-variant-numeric:tabular-nums}
+.doux-txt{color:var(--encre-80)}
+.centre{text-align:center}
+.centre .t-lg,.centre .t-md,.centre .lire,.centre .lead-aere{margin-inline:auto}
+.lire{max-width:var(--lire)}
+
+/* la couleur des rôles selon le fond */
+.nuit{color:var(--encre-nuit)}
+.nuit .sur-titre{color:var(--act-nuit)}
+.nuit .doux-txt{color:var(--encre-nuit-doux)}
+.bleu{color:#fff}
+.bleu .sur-titre{color:#fff}
+.bleu .doux-txt{color:rgba(255,255,255,.92)}
+
+/* ═════ 4 · LES TUILES ET LEUR LUMIÈRE — jamais un aplat mort ════════════════ */
+.tuile{position:relative;padding:var(--sect) var(--gout);scroll-margin-top:var(--barre)}
+.dedans{max-width:var(--large);margin-inline:auto;position:relative;z-index:1}
+.blanc{background:linear-gradient(180deg,#FFFFFF 60%,var(--doux))}
+.doux{background:radial-gradient(85% 65% at 18% 2%,#FFFFFF 0%,rgba(255,255,255,0) 60%),var(--doux)}
+.doux--droite{background:radial-gradient(85% 65% at 82% 2%,#FFFFFF 0%,rgba(255,255,255,0) 60%),var(--doux)}
+.pastel{background:radial-gradient(85% 65% at 18% 2%,#FFFFFF 0%,rgba(255,255,255,0) 60%),var(--bleu-clair)}
+.pastel--droite{background:radial-gradient(85% 65% at 82% 2%,#FFFFFF 0%,rgba(255,255,255,0) 60%),var(--bleu-clair)}
+.bleu{background:radial-gradient(80% 60% at 82% 4%,var(--halo-act) 0%,rgba(44,116,255,0) 60%),var(--act)}
+.nuit{background:radial-gradient(85% 65% at 18% 2%,rgba(92,151,255,.16) 0%,rgba(92,151,255,0) 60%),var(--nuit)}
+.pastel::before,.pastel--droite::before,.bleu::before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background-image:var(--grain);opacity:.045;mix-blend-mode:multiply;
+}
+.filet-haut{border-top:1px solid var(--filet)}
+
+/* deux colonnes : une seule grille */
+.duo{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(32px,5vw,72px);align-items:start}
+.duo--centre{align-items:center}
+@media (max-width:900px){.duo{grid-template-columns:1fr}}
+
+/* ═════ 5 · LES ACTIONS ═══════════════════════════════════════════════════════ */
+.pilule{
+  display:inline-flex;align-items:center;justify-content:center;gap:var(--e2);
+  min-height:48px;padding:0 26px;border-radius:var(--pilule);
+  background:var(--act);color:#fff;font-size:17px;font-weight:500;letter-spacing:-.011em;
+  transition:background var(--d-micro) var(--sortie),color var(--d-micro) var(--sortie),transform var(--d-micro) var(--sortie);
+}
+.pilule:hover{background:var(--act-presse)}
+.pilule:active{transform:scale(.97)}
+.pilule--vide{background:transparent;border:1px solid var(--act);color:var(--act)}
+.pilule--vide:hover{background:var(--act);color:#fff}
+.pilule--barre{min-height:32px;padding:0 var(--e4);font-size:13px}
+.nuit .pilule,.scene .pilule{background:var(--act-nuit);color:var(--nuit)}
+.nuit .pilule:hover,.scene .pilule:hover{background:var(--act-nuit-presse)}
+.bleu .pilule{background:#fff;color:var(--act)}
+.bleu .pilule:hover{background:var(--bleu-clair)}
+.nuit .pilule--vide,.bleu .pilule--vide{background:transparent;border-color:rgba(255,255,255,.5);color:#fff}
+.nuit .pilule--vide:hover,.bleu .pilule--vide:hover{background:rgba(255,255,255,.14)}
+
+.lien{display:inline-flex;align-items:center;gap:6px;min-height:44px;color:var(--act);font-size:17px;font-weight:500;letter-spacing:-.011em}
+.lien svg{width:9px;height:14px;flex:none;transition:transform var(--d-micro) var(--sortie)}
+.lien:hover{text-decoration:underline;text-underline-offset:4px}
+.lien:hover svg,a:hover > .lien svg{transform:translateX(3px)}
+a:hover > .lien{text-decoration:underline;text-underline-offset:4px}
+.nuit .lien{color:var(--act-nuit)}
+.bleu .lien,.scene .lien,.bande .lien{color:#fff}
+.actions{display:flex;flex-wrap:wrap;gap:var(--e4) var(--e5);align-items:center;margin-top:var(--e6)}
+.centre .actions{justify-content:center}
+
+/* ═════ 6 · LES CARTES ET LES PICTOS ══════════════════════════════════════════ */
+.carte{background:var(--blanc);border:1px solid var(--filet);border-radius:var(--rond);padding:var(--carte-pad)}
+.nuit .carte{background:rgba(255,255,255,.06);border-color:var(--filet-nuit)}
+.bleu .carte{background:rgba(255,255,255,.10);border-color:var(--filet-act)}
+.cartes{display:grid;gap:var(--e4);margin-top:var(--e8)}
+.cartes--2{grid-template-columns:repeat(2,1fr)}
+.cartes--3{grid-template-columns:repeat(3,1fr)}
+@media (max-width:820px){.cartes--3{grid-template-columns:1fr}}
+@media (max-width:760px){.cartes--2{grid-template-columns:1fr}}
+.carte .t-carte{margin-bottom:var(--e4)}
+.carte .corps{color:var(--encre-80)}
+.nuit .carte .corps{color:var(--encre-nuit-doux)}
+
+.picto{position:relative;width:56px;height:56px;margin-bottom:var(--e5);color:var(--act)}
+.picto::before{
+  content:"";position:absolute;left:-8px;top:6px;width:52px;height:46px;
+  background:var(--bleu-clair);border-radius:58% 42% 55% 45% / 48% 55% 45% 52%;
+}
+.nuit .picto{color:var(--act-nuit)}
+.nuit .picto::before{background:rgba(92,151,255,.18)}
+.picto svg{position:relative;width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+
+.puces{display:flex;flex-wrap:wrap;gap:var(--e2) var(--e3);margin-top:var(--e6)}
+.puces span{display:inline-flex;align-items:center;min-height:40px;padding:0 var(--e4);border-radius:var(--pilule);
+  background:var(--doux);border:1px solid var(--filet);font-size:14px;font-weight:500;letter-spacing:0;color:var(--encre-80)}
+
+/* ═════ 7 · LA BARRE ET LE MENU ═══════════════════════════════════════════════ */
+.barre{
+  position:fixed;inset:0 0 auto 0;height:var(--barre);z-index:200;
+  display:flex;align-items:center;gap:var(--e4);padding:0 var(--marge-colonne);
+  background:rgba(255,255,255,0);border-bottom:1px solid transparent;
+  transition:background var(--d-etat) var(--sortie),border-color var(--d-etat) var(--sortie),box-shadow var(--d-etat) var(--sortie);
+}
+.barre.posee{background:var(--blanc);border-bottom-color:var(--filet);box-shadow:var(--ombre-1)}
+.barre.posee.sombre{background:var(--nuit);border-bottom-color:var(--filet-nuit);--anneau:#fff}
+.barre__marque{display:flex;align-items:center;height:100%;padding-right:var(--e1)}
+.barre__nom{font-size:15px;font-weight:600;letter-spacing:-.016em;color:#fff;white-space:nowrap;transition:color var(--d-etat) var(--sortie)}
+.barre.posee .barre__nom{color:var(--encre)}
+.barre.posee.sombre .barre__nom{color:#fff}
+.barre__nav{margin-left:auto;display:flex;align-items:center;gap:2px}
+.barre__nav a{
+  display:inline-flex;align-items:center;height:var(--barre);padding:0 var(--e3);
+  font-size:13px;font-weight:400;letter-spacing:-.006em;color:rgba(255,255,255,.86);
+  transition:color var(--d-etat) var(--sortie),opacity var(--d-micro) var(--sortie);
+}
+.barre.posee .barre__nav a{color:var(--encre-80)}
+.barre.posee.sombre .barre__nav a{color:rgba(255,255,255,.86)}
+.barre__nav a:hover{opacity:.6}
+.barre__nav .actif{color:#fff;font-weight:500}
+.barre.posee .barre__nav .actif{color:var(--encre)}
+.barre.posee.sombre .barre__nav .actif{color:#fff}
+.barre__nav .pilule--barre{margin-left:var(--e2);height:32px;background:rgba(255,255,255,.14);color:#fff}
+.barre__nav .pilule--barre:hover{opacity:1;background:rgba(255,255,255,.26)}
+.barre.posee .barre__nav .pilule--barre{background:var(--act);color:#fff}
+.barre.posee .barre__nav .pilule--barre:hover{background:var(--act-presse)}
+
+.burger{display:none;margin-left:auto;width:48px;height:48px;flex-direction:column;align-items:center;justify-content:center}
+.burger span{display:block;width:17px;height:1.5px;background:#fff;border-radius:2px;
+  transition:transform var(--d-micro) var(--sortie),opacity var(--d-micro) var(--sortie),background var(--d-etat) var(--sortie)}
+.burger span + span{margin-top:5px}
+.barre.posee .burger span{background:var(--encre)}
+.barre.posee.sombre .burger span{background:#fff}
+.burger.ouvert span:nth-child(1){transform:translateY(6.5px) rotate(45deg)}
+.burger.ouvert span:nth-child(2){opacity:0}
+.burger.ouvert span:nth-child(3){transform:translateY(-6.5px) rotate(-45deg)}
+
+.panneau{
+  position:fixed;inset:var(--barre) 0 auto 0;z-index:190;
+  background:var(--blanc);border-bottom:1px solid var(--filet);box-shadow:var(--ombre-1);
+  padding:var(--e2) var(--gout) var(--e5);
+  visibility:hidden;opacity:0;transform:translateY(-8px);
+  transition:opacity var(--d-micro) var(--sortie),transform var(--d-micro) var(--sortie),visibility 0s linear var(--d-micro);
+}
+.panneau.ouvert{visibility:visible;opacity:1;transform:none;transition-delay:0s}
+.panneau a{display:flex;align-items:center;min-height:56px;font-size:clamp(21px,2vw,28px);font-weight:600;
+  letter-spacing:-.026em;color:var(--encre);border-bottom:1px solid var(--filet)}
+.panneau a:last-of-type{border-bottom:0}
+.panneau .pilule{margin-top:var(--e5);width:100%;min-height:48px;font-size:17px;font-weight:500;letter-spacing:-.011em;
+  color:#fff;background:var(--act);border-bottom:0;justify-content:center}
+@media (max-width:900px){
+  .barre__nav{display:none}
+  .burger{display:flex}
+}
+
+/* ═════ 8 · LE PIED ═══════════════════════════════════════════════════════════ */
+.pied{position:relative;z-index:10;color:var(--encre-nuit-doux);padding:var(--sect-demi) var(--gout);
+  background:radial-gradient(85% 65% at 18% 2%,rgba(92,151,255,.16) 0%,rgba(92,151,255,0) 60%),var(--nuit)}
+.pied__in{display:grid;gap:var(--e5);max-width:var(--large);margin-inline:auto}
+.pied__logo{display:inline-block;background:#fff;border-radius:var(--rond-p);padding:var(--e3) var(--e4)}
+.pied__logo img{height:34px;width:auto}
+.pied address{font-style:normal;font-size:14px;line-height:1.45;letter-spacing:0;margin-top:var(--e4);max-width:none}
+.pied address a{display:inline-flex;align-items:center;min-height:44px}
+.pied a{color:#fff}
+.pied a:hover{text-decoration:underline;text-underline-offset:4px}
+.pied__nav a{display:flex;align-items:center;min-height:44px;font-size:14px;letter-spacing:0}
+.pied .petit-titre{font-size:14px;font-weight:500;line-height:1.45;letter-spacing:0;color:rgba(255,255,255,.58);margin:0 0 var(--e3)}
+.pied__chif{list-style:none;margin:0;padding:var(--e5) 0 0;display:flex;flex-wrap:wrap;gap:var(--e2) var(--e4);font-size:14px;letter-spacing:0;border-top:1px solid var(--filet-nuit)}
+.pied__sig{display:flex;flex-wrap:wrap;justify-content:space-between;gap:var(--e2);font-size:14px;letter-spacing:0;
+  color:rgba(255,255,255,.58);padding-top:var(--e5);border-top:1px solid var(--filet-nuit)}
+@media (min-width:820px){.pied__in{grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:var(--e5) clamp(32px,5vw,72px)}.pied__chif,.pied__sig{grid-column:1/-1}}
+
+/* ═════ 9 · LA RÉVÉLATION — une seule, posée par le script ═══════════════════
+   Sans script, RIEN n'est masqué : le masquage n'existe que si la classe « js »
+   a été posée sur <html>. Un élément révélé ne se re-masque jamais. La transition
+   vit sur l'état initial : elle n'écrase pas celles des composants une fois révélés. */
+html.js .rv{opacity:0;transform:translateY(16px);
+  transition:opacity var(--d-revel) var(--sortie),transform var(--d-revel) var(--sortie);
+  transition-delay:calc(min(var(--i,0),4) * 60ms)}
+html.js .rv.vu{opacity:1;transform:none}
+
+/* ═════ 10 · MOUVEMENT RÉDUIT ═════════════════════════════════════════════════ */
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  html.js .rv{opacity:1;transform:none;transition:none}
+  .pilule,.lien svg,.burger span,.panneau{transition:none}
+}
