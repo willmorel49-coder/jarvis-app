@@ -255,7 +255,8 @@
           '<h1 style="font-size:26px;font-weight:800;color:' + NAVY + ';margin:8px 0 2px">Base Biosimilaires</h1>' +
           '<p style="color:#737A8C;font-size:14px;margin:0 0 4px">Tous les biosimilaires disponibles en France, croisés à tes ventes et stocks réseau. Les <b style="color:' + GREEN + '">substituables en officine</b> et les <b style="color:' + ORANGE + '">labos partenaires</b> en tête.</p>' +
           '<div class="bs-dls">' +
-            '<a class="bs-dl" href="../../base-biosimilaires.xlsx" download>' + ICO('fiche', 15) + ' Excel complet</a>' +
+            // 29/08/2026 — l'Excel porte aussi les prix nets : espace protégé, comme les PDF.
+            '<a class="bs-dl" onclick="V2.ouvrirDocProtege(\'biosimExcel\')">' + ICO('fiche', 15) + ' Excel complet</a>' +
             // 28/08/2026 — fiches INTERNES (avec net IP) : servies depuis l'espace
             // protégé, jamais depuis le dépôt public. Les versions « pharmacien »
             // (PPHT seul) restent téléchargeables et remettables.

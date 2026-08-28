@@ -420,6 +420,11 @@
     biosimDetailPharma: {
       fichier: 'biosim-poster-detail-pharmacien.pdf',
       titre: 'Biosimilaires · toutes présentations (pharmacien)', type: 'pdf'
+    },
+    // 29/08/2026 — l'Excel complet (3 onglets, prix nets) sort lui aussi du dépôt.
+    biosimExcel: {
+      fichier: 'base-biosimilaires.xlsx',
+      titre: 'Base Biosimilaires · Excel', type: 'fichier'
     }
   };
   V2.docsProteges = DOCS_PROTEGES;
@@ -453,16 +458,25 @@
       .then(function (r) {
         var url = r && r.data && r.data.signedUrl;
         if (!url) throw new Error('adresse refusée');
+        // 29/08/2026 — PDF et fichiers : Supabase les sert avec leur vrai type
+        // (mesuré : `content-type: application/pdf`). L'onglet va donc DIRECTEMENT
+        // sur l'adresse signée — pas de fetch ni de blob, qui échouaient sur
+        // certains navigateurs (« les boutons font n'importe quoi », Will, 28/08).
+        // Seul le .html garde le détour par le blob (servi en text/plain).
+        if (d.type === 'pdf' || d.type === 'fichier') {
+          if (onglet) onglet.location.replace(url); else window.location.href = url;
+          return null;
+        }
         return fetch(url);
       })
       .then(function (rep) {
+        if (rep === null) return null;            // PDF / fichier : déjà ouvert
         if (!rep.ok) throw new Error('HTTP ' + rep.status);
-        return d.type === 'pdf' ? rep.blob() : rep.text();
+        return rep.text();
       })
       .then(function (contenu) {
-        var blob = d.type === 'pdf'
-          ? new Blob([contenu], { type: 'application/pdf' })
-          : new Blob([contenu], { type: 'text/html;charset=utf-8' });
+        if (contenu === null) return;
+        var blob = new Blob([contenu], { type: 'text/html;charset=utf-8' });
         var burl = URL.createObjectURL(blob);
         if (onglet) onglet.location.replace(burl); else window.location.href = burl;
         // Laisser le temps à l'onglet de charger avant de libérer la mémoire.
