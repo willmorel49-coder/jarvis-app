@@ -1519,8 +1519,12 @@
       '.mkt-make-cat{--_a:var(--ip-blue)}',
       '.mkt-make-t50{--_a:var(--c-opp);cursor:default}',
       '.mkt-make-t50:hover{transform:none;box-shadow:var(--sh-1);border-color:var(--line)}',
-      '.mkt-make-t50btns{display:flex;gap:8px;align-self:stretch;margin-top:6px}',
-      '.mkt-make-t50btns .v2-btn{flex:1;justify-content:center}',
+      // 29/08/2026 — mesuré : 3 boutons ne tiennent pas sur la ligne ; à l'appui,
+      // le ripple pose overflow:hidden sur le bouton, qui devient compressible et
+      // passe de 125 à 36 px SOUS la souris → le relâchement tombe sur le voisin
+      // (« les boutons font n'importe quoi »). On laisse passer à la ligne.
+      '.mkt-make-t50btns{display:flex;flex-wrap:wrap;gap:8px;align-self:stretch;margin-top:6px}',
+      '.mkt-make-t50btns .v2-btn{flex:1 1 140px;justify-content:center;white-space:nowrap}',
       // La carte « nouveau site » : trois aperçus réels + l'invitation à noter.
       // Les aperçus sont cadrés en haut (`object-position:top`) — c'est l'accroche
       // qui distingue une direction d'une autre, pas le bas de page.
