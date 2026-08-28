@@ -220,6 +220,16 @@ a:hover > .lien{text-decoration:underline;text-underline-offset:4px}
 .barre.posee .barre__nav .actif{color:var(--encre)}
 .barre.posee.sombre .barre__nav .actif{color:#fff}
 .barre__nav .pilule--barre{margin-left:var(--e2);height:32px;background:rgba(255,255,255,.14);color:#fff}
+.barre__nav .pilule--barre svg{width:8px;height:12px;transition:transform var(--d-micro) var(--sortie)}
+.barre__nav .pilule--barre:hover svg{transform:translateX(2px)}
+.barre__nav .pilule--barre.pilule--vide{background:transparent;border:1px solid rgba(255,255,255,.55);color:#fff}
+.barre__nav .pilule--barre.pilule--vide:hover{opacity:1;background:rgba(255,255,255,.14)}
+.barre.posee .barre__nav .pilule--barre.pilule--vide{background:transparent;border-color:var(--act);color:var(--act)}
+.barre.posee .barre__nav .pilule--barre.pilule--vide:hover{background:var(--bleu-clair)}
+.barre.posee.sombre .barre__nav .pilule--barre.pilule--vide{border-color:rgba(255,255,255,.55);color:#fff}
+.barre__nav .pilule--barre.pilule--vide.actif{background:rgba(255,255,255,.14)}
+.barre.posee .barre__nav .pilule--barre.pilule--vide.actif{background:var(--bleu-clair)}
+.panneau a .fleche{margin-left:auto;width:9px;height:14px;color:var(--act)}
 .barre__nav .pilule--barre:hover{opacity:1;background:rgba(255,255,255,.26)}
 .barre.posee .barre__nav .pilule--barre{background:var(--act);color:#fff}
 .barre.posee .barre__nav .pilule--barre:hover{background:var(--act-presse)}
