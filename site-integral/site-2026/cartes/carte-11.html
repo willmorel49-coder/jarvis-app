@@ -71,7 +71,7 @@ body{background:var(--nuit)}
       <canvas id="carte-toile" aria-label="Carte de France : les neuf implantations du groupe et le partenaire de Metz, reliées depuis le siège d'Hyères"></canvas>
       <div class="carte-fiche" id="carte-fiche" aria-live="polite">
         <b id="carte-fiche-t">Neuf implantations et un partenaire</b>
-        <span class="petit" id="carte-fiche-s">Le maillage part du siège, à Hyères</span>
+        <span class="petit" id="carte-fiche-s">Chaque maison irrigue sa région, et se relaie avec ses voisines</span>
       </div>
     </div>
   </div>
@@ -127,7 +127,7 @@ var LIEUX = [
 
   var L=0, H=0, S=0, OX=0, OY=0, dpr=1, petit=false;
   var PTS=[], t0=performance.now(), vivant=false, boucle=null, vise=-1;
-  var DEFAUT = ['Neuf implantations et un partenaire', 'Le maillage part du siège, à Hyères'];
+  var DEFAUT = ['Neuf implantations et un partenaire', 'Chaque maison irrigue sa région, et se relaie avec ses voisines'];
 
   function proj(o){ return { x: OX + o.x/100*S, y: OY + o.y/100*S }; }
   function taille(){
@@ -238,38 +238,41 @@ var LIEUX = [
     ctx.restore();
   }
 
-  /* ── les liens : une lumière qui circule, jamais un clignotement ───────── */
-  function courbe(a,b){
-    var mx=(a.x+b.x)/2, my=(a.y+b.y)/2, dx=b.x-a.x, dy=b.y-a.y;
-    var d=Math.sqrt(dx*dx+dy*dy);
-    return {cx: mx - dy*0.16, cy: my + dx*0.16, d:d};
-  }
-  function surCourbe(a,c,b,t){
-    var u=1-t;
-    return {x: u*u*a.x + 2*u*t*c.cx + t*t*b.x, y: u*u*a.y + 2*u*t*c.cy + t*t*b.y};
-  }
-  function liens(tps){
-    var o = PTS[0];
-    for (var i=1;i<LIEUX.length;i++){
-      var b = PTS[i], c = courbe(o,b), part = !!LIEUX[i].part;
-      ctx.beginPath(); ctx.moveTo(o.x,o.y); ctx.quadraticCurveTo(c.cx,c.cy,b.x,b.y);
-      var g = ctx.createLinearGradient(o.x,o.y,b.x,b.y);
-      g.addColorStop(0, part?'rgba(120,160,255,.30)':'rgba(255,190,120,.42)');
-      g.addColorStop(.55, part?'rgba(110,150,240,.16)':'rgba(150,190,255,.26)');
-      g.addColorStop(1,'rgba(120,160,255,.10)');
-      ctx.strokeStyle=g; ctx.lineWidth = petit?0.9:1.15; ctx.stroke();
-      if (DOUX) continue;
-      var ph = ((tps/1000)*0.11 + i*0.13) % 1;      /* lent, continu, jamais saccadé */
-      for (var s=0;s<7;s++){
-        var t = ph - s*0.013; if (t<0 || t>1) continue;
-        var p = surCourbe(o,c,b,t), al = (1-s/7)*(Math.sin(Math.PI*t))*0.9;
-        var r = (petit?1.6:2.2)*(1-s/9);
-        var lg2 = ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,r*3.2);
-        lg2.addColorStop(0,'rgba(255,224,180,'+(al*0.95)+')');
-        lg2.addColorStop(.4,'rgba(255,190,120,'+(al*0.35)+')');
-        lg2.addColorStop(1,'rgba(255,190,120,0)');
-        ctx.fillStyle=lg2; ctx.beginPath(); ctx.arc(p.x,p.y,r*3.2,0,6.2832); ctx.fill();
+  /* ── le maillage : les maisons se relaient entre voisines, rien ne part d'un centre ──
+     Aucun trait ne rayonne depuis le siège : ce serait dire que tout vient de lui, alors que
+     le stock d'une maison est le stock de toutes. On relie chaque maison à ses deux plus
+     proches, en fils très fins, immobiles. */
+  var MAILLE = null;
+  function maille(){
+    if (MAILLE) return MAILLE;
+    MAILLE = [];
+    var vus = {};
+    for (var i=0;i<LIEUX.length;i++){
+      if (LIEUX[i].part) continue;
+      var d2 = [];
+      for (var j=0;j<LIEUX.length;j++){
+        if (j===i || LIEUX[j].part) continue;
+        var dx=LIEUX[j].x-LIEUX[i].x, dy=LIEUX[j].y-LIEUX[i].y;
+        d2.push({j:j, d:Math.sqrt(dx*dx+dy*dy)});
       }
+      d2.sort(function(a,b){ return a.d-b.d; });
+      for (var k=0;k<2 && k<d2.length;k++){
+        var a2=Math.min(i,d2[k].j), b2=Math.max(i,d2[k].j), cle=a2+'-'+b2;
+        if (!vus[cle]){ vus[cle]=1; MAILLE.push([a2,b2]); }
+      }
+    }
+    return MAILLE;
+  }
+  function liens(){
+    var m = maille();
+    for (var i=0;i<m.length;i++){
+      var a=PTS[m[i][0]], b=PTS[m[i][1]];
+      var g = ctx.createLinearGradient(a.x,a.y,b.x,b.y);
+      g.addColorStop(0,'rgba(255,200,140,.22)');
+      g.addColorStop(.5,'rgba(200,220,255,.13)');
+      g.addColorStop(1,'rgba(255,200,140,.22)');
+      ctx.strokeStyle=g; ctx.lineWidth = petit?0.7:0.9;
+      ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
     }
   }
 
@@ -333,7 +336,7 @@ var LIEUX = [
     }
     ctx.restore();
   }
-  function dessiner(tps){ sol(); pays(tps); irrigation(tps); onde(tps); liens(tps); points(tps); }
+  function dessiner(tps){ sol(); pays(tps); irrigation(tps); onde(tps); liens(); points(tps); }
   function image(){ dessiner(performance.now()-t0); if (vivant && !DOUX) boucle=requestAnimationFrame(image); }
   function partir(){ if (vivant||DOUX) { if(DOUX) dessiner(0); return; } vivant=true; boucle=requestAnimationFrame(image); }
   function stopper(){ vivant=false; if(boucle) cancelAnimationFrame(boucle); boucle=null; }
