@@ -1,0 +1,22 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+   COULEUR 2 · L'ORANGE EN ACTION — les deux couleurs échangent leurs rôles : l'orange
+   devient la couleur qui invite à agir (boutons, liens, pictos), le bleu devient
+   l'accent qui ponctue (traits de section, pastilles). Les fonds ne bougent pas.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+:root{
+  --act:#C2410C;            /* l'orange qui agit — assez profond pour rester lisible */
+  --act-presse:#9A3412;
+  --halo-act:#EA6A1E;
+  --act-nuit:#FFB454;
+  --act-nuit-presse:#FFC97F;
+  --accent:#0050E6;         /* le bleu, désormais accent */
+  --accent-nuit:#7FB0FF;
+}
+/* les grands aplats restent bleus : l'orange sert à agir, pas à peindre */
+.bleu{background:radial-gradient(80% 60% at 82% 4%, #2C74FF 0%, rgba(44,116,255,0) 60%), #0050E6}
+.bleu .pilule{background:#fff;color:#9A3412}
+.bleu .pilule:hover{background:var(--bleu-clair)}
+.bleu .sur-titre::before{background:#FFC46B}
+.bleu .valeur::before,.bleu .valeur .t-carte::before{background:#FFC46B}
+.picto::before{background:rgba(194,65,12,.10)}
+.nuit .picto::before{background:rgba(255,180,84,.16)}

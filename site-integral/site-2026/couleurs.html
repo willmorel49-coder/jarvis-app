@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="fr" class="p-clair">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Quatre couleurs pour le site</title>
+<link rel="stylesheet" href="charte.css">
+<style>
+  body{background:var(--doux)}
+  .entete{padding:var(--sect) var(--gout) var(--e7)}
+  .dedans{max-width:var(--large);margin-inline:auto}
+  .rangee{display:grid;grid-template-columns:repeat(5,1fr);gap:var(--e4);
+    max-width:1480px;margin:0 auto;padding-inline:var(--gout);align-items:start}
+  @media (max-width:1100px){.rangee{grid-template-columns:repeat(2,1fr)}}
+  @media (max-width:560px){.rangee{grid-template-columns:1fr}}
+  .v{display:block;background:var(--blanc);border:1px solid var(--filet);border-radius:var(--rond);
+    overflow:hidden;transition:border-color var(--d-etat) var(--sortie)}
+  .v:hover{border-color:var(--act)}
+  .v--base{border-color:rgba(17,19,24,.22)}
+  .v__vue{background:var(--doux);border-top:1px solid var(--filet)}
+  .v__vue img{width:100%;height:auto;display:block}
+  .v__txt{padding:var(--e5) var(--e4)}
+  .v .lien{margin-bottom:var(--e5)}
+  .v__n{display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:30px;padding:0 9px;
+    border-radius:var(--pilule);background:var(--act);color:#fff;font-size:14px;font-weight:600;margin-bottom:var(--e3)}
+  .v--base .v__n{background:var(--encre)}
+  .v h2{font-size:19px;font-weight:500;letter-spacing:-.012em;line-height:1.24}
+  .v .corps{font-size:15px;line-height:1.45;color:var(--encre-48);margin-top:var(--e2)}
+  .v .lien{font-size:15px;min-height:40px;margin-top:var(--e4)}
+  .socle{margin-top:var(--sect);border-top:1px solid var(--filet);background:var(--blanc);
+    padding:var(--e7) var(--gout) var(--sect)}
+</style>
+</head>
+<body>
+
+<header class="entete">
+  <div class="dedans">
+    <p class="sur-titre">Même page, autres couleurs</p>
+    <h1 class="t-lg" style="max-width:22ch">Quatre façons de répartir le bleu, l'orange et le blanc.</h1>
+    <p class="lead" style="margin-top:var(--e5);max-width:66ch;color:var(--encre-80)">
+      Toutes partent de la variante 3, celle que tu as retenue&nbsp;: même structure, même
+      typographie, mêmes textes, même mise en page. Seules les couleurs changent — et seulement
+      leur répartition, sans en inventer de nouvelles. La page entière est affichée à chaque
+      fois, à côté de la référence.
+    </p>
+  </div>
+</header>
+
+<div class="rangee">
+  <a class="v v--base" href="variante-3.html">
+    <div class="v__txt">
+      <span class="v__n">La 3</span>
+      <h2>Référence</h2>
+      <p class="corps">La variante « Les plans » que tu as retenue, avec les couleurs d'aujourd'hui. Les quatre suivantes ne changent QUE la couleur.</p>
+      <span class="lien">Ouvrir<svg viewBox="0 0 9 14" width="9" height="14" aria-hidden="true"><path d="M1.5 1 7 7l-5.5 6" fill="none" stroke="currentColor" stroke-width="1.7"/></svg></span>
+    </div>
+    <div class="v__vue"><img src="planche-v3.jpg" alt="Référence, vue entière." loading="lazy"></div>
+  </a>
+
+  <a class="v" href="couleur-1.html">
+    <div class="v__txt">
+      <span class="v__n">1</span>
+      <h2>Nuit et blanc</h2>
+      <p class="corps">Le bleu vif quitte les grands aplats : il ne reste que la nuit, le blanc et l'orange. La centrale passe à la nuit, et le bleu redevient ce qu'il fait le mieux — la couleur de l'action, plus celle des valeurs.</p>
+      <span class="lien">Ouvrir<svg viewBox="0 0 9 14" width="9" height="14" aria-hidden="true"><path d="M1.5 1 7 7l-5.5 6" fill="none" stroke="currentColor" stroke-width="1.7"/></svg></span>
+    </div>
+    <div class="v__vue"><img src="planche-c1.jpg" alt="Nuit et blanc, vue entière." loading="lazy"></div>
+  </a>
+
+  <a class="v" href="couleur-2.html">
+    <div class="v__txt">
+      <span class="v__n">2</span>
+      <h2>L'orange en action</h2>
+      <p class="corps">Les deux couleurs échangent leurs rôles : l'orange devient ce qui invite à agir — boutons, liens, pictos — et le bleu devient l'accent qui ponctue, traits de section et pastilles. Les fonds ne bougent pas.</p>
+      <span class="lien">Ouvrir<svg viewBox="0 0 9 14" width="9" height="14" aria-hidden="true"><path d="M1.5 1 7 7l-5.5 6" fill="none" stroke="currentColor" stroke-width="1.7"/></svg></span>
+    </div>
+    <div class="v__vue"><img src="planche-c2.jpg" alt="L'orange en action, vue entière." loading="lazy"></div>
+  </a>
+
+  <a class="v" href="couleur-3.html">
+    <div class="v__txt">
+      <span class="v__n">3</span>
+      <h2>Le bleu clair</h2>
+      <p class="corps">Le blanc pur disparaît : toute la page baigne dans un bleu très pâle, du plus clair au plus soutenu. Le bleu vif se fait rare et n'en frappe que plus fort ; l'orange gagne par contraste.</p>
+      <span class="lien">Ouvrir<svg viewBox="0 0 9 14" width="9" height="14" aria-hidden="true"><path d="M1.5 1 7 7l-5.5 6" fill="none" stroke="currentColor" stroke-width="1.7"/></svg></span>
+    </div>
+    <div class="v__vue"><img src="planche-c3.jpg" alt="Le bleu clair, vue entière." loading="lazy"></div>
+  </a>
+
+  <a class="v" href="couleur-4.html">
+    <div class="v__txt">
+      <span class="v__n">4</span>
+      <h2>Papier et orange</h2>
+      <p class="corps">Le bleu se retire presque entièrement : un papier chaud, une encre brune, et l'orange qui agit et qui ponctue. Les valeurs prennent un aplat de terre cuite. C'est la variation qui s'éloigne le plus de l'identité bleue du groupe.</p>
+      <span class="lien">Ouvrir<svg viewBox="0 0 9 14" width="9" height="14" aria-hidden="true"><path d="M1.5 1 7 7l-5.5 6" fill="none" stroke="currentColor" stroke-width="1.7"/></svg></span>
+    </div>
+    <div class="v__vue"><img src="planche-c4.jpg" alt="Papier et orange, vue entière." loading="lazy"></div>
+  </a>
+</div>
+
+<div class="socle">
+  <div class="dedans">
+    <p class="corps" style="color:var(--encre-48);max-width:74ch">
+      Ces pages ne sont pas référencées. Une variation de couleur tient en un seul petit fichier
+      posé par-dessus le site&nbsp;: on peut donc la déplacer sur la version actuelle plutôt que
+      sur la 3, ou mélanger — «&nbsp;la 2 mais avec les fonds de la 1&nbsp;» est une réponse valable.
+    </p>
+  </div>
+</div>
+
+</body>
+</html>
