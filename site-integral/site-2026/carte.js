@@ -60,7 +60,7 @@ var LIEUX = [
   {c:'04', nom:'Sud Ouest Pharma',                 lieu:'Montayral · Lot-et-Garonne (47)',                 x:40.27, y:67.81, eti:'Montayral',      ax:-1, ay: 1},
   {c:'05', nom:'Comptoir Pharmaceutique du Rhône', lieu:'Saint-Maurice-l’Exil · Isère (38)',          x:66.74, y:58.48, eti:'St-Maurice',     ax: 1, ay:-1},
   {c:'06', nom:'Escale Pharma',                    lieu:'Chilly-Mazarin · Essonne (91)',                   x:49.51, y:24.89, eti:'Chilly-Mazarin', ax: 1, ay: 1},
-  {c:'07', nom:'Ouest Pharma Services',            lieu:'Saint-Étienne-de-Montluc · Loire-Atlantique (44)', x:20.98, y:39.40, eti:'St-Étienne',    ax:-1, ay:-1},
+  {c:'07', nom:'Ouest Pharma Services',            lieu:'Saint-Étienne-de-Montluc · Loire-Atlantique (44)', x:20.98, y:39.40, eti:'St-Étienne-de-Montluc', ax:-1, ay:-1},
   {c:'08', nom:'Pharm’Occitanie Services',    lieu:'Villeneuve-lès-Béziers · Hérault (34)',           x:56.26, y:79.42, eti:'Béziers',        ax:-1, ay: 1},
   {c:'09', nom:'Sud Est Pharma',                   lieu:'Le Cannet-des-Maures · Var (83)',                 x:77.67, y:78.64, eti:'Le Cannet',      ax: 1, ay:-1},
   {c:'10', nom:'Pharmest',                         lieu:'Metz · Moselle (57) — partenaire',                x:76.56, y:20.79, eti:'Metz',           ax: 1, ay:-1, part:true}
@@ -378,8 +378,19 @@ function etiquette(i, vif){
   ctx.globalAlpha = vif ? 1 : 0.82;
   ctx.fillStyle = vif ? '#FFFFFF' : 'rgba(255,255,255,.88)';
   var lx = p.x + o.ax * 15, ly = p.y + o.ay * 13;
+  /* une étiquette longue ne doit jamais sortir du cadre : on la ramène dedans,
+     et si elle n'y tient toujours pas, elle bascule de l'autre côté du point. */
+  var larg = ctx.measureText(o.eti).width, marge = 6, sens = o.ax;
+  if (sens > 0 && lx + larg > L - marge) {
+    if (p.x - 15 - larg >= marge) { sens = -1; lx = p.x - 15; }
+    else lx = Math.max(marge, L - marge - larg);
+  } else if (sens < 0 && lx - larg < marge) {
+    if (p.x + 15 + larg <= L - marge) { sens = 1; lx = p.x + 15; }
+    else lx = Math.min(L - marge, marge + larg);
+  }
+  ctx.textAlign = sens > 0 ? 'left' : 'right';
   ctx.strokeStyle = o.part ? 'rgba(92,151,255,.45)' : 'rgba(243,154,27,.5)'; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(p.x + o.ax*7, p.y + o.ay*4); ctx.lineTo(p.x + o.ax*11, ly); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(p.x + sens*7, p.y + o.ay*4); ctx.lineTo(lx - sens*4, ly); ctx.stroke();
   ctx.fillText(o.eti, lx, ly);
 }
 
