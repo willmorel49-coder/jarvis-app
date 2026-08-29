@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="fr" class="p-clair">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Cinq cartes du réseau</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230050E6'/%3E%3Cpath d='M11 9h3.4v14H11zM17 9h3.4v14H17z' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="../charte.css">
+<style>
+  body{background:var(--doux)}
+  .entete{padding:var(--sect) var(--gout) var(--e7)}
+  .dedans{max-width:var(--large);margin-inline:auto}
+  .rangee{display:grid;grid-template-columns:repeat(2,1fr);gap:var(--e5);
+    max-width:1320px;margin:0 auto;padding-inline:var(--gout)}
+  @media (max-width:900px){.rangee{grid-template-columns:1fr}}
+  .c{display:block;background:var(--blanc);border:1px solid var(--filet);border-radius:var(--rond);
+    overflow:hidden;transition:border-color var(--d-etat) var(--sortie)}
+  .c:hover{border-color:var(--act)}
+  .c--base{border-color:rgba(17,19,24,.22)}
+  .c__txt{padding:var(--e5) var(--e5) var(--e4)}
+  .c__n{display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:30px;padding:0 10px;
+    border-radius:var(--pilule);background:var(--act);color:#fff;font-size:14px;font-weight:600;margin-bottom:var(--e3)}
+  .c--base .c__n{background:var(--encre)}
+  .c h2{font-size:21px;font-weight:500;letter-spacing:-.015em;line-height:1.22}
+  .c .corps{font-size:16px;line-height:1.45;color:var(--encre-48);margin-top:var(--e3)}
+  .c .lien{font-size:16px;min-height:40px;margin:var(--e4) 0 var(--e2)}
+  .c__vue{background:var(--nuit);border-top:1px solid var(--filet)}
+  .c__vue img{width:100%;height:auto;display:block}
+  .socle{margin-top:var(--sect);border-top:1px solid var(--filet);background:var(--blanc);
+    padding:var(--e7) var(--gout) var(--sect)}
+</style>
+</head>
+<body>
+
+<header class="entete">
+  <div class="dedans">
+    <p class="sur-titre">La carte du réseau</p>
+    <h1 class="t-lg" style="max-width:20ch">Cinq façons de montrer les neuf maisons.</h1>
+    <p class="lead" style="margin-top:var(--e5);max-width:66ch;color:var(--encre-80)">
+      Les cinq utilisent exactement les mêmes données&nbsp;: le même tracé de la France, les
+      mêmes neuf implantations et le même partenaire à Metz, avec leurs vraies coordonnées. Ce qui change, c'est ce que la
+      carte raconte — la croissance, le mouvement, la couverture, la précision, ou le relief.
+      Chaque version est montrée dans la vraie section du site.
+    </p>
+  </div>
+</header>
+
+<div class="rangee">
+  <a class="c c--base" href="carte-1.html">
+    <div class="c__txt">
+      <span class="c__n">Actuelle</span>
+      <h2>La croissance</h2>
+      <p class="corps">Le maillage pousse depuis Hyères, branche après branche, et s'affine en
+      capillaires jusqu'aux régions. C'est la carte en ligne aujourd'hui — elle sert de repère.</p>
+      <span class="lien">Ouvrir<svg viewBox="0 0 9 14" width="9" height="14" aria-hidden="true"><path d="M1.5 1 7 7l-5.5 6" fill="none" stroke="currentColor" stroke-width="1.7"/></svg></span>
+    </div>
+    <div class="c__vue"><img src="apercu-1.jpg" alt="La carte actuelle." loading="lazy"></div>
+  </a>
+
+  <a class="c" href="carte-2.html">
+    <div class="c__txt">
+      <span class="c__n">2</span>
+      <h2>Les tournées</h2>
+      <p class="corps">Le maillage passe en filigrane&nbsp;: ce qu'on voit, ce sont des impulsions
+      de lumière qui partent d'Hyères et rejoignent chaque maison, puis rayonnent vers leur région.
+      On comprend sans une ligne de texte que quelque chose part tous les matins.</p>
+      <span class="lien">Ouvrir<svg viewBox="0 0 9 14" width="9" height="14" aria-hidden="true"><path d="M1.5 1 7 7l-5.5 6" fill="none" stroke="currentColor" stroke-width="1.7"/></svg></span>
+    </div>
+    <div class="c__vue"><img src="apercu-2.jpg" alt="La carte des tournées." loading="lazy"></div>
+  </a>
+
+  <a class="c" href="carte-3.html">
+    <div class="c__txt">
+      <span class="c__n">3</span>
+      <h2>Les territoires</h2>
+      <p class="corps">Plus un réseau de traits, mais une couverture&nbsp;: chaque maison éclaire
+      la zone qu'elle dessert, et l'addition des zones fait la France entière. Le message devient
+      «&nbsp;où que vous soyez, une maison est près de vous&nbsp;».</p>
+      <span class="lien">Ouvrir<svg viewBox="0 0 9 14" width="9" height="14" aria-hidden="true"><path d="M1.5 1 7 7l-5.5 6" fill="none" stroke="currentColor" stroke-width="1.7"/></svg></span>
+    </div>
+    <div class="c__vue"><img src="apercu-3.jpg" alt="La carte des territoires." loading="lazy"></div>
+  </a>
+
+  <a class="c" href="carte-4.html">
+    <div class="c__txt">
+      <span class="c__n">4</span>
+      <h2>Le trait</h2>
+      <p class="corps">La carte d'un atlas&nbsp;: un tracé fin, dix repères précis, les noms
+      lisibles du premier coup d'œil, aucune lueur. Elle gagne par la précision, pas par l'effet —
+      et elle reste visible même si rien ne se charge.</p>
+      <span class="lien">Ouvrir<svg viewBox="0 0 9 14" width="9" height="14" aria-hidden="true"><path d="M1.5 1 7 7l-5.5 6" fill="none" stroke="currentColor" stroke-width="1.7"/></svg></span>
+    </div>
+    <div class="c__vue"><img src="apercu-4.jpg" alt="La carte au trait." loading="lazy"></div>
+  </a>
+
+  <a class="c" href="carte-5.html">
+    <div class="c__txt">
+      <span class="c__n">5</span>
+      <h2>Le relief</h2>
+      <p class="corps">La France vue légèrement de biais, comme une maquette posée sur une table.
+      Chaque implantation est un point de lumière qui s'élève au-dessus du plan, relié à son ombre
+      au sol — le siège d'Hyères étant le plus haut.</p>
+      <span class="lien">Ouvrir<svg viewBox="0 0 9 14" width="9" height="14" aria-hidden="true"><path d="M1.5 1 7 7l-5.5 6" fill="none" stroke="currentColor" stroke-width="1.7"/></svg></span>
+    </div>
+    <div class="c__vue"><img src="apercu-5.jpg" alt="La carte en relief." loading="lazy"></div>
+  </a>
+</div>
+
+<div class="socle">
+  <div class="dedans">
+    <p class="corps" style="color:var(--encre-48);max-width:74ch">
+      Ces pages ne sont pas référencées. Les aperçus sont des images figées&nbsp;: les versions
+      animées ne se jugent qu'en les ouvrant. Aucune des cinq n'invente de lieu ni de chiffre —
+      elles lisent toutes le même jeu de coordonnées que le site.
+    </p>
+  </div>
+</div>
+
+</body>
+</html>
