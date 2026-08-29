@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════════════
-   LA CARTE DU RÉSEAU — version simple, dans la langue du site (30/08/2026).
+   LA CARTE DU RÉSEAU — les entrepôts, dans la langue du site (30/08/2026).
 
    Rien d'autre que ce que la page dit déjà : un tracé d'un pixel, un aplat très
    léger, et les trois repères que la légende décrit — le point orange pour une
@@ -51,12 +51,17 @@ var LIEUX = [
   var boite = document.getElementById('carte-boite');
   var toile = document.getElementById('carte-toile');
   var fT = document.getElementById('carte-fiche-t'), fS = document.getElementById('carte-fiche-s');
+  var fic = document.getElementById('carte-fiche');
   if (!boite || !toile) return;
   var ctx = toile.getContext('2d');
   var CHEMINS = null;
   try { CHEMINS = FRANCE.map(function(d){ return new Path2D(d); }); } catch(e){}
 
   var L=0, H=0, S=0, OX=0, OY=0, dpr=1, petit=false, PTS=[], vise=-1, t0=0, boucle=null;
+  var BAS = 1e9;   /* le haut de la fiche : aucun nom ne descend en dessous */
+  /* vrai dès que la carte a le droit de se montrer. Sans navigateur capable de
+     prévenir quand la section entre à l'écran, on montre tout de suite. */
+  var vu = !('IntersectionObserver' in window);
   var DEFAUT = ['Huit implantations et un partenaire', 'Chaque maison livre sa région'];
 
   function taille(){
@@ -64,10 +69,13 @@ var LIEUX = [
     dpr = Math.min(window.devicePixelRatio || 1, 1.5);
     L = Math.max(1, Math.round(r.width)); H = Math.max(1, Math.round(r.height));
     petit = L < 460;
+    var rf = fic ? fic.getBoundingClientRect() : null, rt = toile.getBoundingClientRect();
+    BAS = (rf && rf.height && rf.top > rt.top) ? (rf.top - rt.top - 8) : H;
     toile.width = Math.round(L*dpr); toile.height = Math.round(H*dpr);
     toile.style.width = L+'px'; toile.style.height = H+'px';
     ctx.setTransform(dpr,0,0,dpr,0,0);
     S = Math.min(L, H) * 0.92; OX = (L-S)/2; OY = (H-S)/2;
+    GEO = null;
     PTS = LIEUX.map(function(o){ return { x: OX + o.x/100*S, y: OY + o.y/100*S }; });
   }
 
@@ -84,60 +92,231 @@ var LIEUX = [
     ctx.restore();
   }
 
-  /* ── les points : ceux que la légende de la page décrit déjà ─────────────── */
-  function points(){
+  /* ── l'entrepôt : le picto du site, posé à l'emplacement de chaque maison ──
+     Même écriture que les pictos de la section « Le métier » : trait de 1,6,
+     bouts et jointures ronds, aucun remplissage. Le siège porte le trait plein
+     et son anneau ; le partenaire de Metz est bleu pâle.
+     Trois maisons se touchent dans le Var : les entrepôts s'écartent tout seuls
+     et un fil les relie à leur emplacement exact, qui reste marqué d'un point. */
+  function entrepot(x, y, t, coul, epais){
+    /* t : la largeur du picto. Le sol du bâtiment est en y. */
+    var w = t, h = t*0.66, x0 = x - w/2, y0 = y - h;
+    ctx.strokeStyle = coul; ctx.lineWidth = epais;
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.beginPath();                                   /* le toit, à deux pentes */
+    ctx.moveTo(x0 - w*0.10, y0 + h*0.34);
+    ctx.lineTo(x, y0);
+    ctx.lineTo(x0 + w*1.10, y0 + h*0.34);
+    ctx.stroke();
+    ctx.beginPath();                                   /* le corps */
+    ctx.moveTo(x0, y0 + h*0.30); ctx.lineTo(x0, y);
+    ctx.lineTo(x0 + w, y); ctx.lineTo(x0 + w, y0 + h*0.30);
+    ctx.stroke();
+    ctx.beginPath();                                   /* la grande porte */
+    ctx.moveTo(x0 + w*0.30, y); ctx.lineTo(x0 + w*0.30, y0 + h*0.62);
+    ctx.lineTo(x0 + w*0.70, y0 + h*0.62); ctx.lineTo(x0 + w*0.70, y);
+    ctx.stroke();
+  }
+  var GEO = null;
+  function geometrie(){
+    if (GEO && GEO.S === S) return GEO.g;
+    var g = [];
     for (var i=0;i<LIEUX.length;i++){
-      var o = LIEUX[i], p = PTS[i], vif = (i===vise);
-      var r = (o.siege ? 5.5 : 4.5) * (petit?0.85:1) * (vif?1.25:1);
-      if (o.part){
-        ctx.fillStyle = 'rgba(92,151,255,.55)';
-        ctx.beginPath(); ctx.arc(p.x,p.y,r,0,6.2832); ctx.fill();
-      } else if (o.siege){
-        ctx.fillStyle = '#FFFFFF';
-        ctx.beginPath(); ctx.arc(p.x,p.y,r,0,6.2832); ctx.fill();
-        ctx.strokeStyle = '#F39A1B'; ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.arc(p.x,p.y,r+1,0,6.2832); ctx.stroke();
-      } else {
-        ctx.fillStyle = '#F39A1B';
-        ctx.beginPath(); ctx.arc(p.x,p.y,r,0,6.2832); ctx.fill();
+      var o = LIEUX[i], p = PTS[i];
+      var t = S * (o.siege ? 0.062 : 0.052) * (petit ? 1.15 : 1);
+      g.push({ i:i, o:o, p:p, t:t, x:p.x, y:p.y, dx:0, dy:0 });
+    }
+    /* on écarte ce qui se recouvre, sans jamais déplacer le lieu lui-même */
+    var jeu = S*0.022;
+    for (var tour=0; tour<14; tour++){
+      var bouge = false;
+      for (var a=0;a<g.length;a++) for (var b=a+1;b<g.length;b++){
+        var A=g[a], B=g[b];
+        var ax=A.x+A.dx, ay=A.y+A.dy, bx=B.x+B.dx, by=B.y+B.dy;
+        var lA=(A.t+B.t)/2 + jeu, hA=(A.t*0.66+B.t*0.66)/2 + jeu;
+        if (Math.abs(ax-bx) < lA && Math.abs(ay-by) < hA){
+          var cx=ax-bx, cy=(ay-by)*1.4, n=Math.sqrt(cx*cx+cy*cy)||1;
+          var pous=(lA-Math.abs(ax-bx))*0.5+0.5;
+          var ux=cx/n*pous, uy=cy/n*pous;
+          if (A.o.siege){ B.dx-=ux*2; B.dy-=uy*2; }
+          else if (B.o.siege){ A.dx+=ux*2; A.dy+=uy*2; }
+          else { A.dx+=ux; A.dy+=uy; B.dx-=ux; B.dy-=uy; }
+          bouge = true;
+        }
       }
+      if (!bouge) break;
+    }
+    var m = 6;
+    for (var k=0;k<g.length;k++){
+      g[k].x = Math.min(Math.max(m+g[k].t/2, g[k].x+g[k].dx), L-m-g[k].t/2);
+      g[k].y = Math.min(Math.max(m+g[k].t*0.66, g[k].y+g[k].dy), H-m);
+    }
+    /* l'arrivée monte du sud vers le nord : elle part du siège */
+    g.slice().sort(function(a,b){ return b.p.y - a.p.y; }).forEach(function(e,r){ e.rang = r; });
+    GEO = { S:S, g:g };
+    return g;
+  }
+  function points(av){
+    var g = geometrie();
+    for (var k=0;k<g.length;k++){
+      var e = g[k], o = e.o, p = e.p, vif = (e.i === vise);
+      var a = av==null ? 1 : Math.min(1, Math.max(0, (av - e.rang*0.055) / 0.32));
+      if (a <= 0) continue;
+      var monte = (1-a) * S*0.02;
+      ctx.globalAlpha = a;
+      var coul = o.part ? 'rgba(92,151,255,.75)' : '#F39A1B';
+      /* le fil vers l'emplacement exact, si l'entrepôt a dû s'écarter */
+      if (Math.abs(e.x-p.x) > 1.5 || Math.abs(e.y-p.y) > 1.5){
+        ctx.strokeStyle = o.part ? 'rgba(92,151,255,.35)' : 'rgba(243,154,27,.38)';
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(e.x, e.y+monte); ctx.lineTo(p.x, p.y); ctx.stroke();
+      }
+      /* l'emplacement exact */
+      ctx.fillStyle = o.part ? 'rgba(92,151,255,.85)' : '#F39A1B';
+      ctx.beginPath(); ctx.arc(p.x, p.y, vif?2.6:2, 0, 6.2832); ctx.fill();
+      if (o.siege){
+        ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 1.4;
+        ctx.beginPath(); ctx.arc(e.x, e.y - e.t*0.33 + monte, e.t*0.78, 0, 6.2832); ctx.stroke();
+        coul = '#FFFFFF';
+      }
+      entrepot(e.x, e.y + monte, e.t * (vif?1.10:1), vif ? '#FFFFFF' : coul,
+               (o.siege||vif) ? 1.9 : 1.6);
+      ctx.globalAlpha = 1;
     }
   }
 
-  /* ── les noms : Inter, comme partout ailleurs sur le site ────────────────── */
-  function noms(){
-    for (var i=0;i<LIEUX.length;i++){
-      var o = LIEUX[i], p = PTS[i], vif = (i===vise);
-      if (petit && !vif) continue;
-      var fs = petit ? 13 : 14;
-      ctx.font = (vif?'500 ':'400 ') + fs + 'px Inter, ui-sans-serif, system-ui, sans-serif';
-      ctx.textBaseline = 'middle';
-      ctx.fillStyle = vif ? '#FFFFFF' : 'rgba(255,255,255,.82)';
-      var larg = ctx.measureText(o.eti).width, marge = 8, sens = o.ax;
-      var lx = p.x + sens*12, ly = p.y + o.ay*12 + (o.oy||0);
-      if (sens>0 && lx+larg > L-marge){
-        if (p.x-12-larg >= marge){ sens=-1; lx=p.x-12; } else lx = L-marge-larg;
-      } else if (sens<0 && lx-larg < marge){
-        if (p.x+12+larg <= L-marge){ sens=1; lx=p.x+12; } else lx = marge+larg;
+  /* ── les noms : trois places possibles, on prend la première qui ne gêne rien ──
+     dessous, dessus, à droite, à gauche. Un nom ne doit croiser ni une autre
+     maison, ni un nom déjà posé, ni sortir du cadre. */
+  function noms(av){
+    var g = geometrie(), pol = 'Inter, system-ui, sans-serif';
+    var ts = petit ? 11 : 13, m = 4;
+    ctx.textBaseline = 'top';
+    /* l'encombrement de chaque maison, qu'aucun nom ne doit traverser */
+    var murs = g.map(function(f){
+      var k = f.o.siege ? 0.90 : 0.66;
+      return { x:f.x, y:f.y - f.t*0.33, w:f.t*(f.o.siege?1.75:1.20), h:f.t*(f.o.siege?1.75:k*1.6), e:f };
+    });
+    function heurte(b, sauf){
+      if (b.x - b.w/2 < m || b.x + b.w/2 > L-m || b.y < m || b.y + b.h > Math.min(H-m, BAS)) return true;
+      for (var i=0;i<murs.length;i++){
+        var u = murs[i]; if (u.e === sauf) continue;
+        if (Math.abs(b.x-u.x) < (b.w+u.w)/2 && Math.abs((b.y+b.h/2)-u.y) < (b.h+u.h)/2) return true;
       }
-      ly = Math.min(Math.max(marge+7, ly), H-marge-7);
-      ctx.textAlign = sens>0 ? 'left' : 'right';
-      ctx.fillText(o.eti, lx, ly);
+      for (var j=0;j<poses.length;j++){
+        var v = poses[j];
+        if (Math.abs(b.x-v.x) < (b.w+v.w)/2+5 && Math.abs(b.y-v.y) < (b.h+v.h)/2+3) return true;
+      }
+      return false;
+    }
+    var poses = [];
+    /* le siège d'abord, puis du sud vers le nord : les plus serrés choisissent tôt */
+    var ordre = g.slice().sort(function(a,b){
+      if (a.o.siege !== b.o.siege) return a.o.siege ? -1 : 1;
+      return b.y - a.y;
+    });
+    for (var k=0;k<ordre.length;k++){
+      var e = ordre[k], o = e.o, gras = (o.siege || e.i === vise);
+      ctx.font = (gras?'700 ':'500 ')+ts+'px '+pol;
+      var w = ctx.measureText(o.eti).width, h = ts+2;
+      var bas = e.y + (o.siege ? e.t*0.60 : e.t*0.34) + 5;
+      var hau = e.y - e.t*0.66 - (o.siege ? e.t*0.55 : 0) - h - 6;
+      var cot = e.t*(o.siege?1.05:0.75) + w/2 + 6;
+      var cand = [ {x:e.x, y:bas}, {x:e.x, y:hau},
+                   {x:e.x+cot, y:e.y-e.t*0.33-h/2}, {x:e.x-cot, y:e.y-e.t*0.33-h/2} ];
+      var cx0 = e.x, cy0 = e.y - e.t*0.33, fil = cand.length;
+      for (var r=1.9; r<=4.6; r+=0.9)
+        for (var ang=0; ang<12; ang++){
+          var A = (-Math.PI/2) + ang * (Math.PI/6) * (ang%2 ? 1 : -1);
+          cand.push({ x: cx0 + Math.cos(A)*(e.t*r + w*0.45), y: cy0 + Math.sin(A)*e.t*r - h/2 });
+        }
+      var choix = null;
+      for (var c=0;c<cand.length;c++){
+        var b = { x:cand[c].x, y:cand[c].y, w:w, h:h };
+        if (!heurte(b, e)){ choix = b; choix.fil = (c >= fil); break; }
+      }
+      if (!choix){                                     /* rien de libre : on descend jusqu'à trouver */
+        choix = { x:e.x, y:bas, w:w, h:h, fil:false };
+        for (var d=0; d<12 && heurte(choix, e); d++) choix.y += 6;
+      }
+      /* le fil se tire dès que le nom ne touche plus sa maison : sans lui, il
+         se lirait comme appartenant à la maison d'à côté */
+      var ec = Math.abs(choix.x - e.x), eh = Math.abs((choix.y + h/2) - (e.y - e.t*0.33));
+      choix.fil = (ec > e.t*0.72 && eh > e.t*0.55) || ec > e.t*1.6 || eh > e.t*1.15;
+      choix.gras = gras; choix.o = o; choix.t = o.eti; choix.e = e;
+      /* le nom se pose en même temps que sa maison */
+      choix.a = av==null ? 1 : Math.min(1, Math.max(0, (av - e.rang*0.055 - 0.10) / 0.28));
+      poses.push(choix);
+    }
+    ctx.textAlign = 'center';
+    for (var p=0;p<poses.length;p++){
+      var q = poses[p];
+      if (q.fil){
+        ctx.strokeStyle = q.o.part ? 'rgba(92,151,255,.50)' : 'rgba(243,154,27,.50)';
+        ctx.lineWidth = 1; ctx.beginPath();
+        ctx.moveTo(q.x, q.y + q.h/2);
+        ctx.lineTo(q.e.x, q.e.y - q.e.t*0.33); ctx.stroke();
+      }
+      ctx.font = (q.gras?'700 ':'500 ')+ts+'px '+pol;
+      ctx.strokeStyle = 'rgba(8,14,28,.75)'; ctx.lineWidth = 3.4;
+      ctx.lineJoin = 'round'; ctx.miterLimit = 2;
+      ctx.strokeText(q.t, q.x, q.y);
+      ctx.fillStyle = q.gras ? 'rgba(255,255,255,.97)'
+                    : q.o.part ? 'rgba(160,197,255,.86)' : 'rgba(255,255,255,.78)';
+      ctx.fillText(q.t, q.x, q.y);
+      ctx.globalAlpha = 1;
+    }
+    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  }
+
+  /* ── l'onde : chaque maison expédie à son tour, un cercle qui s'ouvre ────
+     Une seule onde naît toutes les 900 ms, elle vit 1,8 s. Deux au plus à
+     l'écran : la carte respire sans jamais clignoter. Coupée hors écran et
+     si le visiteur a demandé moins d'animation. */
+  var ondes = [], ondeK = 0, ondeT = 0, souffle = null, dedans = false;
+  function respirer(now){
+    souffle = null;
+    if (!dedans || DOUX) return;
+    var g = geometrie();
+    if (now - ondeT > 900){
+      ondeT = now;
+      var ordre = g.slice().sort(function(a,b){ return b.rang - a.rang; });
+      ondes.push({ e: ordre[ondeK % ordre.length], n: now }); ondeK++;
+    }
+    ondes = ondes.filter(function(o){ return now - o.n < 1800; });
+    dessiner(now);
+    souffle = requestAnimationFrame(respirer);
+  }
+  function tracerOndes(now){
+    if (!now || DOUX) return;
+    for (var k=0;k<ondes.length;k++){
+      var o = ondes[k], u = (now - o.n) / 1800;
+      if (u < 0 || u > 1) continue;
+      var d = 1 - Math.pow(1-u, 2);
+      var r = o.e.t * (0.55 + d*2.4);
+      var cx = o.e.x, cy = o.e.y - o.e.t*0.33;
+      ctx.strokeStyle = (o.e.o.part ? 'rgba(92,151,255,' : 'rgba(243,154,27,')
+                        + (0.32 * (1-u)).toFixed(3) + ')';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, 6.2832); ctx.stroke();
     }
   }
 
-  function dessiner(){ ctx.clearRect(0,0,L,H); pays(); points(); noms(); }
+  function dessiner(now){ ctx.clearRect(0,0,L,H); pays(); tracerOndes(now); points(); noms(); }
 
   /* ── la seule animation : le trait se pose à l'arrivée, puis plus rien ───── */
   function arrivee(){
     if (DOUX){ dessiner(); return; }
     if (!t0) t0 = performance.now();
-    var t = Math.min(1, (performance.now()-t0)/700);
+    var t = Math.min(1, (performance.now()-t0)/1300);
     var e = 1 - Math.pow(1-t, 3);
     ctx.clearRect(0,0,L,H);
-    ctx.globalAlpha = e; pays(); ctx.globalAlpha = 1;
-    if (t > 0.45){ ctx.globalAlpha = (t-0.45)/0.55; points(); noms(); ctx.globalAlpha = 1; }
-    if (t < 1) boucle = requestAnimationFrame(arrivee); else boucle = null;
+    ctx.globalAlpha = Math.min(1, e*1.6); pays(); ctx.globalAlpha = 1;
+    /* les entrepôts se posent l'un après l'autre, du sud vers le nord */
+    var av = Math.max(0, (t - 0.20) / 0.80);
+    if (av > 0){ points(av); noms(av); }
+    if (t < 1) boucle = requestAnimationFrame(arrivee);
+    else { boucle = null; dessiner(); lancerSouffle(); }
   }
 
   function fiche(i){
@@ -165,15 +344,34 @@ var LIEUX = [
     el.addEventListener('mouseleave', function(){ vise=-1; fiche(-1); dessiner(); });
   });
 
-  function poser(){ taille(); dessiner(); }
+  function lancerSouffle(){
+    if (souffle || DOUX || !dedans) return;
+    ondeT = performance.now() - 700;
+    souffle = requestAnimationFrame(respirer);
+  }
+  /* Le redessin qui suit un changement de taille — ou la fin du chargement des
+     polices — ne doit JAMAIS repasser par-dessus l'arrivée en cours : sinon la
+     carte apparaît d'un bloc, puis se remet à s'animer. */
+  function poser(){
+    ondes = []; taille();
+    if (boucle) return;                 /* l'arrivée est en cours : elle redessine seule */
+    if (!vu){ ctx.clearRect(0, 0, L, H); return; }
+    dessiner();
+  }
   poser();
   window.addEventListener('resize', poser);
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(poser);
   if ('IntersectionObserver' in window){
-    var vu = false;
     new IntersectionObserver(function(en){
-      if (en[0].isIntersecting && !vu){ vu = true; t0 = 0; arrivee(); }
+      dedans = en[0].isIntersecting;
+      if (dedans && !vu){ vu = true; t0 = 0; arrivee(); }
+      else if (dedans && !boucle) lancerSouffle();
+      else if (!dedans && souffle){ cancelAnimationFrame(souffle); souffle = null; ondes = []; }
     }, { rootMargin: '0px 0px -10% 0px', threshold: 0.15 }).observe(boite);
+    document.addEventListener('visibilitychange', function(){
+      if (document.hidden && souffle){ cancelAnimationFrame(souffle); souffle = null; ondes = []; dessiner(); }
+      else if (!document.hidden && !boucle) lancerSouffle();
+    });
     setTimeout(function(){ if (!vu){ vu = true; dessiner(); } }, 3500);
   }
 })();
