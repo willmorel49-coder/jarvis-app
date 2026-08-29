@@ -1,32 +1,22 @@
 /* ═══════════════════════════════════════════════════════════════════════════════
-   LA CARTE — la croissance de la direction 17 « Delta », posée sur la France.
-   Appelé par index.html (section #carte).
+   LA CARTE DU RÉSEAU — validée par Will le 29/08/2026.
 
-   Le moteur est celui de la direction 17 : une ramure en delta qui pousse depuis
-   une origine, se divise selon l'axe le plus large du groupe de cibles, des
-   épaisseurs qui suivent la loi de Murray, un front lumineux qui respire, une
-   éclosion à l'arrivée sur chaque cible, puis des capillaires.
+   Ce que la carte dit, dans cet ordre :
+   · le pays est une matière de lumière, éclairée d'un seul côté — jamais un aplat ;
+   · de chaque établissement partent des routes qui desservent sa région, et des
+     convois les parcourent en continu : on livre partout, tous les jours ;
+   · les maisons se relient à leurs deux plus proches voisines — rien ne rayonne
+     depuis le siège : le stock d'une maison est le stock de toutes ;
+   · chaque établissement est un BÂTIMENT posé à son emplacement, numéroté 01→09.
+     Trois maisons se touchent dans le Var : les bâtiments s'écartent tout seuls et
+     un fil les relie à leur emplacement exact. On ne déplace jamais le lieu,
+     seulement son dessin.
+   · Pharmest (Metz) est un PARTENAIRE : bleu, sans numéro, et ses routes n'existent pas.
 
-   Ce qui change ici : l'origine est HYÈRES (le siège), les cibles sont les vraies
-   villes projetées sur la carte, il n'y a plus de couloir de texte à contourner,
-   et la croissance est pilotée par l'arrivée de la carte dans l'écran. Le tracé de
-   la France (IGN, Licence Ouverte, repris de la maquette 06) est dessiné dans la
-   même toile, sous la ramure. Sans toile 2D, la carte se retire et la fiche reste.
-   Mouvement réduit : réseau complet et figé.
+   L'animation s'arrête hors écran et sous « mouvement réduit ». Une seule toile 2D,
+   aucun contexte 3D, ~60 images/seconde mesurées.
    ═══════════════════════════════════════════════════════════════════════════════ */
-(function(){
-'use strict';
-var DOUX = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-var boite = document.getElementById('carte-boite');
-var toile = document.getElementById('carte-toile');
-var ficheT = document.getElementById('carte-fiche-t');
-var ficheS = document.getElementById('carte-fiche-s');
-if (!boite || !toile) return;
-var ctx = null;
-try { ctx = toile.getContext('2d', {alpha:true}); } catch(e){ ctx = null; }
-if (!ctx){ toile.style.display = 'none'; return; }
 
-/* la France : 17 tracés dans un carré 0 → 100 (source IGN, Licence Ouverte) */
 var FRANCE = [
 "M68.10 69.57 L67.46 69.49 L67.32 69.08 L68.04 68.20 L68.74 68.72 L68.10 69.57 Z",
 "M68.41 69.57 L68.66 69.45 L68.99 69.77 L69.41 69.39 L69.31 70.24 L70.71 70.40 L70.90 71.00 L71.27 71.03 L71.40 71.37 L72.00 71.23 L72.43 70.63 L72.63 71.05 L72.96 71.10 L72.72 70.85 L73.02 70.60 L73.02 69.87 L72.47 69.47 L72.63 69.19 L71.67 69.16 L71.24 68.81 L71.15 68.27 L71.71 68.15 L71.43 67.51 L72.49 67.82 L72.87 67.49 L72.39 67.07 L72.71 65.97 L73.74 65.95 L74.02 65.58 L73.82 65.41 L74.00 64.87 L74.86 64.88 L75.06 64.66 L74.85 64.42 L75.32 64.10 L75.59 64.31 L76.13 63.81 L76.94 63.94 L77.21 63.72 L77.67 63.92 L77.45 62.45 L76.62 62.31 L76.91 61.22 L77.53 61.19 L77.74 61.73 L78.36 61.91 L78.76 61.33 L79.49 61.21 L79.89 62.24 L80.39 62.29 L80.43 63.39 L81.22 63.95 L81.69 63.82 L82.34 64.23 L82.16 64.57 L82.70 65.67 L81.91 65.70 L81.95 66.30 L81.15 67.22 L81.81 68.22 L81.42 68.31 L81.38 68.91 L82.23 70.19 L83.48 70.54 L84.12 71.15 L84.57 71.10 L84.66 71.40 L86.89 70.78 L86.81 71.25 L87.18 71.74 L86.71 72.84 L86.13 73.11 L86.08 73.60 L85.63 73.88 L85.86 74.76 L85.56 75.12 L84.64 75.41 L84.47 75.88 L84.36 75.55 L83.84 75.75 L83.65 76.15 L83.25 76.10 L83.13 77.18 L82.85 76.93 L82.44 77.29 L81.90 77.23 L81.63 78.15 L81.16 78.54 L80.37 78.38 L80.19 79.19 L79.21 79.95 L80.06 80.01 L79.71 81.02 L79.12 80.80 L78.64 81.19 L77.89 81.25 L77.74 81.84 L76.61 81.53 L76.28 81.90 L76.29 82.45 L75.84 82.36 L76.11 82.26 L76.07 81.91 L75.35 81.92 L74.60 81.45 L74.47 81.88 L74.86 81.98 L74.43 81.92 L74.11 82.24 L73.76 82.01 L73.88 81.56 L73.08 81.26 L73.02 80.89 L72.59 80.82 L72.45 81.09 L71.98 80.54 L70.58 80.55 L70.84 79.73 L70.49 79.09 L69.83 79.38 L68.49 79.37 L68.21 78.64 L69.19 78.67 L69.84 78.00 L69.67 77.73 L69.22 78.06 L69.03 77.42 L68.55 77.43 L68.38 77.06 L68.24 77.90 L68.60 78.01 L68.65 78.59 L68.11 78.70 L67.77 78.32 L67.49 78.61 L67.58 78.35 L67.19 78.14 L67.37 78.55 L67.04 78.36 L67.27 78.66 L66.89 78.82 L67.34 78.76 L67.04 78.91 L67.42 79.11 L67.66 78.85 L67.09 79.39 L65.33 79.04 L65.11 78.80 L65.36 78.43 L65.01 78.14 L62.87 78.05 L62.94 77.65 L63.53 77.36 L63.46 77.08 L63.60 77.29 L64.48 76.74 L64.56 76.51 L64.24 76.38 L64.65 75.63 L65.64 75.77 L65.91 74.13 L65.74 73.92 L67.15 72.69 L66.75 71.90 L66.20 71.53 L66.30 70.68 L65.80 69.93 L65.80 69.23 L66.70 69.34 L67.02 70.26 L68.41 69.57 Z",
@@ -47,12 +37,7 @@ var FRANCE = [
 "M24.51 26.82 L24.61 26.55 L25.00 26.52 L25.97 26.90 L26.13 28.70 L25.73 29.36 L26.29 32.07 L25.36 32.37 L24.73 34.29 L23.11 33.69 L23.16 34.02 L22.10 34.42 L21.85 34.97 L20.46 34.98 L19.78 35.36 L19.65 35.12 L18.84 35.65 L18.78 36.75 L18.39 36.87 L18.33 37.20 L18.19 36.97 L17.78 37.15 L17.39 36.93 L17.30 37.45 L17.01 37.55 L16.53 37.32 L16.13 37.69 L16.00 37.14 L16.53 37.24 L16.78 36.99 L16.41 37.11 L15.76 36.80 L15.15 37.04 L14.85 36.89 L14.77 37.18 L13.66 37.18 L13.10 36.51 L14.39 36.65 L14.47 36.09 L14.04 35.86 L14.34 35.94 L14.28 35.75 L13.41 35.87 L13.47 36.11 L13.07 36.26 L12.67 35.47 L13.01 36.54 L12.54 36.17 L12.59 36.42 L12.33 36.16 L12.38 36.41 L11.84 36.45 L11.61 36.10 L11.63 36.96 L11.95 37.40 L11.60 37.37 L11.38 36.79 L11.53 36.29 L11.04 35.67 L11.45 35.14 L11.00 35.11 L11.02 35.64 L10.46 35.19 L10.00 35.21 L10.55 35.20 L10.49 34.98 L9.96 34.96 L10.58 34.07 L10.19 34.63 L9.97 34.45 L9.85 35.02 L9.35 35.11 L8.81 34.40 L8.86 34.07 L8.75 34.43 L8.01 34.31 L8.06 34.12 L7.79 34.30 L7.47 34.02 L7.97 33.83 L7.64 33.73 L7.40 34.02 L7.30 33.50 L7.34 34.08 L6.55 34.15 L5.92 32.98 L5.60 33.07 L5.70 33.51 L4.85 33.42 L4.53 32.94 L4.78 32.61 L5.06 32.70 L4.98 32.47 L4.78 32.61 L4.74 32.19 L4.76 32.67 L4.53 33.06 L4.31 32.96 L4.75 33.42 L4.36 33.65 L4.30 33.24 L4.30 33.54 L4.00 33.36 L4.43 33.73 L4.33 33.98 L2.99 34.09 L3.02 33.19 L2.40 32.21 L1.81 31.77 L1.60 32.03 L0.38 31.62 L0.56 31.36 L2.64 30.94 L3.41 31.12 L3.68 30.70 L3.43 30.03 L2.53 29.61 L2.07 29.66 L1.65 30.30 L1.55 29.63 L1.76 29.50 L1.21 29.46 L1.15 29.18 L1.57 29.16 L1.68 28.59 L1.81 29.14 L2.01 28.87 L2.03 29.17 L2.78 29.24 L3.53 28.99 L3.66 29.41 L4.11 29.61 L3.59 29.20 L4.30 29.02 L3.58 28.85 L3.85 28.69 L3.21 28.85 L3.72 28.36 L2.35 28.71 L3.66 27.51 L1.30 28.60 L0.80 28.42 L0.16 28.68 L0.08 27.50 L0.55 27.27 L0.14 27.11 L0.30 26.51 L1.17 26.15 L2.02 26.49 L1.28 26.16 L1.37 25.85 L1.95 26.08 L1.58 25.85 L1.76 25.56 L2.77 25.57 L2.51 25.37 L3.12 25.15 L3.48 25.28 L3.48 25.61 L4.64 24.96 L5.15 25.24 L5.17 24.86 L5.66 24.61 L5.85 25.47 L6.30 25.22 L6.59 25.90 L6.48 25.22 L6.79 24.73 L8.02 24.95 L7.90 25.38 L8.16 25.06 L8.52 25.18 L8.45 24.67 L9.27 24.61 L8.43 24.33 L8.99 23.50 L9.53 23.69 L9.51 23.94 L10.67 23.56 L10.85 23.23 L11.12 23.73 L11.91 23.22 L11.81 23.60 L12.01 23.60 L11.62 24.34 L12.00 23.71 L12.45 23.72 L12.19 24.07 L13.01 24.37 L12.89 24.72 L13.78 25.44 L13.71 25.93 L14.50 26.39 L14.33 26.68 L14.74 27.07 L14.72 26.63 L15.16 26.77 L15.61 25.95 L16.18 25.71 L16.07 25.48 L16.60 25.61 L17.26 25.04 L17.50 25.24 L17.12 25.74 L17.78 25.49 L17.90 26.57 L18.11 25.83 L18.32 26.17 L18.43 25.75 L18.61 25.89 L18.43 25.58 L19.14 25.55 L19.66 26.50 L19.52 27.03 L19.90 26.59 L19.68 26.59 L19.56 26.10 L19.79 26.16 L19.38 25.95 L19.27 25.42 L19.91 24.90 L20.56 24.80 L20.54 25.76 L22.46 25.67 L23.03 27.06 L23.46 27.34 L23.79 27.40 L24.51 26.82 Z",
 "M98.94 82.66 L99.33 82.86 L99.53 84.68 L99.21 86.01 L99.81 87.33 L99.96 91.59 L98.98 93.32 L98.78 96.45 L98.04 96.94 L98.66 97.00 L98.00 97.62 L98.03 98.28 L97.56 98.80 L97.91 98.80 L97.36 99.28 L96.75 99.00 L97.01 98.45 L96.61 98.51 L96.66 98.11 L96.38 98.36 L94.63 97.34 L94.67 96.58 L95.19 96.45 L95.50 95.99 L94.59 95.90 L94.53 95.47 L94.06 95.67 L93.72 95.49 L94.21 95.14 L94.09 94.86 L94.51 94.77 L94.36 94.42 L94.73 93.93 L94.34 93.53 L93.36 93.91 L93.26 93.21 L93.70 93.13 L93.70 92.76 L94.34 92.34 L94.01 91.71 L93.73 91.83 L93.02 91.37 L93.27 91.16 L93.04 91.11 L93.19 90.77 L92.90 90.45 L93.99 90.16 L93.35 89.75 L93.42 89.31 L92.99 89.47 L92.92 89.11 L93.38 88.93 L93.36 88.63 L93.71 88.62 L93.87 88.09 L93.66 88.00 L93.78 87.62 L94.15 87.53 L94.18 86.93 L94.20 87.16 L94.63 87.21 L94.72 86.75 L96.21 86.35 L96.97 85.44 L97.65 85.40 L98.18 86.00 L98.51 85.39 L98.26 84.40 L98.62 83.48 L98.47 82.78 L98.94 82.66 Z"
 ];
-var CHEMINS = null;
-try { CHEMINS = FRANCE.map(function(d){ return new Path2D(d); }); } catch(e){ CHEMINS = null; }
 
-/* les maisons — coordonnées dans le carré 0 → 100 de la carte (maquette 06).
-   ax / ay : de quel côté du point se pose l'étiquette (les maisons du Var et de
-   l'Essonne sont voisines : leurs étiquettes partent dans des directions opposées). */
 var LIEUX = [
   {c:'01', nom:'Hyères Pharma',                    lieu:'Hyères · Var (83) — siège du groupe',             x:76.61, y:81.53, eti:'Hyères',         ax: 1, ay: 1, siege:true},
   {c:'02', nom:'SR Pharma',                        lieu:'Palaiseau · Essonne (91)',                        x:48.96, y:24.76, eti:'Palaiseau',      ax:-1, ay:-1},
@@ -65,435 +50,370 @@ var LIEUX = [
   {c:'09', nom:'Sud Est Pharma',                   lieu:'Le Cannet-des-Maures · Var (83)',                 x:77.67, y:78.64, eti:'Le Cannet-des-Maures', oy:-15,      ax: 1, ay:-1},
   {c:'10', nom:'Pharmest',                         lieu:'Metz · Moselle (57) — partenaire',                x:76.56, y:20.79, eti:'Metz',           ax: 1, ay:-1, part:true}
 ];
-var DEFAUT = ['Neuf implantations et un partenaire', 'Le maillage part du siège, à Hyères'];
 
-/* générateur à graine fixe (mulberry32, domaine public) : le même dessin à chaque visite */
-function graine(a){
-  return function(){
-    a |= 0; a = a + 0x6D2B79F5 | 0;
-    var t = Math.imul(a ^ a >>> 15, 1 | a);
-    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
-    return ((t ^ t >>> 14) >>> 0) / 4294967296;
-  };
-}
-function borne(v,a,b){ return v<a?a:(v>b?b:v); }
+(function(){
+  "use strict";
+  var DOUX = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var boite = document.getElementById('carte-boite');
+  var toile = document.getElementById('carte-toile');
+  var fT = document.getElementById('carte-fiche-t'), fS = document.getElementById('carte-fiche-s');
+  if (!boite || !toile) return;
+  var ctx = toile.getContext('2d');
+  var CHEMINS = null;
+  try { CHEMINS = FRANCE.map(function(d){ return new Path2D(d); }); } catch(e){}
 
-var L=0, H=0, S=0, OX=0, OY=0, dpr=1, petit=false, K=1;
-var SEGS=[], POINTES=[], RACINE=null, PTS=[];
-function proj(o){ return { x: OX + o.x/100*S, y: OY + o.y/100*S }; }
+  var L=0, H=0, S=0, OX=0, OY=0, dpr=1, petit=false;
+  var PTS=[], t0=performance.now(), vivant=false, boucle=null, vise=-1;
+  var DEFAUT = ['Neuf implantations et un partenaire', 'Chaque maison irrigue sa région, et se relaie avec ses voisines'];
 
-/* ── 1 · construction de la ramure ─────────────────────────────────────── */
-function construire(){
-  var R = graine(2006083);
-  SEGS = []; POINTES = [];
-  petit = S < 420;
-  K = S / 640;
-  var PAS = Math.max(4, 6.6 * K);
-  PTS = LIEUX.map(proj);
-  RACINE = PTS[0];
-  /* les cibles : les huit maisons hors siège (le partenaire n'est pas relié) */
-  var cibles = [];
-  for (var i=1;i<9;i++) cibles.push({ x:PTS[i].x, y:PTS[i].y, i:i });
-  var toutes = [];
-  var souche = { x:RACINE.x, y:RACINE.y, dx:-0.55, dy:-0.83, ens:cibles, t:0, prof:0, enfants:[], segs:[], w:0 };
-  var file = [souche];
-  toutes.push(souche);
-
-  function centre(ens){
-    var sx=0, sy=0;
-    for (var i=0;i<ens.length;i++){ sx+=ens[i].x; sy+=ens[i].y; }
-    return {x:sx/ens.length, y:sy/ens.length};
+  function proj(o){ return { x: OX + o.x/100*S, y: OY + o.y/100*S }; }
+  function taille(){
+    var r = boite.getBoundingClientRect();
+    dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    L = Math.max(1, Math.round(r.width)); H = Math.max(1, Math.round(r.height));
+    petit = L < 420;   /* le telephone seul renonce aux noms ; un portable les garde */
+    toile.width = Math.round(L*dpr); toile.height = Math.round(H*dpr);
+    toile.style.width = L+'px'; toile.style.height = H+'px';
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    S = Math.min(L, H) * (petit ? 0.94 : 0.90);
+    OX = (L - S)/2; OY = (H - S)/2;
+    PTS = LIEUX.map(proj);
   }
-  /* découpe k-d : on coupe le jeu de cibles selon son axe le plus étalé — la topologie d'un delta */
-  function couper(ens){
-    var minx=1e9,maxx=-1e9,miny=1e9,maxy=-1e9, i, p;
-    for (i=0;i<ens.length;i++){ p=ens[i]; if(p.x<minx)minx=p.x; if(p.x>maxx)maxx=p.x; if(p.y<miny)miny=p.y; if(p.y>maxy)maxy=p.y; }
-    var axeX = (maxx-minx) >= (maxy-miny);
-    var tri = ens.slice().sort(function(a,b){ return axeX ? a.x-b.x : a.y-b.y; });
-    var m = Math.floor(tri.length/2);
-    return [tri.slice(0,m), tri.slice(m)];
+
+  /* ── le sol : jamais un aplat, toujours une source de lumière ─────────── */
+  function sol(){
+    var g = ctx.createLinearGradient(0,0,L,H);
+    g.addColorStop(0,'#101A2E'); g.addColorStop(.55,'#0A1220'); g.addColorStop(1,'#070B14');
+    ctx.fillStyle = g; ctx.fillRect(0,0,L,H);
+    var h = ctx.createRadialGradient(L*.14, -H*.12, 0, L*.14, -H*.12, Math.max(L,H)*1.15);
+    h.addColorStop(0,'rgba(120,170,255,.30)'); h.addColorStop(.45,'rgba(90,130,220,.10)');
+    h.addColorStop(1,'rgba(90,130,220,0)');
+    ctx.fillStyle = h; ctx.fillRect(0,0,L,H);
+    var c = ctx.createRadialGradient(L*.92, H*1.06, 0, L*.92, H*1.06, Math.max(L,H)*.85);
+    c.addColorStop(0,'rgba(255,178,92,.16)'); c.addColorStop(1,'rgba(255,178,92,0)');
+    ctx.fillStyle = c; ctx.fillRect(0,0,L,H);
   }
-  var tMax = 0;
-  while (file.length){
-    var b = file.shift();
-    var c = centre(b.ens);
-    var feuille = (b.ens.length === 1);
-    var x=b.x, y=b.y, dx=b.dx, dy=b.dy, t=b.t;
-    var nPas;
-    if (b.prof === 0) nPas = Math.max(3, Math.round(S*0.06/PAS));
-    else if (feuille) nPas = 400;
-    else nPas = Math.max(3, Math.round(Math.sqrt((c.x-x)*(c.x-x)+(c.y-y)*(c.y-y))/PAS*0.34));
-    var meilleur = 1e9, stagne = 0;
-    for (var k=0;k<nPas;k++){
-      var vx=c.x-x, vy=c.y-y, d=Math.sqrt(vx*vx+vy*vy);
-      if (feuille){
-        if (d < PAS*1.2) break;
-        if (d < meilleur - 0.5){ meilleur = d; stagne = 0; } else if (++stagne > 14) break;
+
+  /* ── le pays : une matière iridescente, qui respire ───────────────────── */
+  function nuage(x,y,r,col,a){
+    var g = ctx.createRadialGradient(x,y,0,x,y,r);
+    g.addColorStop(0, col.replace('A', a));
+    g.addColorStop(.55, col.replace('A', a*0.42));
+    g.addColorStop(1, col.replace('A', 0));
+    ctx.fillStyle = g; ctx.fillRect(OX-S*.3, OY-S*.3, S*1.6, S*1.6);
+  }
+  function pays(tps){
+    if (!CHEMINS) return;
+    ctx.save();
+    ctx.translate(OX, OY); ctx.scale(S/100, S/100);
+    var p = new Path2D(); CHEMINS.forEach(function(c){ p.addPath(c); });
+    ctx.clip(p);
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    var g = ctx.createLinearGradient(OX, OY, OX+S, OY+S);
+    g.addColorStop(0,'#1B2C4E'); g.addColorStop(.5,'#152444'); g.addColorStop(1,'#101B36');
+    ctx.fillStyle = g; ctx.fillRect(OX-4, OY-4, S+8, S+8);
+    ctx.globalCompositeOperation = 'lighter';
+    var k = tps/1000;
+    nuage(OX+S*(.30+.06*Math.sin(k*.13)), OY+S*(.22+.05*Math.cos(k*.11)), S*.64, 'rgba(60,125,255,A)', .42);
+    nuage(OX+S*(.76+.05*Math.cos(k*.09)), OY+S*(.34+.06*Math.sin(k*.12)), S*.56, 'rgba(30,90,225,A)', .34);
+    nuage(OX+S*(.56+.06*Math.sin(k*.08+1)), OY+S*(.82+.04*Math.cos(k*.10)), S*.60, 'rgba(255,152,60,A)', .30);
+    nuage(OX+S*(.18+.05*Math.cos(k*.10+2)), OY+S*(.60+.05*Math.sin(k*.09)), S*.48, 'rgba(90,180,255,A)', .24);
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.restore();
+    /* le liseré : la lumière accroche le bord */
+    ctx.save();
+    ctx.translate(OX, OY); ctx.scale(S/100, S/100);
+    var lg = ctx.createLinearGradient(0,0,100,100);
+    lg.addColorStop(0,'rgba(190,220,255,.75)'); lg.addColorStop(.55,'rgba(150,185,255,.30)');
+    lg.addColorStop(1,'rgba(120,150,220,.16)');
+    ctx.strokeStyle = lg; ctx.lineWidth = 100/S*1.1; ctx.lineJoin='round';
+    CHEMINS.forEach(function(c){ ctx.stroke(c); });
+    ctx.restore();
+  }
+
+  /* ── les routes : de chaque maison partent des routes qui desservent sa région ──
+     Une route n'est pas une veine : elle est lisse, elle se divise à des carrefours,
+     et elle porte quelque chose. Ici, un convoi la parcourt vers l'extérieur, en boucle. */
+  function graine(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; var t=Math.imul(a^a>>>15,1|a);
+    t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+  var ROUTES = null;
+  function lisser(pts){                       /* une route ne fait pas d'angle : on arrondit */
+    var out=[pts[0]];
+    for (var i=1;i<pts.length-1;i++){
+      var a=pts[i-1], b=pts[i], c=pts[i+1];
+      out.push({x:(a.x+2*b.x+c.x)/4, y:(a.y+2*b.y+c.y)/4});
+    }
+    out.push(pts[pts.length-1]);
+    return out;
+  }
+  function routes(){
+    if (ROUTES) return ROUTES;
+    ROUTES = [];
+    for (var i=0;i<LIEUX.length;i++){
+      if (LIEUX[i].part) continue;            /* le partenaire n'est pas une maison du groupe */
+      var al = graine(i*977+13), p = PTS[i], n = 5;
+      for (var b2=0;b2<n;b2++){
+        var ang = (b2/n)*6.2832 + al()*0.9;
+        var lg = S*(0.13 + al()*0.17), pas = 7;
+        var pts=[{x:p.x,y:p.y}], x=p.x, y=p.y, a2=ang;
+        for (var k=0;k<pas;k++){
+          a2 += (al()-0.5)*0.42;              /* une route tourne doucement, jamais en zigzag */
+          var d2 = lg/pas;
+          x += Math.cos(a2)*d2; y += Math.sin(a2)*d2;
+          pts.push({x:x,y:y});
+        }
+        pts = lisser(lisser(pts));
+        ROUTES.push({pts:pts, w:0.8+al()*0.5, ph:al(), vit:0.055+al()*0.035, i:i});
+        if (al() > 0.45){                      /* un carrefour : la route se divise */
+          var o = pts[Math.floor(pts.length*0.55)], a3 = a2 + (al()<0.5?-1:1)*(0.5+al()*0.5);
+          var q=[{x:o.x,y:o.y}], xx=o.x, yy=o.y, l2=lg*0.55;
+          for (var k2=0;k2<5;k2++){
+            a3 += (al()-0.5)*0.4; var d3=l2/5;
+            xx += Math.cos(a3)*d3; yy += Math.sin(a3)*d3; q.push({x:xx,y:yy});
+          }
+          ROUTES.push({pts:lisser(lisser(q)), w:0.6+al()*0.35, ph:al(), vit:0.05+al()*0.03, i:i});
+        }
       }
-      if (d > 1e-4){ vx/=d; vy/=d; }
-      var att = feuille ? 0.42 : 0.16;
-      dx += (vx-dx)*att; dy += (vy-dy)*att;
-      /* bruit d'orientation : c'est lui qui empêche le trait rectiligne */
-      var a = (R()-0.5)*0.26, ca=Math.cos(a), sa=Math.sin(a);
-      var ndx = dx*ca - dy*sa, ndy = dx*sa + dy*ca;
-      dx = ndx; dy = ndy;
-      var m = Math.sqrt(dx*dx+dy*dy) || 1; dx/=m; dy/=m;
-      var nx = x + dx*PAS, ny = y + dy*PAS;
-      if (nx < 6){ nx = 6; dx = Math.abs(dx)*0.35; }
-      if (nx > L-6){ nx = L-6; dx = -Math.abs(dx)*0.35; }
-      if (ny < 6){ ny = 6; dy = Math.abs(dy)*0.35; }
-      if (ny > H-6){ ny = H-6; dy = -Math.abs(dy)*0.35; }
-      SEGS.push({x1:x, y1:y, x2:nx, y2:ny, t0:t, t1:t+PAS, w:1});
-      b.segs.push(SEGS.length-1);
-      x=nx; y=ny; t+=PAS;
-      if (t > tMax) tMax = t;
     }
-    if (feuille){
-      POINTES.push({ x:PTS[b.ens[0].i].x, y:PTS[b.ens[0].i].y, dx:dx, dy:dy, t:t, i:b.ens[0].i });
-    } else {
-      var parts = couper(b.ens);
-      for (var q=0;q<2;q++){
-        var sc = centre(parts[q]);
-        var tx = sc.x - x, ty = sc.y - y;
-        var td = Math.sqrt(tx*tx+ty*ty) || 1; tx/=td; ty/=td;
-        var enf = { x:x, y:y, dx:dx + (tx-dx)*0.62, dy:dy + (ty-dy)*0.62, ens:parts[q], t:t, prof:b.prof+1, enfants:[], segs:[], w:0 };
-        b.enfants.push(enf); file.push(enf); toutes.push(enf);
+    return ROUTES;
+  }
+  function surRoute(r, t){
+    var n=r.pts.length-1, u=Math.min(0.9999,Math.max(0,t))*n, k=Math.floor(u), f=u-k;
+    var a=r.pts[k], b=r.pts[k+1] || r.pts[k];
+    return {x:a.x+(b.x-a.x)*f, y:a.y+(b.y-a.y)*f};
+  }
+  function reseauRoutier(tps){
+    if (!CHEMINS) return;
+    ctx.save();
+    ctx.translate(OX,OY); ctx.scale(S/100,S/100);
+    var p = new Path2D(); CHEMINS.forEach(function(c){ p.addPath(c); });
+    ctx.clip(p);
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    var R = routes(), k = tps/1000;
+    /* le tracé des routes */
+    for (var i=0;i<R.length;i++){
+      var r=R[i];
+      ctx.beginPath(); ctx.moveTo(r.pts[0].x, r.pts[0].y);
+      for (var j=1;j<r.pts.length;j++) ctx.lineTo(r.pts[j].x, r.pts[j].y);
+      ctx.strokeStyle='rgba(255,206,150,.18)';
+      ctx.lineWidth=r.w*(petit?0.7:1); ctx.lineCap='round'; ctx.lineJoin='round';
+      ctx.stroke();
+    }
+    /* les convois : ce qui part de chaque maison et s'éloigne */
+    if (!DOUX){
+      for (var i2=0;i2<R.length;i2++){
+        var r2=R[i2], t=((k*r2.vit)+r2.ph)%1;
+        var fade=Math.sin(Math.PI*Math.min(1,t*1.06));      /* apparaît, s'éloigne, s'efface */
+        if (fade<=0.02) continue;
+        var q2=surRoute(r2,t), rr=(petit?1.5:2.1);
+        var g=ctx.createRadialGradient(q2.x,q2.y,0,q2.x,q2.y,rr*3.4);
+        g.addColorStop(0,'rgba(255,232,196,'+(fade*0.95)+')');
+        g.addColorStop(.35,'rgba(255,192,120,'+(fade*0.34)+')');
+        g.addColorStop(1,'rgba(255,192,120,0)');
+        ctx.fillStyle=g; ctx.beginPath(); ctx.arc(q2.x,q2.y,rr*3.4,0,6.2832); ctx.fill();
+        var tr=surRoute(r2, Math.max(0,t-0.05));            /* la trace derrière lui */
+        ctx.beginPath(); ctx.moveTo(tr.x,tr.y); ctx.lineTo(q2.x,q2.y);
+        ctx.strokeStyle='rgba(255,214,160,'+(fade*0.30)+')';
+        ctx.lineWidth=(petit?0.9:1.2); ctx.stroke();
       }
     }
-  }
-  var tCharpente = tMax;
-
-  /* épaisseurs : loi de Murray (exposant 2,3) — troncs gros, rameaux fins, sans réglage à la main */
-  var EXP = 2.3, INV = 1/EXP, ECH = 1.55 * Math.max(.7, K);
-  function largeur(b2){
-    if (!b2.enfants.length){ b2.w = 1.05; return b2.w; }
-    var s = 0;
-    for (var i=0;i<b2.enfants.length;i++) s += Math.pow(largeur(b2.enfants[i]), EXP);
-    b2.w = Math.pow(s, INV); return b2.w;
-  }
-  largeur(souche);
-  for (var i1=0;i1<toutes.length;i1++){
-    var br = toutes[i1], w1 = br.w*ECH;
-    for (var j1=0;j1<br.segs.length;j1++) SEGS[br.segs[j1]].w = w1;
+    ctx.restore();
   }
 
-  /* nervures : petites divisions greffées le long des troncs */
-  function nervure(x2,y2,dx2,dy2,t2,w2,niv,sens){
-    if (niv <= 0 || w2 < 0.3) return;
-    var ang = sens*(0.62 + R()*0.35), ca2=Math.cos(ang), sa2=Math.sin(ang);
-    var ndx2 = dx2*ca2 - dy2*sa2, ndy2 = dx2*sa2 + dy2*ca2;
-    var len = (6 + R()*9) * K;
-    var nx2 = x2 + ndx2*len, ny2 = y2 + ndy2*len;
-    if (nx2 < 4 || nx2 > L-4 || ny2 < 4 || ny2 > H-4) return;
-    SEGS.push({x1:x2, y1:y2, x2:nx2, y2:ny2, t0:t2, t1:t2+len, w:w2*0.5});
-    if (t2+len > tMax) tMax = t2+len;
-    nervure(nx2, ny2, ndx2, ndy2, t2+len, w2*0.58, niv-1, sens);
-    if (niv > 1) nervure(nx2, ny2, ndx2, ndy2, t2+len, w2*0.52, niv-1, -sens);
+  /* ── le maillage : les maisons se relaient entre voisines, rien ne part d'un centre ──
+     Aucun trait ne rayonne depuis le siège : ce serait dire que tout vient de lui, alors que
+     le stock d'une maison est le stock de toutes. On relie chaque maison à ses deux plus
+     proches, en fils très fins, immobiles. */
+  var MAILLE = null;
+  function maille(){
+    if (MAILLE) return MAILLE;
+    MAILLE = [];
+    var vus = {};
+    for (var i=0;i<LIEUX.length;i++){
+      if (LIEUX[i].part) continue;
+      var d2 = [];
+      for (var j=0;j<LIEUX.length;j++){
+        if (j===i || LIEUX[j].part) continue;
+        var dx=LIEUX[j].x-LIEUX[i].x, dy=LIEUX[j].y-LIEUX[i].y;
+        d2.push({j:j, d:Math.sqrt(dx*dx+dy*dy)});
+      }
+      d2.sort(function(a,b){ return a.d-b.d; });
+      for (var k=0;k<2 && k<d2.length;k++){
+        var a2=Math.min(i,d2[k].j), b2=Math.max(i,d2[k].j), cle=a2+'-'+b2;
+        if (!vus[cle]){ vus[cle]=1; MAILLE.push([a2,b2]); }
+      }
+    }
+    return MAILLE;
   }
-  var sens = 1;
-  for (var i2=0;i2<toutes.length;i2++){
-    var br2 = toutes[i2];
-    if (br2.prof < 1) continue;
-    for (var j2=2;j2<br2.segs.length;j2+=5){
-      var s2 = SEGS[br2.segs[j2]];
-      var ddx = s2.x2-s2.x1, ddy = s2.y2-s2.y1, dd = Math.sqrt(ddx*ddx+ddy*ddy)||1;
-      nervure(s2.x2, s2.y2, ddx/dd, ddy/dd, s2.t1, br2.w*ECH*0.55, petit?1:2, sens);
-      sens = -sens;
+  function liens(){
+    var m = maille();
+    for (var i=0;i<m.length;i++){
+      var a=PTS[m[i][0]], b=PTS[m[i][1]];
+      var g = ctx.createLinearGradient(a.x,a.y,b.x,b.y);
+      g.addColorStop(0,'rgba(255,200,140,.22)');
+      g.addColorStop(.5,'rgba(200,220,255,.13)');
+      g.addColorStop(1,'rgba(255,200,140,.22)');
+      ctx.strokeStyle=g; ctx.lineWidth = petit?0.7:0.9;
+      ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
     }
   }
 
-  /* capillaires : ce qui part de chaque maison, compté depuis SA propre arrivée */
-  var NIV = petit ? 2 : 3;
-  var capMax = 1;
-  function capillaire(x3,y3,dx3,dy3,t3,w3,niv){
-    if (niv <= 0 || w3 < 0.24) return;
-    var n = 2 + (R() < 0.26 ? 1 : 0);
-    for (var i=0;i<n;i++){
-      var ang = (i-(n-1)/2)*(0.40+R()*0.26) + (R()-0.5)*0.14;
-      var ca3=Math.cos(ang), sa3=Math.sin(ang);
-      var ndx3 = dx3*ca3 - dy3*sa3, ndy3 = dx3*sa3 + dy3*ca3;
-      var len = (5 + R()*7) * (0.45 + niv/NIV*0.75) * K;
-      var nx3 = x3 + ndx3*len, ny3 = y3 + ndy3*len;
-      if (nx3 < 4 || nx3 > L-4 || ny3 < 4 || ny3 > H-4) continue;
-      SEGS.push({x1:x3, y1:y3, x2:nx3, y2:ny3, t0:t3, t1:t3+len, w:w3*0.76, cap:true});
-      if (t3+len > capMax) capMax = t3+len;
-      capillaire(nx3, ny3, ndx3, ndy3, t3+len, w3*0.76, niv-1);
+  /* ── les maisons : un cœur chaud, un halo court ────────────────────────── */
+  function points(tps){
+    for (var i=0;i<LIEUX.length;i++){
+      var o=LIEUX[i], p=PTS[i], vif = (i===vise), siege=!!o.siege, part=!!o.part;
+      var bat = DOUX ? 0 : 0.5+0.5*Math.sin(tps/1000*0.9 + i*0.7);
+      var R = (siege?15:11) * (petit?0.8:1) * (1 + bat*0.10) * (vif?1.35:1);
+      var g = ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,R);
+      if (part){ g.addColorStop(0,'rgba(150,190,255,.55)'); g.addColorStop(.45,'rgba(110,155,240,.18)'); g.addColorStop(1,'rgba(110,155,240,0)'); }
+      else     { g.addColorStop(0,'rgba(255,206,140,.80)'); g.addColorStop(.40,'rgba(255,168,80,.26)'); g.addColorStop(1,'rgba(255,168,80,0)'); }
+      ctx.fillStyle=g; ctx.beginPath(); ctx.arc(p.x,p.y,R,0,6.2832); ctx.fill();
+      /* le repère : un anneau fin marque l'emplacement exact, un cœur net le confirme */
+      var r0 = (siege?3.0:2.2)*(petit?0.85:1)*(vif?1.2:1);
+      var ra = r0 + (siege?4.6:3.6);
+      ctx.strokeStyle = part ? 'rgba(190,215,255,.62)' : 'rgba(255,228,190,.72)';
+      ctx.lineWidth = vif?1.6:1.15;
+      ctx.beginPath(); ctx.arc(p.x,p.y,ra,0,6.2832); ctx.stroke();
+      if (siege){ ctx.strokeStyle='rgba(255,236,206,.42)'; ctx.lineWidth=1;
+        ctx.beginPath(); ctx.arc(p.x,p.y,ra+3.2,0,6.2832); ctx.stroke(); }
+      var c = ctx.createRadialGradient(p.x-r0*.3,p.y-r0*.4,0,p.x,p.y,r0);
+      if (part){ c.addColorStop(0,'#EAF2FF'); c.addColorStop(1,'#7FA8F0'); }
+      else     { c.addColorStop(0,'#FFF8EC'); c.addColorStop(1,'#FFA332'); }
+      ctx.fillStyle=c; ctx.beginPath(); ctx.arc(p.x,p.y,r0,0,6.2832); ctx.fill();
     }
   }
-  var origines = POINTES.slice();
-  origines.push({ x:RACINE.x, y:RACINE.y, dx:0.6, dy:0.8, t:0, i:0 });
-  for (var p=0;p<origines.length;p++){
-    var pt0 = origines[p];
-    for (var e0=0;e0<4;e0++){
-      var a0 = (e0-1.5)*0.7 + (R()-0.5)*0.18, c0=Math.cos(a0), s0=Math.sin(a0);
-      capillaire(pt0.x, pt0.y, pt0.dx*c0 - pt0.dy*s0, pt0.dx*s0 + pt0.dy*c0, 0, 1.02*ECH, NIV);
+  /* ── l'établissement : un bâtiment posé à son emplacement ─────────────────
+     Chaque maison est un petit bâtiment au trait — corps, toit en pente, quai de
+     chargement — et non un point. Le siège est plus grand et porte son anneau ;
+     le partenaire de Metz est bleu et sans numéro.
+     Trois maisons se touchent dans le Var : les bâtiments sont d'abord tous
+     calculés, écartés s'ils se recouvrent, puis reliés par un fil à leur
+     emplacement exact — qui reste marqué par un point. On ne déplace jamais le
+     lieu, seulement son dessin. */
+  function batiGeom(i){
+    var o=LIEUX[i], p=PTS[i], siege=!!o.siege;
+    var w = S*(siege?0.072:0.060), h = w*0.86;
+    return {i:i,o:o,p:p, x:p.x-w/2, y:p.y-h-(petit?3:5), w:w, h:h, dx:0, dy:0};
+  }
+  function ecarterBati(G){
+    var jeu = S*0.016;   /* de l'air entre deux batiments voisins */
+    for (var tour=0; tour<8; tour++){
+      var bouge=false;
+      for (var a=0;a<G.length;a++) for (var b=a+1;b<G.length;b++){
+        var A=G[a], B=G[b];
+        var ax=A.x+A.dx, ay=A.y+A.dy, bx=B.x+B.dx, by=B.y+B.dy;
+        if (ax<bx+B.w+jeu && bx<ax+A.w+jeu && ay<by+B.h+jeu && by<ay+A.h+jeu){
+          var cx=(ax+A.w/2)-(bx+B.w/2), cy=(ay+A.h/2)-(by+B.h/2);
+          var n=Math.sqrt(cx*cx+cy*cy)||1, d2=(A.w+B.w)/2+jeu-n;
+          if (d2<=0) continue;
+          var ux=cx/n*d2*0.5, uy=cy/n*d2*0.5;
+          if (A.o.siege){ B.dx-=ux*2; B.dy-=uy*2; }
+          else if (B.o.siege){ A.dx+=ux*2; A.dy+=uy*2; }
+          else { A.dx+=ux; A.dy+=uy; B.dx-=ux; B.dy-=uy; }
+          bouge=true;
+        }
+      }
+      if(!bouge) break;
     }
+    for (var k=0;k<G.length;k++){
+      var g=G[k];
+      g.x=Math.min(Math.max(6,g.x+g.dx), L-6-g.w);
+      g.y=Math.min(Math.max(6,g.y+g.dy), H-6-g.h);
+    }
+    return G;
   }
-
-  /* temps de croissance : 0 → 0,62 la charpente jusqu'aux huit maisons, 0,62 → 1 les capillaires */
-  var A = 0.62, iA = A/(tCharpente || 1), iB = (1-A)/(capMax || 1);
-  for (var s3=0;s3<SEGS.length;s3++){
-    var sg = SEGS[s3];
-    if (sg.cap){ sg.t0 = A + sg.t0*iB; sg.t1 = A + sg.t1*iB; }
-    else { sg.t0 = Math.min(A, sg.t0*iA); sg.t1 = Math.min(A, sg.t1*iA); }
-  }
-  for (var p3=0;p3<POINTES.length;p3++) POINTES[p3].t = POINTES[p3].t*iA;
-  ranger();
-}
-
-/* ── 2 · rangement par épaisseur : cinq passes de tracé ─────────────────── */
-var NIVEAUX = [
-  {seuil:3.4, w:4.0,  col:'rgba(92,151,255,.92)', halo:'rgba(92,151,255,.07)', segs:[]},
-  {seuil:2.2, w:2.6,  col:'rgba(92,151,255,.84)', halo:'rgba(92,151,255,.05)', segs:[]},
-  {seuil:1.4, w:1.7,  col:'rgba(92,151,255,.72)', halo:null, segs:[]},
-  {seuil:0.8, w:1.05, col:'rgba(92,151,255,.56)', halo:null, segs:[]},
-  {seuil:0,   w:0.7,  col:'rgba(92,151,255,.40)', halo:null, segs:[]}
-];
-function ranger(){
-  for (var n=0;n<NIVEAUX.length;n++) NIVEAUX[n].segs = [];
-  for (var i=0;i<SEGS.length;i++){
-    var w = SEGS[i].w || 0.6;
-    for (var n2=0;n2<NIVEAUX.length;n2++){ if (w >= NIVEAUX[n2].seuil){ NIVEAUX[n2].segs.push(SEGS[i]); break; } }
-  }
-}
-/* les lueurs : des dégradés radiaux pré-cuits sur un petit canevas, dessinés comme une image */
-function lueur(r,g,b){
-  var c = document.createElement('canvas'); c.width = c.height = 64;
-  var k = c.getContext('2d');
-  var grad = k.createRadialGradient(32,32,0,32,32,32);
-  grad.addColorStop(0,'rgba('+r+','+g+','+b+',.85)');
-  grad.addColorStop(0.32,'rgba('+r+','+g+','+b+',.28)');
-  grad.addColorStop(1,'rgba('+r+','+g+','+b+',0)');
-  k.fillStyle = grad; k.fillRect(0,0,64,64);
-  return c;
-}
-var LUEUR_FROIDE = lueur(92,151,255), LUEUR_CHAUDE = lueur(243,154,27);
-var surligne = -1;
-
-/* ── 3 · tracé ──────────────────────────────────────────────────────────── */
-function dessinerFrance(){
-  if (!CHEMINS) return;
-  ctx.save();
-  ctx.translate(OX, OY);
-  ctx.scale(S/100, S/100);
-  ctx.lineJoin = 'round';
-  ctx.fillStyle = 'rgba(92,151,255,.08)';
-  ctx.strokeStyle = 'rgba(92,151,255,.30)';
-  ctx.lineWidth = 0.75 * 100 / S;
-  for (var i=0;i<CHEMINS.length;i++){ ctx.fill(CHEMINS[i]); ctx.stroke(CHEMINS[i]); }
-  ctx.restore();
-}
-
-function dessiner(g, tps){
-  ctx.setTransform(dpr,0,0,dpr,0,0);
-  ctx.clearRect(0,0,L,H);
-  ctx.globalAlpha = 1;
-  ctx.globalCompositeOperation = 'source-over';
-  dessinerFrance();
-
-  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-  ctx.globalCompositeOperation = 'lighter';
-  var attenue = petit ? 0.7 : 1;
-  var front = [];
-  var n, N, arr, len, i, s, x2, y2, f;
-  for (n=0;n<NIVEAUX.length;n++){
-    N = NIVEAUX[n]; arr = N.segs; len = arr.length;
-    if (!len) continue;
+  function tracerBati(g, vif){
+    var o=g.o, p=g.p, siege=!!o.siege, part=!!o.part;
+    var x0=g.x, y0=g.y, w=g.w, h=g.h;
+    var chaud = part ? 'rgba(170,205,255,' : 'rgba(255,214,160,';
+    /* le fil vers l'emplacement exact, si le bâtiment a dû s'écarter */
+    var cxb=x0+w/2, cyb=y0+h;
+    if (Math.abs(cxb-p.x)>1.5 || Math.abs(cyb-p.y)>1.5){
+      ctx.strokeStyle = chaud+'.42)'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(cxb,cyb); ctx.lineTo(p.x,p.y); ctx.stroke();
+    }
+    /* l'ombre au sol, puis le volume */
+    ctx.fillStyle='rgba(0,0,0,.34)'; ctx.beginPath();
+    ctx.ellipse(x0+w/2, y0+h+1, w*0.46, w*0.11, 0, 0, 6.2832); ctx.fill();
+    var gb=ctx.createLinearGradient(x0,y0,x0,y0+h);
+    gb.addColorStop(0, part?'rgba(120,165,240,.30)':(siege?'rgba(255,190,110,.36)':'rgba(255,175,90,.26)'));
+    gb.addColorStop(1, part?'rgba(90,130,215,.14)':'rgba(255,150,60,.12)');
+    ctx.fillStyle=gb; ctx.fillRect(x0, y0+h*0.30, w, h*0.70);
+    ctx.strokeStyle = chaud + (vif?'1)':(siege?'.95)':'.80)'));
+    ctx.lineWidth=Math.max(1, S*0.0024); ctx.lineJoin='round';
+    ctx.strokeRect(x0, y0+h*0.30, w, h*0.70);
     ctx.beginPath();
-    for (i=0;i<len;i++){
-      s = arr[i];
-      if (s.t0 >= g) continue;
-      x2 = s.x2; y2 = s.y2;
-      if (s.t1 > g){
-        f = (g - s.t0) / (s.t1 - s.t0);
-        x2 = s.x1 + (s.x2-s.x1)*f; y2 = s.y1 + (s.y2-s.y1)*f;
-        if (n < 4) front.push({x:x2, y:y2, w:N.w});
-      }
-      ctx.moveTo(s.x1, s.y1); ctx.lineTo(x2, y2);
-    }
-    ctx.globalAlpha = attenue;
-    if (N.halo){ ctx.strokeStyle = N.halo; ctx.lineWidth = N.w*5.5; ctx.stroke(); }
-    ctx.strokeStyle = N.col; ctx.lineWidth = N.w; ctx.stroke();
-  }
-  /* le front de croissance : c'est là qu'est la lumière */
-  if (g < 0.999){
-    var max = Math.min(front.length, 120);
-    for (var q=0;q<max;q++){
-      var pf = front[q], tf = 22 + pf.w*6;
-      ctx.globalAlpha = (0.30 + 0.16*Math.sin(tps*0.004 + q)) * attenue;
-      ctx.drawImage(LUEUR_FROIDE, pf.x-tf/2, pf.y-tf/2, tf, tf);
-    }
-  }
-  /* l'origine : Hyères, qui bat */
-  var bat = 30 + 6*Math.sin(tps*0.0018);
-  ctx.globalAlpha = 0.6;
-  ctx.drawImage(LUEUR_FROIDE, RACINE.x-bat/2, RACINE.y-bat/2, bat, bat);
-
-  /* le partenaire : un point calme, non relié */
-  ctx.globalCompositeOperation = 'source-over';
-  var pp = PTS[9];
-  ctx.globalAlpha = (surligne === 9) ? 1 : 0.7;
-  ctx.strokeStyle = 'rgba(92,151,255,.7)'; ctx.lineWidth = 1.2;
-  ctx.beginPath(); ctx.arc(pp.x, pp.y, 5, 0, 6.2832); ctx.stroke();
-  ctx.fillStyle = (surligne === 9) ? '#fff' : 'rgba(92,151,255,.55)';
-  ctx.beginPath(); ctx.arc(pp.x, pp.y, 2.2, 0, 6.2832); ctx.fill();
-  etiquette(9, surligne === 9);
-
-  /* le siège, puis les huit maisons */
-  pointe({x:RACINE.x, y:RACINE.y, t:0, i:0}, g, true);
-  for (var k=0;k<POINTES.length;k++) pointe(POINTES[k], g, false);
-  ctx.globalAlpha = 1;
-  ctx.globalCompositeOperation = 'source-over';
-}
-function pointe(pt, g, siege){
-  if (g < pt.t) return;
-  var age = g - pt.t;
-  var vif = (surligne === pt.i);
-  ctx.globalCompositeOperation = 'lighter';
-  var tc = vif ? 70 : (siege ? 54 : 42);
-  ctx.globalAlpha = vif ? 0.85 : 0.42;
-  ctx.drawImage(LUEUR_CHAUDE, pt.x-tc/2, pt.y-tc/2, tc, tc);
-  ctx.globalCompositeOperation = 'source-over';
-  /* éclosion : un anneau qui s'ouvre puis s'efface */
-  if (!siege && age < 0.035){
-    var f2 = age/0.035;
-    ctx.globalAlpha = (1-f2)*0.8;
-    ctx.strokeStyle = '#F39A1B'; ctx.lineWidth = 1.4;
-    ctx.beginPath(); ctx.arc(pt.x, pt.y, 5 + f2*34, 0, 6.2832); ctx.stroke();
-  }
-  ctx.globalAlpha = 1;
-  ctx.strokeStyle = vif ? '#FFFFFF' : 'rgba(243,154,27,.92)';
-  ctx.lineWidth = vif ? 2 : 1.4;
-  ctx.beginPath(); ctx.arc(pt.x, pt.y, vif ? 8 : (siege ? 6.5 : 5), 0, 6.2832); ctx.stroke();
-  ctx.fillStyle = (vif || siege) ? '#FFFFFF' : '#F39A1B';
-  ctx.beginPath(); ctx.arc(pt.x, pt.y, vif ? 3 : (siege ? 2.8 : 2), 0, 6.2832); ctx.fill();
-  etiquette(pt.i, vif);
-}
-function etiquette(i, vif){
-  if (petit && !vif) return;
-  var o = LIEUX[i], p = PTS[i];
-  ctx.font = (vif ? '500 ' : '400 ') + (petit ? 13 : 14) + 'px Inter, ui-sans-serif, system-ui, sans-serif';
-  ctx.textBaseline = 'middle';
-  ctx.textAlign = o.ax > 0 ? 'left' : 'right';
-  ctx.globalAlpha = vif ? 1 : 0.82;
-  ctx.fillStyle = vif ? '#FFFFFF' : 'rgba(255,255,255,.88)';
-  var lx = p.x + o.ax * 15, ly = p.y + o.ay * 13 + (o.oy || 0);
-  /* une étiquette longue ne doit jamais sortir du cadre : on la ramène dedans,
-     et si elle n'y tient toujours pas, elle bascule de l'autre côté du point. */
-  var larg = ctx.measureText(o.eti).width, marge = 6, sens = o.ax;
-  if (sens > 0 && lx + larg > L - marge) {
-    if (p.x - 15 - larg >= marge) { sens = -1; lx = p.x - 15; }
-    else lx = Math.max(marge, L - marge - larg);
-  } else if (sens < 0 && lx - larg < marge) {
-    if (p.x + 15 + larg <= L - marge) { sens = 1; lx = p.x + 15; }
-    else lx = Math.min(L - marge, marge + larg);
-  }
-  ctx.textAlign = sens > 0 ? 'left' : 'right';
-  ctx.strokeStyle = o.part ? 'rgba(92,151,255,.45)' : 'rgba(243,154,27,.5)'; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(p.x + sens*7, p.y + o.ay*4); ctx.lineTo(lx - sens*4, ly); ctx.stroke();
-  ctx.fillText(o.eti, lx, ly);
-}
-
-/* ── 4 · pilotage par l'arrivée de la carte dans l'écran ────────────────── */
-function progression(){
-  var r = boite.getBoundingClientRect(), vh = window.innerHeight;
-  var debut = vh * 0.94;                                  /* la carte entre par le bas : rien encore */
-  var fin   = Math.max(vh * 0.5 - r.height * 0.5, 40);   /* la carte est au centre : tout est là */
-  if (debut - fin < 40) return r.top < vh ? 1 : 0;
-  return borne((debut - r.top) / (debut - fin), 0, 1);
-}
-var pLisse = 0, sale = true, tourne = false, visible = false, tPrec = 0;
-function boucle(tps){
-  if (!tourne) return;
-  var dt = tPrec ? Math.min(50, tps - tPrec) : 16; tPrec = tps;
-  var cible = progression();
-  var d = cible - pLisse;
-  if (Math.abs(d) < 0.0004){ pLisse = cible; } else { pLisse += d*(1 - Math.exp(-dt/120)); sale = true; }
-  if (sale || (pLisse > 0.001 && pLisse < 0.999) || surligne >= 0 || visible){
-    dessiner(pLisse, tps||0); sale = false;
-  }
-  requestAnimationFrame(boucle);
-}
-function redimensionner(){
-  var r = toile.getBoundingClientRect();
-  L = Math.max(1, Math.round(r.width)); H = Math.max(1, Math.round(r.height));
-  dpr = Math.min(window.devicePixelRatio || 1, 1.5);
-  toile.width = Math.round(L*dpr); toile.height = Math.round(H*dpr);
-  var marge = Math.round(Math.min(L,H) * 0.06);
-  S = Math.min(L,H) - marge*2; OX = (L-S)/2; OY = (H-S)/2;
-  construire();
-  sale = true;
-}
-
-/* ── 5 · la fiche : la maison la plus proche du curseur ─────────────────── */
-function viser(i){
-  if (i === surligne) return;
-  surligne = i; sale = true;
-  var fiche = document.getElementById('carte-fiche');
-  var t, st;
-  if (i < 0){ t = DEFAUT[0]; st = DEFAUT[1]; }
-  else {
-    /* les maisons à moins de 12 px l'une de l'autre (Essonne, Var) sont nommées ensemble */
-    var voisines = [];
-    for (var k=0;k<PTS.length;k++){
-      if (k === i) continue;
-      var ddx = PTS[k].x-PTS[i].x, ddy = PTS[k].y-PTS[i].y;
-      if (ddx*ddx+ddy*ddy < 12*12) voisines.push(k);
-    }
-    t = LIEUX[i].c + ' · ' + LIEUX[i].nom;
-    st = LIEUX[i].lieu;
-    if (voisines.length){
-      t += voisines.map(function(k){ return ' — ' + LIEUX[k].c + ' · ' + LIEUX[k].nom; }).join('');
-      st = LIEUX[i].lieu.split(' — ')[0] + ' et ' + voisines.map(function(k){ return LIEUX[k].lieu.split(' — ')[0]; }).join(', ');
+    ctx.moveTo(x0-w*0.06, y0+h*0.30); ctx.lineTo(x0+w*0.22, y0+h*0.04);
+    ctx.lineTo(x0+w*1.06, y0+h*0.04); ctx.lineTo(x0+w, y0+h*0.30); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x0+w*0.16, y0+h); ctx.lineTo(x0+w*0.16, y0+h*0.56);
+    ctx.lineTo(x0+w*0.50, y0+h*0.56); ctx.lineTo(x0+w*0.50, y0+h); ctx.stroke();
+    ctx.strokeStyle = chaud+'.48)';
+    ctx.beginPath(); ctx.moveTo(x0+w*0.62, y0+h*0.60); ctx.lineTo(x0+w*0.90, y0+h*0.60); ctx.stroke();
+    /* l'emplacement exact */
+    ctx.fillStyle = part?'#EAF2FF':'#FFF8EC';
+    ctx.beginPath(); ctx.arc(p.x, p.y, Math.max(1.6, S*0.0045), 0, 6.2832); ctx.fill();
+    if (siege){ ctx.strokeStyle='rgba(255,222,170,.5)'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.arc(p.x, p.y, Math.max(5, S*0.014), 0, 6.2832); ctx.stroke(); }
+    /* le numéro, sur le toit */
+    if (!part){
+      /* le numéro se pose sur une petite plaque : il reste lisible quelle que soit
+         la couleur de la carte dessous, et ne descend jamais sous 13 px. */
+      var fs=Math.max(13, S*0.024);
+      ctx.font='600 '+fs.toFixed(1)+'px Inter, ui-sans-serif, system-ui, sans-serif';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      var wn=ctx.measureText(o.c).width, px2=fs*0.42, py2=fs*0.26;
+      var bx=x0+w/2-wn/2-px2, by=y0-fs*0.62-py2, bw=wn+px2*2, bh=fs+py2*2, br=bh/2;
+      if (ctx.roundRect){ ctx.beginPath(); ctx.roundRect(bx,by,bw,bh,br); }
+      else { ctx.beginPath(); ctx.moveTo(bx+br,by); ctx.lineTo(bx+bw-br,by);
+        ctx.arcTo(bx+bw,by,bx+bw,by+br,br); ctx.lineTo(bx+bw,by+bh-br);
+        ctx.arcTo(bx+bw,by+bh,bx+bw-br,by+bh,br); ctx.lineTo(bx+br,by+bh);
+        ctx.arcTo(bx,by+bh,bx,by+bh-br,br); ctx.lineTo(bx,by+br); ctx.arcTo(bx,by,bx+br,by,br); ctx.closePath(); }
+      ctx.fillStyle = siege ? 'rgba(255,178,60,.96)' : 'rgba(9,15,28,.86)';
+      ctx.fill();
+      if (!siege){ ctx.strokeStyle='rgba(255,196,107,.42)'; ctx.lineWidth=1; ctx.stroke(); }
+      ctx.fillStyle = siege ? '#1C1204' : (vif?'#FFFFFF':'rgba(255,214,160,.98)');
+      ctx.fillText(o.c, x0+w/2, by+bh/2+0.5);
     }
   }
-  if (fiche && !DOUX){
-    fiche.classList.add('change');
-    setTimeout(function(){ ficheT.textContent = t; ficheS.textContent = st; fiche.classList.remove('change'); }, 200);
-  } else { ficheT.textContent = t; ficheS.textContent = st; }
-}
-var RAYON = ('ontouchstart' in window) ? 28 : 22;
-function plusProche(px, py){
-  var meilleur = -1, dm = 1e9;
-  for (var i=0;i<PTS.length;i++){
-    var dx = PTS[i].x-px, dy = PTS[i].y-py, d = dx*dx+dy*dy;
-    if (d < dm){ dm = d; meilleur = i; }
+  function batiments(){
+    var G=[];
+    for (var i=0;i<LIEUX.length;i++) G.push(batiGeom(i));
+    ecarterBati(G);
+    for (var k=0;k<G.length;k++) tracerBati(G[k], G[k].i===vise);
   }
-  return dm < RAYON*RAYON ? meilleur : -1;
-}
-/* le survol propose, le clic ou le toucher verrouille */
-var verrou = -1;
-function position(e){ var r = toile.getBoundingClientRect(); return { x:e.clientX - r.left, y:e.clientY - r.top }; }
-toile.addEventListener('mousemove', function(e){ if (verrou < 0){ var q = position(e); viser(plusProche(q.x, q.y)); } });
-toile.addEventListener('mouseleave', function(){ if (verrou < 0) viser(-1); });
-toile.addEventListener('click', function(e){
-  var q = position(e), i = plusProche(q.x, q.y);
-  verrou = (i === verrou) ? -1 : i;
-  viser(verrou);
-});
-var consigne = document.getElementById('carte-consigne');
-if (consigne && ('ontouchstart' in window)) consigne.textContent = 'Touchez une maison pour la retrouver sur la carte.';
 
-/* ── 6 · départ ─────────────────────────────────────────────────────────── */
-redimensionner();
-if (DOUX){
-  pLisse = 1; dessiner(1, 0);
-} else {
-  tourne = true; requestAnimationFrame(boucle);
-}
-if (document.fonts && document.fonts.ready) document.fonts.ready.then(function(){ sale = true; if (DOUX) dessiner(1,0); });
-if ('IntersectionObserver' in window){
-  new IntersectionObserver(function(en){ visible = en[0].isIntersecting; sale = true; }, {threshold:0.02}).observe(boite);
-} else { visible = true; }
-var minuteur = null;
-window.addEventListener('resize', function(){
-  clearTimeout(minuteur);
-  minuteur = setTimeout(function(){ redimensionner(); if (DOUX) dessiner(1,0); }, 200);
-}, {passive:true});
-document.addEventListener('visibilitychange', function(){
-  if (document.hidden) tourne = false;
-  else if (!DOUX){ tourne = true; sale = true; requestAnimationFrame(boucle); }
-});
-/* sonde de contrôle, pour les tests à l'écran */
-window.__carte = { segments:function(){ return SEGS.length; }, pointes:function(){ return POINTES.length; }, progression:function(){ return pLisse; } };
+  function dessiner(tps){ sol(); pays(tps); reseauRoutier(tps); liens(); batiments(); }
+  function image(){ dessiner(performance.now()-t0); if (vivant && !DOUX) boucle=requestAnimationFrame(image); }
+  function partir(){ if (vivant||DOUX) { if(DOUX) dessiner(0); return; } vivant=true; boucle=requestAnimationFrame(image); }
+  function stopper(){ vivant=false; if(boucle) cancelAnimationFrame(boucle); boucle=null; }
+
+  function fiche(i){
+    var t = i<0 ? DEFAUT[0] : LIEUX[i].nom, s = i<0 ? DEFAUT[1] : LIEUX[i].lieu;
+    if (fT) fT.textContent=t; if (fS) fS.textContent=s;
+  }
+  function viser(x,y){
+    var r = petit?26:20, best=-1, bd=1e9;
+    for (var i=0;i<PTS.length;i++){ var dx=PTS[i].x-x, dy=PTS[i].y-y, d=dx*dx+dy*dy;
+      if (d<r*r && d<bd){ bd=d; best=i; } }
+    if (best!==vise){ vise=best; fiche(best); if (DOUX) dessiner(0); }
+  }
+  toile.addEventListener('mousemove', function(e){ var r=toile.getBoundingClientRect(); viser(e.clientX-r.left, e.clientY-r.top); });
+  toile.addEventListener('mouseleave', function(){ if(vise!==-1){ vise=-1; fiche(-1); if(DOUX) dessiner(0);} });
+  toile.addEventListener('touchstart', function(e){ var r=toile.getBoundingClientRect(), t=e.touches[0];
+    viser(t.clientX-r.left, t.clientY-r.top); }, {passive:true});
+  [].forEach.call(document.querySelectorAll('[data-lieu]'), function(el){
+    var i = +el.getAttribute('data-lieu');
+    el.addEventListener('mouseenter', function(){ vise=i; fiche(i); if(DOUX) dessiner(0); });
+    el.addEventListener('focus', function(){ vise=i; fiche(i); if(DOUX) dessiner(0); });
+    el.addEventListener('mouseleave', function(){ vise=-1; fiche(-1); if(DOUX) dessiner(0); });
+  });
+
+  function poser(){ taille(); dessiner(performance.now()-t0); }
+  poser(); window.addEventListener('resize', poser);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(poser);
+  if ('IntersectionObserver' in window){
+    new IntersectionObserver(function(e){ e[0].isIntersecting ? partir() : stopper(); }, {rootMargin:'120px'}).observe(boite);
+  } else partir();
+  document.addEventListener('visibilitychange', function(){ document.hidden ? stopper() : partir(); });
 })();
