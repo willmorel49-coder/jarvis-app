@@ -1,20 +1,14 @@
 /* ═══════════════════════════════════════════════════════════════════════════════
-   LA CARTE DU RÉSEAU — validée par Will le 29/08/2026.
+   LA CARTE DU RÉSEAU — version simple, dans la langue du site (30/08/2026).
 
-   Ce que la carte dit, dans cet ordre :
-   · le pays est une matière de lumière, éclairée d'un seul côté — jamais un aplat ;
-   · de chaque établissement partent des routes qui desservent sa région, et des
-     convois les parcourent en continu : on livre partout, tous les jours ;
-   · les maisons se relient à leurs deux plus proches voisines — rien ne rayonne
-     depuis le siège : le stock d'une maison est le stock de toutes ;
-   · chaque établissement est un BÂTIMENT posé à son emplacement, numéroté 01→09.
-     Trois maisons se touchent dans le Var : les bâtiments s'écartent tout seuls et
-     un fil les relie à leur emplacement exact. On ne déplace jamais le lieu,
-     seulement son dessin.
-   · Pharmest (Metz) est un PARTENAIRE : bleu, sans numéro, et ses routes n'existent pas.
+   Rien d'autre que ce que la page dit déjà : un tracé d'un pixel, un aplat très
+   léger, et les trois repères que la légende décrit — le point orange pour une
+   implantation, le point blanc cerclé d'orange pour le siège, le point bleu pâle
+   pour le partenaire de Metz. Les noms en Inter, comme partout ailleurs.
 
-   L'animation s'arrête hors écran et sous « mouvement réduit ». Une seule toile 2D,
-   aucun contexte 3D, ~60 images/seconde mesurées.
+   Une seule animation : le trait se pose à l'arrivée, puis PLUS RIEN ne bouge.
+   Aucune boucle, aucun effet, aucun dégradé. Survol et toucher mettent la fiche
+   à jour ; sous « mouvement réduit » la carte s'affiche d'emblée, complète.
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 var FRANCE = [
@@ -51,6 +45,7 @@ var LIEUX = [
   {c:'10', nom:'Pharmest',                         lieu:'Metz · Moselle (57) — partenaire',                x:76.56, y:20.79, eti:'Metz',           ax: 1, ay:-1, part:true}
 ];
 
+
 (function(){
   "use strict";
   var DOUX = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -62,358 +57,125 @@ var LIEUX = [
   var CHEMINS = null;
   try { CHEMINS = FRANCE.map(function(d){ return new Path2D(d); }); } catch(e){}
 
-  var L=0, H=0, S=0, OX=0, OY=0, dpr=1, petit=false;
-  var PTS=[], t0=performance.now(), vivant=false, boucle=null, vise=-1;
-  var DEFAUT = ['Neuf implantations et un partenaire', 'Chaque maison irrigue sa région, et se relaie avec ses voisines'];
+  var L=0, H=0, S=0, OX=0, OY=0, dpr=1, petit=false, PTS=[], vise=-1, t0=0, boucle=null;
+  var DEFAUT = ['Neuf implantations et un partenaire', 'Chaque maison livre sa région'];
 
-  function proj(o){ return { x: OX + o.x/100*S, y: OY + o.y/100*S }; }
   function taille(){
     var r = boite.getBoundingClientRect();
     dpr = Math.min(window.devicePixelRatio || 1, 1.5);
     L = Math.max(1, Math.round(r.width)); H = Math.max(1, Math.round(r.height));
-    petit = L < 420;   /* le telephone seul renonce aux noms ; un portable les garde */
+    petit = L < 460;
     toile.width = Math.round(L*dpr); toile.height = Math.round(H*dpr);
     toile.style.width = L+'px'; toile.style.height = H+'px';
     ctx.setTransform(dpr,0,0,dpr,0,0);
-    S = Math.min(L, H) * (petit ? 0.94 : 0.90);
-    OX = (L - S)/2; OY = (H - S)/2;
-    PTS = LIEUX.map(proj);
+    S = Math.min(L, H) * 0.92; OX = (L-S)/2; OY = (H-S)/2;
+    PTS = LIEUX.map(function(o){ return { x: OX + o.x/100*S, y: OY + o.y/100*S }; });
   }
 
-  /* ── le sol : jamais un aplat, toujours une source de lumière ─────────── */
-  function sol(){
-    var g = ctx.createLinearGradient(0,0,L,H);
-    g.addColorStop(0,'#101A2E'); g.addColorStop(.55,'#0A1220'); g.addColorStop(1,'#070B14');
-    ctx.fillStyle = g; ctx.fillRect(0,0,L,H);
-    var h = ctx.createRadialGradient(L*.14, -H*.12, 0, L*.14, -H*.12, Math.max(L,H)*1.15);
-    h.addColorStop(0,'rgba(120,170,255,.30)'); h.addColorStop(.45,'rgba(90,130,220,.10)');
-    h.addColorStop(1,'rgba(90,130,220,0)');
-    ctx.fillStyle = h; ctx.fillRect(0,0,L,H);
-    var c = ctx.createRadialGradient(L*.92, H*1.06, 0, L*.92, H*1.06, Math.max(L,H)*.85);
-    c.addColorStop(0,'rgba(255,178,92,.16)'); c.addColorStop(1,'rgba(255,178,92,0)');
-    ctx.fillStyle = c; ctx.fillRect(0,0,L,H);
-  }
-
-  /* ── le pays : une matière iridescente, qui respire ───────────────────── */
-  function nuage(x,y,r,col,a){
-    var g = ctx.createRadialGradient(x,y,0,x,y,r);
-    g.addColorStop(0, col.replace('A', a));
-    g.addColorStop(.55, col.replace('A', a*0.42));
-    g.addColorStop(1, col.replace('A', 0));
-    ctx.fillStyle = g; ctx.fillRect(OX-S*.3, OY-S*.3, S*1.6, S*1.6);
-  }
-  function pays(tps){
+  /* ── le pays : un aplat très léger, un trait d'un pixel. Rien d'autre. ───── */
+  function pays(){
     if (!CHEMINS) return;
     ctx.save();
     ctx.translate(OX, OY); ctx.scale(S/100, S/100);
     var p = new Path2D(); CHEMINS.forEach(function(c){ p.addPath(c); });
-    ctx.clip(p);
-    ctx.setTransform(dpr,0,0,dpr,0,0);
-    var g = ctx.createLinearGradient(OX, OY, OX+S, OY+S);
-    g.addColorStop(0,'#1B2C4E'); g.addColorStop(.5,'#152444'); g.addColorStop(1,'#101B36');
-    ctx.fillStyle = g; ctx.fillRect(OX-4, OY-4, S+8, S+8);
-    ctx.globalCompositeOperation = 'lighter';
-    var k = tps/1000;
-    nuage(OX+S*(.30+.06*Math.sin(k*.13)), OY+S*(.22+.05*Math.cos(k*.11)), S*.64, 'rgba(60,125,255,A)', .42);
-    nuage(OX+S*(.76+.05*Math.cos(k*.09)), OY+S*(.34+.06*Math.sin(k*.12)), S*.56, 'rgba(30,90,225,A)', .34);
-    nuage(OX+S*(.56+.06*Math.sin(k*.08+1)), OY+S*(.82+.04*Math.cos(k*.10)), S*.60, 'rgba(255,152,60,A)', .30);
-    nuage(OX+S*(.18+.05*Math.cos(k*.10+2)), OY+S*(.60+.05*Math.sin(k*.09)), S*.48, 'rgba(90,180,255,A)', .24);
-    ctx.globalCompositeOperation = 'source-over';
-    ctx.restore();
-    /* le liseré : la lumière accroche le bord */
-    ctx.save();
-    ctx.translate(OX, OY); ctx.scale(S/100, S/100);
-    var lg = ctx.createLinearGradient(0,0,100,100);
-    lg.addColorStop(0,'rgba(190,220,255,.75)'); lg.addColorStop(.55,'rgba(150,185,255,.30)');
-    lg.addColorStop(1,'rgba(120,150,220,.16)');
-    ctx.strokeStyle = lg; ctx.lineWidth = 100/S*1.1; ctx.lineJoin='round';
+    ctx.fillStyle = 'rgba(255,255,255,.045)'; ctx.fill(p);
+    ctx.strokeStyle = 'rgba(255,255,255,.20)';
+    ctx.lineWidth = 100/S; ctx.lineJoin = 'round';
     CHEMINS.forEach(function(c){ ctx.stroke(c); });
     ctx.restore();
   }
 
-  /* ── les routes : de chaque maison partent des routes qui desservent sa région ──
-     Une route n'est pas une veine : elle est lisse, elle se divise à des carrefours,
-     et elle porte quelque chose. Ici, un convoi la parcourt vers l'extérieur, en boucle. */
-  function graine(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; var t=Math.imul(a^a>>>15,1|a);
-    t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
-  var ROUTES = null;
-  function lisser(pts){                       /* une route ne fait pas d'angle : on arrondit */
-    var out=[pts[0]];
-    for (var i=1;i<pts.length-1;i++){
-      var a=pts[i-1], b=pts[i], c=pts[i+1];
-      out.push({x:(a.x+2*b.x+c.x)/4, y:(a.y+2*b.y+c.y)/4});
-    }
-    out.push(pts[pts.length-1]);
-    return out;
-  }
-  function routes(){
-    if (ROUTES) return ROUTES;
-    ROUTES = [];
+  /* ── les points : ceux que la légende de la page décrit déjà ─────────────── */
+  function points(){
     for (var i=0;i<LIEUX.length;i++){
-      if (LIEUX[i].part) continue;            /* le partenaire n'est pas une maison du groupe */
-      var al = graine(i*977+13), p = PTS[i], n = 5;
-      for (var b2=0;b2<n;b2++){
-        var ang = (b2/n)*6.2832 + al()*0.9;
-        var lg = S*(0.13 + al()*0.17), pas = 7;
-        var pts=[{x:p.x,y:p.y}], x=p.x, y=p.y, a2=ang;
-        for (var k=0;k<pas;k++){
-          a2 += (al()-0.5)*0.42;              /* une route tourne doucement, jamais en zigzag */
-          var d2 = lg/pas;
-          x += Math.cos(a2)*d2; y += Math.sin(a2)*d2;
-          pts.push({x:x,y:y});
-        }
-        pts = lisser(lisser(pts));
-        ROUTES.push({pts:pts, w:0.8+al()*0.5, ph:al(), vit:0.055+al()*0.035, i:i});
-        if (al() > 0.45){                      /* un carrefour : la route se divise */
-          var o = pts[Math.floor(pts.length*0.55)], a3 = a2 + (al()<0.5?-1:1)*(0.5+al()*0.5);
-          var q=[{x:o.x,y:o.y}], xx=o.x, yy=o.y, l2=lg*0.55;
-          for (var k2=0;k2<5;k2++){
-            a3 += (al()-0.5)*0.4; var d3=l2/5;
-            xx += Math.cos(a3)*d3; yy += Math.sin(a3)*d3; q.push({x:xx,y:yy});
-          }
-          ROUTES.push({pts:lisser(lisser(q)), w:0.6+al()*0.35, ph:al(), vit:0.05+al()*0.03, i:i});
-        }
+      var o = LIEUX[i], p = PTS[i], vif = (i===vise);
+      var r = (o.siege ? 5.5 : 4.5) * (petit?0.85:1) * (vif?1.25:1);
+      if (o.part){
+        ctx.fillStyle = 'rgba(92,151,255,.55)';
+        ctx.beginPath(); ctx.arc(p.x,p.y,r,0,6.2832); ctx.fill();
+      } else if (o.siege){
+        ctx.fillStyle = '#FFFFFF';
+        ctx.beginPath(); ctx.arc(p.x,p.y,r,0,6.2832); ctx.fill();
+        ctx.strokeStyle = '#F39A1B'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(p.x,p.y,r+1,0,6.2832); ctx.stroke();
+      } else {
+        ctx.fillStyle = '#F39A1B';
+        ctx.beginPath(); ctx.arc(p.x,p.y,r,0,6.2832); ctx.fill();
       }
-    }
-    return ROUTES;
-  }
-  function surRoute(r, t){
-    var n=r.pts.length-1, u=Math.min(0.9999,Math.max(0,t))*n, k=Math.floor(u), f=u-k;
-    var a=r.pts[k], b=r.pts[k+1] || r.pts[k];
-    return {x:a.x+(b.x-a.x)*f, y:a.y+(b.y-a.y)*f};
-  }
-  function reseauRoutier(tps){
-    if (!CHEMINS) return;
-    ctx.save();
-    ctx.translate(OX,OY); ctx.scale(S/100,S/100);
-    var p = new Path2D(); CHEMINS.forEach(function(c){ p.addPath(c); });
-    ctx.clip(p);
-    ctx.setTransform(dpr,0,0,dpr,0,0);
-    var R = routes(), k = tps/1000;
-    /* le tracé des routes */
-    for (var i=0;i<R.length;i++){
-      var r=R[i];
-      ctx.beginPath(); ctx.moveTo(r.pts[0].x, r.pts[0].y);
-      for (var j=1;j<r.pts.length;j++) ctx.lineTo(r.pts[j].x, r.pts[j].y);
-      ctx.strokeStyle='rgba(255,206,150,.18)';
-      ctx.lineWidth=r.w*(petit?0.7:1); ctx.lineCap='round'; ctx.lineJoin='round';
-      ctx.stroke();
-    }
-    /* les convois : ce qui part de chaque maison et s'éloigne */
-    if (!DOUX){
-      for (var i2=0;i2<R.length;i2++){
-        var r2=R[i2], t=((k*r2.vit)+r2.ph)%1;
-        var fade=Math.sin(Math.PI*Math.min(1,t*1.06));      /* apparaît, s'éloigne, s'efface */
-        if (fade<=0.02) continue;
-        var q2=surRoute(r2,t), rr=(petit?1.5:2.1);
-        var g=ctx.createRadialGradient(q2.x,q2.y,0,q2.x,q2.y,rr*3.4);
-        g.addColorStop(0,'rgba(255,232,196,'+(fade*0.95)+')');
-        g.addColorStop(.35,'rgba(255,192,120,'+(fade*0.34)+')');
-        g.addColorStop(1,'rgba(255,192,120,0)');
-        ctx.fillStyle=g; ctx.beginPath(); ctx.arc(q2.x,q2.y,rr*3.4,0,6.2832); ctx.fill();
-        var tr=surRoute(r2, Math.max(0,t-0.05));            /* la trace derrière lui */
-        ctx.beginPath(); ctx.moveTo(tr.x,tr.y); ctx.lineTo(q2.x,q2.y);
-        ctx.strokeStyle='rgba(255,214,160,'+(fade*0.30)+')';
-        ctx.lineWidth=(petit?0.9:1.2); ctx.stroke();
-      }
-    }
-    ctx.restore();
-  }
-
-  /* ── le maillage : les maisons se relaient entre voisines, rien ne part d'un centre ──
-     Aucun trait ne rayonne depuis le siège : ce serait dire que tout vient de lui, alors que
-     le stock d'une maison est le stock de toutes. On relie chaque maison à ses deux plus
-     proches, en fils très fins, immobiles. */
-  var MAILLE = null;
-  function maille(){
-    if (MAILLE) return MAILLE;
-    MAILLE = [];
-    var vus = {};
-    for (var i=0;i<LIEUX.length;i++){
-      if (LIEUX[i].part) continue;
-      var d2 = [];
-      for (var j=0;j<LIEUX.length;j++){
-        if (j===i || LIEUX[j].part) continue;
-        var dx=LIEUX[j].x-LIEUX[i].x, dy=LIEUX[j].y-LIEUX[i].y;
-        d2.push({j:j, d:Math.sqrt(dx*dx+dy*dy)});
-      }
-      d2.sort(function(a,b){ return a.d-b.d; });
-      for (var k=0;k<2 && k<d2.length;k++){
-        var a2=Math.min(i,d2[k].j), b2=Math.max(i,d2[k].j), cle=a2+'-'+b2;
-        if (!vus[cle]){ vus[cle]=1; MAILLE.push([a2,b2]); }
-      }
-    }
-    return MAILLE;
-  }
-  function liens(){
-    var m = maille();
-    for (var i=0;i<m.length;i++){
-      var a=PTS[m[i][0]], b=PTS[m[i][1]];
-      var g = ctx.createLinearGradient(a.x,a.y,b.x,b.y);
-      g.addColorStop(0,'rgba(255,200,140,.22)');
-      g.addColorStop(.5,'rgba(200,220,255,.13)');
-      g.addColorStop(1,'rgba(255,200,140,.22)');
-      ctx.strokeStyle=g; ctx.lineWidth = petit?0.7:0.9;
-      ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
     }
   }
 
-  /* ── les maisons : un cœur chaud, un halo court ────────────────────────── */
-  function points(tps){
+  /* ── les noms : Inter, comme partout ailleurs sur le site ────────────────── */
+  function noms(){
     for (var i=0;i<LIEUX.length;i++){
-      var o=LIEUX[i], p=PTS[i], vif = (i===vise), siege=!!o.siege, part=!!o.part;
-      var bat = DOUX ? 0 : 0.5+0.5*Math.sin(tps/1000*0.9 + i*0.7);
-      var R = (siege?15:11) * (petit?0.8:1) * (1 + bat*0.10) * (vif?1.35:1);
-      var g = ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,R);
-      if (part){ g.addColorStop(0,'rgba(150,190,255,.55)'); g.addColorStop(.45,'rgba(110,155,240,.18)'); g.addColorStop(1,'rgba(110,155,240,0)'); }
-      else     { g.addColorStop(0,'rgba(255,206,140,.80)'); g.addColorStop(.40,'rgba(255,168,80,.26)'); g.addColorStop(1,'rgba(255,168,80,0)'); }
-      ctx.fillStyle=g; ctx.beginPath(); ctx.arc(p.x,p.y,R,0,6.2832); ctx.fill();
-      /* le repère : un anneau fin marque l'emplacement exact, un cœur net le confirme */
-      var r0 = (siege?3.0:2.2)*(petit?0.85:1)*(vif?1.2:1);
-      var ra = r0 + (siege?4.6:3.6);
-      ctx.strokeStyle = part ? 'rgba(190,215,255,.62)' : 'rgba(255,228,190,.72)';
-      ctx.lineWidth = vif?1.6:1.15;
-      ctx.beginPath(); ctx.arc(p.x,p.y,ra,0,6.2832); ctx.stroke();
-      if (siege){ ctx.strokeStyle='rgba(255,236,206,.42)'; ctx.lineWidth=1;
-        ctx.beginPath(); ctx.arc(p.x,p.y,ra+3.2,0,6.2832); ctx.stroke(); }
-      var c = ctx.createRadialGradient(p.x-r0*.3,p.y-r0*.4,0,p.x,p.y,r0);
-      if (part){ c.addColorStop(0,'#EAF2FF'); c.addColorStop(1,'#7FA8F0'); }
-      else     { c.addColorStop(0,'#FFF8EC'); c.addColorStop(1,'#FFA332'); }
-      ctx.fillStyle=c; ctx.beginPath(); ctx.arc(p.x,p.y,r0,0,6.2832); ctx.fill();
-    }
-  }
-  /* ── l'établissement : un bâtiment posé à son emplacement ─────────────────
-     Chaque maison est un petit bâtiment au trait — corps, toit en pente, quai de
-     chargement — et non un point. Le siège est plus grand et porte son anneau ;
-     le partenaire de Metz est bleu et sans numéro.
-     Trois maisons se touchent dans le Var : les bâtiments sont d'abord tous
-     calculés, écartés s'ils se recouvrent, puis reliés par un fil à leur
-     emplacement exact — qui reste marqué par un point. On ne déplace jamais le
-     lieu, seulement son dessin. */
-  function batiGeom(i){
-    var o=LIEUX[i], p=PTS[i], siege=!!o.siege;
-    var w = S*(siege?0.072:0.060), h = w*0.86;
-    return {i:i,o:o,p:p, x:p.x-w/2, y:p.y-h-(petit?3:5), w:w, h:h, dx:0, dy:0};
-  }
-  function ecarterBati(G){
-    var jeu = S*0.016;   /* de l'air entre deux batiments voisins */
-    for (var tour=0; tour<8; tour++){
-      var bouge=false;
-      for (var a=0;a<G.length;a++) for (var b=a+1;b<G.length;b++){
-        var A=G[a], B=G[b];
-        var ax=A.x+A.dx, ay=A.y+A.dy, bx=B.x+B.dx, by=B.y+B.dy;
-        if (ax<bx+B.w+jeu && bx<ax+A.w+jeu && ay<by+B.h+jeu && by<ay+A.h+jeu){
-          var cx=(ax+A.w/2)-(bx+B.w/2), cy=(ay+A.h/2)-(by+B.h/2);
-          var n=Math.sqrt(cx*cx+cy*cy)||1, d2=(A.w+B.w)/2+jeu-n;
-          if (d2<=0) continue;
-          var ux=cx/n*d2*0.5, uy=cy/n*d2*0.5;
-          if (A.o.siege){ B.dx-=ux*2; B.dy-=uy*2; }
-          else if (B.o.siege){ A.dx+=ux*2; A.dy+=uy*2; }
-          else { A.dx+=ux; A.dy+=uy; B.dx-=ux; B.dy-=uy; }
-          bouge=true;
-        }
+      var o = LIEUX[i], p = PTS[i], vif = (i===vise);
+      if (petit && !vif) continue;
+      var fs = petit ? 13 : 14;
+      ctx.font = (vif?'500 ':'400 ') + fs + 'px Inter, ui-sans-serif, system-ui, sans-serif';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = vif ? '#FFFFFF' : 'rgba(255,255,255,.82)';
+      var larg = ctx.measureText(o.eti).width, marge = 8, sens = o.ax;
+      var lx = p.x + sens*12, ly = p.y + o.ay*12 + (o.oy||0);
+      if (sens>0 && lx+larg > L-marge){
+        if (p.x-12-larg >= marge){ sens=-1; lx=p.x-12; } else lx = L-marge-larg;
+      } else if (sens<0 && lx-larg < marge){
+        if (p.x+12+larg <= L-marge){ sens=1; lx=p.x+12; } else lx = marge+larg;
       }
-      if(!bouge) break;
+      ly = Math.min(Math.max(marge+7, ly), H-marge-7);
+      ctx.textAlign = sens>0 ? 'left' : 'right';
+      ctx.fillText(o.eti, lx, ly);
     }
-    for (var k=0;k<G.length;k++){
-      var g=G[k];
-      g.x=Math.min(Math.max(6,g.x+g.dx), L-6-g.w);
-      g.y=Math.min(Math.max(6,g.y+g.dy), H-6-g.h);
-    }
-    return G;
-  }
-  function tracerBati(g, vif){
-    var o=g.o, p=g.p, siege=!!o.siege, part=!!o.part;
-    var x0=g.x, y0=g.y, w=g.w, h=g.h;
-    var chaud = part ? 'rgba(170,205,255,' : 'rgba(255,214,160,';
-    /* le fil vers l'emplacement exact, si le bâtiment a dû s'écarter */
-    var cxb=x0+w/2, cyb=y0+h;
-    if (Math.abs(cxb-p.x)>1.5 || Math.abs(cyb-p.y)>1.5){
-      ctx.strokeStyle = chaud+'.42)'; ctx.lineWidth=1;
-      ctx.beginPath(); ctx.moveTo(cxb,cyb); ctx.lineTo(p.x,p.y); ctx.stroke();
-    }
-    /* l'ombre au sol, puis le volume */
-    ctx.fillStyle='rgba(0,0,0,.34)'; ctx.beginPath();
-    ctx.ellipse(x0+w/2, y0+h+1, w*0.46, w*0.11, 0, 0, 6.2832); ctx.fill();
-    var gb=ctx.createLinearGradient(x0,y0,x0,y0+h);
-    gb.addColorStop(0, part?'rgba(120,165,240,.30)':(siege?'rgba(255,190,110,.36)':'rgba(255,175,90,.26)'));
-    gb.addColorStop(1, part?'rgba(90,130,215,.14)':'rgba(255,150,60,.12)');
-    ctx.fillStyle=gb; ctx.fillRect(x0, y0+h*0.30, w, h*0.70);
-    ctx.strokeStyle = chaud + (vif?'1)':(siege?'.95)':'.80)'));
-    ctx.lineWidth=Math.max(1, S*0.0024); ctx.lineJoin='round';
-    ctx.strokeRect(x0, y0+h*0.30, w, h*0.70);
-    ctx.beginPath();
-    ctx.moveTo(x0-w*0.06, y0+h*0.30); ctx.lineTo(x0+w*0.22, y0+h*0.04);
-    ctx.lineTo(x0+w*1.06, y0+h*0.04); ctx.lineTo(x0+w, y0+h*0.30); ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(x0+w*0.16, y0+h); ctx.lineTo(x0+w*0.16, y0+h*0.56);
-    ctx.lineTo(x0+w*0.50, y0+h*0.56); ctx.lineTo(x0+w*0.50, y0+h); ctx.stroke();
-    ctx.strokeStyle = chaud+'.48)';
-    ctx.beginPath(); ctx.moveTo(x0+w*0.62, y0+h*0.60); ctx.lineTo(x0+w*0.90, y0+h*0.60); ctx.stroke();
-    /* l'emplacement exact */
-    ctx.fillStyle = part?'#EAF2FF':'#FFF8EC';
-    ctx.beginPath(); ctx.arc(p.x, p.y, Math.max(1.6, S*0.0045), 0, 6.2832); ctx.fill();
-    if (siege){ ctx.strokeStyle='rgba(255,222,170,.5)'; ctx.lineWidth=1;
-      ctx.beginPath(); ctx.arc(p.x, p.y, Math.max(5, S*0.014), 0, 6.2832); ctx.stroke(); }
-    /* le numéro, sur le toit */
-    if (!part){
-      /* le numéro se pose sur une petite plaque : il reste lisible quelle que soit
-         la couleur de la carte dessous, et ne descend jamais sous 13 px. */
-      var fs=Math.max(13, S*0.024);
-      ctx.font='600 '+fs.toFixed(1)+'px Inter, ui-sans-serif, system-ui, sans-serif';
-      ctx.textAlign='center'; ctx.textBaseline='middle';
-      var wn=ctx.measureText(o.c).width, px2=fs*0.42, py2=fs*0.26;
-      var bx=x0+w/2-wn/2-px2, by=y0-fs*0.62-py2, bw=wn+px2*2, bh=fs+py2*2, br=bh/2;
-      if (ctx.roundRect){ ctx.beginPath(); ctx.roundRect(bx,by,bw,bh,br); }
-      else { ctx.beginPath(); ctx.moveTo(bx+br,by); ctx.lineTo(bx+bw-br,by);
-        ctx.arcTo(bx+bw,by,bx+bw,by+br,br); ctx.lineTo(bx+bw,by+bh-br);
-        ctx.arcTo(bx+bw,by+bh,bx+bw-br,by+bh,br); ctx.lineTo(bx+br,by+bh);
-        ctx.arcTo(bx,by+bh,bx,by+bh-br,br); ctx.lineTo(bx,by+br); ctx.arcTo(bx,by,bx+br,by,br); ctx.closePath(); }
-      ctx.fillStyle = siege ? 'rgba(255,178,60,.96)' : 'rgba(9,15,28,.86)';
-      ctx.fill();
-      if (!siege){ ctx.strokeStyle='rgba(255,196,107,.42)'; ctx.lineWidth=1; ctx.stroke(); }
-      ctx.fillStyle = siege ? '#1C1204' : (vif?'#FFFFFF':'rgba(255,214,160,.98)');
-      ctx.fillText(o.c, x0+w/2, by+bh/2+0.5);
-    }
-  }
-  function batiments(){
-    var G=[];
-    for (var i=0;i<LIEUX.length;i++) G.push(batiGeom(i));
-    ecarterBati(G);
-    for (var k=0;k<G.length;k++) tracerBati(G[k], G[k].i===vise);
   }
 
-  function dessiner(tps){ sol(); pays(tps); reseauRoutier(tps); liens(); batiments(); }
-  function image(){ dessiner(performance.now()-t0); if (vivant && !DOUX) boucle=requestAnimationFrame(image); }
-  function partir(){ if (vivant||DOUX) { if(DOUX) dessiner(0); return; } vivant=true; boucle=requestAnimationFrame(image); }
-  function stopper(){ vivant=false; if(boucle) cancelAnimationFrame(boucle); boucle=null; }
+  function dessiner(){ ctx.clearRect(0,0,L,H); pays(); points(); noms(); }
+
+  /* ── la seule animation : le trait se pose à l'arrivée, puis plus rien ───── */
+  function arrivee(){
+    if (DOUX){ dessiner(); return; }
+    if (!t0) t0 = performance.now();
+    var t = Math.min(1, (performance.now()-t0)/700);
+    var e = 1 - Math.pow(1-t, 3);
+    ctx.clearRect(0,0,L,H);
+    ctx.globalAlpha = e; pays(); ctx.globalAlpha = 1;
+    if (t > 0.45){ ctx.globalAlpha = (t-0.45)/0.55; points(); noms(); ctx.globalAlpha = 1; }
+    if (t < 1) boucle = requestAnimationFrame(arrivee); else boucle = null;
+  }
 
   function fiche(i){
-    var t = i<0 ? DEFAUT[0] : LIEUX[i].nom, s = i<0 ? DEFAUT[1] : LIEUX[i].lieu;
-    if (fT) fT.textContent=t; if (fS) fS.textContent=s;
+    if (fT) fT.textContent = i<0 ? DEFAUT[0] : LIEUX[i].nom;
+    if (fS) fS.textContent = i<0 ? DEFAUT[1] : LIEUX[i].lieu;
   }
   function viser(x,y){
-    var r = petit?26:20, best=-1, bd=1e9;
-    for (var i=0;i<PTS.length;i++){ var dx=PTS[i].x-x, dy=PTS[i].y-y, d=dx*dx+dy*dy;
-      if (d<r*r && d<bd){ bd=d; best=i; } }
-    if (best!==vise){ vise=best; fiche(best); if (DOUX) dessiner(0); }
+    var seuil = petit ? 26 : 18, best = -1, bd = 1e9;
+    for (var i=0;i<PTS.length;i++){
+      var dx=PTS[i].x-x, dy=PTS[i].y-y, d=dx*dx+dy*dy;
+      if (d < seuil*seuil && d < bd){ bd=d; best=i; }
+    }
+    if (best !== vise){ vise = best; fiche(best); dessiner(); }
   }
-  toile.addEventListener('mousemove', function(e){ var r=toile.getBoundingClientRect(); viser(e.clientX-r.left, e.clientY-r.top); });
-  toile.addEventListener('mouseleave', function(){ if(vise!==-1){ vise=-1; fiche(-1); if(DOUX) dessiner(0);} });
-  toile.addEventListener('touchstart', function(e){ var r=toile.getBoundingClientRect(), t=e.touches[0];
-    viser(t.clientX-r.left, t.clientY-r.top); }, {passive:true});
+  toile.addEventListener('mousemove', function(e){
+    var r = toile.getBoundingClientRect(); viser(e.clientX-r.left, e.clientY-r.top); });
+  toile.addEventListener('mouseleave', function(){ if (vise!==-1){ vise=-1; fiche(-1); dessiner(); } });
+  toile.addEventListener('touchstart', function(e){
+    var r = toile.getBoundingClientRect(), t = e.touches[0];
+    viser(t.clientX-r.left, t.clientY-r.top); }, { passive:true });
   [].forEach.call(document.querySelectorAll('[data-lieu]'), function(el){
     var i = +el.getAttribute('data-lieu');
-    el.addEventListener('mouseenter', function(){ vise=i; fiche(i); if(DOUX) dessiner(0); });
-    el.addEventListener('focus', function(){ vise=i; fiche(i); if(DOUX) dessiner(0); });
-    el.addEventListener('mouseleave', function(){ vise=-1; fiche(-1); if(DOUX) dessiner(0); });
+    el.addEventListener('mouseenter', function(){ vise=i; fiche(i); dessiner(); });
+    el.addEventListener('focus',      function(){ vise=i; fiche(i); dessiner(); });
+    el.addEventListener('mouseleave', function(){ vise=-1; fiche(-1); dessiner(); });
   });
 
-  function poser(){ taille(); dessiner(performance.now()-t0); }
-  poser(); window.addEventListener('resize', poser);
+  function poser(){ taille(); dessiner(); }
+  poser();
+  window.addEventListener('resize', poser);
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(poser);
   if ('IntersectionObserver' in window){
-    new IntersectionObserver(function(e){ e[0].isIntersecting ? partir() : stopper(); }, {rootMargin:'120px'}).observe(boite);
-  } else partir();
-  document.addEventListener('visibilitychange', function(){ document.hidden ? stopper() : partir(); });
+    var vu = false;
+    new IntersectionObserver(function(en){
+      if (en[0].isIntersecting && !vu){ vu = true; t0 = 0; arrivee(); }
+    }, { rootMargin: '0px 0px -10% 0px', threshold: 0.15 }).observe(boite);
+    setTimeout(function(){ if (!vu){ vu = true; dessiner(); } }, 3500);
+  }
 })();
+
