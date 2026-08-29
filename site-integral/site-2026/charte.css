@@ -17,9 +17,9 @@
 /* ═════ 1 · LES JETONS ════════════════════════════════════════════════════════ */
 :root{
   /* les douze couleurs */
-  --blanc:#FFFFFF;
-  --doux:#F5F8FD;
-  --bleu-clair:#E2EBFF;
+  --blanc:#F6FAFF;                        /* plus de blanc pur : la page baigne dans le bleu */
+  --doux:#E9F0FF;
+  --bleu-clair:#D9E6FF;
   --act:#0050E6;
   --nuit:#0B1220;
   --encre:#111318;
@@ -34,8 +34,8 @@
   /* dérivés : une règle, pas des couleurs nouvelles */
   --act-presse:#003FB4;
   --act-nuit-presse:#7FAEFF;
-  --halo-act:#2C74FF;
-  --filet:rgba(17,19,24,.10);
+  --halo-act:#1F63F0;                    /* assez sombre pour que le blanc reste lisible dessus */
+  --filet:rgba(17,19,24,.12);
   --filet-nuit:rgba(255,255,255,.13);
   --filet-act:rgba(255,255,255,.28);
   --voile:11,18,32;                       /* la nuit en alpha : voiles, ombres */
@@ -113,7 +113,7 @@ ul{list-style:none;padding:0}
 
 /* la couleur des rôles selon le fond */
 .nuit{color:var(--encre-nuit)}
-.nuit .sur-titre{color:var(--act-nuit)}
+.nuit .sur-titre{color:#8FB8FF}   /* le halo du haut éclaire le fond : il faut un bleu plus clair */
 .nuit .doux-txt{color:var(--encre-nuit-doux)}
 .bleu{color:#fff}
 .bleu .sur-titre{color:#fff}
@@ -128,7 +128,9 @@ ul{list-style:none;padding:0}
 .pastel{background:radial-gradient(85% 65% at 18% 2%,#FFFFFF 0%,rgba(255,255,255,0) 60%),var(--bleu-clair)}
 .pastel--droite{background:radial-gradient(85% 65% at 82% 2%,#FFFFFF 0%,rgba(255,255,255,0) 60%),var(--bleu-clair)}
 .bleu{background:radial-gradient(80% 60% at 82% 4%,var(--halo-act) 0%,rgba(44,116,255,0) 60%),var(--act)}
-.nuit{background:radial-gradient(85% 65% at 18% 2%,rgba(92,151,255,.16) 0%,rgba(92,151,255,0) 60%),var(--nuit)}
+.nuit{background:
+  radial-gradient(70% 52% at 18% -8%, rgba(92,151,255,.26), rgba(92,151,255,0) 60%),
+  linear-gradient(180deg,#101B2E 0%, var(--nuit) 54%, #070C17 100%)}
 .pastel::before,.pastel--droite::before,.bleu::before{
   content:"";position:absolute;inset:0;pointer-events:none;
   background-image:var(--grain);opacity:.045;mix-blend-mode:multiply;
@@ -164,7 +166,7 @@ ul{list-style:none;padding:0}
 .lien:hover{text-decoration:underline;text-underline-offset:4px}
 .lien:hover svg,a:hover > .lien svg{transform:translateX(3px)}
 a:hover > .lien{text-decoration:underline;text-underline-offset:4px}
-.nuit .lien{color:var(--act-nuit)}
+.nuit .lien{color:#8FB8FF}
 .bleu .lien,.scene .lien,.bande .lien{color:#fff}
 .actions{display:flex;flex-wrap:wrap;gap:var(--e4) var(--e5);align-items:center;margin-top:var(--e6)}
 .centre .actions{justify-content:center}
@@ -277,7 +279,7 @@ a:hover > .lien{text-decoration:underline;text-underline-offset:4px}
 
 /* ═════ 8 · LE PIED ═══════════════════════════════════════════════════════════ */
 .pied{position:relative;z-index:10;color:var(--encre-nuit-doux);padding:var(--sect-demi) var(--gout);
-  background:radial-gradient(85% 65% at 18% 2%,rgba(92,151,255,.16) 0%,rgba(92,151,255,0) 60%),var(--nuit)}
+  background:linear-gradient(180deg,#070C17 0%, #04070F 100%)}
 .pied__in{display:grid;gap:var(--e5);max-width:var(--large);margin-inline:auto}
 .pied__logo{display:inline-block;background:#fff;border-radius:var(--rond-p);padding:var(--e3) var(--e4)}
 .pied__logo img{height:34px;width:auto}
@@ -419,3 +421,29 @@ html:not(.js) .compteur b::before{transform:none}
 
 /* d · le lien souligné d'orange au survol, la barre orange sous le logo survolé */
 .lien:hover,a:hover > .lien{text-decoration-color:var(--accent);text-decoration-thickness:2px}
+
+/* ═════ 13 · LA LUMIÈRE QUI TRAVERSE ═══════════════════════════════════════════
+   Une seule source, toujours du même côté, d'un bout à l'autre du site : c'est elle
+   qui donne l'impression d'un soleil qui parcourt la page. Et les chapitres ne se
+   coupent plus net — ils se fondent l'un dans l'autre. */
+.tuile{isolation:isolate}
+.tuile::after{
+  content:"";position:absolute;inset:0 0 auto 0;height:min(38vh,320px);
+  pointer-events:none;z-index:0;
+  background:linear-gradient(174deg, rgba(255,255,255,.62) 0%, rgba(255,255,255,0) 78%);
+}
+.nuit::after,.bleu::after{
+  background:linear-gradient(174deg, rgba(150,190,255,.13) 0%, rgba(150,190,255,0) 76%);
+}
+.tuile .dedans{position:relative;z-index:1}
+
+/* le fondu au bas de chaque chapitre */
+.tuile{--fondu:rgba(0,0,0,.055)}
+.nuit,.bleu{--fondu:rgba(0,0,0,.22)}
+.blanc,.doux,.doux--droite,.pastel,.pastel--droite{box-shadow:inset 0 -90px 90px -90px var(--fondu)}
+.nuit,.bleu{box-shadow:inset 0 -110px 110px -110px var(--fondu)}
+
+/* les chapitres montent d'un cran : on regarde autant qu'on lit */
+.tuile .t-lg{font-size:clamp(38px,5.4vw,78px)}
+.tuile .t-md{font-size:clamp(29px,3.7vw,52px)}
+.tuile .t-hero{font-size:clamp(42px,6.4vw,96px)}
