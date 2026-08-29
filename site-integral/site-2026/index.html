@@ -162,6 +162,18 @@
   background:radial-gradient(120% 90% at 90% 0,rgba(0,80,230,.09),rgba(0,80,230,.02) 70%)}
 .valeur.suite::before{background:var(--act)}
 .valeur.suite:hover{background:radial-gradient(120% 90% at 90% 0,rgba(0,80,230,.14),rgba(0,80,230,.03) 70%)}
+
+/* les valeurs sur le bleu du groupe */
+.bleu .valeurs{border-top-color:var(--filet-act)}
+.bleu .valeur{border-right-color:var(--filet-act)}
+.bleu .valeur::before,.bleu .valeur .t-carte::before{background:var(--accent-nuit)}
+.bleu .valeur .corps{color:rgba(255,255,255,.92)}
+.bleu .valeur:hover{background:rgba(255,255,255,.10)}
+.bleu .suite{background:radial-gradient(120% 90% at 90% 0,rgba(0,28,86,.26),rgba(0,28,86,.08) 70%)}
+.bleu .valeur.suite::before{background:#fff}
+.bleu .valeur.suite:hover{background:radial-gradient(120% 90% at 90% 0,rgba(0,28,86,.36),rgba(0,28,86,.12) 70%)}
+.bleu .suite .corps{color:rgba(255,255,255,.88)}
+@media (max-width:820px){.bleu .valeur{border-bottom-color:var(--filet-act)}}
 .suite .t-carte::before{display:none}
 .suite .corps{color:var(--encre-48)}
 .suite .lien{margin-top:auto;padding-top:var(--e4)}
@@ -202,6 +214,10 @@ html:not(.js) .valeur::before,html:not(.js) .valeur .t-carte::before{transform:n
 .labo{position:relative}
 .labo::after{content:"";position:absolute;left:28px;right:28px;bottom:22px;height:3px;border-radius:2px;background:var(--accent);transform:scaleX(0);transform-origin:0 50%;transition:transform var(--d-etat) var(--sortie)}
 .labo:hover{background:var(--act);color:#fff}
+.nuit .labos{background:var(--filet-nuit);border-color:var(--filet-nuit)}
+.nuit .labo{background:rgba(255,255,255,.06);color:#fff}
+.nuit .labo:hover{background:var(--act-nuit);color:var(--nuit)}
+.nuit .labo::after{background:var(--accent-nuit)}
 .labo:hover::after{transform:scaleX(1)}
 @media (max-width:900px){.labos{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media (max-width:560px){.labos{grid-template-columns:repeat(2,minmax(0,1fr))}.labo{min-height:110px}}
@@ -310,14 +326,27 @@ html:not(.js) .valeur::before,html:not(.js) .valeur .t-carte::before{transform:n
       </p>
       <p class="lead-aere">
         Chacune de nos maisons livre sa région depuis des années, avec ses équipes et ses
-        habitudes. Neuf implantations aujourd'hui, plus de deux mille officines livrées chaque
-        jour, et la même idée qu'au premier jour — un groupe de répartiteurs indépendants qui a
-        choisi de se mettre du côté du comptoir.
+        habitudes — et la même idée qu'au premier jour : un groupe de répartiteurs indépendants
+        qui a choisi de se mettre du côté du comptoir.
       </p>
     </div>
    </div>
   </div>
 </section>
+
+<a class="bande bande--lien" href="rse.html" aria-label="Le siège du groupe à Hyères, et son toit solaire — découvrir notre responsabilité">
+  <img class="bande__img" src="../assets/siege-solaire.jpg" alt="" loading="lazy" decoding="async">
+  <div class="bande__voile"></div>
+  <div class="bande__mot">
+    <div class="dedans">
+      <p class="t-md">Hyères, Var.</p>
+      <p class="corps">Le siège du groupe — implantation 01 — et son toit couvert de panneaux solaires.</p>
+      <span class="lien">Notre responsabilité
+        <svg viewBox="0 0 9 14" aria-hidden="true"><path d="M1.5 1 7 7l-5.5 6" fill="none" stroke="currentColor" stroke-width="1.7"/></svg>
+      </span>
+    </div>
+  </div>
+</a>
 
 <!-- ══ 3 bis · EN CHIFFRES — une section à part, un cadre net ═══════════════ -->
 <section class="tuile pastel chiffres" id="chiffres">
@@ -333,19 +362,7 @@ html:not(.js) .valeur::before,html:not(.js) .valeur .t-carte::before{transform:n
 </section>
 
 <!-- ══ 4 · BANDE PLEINE LARGEUR — le siège vu du ciel, vers la page RSE ═══════ -->
-<a class="bande bande--lien" href="rse.html" aria-label="Le siège du groupe à Hyères, et son toit solaire — découvrir notre responsabilité">
-  <img class="bande__img" src="../assets/siege-solaire.jpg" alt="" loading="lazy" decoding="async">
-  <div class="bande__voile"></div>
-  <div class="bande__mot">
-    <div class="dedans">
-      <p class="t-md">Hyères, Var.</p>
-      <p class="corps">Le siège du groupe — implantation 01 — et son toit couvert de panneaux solaires.</p>
-      <span class="lien">Notre responsabilité
-        <svg viewBox="0 0 9 14" aria-hidden="true"><path d="M1.5 1 7 7l-5.5 6" fill="none" stroke="currentColor" stroke-width="1.7"/></svg>
-      </span>
-    </div>
-  </div>
-</a>
+
 
 <!-- ══ 6 · LA CARTE — les neuf maisons sur la France, et le maillage qui pousse ═ -->
 <section class="tuile nuit" id="reseau">
@@ -370,7 +387,7 @@ html:not(.js) .valeur::before,html:not(.js) .valeur .t-carte::before{transform:n
         <span><i class="part"></i>Le partenaire, Metz</span>
       </div>
       <p class="mention corps rv" style="--i:5">
-        Neuf implantations et un partenaire : <b>Pharmest</b> (Metz, 57) prolonge le maillage à l'Est.
+        Et un partenaire : <b>Pharmest</b> (Metz, 57) prolonge le maillage à l'Est.
       </p>
     </div>
     <div class="carte-boite rv" style="--i:2" id="carte-boite">
@@ -392,9 +409,8 @@ html:not(.js) .valeur::before,html:not(.js) .valeur .t-carte::before{transform:n
       <h2 class="t-md">Ce qui se passe entre votre commande et votre comptoir.</h2>
     </div>
     <p class="lead-aere doux-txt rv" style="--i:1">
-      Quelques heures, quatre métiers, et une chaîne qui ne s'arrête jamais. Référencer,
-      stocker, préparer, livrer : c'est invisible depuis l'officine, et c'est tout notre
-      travail.
+      Quelques heures, quatre métiers, et une chaîne qui ne s'arrête jamais. C'est invisible
+      depuis l'officine, et c'est tout notre travail.
     </p>
    </div>
 
@@ -405,7 +421,7 @@ html:not(.js) .valeur::before,html:not(.js) .valeur .t-carte::before{transform:n
         </div>
         <p class="petit-accent" style="color:var(--act);margin-bottom:var(--e4)">01 — Le référencement</p>
         <h3 class="t-carte">Un catalogue pour neuf maisons.</h3>
-        <p class="corps">Le groupe référence pour ses neuf maisons à la fois : un même catalogue, tenu à
+        <p class="corps">Un seul référencement pour tout le groupe : un même catalogue, tenu à
         jour, disponible dans toutes les implantations. C'est ce qui permet à une maison de
         taille humaine de proposer la profondeur de gamme d'un réseau national.</p>
       </article>
@@ -415,9 +431,9 @@ html:not(.js) .valeur::before,html:not(.js) .valeur .t-carte::before{transform:n
         </div>
         <p class="petit-accent" style="color:var(--act);margin-bottom:var(--e4)">02 — La disponibilité</p>
         <h3 class="t-carte">Le stock au plus près de vous.</h3>
-        <p class="corps">Des stocks répartis sur neuf implantations, au plus près de votre officine. Quand
-        le comptoir a besoin, le réseau répond — et quand une référence manque quelque part,
-        elle existe souvent ailleurs dans le réseau.</p>
+        <p class="corps">Des stocks répartis sur les neuf implantations.
+        Quand une référence manque quelque part, elle existe souvent ailleurs — et le comptoir
+        est servi quand même.</p>
       </article>
       <article class="carte rv" style="--i:2">
         <div class="picto" aria-hidden="true">
@@ -434,7 +450,7 @@ html:not(.js) .valeur::before,html:not(.js) .valeur .t-carte::before{transform:n
         </div>
         <p class="petit-accent" style="color:var(--act);margin-bottom:var(--e4)">04 — La livraison</p>
         <h3 class="t-carte">Tous les jours, sans exception.</h3>
-        <p class="corps">Tous les jours, les tournées partent vers les officines. La régularité d'un
+        <p class="corps">Les tournées partent vers les officines, samedi compris. La régularité d'un
         service tenu — c'est elle qui fait la confiance, pas les promesses.</p>
       </article>
     </div>
@@ -486,7 +502,7 @@ html:not(.js) .valeur::before,html:not(.js) .valeur .t-carte::before{transform:n
 </section>
 
 <!-- ══ 11 · LES PARTENAIRES ══════════════════════════════════════════════════ -->
-<section class="tuile pastel--droite" id="partenaires">
+<section class="tuile nuit" id="partenaires">
   <div class="dedans">
     <div class="rv">
       <p class="sur-titre">Nos partenaires</p>
@@ -546,11 +562,10 @@ html:not(.js) .valeur::before,html:not(.js) .valeur .t-carte::before{transform:n
 </section>
 
 <!-- ══ 13 · LES VALEURS ══════════════════════════════════════════════════════ -->
-<section class="tuile pastel--droite" id="valeurs">
+<section class="tuile bleu" id="valeurs">
   <div class="dedans">
     <p class="sur-titre rv">Nos valeurs</p>
-    <h2 class="t-lg rv" style="--i:1" data-mots>Confiance. Engagement. Respect.</h2>
-    <p class="lead-aere doux-txt rv" style="--i:2;margin-top:var(--e6)">Trois mots qui se vérifient au téléphone.</p>
+    <h2 class="t-lg rv" style="--i:1;max-width:16ch" data-mots>Trois mots qui se vérifient au téléphone.</h2>
     <div class="valeurs">
       <div class="valeur rv" style="--i:0">
         <h3 class="t-carte">Confiance</h3>
@@ -583,8 +598,7 @@ html:not(.js) .valeur::before,html:not(.js) .valeur .t-carte::before{transform:n
     <p class="sur-titre rv">Notre vision</p>
     <h2 class="t-hero rv" style="--i:1;max-width:18ch" data-reflet>Coopérer et partager pour améliorer la santé et préserver le vivant.</h2>
     <p class="lead-aere doux-txt rv" style="--i:2;margin-top:var(--e6)">
-      C'est la phrase qui guide le groupe, et le fil de notre responsabilité — quatre verbes,
-      quatre engagements, expliqués sur une journée.
+      C'est la phrase qui guide le groupe — et le fil de notre responsabilité.
     </p>
   </div>
 </section>
