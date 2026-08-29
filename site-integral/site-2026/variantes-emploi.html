@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="fr" class="p-clair">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Nous rejoindre — quatre mises en scène</title>
+<link rel="stylesheet" href="charte.css">
+<style>
+  body{background:var(--doux)}
+  .entete{padding:var(--e8) var(--gout) var(--e6)}
+  .entete .dedans{max-width:var(--large);margin-inline:auto}
+  .numero{display:flex;align-items:center;gap:var(--e4);max-width:var(--large);margin:0 auto var(--e6)}
+  .numero b{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;flex:none;
+    border-radius:50%;background:var(--act);color:#fff;font-size:19px;font-weight:600}
+  .numero span{font-size:17px;color:var(--encre-80)}
+  .fa{--accent:#0050E6;--meta:#F39A1B}   /* noms internes au dessin, pas ceux de la charte */
+
+  /* ── 1 · le relevé ────────────────────────────────────────────────────── */
+  .releve{margin-top:var(--e6)}
+  .tampon{display:inline-flex;align-items:center;gap:var(--e2);padding:6px 14px;border-radius:var(--pilule);
+    border:1px solid var(--filet);background:var(--blanc);font-size:14px;color:var(--encre-48)}
+  .tampon i{width:7px;height:7px;border-radius:50%;background:var(--accent);flex:none}
+  .lignes{margin-top:var(--e5);border-top:1px solid var(--filet)}
+  .ligne{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr) auto;gap:var(--e4);align-items:center;
+    padding:var(--e5) var(--e3);border-bottom:1px solid var(--filet);
+    transition:transform var(--d-etat) var(--sortie),background var(--d-etat) var(--sortie),border-color var(--d-etat) var(--sortie)}
+  .ligne:hover{transform:translateX(6px);background:var(--blanc);border-bottom-color:var(--accent)}
+  .ligne b{font-weight:500;font-size:19px;letter-spacing:-.012em}
+  .ligne .ou{color:var(--encre-48)}
+  .ligne .ct{display:inline-flex;align-items:center;gap:var(--e2);font-size:14px;color:var(--encre-80);white-space:nowrap}
+  .ligne .ct i{width:6px;height:6px;border-radius:50%;background:var(--accent);flex:none}
+  @media (max-width:640px){.ligne{grid-template-columns:1fr;gap:var(--e2)}}
+
+  /* ── 2 · la maison qui recrute ────────────────────────────────────────── */
+  .postes{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--e4);margin-top:var(--e6)}
+  .poste{background:linear-gradient(158deg,#fff 0%,#F8FAFD 62%,#fff 100%);border:1px solid var(--filet);
+    border-radius:var(--rond);padding:var(--e5);display:flex;flex-direction:column;
+    transition:border-color var(--d-etat) var(--sortie)}
+  .poste:hover{border-color:var(--act)}
+  .poste .fa{width:100%;height:118px;margin-bottom:var(--e4)}
+  .poste .maison-nom{font-size:14px;color:var(--act);font-weight:500;margin-bottom:var(--e2)}
+  .poste h4{font-size:21px;font-weight:500;letter-spacing:-.015em;line-height:1.22;margin-bottom:var(--e3)}
+  .poste .ou{color:var(--encre-48);font-size:16px;line-height:1.45}
+  .poste .ct{display:inline-flex;align-items:center;gap:var(--e2);margin-top:var(--e4);padding-top:var(--e4);
+    border-top:1px solid var(--filet);font-size:14px;color:var(--encre-80)}
+  .poste .ct i{width:6px;height:6px;border-radius:50%;background:var(--accent);flex:none}
+  @media (max-width:900px){.postes{grid-template-columns:1fr}}
+
+  /* ── 3 · les quatre métiers ───────────────────────────────────────────── */
+  .metiers{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--e4);margin-top:var(--e6)}
+  .met{background:var(--blanc);border:1px solid var(--filet);border-radius:var(--rond);
+    padding:var(--e5) var(--e4);text-align:center;transition:border-color var(--d-etat) var(--sortie)}
+  .met:hover{border-color:var(--act)}
+  .met .picto{margin:0 auto var(--e4)}
+  .met .picto::before{left:50%;margin-left:-26px}
+  .met b{display:block;font-weight:500;font-size:17px;letter-spacing:-.01em}
+  .met span{display:block;margin-top:4px;font-size:14px;color:var(--encre-48)}
+  .met:hover .picto::before{transform:translate(3px,-3px) rotate(-6deg)}
+  .met .picto::before{transition:transform var(--d-etat) var(--sortie)}
+  @media (max-width:900px){.metiers{grid-template-columns:repeat(2,1fr)}}
+  @media (max-width:460px){.metiers{grid-template-columns:1fr}}
+
+  /* ── 4 · les neuf maisons ─────────────────────────────────────────────── */
+  .maisons{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--filet);
+    border:1px solid var(--filet);border-radius:var(--rond);overflow:hidden;margin-top:var(--e6)}
+  .maison{background:var(--doux);padding:var(--e5) var(--e4);display:flex;align-items:center;gap:var(--e4);
+    transition:background var(--d-etat) var(--sortie)}
+  .maison .fa{width:58px;height:46px;flex:none;--accent:#6B7079;--meta:#9AA0A9}
+  .maison b{display:block;font-weight:500;font-size:16px;letter-spacing:-.01em}
+  .maison .petit{display:block;color:var(--encre-48);margin-top:2px}
+  .maison--ouvre{background:var(--blanc)}
+  .maison--ouvre .fa{--accent:#0050E6;--meta:#F39A1B}
+  .maison--ouvre:hover{background:var(--bleu-clair)}
+  .marque{display:inline-flex;align-items:center;gap:var(--e2);margin-top:var(--e3);padding:3px 10px;
+    border-radius:var(--pilule);background:rgba(243,154,27,.14);color:#8A5308;font-size:13px;font-weight:500}
+  @media (max-width:900px){.maisons{grid-template-columns:repeat(2,1fr)}}
+  @media (max-width:560px){.maisons{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+<defs>
+    <!-- Les couleurs passent par des variables CSS avec repli sur la
+         charte Intégral. Les variables personnalisées traversent la
+         frontière du <use>, contrairement aux règles de classe : chaque
+         façade prend donc automatiquement les couleurs du système de
+         design chargé par la page. -->
+    <style>
+      .m { fill: none; stroke: var(--accent, #0050e6); stroke-opacity: .55; stroke-width: 1.6; stroke-linejoin: round; stroke-linecap: round; }
+      .f { fill: var(--accent, #0050e6); fill-opacity: .05; }
+      .o { fill: var(--meta, #f39a1b); fill-opacity: .85; }
+      .g { fill: none; stroke: var(--accent, #0050e6); stroke-opacity: .22; stroke-width: 1; }
+      .s { fill: var(--accent, #0050e6); fill-opacity: .14; }
+    </style>
+  </defs>
+<symbol id="f1" viewBox="0 0 120 160">
+    <path class="g" d="M0 132 H120" />
+    <path class="f" d="M14 78 H106 V132 H14 Z" />
+    <path class="m" d="M14 78 H106 V132 H14 Z" />
+    <path class="m" d="M14 78 L24 66 H116 L106 78" />
+    <path class="s" d="M30 69 H62 V75 H30 Z M68 69 H104 V75 H68 Z" />
+    <path class="m" d="M8 100 H112" />
+    <path class="m" d="M26 104 H42 V132 H26 Z M52 104 H68 V132 H52 Z M78 104 H94 V132 H78 Z" />
+    <rect class="o" x="26" y="126" width="16" height="3" />
+    <path class="g" d="M0 140 C24 136 44 144 68 138 S104 142 120 138" />
+  </symbol>
+<symbol id="f2" viewBox="0 0 120 160">
+    <path class="g" d="M0 132 H120" />
+    <path class="f" d="M12 84 H60 V132 H12 Z M64 74 H108 V132 H64 Z" />
+    <path class="m" d="M12 84 H60 V132 H12 Z M64 74 H108 V132 H64 Z" />
+    <path class="m" d="M12 84 L22 74 L32 84 L42 74 L52 84 L60 74" />
+    <path class="m" d="M22 100 H50 M22 110 H50" />
+    <path class="m" d="M74 90 H98 V132 H74 Z" />
+    <rect class="o" x="74" y="90" width="24" height="4" />
+    <path class="g" d="M0 142 H120" />
+  </symbol>
+<symbol id="f3" viewBox="0 0 120 160">
+    <path class="g" d="M0 132 H120" />
+    <path class="m" d="M16 60 L22 74 H10 Z M22 74 L28 88 H16 Z M22 88 V96" />
+    <path class="f" d="M36 88 H108 V132 H36 Z" />
+    <path class="m" d="M36 88 H108 V132 H36 Z" />
+    <path class="m" d="M36 88 L44 80 H116 L108 88" />
+    <path class="m" d="M54 100 H90 V132 H54 Z" />
+    <rect class="o" x="54" y="100" width="36" height="3" />
+    <path class="m" d="M72 100 V132" />
+    <path class="g" d="M0 141 C30 137 60 145 90 139 S116 141 120 140" />
+  </symbol>
+<symbol id="f4" viewBox="0 0 120 160">
+    <path class="g" d="M0 132 H120" />
+    <path class="f" d="M20 86 H92 V132 H20 Z" />
+    <path class="m" d="M20 86 H92 V132 H20 Z" />
+    <path class="m" d="M20 86 L56 66 L92 86" />
+    <path class="m" d="M92 96 H110 V132 H92 Z" />
+    <path class="m" d="M34 104 H50 V132 H34 Z M62 104 H78 V132 H62 Z" />
+    <rect class="o" x="96" y="104" width="10" height="3" />
+    <circle class="s" cx="56" cy="82" r="7" />
+    <path class="g" d="M0 143 H120" />
+  </symbol>
+<symbol id="f5" viewBox="0 0 120 160">
+    <path class="g" d="M0 132 H120" />
+    <path class="f" d="M10 90 H96 V132 H10 Z" />
+    <path class="m" d="M10 90 H96 V132 H10 Z" />
+    <path class="m" d="M96 62 H112 V132 H96 Z" />
+    <path class="m" d="M96 62 H112" />
+    <rect class="o" x="99" y="68" width="10" height="3" />
+    <path class="m" d="M10 90 H96" />
+    <path class="m" d="M22 102 H38 V132 H22 Z M46 102 H62 V132 H46 Z M70 102 H86 V132 H70 Z" />
+    <path class="s" d="M16 94 H90 V99 H16 Z" />
+    <path class="g" d="M0 142 H120" />
+  </symbol>
+<symbol id="f6" viewBox="0 0 120 160">
+    <path class="g" d="M0 132 H120" />
+    <path class="f" d="M16 72 H104 V132 H16 Z" />
+    <path class="m" d="M16 72 H104 V132 H16 Z" />
+    <path class="m" d="M16 92 H104" />
+    <path class="s" d="M22 78 H98 V88 H22 Z" />
+    <path class="m" d="M28 78 V88 M44 78 V88 M60 78 V88 M76 78 V88 M92 78 V88" />
+    <path class="m" d="M30 100 H50 V132 H30 Z M62 100 H82 V132 H62 Z" />
+    <rect class="o" x="62" y="100" width="20" height="3" />
+    <path class="g" d="M0 141 H120" />
+  </symbol>
+<symbol id="f7" viewBox="0 0 120 160">
+    <path class="g" d="M0 132 H120" />
+    <path class="f" d="M8 84 H100 V132 H8 Z" />
+    <path class="m" d="M8 84 H100 V132 H8 Z" />
+    <path class="m" d="M4 96 H116 L108 104 H4 Z" />
+    <path class="m" d="M20 108 H36 V132 H20 Z M44 108 H60 V132 H44 Z M68 108 H84 V132 H68 Z" />
+    <rect class="o" x="44" y="108" width="16" height="3" />
+    <path class="m" d="M100 84 V132" />
+    <path class="s" d="M14 88 H94 V93 H14 Z" />
+    <path class="g" d="M0 142 C26 139 52 145 78 140 S110 142 120 141" />
+  </symbol>
+<symbol id="f8" viewBox="0 0 120 160">
+    <path class="g" d="M0 132 H120" />
+    <path class="f" d="M14 88 H106 V132 H14 Z" />
+    <path class="m" d="M14 88 H106 V132 H14 Z" />
+    <path class="m" d="M14 88 H106" />
+    <path class="m" d="M22 74 H50 L46 82 H18 Z M62 74 H90 L86 82 H58 Z" />
+    <path class="m" d="M30 82 V88 M74 82 V88" />
+    <path class="m" d="M32 100 H56 V132 H32 Z M66 100 H90 V132 H66 Z" />
+    <rect class="o" x="32" y="100" width="24" height="3" />
+    <path class="g" d="M0 141 H120" />
+  </symbol>
+<symbol id="f9" viewBox="0 0 120 160">
+    <path class="g" d="M0 132 H120" />
+    <path class="f" d="M18 76 H102 V132 H18 Z" />
+    <path class="m" d="M18 76 H102 V132 H18 Z" />
+    <path class="m" d="M18 76 L28 68 H112 L102 76" />
+    <path class="s" d="M34 70 H104 V74 H34 Z" />
+    <path class="m" d="M18 104 H102" />
+    <path class="m" d="M34 108 H56 V132 H34 Z M66 108 H88 V132 H66 Z" />
+    <rect class="o" x="66" y="108" width="22" height="3" />
+    <path class="m" d="M60 76 V104" />
+    <path class="g" d="M0 142 H120" />
+  </symbol>
+<symbol id="f10" viewBox="0 0 120 160">
+    <path class="g" d="M0 132 H120" />
+    <path class="f" d="M20 82 H100 V132 H20 Z" />
+    <path class="m" d="M20 82 H100 V132 H20 Z" stroke-dasharray="5 4" />
+    <path class="m" d="M20 82 L30 72 H110 L100 82" stroke-dasharray="5 4" />
+    <path class="m" d="M36 100 H58 V132 H36 Z M66 100 H88 V132 H66 Z" />
+    <rect class="o" x="36" y="100" width="52" height="3" />
+    <circle class="o" cx="60" cy="90" r="3" />
+    <path class="g" d="M0 141 H120" />
+  </symbol>
+</svg>
+
+<header class="entete">
+  <div class="dedans">
+    <p class="sur-titre">La section « Nous rejoindre »</p>
+    <h1 class="t-md" style="max-width:26ch">Quatre façons de montrer qu'on embauche.</h1>
+    <p class="lead" style="margin-top:var(--e4);max-width:62ch;color:var(--encre-80)">
+      Les trois mêmes annonces à chaque fois, seule la mise en scène change. Les façades sont
+      dessinées à la main — une par implantation — parce que nous n'avons de photo que du siège.
+      Dis-moi le numéro.
+    </p>
+  </div>
+</header>
+
+<!-- ═══ 1 ═══ -->
+<section class="tuile blanc">
+  <div class="dedans">
+    <div class="numero"><b>1</b><span>Le relevé — la liste reste une liste, mais elle respire et elle réagit.</span></div>
+    <div class="duo">
+      <div>
+        <p class="sur-titre">Nous rejoindre</p>
+        <h2 class="t-md">Neuf implantations qui embauchent.</h2>
+        <p class="corps doux-txt" style="margin-top:var(--e4)">Préparateur-chauffeur, technicien
+        approvisionnement, commercial, pharmacien responsable&nbsp;: les métiers de la répartition
+        s'apprennent chez nous.</p>
+        <div class="actions">
+          <a class="pilule" href="#">Postuler sur LinkedIn</a>
+          <a class="pilule pilule--vide" href="#">Toutes les offres</a>
+        </div>
+      </div>
+      <div class="releve">
+        <span class="tampon"><i></i>3 annonces en cours, relevées le 28 août 2026</span>
+        <div class="lignes">
+          <div class="ligne"><b>Pharmacien(ne) adjoint(e)</b><span class="ou">Escale Pharma · Chilly-Mazarin (91)</span><span class="ct"><i></i>CDI</span></div>
+          <div class="ligne"><b>Commercial(e)</b><span class="ou">Sud Ouest Pharma · Haute-Garonne et départements voisins</span><span class="ct"><i></i>CDI, temps plein</span></div>
+          <div class="ligne"><b>Pharmacien(ne) commercial(e)</b><span class="ou">Sud Ouest Pharma · Secteur toulousain</span><span class="ct"><i></i>CDI, temps plein</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 2 ═══ -->
+<section class="tuile doux">
+  <div class="dedans">
+    <div class="numero"><b>2</b><span>La maison qui recrute — chaque annonce montre le bâtiment où l'on travaillera.</span></div>
+    <p class="sur-titre">Nous rejoindre</p>
+    <h2 class="t-md" style="max-width:22ch">Neuf implantations qui embauchent.</h2>
+    <p class="corps doux-txt lire" style="margin-top:var(--e4)">Préparateur-chauffeur, technicien
+    approvisionnement, commercial, pharmacien responsable&nbsp;: les métiers de la répartition
+    s'apprennent chez nous. Trois postes sont ouverts aujourd'hui.</p>
+    <div class="postes">
+      <article class="poste">
+        <svg class="fa" viewBox="4 58 112 88" aria-hidden="true"><use width="120" height="160" href="#f6"/></svg>
+        <p class="maison-nom">Escale Pharma</p>
+        <h4>Pharmacien(ne) adjoint(e)</h4>
+        <p class="ou">Chilly-Mazarin · Essonne (91)</p>
+        <p class="ct"><i></i>CDI</p>
+      </article>
+      <article class="poste">
+        <svg class="fa" viewBox="4 58 112 88" aria-hidden="true"><use width="120" height="160" href="#f4"/></svg>
+        <p class="maison-nom">Sud Ouest Pharma</p>
+        <h4>Commercial(e)</h4>
+        <p class="ou">Haute-Garonne et départements voisins</p>
+        <p class="ct"><i></i>CDI, temps plein</p>
+      </article>
+      <article class="poste">
+        <svg class="fa" viewBox="4 58 112 88" aria-hidden="true"><use width="120" height="160" href="#f4"/></svg>
+        <p class="maison-nom">Sud Ouest Pharma</p>
+        <h4>Pharmacien(ne) commercial(e)</h4>
+        <p class="ou">Secteur toulousain</p>
+        <p class="ct"><i></i>CDI, temps plein</p>
+      </article>
+    </div>
+    <div class="actions">
+      <a class="pilule" href="#">Postuler sur LinkedIn</a>
+      <a class="pilule pilule--vide" href="#">Toutes les offres</a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 3 ═══ -->
+<section class="tuile pastel">
+  <div class="dedans">
+    <div class="numero"><b>3</b><span>Les quatre métiers — on montre d'abord ce qu'on fait, l'annonce vient après.</span></div>
+    <p class="sur-titre">Nous rejoindre</p>
+    <h2 class="t-md" style="max-width:22ch">Les métiers de la répartition s'apprennent chez nous.</h2>
+    <p class="corps doux-txt lire" style="margin-top:var(--e4)">On n'arrive pas en sachant faire&nbsp;:
+    on apprend sur place, dans l'une des neuf maisons, avec l'équipe qui y travaille depuis des années.</p>
+    <div class="metiers">
+      <div class="met">
+        <div class="picto" aria-hidden="true"><svg viewBox="0 0 56 56"><path d="M40 41.5v-29c0-1.7-1.3-3-3-3h-4.5"/><circle cx="40" cy="46" r="3"/><path d="M13.5 33.5h19v12h-19v-12z"/><path d="M16 22.5h14v11H16v-11z"/><path d="M23 22.5v11"/><path d="M32.5 45.5h4"/></svg></div>
+        <b>Préparateur-chauffeur</b><span>Prépare, charge, et livre jusqu'au comptoir.</span>
+      </div>
+      <div class="met">
+        <div class="picto" aria-hidden="true"><svg viewBox="0 0 56 56"><path d="M20 21.5h16v13.5H20V21.5z"/><path d="M20 26.5h16M28 21.5v5"/><path d="M12.5 19.5C15.3 12.6 21.2 8.5 28 8.5c6.2 0 11.8 3.4 14.9 8.8"/><path d="M43.5 11.5l-.4 6-5.6-1.7"/><path d="M43.5 36.5C40.7 43.4 34.8 47.5 28 47.5c-6.2 0-11.8-3.4-14.9-8.8"/><path d="M12.5 44.5l.4-6 5.6 1.7"/></svg></div>
+        <b>Technicien approvisionnement</b><span>Fait revenir le stock avant qu'il ne manque.</span>
+      </div>
+      <div class="met">
+        <div class="picto" aria-hidden="true"><svg viewBox="0 0 56 56"><path d="M28 7.5c-5.8 0-10.5 4.6-10.5 10.3 0 7.3 10.5 16.2 10.5 16.2s10.5-8.9 10.5-16.2C38.5 12.1 33.8 7.5 28 7.5z"/><path d="M28 13.5v8M24 17.5h8"/><path d="M9 48.5c4.5-1.1 8.7-2.6 12.3-4.5"/><path d="M25.8 41.5c1.7-1.5 2.7-3.3 3.2-5.6"/></svg></div>
+        <b>Commercial(e)</b><span>Connaît ses officines, leurs saisons, leurs besoins.</span>
+      </div>
+      <div class="met">
+        <div class="picto" aria-hidden="true"><svg viewBox="0 0 56 56"><path d="M28 7.5c4.6 1.9 9.4 3.3 14.5 4.1v12.2c0 10-6 16.6-14.5 20.7-8.5-4.1-14.5-10.7-14.5-20.7V11.6c5.1-.8 9.9-2.2 14.5-4.1z"/><path d="M28 17.5v13M21.5 24h13"/><path d="M17.5 14.2c2.4-.5 4.8-1.2 7-2.1"/></svg></div>
+        <b>Pharmacien(ne) responsable</b><span>Garantit la chaîne du médicament.</span>
+      </div>
+    </div>
+    <div class="releve" style="margin-top:var(--e7)">
+      <span class="tampon"><i></i>3 postes ouverts aujourd'hui, relevés le 28 août 2026</span>
+      <div class="lignes">
+        <div class="ligne"><b>Pharmacien(ne) adjoint(e)</b><span class="ou">Escale Pharma · Chilly-Mazarin (91)</span><span class="ct"><i></i>CDI</span></div>
+        <div class="ligne"><b>Commercial(e)</b><span class="ou">Sud Ouest Pharma · Haute-Garonne et départements voisins</span><span class="ct"><i></i>CDI, temps plein</span></div>
+        <div class="ligne"><b>Pharmacien(ne) commercial(e)</b><span class="ou">Sud Ouest Pharma · Secteur toulousain</span><span class="ct"><i></i>CDI, temps plein</span></div>
+      </div>
+    </div>
+    <div class="actions">
+      <a class="pilule" href="#">Postuler sur LinkedIn</a>
+      <a class="pilule pilule--vide" href="#">Toutes les offres</a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 4 ═══ -->
+<section class="tuile blanc">
+  <div class="dedans">
+    <div class="numero"><b>4</b><span>Les neuf maisons — les neuf portes du groupe, deux sont ouvertes.</span></div>
+    <div class="duo">
+      <div>
+        <p class="sur-titre">Nous rejoindre</p>
+        <h2 class="t-md">Neuf implantations qui embauchent.</h2>
+        <p class="corps doux-txt" style="margin-top:var(--e4)">On ne rejoint pas « le groupe »&nbsp;:
+        on rejoint une maison, une équipe, une ville. Voici les neuf — celles qui recrutent
+        aujourd'hui sont éclairées.</p>
+        <div class="actions">
+          <a class="pilule" href="#">Postuler sur LinkedIn</a>
+          <a class="pilule pilule--vide" href="#">Toutes les offres</a>
+        </div>
+      </div>
+      <div class="maisons">
+      <div class="maison"><svg class="fa" viewBox="4 58 112 88" aria-hidden="true"><use width="120" height="160" href="#f1"/></svg><div><b>Hyères Pharma</b><span class="petit">Hyères · Var (83)</span></div></div>
+      <div class="maison"><svg class="fa" viewBox="4 58 112 88" aria-hidden="true"><use width="120" height="160" href="#f2"/></svg><div><b>SR Pharma</b><span class="petit">Palaiseau · Essonne (91)</span></div></div>
+      <div class="maison"><svg class="fa" viewBox="4 58 112 88" aria-hidden="true"><use width="120" height="160" href="#f3"/></svg><div><b>Mistral Santé Pharma</b><span class="petit">Flassans-sur-Issole · Var (83)</span></div></div>
+      <div class="maison maison--ouvre"><svg class="fa" viewBox="4 58 112 88" aria-hidden="true"><use width="120" height="160" href="#f4"/></svg><div><b>Sud Ouest Pharma</b><span class="petit">Montayral · Lot-et-Garonne (47)</span><span class="marque">2 postes</span></div></div>
+      <div class="maison"><svg class="fa" viewBox="4 58 112 88" aria-hidden="true"><use width="120" height="160" href="#f5"/></svg><div><b>Comptoir Pharmaceutique du Rhône</b><span class="petit">Saint-Maurice-l'Exil · Isère (38)</span></div></div>
+      <div class="maison maison--ouvre"><svg class="fa" viewBox="4 58 112 88" aria-hidden="true"><use width="120" height="160" href="#f6"/></svg><div><b>Escale Pharma</b><span class="petit">Chilly-Mazarin · Essonne (91)</span><span class="marque">1 poste</span></div></div>
+      <div class="maison"><svg class="fa" viewBox="4 58 112 88" aria-hidden="true"><use width="120" height="160" href="#f7"/></svg><div><b>Ouest Pharma Services</b><span class="petit">Saint-Étienne-de-Montluc (44)</span></div></div>
+      <div class="maison"><svg class="fa" viewBox="4 58 112 88" aria-hidden="true"><use width="120" height="160" href="#f8"/></svg><div><b>Pharm'Occitanie Services</b><span class="petit">Villeneuve-lès-Béziers · Hérault (34)</span></div></div>
+      <div class="maison"><svg class="fa" viewBox="4 58 112 88" aria-hidden="true"><use width="120" height="160" href="#f9"/></svg><div><b>Sud Est Pharma</b><span class="petit">Le Cannet-des-Maures · Var (83)</span></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>
