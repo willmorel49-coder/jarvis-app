@@ -62,7 +62,7 @@ var LIEUX = [
   {c:'06', nom:'Escale Pharma',                    lieu:'Chilly-Mazarin · Essonne (91)',                   x:49.51, y:24.89, eti:'Chilly-Mazarin', ax: 1, ay: 1},
   {c:'07', nom:'Ouest Pharma Services',            lieu:'Saint-Étienne-de-Montluc · Loire-Atlantique (44)', x:20.98, y:39.40, eti:'St-Étienne-de-Montluc', ax:-1, ay:-1},
   {c:'08', nom:'Pharm’Occitanie Services',    lieu:'Villeneuve-lès-Béziers · Hérault (34)',           x:56.26, y:79.42, eti:'Béziers',        ax:-1, ay: 1},
-  {c:'09', nom:'Sud Est Pharma',                   lieu:'Le Cannet-des-Maures · Var (83)',                 x:77.67, y:78.64, eti:'Le Cannet',      ax: 1, ay:-1},
+  {c:'09', nom:'Sud Est Pharma',                   lieu:'Le Cannet-des-Maures · Var (83)',                 x:77.67, y:78.64, eti:'Le Cannet-des-Maures', oy:-15,      ax: 1, ay:-1},
   {c:'10', nom:'Pharmest',                         lieu:'Metz · Moselle (57) — partenaire',                x:76.56, y:20.79, eti:'Metz',           ax: 1, ay:-1, part:true}
 ];
 var DEFAUT = ['Neuf implantations et un partenaire', 'Le maillage part du siège, à Hyères'];
@@ -377,7 +377,7 @@ function etiquette(i, vif){
   ctx.textAlign = o.ax > 0 ? 'left' : 'right';
   ctx.globalAlpha = vif ? 1 : 0.82;
   ctx.fillStyle = vif ? '#FFFFFF' : 'rgba(255,255,255,.88)';
-  var lx = p.x + o.ax * 15, ly = p.y + o.ay * 13;
+  var lx = p.x + o.ax * 15, ly = p.y + o.ay * 13 + (o.oy || 0);
   /* une étiquette longue ne doit jamais sortir du cadre : on la ramène dedans,
      et si elle n'y tient toujours pas, elle bascule de l'autre côté du point. */
   var larg = ctx.measureText(o.eti).width, marge = 6, sens = o.ax;
