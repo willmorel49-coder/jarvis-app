@@ -348,104 +348,96 @@ var LIEUX = [
       ctx.fillStyle=c; ctx.beginPath(); ctx.arc(p.x,p.y,r0,0,6.2832); ctx.fill();
     }
   }
-  /* ── la plaque d'établissement ────────────────────────────────────────────
-     Chaque maison porte une plaque, dans le langage du site : la pilule, son filet
-     d'un pixel, l'orange en accent et les chiffres tabulaires. Le siège porte la
-     plaque pleine, le partenaire une plaque bleue sans numéro. Un pied fin relie
-     la plaque à l'emplacement exact, qui reste marqué par son anneau.
-     Les plaques sont d'abord toutes calculées, puis écartées si elles se touchent,
-     et seulement ensuite dessinées : à toute largeur, aucune n'en recouvre une autre. */
-  function pilule(x,y,w,h,r){
-    if (ctx.roundRect){ ctx.beginPath(); ctx.roundRect(x,y,w,h,r); return; }
-    ctx.beginPath();
-    ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.arcTo(x+w,y,x+w,y+r,r);
-    ctx.lineTo(x+w,y+h-r); ctx.arcTo(x+w,y+h,x+w-r,y+h,r);
-    ctx.lineTo(x+r,y+h); ctx.arcTo(x,y+h,x,y+h-r,r);
-    ctx.lineTo(x,y+r); ctx.arcTo(x,y,x+r,y,r); ctx.closePath();
+  /* ── l'établissement : un bâtiment posé à son emplacement ─────────────────
+     Chaque maison est un petit bâtiment au trait — corps, toit en pente, quai de
+     chargement — et non un point. Le siège est plus grand et porte son anneau ;
+     le partenaire de Metz est bleu et sans numéro.
+     Trois maisons se touchent dans le Var : les bâtiments sont d'abord tous
+     calculés, écartés s'ils se recouvrent, puis reliés par un fil à leur
+     emplacement exact — qui reste marqué par un point. On ne déplace jamais le
+     lieu, seulement son dessin. */
+  function batiGeom(i){
+    var o=LIEUX[i], p=PTS[i], siege=!!o.siege;
+    var w = S*(siege?0.072:0.060), h = w*0.86;
+    return {i:i,o:o,p:p, x:p.x-w/2, y:p.y-h-(petit?3:5), w:w, h:h, dx:0, dy:0};
   }
-  function geometrie(i, vif){
-    var o=LIEUX[i], p=PTS[i];
-    var fs = petit?12:13, pad = petit?7:9, h = petit?22:26;
-    var num = o.part ? '' : o.c;
-    ctx.font = '600 ' + fs + 'px Inter, ui-sans-serif, system-ui, sans-serif';
-    var wNum = num ? ctx.measureText(num).width : 0;
-    ctx.font = (vif?'500 ':'400 ') + fs + 'px Inter, ui-sans-serif, system-ui, sans-serif';
-    var wNom = ctx.measureText(o.eti).width;
-    var ecart = num ? (petit?6:8) : 0, W = pad + wNum + ecart + wNom + pad, marge = 8;
-    var sens = o.ax, x = sens>0 ? p.x + 15 : p.x - 15 - W;
-    var y = p.y + o.ay*13 + (o.oy||0) - h/2;
-    if (x + W > L - marge){ if (p.x - 15 - W >= marge){ sens=-1; x = p.x - 15 - W; } else x = L - marge - W; }
-    if (x < marge){ if (p.x + 15 + W <= L - marge){ sens=1; x = p.x + 15; } else x = marge; }
-    y = Math.min(Math.max(marge, y), H - marge - h);
-    return {i:i, o:o, p:p, vif:vif, x:x, y:y, W:W, h:h, fs:fs, pad:pad,
-            num:num, wNum:wNum, ecart:ecart, sens:sens};
-  }
-  function ecarter(G){
-    var marge = 8, jeu = 3;
-    for (var tour=0; tour<6; tour++){
-      var bouge = false;
+  function ecarterBati(G){
+    var jeu = S*0.006;
+    for (var tour=0; tour<8; tour++){
+      var bouge=false;
       for (var a=0;a<G.length;a++) for (var b=a+1;b<G.length;b++){
         var A=G[a], B=G[b];
-        if (A.x < B.x+B.W+jeu && B.x < A.x+A.W+jeu &&
-            A.y < B.y+B.h+jeu && B.y < A.y+A.h+jeu){
-          var dep = ((A.y<B.y ? A.y+A.h - B.y : B.y+B.h - A.y) + jeu) / 2;
-          var haut = A.y < B.y ? A : B, bas = A.y < B.y ? B : A;
-          if (haut.o.siege){ bas.y += dep*2; }            /* le siège ne bouge pas */
-          else if (bas.o.siege){ haut.y -= dep*2; }
-          else { haut.y -= dep; bas.y += dep; }
-          haut.y = Math.max(marge, haut.y);
-          bas.y  = Math.min(H - marge - bas.h, bas.y);
-          bouge = true;
+        var ax=A.x+A.dx, ay=A.y+A.dy, bx=B.x+B.dx, by=B.y+B.dy;
+        if (ax<bx+B.w+jeu && bx<ax+A.w+jeu && ay<by+B.h+jeu && by<ay+A.h+jeu){
+          var cx=(ax+A.w/2)-(bx+B.w/2), cy=(ay+A.h/2)-(by+B.h/2);
+          var n=Math.sqrt(cx*cx+cy*cy)||1, d2=(A.w+B.w)/2+jeu-n;
+          if (d2<=0) continue;
+          var ux=cx/n*d2*0.5, uy=cy/n*d2*0.5;
+          if (A.o.siege){ B.dx-=ux*2; B.dy-=uy*2; }
+          else if (B.o.siege){ A.dx+=ux*2; A.dy+=uy*2; }
+          else { A.dx+=ux; A.dy+=uy; B.dx-=ux; B.dy-=uy; }
+          bouge=true;
         }
       }
-      if (!bouge) break;
+      if(!bouge) break;
+    }
+    for (var k=0;k<G.length;k++){
+      var g=G[k];
+      g.x=Math.min(Math.max(6,g.x+g.dx), L-6-g.w);
+      g.y=Math.min(Math.max(6,g.y+g.dy), H-6-g.h);
     }
     return G;
   }
-  function tracerPlaque(g){
-    var o=g.o, p=g.p, siege=!!o.siege, part=!!o.part, r=g.h/2;
-    ctx.strokeStyle = part ? 'rgba(150,190,255,.42)' : 'rgba(255,190,120,.48)';
-    ctx.lineWidth = 1;
+  function tracerBati(g, vif){
+    var o=g.o, p=g.p, siege=!!o.siege, part=!!o.part;
+    var x0=g.x, y0=g.y, w=g.w, h=g.h;
+    var chaud = part ? 'rgba(170,205,255,' : 'rgba(255,214,160,';
+    /* le fil vers l'emplacement exact, si le bâtiment a dû s'écarter */
+    var cxb=x0+w/2, cyb=y0+h;
+    if (Math.abs(cxb-p.x)>1.5 || Math.abs(cyb-p.y)>1.5){
+      ctx.strokeStyle = chaud+'.42)'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(cxb,cyb); ctx.lineTo(p.x,p.y); ctx.stroke();
+    }
+    /* l'ombre au sol, puis le volume */
+    ctx.fillStyle='rgba(0,0,0,.34)'; ctx.beginPath();
+    ctx.ellipse(x0+w/2, y0+h+1, w*0.46, w*0.11, 0, 0, 6.2832); ctx.fill();
+    var gb=ctx.createLinearGradient(x0,y0,x0,y0+h);
+    gb.addColorStop(0, part?'rgba(120,165,240,.30)':(siege?'rgba(255,190,110,.36)':'rgba(255,175,90,.26)'));
+    gb.addColorStop(1, part?'rgba(90,130,215,.14)':'rgba(255,150,60,.12)');
+    ctx.fillStyle=gb; ctx.fillRect(x0, y0+h*0.30, w, h*0.70);
+    ctx.strokeStyle = chaud + (vif?'1)':(siege?'.95)':'.80)'));
+    ctx.lineWidth=Math.max(1, S*0.0024); ctx.lineJoin='round';
+    ctx.strokeRect(x0, y0+h*0.30, w, h*0.70);
     ctx.beginPath();
-    ctx.moveTo(p.x + (g.sens>0?7:-7), p.y + o.ay*4);
-    ctx.lineTo(g.sens>0 ? g.x : g.x + g.W, g.y + g.h/2);
-    ctx.stroke();
-    pilule(g.x, g.y, g.W, g.h, r);
-    if (siege){
-      var gr = ctx.createLinearGradient(g.x,g.y,g.x,g.y+g.h);
-      gr.addColorStop(0,'#FFB23C'); gr.addColorStop(1,'#F39A1B');
-      ctx.fillStyle = gr; ctx.fill();
-    } else {
-      ctx.fillStyle = g.vif ? 'rgba(12,20,36,.94)' : 'rgba(10,17,31,.86)';
-      ctx.fill();
-      ctx.strokeStyle = part ? 'rgba(150,190,255,.52)'
-                             : (g.vif ? 'rgba(255,206,140,.85)' : 'rgba(255,196,107,.46)');
-      ctx.lineWidth = 1; pilule(g.x+.5, g.y+.5, g.W-1, g.h-1, r-.5); ctx.stroke();
+    ctx.moveTo(x0-w*0.06, y0+h*0.30); ctx.lineTo(x0+w*0.22, y0+h*0.04);
+    ctx.lineTo(x0+w*1.06, y0+h*0.04); ctx.lineTo(x0+w, y0+h*0.30); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x0+w*0.16, y0+h); ctx.lineTo(x0+w*0.16, y0+h*0.56);
+    ctx.lineTo(x0+w*0.50, y0+h*0.56); ctx.lineTo(x0+w*0.50, y0+h); ctx.stroke();
+    ctx.strokeStyle = chaud+'.48)';
+    ctx.beginPath(); ctx.moveTo(x0+w*0.62, y0+h*0.60); ctx.lineTo(x0+w*0.90, y0+h*0.60); ctx.stroke();
+    /* l'emplacement exact */
+    ctx.fillStyle = part?'#EAF2FF':'#FFF8EC';
+    ctx.beginPath(); ctx.arc(p.x, p.y, Math.max(1.6, S*0.0045), 0, 6.2832); ctx.fill();
+    if (siege){ ctx.strokeStyle='rgba(255,222,170,.5)'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.arc(p.x, p.y, Math.max(5, S*0.014), 0, 6.2832); ctx.stroke(); }
+    /* le numéro, sur le toit */
+    if (!part){
+      var fs=Math.max(9, S*0.021);
+      ctx.font='600 '+fs.toFixed(1)+'px Inter, ui-sans-serif, system-ui, sans-serif';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillStyle = vif?'#FFFFFF':(siege?'rgba(255,226,180,.98)':'rgba(255,204,140,.92)');
+      ctx.fillText(o.c, x0+w/2, y0-fs*0.55);
     }
-    ctx.textBaseline='middle'; ctx.textAlign='left';
-    var cx = g.x + g.pad, cy = g.y + g.h/2 + 0.5;
-    if (g.num){
-      ctx.font = '600 ' + g.fs + 'px Inter, ui-sans-serif, system-ui, sans-serif';
-      ctx.fillStyle = siege ? 'rgba(28,18,4,.72)' : 'rgba(255,196,107,.96)';
-      ctx.fillText(g.num, cx, cy);
-      cx += g.wNum + g.ecart;
-    }
-    ctx.font = (g.vif?'500 ':'400 ') + g.fs + 'px Inter, ui-sans-serif, system-ui, sans-serif';
-    ctx.fillStyle = siege ? '#1C1204' : (part ? 'rgba(214,230,255,.94)' : 'rgba(244,248,255,.95)');
-    ctx.fillText(o.eti, cx, cy);
   }
-  function plaques(){
+  function batiments(){
     var G=[];
-    for (var i=0;i<LIEUX.length;i++){
-      var vif = (i===vise);
-      if (petit && !vif) continue;
-      G.push(geometrie(i, vif));
-    }
-    ecarter(G);
-    for (var k=0;k<G.length;k++) tracerPlaque(G[k]);
+    for (var i=0;i<LIEUX.length;i++) G.push(batiGeom(i));
+    ecarterBati(G);
+    for (var k=0;k<G.length;k++) tracerBati(G[k], G[k].i===vise);
   }
 
-  function dessiner(tps){ sol(); pays(tps); reseauRoutier(tps); liens(); points(tps); plaques(); }
+  function dessiner(tps){ sol(); pays(tps); reseauRoutier(tps); liens(); batiments(); }
   function image(){ dessiner(performance.now()-t0); if (vivant && !DOUX) boucle=requestAnimationFrame(image); }
   function partir(){ if (vivant||DOUX) { if(DOUX) dessiner(0); return; } vivant=true; boucle=requestAnimationFrame(image); }
   function stopper(){ vivant=false; if(boucle) cancelAnimationFrame(boucle); boucle=null; }
