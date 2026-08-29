@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="fr" class="p-clair">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Quatre variantes du site</title>
+<link rel="stylesheet" href="charte.css">
+<style>
+  body{background:var(--doux)}
+  .entete{padding:var(--sect) var(--gout) var(--e7)}
+  .dedans{max-width:var(--large);margin-inline:auto}
+  .rangee{display:grid;grid-template-columns:repeat(5,1fr);gap:var(--e4);
+    max-width:1480px;margin:0 auto;padding-inline:var(--gout);align-items:start}
+  @media (max-width:1100px){.rangee{grid-template-columns:repeat(2,1fr)}}
+  @media (max-width:560px){.rangee{grid-template-columns:1fr}}
+  .v{display:block;background:var(--blanc);border:1px solid var(--filet);border-radius:var(--rond);
+    overflow:hidden;transition:border-color var(--d-etat) var(--sortie)}
+  .v:hover{border-color:var(--act)}
+  .v--base{border-color:rgba(17,19,24,.22)}
+  .v__vue{background:var(--doux);border-top:1px solid var(--filet)}
+  .v__vue img{width:100%;height:auto;display:block}
+  .v__txt{padding:var(--e5) var(--e4)}
+  .v .lien{margin-bottom:var(--e5)}
+  .v__n{display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:30px;padding:0 9px;
+    border-radius:var(--pilule);background:var(--act);color:#fff;font-size:14px;font-weight:600;margin-bottom:var(--e3)}
+  .v--base .v__n{background:var(--encre)}
+  .v h2{font-size:19px;font-weight:500;letter-spacing:-.012em;line-height:1.24}
+  .v .corps{font-size:15px;line-height:1.45;color:var(--encre-48);margin-top:var(--e2)}
+  .v .lien{font-size:15px;min-height:40px;margin-top:var(--e4)}
+  .socle{margin-top:var(--sect);border-top:1px solid var(--filet);background:var(--blanc);
+    padding:var(--e7) var(--gout) var(--sect)}
+</style>
+</head>
+<body>
+
+<header class="entete">
+  <div class="dedans">
+    <p class="sur-titre">Quatre pas, pas quatre sites</p>
+    <h1 class="t-lg" style="max-width:22ch">Notre site, avec de plus en plus de cinématique.</h1>
+    <p class="lead" style="margin-top:var(--e5);max-width:66ch;color:var(--encre-80)">
+      Tout part du site que tu as validé&nbsp;: même structure, même typographie, mêmes textes,
+      mêmes chiffres. Ce qui change, c'est la dose de lumière empruntée à la maquette
+      cinématique. La planche entière de chaque page est affichée à côté de l'actuelle, pour
+      comparer le rythme d'un coup d'œil.
+    </p>
+  </div>
+</header>
+
+<div class="rangee">
+  <a class="v v--base" href="index.html">
+<div class="v__txt">
+      <span class="v__n">Actuel</span>
+      <h2>Ce qui est en ligne</h2>
+      <p class="corps">Le site que tu viens de valider, sans retouche. Il sert de repère.</p>
+      <span class="lien">Ouvrir<svg viewBox="0 0 9 14" width="9" height="14" aria-hidden="true"><path d="M1.5 1 7 7l-5.5 6" fill="none" stroke="currentColor" stroke-width="1.7"/></svg></span>
+    </div>
+<div class="v__vue"><img src="planche-v0.jpg" alt="La page actuelle, vue entière." loading="lazy"></div>
+  </a>
+
+  <a class="v" href="variante-1.html">
+<div class="v__txt">
+      <span class="v__n">1</span>
+      <h2>Une touche</h2>
+      <p class="corps">Le seul geste qu'on retient vraiment de la cinématique&nbsp;: la page finit
+      sur un lever de jour chaud au lieu d'un aplat bleu, et les sections de nuit gagnent de la
+      profondeur. Le reste est identique.</p>
+      <span class="lien">Ouvrir<svg viewBox="0 0 9 14" width="9" height="14" aria-hidden="true"><path d="M1.5 1 7 7l-5.5 6" fill="none" stroke="currentColor" stroke-width="1.7"/></svg></span>
+    </div>
+<div class="v__vue"><img src="planche-v1.jpg" alt="Variante 1, vue entière." loading="lazy"></div>
+  </a>
+
+  <a class="v" href="variante-2.html">
+<div class="v__txt">
+      <span class="v__n">2</span>
+      <h2>Le fil de lumière</h2>
+      <p class="corps">La touche, plus une lumière qui vient toujours du même côté d'un bout à
+      l'autre de la page — comme un soleil qui la traverse — et des passages fondus entre les
+      chapitres au lieu de coupes nettes.</p>
+      <span class="lien">Ouvrir<svg viewBox="0 0 9 14" width="9" height="14" aria-hidden="true"><path d="M1.5 1 7 7l-5.5 6" fill="none" stroke="currentColor" stroke-width="1.7"/></svg></span>
+    </div>
+<div class="v__vue"><img src="planche-v2.jpg" alt="Variante 2, vue entière." loading="lazy"></div>
+  </a>
+
+  <a class="v" href="variante-3.html">
+<div class="v__txt">
+      <span class="v__n">3</span>
+      <h2>Les plans</h2>
+      <p class="corps">Le fil de lumière, plus une ouverture qui tient l'écran entier, la photo du
+      siège traitée comme un plan de cinéma, et les titres de chapitre d'un cran au-dessus.</p>
+      <span class="lien">Ouvrir<svg viewBox="0 0 9 14" width="9" height="14" aria-hidden="true"><path d="M1.5 1 7 7l-5.5 6" fill="none" stroke="currentColor" stroke-width="1.7"/></svg></span>
+    </div>
+<div class="v__vue"><img src="planche-v3.jpg" alt="Variante 3, vue entière." loading="lazy"></div>
+  </a>
+
+  <a class="v" href="variante-4.html">
+<div class="v__txt">
+      <span class="v__n">4</span>
+      <h2>La nuit</h2>
+      <p class="corps">Même structure, autre heure&nbsp;: les sombres dominent, les claires
+      deviennent un papier chaud plutôt qu'un blanc clinique, et le bleu est réservé à l'action.
+      L'alternance reste stricte.</p>
+      <span class="lien">Ouvrir<svg viewBox="0 0 9 14" width="9" height="14" aria-hidden="true"><path d="M1.5 1 7 7l-5.5 6" fill="none" stroke="currentColor" stroke-width="1.7"/></svg></span>
+    </div>
+<div class="v__vue"><img src="planche-v4.jpg" alt="Variante 4, vue entière." loading="lazy"></div>
+  </a>
+</div>
+
+<div class="socle">
+  <div class="dedans">
+    <p class="corps" style="color:var(--encre-48);max-width:74ch">
+      Ces quatre pages ne sont pas référencées. Elles n'existent qu'en page d'accueil&nbsp;: la
+      page « Notre responsabilité » n'a pas été retouchée, pour comparer à contenu égal. Elles
+      s'additionnent — la 2 contient la 1, la 3 contient la 2 — donc tu peux aussi t'arrêter en
+      chemin&nbsp;: «&nbsp;la 3 mais sans les grands titres&nbsp;» est une réponse valable.
+    </p>
+  </div>
+</div>
+
+</body>
+</html>
