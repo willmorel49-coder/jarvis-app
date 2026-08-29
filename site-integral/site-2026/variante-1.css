@@ -1,0 +1,35 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+   VARIANTE 1 · UNE TOUCHE — le site actuel, plus le seul geste qu'on retient de la
+   cinématique : la page finit sur un lever de jour, et les nuits ont de la profondeur.
+   Rien d'autre ne change : même structure, même typographie, mêmes textes.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+/* ── LE LEVER DE JOUR — la page ne finit plus sur un aplat ──────────────────── */
+#ecrire{
+  background:
+    radial-gradient(78% 60% at 50% -14%, rgba(255,196,107,.60), rgba(255,196,107,0) 60%),
+    linear-gradient(180deg,#FFF4E4 0%, #FDF7EE 44%, #F6F3EE 100%);
+  color:var(--encre);
+}
+#ecrire .sur-titre{color:#A85C08}
+#ecrire .sur-titre::before{background:var(--accent)}
+#ecrire .doux-txt{color:var(--encre-80)}
+#ecrire .t-lg,#ecrire .t-md,#ecrire h2{color:var(--encre)}
+#ecrire .pilule{background:var(--encre);color:#fff}
+#ecrire .pilule:hover{background:#000}
+#ecrire .pilule--vide{background:transparent;border-color:rgba(17,19,24,.34);color:var(--encre)}
+#ecrire .pilule--vide:hover{background:rgba(17,19,24,.06)}
+#ecrire .lien{color:#A85C08}
+#ecrire .nappes{--n1:rgba(255,255,255,.62);--n2:rgba(243,154,27,.14);--n3:rgba(255,255,255,.46);
+  --n4:rgba(255,196,107,.20);--nl:rgba(255,255,255,.80);--mel:multiply}
+#ecrire .nappes .nl{mix-blend-mode:normal}
+
+/* ── LES NUITS GAGNENT DE LA PROFONDEUR ────────────────────────────────────── */
+.nuit{
+  background:
+    radial-gradient(70% 52% at 18% -8%, rgba(92,151,255,.26), rgba(92,151,255,0) 60%),
+    linear-gradient(180deg,#101B2E 0%, var(--nuit) 54%, #070C17 100%);
+}
+.pied{background:linear-gradient(180deg,#070C17 0%, #04070F 100%)}
+.scene__voile{background:linear-gradient(180deg,rgba(6,10,20,.30) 0%,rgba(6,10,20,.52) 44%,rgba(6,10,20,.86) 100%)}
+
+@media (prefers-reduced-motion:reduce){ #ecrire .nappes span{animation:none} }
