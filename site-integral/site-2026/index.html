@@ -231,18 +231,6 @@ html:not(.js) .valeur::before,html:not(.js) .valeur .t-carte::before{transform:n
   .bandeau__lot{flex-wrap:wrap;justify-content:center}
   .bandeau__lot + .bandeau__lot{display:none}
 }
-.echelle{display:flex;align-items:baseline;gap:var(--e4);margin-top:var(--e6);
-  padding-top:var(--e5);border-top:1px solid var(--filet-nuit)}
-.echelle b{font-size:clamp(38px,4.4vw,60px);font-weight:600;line-height:1;letter-spacing:-.03em;
-  color:#fff;font-variant-numeric:tabular-nums}
-.echelle b i{font-style:normal;color:#FFC46B;margin-left:.06em}
-.echelle span{font-size:17px;line-height:1.4;color:var(--encre-nuit-doux)}
-@media (max-width:560px){
-  /* sur un téléphone, le nombre garde sa taille et le libellé passe dessous */
-  .echelle{flex-wrap:wrap;gap:var(--e2) var(--e4)}
-  .echelle b{font-size:clamp(34px,10.5vw,46px)}
-  .echelle span{flex-basis:100%;font-size:16px}
-}
 </style>
 </head>
 
@@ -408,12 +396,9 @@ html:not(.js) .valeur::before,html:not(.js) .valeur .t-carte::before{transform:n
       <canvas id="carte-toile" aria-label="Carte de France : les neuf implantations du groupe et le partenaire de Metz, reliées depuis le siège d'Hyères"></canvas>
       <div class="carte-fiche" id="carte-fiche" aria-live="polite">
         <b id="carte-fiche-t">Neuf implantations et un partenaire</b>
-        <span class="petit" id="carte-fiche-s">Chaque maison irrigue sa région, et se relaie avec ses voisines</span>
+        <span class="petit" id="carte-fiche-s">Chaque maison livre sa région</span>
       </div>
     </div>
-    <p class="echelle rv" style="--i:5">
-      <b>2 000<i>+</i></b><span>officines livrées chaque jour</span>
-    </p>
   </div>
 </section>
 
