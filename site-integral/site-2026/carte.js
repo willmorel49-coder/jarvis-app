@@ -34,15 +34,14 @@ var FRANCE = [
 
 var LIEUX = [
   {c:'01', nom:'Hyères Pharma',                    lieu:'Hyères · Var (83) — siège du groupe',             x:76.61, y:81.53, eti:'Hyères',         ax: 1, ay: 1, siege:true},
-  {c:'02', nom:'SR Pharma',                        lieu:'Palaiseau · Essonne (91)',                        x:48.96, y:24.76, eti:'Palaiseau',      ax:-1, ay:-1},
-  {c:'03', nom:'Mistral Santé Pharma',             lieu:'Flassans-sur-Issole · Var (83)',                  x:76.69, y:78.92, eti:'Flassans',       ax:-1, ay:-1},
-  {c:'04', nom:'Sud Ouest Pharma',                 lieu:'Montayral · Lot-et-Garonne (47)',                 x:40.27, y:67.81, eti:'Montayral',      ax:-1, ay: 1},
-  {c:'05', nom:'Comptoir Pharmaceutique du Rhône', lieu:'Saint-Maurice-l’Exil · Isère (38)',          x:66.74, y:58.48, eti:'St-Maurice',     ax: 1, ay:-1},
-  {c:'06', nom:'Escale Pharma',                    lieu:'Chilly-Mazarin · Essonne (91)',                   x:49.51, y:24.89, eti:'Chilly-Mazarin', ax: 1, ay: 1},
-  {c:'07', nom:'Ouest Pharma Services',            lieu:'Saint-Étienne-de-Montluc · Loire-Atlantique (44)', x:20.98, y:39.40, eti:'St-Étienne-de-Montluc', ax:-1, ay:-1},
-  {c:'08', nom:'Pharm’Occitanie Services',    lieu:'Villeneuve-lès-Béziers · Hérault (34)',           x:56.26, y:79.42, eti:'Béziers',        ax:-1, ay: 1},
-  {c:'09', nom:'Sud Est Pharma',                   lieu:'Le Cannet-des-Maures · Var (83)',                 x:77.67, y:78.64, eti:'Le Cannet-des-Maures', oy:-15,      ax: 1, ay:-1},
-  {c:'10', nom:'Pharmest',                         lieu:'Metz · Moselle (57) — partenaire',                x:76.56, y:20.79, eti:'Metz',           ax: 1, ay:-1, part:true}
+  {c:'02', nom:'Mistral Santé Pharma',             lieu:'Flassans-sur-Issole · Var (83)',                  x:76.69, y:78.92, eti:'Flassans',       ax:-1, ay:-1},
+  {c:'03', nom:'Sud Ouest Pharma',                 lieu:'Montayral · Lot-et-Garonne (47)',                 x:40.27, y:67.81, eti:'Montayral',      ax:-1, ay: 1},
+  {c:'04', nom:'Comptoir Pharmaceutique du Rhône', lieu:'Saint-Maurice-l’Exil · Isère (38)',          x:66.74, y:58.48, eti:'St-Maurice',     ax: 1, ay:-1},
+  {c:'05', nom:'Escale Pharma',                    lieu:'Chilly-Mazarin · Essonne (91)',                   x:49.51, y:24.89, eti:'Chilly-Mazarin', ax: 1, ay: 1},
+  {c:'06', nom:'Ouest Pharma Services',            lieu:'Saint-Étienne-de-Montluc · Loire-Atlantique (44)', x:20.98, y:39.40, eti:'St-Étienne-de-Montluc', ax:-1, ay:-1},
+  {c:'07', nom:'Pharm’Occitanie Services',    lieu:'Villeneuve-lès-Béziers · Hérault (34)',           x:56.26, y:79.42, eti:'Béziers',        ax:-1, ay: 1},
+  {c:'08', nom:'Sud Est Pharma',                   lieu:'Le Cannet-des-Maures · Var (83)',                 x:77.67, y:78.64, eti:'Le Cannet-des-Maures', oy:-15,      ax: 1, ay:-1},
+  {c:'09', nom:'Pharmest',                         lieu:'Metz · Moselle (57) — partenaire',                x:76.56, y:20.79, eti:'Metz',           ax: 1, ay:-1, part:true}
 ];
 
 
@@ -58,7 +57,7 @@ var LIEUX = [
   try { CHEMINS = FRANCE.map(function(d){ return new Path2D(d); }); } catch(e){}
 
   var L=0, H=0, S=0, OX=0, OY=0, dpr=1, petit=false, PTS=[], vise=-1, t0=0, boucle=null;
-  var DEFAUT = ['Neuf implantations et un partenaire', 'Chaque maison livre sa région'];
+  var DEFAUT = ['Huit implantations et un partenaire', 'Chaque maison livre sa région'];
 
   function taille(){
     var r = boite.getBoundingClientRect();
