@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="fr" class="p-clair">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Quatre directions pour le site Intégral</title>
+<link rel="stylesheet" href="../charte.css">
+<style>
+  body{background:var(--doux)}
+  .entete{padding:var(--sect) var(--gout) var(--e7)}
+  .dedans{max-width:var(--large);margin-inline:auto}
+  .grille{display:grid;grid-template-columns:repeat(2,1fr);gap:var(--e5);
+    max-width:var(--large);margin:0 auto var(--sect);padding-inline:var(--gout)}
+  @media (max-width:860px){.grille{grid-template-columns:1fr}}
+  .piste{display:block;background:var(--blanc);border:1px solid var(--filet);border-radius:var(--rond);
+    overflow:hidden;position:relative;transition:border-color var(--d-etat) var(--sortie)}
+  .piste:hover{border-color:var(--act)}
+  .piste__vue{aspect-ratio:16/11;overflow:hidden;background:var(--doux);border-bottom:1px solid var(--filet)}
+  .piste__vue img{width:100%;height:100%;object-fit:cover;object-position:top center;display:block}
+  .piste__txt{padding:var(--carte-pad)}
+  .piste__n{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;
+    border-radius:50%;background:var(--act);color:#fff;font-size:16px;font-weight:600;margin-bottom:var(--e4)}
+  .piste h2{font-size:clamp(21px,2vw,28px);font-weight:500;letter-spacing:-.018em;line-height:1.22}
+  .piste .corps{color:var(--encre-48);margin-top:var(--e3)}
+  .piste .voir{margin-top:var(--e5)}
+  .socle{border-top:1px solid var(--filet);padding:var(--e7) var(--gout) var(--sect);background:var(--blanc)}
+</style>
+</head>
+<body>
+
+<header class="entete">
+  <div class="dedans">
+    <p class="sur-titre">Quatre directions, une base commune</p>
+    <h1 class="t-lg" style="max-width:20ch">Le même site, réécrit quatre fois.</h1>
+    <p class="lead" style="margin-top:var(--e5);max-width:64ch;color:var(--encre-80)">
+      Chacune part du site que nous venons de construire et en garde tout le contenu — mêmes
+      textes, mêmes chiffres, mêmes sections. Seule la direction change : la typographie, la
+      couleur, la grille, le rythme. Dis-moi le numéro, ou dis-moi ce que tu prends dans l'une
+      et dans l'autre.
+    </p>
+    <div class="actions">
+      <a class="pilule pilule--vide" href="../index.html">Revoir le site actuel</a>
+    </div>
+  </div>
+</header>
+
+<div class="grille" id="grille"></div>
+
+<div class="socle">
+  <div class="dedans">
+    <p class="corps" style="color:var(--encre-48);max-width:70ch">
+      Ces quatre pages sont des maquettes de travail&nbsp;: elles ne sont pas référencées, aucun
+      moteur ne les trouvera. Elles n'ont pas de page « Notre responsabilité » — seule la page
+      d'accueil a été redessinée, pour comparer à contenu égal.
+    </p>
+  </div>
+</div>
+
+<script>
+(function(){
+  var P = [
+    {n:1, titre:"Le grand journal",
+     txt:"L'autorité d'un quotidien : manchette en didone, rubriques numérotées, colonnes de texte, filets fins, lettrine, légendes sous les images. La hiérarchie ne vient que de la taille et de la graisse — un seul bleu, réservé aux liens et aux points de la carte. Papier crème, jamais un aplat plat."},
+    {n:2, titre:"Cinématique",
+     txt:"Une séquence de plans plein écran : la nuit du dépôt, les phares des tournées, le lever du jour sur le toit solaire. Image et vidéo occupent le champ, le texte est rare et posé dessus. La couleur naît de la lumière, jamais d'un aplat."},
+    {n:3, titre:"La salle de contrôle",
+     txt:"L'infrastructure qui tourne : grille technique, chiffres en chasse fixe, repères et étiquettes courtes, les neuf implantations en annuaire plutôt qu'en chapitre. La précision d'une machine qui ne s'arrête jamais — sans jamais afficher un chiffre qui n'existe pas."},
+    {n:4, titre:"Le trait",
+     txt:"Tout est dessiné à la main : les neuf façades, la France, les métiers, et des lignes qui se prolongent d'une section à l'autre. Papier chaud, encre plutôt que noir, un accent posé comme un coup de crayon. La douceur de mutualpharm, avec une vraie source de lumière."}
+  ];
+  var g = document.getElementById("grille");
+  function esc(t){ return String(t).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];}); }
+  g.innerHTML = P.map(function(p){
+    return '<a class="piste" href="piste-' + p.n + '.html">' +
+      '<div class="piste__vue"><img src="apercu-' + p.n + '.jpg" alt="Aperçu de la direction : ' + esc(p.titre) + '" loading="lazy"></div>' +
+      '<div class="piste__txt"><span class="piste__n">' + p.n + '</span>' +
+      '<h2>' + esc(p.titre) + '</h2><p class="corps">' + esc(p.txt) + '</p>' +
+      '<span class="lien voir">Ouvrir la maquette ' + p.n +
+      '<svg viewBox="0 0 9 14" width="9" height="14" aria-hidden="true"><path d="M1.5 1 7 7l-5.5 6" fill="none" stroke="currentColor" stroke-width="1.7"/></svg></span></div></a>';
+  }).join("");
+})();
+</script>
+<noscript>
+  <div class="dedans" style="padding:0 var(--gout) var(--sect)">
+    <p class="corps"><a class="lien" href="piste-1.html">1 · Le grand journal</a></p>
+    <p class="corps"><a class="lien" href="piste-2.html">2 · Cinématique</a></p>
+    <p class="corps"><a class="lien" href="piste-3.html">3 · La salle de contrôle</a></p>
+    <p class="corps"><a class="lien" href="piste-4.html">4 · Le trait</a></p>
+  </div>
+</noscript>
+</body>
+</html>
