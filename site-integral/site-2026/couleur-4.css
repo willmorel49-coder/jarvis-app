@@ -1,0 +1,47 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+   COULEUR 4 · PAPIER ET ORANGE — le bleu se retire presque entièrement. Il reste un
+   papier chaud, une encre brune et l'orange, qui agit et qui ponctue. Les valeurs
+   prennent un aplat de terre cuite, la seule vraie couleur de la page.
+   ⚠️ C'est la variation qui s'éloigne le plus de l'identité bleue du groupe.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+:root{
+  --act:#C2410C; --act-presse:#9A3412; --halo-act:#EA6A1E;
+  --act-nuit:#FFB454; --act-nuit-presse:#FFC97F;
+  --accent:#F39A1B; --accent-nuit:#FFC46B;
+  --nuit:#1A1512; --voile:26,21,18;
+  --blanc:#FFFDFA; --doux:#F8F4EE; --bleu-clair:#F1E7DA;
+  --filet:rgba(26,21,18,.12);
+}
+.nuit{
+  background:
+    radial-gradient(70% 52% at 18% -8%, rgba(255,180,84,.16), rgba(255,180,84,0) 58%),
+    linear-gradient(180deg,#241C16 0%, var(--nuit) 54%, #120E0B 100%);
+}
+.pied{background:linear-gradient(180deg,#120E0B 0%, #0C0907 100%)}
+.carte{background:linear-gradient(158deg,#FFFDFA 0%, #F8F3EB 62%, #FFFDFA 100%)}
+.compteurs,.labo,.tampon{background:#FFFDFA}
+.puces span{background:#F1E7DA}
+.picto::before{background:rgba(194,65,12,.11)}
+.nuit .picto::before{background:rgba(255,180,84,.16)}
+
+/* la centrale rejoint l'encre : plus aucun aplat bleu */
+#centrale{
+  background:
+    radial-gradient(70% 52% at 82% -8%, rgba(255,180,84,.18), rgba(255,180,84,0) 58%),
+    linear-gradient(180deg,#241C16 0%, var(--nuit) 54%, #120E0B 100%);
+}
+#centrale .compteurs{background:rgba(255,255,255,.05);border-color:var(--filet-nuit)}
+#centrale .compteur{border-right-color:var(--filet-nuit)}
+#centrale .compteurs .compteur:last-child{border-right:0}
+#centrale .pilule{background:var(--act-nuit);color:var(--nuit)}
+#centrale .sur-titre::before{background:var(--accent-nuit)}
+#centrale .nappes{--n1:rgba(255,180,84,.16);--n2:rgba(194,65,12,.16);--n3:rgba(210,180,150,.10);
+  --n4:rgba(243,154,27,.14);--nl:rgba(255,214,150,.14);--mel:screen}
+
+/* les valeurs prennent la terre cuite — la seule couleur pleine qui reste */
+#valeurs{background:radial-gradient(80% 60% at 82% 4%, #C2521A 0%, rgba(194,82,26,0) 60%), #A8480C}
+#valeurs .pilule{background:#fff;color:#8A3A08}
+#valeurs .suite{background:radial-gradient(120% 90% at 90% 0, rgba(60,20,4,.30), rgba(60,20,4,.08) 70%)}
+#valeurs .valeur.suite:hover{background:radial-gradient(120% 90% at 90% 0, rgba(60,20,4,.40), rgba(60,20,4,.12) 70%)}
+#valeurs .nappes{--n1:rgba(255,200,150,.30);--n2:rgba(255,160,80,.20);--n3:rgba(120,50,10,.30);
+  --n4:rgba(255,220,180,.14);--nl:rgba(255,230,200,.22);--mel:screen}

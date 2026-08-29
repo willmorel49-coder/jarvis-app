@@ -1,0 +1,18 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+   COULEUR 3 · LE BLEU CLAIR — le blanc pur disparaît : toute la page baigne dans un
+   bleu très pâle, du plus clair au plus soutenu. Le bleu vif se fait rare et n'en
+   frappe que plus fort, l'orange gagne en présence par contraste.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+:root{
+  --blanc:#F6FAFF;
+  --doux:#E9F0FF;
+  --bleu-clair:#D9E6FF;
+  --filet:rgba(17,19,24,.12);
+}
+.carte{background:linear-gradient(158deg,#FFFFFF 0%, #F0F5FF 62%, #FFFFFF 100%)}
+.compteurs{background:#FCFDFF}
+.labo{background:#FCFDFF}
+.tampon{background:#FCFDFF}
+.puces span{background:#E9F0FF}
+.ligne:hover{background:#FCFDFF}
+.valeur:hover{background:rgba(255,255,255,.7)}

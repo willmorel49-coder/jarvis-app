@@ -1,0 +1,24 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+   COULEUR 1 · NUIT ET BLANC — le bleu vif quitte les grands aplats : il ne reste que
+   la nuit, le blanc et l'orange. Le bleu redevient ce qu'il est le mieux : la couleur
+   de l'action, et le cœur d'une seule section — les valeurs.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+:root{ --doux:#F7F9FC; --bleu-clair:#EDF2FA; }
+
+/* la centrale quitte l'aplat bleu pour la nuit */
+#centrale{
+  background:
+    radial-gradient(70% 52% at 82% -8%, rgba(92,151,255,.24), rgba(92,151,255,0) 60%),
+    linear-gradient(180deg,#101B2E 0%, var(--nuit) 54%, #070C17 100%);
+}
+
+#centrale .compteurs{background:rgba(255,255,255,.05);border-color:var(--filet-nuit)}
+#centrale .compteur{border-right-color:var(--filet-nuit)}
+#centrale .compteurs .compteur:last-child{border-right:0}
+#centrale .pilule{background:var(--act-nuit);color:var(--nuit)}
+#centrale .pilule:hover{background:var(--act-nuit-presse)}
+#centrale .carte{background:rgba(255,255,255,.06);border-color:var(--filet-nuit)}
+#centrale .sur-titre::before{background:var(--accent-nuit)}
+
+#centrale .nappes{--n1:rgba(92,151,255,.22);--n2:rgba(0,80,230,.18);--n3:rgba(120,150,210,.10);
+  --n4:rgba(243,154,27,.11);--nl:rgba(140,180,255,.16);--mel:screen}
