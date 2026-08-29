@@ -113,11 +113,41 @@
 }
 
 /* ═════ LES ANNONCES EN COURS ═════════════════════════════════════════════════ */
-.annonces{margin-top:var(--e6);border-top:1px solid var(--filet)}
-.annonces li{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) auto;gap:var(--e4);align-items:baseline;padding:var(--e4) 0;border-bottom:1px solid var(--filet)}
-.annonces b{font-weight:500;color:var(--encre)}
-.annonces .petit{color:var(--encre-48)}
-@media (max-width:560px){.annonces li{grid-template-columns:1fr}}
+/* les quatre métiers de la répartition */
+.metiers{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--e4);margin-top:var(--e7)}
+.met{background:var(--blanc);border:1px solid var(--filet);border-radius:var(--rond);
+  padding:var(--e5) var(--e4);text-align:center;transition:border-color var(--d-etat) var(--sortie)}
+.met:hover{border-color:var(--act)}
+.met .picto{margin:0 auto var(--e4);transition:transform var(--d-etat) var(--sortie)}
+.met .picto::before{left:50%;margin-left:-26px;transition:transform var(--d-etat) var(--sortie)}
+.met:hover .picto::before{transform:translate(3px,-3px) rotate(-6deg)}
+.met b{display:block;font-weight:500;font-size:17px;letter-spacing:-.01em}
+.met span{display:block;margin-top:4px;font-size:14px;line-height:1.45;color:var(--encre-48)}
+@media (max-width:900px){.metiers{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:460px){
+  /* sur un téléphone, quatre cartes empilées font une tour : on couche le métier */
+  .metiers{grid-template-columns:1fr;gap:var(--e2)}
+  .met{display:grid;grid-template-columns:auto minmax(0,1fr);gap:2px var(--e4);
+    align-items:start;text-align:left;padding:var(--e4)}
+  .met .picto{grid-row:1 / 3;align-self:center;margin:0;width:44px;height:44px}
+  .met .picto::before{left:-6px;margin-left:0;top:5px;width:41px;height:36px}
+}
+
+/* le relevé des postes ouverts */
+.releve{margin-top:var(--e7)}
+.tampon{display:inline-flex;align-items:center;gap:var(--e2);padding:6px 14px;border-radius:var(--pilule);
+  border:1px solid var(--filet);background:var(--blanc);font-size:14px;color:var(--encre-48)}
+.tampon i{width:7px;height:7px;border-radius:50%;background:var(--accent);flex:none}
+.lignes{margin-top:var(--e5);border-top:1px solid var(--filet)}
+.ligne{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr) auto;gap:var(--e4);align-items:center;
+  padding:var(--e4) var(--e3);border-bottom:1px solid var(--filet);
+  transition:transform var(--d-etat) var(--sortie),background var(--d-etat) var(--sortie),border-color var(--d-etat) var(--sortie)}
+.ligne:hover{transform:translateX(6px);background:var(--blanc);border-bottom-color:var(--accent)}
+.ligne b{font-weight:500;font-size:19px;letter-spacing:-.012em;color:var(--encre)}
+.ligne .ou{color:var(--encre-48)}
+.ligne .ct{display:inline-flex;align-items:center;gap:var(--e2);font-size:14px;color:var(--encre-80);white-space:nowrap}
+.ligne .ct i{width:6px;height:6px;border-radius:50%;background:var(--accent);flex:none}
+@media (max-width:640px){.ligne{grid-template-columns:1fr;gap:var(--e2);padding-inline:0}}
 
 /* ═════ VALEURS ═══════════════════════════════════════════════════════════════ */
 .valeurs{display:grid;grid-template-columns:repeat(4,1fr);margin-top:var(--e8);border-top:1px solid var(--filet)}
@@ -476,22 +506,41 @@ html:not(.js) .valeur::before,html:not(.js) .valeur .t-carte::before{transform:n
 
 <!-- ══ 12 · NOUS REJOINDRE ═══════════════════════════════════════════════════ -->
 <section class="tuile blanc" id="rejoindre">
-  <div class="dedans duo">
-    <div class="rv">
-      <p class="sur-titre">Nous rejoindre</p>
-      <h2 class="t-md">Neuf implantations qui embauchent.</h2>
-      <p class="petit rv" id="annonces-releve" style="margin-top:var(--e4);color:var(--encre-48)"></p>
-    </div>
-    <div class="rv" style="--i:1">
-      <p class="corps doux-txt">
-        Préparateur-chauffeur, technicien approvisionnement, commercial, pharmacien
-        responsable : les métiers de la répartition s'apprennent chez nous.
-      </p>
-      <ul class="annonces" id="annonces" aria-label="Les annonces en cours"></ul>
-      <div class="actions">
-        <a class="pilule" id="annonces-linkedin" href="https://fr.linkedin.com/company/integralpharma/jobs" target="_blank" rel="noopener">Postuler sur LinkedIn</a>
-        <a class="pilule pilule--vide" href="https://www.integralpharma.fr/jobs" target="_blank" rel="noopener">Toutes les offres</a>
+  <div class="dedans">
+    <p class="sur-titre rv">Nous rejoindre</p>
+    <h2 class="t-md rv" style="--i:1;max-width:22ch">Les métiers de la répartition s'apprennent chez nous.</h2>
+    <p class="corps doux-txt lire rv" style="--i:2;margin-top:var(--e4)">
+      On n'arrive pas en sachant faire&nbsp;: on apprend sur place, dans l'une des neuf maisons,
+      avec l'équipe qui y travaille depuis des années.
+    </p>
+
+    <div class="metiers">
+      <div class="met rv" style="--i:0">
+        <div class="picto" aria-hidden="true"><svg viewBox="0 0 56 56"><path d="M40 41.5v-29c0-1.7-1.3-3-3-3h-4.5"/><circle cx="40" cy="46" r="3"/><path d="M13.5 33.5h19v12h-19v-12z"/><path d="M16 22.5h14v11H16v-11z"/><path d="M23 22.5v11"/><path d="M32.5 45.5h4"/></svg></div>
+        <b>Préparateur-chauffeur</b><span>Prépare, charge, et livre jusqu'au comptoir.</span>
       </div>
+      <div class="met rv" style="--i:1">
+        <div class="picto" aria-hidden="true"><svg viewBox="0 0 56 56"><path d="M20 21.5h16v13.5H20V21.5z"/><path d="M20 26.5h16M28 21.5v5"/><path d="M12.5 19.5C15.3 12.6 21.2 8.5 28 8.5c6.2 0 11.8 3.4 14.9 8.8"/><path d="M43.5 11.5l-.4 6-5.6-1.7"/><path d="M43.5 36.5C40.7 43.4 34.8 47.5 28 47.5c-6.2 0-11.8-3.4-14.9-8.8"/><path d="M12.5 44.5l.4-6 5.6 1.7"/></svg></div>
+        <b>Technicien approvisionnement</b><span>Fait revenir le stock avant qu'il ne manque.</span>
+      </div>
+      <div class="met rv" style="--i:2">
+        <div class="picto" aria-hidden="true"><svg viewBox="0 0 56 56"><path d="M28 7.5c-5.8 0-10.5 4.6-10.5 10.3 0 7.3 10.5 16.2 10.5 16.2s10.5-8.9 10.5-16.2C38.5 12.1 33.8 7.5 28 7.5z"/><path d="M28 13.5v8M24 17.5h8"/><path d="M9 48.5c4.5-1.1 8.7-2.6 12.3-4.5"/><path d="M25.8 41.5c1.7-1.5 2.7-3.3 3.2-5.6"/></svg></div>
+        <b>Commercial(e)</b><span>Connaît ses officines, leurs saisons, leurs besoins.</span>
+      </div>
+      <div class="met rv" style="--i:3">
+        <div class="picto" aria-hidden="true"><svg viewBox="0 0 56 56"><path d="M28 7.5c4.6 1.9 9.4 3.3 14.5 4.1v12.2c0 10-6 16.6-14.5 20.7-8.5-4.1-14.5-10.7-14.5-20.7V11.6c5.1-.8 9.9-2.2 14.5-4.1z"/><path d="M28 17.5v13M21.5 24h13"/><path d="M17.5 14.2c2.4-.5 4.8-1.2 7-2.1"/></svg></div>
+        <b>Pharmacien(ne) responsable</b><span>Garantit la chaîne du médicament.</span>
+      </div>
+    </div>
+
+    <div class="releve rv" style="--i:1">
+      <span class="tampon" id="annonces-releve"><i></i>Nos postes ouverts sont publiés sur notre page LinkedIn.</span>
+      <ul class="lignes" id="annonces" aria-label="Les postes ouverts"></ul>
+    </div>
+
+    <div class="actions rv" style="--i:2">
+      <a class="pilule" id="annonces-linkedin" href="https://fr.linkedin.com/company/integralpharma/jobs" target="_blank" rel="noopener">Postuler sur LinkedIn</a>
+      <a class="pilule pilule--vide" href="https://www.integralpharma.fr/jobs" target="_blank" rel="noopener">Toutes les offres</a>
     </div>
   </div>
 </section>
@@ -663,10 +712,11 @@ html:not(.js) .valeur::before,html:not(.js) .valeur .t-carte::before{transform:n
   function esc(t){ return String(t).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
   if (ul && A && A.liste){
     ul.innerHTML = A.liste.map(function(a){
-      return "<li><b>" + esc(a.poste) + "</b><span class=\"petit\">" + esc(a.maison) + " · " + esc(a.lieu) + "</span><span class=\"petit-accent\">" + esc(a.contrat) + "</span></li>";
+      return "<li class=\"ligne\"><b>" + esc(a.poste) + "</b><span class=\"ou\">" + esc(a.maison) + " · " + esc(a.lieu) + "</span><span class=\"ct\"><i></i>" + esc(a.contrat) + "</span></li>";
     }).join("");
     var rel = document.getElementById("annonces-releve");
-    if (rel) rel.textContent = A.liste.length + " annonce" + (A.liste.length > 1 ? "s" : "") + " en cours sur notre page LinkedIn, relevée" + (A.liste.length > 1 ? "s" : "") + " le " + A.releve + ".";
+    var n = A.liste.length;
+    if (rel) rel.innerHTML = "<i></i>" + n + " poste" + (n > 1 ? "s" : "") + " ouvert" + (n > 1 ? "s" : "") + " aujourd'hui, relevé" + (n > 1 ? "s" : "") + " le " + esc(A.releve) + "."; 
     var li = document.getElementById("annonces-linkedin"); if (li && A.linkedin) li.href = A.linkedin;
   }
 
