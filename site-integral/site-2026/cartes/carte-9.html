@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Carte 9 · La retenue — Intégral Pharma</title>
+<meta name="theme-color" content="#0B1220">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230050E6'/%3E%3Cpath d='M11 9h3.4v14H11zM17 9h3.4v14H17z' fill='%23fff'/%3E%3C/svg%3E">
+<script>document.documentElement.className+=" js";</script>
+<link rel="stylesheet" href="../charte.css">
+
+<!--
+  ═══════════════════════════════════════════════════════════════════════════════
+  CARTE — VERSION 9 · « LA RETENUE »
+
+  Aucun contour de France. Dix points, à leur place exacte, sur une plaque presque
+  vide : c'est la seule disposition des points qui dessine le pays. Le cadre est
+  suggéré par une trame de points très pâle, éclairée d'un seul côté, et par un
+  filet gravé. Les noms sont écrits en petit corps, dans une serif de lecture,
+  légèrement espacés. Quand on désigne un lieu, son nom s'écrit en grand, calmement,
+  dans le bas de la plaque ; le reste s'efface d'un cran.
+
+  Données reprises telles quelles de ../carte.js : le tableau LIEUX (dix lieux,
+  x et y dans un carré 0 → 100). Neuf implantations et UN partenaire, Pharmest à
+  Metz, qui n'est jamais présenté comme une implantation du groupe. Le tableau
+  FRANCE n'est pas utilisé : cette direction ne dessine aucun contour.
+
+  Sûreté : aucun effet de verre ni de flou, aucune vidéo, aucun texte rempli par
+  une image. Vanilla, zéro dépendance, zéro appel réseau sortant, polices servies
+  en local. Sans script, le texte, la légende et l'index des dix lieux restent
+  lisibles ; la plaque, qui est construite par le script, se retire.
+  ═══════════════════════════════════════════════════════════════════════════════
+-->
+<style>
+/* ═════ LES POLICES — locales, OFL, en relatif ═══════════════════════════════ */
+@font-face{font-family:"Bodoni Moda";src:url("../../propositions/v2026/polices-33/bodoni.woff2") format("woff2");
+  font-weight:400 900;font-style:normal;font-display:swap}
+@font-face{font-family:"Newsreader";src:url("../../propositions/v2026/polices-13/newsreader.woff2") format("woff2");
+  font-weight:200 800;font-style:normal;font-display:swap}
+@font-face{font-family:"IBM Plex Mono";src:url("../../propositions/v2026/polices-11/plexmono-400.woff2") format("woff2");
+  font-weight:400;font-style:normal;font-display:swap}
+
+:root{
+  --ivoire:#F2E7D6;
+  --f-serif:"Newsreader",Georgia,"Times New Roman",serif;
+  --f-didone:"Bodoni Moda","Newsreader",Georgia,serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+body{background:var(--nuit)}
+.mention{margin-top:var(--e6);padding-top:var(--e5);border-top:1px solid var(--filet-nuit);color:var(--encre-nuit-doux)}
+.mention b{color:#fff;font-weight:500}
+
+/* ═════ LA PLAQUE ════════════════════════════════════════════════════════════
+   Une seule source de lumière, chaude, en haut à gauche, posée sur une nuit très
+   profonde — plus profonde que la section, pour que la plaque existe comme objet.
+   Le grain de la charte donne la matière. Aucun effet de verre, aucun flou.      */
+.carte-boite{width:100%;max-width:680px;margin-inline:auto}
+.plaque{
+  position:relative;width:100%;aspect-ratio:1000/1080;
+  container-type:inline-size;
+  border-radius:var(--rond);overflow:hidden;
+  border:1px solid rgba(242,231,214,.10);
+  background:
+    radial-gradient(76% 60% at 25% 11%, rgba(255,201,120,.130) 0%, rgba(255,201,120,.042) 40%, rgba(255,201,120,0) 70%),
+    radial-gradient(124% 98% at 44% 2%, #111A2B 0%, #090E1A 46%, #04070E 100%);
+  box-shadow:0 26px 60px -34px rgba(0,0,0,.85),inset 0 1px 0 rgba(242,231,214,.085);
+}
+html:not(.js) .plaque{display:none}
+.plaque__grain{position:absolute;inset:0;pointer-events:none;background-image:var(--grain);
+  background-size:170px 170px;opacity:.22;mix-blend-mode:overlay}
+.plaque svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+
+/* les points et les filets de renvoi */
+.pt{opacity:0;transition:opacity .95s var(--sortie);transition-delay:var(--dl,0s)}
+.pt__a{opacity:0;transition:opacity .4s var(--sortie)}
+
+/* ═════ LES NOMS — petit corps, serif, légèrement espacés ════════════════════ */
+.etiquettes{position:absolute;inset:0;pointer-events:none}
+.eti{
+  position:absolute;white-space:nowrap;transform:translateY(-50%);
+  font-family:var(--f-serif);font-weight:380;
+  font-size:clamp(10.5px,2.06cqw,14px);line-height:1.1;letter-spacing:.055em;
+  color:rgba(242,231,214,.86);
+  opacity:0;transition:opacity .95s var(--sortie),color .4s var(--sortie);
+  transition-delay:var(--dl,0s);
+}
+.eti.fin{text-align:right}
+
+/* ═════ LE NOM EN GRAND — le bas de la plaque ════════════════════════════════ */
+.carte-fiche{
+  position:absolute;left:0;right:0;bottom:0;
+  padding:clamp(18px,3.4cqw,26px) clamp(20px,4.2cqw,34px) clamp(20px,4.2cqw,32px);
+  background-image:linear-gradient(90deg,rgba(242,231,214,0) 0%,rgba(242,231,214,.20) 10%,rgba(242,231,214,.20) 90%,rgba(242,231,214,0) 100%);
+  background-size:100% 1px;background-repeat:no-repeat;background-position:0 0;
+  opacity:0;transition:opacity .95s var(--sortie);transition-delay:var(--dl,0s);
+}
+.carte-fiche b{
+  display:block;font-family:var(--f-didone);font-weight:400;
+  font-size:clamp(22px,4.15cqw,36px);line-height:1.12;letter-spacing:-.004em;
+  color:#FBF3E6;transition:opacity .28s var(--sortie);
+}
+.carte-fiche span{
+  display:block;margin-top:clamp(7px,1.2cqw,11px);
+  font-family:var(--f-mono);font-weight:400;
+  font-size:clamp(10px,1.5cqw,13px);line-height:1.38;letter-spacing:.045em;
+  color:rgba(242,231,214,.72);transition:opacity .28s var(--sortie);
+}
+.plaque.change .carte-fiche b,.plaque.change .carte-fiche span{opacity:0}
+
+/* ═════ L'APPARITION — une seule, lente, puis le calme ═══════════════════════ */
+.plaque.vue .pt,.plaque.vue .eti,.plaque.vue .carte-fiche{opacity:1}
+.plaque.pret .pt,.plaque.pret .eti,.plaque.pret .carte-fiche{transition-delay:0s;transition-duration:.4s}
+.plaque.fige .pt,.plaque.fige .eti,.plaque.fige .carte-fiche{transition:none}
+
+/* l'état désigné : le lieu s'affirme, le reste recule d'un cran */
+.plaque.designe .pt:not(.on){opacity:.30}
+.plaque.designe .eti:not(.on){opacity:.74}
+.plaque .eti.on{color:#FFF7EA}
+.plaque .pt.on .pt__a{opacity:1}
+
+/* ═════ L'INDEX DES DIX — lisible sans script, cibles ≥ 44 px ════════════════ */
+.index{margin-top:clamp(26px,3vw,40px);display:grid;grid-template-columns:1fr 1fr;
+  gap:0 clamp(24px,3vw,44px)}
+.index__l{
+  display:grid;grid-template-columns:auto 1fr;gap:2px clamp(10px,1.4vw,16px);
+  align-items:baseline;min-height:46px;padding:9px 8px 9px 4px;margin-inline:-4px;
+  border-top:1px solid rgba(255,255,255,.09);border-radius:6px;
+  transition:background-color var(--d-micro) var(--sortie);
+}
+.index__l:nth-child(1),.index__l:nth-child(2){border-top:0}
+html.js .index__l{cursor:pointer}
+html.js .index__l.on{background:rgba(242,231,214,.07)}
+.index__n{grid-row:1/span 2;font-family:var(--f-mono);font-size:12px;letter-spacing:.05em;
+  color:rgba(242,231,214,.60);align-self:center}
+.index__m{font-family:var(--f-serif);font-weight:420;font-size:17px;line-height:1.25;
+  letter-spacing:.004em;color:#F7EFE2}
+.index__v{font-family:var(--f-mono);font-size:11.5px;line-height:1.4;letter-spacing:.04em;
+  color:rgba(242,231,214,.72)}
+.index__l:focus-visible{outline:2px solid #fff;outline-offset:2px}
+
+/* la légende — la mise en page vient d'index.html, les pastilles suivent la plaque */
+.carte-legende{display:flex;flex-wrap:wrap;gap:var(--e2) var(--e5);margin-top:var(--e5);
+  color:var(--encre-nuit-doux)}
+.carte-legende span{display:inline-flex;align-items:center;gap:var(--e2)}
+.carte-legende i{width:9px;height:9px;border-radius:50%;background:var(--ivoire);flex:none}
+.carte-legende i.siege{background:var(--ivoire);box-shadow:0 0 0 1px rgba(242,231,214,.34),0 0 0 3.5px rgba(242,231,214,.18)}
+.carte-legende i.part{width:8px;height:8px;background:transparent;
+  box-shadow:inset 0 0 0 1.5px rgba(242,231,214,.85)}
+
+@media (max-width:900px){
+  .carte-boite{max-width:560px}
+  .index{grid-template-columns:1fr}
+  .index__l:nth-child(2){border-top:1px solid rgba(255,255,255,.09)}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .pt,.eti,.carte-fiche,.pt__a,.index__l{transition:none}
+  .plaque .pt,.plaque .eti,.plaque .carte-fiche{opacity:1}
+  .plaque.change .carte-fiche b,.plaque.change .carte-fiche span{opacity:1}
+}
+</style>
+</head>
+<body>
+
+<main>
+<section class="tuile nuit" id="reseau">
+  <div class="dedans duo duo--centre">
+    <div>
+      <p class="sur-titre rv">Le réseau</p>
+      <h2 class="t-lg rv" style="--i:1" data-mots>Neuf implantations. Laquelle est la vôtre&nbsp;?</h2>
+      <p class="corps doux-txt rv" style="--i:2;margin-top:var(--e6)">
+        C'est la seule question qui compte vraiment. Celle qui prépare votre commande, qui
+        vous livre chaque matin, et dont vous connaissez l'équipe par son prénom.
+      </p>
+      <p class="corps doux-txt rv" style="--i:2">
+        Les huit autres sont là pour qu'elle ne soit jamais prise au dépourvu — de la
+        Bretagne à la Méditerranée, le stock d'une maison est le stock de toutes.
+      </p>
+      <p class="corps doux-txt rv" style="--i:3" id="carte-consigne">
+        Survolez une maison pour la retrouver sur la carte.
+      </p>
+      <div class="carte-legende petit rv" style="--i:4" aria-hidden="true">
+        <span><i class="siege"></i>Le siège, Hyères</span>
+        <span><i></i>Une implantation</span>
+        <span><i class="part"></i>Le partenaire, Metz</span>
+      </div>
+      <p class="mention corps rv" style="--i:5">
+        Et un partenaire : <b>Pharmest</b> (Metz, 57) prolonge le maillage à l'Est.
+      </p>
+    </div>
+
+    <div class="carte-boite rv" style="--i:2" id="carte-boite">
+      <div class="plaque" id="plaque">
+        <div class="plaque__grain" aria-hidden="true"></div>
+        <!-- la plaque est construite par le script : sans script, l'index ci-dessous suffit -->
+        <div class="etiquettes" id="etiquettes" aria-hidden="true"></div>
+        <div class="carte-fiche" id="carte-fiche" aria-live="polite">
+          <b id="carte-fiche-t">Neuf implantations et un partenaire</b>
+          <span id="carte-fiche-s">Le maillage part du siège, à Hyères</span>
+        </div>
+      </div>
+
+      <ul class="index" id="index">
+        <li class="index__l" data-i="0"><span class="index__n">01</span><span class="index__m">Hyères Pharma</span><span class="index__v">Hyères · Var (83) — siège du groupe</span></li>
+        <li class="index__l" data-i="1"><span class="index__n">02</span><span class="index__m">SR Pharma</span><span class="index__v">Palaiseau · Essonne (91)</span></li>
+        <li class="index__l" data-i="2"><span class="index__n">03</span><span class="index__m">Mistral Santé Pharma</span><span class="index__v">Flassans-sur-Issole · Var (83)</span></li>
+        <li class="index__l" data-i="3"><span class="index__n">04</span><span class="index__m">Sud Ouest Pharma</span><span class="index__v">Montayral · Lot-et-Garonne (47)</span></li>
+        <li class="index__l" data-i="4"><span class="index__n">05</span><span class="index__m">Comptoir Pharmaceutique du Rhône</span><span class="index__v">Saint-Maurice-l’Exil · Isère (38)</span></li>
+        <li class="index__l" data-i="5"><span class="index__n">06</span><span class="index__m">Escale Pharma</span><span class="index__v">Chilly-Mazarin · Essonne (91)</span></li>
+        <li class="index__l" data-i="6"><span class="index__n">07</span><span class="index__m">Ouest Pharma Services</span><span class="index__v">Saint-Étienne-de-Montluc · Loire-Atlantique (44)</span></li>
+        <li class="index__l" data-i="7"><span class="index__n">08</span><span class="index__m">Pharm’Occitanie Services</span><span class="index__v">Villeneuve-lès-Béziers · Hérault (34)</span></li>
+        <li class="index__l" data-i="8"><span class="index__n">09</span><span class="index__m">Sud Est Pharma</span><span class="index__v">Le Cannet-des-Maures · Var (83)</span></li>
+        <li class="index__l" data-i="9"><span class="index__n">10</span><span class="index__m">Pharmest</span><span class="index__v">Metz · Moselle (57) — partenaire</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+</main>
+
+<script src="../commun.js"></script>
+<script>
+/* Cette direction vit de la retenue : les nappes de couleur que la charte pose sur les
+   tuiles teintées n'ont rien à y faire, et leur mouvement ne s'arrêtait jamais — leur
+   conteneur couvre toute la page, donc il n'est jamais hors écran. On les retire. */
+[].forEach.call(document.querySelectorAll(".nappes"), function(n){ n.remove(); });
+</script>
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════════
+   LA RETENUE — dix points, rien d'autre.
+   Aucune donnée inventée : LIEUX est repris tel quel de ../carte.js.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+(function(){
+'use strict';
+
+var LIEUX = [
+  {c:'01', nom:'Hyères Pharma',                    lieu:'Hyères · Var (83) — siège du groupe',              x:76.61, y:81.53, eti:'Hyères',                 siege:true},
+  {c:'02', nom:'SR Pharma',                        lieu:'Palaiseau · Essonne (91)',                         x:48.96, y:24.76, eti:'Palaiseau'},
+  {c:'03', nom:'Mistral Santé Pharma',             lieu:'Flassans-sur-Issole · Var (83)',                   x:76.69, y:78.92, eti:'Flassans'},
+  {c:'04', nom:'Sud Ouest Pharma',                 lieu:'Montayral · Lot-et-Garonne (47)',                  x:40.27, y:67.81, eti:'Montayral'},
+  {c:'05', nom:'Comptoir Pharmaceutique du Rhône', lieu:'Saint-Maurice-l’Exil · Isère (38)',                x:66.74, y:58.48, eti:'St-Maurice'},
+  {c:'06', nom:'Escale Pharma',                    lieu:'Chilly-Mazarin · Essonne (91)',                    x:49.51, y:24.89, eti:'Chilly-Mazarin'},
+  {c:'07', nom:'Ouest Pharma Services',            lieu:'Saint-Étienne-de-Montluc · Loire-Atlantique (44)', x:20.98, y:39.40, eti:'St-Étienne-de-Montluc'},
+  {c:'08', nom:'Pharm’Occitanie Services',         lieu:'Villeneuve-lès-Béziers · Hérault (34)',            x:56.26, y:79.42, eti:'Béziers'},
+  {c:'09', nom:'Sud Est Pharma',                   lieu:'Le Cannet-des-Maures · Var (83)',                  x:77.67, y:78.64, eti:'Le Cannet-des-Maures'},
+  {c:'10', nom:'Pharmest',                         lieu:'Metz · Moselle (57) — partenaire',                 x:76.56, y:20.79, eti:'Metz',  part:true}
+];
+var DEFAUT = ['Neuf implantations et un partenaire', 'Le maillage part du siège, à Hyères'];
+
+/* Deux mises en page. Sur écran étroit les noms deviennent proportionnellement plus
+   gros : le nuage de points se resserre et l'éventail du Var s'ouvre davantage.
+   « a » vaut 'd' (le nom part vers la droite) ou 'g' (il finit à gauche du point).
+   dx/dy : décalage depuis le point. ax/ay : position absolue imposée (l'éventail). */
+var PLANS = {
+  large: { W:1000, H:1080, cx:466, cy:430, k:9.6, rp:4.6, rh:30, pos:[
+    {a:'d', ax:766, ay:752, ren:true},                       /* 01 Hyères        */
+    {a:'g', dx:-30, dy:-32, ren:true},                       /* 02 Palaiseau     */
+    {a:'d', ax:766, ay:648, ren:true},                       /* 03 Flassans      */
+    {a:'g', dx:-28, dy:0},                                   /* 04 Montayral     */
+    {a:'d', dx: 28, dy:0},                                   /* 05 St-Maurice    */
+    {a:'d', dx: 30, dy: 36, ren:true},                       /* 06 Chilly        */
+    {a:'d', dx: 28, dy:0},                                   /* 07 St-Étienne-de-Montluc */
+    {a:'g', dx:-28, dy:0},                                   /* 08 Béziers       */
+    {a:'d', ax:766, ay:700, ren:true},                       /* 09 Le Cannet-des-Maures */
+    {a:'d', dx: 28, dy:0}                                    /* 10 Metz          */
+  ]},
+  petit: { W:1000, H:1180, cx:462, cy:455, k:8.4, rp:5.9, rh:34, pos:[
+    {a:'d', ax:722, ay:754, ren:true},
+    {a:'g', dx:-30, dy:-44, ren:true},
+    {a:'d', ax:722, ay:618, ren:true},
+    {a:'g', dx:-30, dy:0},
+    {a:'d', dx: 30, dy:0},
+    {a:'d', dx: 30, dy: 46, ren:true},
+    {a:'d', dx: 30, dy:0},
+    {a:'g', dx:-30, dy:0},
+    {a:'d', ax:722, ay:686, ren:true},
+    {a:'d', dx: 30, dy:0}
+  ]}
+};
+
+var NS = 'http://www.w3.org/2000/svg';
+var plaque   = document.getElementById('plaque');
+var couche   = document.getElementById('etiquettes');
+var fiche    = document.getElementById('carte-fiche');
+var ficheT   = document.getElementById('carte-fiche-t');
+var ficheS   = document.getElementById('carte-fiche-s');
+var lignes   = [].slice.call(document.querySelectorAll('.index__l'));
+if (!plaque || !couche) return;
+
+var svg = null, groupes = [], etis = [], PTS = [], plan = null, nomPlan = '';
+var designe = -1, tChange = 0, tPret = 0;
+
+function el(n, at){ var e = document.createElementNS(NS, n); for (var k in at) e.setAttribute(k, at[k]); return e; }
+
+/* ── construction de la plaque ─────────────────────────────────────────────── */
+function batir(){
+  var large = plaque.clientWidth >= 560;
+  var nom = large ? 'large' : 'petit';
+  if (nom === nomPlan) return;
+  nomPlan = nom; plan = PLANS[nom];
+  var W = plan.W, H = plan.H;
+  plaque.style.aspectRatio = W + '/' + H;
+
+  if (svg) svg.parentNode.removeChild(svg);
+  couche.textContent = '';
+  groupes = []; etis = []; PTS = [];
+
+  svg = el('svg', {viewBox:'0 0 '+W+' '+H, role:'img', 'aria-label':
+    'Les neuf implantations du groupe et le partenaire de Metz, placées à leur position réelle sur la France.'});
+
+  var defs = el('defs');
+
+  var halo = el('radialGradient', {id:'halo'});
+  halo.appendChild(el('stop', {offset:'0',   'stop-color':'#FFDCA6', 'stop-opacity':'.34'}));
+  halo.appendChild(el('stop', {offset:'.34', 'stop-color':'#FFDCA6', 'stop-opacity':'.055'}));
+  halo.appendChild(el('stop', {offset:'1',   'stop-color':'#FFD79A', 'stop-opacity':'0'}));
+  defs.appendChild(halo);
+
+  /* la trame : un point tous les 34, très pâle, éteinte loin de la lumière */
+  var pat = el('pattern', {id:'trame', width:'34', height:'34', patternUnits:'userSpaceOnUse'});
+  pat.appendChild(el('circle', {cx:'17', cy:'17', r:'.9', fill:'#F2E7D6'}));
+  defs.appendChild(pat);
+
+  var mg = el('radialGradient', {id:'mg', cx:'.28', cy:'.16', r:'1.02'});
+  mg.appendChild(el('stop', {offset:'0',   'stop-color':'#fff', 'stop-opacity':'.85'}));
+  mg.appendChild(el('stop', {offset:'.5',  'stop-color':'#fff', 'stop-opacity':'.30'}));
+  mg.appendChild(el('stop', {offset:'1',   'stop-color':'#fff', 'stop-opacity':'0'}));
+  defs.appendChild(mg);
+  var msk = el('mask', {id:'mfade', maskUnits:'userSpaceOnUse', x:'0', y:'0', width:W, height:H});
+  msk.appendChild(el('rect', {x:'0', y:'0', width:W, height:H, fill:'url(#mg)'}));
+  defs.appendChild(msk);
+
+  svg.appendChild(defs);
+  svg.appendChild(el('rect', {x:'0', y:'0', width:W, height:H, fill:'url(#trame)',
+    mask:'url(#mfade)', opacity:'.30'}));
+
+  /* le filet gravé qui tient le cadre */
+  svg.appendChild(el('rect', {x:'26', y:'26', width:(W-52), height:(H-52), rx:'14',
+    fill:'none', stroke:'rgba(242,231,214,.115)', 'stroke-width':'1',
+    'vector-effect':'non-scaling-stroke'}));
+
+  var i, o, p, cfg;
+  for (i=0;i<LIEUX.length;i++){
+    o = LIEUX[i];
+    p = { x: plan.cx + (o.x - 49.325) * plan.k, y: plan.cy + (o.y - 51.16) * plan.k };
+    PTS.push(p);
+  }
+
+  for (i=0;i<LIEUX.length;i++){
+    o = LIEUX[i]; p = PTS[i]; cfg = plan.pos[i];
+    var lx = (cfg.ax !== undefined) ? cfg.ax : p.x + cfg.dx;
+    var ly = (cfg.ay !== undefined) ? cfg.ay : p.y + cfg.dy;
+
+    var g = el('g', {'class':'pt'});
+
+    if (cfg.ren){                       /* le filet de renvoi, en équerre */
+      var sens = (cfg.a === 'd') ? 1 : -1;
+      var cx1 = lx - sens*16, cx2 = lx - sens*7;
+      g.appendChild(el('path', {d:'M'+p.x.toFixed(1)+','+p.y.toFixed(1)+
+        ' L'+cx1.toFixed(1)+','+ly.toFixed(1)+' L'+cx2.toFixed(1)+','+ly.toFixed(1),
+        fill:'none', stroke:'rgba(242,231,214,.30)', 'stroke-width':'1',
+        'vector-effect':'non-scaling-stroke'}));
+    }
+
+    g.appendChild(el('circle', {cx:p.x.toFixed(1), cy:p.y.toFixed(1), r:plan.rh, fill:'url(#halo)',
+      opacity: o.part ? '.45' : '1'}));
+
+    if (o.siege){
+      g.appendChild(el('circle', {cx:p.x.toFixed(1), cy:p.y.toFixed(1), r:'11', fill:'none',
+        stroke:'rgba(242,231,214,.44)', 'stroke-width':'1', 'vector-effect':'non-scaling-stroke'}));
+    }
+
+    /* le cercle de désignation, invisible au repos */
+    var an = el('circle', {'class':'pt__a', cx:p.x.toFixed(1), cy:p.y.toFixed(1), r:'14',
+      fill:'none', stroke:'rgba(255,247,234,.62)', 'stroke-width':'1', 'vector-effect':'non-scaling-stroke'});
+    g.appendChild(an);
+
+    if (o.part){                        /* le partenaire : un point creux */
+      g.appendChild(el('circle', {cx:p.x.toFixed(1), cy:p.y.toFixed(1), r:plan.rp, fill:'none',
+        stroke:'#F2E7D6', 'stroke-width':'1.4', 'vector-effect':'non-scaling-stroke'}));
+    } else {
+      g.appendChild(el('circle', {cx:p.x.toFixed(1), cy:p.y.toFixed(1), r:plan.rp, fill:'#F7EEE0'}));
+    }
+
+    svg.appendChild(g);
+    groupes.push(g);
+
+    var s = document.createElement('span');
+    s.className = 'eti' + (cfg.a === 'g' ? ' fin' : '');
+    s.textContent = o.eti;
+    if (cfg.a === 'g') s.style.right = ((W - lx) / W * 100).toFixed(3) + '%';
+    else               s.style.left  = (lx / W * 100).toFixed(3) + '%';
+    s.style.top = (ly / H * 100).toFixed(3) + '%';
+    couche.appendChild(s);
+    etis.push(s);
+  }
+
+  plaque.insertBefore(svg, couche);
+
+  /* Aucune étiquette ne doit sortir de la plaque : la plus longue
+     (« St-Étienne-de-Montluc », « Le Cannet-des-Maures ») dépassait sur téléphone.
+     On la ramène contre le bord, du côté où elle déborde. */
+  function borner(){
+    var cadre = couche.getBoundingClientRect();
+    if (!cadre.width) return;
+    etis.forEach(function(s){
+      s.style.removeProperty('margin-left'); s.style.removeProperty('margin-right');
+      var r = s.getBoundingClientRect();
+      if (r.right > cadre.right - 4) s.style.marginLeft = -(r.right - (cadre.right - 4)) + 'px';
+      else if (r.left < cadre.left + 4) s.style.marginLeft = ((cadre.left + 4) - r.left) + 'px';
+    });
+  }
+  requestAnimationFrame(borner);
+  window.addEventListener('resize', borner);
+
+
+  /* l'ordre d'apparition : la lumière balaie la plaque, du nord-ouest au sud-est,
+     et finit sur le siège. Une seule fois. */
+  var ordre = PTS.map(function(q, j){
+    return { j:j, d: Math.sqrt(Math.pow(q.x - W*.28, 2) + Math.pow(q.y - H*.16, 2)) };
+  }).sort(function(a, b){ return a.d - b.d; });
+  ordre.forEach(function(r, rang){
+    var d = (0.30 + rang * 0.115).toFixed(3) + 's';
+    groupes[r.j].style.setProperty('--dl', d);
+    etis[r.j].style.setProperty('--dl', (0.44 + rang * 0.115).toFixed(3) + 's');
+  });
+  fiche.style.setProperty('--dl', (0.44 + ordre.length * 0.115 + 0.15).toFixed(3) + 's');
+
+  if (plaque.classList.contains('vue')) armer();
+}
+
+/* ── la fiche ──────────────────────────────────────────────────────────────── */
+function ecrire(t, s){
+  if (ficheT.textContent === t) return;
+  plaque.classList.add('change');
+  clearTimeout(tChange);
+  tChange = setTimeout(function(){
+    ficheT.textContent = t; ficheS.textContent = s;
+    plaque.classList.remove('change');
+  }, 200);
+}
+function pointer(i){
+  if (i === designe) return;
+  designe = i;
+  groupes.forEach(function(g, j){ g.classList.toggle('on', j === i); });
+  etis.forEach(function(e, j){ e.classList.toggle('on', j === i); });
+  lignes.forEach(function(l, j){ l.classList.toggle('on', j === i); });
+  plaque.classList.toggle('designe', i >= 0);
+  if (i >= 0) ecrire(LIEUX[i].nom, LIEUX[i].lieu);
+  else        ecrire(DEFAUT[0], DEFAUT[1]);
+}
+
+/* ── désigner à la souris et au doigt : le plus proche, points et noms ─────── */
+function plusProche(cx, cy){
+  var r = plaque.getBoundingClientRect();
+  if (!r.width) return -1;
+  var e = r.width / plan.W;                       /* échelle écran ↔ repère */
+  var best = -1, bd = 1e9, i, d;
+  for (i=0;i<PTS.length;i++){
+    d = Math.hypot(r.left + PTS[i].x*e - cx, r.top + PTS[i].y*e - cy);
+    if (d < bd){ bd = d; best = i; }
+  }
+  for (i=0;i<etis.length;i++){
+    var b = etis[i].getBoundingClientRect();
+    var dx = cx < b.left ? b.left - cx : (cx > b.right ? cx - b.right : 0);
+    var dy = cy < b.top  ? b.top  - cy : (cy > b.bottom ? cy - b.bottom : 0);
+    d = Math.hypot(dx, dy) * 0.92;                /* le nom attire un peu plus */
+    if (d < bd){ bd = d; best = i; }
+  }
+  return bd <= Math.max(34, r.width * 0.085) ? best : -1;
+}
+function viser(ev){ pointer(plusProche(ev.clientX, ev.clientY)); }
+
+plaque.addEventListener('pointermove', viser);
+plaque.addEventListener('pointerdown', viser);
+plaque.addEventListener('pointerleave', function(ev){
+  if (ev.pointerType === 'mouse') pointer(-1);
+});
+
+/* l'index : la vraie cible tactile, et le chemin au clavier */
+lignes.forEach(function(l){
+  var i = +l.getAttribute('data-i');
+  l.setAttribute('role', 'button');
+  l.setAttribute('tabindex', '0');
+  l.addEventListener('pointerenter', function(){ pointer(i); });
+  l.addEventListener('pointerdown',  function(){ pointer(i); });
+  l.addEventListener('focus',        function(){ pointer(i); });
+  l.addEventListener('blur',         function(){ if (designe === i) pointer(-1); });
+  l.addEventListener('keydown', function(ev){
+    if (ev.key === 'Enter' || ev.key === ' '){ ev.preventDefault(); pointer(i); }
+  });
+});
+document.getElementById('index').addEventListener('pointerleave', function(ev){
+  if (ev.pointerType === 'mouse') pointer(-1);
+});
+
+/* ── l'apparition, une seule fois, et rien qui tourne hors écran ───────────── */
+function armer(){
+  clearTimeout(tPret);
+  plaque.classList.remove('fige');
+  plaque.classList.add('vue');
+  var n = LIEUX.length;
+  tPret = setTimeout(function(){ plaque.classList.add('pret'); }, (0.44 + n*0.115 + 1.3) * 1000);
+}
+if ('IntersectionObserver' in window){
+  var io = new IntersectionObserver(function(entrees){
+    entrees.forEach(function(e){
+      if (e.isIntersecting) armer();
+      else { clearTimeout(tPret); plaque.classList.add('fige', 'pret'); }
+    });
+  }, {threshold:.12});
+  io.observe(plaque);
+} else { armer(); plaque.classList.add('pret'); }
+
+/* ── construction, et reconstruction seulement si la mise en page change ───── */
+batir();
+var tRes = 0;
+window.addEventListener('resize', function(){
+  clearTimeout(tRes);
+  tRes = setTimeout(function(){ designe = -1; batir(); }, 180);
+});
+})();
+</script>
+</body>
+</html>
