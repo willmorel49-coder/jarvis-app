@@ -346,61 +346,106 @@ var LIEUX = [
       if (part){ c.addColorStop(0,'#EAF2FF'); c.addColorStop(1,'#7FA8F0'); }
       else     { c.addColorStop(0,'#FFF8EC'); c.addColorStop(1,'#FFA332'); }
       ctx.fillStyle=c; ctx.beginPath(); ctx.arc(p.x,p.y,r0,0,6.2832); ctx.fill();
-      etiquette(i, vif);
     }
   }
-  function etiquette(i, vif){
-    if (petit && !vif) return;
+  /* ── la plaque d'établissement ────────────────────────────────────────────
+     Chaque maison porte une plaque, dans le langage du site : la pilule, son filet
+     d'un pixel, l'orange en accent et les chiffres tabulaires. Le siège porte la
+     plaque pleine, le partenaire une plaque bleue sans numéro. Un pied fin relie
+     la plaque à l'emplacement exact, qui reste marqué par son anneau.
+     Les plaques sont d'abord toutes calculées, puis écartées si elles se touchent,
+     et seulement ensuite dessinées : à toute largeur, aucune n'en recouvre une autre. */
+  function pilule(x,y,w,h,r){
+    if (ctx.roundRect){ ctx.beginPath(); ctx.roundRect(x,y,w,h,r); return; }
+    ctx.beginPath();
+    ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.arcTo(x+w,y,x+w,y+r,r);
+    ctx.lineTo(x+w,y+h-r); ctx.arcTo(x+w,y+h,x+w-r,y+h,r);
+    ctx.lineTo(x+r,y+h); ctx.arcTo(x,y+h,x,y+h-r,r);
+    ctx.lineTo(x,y+r); ctx.arcTo(x,y,x+r,y,r); ctx.closePath();
+  }
+  function geometrie(i, vif){
     var o=LIEUX[i], p=PTS[i];
-    ctx.font=(vif?'500 ':'400 ')+(petit?13:14)+'px Inter, ui-sans-serif, system-ui, sans-serif';
-    ctx.textBaseline='middle';
-    ctx.globalAlpha = vif?1:0.86;
-    ctx.fillStyle = vif?'#FFFFFF':'rgba(240,246,255,.90)';
-    var lx = p.x + o.ax*15, ly = p.y + o.ay*13 + (o.oy||0);
-    var num = o.part ? '' : o.c + '  ';        /* 01 → 09 : on compte les maisons à l'œil */
-    var lNum = num ? ctx.measureText(num).width : 0;
-    var larg = ctx.measureText(o.eti).width + lNum, marge=8, sens=o.ax;
-    if (sens>0 && lx+larg > L-marge){ if (p.x-15-larg >= marge){ sens=-1; lx=p.x-15; } else lx=Math.max(marge, L-marge-larg); }
-    else if (sens<0 && lx-larg < marge){ if (p.x+15+larg <= L-marge){ sens=1; lx=p.x+15; } else lx=Math.min(L-marge, marge+larg); }
-    ctx.textAlign = sens>0?'left':'right';
-    ctx.strokeStyle = o.part?'rgba(150,190,255,.40)':'rgba(255,190,120,.45)';
-    ctx.lineWidth=1; ctx.beginPath();
-    ctx.moveTo(p.x+sens*7, p.y+o.ay*4); ctx.lineTo(lx-sens*4, ly); ctx.stroke();
-    if (num){
-      var x0 = sens>0 ? lx : lx - larg;               /* le numéro d'abord, puis le nom */
-      ctx.textAlign='left';
-      ctx.fillStyle = vif?'#FFD79A':'rgba(255,196,107,.94)';
-      ctx.fillText(num, x0, ly);
-      ctx.fillStyle = vif?'#FFFFFF':'rgba(240,246,255,.90)';
-      ctx.fillText(o.eti, x0+lNum, ly);
-    } else {
-      ctx.fillText(o.eti, lx, ly);
+    var fs = petit?12:13, pad = petit?7:9, h = petit?22:26;
+    var num = o.part ? '' : o.c;
+    ctx.font = '600 ' + fs + 'px Inter, ui-sans-serif, system-ui, sans-serif';
+    var wNum = num ? ctx.measureText(num).width : 0;
+    ctx.font = (vif?'500 ':'400 ') + fs + 'px Inter, ui-sans-serif, system-ui, sans-serif';
+    var wNom = ctx.measureText(o.eti).width;
+    var ecart = num ? (petit?6:8) : 0, W = pad + wNum + ecart + wNom + pad, marge = 8;
+    var sens = o.ax, x = sens>0 ? p.x + 15 : p.x - 15 - W;
+    var y = p.y + o.ay*13 + (o.oy||0) - h/2;
+    if (x + W > L - marge){ if (p.x - 15 - W >= marge){ sens=-1; x = p.x - 15 - W; } else x = L - marge - W; }
+    if (x < marge){ if (p.x + 15 + W <= L - marge){ sens=1; x = p.x + 15; } else x = marge; }
+    y = Math.min(Math.max(marge, y), H - marge - h);
+    return {i:i, o:o, p:p, vif:vif, x:x, y:y, W:W, h:h, fs:fs, pad:pad,
+            num:num, wNum:wNum, ecart:ecart, sens:sens};
+  }
+  function ecarter(G){
+    var marge = 8, jeu = 3;
+    for (var tour=0; tour<6; tour++){
+      var bouge = false;
+      for (var a=0;a<G.length;a++) for (var b=a+1;b<G.length;b++){
+        var A=G[a], B=G[b];
+        if (A.x < B.x+B.W+jeu && B.x < A.x+A.W+jeu &&
+            A.y < B.y+B.h+jeu && B.y < A.y+A.h+jeu){
+          var dep = ((A.y<B.y ? A.y+A.h - B.y : B.y+B.h - A.y) + jeu) / 2;
+          var haut = A.y < B.y ? A : B, bas = A.y < B.y ? B : A;
+          if (haut.o.siege){ bas.y += dep*2; }            /* le siège ne bouge pas */
+          else if (bas.o.siege){ haut.y -= dep*2; }
+          else { haut.y -= dep; bas.y += dep; }
+          haut.y = Math.max(marge, haut.y);
+          bas.y  = Math.min(H - marge - bas.h, bas.y);
+          bouge = true;
+        }
+      }
+      if (!bouge) break;
     }
-    ctx.globalAlpha=1;
+    return G;
+  }
+  function tracerPlaque(g){
+    var o=g.o, p=g.p, siege=!!o.siege, part=!!o.part, r=g.h/2;
+    ctx.strokeStyle = part ? 'rgba(150,190,255,.42)' : 'rgba(255,190,120,.48)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(p.x + (g.sens>0?7:-7), p.y + o.ay*4);
+    ctx.lineTo(g.sens>0 ? g.x : g.x + g.W, g.y + g.h/2);
+    ctx.stroke();
+    pilule(g.x, g.y, g.W, g.h, r);
+    if (siege){
+      var gr = ctx.createLinearGradient(g.x,g.y,g.x,g.y+g.h);
+      gr.addColorStop(0,'#FFB23C'); gr.addColorStop(1,'#F39A1B');
+      ctx.fillStyle = gr; ctx.fill();
+    } else {
+      ctx.fillStyle = g.vif ? 'rgba(12,20,36,.94)' : 'rgba(10,17,31,.86)';
+      ctx.fill();
+      ctx.strokeStyle = part ? 'rgba(150,190,255,.52)'
+                             : (g.vif ? 'rgba(255,206,140,.85)' : 'rgba(255,196,107,.46)');
+      ctx.lineWidth = 1; pilule(g.x+.5, g.y+.5, g.W-1, g.h-1, r-.5); ctx.stroke();
+    }
+    ctx.textBaseline='middle'; ctx.textAlign='left';
+    var cx = g.x + g.pad, cy = g.y + g.h/2 + 0.5;
+    if (g.num){
+      ctx.font = '600 ' + g.fs + 'px Inter, ui-sans-serif, system-ui, sans-serif';
+      ctx.fillStyle = siege ? 'rgba(28,18,4,.72)' : 'rgba(255,196,107,.96)';
+      ctx.fillText(g.num, cx, cy);
+      cx += g.wNum + g.ecart;
+    }
+    ctx.font = (g.vif?'500 ':'400 ') + g.fs + 'px Inter, ui-sans-serif, system-ui, sans-serif';
+    ctx.fillStyle = siege ? '#1C1204' : (part ? 'rgba(214,230,255,.94)' : 'rgba(244,248,255,.95)');
+    ctx.fillText(o.eti, cx, cy);
+  }
+  function plaques(){
+    var G=[];
+    for (var i=0;i<LIEUX.length;i++){
+      var vif = (i===vise);
+      if (petit && !vif) continue;
+      G.push(geometrie(i, vif));
+    }
+    ecarter(G);
+    for (var k=0;k<G.length;k++) tracerPlaque(G[k]);
   }
 
-  function onde(tps){
-    if (DOUX || !CHEMINS) return;
-    ctx.save();
-    ctx.translate(OX,OY); ctx.scale(S/100,S/100);
-    var p = new Path2D(); CHEMINS.forEach(function(c){ p.addPath(c); });
-    ctx.clip(p);
-    ctx.setTransform(dpr,0,0,dpr,0,0);
-    var cyc = 9000, t = (tps % cyc) / cyc;                /* une vague toutes les neuf secondes */
-    for (var i=0;i<LIEUX.length;i++){
-      if (LIEUX[i].part) continue;
-      var pt = PTS[i], r = t * S * 0.62;
-      var a2 = Math.sin(Math.PI*t) * 0.16;
-      if (a2 <= 0.002 || r <= 0) continue;
-      var g = ctx.createRadialGradient(pt.x,pt.y,Math.max(0,r-S*0.05),pt.x,pt.y,r);
-      g.addColorStop(0,'rgba(255,190,120,0)');
-      g.addColorStop(.72,'rgba(255,205,150,'+(a2*0.5)+')');
-      g.addColorStop(1,'rgba(255,190,120,0)');
-      ctx.fillStyle=g; ctx.beginPath(); ctx.arc(pt.x,pt.y,r,0,6.2832); ctx.fill();
-    }
-    ctx.restore();
-  }
-  function dessiner(tps){ sol(); pays(tps); reseauRoutier(tps); liens(); points(tps); }
+  function dessiner(tps){ sol(); pays(tps); reseauRoutier(tps); liens(); points(tps); plaques(); }
   function image(){ dessiner(performance.now()-t0); if (vivant && !DOUX) boucle=requestAnimationFrame(image); }
   function partir(){ if (vivant||DOUX) { if(DOUX) dessiner(0); return; } vivant=true; boucle=requestAnimationFrame(image); }
   function stopper(){ vivant=false; if(boucle) cancelAnimationFrame(boucle); boucle=null; }
