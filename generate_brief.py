@@ -3,14 +3,18 @@
 """
 « L'édition du matin » — le rédacteur en chef de JARVIS.
 
-Ne va chercher AUCUNE source lui-même : il lit ce que les autres robots ont déjà
-déposé dans crm/v2/ chaque nuit, et il en fait UNE édition datée, hiérarchisée,
-archivée. C'est la couche qui manquait : la donnée existait, personne ne la
-rassemblait.
+Il lit d'abord ce que les autres robots ont déjà déposé dans crm/v2/ pendant la
+nuit — c'est la couche qui manquait : la donnée existait, personne ne la
+rassemblait — puis il va chercher six flux gratuits ILLUSTRÉS, et il ouvre chaque
+article retenu pour en tirer son image et vérifier qu'il est lisible en entier.
 
 Ce qu'il fait, dans l'ordre :
   1. COLLECTE     — 11 fichiers déjà produits (presse, ANSM, JO, CEPS, HAS, EMA,
-                    épidémio, urgences, rappels, veille concurrents).
+                    épidémio, urgences, rappels, veille concurrents) + 6 flux
+                    gratuits illustrés lus directement.
+  1 bis. LIT LES ARTICLES — ouvre les pages retenues : illustration déclarée par
+                    le site (og:image), vrai chapeau, temps de lecture, et surtout
+                    « est-ce lisible en entier ? ». Les murs payants sortent.
   2. REGROUPE     — le même sujet raconté par USPO + FSPF + Google News devient
                     UNE entrée qui dit « 3 sources ».
   3. CLASSE       — un thème métier par entrée (marge, remboursement, générique,
@@ -29,7 +33,9 @@ Zéro clé, zéro dépendance (stdlib), zéro coût. Tourne dans GitHub Actions.
    publique. Aucun prix Intégral, aucune remise, aucun abandon de marge, aucune
    donnée client. Le croisement avec le catalogue reste côté application.
 """
-import json, os, re, sys, unicodedata
+import json, os, re, sys, unicodedata, html, urllib.request
+import xml.etree.ElementTree as ET
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone, date, timedelta
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -40,6 +46,131 @@ ARCH = os.path.join(V2, 'brief-archive.json')
 TODAY = date.today()
 ARCHIVE_DAYS = 120        # ce que pharmalpha appelle « les archives »
 FIL_DAYS = 21             # profondeur du fil complet (3 semaines glissantes)
+N_ENRICHI = 54            # articles dont on va vraiment lire la page (image + chapeau)
+
+UA = ('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 '
+      '(KHTML, like Gecko) Version/17.4 Safari/605.1.15')
+
+# ── Sources GRATUITES et ILLUSTRÉES, ajoutées le 01/09/2026 ────────────────────
+# Will : « que le contenu soit pris de plusieurs sources et notamment des gratuites
+# qu'on puisse lire en entier ». Les sources cœur de métier (USPO, FSPF, Leem,
+# Le Pharmacien de France, ANSM) sont gratuites et complètes mais n'ont AUCUNE image
+# dans leur flux. Celles-ci en ont une sur chaque article — vérifié le 01/09/2026,
+# 3 articles par source, image ET absence de mur mesurées une par une.
+# Elles sont grand public : filtre de pertinence STRICT, sinon le magazine se remplit
+# de « quoi manger pour protéger son cerveau ».
+FLUX_ILLUSTRES = [
+    ('Sciences et Avenir', 'https://www.sciencesetavenir.fr/sante/rss.xml'),
+    ('20 Minutes santé',   'https://www.20minutes.fr/feeds/rss-sante.xml'),
+    ('Futura Santé',       'https://www.futura-sciences.com/rss/sante/actualites.xml'),
+    ('Santé Magazine',     'https://www.santemagazine.fr/rss'),
+    ('Réseau CHU',         'https://www.reseau-chu.org/feed/'),
+    ('France Info santé',  'https://www.francetvinfo.fr/sante.rss'),
+]
+# Ce qui intéresse VRAIMENT un grossiste-répartiteur dans de la presse grand public.
+REL_STRICT = re.compile(
+    r'pharmaci|officin|m[ée]dicament|g[ée]n[ée]riqu|biosimil|rupture|p[ée]nurie|'
+    r'rembours|d[ée]rembours|ordonnance|prescri|vaccin|automédication|'
+    r'\bansm\b|\bceps\b|\bhas\b|assurance maladie|s[ée]curit[ée] sociale|'
+    r'laboratoire pharma|industrie pharma|comptoir|substitu|tiers payant', re.I)
+# ⚠️ « médicament » suffit à faire entrer du magazine-santé : « la vérité sur le
+# cholestérol », « ce probiotique qui… ». Registre bien-être et putaclic = dehors.
+HORS_SUJET = re.compile(
+    r'r[ée]gime|perdre du poids|minceur|astuce|recette|aliment|superaliment|'
+    r'probiotique|complément alimentaire|bien-[êe]tre|sommeil r[ée]parateur|'
+    r'vous ne (devinerez|saviez)|voici pourquoi|la v[ée]rit[ée] sur|'
+    r'ce que r[ée]v[èe]le|faut-il vraiment|horoscope|beaut[ée]|peau|cheveux', re.I)
+MAX_GRAND_PUBLIC = 10   # la presse générale illustre, elle ne fait pas le journal
+
+# ── Sources dont le mur payant a été MESURÉ le 01/09/2026 ─────────────────────
+# 3 articles ouverts par source. On les écarte parce qu'un lien qu'on ne peut pas
+# lire ne sert à rien (Will). ⚠️ Nécessaire parce que la veille concurrents passe
+# par Google News, dont les liens sont des redirections JavaScript : impossible d'y
+# lire quoi que ce soit, donc impossible de mesurer le mur au moment de la lecture.
+# Le nom de la source est alors le seul signal fiable.
+SOURCES_MUR = [
+    'lemoniteurdespharmacies.fr', 'le moniteur des pharmacies', 'pharmacien manager',
+    'lequotidiendupharmacien.fr', 'le quotidien du pharmacien',
+    'lequotidiendumedecin.fr', 'le quotidien du m',
+    'legeneraliste.fr', 'le g\u00e9n\u00e9raliste',
+    'destinationsante.com', 'destination sant',
+    'lesechos.fr', 'les echos', 'lefigaro.fr', 'le figaro',
+    'latribune.fr', 'la tribune', 'letemps.ch', 'le temps',
+    'liberation.fr', 'lib\u00e9ration', 'mediapart',
+]
+
+
+def source_au_mur(src):
+    n = norm(src)
+    return any(norm(m) in n for m in SOURCES_MUR)
+
+
+# ── Le mur payant se MESURE sur la page, il ne se devine pas au nom du site ────
+# Calibré le 01/09/2026 sur deux cas dont la réponse était connue d'avance :
+# USPO (gratuit, 10 581 car.) et Le Moniteur (payant, « Réservé aux abonnés »).
+# ⚠️ La LONGUEUR ne prouve rien : un article FSPF complet fait 1 046 caractères.
+#    Seul un marqueur explicite condamne.
+MUR = re.compile(
+    r'r[ée]serv[ée] aux abonn[ée]s|article r[ée]serv[ée]|cet article est r[ée]serv|'
+    r'votre inscription nous permet de contr[oô]ler le contenu|'
+    r'pour (lire|poursuivre) la (suite|lecture).{0,60}(abonn|inscri|compte)', re.I)
+# Habillage : ces phrases ne sont pas de l'article, elles ne comptent pas dans sa longueur.
+HABILLAGE = re.compile(
+    r'votre inscription nous permet|r[ée]serv[ée] aux abonn|d[ée]j[aà] abonn|'
+    r'abonnez[- ]vous|cr[ée]ez? (un|votre) compte|connectez[- ]vous pour|'
+    r'acc[eè]s illimit|offre d.essai|newsletter|accepter les cookies|'
+    r'g[ée]rer mes choix|politique de confidentialit', re.I)
+
+
+def http(url, n=400000, t=12):
+    r = urllib.request.Request(url, headers={'User-Agent': UA, 'Accept': '*/*'})
+    return urllib.request.urlopen(r, timeout=t).read()[:n]
+
+
+def og_image(pg):
+    """L'illustration que le site déclare lui-même pour le partage."""
+    for rx in (r'<meta[^>]+property=["\']og:image(?::url)?["\'][^>]+content=["\']([^"\']+)',
+               r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:image["\']',
+               r'<meta[^>]+name=["\']twitter:image["\'][^>]+content=["\']([^"\']+)'):
+        m = re.search(rx, pg, re.I)
+        if m:
+            u = html.unescape(m.group(1)).strip()
+            if u.startswith('//'):
+                u = 'https:' + u
+            if u.startswith('http') and not re.search(r'logo|placeholder|default|sprite|avatar', u, re.I):
+                return u
+    return ''
+
+
+def paragraphes(pg):
+    """Les vrais paragraphes de l'article, habillage retiré."""
+    pg = re.sub(r'<(script|style|nav|header|footer|aside|form)[^>]*>.*?</\1>', ' ', pg, flags=re.S | re.I)
+    out = []
+    for p in re.findall(r'<p[^>]*>(.*?)</p>', pg, re.S | re.I):
+        t = re.sub(r'\s+', ' ', html.unescape(re.sub(r'<[^>]+>', ' ', p))).strip()
+        if len(t) > 80 and not HABILLAGE.search(t):
+            out.append(t)
+    return out
+
+
+def lire_article(url):
+    """Va lire la page. Rend l'image, le chapeau, la longueur et le verdict mur.
+    ⚠️ Un échec ne condamne RIEN : on rend verif=0 et l'article est gardé."""
+    try:
+        pg = http(url).decode('utf-8', 'ignore')
+    except Exception:
+        return {'verif': 0}
+    ps = paragraphes(pg)
+    n = sum(len(p) for p in ps)
+    return {
+        'verif': 1,
+        'img': og_image(pg),
+        'car': n,
+        'mn': max(1, int(round(n / 1400.0))),      # ~250 mots/min
+        'chapeau': phrase(' '.join(ps[:2]), 300) if ps else '',
+        'mur': 1 if MUR.search(pg) else 0,
+    }
+
 
 # ───────────────────────────── petites fonctions ─────────────────────────────
 
@@ -77,6 +208,12 @@ def iso_day(s):
     m = re.match(r'^(\d{2})/(\d{2})/(\d{4})', s)
     if m:
         return '%s-%s-%s' % (m.group(3), m.group(2), m.group(1))
+    # RFC-822, le format de tous les flux RSS : « Tue, 01 Sep 2026 14:31:32 +0200 »
+    m = re.search(r'(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*\s+(\d{4})', s, re.I)
+    if m:
+        MOIS = {'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'may': 5, 'jun': 6,
+                'jul': 7, 'aug': 8, 'sep': 9, 'oct': 10, 'nov': 11, 'dec': 12}
+        return '%s-%02d-%02d' % (m.group(3), MOIS[m.group(2)[:3].lower()], int(m.group(1)))
     return ''
 
 
@@ -381,6 +518,42 @@ def collecte():
         lus.append('odisse.json')
         ctx['odisse'] = d.get('pathologies', [])
 
+    # ── Flux gratuits et ILLUSTRÉS (lus directement ici) ──────────────────────
+    # Ils apportent ce que les sources syndicales n'ont pas : une image par article.
+    # Presse grand public → filtre STRICT, on ne garde que ce qui touche le médicament,
+    # l'officine ou le remboursement.
+    n_ill = 0
+    for source, url in FLUX_ILLUSTRES:
+        try:
+            raw = http(url, 300000)
+            i = raw.find(b'<?xml')
+            if i < 0:
+                i = max(raw.find(b'<rss'), raw.find(b'<feed'))
+            root = ET.fromstring(raw[i:] if i > 0 else raw)
+            NS = {'a': 'http://www.w3.org/2005/Atom'}
+            for it in (root.findall('.//item') or root.findall('.//a:entry', NS))[:25]:
+                g = lambda t: (it.find(t).text if it.find(t) is not None else '')
+                titre = clean(g('title') or g('{http://www.w3.org/2005/Atom}title'))
+                desc = clean(g('description') or g('{http://purl.org/rss/1.0/modules/content/}encoded'))
+                if not REL_STRICT.search(titre + ' ' + desc):
+                    continue
+                if HORS_SUJET.search(titre):
+                    continue
+                if n_ill >= MAX_GRAND_PUBLIC:
+                    break
+                lien = (g('link') or '').strip()
+                if not lien:
+                    a = it.find('a:link', NS)
+                    lien = a.get('href') if a is not None else ''
+                add(titre, lien, source, g('pubDate') or g('published') or g('a:updated'), desc)
+                n_ill += 1
+            lus.append(source)
+        except Exception as e:
+            sys.stderr.write('  (flux illustré KO) %s : %s\n' % (source, str(e)[:70]))
+    if n_ill:
+        print('   %d articles illustrés retenus sur les %d flux grand public'
+              % (n_ill, len(FLUX_ILLUSTRES)))
+
     return E, ctx, lus
 
 
@@ -512,6 +685,11 @@ def note(c):
             pts += p
             why.append(('échéance', p))
 
+    if c.get('verif') and not c.get('mur'):
+        p = 6 + (6 if c.get('img') else 0) + (4 if (c.get('car') or 0) >= 2500 else 0)
+        pts += p
+        why.append(('lisible en entier', p))
+
     c['score'] = pts
     c['why'] = why
     return pts
@@ -560,7 +738,11 @@ def redige(c):
         faits.append(m.group(0).strip())
     return {
         't': c['t'],
-        'r': c.get('r') or '',
+        # le chapeau LU sur la page vaut mieux que le résumé du flux, souvent tronqué
+        'r': c.get('chapeau') or c.get('r') or '',
+        'img': c.get('img', ''),
+        'mn': c.get('mn', 0),
+        'entier': 1 if (c.get('verif') and not c.get('mur')) else 0,
         'u': c['u'],
         's': c['s'],
         'srcs': c.get('srcs', [])[:4],
@@ -699,6 +881,12 @@ def main():
         sys.stderr.write('AUCUNE entrée collectée — édition précédente conservée.\n')
         return 1
 
+    avant = len(entrees)
+    entrees = [e for e in entrees if not source_au_mur(e['s'])]
+    if len(entrees) < avant:
+        print('   %d entrées écartées : source derrière un mur payant (mesuré)'
+              % (avant - len(entrees)))
+
     clusters = regroupe(entrees)
     print('   %d sujets après regroupement' % len(clusters))
     for c in clusters:
@@ -707,6 +895,51 @@ def main():
     # Le fil complet : fenêtre glissante, les plus importants d'abord
     fil = [c for c in clusters if days_ago(c['d']) <= FIL_DAYS]
     fil.sort(key=lambda c: (-c['score'], days_ago(c['d'])))
+
+    # ── ON VA LIRE LES ARTICLES ────────────────────────────────────────────────
+    # Jusqu'ici on ne connaissait d'un article que ce que son flux voulait bien
+    # dire. On ouvre maintenant la page elle-même : l'illustration que le site
+    # déclare, le vrai chapeau, le temps de lecture — et surtout la réponse à la
+    # question de Will : « est-ce qu'on peut le lire en entier ? »
+    a_lire = [c for c in fil[:N_ENRICHI]
+              if c.get('u', '').startswith('http') and 'news.google.com' not in c['u']]
+    if a_lire:
+        with ThreadPoolExecutor(max_workers=8) as ex:
+            for c, r in zip(a_lire, ex.map(lambda x: lire_article(x['u']), a_lire)):
+                c.update(r)
+        # ⚠️ Beaucoup de sites déclarent leur LOGO en og:image faute d'illustration
+        # (USPO le fait sur tous ses articles). Résultat à l'écran : le même visuel
+        # répété six fois, ce qui fait plus pauvre que pas d'image du tout.
+        # Règle : une image vue sur 3 articles ou plus n'illustre rien, c'est un logo.
+        vues = {}
+        for c in a_lire:
+            if c.get('img'):
+                vues[c['img']] = vues.get(c['img'], 0) + 1
+        logos = set(u for u, n in vues.items() if n >= 3)
+        if logos:
+            n_l = 0
+            for c in a_lire:
+                if c.get('img') in logos:
+                    c['img'] = ''
+                    n_l += 1
+            print('   %d images écartées : le même visuel sur %d articles = un logo, pas une illustration'
+                  % (n_l, max(vues[u] for u in logos)))
+
+        lus_ok = [c for c in a_lire if c.get('verif')]
+        avec_img = [c for c in lus_ok if c.get('img')]
+        murs = [c for c in lus_ok if c.get('mur')]
+        print('   %d articles ouverts · %d illustrés · %d derrière un mur payant'
+              % (len(lus_ok), len(avec_img), len(murs)))
+        # Un mur PROUVÉ sort du magazine : un lien qu'on ne peut pas lire ne sert
+        # à rien (Will, 01/09/2026). ⚠️ Une lecture qui ÉCHOUE ne condamne pas :
+        # verif=0 reste dans le fil, simplement sans image.
+        fil = [c for c in fil if not c.get('mur')]
+        # ⚠️ On renote APRÈS avoir lu : la prime « lisible en entier » n'existe
+        # qu'une fois la page ouverte. Sans ce second passage, elle ne comptait
+        # jamais — les notes étaient déjà figées.
+        for c in fil:
+            note(c)
+        fil.sort(key=lambda c: (-c['score'], days_ago(c['d'])))
 
     retenus = selection(fil or clusters, 5)
     cinq = [redige(c) for c in retenus]
@@ -729,10 +962,11 @@ def main():
         'radar': radar(ctx),
         'fil': [{
             't': c['t'], 'u': c['u'], 's': c['s'], 'd': c['d'],
-            'r': (c.get('r') or '')[:160], 'theme': c['theme'],
+            'r': (c.get('chapeau') or c.get('r') or '')[:200], 'theme': c['theme'],
             'theme_l': THEME_LABEL.get(c['theme'], 'Autre'),
             'n_src': c.get('n_src', 1), 'srcs': c.get('srcs', [])[:3],
             'neuf': 1 if days_ago(c['d']) <= 1 else 0,
+            'img': c.get('img', ''), 'mn': c.get('mn', 0), 'entier': 1 if (c.get('verif') and not c.get('mur')) else 0,
         } for c in fil[:60]],
         'themes_du_jour': themes_du_jour,
         'themes_l': THEME_LABEL,

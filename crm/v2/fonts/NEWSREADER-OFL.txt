@@ -1,0 +1,7 @@
+Newsreader — SIL Open Font License 1.1
+Auteur : Production Type (https://github.com/productiontype/Newsreader)
+Licence : SIL OFL 1.1 — utilisation commerciale et intégration au produit autorisées,
+la police ne peut pas être vendue seule. Texte complet : https://openfontlicense.org
+
+Employée ici UNIQUEMENT pour les titres d'articles de l'écran « Infos du matin »,
+qui a un registre éditorial (magazine). Le reste du CRM reste en Inter.

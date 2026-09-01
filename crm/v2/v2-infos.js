@@ -81,7 +81,7 @@
   V2.briefSearch = function (el) {
     QUERY = el.value || '';
     var q = norm(QUERY.trim());
-    var rows = document.querySelectorAll('#brief-fil .inf-row');
+    var rows = document.querySelectorAll('#brief-fil .mag-s');
     var vus = 0;
     for (var i = 0; i < rows.length; i++) {
       var ok = !q || norm(rows[i].getAttribute('data-q') || '').indexOf(q) >= 0;
@@ -259,19 +259,31 @@
       var html = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
         '<div class="v2-wrap narrow inf2">';
 
-      /* ──────────── HERO ──────────── */
-      html += '<div class="inf-hero">' +
-        '<div class="inf-eyebrow"><span class="live"><i></i>Édition du jour</span> · ' + esc(topDate()) +
-          (nbNew ? ' · <span class="inf-new">+' + nbNew + ' nouveau' + (nbNew > 1 ? 'x' : '') + ' depuis ta dernière visite</span>' : '') + '</div>' +
-        '<h1>L\'édition du matin</h1>' +
-        '<p class="inf-lede">' + esc(BRIEF.compte.fichiers) + ' sources officielles relues, ' +
-          esc(BRIEF.compte.entrees) + ' informations triées, ' + esc(cinq.length) + ' retenues. ' +
-          'Ce qu\'un grossiste-répartiteur doit savoir avant sa première visite.</p>' +
-        '<div class="inf-hero-act">' +
+      /* ──────────── LE BANDEAU DE TÊTE (masthead) ────────────
+         Un journal se reconnaît à sa tête. Filet fin, titre en sérif, date et
+         chiffres du jour en petites capitales — et derrière, une vraie source de
+         lumière (dégradé radial), parce que le clair ne pardonne pas la platitude. */
+      var nIll = fil.filter(function (i) { return i.img; }).length;
+      html += '<header class="mag-head">' +
+        '<div class="mag-glow" aria-hidden="true"></div>' +
+        '<div class="mag-rule"></div>' +
+        '<div class="mag-kicker"><span class="live"><i></i>Édition du jour</span><span class="sep">·</span>' + esc(topDate()) +
+          (nbNew ? '<span class="sep">·</span><span class="inf-new">' + nbNew + ' nouveau' + (nbNew > 1 ? 'x' : '') + '</span>' : '') + '</div>' +
+        '<h1 class="mag-title">L\'édition du matin</h1>' +
+        '<p class="mag-sub">Le journal du comptoir et de la répartition — écrit chaque matin à partir de ' +
+          esc(BRIEF.compte.fichiers) + ' sources, uniquement des articles gratuits qu\'on peut lire en entier.</p>' +
+        '<div class="mag-stats">' +
+          '<span><b>' + esc(BRIEF.compte.entrees) + '</b> informations lues</span>' +
+          '<span><b>' + esc(BRIEF.compte.sujets) + '</b> sujets</span>' +
+          '<span><b>' + esc(cinq.length + fil.length) + '</b> articles retenus</span>' +
+          (nIll ? '<span><b>' + nIll + '</b> illustrés</span>' : '') +
+        '</div>' +
+        '<div class="mag-act">' +
           '<button class="inf-copy" data-lbl="Copier le brief" onclick="V2.infosCopyBrief(this)">' + COPY_SVG + 'Copier le brief</button>' +
           (ARCHIVE && ARCHIVE.n > 1 ? '<button class="inf-ghost" onclick="V2.briefArchive()">' + ICO('cal', 14, 2) + 'Les matins d\'avant</button>' : '') +
         '</div>' +
-      '</div>';
+        '<div class="mag-rule thin"></div>' +
+      '</header>';
 
       /* ──────────── LA UNE ──────────── */
       if (une) html += carteUne(une);
@@ -313,10 +325,8 @@
       /* ──────────── LES AUTRES QUI COMPTENT ──────────── */
       if (autres.length) {
         html += '<section class="inf-sec">' +
-          '<div class="inf-sec-head"><span class="inf-sec-ic">' + ICO('list', 18, 2) + '</span>' +
-            '<span class="inf-sec-meta"><span class="inf-sec-t">Et aussi, ce matin</span>' +
-            '<span class="inf-sec-s">Les ' + autres.length + ' autres sujets qui pèsent, classés par importance pour Intégral.</span></span></div>' +
-          '<div class="brf-list">' + autres.map(function (c, i) { return carteRang(c, i + 2); }).join('') + '</div>' +
+          rubrique('Et aussi, ce matin', 'Les ' + autres.length + ' autres sujets qui pèsent, classés par importance pour Intégral.') +
+          '<div class="mag-grid">' + autres.map(function (c, i) { return carteRang(c, i + 2); }).join('') + '</div>' +
         '</section>';
       }
 
@@ -324,9 +334,7 @@
       var R = BRIEF.radar || [];
       if (R.length) {
         html += '<section class="inf-sec">' +
-          '<div class="inf-sec-head"><span class="inf-sec-ic">' + ICO('opp', 18, 2) + '</span>' +
-            '<span class="inf-sec-meta"><span class="inf-sec-t">Le radar du jour</span>' +
-            '<span class="inf-sec-s">Des chiffres mesurés ce matin sur les bases officielles — pas des estimations.</span></span></div>' +
+          rubrique('Le radar du jour', 'Des chiffres mesurés ce matin sur les bases officielles — pas des estimations.') +
           '<div class="brf-radar">' + R.map(function (r) {
             return '<div class="brf-r a-' + esc(r.ton || 'blue') + '">' +
               '<div class="brf-r-v"><b data-count="' + esc(r.v) + '">' + esc(r.v) + '</b>' + (r.unite ? '<i>' + esc(r.unite) + '</i>' : '') + '</div>' +
@@ -436,23 +444,28 @@
 
         var rows2 = visibles.map(function (i) {
           var q = norm((i.t || '') + ' ' + (i.r || '') + ' ' + (i.s || '') + ' ' + ((BRIEF.themes_l && BRIEF.themes_l[i.theme]) || ''));
-          return '<a class="inf-row" data-q="' + esc(q) + '"' + (i.u ? ' href="' + esc(i.u) + '" target="_blank" rel="noopener"' : '') + '>' +
-            '<span class="row-ic a-' + (THEME_ACC[i.theme] || 'muted') + '">' + ICO(THEME_ICO[i.theme] || 'list', 15, 2) + '</span>' +
-            '<span class="row-body"><b>' + esc(i.t) + (i.neuf ? '<em class="brf-neuf">nouveau</em>' : '') + '</b>' +
-              '<span>' + esc(i.s) + (i.n_src > 1 ? ' <b class="brf-nsrc">+' + (i.n_src - 1) + ' source' + (i.n_src > 2 ? 's' : '') + '</b>' : '') +
-              ' · ' + esc(ilYA(i.d)) + '</span></span>' +
-            (i.u ? '<span class="row-ext">' + ICO('chev', 15, 2) + '</span>' : '') + '</a>';
+          return '<article class="mag-s a-' + (THEME_ACC[i.theme] || 'muted') + '" data-q="' + esc(q) + '">' +
+            '<span class="mag-s-cov">' + couverture(i, 'r-4x3') + '</span>' +
+            '<div class="mag-s-b">' +
+              '<div class="mag-s-top">' + chipTheme(i) +
+                (i.neuf ? '<span class="brf-neuf">nouveau</span>' : '') + '</div>' +
+              '<h4>' + (i.u ? '<a class="mag-link" href="' + esc(i.u) + '" target="_blank" rel="noopener">' + esc(i.t) + '</a>' : esc(i.t)) + '</h4>' +
+              (i.r ? '<p>' + esc(i.r) + '</p>' : '') +
+              '<div class="mag-s-foot"><span>' + esc(i.s) +
+                (i.n_src > 1 ? ' <b class="brf-nsrc">+' + (i.n_src - 1) + '</b>' : '') +
+                ' · ' + esc(ilYA(i.d)) + (i.mn ? ' · ' + esc(i.mn) + ' min' : '') + '</span>' +
+                (i.entier ? '<span class="mag-libre sm">' + CHECK_SVG + 'en entier</span>' : '') + '</div>' +
+            '</div>' +
+          '</article>';
         }).join('');
 
         html += '<section class="inf-sec a-blue" id="brief-fil">' +
-          '<div class="inf-sec-head"><span class="inf-sec-ic">' + ICO('list', 18, 2) + '</span>' +
-            '<span class="inf-sec-meta"><span class="inf-sec-t">Le fil complet</span>' +
-            '<span class="inf-sec-s">Les 3 dernières semaines, doublons regroupés. <b id="brief-fil-cpt">' + visibles.length + (visibles.length > 1 ? ' sujets' : ' sujet') + '</b></span></span></div>' +
+          rubrique('Le fil complet', 'Les 3 dernières semaines, doublons regroupés — <b id="brief-fil-cpt">' + visibles.length + (visibles.length > 1 ? ' sujets' : ' sujet') + '</b>') +
           '<div class="brf-chips">' + chips + '</div>' +
           '<div class="brf-search">' + ICO('search', 16, 2) +
             '<input type="search" placeholder="Chercher dans le fil (molécule, mot-clé, source)…" oninput="V2.briefSearch(this)" value="' + esc(QUERY) + '">' +
           '</div>' +
-          '<div class="inf-list">' + rows2 + '</div>' +
+          '<div class="mag-flow">' + rows2 + '</div>' +
           '<div class="inf-allhidden" id="brief-fil-vide" style="display:none">Aucun sujet ne correspond à cette recherche.</div>' +
         '</section>';
       }
@@ -460,9 +473,7 @@
       /* ── LES MATINS D'AVANT (archive) ── */
       if (ARCH_OPEN && ARCHIVE && (ARCHIVE.jours || []).length) {
         html += '<section class="inf-sec a-violet">' +
-          '<div class="inf-sec-head"><span class="inf-sec-ic">' + ICO('cal', 18, 2) + '</span>' +
-            '<span class="inf-sec-meta"><span class="inf-sec-t">Les matins d\'avant</span>' +
-            '<span class="inf-sec-s">' + ARCHIVE.n + ' édition' + (ARCHIVE.n > 1 ? 's' : '') + ' archivée' + (ARCHIVE.n > 1 ? 's' : '') + ' — la une de chaque jour et ses cinq titres.</span></span></div>' +
+          rubrique('Les matins d\'avant', ARCHIVE.n + ' édition' + (ARCHIVE.n > 1 ? 's' : '') + ' archivée' + (ARCHIVE.n > 1 ? 's' : '') + ' — la une de chaque jour et ses cinq titres.') +
           '<div class="brf-arch">' + ARCHIVE.jours.slice(0, 30).map(function (j) {
             return '<div class="brf-day"><div class="brf-day-d">' + esc(joDateFr(j.d)) + '</div>' +
               '<div class="brf-day-l">' + (j.titres || []).map(function (t) {
@@ -496,7 +507,7 @@
       /* ── Motion (vanilla, respecte prefers-reduced-motion via l'API) ── */
       var mo = V2.motion;
       if (mo) {
-        var una = root.querySelector('.brf-une');
+        var una = root.querySelector('.mag-une');
         if (una) mo.inView(una, function (el) { mo.stagger([el], { step: 0, y: 12 }); });
         var rad = root.querySelector('.brf-radar');
         if (rad) mo.inView(rad, function (el) {
@@ -510,10 +521,12 @@
           var cs = el.querySelectorAll('[data-count]');
           for (var i = 0; i < cs.length; i++) mo.countUp(cs[i]);
         });
-        var brfl = root.querySelector('.brf-list');
-        if (brfl) mo.inView(brfl, function (el) { mo.stagger(el.querySelectorAll('.brf-c'), { step: 55, cap: 6, y: 10 }); });
+        var brfl = root.querySelector('.mag-grid');
+        if (brfl) mo.inView(brfl, function (el) { mo.stagger(el.querySelectorAll('.mag-c'), { step: 55, cap: 6, y: 10 }); });
         var oppsEl = root.querySelector('.inf-opps');
         if (oppsEl) mo.inView(oppsEl, function (el) { mo.stagger(el.querySelectorAll('.inf-opp'), { step: 50, cap: 6, y: 10 }); });
+        var flow = root.querySelector('.mag-flow');
+        if (flow) mo.inView(flow, function (el) { mo.stagger(el.querySelectorAll('.mag-s'), { step: 40, cap: 9, y: 10 }); });
         var lists = root.querySelectorAll('.inf-list');
         for (var L = 0; L < lists.length; L++) (function (listEl) {
           mo.inView(listEl, function (el) { mo.stagger(el.querySelectorAll('.inf-row'), { step: 30, cap: 10, y: 8 }); });
@@ -532,37 +545,74 @@
     var s = (c.srcs && c.srcs.length) ? c.srcs : [c.s];
     return esc(s.slice(0, 3).join(' · ')) + (s.length > 3 ? ' <b>+' + (s.length - 3) + '</b>' : '');
   }
+  /* méta d'un article : temps de lecture + garantie « lisible en entier » */
+  function meta(c) {
+    var m = [];
+    if (c.mn) m.push('<span class="mag-mn">' + esc(c.mn) + ' min de lecture</span>');
+    if (c.entier) m.push('<span class="mag-libre">' + CHECK_SVG + 'lisible en entier</span>');
+    return m.length ? '<div class="mag-meta">' + m.join('') + '</div>' : '';
+  }
 
-  /* LA UNE — le sujet du jour, en grand */
+  /* ════════ LA COUVERTURE D'UN ARTICLE ════════
+     L'image que le site déclare lui-même (og:image), hotlinkée. Deux garde-fous :
+     — certains serveurs refusent d'être appelés depuis un autre site : l'image ne
+       charge pas, en silence. `onerror` bascule alors sur la couverture dessinée ;
+     — la moitié des sources métier (FSPF, ANSM, Leem) n'ont AUCUNE image. Une une
+       sans illustration tuerait le magazine, donc on en dessine une : dégradé teinté
+       par le thème + le glyphe du thème en filigrane. Jamais de rectangle gris. */
+  function couverture(c, ratio) {
+    var acc = THEME_ACC[c.theme] || 'blue';
+    var dessin = '<span class="mag-draw a-' + acc + '">' +
+                   '<span class="mag-draw-trame" aria-hidden="true"></span>' +
+                   '<span class="mag-draw-g">' + ICO(THEME_ICO[c.theme] || 'list', 120, 1) + '</span>' +
+                   '<span class="mag-draw-l">' + esc(c.theme_l || '') + '</span>' +
+                 '</span>';
+    if (!c.img) return '<span class="mag-cover ' + ratio + '">' + dessin + '</span>';
+    return '<span class="mag-cover ' + ratio + '">' + dessin +
+      '<img src="' + esc(c.img) + '" alt="" loading="lazy" decoding="async" ' +
+      'referrerpolicy="no-referrer" onerror="this.remove()">' +
+    '</span>';
+  }
+
+  /* ════════ LA UNE ════════ */
   function carteUne(c) {
-    return '<article class="brf-une a-' + (THEME_ACC[c.theme] || 'blue') + '">' +
-      '<div class="brf-une-top"><span class="brf-une-tag">À la une</span>' + chipTheme(c) + '</div>' +
-      '<h2>' + esc(c.t) + '</h2>' +
-      (c.r ? '<p class="brf-une-r">' + esc(c.r) + '</p>' : '') +
-      (c.faits && c.faits.length ? '<div class="brf-faits">' + c.faits.map(function (f) {
-        return '<span class="brf-fait">' + esc(f) + '</span>'; }).join('') + '</div>' : '') +
-      '<div class="brf-pour"><span class="brf-pour-l">Pour toi</span>' + esc(c.pour_toi) + '</div>' +
-      '<div class="brf-une-foot">' +
-        '<span class="brf-src">' + sourcesLine(c) + ' · ' + esc(ilYA(c.d)) + '</span>' +
-        (c.u ? '<a class="brf-lien" href="' + esc(c.u) + '" target="_blank" rel="noopener">Lire la source ' + ICO('chev', 14, 2.4) + '</a>' : '') +
+    return '<article class="mag-une a-' + (THEME_ACC[c.theme] || 'blue') + '">' +
+      '<span class="mag-une-cov">' + couverture(c, c.img ? 'r-wide' : 'r-band') +
+        '<span class="mag-une-tag">À la une</span></span>' +
+      '<div class="mag-une-b">' +
+        '<div class="mag-une-top">' + chipTheme(c) + meta(c) + '</div>' +
+        '<h2>' + esc(c.t) + '</h2>' +
+        (c.r ? '<p class="mag-une-r">' + esc(c.r) + '</p>' : '') +
+        (c.faits && c.faits.length ? '<div class="brf-faits">' + c.faits.map(function (f) {
+          return '<span class="brf-fait">' + esc(f) + '</span>'; }).join('') + '</div>' : '') +
+        '<div class="brf-pour"><span class="brf-pour-l">Pour toi</span>' + esc(c.pour_toi) + '</div>' +
+        '<div class="brf-une-foot">' +
+          '<span class="brf-src">' + sourcesLine(c) + ' · ' + esc(ilYA(c.d)) + '</span>' +
+          (c.u ? '<a class="brf-lien" href="' + esc(c.u) + '" target="_blank" rel="noopener">Lire l\'article ' + ICO('chev', 14, 2.4) + '</a>' : '') +
+        '</div>' +
       '</div>' +
     '</article>';
   }
 
-  /* LES AUTRES — carte numérotée */
+  /* ════════ UNE CARTE DE LA GRILLE ════════ */
   function carteRang(c, rang) {
-    return '<article class="brf-c a-' + (THEME_ACC[c.theme] || 'muted') + '">' +
-      '<div class="brf-c-n">' + rang + '</div>' +
-      '<div class="brf-c-b">' +
-        '<div class="brf-c-top">' + chipTheme(c) +
-          (c.faits && c.faits.length ? '<span class="brf-fait sm">' + esc(c.faits[0]) + '</span>' : '') + '</div>' +
-        '<h3>' + esc(c.t) + '</h3>' +
+    return '<article class="mag-c a-' + (THEME_ACC[c.theme] || 'muted') + '">' +
+      '<span class="mag-c-cov">' + couverture(c, 'r-16x9') +
+        (rang ? '<span class="mag-c-n">' + rang + '</span>' : '') + '</span>' +
+      '<div class="mag-c-b">' +
+        '<div class="mag-c-top">' + chipTheme(c) + meta(c) + '</div>' +
+        '<h3>' + (c.u ? '<a class="mag-link" href="' + esc(c.u) + '" target="_blank" rel="noopener">' + esc(c.t) + '</a>' : esc(c.t)) + '</h3>' +
         (c.r ? '<p>' + esc(c.r) + '</p>' : '') +
-        '<div class="brf-c-pour">' + esc(c.pour_toi) + '</div>' +
-        '<div class="brf-c-foot"><span class="brf-src">' + sourcesLine(c) + ' · ' + esc(ilYA(c.d)) + '</span>' +
-          (c.u ? '<a class="brf-lien" href="' + esc(c.u) + '" target="_blank" rel="noopener">Lire ' + ICO('chev', 14, 2.4) + '</a>' : '') + '</div>' +
+        (c.pour_toi ? '<div class="brf-c-pour">' + esc(c.pour_toi) + '</div>' : '') +
+        '<div class="brf-c-foot"><span class="brf-src">' + sourcesLine(c) + ' · ' + esc(ilYA(c.d)) + '</span></div>' +
       '</div>' +
     '</article>';
+  }
+
+  /* un titre de rubrique de magazine : filet, sur-titre, sous-titre */
+  function rubrique(titre, sous) {
+    return '<div class="mag-rub"><span class="mag-rub-t">' + titre + '</span>' +
+      (sous ? '<span class="mag-rub-s">' + sous + '</span>' : '') + '</div>';
   }
 
   /* un en-tête de section + son corps, ton calme, un accent par thème */
@@ -580,6 +630,21 @@
     if (document.getElementById('v2-infos-css')) return;
     var st = document.createElement('style'); st.id = 'v2-infos-css';
     st.textContent = [
+      /* ══════════ TYPOGRAPHIE DE PRESSE ══════════
+         Newsreader (SIL OFL, 132 Ko, déjà sur le disque) UNIQUEMENT pour les titres
+         d'articles : c'est le geste qui fait la différence entre une liste de liens
+         et un journal. Le reste du CRM ne bouge pas, il reste en Inter.
+         ⚠️ Une police citée dans une pile sans @font-face retombe en SILENCE sur la
+            police système. Elle est donc déclarée ici, et la sonde MESURE la largeur
+            d'un texte témoin pour prouver qu'elle s'affiche vraiment. */
+      "@font-face{font-family:'Newsreader';src:url('fonts/newsreader.woff2') format('woff2');" +
+        "font-weight:200 800;font-style:normal;font-display:swap}",
+      "@font-face{font-family:'Newsreader';src:url('fonts/newsreader-italic.woff2') format('woff2');" +
+        "font-weight:200 800;font-style:italic;font-display:swap}",
+      ".inf2{--serif:'Newsreader',Georgia,'Times New Roman',serif}",
+      /* le magazine respire : cet écran est plus large que le reste du CRM */
+      '.v2-wrap.inf2{max-width:1120px}',
+
       /* accents locaux (mappés sur les tokens de v2.css) */
       '.inf2 .a-rose{--acc:var(--c-rose);--acc-t:var(--c-rose-txt)}',
       '.inf2 .a-amber{--acc:var(--c-amber);--acc-t:var(--c-amber-txt)}',
@@ -751,9 +816,131 @@
       '.inf2 .inf-empty-t{font-size:16.5px;font-weight:700;color:var(--ip-ink);margin-bottom:7px}',
       '.inf2 .inf-empty-d{font-size:13.5px;color:var(--muted);max-width:38ch;margin:0 auto;line-height:1.5}',
 
+      /* ══════════ LE BANDEAU DE TÊTE ══════════ */
+      '.inf2 .mag-head{position:relative;text-align:center;padding:var(--sp-6) 0 var(--sp-5);margin-bottom:var(--section-gap);overflow:hidden}',
+      /* La source de lumière. Le clair sans lumière est plus mort qu\'un noir : ce
+         dégradé radial est ce qui empêche la page d\'être un aplat. */
+      '.inf2 .mag-glow{position:absolute;left:50%;top:-180px;width:min(1000px,140%);height:440px;transform:translateX(-50%);pointer-events:none;z-index:0;' +
+        'background:radial-gradient(50% 60% at 50% 50%,color-mix(in srgb,var(--ip-blue) 13%,transparent) 0%,transparent 72%),' +
+        'radial-gradient(38% 46% at 26% 44%,color-mix(in srgb,var(--c-amber) 9%,transparent) 0%,transparent 70%)}',
+      '.inf2 .mag-head>*:not(.mag-glow){position:relative;z-index:1}',
+      '.inf2 .mag-rule{height:2px;background:linear-gradient(90deg,transparent,var(--ip-ink) 22%,var(--ip-ink) 78%,transparent);opacity:.85;margin-bottom:var(--sp-4)}',
+      '.inf2 .mag-rule.thin{height:1px;opacity:.16;margin:var(--sp-5) 0 0}',
+      '.inf2 .mag-kicker{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;' +
+        "font:600 11px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:var(--sp-4)}",
+      '.inf2 .mag-kicker .sep{opacity:.4}',
+      '.inf2 .mag-kicker .live{display:inline-flex;align-items:center;gap:6px;color:var(--c-rose-txt);font-weight:700}',
+      '.inf2 .mag-kicker .live i{width:6px;height:6px;border-radius:50%;background:var(--c-rose);display:inline-block}',
+      '.inf2 .inf-new{color:var(--c-mint-txt);font-weight:700}',
+      '.inf2 .mag-title{font-family:var(--serif);font-weight:500;font-size:clamp(38px,8vw,68px);line-height:.98;' +
+        'letter-spacing:-.028em;color:var(--ip-ink);margin:0 0 var(--sp-3)}',
+      '.inf2 .mag-sub{max-width:58ch;margin:0 auto;font-size:15.5px;line-height:1.6;color:var(--muted)}',
+      '.inf2 .mag-stats{display:flex;justify-content:center;gap:var(--sp-5);flex-wrap:wrap;margin-top:var(--sp-4);' +
+        "font:500 12px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted-2)}",
+      '.inf2 .mag-stats b{color:var(--ip-ink);font-weight:700;font-variant-numeric:tabular-nums}',
+      '.inf2 .mag-act{display:flex;gap:var(--sp-2);justify-content:center;flex-wrap:wrap;margin-top:var(--sp-5)}',
+
+      /* ══════════ TITRE DE RUBRIQUE ══════════ */
+      '.inf2 .mag-rub{display:flex;align-items:baseline;gap:var(--sp-3);flex-wrap:wrap;padding-bottom:var(--sp-3);' +
+        'border-bottom:1.5px solid var(--ip-ink);margin-bottom:var(--sp-5)}',
+      '.inf2 .mag-rub-t{font-family:var(--serif);font-weight:600;font-size:23px;letter-spacing:-.02em;color:var(--ip-ink)}',
+      '.inf2 .mag-rub-s{font-size:13px;color:var(--muted);line-height:1.4}',
+      '.inf2 .mag-rub-s b{color:var(--ip-ink);font-weight:700}',
+
+      /* ══════════ COUVERTURES ══════════ */
+      '.inf2 .mag-cover{position:relative;display:block;overflow:hidden;background:var(--surf-sunken);border-radius:inherit}',
+      '.inf2 .mag-cover.r-wide{aspect-ratio:21/9}.inf2 .mag-cover.r-16x9{aspect-ratio:16/9}'+
+        '.inf2 .mag-cover.r-4x3{aspect-ratio:4/3}.inf2 .mag-cover.r-band{aspect-ratio:34/10}',
+      '.inf2 .mag-cover img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;z-index:1;' +
+        'transition:transform .55s var(--ease)}',
+      /* la couverture DESSINÉE : elle est toujours là, sous l\'image. Si l\'image ne
+         charge pas (serveur qui refuse d\'être appelé d\'ailleurs), elle réapparaît
+         seule — jamais de rectangle gris. */
+      '.inf2 .mag-draw{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;' +
+        'background:linear-gradient(152deg,color-mix(in srgb,var(--acc) 88%,#0B1020) 0%,color-mix(in srgb,var(--acc) 62%,#fff) 46%,color-mix(in srgb,var(--acc) 34%,#fff) 100%)}',
+      /* la source de lumière : sans elle, la planche est un aplat, donc morte */
+      '.inf2 .mag-draw::after{content:"";position:absolute;inset:0;' +
+        'background:radial-gradient(62% 74% at 24% 8%,rgba(255,255,255,.5),transparent 60%),' +
+        'radial-gradient(52% 62% at 88% 98%,rgba(11,16,32,.24),transparent 62%)}',
+      /* trame fine de fond de planche, comme un papier de presse */
+      '.inf2 .mag-draw-trame{position:absolute;inset:0;opacity:.5;' +
+        'background:repeating-linear-gradient(58deg,rgba(255,255,255,.16) 0 1px,transparent 1px 12px)}',
+      '.inf2 .mag-draw-g{position:relative;z-index:1;color:#fff;opacity:.92;line-height:0;' +
+        'filter:drop-shadow(0 3px 10px rgba(11,16,32,.32))}',
+      '.inf2 .mag-draw-l{position:relative;z-index:1;font:700 10.5px/1 var(--mono);letter-spacing:.18em;' +
+        'text-transform:uppercase;color:#fff;background:rgba(11,16,32,.42);' +
+        'padding:7px 13px;border-radius:var(--r-pill)}',
+
+      /* ══════════ LA UNE ══════════ */
+      '.inf2 .mag-une{position:relative;background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);' +
+        'overflow:hidden;box-shadow:var(--sh-3);margin-bottom:var(--section-gap)}',
+      '.inf2 .mag-une-cov{position:relative;display:block;border-radius:0}',
+      '.inf2 .mag-une:hover .mag-cover img{transform:scale(1.035)}',
+      '.inf2 .mag-une-tag{position:absolute;left:var(--sp-5);bottom:var(--sp-4);z-index:2;' +
+        "font:700 10.5px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:#fff;background:var(--acc);" +
+        'padding:8px 13px;border-radius:var(--r-pill);box-shadow:0 3px 14px rgba(16,19,28,.28)}',
+      '.inf2 .mag-une-b{padding:var(--sp-6)}',
+      '.inf2 .mag-une-top,.inf2 .mag-c-top,.inf2 .mag-s-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:var(--sp-3)}',
+      '.inf2 .mag-une h2{font-family:var(--serif);font-weight:600;font-size:clamp(26px,3.4vw,38px);line-height:1.13;' +
+        'letter-spacing:-.022em;margin:0 0 var(--sp-3);color:var(--ip-ink)}',
+      '.inf2 .mag-une h2 a,.inf2 .mag-c h3 a,.inf2 .mag-s h4 a{color:inherit;text-decoration:none}',
+      '.inf2 .mag-une h2 a:hover,.inf2 .mag-c h3 a:hover,.inf2 .mag-s h4 a:hover{color:var(--ip-blue)}',
+      '.inf2 .mag-une-r{font-size:16.5px;line-height:1.62;color:var(--ip-ink-2);margin:0 0 var(--sp-4);max-width:68ch}',
+
+      /* ══════════ GRILLE « ET AUSSI » ══════════ */
+      '.inf2 .mag-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:var(--gap-grid)}',
+      '.inf2 .mag-c{display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);' +
+        'border-radius:var(--r-md);overflow:hidden;box-shadow:var(--sh-1);transition:transform .25s var(--ease),box-shadow .25s var(--ease)}',
+      '.inf2 .mag-c:hover{transform:translateY(var(--mo-lift));box-shadow:var(--sh-2)}',
+      '.inf2 .mag-c:hover .mag-cover img{transform:scale(1.05)}',
+      '.inf2 .mag-c-cov{position:relative;display:block}',
+      '.inf2 .mag-c-n{position:absolute;left:12px;top:12px;z-index:2;width:28px;height:28px;border-radius:50%;' +
+        "display:flex;align-items:center;justify-content:center;font:800 13px/1 var(--mono);color:#fff;background:var(--acc);" +
+        'box-shadow:0 2px 10px rgba(16,19,28,.3)}',
+      '.inf2 .mag-c-b{flex:1 1 auto;display:flex;flex-direction:column;padding:var(--sp-4) var(--sp-5) var(--sp-5)}',
+      '.inf2 .mag-c h3{font-family:var(--serif);font-weight:600;font-size:20px;line-height:1.24;letter-spacing:-.015em;' +
+        'margin:0 0 9px;color:var(--ip-ink)}',
+      '.inf2 .mag-c p{font-size:14px;line-height:1.55;color:var(--muted);margin:0 0 var(--sp-3)}',
+      '.inf2 .mag-c .brf-c-foot{margin-top:auto}',
+
+      /* ══════════ LE FIL ══════════ */
+      '.inf2 .mag-flow{display:grid;grid-template-columns:repeat(auto-fill,minmax(252px,1fr));gap:var(--gap-grid)}',
+      '.inf2 .mag-s{display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);' +
+        'border-radius:var(--r-md);overflow:hidden;box-shadow:var(--sh-1);transition:transform .25s var(--ease),box-shadow .25s var(--ease)}',
+      '.inf2 .mag-s:hover{transform:translateY(var(--mo-lift));box-shadow:var(--sh-2)}',
+      '.inf2 .mag-s:hover .mag-cover img{transform:scale(1.05)}',
+      '.inf2 .mag-s-cov{display:block}',
+      '.inf2 .mag-s-b{flex:1 1 auto;display:flex;flex-direction:column;padding:var(--sp-4)}',
+      '.inf2 .mag-s h4{font-family:var(--serif);font-weight:600;font-size:17px;line-height:1.28;letter-spacing:-.012em;' +
+        'margin:0 0 7px;color:var(--ip-ink)}',
+      '.inf2 .mag-s p{font-size:13.5px;line-height:1.5;color:var(--muted);margin:0 0 var(--sp-3);' +
+        'display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}',
+      '.inf2 .mag-s-foot{margin-top:auto;display:flex;align-items:center;gap:9px;justify-content:space-between;flex-wrap:wrap;' +
+        'border-top:1px solid var(--line-2);padding-top:10px;font-size:12px;color:var(--muted-2)}',
+
+      /* le lien du titre s'étire sur toute la carte : une seule cible, très grande */
+      '.inf2 .mag-c,.inf2 .mag-s{position:relative}',
+      '.inf2 .mag-link{color:inherit;text-decoration:none}',
+      '.inf2 .mag-link::after{content:"";position:absolute;inset:0;z-index:3;border-radius:var(--r-md)}',
+      '.inf2 .mag-c:hover h3,.inf2 .mag-s:hover h4{color:var(--ip-blue)}',
+      '.inf2 .mag-c:focus-within,.inf2 .mag-s:focus-within{outline:2px solid var(--ip-blue);outline-offset:3px}',
+
+      /* ══════════ MÉTA D\'ARTICLE ══════════ */
+      '.inf2 .mag-meta{display:inline-flex;align-items:center;gap:10px;flex-wrap:wrap}',
+      '.inf2 .mag-mn{font:600 11.5px/1 var(--mono);color:var(--muted-2);letter-spacing:.03em}',
+      '.inf2 .mag-libre{display:inline-flex;align-items:center;gap:5px;font:700 11px/1 var(--mono);letter-spacing:.05em;' +
+        'color:var(--c-mint-txt);background:color-mix(in srgb,var(--c-opp) 11%,transparent);padding:5px 9px;border-radius:var(--r-pill)}',
+      '.inf2 .mag-libre.sm{font-size:10px;padding:4px 7px}',
+      '.inf2 .mag-libre svg{width:10px;height:10px}',
+
       /* ── téléphone ── */
       '@media(max-width:640px){',
-      '.inf2 .brf-une{padding:var(--sp-5) var(--sp-4)}',
+      '.inf2 .mag-une-b{padding:var(--sp-5) var(--sp-4)}',
+      '.inf2 .mag-cover.r-wide{aspect-ratio:16/10}.inf2 .mag-cover.r-band{aspect-ratio:20/9}',
+      '.inf2 .mag-grid,.inf2 .mag-flow{grid-template-columns:1fr}',
+      '.inf2 .mag-c-b{padding:var(--sp-4)}',
+      '.inf2 .mag-title{font-size:clamp(32px,10vw,44px)}',
+      '.inf2 .mag-stats{gap:var(--sp-3);font-size:11px}',
       '.inf2 .brf-c{padding:var(--sp-4);gap:var(--sp-3)}',
       '.inf2 .brf-c-n{width:26px;height:26px;font-size:12.5px}',
       '.inf2 .brf-radar{grid-template-columns:1fr 1fr;gap:var(--sp-2)}',
