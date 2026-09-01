@@ -66,7 +66,21 @@ FLUX_ILLUSTRES = [
     ('Santé Magazine',     'https://www.santemagazine.fr/rss'),
     ('Réseau CHU',         'https://www.reseau-chu.org/feed/'),
     ('France Info santé',  'https://www.francetvinfo.fr/sante.rss'),
+    # ── seconde vague, mesurée le 01/09/2026 au soir : vivantes, libres, illustrées.
+    # Will : « l'idée c'est vraiment d'aller sur des sources gratuites pour récupérer
+    # un max de données partout. »
+    ('Mutualité française', 'https://www.mutualite.fr/feed/'),
+    ('Infirmiers.com',      'https://www.infirmiers.com/rss.xml'),
+    ('Inserm',              'https://www.inserm.fr/feed/'),
+    ('Top Santé',           'https://www.topsante.com/rss'),
+    ('BFM santé',           'https://www.bfmtv.com/rss/sante/'),
+    # libres mais SANS image — gardées pour la matière, pas pour l'illustration
+    ('OMS Europe',          'https://www.who.int/rss-feeds/news-english.xml'),
+    ('CNRS',                'https://www.cnrs.fr/fr/rss.xml'),
 ]
+# ⛔ Mesurées derrière un mur payant le 01/09 : Le Parisien, Le Généraliste.
+#    Mortes ou introuvables : Ordre des pharmaciens, Vidal, HAS, Doctissimo,
+#    Pourquoi Docteur, Egora, Univadis, APM, Hospimedia, TIC Santé (404/403).
 # Ce qui intéresse VRAIMENT un grossiste-répartiteur dans de la presse grand public.
 REL_STRICT = re.compile(
     r'pharmaci|officin|m[ée]dicament|g[ée]n[ée]riqu|biosimil|rupture|p[ée]nurie|'
@@ -80,7 +94,7 @@ HORS_SUJET = re.compile(
     r'probiotique|complément alimentaire|bien-[êe]tre|sommeil r[ée]parateur|'
     r'vous ne (devinerez|saviez)|voici pourquoi|la v[ée]rit[ée] sur|'
     r'ce que r[ée]v[èe]le|faut-il vraiment|horoscope|beaut[ée]|peau|cheveux', re.I)
-MAX_GRAND_PUBLIC = 10   # la presse générale illustre, elle ne fait pas le journal
+MAX_GRAND_PUBLIC = 22   # la presse générale illustre, elle ne fait pas le journal
 
 # ── Sources dont le mur payant a été MESURÉ le 01/09/2026 ─────────────────────
 # 3 articles ouverts par source. On les écarte parce qu'un lien qu'on ne peut pas
@@ -89,6 +103,7 @@ MAX_GRAND_PUBLIC = 10   # la presse générale illustre, elle ne fait pas le jou
 # lire quoi que ce soit, donc impossible de mesurer le mur au moment de la lecture.
 # Le nom de la source est alors le seul signal fiable.
 SOURCES_MUR = [
+    'leparisien.fr', 'le parisien',
     'lemoniteurdespharmacies.fr', 'le moniteur des pharmacies', 'pharmacien manager',
     'lequotidiendupharmacien.fr', 'le quotidien du pharmacien',
     'lequotidiendumedecin.fr', 'le quotidien du m',
@@ -286,6 +301,11 @@ THEMES = [
     ('industrie', re.compile(
         r'laboratoire|industrie|usine|site de production|\bleem\b|\bamm\b|'
         r'essai clinique|\bema\b|\bhas\b|autorisation de mise sur le march', re.I)),
+    # filet de dernier recours : ça parle de soin ou de traitement, mais ni de prix,
+    # ni de marge, ni de rupture. C'est de la culture métier, pas du fourre-tout.
+    ('sante', re.compile(
+        r'm[ée]dicament|traitement|patient|maladie|sant[ée]|soin|th[ée]rapie|'
+        r'vaccin|d[ée]pistage|[ée]pid[ée]mi|virus|cancer|diab[èe]te|molécule', re.I)),
 ]
 
 THEME_LABEL = {
@@ -297,6 +317,7 @@ THEME_LABEL = {
     'concurrence':  'Concurrence & marché',
     'officine':     'Vie de l\'officine',
     'industrie':    'Industrie & autorisations',
+    'sante':        'Santé & traitements',
     'autre':        'Autre',
 }
 
@@ -311,12 +332,14 @@ THEME_ANGLE = {
     'concurrence':  'Bouge le paysage de la répartition : à connaître avant un rendez-vous.',
     'officine':     'Change le quotidien de tes clients — matière à conversation au comptoir.',
     'industrie':    'Amont du circuit : ce qui arrivera en officine dans quelques mois.',
+    'sante':        'De quoi parler au comptoir — la culture métier qui fait la différence.',
     'autre':        'Signalé par la veille du secteur.',
 }
 
 THEME_POIDS = {
     'marge': 30, 'remboursement': 24, 'generique': 20, 'rupture': 18,
-    'concurrence': 18, 'officine': 12, 'securite': 12, 'industrie': 6, 'autre': 4,
+    'concurrence': 18, 'officine': 12, 'securite': 12, 'industrie': 6,
+    'sante': 5, 'autre': 4,
 }
 
 
@@ -955,6 +978,10 @@ def main():
             themes_du_jour[c['theme']] = themes_du_jour.get(c['theme'], 0) + 1
 
     edition = {
+        # l'ordre d'affichage des rubriques : de ce qui touche l'argent d'Intégral
+        # au plus culturel. Trier par volume mettrait « Autre » en tête.
+        'themes_ordre': ['marge', 'remboursement', 'generique', 'rupture', 'concurrence',
+                         'officine', 'securite', 'industrie', 'sante', 'autre'],
         'jour': TODAY.isoformat(),
         'genere': datetime.now(timezone.utc).isoformat(),
         'une': une,

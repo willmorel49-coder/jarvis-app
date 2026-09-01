@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Infos du matin — 4 directions au choix</title>
+<link rel="stylesheet" href="_commun.css">
+<style>
+body{background:#FBFCFE;color:#10131C}
+.wrap{max-width:1180px;margin:0 auto;padding:56px 28px 90px}
+.tete{text-align:center;position:relative;margin-bottom:44px;padding-bottom:8px}
+.halo{position:absolute;left:50%;top:-200px;width:min(900px,140%);height:460px;transform:translateX(-50%);pointer-events:none;
+  background:radial-gradient(50% 60% at 50% 50%,rgba(0,80,230,.14) 0%,transparent 72%)}
+.tete>*{position:relative}
+.tete .d{font:600 11px/1 var(--mono);letter-spacing:.17em;text-transform:uppercase;color:#737A8C}
+.tete h1{font-family:var(--serif);font-weight:500;font-size:clamp(34px,6vw,60px);line-height:1;letter-spacing:-.032em;margin:14px 0 12px}
+.tete p{font-size:16px;line-height:1.6;color:#4A5162;max-width:64ch;margin:0 auto}
+.tete p b{color:#10131C}
+.grille{display:grid;grid-template-columns:repeat(2,1fr);gap:22px}
+@media(max-width:720px){.grille{grid-template-columns:1fr}}
+.d{position:relative;display:flex;flex-direction:column;background:#fff;border:1px solid rgba(16,19,28,.08);
+  border-radius:20px;overflow:hidden;text-decoration:none;color:inherit;
+  box-shadow:0 1px 2px rgba(16,19,28,.05),0 8px 22px rgba(16,19,28,.06);
+  transition:transform .3s cubic-bezier(.32,.72,0,1),box-shadow .3s cubic-bezier(.32,.72,0,1)}
+.d:hover{transform:translateY(-5px);box-shadow:0 16px 40px rgba(16,19,28,.14)}
+/* l'aperçu : un croquis dessiné en CSS de l'architecture de chaque direction */
+.apercu{aspect-ratio:16/10;position:relative;overflow:hidden;padding:16px;display:flex;flex-direction:column;gap:7px}
+.b{border-radius:4px;background:rgba(16,19,28,.1)}
+.b.p{background:var(--a)}
+.b.t{background:rgba(16,19,28,.22)}
+.row{display:flex;gap:7px}
+.d-b{padding:20px 24px 24px;flex:1 1 auto;display:flex;flex-direction:column}
+.n{font:700 10px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:#8A91A4;margin-bottom:9px}
+.d h2{font-family:var(--serif);font-weight:600;font-size:26px;letter-spacing:-.022em;margin:0 0 9px}
+.d p{font-size:14.5px;line-height:1.55;color:#4A5162;margin:0 0 14px}
+.d ul{margin:0 0 16px;padding:0 0 0 17px;font-size:13.5px;line-height:1.6;color:#737A8C}
+.d li::marker{color:var(--a)}
+.go{margin-top:auto;display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 20px;border-radius:12px;
+  background:var(--a);color:#fff;font:650 14px/1 'Inter',sans-serif;align-self:flex-start}
+.d::after{content:"";position:absolute;inset:0}
+.note{margin-top:40px;padding:20px 24px;background:#F4F6FB;border-radius:16px;font-size:14px;line-height:1.65;color:#4A5162}
+.note b{color:#10131C}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="tete">
+    <span class="halo"></span>
+    <div class="d">Infos du matin · JARVIS</div>
+    <h1>Quatre façons de lire le matin</h1>
+    <p>Quatre <b>architectures</b> différentes, pas quatre palettes. Chacune tourne sur
+       <b>les vraies données du jour</b> — mêmes articles, mêmes images, mêmes chiffres.
+       Ouvre-les, compare, et dis-moi le numéro.</p>
+  </header>
+
+  <div class="grille">
+    <a class="d" href="1-la-une.html" style="--a:#0050E6">
+      <div class="apercu" style="background:linear-gradient(160deg,#EEF3FF,#fff)">
+        <div class="b p" style="height:44%"></div>
+        <div class="row" style="flex:1">
+          <div style="flex:1;display:flex;flex-direction:column;gap:5px"><div class="b t" style="height:9px"></div><div class="b" style="flex:1"></div><div class="b" style="height:7px"></div></div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:5px"><div class="b t" style="height:9px"></div><div class="b" style="flex:1"></div><div class="b" style="height:7px"></div></div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:5px"><div class="b t" style="height:9px"></div><div class="b" style="flex:1"></div><div class="b" style="height:7px"></div></div>
+        </div>
+      </div>
+      <div class="d-b">
+        <div class="n">Direction 1</div>
+        <h2>La Une</h2>
+        <p>Le quotidien grand format. Une photo immense qui prend tout le premier écran, le titre posé dessus, puis trois colonnes séparées par des filets — comme un vrai journal.</p>
+        <ul><li>Hiérarchie violente : un sujet écrase les autres</li><li>Pas de cartes, que des filets et du texte</li><li>Le plus « presse écrite » des quatre</li></ul>
+        <span class="go">Ouvrir la maquette →</span>
+      </div>
+    </a>
+
+    <a class="d" href="2-le-mur.html" style="--a:#6D4FC4">
+      <div class="apercu" style="background:linear-gradient(160deg,#F3EFFF,#fff)">
+        <div class="b p" style="height:30%"></div>
+        <div class="row" style="flex:1">
+          <div style="flex:1;display:flex;flex-direction:column;gap:6px"><div class="b" style="flex:2"></div><div class="b t" style="flex:1"></div></div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:6px"><div class="b t" style="flex:1"></div><div class="b" style="flex:2"></div></div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:6px"><div class="b" style="flex:1"></div><div class="b t" style="flex:1"></div><div class="b" style="flex:1"></div></div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:6px"><div class="b t" style="flex:3"></div><div class="b" style="flex:1"></div></div>
+        </div>
+      </div>
+      <div class="d-b">
+        <div class="n">Direction 2</div>
+        <h2>Le Mur</h2>
+        <p>L'image d'abord. Chaque article <b>est</b> une tuile, de taille variable, titre posé dessus. Les articles sans photo deviennent des affiches de couleur — donc aucun trou dans le mur.</p>
+        <ul><li>Le plus dense : 30 articles en deux écrans</li><li>Aucune carte blanche, que des images</li><li>Filtres par rubrique en pastilles de couleur</li></ul>
+        <span class="go">Ouvrir la maquette →</span>
+      </div>
+    </a>
+
+    <a class="d" href="3-le-kiosque.html" style="--a:#1E9E6A">
+      <div class="apercu" style="background:linear-gradient(160deg,#EAF7F1,#fff)">
+        <div class="b p" style="height:28%"></div>
+        <div class="b t" style="height:7px;width:34%"></div>
+        <div class="row" style="height:26%"><div class="b" style="flex:1"></div><div class="b" style="flex:1"></div><div class="b" style="flex:1"></div><div class="b" style="width:14%;opacity:.5"></div></div>
+        <div class="b t" style="height:7px;width:28%"></div>
+        <div class="row" style="flex:1"><div class="b" style="flex:1"></div><div class="b" style="flex:1"></div><div class="b" style="flex:1"></div><div class="b" style="width:14%;opacity:.5"></div></div>
+      </div>
+      <div class="d-b">
+        <div class="n">Direction 3</div>
+        <h2>Le Kiosque</h2>
+        <p>Une rangée par rubrique, qui défile à l'horizontale. On ne descend plus dans un fil sans fin : on longe des rayons et on s'arrête à celui qui nous concerne.</p>
+        <ul><li>Tient en 4 écrans au lieu de 20</li><li>Grandes images sans allonger la page</li><li>Le plus lisible sur téléphone</li></ul>
+        <span class="go">Ouvrir la maquette →</span>
+      </div>
+    </a>
+
+    <a class="d" href="4-le-poste.html" style="--a:#C7791A">
+      <div class="apercu" style="background:linear-gradient(160deg,#241F1A,#141210)">
+        <div class="row" style="height:22%"><div class="b p" style="flex:1;opacity:.85"></div><div class="b" style="flex:1;background:rgba(255,255,255,.18)"></div><div class="b" style="flex:1;background:rgba(255,255,255,.18)"></div><div class="b" style="flex:1;background:rgba(255,255,255,.18)"></div></div>
+        <div class="b" style="height:34%;background:rgba(255,255,255,.28)"></div>
+        <div class="row" style="flex:1"><div class="b" style="flex:1;background:rgba(255,255,255,.14)"></div><div class="b" style="flex:1;background:rgba(255,255,255,.14)"></div><div class="b" style="flex:1;background:rgba(255,255,255,.14)"></div></div>
+      </div>
+      <div class="d-b">
+        <div class="n">Direction 4</div>
+        <h2>Le Poste</h2>
+        <p>Le poste de commandement, en sombre chaud (jamais noir pur). Les chiffres du marché passent <b>devant</b> les articles, et les photos ressortent comme sur un mur d'écrans.</p>
+        <ul><li>La seule direction sombre — pour que le choix en soit un</li><li>L'état du marché en premier, la lecture ensuite</li><li>Pensée pour « je regarde 20 secondes »</li></ul>
+        <span class="go">Ouvrir la maquette →</span>
+      </div>
+    </a>
+  </div>
+
+  <p class="note"><b>À savoir :</b> les quatre pages lisent le <b>même fichier réel</b>
+     (<code>brief-jour.json</code>, écrit ce matin par le robot). Ce que tu vois est donc ce que
+     l'app affichera — mêmes titres, mêmes photos, mêmes chiffres. Rien n'est simulé.
+     Quand une source ne fournit pas de photo, une planche est dessinée aux couleurs de sa
+     rubrique : c'est voulu, jamais un rectangle gris.</p>
+</div>
+</body>
+</html>
