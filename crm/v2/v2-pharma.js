@@ -1028,6 +1028,11 @@
   }
 
   var _clientsAsked = false;   // évite de redemander clients-data.js à chaque rendu
+  // Coordonnées SAISIES par l'équipe sur la fiche (table `profils`, scope 'client').
+  // Elles étaient enregistrées mais jamais relues : le commercial corrigeait un
+  // numéro, le rechargement le faisait disparaître de l'en-tête. Une lecture par
+  // officine, gardée en mémoire, puis un re-rendu.
+  var _coordSaisie = {};       // pid -> { tel, email, adresse } | null tant qu'on lit
 
 
   // ══ Fiche d'ANALYSE (27/08/2026) — disposition « Cockpit » (ordinateur : l'humain à gauche,
@@ -1249,7 +1254,6 @@
     var ficheBadge = isOpso() ? ' ' + opsoBadge(pharma) : '';
     var repriseBadge = (window.REPRISES && REPRISES[String(pid)])
       ? ' <span class="phf-reprise" title="Le titulaire a changé récemment — moment clé pour (re)capter la relation">🔄 Reprise récente</span>' : '';
-    var loc = [pharma.cp, pharma.ville].filter(function (x) { return x; }).join(' ');
 
     // ── Colonne « humain » : identité + actions + listes + infos officine + notes ──
     var pidSafe = esc(String(pid).replace(/[^0-9A-Za-z_-]/g, ''));
@@ -1261,8 +1265,23 @@
     // le numéro était pourtant connu de l'app. On lit donc la source réconciliée
     // pour les DEUX, comme le fait l'écran Rendez-vous depuis le 10/08/2026.
     var infoRdv = (V2.rdvInfo ? V2.rdvInfo(pid) : null);
-    var tel = (pharma.tel == null ? '' : String(pharma.tel)).trim() || (infoRdv && infoRdv.tel) || '';
-    var mail = (pharma.email == null ? '' : String(pharma.email)).trim() || (infoRdv && infoRdv.email) || '';
+    // Ce que l'équipe a saisi à la main passe AVANT tout le reste : c'est une
+    // correction volontaire, elle doit gagner sur l'annuaire.
+    if (_coordSaisie[pid] === undefined && V2.profil && V2.profil.charger) {
+      _coordSaisie[pid] = null;
+      V2.profil.charger('client', pid).then(function (d) {
+        _coordSaisie[pid] = d || {};
+        if (V2.route && String(V2.route.param) === String(pid)) V2.render();
+      }).catch(function () { _coordSaisie[pid] = {}; });
+    }
+    var saisi = _coordSaisie[pid] || {};
+    var tel = String(saisi.tel || '').trim() || (pharma.tel == null ? '' : String(pharma.tel)).trim() || (infoRdv && infoRdv.tel) || '';
+    var mail = String(saisi.email || '').trim() || (pharma.email == null ? '' : String(pharma.email)).trim() || (infoRdv && infoRdv.email) || '';
+    var adresse = String(saisi.adresse || '').trim() || (infoRdv && infoRdv.adresse) || '';
+    // Même trou pour la ville : WML ne la connaît pas partout (« à compléter »
+    // sur une officine dont l'annuaire donne pourtant la commune).
+    var loc = [pharma.cp || (infoRdv && infoRdv.cp), pharma.ville || (infoRdv && infoRdv.ville)]
+      .filter(function (x) { return x; }).join(' ');
     var titulaire = clientTitulaire(pid);
     var comms = (pharma.comms || []).join(', ');
     var kv = function (l, v, empty) { return '<span>' + l + '</span><span' + (v ? '' : ' class="pha-empty"') + '>' + (v ? v : (empty || 'à compléter')) + '</span>'; };
@@ -1272,6 +1291,7 @@
         '<div class="pha-name">' + esc(nameOf(pid, pharma.name)) + ficheBadge + repriseBadge + '</div>' +
         '<div class="pha-kv">' +
           kv('Ville', esc(loc)) +
+          (adresse ? kv('Adresse', esc(adresse)) : '') +
           kv('Titulaire', esc(titulaire)) +
           kv('Groupement', (pharma.groupement && pharma.groupement !== '—') ? esc(pharma.groupement) : '') +
           kv('Téléphone', tel ? esc(tel) : '') +
@@ -1315,7 +1335,11 @@
           '<option value="__add__">➕ préciser…</option>' +
         '</select></label>';
       return '<div class="v2-card pha-card pha-infos"><div class="pha-ch"><h3>Infos officine</h3><span class="pha-sub">grossistes, génériqueurs, logiciel, robot… tout ce que l\'équipe a noté</span></div>' +
-        cipLine + nameEditor(pid, nameOf(pid, pharma.name)) + titEditor(pid, titulaire) + grpEdit + V2.profil.section('client', pid) + '</div>';
+        cipLine + nameEditor(pid, nameOf(pid, pharma.name)) + titEditor(pid, titulaire) + grpEdit +
+        // L'en-tête dit « Téléphone et e-mail à renseigner dans Infos officine » :
+        // jusqu'ici la promesse était vide, il n'y avait aucun champ où les mettre.
+        V2.profil.coordSection(pid, { tel: tel, email: mail, adresse: adresse }, ['tel', 'email', 'adresse'], 'Coordonnées') +
+        V2.profil.section('client', pid) + '</div>';
     })() : '';
     var notes = V2.notes ? '<div class="pha-notes">' + V2.notes.section('client', pid) + '</div>' : '';
 
@@ -1641,7 +1665,13 @@
           '<td style="padding:4px 7px;text-align:right;font-size:9.5px;font-family:monospace;color:#1E9E6A;font-weight:700">' + (r.mdl > 0 ? V2.fmtEur(r.mdl) : '—') + '</td>' +
         '</tr>';
       }).join('');
-    var ident = [pharma.code, pharma.ville, pharma.tel].filter(function (x) { return x; }).map(esc).join('  ·  ');
+    // Même trou que sur l'écran : `pharma.tel` seul laissait le PDF sans numéro
+    // pour 473 officines sur 717. On prend la saisie de l'équipe, puis WML, puis
+    // la source réconciliée par le CIP.
+    var infoPrepa = (V2.rdvInfo ? V2.rdvInfo(pid) : null);
+    var telPrepa = String((_coordSaisie[pid] || {}).tel || '').trim() ||
+      (pharma.tel == null ? '' : String(pharma.tel)).trim() || (infoPrepa && infoPrepa.tel) || '';
+    var ident = [pharma.code, pharma.ville, telPrepa].filter(function (x) { return x; }).map(esc).join('  ·  ');
     var pot = (pharma.potentiel != null && pharma.potentiel !== '') ? ('Potentiel ' + esc(String(pharma.potentiel))) : '';
     function kpiTile(l, v, col) {
       return '<div style="border:1px solid #E5E9F2;border-radius:9px;padding:9px 11px"><div style="font-size:8px;color:#737A8C;text-transform:uppercase;letter-spacing:.05em;font-weight:700">' + l + '</div><div style="font-size:15px;font-weight:800;color:' + col + ';font-family:monospace">' + v + '</div></div>';
@@ -3102,7 +3132,15 @@
       '.pha-det .pha-bar{width:100%;margin-left:0}',
       '.pha-mob{display:none}',
       '.pha-notes .v2-notes-box{margin:0}',
+      // ⚠️ `display:contents` fait des cartes du rail les enfants directs du flex,
+      // et `align-items:start` (hérité de la grille du bureau) les dimensionne sur
+      // leur contenu au lieu de la largeur disponible. La zone de dictée (champ +
+      // micro + bouton « Ajouter ») réclame 390 px : sur un iPhone, TOUTE la page
+      // partait 14 px hors de l'écran et le bouton « Ajouter » était coupé.
+      // `align-self:stretch` les recale sur la colonne, `min-width:0` les laisse
+      // se réduire. Mesuré à 360 / 390 / 430 px.
       '@media(max-width:900px){.pha{display:flex;flex-direction:column;gap:12px}.pha-rail,.pha-main{display:contents}',
+      '  .pha-rail>*,.pha-main>*{min-width:0;align-self:stretch}',
       '  .pha-id{order:-3}.pha-lists{order:-2}.pha-notes{order:-1}',
       '  .pha-desk{display:none}.pha-mob{display:block}.pha-kpis{grid-template-columns:1fr 1fr}.pha-kval{font-size:20px}.pha-lists{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.pha-lists .pha-kl{width:100%}.pha-lists .pha-btn-w{width:auto;margin-top:0;flex:1 1 auto}}',
       '.phf-prange{color:var(--muted);font-weight:600;font-size:14px}',
