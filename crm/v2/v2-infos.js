@@ -310,26 +310,8 @@
       if (mo) {
         var u = root.querySelector('.mur-une');
         if (u) mo.inView(u, function (el) { mo.stagger([el], { step: 0, y: 12 }); });
-        var jet = root.querySelector('.mur-jetons');
-        if (jet) mo.inView(jet, function (el) {
-          mo.stagger(el.querySelectorAll('.mj'), { step: 50, y: 10 });
-          var cs = el.querySelectorAll('[data-count]');
-          for (var i = 0; i < cs.length; i++) mo.countUp(cs[i]);
-        });
-        var st = root.querySelector('.inf-stats');
-        if (st) mo.inView(st, function (el) {
-          mo.stagger(el.querySelectorAll('.inf-stat'), { step: 60, y: 8 });
-          var cs = el.querySelectorAll('[data-count]');
-          for (var i = 0; i < cs.length; i++) mo.countUp(cs[i]);
-        });
         var m = root.querySelector('.mur');
         if (m) mo.inView(m, function (el) { mo.stagger(el.querySelectorAll('.tu'), { step: 32, cap: 12, y: 12 }); });
-        var oppsEl = root.querySelector('.inf-opps');
-        if (oppsEl) mo.inView(oppsEl, function (el) { mo.stagger(el.querySelectorAll('.inf-opp'), { step: 50, cap: 6, y: 10 }); });
-        var lists = root.querySelectorAll('.inf-list');
-        for (var L = 0; L < lists.length; L++) (function (listEl) {
-          mo.inView(listEl, function (el) { mo.stagger(el.querySelectorAll('.inf-row'), { step: 30, cap: 10, y: 8 }); });
-        })(lists[L]);
       }
     }
   };
