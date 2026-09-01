@@ -910,6 +910,67 @@
   // ════════════════════════════════════════════
   // APERÇU + PDF (flyer)
   // ════════════════════════════════════════════
+  // ── Un seul produit : une vraie fiche, pas un tableau d'une ligne ──
+  // Demandé par Will : la fiche marketing doit marcher « pour un produit ou
+  // plusieurs ». À N produits le tableau reste la bonne forme ; à un seul il
+  // donne une feuille A4 vide avec une ligne au milieu. Ici la photo devient
+  // grande, le prix devient l'objet de la page.
+  function ficheProduitBody(p, acc, showPrice, showRemise, showImg, forPdf) {
+    var img = showImg ? prodImg(p, forPdf) : '';
+    var ppht = p.ppht > 0 ? p.ppht
+      : (p.remise > 0 && p.price > 0 ? Math.round(p.price / (1 - p.remise / 100) * 100) / 100 : 0);
+    var pct = (ppht > 0 && p.price > 0 && p.price < ppht) ? Math.round((1 - p.price / ppht) * 1000) / 10 : 0;
+    var visuel = img
+      ? '<img crossorigin="anonymous" src="' + esc(img) + '" style="width:100%;height:100%;object-fit:contain">'
+      : '<svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="#C6CEDC" stroke-width="1.4">' +
+        '<rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M21 15l-5-5L4 21"/></svg>';
+    var ref = p.cip ? ('CIP ' + esc(p.cip)) : (p.ean ? ('EAN ' + esc(p.ean)) : '');
+    var meta = [];
+    if (p.brand) meta.push(esc(p.brand));
+    if (p.cat) meta.push(esc(p.cat));
+    if (p.froid) meta.push('Chaîne du froid');
+
+    var lignesPrix = '';
+    if (showPrice && ppht > 0 && pct > 0) {
+      lignesPrix += '<div style="display:flex;justify-content:space-between;align-items:baseline;' +
+        'padding:7px 0;border-bottom:1px solid #ECEFF5">' +
+        '<span style="font-size:11.5px;color:#737A8C">Tarif grossiste (PPHT)</span>' +
+        '<span style="font-family:monospace;font-size:14px;color:#9AA1B2;text-decoration:line-through">' +
+        V2.fmtEur(ppht) + '</span></div>';
+      if (showRemise) {
+        lignesPrix += '<div style="display:flex;justify-content:space-between;align-items:baseline;' +
+          'padding:7px 0;border-bottom:1px solid #ECEFF5">' +
+          '<span style="font-size:11.5px;color:#737A8C">Abandon de marge Intégral</span>' +
+          '<span style="font-family:monospace;font-size:14px;font-weight:700;color:#1E9E6A">−' +
+          String(pct).replace('.', ',') + ' % · ' + V2.fmtEur(Math.round((ppht - p.price) * 100) / 100) +
+          '</span></div>';
+      }
+    }
+    var bloc = showPrice
+      ? '<div style="margin-top:18px;background:#F7F9FC;border:1px solid #E2E7F0;border-radius:14px;padding:16px 18px">' +
+          lignesPrix +
+          '<div style="display:flex;justify-content:space-between;align-items:baseline;padding-top:12px">' +
+            '<span style="font-size:12.5px;font-weight:700;color:#10131C">Votre prix net HT</span>' +
+            '<span style="font-family:monospace;font-size:34px;font-weight:800;letter-spacing:-.02em;color:' + acc + '">' +
+              (p.price > 0 ? V2.fmtEur(p.price) : '—') + '</span>' +
+          '</div></div>'
+      : '';
+
+    return '<div style="display:flex;gap:26px;align-items:flex-start;background:#fff;' +
+        'border:1px solid #E2E7F0;border-radius:16px;padding:24px 26px">' +
+        '<div style="flex:0 0 210px;height:210px;border-radius:12px;background:#FBFCFE;' +
+          'border:1px solid #EEF1F7;display:flex;align-items:center;justify-content:center;padding:14px;box-sizing:border-box">' +
+          visuel + '</div>' +
+        '<div style="flex:1;min-width:0">' +
+          '<div style="font-size:22px;font-weight:800;line-height:1.15;letter-spacing:-.01em;color:#10131C">' +
+            esc(p.name || 'Produit') + '</div>' +
+          (meta.length ? '<div style="margin-top:7px;font-size:12.5px;color:#737A8C">' + meta.join(' · ') + '</div>' : '') +
+          (ref ? '<div style="margin-top:5px;font-family:monospace;font-size:11.5px;color:#9AA1B2">' + ref + '</div>' : '') +
+          bloc +
+        '</div>' +
+      '</div>';
+  }
+
   function buildFlyerHtml(forPdf) {
     var it = editing;
     var t = TYPES[it.type] || TYPES.support;
@@ -965,7 +1026,10 @@
       gmap[c].forEach(function (p) { nn++; rows += prodTr(p, nn); });
     });
     function thh(lbl, al) { return '<th style="padding:6px 10px;text-align:' + al + ';font-size:8px;text-transform:uppercase;letter-spacing:.05em;color:#9AA1B2">' + lbl + '</th>'; }
-    var body = rows
+    var unSeul = (it.products || []).length === 1;
+    var body = unSeul
+      ? ficheProduitBody(it.products[0], acc, showPrice, showRemise, showImg, forPdf)
+      : rows
       ? '<table style="width:100%;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden">' +
           '<thead><tr style="background:#F7F9FC;border-bottom:1.5px solid #E2E7F0">' +
             (anyImg ? '<th></th>' : '') + thh('#', 'center') + thh('Produit', 'left') + thh('Réf (CIP/EAN)', 'left') +

@@ -53,7 +53,7 @@
 
   var PUBLICS = [
     ['client', 'Client'], ['groupement', 'Groupement'],
-    ['prospect', 'Prospect'], ['achats', 'Achats']
+    ['prospect', 'Prospect'], ['catalogue', 'Catalogue'], ['achats', 'Achats']
   ];
   // Les trois publics commerciaux partagent le composeur par catégorie.
   var AVEC_COMPOSEUR = { client: 1, groupement: 1, prospect: 1 };
@@ -62,6 +62,7 @@
     mode: 'client', ph: null, grp: null, toutGrp: false, fam: 'all', q: '', sansRupture: false,
     page: 0, horsStock: false,
     sm: null,  // composition par catégorie, chargée au 1er rendu
+    catStock: false, catLabo: '',   // filtres propres à l'onglet Catalogue
     sel: null,  // { cip: 1 } — produits retenus pour le document
     doc: null,  // retouches du document (titre, ordre, lignes retirees, champs)
     apercu: false
@@ -87,13 +88,40 @@
     V2.produits._sig = sig;
     return V2.produits._idx;
   };
+  // ── Le catalogue Intégral EN ENTIER ────────────────────────────
+  // PROD_STATS ne connaît que ce que le réseau achète : 6 292 références sur
+  // les 16 305 du catalogue. Les 10 013 autres — tout ce qu'Intégral référence
+  // sans encore le vendre — n'existaient nulle part dans l'app. Ce fichier
+  // arrive à la demande (1,3 Mo), uniquement quand on ouvre l'onglet Catalogue.
+  V2.produits.catalogueIndex = function () {
+    if (V2.produits._cat) return V2.produits._cat;
+    var C = window.CATALOGUE_COMPLET;
+    if (!C || !C.rows || !C.rows.length) return null;
+    var m = {}, L = C.labos || [], MO = C.mols || [], r, i;
+    for (i = 0; i < C.rows.length; i++) {
+      r = C.rows[i];
+      m[r[0]] = {
+        c: r[0], cip: r[0], d: r[1],
+        labo: r[2] >= 0 ? (L[r[2]] || '') : '', mol: r[3] >= 0 ? (MO[r[3]] || '') : '',
+        f: r[4], ppht: r[5], net: r[6], stock: r[7], mitm: !!r[8], n: r[9]
+      };
+    }
+    V2.produits._cat = m;
+    return m;
+  };
   function fiche(cip) {
     if (!V2.produits._ps) {
       var m = {}, PS = window.PROD_STATS || [], i;
       for (i = 0; i < PS.length; i++) m[String(PS[i].c)] = PS[i];
       V2.produits._ps = m;
     }
-    return V2.produits._ps[String(cip)] || null;
+    var f = V2.produits._ps[String(cip)];
+    if (f) return f;
+    // Hors du périmètre du réseau : le catalogue prend le relais. Même forme
+    // (d, f, ppht, net) — tout ce qui suit, document et PDF compris, marche
+    // sans rien savoir de la provenance.
+    var C = V2.produits.catalogueIndex();
+    return (C && C[String(cip)]) || null;
   }
   function famDe(cip) { var f = fiche(cip); return f ? f.f : ''; }
   function enRupture(cip) {
@@ -449,6 +477,8 @@
     selSauver(); V2.render();
   };
   V2.produits.selVider = function () { S.sel = {}; selSauver(); V2.render(); };
+  V2.produits.setCatStock = function () { S.catStock = !S.catStock; S.page = 0; V2.render(); };
+  V2.produits.setCatLabo = function (v) { S.catLabo = v || ''; S.page = 0; V2.render(); };
 
   // ── Filtres d'affichage ────────────────────────────────────────
   function filtrer(lignes) {
@@ -641,6 +671,7 @@
 
   function actionsHtml(sousTitre) {
     return '<button class="v2-btn v2-btn-primary pr-pdf" onclick="V2.produits.apercu(true)">Voir et retoucher le document</button>' +
+      '<button class="v2-btn pr-mail" onclick="V2.produits.selFicheMarketing()">Fiche marketing</button>' +
       '<button class="v2-btn pr-mail" onclick="V2.produits.documentPdf()">Sortir le PDF</button>' +
       '<button class="v2-btn pr-mail" onclick="V2.produits.documentMail()">Par mail</button>' +
       '<div class="pr-source">' + esc(sousTitre) + '</div>';
@@ -920,6 +951,161 @@
       '</div>' + filtresHtml() + liste(lignes, rl.visibles, rl.corps);
   }
 
+  // ── Onglet Catalogue : tout ce qu'Intégral référence ───────────
+  // Les autres onglets répondent à « quoi proposer à QUI ». Celui-ci répond à
+  // « est-ce qu'on l'a ? » — la question qu'un commercial se pose au téléphone,
+  // et à laquelle l'app ne savait pas répondre pour 10 013 références.
+  var CAT_PAR_PAGE = 60;
+
+  function catalogueLignes() {
+    var C = V2.produits.catalogueIndex();
+    if (!C) return null;
+    var q = S.q.trim().toLowerCase(), out = [], c, o;
+    for (c in C) {
+      if (!Object.prototype.hasOwnProperty.call(C, c)) continue;
+      o = C[c];
+      if (S.fam !== 'all' && o.f !== S.fam) continue;
+      if (S.catStock && !(o.stock > 0)) continue;
+      if (S.catLabo && o.labo !== S.catLabo) continue;
+      if (S.sansRupture && enRupture(c)) continue;
+      if (q &&
+          o.d.toLowerCase().indexOf(q) < 0 &&
+          c.indexOf(q) < 0 &&
+          o.mol.toLowerCase().indexOf(q) < 0 &&
+          o.labo.toLowerCase().indexOf(q) < 0) continue;
+      out.push(o);
+    }
+    // Ce que le réseau achète déjà remonte en tête : c'est ce dont on sait
+    // parler. Le reste suit, du plus disponible au moins disponible.
+    out.sort(function (a, b) {
+      return (b.n - a.n) || (b.stock - a.stock) ||
+        String(a.d).localeCompare(String(b.d), 'fr');
+    });
+    return out;
+  }
+
+  function catalogueLabos() {
+    var C = V2.produits.catalogueIndex(), n = {}, c;
+    if (!C) return [];
+    for (c in C) {
+      if (!Object.prototype.hasOwnProperty.call(C, c)) continue;
+      if (C[c].labo) n[C[c].labo] = (n[C[c].labo] || 0) + 1;
+    }
+    return Object.keys(n).sort(function (a, b) { return n[b] - n[a]; })
+      .map(function (l) { return { nom: l, n: n[l] }; });
+  }
+
+  function ligneCatalogue(oc) {
+    // fiche() d'abord : c'est elle qui sert au document, au PDF et à la fiche
+    // marketing. Lire le prix ailleurs, c'est risquer deux chiffres différents
+    // pour le même produit sur le même écran.
+    var o = fiche(oc.cip) || oc;
+    o = { cip: oc.cip, d: o.d || oc.d, f: o.f || oc.f,
+          ppht: +o.ppht || 0, net: +o.net || 0,
+          labo: oc.labo, mol: oc.mol, stock: oc.stock, mitm: oc.mitm, n: oc.n };
+    var pris = !!S.sel[String(o.cip)];
+    var q = escAttr(o.cip);
+    // Règle métier stricte : l'abandon de marge n'existe que sur un princeps
+    // remboursable. Sur un générique, un biosimilaire ou un NR, on n'affiche
+    // QUE le prix net — l'écart vient du laboratoire, pas d'Intégral.
+    var ab = (porteAbandon(o.f) && o.ppht > 0 && o.net > 0 && o.net < o.ppht)
+      ? eur(o.ppht - o.net) : '—';
+    var fam = FAM[o.f];
+    var sous = [o.labo, o.mol].filter(Boolean).join(' · ');
+    return '<tr>' +
+      '<td class="pr-t-l">' +
+        '<div class="pr-t-d">' + esc(o.d) +
+          (fam ? '<span class="pr-fam" style="--fc:' + fam.c + '">' +
+            esc(FAM_COURT[o.f] || fam.l) + '</span>' : '') +
+          (o.mitm ? '<span class="pr-t-mitm" title="Médicament d\'intérêt thérapeutique majeur">MITM</span>' : '') +
+          (enRupture(o.cip) ? '<span class="pr-rupt">rupture ANSM</span>' : '') + '</div>' +
+        '<div class="pr-t-cip">' + esc(o.cip) + (sous ? ' · ' + esc(sous) : '') + '</div>' +
+      '</td>' +
+      '<td class="n pr-t-prix">' + (o.net > 0 ? eur(o.net) : '—') + '</td>' +
+      '<td class="n pr-t-ab">' + ab + '</td>' +
+      '<td class="n">' + (o.stock > 0
+        ? '<b class="pr-t-stk">' + num(o.stock) + '</b>'
+        : '<span class="pr-t-nostk">0</span>') + '</td>' +
+      '<td class="n">' + (o.n > 0
+        ? '<b>' + num(o.n) + '</b>'
+        : '<span class="pr-t-nostk">—</span>') + '</td>' +
+      '<td class="n pr-t-act">' +
+        '<button class="pr-t-add' + (pris ? ' on' : '') +
+          '" title="' + (pris ? 'Retirer du document' : 'Ajouter au document') +
+          '" onclick="V2.produits.selBascule(\'' + q + '\')">' + (pris ? '✓' : '+') + '</button>' +
+        '<button class="pr-t-fiche" title="Fiche marketing de ce produit"' +
+          ' onclick="V2.produits.ficheMarketing(\'' + q + '\')">Fiche</button>' +
+      '</td></tr>';
+  }
+
+  function rendreCatalogue() {
+    var C = V2.produits.catalogueIndex();
+    if (!C) {
+      // Le fichier arrive à la demande : on le dit, et on rerend dès qu'il est là.
+      if (V2.protegeEchec && V2.protegeEchec.catcomplet) {
+        return vide('Le catalogue n\'a pas pu être chargé',
+          'Vérifie la connexion, puis reviens sur cet onglet.');
+      }
+      if (!V2.produits._catEnCours && V2.loadFiles) {
+        V2.produits._catEnCours = true;
+        V2.loadFiles(['catcomplet']).then(function () {
+          V2.produits._catEnCours = false;
+          if (V2.route && V2.route.name === 'produits') V2.render();
+        });
+      }
+      return vide('Chargement du catalogue…',
+        'Les 16 305 références d\'Intégral Pharma arrivent (1,3 Mo, une seule fois).');
+    }
+    var meta = (window.CATALOGUE_COMPLET && window.CATALOGUE_COMPLET.meta) || {};
+    var lignes = catalogueLignes();
+    var visibles = lignes.slice(0, (S.page + 1) * CAT_PAR_PAGE);
+    V2.produits._affichees = lignes;
+    var corps = '', i;
+    for (i = 0; i < visibles.length; i++) corps += ligneCatalogue(visibles[i]);
+
+    var labos = catalogueLabos(), opts = '<option value="">Tous les laboratoires</option>', j;
+    for (j = 0; j < labos.length; j++) {
+      opts += '<option value="' + escAttr(labos[j].nom) + '"' +
+        (S.catLabo === labos[j].nom ? ' selected' : '') + '>' +
+        esc(labos[j].nom) + ' (' + labos[j].n + ')</option>';
+    }
+    var enStock = 0;
+    for (i = 0; i < lignes.length; i++) if (lignes[i].stock > 0) enStock++;
+
+    var tableau = lignes.length
+      ? '<div class="pr-t-wrap"><table class="pr-t pr-tc">' +
+          '<thead><tr><th>Produit</th><th class="n">Prix net</th>' +
+          '<th class="n" title="Abandon de marge — princeps remboursables uniquement">Abandon</th>' +
+          '<th class="n">Stock</th><th class="n" title="Pharmacies du réseau qui le commandent">Réseau</th>' +
+          '<th class="n"></th></tr></thead><tbody>' + corps + '</tbody></table></div>' +
+        (visibles.length < lignes.length
+          ? '<button class="v2-btn pr-plus" onclick="V2.produits.plus()">Voir ' +
+            CAT_PAR_PAGE + ' produits de plus</button>' : '')
+      : vide('Aucune référence avec ces filtres', 'Élargis la recherche ou change de famille.');
+
+    return '<div class="pr-bandeau">' +
+      '<div class="pr-cible">Tout le catalogue Intégral Pharma</div>' +
+      '<div class="pr-ctx">' +
+        '<span class="pr-ctx-n">' + num(lignes.length) + ' référence' +
+          (lignes.length > 1 ? 's' : '') + ' sur ' + num(meta.n || 0) + '</span>' +
+        '<span class="pr-ctx-pot">' + num(enStock) + ' en stock</span>' +
+      '</div>' +
+      '<select class="pr-select pr-catlabo" aria-label="Laboratoire"' +
+        ' onchange="V2.produits.setCatLabo(this.value)">' + opts + '</select>' +
+      actionsHtml('catalogue Intégral arrêté au ' + esc(dateFr(meta.arrete)) +
+        ' · prix nets réseau, sinon barème') +
+      '</div>' +
+      filtresHtml() +
+      '<div class="pr-chips"><span class="pr-chip' + (S.catStock ? ' on' : '') +
+        '" onclick="V2.produits.setCatStock()">Seulement ce qu\'on a en stock</span></div>' +
+      tableau + panierHtml();
+  }
+
+  function dateFr(iso) {
+    var p = String(iso || '').split('-');
+    return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : String(iso || '—');
+  }
+
   // ── Mémoire des propositions et suivi d'effet ──────────────────
   // On n'enregistre PAS une date mais le dernier mois présent dans les
   // données au moment de la proposition : le fichier mensuel arrive avec du
@@ -966,6 +1152,7 @@
 
   // ── Le document laissé au pharmacien ───────────────────────────
   function nomCible() {
+    if (S.mode === 'catalogue') return '';   // le catalogue n'est adressé à personne
     if (S.mode === 'prospect') return (S.sm && S.sm.nom) || '';
     if (S.mode === 'groupement') return S.grp || '';
     var phs = V2.pharmacies || [], i;
@@ -1213,6 +1400,70 @@
       '&body=' + encodeURIComponent(corps);
   };
 
+  // ── La fiche marketing ─────────────────────────────────────────
+  // Le document ci-dessus est une LISTE : du texte, un prix, un CIP. La fiche
+  // marketing est l'autre besoin — un support avec photo, couleur et accroche,
+  // celui que fabrique déjà l'écran Marketing. Elle marche pour UN produit
+  // comme pour toute une sélection : c'est le même bouton.
+  function produitMkt(cip) {
+    var f = fiche(cip);
+    if (!f) return null;
+    // PROD_STATS ne porte pas le laboratoire : il vient du catalogue quand
+    // celui-ci est chargé. Sans lui la fiche sort avec un produit anonyme.
+    var C = V2.produits.catalogueIndex();
+    var ext = (C && C[String(cip)]) || null;
+    var fam = FAM[f.f];
+    var net = +f.net || 0, ppht = +f.ppht || 0;
+    // Le PPHT barré et le pourcentage ne sortent que sur un princeps
+    // remboursable. Sur un générique, un biosimilaire ou un NR, l'écart de prix
+    // vient du laboratoire : l'afficher comme un abandon de marge Intégral
+    // serait faux, et c'est écrit noir sur blanc dans les règles métier.
+    var porte = porteAbandon(f.f) && ppht > 0 && net > 0 && net < ppht;
+    return {
+      src: 'produits', key: 'p' + cip, id: '',
+      name: f.d || ('CIP ' + cip),
+      brand: f.labo || (ext && ext.labo) || '',
+      ean: '', cip: String(cip),
+      price: net || ppht,
+      remise: 0,
+      ppht: porte ? ppht : 0,
+      img: (window.MKT_IMG && window.MKT_IMG[String(cip)]) || '',
+      froid: false,
+      cat: fam ? fam.l : ''
+    };
+  }
+  function ouvrirFiche(cips, titre, accroche) {
+    if (!S.sel) S.sel = selCharger();
+    if (!S.doc) S.doc = docCharger();
+    if (!V2.mkt || !V2.mkt.newSelection) {
+      if (V2.toast) V2.toast('L\'écran Marketing n\'est pas chargé');
+      return;
+    }
+    var produits = [], i, p;
+    for (i = 0; i < cips.length; i++) {
+      p = produitMkt(cips[i]);
+      if (p) produits.push(p);
+    }
+    if (!produits.length) { if (V2.toast) V2.toast('Aucun produit connu dans cette sélection'); return; }
+    V2.mkt.newSelection(titre, accroche, produits);
+  }
+  // Un seul produit : sa fiche, tout de suite.
+  V2.produits.ficheMarketing = function (cip) {
+    var f = fiche(cip);
+    ouvrirFiche([String(cip)], (f && f.d) ? f.d : ('CIP ' + cip),
+      'Disponible chez Intégral Pharma.');
+  };
+  // Toute la sélection (ou, à défaut, la liste affichée) : une fiche à N produits.
+  V2.produits.selFicheMarketing = function () {
+    if (!S.sel) S.sel = selCharger();
+    if (!S.doc) S.doc = docCharger();
+    var cips = documentCips();
+    if (!cips.length) { if (V2.toast) V2.toast('Aucun produit à mettre sur la fiche'); return; }
+    var nom = nomCible();
+    ouvrirFiche(cips, nom ? ('Sélection — ' + nom) : 'Sélection Intégral Pharma',
+      cips.length + ' produits sélectionnés par Intégral Pharma.');
+  };
+
   // ── L'aperçu : le document tel qu'il sortira, modifiable ───────
   function rendreApercu() {
     // L'aperçu se sert de la liste affichée. Si on arrive ici sans que la liste
@@ -1222,6 +1473,7 @@
       try {
         if (S.mode === 'groupement') rendreGroupement();
         else if (S.mode === 'prospect') rendreProspect();
+        else if (S.mode === 'catalogue') rendreCatalogue();
         else if (S.mode === 'achats') rendreAchats();
         else rendreClient();
       } catch (e) {}
@@ -1291,6 +1543,7 @@
       }
       var corps = S.mode === 'groupement' ? rendreGroupement()
         : S.mode === 'prospect' ? rendreProspect()
+        : S.mode === 'catalogue' ? rendreCatalogue()
         : S.mode === 'achats' ? rendreAchats()
         : rendreClient();
 
@@ -1391,12 +1644,34 @@
       '.pr-t-add{width:34px;height:34px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ip-blue);font:700 16px/1 Inter,sans-serif;cursor:pointer}',
       '.pr-t-add.on{background:var(--c-mint);border-color:var(--c-mint);color:#fff}',
       '.pr-t-mini{display:none;margin-left:6px;padding:1px 6px;border-radius:999px;background:rgba(199,121,26,.16);color:#8A5310;font:700 9.5px/1.6 Inter,sans-serif}',
+      // ── Onglet Catalogue ──
+      '.pr-t-mitm{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:999px;background:rgba(0,80,230,.12);color:var(--ip-blue);font:700 9.5px/1.6 Inter,sans-serif;vertical-align:middle}',
+      '.pr-t-stk{font:700 13px/1 "Geist Mono",ui-monospace,monospace;color:var(--c-mint)}',
+      '.pr-t-nostk{font:400 12px/1 "Geist Mono",ui-monospace,monospace;color:var(--muted);opacity:.7}',
+      '.pr-t-act{white-space:nowrap}',
+      '.pr-t-fiche{margin-left:6px;height:34px;padding:0 12px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ip-ink);font:600 12.5px/1 Inter,sans-serif;cursor:pointer}',
+      '.pr-t-fiche:hover{border-color:var(--ip-blue);color:var(--ip-blue)}',
+      '.pr-catlabo{margin-top:10px}',
+      // Le catalogue montre le PRIX avant tout : sur mobile ce sont l'abandon
+      // et le compteur réseau qui sortent, jamais le prix ni le stock.
+      '@media (max-width:620px){',
+      '  .pr-tc th:nth-child(3),.pr-tc td:nth-child(3),',
+      '  .pr-tc th:nth-child(5),.pr-tc td:nth-child(5){display:none}',
+      // Mesuré sous WebKit à 390 px : la sous-ligne « CIP · labo · molécule »
+      // fait 197 px et refusait de se couper, ce qui poussait le bouton Fiche
+      // hors de l'écran (381 px de tableau pour 360 disponibles). On la laisse
+      // passer à la ligne et on compacte la colonne d'action.
+      '  .pr-tc .pr-t-l{max-width:150px}',
+      '  .pr-tc .pr-t-cip{white-space:normal;overflow-wrap:anywhere}',
+      '  .pr-t-act{white-space:normal;width:52px}',
+      '  .pr-t-fiche{margin:6px 0 0;display:block;width:44px;padding:0;height:40px;font-size:11px}',
+      '}',
       // Sous 620 px, la colonne Statut et la colonne Abandon sortent — mais
       // JAMAIS les deux compteurs : c est eux qu on montre au pharmacien.
       // Le statut se replie en pastille sous le nom du produit.
       '@media (max-width:620px){',
-      '  .pr-t th:nth-child(2),.pr-t td:nth-child(2),',
-      '  .pr-t th:nth-child(4),.pr-t td:nth-child(4){display:none}',
+      '  .pr-t:not(.pr-tc) th:nth-child(2),.pr-t:not(.pr-tc) td:nth-child(2),',
+      '  .pr-t:not(.pr-tc) th:nth-child(4),.pr-t:not(.pr-tc) td:nth-child(4){display:none}',
       '  .pr-t-mini{display:inline-block}',
       '  .pr-t-l{min-width:112px}',
       '  .pr-t th,.pr-t td{padding:8px 4px;font-size:12px}',

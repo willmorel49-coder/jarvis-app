@@ -307,6 +307,10 @@
     // ventes le 15/08/2026 : charges a la demande par le premier ecran qui
     // en affiche, jamais au demarrage.
     grplogos: 'v2/grp-logos-wml.js',
+    // Le catalogue Intégral EN ENTIER (16 305 références, 1,3 Mo). Il ne sert
+    // qu'à l'onglet « Catalogue » de l'écran Produits : chargé à l'ouverture de
+    // cet onglet, jamais au démarrage (règle de poids, ROBOT.md §11.6).
+    catcomplet: 'v2/catalogue-complet-data.js',
   };
 
   // ── Les fichiers de données reviennent dans le dépôt (15/08/2026) ────
@@ -554,7 +558,8 @@
     sagitta: 'SAGITTA_SHORTLIST',
     clients: 'CLIENTS',
     wml: 'WML_OFFICINES',
-    grplogos: 'GRP_LOGOS'
+    grplogos: 'GRP_LOGOS',
+    catcomplet: 'CATALOGUE_COMPLET'
   };
 
   function bridge() {
