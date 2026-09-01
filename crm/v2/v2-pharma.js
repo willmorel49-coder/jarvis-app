@@ -1250,13 +1250,19 @@
     var repriseBadge = (window.REPRISES && REPRISES[String(pid)])
       ? ' <span class="phf-reprise" title="Le titulaire a changé récemment — moment clé pour (re)capter la relation">🔄 Reprise récente</span>' : '';
     var loc = [pharma.cp, pharma.ville].filter(function (x) { return x; }).join(' ');
-    var tel = (pharma.tel == null ? '' : String(pharma.tel)).trim();
-    var email = (pharma.email == null ? '' : String(pharma.email)).trim();
 
     // ── Colonne « humain » : identité + actions + listes + infos officine + notes ──
     var pidSafe = esc(String(pid).replace(/[^0-9A-Za-z_-]/g, ''));
+    // ⚠️ Téléphone et e-mail ne sont PAS dans WML_OFFICINES : seules 182 des 717
+    // officines y ont un numéro, et AUCUNE n'y a d'e-mail. Les deux vivent dans
+    // CLIENTS, dans la base nationale et dans le complément d'annuaire — c'est
+    // exactement ce que `V2.rdvInfo` réconcilie déjà par le CIP. La fiche lisait
+    // `pharma.tel` seul : elle affichait « à compléter » sur 473 officines dont
+    // le numéro était pourtant connu de l'app. On lit donc la source réconciliée
+    // pour les DEUX, comme le fait l'écran Rendez-vous depuis le 10/08/2026.
     var infoRdv = (V2.rdvInfo ? V2.rdvInfo(pid) : null);
-    var mail = email || (infoRdv && infoRdv.email) || '';
+    var tel = (pharma.tel == null ? '' : String(pharma.tel)).trim() || (infoRdv && infoRdv.tel) || '';
+    var mail = (pharma.email == null ? '' : String(pharma.email)).trim() || (infoRdv && infoRdv.email) || '';
     var titulaire = clientTitulaire(pid);
     var comms = (pharma.comms || []).join(', ');
     var kv = function (l, v, empty) { return '<span>' + l + '</span><span' + (v ? '' : ' class="pha-empty"') + '>' + (v ? v : (empty || 'à compléter')) + '</span>'; };

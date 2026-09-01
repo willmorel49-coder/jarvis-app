@@ -12,7 +12,7 @@
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s); };
   var TABLE = 'notes', LS = 'jarvis_notes_v1';
   // Dictée vocale (SpeechRecognition natif) : état courant + détection + icône micro
-  var _rec = null, _recBtn = null;
+  var _rec = null, _recBtn = null, _enCours = null;
   function voiceSupported() { return !!(window.SpeechRecognition || window.webkitSpeechRecognition); }
   var MIC_SVG = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0"/><path d="M12 17.5V21M8.5 21h7"/></svg>';
 
@@ -57,8 +57,20 @@
       var box = btn.closest('.v2-notes-box'); if (!box) return;
       var ta = box.querySelector('.v2-notes-ta'); if (!ta) return;
       // déjà en écoute sur ce bouton → on arrête
-      if (_rec && _recBtn === btn) { _rec._arretDemande = true; try { _rec.stop(); } catch (e) {} return; }
-      if (_rec) { _rec._arretDemande = true; try { _rec.stop(); } catch (e) {} }
+      // ⚠️ `_rec` n'est posé que dans `onstart`, qui arrive APRÈS `start()` : entre
+      // deux relances il vaut brièvement null. Un appui du doigt pile dans ce
+      // trou lançait une SECONDE chaîne d'écoute sans arrêter la première.
+      // `_enCours` est posé tout de suite, il ne laisse plus ce trou ouvert.
+      if (_enCours) {
+        var memeBouton = (_recBtn === btn), dejaArretee = _enCours.arret;
+        _enCours.arret = true;
+        if (_rec) { _rec._arretDemande = true; try { _rec.stop(); } catch (e) {} }
+        // Un 2e appui sur le MÊME micro = arrêt, et rien d'autre. Sauf si l'arrêt
+        // avait déjà été demandé et que la chaîne n'est pas retombée (moteur mort) :
+        // dans ce cas on repart, sinon le micro resterait bloqué pour de bon.
+        if (memeBouton && !dejaArretee) return;
+        _enCours = null;
+      }
       var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!SR) { if (V2.toast) V2.toast('La dictée vocale n\'est pas disponible sur ce navigateur'); return; }
 
@@ -68,6 +80,8 @@
       var affiche = '';       // dernier texte réellement montré à l'écran
       var arret = false;      // l'utilisateur a-t-il touché le micro pour arrêter ?
       var relances = 0;       // garde-fou : jamais de relance en boucle infinie
+      var chaine = _enCours = { arret: false };   // cette dictée-ci, relances comprises
+      _recBtn = btn;
 
       // enCours = on est au milieu d'une phrase : on garde l'espace final qui sépare
       // les mots à venir. Sinon on nettoie, pour ne pas laisser d'espace qui traîne.
@@ -123,22 +137,36 @@
         };
 
         rec.onend = function () {
+          // ⚠️ 01/09/2026 — Safari émet `end` PLUSIEURS FOIS pour une même session
+          // d'écoute (après une erreur, après un `stop()`, ou de lui-même). Sans ce
+          // verrou, chaque `end` en trop rejouait tout le bloc : la phrase entendue
+          // était ajoutée une deuxième fois ET une deuxième chaîne d'écoute était
+          // lancée en parallèle sur la même zone de texte. Deux chaînes qui écrivent
+          // au même endroit, c'est le commentaire recopié « plein de fois ».
+          // Mesuré au banc d'essai : 3 phrases dictées -> chacune écrite 2 fois.
+          if (rec._fini) return;
+          rec._fini = true;
+
           // Ce qui vient d'être reconnu est acquis pour de bon.
           // ⚠️ Safari coupe souvent SANS avoir marqué la phrase « définitive » : dans ce
           // cas on garde le texte provisoire, sinon la phrase disparaît à la relance.
           var capte = rec._fin || rec._interim || '';
-          if (capte) { acquis = (acquis + capte.trim() + ' ').replace(/\s+/g, ' '); }
+          // Deuxième filet : Safari peut re-livrer à la relance la fin de l'audio
+          // précédent. On n'ajoute pas ce qu'on vient tout juste d'ajouter.
+          var dejaLa = capte && acquis.replace(/\s+$/, '').slice(-capte.trim().length) === capte.trim();
+          if (capte && !dejaLa) { acquis = (acquis + capte.trim() + ' ').replace(/\s+/g, ' '); }
 
           // Safari (Mac et iPhone) arrête l'écoute tout seul après chaque phrase.
           // Tant que Karine n'a pas re-touché le micro, on relance : c'est ce qui
           // donnait l'impression que « le dictaphone ne marche pas ».
-          if (!arret && !rec._arretDemande && relances < 60) {
+          if (!arret && !chaine.arret && !rec._arretDemande && relances < 60) {
             relances++;
             try { demarrer(false); return; } catch (e) {}
           }
 
           btn.classList.remove('rec'); btn.title = 'Dicter la note à la voix';
-          _rec = null; _recBtn = null;
+          _rec = null;
+          if (_enCours === chaine) { _enCours = null; _recBtn = null; }
 
           // ⚠️ On ne VIDE JAMAIS la note. Avant, si aucun segment n'était marqué
           // « définitif », tout ce que Karine venait de dicter disparaissait à l'arrêt.
