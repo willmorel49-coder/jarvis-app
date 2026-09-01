@@ -102,15 +102,26 @@
 
     // Coordonnées éditables — même stockage Supabase (scope 'coord'), pré-remplies depuis la carte.
     // Valeur affichée = saisie enregistrée si elle existe, sinon la valeur connue (seed) passée en value.
-    coordSection: function (scopeId, seed) {
+    // `champs` (optionnel) restreint la liste : la fiche d'une officine CLIENTE
+    // n'affiche que téléphone / e-mail / adresse — son groupement et son titulaire
+    // s'y corrigent déjà ailleurs, et deux endroits pour la même donnée, c'est
+    // la garantie que l'un des deux sera faux.
+    coordSection: function (scopeId, seed, champs, titre) {
       ensureCss();
       seed = seed || {};
+      var liste = champs ? COORD.filter(function (f) { return champs.indexOf(f.k) >= 0; }) : COORD;
       return '<div class="v2-profil-box v2-card" data-st="client" data-sid="' + esc(String(scopeId)) + '">' +
-          '<div class="v2-profil-hd">' + (V2.ICO ? V2.ICO('pharma', 16, 2) : '') + '<span>Coordonnées</span><small class="v2-profil-meta"></small></div>' +
+          '<div class="v2-profil-hd">' + (V2.ICO ? V2.ICO('pharma', 16, 2) : '') + '<span>' + esc(titre || 'Coordonnées') + '</span><small class="v2-profil-meta"></small></div>' +
           '<div class="v2-profil-grid">' +
-            COORD.map(function (f) { return '<label class="v2-profil-f v2-profil-f-wide"><span>' + esc(f.l) + '</span>' +
+            liste.map(function (f) { return '<label class="v2-profil-f v2-profil-f-wide"><span>' + esc(f.l) + '</span>' +
               '<input type="text" data-fk="' + f.k + '" value="' + esc(seed[f.k] || '') + '" placeholder="—" onchange="V2.profil.set(this)"></label>'; }).join('') +
           '</div></div>';
+    },
+
+    // Lit l'enregistrement partagé d'une fiche (repli local compris). Sert aux écrans
+    // qui doivent AFFICHER une saisie de l'équipe, pas seulement la ré-éditer.
+    charger: function (scopeType, scopeId) {
+      return load(scopeType, String(scopeId)).then(function (res) { return (res && res.rec && res.rec.data) || {}; });
     },
 
     hydrate: function () {
