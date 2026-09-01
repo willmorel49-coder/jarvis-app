@@ -1040,7 +1040,7 @@
       ];
       // Infos du matin (brief quotidien) — app JARVIS
       if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.infos) {
-        P.push({ k: 'infos', cls: 'p6', accent: 'var(--c-amber)', ico: 'spark', tag: 'Quotidien', t: 'Infos du matin', d: 'La veille du jour : ruptures ANSM, sécurité, réglementaire et actu officine — avec ton alternative IP pour chaque molécule en tension.', go: 'Voir la veille' });
+        P.push({ k: 'infos', cls: 'p6', accent: 'var(--c-amber)', ico: 'spark', tag: 'Quotidien', t: 'Infos du matin', d: 'L\'édition du matin : 11 sources officielles relues, les 5 sujets qui comptent pour Intégral, le radar chiffré du marché — et ton alternative IP pour chaque molécule en tension.', go: 'Lire l\'édition' });
       }
       // LA CARTE (ex-« Copilote », renommée le 27/08/2026 à la demande de Will).
       // L'ancien nom reste une route valide (#copilote → carte) pour les favoris.
@@ -1133,7 +1133,7 @@
           produits: 'Client, groupement ou prospect — la liste à proposer',
           pilotage: 'CA, marge, tranches de prix & marché France',
           marketing: 'Supports & sélections à pousser',
-          infos: 'Ruptures, actu & opportunités du jour'
+          infos: 'Les 5 sujets du jour, le radar & les opportunités'
         };
         var ICOK = { pharma: 'pharma', produits: 'cat', pilotage: 'pilo', marketing: 'fiche', infos: 'spark' };
         // catalogue grossiste médicaments replié · fiches retiré · audit fusionné dans la fiche pharmacie

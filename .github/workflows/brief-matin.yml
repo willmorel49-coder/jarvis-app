@@ -1,0 +1,80 @@
+name: L'édition du matin (récap centralisé)
+
+# LE RÉDACTEUR EN CHEF. Il ne va chercher aucune source : il lit ce que les autres
+# robots ont déjà déposé dans crm/v2/ pendant la nuit et en fait UNE édition datée,
+# hiérarchisée et archivée — « Les 5 qui comptent », le radar chiffré, le fil complet.
+#
+# POURQUOI il existe : 27 robots produisaient de la donnée chaque jour et l'écran
+# « Infos du matin » n'en lisait que 2 (infos-jour.json et jo-marges.json). Le
+# Journal officiel, les avis de prix CEPS, les dates de retour de stock ANSM, les
+# rappels de lots, les génériques européens en approche et la veille concurrents
+# existaient déjà, personne ne les rassemblait.
+#
+# ⚠️ IL PASSE APRÈS LES AUTRES. Ses entrées sont produites par :
+#   ansm-dispo 05:41 · prix 05:33 · rappels-lots 05:35 · epidemio 05:52 ·
+#   infos-matin 05:23 · jo-marges 06:18 · grossistes-actu 06:31 · prix-futurs 06:38
+# Le dernier finit vers 06:40 UTC — d'où le passage à 06:52 UTC (~08h52 Paris l'été).
+# Avancer ce cron sans avancer les autres ferait un récap de la veille.
+#
+# Écrit crm/v2/brief-jour.json (l'édition du jour) et crm/v2/brief-archive.json
+# (les 120 dernières éditions — c'est la mémoire, elle ne se réécrit jamais de zéro).
+
+on:
+  schedule:
+    - cron: '52 6 * * *'    # ~08h52 Paris (été) — après tous les robots amont
+    - cron: '07 12 * * *'   # ~14h07 Paris — filet si le matin est sauté
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: brief-matin
+  cancel-in-progress: false
+
+jobs:
+  brief:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Composer l'édition du matin
+        run: python3 generate_brief.py
+
+      - name: Garde de complétude
+        # Une édition vide n'écrase jamais une édition pleine : si le robot n'a rien
+        # retenu, on garde celle d'hier et on échoue bruyamment. Un contrôle qui rate
+        # ne condamne pas la donnée.
+        run: |
+          python3 - <<'PY'
+          import json, sys
+          d = json.load(open('crm/v2/brief-jour.json', encoding='utf-8'))
+          if not d.get('cinq') or not d.get('fil'):
+              sys.exit("Édition vide — rien à publier, on garde la précédente.")
+          print("OK : %d à la une, %d au fil, %d chiffres au radar, %d fichiers lus"
+                % (len(d['cinq']), len(d['fil']), len(d['radar']), d['compte']['fichiers']))
+          PY
+
+      - name: Committer si changement
+        run: |
+          git config user.name  "JARVIS copilote"
+          git config user.email "actions@users.noreplace.github.com"
+          git add crm/v2/brief-jour.json crm/v2/brief-archive.json
+          if git diff --cached --quiet; then
+            echo "Édition identique à la précédente."
+          else
+            git commit -m "data(brief): édition du matin $(date -u +%Y-%m-%d)"
+            # 28 robots poussent sur le même dépôt et GitHub livre leurs exécutions
+            # planifiées en paquet : une seule reprise ne suffit pas.
+            pousse=0
+            for essai in 1 2 3 4 5; do
+              if git push; then pousse=1; break; fi
+              echo "push refusé (tentative $essai/5) — un autre robot est passé, rattrapage"
+              git pull --rebase --autostash origin "$GITHUB_REF_NAME" || exit 1
+              sleep $(( essai * 5 + RANDOM % 10 ))
+            done
+            [ "$pousse" = 1 ] || { echo "ÉCHEC : 5 tentatives de push refusées"; exit 1; }
+          fi
