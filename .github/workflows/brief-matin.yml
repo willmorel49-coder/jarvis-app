@@ -1,8 +1,14 @@
 name: L'édition du matin (récap centralisé)
 
-# LE RÉDACTEUR EN CHEF. Il ne va chercher aucune source : il lit ce que les autres
-# robots ont déjà déposé dans crm/v2/ pendant la nuit et en fait UNE édition datée,
-# hiérarchisée et archivée — « Les 5 qui comptent », le radar chiffré, le fil complet.
+# LE RÉDACTEUR EN CHEF. Il lit ce que les autres robots ont déjà déposé dans crm/v2/
+# pendant la nuit, ajoute six flux gratuits illustrés, ouvre chaque article retenu
+# pour en tirer son image et vérifier qu'il est lisible en entier, et en fait UNE
+# édition datée, hiérarchisée et archivée — la une, les 5 qui comptent, le radar
+# chiffré, le fil complet illustré.
+#
+# ⚠️ Il sort donc sur le réseau : ~25 pages d'articles ouvertes en parallèle (8 à la
+# fois, 12 s de délai chacune). Compter ~10 s de plus qu'avant. Une page qui ne
+# répond pas ne condamne pas l'article : il reste au fil, simplement sans image.
 #
 # POURQUOI il existe : 27 robots produisaient de la donnée chaque jour et l'écran
 # « Infos du matin » n'en lisait que 2 (infos-jour.json et jo-marges.json). Le
