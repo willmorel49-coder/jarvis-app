@@ -319,13 +319,23 @@
           epingles.map(function (e, i) {
             var ech = e.motif === 'echeance';
             var j = e.jours;
+            /* Cinq natures d'alerte, cinq pastilles. Une couleur veut toujours dire
+               la même chose : ambre = une date arrive · rose = une sanction ou une
+               défaillance · violet = un concurrent bouge. */
+            var ETIQ = {
+              sanction:   { c: 'sanc', l: 'Sanction', i: 'alert' },
+              societe:    { c: 'soc',  l: 'Concurrent · registre', i: 'fiche' },
+              difficulte: { c: 'diff', l: 'En difficulté', i: 'alert' },
+              concurrent: { c: 'conc', l: 'Concurrent', i: 'opp' }
+            };
+            var et = ETIQ[e.motif] || ETIQ.concurrent;
             var pastille = ech
               ? (j !== null && j >= 0
                   ? '<span class="al-cd' + (j <= 60 ? ' urgent' : '') + '">' +
                     (j === 0 ? "aujourd'hui" : 'dans ' + j + ' jour' + (j > 1 ? 's' : '')) + '</span>'
                   : '<span class="al-cd fait">déjà applicable</span>')
-              : '<span class="al-cd conc">' + ICO('opp', 12, 2.4) + 'Concurrent</span>';
-            return '<article class="al-i ' + (ech ? 'ech' : 'conc') + '">' +
+              : '<span class="al-cd ' + et.c + '">' + ICO(et.i, 12, 2.4) + et.l + '</span>';
+            return '<article class="al-i ' + (ech ? 'ech' : esc(e.motif)) + '">' +
               '<div class="al-top">' + pastille +
                 '<span class="al-d">' + (ech && e.effet ? 'à partir du ' + esc(joDateFr(e.effet)) : esc(ilYA(e.d))) + '</span>' +
                 (e.paywall ? '<span class="al-ab">accès abonné</span>' : '') + '</div>' +
@@ -685,8 +695,10 @@
       '.inf2 .al-cd.urgent{background:color-mix(in srgb,var(--c-rose) 12%,transparent);color:var(--c-rose-txt);' +
         'border-color:color-mix(in srgb,var(--c-rose) 28%,transparent)}',
       '.inf2 .al-cd.fait{background:var(--card-2);color:var(--muted);border-color:var(--line)}',
-      '.inf2 .al-cd.conc{background:color-mix(in srgb,var(--c-cat) 11%,transparent);color:var(--c-cat);' +
+      '.inf2 .al-cd.conc,.inf2 .al-cd.soc{background:color-mix(in srgb,var(--c-cat) 11%,transparent);color:var(--c-cat);' +
         'border-color:color-mix(in srgb,var(--c-cat) 26%,transparent)}',
+      '.inf2 .al-cd.sanc,.inf2 .al-cd.diff{background:color-mix(in srgb,var(--c-rose) 12%,transparent);' +
+        'color:var(--c-rose-txt);border-color:color-mix(in srgb,var(--c-rose) 28%,transparent)}',
       '.inf2 .al-d{font-size:12.5px;color:var(--muted)}',
       '.inf2 .al-ab{font:600 10px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted-2);' +
         'background:var(--surf-sunken);padding:5px 9px;border-radius:var(--r-pill)}',
