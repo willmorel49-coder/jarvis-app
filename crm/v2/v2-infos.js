@@ -567,7 +567,8 @@
     return '<span class="mq-cov ' + (ratio || 'r-4x5') + '">' +
       '<span class="mq-plaque a-' + (THEME_ACC[c.theme] || 'muted') + '" style="--ang:' + ang + 'deg"></span>' +
       (c.img ? '<img src="' + esc(c.img) + '" alt="" loading="lazy" decoding="async" ' +
-               'referrerpolicy="no-referrer" onerror="this.remove()">' : '') + '</span>';
+               'referrerpolicy="no-referrer" onerror="this.remove()">' +
+               '<span class="mq-teinte" aria-hidden="true"></span>' : '') + '</span>';
   }
   function sourcesLine(c) {
     var s = (c.srcs && c.srcs.length) ? c.srcs : [c.s];
@@ -739,6 +740,43 @@
       '.inf2 .f .neuf{color:#7BE0AF;font-weight:700}',
       /* le lien couvre toute la tuile : une seule cible, très grande */
       '.inf2 .tout{position:absolute;inset:0;z-index:4}',
+
+      /* ══════════ UNIFIER LE PATCHWORK ══════════
+         Trente sources = trente photographes, trente lumières, trente balances de
+         blanc. Sans traitement, le mur ressemble à un panneau d'affichage. Ce voile
+         teinté à la rubrique, très léger, leur donne une direction commune — c'est
+         ce que fait un magazine avec ses images. Pas de mix-blend-mode : Safari y
+         est capricieux, un simple dégradé en rgba suffit et ne casse rien. */
+      '.inf2 .mq-teinte{position:absolute;inset:0;z-index:2;pointer-events:none;' +
+        'background:linear-gradient(var(--ang,152deg),color-mix(in srgb,var(--acc) 30%,transparent) 0%,' +
+        'color-mix(in srgb,var(--acc) 9%,transparent) 45%,transparent 78%),' +
+        'linear-gradient(0deg,rgba(11,16,32,.30) 0%,transparent 52%);' +
+        'transition:opacity .45s var(--ease)}',
+      '.inf2 .tu:hover .mq-teinte,.inf2 .mur-une:hover .mq-teinte{opacity:.55}',
+
+      /* ══════════ LA PLANCHE DEVIENT UNE COMPOSITION ══════════
+         Un dégradé seul se répète et lasse. On y pose des anneaux concentriques
+         décalés selon la rubrique : la planche devient un objet dessiné, pas un
+         fond de secours. */
+      '.inf2 .mq-plaque{--ox:26%;--oy:22%}',
+      '.inf2 .a-rose .mq-plaque{--ox:74%;--oy:18%}.inf2 .a-amber .mq-plaque{--ox:18%;--oy:74%}',
+      '.inf2 .a-green .mq-plaque{--ox:82%;--oy:70%}.inf2 .a-violet .mq-plaque{--ox:50%;--oy:14%}',
+      '.inf2 .a-teal .mq-plaque{--ox:30%;--oy:62%}.inf2 .a-muted .mq-plaque{--ox:66%;--oy:40%}',
+      '.inf2 .mq-plaque::after{content:"";position:absolute;inset:0;opacity:.55;' +
+        'background:repeating-linear-gradient(var(--ang,58deg),rgba(255,255,255,.16) 0 1px,transparent 1px 12px),' +
+        'repeating-radial-gradient(circle at var(--ox) var(--oy),' +
+          'rgba(255,255,255,.13) 0 1px,transparent 1px 26px)}',
+
+      /* ══════════ LE SURVOL DEVIENT UN GESTE ══════════ */
+      '.inf2 .tu .b,.inf2 .mur-une .b{transition:transform .38s var(--ease)}',
+      '.inf2 .tu:hover .b{transform:translateY(-3px)}',
+      '.inf2 .tu h3,.inf2 .mur-une h2{transition:color .25s var(--ease-soft)}',
+
+      /* ══════════ LA UNE PREND SA PLACE ══════════ */
+      '.inf2 .mur-une h2{font-size:clamp(27px,4vw,52px);line-height:1.02;letter-spacing:-.03em;' +
+        'text-shadow:0 2px 24px rgba(8,11,20,.4)}',
+      '.inf2 .mur-une p{font-size:16.5px;text-shadow:0 1px 12px rgba(8,11,20,.35)}',
+      '.inf2 .mur-une .cat{letter-spacing:.18em;padding:8px 14px}',
 
       /* ══════════ LA LUMIÈRE ══════════
          Le clair ne pardonne pas la platitude : un aplat crème sans source de
