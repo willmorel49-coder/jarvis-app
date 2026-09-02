@@ -167,6 +167,41 @@
     catch (e) { fallbackCopy(txt); ok(); }
   };
 
+  /* ════════════════ « EST-CE UN DE MES CLIENTS ? » ════════════════
+     Une officine en redressement judiciaire, c'est un encours qui peut ne jamais
+     rentrer. Le rapprochement se fait ICI, dans le navigateur, contre V2.pharmacies
+     (le fichier clients chargé au démarrage). Rien de tout ceci ne part dans
+     brief-jour.json, qui est public. */
+  var MOTS_VIDES = { pharmacie: 1, pharmacies: 1, phie: 1, selarl: 1, sarl: 1, sas: 1, sa: 1,
+                     eurl: 1, snc: 1, scp: 1, societe: 1, exploitation: 1, officine: 1, de: 1,
+                     du: 1, des: 1, la: 1, le: 1, les: 1, et: 1, aux: 1, saint: 1, sainte: 1 };
+  function motsUtiles(x) {
+    return norm(x).replace(/[^a-z0-9]+/g, ' ').split(' ')
+      .filter(function (m) { return m.length > 3 && !MOTS_VIDES[m]; });
+  }
+  /* ⚠️ « PHARMACIE CENTRALE » existe dans presque chaque ville : le nom seul ne
+     prouve rien. On exige la VILLE en plus, sinon on n'affirme pas. */
+  function clientTouche(nomSociete, ville) {
+    var liste = (window.V2 && V2.pharmacies) || [];
+    if (!liste.length || !nomSociete) return null;
+    var mots = motsUtiles(nomSociete);
+    if (!mots.length) return null;
+    var v = norm(ville || '').replace(/[^a-z0-9]+/g, ' ').trim();
+    for (var i = 0; i < liste.length; i++) {
+      var p = liste[i];
+      var nomP = norm(p.name || '').replace(/[^a-z0-9]+/g, ' ');
+      if (!nomP.trim()) continue;
+      var communs = 0;
+      for (var k = 0; k < mots.length; k++) if (nomP.indexOf(mots[k]) >= 0) communs++;
+      if (!communs) continue;
+      // la ville doit concorder : c'est elle qui transforme une coïncidence en fait
+      if (v && nomP.indexOf(v) < 0) continue;
+      if (!v && communs < 2) continue;      // sans ville, il faut au moins deux mots rares
+      return p;
+    }
+    return null;
+  }
+
   /* ════════════════ LE PANNEAU DE LECTURE ════════════════
      Will (02/09/2026) : « apporter de la lisibilité et de l'information directement
      sur la plateforme, que ça puisse synthétiser l'info importante rapidement ».
@@ -341,6 +376,13 @@
                 (e.paywall ? '<span class="al-ab">accès abonné</span>' : '') + '</div>' +
               '<h3>' + esc(e.t) + '</h3>' +
               (e.r ? '<p>' + esc(e.r) + '</p>' : '') +
+              (function () {
+                if (e.motif !== 'difficulte') return '';
+                var cl = clientTouche(e.societe, e.ville);
+                return cl ? '<div class="al-client">' + ICO('alert', 14, 2.4) +
+                  '<b>C\'est un de tes clients</b><span>' + esc(cl.name) +
+                  (cl.code ? ' · CIP ' + esc(cl.code) : '') + ' — encours à vérifier</span></div>' : '';
+              })() +
               '<div class="al-f">' + esc((e.srcs && e.srcs.length ? e.srcs : [e.s]).slice(0, 3).join(' · ')) + '</div>' +
               '<a class="tout" href="' + esc(e.u || '#') + '" onclick="return V2.infosLire(event,' + i + ')" aria-label="' + esc(e.t) + '"></a>' +
             '</article>';
@@ -705,6 +747,12 @@
       '.inf2 .al-i h3{font-family:var(--serif);font-weight:600;font-size:19px;line-height:1.28;letter-spacing:-.016em;' +
         'margin:0 0 7px;color:var(--ip-ink)}',
       '.inf2 .al-i p{font-size:15px;font-weight:600;line-height:1.5;color:var(--ip-ink-2);margin:0 0 7px}',
+      '.inf2 .al-client{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:8px 0 9px;padding:9px 13px;' +
+        'border-radius:var(--r-sm);background:color-mix(in srgb,var(--c-rose) 11%,transparent);' +
+        'border:1px solid color-mix(in srgb,var(--c-rose) 28%,transparent)}',
+      '.inf2 .al-client svg{color:var(--c-rose);flex:0 0 auto}',
+      '.inf2 .al-client b{font:800 11px/1 var(--mono);letter-spacing:.09em;text-transform:uppercase;color:var(--c-rose-txt)}',
+      '.inf2 .al-client span{font-size:13.5px;font-weight:600;color:var(--ip-ink)}',
       '.inf2 .al-f{font:600 10.5px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted-2)}',
 
       /* ══════════ L'ESSENTIEL EN 30 SECONDES ══════════
