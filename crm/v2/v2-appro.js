@@ -1140,6 +1140,90 @@
       '<div class="cb-qt">' + (x.qty > 0 ? '+' + fmt(x.qty) + '<small>u</small>' : '—') + '</div></div>';
   }
   V2.approTab = function (t) { _bookTab = t; if (V2.render) V2.render(); };
+
+  // ═══ LA COURBE — prévision du marché France à 3 / 6 / 12 mois ═══════════════
+  // Source : previsions.json (Medic'AM 2021→2026, modèle Chronos-2 d'Amazon, Apache-2.0).
+  // Choisi par backtest sur 9 472 produits, futur caché : il bat la moyenne des 3 derniers
+  // mois de 9 % à 3 mois et de 22 % à 12 mois, y compris sur les gros volumes.
+  // ⚠️ On transporte une ÉVOLUTION, jamais un volume national : la part de marché du réseau
+  // varie trop d'un produit à l'autre (0,04 % à 0,26 % entre quartiles) pour être appliquée
+  // en bloc. L'évolution, elle, se lit sur la vitesse réelle du réseau.
+  var _prevState = 0, _prevData = null;
+  function ensurePrev() {
+    if (_prevData || _prevState) return;
+    _prevState = 1;
+    try {
+      var day = new Date().toISOString().slice(0, 10);
+      fetch('previsions.json?d=' + day, { cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) { _prevData = j || {}; _prevState = 2; approRerender(); })
+        .catch(function () { _prevState = 2; });
+    } catch (e) { _prevState = 2; }
+  }
+  // [m3,b3,h3, m6,b6,h6, m12,b12,h12, bascule, fiable] — en % du rythme des 3 derniers mois connus
+  function prev(c) {
+    var d = _prevData && _prevData.data;
+    return (d && d[String(c)]) || null;
+  }
+  function pctEvo(v) {
+    var e = v - 100;
+    var cls = e > 4 ? 'ap-up' : (e < -4 ? 'ap-down' : 'ap-flat');
+    return '<span class="' + cls + '">' + (e > 0 ? '+' : '') + Math.round(e) + ' %</span>';
+  }
+  function previsionCard() {
+    if (_prevState === 2 && (!_prevData || !_prevData.data)) return '';
+    if (!_prevData) return card('spark', 'La courbe — ce que le marché va faire',
+      'chargement de la prévision…', '<div class="ap-empty">…</div>', '#6D5AE6');
+    var idx = cipIndex(), lignes = [];
+    Object.keys(idx).forEach(function (c) {
+      var o = idx[c], p = prev(c);
+      if (!p || !p[10] || o.vM < MINVEL) return;       // p[10] = fourchette exploitable
+      lignes.push({ c: c, d: o.d, vM: o.vM, m3: p[0], b3: p[1], h3: p[2], m12: p[6],
+                    bascule: p[9], imp: Math.abs(p[0] - 100) / 100 * o.vM * 3 });
+    });
+    if (!lignes.length) return '';
+    lignes.sort(function (a, b) { return b.imp - a.imp; });
+    var haut = lignes.filter(function (l) { return l.m3 >= 110; }).slice(0, 7);
+    var bas  = lignes.filter(function (l) { return l.m3 <= 90; }).slice(0, 7);
+    function ligneHtml(l) {
+      return '<div class="ap-row"><div class="ap-nm">' + esc(cap((l.d || l.c).toLowerCase())) +
+        '<small>' + fmt(Math.round(l.vM)) + ' /mois réseau · fourchette ' +
+        (l.b3 - 100 > 0 ? '+' : '') + Math.round(l.b3 - 100) + ' à ' +
+        (l.h3 - 100 > 0 ? '+' : '') + Math.round(l.h3 - 100) + ' % · à 12 mois ' +
+        (l.m12 - 100 > 0 ? '+' : '') + Math.round(l.m12 - 100) + ' %</small></div>' +
+        '<div class="ap-g">' + pctEvo(l.m3) + '</div></div>';
+    }
+    function titre(txt) {
+      return '<div class="ap-foot" style="padding:11px 18px 2px;margin:0;font-weight:800;' +
+        'color:var(--ip-ink);text-transform:uppercase;letter-spacing:.04em;font-size:11px">' + txt + '</div>';
+    }
+    var corps = '';
+    if (haut.length) corps += titre('Ça va monter') + haut.map(ligneHtml).join('');
+    if (bas.length)  corps += titre('Ça va baisser') + bas.map(ligneHtml).join('');
+    if (!corps) corps = '<div class="ap-empty">Marché stable sur ton périmètre : aucun mouvement marqué à 3 mois.</div>';
+    var basc = lignes.filter(function (l) { return l.bascule >= 200 || l.bascule <= 50; })
+                     .sort(function (a, b) { return b.vM - a.vM; }).slice(0, 5);
+    if (basc.length) {
+      corps += titre('Changements de régime') + basc.map(function (l) {
+        return '<div class="ap-row"><div class="ap-nm">' + esc(cap((l.d || l.c).toLowerCase())) +
+          '<small>' + fmt(Math.round(l.vM)) + ' /mois réseau · rythme récent à ' + l.bascule +
+          ' % de son année</small></div><div class="ap-st ' + (l.bascule >= 200 ? 'ok">en lancement' : 'ko">en extinction') +
+          '</div></div>';
+      }).join('');
+    }
+    var maj = esc(_prevData.dernier_mois_reel || '');
+    return '<div class="v2-card ap-card"><div class="ap-hd"><div class="ap-ic" style="background:#6D5AE6">' +
+      ICO('spark', 15, 2) + '</div><div><h3>La courbe — ce que le marché va faire</h3>' +
+      '<div class="ap-sub">marché France sur ton périmètre · dernier mois réel ' + maj +
+      ' · l\'évolution s\'applique à ta vitesse réseau, jamais un volume national</div></div></div>' + corps +
+      '<div class="ap-foot" style="padding:10px 18px 12px;margin:0">Prévision Chronos-2 (Amazon, libre) ' +
+      'sur Medic\'AM — boîtes remboursées France, 2021 à ' + maj + '. ' + fmt(_prevData.n || 0) +
+      ' produits couverts. Choisi par test à futur caché : il fait 9 % d\'erreur en moins qu\'une moyenne ' +
+      '3 mois à 3 mois, 22 % en moins à 12 mois. ' +
+      'Évolution donnée en % du rythme des 3 derniers mois connus. Les séries trop instables pour décider ' +
+      'un achat ne sont pas affichées.</div></div>';
+  }
+
   var _section = 'today';   // espace affiché : today / anticiper / stock / marche
   V2.approSec = function (s) { _section = s; if (V2.render) V2.render(); try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {} };
   V2.approExport = function () {
@@ -1908,11 +1992,15 @@
       } else if (_section === 'actu') {
         content = actuView();
       } else if (_section === 'anticiper') {
+        ensurePrev();
+        var prevH = '';
+        try { prevH = previsionCard(); } catch (e) { prevH = ''; }
         var cockpit = '';
         try { cockpit = anticiperCockpit(); } catch (e) { cockpit = ''; }
         var ecartH = '';
         try { ecartH = ecartNational(); } catch (e) { ecartH = ''; }
         content = cockpit +
+          (prevH ? secHead('La courbe — 3, 6 et 12 mois', 'ce que le marché national va faire, avec sa fourchette — pour pré-acheter et négocier') + prevH : '') +
           (ecartH ? secHead('Écart au marché France', 'calculé sur le marché national, indépendamment de la fraîcheur de vos données') + ecartH : '') +
           secHead('Veille — retours de rupture &amp; futurs remboursés', 'plus loin dans le temps, à surveiller') + ansmHtml + hasHtml;
       } else if (_section === 'stock') {
