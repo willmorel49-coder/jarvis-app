@@ -1040,7 +1040,7 @@
       ];
       // Infos du matin (brief quotidien) — app JARVIS
       if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.infos) {
-        P.push({ k: 'infos', cls: 'p6', accent: 'var(--c-amber)', ico: 'spark', tag: 'Quotidien', t: 'Infos du matin', d: 'Le mur du matin : 27 sources gratuites relues, l\'essentiel en 30 secondes, et chaque article résumé en trois phrases — sans quitter JARVIS.', go: 'Lire le matin' });
+        P.push({ k: 'infos', cls: 'p6', accent: 'var(--c-amber)', ico: 'spark', tag: 'Quotidien', t: 'Infos du matin', d: 'Le mur du matin : ce qu\'il ne faut pas manquer (échéances de marge, mouvements de concurrents), l\'essentiel en 30 secondes, et chaque article résumé en trois phrases.', go: 'Lire le matin' });
       }
       // LA CARTE (ex-« Copilote », renommée le 27/08/2026 à la demande de Will).
       // L'ancien nom reste une route valide (#copilote → carte) pour les favoris.
