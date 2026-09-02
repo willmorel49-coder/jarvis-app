@@ -1247,6 +1247,114 @@
       'un achat ne sont pas affichées.</div></div>';
   }
 
+
+  // ═══ PROFIL D'ACHAT : ce que prend UNE pharmacie, pas le réseau entier ═════
+  // Un volume réseau ne dit pas comment commander : 8 000 boîtes chez 400 officines
+  // (20 chacune) et 8 000 chez 20 officines (400 chacune) sont deux achats opposés.
+  // Mesuré le 02/09/2026 sur les ventes réelles : la MOYENNE ment presque partout.
+  // Seresta 10 mg — médiane 2 boîtes/mois par pharmacie, moyenne 13,6 (×7) ; sur les
+  // 15 plus gros volumes, les 20 % de pharmacies les plus grosses font 47 à 63 % du
+  // total. Commander sur la moyenne, c'est commander pour une pharmacie qui n'existe pas.
+  // Tout est calculé depuis WML_SALES déjà chargé : aucun fichier à régénérer.
+  var _profil = null, _profilRef = null;
+  function profilIndex() {
+    var S = window.WML_SALES;
+    if (!S || !S.length) return {};
+    if (_profil && _profilRef === S) return _profil;
+    var MR = moisRetenus(S), garde = {}, k;
+    for (k = 0; k < MR.length; k++) garde[MR[k]] = 1;
+    var nMois = MR.length || 1;
+    var parPh = {}, parCom = {};
+    for (var j = 0; j < S.length; j++) {
+      var r = S[j], q = r[4] || 0;
+      if (q <= 0 || !garde[r[1]]) continue;
+      var c = String(r[3]);
+      var a = parPh[c] || (parPh[c] = {}); a[r[0]] = (a[r[0]] || 0) + q;
+      var b = parCom[c] || (parCom[c] = {}); b[r[2]] = (b[r[2]] || 0) + q;
+    }
+    var out = {};
+    Object.keys(parPh).forEach(function (c) {
+      var a = parPh[c], v = [], tot = 0, p;
+      for (p in a) if (a.hasOwnProperty(p)) { v.push(a[p]); tot += a[p]; }
+      if (!v.length || tot <= 0) return;
+      v.sort(function (x, y) { return x - y; });
+      var n = v.length;
+      var med = (n % 2 ? v[(n - 1) / 2] : (v[n / 2 - 1] + v[n / 2]) / 2) / nMois;
+      // concentration : part du volume faite par les 20 % de pharmacies les plus grosses
+      var n20 = Math.max(1, Math.round(n * 0.2)), s20 = 0;
+      for (var i = n - n20; i < n; i++) s20 += v[i];
+      // le commercial qui porte le produit — un produit tenu par un seul secteur est fragile
+      var bc = parCom[c] || {}, meilleur = '', vmax = 0, nCom = 0, tc = 0, x;
+      for (x in bc) if (bc.hasOwnProperty(x)) { nCom++; tc += bc[x]; if (bc[x] > vmax) { vmax = bc[x]; meilleur = x; } }
+      out[c] = { nph: n, med: med, moy: tot / n / nMois, conc: s20 / tot * 100,
+                 nCom: nCom, com: meilleur, partCom: tc > 0 ? vmax / tc * 100 : 0 };
+    });
+    _profil = out; _profilRef = S;
+    return out;
+  }
+  function profilLigne(cip) {
+    var pr = profilIndex()[String(cip)];
+    if (!pr || pr.nph < 3) return '';
+    var dec = pr.med < 10 ? 1 : 0;
+    var alerte = (pr.med > 0 && pr.moy / pr.med >= 3)
+      ? '<div class="tk-warn">Quelques pharmacies font le volume — la moyenne (' +
+        pr.moy.toFixed(dec) + '/mois) vaut ' + Math.round(pr.moy / pr.med) +
+        ' fois la pharmacie type. Commander sur la moyenne mènerait au surstock.</div>' : '';
+    var seul = (pr.nCom === 1)
+      ? '<div class="tk-warn">Un seul secteur achète ce produit (' + esc(pr.com) +
+        ') : le volume tient à un commercial.</div>'
+      : (pr.partCom >= 60 ? '<div class="tk-warn">' + esc(pr.com) + ' fait ' +
+         Math.round(pr.partCom) + ' % du volume de ce produit.</div>' : '');
+    return '<div class="tk-price"><b>' + fmt(pr.nph) + ' pharmacies</b> en prennent · ' +
+      'une pharmacie type : <b>' + pr.med.toFixed(dec) + ' /mois</b> · ' +
+      'les 20 % les plus grosses font <b>' + Math.round(pr.conc) + ' %</b> du volume</div>' +
+      alerte + seul;
+  }
+
+
+  // ═══ D'OÙ VIENT LA DEMANDE — par secteur commercial ═══════════════════════
+  // Le volume réseau ne dit pas d'où il vient. Mesuré le 02/09/2026 : entre le
+  // secteur le plus dense et le moins dense, l'écart va de 1 017 à 372 boîtes par
+  // pharmacie et par mois — presque 3 fois. Un même produit acheté « pour le réseau »
+  // ne se consomme donc pas du tout au même rythme selon le secteur.
+  function secteursCard() {
+    var S = window.WML_SALES;
+    if (!S || !S.length) return '';
+    var MR = moisRetenus(S), garde = {}, k;
+    for (k = 0; k < MR.length; k++) garde[MR[k]] = 1;
+    var nMois = MR.length || 1;
+    var par = {};
+    for (var j = 0; j < S.length; j++) {
+      var r = S[j], q = r[4] || 0;
+      if (q <= 0 || !garde[r[1]]) continue;
+      var co = r[2] || '—', a = par[co] || (par[co] = { q: 0, ph: {}, ref: {}, ca: 0 });
+      a.q += q; a.ph[r[0]] = 1; a.ref[String(r[3])] = 1; a.ca += (r[6] || 0);
+    }
+    var lst = Object.keys(par).map(function (co) {
+      var a = par[co], n = Object.keys(a.ph).length;
+      return { co: co, n: n, q: a.q / nMois, ref: Object.keys(a.ref).length,
+               dens: a.q / nMois / (n || 1), ca: a.ca / nMois };
+    }).filter(function (x) { return x.n > 0; });
+    if (!lst.length) return '';
+    lst.sort(function (a, b) { return b.q - a.q; });
+    var dmax = Math.max.apply(null, lst.map(function (x) { return x.dens; })) || 1;
+    var rows = lst.map(function (x) {
+      var w = Math.max(4, Math.round(x.dens / dmax * 100));
+      return '<div class="ap-row"><div class="ap-nm">' + esc(x.co) +
+        '<small>' + fmt(x.n) + ' pharmacies · ' + fmt(Math.round(x.q)) + ' boîtes/mois · ' +
+        fmt(x.ref) + ' références</small>' +
+        '<div class="sec-bar"><i style="width:' + w + '%"></i></div></div>' +
+        '<div class="ap-g">' + fmt(Math.round(x.dens)) + '<small style="display:block;font-weight:500;color:var(--muted);font-size:10.5px">par pharmacie</small></div></div>';
+    }).join('');
+    return '<div class="v2-card ap-card"><div class="ap-hd"><div class="ap-ic" style="background:#0E7C86">' +
+      ICO('pilo', 15, 2) + '</div><div><h3>D\'où vient la demande — par secteur</h3>' +
+      '<div class="ap-sub">boîtes par mois et par pharmacie : deux secteurs de même taille ne consomment pas pareil</div></div></div>' +
+      rows +
+      '<div class="ap-foot" style="padding:10px 18px 12px;margin:0">Calculé sur les ' + nMois +
+      ' mois complets retenus. La barre compare la densité — ce qu\'une pharmacie du secteur prend en moyenne chaque mois. ' +
+      'Un secteur dense consomme un réassort plus vite à nombre d\'officines égal.</div></div>';
+  }
+
   var _section = 'today';   // espace affiché : today / anticiper / stock / marche
   V2.approSec = function (s) { _section = s; if (V2.render) V2.render(); try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {} };
   V2.approExport = function () {
@@ -1338,6 +1446,8 @@
       '<div class="tk-kpi"><b>' + fmt(o.st) + '</b><span>en stock</span></div>' +
       '<div class="tk-kpi"><b style="color:var(--c-opp)">' + (o.qcmd > 0 ? '+' + fmt(o.qcmd) : '—') + '</b><span>à commander</span></div>' +
       '</div>';
+    var profilHtml = '';
+    try { profilHtml = profilLigne(o.c); } catch (e) { profilHtml = ''; }
     var priceLine = '<div class="tk-price">Prix grossiste (PPHT) <b>' + (V2.fmtEur ? V2.fmtEur(o.ppht) : o.ppht) + '</b>' +
       (rpct > 0 ? ' · abandon de marge <b>' + (Math.round(rpct * 10) / 10) + ' %</b> → net <b>' + (V2.fmtEur ? V2.fmtEur(net) : net) + '</b>' : '') + '</div>';
     // projection du stock → date de rupture (le meilleur d'Aprobot, en clair)
@@ -1358,7 +1468,7 @@
       '<div class="tk-title">' + esc(cap((name || '').toLowerCase())) + '</div>' +
       '<div class="tk-cip">CIP ' + esc(cip) + (p && p.f ? ' · ' + esc(p.f) : '') + '</div>' +
       (sig.length ? '<div class="tk-sig">' + sig.join(' ') + '</div>' : '') +
-      kpis + priceLine + proj +
+      kpis + priceLine + profilHtml + proj +
       '<div class="tk-h">Demande réseau (' + MOIS.length + ' mois)</div>' + spark +
       marcheLine + sitesHtml + '</div>';
     var el = document.getElementById('appro-ticket');
@@ -2042,6 +2152,7 @@
             card('spark', 'La saison arrive', 'classes qui montent le mois prochain (Medic\'AM)', saiRows, '#6D5AE6') +
           '</div>' +
           card('cat', 'Nouveautés à référencer', 'AMM récentes (BDPM)', nouvRows, 'var(--ip-blue)') +
+          (function () { try { return secteursCard(); } catch (e) { return ''; } })() +
           card('pilo', 'Négo labos — ton levier', 'vrai volume réseau par génériqueur', negRows, '#0E7C86') +
           whiteSpaceCard() +
           prixCard() +
@@ -2124,7 +2235,7 @@
       '.tk-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}' +
       '.tk-kpi{background:var(--card-2,#F6F8FB);border:1px solid var(--line);border-radius:11px;padding:10px 8px;text-align:center}' +
       '.tk-kpi b{display:block;font-size:17px;font-weight:800;font-family:var(--mono);color:var(--ip-ink)}.tk-kpi span{font-size:10px;color:var(--muted);font-weight:600}' +
-      '.tk-price{font-size:12.5px;color:var(--muted);background:var(--card-2,#F6F8FB);border:1px solid var(--line);border-radius:10px;padding:9px 12px;margin-bottom:14px}.tk-price b{color:var(--ip-ink);font-family:var(--mono)}' +
+      '.tk-price{font-size:12.5px;color:var(--muted);background:var(--card-2,#F6F8FB);border:1px solid var(--line);border-radius:10px;padding:9px 12px;margin-bottom:14px}.sec-bar{height:5px;border-radius:99px;background:var(--line);margin-top:6px;max-width:320px}.sec-bar i{display:block;height:100%;border-radius:99px;background:#0E7C86}.tk-warn{font-size:11.5px;color:#a8651a;background:#FFF6E8;border:1px solid #F0C98A;border-radius:9px;padding:7px 11px;margin:-8px 0 14px;line-height:1.45}.tk-price b{color:var(--ip-ink);font-family:var(--mono)}' +
       '.tk-h{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:6px 0 8px}' +
       '.tk-proj{border:1px solid var(--line);border-radius:10px;background:var(--card-2,#F6F8FB);padding:6px 8px;margin-bottom:4px}.tk-proj svg{width:100%;height:82px;display:block}' +
       '.tk-projlab{display:flex;justify-content:space-between;font-size:11px;font-weight:800;margin:0 2px 14px}' +
