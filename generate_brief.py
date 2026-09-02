@@ -238,6 +238,10 @@ JUGEMENT_FORT = re.compile(
     r'plan de redressement|clôture pour insuffisance', re.I)
 
 
+GREFFE = re.compile(r'liste des cr[ée]ances|[ée]tat des cr[ée]ances|d[ée]p[oô]t de l.[ée]tat|'
+                    r'avis de d[ée]p[oô]t|extrait de jugement|rectificatif', re.I)
+
+
 def bodacc_secteur(n=8):
     """Qui, dans le circuit du médicament, est en difficulté ?
     C'est le signal le plus directement commercial de toute la veille : une officine
@@ -262,7 +266,7 @@ def bodacc_secteur(n=8):
             except Exception:
                 j = {}
             nature = clean(j.get('nature') or j.get('famille') or '')
-            if not JUGEMENT_FORT.search(nature):
+            if not JUGEMENT_FORT.search(nature) or GREFFE.search(nature):
                 continue
             soc = clean(str(r.get('commercant') or ''))
             cle = norm(soc) + nature[:20]
@@ -366,6 +370,60 @@ def bodacc_repartiteurs(n=6):
     return out[:n]
 
 
+# ═══ CE QUI VA SE VENDRE : LES POLLENS ═══════════════════════════════════════
+# Atmo France publie l'indice pollinique de 104 418 communes, gratuitement, sans
+# clé, mis à jour chaque jour (WFS GeoServer). Personne dans la répartition ne s'en
+# sert : c'est pourtant le signal de demande le plus avancé qui existe pour
+# l'antihistaminique, le collyre et le spray nasal.
+# ⚠️ Deux fausses pistes écartées le 02/09/2026 : les jeux « Indice pollen ATMO » de
+#    data.gouv ne couvrent QUE le Rhône (522 communes) et la Métropole de Lyon (66).
+#    Seule la couche `ind_pol:ind_national_pol` est nationale.
+POLLEN_WFS = ('https://data.atmo-france.org/geoserver/ind_pol/ows?service=WFS&version=2.0.0'
+              '&request=GetFeature&typeName=ind_pol:ind_national_pol'
+              '&outputFormat=application/json&count=3000&CQL_FILTER=')
+POLLENS = {'code_aul': 'aulne', 'code_boul': 'bouleau', 'code_oliv': 'olivier',
+           'code_gram': 'graminées', 'code_arm': 'armoise', 'code_ambr': 'ambroisie'}
+# Ce que chaque pollen fait vendre au comptoir.
+POLLEN_RAYON = {
+    'ambroisie': 'antihistaminiques, collyres antiallergiques, sprays nasaux',
+    'graminées': 'antihistaminiques, collyres, sérums physiologiques',
+    'bouleau':   'antihistaminiques, collyres',
+    'armoise':   'antihistaminiques, sprays nasaux',
+    'aulne':     'antihistaminiques',
+    'olivier':   'antihistaminiques, collyres',
+}
+
+
+def pollens():
+    """Où l'air est chargé, et de quoi. Rend un seul constat national, chiffré."""
+    try:
+        d = json.loads(http(POLLEN_WFS + urllib.parse.quote('code_qual>=4'), 6000000, 40))
+    except Exception as e:
+        sys.stderr.write('  (pollens KO) %s\n' % str(e)[:70])
+        return None
+    f = d.get('features') or []
+    if not f:
+        return None
+    compte, regions, jour = {}, {}, ''
+    for x in f:
+        p = x.get('properties') or {}
+        jour = jour or (p.get('date_dif') or '')[:10]
+        r = clean(p.get('source') or '')
+        if r:
+            regions[r] = regions.get(r, 0) + 1
+        for k, nom in POLLENS.items():
+            if (p.get(k) or 0) >= 4:
+                compte[nom] = compte.get(nom, 0) + 1
+    if not compte:
+        return None
+    top = sorted(compte.items(), key=lambda kv: -kv[1])
+    zones = sorted(regions.items(), key=lambda kv: -kv[1])[:3]
+    return {'jour': jour, 'communes': len(f), 'pollen': top[0][0], 'n': top[0][1],
+            'autres': [n for n, _ in top[1:3]],
+            'regions': [z for z, _ in zones],
+            'rayon': POLLEN_RAYON.get(top[0][0], 'antihistaminiques')}
+
+
 def epingle_de(e):
     """Cette entrée doit-elle être épinglée, et à quel titre ?"""
     txt = (e.get('t') or '') + ' ' + (e.get('r') or '') + ' ' + (e.get('resume') or '')
@@ -375,6 +433,8 @@ def epingle_de(e):
         return 'difficulte'
     if e.get('k') == 'cession':
         return 'cession'
+    if e.get('k') == 'pollen':
+        return 'demande'
     if e.get('k') in ('jo', 'prix'):
         if ARGENT_IP.search(txt) or e.get('effet'):
             return 'echeance'
@@ -980,6 +1040,25 @@ def collecte():
     except Exception as e:
         sys.stderr.write('  (BODACC global KO) %s\n' % str(e)[:80])
 
+    # ── Ce qui va se vendre : l'air du jour ───────────────────────────────────
+    try:
+        po = pollens()
+        ctx['pollens'] = po
+        if po:
+            lus.append('Atmo France · pollens')
+            titre = ('%s : %d communes en niveau élevé'
+                     % (po['pollen'][:1].upper() + po['pollen'][1:], po['n']))
+            corps = ('Alerte pollinique du %s%s. Au comptoir : %s.'
+                     % (fr_date(po['jour']),
+                        ' — surtout ' + ', '.join(po['regions']) if po['regions'] else '',
+                        po['rayon']))
+            add(titre, 'https://www.pollens.fr/', 'Atmo France · indice pollinique',
+                po['jour'], corps, kind='pollen')
+            print('   pollens : %s sur %d communes en niveau élevé (%s)'
+                  % (po['pollen'], po['n'], ', '.join(po['regions'][:2])))
+    except Exception as e:
+        sys.stderr.write('  (pollens global KO) %s\n' % str(e)[:70])
+
     # ── Quelles officines ont changé de main ? ────────────────────────────────
     try:
         cess = bodacc_cessions()
@@ -1410,9 +1489,10 @@ def main():
     # dire. On ouvre maintenant la page elle-même : l'illustration que le site
     # déclare, le vrai chapeau, le temps de lecture — et surtout la réponse à la
     # question de Will : « est-ce qu'on peut le lire en entier ? »
+    FABRIQUEES = ('pollen', 'bodacc', 'pcl', 'cession', 'jo', 'prix', 'rupture', 'ema')
     a_lire = [c for c in fil[:N_ENRICHI]
               if c.get('u', '').startswith('http') and 'news.google.com' not in c['u']
-              and not c.get('paywall')]
+              and not c.get('paywall') and c.get('k') not in FABRIQUEES]
     if a_lire:
         with ThreadPoolExecutor(max_workers=8) as ex:
             for c, r in zip(a_lire, ex.map(lambda x: lire_article(x['u'], x.get('t', '')), a_lire)):
@@ -1482,6 +1562,10 @@ def main():
             if not eff and days_ago(c['d']) > 120:
                 continue
             c['jours'] = j
+        elif m == 'demande':
+            if days_ago(c['d']) > 8:      # l'air change vite : au-delà d'une semaine, ce n'est plus une alerte
+                continue
+            c['jours'] = None
         elif m in ('societe', 'difficulte', 'cession'):
             if days_ago(c['d']) > BODACC_JOURS:
                 continue
@@ -1492,7 +1576,7 @@ def main():
             c['jours'] = None
         epingles.append(c)
     # échéances d'abord (la plus proche en tête), puis les concurrents, les plus frais devant
-    ORDRE_EP = {'echeance': 0, 'sanction': 1, 'difficulte': 2, 'cession': 3, 'societe': 4, 'concurrent': 5}
+    ORDRE_EP = {'echeance': 0, 'sanction': 1, 'demande': 2, 'difficulte': 3, 'cession': 4, 'societe': 5, 'concurrent': 6}
 
     def rang_ep(c):
         j = c.get('jours')
