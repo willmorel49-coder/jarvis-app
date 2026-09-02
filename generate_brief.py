@@ -898,7 +898,8 @@ def collecte():
             add('%s — %s' % (v['societe'], v['nature']), v['url'],
                 'BODACC · procédure collective', v['date'],
                 'Jugement publié au BODACC%s.' % (' · ' + v['ville'] if v['ville'] else ''),
-                kind='pcl', extra={'quoi': v['quoi']})
+                kind='pcl', extra={'quoi': v['quoi'], 'societe_de': v['societe'],
+                                   'ville_de': v['ville']})
         if diff:
             lus.append('BODACC procédures')
             print('   %d procédure%s collective%s dans le circuit du médicament (75 derniers jours)'
@@ -1004,6 +1005,9 @@ def regroupe(entrees):
                     chef['effet'] = e['effet']
                 if e.get('paywall'):
                     chef['paywall'] = 1
+                for k in ('societe_de', 'ville_de'):
+                    if e.get(k) and not chef.get(k):
+                        chef[k] = e[k]
                 break
         clusters.append(chef)
     return clusters
@@ -1409,7 +1413,7 @@ def main():
             't': c['t'], 'u': c['u'], 's': c['s'], 'd': c['d'],
             'r': (c.get('chapeau') or c.get('r') or '')[:240],
             'motif': c['epingle'], 'effet': c.get('effet') or '', 'jours': c.get('jours'),
-            'societe': c.get('societe_de') or '',
+            'societe': c.get('societe_de') or '', 'ville': c.get('ville_de') or '',
             'theme': c['theme'], 'theme_l': THEME_LABEL.get(c['theme'], 'Autre'),
             'points': c.get('points', []), 'chiffres': c.get('chiffres', []),
             'srcs': c.get('srcs', [])[:3], 'n_src': c.get('n_src', 1),
