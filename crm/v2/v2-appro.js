@@ -1355,6 +1355,75 @@
       'Un secteur dense consomme un réassort plus vite à nombre d\'officines égal.</div></div>';
   }
 
+
+  // ═══ POURQUOI ÇA CASSE — les causes de rupture (ANSM, robot mensuel) ═══════
+  // L'app savait QUELS produits sont en tension. Elle ne savait pas POURQUOI.
+  // ⚠️ Le chiffre qui justifie cette carte : en 2024, 28 % des ruptures françaises ont
+  // pour cause « Augmentation du volume de vente » (1 150 cas sur 3 809). Un quart des
+  // ruptures vient donc d'une demande qui MONTE — précisément ce que « La courbe » sait
+  // voir venir trois mois à l'avance. C'est le pont entre prévoir et sécuriser.
+  // Source : API publique du portail Datamed de l'ANSM. Années partielles écartées côté robot.
+  var _causesState = 0, _causesData = null;
+  function ensureCauses() {
+    if (_causesData || _causesState) return;
+    _causesState = 1;
+    try {
+      var day = new Date().toISOString().slice(0, 10);
+      fetch('ansm-causes.json?d=' + day, { cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) { _causesData = j || {}; _causesState = 2; approRerender(); })
+        .catch(function () { _causesState = 2; });
+    } catch (e) { _causesState = 2; }
+  }
+  function causesCard() {
+    var d = _causesData;
+    if (_causesState === 2 && (!d || !d.causes)) return '';
+    if (!d) return '';
+    var an = d.derniere_complete;
+    var lst = (d.causes || {})[String(an)] || [];
+    if (!lst.length) return '';
+    var tot = 0;
+    for (var i = 0; i < lst.length; i++) tot += (lst[i].n || 0);
+    // Le nombre RÉEL de signalements vient de parAn ; `tot` n'est que la somme des causes,
+    // et un signalement peut en porter plusieurs (4 172 causes pour 3 809 signalements en
+    // 2024). Afficher l'une pour l'autre gonflerait le chiffre de 10 %.
+    var nSig = null;
+    (d.parAn || []).forEach(function (x) { if (x.a === an) nSig = x.n; });
+    var vol = null;
+    for (i = 0; i < lst.length; i++) {
+      if (/volume de vente/i.test(lst[i].c || '')) { vol = lst[i]; break; }
+    }
+    var rows = lst.slice(0, 6).map(function (c) {
+      var w = tot > 0 ? Math.max(2, Math.round((c.n || 0) / tot * 100)) : 0;
+      var fort = /volume de vente/i.test(c.c || '');
+      return '<div class="ap-row"><div class="ap-nm">' + esc(c.c || '—') +
+        '<small>' + fmt(c.n) + ' signalements' +
+        (fort ? ' · <b style="color:var(--c-opp)">ce que la prévision sait voir venir</b>' : '') + '</small>' +
+        '<div class="sec-bar"><i style="width:' + w + '%' +
+        (fort ? ';background:var(--c-opp)' : '') + '"></i></div></div>' +
+        '<div class="ap-g">' + Math.round(c.p || 0) + ' %</div></div>';
+    }).join('');
+    var tete = vol ? '<div class="ap-foot" style="padding:11px 18px 0;margin:0;font-size:12.5px;color:var(--ip-ink)">' +
+      '<b>' + Math.round(vol.p) + ' % des ruptures viennent d\'une demande qui monte</b> — ' +
+      fmt(vol.n) + ' cas en ' + an + '. Ce n\'est pas une fatalité à subir : ' +
+      'c\'est exactement ce que « La courbe » annonce trois mois à l\'avance.</div>' : '';
+    // les classes thérapeutiques les plus touchées — où le risque se concentre
+    var atc = ((d.atc || {})[String(an)] || []).slice(0, 4);
+    var atcHtml = atc.length ? '<div class="ap-foot" style="padding:10px 18px 0;margin:0">' +
+      '<b>Où ça casse le plus</b> — ' + atc.map(function (a) {
+        return esc(cap((a.l || '').toLowerCase())) + ' (' + fmt(a.n) + ')';
+      }).join(' · ') + '</div>' : '';
+    return '<div class="v2-card ap-card"><div class="ap-hd"><div class="ap-ic" style="background:var(--c-amber)">' +
+      ICO('alert', 15, 2) + '</div><div><h3>Pourquoi ça casse — les causes de rupture</h3>' +
+      '<div class="ap-sub">France entière, ' + an + ' · ' + (nSig ? fmt(nSig) + ' signalements ANSM' : '') +
+      ' · ' + fmt(tot) + ' causes recensées (un signalement peut en porter plusieurs)</div></div></div>' +
+      tete + rows + atcHtml +
+      '<div class="ap-foot" style="padding:10px 18px 12px;margin:0">Source : ANSM, portail Datamed — ' +
+      'la seule qui publie les causes. Historique ' + (d.annees ? d.annees[0] : '') + '→' + an +
+      '. Les années encore incomplètes sont écartées : une année partielle passerait pour un ' +
+      'effondrement des ruptures.</div></div>';
+  }
+
   var _section = 'today';   // espace affiché : today / anticiper / stock / marche
   V2.approSec = function (s) { _section = s; if (V2.render) V2.render(); try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {} };
   V2.approExport = function () {
@@ -2125,7 +2194,9 @@
       } else if (_section === 'actu') {
         content = actuView();
       } else if (_section === 'anticiper') {
-        ensurePrev();
+        ensurePrev(); ensureCauses();
+        var causesH = '';
+        try { causesH = causesCard(); } catch (e) { causesH = ''; }
         var prevH = '';
         try { prevH = previsionCard(); } catch (e) { prevH = ''; }
         var cockpit = '';
@@ -2134,6 +2205,7 @@
         try { ecartH = ecartNational(); } catch (e) { ecartH = ''; }
         content = cockpit +
           (prevH ? secHead('La courbe — 3, 6 et 12 mois', 'ce que le marché national va faire, avec sa fourchette — pour pré-acheter et négocier') + prevH : '') +
+          (causesH ? secHead('Pourquoi les ruptures arrivent', 'la cause n° 1 est une demande qui monte — donc prévisible') + causesH : '') +
           (ecartH ? secHead('Écart au marché France', 'calculé sur le marché national, indépendamment de la fraîcheur de vos données') + ecartH : '') +
           secHead('Veille — retours de rupture &amp; futurs remboursés', 'plus loin dans le temps, à surveiller') + ansmHtml + hasHtml;
       } else if (_section === 'stock') {
