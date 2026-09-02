@@ -270,6 +270,11 @@
   }
 
   /* dépliage de l'archive */
+  /* Le bandeau montre les six plus importants ; les autres sont à un geste.
+     ⚠️ On ne RETIRE rien : « ne pas passer à côté » interdit de cacher pour de bon. */
+  var ALERTES_TOUT = false;
+  V2.infosAlertes = function () { ALERTES_TOUT = !ALERTES_TOUT; if (V2.route && V2.route.name === 'infos') V2.render(); };
+
   var ARCH_OPEN = false;
   V2.briefArchive = function () { ARCH_OPEN = !ARCH_OPEN; if (V2.route && V2.route.name === 'infos') V2.render(); };
 
@@ -325,6 +330,7 @@
       /* ──────────── TÊTE COMPACTE ────────────
          Le mur commence tout de suite : pas de grand bandeau qui mange un écran. */
       html += '<header class="mur-tete">' +
+        '<span class="mur-halo" aria-hidden="true"></span>' +
         '<div class="mur-tete-g">' +
           '<span class="mur-d"><i></i>Édition du jour · ' + esc(topDate()) +
             (nbNew ? ' · <b>' + nbNew + ' nouveau' + (nbNew > 1 ? 'x' : '') + '</b>' : '') + '</span>' +
@@ -351,7 +357,7 @@
         html += '<section class="alerte">' +
           '<div class="alerte-h">' + ICO('alert', 16, 2.2) + 'À ne pas manquer' +
             '<span>échéances réglementaires & mouvements de concurrents</span></div>' +
-          epingles.map(function (e, i) {
+          '<div class="al-grille">' + (ALERTES_TOUT ? epingles : epingles.slice(0, 6)).map(function (e, i) {
             var ech = e.motif === 'echeance';
             var j = e.jours;
             /* Cinq natures d'alerte, cinq pastilles. Une couleur veut toujours dire
@@ -359,7 +365,8 @@
                défaillance · violet = un concurrent bouge. */
             var ETIQ = {
               sanction:   { c: 'sanc', l: 'Sanction', i: 'alert' },
-              societe:    { c: 'soc',  l: 'Concurrent · registre', i: 'fiche' },
+              societe:    { c: 'soc',  l: 'Répartiteur · registre', i: 'fiche' },
+              cession:    { c: 'cess', l: 'Officine vendue', i: 'pharma' },
               difficulte: { c: 'diff', l: 'En difficulté', i: 'alert' },
               concurrent: { c: 'conc', l: 'Concurrent', i: 'opp' }
             };
@@ -377,16 +384,22 @@
               '<h3>' + esc(e.t) + '</h3>' +
               (e.r ? '<p>' + esc(e.r) + '</p>' : '') +
               (function () {
-                if (e.motif !== 'difficulte') return '';
+                if (e.motif !== 'difficulte' && e.motif !== 'cession') return '';
                 var cl = clientTouche(e.societe, e.ville);
                 return cl ? '<div class="al-client">' + ICO('alert', 14, 2.4) +
                   '<b>C\'est un de tes clients</b><span>' + esc(cl.name) +
-                  (cl.code ? ' · CIP ' + esc(cl.code) : '') + ' — encours à vérifier</span></div>' : '';
+                  (cl.code ? ' · CIP ' + esc(cl.code) : '') +
+                  (e.motif === 'cession' ? ' — le titulaire change, compte à reprendre'
+                                         : ' — encours à vérifier') + '</span></div>' : '';
               })() +
               '<div class="al-f">' + esc((e.srcs && e.srcs.length ? e.srcs : [e.s]).slice(0, 3).join(' · ')) + '</div>' +
               '<a class="tout" href="' + esc(e.u || '#') + '" onclick="return V2.infosLire(event,' + i + ')" aria-label="' + esc(e.t) + '"></a>' +
             '</article>';
-          }).join('') +
+          }).join('') + '</div>' +
+          (epingles.length > 6
+            ? '<button class="al-plus" onclick="V2.infosAlertes()">' +
+              (ALERTES_TOUT ? 'Replier' : 'Voir les ' + (epingles.length - 6) + ' autres') +
+              '</button>' : '') +
         '</section>';
       }
 
@@ -479,6 +492,10 @@
                   '<i class="a-' + (THEME_ACC[t.theme] || 'muted') + '"></i>' + esc(t.t) + '</a>';
               }).join('') + '</div></div>';
           }).join('') + '</div>' +
+          (epingles.length > 6
+            ? '<button class="al-plus" onclick="V2.infosAlertes()">' +
+              (ALERTES_TOUT ? 'Replier' : 'Voir les ' + (epingles.length - 6) + ' autres') +
+              '</button>' : '') +
         '</section>';
       }
 
@@ -541,9 +558,13 @@
        et l'article reste une tuile pleine, jamais un trou dans le mur ;
      — si le serveur refuse d'être appelé depuis ailleurs, `onerror` retire la photo
        et la planche réapparaît toute seule. */
+  var ANGLES = { marge: 118, remboursement: 152, generique: 196, rupture: 138,
+                 securite: 172, concurrence: 210, officine: 128, industrie: 160,
+                 sante: 184, autre: 145 };
   function couverture(c, ratio) {
+    var ang = ANGLES[c.theme] || 152;
     return '<span class="mq-cov ' + (ratio || 'r-4x5') + '">' +
-      '<span class="mq-plaque a-' + (THEME_ACC[c.theme] || 'muted') + '"></span>' +
+      '<span class="mq-plaque a-' + (THEME_ACC[c.theme] || 'muted') + '" style="--ang:' + ang + 'deg"></span>' +
       (c.img ? '<img src="' + esc(c.img) + '" alt="" loading="lazy" decoding="async" ' +
                'referrerpolicy="no-referrer" onerror="this.remove()">' : '') + '</span>';
   }
@@ -698,7 +719,7 @@
       '.inf2 .mq-cov img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;transition:transform .6s var(--ease)}',
       /* la planche dessinée, TOUJOURS sous la photo : si la photo ne charge pas, elle
          réapparaît seule. Jamais de trou dans le mur, jamais de rectangle gris. */
-      '.inf2 .mq-plaque{position:absolute;inset:0;background:linear-gradient(152deg,color-mix(in srgb,var(--acc) 92%,#0B1020) 0%,color-mix(in srgb,var(--acc) 64%,#fff) 48%,color-mix(in srgb,var(--acc) 34%,#fff) 100%)}',
+      '.inf2 .mq-plaque{position:absolute;inset:0;background:linear-gradient(var(--ang,152deg),color-mix(in srgb,var(--acc) 92%,#0B1020) 0%,color-mix(in srgb,var(--acc) 64%,#fff) 48%,color-mix(in srgb,var(--acc) 34%,#fff) 100%)}',
       '.inf2 .mq-plaque::before{content:"";position:absolute;inset:0;background:radial-gradient(62% 74% at 24% 8%,rgba(255,255,255,.48),transparent 60%),radial-gradient(52% 62% at 88% 98%,rgba(11,16,32,.26),transparent 62%)}',
       '.inf2 .mq-plaque::after{content:"";position:absolute;inset:0;opacity:.55;background:repeating-linear-gradient(58deg,rgba(255,255,255,.16) 0 1px,transparent 1px 12px)}',
       '.inf2 .veil{position:absolute;inset:0;z-index:2;background:linear-gradient(0deg,rgba(8,11,20,.94) 0%,rgba(8,11,20,.62) 40%,rgba(8,11,20,.04) 78%)}',
@@ -718,6 +739,42 @@
       /* le lien couvre toute la tuile : une seule cible, très grande */
       '.inf2 .tout{position:absolute;inset:0;z-index:4}',
 
+      /* ══════════ LA LUMIÈRE ══════════
+         Le clair ne pardonne pas la platitude : un aplat crème sans source de
+         lumière est plus mort qu'un noir. Ce halo est ce qui empêche la page
+         d'être un fond uni. Pas de flou : Safari y laisse des images fantômes. */
+      '.inf2 .mur-tete{position:relative;isolation:isolate;overflow:hidden}',
+      '.inf2 .mur-halo{position:absolute;left:0;right:0;top:-140px;height:520px;' +
+        'pointer-events:none;z-index:-1;' +
+        'background:radial-gradient(46% 54% at 32% 52%,color-mix(in srgb,var(--ip-blue) 15%,transparent) 0%,transparent 70%),' +
+        'radial-gradient(38% 46% at 76% 40%,color-mix(in srgb,var(--c-amber) 11%,transparent) 0%,transparent 72%),' +
+        'radial-gradient(30% 38% at 54% 78%,color-mix(in srgb,var(--c-cat) 8%,transparent) 0%,transparent 74%)}',
+      /* un filet de lumière sous la tête, qui sépare sans trancher */
+      '.inf2 .mur-tete::after{content:"";position:absolute;left:0;right:0;bottom:-2px;height:1px;' +
+        'background:linear-gradient(90deg,transparent,var(--line-strong) 18%,var(--line-strong) 82%,transparent)}',
+
+      /* ══════════ LA MATIÈRE DES TUILES ══════════
+         Ombres en trois couches (ambiante + portée + liseré haut-lumière interne) :
+         c'est le liseré blanc en haut qui donne l'impression d'un objet posé,
+         pas d'un rectangle peint. */
+      '.inf2 .tu,.inf2 .mur-une{box-shadow:0 1px 2px rgba(16,19,28,.06),0 6px 16px rgba(16,19,28,.07),' +
+        '0 18px 40px rgba(16,19,28,.09),0 1px 0 rgba(255,255,255,.14) inset}',
+      '.inf2 .tu:hover{box-shadow:0 2px 4px rgba(16,19,28,.08),0 12px 28px rgba(16,19,28,.14),' +
+        '0 30px 64px rgba(16,19,28,.16),0 1px 0 rgba(255,255,255,.22) inset}',
+      '.inf2 .mur-une{box-shadow:0 2px 6px rgba(16,19,28,.07),0 16px 40px rgba(16,19,28,.12),' +
+        '0 40px 90px rgba(16,19,28,.14),0 1px 0 rgba(255,255,255,.16) inset}',
+      /* le survol : la tuile monte ET l\'image respire */
+      '.inf2 .tu:hover .mq-cov img{transform:scale(1.08)}',
+      '.inf2 .mur-une:hover .mq-cov img{transform:scale(1.045)}',
+
+      /* ══════════ LE BANDEAU PREND DE LA MATIÈRE ══════════ */
+      '.inf2 .alerte{background:linear-gradient(168deg,color-mix(in srgb,var(--c-amber) 7%,var(--card)) 0%,var(--card) 46%);' +
+        'box-shadow:0 1px 2px rgba(16,19,28,.05),0 10px 26px rgba(16,19,28,.07),0 1px 0 rgba(255,255,255,.8) inset}',
+
+      /* ══════════ L\'ESSENTIEL RESPIRE ══════════ */
+      '.inf2 .ess{background:linear-gradient(172deg,color-mix(in srgb,var(--ip-blue) 4%,var(--card)) 0%,var(--card) 40%);' +
+        'box-shadow:0 1px 2px rgba(16,19,28,.05),0 10px 26px rgba(16,19,28,.07),0 1px 0 rgba(255,255,255,.8) inset}',
+
       /* ══════════ À NE PAS MANQUER ══════════
          Le seul bloc qui ne se filtre pas et ne se replie pas. Éclairé, pas alarmant :
          une seule teinte ambre, réservée au compte à rebours quand l'échéance approche. */
@@ -727,8 +784,12 @@
         'letter-spacing:-.02em;color:var(--ip-ink);margin-bottom:var(--sp-4)}',
       '.inf2 .alerte-h svg{color:var(--c-amber);flex:0 0 auto}',
       '.inf2 .alerte-h span{margin-left:auto;font:600 10px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted-2)}',
-      '.inf2 .al-i{position:relative;padding:var(--sp-4) 0;border-top:1px solid var(--line-2)}',
-      '.inf2 .al-i:first-of-type{border-top:0;padding-top:0}',
+      '.inf2 .al-grille{display:grid;grid-template-columns:1fr 1fr;gap:0 var(--sp-6)}',
+      '@media(max-width:900px){.inf2 .al-grille{grid-template-columns:1fr}}',
+      '.inf2 .al-i{position:relative;padding:var(--sp-3) 0;border-top:1px solid var(--line-2)}',
+      '.inf2 .al-grille>.al-i:nth-child(-n+2){border-top:0;padding-top:0}',
+      '@media(max-width:900px){.inf2 .al-grille>.al-i:nth-child(2){border-top:1px solid var(--line-2);padding-top:var(--sp-3)}}',
+
       '.inf2 .al-i:hover h3{color:var(--ip-blue)}',
       '.inf2 .al-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}',
       '.inf2 .al-cd{display:inline-flex;align-items:center;gap:6px;font:700 11.5px/1 var(--mono);font-variant-numeric:tabular-nums;' +
@@ -739,20 +800,26 @@
       '.inf2 .al-cd.fait{background:var(--card-2);color:var(--muted);border-color:var(--line)}',
       '.inf2 .al-cd.conc,.inf2 .al-cd.soc{background:color-mix(in srgb,var(--c-cat) 11%,transparent);color:var(--c-cat);' +
         'border-color:color-mix(in srgb,var(--c-cat) 26%,transparent)}',
+      '.inf2 .al-cd.cess{background:color-mix(in srgb,var(--c-opp) 12%,transparent);color:var(--c-mint-txt);' +
+        'border-color:color-mix(in srgb,var(--c-opp) 28%,transparent)}',
       '.inf2 .al-cd.sanc,.inf2 .al-cd.diff{background:color-mix(in srgb,var(--c-rose) 12%,transparent);' +
         'color:var(--c-rose-txt);border-color:color-mix(in srgb,var(--c-rose) 28%,transparent)}',
       '.inf2 .al-d{font-size:12.5px;color:var(--muted)}',
       '.inf2 .al-ab{font:600 10px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted-2);' +
         'background:var(--surf-sunken);padding:5px 9px;border-radius:var(--r-pill)}',
-      '.inf2 .al-i h3{font-family:var(--serif);font-weight:600;font-size:19px;line-height:1.28;letter-spacing:-.016em;' +
+      '.inf2 .al-i h3{font-family:var(--serif);font-weight:600;font-size:17.5px;line-height:1.28;letter-spacing:-.016em;' +
         'margin:0 0 7px;color:var(--ip-ink)}',
-      '.inf2 .al-i p{font-size:15px;font-weight:600;line-height:1.5;color:var(--ip-ink-2);margin:0 0 7px}',
+      '.inf2 .al-i p{font-size:14px;font-weight:600;line-height:1.45;color:var(--ip-ink-2);margin:0 0 6px}',
       '.inf2 .al-client{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:8px 0 9px;padding:9px 13px;' +
         'border-radius:var(--r-sm);background:color-mix(in srgb,var(--c-rose) 11%,transparent);' +
         'border:1px solid color-mix(in srgb,var(--c-rose) 28%,transparent)}',
       '.inf2 .al-client svg{color:var(--c-rose);flex:0 0 auto}',
       '.inf2 .al-client b{font:800 11px/1 var(--mono);letter-spacing:.09em;text-transform:uppercase;color:var(--c-rose-txt)}',
       '.inf2 .al-client span{font-size:13.5px;font-weight:600;color:var(--ip-ink)}',
+      '.inf2 .al-plus{display:inline-flex;align-items:center;justify-content:center;min-height:var(--tap-min);' +
+        'padding:0 18px;margin-top:var(--sp-3);border-radius:var(--r-btn);border:1px solid var(--line-strong);' +
+        'background:var(--card);color:var(--ip-ink);font-size:13.5px;font-weight:650;cursor:pointer}',
+      '.inf2 .al-plus:hover{border-color:var(--c-amber);color:var(--c-amber-txt)}',
       '.inf2 .al-f{font:600 10.5px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted-2)}',
 
       /* ══════════ L'ESSENTIEL EN 30 SECONDES ══════════
