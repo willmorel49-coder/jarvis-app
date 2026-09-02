@@ -77,6 +77,11 @@ FLUX_ILLUSTRES = [
     # libres mais SANS image — gardées pour la matière, pas pour l'illustration
     ('OMS Europe',          'https://www.who.int/rss-feeds/news-english.xml'),
     ('CNRS',                'https://www.cnrs.fr/fr/rss.xml'),
+    # troisième vague, mesurée le 02/09/2026 (2 articles ouverts par source)
+    ('Nile',                'https://www.nile-consulting.eu/feed/'),      # politique du médicament, accès au marché
+    ('Allo Docteurs',       'https://www.allodocteurs.fr/rss.xml'),
+    ('Silver Eco',          'https://www.silvereco.fr/feed'),            # grand âge, EHPAD
+    ('ANSES',               'https://www.anses.fr/fr/rss.xml'),          # sécurité sanitaire (sans image)
 ]
 # ⛔ Mesurées derrière un mur payant le 01/09 : Le Parisien, Le Généraliste.
 #    Mortes ou introuvables : Ordre des pharmaciens, Vidal, HAS, Doctissimo,
@@ -134,7 +139,14 @@ HABILLAGE = re.compile(
     r'votre inscription nous permet|r[ée]serv[ée] aux abonn|d[ée]j[aà] abonn|'
     r'abonnez[- ]vous|cr[ée]ez? (un|votre) compte|connectez[- ]vous pour|'
     r'acc[eè]s illimit|offre d.essai|newsletter|accepter les cookies|'
-    r'g[ée]rer mes choix|politique de confidentialit', re.I)
+    r'g[ée]rer mes choix|politique de confidentialit|'
+    # navigation, pas rédaction : fil d'Ariane, articles voisins, barre de partage
+    r'^accueil\s*[»>]|\s[»>]\s.*\s[»>]\s|lire la suite|[àa] lire aussi|voir aussi|'
+    r'sur le m[êe]me (sujet|th[èe]me)|partager (sur|cet)|copier le lien|'
+    r'mettre en favori|tous les articles|articles? (li[ée]s|similaires)|'
+    r'suivez[- ]nous|inscrivez[- ]vous|'
+    r'cotisation|bulletin d.adh[ée]sion|demande d.adh[ée]sion|espace adh[ée]rent|'
+    r'profiter pleinement de vos avantages|nous vous invitons [àa] proc[ée]der', re.I)
 
 
 def http(url, n=400000, t=12):
@@ -168,7 +180,85 @@ def paragraphes(pg):
     return out
 
 
-def lire_article(url):
+# ── Ce qui fait qu'une phrase mérite d'être retenue ──────────────────────────
+# Will (02/09/2026) : « qu'on puisse synthétiser l'info importante rapidement ».
+# On ne génère pas de texte : on CHOISIT, dans l'article lui-même, les phrases qui
+# portent l'information. Déterministe, gratuit, et rien n'est inventé.
+PORTEUSE = re.compile(
+    r'marge|grossist|r[ée]partit|rembours|d[ée]rembours|prix|tarif|honorair|'
+    r'g[ée]n[ée]riqu|biosimil|substitu|rupture|tension|p[ée]nurie|officin|pharmaci|'
+    r'\bansm\b|\bceps\b|\bhas\b|\bcnam\b|assurance maladie|arr[êe]t[ée]|d[ée]cret|'
+    r'entr(e|era) en vigueur|[àa] compter du|d[èe]s le|obligat|interdi|autoris|'
+    r'plafond|seuil|baisse|hausse|augment|[ée]conomie|budget|patient|d[ée]livr', re.I)
+BAVARDE = re.compile(
+    r'^(en effet|par ailleurs|de plus|enfin|ainsi|c\'est pourquoi|autrement dit|'
+    r'rappelons|pour rappel|selon lui|selon elle|il a ajout|elle a ajout)', re.I)
+RX_NOMBRE = re.compile(r'\b\d+([.,]\d+)?\s?(%|€|euros?|millions?|milliards?|jours?|mois|ans?)\b', re.I)
+
+
+def phrases(txt):
+    """Découpe en phrases, sans casser sur les abréviations courantes."""
+    t = re.sub(r'\b(M|Mme|Dr|Pr|art|cf|ex|n°|etc)\.', lambda m: m.group(1) + '§', txt)
+    out = []
+    for ph in re.split(r'(?<=[.!?])\s+(?=[A-ZÀÂÉÈÊÎÔÙÜÇ«"])', t):
+        ph = ph.replace('§', '.').strip()
+        if ph:
+            out.append(ph)
+    return out
+
+
+def resume_extractif(paras, n=3, titre=''):
+    """Les n phrases qui portent le plus d'information, dans l'ordre du texte.
+    ⚠️ Ce sont des CITATIONS de l'article, jamais sa republication : on en garde
+       trois phrases, l'article complet reste chez son éditeur."""
+    mots_titre = set(m for m in norm(titre).split() if len(m) > 4 and m not in STOP)
+    ph = []
+    for i, para in enumerate(paras[:12]):
+        for j, x in enumerate(phrases(para)):
+            if HABILLAGE.search(x):
+                continue
+            # la phrase parle-t-elle du sujet ? (mot du titre) ou du métier ?
+            mots = set(norm(x).split())
+            if not (mots & mots_titre) and not PORTEUSE.search(x):
+                continue
+            ph.append((len(ph), x))
+    if not ph:
+        return []
+    notes = []
+    for rang, x in ph:
+        n_car = len(x)
+        pts = 0
+        pts += max(0, 12 - rang * 1.4)                      # le haut de l'article porte l'essentiel
+        pts += 9 if PORTEUSE.search(x) else 0               # vocabulaire qui compte pour Intégral
+        pts += 7 if RX_NOMBRE.search(x) else 0              # une phrase chiffrée dit quelque chose
+        pts += 5 if 80 <= n_car <= 240 else (-6 if n_car < 60 or n_car > 330 else 0)
+        pts -= 8 if BAVARDE.match(x) else 0                 # phrase de liaison, pas d'information
+        pts -= 6 if x.count('"') + x.count('«') else 0      # citation de personne : rarement le fait
+        notes.append((pts, rang, x))
+    notes.sort(key=lambda t: -t[0])
+    gardees = sorted(notes[:n], key=lambda t: t[1])         # on rétablit l'ordre du texte
+    return [phrase(x, 260) for _, _, x in gardees]
+
+
+def chiffres_cles(paras, n=3):
+    """Les nombres qui comptent, avec le bout de phrase qui les explique."""
+    vus, out = set(), []
+    for para in paras[:10]:
+        for m in RX_NOMBRE.finditer(para):
+            val = re.sub(r'\s+', ' ', m.group(0)).strip()
+            if val.lower() in vus:
+                continue
+            deb = max(0, m.start() - 70)
+            ctx = para[deb:m.end() + 70]
+            ctx = ctx[ctx.find(' ') + 1:] if deb else ctx           # on ne coupe pas un mot
+            vus.add(val.lower())
+            out.append({'v': val, 'c': phrase(ctx, 120)})
+            if len(out) >= n:
+                return out
+    return out
+
+
+def lire_article(url, titre=''):
     """Va lire la page. Rend l'image, le chapeau, la longueur et le verdict mur.
     ⚠️ Un échec ne condamne RIEN : on rend verif=0 et l'article est gardé."""
     try:
@@ -182,7 +272,9 @@ def lire_article(url):
         'img': og_image(pg),
         'car': n,
         'mn': max(1, int(round(n / 1400.0))),      # ~250 mots/min
-        'chapeau': phrase(' '.join(ps[:2]), 300) if ps else '',
+        'chapeau': phrase(ps[0], 300) if ps else '',
+        'points': resume_extractif(ps, 3, titre),   # les 3 phrases qui portent l'info
+        'chiffres': chiffres_cles(ps),             # les nombres, avec leur contexte
         'mur': 1 if MUR.search(pg) else 0,
     }
 
@@ -765,6 +857,8 @@ def redige(c):
         'r': c.get('chapeau') or c.get('r') or '',
         'img': c.get('img', ''),
         'mn': c.get('mn', 0),
+        'points': c.get('points', []),
+        'chiffres': c.get('chiffres', []),
         'entier': 1 if (c.get('verif') and not c.get('mur')) else 0,
         'u': c['u'],
         's': c['s'],
@@ -928,7 +1022,7 @@ def main():
               if c.get('u', '').startswith('http') and 'news.google.com' not in c['u']]
     if a_lire:
         with ThreadPoolExecutor(max_workers=8) as ex:
-            for c, r in zip(a_lire, ex.map(lambda x: lire_article(x['u']), a_lire)):
+            for c, r in zip(a_lire, ex.map(lambda x: lire_article(x['u'], x.get('t', '')), a_lire)):
                 c.update(r)
         # ⚠️ Beaucoup de sites déclarent leur LOGO en og:image faute d'illustration
         # (USPO le fait sur tous ses articles). Résultat à l'écran : le même visuel
@@ -964,6 +1058,12 @@ def main():
             note(c)
         fil.sort(key=lambda c: (-c['score'], days_ago(c['d'])))
 
+    # Une entrée sans page à ouvrir (agrégat ANSM, EMA, avis CEPS, lien Google News)
+    # a quand même un texte : on le découpe pour qu'elle ne reste pas muette.
+    for c in fil:
+        if not c.get('points') and (c.get('r') or ''):
+            c['points'] = [phrase(x, 260) for x in phrases(c['r'])[:3] if len(x) > 40]
+
     retenus = selection(fil or clusters, 5)
     cinq = [redige(c) for c in retenus]
     une = cinq[0] if cinq else None
@@ -994,6 +1094,7 @@ def main():
             'n_src': c.get('n_src', 1), 'srcs': c.get('srcs', [])[:3],
             'neuf': 1 if days_ago(c['d']) <= 1 else 0,
             'img': c.get('img', ''), 'mn': c.get('mn', 0), 'entier': 1 if (c.get('verif') and not c.get('mur')) else 0,
+            'points': c.get('points', []), 'chiffres': c.get('chiffres', []),
         } for c in fil[:60]],
         'themes_du_jour': themes_du_jour,
         'themes_l': THEME_LABEL,

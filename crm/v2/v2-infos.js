@@ -35,6 +35,8 @@
   function norm(s) { return String(s == null ? '' : s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
 
   var BRIEF = null, ARCHIVE = null, LOADED = false, FAILED = false;
+  var TOUS = [];        // tous les articles à plat : le panneau de lecture s'y réfère par rang
+  var OUVERT = -1;      // l'article actuellement ouvert dans le panneau (-1 = aucun)
 
   /* ── accent visuel par thème : une couleur veut toujours dire la même chose ── */
   var THEME_ACC = {
@@ -153,6 +155,73 @@
     catch (e) { fallbackCopy(txt); ok(); }
   };
 
+  /* ════════════════ LE PANNEAU DE LECTURE ════════════════
+     Will (02/09/2026) : « apporter de la lisibilité et de l'information directement
+     sur la plateforme, que ça puisse synthétiser l'info importante rapidement ».
+     Toucher une tuile n'envoie plus sur le site : ça ouvre ici l'essentiel de
+     l'article — son chapeau, les trois phrases qui portent l'information, les
+     chiffres, les sources. Le lien vers le site reste, en bas, pour lire en entier.
+     ⚠️ On cite trois phrases, on ne republie pas : l'article reste chez son éditeur. */
+  V2.infosLire = function (ev, n) {
+    // ⌘/Ctrl-clic, clic du milieu, nouvel onglet : on laisse partir vers la source
+    if (ev && (ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.button === 1)) return true;
+    if (ev && ev.preventDefault) ev.preventDefault();
+    OUVERT = n;
+    panneau();
+    return false;
+  };
+  V2.infosFermer = function () { OUVERT = -1; panneau(); };
+
+  function panneau() {
+    var vieux = document.getElementById('inf-panneau');
+    if (vieux) vieux.parentNode.removeChild(vieux);
+    document.documentElement.classList.toggle('inf-fige', OUVERT >= 0);
+    if (OUVERT < 0) return;
+    var a = TOUS[OUVERT];
+    if (!a) return;
+    var acc = THEME_ACC[a.theme] || 'muted';
+    var pts = (a.points || []).filter(Boolean);
+    var chf = (a.chiffres || []).filter(Boolean);
+    var srcs = (a.srcs && a.srcs.length) ? a.srcs : [a.s];
+
+    var h = '<div class="inf-pan-fond" onclick="V2.infosFermer()"></div>' +
+      '<aside class="inf-pan a-' + acc + '" role="dialog" aria-modal="true" aria-label="' + esc(a.t) + '">' +
+        '<button class="inf-pan-x" onclick="V2.infosFermer()" aria-label="Fermer">' + ICO('close', 18, 2.2) + '</button>' +
+        (a.img ? '<div class="inf-pan-img">' + couverture(a, 'r-16x9') + '</div>' : '') +
+        '<div class="inf-pan-b">' +
+          '<div class="inf-pan-top"><span class="cat">' + esc(a.theme_l) + '</span>' +
+            (a.entier ? '<span class="inf-pan-ok">✓ lisible en entier</span>' : '') +
+            (a.mn ? '<span class="inf-pan-mn">' + esc(a.mn) + ' min</span>' : '') + '</div>' +
+          '<h2>' + esc(a.t) + '</h2>' +
+          (a.r ? '<p class="inf-pan-chap">' + esc(a.r) + '</p>' : '') +
+          (pts.length ? '<div class="inf-pan-sec"><span class="inf-pan-l">L\'essentiel</span><ul>' +
+            pts.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul></div>' : '') +
+          (chf.length ? '<div class="inf-pan-sec"><span class="inf-pan-l">Les chiffres</span>' +
+            '<div class="inf-pan-chf">' + chf.map(function (c) {
+              return '<div class="chf"><b>' + esc(c.v) + '</b><span>' + esc(c.c) + '</span></div>';
+            }).join('') + '</div></div>' : '') +
+          (a.pour_toi ? '<div class="inf-pan-pour"><b>Pour toi</b>' + esc(a.pour_toi) + '</div>' : '') +
+          '<div class="inf-pan-src">' + esc(srcs.join(' · ')) + ' · ' + esc(ilYA(a.d)) +
+            (a.n_src > 1 ? ' · <b>' + a.n_src + ' sources en parlent</b>' : '') + '</div>' +
+          (a.u ? '<a class="inf-pan-go" href="' + esc(a.u) + '" target="_blank" rel="noopener">' +
+                 'Lire l\'article en entier sur ' + esc((srcs[0] || 'le site')) + ' ' + ICO('chev', 15, 2.4) + '</a>' : '') +
+        '</div>' +
+      '</aside>';
+    var d = document.createElement('div');
+    d.id = 'inf-panneau';
+    d.innerHTML = h;
+    document.body.appendChild(d);
+    var f = d.querySelector('.inf-pan-x');
+    if (f) f.focus();
+  }
+  // Échap ferme le panneau — posé une seule fois
+  if (!V2._infosEchap) {
+    V2._infosEchap = true;
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && OUVERT >= 0) V2.infosFermer();
+    });
+  }
+
   /* dépliage de l'archive */
   var ARCH_OPEN = false;
   V2.briefArchive = function () { ARCH_OPEN = !ARCH_OPEN; if (V2.route && V2.route.name === 'infos') V2.render(); };
@@ -196,6 +265,8 @@
          il y a UNE tuile de tête et LE MUR. Les 4 autres du top rejoignent le mur en
          tête, à leur rang — c'est le classement qui les distingue, pas une section. */
       var mur = cinq.slice(1).concat(BRIEF.fil || []);
+      // index plat : la une d'abord, puis le mur — c'est ce rang que le panneau ouvre
+      TOUS = (une ? [une] : []).concat(mur);
       var base = seenBase();
       var nbNew = base ? mur.filter(function (i) { return i.d && i.d > base; }).length : 0;
       var nIll = mur.filter(function (i) { return i.img; }).length + (une && une.img ? 1 : 0);
@@ -230,6 +301,32 @@
          filtres de rubriques, opportunités catalogue, alertes de stock, rappels.
          La page ne garde que ce qui se REGARDE : la une, puis le mur. */
 
+      /* ──────────── L'ESSENTIEL EN 30 SECONDES ────────────
+         Le mur se regarde ; ça, ça se lit. Les cinq sujets que le robot a classés
+         en tête, chacun réduit à sa phrase la plus porteuse — de quoi savoir ce
+         qui compte aujourd'hui sans ouvrir un seul article. */
+      if (cinq.length > 1) {
+        html += '<section class="ess">' +
+          '<div class="ess-h"><b>L\'essentiel en 30 secondes</b>' +
+            '<span>' + (cinq.length) + ' sujets · ' + esc(BRIEF.compte.fichiers) + ' sources relues ce matin</span></div>' +
+          '<ol class="ess-l">' + cinq.map(function (c, i) {
+            var cle = (c.points && c.points.length) ? c.points[0] : (c.r || '');
+            var rang = TOUS.indexOf(c);
+            return '<li class="ess-i a-' + (THEME_ACC[c.theme] || 'muted') + '">' +
+              '<span class="ess-n">' + (i + 1) + '</span>' +
+              '<span class="ess-b">' +
+                '<span class="ess-cat">' + esc(c.theme_l) + '</span>' +
+                '<b>' + esc(c.t) + '</b>' +
+                (cle ? '<span class="ess-p">' + esc(cle) + '</span>' : '') +
+                '<span class="ess-f">' + esc((c.srcs || [c.s]).slice(0, 2).join(' · ')) +
+                  (c.n_src > 1 ? ' · <em>' + c.n_src + ' sources</em>' : '') +
+                  (c.mn ? ' · ' + esc(c.mn) + ' min' : '') + '</span>' +
+              '</span>' +
+              (rang >= 0 ? '<a class="tout" href="' + esc(c.u || '#') + '" onclick="return V2.infosLire(event,' + rang + ')" aria-label="' + esc(c.t) + '"></a>' : '') +
+            '</li>';
+          }).join('') + '</ol></section>';
+      }
+
       /* ════════════════ LE MUR ════════════════ */
       if (mur.length) {
         var compte = {};
@@ -257,7 +354,7 @@
           var min = 0;
           for (var k = 1; k < nCol; k++) if (charge[k] < charge[min]) min = k;
           var q = norm((i.t || '') + ' ' + (i.r || '') + ' ' + (i.s || '') + ' ' + ((BRIEF.themes_l && BRIEF.themes_l[i.theme]) || ''));
-          cols[min] += tuile(i, fmt, q);
+          cols[min] += tuile(i, fmt, q, TOUS.indexOf(i));
           charge[min] += HAUT[fmt] + 0.06;
         });
         var tuiles = cols.map(function (c) { return '<div class="mur-col">' + c + '</div>'; }).join('');
@@ -371,25 +468,26 @@
           (c.mn ? ' · ' + esc(c.mn) + ' min' : '') +
           (c.entier ? ' · <span class="ok">✓ lisible en entier</span>' : '') + '</div>' +
       '</div>' +
-      (c.u ? '<a class="tout" href="' + esc(c.u) + '" target="_blank" rel="noopener" aria-label="' + esc(c.t) + '"></a>' : '') +
+      '<a class="tout" href="' + esc(c.u || '#') + '" onclick="return V2.infosLire(event,0)" aria-label="' + esc(c.t) + '"></a>' +
     '</article>';
   }
 
   /* UNE TUILE DU MUR */
-  function tuile(a, taille, q) {
+  function tuile(a, taille, q, rang) {
     var RATIO = { '': 'r-4x5', h: 'r-3x4', l: 'r-1x1', xl: 'r-4x6' };
     return '<article class="tu ' + taille + ' a-' + (THEME_ACC[a.theme] || 'muted') + '" data-q="' + esc(q) + '">' +
       couverture(a, RATIO[taille] || 'r-4x5') + '<span class="veil"></span>' +
       '<div class="b">' +
         '<span class="cat">' + esc(a.theme_l) + '</span>' +
         '<h3>' + esc(a.t) + '</h3>' +
+        (a.r ? '<p class="tu-p">' + esc(a.r) + '</p>' : '') +
         '<div class="f">' + esc(a.s) +
           (a.n_src > 1 ? ' <b>+' + (a.n_src - 1) + '</b>' : '') + ' · ' + esc(ilYA(a.d)) +
           (a.mn ? ' · ' + esc(a.mn) + ' min' : '') +
           (a.neuf ? ' · <span class="neuf">nouveau</span>' : '') +
           (a.entier ? '<br><span class="ok">✓ lisible en entier</span>' : '') + '</div>' +
       '</div>' +
-      (a.u ? '<a class="tout" href="' + esc(a.u) + '" target="_blank" rel="noopener" aria-label="' + esc(a.t) + '"></a>' : '') +
+      '<a class="tout" href="' + esc(a.u || '#') + '" onclick="return V2.infosLire(event,' + rang + ')" aria-label="' + esc(a.t) + '"></a>' +
     '</article>';
   }
 
@@ -523,6 +621,87 @@
       /* le lien couvre toute la tuile : une seule cible, très grande */
       '.inf2 .tout{position:absolute;inset:0;z-index:4}',
 
+      /* ══════════ L'ESSENTIEL EN 30 SECONDES ══════════
+         Le seul bloc de la page qui se LIT au lieu de se regarder. Fond clair,
+         filets fins, aucune image : c'est un sommaire, pas une vitrine. */
+      '.inf2 .ess{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);padding:var(--sp-5) var(--sp-6) var(--sp-4);margin-bottom:var(--section-gap);box-shadow:var(--sh-2)}',
+      '.inf2 .ess-h{display:flex;align-items:baseline;gap:var(--sp-3);flex-wrap:wrap;padding-bottom:var(--sp-3);border-bottom:1.5px solid var(--ip-ink);margin-bottom:var(--sp-2)}',
+      '.inf2 .ess-h b{font-family:var(--serif);font-weight:600;font-size:23px;letter-spacing:-.02em;color:var(--ip-ink)}',
+      '.inf2 .ess-h span{font:600 10.5px/1 var(--mono);letter-spacing:.11em;text-transform:uppercase;color:var(--muted-2)}',
+      '.inf2 .ess-l{list-style:none;margin:0;padding:0}',
+      '.inf2 .ess-i{position:relative;display:flex;gap:var(--sp-4);padding:var(--sp-4) 0;border-top:1px solid var(--line-2)}',
+      '.inf2 .ess-i:first-child{border-top:0}',
+      '.inf2 .ess-i:hover{background:var(--card-2)}',
+      '.inf2 .ess-n{flex:0 0 auto;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;' +
+        "font:800 12.5px/1 var(--mono);color:#fff;background:var(--acc)}",
+      '.inf2 .ess-b{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:5px}',
+      '.inf2 .ess-cat{font:700 9.5px/1 var(--mono);letter-spacing:.15em;text-transform:uppercase;color:var(--acc-t)}',
+      '.inf2 .ess-b b{font-family:var(--serif);font-weight:600;font-size:19px;line-height:1.25;letter-spacing:-.016em;color:var(--ip-ink)}',
+      '.inf2 .ess-i:hover .ess-b b{color:var(--ip-blue)}',
+      '.inf2 .ess-p{font-size:14.5px;line-height:1.55;color:var(--ip-ink-2)}',
+      '.inf2 .ess-f{font:600 10.5px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted-2)}',
+      '.inf2 .ess-f em{color:var(--ip-blue);font-style:normal;font-weight:700}',
+
+      /* le chapeau sur la tuile : on comprend le sujet sans même ouvrir */
+      '.inf2 .tu-p{font-size:13px;line-height:1.45;color:rgba(255,255,255,.78);margin:0 0 9px;' +
+        'display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}',
+
+      /* ══════════ LE PANNEAU DE LECTURE ══════════
+         Pas de flou d'arrière-plan : Safari y laisse des images fantômes. Un voile
+         plein et une ombre franche font le même travail, sans risque. */
+      '.inf-fige{overflow:hidden}',
+      // le panneau vit hors de .inf2 : il lui faut ses propres variables
+      "#inf-panneau{--serif:'Newsreader',Georgia,'Times New Roman',serif}",
+      '#inf-panneau .a-rose{--acc:var(--c-rose);--acc-t:var(--c-rose-txt)}',
+      '#inf-panneau .a-amber{--acc:var(--c-amber);--acc-t:var(--c-amber-txt)}',
+      '#inf-panneau .a-blue{--acc:var(--ip-blue);--acc-t:var(--ip-blue)}',
+      '#inf-panneau .a-green{--acc:var(--c-opp);--acc-t:var(--c-mint-txt)}',
+      '#inf-panneau .a-violet{--acc:var(--c-cat);--acc-t:var(--c-cat)}',
+      '#inf-panneau .a-teal{--acc:var(--c-froid);--acc-t:#006F80}',
+      '#inf-panneau .a-muted{--acc:var(--muted);--acc-t:var(--muted)}',
+      '#inf-panneau .inf-pan-fond{position:fixed;inset:0;z-index:200;background:rgba(10,13,22,.52);animation:inf-fondu .22s ease both}',
+      '@keyframes inf-fondu{from{opacity:0}to{opacity:1}}',
+      '#inf-panneau .inf-pan{position:fixed;top:0;right:0;bottom:0;z-index:201;width:min(520px,100%);overflow-y:auto;' +
+        '-webkit-overflow-scrolling:touch;background:var(--card);box-shadow:var(--sh-pop);animation:inf-entre .3s var(--ease) both}',
+      '@keyframes inf-entre{from{transform:translateX(28px);opacity:0}to{transform:none;opacity:1}}',
+      '@media(prefers-reduced-motion:reduce){#inf-panneau .inf-pan,#inf-panneau .inf-pan-fond{animation-duration:.01ms}}',
+      '#inf-panneau .inf-pan-x{position:absolute;right:14px;top:14px;z-index:3;width:var(--tap-min);height:var(--tap-min);' +
+        'border-radius:50%;border:1px solid var(--line-strong);background:var(--card);color:var(--ip-ink);' +
+        'display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:var(--sh-1)}',
+      '#inf-panneau .inf-pan-img .mq-cov{border-radius:0}',
+      '#inf-panneau .inf-pan-b{padding:var(--sp-6)}',
+      '#inf-panneau .inf-pan:not(:has(.inf-pan-img)) .inf-pan-b{padding-top:var(--sp-8)}',
+      '#inf-panneau .inf-pan-top{display:flex;align-items:center;gap:var(--gap-tight);flex-wrap:wrap;margin-bottom:var(--sp-3)}',
+      "#inf-panneau .cat{display:inline-block;font:700 9.5px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:#fff;background:var(--acc);padding:7px 12px;border-radius:var(--r-pill)}",
+      '#inf-panneau .inf-pan-ok{font:700 10.5px/1 var(--mono);color:var(--c-mint-txt);background:color-mix(in srgb,var(--c-opp) 12%,transparent);padding:6px 10px;border-radius:var(--r-pill)}',
+      '#inf-panneau .inf-pan-mn{font:600 11px/1 var(--mono);color:var(--muted-2)}',
+      '#inf-panneau h2{font-family:var(--serif);font-weight:600;font-size:26px;line-height:1.16;letter-spacing:-.022em;margin:0 0 var(--sp-3);color:var(--ip-ink)}',
+      '#inf-panneau .inf-pan-chap{font-size:16px;line-height:1.62;color:var(--ip-ink-2);margin:0 0 var(--sp-5)}',
+      '#inf-panneau .inf-pan-sec{margin-bottom:var(--sp-5)}',
+      '#inf-panneau .inf-pan-l{display:block;font:700 10px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--acc-t);margin-bottom:var(--sp-3)}',
+      '#inf-panneau .inf-pan-sec ul{margin:0;padding:0;list-style:none}',
+      '#inf-panneau .inf-pan-sec li{position:relative;padding:0 0 var(--sp-3) 20px;font-size:15px;line-height:1.6;color:var(--ip-ink)}',
+      '#inf-panneau .inf-pan-sec li::before{content:"";position:absolute;left:2px;top:9px;width:7px;height:7px;border-radius:50%;background:var(--acc)}',
+      '#inf-panneau .inf-pan-chf{display:flex;flex-direction:column;gap:var(--sp-2)}',
+      '#inf-panneau .chf{background:var(--surf-sunken);border-radius:var(--r-sm);padding:var(--sp-3) var(--sp-4)}',
+      '#inf-panneau .chf b{display:block;font:800 21px/1 var(--mono);font-variant-numeric:tabular-nums;color:var(--acc-t);letter-spacing:-.02em}',
+      '#inf-panneau .chf span{display:block;font-size:13px;line-height:1.45;color:var(--muted);margin-top:6px}',
+      '#inf-panneau .inf-pan-pour{background:color-mix(in srgb,var(--acc) 8%,transparent);border-left:3px solid var(--acc);' +
+        'border-radius:0 var(--r-sm) var(--r-sm) 0;padding:var(--sp-3) var(--sp-4);font-size:14.5px;font-weight:600;line-height:1.5;color:var(--ip-ink);margin-bottom:var(--sp-5)}',
+      '#inf-panneau .inf-pan-pour b{display:block;font:700 10px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--acc-t);margin-bottom:5px}',
+      '#inf-panneau .inf-pan-src{font:600 11px/1.6 var(--mono);letter-spacing:.05em;text-transform:uppercase;color:var(--muted-2);margin-bottom:var(--sp-4)}',
+      '#inf-panneau .inf-pan-src b{color:var(--ip-blue)}',
+      '#inf-panneau .inf-pan-go{display:inline-flex;align-items:center;gap:8px;min-height:var(--tap-min);padding:0 20px;border-radius:var(--r-btn);' +
+        'background:var(--ip-blue);color:#fff;font-size:14px;font-weight:650;text-decoration:none;box-shadow:var(--sh-blue)}',
+      '#inf-panneau .inf-pan-go:hover{transform:translateY(var(--mo-lift));box-shadow:var(--sh-blue-h)}',
+      '@media(max-width:640px){',
+      '#inf-panneau .inf-pan{top:auto;left:0;width:100%;max-height:92vh;border-radius:var(--r-card) var(--r-card) 0 0;' +
+        'animation:inf-monte .3s var(--ease) both}',
+      '@keyframes inf-monte{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}',
+      '#inf-panneau .inf-pan-b{padding:var(--sp-5) var(--sp-4) var(--sp-7)}',
+      '#inf-panneau h2{font-size:22px}',
+      '}',
+
       /* ══════════ LE MUR ══════════ */
 '.inf2 .mur{display:flex;align-items:flex-start;gap:var(--sp-3)}',
       '.inf2 .mur-col{flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:var(--sp-3)}',
@@ -554,6 +733,8 @@
       '.inf2 .mur-une{border-radius:var(--r-md)}',
       '.inf2 .mur-une .b{padding:var(--sp-5) var(--sp-4) var(--sp-4)}',
       '.inf2 .mur-tete{padding:var(--sp-4) 0}',
+      '.inf2 .ess{padding:var(--sp-4)}.inf2 .ess-b b{font-size:17px}.inf2 .ess-p{font-size:13.5px}',
+      '.inf2 .ess-i{gap:var(--sp-3)}.inf2 .ess-n{width:22px;height:22px;font-size:11px}',
       '.inf2 .mur-tete-d{gap:var(--sp-4);font-size:10px}',
       '.inf2 .mur-tete-d b{font-size:16px}',
       '.inf2 .tu h3{font-size:15.5px;line-height:1.24}.inf2 .tu.xl h3{font-size:18px}',
