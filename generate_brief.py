@@ -278,6 +278,94 @@ def bodacc_secteur(n=8):
     return out[:n]
 
 
+# ═══ LA DONNÉE QUE PERSONNE NE LIT ═══════════════════════════════════════════
+# Will, 02/09/2026, sur ce qui lui manque : « de la donnée que personne n'a ».
+# Le BODACC est public, gratuit, et personne dans le métier ne le dépouille.
+# Deux gisements mesurés le 02/09 : 169 officines vendues en 90 jours, et 45
+# mouvements sur des sociétés de répartition en 2026 — dont des régionaux
+# (Franche-Comté Répartition, Brie Santé Répartition) absents de toute liste.
+
+
+def bodacc_cessions(n=10):
+    """Quelles OFFICINES ont changé de main ? Une pharmacie qui se vend, c'est
+    un client dont le titulaire change — donc un compte à reconquérir — ou un
+    prospect qui s'ouvre. Personne ne suit ça."""
+    limite = (TODAY - timedelta(days=90)).isoformat()
+    w = ('familleavis_lib="Ventes et cessions" and search(commercant,"pharmacie") '
+         'and dateparution>="%s"' % limite)
+    try:
+        d = json.loads(http(BODACC_API + '?where=' + urllib.parse.quote(w)
+                            + '&limit=40&order_by=dateparution%20desc', 400000, 20))
+    except Exception as e:
+        sys.stderr.write('  (BODACC cessions KO) %s\n' % str(e)[:70])
+        return []
+    out, vus = [], set()
+    for r in d.get('results', []):
+        soc = clean(str(r.get('commercant') or ''))
+        # le champ commercant liste parfois vendeur ET acheteur : on garde le 1er nom
+        soc = soc.split(',')[0].strip()
+        cle = norm(soc)
+        if not soc or cle in vus:
+            continue
+        vus.add(cle)
+        v = r.get('vente')
+        try:
+            v = json.loads(v) if isinstance(v, str) else (v or {})
+        except Exception:
+            v = {}
+        out.append({'societe': soc, 'ville': clean(str(r.get('ville') or '')),
+                    'date': r.get('dateparution') or '',
+                    'nature': clean(v.get('categorieVente') or v.get('descriptif') or 'Vente ou cession'),
+                    'url': 'https://www.bodacc.fr/pages/annonces-commerciales/?q='
+                           + urllib.parse.quote(soc)})
+        if len(out) >= n:
+            break
+    return out
+
+
+def bodacc_repartiteurs(n=6):
+    """Les mouvements de TOUTE société de répartition, pas seulement des huit
+    concurrents connus : le nom suffit à les trouver, et il en sort des régionaux
+    qu'aucune liste ne contient."""
+    limite = (TODAY - timedelta(days=120)).isoformat()
+    out, vus = [], set()
+    for mot in ('repartition', 'grossiste pharmaceutique'):
+        w = ('search(commercant,"%s") and dateparution>="%s"' % (mot, limite))
+        try:
+            d = json.loads(http(BODACC_API + '?where=' + urllib.parse.quote(w)
+                                + '&limit=30&order_by=dateparution%20desc', 400000, 20))
+        except Exception as e:
+            sys.stderr.write('  (BODACC répartiteurs KO) %s\n' % str(e)[:60])
+            continue
+        for r in d.get('results', []):
+            fam = r.get('familleavis_lib') or ''
+            if fam not in BODACC_FAMILLES:      # « Dépôts des comptes » = bruit annuel
+                continue
+            soc = clean(str(r.get('commercant') or '')).split(',')[0].strip()
+            cle = norm(soc) + fam
+            if not soc or cle in vus:
+                continue
+            vus.add(cle)
+            det = ''
+            for k in ('modificationsgenerales', 'jugement', 'vente'):
+                v = r.get(k)
+                if v:
+                    try:
+                        v = json.loads(v) if isinstance(v, str) else v
+                    except Exception:
+                        pass
+                    if isinstance(v, dict):
+                        det = clean(v.get('descriptif') or v.get('nature') or '')
+                    if det:
+                        break
+            out.append({'societe': soc, 'ville': clean(str(r.get('ville') or '')),
+                        'date': r.get('dateparution') or '', 'famille': fam, 'detail': det,
+                        'url': 'https://www.bodacc.fr/pages/annonces-commerciales/?q='
+                               + urllib.parse.quote(soc)})
+    out.sort(key=lambda x: x['date'], reverse=True)
+    return out[:n]
+
+
 def epingle_de(e):
     """Cette entrée doit-elle être épinglée, et à quel titre ?"""
     txt = (e.get('t') or '') + ' ' + (e.get('r') or '') + ' ' + (e.get('resume') or '')
@@ -285,6 +373,8 @@ def epingle_de(e):
         return 'societe'
     if e.get('k') == 'pcl':
         return 'difficulte'
+    if e.get('k') == 'cession':
+        return 'cession'
     if e.get('k') in ('jo', 'prix'):
         if ARGENT_IP.search(txt) or e.get('effet'):
             return 'echeance'
@@ -890,6 +980,39 @@ def collecte():
     except Exception as e:
         sys.stderr.write('  (BODACC global KO) %s\n' % str(e)[:80])
 
+    # ── Quelles officines ont changé de main ? ────────────────────────────────
+    try:
+        cess = bodacc_cessions()
+        ctx['cessions'] = cess
+        for v in cess:
+            add('%s — %s' % (v['societe'], v['nature']), v['url'],
+                'BODACC · vente ou cession', v['date'],
+                'Officine vendue ou cédée%s. Le titulaire change.' % (' à ' + v['ville'] if v['ville'] else ''),
+                kind='cession', extra={'societe_de': v['societe'], 'ville_de': v['ville']})
+        if cess:
+            lus.append('BODACC cessions')
+            print('   %d officine%s vendue%s ou cédée%s (90 derniers jours)'
+                  % (len(cess), 's' if len(cess) > 1 else '', 's' if len(cess) > 1 else '',
+                     's' if len(cess) > 1 else ''))
+    except Exception as e:
+        sys.stderr.write('  (cessions KO) %s\n' % str(e)[:70])
+
+    # ── Les répartiteurs, y compris ceux qui ne sont sur aucune liste ─────────
+    try:
+        rep = bodacc_repartiteurs()
+        for v in rep:
+            add('%s · %s' % (v['societe'], v['famille']), v['url'],
+                'BODACC · sociétés de répartition', v['date'],
+                v['detail'] or ('Mouvement au registre%s.' % (' · ' + v['ville'] if v['ville'] else '')),
+                kind='bodacc', extra={'societe_de': v['societe'], 'ville_de': v['ville']})
+        if rep:
+            lus.append('BODACC répartiteurs')
+            print('   %d mouvement%s sur des sociétés de répartition (120 j) : %s'
+                  % (len(rep), 's' if len(rep) > 1 else '',
+                     ', '.join(v['societe'][:22] for v in rep[:3])))
+    except Exception as e:
+        sys.stderr.write('  (répartiteurs KO) %s\n' % str(e)[:70])
+
     # ── Qui, dans le circuit, est en difficulté ? ─────────────────────────────
     try:
         diff = bodacc_secteur()
@@ -958,8 +1081,12 @@ def meme_sujet(a, b):
 
 def regroupe(entrees):
     """Un sujet = un cluster. Le représentant est l'entrée la plus autorisée."""
+    SANS_REGROUPEMENT = ('bodacc', 'pcl', 'cession')
     groupes = []          # [(sac_de_mots, [entrées])]
     for e in entrees:
+        if e.get('k') in SANS_REGROUPEMENT:
+            groupes.append([set(), [e]])      # un enregistrement = un sujet, point
+            continue
         sac = mots_cles(e['t'])
         place = False
         for g in groupes:
@@ -1355,7 +1482,7 @@ def main():
             if not eff and days_ago(c['d']) > 120:
                 continue
             c['jours'] = j
-        elif m in ('societe', 'difficulte'):
+        elif m in ('societe', 'difficulte', 'cession'):
             if days_ago(c['d']) > BODACC_JOURS:
                 continue
             c['jours'] = None
@@ -1365,7 +1492,7 @@ def main():
             c['jours'] = None
         epingles.append(c)
     # échéances d'abord (la plus proche en tête), puis les concurrents, les plus frais devant
-    ORDRE_EP = {'echeance': 0, 'sanction': 1, 'societe': 2, 'difficulte': 3, 'concurrent': 4}
+    ORDRE_EP = {'echeance': 0, 'sanction': 1, 'difficulte': 2, 'cession': 3, 'societe': 4, 'concurrent': 5}
 
     def rang_ep(c):
         j = c.get('jours')
@@ -1375,7 +1502,16 @@ def main():
             return (0, j, 0)            # ce qui arrive, le plus proche d'abord
         return (1, -(j or 0), 0)        # ce qui vient de s'appliquer, le plus récent d'abord
     epingles.sort(key=rang_ep)
-    epingles = epingles[:10]
+    par_motif, retenues = {}, []
+    for c in epingles:
+        m = c['epingle']
+        if par_motif.get(m, 0) >= 3:      # trois par nature, pas plus
+            continue
+        par_motif[m] = par_motif.get(m, 0) + 1
+        retenues.append(c)
+        if len(retenues) >= 12:
+            break
+    epingles = retenues
     print('   %d information%s épinglée%s : %s'
           % (len(epingles), 's' if len(epingles) > 1 else '', 's' if len(epingles) > 1 else '',
              ' | '.join('%s %s' % (c['epingle'], c['t'][:38]) for c in epingles) or '—'))
