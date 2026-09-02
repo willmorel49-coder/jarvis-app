@@ -153,6 +153,29 @@
       if (nb(dernier) >= 0.8 * moy) break;
       mois = reste;
     }
+    // ⚠️ Le balayage ci-dessus ne regarde QUE la fin de la série : il retire le dernier
+    // mois tant qu'il est partiel. Un mois troué AU MILIEU passait au travers — juin 2026
+    // n'avait que 425 officines contre 580 de médiane (73 %), faute des exports de deux
+    // commerciaux, et il entrait quand même dans la moyenne. Mesuré le 02/09/2026 : la
+    // vitesse réseau s'en trouvait sous-estimée de 4,2 %, donc toutes les couvertures
+    // gonflées et les quantités conseillées trop basses.
+    // On écarte donc TOUT mois sous 80 % de la médiane, où qu'il soit dans la série —
+    // et jamais au point de descendre sous 3 mois d'historique.
+    if (mois.length > 3) {
+      var tri = mois.map(nb).slice().sort(function (a, b) { return a - b; });
+      var med = tri[Math.floor(tri.length / 2)];
+      // DEUX conditions, et c'est volontaire : sous 80 % de la médiane ET sous 80 % du
+      // mois précédent. Le seul critère de la médiane écartait les premiers mois d'un
+      // réseau EN CROISSANCE (300 → 660 officines : janvier et février passaient pour
+      // troués alors qu'ils étaient complets). Un vrai trou, lui, est un CREUX : il
+      // s'effondre par rapport au mois d'avant. Le premier mois n'a pas de précédent,
+      // donc rien ne permet d'y voir une anomalie : on le garde.
+      var pleins = mois.filter(function (x, k) {
+        if (k === 0) return true;
+        return !(nb(x) < 0.8 * med && nb(x) < 0.8 * nb(mois[k - 1]));
+      });
+      if (pleins.length >= 3) mois = pleins;
+    }
     return mois;
   }
 
