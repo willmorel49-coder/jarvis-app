@@ -368,6 +368,7 @@
               societe:    { c: 'soc',  l: 'Répartiteur · registre', i: 'fiche' },
               cession:    { c: 'cess', l: 'Officine vendue', i: 'pharma' },
               demande:    { c: 'dem',  l: 'Ça va se vendre', i: 'cart' },
+              amont:      { c: 'amo',  l: "Avant l'ANSM", i: 'opp' },
               difficulte: { c: 'diff', l: 'En difficulté', i: 'alert' },
               concurrent: { c: 'conc', l: 'Concurrent', i: 'opp' }
             };
@@ -839,6 +840,8 @@
       '.inf2 .al-cd.fait{background:var(--card-2);color:var(--muted);border-color:var(--line)}',
       '.inf2 .al-cd.conc,.inf2 .al-cd.soc{background:color-mix(in srgb,var(--c-cat) 11%,transparent);color:var(--c-cat);' +
         'border-color:color-mix(in srgb,var(--c-cat) 26%,transparent)}',
+      '.inf2 .al-cd.amo{background:color-mix(in srgb,var(--ip-blue) 12%,transparent);color:var(--ip-blue);' +
+        'border-color:color-mix(in srgb,var(--ip-blue) 30%,transparent)}',
       '.inf2 .al-cd.dem{background:color-mix(in srgb,var(--c-froid) 13%,transparent);color:#006F80;' +
         'border-color:color-mix(in srgb,var(--c-froid) 30%,transparent)}',
       '.inf2 .al-cd.cess{background:color-mix(in srgb,var(--c-opp) 12%,transparent);color:var(--c-mint-txt);' +

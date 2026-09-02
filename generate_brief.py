@@ -33,7 +33,7 @@ Zéro clé, zéro dépendance (stdlib), zéro coût. Tourne dans GitHub Actions.
    publique. Aucun prix Intégral, aucune remise, aucun abandon de marge, aucune
    donnée client. Le croisement avec le catalogue reste côté application.
 """
-import json, os, re, sys, unicodedata, html, urllib.request, urllib.parse
+import json, os, re, sys, unicodedata, html, urllib.request, urllib.parse, csv, io
 import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone, date, timedelta
@@ -424,6 +424,119 @@ def pollens():
             'rayon': POLLEN_RAYON.get(top[0][0], 'antihistaminiques')}
 
 
+# ═══ SAVOIR AVANT L'ANSM : LES AGENCES VOISINES ══════════════════════════════
+# Une rupture ne s'arrête pas à la frontière : les usines sont les mêmes. L'Allemagne,
+# l'Espagne et l'Italie publient leurs déclarations de rupture en CSV/JSON ouverts,
+# gratuits, sans clé — et souvent AVANT que la molécule n'apparaisse sur la liste ANSM.
+# Mesuré le 02/09/2026 : BfArM 954 lignes dont 144 déclarations neuves sur 90 jours,
+# CIMA 934 problèmes actifs, AIFA 2 542 lignes. Côté ANSM : 286 lignes au total.
+#
+# ⚠️ PIÈGE VÉRIFIÉ : l'ancienne adresse EMA des pénuries
+#    (/system/files/documents/other/medicines_output_shortages_en.xlsx) répond
+#    HTTP 200 avec un VRAI fichier de 31 Ko — figé au 5 décembre 2023. Un 200 ne
+#    prouve rien : on lit toujours le last-modified.
+VOISINS = {
+    'Allemagne': 'https://anwendungen.pharmnet-bund.de/lieferengpassmeldungen/public/csv',
+    'Espagne':   'https://cima.aemps.es/cima/rest/psuministro?pagina=1',
+    'Italie':    'https://www.aifa.gov.it/documents/20142/847339/elenco_medicinali_carenti.csv',
+}
+VOISINS_JOURS = 60
+
+
+def _mol(x):
+    """Une DCI ramenée à une clé comparable ENTRE LANGUES.
+
+    ⚠️ Comparer les mots ne marche pas : l'Allemagne écrit « Posaconazol » là où la
+    France écrit « posaconazole », l'Espagne « levotiroxina » pour « lévothyroxine ».
+    Une comparaison naïve rendait 246 molécules « absentes de la liste ANSM » sur
+    246 — c'est-à-dire zéro recouvrement, ce qui ne peut pas être vrai.
+    Les DCI sont latines : elles ne diffèrent que par l'orthographe nationale.
+    On ramène donc ph→f, th→t, y→i, k→c, on retire les h et la terminaison.
+    Éprouvé sur 9 paires FR/DE, FR/ES, FR/IT dont la réponse était connue d'avance :
+    9 sur 9 rapprochées, et un nom de marque (MISOFAR) échoue bien à se rapprocher
+    de misoprostol — ce qu'on veut."""
+    t = unicodedata.normalize('NFD', str(x or ''))
+    t = ''.join(c for c in t if unicodedata.category(c) != 'Mn').lower()
+    t = re.sub(r'[^a-z]', '', t)
+    t = t.replace('ph', 'f').replace('th', 't').replace('ae', 'e').replace('oe', 'e')
+    t = t.replace('y', 'i').replace('k', 'c').replace('h', '')
+    t = re.sub(r'(e|o|a|um|us)$', '', t)
+    return t[:11]
+
+def ruptures_voisins():
+    """Ce que l'Allemagne, l'Espagne et l'Italie signalent — et que la France n'a pas
+    encore inscrit. ⚠️ Chaque pays est isolé : si l'un tombe, les autres remontent."""
+    from datetime import date as _d
+    limite = TODAY - timedelta(days=VOISINS_JOURS)
+    trouve = {}          # clé DCI -> {'mol','atc','pays','depuis','produit'}
+    n_es = [0]           # l'Espagne compte, mais ne nomme pas de molécule
+
+    def garde(mol, atc, pays, depuis, produit):
+        k = _mol(mol)
+        if len(k) < 5 or k in trouve:
+            return
+        trouve[k] = {'mol': clean(mol), 'atc': clean(atc or ''), 'pays': pays,
+                     'depuis': depuis or '', 'produit': clean(produit or '')}
+
+    # ── Allemagne : CSV point-virgule, latin-1, une ligne par déclaration ──
+    try:
+        txt = http(VOISINS['Allemagne'], 4000000, 40).decode('latin-1')
+        for r in csv.DictReader(io.StringIO(txt), delimiter=';'):
+            if not (r.get('Meldungsart') or '').startswith('Erst'):
+                continue
+            j = r.get('Datum der Erstmeldung') or ''
+            try:
+                jj, mm, aa = j.split('.')
+                if _d(int(aa), int(mm), int(jj)) < limite:
+                    continue
+            except Exception:
+                continue
+            garde(r.get('Wirkstoffe'), r.get('Atc Code'), 'Allemagne',
+                  '%s-%s-%s' % (aa, mm, jj), r.get('Arzneimittlbezeichnung'))
+    except Exception as e:
+        sys.stderr.write('  (BfArM KO) %s\n' % str(e)[:70])
+
+    # ── Espagne : API JSON, dates en millisecondes ──
+    try:
+        d = json.loads(http(VOISINS['Espagne'], 400000, 30))
+        for r in d.get('resultados', []):
+            if not r.get('activo'):
+                continue
+            deb = ''
+            try:
+                deb = datetime.fromtimestamp((r.get('fini') or 0) / 1000.0, timezone.utc).date()
+                if deb < limite:
+                    continue
+                deb = deb.isoformat()
+            except Exception:
+                continue
+            # ⚠️ le champ `nombre` est une étiquette de boîte (« MISOFAR 200 mcg… »),
+            #    pas une DCI : on le compte dans le volume, on ne s'en sert PAS pour
+            #    affirmer qu'une molécule manque en France.
+            n_es[0] += 1
+    except Exception as e:
+        sys.stderr.write('  (CIMA KO) %s\n' % str(e)[:70])
+
+    # ── Italie : CSV point-virgule, latin-1, en-tête à la LIGNE 3 ──
+    try:
+        txt = http(VOISINS['Italie'], 4000000, 40).decode('latin-1')
+        lignes = txt.split('\n')
+        for r in csv.DictReader(io.StringIO('\n'.join(lignes[1:])), delimiter=';'):
+            j = (r.get('Data inizio') or '').strip()
+            try:
+                jj, mm, aa = j.split('/')
+                if _d(int(aa), int(mm), int(jj)) < limite:
+                    continue
+            except Exception:
+                continue
+            garde(r.get('Principio attivo'), r.get('Codice ATC'), 'Italie',
+                  '%s-%s-%s' % (aa, mm, jj), r.get('Nome medicinale'))
+    except Exception as e:
+        sys.stderr.write('  (AIFA KO) %s\n' % str(e)[:70])
+
+    return trouve, n_es[0]
+
+
 def epingle_de(e):
     """Cette entrée doit-elle être épinglée, et à quel titre ?"""
     txt = (e.get('t') or '') + ' ' + (e.get('r') or '') + ' ' + (e.get('resume') or '')
@@ -435,6 +548,8 @@ def epingle_de(e):
         return 'cession'
     if e.get('k') == 'pollen':
         return 'demande'
+    if e.get('k') == 'amont':
+        return 'amont'
     if e.get('k') in ('jo', 'prix'):
         if ARGENT_IP.search(txt) or e.get('effet'):
             return 'echeance'
@@ -1040,6 +1155,36 @@ def collecte():
     except Exception as e:
         sys.stderr.write('  (BODACC global KO) %s\n' % str(e)[:80])
 
+    # ── Ce que nos voisins signalent et que la France n'a pas encore ──────────
+    try:
+        vois, n_es = ruptures_voisins()
+        if vois:
+            # la liste ANSM du jour, réduite aux molécules comparables
+            deja = set()
+            for x in (ctx.get('dispo') or []):
+                m = _mol(x.get('dci') or '')
+                if m:
+                    deja.add(m)
+            inedits = [v for k, v in vois.items() if k not in deja]
+            inedits.sort(key=lambda v: v['depuis'], reverse=True)
+            ctx['amont'] = inedits[:20]
+            lus.append('BfArM · CIMA · AIFA')
+            print('   %d molécules nommées (Allemagne, Italie), %d absentes de la liste ANSM '
+                  '· %d signalements espagnols comptés sans nommer de molécule'
+                  % (len(vois), len(inedits), n_es))
+            if inedits:
+                noms = ', '.join(v['mol'][:26] for v in inedits[:4])
+                pays = sorted(set(v['pays'] for v in inedits))
+                add('%d molécules en rupture chez nos voisins, pas encore en France' % len(inedits),
+                    'https://anwendungen.pharmnet-bund.de/lieferengpassmeldungen/public/',
+                    'BfArM · CIMA · AIFA', TODAY.isoformat(),
+                    'Déclarées en %s et absentes de la liste ANSM du jour : %s. Les usines sont les mêmes : '
+                    'ce qui manque là-bas manque souvent ici quelques semaines plus tard.'
+                    % (' et '.join(pays), noms),
+                    kind='amont')
+    except Exception as e:
+        sys.stderr.write('  (voisins global KO) %s\n' % str(e)[:80])
+
     # ── Ce qui va se vendre : l'air du jour ───────────────────────────────────
     try:
         po = pollens()
@@ -1489,7 +1634,7 @@ def main():
     # dire. On ouvre maintenant la page elle-même : l'illustration que le site
     # déclare, le vrai chapeau, le temps de lecture — et surtout la réponse à la
     # question de Will : « est-ce qu'on peut le lire en entier ? »
-    FABRIQUEES = ('pollen', 'bodacc', 'pcl', 'cession', 'jo', 'prix', 'rupture', 'ema')
+    FABRIQUEES = ('pollen', 'bodacc', 'pcl', 'cession', 'jo', 'prix', 'rupture', 'ema', 'amont')
     a_lire = [c for c in fil[:N_ENRICHI]
               if c.get('u', '').startswith('http') and 'news.google.com' not in c['u']
               and not c.get('paywall') and c.get('k') not in FABRIQUEES]
@@ -1562,6 +1707,10 @@ def main():
             if not eff and days_ago(c['d']) > 120:
                 continue
             c['jours'] = j
+        elif m == 'amont':
+            if days_ago(c['d']) > 3:
+                continue
+            c['jours'] = None
         elif m == 'demande':
             if days_ago(c['d']) > 8:      # l'air change vite : au-delà d'une semaine, ce n'est plus une alerte
                 continue
@@ -1576,7 +1725,7 @@ def main():
             c['jours'] = None
         epingles.append(c)
     # échéances d'abord (la plus proche en tête), puis les concurrents, les plus frais devant
-    ORDRE_EP = {'echeance': 0, 'sanction': 1, 'demande': 2, 'difficulte': 3, 'cession': 4, 'societe': 5, 'concurrent': 6}
+    ORDRE_EP = {'echeance': 0, 'amont': 1, 'sanction': 2, 'demande': 3, 'difficulte': 4, 'cession': 5, 'societe': 6, 'concurrent': 7}
 
     def rang_ep(c):
         j = c.get('jours')
@@ -1662,6 +1811,7 @@ def main():
             'retour': (x.get('retour') or {}).get('raw') or '', 'since': x.get('since'),
         } for x in (ctx.get('ruptures_neuves') or [])[:14]],
         'ema': ctx.get('ema', []),
+        'amont': ctx.get('amont', []),
         'compte': {
             'fichiers': len(lus), 'sources_lues': lus,
             'entrees': len(entrees), 'sujets': len(clusters), 'retenues': len(fil),
