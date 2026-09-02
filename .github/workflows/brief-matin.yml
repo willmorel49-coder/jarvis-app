@@ -56,12 +56,37 @@ jobs:
         # ne condamne pas la donnée.
         run: |
           python3 - <<'PY'
-          import json, sys
+          import json, sys, re, unicodedata
           d = json.load(open('crm/v2/brief-jour.json', encoding='utf-8'))
           if not d.get('cinq') or not d.get('fil'):
               sys.exit("Édition vide — rien à publier, on garde la précédente.")
-          print("OK : %d à la une, %d au fil, %d chiffres au radar, %d fichiers lus"
-                % (len(d['cinq']), len(d['fil']), len(d['radar']), d['compte']['fichiers']))
+
+          # ⚠️ LE CONTRÔLE QUI COMPTE, posé le 02/09/2026.
+          # L'arrêté qui fait passer la marge grossiste à 0,22 € au 20/01/2027 avait
+          # disparu de l'écran sans que rien ne le signale. Désormais : toute échéance
+          # encore à venir dans jo-marges.json DOIT se retrouver dans les épingles,
+          # sinon on ne publie pas. Le silence n'est plus une sortie possible.
+          def norm(x):
+              x = unicodedata.normalize('NFD', str(x or ''))
+              x = ''.join(c for c in x if unicodedata.category(c) != 'Mn').lower()
+              return re.sub(r'[^a-z0-9]+', ' ', x).strip()
+          try:
+              jo = json.load(open('crm/v2/jo-marges.json', encoding='utf-8')).get('items', [])
+          except Exception:
+              jo = []
+          from datetime import date
+          auj = date.today().isoformat()
+          attendues = [t for t in jo if (t.get('date_effet') or '') >= auj]
+          epingles = ' | '.join(norm(e.get('t')) for e in d.get('epingles', []))
+          perdues = [t for t in attendues if norm(t.get('titre'))[:60] not in epingles]
+          if perdues:
+              for t in perdues:
+                  print("PERDUE : %s (effet %s)" % (t.get('titre'), t.get('date_effet')))
+              sys.exit("ÉCHÉANCE PERDUE — %d texte(s) du JO à venir ne sont pas épinglés." % len(perdues))
+
+          print("OK : %d épinglés (dont %d échéances à venir), %d à la une, %d au fil, %d fichiers lus"
+                % (len(d.get('epingles', [])), len(attendues), len(d['cinq']), len(d['fil']),
+                   d['compte']['fichiers']))
           PY
 
       - name: Committer si changement

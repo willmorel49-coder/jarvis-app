@@ -101,6 +101,59 @@ HORS_SUJET = re.compile(
     r'ce que r[ée]v[èe]le|faut-il vraiment|horoscope|beaut[ée]|peau|cheveux', re.I)
 MAX_GRAND_PUBLIC = 22   # la presse générale illustre, elle ne fait pas le journal
 
+# ═══════════════════════════════════════════════════════════════════════════
+# CE QU'ON NE DOIT JAMAIS RATER
+# Will, 02/09/2026 : « il y a un article que je ne vois pas et pourtant ça devrait
+# être l'un des plus importants, c'est la loi prévue pour la marge des grossistes en
+# janvier 2027. On doit absolument pas passer à côté d'infos comme celle-là. Nos
+# concurrents pareil, il faut qu'on soit au courant de leurs projets majeurs. »
+#
+# Deux familles d'information ne se noient PAS dans le fil : elles sont épinglées en
+# tête, hors filtres, et une échéance y reste jusqu'à son entrée en vigueur.
+#   1) ÉCHÉANCE — un texte officiel qui change l'argent d'Intégral (barème de marge,
+#      remise, honoraire, TFR, clause de sauvegarde). Ce n'est pas une nouvelle du
+#      jour, c'est une date qui arrive.
+#   2) CONCURRENT — un répartiteur nommé + un mouvement structurant.
+# ═══════════════════════════════════════════════════════════════════════════
+
+# Les concurrents et voisins directs d'Intégral Pharma. Un nom seul ne suffit pas :
+# il faut qu'il soit associé à un mouvement (voir MOUVEMENT).
+CONCURRENTS = re.compile(
+    r'\bocp\b|alliance healthcare|\bcerp\b|cerp rouen|cerp rrm|astera|'
+    r'phoenix pharma|\bphoenix\b|sagitta|cophana|welcoop|giphar|\bcsrp\b|'
+    r'\bocp r[ée]partition\b|teva sant[ée]|biogaran|viatris|sandoz|zentiva|arrow g[ée]n[ée]riques|'
+    r'\beg labo\b|mylan|servier|sanofi|upsa|urgo|cooper|pierre fabre', re.I)
+# Un mouvement structurant : ce qui engage l'entreprise, pas un communiqué de routine.
+MOUVEMENT = re.compile(
+    r'rachat|rach[èe]te|acquisition|acqui[eè]rt|fusion|fusionne|c[èe]de|cession|reprise|'
+    r'ouvre|ouverture|inaugur|ferme|fermeture|d[ée]localis|restructur|plan social|'
+    r'investi|investissement|lev[ée]e de fonds|entrep[oô]t|plateforme logistique|'
+    r'nouveau site|partenariat|accord|alliance avec|s.associe|'
+    r'nomination|nomm[ée]|directeur g[ée]n[ée]ral|pr[ée]sident|arriv[ée]e de|d[ée]part de|'
+    r'r[ée]sultats annuels|chiffre d.affaires|perte|b[ée]n[ée]fice|redressement|liquidation|'
+    r'strat[ée]gi|feuille de route|lance|lancement|d[ée]ploie|d[ée]ploiement|'
+    r'renforce|renforcement|s.implante|implantation|se dote|'
+    r'd[ée]veloppe|d[ée]veloppement|croissance|[ée]largit|[ée]tend|'
+    r'nouvelle offre|nouveau service|cr[ée]e|cr[ée]ation|met en place|'
+    r'contrat|march[ée] remport|appel d.offres', re.I)
+# Ce qui touche l'ARGENT d'un grossiste-répartiteur dans un texte officiel.
+ARGENT_IP = re.compile(
+    r'marge|grossist|r[ée]partit|distribution en gros|remise|honorair|'
+    r'prix et marges|tarif forfaitaire|\btfr\b|clause de sauvegarde|'
+    r'plafond|coefficient|forfait par bo[iî]te|r[ée]mun[ée]ration', re.I)
+
+
+def epingle_de(e):
+    """Cette entrée doit-elle être épinglée, et à quel titre ?"""
+    txt = (e.get('t') or '') + ' ' + (e.get('r') or '') + ' ' + (e.get('resume') or '')
+    if e.get('k') in ('jo', 'prix'):
+        if ARGENT_IP.search(txt) or e.get('effet'):
+            return 'echeance'
+    if CONCURRENTS.search(txt) and MOUVEMENT.search(txt):
+        return 'concurrent'
+    return ''
+
+
 # ── Sources dont le mur payant a été MESURÉ le 01/09/2026 ─────────────────────
 # 3 articles ouverts par source. On les écarte parce qu'un lien qu'on ne peut pas
 # lire ne sert à rien (Will). ⚠️ Nécessaire parce que la veille concurrents passe
@@ -525,11 +578,15 @@ def collecte():
     d = load('jo-marges.json')
     if d:
         lus.append('jo-marges.json')
-        # ⚠️ Les textes du JO N'ENTRENT PAS dans le flux éditorial : ils ont leur
-        # propre bloc « Ce qui touche tes marges », avec compte à rebours, et ils y
-        # restent jusqu'à leur entrée en vigueur. Les mettre aussi dans « les 5 »
-        # affichait le même arrêté trois fois sur la page. Une chose, un endroit.
+        # ⚠️ Le 01/09 ces textes étaient EXCLUS du flux : ils avaient leur bloc à eux.
+        # Ce bloc a été retiré le 02/09 — et l'arrêté qui fait passer la marge grossiste
+        # à 0,22 € au 20/01/2027 a disparu de l'écran avec lui. Ils reviennent donc dans
+        # la collecte, et leur place est le bandeau épinglé, pas le fil.
         ctx['jo'] = d.get('items', [])
+        for t in ctx['jo']:
+            add(t.get('titre'), t.get('url'), 'Journal officiel', t.get('jo'),
+                t.get('resume') or ' · '.join(t.get('motifs') or []),
+                kind='jo', extra={'effet': t.get('date_effet') or ''})
 
     # ── avis de prix CEPS au JO (generate_prix_futurs.py) ──
     d = load('prix-futurs.json')
@@ -758,6 +815,16 @@ def regroupe(entrees):
         if nr and (nr.startswith(nt[:40]) or nt.startswith(nr[:40])):
             chef['r'] = ''
         chef['theme'] = theme_of(chef['t'] + ' ' + (chef.get('r') or ''), chef.get('tag') or '')
+        # une épingle posée sur N'IMPORTE quelle entrée du groupe vaut pour le groupe
+        for e in grp:
+            m = epingle_de(e)
+            if m:
+                chef['epingle'] = m
+                if e.get('effet') and not chef.get('effet'):
+                    chef['effet'] = e['effet']
+                if e.get('paywall'):
+                    chef['paywall'] = 1
+                break
         clusters.append(chef)
     return clusters
 
@@ -998,11 +1065,25 @@ def main():
         sys.stderr.write('AUCUNE entrée collectée — édition précédente conservée.\n')
         return 1
 
+    # ⚠️ ARBITRAGE, 02/09/2026. Une source payante est écartée du mur : un lien qu'on
+    # ne peut pas lire n'y sert à rien. MAIS pour une échéance réglementaire ou un
+    # mouvement de concurrent, **savoir que ça existe prime sur pouvoir tout lire** —
+    # « Astera renforce son offre » venait du Moniteur et disparaissait en silence.
+    # Ces entrées-là restent, marquées « accès abonné », et vont au bandeau épinglé.
     avant = len(entrees)
-    entrees = [e for e in entrees if not source_au_mur(e['s'])]
+    gardees, payantes_epinglees = [], 0
+    for e in entrees:
+        if not source_au_mur(e['s']):
+            gardees.append(e)
+        elif epingle_de(e):
+            e['paywall'] = 1
+            gardees.append(e)
+            payantes_epinglees += 1
+    entrees = gardees
     if len(entrees) < avant:
-        print('   %d entrées écartées : source derrière un mur payant (mesuré)'
-              % (avant - len(entrees)))
+        print('   %d entrées écartées : source derrière un mur payant (mesuré)%s'
+              % (avant - len(entrees),
+                 ' — %d gardée(s) car épinglée(s)' % payantes_epinglees if payantes_epinglees else ''))
 
     clusters = regroupe(entrees)
     print('   %d sujets après regroupement' % len(clusters))
@@ -1019,7 +1100,8 @@ def main():
     # déclare, le vrai chapeau, le temps de lecture — et surtout la réponse à la
     # question de Will : « est-ce qu'on peut le lire en entier ? »
     a_lire = [c for c in fil[:N_ENRICHI]
-              if c.get('u', '').startswith('http') and 'news.google.com' not in c['u']]
+              if c.get('u', '').startswith('http') and 'news.google.com' not in c['u']
+              and not c.get('paywall')]
     if a_lire:
         with ThreadPoolExecutor(max_workers=8) as ex:
             for c, r in zip(a_lire, ex.map(lambda x: lire_article(x['u'], x.get('t', '')), a_lire)):
@@ -1072,6 +1154,56 @@ def main():
     haut = set(id(c) for c in retenus)
     fil = [c for c in fil if id(c) not in haut]
 
+    # ═══ CE QU'ON NE DOIT JAMAIS RATER ═══════════════════════════════════════
+    # Les épingles ne suivent PAS la fenêtre de 21 jours : une échéance reste tant
+    # qu'elle n'est pas entrée en vigueur, même si le texte est paru il y a 3 mois.
+    epingles = []
+    for c in clusters:
+        m = c.get('epingle')
+        if not m:
+            continue
+        if m == 'echeance':
+            eff = c.get('effet') or ''
+            j = days_until(eff) if eff else None
+            # on garde : ce qui arrive, et ce qui vient tout juste de s'appliquer
+            if eff and j is not None and j < -30:
+                continue
+            if not eff and days_ago(c['d']) > 120:
+                continue
+            c['jours'] = j
+        else:
+            if days_ago(c['d']) > 30:      # un mouvement concurrent vieux d'un mois n'est plus un signal
+                continue
+            c['jours'] = None
+        epingles.append(c)
+    # échéances d'abord (la plus proche en tête), puis les concurrents, les plus frais devant
+    def rang_ep(c):
+        j = c.get('jours')
+        if c['epingle'] != 'echeance':
+            return (2, days_ago(c['d']), 0)
+        if j is not None and j >= 0:
+            return (0, j, 0)            # ce qui arrive, le plus proche d'abord
+        return (1, -(j or 0), 0)        # ce qui vient de s'appliquer, le plus récent d'abord
+    epingles.sort(key=rang_ep)
+    epingles = epingles[:6]
+    print('   %d information%s épinglée%s : %s'
+          % (len(epingles), 's' if len(epingles) > 1 else '', 's' if len(epingles) > 1 else '',
+             ' | '.join('%s %s' % (c['epingle'], c['t'][:38]) for c in epingles) or '—'))
+
+    # ⚠️ LE GARDE-FOU. Le 02/09/2026, l'arrêté de la marge grossiste au 20/01/2027 a
+    # disparu de l'écran sans que rien ne le signale. Désormais : toute échéance encore
+    # à venir dans jo-marges.json DOIT se retrouver épinglée, sinon le robot échoue.
+    attendues = [t for t in (ctx.get('jo') or [])
+                 if t.get('date_effet') and days_until(t['date_effet']) >= 0]
+    titres_ep = ' | '.join(norm(c['t']) for c in epingles)
+    manquantes = [t for t in attendues if norm(t['titre'])[:60] not in titres_ep]
+    if manquantes:
+        sys.stderr.write('ÉCHÉANCE PERDUE — %d texte(s) du JO encore à venir ne sont pas épinglés :\n'
+                         % len(manquantes))
+        for t in manquantes:
+            sys.stderr.write('  · %s (effet %s)\n' % (t['titre'][:90], t['date_effet']))
+        return 2
+
     themes_du_jour = {}
     for c in fil:
         if days_ago(c['d']) <= 1:
@@ -1087,6 +1219,17 @@ def main():
         'une': une,
         'cinq': cinq,
         'radar': radar(ctx),
+        'epingles': [{
+            't': c['t'], 'u': c['u'], 's': c['s'], 'd': c['d'],
+            'r': (c.get('chapeau') or c.get('r') or '')[:240],
+            'motif': c['epingle'], 'effet': c.get('effet') or '', 'jours': c.get('jours'),
+            'theme': c['theme'], 'theme_l': THEME_LABEL.get(c['theme'], 'Autre'),
+            'points': c.get('points', []), 'chiffres': c.get('chiffres', []),
+            'srcs': c.get('srcs', [])[:3], 'n_src': c.get('n_src', 1),
+            'img': c.get('img', ''), 'mn': c.get('mn', 0),
+            'paywall': 1 if c.get('paywall') else 0,
+            'pour_toi': THEME_ANGLE.get(c['theme'], THEME_ANGLE['autre']),
+        } for c in epingles],
         'fil': [{
             't': c['t'], 'u': c['u'], 's': c['s'], 'd': c['d'],
             'r': (c.get('chapeau') or c.get('r') or '')[:200], 'theme': c['theme'],
@@ -1095,7 +1238,7 @@ def main():
             'neuf': 1 if days_ago(c['d']) <= 1 else 0,
             'img': c.get('img', ''), 'mn': c.get('mn', 0), 'entier': 1 if (c.get('verif') and not c.get('mur')) else 0,
             'points': c.get('points', []), 'chiffres': c.get('chiffres', []),
-        } for c in fil[:60]],
+        } for c in fil[:60] if not c.get('epingle')],
         'themes_du_jour': themes_du_jour,
         'themes_l': THEME_LABEL,
         # rubriques dédiées, servies telles quelles à l'écran

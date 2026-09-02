@@ -132,6 +132,18 @@
     if (!BRIEF) return;
     var L = [];
     L.push("L'édition du matin — " + topDate());
+    var ep = BRIEF.epingles || [];
+    if (ep.length) {
+      L.push('', 'À NE PAS MANQUER');
+      ep.forEach(function (e) {
+        var q = (e.motif === 'echeance')
+          ? (e.jours !== null && e.jours >= 0 ? 'dans ' + e.jours + ' jours' : 'déjà applicable')
+          : 'concurrent';
+        L.push('- [' + q + '] ' + e.t);
+        if (e.r) L.push('  ' + e.r);
+        if (e.u) L.push('  ' + e.u);
+      });
+    }
     (BRIEF.cinq || []).forEach(function (c, i) {
       L.push('', (i + 1) + '. ' + c.t);
       if (c.r) L.push('   ' + c.r);
@@ -265,8 +277,9 @@
          il y a UNE tuile de tête et LE MUR. Les 4 autres du top rejoignent le mur en
          tête, à leur rang — c'est le classement qui les distingue, pas une section. */
       var mur = cinq.slice(1).concat(BRIEF.fil || []);
-      // index plat : la une d'abord, puis le mur — c'est ce rang que le panneau ouvre
-      TOUS = (une ? [une] : []).concat(mur);
+      var epingles = BRIEF.epingles || [];
+      // index plat : les épinglés, la une, puis le mur — c'est ce rang que le panneau ouvre
+      TOUS = epingles.concat(une ? [une] : [], mur);
       var base = seenBase();
       var nbNew = base ? mur.filter(function (i) { return i.d && i.d > base; }).length : 0;
       var nIll = mur.filter(function (i) { return i.img; }).length + (une && une.img ? 1 : 0);
@@ -292,6 +305,38 @@
           (ARCHIVE && ARCHIVE.n > 1 ? '<button class="inf-ghost" onclick="V2.briefArchive()">' + ICO('cal', 14, 2) + 'Les matins d\'avant</button>' : '') +
         '</div>' +
       '</header>';
+
+      /* ════════════════ À NE PAS MANQUER ════════════════
+         Will, 02/09/2026 : « on doit absolument pas passer à côté d'infos comme
+         celle-là ». Deux familles d'information ne se noient jamais dans le fil :
+         les ÉCHÉANCES qui changent l'argent d'Intégral (elles restent jusqu'à leur
+         entrée en vigueur, avec le compte à rebours) et les MOUVEMENTS de concurrents.
+         Ce bandeau n'est ni filtrable, ni repliable, ni soumis à la fenêtre de 21 jours. */
+      if (epingles.length) {
+        html += '<section class="alerte">' +
+          '<div class="alerte-h">' + ICO('alert', 16, 2.2) + 'À ne pas manquer' +
+            '<span>échéances réglementaires & mouvements de concurrents</span></div>' +
+          epingles.map(function (e, i) {
+            var ech = e.motif === 'echeance';
+            var j = e.jours;
+            var pastille = ech
+              ? (j !== null && j >= 0
+                  ? '<span class="al-cd' + (j <= 60 ? ' urgent' : '') + '">' +
+                    (j === 0 ? "aujourd'hui" : 'dans ' + j + ' jour' + (j > 1 ? 's' : '')) + '</span>'
+                  : '<span class="al-cd fait">déjà applicable</span>')
+              : '<span class="al-cd conc">' + ICO('opp', 12, 2.4) + 'Concurrent</span>';
+            return '<article class="al-i ' + (ech ? 'ech' : 'conc') + '">' +
+              '<div class="al-top">' + pastille +
+                '<span class="al-d">' + (ech && e.effet ? 'à partir du ' + esc(joDateFr(e.effet)) : esc(ilYA(e.d))) + '</span>' +
+                (e.paywall ? '<span class="al-ab">accès abonné</span>' : '') + '</div>' +
+              '<h3>' + esc(e.t) + '</h3>' +
+              (e.r ? '<p>' + esc(e.r) + '</p>' : '') +
+              '<div class="al-f">' + esc((e.srcs && e.srcs.length ? e.srcs : [e.s]).slice(0, 3).join(' · ')) + '</div>' +
+              '<a class="tout" href="' + esc(e.u || '#') + '" onclick="return V2.infosLire(event,' + i + ')" aria-label="' + esc(e.t) + '"></a>' +
+            '</article>';
+          }).join('') +
+        '</section>';
+      }
 
       /* ──────────── LA TUILE DE TÊTE ──────────── */
       if (une) html += tuileUne(une);
@@ -468,7 +513,7 @@
           (c.mn ? ' · ' + esc(c.mn) + ' min' : '') +
           (c.entier ? ' · <span class="ok">✓ lisible en entier</span>' : '') + '</div>' +
       '</div>' +
-      '<a class="tout" href="' + esc(c.u || '#') + '" onclick="return V2.infosLire(event,0)" aria-label="' + esc(c.t) + '"></a>' +
+      '<a class="tout" href="' + esc(c.u || '#') + '" onclick="return V2.infosLire(event,' + TOUS.indexOf(c) + ')" aria-label="' + esc(c.t) + '"></a>' +
     '</article>';
   }
 
@@ -621,6 +666,35 @@
       /* le lien couvre toute la tuile : une seule cible, très grande */
       '.inf2 .tout{position:absolute;inset:0;z-index:4}',
 
+      /* ══════════ À NE PAS MANQUER ══════════
+         Le seul bloc qui ne se filtre pas et ne se replie pas. Éclairé, pas alarmant :
+         une seule teinte ambre, réservée au compte à rebours quand l'échéance approche. */
+      '.inf2 .alerte{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--c-amber);' +
+        'border-radius:var(--r-md);padding:var(--sp-5) var(--sp-5) var(--sp-3);margin-bottom:var(--section-gap);box-shadow:var(--sh-2)}',
+      '.inf2 .alerte-h{display:flex;align-items:center;gap:9px;flex-wrap:wrap;font-weight:800;font-size:15px;' +
+        'letter-spacing:-.02em;color:var(--ip-ink);margin-bottom:var(--sp-4)}',
+      '.inf2 .alerte-h svg{color:var(--c-amber);flex:0 0 auto}',
+      '.inf2 .alerte-h span{margin-left:auto;font:600 10px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted-2)}',
+      '.inf2 .al-i{position:relative;padding:var(--sp-4) 0;border-top:1px solid var(--line-2)}',
+      '.inf2 .al-i:first-of-type{border-top:0;padding-top:0}',
+      '.inf2 .al-i:hover h3{color:var(--ip-blue)}',
+      '.inf2 .al-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}',
+      '.inf2 .al-cd{display:inline-flex;align-items:center;gap:6px;font:700 11.5px/1 var(--mono);font-variant-numeric:tabular-nums;' +
+        'padding:6px 11px;border-radius:var(--r-pill);background:color-mix(in srgb,var(--c-amber) 12%,transparent);' +
+        'color:var(--c-amber-txt);border:1px solid color-mix(in srgb,var(--c-amber) 26%,transparent)}',
+      '.inf2 .al-cd.urgent{background:color-mix(in srgb,var(--c-rose) 12%,transparent);color:var(--c-rose-txt);' +
+        'border-color:color-mix(in srgb,var(--c-rose) 28%,transparent)}',
+      '.inf2 .al-cd.fait{background:var(--card-2);color:var(--muted);border-color:var(--line)}',
+      '.inf2 .al-cd.conc{background:color-mix(in srgb,var(--c-cat) 11%,transparent);color:var(--c-cat);' +
+        'border-color:color-mix(in srgb,var(--c-cat) 26%,transparent)}',
+      '.inf2 .al-d{font-size:12.5px;color:var(--muted)}',
+      '.inf2 .al-ab{font:600 10px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted-2);' +
+        'background:var(--surf-sunken);padding:5px 9px;border-radius:var(--r-pill)}',
+      '.inf2 .al-i h3{font-family:var(--serif);font-weight:600;font-size:19px;line-height:1.28;letter-spacing:-.016em;' +
+        'margin:0 0 7px;color:var(--ip-ink)}',
+      '.inf2 .al-i p{font-size:15px;font-weight:600;line-height:1.5;color:var(--ip-ink-2);margin:0 0 7px}',
+      '.inf2 .al-f{font:600 10.5px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted-2)}',
+
       /* ══════════ L'ESSENTIEL EN 30 SECONDES ══════════
          Le seul bloc de la page qui se LIT au lieu de se regarder. Fond clair,
          filets fins, aucune image : c'est un sommaire, pas une vitrine. */
@@ -733,6 +807,7 @@
       '.inf2 .mur-une{border-radius:var(--r-md)}',
       '.inf2 .mur-une .b{padding:var(--sp-5) var(--sp-4) var(--sp-4)}',
       '.inf2 .mur-tete{padding:var(--sp-4) 0}',
+      '.inf2 .alerte{padding:var(--sp-4) var(--sp-4) var(--sp-2)}.inf2 .al-i h3{font-size:17px}.inf2 .al-i p{font-size:14px}',
       '.inf2 .ess{padding:var(--sp-4)}.inf2 .ess-b b{font-size:17px}.inf2 .ess-p{font-size:13.5px}',
       '.inf2 .ess-i{gap:var(--sp-3)}.inf2 .ess-n{width:22px;height:22px;font-size:11px}',
       '.inf2 .mur-tete-d{gap:var(--sp-4);font-size:10px}',
