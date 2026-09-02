@@ -985,7 +985,7 @@
       '.v2-home-x .v2-lch-mini svg{color:var(--muted-2,#98a1b4);width:15px;height:15px;flex-shrink:0}',
       '.v2-home-x .v2-lch-mini:hover{border-color:color-mix(in srgb,var(--ip-blue) 40%,var(--line));transform:translateY(-1px);box-shadow:var(--sh-1)}',
       '.v2-home-x .v2-lch-card,.v2-home-x .v2-lch-more{animation:v2homeIn .5s var(--mo-ease-in) both}',
-      '.v2-home-x .v2-lch-card:nth-of-type(1){animation-delay:.10s}.v2-home-x .v2-lch-card:nth-of-type(2){animation-delay:.14s}.v2-home-x .v2-lch-card:nth-of-type(3){animation-delay:.18s}.v2-home-x .v2-lch-card:nth-of-type(4){animation-delay:.22s}.v2-home-x .v2-lch-card:nth-of-type(5){animation-delay:.26s}.v2-home-x .v2-lch-more{animation-delay:.30s}',
+      '.v2-home-x .v2-lch-card:nth-of-type(1){animation-delay:.10s}.v2-home-x .v2-lch-card:nth-of-type(2){animation-delay:.14s}.v2-home-x .v2-lch-card:nth-of-type(3){animation-delay:.18s}.v2-home-x .v2-lch-card:nth-of-type(4){animation-delay:.22s}.v2-home-x .v2-lch-card:nth-of-type(5){animation-delay:.26s}.v2-home-x .v2-lch-card:nth-of-type(6){animation-delay:.30s}.v2-home-x .v2-lch-more{animation-delay:.34s}',
       // Nombre impair de grandes entrées : la dernière resterait seule sur une
       // demi-ligne. Elle prend les deux colonnes. Règle générale, pas un
       // rattrapage pour 5 : elle vaut pour 3, 5, 7… sans rien à maintenir.
@@ -1057,9 +1057,15 @@
       if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.audit) {
         P.push({ k: 'audit', cls: 'p4', accent: '#10915E', ico: 'pilo', tag: 'Par pharmacie', t: 'Audit marge', d: 'Ce qu\'Intégral rend à chaque pharmacie via l\'abandon de marge — par tranche, vs son grossiste actuel, calculé sur ses vrais achats. Un audit offert, prêt en PDF.', go: 'Ouvrir l\'audit' });
         P.push({ k: 'missions', cls: 'p4', accent: '#0E9E6A', ico: 'pilo', tag: 'Expert 360', t: 'Missions rémunérées', d: 'La rémunération de l\'officine au-delà du produit : vaccination, entretiens, BPM, TROD… les tarifs 2026 + un simulateur « combien elle peut gagner ». L\'argument d\'expert à montrer au pharmacien.', go: 'Ouvrir les missions' });
-        // Tuile « Appro Intégral » retirée le 11/08/2026 : l'écran existe
-        // toujours, atteignable depuis Produits (mode Achats + lien de bas de
-        // page) et depuis ⌘K.
+      }
+      // Appro Intégral : tuile retirée le 11/08/2026, rétablie le 02/09/2026 à la demande
+      // de Will. Motif du retour : l'écran a reçu « La courbe » (prévision du marché à
+      // 3/6/12 mois) et ⌘K seul ne suffit pas — une feature sans porte visible reste
+      // introuvable, y compris pour le reste de l'équipe.
+      // ⚠️ Bloc à part, conditionné sur V2.pages.appro : placée dans le bloc « Audit
+      // marge », la tuile aurait disparu avec lui.
+      if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.appro) {
+        P.push({ k: 'appro', cls: 'p5', accent: '#6D5AE6', ico: 'spark', tag: 'Achats', t: 'Appro Intégral', d: 'Ce qu\'il faut acheter et quand : couverture de stock par référence, ruptures à sécuriser, et la courbe du marché à 3, 6 et 12 mois avec sa fourchette — pour pré-acheter au bon moment et négocier avec les laboratoires.', go: 'Ouvrir l\'appro' });
       }
       // Concurrents · grossistes-répartiteurs (annuaire + actualités) — app JARVIS
       if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.grossistes) {
@@ -1126,16 +1132,23 @@
         // taille et même traitement que les autres, mais dans le premier
         // regard. La grille étant à 2 colonnes, la 5ᵉ carte occupe toute la
         // largeur — une règle CSS s'en charge, aucun ordre à maintenir.
-        var ESSENTIAL = ['pharma', 'produits', 'pilotage', 'marketing', 'infos'];
-        var ACC = { pharma: 'var(--ip-blue)', produits: 'var(--ip-blue)', pilotage: 'var(--ip-blue)', marketing: '#F39A1B', infos: '#F39A1B' };
+        // Appro rejoint les grandes entrées le 02/09/2026 (demande de Will). Il était
+        // dans les pastilles grises d'« Autres outils », donc introuvable — or c'est
+        // l'écran qui répond à « qu'est-ce que j'achète, et quand ». Placé en dernier :
+        // aucun des ordres décidés avant (Pilotage en 3ᵉ le 24/08) n'est déplacé.
+        // La grille passe à 6 cartes : la règle `:last-child:nth-child(odd)` ne se
+        // déclenche plus (6 est pair), donc 3 rangées de 2, sans carte pleine largeur.
+        var ESSENTIAL = ['pharma', 'produits', 'pilotage', 'marketing', 'infos', 'appro'];
+        var ACC = { pharma: 'var(--ip-blue)', produits: 'var(--ip-blue)', pilotage: 'var(--ip-blue)', marketing: '#F39A1B', infos: '#F39A1B', appro: 'var(--ip-blue)' };
         var SUB = {
           pharma: 'Fiches, visites & suivi terrain',
           produits: 'Client, groupement ou prospect — la liste à proposer',
           pilotage: 'CA, marge, tranches de prix & marché France',
           marketing: 'Supports & sélections à pousser',
-          infos: 'Les 5 sujets du jour, le radar & les opportunités'
+          infos: 'Les 5 sujets du jour, le radar & les opportunités',
+          appro: 'Ce qu\'il faut acheter — et la courbe du marché à 3, 6 et 12 mois'
         };
-        var ICOK = { pharma: 'pharma', produits: 'cat', pilotage: 'pilo', marketing: 'fiche', infos: 'spark' };
+        var ICOK = { pharma: 'pharma', produits: 'cat', pilotage: 'pilo', marketing: 'fiche', infos: 'spark', appro: 'spark' };
         // catalogue grossiste médicaments replié · fiches retiré · audit fusionné dans la fiche pharmacie
         var used = { catalogue: 1, fiches: 1, audit: 1 };
         function bigCard(k) {
