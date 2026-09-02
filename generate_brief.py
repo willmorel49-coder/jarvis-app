@@ -33,7 +33,7 @@ Zéro clé, zéro dépendance (stdlib), zéro coût. Tourne dans GitHub Actions.
    publique. Aucun prix Intégral, aucune remise, aucun abandon de marge, aucune
    donnée client. Le croisement avec le catalogue reste côté application.
 """
-import json, os, re, sys, unicodedata, html, urllib.request
+import json, os, re, sys, unicodedata, html, urllib.request, urllib.parse
 import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone, date, timedelta
@@ -143,12 +143,156 @@ ARGENT_IP = re.compile(
     r'plafond|coefficient|forfait par bo[iî]te|r[ée]mun[ée]ration', re.I)
 
 
+# ═══ SANCTIONS & VIE DES SOCIÉTÉS ════════════════════════════════════════════
+# Will, 02/09/2026 : « il faut qu'on soit au courant de tout, même des sanctions dont
+# écopent certains grossistes ».
+#
+# ⚠️ LinkedIn a été écarté, et il faut le dire : pas de flux public, pas d'API gratuite,
+#    et son règlement interdit l'aspiration. Un robot qui le scrape se fait bloquer en
+#    quelques jours et nous met en tort. À la place, on va chercher les FAITS que les
+#    publications LinkedIn ne font que commenter, à la source officielle :
+#      · BODACC — les annonces légales : procédures collectives, ventes et cessions,
+#        changements de dirigeants, radiations. Gratuit, sans clé, opendatasoft.
+#      · ANSM — décisions de police sanitaire, suspensions, injonctions.
+#      · la presse déjà collectée — condamnations, amendes, enquêtes.
+#
+# SIREN relevés le 02/09/2026 sur recherche-entreprises.api.gouv.fr (registre officiel).
+# Pour en ajouter un : chercher le nom sur ce service et recopier le SIREN ici.
+CONCURRENTS_SIREN = {
+    # nom lisible                 SIREN        (nb d'annonces au registre, éprouvé le 02/09)
+    'Phoenix OCP':                '582137436',   # 55
+    'CERP':                       '493265284',   # 29  Cie d'exploitation et de répartition
+    'Alliance Healthcare Répartition': '421218132',  # 33
+    'Sagitta Pharma':             '534188941',   # 22
+    'Welcoop Logistique':         '767800113',   # 30
+    'Henry Schein France':        '390471985',   # 38
+    'Air Liquide Santé France':   '379369465',   # 54
+    'Centravet':                  '027250026',   # 39
+}
+# Les familles d'annonces qui disent quelque chose. « Dépôts des comptes » est du
+# bruit annuel : on l'écarte.
+BODACC_FAMILLES = {
+    'Procédures collectives', 'Procédures de conciliation', 'Ventes et cessions',
+    'Modifications diverses', 'Radiations', 'Créations',
+}
+BODACC_API = ('https://bodacc-datadila.opendatasoft.com/api/explore/v2.1/catalog/'
+              'datasets/annonces-commerciales/records')
+BODACC_JOURS = 180        # une annonce légale est lente : on regarde six mois
+
+# Une sanction, au sens large : ce qui coûte de l'argent ou l'autorisation d'exercer.
+SANCTION = re.compile(
+    r'sanction|amende|condamn|p[ée]nalit[ée]|injonction|mise en demeure|'
+    r'suspension|suspendu|retrait d.(autorisation|agr[ée]ment)|interdiction|'
+    r'police sanitaire|redressement judiciaire|liquidation judiciaire|sauvegarde|'
+    r'perquisition|enqu[êe]te (pr[ée]liminaire|de la|ouverte)|poursuit|poursuivi|'
+    r'tribunal|proc[èe]s|contentieux|manquement|non[- ]conformit[ée]|'
+    r'rappel [àa] l.ordre|avertissement|blâme|radiation de l.ordre', re.I)
+
+
+def bodacc(nom, siren):
+    """Les annonces légales récentes d'une société. Rend [] au moindre pépin :
+    ⚠️ une source qui ne répond pas ne doit jamais faire tomber l'édition."""
+    limite = (TODAY - timedelta(days=BODACC_JOURS)).isoformat()
+    try:
+        u = (BODACC_API + '?where=' + urllib.parse.quote('registre like "%s"' % siren)
+             + '&limit=20&order_by=dateparution%20desc')
+        d = json.loads(http(u, 400000, 20))
+    except Exception as e:
+        sys.stderr.write('  (BODACC KO) %s : %s\n' % (nom, str(e)[:70]))
+        return []
+    out = []
+    for r in d.get('results', []):
+        fam = r.get('familleavis_lib') or ''
+        dt = r.get('dateparution') or ''
+        if fam not in BODACC_FAMILLES or dt < limite:
+            continue
+        detail = ''
+        for cle in ('modificationsgenerales', 'depot', 'radiationaurcs', 'jugement', 'vente'):
+            v = r.get(cle)
+            if v:
+                try:
+                    v = json.loads(v) if isinstance(v, str) else v
+                except Exception:
+                    pass
+                if isinstance(v, dict):
+                    detail = clean(v.get('descriptif') or v.get('commentaire')
+                                   or v.get('nature') or v.get('famille') or '')
+                elif isinstance(v, str):
+                    detail = clean(v)
+                if detail:
+                    break
+        out.append({
+            'nom': nom, 'societe': clean(str(r.get('commercant') or nom)),
+            'famille': fam, 'date': dt, 'detail': detail,
+            'ville': clean(str(r.get('ville') or '')),
+            'url': 'https://www.bodacc.fr/pages/annonces-commerciales/?q=' + urllib.parse.quote(siren),
+        })
+    return out
+
+
+# Un jugement qui compte, par opposition à la procédure courante (dépôt de créances,
+# état des créances… : du bruit de greffe).
+JUGEMENT_FORT = re.compile(
+    r'ouverture d.une proc[ée]dure|liquidation judiciaire|redressement judiciaire|'
+    r'plan de cession|conversion en liquidation|sauvegarde|cessation des paiements|'
+    r'plan de redressement|clôture pour insuffisance', re.I)
+
+
+def bodacc_secteur(n=8):
+    """Qui, dans le circuit du médicament, est en difficulté ?
+    C'est le signal le plus directement commercial de toute la veille : une officine
+    en redressement, c'est un encours à surveiller ; un laboratoire en liquidation,
+    c'est une rupture d'approvisionnement qui arrive."""
+    limite = (TODAY - timedelta(days=75)).isoformat()
+    out, vus = [], set()
+    for mot, quoi in (('pharmacie', 'officine'), ('pharmaceutique', 'industrie'),
+                      ('laboratoire', 'laboratoire')):
+        w = ('familleavis_lib="Procédures collectives" and search(commercant,"%s") '
+             'and dateparution>="%s"' % (mot, limite))
+        try:
+            d = json.loads(http(BODACC_API + '?where=' + urllib.parse.quote(w)
+                                + '&limit=25&order_by=dateparution%20desc', 400000, 20))
+        except Exception as e:
+            sys.stderr.write('  (BODACC secteur KO) %s : %s\n' % (mot, str(e)[:60]))
+            continue
+        for r in d.get('results', []):
+            j = r.get('jugement')
+            try:
+                j = json.loads(j) if isinstance(j, str) else (j or {})
+            except Exception:
+                j = {}
+            nature = clean(j.get('nature') or j.get('famille') or '')
+            if not JUGEMENT_FORT.search(nature):
+                continue
+            soc = clean(str(r.get('commercant') or ''))
+            cle = norm(soc) + nature[:20]
+            if not soc or cle in vus:
+                continue
+            vus.add(cle)
+            out.append({'societe': soc, 'quoi': quoi, 'nature': nature,
+                        'date': r.get('dateparution') or '',
+                        'ville': clean(str(r.get('ville') or '')),
+                        'url': 'https://www.bodacc.fr/pages/annonces-commerciales/?q='
+                               + urllib.parse.quote(soc)})
+    out.sort(key=lambda x: x['date'], reverse=True)
+    return out[:n]
+
+
 def epingle_de(e):
     """Cette entrée doit-elle être épinglée, et à quel titre ?"""
     txt = (e.get('t') or '') + ' ' + (e.get('r') or '') + ' ' + (e.get('resume') or '')
+    if e.get('k') == 'bodacc':
+        return 'societe'
+    if e.get('k') == 'pcl':
+        return 'difficulte'
     if e.get('k') in ('jo', 'prix'):
         if ARGENT_IP.search(txt) or e.get('effet'):
             return 'echeance'
+    # une sanction qui touche un acteur du circuit passe avant tout le reste
+    if SANCTION.search(txt) and (CONCURRENTS.search(txt) or
+                                 re.search(r'grossist|r[ée]partit|[ée]tablissement pharmaceutique|'
+                                           r'laboratoire|officine|pharmaci', txt, re.I)):
+        return 'sanction'
     if CONCURRENTS.search(txt) and MOUVEMENT.search(txt):
         return 'concurrent'
     return ''
@@ -726,6 +870,42 @@ def collecte():
         print('   %d articles illustrés retenus sur les %d flux grand public'
               % (n_ill, len(FLUX_ILLUSTRES)))
 
+    # ── BODACC : la vie légale des concurrents ────────────────────────────────
+    # Ce que LinkedIn commente, le registre le dit avant, et sans filtre.
+    vies = []
+    try:
+        with ThreadPoolExecutor(max_workers=6) as ex:
+            for lot in ex.map(lambda kv: bodacc(kv[0], kv[1]), CONCURRENTS_SIREN.items()):
+                vies.extend(lot)
+        vies.sort(key=lambda v: v['date'], reverse=True)
+        ctx['societes'] = vies[:12]
+        lus.append('BODACC')
+        for v in vies[:12]:
+            add('%s · %s' % (v['societe'], v['famille']), v['url'], 'BODACC · annonces légales',
+                v['date'], v['detail'] or v['famille'], kind='bodacc',
+                extra={'societe_de': v['nom']})
+        print('   %d annonce%s légale%s sur %d concurrents suivis (BODACC, %d derniers jours)'
+              % (len(vies), 's' if len(vies) > 1 else '', 's' if len(vies) > 1 else '',
+                 len(CONCURRENTS_SIREN), BODACC_JOURS))
+    except Exception as e:
+        sys.stderr.write('  (BODACC global KO) %s\n' % str(e)[:80])
+
+    # ── Qui, dans le circuit, est en difficulté ? ─────────────────────────────
+    try:
+        diff = bodacc_secteur()
+        ctx['difficultes'] = diff
+        for v in diff:
+            add('%s — %s' % (v['societe'], v['nature']), v['url'],
+                'BODACC · procédure collective', v['date'],
+                'Jugement publié au BODACC%s.' % (' · ' + v['ville'] if v['ville'] else ''),
+                kind='pcl', extra={'quoi': v['quoi']})
+        if diff:
+            lus.append('BODACC procédures')
+            print('   %d procédure%s collective%s dans le circuit du médicament (75 derniers jours)'
+                  % (len(diff), 's' if len(diff) > 1 else '', 's' if len(diff) > 1 else ''))
+    except Exception as e:
+        sys.stderr.write('  (BODACC secteur global KO) %s\n' % str(e)[:80])
+
     return E, ctx, lus
 
 
@@ -1171,21 +1351,27 @@ def main():
             if not eff and days_ago(c['d']) > 120:
                 continue
             c['jours'] = j
+        elif m in ('societe', 'difficulte'):
+            if days_ago(c['d']) > BODACC_JOURS:
+                continue
+            c['jours'] = None
         else:
             if days_ago(c['d']) > 30:      # un mouvement concurrent vieux d'un mois n'est plus un signal
                 continue
             c['jours'] = None
         epingles.append(c)
     # échéances d'abord (la plus proche en tête), puis les concurrents, les plus frais devant
+    ORDRE_EP = {'echeance': 0, 'sanction': 1, 'societe': 2, 'difficulte': 3, 'concurrent': 4}
+
     def rang_ep(c):
         j = c.get('jours')
         if c['epingle'] != 'echeance':
-            return (2, days_ago(c['d']), 0)
+            return (2 + ORDRE_EP.get(c['epingle'], 3), days_ago(c['d']), 0)
         if j is not None and j >= 0:
             return (0, j, 0)            # ce qui arrive, le plus proche d'abord
         return (1, -(j or 0), 0)        # ce qui vient de s'appliquer, le plus récent d'abord
     epingles.sort(key=rang_ep)
-    epingles = epingles[:6]
+    epingles = epingles[:10]
     print('   %d information%s épinglée%s : %s'
           % (len(epingles), 's' if len(epingles) > 1 else '', 's' if len(epingles) > 1 else '',
              ' | '.join('%s %s' % (c['epingle'], c['t'][:38]) for c in epingles) or '—'))
@@ -1223,6 +1409,7 @@ def main():
             't': c['t'], 'u': c['u'], 's': c['s'], 'd': c['d'],
             'r': (c.get('chapeau') or c.get('r') or '')[:240],
             'motif': c['epingle'], 'effet': c.get('effet') or '', 'jours': c.get('jours'),
+            'societe': c.get('societe_de') or '',
             'theme': c['theme'], 'theme_l': THEME_LABEL.get(c['theme'], 'Autre'),
             'points': c.get('points', []), 'chiffres': c.get('chiffres', []),
             'srcs': c.get('srcs', [])[:3], 'n_src': c.get('n_src', 1),
