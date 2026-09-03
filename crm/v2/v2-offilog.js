@@ -689,8 +689,8 @@
     // 1) chemin du module (MOD_BASE) → 2) repli chemin relatif → 3) échec
     // ⚠️ jeton bumpé : le fichier a changé de forme (prix retirés). Sans ça,
     // un navigateur resservirait l'ancien, prix compris.
-    inject(MOD_BASE + 'offilog-bestsellers-data.js?v=20260903a', function () {
-      inject('offilog-bestsellers-data.js?v=20260903a', function () {
+    inject(MOD_BASE + 'offilog-bestsellers-data.js?v=20260903b', function () {
+      inject('offilog-bestsellers-data.js?v=20260903b', function () {
         bestLoading = false; bestFail = true; cb();
       });
     });
