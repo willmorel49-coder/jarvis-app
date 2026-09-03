@@ -16,7 +16,33 @@ import openpyxl, re, json, os
 from collections import defaultdict
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
-XLSX = os.path.join(ROOT, 'STATS', 'stock et prix 22 06 2026.xlsx')
+def dernier_prix():
+    """Le fichier de prix/stock LE PLUS RÉCENT (STOCKS/ puis STATS/), daté par son NOM.
+    Même correction que generate_stock.py : un chemin en dur fige le script sur un vieux
+    millésime sans rien signaler."""
+    import glob as _g, datetime as _dt
+    cands = []
+    for d in ('STOCKS', 'STATS'):
+        for f in _g.glob(os.path.join(ROOT, d, '*.xlsx')):
+            b = os.path.basename(f)
+            if b.startswith('~$') or 'stock' not in b.lower():
+                continue
+            m = re.search(r'(\d{2})[ _-](\d{2})[ _-](\d{4})', b)
+            if not m:
+                continue
+            try:
+                cands.append((_dt.date(int(m.group(3)), int(m.group(2)), int(m.group(1))), f))
+            except ValueError:
+                pass
+    if not cands:
+        raise SystemExit('[prod-stats] aucun fichier de prix trouvé')
+    cands.sort(key=lambda x: x[0])
+    print(f'[prod-stats] prix et statuts lus dans : {os.path.basename(cands[-1][1])} '
+          f'(inventaire du {cands[-1][0]})')
+    return cands[-1][1]
+
+
+XLSX = dernier_prix()
 WML  = os.path.join(ROOT, 'crm', 'v2', 'wml-officines-data.js')
 OUT  = os.path.join(ROOT, 'crm', 'v2', 'prod-stats-data.js')
 
@@ -140,9 +166,54 @@ TAUX_COEUR = 0.0389
 
 mdl = abandon_ip   # rétrocompatibilité — ancien nom, trompeur
 
-t = open(WML, encoding='utf-8').read()
-sales = json.loads(re.search(r'WML_SALES\s*=\s*(\[.*?\]);', t, re.S).group(1))
-NM = len(set(s[1] for s in sales if len(s) > 1 and s[1])) or 5   # nb de mois distincts
+def charger_ventes():
+    """Les ventes réseau, décodées, quel que soit leur découpage.
+
+    ⚠️ CE SCRIPT ÉTAIT CASSÉ DEPUIS LE 15/08/2026 et personne ne l'a vu : les ventes ont
+    quitté `wml-officines-data.js` pour 11 fichiers `wml-ventes-NN.js` (un iPhone ne peut
+    pas lire 13 Mo d'un tenant), et la recherche de `WML_SALES = [...]` ne trouvait plus
+    rien. Le fichier déjà publié continuait d'être servi, donc l'app avait l'air normale.
+    Un générateur qui ne peut plus tourner ne se signale jamais tout seul.
+
+    ⚠️ Et les lignes sont ENCODÉES : officine, commercial et produit sont des index dans
+    les dictionnaires de `wml-officines-data.js`. Sans décodage, aucun CIP ne correspond
+    à rien — sans la moindre erreur, juste un résultat vide.
+    """
+    import glob as _glob
+    src = open(WML, encoding='utf-8', errors='ignore').read()
+    def dico(nom):
+        m = re.search(nom + r'\s*=\s*(\[[^\]]*\])', src, re.S)
+        return json.loads(m.group(1)) if m else None
+    dPro = dico('WML_D_PRODUITS'); dOff = dico('WML_D_OFFICINES'); dCom = dico('WML_D_COMMERCIAUX')
+
+    morceaux = sorted(_glob.glob(os.path.join(ROOT, 'crm', 'v2', 'wml-ventes-*.js')))
+    lignes = []
+    for f in morceaux:
+        tx = open(f, encoding='utf-8', errors='ignore').read()
+        for m in re.finditer(r'\[(-?[\d.]+(?:,-?[\d.]+){6})\]', tx):
+            lignes.append([float(x) for x in m.group(1).split(',')])
+    if not lignes:                      # repli : ancien format d'un seul tenant
+        m = re.search(r'WML_SALES\s*=\s*(\[.*?\]);', src, re.S)
+        if m:
+            lignes = json.loads(m.group(1))
+    if not lignes:
+        raise SystemExit('[prod-stats] aucune vente trouvée — ni dans wml-ventes-*.js '
+                         'ni dans wml-officines-data.js. Rien ne sera écrit.')
+
+    # décodage sur place, exactement comme v2-boot.js l.222
+    if dPro and dOff and dCom and isinstance(lignes[0][0], float):
+        for s in lignes:
+            try:
+                s[0] = dOff[int(s[0])]; s[2] = dCom[int(s[2])]; s[3] = dPro[int(s[3])]
+            except (IndexError, ValueError):
+                s[3] = ''
+    print(f'[prod-stats] {len(lignes):,} lignes de vente lues dans {len(morceaux)} fichier(s)')
+    return lignes
+
+
+sales = charger_ventes()
+NM = len(set(s[1] for s in sales if len(s) > 1 and s[1])) or 5   # nb de mois distincts, compté
+print(f'[prod-stats] {NM} mois distincts couverts')
 
 ag = defaultdict(lambda: {'qte': 0.0, 'ph': set(), 'ca': 0.0, 'tarif': 0.0, 'marge': 0.0, 'pw': 0.0, 'pn': 0.0})
 for s in sales:                       # [pharmacyId, mois, comm, cip13, qte, puNet, mntNetHt]
