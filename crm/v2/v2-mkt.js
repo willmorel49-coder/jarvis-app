@@ -285,8 +285,11 @@
     if (window.OFFILOG_BEST) { cb(); return; }
     if (bestLoading) { setTimeout(function () { ensureBest(cb); }, 250); return; }
     bestLoading = true;
-    var s = document.createElement('script'); s.src = 'offilog-bestsellers-data.js?v=20260610v2m';
-    s.onload = function () { bestLoading = false; cb(); }; s.onerror = function () { bestLoading = false; cb(); };
+    // Les prix B2B ont quitté le fichier public : ils viennent en parallèle,
+    // depuis le fichier protégé. Jeton bumpé, le fichier a changé de forme.
+    if (V2.loadFiles) { try { V2.loadFiles(['offilogbestprix']).then(function () { if (V2.fusionnerPrixBest) V2.fusionnerPrixBest(); }); } catch (e) {} }
+    var s = document.createElement('script'); s.src = 'offilog-bestsellers-data.js?v=20260903a';
+    s.onload = function () { bestLoading = false; if (V2.fusionnerPrixBest) V2.fusionnerPrixBest(); cb(); }; s.onerror = function () { bestLoading = false; cb(); };
     document.head.appendChild(s);
   }
   function ensureImg(cb) {

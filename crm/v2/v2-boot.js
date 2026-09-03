@@ -299,6 +299,10 @@
     // taux de marge) ont quitté offilog-data.js, qui part dans un dépôt PUBLIC.
     // 77 Ko, chargé par adresse signée en même temps que le catalogue.
     offilogcond: 'offilog-conditions.js',
+    // Les prix B2B des meilleures ventes : même raison, même traitement.
+    // L'en-tête du fichier public disait « connecté, prix B2B » — 6 192
+    // prix de vente aux pharmacies, téléchargeables sans mot de passe.
+    offilogbestprix: 'v2/offilog-best-prix.js',
     drakkars: 'drakkars-data.js',
     cap3000: 'cap3000-data.js',
     sagitta: 'sagitta-shortlist-data.js',
@@ -338,7 +342,10 @@
   // ⚠️ N'y remettre QUE des fichiers légers. Une adresse signée n'est pas mise
   // en cache par le service worker : le fichier repart à chaque ouverture.
   // C'est ce qui avait rendu l'app inutilisable en août avec 17 Mo. 77 Ko, oui.
-  var PROTEGES = { offilogcond: 'offilog-conditions.js' };
+  var PROTEGES = {
+    offilogcond: 'offilog-conditions.js',
+    offilogbestprix: 'offilog-best-prix.js'
+  };
   var SEAU_PROTEGE = 'donnees-protegees';   // sert encore aux DOCUMENTS privés
 
   // Fichiers protégés dont l'adresse a été refusée pour de bon. Lu par l'écran
@@ -561,6 +568,7 @@
     establishments: 'ESTABLISHMENTS',
     offilog: 'OFFILOG',
     offilogcond: 'OFFILOG_COND',
+    offilogbestprix: 'OFFILOG_BEST_PRIX',
     drakkars: 'DRAKKARS',
     cap3000: 'CAP3000',
     sagitta: 'SAGITTA_SHORTLIST',
@@ -593,10 +601,32 @@
     V2.offilogConditions = n;   // lu par l'écran pour dire la vérité s'il n'a rien
   }
 
+  // Même principe pour les meilleures ventes : le prix B2B revient sur les
+  // objets, et v2-offilog.js / v2-mkt.js continuent de lire `b.price`.
+  var _prixFaits = false;
+  V2.fusionnerPrixBest = fusionnerPrixBest;
+  function fusionnerPrixBest() {
+    if (_prixFaits) return;
+    var best = window.OFFILOG_BEST, prix = window.OFFILOG_BEST_PRIX;
+    if (!best || !prix) return;
+    var n = 0;
+    for (var i = 0; i < best.length; i++) {
+      var b = best[i];
+      var v = b && b.id != null ? prix[String(b.id)] : null;
+      if (v == null) continue;
+      b.price = v; n++;
+    }
+    _prixFaits = true;
+    V2.offilogPrixBest = n;
+  }
+
   function bridge() {
     try { if (typeof BENCHMARK !== 'undefined') window.BENCHMARK = BENCHMARK; } catch (e) {}
     try { if (typeof OFFILOG !== 'undefined') window.OFFILOG = OFFILOG; } catch (e) {}
     try { if (typeof OFFILOG_COND !== 'undefined') window.OFFILOG_COND = OFFILOG_COND; } catch (e) {}
+    try { if (typeof OFFILOG_BEST_PRIX !== 'undefined') window.OFFILOG_BEST_PRIX = OFFILOG_BEST_PRIX; } catch (e) {}
+    try { if (typeof OFFILOG_BEST !== 'undefined') window.OFFILOG_BEST = OFFILOG_BEST; } catch (e) {}
+    fusionnerPrixBest();
     fusionnerConditionsOffilog();
     try { if (typeof DRAKKARS !== 'undefined') window.DRAKKARS = DRAKKARS; } catch (e) {}
     try { if (typeof CAP3000 !== 'undefined') window.CAP3000 = CAP3000; } catch (e) {}
