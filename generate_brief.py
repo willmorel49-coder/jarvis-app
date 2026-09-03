@@ -550,6 +550,10 @@ def epingle_de(e):
         return 'demande'
     if e.get('k') == 'amont':
         return 'amont'
+    if e.get('k') == 'ferme':
+        return 'ferme'
+    if e.get('k') == 'titulaire':
+        return 'titulaire'
     if e.get('k') in ('jo', 'prix'):
         if ARGENT_IP.search(txt) or e.get('effet'):
             return 'echeance'
@@ -1155,6 +1159,31 @@ def collecte():
     except Exception as e:
         sys.stderr.write('  (BODACC global KO) %s\n' % str(e)[:80])
 
+    # ── Le parc bouge : qui ferme, qui change de main ─────────────────────────
+    # Écrit chaque lundi par generate_parc.py depuis FINESS (Licence Ouverte).
+    d = load('parc-mouvements.json')
+    if d:
+        lus.append('parc-mouvements.json')
+        ctx['parc'] = d
+        # une fermeture ANNONCÉE est le signal le plus fort : le client disparaît à date connue
+        for f in (d.get('ferme_bientot') or [])[:4]:
+            add('%s ferme le %s' % (f.get('nom') or 'Une officine', fr_date(f.get('date'))),
+                'https://finess.esante.gouv.fr/', 'FINESS · fermeture annoncée', TODAY.isoformat(),
+                'Fermeture inscrite au fichier national%s. Licence %s.'
+                % (' · ' + f['voie'] if f.get('voie') else '', f.get('licence') or '—'),
+                kind='ferme', extra={'societe_de': f.get('nom') or '', 'ville_de': f.get('insee') or '',
+                                     'echeance': f.get('date') or '', 'jours_f': f.get('jours')})
+        for t in (d.get('titulaires') or [])[:4]:
+            add('%s — changement de titulaire' % (t.get('nom') or 'Une officine'),
+                'https://finess.esante.gouv.fr/', 'FINESS · changement de titulaire', t.get('date'),
+                'Le titulaire a changé%s. Licence %s. Compte à reprendre.'
+                % (' · ' + t['voie'] if t.get('voie') else '', t.get('licence') or '—'),
+                kind='titulaire', extra={'societe_de': t.get('nom') or '', 'ville_de': t.get('insee') or ''})
+        print('   parc : %d officines suivies · %d changements de titulaire · %d fermetures · '
+              '%d ouvertures · %d fermetures annoncées'
+              % (d.get('officines', 0), len(d.get('titulaires') or []), len(d.get('fermetures') or []),
+                 len(d.get('ouvertures') or []), len(d.get('ferme_bientot') or [])))
+
     # ── Ce que nos voisins signalent et que la France n'a pas encore ──────────
     try:
         vois, n_es = ruptures_voisins()
@@ -1352,6 +1381,9 @@ def regroupe(entrees):
             m = epingle_de(e)
             if m:
                 chef['epingle'] = m
+                for k in ('echeance', 'jours_f'):
+                    if e.get(k) and not chef.get(k):
+                        chef[k] = e[k]
                 if e.get('effet') and not chef.get('effet'):
                     chef['effet'] = e['effet']
                 if e.get('paywall'):
@@ -1634,7 +1666,8 @@ def main():
     # dire. On ouvre maintenant la page elle-même : l'illustration que le site
     # déclare, le vrai chapeau, le temps de lecture — et surtout la réponse à la
     # question de Will : « est-ce qu'on peut le lire en entier ? »
-    FABRIQUEES = ('pollen', 'bodacc', 'pcl', 'cession', 'jo', 'prix', 'rupture', 'ema', 'amont')
+    FABRIQUEES = ('pollen', 'bodacc', 'pcl', 'cession', 'jo', 'prix', 'rupture', 'ema', 'amont',
+                  'ferme', 'titulaire')
     a_lire = [c for c in fil[:N_ENRICHI]
               if c.get('u', '').startswith('http') and 'news.google.com' not in c['u']
               and not c.get('paywall') and c.get('k') not in FABRIQUEES]
@@ -1707,6 +1740,10 @@ def main():
             if not eff and days_ago(c['d']) > 120:
                 continue
             c['jours'] = j
+        elif m in ('ferme', 'titulaire'):
+            if days_ago(c['d']) > 130:
+                continue
+            c['jours'] = c.get('jours_f')
         elif m == 'amont':
             if days_ago(c['d']) > 3:
                 continue
@@ -1725,7 +1762,8 @@ def main():
             c['jours'] = None
         epingles.append(c)
     # échéances d'abord (la plus proche en tête), puis les concurrents, les plus frais devant
-    ORDRE_EP = {'echeance': 0, 'amont': 1, 'sanction': 2, 'demande': 3, 'difficulte': 4, 'cession': 5, 'societe': 6, 'concurrent': 7}
+    ORDRE_EP = {'echeance': 0, 'ferme': 1, 'amont': 2, 'sanction': 3, 'titulaire': 4,
+                'demande': 5, 'difficulte': 6, 'cession': 7, 'societe': 8, 'concurrent': 9}
 
     def rang_ep(c):
         j = c.get('jours')
@@ -1781,7 +1819,7 @@ def main():
         'epingles': [{
             't': c['t'], 'u': c['u'], 's': c['s'], 'd': c['d'],
             'r': (c.get('chapeau') or c.get('r') or '')[:240],
-            'motif': c['epingle'], 'effet': c.get('effet') or '', 'jours': c.get('jours'),
+            'motif': c['epingle'], 'effet': c.get('effet') or c.get('echeance') or '', 'jours': c.get('jours'),
             'societe': c.get('societe_de') or '', 'ville': c.get('ville_de') or '',
             'theme': c['theme'], 'theme_l': THEME_LABEL.get(c['theme'], 'Autre'),
             'points': c.get('points', []), 'chiffres': c.get('chiffres', []),
