@@ -18,12 +18,11 @@ Plateforme pharmaceutique — catalogue mobile + CRM avec import Excel.
 - Catalogue produits avec recherche
 - Gestion multi-rôles (admin / manager / commercial)
 
-## Comptes de connexion
-| Email | Mot de passe | Rôle |
-|---|---|---|
-| admin@integralpharma.fr | ***RETIRE*** | Admin |
-| manager@integralpharma.fr | ***RETIRE*** | Manager |
-| demo@integralpharma.fr | ***RETIRE*** | Commercial |
+## Connexion
+
+L'accès se fait par compte nominatif (Supabase Auth). Les identifiants ne
+figurent jamais dans le dépôt : ce dépôt est public. Demande un accès à
+l'administrateur du CRM.
 
 ## Format des fichiers Excel attendus
 Nommage : `Phie de la republique 04 26.xlsx` (Pharmacie + mois + année)

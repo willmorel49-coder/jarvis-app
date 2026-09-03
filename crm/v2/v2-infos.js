@@ -26,6 +26,13 @@
       calculé ici, dans le navigateur, à partir du catalogue déjà chargé.
    ═══════════════════════════════════════════════════════════════════ */
 (function () {
+  // 03/09/2026 — un lien de flux scrapé ne doit jamais porter un schéma
+  // exécutable (javascript:, data:). On n'accepte que http(s), sinon '#'.
+  function urlSure(u) {
+    var t = String(u == null ? '' : u).trim();
+    return /^https?:\/\//i.test(t) ? t : '#';
+  }
+
   'use strict';
   var V2 = window.V2 = window.V2 || {};
   V2.pages = V2.pages || {};
@@ -262,7 +269,7 @@
           (a.pour_toi ? '<div class="inf-pan-pour"><b>Pour toi</b>' + esc(a.pour_toi) + '</div>' : '') +
           '<div class="inf-pan-src">' + esc(srcs.join(' · ')) + ' · ' + esc(ilYA(a.d)) +
             (a.n_src > 1 ? ' · <b>' + a.n_src + ' sources en parlent</b>' : '') + '</div>' +
-          (a.u ? '<a class="inf-pan-go" href="' + esc(a.u) + '" target="_blank" rel="noopener">' +
+          (a.u ? '<a class="inf-pan-go" href="' + esc(urlSure(a.u)) + '" target="_blank" rel="noopener">' +
                  'Lire l\'article en entier sur ' + esc((srcs[0] || 'le site')) + ' ' + ICO('chev', 15, 2.4) + '</a>' : '') +
         '</div>' +
       '</aside>';
@@ -411,7 +418,7 @@
                    }[e.motif] || ' — encours à vérifier') + '</span></div>' : '';
               })() +
               '<div class="al-f">' + esc((e.srcs && e.srcs.length ? e.srcs : [e.s]).slice(0, 3).join(' · ')) + '</div>' +
-              '<a class="tout" href="' + esc(e.u || '#') + '" onclick="return V2.infosLire(event,' + i + ')" aria-label="' + esc(e.t) + '"></a>' +
+              '<a class="tout" href="' + esc(urlSure(e.u)) + '" onclick="return V2.infosLire(event,' + i + ')" aria-label="' + esc(e.t) + '"></a>' +
             '</article>';
           }).join('') + '</div>' +
           (epingles.length > 6
@@ -583,7 +590,7 @@
     var ang = ANGLES[c.theme] || 152;
     return '<span class="mq-cov ' + (ratio || 'r-4x5') + '">' +
       '<span class="mq-plaque a-' + (THEME_ACC[c.theme] || 'muted') + '" style="--ang:' + ang + 'deg"></span>' +
-      (c.img ? '<img src="' + esc(c.img) + '" alt="" loading="lazy" decoding="async" ' +
+      (c.img ? '<img src="' + esc(urlSure(c.img)) + '" alt="" loading="lazy" decoding="async" ' +
                'referrerpolicy="no-referrer" onerror="this.remove()">' +
                '<span class="mq-teinte" aria-hidden="true"></span>' : '') + '</span>';
   }
@@ -624,7 +631,7 @@
           (a.neuf ? ' · <span class="neuf">nouveau</span>' : '') +
           (a.entier ? '<br><span class="ok">✓ lisible en entier</span>' : '') + '</div>' +
       '</div>' +
-      '<a class="tout" href="' + esc(a.u || '#') + '" onclick="return V2.infosLire(event,' + rang + ')" aria-label="' + esc(a.t) + '"></a>' +
+      '<a class="tout" href="' + esc(urlSure(a.u)) + '" onclick="return V2.infosLire(event,' + rang + ')" aria-label="' + esc(a.t) + '"></a>' +
     '</article>';
   }
 

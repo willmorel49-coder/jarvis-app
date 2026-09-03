@@ -84,7 +84,7 @@
       </div>
       <div class="field">
         <label for="newpass-input">Nouveau mot de passe</label>
-        <input id="newpass-input" type="password" placeholder="Min. 6 caractères" minlength="6" required>
+        <input id="newpass-input" type="password" autocomplete="new-password" placeholder="Min. 6 caractères" minlength="6" required>
       </div>
       <button class="login-btn" type="submit">Enregistrer →</button>
       <div id="newpass-error" class="login-error"></div>
@@ -320,18 +320,17 @@ function showNewPassForm() {
   document.getElementById('newpass-input').focus();
 }
 </script>
-<script src="../crm/clients-data.js?v=20260715e"></script>
+<script src="../crm/clients-data.js?v=20260904b"></script>
 <script src="../crm/benchmark-data.js?v=20260715e"></script>
 <script src="../crm/offilog-data.js?v=20260715e"></script>
 <script src="../crm/drakkars-data.js?v=20260715e"></script>
 <script src="../crm/cap3000-data.js?v=20260715e"></script>
 <script src="../crm/groupements-data.js?v=20260715e"></script>
 <script src="leclerc-data.js?v=20260715e"></script>
-<script src="wml-data.js?v=20260819b"></script>
 <script defer src="opso-adherents.js?v=20260715e"></script>
 <script defer src="opso-listing-2026.js?v=20260715e"></script>
 <!-- offilog-live-data.js (2,7 Mo) : chargé en lazy via loadOffilogLive() dans app.js -->
-<script defer src="app.js?v=20260904a"></script>
+<script defer src="app.js?v=20260904b"></script>
 <script>
   // Enregistrement Service Worker (PWA)
   if ('serviceWorker' in navigator && location.protocol === 'https:') {

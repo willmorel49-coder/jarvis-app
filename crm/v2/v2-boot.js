@@ -102,7 +102,14 @@
   V2.signIn = async function (email, password) {
     var c = getSb(); if (!c) return { ok: false, msg: 'Connexion indisponible' };
     var r = await c.auth.signInWithPassword({ email: email, password: password });
-    if (r.error) return { ok: false, msg: r.error.message };
+    if (r.error) {
+      // message maîtrisé : on n'expose pas le texte brut de Supabase (anglais,
+      // parfois « rate limit »…) et on ne dit jamais si l'email existe.
+      var m = /invalid|credential/i.test(r.error.message || '')
+        ? 'Email ou mot de passe incorrect.'
+        : 'Connexion impossible — réessaie dans un instant.';
+      return { ok: false, msg: m };
+    }
     var ok = await V2.loadUserProfile();
     return { ok: ok, msg: ok ? '' : 'Profil introuvable' };
   };
@@ -110,6 +117,15 @@
   V2.signOut = async function () {
     var c = getSb(); if (c) { try { await c.auth.signOut(); } catch (e) {} }
     V2.user = null; V2.ready = false;
+    // 03/09/2026 — le rangement local des fichiers protégés est VIDÉ à la
+    // déconnexion : sur un poste partagé, il resterait sinon lisible sans
+    // session. Au prochain login, texteProtege retélécharge — chemin déjà
+    // prévu et éprouvé, jamais pire qu'avant.
+    try {
+      var ks = await caches.keys();
+      await Promise.all(ks.filter(function (k) { return k.indexOf('v2-protege-') === 0; })
+        .map(function (k) { return caches.delete(k); }));
+    } catch (e) {}
     location.reload();
   };
 
@@ -319,6 +335,8 @@
     mktnr: 'v2/mkt-nr-data.js',
     // Achats par officine OPSO (prix nets facturés + CA) : protégé.
     opsostats: 'opso-stats-data.js',
+    // potentiel commercial + CA par pharmacie (fiches clients)
+    clientscond: 'clients-cond.js',
     drakkars: 'drakkars-data.js',
     cap3000: 'cap3000-data.js',
     sagitta: 'sagitta-shortlist-data.js',
@@ -373,7 +391,8 @@
     mktnr: 'mkt-nr-data.js',
     opsostats: 'opso-stats-data.js',
     establishments: 'establishments-aggregate.js',
-    sagitta: 'sagitta-shortlist-data.js'
+    sagitta: 'sagitta-shortlist-data.js',
+    clientscond: 'clients-cond.js'
   };
   var SEAU_PROTEGE = 'donnees-protegees';   // sert encore aux DOCUMENTS privés
 
@@ -673,6 +692,7 @@
     biosimcomplet: 'BIOSIMILAIRES_COMPLET',
     mktnr: 'MKT_NR',
     opsostats: 'OPSO_STATS_SALES',
+    clientscond: 'CLIENTS_COND',
     drakkars: 'DRAKKARS',
     cap3000: 'CAP3000',
     sagitta: 'SAGITTA_SHORTLIST',
@@ -786,6 +806,14 @@
       window.BIOSIMILAIRES = window.BIOSIMILAIRES_COMPLET;
       _fusionsFaites.biosim = true;
     }
+    if (!_fusionsFaites.clientscond && window.CLIENTS && window.CLIENTS_COND) {
+      var cc = window.CLIENTS_COND;
+      for (var ci = 0; ci < window.CLIENTS.length; ci++) {
+        var cl = window.CLIENTS[ci], v = cc[String(cl.cip)];
+        if (v) { cl.potentielGx = v[0]; cl.ca2023 = v[1]; }
+      }
+      _fusionsFaites.clientscond = true;
+    }
     if (V2.applyPPHT && (_fusionsFaites.bench)) { try { V2.applyPPHT(); } catch (e) {} }
   }
   V2.fusionsProtegees = fusionsProtegees;
@@ -857,6 +885,9 @@
     if (keys && keys.indexOf('wml') >= 0 && keys.indexOf('wmlca') < 0) {
       keys = keys.concat(['wmlca']);
     }
+    if (keys && keys.indexOf('clients') >= 0 && keys.indexOf('clientscond') < 0) {
+      keys = keys.concat(['clientscond']);
+    }
     // chemins relatifs au dossier parent crm/ (les data files sont dans crm/)
     // Jeton PROPRE aux fichiers de données, distinct du ?v= global.
     // ⚠️ Le bumper quand les DONNÉES changent — et elles viennent de changer :
@@ -865,7 +896,7 @@
     // de le servir, et le lecteur compacté ne trouverait pas ses dictionnaires.
     // Pas besoin de le suivre à chaque déploiement en revanche : quand `VER` de
     // sw.js change, l'activation du service worker efface tous les caches.
-    var V = '?v=20260904a';
+    var V = '?v=20260904b';
     var promises = keys.map(function (k) {
       var src = (window.V2_DATA_BASE || '../') + DATA_FILES[k];
       if (loaded[src]) return Promise.resolve();

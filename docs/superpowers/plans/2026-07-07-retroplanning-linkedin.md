@@ -141,7 +141,7 @@ Servir et ouvrir :
 ```bash
 cd /Users/williammorel/JARVIS/APP && python3 -m http.server 8090 --directory crm >/dev/null 2>&1 &
 ```
-Aller sur `http://localhost:8090/v2/` (se connecter : `demo@integralpharma.fr` / `***RETIRE***`), onglet **Marketing** → cliquer **Rétroplanning LinkedIn**.
+Aller sur `http://localhost:8090/v2/` (se connecter : `demo@integralpharma.fr` / `••••••(retiré)`), onglet **Marketing** → cliquer **Rétroplanning LinkedIn**.
 Attendu : une page avec le titre « Rétroplanning LinkedIn », la topbar « ← Marketing », et le texte « Module en cours de construction ». Aucune erreur console.
 
 - [ ] **Step 6: Commit**
