@@ -20,13 +20,60 @@ Colonnes source :
 """
 
 from pathlib import Path
+import datetime
 import openpyxl
 import json
+import re
 
 BASE   = Path(__file__).parent
-SRC    = BASE / "STATS" / "stock01 06 2026.xlsx"
 OUT    = BASE / "crm" / "stock.js"
-DATE   = "2026-06-01"
+
+
+def dernier_export():
+    """Le fichier de stock LE PLUS RÉCENT, et sa date lue dans son NOM.
+
+    ⚠️ Le chemin était écrit en dur (« STATS/stock01 06 2026.xlsx »). Le 03/09/2026 Will a
+    déposé un export frais dans STOCKS/ : le robot ne l'aurait jamais vu et aurait continué
+    à publier un inventaire vieux de 94 jours, sans la moindre erreur à l'écran. Un chemin
+    en dur est un robot qui ment en silence.
+
+    ⚠️ Et la date se lit dans le NOM du fichier, jamais dans sa date de modification : un
+    fichier recopié ou synchronisé porte la date de la copie, pas celle de l'inventaire.
+    Formats acceptés : « stock01 06 2026.xlsx », « stock OPS 03 09 2026.xlsx »,
+    « stock et prix 22 06 2026.xlsx ».
+    """
+    cands = []
+    for dossier in ("STOCKS", "STATS"):
+        d = BASE / dossier
+        if not d.is_dir():
+            continue
+        for f in d.glob("*.xlsx"):
+            if f.name.startswith("~$") or "stock" not in f.name.lower():
+                continue
+            m = re.search(r"(\d{2})[ _-](\d{2})[ _-](\d{4})", f.name)
+            if not m:
+                continue
+            j, mo, a = m.groups()
+            try:
+                dt = datetime.date(int(a), int(mo), int(j))
+            except ValueError:
+                continue
+            cands.append((dt, f))
+    if not cands:
+        raise SystemExit("[stock] aucun export trouvé dans STOCKS/ ni STATS/")
+    cands.sort(key=lambda x: x[0])
+    dt, f = cands[-1]
+    autres = [c[1].name for c in cands[:-1]]
+    print(f"[stock] {len(cands)} export(s) trouvé(s) · retenu : {f.name} (inventaire du {dt})")
+    if autres:
+        print(f"[stock] plus anciens, ignorés : {', '.join(autres)}")
+    age = (datetime.date.today() - dt).days
+    if age > 35:
+        print(f"[stock] ⚠️ cet inventaire a {age} jours — les couvertures seront optimistes")
+    return f, dt.isoformat()
+
+
+SRC, DATE = dernier_export()
 
 def clean_str(v):
     if v is None:
@@ -166,7 +213,7 @@ def main():
         ean_lines.append(f'  {json.dumps(ean, ensure_ascii=False)}: {json.dumps(artcode, ensure_ascii=False)}')
 
     js_content = """// Inventaire stock Intégral Pharma au ___DATE___
-// Source : STATS/stock01 06 2026.xlsx
+// Source : ___SRC___
 // Généré par generate_stock.py
 // Références en stock : ___REFS___ | Total unités : ___UNITS___
 window.STOCK = {
@@ -186,7 +233,8 @@ window.STOCK_DATE = "___DATE___";
         .replace("___UNITS___", f"{total_units:,}")
         .replace("___LINES___", ",\n".join(lines))
         .replace("___EAN_LINES___", ",\n".join(ean_lines))
-        .replace("___DATE___", DATE))
+        .replace("___DATE___", DATE)
+        .replace("___SRC___", f"{SRC.parent.name}/{SRC.name}"))
 
     OUT.write_text(js_content, encoding="utf-8")
     size_kb = OUT.stat().st_size / 1024
