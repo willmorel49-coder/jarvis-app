@@ -164,9 +164,9 @@
   Dans ton projet Supabase : Authentication → Users → "Add user" (bouton en haut à droite)
 
   Crée ces 3 comptes dans cet ordre (coche "Auto Confirm User" à chaque fois) :
-  - Email: `admin@integralpharma.fr` | Password: `***RETIRE***`
-  - Email: `manager@integralpharma.fr` | Password: `***RETIRE***`
-  - Email: `demo@integralpharma.fr` | Password: `***RETIRE***`
+  - Email: `admin@integralpharma.fr` | Password: `••••••(retiré)`
+  - Email: `manager@integralpharma.fr` | Password: `••••••(retiré)`
+  - Email: `demo@integralpharma.fr` | Password: `••••••(retiré)`
 
 - [ ] **Step 2 : Seed les profils utilisateurs**
 
@@ -274,9 +274,9 @@
   En haut de `crm/app.js`, trouve et supprime tout le bloc `USERS` :
   ```js
   const USERS = [
-    { id: 1, email: 'admin@integralpharma.fr',   password: '***RETIRE***',   role: 'admin',      name: 'William M.',   pharmacyIds: null },
-    { id: 2, email: 'manager@integralpharma.fr', password: '***RETIRE***', role: 'manager',    name: 'Sophie L.',    pharmacyIds: null },
-    { id: 3, email: 'demo@integralpharma.fr',    password: '***RETIRE***',    role: 'commercial', name: 'Demo User',    pharmacyIds: [] },
+    { id: 1, email: 'admin@integralpharma.fr',   password: '••••••(retiré)',   role: 'admin',      name: 'William M.',   pharmacyIds: null },
+    { id: 2, email: 'manager@integralpharma.fr', password: '••••••(retiré)', role: 'manager',    name: 'Sophie L.',    pharmacyIds: null },
+    { id: 3, email: 'demo@integralpharma.fr',    password: '••••••(retiré)',    role: 'commercial', name: 'Demo User',    pharmacyIds: [] },
   ];
   ```
 
@@ -497,14 +497,14 @@
 
 - [ ] **Step 3 : Tester la connexion**
 
-  - Entre `admin@integralpharma.fr` / `***RETIRE***` → doit se connecter et afficher le dashboard
+  - Entre `admin@integralpharma.fr` / `••••••(retiré)` → doit se connecter et afficher le dashboard
   - Ouvre la console (F12 → Console) → vérifie qu'il n'y a pas d'erreurs rouges
   - Rafraîchis la page → doit rester connecté (session restaurée par Supabase)
   - Clique sur ton nom en bas de la sidebar → doit se déconnecter
 
 - [ ] **Step 4 : Tester avec le compte manager**
 
-  - Connecte-toi avec `manager@integralpharma.fr` / `***RETIRE***`
+  - Connecte-toi avec `manager@integralpharma.fr` / `••••••(retiré)`
   - Vérifie que le menu "Administration" n'apparaît pas (visible seulement pour admin)
 
   Phase 1 terminée ✓
@@ -845,7 +845,7 @@
 
   Attends 1-2 min, puis : https://willmorel49-coder.github.io/jarvis-app/crm/
 
-  Connecte-toi avec `admin@integralpharma.fr` / `***RETIRE***`
+  Connecte-toi avec `admin@integralpharma.fr` / `••••••(retiré)`
 
 - [ ] **Step 3 : Migrer les données existantes**
 
@@ -863,7 +863,7 @@
 - [ ] **Step 5 : Vérifier le partage des données**
 
   - Ouvre le CRM dans un autre navigateur (ou onglet privé)
-  - Connecte-toi avec un autre compte (`manager@integralpharma.fr` / `***RETIRE***`)
+  - Connecte-toi avec un autre compte (`manager@integralpharma.fr` / `••••••(retiré)`)
   - Vérifie que tu vois les mêmes données que sur le premier compte
 
   Phase 2 terminée ✓

@@ -11,8 +11,13 @@ from supabase import create_client
 # ── Config ─────────────────────────────────────────────────────────────────────
 SUPABASE_URL  = 'https://iyvavhnlhxksokkerkos.supabase.co'
 SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5dmF2aG5saHhrc29ra2Vya29zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1NjU2NTYsImV4cCI6MjA5MzE0MTY1Nn0.eMdW6vUdoyVpZbqKXp6FNYTajwKEf4x-Xyj5zj1igO4'
-EMAIL         = 'demo@integralpharma.fr'
-PASSWORD      = '***RETIRE***'
+# ⚠️ 03/09/2026 — identifiants sortis du dépôt (public). Ce compte de démo est
+# supprimé de Supabase ; le script lit désormais un compte réel hors du dépôt.
+import os as _os
+EMAIL    = _os.environ.get('JARVIS_IMPORT_EMAIL', '')
+PASSWORD = _os.environ.get('JARVIS_IMPORT_PWD', '')
+if not EMAIL or not PASSWORD:
+    raise SystemExit("Définis JARVIS_IMPORT_EMAIL / JARVIS_IMPORT_PWD (hors dépôt).")
 
 WML_FILES = [
     ('/Users/williammorel/JARVIS/APP/WML_01_2026.xlsx', 1, 2026),

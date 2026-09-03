@@ -68,9 +68,9 @@ create table user_profiles (
 
 ### Création des comptes
 Les 3 comptes sont créés manuellement dans le dashboard Supabase :
-- `admin@integralpharma.fr` / `***RETIRE***` → role: admin
-- `manager@integralpharma.fr` / `***RETIRE***` → role: manager
-- `demo@integralpharma.fr` / `***RETIRE***` → role: commercial
+- `admin@integralpharma.fr` / `••••••(retiré)` → role: admin
+- `manager@integralpharma.fr` / `••••••(retiré)` → role: manager
+- `demo@integralpharma.fr` / `••••••(retiré)` → role: commercial
 
 ---
 

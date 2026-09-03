@@ -200,3 +200,5 @@ pharma-fr-ca.js
 wml-officines-ca.js
 biosimilaires-complet.js
 opso/opso-stats-data.js
+opso/wml-data.js
+clients-cond.js

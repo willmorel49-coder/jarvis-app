@@ -1498,7 +1498,11 @@
   });
 
   // ── helpers ───────────────────────────────────
-  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+  // 03/09/2026 — échappe AUSSI l'apostrophe. Le pattern onclick="V2.x('+esc(d)+')"
+  // est partout : sans ', une donnée avec apostrophe refermait la chaîne JS et
+  // permettait d'exécuter du script. `&#39;` s'affiche exactement comme ' —
+  // aucun changement visible.
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
   function cap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
   V2.esc = esc; V2.cap = cap;
 
@@ -1643,15 +1647,15 @@
       '<h1>' + ((window.V2_BRAND && window.V2_BRAND.name) || 'Intégral Pharma') + '</h1>' +
       '<p>' + ((window.V2_BRAND && window.V2_BRAND.sub) || 'Espace commercial · CRM') + '</p>' +
       '<div class="v2-login-spark" aria-hidden="true"></div>' +
-      '<div class="v2-login-fields">' +
+      '<form class="v2-login-fields" onsubmit="return false">' +
         '<input class="v2-field" id="v2-email" type="email" inputmode="email" aria-label="Adresse email" placeholder="Email" autocomplete="username">' +
         '<div style="position:relative">' +
           '<input class="v2-field" id="v2-pass" type="password" aria-label="Mot de passe" placeholder="Mot de passe" autocomplete="current-password" style="padding-right:82px">' +
           '<button type="button" id="v2-eye" aria-label="Afficher le mot de passe" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:0;color:var(--muted);font:600 12.5px/1 inherit;cursor:pointer;padding:10px">Afficher</button>' +
         '</div>' +
-        '<button class="v2-btn v2-btn-primary" id="v2-login-btn">Se connecter</button>' +
+        '<button type="submit" class="v2-btn v2-btn-primary" id="v2-login-btn">Se connecter</button>' +
         '<div class="v2-login-err" id="v2-login-err" role="alert"></div>' +
-      '</div>' +
+      '</form>' +
       '<div class="v2-login-foot">Connexion sécurisée</div>' +
       '</div></div>';
     var btn = document.getElementById('v2-login-btn');
@@ -1669,8 +1673,12 @@
         btn.textContent = 'Se connecter'; btn.disabled = false;
       });
     }
-    btn.onclick = submit;
-    document.getElementById('v2-pass').addEventListener('keydown', function (e) { if (e.key === 'Enter') submit(); });
+    // le <form> capte le clic sur le bouton submit ET la touche Entrée : un
+    // SEUL déclencheur, sinon le login partait deux fois (double V2.boot, double
+    // listener hashchange). Pas de btn.onclick en plus.
+    var frm = btn.form;
+    if (frm) { frm.addEventListener('submit', function (e) { e.preventDefault(); submit(); }); }
+    else { btn.onclick = submit; }
     var eye = document.getElementById('v2-eye');
     if (eye) eye.onclick = function () { var p = document.getElementById('v2-pass'); var show = p.type === 'password'; p.type = show ? 'text' : 'password'; this.textContent = show ? 'Masquer' : 'Afficher'; this.setAttribute('aria-label', (show ? 'Masquer' : 'Afficher') + ' le mot de passe'); };
     document.getElementById('v2-email').focus();

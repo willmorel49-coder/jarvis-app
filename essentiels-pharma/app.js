@@ -203,6 +203,25 @@ let state = {
   sim: { pharmacyId: null, name: 'Simulation 1', items: [] },
 };
 
+
+// ── 03/09/2026 — neutralisation anti-XSS à la SOURCE ────────────────────────
+// Les noms de pharmacie (modifiables par un collègue) et les libellés produit
+// (venus de fichiers Excel de tiers) étaient injectés bruts dans des dizaines
+// d'innerHTML : un nom piégé « <img onerror=...> » volait la session de toute
+// l'équipe. On retire ici les 3 caractères qui ouvrent une balise ou cassent
+// un attribut — AUCUN nom ou libellé légitime n'en contient, donc rien ne
+// change à l'affichage. C'est la barrière la plus sûre : une seule passe, en
+// amont de tous les rendus.
+function _neutXss(v) {
+  return (v == null) ? v : String(v).replace(/[<>"]/g, '');
+}
+function _neutRows(rows, champs) {
+  (rows || []).forEach(function (r) {
+    champs.forEach(function (c) { if (r && r[c] != null) r[c] = _neutXss(r[c]); });
+  });
+  return rows;
+}
+
 // ── STORAGE ──────────────────────────────────
 async function load() {
   let pharmacies = [], imports = [], sales = [];
@@ -212,9 +231,9 @@ async function load() {
       sb.from('imports').select('*').order('imported_at', { ascending: false }),
       sb.from('sales').select('id,import_id,pharmacy_id,month,year,art_designation,art_code,art_id,art_famille,qte,pu_brut,pu_net,mnt_net_ht').limit(20000),
     ]);
-    pharmacies = r1.data || [];
-    imports    = r2.data || [];
-    sales      = r3.data || [];
+    pharmacies = _neutRows(r1.data || [], ['name', 'ville']);
+    imports    = _neutRows(r2.data || [], ['filename']);
+    sales      = _neutRows(r3.data || [], ['art_designation', 'art_famille']);
   } catch(e) {
     console.warn('[OPSO] Supabase load failed, continuing with static data:', e);
   }
@@ -504,6 +523,15 @@ function chargerTarifPharmazon() {
 // ip_qty, ip_ca vivent dans bench-conditions.js, recollés ici par INDEX.
 // Contrôle strict : si le fichier public a été régénéré sans re-découpage,
 // on ne fusionne PAS — des prix décalés d'une ligne seraient pires qu'absents.
+let _clientsCondFait = false;
+function fusionnerClientsCond() {
+  // le potentiel commercial et le CA (fiches clients) reviennent sur CLIENTS,
+  // chargé par balise (const lexical). Le reste des fiches est public (annuaire).
+  if (_clientsCondFait || typeof CLIENTS === 'undefined' || typeof window.CLIENTS_COND === 'undefined') return;
+  const cc = window.CLIENTS_COND;
+  for (const c of CLIENTS) { const v = cc[String(c.cip)]; if (v) { c.potentielGx = v[0]; c.ca2023 = v[1]; } }
+  _clientsCondFait = true;
+}
 let _benchFusionne = false;
 function fusionnerBenchConditions() {
   if (_benchFusionne || typeof BENCHMARK === 'undefined' || typeof window.BENCH_COND === 'undefined') return;
@@ -528,6 +556,7 @@ async function loadUserProfile() {
     await Promise.all([
       chargerTarifPharmazon(),
       chargerProtege('bench-conditions.js', () => fusionnerBenchConditions()),
+      chargerProtege('clients-cond.js', () => fusionnerClientsCond()),
       chargerProtege('essentiels-reco-data.js')
     ]).catch(() => {});
     // Fallback si user_profiles vide ou table absente — on continue quand même
@@ -558,6 +587,11 @@ async function restoreSession() {
 
 async function logout() {
   await sb.auth.signOut();
+  // le rangement local des fichiers protégés part avec la session (poste partagé)
+  try {
+    const ks = await caches.keys();
+    await Promise.all(ks.filter(k => k.indexOf('protege-') === 0).map(k => caches.delete(k)));
+  } catch (e) {}
   state.user = null;
   state.pharmacies = [];
   state.imports    = [];
@@ -9786,6 +9820,7 @@ async function syncOpsoPharmacies() {
 
   // Recharge depuis Supabase pour avoir l'état réel (pas filtré)
   const { data: allPharmas } = await sb.from('pharmacies').select('id,name,code,color');
+  _neutRows(allPharmas, ['name']);
   const existingNoms = new Set((allPharmas || []).map(p => normPhName(p.name)));
 
   const missing = OPSO_ADHERENTS.filter(a => !existingNoms.has(normPhName(a.nom)));
@@ -9809,6 +9844,7 @@ async function syncOpsoPharmacies() {
 
   // Recharge l'état complet depuis Supabase après insertion
   const { data: refreshed } = await sb.from('pharmacies').select('id,name,code,color');
+  _neutRows(refreshed, ['name']);
   const allowed = opsoAdherentNoms();
   state.pharmacies = (refreshed || [])
     .filter(p => allowed?.has(normPhName(p.name)))
@@ -12460,6 +12496,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     btn.disabled    = true;
     btn.textContent = 'Connexion…';
 
+    // le champ ne garde pas le mot de passe en clair dans la page (lisible
+    // sinon toute la session par les outils de développement ou une extension)
+    document.getElementById('login-password').value = '';
     if (await tryLogin(email, password)) {
       trackEvent('login', {});
       // Apres login reussi, message du jour une fois par jour
