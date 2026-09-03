@@ -1220,7 +1220,18 @@
       return '<div class="ap-foot" style="padding:11px 18px 2px;margin:0;font-weight:800;' +
         'color:var(--ip-ink);text-transform:uppercase;letter-spacing:.04em;font-size:11px">' + txt + '</div>';
     }
-    var corps = '';
+    // le produit dont l'écart pèse le plus en boîtes ouvre la carte, dessiné
+    var vedette = lignes[0], grHtml = '';
+    try {
+      var pv = prev(vedette.c);
+      if (pv) grHtml = '<div class="pv-hd"><b>' + esc(cap((vedette.d || vedette.c).toLowerCase())) + '</b>' +
+        '<span>' + fmt(Math.round(vedette.vM)) + ' boîtes/mois réseau · ' +
+        (vedette.m3 - 100 > 0 ? '+' : '') + Math.round(vedette.m3 - 100) + ' % à 3 mois, ' +
+        'fourchette ' + (vedette.b3 - 100 > 0 ? '+' : '') + Math.round(vedette.b3 - 100) + ' à ' +
+        (vedette.h3 - 100 > 0 ? '+' : '') + Math.round(vedette.h3 - 100) + ' %</span></div>' + courbeSvg(pv);
+    } catch (e) { grHtml = ''; }
+
+    var corps = grHtml;
     if (haut.length) corps += titre('Ça va monter') + haut.map(ligneHtml).join('');
     if (bas.length)  corps += titre('Ça va baisser') + bas.map(ligneHtml).join('');
     if (!corps) corps = '<div class="ap-empty">Marché stable sur ton périmètre : aucun mouvement marqué à 3 mois.</div>';
@@ -1292,6 +1303,102 @@
     _profil = out; _profilRef = S;
     return out;
   }
+
+  // ═══ LA FOURCHETTE DESSINÉE ═══════════════════════════════════════════════
+  // Aucun des 12 outils d'achat professionnels examinés le 02/09/2026 (RELEX, o9, Kinaxis,
+  // Netstock, Inventory Planner, Cin7, Odoo…) ne trace une vraie bande min/max : au mieux
+  // des pointillés ou des scénarios. C'est le geste différenciant de l'outil.
+  // Conventions reprises du métier : constaté en TRAIT PLEIN, attendu en POINTILLÉ, et une
+  // aire qui s'ÉLARGIT avec l'horizon — parce que c'est vrai, donc ça se dessine.
+  // ⚠️ Robinhood s'est fait critiquer pour avoir CACHÉ l'incertitude : trop simplifier une
+  // fourchette, c'est mentir. On montre la borne basse ET la borne haute, toujours.
+
+  // ═══ LE RUBAN — le seul emprunt décoratif à la salle des marchés ══════════
+  // Règle que je me suis fixée en le dessinant, et qui doit tenir : il ne porte QUE ce sur
+  // quoi on peut agir aujourd'hui — les urgences du carnet et les mouvements de marché les
+  // plus lourds. Jamais un fil d'actualité : ça fatiguerait et ça ferait perdre à JARVIS sa
+  // sobriété. Court, lent (45 s le tour), en pause au survol, et immobile si l'utilisateur
+  // a demandé moins d'animations.
+  function rubanHtml() {
+    var idx = {}, out = [];
+    try { idx = cipIndex(); } catch (e) { return ''; }
+    var urg = [];
+    Object.keys(idx).forEach(function (c) {
+      var o = idx[c];
+      if (o.unk || o.vM < MINVEL || o.qcmd <= 0 || o.cov > 3) return;
+      urg.push(o);
+    });
+    urg.sort(function (a, b) { return a.cov - b.cov || b.vM - a.vM; });
+    urg.slice(0, 4).forEach(function (o) {
+      out.push('<span><b>' + esc(cap((o.d || o.c).toLowerCase()).slice(0, 26)) + '</b> ' +
+        '<em class="rb-j0">' + Math.round(o.cov) + ' j</em> · +' + fmt(o.qcmd) + '</span>');
+    });
+    // les mouvements de marché les plus lourds en boîtes, hausses ET baisses
+    var mv = [];
+    Object.keys(idx).forEach(function (c) {
+      var o = idx[c], pv = prev(c);
+      if (!pv || !pv[10] || o.vM < MINVEL) return;
+      if (pv[0] >= 112 || pv[0] <= 88) mv.push({ d: o.d || c, e: pv[0] - 100, imp: Math.abs(pv[0] - 100) * o.vM });
+    });
+    mv.sort(function (a, b) { return b.imp - a.imp; });
+    mv.slice(0, 4).forEach(function (m) {
+      var h = m.e > 0;
+      out.push('<span><b>' + esc(cap(String(m.d).toLowerCase()).slice(0, 26)) + '</b> ' +
+        '<em class="' + (h ? 'rb-up' : 'rb-dn') + '">' + (h ? '▲ +' : '▼ ') + Math.round(m.e) + ' %</em> 3 mois</span>');
+    });
+    if (_ansmData && _ansmData.meta && _ansmData.meta.byStatut) {
+      var b = _ansmData.meta.byStatut;
+      var nt = (b.tension || 0), nr = (b.rupture || 0);
+      if (nt || nr) out.push('<span><b>ANSM</b> ' + nt + ' tensions · ' + nr + ' ruptures</span>');
+    }
+    if (out.length < 3) return '';
+    var age = '';
+    try {
+      var g = window.STOCK_IP && window.STOCK_IP.meta && window.STOCK_IP.meta.gen;
+      if (g) age = '<span class="rb-fl">stock plateforme arrêté au ' +
+        esc(g.split('-').reverse().join('/')) + ' — photographie</span>';
+    } catch (e) {}
+    var suite = out.join('') + age;
+    // dupliqué une fois : c'est ce qui rend le défilement continu sans saut
+    return '<div class="rb"><div class="rb-in">' + suite + suite + '</div></div>';
+  }
+
+  function courbeSvg(p) {
+    if (!p) return '';
+    var W = 640, H = 132, y0 = 96;                 // y0 = la ligne « rythme actuel » (100 %)
+    // échelle : on cadre sur l'amplitude réelle, bornée pour rester lisible
+    var vals = [p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8]];
+    var lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals);
+    lo = Math.min(lo, 100); hi = Math.max(hi, 100);
+    var amp = Math.max(30, hi - lo);
+    function y(v) { return Math.round(y0 - (v - 100) / amp * 62); }
+    var xs = [W * 0.42, W * 0.62, W * 0.80, W];    // aujourd'hui, 3, 6, 12 mois
+    var med = [p[0], p[3], p[6]], bas = [p[1], p[4], p[7]], hau = [p[2], p[5], p[8]];
+    var aire = 'M' + xs[0] + ',' + y0;
+    for (var i = 0; i < 3; i++) aire += ' L' + Math.round(xs[i + 1]) + ',' + y(hau[i]);
+    for (i = 2; i >= 0; i--) aire += ' L' + Math.round(xs[i + 1]) + ',' + y(bas[i]);
+    aire += ' Z';
+    var ligne = xs[0] + ',' + y0;
+    for (i = 0; i < 3; i++) ligne += ' ' + Math.round(xs[i + 1]) + ',' + y(med[i]);
+    var pts = '';
+    for (i = 0; i < 3; i++) pts += '<circle cx="' + Math.round(xs[i + 1]) + '" cy="' + y(med[i]) + '" r="3.5" fill="var(--ip-blue)"/>';
+    return '<div class="pv-gr"><svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" ' +
+      'role="img" aria-label="Prévision à 3, 6 et 12 mois avec sa fourchette basse et haute">' +
+      '<defs><linearGradient id="pvA" x1="0" y1="0" x2="0" y2="1">' +
+      '<stop offset="0%" stop-color="#0050E6" stop-opacity=".22"/>' +
+      '<stop offset="100%" stop-color="#0050E6" stop-opacity=".05"/></linearGradient></defs>' +
+      '<line x1="0" y1="' + y0 + '" x2="' + W + '" y2="' + y0 + '" stroke="rgba(16,19,28,.12)"/>' +
+      '<polyline points="0,' + y0 + ' ' + Math.round(xs[0]) + ',' + y0 + '" fill="none" stroke="#10131C" stroke-width="2"/>' +
+      '<path d="' + aire + '" fill="url(#pvA)"/>' +
+      '<polyline points="' + ligne + '" fill="none" stroke="var(--ip-blue)" stroke-width="2.2" stroke-dasharray="6 5"/>' + pts +
+      '<line x1="' + Math.round(xs[0]) + '" y1="14" x2="' + Math.round(xs[0]) + '" y2="' + (H - 16) + '" stroke="rgba(16,19,28,.16)" stroke-dasharray="3 4"/>' +
+      '</svg><div class="pv-ax"><span>aujourd’hui</span><span>3 mois</span><span>6 mois</span><span>12 mois</span></div>' +
+      '<div class="pv-lg"><span><i style="background:#10131C"></i>constaté</span>' +
+      '<span><i style="background:var(--ip-blue)"></i>attendu</span>' +
+      '<span><i style="background:#C4D6F8"></i>fourchette basse → haute</span>' +
+      '<span class="pv-note">plus l’horizon s’éloigne, plus la fourchette s’ouvre — c’est vrai, donc c’est dessiné</span></div></div>';
+  }
+
   function profilLigne(cip) {
     var pr = profilIndex()[String(cip)];
     if (!pr || pr.nph < 3) return '';
@@ -2204,12 +2311,12 @@
         var ecartH = '';
         try { ecartH = ecartNational(); } catch (e) { ecartH = ''; }
         content = cockpit +
-          (prevH ? secHead('La courbe — 3, 6 et 12 mois', 'ce que le marché national va faire, avec sa fourchette — pour pré-acheter et négocier') + prevH : '') +
-          (causesH ? secHead('Pourquoi les ruptures arrivent', 'la cause n° 1 est une demande qui monte — donc prévisible') + causesH : '') +
+          (prevH ? secHead('Comment — combien, et quand', 'une prévision est une fourchette, jamais un chiffre nu : on pré-achète sur la borne basse, on sécurise sur la haute') + prevH : '') +
+          (causesH ? secHead('Et pourquoi ça casse', 'la cause n° 1 est une demande qui monte — donc annoncée par la courbe ci-dessus') + causesH : '') +
           (ecartH ? secHead('Écart au marché France', 'calculé sur le marché national, indépendamment de la fraîcheur de vos données') + ecartH : '') +
           secHead('Veille — retours de rupture &amp; futurs remboursés', 'plus loin dans le temps, à surveiller') + ansmHtml + hasHtml;
       } else if (_section === 'stock') {
-        content = kpiBand + secHead('Réassort &amp; stock') + reaCard + etabHtml + basculesHtml + rosCard;
+        content = kpiBand + secHead('Pour qui — qui va vraiment consommer', 'un volume réseau ne dit pas comment commander : ce que prend une pharmacie type, et la densité de chaque secteur') + reaCard + etabHtml + basculesHtml + rosCard;
       } else {
         var horsH = '';
         try { horsH = horsCatalogueCard(); } catch (e) { horsH = ''; }
@@ -2238,7 +2345,9 @@
         '<div class="v2-wrap">' +
           '<div class="v2-page-title">Appro Intégral</div>' +
           '<div class="v2-page-sub">Ta vue du jour en un coup d\'œil — clique un chiffre ou un espace pour agir.</div>' +
-          recallBanner + hero + nav + content + freshnessBar() +
+          recallBanner +
+          (function () { try { return rubanHtml(); } catch (e) { return ''; } })() +
+          hero + nav + content + freshnessBar() +
         '</div>';
     }
   };
@@ -2307,7 +2416,7 @@
       '.tk-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}' +
       '.tk-kpi{background:var(--card-2,#F6F8FB);border:1px solid var(--line);border-radius:11px;padding:10px 8px;text-align:center}' +
       '.tk-kpi b{display:block;font-size:17px;font-weight:800;font-family:var(--mono);color:var(--ip-ink)}.tk-kpi span{font-size:10px;color:var(--muted);font-weight:600}' +
-      '.tk-price{font-size:12.5px;color:var(--muted);background:var(--card-2,#F6F8FB);border:1px solid var(--line);border-radius:10px;padding:9px 12px;margin-bottom:14px}.sec-bar{height:5px;border-radius:99px;background:var(--line);margin-top:6px;max-width:320px}.sec-bar i{display:block;height:100%;border-radius:99px;background:#0E7C86}.tk-warn{font-size:11.5px;color:#a8651a;background:#FFF6E8;border:1px solid #F0C98A;border-radius:9px;padding:7px 11px;margin:-8px 0 14px;line-height:1.45}.tk-price b{color:var(--ip-ink);font-family:var(--mono)}' +
+      '.tk-price{font-size:12.5px;color:var(--muted);background:var(--card-2,#F6F8FB);border:1px solid var(--line);border-radius:10px;padding:9px 12px;margin-bottom:14px}.rb{background:var(--ip-ink);border-radius:14px;overflow:hidden;margin:0 0 16px;box-shadow:var(--sh-1)}.rb-in{display:flex;gap:30px;padding:9px 16px;white-space:nowrap;color:#EAEEF6;font-family:var(--mono);font-size:12.5px;animation:rbDef 45s linear infinite;width:max-content}.rb:hover .rb-in{animation-play-state:paused}.rb-in b{font-weight:600;color:#fff}.rb-in em{font-style:normal}.rb-up{color:#3FD69A}.rb-dn{color:#FF8DA1}.rb-j0{color:#FF8DA1;font-weight:600}.rb-fl{color:#98A2B8}@keyframes rbDef{from{transform:translateX(0)}to{transform:translateX(-50%)}}@media (prefers-reduced-motion:reduce){.rb-in{animation:none;flex-wrap:wrap;white-space:normal;width:auto}}.pv-hd{padding:13px 18px 0}.pv-hd b{font-size:14px;font-weight:800;display:block}.pv-hd span{font-size:11.5px;color:var(--muted);display:block;margin-top:2px}.pv-gr{padding:8px 18px 0}.pv-gr svg{width:100%;height:132px;display:block}.pv-ax{display:flex;justify-content:space-between;font-size:10.5px;color:var(--muted);margin-top:2px}.pv-ax span:first-child{margin-left:38%}.pv-lg{display:flex;flex-wrap:wrap;gap:14px;font-size:11px;color:var(--muted);padding:9px 0 4px}.pv-lg i{display:inline-block;width:18px;height:3px;border-radius:2px;vertical-align:middle;margin-right:5px}.pv-note{flex:1;min-width:180px}@media(max-width:600px){.pv-ax span:first-child{margin-left:30%}}.sec-bar{height:5px;border-radius:99px;background:var(--line);margin-top:6px;max-width:320px}.sec-bar i{display:block;height:100%;border-radius:99px;background:#0E7C86}.tk-warn{font-size:11.5px;color:#a8651a;background:#FFF6E8;border:1px solid #F0C98A;border-radius:9px;padding:7px 11px;margin:-8px 0 14px;line-height:1.45}.tk-price b{color:var(--ip-ink);font-family:var(--mono)}' +
       '.tk-h{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:6px 0 8px}' +
       '.tk-proj{border:1px solid var(--line);border-radius:10px;background:var(--card-2,#F6F8FB);padding:6px 8px;margin-bottom:4px}.tk-proj svg{width:100%;height:82px;display:block}' +
       '.tk-projlab{display:flex;justify-content:space-between;font-size:11px;font-weight:800;margin:0 2px 14px}' +
