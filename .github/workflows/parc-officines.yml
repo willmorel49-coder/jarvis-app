@@ -1,0 +1,77 @@
+name: Le parc bouge (officines · FINESS)
+
+# Qui ouvre, qui ferme, qui change de main. FINESS publie chaque jour l'état complet
+# des établissements de santé avec un journal d'évènements daté ; on en extrait les
+# 24 026 officines et les quatre mouvements qui comptent pour un répartiteur :
+# changement de titulaire (037), fermeture (005), ouverture (036), et les fermetures
+# déjà datées dans le futur.
+#
+# ⚠️ HEBDOMADAIRE, ET C'EST VOULU. Le fichier fait 48 Mo compressés, 715 Mo une fois
+# ouvert, et son analyse demande ~1,5 Go de mémoire pour 30 secondes. Le robot de
+# l'édition du matin ne doit pas porter ça tous les jours : celui-ci écrit un résumé
+# de quelques dizaines de Ko que l'édition lit ensuite.
+#
+# ⚠️ Le piège du fichier : `dateEnregistrement` ne vaut rien (FINESS a réenregistré
+# ses 24 026 fiches le même jour en juillet 2026). Seul `dateEvenement` porte la
+# vraie date. C'est dans generate_parc.py, ne pas y toucher sans relire l'en-tête.
+#
+# Source : data.gouv.fr « FINESS - Structures », Licence Ouverte 2.0 → republiable.
+
+on:
+  schedule:
+    - cron: '12 4 * * 1'    # lundi ~06h12 Paris (été), avant l'édition de 08h52
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: parc-officines
+  cancel-in-progress: false
+
+jobs:
+  parc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Relever les mouvements du parc
+        run: python3 generate_parc.py
+
+      - name: Garde de complétude
+        # Un fichier qui ne trouve plus une seule officine, c'est une source qui a
+        # changé de forme — pas un parc immobile. On ne publie pas ça.
+        run: |
+          python3 - <<'PY'
+          import json, sys
+          d = json.load(open('crm/v2/parc-mouvements.json', encoding='utf-8'))
+          if d.get('officines', 0) < 15000:
+              sys.exit("Seulement %s officines lues — la source a changé de forme."
+                       % d.get('officines'))
+          print("OK : %d officines · %d changements de titulaire · %d fermetures · "
+                "%d ouvertures · %d fermetures annoncées"
+                % (d['officines'], len(d['titulaires']), len(d['fermetures']),
+                   len(d['ouvertures']), len(d['ferme_bientot'])))
+          PY
+
+      - name: Committer si changement
+        run: |
+          git config user.name  "JARVIS copilote"
+          git config user.email "actions@users.noreplace.github.com"
+          git add crm/v2/parc-mouvements.json
+          if git diff --cached --quiet; then
+            echo "Le parc n'a pas bougé depuis la dernière lecture."
+          else
+            git commit -m "data(parc): mouvements des officines $(date -u +%Y-%m-%d)"
+            pousse=0
+            for essai in 1 2 3 4 5; do
+              if git push; then pousse=1; break; fi
+              echo "push refusé (tentative $essai/5) — un autre robot est passé, rattrapage"
+              git pull --rebase --autostash origin "$GITHUB_REF_NAME" || exit 1
+              sleep $(( essai * 5 + RANDOM % 10 ))
+            done
+            [ "$pousse" = 1 ] || { echo "ÉCHEC : 5 tentatives de push refusées"; exit 1; }
+          fi

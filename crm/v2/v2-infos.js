@@ -187,6 +187,16 @@
     var mots = motsUtiles(nomSociete);
     if (!mots.length) return null;
     var v = norm(ville || '').replace(/[^a-z0-9]+/g, ' ').trim();
+    // ⚠️ FINESS donne un CODE INSEE (« 63315 »), pas un nom de ville : le chercher
+    //    dans le nom d'un client ne peut rien donner.
+    if (/^\d[\d ]*$/.test(v)) v = '';
+
+    /* La règle qui décide : UN SEUL CLIENT POSSIBLE.
+       « Deux mots rares exigés » perdait « SELARL Pharmacie SABOURIN » (un seul mot
+       rare une fois « selarl » et « pharmacie » retirés) ; « un mot suffit » faisait
+       crier au loup sur les noms répandus. On rassemble donc TOUS les clients
+       compatibles : on n'affirme que s'il n'y en a qu'un. Une ambiguïté, on se tait. */
+    var candidats = [];
     for (var i = 0; i < liste.length; i++) {
       var p = liste[i];
       var nomP = norm(p.name || '').replace(/[^a-z0-9]+/g, ' ');
@@ -194,12 +204,14 @@
       var communs = 0;
       for (var k = 0; k < mots.length; k++) if (nomP.indexOf(mots[k]) >= 0) communs++;
       if (!communs) continue;
-      // la ville doit concorder : c'est elle qui transforme une coïncidence en fait
-      if (v && nomP.indexOf(v) < 0) continue;
-      if (!v && communs < 2) continue;      // sans ville, il faut au moins deux mots rares
-      return p;
+      if (v && nomP.indexOf(v) < 0) continue;   // ville connue : elle doit concorder
+      candidats.push({ p: p, n: communs });
     }
-    return null;
+    if (!candidats.length) return null;
+    if (candidats.length === 1) return candidats[0].p;
+    // plusieurs clients compatibles : on ne tranche que si UN SEUL est nettement devant
+    candidats.sort(function (a, b) { return b.n - a.n; });
+    return (candidats[0].n > candidats[1].n) ? candidats[0].p : null;
   }
 
   /* ════════════════ LE PANNEAU DE LECTURE ════════════════
@@ -358,7 +370,7 @@
           '<div class="alerte-h">' + ICO('alert', 16, 2.2) + 'À ne pas manquer' +
             '<span>échéances réglementaires & mouvements de concurrents</span></div>' +
           '<div class="al-grille">' + (ALERTES_TOUT ? epingles : epingles.slice(0, 6)).map(function (e, i) {
-            var ech = e.motif === 'echeance';
+            var ech = e.motif === 'echeance' || (e.motif === 'ferme' && e.jours !== null);
             var j = e.jours;
             /* Cinq natures d'alerte, cinq pastilles. Une couleur veut toujours dire
                la même chose : ambre = une date arrive · rose = une sanction ou une
@@ -368,6 +380,8 @@
               societe:    { c: 'soc',  l: 'Répartiteur · registre', i: 'fiche' },
               cession:    { c: 'cess', l: 'Officine vendue', i: 'pharma' },
               demande:    { c: 'dem',  l: 'Ça va se vendre', i: 'cart' },
+              ferme:      { c: 'fer',  l: 'Ferme bientôt', i: 'alert' },
+              titulaire:  { c: 'tit',  l: 'Change de main', i: 'pharma' },
               amont:      { c: 'amo',  l: "Avant l'ANSM", i: 'opp' },
               difficulte: { c: 'diff', l: 'En difficulté', i: 'alert' },
               concurrent: { c: 'conc', l: 'Concurrent', i: 'opp' }
@@ -386,13 +400,15 @@
               '<h3>' + esc(e.t) + '</h3>' +
               (e.r ? '<p>' + esc(e.r) + '</p>' : '') +
               (function () {
-                if (e.motif !== 'difficulte' && e.motif !== 'cession') return '';
+                if (['difficulte','cession','ferme','titulaire'].indexOf(e.motif) < 0) return '';
                 var cl = clientTouche(e.societe, e.ville);
                 return cl ? '<div class="al-client">' + ICO('alert', 14, 2.4) +
                   '<b>C\'est un de tes clients</b><span>' + esc(cl.name) +
                   (cl.code ? ' · CIP ' + esc(cl.code) : '') +
-                  (e.motif === 'cession' ? ' — le titulaire change, compte à reprendre'
-                                         : ' — encours à vérifier') + '</span></div>' : '';
+                  ({ cession: ' — le titulaire change, compte à reprendre',
+                     titulaire: ' — le titulaire a changé, compte à reprendre',
+                     ferme: ' — ce client ferme, encours à solder'
+                   }[e.motif] || ' — encours à vérifier') + '</span></div>' : '';
               })() +
               '<div class="al-f">' + esc((e.srcs && e.srcs.length ? e.srcs : [e.s]).slice(0, 3).join(' · ')) + '</div>' +
               '<a class="tout" href="' + esc(e.u || '#') + '" onclick="return V2.infosLire(event,' + i + ')" aria-label="' + esc(e.t) + '"></a>' +
@@ -842,6 +858,10 @@
         'border-color:color-mix(in srgb,var(--c-cat) 26%,transparent)}',
       '.inf2 .al-cd.amo{background:color-mix(in srgb,var(--ip-blue) 12%,transparent);color:var(--ip-blue);' +
         'border-color:color-mix(in srgb,var(--ip-blue) 30%,transparent)}',
+      '.inf2 .al-cd.fer{background:color-mix(in srgb,var(--c-rose) 14%,transparent);color:var(--c-rose-txt);' +
+        'border-color:color-mix(in srgb,var(--c-rose) 32%,transparent);font-weight:800}',
+      '.inf2 .al-cd.tit{background:color-mix(in srgb,var(--c-opp) 12%,transparent);color:var(--c-mint-txt);' +
+        'border-color:color-mix(in srgb,var(--c-opp) 28%,transparent)}',
       '.inf2 .al-cd.dem{background:color-mix(in srgb,var(--c-froid) 13%,transparent);color:#006F80;' +
         'border-color:color-mix(in srgb,var(--c-froid) 30%,transparent)}',
       '.inf2 .al-cd.cess{background:color-mix(in srgb,var(--c-opp) 12%,transparent);color:var(--c-mint-txt);' +
