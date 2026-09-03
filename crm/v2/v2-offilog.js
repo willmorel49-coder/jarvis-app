@@ -19,7 +19,7 @@
     return '';
   })();
 
-  var S = { chip: 'all', q: '', page: 0, sel: null, sort: 'ventes', adv: false };
+  var S = { chip: 'all', q: '', page: 0, sel: null, sort: 'ventes', adv: false, sous: '' };
   var firstPaint = true; // cascade d'entrée réservée au 1er affichage de la grille
   var PER_PAGE = 60;
 
@@ -31,6 +31,7 @@
     { k: 'all',         label: 'Tout',           sc: '#0050E6' },
     { k: 'alerte',      label: 'Concurrent moins cher', sc: '#6D4FC4' },
     { k: 'pzcheaper',   label: 'Moins cher sur Pharmazon', sc: 'var(--ip-blue-d)' },
+    { k: 'leclercpub',  label: 'Vendu chez E.Leclerc', sc: '#0066B3' },
     { k: 'sante',       label: 'Santé',          sc: '#1E9E6A' },
     { k: 'beaute-et-soins', label: 'Beauté & soins', sc: '#6D4FC4' },
     { k: 'hygiene',     label: 'Hygiène',        sc: 'var(--c-froid)' },
@@ -113,17 +114,24 @@
       if (o) {
         CONC.forEach(function (c) { var v = numOr0(o[c.key]); conc[c.key] = v; if (v > 0) { hasC = true; if (mc === 0 || v < mc) mc = v; } });
       }
-      var alert = achat > 0 && mc > 0 && mc < achat;
       var price = numOr0(b.price);
       var pz = b.ean ? pzByEan.get(String(b.ean)) : null;
       // comparaison achat Offilog vs Pharmazon
       var pzCheaper = !!(pz && pz.price > 0 && price > 0 && pz.price < price);
+      // prix PUBLIC E.Leclerc (TTC), relevé par l'API du site sur tout le
+      // catalogue — bien plus large que l'ancien prix_leclerc porté par
+      // OFFILOG (918 réf. contre 3 754).
+      var lp = (window.LECLERC_PUB && b.ean) ? window.LECLERC_PUB[String(b.ean)] : null;
+      var leclerc = (lp && lp[0] > 0) ? lp[0] : 0;
+      if (leclerc > 0) { if (mc === 0 || leclerc < mc) mc = leclerc; hasC = true; }
+      var sousRayon = (window.OFFILOG_CATS && b.id != null) ? (window.OFFILOG_CATS[String(b.id)] || '') : '';
+      var alert = achat > 0 && mc > 0 && mc < achat;
       return {
         rank: b.rank, id: b.id, name: b.name, brand: b.brand || '',
         price: price, ean: b.ean || '', img: b.img || '', cat: b.cat || '',
         url: b.url || '', univers: o ? (o.univers || '') : '',
         achat: achat, conc: conc, hasConc: hasC, minConc: mc, alert: alert, matched: !!o,
-        pz: pz || null, pzCheaper: pzCheaper
+        pz: pz || null, pzCheaper: pzCheaper, leclerc: leclerc, sousRayon: sousRayon
       };
     });
     byEan = new Map();
@@ -136,6 +144,7 @@
     if (k === 'all') return true;
     if (k === 'alerte') return it.alert;
     if (k === 'pzcheaper') return it.pzCheaper;
+    if (k === 'leclercpub') return it.leclerc > 0;
     return it.cat === k;
   }
   function filteredBase() {
@@ -154,12 +163,13 @@
     return a;
   }
   function counts(base) {
-    var c = { all: base.length, alerte: 0, pzcheaper: 0 };
+    var c = { all: base.length, alerte: 0, pzcheaper: 0, leclercpub: 0 };
     CHIPS.forEach(function (ch) { if (c[ch.k] == null) c[ch.k] = 0; });
     for (var i = 0; i < base.length; i++) {
       var it = base[i];
       if (it.alert) c.alerte++;
       if (it.pzCheaper) c.pzcheaper++;
+      if (it.leclerc > 0) c.leclercpub++;
       if (c[it.cat] != null) c[it.cat]++;
     }
     return c;
@@ -221,6 +231,22 @@
           '</div>' +
         '</div>' +
       '</div>';
+  }
+
+  // Les SOUS-RAYONS du rayon sélectionné : pastilles fines, triées par
+  // volume. Elles n'apparaissent qu'un rayon choisi — 41 pastilles d'un coup
+  // seraient un menu, pas un linéaire.
+  function sousRayons(dispo) {
+    var libs = Object.keys(dispo);
+    if (libs.length < 2) return '';
+    libs.sort(function (a, b) { return dispo[b] - dispo[a]; });
+    var out = '';
+    for (var i = 0; i < libs.length; i++) {
+      var l = libs[i], on = (S.sous === l) ? ' on' : '';
+      out += '<button type="button" class="offsr' + on + '" onclick="V2.offSous(\'' + esc(l).replace(/'/g, "\\'") + '\')">' +
+        esc(l) + '<i class="mono">' + V2.fmtNum(dispo[l]) + '</i></button>';
+    }
+    return '<div class="offsr-w">' + out + '</div>';
   }
 
   // Les rayons : on entre dans Offilog par le linéaire, pas par un menu de
@@ -332,6 +358,7 @@
         '<div class="off-card-name">' + esc(it.name) + '</div>' +
         '<div class="off-card-price mono">' + (it.price > 0 ? V2.fmtEur(it.price) : '—') +
           (it.pz && it.pz.price > 0 ? '<span class="off-card-pz' + (it.pzCheaper ? ' win' : '') + '">Pharmazon ' + V2.fmtEur(it.pz.price) + '</span>' : '') +
+          (it.leclerc > 0 ? '<span class="off-card-lec' + (it.achat > 0 && it.leclerc < it.achat ? ' bad' : '') + '" title="Prix de vente au public chez E.Leclerc (TTC)">Leclerc ' + V2.fmtEur(it.leclerc) + '</span>' : '') +
           concBelow + '</div>' +
       '</div>' +
     '</div>';
@@ -357,7 +384,20 @@
         (it.achat > 0 ? '<span class="off-cmp-delta ' + (below ? 'bad' : 'ok') + '">' + (delta >= 0 ? '+' : '') + V2.fmtEur(delta) + '</span>' : '<span class="off-cmp-delta"></span>') +
       '</div>';
     }).join('');
-    return ref + rows;
+    // le relevé FRAIS de l'API e.leclerc (3 754 EAN) prime sur l'ancien
+    // prix_leclerc porté par OFFILOG (918 EAN, juin) — on n'affiche pas deux
+    // lignes Leclerc qui se contrediraient.
+    var lec = '';
+    if (it.leclerc > 0 && numOr0(it.conc['prix_leclerc']) <= 0) {
+      var below = it.achat > 0 && it.leclerc < it.achat;
+      var d = it.achat > 0 ? (it.leclerc - it.achat) : 0;
+      lec = '<div class="off-cmp-row' + (below ? ' below' : '') + '">' +
+        '<span class="off-cmp-src"><span class="dot" style="background:#0066B3"></span>E.Leclerc (public TTC)</span>' +
+        '<span class="off-cmp-price ' + (below ? 'bad' : '') + ' mono">' + V2.fmtEur(it.leclerc) + '</span>' +
+        (it.achat > 0 ? '<span class="off-cmp-delta ' + (below ? 'bad' : 'ok') + '">' + (d >= 0 ? '+' : '') + V2.fmtEur(d) + '</span>' : '<span class="off-cmp-delta"></span>') +
+      '</div>';
+    }
+    return ref + rows + lec;
   }
   function inspector(it) {
     var img = it.img ? '<div class="off-insp-img"><img src="' + esc(it.img) + '" loading="lazy" alt="" onerror="this.parentNode.style.display=\'none\'"></div>' : '';
@@ -419,6 +459,7 @@
 
   // FLIP par famille/alertes : on mémorise la position des cartes AVANT le re-render,
   // le passage motion post-render (voir fin de render) rejoue le repositionnement.
+  var lecTried = false;
   var flipRects = null;
   function captureCardRects() {
     if (!V2.motion || V2.motion.reduced()) { flipRects = null; return; }
@@ -432,7 +473,13 @@
     }
   }
 
+  V2.offSous = function (label) {
+    S.sous = (S.sous === label) ? '' : label;   // re-cliquer désélectionne
+    S.page = 0;
+    V2.render();
+  };
   V2.offFilter = function (k) {
+    S.sous = '';
     captureCardRects(); // repositionnement fluide des cartes qui restent visibles
     S.chip = k; S.page = 0;
     // si on choisit une catégorie (hors verdicts), on ouvre les filtres avancés pour rester cohérent
@@ -574,8 +621,11 @@
       sc.onload = function () { pzLoading = false; cb(); }; sc.onerror = onfail;
       document.head.appendChild(sc);
     }
-    inject(MOD_BASE + 'pharmazon-data.js?v=20260612a', function () {
-      inject('pharmazon-data.js?v=20260612a', function () { pzLoading = false; cb(); });
+    // Les prix négociés Pharmazon (conditions d'un TIERS) ne sont plus dans ce
+    // fichier : ils arrivent par adresse signée, en parallèle. Jeton bumpé.
+    if (V2.loadFiles) { try { V2.loadFiles(['pharmazonprix']).then(function () { if (V2.fusionnerPrixPharmazon) V2.fusionnerPrixPharmazon(); idxBuilt = false; V2.render(); }); } catch (e) {} }
+    inject(MOD_BASE + 'pharmazon-data.js?v=20260903a', function () {
+      inject('pharmazon-data.js?v=20260903a', function () { pzLoading = false; cb(); });
     });
   }
 
@@ -931,6 +981,17 @@
       '@media(min-width:900px){.offr-w{display:grid;grid-template-columns:repeat(auto-fill,minmax(172px,1fr));overflow-x:visible;padding-bottom:0}.offr{min-width:0}}',
       '@media(max-width:640px){.offr{min-width:132px}}',
 
+      // ══════════ LES SOUS-RAYONS ══════════
+      '.offsr-w{display:flex;gap:8px;overflow-x:auto;padding:0 2px 12px;margin:-4px 0 var(--sp-3);scrollbar-width:thin;-webkit-overflow-scrolling:touch}',
+      '.offsr{flex:0 0 auto;display:inline-flex;align-items:center;gap:7px;min-height:var(--tap-min);padding:0 14px;border-radius:var(--r-pill);border:1.5px solid var(--line-strong);background:var(--card);font-size:12.5px;font-weight:650;color:var(--ip-ink-2);cursor:pointer;transition:all .18s var(--ease)}',
+      '.offsr i{font-style:normal;font-size:11px;font-weight:700;color:var(--muted-2);font-variant-numeric:tabular-nums}',
+      '.offsr:hover{border-color:color-mix(in srgb,#345DA0 40%,transparent)}',
+      '.offsr.on{background:var(--ip-ink);border-color:var(--ip-ink);color:#fff}',
+      '.offsr.on i{color:#FFAF0F}',
+
+      '.off-card-lec{font-size:10.5px;font-weight:700;color:#0066B3;background:color-mix(in srgb,#0066B3 8%,#fff);border:1px solid color-mix(in srgb,#0066B3 24%,transparent);border-radius:7px;padding:1px 6px;font-variant-numeric:tabular-nums}',
+      '.off-card-lec.bad{color:var(--c-rose-txt,#C2263F);background:color-mix(in srgb,#C2263F 8%,#fff);border-color:color-mix(in srgb,#C2263F 26%,transparent)}',
+
       // ══════════ LA CARTE, REGISTRE PARA ══════════
       // La photo prend la moitié de la carte et vit sur du blanc franc : un
       // flacon de dermo ne se lit pas sur un fond gris.
@@ -1008,6 +1069,11 @@
         offTried = true;
         V2.loadFiles(['offilog']).then(function () { idxBuilt = false; V2.render(); });
       }
+      // Prix publics Leclerc + rayons fins : publics, légers, en tâche de fond
+      if (!window.LECLERC_PUB && !lecTried) {
+        lecTried = true;
+        V2.loadFiles(['leclercpub', 'offilogcats']).then(function () { idxBuilt = false; V2.render(); });
+      }
       // Prix Pharmazon (comparaison achat) : chargés UNE SEULE FOIS en tâche de fond
       if (!window.PHARMAZON && !pzTried) {
         pzTried = true;
@@ -1016,11 +1082,24 @@
       // les deux morceaux (catalogue, prix protégés) arrivent dans un ordre
       // quelconque : on retente la fusion à chaque rendu, c'est idempotent.
       if (V2.fusionnerPrixBest) { try { V2.fusionnerPrixBest(); } catch (e) {} }
+      if (V2.fusionnerPrixPharmazon) { try { V2.fusionnerPrixPharmazon(); } catch (e) {} }
       buildIndex();
 
       var base = filteredBase();
       var c = counts(base);
+      var RAYON_K = {}; RAYONS.forEach(function (r) { RAYON_K[r.k] = 1; });
       var filtered = (S.chip === 'all') ? base : base.filter(function (it) { return matchChip(it, S.chip); });
+      // les sous-rayons portés par le rayon sélectionné (avant le filtre fin,
+      // pour que les pastilles gardent leurs comptes)
+      var sousDispo = {};
+      if (RAYON_K[S.chip]) {
+        for (var si = 0; si < filtered.length; si++) {
+          var sr = filtered[si].sousRayon;
+          if (sr) sousDispo[sr] = (sousDispo[sr] || 0) + 1;
+        }
+        if (S.sous && !sousDispo[S.sous]) S.sous = '';
+        if (S.sous) filtered = filtered.filter(function (it) { return it.sousRayon === S.sous; });
+      } else if (S.sous) { S.sous = ''; }
       filtered = sorted(filtered);
       var total = filtered.length;
       var pages = Math.max(1, Math.ceil(total / PER_PAGE));
@@ -1032,7 +1111,6 @@
       // Chips de CATÉGORIE uniquement (Santé, Beauté, Hygiène…) — repliés dans les
       // filtres avancés. Les « verdicts » (alerte / bien placé) vivent dans la
       // bande du haut ; le raccourci Pharmazon reste ici, discret.
-      var RAYON_K = {}; RAYONS.forEach(function (r) { RAYON_K[r.k] = 1; });
       var advChips = CHIPS.map(function (f) {
         if (f.k === 'alerte') return '';   // porté par la tuile-verdict rouge
         if (f.k === 'all') return '';      // porté par « Tout le rayon »
@@ -1085,6 +1163,7 @@
           brandHead() +
           bandeauCond() +
           rayons(c) +
+          (RAYON_K[S.chip] ? sousRayons(sousDispo) : '') +
           '<div class="off-search">' + ICO('search', 19, 2) +
             '<input id="off-search-input" autocomplete="off" placeholder="Rechercher par produit, marque ou EAN…" value="' + qVal + '" oninput="V2.offSearch(this.value)">' + clrBtn + '</div>' +
           verdictBand(filtered) +

@@ -142,11 +142,32 @@ def fetch_ean(pid):
     return m.group(1) if m else ""
 
 def write_out(rows, partial=False):
+    # ⚠️ 03/09/2026 — les prix négociés Pharmazon sont les conditions d'un
+    # TIERS : ils ne vont JAMAIS dans OUT, qui part dans un dépôt PUBLIC
+    # (règle §8). Deux fichiers : le catalogue (identité seule) dans le dépôt,
+    # le tarif dans OUT_PRIX, à déposer sur Supabase (couvert par .gitignore).
+    import os as _os
+    OUT_PRIX = _os.path.join(_os.path.dirname(OUT), "pharmazon-prix.js")
+    pub, tarif = [], {}
+    for r in rows:
+        ean = str(r.get("ean") or "")
+        if ean and r.get("prix_final") is not None:
+            tarif[ean] = [r["prix_final"], r.get("prix_catalogue") or 0, r.get("remise") or 0]
+        pub.append({k: v for k, v in r.items() if k in ("sku", "id", "name", "img", "labo", "ean")})
     with open(OUT, "w", encoding="utf-8") as f:
-        f.write("// Pharmazon (sra-pharmazon.com) — offres labos, connecté%s\n" % (" [PARTIEL]" if partial else ""))
-        f.write("// %d produits · prix final/catalogue + remise + promo + EAN\n" % len(rows))
-        f.write("const PHARMAZON = " + json.dumps(rows, ensure_ascii=False) + ";\n")
+        f.write("// Pharmazon (sra-pharmazon.com) — CATALOGUE SEUL, SANS LES PRIX NÉGOCIÉS%s\n" % (" [PARTIEL]" if partial else ""))
+        f.write("// %d produits · identité seulement (nom, labo, image, EAN)\n" % len(pub))
+        f.write("// ⚠️ Les prix B2B d'un TIERS ne se republient jamais (règle §8).\n")
+        f.write("const PHARMAZON = " + json.dumps(pub, ensure_ascii=False) + ";\n")
         f.write("try{window.PHARMAZON=PHARMAZON;}catch(e){}\n")
+    with open(OUT_PRIX, "w", encoding="utf-8") as f:
+        f.write("// Pharmazon — PRIX NÉGOCIÉS (tiers) — NE JAMAIS COMMITER.\n")
+        f.write("// %d EAN · ean -> [prix_final, prix_catalogue, remise]\n" % len(tarif))
+        f.write("const PHARMAZON_PRIX = " + json.dumps(tarif) + ";\n")
+    # garde-fou : se RELIRE avant de rendre la main
+    with open(OUT, encoding="utf-8") as f:
+        if "prix_final" in f.read():
+            sys.exit("ARRÊT : %s contient encore des prix — dépôt PUBLIC." % OUT)
 
 def main():
     if not login():

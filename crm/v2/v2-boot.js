@@ -303,6 +303,11 @@
     // L'en-tête du fichier public disait « connecté, prix B2B » — 6 192
     // prix de vente aux pharmacies, téléchargeables sans mot de passe.
     offilogbestprix: 'v2/offilog-best-prix.js',
+    // Prix NÉGOCIÉS Pharmazon : conditions d'un TIERS — jamais publiques (§8).
+    pharmazonprix: 'v2/pharmazon-prix.js',
+    // Prix PUBLICS E.Leclerc (TTC) et rayons fins Offilog : données publiques.
+    leclercpub: 'v2/leclerc-pub-data.js',
+    offilogcats: 'v2/offilog-cats-data.js',
     drakkars: 'drakkars-data.js',
     cap3000: 'cap3000-data.js',
     sagitta: 'sagitta-shortlist-data.js',
@@ -344,7 +349,8 @@
   // C'est ce qui avait rendu l'app inutilisable en août avec 17 Mo. 77 Ko, oui.
   var PROTEGES = {
     offilogcond: 'offilog-conditions.js',
-    offilogbestprix: 'offilog-best-prix.js'
+    offilogbestprix: 'offilog-best-prix.js',
+    pharmazonprix: 'pharmazon-prix.js'
   };
   var SEAU_PROTEGE = 'donnees-protegees';   // sert encore aux DOCUMENTS privés
 
@@ -569,6 +575,9 @@
     offilog: 'OFFILOG',
     offilogcond: 'OFFILOG_COND',
     offilogbestprix: 'OFFILOG_BEST_PRIX',
+    pharmazonprix: 'PHARMAZON_PRIX',
+    leclercpub: 'LECLERC_PUB',
+    offilogcats: 'OFFILOG_CATS',
     drakkars: 'DRAKKARS',
     cap3000: 'CAP3000',
     sagitta: 'SAGITTA_SHORTLIST',
@@ -620,11 +629,36 @@
     V2.offilogPrixBest = n;
   }
 
+  // Prix négociés Pharmazon recollés sur le catalogue : pzIndex() et tous les
+  // lecteurs continuent de lire p.prix_final sans une ligne de changement.
+  var _pzPrixFaits = false;
+  V2.fusionnerPrixPharmazon = fusionnerPrixPharmazon;
+  function fusionnerPrixPharmazon() {
+    if (_pzPrixFaits) return;
+    var cat = window.PHARMAZON, t = window.PHARMAZON_PRIX;
+    if (!cat || !t) return;
+    var n = 0;
+    for (var i = 0; i < cat.length; i++) {
+      var o = cat[i];
+      var v = o && o.ean != null ? t[String(o.ean)] : null;
+      if (!v) continue;
+      o.prix_final = v[0]; o.prix_catalogue = v[1] || null; o.remise = v[2] || null;
+      n++;
+    }
+    _pzPrixFaits = true;
+    V2.pharmazonPrix = n;
+  }
+
   function bridge() {
     try { if (typeof BENCHMARK !== 'undefined') window.BENCHMARK = BENCHMARK; } catch (e) {}
     try { if (typeof OFFILOG !== 'undefined') window.OFFILOG = OFFILOG; } catch (e) {}
     try { if (typeof OFFILOG_COND !== 'undefined') window.OFFILOG_COND = OFFILOG_COND; } catch (e) {}
     try { if (typeof OFFILOG_BEST_PRIX !== 'undefined') window.OFFILOG_BEST_PRIX = OFFILOG_BEST_PRIX; } catch (e) {}
+    try { if (typeof PHARMAZON_PRIX !== 'undefined') window.PHARMAZON_PRIX = PHARMAZON_PRIX; } catch (e) {}
+    try { if (typeof PHARMAZON !== 'undefined') window.PHARMAZON = PHARMAZON; } catch (e) {}
+    try { if (typeof LECLERC_PUB !== 'undefined') window.LECLERC_PUB = LECLERC_PUB; } catch (e) {}
+    try { if (typeof OFFILOG_CATS !== 'undefined') window.OFFILOG_CATS = OFFILOG_CATS; } catch (e) {}
+    fusionnerPrixPharmazon();
     try { if (typeof OFFILOG_BEST !== 'undefined') window.OFFILOG_BEST = OFFILOG_BEST; } catch (e) {}
     fusionnerPrixBest();
     fusionnerConditionsOffilog();

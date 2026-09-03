@@ -39,6 +39,10 @@ const prix = t => { if(!t) return null;
   console.log('Connexion OK (' + C.email + ')');
 
   const vus = new Map();
+  // rayon FIN par produit : un libellé de sous-rayon écrase le rayon parent
+  // (les enfants sont visités après leur parent), jamais l'inverse.
+  const TOP = new Set(['Santé','Beauté & Soins','Hygiène','Bébé','Vétérinaire','Solaire','Coffrets & Cadeaux','Promotions','Nouveautés']);
+  const rayonFin = {};
   for (const cat of CATS) {
     let n0 = vus.size;
     for (let page = 1; page <= 40; page++) {
@@ -60,7 +64,12 @@ const prix = t => { if(!t) return null;
             url:l?(l.getAttribute('href')||''):'',
             img:img?(img.getAttribute('data-full-size-image-url')||img.getAttribute('data-src')||img.getAttribute('src')||''):'' }; }));
       let neufs=0;
-      for (const it of lot) { if(!it.id||vus.has(it.id)) continue;
+      for (const it of lot) {
+        if (it.id) {
+          if (!TOP.has(cat.label)) rayonFin[it.id] = cat.label;
+          else if (!(it.id in rayonFin)) rayonFin[it.id] = cat.label;
+        }
+        if(!it.id||vus.has(it.id)) continue;
         it.cat = cat.label;
         it.ean = (it.url.match(/(\d{13})/)||[])[1] || '';
         vus.set(it.id, it); neufs++; }
@@ -99,6 +108,14 @@ const prix = t => { if(!t) return null;
     '// Intégral Pharma — Offilog catalogue live, PRIX B2B\n// ' + Object.keys(tarif).length + ' prix — ' + j +
     '\n// ⚠️ NE JAMAIS COMMITER. Servi par adresse signée (Supabase).\n' +
     'const OFFILOG_LIVE_PRIX = ' + JSON.stringify(tarif) + ';\n');
+  // le rayon fin de chaque produit — du rangement, pas du tarif : public
+  const nbFins = Object.keys(rayonFin).length;
+  fs.writeFileSync(path.join(BASE,'crm/v2/offilog-cats-data.js'),
+    '// Offilog — RAYON FIN de chaque produit (id -> libellé), relevé sur le site.\n' +
+    '// ' + nbFins + ' produits — ' + j + '. Du rangement, pas du tarif : public.\n' +
+    'const OFFILOG_CATS = ' + JSON.stringify(rayonFin) + ';\n' +
+    'try{window.OFFILOG_CATS=OFFILOG_CATS;}catch(e){}\n');
+  console.log('✓ rayons fins : ' + nbFins + ' produits');
   if (/,prix:[0-9]/.test(contenu)) { console.error('ARRÊT : prix encore présents dans le fichier public.'); process.exit(1); }
   console.log('✓ public  : ' + Math.round(contenu.length/1024) + ' Ko ×2 — sans prix, vérifié');
   console.log('✓ protégé : ' + Math.round(fs.statSync(OUT_PRIX).size/1024) + ' Ko, ' + Object.keys(tarif).length + ' prix — NE PAS COMMITER');
