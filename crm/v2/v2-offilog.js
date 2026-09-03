@@ -51,6 +51,25 @@
     { key: 'prix_leclerc',  label: 'E.Leclerc', color: '#0066B3' },
   ];
 
+  // ── La marque OFFILOG ─────────────────────────
+  // Le dégradé est RELEVÉ SUR LE LOGO lui-même (logos/offilog.png, 444×70) :
+  // les trois barres vont du bleu (52,93,160) à l'ambre (255,175,15).
+  // C'est la seule signature colorée de l'écran — tout le reste reste sobre,
+  // pour que la photo produit porte la page. Registre parapharmacie.
+  var OFF_BLEU = '#345DA0', OFF_AMBRE = '#F8A808';
+
+  // Les rayons, dans l'ordre d'un linéaire de parapharmacie : le visage et le
+  // corps d'abord, le bébé et le solaire ensuite, le vétérinaire en bout.
+  // La clé est celle de `cat` porté par OFFILOG_BEST — aucun recalcul.
+  var RAYONS = [
+    { k: 'beaute-et-soins', label: 'Beauté & soins', sub: 'Visage, corps, cheveux' },
+    { k: 'sante',           label: 'Santé',          sub: 'Compléments, petits maux' },
+    { k: 'hygiene',         label: 'Hygiène',        sub: 'Corps, bouche, mains' },
+    { k: 'bebe',            label: 'Bébé',           sub: 'Change, toilette, repas' },
+    { k: 'solaires',        label: 'Solaires',       sub: 'Protection, après-soleil' },
+    { k: 'veterinaire',     label: 'Vétérinaire',    sub: 'Chien, chat, antiparasitaire' },
+  ];
+
   // ── Index ─────────────────────────────────────
   var idxBuilt = false, items = null, byEan = null, itemsById = null;
   function norm(s) { return String(s == null ? '' : s).toLowerCase(); }
@@ -144,6 +163,67 @@
       if (c[it.cat] != null) c[it.cat]++;
     }
     return c;
+  }
+
+  // ── Les chiffres de la tête de page ───────────
+  // ⚠️ TOUT est compté sur les données réellement chargées. Aucun chiffre
+  // marketing recopié du site offilog.fr : un nombre affiché ici doit pouvoir
+  // se retrouver en comptant les objets à l'écran.
+  function brandStats() {
+    var marques = Object.create(null), nm = 0;
+    var nOff = 0, nPhoto = 0;
+    for (var i = 0; i < items.length; i++) {
+      var it = items[i];
+      if (it.brand && !marques[it.brand]) { marques[it.brand] = 1; nm++; }
+      if (it.achat > 0) nOff++;
+      if (it.img) nPhoto++;
+    }
+    return { nProd: items.length, nMarques: nm, nOff: nOff, nPhoto: nPhoto };
+  }
+
+  // La tête de marque : le logo, le dégradé relevé dessus, et ce que la
+  // sélection contient vraiment. Pas de baratin — trois nombres et une phrase.
+  function brandHead() {
+    var st = brandStats();
+    function n(v, l, d) {
+      return '<div class="offb-n"><b class="mono">' + V2.fmtNum(v) + '</b>' +
+        '<span>' + l + '</span>' + (d ? '<em>' + d + '</em>' : '') + '</div>';
+    }
+    return '<div class="offb">' +
+        '<div class="offb-bar" aria-hidden="true"></div>' +
+        '<div class="offb-in">' +
+          '<div class="offb-id">' +
+            '<img class="offb-logo" src="' + MOD_BASE + 'logos/offilog.png" width="444" height="70" ' +
+              'alt="Offilog" decoding="async">' +
+            '<div class="offb-bl">La centrale parapharmacie d\'Intégral</div>' +
+          '</div>' +
+          '<div class="offb-ns">' +
+            n(st.nProd, 'produits suivis', 'les meilleures ventes') +
+            n(st.nOff, 'à ton prix d\'achat', 'prix Offilog connu') +
+            n(st.nMarques, 'marques', 'dans la sélection') +
+          '</div>' +
+        '</div>' +
+      '</div>';
+  }
+
+  // Les rayons : on entre dans Offilog par le linéaire, pas par un menu de
+  // filtres replié. Un rayon vide ne s'affiche pas.
+  function rayons(c) {
+    var out = '', tot = c.all || 0;
+    var onAll = (S.chip === 'all') ? ' on' : '';
+    out += '<button type="button" class="offr offr-all' + onAll + '" onclick="V2.offFilter(\'all\')">' +
+      '<span class="offr-l">Tout le rayon</span>' +
+      '<span class="offr-n mono">' + V2.fmtNum(tot) + '</span></button>';
+    for (var i = 0; i < RAYONS.length; i++) {
+      var r = RAYONS[i], n = c[r.k] || 0;
+      if (!n) continue;
+      var on = (S.chip === r.k) ? ' on' : '';
+      out += '<button type="button" class="offr' + on + '" onclick="V2.offFilter(\'' + r.k + '\')">' +
+        '<span class="offr-l">' + esc(r.label) + '</span>' +
+        '<span class="offr-s">' + esc(r.sub) + '</span>' +
+        '<span class="offr-n mono">' + V2.fmtNum(n) + '</span></button>';
+    }
+    return '<div class="offr-w">' + out + '</div>';
   }
 
   // ── Verdict band ──────────────────────────────
@@ -784,6 +864,52 @@
       '.off-insp-cta .v2-btn{width:100%}',
       '@media(max-width:1100px){.off-insp{width:350px}}',
       '@media(max-width:640px){.off-insp{height:100dvh;padding-bottom:env(safe-area-inset-bottom)}}',
+      // ══════════ LA MARQUE OFFILOG ══════════
+      // Registre parapharmacie : beaucoup de blanc, une seule ligne de couleur
+      // (le dégradé du logo), la photo produit comme seule matière. Aucun
+      // aucun des effets qui font planter Safari.
+      '.offb{position:relative;background:linear-gradient(180deg,var(--card),var(--card-2));border:1px solid var(--line);border-radius:22px;overflow:hidden;box-shadow:var(--sh-2);margin-bottom:var(--sp-5)}',
+      // relevé sur logos/offilog.png colonne par colonne (x=10→110) : le bleu
+      // TIENT jusqu'à 26 %, la bascule est brève, l'ambre occupe la moitié droite.
+      // Un dégradé linéaire bleu→ambre traverserait un gris terne — pas le logo.
+      '.offb-bar{height:5px;background:linear-gradient(90deg,#3D62A0 0%,#4165A1 24%,#AF8F4D 35%,#D29D33 43%,#F0A81C 52%,#FFAF0F 60%,#FFAF0F 100%)}',
+      '.offb-in{display:flex;align-items:flex-end;justify-content:space-between;gap:var(--sp-6);flex-wrap:wrap;padding:26px 28px 24px}',
+      '.offb-id{min-width:0}',
+      // hauteur imposée, largeur libre : le logo garde son ratio 444/70 quel
+      // que soit le zoom. Jamais de width fixe, il s'écraserait sur mobile.
+      '.offb-logo{display:block;height:38px;width:auto;max-width:100%}',
+      '.offb-bl{margin-top:13px;font-size:15px;font-weight:600;color:var(--ip-ink-2);letter-spacing:-.01em}',
+      '.offb-ns{display:flex;gap:34px;flex-wrap:wrap}',
+      '.offb-n b{display:block;font-size:29px;font-weight:800;letter-spacing:-.03em;color:var(--ip-ink);font-variant-numeric:tabular-nums;line-height:1}',
+      '.offb-n span{display:block;margin-top:7px;font-size:12.5px;font-weight:700;color:var(--ip-ink-2)}',
+      '.offb-n em{display:block;margin-top:3px;font-size:11px;font-style:normal;color:var(--muted)}',
+      '@media(max-width:720px){.offb-in{padding:20px 18px 18px;gap:var(--sp-4)}.offb-logo{height:30px}.offb-ns{gap:22px}.offb-n b{font-size:23px}}',
+
+      // ══════════ LES RAYONS ══════════
+      // Une bande qui défile horizontalement plutôt qu'un menu replié : on entre
+      // dans Offilog par le linéaire. Cible tactile 44px garantie par le padding.
+      '.offr-w{display:flex;gap:12px;overflow-x:auto;padding:2px 2px 14px;margin-bottom:var(--sp-4);scrollbar-width:thin;-webkit-overflow-scrolling:touch}',
+      '.offr{flex:0 0 auto;min-width:150px;min-height:64px;text-align:left;cursor:pointer;padding:12px 16px;border-radius:14px;border:1.5px solid var(--line-strong);background:var(--card);box-shadow:var(--sh-1);transition:.18s var(--ease);position:relative;overflow:hidden}',
+      '.offr::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,#4165A1,#FFAF0F);opacity:0;transition:opacity .18s var(--ease)}',
+      '.offr:hover{transform:translateY(-2px);box-shadow:var(--sh-2);border-color:color-mix(in srgb,#345DA0 38%,transparent)}',
+      '.offr:hover::before,.offr.on::before{opacity:1}',
+      '.offr.on{border-color:var(--ip-ink);background:var(--ip-ink)}',
+      '.offr.on .offr-l{color:#fff}.offr.on .offr-s{color:rgba(255,255,255,.62)}.offr.on .offr-n{color:#FFAF0F}',
+      '.offr-l{display:block;font-size:13.5px;font-weight:700;color:var(--ip-ink);letter-spacing:-.01em}',
+      '.offr-s{display:block;margin-top:3px;font-size:11px;color:var(--muted);white-space:nowrap}',
+      '.offr-n{display:block;margin-top:6px;font-size:13px;font-weight:800;color:var(--ip-ink-2);font-variant-numeric:tabular-nums}',
+      '.offr-all{min-width:126px}.offr-all .offr-n{margin-top:8px}',
+      // Sur ordinateur : une GRILLE, pas un flex qui se plie. Avec flex-wrap,
+      // la dernière ligne (2 rayons sur 7) s'étirait sur toute la largeur et
+      // Solaires devenait cinq fois plus gros que Bébé.
+      '@media(min-width:900px){.offr-w{display:grid;grid-template-columns:repeat(auto-fill,minmax(172px,1fr));overflow-x:visible;padding-bottom:0}.offr{min-width:0}}',
+      '@media(max-width:640px){.offr{min-width:132px}}',
+
+      // ══════════ LA CARTE, REGISTRE PARA ══════════
+      // La photo prend la moitié de la carte et vit sur du blanc franc : un
+      // flacon de dermo ne se lit pas sur un fond gris.
+      '.off-card-media{background:#fff}',
+      '.off-card:hover{border-color:color-mix(in srgb,#345DA0 34%,transparent)}',
     ].join('');
     document.head.appendChild(s);
   }
@@ -835,10 +961,17 @@
           return;
         }
         // squelette (forme des futures cartes) au lieu du spinner sur la grille lourde
-        root.innerHTML = V2.topbar({ back: true }) + (V2.concTabs ? V2.concTabs('prix') : '') +
+        // Le squelette porte DÉJÀ la marque : sans ça, l'écran s'ouvre sur un
+        // titre générique puis saute sur le logo — un clignotement d'identité.
+        root.innerHTML = V2.topbar({ back: true }) +
           '<div class="v2-wrap">' +
-            '<div class="v2-page-title">Concurrents</div>' +
-            '<div class="v2-page-sub">Chargement des meilleures ventes Offilog…</div>' +
+            '<div class="offb"><div class="offb-bar"></div><div class="offb-in">' +
+              '<div class="offb-id">' +
+                '<img class="offb-logo" src="' + MOD_BASE + 'logos/offilog.png" width="444" height="70" alt="Offilog" decoding="async">' +
+                '<div class="offb-bl">La centrale parapharmacie d\'Intégral</div>' +
+              '</div>' +
+            '</div></div>' +
+            '<div class="v2-page-sub">Chargement du rayon…</div>' +
             skeletonGrid(12) +
           '</div>';
         ensureBest(function () { idxBuilt = false; V2.render(); }); // on rend dès que les ventes sont là
@@ -870,10 +1003,13 @@
       // Chips de CATÉGORIE uniquement (Santé, Beauté, Hygiène…) — repliés dans les
       // filtres avancés. Les « verdicts » (alerte / bien placé) vivent dans la
       // bande du haut ; le raccourci Pharmazon reste ici, discret.
+      var RAYON_K = {}; RAYONS.forEach(function (r) { RAYON_K[r.k] = 1; });
       var advChips = CHIPS.map(function (f) {
-        if (f.k === 'alerte') return ''; // porté par la tuile-verdict rouge
+        if (f.k === 'alerte') return '';   // porté par la tuile-verdict rouge
+        if (f.k === 'all') return '';      // porté par « Tout le rayon »
+        if (RAYON_K[f.k]) return '';       // porté par la bande des rayons
         var n = c[f.k] || 0;
-        if (f.k !== 'all' && f.k !== 'pzcheaper' && n === 0) return '';
+        if (f.k !== 'pzcheaper' && n === 0) return '';
         var on = S.chip === f.k ? ' on' : '';
         return '<button class="v2-seg' + on + '" style="--sc:' + f.sc + '" onclick="V2.offFilter(\'' + f.k + '\')">' +
           (f.k === 'all' ? '' : '<span class="sw"></span>') + esc(f.label) + '<span class="cnt">' + V2.fmtNum(n) + '</span></button>';
@@ -898,28 +1034,27 @@
       // Contexte de la sélection courante (calme, une ligne) : ce qu'on regarde.
       var ctxLabel = (S.chip === 'all')
         ? (S.q ? 'Résultats pour « ' + esc(S.q) + ' »' : 'Meilleures ventes')
-        : esc(CHIP_BY_KEY[S.chip].label);
+        : esc((CHIP_BY_KEY[S.chip] && CHIP_BY_KEY[S.chip].label) || 'Sélection');
 
       // Bloc « Filtres » : progressive disclosure. Fermé par défaut = page calme.
       var advOpen = S.adv;
       var advBtn = '<button type="button" class="off-advbtn' + (advOpen ? ' open' : '') + '" onclick="V2.offToggleAdv()">' +
           ICO('grid', 15, 2) + ' Filtres' +
-          (S.chip !== 'all' && S.chip !== 'alerte' ? '<span class="off-advbtn-tag">' + esc(CHIP_BY_KEY[S.chip].label) + '</span>' : '') +
+          (S.chip === 'pzcheaper' ? '<span class="off-advbtn-tag">' + esc(CHIP_BY_KEY[S.chip].label) + '</span>' : '') +
           '<span class="off-advbtn-chev">' + ICO('chev', 14, 2.2) + '</span></button>';
       var advPanel = advOpen
         ? '<div class="off-adv">' +
-            '<div class="off-adv-l">Par famille</div>' +
-            '<div class="v2-segs off-adv-segs">' + advChips + '</div>' +
+            (advChips ? '<div class="off-adv-l">Repères concurrence</div>' +
+              '<div class="v2-segs off-adv-segs">' + advChips + '</div>' : '') +
             '<div class="off-adv-l">Trier</div>' +
             '<div class="off-sort">' + sortBtn('ventes', 'Meilleures ventes') + sortBtn('prix_asc', 'Prix ↑') + sortBtn('prix_desc', 'Prix ↓') + '</div>' +
           '</div>'
         : '';
 
-      root.innerHTML = V2.topbar({ back: true }) + (V2.concTabs ? V2.concTabs('prix') : '') +
-        '<div class="v2-wrap' + (S.sel != null ? ' v2-detail-shift" style="--detw:392px"' : '"') + '>' +
+      root.innerHTML = V2.topbar({ back: true }) +         '<div class="v2-wrap' + (S.sel != null ? ' v2-detail-shift" style="--detw:392px"' : '"') + '>' +
           (V2.priceTabs ? V2.priceTabs('offilog') : '') +
-          '<div class="v2-page-title">Concurrents</div>' +
-          '<div class="v2-page-sub">Ton prix d\'achat IP (HT) comparé en direct au prix public E.Leclerc (TTC). Vois d\'un coup d\'œil où un concurrent casse les prix sous ton achat.</div>' +
+          brandHead() +
+          rayons(c) +
           '<div class="off-search">' + ICO('search', 19, 2) +
             '<input id="off-search-input" autocomplete="off" placeholder="Rechercher par produit, marque ou EAN…" value="' + qVal + '" oninput="V2.offSearch(this.value)">' + clrBtn + '</div>' +
           verdictBand(filtered) +
