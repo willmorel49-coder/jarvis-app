@@ -288,7 +288,7 @@
     // Les prix B2B ont quitté le fichier public : ils viennent en parallèle,
     // depuis le fichier protégé. Jeton bumpé, le fichier a changé de forme.
     if (V2.loadFiles) { try { V2.loadFiles(['offilogbestprix']).then(function () { if (V2.fusionnerPrixBest) V2.fusionnerPrixBest(); }); } catch (e) {} }
-    var s = document.createElement('script'); s.src = 'offilog-bestsellers-data.js?v=20260903a';
+    var s = document.createElement('script'); s.src = 'offilog-bestsellers-data.js?v=20260903b';
     s.onload = function () { bestLoading = false; if (V2.fusionnerPrixBest) V2.fusionnerPrixBest(); cb(); }; s.onerror = function () { bestLoading = false; cb(); };
     document.head.appendChild(s);
   }

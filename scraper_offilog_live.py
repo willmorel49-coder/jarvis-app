@@ -5,6 +5,24 @@ Connexion : identifiants hors dépôt (~/.config/jarvis/offilog.json)
 Pagination via bouton "suivant" (pas le total déclaré, souvent absent)
 Output    : offilog_live.json  +  offilog_live.xlsx  +  opso/offilog-live-data.js
 """
+
+# ══════════════════════════════════════════════════════════════════════════
+# ⚠️ 03/09/2026 — CE SCRIPT EST REMPLACÉ, ET IL EST DANGEREUX DE LE LANCER.
+#
+# Il écrit les PRIX B2B directement dans un fichier du dépôt, qui est PUBLIC
+# et servi par GitHub Pages. C'est exactement la fuite qu'on vient de fermer :
+# le relancer la rouvrirait, sans le moindre message d'erreur.
+#
+# À utiliser à la place — même travail, mais par navigateur réel (Playwright,
+# le site rend sa liste en JavaScript) ET séparant le public du protégé :
+#   node scraper_offilog_live_playwright.js
+# ══════════════════════════════════════════════════════════════════════════
+import sys as _sys
+print(__doc__ or '')
+print("ARRÊT : ce script réécrirait les prix B2B dans un fichier PUBLIC.")
+print("Utiliser :  node scraper_offilog_live_playwright.js")
+_sys.exit(2)
+
 import re
 import sys
 import json
