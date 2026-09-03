@@ -177,3 +177,7 @@ crm/offilog-conditions.js
 bestsellers_offilog.json
 crm/v2/offilog-best-prix.js
 offilog-live-prix.js
+opso/pharmazon-data.js
+essentiels-pharma/pharmazon-data.js
+crm/v2/pharmazon-prix.js
+pharmazon-b2b-data.js

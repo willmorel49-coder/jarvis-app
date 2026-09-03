@@ -433,11 +433,40 @@ function exportVisitsToICS() {
 }
 
 // ── AUTH ─────────────────────────────────────
+
+// ── Tarif Pharmazon (conditions d'un TIERS) — plus jamais dans le dépôt ──
+// 03/09/2026 : PHARMAZON_DATA / PHARMAZON_NOM portaient 8 976 prix négociés
+// Pharmazon dans un dépôt PUBLIC. Les conditions d'un tiers ne se republient
+// jamais (règle §8). Le fichier vit sur Supabase et n'arrive qu'avec une
+// session ouverte. Tous les lecteurs sont gardés par `typeof !== 'undefined'` :
+// tant qu'il n'est pas là, l'app marche, simplement sans la colonne Pharmazon.
+let _pharmazonCharge = false;
+function chargerTarifPharmazon() {
+  if (_pharmazonCharge || typeof PHARMAZON_DATA !== 'undefined') return;
+  _pharmazonCharge = true;
+  sb.storage.from('donnees-protegees')
+    .createSignedUrl('pharmazon-b2b-data.js', 3600)
+    .then(r => {
+      const url = r && r.data && r.data.signedUrl;
+      if (!url) throw new Error('adresse refusée');
+      const s = document.createElement('script');
+      s.src = url;
+      s.onload = () => {
+        try { if (typeof PHARMAZON_DATA !== 'undefined') window.PHARMAZON_DATA = PHARMAZON_DATA; } catch (e) {}
+        try { if (typeof PHARMAZON_NOM !== 'undefined') window.PHARMAZON_NOM = PHARMAZON_NOM; } catch (e) {}
+      };
+      s.onerror = () => { _pharmazonCharge = false; };
+      document.head.appendChild(s);
+    })
+    .catch(() => { _pharmazonCharge = false; });
+}
+
 async function loadUserProfile() {
   try {
     const { data: { user }, error: userErr } = await sb.auth.getUser();
     if (userErr || !user) return false;
     const { data: profile } = await sb.from('user_profiles').select('*').eq('id', user.id).single();
+    chargerTarifPharmazon();
     // Fallback si user_profiles vide ou table absente — on continue quand même
     state.user = {
       id:          user.id,
