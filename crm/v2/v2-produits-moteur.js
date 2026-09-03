@@ -26,8 +26,19 @@
   M.MIN_LIGNES = 5;
   // Taille minimale d'un groupe pour que la comparaison ait un sens.
   M.MIN_GROUPE = 5;
-  // Nombre de mois couverts par WML_SALES (jan.–juin 2026).
+  // Nombre de mois couverts par WML_SALES.
+  // ⚠️ Cette valeur était ÉCRITE EN DUR à 6 (« jan.–juin 2026 ») ; juillet est entré dans
+  // les données le 02/09/2026 et personne ne l'a bougée. Toutes les vitesses mensuelles
+  // étaient donc divisées par 6 au lieu de 7 — surestimées de 17 %, et les couvertures de
+  // stock d'autant trop courtes. Un compteur de période ne s'écrit pas, il se COMPTE.
+  // Elle sert de repli quand l'index n'est pas encore construit ; `moisDe()` fait foi.
   M.MOIS_COUVERTS = 6;
+
+  // Le nombre de mois RÉELLEMENT présents dans l'index (jamais moins de 1).
+  M.moisDe = function (idx) {
+    var n = (idx && idx.nbMois) || 0;
+    return n > 0 ? n : M.MOIS_COUVERTS;
+  };
 
   M.trancheCA = function (ca) {
     ca = +ca || 0;
@@ -44,7 +55,7 @@
 
   M.indexer = function (officines, ventes) {
     var idx = { officines: {}, netParOfficine: {}, qteParCip: {}, cles: {}, membres: {},
-                premierMois: {}, moisMax: 0,
+                premierMois: {}, moisMax: 0, moisVus: {}, nbMois: 0,
                 acheteurs: {}, acheteursGrp: {}, tailleGrp: {}, nbOfficines: 0 };
     var i, o, id;
 
@@ -90,6 +101,11 @@
         var pm = idx.premierMois[ph] || (idx.premierMois[ph] = {});
         if (pm[cip] === undefined || mo < pm[cip]) pm[cip] = mo;
         if (mo > idx.moisMax) idx.moisMax = mo;
+        // ⚠️ `moisMax` est le NUMÉRO du dernier mois (7 = juillet), pas le NOMBRE de mois :
+        // il ne coïncide que parce que l'historique démarre en janvier. On compte donc les
+        // mois DISTINCTS réellement vus — seul chiffre juste si l'historique ne part pas de
+        // janvier, ou s'il finit par franchir une année.
+        if (!idx.moisVus[mo]) { idx.moisVus[mo] = 1; idx.nbMois++; }
       }
     }
     // Acheteurs : une officine ne compte que si son solde net est > 0 —
@@ -243,7 +259,7 @@
 
   // Combien de mois de stock on tient sur ce produit, au rythme du réseau.
   M.couverture = function (idx, cip, stock) {
-    var parMois = (idx.qteParCip[String(cip)] || 0) / M.MOIS_COUVERTS;
+    var parMois = (idx.qteParCip[String(cip)] || 0) / M.moisDe(idx);
     if (!(parMois > 0)) return null;
     return (+((stock || {})[String(cip)]) || 0) / parMois;
   };

@@ -246,9 +246,10 @@ td:last-child,th:last-child{text-align:right}
       return '<tr><td class="num" style="color:var(--muted2);width:26px">'+(k+1)+'</td>'+
         '<td><span class="pname">'+esc(r.d)+'</span></td>'+
         '<td class="cip">'+esc(r.c)+'</td>'+
-        '<td class="num"><span class="price">'+eur(r.p)+'</span>'+(r.o?'<span class="offre">offre</span>':'')+'</td></tr>';
+        '<td class="num" style="color:var(--muted2)">'+(r.n||'—')+'</td>'+
+        '<td class="num"><span class="price">'+eur(r.p)+'</span></td></tr>';
     }).join('');
-    table.innerHTML='<table><thead><tr><th class="num">#</th><th>Produit</th><th>CIP</th><th class="num">Prix net</th></tr></thead><tbody>'+rows+'</tbody></table>';
+    table.innerHTML='<table><thead><tr><th class="num">#</th><th>Produit</th><th>CIP</th><th class="num" title="officines du réseau qui en commandent">Officines</th><th class="num">Prix grossiste</th></tr></thead><tbody>'+rows+'</tbody></table>';
   }
   data.forEach(function(c,i){
     var b=document.createElement('button'); b.className='bs-tab'; b.textContent=c.label;
