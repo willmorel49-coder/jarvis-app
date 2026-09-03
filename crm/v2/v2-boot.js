@@ -295,6 +295,10 @@
     bench: 'benchmark-data.js',
     establishments: 'establishments-aggregate.js',
     offilog: 'offilog-data.js',
+    // 03/09/2026 — nos conditions commerciales Offilog (prix d'achat, écart,
+    // taux de marge) ont quitté offilog-data.js, qui part dans un dépôt PUBLIC.
+    // 77 Ko, chargé par adresse signée en même temps que le catalogue.
+    offilogcond: 'offilog-conditions.js',
     drakkars: 'drakkars-data.js',
     cap3000: 'cap3000-data.js',
     sagitta: 'sagitta-shortlist-data.js',
@@ -331,7 +335,10 @@
   // ⚠️ NE PAS reprotéger ces fichiers sans traiter d'abord leur POIDS :
   // 13,4 Mo de ventes sur une seule ligne + 3,6 Mo de logos en base64 logés
   // dans le fichier de ventes. Reprotéger sans découper referait la panne.
-  var PROTEGES = {};
+  // ⚠️ N'y remettre QUE des fichiers légers. Une adresse signée n'est pas mise
+  // en cache par le service worker : le fichier repart à chaque ouverture.
+  // C'est ce qui avait rendu l'app inutilisable en août avec 17 Mo. 77 Ko, oui.
+  var PROTEGES = { offilogcond: 'offilog-conditions.js' };
   var SEAU_PROTEGE = 'donnees-protegees';   // sert encore aux DOCUMENTS privés
 
   // Fichiers protégés dont l'adresse a été refusée pour de bon. Lu par l'écran
@@ -553,6 +560,7 @@
     bench: 'BENCHMARK',
     establishments: 'ESTABLISHMENTS',
     offilog: 'OFFILOG',
+    offilogcond: 'OFFILOG_COND',
     drakkars: 'DRAKKARS',
     cap3000: 'CAP3000',
     sagitta: 'SAGITTA_SHORTLIST',
@@ -562,9 +570,34 @@
     catcomplet: 'CATALOGUE_COMPLET'
   };
 
+  // ── Les conditions commerciales reviennent sur le catalogue ──────────────
+  // Elles vivent dans un fichier séparé et protégé, mais l'app entière lit
+  // `o.prix_offilog` depuis toujours — dans v2-offilog.js comme dans
+  // marketing.js (que charge OPSO), une quinzaine d'endroits. Plutôt que de
+  // réécrire chacun, on RECOLLE les trois champs sur les objets en mémoire :
+  // tout ce qui marchait continue de marcher, sans une ligne de plus ailleurs.
+  var _condFaites = false;
+  function fusionnerConditionsOffilog() {
+    if (_condFaites) return;
+    var cat = window.OFFILOG, cond = window.OFFILOG_COND;
+    if (!cat || !cond) return;          // l'un des deux manque encore : on repassera
+    var n = 0;
+    for (var i = 0; i < cat.length; i++) {
+      var o = cat[i];
+      var v = o && o.ean != null ? cond[String(o.ean)] : null;
+      if (!v) continue;
+      o.prix_offilog = v[0]; o.ecart = v[1]; o.marge_pct = v[2];
+      n++;
+    }
+    _condFaites = true;
+    V2.offilogConditions = n;   // lu par l'écran pour dire la vérité s'il n'a rien
+  }
+
   function bridge() {
     try { if (typeof BENCHMARK !== 'undefined') window.BENCHMARK = BENCHMARK; } catch (e) {}
     try { if (typeof OFFILOG !== 'undefined') window.OFFILOG = OFFILOG; } catch (e) {}
+    try { if (typeof OFFILOG_COND !== 'undefined') window.OFFILOG_COND = OFFILOG_COND; } catch (e) {}
+    fusionnerConditionsOffilog();
     try { if (typeof DRAKKARS !== 'undefined') window.DRAKKARS = DRAKKARS; } catch (e) {}
     try { if (typeof CAP3000 !== 'undefined') window.CAP3000 = CAP3000; } catch (e) {}
     try { if (typeof CLIENTS !== 'undefined') window.CLIENTS = CLIENTS; } catch (e) {}
@@ -604,6 +637,12 @@
   }
 
   V2.loadFiles = function (keys) {
+    // Le catalogue Offilog et ses conditions commerciales ne se demandent
+    // jamais l'un sans l'autre : sinon un écran afficherait un catalogue
+    // complet avec des prix d'achat vides, sans que personne comprenne.
+    if (keys && keys.indexOf('offilog') >= 0 && keys.indexOf('offilogcond') < 0) {
+      keys = keys.concat(['offilogcond']);
+    }
     // chemins relatifs au dossier parent crm/ (les data files sont dans crm/)
     // Jeton PROPRE aux fichiers de données, distinct du ?v= global.
     // ⚠️ Le bumper quand les DONNÉES changent — et elles viennent de changer :
@@ -612,7 +651,7 @@
     // de le servir, et le lecteur compacté ne trouverait pas ses dictionnaires.
     // Pas besoin de le suivre à chaque déploiement en revanche : quand `VER` de
     // sw.js change, l'activation du service worker efface tous les caches.
-    var V = '?v=20260831a';
+    var V = '?v=20260903a';
     var promises = keys.map(function (k) {
       var src = (window.V2_DATA_BASE || '../') + DATA_FILES[k];
       if (loaded[src]) return Promise.resolve();

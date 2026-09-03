@@ -34,6 +34,15 @@ IMG_JSON   = BASE / 'images_by_ean.json'   # lookup consolidé toutes sources
 PHARMA     = BASE / 'benchmark_apothical_pharmacie_montlouis-sur-loire.xlsx'
 LECLERC_JSON = BASE / 'leclerc_prices.json'
 OUT        = BASE / 'crm' / 'offilog-data.js'
+# ⚠️ 03/09/2026 — nos CONDITIONS COMMERCIALES sortent du fichier public.
+# `jarvis-app` est un dépôt PUBLIC servi par GitHub Pages : tout ce qui
+# est écrit dans crm/offilog-data.js est téléchargeable sans mot de passe.
+# prix_offilog, ecart et marge_pct partent donc dans un fichier séparé,
+# hors dépôt (.gitignore) et servi par adresse signée Supabase.
+# Les TROIS ensemble, jamais l'un sans les autres : prix_offilog se
+# recalcule exactement par `prix_maxi - ecart` (vérifié 2000/2000) et par
+# `prix_maxi x (1 - marge_pct/100)`. N'en retirer qu'un est un faux correctif.
+OUT_COND   = BASE / 'crm' / 'offilog-conditions.js'
 
 
 # ── HELPERS ─────────────────────────────────────────────────────────────────
@@ -444,8 +453,8 @@ for r in records:
         f'marque:{js_str(r["marque"])},univers:{js_str(r["univers"])},'
         f'saison:{js_str(r["saison"])},prix_maxi:{js_num(r["prix_maxi"])},'
         f'dans_offilog:{js_bool(r["dans_offilog"])},marque_off:{js_str(r["marque_off"])},'
-        f'prix_offilog:{js_num(r["prix_offilog"])},ecart:{js_num(r["ecart"])},'
-        f'marge_pct:{js_num(r["marge_pct"])},potentiel:{js_str(r["potentiel"])},'
+        # prix_offilog / ecart / marge_pct : voir OUT_COND. Rien ici.
+        f'potentiel:{js_str(r["potentiel"])},'
         f'role:{js_str(r["role"])},prix_drakkars:{js_num(r["prix_drakkars"])},'
         f'prix_cap3000:{js_num(r["prix_cap3000"])},'
         f'prix_live:{js_num(r["prix_live"])},img:{js_str(r["img"] or None)},'
@@ -463,3 +472,42 @@ with open(OUT, 'w', encoding='utf-8') as f:
 
 sz = OUT.stat().st_size / 1024
 print(f'\n✓ Écrit : {OUT}  ({sz:.0f} KB, {len(records)} produits)')
+
+# ── LES CONDITIONS COMMERCIALES, À PART ──────────────────────────────────
+# Format volontairement compact : un objet EAN -> [prix_offilog, ecart,
+# marge_pct]. Le but est qu'il reste LÉGER. Le 15/08/2026, protéger des
+# fichiers lourds avait rendu l'app inutilisable (17 Mo retéléchargés à
+# chaque ouverture, adresse signée = pas de cache navigateur). À quelques
+# dizaines de Ko, ce reproche ne tient plus.
+cond_lines = [
+    '// Intégral Pharma — Offilog, CONDITIONS COMMERCIALES',
+    f'// Généré le {today}',
+    '// ⚠️ NE JAMAIS COMMITER. Fichier servi par adresse signée (Supabase).',
+    '// ean -> [prix_offilog, ecart, marge_pct]',
+    'const OFFILOG_COND = {',
+]
+n_cond = 0
+for r in records:
+    if not r['ean'] or r['prix_offilog'] in (None, ''):
+        continue
+    cond_lines.append(
+        f'{js_str(r["ean"])}:[{js_num(r["prix_offilog"])},'
+        f'{js_num(r["ecart"])},{js_num(r["marge_pct"])}],'
+    )
+    n_cond += 1
+cond_lines.append('};')
+with open(OUT_COND, 'w', encoding='utf-8') as f:
+    f.write('\n'.join(cond_lines) + '\n')
+szc = OUT_COND.stat().st_size / 1024
+print(f'✓ Écrit : {OUT_COND}  ({szc:.0f} KB, {n_cond} conditions) — NE PAS COMMITER')
+
+# ── GARDE-FOU : le fichier public ne doit plus porter nos conditions ─────
+# Un contrôle qui ne s'exécute jamais ne protège rien : celui-ci tourne à
+# chaque génération et fait échouer le script plutôt que d'écrire la fuite.
+_public = OUT.read_text(encoding='utf-8')
+_fuites = [c for c in ('prix_offilog', 'marge_pct', 'ecart') if c + ':' in _public]
+if _fuites:
+    raise SystemExit(
+        f'ARRÊT : {OUT.name} contient encore {_fuites}. '
+        'Ce fichier part dans un dépôt PUBLIC — corriger avant de committer.')
+print('✓ Contrôle : aucune condition commerciale dans le fichier public.')

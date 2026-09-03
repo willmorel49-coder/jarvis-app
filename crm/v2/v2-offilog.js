@@ -183,6 +183,23 @@
 
   // La tête de marque : le logo, le dégradé relevé dessus, et ce que la
   // sélection contient vraiment. Pas de baratin — trois nombres et une phrase.
+  // Les conditions commerciales (prix d'achat, marge) vivent dans un fichier
+  // protégé, hors dépôt public. Si la session ne permet pas de le lire, l'écran
+  // le DIT : un « 0 » silencieux passerait pour un vrai résultat.
+  function condKO() {
+    try {
+      var ko = V2.donneesProtegeesKO ? V2.donneesProtegeesKO() : [];
+      return ko.indexOf('offilogcond') >= 0;
+    } catch (e) { return false; }
+  }
+  function bandeauCond() {
+    if (!condKO()) return '';
+    return '<div class="off-cond-ko">' + ICO('alert', 18, 2) +
+      '<span><b>Tes prix d\'achat ne sont pas chargés.</b> Le catalogue et les prix ' +
+      'publics s\'affichent, mais la comparaison avec ton prix Offilog est indisponible ' +
+      'pour l\'instant. Reconnecte-toi si ça persiste.</span></div>';
+  }
+
   function brandHead() {
     var st = brandStats();
     function n(v, l, d) {
@@ -885,6 +902,9 @@
       '.offb-n em{display:block;margin-top:3px;font-size:11px;font-style:normal;color:var(--muted)}',
       '@media(max-width:720px){.offb-in{padding:20px 18px 18px;gap:var(--sp-4)}.offb-logo{height:30px}.offb-ns{gap:22px}.offb-n b{font-size:23px}}',
 
+      '.off-cond-ko{display:flex;gap:12px;align-items:flex-start;background:var(--c-warm-bg,#FFF7E8);border:1px solid var(--c-warm,#E8A33D);border-radius:14px;padding:14px 16px;margin-bottom:var(--sp-4);font-size:13.5px;line-height:1.5;color:var(--ip-ink-2)}',
+      '.off-cond-ko svg{color:#C7791A;flex-shrink:0;margin-top:1px}',
+
       // ══════════ LES RAYONS ══════════
       // Une bande qui défile horizontalement plutôt qu'un menu replié : on entre
       // dans Offilog par le linéaire. Cible tactile 44px garantie par le padding.
@@ -1054,6 +1074,7 @@
       root.innerHTML = V2.topbar({ back: true }) +         '<div class="v2-wrap' + (S.sel != null ? ' v2-detail-shift" style="--detw:392px"' : '"') + '>' +
           (V2.priceTabs ? V2.priceTabs('offilog') : '') +
           brandHead() +
+          bandeauCond() +
           rayons(c) +
           '<div class="off-search">' + ICO('search', 19, 2) +
             '<input id="off-search-input" autocomplete="off" placeholder="Rechercher par produit, marque ou EAN…" value="' + qVal + '" oninput="V2.offSearch(this.value)">' + clrBtn + '</div>' +
