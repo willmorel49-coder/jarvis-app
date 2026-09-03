@@ -1,7 +1,7 @@
 // Service Worker Essentiels Pharma
 // Stratégie : network-first sur index.html + app.js (fichiers qui versionnent les autres)
 // Cache-first stale-while-revalidate sur tout le reste (data files, images, fonts).
-const CACHE_NAME = 'essentiels-v5-' + new Date().toISOString().slice(0,10);
+const CACHE_NAME = 'essentiels-v6-' + new Date().toISOString().slice(0,10);
 const PRECACHE = [
   './',
   './index.html',

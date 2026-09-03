@@ -173,9 +173,9 @@
     if (window.MKT_NR) { cb(); return; }
     if (nrLoading) { setTimeout(function () { ensureNr(cb); }, 250); return; }
     nrLoading = true;
-    var s = document.createElement('script'); s.src = 'mkt-nr-data.js?v=20260703d25';
-    s.onload = function () { nrLoading = false; cb(); }; s.onerror = function () { nrLoading = false; cb(); };
-    document.head.appendChild(s);
+    // 03/09/2026 — les ventes NR réelles sont des chiffres réseau : le fichier
+    // vit sur Supabase, chargé par adresse signée avec rangement local.
+    V2.loadFiles(['mktnr']).then(function () { nrLoading = false; cb(); });
   }
   // SheetJS chargé à la demande (export Excel) — même lib que l'import (v2-audit)
   var xlsxLoading = false;

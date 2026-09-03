@@ -440,25 +440,80 @@ function exportVisitsToICS() {
 // jamais (règle §8). Le fichier vit sur Supabase et n'arrive qu'avec une
 // session ouverte. Tous les lecteurs sont gardés par `typeof !== 'undefined'` :
 // tant qu'il n'est pas là, l'app marche, simplement sans la colonne Pharmazon.
-let _pharmazonCharge = false;
-function chargerTarifPharmazon() {
-  if (_pharmazonCharge || typeof PHARMAZON_DATA !== 'undefined') return;
-  _pharmazonCharge = true;
-  sb.storage.from('donnees-protegees')
-    .createSignedUrl('pharmazon-b2b-data.js', 3600)
-    .then(r => {
-      const url = r && r.data && r.data.signedUrl;
-      if (!url) throw new Error('adresse refusée');
+// ── Chargeur générique de fichier protégé, avec rangement local ─────────
+// (03/09/2026, généralise le chargeur Pharmazon du matin même.)
+// Le TEXTE est rangé sous une clé fixe (nom + version) : téléchargé une fois
+// par version, servi depuis l'appareil ensuite — c'est ce qui a manqué le
+// 15/08 quand les adresses signées, jamais mises en cache, retéléchargeaient
+// tout à chaque ouverture. Exécution par <script> blob : un `const` du
+// fichier garde exactement la même portée qu'avec une balise ordinaire.
+const PROTEGE_VER = '20260904a';
+const _protegeFait = {};
+function chargerProtege(fichier, apres) {
+  if (_protegeFait[fichier]) { if (apres) apres(true); return Promise.resolve(true); }
+  return new Promise((fin) => {
+    const ok = (texte) => {
+      const u = URL.createObjectURL(new Blob([texte], { type: 'text/javascript' }));
       const s = document.createElement('script');
-      s.src = url;
-      s.onload = () => {
-        try { if (typeof PHARMAZON_DATA !== 'undefined') window.PHARMAZON_DATA = PHARMAZON_DATA; } catch (e) {}
-        try { if (typeof PHARMAZON_NOM !== 'undefined') window.PHARMAZON_NOM = PHARMAZON_NOM; } catch (e) {}
+      s.src = u; s.async = false;
+      s.onload = s.onerror = () => {
+        URL.revokeObjectURL(u);
+        _protegeFait[fichier] = true;
+        if (apres) { try { apres(true); } catch (e) {} }
+        fin(true);
       };
-      s.onerror = () => { _pharmazonCharge = false; };
       document.head.appendChild(s);
-    })
-    .catch(() => { _pharmazonCharge = false; });
+    };
+    const ko = () => { if (apres) { try { apres(false); } catch (e) {} } fin(false); };
+    const telecharger = (c) => {
+      sb.storage.from('donnees-protegees').createSignedUrl(fichier, 3600)
+        .then(r => {
+          const url = r && r.data && r.data.signedUrl;
+          if (!url) throw new Error('adresse refusée');
+          return fetch(url);
+        })
+        .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
+        .then(t => {
+          if (!t || t.length < 10) throw new Error('vide');
+          try { if (c) c.put('https://protege.local/' + fichier, new Response(t)); } catch (e) {}
+          ok(t);
+        })
+        .catch(ko);
+    };
+    try {
+      caches.open('protege-' + PROTEGE_VER).then(c => {
+        try { caches.keys().then(ks => ks.forEach(k => { if (k.indexOf('protege-') === 0 && k !== 'protege-' + PROTEGE_VER) caches.delete(k); })); } catch (e) {}
+        c.match('https://protege.local/' + fichier).then(hit => {
+          if (hit) { hit.text().then(ok, () => telecharger(c)); return; }
+          telecharger(c);
+        }, () => telecharger(c));
+      }, () => telecharger(null));
+    } catch (e) { telecharger(null); }
+  });
+}
+
+function chargerTarifPharmazon() {
+  if (typeof PHARMAZON_DATA !== 'undefined') return Promise.resolve(true);
+  return chargerProtege('pharmazon-b2b-data.js', () => {
+    try { if (typeof PHARMAZON_DATA !== 'undefined') window.PHARMAZON_DATA = PHARMAZON_DATA; } catch (e) {}
+    try { if (typeof PHARMAZON_NOM !== 'undefined') window.PHARMAZON_NOM = PHARMAZON_NOM; } catch (e) {}
+  });
+}
+
+// Le benchmark public est ALLÉGÉ (03/09/2026) : prix_ip, remise_pct, offre_ip,
+// ip_qty, ip_ca vivent dans bench-conditions.js, recollés ici par INDEX.
+// Contrôle strict : si le fichier public a été régénéré sans re-découpage,
+// on ne fusionne PAS — des prix décalés d'une ligne seraient pires qu'absents.
+let _benchFusionne = false;
+function fusionnerBenchConditions() {
+  if (_benchFusionne || typeof BENCHMARK === 'undefined' || typeof window.BENCH_COND === 'undefined') return;
+  const c = window.BENCH_COND;
+  if (c.n !== BENCHMARK.length) { console.warn('bench-conditions : ' + c.n + ' vs ' + BENCHMARK.length + ' — fusion refusée'); return; }
+  for (let i = 0; i < BENCHMARK.length; i++) {
+    const o = BENCHMARK[i], r = c.rows[i];
+    o.prix_ip = r[0]; o.remise_pct = r[1]; o.offre_ip = r[2]; o.ip_qty = r[3]; o.ip_ca = r[4];
+  }
+  _benchFusionne = true;
 }
 
 async function loadUserProfile() {
@@ -466,7 +521,15 @@ async function loadUserProfile() {
     const { data: { user }, error: userErr } = await sb.auth.getUser();
     if (userErr || !user) return false;
     const { data: profile } = await sb.from('user_profiles').select('*').eq('id', user.id).single();
-    chargerTarifPharmazon();
+    // Les fichiers protégés arrivent AVANT de rendre la main : l'app démarre
+    // avec ses données, comme avant — le rangement local rend les ouvertures
+    // suivantes instantanées. Un échec n'empêche pas la connexion : les
+    // lecteurs sont gardés, les écrans concernés affichent leur état vide.
+    await Promise.all([
+      chargerTarifPharmazon(),
+      chargerProtege('bench-conditions.js', () => fusionnerBenchConditions()),
+      chargerProtege('essentiels-reco-data.js')
+    ]).catch(() => {});
     // Fallback si user_profiles vide ou table absente — on continue quand même
     state.user = {
       id:          user.id,

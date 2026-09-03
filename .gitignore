@@ -181,3 +181,22 @@ opso/pharmazon-data.js
 essentiels-pharma/pharmazon-data.js
 crm/v2/pharmazon-prix.js
 pharmazon-b2b-data.js
+
+# 03/09/2026 — grande passe « conditions commerciales » : ces fichiers portent
+# nos prix nets, remises, CA par pharmacie ou par établissement. Ils vivent
+# dans l'espace Supabase « donnees-protegees », JAMAIS dans ce dépôt public.
+crm/v2/wml-ventes-*.js
+crm/establishments-aggregate.js
+crm/sagitta-shortlist-data.js
+crm/v2/mkt-nr-data.js
+opso/wml-sales-data.js
+essentiels-pharma/essentiels-reco-data.js
+crm/catalogue-ip.js
+crm/sales-detail.js
+biosimilaires-export.json
+bench-conditions.js
+prod-stats-conditions.js
+pharma-fr-ca.js
+wml-officines-ca.js
+biosimilaires-complet.js
+opso/opso-stats-data.js

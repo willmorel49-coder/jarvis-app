@@ -308,6 +308,17 @@
     // Prix PUBLICS E.Leclerc (TTC) et rayons fins Offilog : données publiques.
     leclercpub: 'v2/leclerc-pub-data.js',
     offilogcats: 'v2/offilog-cats-data.js',
+    // 03/09/2026 — la grande passe « conditions commerciales » : les colonnes
+    // sensibles (prix nets, remises, CA) vivent sur Supabase et sont RECOLLÉES
+    // en mémoire après connexion. Les fichiers publics gardent l'identité.
+    benchcond: 'bench-conditions.js',
+    prodstatscond: 'prod-stats-conditions.js',
+    pharmafrca: 'pharma-fr-ca.js',
+    wmlca: 'wml-officines-ca.js',
+    biosimcomplet: 'biosimilaires-complet.js',
+    mktnr: 'v2/mkt-nr-data.js',
+    // Achats par officine OPSO (prix nets facturés + CA) : protégé.
+    opsostats: 'opso-stats-data.js',
     drakkars: 'drakkars-data.js',
     cap3000: 'cap3000-data.js',
     sagitta: 'sagitta-shortlist-data.js',
@@ -350,7 +361,19 @@
   var PROTEGES = {
     offilogcond: 'offilog-conditions.js',
     offilogbestprix: 'offilog-best-prix.js',
-    pharmazonprix: 'pharmazon-prix.js'
+    pharmazonprix: 'pharmazon-prix.js',
+    // La grande passe du 03/09/2026. Le POIDS, cause de la panne du 15/08,
+    // est traité par le rangement local (texteProtege) : téléchargé une fois
+    // par version, servi depuis l'appareil ensuite.
+    benchcond: 'bench-conditions.js',
+    prodstatscond: 'prod-stats-conditions.js',
+    pharmafrca: 'pharma-fr-ca.js',
+    wmlca: 'wml-officines-ca.js',
+    biosimcomplet: 'biosimilaires-complet.js',
+    mktnr: 'mkt-nr-data.js',
+    opsostats: 'opso-stats-data.js',
+    establishments: 'establishments-aggregate.js',
+    sagitta: 'sagitta-shortlist-data.js'
   };
   var SEAU_PROTEGE = 'donnees-protegees';   // sert encore aux DOCUMENTS privés
 
@@ -394,7 +417,9 @@
     }
 
     try {
-      return c.storage.from(SEAU_PROTEGE).createSignedUrl(PROTEGES[cle], 3600)
+      // `cle` est une clé de PROTEGES, ou directement un nom de fichier du
+      // seau (les tranches de ventes n'ont pas d'entrée une par une).
+      return c.storage.from(SEAU_PROTEGE).createSignedUrl(PROTEGES[cle] || cle, 3600)
         .then(function (r) {
           var url = (r && r.data && r.data.signedUrl) || null;
           if (!url) return echouer();
@@ -403,6 +428,69 @@
         })
         .catch(echouer);
     } catch (e) { return echouer(); }
+  }
+
+  // ── Rangement local des fichiers protégés ───────────────────────────────
+  // ⚠️ C'est LA pièce qui manquait le 15/08/2026. Une adresse signée change à
+  // chaque fois : le service worker ne peut pas la mettre en cache, et l'app
+  // retéléchargeait 17 Mo à CHAQUE ouverture — inutilisable sur l'iPhone de
+  // Will, d'où le retour de tout dans le dépôt public. Ici, le TEXTE du
+  // fichier est rangé sous une clé FIXE (son nom + la version des données) :
+  // téléchargé une fois par version, servi depuis l'appareil ensuite. Si le
+  // rangement est vidé par le navigateur, on retélécharge — jamais pire
+  // qu'avant. Et si Supabase est injoignable mais que le rangement a la
+  // version, l'app marche quand même.
+  var CACHE_PROTEGE = 'v2-protege-';   // + version des données (V), voir loadFiles
+
+  function nettoyerVieuxRangements(courant) {
+    try {
+      caches.keys().then(function (ks) {
+        ks.forEach(function (k) {
+          if (k.indexOf(CACHE_PROTEGE) === 0 && k !== courant) caches.delete(k);
+        });
+      });
+    } catch (e) {}
+  }
+
+  // Rend le TEXTE du fichier protégé `fichier` (nom dans le seau), par le
+  // rangement local d'abord, par adresse signée sinon. cb(texte) / ko().
+  function texteProtege(fichier, version, cb, ko) {
+    var nomCache = CACHE_PROTEGE + version;
+    var cle = 'https://protege.local/' + fichier;   // clé synthétique STABLE
+    function telecharger(c) {
+      adresseProtegee(fichier).then(function (url) {
+        if (!url) { ko(); return; }
+        fetch(url).then(function (r) {
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          return r.text();
+        }).then(function (t) {
+          if (!t || t.length < 10) throw new Error('réponse vide');
+          try { if (c) c.put(cle, new Response(t, { headers: { 'Content-Type': 'text/javascript' } })); } catch (e) {}
+          cb(t);
+        }).catch(function () { ko(); });
+      });
+    }
+    try {
+      caches.open(nomCache).then(function (c) {
+        nettoyerVieuxRangements(nomCache);
+        c.match(cle).then(function (hit) {
+          if (hit) { hit.text().then(cb, function () { telecharger(c); }); return; }
+          telecharger(c);
+        }, function () { telecharger(c); });
+      }, function () { telecharger(null); });
+    } catch (e) { telecharger(null); }
+  }
+
+  // Exécute un texte de fichier de données comme un VRAI <script> classique
+  // (adresse blob) : un `const X` y crée la même liaison globale qu'un script
+  // ordinaire — bridge() la recopie ensuite sur window, comme d'habitude.
+  function poserTexte(texte, onload) {
+    var u = URL.createObjectURL(new Blob([texte], { type: 'text/javascript' }));
+    var sc = document.createElement('script');
+    sc.src = u; sc.async = false;
+    sc.onload = function () { URL.revokeObjectURL(u); onload(true); };
+    sc.onerror = function () { URL.revokeObjectURL(u); onload(false); };
+    document.head.appendChild(sc);
   }
 
   function rafraichirSession(c) {
@@ -578,6 +666,13 @@
     pharmazonprix: 'PHARMAZON_PRIX',
     leclercpub: 'LECLERC_PUB',
     offilogcats: 'OFFILOG_CATS',
+    benchcond: 'BENCH_COND',
+    prodstatscond: 'PROD_COND',
+    pharmafrca: 'PHARMA_FR_CA',
+    wmlca: 'WML_OFF_CA',
+    biosimcomplet: 'BIOSIMILAIRES_COMPLET',
+    mktnr: 'MKT_NR',
+    opsostats: 'OPSO_STATS_SALES',
     drakkars: 'DRAKKARS',
     cap3000: 'CAP3000',
     sagitta: 'SAGITTA_SHORTLIST',
@@ -649,6 +744,52 @@
     V2.pharmazonPrix = n;
   }
 
+  // ── Recoller les colonnes protégées sur les fichiers publics ────────────
+  // Chaque table protégée porte `n` : le nombre d'enregistrements du fichier
+  // public au moment du découpage. Si ça ne correspond plus (fichier public
+  // régénéré sans re-découpage), on NE fusionne PAS : des prix décalés d'une
+  // ligne seraient pires que des prix absents — et on le dit en console.
+  var _fusionsFaites = {};
+  function fusionParIndex(nom, publicArr, cond, applique) {
+    if (_fusionsFaites[nom] || !publicArr || !cond) return;
+    if (cond.n !== publicArr.length) {
+      console.warn('[V2] ' + nom + ' : ' + cond.n + ' conditions pour ' +
+        publicArr.length + ' enregistrements — fichier public régénéré sans re-découpage, fusion REFUSÉE');
+      return;
+    }
+    for (var i = 0; i < publicArr.length; i++) applique(publicArr[i], cond.rows[i]);
+    _fusionsFaites[nom] = true;
+  }
+  function fusionsProtegees() {
+    fusionParIndex('bench', window.BENCHMARK, window.BENCH_COND, function (o, r) {
+      o.prix_ip = r[0]; o.remise_pct = r[1]; o.offre_ip = r[2]; o.ip_qty = r[3]; o.ip_ca = r[4];
+    });
+    fusionParIndex('prodstats', window.PROD_STATS, window.PROD_COND, function (o, r) {
+      o.net = r[0]; o.rpct = r[1]; o.rota = r[2]; o.marge = r[3]; o.remise = r[4]; o.ca = r[5];
+    });
+    if (!_fusionsFaites.pharmafr && window.PHARMA_FR && window.PHARMA_FR.p && window.PHARMA_FR_CA) {
+      var mca = window.PHARMA_FR_CA.m, pts = window.PHARMA_FR.p;
+      for (var i = 0; i < pts.length; i++) { var v = mca[String(pts[i][13])]; if (v) pts[i][12] = v; }
+      _fusionsFaites.pharmafr = true;
+    }
+    if (!_fusionsFaites.wmlca && window.WML_OFFICINES && window.WML_OFF_CA) {
+      var mo = window.WML_OFF_CA.m;
+      for (var w = 0; w < window.WML_OFFICINES.length; w++) {
+        var of = window.WML_OFFICINES[w], vv = mo[String(of.id)];
+        if (vv) { of.ca = vv[0]; of.potentiel = vv[1]; }
+      }
+      _fusionsFaites.wmlca = true;
+    }
+    if (!_fusionsFaites.biosim && window.BIOSIMILAIRES_COMPLET) {
+      // le fichier protégé porte la base ENTIÈRE (avec nos prix facturés) :
+      // il remplace la version publique allégée.
+      window.BIOSIMILAIRES = window.BIOSIMILAIRES_COMPLET;
+      _fusionsFaites.biosim = true;
+    }
+    if (V2.applyPPHT && (_fusionsFaites.bench)) { try { V2.applyPPHT(); } catch (e) {} }
+  }
+  V2.fusionsProtegees = fusionsProtegees;
+
   function bridge() {
     try { if (typeof BENCHMARK !== 'undefined') window.BENCHMARK = BENCHMARK; } catch (e) {}
     try { if (typeof OFFILOG !== 'undefined') window.OFFILOG = OFFILOG; } catch (e) {}
@@ -671,6 +812,7 @@
     try { if (typeof CPR_AGGREGATE !== 'undefined') window.CPR_AGGREGATE = CPR_AGGREGATE; } catch (e) {}
     try { if (typeof HP_AGGREGATE !== 'undefined') window.HP_AGGREGATE = HP_AGGREGATE; } catch (e) {}
     V2.applyPPHT();
+    fusionsProtegees();
   }
   // ── Les ventes arrivent en TRANCHES (15/08/2026) ────────────────────────
   // ⚠️ Mesuré sur l'iPhone de Will : un fichier de 13,4 Mo de ventes sur une
@@ -688,7 +830,7 @@
   // oubliée un jour, et des ventes manquantes SANS erreur visible : exactement
   // le genre de panne muette qui a coûté deux jours les 13 et 14/08.
   // Ce repli ne sert que si l'en-tête est d'une version antérieure au 15/08.
-  var WML_TRANCHES_REPLI = 9;
+  var WML_TRANCHES_REPLI = 11;   // 11 tranches depuis le 03/09/2026
 
   function urlsTranches(V) {
     var base = (window.V2_DATA_BASE || '../');
@@ -707,6 +849,14 @@
     if (keys && keys.indexOf('offilog') >= 0 && keys.indexOf('offilogcond') < 0) {
       keys = keys.concat(['offilogcond']);
     }
+    // Même règle pour la grande passe : un catalogue sans ses conditions
+    // afficherait des colonnes vides sans que personne comprenne pourquoi.
+    if (keys && keys.indexOf('bench') >= 0 && keys.indexOf('benchcond') < 0) {
+      keys = keys.concat(['benchcond']);
+    }
+    if (keys && keys.indexOf('wml') >= 0 && keys.indexOf('wmlca') < 0) {
+      keys = keys.concat(['wmlca']);
+    }
     // chemins relatifs au dossier parent crm/ (les data files sont dans crm/)
     // Jeton PROPRE aux fichiers de données, distinct du ?v= global.
     // ⚠️ Le bumper quand les DONNÉES changent — et elles viennent de changer :
@@ -715,7 +865,7 @@
     // de le servir, et le lecteur compacté ne trouverait pas ses dictionnaires.
     // Pas besoin de le suivre à chaque déploiement en revanche : quand `VER` de
     // sw.js change, l'activation du service worker efface tous les caches.
-    var V = '?v=20260903b';
+    var V = '?v=20260904a';
     var promises = keys.map(function (k) {
       var src = (window.V2_DATA_BASE || '../') + DATA_FILES[k];
       if (loaded[src]) return Promise.resolve();
@@ -728,15 +878,29 @@
         // n'existe plus que pour les DOCUMENTS privés (V2.ouvrirDocProtege).
         if (!PROTEGES[k]) { poserSuite([src + V], resolve); return; }
 
-        adresseProtegee(k).then(function (url) {
-          if (!url) {
-            // adresseProtegee a déjà réessayé 3 fois et noté l'échec dans
-            // V2.protegeEchec — l'écran doit le DIRE, pas afficher des zéros.
-            delete pending[src];
+        // Fichier protégé : rangement local d'abord (clé fixe = nom + version
+        // des données), adresse signée sinon. Voir texteProtege() plus haut —
+        // c'est ce qui évite de retélécharger à chaque ouverture (panne 15/08).
+        texteProtege(PROTEGES[k], V, function (texte) {
+          poserTexte(texte, function () {
+            bridge();
+            if (TEMOIN[k] && typeof window[TEMOIN[k]] === 'undefined') {
+              console.warn('[V2] ' + PROTEGES[k] + ' chargé mais ' + TEMOIN[k] + ' absent');
+              V2.protegeEchec[k] = true;
+              delete pending[src];
+              resolve();
+              return;
+            }
+            delete V2.protegeEchec[k];
+            loaded[src] = true;
             resolve();
-            return;
-          }
-          poser(url, resolve);
+          });
+        }, function () {
+          // texteProtege a déjà réessayé et noté l'échec — l'écran doit le
+          // DIRE, pas afficher des zéros.
+          V2.protegeEchec[k] = true;
+          delete pending[src];
+          resolve();
         });
       });
       pending[src] = p;
@@ -754,8 +918,25 @@
             // combien de tranches l'attendre. On les enchaîne à la suite.
             if (k === 'wml' && !tranchesFaites) {
               tranchesFaites = true;
-              urls = urls.concat(urlsTranches(V));
-              suivant();
+              // 03/09/2026 — les tranches portent les VENTES par officine :
+              // des chiffres par pharmacie, protégés. Elles ne sont plus dans
+              // le dépôt : elles arrivent par adresse signée, une par une
+              // (pic mémoire = une tranche), avec le rangement local.
+              var n = window.WML_TRANCHES || WML_TRANCHES_REPLI;
+              var ti = 1;
+              (function trancheSuivante() {
+                if (ti > n) { finir(); return; }
+                var nom = 'wml-ventes-' + (ti < 10 ? '0' + ti : ti) + '.js';
+                ti++;
+                texteProtege(nom, V, function (texte) {
+                  poserTexte(texte, function () { trancheSuivante(); });
+                }, function () {
+                  console.warn('[V2] tranche protégée manquante : ' + nom);
+                  V2.protegeEchec[k] = true;
+                  delete pending[src];
+                  resolve();
+                });
+              })();
               return;
             }
             finir();
