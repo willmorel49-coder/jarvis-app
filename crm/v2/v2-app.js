@@ -1035,7 +1035,7 @@
         // Entrée UNIQUE des produits (11/08/2026). Remplace la tuile Catalogue ;
         // les tuiles « Par molécule » et « Appro » sont retirées plus bas. Les
         // trois écrans restent atteignables depuis Produits et depuis ⌘K.
-        { k: 'offilog', cls: 'p5', accent: 'var(--c-froid)', ico: 'spark', tag: 'Veille', t: 'Offilog & concurrents', d: 'Ta parapharma : ton prix d\'achat IP comparé en direct au prix public E.Leclerc. Repère où un concurrent casse les prix.', go: 'Ouvrir Offilog' },
+        { k: 'offilog', cls: 'p5', accent: '#345DA0', ico: 'spark', tag: 'Parapharmacie', t: 'Offilog', d: 'La centrale parapharmacie d\'Intégral, rayon par rayon : ton prix d\'achat, la photo produit, et où un concurrent casse les prix.', go: 'Ouvrir Offilog' },
         { k: 'pilotage', cls: 'p4', ico: 'pilo', tag: V2.fmtK(caTotal) + ' €', t: 'Pilotage', d: 'Ton chiffre d\'affaires, ta marge MDL, tes objectifs et qui commande quoi. Le tableau de bord de ta tournée.', go: 'Voir mon pilotage' },
       ];
       // Infos du matin (brief quotidien) — app JARVIS
@@ -1119,7 +1119,11 @@
         // Libellés courts pour l'accueil ; les pages restent atteignables via ⌘K.
         if (pmap.molecules) { pmap.molecules.t = 'Catalogue & prix'; }
         if (pmap.presentation) { pmap.presentation.t = 'Présentation'; }
-        if (pmap.offilog) { pmap.offilog.t = 'Concurrents'; }
+        // 03/09/2026 — la tuile s'appelle OFFILOG, pas « Concurrents » : c'est la
+        // centrale parapharmacie du groupe, la veille concurrente n'en est qu'un
+        // usage. Demande de Will, mot pour mot : « ça devient une feature Offilog
+        // identifiée avec le logo ».
+        if (pmap.offilog) { pmap.offilog.t = 'Offilog'; }
         // ── Accueil « Launcher » (choix Will) : les grandes entrées, tout le reste en « Autres outils »
         // ⚠️ 'molecules' figurait ici alors que sa tuile avait ete retiree le
         // 11/08 : la grille n'affichait plus que 3 cartes sur 4. Produits,
@@ -1256,7 +1260,7 @@
   function buildCmdkIndex() {
     var idx = [];
     // Pages
-    var PAGES = [['home', 'Accueil', 'opp'], ['pharma', 'Opportunités pharmacie', 'opp'], ['offilog', 'Offilog · prix concurrents', 'spark'], ['pilotage', 'Pilotage CA & marge', 'pilo']];
+    var PAGES = [['home', 'Accueil', 'opp'], ['pharma', 'Opportunités pharmacie', 'opp'], ['offilog', 'Offilog · parapharmacie & prix concurrents', 'spark'], ['pilotage', 'Pilotage CA & marge', 'pilo']];
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.grossistes) PAGES.splice(3, 0, ['grossistes', 'Concurrents · grossistes-répartiteurs', 'spark']);
     if (window.V2_BRAND && window.V2_BRAND.opso) PAGES.splice(2, 0, ['fiches', 'Fiches commerciales', 'fiche']); // OPSO garde les fiches
     if (window.V2_BRAND && window.V2_BRAND.opso && V2.pages.marketing) PAGES.splice(2, 0, ['marketing', 'Fiches marketing OPSO', 'fiche']);
