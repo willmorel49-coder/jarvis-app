@@ -1407,6 +1407,8 @@
     var s = document.createElement('script'); s.src = 'pharma-fr-data.js?v=' + (window.V2_DATAV || '');
     s.onload = s.onerror = function () {
       V2._pfrLoading = false;
+      // la colonne CA protégée se recolle dès que la carte publique est là
+      if (window.PHARMA_FR && V2.loadFiles) { try { V2.loadFiles(['pharmafrca']); } catch (e) {} }
       try { V2.reconcilePharma(); } catch (e) {}
       var cbs = V2._pfrCbs || []; V2._pfrCbs = [];
       cbs.forEach(function (f) { try { f(); } catch (e) {} });
@@ -1610,9 +1612,17 @@
     root.innerHTML = '<div class="v2-loading"><div class="v2-spinner"></div><div>Chargement de tes données…</div></div>';
     // charge données Supabase + fichiers essentiels en parallèle
     await Promise.all([
-      V2.loadData(),
-      V2.loadFiles(['bench', 'establishments', 'sagitta'])
+      // OPSO : les achats par officine (protégés) doivent être en mémoire
+      // AVANT que loadData ne fabrique les fiches — c'est lui qui les répartit.
+      (window.V2_BRAND && window.V2_BRAND.opso
+        ? V2.loadFiles(['opsostats']).then(function () { return V2.loadData(); })
+        : V2.loadData()),
+      // le léger d'abord (bench public + colonnes protégées, petites tables) ;
+      // establishments (4,3 Mo protégé) part EN FOND après le premier rendu :
+      // l'attendre bloquerait la première connexion le temps du téléchargement.
+      V2.loadFiles(['bench', 'sagitta', 'prodstatscond', 'pharmafrca', 'wmlca', 'biosimcomplet'])
     ]);
+    V2.loadFiles(['establishments']);
     V2.invalidateCmdk();
     V2.route = parseHash();
     V2.render();

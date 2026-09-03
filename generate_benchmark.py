@@ -312,3 +312,12 @@ for r in top5:
     print(f"  #{r['ip_rank_qty']:3d} {r['designation'][:45]:<45} "
           f"qty={r['ip_qty']:>10,}  rot/pharma/mois={rot_str}  cat={r['categorie']}")
 print("="*60)
+
+# ── 03/09/2026 — LE FILET : jamais de conditions commerciales dans un fichier
+# public. Ce script vient d'écrire un fichier suivi par git ; on découpe les
+# colonnes sensibles AVANT de rendre la main. proteger_conditions.py échoue
+# fort si quelque chose subsiste — un échec ici est une fuite évitée.
+import subprocess as _sp, sys as _sys, os as _os
+_r = _sp.run([_sys.executable, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), 'proteger_conditions.py')])
+if _r.returncode != 0:
+    _sys.exit('ARRÊT : proteger_conditions.py a échoué — ne pas committer.')

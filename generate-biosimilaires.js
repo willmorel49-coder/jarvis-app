@@ -459,3 +459,13 @@ console.log("✓ écrit crm/v2/biosimilaires-data.js et biosimilaires-export.jso
 console.log(`  ${meta.nb_molecules} molécules · ${meta.nb_biosimilaires} biosimilaires · ` +
   `${meta.nb_substituables} substituables · ${meta.nb_molecules_ref_ip} molécules référencées IP · ` +
   `${meta.nb_biosim_partenaire} biosim partenaires`);
+
+// ── 03/09/2026 — LE FILET : les prix facturés ne restent jamais dans le
+// fichier public. Échec du filet = arrêt, pour ne pas committer une fuite.
+const { execFileSync } = require('child_process');
+try {
+  execFileSync('/usr/bin/python3', [require('path').join(__dirname, 'proteger_conditions.py')], { stdio: 'inherit' });
+} catch (e) {
+  console.error('ARRÊT : proteger_conditions.py a échoué — ne pas committer.');
+  process.exit(1);
+}

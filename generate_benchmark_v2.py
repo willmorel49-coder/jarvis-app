@@ -384,3 +384,12 @@ print(f"Records: {len(recs)} | Ameli matched: {ameli_matched} | File size: {sz:.
 print(f"Top 5 by IP qty:")
 for r in recs[:5]:
     print(f"  {r['designation'][:45]:<45} qty={r['ip_qty']:>8,} cat={r['categorie']} yoy={r['yoy_jan']}")
+
+# ── 03/09/2026 — LE FILET : jamais de conditions commerciales dans un fichier
+# public. Ce script vient d'écrire un fichier suivi par git ; on découpe les
+# colonnes sensibles AVANT de rendre la main. proteger_conditions.py échoue
+# fort si quelque chose subsiste — un échec ici est une fuite évitée.
+import subprocess as _sp, sys as _sys, os as _os
+_r = _sp.run([_sys.executable, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), 'proteger_conditions.py')])
+if _r.returncode != 0:
+    _sys.exit('ARRÊT : proteger_conditions.py a échoué — ne pas committer.')

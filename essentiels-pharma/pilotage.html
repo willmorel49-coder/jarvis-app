@@ -193,7 +193,6 @@
 </style>
 
 <script src="essentiels-officines.js?v=g7"></script>
-<script src="essentiels-reco-data.js?v=g8"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
@@ -244,7 +243,19 @@
   try{ document.body && document.body.classList.add('locked'); }catch(e){}
   document.addEventListener('DOMContentLoaded',function(){ document.body.classList.add('locked'); });
   function ready(cb){ if(window.supabase&&window.supabase.createClient){cb();} else if(tries++<150){setTimeout(function(){ready(cb);},60);} }
-  function unlock(){ var o=document.getElementById('ess-login'); if(o)o.remove(); document.body.classList.remove('locked'); }
+  function unlock(){
+    var o=document.getElementById('ess-login'); if(o)o.remove(); document.body.classList.remove('locked');
+    // 03/09/2026 — les recos portent nos prix IP : fichier protégé, chargé par
+    // adresse signée APRÈS l'ouverture de session, puis la page se redessine.
+    if(!window.ESSENTIELS_RECO){
+      sb.storage.from('donnees-protegees').createSignedUrl('essentiels-reco-data.js',3600).then(function(r){
+        var url=r&&r.data&&r.data.signedUrl; if(!url) return;
+        var sc=document.createElement('script'); sc.src=url;
+        sc.onload=function(){ try{ if(typeof renderProdTable==='function') renderProdTable(); }catch(e){} };
+        document.head.appendChild(sc);
+      });
+    }
+  }
   ready(function(){
     sb=window.supabase.createClient(SB_URL,SB_KEY);
     sb.auth.getSession().then(function(r){ if(r&&r.data&&r.data.session) unlock(); });
