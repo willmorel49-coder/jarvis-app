@@ -174,3 +174,6 @@ base-biosimilaires.xlsx
 # 03/09/2026 — conditions commerciales Offilog : JAMAIS dans ce dépôt public.
 # Déposé dans l'espace Supabase « donnees-protegees », servi par adresse signée.
 crm/offilog-conditions.js
+bestsellers_offilog.json
+crm/v2/offilog-best-prix.js
+offilog-live-prix.js

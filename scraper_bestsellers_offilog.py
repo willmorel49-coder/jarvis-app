@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Scraper Offilog — Meilleures ventes
-Connexion : ***RETIRE*** / ***RETIRE***
+Connexion : identifiants hors dépôt (~/.config/jarvis/offilog.json)
 Préserve l'ordre d'affichage = rang de vente décroissant
 Output    : bestsellers_offilog.json  +  bestsellers_offilog.xlsx
 """
@@ -20,8 +20,29 @@ OUT_JSON = BASE / 'bestsellers_offilog.json'
 OUT_XLSX = BASE / 'bestsellers_offilog.xlsx'
 
 LOGIN_URL = 'https://offilog.fr/connexion?back=my-account'
-EMAIL     = '***RETIRE***
-PASSWORD  = '***RETIRE***'
+# ── Identifiants ────────────────────────────────────────────────────────────
+# ⚠️ 03/09/2026 — ils étaient ÉCRITS EN CLAIR ici, dans un dépôt PUBLIC servi
+# par GitHub Pages. N'importe qui pouvait se connecter à la plateforme Offilog.
+# Ils se lisent désormais hors du dépôt : ~/.config/jarvis/offilog.json
+#   {"email": "...", "password": "..."}
+# ou, à défaut, dans les variables d'environnement OFFILOG_EMAIL / OFFILOG_PWD.
+import os, json as _json
+from pathlib import Path as _Path
+
+def _identifiants():
+    f = _Path.home() / '.config' / 'jarvis' / 'offilog.json'
+    if f.exists():
+        d = _json.loads(f.read_text(encoding='utf-8'))
+        return d.get('email', ''), d.get('password', '')
+    return os.environ.get('OFFILOG_EMAIL', ''), os.environ.get('OFFILOG_PWD', '')
+
+EMAIL, PASSWORD = _identifiants()
+if not EMAIL or not PASSWORD:
+    raise SystemExit(
+        "Identifiants Offilog absents. Crée ~/.config/jarvis/offilog.json "
+        '({"email": "...", "password": "..."}) ou exporte OFFILOG_EMAIL / OFFILOG_PWD. '
+        "Ne JAMAIS les réécrire dans ce fichier : le dépôt est public.")
+
 BEST_URL  = 'https://offilog.fr/meilleures-ventes'
 PER_PAGE  = 100
 DELAY     = 0.5

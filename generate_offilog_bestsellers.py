@@ -24,8 +24,31 @@ def fetch(sess, url, hard=55):
         signal.alarm(0)
 
 BASE = "https://offilog.fr"
-EMAIL = "***RETIRE***
-PWD = "***RETIRE***"
+# ── Identifiants ────────────────────────────────────────────────────────────
+# ⚠️ 03/09/2026 — ils étaient ÉCRITS EN CLAIR ici, dans un dépôt PUBLIC servi
+# par GitHub Pages. N'importe qui pouvait se connecter à la plateforme Offilog.
+# Ils se lisent désormais hors du dépôt : ~/.config/jarvis/offilog.json
+#   {"email": "...", "password": "..."}
+# ou, à défaut, dans les variables d'environnement OFFILOG_EMAIL / OFFILOG_PWD.
+import os, json as _json
+from pathlib import Path as _Path
+
+def _identifiants():
+    f = _Path.home() / '.config' / 'jarvis' / 'offilog.json'
+    if f.exists():
+        d = _json.loads(f.read_text(encoding='utf-8'))
+        return d.get('email', ''), d.get('password', '')
+    return os.environ.get('OFFILOG_EMAIL', ''), os.environ.get('OFFILOG_PWD', '')
+
+EMAIL, PASSWORD = _identifiants()
+if not EMAIL or not PASSWORD:
+    raise SystemExit(
+        "Identifiants Offilog absents. Crée ~/.config/jarvis/offilog.json "
+        '({"email": "...", "password": "..."}) ou exporte OFFILOG_EMAIL / OFFILOG_PWD. '
+        "Ne JAMAIS les réécrire dans ce fichier : le dépôt est public.")
+
+PWD = PASSWORD
+
 OUT = "/Users/williammorel/JARVIS/APP/crm/v2/offilog-bestsellers-data.js"
 UA = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36"}
 

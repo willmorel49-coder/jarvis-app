@@ -2293,13 +2293,59 @@ function renderProspects(search = '') {
 // → chargé à la demande pour ne pas bloquer le boot du Cockpit.
 let _offilogLivePromise = null;
 
+// ⚠️ 03/09/2026 — les PRIX B2B ont quitté offilog-live-data.js, qui part dans
+// un dépôt PUBLIC : 6 751 prix de vente aux pharmacies étaient téléchargeables
+// sans mot de passe. Ils vivent maintenant dans offilog-live-prix.js, hors
+// dépôt, dans l'espace Supabase « donnees-protegees », lisible seulement avec
+// une session ouverte. On recolle `p.prix` sur les objets après chargement :
+// tout le code qui lit `p.prix` continue de marcher sans être touché.
+let _offilogPrixOK = null;   // null = pas encore su, false = indisponible
+
+function _appliquerPrixLive() {
+  if (typeof OFFILOG_LIVE === 'undefined') return 0;
+  const t = window.OFFILOG_LIVE_PRIX;
+  if (!t) return 0;
+  let n = 0;
+  for (const p of OFFILOG_LIVE) {
+    const v = p && p.id != null ? t[String(p.id)] : null;
+    if (v == null) continue;
+    p.prix = v; n++;
+  }
+  return n;
+}
+
+function _chargerPrixLive() {
+  // sans session, pas d'adresse signée — donc pas de prix. On le dit à
+  // l'appelant plutôt que de laisser des prix vides passer pour des zéros.
+  return sb.storage.from('donnees-protegees')
+    .createSignedUrl('offilog-live-prix.js', 3600)
+    .then(r => {
+      const url = r && r.data && r.data.signedUrl;
+      if (!url) throw new Error('adresse signée refusée');
+      return new Promise((ok, ko) => {
+        const s = document.createElement('script');
+        s.src = url;
+        s.onload = () => {
+          try { if (typeof OFFILOG_LIVE_PRIX !== 'undefined') window.OFFILOG_LIVE_PRIX = OFFILOG_LIVE_PRIX; } catch (e) {}
+          ok();
+        };
+        s.onerror = () => ko(new Error('Echec chargement offilog-live-prix.js'));
+        document.head.appendChild(s);
+      });
+    })
+    .then(() => { _offilogPrixOK = true; })
+    .catch(() => { _offilogPrixOK = false; });
+}
+
 function loadOffilogLive() {
-  if (typeof OFFILOG_LIVE !== 'undefined') return Promise.resolve();
+  if (typeof OFFILOG_LIVE !== 'undefined' && _offilogPrixOK !== null) return Promise.resolve();
   if (_offilogLivePromise) return _offilogLivePromise;
 
   _offilogLivePromise = new Promise((resolve, reject) => {
     const s = document.createElement('script');
-    s.src = 'offilog-live-data.js?v=20260512lazy';
+    // jeton bumpé : le fichier a changé de forme (prix retirés). Sans ça, un
+    // navigateur resservirait l'ancien fichier, prix compris.
+    s.src = 'offilog-live-data.js?v=20260903a';
     s.async = true;
     s.onload = () => resolve();
     s.onerror = () => {
@@ -2307,7 +2353,7 @@ function loadOffilogLive() {
       reject(new Error('Echec chargement offilog-live-data.js'));
     };
     document.head.appendChild(s);
-  });
+  }).then(() => _chargerPrixLive()).then(() => { _appliquerPrixLive(); });
   return _offilogLivePromise;
 }
 

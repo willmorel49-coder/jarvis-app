@@ -189,7 +189,7 @@
   function condKO() {
     try {
       var ko = V2.donneesProtegeesKO ? V2.donneesProtegeesKO() : [];
-      return ko.indexOf('offilogcond') >= 0;
+      return ko.indexOf('offilogcond') >= 0 || ko.indexOf('offilogbestprix') >= 0;
     } catch (e) { return false; }
   }
   function bandeauCond() {
@@ -682,9 +682,15 @@
       sc.onerror = onfail;
       document.head.appendChild(sc);
     }
+    // Les PRIX B2B ne sont plus dans ce fichier : ils viennent d'un fichier
+    // protégé, en parallèle. Le catalogue s'affiche même s'ils manquent — mais
+    // alors sans prix, et l'écran le dit (bandeauCond).
+    if (V2.loadFiles) { try { V2.loadFiles(['offilogbestprix']); } catch (e) {} }
     // 1) chemin du module (MOD_BASE) → 2) repli chemin relatif → 3) échec
-    inject(MOD_BASE + 'offilog-bestsellers-data.js?v=20260610v2m', function () {
-      inject('offilog-bestsellers-data.js?v=20260610v2m', function () {
+    // ⚠️ jeton bumpé : le fichier a changé de forme (prix retirés). Sans ça,
+    // un navigateur resservirait l'ancien, prix compris.
+    inject(MOD_BASE + 'offilog-bestsellers-data.js?v=20260903a', function () {
+      inject('offilog-bestsellers-data.js?v=20260903a', function () {
         bestLoading = false; bestFail = true; cb();
       });
     });
@@ -1007,6 +1013,9 @@
         pzTried = true;
         ensurePz(function () { idxBuilt = false; V2.render(); });
       }
+      // les deux morceaux (catalogue, prix protégés) arrivent dans un ordre
+      // quelconque : on retente la fusion à chaque rendu, c'est idempotent.
+      if (V2.fusionnerPrixBest) { try { V2.fusionnerPrixBest(); } catch (e) {} }
       buildIndex();
 
       var base = filteredBase();
