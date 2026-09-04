@@ -32,7 +32,8 @@
   var FAM_ORDER = ['pr_low', 'pr_mid', 'pr_high', 'nr', 'gen', 'biosim'];
   var LIMIT = 200;
 
-  var S = { sort: 'n', q: '', chip: 'all', etab: '', stockOnly: false, perCat: 5 };
+  var S = { sort: 'n', q: '', chip: 'all', etab: '', stockOnly: false, perCat: 5, sagV: '' };
+  var sagTried = false;   // tarif Sagitta (fichier protégé) demandé une seule fois
   try { var sv = JSON.parse(localStorage.getItem('mol.S') || '{}'); ['sort', 'chip', 'etab', 'stockOnly', 'perCat'].forEach(function (k) { if (sv[k] != null) S[k] = sv[k]; }); } catch (e) {}
   function save() { try { localStorage.setItem('mol.S', JSON.stringify({ sort: S.sort, chip: S.chip, etab: S.etab, stockOnly: S.stockOnly, perCat: S.perCat })); } catch (e) {} }
 
@@ -73,12 +74,27 @@
     return { ppht: ppht, net: net, stk: stk, rpct: rpct };
   }
 
+  // Face à Sagitta : tarif d'achat net d'un TIERS (fichier protégé, adresse
+  // signée — jamais dans un PDF ni une sélection marketing, écran seulement).
+  // Verdict sur le net effectif de la ligne (pricing : barème + établissement).
+  function sagVerdict(r, p) {
+    var t = window.SAGITTA_PRIX_CIP; if (!t) return null;
+    // Génériques et biosimilaires EXCLUS : chez Intégral leurs remises passent
+    // en direct labo → pharmacie (invisibles dans le net), chez Sagitta elles
+    // sont en facture — le face-à-face serait faux par construction.
+    if (r.f === 'gen' || r.f === 'biosim') return null;
+    var s = t[String(r.c)];
+    if (!(typeof s === 'number' && s > 0)) return null;
+    var net = p.net || 0;
+    return { s: s, v: net > 0 ? (net < s ? 'gagne' : (s < net ? 'perd' : 'egal')) : '' };
+  }
   function baseData() {
     var data = (window.PROD_STATS || []);
     if (S.chip !== 'all') data = data.filter(function (r) { return r.f === S.chip; });
     var q = S.q.trim().toLowerCase();
     if (q) data = data.filter(function (r) { return (r.d || '').toLowerCase().indexOf(q) >= 0 || (r.c || '').indexOf(q) >= 0; });
     if (S.etab && S.stockOnly) data = data.filter(function (r) { var er = etabRec(r.c); return !!(er && er[1] > 0); });
+    if (S.sagV) data = data.filter(function (r) { var sg = sagVerdict(r, pricing(r)); return !!(sg && sg.v === S.sagV); });
     return data;
   }
   function counts() { var c = {}; FAMS.forEach(function (f) { c[f.k] = 0; }); (window.PROD_STATS || []).forEach(function (r) { c.all++; if (c[r.f] != null) c[r.f]++; }); return c; }
@@ -111,7 +127,11 @@
         '<td data-label="Famille">' + famBadge(r.f) + '</td>' +
         '<td class="num mono mol-nph" data-label="Pharmacies">' + num(r.n) + '</td>' +
         pphtTd +
-        '<td class="num mono mol-net" data-label="Net remisé">' + (p.net > 0 ? eur(p.net) : '—') + '</td>' +
+        (function () {
+          var sg = sagVerdict(r, p);
+          return '<td class="num mono mol-net" data-label="Net remisé">' + (p.net > 0 ? eur(p.net) : '—') +
+            (sg ? '<span class="mol-sag' + (sg.v === 'gagne' ? ' win' : sg.v === 'perd' ? ' lose' : '') + '" title="Tarif d\'achat net Sagitta">Sagitta ' + eur(sg.s) + '</span>' : '') + '</td>';
+        })() +
         '<td class="num" data-label="Abandon de marge">' + (showAb ? '<span class="mol-rem">−' + String(p.rpct).replace('.', ',') + '%</span>' : '<span style="color:var(--muted-2)">—</span>') + '</td>' +
         '<td class="num mono mol-frv" data-label="Moy. France/an">' + (mkt ? '<span title="Moyenne France indicative (Ameli, ' + (mkt.meta ? mkt.meta.mois : 12) + ' mois)">~' + num(mkt.avgYear) + '</span>' : '<span style="color:var(--muted-2)">—</span>') + '</td>' +
         COLS.map(function (c) { return '<td class="num mono" data-label="' + esc(c.l) + '"' + (c.accent ? ' style="color:' + c.accent + ';font-weight:800"' : '') + '>' + c.fmt(r[c.k] || 0) + '</td>'; }).join('') +
@@ -123,6 +143,46 @@
   }
 
   V2.molFilter = function (k) { S.chip = k; save(); V2.render(); };
+  V2.molSagV = function (v) { S.sagV = (S.sagV === v) ? '' : v; V2.render(); };
+  // Bande « Face à Sagitta » : verdict compté sur la sélection courante
+  // (famille + recherche + stock), net effectif ligne par ligne. Rien tant que
+  // le tarif protégé n'est pas chargé.
+  function sagMajLabel() {
+    var d = window.SAGITTA_PRIX_MAJ;
+    if (!d) return '';
+    var p = String(d).split('-');
+    return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : String(d);
+  }
+  function sagBand() {
+    if (!window.SAGITTA_PRIX_CIP) return '';
+    var data = (window.PROD_STATS || []);
+    if (S.chip !== 'all') data = data.filter(function (r) { return r.f === S.chip; });
+    var q = S.q.trim().toLowerCase();
+    if (q) data = data.filter(function (r) { return (r.d || '').toLowerCase().indexOf(q) >= 0 || (r.c || '').indexOf(q) >= 0; });
+    if (S.etab && S.stockOnly) data = data.filter(function (r) { var er = etabRec(r.c); return !!(er && er[1] > 0); });
+    var g = 0, pd = 0, eg = 0, tot = 0;
+    for (var i = 0; i < data.length; i++) {
+      var sg = sagVerdict(data[i], pricing(data[i]));
+      if (sg && sg.v) { tot++; if (sg.v === 'gagne') g++; else if (sg.v === 'perd') pd++; else eg++; }
+    }
+    if (!tot) return '';
+    function tuile(k, n, label) {
+      var on = S.sagV === k ? ' on' : '';
+      var cls = k === 'gagne' ? ' win' : ' lose';
+      return '<button type="button" class="mol-sagv' + cls + on + '" onclick="V2.molSagV(\'' + k + '\')">' +
+        '<span class="mol-sagv-v mono">' + num(n) + '</span>' +
+        '<span class="mol-sagv-l">' + label + '</span>' +
+        '<span class="mol-sagv-go">' + (S.sagV === k ? 'Tout revoir' : 'Les voir') + ' ' + ICO('chev', 14, 2.2) + '</span>' +
+      '</button>';
+    }
+    return '<div class="mol-sagband">' +
+      '<div class="mol-sagband-l">Face à Sagitta <span>· tarif du ' + sagMajLabel() + ' · ' + num(tot) + ' références comparées · ' + num(eg) + ' au même prix · hors génériques et biosimilaires (leurs remises passent par les labos, pas par la facture grossiste)</span></div>' +
+      '<div class="mol-sagband-row">' +
+        tuile('gagne', g, 'référence' + (g > 1 ? 's' : '') + ' où ton net Intégral est moins cher') +
+        tuile('perd', pd, 'où Sagitta est moins cher') +
+      '</div>' +
+    '</div>';
+  }
   V2.molSort = function (k) { S.sort = k; save(); fill(true); syncHead(); };
   V2.molEtab = function (code) { S.etab = code || ''; save(); if (!window.ETAB_PRICES) ensureEtab(function () { if (V2.route && V2.route.name === 'molecules') V2.render(); }); V2.render(); };
   V2.molStockOnly = function (on) { S.stockOnly = !!on; save(); V2.render(); };
@@ -249,6 +309,11 @@
         return;
       }
       if (!window.ETAB_PRICES) ensureEtab(function () { if (V2.route && V2.route.name === 'molecules') V2.render(); });
+      // Tarif d'achat Sagitta (conditions d'un tiers) : adresse signée, une fois
+      if (!window.SAGITTA_PRIX_CIP && !sagTried) {
+        sagTried = true;
+        if (V2.loadFiles) { try { V2.loadFiles(['sagittaprix']).then(function () { if (V2.route && V2.route.name === 'molecules') V2.render(); }); } catch (e) {} }
+      }
       var c = counts();
       var chips = FAMS.map(function (f) {
         return '<button class="v2-seg' + (S.chip === f.k ? ' on' : '') + '" style="--sc:' + f.sc + '" onclick="V2.molFilter(\'' + f.k + '\')">' + (f.k === 'all' ? '' : '<span class="sw"></span>') + esc(f.label) + '<span class="cnt">' + num(c[f.k] || 0) + '</span></button>';
@@ -307,7 +372,7 @@
             '<div class="v2-page-title">Catalogue &amp; prix</div>' +
             '<div class="v2-page-sub">Tous les produits du réseau, classés par nb de pharmacies qui commandent. Pour chacun : ton <b>prix net remisé</b> et l\'<b>abandon de marge</b> Intégral, plus la rotation et la marge pharmacien.</div>' +
           '</div>' + kfs + '</div>' +
-          panel + advBar +
+          panel + advBar + sagBand() +
           '<div class="mol-tcard">' +
           '<div class="mol-countrow"><span class="cat-count" id="mol-count"></span>' + msort + '</div>' +
           '<div class="mol-scroll"><table class="v2-table mol-table"><thead><tr>' +
@@ -342,6 +407,29 @@
   if (!document.getElementById('v2-mol-css')) {
     var st = document.createElement('style'); st.id = 'v2-mol-css';
     st.textContent =
+      // ── Face à Sagitta : bande de verdict + mini-prix sous le net ──
+      '.mol-sagband{margin:0 0 16px}' +
+      '.mol-sagband-l{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;margin:0 0 10px}' +
+      '.mol-sagband-l span{text-transform:none;letter-spacing:0;font-weight:600;color:var(--muted-2)}' +
+      '.mol-sagband-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}' +
+      '@media(max-width:640px){.mol-sagband-row{grid-template-columns:1fr}}' +
+      '.mol-sagv{display:flex;align-items:center;gap:12px;text-align:left;width:100%;padding:13px 17px;border-radius:var(--r-card);border:1px solid var(--line);background:linear-gradient(180deg,var(--card),var(--card-2));box-shadow:var(--sh-1);font-family:var(--font);cursor:pointer;transition:transform .18s var(--mo-ease-soft),box-shadow .18s var(--mo-ease-soft),border-color .18s var(--mo-ease-soft)}' +
+      '.mol-sagv:hover{transform:translateY(-2px);box-shadow:var(--sh-2)}' +
+      '.mol-sagv-v{font-size:22px;font-weight:800;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums}' +
+      '.mol-sagv-l{font-size:12.5px;color:var(--muted);line-height:1.3;flex:1;min-width:0}' +
+      '.mol-sagv-go{display:inline-flex;align-items:center;gap:3px;font-size:12.5px;font-weight:700;white-space:nowrap;color:var(--muted)}' +
+      '.mol-sagv.win .mol-sagv-v{color:var(--c-mint)}' +
+      '.mol-sagv.win:hover{border-color:color-mix(in srgb,var(--c-mint) 40%,var(--line))}' +
+      '.mol-sagv.win.on{border-color:var(--c-mint);box-shadow:0 0 0 3px color-mix(in srgb,var(--c-mint) 20%,transparent),var(--sh-2)}' +
+      '.mol-sagv.win .mol-sagv-go{color:var(--c-mint)}' +
+      '.mol-sagv.lose .mol-sagv-v{color:var(--c-amber)}' +
+      '.mol-sagv.lose:hover{border-color:color-mix(in srgb,var(--c-amber) 40%,var(--line))}' +
+      '.mol-sagv.lose.on{border-color:var(--c-amber);box-shadow:0 0 0 3px color-mix(in srgb,var(--c-amber) 22%,transparent),var(--sh-2)}' +
+      '.mol-sagv.lose .mol-sagv-go{color:var(--c-amber)}' +
+      '@media(prefers-reduced-motion:reduce){.mol-sagv{transition:none}.mol-sagv:hover{transform:none}}' +
+      '.mol-sag{display:block;font-size:10.5px;font-weight:700;color:var(--muted);margin-top:2px}' +
+      '.mol-sag.win{color:var(--c-mint)}' +
+      '.mol-sag.lose{color:var(--c-amber)}' +
       // en-tête : titre + bandeau de repères (vraies données)
       '.mol-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px 28px;flex-wrap:wrap;margin-bottom:18px}' +
       '.mol-head-l{flex:1 1 380px;min-width:0}' +
