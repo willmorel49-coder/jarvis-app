@@ -464,7 +464,8 @@
         '</div>' +
         pzBlock +
         '<div class="off-cmp"><div class="off-cmp-l">Prix public concurrents <span>(TTC)</span></div>' + priceCmpRows(it) + '</div>' +
-        '<div class="off-insp-cta"><button class="v2-btn v2-btn-primary" onclick="V2.offAddToFiche(\'' + esc(it.ean || it.id) + '\')">' + ICO('plus', 17) + ' Ajouter à une fiche commerciale</button>' +
+        '<div class="off-insp-cta">' +
+          (V2.ficheCart ? '<button class="v2-btn v2-btn-primary" onclick="V2.offAddToFiche(\'' + esc(it.ean || it.id) + '\')">' + ICO('plus', 17) + ' Ajouter à une fiche commerciale</button>' : '') +
           (it.url ? '<a class="v2-btn v2-btn-ghost" href="' + esc(it.url) + '" target="_blank" rel="noopener" style="margin-top:8px">Voir sur Offilog</a>' : '') + '</div>' +
       '</div>' +
     '</div>';

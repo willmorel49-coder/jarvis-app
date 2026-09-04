@@ -1110,6 +1110,9 @@
           '<div class="v2-pil-t">' + p.t + '</div><div class="v2-pil-d">' + p.d + '</div>' +
           '<div class="v2-pil-go">' + p.go + ' <span class="arrow">→</span></div></a>';
       }
+      // Une tuile dont l'écran n'est pas chargé (app OPSO allégée, module
+      // optionnel absent) ne s'affiche pas : un clic vers rien n'existe pas.
+      P = P.filter(function (p) { return p.route ? !!V2.pages[p.route.name] : !!V2.pages[p.k]; });
       // Accueil regroupé "par moment d'usage" (hors OPSO qui garde son ordre suivi-groupement)
       var pilHtml;
       if (window.V2_BRAND && window.V2_BRAND.opso) {
@@ -1262,7 +1265,8 @@
     // Pages
     var PAGES = [['home', 'Accueil', 'opp'], ['pharma', 'Opportunités pharmacie', 'opp'], ['offilog', 'Offilog · parapharmacie & prix concurrents', 'spark'], ['pilotage', 'Pilotage CA & marge', 'pilo']];
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.grossistes) PAGES.splice(3, 0, ['grossistes', 'Concurrents · grossistes-répartiteurs', 'spark']);
-    if (window.V2_BRAND && window.V2_BRAND.opso) PAGES.splice(2, 0, ['fiches', 'Fiches commerciales', 'fiche']); // OPSO garde les fiches
+    // 04/09/2026 — l'app OPSO redevient un simple visu groupement : plus de
+    // fiches commerciales chez elle (v2-fiches n'y est plus chargé).
     if (window.V2_BRAND && window.V2_BRAND.opso && V2.pages.marketing) PAGES.splice(2, 0, ['marketing', 'Fiches marketing OPSO', 'fiche']);
     else if (V2.pages.marketing) PAGES.splice(2, 0, ['marketing', 'Marketing', 'spark']);
     // Une seule entrée « La carte » (l'entrée « Copilote » en doublon est retirée le 27/08/2026).
@@ -1288,6 +1292,8 @@
       if (V2.pages.rdvsuivi) PAGES.push(['rdvsuivi', 'Suivi & contrôle des rendez-vous', 'cal']);
       if (V2.pages.rdvdispo) PAGES.push(['rdvdispo', 'Mes disponibilités & mon lien de réservation', 'cal']);
     }
+    // Une page non chargée (app OPSO allégée) ne se propose pas au clavier.
+    PAGES = PAGES.filter(function (p) { return p[0] === 'home' || !!V2.pages[p[0]]; });
     PAGES.forEach(function (p) { idx.push({ grp: 'Pages', label: p[1], ico: p[2], action: function () { V2.go(p[0]); } }); });
     // Espace Groupements (sous-vue de pharma avec param) — recherchable dans ⌘K
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.pharma) {
