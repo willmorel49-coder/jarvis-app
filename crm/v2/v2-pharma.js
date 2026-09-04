@@ -1524,8 +1524,13 @@
         '<div class="pha-rail">' + idCard + listes + infos + notes + '</div>' +
         '<div class="pha-main">' + chiffres + listing + generiqueurSec + '</div>' +
       '</div>';
-    var auditTab = (V2.audit && window.WML_SALES && window.PROD_STATS)
+    // ⚠️ window.ARGUMENT (part d'abandon, donnée protégée) est requis : sans lui le
+    // calcul rendrait des ZÉROS silencieux. On le charge et on re-rend, comme les ventes.
+    var auditTab = (V2.audit && window.WML_SALES && window.PROD_STATS && window.ARGUMENT)
       ? '<div id="aud">' + V2.audit.sheetFor(pid) + V2.audit.importSection() + '</div>' : '';
+    if (V2.audit && window.WML_SALES && window.PROD_STATS && !window.ARGUMENT && V2.loadFiles) {
+      V2.loadFiles(['argument']).then(function () { if (V2.route && V2.route.name === 'pharma') V2.render(); });
+    }
     var tabs = auditTab ? '<div class="ph-fiche-tabs" style="display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 16px">' +
       '<button class="ph-vtab on" id="phft-apercu" onclick="V2.phFicheTab(\'apercu\')">' + ICO('pharma', 15, 2) + 'Analyse</button>' +
       '<button class="ph-vtab" id="phft-audit" onclick="V2.phFicheTab(\'audit\')">' + ICO('pilo', 15, 2) + 'Audit marge</button>' +

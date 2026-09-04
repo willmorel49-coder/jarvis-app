@@ -4,7 +4,9 @@
    sur le PRINCEPS DE MARQUE (hors génériques), à partir des vraies ventes
    WML_SALES [pharmacyId,mois,commercial,cip13,qte,puNet,mntNetHt] + PROD_STATS
    (famille + libellé par CIP pour isoler le princeps de marque).
-   Abandon = 60% de la marge grossiste (plancher 0,30€ / 6,93% / plafond 32,50€).
+   Abandon = part Intégral de la marge grossiste (plancher 0,30€ / 6,93% / plafond 32,50€ —
+   barème public). La PART, elle, est une condition commerciale : elle vit dans les données
+   protégées (window.ARGUMENT.ip.partAbandon, clé `argument`), jamais dans ce fichier public.
    100% client-side, zéro dépendance. PDF via V2.pdfPreview.
    ═══════════════════════════════════════════════════════════════════ */
 (function () {
@@ -30,7 +32,10 @@
     return _M;
   }
   function pfFromNet(pu) { pu = Math.abs(pu || 0); return pu <= 4.63 ? Math.max(0.01, pu - 0.30) : (pu <= 501.5 ? pu / 1.0693 : pu - 32.50); }
-  function abPF(pf) { return 0.60 * Math.max(0.30, Math.min(0.0693 * pf, 32.50)); }
+  // Part d'abandon Intégral : donnée protégée, AUCUN repli chiffré ici (dépôt public).
+  // Le render garantit window.ARGUMENT avant tout calcul ; 0 = données absentes.
+  function abPart() { return (window.ARGUMENT && window.ARGUMENT.ip && window.ARGUMENT.ip.partAbandon) || 0; }
+  function abPF(pf) { return abPart() * Math.max(0.30, Math.min(0.0693 * pf, 32.50)); }
 
   // Index ventes brutes par pharmacie (1×) + cache résultat — évite d'itérer 325k lignes à chaque render
   var _sbp = null, _ac = {};
@@ -42,6 +47,11 @@
   }
   // Calcule l'audit pour une pharmacie (pid) ou la moyenne réseau (pid falsy).
   function audit(pid) {
+    // ⚠️ Sans la part d'abandon (donnée protégée), tout serait à 0 : on NE CALCULE
+    // NI NE MET EN CACHE — sinon des zéros figés survivraient à l'arrivée des données
+    // (le piège des « zéros silencieux »). On déclenche le chargement et on rend null,
+    // que tous les appelants traitent déjà (garde `a && a.annAb > 0`, `d.net`).
+    if (!abPart()) { if (V2.loadFiles) V2.loadFiles(['argument']); return null; }
     var ck = String(pid || '_reseau'); if (_ac[ck]) return _ac[ck];
     var M = cipMap();
     var S = pid ? (salesByPid()[String(pid)] || []) : (window.WML_SALES || []);
@@ -77,7 +87,7 @@
   // Construit le "sheet" (HTML) — width: variable (écran responsive / 794px en PDF).
   function buildSheet(pid, name) {
     var d = audit(pid);
-    if (!d.net) {
+    if (!d || !d.net) {
       return '<div class="aud-sheet"><div class="aud-band"><div><div class="aud-logo">Intégral Pharma</div><h1>Audit Marge</h1>'
         + '<div class="aud-ph">' + esc(name) + '</div></div></div>'
         + '<div class="aud-empty">Aucune vente de princeps de marque sur la période (janv.–mai 2026) pour cette pharmacie.</div></div>';
@@ -163,9 +173,9 @@
   V2.pages.audit = {
     render: function (root) {
       var top = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' });
-      if (!window.WML_SALES || !window.PROD_STATS) {
+      if (!window.WML_SALES || !window.PROD_STATS || !window.ARGUMENT) {
         root.innerHTML = top + '<div class="v2-wrap"><div class="v2-loading"><div class="v2-spinner"></div><div>Chargement des ventes…</div></div></div>';
-        if (V2.loadFiles) V2.loadFiles(['wml', 'prod']).then(function () { if (V2.route && V2.route.name === 'audit') V2.render(); });
+        if (V2.loadFiles) V2.loadFiles(['wml', 'prod', 'argument']).then(function () { if (V2.route && V2.route.name === 'audit') V2.render(); });
         return;
       }
       ensureCss();
