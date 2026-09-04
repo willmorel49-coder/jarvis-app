@@ -785,21 +785,25 @@
         '</div>'
       : '';
 
-    // La note dit sur quoi on compte, et ce qu'on a laissé dehors. Un
-    // pourcentage sans son périmètre ne veut rien dire.
+    // TOUTE l'explication vit dans la légende du HAUT, au moment où on lit les
+    // boutons — elle vivait sous le tableau, et Will lisait les boutons sans elle :
+    // « je ne comprends pas la différence sur le CA » (04/09/2026). Un pourcentage
+    // sans son périmètre ne veut rien dire : le mode choisi dit ce qu'il compte,
+    // en % du chiffre réel, et ce qu'il laisse dehors.
     var partRetenue = caTotal > 0 ? caRetenu / caTotal * 100 : 0;
     var leCa = monSecteur ? 'ton chiffre d\'affaires' : 'le chiffre d\'affaires du réseau';
-    var nbLignes = lignes.length === 3 ? 'Les trois lignes' : (lignes.length === 2 ? 'Les deux lignes' : 'Les lignes');
-    var note = comparable
-      ? nbLignes + ' comptent les <b>mêmes produits</b> : ceux que Medic\'AM suit, ' +
-        'c\'est-à-dire les remboursables — <b>' + partRetenue.toFixed(1).replace('.', ',') + ' %</b> ' +
-        'de ' + leCa + ' sur cette fenêtre. Les NR et la parapharmacie n\'y sont pas : ' +
+    var nbLignes = lignes.length === 3 ? 'les trois lignes' : (lignes.length === 2 ? 'les deux lignes' : 'les lignes');
+    var modeTxt = comparable
+      ? '<b>« Comparable à la France »</b> : ' + nbLignes + ' comptent les <b>mêmes produits</b> — ' +
+        'ceux que l\'Assurance Maladie suit (Medic\'AM), soit <b>' + partRetenue.toFixed(1).replace('.', ',') + ' %</b> ' +
+        (monSecteur ? 'de ton chiffre d\'affaires' : 'du chiffre d\'affaires du réseau') + ' sur cette fenêtre. Les non remboursés et la parapharmacie sont laissés dehors : ' +
         'la France ne les connaît pas, les compter d\'un seul côté fabriquerait un écart qui n\'existe pas. ' +
-        'Côté France, chaque boîte remboursée est valorisée à son tarif grossiste' +
+        'Chaque boîte remboursée côté France est valorisée à son tarif grossiste' +
         (fr.meta && fr.meta.periode ? ' (' + esc(String(fr.meta.periode).replace('→', ' → ')) + ')' : '') + '.'
-      : 'Vue complète : ' + leCa + ' en entier, NR et parapharmacie comprises. ' +
+      : '<b>« ' + (monSecteur ? 'Tout mon chiffre' : 'Tout le chiffre') + ' »</b> : ' + leCa + ' en entier, ' +
+        'tous produits — non remboursés et parapharmacie comprises. ' +
         (franceParTranche()
-          ? 'La ligne France disparaît — Medic\'AM ne connaît que le remboursable, elle ne serait plus comparable.'
+          ? 'La ligne France disparaît : Medic\'AM ne connaît que le remboursable, la comparaison ne serait plus à règles égales.'
           : 'La référence France n\'est pas disponible : les données Medic\'AM ne sont pas chargées.');
 
     return '<div class="v2-card pilo-prod">' +
@@ -811,11 +815,11 @@
         'de prix' + (comparable ? (monSecteur ? ', chez moi, chez les autres, et en France' : ', dans le réseau et en France') : '') + '. ' +
         (comparable ? 'Le petit chiffre sous chaque part est l\'écart avec la France, en points. ' : '') +
         'Touche une catégorie pour ne garder que ces produits dans la liste dessous.' +
+        '<br>' + modeTxt +
         (periodeLabel ? '<br><b>Mesuré sur ' + esc(periodeLabel) + '</b> — pas sur la période choisie en haut : ' +
           'sur les derniers mois, tous les secteurs ne sont pas encore dans le fichier de ventes.' : '') +
       '</div>' +
       tableau +
-      '<div class="pilo-cmp-note">' + note + '</div>' +
       '<div class="pilo-prod-sep"><span class="pilo-prod-lt">' + esc(titreListe) + '</span>' +
         '<span class="pilo-prod-lc mono">' + V2.fmtNum(prods.length) + ' référence' + (prods.length > 1 ? 's' : '') +
           ' · ' + V2.fmtEur(caSel) + '</span>' +
@@ -1799,12 +1803,16 @@
           '</details>';
       }
 
-      // Détail : répartition du CA (familles + tranches de prix + génériqueurs)
+      // Détail : répartition du CA (mois par mois + génériqueurs)
       // `sales` = V2.commSales() → respecte le périmètre commercial (confidentialité).
+      // 04/09/2026, Will : « ça fait doublon [...] mois par mois c'est juste plus
+      // précis donc c'est mieux, pas besoin d'avoir de doublons ». Les deux cartes
+      // statiques « Répartition par famille / par tranche » ne s'affichent plus que
+      // si la carte mois par mois n'a rien à montrer (moins de 2 mois de ventes).
       var gnqCard = V2.generiqueurCard ? V2.generiqueurCard(sales, { title: 'CA par génériqueur', max: 15 }) : '';
-      var repartition = legendeReseau(compare, repereLabel) +
-        '<div class="pilo-grid2" data-reveal>' + famCard + tierCard + '</div>' +
-        (partsMoisCard ? '<div style="margin-top:14px">' + partsMoisCard + '</div>' : '') +
+      var repartition = (partsMoisCard
+          ? '<div data-reveal>' + partsMoisCard + '</div>'
+          : legendeReseau(compare, repereLabel) + '<div class="pilo-grid2" data-reveal>' + famCard + tierCard + '</div>') +
         (gnqCard ? '<div data-reveal style="margin-top:14px">' + gnqCard + '</div>' : '');
       // Détail : classements (top pharmacies + groupements)
       var classements = grpCard ? ('<div class="pilo-grid2" data-reveal>' + topCaCard + grpCard + '</div>') : ('<div data-reveal>' + topCaCard + '</div>');
@@ -1855,7 +1863,7 @@
           chart.html +
           // ── DÉTAIL, replié par défaut : Will déplie au besoin ──
           disc('Répartition de mon chiffre d\'affaires',
-               compare ? 'tranches de prix et familles, avec le repère du réseau' : 'familles de produits et tranches de prix',
+               'familles et tranches de prix, mois par mois — en part, en euros ou en boîtes' + (compare ? ', avec le repère du réseau' : ''),
                repartition, false) +
           (produitsCard ? disc('Mes produits',
                'quels produits, dans quel secteur, dans quelle catégorie de prix',
@@ -2308,8 +2316,6 @@
       // La ligne France est la référence : trait plein au-dessus, jamais un accent de couleur.
       '.pilo-cmp-r.fr{margin-top:9px;padding-top:9px;border-top:1px solid var(--line-strong)}' +
       '.pilo-cmp-r.fr .pilo-cmp-p{color:var(--muted)}' +
-      '.pilo-cmp-note{margin-top:14px;font-size:11.5px;line-height:1.55;color:var(--muted-2);max-width:78ch}' +
-      '.pilo-cmp-note b{color:var(--muted);font-weight:700}' +
       // séparateur + liste produits
       '.pilo-prod-sep{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:20px 0 4px;padding-top:15px;border-top:1px solid var(--line)}' +
       '.pilo-prod-lt{font-size:13.5px;font-weight:800;color:var(--ip-ink);letter-spacing:-.01em}' +
