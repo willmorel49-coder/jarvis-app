@@ -3,7 +3,7 @@
    Catalogue PARAPHARMA = meilleures ventes Offilog (live, connecté),
    classées par ventes décroissantes, AVEC PHOTOS + prix Offilog.
    Enrichi par EAN avec la veille prix (achat IP vs prix public
-   E.Leclerc) depuis OFFILOG. + axe pro Offilog vs Pharmazon.
+   E.Leclerc) depuis OFFILOG. + axe pro Offilog vs Pharmazon vs Sagitta.
    ── Même DA que le catalogue grossiste · vanilla · zéro emoji ──
    ═══════════════════════════════════════════════════════════════════ */
 (function () {
@@ -31,6 +31,7 @@
     { k: 'all',         label: 'Tout',           sc: '#0050E6' },
     { k: 'alerte',      label: 'Concurrent moins cher', sc: '#6D4FC4' },
     { k: 'pzcheaper',   label: 'Moins cher sur Pharmazon', sc: 'var(--ip-blue-d)' },
+    { k: 'sgcheaper',   label: 'Moins cher chez Sagitta', sc: 'var(--ip-blue-d)' },
     { k: 'leclercpub',  label: 'Vendu chez E.Leclerc', sc: '#0066B3' },
     { k: 'sante',       label: 'Santé',          sc: '#1E9E6A' },
     { k: 'beaute-et-soins', label: 'Beauté & soins', sc: '#6D4FC4' },
@@ -102,6 +103,14 @@
     return m;
   }
 
+  // date du relevé Sagitta (portée par le fichier protégé), au format français
+  function sgMajLabel() {
+    var d = window.SAGITTA_PRIX_MAJ;
+    if (!d) return '';
+    var p = String(d).split('-');
+    return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : String(d);
+  }
+
   function buildIndex() {
     if (idxBuilt) return;
     var offByEan = offIndex();
@@ -118,6 +127,11 @@
       var pz = b.ean ? pzByEan.get(String(b.ean)) : null;
       // comparaison achat Offilog vs Pharmazon
       var pzCheaper = !!(pz && pz.price > 0 && price > 0 && pz.price < price);
+      // tarif d'achat Sagitta (grossiste) par EAN : {ean: [net] ou [net, tarif, remise %]}
+      // — fichier protégé (conditions d'un tiers), chargé par adresse signée.
+      var sgv = (window.SAGITTA_PRIX && b.ean) ? window.SAGITTA_PRIX[String(b.ean)] : null;
+      var sg = sgv ? { price: numOr0(sgv[0]), tarif: numOr0(sgv[1]), remise: numOr0(sgv[2]) } : null;
+      var sgCheaper = !!(sg && sg.price > 0 && price > 0 && sg.price < price);
       // prix PUBLIC E.Leclerc (TTC), relevé par l'API du site sur tout le
       // catalogue — bien plus large que l'ancien prix_leclerc porté par
       // OFFILOG (918 réf. contre 3 754).
@@ -131,7 +145,7 @@
         price: price, ean: b.ean || '', img: b.img || '', cat: b.cat || '',
         url: b.url || '', univers: o ? (o.univers || '') : '',
         achat: achat, conc: conc, hasConc: hasC, minConc: mc, alert: alert, matched: !!o,
-        pz: pz || null, pzCheaper: pzCheaper, leclerc: leclerc, sousRayon: sousRayon
+        pz: pz || null, pzCheaper: pzCheaper, sg: sg, sgCheaper: sgCheaper, leclerc: leclerc, sousRayon: sousRayon
       };
     });
     byEan = new Map();
@@ -144,6 +158,7 @@
     if (k === 'all') return true;
     if (k === 'alerte') return it.alert;
     if (k === 'pzcheaper') return it.pzCheaper;
+    if (k === 'sgcheaper') return it.sgCheaper;
     if (k === 'leclercpub') return it.leclerc > 0;
     return it.cat === k;
   }
@@ -163,12 +178,13 @@
     return a;
   }
   function counts(base) {
-    var c = { all: base.length, alerte: 0, pzcheaper: 0, leclercpub: 0 };
+    var c = { all: base.length, alerte: 0, pzcheaper: 0, sgcheaper: 0, leclercpub: 0 };
     CHIPS.forEach(function (ch) { if (c[ch.k] == null) c[ch.k] = 0; });
     for (var i = 0; i < base.length; i++) {
       var it = base[i];
       if (it.alert) c.alerte++;
       if (it.pzCheaper) c.pzcheaper++;
+      if (it.sgCheaper) c.sgcheaper++;
       if (it.leclerc > 0) c.leclercpub++;
       if (c[it.cat] != null) c[it.cat]++;
     }
@@ -358,6 +374,7 @@
         '<div class="off-card-name">' + esc(it.name) + '</div>' +
         '<div class="off-card-price mono">' + (it.price > 0 ? V2.fmtEur(it.price) : '—') +
           (it.pz && it.pz.price > 0 ? '<span class="off-card-pz' + (it.pzCheaper ? ' win' : '') + '">Pharmazon ' + V2.fmtEur(it.pz.price) + '</span>' : '') +
+          (it.sg && it.sg.price > 0 ? '<span class="off-card-pz' + (it.sgCheaper ? ' win' : '') + '" title="Tarif d\'achat Sagitta (HT)">Sagitta ' + V2.fmtEur(it.sg.price) + '</span>' : '') +
           (it.leclerc > 0 ? '<span class="off-card-lec' + (it.achat > 0 && it.leclerc < it.achat ? ' bad' : '') + '" title="Prix de vente au public chez E.Leclerc (TTC)">Leclerc ' + V2.fmtEur(it.leclerc) + '</span>' : '') +
           concBelow + '</div>' +
       '</div>' +
@@ -402,18 +419,24 @@
   function inspector(it) {
     var img = it.img ? '<div class="off-insp-img"><img src="' + esc(it.img) + '" loading="lazy" alt="" onerror="this.parentNode.style.display=\'none\'"></div>' : '';
     function kpi(l, v, col) { return '<div class="off-kpi"><div class="off-kpi-l">' + l + '</div><div class="off-kpi-v"' + (col ? ' style="color:' + col + '"' : '') + '>' + v + '</div></div>'; }
+    // Comparatif d'achat pro : Offilog vs Pharmazon vs Sagitta — seules les
+    // plateformes qui portent un prix pour CE produit entrent dans le bloc.
     var pzBlock = '';
-    if (it.pz && it.pz.price > 0) {
-      var oP = it.price, pP = it.pz.price;
-      var cheaper = (pP < oP) ? 'Pharmazon' : (oP < pP ? 'Offilog' : '');
-      var diff = Math.abs(oP - pP);
+    var plats = [{ n: 'Offilog', p: it.price, sub: '' }];
+    if (it.pz && it.pz.price > 0) plats.push({ n: 'Pharmazon', p: it.pz.price, sub: it.pz.labo ? ' · ' + esc(it.pz.labo) : '' });
+    if (it.sg && it.sg.price > 0) plats.push({ n: 'Sagitta', p: it.sg.price, sub: sgMajLabel() ? ' · tarif ' + sgMajLabel() : '' });
+    if (plats.length >= 2) {
+      var avecPrix = plats.filter(function (x) { return x.p > 0; }).slice().sort(function (a, b) { return a.p - b.p; });
+      var best = (avecPrix.length >= 2 && avecPrix[0].p < avecPrix[1].p) ? avecPrix[0] : null;
       pzBlock = '<div class="off-pz">' +
-        '<div class="off-pz-l">Comparatif d\'achat · Offilog vs Pharmazon</div>' +
-        '<div class="off-pz-row">' +
-          '<div class="off-pz-cell' + (cheaper === 'Offilog' ? ' win' : '') + '"><span>Offilog</span><b class="mono">' + (oP > 0 ? V2.fmtEur(oP) : '—') + '</b></div>' +
-          '<div class="off-pz-cell' + (cheaper === 'Pharmazon' ? ' win' : '') + '"><span>Pharmazon' + (it.pz.labo ? ' · ' + esc(it.pz.labo) : '') + '</span><b class="mono">' + V2.fmtEur(pP) + '</b></div>' +
+        '<div class="off-pz-l">Comparatif d\'achat · ' + plats.map(function (x) { return x.n; }).join(' vs ') + '</div>' +
+        '<div class="off-pz-row" style="grid-template-columns:repeat(' + plats.length + ',1fr)">' +
+        plats.map(function (x) {
+          return '<div class="off-pz-cell' + (best === x ? ' win' : '') + '"><span>' + x.n + x.sub + '</span><b class="mono">' + (x.p > 0 ? V2.fmtEur(x.p) : '—') + '</b></div>';
+        }).join('') +
         '</div>' +
-        (cheaper ? '<div class="off-pz-note">Moins cher sur <b>' + cheaper + '</b> · écart ' + V2.fmtEur(diff) + '</div>' : '<div class="off-pz-note">Même prix sur les deux plateformes</div>') +
+        (best ? '<div class="off-pz-note">Moins cher sur <b>' + best.n + '</b> · écart ' + V2.fmtEur(avecPrix[1].p - avecPrix[0].p) + '</div>'
+              : (avecPrix.length >= 2 ? '<div class="off-pz-note">Même prix sur les plateformes comparées</div>' : '')) +
       '</div>';
     }
     var badges = '<span class="off-badge" style="--bc:var(--pil-froid)">#' + it.rank + ' ventes</span>' +
@@ -483,7 +506,7 @@
     captureCardRects(); // repositionnement fluide des cartes qui restent visibles
     S.chip = k; S.page = 0;
     // si on choisit une catégorie (hors verdicts), on ouvre les filtres avancés pour rester cohérent
-    if (k !== 'all' && k !== 'alerte' && k !== 'pzcheaper') S.adv = true;
+    if (k !== 'all' && k !== 'alerte' && k !== 'pzcheaper' && k !== 'sgcheaper') S.adv = true;
     V2.render();
   };
   V2.offToggleAdv = function () { S.adv = !S.adv; V2.render(); };
@@ -720,7 +743,7 @@
   }
 
   // ── Chargement du fichier best-sellers (lazy, dans crm/v2/) ──
-  var bestLoading = false, bestFail = false, offTried = false, pzTried = false;
+  var bestLoading = false, bestFail = false, offTried = false, pzTried = false, sgTried = false;
   function ensureBest(cb) {
     if (window.OFFILOG_BEST) { cb(); return; }
     if (bestLoading) return;
@@ -1079,6 +1102,11 @@
         pzTried = true;
         ensurePz(function () { idxBuilt = false; V2.render(); });
       }
+      // Tarif d'achat Sagitta (conditions d'un tiers) : adresse signée, une fois
+      if (!window.SAGITTA_PRIX && !sgTried) {
+        sgTried = true;
+        if (V2.loadFiles) { try { V2.loadFiles(['sagittaprix']).then(function () { idxBuilt = false; V2.render(); }); } catch (e) {} }
+      }
       // les deux morceaux (catalogue, prix protégés) arrivent dans un ordre
       // quelconque : on retente la fusion à chaque rendu, c'est idempotent.
       if (V2.fusionnerPrixBest) { try { V2.fusionnerPrixBest(); } catch (e) {} }
@@ -1116,7 +1144,7 @@
         if (f.k === 'all') return '';      // porté par « Tout le rayon »
         if (RAYON_K[f.k]) return '';       // porté par la bande des rayons
         var n = c[f.k] || 0;
-        if (f.k !== 'pzcheaper' && n === 0) return '';
+        if (f.k !== 'pzcheaper' && f.k !== 'sgcheaper' && n === 0) return '';
         var on = S.chip === f.k ? ' on' : '';
         return '<button class="v2-seg' + on + '" style="--sc:' + f.sc + '" onclick="V2.offFilter(\'' + f.k + '\')">' +
           (f.k === 'all' ? '' : '<span class="sw"></span>') + esc(f.label) + '<span class="cnt">' + V2.fmtNum(n) + '</span></button>';
@@ -1147,7 +1175,7 @@
       var advOpen = S.adv;
       var advBtn = '<button type="button" class="off-advbtn' + (advOpen ? ' open' : '') + '" onclick="V2.offToggleAdv()">' +
           ICO('grid', 15, 2) + ' Filtres' +
-          (S.chip === 'pzcheaper' ? '<span class="off-advbtn-tag">' + esc(CHIP_BY_KEY[S.chip].label) + '</span>' : '') +
+          (S.chip === 'pzcheaper' || S.chip === 'sgcheaper' ? '<span class="off-advbtn-tag">' + esc(CHIP_BY_KEY[S.chip].label) + '</span>' : '') +
           '<span class="off-advbtn-chev">' + ICO('chev', 14, 2.2) + '</span></button>';
       var advPanel = advOpen
         ? '<div class="off-adv">' +
