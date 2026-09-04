@@ -98,6 +98,42 @@
   function hsl(str) { var h = 0, i; str = String(str || ''); for (i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) % 360; return 'hsl(' + h + ',62%,48%)'; }
   function isClient(p) { return (D.seg[p[4]] || '').indexOf('Client') === 0; }
   function isProspect(p) { return D.seg[p[4]] === 'Prospect'; }
+
+  // ── Filtre « Commercial » : le portefeuille réel + les prospects du secteur ──
+  // La base nationale ne tague un commercial que sur ~600 officines sur 19 671 :
+  // « Prospects + Commercial » rendait toujours 0 officine (aucun prospect n'a de
+  // commercial, nulle part). La règle devient celle de l'écran Pharmacies
+  // (ugaCommMap de v2-pharma.js) : une officine compte pour un commercial si
+  // c'est SON client (champ `comms` de WML_OFFICINES), sinon si elle est dans
+  // une UGA où ce commercial a le plus de clients — ses prospects de secteur.
+  // Sans WML (dégradé), on retombe sur l'ancien tag de la base nationale.
+  var commById = null, commByUga = null;
+  function buildCommMaps() {
+    commById = {}; commByUga = null;
+    var W = window.WML_OFFICINES; if (!W || !W.length || !D || !D.p) return;
+    W.forEach(function (o) {
+      var k = String((o && o.id) || '').replace(/[^0-9]/g, '');
+      if (k && o.comms && o.comms.length) commById[k] = o.comms;
+    });
+    var count = {};
+    D.p.forEach(function (p) {
+      var cs = commById[String(p[13] || '').replace(/[^0-9]/g, '')]; if (!cs) return;
+      var uga = p[2]; if (uga == null) return;
+      var c = cs[0];
+      (count[uga] || (count[uga] = {}))[c] = (count[uga][c] || 0) + 1;
+    });
+    commByUga = {};
+    Object.keys(count).forEach(function (uga) {
+      var best = null, bn = 0; for (var c in count[uga]) if (count[uga][c] > bn) { bn = count[uga][c]; best = c; }
+      if (best) commByUga[uga] = best;
+    });
+  }
+  function commsOf(p) {
+    var cs = commById && commById[String(p[13] || '').replace(/[^0-9]/g, '')];
+    if (cs && cs.length) return cs;
+    if (commByUga) { var c = commByUga[p[2]]; if (c) return [c]; }
+    return p[5] ? [D.comm[p[5]]] : [];
+  }
   function caOf(p) { return (p && p[12]) || 0; }
   function eurK(n) { n = n || 0; return n >= 1000 ? (Math.round(n / 100) / 10).toLocaleString('fr') + ' k€' : Math.round(n) + ' €'; }
   function colorFor(p) {
@@ -141,7 +177,11 @@
   function pass(p) {
     if (typeFocus === 'clients' && !isClient(p)) return false;
     if (typeFocus === 'prospects' && D.seg[p[4]] !== 'Prospect') return false;
-    if (commFocus.length && commFocus.indexOf(D.comm[p[5]]) < 0) return false;
+    if (commFocus.length) {
+      var _cc = commsOf(p), _ok = false;
+      for (var _ci = 0; _ci < _cc.length; _ci++) if (commFocus.indexOf(_cc[_ci]) >= 0) { _ok = true; break; }
+      if (!_ok) return false;
+    }
     if (grpFocus.length && grpFocus.indexOf(D.grp[p[3]]) < 0) return false;
     if (deptFocus.length && deptFocus.indexOf(deptOf(p[8])) < 0) return false;
     if (ugaFocus.length && ugaFocus.indexOf(D.uga[p[2]]) < 0) return false;
@@ -1439,11 +1479,14 @@
   function boot(root) {
     D = window.PHARMA_FR;
     reconcileWithWml();   // WML = vérité clients : corrige statut + groupement AVANT tout calcul de couleur
+    buildCommMaps();      // portefeuilles réels + secteurs UGA pour le filtre Commercial
     loadTour();
     try { var dp = JSON.parse(localStorage.getItem('jarvis_depot_v1') || 'null'); if (dp && dp.lat) depot = dp; } catch (e) {}
     computeColors();
     // Valeurs des menus de la barre de filtres (calculées sur les données réellement présentes)
-    COMMS = D.comm.slice(1).filter(function (c) { return c; });
+    var _cu = {}; D.comm.slice(1).forEach(function (c) { if (c) _cu[c] = 1; });
+    if (commById) Object.keys(commById).forEach(function (k) { commById[k].forEach(function (c) { if (c) _cu[c] = 1; }); });
+    COMMS = Object.keys(_cu).sort(function (a, b) { return a.localeCompare(b, 'fr', { sensitivity: 'base' }); });
     var _gu = {}; D.p.forEach(function (p) { var g = D.grp[p[3]]; if (g && g !== '—') _gu[g] = 1; });
     GRPS = Object.keys(_gu).sort(function (a, b) { return a.localeCompare(b, 'fr', { sensitivity: 'base' }); });
     var _du = {}; D.p.forEach(function (p) { var d = deptOf(p[8]); if (d) _du[d] = 1; });
