@@ -40,7 +40,7 @@
   };
 
   // ── Index ─────────────────────────────────────
-  var idxBuilt = false, sagittaSet = null, sortedBench = null, benchByCip = null, sagPrixTried = false;
+  var idxBuilt = false, sagittaSet = null, sortedBench = null, benchByCip = null;
   function norm(s) { return String(s == null ? '' : s).toLowerCase(); }
   function refPrice(b) {
     var bp = V2.bestPrice(b);            // prix le plus bas (offre labo incluse)
@@ -66,25 +66,7 @@
     (window.SAGITTA_SHORTLIST || []).forEach(function (s) { if (s && s.cip13 != null) sagittaSet.add(String(s.cip13)); });
     benchByCip = new Map();
     sortedBench = B.slice().sort(function (a, b) { return (a.ip_rank_qty || 9e9) - (b.ip_rank_qty || 9e9); });
-    // Face à Sagitta : tarif d'achat net Sagitta par CIP13 (fichier protégé,
-    // conditions d'un tiers). Verdict sur le MEILLEUR prix IP (offre labo incluse).
-    var sagCip = window.SAGITTA_PRIX_CIP || null;
-    B.forEach(function (b) {
-      b._fam = classify(b);
-      if (b.cip13 != null && String(b.cip13).trim() !== '') benchByCip.set(String(b.cip13), b);   // ne pas indexer les CIP vides (sinon tous collident sur la clé '' → mauvais produit)
-      b._sag = 0; b._sagV = '';
-      // Génériques et biosimilaires exclus du face-à-face : leurs remises
-      // Intégral passent en direct labo → pharmacie, celles de Sagitta sont
-      // en facture — la comparaison serait fausse par construction.
-      if (sagCip && b._fam !== 'gen' && b._fam !== 'genp' && b._fam !== 'bio') {
-        var sNet = sagCip[String(b.cip13 || '')];
-        if (typeof sNet === 'number' && sNet > 0) {
-          b._sag = sNet;
-          var ipN = V2.bestPrice ? (V2.bestPrice(b).ip || 0) : 0;
-          if (ipN > 0) b._sagV = (ipN < sNet) ? 'gagne' : (sNet < ipN ? 'perd' : 'egal');
-        }
-      }
-    });
+    B.forEach(function (b) { b._fam = classify(b); if (b.cip13 != null && String(b.cip13).trim() !== '') benchByCip.set(String(b.cip13), b); });   // ne pas indexer les CIP vides (sinon tous collident sur la clé '' → mauvais produit)
     idxBuilt = true;
   }
 
@@ -135,20 +117,10 @@
     return arr;
   }
   function counts(base) {
-    var c = { all: base.length, sag_gagne: 0, sag_perd: 0, sag_egal: 0, sag_tot: 0 };
+    var c = { all: base.length };
     FAMS.forEach(function (f) { if (f.k !== 'all') c[f.k] = 0; });
-    for (var i = 0; i < base.length; i++) {
-      c[base[i]._fam]++;
-      var v = base[i]._sagV;
-      if (v) { c.sag_tot++; if (v === 'gagne') c.sag_gagne++; else if (v === 'perd') c.sag_perd++; else c.sag_egal++; }
-    }
+    for (var i = 0; i < base.length; i++) c[base[i]._fam]++;
     return c;
-  }
-  // libellé d'un filtre actif : famille AFMCODE ou verdict Sagitta
-  var SAG_CHIPS = { sag_gagne: 'Intégral moins cher que Sagitta', sag_perd: 'Sagitta moins cher' };
-  function chipLabel(k) {
-    if (SAG_CHIPS[k]) return SAG_CHIPS[k];
-    return (FAM_BY_KEY[k] && FAM_BY_KEY[k].label) || 'Sélection';
   }
   function fmtBig(n) {
     if (!n) return '—';
@@ -206,55 +178,6 @@
         agg.prixMoy > 0 ? 'prix net moyen ' + V2.fmtEur(agg.prixMoy) : '') +
       kpiCard('k4', 'Marge MDL potentielle', V2.fmtEur(agg.mdl),
         agg.remMoy > 0 ? 'abandon de marge moyen ' + agg.remMoy.toFixed(1).replace('.', ',') + ' %' : 'sur remboursables') +
-    '</div>';
-  }
-
-  // ── Bande « Face à Sagitta » ──────────────────
-  // Verdict compté sur les données chargées, jamais recopié : X références où
-  // le net Intégral (offre labo incluse) bat le net Sagitta, Y où il est battu.
-  // N'apparaît que quand le tarif protégé est arrivé (adresse signée).
-  function sagMajLabel() {
-    var d = window.SAGITTA_PRIX_MAJ;
-    if (!d) return '';
-    var p = String(d).split('-');
-    return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : String(d);
-  }
-  function sagBand(c) {
-    if (!window.SAGITTA_PRIX_CIP || !c.sag_tot) return '';
-    function tuile(k, n, label) {
-      var on = S.chip === k ? ' on' : '';
-      var cls = k === 'sag_gagne' ? ' win' : ' lose';
-      return '<button type="button" class="cat-sagv' + cls + on + '" onclick="V2.catFilter(\'' + (S.chip === k ? 'all' : k) + '\')">' +
-        '<span class="cat-sagv-v mono">' + V2.fmtNum(n) + '</span>' +
-        '<span class="cat-sagv-l">' + label + '</span>' +
-        '<span class="cat-sagv-go">' + (S.chip === k ? 'Tout revoir' : 'Les voir') + ' ' + ICO('chev', 14, 2.2) + '</span>' +
-      '</button>';
-    }
-    return '<div class="cat-stats-l">Face à Sagitta · tarif du ' + sagMajLabel() + '</div>' +
-      '<div class="cat-sag-band">' +
-        tuile('sag_gagne', c.sag_gagne, 'référence' + (c.sag_gagne > 1 ? 's' : '') + ' où Intégral est moins cher') +
-        tuile('sag_perd', c.sag_perd, 'où Sagitta est moins cher') +
-      '</div>' +
-      '<div class="cat-sag-meta"><b class="mono">' + V2.fmtNum(c.sag_tot) + '</b> références comparées · <b class="mono">' + V2.fmtNum(c.sag_egal) + '</b> au même prix · hors génériques et biosimilaires (remises labo directes, non comparables)</div>';
-  }
-
-  // Bloc inspecteur : net Intégral vs net Sagitta pour CE produit (deux prix
-  // nets HT, aucun pourcentage — règle d'affichage NR/génériques respectée).
-  function sagCmp(b, ipNet) {
-    if (!b._sag || b._sag <= 0) return '';
-    var s = b._sag;
-    var win = (ipNet > 0 && ipNet < s) ? 'ip' : (ipNet > 0 && s < ipNet ? 'sag' : '');
-    var note;
-    if (win === 'ip') note = 'Intégral moins cher de <b>' + V2.fmtEur(s - ipNet) + '</b> par boîte';
-    else if (win === 'sag') note = 'Sagitta moins cher de <b>' + V2.fmtEur(ipNet - s) + '</b> par boîte';
-    else note = ipNet > 0 ? 'Même prix net chez les deux' : 'Prix net Intégral non connu pour ce produit';
-    return '<div class="cat-sag">' +
-      '<div class="cat-sag-l">Face à Sagitta · tarif du ' + sagMajLabel() + '</div>' +
-      '<div class="cat-sag-row">' +
-        '<div class="cat-sag-cell' + (win === 'ip' ? ' win' : '') + '"><span>Intégral</span><b class="mono">' + (ipNet > 0 ? V2.fmtEur(ipNet) : '—') + '</b></div>' +
-        '<div class="cat-sag-cell' + (win === 'sag' ? ' win' : '') + '"><span>Sagitta</span><b class="mono">' + V2.fmtEur(s) + '</b></div>' +
-      '</div>' +
-      '<div class="cat-sag-note">' + note + '</div>' +
     '</div>';
   }
 
@@ -357,7 +280,6 @@
           kpi('Abandon de marge', rem > 0 ? rem + '%' : '—', 'var(--c-mint)') +
           kpi('Volume IP', V2.fmtNum(vol)) +
         '</div>' +
-        sagCmp(b, ip) +
         perfHtml +
         potHtml +
         '<div class="cat-insp-cta"><button class="v2-btn v2-btn-primary" onclick="V2.catAddToFiche(\'' + esc(b.cip13) + '\')">' + ICO('plus', 17) + ' Ajouter à une fiche commerciale</button></div>' +
@@ -516,35 +438,6 @@
       '.cat-perf-note{margin-top:12px;padding:11px 14px;background:color-mix(in srgb,var(--c-mint) 8%,#fff);border:1px solid color-mix(in srgb,var(--c-mint) 24%,transparent);border-radius:11px;font-size:12.5px;color:var(--ip-ink-2);line-height:1.5}',
       '.cat-perf-note b{font-family:var(--mono);color:var(--c-mint)}',
       /* Potentiel marché enrichi */
-      // ── Face à Sagitta : bande de verdict + bloc inspecteur ──
-      '.cat-sag-band{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-4);margin-bottom:8px}',
-      '@media(max-width:640px){.cat-sag-band{grid-template-columns:1fr;gap:var(--sp-3)}}',
-      '.cat-sagv{display:flex;align-items:center;gap:12px;text-align:left;width:100%;padding:14px 18px;border-radius:var(--r-card);border:1px solid var(--line);background:linear-gradient(180deg,var(--card),var(--card-2));box-shadow:var(--sh-1);font-family:var(--font);cursor:pointer;transition:transform .18s var(--mo-ease-soft),box-shadow .18s var(--mo-ease-soft),border-color .18s var(--mo-ease-soft)}',
-      '.cat-sagv:hover{transform:translateY(-2px);box-shadow:var(--sh-2)}',
-      '.cat-sagv-v{font-size:23px;font-weight:800;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums}',
-      '.cat-sagv-l{font-size:12.5px;color:var(--muted);line-height:1.3;flex:1;min-width:0}',
-      '.cat-sagv-go{display:inline-flex;align-items:center;gap:3px;font-size:12.5px;font-weight:700;white-space:nowrap;color:var(--muted)}',
-      '.cat-sagv.win .cat-sagv-v{color:var(--c-mint)}',
-      '.cat-sagv.win:hover{border-color:color-mix(in srgb,var(--c-mint) 40%,var(--line))}',
-      '.cat-sagv.win.on{border-color:var(--c-mint);box-shadow:0 0 0 3px color-mix(in srgb,var(--c-mint) 20%,transparent),var(--sh-2)}',
-      '.cat-sagv.win .cat-sagv-go{color:var(--c-mint)}',
-      '.cat-sagv.lose .cat-sagv-v{color:var(--c-amber)}',
-      '.cat-sagv.lose:hover{border-color:color-mix(in srgb,var(--c-amber) 40%,var(--line))}',
-      '.cat-sagv.lose.on{border-color:var(--c-amber);box-shadow:0 0 0 3px color-mix(in srgb,var(--c-amber) 22%,transparent),var(--sh-2)}',
-      '.cat-sagv.lose .cat-sagv-go{color:var(--c-amber)}',
-      '@media(prefers-reduced-motion:reduce){.cat-sagv{transition:none}.cat-sagv:hover{transform:none}}',
-      '.cat-sag-meta{font-size:12.5px;color:var(--muted);margin-bottom:var(--sp-5);padding:0 2px}',
-      '.cat-sag-meta b{color:var(--ip-ink)}',
-      '.cat-sag{margin-top:18px;padding:14px 16px;background:color-mix(in srgb,var(--ip-blue-d) 5%,#fff);border:1px solid color-mix(in srgb,var(--ip-blue-d) 22%,transparent);border-radius:13px}',
-      '.cat-sag-l{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--ip-blue-d);font-weight:700;margin-bottom:10px}',
-      '.cat-sag-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}',
-      '.cat-sag-cell{border:1px solid var(--line);border-radius:11px;padding:10px 13px;background:var(--card);display:flex;flex-direction:column;gap:3px}',
-      '.cat-sag-cell span{font-size:11px;color:var(--muted);font-weight:700}',
-      '.cat-sag-cell b{font-size:16px;color:var(--ip-ink)}',
-      '.cat-sag-cell.win{border-color:color-mix(in srgb,var(--c-mint) 46%,transparent);background:color-mix(in srgb,var(--c-mint) 7%,#fff)}',
-      '.cat-sag-cell.win b{color:var(--c-mint)}',
-      '.cat-sag-note{font-size:12.5px;color:var(--muted);margin-top:9px}',
-      '.cat-sag-note b{color:var(--ip-ink)}',
       '.cat-pot{margin-top:18px;padding:14px 16px;background:color-mix(in srgb,var(--ip-blue) 6%,#fff);border:1px solid color-mix(in srgb,var(--ip-blue) 22%,transparent);border-radius:13px}',
       '.cat-pot.nr{background:color-mix(in srgb,var(--c-amber) 8%,#fff);border-color:color-mix(in srgb,var(--c-amber) 26%,transparent)}',
       '.cat-pot-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}',
@@ -616,20 +509,11 @@
         V2.loadFiles(['bench', 'sagitta']).then(function () { idxBuilt = false; V2.render(); });
         return;
       }
-      // Tarif d'achat Sagitta (conditions d'un tiers, adresse signée) : chargé
-      // UNE fois en tâche de fond — la bande « Face à Sagitta » apparaît ensuite.
-      if (!window.SAGITTA_PRIX_CIP && !sagPrixTried) {
-        sagPrixTried = true;
-        if (V2.loadFiles) { try { V2.loadFiles(['sagittaprix']).then(function () { idxBuilt = false; V2.render(); }); } catch (e) {} }
-      }
       buildIndex();
 
       var base = filteredBase();
       var c = counts(base);
-      var filtered = (S.chip === 'all') ? base
-        : (S.chip === 'sag_gagne') ? base.filter(function (b) { return b._sagV === 'gagne'; })
-        : (S.chip === 'sag_perd') ? base.filter(function (b) { return b._sagV === 'perd'; })
-        : base.filter(function (b) { return b._fam === S.chip; });
+      var filtered = (S.chip === 'all') ? base : base.filter(function (b) { return b._fam === S.chip; });
       var total = filtered.length;
       var pages = Math.max(1, Math.ceil(total / PER_PAGE));
       if (S.page >= pages) S.page = pages - 1;
@@ -699,10 +583,9 @@
             '<input id="cat-search-input" autocomplete="off" placeholder="Rechercher par CIP13 ou désignation…" value="' + qVal + '" oninput="V2.catSearch(this.value)">' + clrBtn +
           '</div>' +
           '<div class="v2-segs">' + chips + '</div>' +
-          '<div class="cat-stats-l">' + (S.chip === 'all' ? (S.q ? 'Statistiques · résultats « ' + esc(S.q) + ' »' : 'Statistiques · tout le catalogue grossiste') : 'Statistiques · ' + esc(chipLabel(S.chip))) + '</div>' +
+          '<div class="cat-stats-l">' + (S.chip === 'all' ? (S.q ? 'Statistiques · résultats « ' + esc(S.q) + ' »' : 'Statistiques · tout le catalogue grossiste') : 'Statistiques · ' + esc(FAM_BY_KEY[S.chip].label)) + '</div>' +
           statBand(computeAgg(filtered)) +
-          sagBand(c) +
-          '<div class="cat-count"><b style="color:var(--ip-ink);font-family:var(--mono)">' + V2.fmtNum(total) + '</b> référence' + (total > 1 ? 's' : '') + (S.chip !== 'all' ? ' · ' + esc(chipLabel(S.chip)) : '') + '</div>' +
+          '<div class="cat-count"><b style="color:var(--ip-ink);font-family:var(--mono)">' + V2.fmtNum(total) + '</b> référence' + (total > 1 ? 's' : '') + (S.chip !== 'all' ? ' · ' + esc(FAM_BY_KEY[S.chip].label) : '') + '</div>' +
           tableHtml +
         '</div>' + insHtml;
     }
