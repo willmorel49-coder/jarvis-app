@@ -310,14 +310,22 @@
     _netTotal = st.total; _statsMonths = st.months;
     return st.map;
   }
-  // Pharmacies du même groupement que `pid` (selon pharma.groupement).
+  // Nom de groupement CANONIQUE (table GRP_ALIAS via V2.canonGrp) : sans elle,
+  // « UPP » / « Pharm-UPP » ou « SRA via IP » / « SRA via SRA » comptent comme
+  // des groupements différents — la carte fusionne, le listing doit fusionner pareil.
+  function canonG(g) { return (V2.canonGrp ? V2.canonGrp(g) : g) || g; }
+  // Pharmacies du même groupement que `pid` (selon pharma.groupement, canonisé).
   function groupementPids(pid) {
     var p = (V2.pharmacies || []).filter(function (x) { return String(x.id) === String(pid); })[0];
     var g = p && p.groupement ? String(p.groupement).trim() : '';
     if (!g) return { name: '', set: null };
+    var cg = canonG(g);
     var set = new Set();
-    (V2.pharmacies || []).forEach(function (x) { if (String(x.groupement || '').trim() === g) set.add(String(x.id)); });
-    return { name: g, set: set };
+    (V2.pharmacies || []).forEach(function (x) {
+      var xg = String(x.groupement || '').trim();
+      if (xg && canonG(xg) === cg) set.add(String(x.id));
+    });
+    return { name: cg, set: set };
   }
   // Rotation moyenne = boîtes/an pour une pharmacie qui le commande (moyenne réseau).
   function rotationYear(cip) {
@@ -1147,7 +1155,8 @@
     var rank = net.ranking.indexOf(String(pid)) + 1;
     var pharma = (V2.pharmacies || []).find(function (p) { return String(p.id) === String(pid); }) || {};
     var grpName = String(pharma.groupement || '').trim();
-    var grpPids = (grpName && grpName !== '—') ? (V2.pharmacies || []).filter(function (p) { return String(p.groupement || '').trim() === grpName; }).map(function (p) { return String(p.id); }) : [];
+    if (grpName && grpName !== '—') grpName = canonG(grpName);
+    var grpPids = (grpName && grpName !== '—') ? (V2.pharmacies || []).filter(function (p) { var g = String(p.groupement || '').trim(); return g && canonG(g) === grpName; }).map(function (p) { return String(p.id); }) : [];
     var grpRank = 0;
     if (grpPids.length >= 2) { var sorted = grpPids.slice().sort(function (x, y) { return (net.caByPid[y] || 0) - (net.caByPid[x] || 0); }); grpRank = sorted.indexOf(String(pid)) + 1; }
     return { pts: pts, n: n, last: last, prev: prev, caTot: caTot, caMoy: n ? caTot / n : 0, netMoy: n ? netTot / n : 0,
@@ -1914,7 +1923,7 @@
       '<button class="ph-vtab' + (active === 'carte' ? ' on' : '') + '" onclick="V2.pharmaView(\'carte\')">' + ICO('grid', 15, 2) + 'Carte secteur</button>' +
     '</div>';
   }
-  function groupName(p) { return (String(p.groupement || '').trim()) || '— Sans groupement'; }
+  function groupName(p) { var g = String(p.groupement || '').trim(); return g ? canonG(g) : '— Sans groupement'; }
   function grpLogo(name, big) {
     // ⚠️ 15/08/2026 — les 3,6 Mo de logos ont quitté le fichier de ventes.
     // Ils ne se chargent plus au démarrage mais ICI, au premier écran qui en
@@ -1926,6 +1935,17 @@
       V2.loadFiles(['grplogos']).then(function () { if (V2.render) V2.render(); });
     }
     var l = window.GRP_LOGOS && window.GRP_LOGOS[name];
+    // Les logos sont indexés par les noms BRUTS des fichiers WML ; le listing
+    // affiche désormais les noms canoniques (GRP_ALIAS) → on indexe aussi les
+    // logos par nom canonique, sinon 13 groupements retomberaient en initiales.
+    if (!l && window.GRP_LOGOS) {
+      if (!V2._grpLogoCanon || V2._grpLogoCanonRef !== window.GRP_LOGOS) {
+        var m = {};
+        Object.keys(window.GRP_LOGOS).forEach(function (k) { var c = canonG(k); if (!m[c]) m[c] = window.GRP_LOGOS[k]; });
+        V2._grpLogoCanon = m; V2._grpLogoCanonRef = window.GRP_LOGOS;
+      }
+      l = V2._grpLogoCanon[name];
+    }
     var cls = 'grp-logo' + (big ? ' grp-logo-big' : '');
     if (l) return '<span class="' + cls + '"><img src="' + esc(l) + '" alt=""></span>';
     var ini = String(name || '?').replace(/[^A-Za-zÀ-ÿ0-9]+/g, ' ').trim().split(/\s+/).slice(0, 2)
