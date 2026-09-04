@@ -1337,6 +1337,116 @@
           tierHtml +
         '</div>';
 
+      // ── Parts par famille, MOIS PAR MOIS (demande Will, 04/09/2026 : « il faut
+      // aussi que dans le pilotage on puisse vraiment voir ces progressions mois
+      // par mois ») — même lecture que la carte de la fiche officine : barres =
+      // part de la famille dans le CA du mois, tiret = part réseau du même mois.
+      // ⚠️ Ce bloc a son PROPRE axe de temps (tous les mois), il ne suit pas le
+      // sélecteur de période. En vue « Tous », on ne garde que les mois où le
+      // réseau est AU COMPLET : les fichiers s'arrêtent à des mois différents,
+      // un mois à deux secteurs fabriquerait une fausse bascule de mélange.
+      // Le tiret réseau, lui aussi, ne se dessine que sur ces mois-là.
+      var partsMoisCard = '';
+      (function () {
+        var pmList = availableMonths(sales);
+        if (!V2.commFilter && ancRes) pmList = pmList.filter(function (m) { return ancRes.dispo[mkey(m.year, m.month)]; });
+        if (pmList.length < 2) return;
+        var pmTot = {}, pmFam = {}; FAM.forEach(function (f) { pmFam[f.key] = {}; });
+        sales.forEach(function (s) {
+          if (!s.month || !s.year) return;
+          var k = mkey(s.year, s.month);
+          pmTot[k] = (pmTot[k] || 0) + (s.mntNetHt || 0);
+          var fk = familyOf(s, idx); pmFam[fk][k] = (pmFam[fk][k] || 0) + (s.mntNetHt || 0);
+        });
+        var pmNetTot = null, pmNetFam = null;
+        if (compare) {   // reseauCur = le réseau, mois complets uniquement
+          pmNetTot = {}; pmNetFam = {}; FAM.forEach(function (f) { pmNetFam[f.key] = {}; });
+          reseauCur.forEach(function (s) {
+            var k = mkey(s.year, s.month);
+            pmNetTot[k] = (pmNetTot[k] || 0) + (s.mntNetHt || 0);
+            var fk = familyOf(s, idx); pmNetFam[fk][k] = (pmNetFam[fk][k] || 0) + (s.mntNetHt || 0);
+          });
+        }
+        var MNC = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+        var fmtP = function (v) {
+          if (v == null) return '—';
+          var r = v < 9.95 ? Math.round(v * 10) / 10 : Math.round(v);
+          return String(r).replace('.', ',');
+        };
+        var tiles = famSorted.map(function (f) {
+          var vals = pmList.map(function (m) {
+            var k = mkey(m.year, m.month), t = pmTot[k] || 0;
+            return t > 0 ? (pmFam[f.key][k] || 0) / t * 100 : null;
+          });
+          var netVals = pmList.map(function (m) {
+            var k = mkey(m.year, m.month);
+            if (!pmNetTot || !pmNetTot[k]) return null;
+            return (pmNetFam[f.key][k] || 0) / pmNetTot[k] * 100;
+          });
+          var act = vals.filter(function (v) { return v != null; });
+          var lastV = act.length ? act[act.length - 1] : null;
+          var delta = act.length >= 2 ? act[act.length - 1] - act[act.length - 2] : null;
+          var netAct = netVals.filter(function (v) { return v != null; });
+          var netLast = netAct.length ? netAct[netAct.length - 1] : null;
+          // delta en points, mêmes classes d'écart que le reste de l'écran
+          var deltaHtml2 = '—';
+          if (delta != null) {
+            var dr = Math.round(delta * 10) / 10;
+            var cls = Math.abs(dr) < 1 ? 'eq' : (dr >= 0 ? 'up' : 'dn');
+            deltaHtml2 = '<span class="pilo-ecart ' + cls + '">' + (dr >= 0 ? '+' : '−') + String(Math.abs(dr)).replace('.', ',') + ' pt' + (Math.abs(dr) >= 2 ? 's' : '') + '</span>';
+          }
+          // mini-graphe : barres (part du mois) + tirets (part réseau du même mois)
+          var n = pmList.length, w = 300, h = 100, padT = 17, padB = 15, padS = 4;
+          var W = w - padS * 2, H = h - padT - padB, base = padT + H;
+          var max = 1;
+          vals.forEach(function (v) { if (v != null && v > max) max = v; });
+          netVals.forEach(function (v) { if (v != null && v > max) max = v; });
+          max *= 1.18;
+          var bw = Math.min(24, W / n * 0.56);
+          var xc = function (i) { return padS + (i + 0.5) * (W / n); };
+          var yv = function (v) { return base - Math.max(0, v) / max * H; };
+          var g = '<svg class="pilo-part-ch" viewBox="0 0 ' + w + ' ' + h + '" role="img" aria-label="Part de la famille ' + esc(f.label) + ' dans le CA, mois par mois">' +
+            '<line x1="' + padS + '" x2="' + (w - padS) + '" y1="' + base + '" y2="' + base + '" stroke="rgba(16,19,28,.14)"/>';
+          var labels = '';
+          pmList.forEach(function (m, i) {
+            var v = vals[i], nv = netVals[i], x = xc(i);
+            if (v == null) {
+              labels += '<text x="' + x.toFixed(1) + '" y="' + (base - 4) + '" font-size="10" text-anchor="middle" fill="#B9C0D0">·</text>';
+            } else {
+              var y = yv(v);
+              if (v > 0) g += '<rect x="' + (x - bw / 2).toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + (base - y).toFixed(1) + '" rx="2.5" fill="' + f.color + '" opacity=".9"/>';
+              // le chiffre passe AU-DESSUS du tiret quand ils se chevauchent :
+              // les bouts de tiret qui dépassent se liraient comme un signe moins
+              var ly = y - 4;
+              if (nv != null) { var ny0 = yv(nv); if (ny0 < y + 2 && ny0 > y - 16) ly = ny0 - 5; }
+              labels += '<text x="' + x.toFixed(1) + '" y="' + ly.toFixed(1) + '" font-size="9.5" font-weight="700" text-anchor="middle" fill="#10131C" font-family="var(--mono)" stroke="#fff" stroke-width="3" paint-order="stroke">' + fmtP(v) + '</text>';
+            }
+            if (nv != null) {
+              var ny = yv(nv);
+              g += '<line x1="' + (x - bw / 2 - 3).toFixed(1) + '" x2="' + (x + bw / 2 + 3).toFixed(1) + '" y1="' + ny.toFixed(1) + '" y2="' + ny.toFixed(1) + '" stroke="#7A8299" stroke-width="1.8" stroke-dasharray="3 2"/>';
+            }
+            g += '<text x="' + x.toFixed(1) + '" y="' + (h - 3) + '" font-size="9.5" text-anchor="middle" fill="' + (v == null ? '#B9C0D0' : '#737A8C') + '" font-weight="600">' + MNC[m.month - 1] + '</text>';
+          });
+          g += labels + '</svg>';
+          var icon = f.key === 'froid' ? 'froid' : 'pill';
+          return '<div class="pilo-part' + (f.key === 'biosim' ? ' pilo-part-bio' : '') + '">' +
+            '<div class="pilo-part-hd"><span class="pilo-part-t"><span class="pilo-fam-ico" style="color:' + f.color + '">' + ICO(icon, 14) + '</span>' + f.label + '</span>' +
+              '<span class="pilo-part-v mono">' + fmtP(lastV) + '<small> %</small></span></div>' +
+            '<div class="pilo-part-sub mono">' + deltaHtml2 + ' <span style="color:var(--muted);font-weight:600">vs mois préc.' + (netLast != null ? ' · réseau ' + fmtP(netLast) + ' %' : '') + '</span></div>' +
+            g +
+          '</div>';
+        }).join('');
+        var sousTitre = V2.commFilter
+          ? 'part de chaque famille dans le CA du mois — tous tes mois de ventes · <i class="pilo-net-dash"></i> = la même part côté réseau, sur les mois où il est au complet'
+          : 'part de chaque famille dans le CA du mois du réseau — uniquement les mois où le réseau est au complet';
+        partsMoisCard =
+          '<div class="v2-card" style="padding:18px 20px" data-reveal>' +
+            '<div class="v2-card-t">' + ICO('cat', 17) + 'Parts par famille, mois par mois</div>' +
+            '<div class="pilo-part-note">' + sousTitre + ' · indépendant du sélecteur de période</div>' +
+            '<div class="pilo-parts">' + tiles + '</div>' +
+          '</div>';
+      })();
+
       // ── CA & marge par groupement ──
       function grpKey(ph) { return (ph && (ph.groupement || '').trim()) || 'Indépendants'; }
       var grpAgg = {};
@@ -1641,6 +1751,7 @@
       var gnqCard = V2.generiqueurCard ? V2.generiqueurCard(sales, { title: 'CA par génériqueur', max: 15 }) : '';
       var repartition = legendeReseau(compare, repereLabel) +
         '<div class="pilo-grid2" data-reveal>' + famCard + tierCard + '</div>' +
+        (partsMoisCard ? '<div style="margin-top:14px">' + partsMoisCard + '</div>' : '') +
         (gnqCard ? '<div data-reveal style="margin-top:14px">' + gnqCard + '</div>' : '');
       // Détail : classements (top pharmacies + groupements)
       var classements = grpCard ? ('<div class="pilo-grid2" data-reveal>' + topCaCard + grpCard + '</div>') : ('<div data-reveal>' + topCaCard + '</div>');
@@ -2278,7 +2389,19 @@
       '.opso-perim-top{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}' +
       '.opso-perim-badge{display:inline-flex;align-items:center;padding:4px 11px;border-radius:10px;font-size:12px;font-weight:700;letter-spacing:.01em}' +
       '.opso-perim-nums{display:flex;align-items:center;flex-wrap:wrap}' +
-      '.opso-new-tag{display:inline-block;margin-left:6px;vertical-align:middle;font-size:9.5px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;color:var(--ok);background:color-mix(in srgb,var(--ok) 14%,transparent);border:1px solid color-mix(in srgb,var(--ok) 30%,transparent);border-radius:999px;padding:1px 7px;font-family:var(--mono)}';
+      '.opso-new-tag{display:inline-block;margin-left:6px;vertical-align:middle;font-size:9.5px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;color:var(--ok);background:color-mix(in srgb,var(--ok) 14%,transparent);border:1px solid color-mix(in srgb,var(--ok) 30%,transparent);border-radius:999px;padding:1px 7px;font-family:var(--mono)}' +
+      // ── Parts par famille, mois par mois ──────────
+      '.pilo-part-note{font-size:12px;color:var(--muted);font-weight:600;margin:4px 0 14px;line-height:1.45}' +
+      '.pilo-parts{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:12px}' +
+      '.pilo-part{border:1px solid var(--line);border-radius:12px;background:var(--card-2);padding:10px 12px 8px;min-width:0}' +
+      '.pilo-part-bio{border-color:color-mix(in srgb,var(--c-cat) 45%,var(--line));background:color-mix(in srgb,var(--c-cat) 5%,var(--card-2))}' +
+      '.pilo-part-hd{display:flex;justify-content:space-between;align-items:baseline;gap:8px}' +
+      '.pilo-part-t{font-size:12.5px;font-weight:800;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-flex;align-items:center;gap:6px}' +
+      '.pilo-part-v{font-size:18px;font-weight:800;letter-spacing:-.02em;white-space:nowrap}' +
+      '.pilo-part-v small{font-size:11px;color:var(--muted);font-weight:700}' +
+      '.pilo-part-sub{font-size:11.5px;font-weight:700;margin:1px 0 6px}' +
+      '.pilo-part-ch{width:100%;height:auto;display:block}' +
+      '.pilo-net-dash{display:inline-block;width:16px;height:0;border-top:2px dashed #7A8299;vertical-align:middle}';
 
     var st = document.createElement('style');
     st.id = 'pilo-styles'; st.textContent = css;
