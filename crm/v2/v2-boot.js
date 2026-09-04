@@ -339,6 +339,10 @@
     opsostats: 'opso-stats-data.js',
     // potentiel commercial + CA par pharmacie (fiches clients)
     clientscond: 'clients-cond.js',
+    // Écran « L'Argument » (1er rendez-vous prospect) : barème IP + fourchettes
+    // de marché + preuves. ~4 Ko, protégé — le code de la page est public,
+    // AUCUN chiffre n'y vit (règle ROBOT.md §10 / CLAUDE.md §8).
+    argument: 'v2/argument-data.js',
     drakkars: 'drakkars-data.js',
     cap3000: 'cap3000-data.js',
     sagitta: 'sagitta-shortlist-data.js',
@@ -395,7 +399,8 @@
     opsostats: 'opso-stats-data.js',
     establishments: 'establishments-aggregate.js',
     sagitta: 'sagitta-shortlist-data.js',
-    clientscond: 'clients-cond.js'
+    clientscond: 'clients-cond.js',
+    argument: 'argument-data.js'
   };
   var SEAU_PROTEGE = 'donnees-protegees';   // sert encore aux DOCUMENTS privés
 
@@ -697,6 +702,7 @@
     mktnr: 'MKT_NR',
     opsostats: 'OPSO_STATS_SALES',
     clientscond: 'CLIENTS_COND',
+    argument: 'ARGUMENT',
     drakkars: 'DRAKKARS',
     cap3000: 'CAP3000',
     sagitta: 'SAGITTA_SHORTLIST',

@@ -1058,6 +1058,13 @@
         P.push({ k: 'audit', cls: 'p4', accent: '#10915E', ico: 'pilo', tag: 'Par pharmacie', t: 'Audit marge', d: 'Ce qu\'Intégral rend à chaque pharmacie via l\'abandon de marge — par tranche, vs son grossiste actuel, calculé sur ses vrais achats. Un audit offert, prêt en PDF.', go: 'Ouvrir l\'audit' });
         P.push({ k: 'missions', cls: 'p4', accent: '#0E9E6A', ico: 'pilo', tag: 'Expert 360', t: 'Missions rémunérées', d: 'La rémunération de l\'officine au-delà du produit : vaccination, entretiens, BPM, TROD… les tarifs 2026 + un simulateur « combien elle peut gagner ». L\'argument d\'expert à montrer au pharmacien.', go: 'Ouvrir les missions' });
       }
+      // « L'Argument » (1er rendez-vous prospect, curseurs + preuves) — app JARVIS.
+      // Complément de l'Audit marge : l'Audit exige les achats d'une CLIENTE,
+      // l'Argument se règle devant un PROSPECT sans aucune donnée.
+      // ⚠️ Bloc à part, conditionné sur SA page (leçon de la tuile Appro).
+      if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.argument) {
+        P.push({ k: 'argument', cls: 'p4', accent: 'var(--c-opp)', ico: 'opp', tag: '1er RDV', t: 'L’Argument', d: 'Le premier rendez-vous, chiffré : trois curseurs réglés devant le prospect — ce que son grossiste lui verse vraiment, ce qu\'Intégral met dans sa poche, le gain net par an. Avec les preuves sourcées et les réponses aux objections.', go: 'Ouvrir l’argument' });
+      }
       // Appro Intégral : tuile retirée le 11/08/2026, rétablie le 02/09/2026 à la demande
       // de Will. Motif du retour : l'écran a reçu « La courbe » (prévision du marché à
       // 3/6/12 mois) et ⌘K seul ne suffit pas — une feature sans porte visible reste

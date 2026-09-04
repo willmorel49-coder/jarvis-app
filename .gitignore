@@ -204,3 +204,6 @@ biosimilaires-complet.js
 opso/opso-stats-data.js
 opso/wml-data.js
 clients-cond.js
+
+# L'Argument : barème IP + fourchettes — espace protégé uniquement
+crm/v2/argument-data.js
