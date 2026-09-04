@@ -2089,6 +2089,7 @@
           '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
             '<button id="v2-opp-pdf" class="v2-btn v2-btn-primary" onclick="V2.grpDownloadPdf(\'' + encodeURIComponent(grpName).replace(/'/g, '%27') + '\')">' +
               ICO('download', 17) + (selCips && selCips.size ? 'Liste · ' + selCips.size + ' produit' + (selCips.size > 1 ? 's' : '') : 'Liste d\'achats (PDF)') + '</button>' +
+            '<button class="v2-btn v2-btn-ghost" onclick="V2.grpDownloadXlsx(\'' + encodeURIComponent(grpName).replace(/'/g, '%27') + '\')">' + ICO('download', 16) + 'Excel</button>' +
             (V2.canShareFiles && V2.canShareFiles() ? '<button class="v2-btn v2-btn-ghost" onclick="V2.grpDownloadPdf(\'' + encodeURIComponent(grpName).replace(/'/g, '%27') + '\',\'share\')">' + ICO('spark', 16) + 'Partager</button>' : '') +
           '</div>' +
         '</div>' +
@@ -2531,6 +2532,72 @@
     var l = listGet(id); if (!l) return;
     achatsPdf(l.name, productsForIds(listIdsObj(l), 'LST:' + id), !!(selCips && selCips.size && selPid === 'LST:' + id), mode);
   };
+  // ── Export Excel des mêmes listes (SheetJS, chargé à la demande comme dans v2-mkt) ──
+  var xlsxLoading = false;
+  function ensureXLSX(cb) {
+    if (window.XLSX) { cb(true); return; }
+    if (xlsxLoading) { setTimeout(function () { ensureXLSX(cb); }, 250); return; }
+    xlsxLoading = true;
+    var s = document.createElement('script');
+    s.src = 'https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js';
+    s.onload = function () { xlsxLoading = false; cb(!!window.XLSX); };
+    s.onerror = function () { xlsxLoading = false; cb(false); };
+    document.head.appendChild(s);
+  }
+  // Mêmes colonnes que le PDF (Produit, CIP13, PPHT, Prix net IP, Nbr pharma) :
+  // pas de colonne « abandon » — le % ne figure jamais sur un document remis.
+  function achatsXlsx(title, data, useSel) {
+    var sections = data.cats.map(function (o) {
+      var rows = (useSel && selCips) ? o.rows.filter(function (r) { return selCips.has(r.cip); }) : o.rows;
+      return { cat: o.cat, rows: rows };
+    }).filter(function (o) { return o.rows.length; });
+    var panel = (data.panel > 0) ? data.panel : 0;
+    if (!sections.length || !panel) { V2.toast('Aucun produit à proposer pour cette liste', 'warn'); return; }
+    V2.toast('Génération de l\'Excel…');
+    ensureXLSX(function (ok) {
+      if (!ok || !window.XLSX) { V2.toast('Export Excel indisponible (hors ligne ?)', 'error'); return; }
+      var dateStr = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+      var used = {};
+      function sheetName(name) {
+        var n = String(name).replace(/[\[\]\:\*\?\/\\]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 28) || 'Liste';
+        var base = n; var i = 2; while (used[n.toLowerCase()]) { n = (base.slice(0, 25) + ' ' + i); i++; } used[n.toLowerCase()] = 1; return n;
+      }
+      var wb = window.XLSX.utils.book_new();
+      sections.forEach(function (o) {
+        var head = ['#', 'Produit', 'CIP13', 'PPHT (€)', 'Prix net IP (€)', 'Nb pharmacies / ' + panel];
+        var aoa = [
+          ['Intégral Pharma — Liste d\'achats recommandée · ' + title],
+          [o.cat.label + (o.cat.sub ? ' · ' + o.cat.sub : '') + ' — éditée le ' + dateStr + ' · référence ' + panel + ' pharmacie' + (panel > 1 ? 's' : '')],
+          [],
+          head
+        ];
+        o.rows.forEach(function (r, i) {
+          aoa.push([
+            i + 1,
+            (r.designation || '') + (r.froid ? ' [FROID]' : '') + (r.offre ? ' [OFFRE]' : ''),
+            String(r.cip),
+            r.prix_ht > 0 ? +r.prix_ht.toFixed(2) : '',
+            r.prix_ip > 0 ? +r.prix_ip.toFixed(2) : '',
+            r.sortie
+          ]);
+        });
+        var ws = window.XLSX.utils.aoa_to_sheet(aoa);
+        ws['!cols'] = [{ wch: 4 }, { wch: 48 }, { wch: 15 }, { wch: 10 }, { wch: 14 }, { wch: 17 }];
+        ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 5 } }, { s: { r: 1, c: 0 }, e: { r: 1, c: 5 } }];
+        window.XLSX.utils.book_append_sheet(wb, ws, sheetName(o.cat.label));
+      });
+      window.XLSX.writeFile(wb, 'Liste-' + String(title).replace(/[^A-Za-z0-9-]/g, '_') + '-' + new Date().toISOString().slice(0, 10) + '.xlsx');
+      V2.toast('Excel téléchargé');
+    });
+  }
+  V2.grpDownloadXlsx = function (enc) {
+    var grpName; try { grpName = decodeURIComponent(enc); } catch (e) { grpName = enc; }
+    achatsXlsx(grpName, groupementProducts(grpName), !!(selCips && selCips.size && selPid === 'GRP:' + grpName));
+  };
+  V2.listDownloadXlsx = function (id) {
+    var l = listGet(id); if (!l) return;
+    achatsXlsx(l.name, productsForIds(listIdsObj(l), 'LST:' + id), !!(selCips && selCips.size && selPid === 'LST:' + id));
+  };
   // PDF officine = liste d'achats PURE (même format que le groupement, SANS récap RDV).
   // scope = 'reseau' (réf. réseau IP) | 'groupement' (réf. son groupement). Toute la liste.
   V2.pharmaListPdf = function (pid, scope, mode) {
@@ -2606,6 +2673,7 @@
           '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
             '<button class="v2-btn v2-btn-ghost" onclick="V2.pharmaListAddOpen(\'' + esc(id) + '\')">' + ICO('plus', 16) + 'Ajouter des pharmacies</button>' +
             (total ? '<button class="v2-btn v2-btn-primary" onclick="V2.listDownloadPdf(\'' + esc(id) + '\')">' + ICO('download', 17) + (selCips && selCips.size ? 'Liste · ' + selCips.size + ' produit' + (selCips.size > 1 ? 's' : '') : 'Liste d\'achats (PDF)') + '</button>' : '') +
+            (total ? '<button class="v2-btn v2-btn-ghost" onclick="V2.listDownloadXlsx(\'' + esc(id) + '\')">' + ICO('download', 16) + 'Excel</button>' : '') +
             (total && V2.canShareFiles && V2.canShareFiles() ? '<button class="v2-btn v2-btn-ghost" onclick="V2.listDownloadPdf(\'' + esc(id) + '\',\'share\')">' + ICO('spark', 16) + 'Partager</button>' : '') +
           '</div>' +
         '</div>' +
