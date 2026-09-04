@@ -1220,7 +1220,9 @@
       //    « /directions/ » et répondent toujours.
       //    Vérifié dans un navigateur vierge : racine 200 « la boîte à outils
       //    du beau », /directions/ 200, /app/ 404.
-      pilHtml +=
+      // Outils INTERNES Intégral (bêta) : jamais montrés au groupement — le
+      // 04/09/2026, Will : « ils n'ont pas accès à jarvis academy ni jarvis design ! »
+      if (!(window.V2_BRAND && window.V2_BRAND.opso)) pilHtml +=
         '<div class="v2-lch-soon">' +
             '<div class="v2-lch-soon-h"><span class="lbl">Bientôt</span><span class="ln"></span></div>' +
             '<div class="v2-lch-soon-g">' +
