@@ -19,6 +19,10 @@
     return '';
   })();
 
+  // Le tarif Sagitta (conditions d'un tiers, réservé à l'interne Intégral) ne
+  // se montre PAS dans l'app OPSO — décision Will du 04/09/2026.
+  var SANS_SAGITTA = !!(window.V2_BRAND && window.V2_BRAND.opso);
+
   var S = { chip: 'all', q: '', page: 0, sel: null, sort: 'ventes', adv: false, sous: '' };
   var firstPaint = true; // cascade d'entrée réservée au 1er affichage de la grille
   var PER_PAGE = 60;
@@ -129,7 +133,7 @@
       var pzCheaper = !!(pz && pz.price > 0 && price > 0 && pz.price < price);
       // tarif d'achat Sagitta (grossiste) par EAN : {ean: [net] ou [net, tarif, remise %]}
       // — fichier protégé (conditions d'un tiers), chargé par adresse signée.
-      var sgv = (window.SAGITTA_PRIX && b.ean) ? window.SAGITTA_PRIX[String(b.ean)] : null;
+      var sgv = (!SANS_SAGITTA && window.SAGITTA_PRIX && b.ean) ? window.SAGITTA_PRIX[String(b.ean)] : null;
       var sg = sgv ? { price: numOr0(sgv[0]), tarif: numOr0(sgv[1]), remise: numOr0(sgv[2]) } : null;
       var sgCheaper = !!(sg && sg.price > 0 && price > 0 && sg.price < price);
       // prix PUBLIC E.Leclerc (TTC), relevé par l'API du site sur tout le
@@ -1103,7 +1107,7 @@
         ensurePz(function () { idxBuilt = false; V2.render(); });
       }
       // Tarif d'achat Sagitta (conditions d'un tiers) : adresse signée, une fois
-      if (!window.SAGITTA_PRIX && !sgTried) {
+      if (!SANS_SAGITTA && !window.SAGITTA_PRIX && !sgTried) {
         sgTried = true;
         if (V2.loadFiles) { try { V2.loadFiles(['sagittaprix']).then(function () { idxBuilt = false; V2.render(); }); } catch (e) {} }
       }
@@ -1144,6 +1148,7 @@
         if (f.k === 'all') return '';      // porté par « Tout le rayon »
         if (RAYON_K[f.k]) return '';       // porté par la bande des rayons
         var n = c[f.k] || 0;
+        if (f.k === 'sgcheaper' && SANS_SAGITTA) return '';
         if (f.k !== 'pzcheaper' && f.k !== 'sgcheaper' && n === 0) return '';
         var on = S.chip === f.k ? ' on' : '';
         return '<button class="v2-seg' + on + '" style="--sc:' + f.sc + '" onclick="V2.offFilter(\'' + f.k + '\')">' +
