@@ -1136,6 +1136,13 @@
       c.gap = pctOf(c.moy, c.netMoy);
       c.evo = (last && prev) ? pctOf(mm[last.mk] || 0, mm[prev.mk] || 0) : null;
       c.netEvo = (last && prev) ? pctOf(netMonths[n - 1].avgByCat[c.key] || 0, netMonths[n - 2].avgByCat[c.key] || 0) : null;
+      // Part de la catégorie dans le CA de CHAQUE mois (null = officine inactive ce mois-là),
+      // face à la part de la même catégorie dans le CA réseau du même mois.
+      c.partByM = netMonths.map(function (m) { var t = byM[m.mk] || 0; return t > 0 ? (mm[m.mk] || 0) / t * 100 : null; });
+      c.netPartByM = netMonths.map(function (m) { return m.total > 0 ? (m.byCat[c.key] || 0) / m.total * 100 : 0; });
+      var act = c.partByM.filter(function (v) { return v != null; });
+      c.partLast = act.length ? act[act.length - 1] : null;
+      c.partEvo = act.length >= 2 ? act[act.length - 1] - act[act.length - 2] : null;
     });
     var rank = net.ranking.indexOf(String(pid)) + 1;
     var pharma = (V2.pharmacies || []).find(function (p) { return String(p.id) === String(pid); }) || {};
@@ -1194,6 +1201,76 @@
       A.cats.filter(function (c) { return c.ca <= 0 && c.netMoy > 0; }).map(function (c) { return '<div class="pha-r pha-r1"><span><span class="ph-tr-dot" style="background:' + c.color + '"></span>' + esc(c.label) + '</span><b class="pha-dn">absente</b><span class="pha-sub" style="grid-column:1/-1">le réseau en fait ' + V2.fmtEur(c.netMoy) + '/mois</span></div>'; }).join('') +
     '</div>';
     return desk + mob;
+  }
+
+  // ── Parts par catégorie, MOIS PAR MOIS (demande Will 04/09/2026 : « il faut vraiment que
+  // sur les clients on voit les parts mois par mois d'évolution sur les catégories,
+  // notamment les biosimilaires »). Une tuile par catégorie : barres = sa part du CA du
+  // mois, tiret gris = part de la même catégorie dans le CA du réseau ce mois-là.
+  function fmtPart(v) {
+    if (v == null) return '—';
+    var r = v < 9.95 ? Math.round(v * 10) / 10 : Math.round(v);
+    return String(r).replace('.', ',');
+  }
+  function ptsHtml(d) {
+    if (d == null) return '<span class="pha-flat">—</span>';
+    var r = Math.round(d * 10) / 10;
+    var c = r > 0.5 ? 'pha-up' : (r < -0.5 ? 'pha-dn' : 'pha-flat');
+    return '<span class="' + c + ' mono">' + (r > 0 ? '+' : '') + String(r).replace('.', ',') + ' pt' + (Math.abs(r) >= 2 ? 's' : '') + '</span>';
+  }
+  function partTileSvg(c, pts) {
+    var n = pts.length; if (!n) return '';
+    var w = 300, h = 100, padT = 17, padB = 15, padS = 4;
+    var W = w - padS * 2, H = h - padT - padB, base = padT + H;
+    var max = 1;
+    c.partByM.forEach(function (v) { if (v != null && v > max) max = v; });
+    c.netPartByM.forEach(function (v) { if (v > max) max = v; });
+    max *= 1.18;
+    var bw = Math.min(24, W / n * 0.56);
+    var xc = function (i) { return padS + (i + 0.5) * (W / n); };
+    var yv = function (v) { return base - Math.max(0, v) / max * H; };
+    var g = '<svg class="pha-part-ch" viewBox="0 0 ' + w + ' ' + h + '" role="img" aria-label="Part de la catégorie ' + esc(c.label) + ' dans le CA, mois par mois">' +
+      '<line x1="' + padS + '" x2="' + (w - padS) + '" y1="' + base + '" y2="' + base + '" stroke="rgba(16,19,28,.14)"/>';
+    // Barres + tirets réseau d'abord, valeurs PAR-DESSUS avec un halo blanc : sans lui,
+    // un tiret à la même hauteur barre le chiffre et « 2,4 » se lit « -2,4 ».
+    var labels = '';
+    pts.forEach(function (p, i) {
+      var v = c.partByM[i], nv = c.netPartByM[i], x = xc(i);
+      if (v == null) {
+        labels += '<text x="' + x.toFixed(1) + '" y="' + (base - 4) + '" font-size="10" text-anchor="middle" fill="#B9C0D0">·</text>';
+      } else {
+        var y = yv(v);
+        if (v > 0) g += '<rect x="' + (x - bw / 2).toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + (base - y).toFixed(1) + '" rx="2.5" fill="' + c.color + '" opacity=".9"/>';
+        // Si le tiret réseau passe dans la zone du chiffre, on pose le chiffre AU-DESSUS
+        // du tiret : les bouts de tiret qui dépassent se liraient comme un signe moins.
+        var nyv = yv(c.netPartByM[i]);
+        var ly = (nyv < y + 2 && nyv > y - 16) ? nyv - 5 : y - 4;
+        labels += '<text x="' + x.toFixed(1) + '" y="' + ly.toFixed(1) + '" font-size="9.5" font-weight="700" text-anchor="middle" fill="#10131C" font-family="var(--mono)" stroke="#fff" stroke-width="3" paint-order="stroke">' + fmtPart(v) + '</text>';
+      }
+      var ny = yv(nv);
+      g += '<line x1="' + (x - bw / 2 - 3).toFixed(1) + '" x2="' + (x + bw / 2 + 3).toFixed(1) + '" y1="' + ny.toFixed(1) + '" y2="' + ny.toFixed(1) + '" stroke="#7A8299" stroke-width="1.8" stroke-dasharray="3 2"/>';
+      g += '<text x="' + x.toFixed(1) + '" y="' + (h - 3) + '" font-size="9.5" text-anchor="middle" fill="' + (v == null ? '#B9C0D0' : '#737A8C') + '" font-weight="600">' + esc(p.label) + '</text>';
+    });
+    return g + labels + '</svg>';
+  }
+  function analyseParts(A) {
+    if (A.n < 2) return '';
+    // Une catégorie jamais commandée n'encombre pas la fiche — sauf les biosimilaires,
+    // toujours visibles (c'est le combat commercial du moment) : 0 % face au tiret réseau.
+    var show = A.cats.filter(function (c) { return c.ca > 0 || c.key === 'biosim'; });
+    if (!show.length) return '';
+    var tiles = show.map(function (c) {
+      var netLast = c.netPartByM.length ? c.netPartByM[c.netPartByM.length - 1] : null;
+      return '<div class="pha-part' + (c.key === 'biosim' ? ' pha-part-bio' : '') + '">' +
+        '<div class="pha-part-hd"><span class="pha-part-t"><span class="ph-tr-dot" style="background:' + c.color + '"></span>' + esc(c.label) + '</span>' +
+          '<span class="pha-part-v mono">' + fmtPart(c.partLast) + '<small> %</small></span></div>' +
+        '<div class="pha-part-sub">' + ptsHtml(c.partEvo) + ' <span class="pha-sub">vs mois préc. · réseau ' + fmtPart(netLast) + ' %</span></div>' +
+        partTileSvg(c, A.pts) +
+      '</div>';
+    }).join('');
+    return '<div class="v2-card pha-card"><div class="pha-ch"><h3>Ses parts par catégorie, mois par mois</h3>' +
+      '<span class="pha-sub">part de chaque catégorie dans son CA du mois · <i class="pha-net-dash"></i> = part de la catégorie dans le CA réseau du même mois</span></div>' +
+      '<div class="pha-parts">' + tiles + '</div></div>';
   }
 
   function analyseTop5(A) {
@@ -1345,7 +1422,7 @@
 
     // ── Colonne « chiffres » ──
     var A = analyseData(pid, sales);
-    var chiffres = analyseKpis(A, marge, nbRefs) + analyseChart(A) + analyseTranches(A) + analyseTop5(A);
+    var chiffres = analyseKpis(A, marge, nbRefs) + analyseChart(A) + analyseTranches(A) + analyseParts(A) + analyseTop5(A);
 
     // Best rotations du groupement / réseau : détail produit par produit, replié (inchangé)
     var rot = grpBestRotations(pid, 60);
@@ -3117,6 +3194,17 @@
       '.pha-absent td{color:var(--muted)}',
       '.pha-bar{height:6px;border-radius:999px;background:var(--surf-sunken,#F4F6FB);overflow:hidden;margin-top:4px;width:64px;margin-left:auto}',
       '.pha-bar i{display:block;height:100%;border-radius:999px}',
+      '.pha-parts{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:12px}',
+      '.pha-part{border:1px solid var(--line);border-radius:12px;background:var(--card-2);padding:10px 12px 8px;min-width:0}',
+      '.pha-part-bio{border-color:color-mix(in srgb,#6D4FC4 45%,var(--line));background:color-mix(in srgb,#6D4FC4 5%,var(--card-2))}',
+      '.pha-part-hd{display:flex;justify-content:space-between;align-items:baseline;gap:8px}',
+      '.pha-part-t{font-size:12.5px;font-weight:800;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      '.pha-part-t .ph-tr-dot{margin-right:7px}',
+      '.pha-part-v{font-size:18px;font-weight:800;letter-spacing:-.02em;white-space:nowrap}',
+      '.pha-part-v small{font-size:11px;color:var(--muted);font-weight:700}',
+      '.pha-part-sub{font-size:11.5px;font-weight:700;margin:1px 0 6px}',
+      '.pha-part-ch{width:100%;height:auto;display:block}',
+      '.pha-net-dash{display:inline-block;width:16px;height:0;border-top:2px dashed #7A8299;vertical-align:middle}',
       '.pha-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}',
       '.pha-tab{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line-strong);background:var(--card);border-radius:999px;padding:7px 12px;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;min-height:36px;color:var(--ip-ink)}',
       '.pha-tab.on{background:var(--ip-ink);color:#fff;border-color:var(--ip-ink)}',
