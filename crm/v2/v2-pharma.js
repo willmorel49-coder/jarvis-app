@@ -1132,10 +1132,11 @@
     });
     // CA par mois et par catégorie de l'officine (pour l'évolution du dernier mois)
     var bIdx = benchIndex();
-    var mine = {}; sales.forEach(function (s) {
+    var mine = {}, mineQ = {}; sales.forEach(function (s) {
       if (!s.month || !s.year) return; var k = s.year * 12 + (s.month - 1);
       var cip = String(s.artCode || ''); var b = cip ? bIdx.get(cip) : null; var cat = (b ? classify(b, cip) : null) || 'other';
       var mm = mine[cat] || (mine[cat] = {}); mm[k] = (mm[k] || 0) + (s.mntNetHt || 0);
+      var mq = mineQ[cat] || (mineQ[cat] = {}); mq[k] = (mq[k] || 0) + (s.qte || 0);
     });
     cats.forEach(function (c) {
       var mm = mine[c.key] || {};
@@ -1151,6 +1152,10 @@
       var act = c.partByM.filter(function (v) { return v != null; });
       c.partLast = act.length ? act[act.length - 1] : null;
       c.partEvo = act.length >= 2 ? act[act.length - 1] - act[act.length - 2] : null;
+      // et les mêmes mois en VALEUR (€) et en VOLUME (boîtes) — null = mois sans commande
+      var mq = mineQ[c.key] || {};
+      c.caByM = netMonths.map(function (m) { return (byM[m.mk] || 0) > 0 ? (mm[m.mk] || 0) : null; });
+      c.qByM = netMonths.map(function (m) { return (byM[m.mk] || 0) > 0 ? (mq[m.mk] || 0) : null; });
     });
     var rank = net.ranking.indexOf(String(pid)) + 1;
     var pharma = (V2.pharmacies || []).find(function (p) { return String(p.id) === String(pid); }) || {};
@@ -1227,24 +1232,32 @@
     var c = r > 0.5 ? 'pha-up' : (r < -0.5 ? 'pha-dn' : 'pha-flat');
     return '<span class="' + c + ' mono">' + (r > 0 ? '+' : '') + String(r).replace('.', ',') + ' pt' + (Math.abs(r) >= 2 ? 's' : '') + '</span>';
   }
-  function partTileSvg(c, pts) {
+  // Unité de la carte : 'part' (% du CA du mois) · 'eur' (CA net) · 'vol' (boîtes)
+  // (Will, 04/09/2026 : « j'aimerais aussi voir [...] en terme de valeur et de volume »)
+  var partsUnit = 'part';
+  V2.pharmaPartsUnit = function (u) { partsUnit = u; V2.render(); };
+  function partTileSvg(c, pts, unit) {
     var n = pts.length; if (!n) return '';
+    var vals = unit === 'eur' ? c.caByM : (unit === 'vol' ? c.qByM : c.partByM);
+    var withNet = unit === 'part';   // en € / boîtes, l'échelle réseau n'est pas comparable
+    var fmtVal = unit === 'part' ? fmtPart : V2.fmtK;
     var w = 300, h = 100, padT = 17, padB = 15, padS = 4;
     var W = w - padS * 2, H = h - padT - padB, base = padT + H;
-    var max = 1;
-    c.partByM.forEach(function (v) { if (v != null && v > max) max = v; });
-    c.netPartByM.forEach(function (v) { if (v > max) max = v; });
-    max *= 1.18;
+    var max = unit === 'part' ? 1 : 0;
+    vals.forEach(function (v) { if (v != null && v > max) max = v; });
+    if (withNet) c.netPartByM.forEach(function (v) { if (v > max) max = v; });
+    max = (max || 1) * 1.18;
     var bw = Math.min(24, W / n * 0.56);
     var xc = function (i) { return padS + (i + 0.5) * (W / n); };
     var yv = function (v) { return base - Math.max(0, v) / max * H; };
-    var g = '<svg class="pha-part-ch" viewBox="0 0 ' + w + ' ' + h + '" role="img" aria-label="Part de la catégorie ' + esc(c.label) + ' dans le CA, mois par mois">' +
+    var quoi = unit === 'eur' ? 'CA net' : (unit === 'vol' ? 'Boîtes' : 'Part dans le CA');
+    var g = '<svg class="pha-part-ch" viewBox="0 0 ' + w + ' ' + h + '" role="img" aria-label="' + esc(quoi + ' — ' + c.label) + ', mois par mois">' +
       '<line x1="' + padS + '" x2="' + (w - padS) + '" y1="' + base + '" y2="' + base + '" stroke="rgba(16,19,28,.14)"/>';
     // Barres + tirets réseau d'abord, valeurs PAR-DESSUS avec un halo blanc : sans lui,
     // un tiret à la même hauteur barre le chiffre et « 2,4 » se lit « -2,4 ».
     var labels = '';
     pts.forEach(function (p, i) {
-      var v = c.partByM[i], nv = c.netPartByM[i], x = xc(i);
+      var v = vals[i], x = xc(i);
       if (v == null) {
         labels += '<text x="' + x.toFixed(1) + '" y="' + (base - 4) + '" font-size="10" text-anchor="middle" fill="#B9C0D0">·</text>';
       } else {
@@ -1252,12 +1265,14 @@
         if (v > 0) g += '<rect x="' + (x - bw / 2).toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + (base - y).toFixed(1) + '" rx="2.5" fill="' + c.color + '" opacity=".9"/>';
         // Si le tiret réseau passe dans la zone du chiffre, on pose le chiffre AU-DESSUS
         // du tiret : les bouts de tiret qui dépassent se liraient comme un signe moins.
-        var nyv = yv(c.netPartByM[i]);
-        var ly = (nyv < y + 2 && nyv > y - 16) ? nyv - 5 : y - 4;
-        labels += '<text x="' + x.toFixed(1) + '" y="' + ly.toFixed(1) + '" font-size="9.5" font-weight="700" text-anchor="middle" fill="#10131C" font-family="var(--mono)" stroke="#fff" stroke-width="3" paint-order="stroke">' + fmtPart(v) + '</text>';
+        var ly = y - 4;
+        if (withNet) { var nyv = yv(c.netPartByM[i]); if (nyv < y + 2 && nyv > y - 16) ly = nyv - 5; }
+        labels += '<text x="' + x.toFixed(1) + '" y="' + ly.toFixed(1) + '" font-size="9.5" font-weight="700" text-anchor="middle" fill="#10131C" font-family="var(--mono)" stroke="#fff" stroke-width="3" paint-order="stroke">' + fmtVal(v) + '</text>';
       }
-      var ny = yv(nv);
-      g += '<line x1="' + (x - bw / 2 - 3).toFixed(1) + '" x2="' + (x + bw / 2 + 3).toFixed(1) + '" y1="' + ny.toFixed(1) + '" y2="' + ny.toFixed(1) + '" stroke="#7A8299" stroke-width="1.8" stroke-dasharray="3 2"/>';
+      if (withNet) {
+        var ny = yv(c.netPartByM[i]);
+        g += '<line x1="' + (x - bw / 2 - 3).toFixed(1) + '" x2="' + (x + bw / 2 + 3).toFixed(1) + '" y1="' + ny.toFixed(1) + '" y2="' + ny.toFixed(1) + '" stroke="#7A8299" stroke-width="1.8" stroke-dasharray="3 2"/>';
+      }
       g += '<text x="' + x.toFixed(1) + '" y="' + (h - 3) + '" font-size="9.5" text-anchor="middle" fill="' + (v == null ? '#B9C0D0' : '#737A8C') + '" font-weight="600">' + esc(p.label) + '</text>';
     });
     return g + labels + '</svg>';
@@ -1268,17 +1283,38 @@
     // toujours visibles (c'est le combat commercial du moment) : 0 % face au tiret réseau.
     var show = A.cats.filter(function (c) { return c.ca > 0 || c.key === 'biosim'; });
     if (!show.length) return '';
+    var unit = partsUnit;
     var tiles = show.map(function (c) {
       var netLast = c.netPartByM.length ? c.netPartByM[c.netPartByM.length - 1] : null;
+      var vals = unit === 'eur' ? c.caByM : (unit === 'vol' ? c.qByM : c.partByM);
+      var act = vals.filter(function (v) { return v != null; });
+      var lastV = act.length ? act[act.length - 1] : null;
+      var prevV = act.length >= 2 ? act[act.length - 2] : null;
+      var headVal, deltaTxt;
+      if (unit === 'part') {
+        headVal = fmtPart(c.partLast) + '<small> %</small>';
+        deltaTxt = ptsHtml(c.partEvo);
+      } else {
+        headVal = lastV == null ? '—'
+          : (unit === 'eur' ? V2.fmtEur(lastV) : V2.fmtNum(lastV) + '<small> boîtes</small>');
+        deltaTxt = evoHtml((lastV != null && prevV != null) ? pctOf(lastV, prevV) : null);
+      }
       return '<div class="pha-part' + (c.key === 'biosim' ? ' pha-part-bio' : '') + '">' +
         '<div class="pha-part-hd"><span class="pha-part-t"><span class="ph-tr-dot" style="background:' + c.color + '"></span>' + esc(c.label) + '</span>' +
-          '<span class="pha-part-v mono">' + fmtPart(c.partLast) + '<small> %</small></span></div>' +
-        '<div class="pha-part-sub">' + ptsHtml(c.partEvo) + ' <span class="pha-sub">vs mois préc. · réseau ' + fmtPart(netLast) + ' %</span></div>' +
-        partTileSvg(c, A.pts) +
+          '<span class="pha-part-v mono">' + headVal + '</span></div>' +
+        '<div class="pha-part-sub">' + deltaTxt + ' <span class="pha-sub">vs mois préc.' + (unit === 'part' ? ' · réseau ' + fmtPart(netLast) + ' %' : '') + '</span></div>' +
+        partTileSvg(c, A.pts, unit) +
       '</div>';
     }).join('');
-    return '<div class="v2-card pha-card"><div class="pha-ch"><h3>Ses parts par catégorie, mois par mois</h3>' +
-      '<span class="pha-sub">part de chaque catégorie dans son CA du mois · <i class="pha-net-dash"></i> = part de la catégorie dans le CA réseau du même mois</span></div>' +
+    var sub = unit === 'part'
+      ? 'part de chaque catégorie dans son CA du mois · <i class="pha-net-dash"></i> = part de la catégorie dans le CA réseau du même mois'
+      : (unit === 'eur' ? 'CA net de chaque catégorie, mois par mois' : 'boîtes commandées dans chaque catégorie, mois par mois');
+    var btn = function (val, lbl) {
+      return '<button class="pha-part-btn' + (unit === val ? ' on' : '') + '" onclick="V2.pharmaPartsUnit(\'' + val + '\')">' + lbl + '</button>';
+    };
+    return '<div class="v2-card pha-card"><div class="pha-ch pha-parts-head"><div><h3>Par catégorie, mois par mois</h3>' +
+      '<span class="pha-sub">' + sub + '</span></div>' +
+      '<div class="pha-part-seg">' + btn('part', 'Part %') + btn('eur', 'CA €') + btn('vol', 'Boîtes') + '</div></div>' +
       '<div class="pha-parts">' + tiles + '</div></div>';
   }
 
@@ -3283,6 +3319,10 @@
       '.pha-bar{height:6px;border-radius:999px;background:var(--surf-sunken,#F4F6FB);overflow:hidden;margin-top:4px;width:64px;margin-left:auto}',
       '.pha-bar i{display:block;height:100%;border-radius:999px}',
       '.pha-parts{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:12px}',
+      '.pha-parts-head{align-items:flex-start}',
+      '.pha-part-seg{display:inline-flex;background:var(--surf-sunken,#F4F6FB);border:1px solid var(--line);border-radius:10px;padding:2px;gap:2px;flex:none}',
+      '.pha-part-btn{border:0;background:transparent;border-radius:8px;padding:6px 11px;font:inherit;font-size:12px;font-weight:700;color:var(--muted);cursor:pointer;min-height:32px;white-space:nowrap}',
+      '.pha-part-btn.on{background:var(--card);color:var(--ip-ink);box-shadow:0 1px 3px rgba(16,19,28,.12)}',
       '.pha-part{border:1px solid var(--line);border-radius:12px;background:var(--card-2);padding:10px 12px 8px;min-width:0}',
       '.pha-part-bio{border-color:color-mix(in srgb,#6D4FC4 45%,var(--line));background:color-mix(in srgb,#6D4FC4 5%,var(--card-2))}',
       '.pha-part-hd{display:flex;justify-content:space-between;align-items:baseline;gap:8px}',
