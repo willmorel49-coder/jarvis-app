@@ -214,7 +214,7 @@ SOURCES = [
     ('Morgane', 'MDC'),      # Morgane
     ('Arthur', 'ALH'),       # Arthur Lehouerou
 ]
-MONTHS_NUM = [1, 2, 3, 4, 5, 6, 7]
+MONTHS_NUM = [1, 2, 3, 4, 5, 6, 7, 8]
 NB_MOIS = len(MONTHS_NUM)
 MOIS_ABBR = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil',
              'Août', 'Sep', 'Oct', 'Nov', 'Déc']
