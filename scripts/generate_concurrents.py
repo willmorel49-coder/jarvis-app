@@ -256,8 +256,8 @@ def cooper():
     # lignes colonne par colonne (codes, EAN, libellés, lots, prix sur des
     # lignes séparées). Relues à l'œil sur planches-rendues/ et recopiées ici.
     MAIN = [
-        ["3401546771657", "2259100", "Conditionnement", "Pots à gélules transparents", "POT GELUL PLAST TRANSP 60 ML", "", "L 20", "", "", 13.99, 46],
-        ["3401546771367", "2259102", "Conditionnement", "Pots à gélules transparents", "POT GELUL PLAST TRANSP 100 ML", "", "L 20", "", "", 22.90, 46],
+        ["3401546771657", "2259100", "Conditionnement", "Pots à gélules transparents", "POT GELUL PLAST TRANSP 60 ML", "", "L 20", "", "", 13.99, 44],
+        ["3401546771367", "2259102", "Conditionnement", "Pots à gélules transparents", "POT GELUL PLAST TRANSP 100 ML", "", "L 20", "", "", 22.90, 44],
     ]
     data = []
     n_ean = 0
@@ -302,10 +302,12 @@ def cooper():
             if desig:
                 libelle = desig
             statut_l = " / ".join(COOP_STATUTS.get(x, x) for x in statut.split("/")) if statut else ""
+            # page = numéro IMPRIMÉ en pied de planche (PDF − 2 : couverture et
+            # sommaire ne sont pas numérotés) — vérifié sur les planches 32 et 46
             data.append([ean, cpf.replace(" ", ""), famille, rayon, libelle, detail, division, statut_l,
-                         "CMR" if cmr else "", float(prix.replace(" ", "").replace(",", ".")), page])
+                         "CMR" if cmr else "", float(prix.replace(" ", "").replace(",", ".")), page - 2])
     # les deux lignes éclatées reprennent la famille lue sur leur page
-    fam46 = next((r[2] for r in data if r[10] == 46), MAIN[0][2])
+    fam46 = next((r[2] for r in data if r[10] == 44), MAIN[0][2])
     for m in MAIN:
         m[2] = fam46
         data.append(list(m))
