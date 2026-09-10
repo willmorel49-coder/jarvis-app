@@ -205,47 +205,33 @@ PHARM_FILES = sorted(glob.glob(os.path.join(STATS, '*_pharmacies.xlsx')),
                      key=lambda p: (not os.path.basename(p).startswith('WML_'), p))
 # (commercial, préfixe fichier) — chaque source : les mois de MONTHS_NUM réellement déposés
 SOURCES = [
-    ('Will', 'WML'),
+    ('Will', 'WML'),         # William Morel
     ('Pauline G.', 'PGN'),   # Pauline Guillaumin
-    ('Karine', 'KV'),
-    ('Pauline S.', 'PSA'),   # Pauline Soldevila
-    ('Manon', 'MD'),         # Manon
-    ('Florent', 'FML'),      # Florent
-    ('Morgane', 'MDC'),      # Morgane
+    ('Karine', 'KV'),        # Karine Vezzaro
+    ('Pauline S.', 'PSA'),   # Pauline Soldevilla
+    ('Manon', 'MD'),         # Manon Dussurgey
+    ('Florent', 'FML'),      # Florent Mirablel
+    ('Morgane', 'MDC'),      # Morgane Durigan-Cueille
     ('Arthur', 'ALH'),       # Arthur Lehouerou
-    ('Mathieu', 'MMN'),
-    ('Mathieu', 'JMR'),
-    # Ajoutés le 10/09/2026 (dossier STATS/total ventes — toute l'entreprise).
-    # Prénoms donnés par Will ; les autres codes s'affichent tels quels.
+    ('Mathieu', 'MMN'),      # Matthieu Manoukian
+    ('Mathieu', 'JMR'),      # Matthieu Manoukian (second code)
     ('Eric', 'EL'),
-    ('Valérie', 'VAM'),
-    ('Ingrid', 'IM'),
-    ('Yves', 'YM'),
-    ('Guillaume', 'GPX'),
-    ('NS', 'NS'),
-    ('DC', 'DC'),
-    ('PG', 'PG'),
-    ('PPO', 'PPO'),
-    ('CSM', 'CSM'),
-    ('GM', 'GM'),
-    ('PA', 'PA'),
-    ('ADC', 'ADC'),
-    ('VM', 'VM'),
-    ('AM', 'AM'),
-    ('ILE', 'ILE'),
-    ('SEP', 'SEP'),
-    ('GL', 'GL'),
-    ('AUL', 'AUL'),
-    ('SV', 'SV'),
-    ('LP', 'LP'),
-    ('IMM', 'IMM'),
-    ('SOP', 'SOP'),
-    ('MSP', 'MSP'),
-    ('CPR', 'CPR'),
-    ('NR', 'NR'),
-    ('REP', 'REP'),
-    ('Inconnu', 'COMMERCIAL_INCONNU'),
+    ('Valérie', 'VAM'),      # Valérie Morlaix
+    ('Inès', 'IM'),          # Inès Montignac (Bordeaux) — pas Ingrid, corrigé le 10/09/2026
+    ('Yves', 'YM'),          # Yves Marcelin
+    ('Guillaume', 'GPX'),    # Guillaume Poitoux
+    ('Céline', 'DC'),        # Céline Descomps
+    ('Caroline', 'CSM'),     # Caroline Simon
+    ('Ingrid L.', 'ILE'),    # Ingrid Lefebure
+    ('Ingrid M.', 'IMM'),    # Ingrid Mazerm
+    ('Pauline A.', 'PA'),    # Pauline Attali
 ]
+# Codes présents dans les exports « total ventes » mais VOLONTAIREMENT hors du CRM
+# (décision de Will, 10/09/2026 : focus sur l'équipe commerciale). Leurs fichiers
+# vivent dans STATS/hors-perimetre/ ; le robot les y range tout seul s'ils
+# réapparaissent à la racine de STATS.
+EXCLUS = ['NS', 'PG', 'PPO', 'GM', 'ADC', 'VM', 'AM', 'SEP', 'GL', 'AUL', 'SV', 'LP',
+          'SOP', 'MSP', 'CPR', 'NR', 'REP', 'COMMERCIAL_INCONNU']
 MONTHS_NUM = [1, 2, 3, 4, 5, 6, 7, 8]
 NB_MOIS = len(MONTHS_NUM)
 MOIS_ABBR = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil',
