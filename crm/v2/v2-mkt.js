@@ -67,7 +67,6 @@
   var backend = 'local';     // 'supabase' | 'local'
   var liKicked = false;      // posts LinkedIn chargés une seule fois (badge « à publier »)
   var editing = null;
-  var choixModele = false;   // true = l'utilisateur a demandé à changer de modèle (galerie affichée)
   var replaceIdx = null;     // index du produit à remplacer quand le sélecteur s'ouvre depuis une photo de l'aperçu
   var pickSrc = 'cat';       // univers : 'cat' (tout le catalogue) | 'offilog' (parapharmacie) | 'mix' (nos sélections) — 'gros' reste accepté par addProduct pour les fiches existantes
   // Nombre de références annoncé AVANT que le fichier n'arrive (il pèse 1,5 Mo
@@ -355,26 +354,6 @@
   // ════════════════════════════════════════════
   // VUE LISTE
   // ════════════════════════════════════════════
-  function badge(type) {
-    var t = TYPES[type] || TYPES.support;
-    return '<span class="mkt-typebadge" style="--bc:' + t.accent + '">' + esc(t.label) + '</span>';
-  }
-  function card(it) {
-    var n = (it.products || []).length;
-    var st = statusOf(it.status);
-    var thumbs = (it.products || []).slice(0, 4).map(function (p) {
-      return p.img ? '<span class="mkt-th" style="background-image:url(' + esc(p.img) + ')"></span>' : '<span class="mkt-th mkt-th-x"></span>';
-    }).join('');
-    var t = TYPES[it.type] || TYPES.support;
-    return '<div class="mkt-card" style="--ca:' + t.accent + '" onclick="V2.mkt.open(\'' + esc(it.id) + '\')">' +
-      '<div class="mkt-card-top">' + badge(it.type) +
-        '<span class="mkt-status" style="--sc:' + st.color + '"><span class="mkt-status-dot"></span>' + esc(st.label) + '</span></div>' +
-      '<div class="mkt-card-t">' + (it.title ? esc(it.title) : '<span style="color:var(--muted-2)">Sans titre</span>') + '</div>' +
-      '<div class="mkt-thumbs">' + (thumbs || '<span class="mkt-th mkt-th-x"></span>') + (n > 4 ? '<span class="mkt-more">+' + (n - 4) + '</span>' : '') + '</div>' +
-      '<div class="mkt-card-m"><span>' + n + ' produit' + (n > 1 ? 's' : '') + (it.owner ? ' · ' + esc((it.owner || '').split('@')[0]) : '') + '</span>' +
-        '<span class="mkt-card-go">Ouvrir ' + ICO('chev', 15, 2.2) + '</span></div>' +
-    '</div>';
-  }
   // ── Sélection grossiste (mix L'Intégral + ITP + meilleures ventes) ──
   // Classé par NB DE PHARMACIES qui commandent (sortie réseau) — données bakées.
   var _mixFlat = null;
@@ -400,203 +379,232 @@
     _mixFlat = out; return out;
   }
 
+  function flyerPreviewHtml(it) {
+    var prev = editing;
+    editing = { id: it.id, type: it.type, title: it.title, accroche: it.accroche, footer: it.footer || '', status: it.status,
+      products: it.products || [], theme: Object.assign(defaultTheme(it.type), it.theme || {}), owner: it.owner };
+    var html = buildFlyerHtml(false, false);
+    editing = prev;
+    return html;
+  }
+  // Feuille d'exemple affichée quand il n'existe encore aucune création — mêmes
+  // textes que la maquette « L'atelier » (modèle Promo de la semaine).
+  function exampleSheetHtml() {
+    var prev = editing;
+    editing = { id: 'example', type: 'support', title: 'Sécheresse oculaire : trois collyres à mettre en avant',
+      accroche: 'Les trois références hydratantes les plus demandées de la rentrée, disponibles sur tout le réseau.',
+      footer: '', status: 'brouillon',
+      products: [
+        { src: 'custom', key: 'ex1', name: 'Thealose sol. opht. flacon 15 mL', brand: 'Théa', cip: '3662042005664', price: 8.34, remise: 0, ppht: 0, img: '', froid: false, cat: 'Yeux & ophtalmologie' },
+        { src: 'custom', key: 'ex2', name: 'Hylo Confort collyre hydratant flacon 10 mL', brand: 'Ursapharm', cip: '3401040669580', price: 7.02, remise: 0, ppht: 0, img: '', froid: false, cat: 'Yeux & ophtalmologie' },
+        { src: 'custom', key: 'ex3', name: 'Vismed Multi gouttes lubrifiantes flacon 15 mL', brand: 'Horus', cip: '4028694001468', price: 8.60, remise: 0, ppht: 0, img: '', froid: false, cat: 'Yeux & ophtalmologie' }
+      ],
+      theme: Object.assign(defaultTheme('support'), { tpl: 'promo' }), owner: '' };
+    var html = buildFlyerHtml(false, false);
+    editing = prev;
+    return html;
+  }
+
+  // Puces du tiroir « Rayons » de l'accueil : les 7 plus gros rayons du catalogue s'il est
+  // en mémoire, sinon les 7 premiers libellés du fichier des rayons. Au tout premier passage
+  // rien n'est chargé : on demande le fichier des rayons (léger) et on regarnit le tiroir.
+  function rayonsChips(catTotal) {
+    var K = catCache(), html, n;
+    if (K) {
+      n = K.rayons.length;
+      html = K.rayons.slice(0, 7).map(function (r) {
+        return '<button class="mkt-chip" type="button" onclick="V2.mkt.createFromRayon(' + r.i + ')">' + esc(r.l) + ' <small>' + V2.fmtNum(r.n) + '</small></button>';
+      }).join('');
+    } else {
+      var rLabels = (window.MKT_RAYONS && window.MKT_RAYONS.rayons) || [];
+      n = rLabels.length;
+      html = rLabels.slice(0, 7).map(function (l, i) {
+        return '<button class="mkt-chip" type="button" onclick="V2.mkt.createFromRayon(' + i + ')">' + esc(l) + '</button>';
+      }).join('');
+      if (!rLabels.length && V2.loadFiles && !rayonsDemandes) {
+        rayonsDemandes = true;
+        V2.loadFiles(['mktrayons']).then(function () {
+          var box = document.getElementById('mkt-rayons-chips'), hd = document.getElementById('mkt-rayons-n');
+          if (!box) return;                       // on a quitté l'accueil entre-temps
+          var r2 = rayonsChips(catTotal);
+          box.innerHTML = r2.html;
+          if (hd && r2.n) hd.innerHTML = '<span class="n">' + V2.fmtNum(r2.n) + '</span>';
+        }, function () { rayonsDemandes = false; });
+      }
+    }
+    html += '<button class="mkt-chip more" type="button" onclick="V2.mkt.createFromCatalogue()">Tous les rayons · ' + V2.fmtNum(catTotal) + ' réf.</button>';
+    return { html: html, n: n };
+  }
+  var rayonsDemandes = false;
   function renderList(root) {
     if (!liKicked && V2.mktLinkedin && V2.mktLinkedin.loadPosts) { liKicked = true; V2.mktLinkedin.loadPosts().then(function () { if (V2.route && V2.route.name === 'marketing' && !V2.route.param) V2.render(); }); }
-    var supports = (items || []).filter(function (x) { return x.type !== 'selection'; });
-    var selections = (items || []).filter(function (x) { return x.type === 'selection'; });
     var all = (items || []).slice().sort(function (a, b) { return (b.updated || 0) - (a.updated || 0); });
     var shareNote = backend === 'supabase'
       ? '<span class="mkt-share ok">' + ICO('check', 14, 2) + ' Partagé avec Pauline</span>'
       : '<span class="mkt-share local">' + ICO('alert', 14, 2) + ' Enregistré sur cet appareil</span>';
-
-    // ── ZONE 0 : créer une fiche marketing — l'action la plus demandée, en tête ──
-    // Elle était rangée dans le tiroir « Autres outils », replié : quatre à
-    // six clics pour y arriver. Trois entrées, dont le catalogue entier.
     var catTotal = (window.CATALOGUE_COMPLET && window.CATALOGUE_COMPLET.rows && window.CATALOGUE_COMPLET.rows.length) || CAT_TOTAL_ATTENDU;
-    var heroZone =
-      '<div class="mkt-hero">' +
-        '<div class="mkt-hero-kick">' + ICO('spark', 15, 2) + ' Fiche marketing</div>' +
-        '<div class="mkt-hero-t">Créer une fiche marketing</div>' +
-        '<div class="mkt-hero-s">Un produit ou une sélection, avec photos, prix et accroche — prête à présenter ou à envoyer en PDF.</div>' +
-        '<div class="mkt-hero-btns">' +
-          '<button class="v2-btn v2-btn-primary mkt-hero-btn" onclick="V2.mkt.create(\'support\')">' + ICO('fiche', 18, 2) + 'Une fiche produit</button>' +
-          '<button class="v2-btn v2-btn-primary mkt-hero-btn" onclick="V2.mkt.create(\'selection\')">' + ICO('list', 18, 2) + 'Une sélection de produits</button>' +
-          '<button class="v2-btn v2-btn-ghost mkt-hero-btn mkt-hero-all" onclick="V2.mkt.createFromCatalogue()">' + ICO('grid', 18, 2) + 'Parcourir tous les produits' +
-            '<span class="mkt-hero-n">' + V2.fmtNum(catTotal) + ' références</span></button>' +
-        '</div>' +
-      '</div>';
 
-    // ── ÉTAPE 1 : le catalogue & prix est LE cœur de l'espace marketing ──
-    var makeZone =
-      '<div class="mkt-make">' +
-        '<button class="mkt-make-card mkt-make-cat" onclick="V2.go(\'marketing\',\'catalogues\')">' +
-          '<span class="mkt-make-ic">' + ICO('grid', 26, 1.8) + '</span>' +
-          '<span class="mkt-make-t">Catalogue &amp; prix</span>' +
-          '<span class="mkt-make-s">Tous nos produits par catégorie — PPHT, abandon de marge et prix net, prix &amp; stock par établissement. « Créer la liste » en 1 clic.</span>' +
-          '<span class="mkt-make-cta">Ouvrir le catalogue ' + ICO('chev', 17, 2.2) + '</span>' +
-        '</button>' +
-        '<div class="mkt-make-card mkt-make-t50">' +
-          '<span class="mkt-make-ic">' + ICO('download', 26, 1.8) + '</span>' +
-          '<span class="mkt-make-t">Catalogue par catégorie</span>' +
-          '<span class="mkt-make-s">Princeps (petits prix · intermédiaire · cher) + NR — les plus demandés de chaque catégorie, prêts à présenter.</span>' +
-          '<span class="mkt-make-t50btns">' +
-            '<button class="v2-btn v2-btn-primary" onclick="V2.mkt.top50Pdf()">' + ICO('download', 15) + ' Fiche PDF</button>' +
-            '<button class="v2-btn v2-btn-ghost" onclick="V2.mkt.top50Xlsx()">' + ICO('download', 15) + ' Excel</button>' +
-          '</span>' +
-        '</div>' +
-        '<div class="mkt-make-card mkt-make-t50">' +
-          '<span class="mkt-make-ic">' + ICO('cat', 26, 1.8) + '</span>' +
-          '<span class="mkt-make-t">Biosimilaires substituables</span>' +
-          '<span class="mkt-make-s">Tous les biosimilaires substituables en officine — PPHT, abandon de marge et prix net IP. Fiche façon Teva prête à présenter, + la base complète.</span>' +
-          '<span class="mkt-make-t50btns">' +
-            // 29/08/2026 — les fiches portent le net IP : plus dans le dépôt public,
-            // servies depuis l'espace protégé (les anciens liens répondaient 404).
-            '<button class="v2-btn v2-btn-primary" onclick="V2.ouvrirDocProtege(\'biosimSynthesePharma\')">' + ICO('download', 15) + ' Fiche PDF</button>' +
-            '<button class="v2-btn v2-btn-ghost" onclick="V2.ouvrirDocProtege(\'biosimDetailPharma\')">' + ICO('download', 15) + ' Toutes présentations</button>' +
-            (V2.pages && V2.pages.biosimilaires ? '<button class="v2-btn v2-btn-ghost" onclick="V2.go(\'biosimilaires\')">' + ICO('chev', 15, 2.2) + ' Ouvrir la base</button>' : '') +
-          '</span>' +
-        '</div>' +
-      '</div>';
+    // ── Tiroir « Modèles » : les 4 modèles, tuile = mini-feuille ──
+    var modelsHtml = MODELES.map(function (m) {
+      return '<button class="mkt-mtile" type="button" style="--m:' + m.accent + '" data-model="' + m.k + '" data-head="' + m.head + '" onclick="V2.mkt.createWith(\'' + m.k + '\')">' +
+        '<b>' + esc(m.label) + '</b><small>' + esc(m.desc) + '</small></button>';
+    }).join('');
 
-    // ── Le nouveau site : une carte pleine largeur, avec les aperçus ──
-    // Elle était rangée dans le tiroir « Autres outils », replié par défaut :
-    // personne n'y arrivait. C'est pourtant la décision la plus lourde du
-    // moment, et elle attend un choix — donc elle est visible d'entrée, avec
-    // trois vrais aperçus et l'avancement des notes.
-    var mqZone = '';
+    // ── Tiroir « Rayons » : les 7 plus gros, avec repli si le catalogue n'est pas encore chargé ──
+    var ray = rayonsChips(catTotal), rayChips = ray.html, rayCount = ray.n;
+
+    // ── La feuille sur le plan de travail : la dernière création, ou un exemple ──
+    var mostRecent = all[0];
+    var sheetHtml = mostRecent ? flyerPreviewHtml(mostRecent) : exampleSheetHtml();
+    var sheetClick = mostRecent ? "V2.mkt.open('" + esc(mostRecent.id) + "')" : "V2.mkt.create('support')";
+
+    // ── Créations récentes : éventail de mini-feuilles ──
+    var recentHtml;
+    if (all.length) {
+      var fan = all.slice(0, 6).map(function (it) {
+        var t = TYPES[it.type] || TYPES.support;
+        var n = (it.products || []).length;
+        var st = statusOf(it.status);
+        var acc = (it.theme && it.theme.accent) || t.accent;
+        var who = (it.owner || '').split('@')[0];
+        return '<button class="mkt-mini" type="button" style="--m:' + acc + '" onclick="V2.mkt.open(\'' + esc(it.id) + '\')">' +
+          '<i></i><b>' + (it.title ? esc(it.title) : 'Sans titre') + '</b>' +
+          '<small>' + n + ' produit' + (n > 1 ? 's' : '') + ' · ' + esc(st.label) +
+            (who ? '<br><span class="who"><em>' + esc(who.charAt(0).toUpperCase()) + '</em> ' + esc(who) + '</span>' : '') + '</small>' +
+        '</button>';
+      }).join('');
+      recentHtml = '<div class="mkt-recent"><h2>Créations récentes' + (backend === 'supabase' ? ' · partagées avec Pauline' : '') + '</h2><div class="mkt-fan">' + fan + '</div></div>';
+    } else {
+      recentHtml = '<div class="mkt-recent"><div class="mkt-empty">Aucune création pour l\'instant — clique la feuille pour commencer.</div></div>';
+    }
+
+    // ── Tiroir « Le nouveau site » : bandeau de vignettes si présentes ──
+    var mqStrip = '';
     if (window.MAQUETTES_SITE && window.MAQUETTES_SITE.length) {
-      // Chaque maquette porte son propre chemin d'aperçu depuis le 15/08/2026 :
-      // le dossier `nouvelles/vignettes/` a été retiré avec les vingt directions.
-      var mqL = window.MAQUETTES_SITE;
-      var mqApercus = '';
+      var mqL = window.MAQUETTES_SITE, mqShots = '';
       for (var mqi = 0; mqi < 3 && mqi < mqL.length; mqi++) {
         var mqA = mqL[mqi].apercu || ('../../site-integral/propositions/vignettes/' + mqL[mqi].id + '.jpg');
-        mqApercus += '<img src="' + mqA + '" loading="lazy" decoding="async" alt="">';
+        mqShots += '<img src="' + mqA + '" loading="lazy" decoding="async" alt="">';
       }
-      mqZone =
-        '<button class="mkt-site" onclick="V2.go(\'marketing\',\'propositions\')">' +
-          '<span class="mkt-site-shots">' + mqApercus + '</span>' +
-          '<span class="mkt-site-txt">' +
-            '<span class="mkt-site-kick">' + (mqL.length > 1 ? 'À choisir' : 'Le nouveau site') + '</span>' +
-            '<span class="mkt-site-t">' + (mqL.length > 1 ? 'Le nouveau site — ' + mqL.length + ' directions' : 'Intégral Pharma, version unique') + '</span>' +
-            '<span class="mkt-site-s">' + (mqL.length > 1 ? 'Ouvre-les en vrai, elles défilent et elles répondent. Mets une note sur 10 : la moyenne est partagée entre vous.' : 'La version unique, sur la base Cimaise. Ouvre-la en vrai : elle défile, la carte pousse depuis Hyères, la page RSE suit le soleil. Mets une note sur 10 : la moyenne est partagée entre vous.') + '</span>' +
-            '<span class="mkt-site-cta">Voir et noter ' + ICO('chev', 17, 2.2) + '</span>' +
-          '</span>' +
-        '</button>';
+      mqStrip = '<span class="mkt-mqstrip">' + mqShots + '</span>';
     }
-
-    // ── ÉTAPE 2 : mes créations récentes (une seule liste, plus de grilles répétées) ──
-    var recentZone;
-    if (all.length) {
-      recentZone =
-        '<div class="mkt-block">' +
-          '<div class="mkt-block-head">' +
-            '<div class="mkt-block-t">Mes créations</div>' +
-            '<div class="mkt-block-s">' + supports.length + ' support' + (supports.length > 1 ? 's' : '') +
-              ' · ' + selections.length + ' sélection' + (selections.length > 1 ? 's' : '') + '</div>' +
-          '</div>' +
-          '<div class="mkt-grid">' + all.map(card).join('') + '</div>' +
-        '</div>';
-    } else {
-      recentZone =
-        '<div class="mkt-block">' +
-          '<div class="mkt-empty mkt-empty-first">Aucune fiche pour l\'instant — commence par « Créer une fiche marketing » ci-dessus.</div>' +
-        '</div>';
-    }
-
-    // ── ZONE 2 : les PDF partagés (autre usage, bien séparé) ──
-    var docsZone =
-      '<div class="mkt-block">' +
-        '<a class="mkt-bigrow" onclick="V2.go(\'marketing\',\'docs\')">' +
-          '<span class="mkt-bigrow-ic">' + ICO('download', 22, 1.8) + '</span>' +
-          '<span class="mkt-bigrow-txt"><span class="mkt-bigrow-t">Documents partagés (PDF)</span>' +
-          '<span class="mkt-bigrow-s">Catalogues, fiches et offres — ajoute ou supprime des PDF visibles par tous les comptes.</span></span>' +
-          '<span class="mkt-bigrow-go">Ouvrir ' + ICO('chev', 17) + '</span>' +
-        '</a>' +
-      '</div>';
-
-    // ── ZONE LinkedIn : outil du quotidien, accès visible direct ──
     var liDue = (V2.mktLinkedin && V2.mktLinkedin.dueCount) ? V2.mktLinkedin.dueCount() : 0;
-    var liZone =
-      '<div class="mkt-block">' +
-        '<a class="mkt-bigrow" onclick="V2.go(\'marketing\',\'linkedin\')">' +
-          '<span class="mkt-bigrow-ic" style="background:linear-gradient(150deg,#0A66C2,#004182)">' + ICO('cal', 22, 1.8) + '</span>' +
-          '<span class="mkt-bigrow-txt"><span class="mkt-bigrow-t">Rétroplanning LinkedIn' +
-            (liDue > 0 ? ' <b class="mkt-badge">' + liDue + ' à publier</b>' : '') +
-          '</span>' +
-          '<span class="mkt-bigrow-s">Calendrier éditorial : retrouve tes anciens posts, prépare et planifie les prochains, publie en 1 clic.</span></span>' +
-          '<span class="mkt-bigrow-go">Ouvrir ' + ICO('chev', 17) + '</span>' +
-        '</a>' +
-      '</div>';
-
-    // ── Accès annexes (repliés, discrets — c'est le côté « design du site », pas le quotidien) ──
-    var moreZone =
-      '<details class="mkt-more-box">' +
-        '<summary class="mkt-more-sum">' + ICO('cat', 16) + ' Autres outils (maquettes, banque d\'effets)' +
-          '<span class="mkt-more-chev">' + ICO('chev', 16) + '</span></summary>' +
-        '<div class="mkt-links">' +
-          // « Support à présenter » et « Sélection à pousser » ont quitté ce
-          // tiroir le 10/09/2026 : ils sont dans le bloc « Créer une fiche
-          // marketing », tout en haut de la page.
-          // Les maquettes ne sont plus ici : elles ont leur propre carte, en
-          // haut de la page. En laisser une copie dans le tiroir ferait douter
-          // qu'il s'agit du même écran.
-          // L'écran de vote existait, mais AUCUN bouton n'y menait : personne ne
-          // pouvait y arriver autrement qu'en tapant l'adresse à la main.
-          '<a class="mkt-link" onclick="V2.go(\'marketing\',\'propositions\')">' +
-            '<span class="mkt-link-ic mkt-link-ic-cat">' + ICO('cat', 18) + '</span>' +
-            '<span style="flex:1;min-width:0"><span class="mkt-link-t">Le nouveau site — le noter</span>' +
-            '<span class="mkt-link-s">Chacun l\'ouvre en vrai, met une note sur 10 et écrit ce qui va ou ne va pas.</span></span>' +
-            '<span class="v2-row-chev">' + ICO('chev', 17) + '</span>' +
-          '</a>' +
-          '<a class="mkt-link" onclick="V2.go(\'marketing\',\'site\')">' +
-            '<span class="mkt-link-ic mkt-link-ic-cat">' + ICO('cat', 18) + '</span>' +
-            '<span style="flex:1;min-width:0"><span class="mkt-link-t">Le nouveau site, en plein écran</span>' +
-            '<span class="mkt-link-s">La version unique, servie telle qu\'elle sera en ligne — accueil et page RSE.</span></span>' +
-            '<span class="v2-row-chev">' + ICO('chev', 17) + '</span>' +
-          '</a>' +
-          '<a class="mkt-link" onclick="V2.go(\'marketing\',\'fxbank\')">' +
-            '<span class="mkt-link-ic mkt-link-ic-cat">' + ICO('cat', 18) + '</span>' +
-            '<span style="flex:1;min-width:0"><span class="mkt-link-t">Banque d\'effets (FX-BANK)</span>' +
-            '<span class="mkt-link-s">24 composants 3D / motion / design prêts à assembler pour un site ultra-tendance.</span></span>' +
-            '<span class="v2-row-chev">' + ICO('chev', 17) + '</span>' +
-          '</a>' +
-        '</div>' +
-      '</details>';
 
     root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
-      '<div class="v2-wrap narrow mkt-launch">' +
-        '<div class="mkt-head">' +
-          '<div class="v2-page-title">Marketing</div>' +
-          '<div class="v2-page-sub" style="margin-bottom:0">Le catalogue, les prix et les documents à présenter — l\'espace de Pauline &amp; Will.</div>' +
-          '<div class="mkt-head-share">' + shareNote + '</div>' +
+      '<main class="mkt-atelier"><div class="v2-wrap mkt-bench">' +
+
+        '<div class="mkt-headline">' +
+          '<div><h1>Une feuille vierge, et tout à portée de main.</h1>' +
+            '<p>Tape directement dans la feuille. Les modèles, les rayons et les produits sont rangés dans les tiroirs autour. ' + shareNote + '</p></div>' +
+          '<div class="mkt-hacts">' +
+            '<button class="v2-btn v2-btn-ghost" type="button" onclick="V2.mkt.create(\'support\')">' + ICO('fiche', 17, 2) + 'Une fiche produit</button>' +
+            '<button class="v2-btn v2-btn-primary" type="button" onclick="V2.mkt.create(\'selection\')">' + ICO('plus', 17, 2.4) + 'Une sélection de produits</button>' +
+          '</div>' +
         '</div>' +
-        heroZone +
-        makeZone +
-        mqZone +
-        recentZone +
-        liZone +
-        docsZone +
-        moreZone +
+
+        '<aside class="mkt-rail" aria-label="Tiroirs de gauche">' +
+          '<section class="mkt-drawer"><header>' + ICO('grid', 20, 1.8) + 'Modèles<span class="handle"></span></header>' +
+            '<div class="body"><div class="mkt-models">' + modelsHtml + '</div></div></section>' +
+          '<section class="mkt-drawer"><header>' + ICO('cat', 20, 1.8) + 'Rayons<span id="mkt-rayons-n">' + (rayCount ? '<span class="n">' + V2.fmtNum(rayCount) + '</span>' : '') + '</span></header>' +
+            '<div class="body"><div class="mkt-chips" id="mkt-rayons-chips">' + rayChips + '</div></div></section>' +
+        '</aside>' +
+
+        '<section class="mkt-stage" aria-label="La feuille">' +
+          '<div class="mkt-hint">' + ICO('spark', 14, 2) + 'La feuille est vivante : clique-la pour l\'ouvrir dans l\'atelier.</div>' +
+          '<div class="mkt-sheetwrap" id="mkt-home-wrap">' +
+            '<button class="mkt-sheet-home" type="button" id="mkt-home-btn" onclick="' + sheetClick + '" aria-label="Ouvrir la feuille">' +
+              '<div class="mkt-home-holder" id="mkt-home-holder"><div class="mkt-home-sheet" id="mkt-home-sheet">' + sheetHtml + '</div></div>' +
+            '</button>' +
+          '</div>' +
+          recentHtml +
+        '</section>' +
+
+        '<aside class="mkt-rail right" aria-label="Instruments">' +
+          '<section class="mkt-drawer"><header>' + ICO('cat', 20, 1.8) + 'Catalogue<span class="handle"></span></header>' +
+            '<div class="body">' +
+              '<button class="mkt-tool" type="button" onclick="V2.go(\'marketing\',\'catalogues\')">' +
+                '<span class="tico">' + ICO('grid', 20, 1.8) + '</span>' +
+                '<span><b>Catalogue &amp; prix</b><span>' + V2.fmtNum(catTotal) + ' références, PPHT et stock par établissement. « Créer la liste » en un clic.</span></span>' +
+                '<span class="arr">' + ICO('chev', 16, 2.2) + '</span></button>' +
+              '<div class="mkt-tool" style="cursor:default">' +
+                '<span class="tico pdf">' + ICO('download', 20, 1.8) + '</span>' +
+                '<span><b>Catalogue par catégorie</b><span>Princeps petits prix · intermédiaire · cher + NR. PDF ou Excel.</span>' +
+                  '<span style="display:flex;gap:8px;margin-top:8px"><button class="v2-btn v2-btn-ghost" style="min-height:36px" onclick="event.stopPropagation();V2.mkt.top50Pdf()">' + ICO('download', 14) + ' PDF</button>' +
+                  '<button class="v2-btn v2-btn-ghost" style="min-height:36px" onclick="event.stopPropagation();V2.mkt.top50Xlsx()">' + ICO('download', 14) + ' Excel</button></span></span></div>' +
+              '<div class="mkt-tool" style="cursor:default">' +
+                '<span class="tico">' + ICO('pill', 20, 1.8) + '</span>' +
+                '<span><b>Biosimilaires substituables</b><span>Fiche façon Teva prête à présenter.</span>' +
+                  '<span style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">' +
+                    '<button class="v2-btn v2-btn-ghost" style="min-height:36px" onclick="event.stopPropagation();V2.ouvrirDocProtege(\'biosimSynthesePharma\')">' + ICO('download', 14) + ' Fiche PDF</button>' +
+                    '<button class="v2-btn v2-btn-ghost" style="min-height:36px" onclick="event.stopPropagation();V2.ouvrirDocProtege(\'biosimDetailPharma\')">' + ICO('download', 14) + ' Toutes présentations</button>' +
+                    (V2.pages && V2.pages.biosimilaires ? '<button class="v2-btn v2-btn-ghost" style="min-height:36px" onclick="event.stopPropagation();V2.go(\'biosimilaires\')">' + ICO('chev', 14, 2.2) + ' Ouvrir la base</button>' : '') +
+                  '</span></span></div>' +
+            '</div></section>' +
+          '<section class="mkt-drawer"><header>' + ICO('cal', 20, 1.8) + 'Communication<span class="handle"></span></header>' +
+            '<div class="body">' +
+              '<button class="mkt-tool" type="button" onclick="V2.go(\'marketing\',\'linkedin\')">' +
+                '<span class="tico">' + ICO('cal', 20, 1.8) + '</span>' +
+                '<span><b>Rétroplanning LinkedIn' + (liDue > 0 ? ' <span class="mkt-badge">' + liDue + ' à publier</span>' : '') + '</b><span>Calendrier éditorial : anciens posts, prochains à préparer, publication en un clic.</span></span>' +
+                '<span class="arr">' + ICO('chev', 16, 2.2) + '</span></button>' +
+              '<button class="mkt-tool" type="button" onclick="V2.go(\'marketing\',\'docs\')">' +
+                '<span class="tico">' + ICO('download', 20, 1.8) + '</span>' +
+                '<span><b>Documents partagés</b><span>Catalogues, fiches et offres en PDF, visibles par tous les comptes.</span></span>' +
+                '<span class="arr">' + ICO('chev', 16, 2.2) + '</span></button>' +
+              '<button class="mkt-tool" type="button" onclick="V2.go(\'marketing\',\'propositions\')">' +
+                '<span class="tico">' + ICO('cat', 20, 1.8) + '</span>' +
+                '<span><b>Le nouveau site</b><span>Intégral Pharma, version unique — voir et noter.</span></span>' +
+                '<span class="arr">' + ICO('chev', 16, 2.2) + '</span></button>' +
+              mqStrip +
+            '</div></section>' +
+          '<details class="mkt-drawer mkt-more"><summary>' + ICO('cat', 20, 1.8) + 'Autres outils<span class="n">maquettes, supports</span><span class="mkt-more-chev">' + ICO('chev', 16, 2) + '</span></summary>' +
+            '<div class="body">' +
+              '<button class="mkt-tool" type="button" onclick="V2.go(\'marketing\',\'site\')">' +
+                '<span class="tico">' + ICO('cat', 20, 1.8) + '</span>' +
+                '<span><b>Le nouveau site, en plein écran</b><span>La version unique, servie telle qu\'elle sera en ligne.</span></span>' +
+                '<span class="arr">' + ICO('chev', 16, 2.2) + '</span></button>' +
+              '<button class="mkt-tool" type="button" onclick="V2.go(\'marketing\',\'fxbank\')">' +
+                '<span class="tico">' + ICO('spark', 20, 1.8) + '</span>' +
+                '<span><b>Banque d\'effets</b><span>Composants 3D / motion / design prêts à assembler.</span></span>' +
+                '<span class="arr">' + ICO('chev', 16, 2.2) + '</span></button>' +
+            '</div></details>' +
+        '</aside>' +
+
         (backend === 'local'
-          ? '<div class="mkt-setup">' + ICO('alert', 16, 2) + '<div><b>Activer le partage entre vous</b><br>' +
+          ? '<div class="mkt-setup" style="grid-column:1/-1">' + ICO('alert', 16, 2) + '<div><b>Activer le partage entre vous</b><br>' +
             'Pour l\'instant les supports sont enregistrés sur cet appareil. Pour que Pauline et toi voyiez les mêmes, il faut créer une table dans Supabase (une seule fois). Demande-moi le script SQL, il est prêt.</div></div>'
           : '') +
-      '</div>';
+      '</div></main>';
 
-    // ── Motion « façon Framer Motion » (discret, 150–300ms, RM-safe via l'API) ──
+    fitHomeSheet();
+    if (!V2._mktHomeFitBound) { window.addEventListener('resize', fitHomeSheet); V2._mktHomeFitBound = true; }
+    wireHomeTilt();
+
     if (V2.motion) {
-      // Cascade d'entrée sur les cartes « Mes créations »
-      V2.motion.stagger(root.querySelectorAll('.mkt-card'), { step: 45, y: 10 });
-      // Les 2 grands boutons d'action rendus magnétiques (attirés vers le curseur)
-      var mk = root.querySelectorAll('.mkt-make-card');
-      for (var mi = 0; mi < mk.length; mi++) V2.motion.magnetic(mk[mi]);
-      // Apparition douce de la ligne « PDF partagés » et de l'état vide
-      var big = root.querySelector('.mkt-bigrow');
-      if (big) V2.motion.enter(big, { y: 8, delay: 120 });
-      var emptyFirst = root.querySelector('.mkt-empty-first');
-      if (emptyFirst) V2.motion.enter(emptyFirst, { y: 8, delay: 60 });
+      V2.motion.stagger(root.querySelectorAll('.mkt-mini'), { step: 45, y: 10 });
+      var drawers = root.querySelectorAll('.mkt-drawer');
+      for (var di = 0; di < drawers.length; di++) V2.motion.enter(drawers[di], { y: 8, delay: 40 * di });
     }
+  }
+  // ── Mise à l'échelle de la feuille d'accueil (même principe que fitSheet, id distincts) ──
+  function fitHomeSheet() {
+    var ho = document.getElementById('mkt-home-holder'), sh = document.getElementById('mkt-home-sheet');
+    if (!ho || !sh) return;
+    var avail = Math.min(ho.parentNode.clientWidth || 600, 600);
+    var scale = Math.min(1, avail / 794);
+    sh.style.transform = 'scale(' + scale + ')';
+    var h = sh.firstChild ? sh.firstChild.offsetHeight : sh.offsetHeight;
+    ho.style.width = (794 * scale) + 'px'; ho.style.height = (h * scale) + 'px';
+  }
+  // ── Inclinaison 3D de la feuille d'accueil sous le curseur (souris fine, hors reduced-motion) ──
+  function wireHomeTilt() {
+    var wrap = document.getElementById('mkt-home-wrap'); if (!wrap) return;
+    if (!(window.matchMedia && matchMedia('(hover:hover) and (pointer:fine)').matches && !matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
+    wrap.addEventListener('mousemove', function (e) {
+      var r = wrap.getBoundingClientRect(), x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5;
+      wrap.style.setProperty('--ry', (-10 + x * 12).toFixed(2) + 'deg');
+      wrap.style.setProperty('--rx', (6 - y * 9).toFixed(2) + 'deg');
+    });
+    wrap.addEventListener('mouseleave', function () { wrap.style.removeProperty('--rx'); wrap.style.removeProperty('--ry'); });
   }
 
   // ════════════════════════════════════════════
@@ -775,7 +783,9 @@
     if (id === 'new-support' || id === 'new-selection') {
       var ty = id === 'new-selection' ? 'selection' : 'support';
       if (!editing || editing._new !== ty) {
-        editing = { id: newId(), type: ty, title: '', accroche: '', footer: '', status: 'brouillon', products: [], theme: defaultTheme(ty), owner: (V2.user && V2.user.email) || '', _new: ty };
+        editing = { id: newId(), type: ty, title: '', accroche: '', footer: '', status: 'brouillon', products: [],
+          theme: Object.assign(defaultTheme(ty), { tpl: ty === 'selection' ? 'selection' : 'promo' }),
+          owner: (V2.user && V2.user.email) || '', _new: ty };
       }
     } else {
       var ex = (items || []).filter(function (x) { return x.id === id; })[0];
@@ -786,80 +796,76 @@
                     theme: Object.assign(defaultTheme(ex.type), ex.theme || {}), owner: ex.owner };
       }
     }
-    // Étape 1 : une fiche neuve n'a pas encore de modèle → galerie plein écran. Une fiche
-    // existante y revient par « Changer de modèle ».
-    if (choixModele || (editing._new && !(editing.theme && editing.theme.tpl))) {
-      root.innerHTML = V2.topbar({ back: true, backTo: 'marketing', backLabel: 'Marketing' }) + galerieModeles();
-      return;
-    }
     var t = TYPES[editing.type] || TYPES.support;
     var n = editing.products.length;
-    var statusChips = STATUSES.map(function (s) {
-      return '<button class="mkt-stbtn' + (editing.status === s.k ? ' on' : '') + '" style="--sc:' + s.color + '" onclick="V2.mkt.setStatus(\'' + s.k + '\',this)">' + esc(s.label) + '</button>';
-    }).join('');
+    var statusChips = '<div class="mkt-seg" role="group" aria-label="Statut">' + STATUSES.map(function (s) {
+      return '<button type="button" aria-pressed="' + (editing.status === s.k ? 'true' : 'false') + '" onclick="V2.mkt.setStatus(\'' + s.k + '\',this)">' + esc(s.label) + '</button>';
+    }).join('') + '</div>';
     var prodHtml = n ? editing.products.map(prodRow).join('') : '<div class="mkt-empty" style="border:none">Aucun produit. Ajoute des références ci-dessous.</div>';
+    var curTpl = (editing.theme && editing.theme.tpl) || 'promo';
+    var modelsHtml = MODELES.map(function (m) {
+      return '<button class="mkt-mtile" type="button" style="--m:' + m.accent + '" data-model="' + m.k + '" data-head="' + m.head + '" aria-pressed="' + (curTpl === m.k ? 'true' : 'false') + '" onclick="V2.mkt.setModele(\'' + m.k + '\')">' +
+        '<b>' + esc(m.label) + '</b><small>' + esc(m.desc) + '</small></button>';
+    }).join('');
 
     root.innerHTML = V2.topbar({ back: true, backTo: 'marketing', backLabel: 'Marketing' }) +
-      '<div class="v2-wrap">' + stepper(2) +
-        '<div class="mkt-edit-grid"><div class="mkt-edit-col">' +
-          '<div class="mkt-edit-head">' + badge(editing.type) +
-            '<input class="mkt-titlefield" id="mkt-title" placeholder="Titre du ' + esc(t.label.toLowerCase()) + '…" value="' + esc(editing.title) + '" oninput="V2.mkt.setTitle(this.value)"></div>' +
-          '<textarea class="mkt-accroche" id="mkt-accroche" rows="2" placeholder="Accroche / message (ex : Notre sélection solaires de l\'été)…" oninput="V2.mkt.setAccroche(this.value)">' + esc(editing.accroche || '') + '</textarea>' +
-          personalizePanel() +
-          '<div class="mkt-statusrow"><span class="mkt-statusl">Statut</span>' + statusChips + '</div>' +
-          '<div class="v2-card">' +
-            '<div class="v2-card-head"><div class="v2-card-t">' + ICO('cart', 17, 1.8) + 'Produits</div>' +
-              '<span class="v2-card-link" id="mkt-count" style="cursor:default">' + n + ' produit' + (n > 1 ? 's' : '') + '</span></div>' +
-            '<div id="mkt-prodlist">' + prodHtml + '</div>' +
-            catDatalist() +
-          '</div>' +
-          '<div class="mkt-editbar">' +
-            '<button class="v2-btn v2-btn-primary mkt-addbtn" onclick="V2.mkt.openPicker()">' + ICO('plus', 17, 2) + 'Ajouter des produits · tout le catalogue</button>' +
-            '<button class="v2-btn v2-btn-ghost" onclick="V2.mkt.addCustom()">' + ICO('plus', 17, 2) + 'Produit libre</button>' +
-            '<button class="v2-btn v2-btn-ghost" onclick="V2.mkt.save()">' + ICO('check', 17, 2) + 'Enregistrer</button>' +
-            '<button class="v2-btn v2-btn-primary" onclick="V2.mkt.downloadPdf()">' + ICO('download', 17, 2) + 'Télécharger le PDF</button>' +
-            '<button class="mkt-del" onclick="V2.mkt.remove()" title="Supprimer">' + ICO('close', 17, 2) + '</button>' +
+      '<main class="mkt-atelier"><div class="v2-wrap mkt-bench">' +
+
+        '<div class="mkt-headline">' +
+          '<div><h1>' + (editing.title ? esc(editing.title) : 'Sans titre') + '</h1>' +
+            '<p>Modèle choisi · tu personnalises · tu télécharges. Tout se fait sur la feuille.</p></div>' +
+          '<div class="mkt-hacts">' +
+            '<button class="v2-btn v2-btn-ghost" type="button" onclick="V2.mkt.openPicker()">' + ICO('plus', 17, 2.4) + 'Ajouter des produits</button>' +
+            '<button class="v2-btn v2-btn-primary" type="button" onclick="V2.mkt.downloadPdf()">' + ICO('download', 17, 2) + 'Télécharger le PDF</button>' +
           '</div>' +
         '</div>' +
-        '<div class="mkt-pv-col"><div class="mkt-pv-pane">' +
-          '<div class="mkt-pv-bar"><span class="mkt-pv-live">Aperçu en direct</span>' +
-            '<button class="v2-btn v2-btn-ghost mkt-pv-tpl" onclick="V2.mkt.choisirModele()" title="Modèle : ' + esc(modele(editing).label) + '">' + ICO('grid', 15, 2) + 'Changer de modèle</button>' +
-            '<button class="v2-btn v2-btn-primary mkt-pv-dl" onclick="V2.mkt.downloadPdf()">' + ICO('download', 15, 2) + 'Télécharger le PDF</button></div>' +
-          '<div class="mkt-pv-hint">Cliquez un texte de l\'aperçu pour l\'écrire · cliquez la photo pour changer de produit</div>' +
-          '<div class="mkt-mscroll" id="mkt-mscroll"><div class="mkt-mholder" id="mkt-mholder"><div class="mkt-msheet" id="mkt-msheet"></div></div></div>' +
-        '</div></div>' +
-        '</div>' +
-      '</div>' + pickerMarkup();
+
+        '<aside class="mkt-rail" aria-label="Tiroirs de gauche">' +
+          '<section class="mkt-drawer"><header>' + ICO('grid', 20, 1.8) + 'Modèles<span class="handle"></span></header>' +
+            '<div class="body"><div class="mkt-models">' + modelsHtml + '</div></div></section>' +
+          '<section class="mkt-drawer"><header>' + ICO('check', 20, 1.8) + 'Statut<span class="handle"></span></header>' +
+            '<div class="body">' + statusChips + '<p class="desc" style="padding-top:10px">Partagée avec Pauline dès l\'enregistrement.</p></div></section>' +
+          '<section class="mkt-drawer"><header>' + ICO('spark', 20, 1.8) + 'Affichage<span class="handle"></span></header>' +
+            '<div class="body">' + personalizePanel() + '</div></section>' +
+        '</aside>' +
+
+        '<section class="mkt-stage" aria-label="La feuille">' +
+          '<div class="mkt-toolbar"><div class="mkt-tbsteps"><b><i class="done">' + ICO('check', 12, 3) + '</i>Modèle</b><span>—</span><b><i>2</i>Personnaliser</b></div>' +
+            '<div class="mkt-tbhint"><i></i>Aperçu en direct</div></div>' +
+          '<div class="mkt-sheetwrap">' +
+            '<div class="mkt-mscroll" id="mkt-mscroll"><div class="mkt-mholder" id="mkt-mholder"><div class="mkt-msheet" id="mkt-msheet"></div></div></div>' +
+          '</div>' +
+          '<section class="mkt-drawer" style="width:min(100%,600px)">' +
+            '<header>' + ICO('cart', 20, 1.8) + 'Produits sur la feuille<span class="n" id="mkt-count">' + n + '</span></header>' +
+            '<div class="body">' +
+              '<div id="mkt-prodlist">' + prodHtml + '</div>' +
+              catDatalist() +
+              '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">' +
+                '<button class="v2-btn v2-btn-ghost" type="button" onclick="V2.mkt.openPicker()">' + ICO('plus', 16, 2.4) + 'Ajouter des produits</button>' +
+                '<button class="v2-btn v2-btn-ghost" type="button" onclick="V2.mkt.addCustom()">' + ICO('plus', 16, 2) + 'Produit libre</button>' +
+              '</div>' +
+            '</div></section>' +
+        '</section>' +
+
+        '<aside class="mkt-rail right" aria-label="Instruments">' +
+          '<section class="mkt-drawer"><header>' + ICO('fiche', 20, 1.8) + 'Texte<span class="handle"></span></header>' +
+            '<div class="body">' +
+              '<div class="mkt-field"><label for="mkt-title">Titre</label><input id="mkt-title" type="text" placeholder="Titre du ' + esc(t.label.toLowerCase()) + '…" value="' + esc(editing.title) + '" oninput="V2.mkt.setTitle(this.value)"></div>' +
+              '<div class="mkt-field" style="margin-top:10px"><label for="mkt-accroche">Accroche</label><textarea id="mkt-accroche" rows="3" placeholder="Accroche / message (ex : Notre sélection solaires de l\'été)…" oninput="V2.mkt.setAccroche(this.value)">' + esc(editing.accroche || '') + '</textarea></div>' +
+            '</div></section>' +
+          '<section class="mkt-drawer"><header>' + ICO('check', 20, 1.8) + 'Actions<span class="handle"></span></header>' +
+            '<div class="body" style="display:flex;flex-direction:column;gap:8px">' +
+              '<button class="v2-btn v2-btn-ghost" type="button" onclick="V2.mkt.save()">' + ICO('check', 16, 2) + 'Enregistrer</button>' +
+              '<button class="v2-btn v2-btn-primary" type="button" onclick="V2.mkt.downloadPdf()">' + ICO('download', 16, 2) + 'Télécharger le PDF</button>' +
+              '<button class="v2-btn v2-btn-ghost mkt-del-a" type="button" onclick="V2.mkt.remove()">' + ICO('close', 16, 2) + 'Supprimer</button>' +
+            '</div></section>' +
+        '</aside>' +
+
+      '</div></main>' + pickerMarkup();
     wirePicker();
     refreshPreview();
     if (!V2._mktFitBound) { window.addEventListener('resize', fitSheet); V2._mktFitBound = true; }
     if (pickOpenOnRender) { pickOpenOnRender = false; openPicker(); }
-  }
-  // ── Assistant guidé : indicateur d'étapes + galerie de modèles (étape 1) ──
-  function stepper(step) {
-    return '<div class="mkt-steps">' +
-      '<div class="mkt-step' + (step === 1 ? ' on' : ' done') + '"' + (step === 2 ? ' onclick="V2.mkt.choisirModele()" title="Revenir au choix du modèle"' : '') + '><span>' + (step === 1 ? '1' : '✓') + '</span>Choisir un modèle</div>' +
-      '<div class="mkt-step-sep"></div>' +
-      '<div class="mkt-step' + (step === 2 ? ' on' : '') + '"><span>2</span>Personnaliser</div>' +
-    '</div>';
-  }
-  function galerieModeles() {
-    var cur = editing.theme && editing.theme.tpl;
-    var cards = MODELES.map(function (m) {
-      var pv = '<span class="mkt-tpl-pv" style="--acc:' + m.accent + '">' +
-        (m.head === 'band' ? '<i class="hdr"></i><i class="ttl light"></i>' : (m.head === 'slim' ? '<i class="hdr slim"></i><i class="ttl"></i>' : '<i class="ttl"></i>')) +
-        (m.tag ? '<i class="tag"></i>' : '') +
-        '<i class="ph"></i><i class="ln big" style="top:41%"></i><i class="ln" style="top:50%;right:30%"></i><i class="pr"></i><i class="ln" style="top:88%;height:4px;right:40%"></i>' +
-      '</span>';
-      return '<button class="mkt-tpl' + (cur === m.k ? ' on' : '') + '" onclick="V2.mkt.setModele(\'' + m.k + '\')">' + pv +
-        '<b>' + esc(m.label) + '</b><small>' + esc(m.desc) + '</small></button>';
-    }).join('');
-    return '<div class="v2-wrap">' + stepper(1) +
-      '<div class="mkt-gal-head"><div class="v2-card-t">' + ICO('grid', 18, 1.8) + 'Choisissez un modèle</div>' +
-        (choixModele ? '<button class="v2-btn v2-btn-ghost" onclick="V2.mkt.annulerModele()">' + ICO('chev', 15, 2) + 'Revenir à la fiche</button>' : '') + '</div>' +
-      '<div class="mkt-tpls">' + cards + '</div>' +
-      '<p class="mkt-gal-note">La mise en page est fixée par le modèle. À l\'étape suivante, seuls les textes, la photo et le prix se modifient — directement dans l\'aperçu.</p>' +
-    '</div>';
   }
   var CAT_SUGG = ['Antalgiques & douleur', 'ORL · Nez & gorge', 'Digestif & transit', 'Dermatologie', 'Circulation veineuse', 'Compléments & vitamines', 'Diabète & autosurveillance', 'Ophtalmologie', 'Pansements & cicatrisation', 'Hygiène · Bébé · Sérum phy', 'Sommeil · Stress', 'Sevrage tabac', 'Contraception & gynéco', 'Solaire', 'Minceur', 'Vétérinaire'];
   function catDatalist() {
@@ -1038,6 +1044,7 @@
   function pickerMarkup() {
     return '<div id="mkt-picker" class="mkt-pick-bd">' +
       '<div class="mkt-pick" onclick="event.stopPropagation()">' +
+        '<span class="mkt-pick-grip" aria-hidden="true"></span>' +
         '<div class="mkt-pick-search">' + ICO('search', 21, 2) +
           '<input id="mkt-pick-input" placeholder="' + esc(pickPlaceholder()) + '" autocomplete="off">' +
           '<button class="mkt-prow-x" onclick="V2.mkt.closePicker()" aria-label="Fermer">' + ICO('close', 16, 2) + '</button></div>' +
@@ -1435,22 +1442,17 @@
     var bgSw = BGS.map(function (c) {
       return '<button class="mkt-sw mkt-sw-bg' + (th.bg === c ? ' on' : '') + '" data-c="' + c + '" style="background:' + c + '" onclick="V2.mkt.setBg(\'' + c + '\')"></button>';
     }).join('');
-    return '<div class="v2-card mkt-perso">' +
-      '<div class="v2-card-head"><div class="v2-card-t">' + ICO('spark', 17, 1.8) + 'Personnalisation</div>' +
-        '<span class="v2-card-link" style="cursor:default;color:var(--muted)">charte graphique</span></div>' +
-      '<div class="mkt-perso-body">' +
-        '<div class="mkt-perso-row"><span class="mkt-perso-l">Couleur</span><div class="mkt-sws">' + accSw +
-          '<label class="mkt-sw mkt-sw-pick" title="Couleur libre"><input type="color" value="' + esc(th.accent) + '" oninput="V2.mkt.setAccent(this.value)"></label></div></div>' +
-        '<div class="mkt-perso-row"><span class="mkt-perso-l">Fond</span><div class="mkt-sws">' + bgSw +
-          '<label class="mkt-sw mkt-sw-pick" title="Fond libre"><input type="color" value="' + esc(th.bg) + '" oninput="V2.mkt.setBg(this.value)"></label></div></div>' +
-        '<div class="mkt-perso-row"><span class="mkt-perso-l">Affichage</span><div class="mkt-toggles">' +
-          '<button class="mkt-tg' + (th.showPrice !== false ? ' on' : '') + '" onclick="V2.mkt.toggle(\'showPrice\',this)">Prix</button>' +
-          '<button class="mkt-tg' + (th.showRemise !== false ? ' on' : '') + '" onclick="V2.mkt.toggle(\'showRemise\',this)">Abandon</button>' +
-          '<button class="mkt-tg' + (th.showImg !== false ? ' on' : '') + '" onclick="V2.mkt.toggle(\'showImg\',this)">Photos</button>' +
-        '</div></div>' +
-        '<div class="mkt-perso-row"><span class="mkt-perso-l">Mentions</span>' +
-          '<input class="mkt-foot" id="mkt-footer" placeholder="ex : Offre valable jusqu\'au 31/07 · contact@integralpharma.fr" value="' + esc(editing.footer || '') + '" oninput="V2.mkt.setFooter(this.value)"></div>' +
-      '</div></div>';
+    return '<div class="mkt-chips">' +
+        '<button class="mkt-tg' + (th.showPrice !== false ? ' on' : '') + '" onclick="V2.mkt.toggle(\'showPrice\',this)">Prix</button>' +
+        '<button class="mkt-tg' + (th.showRemise !== false ? ' on' : '') + '" onclick="V2.mkt.toggle(\'showRemise\',this)">Abandon</button>' +
+        '<button class="mkt-tg' + (th.showImg !== false ? ' on' : '') + '" onclick="V2.mkt.toggle(\'showImg\',this)">Photos</button>' +
+      '</div>' +
+      '<div class="mkt-sws" style="margin-top:10px">' + accSw +
+        '<label class="mkt-sw mkt-sw-pick" title="Couleur libre"><input type="color" value="' + esc(th.accent) + '" oninput="V2.mkt.setAccent(this.value)"></label></div>' +
+      '<div class="mkt-sws" style="margin-top:8px">' + bgSw +
+        '<label class="mkt-sw mkt-sw-pick" title="Fond libre"><input type="color" value="' + esc(th.bg) + '" oninput="V2.mkt.setBg(this.value)"></label></div>' +
+      '<div class="mkt-field" style="margin-top:12px"><label for="mkt-footer">Mentions en pied</label>' +
+        '<input class="mkt-foot" id="mkt-footer" type="text" placeholder="ex : Offre valable jusqu\'au 31/07 · contact@integralpharma.fr" value="' + esc(editing.footer || '') + '" oninput="V2.mkt.setFooter(this.value)"></div>';
   }
   // aperçu live inline (toujours visible dans l'éditeur)
   function refreshPreview() {
@@ -1545,20 +1547,44 @@
   // ════════════════════════════════════════════
   V2.mkt = {
     create: function (type) { editing = null; V2.go('marketing', type === 'selection' ? 'new-selection' : 'new-support'); },
+    // Une tuile du tiroir « Modèles », depuis l'accueil : crée directement un support sur ce modèle.
+    createWith: function (k) {
+      var m = null; for (var i = 0; i < MODELES.length; i++) if (MODELES[i].k === k) m = MODELES[i];
+      editing = { id: newId(), type: 'support', title: '', accroche: '', footer: '', status: 'brouillon', products: [],
+                  theme: Object.assign(defaultTheme('support'), { tpl: k || 'promo', accent: (m && m.accent) || undefined }),
+                  owner: (V2.user && V2.user.email) || '', _new: 'support' };
+      V2.go('marketing', 'new-support');
+    },
+    // Une chip « Rayons » de l'accueil : sélection neuve, sélecteur ouvert direct sur ce rayon.
+    createFromRayon: function (i) {
+      editing = { id: newId(), type: 'selection', title: '', accroche: '', footer: '', status: 'brouillon', products: [],
+                  theme: defaultTheme('selection'), owner: (V2.user && V2.user.email) || '', _new: 'selection' };
+      for (var j = 0; j < MODELES.length; j++) if (MODELES[j].k === 'selection') editing.theme.accent = MODELES[j].accent;
+      editing.theme.tpl = 'selection';
+      pickSrc = 'cat'; pickF = pickFiltresVides(); pickF.rayon = String(i); pickOpenOnRender = true;
+      V2.go('marketing', 'new-selection');
+    },
     open: function (id) { editing = null; V2.go('marketing', id); },
-    // Assistant guidé : étape 1 (modèle) ↔ étape 2 (personnalisation)
+    // Changer de modèle depuis l'éditeur : la feuille bascule sur sa tranche, change de peau, revient.
     setModele: function (k) {
       if (!editing) return;
       var m = null; for (var i = 0; i < MODELES.length; i++) if (MODELES[i].k === k) m = MODELES[i];
       if (!m) return;
       editing.theme = editing.theme || defaultTheme(editing.type);
       if (editing.theme.tpl !== m.k) editing.theme.accent = m.accent; // la couleur suit le modèle, reste modifiable ensuite
-      editing.theme.tpl = m.k;
-      choixModele = false;
-      V2.render();
+      var apply = function () {
+        editing.theme.tpl = k;
+        Array.prototype.forEach.call(document.querySelectorAll('.mkt-mtile'), function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-model') === k ? 'true' : 'false'); });
+        Array.prototype.forEach.call(document.querySelectorAll('.mkt-sw-acc'), function (el) { el.classList.toggle('on', el.getAttribute('data-c') === m.accent); });
+        refreshPreview();
+      };
+      var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var holder = document.getElementById('mkt-mholder');
+      if (reduce || !holder || V2._mktTurning) { apply(); return; }
+      V2._mktTurning = true;
+      holder.classList.add('mkt-turn');
+      setTimeout(function () { apply(); holder.classList.remove('mkt-turn'); setTimeout(function () { V2._mktTurning = false; }, 340); }, 330);
     },
-    choisirModele: function () { if (!editing) return; choixModele = true; V2.render(); },
-    annulerModele: function () { choixModele = false; V2.render(); },
     setProd: function (i, field, v) {
       if (!editing || !editing.products[i]) return;
       var p = editing.products[i];
@@ -1596,8 +1622,8 @@
     },
     setStatus: function (k, btn) {
       if (!editing) return; editing.status = k;
-      Array.prototype.forEach.call(document.querySelectorAll('.mkt-stbtn'), function (b) { b.classList.remove('on'); });
-      if (btn) btn.classList.add('on');
+      Array.prototype.forEach.call(document.querySelectorAll('.mkt-seg button'), function (b) { b.setAttribute('aria-pressed', 'false'); });
+      if (btn) btn.setAttribute('aria-pressed', 'true');
     },
     catSrc: function (s) { catSrc = s; V2.render(); },
     catAdd: function (fi) {
@@ -1802,13 +1828,12 @@
     openPicker: function () { openPicker(); }, closePicker: closePicker,
     // « Parcourir tous les produits » (accueil Marketing) : une sélection neuve,
     // modèle déjà posé, et le sélecteur s'ouvre sur le catalogue entier dès le
-    // rendu de l'éditeur — sans passer par la galerie de modèles.
+    // rendu de l'éditeur.
     createFromCatalogue: function () {
       editing = { id: newId(), type: 'selection', title: '', accroche: '', footer: '', status: 'brouillon', products: [],
                   theme: defaultTheme('selection'), owner: (V2.user && V2.user.email) || '', _new: 'selection' };
       for (var i = 0; i < MODELES.length; i++) if (MODELES[i].k === 'selection') editing.theme.accent = MODELES[i].accent;
       editing.theme.tpl = 'selection';
-      choixModele = false;
       pickSrc = 'cat'; pickF = pickFiltresVides(); pickOpenOnRender = true;
       V2.go('marketing', 'new-selection');
     },
@@ -2034,6 +2059,7 @@
       '.mkt-share{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:6px 11px;border-radius:999px}',
       '.mkt-share.ok{color:var(--c-opp);background:color-mix(in srgb,var(--c-opp) 12%,#fff)}',
       '.mkt-share.local{color:var(--c-amber);background:color-mix(in srgb,var(--c-amber) 12%,#fff)}',
+      '.mkt-badge{display:inline-block;vertical-align:middle;margin-left:7px;padding:2px 9px;border-radius:999px;background:#FF4D6D;color:#fff;font-size:11px;font-weight:800;letter-spacing:.01em}',
       '.mkt-cat-banner{display:flex;align-items:center;gap:14px;margin-top:14px;padding:16px 18px;background:linear-gradient(150deg,color-mix(in srgb,var(--c-cat) 8%,#fff),var(--card));border:1px solid color-mix(in srgb,var(--c-cat) 22%,var(--line));border-radius:var(--r-card);box-shadow:var(--sh-1);cursor:pointer;text-decoration:none;color:inherit;transition:.16s var(--ease)}',
       '.mkt-cat-banner:hover{box-shadow:var(--sh-2);transform:translateY(-1px)}',
       '.mkt-cat-ic{width:44px;height:44px;border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;background:linear-gradient(150deg,var(--c-cat),#4d35a0)}',
@@ -2046,54 +2072,6 @@
       '@media(max-width:640px){.mkt-top50{flex-wrap:wrap}.mkt-top50-btns{width:100%}.mkt-top50-btns .v2-btn{flex:1;justify-content:center}}',
       '.mkt-cat-t{display:block;font-weight:800;font-size:15.5px;letter-spacing:-.01em}',
       '.mkt-cat-s{display:block;font-size:12.5px;color:var(--muted);margin-top:2px}',
-      // ═══ Accueil Marketing « Launcher » : calme, centré, 1 action claire par zone ═══
-      '.mkt-launch{padding-top:6px}',
-      '.mkt-head{text-align:center;margin-bottom:22px}',
-      '.mkt-head .v2-page-title{margin-bottom:6px}',
-      '.mkt-head-share{margin-top:12px}',
-      // ── Étape 1 : les 2 choix de fabrication (grandes cartes claires, sobres) ──
-      // Héros « Créer une fiche marketing » : une source de lumière en haut à
-      // gauche (bleu doux → blanc), l'ombre existante. Aucun des effets qui
-      // font planter Safari (voir la skill safari-safe).
-      '.mkt-hero{position:relative;margin-bottom:var(--section-gap);padding:26px 24px 22px;border-radius:var(--r-card);border:1px solid color-mix(in srgb,var(--ip-blue) 18%,var(--line));background:radial-gradient(130% 110% at 0% 0%,#D9E6FF 0%,#EAF1FF 34%,var(--card) 72%);box-shadow:var(--sh-pop);overflow:hidden}',
-      '.mkt-hero-kick{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ip-blue)}',
-      '.mkt-hero-t{margin-top:8px;font-size:24px;font-weight:800;letter-spacing:-.025em;color:var(--ip-ink);line-height:1.15}',
-      '.mkt-hero-s{margin-top:6px;font-size:14px;color:var(--muted);line-height:1.45;max-width:560px}',
-      '.mkt-hero-btns{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}',
-      '.mkt-hero-btn{min-height:52px;padding:12px 22px;font-size:15px;flex:1 1 240px;justify-content:center}',
-      '.mkt-hero-all{flex-basis:100%;background:var(--card);border-color:color-mix(in srgb,var(--ip-blue) 30%,var(--line));color:var(--ip-ink)}',
-      '.mkt-hero-all:hover{border-color:var(--ip-blue)}',
-      '.mkt-hero-n{font-size:12.5px;font-weight:700;color:var(--ip-blue);background:var(--halo);border-radius:999px;padding:4px 10px;margin-left:4px}',
-      '@media(max-width:640px){.mkt-hero{padding:22px 18px 18px}.mkt-hero-t{font-size:21px}.mkt-hero-btns{flex-direction:column}.mkt-hero-btn{flex:none;width:100%}}',
-      '.mkt-make{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:var(--section-gap)}',
-      '@media(max-width:640px){.mkt-make{grid-template-columns:1fr;gap:12px}}',
-      '.mkt-make-card{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:8px;text-align:left;padding:22px 22px 20px;background:linear-gradient(180deg,var(--card),var(--card-2));border:1px solid var(--line);border-radius:var(--r-card);cursor:pointer;font-family:var(--font);overflow:hidden;transition:transform .26s var(--mo-ease-soft),box-shadow .26s var(--mo-ease-soft),border-color .26s var(--mo-ease-soft)}',
-      '.mkt-make-card:hover{transform:translateY(-3px);box-shadow:var(--sh-2);border-color:color-mix(in srgb,var(--_a) 32%,var(--line))}',
-      '.mkt-make-card:active{transform:translateY(-1px)}',
-      '.mkt-make-support{--_a:var(--ip-blue)}',
-      '.mkt-make-selection{--_a:var(--c-opp)}',
-      '.mkt-make-cat{--_a:var(--ip-blue)}',
-      '.mkt-make-t50{--_a:var(--c-opp);cursor:default}',
-      '.mkt-make-t50:hover{transform:none;box-shadow:var(--sh-1);border-color:var(--line)}',
-      // 29/08/2026 — mesuré : 3 boutons ne tiennent pas sur la ligne ; à l'appui,
-      // le ripple pose overflow:hidden sur le bouton, qui devient compressible et
-      // passe de 125 à 36 px SOUS la souris → le relâchement tombe sur le voisin
-      // (« les boutons font n'importe quoi »). On laisse passer à la ligne.
-      '.mkt-make-t50btns{display:flex;flex-wrap:wrap;gap:8px;align-self:stretch;margin-top:6px}',
-      '.mkt-make-t50btns .v2-btn{flex:1 1 140px;justify-content:center;white-space:nowrap}',
-      // La carte « nouveau site » : trois aperçus réels + l'invitation à noter.
-      // Les aperçus sont cadrés en haut (`object-position:top`) — c'est l'accroche
-      // qui distingue une direction d'une autre, pas le bas de page.
-      '.mkt-site{display:flex;flex-direction:column;width:100%;text-align:left;padding:0;margin:0 0 16px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);overflow:hidden;cursor:pointer;font-family:var(--font);box-shadow:var(--sh-1);transition:transform .26s var(--mo-ease-soft),box-shadow .26s var(--mo-ease-soft),border-color .26s var(--mo-ease-soft)}',
-      '.mkt-site:hover{transform:translateY(-2px);box-shadow:var(--sh-2,0 10px 30px rgba(16,19,28,.10));border-color:var(--ip-blue)}',
-      '.mkt-site-shots{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border-bottom:1px solid var(--line)}',
-      '.mkt-site-shots img{width:100%;height:96px;object-fit:cover;object-position:top center;display:block;background:var(--card-2)}',
-      '@media(min-width:640px){.mkt-site-shots img{height:132px}}',
-      '.mkt-site-txt{display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:16px 18px 17px}',
-      '.mkt-site-kick{font-size:10.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:#fff;background:var(--ip-blue);border-radius:var(--r-pill);padding:3px 9px}',
-      '.mkt-site-t{font-size:17px;font-weight:800;letter-spacing:-.02em;color:var(--ip-ink)}',
-      '.mkt-site-s{font-size:13.5px;line-height:1.5;color:var(--muted);max-width:56ch}',
-      '.mkt-site-cta{display:inline-flex;align-items:center;gap:4px;margin-top:4px;font-size:13px;font-weight:700;color:var(--ip-blue);min-height:32px}',
       '.mkt-search{position:relative;display:flex;align-items:center;margin-bottom:14px}',
       '.mkt-search-ic{position:absolute;left:14px;color:var(--muted-2);display:inline-flex;pointer-events:none}',
       '.mkt-search input{flex:1;width:100%;box-sizing:border-box;padding:12px 40px;font-size:14.5px;font-family:var(--font);color:var(--ip-ink);background:var(--card);border:1px solid var(--line);border-radius:var(--r-pill);outline:none;transition:border-color .16s var(--ease),box-shadow .16s var(--ease)}',
@@ -2101,47 +2079,7 @@
       '.mkt-search input::-webkit-search-decoration,.mkt-search input::-webkit-search-cancel-button{-webkit-appearance:none}',
       '.mkt-search-x{position:absolute;right:8px;display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border:none;background:transparent;color:var(--muted-2);cursor:pointer;border-radius:50%}',
       '.mkt-search-x:hover{background:color-mix(in srgb,var(--ip-blue) 10%,transparent);color:var(--ip-blue)}',
-      '.mkt-make-ic{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;color:var(--_a);background:linear-gradient(150deg,color-mix(in srgb,var(--_a) 15%,var(--card)),color-mix(in srgb,var(--_a) 6%,var(--card)));margin-bottom:4px}',
-      '.mkt-make-t{font-size:17px;font-weight:800;letter-spacing:-.02em;color:var(--ip-ink)}',
-      '.mkt-make-s{font-size:13px;color:var(--muted);line-height:1.4}',
-      '.mkt-make-cta{display:inline-flex;align-items:center;gap:5px;margin-top:8px;font-weight:800;font-size:13.5px;color:#fff;background:var(--_a);border-radius:var(--r-pill);padding:9px 16px;min-height:var(--tap-min);box-sizing:border-box;align-self:stretch;justify-content:center;transition:filter .16s var(--ease)}',
-      '.mkt-make-card:hover .mkt-make-cta{filter:brightness(1.06)}',
-      // ── Blocs (créations récentes / PDF partagés) ──
-      '.mkt-block{margin-bottom:var(--section-gap)}',
-      '.mkt-block-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:14px}',
-      '.mkt-block-t{font-size:16px;font-weight:800;letter-spacing:-.01em;color:var(--ip-ink)}',
-      '.mkt-block-s{font-size:12.5px;color:var(--muted);font-weight:600}',
-      '.mkt-empty-first{margin:0}',
-      // ── Grande ligne « Documents partagés » (action secondaire claire) ──
-      '.mkt-bigrow{display:flex;align-items:center;gap:15px;padding:18px 20px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-1);cursor:pointer;text-decoration:none;color:inherit;transition:transform .18s var(--ease),box-shadow .18s var(--ease),border-color .18s var(--ease)}',
-      '.mkt-bigrow:hover{transform:translateY(-2px);box-shadow:var(--sh-2);border-color:color-mix(in srgb,var(--c-rose) 28%,var(--line))}',
-      '.mkt-bigrow:hover .mkt-bigrow-go{color:var(--c-rose)}',
-      '.mkt-bigrow-ic{width:46px;height:46px;border-radius:13px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;background:linear-gradient(150deg,var(--c-rose),#b1304a)}',
-      '.mkt-bigrow-txt{flex:1;min-width:0}',
-      '.mkt-bigrow-t{display:block;font-weight:800;font-size:15.5px;letter-spacing:-.01em;color:var(--ip-ink)}',
-      '.mkt-badge{display:inline-block;vertical-align:middle;margin-left:7px;padding:2px 9px;border-radius:999px;background:#FF4D6D;color:#fff;font-size:11px;font-weight:800;letter-spacing:.01em}',
-      '.mkt-bigrow-s{display:block;font-size:12.5px;color:var(--muted);margin-top:2px;line-height:1.4}',
-      '.mkt-bigrow-go{display:inline-flex;align-items:center;gap:3px;flex-shrink:0;font-weight:700;font-size:13px;color:var(--muted-2);transition:color .16s var(--ease)}',
-      // ── Accès annexes repliés (progressive disclosure) ──
-      '.mkt-more-box{margin-bottom:var(--section-gap);border:1px solid var(--line);border-radius:var(--r-md);background:var(--card);overflow:hidden}',
-      '.mkt-more-sum{display:flex;align-items:center;gap:9px;padding:14px 16px;font-size:13.5px;font-weight:700;color:var(--ip-ink-2);cursor:pointer;list-style:none;-webkit-tap-highlight-color:transparent}',
-      '.mkt-more-sum::-webkit-details-marker{display:none}',
-      '.mkt-more-sum svg{color:var(--muted-2)}',
       '.mkt-more-chev{margin-left:auto;color:var(--muted-2);display:inline-flex;transition:transform .2s var(--ease)}',
-      '.mkt-more-box[open] .mkt-more-chev{transform:rotate(90deg)}',
-      '.mkt-more-box[open] .mkt-more-sum{border-bottom:1px solid var(--line)}',
-      '.mkt-more-box .mkt-links{padding:12px}',
-      '.mkt-links{display:grid;grid-template-columns:1fr 1fr;gap:12px}',
-      '@media(max-width:640px){.mkt-links{grid-template-columns:1fr}}',
-      '.mkt-link{display:flex;align-items:center;gap:12px;padding:13px 15px;background:var(--card);border:1px solid var(--line);border-radius:14px;cursor:pointer;text-decoration:none;color:inherit;transition:border-color .16s var(--ease),transform .16s var(--ease),box-shadow .16s var(--ease)}',
-      '.mkt-link:hover{border-color:color-mix(in srgb,var(--ip-blue) 30%,var(--line));box-shadow:var(--sh-1);transform:translateY(-1px)}',
-      '.mkt-link:hover .v2-row-chev{transform:translateX(2px);color:var(--ip-blue)}',
-      '.mkt-link-ic{width:38px;height:38px;border-radius:11px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff}',
-      '.mkt-link-ic-doc{background:linear-gradient(150deg,var(--c-rose,#E0556E),#b1304a)}',
-      '.mkt-link-ic-cat{background:linear-gradient(150deg,var(--c-cat),#4d35a0)}',
-      '.mkt-link-t{display:block;font-weight:700;font-size:14px;letter-spacing:-.01em}',
-      '.mkt-link-s{display:block;font-size:12px;color:var(--muted);margin-top:2px;line-height:1.35}',
-      '.mkt-link .v2-row-chev{transition:transform .16s var(--ease),color .16s var(--ease)}',
       // ── Documents PDF partagés ──
       '.mkt-etabbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 16px;padding:12px 14px;background:color-mix(in srgb,var(--ip-blue) 5%,#fff);border:1px solid color-mix(in srgb,var(--ip-blue) 18%,var(--line));border-radius:12px}',
       '.mkt-etablbl{font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--ip-blue)}',
@@ -2171,46 +2109,16 @@
       '.mkt-doc-del{flex-shrink:0;width:36px;height:36px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s}',
       '.mkt-doc-del:hover{color:#fff;background:var(--c-rose,#E0556E);border-color:var(--c-rose,#E0556E)}',
       '.mkt-cat-prod{font-weight:600;font-size:13.5px}',
-      '.mkt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:15px}',
-      '.mkt-card{position:relative;background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--sh-1);padding:16px 16px 14px;cursor:pointer;transition:transform .2s var(--ease),box-shadow .2s var(--ease),border-color .2s var(--ease);display:flex;flex-direction:column;gap:9px;overflow:hidden}',
-      '.mkt-card::before{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:var(--ca);opacity:0;transition:opacity .2s var(--ease)}',
-      '.mkt-card:hover{transform:translateY(-4px);box-shadow:var(--sh-3);border-color:color-mix(in srgb,var(--ca) 30%,var(--line))}',
-      '.mkt-card:hover::before{opacity:1}',
-      '.mkt-card:active{transform:translateY(-1px)}',
-      '.mkt-card-top{display:flex;align-items:center;justify-content:space-between;gap:8px}',
-      '.mkt-typebadge{display:inline-block;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--bc);background:color-mix(in srgb,var(--bc) 13%,#fff);padding:3px 8px;border-radius:7px}',
-      '.mkt-status{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;color:var(--sc)}',
-      '.mkt-status-dot{width:6px;height:6px;border-radius:50%;background:var(--sc)}',
-      '.mkt-card-t{font-size:15px;font-weight:800;letter-spacing:-.01em;line-height:1.25}',
-      '.mkt-thumbs{display:flex;gap:5px;align-items:center}',
-      '.mkt-th{width:34px;height:34px;border-radius:8px;background:#F0F2F7 center/cover no-repeat;border:1px solid var(--line);flex-shrink:0}',
       '.mkt-th-x{background:var(--card-2)}',
-      '.mkt-more{font-size:11px;color:var(--muted);font-weight:700}',
-      '.mkt-card-m{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11.5px;color:var(--muted);margin-top:auto}',
-      '.mkt-card-go{display:inline-flex;align-items:center;gap:2px;font-weight:700;color:var(--ca);opacity:0;transform:translateX(-4px);transition:opacity .18s var(--ease),transform .18s var(--ease)}',
-      '.mkt-card:hover .mkt-card-go{opacity:1;transform:translateX(0)}',
       '.mkt-empty{padding:24px 16px;text-align:center;color:var(--muted);font-size:13px;border:1px dashed var(--line);border-radius:14px;grid-column:1/-1}',
       '.mkt-setup{display:flex;gap:11px;align-items:flex-start;margin-top:26px;padding:15px 17px;border-radius:14px;background:color-mix(in srgb,var(--c-amber) 8%,#fff);border:1px solid color-mix(in srgb,var(--c-amber) 28%,transparent);font-size:13px;line-height:1.5;color:var(--ip-ink-2)}',
       '.mkt-setup svg{color:var(--c-amber);flex-shrink:0;margin-top:1px}',
-      '.mkt-edit-head{display:flex;align-items:center;gap:11px;margin-bottom:6px}',
-      '.mkt-titlefield{flex:1;font-family:var(--font);font-size:23px;font-weight:800;letter-spacing:-.03em;color:var(--ip-ink);border:none;outline:none;background:none;padding:6px 0;border-bottom:2px solid var(--line);transition:.18s var(--ease)}',
-      '.mkt-titlefield:focus{border-bottom-color:var(--ip-blue)}',
-      '.mkt-accroche{width:100%;font-family:var(--font);font-size:14px;line-height:1.55;color:var(--ip-ink-2);background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 15px;margin:14px 0;outline:none;resize:vertical;box-shadow:var(--sh-1)}',
-      '.mkt-accroche:focus{border-color:var(--ip-blue);box-shadow:0 0 0 3px var(--halo)}',
-      '.mkt-statusrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:18px}',
-      '.mkt-statusl{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;margin-right:4px}',
-      '.mkt-stbtn{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:6px 13px;font-family:var(--font);font-size:12.5px;font-weight:600;color:var(--muted);cursor:pointer;transition:.16s var(--ease)}',
-      '.mkt-stbtn.on{border-color:var(--sc);color:#fff;background:var(--sc)}',
-      '.mkt-perso-body{padding:14px 18px;display:flex;flex-direction:column;gap:13px}',
-      '.mkt-perso-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}',
-      '.mkt-perso-l{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700;width:82px;flex-shrink:0}',
       '.mkt-sws{display:flex;gap:6px;flex-wrap:wrap;align-items:center}',
       '.mkt-sw{width:26px;height:26px;border-radius:8px;border:2px solid var(--line);cursor:pointer;padding:0;transition:.14s var(--ease)}',
       '.mkt-sw.on{border-color:var(--ip-ink);box-shadow:0 0 0 2px #fff inset}',
       '.mkt-sw-bg{box-shadow:inset 0 0 0 1px rgba(16,19,28,.07)}',
       '.mkt-sw-pick{display:inline-flex;align-items:center;justify-content:center;overflow:hidden;background:conic-gradient(#f44,#fd0,#4d4,#0cf,#46f,#d4f,#f44)}',
       '.mkt-sw-pick input{opacity:0;width:130%;height:130%;cursor:pointer;border:none;padding:0}',
-      '.mkt-toggles{display:flex;gap:8px}',
       '.mkt-tg{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:6px 15px;font-family:var(--font);font-size:12.5px;font-weight:600;color:var(--muted);cursor:pointer;transition:.16s var(--ease)}',
       '.mkt-tg.on{border-color:var(--c-opp);color:#fff;background:var(--c-opp)}',
       '.mkt-foot{flex:1;min-width:200px;font-family:var(--font);font-size:13px;color:var(--ip-ink);border:1px solid var(--line);border-radius:10px;padding:9px 12px;outline:none;background:var(--card)}',
@@ -2237,23 +2145,6 @@
       '.mkt-prow-price{font-size:14px;font-weight:800;color:var(--ip-blue);flex-shrink:0}',
       '.mkt-prow-x{width:30px;height:30px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--muted-2);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.16s var(--ease)}',
       '.mkt-prow-x:hover{color:var(--c-rose);border-color:color-mix(in srgb,var(--c-rose) 40%,var(--line))}',
-      '.mkt-editbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:20px;padding:14px 16px;background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--sh-1)}',
-      '.mkt-editbar .v2-btn-primary{margin-left:auto}',
-      '.mkt-editbar .mkt-del{margin-left:0}',
-      '@media(max-width:560px){.mkt-editbar .v2-btn-primary{margin-left:0;width:100%;order:-1}}',
-      // éditeur 2 colonnes + aperçu live
-      '.mkt-edit-grid{display:grid;grid-template-columns:minmax(320px,1fr) minmax(360px,520px);gap:30px;align-items:start}',
-      '@media(max-width:980px){.mkt-edit-grid{grid-template-columns:1fr;gap:22px}.mkt-edit-col,.mkt-pv-col{min-width:0}}', // min-width:0 : sinon la feuille de 794 px étire la colonne et coupe l'écran sur téléphone
-      '.mkt-pv-pane{position:sticky;top:84px}',
-      '@media(max-width:980px){.mkt-pv-pane{position:static}}',
-      '.mkt-pv-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}',
-      '.mkt-pv-live{display:flex;align-items:center;gap:8px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:800}',
-      '.mkt-pv-live::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--c-opp);box-shadow:0 0 0 4px color-mix(in srgb,var(--c-opp) 18%,transparent);animation:mktPulse 2s var(--ease) infinite}',
-      '.mkt-pv-dl{flex-shrink:0}',
-      '@keyframes mktPulse{0%,100%{box-shadow:0 0 0 4px color-mix(in srgb,var(--c-opp) 18%,transparent)}50%{box-shadow:0 0 0 6px color-mix(in srgb,var(--c-opp) 8%,transparent)}}',
-      '.mkt-pv-pane .mkt-mscroll{flex:none;max-height:calc(100vh - 148px);border-radius:16px;border:1px solid var(--line)}',
-      '.mkt-del{margin-left:auto;width:42px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.16s var(--ease)}',
-      '.mkt-del:hover{color:var(--c-rose);border-color:color-mix(in srgb,var(--c-rose) 40%,var(--line))}',
       // Sélecteur = explorateur de catalogue : rail de facettes à gauche,
       // résultats seuls défilent, pied collant. Plein écran sous 640 px.
       '.mkt-pick-bd{position:fixed;inset:0;z-index:210;background:rgba(16,19,28,0.55);display:flex;align-items:flex-start;justify-content:center;padding-top:8vh;opacity:0;pointer-events:none;transition:opacity .2s var(--ease)}',
@@ -2305,8 +2196,6 @@
       // « labo · CIP · rayon » reste sur une seule, coupée par « … ».
       '.mkt-pick-list .mkt-pick-nm b{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;white-space:normal;overflow:hidden;line-height:1.25}',
       '.mkt-pick-list .mkt-pick-nm span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
-      '.mkt-editbar .mkt-addbtn{margin-left:0}',
-      '@media(max-width:560px){.mkt-editbar .mkt-addbtn{order:-2}}',
       '.mkt-pick-search{display:flex;align-items:center;gap:12px;padding:15px 18px;border-bottom:1px solid var(--line)}',
       '.mkt-pick-search svg{color:var(--ip-blue);flex-shrink:0}',
       '.mkt-pick-search input{border:none;outline:none;background:none;font-family:var(--font);font-size:16px;flex:1;color:var(--ip-ink)}',
@@ -2351,7 +2240,7 @@
       '.mkt-mtt svg{color:var(--ip-blue)}',
       '.mkt-mx{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.16s var(--ease)}',
       '.mkt-mx:hover{color:var(--ip-ink);transform:rotate(90deg)}',
-      '.mkt-mscroll{overflow-y:auto;overflow-x:hidden;padding:24px;background:#EBEEF4;flex:1}',
+      '.mkt-mscroll{overflow-y:auto;overflow-x:hidden;padding:0;background:transparent;flex:1}',
       '.mkt-mholder{margin:0 auto;overflow:hidden;border-radius:8px;box-shadow:0 14px 44px rgba(16,19,28,.2)}',
       '.mkt-msheet{width:794px;transform-origin:top left;background:#fff}',
       // ── Assistant guidé : zones modifiables de l'aperçu ──
@@ -2368,42 +2257,120 @@
       '.mkt-zone-quiet{outline-color:transparent;display:inline-block;min-width:24px}',
       '.mkt-zone-quiet::before{display:none}',
       '.mkt-zone-quiet:hover::after{border-radius:0 0 6px 6px;padding:3px;font-size:8px}',
-      '.mkt-pv-hint{font-size:11.5px;color:var(--muted);margin:-6px 0 10px}',
-      '.mkt-pv-tpl{margin-left:auto}',
-      '@media(max-width:560px){.mkt-pv-bar{flex-wrap:wrap}.mkt-pv-tpl{margin-left:0}}',
-      '@media(max-width:640px){.mkt-pv-tpl,.mkt-pv-dl{min-height:44px}.mkt-step.done{min-height:44px;padding:5px 4px}}',
-      // ── Assistant guidé : étapes + galerie de modèles ──
-      '.mkt-steps{display:flex;align-items:center;gap:12px;margin:4px 0 18px;font-size:12.5px;font-weight:700;color:var(--muted)}',
-      '.mkt-step{display:flex;align-items:center;gap:8px}',
-      '.mkt-step span{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--line);display:inline-flex;align-items:center;justify-content:center;font-size:11px}',
-      '.mkt-step.on{color:var(--ip-ink)}.mkt-step.on span{background:var(--ip-blue);border-color:var(--ip-blue);color:#fff}',
-      '.mkt-step.done{color:var(--ip-ink);cursor:pointer}.mkt-step.done span{border-color:var(--ip-blue);color:var(--ip-blue)}',
-      '.mkt-step-sep{width:36px;height:1.5px;background:var(--line)}',
-      '.mkt-gal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}',
-      '.mkt-gal-note{font-size:12.5px;color:var(--muted);margin:16px 0 0}',
-      '.mkt-tpls{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:18px}',
-      '.mkt-tpl{display:flex;flex-direction:column;gap:8px;padding:12px;background:var(--card);border:1.5px solid var(--line);border-radius:18px;cursor:pointer;text-align:left;font-family:var(--font);color:var(--ip-ink);box-shadow:var(--sh-1);transition:.18s var(--ease)}',
-      '.mkt-tpl:hover{border-color:var(--ip-blue);transform:translateY(-2px);box-shadow:0 10px 30px rgba(16,19,28,.12)}',
-      '.mkt-tpl.on{border-color:var(--ip-blue);box-shadow:0 0 0 3px color-mix(in srgb,var(--ip-blue) 18%,transparent)}',
-      '.mkt-tpl b{font-size:14px;font-weight:800}.mkt-tpl small{font-size:12px;color:var(--muted)}',
-      '.mkt-tpl-pv{display:block;position:relative;aspect-ratio:1/1.3;background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden}',
-      '.mkt-tpl-pv i{position:absolute;display:block}',
-      '.mkt-tpl-pv .hdr{left:8%;right:8%;top:7%;height:22%;border-radius:6px;background:var(--acc)}',
-      '.mkt-tpl-pv .hdr.slim{height:4px;top:7%;border-radius:2px}',
-      '.mkt-tpl-pv .ttl{left:16%;right:34%;top:15%;height:9px;border-radius:3px;background:#10131C}',
-      '.mkt-tpl-pv .ttl.light{left:14%;background:#fff;opacity:.9}',
-      '.mkt-tpl-pv .tag{left:14%;top:10%;width:14%;height:5px;border-radius:999px;background:#fff;opacity:.7}',
-      '.mkt-tpl-pv .ph{left:8%;top:39%;width:32%;aspect-ratio:1;border-radius:6px;background:#F1F4F9;border:1px solid #E2E7F0}',
-      '.mkt-tpl-pv .ln{left:46%;right:8%;height:6px;border-radius:3px;background:#E2E7F0}',
-      '.mkt-tpl-pv .ln.big{height:9px;background:#10131C}',
-      '.mkt-tpl-pv .pr{left:46%;width:30%;height:12px;border-radius:3px;background:var(--acc);top:62%}',
       // ── Accessibilité : respecter la préférence « moins d\'animations » ──
+      // ═══ « L'atelier » — accueil et éditeur Marketing (direction validée 10/09/2026) ═══
+      // Le fond verrière (ciel + halo) existe déjà : .v2-halo (v2-verriere.css), fixe,
+      // derrière tout. Ici on ajoute seulement les travées de lumière qui tombent de
+      // biais sur le plan de travail, sans repeindre le ciel par-dessus.
+      '.mkt-atelier{position:relative}',
+      '.mkt-atelier::before{content:"";position:absolute;left:0;right:0;top:0;height:440px;pointer-events:none;z-index:0;background:repeating-linear-gradient(104deg,rgba(255,255,255,0) 0px,rgba(255,255,255,0) 140px,rgba(255,255,255,.22) 140px,rgba(255,255,255,.4) 185px,rgba(255,255,255,.22) 230px,rgba(255,255,255,0) 232px,rgba(255,255,255,0) 360px)}',
+      '.mkt-atelier::after{content:"";position:absolute;left:0;right:0;top:0;height:8px;pointer-events:none;z-index:0;background:repeating-linear-gradient(90deg,rgba(11,31,77,.08) 0 2px,transparent 2px 160px)}',
+      '.mkt-bench{position:relative;z-index:1;padding-top:20px;display:grid;grid-template-columns:256px minmax(0,1fr) 296px;gap:24px;align-items:start}',
+      '@media(max-width:1180px) and (min-width:960px){.mkt-bench{grid-template-columns:220px minmax(0,1fr) 260px;gap:18px}.mkt-models{grid-template-columns:1fr}}',
+      '.mkt-headline{grid-column:1/-1;display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:6px 4px 2px}',
+      '.mkt-headline h1{font-size:28px;line-height:1.08;color:var(--ip-ink);letter-spacing:-.02em;font-weight:800}',
+      '.mkt-headline p{color:var(--muted);font-size:14px;margin-top:6px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}',
+      '.mkt-hacts{display:flex;gap:10px;flex-wrap:wrap}',
+      // ── Tiroirs (rails latéraux) ──
+      '.mkt-rail{display:flex;flex-direction:column;gap:14px;position:sticky;top:84px}',
+      '.mkt-drawer{background:var(--card);border-radius:var(--r-card);border:1px solid var(--line);position:relative;box-shadow:var(--sh-1);background-image:linear-gradient(180deg,var(--card) 0,var(--card) 60%,var(--card-2) 100%);overflow:hidden;transition:transform .22s var(--ease),box-shadow .22s var(--ease)}',
+      '.mkt-drawer:hover{transform:translateY(-2px);box-shadow:var(--sh-2)}',
+      '.mkt-drawer>header{display:flex;align-items:center;gap:10px;padding:14px 16px 10px;font-weight:800;color:var(--ip-ink);font-size:14px;letter-spacing:-.01em}',
+      '.mkt-drawer>header svg{color:var(--ip-blue);flex:none}',
+      '.mkt-drawer>header .handle{margin-left:auto;width:34px;height:6px;border-radius:999px;background:linear-gradient(180deg,#DCE3F0,#B9C6DE)}',
+      '.mkt-drawer>header .n{margin-left:auto;font-size:13px;text-align:right;font-weight:600;color:var(--muted)}',
+      '.mkt-drawer .body{padding:0 12px 14px}',
+      '.mkt-drawer .desc{color:var(--muted);font-size:13px;padding:0 4px}',
+      '.mkt-more>summary{display:flex;align-items:center;gap:10px;padding:14px 16px 10px;font-weight:800;color:var(--ip-ink);font-size:14px;letter-spacing:-.01em;cursor:pointer;list-style:none;-webkit-tap-highlight-color:transparent}',
+      '.mkt-more>summary::-webkit-details-marker{display:none}',
+      '.mkt-more>summary svg{color:var(--ip-blue);flex:none}',
+      '.mkt-more>summary .n{margin-left:auto;font-size:12.5px;color:var(--muted);font-weight:600}',
+      '.mkt-more[open]>summary{border-bottom:1px solid var(--line)}',
+      '.mkt-more[open]>summary .mkt-more-chev{transform:rotate(90deg)}',
+      // tuiles de modèles : chacune une mini-feuille
+      '.mkt-models{display:grid;grid-template-columns:1fr 1fr;gap:10px}',
+      '.mkt-mtile{--m:var(--ip-blue);min-height:92px;border-radius:12px;background:var(--card);border:1px solid var(--line);position:relative;padding:26px 10px 8px;text-align:left;display:flex;flex-direction:column;justify-content:flex-end;gap:4px;box-shadow:var(--sh-1);overflow:hidden;transition:transform .18s var(--ease),box-shadow .18s var(--ease),border-color .18s var(--ease);cursor:pointer}',
+      '.mkt-mtile::before{content:"";position:absolute;left:0;right:0;top:0;height:12px;background:var(--m)}',
+      '.mkt-mtile[data-head="slim"]::before{height:3px;top:8px;left:10px;right:10px;border-radius:2px}',
+      '.mkt-mtile[data-head="plain"]::before{height:0}',
+      '.mkt-mtile::after{content:"";position:absolute;left:10px;top:20px;width:60%;height:5px;border-radius:3px;background:rgba(16,19,28,.12)}',
+      '.mkt-mtile[data-head="plain"]::after{top:10px;background:var(--m);opacity:.8}',
+      '.mkt-mtile b{font-size:13px;color:var(--ip-ink);font-weight:700;letter-spacing:-.01em;line-height:1.2}',
+      '.mkt-mtile small{font-size:12.5px;color:var(--muted)}',
+      '.mkt-mtile:hover{transform:translateY(-2px)}',
+      '.mkt-mtile[aria-pressed="true"]{border-color:var(--m);box-shadow:0 0 0 3px color-mix(in srgb,var(--m) 22%,transparent),var(--sh-2)}',
+      // rayons (chips)
+      '.mkt-chips{display:flex;flex-wrap:wrap;gap:6px}',
+      '.mkt-chip{min-height:34px;padding:0 11px;border-radius:999px;border:1px solid var(--line);background:var(--card);font-size:13px;font-weight:600;color:var(--ip-ink);display:inline-flex;align-items:center;gap:6px;box-shadow:var(--sh-1);cursor:pointer;transition:border-color .16s var(--ease)}',
+      '.mkt-chip small{color:var(--muted);font-weight:600;font-size:12.5px}',
+      '.mkt-chip.more{border-style:dashed;color:var(--muted);background:none;box-shadow:none}',
+      '.mkt-chip:hover{border-color:var(--ip-blue)}',
+      // instruments (rail droit)
+      '.mkt-tool{background:none;border:0;font-family:inherit;color:inherit;display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-radius:var(--r-md);text-align:left;width:100%;transition:background .15s var(--ease);cursor:pointer}',
+      '.mkt-tool:hover{background:var(--card-2)}',
+      '.mkt-tool .tico{width:38px;height:38px;border-radius:10px;flex:none;display:grid;place-items:center;color:var(--ip-blue);background:linear-gradient(180deg,var(--halo),color-mix(in srgb,var(--ip-blue) 12%,#fff));box-shadow:var(--sh-1)}',
+      '.mkt-tool .tico svg{width:20px;height:20px}',
+      '.mkt-tool .tico.pdf{color:var(--ip-blue-d);background:linear-gradient(180deg,#fff,var(--card-2))}',
+      '.mkt-tool b{display:block;font-size:14px;color:var(--ip-ink);font-weight:700;letter-spacing:-.01em}',
+      '.mkt-tool span span{display:block;font-size:12.5px;color:var(--muted);margin-top:2px;line-height:1.35}',
+      '.mkt-tool .arr{margin-left:auto;align-self:center;color:var(--muted);flex:none}',
+      '.mkt-mqstrip{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;margin-top:8px;border-radius:8px;overflow:hidden;border:1px solid var(--line)}',
+      '.mkt-mqstrip img{width:100%;height:52px;object-fit:cover;object-position:top center;display:block}',
+      // ── La feuille sur le plan de travail ──
+      '.mkt-stage{position:relative;perspective:1800px;perspective-origin:50% 30%;display:flex;flex-direction:column;align-items:center;gap:18px}',
+      '.mkt-hint{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:8px}',
+      '.mkt-hint svg{color:#1E9E6A}',
+      '.mkt-sheetwrap{position:relative;width:min(100%,600px)}',
+      '.mkt-sheetwrap::after{content:"";position:absolute;left:6%;right:-2%;bottom:-26px;height:60px;border-radius:50%;z-index:-1;background:radial-gradient(60% 100% at 50% 50%,rgba(11,31,77,.28),rgba(11,31,77,0) 70%)}',
+      '#mkt-home-wrap{transform-style:preserve-3d;transform:rotateX(var(--rx,6deg)) rotateY(var(--ry,-10deg)) translateZ(0);transition:transform .6s var(--ease)}',
+      '.mkt-sheet-home{position:relative;display:block;width:100%;border:0;background:none;padding:0;margin:0;cursor:pointer;text-align:left;border-radius:6px;box-shadow:0 1px 0 rgba(255,255,255,1) inset,0 0 0 1px rgba(11,31,77,.08),0 2px 3px rgba(11,31,77,.08),0 22px 40px -18px rgba(11,31,77,.45),0 60px 80px -40px rgba(11,31,77,.35);overflow:hidden}',
+      '.mkt-home-holder{margin:0 auto;overflow:hidden}',
+      '.mkt-home-sheet{width:794px;transform-origin:top left;background:#fff}',
+      // créations récentes : éventail de mini-feuilles
+      '.mkt-recent{width:min(100%,600px)}',
+      '.mkt-recent h2{font-size:13px;color:var(--muted);font-weight:700;letter-spacing:.02em;text-transform:uppercase;margin:6px 0 10px}',
+      '.mkt-fan{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}',
+      '.mkt-mini{--m:var(--ip-blue);background:var(--card);border:0;border-radius:6px;min-height:120px;padding:12px;position:relative;text-align:left;box-shadow:0 1px 0 rgba(255,255,255,1) inset,0 0 0 1px rgba(11,31,77,.08),0 12px 22px -14px rgba(11,31,77,.5);background-image:linear-gradient(158deg,#fff 0,#fff 50%,var(--card-2) 100%);display:flex;flex-direction:column;gap:5px;transition:transform .22s var(--ease);cursor:pointer}',
+      '.mkt-mini:nth-child(1){transform:rotate(-2deg)}.mkt-mini:nth-child(3){transform:rotate(2deg)}',
+      '.mkt-mini:hover{transform:rotate(0) translateY(-4px)}',
+      '.mkt-mini i{display:block;height:6px;border-radius:2px;background:var(--m)}',
+      '.mkt-mini b{font-size:13px;color:var(--ip-ink);line-height:1.15;font-weight:700;letter-spacing:-.01em}',
+      '.mkt-mini small{font-size:12px;color:var(--muted);margin-top:auto;line-height:1.3}',
+      '.mkt-mini .who{display:inline-flex;align-items:center;gap:4px;margin-top:4px}',
+      '.mkt-mini .who em{font-style:normal;width:18px;height:18px;border-radius:50%;background:#F5931C;color:#fff;font-size:11px;font-weight:800;display:grid;place-items:center}',
+      // barre d'outils flottante de l'éditeur, posée au-dessus de la feuille
+      '.mkt-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center;width:min(100%,600px)}',
+      '.mkt-tbsteps{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);margin-right:auto}',
+      '.mkt-tbsteps b{display:inline-flex;align-items:center;gap:6px;color:var(--ip-ink);font-weight:700}',
+      '.mkt-tbsteps b i{width:20px;height:20px;border-radius:50%;background:var(--ip-blue);color:#fff;font-style:normal;font-size:11px;display:grid;place-items:center;font-weight:800}',
+      '.mkt-tbsteps b i.done{background:var(--halo);color:var(--ip-blue)}',
+      '.mkt-tbhint{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:8px}',
+      '.mkt-tbhint i{width:8px;height:8px;border-radius:50%;background:#1E9E6A;box-shadow:0 0 0 3px rgba(30,158,106,.18)}',
+      // Statut (segmented) + champs texte du rail droit
+      '.mkt-seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--card)}',
+      '.mkt-seg button{background:none;border:0;font-family:inherit;min-height:40px;padding:0 10px;white-space:nowrap;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer}',
+      '.mkt-seg button[aria-pressed="true"]{background:var(--card-2);color:var(--ip-ink)}',
+      '.mkt-field{display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:600;color:var(--muted)}',
+      '.mkt-field input,.mkt-field textarea{font:inherit;font-size:16px;font-weight:500;color:var(--ip-ink);min-height:44px;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card);width:100%}',
+      '.mkt-field textarea{min-height:64px;resize:vertical}',
+      '.mkt-del-a{color:var(--muted)}',
+      '.mkt-del-a:hover{color:var(--c-rose);border-color:color-mix(in srgb,var(--c-rose) 40%,var(--line))}',
+      // le retournement de la feuille au changement de modèle (sur le holder, jamais sur #mkt-msheet qui porte déjà transform:scale())
+      '#mkt-mholder{transition:transform .32s cubic-bezier(.4,0,.2,1);transform-style:preserve-3d}',
+      '#mkt-mholder.mkt-turn{transform:rotateY(-92deg)}',
+      // ── Le sélecteur devient le tiroir du bas (d1) : plein-bas, poignée, coins arrondis en haut ──
+      '.mkt-pick-bd{position:fixed;inset:0;z-index:210;background:rgba(16,19,28,.45);display:flex;align-items:flex-end;justify-content:center;opacity:0;visibility:hidden;transition:opacity .3s var(--ease)}',
+      '.mkt-pick-bd.open{opacity:1;visibility:visible}',
+      '.mkt-pick{position:relative;width:100%;max-width:1180px;height:min(78vh,720px);background:var(--card);border-radius:22px 22px 0 0;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 1px 0 rgba(255,255,255,1) inset,0 -2px 0 rgba(11,31,77,.04),0 -30px 60px -20px rgba(11,31,77,.45);transform:translateY(104%);transition:transform .5s var(--ease)}',
+      '.mkt-pick-bd.open .mkt-pick{transform:translateY(0)}',
+      '.mkt-pick-grip{position:absolute;top:8px;left:50%;width:48px;height:6px;margin-left:-24px;border-radius:999px;background:linear-gradient(180deg,#DCE3F0,#B9C6DE)}',
+      '@media(max-width:959px){.mkt-pick{height:92vh;border-radius:18px 18px 0 0}.mkt-pick-rail.mkt-pick-strip{width:auto;display:flex;flex-wrap:nowrap;align-items:center;gap:6px;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;border-right:none;border-bottom:1px solid var(--line);padding:8px 12px}.mkt-pick-rail.mkt-pick-strip .mkt-fac{display:contents}.mkt-pick-rail.mkt-pick-strip .mkt-fac-t{display:none}.mkt-pick-rail.mkt-pick-strip .mkt-fchip{width:auto;flex:0 0 auto;min-height:44px;white-space:nowrap}}',
+      // ── Mobile 390 : les tiroirs deviennent des bandes, la feuille reste au centre ──
+      '@media(max-width:959px){.mkt-bench{grid-template-columns:minmax(0,1fr);gap:16px}.mkt-headline h1{font-size:24px}.mkt-rail{position:static;flex-direction:row;overflow-x:auto;gap:10px;margin:0 -14px;padding:4px 14px 10px;scroll-snap-type:x proximity;scrollbar-width:none}.mkt-rail::-webkit-scrollbar{display:none}.mkt-rail .mkt-drawer{flex:0 0 82%;max-width:320px;scroll-snap-align:start}.mkt-rail.right .mkt-drawer{flex-basis:88%}.mkt-chip,.mkt-seg button{min-height:44px}.mkt-fan{gap:10px}}',
       '@media(prefers-reduced-motion:reduce){',
-        '.mkt-make-card,.mkt-bigrow,.mkt-card,.mkt-link,.mkt-pick-item,.mkt-cat-banner,.mkt-more-chev{transition:none!important}',
-        '.mkt-make-card:hover,.mkt-bigrow:hover,.mkt-card:hover,.mkt-link:hover,.mkt-pick-item:hover{transform:none!important}',
-        '.mkt-card-go,.mkt-link .v2-row-chev{transition:none!important}',
-        '.mkt-pv-live::before{animation:none!important}',
-        '.mkt-pick,.mkt-dialog{transition:none!important}',
+        '.mkt-pick,.mkt-dialog,.mkt-drawer,.mkt-mini,.mkt-mtile,.mkt-tool,.mkt-pick-item{transition:none!important}',
+        '.mkt-drawer:hover,.mkt-mini:hover,.mkt-mtile:hover,.mkt-pick-item:hover{transform:none!important}',
+        '.mkt-sheetwrap,#mkt-home-wrap,#mkt-mholder{transform:none!important}',
       '}',
     ].join('');
     document.head.appendChild(s);
