@@ -15,7 +15,7 @@
   V2.pages = V2.pages || {};
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
 
-  var CB = '?v=20260910m';
+  var CB = '?v=20260910p';
   var map = null, cluster = null, markers = null, D = null, canvas = null;
   var displayMode = 'points';    // points | bulles (taille = CA)
   var tourLayer = null;          // tracé de la tournée (polyline + n° d'arrêts)
@@ -1887,7 +1887,7 @@
   function ensureDetail(cb) {
     if (DETAIL) { cb(); return; }
     if (window.CARTE_DETAIL) { DETAIL = window.CARTE_DETAIL; cb(); return; }
-    js('carte-detail.js' + CB, function () {});
+    V2.chargerScriptProtege('carte-detail.js', function () {});   // protégé depuis le 10/09/2026
     var t0 = Date.now(), iv = setInterval(function () {
       if (window.CARTE_DETAIL) { clearInterval(iv); DETAIL = window.CARTE_DETAIL; cb(); }
       else if (Date.now() - t0 > 12000) { clearInterval(iv); cb(); }
