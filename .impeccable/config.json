@@ -2,16 +2,6 @@
   "detector": {
     "ignoreRules": [],
     "ignoreFiles": [],
-    "ignoreValues": [
-      {
-        "rule": "dark-glow",
-        "value": "*",
-        "files": [
-          "crm/v2/mkt-editeur-canva-propositions.html"
-        ],
-        "createdAt": "2026-09-10T12:38:18.651Z",
-        "reason": "sh-blue est le token d'ombre bleue de marque déjà utilisé dans v2.css (boutons primaires), copié tel quel pour rester cohérent visuellement"
-      }
-    ]
+    "ignoreValues": []
   }
 }
