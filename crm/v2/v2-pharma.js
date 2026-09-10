@@ -1995,19 +1995,24 @@
   }
   // Vue Groupements = vue d'équipe : TOUJOURS toutes les pharmacies des 4
   // commerciaux, sans tenir compte du filtre commercial.
+  var grpListSort = 'active';   // 'active' (par défaut, nb pharmacies actives) | 'name' (alphabétique)
   function groupementList() {
     var byG = {};
     (V2.pharmacies || []).forEach(function (p) {
       var g = groupName(p);
       (byG[g] = byG[g] || { name: g, members: [] }).members.push(p);
     });
-    return Object.keys(byG).map(function (g) {
+    var list = Object.keys(byG).map(function (g) {
       var o = byG[g];
       o.nb = o.members.length;
       o.active = o.members.filter(function (p) { return pharmaSalesAll(p.id).length > 0; }).length;
       return o;
-    }).sort(function (a, b) { return b.active - a.active || b.nb - a.nb; });
+    });
+    if (grpListSort === 'name') list.sort(function (a, b) { return a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' }); });
+    else list.sort(function (a, b) { return b.active - a.active || b.nb - a.nb; });
+    return list;
   }
+  V2.grpListSortSet = function (mode) { grpListSort = mode === 'name' ? 'name' : 'active'; V2.render(); };
   function groupementProducts(grpName) {
     var ids = {};
     (V2.pharmacies || []).forEach(function (p) {
@@ -2088,11 +2093,20 @@
         '<span class="v2-row-chev">' + ICO('chev', 16) + '</span>' +
       '</a>';
     }).join('') || '<div class="v2-empty"><div class="v2-empty-d">Aucun groupement.</div></div>';
+    var sortBar =
+      '<div class="v2-card" style="margin-top:16px;padding:10px 14px;display:flex;align-items:center;gap:10px">' +
+        '<span style="font-size:12px;color:var(--muted);font-weight:600">Trier :</span>' +
+        '<div class="v2-segs">' +
+          '<button type="button" class="v2-seg' + (grpListSort === 'active' ? ' on' : '') + '" style="--sc:var(--ip-blue)" onclick="V2.grpListSortSet(\'active\')">Activité</button>' +
+          '<button type="button" class="v2-seg' + (grpListSort === 'name' ? ' on' : '') + '" style="--sc:var(--ip-blue)" onclick="V2.grpListSortSet(\'name\')">Nom (A→Z)</button>' +
+        '</div>' +
+      '</div>';
     root.innerHTML = V2.topbar({ back: true, backTo: 'groupements', backLabel: 'Groupements' }) +
       '<div class="v2-wrap">' +
         '<div class="v2-page-title">Groupements</div>' +
         '<div class="v2-page-sub">Opportunités par groupement · ce que commandent les pharmacies adhérentes — liste d\'achats à pousser</div>' +
         (V2.grpSpaceTabs ? V2.grpSpaceTabs('opp') : '') +
+        sortBar +
         '<div class="v2-card" style="margin-top:16px">' + rows + '</div>' +
       '</div>';
   }
