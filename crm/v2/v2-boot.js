@@ -809,11 +809,16 @@
       // vaut le PPHT (donc "plus aucune remise") alors que remise_pct contient en
       // réalité le vrai prix net — vestige d'une génération passée, figé dans ce
       // fichier protégé. On ne l'accepte QUE si remise_pct correspond bien à l'écart
-      // réel entre prix_ip et le PPHT ; sinon on garde ce qu'applyPPHT() a déjà
-      // reconstitué depuis le barème officiel (toujours cohérent, jamais pire).
+      // réel entre prix_ip et le PPHT.
+      // Et même cohérent avec lui-même, un couple qui dit "0% de remise" (ex
+      // Rhinofluimucil, Mag 2 : même piège que la branche NR plus haut, figé ici
+      // aussi) ne doit JAMAIS effacer un abandon qu'applyPPHT() avait déjà établi —
+      // sinon on retombe exactement sur le bug signalé.
       var ip = r[0], pct = r[1], ht = o.prix_ht;
       var attendu = (ht > 0 && ip > 0 && ip <= ht) ? Math.round((1 - ip / ht) * 1000) / 10 : 0;
-      if (ht > 0 && ip > 0 && Math.abs(attendu - pct) <= 0.5) {
+      var coherent = ht > 0 && ip > 0 && Math.abs(attendu - pct) <= 0.5;
+      var dejaAbandon = ht > 0 && o.prix_ip > 0 && o.prix_ip < ht;
+      if (coherent && (ip < ht || !dejaAbandon)) {
         o.prix_ip = ip; o.remise_pct = pct;
       }
       o.offre_ip = r[2]; o.ip_qty = r[3]; o.ip_ca = r[4];
