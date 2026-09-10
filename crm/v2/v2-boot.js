@@ -803,7 +803,20 @@
   }
   function fusionsProtegees() {
     fusionParIndex('bench', window.BENCHMARK, window.BENCH_COND, function (o, r) {
-      o.prix_ip = r[0]; o.remise_pct = r[1]; o.offre_ip = r[2]; o.ip_qty = r[3]; o.ip_ca = r[4];
+      // Sur ~31% des lignes (457/1472, princeps ET froid, ex Boostrixtetra, Priorix,
+      // Estreva, Loxen, Permixon — signalé par Will le 10/09/2026), ce couple
+      // [prix_ip, remise_pct] du fichier protégé est incohérent entre eux : prix_ip
+      // vaut le PPHT (donc "plus aucune remise") alors que remise_pct contient en
+      // réalité le vrai prix net — vestige d'une génération passée, figé dans ce
+      // fichier protégé. On ne l'accepte QUE si remise_pct correspond bien à l'écart
+      // réel entre prix_ip et le PPHT ; sinon on garde ce qu'applyPPHT() a déjà
+      // reconstitué depuis le barème officiel (toujours cohérent, jamais pire).
+      var ip = r[0], pct = r[1], ht = o.prix_ht;
+      var attendu = (ht > 0 && ip > 0 && ip <= ht) ? Math.round((1 - ip / ht) * 1000) / 10 : 0;
+      if (ht > 0 && ip > 0 && Math.abs(attendu - pct) <= 0.5) {
+        o.prix_ip = ip; o.remise_pct = pct;
+      }
+      o.offre_ip = r[2]; o.ip_qty = r[3]; o.ip_ca = r[4];
     });
     fusionParIndex('prodstats', window.PROD_STATS, window.PROD_COND, function (o, r) {
       o.net = r[0]; o.rpct = r[1]; o.rota = r[2]; o.marge = r[3]; o.remise = r[4]; o.ca = r[5];
