@@ -323,6 +323,8 @@
     pharmazonprix: 'v2/pharmazon-prix.js',
     // Tarif d'achat Sagitta (grossiste) par EAN : même raison, même traitement.
     sagittaprix: 'v2/sagitta-prix.js',
+    // Catalogue OCP « Les Incontournables » (meilleur net par code 13) : même raison, même traitement.
+    ocpprix: 'v2/ocp-prix.js',
     // Prix PUBLICS E.Leclerc (TTC) et rayons fins Offilog : données publiques.
     leclercpub: 'v2/leclerc-pub-data.js',
     offilogcats: 'v2/offilog-cats-data.js',
@@ -391,6 +393,7 @@
     offilogbestprix: 'offilog-best-prix.js',
     pharmazonprix: 'pharmazon-prix.js',
     sagittaprix: 'sagitta-prix.js',
+    ocpprix: 'ocp-prix.js',
     // La grande passe du 03/09/2026. Le POIDS, cause de la panne du 15/08,
     // est traité par le rangement local (texteProtege) : téléchargé une fois
     // par version, servi depuis l'appareil ensuite.
@@ -741,6 +744,7 @@
     offilogbestprix: 'OFFILOG_BEST_PRIX',
     pharmazonprix: 'PHARMAZON_PRIX',
     sagittaprix: 'SAGITTA_PRIX',
+    ocpprix: 'OCP_PRIX',
     leclercpub: 'LECLERC_PUB',
     offilogcats: 'OFFILOG_CATS',
     benchcond: 'BENCH_COND',
