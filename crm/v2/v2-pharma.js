@@ -36,6 +36,7 @@
   var recoFam = null;         // famille active dans la fiche officine (master-détail)
   var recoInitKey = null;     // (pid|scope) déjà pré-sélectionné ? — tout coché par défaut
   var grpListFilter = 'all';  // listing best rotations groupement : 'all' | 'gap' (ce qu'elle ne commande pas)
+  var grpRotExpanded = false; // demande Pauline G. (10/09/2026) : la fiche montre trop de lignes d'un coup — repliée par défaut, 15 lignes visibles, bouton « Voir tout »
   var selList = null;         // liste personnalisée ouverte (id)
   var grpCollapsed = {};      // repli des catégories en vue groupement / liste
 
@@ -478,6 +479,7 @@
     return { rows: rows.slice(0, limit || 50), total: total, name: g.name, isGrp: isGrp };
   }
   V2.pharmaGrpFilter = function (f) { grpListFilter = f; V2.render(); };
+  V2.pharmaRotExpand = function () { grpRotExpanded = true; V2.render(); };
 
   // Sélecteur de référence réutilisé (réseau IP / son groupement)
   function recoScopeToggle(pid) {
@@ -1461,6 +1463,7 @@
         // L'en-tête dit « Téléphone et e-mail à renseigner dans Infos officine » :
         // jusqu'ici la promesse était vide, il n'y avait aucun champ où les mettre.
         V2.profil.coordSection(pid, { tel: tel, email: mail, adresse: adresse }, ['tel', 'email', 'adresse'], 'Coordonnées') +
+        V2.profil.coordSection(pid, {}, ['relance_date'], 'Relance') +
         V2.profil.section('client', pid) + '</div>';
     })() : '';
     var notes = V2.notes ? '<div class="pha-notes">' + V2.notes.section('client', pid) + '</div>' : '';
@@ -1473,7 +1476,9 @@
     var rot = grpBestRotations(pid, 60);
     var nOwn = rot.rows.filter(function (r) { return r.owned; }).length;
     var nGap = rot.rows.length - nOwn;
-    var shownRot = (grpListFilter === 'gap') ? rot.rows.filter(function (r) { return !r.owned; }) : rot.rows;
+    var shownRotAll = (grpListFilter === 'gap') ? rot.rows.filter(function (r) { return !r.owned; }) : rot.rows;
+    var ROT_LOT = 15;
+    var shownRot = grpRotExpanded ? shownRotAll : shownRotAll.slice(0, ROT_LOT);
     var rotRows = shownRot.map(function (r, i) {
       var pct = rot.total ? Math.min(100, Math.round(r.sortie / rot.total * 100)) : 0;
       var tag = r.owned
@@ -1499,6 +1504,7 @@
       '<div class="phf-tablewrap"><table class="phf-tbl"><thead><tr>' +
         '<th class="phf-tl">Produit</th><th>Statut</th><th>Prix net IP</th><th title="Abandon de marge">Abandon</th><th class="phf-tc">Nbr pharma</th>' +
       '</tr></thead><tbody>' + rotRows + '</tbody></table></div>' +
+      (!grpRotExpanded && shownRotAll.length > ROT_LOT ? '<button class="phf-rf" style="margin:10px 14px" onclick="V2.pharmaRotExpand()">Voir tout (' + shownRotAll.length + ')</button>' : '') +
       '<div class="phf-foot">' + ICO('check', 13) + ' ' + nOwn + ' déjà commandé' + (nOwn > 1 ? 's' : '') + ' · <b style="color:var(--c-amber);margin-left:4px">' + nGap + ' à pousser</b> — sur les ' + rot.rows.length + ' meilleures rotations ' + (rot.isGrp ? 'du groupement' : 'du réseau') + '.</div>' +
     '</div>' : '';
     var listing = rot.rows.length ? (function () {

@@ -43,7 +43,8 @@
     { k: 'titulaire', l: 'Titulaire' },
     { k: 'tel', l: 'Téléphone' },
     { k: 'email', l: 'Email' },
-    { k: 'adresse', l: 'Adresse' }
+    { k: 'adresse', l: 'Adresse' },
+    { k: 'relance_date', l: 'Prochaine relance', type: 'date' }
   ];
 
   function sb() { return (V2.sb && V2.sb()) || null; }
@@ -114,7 +115,7 @@
           '<div class="v2-profil-hd">' + (V2.ICO ? V2.ICO('pharma', 16, 2) : '') + '<span>' + esc(titre || 'Coordonnées') + '</span><small class="v2-profil-meta"></small></div>' +
           '<div class="v2-profil-grid">' +
             liste.map(function (f) { return '<label class="v2-profil-f v2-profil-f-wide"><span>' + esc(f.l) + '</span>' +
-              '<input type="text" data-fk="' + f.k + '" value="' + esc(seed[f.k] || '') + '" placeholder="—" onchange="V2.profil.set(this)"></label>'; }).join('') +
+              '<input type="' + (f.type || 'text') + '" data-fk="' + f.k + '" value="' + esc(seed[f.k] || '') + '" placeholder="—" onchange="V2.profil.set(this)"></label>'; }).join('') +
           '</div></div>';
     },
 

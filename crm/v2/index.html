@@ -12,7 +12,7 @@
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function () {
         var hadController = !!navigator.serviceWorker.controller;
-        navigator.serviceWorker.register('sw.js?v=20260910c').then(function (reg) {
+        navigator.serviceWorker.register('sw.js?v=20260910d').then(function (reg) {
           try { reg.update(); } catch (e) {}   // vérifie tout de suite au chargement
           // pendant une longue session, re-vérifier périodiquement s'il y a une nouvelle version
           setInterval(function () { try { reg.update(); } catch (e) {} }, 5 * 60 * 1000);
@@ -209,7 +209,7 @@
   <script src="v2-boot.js?v=20260910c"></script>
   <!-- Coin notes + Profil commercial + Remontées (partagés Supabase, repli localStorage) -->
   <script src="v2-notes.js?v=20260910c"></script>
-  <script src="v2-profil.js?v=20260910c"></script>
+  <script src="v2-profil.js?v=20260910d"></script>
   <script src="v2-remontees.js?v=20260910c"></script>
   <!-- Les 20 directions du nouveau site + la note sur 10 (partagée Supabase, repli localStorage) -->
   <script src="maquettes-data.js?v=20260910c"></script>
@@ -248,7 +248,7 @@
   <script src="generiqueurs-data.js?v=20260910c"></script>
   <script src="v2-generiqueurs.js?v=20260910c"></script>
   <!-- Piliers (chargés avant app pour enregistrer V2.pages.*) -->
-  <script src="v2-pharma.js?v=20260910c"></script>
+  <script src="v2-pharma.js?v=20260910d"></script>
   <script src="v2-offilog.js?v=20260910c"></script>
   <script src="v2-fiches.js?v=20260910c"></script>
   <script src="v2-pilotage.js?v=20260910c"></script>
@@ -288,7 +288,7 @@
   <!-- Espace Marketing JARVIS (Pauline & Will) -->
   <script src="marketing-mix-data.js?v=20260910c"></script>
   <script src="mkt-images-data.js?v=20260910c"></script>
-  <script src="v2-mkt.js?v=20260910c"></script>
+  <script src="v2-mkt.js?v=20260910d"></script>
   <script src="v2-mkt-linkedin.js?v=20260910c"></script>
   <script src="v2-mkt-li-strategy.js?v=20260910c"></script>
   <script src="v2-mkt-li-plan.js?v=20260910c"></script>
@@ -302,7 +302,7 @@
   <!-- Tournée prospect : intégrée au Copilote (Organisateur de tournée dans v2-carte.js).
        Page autonome v2-tournee.js retirée (redondante). osrm + visites conservés pour l'organisateur. -->
   <!-- App (boot en dernier) -->
-  <script src="v2-app.js?v=20260910c"></script>
+  <script src="v2-app.js?v=20260910d"></script>
   <!-- Couche motion design (scroll-reveal, count-up, micro-interactions) — après l'app pour wrapper V2.render -->
   <script src="v2-motion.js?v=20260910c"></script>
   <!-- Fond WebGL interactif de l'accueil (aurora clair) — après l'app pour wrapper pages.home -->

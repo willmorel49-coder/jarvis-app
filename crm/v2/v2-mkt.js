@@ -1385,7 +1385,7 @@
         for (var j = 0; j < B.length; j++) if (String(B[j].cip13) === String(key)) { g = B[j]; break; }
         if (!g) return;
         var _bpg = V2.bestPrice(g);
-        p = { src: 'gros', key: 'g' + g.cip13, id: '', name: g.designation, brand: '', ean: '', cip: String(g.cip13), price: _bpg.ip != null ? _bpg.ip : refPriceB(g), remise: _bpg.remise, ppht: _bpg.ht || 0, img: '', froid: !!g.is_froid, cat: '' };
+        p = { src: 'gros', key: 'g' + g.cip13, id: '', name: g.designation, brand: '', ean: '', cip: String(g.cip13), price: _bpg.ip != null ? _bpg.ip : refPriceB(g), remise: _bpg.remise, ppht: _bpg.ht || 0, img: catImg(String(g.cip13)), froid: !!g.is_froid, cat: '' };
       }
       if (editing.products.some(function (x) { return String(x.key) === String(p.key); })) return;
       editing.products.push(p); refreshProducts(); renderPickList();
