@@ -1429,9 +1429,23 @@
       ppht: porte ? ppht : 0,
       img: (window.MKT_IMG && window.MKT_IMG[String(cip)]) || '',
       froid: false,
-      cat: fam ? fam.l : ''
+      // C'est `cat` qui groupe les produits sur la fiche : le rayon lisible
+      // (Douleur & fièvre, Peau & dermatologie…) quand il est connu, la
+      // famille tarifaire sinon.
+      cat: rayonMkt(cip) || (fam ? fam.l : '')
     };
   }
+  function rayonMkt(cip) {
+    var R = window.MKT_RAYONS;
+    if (!R || !R.cip || !R.rayons) return '';
+    var i = R.cip[String(cip)];
+    return (typeof i === 'number' && R.rayons[i]) ? R.rayons[i] : '';
+  }
+  // Exposés pour le sélecteur de produits de l'éditeur marketing (v2-mkt.js) :
+  // même objet fiche, mêmes règles de prix, mêmes libellés de famille.
+  V2.produits.produitMkt = produitMkt;
+  V2.produits.rayonMkt = rayonMkt;
+  V2.produits.FAM = FAM;
   function ouvrirFiche(cips, titre, accroche) {
     if (!S.sel) S.sel = selCharger();
     if (!S.doc) S.doc = docCharger();

@@ -69,7 +69,20 @@
   var editing = null;
   var choixModele = false;   // true = l'utilisateur a demandé à changer de modèle (galerie affichée)
   var replaceIdx = null;     // index du produit à remplacer quand le sélecteur s'ouvre depuis une photo de l'aperçu
-  var pickSrc = 'mix';       // source : 'mix' (sélection grossiste) | 'gros' (catalogue méd.) | 'offilog'
+  var pickSrc = 'cat';       // univers : 'cat' (tout le catalogue) | 'offilog' (parapharmacie) | 'mix' (nos sélections) — 'gros' reste accepté par addProduct pour les fiches existantes
+  // Nombre de références annoncé AVANT que le fichier n'arrive (il pèse 1,5 Mo
+  // et ne se charge qu'à la demande). Dès qu'il est là, c'est lui qui compte.
+  var CAT_TOTAL_ATTENDU = 16305;
+  var PICK_PAGE = 60;        // résultats par page du sélecteur
+  var pickShown = PICK_PAGE; // nb de résultats affichés (« Voir 60 de plus »)
+  var pickSel = {};          // produits cochés dans le sélecteur : clé → { src, key }
+  var pickF = pickFiltresVides();   // facettes de l'univers courant, vidées au changement d'univers
+  var pickCatCache = null;   // catalogue complet pré-trié + chaîne de recherche sans accents, construit une fois
+  var pickOffCache = null;   // parapharmacie : rayon Offilog + chaîne de recherche, construit une fois
+  var pickOpenOnRender = false;   // « Parcourir tous les produits » : ouvrir le sélecteur dès que l'éditeur est rendu
+  var pickTimer = null;
+  var pickSelFor = null;     // id de la fiche pour laquelle les coches ont été posées (fermer le sélecteur ne les perd pas)
+  function pickFiltresVides() { return { rayon: 'all', fam: 'all', labo: '', stock: false, orayon: 'all', marque: '' }; }
   var catSrc = 'nrreal';   // Catalogues : 'nrreal' (ventes NR réelles) | 'nr' | 'integral' | 'itp' | 'best'
   var catQuery = '';        // recherche live dans le catalogue (nom / CIP)
   var catSel = [];     // panier : produits cochés (+) dans le catalogue grossiste
@@ -325,10 +338,6 @@
     s.onload = function () { imgLoading = false; cb(); }; s.onerror = function () { imgLoading = false; cb(); };
     document.head.appendChild(s);
   }
-  function ensureBench(cb) {
-    if (window.BENCHMARK) { cb(); return; }
-    if (V2.loadFiles) { V2.loadFiles(['bench']).then(cb); } else cb();
-  }
   // Proxy CORS pour le rendu PDF/canvas (les CDN n'envoient pas d'en-tête CORS).
   // Les images locales (pimg/) et data: passent direct (même origine = PDF-safe).
   function proxify(u) {
@@ -342,7 +351,6 @@
     return proxify(p.img || '');
   }
   function refPriceB(b) { var bp = V2.bestPrice(b); return (bp.ip != null) ? bp.ip : ((b.prix_ht != null && b.prix_ht > 0) ? b.prix_ht : 0); }
-  function remiseB(b) { return V2.bestPrice(b).remise; }
 
   // ════════════════════════════════════════════
   // VUE LISTE
@@ -400,6 +408,23 @@
     var shareNote = backend === 'supabase'
       ? '<span class="mkt-share ok">' + ICO('check', 14, 2) + ' Partagé avec Pauline</span>'
       : '<span class="mkt-share local">' + ICO('alert', 14, 2) + ' Enregistré sur cet appareil</span>';
+
+    // ── ZONE 0 : créer une fiche marketing — l'action la plus demandée, en tête ──
+    // Elle était rangée dans le tiroir « Autres outils », replié : quatre à
+    // six clics pour y arriver. Trois entrées, dont le catalogue entier.
+    var catTotal = (window.CATALOGUE_COMPLET && window.CATALOGUE_COMPLET.rows && window.CATALOGUE_COMPLET.rows.length) || CAT_TOTAL_ATTENDU;
+    var heroZone =
+      '<div class="mkt-hero">' +
+        '<div class="mkt-hero-kick">' + ICO('spark', 15, 2) + ' Fiche marketing</div>' +
+        '<div class="mkt-hero-t">Créer une fiche marketing</div>' +
+        '<div class="mkt-hero-s">Un produit ou une sélection, avec photos, prix et accroche — prête à présenter ou à envoyer en PDF.</div>' +
+        '<div class="mkt-hero-btns">' +
+          '<button class="v2-btn v2-btn-primary mkt-hero-btn" onclick="V2.mkt.create(\'support\')">' + ICO('fiche', 18, 2) + 'Une fiche produit</button>' +
+          '<button class="v2-btn v2-btn-primary mkt-hero-btn" onclick="V2.mkt.create(\'selection\')">' + ICO('list', 18, 2) + 'Une sélection de produits</button>' +
+          '<button class="v2-btn v2-btn-ghost mkt-hero-btn mkt-hero-all" onclick="V2.mkt.createFromCatalogue()">' + ICO('grid', 18, 2) + 'Parcourir tous les produits' +
+            '<span class="mkt-hero-n">' + V2.fmtNum(catTotal) + ' références</span></button>' +
+        '</div>' +
+      '</div>';
 
     // ── ÉTAPE 1 : le catalogue & prix est LE cœur de l'espace marketing ──
     var makeZone =
@@ -475,7 +500,7 @@
     } else {
       recentZone =
         '<div class="mkt-block">' +
-          '<div class="mkt-empty mkt-empty-first">Ouvre le <b>Catalogue &amp; prix</b> ci-dessus pour créer une liste — ou monte un support/sélection manuel depuis « Autres outils ».</div>' +
+          '<div class="mkt-empty mkt-empty-first">Aucune fiche pour l\'instant — commence par « Créer une fiche marketing » ci-dessus.</div>' +
         '</div>';
     }
 
@@ -507,21 +532,12 @@
     // ── Accès annexes (repliés, discrets — c'est le côté « design du site », pas le quotidien) ──
     var moreZone =
       '<details class="mkt-more-box">' +
-        '<summary class="mkt-more-sum">' + ICO('cat', 16) + ' Autres outils (supports manuels, maquettes)' +
+        '<summary class="mkt-more-sum">' + ICO('cat', 16) + ' Autres outils (maquettes, banque d\'effets)' +
           '<span class="mkt-more-chev">' + ICO('chev', 16) + '</span></summary>' +
         '<div class="mkt-links">' +
-          '<a class="mkt-link" onclick="V2.mkt.create(\'support\')">' +
-            '<span class="mkt-link-ic mkt-link-ic-cat">' + ICO('fiche', 18) + '</span>' +
-            '<span style="flex:1;min-width:0"><span class="mkt-link-t">Support à présenter (flyer manuel)</span>' +
-            '<span class="mkt-link-s">Un flyer sur-mesure avec photos, prix et accroche.</span></span>' +
-            '<span class="v2-row-chev">' + ICO('chev', 17) + '</span>' +
-          '</a>' +
-          '<a class="mkt-link" onclick="V2.mkt.create(\'selection\')">' +
-            '<span class="mkt-link-ic mkt-link-ic-cat">' + ICO('list', 18) + '</span>' +
-            '<span style="flex:1;min-width:0"><span class="mkt-link-t">Sélection à pousser (liste manuelle)</span>' +
-            '<span class="mkt-link-s">Une liste de produits du moment, montée à la main.</span></span>' +
-            '<span class="v2-row-chev">' + ICO('chev', 17) + '</span>' +
-          '</a>' +
+          // « Support à présenter » et « Sélection à pousser » ont quitté ce
+          // tiroir le 10/09/2026 : ils sont dans le bloc « Créer une fiche
+          // marketing », tout en haut de la page.
           // Les maquettes ne sont plus ici : elles ont leur propre carte, en
           // haut de la page. En laisser une copie dans le tiroir ferait douter
           // qu'il s'agit du même écran.
@@ -555,6 +571,7 @@
           '<div class="v2-page-sub" style="margin-bottom:0">Le catalogue, les prix et les documents à présenter — l\'espace de Pauline &amp; Will.</div>' +
           '<div class="mkt-head-share">' + shareNote + '</div>' +
         '</div>' +
+        heroZone +
         makeZone +
         mqZone +
         recentZone +
@@ -797,7 +814,7 @@
             catDatalist() +
           '</div>' +
           '<div class="mkt-editbar">' +
-            '<button class="v2-btn v2-btn-ghost" onclick="V2.mkt.openPicker()">' + ICO('plus', 17, 2) + 'Ajouter des produits</button>' +
+            '<button class="v2-btn v2-btn-primary mkt-addbtn" onclick="V2.mkt.openPicker()">' + ICO('plus', 17, 2) + 'Ajouter des produits · tout le catalogue</button>' +
             '<button class="v2-btn v2-btn-ghost" onclick="V2.mkt.addCustom()">' + ICO('plus', 17, 2) + 'Produit libre</button>' +
             '<button class="v2-btn v2-btn-ghost" onclick="V2.mkt.save()">' + ICO('check', 17, 2) + 'Enregistrer</button>' +
             '<button class="v2-btn v2-btn-primary" onclick="V2.mkt.downloadPdf()">' + ICO('download', 17, 2) + 'Télécharger le PDF</button>' +
@@ -816,6 +833,7 @@
     wirePicker();
     refreshPreview();
     if (!V2._mktFitBound) { window.addEventListener('resize', fitSheet); V2._mktFitBound = true; }
+    if (pickOpenOnRender) { pickOpenOnRender = false; openPicker(); }
   }
   // ── Assistant guidé : indicateur d'étapes + galerie de modèles (étape 1) ──
   function stepper(step) {
@@ -879,98 +897,371 @@
     refreshPreview();
   }
 
-  // ── Sélecteur de produits (Offilog best-sellers) ──
+  // ── Sélecteur de produits : explorateur de catalogue, multi-sélection ──
+  // Trois univers : tout le catalogue Intégral (16 305 références, chargé à
+  // la demande avec ses rayons), la parapharmacie Offilog (rayon, marque),
+  // nos sélections (top ventes, rotations, ITP…). Facettes à gauche,
+  // résultats par 60, une coche par ligne, pied collant « Ajouter N produits ».
+  // Ouvert depuis la photo de l'aperçu (replaceIdx) : un clic remplace et ferme.
+  function sansAccent(x) {
+    var v = String(x == null ? '' : x).toLowerCase();
+    if (v.normalize) v = v.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    return v;
+  }
+  function pickQuery() {
+    var inp = document.getElementById('mkt-pick-input');
+    var q = sansAccent(inp ? inp.value : '').trim();
+    return q.length >= 2 ? q : '';
+  }
+  function rayonLibelle(i) {
+    var R = window.MKT_RAYONS;
+    return (R && R.rayons && typeof i === 'number' && i >= 0 && R.rayons[i]) || '';
+  }
+  // Catalogue complet : une seule passe — tri (réseau, stock, nom, comme
+  // l'onglet Catalogue de l'écran Produits), rayon et chaîne de recherche sans
+  // accents par ligne, comptes par rayon / famille / laboratoire. Filtrer
+  // ensuite ne coûte qu'un parcours linéaire, à chaque frappe.
+  function catCache() {
+    if (pickCatCache) return pickCatCache;
+    var C = (V2.produits && V2.produits.catalogueIndex) ? V2.produits.catalogueIndex() : null;
+    if (!C) return null;
+    var R = window.MKT_RAYONS, rows = [], nRay = {}, nFam = {}, nLab = {}, c, o, ri;
+    for (c in C) {
+      if (!Object.prototype.hasOwnProperty.call(C, c)) continue;
+      o = C[c];
+      ri = (R && R.cip && typeof R.cip[c] === 'number') ? R.cip[c] : -1;
+      rows.push({ o: o, r: ri, s: sansAccent(o.d + ' ' + c + ' ' + o.mol + ' ' + o.labo) });
+      nRay[ri] = (nRay[ri] || 0) + 1;
+      if (o.f) nFam[o.f] = (nFam[o.f] || 0) + 1;
+      if (o.labo) nLab[o.labo] = (nLab[o.labo] || 0) + 1;
+    }
+    rows.sort(function (a, b) {
+      return (b.o.n - a.o.n) || (b.o.stock - a.o.stock) || String(a.o.d).localeCompare(String(b.o.d), 'fr');
+    });
+    var rayons = Object.keys(nRay).map(Number).filter(function (i) { return i >= 0; })
+      .sort(function (a, b) { return nRay[b] - nRay[a]; })
+      .map(function (i) { return { i: i, l: rayonLibelle(i), n: nRay[i] }; });
+    var labos = Object.keys(nLab).sort(function (a, b) { return nLab[b] - nLab[a]; })
+      .map(function (l) { return { l: l, n: nLab[l] }; });
+    pickCatCache = { rows: rows, rayons: rayons, sansRayon: nRay[-1] || 0, fam: nFam, labos: labos, total: rows.length };
+    return pickCatCache;
+  }
+  function pickCatRows(q) {
+    var K = catCache(); if (!K) return [];
+    var out = [], i, r, f = pickF;
+    for (i = 0; i < K.rows.length; i++) {
+      r = K.rows[i];
+      if (f.rayon === 'none') { if (r.r >= 0) continue; }
+      else if (f.rayon !== 'all' && String(r.r) !== f.rayon) continue;
+      if (f.fam !== 'all' && r.o.f !== f.fam) continue;
+      if (f.labo && r.o.labo !== f.labo) continue;
+      if (f.stock && !(r.o.stock > 0)) continue;
+      if (q && r.s.indexOf(q) < 0) continue;
+      out.push(r);
+    }
+    return out;
+  }
+  // Parapharmacie : même principe, rayon Offilog (OFFILOG_CATS) et marque.
+  function offCache() {
+    if (pickOffCache) return pickOffCache;
+    var O = window.OFFILOG_BEST; if (!O || !O.length) return null;
+    var CATS = window.OFFILOG_CATS || {}, rows = [], nRay = {}, nMq = {}, i, b, ry;
+    for (i = 0; i < O.length; i++) {
+      b = O[i];
+      ry = (b.id != null && CATS[String(b.id)]) || '';
+      rows.push({ b: b, ry: ry, s: sansAccent((b.name || '') + ' ' + (b.brand || '') + ' ' + (b.ean || '')) });
+      nRay[ry] = (nRay[ry] || 0) + 1;
+      if (b.brand) nMq[b.brand] = (nMq[b.brand] || 0) + 1;
+    }
+    var rayons = Object.keys(nRay).filter(function (r) { return !!r; })
+      .sort(function (a, b) { return nRay[b] - nRay[a]; })
+      .map(function (r) { return { l: r, n: nRay[r] }; });
+    var marques = Object.keys(nMq).sort(function (a, b) { return nMq[b] - nMq[a]; })
+      .map(function (m) { return { l: m, n: nMq[m] }; });
+    pickOffCache = { rows: rows, rayons: rayons, sansRayon: nRay[''] || 0, marques: marques, total: rows.length };
+    return pickOffCache;
+  }
+  function offRows(q) {
+    var K = offCache(); if (!K) return [];
+    var out = [], i, r, f = pickF;
+    for (i = 0; i < K.rows.length; i++) {
+      r = K.rows[i];
+      if (f.orayon === 'none') { if (r.ry) continue; }
+      else if (f.orayon !== 'all' && r.ry !== f.orayon) continue;
+      if (f.marque && r.b.brand !== f.marque) continue;
+      if (q && r.s.indexOf(q) < 0) continue;
+      out.push(r);
+    }
+    return out;
+  }
+  function mixRows(q) {
+    var L = mixFlat(), out = [], i, b;
+    for (i = 0; i < L.length; i++) {
+      b = L[i];
+      if (!q || sansAccent(b.name).indexOf(q) >= 0 || String(b.cip).indexOf(q) >= 0) out.push(b);
+    }
+    return out;
+  }
+  function pickRows(q) {
+    return pickSrc === 'cat' ? pickCatRows(q) : (pickSrc === 'offilog' ? offRows(q) : mixRows(q));
+  }
+  // Clé d'un produit dans editing.products, selon l'univers (« déjà dans la fiche »).
+  function pickKey(src, key) {
+    return (src === 'cat' ? 'p' : (src === 'offilog' ? 'o' : (src === 'gros' ? 'g' : 'm'))) + key;
+  }
+  // L'objet produit de la fiche. Le catalogue passe par produitMkt : mêmes
+  // règles de prix et d'abandon de marge que l'écran Produits, rayon en `cat`.
+  function pickProduct(src, key) {
+    if (src === 'cat') {
+      return (V2.produits && V2.produits.produitMkt) ? V2.produits.produitMkt(String(key)) : null;
+    }
+    if (src === 'mix') {
+      var L = mixFlat(), gm = null;
+      for (var m = 0; m < L.length; m++) if (String(L[m].id) === String(key)) { gm = L[m]; break; }
+      if (!gm) return null;
+      return { src: 'mix', key: 'm' + gm.id, id: '', name: gm.name, brand: (gm.group === 'itp' ? 'ITP' : (gm.group === 'integral' ? 'L\'Intégral' : '')), ean: '', cip: gm.cip, price: gm.price, remise: gm.remise, ppht: gm.ppht || 0, img: '', froid: false, cat: gm.cat || '' };
+    }
+    if (src === 'offilog') {
+      var O = window.OFFILOG_BEST || [], b = null;
+      for (var i = 0; i < O.length; i++) if (String(O[i].id) === String(key)) { b = O[i]; break; }
+      if (!b) return null;
+      return { src: 'offilog', key: 'o' + b.id, id: b.id, name: b.name, brand: b.brand || '', ean: b.ean || '', cip: '', price: b.price || 0, remise: 0, ppht: 0, img: b.img || '', froid: false, cat: 'Parapharmacie' };
+    }
+    // 'gros' : plus proposé dans le sélecteur, gardé pour les fiches existantes
+    var B = window.BENCHMARK || [], g = null;
+    for (var j = 0; j < B.length; j++) if (String(B[j].cip13) === String(key)) { g = B[j]; break; }
+    if (!g) return null;
+    var _bpg = V2.bestPrice(g);
+    return { src: 'gros', key: 'g' + g.cip13, id: '', name: g.designation, brand: '', ean: '', cip: String(g.cip13), price: _bpg.ip != null ? _bpg.ip : refPriceB(g), remise: _bpg.remise, ppht: _bpg.ht || 0, img: catImg(String(g.cip13)), froid: !!g.is_froid, cat: '' };
+  }
+
   function pickerMarkup() {
     return '<div id="mkt-picker" class="mkt-pick-bd">' +
       '<div class="mkt-pick" onclick="event.stopPropagation()">' +
         '<div class="mkt-pick-search">' + ICO('search', 21, 2) +
-          '<input id="mkt-pick-input" placeholder="Rechercher (désignation, CIP, EAN)…" autocomplete="off">' +
-          '<button class="mkt-prow-x" onclick="V2.mkt.closePicker()">' + ICO('close', 16, 2) + '</button></div>' +
-        '<div class="mkt-pick-src">' +
-          '<button class="mkt-srcbtn' + (pickSrc === 'mix' ? ' on' : '') + '" data-src="mix" onclick="V2.mkt.setPickSrc(\'mix\')">Sélection grossiste</button>' +
-          '<button class="mkt-srcbtn' + (pickSrc === 'gros' ? ' on' : '') + '" data-src="gros" onclick="V2.mkt.setPickSrc(\'gros\')">Catalogue grossiste</button>' +
-          '<button class="mkt-srcbtn' + (pickSrc === 'offilog' ? ' on' : '') + '" data-src="offilog" onclick="V2.mkt.setPickSrc(\'offilog\')">Parapharma Offilog</button>' +
+          '<input id="mkt-pick-input" placeholder="' + esc(pickPlaceholder()) + '" autocomplete="off">' +
+          '<button class="mkt-prow-x" onclick="V2.mkt.closePicker()" aria-label="Fermer">' + ICO('close', 16, 2) + '</button></div>' +
+        '<div class="mkt-pick-src" id="mkt-pick-src">' + pickTabs() + '</div>' +
+        '<div class="mkt-pick-body">' +
+          '<div class="mkt-pick-rail mkt-pick-strip" id="mkt-pick-rail"></div>' +
+          '<div class="mkt-pick-main">' +
+            '<div class="mkt-pick-bar">' +
+              '<span class="mkt-pick-n mkt-pick-count" id="mkt-pick-n"></span>' +
+              '<div class="mkt-pick-filters mkt-pick-strip" id="mkt-pick-filters"></div>' +
+            '</div>' +
+            '<div id="mkt-pick-list" class="mkt-pick-list"></div>' +
+          '</div>' +
         '</div>' +
-        '<div id="mkt-pick-list" class="mkt-pick-list"></div>' +
+        '<div class="mkt-pick-foot" id="mkt-pick-foot"></div>' +
       '</div></div>';
   }
-  function renderPickList() {
-    var box = document.getElementById('mkt-pick-list'); if (!box) return;
-    var inp = document.getElementById('mkt-pick-input'); var q = (inp ? inp.value : '').trim().toLowerCase();
-    var have = {}; editing.products.forEach(function (p) { have[String(p.key)] = 1; });
-    var html = '', i, b, added;
-    if (pickSrc === 'mix') {
-      var L = mixFlat(), r3 = [];
-      for (i = 0; i < L.length && r3.length < 60; i++) {
-        b = L[i];
-        if (!q || (b.name || '').toLowerCase().indexOf(q) >= 0 || String(b.cip).indexOf(q) >= 0) r3.push(b);
-      }
-      html = r3.map(function (b) {
-        added = have['m' + b.id];
-        var tag = b.group === 'nr' ? 'NR / Para' : (b.group === 'rota' ? 'Top rotation France' : (b.group === 'best' ? 'Top ventes' : (b.group === 'itp' ? 'ITP' : 'L\'Intégral')));
-        // chip à droite : VOLUME vendu en priorité, sinon marge (ITP)
-        var chip = (b.vol > 0)
-          ? '<span class="mkt-pick-sortie" title="volume vendu (unités)">' + V2.fmtNum(b.vol) + ' vendus</span>'
-          : (b.group === 'itp' && b.marge > 0 ? '<span class="mkt-pick-sortie marge" title="marge par boîte">marge ' + V2.fmtEur(b.marge) + '</span>' : '');
-        var subm = b.sortie > 0 ? ' · ' + b.sortie + '/' + b.total + ' pharm' : (b.cip ? ' · CIP ' + esc(b.cip) : ' · ' + esc(b.cat));
-        return '<div class="mkt-pick-item' + (added ? ' added' : '') + '" onclick="V2.mkt.addProduct(\'mix\',\'' + b.id + '\')">' +
-          '<span class="mkt-pick-ic">' + ICO('pill', 18, 1.7) + '</span>' +
-          '<span class="mkt-pick-nm"><b>' + esc(b.name) + '</b><span>' + tag + subm + '</span></span>' +
-          chip +
-          '<span class="mkt-pick-pr mono">' + (b.price > 0 ? V2.fmtEur(b.price) : '') + '</span></div>';
-      }).join('');
-    } else if (pickSrc === 'offilog') {
-      var O = window.OFFILOG_BEST || [], res = [];
-      for (i = 0; i < O.length && res.length < 40; i++) {
-        b = O[i];
-        if (!q || (b.name || '').toLowerCase().indexOf(q) >= 0 || (b.brand || '').toLowerCase().indexOf(q) >= 0 || (b.ean || '').indexOf(q) >= 0) res.push(b);
-      }
-      html = res.map(function (b) {
-        added = have['o' + b.id];
-        return '<div class="mkt-pick-item' + (added ? ' added' : '') + '" onclick="V2.mkt.addProduct(\'offilog\',\'' + esc(b.id) + '\')">' +
-          (b.img ? '<span class="mkt-pick-img" style="background-image:url(' + esc(b.img) + ')"></span>' : '<span class="mkt-pick-img mkt-th-x"></span>') +
-          '<span class="mkt-pick-nm"><b>' + esc(b.name) + '</b><span>' + (b.brand ? esc(b.brand) : '') + '</span></span>' +
-          '<span class="mkt-pick-pr mono">' + (b.price > 0 ? V2.fmtEur(b.price) : '') + '</span></div>';
-      }).join('');
-    } else {
-      var B = window.BENCHMARK || [], r2 = [];
-      for (i = 0; i < B.length && r2.length < 40; i++) {
-        b = B[i];
-        if (!q || (b.designation || '').toLowerCase().indexOf(q) >= 0 || String(b.cip13 || '').indexOf(q) >= 0) r2.push(b);
-      }
-      html = r2.map(function (b) {
-        added = have['g' + b.cip13];
-        var price = refPriceB(b), rem = remiseB(b);
-        return '<div class="mkt-pick-item' + (added ? ' added' : '') + '" onclick="V2.mkt.addProduct(\'gros\',\'' + esc(b.cip13) + '\')">' +
-          '<span class="mkt-pick-ic">' + ICO('pill', 18, 1.7) + '</span>' +
-          '<span class="mkt-pick-nm"><b>' + esc(b.designation) + '</b><span>CIP ' + esc(b.cip13 || '—') + (rem > 0 ? ' · remise ' + String(rem).replace('.', ',') + '%' : '') + '</span></span>' +
-          '<span class="mkt-pick-pr mono">' + (price > 0 ? V2.fmtEur(price) : '') + '</span></div>';
-      }).join('');
+  function pickPlaceholder() {
+    if (replaceIdx != null) return 'Choisir le produit de remplacement…';
+    if (pickSrc === 'cat') return 'Rechercher (désignation, CIP, molécule, laboratoire)…';
+    if (pickSrc === 'offilog') return 'Rechercher (nom, marque, EAN)…';
+    return 'Rechercher (désignation, CIP)…';
+  }
+  function pickTabs() {
+    var K = catCache(), O = offCache();
+    function tab(k, label, n) {
+      return '<button class="mkt-srcbtn' + (pickSrc === k ? ' on' : '') + '" data-src="' + k + '" onclick="V2.mkt.setPickSrc(\'' + k + '\')">' +
+        label + (n ? '<i class="mkt-srcbtn-n"> (' + V2.fmtNum(n) + ')</i>' : '') + '</button>';
     }
-    box.innerHTML = html || '<div class="mkt-empty" style="border:none">Aucun produit trouvé.</div>';
+    return tab('cat', 'Tous les produits', K ? K.total : CAT_TOTAL_ATTENDU) +
+      tab('offilog', 'Parapharmacie', O ? O.total : 0) +
+      tab('mix', 'Nos sélections', mixFlat().length);
+  }
+  // Chip de facette. Les valeurs passent par data-v (libellés avec
+  // apostrophes ou esperluettes), jamais en argument inline.
+  function pickChip(kind, v, label, n, on) {
+    return '<button class="mkt-fchip' + (on ? ' on' : '') + '" data-v="' + esc(v) + '" onclick="V2.mkt.pickSet(\'' + kind + '\',this.getAttribute(\'data-v\'))">' +
+      '<span>' + esc(label) + '</span><i>' + V2.fmtNum(n) + '</i></button>';
+  }
+  // Rail (bureau) / bande défilante (mobile) : LES RAYONS, rien d'autre.
+  function pickRail() {
+    var h = '', K, i, f = pickF;
+    if (pickSrc === 'cat') {
+      K = catCache(); if (!K) return '';
+      h += '<div class="mkt-fac"><div class="mkt-fac-t">Rayon</div>' + pickChip('rayon', 'all', 'Tous les rayons', K.total, f.rayon === 'all');
+      for (i = 0; i < K.rayons.length; i++) h += pickChip('rayon', String(K.rayons[i].i), K.rayons[i].l, K.rayons[i].n, f.rayon === String(K.rayons[i].i));
+      if (K.sansRayon) h += pickChip('rayon', 'none', 'Sans rayon', K.sansRayon, f.rayon === 'none');
+      h += '</div>';
+    } else if (pickSrc === 'offilog') {
+      K = offCache(); if (!K) return '';
+      h += '<div class="mkt-fac"><div class="mkt-fac-t">Rayon Offilog</div>' + pickChip('orayon', 'all', 'Tous les rayons', K.total, f.orayon === 'all');
+      for (i = 0; i < K.rayons.length; i++) h += pickChip('orayon', K.rayons[i].l, K.rayons[i].l, K.rayons[i].n, f.orayon === K.rayons[i].l);
+      if (K.sansRayon) h += pickChip('orayon', 'none', 'Sans rayon', K.sansRayon, f.orayon === 'none');
+      h += '</div>';
+    }
+    return h;
+  }
+  // Ligne compacte au-dessus des résultats, à côté du compteur : famille,
+  // laboratoire, stock (catalogue) ; marque (parapharmacie).
+  function pickFilters() {
+    var h = '', K, i, f = pickF, FAMS, fk;
+    if (pickSrc === 'cat') {
+      K = catCache(); if (!K) return '';
+      FAMS = (V2.produits && V2.produits.FAM) || {}; fk = Object.keys(FAMS);
+      h += pickChip('fam', 'all', 'Toutes les familles', K.total, f.fam === 'all');
+      for (i = 0; i < fk.length; i++) if (K.fam[fk[i]]) h += pickChip('fam', fk[i], FAMS[fk[i]].l, K.fam[fk[i]], f.fam === fk[i]);
+      h += '<select class="mkt-fsel" id="mkt-pick-labo" aria-label="Laboratoire" onchange="V2.mkt.pickSet(\'labo\',this.value)"><option value="">Tous les laboratoires</option>';
+      for (i = 0; i < K.labos.length; i++) h += '<option value="' + esc(K.labos[i].l) + '"' + (f.labo === K.labos[i].l ? ' selected' : '') + '>' + esc(K.labos[i].l) + ' (' + V2.fmtNum(K.labos[i].n) + ')</option>';
+      h += '</select>';
+      h += '<label class="mkt-fchk"><input type="checkbox" id="mkt-pick-stock"' + (f.stock ? ' checked' : '') + ' onchange="V2.mkt.pickSet(\'stock\',this.checked)"><span>En stock seulement</span></label>';
+    } else if (pickSrc === 'offilog') {
+      K = offCache(); if (!K) return '';
+      h += '<select class="mkt-fsel" id="mkt-pick-marque" aria-label="Marque" onchange="V2.mkt.pickSet(\'marque\',this.value)"><option value="">Toutes les marques</option>';
+      for (i = 0; i < K.marques.length; i++) h += '<option value="' + esc(K.marques[i].l) + '"' + (f.marque === K.marques[i].l ? ' selected' : '') + '>' + esc(K.marques[i].l) + ' (' + V2.fmtNum(K.marques[i].n) + ')</option>';
+      h += '</select>';
+    }
+    return h;
+  }
+  function pickItemOpen(src, key, have, sk) {
+    var k = pickKey(src, key);
+    return '<div class="mkt-pick-item' + (have[k] ? ' added' : (pickSel[sk] ? ' sel' : '')) + '" onclick="V2.mkt.pickToggle(\'' + src + '\',\'' + esc(String(key)) + '\',this)">';
+  }
+  function pickItemClose() { return '<span class="mkt-pick-ck">' + ICO('check', 13, 3) + '</span></div>'; }
+  function pickRowCat(r, have) {
+    var o = r.o, cip = String(o.cip);
+    var p = (V2.produits && V2.produits.produitMkt) ? V2.produits.produitMkt(cip) : null;
+    var img = (window.MKT_IMG && window.MKT_IMG[cip]) || '';
+    var sub = [o.labo, 'CIP ' + cip, rayonLibelle(r.r)].filter(function (x) { return !!x; }).join(' · ');
+    return pickItemOpen('cat', cip, have, 'cat|' + cip) +
+      (img ? '<span class="mkt-pick-img" style="background-image:url(' + esc(img) + ')"></span>' : '<span class="mkt-pick-ic">' + ICO('pill', 18, 1.7) + '</span>') +
+      '<span class="mkt-pick-nm"><b>' + esc(o.d) + '</b><span>' + esc(sub) + '</span></span>' +
+      (o.stock > 0 ? '' : '<span class="mkt-pick-rupt">rupture</span>') +
+      '<span class="mkt-pick-pr mono">' + (p && p.price > 0 ? V2.fmtEur(p.price) : '') + '</span>' +
+      pickItemClose();
+  }
+  function pickRowOff(r, have) {
+    var b = r.b, id = String(b.id);
+    var sub = [b.brand, r.ry].filter(function (x) { return !!x; }).join(' · ');
+    return pickItemOpen('offilog', id, have, 'offilog|' + id) +
+      (b.img ? '<span class="mkt-pick-img" style="background-image:url(' + esc(b.img) + ')"></span>' : '<span class="mkt-pick-img mkt-th-x"></span>') +
+      '<span class="mkt-pick-nm"><b>' + esc(b.name) + '</b><span>' + esc(sub) + '</span></span>' +
+      '<span class="mkt-pick-pr mono">' + (b.price > 0 ? V2.fmtEur(b.price) : '') + '</span>' +
+      pickItemClose();
+  }
+  function pickRowMix(b, have) {
+    var id = String(b.id);
+    var tag = b.group === 'nr' ? 'NR / Para' : (b.group === 'rota' ? 'Top rotation France' : (b.group === 'best' ? 'Top ventes' : (b.group === 'itp' ? 'ITP' : 'L\'Intégral')));
+    // chip à droite : VOLUME vendu en priorité, sinon marge (ITP)
+    var chip = (b.vol > 0)
+      ? '<span class="mkt-pick-sortie" title="volume vendu (unités)">' + V2.fmtNum(b.vol) + ' vendus</span>'
+      : (b.group === 'itp' && b.marge > 0 ? '<span class="mkt-pick-sortie marge" title="marge par boîte">marge ' + V2.fmtEur(b.marge) + '</span>' : '');
+    var subm = b.sortie > 0 ? ' · ' + b.sortie + '/' + b.total + ' pharm' : (b.cip ? ' · CIP ' + esc(b.cip) : ' · ' + esc(b.cat));
+    return pickItemOpen('mix', id, have, 'mix|' + id) +
+      '<span class="mkt-pick-ic">' + ICO('pill', 18, 1.7) + '</span>' +
+      '<span class="mkt-pick-nm"><b>' + esc(b.name) + '</b><span>' + tag + subm + '</span></span>' +
+      chip +
+      '<span class="mkt-pick-pr mono">' + (b.price > 0 ? V2.fmtEur(b.price) : '') + '</span>' +
+      pickItemClose();
+  }
+  function renderPickList() {
+    var box = document.getElementById('mkt-pick-list'); if (!box || !editing) return;
+    var cnt = document.getElementById('mkt-pick-n');
+    if ((pickSrc === 'cat' && !catCache()) || (pickSrc === 'offilog' && !offCache())) {
+      box.innerHTML = '<div class="mkt-empty" style="border:none">Le catalogue n\'a pas pu être chargé. Ferme le sélecteur et réessaie.</div>';
+      if (cnt) cnt.textContent = '';
+      pickFoot();
+      return;
+    }
+    var q = pickQuery(), rows = pickRows(q), have = {}, html = '', i, n = rows.length, end = Math.min(n, pickShown);
+    editing.products.forEach(function (p) { have[String(p.key)] = 1; });
+    for (i = 0; i < end; i++) {
+      html += pickSrc === 'cat' ? pickRowCat(rows[i], have) : (pickSrc === 'offilog' ? pickRowOff(rows[i], have) : pickRowMix(rows[i], have));
+    }
+    if (n > end) html += '<button class="v2-btn v2-btn-ghost mkt-pick-more" onclick="V2.mkt.pickMore()">Voir ' + Math.min(PICK_PAGE, n - end) + ' produits de plus</button>';
+    var top = box.scrollTop;
+    box.innerHTML = html || '<div class="mkt-empty" style="border:none">Aucun produit ne correspond à ces critères.</div>';
+    box.scrollTop = pickShown > PICK_PAGE ? top : 0;
+    if (cnt) cnt.textContent = V2.fmtNum(n) + ' produit' + (n > 1 ? 's' : '');
+    pickFoot();
+  }
+  function pickFoot() {
+    var foot = document.getElementById('mkt-pick-foot'); if (!foot) return;
+    if (replaceIdx != null) {
+      foot.innerHTML = '<span class="mkt-pick-nsel">Un clic sur un produit remplace celui de l\'aperçu.</span>' +
+        '<button class="v2-btn v2-btn-ghost" onclick="V2.mkt.closePicker()">Fermer</button>';
+      return;
+    }
+    var n = Object.keys(pickSel).length;
+    foot.innerHTML =
+      '<span class="mkt-pick-nsel">' + (n ? n + ' coché' + (n > 1 ? 's' : '') : 'Coche les produits à ajouter') + '</span>' +
+      '<button class="v2-btn v2-btn-ghost" onclick="V2.mkt.pickClearSel()"' + (n ? '' : ' disabled') + '>Tout décocher</button>' +
+      '<button class="v2-btn v2-btn-primary" onclick="V2.mkt.pickAddSel()"' + (n ? '' : ' disabled') + '>' + ICO('plus', 16, 2) +
+        'Ajouter ' + (n ? n + ' produit' + (n > 1 ? 's' : '') : 'les produits') + '</button>' +
+      '<button class="v2-btn v2-btn-ghost" onclick="V2.mkt.closePicker()">Fermer</button>';
+  }
+  function renderPickAll() {
+    var tabs = document.getElementById('mkt-pick-src'); if (tabs) tabs.innerHTML = pickTabs();
+    var rail = document.getElementById('mkt-pick-rail');
+    if (rail) { var top = rail.scrollTop; rail.innerHTML = pickRail(); rail.hidden = !rail.innerHTML; rail.scrollTop = top; }
+    var flt = document.getElementById('mkt-pick-filters');
+    if (flt) { var left = flt.scrollLeft; flt.innerHTML = pickFilters(); flt.hidden = !flt.innerHTML; flt.scrollLeft = left; }
+    var inp = document.getElementById('mkt-pick-input'); if (inp) inp.placeholder = pickPlaceholder();
+    renderPickList();
   }
   function wirePicker() {
     var bd = document.getElementById('mkt-picker'); if (!bd) return;
     bd.onclick = function () { closePicker(); };
     var inp = document.getElementById('mkt-pick-input');
-    if (inp) { inp.addEventListener('input', renderPickList); inp.addEventListener('keydown', function (e) { if (e.key === 'Escape') closePicker(); }); }
+    if (inp) {
+      inp.addEventListener('input', function () {
+        pickShown = PICK_PAGE;
+        if (pickTimer) clearTimeout(pickTimer);
+        pickTimer = setTimeout(renderPickList, 120);
+      });
+      inp.addEventListener('keydown', function (e) { if (e.key === 'Escape') closePicker(); });
+    }
+  }
+  function pickSpinner(txt) {
+    var box = document.getElementById('mkt-pick-list');
+    if (box) box.innerHTML = '<div class="v2-loading" style="min-height:220px"><div class="v2-spinner"></div><div>' + esc(txt) + '</div></div>';
+    var rail = document.getElementById('mkt-pick-rail'); if (rail) { rail.innerHTML = ''; rail.hidden = true; }
+    var flt = document.getElementById('mkt-pick-filters'); if (flt) { flt.innerHTML = ''; flt.hidden = true; }
+    var cnt = document.getElementById('mkt-pick-n'); if (cnt) cnt.textContent = '';
   }
   function ensureSrc(cb) {
     if (pickSrc === 'mix') { cb(); return; }   // window.MKT_MIX chargé via index.html
-    if (pickSrc === 'offilog') ensureBest(cb); else ensureBench(cb);
+    if (pickSrc === 'offilog') {
+      if (!window.OFFILOG_BEST || !window.OFFILOG_CATS) pickSpinner('La parapharmacie arrive…');
+      ensureBest(function () {
+        if (window.OFFILOG_CATS || !V2.loadFiles) { cb(); return; }
+        V2.loadFiles(['offilogcats']).then(cb, cb);
+      });
+      return;
+    }
+    if (pickCatCache || (window.CATALOGUE_COMPLET && window.MKT_RAYONS) || !V2.loadFiles) { cb(); return; }
+    pickSpinner('Les ' + V2.fmtNum(CAT_TOTAL_ATTENDU) + ' références arrivent (1,5 Mo, une seule fois)…');
+    V2.loadFiles(['catcomplet', 'mktrayons']).then(cb, cb);
   }
   // idx (facultatif) : ouvert depuis la photo d'un produit de l'aperçu → le produit choisi REMPLACE celui-là
   function openPicker(idx) {
     replaceIdx = (typeof idx === 'number' && editing && editing.products[idx]) ? idx : null;
+    // Les coches survivent à une fermeture (clic à côté du panneau) tant qu'on
+    // reste sur la même fiche ; elles tombent en mode remplacement.
+    if (replaceIdx != null || !editing || pickSelFor !== editing.id) pickSel = {};
+    pickSelFor = editing ? editing.id : null;
+    pickShown = PICK_PAGE;
+    var bd = document.getElementById('mkt-picker'); if (!bd) return;
+    bd.classList.add('open');
+    // Le bouton flottant « + » de l'app (.v2-fab, z-index 9400) passerait
+    // par-dessus le panneau et couvrirait « Fermer » sur iPhone.
+    document.body.classList.add('mkt-picking');
+    var inp = document.getElementById('mkt-pick-input');
+    if (inp) { inp.value = ''; inp.placeholder = pickPlaceholder(); }
     ensureSrc(function () {
-      var bd = document.getElementById('mkt-picker'); if (!bd) return;
-      bd.classList.add('open');
-      var inp = document.getElementById('mkt-pick-input');
-      if (inp) { inp.value = ''; inp.placeholder = replaceIdx != null ? 'Choisir le produit de remplacement…' : 'Rechercher (désignation, CIP, EAN)…'; setTimeout(function () { inp.focus(); }, 60); }
-      renderPickList();
+      renderPickAll();
+      // Sur téléphone, le clavier couvrirait les rayons : pas de focus automatique.
+      if (inp && window.innerWidth > 640) setTimeout(function () { inp.focus(); }, 60);
     });
   }
-  function closePicker() { replaceIdx = null; var bd = document.getElementById('mkt-picker'); if (bd) bd.classList.remove('open'); }
+  function closePicker() {
+    replaceIdx = null;
+    document.body.classList.remove('mkt-picking');
+    var bd = document.getElementById('mkt-picker'); if (bd) bd.classList.remove('open');
+  }
 
   // ════════════════════════════════════════════
   // APERÇU + PDF (flyer)
@@ -1509,30 +1800,68 @@
       });
     },
     openPicker: function () { openPicker(); }, closePicker: closePicker,
+    // « Parcourir tous les produits » (accueil Marketing) : une sélection neuve,
+    // modèle déjà posé, et le sélecteur s'ouvre sur le catalogue entier dès le
+    // rendu de l'éditeur — sans passer par la galerie de modèles.
+    createFromCatalogue: function () {
+      editing = { id: newId(), type: 'selection', title: '', accroche: '', footer: '', status: 'brouillon', products: [],
+                  theme: defaultTheme('selection'), owner: (V2.user && V2.user.email) || '', _new: 'selection' };
+      for (var i = 0; i < MODELES.length; i++) if (MODELES[i].k === 'selection') editing.theme.accent = MODELES[i].accent;
+      editing.theme.tpl = 'selection';
+      choixModele = false;
+      pickSrc = 'cat'; pickF = pickFiltresVides(); pickOpenOnRender = true;
+      V2.go('marketing', 'new-selection');
+    },
     setPickSrc: function (s) {
+      if (s !== 'cat' && s !== 'offilog' && s !== 'mix') return;
       pickSrc = s;
-      Array.prototype.forEach.call(document.querySelectorAll('.mkt-srcbtn'), function (b) { b.classList.toggle('on', b.getAttribute('data-src') === s); });
-      ensureSrc(function () { renderPickList(); var inp = document.getElementById('mkt-pick-input'); if (inp) inp.focus(); });
+      pickF = pickFiltresVides(); pickShown = PICK_PAGE;   // les facettes sont propres à chaque univers
+      Array.prototype.forEach.call(document.querySelectorAll('#mkt-pick-src .mkt-srcbtn'), function (b) { b.classList.toggle('on', b.getAttribute('data-src') === s); });
+      ensureSrc(renderPickAll);
+    },
+    // Une facette change : on repart à la première page, le rail se redessine (état des chips)
+    pickSet: function (kind, v) {
+      if (!Object.prototype.hasOwnProperty.call(pickF, kind)) return;
+      pickF[kind] = (kind === 'stock') ? !!v : String(v == null ? '' : v);
+      pickShown = PICK_PAGE;
+      renderPickAll();
+    },
+    pickMore: function () { pickShown += PICK_PAGE; renderPickList(); },
+    // Un clic coche / décoche. En mode remplacement (ouvert depuis la photo), il remplace et ferme.
+    pickToggle: function (src, key, el) {
+      if (!editing) return;
+      if (replaceIdx != null) { V2.mkt.addProduct(src, key); return; }
+      var k = pickKey(src, key);
+      if (editing.products.some(function (x) { return String(x.key) === k; })) return;
+      var sk = src + '|' + key;
+      if (pickSel[sk]) delete pickSel[sk]; else pickSel[sk] = { src: src, key: key };
+      if (el && el.classList) el.classList.toggle('sel', !!pickSel[sk]);
+      pickFoot();
+    },
+    pickClearSel: function () {
+      pickSel = {};
+      Array.prototype.forEach.call(document.querySelectorAll('#mkt-pick-list .mkt-pick-item.sel'), function (el) { el.classList.remove('sel'); });
+      pickFoot();
+    },
+    // Ajoute tous les produits cochés, puis UN seul rafraîchissement de l'aperçu.
+    pickAddSel: function () {
+      if (!editing) return;
+      var keys = Object.keys(pickSel), n = 0, i, p;
+      for (i = 0; i < keys.length; i++) {
+        p = pickProduct(pickSel[keys[i]].src, pickSel[keys[i]].key);
+        if (!p || editing.products.some(function (x) { return String(x.key) === String(p.key); })) continue;
+        editing.products.push(p); n++;
+      }
+      pickSel = {};
+      if (!n) { V2.toast('Aucun produit à ajouter', 'warn'); pickFoot(); return; }
+      closePicker();
+      refreshProducts();
+      V2.toast(n + ' produit' + (n > 1 ? 's' : '') + ' ajouté' + (n > 1 ? 's' : ''));
     },
     addProduct: function (src, key) {
-      var p = null;
-      if (src === 'mix') {
-        var L = mixFlat(), gm = null;
-        for (var m = 0; m < L.length; m++) if (String(L[m].id) === String(key)) { gm = L[m]; break; }
-        if (!gm) return;
-        p = { src: 'mix', key: 'm' + gm.id, id: '', name: gm.name, brand: (gm.group === 'itp' ? 'ITP' : (gm.group === 'integral' ? 'L\'Intégral' : '')), ean: '', cip: gm.cip, price: gm.price, remise: gm.remise, ppht: gm.ppht || 0, img: '', froid: false, cat: gm.cat || '' };
-      } else if (src === 'offilog') {
-        var O = window.OFFILOG_BEST || [], b = null;
-        for (var i = 0; i < O.length; i++) if (String(O[i].id) === String(key)) { b = O[i]; break; }
-        if (!b) return;
-        p = { src: 'offilog', key: 'o' + b.id, id: b.id, name: b.name, brand: b.brand || '', ean: b.ean || '', cip: '', price: b.price || 0, remise: 0, ppht: 0, img: b.img || '', froid: false, cat: 'Parapharmacie' };
-      } else {
-        var B = window.BENCHMARK || [], g = null;
-        for (var j = 0; j < B.length; j++) if (String(B[j].cip13) === String(key)) { g = B[j]; break; }
-        if (!g) return;
-        var _bpg = V2.bestPrice(g);
-        p = { src: 'gros', key: 'g' + g.cip13, id: '', name: g.designation, brand: '', ean: '', cip: String(g.cip13), price: _bpg.ip != null ? _bpg.ip : refPriceB(g), remise: _bpg.remise, ppht: _bpg.ht || 0, img: catImg(String(g.cip13)), froid: !!g.is_froid, cat: '' };
-      }
+      if (!editing) return;
+      var p = pickProduct(src, key);
+      if (!p) return;
       if (editing.products.some(function (x) { return String(x.key) === String(p.key); })) { if (replaceIdx != null) V2.toast('Ce produit est déjà dans la fiche', 'warn'); return; }
       if (replaceIdx != null && editing.products[replaceIdx]) { editing.products[replaceIdx] = p; closePicker(); refreshProducts(); return; }
       editing.products.push(p); refreshProducts(); renderPickList();
@@ -1723,6 +2052,19 @@
       '.mkt-head .v2-page-title{margin-bottom:6px}',
       '.mkt-head-share{margin-top:12px}',
       // ── Étape 1 : les 2 choix de fabrication (grandes cartes claires, sobres) ──
+      // Héros « Créer une fiche marketing » : une source de lumière en haut à
+      // gauche (bleu doux → blanc), l'ombre existante. Aucun des effets qui
+      // font planter Safari (voir la skill safari-safe).
+      '.mkt-hero{position:relative;margin-bottom:var(--section-gap);padding:26px 24px 22px;border-radius:var(--r-card);border:1px solid color-mix(in srgb,var(--ip-blue) 18%,var(--line));background:radial-gradient(130% 110% at 0% 0%,#D9E6FF 0%,#EAF1FF 34%,var(--card) 72%);box-shadow:var(--sh-pop);overflow:hidden}',
+      '.mkt-hero-kick{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ip-blue)}',
+      '.mkt-hero-t{margin-top:8px;font-size:24px;font-weight:800;letter-spacing:-.025em;color:var(--ip-ink);line-height:1.15}',
+      '.mkt-hero-s{margin-top:6px;font-size:14px;color:var(--muted);line-height:1.45;max-width:560px}',
+      '.mkt-hero-btns{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}',
+      '.mkt-hero-btn{min-height:52px;padding:12px 22px;font-size:15px;flex:1 1 240px;justify-content:center}',
+      '.mkt-hero-all{flex-basis:100%;background:var(--card);border-color:color-mix(in srgb,var(--ip-blue) 30%,var(--line));color:var(--ip-ink)}',
+      '.mkt-hero-all:hover{border-color:var(--ip-blue)}',
+      '.mkt-hero-n{font-size:12.5px;font-weight:700;color:var(--ip-blue);background:var(--halo);border-radius:999px;padding:4px 10px;margin-left:4px}',
+      '@media(max-width:640px){.mkt-hero{padding:22px 18px 18px}.mkt-hero-t{font-size:21px}.mkt-hero-btns{flex-direction:column}.mkt-hero-btn{flex:none;width:100%}}',
       '.mkt-make{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:var(--section-gap)}',
       '@media(max-width:640px){.mkt-make{grid-template-columns:1fr;gap:12px}}',
       '.mkt-make-card{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:8px;text-align:left;padding:22px 22px 20px;background:linear-gradient(180deg,var(--card),var(--card-2));border:1px solid var(--line);border-radius:var(--r-card);cursor:pointer;font-family:var(--font);overflow:hidden;transition:transform .26s var(--mo-ease-soft),box-shadow .26s var(--mo-ease-soft),border-color .26s var(--mo-ease-soft)}',
@@ -1912,10 +2254,59 @@
       '.mkt-pv-pane .mkt-mscroll{flex:none;max-height:calc(100vh - 148px);border-radius:16px;border:1px solid var(--line)}',
       '.mkt-del{margin-left:auto;width:42px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.16s var(--ease)}',
       '.mkt-del:hover{color:var(--c-rose);border-color:color-mix(in srgb,var(--c-rose) 40%,var(--line))}',
+      // Sélecteur = explorateur de catalogue : rail de facettes à gauche,
+      // résultats seuls défilent, pied collant. Plein écran sous 640 px.
       '.mkt-pick-bd{position:fixed;inset:0;z-index:210;background:rgba(16,19,28,0.55);display:flex;align-items:flex-start;justify-content:center;padding-top:8vh;opacity:0;pointer-events:none;transition:opacity .2s var(--ease)}',
       '.mkt-pick-bd.open{opacity:1;pointer-events:auto}',
-      '.mkt-pick{width:min(620px,93vw);max-height:76vh;background:var(--card);border-radius:18px;box-shadow:var(--sh-pop);display:flex;flex-direction:column;overflow:hidden;transform:scale(.97);transition:transform .24s var(--ease)}',
+      '.mkt-pick{width:min(980px,94vw);height:84vh;max-height:84vh;background:var(--card);border-radius:18px;box-shadow:var(--sh-pop);display:flex;flex-direction:column;overflow:hidden;transform:scale(.97);transition:transform .24s var(--ease)}',
       '.mkt-pick-bd.open .mkt-pick{transform:scale(1)}',
+      '.mkt-pick-body{display:flex;flex:1;min-height:0}',
+      '.mkt-pick-rail{width:220px;flex-shrink:0;overflow-y:auto;border-right:1px solid var(--line);padding:10px 10px 14px;background:var(--card-2)}',
+      '.mkt-pick-rail[hidden]{display:none}',
+      '.mkt-pick-main{flex:1;min-width:0;display:flex;flex-direction:column}',
+      '.mkt-pick-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 14px 6px;border-bottom:1px solid var(--line)}',
+      '.mkt-pick-n{flex-shrink:0;font-size:11.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}',
+      '.mkt-pick-filters{display:flex;align-items:center;gap:6px;flex-wrap:wrap;flex:1;min-width:0}',
+      '.mkt-pick-filters[hidden]{display:none}',
+      '.mkt-pick-filters .mkt-fchip{width:auto;flex:0 0 auto;min-height:32px;padding:5px 10px;border-color:var(--line);background:var(--card);white-space:nowrap}',
+      '.mkt-pick-filters .mkt-fchip.on{border-color:var(--ip-blue);background:var(--ip-blue)}',
+      '.mkt-pick-filters .mkt-fsel{width:auto;max-width:220px;min-height:32px;padding:4px 8px}',
+      '.mkt-pick-filters .mkt-fchk{min-height:32px;padding:0 4px}',
+      'body.mkt-picking .v2-fab{display:none}',
+      '.mkt-fac{margin-bottom:12px}',
+      '.mkt-fac-t{font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:6px 6px 4px}',
+      '.mkt-fchip{display:flex;align-items:center;gap:8px;width:100%;min-height:34px;padding:6px 8px;border:1px solid transparent;border-radius:9px;background:none;font-family:var(--font);font-size:12.5px;font-weight:600;color:var(--ip-ink);text-align:left;cursor:pointer;transition:background .12s var(--ease),border-color .12s var(--ease)}',
+      '.mkt-fchip span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      '.mkt-fchip i{font-style:normal;font-family:var(--mono);font-size:10.5px;color:var(--muted);flex-shrink:0}',
+      '.mkt-fchip:hover{background:var(--halo)}',
+      '.mkt-fchip.on{background:var(--ip-blue);border-color:var(--ip-blue);color:#fff}',
+      '.mkt-fchip.on i{color:rgba(255,255,255,.8)}',
+      '.mkt-fsel{width:100%;min-height:38px;padding:7px 8px;border:1px solid var(--line);border-radius:9px;background:var(--card);font-family:var(--font);font-size:13px;color:var(--ip-ink)}',
+      '.mkt-fchk{display:flex;align-items:center;gap:8px;min-height:38px;padding:6px 8px;font-size:13px;font-weight:600;color:var(--ip-ink);cursor:pointer}',
+      '.mkt-fchk input{width:18px;height:18px;accent-color:var(--ip-blue);margin:0}',
+      '.mkt-pick-foot{position:sticky;bottom:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 14px;border-top:1px solid var(--line);background:var(--card)}',
+      '.mkt-pick-nsel{flex:1;min-width:120px;font-size:13px;font-weight:600;color:var(--muted)}',
+      '.mkt-pick-foot .v2-btn[disabled]{opacity:.45;cursor:default}',
+      '.mkt-pick-more{width:100%;justify-content:center;margin:8px 0 4px}',
+      '.mkt-pick-ck{width:24px;height:24px;border-radius:50%;border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0;transition:background .12s var(--ease),border-color .12s var(--ease)}',
+      '.mkt-pick-item.sel{background:var(--halo)}',
+      '.mkt-pick-item.sel .mkt-pick-ck{background:var(--ip-blue);border-color:var(--ip-blue)}',
+      '.mkt-pick-item.added .mkt-pick-ck{display:none}',
+      '.mkt-pick-rupt{flex-shrink:0;font-size:10.5px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;color:var(--c-rose);background:color-mix(in srgb,var(--c-rose) 12%,#fff);border-radius:999px;padding:3px 8px}',
+      '@media(max-width:640px){.mkt-pick-bd{padding-top:0}.mkt-pick{width:100vw;height:100vh;height:100dvh;max-height:100vh;max-height:100dvh;border-radius:0}.mkt-pick-body{flex-direction:column}',
+      '.mkt-pick-rail{width:auto;display:flex;flex-wrap:nowrap;align-items:center;gap:6px;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;border-right:none;border-bottom:1px solid var(--line);padding:8px 12px}',
+      '.mkt-fac{display:contents}.mkt-fac-t{display:none}.mkt-fchip{width:auto;flex:0 0 auto;min-height:44px;white-space:nowrap;border-color:var(--line);background:var(--card)}',
+      '.mkt-pick-bar{flex-direction:column;align-items:stretch;gap:4px;padding:6px 0 0;flex-wrap:nowrap}.mkt-pick-n{padding:0 12px}',
+      '.mkt-pick-filters{flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;padding:4px 12px 8px}',
+      '.mkt-pick-filters .mkt-fchip,.mkt-pick-filters .mkt-fchk{min-height:44px;flex:0 0 auto;white-space:nowrap}.mkt-pick-filters .mkt-fsel{min-height:44px;flex:0 0 auto;max-width:180px}',
+      '.mkt-pick-list .mkt-pick-nm b{-webkit-line-clamp:2}',
+      '.mkt-pick-item{min-height:44px}.mkt-pick-foot .v2-btn{min-height:var(--tap-min)}}',
+      // Ligne de résultat : le NOM peut prendre deux lignes, la sous-ligne
+      // « labo · CIP · rayon » reste sur une seule, coupée par « … ».
+      '.mkt-pick-list .mkt-pick-nm b{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;white-space:normal;overflow:hidden;line-height:1.25}',
+      '.mkt-pick-list .mkt-pick-nm span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      '.mkt-editbar .mkt-addbtn{margin-left:0}',
+      '@media(max-width:560px){.mkt-editbar .mkt-addbtn{order:-2}}',
       '.mkt-pick-search{display:flex;align-items:center;gap:12px;padding:15px 18px;border-bottom:1px solid var(--line)}',
       '.mkt-pick-search svg{color:var(--ip-blue);flex-shrink:0}',
       '.mkt-pick-search input{border:none;outline:none;background:none;font-family:var(--font);font-size:16px;flex:1;color:var(--ip-ink)}',
@@ -1932,15 +2323,18 @@
       '.mkt-catbar #mkt-catbar-n{font-weight:700;font-size:13.5px}',
       // Mobile : barre de sélection empilée (libellé au-dessus, 2 CTA pleine largeur) au lieu de déborder
       '@media(max-width:560px){.mkt-catbar{flex-direction:column;align-items:stretch;gap:10px}.mkt-catbar>div{width:100%}.mkt-catbar>div .v2-btn{flex:1;justify-content:center}}',
-      // Mobile : les 5 onglets sources deviennent une bande scrollable horizontalement (au lieu de se casser sur 3 lignes)
+      // Mobile : les onglets d'univers deviennent une bande scrollable horizontalement (au lieu de se casser sur plusieurs lignes)
       '@media(max-width:640px){.mkt-pick-src{overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:6px}.mkt-srcbtn{flex:0 0 auto;white-space:nowrap}}',
+      // Dans le sélecteur, sous 640 px les trois univers tiennent sur la largeur : le compte disparaît (il reste dans le compteur de résultats).
+      '.mkt-srcbtn-n{font-style:normal}',
+      '@media(max-width:640px){#mkt-pick-src{overflow:visible;padding-bottom:4px}#mkt-pick-src .mkt-srcbtn{flex:1 1 0;min-width:0;padding:10px 6px;font-size:12px;overflow:hidden;text-overflow:ellipsis}#mkt-pick-src .mkt-srcbtn-n{display:none}}',
       '.mkt-pick-ic{width:40px;height:40px;border-radius:9px;background:var(--card-2);display:flex;align-items:center;justify-content:center;color:var(--ip-blue);flex-shrink:0}',
       '.mkt-prow-pill{display:flex;align-items:center;justify-content:center;color:var(--ip-blue);background:var(--card-2)}',
       '.mkt-pick-list{overflow-y:auto;padding:8px}',
       '.mkt-pick-item{display:flex;align-items:center;gap:12px;padding:8px 11px;border-radius:11px;cursor:pointer;transition:background .12s var(--ease),transform .12s var(--ease)}',
       '.mkt-pick-item:hover{background:var(--halo);transform:translateX(2px)}',
       '.mkt-pick-item.added{opacity:.5;pointer-events:none}',
-      '.mkt-pick-item.added::after{content:"Ajouté";margin-left:auto;flex-shrink:0;font-size:10.5px;font-weight:800;letter-spacing:.03em;color:var(--c-opp);background:color-mix(in srgb,var(--c-opp) 14%,#fff);border-radius:999px;padding:3px 9px}',
+      '.mkt-pick-item.added::after{content:"Dans la fiche";margin-left:auto;flex-shrink:0;font-size:10.5px;font-weight:800;letter-spacing:.03em;color:var(--c-opp);background:color-mix(in srgb,var(--c-opp) 14%,#fff);border-radius:999px;padding:3px 9px}',
       '.mkt-pick-img{width:40px;height:40px;border-radius:9px;background:#fff center/contain no-repeat;border:1px solid var(--line);flex-shrink:0}',
       '.mkt-pick-nm{flex:1;min-width:0}',
       '.mkt-pick-nm b{display:block;font-weight:600;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
