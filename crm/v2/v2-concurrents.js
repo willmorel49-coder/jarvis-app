@@ -304,11 +304,12 @@
       var back = src ? { back: true } : { back: true, backTo: 'home', backLabel: 'Accueil' };
       root.innerHTML = V2.topbar(back) + '<div class="v2-wrap cc-wrap">' + (src ? sourceHtml(src) : hubHtml()) + '</div>';
       if (SANS) return;
-      if (src) {
+      // Données absentes → on les demande, et on re-rend à l'arrivée. JAMAIS
+      // quand elles sont déjà là : le rappel relancerait le rendu, qui
+      // relancerait le rappel… (récursion infinie constatée au 1er test WebKit).
+      // Sur le hub, rien n'est téléchargé d'office (2 Mo pour Sagitta).
+      if (src && !SRC[src].charge()) {
         charger(src, function () { if (V2.route && V2.route.name === 'concurrents') V2.render(); });
-      } else {
-        // Sur le hub, on préchauffe les compteurs des sources légères déjà en
-        // mémoire ; rien n'est téléchargé d'office (2 Mo pour Sagitta).
       }
       var q = document.getElementById('cc-q');
       if (q && S.q) { try { q.focus(); q.setSelectionRange(q.value.length, q.value.length); } catch (e) {} }
