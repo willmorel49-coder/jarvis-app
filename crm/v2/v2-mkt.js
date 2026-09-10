@@ -44,6 +44,7 @@
   var backend = 'local';     // 'supabase' | 'local'
   var liKicked = false;      // posts LinkedIn chargés une seule fois (badge « à publier »)
   var editing = null;
+  var freeMode = false;      // « Position libre » : drag/resize des blocs de l'aperçu (interact.js)
   var pickSrc = 'mix';       // source : 'mix' (sélection grossiste) | 'gros' (catalogue méd.) | 'offilog'
   var catSrc = 'nrreal';   // Catalogues : 'nrreal' (ventes NR réelles) | 'nr' | 'integral' | 'itp' | 'best'
   var catQuery = '';        // recherche live dans le catalogue (nom / CIP)
@@ -68,12 +69,12 @@
   function localWrite(a) { try { localStorage.setItem(LS, JSON.stringify(a)); } catch (e) {} }
   function fromRow(r) {
     return { id: r.id, type: r.type || 'support', title: r.title || '', accroche: r.accroche || '', footer: r.footer || '',
-             status: r.status || 'brouillon', products: r.products || [], theme: r.theme || null, owner: r.owner || '',
+             status: r.status || 'brouillon', products: r.products || [], theme: r.theme || null, layout: r.layout || null, owner: r.owner || '',
              updated: r.updated_at ? new Date(r.updated_at).getTime() : Date.now() };
   }
   function toRow(it) {
     return { id: it.id, type: it.type, title: it.title, accroche: it.accroche, footer: it.footer || '', status: it.status,
-             products: it.products, theme: it.theme || null, owner: it.owner || (V2.user && V2.user.email) || '', updated_at: new Date().toISOString() };
+             products: it.products, theme: it.theme || null, layout: it.layout || null, owner: it.owner || (V2.user && V2.user.email) || '', updated_at: new Date().toISOString() };
   }
   // Rattrapage : jusqu'au 03/08/2026 la table `marketing_items` n'existait pas en base.
   // Tout ce que l'équipe créait tombait en repli local et n'était jamais partagé.
@@ -733,7 +734,7 @@
     if (id === 'new-support' || id === 'new-selection') {
       var ty = id === 'new-selection' ? 'selection' : 'support';
       if (!editing || editing._new !== ty) {
-        editing = { id: newId(), type: ty, title: '', accroche: '', footer: '', status: 'brouillon', products: [], theme: defaultTheme(ty), owner: (V2.user && V2.user.email) || '', _new: ty };
+        editing = { id: newId(), type: ty, title: '', accroche: '', footer: '', status: 'brouillon', products: [], theme: defaultTheme(ty), layout: {}, owner: (V2.user && V2.user.email) || '', _new: ty };
       }
     } else {
       var ex = (items || []).filter(function (x) { return x.id === id; })[0];
@@ -741,9 +742,10 @@
       if (!editing || editing.id !== ex.id) {
         editing = { id: ex.id, type: ex.type, title: ex.title, accroche: ex.accroche, footer: ex.footer || '', status: ex.status,
                     products: (ex.products || []).map(function (p) { return Object.assign({}, p); }),
-                    theme: Object.assign(defaultTheme(ex.type), ex.theme || {}), owner: ex.owner };
+                    theme: Object.assign(defaultTheme(ex.type), ex.theme || {}), layout: Object.assign({}, ex.layout || {}), owner: ex.owner };
       }
     }
+    freeMode = false;
     var t = TYPES[editing.type] || TYPES.support;
     var n = editing.products.length;
     var statusChips = STATUSES.map(function (s) {
@@ -771,6 +773,10 @@
             '<button class="v2-btn v2-btn-ghost" onclick="V2.mkt.save()">' + ICO('check', 17, 2) + 'Enregistrer</button>' +
             '<button class="v2-btn v2-btn-primary" onclick="V2.mkt.downloadPdf()">' + ICO('download', 17, 2) + 'Télécharger le PDF</button>' +
             '<button class="mkt-del" onclick="V2.mkt.remove()" title="Supprimer">' + ICO('close', 17, 2) + '</button>' +
+          '</div>' +
+          '<div class="mkt-editbar" style="margin-top:8px">' +
+            '<button class="v2-btn' + (freeMode ? ' v2-btn-primary' : ' v2-btn-ghost') + '" id="mkt-freebtn" onclick="V2.mkt.toggleFree()">' + ICO('move', 17, 2) + (freeMode ? 'Position libre : activée' : 'Position libre') + '</button>' +
+            (editing.layout && Object.keys(editing.layout).length ? '<button class="v2-btn v2-btn-ghost" onclick="V2.mkt.resetLayout()">' + ICO('close', 17, 2) + 'Réinitialiser la mise en page</button>' : '') +
           '</div>' +
         '</div>' +
         '<div class="mkt-pv-col"><div class="mkt-pv-pane">' +
@@ -1040,15 +1046,20 @@
           '</tr></thead><tbody>' + rows + '</tbody></table>'
       : '<div style="text-align:center;color:#9AA1B2;font-size:13px;padding:40px">Aucun produit.</div>';
     var footer = (it.footer && it.footer.trim()) ? esc(it.footer.trim()) : ('Prix nets HT indicatifs · ' + esc(dateStr));
-    return '<div style="font-family:Satoshi,Inter,Arial,sans-serif;width:794px;box-sizing:border-box;padding:36px 38px;background:' + bg + ';color:#10131C">' +
-        '<div style="background:' + grad + ';border-radius:18px;padding:26px 30px;color:#fff;margin-bottom:22px;position:relative;overflow:hidden">' +
+    function blockStyle(key) {
+      var L = it.layout && it.layout[key];
+      return L ? ('position:absolute;left:' + L.x + 'px;top:' + L.y + 'px;width:' + L.w + 'px;height:' + L.h + 'px;z-index:2;') : '';
+    }
+    return '<div style="font-family:Satoshi,Inter,Arial,sans-serif;width:794px;box-sizing:border-box;padding:36px 38px;background:' + bg + ';color:#10131C;position:relative">' +
+        '<div data-block="header" style="background:' + grad + ';border-radius:18px;padding:26px 30px;color:#fff;margin-bottom:22px;position:relative;overflow:hidden;' + blockStyle('header') + '">' +
           '<div style="position:absolute;right:-30px;top:-30px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,.12)"></div>' +
           '<div style="font-size:11px;text-transform:uppercase;letter-spacing:.12em;font-weight:800;opacity:.9">Intégral Pharma · ' + esc(t.label) + '</div>' +
           '<div style="font-size:30px;font-weight:800;letter-spacing:-.02em;margin-top:8px;line-height:1.05">' + esc(title) + '</div>' +
           (it.accroche && it.accroche.trim() ? '<div style="font-size:13.5px;opacity:.95;margin-top:9px;max-width:560px">' + esc(it.accroche.trim()) + '</div>' : '') +
           '<div style="font-size:12px;opacity:.85;margin-top:9px">' + (it.products || []).length + ' produit' + ((it.products || []).length > 1 ? 's' : '') + ' · ' + esc(dateStr) + '</div>' +
-        '</div>' + body +
-        '<div style="margin-top:26px;padding-top:14px;border-top:1px solid rgba(16,19,28,.1);display:flex;justify-content:space-between;gap:14px;font-size:9px;color:#737A8C;text-transform:uppercase;letter-spacing:.05em">' +
+        '</div>' +
+        '<div data-block="body" style="' + blockStyle('body') + '">' + body + '</div>' +
+        '<div data-block="footer" style="margin-top:26px;padding-top:14px;border-top:1px solid rgba(16,19,28,.1);display:flex;justify-content:space-between;gap:14px;font-size:9px;color:#737A8C;text-transform:uppercase;letter-spacing:.05em;' + blockStyle('footer') + '">' +
           '<span>Intégral Pharma · ' + esc(t.plural) + '</span><span style="text-align:right">' + footer + '</span></div>' +
       '</div>';
   }
@@ -1084,6 +1095,67 @@
     sh.innerHTML = buildFlyerHtml(false); // false = images via URL réseau (écran)
     fitSheet();
     waitImages(sh, 6000).then(fitSheet);
+    wireFreeDrag();
+  }
+
+  // ── Position libre (interact.js) : drag/resize des blocs [data-block] de l'aperçu ──
+  // Le rendu #mkt-msheet est mis à l'échelle par fitSheet() (transform:scale) : les
+  // déplacements souris (event.dx/dy, en pixels écran) doivent être divisés par cette
+  // échelle pour rester justes dans le repère non-mis-à-l'échelle (794px) du document.
+  function sheetScale() {
+    var sh = document.getElementById('mkt-msheet');
+    var m = sh && sh.style.transform && sh.style.transform.match(/scale\(([\d.]+)\)/);
+    return m ? (parseFloat(m[1]) || 1) : 1;
+  }
+  function ensureBlockLayout(el, key) {
+    if (!editing.layout) editing.layout = {};
+    if (!editing.layout[key]) {
+      var sh = document.getElementById('mkt-msheet');
+      var r = el.getBoundingClientRect(), sr = sh.getBoundingClientRect(), sc = sheetScale();
+      editing.layout[key] = {
+        x: Math.round((r.left - sr.left) / sc), y: Math.round((r.top - sr.top) / sc),
+        w: Math.round(r.width / sc), h: Math.round(r.height / sc)
+      };
+      el.style.position = 'absolute';
+      el.style.left = editing.layout[key].x + 'px'; el.style.top = editing.layout[key].y + 'px';
+      el.style.width = editing.layout[key].w + 'px'; el.style.height = editing.layout[key].h + 'px';
+      el.style.zIndex = 2;
+    }
+    return editing.layout[key];
+  }
+  function wireFreeDrag() {
+    var sh = document.getElementById('mkt-msheet'); if (!sh) return;
+    var blocks = Array.prototype.slice.call(sh.querySelectorAll('[data-block]'));
+    if (!window.interact) {
+      if (freeMode) V2.toast('Chargement de l\'outil de positionnement…', 'warn');
+      return;
+    }
+    blocks.forEach(function (el) {
+      var key = el.getAttribute('data-block');
+      if (!freeMode) { interact(el).unset(); el.classList.remove('mkt-block-free'); return; }
+      el.classList.add('mkt-block-free');
+      interact(el).unset();
+      interact(el)
+        .draggable({
+          listeners: { move: function (e) {
+            var L = ensureBlockLayout(el, key), sc = sheetScale();
+            L.x = Math.round(L.x + e.dx / sc); L.y = Math.round(L.y + e.dy / sc);
+            el.style.left = L.x + 'px'; el.style.top = L.y + 'px';
+            fitSheet();
+          } }
+        })
+        .resizable({
+          edges: { left: true, right: true, top: true, bottom: true },
+          listeners: { move: function (e) {
+            var L = ensureBlockLayout(el, key), sc = sheetScale();
+            L.w = Math.round(e.rect.width / sc); L.h = Math.round(e.rect.height / sc);
+            L.x = Math.round(L.x + e.deltaRect.left / sc); L.y = Math.round(L.y + e.deltaRect.top / sc);
+            el.style.width = L.w + 'px'; el.style.height = L.h + 'px';
+            el.style.left = L.x + 'px'; el.style.top = L.y + 'px';
+            fitSheet();
+          } }
+        });
+    });
   }
 
   function previewMarkup() {
@@ -1102,6 +1174,13 @@
     var scale = Math.min(1, avail / 794);
     sh.style.transform = 'scale(' + scale + ')';
     var h = sh.firstChild ? sh.firstChild.offsetHeight : sh.offsetHeight;
+    // Un bloc en « position libre » sort du flux normal : il ne pousse pas la hauteur
+    // naturelle. On l'inclut à la main pour ne pas le faire couper par le cadre (overflow:hidden).
+    if (editing && editing.layout) {
+      Object.keys(editing.layout).forEach(function (k) {
+        var L = editing.layout[k]; if (L) h = Math.max(h, L.y + L.h + 40);
+      });
+    }
     ho.style.width = (794 * scale) + 'px'; ho.style.height = (h * scale) + 'px';
   }
   function waitImages(node, timeout) {
@@ -1122,6 +1201,24 @@
   V2.mkt = {
     create: function (type) { editing = null; V2.go('marketing', type === 'selection' ? 'new-selection' : 'new-support'); },
     open: function (id) { editing = null; V2.go('marketing', id); },
+    toggleFree: function () {
+      freeMode = !freeMode;
+      var btn = document.getElementById('mkt-freebtn');
+      if (btn) { btn.className = 'v2-btn' + (freeMode ? ' v2-btn-primary' : ' v2-btn-ghost'); btn.innerHTML = ICO('move', 17, 2) + (freeMode ? 'Position libre : activée' : 'Position libre'); }
+      if (freeMode && !window.interact && window.ensureInteract) {
+        window.ensureInteract().then(wireFreeDrag).catch(function () { V2.toast('Chargement de l\'outil de positionnement impossible (hors ligne ?)', 'error'); freeMode = false; if (btn) { btn.className = 'v2-btn v2-btn-ghost'; btn.innerHTML = ICO('move', 17, 2) + 'Position libre'; } });
+      } else {
+        wireFreeDrag();
+      }
+      if (freeMode) V2.toast('Position libre activée — glisse ou redimensionne un bloc de l\'aperçu');
+    },
+    resetLayout: function () {
+      if (!editing) return;
+      if (!confirm('Remettre tous les blocs à leur position d\'origine ?')) return;
+      editing.layout = {};
+      refreshPreview();
+      V2.render();
+    },
     setProd: function (i, field, v) {
       if (!editing || !editing.products[i]) return;
       var p = editing.products[i];
@@ -1396,6 +1493,7 @@
       if (!editing.title || !editing.title.trim()) { editing.title = (TYPES[editing.type] || TYPES.support).plural + ' du ' + new Date().toLocaleDateString('fr-FR'); }
       var clean = { id: editing.id, type: editing.type, title: editing.title, accroche: editing.accroche, footer: editing.footer || '',
                     status: editing.status, theme: Object.assign({}, editing.theme || defaultTheme(editing.type)),
+                    layout: Object.assign({}, editing.layout || {}),
                     products: editing.products.map(function (p) { return Object.assign({}, p); }), owner: editing.owner };
       V2.toast('Enregistrement…');
       saveItem(clean).then(function () { V2.toast('Enregistré' + (backend === 'supabase' ? ' (partagé)' : '')); var tf = document.getElementById('mkt-title'); if (tf) tf.value = editing.title; });
@@ -1813,6 +1911,8 @@
       '.mkt-mscroll{overflow-y:auto;overflow-x:hidden;padding:24px;background:#EBEEF4;flex:1}',
       '.mkt-mholder{margin:0 auto;overflow:hidden;border-radius:8px;box-shadow:0 14px 44px rgba(16,19,28,.2)}',
       '.mkt-msheet{width:794px;transform-origin:top left;background:#fff}',
+      '.mkt-block-free{cursor:move;outline:1.5px dashed #0050E6;outline-offset:2px;touch-action:none}',
+      '.mkt-block-free:hover{outline-color:#0034A0}',
       // ── Accessibilité : respecter la préférence « moins d\'animations » ──
       '@media(prefers-reduced-motion:reduce){',
         '.mkt-make-card,.mkt-bigrow,.mkt-card,.mkt-link,.mkt-pick-item,.mkt-cat-banner,.mkt-more-chev{transition:none!important}',

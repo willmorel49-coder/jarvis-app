@@ -13,8 +13,7 @@
       window.addEventListener('load', function () {
         var hadController = !!navigator.serviceWorker.controller;
         navigator.serviceWorker.register('sw.js?v=20260910g').then(function (reg) {
-          try { reg.update(); } catch (e) {}   // vérifie tout de suite au chargement
-          // pendant une longue session, re-vérifier périodiquement s'il y a une nouvelle version
+          try { reg.update(); } catch (e) {}   // vérifie tout de suite au chargement          // pendant une longue session, re-vérifier périodiquement s'il y a une nouvelle version
           setInterval(function () { try { reg.update(); } catch (e) {} }, 5 * 60 * 1000);
           // dès qu'on revient sur l'appli (onglet réactivé) : re-check -> bannière « Actualiser » si nouvelle version
           document.addEventListener('visibilitychange', function () { if (!document.hidden) { try { reg.update(); } catch (e) {} } });
@@ -152,8 +151,7 @@
 
   <!-- PWA : installable sur l'écran d'accueil (iOS + Android) -->
   <link rel="manifest" href="manifest.webmanifest?v=20260910g" />
-  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />  <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="JARVIS" />
   <meta name="mobile-web-app-capable" content="yes" />
@@ -188,6 +186,17 @@
         var s = document.createElement('script');
         s.src = 'https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.2/dist/html2pdf.bundle.min.js';
         s.crossOrigin = 'anonymous';   // même raison : sans ça, une erreur de cette lib est aveugle
+        s.onload = resolve; s.onerror = reject; document.head.appendChild(s);
+      });
+    };
+    // Chargé à la demande (~96 Ko) seulement quand on active « Position libre »
+    // dans l'éditeur marketing — pas au boot, pour ne pas alourdir toutes les autres pages.
+    // Vendorisé en local (crm/v2/vendor/) plutôt que via CDN : pas de dépendance externe.
+    window.ensureInteract = function () {
+      if (window.interact) return Promise.resolve();
+      return new Promise(function (resolve, reject) {
+        var s = document.createElement('script');
+        s.src = 'vendor/interact.min.js?v=20260910a';
         s.onload = resolve; s.onerror = reject; document.head.appendChild(s);
       });
     };
@@ -308,5 +317,4 @@
   <!-- Fond WebGL interactif de l'accueil (aurora clair) — après l'app pour wrapper pages.home -->
   <script src="v2-bg.js?v=20260910g"></script>
   <script src="v2-campagne-cible.js?v=20260910g"></script>
-</body>
-</html>
+</body></html>
