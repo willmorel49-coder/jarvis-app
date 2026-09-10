@@ -10,6 +10,15 @@ Découpé par source (règle de poids, > 500 Ko sinon) :
   crm/v2/concurrents-sagitta-data.js  window.CONCURRENTS_SAGITTA
   crm/v2/concurrents-ocp-data.js      window.CONCURRENTS_OCP
   crm/v2/concurrents-etudes-data.js   window.CONCURRENTS_ETUDES  (11/09/2026)
+  crm/v2/concurrents-cooper-data.js   window.CONCURRENTS_COOPER  (11/09/2026)
+
+Cooper : catalogue PRÉPARATOIRE 2023 (PDF public sur cooper.fr, CGV au
+01/01/2023, dernière version en ligne au 10/09/2026). `pdftotext -layout`
+→ texte, une ligne par déclinaison : code CPF, EAN 13, drapeau CMR (Â),
+désignation (vide = même produit, autre conditionnement ; en minuscules =
+origine ou composition, gardée en « détail »), division ou lot, statut
+(A/C/E/CA/SA/T, composables), prix unitaire HT. Famille = titre de la page,
+rayon = sous-titre au-dessus de l'en-tête de colonnes.
 
 Études : `~/recherche-grossistes-2026-09/dataset.csv` (recherche de sept. 2026,
 828 avantages commerciaux observés dans des sources publiques : décisions,
@@ -31,6 +40,7 @@ Usage : /usr/bin/python3 scripts/generate_concurrents.py [--date-sagitta AAAA-MM
 import csv
 import datetime
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -39,6 +49,8 @@ OUT_SAG = ROOT / "crm" / "v2" / "concurrents-sagitta-data.js"
 OUT_OCP = ROOT / "crm" / "v2" / "concurrents-ocp-data.js"
 OUT_ETU = ROOT / "crm" / "v2" / "concurrents-etudes-data.js"
 ETUDES_CSV = Path.home() / "recherche-grossistes-2026-09" / "dataset.csv"
+OUT_COOP = ROOT / "crm" / "v2" / "concurrents-cooper-data.js"
+COOPER_TXT = Path.home() / "recherche-concurrents-2026-09-11" / "recoltes" / "03-cooper-preparatoire-2023" / "catalogue-preparatoire-2023-texte.txt"
 
 # CONCURRENTS/ est gitignoré : absent des worktrees, présent dans ~/JARVIS/APP
 BASES = [ROOT / "CONCURRENTS", Path.home() / "JARVIS" / "APP" / "CONCURRENTS"]
@@ -216,6 +228,103 @@ def etudes():
     return COLS, data, date_de(ETUDES_CSV), n
 
 
+# ── Cooper (catalogue préparatoire 2023, PDF public) ─────────────────────
+# prix = milliers séparés par UNE espace (« 18 657,50 ») : un motif plus large
+# avalait le lot « L 24 » dans le prix (24 56,95 → 2 456,95).
+COOP_ROW = re.compile(r"^\s*(\d \d{3} \d{3})\s+(\d{13})\s+(Â\s+)?(.*?)\s+(\d{1,3}(?: \d{3})*,\d{2}) €\s*$")
+# titres de page à unifier (casse ou coupure du titre selon la page)
+COOP_FAMILLES = {"chimiques & excipients": "Chimiques & excipients", "huiles végétales": "Huiles végétales",
+                 "matériel & articles": "Matériel & articles de conditionnement", "matériel & articles de conditionnement": "Matériel & articles de conditionnement",
+                 "géluliers": "Géluliers", "géluliers classiques": "Géluliers", "équipement": "Équipement du préparatoire", "équipement du préparatoire": "Équipement du préparatoire"}
+COOP_STATUT = re.compile(r"^[A-Z]{1,2}(/[A-Z]{1,2})*$")
+# division ou lot : « 250 G », « 1K », « 0,50 G », « 25 L », « L 24 », « L1 »
+COOP_DIVISION = re.compile(r"^(L ?\d+|\d+(,\d+)? ?[A-Z]{0,2}|\d+X\d+[A-Z]{0,2})$")
+COOP_STATUTS = {"A": "Alimentaire", "C": "Cosmétique", "E": "Excipient", "CA": "Complément alimentaire", "SA": "Substance active", "T": "Technique"}
+
+
+def titre(s):
+    s = re.sub(r"\s+", " ", s.strip())
+    return s if s != s.upper() else s.capitalize()
+
+
+def cooper():
+    COLS = ["code13", "cpf", "famille", "rayon", "libelle", "detail", "division", "statut", "cmr", "prix", "page"]
+    if not COOPER_TXT.exists():
+        print("ERREUR : fichier introuvable :", COOPER_TXT)
+        sys.exit(1)
+    # Page 46, « Pots à gélules transparents » : pdftotext éclate les deux
+    # lignes colonne par colonne (codes, EAN, libellés, lots, prix sur des
+    # lignes séparées). Relues à l'œil sur planches-rendues/ et recopiées ici.
+    MAIN = [
+        ["3401546771657", "2259100", "Conditionnement", "Pots à gélules transparents", "POT GELUL PLAST TRANSP 60 ML", "", "L 20", "", "", 13.99, 46],
+        ["3401546771367", "2259102", "Conditionnement", "Pots à gélules transparents", "POT GELUL PLAST TRANSP 100 ML", "", "L 20", "", "", 22.90, 46],
+    ]
+    data = []
+    n_ean = 0
+    for page, texte in enumerate(COOPER_TXT.read_text(encoding="utf-8").split("\f"), 1):
+        lignes = texte.split("\n")
+        famille = ""
+        rayon = ""
+        prev = ""  # dernière ligne non vide (candidat rayon)
+        libelle = ""
+        for l in lignes:
+            t = l.strip()
+            if not t:
+                continue
+            if re.search(r"\d{13}", t):
+                n_ean += 1
+            m = COOP_ROW.match(l)
+            if not m:
+                if "CODE CPF" in t:
+                    # un sous-titre, pas la fin d'une phrase de présentation
+                    if prev and len(prev) < 70 and not prev.endswith("."):
+                        rayon = titre(prev)
+                        if rayon.casefold() == famille.casefold():
+                            rayon = ""
+                elif not famille and len(t) < 60:
+                    famille = titre(t)
+                    famille = COOP_FAMILLES.get(famille.casefold(), famille)
+                prev = t
+                continue
+            cpf, ean, cmr, milieu, prix = m.groups()
+            parts = [x for x in re.split(r"\s{2,}", milieu.strip()) if x]
+            statut = ""
+            if parts and COOP_STATUT.match(parts[-1]):
+                statut = parts.pop()
+            division = parts.pop() if parts and COOP_DIVISION.match(parts[-1]) else ""
+            desig = " ".join(parts).strip()
+            detail = ""
+            # « péricarpe - Italie », « 1,8-cinéole » : origine ou composition,
+            # pas un produit — la première lettre est une minuscule
+            alpha = next((ch for ch in desig if ch.isalpha()), "")
+            if desig and alpha.islower():
+                detail, desig = desig, ""
+            if desig:
+                libelle = desig
+            statut_l = " / ".join(COOP_STATUTS.get(x, x) for x in statut.split("/")) if statut else ""
+            data.append([ean, cpf.replace(" ", ""), famille, rayon, libelle, detail, division, statut_l,
+                         "CMR" if cmr else "", float(prix.replace(" ", "").replace(",", ".")), page])
+    # les deux lignes éclatées reprennent la famille lue sur leur page
+    fam46 = next((r[2] for r in data if r[10] == 46), MAIN[0][2])
+    for m in MAIN:
+        m[2] = fam46
+        data.append(list(m))
+    # Un même EAN peut figurer deux fois (page « nouveautés » en tête, puis sa
+    # famille) : on garde la ligne de la famille, la dernière lue.
+    vus = {}
+    for r in data:
+        if r[0] in vus and vus[r[0]][9] != r[9]:
+            print("ATTENTION Cooper : EAN %s à deux prix (%s p.%s / %s p.%s)" % (r[0], vus[r[0]][9], vus[r[0]][10], r[9], r[10]))
+        vus[r[0]] = r
+    data = list(vus.values())
+    return COLS, data, "2023-01-01", n_ean
+
+
+def coop_doublons(data, n_ean):
+    # nombre de lignes EAN du texte qui ne sont pas dans la sortie = doublons retirés
+    return n_ean - len(data)
+
+
 def ecrire(out, var, obj, entete, attendu):
     body = json.dumps(obj, separators=(",", ":"), ensure_ascii=False)
     out.write_text(
@@ -263,6 +372,17 @@ def main():
     print("Études   : %d lignes CSV lues -> %d observations, maj %s, %d octets, relecture %s"
           % (ne, len(edata), emaj, OUT_ETU.stat().st_size, "OK" if ok else "ÉCART !"))
     if not ok:
+        sys.exit(1)
+
+    cc, cdata, cmaj, nc = cooper()
+    coop = {"maj": cmaj, "cols": cc, "rows": cdata}
+    relu, ok = ecrire(OUT_COOP, "CONCURRENTS_COOPER", coop,
+                      "Cooper — catalogue préparatoire 2023 (matières premières, huiles essentielles, conditionnement, équipement), prix HT",
+                      lambda o: len(o["rows"]) == len(cdata))
+    print("Cooper   : %d lignes avec EAN dans le texte -> %d références, maj %s, %d octets, relecture %s"
+          % (nc, len(cdata), cmaj, OUT_COOP.stat().st_size, "OK" if ok else "ÉCART !"))
+    if not ok or nc != len(cdata) + coop_doublons(cdata, nc):
+        print("ERREUR : des lignes EAN du catalogue Cooper n'ont pas été lues")
         sys.exit(1)
 
 
