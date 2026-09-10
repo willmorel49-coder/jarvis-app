@@ -520,6 +520,14 @@
     document.head.appendChild(sc);
   }
 
+  // 10/09/2026 — carte-detail.js (CA mensuel par officine, top produits) est
+  // protégé comme les tranches de ventes : plus dans le dépôt public, chargé à
+  // la demande par la fiche de la carte (v2-carte.js), avec le rangement local.
+  V2.chargerScriptProtege = function (nom, cb) {
+    texteProtege(nom, V2.versionDonnees || '', function (texte) { poserTexte(texte, cb); },
+                 function () { console.warn('[V2] fichier protégé manquant : ' + nom); cb(false); });
+  };
+
   function rafraichirSession(c) {
     try {
       if (!c.auth || !c.auth.refreshSession) return Promise.resolve();
@@ -964,7 +972,8 @@
     // de le servir, et le lecteur compacté ne trouverait pas ses dictionnaires.
     // Pas besoin de le suivre à chaque déploiement en revanche : quand `VER` de
     // sw.js change, l'activation du service worker efface tous les caches.
-    var V = '?v=20260910m';
+    var V = '?v=20260910p';
+    V2.versionDonnees = V;   // lu par chargerScriptProtege (fiche carte)
     var promises = keys.map(function (k) {
       var src = (window.V2_DATA_BASE || '../') + DATA_FILES[k];
       if (loaded[src]) return Promise.resolve();
