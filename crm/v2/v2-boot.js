@@ -663,16 +663,24 @@
       if (!c || !(P[c] > 0)) continue;          // ignore PPHT absent ou ≤ 0 (ex Shingrix=0) → jamais de prix à 0
       var pp = P[c];
       b.prix_ht = pp;                           // tarif grossiste officiel (HT) — corrige les prix_ht=0
+      // Le champ NR (afmcode du fichier stock) peut être faux/périmé sur des princeps
+      // pourtant bien remboursés au vu d'Ameli (ex Plavix, Telfast : stock dit NR, Ameli
+      // dit remboursé avec des vraies boîtes vendues) → on fait confiance à Ameli
+      // (has_ameli, alimenté par les vraies stats de remboursement) plutôt qu'au stock
+      // dès que la désignation n'est pas un générique (artnature vide ou "referent").
+      var natOk = !b.artnature || b.artnature === 'referent';
+      var vraimentRemb = b.has_ameli === true && natOk &&
+        (b.categorie === 'pp' || b.categorie === 'mi' || b.categorie === 'ch');
       // NR : marge libre PLM -> on aligne le prix IP sur le PPHT et on neutralise
       // l'offre labo (pas de tag OFFRE sur un NR). Remboursable : on garde le prix_ip réel.
-      if (NR[c]) { if (!(b.prix_ip > 0 && b.prix_ip < pp)) b.prix_ip = pp; b.offre_ip = 0; }
+      if (NR[c] && !vraimentRemb) { if (!(b.prix_ip > 0 && b.prix_ip < pp)) b.prix_ip = pp; b.offre_ip = 0; }
       // Princeps sans abandon dans les données (net = PPHT, ex prix_ht manquant à l'origine,
       // OU prix_ip carrément absent — cas des produits froid/vaccins, ex Bexsero, Shingrix :
       // `b.prix_ip > 0` valait false sur un champ absent, donc jamais corrigé → même piège
       // que la branche NR ci-dessus, corrigé pareil avec la négation)
       // → on applique le barème pour révéler le vrai net remisé. Les princeps déjà remisés
       // (prix_ip < pp) et les offres Sanofi/UPSA (prix_ip plus bas) sont laissés intacts.
-      else if (PR[c] && !(b.prix_ip > 0 && b.prix_ip < pp)) {
+      else if ((PR[c] || vraimentRemb) && !(b.prix_ip > 0 && b.prix_ip < pp)) {
         b.prix_ip = Math.round((pp - abandonBareme(pp)) * 100) / 100;
         fixedAband++;
       }
