@@ -203,6 +203,7 @@ wml-officines-ca.js
 biosimilaires-complet.js
 opso/opso-stats-data.js
 opso/wml-data.js
+crm/v2/carte-detail.js
 clients-cond.js
 
 # L'Argument : barème IP + fourchettes — espace protégé uniquement

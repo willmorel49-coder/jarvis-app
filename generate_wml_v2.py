@@ -215,6 +215,36 @@ SOURCES = [
     ('Arthur', 'ALH'),       # Arthur Lehouerou
     ('Mathieu', 'MMN'),
     ('Mathieu', 'JMR'),
+    # Ajoutés le 10/09/2026 (dossier STATS/total ventes — toute l'entreprise).
+    # Prénoms donnés par Will ; les autres codes s'affichent tels quels.
+    ('Eric', 'EL'),
+    ('Valérie', 'VAM'),
+    ('Ingrid', 'IM'),
+    ('Yves', 'YM'),
+    ('Guillaume', 'GPX'),
+    ('NS', 'NS'),
+    ('DC', 'DC'),
+    ('PG', 'PG'),
+    ('PPO', 'PPO'),
+    ('CSM', 'CSM'),
+    ('GM', 'GM'),
+    ('PA', 'PA'),
+    ('ADC', 'ADC'),
+    ('VM', 'VM'),
+    ('AM', 'AM'),
+    ('ILE', 'ILE'),
+    ('SEP', 'SEP'),
+    ('GL', 'GL'),
+    ('AUL', 'AUL'),
+    ('SV', 'SV'),
+    ('LP', 'LP'),
+    ('IMM', 'IMM'),
+    ('SOP', 'SOP'),
+    ('MSP', 'MSP'),
+    ('CPR', 'CPR'),
+    ('NR', 'NR'),
+    ('REP', 'REP'),
+    ('Inconnu', 'COMMERCIAL_INCONNU'),
 ]
 MONTHS_NUM = [1, 2, 3, 4, 5, 6, 7, 8]
 NB_MOIS = len(MONTHS_NUM)
