@@ -213,6 +213,8 @@ SOURCES = [
     ('Florent', 'FML'),      # Florent
     ('Morgane', 'MDC'),      # Morgane
     ('Arthur', 'ALH'),       # Arthur Lehouerou
+    ('Mathieu', 'MMN'),
+    ('Mathieu', 'JMR'),
 ]
 MONTHS_NUM = [1, 2, 3, 4, 5, 6, 7, 8]
 NB_MOIS = len(MONTHS_NUM)
