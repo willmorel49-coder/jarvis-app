@@ -1505,7 +1505,7 @@
       })();
 
       // ── CA & marge par groupement ──
-      function grpKey(ph) { return (ph && (ph.groupement || '').trim()) || 'Indépendants'; }
+      function grpKey(ph) { var g = ph && (ph.groupement || '').trim(); if (!g) return 'Indépendants'; return (V2.canonGrp ? V2.canonGrp(g) : g) || g; }
       var grpAgg = {};
       cur.forEach(function (s) {
         var ph = phById[s.pharmacyId]; if (!ph) return;
