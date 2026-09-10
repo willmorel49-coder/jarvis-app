@@ -79,6 +79,11 @@
     var cl = clientDuCip(pid) || {};
     var n = nationalDuCip(pid) || [];
     var xt = (window.MAILS_COMPLEMENT || {})[String(pid)] || {};
+    // 10/09/2026 — la base clients (export « clients actifs », protégé) passe en
+    // PREMIER : c'est le fichier de gestion, à jour du 07/09, là où CLIENTS date
+    // de mai et PHARMA_FR de décembre 2024. Une saisie de l'équipe reste devant
+    // (gérée par les écrans, pas ici).
+    var ca = ((window.CLIENTS_ACTIFS || {}).d || {})[String(pid)] || [];
     function nat(k) { return n[NAT[k]] || ''; }
     return {
       cip: String(pid),
@@ -86,9 +91,13 @@
       adresse: cl.adresse || '',
       cp: ph.cp || cl.cp || nat('cp') || '',
       ville: ph.ville || cl.ville || nat('ville') || '',
-      email: String(cl.email || nat('email') || xt.email || '').trim(),
-      tel: String(ph.tel || cl.tel || nat('tel') || xt.tel || '').trim(),
-      contact: String(cl.contact || nat('titulaire') || '').trim(),
+      email: String(ca[2] || cl.email || nat('email') || xt.email || '').trim(),
+      tel: String(ca[0] || ph.tel || cl.tel || nat('tel') || xt.tel || '').trim(),
+      portable: String(ca[1] || '').trim(),
+      contact: String(ca[3] || cl.contact || nat('titulaire') || '').trim(),
+      fonction: String(ca[4] || '').trim(),
+      logiciel: String(ca[5] || '').trim(),
+      livraison: String(ca[9] || '').trim(),
       lat: (typeof ph.lat === 'number' ? ph.lat : (typeof n[NAT.lat] === 'number' ? n[NAT.lat] : null)),
       lon: (typeof ph.lng === 'number' ? ph.lng : (typeof n[NAT.lng] === 'number' ? n[NAT.lng] : null))
     };
