@@ -969,9 +969,11 @@
 
   // ── Titulaire(s) de l'officine (affiché + corrigeable) — via V2.titOvr, sinon base nationale ──
   function titulaireOf(pid, orig) { return (V2.titOvr && V2.titOvr[String(pid)]) || orig || ''; }
-  function clientTitulaire(pid) {   // titulaire connu (override sinon PHARMA_FR p[10])
+  function clientTitulaire(pid) {   // titulaire connu (override, sinon base clients, sinon PHARMA_FR p[10])
     var base = '';
-    if (window.PHARMA_FR) { var pt = pharmaFrById(pid); if (pt && pt[10]) base = pt[10]; }
+    var ca = ((window.CLIENTS_ACTIFS || {}).d || {})[String(pid)];
+    if (ca && ca[3]) base = ca[3];
+    if (!base && window.PHARMA_FR) { var pt = pharmaFrById(pid); if (pt && pt[10]) base = pt[10]; }
     return titulaireOf(pid, base);
   }
   function titEditor(pid, currentTit) {
@@ -1399,7 +1401,10 @@
       }).catch(function () { _coordSaisie[pid] = {}; });
     }
     var saisi = _coordSaisie[pid] || {};
-    var tel = String(saisi.tel || '').trim() || (pharma.tel == null ? '' : String(pharma.tel)).trim() || (infoRdv && infoRdv.tel) || '';
+    var tel = String(saisi.tel || '').trim() || (infoRdv && infoRdv.tel) || (pharma.tel == null ? '' : String(pharma.tel)).trim() || '';
+    // 10/09/2026 — ce que la base clients sait d'elle et que rien d'autre ne dit :
+    // le logiciel de gestion, le portable, le rythme de livraison.
+    var logiciel = (infoRdv && infoRdv.logiciel) || '', portable = (infoRdv && infoRdv.portable) || '', livraison = (infoRdv && infoRdv.livraison) || '';
     var mail = String(saisi.email || '').trim() || (pharma.email == null ? '' : String(pharma.email)).trim() || (infoRdv && infoRdv.email) || '';
     var adresse = String(saisi.adresse || '').trim() || (infoRdv && infoRdv.adresse) || '';
     // Même trou pour la ville : WML ne la connaît pas partout (« à compléter »
@@ -1419,7 +1424,10 @@
           kv('Titulaire', esc(titulaire)) +
           kv('Groupement', (pharma.groupement && pharma.groupement !== '—') ? esc(pharma.groupement) : '') +
           kv('Téléphone', tel ? esc(tel) : '') +
+          (portable && portable !== tel ? kv('Portable', esc(portable)) : '') +
           kv('E-mail', mail ? esc(mail) : '') +
+          kv('Logiciel', logiciel ? esc(logiciel) : '', 'inconnu') +
+          (livraison ? kv('Livraison', esc(livraison)) : '') +
         '</div>' +
         '<div class="pha-acts">' +
           (tel ? '<a class="pha-btn" href="tel:' + esc(tel.replace(/[^+0-9]/g, '')) + '">' + ICO('phone', 15) + 'Appeler</a>' : '') +

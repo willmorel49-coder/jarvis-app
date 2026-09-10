@@ -341,6 +341,9 @@
     opsostats: 'opso-stats-data.js',
     // potentiel commercial + CA par pharmacie (fiches clients)
     clientscond: 'clients-cond.js',
+    // 10/09/2026 — base clients (export « clients actifs ») : tel, mail, contact,
+    // logiciel, enseigne, commercial. Notre liste de clients → protégé.
+    clientsactifs: 'v2/clients-actifs.js',
     // Écran « L'Argument » (1er rendez-vous prospect) : barème IP + fourchettes
     // de marché + preuves. ~4 Ko, protégé — le code de la page est public,
     // AUCUN chiffre n'y vit (règle ROBOT.md §10 / CLAUDE.md §8).
@@ -407,6 +410,7 @@
     establishments: 'establishments-aggregate.js',
     sagitta: 'sagitta-shortlist-data.js',
     clientscond: 'clients-cond.js',
+    clientsactifs: 'clients-actifs.js',
     argument: 'argument-data.js'
   };
   var SEAU_PROTEGE = 'donnees-protegees';   // sert encore aux DOCUMENTS privés
@@ -755,6 +759,7 @@
     mktnr: 'MKT_NR',
     opsostats: 'OPSO_STATS_SALES',
     clientscond: 'CLIENTS_COND',
+    clientsactifs: 'CLIENTS_ACTIFS',
     argument: 'ARGUMENT',
     drakkars: 'DRAKKARS',
     cap3000: 'CAP3000',
@@ -899,6 +904,29 @@
       }
       _fusionsFaites.clientscond = true;
     }
+    // 10/09/2026 — la base clients (export du 07/09) est la source OFFICIELLE de
+    // l'enseigne (colonne TIRENSEIGNE, celle-là même que generate_wml_v2.py lit
+    // dans les fichiers géoloc, plus anciens et partiels) et du téléphone.
+    // Elle complète WML : téléphone posé s'il manque, groupement remplacé si la
+    // base clients en déclare un autre (canonisé par la table d'alias). Le
+    // rendu passe par V2.pharmacies, copie faite au boot : on met les deux.
+    if (!_fusionsFaites.clientsactifs && window.WML_OFFICINES && window.CLIENTS_ACTIFS && window.CLIENTS_ACTIFS.d) {
+      var cad = window.CLIENTS_ACTIFS.d, canon = V2.canonGrp || function (g) { return g; };
+      // Seuls les noms CONNUS de la table d'alias remplacent : la colonne porte
+      // aussi des laboratoires (Sanofi, Biogaran, Sandoz…) et des libellés jamais
+      // vérifiés — ceux-là ne touchent pas au groupement.
+      var connus = {}, AL = window.GRP_ALIAS || {};
+      Object.keys(AL).forEach(function (k) { connus[AL[k]] = 1; });
+      var appliquer = function (of) {
+        var e = cad[String(of.id)]; if (!e) return;
+        if (!of.tel && e[0]) of.tel = e[0];
+        var ens = e[6] && canon(e[6]);
+        if (ens && ens !== '—' && connus[ens] && canon(of.groupement || '') !== ens) of.groupement = ens;
+      };
+      window.WML_OFFICINES.forEach(appliquer);
+      (V2.pharmacies || []).forEach(appliquer);
+      _fusionsFaites.clientsactifs = true;
+    }
     if (V2.applyPPHT && (_fusionsFaites.bench)) { try { V2.applyPPHT(); } catch (e) {} }
   }
   V2.fusionsProtegees = fusionsProtegees;
@@ -973,6 +1001,9 @@
     if (keys && keys.indexOf('clients') >= 0 && keys.indexOf('clientscond') < 0) {
       keys = keys.concat(['clientscond']);
     }
+    if (keys && keys.indexOf('wml') >= 0 && keys.indexOf('clientsactifs') < 0) {
+      keys = keys.concat(['clientsactifs']);
+    }
     // chemins relatifs au dossier parent crm/ (les data files sont dans crm/)
     // Jeton PROPRE aux fichiers de données, distinct du ?v= global.
     // ⚠️ Le bumper quand les DONNÉES changent — et elles viennent de changer :
@@ -981,7 +1012,7 @@
     // de le servir, et le lecteur compacté ne trouverait pas ses dictionnaires.
     // Pas besoin de le suivre à chaque déploiement en revanche : quand `VER` de
     // sw.js change, l'activation du service worker efface tous les caches.
-    var V = '?v=20260910u';
+    var V = '?v=20260910x';
     V2.versionDonnees = V;   // lu par chargerScriptProtege (fiche carte)
     var promises = keys.map(function (k) {
       var src = (window.V2_DATA_BASE || '../') + DATA_FILES[k];
