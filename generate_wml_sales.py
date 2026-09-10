@@ -128,7 +128,15 @@ def _put(key, ean, nat, afm, sub):
         d['sub'] = sub
 
 
-for p in sorted(glob.glob(os.path.join(STATS, '*_0[1-6]_2026*.xlsx'))):
+def fichiers_mois(suffixe=''):
+    """Les tableurs de TOUS les mois de MONTHS — la liste des mois est la seule source de
+    vérité. (Jusqu'au 10/09/2026, un motif '0[1-6]' écrit en dur ignorait juillet et août :
+    l'app OPSO affichait presque 0 € sur ces deux mois alors que MONTHS allait jusqu'à 8.)"""
+    return sorted(p for m in MONTHS
+                  for p in glob.glob(os.path.join(STATS, '*_%02d_2026%s.xlsx' % (m, suffixe))))
+
+
+for p in fichiers_mois('*'):
     wb = openpyxl.load_workbook(p, read_only=True, data_only=True)
     ws = wb.active
     it = ws.iter_rows(values_only=True)
@@ -187,9 +195,9 @@ def new_ph(cip):
             'prod': defaultdict(lambda: [0.0, 0.0, 0.0, ''])}  # nom -> [ca,mg,qt,ean]
 
 
-for path in sorted(glob.glob(os.path.join(STATS, '*_0[1-6]_2026.xlsx'))):
+for path in fichiers_mois():
     base = os.path.basename(path)
-    mm = re.match(r'[A-Za-z]+_(0[1-6])_2026\.xlsx$', base)
+    mm = re.match(r'[A-Za-z]+_(\d{2})_2026\.xlsx$', base)
     if not mm:
         continue
     month = int(mm.group(1))
