@@ -2069,14 +2069,14 @@
       var b = bIdx.get(cip); if (!b) return;
       var cat = classify(b, cip); if (!cat || !buckets[cat]) return;
       if (!byCip[cip].manual && Object.keys(byCip[cip].ph).length < seuil) return;   // < 20% des pharmacies → masqué
-      var e = byCip[cip], ht = (b.prix_ht > 0) ? b.prix_ht : 0, ip0 = (b.prix_ip > 0) ? b.prix_ip : 0;
-      // prix le plus bas : offre labo (Sanofi, UPSA…) valide si remise ≤ 50%
-      // (au-delà = donnée offre_ip aberrante → ignorée)
-      var off = (b.offre_ip > 0) ? b.offre_ip : 0;
-      var hasOffer = off > 0 && ht > 0 && off < ht && off >= ht * 0.5;
-      var ip = hasOffer ? off : ip0;
-      var rem = (ht > 0 && ip > 0 && ip <= ht) ? Math.round((1 - ip / ht) * 1000) / 10 : 0;
-      buckets[cat].push({ cip: cip, designation: b.designation, prix_ht: ht, prix_ip: ip, offre: hasOffer, remise: rem,
+      // Prix : toujours via V2.bestPrice() (gère offre labo + barème d'abandon) — cette
+      // fonction recalculait son propre prix "à la main" sur b.prix_ht/prix_ip/offre_ip
+      // bruts, donc ratait toutes les corrections faites dans applyPPHT()/fusionsProtegees()
+      // (produits froid, princeps mal classés NR, biosimilaires, génériques sans prix —
+      // signalé par Will le 10/09/2026, ce moteur alimente Groupements + Listes + leurs PDF/Excel).
+      var e = byCip[cip], bp = V2.bestPrice(b);
+      buckets[cat].push({ cip: cip, designation: b.designation, prix_ht: bp.ht || 0, prix_ip: bp.ip || 0,
+                          offre: bp.offre, remise: bp.remise,
                           froid: !!b.is_froid, sortie: Object.keys(e.ph).length, qte: e.qte, manual: !!e.manual });
     });
     return {

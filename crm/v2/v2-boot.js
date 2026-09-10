@@ -677,25 +677,34 @@
       var natOk = !b.artnature || b.artnature === 'referent';
       var vraimentRemb = b.has_ameli === true && natOk &&
         (b.categorie === 'pp' || b.categorie === 'mi' || b.categorie === 'ch');
-      // NR : marge libre PLM -> on aligne le prix IP sur le PPHT et on neutralise
-      // l'offre labo (pas de tag OFFRE sur un NR). Remboursable : on garde le prix_ip réel.
-      if (NR[c] && !vraimentRemb) { if (!(b.prix_ip > 0 && b.prix_ip < pp)) b.prix_ip = pp; b.offre_ip = 0; }
-      // Princeps sans abandon dans les données (net = PPHT, ex prix_ht manquant à l'origine,
-      // OU prix_ip carrément absent — cas des produits froid/vaccins, ex Bexsero, Shingrix :
-      // `b.prix_ip > 0` valait false sur un champ absent, donc jamais corrigé → même piège
-      // que la branche NR ci-dessus, corrigé pareil avec la négation)
-      // → on applique le barème pour révéler le vrai net remisé. Les princeps déjà remisés
-      // (prix_ip < pp) et les offres Sanofi/UPSA (prix_ip plus bas) sont laissés intacts.
-      else if ((PR[c] || vraimentRemb) && !(b.prix_ip > 0 && b.prix_ip < pp)) {
-        b.prix_ip = Math.round((pp - abandonBareme(pp)) * 100) / 100;
-        fixedAband++;
-      }
-      // Biosimilaires (ex Yuflyma, Abasaglar, Remsima) : ni NR, ni princeps (famille à
-      // part dans PROD_STATS), donc sans prix_ip d'origine ils restaient à "—" nulle
-      // part — aucune vraie remise, mais aucun prix net non plus. Comme pour un NR, on
-      // aligne au minimum sur le PPHT (pas d'abandon inventé) : la fusion du fichier
-      // protégé, juste après, peut ensuite remplacer par un vrai net négocié si connu.
-      else if (BIOSIM[c] && !(b.prix_ip > 0 && b.prix_ip <= pp)) {
+      var estNR = NR[c] && !vraimentRemb;
+      // Princeps ET biosimilaires reçoivent le même barème (vérifié 10/09/2026 sur la
+      // base Biosimilaires interne, déjà correcte : Remsima 292,11€ → 280,75€, 3,9% —
+      // même taux que les princeps, pas un cas à part).
+      var estPrinceps = !estNR && (PR[c] || vraimentRemb || BIOSIM[c]);
+      var dejaUnPrixNet = b.prix_ip > 0 && b.prix_ip < pp;
+      if (estNR) {
+        // NR : marge libre PLM -> on aligne le prix IP sur le PPHT et on neutralise
+        // l'offre labo (pas de tag OFFRE sur un NR). Remboursable : on garde le prix_ip réel.
+        if (!dejaUnPrixNet) b.prix_ip = pp;
+        b.offre_ip = 0;
+      } else if (estPrinceps) {
+        // Princeps/biosim sans abandon dans les données (net = PPHT, ex prix_ht manquant
+        // à l'origine, OU prix_ip carrément absent — cas des produits froid/vaccins, ex
+        // Bexsero, Shingrix : `b.prix_ip > 0` valait false sur un champ absent, donc
+        // jamais corrigé) → on applique le barème pour révéler le vrai net remisé. Les
+        // princeps déjà remisés (prix_ip < pp) et les offres Sanofi/UPSA sont laissés intacts.
+        if (!dejaUnPrixNet) {
+          b.prix_ip = Math.round((pp - abandonBareme(pp)) * 100) / 100;
+          fixedAband++;
+        }
+      } else if (!(b.prix_ip > 0 && b.prix_ip <= pp)) {
+        // Génériques, génériques partenaires, et tout produit non classé (has_ameli
+        // manquant côté PROD_STATS, etc.) : ni abandon barème connu, ni marge libre NR
+        // — mais un PPHT est là. Sans ce filet, ces produits restaient à "—" nulle part
+        // dans l'app (ex Permixon, Clopidogrel ZEN, Deslo ZEN — signalé 10/09/2026).
+        // Aucun abandon inventé : on affiche au moins le tarif grossiste. La fusion du
+        // fichier protégé, juste après, peut ensuite remplacer par un vrai net négocié.
         b.prix_ip = pp;
       }
       // recalcule la remise (évite les % aberrants pré-calculés quand prix_ht était 0)
@@ -828,9 +837,12 @@
       // Rhinofluimucil, Mag 2 : même piège que la branche NR plus haut, figé ici
       // aussi) ne doit JAMAIS effacer un abandon qu'applyPPHT() avait déjà établi —
       // sinon on retombe exactement sur le bug signalé.
+      // Un prix net qui DÉPASSE le PPHT n'est jamais crédible (ex Doliprane 1,36€ pour
+      // un PPHT de 1,09€, Hylo Confort à +0,003€ du PPHT — arrondis ou données figées
+      // erronées) : on l'exclut d'office, même si le couple paraît "cohérent" avec lui.
       var ip = r[0], pct = r[1], ht = o.prix_ht;
       var attendu = (ht > 0 && ip > 0 && ip <= ht) ? Math.round((1 - ip / ht) * 1000) / 10 : 0;
-      var coherent = ht > 0 && ip > 0 && Math.abs(attendu - pct) <= 0.5;
+      var coherent = ht > 0 && ip > 0 && ip <= ht && Math.abs(attendu - pct) <= 0.5;
       var dejaAbandon = ht > 0 && o.prix_ip > 0 && o.prix_ip < ht;
       if (coherent && (ip < ht || !dejaAbandon)) {
         o.prix_ip = ip; o.remise_pct = pct;
