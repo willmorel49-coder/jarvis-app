@@ -308,6 +308,8 @@
 
   // ── Chargement lazy des gros fichiers data (.js globaux) ──
   var DATA_FILES = {
+    ppht: 'v2/ppht-data.js',            // 393 Ko — sorti d'index.html le 11/09/2026 (perf)
+    prodstats: 'v2/prod-stats-data.js', // 715 Ko — idem ; lu par 12 modules + applyPPHT
     bench: 'benchmark-data.js',
     establishments: 'establishments-aggregate.js',
     offilog: 'offilog-data.js',
@@ -676,6 +678,41 @@
   };
 
   var loaded = {}, pending = {};
+
+  // ── Modules différés (11/09/2026, perf) ───────────────────────────────
+  // index.html ne garde que le socle ; le reste (window.V2_MODULES, même ordre
+  // qu'avant) est posé ici en scripts `async = false` : téléchargés en
+  // parallèle, EXÉCUTÉS DANS L'ORDRE — exactement comme des balises <script>.
+  // Un fichier en échec ne bloque pas les suivants : il est noté dans modulesKO.
+  // Sans V2_MODULES (app OPSO), la promesse est déjà tenue : rien ne change.
+  V2.modulesKO = [];
+  V2.chargerScripts = function (urls) {
+    urls = urls || [];
+    if (!urls.length) return Promise.resolve();
+    var V = '?v=' + (window.V2_VER || '20260911j');
+    return Promise.all(urls.map(function (u) {
+      return new Promise(function (resolve) {
+        var s = document.createElement('script');
+        s.src = u + V; s.async = false;
+        s.onload = resolve;
+        s.onerror = function () { V2.modulesKO.push(u); console.warn('[V2] module manquant : ' + u); resolve(); };
+        document.head.appendChild(s);
+      });
+    }));
+  };
+  V2._modulesEnCours = false;
+  V2.modulesPrets = Promise.resolve();
+  V2.lancerModules = function () {
+    if (V2._modulesLances) return V2.modulesPrets;
+    V2._modulesLances = true;
+    if (!(window.V2_MODULES && window.V2_MODULES.length)) return V2.modulesPrets;
+    V2._modulesEnCours = true;
+    V2.modulesPrets = V2.chargerScripts(window.V2_MODULES).then(function () {
+      V2._modulesEnCours = false;
+      if (V2.invalidateCmdk) V2.invalidateCmdk();   // ⌘K construit son index à l'ouverture : il doit voir les pages
+    });
+    return V2.modulesPrets;
+  };
   // Corrige le prix NR au tarif officiel PPHT (window.PPHT) directement dans le
   // benchmark : impacte partout (groupements, fiches, catalogue, listes).
   // Abandon de marge Intégral sur un princeps = barème par tranche sur le PPHT :
@@ -759,6 +796,8 @@
   // une fois lu. Sert à distinguer « le navigateur a fini de télécharger » de
   // « les données sont là » — voir le commentaire de `s.onload`.
   var TEMOIN = {
+    ppht: 'PPHT',
+    prodstats: 'PROD_STATS',
     bench: 'BENCHMARK',
     establishments: 'ESTABLISHMENTS',
     offilog: 'OFFILOG',
@@ -1035,7 +1074,7 @@
     // de le servir, et le lecteur compacté ne trouverait pas ses dictionnaires.
     // Pas besoin de le suivre à chaque déploiement en revanche : quand `VER` de
     // sw.js change, l'activation du service worker efface tous les caches.
-    var V = '?v=20260911i';
+    var V = '?v=20260911j';
     V2.versionDonnees = V;   // lu par chargerScriptProtege (fiche carte)
     var promises = keys.map(function (k) {
       var src = (window.V2_DATA_BASE || '../') + DATA_FILES[k];

@@ -143,8 +143,19 @@
     V2.route = { name: name, param: param || null };
     V2.mesurer(name);   // 24/08/2026 — mesure d'usage, silencieuse et sans await
     try { location.hash = '#' + name + (param ? '/' + encodeURIComponent(param) : ''); } catch (e) {}
-    V2.render();
-    try { document.querySelector('.v2-wrap, .v2-content')?.scrollTo?.({ top: 0 }); window.scrollTo({ top: 0, behavior: 'instant' }); } catch (e) {}
+    // 11/09/2026 — perf : le clic est ACCUSÉ dans cette frame (classe v2-nav →
+    // curseur + filet de progression, voir v2.css), et le rendu lourd part à la
+    // frame suivante : le navigateur peint d'abord, l'écran se construit ensuite.
+    // Aucun appelant JS de V2.go ne lit le DOM rendu juste après (vérifié le 11/09).
+    try { document.documentElement.classList.add('v2-nav'); } catch (e) {}
+    var raf = window.requestAnimationFrame || function (f) { return setTimeout(f, 0); };
+    raf(function () { setTimeout(function () {
+      try { V2.render(); }
+      finally {
+        try { document.documentElement.classList.remove('v2-nav'); } catch (e) {}
+        try { document.querySelector('.v2-wrap, .v2-content')?.scrollTo?.({ top: 0 }); window.scrollTo({ top: 0, behavior: 'instant' }); } catch (e) {}
+      }
+    }, 0); });
   };
 
   // Retour = UN pas en arrière dans l'historique NATIF du navigateur (incassable,
@@ -453,6 +464,17 @@
       return;
     }
     if (V2.loadFiles && !V2.dataLoaded('wml')) { return; }   // chargement en cours
+    // 11/09/2026 — perf : les modules différés (index.html : V2_MODULES) ne sont
+    // peut-être pas tous exécutés : V2.pages serait incomplet (tuiles de l'accueil,
+    // ⌘K, lien profond #rdv → accueil). On attend la fin du manifeste, puis on rend.
+    if (V2._modulesEnCours) {
+      if (!V2._modulesAttente) {
+        V2._modulesAttente = true;
+        root.innerHTML = '<div class="v2-loading"><div class="v2-spinner"></div><div>Chargement…</div></div>';
+        V2.modulesPrets.then(function () { V2._modulesAttente = false; V2.render(); });
+      }
+      return;
+    }
     var page = V2.pages[V2.route.name];
     if (!page) { V2.route.name = 'home'; page = V2.pages.home; }
     if (!page) { root.innerHTML = '<div class="v2-loading"><div class="v2-spinner"></div><div>Chargement…</div></div>'; return; }
@@ -1058,14 +1080,24 @@
     } catch (err) {}
   };
 
+  // 11/09/2026 — perf : CA par officine calculé en UNE passe sur les ventes et
+  // mémorisé sur la référence de V2.sales. Avant : 690 × filter() sur ~600 000
+  // ventes à CHAQUE retour à l'accueil (≈ 1 s sur Mac, plusieurs sur iPhone).
+  var _caByPid = null, _caRef = null;
+  V2.caByPharma = function () {
+    if (_caByPid && _caRef === V2.sales) return _caByPid;
+    var m = {}, S = V2.sales || [];
+    for (var i = 0; i < S.length; i++) { var s = S[i]; m[s.pharmacyId] = (m[s.pharmacyId] || 0) + (s.mntNetHt || 0); }
+    _caByPid = m; _caRef = V2.sales; return m;
+  };
   V2.pages.home = {
     render: function (root) {
       injectHomeStyles();
       var phs = V2.pharmacies || [];
       // pharmacies récentes : par CA décroissant (proxy d'activité)
+      var caOf = V2.caByPharma();
       var withCa = phs.map(function (p) {
-        var ca = V2.sumCA(V2.sales.filter(function (s) { return s.pharmacyId === p.id; }));
-        return { p: p, ca: ca };
+        return { p: p, ca: caOf[p.id] || 0 };
       }).filter(function (x) { return x.ca > 0; }).sort(function (a, b) { return b.ca - a.ca; });
       var nbPharma = withCa.length;
       var caTotal = withCa.reduce(function (s, x) { return s + x.ca; }, 0);
@@ -1395,11 +1427,18 @@
     if (q.length >= 2 && window.PHARMA_FR && window.PHARMA_FR.p) {
       var shown = {}; out.forEach(function (x) { if (x.pid != null) shown[String(x.pid)] = 1; });
       var D = window.PHARMA_FR, P = D.p, nq = deaccLower(q), extra = [];
+      // 11/09/2026 — perf : noms/villes/titulaires normalisés UNE fois (et non
+      // 3 × 18 000 normalisations Unicode à chaque touche).
+      if (!D.__norm || D.__norm.length !== P.length) {
+        D.__norm = new Array(P.length);
+        for (var z = 0; z < P.length; z++) { var pz = P[z]; D.__norm[z] = [deaccLower(pz[6]), deaccLower(pz[7]), String(pz[8] || ''), deaccLower(pz[10])]; }
+      }
+      var NP = D.__norm;
       for (var k = 0; k < P.length && extra.length < 20; k++) {
-        var p = P[k], id = String(p[13] || '');
+        var p = P[k], id = String(p[13] || ''), np = NP[k];
         if (!id || shown[id]) continue;
-        if (deaccLower(p[6]).indexOf(nq) >= 0 || deaccLower(p[7]).indexOf(nq) >= 0 ||
-            String(p[8] || '').indexOf(q) >= 0 || deaccLower(p[10]).indexOf(nq) >= 0) {
+        if (np[0].indexOf(nq) >= 0 || np[1].indexOf(nq) >= 0 ||
+            np[2].indexOf(q) >= 0 || np[3].indexOf(nq) >= 0) {
           shown[id] = 1;
           extra.push({ grp: 'Officines (France entière)', label: (p[6] || p[10] || 'Pharmacie'), ico: 'pharma',
             meta: (p[7] || '') + (p[8] ? ' · ' + p[8] : ''), pid: id,
@@ -1545,7 +1584,11 @@
     bd.onclick = function () { V2.closeCmdk(); };
     document.body.appendChild(bd);
     var inp = bd.querySelector('#v2-cmdk-input');
-    inp.addEventListener('input', function () { cmdkSel = 0; cmdkResults = cmdkSearch(inp.value); renderCmdkResults(); });
+    var cmdkTimer = null;   // 11/09/2026 — perf : on cherche 80 ms après la dernière touche
+    inp.addEventListener('input', function () {
+      clearTimeout(cmdkTimer);
+      cmdkTimer = setTimeout(function () { cmdkSel = 0; cmdkResults = cmdkSearch(inp.value); renderCmdkResults(); }, 80);
+    });
     inp.addEventListener('keydown', function (e) {
       if (e.key === 'ArrowDown') { e.preventDefault(); cmdkSel = Math.min(cmdkSel + 1, cmdkResults.length - 1); renderCmdkResults(); scrollSel(); }
       else if (e.key === 'ArrowUp') { e.preventDefault(); cmdkSel = Math.max(cmdkSel - 1, 0); renderCmdkResults(); scrollSel(); }
@@ -1676,20 +1719,34 @@
     var root = $app();
     root.innerHTML = '<div class="v2-loading"><div class="v2-spinner"></div><div>Connexion…</div></div>';
     mountCmdk();
+    // 11/09/2026 — perf : les modules différés partent dès maintenant, pendant
+    // l'authentification (et pendant que l'utilisateur tape son mot de passe).
+    if (V2.lancerModules) V2.lancerModules();
     var logged = await V2.loadUserProfile();
     if (!logged) { V2.renderLogin(); return; }
     root.innerHTML = '<div class="v2-loading"><div class="v2-spinner"></div><div>Chargement de tes données…</div></div>';
+    var opso = !!(window.V2_BRAND && window.V2_BRAND.opso);
+    // PPHT et PROD_STATS ne sont plus des balises d'index.html (CRM) : ils doivent
+    // être en mémoire AVANT bench (applyPPHT, déclenché à l'arrivée de bench, en a
+    // besoin — sinon les nets princeps sont figés faux, sans erreur). OPSO les a
+    // encore en balises : on ne recharge que ce qui manque.
+    var prealables = [];
+    if (typeof window.PPHT === 'undefined') prealables.push('ppht');
+    if (typeof window.PROD_STATS === 'undefined') prealables.push('prodstats');
     // charge données Supabase + fichiers essentiels en parallèle
     await Promise.all([
       // OPSO : les achats par officine (protégés) doivent être en mémoire
       // AVANT que loadData ne fabrique les fiches — c'est lui qui les répartit.
-      (window.V2_BRAND && window.V2_BRAND.opso
-        ? V2.loadFiles(['opsostats']).then(function () { return V2.loadData(); })
-        : V2.loadData()),
+      // CRM : loadData() sans WML_OFFICINES ne faisait que 3 requêtes Supabase de
+      // repli (1 000 ventes tronquées) aussitôt écrasées par le vrai loadData()
+      // du premier rendu — retirées le 11/09/2026.
+      (opso ? V2.loadFiles(['opsostats']).then(function () { return V2.loadData(); }) : Promise.resolve()),
       // le léger d'abord (bench public + colonnes protégées, petites tables) ;
       // establishments (4,3 Mo protégé) part EN FOND après le premier rendu :
       // l'attendre bloquerait la première connexion le temps du téléchargement.
-      V2.loadFiles(['bench', 'sagitta', 'prodstatscond', 'pharmafrca', 'wmlca', 'biosimcomplet'])
+      (prealables.length ? V2.loadFiles(prealables) : Promise.resolve()).then(function () {
+        return V2.loadFiles(['bench', 'sagitta', 'prodstatscond', 'pharmafrca', 'wmlca', 'biosimcomplet']);
+      })
     ]);
     V2.loadFiles(['establishments']);
     V2.invalidateCmdk();

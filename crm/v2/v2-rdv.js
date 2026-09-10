@@ -1096,6 +1096,10 @@
           .gte('date', auj).lte('date', jourPlus(auj, 21))
           .order('date').order('debut')
       ]).then(function (r) {
+        // 11/09/2026 — perf : la navigation est devenue assez rapide pour que l'on
+        // ait déjà quitté cet écran quand les lectures reviennent. Dans ce cas on
+        // ne réécrit pas la page (sinon RDV recouvrait la Carte ouverte entre-temps).
+        if (!V2.route || V2.route.name !== 'rdv') return;
         var venir = (r[0] && r[0].data) || [];
         var parJour = {};
         venir.forEach(function (d) {

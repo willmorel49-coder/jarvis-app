@@ -243,9 +243,9 @@
     __moLastRoute = rt;
     var wrap = scope.querySelector('.v2-wrap') || scope;
     var cls = (window.__navDir === 'back') ? 'mo-view-back' : 'mo-view-in';
+    // 11/09/2026 — perf : l'écran vient d'être recréé par innerHTML, l'élément
+    // est neuf : pas besoin de forcer un reflow complet pour relancer l'animation.
     wrap.classList.remove('mo-view-in', 'mo-view-back');
-    // force reflow puis re-add pour relancer l'animation CSS
-    void wrap.offsetWidth;
     wrap.classList.add(cls);
   }
 
@@ -344,6 +344,15 @@
     }, true);
   }
 
+  // 11/09/2026 — perf : une seule passe par frame, que la demande vienne du
+  // wrapper de V2.render ou du MutationObserver (avant : deux passes par clic).
+  var __passScheduled = false;
+  function schedulePass() {
+    if (__passScheduled) return;
+    __passScheduled = true;
+    raf(function () { __passScheduled = false; pass(); });
+  }
+
   // ── Passe complète post-render ──────────────────────────────────────
   function pass() {
     try {
@@ -367,7 +376,7 @@
     var orig = V2.render;
     var wrapped = function () {
       var r = orig.apply(this, arguments);
-      raf(pass); // après que l'app ait écrit son innerHTML
+      schedulePass(); // après que l'app ait écrit son innerHTML
       return r;
     };
     wrapped.__moWrapped = true;
@@ -382,12 +391,7 @@
     if (!('MutationObserver' in window)) return;
     var root = document.getElementById('v2-root');
     if (!root) return;
-    var scheduled = false;
-    var mo = new MutationObserver(function () {
-      if (scheduled) return;
-      scheduled = true;
-      raf(function () { scheduled = false; pass(); });
-    });
+    var mo = new MutationObserver(function () { schedulePass(); });
     try { mo.observe(root, { childList: true }); } catch (e) {}
   }
 

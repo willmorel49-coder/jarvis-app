@@ -528,7 +528,12 @@
     V2.render();
   };
   V2.offToggleAdv = function () { S.adv = !S.adv; V2.render(); };
-  V2.offSearch = function (val) { S.q = val || ''; S.page = 0; rerenderKeepFocus(); };
+  var _offSearchTimer = null;   // 11/09/2026 — perf : re-rendu 120 ms après la dernière touche
+  V2.offSearch = function (val) {
+    S.q = val || ''; S.page = 0;
+    clearTimeout(_offSearchTimer);
+    _offSearchTimer = setTimeout(rerenderKeepFocus, 120);
+  };
   V2.offSort = function (v) { S.sort = v; S.page = 0; V2.render(); };
   V2.offPage = function (p) { S.page = p; V2.render(); try { window.scrollTo({ top: 0, behavior: 'instant' }); } catch (e) {} };
   V2.offSelect = function (id) {

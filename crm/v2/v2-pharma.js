@@ -138,11 +138,14 @@
   function periodLabel() {
     var MN = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
     var ms = {}, yr = null;
+    // 11/09/2026 — perf : mémorisé sur la référence de V2.sales (passe complète sinon)
+    if (periodLabel._ref === V2.sales && periodLabel._val != null) return periodLabel._val;
     (V2.sales || []).forEach(function (s) { if (s.month) { ms[s.month] = 1; if (s.year) yr = s.year; } });
     var ks = Object.keys(ms).map(Number).sort(function (a, b) { return a - b; });
-    if (!ks.length) return '';
+    periodLabel._ref = V2.sales;
+    if (!ks.length) return (periodLabel._val = '');
     var span = MN[ks[0] - 1] + '–' + MN[ks[ks.length - 1] - 1] + (yr ? ' ' + yr : '');
-    return 'cumul ' + ks.length + ' mois · ' + span;
+    return (periodLabel._val = 'cumul ' + ks.length + ' mois · ' + span);
   }
 
   // ── Classement d'un produit benchmark dans une des 8 catégories ──
@@ -196,6 +199,30 @@
     }
     _marketCache = out;
     return out;
+  }
+
+  // 11/09/2026 — perf : compteur d'opportunités SANS reconstruire les 8 seaux
+  // pour chacune des 690 officines. Même définition que buildOpportunities :
+  // CIP du marché présents au catalogue IP et classés, que l'officine ne
+  // commande pas. La part indépendante de l'officine est calculée une fois.
+  var _mkClassified = null;
+  function marketClassified() {
+    if (_mkClassified) return _mkClassified;
+    var bIdx = benchIndex(), out = new Set();
+    mergeMarket().forEach(function (m, cip) {
+      var b = bIdx.get(cip); if (!b) return;
+      var cat = classify(b, cip);
+      if (cat && CATS.some(function (c) { return c.key === cat; })) out.add(cip);
+    });
+    return (_mkClassified = out);
+  }
+  function oppCount(pid) {
+    var mk = marketClassified(), sales = pharmaSales(pid), seen = new Set(), n = mk.size;
+    for (var i = 0; i < sales.length; i++) {
+      var c = String(sales[i].artCode || '');
+      if (c.length >= 7 && mk.has(c) && !seen.has(c)) { seen.add(c); n--; }
+    }
+    return n;
   }
 
   // ── Construit les opportunités par catégorie pour une pharma ────
@@ -594,9 +621,7 @@
     var phs = (V2.pharmacies || []).map(function (p) {
       var sales = pharmaSales(p.id);
       var x = { p: p, ca: V2.sumCA(sales), marge: margeMDLpharma(sales), opp: null };
-      if (marketReady) {
-        x.opp = buildOpportunities(p.id).reduce(function (s, o) { return s + o.oppCount; }, 0);
-      }
+      if (marketReady) x.opp = oppCount(p.id);
       return x;
     });
 
@@ -622,7 +647,7 @@
     // rafraîchit la liste pour afficher le compteur d'opportunités par officine.
     if (!marketReady) {
       V2.loadFiles(['establishments']).then(function () {
-        _marketCache = null;
+        _marketCache = null; _mkClassified = null;
         if (V2.route && V2.route.name === 'pharma' && !V2.route.param) V2.render();
       });
     }
@@ -1344,7 +1369,7 @@
     if (!window.OPS_AGGREGATE || !window.BENCHMARK) {
       root.innerHTML = V2.topbar({ back: true, backTo: 'pharma', backLabel: 'Officines' }) +
         '<div class="v2-loading"><div class="v2-spinner"></div><div>Chargement du marché sectoriel…</div></div>';
-      V2.loadFiles(['establishments', 'bench']).then(function () { _marketCache = null; V2.render(); });
+      V2.loadFiles(['establishments', 'bench']).then(function () { _marketCache = null; _mkClassified = null; V2.render(); });
       return;
     }
 
