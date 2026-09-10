@@ -1,0 +1,457 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Proposition 4 · Le comptoir — Ressources concurrents</title>
+<!--
+   ═══════════════════════════════════════════════════════════════
+   PROPOSITION 4 · « Le comptoir »
+   Pensé téléphone d'abord, pour la visite en officine.
+   Une recherche géante → UN produit = tous les prix, du moins cher au
+   plus cher, notre position surlignée → un geste « retourner vers le
+   pharmacien » : plein écran, propre, le produit et notre prix, rien d'autre.
+   Sur ordinateur : deux colonnes (recherche + résultats | la carte).
+   Autonome : aucune ressource externe. Motion : transform + opacity seulement.
+   Peau Verrière : la lumière tombe d'en haut ; cartes éclairées, pas détourées.
+   ═══════════════════════════════════════════════════════════════
+-->
+<style>
+:root{
+  --ip-blue:#0050E6;--ip-blue-d:#0034A0;--ink:#10131C;--ink-2:#2A2F3C;--titre:#0B1F4D;
+  --muted:#5F6678;--muted-2:#8A91A4;
+  --paper:#FBFCFE;--card:#FFFFFF;--card-2:#F7F9FC;--sunken:#F4F6FB;--halo:#E9F0FF;
+  --line:rgba(16,19,28,.07);--line-2:rgba(16,19,28,.04);--line-s:rgba(11,31,77,.10);
+  --ok:#10915E;--bad:#C8385A;--eq:#6B7280;
+  --r-card:20px;--r-btn:12px;--r-ctl:10px;
+  --sh-1:0 1px 1px rgba(11,31,77,.05),0 4px 10px -6px rgba(11,31,77,.16),0 1px 0 rgba(255,255,255,.9) inset;
+  --sh-2:0 1px 1px rgba(11,31,77,.05),0 10px 24px -14px rgba(11,31,77,.22),0 1px 0 rgba(255,255,255,.95) inset;
+  --sh-3:0 2px 3px rgba(11,31,77,.06),0 18px 34px -18px rgba(11,31,77,.26),0 1px 0 rgba(255,255,255,1) inset;
+  --sh-blue:0 4px 12px rgba(0,80,230,.26),0 8px 24px rgba(0,52,160,.14),0 1px 0 rgba(255,255,255,.22) inset;
+  --ease:cubic-bezier(.32,.72,0,1);--ease-soft:cubic-bezier(.33,.02,0,.98);
+  --font:system-ui,-apple-system,'Helvetica Neue',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;-webkit-text-size-adjust:100%}
+body{font-family:var(--font);color:var(--ink);background:var(--paper);min-height:100vh;font-variant-numeric:tabular-nums;overflow-x:clip}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+input{font:inherit;color:inherit}
+.num{font-variant-numeric:tabular-nums}
+b{font-weight:700}
+
+/* ── la verrière : la lumière tombe d'en haut ────────────────── */
+.halo{position:fixed;left:0;right:0;top:0;height:520px;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(58% 78% at 50% -14%,#FFFFFF 0%,rgba(255,255,255,0) 64%),
+    radial-gradient(64% 96% at 2% -12%,#CFDFFC 0%,rgba(207,223,252,0) 66%),
+    radial-gradient(64% 96% at 99% -8%,#DCE7FC 0%,rgba(220,231,252,0) 68%),
+    linear-gradient(#E4EDFC 0%,rgba(251,252,254,0) 92%)}
+.grain{position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.5;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.06 0 0 0 0 0.08 0 0 0 0 0.13 0 0 0 .025 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+
+/* ── bandeau de proposition ─────────────────────────────────── */
+.bandeau{position:relative;z-index:2;display:flex;flex-wrap:wrap;gap:4px 14px;align-items:baseline;
+  padding:10px 16px;font-size:13px;color:var(--muted);border-bottom:1px solid var(--line-s);
+  background:linear-gradient(rgba(255,255,255,.92),rgba(255,255,255,.74))}
+.bandeau b{color:var(--titre);font-weight:800;letter-spacing:-.01em}
+.bandeau .risk{color:var(--ink-2)}
+.bandeau .demo{color:var(--muted-2)}
+
+/* ── mise en page ───────────────────────────────────────────── */
+.app{position:relative;z-index:1;max-width:1240px;margin:0 auto;padding:0 20px 40px;display:grid;grid-template-columns:440px minmax(0,1fr);gap:28px;align-items:start}
+.gauche{position:sticky;top:0;padding-top:22px;display:flex;flex-direction:column;gap:18px;max-height:100vh;overflow:auto;padding-bottom:20px}
+.droite{padding-top:22px;min-width:0}
+
+/* tête */
+.titre h1{font-size:30px;font-weight:800;letter-spacing:-.03em;color:var(--titre);line-height:1.05}
+.titre p{font-size:14px;color:var(--muted);margin-top:6px;line-height:1.45}
+
+/* recherche géante */
+.chercher{position:relative}
+.chercher input{width:100%;min-height:64px;padding:0 60px 0 56px;font-size:20px;font-weight:600;letter-spacing:-.01em;
+  background:var(--card);border:1px solid var(--line-s);border-radius:18px;box-shadow:var(--sh-2);outline:0;
+  transition:box-shadow .3s var(--ease-soft),border-color .3s var(--ease-soft)}
+.chercher input::placeholder{color:var(--muted-2);font-weight:500}
+.chercher input:focus{border-color:rgba(0,80,230,.35);box-shadow:var(--sh-2),0 0 0 4px rgba(0,80,230,.12)}
+.chercher .ico{position:absolute;left:20px;top:50%;transform:translateY(-50%);width:22px;height:22px;color:var(--ip-blue);pointer-events:none}
+.chercher .mic{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:48px;height:48px;border-radius:14px;display:grid;place-items:center;color:var(--muted)}
+.chercher .mic svg{width:22px;height:22px}
+.chercher .mic:active{transform:translateY(-50%) scale(.94)}
+.chercher .vider{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:48px;height:48px;border-radius:14px;display:none;place-items:center;color:var(--muted);font-size:14px;font-weight:700}
+.chercher.plein .mic{display:none}.chercher.plein .vider{display:grid}
+
+/* ce que le comptoir compare */
+.sources{display:flex;gap:6px;flex-wrap:wrap}
+.sources span{font-size:13px;font-weight:600;color:var(--ink-2);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:6px 10px;box-shadow:var(--sh-1);white-space:nowrap}
+.sources span b{color:var(--titre);font-weight:800}
+.sources span i{font-style:normal;color:var(--muted-2);font-weight:500}
+.legende{font-size:13px;color:var(--muted);line-height:1.45}
+
+/* liste de résultats */
+.liste{display:flex;flex-direction:column;gap:8px}
+.liste h2{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:6px 0 2px}
+.liste h2 span{color:var(--titre)}
+.res{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 14px;align-items:center;text-align:left;width:100%;
+  background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;min-height:64px;box-shadow:var(--sh-1);
+  transition:transform .3s var(--ease),box-shadow .3s var(--ease),border-color .3s var(--ease-soft)}
+.res:hover{transform:translateY(-2px);box-shadow:var(--sh-2);border-color:rgba(0,80,230,.22)}
+.res:active{transform:translateY(0) scale(.99)}
+.res.on{border-color:rgba(0,80,230,.35);box-shadow:var(--sh-2),0 0 0 3px rgba(0,80,230,.10)}
+.res .nom{font-size:15px;font-weight:700;color:var(--ink);letter-spacing:-.01em;line-height:1.25;grid-column:1;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.res .meta{font-size:13px;color:var(--muted);grid-column:1;display:flex;gap:8px;flex-wrap:wrap}
+.res .prix{grid-column:2;grid-row:1;font-size:18px;font-weight:800;color:var(--titre);letter-spacing:-.02em;white-space:nowrap}
+.res .pos{grid-column:2;grid-row:2;font-size:13px;font-weight:700;white-space:nowrap;text-align:right}
+.pos.ok{color:var(--ok)}.pos.bad{color:var(--bad)}.pos.eq{color:var(--eq)}
+.vide{padding:22px 16px;color:var(--muted);font-size:14px;line-height:1.5;background:var(--sunken);border-radius:14px}
+
+/* ── la carte produit ───────────────────────────────────────── */
+.carte{background:var(--card);border:1px solid var(--line-s);border-radius:var(--r-card);box-shadow:var(--sh-3);overflow:hidden;
+  transform-origin:50% 0;animation:arrive .42s var(--ease) both}
+@keyframes arrive{from{opacity:0;transform:translateY(14px) scale(.985)}to{opacity:1;transform:none}}
+.carte .ct{padding:24px 26px 20px;background:linear-gradient(#FFFFFF,#F7F9FC)}
+.carte .sur{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:13px;color:var(--muted);margin-bottom:10px}
+.carte .sur .tag{display:inline-block;font-weight:700;color:var(--ip-blue);background:var(--halo);border-radius:999px;padding:4px 10px}
+.carte h2{font-size:26px;font-weight:800;letter-spacing:-.03em;color:var(--titre);line-height:1.1}
+.carte .labo{font-size:14px;color:var(--muted);margin-top:6px}
+.chiffres{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:18px}
+.chiffres div{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;box-shadow:var(--sh-1);min-width:0}
+.chiffres small{display:block;font-size:13px;color:var(--muted);font-weight:600}
+.chiffres b{display:block;font-size:22px;font-weight:800;letter-spacing:-.03em;color:var(--titre);margin-top:2px;white-space:nowrap}
+.chiffres b.ok{color:var(--ok)}.chiffres b.bad{color:var(--bad)}.chiffres b.eq{color:var(--eq)}
+.chiffres i{display:block;font-style:normal;font-size:13px;color:var(--muted-2);margin-top:2px}
+
+/* classement des prix */
+.classement{padding:8px 14px 10px;border-top:1px solid var(--line)}
+.classement h3{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:12px 12px 8px}
+.rang{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:2px 12px;align-items:center;padding:12px 12px;border-radius:14px;min-height:56px;
+  position:relative}
+.rang + .rang{margin-top:2px}
+.rang .n{font-size:15px;font-weight:800;color:var(--muted-2);letter-spacing:-.02em;grid-row:span 2;width:34px;height:34px;border-radius:999px;display:grid;place-items:center;background:var(--sunken)}
+.rang .qui{font-size:15px;font-weight:700;color:var(--ink)}
+.rang .cond{font-size:13px;color:var(--muted);grid-column:2}
+.rang .val{grid-column:3;grid-row:1;font-size:19px;font-weight:800;letter-spacing:-.02em;color:var(--ink);text-align:right;white-space:nowrap}
+.rang .ecart{grid-column:3;grid-row:2;font-size:13px;font-weight:600;text-align:right;color:var(--muted)}
+.rang.nous{background:linear-gradient(90deg,#E9F0FF,#F2F6FF);box-shadow:0 1px 0 rgba(255,255,255,.9) inset,0 6px 16px -10px rgba(0,80,230,.45);border:1px solid rgba(0,80,230,.22)}
+.rang.nous .n{background:var(--ip-blue);color:#fff;box-shadow:var(--sh-blue)}
+.rang.nous .qui,.rang.nous .val{color:var(--ip-blue-d)}
+.rang.nous .ecart.ok{color:var(--ok)}.rang.nous .ecart.bad{color:var(--bad)}.rang.nous .ecart.eq{color:var(--eq)}
+.rang .pt{display:inline-block;width:8px;height:8px;border-radius:999px;margin-right:6px;vertical-align:1px}
+.pt.ok{background:var(--ok)}.pt.bad{background:var(--bad)}.pt.eq{background:var(--eq)}
+
+/* prix public, hors classement */
+.public{padding:6px 26px 18px;border-top:1px solid var(--line)}
+.public h3{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:12px 0 8px}
+.public .ligne{display:flex;justify-content:space-between;gap:12px;align-items:baseline;padding:8px 0;border-top:1px solid var(--line-2);font-size:14px}
+.public .ligne:first-of-type{border-top:0}
+.public .ligne b{font-size:16px;font-weight:800;letter-spacing:-.02em;white-space:nowrap}
+.public .ligne span{color:var(--ink-2)}
+.public .ligne small{display:block;font-size:13px;color:var(--muted-2)}
+.public a{color:var(--ip-blue);text-decoration:none;font-weight:600;display:inline-block;padding:14px 4px;margin:-14px -4px}
+
+/* geste */
+.geste{padding:16px 26px 24px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;border-top:1px solid var(--line);background:linear-gradient(#FFFFFF,#F7F9FC)}
+.btn{display:inline-flex;align-items:center;gap:10px;min-height:52px;padding:0 20px;border-radius:var(--r-btn);font-size:16px;font-weight:700;
+  transition:transform .25s var(--ease),box-shadow .25s var(--ease)}
+.btn svg{width:20px;height:20px}
+.btn.prim{background:linear-gradient(#1A62F0,var(--ip-blue));color:#fff;box-shadow:var(--sh-blue);flex:1;justify-content:center}
+.btn.prim:hover{transform:translateY(-2px)}
+.btn.prim:active{transform:translateY(0) scale(.98)}
+.btn.sec{background:var(--card);border:1px solid var(--line-s);box-shadow:var(--sh-1);color:var(--ink-2)}
+.geste p{width:100%;font-size:13px;color:var(--muted);line-height:1.45}
+
+/* ── plein écran vers le pharmacien ─────────────────────────── */
+.face{position:fixed;inset:0;z-index:50;background:var(--paper);display:flex;flex-direction:column;
+  opacity:0;transform:translateY(24px) scale(.98);pointer-events:none;transition:opacity .38s var(--ease),transform .42s var(--ease)}
+.face.on{opacity:1;transform:none;pointer-events:auto}
+.face .lum{position:absolute;left:0;right:0;top:0;height:60%;pointer-events:none;
+  background:radial-gradient(70% 90% at 50% -20%,#FFFFFF 0%,rgba(255,255,255,0) 60%),linear-gradient(#DCE7FC 0%,rgba(251,252,254,0) 100%)}
+.face .haut{position:relative;display:flex;justify-content:space-between;align-items:center;padding:14px 16px;gap:10px}
+.face .haut .btn{min-height:48px}
+.face .corps{position:relative;flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 28px 40px;gap:12px;width:100%;max-width:880px;margin:0 auto;
+  transition:transform .55s var(--ease)}
+.face.tourne .corps{transform:rotate(180deg)}
+.face .qui{font-size:14px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ip-blue)}
+.face h2{font-size:clamp(28px,5vw,54px);font-weight:800;letter-spacing:-.035em;line-height:1.02;color:var(--titre);max-width:16ch}
+.face .lab{font-size:clamp(15px,1.6vw,20px);color:var(--muted)}
+.face .prix{margin-top:18px;background:var(--card);border:1px solid var(--line-s);border-radius:28px;box-shadow:var(--sh-3);padding:26px 30px;max-width:640px}
+.face .prix small{display:block;font-size:15px;font-weight:700;color:var(--muted);letter-spacing:.02em}
+.face .prix b{display:block;font-size:clamp(64px,11vw,120px);font-weight:800;letter-spacing:-.05em;line-height:1;color:var(--ip-blue-d);margin-top:4px;white-space:nowrap}
+.face .prix b sup{font-size:.36em;vertical-align:.9em;letter-spacing:-.02em;margin-left:.08em}
+.face .bas{display:flex;gap:24px;flex-wrap:wrap;margin-top:18px}
+.face .bas div small{display:block;font-size:14px;color:var(--muted);font-weight:600}
+.face .bas div b{display:block;font-size:clamp(22px,3vw,34px);font-weight:800;letter-spacing:-.03em;color:var(--titre);margin-top:2px}
+.face .pied{position:relative;padding:0 28px 22px;font-size:13px;color:var(--muted-2)}
+
+/* ── mobile ─────────────────────────────────────────────────── */
+.retour{display:none}
+@media (max-width:900px){
+  .bandeau{padding:8px 14px;font-size:13px}
+  .app{display:block;padding:0 14px 40px;z-index:auto}
+  .gauche{position:static;max-height:none;overflow:visible;padding-top:16px}
+  .titre h1{font-size:26px}
+  .chercher input{min-height:60px;font-size:19px}
+  .droite{position:fixed;inset:0;z-index:20;background:var(--paper);overflow:auto;padding:0 14px 40px;
+    transform:translateX(100%);transition:transform .38s var(--ease);will-change:transform}
+  .droite.on{transform:none}
+  .retour{display:inline-flex;align-items:center;gap:8px;min-height:48px;padding:0 14px 0 8px;margin:12px 0 10px -6px;font-size:15px;font-weight:700;color:var(--ip-blue);border-radius:12px}
+  .retour svg{width:22px;height:22px}
+  .carte .ct{padding:18px 18px 16px}
+  .carte h2{font-size:23px}
+  .chiffres{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+  .chiffres div{padding:10px 10px}
+  .chiffres b{font-size:19px}
+  .classement{padding:6px 8px 8px}
+  .rang{padding:10px 8px;gap:2px 10px}
+  .public{padding:4px 18px 14px}
+  .geste{padding:14px 18px 20px}
+  .face .corps{padding:0 22px 30px}
+  .face .prix{padding:20px 22px;border-radius:24px}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none !important;transition:none !important}
+}
+</style>
+</head>
+<body>
+<div class="halo"></div><div class="grain"></div>
+
+<div class="bandeau">
+  <b>Proposition 4 · Le comptoir</b>
+  <span>Pensé téléphone d'abord, pour la visite en officine : une recherche, un produit, tous les prix du moins cher au plus cher, et un geste pour le montrer au pharmacien.</span>
+  <span class="risk">Risque : moins adapté au tri de masse, on regarde un produit à la fois.</span>
+  <span class="demo">Prix Intégral et bilans : chiffres de démonstration.</span>
+</div>
+
+<div class="app">
+  <section class="gauche">
+    <div class="titre">
+      <h1>Le comptoir</h1>
+      <p>Un nom, un code EAN — et le prix de chacun, à côté du nôtre.</p>
+    </div>
+    <div class="chercher" id="chercher">
+      <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <input id="q" type="search" inputmode="search" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="Produit, labo ou EAN" aria-label="Rechercher un produit">
+      <button class="mic" type="button" aria-label="Dicter le nom du produit" title="Dicter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+      <button class="vider" type="button" id="vider" aria-label="Effacer la recherche">Effacer</button>
+    </div>
+    <div class="sources" id="sources"></div>
+    <p class="legende" id="legende"></p>
+    <div class="liste" id="liste"></div>
+  </section>
+
+  <section class="droite" id="droite">
+    <button class="retour" type="button" id="retour"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>Retour à la recherche</button>
+    <div id="carte"></div>
+  </section>
+</div>
+
+<div class="face" id="face" role="dialog" aria-modal="true" aria-label="Prix Intégral, face au pharmacien">
+  <div class="lum"></div>
+  <div class="haut">
+    <button class="btn sec" type="button" id="fermer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>Fermer</button>
+    <button class="btn sec" type="button" id="tourner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3"/><path d="M18 3v4h-4M6 21v-4h4"/></svg>Retourner l'écran</button>
+  </div>
+  <div class="corps" id="corps"></div>
+  <div class="pied">Intégral Pharma · groupe de grossistes-répartiteurs · prix net HT, hors TVA</div>
+</div>
+
+<script>
+/* ═══ DONNÉES RÉELLES (DONNEES.json) ═══════════════════════════════
+   Farmaline : prix publics belges (TTC / HT), EAN connus de JARVIS.
+   PPHT publics : prix publics des mêmes produits chez nous.
+   Cooper Préparatoire : prix unitaire HT publié (tarif 2023).
+   Sagitta, OCP, Pharmazon et NOTRE NET : chiffres de démonstration
+   (générateur déterministe), jamais un prix net réel de tiers. */
+var FARMALINE=[
+["3614790000835","Cinq Sur Cinq Lot de 2 Spray Tropic Anti-Moustiques","BAUSCH ET LOMB FRANCE","2x75 ml","Insectes",14.99,12.39,"https://www.farmaline.be/fr/hygiene-et-bien-etre/F00393192/cinq-sur-cinq-lot-de-2-spray-tropic-anti-moustiques.htm"],
+["3401076312122","ialuset Compresses à base d'acide hyaluronique","IBSA PHARMA SAS","10 pc(s)","Compresses",25.89,21.4,"https://www.farmaline.be/fr/soins-a-domicile/F00127193/ialuset-compresses-a-base-d-acide-hyaluronique.htm"],
+["3337875797719","La Roche-Posay Anthelios UVmune 400 Crème Hydratante Sans Parfum SPF50+","La Roche-Posay","50 ml","Visage",15.29,12.64,"https://www.farmaline.be/fr/beaute/BE04378931/la-roche-posay-anthelios-uvmune-400-hydraterende-creme-zonder-parfum-spf50.htm"],
+["8032472012115","COLILEN IBS - 96 gélules","ABOCA SPA","96 pc(s)","Digestion",32.99,27.26,"https://www.farmaline.be/fr/soins-a-domicile/F00065829/colilen-ibs-96-gelules.htm"],
+["3700225600203","PEDIAKID Appétit","Laboratoires Ineldea","125 ml","Complexes de vitamines & minéraux",16.69,16.69,"https://www.farmaline.be/fr/bebe/15743669/pediakid-appetit-sirup.htm"],
+["3700225602320","Pediakid Immunité Gommes","Laboratoires Ineldea","60 pc(s)","Système immunitaire",10.59,9.99,"https://www.farmaline.be/fr/Complements/BE03493798/pediakid-immuniteit-gummies.htm"],
+["3401044442547","HYALUGEL GEL 20 ML","COOPER CONSUMER HEALTH","20 ml","Aphtes",8.49,7.02,"https://www.farmaline.be/fr/beaute/F00000330/hyalugel-gel-20-ml.htm"],
+["4015630057009","Accu-Chek Fastclix Lancettes","Roche Diabetes Care","204 pc(s)","Aiguilles et seringues",14.39,13.58,"https://www.farmaline.be/fr/hygiene-et-bien-etre/BE02676815/accu-chek-fastclix-lancettes.htm"],
+["3700225600227","Pediakid Nervosité Solution","Laboratoires Ineldea","125 ml","Repos & Sommeil",12.39,11.69,"https://www.farmaline.be/fr/Complements/BE02990224/pediakid-nervositeit-oplossing.htm"],
+["3700225600258","Pediakid 22 vitamines & Oligo Éléments","Laboratoires Ineldea","125 ml","Enfants",12.39,11.69,"https://www.farmaline.be/fr/Complements/BE02989952/pediakid-22-vitaminen-olijf-elementen.htm"],
+["3760054331013","HYLOVIS LIPO","TRB Chemedica AG","30x0,4 ml","Soin oculaire",13.29,10.98,"https://www.farmaline.be/fr/medicaments/15815469/hylovis-lipo.htm"],
+["3700225602306","Pediakid Gaz Baby","Laboratoires Ineldea","12 pc(s)","Estomac & Intestins",12.69,11.97,"https://www.farmaline.be/fr/Complements/BE03587326/pediakid-gaz-baby.htm"],
+["3401096077551","Ilast Hydraclean","HORUS PHARMA","50 ml","Soin oculaire",16.29,15.37,"https://www.farmaline.be/fr/beaute/BE03322948/ilast-hydraclean-spray.htm"],
+["3401041088526","Mystar Sylkfeel 33g Cartouche","OPELLA HEALTHCARE","100 pc(s)","Glycémie",6.79,6.41,"https://www.farmaline.be/fr/hygiene-et-bien-etre/BE03049632/mystar-sylkfeel-33g-lancet.htm"],
+["8032472028406","GRINTUSS Sirop pour la toux adulte","ABOCA SPA","180 g","Adultes",12.29,10.16,"https://www.farmaline.be/fr/soins-a-domicile/F00537894/grintuss-sirop-pour-la-toux-adulte.htm"],
+["3401076312351","Ialuset Crème","IBSA PHARMA SAS","100 g","Traitement & soin des plaies",9.59,7.93,"https://www.farmaline.be/fr/soins-a-domicile/F00127190/ialuset-creme.htm"],
+["3614790000859","BLOXANG Eponge Hémostatique","BAUSCH ET LOMB FRANCE","1 pc(s)","Traitement & soin des plaies",7.89,6.52,"https://www.farmaline.be/fr/soins-a-domicile/F00416339/bloxang-eponge-hemostatique.htm"],
+["5055158008441","Tubifast Vert 5 cm x 1 m 2481","Mölnlycke Health Care AB","1 pc(s)","Bandages et accessoires",4.99,4.71,"https://www.farmaline.be/fr/hygiene-et-bien-etre/BE02380293/tubifast-groen-5cmx1m-2481.htm"]
+];
+var PPHT={"3614790000835":["CINQ/CINQ TROPIC SPR 75ML X2",9.94],"3401076312122":["IALUSET COMP IMPREG BT 10 T",15.84],"3337875797719":["ANTHELIOS 50+UV CR S/PARF 50ML",11.33],"8032472012115":["COLILEN IBS GELU BT 96",16.12],"3700225600203":["PEDIAKID APPETIT TONU SIR125ML",7.11],"3700225602320":["PEDIAKID GOM IMMUNI OURSO BT60",7.11],"3401044442547":["HYALUGEL GEL BUC T 20ML",8.28],"4015630057009":["ACCU CHEK FAST CLIX LANCETTES BTE 204",11.23],"3700225600227":["PEDIAKID NERVOSITE SIR125ML",7.11],"3700225600258":["PEDIAKID 22VIT OLIGOE SIR125ML",7.11],"3760054331013":["HYLOVIS LIPO EMUL OCUL UNI30 T",8.41],"3700225602306":["PEDIAKID BB GAZ STICK BT 12",7.11],"3401096077551":["ILAST HYDRA GEL NETT PAUP 50ML",9.96],"3401041088526":["MYSTAR SYLKFEEL LANCE33G 100 T",5.91],"8032472028406":["GRINTUSS SIR AD TOUX FL180G",6.7],"3401076312351":["IALUSET CR TRAIT ULCERE 100G T",5.87],"3614790000859":["BLOXANG EPONG HEMOS STER BT 4",7.99],"5055158008441":["TUBIFAST 2WAY BDG TUB 1MX 5CM",1.16]};
+var COOPER=[
+["3401574257543","EUGENOL","Chimiques & excipients","250 ML","Substance active",60.42],
+["3401574266019","GELULES N° 0 - VOL. EN ML : 0,68","Gélules végétales","L 1000","",27.02],
+["3401574222534","CALCIUM HYDROXYDE","Chimiques & excipients","1K","Excipient",30.85],
+["3401566628191","ICHTHYOLAMMONIUM tube 100 G","Chimiques & excipients","","Substance active",17.43],
+["3401562895795","SODIUM BICARBONATE","Chimiques & excipients","1K","Substance active",7.57],
+["3401566623578","ACIDE RETINOÏQUE","Chimiques & excipients","0,50 G","Substance active · CMR",20.12],
+["3401574202314","ALUMINIUM OXYDE HYDRATE","Chimiques & excipients","250 G","Excipient",42.24],
+["3401547709017","CITRON JAUNE - citrus limonum","Huiles Essentielles HECT","250 ML","Excipient",41.66],
+["3401560647686","PARAFFINE EPAISSE","Chimiques & excipients","1L","Substance active",9.96],
+["3401574205384","ARGENT NITRATE crist.","Chimiques & excipients","25 G","Substance active",62.6],
+["3401366627424","GLYCEROLE D'AMIDON tube 50 G","Chimiques & excipients","1K","Excipient",31.8],
+["3401574301987","POTASSIUM BICARBONATE","Chimiques & excipients","1K","Excipient",33.1],
+["3401546775679","ACIDE SORBIQUE","Chimiques & excipients","1K","Excipient",85.29],
+["3401546670431","GELULES N° 2 - VOL. EN ML : 0,37","Gélules bleu/blanc","L 1000","",22.99],
+["3401574287878","L - METHIONINE","Chimiques & excipients","1K","Substance active",216.19],
+["3401547605357","L - CITRULLINE","Chimiques & excipients","250 G","Alimentaire",115.04],
+["3614819998761","ACIDE LACTIQUE S","Chimiques & excipients","1L","Excipient",31.89],
+["3401574203373","AMMONIUM CARBONATE pulv.","Chimiques & excipients","1K","Alimentaire",37.94]
+];
+var SOURCES=[
+ {cle:'sagitta',nom:'Sagitta',refs:15496,maj:'04/06/2026'},
+ {cle:'ocp',nom:'OCP · Les Incontournables',refs:638,maj:'09/2026'},
+ {cle:'pharmazon',nom:'Pharmazon',refs:4617,maj:'14/05/2026'},
+ {cle:'cooper',nom:'Cooper · Préparatoire',refs:964,maj:'01/01/2023'},
+ {cle:'farmaline',nom:'Farmaline',refs:7046,maj:'10/09/2026'},
+ {cle:'mc',nom:'OCP · Marque Conseil',refs:115,maj:'02/2026'},
+ {cle:'etudes',nom:'Études',refs:827,maj:'04/09/2026'}
+];
+
+/* ═══ GÉNÉRATEUR DÉTERMINISTE (démonstration) ═══ */
+function h(s,k){var x=2166136261;s=s+'|'+k;for(var i=0;i<s.length;i++){x^=s.charCodeAt(i);x=Math.imul(x,16777619)>>>0}return (x%10000)/10000}
+function r2(v){return Math.round(v*100)/100}
+function eur(v){return v.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' €'}
+function pct(v){return Math.round(v*100)+' %'}
+function nb(v){return v.toLocaleString('fr-FR')}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+
+var PRODUITS=[];
+FARMALINE.forEach(function(r){
+  var ean=r[0],pp=PPHT[ean],ppht=pp?pp[1]:null;
+  /* produits NR = prix libre : aucun taux d'abandon de marge affiché (règle métier), seulement un net (démo) */
+  var ab=null;
+  var net=ppht?r2(ppht*(1-(.14+h(ean,'ab')*.26))):null;
+  var conc=[];
+  var abS=r2(.10+h(ean,'sag')*.30);        /* Sagitta (démo) */
+  conc.push({src:'Sagitta',net:r2(ppht*(1-abS)),cond:'Grossiste · abandon de marge '+pct(abS)});
+  if(h(ean,'ocp?')<.55){var abO=r2(.18+h(ean,'ocp')*.24);conc.push({src:'OCP · Les Incontournables',net:r2(ppht*(1-abO)),cond:'Promo sept-déc · par '+(3+Math.floor(h(ean,'q')*4)*3)+' unités · '+pct(abO)})}
+  if(h(ean,'pz?')<.7){var abP=r2(.12+h(ean,'pz')*.26);conc.push({src:'Pharmazon',net:r2(ppht*(1-abP)),cond:'Plateforme labos · prix négocié · '+pct(abP)})}
+  PRODUITS.push({ean:ean,nom:r[1],labo:r[2],cond:r[3],rayon:r[4],designation:pp?pp[0]:'',ppht:ppht,ab:ab,net:net,conc:conc,
+    farmaline:{ttc:r[5],ht:r[6],lien:r[7]},famille:'Parapharmacie · NR'});
+});
+COOPER.forEach(function(r){
+  var ean=r[0],base=r[5];
+  var k=.88+h(ean,'us')*.26;               /* notre net (démo) : −12 % à +14 % du tarif Cooper */
+  var net=r2(base*k);
+  var conc=[{src:'Cooper · Préparatoire',net:base,cond:'Vente directe labo · tarif 2023 · prix unitaire HT'}];
+  if(h(ean,'sag?')<.5){conc.push({src:'Sagitta',net:r2(base*(.92+h(ean,'sag')*.2)),cond:'Grossiste · catalogue général'})}
+  PRODUITS.push({ean:ean,nom:r[1],labo:'Cooper',cond:r[3],rayon:r[2],designation:'',ppht:null,ab:null,net:net,conc:conc,farmaline:null,famille:'Préparatoire · '+(r[4]||'matière première')});
+});
+/* position de chaque produit */
+PRODUITS.forEach(function(p){
+  var tous=p.conc.map(function(c){return {src:c.src,net:c.net,cond:c.cond}});
+  tous.push({src:'Intégral Pharma',net:p.net,cond:p.ab!=null?'Notre net · abandon de marge '+pct(p.ab):'Notre net · prix libre',nous:true});
+  tous.sort(function(a,b){return a.net-b.net});
+  p.rangs=tous;
+  p.rang=tous.findIndex(function(t){return t.nous})+1;
+  var mc=Math.min.apply(null,p.conc.map(function(c){return c.net}));
+  p.ecart=r2(mc-p.net);                    /* >0 : nous moins chers */
+  p.verdict=Math.abs(p.ecart)<.005?'eq':(p.ecart>0?'ok':'bad');
+});
+
+/* ═══ RENDU ═══ */
+var $=function(id){return document.getElementById(id)};
+var q=$('q'),liste=$('liste'),droite=$('droite'),carte=$('carte'),face=$('face'),corps=$('corps');
+var courant=null;
+var DEMANDES=["3401044442547","8032472028406","3337875797719","4015630057009","3401076312351","3401574266019"];
+
+$('sources').innerHTML=SOURCES.map(function(s){return '<span><b>'+esc(s.nom)+'</b> '+nb(s.refs)+' <i>· '+esc(s.maj)+'</i></span>'}).join('');
+$('legende').textContent='Sept sources relevées. Le classement ne compare que des prix d\'achat ; les prix publics (Farmaline, PPHT) restent en repère sous la carte.';
+
+function norm(s){return String(s).normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase()}
+function cherche(txt){
+  var t=norm(txt.trim());
+  if(!t) return null;
+  var mots=t.split(/\s+/);
+  return PRODUITS.filter(function(p){var hay=norm(p.nom+' '+p.labo+' '+p.ean+' '+p.designation+' '+p.rayon);return mots.every(function(m){return hay.indexOf(m)>=0})})
+    .sort(function(a,b){return norm(a.nom).indexOf(mots[0])-norm(b.nom).indexOf(mots[0])});
+}
+function posTxt(p){
+  if(p.verdict==='eq') return 'Même prix';
+  if(p.verdict==='ok') return '1er sur '+p.rangs.length+' · '+eur(p.ecart)+' de moins';
+  return (p.rang===2?'2e':p.rang+'e')+' sur '+p.rangs.length+' · '+eur(-p.ecart)+' de plus';
+}
+function ligne(p){
+  return '<button class="res'+(courant===p?' on':'')+'" type="button" data-ean="'+p.ean+'">'+
+    '<span class="nom">'+esc(p.nom)+'</span>'+
+    '<span class="meta"><span>'+esc(p.labo)+'</span><span>'+esc(p.cond||'')+'</span></span>'+
+    '<span class="prix num">'+eur(p.net)+'</span>'+
+    '<span class="pos '+p.verdict+'">'+posTxt(p)+'</span></button>';
+}
+function rendListe(){
+  var txt=q.value,res=cherche(txt),html='';
+  $('chercher').classList.toggle('plein',!!txt.trim());
+  if(res===null){
+    html='<h2>Demandés souvent au comptoir</h2>'+DEMANDES.map(function(e){return ligne(PRODUITS.filter(function(p){return p.ean===e})[0])}).join('');
+    html+='<h2>Tous les produits relevés <span>'+PRODUITS.length+'</span></h2>'+PRODUITS.filter(function(p){return DEMANDES.indexOf(p.ean)<0}).map(ligne).join('');
+  }else if(!res.length){
+    html='<div class="vide">Aucun produit pour « '+esc(txt)+' » dans les '+PRODUITS.length+' références de la maquette. Dans l\'app, la recherche porte sur les '+nb(SOURCES.reduce(function(a,s){return a+s.refs},0))+' références des sept sources.</div>';
+  }else{
+    html='<h2><span>'+res.length+'</span> produit'+(res.length>1?'s':'')+' pour « '+esc(txt)+' »</h2>'+res.map(ligne).join('');
+  }
+  liste.innerHTML=html;
+}
+function rangHtml(t,i,p){
+  var ec='';
+  if(t.nous){ec='<span class="ecart '+p.verdict+'">'+(p.verdict==='eq'?'au même prix':(p.verdict==='ok'?eur(p.ecart)+' d\'avance sur le 2e':'+'+eur(-p.ecart)+' sur le 1er'))+'</span>'}
+  else{var d=r2(t.net-p.net);ec='<span class="ecart">'+(Math.abs(d)<.005?'même prix':(d>0?'+':'−')+eur(Math.abs(d))+' vs nous')+'</span>'}
+  return '<div class="rang'+(t.nous?' nous':'')+'"><span class="n">'+(i+1)+'</span><span class="qui">'+(t.nous?'':'<i class="pt '+(t.net<p.net?'bad':(t.net>p.net?'ok':'eq'))+'"></i>')+esc(t.src)+'</span><span class="cond">'+esc(t.cond)+'</span><span class="val num">'+eur(t.net)+'</span>'+ec+'</div>';
+}
+function rendCarte(p){
+  var pub='';
+  if(p.farmaline||p.ppht){
+    pub='<div class="public"><h3>Prix public, hors classement</h3>';
+    if(p.ppht) pub+='<div class="ligne"><span>PPHT <small>prix public HT chez nous · '+esc(p.designation)+'</small></span><b class="num">'+eur(p.ppht)+'</b></div>';
+    if(p.farmaline) pub+='<div class="ligne"><span>Farmaline (BE) · prix consommateur <small>'+eur(p.farmaline.ht)+' HT · <a href="'+esc(p.farmaline.lien)+'" target="_blank" rel="noopener">voir la fiche</a></small></span><b class="num">'+eur(p.farmaline.ttc)+' TTC</b></div>';
+    pub+='</div>';
+  }
+  var devant=p.rang-1;var verdictTxt=p.verdict==='eq'?'Même prix':(p.verdict==='ok'?'Les moins chers':(devant>1?devant+' concurrents devant':'Un concurrent devant'));
+  carte.innerHTML='<article class="carte">'+
+    '<div class="ct"><div class="sur"><span class="tag">'+esc(p.famille)+'</span><span class="num">EAN '+p.ean+'</span><span>'+esc(p.rayon)+'</span></div>'+
+    '<h2>'+esc(p.nom)+'</h2><div class="labo">'+esc(p.labo)+(p.cond?' · '+esc(p.cond):'')+'</div>'+
+    '<div class="chiffres"><div><small>Notre net</small><b class="num">'+eur(p.net)+'</b><i>'+(p.ab!=null?'abandon de marge '+pct(p.ab):'prix libre')+'</i></div>'+
+    '<div><small>Position</small><b class="'+p.verdict+'">'+(p.verdict==='eq'?'Égal':(p.rang===1?'1er':p.rang+'e')+' / '+p.rangs.length)+'</b><i>'+verdictTxt+'</i></div>'+
+    '<div><small>Écart</small><b class="num '+p.verdict+'">'+(p.ecart>0?'−':(p.ecart<0?'+':''))+eur(Math.abs(p.ecart))+'</b><i>'+(p.ecart>=0?'sous le meilleur concurrent':'au-dessus du moins cher')+'</i></div></div></div>'+
+    '<div class="classement"><h3>Du moins cher au plus cher · '+p.rangs.length+' prix d\'achat</h3>'+p.rangs.map(function(t,i){return rangHtml(t,i,p)}).join('')+'</div>'+
+    pub+
+    '<div class="geste"><button class="btn prim" type="button" id="montrer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2.5" width="14" height="19" rx="3"/><path d="M10 18h4"/></svg>Montrer au pharmacien</button>'+
+    '<p>Plein écran : le produit et notre prix, sans les concurrents. Le bouton « Retourner l\'écran » tourne l\'affichage de 180° pour lire de l\'autre côté du comptoir.</p></div>'+
+    '</article>';
+  $('montrer').onclick=function(){ouvrirFace(p)};
+}
+function ouvrirFace(p){
+  corps.innerHTML='<div class="qui">Intégral Pharma · notre prix net</div><h2>'+esc(p.nom)+'</h2><div class="lab">'+esc(p.labo)+(p.cond?' · '+esc(p.cond):'')+' · EAN '+p.ean+'</div>'+
+    '<div class="prix"><small>Prix net HT, la boîte</small><b class="num">'+p.net.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2}).replace(',','<sup>,')+'</sup><sup>€</sup></b>'+
+    '<div class="bas">'+(p.ab!=null?'<div><small>Abandon de marge</small><b class="num">'+pct(p.ab)+'</b></div>':'')+(p.ppht?'<div><small>PPHT</small><b class="num">'+eur(p.ppht)+'</b></div>':'')+'<div><small>Livraison</small><b>J+1</b></div></div></div>';
+  face.classList.remove('tourne');face.classList.add('on');document.body.style.overflow='hidden';
+}
+function fermerFace(){face.classList.remove('on');document.body.style.overflow=''}
+$('fermer').onclick=fermerFace;
+$('tourner').onclick=function(){face.classList.toggle('tourne')};
+document.addEventListener('keydown',function(e){if(e.key==='Escape'&&face.classList.contains('on'))fermerFace()});
+
+function choisir(ean){
+  var p=PRODUITS.filter(function(x){return x.ean===ean})[0];if(!p)return;
+  courant=p;rendCarte(p);
+  Array.prototype.forEach.call(liste.querySelectorAll('.res'),function(b){b.classList.toggle('on',b.dataset.ean===ean)});
+  droite.classList.add('on');droite.scrollTop=0;
+  if(window.innerWidth<=900){history.replaceState(null,'','#'+ean)}
+}
+liste.addEventListener('click',function(e){var b=e.target.closest('.res');if(b)choisir(b.dataset.ean)});
+q.addEventListener('input',rendListe);
+$('vider').onclick=function(){q.value='';rendListe();q.focus()};
+$('retour').onclick=function(){droite.classList.remove('on');history.replaceState(null,'',' ')};
+
+rendListe();
+/* état d'arrivée : sur ordinateur, la carte montre déjà un produit ; sur téléphone, la recherche seule */
+if(window.innerWidth>900){choisir(DEMANDES[0])}
+else if(location.hash.length>1){choisir(location.hash.slice(1))}
+</script>
+</body>
+</html>

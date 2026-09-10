@@ -1,0 +1,538 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Proposition 2 · Le tableau de bord — Ressources concurrents</title>
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   Proposition 2 · « Le tableau de bord » — Ressources concurrents
+   Peau Verrière : la lumière tombe d'en haut, cartes éclairées,
+   un seul accent bleu, couleurs de verdict vert / rose / gris.
+   Aucune ressource externe, aucune police distante.
+   ═══════════════════════════════════════════════════════════════ */
+:root{
+  --blue:#0050E6; --blue-d:#0034A0; --ink:#10131C; --ink-2:#2A2F3C; --titre:#0B1F4D;
+  --muted:#6B7386; --muted-2:#8A91A4;
+  --paper:#FBFCFE; --card:#FFFFFF; --card-2:#F7F9FC; --sunken:#F4F6FB;
+  --line:rgba(16,19,28,.07); --line-2:rgba(16,19,28,.04); --line-strong:rgba(16,19,28,.12);
+  --line-card:rgba(11,31,77,.09);
+  --ciel:#E4EDFC; --ciel-g:#CFDFFC; --ciel-d:#DCE7FC;
+  --ok:#10915E; --ok-bg:#E6F5EE; --bad:#C8385A; --bad-bg:#FBE9EE; --eq:#8A91A4; --eq-bg:#EEF0F4;
+  --r-card:20px; --r-md:14px; --r-btn:12px; --r-ctl:10px; --r-pill:999px;
+  --sh-1:0 1px 1px rgba(11,31,77,.05),0 4px 10px -6px rgba(11,31,77,.16),0 1px 0 rgba(255,255,255,.9) inset;
+  --sh-2:0 1px 1px rgba(11,31,77,.05),0 10px 24px -14px rgba(11,31,77,.22),0 1px 0 rgba(255,255,255,.95) inset;
+  --sh-3:0 2px 3px rgba(11,31,77,.06),0 18px 34px -18px rgba(11,31,77,.26),0 1px 0 rgba(255,255,255,1) inset;
+  --sh-pop:0 8px 20px rgba(16,19,28,.12),0 20px 44px rgba(16,19,28,.14);
+  --sh-blue:0 4px 12px rgba(0,80,230,.26),0 8px 24px rgba(0,52,160,.14),0 1px 0 rgba(255,255,255,.22) inset;
+  --ease:cubic-bezier(.32,.72,0,1); --ease-soft:cubic-bezier(.33,.02,0,.98);
+  --font:system-ui,-apple-system,'Helvetica Neue',sans-serif;
+  --tap:44px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{overflow-x:clip;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;-webkit-text-size-adjust:100%}
+body{font-family:var(--font);color:var(--ink);background:var(--paper);min-height:100vh;position:relative;font-size:14px;line-height:1.45;overflow-x:clip}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:0}
+small{font-size:13px}
+a{color:var(--blue)}
+.num{font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+
+/* ── la verrière ─────────────────────────────────────────────── */
+.halo{position:fixed;left:0;right:0;top:0;height:520px;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(58% 78% at 50% -14%,#FFFFFF 0%,rgba(255,255,255,0) 64%),
+    radial-gradient(64% 96% at 2% -12%,var(--ciel-g) 0%,rgba(207,223,252,0) 66%),
+    radial-gradient(64% 96% at 99% -8%,var(--ciel-d) 0%,rgba(220,231,252,0) 68%),
+    linear-gradient(var(--ciel) 0%,rgba(251,252,254,0) 92%);}
+.page{position:relative;z-index:1}
+
+/* ── barre du haut, comme dans l'app ─────────────────────────── */
+.top{position:sticky;top:0;z-index:30;height:60px;display:flex;align-items:center;gap:12px;padding:0 24px;
+  background:linear-gradient(rgba(255,255,255,.96),rgba(255,255,255,.88));border-bottom:1px solid rgba(11,31,77,.10)}
+.top .back{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 16px 0 12px;border-radius:var(--r-btn);
+  background:var(--card);border:1px solid var(--line-card);box-shadow:var(--sh-1);font-weight:600}
+.top .back svg{width:14px;height:14px}
+.top .plus{width:40px;height:40px;border-radius:var(--r-btn);background:linear-gradient(180deg,#1A63F0,var(--blue) 60%,var(--blue-d));color:#fff;
+  display:inline-flex;align-items:center;justify-content:center;box-shadow:var(--sh-blue)}
+.top .sp{flex:1}
+.top .avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(180deg,#FFB56A,#FF8A2A);color:#fff;font-weight:800;font-size:13px;
+  display:inline-flex;align-items:center;justify-content:center;box-shadow:0 4px 10px -4px rgba(255,138,42,.6)}
+
+/* ── bandeau de proposition ──────────────────────────────────── */
+.bandeau{max-width:1200px;margin:18px auto 0;padding:0 24px}
+.bandeau .in{display:flex;flex-wrap:wrap;gap:6px 18px;align-items:baseline;padding:10px 16px;border-radius:var(--r-md);
+  background:rgba(255,255,255,.55);border:1px solid rgba(11,31,77,.08);font-size:13px;color:var(--ink-2)}
+.bandeau b{color:var(--titre);font-weight:800}
+.bandeau .risque{color:var(--bad)}
+.bandeau .demo{color:var(--muted);font-style:italic}
+
+/* ── conteneur ───────────────────────────────────────────────── */
+.wrap{max-width:1200px;margin:0 auto;padding:28px 24px 80px}
+.eyebrow{display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:var(--r-pill);background:rgba(0,80,230,.10);
+  color:var(--blue-d);font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+h1{font-size:34px;font-weight:800;letter-spacing:-.025em;color:var(--titre);line-height:1.1;margin-top:10px}
+h1 small{display:block;font-size:15px;font-weight:500;letter-spacing:0;color:var(--muted);margin-top:6px}
+h2{font-size:17px;font-weight:800;letter-spacing:-.015em;color:var(--titre)}
+.h2row{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:34px 0 12px}
+.h2row .meta{font-size:13px;color:var(--muted)}
+
+/* ── cartes ──────────────────────────────────────────────────── */
+.card{background:var(--card);border:1px solid var(--line-card);border-radius:var(--r-card);box-shadow:var(--sh-2);
+  transition:transform .3s var(--ease),box-shadow .3s var(--ease),border-color .3s var(--ease)}
+.card.click{cursor:pointer}
+.card.click:hover{transform:translateY(-3px);box-shadow:var(--sh-3);border-color:rgba(0,80,230,.22)}
+
+/* jauges par source */
+.gauges{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.g{padding:18px 20px 16px;display:flex;flex-direction:column;gap:10px}
+.g .hd{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.g .nom{font-weight:800;font-size:16px;letter-spacing:-.01em;color:var(--titre);line-height:1.2}
+.g .tag{font-size:13px;color:var(--muted);margin-top:2px}
+.g .refs{font-size:13px;color:var(--muted);white-space:nowrap;text-align:right}
+.g .refs b{display:block;font-size:15px;color:var(--ink);font-weight:700}
+.g .big{display:flex;align-items:baseline;gap:8px;margin-top:2px}
+.g .big .v{font-size:36px;font-weight:800;letter-spacing:-.03em;color:var(--ok);line-height:1}
+.g .big .v.neg{color:var(--bad)}
+.g .big .l{font-size:13px;color:var(--muted)}
+.bar{height:10px;border-radius:6px;background:var(--sunken);display:flex;overflow:hidden;box-shadow:0 1px 0 rgba(255,255,255,.8),0 1px 2px rgba(11,31,77,.08) inset}
+.bar i{display:block;height:100%;transform-origin:left;transform:scaleX(0);transition:transform .9s var(--ease)}
+.bar i.on,.rbar i.on{transform:scaleX(1)}
+.bar .ok{background:linear-gradient(180deg,#22A872,var(--ok))}
+.bar .eq{background:linear-gradient(180deg,#B6BCCB,#9AA1B3)}
+.bar .bad{background:linear-gradient(180deg,#DB5375,var(--bad))}
+.leg{display:flex;justify-content:space-between;gap:8px;font-size:13px;color:var(--muted)}
+.leg b{color:var(--ink);font-weight:700}
+.leg .ok b{color:var(--ok)}.leg .bad b{color:var(--bad)}
+.g .foot{display:flex;justify-content:space-between;font-size:13px;color:var(--muted-2);border-top:1px solid var(--line);padding-top:10px;margin-top:2px}
+.g .foot .go{color:var(--blue);font-weight:600}
+
+/* sources consultables (sans verdict) */
+.consult{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:16px}
+.c{padding:14px 20px;display:flex;align-items:center;gap:14px}
+.c .n{font-size:26px;font-weight:800;letter-spacing:-.03em;color:var(--titre);min-width:76px}
+.c .n small{display:block;font-size:13px;font-weight:500;letter-spacing:0;color:var(--muted)}
+.c .t{font-size:14px;font-weight:700;color:var(--ink);line-height:1.25}
+.c .t small{display:block;font-weight:500;color:var(--muted);font-size:13px;margin-top:2px}
+
+/* écarts + rayons */
+.duo{display:grid;grid-template-columns:7fr 5fr;gap:16px;margin-top:16px}
+.duo .card{padding:18px 20px}
+.duo h2{margin-bottom:2px}
+.duo .sub{font-size:13px;color:var(--muted);margin-bottom:12px}
+.ecarts{list-style:none}
+.ecarts li{display:grid;grid-template-columns:22px minmax(0,1fr) 92px 92px 108px;gap:12px;align-items:center;padding:12px 0;min-height:44px;border-top:1px solid var(--line);cursor:pointer;border-radius:8px}
+.ecarts li:first-child{border-top:0}
+.ecarts li:hover .p{color:var(--blue)}
+.ecarts .rk{font-size:13px;font-weight:700;color:var(--muted-2)}
+.ecarts li>span:nth-child(2){min-width:0}
+.ecarts .p{display:block;font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:color .2s}
+.ecarts .m{display:block;font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ecarts .pr{text-align:right;font-size:14px}
+.ecarts .pr small{display:block;font-size:13px;color:var(--muted)}
+.ecarts .ec{text-align:right}
+.ecarts .ec b{display:block;font-size:16px;font-weight:800;color:var(--bad);letter-spacing:-.02em}
+.ecarts .ec small{font-size:13px;color:var(--bad)}
+.rayons{list-style:none;display:flex;flex-direction:column;gap:2px}
+.rayons li{cursor:pointer;min-height:44px;padding:6px 0}
+.rayons .l{display:flex;justify-content:space-between;gap:10px;font-size:13px;margin-bottom:5px}
+.rayons .l b{font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rayons .l span{color:var(--muted);white-space:nowrap}
+.rayons .l span b{color:var(--bad)}
+.rayons li:hover .l b{color:var(--blue)}
+.rbar{height:8px;border-radius:5px;background:var(--sunken);overflow:hidden;box-shadow:0 1px 2px rgba(11,31,77,.08) inset}
+.rbar i{display:block;height:100%;width:0;background:linear-gradient(180deg,#DB5375,var(--bad));border-radius:5px;transform-origin:left;transform:scaleX(0);transition:transform .9s var(--ease)}
+
+/* ── explorateur ─────────────────────────────────────────────── */
+.explo{display:grid;grid-template-columns:264px minmax(0,1fr);gap:16px;align-items:start}
+aside.filtres{position:sticky;top:76px;padding:16px;display:flex;flex-direction:column;gap:16px}
+.f-h{display:flex;justify-content:space-between;align-items:center}
+.f-h b{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.f-h button{font-size:13px;color:var(--blue);font-weight:600;min-height:44px;padding:0 4px}
+.search{position:relative}
+.search input{width:100%;height:44px;padding:0 12px 0 38px;border-radius:var(--r-ctl);border:1px solid var(--line-strong);background:var(--card);font-size:16px;
+  box-shadow:0 1px 2px rgba(11,31,77,.06) inset;outline:none;transition:border-color .2s,box-shadow .2s}
+.search input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,80,230,.15)}
+.search svg{position:absolute;left:12px;top:14px;width:16px;height:16px;color:var(--muted)}
+.opts{display:flex;flex-direction:column;gap:2px}
+.opt{display:flex;align-items:center;gap:10px;min-height:38px;padding:0 10px;border-radius:var(--r-ctl);font-size:14px;text-align:left;width:100%;transition:background .15s}
+.opt:hover{background:var(--card-2)}
+.opt.on{background:rgba(0,80,230,.08);color:var(--blue-d);font-weight:700}
+.opt .k{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.opt .n{font-size:13px;color:var(--muted)}
+.opt.on .n{color:var(--blue-d)}
+.opt .box{width:16px;height:16px;border-radius:5px;border:1.5px solid var(--line-strong);background:var(--card);display:inline-flex;align-items:center;justify-content:center;flex:none}
+.opt.on .box{background:var(--blue);border-color:var(--blue)}
+.opt .box svg{width:10px;height:10px;color:#fff}
+.opt .dot{width:9px;height:9px;border-radius:50%;flex:none}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 12px;border-radius:var(--r-pill);border:1px solid var(--line-card);background:var(--card);font-size:13px;font-weight:600;box-shadow:var(--sh-1);transition:all .2s var(--ease)}
+.chip:hover{transform:translateY(-1px)}
+.chip.on{background:linear-gradient(180deg,#1A63F0,var(--blue) 60%,var(--blue-d));color:#fff;border-color:transparent;box-shadow:var(--sh-blue)}
+.chip .n{opacity:.75;font-weight:500}
+
+.tableau{padding:0;overflow:hidden}
+.tb{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.tb .count{font-size:14px;color:var(--muted)}
+.tb .count b{color:var(--ink);font-weight:800;font-size:16px}
+.tb .sp{flex:1}
+.btn{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 14px;border-radius:var(--r-btn);border:1px solid var(--line-card);background:var(--card);font-weight:600;font-size:14px;box-shadow:var(--sh-1);transition:all .2s var(--ease)}
+.btn:hover{transform:translateY(-1px);box-shadow:var(--sh-2);border-color:rgba(0,80,230,.22)}
+.btn svg{width:15px;height:15px}
+.btn .b{display:inline-flex;min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:rgba(0,80,230,.10);color:var(--blue-d);font-size:13px;align-items:center;justify-content:center}
+.btn-f{display:none}
+.pop{position:relative}
+.menu{position:absolute;right:0;top:calc(100% + 8px);z-index:20;width:240px;padding:8px;border-radius:var(--r-md);background:var(--card);border:1px solid var(--line-card);box-shadow:var(--sh-pop);
+  opacity:0;transform:translateY(-6px);pointer-events:none;transition:opacity .2s var(--ease),transform .2s var(--ease)}
+.menu.open{opacity:1;transform:none;pointer-events:auto}
+.menu .t{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:6px 10px 4px}
+.menu .opt{min-height:40px}
+
+.tscroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse}
+th{position:sticky;top:0;background:var(--card);text-align:left;font-size:13px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:12px 10px;border-bottom:1px solid var(--line);white-space:nowrap;cursor:pointer;user-select:none}
+th.r{text-align:right}
+th:hover{color:var(--titre)}
+th.s{color:var(--blue-d)}
+th .a{display:inline-block;width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-bottom:5px solid currentColor;margin-left:5px;vertical-align:middle;opacity:0;transition:transform .2s,opacity .2s}
+th.s .a{opacity:1}
+th.s.d .a{transform:rotate(180deg)}
+td{padding:11px 10px;border-bottom:1px solid var(--line-2);font-size:14px;vertical-align:middle}
+td.r{text-align:right;white-space:nowrap}
+tbody tr{cursor:pointer;transition:background .15s}
+tbody tr:hover{background:var(--card-2)}
+tbody tr.sel{background:rgba(0,80,230,.06)}
+td.p{font-weight:700;max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+td.p small{display:block;font-weight:500;color:var(--muted);font-size:13px}
+td .code{font-variant-numeric:tabular-nums;color:var(--muted);font-size:13px}
+td.mut{color:var(--muted);max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+td .ppht{color:var(--muted);font-size:13px}
+.src{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:var(--r-pill);background:var(--card-2);border:1px solid var(--line);font-size:13px;font-weight:600;white-space:nowrap}
+.src i{width:7px;height:7px;border-radius:50%;background:var(--blue)}
+.v{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:var(--r-pill);font-size:13px;font-weight:700;white-space:nowrap}
+.v.ok{background:var(--ok-bg);color:var(--ok)}.v.bad{background:var(--bad-bg);color:var(--bad)}.v.eq{background:var(--eq-bg);color:#5C6478}.v.na{background:transparent;color:var(--muted-2);font-weight:500;padding:0}
+.ec.ok{color:var(--ok);font-weight:700}.ec.bad{color:var(--bad);font-weight:700}.ec.eq{color:var(--muted)}
+.vide{padding:40px 20px;text-align:left;color:var(--muted)}
+.vide b{display:block;color:var(--titre);font-size:16px;margin-bottom:4px}
+.liste{display:none}
+
+/* ── panneau de détail ───────────────────────────────────────── */
+.ov{position:fixed;inset:0;background:rgba(11,31,77,.28);z-index:40;opacity:0;pointer-events:none;transition:opacity .3s var(--ease-soft)}
+.ov.open{opacity:1;pointer-events:auto}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(460px,100%);z-index:50;background:var(--card);box-shadow:-20px 0 60px -30px rgba(11,31,77,.45);
+  transform:translateX(102%);transition:transform .38s var(--ease);display:flex;flex-direction:column;overflow:hidden}
+.drawer.open{transform:none}
+.drawer .dh{padding:18px 20px 14px;border-bottom:1px solid var(--line);
+  background:linear-gradient(180deg,var(--ciel) 0%,rgba(228,237,252,0) 100%)}
+.drawer .dh .row{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.drawer .x{width:40px;height:40px;border-radius:var(--r-btn);background:var(--card);border:1px solid var(--line-card);box-shadow:var(--sh-1);display:inline-flex;align-items:center;justify-content:center;flex:none}
+.drawer .x svg{width:14px;height:14px}
+.drawer h3{font-size:20px;font-weight:800;letter-spacing:-.02em;color:var(--titre);line-height:1.2;margin-top:8px}
+.drawer .dm{font-size:13px;color:var(--muted);margin-top:4px}
+.drawer .kp{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
+.drawer .kp div{background:rgba(255,255,255,.7);border:1px solid var(--line-card);border-radius:var(--r-md);padding:10px 12px;box-shadow:var(--sh-1)}
+.drawer .kp small{display:block;font-size:13px;color:var(--muted)}
+.drawer .kp b{display:block;font-size:20px;font-weight:800;letter-spacing:-.02em;color:var(--titre);margin-top:2px}
+.drawer .kp b.ok{color:var(--ok)}.drawer .kp b.bad{color:var(--bad)}
+.drawer .body{overflow:auto;padding:16px 20px 30px;flex:1}
+.drawer .st{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.srow{border:1px solid var(--line-card);border-radius:var(--r-md);padding:12px 14px;margin-bottom:10px;box-shadow:var(--sh-1);background:var(--card)}
+.srow .a{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.srow .a b{font-weight:800;color:var(--titre)}
+.srow .px{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px}
+.srow .px small{display:block;font-size:13px;color:var(--muted)}
+.srow .px span{font-size:16px;font-weight:700}
+.srow .cond{font-size:13px;color:var(--ink-2);margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
+.srow .cond a{font-weight:600;text-decoration:none}
+.srow.dim{background:var(--card-2)}
+
+/* ── apparition ──────────────────────────────────────────────── */
+.rv{opacity:0;transform:translateY(10px);transition:opacity .5s var(--ease),transform .5s var(--ease)}
+.rv.in{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){
+  *{transition:none !important;animation:none !important}
+  .rv{opacity:1;transform:none}
+}
+
+/* ── téléphone ───────────────────────────────────────────────── */
+@media (max-width:900px){
+  .gauges{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .consult{grid-template-columns:1fr}
+  .duo{grid-template-columns:1fr}
+  .explo{grid-template-columns:1fr}
+  aside.filtres{position:fixed;inset:auto 0 0 0;top:auto;max-height:82vh;overflow:auto;z-index:50;border-radius:22px 22px 0 0;
+    transform:translateY(105%);transition:transform .38s var(--ease);box-shadow:0 -20px 60px -30px rgba(11,31,77,.5);padding-bottom:calc(16px + env(safe-area-inset-bottom))}
+  aside.filtres.open{transform:none}
+  .opt{min-height:44px}
+  aside.filtres .f-close{display:inline-flex}
+  .btn-f{display:inline-flex}
+}
+@media (max-width:640px){
+  .top{padding:0 14px}
+  .bandeau,.wrap{padding-left:14px;padding-right:14px}
+  h1{font-size:28px}
+  .gauges{grid-template-columns:1fr}
+  .g{padding:16px}
+  .ecarts li{grid-template-columns:20px minmax(0,1fr) 112px;gap:10px}
+  .ecarts .pr{display:none}
+  .ecarts .ec small{white-space:nowrap}
+  .tb .count{flex-basis:100%}
+  .tb .sp{display:none}
+  .tb .pop{margin-left:auto}
+  .chip,.menu .opt{min-height:44px}
+  .btn,.drawer .x,.f-close{min-height:44px;height:44px;width:auto}
+  .drawer .x,.f-close{width:44px}
+  .srow .cond a{display:inline-block;padding:12px 0;margin:-12px 0}
+  .tscroll{display:none}
+  .liste{display:block}
+  .li{padding:12px 14px;border-bottom:1px solid var(--line);cursor:pointer;min-height:var(--tap)}
+  .li:hover{background:var(--card-2)}
+  .li .p{font-weight:700;font-size:14px}
+  .li .m{font-size:13px;color:var(--muted);margin-top:2px}
+  .li .r{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;flex-wrap:wrap}
+  .li .r .px{font-size:14px;white-space:nowrap}
+  .li .r .px small{color:var(--muted);font-size:13px}
+  .drawer .kp{grid-template-columns:1fr 1fr 1fr}
+  .drawer .kp b{font-size:17px}
+}
+.f-close{display:none;align-items:center;justify-content:center;width:40px;height:40px;border-radius:var(--r-btn);border:1px solid var(--line-card);box-shadow:var(--sh-1);background:var(--card)}
+.f-close svg{width:14px;height:14px}
+</style>
+</head>
+<body>
+<div class="halo"></div>
+<div class="page">
+  <header class="top">
+    <button class="back" type="button"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5"/></svg>Retour</button>
+    <span class="plus"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg></span>
+    <span class="sp"></span>
+    <span class="avatar">CT</span>
+  </header>
+
+  <div class="bandeau"><div class="in">
+    <b>Proposition 2 · Le tableau de bord</b>
+    <span>L'écran s'ouvre sur « où en sommes-nous » ; l'exploration vient en dessous, filtres à gauche, colonnes au choix.</span>
+    <span class="risque">Risque : dense ; doit rester lisible.</span>
+    <span class="demo">Prix Intégral et bilans : chiffres de démonstration.</span>
+  </div></div>
+
+  <main class="wrap">
+    <span class="eyebrow">Ressources concurrents</span>
+    <h1>Où en sommes-nous<small id="sub"></small></h1>
+
+    <div class="h2row"><h2>Par source, ce que nous gagnons et ce que nous perdons</h2><span class="meta">références aussi chez nous, hors génériques et biosimilaires</span></div>
+    <div class="gauges" id="gauges"></div>
+    <div class="consult" id="consult"></div>
+
+    <div class="duo">
+      <section class="card rv">
+        <h2>Les 5 écarts les plus forts en notre défaveur</h2>
+        <div class="sub">En euros par unité, sur les sources à prix d'achat. Un clic ouvre le produit.</div>
+        <ol class="ecarts" id="ecarts"></ol>
+      </section>
+      <section class="card rv">
+        <h2>Les rayons où l'on perd</h2>
+        <div class="sub">Part des références où un concurrent est moins cher. Un clic filtre l'explorateur.</div>
+        <ul class="rayons" id="rayons"></ul>
+      </section>
+    </div>
+
+    <div class="h2row" id="explo-titre"><h2>L'explorateur</h2><span class="meta">filtres conservés d'une visite à l'autre</span></div>
+    <div class="explo">
+      <aside class="card filtres" id="filtres">
+        <div class="f-h"><b>Filtres</b><span style="display:flex;gap:8px;align-items:center"><button type="button" id="reset">Tout effacer</button><button type="button" class="f-close" id="f-close" aria-label="Fermer"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3l10 10M13 3 3 13"/></svg></button></span></div>
+        <label class="search"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5 14 14"/></svg><input type="search" id="q" placeholder="Produit, laboratoire, code…" autocomplete="off"></label>
+        <div><div class="f-h" style="margin-bottom:6px"><b>Sources</b></div><div class="opts" id="f-src"></div></div>
+        <div><div class="f-h" style="margin-bottom:8px"><b>Verdict</b></div><div class="chips" id="f-verdict"></div></div>
+        <div><div class="f-h" style="margin-bottom:6px"><b>Rayons</b></div><div class="opts" id="f-rayon"></div></div>
+      </aside>
+
+      <section class="card tableau">
+        <div class="tb">
+          <span class="count" id="count"></span>
+          <span class="sp"></span>
+          <button type="button" class="btn btn-f" id="btn-f"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M2 4h12M4 8h8M6 12h4"/></svg>Filtres <span class="b" id="nf">0</span></button>
+          <span class="pop">
+            <button type="button" class="btn" id="btn-cols"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 2v12M8 2v12M13 2v12"/></svg>Colonnes <span class="b" id="nc">0</span></button>
+            <div class="menu" id="menu-cols"><div class="t">Colonnes affichées</div><div id="cols-list"></div></div>
+          </span>
+        </div>
+        <div class="tscroll"><table><thead id="thead"></thead><tbody id="tbody"></tbody></table></div>
+        <div class="liste" id="liste"></div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<div class="ov" id="ov"></div>
+<aside class="drawer" id="drawer" aria-hidden="true">
+  <div class="dh"><div class="row"><span class="eyebrow" id="d-src">Produit</span><button type="button" class="x" id="d-x" aria-label="Fermer"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3l10 10M13 3 3 13"/></svg></button></div>
+    <h3 id="d-titre"></h3><div class="dm" id="d-meta"></div>
+    <div class="kp" id="d-kp"></div></div>
+  <div class="body"><div class="st">Chez chaque source</div><div id="d-rows"></div></div>
+</aside>
+
+<script>
+/* ═══ DONNÉES — Cooper et Farmaline : lignes publiques réelles. Sagitta, OCP, Pharmazon :
+   produits réels de notre catalogue (PPHT public), prix de DÉMONSTRATION. « Notre net » est
+   partout un chiffre de démonstration, comme les bilans par source. ═══ */
+const SRC={
+  sagitta:{nom:'Sagitta',court:'Sagitta',tag:'Grossiste',refs:15496,maj:'04/06/2026',verdict:true,communes:2840,gagne:1190,egal:330,perdu:1320},
+  ocp:{nom:'OCP · Les Incontournables',court:'OCP',tag:'Promo sept-déc 2026',refs:638,maj:'09/2026',verdict:true,communes:72,gagne:31,egal:5,perdu:36},
+  pharmazon:{nom:'Pharmazon',court:'Pharmazon',tag:'Plateforme labos',refs:4617,maj:'14/05/2026',verdict:true,communes:1260,gagne:640,egal:140,perdu:480},
+  cooper:{nom:'Cooper · Préparatoire',court:'Cooper',tag:'Vente directe labo',refs:964,maj:'01/01/2023',verdict:true,communes:210,gagne:96,egal:26,perdu:88},
+  mc:{nom:'OCP · Marque Conseil',court:'Marque Conseil',tag:'Marque distributeur',refs:115,maj:'02/2026',verdict:false,quoi:'Prix public conseillé, tarif LPPR, coefficient de marge par famille'},
+  farmaline:{nom:'Farmaline',court:'Farmaline',tag:'Pharmacie en ligne (BE)',refs:7046,maj:'10/09/2026',verdict:false,quoi:'Prix consommateur belge, pas une condition d\'achat'},
+  etudes:{nom:'Études · avantages observés',court:'Études',tag:'Recherche sept. 2026',refs:827,unite:'observations',maj:'04/09/2026',verdict:false,quoi:'Décisions, rapports, thèses, factures, CGV'}
+};
+const COOPER=[["3401574257543","Chimiques & excipients","EUGENOL","250 ML","Substance active",60.42],["3401574266019","Gélules","GELULES N° 0 - VOL. EN ML : 0,68","L 1000","",27.02],["3401574222534","Chimiques & excipients","CALCIUM HYDROXYDE","1K","Excipient",30.85],["3401566628191","Chimiques & excipients","ICHTHYOLAMMONIUM tube 100 G","","Substance active",17.43],["3401562895795","Chimiques & excipients","SODIUM BICARBONATE","1K","Substance active",7.57],["3401566623578","Chimiques & excipients","ACIDE RETINOÏQUE","0,50 G","Substance active · CMR",20.12],["3401574202314","Chimiques & excipients","ALUMINIUM OXYDE HYDRATE","250 G","Excipient",42.24],["3401547709017","Huiles essentielles","CITRON JAUNE - citrus limonum","250 ML","Excipient",41.66],["3401560647686","Chimiques & excipients","PARAFFINE EPAISSE","1L","Substance active",9.96],["3401574205384","Chimiques & excipients","ARGENT NITRATE crist.","25 G","Substance active",62.6],["3401366627424","Chimiques & excipients","GLYCEROLE D'AMIDON tube 50 G","1K","Excipient",31.8],["3401574301987","Chimiques & excipients","POTASSIUM BICARBONATE","1K","Excipient",33.1],["3401546775679","Chimiques & excipients","ACIDE SORBIQUE","1K","Excipient",85.29],["3401546670431","Gélules","GELULES N° 2 - VOL. EN ML : 0,37","L 1000","",22.99],["3401574287878","Chimiques & excipients","L - METHIONINE","1K","Substance active",216.19],["3401547605357","Chimiques & excipients","L - CITRULLINE","250 G","Alimentaire",115.04],["3614819998761","Chimiques & excipients","ACIDE LACTIQUE S","1L","Excipient",31.89],["3401574203373","Chimiques & excipients","AMMONIUM CARBONATE pulv.","1K","Alimentaire",37.94]];
+const FARMA=[["3614790000835","Cinq Sur Cinq Lot de 2 Spray Tropic Anti-Moustiques","BAUSCH ET LOMB FRANCE","2x75 ml","Insectes",14.99,12.39,"https://www.farmaline.be/fr/hygiene-et-bien-etre/F00393192/cinq-sur-cinq-lot-de-2-spray-tropic-anti-moustiques.htm"],["3401076312122","ialuset Compresses à base d'acide hyaluronique","IBSA PHARMA SAS","10 pc(s)","Compresses",25.89,21.4,"https://www.farmaline.be/fr/soins-a-domicile/F00127193/ialuset-compresses-a-base-d-acide-hyaluronique.htm"],["3337875797719","La Roche-Posay Anthelios UVmune 400 Crème Hydratante Sans Parfum SPF50+","La Roche-Posay Laboratoire Dermatologique CAI","50 ml","Visage",15.29,12.64,"https://www.farmaline.be/fr/beaute/BE04378931/la-roche-posay-anthelios-uvmune-400-hydraterende-creme-zonder-parfum-spf50.htm"],["8032472012115","COLILEN IBS - 96 gélules","ABOCA SPA","96 pc(s)","Digestion",32.99,27.26,"https://www.farmaline.be/fr/soins-a-domicile/F00065829/colilen-ibs-96-gelules.htm"],["3700225600203","PEDIAKID Appétit","Unitex Germany GmbH i.Gr.","125 ml","Complexes de vitamines & minéraux",16.69,16.69,"https://www.farmaline.be/fr/bebe/15743669/pediakid-appetit-sirup.htm"],["3700225602320","Pediakid Immunité Gommes","Laboratoires Ineldea","60 pc(s)","Système immunitaire",10.59,9.99,"https://www.farmaline.be/fr/Complements/BE03493798/pediakid-immuniteit-gummies.htm"],["3401044442547","HYALUGEL GEL 20 ML","COOPER CONSUMER HEALTH","20 ml","Aphtes",8.49,7.02,"https://www.farmaline.be/fr/beaute/F00000330/hyalugel-gel-20-ml.htm"],["4015630057009","Accu-Chek Fastclix Lancettes","Roche Diabetes Care","204 pc(s)","Aiguilles et seringues",14.39,13.58,"https://www.farmaline.be/fr/hygiene-et-bien-etre/BE02676815/accu-chek-fastclix-lancettes.htm"],["3700225600227","Pediakid Nervosité Solution","Laboratoires Ineldea","125 ml","Repos & Sommeil",12.39,11.69,"https://www.farmaline.be/fr/Complements/BE02990224/pediakid-nervositeit-oplossing.htm"],["3700225600258","Pediakid 22 vitamines & Oligo Éléments","Laboratoires Ineldea","125 ml","Enfants",12.39,11.69,"https://www.farmaline.be/fr/Complements/BE02989952/pediakid-22-vitaminen-olijf-elementen.htm"],["3760054331013","HYLOVIS® LIPO","TRB Chemedica AG","30x0,4 ml","Soin oculaire",13.29,10.98,"https://www.farmaline.be/fr/medicaments/15815469/hylovis-lipo.htm"],["3700225602306","Pediakid Gaz Baby","Laboratoires Ineldea","12 pc(s)","Estomac & Intestins",12.69,11.97,"https://www.farmaline.be/fr/Complements/BE03587326/pediakid-gaz-baby.htm"],["3401096077551","Ilast® Hydraclean","HORUS PHARMA","50 ml","Soin oculaire",16.29,15.37,"https://www.farmaline.be/fr/beaute/BE03322948/ilast-hydraclean-spray.htm"],["3401041088526","Mystar Sylkfeel 33g Cartouche","OPELLA HEALTHCARE","100 pc(s)","Glycémie",6.79,6.41,"https://www.farmaline.be/fr/hygiene-et-bien-etre/BE03049632/mystar-sylkfeel-33g-lancet.htm"],["8032472028406","GRINTUSS Sirop pour la toux adulte","ABOCA SPA","180 g","Adultes",12.29,10.16,"https://www.farmaline.be/fr/soins-a-domicile/F00537894/grintuss-sirop-pour-la-toux-adulte.htm"],["3401076312351","Ialuset Crème","IBSA PHARMA SAS","100 g","Traitement & soin des plaies",9.59,7.93,"https://www.farmaline.be/fr/soins-a-domicile/F00127190/ialuset-creme.htm"],["3614790000859","BLOXANG Eponge Hémostatique","BAUSCH ET LOMB FRANCE","1 pc(s)","Traitement & soin des plaies",7.89,6.52,"https://www.farmaline.be/fr/soins-a-domicile/F00416339/bloxang-eponge-hemostatique.htm"],["5055158008441","Tubifast Vert 5 cm x 1 m 2481","Mölnlycke Health Care AB","1 pc(s)","Bandages et accessoires",4.99,4.71,"https://www.farmaline.be/fr/hygiene-et-bien-etre/BE02380293/tubifast-groen-5cmx1m-2481.htm"]];
+const PPHT={"3614790000835":9.94,"3401076312122":15.84,"3337875797719":11.33,"8032472012115":16.12,"3700225600203":7.11,"3700225602320":7.11,"3401044442547":8.28,"4015630057009":11.23,"3700225600227":7.11,"3700225600258":7.11,"3760054331013":8.41,"3700225602306":7.11,"3401096077551":9.96,"3401041088526":5.91,"8032472028406":6.7,"3401076312351":5.87,"3614790000859":7.99,"5055158008441":1.16};
+
+/* générateur déterministe pour les chiffres de démonstration */
+function rnd(seed){let h=2166136261;for(const c of String(seed)){h^=c.charCodeAt(0);h=Math.imul(h,16777619)}return ((h>>>0)%1000)/1000}
+const r2=x=>Math.round(x*100)/100;
+
+const ROWS=[];
+COOPER.forEach((r,i)=>{const net=r2(r[5]*(0.86+rnd(r[0]+'n')*0.26));
+  ROWS.push({id:'co'+i,code:r[0],produit:r[2],labo:'Cooper',rayon:r[1],source:'cooper',prixConc:r[5],notreNet:i%6===4?r[5]:net,cond:(r[3]||'à l\'unité')+(r[4]?' · '+r[4]:''),releve:'01/01/2023',lien:null})});
+FARMA.forEach((r,i)=>{ROWS.push({id:'fa'+i,code:r[0],produit:r[1],labo:r[2],rayon:r[4],source:'farmaline',prixConc:r[6],prixTTC:r[5],notreNet:null,ppht:PPHT[r[0]],cond:r[3],releve:'10/09/2026',lien:r[7]})});
+FARMA.forEach((r,i)=>{const p=PPHT[r[0]],net=r2(p*(0.80+rnd(r[0]+'n')*0.24)),nom=r[1].replace(/®/g,'').replace(/\s+-\s+.*$/,'');
+  const sag=i%7===3?net:r2(p*(0.76+rnd(r[0]+'s')*0.34));
+  ROWS.push({id:'sa'+i,code:r[0],produit:nom,labo:r[2],rayon:r[4],source:'sagitta',prixConc:sag,notreNet:net,cond:'Catalogue général · tarif '+fmt(p)+' HT',releve:'04/06/2026',lien:null,demo:true});
+  if(i%2===0)ROWS.push({id:'oc'+i,code:r[0],produit:nom,labo:r[2],rayon:r[4],source:'ocp',prixConc:r2(p*(0.72+rnd(r[0]+'o')*0.36)),notreNet:net,cond:'Annuelle sans engagement · paliers 6 / 12 / 24 unités · p. '+(4+i),releve:'09/2026',lien:null,demo:true});
+  if(i%3!==0)ROWS.push({id:'ph'+i,code:r[0],produit:nom,labo:r[2],rayon:r[4],source:'pharmazon',prixConc:i%5===1?net:r2(p*(0.78+rnd(r[0]+'p')*0.30)),notreNet:net,cond:'Prix négocié plateforme · franco 150 € HT',releve:'14/05/2026',lien:null,demo:true});
+});
+ROWS.forEach(r=>{if(r.notreNet==null){r.verdict='na';r.ecart=null;return}
+  const d=r2(r.notreNet-r.prixConc);r.ecart=d;r.verdict=Math.abs(d)<0.005?'eq':d<0?'ok':'bad'});
+
+function fmt(n){return n==null?'—':n.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' €'}
+function fint(n){return n.toLocaleString('fr-FR')}
+function pct(a,b){return b?Math.round(a/b*100):0}
+const VLAB={ok:'Intégral moins cher',bad:'moins cher',eq:'Même prix',na:'Prix public, pas de verdict'};
+function vbadge(r){if(r.verdict==='na')return '<span class="v na">'+VLAB.na+'</span>';
+  if(r.verdict==='bad')return '<span class="v bad">'+SRC[r.source].court+' '+VLAB.bad+'</span>';return '<span class="v '+r.verdict+'">'+VLAB[r.verdict]+'</span>'}
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const $=id=>document.getElementById(id);
+
+/* ═══ ÉTAT DE L'EXPLORATEUR (persistant) ═══ */
+const COLS=[
+  {k:'code',l:'Code 13',r:false},{k:'produit',l:'Produit'},{k:'labo',l:'Laboratoire'},{k:'rayon',l:'Rayon'},{k:'source',l:'Source'},
+  {k:'cond',l:'Condition'},{k:'prixConc',l:'Prix concurrent',r:true},{k:'notreNet',l:'Notre net',r:true},{k:'ecart',l:'Écart',r:true},{k:'verdict',l:'Verdict'},{k:'releve',l:'Relevé'}];
+const DEF={q:'',source:'all',verdict:'all',rayons:[],cols:['produit','source','prixConc','notreNet','ecart','verdict'],sort:{k:'ecart',d:-1}};
+let S;try{S=Object.assign({},DEF,JSON.parse(localStorage.getItem('d2-explorateur')||'{}'))}catch(e){S=Object.assign({},DEF)}
+function save(){try{localStorage.setItem('d2-explorateur',JSON.stringify(S))}catch(e){}}
+
+/* ═══ TABLEAU DE BORD ═══ */
+const withV=Object.keys(SRC).filter(k=>SRC[k].verdict);
+const total=Object.values(SRC).reduce((a,s)=>a+s.refs,0);
+$('sub').textContent=Object.keys(SRC).length+' sources · '+fint(total)+' références et observations · '+withV.length+' sources à prix d\'achat';
+
+$('gauges').innerHTML=withV.map(k=>{const s=SRC[k],g=pct(s.gagne,s.communes),e=pct(s.egal,s.communes),p=100-g-e,net=g-p;
+  return `<article class="card click g rv" data-src="${k}">
+    <div class="hd"><div><div class="nom">${s.nom}</div><div class="tag">${s.tag}</div></div><div class="refs"><b class="num">${fint(s.refs)}</b>références</div></div>
+    <div class="big"><span class="v num ${net<0?'neg':''}">${net>0?'+':''}${net}<span style="font-size:20px"> pts</span></span><span class="l">gagné − perdu<br>sur <b class="num">${fint(s.communes)}</b> communes</span></div>
+    <div class="bar"><i class="ok" data-w="${g}"></i><i class="eq" data-w="${e}"></i><i class="bad" data-w="${p}"></i></div>
+    <div class="leg"><span class="ok"><b class="num">${fint(s.gagne)}</b> gagnées</span><span class="eq"><b class="num">${fint(s.egal)}</b> égales</span><span class="bad"><b class="num">${fint(s.perdu)}</b> perdues</span></div>
+    <div class="foot"><span>Relevé du ${s.maj}</span><span class="go">Explorer →</span></div></article>`}).join('');
+$('consult').innerHTML=Object.keys(SRC).filter(k=>!SRC[k].verdict).map(k=>{const s=SRC[k];
+  return `<article class="card click c rv" data-src="${k}"><div class="n num">${fint(s.refs)}<small>${s.unite||'références'} · ${s.maj}</small></div><div class="t">${s.nom}<small>${s.quoi}</small></div></article>`}).join('');
+
+const perdus=ROWS.filter(r=>r.verdict==='bad').sort((a,b)=>b.ecart-a.ecart).slice(0,5);
+$('ecarts').innerHTML=perdus.map((r,i)=>`<li data-id="${r.id}"><span class="rk num">${i+1}</span><span><span class="p">${esc(r.produit)}</span><span class="m">${esc(r.labo)} · ${esc(r.rayon)}</span></span>
+  <span class="pr num">${fmt(r.prixConc)}<small>${SRC[r.source].court}</small></span><span class="pr num">${fmt(r.notreNet)}<small>notre net</small></span>
+  <span class="ec num"><b>+${fmt(r.ecart)}</b><small>+${pct(r.ecart,r.prixConc)} % · ${SRC[r.source].court}</small></span></li>`).join('');
+
+const byR={};ROWS.filter(r=>r.verdict!=='na').forEach(r=>{const o=byR[r.rayon]||(byR[r.rayon]={n:0,p:0});o.n++;if(r.verdict==='bad')o.p++});
+const rayonsPerdus=Object.entries(byR).filter(([,o])=>o.p>0).sort((a,b)=>pct(b[1].p,b[1].n)-pct(a[1].p,a[1].n)||b[1].p-a[1].p).slice(0,7);
+$('rayons').innerHTML=rayonsPerdus.map(([r,o])=>`<li data-rayon="${esc(r)}"><div class="l"><b>${esc(r)}</b><span><b class="num">${o.p}</b> sur ${o.n} · ${pct(o.p,o.n)} %</span></div><div class="rbar"><i data-w="${pct(o.p,o.n)}"></i></div></li>`).join('');
+
+/* ═══ FILTRES ═══ */
+const RAYONS=[...new Set(ROWS.map(r=>r.rayon))].sort((a,b)=>a.localeCompare(b,'fr'));
+const CHK='<span class="box"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5l2.2 2.2L8 3"/></svg></span>';
+function renderFiltres(){
+  const cnt=k=>ROWS.filter(r=>k==='all'||r.source===k).length;
+  $('f-src').innerHTML=[['all','Toutes les sources'],...Object.keys(SRC).filter(k=>ROWS.some(r=>r.source===k)).map(k=>[k,SRC[k].nom])]
+    .map(([k,l])=>`<button type="button" class="opt ${S.source===k?'on':''}" data-src="${k}"><span class="dot" style="background:${k==='all'?'var(--blue)':SRC[k].verdict?'var(--blue)':'var(--eq)'}"></span><span class="k">${l}</span><span class="n num">${cnt(k)}</span></button>`).join('');
+  $('f-verdict').innerHTML=[['all','Tous'],['ok','Gagné'],['bad','Perdu'],['eq','Égal']].map(([k,l])=>`<button type="button" class="chip ${S.verdict===k?'on':''}" data-v="${k}">${l}<span class="n num">${k==='all'?ROWS.length:ROWS.filter(r=>r.verdict===k).length}</span></button>`).join('');
+  $('f-rayon').innerHTML=RAYONS.map(r=>`<button type="button" class="opt ${S.rayons.includes(r)?'on':''}" data-rayon="${esc(r)}">${CHK}<span class="k">${esc(r)}</span><span class="n num">${ROWS.filter(x=>x.rayon===r).length}</span></button>`).join('');
+  $('q').value=S.q;
+  const nf=(S.source!=='all')+(S.verdict!=='all')+S.rayons.length+(S.q?1:0);$('nf').textContent=nf;
+}
+function renderCols(){$('cols-list').innerHTML=COLS.map(c=>`<button type="button" class="opt ${S.cols.includes(c.k)?'on':''}" data-col="${c.k}">${CHK}<span class="k">${c.l}</span></button>`).join('');$('nc').textContent=S.cols.length}
+
+/* ═══ TABLEAU ═══ */
+function filtered(){const q=S.q.trim().toLowerCase();
+  return ROWS.filter(r=>(S.source==='all'||r.source===S.source)&&(S.verdict==='all'||r.verdict===S.verdict)&&(!S.rayons.length||S.rayons.includes(r.rayon))
+    &&(!q||(r.produit+' '+r.labo+' '+r.code+' '+SRC[r.source].nom).toLowerCase().includes(q)))
+    .sort((a,b)=>{const k=S.sort.k,d=S.sort.d;let x=a[k],y=b[k];if(k==='source'){x=SRC[x].nom;y=SRC[y].nom}
+      if(x==null&&y==null)return 0;if(x==null)return 1;if(y==null)return -1;return (typeof x==='number'?x-y:String(x).localeCompare(String(y),'fr'))*d})}
+function cell(r,k){switch(k){
+  case 'code':return `<td><span class="code">${r.code}</span></td>`;
+  case 'produit':return `<td class="p" title="${esc(r.produit)}">${esc(r.produit)}${S.cols.includes('labo')?'':'<small>'+esc(r.labo)+'</small>'}</td>`;
+  case 'labo':return `<td class="mut">${esc(r.labo)}</td>`;
+  case 'rayon':return `<td class="mut">${esc(r.rayon)}</td>`;
+  case 'source':return `<td><span class="src"><i style="background:${SRC[r.source].verdict?'var(--blue)':'var(--eq)'}"></i>${SRC[r.source].court}</span></td>`;
+  case 'cond':return `<td class="mut" style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(r.cond)}">${esc(r.cond)}</td>`;
+  case 'prixConc':return `<td class="r num">${fmt(r.prixConc)}${r.source==='farmaline'?'<span class="ppht"> HT public</span>':''}</td>`;
+  case 'notreNet':return `<td class="r num">${r.notreNet==null?'<span class="ppht">PPHT '+fmt(r.ppht)+'</span>':'<b>'+fmt(r.notreNet)+'</b>'}</td>`;
+  case 'ecart':return `<td class="r num ec ${r.verdict}">${r.ecart==null?'—':(r.ecart>0?'+':'')+fmt(r.ecart)}</td>`;
+  case 'verdict':return `<td>${vbadge(r)}</td>`;
+  case 'releve':return `<td class="mut num">${r.releve}</td>`}}
+let sel=null;
+function renderTable(){const rows=filtered();
+  $('count').innerHTML=`<b class="num">${rows.length}</b> ligne${rows.length>1?'s':''} sur ${ROWS.length}`;
+  const cols=COLS.filter(c=>S.cols.includes(c.k));
+  $('thead').innerHTML='<tr>'+cols.map(c=>`<th class="${c.r?'r':''} ${S.sort.k===c.k?'s':''} ${S.sort.d<0?'d':''}" data-sort="${c.k}">${c.l}<span class="a"></span></th>`).join('')+'</tr>';
+  $('tbody').innerHTML=rows.map(r=>`<tr data-id="${r.id}" class="${sel===r.id?'sel':''}">${cols.map(c=>cell(r,c.k)).join('')}</tr>`).join('');
+  $('liste').innerHTML=rows.map(r=>`<div class="li" data-id="${r.id}"><div class="p">${esc(r.produit)}</div><div class="m">${esc(r.labo)} · ${esc(r.rayon)}</div>
+    <div class="r"><span class="src"><i style="background:${SRC[r.source].verdict?'var(--blue)':'var(--eq)'}"></i>${SRC[r.source].court}</span>
+    <span class="px num">${fmt(r.prixConc)} <small>${r.source==='farmaline'?'HT public':'concurrent'}</small> · ${r.notreNet==null?'<small>PPHT '+fmt(r.ppht)+'</small>':'<b>'+fmt(r.notreNet)+'</b> <small>notre net</small>'}</span>${vbadge(r)}</div></div>`).join('');
+  if(!rows.length){const v='<div class="vide"><b>Aucune ligne ne correspond</b>Élargir la recherche ou retirer un filtre.</div>';$('tbody').innerHTML=`<tr><td colspan="${cols.length}" style="padding:0">${v}</td></tr>`;$('liste').innerHTML=v}
+}
+function renderAll(){renderFiltres();renderCols();renderTable();save()}
+
+/* ═══ DÉTAIL ═══ */
+function openDetail(id){const r=ROWS.find(x=>x.id===id);if(!r)return;sel=id;
+  const all=ROWS.filter(x=>x.code===r.code).sort((a,b)=>(a.prixConc??1e9)-(b.prixConc??1e9));
+  const net=all.find(x=>x.notreNet!=null)?.notreNet,ppht=r.ppht||PPHT[r.code];
+  const conc=all.filter(x=>x.notreNet!=null),g=conc.filter(x=>x.verdict==='ok').length,p=conc.filter(x=>x.verdict==='bad').length;
+  $('d-src').textContent=SRC[r.source].court;$('d-titre').textContent=r.produit;$('d-meta').textContent=r.labo+' · '+r.rayon+' · code '+r.code;
+  $('d-kp').innerHTML=`<div><small>Notre net</small><b class="num">${net!=null?fmt(net):'—'}</b></div><div><small>Gagné</small><b class="num ok">${g}<span style="font-size:13px;color:var(--muted);font-weight:500"> / ${conc.length}</span></b></div><div><small>Perdu</small><b class="num bad">${p}<span style="font-size:13px;color:var(--muted);font-weight:500"> / ${conc.length}</span></b></div>${ppht?'':''}`;
+  $('d-rows').innerHTML=all.map(x=>`<div class="srow ${x.verdict==='na'?'dim':''}"><div class="a"><b>${SRC[x.source].nom}</b>${vbadge(x)}</div>
+    <div class="px"><div><small>${x.source==='farmaline'?'Prix HT public':'Prix '+SRC[x.source].court}</small><span class="num">${fmt(x.prixConc)}</span></div>
+    <div><small>${x.notreNet==null?'Notre PPHT':'Notre net'}</small><span class="num">${x.notreNet==null?fmt(x.ppht):fmt(x.notreNet)}</span></div>
+    <div><small>Écart</small><span class="num ec ${x.verdict}">${x.ecart==null?'—':(x.ecart>0?'+':'')+fmt(x.ecart)}</span></div></div>
+    <div class="cond">${esc(x.cond)} · relevé du ${x.releve}${x.lien?' · <a href="'+x.lien+'" target="_blank" rel="noopener">voir la fiche ↗</a>':''}${x.demo?' · <em style="color:var(--muted)">prix de démonstration</em>':''}</div></div>`).join('');
+  $('drawer').classList.add('open');$('ov').classList.add('open');$('drawer').setAttribute('aria-hidden','false');renderTable()}
+function closeDetail(){$('drawer').classList.remove('open');$('ov').classList.remove('open');$('drawer').setAttribute('aria-hidden','true');sel=null;renderTable()}
+
+/* ═══ ÉVÉNEMENTS ═══ */
+const goExplo=()=>$('explo-titre').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion:reduce)').matches?'auto':'smooth',block:'start'});
+document.addEventListener('click',e=>{
+  const t=e.target.closest('[data-src],[data-id],[data-rayon],[data-v],[data-col],[data-sort]');
+  if($('menu-cols').classList.contains('open')&&!e.target.closest('.pop'))$('menu-cols').classList.remove('open');
+  if(!t)return;
+  if(t.matches('.g,.c')){S.source=t.dataset.src;renderAll();goExplo();return}
+  if(t.matches('.ecarts li,tr[data-id],.li')){openDetail(t.dataset.id);return}
+  if(t.matches('.rayons li')){S.rayons=[t.dataset.rayon];renderAll();goExplo();return}
+  if(t.matches('#f-src .opt')){S.source=t.dataset.src;renderAll();return}
+  if(t.matches('.chip[data-v]')){S.verdict=t.dataset.v;renderAll();return}
+  if(t.matches('#f-rayon .opt')){const r=t.dataset.rayon;S.rayons=S.rayons.includes(r)?S.rayons.filter(x=>x!==r):[...S.rayons,r];renderAll();return}
+  if(t.matches('[data-col]')){const k=t.dataset.col;if(S.cols.includes(k)){if(S.cols.length>2)S.cols=S.cols.filter(x=>x!==k)}else S.cols=COLS.map(c=>c.k).filter(c=>S.cols.includes(c)||c===k);renderCols();renderTable();save();return}
+  if(t.matches('th[data-sort]')){const k=t.dataset.sort;S.sort=S.sort.k===k?{k,d:-S.sort.d}:{k,d:k==='ecart'||k==='prixConc'||k==='notreNet'?-1:1};renderTable();save()}
+});
+$('q').addEventListener('input',()=>{S.q=$('q').value;renderTable();$('nf').textContent=(S.source!=='all')+(S.verdict!=='all')+S.rayons.length+(S.q?1:0);save()});
+$('reset').addEventListener('click',()=>{S=Object.assign({},DEF,{cols:S.cols,sort:S.sort});renderAll()});
+$('btn-cols').addEventListener('click',()=>$('menu-cols').classList.toggle('open'));
+$('btn-f').addEventListener('click',()=>$('filtres').classList.add('open'));
+$('f-close').addEventListener('click',()=>$('filtres').classList.remove('open'));
+$('d-x').addEventListener('click',closeDetail);$('ov').addEventListener('click',()=>{closeDetail();$('filtres').classList.remove('open')});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeDetail();$('filtres').classList.remove('open');$('menu-cols').classList.remove('open')}});
+
+renderAll();
+requestAnimationFrame(()=>requestAnimationFrame(()=>{document.querySelectorAll('.rv').forEach((el,i)=>setTimeout(()=>el.classList.add('in'),i*60));
+  document.querySelectorAll('[data-w]').forEach(i=>{i.style.width=i.dataset.w+'%';i.classList.add('on')})}));
+</script>
+</body>
+</html>
