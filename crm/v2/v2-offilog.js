@@ -442,7 +442,7 @@
     var plats = [{ n: 'Offilog', p: it.price, sub: '' }];
     if (it.pz && it.pz.price > 0) plats.push({ n: 'Pharmazon', p: it.pz.price, sub: it.pz.labo ? ' · ' + esc(it.pz.labo) : '' });
     if (it.sg && it.sg.price > 0) plats.push({ n: 'Sagitta', p: it.sg.price, sub: sgMajLabel() ? ' · tarif ' + sgMajLabel() : '' });
-    if (it.ocp && it.ocp.price > 0) plats.push({ n: 'OCP', p: it.ocp.price, sub: ' · catalogue sept-déc 2026' + (ocpMajLabel() ? ', relevé ' + ocpMajLabel() : '') });
+    if (it.ocp && it.ocp.price > 0) plats.push({ n: 'OCP', p: it.ocp.price, sub: ' · sept-déc 2026' });
     if (plats.length >= 2) {
       var avecPrix = plats.filter(function (x) { return x.p > 0; }).slice().sort(function (a, b) { return a.p - b.p; });
       var best = (avecPrix.length >= 2 && avecPrix[0].p < avecPrix[1].p) ? avecPrix[0] : null;
