@@ -337,7 +337,10 @@ def cooper():
 
 # ── Farmaline (pharmacie en ligne belge, prix publics) ───────────────────
 def farmaline():
-    COLS = ["ean13", "libelle", "marque", "labo", "conditionnement", "forme", "rayon", "tarif", "prix", "prix_ht", "remise", "stock", "vendeur", "lien", "connu"]
+    # tarif = prix BARRÉ (best_offer.strike_price, seulement s'il dépasse le prix) ;
+    # conseille = listPrice (prix conseillé, parfois SOUS le prix de vente : ce n'est pas
+    # un prix barré) ; remise = best_offer.discount en %. Vérifié sur la récolte le 12/09.
+    COLS = ["ean13", "libelle", "marque", "labo", "conditionnement", "forme", "rayon", "tarif", "conseille", "prix", "prix_ht", "remise", "stock", "vendeur", "lien", "connu"]
     if not FARMA_JSONL.exists():
         print("ERREUR : fichier introuvable :", FARMA_JSONL)
         sys.exit(1)
@@ -367,14 +370,18 @@ def farmaline():
         rp = pr.get("retailPrice") or {}
         cat = r.get("primaryCategory") or []
         rayon = cat[-1].split("/")[-1] if cat else ""
-        seller = ((r.get("best_offer") or {}).get("seller") or {}).get("name") or ""
+        bo = r.get("best_offer") or {}
+        seller = (bo.get("seller") or {}).get("name") or ""
         prix = r.get("price")
-        tarif = r.get("listPrice")
+        conseille = r.get("listPrice")
+        strike = (bo.get("strike_price") or {}).get("amount")
+        tarif = strike if (strike and prix and strike > prix) else None
+        remise = bo.get("discount") if tarif else None
         data.append([
             ean, r.get("productName") or "", r.get("brand") or "", r.get("manufacturer") or "",
             r.get("packSize") or "", r.get("pharmaForm") or "", rayon,
-            round(tarif / 100, 2) if tarif else None, round(prix / 100, 2) if prix else None,
-            rp.get("net"), r.get("discountInPercent") or None,
+            round(tarif / 100, 2) if tarif else None, round(conseille / 100, 2) if conseille else None,
+            round(prix / 100, 2) if prix else None, rp.get("net"), remise or None,
             "en stock" if r.get("inStock") else "épuisé", seller,
             "https://www.farmaline.be/" + (r.get("deeplink") or "").lstrip("/"),
             "connu" if connu else "code FR",

@@ -138,7 +138,7 @@
       code: 'ean13', net: '',
       chipCol: 'connu', chipLabel: { connu: 'Connus de JARVIS', 'code FR': 'Codes français' },
       affiche: [['ean13', 'EAN', ''], ['libelle', 'Produit', ''], ['marque', 'Marque', ''], ['labo', 'Laboratoire', ''], ['conditionnement', 'Conditionnement', ''], ['rayon', 'Rayon', ''],
-        ['tarif', 'Prix barré TTC', 'eur'], ['prix', 'Prix TTC', 'eur'], ['remise', 'Remise', 'pct'], ['prix_ht', 'Prix HT', 'eur'], ['stock', 'Stock', ''], ['vendeur', 'Vendeur', ''], ['lien', 'Fiche', 'lien']],
+        ['tarif', 'Prix barré TTC', 'eur'], ['prix', 'Prix TTC', 'eur'], ['remise', 'Remise', 'pct'], ['prix_ht', 'Prix HT', 'eur'], ['conseille', 'Prix conseillé TTC', 'eur'], ['stock', 'Stock', ''], ['vendeur', 'Vendeur', ''], ['lien', 'Fiche', 'lien']],
       cherche: ['libelle', 'marque', 'labo', 'rayon', 'ean13']
     }
   };
