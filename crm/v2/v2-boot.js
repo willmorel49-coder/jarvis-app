@@ -359,6 +359,10 @@
     // qu'à l'onglet « Catalogue » de l'écran Produits : chargé à l'ouverture de
     // cet onglet, jamais au démarrage (règle de poids, ROBOT.md §11.6).
     catcomplet: 'v2/catalogue-complet-data.js',
+    // Rayon lisible par CIP (47 rayons, 11 817 CIP) : sert au sélecteur de
+    // produits de l'éditeur marketing, chargé avec le catalogue complet.
+    // Du rangement, pas du tarif : public.
+    mktrayons: 'v2/mkt-rayons-data.js',
   };
 
   // ── Les fichiers de données reviennent dans le dépôt (15/08/2026) ────
@@ -746,7 +750,8 @@
     clients: 'CLIENTS',
     wml: 'WML_OFFICINES',
     grplogos: 'GRP_LOGOS',
-    catcomplet: 'CATALOGUE_COMPLET'
+    catcomplet: 'CATALOGUE_COMPLET',
+    mktrayons: 'MKT_RAYONS'
   };
 
   // ── Les conditions commerciales reviennent sur le catalogue ──────────────
