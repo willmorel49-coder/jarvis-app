@@ -654,9 +654,15 @@
     if (!P || !B || !B.length) return;
     // Set des princeps (famille pr_*) d'après PROD_STATS : seuls eux ont l'abandon
     // de marge (les génériques/NR gardent net = PPHT). Vide si non chargé → dégrade proprement.
-    var PR = {};
+    var PR = {}, BIOSIM = {};
     var PS = window.PROD_STATS;
-    if (PS && PS.length) { for (var k = 0; k < PS.length; k++) { var r = PS[k]; if (r && r.c && r.f && r.f.indexOf('pr_') === 0) PR[String(r.c)] = 1; } }
+    if (PS && PS.length) {
+      for (var k = 0; k < PS.length; k++) {
+        var r = PS[k]; if (!r || !r.c || !r.f) continue;
+        if (r.f.indexOf('pr_') === 0) PR[String(r.c)] = 1;
+        else if (r.f === 'biosim') BIOSIM[String(r.c)] = 1;
+      }
+    }
     var n = 0, fixedAband = 0;
     for (var i = 0; i < B.length; i++) {
       var b = B[i], c = b && b.cip13 ? String(b.cip13) : '';
@@ -683,6 +689,14 @@
       else if ((PR[c] || vraimentRemb) && !(b.prix_ip > 0 && b.prix_ip < pp)) {
         b.prix_ip = Math.round((pp - abandonBareme(pp)) * 100) / 100;
         fixedAband++;
+      }
+      // Biosimilaires (ex Yuflyma, Abasaglar, Remsima) : ni NR, ni princeps (famille à
+      // part dans PROD_STATS), donc sans prix_ip d'origine ils restaient à "—" nulle
+      // part — aucune vraie remise, mais aucun prix net non plus. Comme pour un NR, on
+      // aligne au minimum sur le PPHT (pas d'abandon inventé) : la fusion du fichier
+      // protégé, juste après, peut ensuite remplacer par un vrai net négocié si connu.
+      else if (BIOSIM[c] && !(b.prix_ip > 0 && b.prix_ip <= pp)) {
+        b.prix_ip = pp;
       }
       // recalcule la remise (évite les % aberrants pré-calculés quand prix_ht était 0)
       b.remise_pct = (b.prix_ht > 0 && b.prix_ip > 0 && b.prix_ip <= b.prix_ht)
