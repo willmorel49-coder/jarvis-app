@@ -55,6 +55,8 @@
     'list': '<path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1.2" fill="currentColor" stroke="none"/><circle cx="4" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="4" cy="18" r="1.2" fill="currentColor" stroke="none"/>',
     // croix close
     'close': '<path d="M6 6l12 12M18 6 6 18"/>',
+    // déplacer (position libre)
+    'move': '<path d="M12 3v18M3 12h18M6.5 8.5 3 12l3.5 3.5M17.5 8.5 21 12l-3.5 3.5M8.5 6.5 12 3l3.5 3.5M8.5 17.5 12 21l3.5-3.5"/>',
   };
 
   function ICO(name, size, strokeW) {
