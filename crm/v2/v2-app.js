@@ -1006,6 +1006,49 @@
     ].join('');
     document.head.appendChild(st);
   }
+  // Relances dues (demande Manon, 10/09/2026) : date saisie fiche par fiche
+  // (« Prochaine relance », V2.profil scope 'client') — carte sur l'accueil
+  // listant les officines en retard / à relancer aujourd'hui / bientôt.
+  // Chargée une fois (cache module), l'accueil se réaffiche dès qu'elle arrive.
+  var _relances = null;
+  function loadRelances() {
+    if (_relances || !V2.profil || !V2.profil.loadScope) return;
+    _relances = [];
+    V2.profil.loadScope('client').then(function (all) {
+      var byId = {}; (V2.pharmacies || []).forEach(function (p) { byId[String(p.id)] = p; });
+      var today0 = new Date(); today0.setHours(0, 0, 0, 0);
+      var out = [];
+      (all || []).forEach(function (o) {
+        var d = o && o.data && o.data.relance_date; if (!d) return;
+        var ph = byId[String(o.sid)]; if (!ph) return;
+        var dt = new Date(d + 'T00:00:00'); if (isNaN(dt.getTime())) return;
+        var diff = Math.round((dt - today0) / 86400000);
+        out.push({ pid: o.sid, name: ph.name || '', diff: diff });
+      });
+      out.sort(function (a, b) { return a.diff - b.diff; });
+      _relances = out;
+      if (V2.render) V2.render();
+    }).catch(function () { _relances = []; });
+  }
+  function relancesCardHtml() {
+    if (_relances == null) { loadRelances(); return ''; }
+    var dus = _relances.filter(function (r) { return r.diff <= 2; }).slice(0, 8);
+    if (!dus.length) return '';
+    function badge(diff) {
+      if (diff < 0) return { c: 'var(--c-rose)', t: diff === -1 ? 'Retard : hier' : 'Retard : J' + diff };
+      if (diff === 0) return { c: 'var(--c-amber)', t: 'Aujourd\'hui' };
+      return { c: 'var(--c-mint)', t: 'Dans ' + diff + 'j' };
+    }
+    return '<div class="v2-card" style="margin-bottom:16px;padding:16px 18px">' +
+      '<div style="font-size:13px;font-weight:800;letter-spacing:-.01em;color:var(--ip-ink);margin-bottom:10px">À relancer</div>' +
+      dus.map(function (r) {
+        var b = badge(r.diff);
+        return '<a onclick="V2.go(\'pharma\',\'' + esc(String(r.pid)) + '\')" style="display:flex;align-items:center;gap:10px;padding:8px 0;text-decoration:none;color:inherit;cursor:pointer;border-top:1px solid var(--line);font-size:13.5px">' +
+          '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(r.name) + '</span>' +
+          '<span style="flex:none;font-size:11px;font-weight:700;color:' + b.c + '">' + b.t + '</span></a>';
+      }).join('') +
+      '</div>';
+  }
   // Spotlight : la souris met à jour --mx/--my sur la tuile survolée
   V2.homeSpot = function (e, el) {
     try {
@@ -1260,6 +1303,7 @@
           '</div>' +
           '<div class="v2-search" role="button" tabindex="0" aria-label="Rechercher une pharmacie, un produit" onclick="V2.onTopSearch()"><span class="srch-ic">' + ICO('search', 18, 2) + '</span>' +
             '<input readonly aria-hidden="true" tabindex="-1" placeholder="Cherche une pharmacie, un produit…" style="cursor:pointer"><kbd>' + MOD + 'K</kbd></div>' +
+          relancesCardHtml() +
           pilHtml +
         '</div>';
     }
