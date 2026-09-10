@@ -325,6 +325,11 @@
     sagittaprix: 'v2/sagitta-prix.js',
     // Catalogue OCP « Les Incontournables » (meilleur net par code 13) : même raison, même traitement.
     ocpprix: 'v2/ocp-prix.js',
+    // 10/09/2026 — écran « Ressources concurrents » : catalogues COMPLETS Sagitta
+    // (3 exports fusionnés, 2 Mo) et OCP (tous paliers + Marque Conseil, 125 Ko).
+    // Conditions de tiers : protégés, jamais côté OPSO. generate_concurrents.py.
+    concsagitta: 'v2/concurrents-sagitta-data.js',
+    concocp: 'v2/concurrents-ocp-data.js',
     // Prix PUBLICS E.Leclerc (TTC) et rayons fins Offilog : données publiques.
     leclercpub: 'v2/leclerc-pub-data.js',
     offilogcats: 'v2/offilog-cats-data.js',
@@ -397,6 +402,8 @@
     pharmazonprix: 'pharmazon-prix.js',
     sagittaprix: 'sagitta-prix.js',
     ocpprix: 'ocp-prix.js',
+    concsagitta: 'concurrents-sagitta-data.js',
+    concocp: 'concurrents-ocp-data.js',
     // La grande passe du 03/09/2026. Le POIDS, cause de la panne du 15/08,
     // est traité par le rangement local (texteProtege) : téléchargé une fois
     // par version, servi depuis l'appareil ensuite.
@@ -749,6 +756,8 @@
     pharmazonprix: 'PHARMAZON_PRIX',
     sagittaprix: 'SAGITTA_PRIX',
     ocpprix: 'OCP_PRIX',
+    concsagitta: 'CONCURRENTS_SAGITTA',
+    concocp: 'CONCURRENTS_OCP',
     leclercpub: 'LECLERC_PUB',
     offilogcats: 'OFFILOG_CATS',
     benchcond: 'BENCH_COND',
@@ -1012,7 +1021,7 @@
     // de le servir, et le lecteur compacté ne trouverait pas ses dictionnaires.
     // Pas besoin de le suivre à chaque déploiement en revanche : quand `VER` de
     // sw.js change, l'activation du service worker efface tous les caches.
-    var V = '?v=20260910x';
+    var V = '?v=20260910y';
     V2.versionDonnees = V;   // lu par chargerScriptProtege (fiche carte)
     var promises = keys.map(function (k) {
       var src = (window.V2_DATA_BASE || '../') + DATA_FILES[k];

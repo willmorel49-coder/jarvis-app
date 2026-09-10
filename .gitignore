@@ -184,6 +184,9 @@ pharmazon-b2b-data.js
 # 04/09/2026 — tarif d'achat Sagitta (conditions d'un tiers) : même traitement.
 crm/v2/sagitta-prix.js
 crm/v2/ocp-prix.js
+# 10/09/2026 — catalogues complets Sagitta + OCP (écran Ressources concurrents) : même traitement.
+crm/v2/concurrents-sagitta-data.js
+crm/v2/concurrents-ocp-data.js
 
 # 03/09/2026 — grande passe « conditions commerciales » : ces fichiers portent
 # nos prix nets, remises, CA par pharmacie ou par établissement. Ils vivent
