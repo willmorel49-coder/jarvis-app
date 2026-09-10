@@ -117,7 +117,7 @@
   .v3-right{width:220px;border-left:1px solid var(--line);background:var(--card-2);padding:14px}
 
   /* ---- V4 : Assistant guidé ---- */
-  .v4-body{height:560px;display:flex;flex-direction:column}
+  .v4-body{height:600px;display:flex;flex-direction:column}
   .v4-steps{display:flex;gap:0;padding:16px 24px 0;flex-shrink:0}
   .v4-step{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--muted-2)}
   .v4-step .n{width:22px;height:22px;border-radius:50%;background:var(--line-2);color:var(--muted);
@@ -133,7 +133,7 @@
   .v4-tpl .hdr{position:absolute;top:0;left:0;right:0;height:34%;background:var(--ip-blue)}
   .v4-tpl .ln{position:absolute;left:10%;right:26%;height:6%;background:var(--line-strong);border-radius:3px}
   .v4-tpl .lbl{position:absolute;bottom:8px;left:8px;right:8px;font-size:11px;font-weight:700;color:var(--ip-ink-2)}
-  .v4-canvas-zone{flex:1;position:relative;display:none;align-items:center;justify-content:center}
+  .v4-canvas-zone{flex:1;position:relative;display:none;align-items:center;justify-content:center;overflow-y:auto}
   .v4-guide-zone{position:absolute;border:1.5px dashed var(--ip-blue);border-radius:6px;pointer-events:none}
   .v4-guide-lbl{position:absolute;font-size:9px;font-weight:700;color:var(--ip-blue);background:#fff;
     padding:1px 5px;border-radius:4px;top:-9px;left:6px}
@@ -293,13 +293,15 @@
         <div class="v4-step"><span class="n">2</span>Personnaliser</div>
       </div>
       <div class="v4-gallery" id="v4-gallery">
-        <div class="v4-tpl" data-go="1"><div class="hdr"></div><div class="ln" style="top:40%"></div><div class="ln" style="top:48%;right:40%"></div><div class="lbl">Promo semaine</div></div>
-        <div class="v4-tpl" data-go="1"><div class="hdr" style="background:#1E9E6A"></div><div class="ln" style="top:40%"></div><div class="lbl">Nouveauté</div></div>
-        <div class="v4-tpl" data-go="1"><div class="hdr" style="background:#C7791A"></div><div class="ln" style="top:44%"></div><div class="ln" style="top:52%;right:50%"></div><div class="lbl">Sélection du mois</div></div>
-        <div class="v4-tpl" data-go="1"><div class="hdr" style="background:#6D4FC4"></div><div class="ln" style="top:40%"></div><div class="lbl">Fiche produit simple</div></div>
+        <div class="v4-tpl" data-tpl="0"><div class="hdr"></div><div class="ln" style="top:40%"></div><div class="ln" style="top:48%;right:40%"></div><div class="lbl">Promo semaine</div></div>
+        <div class="v4-tpl" data-tpl="1"><div class="hdr" style="background:#1E9E6A"></div><div class="ln" style="top:40%"></div><div class="lbl">Nouveauté</div></div>
+        <div class="v4-tpl" data-tpl="2"><div class="hdr" style="background:#C7791A"></div><div class="ln" style="top:44%"></div><div class="ln" style="top:52%;right:50%"></div><div class="lbl">Sélection du mois</div></div>
+        <div class="v4-tpl" data-tpl="3"><div class="hdr" style="background:#6D4FC4"></div><div class="ln" style="top:40%"></div><div class="lbl">Fiche produit simple</div></div>
       </div>
       <div class="v4-canvas-zone" id="v4-canvas-zone">
-        <canvas id="fab-v4" width="520" height="440"></canvas>
+        <button class="mini-btn" id="v4-back" style="position:absolute;left:16px;top:16px;z-index:6">← Changer de modèle</button>
+        <div class="v4-swap-hint" style="position:absolute;right:16px;top:16px;z-index:6;font-size:11px;color:var(--muted);background:#fff;border:1px solid var(--line);padding:5px 10px;border-radius:999px">Double-clique un texte pour l'écrire · clique la photo pour changer de produit</div>
+        <canvas id="fab-v4" width="520" height="540"></canvas>
       </div>
     </div>
   </div>
@@ -341,20 +343,171 @@
     return c;
   }
 
+  // ── V4 : vrais champs d'une fiche marketing (mêmes noms que editing / products[] dans v2-mkt.js) ──
+  // editing.title, editing.accroche, editing.footer, editing.theme.accent
+  // products[0] : { name, cat, cip, price, remise, ppht } — vocab-ok : noms de champs internes identiques à v2-mkt.js (« abandon de marge » à l'affichage)
+  // même calcul PPHT / abandon de marge que ficheProduitBody() en prod
+  var V4_TEMPLATES = [
+    { label: 'Promo semaine',       accent: '#0050E6' },
+    { label: 'Nouveauté',           accent: '#1E9E6A' },
+    { label: 'Sélection du mois',   accent: '#C7791A' },
+    { label: 'Fiche produit simple',accent: '#6D4FC4' }
+  ];
+  // Fiche de démonstration avec les VRAIS noms de champs (aucune donnée réelle de pharmacie ici,
+  // juste la forme exacte de editing/products[0] telle que lue par v2-mkt.js)
+  var v4Editing = {
+    title: 'Promo de la semaine',
+    accroche: 'Notre sélection à mettre en avant au comptoir cette semaine',
+    footer: 'Offre valable jusqu\'au 31/07 · contact@integralpharma.fr',
+    products: [{ name: 'Doliprane 1000 mg, 8 comprimés', cat: 'Antalgiques & douleur', cip: '3400930000000', price: 1.90, /* vocab-ok : champ interne identique à products[].remise dans v2-mkt.js */ remise: 8, ppht: 0, img: '' }]
+  };
+  function v4Ppht(p){ return p.ppht > 0 ? p.ppht : (p.remise > 0 && p.price > 0 ? Math.round(p.price / (1 - p.remise / 100) * 100) / 100 : 0); }
+  function v4Pct(p){ var ppht = v4Ppht(p); return (ppht > 0 && p.price > 0 && p.price < ppht) ? Math.round((1 - p.price / ppht) * 1000) / 10 : 0; }
+  function v4Eur(n){ return n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €'; }
+
+  function guideRect(x, y, w, h, accent, label){
+    var group = [];
+    group.push(new fabric.Rect({
+      left: x, top: y, width: w, height: h, fill: 'transparent',
+      stroke: accent, strokeWidth: 1.5, strokeDashArray: [5, 4], rx: 6, ry: 6,
+      selectable: false, evented: false, hoverCursor: 'default'
+    }));
+    group.push(new fabric.Text(label, {
+      left: x + 6, top: y - 15, fontSize: 9, fontWeight: '700', fill: accent,
+      fontFamily: 'Inter', selectable: false, evented: false, hoverCursor: 'default'
+    }));
+    return group;
+  }
+  function photoPlaceholder(x, y, w, h){
+    var objs = [];
+    objs.push(new fabric.Rect({ left: x, top: y, width: w, height: h, rx: 10, ry: 10, fill: '#F4F6FB', stroke: 'rgba(16,19,28,.1)', selectable: false, evented: false }));
+    objs.push(new fabric.Rect({ left: x + w/2 - 16, top: y + h/2 - 16, width: 32, height: 32, rx: 4, ry: 4, fill: 'transparent', stroke: '#C6CEDC', strokeWidth: 1.6, selectable: false, evented: false }));
+    objs.push(new fabric.Circle({ left: x + w/2 - 8, top: y + h/2 - 10, radius: 3, fill: 'transparent', stroke: '#C6CEDC', strokeWidth: 1.6, selectable: false, evented: false }));
+    return objs;
+  }
+
+  function buildGuidedCanvas(tplIndex){
+    var canvasEl = document.getElementById('fab-v4');
+    if (!canvasEl || !window.fabric) return;
+    var tpl = V4_TEMPLATES[tplIndex] || V4_TEMPLATES[0];
+    var acc = tpl.accent;
+    var it = v4Editing, p = it.products[0];
+
+    if (window.__v4Canvas) { window.__v4Canvas.dispose(); window.__v4Canvas = null; } // sinon fabric plante à la reconstruction (clic photo, retour galerie)
+    var c = new fabric.Canvas('fab-v4', { backgroundColor: '#ffffff', selection: false, preserveObjectStacking: true });
+    window.__v4Canvas = c;
+
+    // en-tête (bandeau de couleur, non modifiable — vient du modèle choisi)
+    c.add(new fabric.Rect({ left: 0, top: 0, width: 520, height: 96, fill: acc, selectable: false, evented: false }));
+    c.add(new fabric.Text('INTÉGRAL PHARMA · ' + tpl.label.toUpperCase(), { left: 24, top: 16, fontSize: 10, fontWeight: '800', fill: 'rgba(255,255,255,.85)', fontFamily: 'Inter', selectable: false, evented: false }));
+
+    // zone TITRE (editing.title)
+    var titleBox = new fabric.Textbox(it.title, {
+      left: 24, top: 34, width: 472, fontSize: 21, fontWeight: '800', fill: '#fff', fontFamily: 'Inter',
+      editable: true, lockMovementX: true, lockMovementY: true, hasControls: false, lockScalingX: true, lockScalingY: true
+    });
+    c.add(titleBox);
+
+    // zone ACCROCHE (editing.accroche)
+    guideRect(24, 106, 472, 34, '#8A91A4', 'ACCROCHE').forEach(function(o){ c.add(o); });
+    var accBox = new fabric.Textbox(it.accroche, {
+      left: 30, top: 110, width: 460, fontSize: 12.5, fill: '#4A5164', fontFamily: 'Inter',
+      editable: true, lockMovementX: true, lockMovementY: true, hasControls: false, lockScalingX: true, lockScalingY: true
+    });
+    c.add(accBox);
+
+    // carte produit (cadre d'ensemble, non modifiable)
+    c.add(new fabric.Rect({ left: 24, top: 150, width: 472, height: 300, rx: 14, ry: 14, fill: '#fff', stroke: '#E2E7F0', strokeWidth: 1, selectable: false, evented: false }));
+
+    // zone PHOTO — clique pour changer de produit (démo : fait défiler quelques produits d'exemple)
+    guideRect(48, 172, 170, 170, acc, 'PHOTO PRODUIT').forEach(function(o){ c.add(o); });
+    var photoObjs = photoPlaceholder(48, 172, 170, 170);
+    photoObjs.forEach(function(o){ c.add(o); });
+    var photoHit = new fabric.Rect({ left: 48, top: 172, width: 170, height: 170, fill: 'transparent', selectable: false, hoverCursor: 'pointer' });
+    c.add(photoHit);
+
+    // zone NOM DU PRODUIT (products[0].name)
+    guideRect(260, 172, 236, 34, '#8A91A4', 'NOM DU PRODUIT').forEach(function(o){ c.add(o); });
+    var nameBox = new fabric.Textbox(p.name, {
+      left: 262, top: 176, width: 232, fontSize: 15.5, fontWeight: '800', fill: '#10131C', fontFamily: 'Inter',
+      editable: true, lockMovementX: true, lockMovementY: true, hasControls: false, lockScalingX: true, lockScalingY: true
+    });
+    c.add(nameBox);
+
+    // méta (cat + réf CIP) — dérivé, non éditable directement ici (comme la ligne "sub" de prodRow)
+    var metaTxt = (p.cat ? p.cat : '') + (p.cip ? ' · CIP ' + p.cip : '');
+    c.add(new fabric.Text(metaTxt, { left: 262, top: 212, fontSize: 10.5, fill: '#8A91A4', fontFamily: 'Inter', selectable: false, evented: false }));
+
+    // zone PRIX — même calcul PPHT / abandon de marge que ficheProduitBody() en prod
+    guideRect(260, 250, 236, 96, acc, 'PRIX').forEach(function(o){ c.add(o); });
+    var ppht = v4Ppht(p), pct = v4Pct(p);
+    var yPrice = 258;
+    if (ppht > 0 && pct > 0) {
+      c.add(new fabric.Text('Tarif grossiste (PPHT)', { left: 266, top: yPrice, fontSize: 9.5, fill: '#737A8C', fontFamily: 'Inter', selectable: false, evented: false }));
+      c.add(new fabric.Text(v4Eur(ppht), { left: 480, top: yPrice, fontSize: 11, fill: '#9AA1B2', fontFamily: 'monospace', originX: 'right', selectable: false, evented: false, linethrough: true }));
+      yPrice += 18;
+      c.add(new fabric.Text('Abandon de marge Intégral', { left: 266, top: yPrice, fontSize: 9.5, fill: '#737A8C', fontFamily: 'Inter', selectable: false, evented: false }));
+      c.add(new fabric.Text('−' + String(pct).replace('.', ',') + ' %', { left: 480, top: yPrice, fontSize: 11, fontWeight: '700', fill: '#1E9E6A', fontFamily: 'monospace', originX: 'right', selectable: false, evented: false }));
+      yPrice += 26;
+    }
+    c.add(new fabric.Text('Votre prix net HT', { left: 266, top: yPrice + 6, fontSize: 10.5, fontWeight: '700', fill: '#10131C', fontFamily: 'Inter', selectable: false, evented: false }));
+    c.add(new fabric.Text(v4Eur(p.price), { left: 480, top: yPrice, fontSize: 27, fontWeight: '800', fill: acc, fontFamily: 'monospace', originX: 'right', selectable: false, evented: false }));
+
+    // zone PIED DE PAGE (editing.footer)
+    guideRect(24, 470, 472, 34, '#8A91A4', 'PIED DE PAGE').forEach(function(o){ c.add(o); });
+    var footBox = new fabric.Textbox(it.footer, {
+      left: 30, top: 474, width: 460, fontSize: 10, fill: '#737A8C', fontFamily: 'Inter',
+      editable: true, lockMovementX: true, lockMovementY: true, hasControls: false, lockScalingX: true, lockScalingY: true
+    });
+    c.add(footBox);
+
+    // saisie live : les Textbox réécrivent v4Editing pour rester la source de vérité (comme editing.setTitle/setAccroche/setFooter)
+    titleBox.on('changed', function(){ it.title = titleBox.text; });
+    accBox.on('changed', function(){ it.accroche = accBox.text; });
+    nameBox.on('changed', function(){ p.name = nameBox.text; });
+    footBox.on('changed', function(){ it.footer = footBox.text; });
+
+    // clique sur la photo = changer de produit d'exemple (démo de la contrainte : on ne peut QUE remplacer le
+    // contenu de la zone prévue, jamais déplacer/redimensionner — cf. risque assumé de la variante ④)
+    var SAMPLES = [
+      { name: 'Doliprane 1000 mg, 8 comprimés', cat: 'Antalgiques & douleur', cip: '3400930000000', price: 1.90, remise: 8, ppht: 0 }, // vocab-ok : champ interne
+      { name: 'Nurofen 400 mg, 12 comprimés', cat: 'Antalgiques & douleur', cip: '3400931000000', price: 3.10, remise: 6, ppht: 0 }, // vocab-ok : champ interne
+      { name: 'Solaire SPF50 crème visage 50ml', cat: 'Solaire', cip: '', price: 12.90, remise: 0, ppht: 0 } // vocab-ok : champ interne
+    ];
+    photoHit.on('mousedown', function(){
+      // le compteur vit sur v4Editing (hors de cette fonction) : sinon il repart à zéro à chaque reconstruction du canevas
+      it._sampleIdx = ((it._sampleIdx == null ? 0 : it._sampleIdx) + 1) % SAMPLES.length;
+      var next = SAMPLES[it._sampleIdx];
+      it.products[0] = Object.assign({}, next);
+      buildGuidedCanvas(tplIndex); // reconstruit le canevas avec le nouveau produit — la photo change, le nom et le prix suivent
+    });
+
+    c.renderAll();
+    return c;
+  }
+
   window.addEventListener('load', function(){
     ['fab-v1','fab-v2','fab-v3'].forEach(function(id){ buildDemoCanvas(id, 500); });
 
+    var currentTpl = 0;
     // v4 : passage étape 1 → étape 2
     document.querySelectorAll('#v4-gallery .v4-tpl').forEach(function(t){
       t.addEventListener('click', function(){
+        currentTpl = parseInt(t.dataset.tpl, 10) || 0;
         document.getElementById('v4-gallery').style.display = 'none';
         var zone = document.getElementById('v4-canvas-zone');
         zone.style.display = 'flex';
         document.querySelectorAll('.v4-step')[0].classList.remove('on'); document.querySelectorAll('.v4-step')[0].classList.add('done');
         document.querySelectorAll('.v4-step')[1].classList.add('on');
-        var c = buildDemoCanvas('fab-v4', 420);
-        // zones guidées en pointillé pour simuler le mode "seules certaines zones bougent"
+        buildGuidedCanvas(currentTpl);
       });
+    });
+    var backBtn = document.getElementById('v4-back');
+    if (backBtn) backBtn.addEventListener('click', function(){
+      document.getElementById('v4-canvas-zone').style.display = 'none';
+      document.getElementById('v4-gallery').style.display = 'grid';
+      document.querySelectorAll('.v4-step')[0].classList.add('on'); document.querySelectorAll('.v4-step')[0].classList.remove('done');
+      document.querySelectorAll('.v4-step')[1].classList.remove('on');
     });
   });
 </script>
