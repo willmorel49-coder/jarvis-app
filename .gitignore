@@ -187,6 +187,8 @@ crm/v2/ocp-prix.js
 # 10/09/2026 — catalogues complets Sagitta + OCP (écran Ressources concurrents) : même traitement.
 crm/v2/concurrents-sagitta-data.js
 crm/v2/concurrents-ocp-data.js
+# 11/09/2026 — onglet « Études » (827 avantages observés, recherche sept. 2026) : même traitement.
+crm/v2/concurrents-etudes-data.js
 
 # 03/09/2026 — grande passe « conditions commerciales » : ces fichiers portent
 # nos prix nets, remises, CA par pharmacie ou par établissement. Ils vivent

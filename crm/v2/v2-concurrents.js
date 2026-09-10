@@ -6,9 +6,11 @@
    grossistes-répartiteurs. Chaque source s'ouvre en tableau filtrable,
    avec NOTRE net (V2.bestPrice) en face quand le code est chez nous.
    Décision Will 10/09/2026. CRM interne SEULEMENT — jamais côté OPSO.
-   Données : concurrents-sagitta-data.js + concurrents-ocp-data.js
-   (protégés, Supabase, generate_concurrents.py), pharmazon-data.js +
-   pharmazon-prix.js (protégé). Vanilla · zéro lib · zéro emoji.
+   Données : concurrents-sagitta-data.js + concurrents-ocp-data.js +
+   concurrents-etudes-data.js (protégés, Supabase, generate_concurrents.py),
+   pharmazon-data.js + pharmazon-prix.js (protégé).
+   11/09/2026 : onglet « Études » (dataset de la recherche conditions
+   grossistes, sept. 2026 — décision Will : dataset seul). Vanilla · zéro lib · zéro emoji.
    ═══════════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
@@ -91,9 +93,24 @@
       chipCol: '', chipLabel: {},
       affiche: [['ean13', 'EAN', ''], ['libelle', 'Produit', ''], ['labo', 'Laboratoire', ''], ['tarif', 'Prix catalogue', 'eur'], ['remise', 'Remise', 'pct'], ['net', 'Net Pharmazon', 'eur']],
       cherche: ['libelle', 'labo', 'ean13']
+    },
+    etudes: {
+      nom: 'Études · avantages observés', tag: 'Recherche sept. 2026', accent: '#8A6D1F', cles: ['concetudes'],
+      quoi: 'Ce que les sources publiques disent des avantages consentis aux officines : décisions, rapports, thèses, factures, CGV. Chaque ligne cite sa source, son extrait et un indice de confiance de 1 à 5.',
+      unite: 'observation', go: 'Ouvrir les observations', placeholder: 'Acteur, produit, avantage, source…',
+      charge: function () { return !!window.CONCURRENTS_ETUDES; },
+      maj: function () { return window.CONCURRENTS_ETUDES && CONCURRENTS_ETUDES.maj; },
+      rows: function () { return window.CONCURRENTS_ETUDES ? CONCURRENTS_ETUDES.rows : []; },
+      cols: function () { return window.CONCURRENTS_ETUDES ? CONCURRENTS_ETUDES.cols : []; },
+      code: 'cip13', net: '',
+      chipCol: 'flux', chipLabel: { 'grossiste→pharmacie': 'Grossiste → officine', 'labo→pharmacie': 'Laboratoire → officine', 'groupement→pharmacie': 'Groupement → officine', 'labo→grossiste': 'Laboratoire → grossiste', 'labo→groupement': 'Laboratoire → groupement', 'labo→autre': 'Laboratoire → autre', 'cadre-legal': 'Cadre légal', autre: 'Autre' },
+      affiche: [['acteur', 'Acteur', ''], ['libelle', 'Observation', ''], ['avantage', 'Avantage', ''], ['taux', 'Taux %', ''], ['montant', 'Montant', ''],
+        ['assiette', 'Assiette', ''], ['condition', 'Condition', ''], ['plafond', 'Plafond légal', ''], ['classification', 'Lecture', ''],
+        ['periode', 'Période', ''], ['document', 'Document', ''], ['extrait', 'Extrait', ''], ['source', 'Source', ''], ['url', 'Lien', 'lien'], ['confiance', 'Confiance', 'num']],
+      cherche: ['libelle', 'acteur', 'medicament', 'avantage', 'source', 'extrait', 'labo', 'cip13']
     }
   };
-  var ORDRE = ['sagitta', 'ocp', 'mc', 'pharmazon'];
+  var ORDRE = ['sagitta', 'ocp', 'mc', 'pharmazon', 'etudes'];
 
   // ── Notre prix (V2.bestPrice = seule source de vérité) ───────────────
   // Index PROD_STATS par CIP13. Génériques et biosimilaires EXCLUS du verdict
@@ -147,12 +164,14 @@
     return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : String(d);
   }
   function cap(s) { s = String(s || ''); return s.length > 60 ? s.slice(0, 58) + '…' : s; }
+  var LONG = { libelle: 1, descriptif: 1, condition: 1, extrait: 1, source: 1, assiette: 1 };
   function colIdx(s) { var m = {}; s.cols().forEach(function (c, i) { m[c] = i; }); return m; }
   function fmt(v, type) {
     if (v == null || v === '') return '<span class="cc-mute">—</span>';
     if (type === 'eur') return eur(v);
     if (type === 'pct') return (v > 0 ? String(Math.round(v * 10) / 10).replace('.', ',') + ' %' : '<span class="cc-mute">—</span>');
     if (type === 'num') return num(v);
+    if (type === 'lien') return /^https?:\/\//.test(String(v)) ? '<a href="' + esc(v) + '" target="_blank" rel="noopener">Voir</a>' : esc(v);
     if (type === 'paliers') return String(v).split('|').map(function (x) { var n = parseFloat(x); return isNaN(n) ? esc(x) : eur(n); }).join(' · ');
     return esc(v);
   }
@@ -198,13 +217,13 @@
   function tuile(k) {
     var s = SRC[k], ok = s.charge();
     var n = ok ? s.rows().length : null;
-    var meta = ok ? num(n) + ' références · relevé ' + dateFr(s.maj()) : (echec(k) ? 'Données protégées non chargées' : 'Chargé à l\'ouverture');
+    var meta = ok ? num(n) + ' ' + (s.unite || 'référence') + 's · relevé ' + dateFr(s.maj()) : (echec(k) ? 'Données protégées non chargées' : 'Chargé à l\'ouverture');
     return '<button type="button" class="cc-tile" style="--accent:' + s.accent + '" onclick="V2.go(\'concurrents\',\'' + k + '\')">' +
       '<div class="cc-tile-h"><span class="cc-tile-tag">' + esc(s.tag) + '</span><span class="cc-tile-n mono">' + (ok ? num(n) : '') + '</span></div>' +
       '<div class="cc-tile-t">' + esc(s.nom) + '</div>' +
       '<div class="cc-tile-d">' + esc(s.quoi) + '</div>' +
       '<div class="cc-tile-m">' + esc(meta) + '</div>' +
-      '<div class="cc-tile-go">Ouvrir le catalogue ' + ICO('chev', 14, 2.2) + '</div>' +
+      '<div class="cc-tile-go">' + esc(s.go || 'Ouvrir le catalogue') + ' ' + ICO('chev', 14, 2.2) + '</div>' +
     '</button>';
   }
   function lien(route, tag, t, d, accent) {
@@ -238,8 +257,8 @@
       var v = n ? verdict(r[netI], n) : '';
       var tds = s.affiche.map(function (c) {
         var val = r[ci[c[0]]];
-        var cls = (c[2] ? 'num mono' : '') + (c[0] === 'libelle' ? ' cc-name' : '') + (c[0] === s.code || c[0] === s.codeAlt ? ' mono cc-code' : '');
-        return '<td class="' + cls + '" data-label="' + esc(c[1]) + '"' + (c[0] === 'libelle' || c[0] === 'descriptif' || c[0] === 'condition' ? ' title="' + esc(val) + '"' : '') + '>' + (c[0] === 'libelle' || c[0] === 'descriptif' || c[0] === 'condition' ? esc(cap(val)) : fmt(val, c[2])) + '</td>';
+        var cls = (c[2] ? 'num mono' : '') + (c[0] === 'libelle' ? ' cc-name' : '') + (LONG[c[0]] && c[0] !== 'libelle' ? ' cc-long' : '') + (c[0] === s.code || c[0] === s.codeAlt ? ' mono cc-code' : '');
+        return '<td class="' + cls + '" data-label="' + esc(c[1]) + '"' + (LONG[c[0]] ? ' title="' + esc(val) + '"' : '') + '>' + (LONG[c[0]] ? esc(cap(val)) : fmt(val, c[2])) + '</td>';
       }).join('');
       if (avecNous) {
         tds += '<td class="num mono" data-label="Notre net">' + (n && n.ip > 0 ? eur(n.ip) : '<span class="cc-mute">—</span>') + '</td>' +
@@ -253,11 +272,11 @@
       var v = n ? verdict(r[netI], n) : '';
       if (v) { cmp++; if (v === 'win') g++; else if (v === 'lose') l++; else e++; }
     });
-    if (!shown.length) body = '<tr><td colspan="' + (s.affiche.length + 2) + '" style="padding:26px;text-align:center;color:var(--muted)">Aucune référence ne correspond.</td></tr>';
+    if (!shown.length) body = '<tr><td colspan="' + (s.affiche.length + 2) + '" style="padding:26px;text-align:center;color:var(--muted)">Aucune ' + (s.unite || 'référence') + ' ne correspond.</td></tr>';
     if (data.length > LIMIT) body += '<tr class="cc-more"><td colspan="' + (s.affiche.length + 2) + '">' + LIMIT + ' lignes affichées sur ' + num(data.length) + ' — affine la recherche pour voir les autres.</td></tr>';
     var bilan = avecNous && cmp ? '<div class="cc-bilan" style="--accent:' + s.accent + '"><b>' + num(cmp) + '</b> références aussi chez nous · <span class="win">' + num(g) + ' où Intégral est moins cher</span> · <span class="lose">' + num(l) + ' où ' + esc(s.nom.split(' ·')[0]) + ' est moins cher</span> · ' + num(e) + ' au même prix · hors génériques et biosimilaires</div>' : '';
     return bilan +
-      '<div class="cc-count">' + num(data.length) + ' référence' + (data.length > 1 ? 's' : '') + '</div>' +
+      '<div class="cc-count">' + num(data.length) + ' ' + (s.unite || 'référence') + (data.length > 1 ? 's' : '') + '</div>' +
       '<div class="cc-tablewrap"><table class="v2-table cc-table"><thead><tr>' + head + '</tr></thead><tbody>' + body + '</tbody></table></div>';
   }
   function sourceHtml(k) {
@@ -275,7 +294,7 @@
       return entete + '<div class="cc-sk" aria-busy="true">' + '<div class="cc-sk-l" style="width:38%"></div><div class="cc-sk-l" style="width:92%"></div><div class="cc-sk-l" style="width:84%"></div><div class="cc-sk-l" style="width:88%"></div><div class="cc-sk-l" style="width:70%"></div>' + '</div>';
     }
     return entete +
-      '<div class="cc-tools"><div class="cc-search">' + ICO('search', 15, 2) + '<input id="cc-q" type="search" placeholder="Produit, laboratoire, code…" value="' + esc(S.q) + '" oninput="V2.ccQ(this.value)" autocomplete="off"></div></div>' +
+      '<div class="cc-tools"><div class="cc-search">' + ICO('search', 15, 2) + '<input id="cc-q" type="search" placeholder="' + esc(s.placeholder || 'Produit, laboratoire, code…') + '" value="' + esc(S.q) + '" oninput="V2.ccQ(this.value)" autocomplete="off"></div></div>' +
       chips(s) +
       '<div id="cc-body">' + tableHtml(s) + '</div>';
   }
@@ -345,6 +364,7 @@
       '.cc-table td{padding:9px 12px;border-top:1px solid var(--line);font-size:13px;vertical-align:top}',
       '.cc-table td.num{text-align:right;white-space:nowrap}',
       '.cc-name{min-width:220px;max-width:340px;font-weight:600}',
+      '.cc-long{min-width:200px;max-width:320px}',
       '.cc-code{font-size:12px;color:var(--muted)}',
       '.cc-mute{color:var(--muted-2)}',
       '.cc-v{display:inline-block;font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap}',

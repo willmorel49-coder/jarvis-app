@@ -9,6 +9,13 @@ les paliers OCP, la Marque Conseil OCP.
 Découpé par source (règle de poids, > 500 Ko sinon) :
   crm/v2/concurrents-sagitta-data.js  window.CONCURRENTS_SAGITTA
   crm/v2/concurrents-ocp-data.js      window.CONCURRENTS_OCP
+  crm/v2/concurrents-etudes-data.js   window.CONCURRENTS_ETUDES  (11/09/2026)
+
+Études : `~/recherche-grossistes-2026-09/dataset.csv` (recherche de sept. 2026,
+828 avantages commerciaux observés dans des sources publiques : décisions,
+rapports, thèses, factures, CGV…). Décision Will 11/09/2026 : le dataset seul,
+`supra-legaux.csv` reste sur le Mac. `NULL` → vide ; colonnes pharmacie et
+bénéficiaire non reprises (pseudonymes de forum, sans intérêt pour l'écran).
 
 Sagitta : les 3 exports CSV `;` (général / grossiste / para-OTC) sont fusionnés
 par CIP13 (EAN13 sinon) : le général donne le socle, les deux détaillés
@@ -30,6 +37,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 OUT_SAG = ROOT / "crm" / "v2" / "concurrents-sagitta-data.js"
 OUT_OCP = ROOT / "crm" / "v2" / "concurrents-ocp-data.js"
+OUT_ETU = ROOT / "crm" / "v2" / "concurrents-etudes-data.js"
+ETUDES_CSV = Path.home() / "recherche-grossistes-2026-09" / "dataset.csv"
 
 # CONCURRENTS/ est gitignoré : absent des worktrees, présent dans ~/JARVIS/APP
 BASES = [ROOT / "CONCURRENTS", Path.home() / "JARVIS" / "APP" / "CONCURRENTS"]
@@ -173,6 +182,40 @@ def ocp_marque_conseil():
     return COLS, data, date_de(p), n
 
 
+# ── Études (recherche conditions grossistes, sept. 2026) ─────────────────
+def etudes():
+    # (clé de sortie, colonne CSV) ; 'libelle' pour que l'écran tronque et titre la désignation
+    MAP = [
+        ("id", "id"), ("flux", "flux"), ("acteur", "grossiste_ou_fournisseur"), ("labo", "laboratoire"),
+        ("medicament", "medicament"), ("cip13", "CIP13"), ("libelle", "designation"), ("periode", "date_ou_periode"),
+        ("annee", "annee"), ("document", "type_document"), ("avantage", "type_avantage"), ("taux", "taux_pct"),
+        ("montant", "montant"), ("assiette", "assiette"), ("seuil", "seuil_condition"), ("condition", "condition_particuliere"),
+        ("plafond", "plafond_legal_applicable"), ("classification", "classification"), ("source", "source"),
+        ("url", "url"), ("page", "page_ou_paragraphe"), ("extrait", "extrait_probant"), ("confiance", "confiance"),
+    ]
+    COLS = [m[0] for m in MAP]
+    if not ETUDES_CSV.exists():
+        print("ERREUR : fichier introuvable :", ETUDES_CSV)
+        sys.exit(1)
+    data = []
+    n = 0
+    with open(ETUDES_CSV, encoding="utf-8-sig", newline="") as fh:
+        for r in csv.DictReader(fh, delimiter=";"):
+            n += 1
+            if not (r.get("id") or "").strip():
+                continue
+            row = []
+            for cle, col in MAP:
+                v = (r.get(col) or "").strip()
+                if v == "NULL":
+                    v = ""
+                if cle in ("annee", "confiance"):
+                    v = int(v) if v.isdigit() else None
+                row.append(v)
+            data.append(row)
+    return COLS, data, date_de(ETUDES_CSV), n
+
+
 def ecrire(out, var, obj, entete, attendu):
     body = json.dumps(obj, separators=(",", ":"), ensure_ascii=False)
     out.write_text(
@@ -209,6 +252,16 @@ def main():
                       lambda o: len(o["incontournables"]["rows"]) == len(idata) and len(o["marqueConseil"]["rows"]) == len(mdata))
     print("OCP      : incontournables %d lignes -> %d, marque conseil %d -> %d, %d octets, relecture %s"
           % (ni, len(idata), nm, len(mdata), OUT_OCP.stat().st_size, "OK" if ok else "ÉCART !"))
+    if not ok:
+        sys.exit(1)
+
+    ec, edata, emaj, ne = etudes()
+    etu = {"maj": emaj, "cols": ec, "rows": edata}
+    relu, ok = ecrire(OUT_ETU, "CONCURRENTS_ETUDES", etu,
+                      "Études — avantages commerciaux observés (recherche conditions grossistes, sept. 2026)",
+                      lambda o: len(o["rows"]) == len(edata))
+    print("Études   : %d lignes CSV lues -> %d observations, maj %s, %d octets, relecture %s"
+          % (ne, len(edata), emaj, OUT_ETU.stat().st_size, "OK" if ok else "ÉCART !"))
     if not ok:
         sys.exit(1)
 
