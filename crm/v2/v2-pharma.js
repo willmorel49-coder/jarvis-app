@@ -1422,7 +1422,7 @@
           kv('Ville', esc(loc)) +
           (adresse ? kv('Adresse', esc(adresse)) : '') +
           kv('Titulaire', esc(titulaire)) +
-          kv('Groupement', (pharma.groupement && pharma.groupement !== '—') ? esc(pharma.groupement) : '') +
+          kv('Groupement', (pharma.groupement && pharma.groupement !== '—') ? esc(canonG(pharma.groupement)) : '') +
           kv('Téléphone', tel ? esc(tel) : '') +
           (portable && portable !== tel ? kv('Portable', esc(portable)) : '') +
           kv('E-mail', mail ? esc(mail) : '') +
