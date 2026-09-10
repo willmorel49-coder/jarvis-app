@@ -347,7 +347,9 @@
   }
   function prodImg(p, forPdf) {
     if (forPdf && window.OFFILOG_IMG && p.id && window.OFFILOG_IMG[p.id]) return proxify(window.OFFILOG_IMG[p.id]);
-    return proxify(p.img || '');
+    // À l'écran, la photo se charge en direct (aucune contrainte CORS) ; le relais ne sert qu'au PDF/canvas.
+    // Offilog répond 403 aux serveurs du relais (constaté le 10/09/2026), pas au navigateur.
+    return forPdf ? proxify(p.img || '') : (p.img || '');
   }
   function refPriceB(b) { var bp = V2.bestPrice(b); return (bp.ip != null) ? bp.ip : ((b.prix_ht != null && b.prix_ht > 0) ? b.prix_ht : 0); }
 
@@ -1284,7 +1286,7 @@
       : (p.remise > 0 && p.price > 0 ? Math.round(p.price / (1 - p.remise / 100) * 100) / 100 : 0);
     var pct = (ppht > 0 && p.price > 0 && p.price < ppht) ? Math.round((1 - p.price / ppht) * 1000) / 10 : 0;
     var visuel = img
-      ? '<img crossorigin="anonymous" src="' + esc(img) + '" style="width:100%;height:100%;object-fit:contain">'
+      ? '<img' + (forPdf ? ' crossorigin="anonymous"' : '') + ' src="' + esc(img) + '" style="width:100%;height:100%;object-fit:contain">'
       : '<svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="#C6CEDC" stroke-width="1.4">' +
         '<rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M21 15l-5-5L4 21"/></svg>';
     var ref = p.cip ? ('CIP ' + esc(p.cip)) : (p.ean ? ('EAN ' + esc(p.ean)) : '');
@@ -1357,7 +1359,7 @@
       var ph = '<div style="width:34px;height:34px;border-radius:6px;background:#F1F4F9;display:flex;align-items:center;justify-content:center">' +
         '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#B6BFCE" stroke-width="1.7"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M21 15l-5-5L4 21"/></svg></div>';
       var thumb = anyImg
-        ? '<td style="padding:6px 8px;width:40px;text-align:center"' + zoneAttrs(edit, 'photo', 'Photo', { i: idx, click: true, quiet: true }) + '>' + (img ? '<img crossorigin="anonymous" src="' + esc(img) + '" style="width:34px;height:34px;object-fit:contain;border-radius:6px;background:#FBFCFE">' : ph) + '</td>'
+        ? '<td style="padding:6px 8px;width:40px;text-align:center"' + zoneAttrs(edit, 'photo', 'Photo', { i: idx, click: true, quiet: true }) + '>' + (img ? '<img' + (forPdf ? ' crossorigin="anonymous"' : '') + ' src="' + esc(img) + '" style="width:34px;height:34px;object-fit:contain;border-radius:6px;background:#FBFCFE">' : ph) + '</td>'
         : '';
       var ref = p.cip ? esc(p.cip) : (p.ean ? esc(p.ean) : '—');
       // PPHT connu, sinon reconstitué depuis la remise portée par le produit. 0 = NR/prix libre → net seul.
