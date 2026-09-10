@@ -466,7 +466,7 @@ function exportVisitsToICS() {
 // 15/08 quand les adresses signées, jamais mises en cache, retéléchargeaient
 // tout à chaque ouverture. Exécution par <script> blob : un `const` du
 // fichier garde exactement la même portée qu'avec une balise ordinaire.
-const PROTEGE_VER = '20260910s';
+const PROTEGE_VER = '20260910t';
 const _protegeFait = {};
 function chargerProtege(fichier, apres) {
   if (_protegeFait[fichier]) { if (apres) apres(true); return Promise.resolve(true); }
@@ -920,8 +920,8 @@ const CATS = {
   biosim:    { label: 'Biosimilaires',           color: '#9B5CFF', icon: '🧬' },
   generique: { label: 'Génériques',              color: '#00E5A0', icon: '💊' },
   nr:        { label: 'Non remboursés',          color: '#b8730c', icon: '🔴' },
-  tch:       { label: 'Très chers (> 2000 €)',   color: '#8a1e3f', icon: '💠' },
-  ch:        { label: 'Chers (468 – 2000 €)',    color: '#c0367a', icon: '💎' },
+  tch:       { label: 'Très chers (> 3000 €)',   color: '#8a1e3f', icon: '💠' },
+  ch:        { label: 'Chers (468 – 3000 €)',    color: '#c0367a', icon: '💎' },
   mi:        { label: 'Intermédiaire (4,33 – 468 €)', color: '#e08a1e', icon: '📊' },
   pp:        { label: 'Petits prix (≤ 4,33 €)',  color: '#57AE31', icon: '✓'  },
 };
@@ -1054,7 +1054,7 @@ function classifyProduct(sale) {
   if (/\bNR\b/.test(name))                return 'nr';
   if (getBenchNrSet().has(name))           return 'nr';
   const p = sale.puNet || 0;
-  return p > 2000 ? 'tch' : p > 468 ? 'ch' : p > 4.33 ? 'mi' : 'pp';
+  return p > 3000 ? 'tch' : p > 468 ? 'ch' : p > 4.33 ? 'mi' : 'pp';
 }
 
 function classifyFromWMLRow(sf, nature, afm, puNet, designation) {
@@ -1069,7 +1069,7 @@ function classifyFromWMLRow(sf, nature, afm, puNet, designation) {
     const k = (designation).trim().toUpperCase().replace(/\s+/g, ' ');
     if (getBenchNrSet().has(k)) return 'nr';
   }
-  if (puNet > 2000) return 'tch';
+  if (puNet > 3000) return 'tch';
   if (puNet > 468) return 'ch';
   if (puNet > 4.33) return 'mi';
   return 'pp';

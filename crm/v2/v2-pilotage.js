@@ -35,14 +35,14 @@
   var TIERS = [
     { label: '0 – 4,33 €',     sub: 'petits prix',     color: 'var(--ok)' },
     { label: '4,33 – 468 €',   sub: 'intermédiaires',  color: 'var(--info)' },
-    { label: '468 – 2 000 €',  sub: 'chers',           color: 'var(--c-amber)' },
-    { label: '> 2 000 €',      sub: 'très chers',      color: 'var(--bad-d)' },
+    { label: '468 – 3 000 €',  sub: 'chers',           color: 'var(--c-amber)' },
+    { label: '> 3 000 €',      sub: 'très chers',      color: 'var(--bad-d)' },
   ];
   function priceTier(pu) {
     pu = +pu || 0;
     if (pu < 4.33) return 0;
     if (pu < 468) return 1;
-    if (pu < 2000) return 2;
+    if (pu < 3000) return 2;
     return 3;
   }
 
