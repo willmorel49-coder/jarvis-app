@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Marketing — 4 présentations</title>
+<style>
+  :root{--blue:#0050E6;--blue-d:#0034A0;--ink:#10131C;--ink2:#2A2F3C;--muted:#737A8C;--paper:#FBFCFE;--card:#fff;
+    --line:rgba(16,19,28,.08);--ciel:#E4EDFC;--font:system-ui,-apple-system,'Helvetica Neue',sans-serif}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-font-smoothing:antialiased}
+  body{font-family:var(--font);color:var(--ink);background:var(--paper);min-height:100vh;display:flex;flex-direction:column}
+  .sky{position:fixed;inset:0 0 auto 0;height:420px;pointer-events:none;z-index:0;
+    background:radial-gradient(58% 78% at 50% -14%,#fff 0%,rgba(255,255,255,0) 64%),
+      radial-gradient(64% 96% at 2% -12%,#CFDFFC 0%,rgba(207,223,252,0) 66%),
+      radial-gradient(64% 96% at 99% -8%,#DCE7FC 0%,rgba(220,231,252,0) 68%),
+      linear-gradient(var(--ciel) 0%,rgba(251,252,254,0) 92%)}
+  header{position:relative;z-index:2;padding:18px 20px 12px;display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;
+    border-bottom:1px solid var(--line);background:linear-gradient(rgba(255,255,255,.92),rgba(255,255,255,.78))}
+  header h1{font-size:16px;font-weight:800;letter-spacing:-.01em;color:#0B1F4D;margin-right:6px}
+  header p{font-size:12.5px;color:var(--muted);flex-basis:100%}
+  .tabs{display:flex;flex-wrap:wrap;gap:8px}
+  .tab{min-height:44px;padding:0 16px;border-radius:999px;border:1px solid rgba(16,19,28,.12);background:var(--card);
+    font:inherit;font-size:13.5px;font-weight:700;color:var(--ink2);cursor:pointer;display:inline-flex;align-items:center;gap:8px;
+    box-shadow:0 1px 1px rgba(11,31,77,.05),0 4px 10px -6px rgba(11,31,77,.16),0 1px 0 rgba(255,255,255,.9) inset;transition:.16s}
+  .tab:hover{border-color:var(--blue)}
+  .tab.on{background:var(--blue);border-color:var(--blue);color:#fff;box-shadow:0 4px 12px rgba(0,80,230,.26)}
+  .tab b{font-size:11px;font-weight:800;opacity:.75}
+  .open{margin-left:auto;font-size:13px;font-weight:700;color:var(--blue);text-decoration:none;min-height:44px;display:inline-flex;align-items:center;gap:6px}
+  main{position:relative;z-index:1;flex:1;display:flex;flex-direction:column;padding:14px 20px 20px}
+  .frame{flex:1;display:flex;flex-direction:column;min-height:70vh;border:1px solid var(--line);border-radius:20px;background:var(--card);overflow:hidden;
+    box-shadow:0 2px 3px rgba(11,31,77,.06),0 18px 34px -18px rgba(11,31,77,.26),0 1px 0 #fff inset}
+  iframe{width:100%;flex:1;min-height:70vh;border:0;display:block;background:#fff}
+  .zero{display:none;padding:34px 26px;max-width:640px;margin:0 auto}
+  .zero h2{font-size:22px;font-weight:800;letter-spacing:-.02em;color:#0B1F4D;margin-bottom:8px}
+  .zero p{font-size:14.5px;line-height:1.5;color:var(--ink2);margin-bottom:16px}
+  .btn{display:inline-flex;align-items:center;min-height:48px;padding:0 22px;border-radius:12px;background:var(--blue);color:#fff;
+    font-weight:800;font-size:15px;text-decoration:none;box-shadow:0 4px 12px rgba(0,80,230,.26)}
+  .btn:hover{background:var(--blue-d)}
+  @media(max-width:640px){header{padding:14px 14px 10px}main{padding:10px 10px 14px}.open{margin-left:0;flex-basis:100%}}
+  @media(prefers-reduced-motion:reduce){.tab{transition:none}}
+</style>
+</head>
+<body>
+<div class="sky" aria-hidden="true"></div>
+<header>
+  <h1>Marketing · 4 présentations</h1>
+  <nav class="tabs" aria-label="Propositions">
+    <button class="tab" data-k="0"><b>0</b> Aujourd'hui</button>
+    <button class="tab on" data-k="1"><b>1</b> L'atelier</button>
+    <button class="tab" data-k="2"><b>2</b> La vitrine</button>
+    <button class="tab" data-k="3"><b>3</b> Le flux</button>
+    <button class="tab" data-k="4"><b>4</b> Le comptoir</button>
+  </nav>
+  <a class="open" id="open" href="d1.html" target="_blank" rel="noopener">Ouvrir en plein écran ↗</a>
+  <p>Chaque proposition enchaîne les trois écrans : accueil Marketing, éditeur de fiche, choix des produits. Sur téléphone, « plein écran » est plus confortable.</p>
+</header>
+<main>
+  <div class="frame">
+    <div class="zero" id="zero">
+      <h2>L'écran d'aujourd'hui</h2>
+      <p>C'est la version en ligne, celle que Pauline et toi utilisez. Elle s'ouvre dans l'application, avec ton compte.</p>
+      <a class="btn" href="https://crm-jarvis.vercel.app/crm/v2/#marketing" target="_blank" rel="noopener">Ouvrir l'espace Marketing actuel</a>
+    </div>
+    <iframe id="fr" src="d1.html" title="Proposition"></iframe>
+  </div>
+</main>
+<script>
+(function(){
+  var tabs=document.querySelectorAll('.tab'),fr=document.getElementById('fr'),zero=document.getElementById('zero'),open=document.getElementById('open');
+  function show(k){
+    tabs.forEach(function(t){t.classList.toggle('on',t.dataset.k===k)});
+    if(k==='0'){fr.style.display='none';zero.style.display='block';open.href='https://crm-jarvis.vercel.app/crm/v2/#marketing';}
+    else{zero.style.display='none';fr.style.display='block';var s='d'+k+'.html';if(fr.getAttribute('src')!==s)fr.setAttribute('src',s);open.href=s;}
+    try{history.replaceState(null,'','#'+k)}catch(e){}
+  }
+  tabs.forEach(function(t){t.addEventListener('click',function(){show(t.dataset.k)})});
+  var h=(location.hash||'').replace('#','');
+  show(/^[0-4]$/.test(h)?h:'1');
+})();
+</script>
+</body>
+</html>

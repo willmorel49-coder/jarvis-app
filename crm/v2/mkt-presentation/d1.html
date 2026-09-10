@@ -1,0 +1,719 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Proposition 1 · L'atelier — Marketing JARVIS</title>
+<style>
+/* ── Peau Verrière : la lumière tombe d'en haut ─────────────────────────── */
+:root{
+  --bg:#FBFCFE;--card:#FFFFFF;--ink:#10131C;--t:#0B1F4D;--mute:#5A6379;
+  --acc:#0050E6;--acc2:#0034A0;--line:rgba(16,19,28,.07);--line2:rgba(16,19,28,.12);
+  --r:20px;--rm:14px;--sky1:#E4EDFC;--sky2:#CFDFFC;
+  --m:#0050E6; /* couleur du modèle courant (ne sert QUE sur la feuille et ses tuiles) */
+  --font:system-ui,-apple-system,'Helvetica Neue',Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{font-family:var(--font);color:var(--ink);background:var(--bg);font-size:15px;line-height:1.45;
+  font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased;overflow-x:clip;min-height:100vh}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+h1,h2,h3{color:var(--t);letter-spacing:-.02em;font-weight:800}
+[hidden]{display:none!important}
+::selection{background:rgba(0,80,230,.18)}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+
+/* ── Bandeau de proposition ─────────────────────────────────────────────── */
+.prop{background:#0B1F4D;color:#fff;padding:10px 20px;font-size:13px;line-height:1.4;
+  display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;
+  background-image:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,0))}
+.prop b{font-weight:800;letter-spacing:-.01em}
+.prop .risk{color:#FFD8A8}
+.prop .risk b{color:#FFC27A}
+.prop nav{margin-left:auto;display:flex;gap:6px}
+.prop nav button{min-height:32px;padding:0 12px;border-radius:999px;font-size:13px;font-weight:600;
+  border:1px solid rgba(255,255,255,.22);color:#fff}
+.prop nav button[aria-current="true"]{background:#fff;color:#0B1F4D;border-color:#fff}
+
+/* ── Chrome de l'app ─────────────────────────────────────────────────────── */
+.top{height:64px;display:flex;align-items:center;gap:14px;padding:0 20px;background:#fff;
+  border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20;
+  box-shadow:0 1px 0 rgba(255,255,255,.9) inset,0 8px 24px -16px rgba(11,31,77,.25)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 16px;
+  border-radius:12px;font-weight:600;font-size:14px;border:1px solid var(--line2);background:#fff;
+  color:var(--t);box-shadow:0 1px 0 rgba(255,255,255,.9) inset,0 1px 2px rgba(11,31,77,.06);
+  transition:transform .18s ease,box-shadow .18s ease}
+.btn:hover{transform:translateY(-1px);box-shadow:0 1px 0 rgba(255,255,255,.9) inset,0 6px 16px -6px rgba(11,31,77,.3)}
+.btn.pri{color:#fff;border-color:transparent;
+  background:linear-gradient(180deg,#2A6BFF 0%,#0050E6 55%,#0043C4 100%);
+  box-shadow:0 1px 0 rgba(255,255,255,.35) inset,0 10px 22px -10px rgba(11,31,77,.45)}
+.btn.pri:hover{box-shadow:0 1px 0 rgba(255,255,255,.35) inset,0 14px 26px -10px rgba(11,31,77,.5)}
+.btn.ghost{border-color:transparent;background:transparent;box-shadow:none}
+.top .search{margin-left:auto;display:flex;align-items:center;gap:8px;height:44px;padding:0 14px;
+  border:1px solid var(--line2);border-radius:12px;background:#fff;color:var(--mute);font-size:14px;min-width:220px}
+.top .search kbd{margin-left:auto;font:600 13px var(--font);border:1px solid var(--line2);border-radius:6px;padding:2px 6px;color:var(--mute)}
+.avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(180deg,#FFB65C,#F5931C);color:#fff;
+  display:grid;place-items:center;font-weight:800;box-shadow:0 1px 0 rgba(255,255,255,.5) inset}
+.crumb{display:flex;align-items:center;gap:10px;font-weight:700;color:var(--t);font-size:15px}
+.crumb span{color:var(--mute);font-weight:500}
+
+/* ── L'atelier : verrière + plan de travail ─────────────────────────────── */
+.atelier{position:relative;min-height:calc(100vh - 64px);
+  background:
+    linear-gradient(180deg,var(--sky1) 0,var(--sky2) 180px,#EEF3FB 420px,#F5F7FC 100%)}
+/* la verrière : cinq travées de lumière qui tombent de biais, sans flou */
+.atelier::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
+  background:
+    linear-gradient(180deg,rgba(255,255,255,0) 0,rgba(255,255,255,0) 40%,rgba(245,247,252,.9) 100%),
+    repeating-linear-gradient(104deg,
+      rgba(255,255,255,0) 0px,rgba(255,255,255,0) 140px,
+      rgba(255,255,255,.28) 140px,rgba(255,255,255,.55) 185px,
+      rgba(255,255,255,.28) 230px,rgba(255,255,255,0) 232px,
+      rgba(255,255,255,0) 360px)}
+/* les montants de la verrière : filets fins en haut */
+.atelier::after{content:"";position:absolute;left:0;right:0;top:0;height:8px;pointer-events:none;z-index:0;
+  background:repeating-linear-gradient(90deg,rgba(11,31,77,.10) 0 2px,transparent 2px 160px)}
+.bench{position:relative;z-index:1;max-width:1280px;margin:0 auto;padding:22px 24px 72px;
+  display:grid;grid-template-columns:256px minmax(0,1fr) 296px;gap:24px;align-items:start}
+
+.headline{grid-column:1/-1;display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:6px 4px 2px}
+.headline h1{font-size:30px;line-height:1.05}
+.headline p{color:var(--mute);font-size:14px;margin-top:4px}
+.headline .acts{display:flex;gap:10px;flex-wrap:wrap}
+
+/* ── Tiroirs (rails latéraux) ───────────────────────────────────────────── */
+.rail{display:flex;flex-direction:column;gap:14px;position:sticky;top:84px}
+.drawer{background:var(--card);border-radius:var(--r);border:1px solid var(--line);position:relative;
+  box-shadow:0 1px 0 rgba(255,255,255,.95) inset,0 2px 3px rgba(11,31,77,.05),0 18px 34px -22px rgba(11,31,77,.35);
+  background-image:linear-gradient(180deg,#fff 0,#fff 60%,#F7F9FD 100%);overflow:hidden;
+  transition:transform .22s cubic-bezier(.2,.8,.2,1),box-shadow .22s ease}
+.drawer:hover{transform:translateY(-2px);box-shadow:0 1px 0 rgba(255,255,255,.95) inset,0 2px 3px rgba(11,31,77,.05),0 26px 40px -22px rgba(11,31,77,.45)}
+.drawer>header{display:flex;align-items:center;gap:10px;padding:14px 16px 10px;font-weight:800;color:var(--t);font-size:14px;letter-spacing:-.01em}
+.drawer>header .handle{margin-left:auto;width:34px;height:6px;border-radius:999px;
+  background:linear-gradient(180deg,#DCE3F0,#B9C6DE);box-shadow:0 1px 0 rgba(255,255,255,.9) inset,0 1px 1px rgba(11,31,77,.2)}
+.drawer>header .n{margin-left:auto;font-size:13px;text-align:right;font-weight:600;color:var(--mute)}
+.drawer .body{padding:0 12px 12px}
+.ico{width:20px;height:20px;flex:none;color:var(--acc)}
+.drawer .desc{color:var(--mute);font-size:13px;padding:0 4px 10px}
+
+/* tuiles de modèles : chacune est une mini-feuille dans le tiroir */
+.models{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mtile{--m:#0050E6;min-height:98px;border-radius:12px;background:#fff;border:1px solid var(--line2);position:relative;
+  padding:30px 10px 8px;text-align:left;display:flex;flex-direction:column;justify-content:flex-end;gap:4px;
+  box-shadow:0 1px 0 rgba(255,255,255,.9) inset,0 6px 14px -8px rgba(11,31,77,.35);overflow:hidden;
+  transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}
+.mtile::before{content:"";position:absolute;left:0;right:0;top:0;height:14px;background:var(--m)}
+.mtile[data-head="slim"]::before{height:3px;top:8px;left:10px;right:10px;border-radius:2px}
+.mtile[data-head="plain"]::before{height:0}
+.mtile::after{content:"";position:absolute;left:10px;top:24px;width:60%;height:5px;border-radius:3px;background:rgba(11,31,77,.12)}
+.mtile[data-head="plain"]::after{top:10px;background:var(--m);opacity:.8}
+.mtile b{font-size:13px;color:var(--t);font-weight:700;letter-spacing:-.01em;line-height:1.2}
+.mtile small{font-size:13px;color:var(--mute)}
+.mtile:hover{transform:translateY(-2px)}
+.mtile[aria-pressed="true"]{border-color:var(--m);box-shadow:0 0 0 3px color-mix(in srgb,var(--m) 22%,transparent),0 8px 18px -8px rgba(11,31,77,.4)}
+
+/* rayons (chips) */
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{min-height:34px;padding:0 11px;border-radius:999px;border:1px solid var(--line2);background:#fff;font-size:13px;font-weight:600;color:var(--t);
+  display:inline-flex;align-items:center;gap:6px;box-shadow:0 1px 0 rgba(255,255,255,.9) inset,0 1px 2px rgba(11,31,77,.05)}
+.chip small{color:var(--mute);font-weight:600;font-size:13px}
+.chip.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.chip.on small{color:rgba(255,255,255,.8)}
+.chip.more{border-style:dashed;color:var(--mute)}
+
+/* instruments (colonne droite) */
+.tool{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-radius:var(--rm);text-align:left;width:100%;
+  transition:background .15s ease}
+.tool:hover{background:#F3F6FC}
+.tool .tico{width:38px;height:38px;border-radius:10px;flex:none;display:grid;place-items:center;color:var(--acc);
+  background:linear-gradient(180deg,#F3F7FF,#E4EDFC);box-shadow:0 1px 0 rgba(255,255,255,.9) inset,0 1px 2px rgba(11,31,77,.08)}
+.tool .tico svg{width:20px;height:20px}
+.tool b{display:block;font-size:14px;color:var(--t);font-weight:700;letter-spacing:-.01em}
+.tool span{display:block;font-size:13px;color:var(--mute);margin-top:2px;line-height:1.35}
+.tool .arr{margin-left:auto;align-self:center;color:var(--mute);flex:none}
+.tool .tico.pdf{color:#0034A0;background:linear-gradient(180deg,#FFF,#EAF0FB)}
+
+/* ── La feuille sur le plan de travail ──────────────────────────────────── */
+.stage{position:relative;perspective:1800px;perspective-origin:50% 30%;display:flex;flex-direction:column;align-items:center;gap:18px}
+.stage .hint{font-size:13px;color:var(--mute);display:flex;align-items:center;gap:8px}
+.stage .hint i{width:8px;height:8px;border-radius:50%;background:#1E9E6A;box-shadow:0 0 0 3px rgba(30,158,106,.18)}
+.sheetwrap{position:relative;width:min(100%,600px);transform-style:preserve-3d;
+  transform:rotateX(var(--rx,6deg)) rotateY(var(--ry,-10deg)) translateZ(0);
+  transition:transform .6s cubic-bezier(.2,.8,.2,1)}
+body[data-screen="edit"] .sheetwrap,body[data-screen="pick"] .sheetwrap{--rx:0deg;--ry:0deg}
+body[data-screen="pick"] .sheetwrap{transform:scale(.94) translateY(-6px);opacity:.55}
+/* ombre portée au sol : une tache douce sous la feuille, calée sur la lumière qui vient d'en haut à gauche */
+.sheetwrap::after{content:"";position:absolute;left:6%;right:-2%;bottom:-26px;height:60px;border-radius:50%;z-index:-1;
+  background:radial-gradient(60% 100% at 50% 50%,rgba(11,31,77,.32),rgba(11,31,77,0) 70%);transform:translateZ(-40px)}
+.sheet{position:relative;aspect-ratio:210/297;width:100%;background:#fff;border-radius:6px;
+  background-image:linear-gradient(158deg,#FFFFFF 0%,#FDFDFF 40%,#F4F6FB 72%,#EAEEF6 100%);
+  box-shadow:0 1px 0 rgba(255,255,255,1) inset,0 0 0 1px rgba(11,31,77,.08),
+    0 2px 3px rgba(11,31,77,.08),0 22px 40px -18px rgba(11,31,77,.45),0 60px 80px -40px rgba(11,31,77,.35);
+  padding:7.5% 7% 6%;display:flex;flex-direction:column;gap:12px;
+  transform-style:preserve-3d;transition:transform .32s cubic-bezier(.4,0,.2,1)}
+.sheet.turn{transform:rotateY(-92deg)}
+/* reflet de la verrière sur le papier : une bande de lumière qui traverse la feuille */
+.sheet::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:0;
+  background:linear-gradient(112deg,rgba(255,255,255,0) 18%,rgba(255,255,255,.9) 36%,rgba(255,255,255,0) 54%)}
+.sheet>*{position:relative;z-index:1}
+.sheet[data-head="band"] .sh-band{height:16px;background:var(--m);border-radius:3px}
+.sheet[data-head="slim"] .sh-band{height:4px;background:var(--m);border-radius:2px}
+.sheet[data-head="plain"] .sh-band{display:none}
+.sh-kick{font-size:13px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--m)}
+.sh-title{font-size:clamp(22px,4.2cqw,34px);line-height:1.02;letter-spacing:-.03em;color:var(--t)}
+.sheet[data-head="band"] .sh-title{color:var(--t)}
+.sh-lead{font-size:14px;color:#3B4460;line-height:1.4;max-width:92%}
+.sh-meta{font-size:13px;color:var(--mute);border-bottom:1px solid var(--line2);padding-bottom:10px}
+.sh-tag{display:none;align-self:flex-start;font-size:13px;font-weight:800;padding:4px 10px;border-radius:999px;color:#fff;background:var(--m)}
+.sheet[data-model="nouveaute"] .sh-tag{display:inline-block}
+.sh-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:4px}
+.sh-grid.n1{grid-template-columns:1fr}
+.sh-grid.n2,.sh-grid.n4{grid-template-columns:1fr 1fr}
+.sh-foot{margin-top:auto;display:flex;justify-content:space-between;gap:12px;font-size:13px;color:var(--mute);border-top:1px solid var(--line2);padding-top:10px;flex-wrap:wrap}
+.sh-foot b{color:var(--t);font-weight:700}
+[contenteditable]{border-radius:4px;outline-offset:4px;transition:box-shadow .15s ease}
+[contenteditable]:hover{box-shadow:0 0 0 4px rgba(0,80,230,.08)}
+[contenteditable]:focus{box-shadow:0 0 0 4px rgba(0,80,230,.16);outline:none}
+.sh-args{margin-top:6px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.sh-args h3{grid-column:1/-1;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);font-weight:800}
+.sh-args p{font-size:14px;line-height:1.35;color:#3B4460;padding:10px 12px;border-radius:8px;background:linear-gradient(180deg,#FFFFFF 0,#F6F8FC 100%);box-shadow:0 1px 0 rgba(255,255,255,1) inset,0 0 0 1px rgba(11,31,77,.07),0 6px 14px -8px rgba(11,31,77,.3)}
+.sh-args p b{display:block;color:var(--t);font-weight:800;letter-spacing:-.01em}
+.sh-empty{border:2px dashed var(--line2);border-radius:10px;padding:26px 12px;text-align:center;color:var(--mute);font-size:14px;grid-column:1/-1}
+
+/* la boîte : le produit représenté par sa boîte typographiée, avec un côté qui prend l'ombre */
+.box{position:relative;min-width:0;border-radius:8px;background:#fff;border:1px solid var(--line2);padding:12px 12px 10px;min-height:150px;
+  display:flex;flex-direction:column;gap:4px;
+  box-shadow:0 1px 0 rgba(255,255,255,1) inset,-6px 0 0 -3px #E3E9F4,-8px 8px 16px -10px rgba(11,31,77,.35);
+  background-image:linear-gradient(160deg,#fff 0,#fff 55%,#F3F6FB 100%);transition:transform .18s ease}
+.box::before{content:"";height:6px;border-radius:3px;background:var(--m);margin-bottom:4px;width:44%}
+.box .bn{font-size:13px;font-weight:800;letter-spacing:-.01em;line-height:1.15;color:var(--t);text-transform:uppercase}
+.box .bl{font-size:13px;color:var(--mute);line-height:1.25;overflow-wrap:anywhere}
+.box .bs{font-size:13px;font-weight:700;color:#0F7A4A;display:flex;align-items:center;gap:5px}.box .bs::before{content:"";width:7px;height:7px;border-radius:50%;background:#1E9E6A}.box .bs.rup{color:#B42318}.box .bs.rup::before{background:#B42318}
+.box .bp{margin-top:auto;display:flex;align-items:baseline;gap:5px;font-size:13px;color:var(--mute)}
+.box .bp b{font-size:15px;color:var(--t);font-weight:800;letter-spacing:-.02em}
+.box .bx{position:absolute;top:6px;right:6px;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;color:var(--mute);opacity:0;transition:opacity .15s}
+.box:hover .bx{opacity:1}
+.box:hover{transform:translateY(-2px)}
+
+/* créations récentes : petites feuilles posées en éventail sous la grande */
+.recent{width:min(100%,600px)}
+.recent h2{font-size:14px;color:var(--mute);font-weight:700;letter-spacing:.02em;text-transform:uppercase;margin:6px 0 10px}
+.fan{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.mini{--m:#0050E6;background:#fff;border-radius:6px;min-height:130px;padding:12px;position:relative;text-align:left;
+  box-shadow:0 1px 0 rgba(255,255,255,1) inset,0 0 0 1px rgba(11,31,77,.08),0 12px 22px -14px rgba(11,31,77,.5);
+  background-image:linear-gradient(158deg,#fff 0,#fff 50%,#F1F4FA 100%);display:flex;flex-direction:column;gap:5px;
+  transition:transform .22s cubic-bezier(.2,.8,.2,1)}
+.mini:nth-child(1){transform:rotate(-2deg)}.mini:nth-child(3){transform:rotate(2deg)}
+.mini:hover{transform:rotate(0) translateY(-4px)}
+.mini i{display:block;height:6px;border-radius:2px;background:var(--m)}
+.mini b{font-size:13px;color:var(--t);line-height:1.15;font-weight:700;letter-spacing:-.01em}
+.mini small{font-size:13px;color:var(--mute);margin-top:auto;line-height:1.25}
+.mini .who{display:inline-flex;align-items:center;gap:4px}
+.mini .who em{font-style:normal;width:20px;height:20px;border-radius:50%;background:#F5931C;color:#fff;font-size:13px;font-weight:800;display:grid;place-items:center}
+
+/* barre d'outils flottante de l'éditeur, posée juste au-dessus de la feuille */
+.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center;width:min(100%,600px)}
+.steps{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--mute);margin-right:auto}
+.steps b{display:inline-flex;align-items:center;gap:6px;color:var(--t);font-weight:700}
+.steps b i{width:22px;height:22px;border-radius:50%;background:var(--acc);color:#fff;font-style:normal;font-size:13px;display:grid;place-items:center;font-weight:800}
+.steps b i.done{background:#E4EDFC;color:var(--acc)}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:10px;overflow:hidden;background:#fff}
+.seg button{min-height:40px;padding:0 10px;white-space:nowrap;font-size:13px;font-weight:600;color:var(--mute)}
+.seg button[aria-pressed="true"]{background:#F3F6FC;color:var(--t)}
+.field{display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:600;color:var(--mute)}
+.field input,.field textarea{font:inherit;font-size:16px;font-weight:500;color:var(--ink);min-height:44px;padding:9px 12px;border-radius:10px;border:1px solid var(--line2);background:#fff;width:100%}
+.field textarea{min-height:64px;resize:vertical}
+.plist{display:flex;flex-direction:column;gap:6px}
+.plist li{list-style:none;display:flex;align-items:center;gap:10px;min-height:44px;padding:4px 6px 4px 10px;border-radius:10px;font-size:13px;background:#F7F9FD}
+.plist li b{color:var(--t);font-weight:700;flex:1;line-height:1.15}
+.plist li span{color:var(--mute)}
+.plist li button{width:36px;height:36px;border-radius:8px;color:var(--mute);display:grid;place-items:center}
+.plist li button:hover{background:#fff;color:#B42318}
+
+/* ── Le tiroir « produits » : il glisse sur le plan de travail sans quitter la feuille ── */
+.pick{position:fixed;left:0;right:0;bottom:0;top:auto;z-index:30;height:min(78vh,720px);
+  background:#fff;border-radius:22px 22px 0 0;display:grid;grid-template-rows:auto auto 1fr auto;grid-template-columns:minmax(0,1fr);
+  box-shadow:0 1px 0 rgba(255,255,255,1) inset,0 -2px 0 rgba(11,31,77,.04),0 -30px 60px -20px rgba(11,31,77,.45);
+  transform:translateY(104%);transition:transform .5s cubic-bezier(.2,.8,.2,1);visibility:hidden;max-width:1180px;margin:0 auto}
+body[data-screen="pick"] .pick{transform:translateY(0);visibility:visible}
+.pick>*{min-width:0}
+.pick .grip{position:absolute;top:8px;left:50%;width:48px;height:6px;margin-left:-24px;border-radius:999px;background:linear-gradient(180deg,#DCE3F0,#B9C6DE)}
+.pick .ph{display:flex;align-items:center;gap:10px;padding:22px 20px 10px}
+.pick .ph h2{font-size:18px;margin-right:auto}
+.pick .sbox{display:flex;align-items:center;gap:8px;flex:1;min-width:0;min-height:44px;padding:0 14px;border:1.5px solid var(--acc);border-radius:12px;color:var(--mute);font-size:16px;background:#fff}
+.pick .sbox span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pick .univ{display:flex;gap:8px;padding:0 20px 10px;overflow-x:auto;scrollbar-width:none}
+.pick .univ::-webkit-scrollbar{display:none}
+.pick .univ button{min-height:44px;padding:0 16px;border-radius:12px;border:1px solid var(--line2);font-size:14px;font-weight:700;color:var(--t);white-space:nowrap;background:#fff}
+.pick .univ button[aria-pressed="true"]{background:var(--acc);border-color:var(--acc);color:#fff}
+.pick .main{display:grid;grid-template-columns:230px 1fr;min-height:0;border-top:1px solid var(--line)}
+.pick .rayons{overflow:auto;padding:10px 8px;border-right:1px solid var(--line);background:linear-gradient(180deg,#FBFCFE,#F5F7FC)}
+.pick .rayons h3{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);padding:6px 10px}
+.pick .rayons button{display:flex;width:100%;min-height:44px;align-items:center;justify-content:space-between;gap:8px;padding:0 10px;border-radius:10px;font-size:14px;font-weight:600;color:var(--t);text-align:left}
+.pick .rayons button small{color:var(--mute);font-weight:600;font-size:13px}
+.pick .rayons button[aria-pressed="true"]{background:var(--acc);color:#fff}
+.pick .rayons button[aria-pressed="true"] small{color:rgba(255,255,255,.8)}
+.pick .list{overflow:auto;min-height:0;display:flex;flex-direction:column}
+.pick .filters{display:flex;flex-wrap:wrap;gap:6px;padding:12px 16px;align-items:center;border-bottom:1px solid var(--line);position:sticky;top:0;background:#fff;z-index:2}
+.pick .filters .cnt{font-size:13px;font-weight:800;color:var(--mute);letter-spacing:.06em;margin-right:6px}
+.pick .filters .chip{min-height:36px}
+.pick .filters label{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--t);min-height:36px;padding:0 6px}
+.pick .filters input[type=checkbox]{width:18px;height:18px;accent-color:var(--acc)}
+.prow{display:grid;grid-template-columns:44px 1fr auto 44px;align-items:center;gap:10px;min-height:56px;padding:6px 12px 6px 16px;border-bottom:1px solid var(--line);cursor:pointer;text-align:left;width:100%}
+.prow:hover{background:#F7F9FD}
+.prow .pb{width:40px;height:40px;border-radius:8px;border:1px solid var(--line2);background:linear-gradient(160deg,#fff,#EEF2F9);position:relative;
+  box-shadow:0 1px 0 rgba(255,255,255,1) inset,-4px 0 0 -2px #E3E9F4}
+.prow .pb::before{content:"";position:absolute;left:6px;right:14px;top:8px;height:4px;border-radius:2px;background:var(--acc);opacity:.75}
+.prow .pb::after{content:"";position:absolute;left:6px;right:8px;bottom:8px;height:3px;border-radius:2px;background:rgba(11,31,77,.15)}
+.prow .pn{display:block;font-size:14px;font-weight:800;color:var(--t);letter-spacing:-.01em;line-height:1.15}
+.prow .pm{display:block;font-size:13px;color:var(--mute);margin-top:2px}
+.prow .pm .rup{display:inline-block;font-size:13px;font-weight:800;color:#B42318;background:#FDE8E6;border-radius:999px;padding:2px 8px;margin-left:6px;letter-spacing:.04em}
+.prow .pp{font-size:15px;font-weight:800;color:#0F7A4A;white-space:nowrap}
+.prow .pp small{display:block;font-size:13px;color:var(--mute);font-weight:600;text-align:right}
+.prow .ck{width:44px;height:44px;display:grid;place-items:center}
+.prow .ck i{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--line2);display:grid;place-items:center;background:#fff;transition:all .15s ease}
+.prow[aria-pressed="true"]{background:#F1F5FE}
+.prow[aria-pressed="true"] .ck i{background:var(--acc);border-color:var(--acc)}
+.prow .ck svg{width:12px;height:12px;color:#fff;opacity:0}
+.prow[aria-pressed="true"] .ck svg{opacity:1}
+.pick .pf{display:flex;align-items:center;gap:10px;padding:12px 20px;border-top:1px solid var(--line);background:#fff;flex-wrap:wrap;
+  box-shadow:0 -12px 24px -20px rgba(11,31,77,.3)}
+.pick .pf .msg{font-size:13px;color:var(--mute);margin-right:auto}
+.pick .pf .msg b{color:var(--t)}
+.veil{position:fixed;inset:0;background:rgba(11,31,77,.18);z-index:25;opacity:0;visibility:hidden;transition:opacity .4s ease}
+body[data-screen="pick"] .veil{opacity:1;visibility:visible}
+
+/* écrans : ce qui est visible où */
+body[data-screen="home"] .only-edit,body[data-screen="home"] .only-pick{display:none}
+body[data-screen="edit"] .only-home,body[data-screen="pick"] .only-home{display:none}
+
+/* ── Mobile 390 : les tiroirs deviennent des bandes, la feuille reste au centre ── */
+@media (max-width:959px){
+  .prop{padding:10px 14px}
+  .prop nav{margin-left:0;width:100%}
+  .top{padding:0 12px;gap:8px}
+  .top .search{min-width:0;flex:1;padding:0 10px}
+  .top .search span{display:none}
+  .top .crumb span{display:none}
+  .atelier::before{background:
+    linear-gradient(180deg,rgba(255,255,255,0) 0,rgba(255,255,255,0) 40%,rgba(245,247,252,.9) 100%),
+    repeating-linear-gradient(104deg,rgba(255,255,255,0) 0px,rgba(255,255,255,0) 70px,rgba(255,255,255,.3) 70px,rgba(255,255,255,.55) 96px,rgba(255,255,255,.3) 120px,rgba(255,255,255,0) 122px,rgba(255,255,255,0) 190px)}
+  .bench{grid-template-columns:minmax(0,1fr);padding:14px 14px 60px;gap:16px}
+  .headline h1{font-size:26px}
+  .rail{position:static;flex-direction:row;overflow-x:auto;gap:10px;margin:0 -14px;padding:4px 14px 10px;scroll-snap-type:x proximity;scrollbar-width:none}
+  .rail::-webkit-scrollbar{display:none}
+  .rail .drawer{flex:0 0 82%;max-width:320px;scroll-snap-align:start}
+  .rail.right .drawer{flex-basis:88%}
+  .sheetwrap{--rx:3deg;--ry:-4deg}
+  .sheet{padding:6% 5.5% 5%;gap:9px}
+  .sh-grid,.sh-grid.n3{grid-template-columns:1fr 1fr;gap:8px}
+  .sh-args{grid-template-columns:1fr;gap:8px}
+  .chip,.seg button,.prop nav button,.plist li button{min-height:44px}
+  .plist li button{width:44px}
+  .pick .filters label{min-height:44px}
+  .pick .ph{flex-wrap:wrap;padding:20px 14px 8px}
+  .pick .ph h2{width:100%;margin:0}
+  .pick .filters{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding:10px 14px}
+  .pick .filters::-webkit-scrollbar{display:none}
+  .pick .filters .chip,.pick .filters label,.pick .filters .cnt{white-space:nowrap;flex:none}
+  .pick .filters .chip{min-height:44px}
+  .box{min-height:104px;padding:8px}
+  .box .bp b{font-size:14px}
+  .fan{gap:10px}
+  .pick{height:92vh;border-radius:18px 18px 0 0}
+  .pick .main{grid-template-columns:1fr}
+  .pick .rayons{display:flex;overflow-x:auto;border-right:0;border-bottom:1px solid var(--line);padding:8px 10px;gap:6px;scrollbar-width:none}
+  .pick .rayons::-webkit-scrollbar{display:none}
+  .pick .rayons h3{display:none}
+  .pick .rayons button{width:auto;white-space:nowrap;border:1px solid var(--line2);border-radius:999px;background:#fff;padding:0 12px}
+  .prow{grid-template-columns:40px 1fr 44px;padding:6px 8px 6px 12px}
+  .prow .pp{grid-column:2;justify-self:start;font-size:14px}
+  .prow .pp small{display:inline;margin-left:4px;text-align:left}
+  .prow .ck{grid-column:3;grid-row:1/3}
+  .pick .ph h2{font-size:16px}
+  .pick .pf .msg{width:100%}
+}
+@media (max-width:1180px) and (min-width:960px){
+  .bench{grid-template-columns:220px minmax(0,1fr) 260px;gap:18px}
+  .models{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{transition:none!important;animation:none!important}
+  .sheetwrap{transform:none!important}
+}
+</style>
+</head>
+<body data-screen="home">
+
+<!-- ── Bandeau de proposition ────────────────────────────────────────────── -->
+<div class="prop" role="region" aria-label="Proposition">
+  <div><b>Proposition 1 · L'atelier</b> — le marketing, c'est fabriquer : la feuille A4 est le centre de tout dès l'accueil, on tape dedans, et les outils gravitent autour comme sur un établi.</div>
+  <div class="risk"><b>Risque :</b> l'accueil ne liste plus des cartes, il ouvre sur une feuille — il faut accepter que tout parte de là ; et le relief de la feuille coûte un peu de lisibilité s'il est poussé trop loin.</div>
+  <nav aria-label="Écrans de la maquette">
+    <button type="button" data-go="home" aria-current="true">1 · Accueil</button>
+    <button type="button" data-go="edit">2 · Éditeur</button>
+    <button type="button" data-go="pick">3 · Sélecteur</button>
+  </nav>
+</div>
+
+<!-- ── Chrome de l'app ───────────────────────────────────────────────────── -->
+<header class="top">
+  <button class="btn" type="button" data-go="home" aria-label="Retour">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>Retour
+  </button>
+  <div class="crumb">Marketing <span>· l'atelier de Pauline &amp; Will</span></div>
+  <div class="search" role="search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><span>Rechercher</span><kbd>⌘K</kbd></div>
+  <div class="avatar" aria-label="Compte">T</div>
+</header>
+
+<main class="atelier">
+<div class="bench">
+
+  <!-- ── En-tête de l'atelier ── -->
+  <div class="headline">
+    <div>
+      <h1 class="only-home">Une feuille vierge, et tout à portée de main.</h1>
+      <h1 class="only-edit">Promo de la semaine</h1>
+      <p class="only-home">Tape directement dans la feuille. Les modèles, les rayons et les produits sont rangés dans les tiroirs autour.</p>
+      <p class="only-edit">Modèle choisi · tu personnalises · tu télécharges. Tout se fait sur la feuille.</p>
+    </div>
+    <div class="acts">
+      <button class="btn only-home" type="button" data-go="edit">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 20h16M6 16l10-10 2 2-10 10H6v-2z"/></svg>Une fiche produit
+      </button>
+      <button class="btn pri only-home" type="button" data-go="pick">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Une sélection de produits
+      </button>
+      <button class="btn only-edit" type="button" data-go="pick">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Ajouter des produits
+      </button>
+      <button class="btn pri only-edit" type="button">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Télécharger le PDF
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Tiroir gauche : modèles + rayons + mix ── -->
+  <aside class="rail left" aria-label="Tiroirs de gauche">
+    <section class="drawer">
+      <header><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>Modèles<span class="handle"></span></header>
+      <div class="body">
+        <div class="models" id="models">
+          <button class="mtile" type="button" style="--m:#0050E6" data-model="promo" data-head="band" aria-pressed="true"><b>Promo de la semaine</b><small>Bandeau, grand titre</small></button>
+          <button class="mtile" type="button" style="--m:#1E9E6A" data-model="nouveaute" data-head="band"><b>Nouveauté</b><small>Bandeau et pastille</small></button>
+          <button class="mtile" type="button" style="--m:#C7791A" data-model="selection" data-head="slim"><b>Sélection du mois</b><small>Filet, titre sombre</small></button>
+          <button class="mtile" type="button" style="--m:#6D4FC4" data-model="fiche" data-head="plain"><b>Fiche produit simple</b><small>Sans bandeau, sobre</small></button>
+        </div>
+      </div>
+    </section>
+
+    <section class="drawer only-home">
+      <header><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h10M4 18h13"/></svg>Rayons<span class="n">47</span></header>
+      <div class="body">
+        <div class="chips">
+          <button class="chip" type="button" data-go="pick">Cœur &amp; tension <small>2 337</small></button>
+          <button class="chip" type="button" data-go="pick">Douleur &amp; fièvre <small>758</small></button>
+          <button class="chip" type="button" data-go="pick">Cholestérol <small>656</small></button>
+          <button class="chip" type="button" data-go="pick">Neurologie <small>616</small></button>
+          <button class="chip" type="button" data-go="pick">Diabète <small>514</small></button>
+          <button class="chip" type="button" data-go="pick">Peau &amp; dermatologie <small>344</small></button>
+          <button class="chip" type="button" data-go="pick">Yeux &amp; ophtalmologie <small>336</small></button>
+          <button class="chip more" type="button" data-go="pick">Tous les rayons · 16 305 réf.</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="drawer only-edit">
+      <header><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>Statut<span class="handle"></span></header>
+      <div class="body">
+        <div class="seg" role="group" aria-label="Statut">
+          <button type="button" aria-pressed="true">Brouillon</button><button type="button">À envoyer</button><button type="button">Envoyé</button>
+        </div>
+        <p class="desc" style="padding-top:10px">Partagée avec <b>Pauline</b> dès l'enregistrement.</p>
+      </div>
+    </section>
+
+    <section class="drawer only-edit">
+      <header><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg>Affichage<span class="handle"></span></header>
+      <div class="body">
+        <div class="chips">
+          <button class="chip on" type="button">Prix PPHT</button>
+          <button class="chip on" type="button">Boîtes</button>
+          <button class="chip" type="button">Photos</button>
+        </div>
+        <div class="field" style="margin-top:12px"><label for="mentions">Mentions en pied</label><input id="mentions" type="text" value="Prix PPHT indicatifs · prix net : voir la fiche"></div>
+      </div>
+    </section>
+  </aside>
+
+  <!-- ── Le plan de travail : la feuille ── -->
+  <section class="stage" aria-label="La feuille">
+    <div class="toolbar only-edit">
+      <div class="steps"><b><i class="done">✓</i>Modèle</b><span>—</span><b><i>2</i>Personnaliser</b></div>
+      <div class="hint"><i></i>Aperçu en direct</div>
+    </div>
+    <div class="hint only-home"><i></i>La feuille est vivante : clique un texte pour l'écrire, une boîte pour la remplacer.</div>
+
+    <div class="sheetwrap" id="sheetwrap">
+      <article class="sheet" id="sheet" data-model="promo" data-head="band" style="--m:#0050E6" aria-label="Fiche marketing A4">
+        <div class="sh-band"></div>
+        <div class="sh-kick" contenteditable="true" spellcheck="false">Intégral Pharma · <span id="sh-model-name">Promo de la semaine</span></div>
+        <span class="sh-tag">Nouveau</span>
+        <h2 class="sh-title" contenteditable="true" spellcheck="false">Sécheresse oculaire : trois collyres à mettre en avant</h2>
+        <p class="sh-lead" contenteditable="true" spellcheck="false">Les trois références hydratantes les plus demandées de la rentrée, disponibles sur tout le réseau.</p>
+        <div class="sh-meta"><span id="sh-count">3 produits</span> · 10 septembre 2026 · Yeux &amp; ophtalmologie</div>
+        <div class="sh-grid" id="shgrid"></div>
+        <div class="sh-args">
+          <h3>Pourquoi les présenter</h3>
+          <p contenteditable="true" spellcheck="false"><b>Sans conservateur</b>Les trois formules conviennent aux porteurs de lentilles.</p>
+          <p contenteditable="true" spellcheck="false"><b>Disponibles partout</b>En stock sur les dix établissements du réseau.</p>
+          <p contenteditable="true" spellcheck="false"><b>Forte rotation</b>Septembre est le mois de pointe de la sécheresse oculaire.</p>
+        </div>
+        <footer class="sh-foot">
+          <span><b>Intégral Pharma</b> · groupe de grossistes-répartiteurs</span>
+          <span contenteditable="true" spellcheck="false" id="sh-mentions">Prix PPHT indicatifs · prix net : voir la fiche</span>
+        </footer>
+      </article>
+    </div>
+
+    <div class="recent only-home">
+      <h2>Créations récentes · partagées avec Pauline</h2>
+      <div class="fan">
+        <button class="mini" type="button" style="--m:#C7791A" data-go="edit"><i></i><b>Sélection du mois · digestif</b><small>Forlax, Keal, Spagulax · 5 produits<br><span class="who"><em>P</em> Pauline · hier</span></small></button>
+        <button class="mini" type="button" style="--m:#1E9E6A" data-go="edit"><i></i><b>Nouveauté · Mounjaro</b><small>3 dosages · fiche envoyée<br><span class="who"><em>W</em> Will · 8 sept.</span></small></button>
+        <button class="mini" type="button" style="--m:#0050E6" data-go="edit"><i></i><b>Promo · vaccins de saison</b><small>Repevax, Shingrix, Priorix · 3 produits<br><span class="who"><em>P</em> Pauline · 2 sept.</span></small></button>
+      </div>
+    </div>
+
+    <div class="drawer only-edit" style="width:min(100%,600px)">
+      <header><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16l-1.5 9h-13z"/><path d="M8 20h.01M16 20h.01"/></svg>Produits sur la feuille<span class="n" id="plist-n">3</span></header>
+      <div class="body">
+        <ul class="plist" id="plist"></ul>
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+          <button class="btn" type="button" data-go="pick"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Ajouter des produits</button>
+          <button class="btn ghost" type="button">Produit libre</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Tiroir droit : les instruments ── -->
+  <aside class="rail right" aria-label="Instruments">
+    <section class="drawer">
+      <header><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>Catalogue<span class="handle"></span></header>
+      <div class="body">
+        <button class="tool" type="button" data-go="pick">
+          <span class="tico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg></span>
+          <span><b>Catalogue &amp; prix</b><span>16 305 références, PPHT et stock par établissement. « Créer la liste » en un clic.</span></span>
+          <svg class="arr" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>
+        </button>
+        <button class="tool" type="button">
+          <span class="tico pdf"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg></span>
+          <span><b>Catalogue par catégorie</b><span>Princeps petits prix · intermédiaire · cher + NR. PDF ou Excel.</span></span>
+          <svg class="arr" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>
+        </button>
+        <button class="tool" type="button">
+          <span class="tico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="5" width="16" height="5" rx="2"/><rect x="4" y="14" width="16" height="5" rx="2"/></svg></span>
+          <span><b>Biosimilaires substituables</b><span>287 présentations, fiche façon Teva prête à présenter.</span></span>
+          <svg class="arr" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>
+        </button>
+      </div>
+    </section>
+
+    <section class="drawer">
+      <header><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 5h16v14H4z"/><path d="M4 10h16M9 5v14"/></svg>Communication<span class="handle"></span></header>
+      <div class="body">
+        <button class="tool" type="button">
+          <span class="tico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></span>
+          <span><b>Rétroplanning LinkedIn</b><span>Calendrier éditorial : anciens posts, prochains à préparer, publication en un clic.</span></span>
+          <svg class="arr" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>
+        </button>
+        <button class="tool" type="button">
+          <span class="tico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 13h6M9 17h6"/></svg></span>
+          <span><b>Documents partagés</b><span>Catalogues, fiches et offres en PDF, visibles par tous les comptes.</span></span>
+          <svg class="arr" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>
+        </button>
+        <button class="tool" type="button">
+          <span class="tico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg></span>
+          <span><b>Le nouveau site</b><span>Intégral Pharma, version unique — voir et noter.</span></span>
+          <svg class="arr" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>
+        </button>
+      </div>
+    </section>
+
+    <section class="drawer only-home">
+      <header><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16v13H4zM8 7V4h8v3"/></svg>Autres outils<span class="n">maquettes, supports</span></header>
+    </section>
+  </aside>
+
+</div>
+</main>
+
+<!-- ── Le tiroir « produits » ─────────────────────────────────────────────── -->
+<div class="veil" data-go="edit"></div>
+<section class="pick" id="pick" aria-label="Sélecteur de produits" role="dialog">
+  <span class="grip" aria-hidden="true"></span>
+  <div class="ph">
+    <h2>Ajouter des produits à la feuille</h2>
+    <div class="sbox"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><span>Rechercher (désignation, CIP, molécule, laboratoire)…</span></div>
+    <button class="btn" type="button" data-go="edit">Fermer</button>
+  </div>
+  <div class="univ" role="tablist">
+    <button type="button" aria-pressed="true">Tous les produits (16 305)</button>
+    <button type="button">Parapharmacie</button>
+    <button type="button">Nos sélections (1 236)</button>
+  </div>
+  <div class="main">
+    <nav class="rayons" aria-label="Rayons">
+      <h3>Rayon</h3>
+      <button type="button" aria-pressed="true">Tous les rayons <small>16 305</small></button>
+      <button type="button">Cœur &amp; tension <small>2 337</small></button>
+      <button type="button">Douleur &amp; fièvre <small>758</small></button>
+      <button type="button">Cholestérol <small>656</small></button>
+      <button type="button">Neurologie <small>616</small></button>
+      <button type="button">Sommeil, anxiété &amp; psychiatrie <small>551</small></button>
+      <button type="button">Antibiotiques <small>530</small></button>
+      <button type="button">Diabète <small>514</small></button>
+      <button type="button">Cancérologie <small>389</small></button>
+      <button type="button">Estomac &amp; acidité <small>376</small></button>
+      <button type="button">Dépression &amp; humeur <small>357</small></button>
+      <button type="button">Infections &amp; antiviraux <small>352</small></button>
+      <button type="button">Peau &amp; dermatologie <small>344</small></button>
+      <button type="button">Yeux &amp; ophtalmologie <small>336</small></button>
+      <button type="button">Immunologie <small>326</small></button>
+    </nav>
+    <div class="list">
+      <div class="filters">
+        <span class="cnt">16 305 PRODUITS</span>
+        <button class="chip on" type="button">Toutes les familles <small>16 305</small></button>
+        <button class="chip" type="button">Princeps &lt; 4,33 € <small>1 297</small></button>
+        <button class="chip" type="button">Princeps 4,33–468 € <small>2 978</small></button>
+        <button class="chip" type="button">Princeps &gt; 468 € <small>396</small></button>
+        <button class="chip" type="button">Non remboursable <small>3 239</small></button>
+        <button class="chip" type="button">Générique <small>8 108</small></button>
+        <button class="chip" type="button">Biosimilaire <small>287</small></button>
+        <label><input type="checkbox">En stock seulement</label>
+      </div>
+      <div id="prows"></div>
+    </div>
+  </div>
+  <div class="pf">
+    <span class="msg" id="pmsg">Coche les produits à ajouter — ils se posent sur la feuille, derrière.</span>
+    <button class="btn ghost" type="button" id="punall">Tout décocher</button>
+    <button class="btn pri" type="button" id="padd"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span id="padd-l">Ajouter les produits</span></button>
+  </div>
+</section>
+
+<script>
+(function(){
+  var body=document.body;
+  var MODELS={promo:'Promo de la semaine',nouveaute:'Nouveauté',selection:'Sélection du mois',fiche:'Fiche produit simple'};
+  var TITLES={promo:'Sécheresse oculaire : trois collyres à mettre en avant',nouveaute:'Nouveau au catalogue : à présenter dès cette semaine',selection:'La sélection du mois de septembre',fiche:'Fiche produit'};
+
+  // Produits réels (marketing-mix-data.js / catalogue) — PPHT seulement, jamais de prix net.
+  var CAT=[
+    {d:'KARDEGIC 75MG PDR SACH 30',l:'SUBSTIPHARM',cip:'3400934744198',r:'Anticoagulants & sang',p:'1,47',rup:1},
+    {d:'THEALOSE SOL OPHT FL 15ML T',l:'THEA',cip:'3662042005664',r:'Yeux & ophtalmologie',p:'8,34'},
+    {d:'SKIACOL 0,5% COLLY FL0,5ML',l:'ALCON LAB',cip:'3400932162901',r:'Yeux & ophtalmologie',p:'7,11'},
+    {d:'IZALGI 500MG/25MG GELU BT16',l:'BIOGARAN',cip:'3400949605538',r:'Douleur & fièvre',p:'1,43'},
+    {d:'HYLO CONFORT COLLY HYD F10ML T',l:'URSAPHARM',cip:'3401040669580',r:'Yeux & ophtalmologie',p:'7,02'},
+    {d:'VISMED MULTI GTT LUBR FL15ML T',l:'HORUS',cip:'4028694001468',r:'Yeux & ophtalmologie',p:'8,60'},
+    {d:'GARDASIL 9 INJ SRG0,5ML 1+2AIG',l:'MSD FRANCE',cip:'3400930056202',r:'Vaccins & immunoglobulines',p:'107,56',rup:1},
+    {d:'OPTIVE FUSION SOL OPHT F10ML T',l:'ALLERGAN FRANCE',cip:'3401560002867',r:'Yeux & ophtalmologie',p:'5,61'},
+    {d:'FORLAX 10G BUV PDR SACH 20',l:'IPSEN CONS.HEAL',cip:'3400934326295',r:'Transit & constipation',p:'5,80'},
+    {d:'DOLIPRANETABS 1000MG CPR BT8',l:'OPELLA HEALTH F',cip:'3400930109045',r:'Douleur & fièvre',p:'1,09'},
+    {d:'SHINGRIX INJ FL+FL 1',l:'GLAXOSMITHKLINE',cip:'3400930141861',r:'Vaccins & immunoglobulines',p:'175,18'},
+    {d:'OZEMPIC 1MG INJ STYLO3ML 1',l:'NOVO NORDISK',cip:'3400930151105',r:'Diabète',p:'70,99'},
+    {d:'SOOLANTRA 10MG/G CR TB30G 1',l:'GALDERMA INTER.',cip:'3400930025499',r:'Peau & dermatologie',p:'25,82'},
+    {d:'LUMIRELAX 500MG CPR BT20',l:'GRIMBERG',cip:'3400930113646',r:'Douleur & inflammation',p:'7,56'},
+    {d:'VEINAMITOL 3500MG PDR SACH 10',l:'NEGMA',cip:'3400933521561',r:'Circulation veineuse',p:'6,20'},
+    {d:'TANGANIL 500MG CPR BT30',l:'PIERRE FABRE MEDICAMENT',cip:'3400932944460',r:'Oreilles',p:'2,47'}
+  ];
+  var onSheet=[1,4,5]; // index dans CAT : Thealose, Hylo, Vismed
+  var checked={};
+
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;')}
+  function nice(d){ // désignation en casse lisible pour la boîte
+    return d.replace(/\s+T$/,'').replace(/\s+/g,' ');
+  }
+  function renderSheet(){
+    var g=document.getElementById('shgrid');g.className='sh-grid n'+Math.min(onSheet.length,4);
+    if(!onSheet.length){g.innerHTML='<div class="sh-empty">Aucun produit. Ouvre le tiroir « Ajouter des produits ».</div>';}
+    else g.innerHTML=onSheet.slice(0,6).map(function(i){var p=CAT[i];
+      return '<div class="box" title="Clique pour remplacer"><span class="bn">'+esc(nice(p.d))+'</span><span class="bl">'+esc(p.l)+' · CIP '+p.cip+'</span>'+
+        '<span class="bs'+(p.rup?' rup':'')+'">'+(p.rup?'Rupture':'En stock réseau')+'</span><span class="bp">PPHT <b>'+p.p+' €</b></span><button class="bx" type="button" data-rm="'+i+'" aria-label="Retirer"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>';}).join('');
+    document.getElementById('sh-count').textContent=onSheet.length+' produit'+(onSheet.length>1?'s':'');
+    var pl=document.getElementById('plist');
+    pl.innerHTML=onSheet.map(function(i){var p=CAT[i];return '<li><b>'+esc(nice(p.d))+'</b><span>'+p.p+' €</span><button type="button" data-rm="'+i+'" aria-label="Retirer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></li>';}).join('');
+    document.getElementById('plist-n').textContent=onSheet.length;
+  }
+  function renderRows(){
+    document.getElementById('prows').innerHTML=CAT.map(function(p,i){
+      return '<button class="prow" type="button" data-i="'+i+'" aria-pressed="'+(checked[i]?'true':'false')+'">'+
+        '<span class="pb"></span><span><span class="pn">'+esc(p.d)+'</span><span class="pm">'+esc(p.l)+' · CIP '+p.cip+' · '+esc(p.r.toUpperCase())+(p.rup?'<span class="rup">RUPTURE</span>':'')+'</span></span>'+
+        '<span class="pp">'+p.p+' €<small>PPHT</small></span>'+
+        '<span class="ck"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></i></span></button>';}).join('');
+    var n=Object.keys(checked).filter(function(k){return checked[k]}).length;
+    document.getElementById('padd-l').textContent=n?'Ajouter '+n+' produit'+(n>1?'s':''):'Ajouter les produits';
+    document.getElementById('pmsg').innerHTML=n?'<b>'+n+' coché'+(n>1?'s':'')+'</b> — ils se poseront sur la feuille, derrière.':'Coche les produits à ajouter — ils se posent sur la feuille, derrière.';
+  }
+  function go(s){
+    body.setAttribute('data-screen',s);
+    document.querySelectorAll('.prop nav button').forEach(function(b){b.setAttribute('aria-current',b.getAttribute('data-go')===s?'true':'false')});
+    if(s!=='pick')window.scrollTo({top:0,behavior:'smooth'});
+  }
+  document.addEventListener('click',function(e){
+    var t=e.target.closest('[data-go]');
+    if(t){go(t.getAttribute('data-go'));return;}
+    var m=e.target.closest('.mtile');
+    if(m){setModel(m.getAttribute('data-model'),m.getAttribute('data-head'),m.style.getPropertyValue('--m'));return;}
+    var rm=e.target.closest('[data-rm]');
+    if(rm){var i=+rm.getAttribute('data-rm');onSheet=onSheet.filter(function(x){return x!==i});renderSheet();return;}
+    var row=e.target.closest('.prow');
+    if(row){var i2=+row.getAttribute('data-i');checked[i2]=!checked[i2];row.setAttribute('aria-pressed',checked[i2]?'true':'false');renderRows();return;}
+    var seg=e.target.closest('.seg button');
+    if(seg){seg.parentNode.querySelectorAll('button').forEach(function(b){b.setAttribute('aria-pressed','false')});seg.setAttribute('aria-pressed','true');return;}
+    var ch=e.target.closest('.filters .chip, .univ button, .rayons button');
+    if(ch){ch.parentNode.querySelectorAll('.chip, button').forEach(function(b){b.classList.remove('on');b.setAttribute('aria-pressed','false')});ch.classList.add('on');ch.setAttribute('aria-pressed','true');return;}
+  });
+  document.getElementById('padd').addEventListener('click',function(){
+    Object.keys(checked).forEach(function(k){if(checked[k]&&onSheet.indexOf(+k)<0)onSheet.push(+k)});
+    checked={};renderRows();renderSheet();go('edit');
+  });
+  document.getElementById('punall').addEventListener('click',function(){checked={};renderRows()});
+  document.getElementById('mentions').addEventListener('input',function(){document.getElementById('sh-mentions').textContent=this.value});
+
+  // Changer de modèle : la feuille bascule sur sa tranche, change de peau, revient.
+  var sheet=document.getElementById('sheet'),turning=false;
+  function setModel(k,head,col){
+    document.querySelectorAll('.mtile').forEach(function(b){b.setAttribute('aria-pressed',b.getAttribute('data-model')===k?'true':'false')});
+    var apply=function(){
+      sheet.setAttribute('data-model',k);sheet.setAttribute('data-head',head);sheet.style.setProperty('--m',col);
+      document.getElementById('sh-model-name').textContent=MODELS[k];
+      sheet.querySelector('.sh-title').textContent=TITLES[k];
+      document.querySelector('.headline .only-edit').textContent=MODELS[k];
+    };
+    var reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if(reduce||turning){apply();return;}
+    turning=true;sheet.classList.add('turn');
+    setTimeout(function(){apply();sheet.classList.remove('turn');setTimeout(function(){turning=false},340)},330);
+  }
+
+  // La feuille s'incline sous le curseur sur l'accueil (souris seulement).
+  var wrap=document.getElementById('sheetwrap');
+  if(matchMedia('(hover:hover) and (pointer:fine)').matches&&!matchMedia('(prefers-reduced-motion: reduce)').matches){
+    wrap.addEventListener('mousemove',function(e){
+      if(body.getAttribute('data-screen')!=='home')return;
+      var r=wrap.getBoundingClientRect(),x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;
+      wrap.style.setProperty('--ry',(-10+x*12).toFixed(2)+'deg');wrap.style.setProperty('--rx',(6-y*9).toFixed(2)+'deg');
+    });
+    wrap.addEventListener('mouseleave',function(){wrap.style.removeProperty('--rx');wrap.style.removeProperty('--ry')});
+  }
+  // Clic sur la feuille depuis l'accueil : on passe en édition (sans casser la saisie).
+  sheet.addEventListener('focusin',function(){if(body.getAttribute('data-screen')==='home')go('edit')});
+
+  renderSheet();renderRows();
+})();
+</script>
+</body>
+</html>

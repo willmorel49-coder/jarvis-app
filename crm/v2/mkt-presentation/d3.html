@@ -1,0 +1,818 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Proposition 3 · Le flux — Marketing</title>
+<style>
+/* ============ Verrière — jetons ============ */
+:root{
+  --blue:#0050E6;--blue-d:#0034A0;--ink:#10131C;--ink2:#2A2F3C;--title:#0B1F4D;--muted:#6B7387;--muted2:#8E95A6;
+  --paper:#FBFCFE;--card:#FFFFFF;--line:rgba(16,19,28,.07);--line2:rgba(16,19,28,.12);
+  --ciel:#E4EDFC;--ciel2:#CFDFFC;
+  --r-card:20px;--r-md:14px;--r-sm:10px;
+  --font:system-ui,-apple-system,'Helvetica Neue',sans-serif;
+  --datew:104px;--railw:30px;
+  --sh-card:0 1px 0 rgba(255,255,255,.92) inset,0 1px 2px rgba(11,31,77,.06),0 12px 26px -16px rgba(11,31,77,.30);
+  --sh-card-h:0 1px 0 rgba(255,255,255,.92) inset,0 2px 4px rgba(11,31,77,.07),0 22px 40px -18px rgba(11,31,77,.36);
+  --sh-obj:0 1px 0 rgba(255,255,255,.9) inset,0 2px 3px rgba(11,31,77,.08),0 22px 34px -18px rgba(11,31,77,.42);
+  --tpl:#0050E6;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%}
+body{font-family:var(--font);color:var(--ink);background:var(--paper);min-height:100vh;font-size:14px;line-height:1.45;overflow-x:clip}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:0}
+h1,h2,h3{color:var(--title);letter-spacing:-.025em;font-weight:800;line-height:1.1}
+.num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
+[hidden]{display:none!important}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+
+/* ciel de verrière : la lumière tombe d'en haut */
+.sky{position:fixed;inset:0 0 auto 0;height:560px;pointer-events:none;z-index:0;
+  background:radial-gradient(60% 70% at 50% -18%,#fff 0%,rgba(255,255,255,0) 62%),
+    radial-gradient(70% 90% at 0% -10%,var(--ciel2) 0%,rgba(207,223,252,0) 64%),
+    radial-gradient(70% 90% at 100% -6%,#DCE7FC 0%,rgba(220,231,252,0) 66%),
+    linear-gradient(var(--ciel) 0%,rgba(251,252,254,0) 90%)}
+
+/* bandeau de proposition */
+.prop{position:relative;z-index:3;font-size:13.5px;color:var(--title);padding:9px 20px;display:flex;flex-wrap:wrap;gap:4px 14px;align-items:baseline;
+  background:linear-gradient(rgba(255,255,255,.75),rgba(255,255,255,.35));border-bottom:1px solid var(--line)}
+.prop b{font-weight:800}
+.prop .risk{color:#8A4B00}
+.prop .risk b{color:#8A4B00}
+
+/* barre d'app */
+.bar{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:12px;padding:10px 20px;
+  background:linear-gradient(rgba(255,255,255,.94),rgba(255,255,255,.82));border-bottom:1px solid var(--line)}
+.bar .back{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;min-width:44px;padding:0 14px;border-radius:12px;border:1px solid var(--line2);background:#fff;font-weight:700;font-size:13.5px;
+  box-shadow:0 1px 0 #fff inset,0 1px 2px rgba(11,31,77,.06)}
+.bar .plus{width:44px;height:44px;border-radius:13px;background:linear-gradient(180deg,#1A66F5,var(--blue) 55%,var(--blue-d));color:#fff;display:grid;place-items:center;
+  box-shadow:0 1px 0 rgba(255,255,255,.35) inset,0 6px 14px -6px rgba(0,80,230,.6)}
+.bar h1{font-size:17px;margin-left:4px}
+.bar h1 small{font-weight:600;color:var(--muted);font-size:13px;letter-spacing:0;margin-left:8px}
+.bar .search{margin-left:auto;display:flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;border-radius:12px;border:1px solid var(--line2);background:#fff;color:var(--muted);font-size:14px;min-width:200px;
+  box-shadow:0 1px 0 #fff inset,0 1px 2px rgba(11,31,77,.05)}
+.bar .search kbd{margin-left:auto;font:inherit;font-size:13px;border:1px solid var(--line2);border-radius:5px;padding:1px 5px;color:var(--muted2)}
+.bar .avatars{display:flex}
+.av{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:13px;color:#fff;border:2px solid #fff;
+  background:linear-gradient(160deg,#2F6FF0,var(--blue-d));box-shadow:0 2px 6px -2px rgba(11,31,77,.35)}
+.av.p{background:linear-gradient(160deg,#F0A24A,#C7791A)}
+.avatars .av+.av{margin-left:-10px}
+
+/* coquille : fil + colonne calme */
+.shell{position:relative;z-index:1;display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:32px;max-width:1240px;margin:0 auto;padding:26px 20px 80px}
+.feed{min-width:0}
+
+/* ---------- zone de composition ---------- */
+.compose{position:relative;background:var(--card);border-radius:var(--r-card);border:1px solid var(--line);box-shadow:var(--sh-card);padding:22px 24px 20px;margin-left:calc(var(--datew) + var(--railw));
+  background-image:radial-gradient(90% 80% at 50% -30%,rgba(207,223,252,.55),rgba(255,255,255,0) 70%)}
+.compose h2{font-size:22px;margin-bottom:4px}
+.compose p{color:var(--muted);font-size:13.5px;margin-bottom:16px}
+.kinds{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.kind{display:flex;flex-direction:column;align-items:flex-start;gap:8px;min-height:88px;padding:12px 12px 10px;border-radius:var(--r-md);border:1px solid var(--line2);background:linear-gradient(180deg,#fff,#F7F9FE);text-align:left;
+  box-shadow:0 1px 0 #fff inset,0 1px 2px rgba(11,31,77,.05),0 8px 16px -12px rgba(11,31,77,.25);transition:transform .18s,box-shadow .18s,border-color .18s}
+.kind:hover{transform:translateY(-2px);border-color:rgba(0,80,230,.45);box-shadow:0 1px 0 #fff inset,0 2px 4px rgba(11,31,77,.06),0 14px 22px -12px rgba(0,80,230,.35)}
+.kind i{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(180deg,#EEF3FE,#DCE7FC);color:var(--blue);box-shadow:0 1px 0 #fff inset}
+.kind b{font-size:13.5px;font-weight:800;color:var(--title);letter-spacing:-.01em}
+.kind span{font-size:13px;color:var(--muted);line-height:1.3}
+.compose .week{position:absolute;top:18px;right:20px;font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+
+/* ---------- le fil ---------- */
+.stream{list-style:none;position:relative;margin-top:26px}
+.stream::before{content:"";position:absolute;top:-30px;bottom:0;left:calc(var(--datew) + var(--railw)/2 - 1px);width:2px;border-radius:2px;
+  background:linear-gradient(180deg,#fff 0%,#A9C4FA 4%,var(--blue) 22%,rgba(0,80,230,.55) 60%,rgba(0,80,230,.08) 100%);
+  box-shadow:0 0 14px rgba(0,80,230,.30),0 0 2px rgba(0,80,230,.5)}
+.entry{display:grid;grid-template-columns:var(--datew) var(--railw) minmax(0,1fr);align-items:start;margin-bottom:22px;position:relative}
+.date{padding-top:6px;text-align:right;padding-right:14px}
+.date .d{font-size:46px;font-weight:800;color:var(--title);letter-spacing:-.05em;line-height:.9}
+.date .m{font-size:13px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--blue);margin-top:5px}
+.date .w{font-size:13px;color:var(--muted);margin-top:1px}
+.dot{position:relative;height:100%;display:flex;justify-content:center;padding-top:22px}
+.dot i{width:14px;height:14px;border-radius:50%;background:#fff;border:3px solid var(--blue);box-shadow:0 0 0 4px var(--paper),0 0 16px rgba(0,80,230,.55)}
+.entry.today .dot i{background:var(--blue);box-shadow:0 0 0 4px var(--paper),0 0 22px rgba(0,80,230,.75)}
+.entry.old .dot i{border-color:#9FB6E6;box-shadow:0 0 0 4px var(--paper),0 0 8px rgba(0,80,230,.2)}
+
+.post{background:var(--card);border-radius:var(--r-card);border:1px solid var(--line);box-shadow:var(--sh-card);transition:transform .2s,box-shadow .2s;min-width:0}
+.post:hover{box-shadow:var(--sh-card-h)}
+.post .head{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:12px;align-items:center;width:100%;padding:16px 18px 12px;text-align:left;border-radius:var(--r-card) var(--r-card) 0 0}
+.post .head .who{display:block;font-size:14.5px;color:var(--ink2)}
+.post .head .who b{color:var(--title);font-weight:800}
+.post .head .what{display:block;font-size:13px;color:var(--muted);margin-top:2px}
+.st{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:999px;font-size:13px;font-weight:800;letter-spacing:.02em;white-space:nowrap}
+.st::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.st.brouillon{background:#F0F2F7;color:#5A6275}
+.st.partage{background:#E5EEFF;color:var(--blue)}
+.st.envoye{background:linear-gradient(180deg,#1A66F5,var(--blue-d));color:#fff;box-shadow:0 1px 0 rgba(255,255,255,.3) inset}
+.st.envoye::before{background:#fff}
+.st.programme{background:#FFF3E3;color:#9A5B10}
+.st.noter{background:#EAF7F1;color:#137A56}
+.post .chev{width:44px;height:44px;display:grid;place-items:center;color:var(--muted);transition:transform .3s;margin-right:-10px}
+.post.open .chev{transform:rotate(180deg)}
+
+.obj{padding:4px 18px 16px}
+.post .fold{display:grid;grid-template-rows:0fr;transition:grid-template-rows .38s cubic-bezier(.2,.8,.2,1)}
+.post.open .fold{grid-template-rows:1fr}
+.post .fold>div{overflow:hidden;min-height:0}
+.detail{padding:0 18px 18px;border-top:1px solid var(--line);margin-top:4px}
+.detail .rows{list-style:none;margin:12px 0 14px}
+.detail .rows li{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+.detail .rows li:last-child{border-bottom:0}
+.detail .rows .nm{font-weight:700;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.detail .rows .cip{color:var(--muted2);font-size:13px}
+.detail .rows .pp{font-weight:800;color:var(--title);white-space:nowrap}
+.hist{font-size:13px;color:var(--muted);margin-top:10px}
+.hist b{color:var(--ink2);font-weight:700}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.btn{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 16px;border-radius:12px;font-weight:800;font-size:13.5px;border:1px solid var(--line2);background:#fff;color:var(--ink2);
+  box-shadow:0 1px 0 #fff inset,0 1px 2px rgba(11,31,77,.06),0 6px 12px -8px rgba(11,31,77,.25);transition:transform .16s,box-shadow .16s}
+.btn:hover{transform:translateY(-1px);border-color:rgba(0,80,230,.4)}
+.btn.pri{background:linear-gradient(180deg,#1A66F5,var(--blue) 60%,var(--blue-d));color:#fff;border-color:transparent;box-shadow:0 1px 0 rgba(255,255,255,.35) inset,0 8px 18px -8px rgba(0,80,230,.7)}
+.btn.pri:hover{box-shadow:0 1px 0 rgba(255,255,255,.35) inset,0 12px 22px -8px rgba(0,80,230,.8)}
+.btn.ghost{box-shadow:none;border-color:transparent;color:var(--blue)}
+.btn svg{flex:none}
+
+/* objets — ils ont du poids */
+.obj-row{display:grid;grid-template-columns:auto minmax(0,1fr);gap:18px;align-items:center}
+.a4{position:relative;width:186px;aspect-ratio:210/297;background:#fff;border-radius:6px;border:1px solid var(--line);box-shadow:var(--sh-obj);overflow:hidden;
+  transform:perspective(900px) rotateX(2deg) rotateY(-4deg);transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s;transform-origin:50% 60%}
+.post:hover .a4,.a4:hover{transform:perspective(900px) rotateX(0) rotateY(0) translateY(-3px)}
+.a4 .band{height:8px;background:var(--tpl)}
+.a4 .in{padding:9px 10px}
+.a4 .k{font-size:5.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--tpl);font-weight:800}
+.a4 .t{font-size:11px;font-weight:800;color:var(--title);letter-spacing:-.02em;line-height:1.05;margin:3px 0 2px}
+.a4 .s{font-size:6px;color:var(--muted);margin-bottom:6px}
+.a4 .g{display:grid;gap:4px}
+.a4 .pr{display:grid;grid-template-columns:18px 1fr auto;gap:5px;align-items:center;border:1px solid var(--line);border-radius:4px;padding:3px 4px;font-size:5.6px;line-height:1.15}
+.a4 .pr b{display:block;font-weight:800;color:var(--ink);font-size:6px}
+.a4 .pr .px{font-weight:800;color:var(--tpl);font-size:6.5px}
+.a4 .pr .bx{width:18px;height:18px;border-radius:3px;background:linear-gradient(160deg,#fff,#EDF2FB);border:1px solid var(--line2);display:grid;place-items:center;color:var(--tpl)}
+.a4 .pr .bx svg{width:11px;height:11px}
+.a4 .ft{position:absolute;left:10px;right:10px;bottom:7px;font-size:4.8px;color:var(--muted2);display:flex;justify-content:space-between}
+.obj-txt h3{font-size:17px;margin-bottom:4px}
+.obj-txt p{color:var(--muted);font-size:13.5px}
+.obj-txt .meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.tag{display:inline-flex;align-items:center;height:28px;padding:0 9px;border-radius:8px;font-size:13px;font-weight:700;background:#F3F6FC;color:var(--ink2);border:1px solid var(--line)}
+.tag.tpl{color:#fff;background:var(--tpl);border-color:transparent}
+
+/* post LinkedIn */
+.li{border:1px solid var(--line);border-radius:var(--r-md);background:linear-gradient(180deg,#fff,#FAFBFE);box-shadow:var(--sh-obj);overflow:hidden;max-width:560px}
+.li .h{display:flex;align-items:center;gap:10px;padding:12px 14px 8px}
+.li .logo{width:40px;height:40px;border-radius:10px;background:linear-gradient(160deg,#1A66F5,var(--blue-d));display:grid;place-items:center;color:#fff;font-weight:900;font-size:15px;letter-spacing:-.05em;box-shadow:0 1px 0 rgba(255,255,255,.3) inset}
+.li .h b{display:block;font-size:13.5px;color:var(--title)}
+.li .h .sub{font-size:13px;color:var(--muted)}
+.li .tx{padding:0 14px 12px;font-size:13.5px;line-height:1.5;color:var(--ink2)}
+.li .vis{height:150px;background:radial-gradient(70% 80% at 20% 0%,#fff,rgba(255,255,255,0) 60%),linear-gradient(180deg,var(--ciel),#BFD4FA);position:relative;overflow:hidden;border-top:1px solid var(--line)}
+.li .vis .stack{position:absolute;left:50%;bottom:-6px;transform:translateX(-50%);display:flex;gap:10px;align-items:flex-end}
+.li .vis .box{width:78px;height:96px;border-radius:7px;background:linear-gradient(180deg,#fff,#EEF3FD);border:1px solid rgba(11,31,77,.12);box-shadow:0 1px 0 #fff inset,0 14px 20px -12px rgba(11,31,77,.5);padding:8px 8px;font-size:9px;line-height:1.15;color:var(--title);transform:perspective(600px) rotateY(-14deg);transform-origin:bottom}
+.li .vis .box b{display:block;font-size:10px;font-weight:900;letter-spacing:-.02em}
+.li .vis .box i{display:block;height:4px;width:60%;background:var(--blue);border-radius:2px;margin:6px 0}
+.li .vis .box:nth-child(2){transform:perspective(600px) rotateY(0) translateY(-6px);width:86px;height:106px}
+.li .vis .box:nth-child(3){transform:perspective(600px) rotateY(14deg)}
+.li .vis .cap{position:absolute;left:14px;top:12px;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--blue-d)}
+.li .f{display:flex;gap:16px;padding:10px 14px;font-size:13px;color:var(--muted);border-top:1px solid var(--line)}
+
+/* document PDF (pages empilées) */
+.doc{display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:center}
+.pages{position:relative;width:96px;height:120px;margin:6px 8px 6px 0}
+.pages i{position:absolute;inset:0;background:#fff;border:1px solid var(--line2);border-radius:5px;box-shadow:0 1px 0 #fff inset,0 10px 18px -10px rgba(11,31,77,.45)}
+.pages i:nth-child(1){transform:translate(10px,-8px) rotate(4deg);background:#F5F8FE}
+.pages i:nth-child(2){transform:translate(5px,-4px) rotate(2deg);background:#FAFBFE}
+.pages i:nth-child(3){padding:9px 8px;display:grid;align-content:start;gap:4px}
+.pages i:nth-child(3) s{display:block;height:4px;border-radius:2px;background:#DCE3F1;text-decoration:none}
+.pages i:nth-child(3) s.h{height:7px;background:var(--blue);width:70%}
+.pages i:nth-child(3) s:nth-child(3){width:85%}.pages i:nth-child(3) s:nth-child(5){width:60%}
+.pages em{position:absolute;right:-10px;bottom:-8px;font-style:normal;font-size:10px;font-weight:900;letter-spacing:.06em;background:var(--title);color:#fff;border-radius:6px;padding:3px 6px;box-shadow:0 4px 10px -4px rgba(11,31,77,.6)}
+
+/* site à noter */
+.site{display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:center}
+.screens{display:flex;gap:8px;align-items:flex-end}
+.screens i{display:block;width:74px;height:54px;border-radius:6px;border:1px solid var(--line2);background:linear-gradient(180deg,#fff,#EEF3FD);box-shadow:0 8px 14px -8px rgba(11,31,77,.5);position:relative;overflow:hidden}
+.screens i::before{content:"";position:absolute;left:8px;top:8px;width:36px;height:5px;border-radius:2px;background:var(--title)}
+.screens i::after{content:"";position:absolute;left:8px;right:8px;bottom:8px;height:16px;border-radius:3px;background:linear-gradient(90deg,var(--blue),#8FB1F7)}
+.screens i:nth-child(2){width:88px;height:64px}
+.screens i:nth-child(3)::after{background:linear-gradient(90deg,#1E9E6A,#9BD9BF)}
+.note{display:flex;gap:6px;margin-top:10px}
+.note button{width:44px;height:44px;border-radius:10px;border:1px solid var(--line2);background:#fff;font-weight:800;font-size:14px;color:var(--ink2);box-shadow:0 1px 0 #fff inset,0 3px 8px -6px rgba(11,31,77,.4)}
+.note button.on{background:var(--blue);color:#fff;border-color:transparent}
+
+/* ---------- colonne calme ---------- */
+.side{position:sticky;top:78px;align-self:start}
+.side h4{font-size:13px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:6px 0 10px}
+.tools{list-style:none;background:var(--card);border-radius:var(--r-card);border:1px solid var(--line);box-shadow:var(--sh-card);overflow:hidden;margin-bottom:22px}
+.tool{display:grid;grid-template-columns:36px 1fr auto;gap:12px;align-items:center;width:100%;min-height:60px;padding:10px 14px;text-align:left;border-bottom:1px solid var(--line);transition:background .15s}
+.tool:last-child{border-bottom:0}
+.tool:hover{background:#F5F8FE}
+.tool i{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(180deg,#EEF3FE,#DCE7FC);color:var(--blue);box-shadow:0 1px 0 #fff inset}
+.tool b{display:block;font-size:13.5px;font-weight:800;color:var(--title)}
+.tool span{font-size:13px;color:var(--muted)}
+.tool .n{font-size:13px;font-weight:800;color:var(--muted2)}
+.rayons{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;min-height:44px;padding:0 12px;border-radius:999px;border:1px solid var(--line2);background:#fff;font-size:13px;font-weight:700;color:var(--ink2);white-space:nowrap;
+  box-shadow:0 1px 0 #fff inset,0 1px 2px rgba(11,31,77,.05)}
+.chip:hover{border-color:var(--blue);color:var(--blue)}
+.chip.on{background:var(--blue);color:#fff;border-color:transparent;box-shadow:0 4px 10px -5px rgba(0,80,230,.6)}
+.chip.more{color:var(--blue);border-style:dashed}
+.team{display:flex;align-items:center;gap:10px;margin-top:22px;font-size:13px;color:var(--muted)}
+
+/* ---------- éditeur : composition dans le fil ---------- */
+.edhead{display:flex;align-items:center;gap:12px;margin-left:calc(var(--datew) + var(--railw));margin-bottom:12px}
+.edhead h2{font-size:22px}
+.edhead .btn{margin-left:auto}
+.canvas{padding:22px 18px 18px;display:grid;justify-items:center;background:linear-gradient(180deg,#F3F6FD,#E9EFFB);border-radius:var(--r-card) var(--r-card) 0 0;border-bottom:1px solid var(--line)}
+.a4.big{width:min(100%,460px);transform:none;font-size:2.4em;border-radius:8px}
+.a4.big .band{height:16px}.a4.big .in{padding:22px 26px}
+.a4.big .k{font-size:9.5px}.a4.big .t{font-size:26px;margin:6px 0 4px}.a4.big .s{font-size:11px;margin-bottom:16px}
+.a4.big .g{gap:8px}.a4.big .pr{grid-template-columns:40px 1fr auto;gap:10px;padding:8px 10px;font-size:10.5px;border-radius:8px}
+.a4.big .pr b{font-size:12px}.a4.big .pr .px{font-size:13px}.a4.big .pr .bx{width:40px;height:40px;border-radius:7px}.a4.big .pr .bx svg{width:22px;height:22px}
+.a4.big .ft{font-size:8.5px;left:26px;right:26px;bottom:16px}
+.a4.big [contenteditable]{outline:1px dashed transparent;border-radius:3px;transition:outline-color .15s}
+.a4.big [contenteditable]:hover,.a4.big [contenteditable]:focus{outline-color:rgba(0,80,230,.6);background:rgba(0,80,230,.04)}
+.hint{font-size:13px;color:var(--muted);margin-top:10px;text-align:center}
+.form{padding:18px}
+.frow{margin-bottom:16px}
+.frow label,.frow .lab{display:block;font-size:13px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.frow input[type=text],.frow textarea{width:100%;min-height:48px;padding:12px 14px;border-radius:12px;border:1px solid var(--line2);background:#fff;font-size:16px;
+  box-shadow:0 1px 0 #fff inset,0 1px 2px rgba(11,31,77,.05) inset}
+.frow textarea{resize:vertical;min-height:72px}
+.tpls{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.tpl{display:flex;align-items:center;gap:10px;min-height:48px;padding:0 12px;border-radius:12px;border:1px solid var(--line2);background:#fff;font-size:13px;font-weight:700;color:var(--ink2);text-align:left;
+  box-shadow:0 1px 0 #fff inset,0 1px 2px rgba(11,31,77,.05)}
+.tpl i{width:18px;height:18px;border-radius:6px;background:var(--c);box-shadow:0 1px 0 rgba(255,255,255,.4) inset,0 2px 6px -2px var(--c);flex:none}
+.tpl.on{border-color:var(--c);box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 18%,transparent)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.plist{list-style:none;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.plist li{display:grid;grid-template-columns:auto 1fr auto auto;gap:12px;align-items:center;padding:8px 8px 8px 12px;border-bottom:1px solid var(--line);font-size:13.5px}
+.plist li:last-child{border-bottom:0}
+.plist .bx{width:34px;height:34px;border-radius:8px;background:linear-gradient(160deg,#fff,#EDF2FB);border:1px solid var(--line2);display:grid;place-items:center;color:var(--tpl)}
+.plist .nm{font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.plist .nm small{display:block;font-weight:500;color:var(--muted2);font-size:13px}
+.plist .pp{font-weight:800;color:var(--title);white-space:nowrap}
+.plist .rm{width:44px;height:44px;display:grid;place-items:center;color:var(--muted2);border-radius:10px}
+.plist .rm:hover{background:#F3F6FC;color:#B4231E}
+.plist .empty{padding:18px;color:var(--muted);text-align:center;font-size:13.5px}
+.edfoot{display:flex;flex-wrap:wrap;gap:8px;padding:12px 18px;background:linear-gradient(rgba(255,255,255,.7),#fff 40%);border-top:1px solid var(--line);border-radius:0 0 var(--r-card) var(--r-card)}
+.edfoot .right{margin-left:auto;display:flex;gap:8px}
+
+/* ---------- sélecteur : panneau qui glisse depuis la droite ---------- */
+.scrim{position:fixed;inset:0;background:rgba(11,31,77,.28);z-index:20;opacity:0;pointer-events:none;transition:opacity .3s}
+.scrim.on{opacity:1;pointer-events:auto}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(560px,100%);z-index:21;background:var(--paper);display:flex;flex-direction:column;
+  box-shadow:-24px 0 60px -30px rgba(11,31,77,.6),-1px 0 0 rgba(255,255,255,.9);transform:translateX(104%);transition:transform .42s cubic-bezier(.2,.8,.2,1)}
+.drawer.on{transform:none}
+.drawer .dh{padding:14px 16px 10px;background:linear-gradient(180deg,#fff,var(--paper));border-bottom:1px solid var(--line);
+  background-image:radial-gradient(80% 60% at 50% -30%,rgba(207,223,252,.7),rgba(255,255,255,0) 70%)}
+.drawer .dh .row{display:flex;gap:8px;align-items:center}
+.drawer .dh h2{font-size:18px;flex:1}
+.drawer .dh h2 small{font-weight:600;color:var(--muted);font-size:13.5px;letter-spacing:0;margin-left:6px}
+.xbtn{width:44px;height:44px;border-radius:12px;border:1px solid var(--line2);background:#fff;display:grid;place-items:center;color:var(--ink2);box-shadow:0 1px 0 #fff inset,0 1px 2px rgba(11,31,77,.06)}
+.srch{display:flex;align-items:center;gap:8px;min-height:48px;padding:0 12px;border-radius:12px;border:1px solid var(--line2);background:#fff;margin-top:10px;color:var(--muted);
+  box-shadow:0 1px 0 #fff inset,0 1px 2px rgba(11,31,77,.05) inset}
+.srch input{flex:1;border:0;background:none;font-size:16px;min-width:0;min-height:44px;outline:none;color:var(--ink)}
+.univ{display:flex;gap:6px;margin-top:10px}
+.univ button{flex:1;min-height:44px;border-radius:12px;border:1px solid var(--line2);background:#fff;font-size:13px;font-weight:800;color:var(--ink2);padding:0 8px;box-shadow:0 1px 0 #fff inset,0 1px 2px rgba(11,31,77,.05)}
+.univ button small{display:block;font-size:13px;font-weight:600;color:var(--muted)}
+.univ button.on{background:var(--blue);color:#fff;border-color:transparent;box-shadow:0 6px 14px -8px rgba(0,80,230,.8)}
+.univ button.on small{color:rgba(255,255,255,.8)}
+.rail{display:flex;gap:6px;overflow-x:auto;padding:10px 16px 8px;scrollbar-width:none;-webkit-overflow-scrolling:touch;border-bottom:1px solid var(--line);background:#fff}
+.rail::-webkit-scrollbar{display:none}
+.rail .chip{flex:none}
+.filt{display:flex;gap:8px;align-items:center;padding:8px 16px;font-size:13px;color:var(--muted);border-bottom:1px solid var(--line);flex-wrap:wrap}
+.filt select{height:44px;-webkit-appearance:none;appearance:none;border-radius:10px;border:1px solid var(--line2);background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236B7387' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 10px center;padding:0 32px 0 12px;font-size:16px;color:var(--ink2)}
+.filt label{display:inline-flex;align-items:center;gap:6px;min-height:44px}
+.filt input[type=checkbox]{width:22px;height:22px;accent-color:var(--blue)}
+.filt .cnt{margin-left:auto;font-weight:700;color:var(--ink2)}
+.dlist{list-style:none;overflow-y:auto;flex:1;padding:6px 10px 12px}
+.prod{display:grid;grid-template-columns:auto 44px 1fr auto;gap:10px;align-items:center;min-height:60px;padding:6px 8px;border-radius:12px;cursor:pointer;transition:background .15s}
+.prod:hover{background:#fff;box-shadow:0 1px 0 #fff inset,0 1px 2px rgba(11,31,77,.05)}
+.prod input{width:22px;height:22px;accent-color:var(--blue);margin:0 4px}
+.prod .bx{width:44px;height:44px;border-radius:10px;background:linear-gradient(160deg,#fff,#EDF2FB);border:1px solid var(--line2);display:grid;place-items:center;color:var(--blue);box-shadow:0 1px 0 #fff inset,0 4px 8px -6px rgba(11,31,77,.4)}
+.prod .nm{min-width:0;font-weight:700;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prod .nm small{display:block;font-weight:500;color:var(--muted);font-size:13px}
+.prod .pp{text-align:right;font-weight:800;color:var(--title);white-space:nowrap}
+.prod .pp small{display:block;font-weight:600;color:var(--muted2);font-size:13px;letter-spacing:.06em}
+.prod.sel{background:#EAF0FE}
+.dfoot{padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:#fff;border-top:1px solid var(--line);display:flex;align-items:center;gap:10px;box-shadow:0 -12px 24px -20px rgba(11,31,77,.5)}
+.dfoot .info{font-size:13px;color:var(--muted);flex:1}
+.dfoot .btn.pri{min-height:48px;padding:0 20px}
+
+/* ---------- 390 px : le repli est dessiné ---------- */
+@media (max-width:900px){
+  .shell{grid-template-columns:1fr;gap:20px;padding:16px 14px 60px}
+  .side{position:static;order:2}
+  .bar .search{min-width:0;flex:1}
+  .bar h1 small{display:none}
+}
+@media (max-width:640px){
+  :root{--datew:0px;--railw:22px}
+  .prop{padding:8px 14px;font-size:13px}
+  .bar{padding:8px 12px;gap:8px}
+  .bar .back span{display:none}
+  .bar .back{padding:0 12px}
+  .bar .search{display:none}
+  .bar h1{font-size:16px}
+  .compose{margin-left:0;padding:18px 16px 16px}
+  .compose h2{font-size:19px;padding-right:0}
+  .compose .week{position:static;display:block;margin-bottom:6px}
+  .kinds{grid-template-columns:1fr 1fr}
+  .stream::before{left:calc(var(--railw)/2 - 1px);top:-20px}
+  .entry{grid-template-columns:var(--railw) minmax(0,1fr);grid-template-rows:auto auto;margin-bottom:18px}
+  .date{grid-column:2;text-align:left;padding:0 0 6px 2px;display:flex;align-items:baseline;gap:8px}
+  .date .d{font-size:30px}
+  .date .m{margin:0}
+  .dot{grid-column:1;grid-row:1/3;padding-top:8px}
+  .post .head{padding:14px 14px 10px;grid-template-columns:auto minmax(0,1fr) 44px;row-gap:8px}
+  .post .head .st{grid-column:2;justify-self:start}
+  .post .head .chev{grid-column:3;grid-row:1;margin-right:-6px}
+  .prod .nm,.plist .nm{white-space:normal;line-height:1.25}
+  .obj{padding:2px 14px 14px}
+  .obj-row{grid-template-columns:1fr;gap:12px}
+  .a4{width:150px}
+  .detail{padding:0 14px 14px}
+  .doc,.site{grid-template-columns:1fr}
+  .pages{margin-bottom:12px}
+  .edhead{margin-left:0;flex-wrap:wrap}
+  .edhead .btn{margin-left:0}
+  .a4.big{font-size:1.25em}
+  .a4.big .t{font-size:16px}.a4.big .in{padding:14px 14px}.a4.big .pr{grid-template-columns:28px 1fr auto;padding:5px 7px;font-size:9px}
+  .a4.big .pr b{font-size:9.5px}.a4.big .pr .bx{width:28px;height:28px}.a4.big .pr .bx svg{width:16px;height:16px}.a4.big .pr .px{font-size:10px}
+  .a4.big .s{font-size:9px;margin-bottom:10px}.a4.big .k{font-size:7px}.a4.big .band{height:10px}.a4.big .ft{font-size:7px;left:14px;right:14px;bottom:10px}
+  .tpls{grid-template-columns:1fr 1fr}
+  .form{padding:14px}
+  .edfoot{padding:10px 14px}
+  .edfoot .right{margin-left:0;width:100%}
+  .edfoot .right .btn{flex:1;justify-content:center}
+  .edfoot>.btn{flex:1;justify-content:center}
+  .drawer{width:100%}
+  .univ button small{display:none}
+  .filt select{flex:1;min-width:0}
+  .li .vis .box{width:64px;height:82px}
+  .li .vis .box:nth-child(2){width:72px;height:92px}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{transition:none!important;animation:none!important}
+  .a4{transform:none}
+}
+</style>
+</head>
+<body>
+<div class="sky" aria-hidden="true"></div>
+
+<div class="prop">
+  <b>Proposition 3 · Le flux</b>
+  <span>Parti pris : le marketing, c'est publier — l'accueil est le journal daté des campagnes de l'équipe, l'éditeur s'y ouvre comme une composition et le choix des produits glisse par le côté sans quitter le fil.</span>
+  <span class="risk"><b>Risque :</b> une semaine sans publication laisse le fil vide ; les outils permanents (catalogue, documents) sont un cran moins visibles qu'aujourd'hui, dans la colonne de droite.</span>
+</div>
+
+<header class="bar">
+  <button class="back" type="button" data-go="home" aria-label="Retour">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg><span>Retour</span>
+  </button>
+  <button class="plus" type="button" aria-label="Créer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+  <h1 id="crumb">Marketing<small>le fil de Pauline &amp; Will</small></h1>
+  <div class="search" role="search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>Rechercher<kbd>⌘K</kbd></div>
+  <div class="avatars" aria-label="Équipe"><span class="av p" title="Pauline">P</span><span class="av" title="Will">W</span></div>
+</header>
+
+<div class="shell">
+<!-- ===================== ÉCRAN 1 · LE FIL ===================== -->
+<main class="feed" id="home">
+  <section class="compose" aria-labelledby="ct">
+    <span class="week num">Semaine 37 · 8 → 14 sept.</span>
+    <h2 id="ct">Que voulez-vous préparer cette semaine ?</h2>
+    <p>Chaque création part d'ici et prend sa place dans le fil, datée, avec son statut.</p>
+    <div class="kinds">
+      <button class="kind" type="button" data-go="edit" data-kind="fiche">
+        <i><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/></svg></i>
+        <b>Fiche produit</b><span>Un produit, son PPHT, sa photo</span>
+      </button>
+      <button class="kind" type="button" data-go="edit" data-kind="selection">
+        <i><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="8" height="7" rx="1.5"/><rect x="13" y="4" width="8" height="7" rx="1.5"/><rect x="3" y="13" width="8" height="7" rx="1.5"/><path d="M15 16.5h6M18 13.5v6"/></svg></i>
+        <b>Sélection</b><span>Plusieurs produits, un thème</span>
+      </button>
+      <button class="kind" type="button" data-kind="linkedin">
+        <i><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="M8 10v6M8 7.5v.1M12 16v-3.5a2 2 0 0 1 4 0V16M12 10v6"/></svg></i>
+        <b>Post LinkedIn</b><span>Texte + visuel, programmé</span>
+      </button>
+      <button class="kind" type="button" data-kind="catalogue">
+        <i><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v13"/><path d="M4 19a2 2 0 0 0 2 2h14M8 8h8M8 12h5"/></svg></i>
+        <b>Catalogue par catégorie</b><span>PDF ou Excel, prêt à présenter</span>
+      </button>
+    </div>
+  </section>
+
+  <ol class="stream">
+
+    <!-- 10 sept · aujourd'hui · le site à noter -->
+    <li class="entry today">
+      <div class="date num"><div class="d">10</div><div class="m">sept.</div><div class="w">aujourd'hui</div></div>
+      <div class="dot"><i></i></div>
+      <article class="post">
+        <button class="head" type="button" aria-expanded="false">
+          <span class="av" aria-hidden="true">W</span>
+          <span><span class="who"><b>Will</b> partage le nouveau site à noter</span><span class="what">Intégral Pharma, version unique · base Cimaise · 3 pages</span></span>
+          <span class="st noter">À noter</span>
+        </button>
+        <div class="obj">
+          <div class="site">
+            <div class="screens" aria-hidden="true"><i></i><i></i><i></i></div>
+            <div class="obj-txt">
+              <h3>Intégral Pharma, version unique</h3>
+              <p>Elle défile, la carte pousse depuis Hyères, la page RSE suit le soleil. Mets une note sur 10 : la moyenne est partagée entre vous.</p>
+              <div class="note num" role="group" aria-label="Note sur 10"><button type="button">6</button><button type="button">7</button><button type="button" class="on">8</button><button type="button">9</button><button type="button">10</button></div>
+            </div>
+          </div>
+        </div>
+        <div class="fold"><div><div class="detail">
+          <p class="hist">Ouverte par <b>Pauline</b> hier 17 h 05 · note <b>8/10</b> — « la carte est très belle, le texte RSE à relire ».</p>
+          <div class="actions"><button class="btn pri" type="button">Voir le site</button><button class="btn" type="button">Envoyer ma note</button></div>
+        </div></div></div>
+      </article>
+    </li>
+
+    <!-- 9 sept · Pauline · fiche -->
+    <li class="entry">
+      <div class="date num"><div class="d">9</div><div class="m">sept.</div><div class="w">mardi</div></div>
+      <div class="dot"><i></i></div>
+      <article class="post open" style="--tpl:#0050E6">
+        <button class="head" type="button" aria-expanded="true">
+          <span class="av p" aria-hidden="true">P</span>
+          <span><span class="who"><b>Pauline</b> a créé une fiche « Promo de la semaine »</span><span class="what">3 produits · Douleur &amp; fièvre · partagée avec Will à 16 h 40</span></span>
+          <span class="st partage">Partagé</span>
+          <span class="chev" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+        </button>
+        <div class="obj">
+          <div class="obj-row">
+            <div class="a4" aria-label="Aperçu de la fiche">
+              <div class="band"></div>
+              <div class="in">
+                <div class="k">Intégral Pharma · Promo de la semaine</div>
+                <div class="t">Douleur &amp; fièvre, les trois de la rentrée</div>
+                <div class="s">PPHT · stock au 22/06 · prix net : voir la fiche</div>
+                <div class="g">
+                  <div class="pr"><span class="bx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="9" width="18" height="6" rx="3" transform="rotate(-35 12 12)"/><path d="M9.5 8.4l5 7.2"/></svg></span><span><b>DOLIPRANE 1000MG CPR BT8</b>Opella · CIP 3400930092293</span><span class="px num">0,78 €</span></div>
+                  <div class="pr"><span class="bx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><path d="M12 4v16"/></svg></span><span><b>SPASFON CPR BT30</b>Teva Santé · CIP 3400930986080</span><span class="px num">1,93 €</span></div>
+                  <div class="pr"><span class="bx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 3h10v6l-3 3v9H10v-9L7 9z"/></svg></span><span><b>KETUM 2,5% GEL TB60G</b>Menarini · CIP 3400934081057</span><span class="px num">3,28 €</span></div>
+                </div>
+              </div>
+              <div class="ft"><span>Intégral Pharma · groupe de grossistes-répartiteurs</span><span>10/09/2026</span></div>
+            </div>
+            <div class="obj-txt">
+              <h3>Douleur &amp; fièvre, les trois de la rentrée</h3>
+              <p>Modèle « Promo de la semaine », photos activées, PDF A4 prêt à envoyer.</p>
+              <div class="meta"><span class="tag tpl">Promo de la semaine</span><span class="tag">PDF · 1 page</span><span class="tag num">3 produits</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="fold"><div><div class="detail">
+          <ul class="rows num">
+            <li><span class="nm">DOLIPRANE 1000MG CPR BT8</span><span class="cip">3400930092293</span><span class="pp">0,78 €</span></li>
+            <li><span class="nm">SPASFON CPR BT30</span><span class="cip">3400930986080</span><span class="pp">1,93 €</span></li>
+            <li><span class="nm">KETUM 2,5% GEL TB60G</span><span class="cip">3400934081057</span><span class="pp">3,28 €</span></li>
+          </ul>
+          <p class="hist">Créée mardi <b>14 h 12</b> · modifiée <b>16 h 38</b> · partagée avec Will <b>16 h 40</b> · pas encore envoyée.</p>
+          <div class="actions"><button class="btn pri" type="button" data-go="edit" data-kind="pauline">Ouvrir la composition</button><button class="btn" type="button"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Télécharger le PDF</button><button class="btn ghost" type="button">Dupliquer</button></div>
+        </div></div></div>
+      </article>
+    </li>
+
+    <!-- 8 sept · post LinkedIn -->
+    <li class="entry">
+      <div class="date num"><div class="d">8</div><div class="m">sept.</div><div class="w">lundi</div></div>
+      <div class="dot"><i></i></div>
+      <article class="post">
+        <button class="head" type="button" aria-expanded="false">
+          <span class="av" aria-hidden="true">W</span>
+          <span><span class="who"><b>Will</b> a programmé le post LinkedIn de la semaine</span><span class="what">Publication jeudi 11 sept. à 12 h 00 · page Intégral Pharma</span></span>
+          <span class="st programme">Programmé</span>
+          <span class="chev" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+        </button>
+        <div class="obj">
+          <div class="li">
+            <div class="h"><span class="logo">IP</span><span><b>Intégral Pharma</b><span class="sub">Groupe de grossistes-répartiteurs · programmé jeudi 12 h</span></span></div>
+            <div class="tx">Rentrée : la chaîne du froid, c'est notre métier. Vaccins grippe, zona, méningocoque — livrés à température contrôlée, chaque jour, dans chacune de vos officines. Ce que nous garantissons, et comment on le mesure, en trois points ↓</div>
+            <div class="vis" aria-hidden="true"><span class="cap">Chaîne du froid · rentrée 2026</span>
+              <div class="stack"><div class="box"><b>SHINGRIX</b>inj. fl+fl 1<i></i>GSK</div><div class="box"><b>REPEVAX</b>inj. srg 1<i></i>Sanofi Pasteur</div><div class="box"><b>NIMENRIX</b>inj. fl+srg 1<i></i>Pfizer</div></div>
+            </div>
+            <div class="f num"><span>Visuel généré depuis 3 fiches</span><span>Texte 412 caractères</span></div>
+          </div>
+        </div>
+        <div class="fold"><div><div class="detail">
+          <p class="hist">Rédigé lundi <b>9 h 30</b> · relu par Pauline <b>11 h 15</b> (« préciser "à température contrôlée" ») · programmé jeudi <b>12 h 00</b>. Aucune condition commerciale dans le texte.</p>
+          <div class="actions"><button class="btn pri" type="button">Modifier le post</button><button class="btn" type="button">Voir le rétroplanning</button></div>
+        </div></div></div>
+      </article>
+    </li>
+
+    <!-- 5 sept · biosimilaires -->
+    <li class="entry">
+      <div class="date num"><div class="d">5</div><div class="m">sept.</div><div class="w">vendredi</div></div>
+      <div class="dot"><i></i></div>
+      <article class="post">
+        <button class="head" type="button" aria-expanded="false">
+          <span class="av p" aria-hidden="true">P</span>
+          <span><span class="who"><b>Pauline</b> a mis à jour le catalogue biosimilaires</span><span class="what">15 références substituables · fiche façon Teva + base complète</span></span>
+          <span class="st envoye">Envoyé</span>
+          <span class="chev" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+        </button>
+        <div class="obj">
+          <div class="doc">
+            <div class="pages" aria-hidden="true"><i></i><i></i><i><s class="h"></s><s></s><s></s><s></s><s></s></i><em>PDF</em></div>
+            <div class="obj-txt">
+              <h3>Biosimilaires substituables — septembre 2026</h3>
+              <p>Tous les biosimilaires substituables en officine : PPHT et prix net par établissement. Envoyé à 41 pharmacies du secteur Ouest.</p>
+              <div class="meta"><span class="tag">PDF · 4 pages</span><span class="tag">Excel</span><span class="tag num">15 références</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="fold"><div><div class="detail">
+          <ul class="rows num">
+            <li><span class="nm">YUFLYMA 40MG INJ STY0,4ML 2</span><span class="cip">Celltrion</span><span class="pp">378,75 €</span></li>
+            <li><span class="nm">REMSIMA 120MG INJ STY1ML 2</span><span class="cip">Celltrion</span><span class="pp">305,83 €</span></li>
+            <li><span class="nm">BINOCRIT 30000UI INJ 0,75ML 1</span><span class="cip">Sandoz</span><span class="pp">118,70 €</span></li>
+            <li><span class="nm">ZARZIO 30MU/0,5ML INJ SRG 1</span><span class="cip">Sandoz</span><span class="pp">52,50 €</span></li>
+          </ul>
+          <p class="hist">Régénéré vendredi <b>8 h 02</b> depuis la base · envoyé <b>10 h 30</b> · 11 autres références dans la base complète.</p>
+          <div class="actions"><button class="btn pri" type="button">Télécharger le PDF</button><button class="btn" type="button">Toutes présentations</button><button class="btn ghost" type="button">Ouvrir la base</button></div>
+        </div></div></div>
+      </article>
+    </li>
+
+    <!-- 4 sept · Will · sélection brouillon -->
+    <li class="entry">
+      <div class="date num"><div class="d">4</div><div class="m">sept.</div><div class="w">jeudi</div></div>
+      <div class="dot"><i></i></div>
+      <article class="post" style="--tpl:#C7791A">
+        <button class="head" type="button" aria-expanded="false">
+          <span class="av" aria-hidden="true">W</span>
+          <span><span class="who"><b>Will</b> a commencé une sélection « Rentrée ORL »</span><span class="what">4 produits · Nez, gorge &amp; allergies · brouillon</span></span>
+          <span class="st brouillon">Brouillon</span>
+          <span class="chev" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+        </button>
+        <div class="obj">
+          <div class="obj-row">
+            <div class="a4" aria-label="Aperçu de la sélection">
+              <div class="band"></div>
+              <div class="in">
+                <div class="k">Intégral Pharma · Sélection du mois</div>
+                <div class="t">Rentrée ORL : le nez et la gorge d'abord</div>
+                <div class="s">PPHT · prix net : voir la fiche</div>
+                <div class="g">
+                  <div class="pr"><span class="bx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v5M9 8h6l1 3H8zM8 11h8v8a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2z"/></svg></span><span><b>DERINOX SOL NAS FL15ML +POMP</b>CIP 3400935356062</span><span class="px num">4,51 €</span></div>
+                  <div class="pr"><span class="bx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v5M9 8h6l1 3H8zM8 11h8v8a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2z"/></svg></span><span><b>RHINOFLUIMUCIL NAS FL NEB 10ML</b>Zambon</span><span class="px num">4,66 €</span></div>
+                  <div class="pr"><span class="bx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 4h8v13a4 4 0 0 1-8 0z"/><path d="M8 10h8"/></svg></span><span><b>HELICIDINE 10% S/S SIR FP250ML</b>CIP 3400922385624</span><span class="px num">2,52 €</span></div>
+                  <div class="pr"><span class="bx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="9" width="18" height="6" rx="3" transform="rotate(-35 12 12)"/><path d="M9.5 8.4l5 7.2"/></svg></span><span><b>COQUELUSEDAL BB. SUP BT10</b>CIP 3400935965783</span><span class="px num">2,96 €</span></div>
+                </div>
+              </div>
+              <div class="ft"><span>Intégral Pharma · groupe de grossistes-répartiteurs</span><span>brouillon</span></div>
+            </div>
+            <div class="obj-txt">
+              <h3>Rentrée ORL : le nez et la gorge d'abord</h3>
+              <p>Modèle « Sélection du mois ». Accroche à écrire, mentions à compléter.</p>
+              <div class="meta"><span class="tag tpl">Sélection du mois</span><span class="tag num">4 produits</span><span class="tag">Accroche manquante</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="fold"><div><div class="detail">
+          <p class="hist">Commencée jeudi <b>18 h 20</b> · enregistrée sur cet appareil · pas encore partagée avec Pauline.</p>
+          <div class="actions"><button class="btn pri" type="button" data-go="edit" data-kind="orl">Reprendre</button><button class="btn" type="button">Partager avec Pauline</button></div>
+        </div></div></div>
+      </article>
+    </li>
+
+    <!-- 1er sept · catalogue par catégorie -->
+    <li class="entry old">
+      <div class="date num"><div class="d">1</div><div class="m">sept.</div><div class="w">lundi</div></div>
+      <div class="dot"><i></i></div>
+      <article class="post">
+        <button class="head" type="button" aria-expanded="false">
+          <span class="av" aria-hidden="true">W</span>
+          <span><span class="who"><b>Will</b> a régénéré le catalogue par catégorie</span><span class="what">Princeps petits prix · intermédiaire · cher + NR — 16 305 références au 22/06</span></span>
+          <span class="st partage">Partagé</span>
+          <span class="chev" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+        </button>
+        <div class="obj">
+          <div class="doc">
+            <div class="pages" aria-hidden="true"><i></i><i></i><i><s class="h"></s><s></s><s></s><s></s><s></s></i><em>PDF</em></div>
+            <div class="obj-txt">
+              <h3>Catalogue par catégorie — rentrée 2026</h3>
+              <p>Les plus demandés de chaque catégorie, prêts à présenter. 47 rayons, 7 118 références en stock.</p>
+              <div class="meta"><span class="tag">PDF · 12 pages</span><span class="tag">Excel</span><span class="tag num">47 rayons</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="fold"><div><div class="detail">
+          <p class="hist">Généré lundi <b>7 h 45</b> par le robot du matin · partagé dans « Documents partagés ».</p>
+          <div class="actions"><button class="btn pri" type="button">Fiche PDF</button><button class="btn" type="button">Excel</button></div>
+        </div></div></div>
+      </article>
+    </li>
+
+  </ol>
+</main>
+
+<!-- ===================== ÉCRAN 2 · L'ÉDITEUR, UNE COMPOSITION DANS LE FIL ===================== -->
+<main class="feed" id="edit" hidden>
+  <div class="edhead">
+    <button class="btn" type="button" data-go="home"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>Le fil</button>
+    <h2 id="edtitle">Composition · Fiche</h2>
+  </div>
+  <ol class="stream">
+    <li class="entry today">
+      <div class="date num"><div class="d">10</div><div class="m">sept.</div><div class="w">en cours</div></div>
+      <div class="dot"><i></i></div>
+      <article class="post open" id="edpost" style="--tpl:#0050E6">
+        <div class="head" style="cursor:default">
+          <span class="av" aria-hidden="true">W</span>
+          <span><span class="who"><b>Will</b> compose une fiche</span><span class="what">Elle prendra sa place dans le fil dès l'enregistrement</span></span>
+          <span class="st brouillon" id="edst">Brouillon</span>
+        </div>
+        <div class="canvas">
+          <div class="a4 big" aria-label="Aperçu A4 modifiable">
+            <div class="band"></div>
+            <div class="in">
+              <div class="k" id="pvk">Intégral Pharma · Promo de la semaine</div>
+              <div class="t" id="pvt" contenteditable="true" spellcheck="false">Douleur &amp; fièvre, les trois de la rentrée</div>
+              <div class="s" id="pva" contenteditable="true" spellcheck="false">PPHT · stock au 22/06 · prix net : voir la fiche</div>
+              <div class="g" id="pvg"></div>
+            </div>
+            <div class="ft"><span contenteditable="true" spellcheck="false">Intégral Pharma · groupe de grossistes-répartiteurs</span><span class="num">10/09/2026</span></div>
+          </div>
+          <p class="hint">Cliquez un texte de l'aperçu pour l'écrire · cliquez la boîte d'un produit pour changer sa photo</p>
+        </div>
+        <div class="form">
+          <div class="frow"><span class="lab">Modèle</span>
+            <div class="tpls" id="tpls">
+              <button class="tpl on" type="button" style="--c:#0050E6" data-c="#0050E6" data-k="Promo de la semaine"><i></i>Promo de la semaine</button>
+              <button class="tpl" type="button" style="--c:#1E9E6A" data-c="#1E9E6A" data-k="Nouveauté"><i></i>Nouveauté</button>
+              <button class="tpl" type="button" style="--c:#C7791A" data-c="#C7791A" data-k="Sélection du mois"><i></i>Sélection du mois</button>
+              <button class="tpl" type="button" style="--c:#6D4FC4" data-c="#6D4FC4" data-k="Fiche produit"><i></i>Fiche produit simple</button>
+            </div>
+          </div>
+          <div class="frow"><label for="ftitle">Titre</label><input type="text" id="ftitle" value="Douleur &amp; fièvre, les trois de la rentrée"></div>
+          <div class="frow"><label for="facc">Accroche</label><textarea id="facc">PPHT · stock au 22/06 · prix net : voir la fiche</textarea></div>
+          <div class="frow"><span class="lab">Statut</span>
+            <div class="chips" id="stchips"><button class="chip on" type="button" data-s="brouillon">Brouillon</button><button class="chip" type="button" data-s="partage">Partagé avec Pauline</button><button class="chip" type="button" data-s="envoye">Envoyé</button></div>
+          </div>
+          <div class="frow"><span class="lab">Produits <span class="num" id="pcount" style="color:var(--blue)">· 3</span></span>
+            <ul class="plist num" id="plist"></ul>
+            <div class="actions"><button class="btn pri" type="button" id="openpick"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Ajouter des produits</button><button class="btn" type="button">Produit libre</button></div>
+          </div>
+        </div>
+        <div class="edfoot">
+          <button class="btn" type="button" data-go="home"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>Enregistrer dans le fil</button>
+          <div class="right"><button class="btn" type="button">Partager avec Pauline</button><button class="btn pri" type="button"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Télécharger le PDF</button></div>
+        </div>
+      </article>
+    </li>
+  </ol>
+</main>
+
+<!-- ===================== COLONNE CALME ===================== -->
+<aside class="side" aria-label="Outils permanents">
+  <h4>Outils</h4>
+  <ul class="tools">
+    <li><button class="tool" type="button"><i><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="8" height="7" rx="1.5"/><rect x="13" y="4" width="8" height="7" rx="1.5"/><rect x="3" y="13" width="8" height="7" rx="1.5"/><rect x="13" y="13" width="8" height="7" rx="1.5"/></svg></i><span><b>Catalogue &amp; prix</b><span>PPHT, abandon de marge, stock</span></span><span class="n num">16 305</span></button></li>
+    <li><button class="tool" type="button"><i><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l5 5v13H6z"/><path d="M14 3v6h6M9 13h6M9 17h6"/></svg></i><span><b>Documents partagés</b><span>PDF visibles par tous les comptes</span></span><span class="n num">12</span></button></li>
+    <li><button class="tool" type="button"><i><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg></i><span><b>Biosimilaires substituables</b><span>Fiche PDF · base complète</span></span><span class="n num">15</span></button></li>
+    <li><button class="tool" type="button"><i><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></i><span><b>Rétroplanning LinkedIn</b><span>Anciens posts, prochains à publier</span></span><span class="n num">jeu.</span></button></li>
+    <li><button class="tool" type="button"><i><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg></i><span><b>Autres outils</b><span>Supports manuels, maquettes</span></span><span class="n">›</span></button></li>
+  </ul>
+  <h4>Rayons</h4>
+  <div class="rayons">
+    <button class="chip" type="button">Cœur &amp; tension</button><button class="chip" type="button">Douleur &amp; fièvre</button><button class="chip" type="button">Peau &amp; dermatologie</button><button class="chip" type="button">Digestion &amp; spasmes</button><button class="chip" type="button">Diabète</button><button class="chip" type="button">Yeux</button><button class="chip" type="button">Vaccins</button><button class="chip more" type="button">47 rayons</button>
+  </div>
+  <div class="team"><span class="avatars"><span class="av p">P</span><span class="av">W</span></span>Pauline &amp; Will · même fil, même statut</div>
+</aside>
+</div>
+
+<!-- ===================== ÉCRAN 3 · SÉLECTEUR, PANNEAU LATÉRAL ===================== -->
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" aria-label="Choisir des produits" aria-hidden="true">
+  <div class="dh">
+    <div class="row"><h2>Ajouter des produits<small class="num">16 305 références</small></h2><button class="xbtn" type="button" id="closepick" aria-label="Fermer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <label class="srch"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input type="search" id="q" placeholder="Désignation, CIP, EAN…" autocomplete="off"></label>
+    <div class="univ" id="univ"><button type="button" class="on">Tous les produits<small class="num">16 305 réf.</small></button><button type="button">Parapharmacie<small class="num">3 520 réf.</small></button><button type="button">Nos sélections<small class="num">621 réf.</small></button></div>
+  </div>
+  <div class="rail" id="rail">
+    <button class="chip on" type="button" data-r="">Tous</button>
+    <button class="chip" type="button" data-r="douleur">Douleur &amp; fièvre</button>
+    <button class="chip" type="button" data-r="orl">Nez, gorge &amp; allergies</button>
+    <button class="chip" type="button" data-r="diabete">Diabète</button>
+    <button class="chip" type="button" data-r="yeux">Yeux &amp; ophtalmologie</button>
+    <button class="chip" type="button" data-r="vaccins">Vaccins</button>
+    <button class="chip" type="button" data-r="peau">Peau &amp; dermatologie</button>
+    <button class="chip" type="button" data-r="digestion">Digestion &amp; spasmes</button>
+    <button class="chip" type="button" data-r="thyroide">Hormones &amp; thyroïde</button>
+    <button class="chip" type="button" data-r="coeur">Cœur &amp; tension</button>
+  </div>
+  <div class="filt">
+    <select aria-label="Laboratoire"><option>Tous les laboratoires</option><option>OPELLA</option><option>TEVA SANTE</option><option>LILLY</option><option>GSK</option><option>THEA</option><option>SANDOZ</option><option>MERCK</option></select>
+    <label><input type="checkbox" checked> en stock</label>
+    <span class="cnt num" id="cnt">14 sur 16 305</span>
+  </div>
+  <ul class="dlist num" id="dlist"></ul>
+  <div class="dfoot">
+    <span class="info">Prix affichés : PPHT. Prix net : voir la fiche.</span>
+    <button class="btn pri" type="button" id="addpick"><span>Ajouter <span class="num" id="addn">0</span><span id="addw"> produit</span></span></button>
+  </div>
+</aside>
+
+<script>
+(function(){
+  var $=function(s,c){return (c||document).querySelector(s)},$$=function(s,c){return Array.prototype.slice.call((c||document).querySelectorAll(s))};
+  var ICO={pill:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="9" width="18" height="6" rx="3" transform="rotate(-35 12 12)"/><path d="M9.5 8.4l5 7.2"/></svg>',
+    tab:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><path d="M12 4v16"/></svg>',
+    tube:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 3h10v6l-3 3v9H10v-9L7 9z"/></svg>',
+    spray:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v5M9 8h6l1 3H8zM8 11h8v8a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2z"/></svg>',
+    syr:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20l4-4M6 18l8-8M11 7l6 6M15 5l4 4M13 9l2 2M9 13l2 2"/></svg>',
+    drop:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3s6 7 6 11a6 6 0 0 1-12 0c0-4 6-11 6-11z"/></svg>',
+    flask:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 4h8v13a4 4 0 0 1-8 0z"/><path d="M8 10h8"/></svg>'};
+  // Produits réels (désignation, labo ou CIP, PPHT, rayon, picto)
+  var CAT=[
+    ['DOLIPRANE 1000MG CPR BT8','Opella · 3400930092293',0.78,'douleur','pill'],
+    ['SPASFON CPR BT30','Teva Santé · 3400930986080',1.93,'digestion','tab'],
+    ['KETUM 2,5% GEL TB60G','Menarini · 3400934081057',3.28,'douleur','tube'],
+    ['IZALGI 500MG/25MG GELU BT16','CIP 3400927641145',1.25,'douleur','pill'],
+    ['KARDEGIC 75MG PDR SACH 30','Sanofi · 3400934248740',1.19,'coeur','tab'],
+    ['LUMIRELAX 500MG CPR BT20','CIP 3400934229848',7.56,'douleur','pill'],
+    ['DERINOX SOL NAS FL15ML +POMP','CIP 3400935356062',4.51,'orl','spray'],
+    ['RHINOFLUIMUCIL NAS FL NEB 10ML','Zambon',4.66,'orl','spray'],
+    ['HELICIDINE 10% S/S SIR FP250ML','CIP 3400922385624',2.52,'orl','flask'],
+    ['TRULICITY 1,5MG INJ STY0,5ML 4','Lilly · 3400930003763',74.28,'diabete','syr'],
+    ['MOUNJARO 5MG INJ STYLO KWIKPEN 1','Lilly · 3400930292914',225.18,'diabete','syr'],
+    ['ACCU-CHEK Performa Bandelettes 2x50','Roche · ITP',19.90,'diabete','tab'],
+    ['THEALOSE SOL OPHT FL15ML 1','Théa',8.34,'yeux','drop'],
+    ['VISMED MULTI COLLYR FL15ML 1','TRB Chemedica',8.60,'yeux','drop'],
+    ['MONOPROST 50MCG/ML COLLY DOS30','Théa · 3400926738266',7.62,'yeux','drop'],
+    ['SHINGRIX INJ FL+FL 1','GSK · 3400930141861',175.18,'vaccins','syr'],
+    ['REPEVAX INJ SRG 1 S/A+1','Sanofi Pasteur · 3400936873742',19.92,'vaccins','syr'],
+    ['GARDASIL 9 INJ SRG0,5ML 1+2AIG','MSD · 3400930056202',107.56,'vaccins','syr'],
+    ['SOOLANTRA 10MG/G CR TB30G 1','Galderma · 3400930024119',25.82,'peau','tube'],
+    ['EPIDUO 0,3/2,5% GEL M-DOS30G 1','Galderma',21.06,'peau','tube'],
+    ['FORLAX 10G BUV PDR SACH 20','Ipsen',5.80,'digestion','tab'],
+    ['LEVOTHYROX 75MCG CPR BT30 EXC','Merck · 3400930065785',1.41,'thyroide','pill'],
+    ['LEVOTHYROX 100MCG CPR BT30 EXC','Merck · 3400930065891',1.77,'thyroide','pill'],
+    ['PLAVIX 75MG CPR BT30','Sanofi',9.46,'coeur','pill']
+  ];
+  var SETS={
+    pauline:{k:'Promo de la semaine',c:'#0050E6',t:'Douleur & fièvre, les trois de la rentrée',a:'PPHT · stock au 22/06 · prix net : voir la fiche',p:[0,1,2],st:'partage'},
+    orl:{k:'Sélection du mois',c:'#C7791A',t:'Rentrée ORL : le nez et la gorge d’abord',a:'PPHT · prix net : voir la fiche',p:[6,7,8],st:'brouillon'},
+    fiche:{k:'Fiche produit',c:'#6D4FC4',t:'Une fiche produit',a:'Écrivez l’accroche ici',p:[9],st:'brouillon'},
+    selection:{k:'Sélection du mois',c:'#C7791A',t:'Une sélection à thème',a:'Écrivez l’accroche ici',p:[],st:'brouillon'}
+  };
+  var eur=function(v){return v.toFixed(2).replace('.',',')+' €'};
+  var picked=[0,1,2];
+  var edpost=$('#edpost'),pvg=$('#pvg'),plist=$('#plist'),pcount=$('#pcount'),pvk=$('#pvk'),pvt=$('#pvt'),pva=$('#pva');
+  function render(){
+    pvg.innerHTML=picked.map(function(i){var r=CAT[i];return '<div class="pr"><span class="bx" title="Changer la photo">'+ICO[r[4]]+'</span><span><b>'+r[0]+'</b>'+r[1]+'</span><span class="px num">'+eur(r[2])+'</span></div>'}).join('')||'<div class="pr" style="justify-content:center;grid-template-columns:1fr;text-align:center;color:var(--muted)">Aucun produit — ajoutez-en depuis le panneau</div>';
+    plist.innerHTML=picked.map(function(i,n){var r=CAT[i];return '<li><span class="bx">'+ICO[r[4]]+'</span><span class="nm">'+r[0]+'<small>'+r[1]+'</small></span><span class="pp">'+eur(r[2])+'</span><button class="rm" type="button" data-n="'+n+'" aria-label="Retirer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></li>'}).join('')||'<li class="empty">Aucun produit. Ajoutez des références ci-dessous.</li>';
+    pcount.textContent='· '+picked.length;
+  }
+  plist.addEventListener('click',function(e){var b=e.target.closest('.rm');if(!b)return;picked.splice(+b.dataset.n,1);render()});
+  function loadSet(k){
+    var s=SETS[k]||SETS.fiche;picked=s.p.slice();edpost.style.setProperty('--tpl',s.c);pvk.textContent='Intégral Pharma · '+s.k;pvt.textContent=s.t;pva.textContent=s.a;
+    $('#ftitle').value=s.t;$('#facc').value=s.a;
+    $$('.tpl').forEach(function(b){b.classList.toggle('on',b.dataset.c===s.c)});
+    $$('#stchips .chip').forEach(function(b){b.classList.toggle('on',b.dataset.s===s.st)});setStatus(s.st);
+    $('#edtitle').textContent='Composition · '+s.k;render();
+  }
+  var ST={brouillon:'Brouillon',partage:'Partagé',envoye:'Envoyé'};
+  function setStatus(s){var e=$('#edst');e.className='st '+s;e.textContent=ST[s]}
+  // navigation entre écrans
+  function go(scr){$('#home').hidden=scr!=='home';$('#edit').hidden=scr!=='edit';$('#crumb').innerHTML=scr==='home'?'Marketing<small>le fil de Pauline &amp; Will</small>':'Marketing<small>composition</small>';window.scrollTo({top:0,behavior:'auto'})}
+  document.addEventListener('click',function(e){var b=e.target.closest('[data-go]');if(!b)return;if(b.dataset.go==='edit')loadSet(b.dataset.kind);go(b.dataset.go)});
+  // entrées qui se déplient
+  $$('.post .head[aria-expanded]').forEach(function(h){h.addEventListener('click',function(){var p=h.closest('.post'),o=!p.classList.contains('open');p.classList.toggle('open',o);h.setAttribute('aria-expanded',o)})});
+  $$('.note button').forEach(function(b){b.addEventListener('click',function(){$$('.note button').forEach(function(x){x.classList.remove('on')});b.classList.add('on')})});
+  // formulaire ↔ aperçu
+  $('#ftitle').addEventListener('input',function(){pvt.textContent=this.value});
+  $('#facc').addEventListener('input',function(){pva.textContent=this.value});
+  pvt.addEventListener('input',function(){$('#ftitle').value=pvt.textContent});
+  pva.addEventListener('input',function(){$('#facc').value=pva.textContent});
+  $('#tpls').addEventListener('click',function(e){var b=e.target.closest('.tpl');if(!b)return;$$('.tpl').forEach(function(x){x.classList.remove('on')});b.classList.add('on');edpost.style.setProperty('--tpl',b.dataset.c);pvk.textContent='Intégral Pharma · '+b.dataset.k;$('#edtitle').textContent='Composition · '+b.dataset.k});
+  $('#stchips').addEventListener('click',function(e){var b=e.target.closest('.chip');if(!b)return;$$('#stchips .chip').forEach(function(x){x.classList.remove('on')});b.classList.add('on');setStatus(b.dataset.s)});
+  // panneau latéral
+  var drawer=$('#drawer'),scrim=$('#scrim'),dlist=$('#dlist'),sel={},rayon='',q='';
+  function openPick(){sel={};drawList();drawer.classList.add('on');scrim.classList.add('on');drawer.setAttribute('aria-hidden','false');document.body.style.overflow='hidden';setTimeout(function(){$('#q').focus()},420)}
+  function closePick(){drawer.classList.remove('on');scrim.classList.remove('on');drawer.setAttribute('aria-hidden','true');document.body.style.overflow=''}
+  function drawList(){
+    var n=0;dlist.innerHTML=CAT.map(function(r,i){if(rayon&&r[3]!==rayon)return '';if(q&&r[0].toLowerCase().indexOf(q)<0&&r[1].toLowerCase().indexOf(q)<0)return '';n++;
+      return '<li class="prod'+(sel[i]?' sel':'')+'" data-i="'+i+'"><input type="checkbox" '+(sel[i]?'checked':'')+' aria-label="'+r[0]+'"><span class="bx">'+ICO[r[4]]+'</span><span class="nm">'+r[0]+'<small>'+r[1]+'</small></span><span class="pp">'+eur(r[2])+'<small>PPHT</small></span></li>'}).join('');
+    $('#cnt').textContent=n+' sur 16 305';updN();
+  }
+  function updN(){var n=Object.keys(sel).length;$('#addn').textContent=n;$('#addw').textContent=n>1?' produits':' produit'}
+  dlist.addEventListener('click',function(e){var li=e.target.closest('.prod');if(!li)return;var i=+li.dataset.i;if(sel[i])delete sel[i];else sel[i]=1;li.classList.toggle('sel',!!sel[i]);li.querySelector('input').checked=!!sel[i];updN()});
+  $('#rail').addEventListener('click',function(e){var b=e.target.closest('.chip');if(!b)return;$$('#rail .chip').forEach(function(x){x.classList.remove('on')});b.classList.add('on');rayon=b.dataset.r;drawList()});
+  $('#q').addEventListener('input',function(){q=this.value.trim().toLowerCase();drawList()});
+  $('#univ').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;$$('#univ button').forEach(function(x){x.classList.remove('on')});b.classList.add('on')});
+  $('#openpick').addEventListener('click',openPick);$('#closepick').addEventListener('click',closePick);scrim.addEventListener('click',closePick);
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'&&drawer.classList.contains('on'))closePick()});
+  $('#addpick').addEventListener('click',function(){Object.keys(sel).forEach(function(i){i=+i;if(picked.indexOf(i)<0)picked.push(i)});render();closePick()});
+  // sélecteur ouvrable aussi depuis l'accueil via ?pick
+  loadSet('pauline');go('home');
+  if(location.hash==='#edit'){go('edit')}if(location.hash==='#pick'){go('edit');openPick()}
+})();
+</script>
+</body>
+</html>
