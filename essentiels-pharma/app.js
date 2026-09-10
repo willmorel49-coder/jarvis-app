@@ -466,7 +466,7 @@ function exportVisitsToICS() {
 // 15/08 quand les adresses signées, jamais mises en cache, retéléchargeaient
 // tout à chaque ouverture. Exécution par <script> blob : un `const` du
 // fichier garde exactement la même portée qu'avec une balise ordinaire.
-const PROTEGE_VER = '20260910m';
+const PROTEGE_VER = '20260910s';
 const _protegeFait = {};
 function chargerProtege(fichier, apres) {
   if (_protegeFait[fichier]) { if (apres) apres(true); return Promise.resolve(true); }
