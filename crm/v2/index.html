@@ -12,7 +12,7 @@
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function () {
         var hadController = !!navigator.serviceWorker.controller;
-        navigator.serviceWorker.register('sw.js?v=20260910a').then(function (reg) {
+        navigator.serviceWorker.register('sw.js?v=20260910b').then(function (reg) {
           try { reg.update(); } catch (e) {}   // vérifie tout de suite au chargement
           // pendant une longue session, re-vérifier périodiquement s'il y a une nouvelle version
           setInterval(function () { try { reg.update(); } catch (e) {} }, 5 * 60 * 1000);
@@ -248,7 +248,7 @@
   <script src="generiqueurs-data.js?v=20260910a"></script>
   <script src="v2-generiqueurs.js?v=20260910a"></script>
   <!-- Piliers (chargés avant app pour enregistrer V2.pages.*) -->
-  <script src="v2-pharma.js?v=20260910a"></script>
+  <script src="v2-pharma.js?v=20260910b"></script>
   <script src="v2-offilog.js?v=20260910a"></script>
   <script src="v2-fiches.js?v=20260910a"></script>
   <script src="v2-pilotage.js?v=20260910a"></script>
