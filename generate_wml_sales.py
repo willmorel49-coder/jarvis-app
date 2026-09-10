@@ -44,10 +44,10 @@ def classify(nature, afm, pu_net):
         return 'nr'
     try:
         p = float(pu_net or 0)
-        if p > 2000:
-            return 'tch'      # très chers > 2000 €
+        if p > 3000:
+            return 'tch'      # très chers > 3000 €
         if p > 468:
-            return 'ch'       # chers 468 – 2000 €
+            return 'ch'       # chers 468 – 3000 €
         if p > 4.33:
             return 'mi'       # intermédiaire 4,33 – 468 €
     except (TypeError, ValueError):
