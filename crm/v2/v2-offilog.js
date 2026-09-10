@@ -113,7 +113,6 @@
   // date du relevé Sagitta (portée par le fichier protégé), au format français
   function sgMajLabel() { return majLabel(window.SAGITTA_PRIX_MAJ); }
   // date du relevé du catalogue OCP (portée par le fichier protégé)
-  function ocpMajLabel() { return majLabel(window.OCP_PRIX_MAJ); }
   function majLabel(d) {
     if (!d) return '';
     var p = String(d).split('-');

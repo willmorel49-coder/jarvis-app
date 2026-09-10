@@ -1121,6 +1121,11 @@
       if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.grossistes) {
         P.push({ k: 'grossistes', cls: 'p5', accent: '#0E7C86', ico: 'spark', tag: 'Veille', t: 'Grossistes concurrents', d: 'La carte de la concurrence : OCP, CERP, Alliance, Phoenix, Sagitta… agences, CA, enseignes affiliées, livraison, conditions — plus l\'actualité du secteur et tes remontées terrain.', go: 'Ouvrir la base concurrents' });
       }
+      // Ressources concurrents (catalogues complets Sagitta / OCP / Pharmazon) — app JARVIS,
+      // conditions de tiers : jamais côté OPSO (décision Will 10/09/2026).
+      if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.concurrents) {
+        P.push({ k: 'concurrents', cls: 'p5', accent: '#C7791A', ico: 'spark', tag: 'Tarifs tiers', t: 'Ressources concurrents', d: 'Les catalogues complets des concurrents au même endroit : Sagitta (tarif, remise, labo, gamme), OCP Incontournables (tous les paliers), Marque Conseil, Pharmazon — avec notre net en face de chaque référence.', go: 'Ouvrir les ressources' });
+      }
       // Remontées équipe (mur d'idées interne) — app JARVIS
       if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.remontees) {
         P.push({ k: 'remontees', cls: 'p6', accent: '#7C3AED', ico: 'spark', tag: 'Équipe', t: 'Remontées', d: 'Le mur d\'idées de l\'équipe : propose une amélioration de l\'appli, vote pour celles des autres, suis leur avancement.', go: 'Voir les remontées' });
@@ -1318,6 +1323,7 @@
     // Pages
     var PAGES = [['home', 'Accueil', 'opp'], ['pharma', 'Opportunités pharmacie', 'opp'], ['offilog', 'Offilog · parapharmacie & prix concurrents', 'spark'], ['pilotage', 'Pilotage CA & marge', 'pilo']];
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.grossistes) PAGES.splice(3, 0, ['grossistes', 'Concurrents · grossistes-répartiteurs', 'spark']);
+    if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.concurrents) PAGES.splice(3, 0, ['concurrents', 'Ressources concurrents · catalogues Sagitta, OCP, Pharmazon', 'spark']);
     // 04/09/2026 — l'app OPSO redevient un simple visu groupement : plus de
     // fiches commerciales chez elle (v2-fiches n'y est plus chargé).
     if (window.V2_BRAND && window.V2_BRAND.opso && V2.pages.marketing) PAGES.splice(2, 0, ['marketing', 'Fiches marketing OPSO', 'fiche']);
