@@ -336,6 +336,8 @@
     // 11/09/2026 — onglet « Cooper » : catalogue préparatoire 2023 (PDF public
     // cooper.fr, 964 références, prix HT). Même traitement que les autres sources.
     conccooper: 'v2/concurrents-cooper-data.js',
+    // 12/09/2026 — onglet « Farmaline » : prix publics belges sur les EAN connus + codes FR.
+    concfarmaline: 'v2/concurrents-farmaline-data.js',
     // Prix PUBLICS E.Leclerc (TTC) et rayons fins Offilog : données publiques.
     leclercpub: 'v2/leclerc-pub-data.js',
     offilogcats: 'v2/offilog-cats-data.js',
@@ -412,6 +414,7 @@
     concocp: 'concurrents-ocp-data.js',
     concetudes: 'concurrents-etudes-data.js',
     conccooper: 'concurrents-cooper-data.js',
+    concfarmaline: 'concurrents-farmaline-data.js',
     // La grande passe du 03/09/2026. Le POIDS, cause de la panne du 15/08,
     // est traité par le rangement local (texteProtege) : téléchargé une fois
     // par version, servi depuis l'appareil ensuite.
@@ -768,6 +771,7 @@
     concocp: 'CONCURRENTS_OCP',
     concetudes: 'CONCURRENTS_ETUDES',
     conccooper: 'CONCURRENTS_COOPER',
+    concfarmaline: 'CONCURRENTS_FARMALINE',
     leclercpub: 'LECLERC_PUB',
     offilogcats: 'OFFILOG_CATS',
     benchcond: 'BENCH_COND',
@@ -1031,7 +1035,7 @@
     // de le servir, et le lecteur compacté ne trouverait pas ses dictionnaires.
     // Pas besoin de le suivre à chaque déploiement en revanche : quand `VER` de
     // sw.js change, l'activation du service worker efface tous les caches.
-    var V = '?v=20260911f';
+    var V = '?v=20260911g';
     V2.versionDonnees = V;   // lu par chargerScriptProtege (fiche carte)
     var promises = keys.map(function (k) {
       var src = (window.V2_DATA_BASE || '../') + DATA_FILES[k];

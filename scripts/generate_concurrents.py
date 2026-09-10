@@ -11,6 +11,14 @@ Découpé par source (règle de poids, > 500 Ko sinon) :
   crm/v2/concurrents-ocp-data.js      window.CONCURRENTS_OCP
   crm/v2/concurrents-etudes-data.js   window.CONCURRENTS_ETUDES  (11/09/2026)
   crm/v2/concurrents-cooper-data.js   window.CONCURRENTS_COOPER  (11/09/2026)
+  crm/v2/concurrents-farmaline-data.js window.CONCURRENTS_FARMALINE (12/09/2026)
+
+Farmaline : pharmacie en ligne belge (groupe Redcare / Shop Apotheke). Prix PUBLICS
+consommateur, pas des conditions d'achat : aucun verdict face à notre net. Collecte
+`recoltes/08-farmaline/collecte-algolia.py` (index de recherche public du site,
+148 361 produits, 93 640 EAN). On ne garde dans l'app que ce qui nous parle :
+EAN connus de JARVIS (ventes, Offilog, Sagitta, OCP, Pharmazon) ou codes français
+(préfixe 34). Le reste vit dans algolia-hits.jsonl sur le Mac.
 
 Cooper : catalogue PRÉPARATOIRE 2023 (PDF public sur cooper.fr, CGV au
 01/01/2023, dernière version en ligne au 10/09/2026). `pdftotext -layout`
@@ -51,6 +59,11 @@ OUT_ETU = ROOT / "crm" / "v2" / "concurrents-etudes-data.js"
 ETUDES_CSV = Path.home() / "recherche-grossistes-2026-09" / "dataset.csv"
 OUT_COOP = ROOT / "crm" / "v2" / "concurrents-cooper-data.js"
 COOPER_TXT = Path.home() / "recherche-concurrents-2026-09-11" / "recoltes" / "03-cooper-preparatoire-2023" / "catalogue-preparatoire-2023-texte.txt"
+OUT_FARMA = ROOT / "crm" / "v2" / "concurrents-farmaline-data.js"
+FARMA_JSONL = Path.home() / "recherche-concurrents-2026-09-11" / "recoltes" / "08-farmaline" / "algolia-hits.jsonl"
+# fichiers où l'on lit les codes 13 que JARVIS connaît (publics ou protégés, présents en local)
+FARMA_UNIVERS = ["crm/v2/prod-stats-data.js", "crm/offilog-data.js", "crm/v2/pharmazon-data.js",
+                 "crm/v2/concurrents-sagitta-data.js", "crm/v2/concurrents-ocp-data.js"]
 
 # CONCURRENTS/ est gitignoré : absent des worktrees, présent dans ~/JARVIS/APP
 BASES = [ROOT / "CONCURRENTS", Path.home() / "JARVIS" / "APP" / "CONCURRENTS"]
@@ -322,6 +335,53 @@ def cooper():
     return COLS, data, "2023-01-01", n_ean
 
 
+# ── Farmaline (pharmacie en ligne belge, prix publics) ───────────────────
+def farmaline():
+    COLS = ["ean13", "libelle", "marque", "labo", "conditionnement", "forme", "rayon", "tarif", "prix", "prix_ht", "remise", "stock", "vendeur", "lien", "connu"]
+    if not FARMA_JSONL.exists():
+        print("ERREUR : fichier introuvable :", FARMA_JSONL)
+        sys.exit(1)
+    univers = set()
+    for rel in FARMA_UNIVERS:
+        p = ROOT / rel
+        if not p.exists():
+            print("ERREUR : univers Farmaline, fichier absent :", p)
+            sys.exit(1)
+        univers |= set(re.findall(r"\b(\d{13})\b", p.read_text(encoding="utf-8", errors="ignore")))
+    data = []
+    n = 0
+    vus = set()
+    for l in open(FARMA_JSONL, encoding="utf-8"):
+        n += 1
+        r = json.loads(l)
+        ean = str(r.get("ean") or "")
+        if len(ean) != 13 or not ean.isdigit():
+            continue
+        connu = ean in univers
+        if not connu and not ean.startswith("34"):
+            continue
+        if ean in vus:
+            continue
+        vus.add(ean)
+        pr = r.get("prices") or {}
+        rp = pr.get("retailPrice") or {}
+        cat = r.get("primaryCategory") or []
+        rayon = cat[-1].split("/")[-1] if cat else ""
+        seller = ((r.get("best_offer") or {}).get("seller") or {}).get("name") or ""
+        prix = r.get("price")
+        tarif = r.get("listPrice")
+        data.append([
+            ean, r.get("productName") or "", r.get("brand") or "", r.get("manufacturer") or "",
+            r.get("packSize") or "", r.get("pharmaForm") or "", rayon,
+            round(tarif / 100, 2) if tarif else None, round(prix / 100, 2) if prix else None,
+            rp.get("net"), r.get("discountInPercent") or None,
+            "en stock" if r.get("inStock") else "épuisé", seller,
+            "https://www.farmaline.be/" + (r.get("deeplink") or "").lstrip("/"),
+            "connu" if connu else "code FR",
+        ])
+    return COLS, data, date_de(FARMA_JSONL), n, len(univers)
+
+
 def coop_doublons(data, n_ean):
     # nombre de lignes EAN du texte qui ne sont pas dans la sortie = doublons retirés
     return n_ean - len(data)
@@ -385,6 +445,16 @@ def main():
           % (nc, len(cdata), cmaj, OUT_COOP.stat().st_size, "OK" if ok else "ÉCART !"))
     if not ok or nc != len(cdata) + coop_doublons(cdata, nc):
         print("ERREUR : des lignes EAN du catalogue Cooper n'ont pas été lues")
+        sys.exit(1)
+
+    fc, fdata, fmaj, nf, nu = farmaline()
+    far = {"maj": fmaj, "cols": fc, "rows": fdata}
+    relu, ok = ecrire(OUT_FARMA, "CONCURRENTS_FARMALINE", far,
+                      "Farmaline.be — prix publics de la pharmacie en ligne belge, EAN connus de JARVIS + codes français",
+                      lambda o: len(o["rows"]) == len(fdata))
+    print("Farmaline: %d produits collectés, univers JARVIS %d codes -> %d références gardées, maj %s, %d octets, relecture %s"
+          % (nf, nu, len(fdata), fmaj, OUT_FARMA.stat().st_size, "OK" if ok else "ÉCART !"))
+    if not ok:
         sys.exit(1)
 
 

@@ -12,6 +12,8 @@
    11/09/2026 : onglet « Études » (dataset de la recherche conditions
    grossistes, sept. 2026 — décision Will : dataset seul), puis onglet
    « Cooper » (catalogue préparatoire 2023, PDF public, concurrents-cooper-data.js).
+   12/09/2026 : onglet « Farmaline » (prix publics belges, concurrents-farmaline-data.js,
+   sans verdict : un prix consommateur n'est pas une condition d'achat).
    Vanilla · zéro lib · zéro emoji.
    ═══════════════════════════════════════════════════════════════════ */
 (function () {
@@ -124,9 +126,23 @@
       affiche: [['code13', 'Code 13', ''], ['cpf', 'Code CPF', ''], ['famille', 'Famille', ''], ['rayon', 'Rayon', ''], ['libelle', 'Produit', ''], ['detail', 'Détail', ''],
         ['division', 'Division / lot', ''], ['statut', 'Statut', ''], ['cmr', 'CMR', ''], ['prix', 'Prix HT', 'eur'], ['page', 'Page', '']],
       cherche: ['libelle', 'detail', 'famille', 'rayon', 'code13', 'cpf']
+    },
+    farmaline: {
+      nom: 'Farmaline', tag: 'Pharmacie en ligne (BE)', accent: '#B23A6B', cles: ['concfarmaline'],
+      quoi: 'Les prix publics de la pharmacie en ligne belge Farmaline (groupe Redcare) sur les produits que JARVIS connaît et sur les codes français : prix affiché, prix barré, remise et prix hors taxe. Un prix consommateur, pas une condition d\'achat : aucun verdict face à notre net.',
+      placeholder: 'Produit, marque, laboratoire, rayon, EAN…',
+      charge: function () { return !!window.CONCURRENTS_FARMALINE; },
+      maj: function () { return window.CONCURRENTS_FARMALINE && CONCURRENTS_FARMALINE.maj; },
+      rows: function () { return window.CONCURRENTS_FARMALINE ? CONCURRENTS_FARMALINE.rows : []; },
+      cols: function () { return window.CONCURRENTS_FARMALINE ? CONCURRENTS_FARMALINE.cols : []; },
+      code: 'ean13', net: '',
+      chipCol: 'connu', chipLabel: { connu: 'Connus de JARVIS', 'code FR': 'Codes français' },
+      affiche: [['ean13', 'EAN', ''], ['libelle', 'Produit', ''], ['marque', 'Marque', ''], ['labo', 'Laboratoire', ''], ['conditionnement', 'Conditionnement', ''], ['rayon', 'Rayon', ''],
+        ['tarif', 'Prix barré TTC', 'eur'], ['prix', 'Prix TTC', 'eur'], ['remise', 'Remise', 'pct'], ['prix_ht', 'Prix HT', 'eur'], ['stock', 'Stock', ''], ['vendeur', 'Vendeur', ''], ['lien', 'Fiche', 'lien']],
+      cherche: ['libelle', 'marque', 'labo', 'rayon', 'ean13']
     }
   };
-  var ORDRE = ['sagitta', 'ocp', 'mc', 'pharmazon', 'cooper', 'etudes'];
+  var ORDRE = ['sagitta', 'ocp', 'mc', 'pharmazon', 'cooper', 'farmaline', 'etudes'];
 
   // ── Notre prix (V2.bestPrice = seule source de vérité) ───────────────
   // Index PROD_STATS par CIP13. Génériques et biosimilaires EXCLUS du verdict

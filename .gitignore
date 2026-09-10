@@ -190,6 +190,7 @@ crm/v2/concurrents-ocp-data.js
 # 11/09/2026 — onglet « Études » (827 avantages observés, recherche sept. 2026) : même traitement.
 crm/v2/concurrents-etudes-data.js
 crm/v2/concurrents-cooper-data.js
+crm/v2/concurrents-farmaline-data.js
 
 # 03/09/2026 — grande passe « conditions commerciales » : ces fichiers portent
 # nos prix nets, remises, CA par pharmacie ou par établissement. Ils vivent
