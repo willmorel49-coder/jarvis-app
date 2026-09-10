@@ -206,6 +206,8 @@ opso/opso-stats-data.js
 opso/wml-data.js
 crm/v2/carte-detail.js
 clients-cond.js
+# base clients (tel, mail, contact, logiciel, commercial) — espace protégé uniquement
+crm/v2/clients-actifs.js
 
 # L'Argument : barème IP + fourchettes — espace protégé uniquement
 crm/v2/argument-data.js
