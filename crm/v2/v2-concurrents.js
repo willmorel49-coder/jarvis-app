@@ -10,7 +10,9 @@
    concurrents-etudes-data.js (protégés, Supabase, generate_concurrents.py),
    pharmazon-data.js + pharmazon-prix.js (protégé).
    11/09/2026 : onglet « Études » (dataset de la recherche conditions
-   grossistes, sept. 2026 — décision Will : dataset seul). Vanilla · zéro lib · zéro emoji.
+   grossistes, sept. 2026 — décision Will : dataset seul), puis onglet
+   « Cooper » (catalogue préparatoire 2023, PDF public, concurrents-cooper-data.js).
+   Vanilla · zéro lib · zéro emoji.
    ═══════════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
@@ -108,9 +110,23 @@
         ['assiette', 'Assiette', ''], ['condition', 'Condition', ''], ['plafond', 'Plafond légal', ''], ['classification', 'Lecture', ''],
         ['periode', 'Période', ''], ['document', 'Document', ''], ['extrait', 'Extrait', ''], ['source', 'Source', ''], ['url', 'Lien', 'lien'], ['confiance', 'Confiance', 'num']],
       cherche: ['libelle', 'acteur', 'medicament', 'avantage', 'source', 'extrait', 'labo', 'cip13']
+    },
+    cooper: {
+      nom: 'Cooper · Préparatoire', tag: 'Vente directe labo', accent: '#2F6B3A', cles: ['conccooper'],
+      quoi: 'Le catalogue préparatoire Cooper vendu en direct aux officines : matières premières, huiles essentielles et végétales, gélules, flaconnage et équipement, avec le prix unitaire HT. Tarif 2023, dernière version publiée.',
+      placeholder: 'Produit, famille, rayon, code…',
+      charge: function () { return !!window.CONCURRENTS_COOPER; },
+      maj: function () { return window.CONCURRENTS_COOPER && CONCURRENTS_COOPER.maj; },
+      rows: function () { return window.CONCURRENTS_COOPER ? CONCURRENTS_COOPER.rows : []; },
+      cols: function () { return window.CONCURRENTS_COOPER ? CONCURRENTS_COOPER.cols : []; },
+      code: 'code13', net: 'prix',
+      chipCol: 'famille', chipLabel: {},
+      affiche: [['code13', 'Code 13', ''], ['cpf', 'Code CPF', ''], ['famille', 'Famille', ''], ['rayon', 'Rayon', ''], ['libelle', 'Produit', ''], ['detail', 'Détail', ''],
+        ['division', 'Division / lot', ''], ['statut', 'Statut', ''], ['cmr', 'CMR', ''], ['prix', 'Prix HT', 'eur'], ['page', 'Page', '']],
+      cherche: ['libelle', 'detail', 'famille', 'rayon', 'code13', 'cpf']
     }
   };
-  var ORDRE = ['sagitta', 'ocp', 'mc', 'pharmazon', 'etudes'];
+  var ORDRE = ['sagitta', 'ocp', 'mc', 'pharmazon', 'cooper', 'etudes'];
 
   // ── Notre prix (V2.bestPrice = seule source de vérité) ───────────────
   // Index PROD_STATS par CIP13. Génériques et biosimilaires EXCLUS du verdict
@@ -164,7 +180,7 @@
     return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : String(d);
   }
   function cap(s) { s = String(s || ''); return s.length > 60 ? s.slice(0, 58) + '…' : s; }
-  var LONG = { libelle: 1, descriptif: 1, condition: 1, extrait: 1, source: 1, assiette: 1 };
+  var LONG = { libelle: 1, descriptif: 1, condition: 1, extrait: 1, source: 1, assiette: 1, detail: 1 };
   function colIdx(s) { var m = {}; s.cols().forEach(function (c, i) { m[c] = i; }); return m; }
   function fmt(v, type) {
     if (v == null || v === '') return '<span class="cc-mute">—</span>';

@@ -333,6 +333,9 @@
     // 11/09/2026 — onglet « Études » du même écran : 827 avantages commerciaux
     // observés (recherche sept. 2026). Décision Will : dataset seul, protégé.
     concetudes: 'v2/concurrents-etudes-data.js',
+    // 11/09/2026 — onglet « Cooper » : catalogue préparatoire 2023 (PDF public
+    // cooper.fr, 964 références, prix HT). Même traitement que les autres sources.
+    conccooper: 'v2/concurrents-cooper-data.js',
     // Prix PUBLICS E.Leclerc (TTC) et rayons fins Offilog : données publiques.
     leclercpub: 'v2/leclerc-pub-data.js',
     offilogcats: 'v2/offilog-cats-data.js',
@@ -408,6 +411,7 @@
     concsagitta: 'concurrents-sagitta-data.js',
     concocp: 'concurrents-ocp-data.js',
     concetudes: 'concurrents-etudes-data.js',
+    conccooper: 'concurrents-cooper-data.js',
     // La grande passe du 03/09/2026. Le POIDS, cause de la panne du 15/08,
     // est traité par le rangement local (texteProtege) : téléchargé une fois
     // par version, servi depuis l'appareil ensuite.
@@ -763,6 +767,7 @@
     concsagitta: 'CONCURRENTS_SAGITTA',
     concocp: 'CONCURRENTS_OCP',
     concetudes: 'CONCURRENTS_ETUDES',
+    conccooper: 'CONCURRENTS_COOPER',
     leclercpub: 'LECLERC_PUB',
     offilogcats: 'OFFILOG_CATS',
     benchcond: 'BENCH_COND',
