@@ -32,6 +32,29 @@
   function defaultTheme(type) {
     return { accent: type === 'selection' ? '#1E9E6A' : '#0050E6', bg: '#FFFFFF', showPrice: true, showRemise: true, showImg: true };
   }
+  // ── Modèles (étape 1 de l'assistant guidé). La mise en page est fixée par le modèle :
+  // dans l'aperçu, seules les zones prévues (titre, accroche, photo, nom, prix, mentions)
+  // se modifient, jamais leur place. La clé vit dans theme.tpl (colonne theme existante).
+  var MODELES = [
+    { k: 'promo',     label: 'Promo de la semaine',  accent: '#0050E6', head: 'band',  desc: 'Bandeau de couleur, grand titre' },
+    { k: 'nouveaute', label: 'Nouveauté',            accent: '#1E9E6A', head: 'band',  tag: 'Nouveau', desc: 'Bandeau et pastille « Nouveau »' },
+    { k: 'selection', label: 'Sélection du mois',    accent: '#C7791A', head: 'slim',  desc: 'Filet de couleur, titre sombre' },
+    { k: 'fiche',     label: 'Fiche produit simple', accent: '#6D4FC4', head: 'plain', desc: 'Sans bandeau, sobre' }
+  ];
+  function modele(it) {
+    var k = it && it.theme && it.theme.tpl;
+    for (var i = 0; i < MODELES.length; i++) if (MODELES[i].k === k) return MODELES[i];
+    return MODELES[0];
+  }
+  // Attributs d'une zone modifiable de l'aperçu (rien en PDF ni dans l'aperçu plein écran)
+  function zoneAttrs(edit, key, label, o) {
+    o = o || {};
+    if (!edit) return '';
+    return ' data-zone="' + key + '"' + (o.i != null ? ' data-i="' + o.i + '"' : '') + ' data-label="' + esc(label) + '"' +
+      (o.ph ? ' data-ph="' + esc(o.ph) + '"' : '') +
+      ' class="mkt-zone' + (o.light ? ' mkt-zone-light' : '') + (o.click ? ' mkt-zone-photo' : '') + (o.quiet ? ' mkt-zone-quiet' : '') + '"' +
+      (o.click ? ' tabindex="0"' : ' contenteditable="true" spellcheck="false"');
+  }
   function darken(hex, f) {
     hex = String(hex || '#0050E6').replace('#', '');
     if (hex.length === 3) hex = hex.replace(/./g, '$&$&');
@@ -44,7 +67,8 @@
   var backend = 'local';     // 'supabase' | 'local'
   var liKicked = false;      // posts LinkedIn chargés une seule fois (badge « à publier »)
   var editing = null;
-  var freeMode = false;      // « Position libre » : drag/resize des blocs de l'aperçu (interact.js)
+  var choixModele = false;   // true = l'utilisateur a demandé à changer de modèle (galerie affichée)
+  var replaceIdx = null;     // index du produit à remplacer quand le sélecteur s'ouvre depuis une photo de l'aperçu
   var pickSrc = 'mix';       // source : 'mix' (sélection grossiste) | 'gros' (catalogue méd.) | 'offilog'
   var catSrc = 'nrreal';   // Catalogues : 'nrreal' (ventes NR réelles) | 'nr' | 'integral' | 'itp' | 'best'
   var catQuery = '';        // recherche live dans le catalogue (nom / CIP)
@@ -69,12 +93,12 @@
   function localWrite(a) { try { localStorage.setItem(LS, JSON.stringify(a)); } catch (e) {} }
   function fromRow(r) {
     return { id: r.id, type: r.type || 'support', title: r.title || '', accroche: r.accroche || '', footer: r.footer || '',
-             status: r.status || 'brouillon', products: r.products || [], theme: r.theme || null, layout: r.layout || null, owner: r.owner || '',
+             status: r.status || 'brouillon', products: r.products || [], theme: r.theme || null, owner: r.owner || '',
              updated: r.updated_at ? new Date(r.updated_at).getTime() : Date.now() };
   }
   function toRow(it) {
     return { id: it.id, type: it.type, title: it.title, accroche: it.accroche, footer: it.footer || '', status: it.status,
-             products: it.products, theme: it.theme || null, layout: it.layout || null, owner: it.owner || (V2.user && V2.user.email) || '', updated_at: new Date().toISOString() };
+             products: it.products, theme: it.theme || null, owner: it.owner || (V2.user && V2.user.email) || '', updated_at: new Date().toISOString() };
   }
   // Rattrapage : jusqu'au 03/08/2026 la table `marketing_items` n'existait pas en base.
   // Tout ce que l'équipe créait tombait en repli local et n'était jamais partagé.
@@ -734,7 +758,7 @@
     if (id === 'new-support' || id === 'new-selection') {
       var ty = id === 'new-selection' ? 'selection' : 'support';
       if (!editing || editing._new !== ty) {
-        editing = { id: newId(), type: ty, title: '', accroche: '', footer: '', status: 'brouillon', products: [], theme: defaultTheme(ty), layout: {}, owner: (V2.user && V2.user.email) || '', _new: ty };
+        editing = { id: newId(), type: ty, title: '', accroche: '', footer: '', status: 'brouillon', products: [], theme: defaultTheme(ty), owner: (V2.user && V2.user.email) || '', _new: ty };
       }
     } else {
       var ex = (items || []).filter(function (x) { return x.id === id; })[0];
@@ -742,10 +766,15 @@
       if (!editing || editing.id !== ex.id) {
         editing = { id: ex.id, type: ex.type, title: ex.title, accroche: ex.accroche, footer: ex.footer || '', status: ex.status,
                     products: (ex.products || []).map(function (p) { return Object.assign({}, p); }),
-                    theme: Object.assign(defaultTheme(ex.type), ex.theme || {}), layout: Object.assign({}, ex.layout || {}), owner: ex.owner };
+                    theme: Object.assign(defaultTheme(ex.type), ex.theme || {}), owner: ex.owner };
       }
     }
-    freeMode = false;
+    // Étape 1 : une fiche neuve n'a pas encore de modèle → galerie plein écran. Une fiche
+    // existante y revient par « Changer de modèle ».
+    if (choixModele || (editing._new && !(editing.theme && editing.theme.tpl))) {
+      root.innerHTML = V2.topbar({ back: true, backTo: 'marketing', backLabel: 'Marketing' }) + galerieModeles();
+      return;
+    }
     var t = TYPES[editing.type] || TYPES.support;
     var n = editing.products.length;
     var statusChips = STATUSES.map(function (s) {
@@ -754,7 +783,7 @@
     var prodHtml = n ? editing.products.map(prodRow).join('') : '<div class="mkt-empty" style="border:none">Aucun produit. Ajoute des références ci-dessous.</div>';
 
     root.innerHTML = V2.topbar({ back: true, backTo: 'marketing', backLabel: 'Marketing' }) +
-      '<div class="v2-wrap">' +
+      '<div class="v2-wrap">' + stepper(2) +
         '<div class="mkt-edit-grid"><div class="mkt-edit-col">' +
           '<div class="mkt-edit-head">' + badge(editing.type) +
             '<input class="mkt-titlefield" id="mkt-title" placeholder="Titre du ' + esc(t.label.toLowerCase()) + '…" value="' + esc(editing.title) + '" oninput="V2.mkt.setTitle(this.value)"></div>' +
@@ -774,14 +803,12 @@
             '<button class="v2-btn v2-btn-primary" onclick="V2.mkt.downloadPdf()">' + ICO('download', 17, 2) + 'Télécharger le PDF</button>' +
             '<button class="mkt-del" onclick="V2.mkt.remove()" title="Supprimer">' + ICO('close', 17, 2) + '</button>' +
           '</div>' +
-          '<div class="mkt-editbar" style="margin-top:8px">' +
-            '<button class="v2-btn' + (freeMode ? ' v2-btn-primary' : ' v2-btn-ghost') + '" id="mkt-freebtn" onclick="V2.mkt.toggleFree()">' + ICO('move', 17, 2) + (freeMode ? 'Position libre : activée' : 'Position libre') + '</button>' +
-            (editing.layout && Object.keys(editing.layout).length ? '<button class="v2-btn v2-btn-ghost" onclick="V2.mkt.resetLayout()">' + ICO('close', 17, 2) + 'Réinitialiser la mise en page</button>' : '') +
-          '</div>' +
         '</div>' +
         '<div class="mkt-pv-col"><div class="mkt-pv-pane">' +
           '<div class="mkt-pv-bar"><span class="mkt-pv-live">Aperçu en direct</span>' +
+            '<button class="v2-btn v2-btn-ghost mkt-pv-tpl" onclick="V2.mkt.choisirModele()" title="Modèle : ' + esc(modele(editing).label) + '">' + ICO('grid', 15, 2) + 'Changer de modèle</button>' +
             '<button class="v2-btn v2-btn-primary mkt-pv-dl" onclick="V2.mkt.downloadPdf()">' + ICO('download', 15, 2) + 'Télécharger le PDF</button></div>' +
+          '<div class="mkt-pv-hint">Cliquez un texte de l\'aperçu pour l\'écrire · cliquez la photo pour changer de produit</div>' +
           '<div class="mkt-mscroll" id="mkt-mscroll"><div class="mkt-mholder" id="mkt-mholder"><div class="mkt-msheet" id="mkt-msheet"></div></div></div>' +
         '</div></div>' +
         '</div>' +
@@ -789,6 +816,32 @@
     wirePicker();
     refreshPreview();
     if (!V2._mktFitBound) { window.addEventListener('resize', fitSheet); V2._mktFitBound = true; }
+  }
+  // ── Assistant guidé : indicateur d'étapes + galerie de modèles (étape 1) ──
+  function stepper(step) {
+    return '<div class="mkt-steps">' +
+      '<div class="mkt-step' + (step === 1 ? ' on' : ' done') + '"' + (step === 2 ? ' onclick="V2.mkt.choisirModele()" title="Revenir au choix du modèle"' : '') + '><span>' + (step === 1 ? '1' : '✓') + '</span>Choisir un modèle</div>' +
+      '<div class="mkt-step-sep"></div>' +
+      '<div class="mkt-step' + (step === 2 ? ' on' : '') + '"><span>2</span>Personnaliser</div>' +
+    '</div>';
+  }
+  function galerieModeles() {
+    var cur = editing.theme && editing.theme.tpl;
+    var cards = MODELES.map(function (m) {
+      var pv = '<span class="mkt-tpl-pv" style="--acc:' + m.accent + '">' +
+        (m.head === 'band' ? '<i class="hdr"></i><i class="ttl light"></i>' : (m.head === 'slim' ? '<i class="hdr slim"></i><i class="ttl"></i>' : '<i class="ttl"></i>')) +
+        (m.tag ? '<i class="tag"></i>' : '') +
+        '<i class="ph"></i><i class="ln big" style="top:41%"></i><i class="ln" style="top:50%;right:30%"></i><i class="pr"></i><i class="ln" style="top:88%;height:4px;right:40%"></i>' +
+      '</span>';
+      return '<button class="mkt-tpl' + (cur === m.k ? ' on' : '') + '" onclick="V2.mkt.setModele(\'' + m.k + '\')">' + pv +
+        '<b>' + esc(m.label) + '</b><small>' + esc(m.desc) + '</small></button>';
+    }).join('');
+    return '<div class="v2-wrap">' + stepper(1) +
+      '<div class="mkt-gal-head"><div class="v2-card-t">' + ICO('grid', 18, 1.8) + 'Choisissez un modèle</div>' +
+        (choixModele ? '<button class="v2-btn v2-btn-ghost" onclick="V2.mkt.annulerModele()">' + ICO('chev', 15, 2) + 'Revenir à la fiche</button>' : '') + '</div>' +
+      '<div class="mkt-tpls">' + cards + '</div>' +
+      '<p class="mkt-gal-note">La mise en page est fixée par le modèle. À l\'étape suivante, seuls les textes, la photo et le prix se modifient — directement dans l\'aperçu.</p>' +
+    '</div>';
   }
   var CAT_SUGG = ['Antalgiques & douleur', 'ORL · Nez & gorge', 'Digestif & transit', 'Dermatologie', 'Circulation veineuse', 'Compléments & vitamines', 'Diabète & autosurveillance', 'Ophtalmologie', 'Pansements & cicatrisation', 'Hygiène · Bébé · Sérum phy', 'Sommeil · Stress', 'Sevrage tabac', 'Contraception & gynéco', 'Solaire', 'Minceur', 'Vétérinaire'];
   function catDatalist() {
@@ -906,15 +959,18 @@
     if (pickSrc === 'mix') { cb(); return; }   // window.MKT_MIX chargé via index.html
     if (pickSrc === 'offilog') ensureBest(cb); else ensureBench(cb);
   }
-  function openPicker() {
+  // idx (facultatif) : ouvert depuis la photo d'un produit de l'aperçu → le produit choisi REMPLACE celui-là
+  function openPicker(idx) {
+    replaceIdx = (typeof idx === 'number' && editing && editing.products[idx]) ? idx : null;
     ensureSrc(function () {
       var bd = document.getElementById('mkt-picker'); if (!bd) return;
       bd.classList.add('open');
-      var inp = document.getElementById('mkt-pick-input'); if (inp) { inp.value = ''; setTimeout(function () { inp.focus(); }, 60); }
+      var inp = document.getElementById('mkt-pick-input');
+      if (inp) { inp.value = ''; inp.placeholder = replaceIdx != null ? 'Choisir le produit de remplacement…' : 'Rechercher (désignation, CIP, EAN)…'; setTimeout(function () { inp.focus(); }, 60); }
       renderPickList();
     });
   }
-  function closePicker() { var bd = document.getElementById('mkt-picker'); if (bd) bd.classList.remove('open'); }
+  function closePicker() { replaceIdx = null; var bd = document.getElementById('mkt-picker'); if (bd) bd.classList.remove('open'); }
 
   // ════════════════════════════════════════════
   // APERÇU + PDF (flyer)
@@ -924,7 +980,7 @@
   // plusieurs ». À N produits le tableau reste la bonne forme ; à un seul il
   // donne une feuille A4 vide avec une ligne au milieu. Ici la photo devient
   // grande, le prix devient l'objet de la page.
-  function ficheProduitBody(p, acc, showPrice, showRemise, showImg, forPdf) {
+  function ficheProduitBody(p, acc, showPrice, showRemise, showImg, forPdf, edit) {
     var img = showImg ? prodImg(p, forPdf) : '';
     var ppht = p.ppht > 0 ? p.ppht
       : (p.remise > 0 && p.price > 0 ? Math.round(p.price / (1 - p.remise / 100) * 100) / 100 : 0);
@@ -960,19 +1016,20 @@
           lignesPrix +
           '<div style="display:flex;justify-content:space-between;align-items:baseline;padding-top:12px">' +
             '<span style="font-size:12.5px;font-weight:700;color:#10131C">Votre prix net HT</span>' +
-            '<span style="font-family:monospace;font-size:34px;font-weight:800;letter-spacing:-.02em;color:' + acc + '">' +
-              (p.price > 0 ? V2.fmtEur(p.price) : '—') + '</span>' +
+            '<span style="font-family:monospace;font-size:34px;font-weight:800;letter-spacing:-.02em;color:' + acc + '"' + zoneAttrs(edit, 'price', 'Prix net HT', { i: 0, ph: '0,00 €' }) + '>' +
+              (p.price > 0 ? V2.fmtEur(p.price) : (edit ? '' : '—')) + '</span>' +
           '</div></div>'
       : '';
 
     return '<div style="display:flex;gap:26px;align-items:flex-start;background:#fff;' +
         'border:1px solid #E2E7F0;border-radius:16px;padding:24px 26px">' +
         '<div style="flex:0 0 210px;height:210px;border-radius:12px;background:#FBFCFE;' +
-          'border:1px solid #EEF1F7;display:flex;align-items:center;justify-content:center;padding:14px;box-sizing:border-box">' +
+          'border:1px solid #EEF1F7;display:flex;align-items:center;justify-content:center;padding:14px;box-sizing:border-box"' +
+          zoneAttrs(edit, 'photo', 'Photo · cliquer pour changer', { i: 0, click: true }) + '>' +
           visuel + '</div>' +
         '<div style="flex:1;min-width:0">' +
-          '<div style="font-size:22px;font-weight:800;line-height:1.15;letter-spacing:-.01em;color:#10131C">' +
-            esc(p.name || 'Produit') + '</div>' +
+          '<div style="font-size:22px;font-weight:800;line-height:1.15;letter-spacing:-.01em;color:#10131C"' + zoneAttrs(edit, 'pname', 'Nom du produit', { i: 0, ph: 'Produit' }) + '>' +
+            (edit ? esc(p.name || '') : esc(p.name || 'Produit')) + '</div>' +
           (meta.length ? '<div style="margin-top:7px;font-size:12.5px;color:#737A8C">' + meta.join(' · ') + '</div>' : '') +
           (ref ? '<div style="margin-top:5px;font-family:monospace;font-size:11.5px;color:#9AA1B2">' + ref + '</div>' : '') +
           bloc +
@@ -980,8 +1037,11 @@
       '</div>';
   }
 
-  function buildFlyerHtml(forPdf) {
+  // forPdf : images via proxy + jamais d'abandon de marge. edit : zones modifiables (aperçu de l'éditeur seulement).
+  function buildFlyerHtml(forPdf, edit) {
     var it = editing;
+    edit = !forPdf && edit === true;
+    var md = modele(it), band = md.head === 'band';
     var t = TYPES[it.type] || TYPES.support;
     var title = (it.title && it.title.trim()) ? it.title.trim() : t.plural;
     var dateStr = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
@@ -995,11 +1055,11 @@
     var anyImg = showImg && (it.products || []).some(function (p) { return p.img; });
     var cols = (anyImg ? 1 : 0) + 3 + (showPrice ? 2 : 0) + (showRemise ? 1 : 0);
     function prodTr(p, n) {
-      var img = prodImg(p, forPdf);
+      var img = prodImg(p, forPdf), idx = (it.products || []).indexOf(p);
       var ph = '<div style="width:34px;height:34px;border-radius:6px;background:#F1F4F9;display:flex;align-items:center;justify-content:center">' +
         '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#B6BFCE" stroke-width="1.7"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M21 15l-5-5L4 21"/></svg></div>';
       var thumb = anyImg
-        ? '<td style="padding:6px 8px;width:40px;text-align:center">' + (img ? '<img crossorigin="anonymous" src="' + esc(img) + '" style="width:34px;height:34px;object-fit:contain;border-radius:6px;background:#FBFCFE">' : ph) + '</td>'
+        ? '<td style="padding:6px 8px;width:40px;text-align:center"' + zoneAttrs(edit, 'photo', 'Photo', { i: idx, click: true, quiet: true }) + '>' + (img ? '<img crossorigin="anonymous" src="' + esc(img) + '" style="width:34px;height:34px;object-fit:contain;border-radius:6px;background:#FBFCFE">' : ph) + '</td>'
         : '';
       var ref = p.cip ? esc(p.cip) : (p.ean ? esc(p.ean) : '—');
       // PPHT connu, sinon reconstitué depuis la remise portée par le produit. 0 = NR/prix libre → net seul.
@@ -1009,13 +1069,13 @@
       var remCell = pct > 0 ? '−' + String(pct).replace('.', ',') + ' %' : '—';
       return '<tr style="border-bottom:1px solid #ECEFF5;page-break-inside:avoid">' + thumb +
         '<td style="padding:7px 10px;text-align:center;font-size:9px;color:#9AA1B2;font-family:monospace;width:24px">' + n + '</td>' +
-        '<td style="padding:7px 10px;font-size:11.5px;font-weight:600;color:#10131C">' + esc((p.name || '').slice(0, 62)) +
+        '<td style="padding:7px 10px;font-size:11.5px;font-weight:600;color:#10131C"><span' + zoneAttrs(edit, 'pname', 'Nom', { i: idx, quiet: true }) + '>' + esc(edit ? (p.name || '') : (p.name || '').slice(0, 62)) + '</span>' +
           (p.brand ? ' <span style="color:#9AA1B2;font-weight:500">· ' + esc(p.brand) + '</span>' : '') +
           (p.froid ? ' <span style="font-size:7.5px;color:#00B5D8;border:1px solid #b8edf7;border-radius:4px;padding:0 3px;vertical-align:middle">FROID</span>' : '') + '</td>' +
         '<td style="padding:7px 10px;font-family:monospace;font-size:10px;color:#737A8C">' + ref + '</td>' +
         (showPrice ? '<td style="padding:7px 10px;text-align:right;font-family:monospace;font-size:10.5px">' + pphtCell + '</td>' : '') +
         (showRemise ? '<td style="padding:7px 10px;text-align:right;font-family:monospace;font-size:10.5px;font-weight:700;color:' + (pct > 0 ? '#1E9E6A' : '#B6BFCE') + '">' + remCell + '</td>' : '') +
-        (showPrice ? '<td style="padding:7px 10px;text-align:right;font-family:monospace;font-size:12.5px;font-weight:800;color:' + acc + '">' + (p.price > 0 ? V2.fmtEur(p.price) : '—') + '</td>' : '') +
+        (showPrice ? '<td style="padding:7px 10px;text-align:right;font-family:monospace;font-size:12.5px;font-weight:800;color:' + acc + '"><span' + zoneAttrs(edit, 'price', 'Prix net HT', { i: idx, quiet: true }) + '>' + (p.price > 0 ? V2.fmtEur(p.price) : (edit ? '' : '—')) + '</span></td>' : '') +
       '</tr>';
     }
     // regroupe par catégorie (ordre d'apparition) ; sous-titres si plusieurs catégories
@@ -1037,7 +1097,7 @@
     function thh(lbl, al) { return '<th style="padding:6px 10px;text-align:' + al + ';font-size:8px;text-transform:uppercase;letter-spacing:.05em;color:#9AA1B2">' + lbl + '</th>'; }
     var unSeul = (it.products || []).length === 1;
     var body = unSeul
-      ? ficheProduitBody(it.products[0], acc, showPrice, showRemise, showImg, forPdf)
+      ? ficheProduitBody(it.products[0], acc, showPrice, showRemise, showImg, forPdf, edit)
       : rows
       ? '<table style="width:100%;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden">' +
           '<thead><tr style="background:#F7F9FC;border-bottom:1.5px solid #E2E7F0">' +
@@ -1045,22 +1105,34 @@
             (showPrice ? thh('PPHT', 'right') : '') + (showRemise ? thh('Abandon', 'right') : '') + (showPrice ? thh('Net IP', 'right') : '') +
           '</tr></thead><tbody>' + rows + '</tbody></table>'
       : '<div style="text-align:center;color:#9AA1B2;font-size:13px;padding:40px">Aucun produit.</div>';
-    var footer = (it.footer && it.footer.trim()) ? esc(it.footer.trim()) : ('Prix nets HT indicatifs · ' + esc(dateStr));
-    function blockStyle(key) {
-      var L = it.layout && it.layout[key];
-      return L ? ('position:absolute;left:' + L.x + 'px;top:' + L.y + 'px;width:' + L.w + 'px;height:' + L.h + 'px;z-index:2;') : '';
-    }
+    var footDefaut = 'Prix nets HT indicatifs · ' + dateStr;
+    var footer = (it.footer && it.footer.trim()) ? esc(it.footer.trim()) : esc(footDefaut);
+    // ── En-tête selon le modèle : bandeau plein (band), filet de couleur (slim), sobre (plain) ──
+    var ink = band ? '#fff' : '#10131C', mut = band ? 'rgba(255,255,255,.85)' : '#737A8C', accroCol = band ? 'rgba(255,255,255,.95)' : '#4A5164';
+    var wrapStyle = band
+      ? 'background:' + grad + ';border-radius:18px;padding:26px 30px;color:#fff;margin-bottom:22px;position:relative;overflow:hidden'
+      : (md.head === 'slim'
+        ? 'border-top:6px solid ' + acc + ';padding:18px 0 16px;margin-bottom:22px;border-bottom:1px solid #E2E7F0;position:relative'
+        : 'padding:4px 0 18px;margin-bottom:22px;border-bottom:1px solid #E2E7F0;position:relative');
+    var tagPill = md.tag
+      ? '<span style="display:inline-block;margin-left:10px;padding:3px 9px;border-radius:999px;background:' + (band ? 'rgba(255,255,255,.22)' : acc) + ';color:#fff;font-size:10px;font-weight:800;letter-spacing:.1em;vertical-align:middle">' + esc(md.tag.toUpperCase()) + '</span>'
+      : '';
+    var accroHtml = edit
+      ? '<div style="font-size:13.5px;color:' + accroCol + ';margin-top:9px;max-width:560px;min-height:17px"' + zoneAttrs(edit, 'accroche', 'Accroche', { light: band, ph: 'Accroche / message (facultatif)' }) + '>' + esc((it.accroche || '').trim()) + '</div>'
+      : (it.accroche && it.accroche.trim() ? '<div style="font-size:13.5px;color:' + accroCol + ';margin-top:9px;max-width:560px">' + esc(it.accroche.trim()) + '</div>' : '');
+    var nbTxt = (it.products || []).length + ' produit' + ((it.products || []).length > 1 ? 's' : '') + ' · ' + esc(dateStr);
+    var header = '<div style="' + wrapStyle + '">' +
+        (band ? '<div style="position:absolute;right:-30px;top:-30px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,.12)"></div>' : '') +
+        '<div style="font-size:11px;text-transform:uppercase;letter-spacing:.12em;font-weight:800;color:' + (band ? 'rgba(255,255,255,.9)' : acc) + '">Intégral Pharma · ' + esc(t.label) + tagPill + '</div>' +
+        '<div style="font-size:30px;font-weight:800;letter-spacing:-.02em;margin-top:8px;line-height:1.05;color:' + ink + ';min-height:32px"' + zoneAttrs(edit, 'title', 'Titre', { light: band, ph: t.plural }) + '>' + (edit ? esc(it.title || '') : esc(title)) + '</div>' +
+        accroHtml +
+        '<div style="font-size:12px;color:' + mut + ';margin-top:9px">' + nbTxt + '</div>' +
+      '</div>';
     return '<div style="font-family:Satoshi,Inter,Arial,sans-serif;width:794px;box-sizing:border-box;padding:36px 38px;background:' + bg + ';color:#10131C;position:relative">' +
-        '<div data-block="header" style="background:' + grad + ';border-radius:18px;padding:26px 30px;color:#fff;margin-bottom:22px;position:relative;overflow:hidden;' + blockStyle('header') + '">' +
-          '<div style="position:absolute;right:-30px;top:-30px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,.12)"></div>' +
-          '<div style="font-size:11px;text-transform:uppercase;letter-spacing:.12em;font-weight:800;opacity:.9">Intégral Pharma · ' + esc(t.label) + '</div>' +
-          '<div style="font-size:30px;font-weight:800;letter-spacing:-.02em;margin-top:8px;line-height:1.05">' + esc(title) + '</div>' +
-          (it.accroche && it.accroche.trim() ? '<div style="font-size:13.5px;opacity:.95;margin-top:9px;max-width:560px">' + esc(it.accroche.trim()) + '</div>' : '') +
-          '<div style="font-size:12px;opacity:.85;margin-top:9px">' + (it.products || []).length + ' produit' + ((it.products || []).length > 1 ? 's' : '') + ' · ' + esc(dateStr) + '</div>' +
-        '</div>' +
-        '<div data-block="body" style="' + blockStyle('body') + '">' + body + '</div>' +
-        '<div data-block="footer" style="margin-top:26px;padding-top:14px;border-top:1px solid rgba(16,19,28,.1);display:flex;justify-content:space-between;gap:14px;font-size:9px;color:#737A8C;text-transform:uppercase;letter-spacing:.05em;' + blockStyle('footer') + '">' +
-          '<span>Intégral Pharma · ' + esc(t.plural) + '</span><span style="text-align:right">' + footer + '</span></div>' +
+        header +
+        '<div>' + body + '</div>' +
+        '<div style="margin-top:26px;padding-top:14px;border-top:1px solid rgba(16,19,28,.1);display:flex;justify-content:space-between;gap:14px;font-size:9px;color:#737A8C;text-transform:uppercase;letter-spacing:.05em">' +
+          '<span>Intégral Pharma · ' + esc(t.plural) + '</span><span style="text-align:right;min-width:140px"' + zoneAttrs(edit, 'footer', 'Mentions', { ph: footDefaut }) + '>' + (edit ? esc((it.footer || '').trim()) : footer) + '</span></div>' +
       '</div>';
   }
   // ── Panneau de personnalisation (charte) ──
@@ -1092,69 +1164,58 @@
   // aperçu live inline (toujours visible dans l'éditeur)
   function refreshPreview() {
     var sh = document.getElementById('mkt-msheet'); if (!sh || !editing) return;
-    sh.innerHTML = buildFlyerHtml(false); // false = images via URL réseau (écran)
+    sh.innerHTML = buildFlyerHtml(false, true); // false = images via URL réseau (écran) · true = zones modifiables
     fitSheet();
     waitImages(sh, 6000).then(fitSheet);
-    wireFreeDrag();
+    wireZones(sh);
   }
-
-  // ── Position libre (interact.js) : drag/resize des blocs [data-block] de l'aperçu ──
-  // Le rendu #mkt-msheet est mis à l'échelle par fitSheet() (transform:scale) : les
-  // déplacements souris (event.dx/dy, en pixels écran) doivent être divisés par cette
-  // échelle pour rester justes dans le repère non-mis-à-l'échelle (794px) du document.
-  function sheetScale() {
-    var sh = document.getElementById('mkt-msheet');
-    var m = sh && sh.style.transform && sh.style.transform.match(/scale\(([\d.]+)\)/);
-    return m ? (parseFloat(m[1]) || 1) : 1;
-  }
-  function ensureBlockLayout(el, key) {
-    if (!editing.layout) editing.layout = {};
-    if (!editing.layout[key]) {
-      var sh = document.getElementById('mkt-msheet');
-      var r = el.getBoundingClientRect(), sr = sh.getBoundingClientRect(), sc = sheetScale();
-      editing.layout[key] = {
-        x: Math.round((r.left - sr.left) / sc), y: Math.round((r.top - sr.top) / sc),
-        w: Math.round(r.width / sc), h: Math.round(r.height / sc)
-      };
-      el.style.position = 'absolute';
-      el.style.left = editing.layout[key].x + 'px'; el.style.top = editing.layout[key].y + 'px';
-      el.style.width = editing.layout[key].w + 'px'; el.style.height = editing.layout[key].h + 'px';
-      el.style.zIndex = 2;
+  // ── Zones modifiables de l'aperçu (assistant guidé) : on écrit dans `editing` sans
+  // reconstruire l'aperçu (sinon le curseur saute), et on recopie dans le formulaire.
+  function syncField(id, v) { var f = document.getElementById(id); if (f && f.value !== v) f.value = v; }
+  function wireZones(sh) {
+    // Téléphone : la feuille est réduite (transform:scale) et ses textes font moins de 16 px —
+    // Safari iOS zoome et place mal le curseur au focus. On repasse à l'échelle 1 le temps de la saisie.
+    if (!sh._zoneFocusWired) {
+      sh._zoneFocusWired = true;
+      sh.addEventListener('focusin', function (e) {
+        if (window.innerWidth > 640 || !e.target.classList || !e.target.classList.contains('mkt-zone')) return;
+        sh.style.transform = 'none';
+        var ho = document.getElementById('mkt-mholder'); if (ho) { ho.style.width = '794px'; ho.style.height = 'auto'; }
+        try { e.target.scrollIntoView({ block: 'center', inline: 'center' }); } catch (err) {}
+      });
+      sh.addEventListener('focusout', function (e) {
+        if (window.innerWidth > 640 || !e.target.classList || !e.target.classList.contains('mkt-zone')) return;
+        fitSheet();
+      });
     }
-    return editing.layout[key];
-  }
-  function wireFreeDrag() {
-    var sh = document.getElementById('mkt-msheet'); if (!sh) return;
-    var blocks = Array.prototype.slice.call(sh.querySelectorAll('[data-block]'));
-    if (!window.interact) {
-      if (freeMode) V2.toast('Chargement de l\'outil de positionnement…', 'warn');
-      return;
-    }
-    blocks.forEach(function (el) {
-      var key = el.getAttribute('data-block');
-      if (!freeMode) { interact(el).unset(); el.classList.remove('mkt-block-free'); return; }
-      el.classList.add('mkt-block-free');
-      interact(el).unset();
-      interact(el)
-        .draggable({
-          listeners: { move: function (e) {
-            var L = ensureBlockLayout(el, key), sc = sheetScale();
-            L.x = Math.round(L.x + e.dx / sc); L.y = Math.round(L.y + e.dy / sc);
-            el.style.left = L.x + 'px'; el.style.top = L.y + 'px';
-            fitSheet();
-          } }
-        })
-        .resizable({
-          edges: { left: true, right: true, top: true, bottom: true },
-          listeners: { move: function (e) {
-            var L = ensureBlockLayout(el, key), sc = sheetScale();
-            L.w = Math.round(e.rect.width / sc); L.h = Math.round(e.rect.height / sc);
-            L.x = Math.round(L.x + e.deltaRect.left / sc); L.y = Math.round(L.y + e.deltaRect.top / sc);
-            el.style.width = L.w + 'px'; el.style.height = L.h + 'px';
-            el.style.left = L.x + 'px'; el.style.top = L.y + 'px';
-            fitSheet();
-          } }
-        });
+    Array.prototype.forEach.call(sh.querySelectorAll('[data-zone]'), function (el) {
+      var z = el.getAttribute('data-zone'), i = parseInt(el.getAttribute('data-i') || '0', 10);
+      if (z === 'photo') {
+        el.addEventListener('click', function () { openPicker(i); });
+        el.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPicker(i); } });
+        return;
+      }
+      el.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); el.blur(); } });
+      el.addEventListener('input', function () {
+        if (z === 'price') return; // validé à la sortie du champ
+        var v = (el.innerText || '').replace(/\s*\n+\s*/g, ' ').replace(/^\s+/, '');
+        if (!v.trim() && el.innerHTML) el.innerHTML = ''; // vide « propre » pour que le texte d'aide réapparaisse
+        if (z === 'title') { editing.title = v; syncField('mkt-title', v); }
+        else if (z === 'accroche') { editing.accroche = v; syncField('mkt-accroche', v); }
+        else if (z === 'footer') { editing.footer = v; syncField('mkt-footer', v); }
+        else if (z === 'pname' && editing.products[i]) {
+          editing.products[i].name = v;
+          var inp = document.querySelectorAll('.mkt-prow-namei')[i]; if (inp && inp.value !== v) inp.value = v;
+        }
+        fitSheet();
+      });
+      if (z === 'price') el.addEventListener('blur', function () {
+        var p = editing.products[i]; if (!p) return;
+        var n = parseFloat((el.innerText || '').replace(/[^\d,.\-]/g, '').replace(',', '.'));
+        p.price = isNaN(n) || n < 0 ? 0 : Math.round(n * 100) / 100;
+        var inp = document.querySelectorAll('.mkt-prow-f input')[i * 2]; if (inp) inp.value = p.price || '';
+        refreshPreview();
+      });
     });
   }
 
@@ -1174,13 +1235,6 @@
     var scale = Math.min(1, avail / 794);
     sh.style.transform = 'scale(' + scale + ')';
     var h = sh.firstChild ? sh.firstChild.offsetHeight : sh.offsetHeight;
-    // Un bloc en « position libre » sort du flux normal : il ne pousse pas la hauteur
-    // naturelle. On l'inclut à la main pour ne pas le faire couper par le cadre (overflow:hidden).
-    if (editing && editing.layout) {
-      Object.keys(editing.layout).forEach(function (k) {
-        var L = editing.layout[k]; if (L) h = Math.max(h, L.y + L.h + 40);
-      });
-    }
     ho.style.width = (794 * scale) + 'px'; ho.style.height = (h * scale) + 'px';
   }
   function waitImages(node, timeout) {
@@ -1201,24 +1255,19 @@
   V2.mkt = {
     create: function (type) { editing = null; V2.go('marketing', type === 'selection' ? 'new-selection' : 'new-support'); },
     open: function (id) { editing = null; V2.go('marketing', id); },
-    toggleFree: function () {
-      freeMode = !freeMode;
-      var btn = document.getElementById('mkt-freebtn');
-      if (btn) { btn.className = 'v2-btn' + (freeMode ? ' v2-btn-primary' : ' v2-btn-ghost'); btn.innerHTML = ICO('move', 17, 2) + (freeMode ? 'Position libre : activée' : 'Position libre'); }
-      if (freeMode && !window.interact && window.ensureInteract) {
-        window.ensureInteract().then(wireFreeDrag).catch(function () { V2.toast('Chargement de l\'outil de positionnement impossible (hors ligne ?)', 'error'); freeMode = false; if (btn) { btn.className = 'v2-btn v2-btn-ghost'; btn.innerHTML = ICO('move', 17, 2) + 'Position libre'; } });
-      } else {
-        wireFreeDrag();
-      }
-      if (freeMode) V2.toast('Position libre activée — glisse ou redimensionne un bloc de l\'aperçu');
-    },
-    resetLayout: function () {
+    // Assistant guidé : étape 1 (modèle) ↔ étape 2 (personnalisation)
+    setModele: function (k) {
       if (!editing) return;
-      if (!confirm('Remettre tous les blocs à leur position d\'origine ?')) return;
-      editing.layout = {};
-      refreshPreview();
+      var m = null; for (var i = 0; i < MODELES.length; i++) if (MODELES[i].k === k) m = MODELES[i];
+      if (!m) return;
+      editing.theme = editing.theme || defaultTheme(editing.type);
+      if (editing.theme.tpl !== m.k) editing.theme.accent = m.accent; // la couleur suit le modèle, reste modifiable ensuite
+      editing.theme.tpl = m.k;
+      choixModele = false;
       V2.render();
     },
+    choisirModele: function () { if (!editing) return; choixModele = true; V2.render(); },
+    annulerModele: function () { choixModele = false; V2.render(); },
     setProd: function (i, field, v) {
       if (!editing || !editing.products[i]) return;
       var p = editing.products[i];
@@ -1459,7 +1508,7 @@
         });
       });
     },
-    openPicker: openPicker, closePicker: closePicker,
+    openPicker: function () { openPicker(); }, closePicker: closePicker,
     setPickSrc: function (s) {
       pickSrc = s;
       Array.prototype.forEach.call(document.querySelectorAll('.mkt-srcbtn'), function (b) { b.classList.toggle('on', b.getAttribute('data-src') === s); });
@@ -1484,7 +1533,8 @@
         var _bpg = V2.bestPrice(g);
         p = { src: 'gros', key: 'g' + g.cip13, id: '', name: g.designation, brand: '', ean: '', cip: String(g.cip13), price: _bpg.ip != null ? _bpg.ip : refPriceB(g), remise: _bpg.remise, ppht: _bpg.ht || 0, img: catImg(String(g.cip13)), froid: !!g.is_froid, cat: '' };
       }
-      if (editing.products.some(function (x) { return String(x.key) === String(p.key); })) return;
+      if (editing.products.some(function (x) { return String(x.key) === String(p.key); })) { if (replaceIdx != null) V2.toast('Ce produit est déjà dans la fiche', 'warn'); return; }
+      if (replaceIdx != null && editing.products[replaceIdx]) { editing.products[replaceIdx] = p; closePicker(); refreshProducts(); return; }
       editing.products.push(p); refreshProducts(); renderPickList();
     },
     removeProduct: function (i) { if (editing) { editing.products.splice(i, 1); refreshProducts(); } },
@@ -1493,7 +1543,6 @@
       if (!editing.title || !editing.title.trim()) { editing.title = (TYPES[editing.type] || TYPES.support).plural + ' du ' + new Date().toLocaleDateString('fr-FR'); }
       var clean = { id: editing.id, type: editing.type, title: editing.title, accroche: editing.accroche, footer: editing.footer || '',
                     status: editing.status, theme: Object.assign({}, editing.theme || defaultTheme(editing.type)),
-                    layout: Object.assign({}, editing.layout || {}),
                     products: editing.products.map(function (p) { return Object.assign({}, p); }), owner: editing.owner };
       V2.toast('Enregistrement…');
       saveItem(clean).then(function () { V2.toast('Enregistré' + (backend === 'supabase' ? ' (partagé)' : '')); var tf = document.getElementById('mkt-title'); if (tf) tf.value = editing.title; });
@@ -1530,7 +1579,7 @@
           return waitImages(wrap, 12000).then(function () {
             var fn = (t.label + '-' + title).replace(/[^A-Za-z0-9-]/g, '_').slice(0, 50) + '-' + new Date().toISOString().slice(0, 10) + '.pdf';
             return window.html2pdf().from(wrap.firstChild).set({
-              filename: fn, margin: [8, 8, 10, 8], image: { type: 'jpeg', quality: 0.95 },
+              filename: fn, margin: 0, image: { type: 'jpeg', quality: 0.95 }, // la feuille (794 px = 210 mm) porte déjà ses marges : une marge en plus rognait le bord droit
               html2canvas: { scale: 2, useCORS: true, allowTaint: false, backgroundColor: '#ffffff', logging: false },
               jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'] }
             }).save().then(function () { if (wrap.parentNode) document.body.removeChild(wrap); V2.toast('PDF téléchargé'); });
@@ -1852,7 +1901,7 @@
       '@media(max-width:560px){.mkt-editbar .v2-btn-primary{margin-left:0;width:100%;order:-1}}',
       // éditeur 2 colonnes + aperçu live
       '.mkt-edit-grid{display:grid;grid-template-columns:minmax(320px,1fr) minmax(360px,520px);gap:30px;align-items:start}',
-      '@media(max-width:980px){.mkt-edit-grid{grid-template-columns:1fr;gap:22px}}',
+      '@media(max-width:980px){.mkt-edit-grid{grid-template-columns:1fr;gap:22px}.mkt-edit-col,.mkt-pv-col{min-width:0}}', // min-width:0 : sinon la feuille de 794 px étire la colonne et coupe l'écran sur téléphone
       '.mkt-pv-pane{position:sticky;top:84px}',
       '@media(max-width:980px){.mkt-pv-pane{position:static}}',
       '.mkt-pv-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}',
@@ -1911,8 +1960,49 @@
       '.mkt-mscroll{overflow-y:auto;overflow-x:hidden;padding:24px;background:#EBEEF4;flex:1}',
       '.mkt-mholder{margin:0 auto;overflow:hidden;border-radius:8px;box-shadow:0 14px 44px rgba(16,19,28,.2)}',
       '.mkt-msheet{width:794px;transform-origin:top left;background:#fff}',
-      '.mkt-block-free{cursor:move;outline:1.5px dashed #0050E6;outline-offset:2px;touch-action:none}',
-      '.mkt-block-free:hover{outline-color:#0034A0}',
+      // ── Assistant guidé : zones modifiables de l'aperçu ──
+      '.mkt-zone{position:relative;outline:1.5px dashed rgba(16,19,28,.3);outline-offset:4px;border-radius:4px;cursor:text;transition:outline-color .15s}',
+      '.mkt-zone:hover{outline-color:#0050E6}',
+      '.mkt-zone:focus{outline:2px solid #0050E6;outline-offset:4px}',
+      '.mkt-zone::before{content:attr(data-label);position:absolute;right:-6px;top:-13px;padding:2px 6px;border-radius:999px;background:#0050E6;color:#fff;font:800 8px/1.2 Inter,Arial,sans-serif;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;pointer-events:none;opacity:.9}',
+      '.mkt-zone-light{outline-color:rgba(255,255,255,.55)}',
+      '.mkt-zone-light:hover{outline-color:#fff}.mkt-zone-light:focus{outline-color:#fff}',
+      '.mkt-zone-light::before{background:#fff;color:#10131C}',
+      '.mkt-zone:empty::before{content:attr(data-ph);position:static;padding:0;border-radius:0;background:none;color:inherit;font:inherit;letter-spacing:inherit;text-transform:none;white-space:normal;opacity:.45}',
+      '.mkt-zone-photo{cursor:pointer}',
+      '.mkt-zone-photo:hover::after{content:"Changer de produit";position:absolute;left:0;right:0;bottom:0;padding:7px;text-align:center;background:rgba(16,19,28,.78);color:#fff;font:700 10px/1 Inter,Arial,sans-serif;border-radius:0 0 12px 12px;pointer-events:none}',
+      '.mkt-zone-quiet{outline-color:transparent;display:inline-block;min-width:24px}',
+      '.mkt-zone-quiet::before{display:none}',
+      '.mkt-zone-quiet:hover::after{border-radius:0 0 6px 6px;padding:3px;font-size:8px}',
+      '.mkt-pv-hint{font-size:11.5px;color:var(--muted);margin:-6px 0 10px}',
+      '.mkt-pv-tpl{margin-left:auto}',
+      '@media(max-width:560px){.mkt-pv-bar{flex-wrap:wrap}.mkt-pv-tpl{margin-left:0}}',
+      '@media(max-width:640px){.mkt-pv-tpl,.mkt-pv-dl{min-height:44px}.mkt-step.done{min-height:44px;padding:5px 4px}}',
+      // ── Assistant guidé : étapes + galerie de modèles ──
+      '.mkt-steps{display:flex;align-items:center;gap:12px;margin:4px 0 18px;font-size:12.5px;font-weight:700;color:var(--muted)}',
+      '.mkt-step{display:flex;align-items:center;gap:8px}',
+      '.mkt-step span{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--line);display:inline-flex;align-items:center;justify-content:center;font-size:11px}',
+      '.mkt-step.on{color:var(--ip-ink)}.mkt-step.on span{background:var(--ip-blue);border-color:var(--ip-blue);color:#fff}',
+      '.mkt-step.done{color:var(--ip-ink);cursor:pointer}.mkt-step.done span{border-color:var(--ip-blue);color:var(--ip-blue)}',
+      '.mkt-step-sep{width:36px;height:1.5px;background:var(--line)}',
+      '.mkt-gal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}',
+      '.mkt-gal-note{font-size:12.5px;color:var(--muted);margin:16px 0 0}',
+      '.mkt-tpls{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:18px}',
+      '.mkt-tpl{display:flex;flex-direction:column;gap:8px;padding:12px;background:var(--card);border:1.5px solid var(--line);border-radius:18px;cursor:pointer;text-align:left;font-family:var(--font);color:var(--ip-ink);box-shadow:var(--sh-1);transition:.18s var(--ease)}',
+      '.mkt-tpl:hover{border-color:var(--ip-blue);transform:translateY(-2px);box-shadow:0 10px 30px rgba(16,19,28,.12)}',
+      '.mkt-tpl.on{border-color:var(--ip-blue);box-shadow:0 0 0 3px color-mix(in srgb,var(--ip-blue) 18%,transparent)}',
+      '.mkt-tpl b{font-size:14px;font-weight:800}.mkt-tpl small{font-size:12px;color:var(--muted)}',
+      '.mkt-tpl-pv{display:block;position:relative;aspect-ratio:1/1.3;background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden}',
+      '.mkt-tpl-pv i{position:absolute;display:block}',
+      '.mkt-tpl-pv .hdr{left:8%;right:8%;top:7%;height:22%;border-radius:6px;background:var(--acc)}',
+      '.mkt-tpl-pv .hdr.slim{height:4px;top:7%;border-radius:2px}',
+      '.mkt-tpl-pv .ttl{left:16%;right:34%;top:15%;height:9px;border-radius:3px;background:#10131C}',
+      '.mkt-tpl-pv .ttl.light{left:14%;background:#fff;opacity:.9}',
+      '.mkt-tpl-pv .tag{left:14%;top:10%;width:14%;height:5px;border-radius:999px;background:#fff;opacity:.7}',
+      '.mkt-tpl-pv .ph{left:8%;top:39%;width:32%;aspect-ratio:1;border-radius:6px;background:#F1F4F9;border:1px solid #E2E7F0}',
+      '.mkt-tpl-pv .ln{left:46%;right:8%;height:6px;border-radius:3px;background:#E2E7F0}',
+      '.mkt-tpl-pv .ln.big{height:9px;background:#10131C}',
+      '.mkt-tpl-pv .pr{left:46%;width:30%;height:12px;border-radius:3px;background:var(--acc);top:62%}',
       // ── Accessibilité : respecter la préférence « moins d\'animations » ──
       '@media(prefers-reduced-motion:reduce){',
         '.mkt-make-card,.mkt-bigrow,.mkt-card,.mkt-link,.mkt-pick-item,.mkt-cat-banner,.mkt-more-chev{transition:none!important}',
