@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Éditeur marketing — 4 propositions</title>
+<script src="https://cdn.jsdelivr.net/npm/fabric@6.5.1/dist/index.min.js" integrity="sha384-uwizC/PmbWPkJCrTMrSBSXyEkEk8eLhbxzeLOSfquA3NAvTqOSzUr9PTojpzXK+w" crossorigin="anonymous"></script>
+<style>
+  :root{
+    --ip-blue:#0050E6; --ip-blue-d:#0034A0; --ip-ink:#10131C; --ip-ink-2:#2A2F3C;
+    --muted:#737A8C; --muted-2:#8A91A4;
+    --paper:#FBFCFE; --card:#FFFFFF; --card-2:#F7F9FC;
+    --line:rgba(16,19,28,.07); --line-2:rgba(16,19,28,.04); --line-strong:rgba(16,19,28,.12);
+    --halo:#E9F0FF; --surf-sunken:#F4F6FB;
+    --r-card:20px; --r-md:14px; --r-sm:10px; --r-pill:999px; --r-control:10px; --r-btn:12px;
+    --sh-1:0 1px 1.5px rgba(16,19,28,.045), 0 2px 5px rgba(16,19,28,.04);
+    --sh-2:0 1px 2px rgba(16,19,28,.05), 0 4px 10px rgba(16,19,28,.05), 0 12px 24px rgba(16,19,28,.05);
+    --sh-blue:0 4px 12px rgba(0,80,230,.26), 0 8px 24px rgba(0,52,160,.14);
+    --ease:cubic-bezier(.32,.72,0,1);
+    --font:'Inter',system-ui,-apple-system,sans-serif;
+    --mono:ui-monospace,monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{-webkit-font-smoothing:antialiased}
+  body{font-family:var(--font);color:var(--ip-ink);background:var(--paper);overflow-x:hidden}
+
+  /* ── sélecteur de variantes ── */
+  .picker{position:sticky;top:0;z-index:50;background:rgba(251,252,254,.9);backdrop-filter:none;
+    border-bottom:1px solid var(--line);padding:14px 22px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .picker h1{font-size:15px;font-weight:700;margin-right:8px}
+  .picker .risk{font-size:12px;color:var(--muted);margin-left:auto;max-width:420px}
+  .tabbtn{padding:9px 16px;border-radius:var(--r-pill);border:1px solid var(--line-strong);background:var(--card);
+    font-family:var(--font);font-size:13px;font-weight:700;color:var(--ip-ink-2);cursor:pointer;transition:.15s var(--ease)}
+  .tabbtn:hover{border-color:var(--ip-blue)}
+  .tabbtn.active{background:var(--ip-blue);color:#fff;border-color:var(--ip-blue);box-shadow:var(--sh-blue)}
+
+  .variant{display:none;padding:22px}
+  .variant.active{display:block}
+  .variant-head{max-width:920px;margin:0 auto 16px}
+  .variant-head h2{font-size:19px;font-weight:800;letter-spacing:-.01em}
+  .variant-head p{font-size:13.5px;color:var(--muted);margin-top:4px;line-height:1.5}
+  .variant-head .risk-line{font-size:12px;color:#9A5B12;background:#FFF7E9;border:1px solid #F3E0BA;
+    padding:8px 12px;border-radius:var(--r-sm);margin-top:10px;display:inline-block}
+
+  .stage{max-width:1180px;margin:0 auto;border:1px solid var(--line);border-radius:var(--r-card);
+    background:var(--card);box-shadow:var(--sh-2);overflow:hidden}
+  .stage-top{height:52px;display:flex;align-items:center;gap:10px;padding:0 16px;border-bottom:1px solid var(--line);background:var(--card-2)}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--line-strong)}
+  .stage-title{font-size:12.5px;font-weight:700;color:var(--muted)}
+  .stage-actions{margin-left:auto;display:flex;gap:8px}
+  .mini-btn{padding:7px 12px;border-radius:var(--r-control);border:1px solid var(--line-strong);background:#fff;
+    font-size:12px;font-weight:700;color:var(--ip-ink-2);cursor:pointer;display:flex;align-items:center;gap:6px}
+  .mini-btn.primary{background:var(--ip-blue);color:#fff;border-color:var(--ip-blue)}
+  .mini-btn:hover{background:var(--halo)}
+  .mini-btn.primary:hover{background:var(--ip-blue-d)}
+
+  .canvas-wrap{position:relative;background:var(--surf-sunken)}
+  .canvas-wrap canvas{display:block}
+
+  /* ---- V1 : Atelier classique (3 colonnes) ---- */
+  .v1-body{display:flex;height:560px}
+  .v1-side{width:210px;border-right:1px solid var(--line);background:var(--card-2);padding:14px;overflow-y:auto;flex-shrink:0}
+  .v1-side h4{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:14px 0 8px}
+  .v1-side h4:first-child{margin-top:0}
+  .lib-item{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:var(--r-sm);font-size:12.5px;
+    font-weight:600;color:var(--ip-ink-2);cursor:pointer;border:1px solid transparent}
+  .lib-item:hover{background:#fff;border-color:var(--line)}
+  .lib-icon{width:26px;height:26px;border-radius:8px;background:var(--halo);color:var(--ip-blue);
+    display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+  .tpl-thumb{aspect-ratio:4/3;border-radius:var(--r-sm);border:1px solid var(--line);background:#fff;
+    margin-bottom:8px;cursor:pointer;position:relative;overflow:hidden}
+  .tpl-thumb:hover{border-color:var(--ip-blue)}
+  .tpl-thumb .bar{position:absolute;top:8px;left:8px;right:8px;height:10px;background:var(--ip-blue);border-radius:3px;opacity:.85}
+  .tpl-thumb .ln{position:absolute;left:8px;right:20px;height:4px;background:var(--line-strong);border-radius:2px}
+  .v1-canvas{flex:1;position:relative;display:flex;align-items:center;justify-content:center}
+  .v1-right{width:220px;border-left:1px solid var(--line);background:var(--card-2);padding:14px;flex-shrink:0}
+  .prop-lbl{font-size:11px;font-weight:700;color:var(--muted);margin:12px 0 6px}
+  .prop-lbl:first-child{margin-top:0}
+  .prop-row{display:flex;gap:6px}
+  .prop-in{flex:1;padding:7px 9px;border:1px solid var(--line-strong);border-radius:var(--r-control);
+    font-size:12px;font-family:var(--mono);color:var(--ip-ink)}
+  .swatches{display:flex;gap:6px;margin-top:6px}
+  .sw{width:22px;height:22px;border-radius:6px;border:2px solid #fff;box-shadow:0 0 0 1px var(--line-strong);cursor:pointer}
+
+  /* ---- V2 : Contextuel minimal ---- */
+  .v2-body{position:relative;height:560px;display:flex;align-items:center;justify-content:center}
+  .v2-float-toolbar{position:absolute;top:70px;left:50%;transform:translateX(-50%);display:flex;gap:4px;
+    background:#fff;border:1px solid var(--line-strong);border-radius:var(--r-pill);padding:6px;box-shadow:var(--sh-2);z-index:5}
+  .v2-float-toolbar button{width:34px;height:34px;border-radius:50%;border:none;background:transparent;
+    color:var(--ip-ink-2);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center}
+  .v2-float-toolbar button:hover{background:var(--halo);color:var(--ip-blue)}
+  .v2-float-toolbar .sep{width:1px;background:var(--line);margin:4px 2px}
+  .v2-fab{position:absolute;right:22px;bottom:78px;width:52px;height:52px;border-radius:50%;background:var(--ip-blue);
+    color:#fff;border:none;font-size:22px;box-shadow:var(--sh-blue);cursor:pointer;z-index:5}
+  .v2-drawer{position:absolute;left:0;right:0;bottom:0;height:76px;background:#fff;border-top:1px solid var(--line);
+    display:flex;align-items:center;gap:10px;padding:0 18px;overflow-x:auto}
+  .v2-drawer .card{width:96px;height:56px;flex-shrink:0;border-radius:var(--r-sm);border:1px solid var(--line);
+    background:var(--card-2);cursor:pointer;position:relative;overflow:hidden}
+  .v2-drawer .card:hover{border-color:var(--ip-blue)}
+  .v2-drawer .card .b{position:absolute;top:6px;left:6px;right:6px;height:8px;border-radius:2px;background:var(--ip-blue);opacity:.8}
+  .v2-hint{position:absolute;top:16px;left:22px;font-size:11.5px;color:var(--muted);background:#fff;
+    border:1px solid var(--line);padding:5px 10px;border-radius:var(--r-pill)}
+
+  /* ---- V3 : Panneau double avec calques ---- */
+  .v3-body{display:flex;height:560px}
+  .v3-left{width:200px;border-right:1px solid var(--line);background:var(--card-2);display:flex;flex-direction:column}
+  .v3-tabs{display:flex;border-bottom:1px solid var(--line)}
+  .v3-tabs button{flex:1;padding:10px;border:none;background:transparent;font-size:11.5px;font-weight:700;
+    color:var(--muted);cursor:pointer;border-bottom:2px solid transparent}
+  .v3-tabs button.on{color:var(--ip-blue);border-color:var(--ip-blue)}
+  .layer-row{display:flex;align-items:center;gap:8px;padding:9px 12px;font-size:12px;font-weight:600;
+    color:var(--ip-ink-2);border-bottom:1px solid var(--line-2);cursor:pointer}
+  .layer-row:hover{background:#fff}
+  .layer-row.on{background:var(--halo);color:var(--ip-blue)}
+  .layer-row .eye{margin-left:auto;color:var(--muted-2);font-size:11px}
+  .v3-canvas{flex:1;position:relative;display:flex;align-items:center;justify-content:center}
+  .v3-right{width:220px;border-left:1px solid var(--line);background:var(--card-2);padding:14px}
+
+  /* ---- V4 : Assistant guidé ---- */
+  .v4-body{height:560px;display:flex;flex-direction:column}
+  .v4-steps{display:flex;gap:0;padding:16px 24px 0;flex-shrink:0}
+  .v4-step{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--muted-2)}
+  .v4-step .n{width:22px;height:22px;border-radius:50%;background:var(--line-2);color:var(--muted);
+    display:flex;align-items:center;justify-content:center;font-size:11px}
+  .v4-step.on{color:var(--ip-blue)}
+  .v4-step.on .n{background:var(--ip-blue);color:#fff}
+  .v4-step.done .n{background:#1E9E6A;color:#fff}
+  .v4-sep{flex:1;height:1px;background:var(--line-strong);margin:0 10px;align-self:center;max-width:60px}
+  .v4-gallery{flex:1;padding:20px 24px;display:grid;grid-template-columns:repeat(4,1fr);gap:14px;align-content:start}
+  .v4-tpl{aspect-ratio:3/4;border-radius:var(--r-md);border:2px solid var(--line);background:#fff;cursor:pointer;
+    position:relative;overflow:hidden;transition:.15s var(--ease)}
+  .v4-tpl:hover{border-color:var(--ip-blue);transform:translateY(-2px);box-shadow:var(--sh-2)}
+  .v4-tpl .hdr{position:absolute;top:0;left:0;right:0;height:34%;background:var(--ip-blue)}
+  .v4-tpl .ln{position:absolute;left:10%;right:26%;height:6%;background:var(--line-strong);border-radius:3px}
+  .v4-tpl .lbl{position:absolute;bottom:8px;left:8px;right:8px;font-size:11px;font-weight:700;color:var(--ip-ink-2)}
+  .v4-canvas-zone{flex:1;position:relative;display:none;align-items:center;justify-content:center}
+  .v4-guide-zone{position:absolute;border:1.5px dashed var(--ip-blue);border-radius:6px;pointer-events:none}
+  .v4-guide-lbl{position:absolute;font-size:9px;font-weight:700;color:var(--ip-blue);background:#fff;
+    padding:1px 5px;border-radius:4px;top:-9px;left:6px}
+
+  .who{max-width:920px;margin:20px auto 0;font-size:12.5px;color:var(--muted);line-height:1.6}
+  .who b{color:var(--ip-ink-2)}
+</style>
+</head>
+<body>
+
+<div class="picker">
+  <h1>Éditeur marketing · 4 propositions</h1>
+  <button class="tabbtn active" data-v="v1">① Atelier classique</button>
+  <button class="tabbtn" data-v="v2">② Contextuel minimal</button>
+  <button class="tabbtn" data-v="v3">③ Panneau + calques</button>
+  <button class="tabbtn" data-v="v4">④ Assistant guidé</button>
+  <span class="risk">Chaque canevas est réel (glisse/redimensionne les éléments) — les menus autour sont la vraie question.</span>
+</div>
+
+<!-- ════════ VARIANTE 1 ════════ -->
+<div class="variant active" id="p-v1">
+  <div class="variant-head">
+    <h2>① Atelier classique — 3 colonnes</h2>
+    <p>Bibliothèque d'éléments + modèles à gauche, canevas libre au centre, réglages précis de l'élément sélectionné à droite. Le plus proche de Canva/Figma tel quel.</p>
+    <span class="risk-line">Risque : le plus dense des quatre — sur un petit écran, les panneaux latéraux mangent la place.</span>
+  </div>
+  <div class="stage">
+    <div class="stage-top">
+      <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+      <span class="stage-title">Fiche produit — Semaine 37</span>
+      <div class="stage-actions">
+        <button class="mini-btn">↺ Annuler</button>
+        <button class="mini-btn primary">⇩ Exporter en PDF</button>
+      </div>
+    </div>
+    <div class="v1-body">
+      <div class="v1-side">
+        <h4>Éléments</h4>
+        <div class="lib-item"><span class="lib-icon">T</span>Texte</div>
+        <div class="lib-item"><span class="lib-icon">▢</span>Image / photo</div>
+        <div class="lib-item"><span class="lib-icon">▭</span>Bloc produit</div>
+        <div class="lib-item"><span class="lib-icon">─</span>Forme / filet</div>
+        <h4>Modèles</h4>
+        <div class="tpl-thumb"><div class="bar"></div><div class="ln" style="top:26px"></div><div class="ln" style="top:36px;right:60px"></div></div>
+        <div class="tpl-thumb"><div class="bar" style="background:#1E9E6A"></div><div class="ln" style="top:26px"></div></div>
+      </div>
+      <div class="v1-canvas"><canvas id="fab-v1" width="520" height="500"></canvas></div>
+      <div class="v1-right">
+        <div class="prop-lbl">Position</div>
+        <div class="prop-row"><input class="prop-in" value="x 128"><input class="prop-in" value="y 64"></div>
+        <div class="prop-lbl">Taille</div>
+        <div class="prop-row"><input class="prop-in" value="l 220"><input class="prop-in" value="h 90"></div>
+        <div class="prop-lbl">Couleur</div>
+        <div class="swatches">
+          <span class="sw" style="background:#0050E6"></span><span class="sw" style="background:#1E9E6A"></span>
+          <span class="sw" style="background:#C7791A"></span><span class="sw" style="background:#E0556E"></span>
+        </div>
+        <div class="prop-lbl">Police</div>
+        <div class="prop-row"><input class="prop-in" value="Inter · 700 · 18px"></div>
+      </div>
+    </div>
+  </div>
+  <p class="who">Pour : Will/Pauline qui veulent tout voir et tout régler au chiffre près, sans deviner où cliquer.</p>
+</div>
+
+<!-- ════════ VARIANTE 2 ════════ -->
+<div class="variant" id="p-v2">
+  <div class="variant-head">
+    <h2>② Contextuel minimal — le canevas prend tout l'écran</h2>
+    <p>Pas de panneaux fixes. Une barre d'outils flotte au-dessus de l'élément qu'on touche ; les modèles s'ouvrent dans un tiroir en bas ; un bouton rond ajoute un élément.</p>
+    <span class="risk-line">Risque : les réglages fins (position exacte, couleur précise) demandent un clic de plus qu'en ①.</span>
+  </div>
+  <div class="stage">
+    <div class="stage-top">
+      <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+      <span class="stage-title">Fiche produit — Semaine 37</span>
+      <div class="stage-actions">
+        <button class="mini-btn">↺ Annuler</button>
+        <button class="mini-btn primary">⇩ Exporter en PDF</button>
+      </div>
+    </div>
+    <div class="v2-body">
+      <span class="v2-hint">Touche un élément pour le modifier</span>
+      <div class="v2-float-toolbar">
+        <button>⇕</button><button>⤢</button><div class="sep"></div>
+        <button>T</button><button>🎨</button><div class="sep"></div><button>⧉</button><button>🗑</button>
+      </div>
+      <canvas id="fab-v2" width="520" height="500"></canvas>
+      <button class="v2-fab">+</button>
+      <div class="v2-drawer">
+        <div class="card"><div class="b"></div></div>
+        <div class="card"><div class="b" style="background:#1E9E6A"></div></div>
+        <div class="card"><div class="b" style="background:#C7791A"></div></div>
+        <div class="card"><div class="b" style="background:#6D4FC4"></div></div>
+        <div class="card"><div class="b" style="background:#E0556E"></div></div>
+      </div>
+    </div>
+  </div>
+  <p class="who">Pour : un usage rapide sur le pouce, entre deux visites, sans se sentir devant un logiciel de pro.</p>
+</div>
+
+<!-- ════════ VARIANTE 3 ════════ -->
+<div class="variant" id="p-v3">
+  <div class="variant-head">
+    <h2>③ Panneau + calques — le plus "pro"</h2>
+    <p>À gauche : la liste empilée des éléments (calques), qu'on peut masquer, verrouiller, réordonner sans les toucher sur le canevas. Onglet "Modèles" dans le même panneau.</p>
+    <span class="risk-line">Risque : la notion de "calque" (élément posé au-dessus d'un autre) demande une phrase d'explication la première fois.</span>
+  </div>
+  <div class="stage">
+    <div class="stage-top">
+      <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+      <span class="stage-title">Fiche produit — Semaine 37</span>
+      <div class="stage-actions">
+        <button class="mini-btn">↺ Annuler</button>
+        <button class="mini-btn primary">⇩ Exporter en PDF</button>
+      </div>
+    </div>
+    <div class="v3-body">
+      <div class="v3-left">
+        <div class="v3-tabs"><button class="on">Calques</button><button>Modèles</button></div>
+        <div class="layer-row on">▭ Bloc produit <span class="eye">👁</span></div>
+        <div class="layer-row">▢ Photo <span class="eye">👁</span></div>
+        <div class="layer-row">T Accroche <span class="eye">👁</span></div>
+        <div class="layer-row">T Prix <span class="eye">👁</span></div>
+        <div class="layer-row">─ Pied de page <span class="eye">👁</span></div>
+      </div>
+      <div class="v3-canvas"><canvas id="fab-v3" width="520" height="500"></canvas></div>
+      <div class="v3-right">
+        <div class="prop-lbl">Élément sélectionné</div>
+        <div class="prop-row"><input class="prop-in" value="Bloc produit"></div>
+        <div class="prop-lbl">Position / Taille</div>
+        <div class="prop-row"><input class="prop-in" value="x 128"><input class="prop-in" value="y 64"></div>
+        <div class="prop-row" style="margin-top:6px"><input class="prop-in" value="l 220"><input class="prop-in" value="h 90"></div>
+      </div>
+    </div>
+  </div>
+  <p class="who">Pour : des fiches à plusieurs blocs superposés (photo + prix + bandeau promo) où l'ordre compte.</p>
+</div>
+
+<!-- ════════ VARIANTE 4 ════════ -->
+<div class="variant" id="p-v4">
+  <div class="variant-head">
+    <h2>④ Assistant guidé — en 2 étapes</h2>
+    <p>On choisit d'abord un modèle dans une galerie plein écran, puis on personnalise dans un canevas où seules les zones prévues (photo, texte, prix) sont modifiables — encadrées en pointillé. Moins libre, mais on ne peut pas se perdre.</p>
+    <span class="risk-line">Risque : le moins "Canva" des quatre — si un jour il faut un élément hors des zones prévues, ce mode ne le permet pas sans repasser en mode libre.</span>
+  </div>
+  <div class="stage">
+    <div class="stage-top">
+      <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+      <span class="stage-title">Nouvelle fiche</span>
+      <div class="stage-actions"><button class="mini-btn primary">⇩ Exporter en PDF</button></div>
+    </div>
+    <div class="v4-body">
+      <div class="v4-steps">
+        <div class="v4-step on"><span class="n">1</span>Choisir un modèle</div>
+        <div class="v4-sep"></div>
+        <div class="v4-step"><span class="n">2</span>Personnaliser</div>
+      </div>
+      <div class="v4-gallery" id="v4-gallery">
+        <div class="v4-tpl" data-go="1"><div class="hdr"></div><div class="ln" style="top:40%"></div><div class="ln" style="top:48%;right:40%"></div><div class="lbl">Promo semaine</div></div>
+        <div class="v4-tpl" data-go="1"><div class="hdr" style="background:#1E9E6A"></div><div class="ln" style="top:40%"></div><div class="lbl">Nouveauté</div></div>
+        <div class="v4-tpl" data-go="1"><div class="hdr" style="background:#C7791A"></div><div class="ln" style="top:44%"></div><div class="ln" style="top:52%;right:50%"></div><div class="lbl">Sélection du mois</div></div>
+        <div class="v4-tpl" data-go="1"><div class="hdr" style="background:#6D4FC4"></div><div class="ln" style="top:40%"></div><div class="lbl">Fiche produit simple</div></div>
+      </div>
+      <div class="v4-canvas-zone" id="v4-canvas-zone">
+        <canvas id="fab-v4" width="520" height="440"></canvas>
+      </div>
+    </div>
+  </div>
+  <p class="who">Pour : un usage occasionnel, sans avoir à réapprendre l'outil à chaque fois.</p>
+</div>
+
+<script>
+  // ── sélecteur de variantes ──
+  document.querySelectorAll('.tabbtn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('.tabbtn').forEach(function(b){ b.classList.remove('active'); });
+      document.querySelectorAll('.variant').forEach(function(v){ v.classList.remove('active'); });
+      btn.classList.add('active');
+      document.getElementById('p-' + btn.dataset.v).classList.add('active');
+    });
+  });
+
+  // ── démo canevas Fabric.js réutilisable : un bloc produit, une photo, un texte, tous déplaçables/redimensionnables ──
+  function buildDemoCanvas(id, h){
+    var canvasEl = document.getElementById(id);
+    if (!canvasEl || !window.fabric) return;
+    var c = new fabric.Canvas(id, { backgroundColor: '#ffffff', selection: true, height: h || 500, preserveObjectStacking: true });
+
+    var productBlock = new fabric.Rect({
+      left: 40, top: 40, width: 220, height: 90, rx: 12, ry: 12,
+      fill: '#E9F0FF', stroke: '#0050E6', strokeWidth: 1.5
+    });
+    var photo = new fabric.Rect({
+      left: 40, top: 150, width: 130, height: 130, rx: 10, ry: 10,
+      fill: '#F4F6FB', stroke: 'rgba(16,19,28,.12)', strokeDashArray: [5,4]
+    });
+    var photoLbl = new fabric.Text('Photo', { left: 78, top: 205, fontSize: 12, fill: '#8A91A4', fontFamily: 'Inter' });
+    var title = new fabric.Text('Doliprane 1000mg', { left: 60, top: 65, fontSize: 16, fontWeight: '700', fill: '#10131C', fontFamily: 'Inter' });
+    var price = new fabric.Text('4,90 €', { left: 60, top: 90, fontSize: 22, fontWeight: '800', fill: '#0050E6', fontFamily: 'Inter' });
+    var footer = new fabric.Rect({ left: 40, top: 320, width: 300, height: 2, fill: 'rgba(16,19,28,.12)' });
+
+    [productBlock, photo, photoLbl, title, price, footer].forEach(function(o){ c.add(o); });
+    c.setActiveObject(productBlock);
+    return c;
+  }
+
+  window.addEventListener('load', function(){
+    ['fab-v1','fab-v2','fab-v3'].forEach(function(id){ buildDemoCanvas(id, 500); });
+
+    // v4 : passage étape 1 → étape 2
+    document.querySelectorAll('#v4-gallery .v4-tpl').forEach(function(t){
+      t.addEventListener('click', function(){
+        document.getElementById('v4-gallery').style.display = 'none';
+        var zone = document.getElementById('v4-canvas-zone');
+        zone.style.display = 'flex';
+        document.querySelectorAll('.v4-step')[0].classList.remove('on'); document.querySelectorAll('.v4-step')[0].classList.add('done');
+        document.querySelectorAll('.v4-step')[1].classList.add('on');
+        var c = buildDemoCanvas('fab-v4', 420);
+        // zones guidées en pointillé pour simuler le mode "seules certaines zones bougent"
+      });
+    });
+  });
+</script>
+</body>
+</html>
