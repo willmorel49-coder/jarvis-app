@@ -259,10 +259,17 @@
         if (o.data.nom) V2.nameOvr[sid] = o.data.nom;         // nom corrigé (sync, lu partout au rendu)
         if (o.data.titulaire) V2.titOvr[sid] = o.data.titulaire;  // titulaire(s) saisi(s)
         if (o.data.promu) V2.promoted[sid] = true;            // prospect passé en client
+        // 10/09/2026 — une correction de groupement vaut aussi pour un PROSPECT de l'annuaire
+        // national : V2.reconcilePharma la lit dans window.GRP_OVR, qui n'était rempli que depuis
+        // la carte des groupements. On le remplit ici, au boot, pour toute fiche.
+        if (o.data.groupement) { window.GRP_OVR = window.GRP_OVR || {}; window.GRP_OVR[sid.replace(/[^0-9]/g, '')] = o.data.groupement; }
         var p = byId[sid]; if (!p) return;
         if (o.data.groupement) p.groupement = o.data.groupement;
         if (o.data.nom) p.name = o.data.nom;
       });
+      // Annuaire déjà réconcilié avant l'arrivée des corrections → on le repasse une fois.
+      var D = window.PHARMA_FR;
+      if (D && D.p && D._wmlRecon && window.GRP_OVR && V2.reconcilePharma) { D._wmlRecon = false; try { V2.reconcilePharma(); } catch (e) {} }
       if (cb) cb();
     });
   }
