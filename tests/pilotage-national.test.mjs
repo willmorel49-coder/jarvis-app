@@ -157,8 +157,13 @@ for (const v of VENTES) {
   dernierMoisDe[v.commercial] = Math.max(dernierMoisDe[v.commercial] || 0, v.month);
 }
 const SECTEUR = Object.keys(dernierMoisDe).sort((a, b) => dernierMoisDe[b] - dernierMoisDe[a])[0];
-const nbSectMax = Math.max(...moisTries.map((m) => sectParMois[m].size));
-// dernier mois ou TOUS les secteurs sont presents
+// secteurs reguliers : presents au moins un mois sur deux (meme regle que l ecran)
+const presence = {};
+for (const m of moisTries) for (const c of sectParMois[m]) presence[c] = (presence[c] || 0) + 1;
+const reguliers = new Set(Object.keys(presence).filter((c) => presence[c] >= Math.ceil(moisTries.length / 2)));
+for (const m of moisTries) sectParMois[m] = new Set([...sectParMois[m]].filter((c) => reguliers.has(c)));
+const nbSectMax = reguliers.size;
+// dernier mois ou TOUS les secteurs reguliers sont presents
 const moisReseau = moisTries.slice();
 while (moisReseau.length > 1 && sectParMois[moisReseau[moisReseau.length - 1]].size < nbSectMax) moisReseau.pop();
 const ancreReseau = moisReseau[moisReseau.length - 1];
