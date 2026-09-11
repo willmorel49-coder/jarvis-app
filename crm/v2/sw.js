@@ -10,7 +10,7 @@
 
    ⚠️ Bumper VER à chaque déploiement (aligné sur le ?v= de index.html).
    ═══════════════════════════════════════════════════════════════════ */
-var VER = '20260911x';
+var VER = '20260911y';
 var CACHE = 'jarvis-' + VER;
 
 /* 11/09/2026 (perf, phase 3) — le SOCLE est rangé dès l'installation : les
