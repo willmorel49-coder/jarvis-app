@@ -357,6 +357,7 @@
   };
 
   V2.pages.rdvsuivi = {
+    needs: [],   // audité 11/09/2026 : aucune lecture du catalogue
     render: function (root) {
       ensureCss();
       var top = V2.topbar ? V2.topbar({ back: true, backTo: 'rdv', backLabel: 'Rendez-vous' }) : '';

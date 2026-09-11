@@ -1054,6 +1054,7 @@
   }
 
   V2.pages.rdvplanning = {
+    needs: [],   // audité 11/09/2026 : aucune lecture du catalogue
     render: function (root) {
       ensureCss();
       // Revenir ici annule une correction commencée puis abandonnée : sans ça,

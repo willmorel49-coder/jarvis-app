@@ -458,6 +458,7 @@
   };
 
   V2.pages.campagne = {
+    needs: [],   // audité 11/09/2026 : aucune lecture du catalogue
     render: function (r) {
       ensureCss();
       // Le commercial du compte atterrit sur le sien. Un compte non rattaché

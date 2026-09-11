@@ -329,13 +329,11 @@
     s.onload = function () { bestLoading = false; if (V2.fusionnerPrixBest) V2.fusionnerPrixBest(); cb(); }; s.onerror = function () { bestLoading = false; cb(); };
     document.head.appendChild(s);
   }
+  // 11/09/2026 (phase 2) — un JPEG par produit (v2/oimg/), lu pour les produits
+  // du support seulement, au lieu de 33 Mo de base64 d'un coup. Échec = repli URL brute.
   function ensureImg(cb) {
-    if (window.OFFILOG_IMG) { cb(); return; }
-    if (imgLoading) { setTimeout(function () { ensureImg(cb); }, 250); return; }
-    imgLoading = true;
-    var s = document.createElement('script'); s.src = 'offilog-img-data.js?v=20260611a';
-    s.onload = function () { imgLoading = false; cb(); }; s.onerror = function () { imgLoading = false; cb(); };
-    document.head.appendChild(s);
+    var ids = (editing && editing.products ? editing.products : []).map(function (p) { return p && p.id; });
+    V2.offilogImgs(ids).then(cb, cb);
   }
   // Proxy CORS pour le rendu PDF/canvas (les CDN n'envoient pas d'en-tête CORS).
   // Les images locales (pimg/) et data: passent direct (même origine = PDF-safe).

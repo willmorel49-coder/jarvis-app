@@ -713,6 +713,7 @@
     if (!plan()) {
       root.innerHTML = coquille('<div class="lip-load">Chargement du rétro-planning…</div>');
       charger('mkt-li-plan-data.js', plan).then(function (ok) {
+        if (V2.route && V2.route.name !== 'marketing') return;   // 11/09/2026 : l'écran a pu changer pendant l'attente
         if (!ok) { root.innerHTML = coquille('<div class="lip-empty">Le fichier du rétro-planning n\'a pas pu être chargé.</div>'); return; }
         redessine();
       });
@@ -1087,6 +1088,7 @@
     if (!V()) {
       root.innerHTML = coquille('<div class="lip-load">Chargement de la veille…</div>');
       charger('mkt-li-veille-data.js', V).then(function (ok) {
+        if (V2.route && V2.route.name !== 'marketing') return;   // 11/09/2026 : l'écran a pu changer pendant l'attente
         if (!ok) { root.innerHTML = coquille('<div class="lip-empty">Le fichier de veille n\'a pas pu être chargé.</div>'); return; }
         redessine();
       });

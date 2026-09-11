@@ -26,8 +26,15 @@
   V2.ready = false;
   V2.commFilter = '';   // '' = tous | 'Will' | 'Pauline'
   // ventes du commercial filtré (ou toutes)
+  // 11/09/2026 — perf : mémorisé sur (V2.sales, V2.commFilter). Le Pilotage
+  // l'appelle à chaque rendu (5 rendus par clic) : une passe complète à chaque fois.
   V2.commSales = function () {
-    return V2.commFilter ? V2.sales.filter(function (s) { return s.commercial === V2.commFilter; }) : V2.sales;
+    if (!V2.commFilter) return V2.sales;
+    var m = V2.commSales._m;
+    if (m && m.ref === V2.sales && m.f === V2.commFilter) return m.val;
+    var val = V2.sales.filter(function (s) { return s.commercial === V2.commFilter; });
+    V2.commSales._m = { ref: V2.sales, f: V2.commFilter, val: val };
+    return val;
   };
   // y a-t-il plusieurs commerciaux dans les données ?
   V2.commercials = function () {
@@ -689,7 +696,7 @@
   V2.chargerScripts = function (urls) {
     urls = urls || [];
     if (!urls.length) return Promise.resolve();
-    var V = '?v=' + (window.V2_VER || '20260911j');
+    var V = '?v=' + (window.V2_VER || '20260911k');
     return Promise.all(urls.map(function (u) {
       return new Promise(function (resolve) {
         var s = document.createElement('script');
@@ -1057,6 +1064,21 @@
     if (keys && keys.indexOf('bench') >= 0 && keys.indexOf('benchcond') < 0) {
       keys = keys.concat(['benchcond']);
     }
+    // 11/09/2026 (phase 2) — bench n'est plus chargé au boot mais par l'écran qui
+    // le lit. applyPPHT, déclenché à l'arrivée de bench, a besoin de PPHT et de
+    // PROD_STATS DÉJÀ en mémoire (sinon les nets princeps sont figés faux, sans
+    // erreur, et `_pphtDone` verrouille l'erreur). La dépendance vit donc ICI,
+    // pas chez les 12 appelants. OPSO les a en balises : rien à recharger.
+    // Un préalable en échec (protegeEchec) n'est pas redemandé : pas de boucle.
+    if (keys && keys.indexOf('bench') >= 0) {
+      var pre = [];
+      if (typeof window.PPHT === 'undefined' && !V2.dataLoaded('ppht') && !V2.protegeEchec.ppht) pre.push('ppht');
+      if (typeof window.PROD_STATS === 'undefined' && !V2.dataLoaded('prodstats') && !V2.protegeEchec.prodstats) pre.push('prodstats');
+      if (pre.length) {
+        var apres = keys;
+        return V2.loadFiles(pre).then(function () { return V2.loadFiles(apres); });
+      }
+    }
     if (keys && keys.indexOf('wml') >= 0 && keys.indexOf('wmlca') < 0) {
       keys = keys.concat(['wmlca']);
     }
@@ -1074,7 +1096,7 @@
     // de le servir, et le lecteur compacté ne trouverait pas ses dictionnaires.
     // Pas besoin de le suivre à chaque déploiement en revanche : quand `VER` de
     // sw.js change, l'activation du service worker efface tous les caches.
-    var V = '?v=20260911j';
+    var V = '?v=20260911k';
     V2.versionDonnees = V;   // lu par chargerScriptProtege (fiche carte)
     var promises = keys.map(function (k) {
       var src = (window.V2_DATA_BASE || '../') + DATA_FILES[k];
@@ -1240,6 +1262,30 @@
       }
     });
     return Promise.all(promises).then(bridge);
+  };
+  // ── Vignettes Offilog À LA DEMANDE (11/09/2026, perf, phase 2) ────────
+  // Avant : 33 Mo de base64 dans un seul fichier (offilog-img-data.js), lu en
+  // entier au premier PDF. Maintenant : un JPEG par produit dans v2/oimg/,
+  // lu seulement pour les produits du document en cours. Le résultat est posé
+  // dans window.OFFILOG_IMG[id] (dataURL) — là où le PDF le lisait déjà.
+  // Absent ou en échec → null : le rendu retombe sur l'adresse Offilog brute.
+  V2.offilogImgs = function (ids) {
+    var M = window.OFFILOG_IMG || (window.OFFILOG_IMG = {});
+    var base = (window.V2_DATA_BASE || '../') + 'v2/oimg/';
+    return Promise.all((ids || []).map(function (id) {
+      id = String(id == null ? '' : id);
+      if (!id || M[id] !== undefined) return Promise.resolve();
+      return fetch(base + id + '.jpg').then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.blob(); })
+        .then(function (b) {
+          return new Promise(function (res) {
+            var fr = new FileReader();
+            fr.onload = function () { M[id] = fr.result; res(); };
+            fr.onerror = function () { M[id] = null; res(); };
+            fr.readAsDataURL(b);
+          });
+        })
+        .catch(function () { M[id] = null; });
+    }));
   };
   V2.dataLoaded = function (key) {
     // ⚠️ La base doit être la MÊME que celle utilisée pour charger le fichier.

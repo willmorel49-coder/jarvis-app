@@ -1051,6 +1051,7 @@
   };
 
   V2.pages.rdv = {
+    needs: ['prodstats'],   // audité 11/09/2026 : l'audit de la fiche lit PROD_STATS, jamais BENCHMARK
     render: function (root) {
       ensureCss();
       var top = V2.topbar ? V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) : '';

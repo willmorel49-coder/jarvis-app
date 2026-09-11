@@ -389,6 +389,7 @@
   }
 
   V2.pages.rdvmodeles = {
+    needs: [],   // audité 11/09/2026 : aucune lecture du catalogue
     render: function (root) {
       css();
       var top = V2.topbar ? V2.topbar({ back: true, backTo: 'rdv', backLabel: 'Rendez-vous' }) : '';
@@ -402,6 +403,7 @@
 
       Promise.all([V2.rdvModeles.charger(true), V2.rdvTelCharger ? V2.rdvTelCharger() : null])
         .then(function () {
+          if (V2.route && V2.route.name !== 'rdvmodeles') return;   // 11/09/2026 : l'écran a pu changer pendant l'attente
           root.innerHTML = top + '<div class="v2-wrap narrow">' + hero +
             (EDIT ? editeur() : liste()) + '</div>';
           if (EDIT) apercu();

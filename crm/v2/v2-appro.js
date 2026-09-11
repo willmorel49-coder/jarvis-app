@@ -1424,9 +1424,17 @@
   // secteur le plus dense et le moins dense, l'écart va de 1 017 à 372 boîtes par
   // pharmacie et par mois — presque 3 fois. Un même produit acheté « pour le réseau »
   // ne se consomme donc pas du tout au même rythme selon le secteur.
+  // 11/09/2026 — perf : la carte ne dépend que de WML_SALES (pas d'état d'écran) ;
+  // son HTML est mémorisé sur cette référence (7 rendus dans l'écran = 7 passes complètes).
+  var _sectMemo = null, _sectMemoRef = null;
   function secteursCard() {
     var S = window.WML_SALES;
     if (!S || !S.length) return '';
+    if (_sectMemo !== null && _sectMemoRef === S) return _sectMemo;
+    _sectMemoRef = S;
+    return (_sectMemo = secteursCardCalc(S));
+  }
+  function secteursCardCalc(S) {
     var MR = moisRetenus(S), garde = {}, k;
     for (k = 0; k < MR.length; k++) garde[MR[k]] = 1;
     var nMois = MR.length || 1;
@@ -1550,6 +1558,20 @@
       if (V2.render) V2.render();
     } catch (e) {}
   };
+  // Demande par CIP et par mois (toutes lignes, qté > 0), construite une fois par jeu de ventes.
+  var _dpm = null, _dpmRef = null;
+  function demandeParMois() {
+    var S = window.WML_SALES || [];
+    if (_dpm && _dpmRef === S) return _dpm;
+    var out = {};
+    for (var j = 0; j < S.length; j++) {
+      var r = S[j]; if (!(r[4] > 0)) continue;
+      var c = String(r[3]), a = out[c] || (out[c] = {});
+      a[r[1]] = (a[r[1]] || 0) + r[4];
+    }
+    _dpm = out; _dpmRef = S;
+    return out;
+  }
   V2.approTicketClose = function () { var el = document.getElementById('appro-ticket'); if (el) el.style.display = 'none'; };
   V2.approTicket = function (cip) {
     cip = String(cip);
@@ -1561,8 +1583,9 @@
     var MOIS = (window.WML_MOIS || []).map(function (ym) { return +ym.split('-')[1]; });
     if (!MOIS.length) MOIS = [1, 2, 3, 4, 5, 6];
     var rang = {}; MOIS.forEach(function (m, k) { rang[m] = k; });
-    var series = MOIS.map(function () { return 0; }), S = window.WML_SALES || [];
-    for (var j = 0; j < S.length; j++) { var r = S[j]; if (String(r[3]) === cip && r[4] > 0 && rang[r[1]] !== undefined) series[rang[r[1]]] += r[4]; }
+    // 11/09/2026 — perf : lecture d'index (une passe complète + String() par ligne à chaque ouverture, avant)
+    var dpm = demandeParMois()[cip] || {};
+    var series = MOIS.map(function (m) { return dpm[m] || 0; });
     var mx = Math.max.apply(null, series) || 1;
     var MSA = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
     var MS = MOIS.map(function (m) { return MSA[m - 1]; });

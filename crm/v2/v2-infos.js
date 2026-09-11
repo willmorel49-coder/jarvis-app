@@ -310,6 +310,7 @@
      ⚠️ Les données de ces six blocs sont toujours dans brief-jour.json : les remettre
         ou les déplacer ailleurs ne coûte que du gabarit, rien à recalculer. */
   V2.pages.infos = {
+    needs: [],   // audité 11/09/2026 : aucune lecture du catalogue
     render: function (root) {
       injectStyles();
 

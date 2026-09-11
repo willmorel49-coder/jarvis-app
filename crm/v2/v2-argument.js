@@ -158,5 +158,5 @@
     });
   }
 
-  V2.pages.argument = { render: render };
+  V2.pages.argument = { needs: [], render: render };   // audité 11/09/2026 : charge lui-même ARGUMENT
 })();
