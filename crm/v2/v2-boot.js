@@ -13,7 +13,8 @@
   window.REPRISES = window.REPRISES || {};
   (function () {
     var day = new Date().toISOString().slice(0, 10);
-    fetch('reprises.json?d=' + day, { cache: 'no-store' })
+    // Chemin relatif à crm/v2 : depuis un univers séparé (opso/v2, escale/v2), on passe par V2_DATA_BASE.
+    fetch((window.V2_DATA_BASE || '../') + 'v2/reprises.json?d=' + day, { cache: 'no-store' })
       .then(function (r) { return r.ok ? r.json() : {}; })
       .then(function (j) { window.REPRISES = j || {}; if (V2.render && V2.route) V2.render(); })
       .catch(function () {});
@@ -25,6 +26,13 @@
   V2.sales = [];
   V2.ready = false;
   V2.commFilter = '';   // '' = tous | 'Will' | 'Pauline'
+  // 11/09/2026 — ESCALE PHARMA (Chilly-Mazarin, établissement du groupe) a son
+  // propre espace escale/v2 : Alexandre Lovy et ses quatre commerciaux. Le
+  // périmètre, c'est LEURS officines (prénoms exacts des données de ventes).
+  // Pas de colonne dédiée dans user_profiles (pas de DDL possible) : un compte
+  // Escale se reconnaît à `commercial` ∈ cette liste, ou = 'Escale' (Alexandre).
+  V2.ESCALE_COMMS = ['Guy', 'Tiffany', 'Philippe', 'Germain'];
+  V2.estCommEscale = function (c) { c = String(c || ''); return c === 'Escale' || V2.ESCALE_COMMS.indexOf(c) >= 0; };
   // ventes du commercial filtré (ou toutes)
   // 11/09/2026 — perf : mémorisé sur (V2.sales, V2.commFilter). Le Pilotage
   // l'appelle à chaque rendu (5 rendus par clic) : une passe complète à chaque fois.
@@ -92,12 +100,28 @@
         try { location.replace('../../opso/v2/index.html'); } catch (e) {}
         return false;
       }
+      // 11/09/2026 — Escale Pharma : un compte Escale qui ouvre le CRM Intégral est
+      // renvoyé vers son espace ; un commercial NON Escale qui ouvre l'espace Escale
+      // est renvoyé vers le CRM. Un compte sans `commercial` (direction) va partout.
+      var appEscale = !!(window.V2_BRAND && window.V2_BRAND.escale);
+      var commProfil = String(pr.data.commercial || '');
+      if (V2.estCommEscale(commProfil) && !appEscale && !(window.V2_BRAND && window.V2_BRAND.opso)) {
+        try { location.replace('../../escale/v2/index.html'); } catch (e) {}
+        return false;
+      }
+      if (appEscale && commProfil && !V2.estCommEscale(commProfil)) {
+        try { location.replace('../../crm/v2/index.html'); } catch (e) {}
+        return false;
+      }
       // `commercial` (nom exact dans les données de ventes) = périmètre du Pilotage.
       // Vide/NULL = super-admin (voit tous les commerciaux). Sinon = restreint à SON CA + le global.
       // `voit_tous_commerciaux` ouvre le Pilotage complet SANS vider `commercial` : ce champ sert
       // aussi aux campagnes et au planning RDV, le vider ferait perdre le repère « moi ».
       // ⚠️ `role` ne peut pas servir à ça : toute l'équipe commerciale est en `admin`.
       V2.user = { id: user.id, email: user.email, name: pr.data.name, role: pr.data.role, pharmacyIds: pr.data.pharmacy_ids, commercial: pr.data.commercial || '', opsoOnly: !!pr.data.opso_only, voitTous: pr.data.voit_tous_commerciaux === true };
+      // 'Escale' n'est le prénom d'aucun commercial : dans l'espace Escale, ce
+      // compte voit tout le périmètre (les données y sont déjà bornées aux quatre).
+      if (appEscale && commProfil === 'Escale') { V2.user.commercial = ''; V2.user.voitTous = true; }
       // 24/08/2026 — l'écran de DÉPART ne passe pas par V2.go() : sans cette
       // ligne, l'accueil (l'écran le plus ouvert de tous) serait le seul
       // à n'être jamais mesuré.
@@ -218,11 +242,31 @@
   // arrivent encore (voir V2.onOfficinesPretes dans v2-app.js). loadData()
   // fait EXACTEMENT le même mappage une fois les ventes complètes.
   V2.mapOfficines = function () {
-    return (window.WML_OFFICINES || []).map(function (p) {
+    var phs = (window.WML_OFFICINES || []).map(function (p) {
       return { id: String(p.id), name: p.name, code: p.code, color: p.color,
                ville: p.ville, cp: p.cp, tel: p.tel, groupement: p.groupement, potentiel: p.potentiel,
                lat: (typeof p.lat === 'number' ? p.lat : null), lng: (typeof p.lng === 'number' ? p.lng : null),
                comms: p.comms || [] };
+    });
+    // Espace Escale : borné ici aussi, pour que l'accueil dessiné AVANT les ventes
+    // ne compte jamais une officine Intégral.
+    if (window.V2_BRAND && window.V2_BRAND.escale) phs = phs.filter(V2.estOfficineEscale);
+    return phs;
+  };
+
+  // ── Périmètre ESCALE PHARMA (app escale/v2) ─────────────────────────────
+  // Même mécanique que l'OPSO : V2.pharmacies réduit aux officines suivies par
+  // Guy, Tiffany, Philippe ou Germain, puis V2.sales aux ventes de CES officines
+  // faites par CES commerciaux. Hors app Escale : ne touche à rien.
+  V2.estOfficineEscale = function (p) {
+    return (p && p.comms || []).some(function (c) { return V2.ESCALE_COMMS.indexOf(c) >= 0; });
+  };
+  V2.applyEscalePerimeter = function () {
+    if (!(window.V2_BRAND && window.V2_BRAND.escale)) return;
+    V2.pharmacies = (V2.pharmacies || []).filter(V2.estOfficineEscale);
+    var ids = {}; V2.pharmacies.forEach(function (p) { ids[String(p.id)] = 1; });
+    V2.sales = (V2.sales || []).filter(function (s) {
+      return ids[String(s.pharmacyId)] && (!s.commercial || V2.ESCALE_COMMS.indexOf(s.commercial) >= 0);
     });
   };
 
@@ -272,6 +316,7 @@
       });
       V2.imports = [];
       V2.applyOpsoPerimeter();
+      V2.applyEscalePerimeter();
       V2.donneesSecours = false;   // les vraies données ont pris la place du repli
       V2.ready = true;
       // Corrections manuelles (ex. groupement changé depuis une fiche) — appliquées en arrière-plan.
@@ -314,6 +359,7 @@
       V2.sales = V2.sales.filter(function (s) { return allowed.has(String(s.pharmacyId)); });
     }
     V2.applyOpsoPerimeter();
+    V2.applyEscalePerimeter();
     V2.donneesSecours = true;
     console.warn('[V2] données de SECOURS (anciennes tables) : ' + V2.pharmacies.length
       + ' officines, ' + V2.sales.length + ' ventes'
@@ -811,7 +857,7 @@
   V2.chargerScripts = function (urls) {
     urls = urls || [];
     if (!urls.length) return Promise.resolve();
-    var V = '?v=' + (window.V2_VER || '20260911s');
+    var V = '?v=' + (window.V2_VER || '20260911t');
     return Promise.all(urls.map(function (u) {
       return new Promise(function (resolve) {
         var s = document.createElement('script');
@@ -1215,7 +1261,7 @@
     // de le servir, et le lecteur compacté ne trouverait pas ses dictionnaires.
     // Pas besoin de le suivre à chaque déploiement en revanche : quand `VER` de
     // sw.js change, l'activation du service worker efface tous les caches.
-    var V = '?v=20260911s';
+    var V = '?v=20260911t';
     V2.versionDonnees = V;   // lu par chargerScriptProtege (fiche carte)
     var promises = keys.map(function (k) {
       var src = (window.V2_DATA_BASE || '../') + DATA_FILES[k];

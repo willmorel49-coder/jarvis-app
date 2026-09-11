@@ -194,7 +194,7 @@
       '<div class="v2-top">' +
         back + brand +
         ((V2.route && V2.route.name === 'home') ? '' : '<div class="v2-top-search" onclick="V2.onTopSearch()">' + ICO('search', 15, 2) + 'Rechercher<kbd>' + MOD + 'K</kbd></div>') +
-        ((!(window.V2_BRAND && window.V2_BRAND.opso) && V2.remonteeOpen) ? '<button class="v2-idea" title="Proposer une amélioration à l\'équipe" aria-label="Proposer une amélioration" onclick="V2.remonteeOpen()">' + ICO('spark', 16, 2) + '</button>' : '') +
+        ((!(window.V2_BRAND && (window.V2_BRAND.opso || window.V2_BRAND.escale)) && V2.remonteeOpen) ? '<button class="v2-idea" title="Proposer une amélioration à l\'équipe" aria-label="Proposer une amélioration" onclick="V2.remonteeOpen()">' + ICO('spark', 16, 2) + '</button>' : '') +
         '<div class="v2-av" title="' + (V2.user ? V2.user.name : '') + '" onclick="V2.userMenu()">' + initials + '</div>' +
       '</div>';
   }
@@ -1252,6 +1252,14 @@
           P.unshift(pil);
         }
       }
+      // 11/09/2026 — espace ESCALE PHARMA (escale/v2) : un visu pour Alexandre et ses
+      // quatre commerciaux. Deux entrées, le suivi en tête ; le reste n'est pas chargé.
+      if (window.V2_BRAND && window.V2_BRAND.escale) {
+        var pmE = {}; P.forEach(function (x) { pmE[x.k] = x; });
+        if (pmE.pharma) { pmE.pharma.d = 'Les officines clientes d\'Escale Pharma : coordonnées, groupement, chiffre d\'affaires, et ce qu\'elles commandent ou pas encore.'; pmE.pharma.go = 'Voir les officines'; }
+        if (pmE.pilotage) { pmE.pilotage.t = 'Suivi Escale'; pmE.pilotage.d = 'Le chiffre d\'affaires d\'Escale Pharma par commercial, par mois et par groupement, avec la marge et les familles produits.'; pmE.pilotage.go = 'Voir le suivi'; }
+        P = [pmE.pilotage, pmE.pharma].filter(Boolean);
+      }
       function tile(p) {
         var nav = p.route ? ('V2.go(\'' + p.route.name + '\'' + (p.route.param ? ',\'' + p.route.param + '\'' : '') + ')') : ('V2.go(\'' + p.k + '\')');
         return '<a class="v2-pil ' + p.cls + '"' + (p.accent ? ' style="--accent:' + p.accent + '"' : '') + ' onmousemove="V2.homeSpot(event,this)" onclick="' + nav + '">' +
@@ -1264,7 +1272,7 @@
       P = P.filter(function (p) { return p.route ? !!V2.pages[p.route.name] : !!V2.pages[p.k]; });
       // Accueil regroupé "par moment d'usage" (hors OPSO qui garde son ordre suivi-groupement)
       var pilHtml;
-      if (window.V2_BRAND && window.V2_BRAND.opso) {
+      if (window.V2_BRAND && (window.V2_BRAND.opso || window.V2_BRAND.escale)) {
         pilHtml = '<div class="v2-piliers">' + P.map(tile).join('') + '</div>';
       } else {
         var pmap = {}; P.forEach(function (p) { pmap[p.k] = p; });
@@ -1371,7 +1379,7 @@
       //    du beau », /directions/ 200, /app/ 404.
       // Outils INTERNES Intégral (bêta) : jamais montrés au groupement — le
       // 04/09/2026, Will : « ils n'ont pas accès à jarvis academy ni jarvis design ! »
-      if (!(window.V2_BRAND && window.V2_BRAND.opso)) pilHtml +=
+      if (!(window.V2_BRAND && (window.V2_BRAND.opso || window.V2_BRAND.escale))) pilHtml +=
         '<div class="v2-lch-soon">' +
             '<div class="v2-lch-soon-h"><span class="lbl">Bientôt</span><span class="ln"></span></div>' +
             '<div class="v2-lch-soon-g">' +
@@ -1572,7 +1580,7 @@
     V2._pfrCbs = V2._pfrCbs || []; if (cb) V2._pfrCbs.push(cb);
     if (V2._pfrLoading) return;
     V2._pfrLoading = true;
-    var s = document.createElement('script'); s.src = 'pharma-fr-data.js?v=' + (window.V2_DATAV || '');
+    var s = document.createElement('script'); s.src = (window.V2_DATA_BASE || '../') + 'v2/pharma-fr-data.js?v=' + (window.V2_DATAV || '');
     s.onload = s.onerror = function () {
       V2._pfrLoading = false;
       // la colonne CA protégée se recolle dès que la carte publique est là

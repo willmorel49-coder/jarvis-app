@@ -52,6 +52,9 @@
 
   // ── Helpers OPSO ──────────────────────────────────────────────
   function isOpso() { return !!(window.V2_BRAND && window.V2_BRAND.opso); }
+  // 11/09/2026 — espace Escale Pharma (escale/v2) : même écran, libellés à son nom.
+  function isEscale() { return !!(window.V2_BRAND && window.V2_BRAND.escale); }
+  function reseauLbl(court) { return isEscale() ? (court ? 'Réseau Escale' : 'Réseau Escale Pharma') : (court ? 'Réseau Intégral' : 'Réseau Intégral Pharma'); }
 
   // Badge HTML cliente / prospect (OPSO uniquement)
   function opsoBadge(p) {
@@ -404,7 +407,7 @@
     var tot = built.total || _netTotal || (V2.pharmacies || []).length || 0;
     // Sélecteur de référence (réseau IP / son groupement)
     var toggle = '<div class="net-scope">' +
-      '<button type="button" class="net-scope-b' + (scope === 'reseau' ? ' on' : '') + '" onclick="V2.setNetScope(\'reseau\')">Réseau Intégral Pharma</button>' +
+      '<button type="button" class="net-scope-b' + (scope === 'reseau' ? ' on' : '') + '" onclick="V2.setNetScope(\'reseau\')">' + reseauLbl() + '</button>' +
       (g.name
         ? '<button type="button" class="net-scope-b' + (scope === 'groupement' ? ' on' : '') + '" onclick="V2.setNetScope(\'groupement\')">Son groupement · ' + esc(g.name) + '</button>'
         : '') +
@@ -422,7 +425,7 @@
       return '<div class="ph-section">' +
         sectionHead(titre, soustitre, 'netreco', open) +
         (open ? '<div class="v2-card" style="padding:14px">' + toggle +
-          '<div style="color:var(--muted);font-size:13px;padding:8px 4px">Pas assez de pharmacies de ce groupement dans tes données pour comparer. Bascule sur « Réseau Intégral Pharma ».</div></div>' : '') +
+          '<div style="color:var(--muted);font-size:13px;padding:8px 4px">Pas assez de pharmacies de ce groupement dans tes données pour comparer. Bascule sur « ' + reseauLbl() + ' ».</div></div>' : '') +
         '</div>';
     }
     var totalGain = reco.reduce(function (s, r) { return s + (r.gain || 0); }, 0);
@@ -513,7 +516,7 @@
     var g = groupementPids(pid);
     var scope = (netScope === 'groupement' && g.set && g.set.size >= 2) ? 'groupement' : 'reseau';
     var html = '<div class="net-scope">' +
-      '<button type="button" class="net-scope-b' + (scope === 'reseau' ? ' on' : '') + '" onclick="V2.setNetScope(\'reseau\')">Réseau Intégral Pharma</button>' +
+      '<button type="button" class="net-scope-b' + (scope === 'reseau' ? ' on' : '') + '" onclick="V2.setNetScope(\'reseau\')">' + reseauLbl() + '</button>' +
       (g.name ? '<button type="button" class="net-scope-b' + (scope === 'groupement' ? ' on' : '') + '" onclick="V2.setNetScope(\'groupement\')">Son groupement · ' + esc(g.name) + '</button>' : '') +
       '</div>';
     return { scope: scope, name: g.name, html: html };
@@ -1430,7 +1433,11 @@
     // 10/09/2026 — ce que la base clients sait d'elle et que rien d'autre ne dit :
     // le logiciel de gestion, le portable, le rythme de livraison.
     var logiciel = (infoRdv && infoRdv.logiciel) || '', portable = (infoRdv && infoRdv.portable) || '', livraison = (infoRdv && infoRdv.livraison) || '';
-    var mail = String(saisi.email || '').trim() || (pharma.email == null ? '' : String(pharma.email)).trim() || (infoRdv && infoRdv.email) || '';
+    // 11/09/2026 — génériqueur(s) déclaré(s) : fichier clients Escale seulement (11ᵉ champ).
+    var caBase = ((window.CLIENTS_ACTIFS || {}).d || {})[String(pid)], generiqueur = (caBase && caBase[10]) || '';
+    // Sans le module Rendez-vous (espace Escale), V2.rdvInfo n'existe pas : la base clients se lit ici directement.
+    if (!infoRdv && caBase) { logiciel = logiciel || caBase[5] || ''; portable = portable || caBase[1] || ''; }
+    var mail = String(saisi.email || '').trim() || (pharma.email == null ? '' : String(pharma.email)).trim() || (infoRdv && infoRdv.email) || (!infoRdv && caBase && caBase[2]) || '';
     var adresse = String(saisi.adresse || '').trim() || (infoRdv && infoRdv.adresse) || '';
     // Même trou pour la ville : WML ne la connaît pas partout (« à compléter »
     // sur une officine dont l'annuaire donne pourtant la commune).
@@ -1441,7 +1448,7 @@
     var kv = function (l, v, empty) { return '<span>' + l + '</span><span' + (v ? '' : ' class="pha-empty"') + '>' + (v ? v : (empty || 'à compléter')) + '</span>'; };
     var idCard =
       '<div class="pha-id">' +
-        '<div class="pha-code mono">' + (pharma.code ? 'CIP ' + esc(String(pharma.code)) + ' · ' : '') + 'CLIENTE INTÉGRAL' + (comms ? ' · ' + esc(comms.toUpperCase()) : '') + '</div>' +
+        '<div class="pha-code mono">' + (pharma.code ? 'CIP ' + esc(String(pharma.code)) + ' · ' : '') + (isEscale() ? 'CLIENTE ESCALE' : 'CLIENTE INTÉGRAL') + (comms ? ' · ' + esc(comms.toUpperCase()) : '') + '</div>' +
         '<div class="pha-name">' + esc(nameOf(pid, pharma.name)) + ficheBadge + repriseBadge + '</div>' +
         '<div class="pha-kv">' +
           kv('Ville', esc(loc)) +
@@ -1453,6 +1460,7 @@
           kv('E-mail', mail ? esc(mail) : '') +
           kv('Logiciel', logiciel ? esc(logiciel) : '', 'inconnu') +
           (livraison ? kv('Livraison', esc(livraison)) : '') +
+          (generiqueur ? kv('Génériqueur', esc(generiqueur)) : '') +
         '</div>' +
         '<div class="pha-acts">' +
           (tel ? '<a class="pha-btn" href="tel:' + esc(tel.replace(/[^+0-9]/g, '')) + '">' + ICO('phone', 15) + 'Appeler</a>' : '') +
@@ -1475,7 +1483,7 @@
     var listes = (aDesPdf || btnProduits) ?
       '<div class="v2-card pha-card pha-lists"><div class="pha-kl">Listes à proposer</div>' +
         btnProduits +
-        (aDesPdf ? pdfBtn('reseau', 'Réseau Intégral', nReseau, '') : '') +
+        (aDesPdf ? pdfBtn('reseau', reseauLbl(true), nReseau, '') : '') +
         (aDesPdf && hasGrp ? pdfBtn('groupement', esc(g.name), nGrp, 'pha-btn-grp') : '') +
       '</div>' : '';
 
@@ -2720,7 +2728,7 @@
     if (!window.BENCHMARK) { V2.toast('Catalogue en cours de chargement…'); V2.loadFiles(['bench', 'sagitta']).then(function () {}); return; }
     scope = (scope === 'groupement') ? 'groupement' : 'reseau';
     var data = buildRecoCats(pid, scope);
-    var label = (scope === 'groupement') ? (groupementPids(pid).name || 'Groupement') : 'Réseau Intégral Pharma';
+    var label = (scope === 'groupement') ? (groupementPids(pid).name || 'Groupement') : reseauLbl();
     achatsPdf(pharma.name + ' — ' + label, data, false, mode, pid);
   };
   V2.grpToggleCat = function (catKey) {
