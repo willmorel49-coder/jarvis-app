@@ -230,7 +230,7 @@ SOURCES = [
     # d'Alexandre Lovy déposé le 11/09/2026 ; prénoms lus dans sa liste clients
     ('Guy', 'GUY'),          # Escale Pharma
     ('Tiffany', 'TIF'),      # Escale Pharma (59, 62, 02)
-    ('Philippe', 'PHI'),     # Escale Pharma (60, 62, 80, 76)
+    ('Philippine', 'PHI'),     # Escale Pharma (60, 62, 80, 76)
     ('Germain', 'GER'),      # Escale Pharma (60, 28)
 ]
 # Codes présents dans les exports « total ventes » mais VOLONTAIREMENT hors du CRM
