@@ -29,8 +29,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="dns-prefetch" href="https://images.weserv.nl">
   <!-- Socle visuel V2 (partagé) + thème Escale Pharma par-dessus -->
-  <link rel="stylesheet" href="../../crm/v2/v2.css?v=20260911t" />
-  <link rel="stylesheet" href="escale-theme.css?v=20260911t" />
+  <link rel="stylesheet" href="../../crm/v2/v2.css?v=20260911u" />
+  <link rel="stylesheet" href="escale-theme.css?v=20260911u" />
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
@@ -42,7 +42,7 @@
     // Les fichiers data lourds restent dans crm/ (chemin remappé).
     window.V2_DATA_BASE = '../../crm/';
     window.V2_BRAND = { name: 'Escale Pharma', sub: 'Espace commercial', escale: true };
-    window.V2_VER = '20260911t';
+    window.V2_VER = '20260911u';
     window.ensureHtml2Pdf = function () {
       if (window.html2pdf) return Promise.resolve();
       return new Promise(function (resolve, reject) {
@@ -58,16 +58,16 @@
   <div class="v2" id="v2-root"></div>
 
   <!-- Socle (modules partagés crm/v2) -->
-  <script src="../../crm/v2/v2-icons.js?v=20260911t"></script>
-  <script src="../../crm/v2/groupement-alias.js?v=20260911t"></script>
-  <script src="../../crm/v2/v2-boot.js?v=20260911t"></script>
-  <script src="../../crm/v2/v2-profil.js?v=20260911t"></script>
+  <script src="../../crm/v2/v2-icons.js?v=20260911u"></script>
+  <script src="../../crm/v2/groupement-alias.js?v=20260911u"></script>
+  <script src="../../crm/v2/v2-boot.js?v=20260911u"></script>
+  <script src="../../crm/v2/v2-profil.js?v=20260911u"></script>
   <!-- Périmètre volontairement petit (règle de Will pour les univers séparés :
        « juste un visu, plus simple, pas aussi complet que jarvis ») :
        les officines + leur fiche, et le suivi du chiffre. Rien d'autre. -->
-  <script src="../../crm/v2/v2-pharma.js?v=20260911t"></script>
-  <script src="../../crm/v2/v2-pilotage.js?v=20260911t"></script>
+  <script src="../../crm/v2/v2-pharma.js?v=20260911u"></script>
+  <script src="../../crm/v2/v2-pilotage.js?v=20260911u"></script>
   <!-- App (boot en dernier) -->
-  <script src="../../crm/v2/v2-app.js?v=20260911t"></script>
+  <script src="../../crm/v2/v2-app.js?v=20260911u"></script>
 </body>
 </html>
