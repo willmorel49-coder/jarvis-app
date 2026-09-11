@@ -1369,7 +1369,7 @@
     if (!window.OPS_AGGREGATE || !window.BENCHMARK) {
       root.innerHTML = V2.topbar({ back: true, backTo: 'pharma', backLabel: 'Officines' }) +
         '<div class="v2-loading"><div class="v2-spinner"></div><div>Chargement du marché sectoriel…</div></div>';
-      V2.loadFiles(['establishments', 'bench']).then(function () { _marketCache = null; _mkClassified = null; V2.render(); });
+      V2.loadFiles(['establishments', 'bench']).then(function () { _marketCache = null; _mkClassified = null; if (V2.route && V2.route.name !== 'pharma') return; /* 11/09/2026 (phase 4) : l'écran a pu changer pendant l'attente */ V2.render(); });
       return;
     }
 
@@ -2186,7 +2186,7 @@
     if (!window.BENCHMARK) {
       root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
         '<div class="v2-loading"><div class="v2-spinner"></div><div>Chargement du catalogue…</div></div>';
-      V2.loadFiles(['bench', 'sagitta']).then(function () { V2.render(); });
+      V2.loadFiles(['bench', 'sagitta']).then(function () { if (V2.route && V2.route.name !== 'pharma') return; /* 11/09/2026 (phase 4) : l'écran a pu changer pendant l'attente */ V2.render(); });
       return;
     }
     if (String(selPid) !== 'GRP:' + grpName) { selPid = 'GRP:' + grpName; selCips = new Set(); }
@@ -2771,7 +2771,7 @@
     if (!window.BENCHMARK) {
       root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
         '<div class="v2-loading"><div class="v2-spinner"></div><div>Chargement du catalogue…</div></div>';
-      V2.loadFiles(['bench', 'sagitta']).then(function () { V2.render(); });
+      V2.loadFiles(['bench', 'sagitta']).then(function () { if (V2.route && V2.route.name !== 'pharma') return; /* 11/09/2026 (phase 4) : l'écran a pu changer pendant l'attente */ V2.render(); });
       return;
     }
     if (String(selPid) !== 'LST:' + id) { selPid = 'LST:' + id; selCips = new Set(); }

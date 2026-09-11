@@ -1102,33 +1102,33 @@
             '<div class="v2-page-sub">Chargement du rayon…</div>' +
             skeletonGrid(12) +
           '</div>';
-        ensureBest(function () { idxBuilt = false; V2.render(); }); // on rend dès que les ventes sont là
+        ensureBest(function () { idxBuilt = false; if (V2.route && V2.route.name !== 'offilog') return; /* 11/09/2026 (phase 4) : l'écran a pu changer pendant l'attente */ V2.render(); }); // on rend dès que les ventes sont là
         return;
       }
       // Veille concurrents : chargée UNE SEULE FOIS en tâche de fond (n'empêche pas l'affichage)
       if (!window.OFFILOG && !offTried) {
         offTried = true;
-        V2.loadFiles(['offilog']).then(function () { idxBuilt = false; V2.render(); });
+        V2.loadFiles(['offilog']).then(function () { idxBuilt = false; if (V2.route && V2.route.name !== 'offilog') return; /* 11/09/2026 (phase 4) : l'écran a pu changer pendant l'attente */ V2.render(); });
       }
       // Prix publics Leclerc + rayons fins : publics, légers, en tâche de fond
       if (!window.LECLERC_PUB && !lecTried) {
         lecTried = true;
-        V2.loadFiles(['leclercpub', 'offilogcats']).then(function () { idxBuilt = false; V2.render(); });
+        V2.loadFiles(['leclercpub', 'offilogcats']).then(function () { idxBuilt = false; if (V2.route && V2.route.name !== 'offilog') return; /* 11/09/2026 (phase 4) : l'écran a pu changer pendant l'attente */ V2.render(); });
       }
       // Prix Pharmazon (comparaison achat) : chargés UNE SEULE FOIS en tâche de fond
       if (!window.PHARMAZON && !pzTried) {
         pzTried = true;
-        ensurePz(function () { idxBuilt = false; V2.render(); });
+        ensurePz(function () { idxBuilt = false; if (V2.route && V2.route.name !== 'offilog') return; /* 11/09/2026 (phase 4) : l'écran a pu changer pendant l'attente */ V2.render(); });
       }
       // Tarif d'achat Sagitta (conditions d'un tiers) : adresse signée, une fois
       if (!SANS_SAGITTA && !window.SAGITTA_PRIX && !sgTried) {
         sgTried = true;
-        if (V2.loadFiles) { try { V2.loadFiles(['sagittaprix']).then(function () { idxBuilt = false; V2.render(); }); } catch (e) {} }
+        if (V2.loadFiles) { try { V2.loadFiles(['sagittaprix']).then(function () { idxBuilt = false; if (V2.route && V2.route.name !== 'offilog') return; /* 11/09/2026 (phase 4) : l'écran a pu changer pendant l'attente */ V2.render(); }); } catch (e) {} }
       }
       // Catalogue OCP (conditions d'un tiers) : adresse signée, une fois, jamais côté OPSO
       if (!SANS_OCP && !window.OCP_PRIX && !ocpTried) {
         ocpTried = true;
-        if (V2.loadFiles) { try { V2.loadFiles(['ocpprix']).then(function () { idxBuilt = false; V2.render(); }); } catch (e) {} }
+        if (V2.loadFiles) { try { V2.loadFiles(['ocpprix']).then(function () { idxBuilt = false; if (V2.route && V2.route.name !== 'offilog') return; /* 11/09/2026 (phase 4) : l'écran a pu changer pendant l'attente */ V2.render(); }); } catch (e) {} }
       }
       // les deux morceaux (catalogue, prix protégés) arrivent dans un ordre
       // quelconque : on retente la fusion à chaque rendu, c'est idempotent.

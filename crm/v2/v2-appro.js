@@ -2173,7 +2173,7 @@
       if (!window.PROD_STATS) {
         root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
           '<div class="v2-wrap"><div class="v2-loading"><div class="v2-spinner"></div><div>Chargement des données marché…</div></div></div>';
-        if (V2.loadFiles) V2.loadFiles(['bench']).then(function () { V2.render(); });
+        if (V2.loadFiles) V2.loadFiles(['bench']).then(function () { if (V2.route && V2.route.name !== 'appro') return; /* 11/09/2026 (phase 4) : l'écran a pu changer pendant l'attente */ V2.render(); });
         return;
       }
 
