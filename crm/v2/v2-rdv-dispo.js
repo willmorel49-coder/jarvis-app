@@ -353,6 +353,7 @@
   };
 
   V2.pages.rdvdispo = {
+    needs: [],   // audité 11/09/2026 : aucune lecture du catalogue
     render: function (root) {
       ensureCss();
       var top = V2.topbar ? V2.topbar({ back: true, backTo: 'rdv', backLabel: 'Rendez-vous' }) : '';
@@ -369,6 +370,7 @@
         (V2.rdvFlux ? V2.rdvFlux.charger() : Promise.resolve(null)),
         (V2.rdvJours ? V2.rdvJours.charger() : Promise.resolve(null))
       ]).then(function (res) {
+        if (V2.route && V2.route.name !== 'rdvdispo') return;   // 11/09/2026 : l'écran a pu changer pendant l'attente
         var st = res[0], ag = res[1], lien = res[2], notif = res[3], flux = res[4];
         // Le mode vit dans rdv_dispo, déjà lu par charger().
         JOURS_ETAT.mode = !!(st.dispo && st.dispo.jours_choisis);

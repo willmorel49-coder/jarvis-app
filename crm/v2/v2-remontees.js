@@ -125,6 +125,7 @@
 
   // ── PAGE LISTE ──
   V2.pages.remontees = {
+    needs: [],   // audité 11/09/2026 : aucune lecture du catalogue
     render: function (root) {
       ensureCss();
       var top = V2.topbar ? V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) : '';

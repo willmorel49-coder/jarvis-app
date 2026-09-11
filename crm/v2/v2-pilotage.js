@@ -146,7 +146,17 @@
   // fichier. Sur le réseau, les mois amputés sortent d'eux-mêmes.
   // Un second filet, la médiane, attrape le cas restant : un fichier arrêté en
   // PLEIN mois, où le secteur est présent mais avec une poignée de lignes.
+  // 11/09/2026 — perf : mémorisé sur la référence du tableau (V2.sales, ou le
+  // sous-tableau de V2.commSales, lui-même mémorisé). Deux appels par rendu,
+  // cinq rendus par clic : dix passes complètes pour un résultat identique.
+  var _ancMemo = [];
   function ancreComplete(ventes) {
+    for (var mi = 0; mi < _ancMemo.length; mi++) if (_ancMemo[mi].ref === ventes) return _ancMemo[mi].val;
+    var val = ancreCompleteCalc(ventes);
+    _ancMemo.push({ ref: ventes, val: val }); if (_ancMemo.length > 6) _ancMemo.shift();
+    return val;
+  }
+  function ancreCompleteCalc(ventes) {
     var parMois = {}, i;
     for (i = 0; i < ventes.length; i++) {
       var s = ventes[i];
@@ -1177,7 +1187,14 @@
       var sectTotal = (V2.commercials ? V2.commercials().length : 0);
       var reseauComplet = null, repereLabel = '';
       if (sectTotal > 1 && ancRes) {
-        reseauComplet = (V2.sales || []).filter(function (s) { return ancRes.dispo[mkey(s.year, s.month)]; });
+        // 11/09/2026 — perf : ce sous-tableau (plusieurs centaines de milliers
+        // d'objets) se refaisait à chaque rendu ; mémorisé sur V2.sales (ancRes en dépend).
+        var rcm = V2._reseauCompletMemo;
+        if (rcm && rcm.ref === V2.sales && rcm.anc === ancRes) reseauComplet = rcm.val;
+        else {
+          reseauComplet = (V2.sales || []).filter(function (s) { return ancRes.dispo[mkey(s.year, s.month)]; });
+          V2._reseauCompletMemo = { ref: V2.sales, anc: ancRes, val: reseauComplet };
+        }
         var bornes = Object.keys(ancRes.dispo).map(Number).sort(function (a, b) { return a - b; });
         repereLabel = 'les ' + ancRes.maxSect + ' secteurs réunis, ' +
           (bornes.length > 1 ? 'de ' + nomMois(bornes[0]) + ' à ' + nomMois(bornes[bornes.length - 1])

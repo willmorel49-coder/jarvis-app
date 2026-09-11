@@ -354,6 +354,7 @@
 
   // ── page ──
   V2.pages.tournee = {
+    needs: [],   // audité 11/09/2026 : aucune lecture du catalogue
     render: function (root) {
       injectCss();
       if (V2.visite && V2.visite.load) { try { V2.visite.load(function () {}); } catch (e) {} }

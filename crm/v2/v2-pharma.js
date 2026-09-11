@@ -2739,7 +2739,11 @@
     var lists = listsGet();
     var cards = lists.map(function (l) {
       var ids = listIdsObj(l), ca = 0, actSet = {};
-      (V2.sales || []).forEach(function (s) { if (ids[String(s.pharmacyId)]) { ca += s.mntNetHt || 0; actSet[String(s.pharmacyId)] = 1; } });
+      // 11/09/2026 — perf : par l'index ventes (une passe complète PAR liste sinon)
+      Object.keys(ids).forEach(function (pid) {
+        var ss = pharmaSalesAll(pid);
+        for (var si = 0; si < ss.length; si++) { ca += ss[si].mntNetHt || 0; actSet[pid] = 1; }
+      });
       var nb = (l.ids || []).length, active = Object.keys(actSet).length;
       return '<a class="v2-row" onclick="V2.pharmaListOpen(\'' + esc(l.id) + '\')">' +
         '<span class="pl-badge">' + ICO('fiche', 16) + '</span>' +

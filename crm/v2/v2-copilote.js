@@ -66,16 +66,30 @@
 
   var FAM = { pr_low: 'Petits prix', pr_mid: 'Interméd.', pr_high: 'Chers', nr: 'NR', gen: 'Génér.', biosim: 'Biosim.' };
 
+  // 11/09/2026 — perf : UN index par officine (CIP commandés, CA), construit une
+  // fois par jeu de données. Avant : totalPharma (2×/rendu), orderedCips (dans une
+  // boucle sur les officines : O(P×S)) et pharmaOptions (2×) refaisaient chacun
+  // une passe complète sur les ventes.
+  var _coIdx = null, _coIdxRef = null, _coVide = {};
+  function coIndex() {
+    if (_coIdx && _coIdxRef === V2.sales) return _coIdx;
+    var by = {}, S = V2.sales || [];
+    for (var i = 0; i < S.length; i++) {
+      var x = S[i], k = String(x.pharmacyId), o = by[k] || (by[k] = { cips: {}, ca: 0, actif: false });
+      o.ca += x.mntNetHt || 0;
+      if (x.qte > 0) { o.actif = true; o.cips[String(x.artCode)] = 1; }
+    }
+    _coIdx = by; _coIdxRef = V2.sales;
+    return by;
+  }
   function totalPharma() {
-    var s = {};
-    (V2.sales || []).forEach(function (x) { if (x.qte > 0) s[String(x.pharmacyId)] = 1; });
-    var n = Object.keys(s).length;
+    var by = coIndex(), n = 0;
+    for (var k in by) if (by[k].actif) n++;
     return n || (V2.pharmacies || []).length || 1;
   }
   function orderedCips(pid) {
-    var s = {};
-    (V2.sales || []).forEach(function (x) { if (String(x.pharmacyId) === String(pid) && x.qte > 0) s[String(x.artCode)] = 1; });
-    return s;
+    var o = coIndex()[String(pid)];
+    return o ? o.cips : _coVide;
   }
   // gros marchés France sous-exploités par TON réseau (marché France élevé × faible pénétration)
   function bigMarkets(limit) {
@@ -241,9 +255,8 @@
   function pharmaOptions() {
     var phs = (V2.pharmacies || []).slice();
     // tri par CA décroissant (proxy activité) pour un défaut pertinent
-    var caOf = {};
-    (V2.sales || []).forEach(function (s) { caOf[String(s.pharmacyId)] = (caOf[String(s.pharmacyId)] || 0) + (s.mntNetHt || 0); });
-    phs.sort(function (a, b) { return (caOf[String(b.id)] || 0) - (caOf[String(a.id)] || 0); });
+    var caOf = coIndex();   // 11/09/2026 — perf : index partagé, plus de passe complète
+    phs.sort(function (a, b) { return ((caOf[String(b.id)] || {}).ca || 0) - ((caOf[String(a.id)] || {}).ca || 0); });
     return phs;
   }
   V2.copiloteSelPharma = function (id) { selPid = id; if (V2.render) V2.render(); };

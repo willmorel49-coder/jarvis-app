@@ -51,6 +51,7 @@
   };
 
   V2.pages.missions = {
+    needs: [],   // audité 11/09/2026 : aucune lecture du catalogue
     render: function (root) {
       ensureCss();
       var rows = CATALOGUE.map(function (c) {

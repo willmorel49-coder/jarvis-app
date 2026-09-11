@@ -2,16 +2,17 @@
 # -*- coding: utf-8 -*-
 """
 Télécharge les vignettes (cart_default ~2 Ko) des meilleures ventes Offilog,
-les encode en base64 dans UN seul fichier : crm/v2/offilog-img-data.js
-  const OFFILOG_IMG = { "<id>": "data:image/jpeg;base64,..." }
-→ images même origine, donc affichables dans le PDF marketing (html2canvas).
+et écrit UN JPEG PAR PRODUIT : crm/v2/oimg/<id>.jpg
+→ lu à la demande par V2.offilogImgs (v2-boot.js), pour les produits du
+  document en cours seulement. Même origine, donc affichable dans le PDF.
+  (11/09/2026 : remplace le fichier unique offilog-img-data.js de 33 Mo.)
 """
-import re, json, base64, ssl, time
+import re, json, os, ssl, time
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 
 SRC = "/Users/williammorel/JARVIS/APP/crm/v2/offilog-bestsellers-data.js"
-OUT = "/Users/williammorel/JARVIS/APP/crm/v2/offilog-img-data.js"
+OUT = "/Users/williammorel/JARVIS/APP/crm/v2/oimg"
 ctx = ssl.create_default_context()
 UA = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/124 Safari/537.36"}
 
@@ -31,8 +32,8 @@ def fetch(job):
         try:
             r = urllib.request.urlopen(urllib.request.Request(u, headers=UA), timeout=15, context=ctx)
             b = r.read()
-            if b and len(b) < 60000:
-                return pid, "data:image/jpeg;base64," + base64.b64encode(b).decode("ascii")
+            if b and len(b) < 60000 and b[:3] == b"\xff\xd8\xff":   # un vrai JPEG seulement
+                return pid, b
             return pid, None
         except Exception:
             time.sleep(0.4)
@@ -49,11 +50,10 @@ with ThreadPoolExecutor(max_workers=8) as ex:
         if done % 500 == 0:
             print(f"  {done}/{len(jobs)} · {len(out)} ok · {time.time()-t:.0f}s", flush=True)
 
-with open(OUT, "w", encoding="utf-8") as f:
-    f.write("// Offilog — vignettes produits (base64, cart_default) pour PDF marketing\n")
-    f.write("// {} images · clé = id produit\n".format(len(out)))
-    f.write("const OFFILOG_IMG = " + json.dumps(out, ensure_ascii=False) + ";\n")
-    f.write("try{window.OFFILOG_IMG=OFFILOG_IMG;}catch(e){}\n")
+os.makedirs(OUT, exist_ok=True)
+for pid, b in out.items():
+    with open(os.path.join(OUT, pid + ".jpg"), "wb") as f:
+        f.write(b)
 
-import os
-print("OK ->", OUT, "({:.1f} Mo, {} images)".format(os.path.getsize(OUT)/1024/1024, len(out)), flush=True)
+tot = sum(os.path.getsize(os.path.join(OUT, f)) for f in os.listdir(OUT))
+print("OK ->", OUT, "({:.1f} Mo, {} images)".format(tot/1024/1024, len(out)), flush=True)

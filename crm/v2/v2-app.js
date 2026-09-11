@@ -419,6 +419,9 @@
       '</div></div>';
   }
 
+  // Ce que le boot attendait AVANT la phase 2, pour tout écran : c'est le jeu
+  // reçu par tout écran qui ne déclare pas `needs`. (wmlca est déjà attaché à wml.)
+  V2.NEEDS_DEFAUT = ['bench', 'sagitta', 'prodstatscond', 'pharmafrca', 'wmlca', 'biosimcomplet'];
   // ── RENDER (routeur) ──────────────────────────
   V2.render = function () {
     var root = $app(); if (!root) return;
@@ -478,6 +481,26 @@
     var page = V2.pages[V2.route.name];
     if (!page) { V2.route.name = 'home'; page = V2.pages.home; }
     if (!page) { root.innerHTML = '<div class="v2-loading"><div class="v2-spinner"></div><div>Chargement…</div></div>'; return; }
+    // 11/09/2026 (phase 2) — les données lourdes (catalogue, tables protégées)
+    // ne sont plus attendues au boot. Un écran qui ne déclare rien reçoit le jeu
+    // COMPLET d'avant (V2.NEEDS_DEFAUT) : aucun écran ne peut se rendre avec
+    // moins de données qu'hier. Seuls les écrans audités déclarent `needs: []`.
+    // Un fichier en échec (protegeEchec) ne bloque pas : l'écran se rend comme
+    // avant, avec ses propres garde-fous et le bandeau « données manquantes ».
+    var needs = (page.needs === undefined) ? V2.NEEDS_DEFAUT : page.needs, manque = [];
+    for (var ni = 0; ni < needs.length; ni++) {
+      if (!V2.dataLoaded(needs[ni]) && !(V2.protegeEchec && V2.protegeEchec[needs[ni]])) manque.push(needs[ni]);
+    }
+    if (manque.length) {
+      if (!V2._needsAttente) {
+        V2._needsAttente = true;
+        root.innerHTML = '<div class="v2-loading"><div class="v2-spinner"></div><div>Chargement du catalogue…</div></div>';
+        // On re-rend l'écran COURANT à l'arrivée (V2.route peut avoir changé
+        // entre-temps : V2.render le relit, et redemandera ce qui manque).
+        V2.loadFiles(manque).then(function () { V2._needsAttente = false; V2.render(); });
+      }
+      return;
+    }
     // Pose la lumière du pilier courant à la racine : le halo de tête (.v2-halo,
     // frère de .v2) et tous les liserés contextuels de l'écran lisent var(--accent).
     try {
@@ -1091,6 +1114,7 @@
     _caByPid = m; _caRef = V2.sales; return m;
   };
   V2.pages.home = {
+    needs: [],   // audité 11/09/2026 : l'accueil ne lit ni BENCHMARK ni PROD_STATS
     render: function (root) {
       injectHomeStyles();
       var phs = V2.pharmacies || [];
@@ -1744,14 +1768,25 @@
       // le léger d'abord (bench public + colonnes protégées, petites tables) ;
       // establishments (4,3 Mo protégé) part EN FOND après le premier rendu :
       // l'attendre bloquerait la première connexion le temps du téléchargement.
-      (prealables.length ? V2.loadFiles(prealables) : Promise.resolve()).then(function () {
-        return V2.loadFiles(['bench', 'sagitta', 'prodstatscond', 'pharmafrca', 'wmlca', 'biosimcomplet']);
-      })
+      // 11/09/2026 (phase 2) — CRM : le catalogue (bench 2,9 Mo + prodstats
+      // 0,7 Mo + tables protégées) N'EST PLUS attendu ici : l'accueil ne le lit
+      // pas. Chaque écran déclare ce qu'il lit (`needs`, voir V2.render) et le
+      // charge s'il manque ; le tout part EN FOND juste après le premier rendu.
+      // OPSO garde l'ancien enchaînement (PPHT/PROD_STATS en balises).
+      (opso
+        ? (prealables.length ? V2.loadFiles(prealables) : Promise.resolve()).then(function () { return V2.loadFiles(V2.NEEDS_DEFAUT); })
+        : Promise.resolve())
     ]);
     V2.loadFiles(['establishments']);
     V2.invalidateCmdk();
     V2.route = parseHash();
     V2.render();
+    if (!opso) {
+      setTimeout(function () {
+        // loadFiles enchaîne ppht + prodstats AVANT bench (v2-boot.js).
+        V2.loadFiles(V2.NEEDS_DEFAUT).then(function () { V2.invalidateCmdk(); });
+      }, 250);
+    }
     window.addEventListener('hashchange', function () {
       var r = parseHash();
       if (r.name !== V2.route.name || r.param !== V2.route.param) { V2.route = r; V2.render(); }

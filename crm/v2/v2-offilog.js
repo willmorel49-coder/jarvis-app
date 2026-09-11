@@ -646,16 +646,11 @@
   }
 
   // charge le fichier de vignettes base64 (pour photos dans le PDF) si présent
-  var imgLoading = false;
+  // 11/09/2026 (phase 2) — un JPEG par produit (v2/oimg/), lu pour la sélection
+  // seulement, au lieu de 33 Mo de base64 d'un coup. Échec = repli URL brute.
   function ensureImg(cb) {
-    if (window.OFFILOG_IMG) { cb(); return; }
-    if (imgLoading) { setTimeout(function () { ensureImg(cb); }, 300); return; }
-    imgLoading = true;
-    var sc = document.createElement('script');
-    sc.src = MOD_BASE + 'offilog-img-data.js?v=20260611a';
-    sc.onload = function () { imgLoading = false; cb(); };
-    sc.onerror = function () { imgLoading = false; cb(); }; // pas grave : repli URL brute
-    document.head.appendChild(sc);
+    var ids = mktSelection().map(function (it) { return it.id; });
+    V2.offilogImgs(ids).then(cb, cb);
   }
   var pzLoading = false;
   function ensurePz(cb) {
