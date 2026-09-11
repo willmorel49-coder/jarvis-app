@@ -221,10 +221,18 @@
     var cles = Object.keys(parMois).map(Number).sort(function (a, b) { return a - b; });
     if (!cles.length) return null;
 
-    var nbSect = {}, maxSect = 0;
+    // 11/09/2026 — seuls les secteurs RÉGULIERS (présents au moins un mois sur
+    // deux) comptent : un code qui n'a vendu qu'en juillet faisait écarter août
+    // du réseau entier, alors que les 23 autres secteurs y étaient.
+    var presence = {};
     cles.forEach(function (k) {
-      nbSect[k] = Object.keys(parMois[k].sect).length;
-      if (nbSect[k] > maxSect) maxSect = nbSect[k];
+      for (var c in parMois[k].sect) presence[c] = (presence[c] || 0) + 1;
+    });
+    var seuil = Math.ceil(cles.length / 2), nbSect = {}, maxSect = 0;
+    for (var c in presence) if (presence[c] >= seuil) maxSect++;
+    cles.forEach(function (k) {
+      nbSect[k] = 0;
+      for (var c2 in parMois[k].sect) if (presence[c2] >= seuil) nbSect[k]++;
     });
 
     var complets = cles.slice(), ecartes = [], raison = '';
