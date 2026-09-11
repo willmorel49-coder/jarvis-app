@@ -96,7 +96,8 @@
   function productIndex() {
     var B = window.BENCHMARK || [];
     var S = window.SAGITTA_SHORTLIST || [];
-    var stamp = B.length + 'x' + S.length;
+    var F = window.FROID_CIPS || [];
+    var stamp = B.length + 'x' + S.length + 'x' + F.length;
     if (_idx && _idxStamp === stamp) return _idx;
     var m = {};
     B.forEach(function (b) {
@@ -106,6 +107,13 @@
         is_froid: !!b.is_froid,
         artnature: b.artnature || '',
       };
+    });
+    // FROID_CIPS (froid-data.js) = sous-famille « Froid » du grossiste : 849 CIP13,
+    // là où le benchmark n'en marquait que 54. Un produit y figurant est froid.
+    F.forEach(function (c) {
+      c = normCip(c); if (!c) return;
+      if (!m[c]) m[c] = { has_ameli: false, is_froid: false, artnature: '' };
+      m[c].is_froid = true;
     });
     // SAGITTA = short list NR (non remboursable) : marque isNR=true
     S.forEach(function (s) {
