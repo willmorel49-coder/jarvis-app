@@ -62,8 +62,11 @@ const D_ATTENDU = 30;                       // 30,00 €
 
 const win = faireFenetre();
 // Index produit : une seule référence « froid », une autre non (même chemin que l'écran)
-win.BENCHMARK = [{ cip13: CIP_FROID, is_froid: true, has_ameli: true, artnature: 'princeps' }, { cip13: '3400930000001', is_froid: false }, { cip13: CIP_NR_FROID, is_froid: true }];
+win.BENCHMARK = [{ cip13: CIP_FROID, is_froid: true, has_ameli: true, artnature: 'princeps' }, { cip13: '3400930000001', is_froid: false }, { cip13: '3400930000009', is_froid: false }, { cip13: CIP_NR_FROID, is_froid: true }];
 win.SAGITTA_SHORTLIST = [{ cip13: CIP_NR }, { cip13: CIP_NR_FROID }];
+// froid-data.js : liste grossiste des CIP froid — un produit absent du benchmark y est reconnu froid
+const CIP_FROID_GROSSISTE = '3400930141861';   // SHINGRIX, sous-famille Froid chez le grossiste
+win.FROID_CIPS = [CIP_FROID_GROSSISTE, '3400930000001'];   // le second est aussi marqué non-froid dans le benchmark : la liste grossiste prime
 const fmtNum = (n) => (Math.round(n) || 0).toLocaleString('fr-FR');
 const V2 = win.V2 = {
   pages: {}, user: null, pharmacies: [{ id: 'p1', name: 'Pharma test' }], sales: VENTES, commFilter: '',
@@ -133,7 +136,9 @@ test('chaîne du froid : + 0,63 € la boîte, en plus de la règle par prix', (
   assert.equal(+m({ qte: 10, puNet: 2, mntNetHt: 20, artCode: CIP_FROID }).toFixed(2), 7.50, 'petit prix froid : 1,20 + 6,30');
   assert.equal(+m({ qte: 1, puNet: 1000, mntNetHt: 1000, artCode: CIP_FROID }).toFixed(2), 13.63, 'cher froid : 13 + 0,63');
   assert.equal(+m({ qte: -2, puNet: 50, mntNetHt: -100, artCode: CIP_FROID }).toFixed(2), -4.30, 'avoir froid : −3,04 − 1,26');
-  assert.equal(+m({ qte: 4, puNet: 50, mntNetHt: 200, artCode: '3400930000001' }).toFixed(2), 6.08, 'produit non froid : rien de plus');
+  assert.equal(+m({ qte: 4, puNet: 50, mntNetHt: 200, artCode: '3400930000009' }).toFixed(2), 6.08, 'produit non froid : rien de plus');
+  assert.equal(+m({ qte: 4, puNet: 50, mntNetHt: 200, artCode: CIP_FROID_GROSSISTE }).toFixed(2), 8.60, 'froid connu du seul grossiste (froid-data.js) : 6,08 + 2,52');
+  assert.equal(+m({ qte: 4, puNet: 50, mntNetHt: 200, artCode: '3400930000001' }).toFixed(2), 8.60, 'benchmark non-froid mais grossiste froid : la liste grossiste prime');
   assert.equal(+m({ qte: 4, puNet: 50, mntNetHt: 200, artCode: 'inconnu' }).toFixed(2), 6.08, 'produit hors index : rien de plus');
 });
 
