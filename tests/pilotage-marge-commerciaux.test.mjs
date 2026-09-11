@@ -4,6 +4,8 @@
  * 0–4,33 € → 0,12 € la boîte · 4,33–468 € → 3,04 % · > 468 € → 13 € la boîte.
  * Chaîne du froid (11/09/2026, même jour) : + 0,63 € la boîte, en plus, pour tout
  * produit marqué is_froid dans l'index produit (window.BENCHMARK).
+ * Non remboursés (11/09/2026) : prix de vente = prix d'achat × 1,03, donc marge =
+ * net vendu − net ÷ 1,03, à la place du barème ; « NR » = short list Sagitta.
  * On rend l'ÉCRAN RÉEL (v2-pilotage.js) sur des ventes fabriquées dont on
  * connaît la marge à la main, et on lit ce que l'écran affiche.
  */
@@ -41,6 +43,8 @@ function faireFenetre() {
 // Deux commerciaux, juin 2026. B n'a que du petit prix, A a les trois paliers.
 const V = (commercial, month, qte, puNet, artCode) => ({ pharmacyId: 'p1', year: 2026, month, commercial, artCode: artCode || 'x', qte, puNet, mntNetHt: qte * puNet });
 const CIP_FROID = '3400930292914';   // marqué is_froid dans l'index produit fabriqué
+const CIP_NR = '3400930000002';      // dans la short list Sagitta (non remboursé)
+const CIP_NR_FROID = '3400930000003'; // les deux à la fois
 const VENTES = [
   V('A', 6, 10, 2.00),     // petit prix   → 10 × 0,12 = 1,20 €
   V('A', 6, 5, 100.00),    // intermédiaire → 500 × 3,04 % = 15,20 €
@@ -49,14 +53,17 @@ const VENTES = [
   V('B', 6, 100, 4.00),    // petit prix   → 100 × 0,12 = 12 €
   V('B', 5, 1, 4.00),      // mai : B couvre 2 mois, A un seul
   V('C', 6, 4, 50.00, CIP_FROID),   // froid, intermédiaire → 200 × 3,04 % = 6,08 + 4 × 0,63 = 2,52 → 8,60 €
+  V('D', 6, 10, 103.00, CIP_NR),    // non remboursé → 1030 − 1030 ÷ 1,03 = 30,00 € (le barème aurait dit 31,31)
 ];
 const A_ATTENDU = 1.20 + 15.20 + 26 + 13;   // 55,40 €
 const B_ATTENDU = 12 + 0.12;                // 12,12 €
 const C_ATTENDU = 6.08 + 2.52;              // 8,60 € dont 2,52 € de chaîne du froid
+const D_ATTENDU = 30;                       // 30,00 €
 
 const win = faireFenetre();
 // Index produit : une seule référence « froid », une autre non (même chemin que l'écran)
-win.BENCHMARK = [{ cip13: CIP_FROID, is_froid: true, has_ameli: true, artnature: 'princeps' }, { cip13: '3400930000001', is_froid: false }];
+win.BENCHMARK = [{ cip13: CIP_FROID, is_froid: true, has_ameli: true, artnature: 'princeps' }, { cip13: '3400930000001', is_froid: false }, { cip13: CIP_NR_FROID, is_froid: true }];
+win.SAGITTA_SHORTLIST = [{ cip13: CIP_NR }, { cip13: CIP_NR_FROID }];
 const fmtNum = (n) => (Math.round(n) || 0).toLocaleString('fr-FR');
 const V2 = win.V2 = {
   pages: {}, user: null, pharmacies: [{ id: 'p1', name: 'Pharma test' }], sales: VENTES, commFilter: '',
@@ -99,9 +106,25 @@ const DERNIER_MOIS = texte(carte(rendre('', { commercial: '', voitTous: true }))
   assert.ok(texte(rendre('', V2.user)).includes('2026 ·') || true);
 }
 
-test('« Dernier mois » exclut bien la vente de mai (total 76,00 €, pas 76,12 €)', () => {
-  // A 55,40 + B 12 + C 8,60 = 76,00 € ; avec la vente de mai ce serait 76,12 €
-  assert.ok(DERNIER_MOIS.includes('76,00 €') && !DERNIER_MOIS.includes('76,12 €'), DERNIER_MOIS.slice(0, 200));
+test('« Dernier mois » exclut bien la vente de mai (total 106,00 €, pas 106,12 €)', () => {
+  // A 55,40 + B 12 + C 8,60 + D 30 = 106,00 € ; avec la vente de mai ce serait 106,12 €
+  assert.ok(DERNIER_MOIS.includes('106,00 €') && !DERNIER_MOIS.includes('106,12 €'), DERNIER_MOIS.slice(0, 200));
+});
+
+test('non remboursés : net − net ÷ 1,03, à la place du barème ; le froid s’ajoute', () => {
+  const m = V2.piloMargeVente;
+  assert.equal(+m({ qte: 10, puNet: 103, mntNetHt: 1030, artCode: CIP_NR }).toFixed(2), 30.00, 'NR intermédiaire : 30 € (pas 31,31)');
+  assert.equal(+m({ qte: 10, puNet: 2, mntNetHt: 20, artCode: CIP_NR }).toFixed(2), 0.58, 'NR petit prix : 0,58 € (pas 1,20)');
+  assert.equal(+m({ qte: 1, puNet: 1030, mntNetHt: 1030, artCode: CIP_NR }).toFixed(2), 30.00, 'NR cher : 30 € (pas 13)');
+  assert.equal(+m({ qte: -10, puNet: 103, mntNetHt: -1030, artCode: CIP_NR }).toFixed(2), -30.00, 'avoir NR');
+  assert.equal(+m({ qte: 10, puNet: 103, mntNetHt: 1030, artCode: CIP_NR_FROID }).toFixed(2), 36.30, 'NR froid : 30 + 6,30');
+});
+
+test('la carte affiche la ligne « Non remboursés » (30,00 €, 10 boîtes), hors paliers', () => {
+  const t = texte(carte(rendre('', { commercial: '', voitTous: true })));
+  assert.ok(t.includes('Non remboursés') && t.includes('30,00 €') && t.includes('10 boîtes'), t.slice(0, 700));
+  assert.ok(t.includes('21,28 €'), 'palier intermédiaire sans le NR (21,28 €, pas 51,28)');
+  assert.ok(!texte(carte(rendre('A', { commercial: '', voitTous: true }))).includes('Non remboursés'), 'A n’a pas de NR : pas de ligne');
 });
 
 test('chaîne du froid : + 0,63 € la boîte, en plus de la règle par prix', () => {
@@ -134,17 +157,18 @@ test('la règle par boîte rend les valeurs connues', () => {
   assert.equal(+m({ qte: 1, puNet: 468, mntNetHt: 468 }).toFixed(2), 13, '468 € = cher (même borne que les tranches)');
 });
 
-test('vue « Tous » : total = A + B + C, classement A, B, C ; A marqué « 1 mois sur 2 »', () => {
+test('vue « Tous » : total = A + B + C + D, classement A, D, B, C ; A marqué « 1 mois sur 2 »', () => {
   const h = rendre('', { commercial: '', voitTous: true });
   const c = carte(h), t = texte(c);
   assert.ok(c.includes('Marge produits pour l\'entreprise'), 'la carte existe');
-  assert.ok(t.includes(V2.fmtEur(A_ATTENDU + B_ATTENDU + C_ATTENDU)), 'total ' + V2.fmtEur(A_ATTENDU + B_ATTENDU + C_ATTENDU) + ' dans : ' + t.slice(0, 300));
-  const iA = c.indexOf('data-c="A"'), iB = c.indexOf('data-c="B"'), iC = c.indexOf('data-c="C"');
-  assert.ok(iA > 0 && iB > 0 && iC > 0 && iA < iB && iB < iC, 'A (55,40 €) avant B (12,12 €) avant C (8,60 €)');
-  assert.ok(c.slice(iA, iB).includes(V2.fmtEur(A_ATTENDU)), 'ligne A porte 55,40 €');
+  assert.ok(t.includes(V2.fmtEur(A_ATTENDU + B_ATTENDU + C_ATTENDU + D_ATTENDU)), 'total ' + V2.fmtEur(A_ATTENDU + B_ATTENDU + C_ATTENDU + D_ATTENDU) + ' dans : ' + t.slice(0, 300));
+  const iA = c.indexOf('data-c="A"'), iB = c.indexOf('data-c="B"'), iC = c.indexOf('data-c="C"'), iD = c.indexOf('data-c="D"');
+  assert.ok(iA > 0 && iD > 0 && iB > 0 && iC > 0 && iA < iD && iD < iB && iB < iC, 'A (55,40 €) avant D (30 €) avant B (12,12 €) avant C (8,60 €)');
+  assert.ok(c.slice(iA, iD).includes(V2.fmtEur(A_ATTENDU)), 'ligne A porte 55,40 €');
+  assert.ok(c.slice(iD, iB).includes(V2.fmtEur(D_ATTENDU)) && c.slice(iD, iB).includes('10 boîtes'), 'ligne D porte 30,00 € et compte ses 10 boîtes');
   assert.ok(c.slice(iB, iC).includes(V2.fmtEur(B_ATTENDU)), 'ligne B porte 12,12 €');
   assert.ok(c.slice(iC).includes(V2.fmtEur(C_ATTENDU)), 'ligne C porte 8,60 € (froid compris)');
-  assert.ok(c.slice(iA, iB).includes('1 mois sur 2'), 'A couvert un seul mois sur deux : l’écran le dit');
+  assert.ok(c.slice(iA, iD).includes('1 mois sur 2'), 'A couvert un seul mois sur deux : l’écran le dit');
   assert.ok(!c.slice(iB, iC).includes('mois sur'), 'B couvre les deux mois : pas de mention');
   // paliers du total : 13,32 (petits) · 21,28 (intermédiaires, A + C) · 39
   assert.ok(t.includes(V2.fmtEur(1.2 + 12.12)) && t.includes('21,28 €') && t.includes('39,00 €'), 'les trois paliers : ' + t.slice(0, 400));
