@@ -461,12 +461,34 @@
           // Le fichier pouvait être marqué « chargé » alors qu'il était vide :
           // `loadData()` retombait sur les anciennes tables Supabase et l'app
           // affichait 22 officines au lieu de 690, sans rien dire.
+          V2.ventesEnCours = false;
           if (!V2.dataLoaded('wml') || V2.donneesSecours) { ecranDonneesIndisponibles(root); return; }
           V2.render();
         });
       return;
     }
-    if (V2.loadFiles && !V2.dataLoaded('wml')) { return; }   // chargement en cours
+    if (V2.loadFiles && !V2.dataLoaded('wml')) {   // chargement en cours
+      // 11/09/2026 (phase 5) — l'accueil n'attend plus les ventes : dès que
+      // l'en-tête (officines) est là, il se dessine avec ses tuiles, et le
+      // chiffre du Pilotage arrive quand les tranches sont finies (le .then
+      // ci-dessus re-rend). SEUL l'accueil se rend ainsi ; tout autre écran
+      // lit les ventes et attend la fin : on lui montre l'écran d'attente —
+      // sans quoi un clic depuis l'accueil partiel ne montrerait rien.
+      // Pas pour OPSO (son accueil met le CA groupement en tête).
+      var partiel = V2.route.name === 'home' && window.WML_OFFICINES && !V2.donneesSecours
+        && !(window.V2_BRAND && window.V2_BRAND.opso);
+      if (!partiel) {
+        if (!root.querySelector('.v2-boot-splash')) {
+          root.innerHTML =
+            '<div class="v2-boot-splash"><div class="v2-boot-brand">' + ((window.V2_BRAND && window.V2_BRAND.name) || 'Intégral Pharma') + '</div>'
+            + '<div class="v2-spinner"></div>'
+            + '<div class="v2-boot-msg">Chargement des données réseau…</div></div>';
+        }
+        return;
+      }
+      V2.ventesEnCours = true;
+      if (!V2.pharmacies || !V2.pharmacies.length) V2.pharmacies = V2.mapOfficines ? V2.mapOfficines() : [];
+    }
     // 11/09/2026 — perf : les modules différés (index.html : V2_MODULES) ne sont
     // peut-être pas tous exécutés : V2.pages serait incomplet (tuiles de l'accueil,
     // ⌘K, lien profond #rdv → accueil). On attend la fin du manifeste, puis on rend.
@@ -1113,11 +1135,27 @@
     for (var i = 0; i < S.length; i++) { var s = S[i]; m[s.pharmacyId] = (m[s.pharmacyId] || 0) + (s.mntNetHt || 0); }
     _caByPid = m; _caRef = V2.sales; return m;
   };
+  // 11/09/2026 (phase 5) — appelé par v2-boot.js quand l'en-tête des officines
+  // est exécuté et que les tranches de ventes commencent : on rend l'accueil
+  // tout de suite (V2.render sait qu'il est partiel), et on tient à jour le
+  // compteur « Chargement des ventes… n / 28 » sans re-rendre.
+  V2.onOfficinesPretes = function () {
+    if (!V2.user || V2.route.name !== 'home') return;
+    V2.render();
+  };
+  V2.onVentesProgres = function (n, total) {
+    var el = document.getElementById('v2-ventes-etat');
+    if (el) el.innerHTML = 'Chargement des ventes… <b>' + n + '</b> / ' + total;
+  };
   V2.pages.home = {
     needs: [],   // audité 11/09/2026 : l'accueil ne lit ni BENCHMARK ni PROD_STATS
     render: function (root) {
       injectHomeStyles();
       var phs = V2.pharmacies || [];
+      // Phase 5 : accueil dessiné avant la fin des ventes — les chiffres qui en
+      // dépendent (officines actives, CA du Pilotage) s'affichent en attente,
+      // jamais à « 0 » : un zéro ressemblerait à un vrai zéro.
+      var partiel = !!V2.ventesEnCours;
       // pharmacies récentes : par CA décroissant (proxy d'activité)
       var caOf = V2.caByPharma();
       var withCa = phs.map(function (p) {
@@ -1135,7 +1173,7 @@
         // les tuiles « Par molécule » et « Appro » sont retirées plus bas. Les
         // trois écrans restent atteignables depuis Produits et depuis ⌘K.
         { k: 'offilog', cls: 'p5', accent: '#345DA0', ico: 'spark', tag: 'Parapharmacie', t: 'Offilog', d: 'La centrale parapharmacie d\'Intégral, rayon par rayon : ton prix d\'achat, la photo produit, et où un concurrent casse les prix.', go: 'Ouvrir Offilog' },
-        { k: 'pilotage', cls: 'p4', ico: 'pilo', tag: V2.fmtK(caTotal) + ' €', t: 'Pilotage', d: 'Ton chiffre d\'affaires, ta marge MDL, tes objectifs et qui commande quoi. Le tableau de bord de ta tournée.', go: 'Voir mon pilotage' },
+        { k: 'pilotage', cls: 'p4', ico: 'pilo', tag: partiel ? '…' : V2.fmtK(caTotal) + ' €', t: 'Pilotage', d: 'Ton chiffre d\'affaires, ta marge MDL, tes objectifs et qui commande quoi. Le tableau de bord de ta tournée.', go: 'Voir mon pilotage' },
       ];
       // Infos du matin (brief quotidien) — app JARVIS
       if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.infos) {
@@ -1360,7 +1398,9 @@
         '<div class="v2-wrap narrow v2-home-x">' +
           '<div class="v2-hero">' +
             '<h1>Bonjour <span class="ac">' + esc(firstName) + '</span></h1>' +
-            '<p class="v2-hero-sub">' + cap(today) + ' · <b>' + nbPharma + '</b> officines actives</p>' +
+            '<p class="v2-hero-sub">' + cap(today) + ' · ' + (partiel
+              ? '<span id="v2-ventes-etat">Chargement des ventes… <b>' + ((V2.ventesProgres && V2.ventesProgres.n) || 0) + '</b> / ' + ((V2.ventesProgres && V2.ventesProgres.total) || '?') + '</span>'
+              : '<b>' + nbPharma + '</b> officines actives') + '</p>' +
           '</div>' +
           '<div class="v2-search" role="button" tabindex="0" aria-label="Rechercher une pharmacie, un produit" onclick="V2.onTopSearch()"><span class="srch-ic">' + ICO('search', 18, 2) + '</span>' +
             '<input readonly aria-hidden="true" tabindex="-1" placeholder="Cherche une pharmacie, un produit…" style="cursor:pointer"><kbd>' + MOD + 'K</kbd></div>' +
