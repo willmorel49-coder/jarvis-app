@@ -213,17 +213,25 @@
     V2.sales = (V2.sales || []).filter(function (s) { return ids[String(s.pharmacyId)]; });
   };
 
+  // 11/09/2026 (phase 5) — le mappage des officines est à part : l'accueil se
+  // dessine dès l'en-tête (WML_OFFICINES), pendant que les 28 tranches de ventes
+  // arrivent encore (voir V2.onOfficinesPretes dans v2-app.js). loadData()
+  // fait EXACTEMENT le même mappage une fois les ventes complètes.
+  V2.mapOfficines = function () {
+    return (window.WML_OFFICINES || []).map(function (p) {
+      return { id: String(p.id), name: p.name, code: p.code, color: p.color,
+               ville: p.ville, cp: p.cp, tel: p.tel, groupement: p.groupement, potentiel: p.potentiel,
+               lat: (typeof p.lat === 'number' ? p.lat : null), lng: (typeof p.lng === 'number' ? p.lng : null),
+               comms: p.comms || [] };
+    });
+  };
+
   // ── DONNÉES : WML (source de vérité) sinon Supabase ────
   V2.loadData = async function () {
     // Source de vérité = fichiers WML (officines + ventes, 5 mois) générés
     // depuis WML_pharmacies + WML_01..05. Chargés en statique avant le boot.
     if (window.WML_OFFICINES && window.WML_SALES) {
-      V2.pharmacies = window.WML_OFFICINES.map(function (p) {
-        return { id: String(p.id), name: p.name, code: p.code, color: p.color,
-                 ville: p.ville, cp: p.cp, tel: p.tel, groupement: p.groupement, potentiel: p.potentiel,
-                 lat: (typeof p.lat === 'number' ? p.lat : null), lng: (typeof p.lng === 'number' ? p.lng : null),
-                 comms: p.comms || [] };
-      });
+      V2.pharmacies = V2.mapOfficines();
       // ── Format compacté (13/08/2026) ────────────────────────────────
       // Les trois colonnes répétées 437 848 fois — code officine, nom du
       // commercial, code produit — ne sont plus écrites en toutes lettres dans
@@ -803,7 +811,7 @@
   V2.chargerScripts = function (urls) {
     urls = urls || [];
     if (!urls.length) return Promise.resolve();
-    var V = '?v=' + (window.V2_VER || '20260911m');
+    var V = '?v=' + (window.V2_VER || '20260911n');
     return Promise.all(urls.map(function (u) {
       return new Promise(function (resolve) {
         var s = document.createElement('script');
@@ -1207,7 +1215,7 @@
     // de le servir, et le lecteur compacté ne trouverait pas ses dictionnaires.
     // Pas besoin de le suivre à chaque déploiement en revanche : quand `VER` de
     // sw.js change, l'activation du service worker efface tous les caches.
-    var V = '?v=20260911m';
+    var V = '?v=20260911n';
     V2.versionDonnees = V;   // lu par chargerScriptProtege (fiche carte)
     var promises = keys.map(function (k) {
       var src = (window.V2_DATA_BASE || '../') + DATA_FILES[k];
@@ -1275,8 +1283,15 @@
               var noms = [];
               for (var ti = 1; ti <= n; ti++) noms.push('wml-ventes-' + (ti < 10 ? '0' + ti : ti) + '.js');
               var rang = 0;
+              // 11/09/2026 (phase 5) — l'en-tête est là (officines, dictionnaires) :
+              // on le dit à l'app, qui peut dessiner l'accueil sans attendre les
+              // ventes. Puis on lui donne l'avancement, tranche par tranche.
+              V2.ventesProgres = { n: 0, total: n };
+              if (V2.onOfficinesPretes) { try { V2.onOfficinesPretes(); } catch (e) { console.warn('[V2] onOfficinesPretes', e); } }
               textesProteges(noms, V, TRANCHES_EN_VOL, function (texte, suite) {
                 rang++;
+                V2.ventesProgres = { n: rang, total: n };
+                if (V2.onVentesProgres) { try { V2.onVentesProgres(rang, n); } catch (e) {} }
                 poserTexte(texte, function () { if (rang >= n) finir(); else suite(); });
               }, function (nom) {
                 console.warn('[V2] tranche protégée manquante : ' + nom);
