@@ -53,21 +53,31 @@
   //   · au-dessus de 468 € → 13 € par boîte (chers ET très chers)
   // Les bornes sont celles de priceTier : les deux lectures de l'écran coïncident.
   // Une ligne à quantité négative (avoir) rapporte négativement : c'est voulu.
-  var MARGE = { boitePetit: 0.12, tauxInter: 0.0304, boiteCher: 13 };
-  function margeVente(s) {
+  // Chaîne du froid (Will, 11/09/2026) : une boîte « froid » rapporte 0,63 € DE
+  // PLUS que la règle ci-dessus, quel que soit son prix. Un produit est « froid »
+  // au sens de l'index produit (is_froid, onglet « TOP Froid » du TOP IP), la
+  // même lecture que la répartition par famille de l'écran : familyOf().
+  var MARGE = { boitePetit: 0.12, tauxInter: 0.0304, boiteCher: 13, boiteFroid: 0.63 };
+  function margeBase(s) {
     var t = priceTier(s.puNet), q = +s.qte || 0;
     if (t === 0) return q * MARGE.boitePetit;
     if (t === 1) return (s.mntNetHt || 0) * MARGE.tauxInter;
     return q * MARGE.boiteCher;
   }
+  function estFroid(s, idx) { return familyOf(s, idx || productIndex()) === 'froid'; }
+  function margeFroid(s, idx) { return estFroid(s, idx) ? (+s.qte || 0) * MARGE.boiteFroid : 0; }
+  function margeVente(s, idx) { return margeBase(s) + margeFroid(s, idx); }
   V2.piloMargeVente = margeVente;
   // Cumul sur un lot de ventes : total + détail par palier (boîtes, CA, marge)
-  function cumulMarge(ventes) {
-    var r = { total: 0, pal: [{ q: 0, ca: 0, m: 0 }, { q: 0, ca: 0, m: 0 }, { q: 0, ca: 0, m: 0 }], ca: 0, mois: {} };
+  // + le supplément chaîne du froid à part (les trois paliers + froid = total).
+  function cumulMarge(ventes, idx) {
+    idx = idx || productIndex();
+    var r = { total: 0, pal: [{ q: 0, ca: 0, m: 0 }, { q: 0, ca: 0, m: 0 }, { q: 0, ca: 0, m: 0 }], froid: { q: 0, m: 0 }, ca: 0, mois: {} };
     for (var i = 0; i < ventes.length; i++) {
-      var s = ventes[i], t = priceTier(s.puNet), k = t < 2 ? t : 2, m = margeVente(s);
+      var s = ventes[i], t = priceTier(s.puNet), k = t < 2 ? t : 2, m = margeBase(s), mf = margeFroid(s, idx);
       var o = r.pal[k]; o.q += (+s.qte || 0); o.ca += (s.mntNetHt || 0); o.m += m;
-      r.total += m; r.ca += (s.mntNetHt || 0); r.mois[mkey(s.year, s.month)] = 1;
+      if (mf) { r.froid.q += (+s.qte || 0); r.froid.m += mf; }
+      r.total += m + mf; r.ca += (s.mntNetHt || 0); r.mois[mkey(s.year, s.month)] = 1;
     }
     r.nbMois = Object.keys(r.mois).length;
     return r;
@@ -1289,17 +1299,20 @@
       var margeCard = '';
       var comms = V2.commercials ? V2.commercials() : [];
       if (!opso) {
-        var mg = cumulMarge(cur);
+        var mg = cumulMarge(cur, idx);
         var PAL = [
           { l: '0 – 4,33 €',   d: 'petits prix · 0,12 € la boîte',     color: TIERS[0].color },
           { l: '4,33 – 468 €', d: 'intermédiaires · 3,04 % du prix',   color: TIERS[1].color },
           { l: '> 468 €',      d: 'chers · 13 € la boîte',            color: TIERS[2].color },
         ];
+        // Le supplément chaîne du froid s'ajoute aux trois paliers : la 4e ligne
+        // n'apparaît que s'il y a eu des boîtes froid sur la période.
+        if (mg.froid.q) PAL.push({ l: 'Chaîne du froid', d: 'en plus · 0,63 € la boîte', color: 'var(--c-froid)', ico: 'froid', froid: true });
         var palHtml = PAL.map(function (pz, i) {
-          var o = mg.pal[i], pct = mg.total > 0 ? Math.max(0, o.m) / mg.total * 100 : 0;
+          var o = pz.froid ? mg.froid : mg.pal[i], pct = mg.total > 0 ? Math.max(0, o.m) / mg.total * 100 : 0;
           return '<div class="pilo-fam">' +
             '<div class="pilo-fam-top">' +
-              '<span class="pilo-fam-l"><span class="pilo-fam-ico" style="color:' + pz.color + '">' + ICO('pill', 15) + '</span>' +
+              '<span class="pilo-fam-l"><span class="pilo-fam-ico" style="color:' + pz.color + '">' + ICO(pz.ico || 'pill', 15) + '</span>' +
                 '<span>' + pz.l + '<small class="pilo-marge-d">' + pz.d + '</small></span></span>' +
               '<span class="pilo-fam-v"><span class="mono" style="font-weight:700">' + V2.fmtEur(o.m) + '</span>' +
                 '<span class="mono pilo-fam-pct">' + V2.fmtNum(o.q) + ' boîte' + (Math.abs(o.q) > 1 ? 's' : '') + '</span></span>' +
@@ -1317,7 +1330,7 @@
           var parComm = {};
           cur.forEach(function (s) { (parComm[s.commercial] || (parComm[s.commercial] = [])).push(s); });
           var lignes = comms.map(function (cm) {
-            var r = cumulMarge(parComm[cm] || []); r.cm = cm; return r;
+            var r = cumulMarge(parComm[cm] || [], idx); r.cm = cm; return r;
           }).filter(function (r) { return r.ca !== 0 || r.total !== 0; })
             .sort(function (a, b) { return b.total - a.total; });
           var maxM = lignes.length ? Math.max(0, lignes[0].total) : 0;
