@@ -118,7 +118,11 @@
       // `voit_tous_commerciaux` ouvre le Pilotage complet SANS vider `commercial` : ce champ sert
       // aussi aux campagnes et au planning RDV, le vider ferait perdre le repère « moi ».
       // ⚠️ `role` ne peut pas servir à ça : toute l'équipe commerciale est en `admin`.
-      V2.user = { id: user.id, email: user.email, name: pr.data.name, role: pr.data.role, pharmacyIds: pr.data.pharmacy_ids, commercial: pr.data.commercial || '', opsoOnly: !!pr.data.opso_only, voitTous: pr.data.voit_tous_commerciaux === true };
+      // 11/09/2026 — `commercial` peut valoir « Guillaume+Nicolas » : le premier nom reste
+      // « moi » (campagnes, RDV, carte), les suivants sont des collègues dont il voit aussi
+      // le Pilotage (pas de colonne dédiée : l'API de gestion Supabase ne répond plus).
+      var commParts = String(pr.data.commercial || '').split('+').map(function (s) { return s.trim(); }).filter(Boolean);
+      V2.user = { id: user.id, email: user.email, name: pr.data.name, role: pr.data.role, pharmacyIds: pr.data.pharmacy_ids, commercial: commParts[0] || '', voitAussi: commParts.slice(1), opsoOnly: !!pr.data.opso_only, voitTous: pr.data.voit_tous_commerciaux === true };
       // 'Escale' n'est le prénom d'aucun commercial : dans l'espace Escale, ce
       // compte voit tout le périmètre (les données y sont déjà bornées aux quatre).
       if (appEscale && commProfil === 'Escale') { V2.user.commercial = ''; V2.user.voitTous = true; }
