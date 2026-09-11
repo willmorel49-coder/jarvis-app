@@ -31,7 +31,7 @@
   // périmètre, c'est LEURS officines (prénoms exacts des données de ventes).
   // Pas de colonne dédiée dans user_profiles (pas de DDL possible) : un compte
   // Escale se reconnaît à `commercial` ∈ cette liste, ou = 'Escale' (Alexandre).
-  V2.ESCALE_COMMS = ['Guy', 'Tiffany', 'Philippe', 'Germain'];
+  V2.ESCALE_COMMS = ['Guy', 'Tiffany', 'Philippine', 'Germain'];
   V2.estCommEscale = function (c) { c = String(c || ''); return c === 'Escale' || V2.ESCALE_COMMS.indexOf(c) >= 0; };
   // ventes du commercial filtré (ou toutes)
   // 11/09/2026 — perf : mémorisé sur (V2.sales, V2.commFilter). Le Pilotage
@@ -260,7 +260,7 @@
 
   // ── Périmètre ESCALE PHARMA (app escale/v2) ─────────────────────────────
   // Même mécanique que l'OPSO : V2.pharmacies réduit aux officines suivies par
-  // Guy, Tiffany, Philippe ou Germain, puis V2.sales aux ventes de CES officines
+  // Guy, Tiffany, Philippine ou Germain, puis V2.sales aux ventes de CES officines
   // faites par CES commerciaux. Hors app Escale : ne touche à rien.
   V2.estOfficineEscale = function (p) {
     return (p && p.comms || []).some(function (c) { return V2.ESCALE_COMMS.indexOf(c) >= 0; });
@@ -861,7 +861,7 @@
   V2.chargerScripts = function (urls) {
     urls = urls || [];
     if (!urls.length) return Promise.resolve();
-    var V = '?v=20260911w' + (window.V2_VER || '20260911v');
+    var V = '?v=20260911x' + (window.V2_VER || '20260911v');
     return Promise.all(urls.map(function (u) {
       return new Promise(function (resolve) {
         var s = document.createElement('script');
@@ -1265,7 +1265,7 @@
     // de le servir, et le lecteur compacté ne trouverait pas ses dictionnaires.
     // Pas besoin de le suivre à chaque déploiement en revanche : quand `VER` de
     // sw.js change, l'activation du service worker efface tous les caches.
-    var V = '?v=20260911w';
+    var V = '?v=20260911x';
     V2.versionDonnees = V;   // lu par chargerScriptProtege (fiche carte)
     var promises = keys.map(function (k) {
       var src = (window.V2_DATA_BASE || '../') + DATA_FILES[k];

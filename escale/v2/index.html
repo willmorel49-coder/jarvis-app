@@ -29,20 +29,20 @@
   <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="dns-prefetch" href="https://images.weserv.nl">
   <!-- Socle visuel V2 (partagé) + thème Escale Pharma par-dessus -->
-  <link rel="stylesheet" href="../../crm/v2/v2.css?v=20260911v" />
-  <link rel="stylesheet" href="escale-theme.css?v=20260911v" />
+  <link rel="stylesheet" href="../../crm/v2/v2.css?v=20260911x" />
+  <link rel="stylesheet" href="escale-theme.css?v=20260911x" />
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     window.SUPABASE_URL = 'https://iyvavhnlhxksokkerkos.supabase.co';
     window.SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5dmF2aG5saHhrc29ra2Vya29zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1NjU2NTYsImV4cCI6MjA5MzE0MTY1Nn0.eMdW6vUdoyVpZbqKXp6FNYTajwKEf4x-Xyj5zj1igO4';
     // Espace ESCALE PHARMA (11/09/2026) — un visu pour Alexandre Lovy et ses quatre
-    // commerciaux (Guy, Tiffany, Philippe, Germain). Mêmes modules que le CRM, données
+    // commerciaux (Guy, Tiffany, Philippine, Germain). Mêmes modules que le CRM, données
     // bornées au périmètre Escale dans v2-boot (V2.applyEscalePerimeter).
     // Les fichiers data lourds restent dans crm/ (chemin remappé).
     window.V2_DATA_BASE = '../../crm/';
     window.V2_BRAND = { name: 'Escale Pharma', sub: 'Espace commercial', escale: true };
-    window.V2_VER = '20260911v';
+    window.V2_VER = '20260911x';
     window.ensureHtml2Pdf = function () {
       if (window.html2pdf) return Promise.resolve();
       return new Promise(function (resolve, reject) {
@@ -58,16 +58,16 @@
   <div class="v2" id="v2-root"></div>
 
   <!-- Socle (modules partagés crm/v2) -->
-  <script src="../../crm/v2/v2-icons.js?v=20260911v"></script>
-  <script src="../../crm/v2/groupement-alias.js?v=20260911v"></script>
-  <script src="../../crm/v2/v2-boot.js?v=20260911v"></script>
-  <script src="../../crm/v2/v2-profil.js?v=20260911v"></script>
+  <script src="../../crm/v2/v2-icons.js?v=20260911x"></script>
+  <script src="../../crm/v2/groupement-alias.js?v=20260911x"></script>
+  <script src="../../crm/v2/v2-boot.js?v=20260911x"></script>
+  <script src="../../crm/v2/v2-profil.js?v=20260911x"></script>
   <!-- Périmètre volontairement petit (règle de Will pour les univers séparés :
        « juste un visu, plus simple, pas aussi complet que jarvis ») :
        les officines + leur fiche, et le suivi du chiffre. Rien d'autre. -->
-  <script src="../../crm/v2/v2-pharma.js?v=20260911v"></script>
-  <script src="../../crm/v2/v2-pilotage.js?v=20260911v"></script>
+  <script src="../../crm/v2/v2-pharma.js?v=20260911x"></script>
+  <script src="../../crm/v2/v2-pilotage.js?v=20260911x"></script>
   <!-- App (boot en dernier) -->
-  <script src="../../crm/v2/v2-app.js?v=20260911v"></script>
+  <script src="../../crm/v2/v2-app.js?v=20260911x"></script>
 </body>
 </html>
