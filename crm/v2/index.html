@@ -12,7 +12,7 @@
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function () {
         var hadController = !!navigator.serviceWorker.controller;
-        navigator.serviceWorker.register('sw.js?v=20260911n').then(function (reg) {
+        navigator.serviceWorker.register('sw.js?v=20260911o').then(function (reg) {
           try { reg.update(); } catch (e) {}   // vérifie tout de suite au chargement          // pendant une longue session, re-vérifier périodiquement s'il y a une nouvelle version
           setInterval(function () { try { reg.update(); } catch (e) {} }, 5 * 60 * 1000);
           // dès qu'on revient sur l'appli (onglet réactivé) : re-check -> bannière « Actualiser » si nouvelle version
@@ -151,13 +151,13 @@
     <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   </noscript>
   <link rel="dns-prefetch" href="https://images.weserv.nl">
-  <link rel="stylesheet" href="v2.css?v=20260911n" />
-  <link rel="stylesheet" href="v2-motion.css?v=20260911n" />
+  <link rel="stylesheet" href="v2.css?v=20260911o" />
+  <link rel="stylesheet" href="v2-motion.css?v=20260911o" />
   <!-- Peau « Verrière » (choix Will 12/08/2026) — chargée en dernier, purement additive -->
-  <link rel="stylesheet" href="v2-verriere.css?v=20260911n" />
+  <link rel="stylesheet" href="v2-verriere.css?v=20260911o" />
 
   <!-- PWA : installable sur l'écran d'accueil (iOS + Android) -->
-  <link rel="manifest" href="manifest.webmanifest?v=20260911n" />
+  <link rel="manifest" href="manifest.webmanifest?v=20260911o" />
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />  <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="JARVIS" />
@@ -180,7 +180,7 @@
   <!-- 11/09/2026 — perf : copie locale épinglée (même fichier que rdv.html). Servie par le
        service worker, plus de troisième domaine avant le premier rendu, et la version ne
        change plus sans nous. Même origine = traces d'erreur complètes. -->
-  <script src="vendor/supabase/supabase-2.112.2.min.js?v=20260911n"></script>
+  <script src="vendor/supabase/supabase-2.112.2.min.js?v=20260911o"></script>
   <script>
     window.V2_DATAV = '20260904a';   // version des données lazy (pharma-fr-data.js) — recherche & fiches prospect
     // La marque de l'OUTIL. Will, 19/08/2026 : « c'est JARVIS CRM ; où il y a
@@ -207,12 +207,12 @@
 
   <!-- ═══ SOCLE (≈ 275 Ko) : le strict nécessaire à l'écran de connexion — 11/09/2026 ═══
        Avant : 80 scripts (6,05 Mo) chargés et exécutés AVANT le premier pixel. -->
-  <script src="v2-icons.js?v=20260911n"></script>
+  <script src="v2-icons.js?v=20260911o"></script>
   <!-- Table d'alias groupements (canonicalisation) : fusionne les doublons partout -->
-  <script src="groupement-alias.js?v=20260911n"></script>
-  <script src="v2-boot.js?v=20260911n"></script>
+  <script src="groupement-alias.js?v=20260911o"></script>
+  <script src="v2-boot.js?v=20260911o"></script>
   <!-- Profil commercial : lu DANS loadData (corrections manuelles de groupement) → avant les données -->
-  <script src="v2-profil.js?v=20260911n"></script>
+  <script src="v2-profil.js?v=20260911o"></script>
   <script>
     // ═══ LE RESTE (≈ 5,4 Mo) : MÊME ORDRE qu'avant, posé par V2.chargerScripts (v2-boot.js)
     // juste après le premier rendu, en scripts `async=false` (téléchargés en parallèle,
@@ -244,11 +244,11 @@
       'v2-visites.js', 'v2-campagne-cible.js'
     ];
   </script>
-  <link rel="stylesheet" href="vendor/leaflet/leaflet.css?v=20260911n">
-  <link rel="stylesheet" href="vendor/leaflet/MarkerCluster.css?v=20260911n">
-  <link rel="stylesheet" href="vendor/leaflet/MarkerCluster.Default.css?v=20260911n">
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css?v=20260911o">
+  <link rel="stylesheet" href="vendor/leaflet/MarkerCluster.css?v=20260911o">
+  <link rel="stylesheet" href="vendor/leaflet/MarkerCluster.Default.css?v=20260911o">
   <!-- App (boot), puis les deux couches qui enveloppent V2.render (sondage ≤ 500 ms : rester collées à v2-app) -->
-  <script src="v2-app.js?v=20260911n"></script>
-  <script src="v2-motion.js?v=20260911n"></script>
-  <script src="v2-bg.js?v=20260911n"></script>
+  <script src="v2-app.js?v=20260911o"></script>
+  <script src="v2-motion.js?v=20260911o"></script>
+  <script src="v2-bg.js?v=20260911o"></script>
 </body></html>

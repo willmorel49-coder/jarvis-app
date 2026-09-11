@@ -46,6 +46,33 @@
     return 3;
   }
 
+  // ── Ce qu'une boîte vendue rapporte à l'entreprise (marge produits) ──
+  // Règle donnée par Will le 11/09/2026, sur le prix net unitaire de la boîte :
+  //   · 0 – 4,33 €     → 0,12 € par boîte
+  //   · 4,33 – 468 €   → 3,04 % du prix de la boîte
+  //   · au-dessus de 468 € → 13 € par boîte (chers ET très chers)
+  // Les bornes sont celles de priceTier : les deux lectures de l'écran coïncident.
+  // Une ligne à quantité négative (avoir) rapporte négativement : c'est voulu.
+  var MARGE = { boitePetit: 0.12, tauxInter: 0.0304, boiteCher: 13 };
+  function margeVente(s) {
+    var t = priceTier(s.puNet), q = +s.qte || 0;
+    if (t === 0) return q * MARGE.boitePetit;
+    if (t === 1) return (s.mntNetHt || 0) * MARGE.tauxInter;
+    return q * MARGE.boiteCher;
+  }
+  V2.piloMargeVente = margeVente;
+  // Cumul sur un lot de ventes : total + détail par palier (boîtes, CA, marge)
+  function cumulMarge(ventes) {
+    var r = { total: 0, pal: [{ q: 0, ca: 0, m: 0 }, { q: 0, ca: 0, m: 0 }, { q: 0, ca: 0, m: 0 }], ca: 0, mois: {} };
+    for (var i = 0; i < ventes.length; i++) {
+      var s = ventes[i], t = priceTier(s.puNet), k = t < 2 ? t : 2, m = margeVente(s);
+      var o = r.pal[k]; o.q += (+s.qte || 0); o.ca += (s.mntNetHt || 0); o.m += m;
+      r.total += m; r.ca += (s.mntNetHt || 0); r.mois[mkey(s.year, s.month)] = 1;
+    }
+    r.nbMois = Object.keys(r.mois).length;
+    return r;
+  }
+
   // ── Index produit cip13 → {has_ameli, is_froid, artnature, isNR} ──
   var _idx = null, _idxStamp = null;
   function normCip(c) { return String(c == null ? '' : c).replace(/\D/g, ''); }
@@ -1253,6 +1280,82 @@
             '<div class="v2-kpi-d" style="color:var(--muted);margin-top:auto">par officine active</div></div>' +
         '</div>';
 
+      // ── Marge produits pour l'entreprise ─────────────────────────────
+      // Ce que les boîtes vendues rapportent (règle MARGE), sur la période.
+      // En vue « Tous » (direction) : le classement des commerciaux. Sur un
+      // commercial, ou pour un compte restreint : son chiffre seul — jamais
+      // celui d'un collègue (même règle de confidentialité que le reste).
+      // Hors OPSO : la règle est celle du canal grossiste Intégral.
+      var margeCard = '';
+      var comms = V2.commercials ? V2.commercials() : [];
+      if (!opso) {
+        var mg = cumulMarge(cur);
+        var PAL = [
+          { l: '0 – 4,33 €',   d: 'petits prix · 0,12 € la boîte',     color: TIERS[0].color },
+          { l: '4,33 – 468 €', d: 'intermédiaires · 3,04 % du prix',   color: TIERS[1].color },
+          { l: '> 468 €',      d: 'chers · 13 € la boîte',            color: TIERS[2].color },
+        ];
+        var palHtml = PAL.map(function (pz, i) {
+          var o = mg.pal[i], pct = mg.total > 0 ? Math.max(0, o.m) / mg.total * 100 : 0;
+          return '<div class="pilo-fam">' +
+            '<div class="pilo-fam-top">' +
+              '<span class="pilo-fam-l"><span class="pilo-fam-ico" style="color:' + pz.color + '">' + ICO('pill', 15) + '</span>' +
+                '<span>' + pz.l + '<small class="pilo-marge-d">' + pz.d + '</small></span></span>' +
+              '<span class="pilo-fam-v"><span class="mono" style="font-weight:700">' + V2.fmtEur(o.m) + '</span>' +
+                '<span class="mono pilo-fam-pct">' + V2.fmtNum(o.q) + ' boîte' + (Math.abs(o.q) > 1 ? 's' : '') + '</span></span>' +
+            '</div>' +
+            '<div class="pilo-bar"><span class="pilo-bar-fill" data-w="' + pct.toFixed(1) + '" style="width:0;background:' + pz.color + '"></span></div>' +
+          '</div>';
+        }).join('');
+        var margePct = mg.ca > 0 ? mg.total / mg.ca * 100 : 0;
+        var vueTous = !V2.commFilter && !(myComm && !voitTous);
+        var classement = '';
+        if (vueTous && comms.length > 1) {
+          // Classement : chaque commercial sur la MÊME période (V2.sales, pas le
+          // périmètre filtré). Les fichiers ne s'arrêtent pas tous au même mois :
+          // un commercial couvert sur moins de mois que les autres le DIT.
+          var parComm = {};
+          cur.forEach(function (s) { (parComm[s.commercial] || (parComm[s.commercial] = [])).push(s); });
+          var lignes = comms.map(function (cm) {
+            var r = cumulMarge(parComm[cm] || []); r.cm = cm; return r;
+          }).filter(function (r) { return r.ca !== 0 || r.total !== 0; })
+            .sort(function (a, b) { return b.total - a.total; });
+          var maxM = lignes.length ? Math.max(0, lignes[0].total) : 0;
+          classement = lignes.map(function (r, i) {
+            var pct = maxM > 0 ? Math.max(2, Math.max(0, r.total) / maxM * 100) : 0;
+            var partiel = mg.nbMois > 1 && r.nbMois < mg.nbMois;
+            return '<a class="v2-row pilo-marge-row" data-c="' + esc(r.cm) + '">' +
+              '<span class="mono pilo-rank">' + (i + 1) + '</span>' +
+              '<div style="flex:1;min-width:0">' +
+                '<div class="v2-row-name">' + esc(r.cm) +
+                  (partiel ? ' <small class="pilo-marge-partiel">' + r.nbMois + ' mois sur ' + mg.nbMois + '</small>' : '') + '</div>' +
+                '<div class="pilo-bar"><span class="pilo-bar-fill" data-w="' + pct.toFixed(1) + '" style="width:0;background:var(--c-mint)"></span></div>' +
+              '</div>' +
+              '<div class="pilo-vals">' +
+                '<div class="v2-row-val mono">' + V2.fmtEur(r.total) + '</div>' +
+                // Sur iPhone, le nombre de boîtes s'efface : sinon il coupait les prénoms (« Kari… »).
+                '<div class="v2-row-meta mono"><span class="pilo-marge-boites">' + V2.fmtNum(r.pal[0].q + r.pal[1].q + r.pal[2].q) + ' boîtes · </span>' + (r.ca > 0 ? (r.total / r.ca * 100).toFixed(2).replace('.', ',') + ' % du CA' : 'CA nul') + '</div>' +
+              '</div>' +
+              '<span class="v2-row-chev">' + ICO('chev', 16) + '</span>' +
+            '</a>';
+          }).join('');
+        }
+        margeCard =
+          '<div class="v2-card pilo-marge" data-reveal>' +
+            '<div class="v2-card-head" style="align-items:flex-start">' +
+              '<div><div class="v2-card-t">' + ICO('spark', 17) + 'Marge produits pour l\'entreprise</div>' +
+                '<div class="pilo-marge-sub">' + (pf ? esc(pf.label) : '') + ' · ' +
+                  (V2.commFilter ? esc(V2.commFilter) : (vueTous ? 'tous les commerciaux' : 'mon périmètre')) + '</div></div>' +
+              '<div class="pilo-marge-total"><span class="mono pilo-marge-v" data-count>' + V2.fmtEur(mg.total) + '</span>' +
+                '<span class="pilo-marge-pct mono">' + margePct.toFixed(2).replace('.', ',') + ' % du CA net</span></div>' +
+            '</div>' +
+            '<div class="pilo-marge-body">' +
+              '<div class="pilo-marge-pal">' + palHtml + '</div>' +
+              (classement ? '<div class="pilo-marge-rows"><div class="pilo-marge-rows-t">Par commercial</div>' + classement + '</div>' : '') +
+            '</div>' +
+          '</div>';
+      }
+
       // ── Chart 13 mois ──
       var chart = build13MonthChart(sales, anc);
 
@@ -1769,8 +1872,7 @@
       function seg(mode, lbl) {
         return '<button class="pilo-segbtn' + (PERIOD === mode ? ' on' : '') + '" data-p="' + mode + '">' + lbl + '</button>';
       }
-      // sélecteur commercial
-      var comms = V2.commercials ? V2.commercials() : [];
+      // sélecteur commercial (`comms` est calculé plus haut, avec la marge produits)
       var commSeg = '';
       var cb = function (val, lbl) { return '<button class="pilo-segbtn pilo-commbtn' + ((V2.commFilter || '') === val ? ' on' : '') + '" data-c="' + esc(val) + '">' + esc(lbl) + '</button>'; };
       if (opso) {
@@ -1877,6 +1979,7 @@
           (opsoSect ? opsoSect.html : '') +
           // ── ESSENTIEL, toujours visible : où j'en suis en un coup d'œil ──
           kpis +
+          margeCard +
           chart.html +
           // ── DÉTAIL, replié par défaut : Will déplie au besoin ──
           disc('Répartition de mon chiffre d\'affaires',
@@ -1899,6 +2002,11 @@
           else { PERIOD = b.dataset.p; }
           V2.render();
         };
+      });
+
+      // ── Classement marge : un commercial cliqué devient le périmètre affiché ──
+      Array.prototype.forEach.call(root.querySelectorAll('.pilo-marge-row'), function (a) {
+        a.onclick = function () { V2.commFilter = a.dataset.c || ''; CELL = { t: null }; V2.render(); };
       });
 
       // ── Blocs dépliables : on retient ce que Will laisse ouvert ─────
@@ -2260,6 +2368,19 @@
       '.pilo-ecart{font-weight:700;letter-spacing:-.01em}' +
       '.pilo-ecart.up{color:var(--c-mint-txt,#0F7A52)}' +
       '.pilo-ecart.dn{color:var(--c-rose-txt,#C7283D)}' +
+      // ── Marge produits pour l'entreprise ─────────────────────
+      '.pilo-marge{margin-bottom:14px}' +
+      '.pilo-marge-sub{font-size:12px;color:var(--muted);margin-top:3px}' +
+      '.pilo-marge-total{text-align:right;flex:none}' +
+      '.pilo-marge-v{display:block;font-size:clamp(24px,4vw,30px);font-weight:700;letter-spacing:-.03em;line-height:1.05;color:var(--ip-ink)}' +
+      '.pilo-marge-pct{display:block;font-size:11.5px;color:var(--muted);margin-top:4px}' +
+      '.pilo-marge-body{display:grid;grid-template-columns:1fr 1fr;gap:22px;padding:4px 20px 18px}' +
+      '@media(max-width:820px){.pilo-marge-body{grid-template-columns:1fr;gap:14px}}' +
+      '.pilo-marge-d{display:block;font-weight:500;font-size:11px;color:var(--muted);margin-top:1px}' +
+      '.pilo-marge-rows-t{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700;margin-bottom:4px}' +
+      '.pilo-marge-rows .v2-row{padding-left:0;padding-right:0}' +
+      '.pilo-marge-partiel{font-weight:500;font-size:11px;color:var(--c-amber-txt,#9A5B12)}' +
+      '@media(max-width:560px){.pilo-marge-boites{display:none}}' +
       '.pilo-ecart.eq{color:var(--muted)}' +
       // ── Mois écarté (fichier de ventes arrêté en cours de mois) ─
       '.pilo-ecarte{display:flex;align-items:center;gap:6px;margin-top:8px;font-size:11.5px;font-weight:600;color:var(--c-amber-txt,#9A5B12)}' +
