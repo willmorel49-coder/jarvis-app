@@ -10,11 +10,38 @@
 
    ⚠️ Bumper VER à chaque déploiement (aligné sur le ?v= de index.html).
    ═══════════════════════════════════════════════════════════════════ */
-var VER = '20260911k';
+var VER = '20260911l';
 var CACHE = 'jarvis-' + VER;
+
+/* 11/09/2026 (perf, phase 3) — le SOCLE est rangé dès l'installation : les
+   scripts et feuilles que index.html charge avant le premier rendu (le reste,
+   V2_MODULES et les données, entre dans le cache au fil de l'eau comme avant).
+   Une ouverture interrompue ou un premier passage hors-ligne trouve donc quand
+   même l'écran de connexion à la deuxième fois. Fichier par fichier, jamais
+   addAll : un seul 404 ferait échouer l'installation entière du service worker.
+   ⚠️ Liste à tenir alignée sur les <script>/<link> du socle de index.html. */
+var SOCLE = [
+  './index.html',
+  'v2.css', 'v2-motion.css', 'v2-verriere.css',
+  'vendor/leaflet/leaflet.css', 'vendor/leaflet/MarkerCluster.css', 'vendor/leaflet/MarkerCluster.Default.css',
+  'vendor/supabase/supabase-2.112.2.min.js',
+  'v2-icons.js', 'groupement-alias.js', 'v2-boot.js', 'v2-profil.js',
+  'v2-app.js', 'v2-motion.js', 'v2-bg.js',
+  'manifest.webmanifest'
+];
 
 self.addEventListener('install', function (e) {
   self.skipWaiting(); // le nouveau SW prend la main tout de suite
+  e.waitUntil(
+    caches.open(CACHE).then(function (c) {
+      return Promise.all(SOCLE.map(function (f) {
+        var url = f === './index.html' ? f : f + '?v=' + VER;
+        return fetch(url).then(function (r) {
+          if (r && r.ok && r.type === 'basic') return c.put(url, r);
+        }).catch(function () {});   // un fichier absent n'empêche pas l'installation
+      }));
+    }).catch(function () {})
+  );
 });
 
 self.addEventListener('activate', function (e) {

@@ -546,6 +546,113 @@
     } catch (e) { telecharger(null); }
   }
 
+  // ── Adresses signées EN LOT (11/09/2026, perf, phase 3) ──────────────────
+  // Même contrat qu'adresseProtegee (3 essais, session renouvelée entre deux),
+  // mais UNE requête pour toute la liste : les 28 tranches de ventes coûtaient
+  // 28 signatures à ~130 ms chacune, l'une après l'autre. Rend un tableau
+  // d'adresses (null pour un fichier refusé), dans l'ordre demandé.
+  function adressesProtegees(fichiers, essai) {
+    essai = essai || 1;
+    var c = (V2.sb && V2.sb()) || null;
+    var vide = fichiers.map(function () { return null; });
+    if (!c || !c.storage || !fichiers.length) return Promise.resolve(vide);
+    function echouer() {
+      if (essai >= 3) {
+        fichiers.forEach(function (f) { V2.protegeEchec[f] = true; });
+        console.warn('[V2] adresses protégées refusées pour ' + fichiers.length + ' fichier(s) après 3 essais');
+        return Promise.resolve(vide);
+      }
+      return rafraichirSession(c)
+        .then(function () { return attendre(essai * 400); })
+        .then(function () { return adressesProtegees(fichiers, essai + 1); });
+    }
+    try {
+      return c.storage.from(SEAU_PROTEGE).createSignedUrls(fichiers, 3600)
+        .then(function (r) {
+          var l = (r && r.data) || null;
+          if (!l || !l.length) return echouer();
+          var parChemin = {};
+          l.forEach(function (x) { if (x && (x.signedUrl || x.signedURL)) parChemin[x.path] = x.signedUrl || x.signedURL; });
+          var urls = fichiers.map(function (f) { return parChemin[f] || null; });
+          // Un seul refus dans le lot = on refait le lot entier (même cause
+          // probable : jeton pas encore renouvelé).
+          if (urls.some(function (u) { return !u; })) return echouer();
+          fichiers.forEach(function (f) { delete V2.protegeEchec[f]; });
+          return urls;
+        })
+        .catch(echouer);
+    } catch (e) { return echouer(); }
+  }
+
+  // Rend, DANS L'ORDRE, les textes des fichiers protégés `fichiers` :
+  // rangement local d'abord (lu pour tous d'un coup), UNE signature pour tout
+  // ce qui manque, puis au plus `enVol` téléchargements à la fois. Chaque texte
+  // est remis par onTexte(texte, suite) : le suivant n'est remis qu'après
+  // l'appel de suite(), donc jamais plus de `enVol` + 1 textes en mémoire —
+  // c'est la garde contre la panne mémoire du 13/08 (iPhone). ko(nom) sinon.
+  function textesProteges(fichiers, version, enVol, onTexte, ko) {
+    var nomCache = CACHE_PROTEGE + version;
+    var cle = function (f) { return 'https://protege.local/' + f; };
+    var n = fichiers.length, textes = {}, urls = null, cache = null;
+    var prochainRemis = 0, prochainLance = 0, remiseEnCours = false, fini = false;
+    function rater(nom) { if (fini) return; fini = true; ko(nom); }
+    function remettre() {
+      if (fini || remiseEnCours || prochainRemis >= n) return;
+      var t = textes[prochainRemis];
+      if (t === undefined) return;
+      delete textes[prochainRemis];
+      remiseEnCours = true;
+      var i = prochainRemis++;
+      onTexte(t, function () {
+        remiseEnCours = false;
+        if (prochainRemis >= n) { fini = true; return; }
+        lancer(); remettre();
+      });
+    }
+    function telecharger(i) {
+      var f = fichiers[i];
+      fetch(urls[i]).then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.text();
+      }).then(function (t) {
+        if (!t || t.length < 10) throw new Error('réponse vide');
+        try { if (cache) cache.put(cle(f), new Response(t, { headers: { 'Content-Type': 'text/javascript' } })); } catch (e) {}
+        textes[i] = t; remettre();
+      }).catch(function () { rater(f); });
+    }
+    // Lance les téléchargements manquants, sans dépasser `enVol` en vol.
+    function lancer() {
+      while (!fini && prochainLance < n && prochainLance - prochainRemis < enVol) {
+        var i = prochainLance++;
+        if (textes[i] !== undefined) continue;      // déjà dans le rangement local
+        if (!urls || !urls[i]) { rater(fichiers[i]); return; }
+        telecharger(i);
+      }
+    }
+    function demarrer(hits) {
+      var manquants = [];
+      fichiers.forEach(function (f, i) { if (hits[i] !== undefined) textes[i] = hits[i]; else manquants.push(i); });
+      if (!manquants.length) { urls = []; lancer(); remettre(); return; }
+      adressesProtegees(manquants.map(function (i) { return fichiers[i]; })).then(function (l) {
+        urls = [];
+        manquants.forEach(function (i, j) { urls[i] = l[j]; });
+        lancer(); remettre();
+      });
+    }
+    function lireRangement(c) {
+      cache = c;
+      if (!c) { demarrer([]); return; }
+      Promise.all(fichiers.map(function (f) {
+        return c.match(cle(f)).then(function (hit) { return hit ? hit.text() : undefined; })
+          .catch(function () { return undefined; });
+      })).then(demarrer, function () { demarrer([]); });
+    }
+    try {
+      caches.open(nomCache).then(function (c) { nettoyerVieuxRangements(nomCache); lireRangement(c); },
+                                 function () { lireRangement(null); });
+    } catch (e) { lireRangement(null); }
+  }
+
   // Exécute un texte de fichier de données comme un VRAI <script> classique
   // (adresse blob) : un `const X` y crée la même liaison globale qu'un script
   // ordinaire — bridge() la recopie ensuite sur window, comme d'habitude.
@@ -696,7 +803,7 @@
   V2.chargerScripts = function (urls) {
     urls = urls || [];
     if (!urls.length) return Promise.resolve();
-    var V = '?v=' + (window.V2_VER || '20260911k');
+    var V = '?v=' + (window.V2_VER || '20260911l');
     return Promise.all(urls.map(function (u) {
       return new Promise(function (resolve) {
         var s = document.createElement('script');
@@ -1041,6 +1148,10 @@
   // le genre de panne muette qui a coûté deux jours les 13 et 14/08.
   // Ce repli ne sert que si l'en-tête est d'une version antérieure au 15/08.
   var WML_TRANCHES_REPLI = 11;   // 11 tranches depuis le 03/09/2026
+  // Téléchargements de tranches en vol au plus (phase 3). 3 = ~4,5 Mo de texte
+  // en attente au pire, loin des 17 Mo d'un seul fichier qui avaient tué
+  // l'iPhone le 13/08. À ne pas monter sans remesurer sur téléphone.
+  var TRANCHES_EN_VOL = 3;
 
   function urlsTranches(V) {
     var base = (window.V2_DATA_BASE || '../');
@@ -1096,7 +1207,7 @@
     // de le servir, et le lecteur compacté ne trouverait pas ses dictionnaires.
     // Pas besoin de le suivre à chaque déploiement en revanche : quand `VER` de
     // sw.js change, l'activation du service worker efface tous les caches.
-    var V = '?v=20260911k';
+    var V = '?v=20260911l';
     V2.versionDonnees = V;   // lu par chargerScriptProtege (fiche carte)
     var promises = keys.map(function (k) {
       var src = (window.V2_DATA_BASE || '../') + DATA_FILES[k];
@@ -1154,21 +1265,25 @@
               // des chiffres par pharmacie, protégés. Elles ne sont plus dans
               // le dépôt : elles arrivent par adresse signée, une par une
               // (pic mémoire = une tranche), avec le rangement local.
+              // 11/09/2026 (phase 3) — 28 tranches, mesurées une par une :
+              // signature ~130 ms + téléchargement ~400 ms chacune = 22 s.
+              // Maintenant : UNE signature pour toutes, TRANCHES_EN_VOL
+              // téléchargements à la fois, mais toujours EXÉCUTÉES une par
+              // une et dans l'ordre (le pic mémoire reste celui d'une tranche
+              // en cours d'exécution + quelques textes en attente).
               var n = window.WML_TRANCHES || WML_TRANCHES_REPLI;
-              var ti = 1;
-              (function trancheSuivante() {
-                if (ti > n) { finir(); return; }
-                var nom = 'wml-ventes-' + (ti < 10 ? '0' + ti : ti) + '.js';
-                ti++;
-                texteProtege(nom, V, function (texte) {
-                  poserTexte(texte, function () { trancheSuivante(); });
-                }, function () {
-                  console.warn('[V2] tranche protégée manquante : ' + nom);
-                  V2.protegeEchec[k] = true;
-                  delete pending[src];
-                  resolve();
-                });
-              })();
+              var noms = [];
+              for (var ti = 1; ti <= n; ti++) noms.push('wml-ventes-' + (ti < 10 ? '0' + ti : ti) + '.js');
+              var rang = 0;
+              textesProteges(noms, V, TRANCHES_EN_VOL, function (texte, suite) {
+                rang++;
+                poserTexte(texte, function () { if (rang >= n) finir(); else suite(); });
+              }, function (nom) {
+                console.warn('[V2] tranche protégée manquante : ' + nom);
+                V2.protegeEchec[k] = true;
+                delete pending[src];
+                resolve();
+              });
               return;
             }
             finir();
