@@ -506,7 +506,7 @@
       if (!window.BENCHMARK) {
         root.innerHTML = V2.topbar({ back: true }) +
           '<div class="v2-loading"><div class="v2-spinner"></div><div>Chargement du catalogue…</div></div>';
-        V2.loadFiles(['bench', 'sagitta']).then(function () { idxBuilt = false; V2.render(); });
+        V2.loadFiles(['bench', 'sagitta']).then(function () { idxBuilt = false; if (V2.route && V2.route.name !== 'catalogue') return; /* 11/09/2026 (phase 4) : l'écran a pu changer pendant l'attente */ V2.render(); });
         return;
       }
       buildIndex();

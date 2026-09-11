@@ -732,7 +732,7 @@
         V2._presBenchTried = true;   // une seule tentative → pas de boucle de rendu si le chargement échoue
         root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
           '<div class="v2-loading"><div class="v2-spinner"></div><div>Chargement…</div></div>';
-        V2.loadFiles(['bench']).then(function () { V2.render(); });
+        V2.loadFiles(['bench']).then(function () { if (V2.route && V2.route.name !== 'presentation') return; /* 11/09/2026 (phase 4) : l'écran a pu changer pendant l'attente */ V2.render(); });
         return;
       }
       var B = window.BENCHMARK || [];   // repli si le benchmark n'a pas chargé (valeurs de repli plus bas)

@@ -733,7 +733,7 @@
 
       if (!hasData) {
         root.innerHTML = top + '<div class="v2-wrap narrow"><div class="co-hero"><h1>Copilote</h1><p>Chargement des données réseau…</p></div></div>';
-        if (V2.loadFiles) V2.loadFiles(['bench']).then(function () { V2.render(); });
+        if (V2.loadFiles) V2.loadFiles(['bench']).then(function () { if (V2.route && V2.route.name !== 'marche') return; /* 11/09/2026 (phase 4) : l'écran a pu changer pendant l'attente */ V2.render(); });
         return;
       }
 
