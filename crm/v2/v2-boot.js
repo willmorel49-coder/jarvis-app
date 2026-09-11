@@ -565,11 +565,17 @@
   // version, l'app marche quand même.
   var CACHE_PROTEGE = 'v2-protege-';   // + version des données (V), voir loadFiles
 
+  // 11/09/2026 — les tranches de ventes ont leur propre tiroir (CACHE_VENTES,
+  // versionné par l'empreinte des tranches) : chaque famille ne nettoie que la
+  // sienne, sinon les prix Offilog/Sagitta effaceraient les ventes et inversement.
+  var CACHE_VENTES = CACHE_PROTEGE + 'ventes-';
   function nettoyerVieuxRangements(courant) {
+    var ventes = courant.indexOf(CACHE_VENTES) === 0;
     try {
       caches.keys().then(function (ks) {
         ks.forEach(function (k) {
-          if (k.indexOf(CACHE_PROTEGE) === 0 && k !== courant) caches.delete(k);
+          if (k.indexOf(CACHE_PROTEGE) === 0 && k !== courant &&
+              (k.indexOf(CACHE_VENTES) === 0) === ventes) caches.delete(k);
         });
       });
     } catch (e) {}
@@ -861,7 +867,7 @@
   V2.chargerScripts = function (urls) {
     urls = urls || [];
     if (!urls.length) return Promise.resolve();
-    var V = '?v=20260911y' + (window.V2_VER || '20260911v');
+    var V = '?v=20260911z' + (window.V2_VER || '20260911v');
     return Promise.all(urls.map(function (u) {
       return new Promise(function (resolve) {
         var s = document.createElement('script');
@@ -1265,7 +1271,7 @@
     // de le servir, et le lecteur compacté ne trouverait pas ses dictionnaires.
     // Pas besoin de le suivre à chaque déploiement en revanche : quand `VER` de
     // sw.js change, l'activation du service worker efface tous les caches.
-    var V = '?v=20260911y';
+    var V = '?v=20260911z';
     V2.versionDonnees = V;   // lu par chargerScriptProtege (fiche carte)
     var promises = keys.map(function (k) {
       var src = (window.V2_DATA_BASE || '../') + DATA_FILES[k];
@@ -1338,7 +1344,13 @@
               // ventes. Puis on lui donne l'avancement, tranche par tranche.
               V2.ventesProgres = { n: 0, total: n };
               if (V2.onOfficinesPretes) { try { V2.onOfficinesPretes(); } catch (e) { console.warn('[V2] onOfficinesPretes', e); } }
-              textesProteges(noms, V, TRANCHES_EN_VOL, function (texte, suite) {
+              // 11/09/2026 — rangées sous l'EMPREINTE des tranches (posée par
+              // decouper_wml.py dans l'en-tête), pas sous le jeton de mise en
+              // ligne : une mise en ligne sans nouvelles ventes ne retélécharge
+              // plus rien, et de nouvelles ventes changent l'empreinte d'elles-
+              // mêmes. En-tête sans empreinte (ancien découpage) : jeton V.
+              var versionVentes = 'ventes-' + (window.WML_TRANCHES_EMPREINTE || V);
+              textesProteges(noms, versionVentes, TRANCHES_EN_VOL, function (texte, suite) {
                 rang++;
                 V2.ventesProgres = { n: rang, total: n };
                 if (V2.onVentesProgres) { try { V2.onVentesProgres(rang, n); } catch (e) {} }

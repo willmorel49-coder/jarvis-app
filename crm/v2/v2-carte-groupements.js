@@ -32,7 +32,8 @@
   function ensureData(cb) {
     if (window.PHARMA_FR) { cb(); return; }
     var done = false, fin = function (e) { if (!done) { done = true; cb(e); } };
-    var s = document.createElement('script'); s.src = 'pharma-fr-data.js' + CB;
+    // Même adresse que v2-app.js (jeton des données V2_DATAV) : un seul téléchargement.
+    var s = document.createElement('script'); s.src = 'pharma-fr-data.js?v=' + (window.V2_DATAV || '');
     s.onload = function () { if (V2.loadFiles) V2.loadFiles(['pharmafrca']); fin(window.PHARMA_FR ? null : 'err'); };
     s.onerror = function () { fin('err'); };
     document.head.appendChild(s);

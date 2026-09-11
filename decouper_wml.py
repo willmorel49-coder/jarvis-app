@@ -25,6 +25,7 @@ Relançable sans risque : il refuse de tourner sur un fichier déjà découpé.
 
 ⚠️ À RELANCER après chaque `generate_wml_v2.py`, sinon le gros fichier revient.
 """
+import hashlib
 import json
 import os
 import sys
@@ -128,6 +129,14 @@ def main():
     # tranche oubliée, ce sont des ventes manquantes SANS aucune erreur visible
     # — le genre de panne muette qui a coûté deux jours les 13 et 14/08.
     tete.append('window.WML_TRANCHES = {};'.format(len(tranches)))
+    # 11/09/2026 — EMPREINTE du contenu des tranches : v2-boot.js range les
+    # ventes sur l'appareil sous ce nom. Même ventes = même empreinte = rien à
+    # retélécharger après une mise en ligne ; nouvelles ventes = nouvelle
+    # empreinte = retéléchargement automatique, sans jeton à bumper à la main.
+    emp = hashlib.sha1()
+    for tr in tranches:
+        emp.update(compact(tr).encode('utf-8'))
+    tete.append("window.WML_TRANCHES_EMPREINTE = '{}';".format(emp.hexdigest()[:12]))
     assigns = 'try{window.WML_OFFICINES=WML_OFFICINES;'
     if mois is not None:
         assigns += 'window.WML_MOIS=WML_MOIS;'
