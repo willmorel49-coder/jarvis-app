@@ -57,8 +57,14 @@
   // PLUS que la règle ci-dessus, quel que soit son prix. Un produit est « froid »
   // au sens de l'index produit (is_froid, onglet « TOP Froid » du TOP IP), la
   // même lecture que la répartition par famille de l'écran : familyOf().
-  var MARGE = { boitePetit: 0.12, tauxInter: 0.0304, boiteCher: 13, boiteFroid: 0.63 };
-  function margeBase(s) {
+  // Non remboursés (Will, 11/09/2026) : pas de barème par prix — le prix de vente
+  // est le prix d'achat × 1,03, donc la marge d'une ligne = net vendu − net ÷ 1,03.
+  // « NR » au sens de l'index produit (isNR, short list Sagitta), comme la
+  // répartition par famille. Le supplément froid s'ajoute quand même.
+  var MARGE = { boitePetit: 0.12, tauxInter: 0.0304, boiteCher: 13, boiteFroid: 0.63, coefNR: 1.03 };
+  function estNR(s, idx) { var info = (idx || productIndex())[normCip(s.artCode)]; return !!(info && info.isNR); }
+  function margeBase(s, idx) {
+    if (estNR(s, idx)) return (s.mntNetHt || 0) * (1 - 1 / MARGE.coefNR);
     var t = priceTier(s.puNet), q = +s.qte || 0;
     if (t === 0) return q * MARGE.boitePetit;
     if (t === 1) return (s.mntNetHt || 0) * MARGE.tauxInter;
@@ -66,16 +72,17 @@
   }
   function estFroid(s, idx) { return familyOf(s, idx || productIndex()) === 'froid'; }
   function margeFroid(s, idx) { return estFroid(s, idx) ? (+s.qte || 0) * MARGE.boiteFroid : 0; }
-  function margeVente(s, idx) { return margeBase(s) + margeFroid(s, idx); }
+  function margeVente(s, idx) { idx = idx || productIndex(); return margeBase(s, idx) + margeFroid(s, idx); }
   V2.piloMargeVente = margeVente;
   // Cumul sur un lot de ventes : total + détail par palier (boîtes, CA, marge)
-  // + le supplément chaîne du froid à part (les trois paliers + froid = total).
+  // + les non remboursés à part (hors paliers) + le supplément chaîne du froid à
+  // part : trois paliers + NR + froid = total.
   function cumulMarge(ventes, idx) {
     idx = idx || productIndex();
-    var r = { total: 0, pal: [{ q: 0, ca: 0, m: 0 }, { q: 0, ca: 0, m: 0 }, { q: 0, ca: 0, m: 0 }], froid: { q: 0, m: 0 }, ca: 0, mois: {} };
+    var r = { total: 0, pal: [{ q: 0, ca: 0, m: 0 }, { q: 0, ca: 0, m: 0 }, { q: 0, ca: 0, m: 0 }], nr: { q: 0, ca: 0, m: 0 }, froid: { q: 0, m: 0 }, ca: 0, mois: {} };
     for (var i = 0; i < ventes.length; i++) {
-      var s = ventes[i], t = priceTier(s.puNet), k = t < 2 ? t : 2, m = margeBase(s), mf = margeFroid(s, idx);
-      var o = r.pal[k]; o.q += (+s.qte || 0); o.ca += (s.mntNetHt || 0); o.m += m;
+      var s = ventes[i], t = priceTier(s.puNet), k = t < 2 ? t : 2, m = margeBase(s, idx), mf = margeFroid(s, idx);
+      var o = estNR(s, idx) ? r.nr : r.pal[k]; o.q += (+s.qte || 0); o.ca += (s.mntNetHt || 0); o.m += m;
       if (mf) { r.froid.q += (+s.qte || 0); r.froid.m += mf; }
       r.total += m + mf; r.ca += (s.mntNetHt || 0); r.mois[mkey(s.year, s.month)] = 1;
     }
@@ -1307,9 +1314,11 @@
         ];
         // Le supplément chaîne du froid s'ajoute aux trois paliers : la 4e ligne
         // n'apparaît que s'il y a eu des boîtes froid sur la période.
-        if (mg.froid.q) PAL.push({ l: 'Chaîne du froid', d: 'en plus · 0,63 € la boîte', color: 'var(--c-froid)', ico: 'froid', froid: true });
+        // Les non remboursés sortent des paliers : leur ligne à eux, si la période en a.
+        if (mg.nr.q || mg.nr.ca) PAL.push({ l: 'Non remboursés', d: 'prix libre · coefficient 1,03', color: 'var(--c-amber)', bloc: 'nr' });
+        if (mg.froid.q) PAL.push({ l: 'Chaîne du froid', d: 'en plus · 0,63 € la boîte', color: 'var(--c-froid)', ico: 'froid', bloc: 'froid' });
         var palHtml = PAL.map(function (pz, i) {
-          var o = pz.froid ? mg.froid : mg.pal[i], pct = mg.total > 0 ? Math.max(0, o.m) / mg.total * 100 : 0;
+          var o = pz.bloc ? mg[pz.bloc] : mg.pal[i], pct = mg.total > 0 ? Math.max(0, o.m) / mg.total * 100 : 0;
           return '<div class="pilo-fam">' +
             '<div class="pilo-fam-top">' +
               '<span class="pilo-fam-l"><span class="pilo-fam-ico" style="color:' + pz.color + '">' + ICO(pz.ico || 'pill', 15) + '</span>' +
@@ -1347,7 +1356,7 @@
               '<div class="pilo-vals">' +
                 '<div class="v2-row-val mono">' + V2.fmtEur(r.total) + '</div>' +
                 // Sur iPhone, le nombre de boîtes s'efface : sinon il coupait les prénoms (« Kari… »).
-                '<div class="v2-row-meta mono"><span class="pilo-marge-boites">' + V2.fmtNum(r.pal[0].q + r.pal[1].q + r.pal[2].q) + ' boîtes · </span>' + (r.ca > 0 ? (r.total / r.ca * 100).toFixed(2).replace('.', ',') + ' % du CA' : 'CA nul') + '</div>' +
+                '<div class="v2-row-meta mono"><span class="pilo-marge-boites">' + V2.fmtNum(r.pal[0].q + r.pal[1].q + r.pal[2].q + r.nr.q) + ' boîtes · </span>' + (r.ca > 0 ? (r.total / r.ca * 100).toFixed(2).replace('.', ',') + ' % du CA' : 'CA nul') + '</div>' +
               '</div>' +
               '<span class="v2-row-chev">' + ICO('chev', 16) + '</span>' +
             '</a>';
