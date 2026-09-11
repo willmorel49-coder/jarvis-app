@@ -1,0 +1,76 @@
+/* ═══════════════════════════════════════════════════════════════════
+   ESCALE PHARMA · thème par-dessus crm/v2/v2.css (11/09/2026)
+   Bascule la couleur primaire IP bleue → bleu profond d'Escale #0B6E8F
+   (une escale, un port : eau profonde, lumière qui vient d'en haut).
+   Ne redéfinit PAS la mise en page V2 — uniquement la lumière et l'accent.
+   Une seule couleur d'accent, un papier, une encre (règle de Will).
+   ═══════════════════════════════════════════════════════════════════ */
+:root {
+  --ip-blue:   #0B6E8F;
+  --ip-blue-d: #084F68;
+  --halo:      #E3F1F6;
+  --c-fiche:   #0B6E8F;
+  --accent:    #0B6E8F;
+  --sh-esc-glow:  0 4px 12px rgba(11,110,143,.26), 0 1px 0 rgba(255,255,255,.2) inset;
+  --sh-esc-hover: 0 6px 18px rgba(11,110,143,.36);
+}
+
+/* ── La source de lumière : un halo qui descend du haut, jamais un aplat ── */
+.v2-halo {
+  background:
+    radial-gradient(ellipse 55% 100% at 50% 0%, #E3F1F6, transparent 70%),
+    radial-gradient(ellipse 30% 40% at 85% 8%, rgba(11,110,143,.10), transparent 70%) !important;
+}
+
+.v2-logo {
+  background: linear-gradient(150deg, var(--ip-blue), var(--ip-blue-d)) !important;
+  box-shadow: var(--sh-esc-glow) !important;
+}
+.v2-brand-dot { background: var(--ip-blue) !important; }
+
+.v2-top-search svg, .v2-cmdk-search svg, .v2-search svg { color: var(--ip-blue) !important; }
+.v2-top-search:hover, .v2-search:hover, .v2-search:focus-within {
+  border-color: rgba(11,110,143,.4) !important;
+  box-shadow: 0 0 0 4px var(--halo), var(--sh-2) !important;
+}
+.v2-back:hover { border-color: rgba(11,110,143,.3) !important; }
+.v2-pil:hover { border-color: color-mix(in srgb, var(--accent) 30%, var(--line)) !important; }
+.v2-spinner { border-top-color: var(--ip-blue) !important; }
+.ph-mbar-fill { background: linear-gradient(180deg, var(--ip-blue), var(--ip-blue-d)) !important; }
+.opp-add.on { background: var(--ip-blue) !important; border-color: var(--ip-blue) !important; box-shadow: 0 2px 6px rgba(11,110,143,.38) !important; }
+.opp-add:hover { border-color: var(--ip-blue) !important; color: var(--ip-blue) !important; background: color-mix(in srgb, var(--ip-blue) 8%, transparent) !important; }
+.v2-row-opp { color: var(--ip-blue) !important; background: color-mix(in srgb, var(--ip-blue) 11%, transparent) !important; border-color: color-mix(in srgb, var(--ip-blue) 26%, transparent) !important; }
+.v2-card-link { color: var(--ip-blue) !important; }
+.v2-cmdk-item.sel, .v2-cmdk-item:hover { background: var(--halo) !important; }
+.v2-cmdk-item .ico { color: var(--ip-blue) !important; }
+.v2-chip.b { background: var(--halo) !important; color: var(--ip-blue) !important; }
+.v2-pil-num {
+  color: var(--accent) !important;
+  border-color: color-mix(in srgb, var(--accent) 24%, transparent) !important;
+  background: color-mix(in srgb, var(--accent) 7%, transparent) !important;
+}
+
+/* ── Accueil à deux tuiles : elles prennent la largeur, la lumière glisse dessus ── */
+.v2-piliers { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)) !important; }
+@keyframes esc-pil-in { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+.v2-piliers .v2-pil {
+  animation: esc-pil-in .5s cubic-bezier(.22,.61,.36,1) both;
+  transition: transform .26s cubic-bezier(.22,.61,.36,1), box-shadow .26s cubic-bezier(.22,.61,.36,1), border-color .26s ease !important;
+  background: linear-gradient(165deg, #FFFFFF 0%, #F6FAFC 100%) !important;
+}
+.v2-piliers .v2-pil:nth-child(1) { animation-delay: .03s; }
+.v2-piliers .v2-pil:nth-child(2) { animation-delay: .09s; }
+.v2-piliers .v2-pil:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: 0 14px 30px rgba(11,110,143,.15), 0 2px 6px rgba(11,110,143,.08) !important;
+}
+.v2-piliers .v2-pil:active { transform: translateY(-1px) scale(.995) !important; }
+.v2-piliers .v2-pil .v2-pil-ico { transition: transform .26s cubic-bezier(.22,.61,.36,1); }
+.v2-piliers .v2-pil:hover .v2-pil-ico { transform: scale(1.08) rotate(-2deg); }
+.v2-piliers .v2-pil .v2-pil-go .arrow { display: inline-block; transition: transform .26s cubic-bezier(.22,.61,.36,1); }
+.v2-piliers .v2-pil:hover .v2-pil-go .arrow { transform: translateX(4px); }
+
+@media (prefers-reduced-motion: reduce) {
+  .v2-piliers .v2-pil, .v2-piliers .v2-pil .v2-pil-ico, .v2-piliers .v2-pil .v2-pil-go .arrow { animation: none !important; transition: none !important; }
+  .v2-piliers .v2-pil:hover { transform: none !important; }
+}

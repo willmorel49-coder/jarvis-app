@@ -1910,7 +1910,7 @@
         commSeg = '';
       } else if (myComm && !voitTous) {
         // Restreint : uniquement son périmètre ou le global national (jamais un collègue nommé)
-        commSeg = '<div class="pilo-seg" style="margin-right:8px">' + cb(myComm, 'Moi') + cb('', 'Global national') + '</div>';
+        commSeg = '<div class="pilo-seg" style="margin-right:8px">' + cb(myComm, 'Moi') + cb('', (window.V2_BRAND && window.V2_BRAND.escale) ? 'Global Escale' : 'Global national') + '</div>';
       } else if (comms.length > 1) {
         // Super-admin : Tous + chaque commercial
         commSeg = '<div class="pilo-seg" style="margin-right:8px">' + cb('', 'Tous') + comms.map(function (cm) { return cb(cm, cm); }).join('') + '</div>';

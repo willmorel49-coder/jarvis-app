@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#11a63c" />
+  <meta name="theme-color" content="#0B6E8F" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <title>OPSO Santé · Espace groupement</title>
+  <title>Escale Pharma · Espace commercial</title>
 
   <script>
     try {
@@ -27,20 +27,22 @@
   <link rel="preconnect" href="https://cdn.fontshare.com" crossorigin>
   <link href="https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,700,900&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <!-- Charte Normandie Pharma : Varela Round (digital) + Caveat (citation manuscrite) -->
-  <link href="https://fonts.googleapis.com/css2?family=Varela+Round&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
   <link rel="dns-prefetch" href="https://images.weserv.nl">
-  <!-- Socle visuel V2 (partagé) + override thème vert OPSO -->
+  <!-- Socle visuel V2 (partagé) + thème Escale Pharma par-dessus -->
   <link rel="stylesheet" href="../../crm/v2/v2.css?v=20260911t" />
-  <link rel="stylesheet" href="opso-theme.css?v=20260911t" />
+  <link rel="stylesheet" href="escale-theme.css?v=20260911t" />
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     window.SUPABASE_URL = 'https://iyvavhnlhxksokkerkos.supabase.co';
     window.SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5dmF2aG5saHhrc29ra2Vya29zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1NjU2NTYsImV4cCI6MjA5MzE0MTY1Nn0.eMdW6vUdoyVpZbqKXp6FNYTajwKEf4x-Xyj5zj1igO4';
-    // Mode OPSO : les fichiers data lourds restent dans crm/ (chemin remappé)
+    // Espace ESCALE PHARMA (11/09/2026) — un visu pour Alexandre Lovy et ses quatre
+    // commerciaux (Guy, Tiffany, Philippe, Germain). Mêmes modules que le CRM, données
+    // bornées au périmètre Escale dans v2-boot (V2.applyEscalePerimeter).
+    // Les fichiers data lourds restent dans crm/ (chemin remappé).
     window.V2_DATA_BASE = '../../crm/';
-    window.V2_BRAND = { name: 'OPSO Santé', sub: 'Espace groupement', opso: true, logo: 'assets/opsosante-logo.png', logoWhite: 'assets/opsosante-logo-blanc.png' };
+    window.V2_BRAND = { name: 'Escale Pharma', sub: 'Espace commercial', escale: true };
+    window.V2_VER = '20260911t';
     window.ensureHtml2Pdf = function () {
       if (window.html2pdf) return Promise.resolve();
       return new Promise(function (resolve, reject) {
@@ -57,28 +59,14 @@
 
   <!-- Socle (modules partagés crm/v2) -->
   <script src="../../crm/v2/v2-icons.js?v=20260911t"></script>
-  <!-- Données officines + ventes WML (source de vérité) -->
-  <!-- `wml-officines-data.js` n'est plus chargé ici. Il contient les 691
-       officines clientes avec leur chiffre d'affaires et 437 848 lignes de
-       ventes : servi en clair depuis un dépôt public, il était téléchargeable
-       par n'importe qui. Il vit désormais dans un espace Supabase fermé, et
-       `v2-app.js` — partagé par les deux apps — le demande au chargeur, qui
-       n'obtient son adresse qu'avec une session valide. Cette balise faisait
-       donc doublon en plus d'être une fuite. -->
-  <!-- Listing officiel OPSO Santé (129 adhérents) — définit le périmètre -->
-  <script src="../opso-listing-2026.js?v=20260911t"></script>
-  <!-- Achats par officine (opso/STATISTIQUES) — alimente le suivi groupement -->
+  <script src="../../crm/v2/groupement-alias.js?v=20260911t"></script>
   <script src="../../crm/v2/v2-boot.js?v=20260911t"></script>
-  <!-- Piliers -->
-  <!-- 04/09/2026, décision Will : l'app OPSO est un VISU pour le groupement,
-       pas un JARVIS complet. Retirés : v2-pharma (écran commercial interne),
-       v2-catalogue (toutes nos conditions), v2-fiches (outil de vente).
-       Restent : Suivi groupement, Fiches marketing OPSO, Offilog. -->
-
-  <script src="../../crm/v2/v2-offilog.js?v=20260911t"></script>
+  <script src="../../crm/v2/v2-profil.js?v=20260911t"></script>
+  <!-- Périmètre volontairement petit (règle de Will pour les univers séparés :
+       « juste un visu, plus simple, pas aussi complet que jarvis ») :
+       les officines + leur fiche, et le suivi du chiffre. Rien d'autre. -->
+  <script src="../../crm/v2/v2-pharma.js?v=20260911t"></script>
   <script src="../../crm/v2/v2-pilotage.js?v=20260911t"></script>
-  <!-- Fiches marketing OPSO (charte Normandie Pharma) — OPSO uniquement -->
-  <script src="../../crm/v2/v2-marketing.js?v=20260911t"></script>
   <!-- App (boot en dernier) -->
   <script src="../../crm/v2/v2-app.js?v=20260911t"></script>
 </body>
