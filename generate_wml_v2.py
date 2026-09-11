@@ -220,6 +220,7 @@ SOURCES = [
     ('Inès', 'IM'),          # Inès Montignac (Bordeaux) — pas Ingrid, corrigé le 10/09/2026
     ('Yves', 'YM'),          # Yves Marcelin
     ('Guillaume', 'GPX'),    # Guillaume Poitoux
+    ('Nicolas', 'NS'),       # Nicolas Savajol (Var) — réintégré le 11/09/2026, vu par Guillaume
     ('Céline', 'DC'),        # Céline Descomps
     ('Caroline', 'CSM'),     # Caroline Simon
     ('Ingrid L.', 'ILE'),    # Ingrid Lefebure
@@ -236,7 +237,7 @@ SOURCES = [
 # (décision de Will, 10/09/2026 : focus sur l'équipe commerciale). Leurs fichiers
 # vivent dans STATS/hors-perimetre/ ; le robot les y range tout seul s'ils
 # réapparaissent à la racine de STATS.
-EXCLUS = ['NS', 'PG', 'PPO', 'GM', 'ADC', 'VM', 'AM', 'SEP', 'GL', 'AUL', 'SV', 'LP',
+EXCLUS = ['PG', 'PPO', 'GM', 'ADC', 'VM', 'AM', 'SEP', 'GL', 'AUL', 'SV', 'LP',
           'SOP', 'MSP', 'CPR', 'NR', 'REP', 'COMMERCIAL_INCONNU']
 MONTHS_NUM = [1, 2, 3, 4, 5, 6, 7, 8]
 NB_MOIS = len(MONTHS_NUM)

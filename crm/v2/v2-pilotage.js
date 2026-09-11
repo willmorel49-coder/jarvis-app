@@ -1182,9 +1182,12 @@
       // vider son `commercial` — qui reste son repère dans les campagnes et le planning RDV.
       var myComm = (V2.user && V2.user.commercial) ? String(V2.user.commercial) : '';
       var voitTous = !!(V2.user && V2.user.voitTous);
+      // 11/09/2026 — collègues explicitement ouverts sur le profil (« Guillaume+Nicolas »)
+      var voitAussi = (V2.user && V2.user.voitAussi) || [];
+      var mesComms = myComm ? [myComm].concat(voitAussi) : [];
       if (myComm && !voitTous) {
         if (!V2._piloScopedInit) { V2.commFilter = myComm; V2._piloScopedInit = true; }   // atterrit sur « Moi »
-        if (V2.commFilter !== '' && V2.commFilter !== myComm) V2.commFilter = myComm;       // jamais un collègue
+        if (V2.commFilter !== '' && mesComms.indexOf(V2.commFilter) < 0) V2.commFilter = myComm;  // jamais un collègue non ouvert
       }
       var sales = V2.commSales ? V2.commSales() : (V2.sales || []);
       var top = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' });
@@ -1910,7 +1913,7 @@
         commSeg = '';
       } else if (myComm && !voitTous) {
         // Restreint : uniquement son périmètre ou le global national (jamais un collègue nommé)
-        commSeg = '<div class="pilo-seg" style="margin-right:8px">' + cb(myComm, 'Moi') + cb('', (window.V2_BRAND && window.V2_BRAND.escale) ? 'Global Escale' : 'Global national') + '</div>';
+        commSeg = '<div class="pilo-seg" style="margin-right:8px">' + cb(myComm, 'Moi') + voitAussi.map(function (cm) { return cb(cm, cm); }).join('') + cb('', (window.V2_BRAND && window.V2_BRAND.escale) ? 'Global Escale' : 'Global national') + '</div>';
       } else if (comms.length > 1) {
         // Super-admin : Tous + chaque commercial
         commSeg = '<div class="pilo-seg" style="margin-right:8px">' + cb('', 'Tous') + comms.map(function (cm) { return cb(cm, cm); }).join('') + '</div>';
