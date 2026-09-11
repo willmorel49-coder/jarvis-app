@@ -130,6 +130,21 @@ const V2 = win.V2 = {
   assert.equal(V2.fmtEur(1.06), '1,06 €', 'fmtEur extraite perd les centimes');
   assert.equal(V2.fmtEur(10155), '10 155 €'.replace(' ', '\u202f'), 'fmtEur extraite formate mal les milliers');
 }
+// ⚠️ Depuis la purge du 03/09/2026, benchmark-data.js (public) ne porte plus
+// aucun prix : l'app les RECONSTITUE au demarrage (V2.applyPPHT = PPHT − abandon
+// de marge au bareme). Sans cette etape, le gisement n'avait aucun prix net et
+// le controle « prix NET » ne trouvait plus rien a verifier.
+{
+  const boot = readFileSync(join(DIR, 'v2-boot.js'), 'utf8');
+  const i = boot.indexOf('function abandonBareme');
+  let p = 0, j = boot.indexOf('{', boot.indexOf('V2.applyPPHT = function')), fin = j;
+  for (; j < boot.length; j++) {
+    if (boot[j] === '{') p++;
+    else if (boot[j] === '}') { p--; if (p === 0) { fin = j; break; } }
+  }
+  new Function('V2', 'window', boot.slice(i, fin + 1) + ';V2.applyPPHT();')(V2, win);
+  assert.ok(V2._pphtDone, 'applyPPHT extraite ne s est pas executee');
+}
 executer(lire('v2-pilotage.js'), win);
 
 function rendre(commercial) {
@@ -215,41 +230,59 @@ test('une periode de comparaison incomplete ne produit AUCUN pourcentage', () =>
 // ═══════════════════════════════════════════════════════════════════════════
 // 2. Se comparer au reseau — le repere est-il le VRAI reseau ?
 // ═══════════════════════════════════════════════════════════════════════════
-const tranche = (pu) => (pu < 4.33 ? 0 : pu < 468 ? 1 : pu < 2000 ? 2 : 3);
+const tranche = (pu) => (pu < 4.33 ? 0 : pu < 468 ? 1 : pu < 3000 ? 2 : 3);
 
 test('sans filtre commercial, aucun repere reseau — il n y a rien a comparer', () => {
   const h = rendre('');
   assert.ok(!/pilo-ref/.test(h), 'un repere reseau s affiche alors qu on REGARDE deja le reseau');
 });
 
+// 04/09/2026, Will : « ça fait doublon [...] mois par mois c'est juste plus
+// precis » (a3cf14eb). Les cartes fixes famille/tranche, qui portaient le trait
+// reseau, ne s'affichent plus qu'en repli (< 2 mois). Le repere vit desormais
+// dans la carte « Mois par mois », vue « Tranches de prix » : « · réseau N % ».
+function rendreTranches(commercial) {
+  V2.piloPartsSet('dim', 'tier');
+  try { return rendre(commercial); } finally { V2.piloPartsSet('dim', 'fam'); }
+}
+const reperesMois = (h) => [...h.matchAll(/vs mois préc\. · réseau ([\d,]+) %/g)].map((m) => m[1]);
+
 test('avec un commercial, chaque tranche porte le repere du reseau', () => {
-  const h = rendre(SECTEUR);
-  const reperes = (h.match(/class="pilo-ref"/g) || []).length;
+  const h = rendreTranches(SECTEUR);
+  const reperes = reperesMois(h).length;
   assert.ok(reperes >= 4, `seulement ${reperes} reperes : les 4 tranches ne sont pas couvertes`);
 });
 
 test('le repere vaut bien la repartition RESEAU, recalculee a part', () => {
-  const h = rendre(SECTEUR);
-  // Le repere porte sur les mois ou le reseau est AU COMPLET, pas sur la
+  const h = rendreTranches(SECTEUR);
+  // Le repere porte sur un mois ou le reseau est AU COMPLET, pas sur la
   // periode affichee : en juillet, deux secteurs sur huit seulement ont des
-  // ventes, s y comparer reviendrait a se comparer a soi-meme.
+  // ventes, s y comparer reviendrait a se comparer a soi-meme. La carte montre
+  // la part reseau du DERNIER mois complet.
   const res = [0, 0, 0, 0];
-  for (const v of VENTES) if (v.month <= ancreReseau) res[tranche(v.puNet)] += v.mntNetHt;
+  for (const v of VENTES) if (v.month === ancreReseau) res[tranche(v.puNet)] += v.mntNetHt;
   const tot = res.reduce((a, b) => a + b, 0);
-  const attendus = res.map((v) => (v / tot * 100).toFixed(1));
-  const poses = [...h.matchAll(/class="pilo-ref" style="left:([\d.]+)%"/g)].map((m) => m[1]);
-  for (const a of attendus) {
-    assert.ok(poses.includes(a), `repere ${a} % absent — poses : ${poses.join(', ')}`);
-  }
+  const fmtP = (x) => String(x < 9.95 ? Math.round(x * 10) / 10 : Math.round(x)).replace('.', ',');
+  const attendus = res.map((v) => fmtP(v / tot * 100));
+  assert.deepEqual(reperesMois(h), attendus, 'les reperes reseau ne valent pas la repartition recalculee');
   // et l ecran dit sur quoi porte ce repere
-  assert.ok(new RegExp('les ' + nbSectMax + ' secteurs réunis').test(h),
-    'l ecran ne dit pas combien de secteurs le repere couvre');
+  assert.ok(/la même part côté réseau, sur les mois où il est au complet/.test(h),
+    'l ecran ne dit pas sur quels mois porte le repere');
 });
 
 test('l ecart en euros se lit bien comme une repartition, pas comme une promesse', () => {
+  // La carte « Mois par mois » ne chiffre plus d ecart en euros face au reseau :
+  // en € et en boites, pas de repere (echelles differentes). Si un montant
+  // reapparait, il doit revenir avec sa legende « a chiffre d affaires identique ».
   const h = rendre(SECTEUR);
-  assert.ok(/à chiffre d.affaires identique/.test(h),
-    'la legende ne dit pas que le montant est un ecart de repartition a CA constant');
+  if (/€ (sous le|au-dessus du) réseau/.test(h)) {
+    assert.ok(/à chiffre d.affaires identique/.test(h),
+      'la legende ne dit pas que le montant est un ecart de repartition a CA constant');
+  }
+  V2.piloPartsSet('unit', 'eur');
+  try {
+    assert.equal(reperesMois(rendreTranches(SECTEUR)).length, 0, 'un repere reseau s affiche en euros');
+  } finally { V2.piloPartsSet('unit', 'part'); }
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -393,7 +426,8 @@ test('les trois lignes comptent le MEME univers de produits', () => {
   // fabriquerait un ecart entierement du a la difference de perimetre.
   const h = rendre(SECTEUR);
   assert.ok(/comptent les <b>mêmes produits<\/b>/.test(h), 'la note ne dit pas que l univers est commun');
-  assert.ok(/Medic'AM suit/.test(h), 'la definition de l univers n est pas donnee');
+  // 04/09/2026 : la note du bas est remontee dans la legende du haut (a3cf14eb).
+  assert.ok(/ceux que l.Assurance Maladie suit \(Medic'AM\)/.test(h), 'la definition de l univers n est pas donnee');
   assert.ok(/% du chiffre|% de ton chiffre/.test(h), 'la part du CA couverte n est pas chiffree');
 });
 
@@ -414,7 +448,7 @@ test('la France se calcule sur Medic AM valorise au tarif grossiste', () => {
   assert.ok(P && Object.keys(P).length, 'window.PPHT absent : la ligne France ne peut pas etre verifiee');
   const base = (win.AMELI_AVG.meta && win.AMELI_AVG.meta.base) || 20000;
   const t = [0, 0, 0, 0];
-  const tr = (pu) => (pu < 4.33 ? 0 : pu < 468 ? 1 : pu < 2000 ? 2 : 3);
+  const tr = (pu) => (pu < 4.33 ? 0 : pu < 468 ? 1 : pu < 3000 ? 2 : 3);
   for (const c in A) { const pp = P[c]; if (pp > 0) t[tr(pp)] += A[c] * base * pp; }
   const tot = t.reduce((a, b) => a + b, 0);
   const attendus = t.map((v) => (v / tot * 100).toFixed(1).replace('.', ','));
@@ -431,7 +465,7 @@ test('mes lignes comptent le MEME univers que la France — recalcul independant
   // alors entierement fabrique par la difference de perimetre.
   const h = rendre(SECTEUR);
   const A = win.AMELI_AVG.data;
-  const tr = (pu) => (pu < 4.33 ? 0 : pu < 468 ? 1 : pu < 2000 ? 2 : 3);
+  const tr = (pu) => (pu < 4.33 ? 0 : pu < 468 ? 1 : pu < 3000 ? 2 : 3);
   const fenetre = new Set(moisReseau);
   const t = [0, 0, 0, 0];
   for (const v of VENTES) {
@@ -507,7 +541,7 @@ test('un produit sans designation affiche son CIP, jamais un blanc', () => {
 
 test('tranche DOMINANTE et prix PONDERE — sur un cas dont on connait la reponse', () => {
   // Un produit vendu 2 fois : 1 boîte à 5 000 € et 100 boîtes à 10 €.
-  //   → chiffre d'affaires 6 000 €, dont 5 000 € en « > 2 000 € » : tranche dominante
+  //   → chiffre d'affaires 6 000 €, dont 5 000 € en « > 3 000 € » : tranche dominante
   //   → prix moyen pondéré = 6 000 / 101 = 59,41 €
   // Prendre la DERNIÈRE ligne au lieu du poids donnerait « 4,33 – 468 € », faux.
   const bac = faireFenetre();
@@ -538,7 +572,7 @@ test('tranche DOMINANTE et prix PONDERE — sur un cas dont on connait la repons
   const h = root.innerHTML;
   const ligne = h.slice(h.indexOf('PRODUIT A DEUX PRIX'));
   const tag = (ligne.match(/class="pilo-pr-tag"[^>]*>.*?<\/span>\s*([^<]+)</) || [])[1] || '';
-  assert.ok(/> 2 000/.test(ligne.slice(0, 700)),
+  assert.ok(/> 3 000/.test(ligne.slice(0, 700)),
     'la tranche affichee n est pas celle qui porte le chiffre d affaires');
   const pu = (ligne.match(/>([\d\s ,\.]+)\s*€\/boîte</) || [])[1];
   assert.ok(pu, 'aucun prix unitaire affiche');
