@@ -14,7 +14,11 @@
 
   var TABLE = 'improvements', LS = 'jarvis_improvements_v1';
   var backend = 'local', items = [], sortBy = 'date';
-  var STATUS = { nouveau: { l: 'Nouveau', c: 'var(--c-amber)' }, 'en cours': { l: 'En cours', c: 'var(--ip-blue)' }, fait: { l: 'Fait', c: 'var(--c-mint)' } };
+  // La base n'accepte que nouveau / en cours / fait : « en cours » s'affiche « En réflexion » (12/09/2026).
+  var STATUS = { nouveau: { l: 'Nouveau', c: 'var(--c-amber)' }, 'en cours': { l: 'En réflexion', c: 'var(--ip-blue)' }, fait: { l: 'Fait', c: 'var(--c-mint)' } };
+  // Réponses de l'admin : une ligne de `profils`, data = { idIdée: { t, par, le } }. La base n'accepte que
+  // des types existants : 'groupement' avec un nom qu'aucun groupement ne porte (jamais lu en bloc).
+  var REP = { st: 'groupement', sid: '__remontees_reponses__' }, reponses = {};
 
   function sb() { return (V2.sb && V2.sb()) || null; }
   function localAll() { try { var a = JSON.parse(localStorage.getItem(LS) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
@@ -31,7 +35,9 @@
   function loadItems() {
     var c = sb();
     if (c) {
-      return c.from(TABLE).select('*').order('created_at', { ascending: false })
+      var rep = c.from('profils').select('data').eq('scope_type', REP.st).eq('scope_id', REP.sid).maybeSingle()
+        .then(function (r) { if (!r.error) reponses = (r.data && r.data.data) || {}; }).catch(function () {});
+      return Promise.all([rep, c.from(TABLE).select('*').order('created_at', { ascending: false })]).then(function (x) { return x[1]; })
         .then(function (r) {
           if (!r.error && r.data) { backend = 'supabase'; items = r.data.map(fromRow); return items; }
           backend = 'local'; items = localAll(); return items;
@@ -120,6 +126,23 @@
       localWrite(a); reload();
     }
   };
+  // Réponse de l'admin, visible par toute l'équipe sous l'idée
+  V2.remonteeReply = function (id) {
+    var c = sb();
+    if (!V2.user || V2.user.role !== 'admin') return;
+    if (!(backend === 'supabase' && c)) { if (V2.toast) V2.toast('Réponse impossible hors connexion', 'error'); return; }
+    var txt = window.prompt('Réponse visible par toute l\'équipe :', (reponses[id] && reponses[id].t) || '');
+    if (txt === null) return;
+    var ko = function () { if (V2.toast) V2.toast('Réponse non enregistrée', 'error'); reload(); };
+    // relire la ligne juste avant d'écrire : ne pas écraser une réponse posée entre-temps ailleurs
+    c.from('profils').select('data').eq('scope_type', REP.st).eq('scope_id', REP.sid).maybeSingle().then(function (r) {
+      if (r.error) return ko();
+      var data = (r.data && r.data.data) || {};
+      if (txt.trim()) data[id] = { t: txt.trim(), par: V2.user.name || '', le: new Date().toISOString() }; else delete data[id];
+      return c.from('profils').upsert({ scope_type: REP.st, scope_id: REP.sid, data: data, updated_by: V2.user.id, updated_by_name: V2.user.name || '', updated_at: new Date().toISOString() }, { onConflict: 'scope_type,scope_id' })
+        .then(function (u) { if (u.error) ko(); else reload(); });
+    }).catch(ko);
+  };
   V2.remonteeSort = function (s) { sortBy = s; reload(); };
   function reload() { loadItems().then(function () { if (V2.route && V2.route.name === 'remontees') V2.render(); }); }
 
@@ -152,12 +175,16 @@
     var st = STATUS[it.status] || STATUS.nouveau;
     var d = ''; try { d = new Date(it.created).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }); } catch (e) {}
     var mine = V2.user && backend === 'local'; // en local tout est à soi ; en supabase l'auteur est déjà filtré par nom
+    var rep = backend === 'supabase' ? reponses[it.id] : null;
+    var admin = V2.user && V2.user.role === 'admin' && backend === 'supabase';
     return '<div class="v2-rem-item">' +
       '<button class="v2-rem-vote" onclick="V2.remonteeVote(\'' + esc(it.id) + '\')" title="Voter"><span class="v2-rem-up">▲</span><b>' + it.votes + '</b></button>' +
       '<div class="v2-rem-body"><div class="v2-rem-txt">' + esc(it.body).replace(/\n/g, '<br>') + '</div>' +
-        '<div class="v2-rem-meta"><span>' + esc(it.author) + (d ? ' · ' + d : '') + '</span>' +
+        (rep && rep.t ? '<div class="v2-rem-rep"><b>' + esc(rep.par || 'Réponse') + '</b>' + esc(rep.t).replace(/\n/g, '<br>') + '</div>' : '') +
+        '<div class="v2-rem-meta"><span>' + esc(it.author) + (d ? ' · ' + d : '') + '</span><span class="v2-rem-acts">' +
+          (admin ? '<button class="v2-rem-repbtn" onclick="V2.remonteeReply(\'' + esc(it.id) + '\')">' + (rep && rep.t ? 'Modifier la réponse' : 'Répondre') + '</button>' : '') +
           '<button class="v2-rem-st" style="--stc:' + st.c + '" onclick="V2.remonteeStatus(\'' + esc(it.id) + '\')" title="Changer le statut">' + st.l + '</button>' +
-        '</div></div></div>';
+        '</span></div></div></div>';
   }
 
   function ensureCss() {
@@ -182,6 +209,10 @@
       '.v2-rem-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:9px}',
       '.v2-rem-txt{font-size:14px;line-height:1.5;color:var(--ip-ink)}',
       '.v2-rem-meta{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12px;color:var(--muted)}',
+      '.v2-rem-rep{font-size:13.5px;line-height:1.5;color:var(--ip-ink);background:color-mix(in srgb,var(--c-mint) 9%,var(--card));border-left:3px solid var(--c-mint);border-radius:8px;padding:9px 12px}',
+      '.v2-rem-rep b{display:block;font-size:11.5px;font-weight:800;color:var(--ip-ink);margin-bottom:2px}',
+      '.v2-rem-acts{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}',
+      '.v2-rem-repbtn{border:1px solid var(--line);background:var(--card-2);color:var(--ip-ink);font:inherit;font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:var(--r-pill);cursor:pointer;min-height:28px}',
       '.v2-rem-st{border:1px solid color-mix(in srgb,var(--stc) 40%,var(--line));background:color-mix(in srgb,var(--stc) 12%,var(--card));color:var(--stc);font:inherit;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;padding:4px 10px;border-radius:var(--r-pill);cursor:pointer}',
       // popup
       '.v2-rem-ov{position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:22px;background:rgba(16,19,28,.5);opacity:0;transition:opacity .2s}',
