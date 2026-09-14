@@ -1511,12 +1511,16 @@
       ? '<button class="pha-btn pha-btn-w pha-btn-opp" onclick="V2.go(\'produits\', \'' + pidSafe + '\')">' + ICO('cat', 14, 2) + ' Ce que ses confrères prennent</button>'
       : '';
     var aDesPdf = (nReseau > 0 || (hasGrp && nGrp > 0));
-    var listes = (aDesPdf || btnProduits) ?
+    txMail[String(pid)] = mail;
+    var btnTx = '<button class="pha-btn pha-btn-w pha-btn-tx" onclick="V2.pharmaTransmettre(\'' + pidSafe + '\')" title="listings, catalogues, documents de l\'équipe — en pièces jointes">' +
+      ICO('fiche', 15, 2) + 'Choisir quoi lui transmettre</button>';
+    var listes =
       '<div class="v2-card pha-card pha-lists"><div class="pha-kl">Listes à proposer</div>' +
         btnProduits +
         (aDesPdf ? pdfBtn('reseau', reseauLbl(true), nReseau, '') : '') +
         (aDesPdf && hasGrp ? pdfBtn('groupement', esc(g.name), nGrp, 'pha-btn-grp') : '') +
-      '</div>' : '';
+        btnTx +
+      '</div>';
 
     // ── Infos officine : TOUJOURS visibles (demande Will : les infos saisies doivent rester) ──
     var infos = V2.profil ? (function () {
@@ -2578,15 +2582,17 @@
     // Aperçu avant impression (sauf clic explicite "Partager" sur mobile → partage direct)
     var fn = 'Liste-' + grpName.replace(/[^A-Za-z0-9-]/g, '_') + '-' + new Date().toISOString().slice(0, 10) + '.pdf';
     var shareTitle = 'Liste d\'achats · ' + grpName;
+    if (mode === 'blob') return pdfGenerate(html, fn, 'blob');
     if (mode === 'share') { pdfGenerate(html, fn, 'share', shareTitle); }
     else { V2.pdfPreview(html, fn, shareTitle); }
   }
 
   // Génère et télécharge/partage un PDF à partir d'un HTML 794px (réutilisable).
+  // mode 'blob' : ne télécharge rien, rend une promesse de File (pour « Transmettre »).
   function pdfGenerate(html, fn, mode, shareTitle) {
     if (typeof window.ensureHtml2Pdf !== 'function') { V2.toast('Module PDF indisponible', 'error'); return; }
     V2.toast('Génération du PDF…');
-    window.ensureHtml2Pdf().then(function () {
+    return window.ensureHtml2Pdf().then(function () {
       return (document.fonts && document.fonts.ready) ? document.fonts.ready : null;
     }).then(function () {
       try { window.scrollTo(0, 0); } catch (e) {}
@@ -2603,6 +2609,10 @@
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'], avoid: ['tr'] }
       });
       function cleanup() { if (wrap.parentNode) document.body.removeChild(wrap); if (veil.parentNode) document.body.removeChild(veil); }
+      if (mode === 'blob') {
+        return worker.outputPdf('blob').then(function (blob) { cleanup(); return new File([blob], fn, { type: 'application/pdf' }); },
+          function (e) { console.error(e); cleanup(); return null; });
+      }
       if (mode === 'share' && V2.shareOrSaveBlob) {
         worker.outputPdf('blob').then(function (blob) { return V2.shareOrSaveBlob(blob, fn, shareTitle || fn); })
           .then(function () { cleanup(); V2.toast('PDF prêt à partager'); })
@@ -2760,7 +2770,225 @@
     scope = (scope === 'groupement') ? 'groupement' : 'reseau';
     var data = buildRecoCats(pid, scope);
     var label = (scope === 'groupement') ? (groupementPids(pid).name || 'Groupement') : reseauLbl();
-    achatsPdf(pharma.name + ' — ' + label, data, false, mode, pid);
+    return achatsPdf(pharma.name + ' — ' + label, data, false, mode, pid);
+  };
+
+  // ════════════════════════════════════════════
+  // TRANSMETTRE À L'OFFICINE — demande Will, 14/09/2026
+  // Sur la fiche, on coche ce qu'on lui envoie : ses listings (réseau /
+  // groupement), les documents de l'app, et la bibliothèque partagée où
+  // chacun dépose ses PDF et Excel (même stockage que Marketing › Documents).
+  // Les fichiers partent en PIÈCES JOINTES (feuille de partage ou
+  // téléchargement), jamais en lien : une adresse d'hébergeur ne sort pas.
+  // ════════════════════════════════════════════
+  var TX_BUCKET = 'marketing-pdfs';
+  var TX_APP_DOCS = [
+    { f: 'catalogue-integral.pdf', label: 'Catalogue L\'Intégral' },
+    { f: 'catalogue-itp.pdf', label: 'Catalogue ITP' },
+    { f: 'ouverture-compte-integral-pharma-2026.pdf', label: 'Formulaire d\'ouverture de compte 2026' }
+  ];
+  var tx = { pid: null, sel: {}, docs: null, docsErr: null, busy: '', step: 0, total: 0, files: null };
+  var txMail = {};
+  function txSb() { return (V2.sb && V2.sb()) || null; }
+  function txPretty(n) { n = String(n || ''); var i = n.indexOf('__'); return i >= 0 ? n.slice(i + 2) : n; }
+  function txSize(b) { b = +b || 0; return b < 1048576 ? Math.max(1, Math.round(b / 1024)) + ' Ko' : (b / 1048576).toFixed(1).replace('.', ',') + ' Mo'; }
+  function txIsXls(n) { return /\.xlsx?$/i.test(n); }
+  function txMime(n) {
+    return /\.xlsx$/i.test(n) ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      : /\.xls$/i.test(n) ? 'application/vnd.ms-excel' : 'application/pdf';
+  }
+  function txSanitize(n) { return String(n || 'document').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9._-]+/g, '-').replace(/-+/g, '-').slice(0, 80) || 'document'; }
+  function txLoadDocs() {
+    var c = txSb();
+    if (!c || !c.storage) { tx.docs = []; tx.docsErr = 'Connexion requise pour lire la bibliothèque partagée.'; return Promise.resolve(); }
+    return c.storage.from(TX_BUCKET).list('', { limit: 1000, sortBy: { column: 'created_at', order: 'desc' } }).then(function (r) {
+      if (r.error) { tx.docs = []; tx.docsErr = 'Bibliothèque partagée illisible (' + (r.error.message || 'erreur') + ').'; return; }
+      tx.docsErr = null;
+      tx.docs = (r.data || []).filter(function (f) { return f.name && f.id && f.name !== '.emptyFolderPlaceholder'; })
+        .map(function (f) { return { name: f.name, size: (f.metadata || {}).size || 0 }; });
+    }).catch(function () { tx.docs = []; tx.docsErr = 'Bibliothèque partagée injoignable — réessaie dans un instant.'; });
+  }
+  function txCount(pid, scope) { return buildRecoCats(pid, scope).cats.reduce(function (s, o) { return s + o.rows.length; }, 0); }
+  function txItems(pid) {
+    var its = [];
+    var nR = txCount(pid, 'reseau');
+    if (nR > 0) its.push({ k: 'L:reseau', grp: 'listing', label: 'Listing ' + reseauLbl(), meta: V2.fmtNum(nR) + ' produits · PDF généré' });
+    var g = groupementPids(pid);
+    if (g.set && g.set.size >= 2) {
+      var nG = txCount(pid, 'groupement');
+      if (nG > 0) its.push({ k: 'L:groupement', grp: 'listing', label: 'Listing ' + (g.name || 'groupement'), meta: V2.fmtNum(nG) + ' produits · PDF généré' });
+    }
+    // Documents à l'en-tête Intégral : pas dans les espaces Escale ni OPSO (deux marques distinctes).
+    if (!isEscale() && !isOpso()) TX_APP_DOCS.forEach(function (d) { its.push({ k: 'S:' + d.f, grp: 'app', label: d.label, meta: 'PDF' }); });
+    (tx.docs || []).forEach(function (d) {
+      its.push({ k: 'D:' + d.name, grp: 'lib', label: txPretty(d.name), meta: (txIsXls(d.name) ? 'Excel' : 'PDF') + ' · ' + txSize(d.size), xls: txIsXls(d.name) });
+    });
+    return its;
+  }
+  function txRender() {
+    var bd = document.getElementById('tx-modal');
+    if (!bd || !tx.pid) return;
+    var pharma = (V2.pharmacies || []).find(function (p) { return String(p.id) === tx.pid; });
+    var nom = pharma ? nameOf(tx.pid, pharma.name) : 'l\'officine';
+    var mail = txMail[tx.pid] || '';
+    var its = txItems(tx.pid);
+    var nSel = its.filter(function (i) { return tx.sel[i.k]; }).length;
+    function row(i) {
+      return '<label class="tx-row"><input type="checkbox" data-k="' + esc(i.k) + '"' + (tx.sel[i.k] ? ' checked' : '') + (tx.busy ? ' disabled' : '') + ' onchange="V2.pharmaTxToggle(this)">' +
+        '<span class="tx-ic' + (i.xls ? ' tx-ic-x' : '') + '">' + (i.xls ? 'XLS' : 'PDF') + '</span>' +
+        '<span class="tx-l"><b>' + esc(i.label) + '</b><small>' + esc(i.meta) + '</small></span></label>';
+    }
+    function group(title, sub, arr, extra) {
+      if (!arr.length && !extra) return '';
+      return '<div class="tx-g"><div class="tx-gh"><span class="pha-kl">' + title + '</span>' + (sub ? '<span class="tx-gs">' + sub + '</span>' : '') + '</div>' +
+        arr.map(row).join('') + (extra || '') + '</div>';
+    }
+    var of = function (grp) { return its.filter(function (i) { return i.grp === grp; }); };
+    var lib = of('lib');
+    var libMsg = tx.docs === null ? '<div class="tx-empty">Chargement de la bibliothèque…</div>'
+      : tx.docsErr ? '<div class="tx-empty tx-err">' + esc(tx.docsErr) + '</div>'
+      : (!lib.length ? '<div class="tx-empty">Aucun fichier déposé pour l\'instant. Le premier ajouté sera proposé sur toutes les fiches, pour toute l\'équipe.</div>' : '');
+    var upl = '<label class="v2-btn v2-btn-ghost tx-upl' + (tx.busy ? ' is-busy' : '') + '">' + ICO('plus', 15, 2) +
+      (tx.busy === 'upload' ? 'Envoi en cours…' : 'Ajouter un PDF ou un Excel') +
+      '<input type="file" accept=".pdf,.xlsx,.xls,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" multiple style="display:none"' +
+      (tx.busy ? ' disabled' : '') + ' onchange="V2.pharmaTxUpload(this)"></label>';
+
+    var body = document.getElementById('tx-body');
+    var keepY = body ? body.scrollTop : 0;
+    document.getElementById('tx-tt').innerHTML = ICO('fiche', 17, 2) + ' Transmettre à ' + esc(nom);
+    body.innerHTML =
+      (mail ? '<div class="tx-to">Destinataire : <b>' + esc(mail) + '</b></div>'
+            : '<div class="tx-to tx-err">Pas d\'e-mail connu pour cette officine — à renseigner dans « Infos officine ».</div>') +
+      group('Ses listings produits', 'ce qu\'elle n\'a pas encore', of('listing')) +
+      group('Documents Intégral Pharma', '', of('app')) +
+      group('Bibliothèque de l\'équipe', 'déposés par chacun, visibles par tous', lib, libMsg + upl);
+    body.scrollTop = keepY;
+
+    var foot;
+    if (tx.busy === 'prepare') {
+      foot = '<div class="tx-state">Préparation du fichier ' + tx.step + ' sur ' + tx.total + '…</div>';
+    } else if (tx.files) {
+      var tot = tx.files.reduce(function (s, f) { return s + (f.size || 0); }, 0);
+      var canSh = false;
+      try { canSh = !!(navigator.share && navigator.canShare && navigator.canShare({ files: tx.files })); } catch (e) {}
+      var names = tx.files.map(function (f) { return '- ' + f.name; }).join('\n');
+      var href = 'mailto:' + encodeURIComponent(mail) + '?subject=' + encodeURIComponent('Documents pour votre officine') +
+        '&body=' + encodeURIComponent('Bonjour,\n\nVeuillez trouver ci-joint :\n' + names + '\n\nJe reste à votre disposition pour en parler.\n\nBien cordialement,');
+      foot = '<div class="tx-state"><b>' + tx.files.length + ' fichier' + (tx.files.length > 1 ? 's' : '') + ' prêt' + (tx.files.length > 1 ? 's' : '') + '</b> · ' + txSize(tot) +
+          (tot > 20 * 1048576 ? '<span class="tx-warn">Plus de 20 Mo : de nombreuses messageries refusent un mail aussi lourd.</span>' : '') + '</div>' +
+        '<button class="v2-btn v2-btn-ghost" onclick="V2.pharmaTxReset()">Modifier</button>' +
+        (!canSh && mail ? '<a class="v2-btn v2-btn-ghost" href="' + esc(href) + '">Ouvrir le mail</a>' : '') +
+        '<button class="v2-btn v2-btn-primary" onclick="V2.pharmaTxSend()">' + ICO(canSh ? 'spark' : 'download', 16) + (canSh ? 'Envoyer' : 'Télécharger les fichiers') + '</button>';
+    } else {
+      foot = '<div class="tx-state">' + (nSel ? '<b>' + nSel + '</b> sélectionné' + (nSel > 1 ? 's' : '') : 'Coche ce que tu veux lui transmettre') + '</div>' +
+        '<button class="v2-btn v2-btn-primary"' + (nSel && !tx.busy ? '' : ' disabled') + ' onclick="V2.pharmaTxPrepare()">' + ICO('check', 16, 2) + 'Préparer les fichiers</button>';
+    }
+    document.getElementById('tx-foot').innerHTML = foot;
+  }
+  V2.pharmaTransmettre = function (pid) {
+    pid = String(pid);
+    if (tx.pid !== pid) { tx.sel = {}; tx.files = null; }
+    tx.pid = pid; tx.busy = '';
+    var bd = document.getElementById('tx-modal');
+    if (!bd) {
+      bd = document.createElement('div');
+      bd.id = 'tx-modal'; bd.className = 'prepa-modal';
+      bd.innerHTML = '<div class="prepa-dialog tx-dialog" onclick="event.stopPropagation()">' +
+        '<div class="prepa-top"><div class="prepa-tt" id="tx-tt"></div>' +
+          '<button class="prepa-x" onclick="V2.pharmaTxClose()" title="Fermer">' + ICO('close', 18, 2) + '</button></div>' +
+        '<div class="tx-body" id="tx-body"></div><div class="tx-foot" id="tx-foot"></div></div>';
+      bd.onclick = function () { V2.pharmaTxClose(); };
+      document.body.appendChild(bd);
+    }
+    bd.classList.add('open');
+    txRender();
+    txLoadDocs().then(txRender);
+  };
+  V2.pharmaTxClose = function () { var bd = document.getElementById('tx-modal'); if (bd) bd.classList.remove('open'); };
+  V2.pharmaTxReset = function () { tx.files = null; txRender(); };
+  V2.pharmaTxToggle = function (el) {
+    var k = el.getAttribute('data-k');
+    if (el.checked) tx.sel[k] = true; else delete tx.sel[k];
+    tx.files = null; txRender();
+  };
+  function txFetch(pid, k) {
+    if (k.indexOf('L:') === 0) return Promise.resolve(V2.pharmaListPdf(pid, k.slice(2), 'blob'));
+    if (k.indexOf('S:') === 0) {
+      return fetch(k.slice(2)).then(function (r) { return r.ok ? r.blob() : null; })
+        .then(function (b) { return b ? new File([b], k.slice(2), { type: 'application/pdf' }) : null; });
+    }
+    var c = txSb(), name = k.slice(2);
+    if (!c || !c.storage) return Promise.resolve(null);
+    return c.storage.from(TX_BUCKET).download(name).then(function (r) {
+      return (r && r.data && !r.error) ? new File([r.data], txPretty(name), { type: txMime(name) }) : null;
+    });
+  }
+  // Deux temps (Préparer puis Envoyer) : Safari n'ouvre la feuille de partage que
+  // dans le clic lui-même — après plusieurs secondes de génération, il la refuse.
+  V2.pharmaTxPrepare = function () {
+    if (tx.busy || !tx.pid) return;
+    var pid = tx.pid;
+    var its = txItems(pid).filter(function (i) { return tx.sel[i.k]; });
+    if (!its.length) return;
+    tx.busy = 'prepare'; tx.step = 0; tx.total = its.length; txRender();
+    var out = [], fails = [], chain = Promise.resolve();
+    its.forEach(function (it) {
+      chain = chain.then(function () {
+        tx.step++; txRender();
+        return txFetch(pid, it.k).then(function (f) { if (f) out.push(f); else fails.push(it.label); },
+          function () { fails.push(it.label); });
+      });
+    });
+    chain.then(function () {
+      tx.busy = ''; tx.files = out.length ? out : null; txRender();
+      if (fails.length) V2.toast('Non préparé : ' + fails.join(', '), 'error');
+    });
+  };
+  function txDownloadAll(files) {
+    files.forEach(function (f, i) {
+      setTimeout(function () {
+        var u = URL.createObjectURL(f), a = document.createElement('a');
+        a.href = u; a.download = f.name; document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(function () { URL.revokeObjectURL(u); }, 4000);
+      }, i * 400);
+    });
+    V2.toast(files.length > 1 ? files.length + ' fichiers téléchargés — à joindre au mail' : 'Fichier téléchargé — à joindre au mail');
+  }
+  V2.pharmaTxSend = function () {
+    var files = tx.files;
+    if (!files || !files.length) return;
+    try {
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: files })) {
+        navigator.share({ files: files, title: 'Documents pour votre officine' })
+          .catch(function (e) { if (!e || e.name !== 'AbortError') txDownloadAll(files); });
+        return;
+      }
+    } catch (e) {}
+    txDownloadAll(files);
+  };
+  V2.pharmaTxUpload = function (input) {
+    var all = input && input.files ? [].slice.call(input.files) : [];
+    var ok = all.filter(function (f) { return /\.(pdf|xlsx|xls)$/i.test(f.name); });
+    if (!ok.length) { V2.toast('Choisis un fichier PDF ou Excel.', 'warn'); return; }
+    var c = txSb();
+    if (!c || !c.storage) { V2.toast('Connexion requise pour ajouter un fichier.', 'error'); return; }
+    tx.busy = 'upload'; txRender();
+    var failed = [], added = [], chain = Promise.resolve();
+    ok.forEach(function (f) {
+      chain = chain.then(function () {
+        var key = Date.now() + '-' + Math.floor(Math.random() * 1000) + '__' + txSanitize(f.name);
+        return c.storage.from(TX_BUCKET).upload(key, f, { contentType: txMime(f.name), upsert: false })
+          .then(function (r) { if (r && r.error) failed.push(f.name + ' (' + (r.error.message || 'refusé') + ')'); else added.push(key); },
+            function () { failed.push(f.name); });
+      });
+    });
+    chain.then(txLoadDocs).then(function () {
+      added.forEach(function (k) { tx.sel['D:' + k] = true; });
+      tx.busy = ''; tx.files = null; txRender();
+      if (failed.length) V2.toast('Non ajouté : ' + failed.join(', '), 'error');
+      else if (ok.length < all.length) V2.toast('Ajouté. Ignoré : fichiers qui ne sont ni PDF ni Excel.', 'warn');
+      else V2.toast(added.length > 1 ? added.length + ' fichiers ajoutés pour toute l\'équipe' : 'Fichier ajouté pour toute l\'équipe');
+    });
   };
   V2.grpToggleCat = function (catKey) {
     var key = 'g_' + catKey, idx = -1;
@@ -3399,6 +3627,31 @@
       '.pha-btn-opp{background:var(--c-opp);border-color:var(--c-opp);color:#fff;justify-content:center}',
       '.pha-btn-grp b{background:color-mix(in srgb,var(--c-opp) 18%,transparent);color:var(--c-mint-txt)}',
       '.pha-lists .pha-kl{margin-bottom:2px}',
+      '.pha-btn-tx{justify-content:center;background:var(--ip-ink);border-color:var(--ip-ink);color:#fff}',
+      '.tx-dialog{width:min(620px,96vw)}',
+      '.tx-body{flex:1;min-height:0;overflow-y:auto;padding:14px 18px 6px;-webkit-overflow-scrolling:touch}',
+      '.tx-to{font-size:13px;color:var(--muted);margin-bottom:12px;overflow-wrap:anywhere}',
+      '.tx-to b{color:var(--ip-ink)}',
+      '.tx-err{color:#C7283D}',
+      '.tx-g{margin-bottom:16px}',
+      '.tx-gh{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:6px}',
+      '.tx-gs{font-size:12px;color:var(--muted)}',
+      '.tx-row{display:flex;align-items:center;gap:12px;min-height:48px;padding:6px 10px;border:1px solid var(--line);border-radius:12px;margin-bottom:6px;cursor:pointer;background:var(--card);transition:border-color .16s var(--ease)}',
+      '.tx-row:has(input:checked){border-color:var(--ip-blue);background:color-mix(in srgb,var(--ip-blue) 6%,var(--card))}',
+      '.tx-row input{width:20px;height:20px;margin:0;flex-shrink:0;accent-color:var(--ip-blue)}',
+      '.tx-ic{flex-shrink:0;width:38px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font:800 10px var(--mono,ui-monospace,monospace);letter-spacing:.04em;color:#fff;background:#C7283D}',
+      '.tx-ic-x{background:#1E7A45}',
+      '.tx-l{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}',
+      '.tx-l b{font-size:13.5px;color:var(--ip-ink);overflow-wrap:anywhere}',
+      '.tx-l small{font-size:11.5px;color:var(--muted)}',
+      '.tx-empty{font-size:12.5px;color:var(--muted);padding:6px 2px 10px}',
+      '.tx-upl{min-height:44px;gap:7px}',
+      '.tx-upl.is-busy{opacity:.6;pointer-events:none}',
+      '.tx-foot{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 18px;border-top:1px solid var(--line);background:var(--card)}',
+      '.tx-state{flex:1;min-width:160px;font-size:13px;color:var(--muted)}',
+      '.tx-state b{color:var(--ip-ink)}',
+      '.tx-warn{display:block;color:var(--c-amber);font-size:12px;margin-top:2px}',
+      '.tx-foot .v2-btn[disabled]{opacity:.45;pointer-events:none}',
       '.pha-cip{font-size:12.5px;color:var(--muted);margin:0 0 12px;padding:8px 12px;background:var(--card-2);border-radius:10px}',
       '.pha-cip b{color:var(--ip-ink)}',
       '.pha-infos .v2-profil-box{box-shadow:none;border:none;padding:12px 0 0;margin-top:6px;overflow:visible}',
