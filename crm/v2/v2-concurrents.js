@@ -853,7 +853,9 @@
       '.cc-acc-h{font-size:20px;font-weight:800;letter-spacing:-.025em;color:var(--titre,#0B1F4D);margin:0 0 4px}.cc-acc-s{font-size:14px;color:var(--muted);margin:0 0 12px}',
       /* plus spécifique que « .cc-wrap:not(.tel) .cc-cres » (liste déroulante masquée), écrite plus bas */
       '.cc-wrap .cc-accueil .cc-comptoir .cc-cres{position:relative;display:block;margin-top:8px;padding:0;background:none;border:0;box-shadow:none;max-height:none;overflow:visible}',
-      '@media (max-width:700px){.cc-portes{grid-template-columns:1fr;gap:10px}.cc-porte{padding:18px 18px 16px}.cc-porte .t{font-size:20px}.cc-accueil .v2-page-title{font-size:28px}.cc-espaces{width:auto}}',
+      '@media (max-width:700px){.cc-portes{grid-template-columns:1fr;gap:10px}.cc-porte{padding:18px 18px 16px}.cc-porte .t{font-size:20px}.cc-accueil .v2-page-title{font-size:28px}',
+      /* les quatre boutons tiennent dans la largeur : rien de caché hors écran */
+      '.cc-espaces{width:auto;display:grid;grid-template-columns:auto auto auto auto;gap:2px;padding:3px}.cc-esp,.cc-esp-home{padding:0 6px;font-size:13px}}',
       /* onglets */
       '.cc-tabs{display:flex;gap:6px;padding:6px;margin:0 0 10px;border-radius:var(--r-md);background:#F3F6FB;border:1px solid var(--line);box-shadow:var(--sh-1);overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}',
       '.cc-tabs::-webkit-scrollbar{display:none}',
