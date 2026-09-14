@@ -209,6 +209,22 @@
       } else { addLocal(st, sid, body); done(); }
     },
 
+    // Note écrite par l'app elle-même (ex. documents transmis depuis la fiche),
+    // puis les encadrés de notes de ce client affichés à l'écran sont relus.
+    addAuto: function (st, sid, body) {
+      if (!V2.user || !body) return Promise.resolve(false);
+      var c = sb();
+      var redraw = function () {
+        Array.prototype.forEach.call(document.querySelectorAll('.v2-notes-box'), function (box) {
+          if (box.getAttribute('data-st') === st && box.getAttribute('data-sid') === String(sid)) renderBox(box);
+        });
+        return true;
+      };
+      if (!c) { addLocal(st, sid, body); return Promise.resolve(redraw()); }
+      return c.from(TABLE).insert({ scope_type: st, scope_id: String(sid), author_id: V2.user.id, author_name: V2.user.name || '', body: body })
+        .then(function (r) { return r.error ? false : redraw(); }, function () { return false; });
+    },
+
     remove: function (el) {
       var box = el.closest('.v2-notes-box'); if (!box) return;
       var id = el.getAttribute('data-id'); var st = box.getAttribute('data-st'), sid = box.getAttribute('data-sid');

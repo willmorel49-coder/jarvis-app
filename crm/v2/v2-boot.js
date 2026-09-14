@@ -867,7 +867,7 @@
   V2.chargerScripts = function (urls) {
     urls = urls || [];
     if (!urls.length) return Promise.resolve();
-    var V = '?v=20260914d' + (window.V2_VER || '20260914d');
+    var V = '?v=20260914e' + (window.V2_VER || '20260914e');
     return Promise.all(urls.map(function (u) {
       return new Promise(function (resolve) {
         var s = document.createElement('script');
