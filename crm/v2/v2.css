@@ -310,7 +310,7 @@ border-bottom:1px solid var(--line)}
 /* Cibles tactiles confortables sur mobile (a11y — boutons d'action répétés) */
 @media(max-width:640px){
   .opp-add,.mkt-catadd{min-width:40px;min-height:40px}
-  .mkt-prow-x,.mkt-doc-del,.mkt-mx{min-width:44px;min-height:44px}
+  .mkt-prow-x,.mkt-ddel,.mkt-mx{min-width:44px;min-height:44px}
   .mkt-etabchip,.mkt-srcbtn,.mol-chip{min-height:40px}
 }
 
