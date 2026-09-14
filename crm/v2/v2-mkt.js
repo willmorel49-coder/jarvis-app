@@ -192,7 +192,7 @@
         docs = (r.data || []).filter(function (f) { return f.name && f.name !== '.emptyFolderPlaceholder'; }).map(function (f) {
           var meta = f.metadata || {};
           return { name: f.name, size: meta.size || 0, created: f.created_at || f.updated_at || null,
-                   url: c.storage.from(BUCKET).getPublicUrl(f.name).data.publicUrl };
+                   xls: docIsXls(f.name) };
         });
       }).catch(function (e) { docs = []; docsErr = (e && e.message) || 'err'; });
   }
@@ -548,7 +548,7 @@
                 '<span class="arr">' + ICO('chev', 16, 2.2) + '</span></button>' +
               '<button class="mkt-tool" type="button" onclick="V2.go(\'marketing\',\'docs\')">' +
                 '<span class="tico">' + ICO('download', 20, 1.8) + '</span>' +
-                '<span><b>Documents partagés</b><span>Catalogues, fiches et offres en PDF, visibles par tous les comptes.</span></span>' +
+                '<span><b>Documents partagés</b><span>Catalogues, fiches et offres en PDF ou Excel, visibles par tous les comptes.</span></span>' +
                 '<span class="arr">' + ICO('chev', 16, 2.2) + '</span></button>' +
               '<button class="mkt-tool" type="button" onclick="V2.go(\'marketing\',\'propositions\')">' +
                 '<span class="tico">' + ICO('cat', 20, 1.8) + '</span>' +
@@ -1947,8 +1947,111 @@
   // PAGE
   // ════════════════════════════════════════════
   // ════════════════════════════════════════════
-  // DOCUMENTS PARTAGÉS (PDF) — Supabase Storage
+  // DOCUMENTS PARTAGÉS (PDF + Excel) — Supabase Storage
+  // 14/09/2026, demande Will : glisser des PDF et des Excel, et voir TOUTE la
+  // base en aperçu. Le bucket est privé : on lit chaque fichier avec la session
+  // (download), jamais par adresse publique (l'ancien « Ouvrir » était mort).
   // ════════════════════════════════════════════
+  var docFilter = 'all';        // 'all' | 'pdf' | 'xls'
+  var docBlobs = {};            // nom → Promise<Blob> (un seul téléchargement par fichier)
+  var docThumbs = {};           // nom → html de l'aperçu (image de la page 1 ou début du tableau)
+  var docView = null;           // nom du document ouvert dans la visionneuse
+  function docIsXls(n) { return /\.xlsx?$/i.test(n); }
+  function docMime(n) {
+    return /\.xlsx$/i.test(n) ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      : /\.xls$/i.test(n) ? 'application/vnd.ms-excel' : 'application/pdf';
+  }
+  function docBlob(name) {
+    if (!docBlobs[name]) {
+      var c = sb();
+      docBlobs[name] = (c && c.storage ? c.storage.from(BUCKET).download(name) : Promise.reject(new Error('no-sb')))
+        .then(function (r) { if (!r || r.error || !r.data) throw (r && r.error) || new Error('vide'); return r.data; });
+      docBlobs[name].catch(function () { delete docBlobs[name]; });   // un échec ne se garde pas : on réessaiera
+    }
+    return docBlobs[name];
+  }
+  // pdf.js (Mozilla, Apache-2.0) — build « legacy » UMD, compatible Safari, chargé à la demande
+  var pdfjsLoading = false;
+  function ensurePdfJs(cb) {
+    if (window.pdfjsLib) { cb(true); return; }
+    if (pdfjsLoading) { setTimeout(function () { ensurePdfJs(cb); }, 250); return; }
+    pdfjsLoading = true;
+    var base = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/legacy/build/';
+    var s = document.createElement('script');
+    s.src = base + 'pdf.min.js';
+    s.onload = function () {
+      pdfjsLoading = false;
+      if (window.pdfjsLib) window.pdfjsLib.GlobalWorkerOptions.workerSrc = base + 'pdf.worker.min.js';
+      cb(!!window.pdfjsLib);
+    };
+    s.onerror = function () { pdfjsLoading = false; cb(false); };
+    document.head.appendChild(s);
+  }
+  function pdfOpen(blob) {
+    return blob.arrayBuffer().then(function (buf) { return window.pdfjsLib.getDocument({ data: new Uint8Array(buf) }).promise; });
+  }
+  function pdfPageCanvas(pdf, n, width) {
+    return pdf.getPage(n).then(function (pg) {
+      var v1 = pg.getViewport({ scale: 1 });
+      // plafond de 1800 px : au-delà, Safari refuse la toile sur iPhone
+      var scale = Math.min(width / v1.width, 1800 / v1.width);
+      var vp = pg.getViewport({ scale: scale });
+      var cv = document.createElement('canvas');
+      cv.width = Math.round(vp.width); cv.height = Math.round(vp.height);
+      return pg.render({ canvasContext: cv.getContext('2d'), viewport: vp }).promise.then(function () { return cv; });
+    });
+  }
+  function xlsTable(ws, maxR, maxC) {
+    var rows = window.XLSX.utils.sheet_to_json(ws, { header: 1, defval: '', blankrows: false });
+    var nC = 0;
+    rows.forEach(function (r) { if (r.length > nC) nC = r.length; });
+    if (maxR) rows = rows.slice(0, maxR);
+    if (maxC) nC = Math.min(nC, maxC);
+    if (!rows.length) return '<div class="mkt-dv-empty">Feuille vide.</div>';
+    return '<table>' + rows.map(function (r) {
+      var tds = '';
+      for (var i = 0; i < nC; i++) tds += '<td>' + esc(r[i] == null ? '' : String(r[i])) + '</td>';
+      return '<tr>' + tds + '</tr>';
+    }).join('') + '</table>';
+  }
+  // Aperçus de la galerie : un fichier à la fois, gardés en mémoire pour la session.
+  var thumbQueue = [], thumbRunning = false;
+  function paintThumb(name) {
+    var el = [].slice.call(document.querySelectorAll('.mkt-dthumb')).filter(function (x) { return x.getAttribute('data-name') === name; })[0];
+    if (el && docThumbs[name] != null) { el.innerHTML = docThumbs[name]; el.classList.add('is-ready'); }
+  }
+  function queueThumbs() {
+    (docs || []).forEach(function (d) {
+      if (docThumbs[d.name] != null) paintThumb(d.name);
+      else if (thumbQueue.indexOf(d.name) < 0) thumbQueue.push(d.name);
+    });
+    runThumbs();
+  }
+  function runThumbs() {
+    if (thumbRunning || !thumbQueue.length) return;
+    thumbRunning = true;
+    var name = thumbQueue.shift();
+    var done = function (html) { docThumbs[name] = html; paintThumb(name); thumbRunning = false; runThumbs(); };
+    var fail = function () { thumbRunning = false; runThumbs(); };   // pas d'aperçu = on garde l'icône, le document reste là
+    docBlob(name).then(function (blob) {
+      if (docIsXls(name)) {
+        ensureXLSX(function (ok) {
+          if (!ok) { fail(); return; }
+          blob.arrayBuffer().then(function (buf) {
+            var wb = window.XLSX.read(buf, { type: 'array', sheetRows: 12 });
+            done('<div class="mkt-dthumb-xls">' + xlsTable(wb.Sheets[wb.SheetNames[0]], 9, 5) + '</div>');
+          }).catch(fail);
+        });
+      } else {
+        ensurePdfJs(function (ok) {
+          if (!ok) { fail(); return; }
+          pdfOpen(blob).then(function (pdf) { return pdfPageCanvas(pdf, 1, 440); })
+            .then(function (cv) { done('<img alt="" src="' + cv.toDataURL('image/jpeg', 0.82) + '">'); })
+            .catch(fail);
+        });
+      }
+    }).catch(fail);
+  }
   function renderDocs(root) {
     if (docs === null) {
       root.innerHTML = V2.topbar({ back: true, backTo: 'marketing', backLabel: 'Marketing' }) +
@@ -1956,33 +2059,193 @@
       loadDocs().then(function () { if (V2.route && V2.route.name === 'marketing') V2.render(); });
       return;
     }
-    var list = docs.length ? docs.map(function (d) {
-      var nm = String(d.name).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-      return '<div class="mkt-doc">' +
-        '<span class="mkt-doc-ic">' + ICO('cat', 20) + '</span>' +
-        '<div class="mkt-doc-main"><div class="mkt-doc-n">' + esc(prettyName(d.name)) + '</div>' +
-          '<div class="mkt-doc-m">' + fmtSize(d.size) + (d.created ? ' · ' + new Date(d.created).toLocaleDateString('fr-FR') : '') + '</div></div>' +
-        '<a class="v2-btn v2-btn-ghost mkt-doc-open" href="' + esc(d.url) + '" target="_blank" rel="noopener">' + ICO('download', 15) + 'Ouvrir</a>' +
-        '<button class="mkt-doc-del" title="Supprimer pour tous" onclick="V2.mkt.docsDelete(\'' + nm + '\')">' + ICO('close', 16, 2) + '</button>' +
+    var nPdf = docs.filter(function (d) { return !d.xls; }).length, nXls = docs.length - nPdf;
+    var shown = docs.filter(function (d) { return docFilter === 'all' || (docFilter === 'xls') === d.xls; });
+    var chip = function (k, label, n) {
+      return '<button type="button" class="mkt-dchip' + (docFilter === k ? ' on' : '') + '" data-filter="' + k + '">' + label + ' <span>' + n + '</span></button>';
+    };
+    var grid = shown.length ? shown.map(function (d) {
+      return '<div class="mkt-dcard" data-name="' + esc(d.name) + '" role="button" tabindex="0">' +
+        '<div class="mkt-dthumb' + (d.xls ? ' xls' : '') + '" data-name="' + esc(d.name) + '">' +
+          '<span class="mkt-dthumb-ph">' + (d.xls ? 'XLS' : 'PDF') + '</span></div>' +
+        '<div class="mkt-dinfo">' +
+          '<div class="mkt-dname" title="' + esc(prettyName(d.name)) + '">' + esc(prettyName(d.name)) + '</div>' +
+          '<div class="mkt-dmeta"><span class="mkt-dtag' + (d.xls ? ' xls' : '') + '">' + (d.xls ? 'Excel' : 'PDF') + '</span>' +
+            fmtSize(d.size) + (d.created ? ' · ' + new Date(d.created).toLocaleDateString('fr-FR') : '') + '</div>' +
+        '</div>' +
+        '<button type="button" class="mkt-ddel" data-del="' + esc(d.name) + '" title="Supprimer pour tous" aria-label="Supprimer pour tous">' + ICO('close', 15, 2) + '</button>' +
       '</div>';
-    }).join('') : '<div class="mkt-empty">Aucun document pour le moment. Ajoute un PDF — il sera visible par tous les comptes.</div>';
+    }).join('') : '<div class="mkt-empty">' + (docs.length ? 'Aucun document de ce type.' : 'Aucun document pour le moment. Glissez un PDF ou un Excel ci-dessus : il sera visible par tous les comptes.') + '</div>';
 
     var setup = docsErr
-      ? '<div class="mkt-setup">' + ICO('alert', 16, 2) + '<div><b>Stockage partagé à activer (une seule fois)</b><br>' +
-        'Le dossier des PDF n\'est pas encore créé côté Supabase. Demande-moi le script, il est prêt — après ça, tout marche pour tous les comptes.</div></div>'
+      ? '<div class="mkt-setup">' + ICO('alert', 16, 2) + '<div><b>Bibliothèque injoignable</b><br>' +
+        'Les documents n\'ont pas pu être lus (' + esc(docsErr) + '). Rechargez la page dans un instant.</div></div>'
       : '';
 
     root.innerHTML = V2.topbar({ back: true, backTo: 'marketing', backLabel: 'Marketing' }) +
       '<div class="v2-wrap">' +
         '<div class="v2-page-title">Documents partagés</div>' +
-        '<div class="v2-page-sub">Des PDF (catalogues, fiches, offres…) visibles par <b>tous les comptes</b>. Ajoute, ouvre, supprime.</div>' +
-        '<div class="mkt-doc-bar">' +
-          '<label class="v2-btn v2-btn-primary mkt-upl' + (docsBusy ? ' is-busy' : '') + '">' + ICO('plus', 16, 2) + (docsBusy ? 'Envoi en cours…' : 'Ajouter un PDF') +
-            '<input type="file" accept="application/pdf,.pdf" multiple style="display:none"' + (docsBusy ? ' disabled' : '') + ' onchange="V2.mkt.docsUpload(this)"></label>' +
-        '</div>' +
+        '<div class="v2-page-sub">Catalogues, fiches, offres, tableaux : PDF et Excel visibles par <b>tous les comptes</b>, et proposés sur chaque fiche officine.</div>' +
+        '<label class="mkt-drop' + (docsBusy ? ' is-busy' : '') + '" id="mkt-drop">' +
+          '<span class="mkt-drop-ic">' + ICO('plus', 22, 2) + '</span>' +
+          '<span class="mkt-drop-t">' + (docsBusy ? 'Envoi en cours…' : 'Glissez vos PDF et Excel ici') + '</span>' +
+          '<span class="mkt-drop-s">' + (docsBusy ? 'Ne fermez pas la page.' : 'ou cliquez pour les choisir · plusieurs fichiers à la fois') + '</span>' +
+          '<input type="file" accept="application/pdf,.pdf,.xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" multiple' + (docsBusy ? ' disabled' : '') + '>' +
+        '</label>' +
         setup +
-        '<div class="mkt-doc-list">' + list + '</div>' +
+        (docs.length ? '<div class="mkt-dchips">' + chip('all', 'Tous', docs.length) + chip('pdf', 'PDF', nPdf) + chip('xls', 'Excel', nXls) + '</div>' : '') +
+        '<div class="mkt-dgrid" id="mkt-dgrid">' + grid + '</div>' +
       '</div>';
+
+    // Glisser-déposer : la zone, et toute la page pour ne pas rater sa cible
+    var drop = document.getElementById('mkt-drop');
+    var inp = drop.querySelector('input');
+    inp.onchange = function () { V2.mkt.docsUploadFiles(inp.files); inp.value = ''; };
+    var wrap = drop.parentNode, depth = 0;
+    wrap.ondragenter = function (e) { e.preventDefault(); depth++; drop.classList.add('is-over'); };
+    wrap.ondragover = function (e) { e.preventDefault(); if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy'; };
+    wrap.ondragleave = function () { if (--depth <= 0) { depth = 0; drop.classList.remove('is-over'); } };
+    wrap.ondrop = function (e) {
+      e.preventDefault(); depth = 0; drop.classList.remove('is-over');
+      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) V2.mkt.docsUploadFiles(e.dataTransfer.files);
+    };
+    var gridEl = document.getElementById('mkt-dgrid');
+    gridEl.onclick = function (e) {
+      var del = e.target.closest('[data-del]');
+      if (del) { e.stopPropagation(); V2.mkt.docsDelete(del.getAttribute('data-del')); return; }
+      var card = e.target.closest('.mkt-dcard');
+      if (card) docOpenViewer(card.getAttribute('data-name'));
+    };
+    gridEl.onkeydown = function (e) {
+      var card = e.target.closest && e.target.closest('.mkt-dcard');
+      if (card && (e.key === 'Enter' || e.key === ' ') && e.target === card) { e.preventDefault(); docOpenViewer(card.getAttribute('data-name')); }
+    };
+    [].slice.call(root.querySelectorAll('.mkt-dchip')).forEach(function (b) {
+      b.onclick = function () { docFilter = b.getAttribute('data-filter'); V2.render(); };
+    });
+    queueThumbs();
+  }
+
+  // ── Visionneuse : PDF page par page, Excel feuille par feuille, sans quitter le CRM ──
+  var viewToken = 0;
+  function docList() { return (docs || []).filter(function (d) { return docFilter === 'all' || (docFilter === 'xls') === d.xls; }); }
+  function docCloseViewer() {
+    viewToken++; docView = null;
+    var ov = document.getElementById('mkt-dview');
+    if (ov) ov.parentNode.removeChild(ov);
+    document.removeEventListener('keydown', docViewKeys);
+    document.documentElement.classList.remove('mkt-dview-open');
+  }
+  function docViewKeys(e) {
+    if (e.key === 'Escape') docCloseViewer();
+    else if (e.key === 'ArrowRight') docStep(1);
+    else if (e.key === 'ArrowLeft') docStep(-1);
+  }
+  function docStep(dir) {
+    var l = docList(); if (!docView || l.length < 2) return;
+    var i = l.map(function (d) { return d.name; }).indexOf(docView);
+    docOpenViewer(l[(i + dir + l.length) % l.length].name);
+  }
+  function docOpenViewer(name) {
+    var tok = ++viewToken;
+    docView = name;
+    var l = docList(), i = l.map(function (d) { return d.name; }).indexOf(name);
+    var ov = document.getElementById('mkt-dview');
+    if (!ov) {
+      ov = document.createElement('div');
+      ov.id = 'mkt-dview'; ov.className = 'mkt-dview';
+      document.body.appendChild(ov);
+      document.addEventListener('keydown', docViewKeys);
+      document.documentElement.classList.add('mkt-dview-open');
+    }
+    var nav = l.length > 1
+      ? '<button type="button" class="mkt-dv-btn" data-act="prev" aria-label="Document précédent">‹</button>' +
+        '<span class="mkt-dv-pos">' + (i + 1) + ' / ' + l.length + '</span>' +
+        '<button type="button" class="mkt-dv-btn" data-act="next" aria-label="Document suivant">›</button>'
+      : '';
+    ov.innerHTML =
+      '<div class="mkt-dv-bar">' +
+        '<div class="mkt-dv-title"><span class="mkt-dtag' + (docIsXls(name) ? ' xls' : '') + '">' + (docIsXls(name) ? 'Excel' : 'PDF') + '</span>' +
+          '<b>' + esc(prettyName(name)) + '</b></div>' +
+        '<div class="mkt-dv-acts">' + nav +
+          '<button type="button" class="v2-btn v2-btn-ghost mkt-dv-dl" data-act="dl">' + ICO('download', 15) + '<span>Télécharger</span></button>' +
+          '<button type="button" class="mkt-dv-btn" data-act="close" aria-label="Fermer">' + ICO('close', 18, 2) + '</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="mkt-dv-body" id="mkt-dv-body"><div class="v2-loading"><div class="v2-spinner"></div><div>Ouverture du document…</div></div></div>';
+    ov.onclick = function (e) {
+      var b = e.target.closest('[data-act]');
+      if (b) {
+        var a = b.getAttribute('data-act');
+        if (a === 'close') docCloseViewer();
+        else if (a === 'prev') docStep(-1);
+        else if (a === 'next') docStep(1);
+        else if (a === 'dl') docDownload(name);
+        else if (a === 'sheet') docShowSheet(b.getAttribute('data-i'));
+        return;
+      }
+      if (e.target === ov) docCloseViewer();
+    };
+    var body = document.getElementById('mkt-dv-body');
+    var failed = function () {
+      if (tok !== viewToken) return;
+      body.innerHTML = '<div class="mkt-dv-empty">Aperçu impossible pour ce fichier. Il reste disponible avec « Télécharger ».</div>';
+    };
+    docBlob(name).then(function (blob) {
+      if (tok !== viewToken) return;
+      if (docIsXls(name)) {
+        ensureXLSX(function (ok) {
+          if (!ok) { failed(); return; }
+          blob.arrayBuffer().then(function (buf) {
+            if (tok !== viewToken) return;
+            var wb = window.XLSX.read(buf, { type: 'array' });
+            ov._wb = wb;
+            var tabs = wb.SheetNames.length > 1 ? '<div class="mkt-dv-tabs">' + wb.SheetNames.map(function (s, k) {
+              return '<button type="button" class="mkt-dchip' + (k === 0 ? ' on' : '') + '" data-act="sheet" data-i="' + k + '">' + esc(s) + '</button>';
+            }).join('') + '</div>' : '';
+            body.innerHTML = tabs + '<div class="mkt-dv-sheet" id="mkt-dv-sheet"></div>';
+            docShowSheet(0);
+          }).catch(failed);
+        });
+      } else {
+        ensurePdfJs(function (ok) {
+          if (!ok) { failed(); return; }
+          pdfOpen(blob).then(function (pdf) {
+            if (tok !== viewToken) return;
+            body.innerHTML = '<div class="mkt-dv-pages" id="mkt-dv-pages"></div>';
+            var pages = document.getElementById('mkt-dv-pages');
+            var w = Math.min(pages.clientWidth || 900, 1000) * Math.min(window.devicePixelRatio || 1, 2);
+            var n = 1;
+            var next = function () {
+              if (tok !== viewToken || n > pdf.numPages) return;
+              pdfPageCanvas(pdf, n, w).then(function (cv) {
+                if (tok !== viewToken) return;
+                cv.className = 'mkt-dv-page'; pages.appendChild(cv); n++; next();
+              }).catch(failed);
+            };
+            next();
+          }).catch(failed);
+        });
+      }
+    }).catch(failed);
+  }
+  function docShowSheet(k) {
+    var ov = document.getElementById('mkt-dview'), host = document.getElementById('mkt-dv-sheet');
+    if (!ov || !ov._wb || !host) return;
+    k = +k || 0;
+    // 2000 lignes affichées au plus : un très gros tableau figerait Safari
+    host.innerHTML = xlsTable(ov._wb.Sheets[ov._wb.SheetNames[k]], 2000, 60);
+    [].slice.call(ov.querySelectorAll('.mkt-dv-tabs .mkt-dchip')).forEach(function (b) { b.classList.toggle('on', +b.getAttribute('data-i') === k); });
+  }
+  function docDownload(name) {
+    docBlob(name).then(function (blob) {
+      var file = new Blob([blob], { type: docMime(name) });
+      var url = URL.createObjectURL(file);
+      var a = document.createElement('a');
+      a.href = url; a.download = prettyName(name);
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
+    }).catch(function () { if (V2.toast) V2.toast('Téléchargement impossible — réessayez.'); });
   }
 
   V2.pages.marketing = {
@@ -2005,27 +2268,31 @@
   };
   V2.mktReload = function () { items = null; docs = null; };
 
-  // ── Upload / suppression des PDF partagés ──
+  // ── Upload / suppression des documents partagés (PDF + Excel) ──
   V2.mkt = V2.mkt || {};
-  V2.mkt.docsUpload = function (input) {
-    var files = input && input.files ? [].slice.call(input.files) : [];
-    var pdfs = files.filter(function (f) { return /\.pdf$/i.test(f.name) || f.type === 'application/pdf'; });
-    if (!pdfs.length) { if (V2.toast) V2.toast('Choisis un fichier PDF.'); return; }
+  V2.mkt.docsUploadFiles = function (list) {
+    if (docsBusy) return;
+    var files = list ? [].slice.call(list) : [];
+    var ok = files.filter(function (f) { return /\.(pdf|xlsx?)$/i.test(f.name); });
+    var skipped = files.length - ok.length;
+    if (!ok.length) { if (V2.toast) V2.toast('Seuls les PDF et les Excel (.xlsx, .xls) sont acceptés.'); return; }
     var c = sb();
     if (!c || !c.storage) { if (V2.toast) V2.toast('Connexion requise.'); return; }
     docsBusy = true; if (V2.route && V2.route.name === 'marketing') V2.render();
     var chain = Promise.resolve(), failed = 0;
-    pdfs.forEach(function (f) {
+    ok.forEach(function (f) {
       chain = chain.then(function () {
         var key = Date.now() + '-' + Math.floor(Math.random() * 1000) + '__' + sanitize(f.name);
-        return c.storage.from(BUCKET).upload(key, f, { contentType: 'application/pdf', upsert: false })
+        return c.storage.from(BUCKET).upload(key, f, { contentType: docMime(f.name), upsert: false })
           .then(function (r) { if (r && r.error) failed++; });
       });
     });
     chain.then(function () { return loadDocs(); }).then(function () {
       docsBusy = false;
       if (V2.route && V2.route.name === 'marketing') V2.render();
-      if (V2.toast) V2.toast(failed ? 'Envoi partiel (' + failed + ' échec).' : (pdfs.length > 1 ? 'PDF ajoutés.' : 'PDF ajouté.'));
+      var msg = failed ? 'Envoi partiel (' + failed + ' échec).' : (ok.length > 1 ? ok.length + ' documents ajoutés.' : 'Document ajouté.');
+      if (skipped) msg += ' ' + skipped + ' fichier(s) ignoré(s) : ni PDF ni Excel.';
+      if (V2.toast) V2.toast(msg);
     }).catch(function () {
       docsBusy = false;
       loadDocs().then(function () { if (V2.route && V2.route.name === 'marketing') V2.render(); });
@@ -2042,7 +2309,7 @@
     var c = sb(); if (!c || !c.storage) return;
     var disp = prettyName(name);
     var go = function () {
-      c.storage.from(BUCKET).remove([name]).then(function () { return loadDocs(); })
+      c.storage.from(BUCKET).remove([name]).then(function () { delete docBlobs[name]; delete docThumbs[name]; return loadDocs(); })
         .then(function () { if (V2.route && V2.route.name === 'marketing') V2.render(); if (V2.toast) V2.toast('Supprimé.'); })
         .catch(function () { if (V2.toast) V2.toast('Échec de la suppression.'); });
     };
@@ -2095,19 +2362,60 @@
       '.mkt-catlist-btn{display:inline-flex;align-items:center;gap:5px;border:1px solid color-mix(in srgb,var(--c-mint) 45%,var(--line));background:color-mix(in srgb,var(--c-mint) 10%,#fff);color:#0f7a52;border-radius:9px;padding:6px 11px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;transition:.14s}',
       '.mkt-catlist-btn:hover{background:var(--c-mint);color:#fff;border-color:var(--c-mint)}',
       '.mkt-catlist-btn:active{transform:scale(.97)}',
-      '.mkt-doc-bar{display:flex;gap:10px;margin:18px 0 6px;flex-wrap:wrap}',
-      '.mkt-upl{position:relative;cursor:pointer}',
-      '.mkt-upl input{position:absolute;inset:0;opacity:0;cursor:pointer}',
-      '.mkt-upl.is-busy{opacity:.6;pointer-events:none}',
-      '.mkt-doc-list{display:flex;flex-direction:column;gap:10px;margin-top:14px}',
-      '.mkt-doc{display:flex;align-items:center;gap:13px;background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--sh-1);padding:12px 14px}',
-      '.mkt-doc-ic{width:40px;height:40px;border-radius:11px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;background:linear-gradient(150deg,var(--c-rose,#E0556E),#b1304a)}',
-      '.mkt-doc-main{flex:1;min-width:0}',
-      '.mkt-doc-n{font-weight:700;font-size:14.5px;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
-      '.mkt-doc-m{font-size:12px;color:var(--muted);margin-top:2px}',
-      '.mkt-doc-open{flex-shrink:0;white-space:nowrap}',
-      '.mkt-doc-del{flex-shrink:0;width:36px;height:36px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s}',
-      '.mkt-doc-del:hover{color:#fff;background:var(--c-rose,#E0556E);border-color:var(--c-rose,#E0556E)}',
+      // Documents partagés : zone de dépôt + galerie d'aperçus + visionneuse (14/09/2026)
+      '.mkt-drop{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;margin:18px 0 6px;padding:26px 18px;text-align:center;cursor:pointer;border-radius:18px;border:1.5px dashed color-mix(in srgb,var(--ip-blue) 38%,var(--line));background:radial-gradient(120% 140% at 50% 0%,color-mix(in srgb,var(--ip-blue) 9%,#fff),var(--card) 70%);box-shadow:var(--sh-1);transition:border-color .16s var(--ease),box-shadow .16s var(--ease),transform .16s var(--ease)}',
+      '.mkt-drop:hover,.mkt-drop.is-over{border-color:var(--ip-blue);box-shadow:0 0 0 4px var(--halo),var(--sh-2)}',
+      '.mkt-drop.is-over{transform:scale(1.01)}',
+      '.mkt-drop.is-busy{opacity:.65;pointer-events:none}',
+      '.mkt-drop input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}',
+      '.mkt-drop-ic{width:46px;height:46px;border-radius:14px;display:flex;align-items:center;justify-content:center;color:#fff;background:linear-gradient(150deg,var(--ip-blue),#0034A0);box-shadow:0 6px 16px color-mix(in srgb,var(--ip-blue) 30%,transparent);margin-bottom:6px}',
+      '.mkt-drop-t{font-weight:800;font-size:16px;letter-spacing:-.01em;color:var(--ip-ink)}',
+      '.mkt-drop-s{font-size:12.5px;color:var(--muted)}',
+      '.mkt-dchips{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0 2px}',
+      '.mkt-dchip{font:inherit;font-size:13px;font-weight:700;padding:7px 13px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ip-ink-2);cursor:pointer;min-height:36px}',
+      '.mkt-dchip span{color:var(--muted);font-weight:600;margin-left:3px}',
+      '.mkt-dchip.on{background:var(--ip-ink);border-color:var(--ip-ink);color:#fff}',
+      '.mkt-dchip.on span{color:rgba(255,255,255,.7)}',
+      '.mkt-dgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px;margin-top:14px}',
+      '@media(max-width:480px){.mkt-dgrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}}',
+      '.mkt-dcard{position:relative;display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--sh-1);overflow:hidden;cursor:pointer;transition:box-shadow .16s var(--ease),transform .16s var(--ease)}',
+      '.mkt-dcard:hover,.mkt-dcard:focus-visible{box-shadow:var(--sh-2);transform:translateY(-2px);outline:none}',
+      '.mkt-dthumb{position:relative;aspect-ratio:4/5;background:linear-gradient(160deg,#f4f6fb,#e7ebf3);display:flex;align-items:flex-start;justify-content:center;overflow:hidden;border-bottom:1px solid var(--line)}',
+      '.mkt-dthumb.xls{background:linear-gradient(160deg,#f1f8f3,#e2efe6)}',
+      '.mkt-dthumb img{width:100%;height:auto;display:block}',
+      '.mkt-dthumb-ph{align-self:center;font-weight:800;font-size:13px;letter-spacing:.08em;color:#fff;padding:8px 12px;border-radius:10px;background:linear-gradient(150deg,var(--c-rose,#E0556E),#b1304a)}',
+      '.mkt-dthumb.xls .mkt-dthumb-ph{background:linear-gradient(150deg,#1f8a4c,#136236)}',
+      '.mkt-dthumb-xls{width:100%;padding:8px;box-sizing:border-box;background:#fff;height:100%}',
+      '.mkt-dthumb-xls table{border-collapse:collapse;width:100%;table-layout:fixed;font-size:9px;color:var(--ip-ink-2)}',
+      '.mkt-dthumb-xls td{border:1px solid #dfe5dc;padding:3px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+      '.mkt-dthumb-xls tr:first-child td{background:#e6f2ea;font-weight:700;color:#136236}',
+      '.mkt-dinfo{padding:10px 12px 12px}',
+      '.mkt-dname{font-weight:700;font-size:13.5px;line-height:1.3;letter-spacing:-.01em;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}',
+      '.mkt-dmeta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:11.5px;color:var(--muted);margin-top:5px}',
+      '.mkt-dtag{font-size:10.5px;font-weight:800;letter-spacing:.03em;padding:2px 7px;border-radius:6px;color:#b1304a;background:color-mix(in srgb,#E0556E 13%,#fff)}',
+      '.mkt-dtag.xls{color:#136236;background:#e3f1e8}',
+      '.mkt-ddel{position:absolute;top:8px;right:8px;width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:var(--sh-1);transition:.15s}',
+      '.mkt-ddel:hover{color:#fff;background:var(--c-rose,#E0556E);border-color:var(--c-rose,#E0556E)}',
+      'html.mkt-dview-open,html.mkt-dview-open body{overflow:hidden}',
+      '.mkt-dview{position:fixed;inset:0;z-index:9000;display:flex;flex-direction:column;background:rgba(14,20,34,.86)}',
+      '.mkt-dv-bar{display:flex;align-items:center;gap:12px;padding:10px 16px;padding-top:max(10px,env(safe-area-inset-top));background:#fff;box-shadow:0 2px 14px rgba(0,0,0,.18)}',
+      '.mkt-dv-title{flex:1;min-width:0;display:flex;align-items:center;gap:8px}',
+      '.mkt-dv-title b{font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+      '.mkt-dv-acts{display:flex;align-items:center;gap:6px;flex-shrink:0}',
+      '.mkt-dv-pos{font-size:12.5px;color:var(--muted);font-weight:600;min-width:42px;text-align:center}',
+      '.mkt-dv-btn{width:40px;height:40px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--ip-ink);font-size:22px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}',
+      '.mkt-dv-btn:hover{background:#f2f4f8}',
+      '.mkt-dv-body{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;padding:18px 16px 40px}',
+      '.mkt-dv-body .v2-loading{color:#fff}',
+      '.mkt-dv-pages{max-width:1000px;margin:0 auto;display:flex;flex-direction:column;gap:14px}',
+      '.mkt-dv-page{width:100%;height:auto;display:block;background:#fff;border-radius:4px;box-shadow:0 8px 30px rgba(0,0,0,.35)}',
+      '.mkt-dv-tabs{display:flex;gap:6px;flex-wrap:wrap;max-width:1200px;margin:0 auto 12px}',
+      '.mkt-dv-sheet{max-width:1200px;margin:0 auto;background:#fff;border-radius:10px;overflow:auto;box-shadow:0 8px 30px rgba(0,0,0,.35)}',
+      '.mkt-dv-sheet table{border-collapse:collapse;font-size:13px;color:var(--ip-ink)}',
+      '.mkt-dv-sheet td{border:1px solid #e3e7ee;padding:6px 10px;white-space:nowrap;max-width:420px;overflow:hidden;text-overflow:ellipsis}',
+      '.mkt-dv-sheet tr:first-child td{position:sticky;top:0;background:#eef5f0;font-weight:700;color:#136236}',
+      '.mkt-dv-empty{max-width:520px;margin:40px auto;padding:18px;border-radius:12px;background:#fff;text-align:center;font-size:14px;color:var(--ip-ink-2)}',
+      '@media(max-width:640px){.mkt-dv-dl span,.mkt-dv-pos{display:none}.mkt-dv-bar{padding-left:10px;padding-right:10px;gap:8px}.mkt-dv-body{padding:10px 8px 30px}}',
       '.mkt-cat-prod{font-weight:600;font-size:13.5px}',
       '.mkt-th-x{background:var(--card-2)}',
       '.mkt-empty{padding:24px 16px;text-align:center;color:var(--muted);font-size:13px;border:1px dashed var(--line);border-radius:14px;grid-column:1/-1}',
