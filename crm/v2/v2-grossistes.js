@@ -427,6 +427,8 @@
       '.gr-gcard{border:1px solid var(--line);border-left:5px solid var(--gc);border-radius:14px;background:var(--card);overflow:hidden}',
       '.gr-gcard.open{box-shadow:0 10px 28px rgba(16,19,28,.09)}',
       '.gr-ghead{display:flex;align-items:center;gap:14px;width:100%;padding:14px 16px;border:none;background:none;cursor:pointer;font:inherit;color:var(--ip-ink);text-align:left}',
+      // téléphone : nom / micro-barre / société mère / bandeau chiffres empilés (en ligne, tout se tassait à 390 px) — APRÈS la règle de base
+      '@media(max-width:640px){.gr-ghead{flex-direction:column;align-items:stretch;gap:0}.gr-gband{flex-wrap:wrap;row-gap:4px}}',
       '.gr-grang{font-size:13px;font-weight:800;color:var(--gc);min-width:26px}',
       '.gr-gmain{flex:1;min-width:0}',
       '.gr-gmain b{display:block;font-size:15.5px;font-weight:800;letter-spacing:-.01em;line-height:1.2}',
