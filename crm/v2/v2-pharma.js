@@ -2935,7 +2935,7 @@
     its.forEach(function (it) {
       chain = chain.then(function () {
         tx.step++; txRender();
-        return txFetch(pid, it.k).then(function (f) { if (f) out.push(f); else fails.push(it.label); },
+        return txFetch(pid, it.k).then(function (f) { if (f) { f.txLabel = it.label; out.push(f); } else fails.push(it.label); },
           function () { fails.push(it.label); });
       });
     });
@@ -2954,17 +2954,29 @@
     });
     V2.toast(files.length > 1 ? files.length + ' fichiers téléchargés — à joindre au mail' : 'Fichier téléchargé — à joindre au mail');
   }
+  // Trace dans les notes de la fiche : une ligne par lot préparé (pas de doublon si
+  // on appuie deux fois). Le CRM ne voit pas le mail partir, d'où « préparés pour envoi ».
+  function txTrace(pid, files) {
+    if (!V2.notes || !V2.notes.addAuto || tx.traced === files) return;
+    tx.traced = files;
+    var body = 'Documents préparés pour envoi en pièces jointes :\n' + files.map(function (f) { return '- ' + (f.txLabel || f.name); }).join('\n');
+    V2.notes.addAuto('client', pid, body).then(function (ok) {
+      if (!ok) { tx.traced = null; V2.toast('La trace dans les notes de la fiche n\'a pas pu s\'enregistrer', 'warn'); }
+    });
+  }
   V2.pharmaTxSend = function () {
-    var files = tx.files;
+    var files = tx.files, pid = tx.pid;
     if (!files || !files.length) return;
     try {
       if (navigator.share && navigator.canShare && navigator.canShare({ files: files })) {
         navigator.share({ files: files, title: 'Documents pour votre officine' })
-          .catch(function (e) { if (!e || e.name !== 'AbortError') txDownloadAll(files); });
+          .then(function () { txTrace(pid, files); })
+          .catch(function (e) { if (!e || e.name !== 'AbortError') { txDownloadAll(files); txTrace(pid, files); } });
         return;
       }
     } catch (e) {}
     txDownloadAll(files);
+    txTrace(pid, files);
   };
   V2.pharmaTxUpload = function (input) {
     var all = input && input.files ? [].slice.call(input.files) : [];

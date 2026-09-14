@@ -82,6 +82,12 @@
       '  display:flex;align-items:center;justify-content:center;',
       '  transition:transform .22s cubic-bezier(.2,.8,.2,1),opacity .22s}',
       '.v2-fab[hidden]{display:none}',
+      /* 14/09/2026 — le bouton passait AU-DESSUS des fenêtres (z 9400 contre 120) :
+         sur téléphone il cachait le coin du bouton Télécharger de « Transmettre ».
+         Fenêtre ouverte = bouton retiré. */
+      'body:has(.prepa-modal.open) .v2-fab,body:has(.mkt-modal.open) .v2-fab,body:has(.mkt-pick-bd.open) .v2-fab,html.mkt-dview-open .v2-fab{display:none}',
+      /* Et sur les pages, le bas du contenu défile au-delà du bouton au lieu de rester dessous. */
+      '@media (max-width:760px){body:has(.v2-fab:not([hidden])) .v2-wrap{padding-bottom:calc(104px + env(safe-area-inset-bottom,0px))}}',
       '.v2-fab:active{transform:scale(.94)}',
       /* Le voile. Pas de flou : le Mac de Will fige avec backdrop-filter. */
       '.v2-gv{position:fixed;inset:0;background:rgba(16,19,28,.38);z-index:9500;opacity:0;',
