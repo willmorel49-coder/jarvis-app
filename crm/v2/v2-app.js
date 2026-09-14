@@ -1320,6 +1320,15 @@
             '<span class="v2-lch-meta"><span class="v2-lch-t">' + esc(p.t) + '</span><span class="v2-lch-d">' + (SUB[k] || '') + '</span></span></a>';
         }
         var big = ESSENTIAL.map(bigCard).filter(Boolean).join('');
+        // 14/09/2026 — Alexandre Lovy (Escale Pharma) a l'accès total ET garde son
+        // espace escale/v2 : une 7ᵉ carte l'y mène (demande de Will). Seul un compte
+        // @escalepharma.fr arrive ici : les commerciaux Escale sont renvoyés avant.
+        if (/@escalepharma\.fr$/i.test((V2.user && V2.user.email) || '')) {
+          big += '<a class="v2-lch-card" style="--accent:#0B6E8F" onmousemove="V2.homeSpot(event,this)" onclick="location.href=\'../../escale/v2/index.html\'">' +
+            '<span class="v2-lch-ico">' + ICO('pilo', 24) + '</span>' +
+            '<span class="v2-lch-arrow">→</span>' +
+            '<span class="v2-lch-meta"><span class="v2-lch-t">Espace Escale Pharma</span><span class="v2-lch-d">Le suivi Escale et ses officines clientes</span></span></a>';
+        }
         // Bannière « Nouveau · Copilote » retirée le 12/08/2026 : c'est un
         // chantier, il n'a pas à occuper la tête de l'accueil. Il reste
         // accessible dans « Autres outils » et par ⌘K.
