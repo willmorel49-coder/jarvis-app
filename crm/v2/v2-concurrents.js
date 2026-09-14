@@ -673,10 +673,26 @@
       }).join('') + '</nav>';
     return nav + (espace === 'prix' ? '<div class="cc-kicker"><span class="cc-kicker-s">Conditions de tiers : réservé à l\'interne Intégral, jamais dans un document remis à une officine.</span></div>' : '');
   }
+  // Chiffres vivants sous chaque porte. Les prix se comptent sans rien charger ;
+  // grossistes et actualité arrivent de v2-grossistes.js (150 + 76 Ko).
+  var CHIFFRES = null;
+  function chiffrePorte(k) {
+    if (k === 'prix') { var n = ORDRE.filter(function (x) { return x !== 'etudes'; }).length; return '<b class="num">' + n + '</b> catalogues de concurrents'; }
+    if (!CHIFFRES) return '&nbsp;';
+    if (k === 'acteurs') return '<b class="num">' + CHIFFRES.acteurs + '</b> acteurs · <b class="num">' + CHIFFRES.groupes + '</b> groupes';
+    return (CHIFFRES.semaine ? '<b class="num">' + CHIFFRES.semaine + '</b> article' + (CHIFFRES.semaine > 1 ? 's' : '') + ' cette semaine' : 'Rien de neuf cette semaine') + (CHIFFRES.maj ? ' · mis à jour ' + esc(CHIFFRES.maj) : '');
+  }
+  function remplirChiffres() {
+    if (CHIFFRES || !V2.grossistesChiffres) return;
+    V2.grossistesChiffres(function (c) {
+      CHIFFRES = c;
+      ['acteurs', 'actu'].forEach(function (k) { var el = document.querySelector('.cc-porte .k[data-k="' + k + '"]'); if (el) el.innerHTML = chiffrePorte(k); });
+    });
+  }
   function accueilHtml() {
     return '<section class="cc-accueil"><h1 class="v2-page-title">Concurrents</h1><p class="v2-page-sub">Tout ce qu\'on sait des concurrents, en trois questions.</p>' +
       '<div class="cc-portes">' + ESPACES.map(function (e, i) {
-        return '<button type="button" class="cc-porte" onclick="' + allerA(e.k) + '"><span class="n num">' + (i + 1) + '</span><span class="q">' + esc(e.q) + '</span><span class="t">' + esc(e.t) + '</span><span class="d">' + esc(e.d) + '</span><span class="go">' + esc(e.go) + ' <span aria-hidden="true">→</span></span></button>';
+        return '<button type="button" class="cc-porte" onclick="' + allerA(e.k) + '"><span class="n num">' + (i + 1) + '</span><span class="q">' + esc(e.q) + '</span><span class="t">' + esc(e.t) + '</span><span class="d">' + esc(e.d) + '</span><span class="k" data-k="' + e.k + '">' + chiffrePorte(e.k) + '</span><span class="go">' + esc(e.go) + ' <span aria-hidden="true">→</span></span></button>';
       }).join('') + '</div>' +
       '<div class="cc-comptoir"><h2 class="cc-acc-h">Ou cherche directement un produit</h2><p class="cc-acc-s">Un nom, un code : le prix de chaque concurrent, à côté du nôtre.</p>' +
       comptoirBar(true) +
@@ -810,6 +826,7 @@
         if (V2.grossistesCorps) V2.grossistesCorps(host, espace);
         else host.innerHTML = '<div class="cc-vide">Cette partie n\'est pas chargée. Recharge la page.</div>';
       }
+      if (espace === 'accueil') remplirChiffres();
       if (SANS) return;
       // Données absentes → on les demande, et on re-rend à l'arrivée. JAMAIS
       // quand elles sont déjà là : le rappel relancerait le rendu, qui
@@ -849,6 +866,8 @@
       '.cc-porte .q{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ip-blue-d)}',
       '.cc-porte .t{font-size:22px;font-weight:800;letter-spacing:-.025em;color:var(--titre,#0B1F4D);line-height:1.1}',
       '.cc-porte .d{font-size:14px;line-height:1.5;color:var(--ip-ink-2);flex:1}',
+      '.cc-porte .k{display:block;min-height:1.5em;margin-top:6px;padding-top:10px;border-top:1px solid rgba(11,31,77,.08);align-self:stretch;font-size:13.5px;line-height:1.5;color:var(--ip-ink-2)}',
+      '.cc-porte .k b{font-size:17px;font-weight:800;color:var(--titre,#0B1F4D)}',
       '.cc-porte .go{margin-top:8px;font-size:14px;font-weight:700;color:var(--ip-blue)}',
       '.cc-acc-h{font-size:20px;font-weight:800;letter-spacing:-.025em;color:var(--titre,#0B1F4D);margin:0 0 4px}.cc-acc-s{font-size:14px;color:var(--muted);margin:0 0 12px}',
       /* plus spécifique que « .cc-wrap:not(.tel) .cc-cres » (liste déroulante masquée), écrite plus bas */

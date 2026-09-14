@@ -32,7 +32,10 @@
   }
   function ensureActu(cb) {
     if (ACTU) { cb(); return; }
-    fetch('grossistes-actu.json' + CB).then(function (r) { return r.json(); })
+    // Clé du jour, comme les autres fichiers des robots : avec le jeton fixe,
+    // le service worker (cache-first) resservait indéfiniment la première
+    // version reçue — l'actualité « mise à jour chaque jour » ne bougeait plus.
+    fetch('grossistes-actu.json?d=' + new Date().toISOString().slice(0, 10), { cache: 'no-store' }).then(function (r) { return r.json(); })
       .then(function (j) { ACTU = j; cb(); }).catch(function () { ACTU = { items: [] }; cb('err'); });
   }
 
@@ -282,6 +285,18 @@
         else body.innerHTML = annuaireHtml();
       });
     }
+  };
+  // Chiffres vivants des portes de l'accueil « Concurrents » : même compte
+  // d'acteurs que la liste, articles des 7 derniers jours, fraîcheur du robot.
+  V2.grossistesChiffres = function (cb) {
+    ensureData(function () {
+      var acteurs = groupes().reduce(function (s, g) { return s + membersOf(g.id).length; }, 0);
+      ensureActu(function () {
+        var items = (ACTU && ACTU.items) || [], now = Date.now();
+        var semaine = items.filter(function (i) { return now - new Date(i.date) < 7 * 864e5; }).length;
+        cb({ acteurs: acteurs, groupes: groupes().length, semaine: semaine, maj: ACTU && ACTU.maj ? timeAgo(ACTU.maj) : '' });
+      });
+    });
   };
   // Ancienne adresse #grossistes (favoris, historique) → le nouvel écran.
   V2.pages.grossistes = {
