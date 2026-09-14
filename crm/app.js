@@ -724,6 +724,89 @@ function sumMargeMDL(sales) {
   };
 }
 
+// ═════════════════════════════════════════════════════════════════════
+// MARGE NETTE OFFICINE — ce que la pharmacie gagne grâce à Intégral
+// Barème arrêté par Will le 14/09/2026. Vocabulaire maison : « marge nette »,
+// jamais « marge MDL » (la MDL est la marge réglementaire propre à l'officine,
+// autre chose). Base de calcul : le prix NET payé par l'officine.
+//   Remboursés   ≤ 4,33 €         → 0,18 € par boîte
+//                4,33 → 468 €     → 4,2 %
+//                > 468 €           → 19,50 € par boîte
+//   Non remboursés (NR)            → 15 % du prix d'achat (marge libre PLM)
+//   Génériques / biosimilaires     → aucun abandon Intégral : non calculé
+// ═════════════════════════════════════════════════════════════════════
+const MARGE_NETTE_TAUX_MI = 0.042;   // tranche intermédiaire, sur prix net payé
+const MARGE_NETTE_TAUX_NR = 0.15;    // NR : marge libre de l'officine
+const MARGE_NETTE_PP      = 0.18;    // € par boîte, petits prix
+const MARGE_NETTE_CH      = 19.50;   // € par boîte, produits chers
+
+const MARGE_NETTE_TRANCHES = [
+  { k: 'pp',   label: 'Petit prix',            regle: '≤ 4,33 € · 0,18 €/boîte',  color: '#34D399' },
+  { k: 'mi',   label: 'Intermédiaire',         regle: '4,33 → 468 € · 4,2 %',      color: '#FFB020' },
+  { k: 'ch',   label: 'Cher',                  regle: '> 468 € · 19,50 €/boîte',   color: '#FF4D6D' },
+  { k: 'nr',   label: 'Non remboursés',        regle: 'marge libre · 15 %',        color: '#FF6B35' },
+  { k: 'hors', label: 'Génériques / biosim.', regle: 'pas d\'abandon Intégral',   color: '#5B6478' },
+];
+
+/** Marge nette gagnée par l'officine sur une boîte. */
+function calcMargeNetteBoite(prixNet, remboursable) {
+  const p = +prixNet || 0;
+  if (!(p > 0)) return 0;
+  if (!remboursable) return p * MARGE_NETTE_TAUX_NR;
+  if (p <= 4.33) return MARGE_NETTE_PP;
+  if (p <= 468)  return p * MARGE_NETTE_TAUX_MI;
+  return MARGE_NETTE_CH;
+}
+
+/** Tranche de marge nette d'une ligne de vente. */
+function margeNetteTranche(sale, remboursable) {
+  const cat = classifyProduct(sale);
+  if (cat === 'generique' || cat === 'biosim') return 'hors';
+  if (!remboursable) return 'nr';
+  const p = sale.puNet || 0;
+  return p > 468 ? 'ch' : p > 4.33 ? 'mi' : 'pp';
+}
+
+/**
+ * Marge nette officine sur un ensemble de ventes.
+ * Retourne le global ET le détail par tranche/catégorie.
+ * margePct = marge / CA des lignes réellement calculées (génériques exclus).
+ */
+function sumMargeNette(sales) {
+  const tranches = {};
+  MARGE_NETTE_TRANCHES.forEach(t => {
+    tranches[t.k] = { k: t.k, label: t.label, regle: t.regle, color: t.color, ca: 0, qte: 0, marge: 0, lignes: 0 };
+  });
+  let margeTotale = 0, caCalcule = 0, caHors = 0, qteCalculee = 0;
+  for (const s of sales) {
+    const remb = isMdlRemboursable(s.artCode);
+    const k    = margeNetteTranche(s, remb);
+    const ca   = s.mntNetHt || 0;
+    const qte  = s.qte || 0;
+    const t    = tranches[k];
+    t.ca += ca; t.qte += qte; t.lignes++;
+    if (k === 'hors') { caHors += ca; continue; }
+    const marge = calcMargeNetteBoite(s.puNet || 0, k !== 'nr') * qte;
+    t.marge     += marge;
+    margeTotale += marge;
+    caCalcule   += ca;
+    qteCalculee += qte;
+  }
+  MARGE_NETTE_TRANCHES.forEach(t => {
+    const x = tranches[t.k];
+    x.pct = x.ca > 0 && t.k !== 'hors' ? (x.marge / x.ca) * 100 : 0;
+  });
+  return {
+    margeTotale,
+    caCalcule,
+    caHors,
+    qteCalculee,
+    margePct: caCalcule > 0 ? (margeTotale / caCalcule) * 100 : 0,
+    tranches,
+    liste: MARGE_NETTE_TRANCHES.map(t => tranches[t.k]),
+  };
+}
+
 function byCategory(sales) {
   const map = {};
   for (const s of sales) {
@@ -2456,15 +2539,15 @@ function renderPharmacies() {
   const wmlVisCRM = typeof getWmlVisible === 'function' ? getWmlVisible() : [];
   const wmlNnMapCRM = new Map(wmlVisCRM.map(d => [(d.nom||'').trim().toUpperCase().replace(/\s+/g,' '), d]));
 
-  // Construire liste enrichie de toutes les pharmacies avec CA + marge MDL + opp
+  // Construire liste enrichie de toutes les pharmacies avec CA + marge nette + opp
   const today = new Date(); today.setHours(0,0,0,0);
   let enriched = state.pharmacies.map(ph => {
     const salesCurPh = salesCur.filter(s => s.pharmacyId === ph.id);
     const allPhSales = getSales({ pharmacyId: ph.id });
     const caCur  = sumCA(salesCurPh);
     const caPrev = sumCA(salesPrev.filter(s => s.pharmacyId === ph.id));
-    // Marge MDL : sur période courante (rapide)
-    const mdl = sumMargeMDL(salesCurPh);
+    // Marge nette officine : sur période courante (rapide)
+    const mdl = sumMargeNette(salesCurPh);
     // Nb produits commandés total (toutes périodes) + nb opportunités estimées
     const cipsOrdered = new Set(allPhSales.map(s => String(s.artCode || '')).filter(c => c.length >= 7));
     const nProdOrdered = cipsOrdered.size;
@@ -2614,8 +2697,8 @@ function renderPharmacies() {
               <div style="font-size:9px;color:var(--text3);letter-spacing:0.06em;text-transform:uppercase;margin-top:1px">CA net HT</div>
             </div>
             <div style="text-align:right;padding-left:14px;border-left:0.5px solid var(--border1)">
-              <div style="font-family:'Geist Mono',ui-monospace,monospace;font-size:14px;font-weight:700;color:var(--mint);font-variant-numeric:tabular-nums" title="Marge MDL pharma (barème officiel France, remboursables uniquement)">${fmt(mdl.margeTotale)}</div>
-              <div style="font-size:9px;color:var(--text3);letter-spacing:0.06em;text-transform:uppercase;margin-top:1px">Marge MDL ${mdl.margePct > 0 ? mdl.margePct.toFixed(1) + '%' : ''}</div>
+              <div style="font-family:'Geist Mono',ui-monospace,monospace;font-size:14px;font-weight:700;color:var(--mint);font-variant-numeric:tabular-nums" title="Marge nette gagnée par l'officine · 0,18 €/boîte ≤ 4,33 € · 4,2 % jusqu'à 468 € · 19,50 €/boîte au-delà · NR 15 % · génériques exclus">${fmt(mdl.margeTotale)}</div>
+              <div style="font-size:9px;color:var(--text3);letter-spacing:0.06em;text-transform:uppercase;margin-top:1px">Marge nette ${mdl.margePct > 0 ? mdl.margePct.toFixed(1) + '%' : ''}</div>
             </div>
             <div style="text-align:right;padding-left:14px;border-left:0.5px solid var(--border1)">
               <div style="font-family:'Geist Mono',ui-monospace,monospace;font-size:14px;font-weight:700;color:var(--blue);font-variant-numeric:tabular-nums" title="Nombre de références produit commandées">${nProdOrdered}</div>
@@ -4056,11 +4139,12 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
   const nRefCur  = new Set(salesCur.map(s => s.artCode)).size;
   const sectorCA = sumCA(curY ? getSales({ year: curY, month: curM }) : []);
   const pctOfSector = sectorCA > 0 ? caCur / sectorCA * 100 : 0;
-  // ── Marge MDL France (officielle, médicaments remboursables uniquement) ──
-  // Barème : 0-4,33€ → 0,18€/boîte | 4,33-468€ → 3,9% | >468€ → 19,50€/boîte
-  const mdlCur  = sumMargeMDL(salesCur);
-  const mdlPrev = sumMargeMDL(salesPrev);
-  const mdlAll  = sumMargeMDL(allPhSales);
+  // ── Marge nette officine (ce que la pharmacie gagne grâce à Intégral) ──
+  // Barème : ≤ 4,33 € → 0,18 €/boîte | 4,33-468 € → 4,2 % | > 468 € → 19,50 €/boîte
+  //          NR → 15 % du prix d'achat | génériques et biosimilaires : non calculé
+  const mdlCur  = sumMargeNette(salesCur);
+  const mdlPrev = sumMargeNette(salesPrev);
+  const mdlAll  = sumMargeNette(allPhSales);
   const mdlDeltaPct = mdlPrev.margeTotale > 0 ? ((mdlCur.margeTotale - mdlPrev.margeTotale) / mdlPrev.margeTotale) * 100 : null;
 
   // ── WML groupement data for this pharmacy ────────
@@ -4318,35 +4402,73 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
       </div>
   `;
 
-  // ── HTML : Marge MDL card (overview) ──────────
+  // ── HTML : Marge nette officine (overview) ──────────
+  // Détail par tranche + total. « Marge nette » = vocabulaire maison (pas « MDL »).
+  const __mnRow = (t) => {
+    const horsCalc = t.k === 'hors';
+    return `
+      <tr style="border-top:0.5px solid var(--border1)">
+        <td style="padding:7px 8px;font-size:12px;color:var(--text)">
+          <span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${t.color};margin-right:7px"></span>${t.label}
+          <div style="font-size:10px;color:var(--text3);margin-left:15px">${t.regle}</div>
+        </td>
+        <td style="padding:7px 8px;text-align:right;font-family:'Geist Mono',ui-monospace,monospace;font-size:12px;color:var(--text2);font-variant-numeric:tabular-nums">${fmt(t.ca)}</td>
+        <td style="padding:7px 8px;text-align:right;font-family:'Geist Mono',ui-monospace,monospace;font-size:12px;color:var(--text2);font-variant-numeric:tabular-nums">${fmtNum(t.qte)}</td>
+        <td style="padding:7px 8px;text-align:right;font-family:'Geist Mono',ui-monospace,monospace;font-size:13px;font-weight:700;color:${horsCalc ? 'var(--text3)' : 'var(--mint)'};font-variant-numeric:tabular-nums">${horsCalc ? '\u2014' : fmt(t.marge)}</td>
+        <td style="padding:7px 8px;text-align:right;font-family:'Geist Mono',ui-monospace,monospace;font-size:12px;color:var(--text3);font-variant-numeric:tabular-nums">${horsCalc ? '\u2014' : t.pct.toFixed(1) + '%'}</td>
+      </tr>`;
+  };
   const __mdlHtml = `
-      <!-- Marge MDL pharmacie (officielle France, médicaments remboursables uniquement) -->
+      <!-- Marge nette officine : ce que la pharmacie gagne grâce à Intégral -->
       <div class="card fade-up" style="margin-bottom:20px;border-left:3px solid var(--mint);padding:14px 18px">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-          <div style="font-size:11px;color:var(--mint);font-weight:700;text-transform:uppercase;letter-spacing:.06em">💰 Marge MDL pharmacie · ${curLabel}</div>
-          <div style="font-size:10px;color:var(--text3)">Barème officiel France · 0,18€ &lt;4,33€ · 3,9% jusqu'à 468€ · 19,50€ au-delà</div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+          <div style="font-size:11px;color:var(--mint);font-weight:700;text-transform:uppercase;letter-spacing:.06em">\u{1F4B0} Marge nette officine · ${curLabel}</div>
+          <div style="font-size:10px;color:var(--text3)">0,18 €/boîte &le; 4,33 € · 4,2 % jusqu'à 468 € · 19,50 €/boîte au-delà · NR 15 % · génériques hors calcul</div>
         </div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;margin-bottom:16px">
           <div>
-            <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;font-weight:600;margin-bottom:4px">Marge MDL générée</div>
+            <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;font-weight:600;margin-bottom:4px">Marge nette générée</div>
             <div style="font-family:'Geist Mono',monospace;font-size:24px;font-weight:700;color:var(--mint);font-variant-numeric:tabular-nums">${fmt(mdlCur.margeTotale)}</div>
-            ${mdlDeltaPct !== null ? `<div style="font-size:11px;font-weight:600;color:${mdlDeltaPct >= 0 ? 'var(--mint)' : 'var(--rose)'};margin-top:2px">${mdlDeltaPct >= 0 ? '↑' : '↓'} ${Math.abs(mdlDeltaPct).toFixed(1)}% vs ${prevLabel}</div>` : ''}
+            ${mdlDeltaPct !== null ? `<div style="font-size:11px;font-weight:600;color:${mdlDeltaPct >= 0 ? 'var(--mint)' : 'var(--rose)'};margin-top:2px">${mdlDeltaPct >= 0 ? '\u2191' : '\u2193'} ${Math.abs(mdlDeltaPct).toFixed(1)}% vs ${prevLabel}</div>` : ''}
           </div>
           <div>
-            <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;font-weight:600;margin-bottom:4px">Taux marge / CA remb.</div>
+            <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;font-weight:600;margin-bottom:4px">Taux moyen</div>
             <div style="font-family:'Geist Mono',monospace;font-size:24px;font-weight:700;color:var(--blue);font-variant-numeric:tabular-nums">${mdlCur.margePct.toFixed(2)}<span style="font-size:14px">%</span></div>
-            <div style="font-size:11px;color:var(--text3);margin-top:2px">${fmt(mdlCur.caRembHT)} CA remb. ${curLabel}</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px">sur ${fmt(mdlCur.caCalcule)} d'achats · ${fmtNum(mdlCur.qteCalculee)} boîtes</div>
           </div>
           <div>
-            <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;font-weight:600;margin-bottom:4px">CA NR · marge libre</div>
-            <div style="font-family:'Geist Mono',monospace;font-size:24px;font-weight:700;color:var(--amber);font-variant-numeric:tabular-nums">${fmt(mdlCur.caNrHT)}</div>
-            <div style="font-size:11px;color:var(--text3);margin-top:2px">Non remboursés · politique pharma</div>
+            <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;font-weight:600;margin-bottom:4px">Hors calcul</div>
+            <div style="font-family:'Geist Mono',monospace;font-size:24px;font-weight:700;color:var(--amber);font-variant-numeric:tabular-nums">${fmt(mdlCur.caHors)}</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px">Génériques et biosimilaires</div>
           </div>
           <div>
-            <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;font-weight:600;margin-bottom:4px">Marge MDL cumulée</div>
+            <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;font-weight:600;margin-bottom:4px">Marge nette cumulée</div>
             <div style="font-family:'Geist Mono',monospace;font-size:24px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums">${fmt(mdlAll.margeTotale)}</div>
             <div style="font-size:11px;color:var(--text3);margin-top:2px">Toutes périodes · ${mdlAll.margePct.toFixed(2)}%</div>
           </div>
+        </div>
+        <div style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse;min-width:440px">
+            <thead>
+              <tr>
+                <th style="padding:6px 8px;text-align:left;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;font-weight:600">Tranche</th>
+                <th style="padding:6px 8px;text-align:right;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;font-weight:600">Achats</th>
+                <th style="padding:6px 8px;text-align:right;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;font-weight:600">Boîtes</th>
+                <th style="padding:6px 8px;text-align:right;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;font-weight:600">Marge nette</th>
+                <th style="padding:6px 8px;text-align:right;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;font-weight:600">Taux</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${mdlCur.liste.filter(t => t.lignes > 0).map(__mnRow).join('')}
+              <tr style="border-top:1px solid var(--border2)">
+                <td style="padding:8px;font-size:12px;font-weight:700;color:var(--text)">Total ${curLabel}</td>
+                <td style="padding:8px;text-align:right;font-family:'Geist Mono',ui-monospace,monospace;font-size:12px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums">${fmt(mdlCur.caCalcule + mdlCur.caHors)}</td>
+                <td style="padding:8px;text-align:right;font-family:'Geist Mono',ui-monospace,monospace;font-size:12px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums">${fmtNum(mdlCur.qteCalculee)}</td>
+                <td style="padding:8px;text-align:right;font-family:'Geist Mono',ui-monospace,monospace;font-size:14px;font-weight:700;color:var(--mint);font-variant-numeric:tabular-nums">${fmt(mdlCur.margeTotale)}</td>
+                <td style="padding:8px;text-align:right;font-family:'Geist Mono',ui-monospace,monospace;font-size:12px;font-weight:700;color:var(--text2);font-variant-numeric:tabular-nums">${mdlCur.margePct.toFixed(1)}%</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
   `;
