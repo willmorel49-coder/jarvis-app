@@ -867,7 +867,7 @@
   V2.chargerScripts = function (urls) {
     urls = urls || [];
     if (!urls.length) return Promise.resolve();
-    var V = '?v=20260912a' + (window.V2_VER || '20260911v');
+    var V = '?v=20260914a' + (window.V2_VER || '20260914a');
     return Promise.all(urls.map(function (u) {
       return new Promise(function (resolve) {
         var s = document.createElement('script');
@@ -1503,6 +1503,23 @@
     return Math.round(n).toLocaleString('fr-FR');
   };
   V2.fmtNum = function (n) { return (Math.round(n) || 0).toLocaleString('fr-FR'); };
+
+  // ── MARGE NETTE OFFICINE ───────────────────────────────────────
+  // Ce que la pharmacie gagne grâce à Intégral. Barème arrêté par Will le 14/09/2026,
+  // sur le prix NET payé par l'officine. Vocabulaire maison : « marge nette »,
+  // jamais « marge MDL » (la MDL est la marge réglementaire de l'officine, autre chose).
+  //   Remboursés ≤ 4,33 € → 0,18 €/boîte · 4,33→468 € → 4,2 % · > 468 € → 19,50 €/boîte
+  //   NR → 15 % du prix d'achat (marge libre) · génériques et biosimilaires : non calculé
+  V2.MARGE_NETTE = { mi: 0.042, nr: 0.15, pp: 0.18, ch: 19.50, seuilPP: 4.33, seuilCH: 468 };
+  V2.margeNetteBoite = function (prixNet, remboursable) {
+    var p = +prixNet || 0;
+    if (!(p > 0)) return 0;
+    var T = V2.MARGE_NETTE;
+    if (!remboursable) return p * T.nr;
+    if (p <= T.seuilPP) return T.pp;
+    if (p <= T.seuilCH) return p * T.mi;
+    return T.ch;
+  };
 
   // Barème MDL France (validé mémoire) — REMBOURSABLES uniquement
   V2.margeMDLboite = function (prixNet) {

@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════════
    CRM V2 · Pilier "Opportunités pharmacie" (pages.pharma)
-   Vue A : liste des officines (CA du mois + marge MDL générée)
+   Vue A : liste des officines (CA du mois + marge nette générée)
    Vue B : fiche opportunités — top marché OPS+CPR+HP que la pharma
            ne commande PAS, classé en 8 catégories.
    ── Vanilla JS pur · IIFE · zéro dépendance · zéro emoji ──
@@ -110,15 +110,26 @@
     return !!(b && b.has_ameli === true);
   }
 
-  // ── Marge MDL générée par une pharma (sur ses ventes remboursables) ──
-  function margeMDLpharma(sales) {
+  // ── Marge nette officine — ce que la pharmacie gagne grâce à Intégral ──
+  // Barème V2.margeNetteBoite (v2-boot.js). Aucun abandon Intégral sur les génériques,
+  // génériques partenaires et biosimilaires → hors calcul, jamais 0 € déguisé en marge.
+  // Produit inconnu du BENCHMARK : on ne compte rien (jamais de fausse marge).
+  function margeNetteExclue(cat) { return cat === 'gen' || cat === 'genp' || cat === 'biosim'; }
+  function margeNetteCat(cip) {
+    var b = cip ? benchIndex().get(cip) : null;
+    return b ? classify(b, cip) : null;
+  }
+  function margeNetteLigne(s) {
+    var cip = String(s.artCode || '');
+    var cat = margeNetteCat(cip);
+    if (margeNetteExclue(cat)) return 0;
+    var remb = isRemboursable(cip);
+    if (!remb && cat !== 'nr') return 0;
+    return V2.margeNetteBoite(s.puNet || 0, remb) * (s.qte || 0);
+  }
+  function margeNettePharma(sales) {
     var total = 0;
-    for (var i = 0; i < sales.length; i++) {
-      var s = sales[i];
-      if (isRemboursable(s.artCode)) {
-        total += V2.margeMDLboite(s.puNet || 0) * (s.qte || 0);
-      }
-    }
+    for (var i = 0; i < sales.length; i++) total += margeNetteLigne(sales[i]);
     return total;
   }
 
@@ -531,13 +542,13 @@
         '<span class="ipv-rank">#' + (i + 1) + '</span>' +
         '<span class="ipv-name">' + esc(cap((r.d || '').toLowerCase())) +
           '<small style="display:block;color:var(--muted);font-family:var(--mono)">rotation ~' + V2.fmtNum(r.rota) + '/an · ' + r.n + ' phies · ta remise ' + V2.fmtEur(r.remise) + '/an</small></span>' +
-        '<span class="ipv-vol" style="color:var(--c-opp);font-weight:800" title="marge pharmacien MDL / an">' + V2.fmtEur(r.marge) + '<small>/an</small></span>' +
+        '<span class="ipv-vol" style="color:var(--c-opp);font-weight:800" title="marge nette gagnée par l\'officine / an">' + V2.fmtEur(r.marge) + '<small>/an</small></span>' +
         '</div>';
     }).join('');
     var open = sectionOpen('molsum');
     return '<div class="ph-section">' +
       sectionHead('Ce qu\'un produit rapporte (réseau)',
-        'rotation moyenne par pharmacie & marge pharmacien (MDL) — l\'argument chiffré à montrer au comptoir',
+        'rotation moyenne par pharmacie & marge nette de l\'officine —l\'argument chiffré à montrer au comptoir',
         'molsum', open) +
       (open ? '<div class="v2-card" style="padding:6px 0">' + rows +
         '<div style="text-align:right;padding:8px 14px"><a class="v2-cat-link" style="cursor:pointer" onclick="V2.go(\'molecules\')">Tous les produits →</a></div></div>' : '') +
@@ -557,7 +568,7 @@
       '<span class="v2-row-name">' + V2.esc(x.p.name) + '</span>' +
       badge +
       oppPill +
-      '<span class="v2-row-meta">marge MDL</span>' +
+      '<span class="v2-row-meta">marge nette</span>' +
       '<span class="v2-row-val mono" style="color:var(--c-opp)">' + V2.fmtEur(x.marge) + '</span>' +
       '<span class="v2-row-val mono" style="min-width:84px;text-align:right">' + V2.fmtEur(x.ca) + '</span>' +
       '<span class="v2-row-chev">' + ICO('chev', 16) + '</span>' +
@@ -623,7 +634,7 @@
     var marketReady = !!window.OPS_AGGREGATE;
     var phs = (V2.pharmacies || []).map(function (p) {
       var sales = pharmaSales(p.id);
-      var x = { p: p, ca: V2.sumCA(sales), marge: margeMDLpharma(sales), opp: null };
+      var x = { p: p, ca: V2.sumCA(sales), marge: margeNettePharma(sales), opp: null };
       if (marketReady) x.opp = oppCount(p.id);
       return x;
     });
@@ -874,9 +885,7 @@
       bk.ca += s.mntNetHt || 0;
       bk.qte += s.qte || 0;
       if (cip.length >= 7) bk.refs.add(cip);
-      if (cat && buckets[cat] && isRemboursable(cip)) {
-        if (s.puNet > 0) buckets[cat].mdl += V2.margeMDLboite(s.puNet) * (s.qte || 0);
-      }
+      if (cat && buckets[cat]) buckets[cat].mdl += margeNetteLigne(s);
     });
     return { buckets: buckets, other: other };
   }
@@ -1207,7 +1216,7 @@
     return '<div class="pha-kpis">' +
       '<div class="pha-kpi" style="--a:var(--ip-blue)"><div class="pha-kl">CA ' + esc(lastLbl) + '</div><div class="pha-kval mono">' + (A.last ? V2.fmtEur(A.last.ca) : '—') + '</div><div class="pha-kd">' + evoHtml(A.evoM) + ' <span class="pha-sub">vs ' + (A.prev ? esc(A.prev.label) : 'mois précédent') + '</span></div></div>' +
       '<div class="pha-kpi" style="--a:var(--c-opp)"><div class="pha-kl">Sa moyenne / mois</div><div class="pha-kval mono">' + V2.fmtEur(A.caMoy) + '</div><div class="pha-kd">' + evoHtml(pctOf(A.caMoy, A.netMoy)) + ' <span class="pha-sub">réseau ' + V2.fmtEur(A.netMoy) + '/mois</span></div></div>' +
-      '<div class="pha-kpi" style="--a:var(--c-amber)"><div class="pha-kl">Cumul ' + A.n + ' mois</div><div class="pha-kval mono">' + V2.fmtEur(A.caTot) + '</div><div class="pha-kd"><span class="pha-sub">marge MDL ' + V2.fmtEur(marge) + ' · ' + V2.fmtNum(nbRefs) + ' réf.</span></div></div>' +
+      '<div class="pha-kpi" style="--a:var(--c-amber)"><div class="pha-kl">Cumul ' + A.n + ' mois</div><div class="pha-kval mono">' + V2.fmtEur(A.caTot) + '</div><div class="pha-kd"><span class="pha-sub">marge nette ' + V2.fmtEur(marge) + ' · ' + V2.fmtNum(nbRefs) + ' réf.</span></div></div>' +
       '<div class="pha-kpi" style="--a:var(--c-cat)"><div class="pha-kl">Place dans le réseau</div><div class="pha-kval mono">' + (A.rank ? A.rank + '<small>/' + A.nOff + '</small>' : '—') + '</div><div class="pha-kd"><span class="pha-sub">' + (A.grpRank ? A.grpRank + 'e sur ' + A.nGrp + ' chez ' + esc(A.grpName) : 'hors groupement') + '</span></div></div>' +
     '</div>';
   }
@@ -1225,6 +1234,7 @@
       '<td class="num"><b>' + V2.fmtEur(c.ca) + '</b><div class="pha-bar"><i style="width:' + (maxCa > 0 ? Math.max(c.ca > 0 ? 3 : 0, c.ca / maxCa * 100) : 0).toFixed(1) + '%;background:' + c.color + '"></i></div></td>' +
       '<td class="num">' + Math.round(c.part) + ' %</td>' +
       '<td class="num" style="color:var(--c-opp);font-weight:700">' + (c.mdl > 0 ? V2.fmtEur(c.mdl) : '—') + '</td>' +
+      '<td class="num" style="color:var(--muted)">' + (c.mdl > 0 && c.ca > 0 ? (c.mdl / c.ca * 100).toFixed(1).replace('.', ',') + ' %' : '—') + '</td>' +
       '<td class="num">' + V2.fmtEur(c.netMoy) + '</td>' +
       '<td class="num">' + (absent ? (c.netMoy > 0 ? '<span class="pha-dn">absente</span>' : '—') : evoHtml(c.gap)) + '</td>' +
       '<td class="num">' + evoHtml(c.evo) + '<div class="pha-sub">réseau ' + evoHtml(c.netEvo) + '</div></td></tr>';
@@ -1232,9 +1242,22 @@
   function analyseTranches(A) {
     var maxCa = A.cats.reduce(function (m, c) { return Math.max(m, c.ca); }, 0);
     var rows = A.cats.map(function (c) { return trancheRow(c, maxCa); }).join('');
-    if (A.other.refs > 0) rows += '<tr><td><span class="ph-tr-dot" style="background:var(--muted-2)"></span>Hors catégories</td><td class="num">' + V2.fmtNum(A.other.refs) + '</td><td class="num"><b>' + V2.fmtEur(A.other.ca) + '</b></td><td class="num">' + Math.round(A.caTot > 0 ? A.other.ca / A.caTot * 100 : 0) + ' %</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td></tr>';
-    var desk = '<div class="v2-card pha-card pha-desk" style="padding:0;overflow:hidden"><div class="pha-ch" style="padding:16px 18px 6px"><h3>Son CA par tranche, face à l\'officine moyenne du réseau</h3><span class="pha-sub">écart = sa moyenne mensuelle vs celle du réseau · évolution = dernier mois vs le précédent</span></div>' +
-      '<div class="v2-cat-table-wrap" style="border-top:none"><table class="v2-table pha-table"><thead><tr><th>Tranche</th><th class="num">Réf.</th><th class="num">CA ' + A.n + ' mois</th><th class="num">Part</th><th class="num">Marge MDL</th><th class="num">Réseau / mois</th><th class="num">Écart</th><th class="num">Évol.</th></tr></thead><tbody>' + rows + '</tbody></table></div></div>';
+    if (A.other.refs > 0) rows += '<tr><td><span class="ph-tr-dot" style="background:var(--muted-2)"></span>Hors catégories</td><td class="num">' + V2.fmtNum(A.other.refs) + '</td><td class="num"><b>' + V2.fmtEur(A.other.ca) + '</b></td><td class="num">' + Math.round(A.caTot > 0 ? A.other.ca / A.caTot * 100 : 0) + ' %</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td></tr>';
+    // Total : la marge nette de l'officine, toutes tranches confondues. Le taux se lit
+    // sur les achats qui ont réellement produit de la marge (génériques, biosimilaires
+    // et produits inconnus du benchmark exclus).
+    var totRefs = A.other.refs, totMarge = 0, caMarge = 0;
+    A.cats.forEach(function (c) { totRefs += c.refs; totMarge += c.mdl; if (c.mdl > 0) caMarge += c.ca; });
+    rows += '<tr style="border-top:1.5px solid var(--line)"><td><b>Total · marge nette de l\'officine</b></td>' +
+      '<td class="num"><b>' + V2.fmtNum(totRefs) + '</b></td><td class="num"><b>' + V2.fmtEur(A.caTot) + '</b></td><td class="num">100 %</td>' +
+      '<td class="num" style="color:var(--c-opp);font-weight:800">' + (totMarge > 0 ? V2.fmtEur(totMarge) : '—') + '</td>' +
+      '<td class="num"><b>' + (caMarge > 0 ? (totMarge / caMarge * 100).toFixed(1).replace('.', ',') + ' %' : '—') + '</b></td>' +
+      '<td class="num">—</td><td class="num">—</td><td class="num">—</td></tr>';
+    var legende = '<div class="pha-sub" style="padding:8px 18px 12px;line-height:1.5">' +
+      'Marge nette gagnée par l\'officine : <b>0,18 €</b> par boîte jusqu\'à 4,33 € · <b>4,2 %</b> de 4,33 à 468 € · ' +
+      '<b>19,50 €</b> par boîte au-delà · non remboursés <b>15 %</b>. Génériques et biosimilaires : pas d\'abandon Intégral, hors calcul.</div>';
+    var desk ='<div class="v2-card pha-card pha-desk" style="padding:0;overflow:hidden"><div class="pha-ch" style="padding:16px 18px 6px"><h3>Son CA par tranche, face à l\'officine moyenne du réseau</h3><span class="pha-sub">écart = sa moyenne mensuelle vs celle du réseau · évolution = dernier mois vs le précédent</span></div>' +
+      '<div class="v2-cat-table-wrap" style="border-top:none"><table class="v2-table pha-table"><thead><tr><th>Tranche</th><th class="num">Réf.</th><th class="num">CA ' + A.n + ' mois</th><th class="num">Part</th><th class="num">Marge nette</th><th class="num">Taux</th><th class="num">Réseau / mois</th><th class="num">Écart</th><th class="num">Évol.</th></tr></thead><tbody>' + rows + '</tbody></table></div>' + legende + '</div>';
     // Téléphone : une ligne par tranche, dépliable sur son top 5
     var on = A.cats.filter(function (c) { return c.ca > 0; }).sort(function (x, y) { return y.ca - x.ca; });
     var mob = '<div class="v2-card pha-card pha-mob"><div class="pha-ch"><h3>Par tranche</h3><span class="pha-sub">' + A.n + ' mois · top 5 au clic</span></div>' +
@@ -1242,10 +1265,10 @@
         return '<details class="pha-det"' + (i === 0 ? ' open' : '') + '><summary><span><span class="ph-tr-dot" style="background:' + c.color + '"></span>' + esc(c.label) + '</span><span class="mono">' + V2.fmtK(c.ca) + ' <span class="pha-sub">' + Math.round(c.part) + ' %</span> ' + ICO('chev', 14) + '</span></summary>' +
           '<div class="pha-bar" style="margin:0 0 8px"><i style="width:' + (maxCa > 0 ? (c.ca / maxCa * 100).toFixed(1) : 0) + '%;background:' + c.color + '"></i></div>' +
           c.top.map(function (t, j) { return '<div class="pha-r"><i>' + (j + 1) + '</i><span>' + esc(t.designation) + '</span><b class="mono">' + V2.fmtEur(t.ca) + '</b></div>'; }).join('') +
-          '<div class="pha-sub" style="padding:2px 0 8px">' + (c.mdl > 0 ? 'marge MDL ' + V2.fmtEur(c.mdl) + ' · ' : '') + 'réseau ' + V2.fmtEur(c.netMoy) + '/mois · ' + evoHtml(c.gap) + ' · évol. ' + evoHtml(c.evo) + ' (réseau ' + evoHtml(c.netEvo) + ')</div></details>';
+          '<div class="pha-sub" style="padding:2px 0 8px">' + (c.mdl > 0 ? 'marge nette ' + V2.fmtEur(c.mdl) + ' · ' : '') + 'réseau ' + V2.fmtEur(c.netMoy) + '/mois · ' + evoHtml(c.gap) + ' · évol. ' + evoHtml(c.evo) + ' (réseau ' + evoHtml(c.netEvo) + ')</div></details>';
       }).join('') +
       A.cats.filter(function (c) { return c.ca <= 0 && c.netMoy > 0; }).map(function (c) { return '<div class="pha-r pha-r1"><span><span class="ph-tr-dot" style="background:' + c.color + '"></span>' + esc(c.label) + '</span><b class="pha-dn">absente</b><span class="pha-sub" style="grid-column:1/-1">le réseau en fait ' + V2.fmtEur(c.netMoy) + '/mois</span></div>'; }).join('') +
-    '</div>';
+    legende + '</div>';
     return desk + mob;
   }
 
@@ -1393,7 +1416,7 @@
 
     var sales = pharmaSales(pid);
     var ca = V2.sumCA(sales);
-    var marge = margeMDLpharma(sales);
+    var marge = margeNettePharma(sales);
     var nbRefs = new Set(sales.map(function (s) { return String(s.artCode || ''); })
       .filter(function (c) { return c.length >= 7; })).size;
 
@@ -1759,7 +1782,7 @@
     var pharma = (V2.pharmacies || []).find(function (p) { return String(p.id) === String(pid); });
     if (!pharma) return null;
     var sales = pharmaSales(pid);
-    var ca = V2.sumCA(sales), marge = margeMDLpharma(sales);
+    var ca = V2.sumCA(sales), marge = margeNettePharma(sales);
     var nbRefs = new Set(sales.map(function (s) { return String(s.artCode || ''); }).filter(function (c) { return c.length >= 7; })).size;
     var opps = buildOpportunities(pid);
     var totalOpp = opps.reduce(function (s, o) { return s + o.oppCount; }, 0);
@@ -1891,7 +1914,7 @@
         // KPI
         '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:16px">' +
           kpiTile('CA cumulé (5 mois)', V2.fmtEur(ca), '#0050E6') +
-          kpiTile('Marge MDL', V2.fmtEur(marge), '#1E9E6A') +
+          kpiTile('Marge nette', V2.fmtEur(marge), '#1E9E6A') +
           kpiTile('Références', V2.fmtNum(nbRefs), '#6D4FC4') +
           kpiTile('Opportunités', V2.fmtNum(totalOpp), '#C7791A') +
         '</div>' +
@@ -1907,7 +1930,7 @@
               '<th style="text-align:left;font-size:7.5px;text-transform:uppercase;letter-spacing:.04em;color:#9AA1B2;padding:0 7px 4px">Tranche</th>' +
               '<th style="text-align:right;font-size:7.5px;text-transform:uppercase;letter-spacing:.04em;color:#9AA1B2;padding:0 7px 4px">Réfs</th>' +
               '<th style="text-align:right;font-size:7.5px;text-transform:uppercase;letter-spacing:.04em;color:#9AA1B2;padding:0 7px 4px">CA</th>' +
-              '<th style="text-align:right;font-size:7.5px;text-transform:uppercase;letter-spacing:.04em;color:#9AA1B2;padding:0 7px 4px">MDL</th>' +
+              '<th style="text-align:right;font-size:7.5px;text-transform:uppercase;letter-spacing:.04em;color:#9AA1B2;padding:0 7px 4px">Marge nette</th>' +
               '</tr></thead><tbody>' + trRows + '</tbody></table>' : '<div style="font-size:10px;color:#9AA1B2">Aucune commande identifiée.</div>') +
           '</div>' +
         '</div>' +
@@ -1925,7 +1948,7 @@
         '</div>' +
         // Footer
         '<div style="margin-top:14px;padding-top:8px;border-top:1px solid #E5E9F2;display:flex;justify-content:space-between;font-size:8px;color:#9AA1B2;text-transform:uppercase;letter-spacing:.04em">' +
-          '<div>Intégral Pharma · Normandie · Document confidentiel</div><div>Marge MDL : 0,18€ &lt;4,33€ · 3,9% &lt;468€ · 19,50€ au-delà</div></div>' +
+          '<div>Intégral Pharma · Normandie · Document confidentiel</div><div>Marge nette : 0,18€ &le;4,33€ · 4,2% &le;468€ · 19,50€ au-delà · NR 15%</div></div>' +
       '</div>';
 
     return { html: html, pharma: pharma };
@@ -2400,7 +2423,7 @@
     var sales = pharmaSales(pid);
     if (!sales.length) return '';
     var MONO = "'Geist Mono',ui-monospace,monospace";
-    var ca = V2.sumCA(sales), marge = margeMDLpharma(sales);
+    var ca = V2.sumCA(sales), marge = margeNettePharma(sales);
     var nbRefs = new Set(sales.map(function (s) { return String(s.artCode || ''); }).filter(function (c) { return c.length >= 7; })).size;
     var months = monthlyCA(sales);
     var maxM = months.reduce(function (m, x) { return Math.max(m, x.ca); }, 1);
@@ -2444,7 +2467,7 @@
       '<div style="font-size:9.5px;font-weight:800;letter-spacing:1.2px;color:#737A8C;text-transform:uppercase;margin-bottom:7px">Récap de l\'officine</div>' +
       '<div style="display:flex;gap:8px;margin-bottom:10px">' +
         kpiTile('CA cumulé', V2.fmtEur(ca), '#10131C', '') +
-        kpiTile('Marge MDL générée', V2.fmtEur(marge), '#1E9E6A', '#1E9E6A') +
+        kpiTile('Marge nette générée',V2.fmtEur(marge), '#1E9E6A', '#1E9E6A') +
         kpiTile('Réf. commandées', V2.fmtNum(nbRefs), '#10131C', '') +
         grpTile +
       '</div>' +
