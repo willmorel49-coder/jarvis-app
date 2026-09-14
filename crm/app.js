@@ -662,10 +662,12 @@ function calcMargeBoiteMDL(prixNet) {
 // Caches d'index remboursable / NR (init lazy)
 let __mdlRembIdx = null;
 let __mdlNrIdx = null;
+let __mdlForceIdx = null;
 function _ensureMdlIndexes() {
   if (__mdlRembIdx && __mdlNrIdx) return;
   __mdlRembIdx = new Set();
   __mdlNrIdx = new Set();
+  __mdlForceIdx = new Set();
   // NR depuis Sagitta SHORTLIST
   if (typeof SAGITTA_SHORTLIST !== 'undefined' && SAGITTA_SHORTLIST.length) {
     SAGITTA_SHORTLIST.forEach(p => {
@@ -676,6 +678,12 @@ function _ensureMdlIndexes() {
   // Remboursables depuis BENCHMARK
   if (typeof BENCHMARK !== 'undefined' && BENCHMARK.length) {
     BENCHMARK.forEach(b => {
+      // Mounjaro / Wegovy : remboursés depuis le 15/06/2026 sans marché Ameli dans le
+      // BENCHMARK — comptés remboursés (décision Will 14/09/2026), Sagitta ou pas.
+      if (/^(MOUNJARO|WEGOVY)\b/i.test(b.designation || '')) {
+        [b.cip13, b.artcode, b.ean].forEach(c => { if (c) { __mdlRembIdx.add(String(c)); __mdlForceIdx.add(String(c)); } });
+        return;
+      }
       if (b.has_ameli === true || b.is_remb === true) {
         if (b.cip13)   __mdlRembIdx.add(String(b.cip13));
         if (b.artcode) __mdlRembIdx.add(String(b.artcode));
@@ -688,6 +696,7 @@ function isMdlRemboursable(cip) {
   const c = String(cip || '');
   if (!c) return false;
   _ensureMdlIndexes();
+  if (__mdlForceIdx.has(c)) return true; // Mounjaro / Wegovy
   if (__mdlNrIdx.has(c)) return false; // NR explicite → marge libre
   return __mdlRembIdx.has(c);
 }

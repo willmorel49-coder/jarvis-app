@@ -101,12 +101,20 @@
     return _nrIdx;
   }
 
+  // Mounjaro et Wegovy : remboursés depuis le 15/06/2026, mais sans marché Ameli dans
+  // le BENCHMARK (has_ameli=false) → ils tombaient en « Non remboursés » à 15 %.
+  // Décision Will 14/09/2026 : barème des remboursés. Tous dosages, par désignation.
+  function rembourseForce(b) {
+    return !!(b && /^(MOUNJARO|WEGOVY)\b/i.test(String(b.designation || '')));
+  }
+
   // Remboursable = présent en BENCHMARK avec has_ameli ET pas NR Sagitta
   function isRemboursable(cip) {
     var c = String(cip || '');
     if (!c) return false;
-    if (nrIndex().has(c)) return false;
     var b = benchIndex().get(c);
+    if (rembourseForce(b)) return true;
+    if (nrIndex().has(c)) return false;
     return !!(b && b.has_ameli === true);
   }
 
@@ -168,7 +176,7 @@
     if (!b) return null;
     var nat = String(b.artnature || '').toLowerCase();
     // 8. Non remboursés : dans Sagitta OU has_ameli=false
-    if (nrIndex().has(cip) || b.has_ameli === false) return 'nr';
+    if (!rembourseForce(b) && (nrIndex().has(cip) || b.has_ameli === false)) return 'nr';
     // 7. Biosimilaires
     if (nat === 'biosimilaire') return 'biosim';
     // 6. Génériques partenaires
