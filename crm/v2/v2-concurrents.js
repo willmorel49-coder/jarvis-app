@@ -156,6 +156,7 @@
   var POIDS = { sagitta: '2 Mo', ocp: '130 Ko', mc: '130 Ko', pharmazon: '1,3 Mo', cooper: '120 Ko', farmaline: '2 Mo', etudes: '500 Ko' };
   var FORTS = { sagitta: 'gamme', ocp: 'section', pharmazon: 'labo', cooper: 'famille' };
   var CLASSEMENT = ['sagitta', 'ocp', 'pharmazon', 'cooper'];   // seules sources à prix d'achat
+  var QUI = { sagitta: 'sagitta', ocp: 'ocp', mc: 'ocp' };       // source → fiche du grossiste (grossistes-data.js)
 
   // ── Notre prix (V2.bestPrice = seule source de vérité) ───────────────
   // Index PROD_STATS par CIP13. Génériques et biosimilaires EXCLUS du verdict
@@ -642,7 +643,6 @@
   }
   function liensHtml() {
     var l = [];
-    if (V2.pages.grossistes) l.push('<button type="button" class="cc-lien" onclick="V2.go(\'grossistes\')">' + ICO('grid', 14, 2) + 'Panorama des 93 grossistes-répartiteurs</button>');
     if (V2.pages.offilog) l.push('<button type="button" class="cc-lien" onclick="V2.go(\'offilog\')">' + ICO('froid', 14, 2) + 'Offilog face aux concurrents</button>');
     return l.length ? '<div class="cc-liens">' + l.join('') + '</div>' : '';
   }
@@ -652,14 +652,42 @@
       (geant ? '<button type="button" class="vider" onclick="V2.ccCq(\'\', true)" aria-label="Effacer la recherche">Effacer</button>' : '<kbd>' + (navigator.platform && /Mac/.test(navigator.platform) ? '⌘' : 'Ctrl+') + 'K</kbd>') +
     '</div>';
   }
-  function kickerHtml() {
-    return '<div class="cc-kicker"><span class="cc-kicker-t">Ressources concurrents</span><span class="cc-kicker-s">Conditions de tiers : réservé à l\'interne Intégral, jamais dans un document remis à une officine.</span></div>';
+  // 14/09/2026 — UNE feature « Concurrents » (demande de Will) : les grossistes
+  // (ex-écran « Grossistes concurrents », v2-grossistes.js), leurs prix (ce
+  // module) et l'actualité du secteur, derrière trois questions simples.
+  var ESPACES = [
+    { k: 'acteurs', q: 'Qui sont-ils ?', t: 'Les grossistes', d: 'Les grossistes-répartiteurs de France : leur poids sur le marché, leurs groupes, leurs enseignes, leurs forces et faiblesses — et tes remontées terrain.', go: 'Voir les grossistes' },
+    { k: 'prix', q: 'À quel prix ?', t: 'Leurs prix', d: 'Leurs catalogues, référence par référence : Sagitta, OCP, Pharmazon, Cooper, Farmaline… avec notre net en face pour savoir qui est le moins cher.', go: 'Comparer les prix' },
+    { k: 'actu', q: 'Quoi de neuf ?', t: 'L\'actualité', d: 'Ce que la presse et les autorités disent des grossistes et du secteur, mis à jour chaque jour.', go: 'Lire l\'actualité' }
+  ];
+  // Aller vers un espace. « Les grossistes » ramène à la liste même depuis une fiche.
+  function allerA(k) {
+    if (k === 'prix') return 'V2.go(\'concurrents\',\'' + (S.src || ORDRE[0]) + '\')';
+    return V2.grossisteTab ? 'V2.grossisteTab(\'' + k + '\')' : 'V2.go(\'concurrents\',\'' + k + '\')';
+  }
+  function kickerHtml(espace) {
+    var nav = '<nav class="cc-espaces" aria-label="Concurrents">' +
+      '<button type="button" class="cc-esp-home' + (espace === 'accueil' ? ' on' : '') + '" onclick="V2.go(\'concurrents\')">Concurrents</button>' +
+      ESPACES.map(function (e) {
+        return '<button type="button" class="cc-esp' + (espace === e.k ? ' on' : '') + '"' + (espace === e.k ? ' aria-current="page"' : '') + ' onclick="' + allerA(e.k) + '">' + esc(e.t) + '</button>';
+      }).join('') + '</nav>';
+    return nav + (espace === 'prix' ? '<div class="cc-kicker"><span class="cc-kicker-s">Conditions de tiers : réservé à l\'interne Intégral, jamais dans un document remis à une officine.</span></div>' : '');
+  }
+  function accueilHtml() {
+    return '<section class="cc-accueil"><h1 class="v2-page-title">Concurrents</h1><p class="v2-page-sub">Tout ce qu\'on sait des concurrents, en trois questions.</p>' +
+      '<div class="cc-portes">' + ESPACES.map(function (e, i) {
+        return '<button type="button" class="cc-porte" onclick="' + allerA(e.k) + '"><span class="n num">' + (i + 1) + '</span><span class="q">' + esc(e.q) + '</span><span class="t">' + esc(e.t) + '</span><span class="d">' + esc(e.d) + '</span><span class="go">' + esc(e.go) + ' <span aria-hidden="true">→</span></span></button>';
+      }).join('') + '</div>' +
+      '<div class="cc-comptoir"><h2 class="cc-acc-h">Ou cherche directement un produit</h2><p class="cc-acc-s">Un nom, un code : le prix de chaque concurrent, à côté du nôtre.</p>' +
+      comptoirBar(true) +
+      '<div id="cc-cres" class="cc-cres">' + (S.cq.trim() ? resultatsHtml() : '') + '</div></div></section>';
   }
   function ficheHtml(k) {
     var s = SRC[k];
     var entete = '<div class="cc-head"><div><span class="cc-eyebrow"><i class="dot"></i>' + esc(s.tag) + '</span><h1 class="v2-page-title">' + esc(s.nom) + '</h1>' +
       '<p class="v2-page-sub">' + esc(s.quoi) + '</p></div>' +
-      '<div class="cc-meta"><span>Circuit <b>' + esc(CIRCUIT[k]) + '</b></span>' + (s.charge() ? '<span>Relevé du <b class="num">' + esc(dateFr(s.maj())) + '</b></span><span><b class="num">' + num(s.rows().length) + '</b> ' + (s.unite || 'référence') + 's</span>' : '') + '</div></div>';
+      '<div class="cc-meta"><span>Circuit <b>' + esc(CIRCUIT[k]) + '</b></span>' + (s.charge() ? '<span>Relevé du <b class="num">' + esc(dateFr(s.maj())) + '</b></span><span><b class="num">' + num(s.rows().length) + '</b> ' + (s.unite || 'référence') + 's</span>' : '') +
+      (QUI[k] && V2.grossisteVoir ? '<span><button type="button" class="cc-lien" onclick="V2.grossisteVoir(\'' + QUI[k] + '\')">Qui est ' + esc(k === 'sagitta' ? 'Sagitta' : 'OCP') + ' ?</button></span>' : '') + '</div></div>';
     if (!s.charge()) {
       if (echec(k)) {
         return entete + '<div class="v2-empty"><div class="v2-empty-ico">' + ICO('alert', 64, 1.4) + '</div>' +
@@ -674,15 +702,6 @@
       '<div class="cc-tools"><div class="cc-search">' + ICO('search', 15, 2) + '<input id="cc-q" type="search" placeholder="' + esc(s.placeholder || 'Produit, laboratoire, code…') + '" value="' + esc(S.q) + '" oninput="V2.ccQ(this.value, true)" autocomplete="off"></div>' +
       (S.q || S.chip ? '<button type="button" class="cc-lien" onclick="V2.ccReset()">' + ICO('close', 14, 2) + 'Tout afficher</button>' : '') + '</div>' +
       chips(s) + '<div id="cc-body">' + tableHtml(s) + '</div></div></section>';
-  }
-  function comptoirHtml() {
-    return '<section class="cc-comptoir"><h1 class="v2-page-title">Le comptoir</h1><p class="v2-page-sub">Un nom, un code — et le prix de chacun, à côté du nôtre.</p>' +
-      comptoirBar(true) +
-      '<div class="cc-puces" data-scroll-x>' + ORDRE.map(function (x) {
-        var s = SRC[x], ok = s.charge();
-        return '<button type="button" class="cc-puce" onclick="V2.go(\'concurrents\',\'' + x + '\')"><b>' + esc(COURT[x]) + '</b> <i>' + (ok ? num(s.rows().length) : POIDS[x]) + '</i></button>';
-      }).join('') + '</div>' +
-      '<div id="cc-cres" class="cc-cres">' + resultatsHtml() + '</div></section>';
   }
 
   // ── Actions ──────────────────────────────────────────────────────────
@@ -721,7 +740,7 @@
   function rerenderRes() {
     var r = document.getElementById('cc-cres'); if (!r) return;
     var geant = !!r.closest('.cc-comptoir');
-    if (geant) { r.innerHTML = resultatsHtml(); return; }
+    if (geant) { r.innerHTML = S.cq.trim() ? resultatsHtml() : ''; return; }
     // ordinateur : liste déroulante sous la barre, seulement quand on cherche
     var ouvert = S.cqOpen && S.cq.trim();
     r.classList.toggle('open', !!ouvert);
@@ -774,13 +793,23 @@
     render: function (root, param) {
       injectCss();
       var tel = phone(); dernierMode = tel;
-      // Ordinateur : la fiche du premier concurrent d'office. Téléphone : le comptoir.
-      var src = (param && SRC[param]) ? param : (tel ? '' : ORDRE[0]);
+      // Sans paramètre : l'accueil (trois portes + recherche produit).
+      // acteurs / actu : v2-grossistes.js. Une source (ou « prix ») : son dossier.
+      var p = param || '';
+      var espace = (p === 'acteurs' || p === 'actu') ? p : ((SRC[p] || p === 'prix') ? 'prix' : 'accueil');
+      var src = espace === 'prix' ? (SRC[p] ? p : ORDRE[0]) : '';
       if (src !== S.src) { S.src = src; S.q = ''; S.chip = ''; S.sort = ''; S.desc = false; }
       fermerTout();
-      var corps = src ? (tel ? tabsHtml(src) + liensHtml() + ficheHtml(src) : tabsHtml(src) + liensHtml() + '<div class="cc-cbar-holder">' + comptoirBar(false) + '<div id="cc-cres" class="cc-cres"></div></div>' + ficheHtml(src)) : comptoirHtml();
+      var corps = espace === 'accueil' ? accueilHtml()
+        : (espace !== 'prix' ? '<div id="cc-gr-host"></div>'
+        : (tel ? tabsHtml(src) + liensHtml() + ficheHtml(src) : tabsHtml(src) + liensHtml() + '<div class="cc-cbar-holder">' + comptoirBar(false) + '<div id="cc-cres" class="cc-cres"></div></div>' + ficheHtml(src)));
       root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
-        '<div class="v2-wrap cc-wrap' + (tel ? ' tel' : '') + '">' + kickerHtml() + corps + '</div>';
+        '<div class="v2-wrap cc-wrap' + (tel ? ' tel' : '') + '">' + kickerHtml(espace) + corps + '</div>';
+      var host = document.getElementById('cc-gr-host');
+      if (host) {
+        if (V2.grossistesCorps) V2.grossistesCorps(host, espace);
+        else host.innerHTML = '<div class="cc-vide">Cette partie n\'est pas chargée. Recharge la page.</div>';
+      }
       if (SANS) return;
       // Données absentes → on les demande, et on re-rend à l'arrivée. JAMAIS
       // quand elles sont déjà là : le rappel relancerait le rendu, qui
@@ -804,6 +833,26 @@
       '.cc-kicker{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:baseline;margin-bottom:14px}',
       '.cc-kicker-t{font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ip-blue-d)}',
       '.cc-kicker-s{font-size:13px;color:var(--muted)}',
+      /* les trois espaces (toujours visibles) */
+      '.cc-espaces{display:flex;gap:4px;align-items:center;margin:0 0 16px;padding:4px;border-radius:999px;background:#EEF2F8;border:1px solid var(--line);width:max-content;max-width:100%;overflow-x:auto;scrollbar-width:none}',
+      '.cc-espaces::-webkit-scrollbar{display:none}',
+      '.cc-esp,.cc-esp-home{flex:0 0 auto;min-height:44px;padding:0 16px;border:0;border-radius:999px;background:none;font:inherit;font-size:14px;font-weight:700;color:var(--ip-ink-2);white-space:nowrap;cursor:pointer;transition:background .18s var(--ease-soft),color .18s var(--ease-soft),box-shadow .18s var(--ease)}',
+      '.cc-esp-home{color:var(--muted)}',
+      '.cc-esp:hover,.cc-esp-home:hover{background:rgba(255,255,255,.8)}',
+      '.cc-esp.on,.cc-esp-home.on{background:var(--card);color:var(--ip-blue);box-shadow:var(--sh-2)}',
+      /* accueil : trois portes */
+      '.cc-accueil .v2-page-title{font-size:34px;line-height:1.04;color:var(--titre,#0B1F4D);margin:6px 0 6px}.cc-accueil .v2-page-sub{margin:0 0 20px}',
+      '.cc-portes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:30px}',
+      '.cc-porte{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:6px;text-align:left;padding:22px 22px 20px;border:1px solid rgba(11,31,77,.09);border-radius:var(--r-card);background:linear-gradient(#FFFFFF,#F7F9FC);box-shadow:var(--sh-2);font:inherit;color:inherit;cursor:pointer;transition:transform .3s var(--ease),box-shadow .3s var(--ease),border-color .3s var(--ease-soft)}',
+      '.cc-porte:hover{transform:translateY(-3px);box-shadow:var(--sh-3);border-color:rgba(0,80,230,.25)}',
+      '.cc-porte .n{width:34px;height:34px;border-radius:999px;display:grid;place-items:center;background:var(--halo);color:var(--ip-blue-d);font-size:15px;font-weight:800;margin-bottom:6px}',
+      '.cc-porte .q{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ip-blue-d)}',
+      '.cc-porte .t{font-size:22px;font-weight:800;letter-spacing:-.025em;color:var(--titre,#0B1F4D);line-height:1.1}',
+      '.cc-porte .d{font-size:14px;line-height:1.5;color:var(--ip-ink-2);flex:1}',
+      '.cc-porte .go{margin-top:8px;font-size:14px;font-weight:700;color:var(--ip-blue)}',
+      '.cc-acc-h{font-size:20px;font-weight:800;letter-spacing:-.025em;color:var(--titre,#0B1F4D);margin:0 0 4px}.cc-acc-s{font-size:14px;color:var(--muted);margin:0 0 12px}',
+      '.cc-wrap .cc-comptoir .cc-cres{position:relative;display:block;margin-top:8px;padding:0;background:none;border:0;box-shadow:none;max-height:none;overflow:visible}',
+      '@media (max-width:700px){.cc-portes{grid-template-columns:1fr;gap:10px}.cc-porte{padding:18px 18px 16px}.cc-porte .t{font-size:20px}.cc-accueil .v2-page-title{font-size:28px}.cc-espaces{width:auto}}',
       /* onglets */
       '.cc-tabs{display:flex;gap:6px;padding:6px;margin:0 0 10px;border-radius:var(--r-md);background:#F3F6FB;border:1px solid var(--line);box-shadow:var(--sh-1);overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}',
       '.cc-tabs::-webkit-scrollbar{display:none}',
@@ -841,8 +890,6 @@
       '.cc-legende,.cc-vide{padding:14px 16px;color:var(--muted);font-size:13.5px;line-height:1.5;background:var(--surf-sunken,#F4F6FB);border-radius:14px;margin-bottom:8px}.cc-legende b{color:var(--ip-ink)}',
       '.cc-chargeurs{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:13px;color:var(--muted);padding:4px}',
       '.cc-charg{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 14px;border-radius:12px;border:1px solid var(--line);background:var(--card);box-shadow:var(--sh-1);font:inherit;font-size:13px;font-weight:600;color:var(--ip-blue);cursor:pointer}.cc-charg:hover{border-color:rgba(0,80,230,.3)}.cc-charg.on{color:var(--muted);cursor:default}',
-      '.cc-puces{display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;margin:12px 0 14px;padding:2px}.cc-puces::-webkit-scrollbar{display:none}',
-      '.cc-puce{flex:0 0 auto;min-height:44px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);box-shadow:var(--sh-1);font:inherit;font-size:13px;color:var(--ip-ink-2);cursor:pointer;white-space:nowrap}.cc-puce b{font-weight:800;color:var(--titre,#0B1F4D)}.cc-puce i{font-style:normal;color:var(--muted-2)}',
       /* fiche */
       '.cc-fiche{animation:cc-arrive .42s var(--ease) both}',
       '@keyframes cc-arrive{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}',

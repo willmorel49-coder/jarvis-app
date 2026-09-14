@@ -1211,14 +1211,11 @@
       if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.appro) {
         P.push({ k: 'appro', cls: 'p5', accent: '#6D5AE6', ico: 'spark', tag: 'Achats', t: 'Appro Intégral', d: 'Ce qu\'il faut acheter et quand : couverture de stock par référence, ruptures à sécuriser, et la courbe du marché à 3, 6 et 12 mois avec sa fourchette — pour pré-acheter au bon moment et négocier avec les laboratoires.', go: 'Ouvrir l\'appro' });
       }
-      // Concurrents · grossistes-répartiteurs (annuaire + actualités) — app JARVIS
-      if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.grossistes) {
-        P.push({ k: 'grossistes', cls: 'p5', accent: '#0E7C86', ico: 'spark', tag: 'Veille', t: 'Grossistes concurrents', d: 'La carte de la concurrence : OCP, CERP, Alliance, Phoenix, Sagitta… agences, CA, enseignes affiliées, livraison, conditions — plus l\'actualité du secteur et tes remontées terrain.', go: 'Ouvrir la base concurrents' });
-      }
-      // Ressources concurrents (catalogues complets Sagitta / OCP / Pharmazon) — app JARVIS,
-      // conditions de tiers : jamais côté OPSO (décision Will 10/09/2026).
+      // Concurrents — UNE entrée depuis le 14/09/2026 (demande de Will) : grossistes,
+      // leurs prix et l'actualité du secteur. L'ex-tuile « Grossistes concurrents »
+      // est fondue dedans (#grossistes redirige). Conditions de tiers : jamais côté OPSO.
       if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.concurrents) {
-        P.push({ k: 'concurrents', cls: 'p5', accent: '#C7791A', ico: 'spark', tag: 'Tarifs tiers', t: 'Ressources concurrents', d: 'Les catalogues complets des concurrents au même endroit : Sagitta (tarif, remise, labo, gamme), OCP Incontournables (tous les paliers), Marque Conseil, Pharmazon — avec notre net en face de chaque référence.', go: 'Ouvrir les ressources' });
+        P.push({ k: 'concurrents', cls: 'p5', accent: '#0E7C86', ico: 'spark', tag: 'Veille', t: 'Concurrents', d: 'Tout sur les concurrents au même endroit, en trois questions : qui sont les grossistes, à quel prix ils vendent face à notre net, et quoi de neuf dans le secteur.', go: 'Ouvrir les concurrents' });
       }
       // Remontées équipe (mur d'idées interne) — app JARVIS
       if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.remontees) {
@@ -1426,8 +1423,7 @@
     var idx = [];
     // Pages
     var PAGES = [['home', 'Accueil', 'opp'], ['pharma', 'Opportunités pharmacie', 'opp'], ['offilog', 'Offilog · parapharmacie & prix concurrents', 'spark'], ['pilotage', 'Pilotage CA & marge', 'pilo']];
-    if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.grossistes) PAGES.splice(3, 0, ['grossistes', 'Concurrents · grossistes-répartiteurs', 'spark']);
-    if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.concurrents) PAGES.splice(3, 0, ['concurrents', 'Ressources concurrents · catalogues Sagitta, OCP, Pharmazon', 'spark']);
+    if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.concurrents) PAGES.splice(3, 0, ['concurrents', 'Concurrents · grossistes, leurs prix, actualité', 'spark']);
     // 04/09/2026 — l'app OPSO redevient un simple visu groupement : plus de
     // fiches commerciales chez elle (v2-fiches n'y est plus chargé).
     if (window.V2_BRAND && window.V2_BRAND.opso && V2.pages.marketing) PAGES.splice(2, 0, ['marketing', 'Fiches marketing OPSO', 'fiche']);

@@ -186,6 +186,8 @@
   }
 
   // ── FICHE d'un grossiste ────────────────────────────────────────
+  // Grossiste dont on a le catalogue de prix → lien vers ce catalogue.
+  var PRIX = { sagitta: 'sagitta', ocp: 'ocp' };
   function ficheHtml(g) {
     if (!g) return '<div class="gr-empty">Fiche introuvable.</div>';
     function sec(t, body) { return body ? '<div class="gr-sec"><h4>' + t + '</h4>' + body + '</div>' : ''; }
@@ -198,6 +200,7 @@
       '<nav class="gr-crumb"><button onclick="V2.grossisteClose()">Concurrents</button>' + (grp ? '<span>›</span><button onclick="V2.grossisteClose();V2.grossisteGroupe(\'' + esc(grp.id) + '\')">' + esc(shortNom(grp.nom)) + '</button>' : '') + '<span>›</span><b>' + esc(shortNom(g.nom)) + '</b></nav>' +
       '<div class="gr-fhead"><div><h2>' + esc(g.nom) + '</h2><div class="gr-fmeta">' + typeBadge(g.type) + (g.lien_ip ? '<span class="gr-iplink">Lié à Intégral Pharma</span>' : '') + (g.groupe ? '<span>' + esc(g.groupe) + '</span>' : '') + (g.siege ? '<span>· ' + esc(g.siege) + '</span>' : '') + fiab(g) + '</div></div></div>' +
       (g.lien_ip_txt ? '<div class="gr-ipnote">⚑ ' + esc(g.lien_ip_txt) + '</div>' : '') +
+      (PRIX[g.id] && V2.pages.concurrents ? '<button type="button" class="gr-prix" onclick="V2.go(\'concurrents\',\'' + PRIX[g.id] + '\')">Voir ses prix, référence par référence, face à notre net →</button>' : '') +
       '<div class="gr-fkpis">' +
         '<div class="gr-fkpi"><b>' + esc(g.ca_eur || '—') + '</b><span>CA' + (g.ca_annee ? ' (' + esc(g.ca_annee) + ')' : '') + '</span></div>' +
         '<div class="gr-fkpi"><b>' + esc(g.nb_agences || '—') + '</b><span>agences</span></div>' +
@@ -248,7 +251,9 @@
   }
 
   // ── actions ─────────────────────────────────────────────────────
-  V2.grossisteTab = function (v) { view = v; selId = null; V2.render(); };
+  V2.grossisteTab = function (v) { selId = null; V2.go('concurrents', v === 'actu' ? 'actu' : 'acteurs'); };
+  // Depuis un catalogue de prix : ouvrir directement la fiche du grossiste.
+  V2.grossisteVoir = function (id) { selId = id; V2.go('concurrents', 'acteurs'); };
   V2.grossisteOpen = function (id) { selId = id; V2.render(); };
   V2.grossisteClose = function () { selId = null; V2.render(); };
   function reAnnu(refocus) { var b = document.getElementById('gr-body'); if (b) b.innerHTML = annuaireHtml(); if (refocus) { var i = document.getElementById('gr-q'); if (i) { i.focus(); try { i.setSelectionRange(i.value.length, i.value.length); } catch (e) {} } } }
@@ -258,30 +263,33 @@
   V2.grossisteSort = function (s) { sortBy = s; reAnnu(); };
   V2.grossisteActuTag = function (t) { actuTag = t; var el = document.getElementById('gr-actuwrap'); if (el) el.innerHTML = actuHtml(); };
 
-  // ── page ────────────────────────────────────────────────────────
+  // ── corps, affiché DANS l'écran unique « Concurrents » ──────────
+  // 14/09/2026 — demande de Will : grossistes concurrents et ressources
+  // concurrents regroupés dans une seule feature. Ce module ne possède plus
+  // d'écran : v2-concurrents.js l'appelle pour « Les grossistes » (acteurs)
+  // et « L'actualité » (actu).
+  V2.grossistesCorps = function (host, v) {
+    injectCss();
+    view = (v === 'actu') ? 'actu' : 'annuaire';
+    host.innerHTML = '<div id="gr-body" class="gr-wrap"><div class="v2-loading"><div class="v2-spinner"></div><div>Chargement…</div></div></div>';
+    var body = document.getElementById('gr-body');
+    if (view === 'actu') {
+      ensureActu(function () { if (body) { body.innerHTML = '<div id="gr-actuwrap">' + actuHtml() + '</div>'; } });
+    } else {
+      ensureData(function () {
+        if (!body) return;
+        if (selId) { body.innerHTML = ficheHtml(byId(selId)); if (V2.notes) V2.notes.hydrate(); }
+        else body.innerHTML = annuaireHtml();
+      });
+    }
+  };
+  // Ancienne adresse #grossistes (favoris, historique) → le nouvel écran.
   V2.pages.grossistes = {
-    render: function (root) {
-      injectCss();
-      var tabs = '<div class="gr-tabs">' +
-        '<button class="gr-tab' + (view === 'annuaire' ? ' on' : '') + '" onclick="V2.grossisteTab(\'annuaire\')">Répartiteurs concurrents</button>' +
-        '<button class="gr-tab' + (view === 'actu' ? ' on' : '') + '" onclick="V2.grossisteTab(\'actu\')">Actualités du secteur</button>' +
-        '</div>';
-      root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
-        '<div class="v2-wrap gr-wrap">' +
-          '<div class="gr-title"><h1>Concurrents · Grossistes-répartiteurs</h1><p>Cartographie de la concurrence + veille. Ajoute tes remontées terrain sur chaque fiche.</p></div>' +
-          tabs +
-          '<div id="gr-body"><div class="v2-loading"><div class="v2-spinner"></div><div>Chargement…</div></div></div>' +
-        '</div>';
-      var body = document.getElementById('gr-body');
-      if (view === 'actu') {
-        ensureActu(function () { if (body) { body.innerHTML = '<div id="gr-actuwrap">' + actuHtml() + '</div>'; } });
-      } else {
-        ensureData(function () {
-          if (!body) return;
-          if (selId) { body.innerHTML = ficheHtml(byId(selId)); if (V2.notes) V2.notes.hydrate(); }
-          else body.innerHTML = annuaireHtml();
-        });
-      }
+    render: function (root, param) {
+      var p = param === 'actu' ? 'actu' : 'acteurs';
+      V2.route = { name: 'concurrents', param: p };
+      try { history.replaceState(null, '', '#concurrents/' + p); } catch (e) {}
+      if (V2.pages.concurrents) V2.pages.concurrents.render(root, p);
     }
   };
 
@@ -469,6 +477,8 @@
       '.gr-cov span{display:block;margin-top:4px;font-size:11.5px;line-height:1.5;color:var(--muted)}',
       '.gr-card.ip{border-color:color-mix(in srgb,#0E7C86 40%,var(--line));background:color-mix(in srgb,#0E7C86 4%,var(--card))}',
       '.gr-iplink{font-size:10px;font-weight:800;padding:2px 8px;border-radius:999px;background:#0E7C86;color:#fff;white-space:nowrap}',
+      '.gr-prix{display:flex;align-items:center;width:100%;min-height:48px;margin:12px 0;padding:0 16px;border:1px solid color-mix(in srgb,var(--ip-blue) 28%,var(--line));border-radius:12px;background:color-mix(in srgb,var(--ip-blue) 6%,var(--card));font:inherit;font-size:14px;font-weight:700;color:var(--ip-blue);text-align:left;cursor:pointer}',
+      '.gr-prix:hover{background:color-mix(in srgb,var(--ip-blue) 10%,var(--card))}',
       '.gr-ipnote{margin:10px 0;padding:10px 12px;border-radius:10px;background:color-mix(in srgb,#0E7C86 8%,var(--card));border:1px solid color-mix(in srgb,#0E7C86 25%,transparent);font-size:12.5px;font-weight:600;color:#0A5A62}',
     ].join('');
     document.head.appendChild(s);
