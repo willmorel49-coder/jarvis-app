@@ -102,10 +102,21 @@ def main():
     by_cip = {}
     months = set()
     print("Téléchargement + parsing Medic'AM (tendance YoY)…")
-    for name in SEMESTERS:
+    # ⚠️ Deux fichiers couvrent les mêmes mois (2026-01-a-04 et 2026-01-a-06) : parse()
+    # ADDITIONNE ce qu'on lui donne, ce qui doublait janvier-avril 2026. Chaque fichier
+    # est donc lu à part, puis le plus récent remplace le plus ancien, mois par mois
+    # (même lecture que generate_france_mois.py).
+    for name in sorted(SEMESTERS):
         p = download(name)
-        if p:
-            parse(p, by_cip, months)
+        if not p:
+            continue
+        un, vus = {}, set()
+        parse(p, un, vus)
+        months |= vus
+        for cip, mo in un.items():
+            d = by_cip.setdefault(cip, {})
+            for ym in vus:
+                d[ym] = mo.get(ym, 0.0)
     if not by_cip:
         sys.exit("Aucune donnée.")
 
