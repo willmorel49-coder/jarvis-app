@@ -2120,6 +2120,34 @@
     '</div>';
   }
 
+  // Biosimilaires absents de BENCHMARK (figé au 07/05/2026) : mesuré le 15/09/2026, 39 biosimilaires
+  // vendus sur le réseau n'y figuraient pas et n'apparaissaient donc jamais (décision Will : option 1).
+  // Reconnus par la base officielle (window.BIOSIMILAIRES), libellé et prix pris au catalogue complet.
+  var _biosimCips = null, _biosimSrc = null, _catDemande = false;
+  function biosimHorsCatalogue(cip) {
+    var B = window.BIOSIMILAIRES;
+    if (!B || !B.molecules) return null;
+    if (_biosimSrc !== B) {              // la base protégée peut remplacer la publique en cours de route
+      _biosimSrc = B; _biosimCips = {};
+      B.molecules.forEach(function (m) { (m.biosimilaires || []).forEach(function (s) { (s.cips || []).forEach(function (c) { _biosimCips[c] = 1; }); }); });
+    }
+    if (!_biosimCips[cip]) return null;
+    var cat = V2.produits && V2.produits.catalogueIndex ? V2.produits.catalogueIndex() : null;
+    var r = cat && cat[cip];
+    if (!r) return null;
+    // net du 22/06 parfois AU-DESSUS du PPHT (22 codes adalimumab/tocilizumab : tarif baissé depuis) :
+    // on n'affiche alors que le PPHT, jamais un prix net plus cher que le tarif.
+    return { cip13: cip, designation: r.d, artnature: 'biosimilaire', has_ameli: true, prix_ht: r.ppht,
+             prix_ip: (r.net > 0 && r.net <= r.ppht) ? r.net : null };
+  }
+  // Le catalogue complet (1,3 Mo) arrive sans bloquer l'écran ; la liste se redessine à son arrivée.
+  function demanderCatComplet() {
+    if (window.CATALOGUE_COMPLET || _catDemande || !V2.loadFiles) return;
+    _catDemande = true;
+    var fin = function () { if (window.CATALOGUE_COMPLET && V2.route && V2.route.name === 'pharma') V2.render(); };
+    V2.loadFiles(['catcomplet']).then(fin, fin);
+  }
+
   // Agrégation des achats pour un ENSEMBLE de pharmacies (ids = {pharmacyId:1}).
   // Mutualisé par les groupements ET les listes personnalisées.
   // ovKey (optionnel) : applique les produits retirés/ajoutés à la main.
@@ -2146,7 +2174,7 @@
     var buckets = {}; CATS.forEach(function (c) { buckets[c.key] = []; });
     Object.keys(byCip).forEach(function (cip) {
       if (ov.removed[cip]) return;                       // produit retiré à la main
-      var b = bIdx.get(cip); if (!b) return;
+      var b = bIdx.get(cip) || biosimHorsCatalogue(cip); if (!b) return;
       var cat = classify(b, cip); if (!cat || !buckets[cat]) return;
       if (!byCip[cip].manual && Object.keys(byCip[cip].ph).length < (cat === 'biosim' ? seuilBiosim : seuil)) return;   // < 20% des pharmacies (biosim : < 2) → masqué
       // Prix : toujours via V2.bestPrice() (gère offre labo + barème d'abandon) — cette
@@ -2236,6 +2264,7 @@
       V2.loadFiles(['bench', 'sagitta']).then(function () { if (V2.route && V2.route.name !== 'pharma') return; /* 11/09/2026 (phase 4) : l'écran a pu changer pendant l'attente */ V2.render(); });
       return;
     }
+    demanderCatComplet();
     if (String(selPid) !== 'GRP:' + grpName) { selPid = 'GRP:' + grpName; selCips = new Set(); }
     var data = groupementProducts(grpName);
     var total = data.cats.reduce(function (s, o) { return s + o.rows.length; }, 0);
@@ -3057,6 +3086,7 @@
       V2.loadFiles(['bench', 'sagitta']).then(function () { if (V2.route && V2.route.name !== 'pharma') return; /* 11/09/2026 (phase 4) : l'écran a pu changer pendant l'attente */ V2.render(); });
       return;
     }
+    demanderCatComplet();
     if (String(selPid) !== 'LST:' + id) { selPid = 'LST:' + id; selCips = new Set(); }
     var ids = listIdsObj(l);
     var data = productsForIds(ids, 'LST:' + id);
