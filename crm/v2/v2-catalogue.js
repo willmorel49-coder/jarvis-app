@@ -134,7 +134,7 @@
     return '<span class="cat-badge" style="--bc:' + f.sc + '">' + esc(lbl) + '</span>';
   }
 
-  // remboursable = a un marché Ameli ET pas NR Sagitta (marge MDL applicable)
+  // remboursable = a un marché Ameli ET pas NR Sagitta (marge pharmacien applicable)
   function isRemb(b) {
     return b.has_ameli === true && !(sagittaSet && sagittaSet.has(String(b.cip13)));
   }
@@ -176,7 +176,7 @@
         agg.part != null ? agg.part.toFixed(2).replace('.', ',') + ' % du marché Ameli' : 'hors remboursement') +
       kpiCard('k3', 'CA IP', V2.fmtEur(agg.caIP),
         agg.prixMoy > 0 ? 'prix net moyen ' + V2.fmtEur(agg.prixMoy) : '') +
-      kpiCard('k4', 'Marge MDL potentielle', V2.fmtEur(agg.mdl),
+      kpiCard('k4', 'Marge pharmacien potentielle', V2.fmtEur(agg.mdl),
         agg.remMoy > 0 ? 'abandon de marge moyen ' + agg.remMoy.toFixed(1).replace('.', ',') + ' %' : 'sur remboursables') +
     '</div>';
   }
@@ -230,7 +230,7 @@
       potHtml =
         '<div class="cat-pot nr">' +
           '<div class="cat-pot-l">Non remboursé</div>' +
-          '<div class="cat-pot-txt">Pas de marché Ameli (hors remboursement). Marge libre pharmacien — pas de référentiel MDL applicable.</div>' +
+          '<div class="cat-pot-txt">Pas de marché Ameli (hors remboursement). Marge libre pharmacien — pas de barème officiel applicable.</div>' +
         '</div>';
     }
 
@@ -238,7 +238,7 @@
       return '<div class="cat-kpi"><div class="cat-kpi-l">' + l + '</div><div class="cat-kpi-v"' + (col ? ' style="color:' + col + '"' : '') + '>' + v + '</div></div>';
     }
 
-    // ── Section performance produit (rang, CA IP, marge MDL/boîte, évol. Ameli) ──
+    // ── Section performance produit (rang, CA IP, marge pharmacien/boîte, évol. Ameli) ──
     var rank_qty = (b.ip_rank_qty != null && b.ip_rank_qty > 0) ? b.ip_rank_qty : 0;
     var rang = rank_qty > 0 ? '#' + V2.fmtNum(rank_qty) : '—';
     var caIp = (typeof b.ip_ca === 'number' && b.ip_ca > 0) ? V2.fmtEur(b.ip_ca) : '—';
@@ -261,10 +261,10 @@
       '<div class="cat-kpi-grid">' +
         '<div class="cat-kpi"><div class="cat-kpi-l">Rang ventes IP</div><div class="cat-kpi-v">' + rangHtml + '</div></div>' +
         kpi('CA IP', caIp) +
-        kpi('Marge MDL / boîte', mdlBte, isRemb(b) ? 'var(--c-mint)' : 'var(--c-amber)') +
+        kpi('Marge pharmacien / boîte', mdlBte, isRemb(b) ? 'var(--c-mint)' : 'var(--c-amber)') +
         kpi('Évol. Ameli (jan.)', yoyHtml) +
       '</div>' +
-      (mdlTot > 0 ? '<div class="cat-perf-note">Marge MDL générée par ton volume actuel : <b>' + V2.fmtEur(mdlTot) + '</b></div>' : '');
+      (mdlTot > 0 ? '<div class="cat-perf-note">Marge pharmacien générée par ton volume actuel : <b>' + V2.fmtEur(mdlTot) + '</b></div>' : '');
 
     return '<div class="cat-insp' + (S.sel != null ? ' open' : '') + '">' +
       '<div class="cat-insp-head">' +
