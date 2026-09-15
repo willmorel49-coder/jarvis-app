@@ -123,6 +123,13 @@
       // le Pilotage (pas de colonne dédiée : l'API de gestion Supabase ne répond plus).
       var commParts = String(pr.data.commercial || '').split('+').map(function (s) { return s.trim(); }).filter(Boolean);
       V2.user = { id: user.id, email: user.email, name: pr.data.name, role: pr.data.role, pharmacyIds: pr.data.pharmacy_ids, commercial: commParts[0] || '', voitAussi: commParts.slice(1), opsoOnly: !!pr.data.opso_only, voitTous: pr.data.voit_tous_commerciaux === true };
+      // 15/09/2026 — bascule Intégral ↔ Escale (topbar) : `voitTous` est écrasé
+      // juste en dessous pour le cas « Escale » (voir commentaire suivant), donc
+      // il ne dit plus « accès total au CRM ». `voitTousReel` garde la valeur
+      // BRUTE du profil : seul Alexandre Lovy l'a à `true` (14/09), Jean-Marie
+      // Roussel (commercial='Escale') ne l'a pas — lui ne doit pas voir le
+      // bouton « Intégral » alors que son V2.user ressemble sinon à celui d'Alexandre.
+      V2.user.voitTousReel = pr.data.voit_tous_commerciaux === true;
       // 'Escale' n'est le prénom d'aucun commercial : dans l'espace Escale, ce
       // compte voit tout le périmètre (les données y sont déjà bornées aux quatre).
       if (appEscale && commProfil === 'Escale') { V2.user.commercial = ''; V2.user.voitTous = true; }

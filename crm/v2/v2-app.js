@@ -190,15 +190,44 @@
       '<span class="v2-logo">' + ICO('logo', 22) + '</span>' +
       (back ? '' : '<span><span class="v2-brand-t">' + ((window.V2_BRAND && window.V2_BRAND.name) || 'Intégral Pharma') + '<span class="v2-brand-dot" aria-hidden="true"></span></span><br><span class="v2-brand-s">' + ((window.V2_BRAND && window.V2_BRAND.sub) || 'Espace commercial') + '</span></span>') +
       '</a>';
+    // 15/09/2026 — bascule Intégral ↔ Escale, en haut à gauche. Réservée aux comptes
+    // ayant accès aux deux espaces (Alexandre Lovy).
+    // Vers Escale (depuis le CRM) : même critère que la 7ᵉ carte d'accueil (14/09,
+    // ligne ~1326) — un compte @escalepharma.fr. Les commerciaux Escale ne l'ont
+    // jamais : ils sont renvoyés vers escale/v2 avant même de voir cette page.
+    // Vers Intégral (depuis Escale) : email @escalepharma.fr NE SUFFIT PAS — tous
+    // les commerciaux Escale l'ont aussi. Il faut en plus `voitTousReel` (posé dans
+    // v2-boot.js AVANT la bascule locale de commercial/voitTous propre à l'espace
+    // Escale) : seul Alexandre l'a à true, pas Jean-Marie Roussel (commercial='Escale').
+    var spaceSw = '';
+    var mail = (V2.user && V2.user.email) || '';
+    if (/@escalepharma\.fr$/i.test(mail)) {
+      var inEscale = !!(window.V2_BRAND && window.V2_BRAND.escale);
+      if (!inEscale || (V2.user && V2.user.voitTousReel === true)) {
+        var swTo = inEscale ? 'crm' : 'escale';
+        var swLabel = inEscale ? 'Intégral' : 'Escale';
+        spaceSw = '<button class="v2-spacesw" title="Basculer vers l\'espace ' + swLabel + '" aria-label="Basculer vers l\'espace ' + swLabel + '" onclick="V2.goSpace(\'' + swTo + '\')">' +
+          '<span aria-hidden="true">⇄</span>' + swLabel + '</button>';
+      }
+    }
     return '' +
       '<div class="v2-top">' +
-        back + brand +
+        back + brand + spaceSw +
         ((V2.route && V2.route.name === 'home') ? '' : '<div class="v2-top-search" onclick="V2.onTopSearch()">' + ICO('search', 15, 2) + 'Rechercher<kbd>' + MOD + 'K</kbd></div>') +
         ((!(window.V2_BRAND && (window.V2_BRAND.opso || window.V2_BRAND.escale)) && V2.remonteeOpen) ? '<button class="v2-idea" title="Proposer une amélioration à l\'équipe" aria-label="Proposer une amélioration" onclick="V2.remonteeOpen()">' + ICO('spark', 16, 2) + '</button>' : '') +
         '<div class="v2-av" title="' + (V2.user ? V2.user.name : '') + '" onclick="V2.userMenu()">' + initials + '</div>' +
       '</div>';
   }
   V2.topbar = topbar;
+
+  // Bascule Intégral ↔ Escale (bouton de la topbar, 15/09/2026). Le choix est
+  // gardé (localStorage, en échec silencieux) pour un usage futur ; la navigation
+  // elle-même se fait par l'URL, qui suffit à rester dans l'espace choisi après
+  // un rechargement — pas de session cassée, `V2.user` est rechargé par l'autre app.
+  V2.goSpace = function (dest) {
+    try { localStorage.setItem('v2-space', dest); } catch (e) {}
+    location.href = dest === 'escale' ? '../../escale/v2/index.html' : '../../crm/v2/index.html';
+  };
 
   // ── Sous-onglets des espaces fusionnés (Catalogue & prix / Fiches & présentation) ──
   function subnav(items, active) {
@@ -1735,6 +1764,13 @@
       '.v2-av{box-shadow:0 0 0 1px color-mix(in srgb,var(--info) 14%,transparent),0 2px 6px rgba(16,19,28,.12)}' +
       '.v2-idea{flex:none;width:38px;height:38px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--muted);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:color .16s,border-color .16s,background .16s,transform .16s}' +
       '.v2-idea:hover{color:var(--ip-blue);border-color:var(--ip-blue);background:color-mix(in srgb,var(--ip-blue) 8%,var(--card));transform:translateY(-1px)}' +
+      // Bascule Intégral ↔ Escale (15/09/2026) : pastille discrète, juste après le logo.
+      '.v2-spacesw{flex:none;display:inline-flex;align-items:center;gap:5px;height:34px;padding:0 12px;' +
+        'border-radius:11px;border:1px solid var(--line);background:var(--card);color:var(--ip-ink-2);' +
+        'font-family:var(--font);font-size:12.5px;font-weight:600;cursor:pointer;' +
+        'transition:color .16s,border-color .16s,background .16s,transform .16s}' +
+      '.v2-spacesw:hover{color:var(--ip-blue);border-color:var(--ip-blue);background:color-mix(in srgb,var(--ip-blue) 8%,var(--card));transform:translateY(-1px)}' +
+      '@media(max-width:640px){.v2-spacesw{padding:0 9px;font-size:0}.v2-spacesw span{font-size:15px}}' +
 
       // ══ LOGIN — première impression de marque ════════════════════════
       // Scène : dégradé de marque sobre (double halo info) + trame de points
