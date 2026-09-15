@@ -59,7 +59,7 @@
   var AVEC_COMPOSEUR = { client: 1, groupement: 1, prospect: 1 };
 
   var S = {
-    mode: 'client', ph: null, grp: null, toutGrp: false, fam: 'all', q: '', sansRupture: false,
+    mode: 'comptoir', ph: null, grp: null, toutGrp: false, fam: 'all', q: '', sansRupture: false,
     page: 0, horsStock: false,
     sm: null,  // composition par catégorie, chargée au 1er rendu
     catStock: false, catLabo: '',   // filtres propres à l'onglet Catalogue
@@ -331,7 +331,9 @@
     return m;
   }
   function catalogue() {
-    if (V2.produits._cat) return V2.produits._cat;
+    // ⚠️ Pas `_cat` : c'est la table du catalogue complet (catalogueIndex).
+    // Partager la clé rendait l'une ou l'autre illisible selon l'onglet ouvert en premier.
+    if (V2.produits._catListe) return V2.produits._catListe;
     var PS = window.PROD_STATS || [], ST = stockIP();
     var R = (window.RUPTURES && window.RUPTURES.data) || {};
     var EX = cipsExclusifs(), LB = laboParCip();
@@ -342,7 +344,7 @@
                  stock: +ST[c] || 0, rupture: !!R[c],
                  labo: LB[c] || null, exclusif: !!EX[c] });
     }
-    V2.produits._cat = out;
+    V2.produits._catListe = out;
     return out;
   }
 
@@ -409,7 +411,16 @@
   }
 
   // ── Commandes appelées depuis le HTML ──────────────────────────
-  V2.produits.setMode = function (m) { S.mode = m; S.page = 0; V2.render(); };
+  V2.produits.setMode = function (m) {
+    S.mode = m; S.page = 0;
+    // Arrivé par #produits/<officine> : tant que l'adresse porte l'officine,
+    // chaque rendu repasse en mode Client — changer de vue serait impossible.
+    if (V2.route && V2.route.param) {
+      V2.route.param = null;
+      try { history.replaceState(null, '', '#produits'); } catch (e) {}
+    }
+    V2.render();
+  };
   V2.produits.setPh = function (id) { S.ph = id || null; S.page = 0; V2.render(); };
   V2.produits.setToutGrp = function (v) {
     S.toutGrp = !!v; S.page = 0; V2.produits._grpCle = null; V2.render();
@@ -1543,7 +1554,20 @@
       if (!S.sel) S.sel = selCharger();
       if (!S.doc) S.doc = docCharger();
 
+      // « Le comptoir » (v2-comptoir.js, choix de Will du 15/09/2026) est la
+      // vue d'entrée. Les vues par public restent, avec un retour vers lui.
+      if (S.mode === 'comptoir' && !S.apercu && V2.comptoir) {
+        root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
+          '<div class="v2-wrap pr-wrap"><div class="v2-page-title">Produits</div>' +
+          V2.comptoir.rendre() + liensBas() + '</div>';
+        return;
+      }
+      if (V2.comptoir && V2.comptoir.fermerPanneau) V2.comptoir.fermerPanneau();
+      if (S.mode === 'comptoir') S.mode = 'client';
       var onglets = '<div class="pr-modes pr-defile">', i;
+      if (V2.comptoir) {
+        onglets += '<button class="pr-mode" onclick="V2.produits.setMode(\'comptoir\')">← Le comptoir</button>';
+      }
       for (i = 0; i < PUBLICS.length; i++) {
         onglets += '<button class="pr-mode' + (S.mode === PUBLICS[i][0] ? ' on' : '') +
           '" onclick="V2.produits.setMode(\'' + PUBLICS[i][0] + '\')">' + PUBLICS[i][1] + '</button>';
@@ -1569,6 +1593,12 @@
 
   function liensBas() {
     var l = [];
+    if (S.mode === 'comptoir') {
+      l.push('<a onclick="V2.produits.setMode(\'client\')">Par officine</a>');
+      l.push('<a onclick="V2.produits.setMode(\'groupement\')">Par groupement</a>');
+      l.push('<a onclick="V2.produits.setMode(\'prospect\')">Prospect</a>');
+      l.push('<a onclick="V2.produits.setMode(\'achats\')">Achats</a>');
+    }
     if (V2.pages.catalogue) l.push('<a onclick="V2.go(\'catalogue\')">Catalogue complet</a>');
     if (V2.pages.molecules) l.push('<a onclick="V2.go(\'molecules\')">Prix par produit</a>');
     if (V2.pages.appro) l.push('<a onclick="V2.go(\'appro\')">Appro Intégral</a>');

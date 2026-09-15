@@ -178,6 +178,8 @@
     }
     return mois;
   }
+  // Partagé avec l'écran Produits (v2-comptoir.js) : mêmes mois complets, même part moyenne.
+  V2.approMoisRetenus = moisRetenus;
 
   var _cipIdx = null, _cipIdxRef = null, _cipIdxSai = null;
 
