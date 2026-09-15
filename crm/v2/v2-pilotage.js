@@ -2530,7 +2530,9 @@
       '.pilo-ecarte{display:flex;align-items:center;gap:6px;margin-top:8px;font-size:11.5px;font-weight:600;color:var(--c-amber-txt,#9A5B12)}' +
       '.pilo-perpick{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:flex-end;width:100%;margin-top:8px}' +
       '.pilo-perpick label{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--muted)}' +
-      '.pilo-persel{font-family:var(--font);font-size:16px;font-weight:600;color:var(--ip-ink);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:7px 10px;min-height:44px}' +
+      '.pilo-persel{font-family:var(--font);font-size:16px;font-weight:600;color:var(--ip-ink);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:0 32px 0 12px;height:44px;' +
+        // Safari ignore la hauteur d'un <select> natif : apparence retirée, flèche redessinée.
+        '-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%278%27%3E%3Cpath d=%27M1 1l5 5 5-5%27 fill=%27none%27 stroke=%27%23737A8C%27 stroke-width=%271.8%27/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}' +
       '.pilo-ecarte svg{flex-shrink:0}' +
       // ── Le marché France ───────────────────────────────────────
       '.pilo-mf{padding:18px 20px}' +
