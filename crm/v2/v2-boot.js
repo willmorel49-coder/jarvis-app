@@ -27,7 +27,7 @@
   V2.ready = false;
   V2.commFilter = '';   // '' = tous | 'Will' | 'Pauline'
   // 11/09/2026 — ESCALE PHARMA (Chilly-Mazarin, établissement du groupe) a son
-  // propre espace escale/v2 : Alexandre Lovy et ses quatre commerciaux. Le
+  // propre espace escale/v2 : le responsable Escale et ses quatre commerciaux. Le
   // périmètre, c'est LEURS officines (prénoms exacts des données de ventes).
   // Pas de colonne dédiée dans user_profiles (pas de DDL possible) : un compte
   // Escale se reconnaît à `commercial` ∈ cette liste, ou = 'Escale' (Alexandre).
@@ -874,7 +874,7 @@
   V2.chargerScripts = function (urls) {
     urls = urls || [];
     if (!urls.length) return Promise.resolve();
-    var V = '?v=20260915a' + (window.V2_VER || '20260915a');
+    var V = '?v=20260915b' + (window.V2_VER || '20260915b');
     return Promise.all(urls.map(function (u) {
       return new Promise(function (resolve) {
         var s = document.createElement('script');
@@ -954,7 +954,7 @@
         // Princeps/biosim sans abandon dans les données (net = PPHT, ex prix_ht manquant
         // à l'origine, OU prix_ip carrément absent — cas des produits froid/vaccins, ex
         // Bexsero, Shingrix : `b.prix_ip > 0` valait false sur un champ absent, donc
-        // jamais corrigé) → on applique le barème pour révéler le vrai net remisé. Les
+        // jamais corrigé) → on applique le barème pour révéler le vrai prix net. Les
         // princeps déjà remisés (prix_ip < pp) et les offres Sanofi/UPSA sont laissés intacts.
         if (!dejaUnPrixNet) {
           b.prix_ip = Math.round((pp - abandonBareme(pp)) * 100) / 100;

@@ -3,7 +3,7 @@
    Catalogue UNIQUE : tous les produits du réseau en 6 catégories
    (Princeps ×3 tranches · NR · Génériques · Biosimilaires), classés par
    NB DE PHARMACIES qui commandent (tous commerciaux). Par CIP : nb
-   pharmacies, PPHT (tarif) + Net remisé (réel) + remise %, rotation,
+   pharmacies, PPHT (tarif) + Prix net (réel) + remise %, rotation,
    marge pharmacien, prix/stock par établissement. Doc PDF « top N par
    catégorie » + création de sélections marketing.
    Données : PROD_STATS (prod-stats-data.js) + ETAB_PRICES.
@@ -142,7 +142,7 @@
         '<td class="num mono mol-nph" data-label="Pharmacies">' + num(r.n) + '</td>' +
         pphtTd +
         (function () {
-          return '<td class="num mono mol-net" data-label="Net remisé">' + (p.net > 0 ? eur(p.net) : '—') +
+          return '<td class="num mono mol-net" data-label="Prix net">' + (p.net > 0 ? eur(p.net) : '—') +
             TIERS.map(function (t) {
               var sg = tiersVerdict(r, p, t);
               return sg ? '<span class="mol-sag' + (sg.v === 'gagne' ? ' win' : sg.v === 'perd' ? ' lose' : '') + '" title="Tarif d\'achat net ' + t.nom + '">' + t.nom + ' ' + eur(sg.s) + '</span>' : '';
@@ -279,7 +279,7 @@
       }).join('');
       var avgR = sN ? Math.round(sR / sN * 10) / 10 : 0;
       gEco += sEco; gR += sR; gN += sN; gProd += rows.length;
-      var ths = ['#', 'Produit', 'CIP', 'PPHT', 'Net remisé', 'Économie', 'Pharmacies'].concat(showStock ? ['Stock'] : []);
+      var ths = ['#', 'Produit', 'CIP', 'PPHT', 'Prix net', 'Économie', 'Pharmacies'].concat(showStock ? ['Stock'] : []);
       return '<div style="margin-bottom:14px;page-break-inside:avoid">' +
         '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:linear-gradient(90deg,' + FAM_BY[k].sc + '22,transparent);border-left:4px solid ' + FAM_BY[k].sc + ';border-radius:5px;margin-bottom:4px">' +
           '<div style="font-size:12.5px;font-weight:800;color:#10131C">' + esc(FAM_BY[k].label) + '</div>' +
@@ -387,7 +387,7 @@
         '<div class="v2-wrap">' +
           '<div class="mol-head"><div class="mol-head-l">' +
             '<div class="v2-page-title">Catalogue &amp; prix</div>' +
-            '<div class="v2-page-sub">Tous les produits du réseau, classés par nb de pharmacies qui commandent. Pour chacun : ton <b>prix net remisé</b> et l\'<b>abandon de marge</b> Intégral, plus la rotation et la marge pharmacien.</div>' +
+            '<div class="v2-page-sub">Tous les produits du réseau, classés par nb de pharmacies qui commandent. Pour chacun : ton <b>prix net</b> et l\'<b>abandon de marge</b> Intégral, plus la rotation et la marge pharmacien.</div>' +
           '</div>' + kfs + '</div>' +
           panel + advBar + sagBand() +
           '<div class="mol-tcard">' +
@@ -396,14 +396,14 @@
             '<th class="num">#</th><th>Produit</th><th>CIP13</th><th>Famille</th>' +
             '<th class="num mol-th' + (S.sort === 'n' ? ' on' : '') + '" data-k="n" onclick="V2.molSort(\'n\')" style="cursor:pointer">Pharmacies<small style="display:block;font-weight:500;color:var(--muted-2)">réseau ' + (S.sort === 'n' ? '↓' : '↕') + '</small></th>' +
             '<th class="num">PPHT<small style="display:block;font-weight:500;color:var(--muted-2)">tarif</small></th>' +
-            '<th class="num mol-key">Net remisé<small style="display:block;font-weight:500;color:var(--muted-2)">ton prix</small></th>' +
+            '<th class="num mol-key">Prix net<small style="display:block;font-weight:500;color:var(--muted-2)">ton prix</small></th>' +
             '<th class="num mol-key">Abandon<small style="display:block;font-weight:500;color:var(--muted-2)">de marge</small></th>' +
             '<th class="num mol-fr" title="Moyenne indicative de boîtes remboursées par pharmacie en France (Ameli)">Moy. France<small style="display:block;font-weight:500;color:var(--muted-2)">boîtes/an · Ameli</small></th>' +
             COLS.map(th).join('') +
             (showStock ? '<th class="num">Stock</th>' : '') +
           '</tr></thead><tbody id="mol-tbody">' + rowsHtml() + '</tbody></table></div>' +
           '</div>' +
-          '<div class="v2-page-sub" style="margin-top:14px;font-size:12px">Ventes réelles du réseau (5 mois, annualisées) · marge pharmacien = remboursables · Net remisé = prix d\'achat moyen constaté · prix/stock = établissement choisi · <b>Moy. France</b> = boîtes remboursées Ameli (12 mois) ÷ ~20 000 officines, à titre indicatif (remboursables uniquement).</div>' +
+          '<div class="v2-page-sub" style="margin-top:14px;font-size:12px">Ventes réelles du réseau (5 mois, annualisées) · marge pharmacien = remboursables · Prix net = prix d\'achat moyen constaté · prix/stock = établissement choisi · <b>Moy. France</b> = boîtes remboursées Ameli (12 mois) ÷ ~20 000 officines, à titre indicatif (remboursables uniquement).</div>' +
         '</div>';
       fill();
       // Motion discret : cascade d'entrée sur les familles + les 1res lignes du tableau
@@ -490,7 +490,7 @@
       '.mol-nph{font-weight:800;color:var(--ip-ink)}' +
       '.mol-ppht{color:var(--muted-2);text-decoration:line-through;text-decoration-color:color-mix(in srgb,var(--muted-2) 50%,transparent);text-decoration-thickness:1px}' +
       '.mol-net{color:var(--ip-blue);font-weight:800;font-size:15px;background:color-mix(in srgb,var(--ip-blue) 5%,transparent);box-shadow:inset 2px 0 0 color-mix(in srgb,var(--ip-blue) 30%,transparent)}' +
-      // les 2 colonnes clés (Net remisé + Abandon de marge) ressortent dès l'en-tête
+      // les 2 colonnes clés (Prix net + Abandon de marge) ressortent dès l'en-tête
       '.mol-table thead th.mol-key{color:var(--ip-blue);background:linear-gradient(180deg,color-mix(in srgb,var(--ip-blue) 7%,var(--card)),color-mix(in srgb,var(--ip-blue) 4%,var(--card-2,#f7f9fc)))}' +
       '.mol-table thead th.mol-key small{color:color-mix(in srgb,var(--ip-blue) 70%,var(--muted-2)) !important}' +
       // colonnes secondaires (CIP, PPHT, rotation, marge) allégées pour la hiérarchie

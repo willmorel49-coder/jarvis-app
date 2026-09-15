@@ -1349,7 +1349,7 @@
             '<span class="v2-lch-meta"><span class="v2-lch-t">' + esc(p.t) + '</span><span class="v2-lch-d">' + (SUB[k] || '') + '</span></span></a>';
         }
         var big = ESSENTIAL.map(bigCard).filter(Boolean).join('');
-        // 14/09/2026 — Alexandre Lovy (Escale Pharma) a l'accès total ET garde son
+        // 14/09/2026 — le responsable d'Escale Pharma a l'accès total ET garde son
         // espace escale/v2 : une 7ᵉ carte l'y mène (demande de Will). Seul un compte
         // @escalepharma.fr arrive ici : les commerciaux Escale sont renvoyés avant.
         if (/@escalepharma\.fr$/i.test((V2.user && V2.user.email) || '')) {
