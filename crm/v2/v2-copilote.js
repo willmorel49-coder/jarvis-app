@@ -262,7 +262,7 @@
   V2.copiloteSelPharma = function (id) { selPid = id; if (V2.render) V2.render(); };
 
   // ════ EXPORT « FICHE DE VISITE » (2 destinataires × 2 formats) ════
-  // mode 'client' = à laisser au pharmacien → PPHT + net remisé, JAMAIS l'abandon de marge.
+  // mode 'client' = à laisser au pharmacien → PPHT + prix net, JAMAIS l'abandon de marge.
   // mode 'interne' = ma prépa → tout (abandon, marge pharmacien, stock), « ne pas laisser au client ».
   function visiteName() {
     var phs = pharmaOptions();
@@ -299,8 +299,8 @@
     var dateStr = ''; try { dateStr = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' }); } catch (e) {}
     function e2(v) { return (v ? (+v).toFixed(2).replace('.', ',') + ' €' : '—'); }
     var cols = isInt
-      ? ['#', 'Produit', 'CIP', 'PPHT', 'Net remisé', 'Abandon', 'Stock', '~/an France']
-      : ['#', 'Produit', 'CIP', 'PPHT', 'Net remisé', '~/an France'];
+      ? ['#', 'Produit', 'CIP', 'PPHT', 'Prix net', 'Abandon', 'Stock', '~/an France']
+      : ['#', 'Produit', 'CIP', 'PPHT', 'Prix net', '~/an France'];
     var trs = rows.map(function (x, i) {
       var tds = '<td style="padding:6px 9px;color:#9AA1B2;font-size:9px;text-align:right">' + (i + 1) + '</td>' +
         '<td style="padding:6px 9px;font-size:10.5px;font-weight:600;color:#10131C">' + esc(cap(x.d)) + '</td>' +
@@ -583,7 +583,7 @@
         (g != null && g >= 8 ? ' · marché <b class="up">+' + g + '%</b> sur un an' : '') +
         ' · tu en as <b class="stk">' + num(s) + '</b> en stock Intégral.</p>' +
       sparkRow(r.c) +
-      '<div class="co-prix">' + (r.net > 0 ? '<span class="co-net">' + eur(r.net) + ' net remisé</span>' : '') + abChip(r) + '</div>' +
+      '<div class="co-prix">' + (r.net > 0 ? '<span class="co-net">' + eur(r.net) + ' net</span>' : '') + abChip(r) + '</div>' +
       '<button class="v2-btn v2-btn-ghost" onclick="V2.go(\'molecules\',\'' + esc(r.c) + '\')">Voir la fiche</button>' +
       '</div>';
   }
@@ -594,7 +594,7 @@
       '<div class="t"><span class="psh up">Marché en croissance</span>' + esc(cap(r.d)) + '<span class="co-grow up big">↑ +' + o.g + '%</span></div>' +
       '<p class="s"><b class="up">+' + o.g + '%</b> sur un an en France · une pharmacie moyenne en vend <b>~' + num(o.fr) + '</b>/an · seulement <b>' + num(r.n || 0) + '</b> de tes officines le commandent · <b class="stk">' + num(s) + '</b> en stock.</p>' +
       sparkRow(r.c) +
-      '<div class="co-prix">' + (r.net > 0 ? '<span class="co-net">' + eur(r.net) + ' net remisé</span>' : '') + abChip(r) + '</div>' +
+      '<div class="co-prix">' + (r.net > 0 ? '<span class="co-net">' + eur(r.net) + ' net</span>' : '') + abChip(r) + '</div>' +
       '<button class="v2-btn v2-btn-ghost" onclick="V2.go(\'molecules\',\'' + esc(r.c) + '\')">Voir la fiche</button>' +
       '</div>';
   }
@@ -607,7 +607,7 @@
       '<div class="t"><span class="psh ac">Accélère en ce moment</span>' + esc(cap(r.d)) + '<span class="co-accel big">↗ +' + o.m + '%/mois</span></div>' +
       '<p class="s">Ventes France en <b class="ac">+' + o.m + '%/mois</b> ces derniers mois' + gtxt + (o.fr >= 10 ? ' · une pharmacie moyenne en vend <b>~' + num(o.fr) + '</b>/an' : ' · marché de niche qui grimpe') + ' · <b class="stk">' + num(s) + '</b> en stock.</p>' +
       sparkRow(r.c) +
-      '<div class="co-prix">' + (r.net > 0 ? '<span class="co-net">' + eur(r.net) + ' net remisé</span>' : '') + abChip(r) + '</div>' +
+      '<div class="co-prix">' + (r.net > 0 ? '<span class="co-net">' + eur(r.net) + ' net</span>' : '') + abChip(r) + '</div>' +
       '<button class="v2-btn v2-btn-ghost" onclick="V2.go(\'molecules\',\'' + esc(r.c) + '\')">Voir la fiche</button>' +
       '</div>';
   }
@@ -665,7 +665,7 @@
       (badges ? '<div class="co-tbadges">' + badges + '</div>' : '') +
       '<p class="s">' + why.join(' · ') + ' · <b class="stk">' + num(s) + '</b> en stock Intégral.</p>' +
       sparkRow(r.c) +
-      '<div class="co-prix">' + (r.net > 0 ? '<span class="co-net">' + eur(r.net) + ' net remisé</span>' : '') + abChip(r) + '</div>' +
+      '<div class="co-prix">' + (r.net > 0 ? '<span class="co-net">' + eur(r.net) + ' net</span>' : '') + abChip(r) + '</div>' +
       '<button class="v2-btn v2-btn-ghost" onclick="V2.go(\'molecules\',\'' + esc(r.c) + '\')">Voir la fiche</button>' +
       '</div>';
   }
@@ -677,7 +677,7 @@
       '<div class="t"><span class="psh nw">Nouveau · AMM ' + esc(n.amm) + '</span>' + esc(cap(r.d)) + growthBadge(r.c) + '</div>' +
       '<p class="s">' + (n.labo ? '<b>' + esc(cap(String(n.labo).toLowerCase())) + '</b> · ' : '') + (o.fr >= 20 ? 'la France en vend déjà <b>~' + num(o.fr) + '</b>/an · ' : 'marché qui démarre · ') + 'tu en as <b class="stk">' + num(s) + '</b> en stock — prends l\'avance.</p>' +
       sparkRow(r.c) +
-      '<div class="co-prix">' + (r.net > 0 ? '<span class="co-net">' + eur(r.net) + ' net remisé</span>' : '') + abChip(r) + '</div>' +
+      '<div class="co-prix">' + (r.net > 0 ? '<span class="co-net">' + eur(r.net) + ' net</span>' : '') + abChip(r) + '</div>' +
       '<button class="v2-btn v2-btn-ghost" onclick="V2.go(\'molecules\',\'' + esc(r.c) + '\')">Voir la fiche</button>' +
       '</div>';
   }
@@ -699,7 +699,7 @@
       '<div class="ms">' +
       '<span class="m"><i>France</i><span>~' + num(o.fr) + '/an</span></span>' +
       '<span class="m"><i>Ton réseau</i><span>' + num(r.n || 0) + ' off.</span></span>' +
-      '<span class="m"><i>Net remisé</i><span class="blue">' + (r.net > 0 ? eur(r.net) : '—') + '</span></span>' +
+      '<span class="m"><i>Prix net</i><span class="blue">' + (r.net > 0 ? eur(r.net) : '—') + '</span></span>' +
       '<span class="m"><i>Stock IP</i><span class="grn">' + num(stk(r.c)) + '</span></span>' +
       '</div>' +
       '<button class="v2-btn v2-btn-ghost" onclick="V2.go(\'molecules\',\'' + esc(r.c) + '\')">Voir</button></div>';
@@ -709,7 +709,7 @@
     return '<div class="co-mkt"><div class="id"><div class="p">' + esc(cap(r.d)) + '<span class="co-fam co-fam-mol">' + esc(cap((rp.d || '—').toLowerCase())) + '</span></div><div class="c">' + esc(r.c) + (rp.dt ? ' · signalé le ' + esc(rp.dt) : '') + '</div></div>' +
       '<div class="ms">' +
       '<span class="m"><i>Ton réseau</i><span>' + num(r.n || 0) + ' off.</span></span>' +
-      '<span class="m"><i>Net remisé</i><span class="blue">' + (r.net > 0 ? eur(r.net) : '—') + '</span></span>' +
+      '<span class="m"><i>Prix net</i><span class="blue">' + (r.net > 0 ? eur(r.net) : '—') + '</span></span>' +
       '<span class="m"><i>Stock IP</i><span class="grn">' + num(stk(r.c)) + '</span></span>' +
       '</div>' +
       '<button class="v2-btn v2-btn-ghost" onclick="V2.go(\'molecules\',\'' + esc(r.c) + '\')">Voir</button></div>';
