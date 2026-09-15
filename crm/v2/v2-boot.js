@@ -126,9 +126,9 @@
       // 15/09/2026 — bascule Intégral ↔ Escale (topbar) : `voitTous` est écrasé
       // juste en dessous pour le cas « Escale » (voir commentaire suivant), donc
       // il ne dit plus « accès total au CRM ». `voitTousReel` garde la valeur
-      // BRUTE du profil : seul Alexandre Lovy l'a à `true` (14/09), Jean-Marie
-      // Roussel (commercial='Escale') ne l'a pas — lui ne doit pas voir le
-      // bouton « Intégral » alors que son V2.user ressemble sinon à celui d'Alexandre.
+      // BRUTE du profil : seul le compte Escale à accès total l'a à `true` (14/09) ; le compte
+      // générique (commercial='Escale') ne l'a pas — il ne doit pas voir le
+      // bouton « Intégral » alors que son V2.user ressemble sinon au premier.
       V2.user.voitTousReel = pr.data.voit_tous_commerciaux === true;
       // 'Escale' n'est le prénom d'aucun commercial : dans l'espace Escale, ce
       // compte voit tout le périmètre (les données y sont déjà bornées aux quatre).
