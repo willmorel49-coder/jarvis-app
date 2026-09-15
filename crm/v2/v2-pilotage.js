@@ -10,7 +10,10 @@
   V2.pages = V2.pages || {};
 
   // ── State période (local module) ──────────────
-  var PERIOD = 'current';            // 'current' | '3m' | 'year'
+  var PERIOD = 'current';            // 'current' | '3m' | 'year' | 'custom'
+  // 15/09/2026 — Will : « analyser un mois ou une période donnée ». Bornes du
+  // mode 'custom', en clés mois absolues (mkey) ; null = pas encore choisies.
+  var PER_DU = null, PER_AU = null;
   var OUVERTS = {};                  // blocs dépliables laissés ouverts par Will
   // Carte « mois par mois » : dimension (familles / tranches) et unité (part / € / boîtes)
   var PM_DIM = 'fam', PM_UNIT = 'part';
@@ -285,22 +288,48 @@
       return true;
     }
 
+    // Chaque période rend aussi ses bornes (du, au) : les blocs plus bas en ont
+    // besoin pour se restreindre aux mêmes mois (mois par mois, graphe 13 mois).
+    function borne(o, du, au) {
+      o.du = du; o.au = au;
+      o.incomplets = [];
+      if (dispo) for (var k = du; k <= au; k++) { if (!dispo[k] && existe[k]) o.incomplets.push(nomMois(k)); }
+      return o;
+    }
+    var existe = {};
+    months.forEach(function (m) { existe[mkey(m.year, m.month)] = 1; });
+
+    if (mode === 'custom' && PER_DU != null && PER_AU != null) {
+      // Période choisie à la main, du mois A au mois B (inclus). La comparaison
+      // se fait à la même durée, juste avant — et seulement si le fichier la couvre.
+      var du = Math.min(PER_DU, PER_AU), au = Math.max(PER_DU, PER_AU), n = au - du + 1;
+      var libDu = cap(MN[du % 12]), libAu = MN[au % 12];
+      var ya = Math.floor(du / 12), yb = Math.floor(au / 12);
+      return borne({
+        label: n === 1 ? libDu + ' ' + ya
+          : (ya === yb ? libDu + ' → ' + libAu + ' ' + yb : libDu + ' ' + ya + ' → ' + libAu + ' ' + yb),
+        prevLabel: n === 1 ? 'mois précédent' : n + ' mois précédents',
+        prevComplet: couvert(du - n, du - 1) && !!existe[du - n],
+        inPeriod: function (s) { var k = mkey(s.year, s.month); return k >= du && k <= au; },
+        inPrev: function (s) { var k = mkey(s.year, s.month); return k >= du - n && k <= du - 1; },
+      }, du, au);
+    }
     if (mode === 'current') {
       // Le dernier mois retenu du périmètre regardé.
       var idx = months.length - 1;
       while (idx > 0 && mkey(months[idx].year, months[idx].month) > lastK) idx--;
       var cur = months[idx], curK = mkey(cur.year, cur.month);
-      return {
+      return borne({
         label: cap(MN[cur.month - 1]) + ' ' + cur.year,
         prevLabel: 'mois précédent',
         prevComplet: couvert(curK - 1, curK - 1),
         inPeriod: function (s) { return mkey(s.year, s.month) === curK; },
         inPrev: function (s) { return mkey(s.year, s.month) === curK - 1; },
-      };
+      }, curK, curK);
     }
     if (mode === '3m') {
       var startK = lastK - 2, pStart = lastK - 5, pEnd = lastK - 3;
-      return {
+      return borne({
         label: '3 derniers mois',
         prevLabel: '3 mois précédents',
         // ⚠️ Le fichier ne remonte qu'à janvier : la fenêtre précédente peut
@@ -309,17 +338,17 @@
         prevComplet: couvert(pStart, pEnd),
         inPeriod: function (s) { var k = mkey(s.year, s.month); return k >= startK && k <= lastK; },
         inPrev: function (s) { var k = mkey(s.year, s.month); return k >= pStart && k <= pEnd; },
-      };
+      }, startK, lastK);
     }
     // year = année du dernier mois retenu, arrêtée à ce mois-là
     var y = Math.floor(lastK / 12);
-    return {
+    return borne({
       label: 'Année ' + y,
       prevLabel: 'année ' + (y - 1),
       prevComplet: false,
       inPeriod: function (s) { return s.year === y && mkey(s.year, s.month) <= lastK; },
       inPrev: function (s) { return s.year === y - 1; },
-    };
+    }, y * 12, lastK);
   }
 
   // ── helpers ───────────────────────────────────
@@ -886,8 +915,10 @@
         (comparable ? 'Le petit chiffre sous chaque part est l\'écart avec la France, en points. ' : '') +
         'Touche une catégorie pour ne garder que ces produits dans la liste dessous.' +
         '<br>' + modeTxt +
-        (periodeLabel ? '<br><b>Mesuré sur ' + esc(periodeLabel) + '</b> — pas sur la période choisie en haut : ' +
-          'sur les derniers mois, tous les secteurs ne sont pas encore dans le fichier de ventes.' : '') +
+        (periodeLabel ? '<br><b>Mesuré sur ' + esc(periodeLabel) + '</b>' +
+          (monSecteur && !(autresTot > 0)
+            ? ' — pas de ligne « les autres secteurs » : sur cette période, leurs ventes ne sont pas encore toutes dans le fichier.'
+            : '.') : '') +
       '</div>' +
       tableau +
       '<div class="pilo-prod-sep"><span class="pilo-prod-lt">' + esc(titreListe) + '</span>' +
@@ -1222,6 +1253,15 @@
       // Index officines : sert au groupement ET au découpage par département.
       var phById = {}; (V2.pharmacies || []).forEach(function (p) { phById[p.id] = p; });
       var anc = ancreComplete(sales);
+      // Période choisie à la main : bornée aux mois du périmètre regardé (un
+      // changement de commercial ne doit pas laisser une période hors fichier).
+      if (PERIOD === 'custom' && PER_DU != null) {
+        var amC = availableMonths(sales);
+        if (amC.length) {
+          var k0 = mkey(amC[0].year, amC[0].month), k1 = mkey(amC[amC.length - 1].year, amC[amC.length - 1].month);
+          PER_DU = Math.min(Math.max(PER_DU, k0), k1); PER_AU = Math.min(Math.max(PER_AU, k0), k1);
+        }
+      }
       var pf = periodFilter(sales, PERIOD, anc);
       var inP = pf ? pf.inPeriod : function () { return true; };
       var inPrev = pf ? pf.inPrev : function () { return false; };
@@ -1263,7 +1303,20 @@
           (bornes.length > 1 ? 'de ' + nomMois(bornes[0]) + ' à ' + nomMois(bornes[bornes.length - 1])
                              : 'sur ' + nomMois(bornes[0]));
       }
-      var reseauCur = V2.commFilter ? reseauComplet : null;
+      // 15/09/2026 — le repère réseau SUIT la période choisie, restreint aux mois
+      // où le réseau est au complet. Si la période n'en a aucun, il reste sur
+      // tous les mois complets, et le libellé le dit.
+      var reseauPer = reseauComplet, reseauPerOk = false;
+      if (reseauComplet && pf) {
+        var perKey = PERIOD + ':' + pf.du + '-' + pf.au, rpm = V2._reseauPerMemo;
+        var rp = (rpm && rpm.ref === reseauComplet && rpm.key === perKey) ? rpm.val : reseauComplet.filter(pf.inPeriod);
+        V2._reseauPerMemo = { ref: reseauComplet, key: perKey, val: rp };
+        if (rp.length) {
+          reseauPer = rp; reseauPerOk = true;
+          repereLabel = 'les ' + ancRes.maxSect + ' secteurs réunis, sur la même période (' + pf.label + ')';
+        }
+      }
+      var reseauCur = V2.commFilter ? reseauPer : null;
       var compare = !!(reseauCur && reseauCur.length);
       if (!compare) reseauCur = null;
 
@@ -1398,7 +1451,7 @@
       }
 
       // ── Chart 13 mois ──
-      var chart = build13MonthChart(sales, anc);
+      var chart = build13MonthChart(sales, anc, pf);
 
       // ── Top pharmacies par CA (période) + marge MDL par pharma ──
       // ⚠️ Une SEULE passe. Cette ligne faisait un `cur.filter()` complet POUR
@@ -1516,14 +1569,17 @@
       // Barres = la famille/tranche ce mois-là ; en mode « part », tiret = la même
       // part côté réseau. En € et en boîtes, pas de tiret : le réseau entier et un
       // secteur ne sont pas à la même échelle, le trait serait toujours au plafond.
-      // ⚠️ Ce bloc a son PROPRE axe de temps (tous les mois), il ne suit pas le
-      // sélecteur de période. En vue « Tous », on ne garde que les mois où le
+      // 15/09/2026 — ce bloc SUIT le sélecteur de période : il ne montre que les
+      // mois de la période choisie. Sur un seul mois, il n'y a rien à dérouler :
+      // les deux cartes « par famille / par tranche » de ce mois prennent sa place.
+      // En vue « Tous », on ne garde que les mois où le
       // réseau est AU COMPLET : les fichiers s'arrêtent à des mois différents —
       // un mois à deux secteurs fabriquerait une fausse chute de CA et de mélange.
       var partsMoisCard = '';
       (function () {
         var pmList = availableMonths(sales);
         if (!V2.commFilter && ancRes) pmList = pmList.filter(function (m) { return ancRes.dispo[mkey(m.year, m.month)]; });
+        if (pf) pmList = pmList.filter(function (m) { var k = mkey(m.year, m.month); return k >= pf.du && k <= pf.au; });
         if (pmList.length < 2) return;
         // agrégats : CA et boîtes, par mois, par famille ET par tranche (une passe)
         var pmTot = {}, agg = { fam: {}, tier: {} };
@@ -1645,8 +1701,8 @@
         var sousTitre = (unit === 'part'
             ? 'part de ' + quoi + ' dans le CA du mois' + (compare ? ' · <i class="pilo-net-dash"></i> = la même part côté réseau, sur les mois où il est au complet' : '')
             : (unit === 'eur' ? 'CA net de ' + quoi + ', mois par mois' : 'boîtes commandées dans ' + quoi + ', mois par mois')) +
-          (V2.commFilter ? ' — tous tes mois de ventes' : ' — uniquement les mois où le réseau est au complet') +
-          ' · indépendant du sélecteur de période';
+          ' — ' + (pf ? esc(pf.label) : '') +
+          (V2.commFilter ? '' : ', uniquement les mois où le réseau est au complet');
         var btn = function (what, val, lbl) {
           var on = (what === 'dim' ? dim : unit) === val;
           return '<button class="pilo-part-btn' + (on ? ' on' : '') + '" onclick="V2.piloPartsSet(\'' + what + '\',\'' + val + '\')">' + lbl + '</button>';
@@ -1730,9 +1786,10 @@
       // un chiffre qui a l'air d'une promesse et n'en est pas est le pire
       // service qu'on puisse rendre à un commercial en rendez-vous.
       //
-      // « Ne commande pas » se mesure sur TOUT le fichier de ventes, pas sur
-      // la période choisie : un produit acheté en mars n'est pas un trou parce
-      // qu'il n'a pas été racheté en mai.
+      // 15/09/2026 — « Ne commande pas » se mesure sur la PÉRIODE CHOISIE (Will :
+      // tous les chiffres suivent le filtre). Sur « Année », c'est l'ancienne
+      // lecture ; sur un seul mois, un produit acheté tous les trimestres peut
+      // apparaître — l'écran écrit la période pour qu'on le lise ainsi.
       var ameliCard = '';
       var AV = window.AMELI_AVG, PP = window.PPHT, SK = window.STOCK_IP;
       if (AV && AV.data && PP) {
@@ -1744,9 +1801,9 @@
           if (bp && bp.ip > 0) prixNet[c] = bp.ip;
         });
 
-        // Qui commande quoi, sur tout le périmètre et tout le fichier.
+        // Qui commande quoi, sur tout le périmètre, pendant la période choisie.
         var pris = {}, mesOffSet = {};
-        sales.forEach(function (v) {
+        cur.forEach(function (v) {
           if (!(v.qte > 0)) return;
           var c = normCip(v.artCode); if (!c) return;
           (pris[c] || (pris[c] = {}))[v.pharmacyId] = 1;
@@ -1831,8 +1888,8 @@
             '<div class="v2-card pilo-gis" style="margin-bottom:14px">' +
               '<div class="v2-card-head"><div class="v2-card-t">' + ICO('pilo', 17) + 'Le gisement</div>' +
                 '<span class="v2-card-link" style="color:var(--muted);cursor:default">' +
-                  V2.fmtNum(nOffTotal) + ' officines · en stock Intégral</span></div>' +
-              '<div class="pilo-legende">Ce que la France achète et que tes officines ne commandent pas — ' +
+                  V2.fmtNum(nOffTotal) + ' officines · ' + (pf ? esc(pf.label) : '') + '</span></div>' +
+              '<div class="pilo-legende">Ce que la France achète et que tes officines n\'ont pas commandé' + (pf ? ' sur ' + esc(pf.label) : '') + ' — ' +
                 'uniquement ce qu\'Intégral a en stock. Classé par euros, pas par nombre de boîtes : ' +
                 'sinon les petits prix à gros volume écrasent tout et le gisement reste invisible.</div>' +
               chips +
@@ -1842,7 +1899,7 @@
                 // 7 786 références, il n'y a aucun objectif à tenir ici.
                 '<span class="mono" style="font-size:13px;font-weight:700;color:var(--ip-ink)">' + covBar + ' %</span>' +
                 '<span style="font-size:12px;color:var(--muted)">' + V2.fmtNum(couvert) + ' / ' + V2.fmtNum(connus) +
-                  ' produits du marché remboursable déjà commandés au moins une fois</span>' +
+                  ' produits du marché remboursable commandés au moins une fois sur la période</span>' +
               '</div>' +
               gapHtml +
               '<div class="pilo-gis-note">' +
@@ -1859,21 +1916,32 @@
         }
       }
 
-      // ── Alerte : Top 10 pharmacies en BAISSE (CA décline sur les mois) ──
-      // Compare la 2e moitié des mois disponibles à la 1re (moyenne mensuelle).
-      var allMonths = availableMonths(sales);
-      var mdlCard;
-      if (allMonths.length >= 2) {
-        var nM = allMonths.length, cut = Math.ceil(nM / 2);
-        var earlyK = {}, lateK = {};
-        allMonths.forEach(function (m, i) { (i < cut ? earlyK : lateK)[mkey(m.year, m.month)] = 1; });
-        var nEarly = cut, nLate = nM - cut;
+      // ── Alerte : Top 10 pharmacies en BAISSE ──
+      // 15/09/2026 — suit la période : la période choisie face à la même durée
+      // juste avant (moyenne mensuelle). Quand le fichier ne couvre pas la
+      // période d'avant (« Année » en janvier…), on coupe la période en deux
+      // moitiés. Un seul mois sans mois précédent : pas de comparaison, et on le dit.
+      var mdlCard, nMoisPer = pf ? pf.au - pf.du + 1 : 0, baseCmp = null;
+      if (pf && pf.prevComplet) {
+        baseCmp = { a: prev, b: cur, nA: nMoisPer, nB: nMoisPer, lib: 'vs ' + pf.prevLabel };
+      } else if (pf && nMoisPer >= 2) {
+        var cutK = pf.du + Math.ceil(nMoisPer / 2);
+        baseCmp = {
+          a: cur.filter(function (s) { return mkey(s.year, s.month) < cutK; }),
+          b: cur.filter(function (s) { return mkey(s.year, s.month) >= cutK; }),
+          nA: cutK - pf.du, nB: pf.au - cutK + 1, lib: '2ᵉ moitié vs 1ʳᵉ de la période'
+        };
+      }
+      if (!baseCmp) {
+        mdlCard = '<div class="v2-card">' +
+          '<div class="v2-card-head"><div class="v2-card-t">' + ICO('alert', 17) + 'Pharmacies en baisse · à relancer</div></div>' +
+          '<div class="v2-empty"><div class="v2-empty-d">Pas de comparaison possible sur ' + (pf ? esc(pf.label) : 'cette période') +
+            ' : le fichier de ventes ne couvre pas la période d\'avant.</div></div></div>';
+      } else {
+        var nEarly = baseCmp.nA, nLate = baseCmp.nB;
         var eByPh = {}, lByPh = {};
-        sales.forEach(function (s) {
-          var k = mkey(s.year, s.month), v = s.mntNetHt || 0;
-          if (earlyK[k]) eByPh[s.pharmacyId] = (eByPh[s.pharmacyId] || 0) + v;
-          else if (lateK[k]) lByPh[s.pharmacyId] = (lByPh[s.pharmacyId] || 0) + v;
-        });
+        baseCmp.a.forEach(function (s) { eByPh[s.pharmacyId] = (eByPh[s.pharmacyId] || 0) + (s.mntNetHt || 0); });
+        baseCmp.b.forEach(function (s) { lByPh[s.pharmacyId] = (lByPh[s.pharmacyId] || 0) + (s.mntNetHt || 0); });
         var decl = Object.keys(eByPh).map(function (id) {
           var em = (eByPh[id] || 0) / nEarly, lm = (lByPh[id] || 0) / nLate;
           return { id: id, em: em, lm: lm, drop: lm - em, pct: em > 0 ? (lm - em) / em * 100 : 0 };
@@ -1899,11 +1967,9 @@
         mdlCard =
           '<div class="v2-card">' +
             '<div class="v2-card-head"><div class="v2-card-t">' + ICO('alert', 17) + 'Pharmacies en baisse · à relancer</div>' +
-              '<span class="v2-card-link" style="color:var(--muted);cursor:default">2nde moitié vs 1ère</span></div>' +
+              '<span class="v2-card-link" style="color:var(--muted);cursor:default">' + esc(baseCmp.lib) + '</span></div>' +
             (declHtml || '<div class="v2-empty"><div class="v2-empty-d">Aucune pharmacie en recul sur la période.</div></div>') +
           '</div>';
-      } else {
-        mdlCard = '';
       }
 
       // ── Section OPSO groupement (conditionnelle) ──
@@ -1926,6 +1992,22 @@
         // Super-admin : Tous + chaque commercial
         commSeg = '<div class="pilo-seg" style="margin-right:8px">' + cb('', 'Tous') + comms.map(function (cm) { return cb(cm, cm); }).join('') + '</div>';
       }
+      // « Choisir » : deux listes de mois, du plus récent au plus ancien.
+      var perPick = '';
+      if (PERIOD === 'custom' && pf) {
+        var moisDispo = availableMonths(sales);
+        var optMois = function (sel) {
+          return moisDispo.map(function (m) {
+            var k = mkey(m.year, m.month);
+            return '<option value="' + k + '"' + (k === sel ? ' selected' : '') + '>' + cap(nomMois(k)) +
+              (anc && anc.dispo && !anc.dispo[k] ? ' (incomplet)' : '') + '</option>';
+          }).reverse().join('');
+        };
+        perPick = '<div class="pilo-perpick">' +
+          '<label>Du <select class="pilo-persel" data-b="du" aria-label="Premier mois">' + optMois(pf.du) + '</select></label>' +
+          '<label>au <select class="pilo-persel" data-b="au" aria-label="Dernier mois">' + optMois(pf.au) + '</select></label>' +
+        '</div>';
+      }
       var header =
         '<div class="pilo-head">' +
           '<div>' +
@@ -1933,12 +2015,17 @@
             '<div class="v2-page-sub" style="margin-bottom:0">' + (pf ? esc(pf.label) : '') + (V2.commFilter ? ' · ' + esc(V2.commFilter) : (opso ? ' · Groupement OPSO Santé' : ' · ton tableau de bord commercial')) + '</div>' +
             // Un mois écarté doit se DIRE : sinon l'écran a l'air de couvrir
             // une période qu'il ne couvre pas.
-            (anc && anc.ecartes.length
-              ? '<div class="pilo-ecarte">' + ICO('alert', 13) + esc(phraseEcart(anc)) + '</div>'
-              : '') +
+            (PERIOD === 'custom'
+              ? (pf && pf.incomplets.length
+                ? '<div class="pilo-ecarte">' + ICO('alert', 13) + 'La période contient un mois incomplet (' + esc(pf.incomplets.join(', ')) + ') : ses chiffres sont partiels.</div>'
+                : '')
+              : (anc && anc.ecartes.length
+                ? '<div class="pilo-ecarte">' + ICO('alert', 13) + esc(phraseEcart(anc)) + '</div>'
+                : '')) +
           '</div>' +
           '<div style="display:flex;gap:0;flex-wrap:wrap;align-items:center">' + commSeg +
-            '<div class="pilo-seg">' + seg('current', 'Dernier mois') + seg('3m', '3 mois') + seg('year', 'Année') + '</div>' +
+            '<div class="pilo-seg">' + seg('current', 'Dernier mois') + seg('3m', '3 mois') + seg('year', 'Année') + seg('custom', 'Choisir') + '</div>' +
+            perPick +
           '</div>' +
         '</div>';
 
@@ -1969,7 +2056,7 @@
       // précis donc c'est mieux, pas besoin d'avoir de doublons ». Les deux cartes
       // statiques « Répartition par famille / par tranche » ne s'affichent plus que
       // si la carte mois par mois n'a rien à montrer (moins de 2 mois de ventes).
-      var gnqCard = V2.generiqueurCard ? V2.generiqueurCard(sales, { title: 'CA par génériqueur', max: 15 }) : '';
+      var gnqCard = V2.generiqueurCard ? V2.generiqueurCard(cur, { title: 'CA par génériqueur' + (pf ? ' · ' + pf.label : ''), max: 15 }) : '';
       var repartition = (partsMoisCard
           ? '<div data-reveal>' + partsMoisCard + '</div>'
           : legendeReseau(compare, repereLabel) + '<div class="pilo-grid2" data-reveal>' + famCard + tierCard + '</div>') +
@@ -1997,16 +2084,17 @@
       // « Mon secteur » = le commercial actuellement regardé. En vue réseau
       // (« Tous »), il n'y a pas de « moi » : le bloc compare alors le réseau
       // entier à la France, sans ligne « les autres ».
-      // ⚠️ CE BLOC NE SUIT PAS LE SÉLECTEUR DE PÉRIODE, et c'est voulu.
-      // « Les autres secteurs » n'existe que si les autres secteurs ont des
-      // ventes : sur le dernier mois du fichier, deux commerciaux sur huit
-      // seulement en ont, la ligne comparerait à une poignée de gens.
-      // Le bloc travaille donc sur la fenêtre où le réseau est AU COMPLET —
-      // la même que le repère des tranches — et il l'écrit en toutes lettres.
-      // C'est une comparaison de STRUCTURE, pas un indicateur de période.
+      // 15/09/2026 — CE BLOC SUIT LE SÉLECTEUR DE PÉRIODE (Will : « ça n'adapte
+      // pas tous les chiffres en dessous »). « Mon secteur » = mes ventes de la
+      // période ; « les autres secteurs » = leurs ventes sur les mois de la
+      // période où le réseau est AU COMPLET — sur un mois où seuls deux secteurs
+      // sont dans le fichier, la ligne comparerait à une poignée de gens. Sans
+      // aucun mois complet dans la période, la ligne disparaît et l'écran le dit.
       var monSecteur = V2.commFilter ? String(V2.commFilter) : '';
-      var produitsCard = (opso || !reseauComplet || !reseauComplet.length)
-        ? '' : buildProduitsCard(reseauComplet, monSecteur, repereLabel);
+      var prodInput = monSecteur
+        ? cur.concat(reseauPerOk ? reseauPer.filter(function (s) { return s.commercial !== monSecteur; }) : [])
+        : cur;
+      var produitsCard = opso ? '' : buildProduitsCard(prodInput, monSecteur, pf ? pf.label : '');
 
       var marcheLink = (V2.pages && V2.pages.marche && !opso)
         ? '<a class="pilo-marche" onclick="V2.go(\'marche\')">' + ICO('spark', 17) +
@@ -2040,7 +2128,17 @@
         b.onclick = function () {
           if (b.classList.contains('pilo-basebtn')) return;   // géré sans rerendre la page
           if (b.classList.contains('pilo-commbtn')) { V2.commFilter = b.dataset.c || ''; CELL = { t: null }; }
-          else { PERIOD = b.dataset.p; }
+          else {
+            PERIOD = b.dataset.p;
+            // « Choisir » part de ce qui était affiché, pour qu'on n'ait qu'à ajuster.
+            if (PERIOD === 'custom' && PER_DU == null && pf) { PER_DU = pf.du; PER_AU = pf.au; }
+          }
+          V2.render();
+        };
+      });
+      Array.prototype.forEach.call(root.querySelectorAll('.pilo-persel'), function (s) {
+        s.onchange = function () {
+          if (s.dataset.b === 'du') PER_DU = +s.value; else PER_AU = +s.value;
           V2.render();
         };
       });
@@ -2079,7 +2177,7 @@
       }
       function refaireProduits() {
         if (!hote) return;
-        hote.innerHTML = buildProduitsCard(reseauComplet, monSecteur, repereLabel);
+        hote.innerHTML = buildProduitsCard(prodInput, monSecteur, pf ? pf.label : '');
         brancherProduits();
         Array.prototype.forEach.call(hote.querySelectorAll('.pilo-bar-fill'), function (el) {
           el.style.width = (el.dataset.w || 0) + '%';
@@ -2182,7 +2280,10 @@
   // bandeau qui explique que ce mois-là n'est pas comparable.
   // ⚠️ Sans ce 2ᵉ argument, le comportement est celui d'avant : la fiche
   // officine (v2-pharma.js) appelle cette fonction avec un seul argument.
-  function build13MonthChart(sales, anc) {
+  // `per` (optionnel, 15/09/2026) = la période choisie ({du, au, label}) : ses
+  // mois restent en couleur, les autres s'estompent, et l'encart s'ouvre sur elle.
+  function build13MonthChart(sales, anc, per) {
+    var dansPer = function (b) { var k = mkey(b.year, b.month); return !!(per && per.du != null && k >= per.du && k <= per.au); };
     injectStyles();   // garantit les styles du chart même hors page Pilotage (ex : fiche officine)
     var months = availableMonths(sales);
     if (!months.length) return { html: '', bind: function () {} };
@@ -2238,7 +2339,7 @@
         dchip = '<span class="pilo-cbar-d ' + (up ? 'up' : 'dn') + '">' + (up ? '+' : '') + Math.round(dd) + '%</span>';
         dtip = ' · ' + (up ? '▲ +' : '▼ ') + Math.round(dd) + '% vs mois préc.';
       }
-      return '<div class="pilo-cbar' + (hot ? ' pilo-cbar-hot' : '') + (b.partiel ? ' pilo-cbar-part' : '') + (isLast ? ' pilo-cbar-cur' : '') + '" data-i="' + i + '" data-tip="' + esc(cap(b.full) + ' ' + b.year + ' · ' + V2.fmtEur(b.ca) + dtip) + '">' +
+      return '<div class="pilo-cbar' + (hot ? ' pilo-cbar-hot' : '') + (b.partiel ? ' pilo-cbar-part' : '') + (isLast ? ' pilo-cbar-cur' : '') + (dansPer(b) ? ' pilo-cbar-in' : '') + '" data-i="' + i + '" data-tip="' + esc(cap(b.full) + ' ' + b.year + ' · ' + V2.fmtEur(b.ca) + dtip) + '">' +
         '<span class="pilo-cbar-v mono">' + V2.fmtK(b.ca) + '</span>' + dchip +
         '<div class="pilo-cbar-track">' +
           '<span class="pilo-cbar-fill' + (isLast ? ' cur' : '') + '" style="height:' + h.toFixed(1) + '%"></span>' +
@@ -2267,8 +2368,8 @@
           '<span class="pilo-chart-period mono">' + esc(range) + '</span>' +
         '</div>' +
         '<div class="pilo-readout" id="pilo-readout"></div>' +
-        '<div class="pilo-hint">Touche un mois pour voir son évolution</div>' +
-        '<div class="pilo-chart" id="pilo-chart">' + barsHtml +
+        '<div class="pilo-hint">' + (per && per.label ? 'En couleur : ' + esc(per.label) + ' · t' : 'T') + 'ouche un mois pour voir son évolution</div>' +
+        '<div class="pilo-chart' + (per && per.du != null ? ' pilo-chart-per' : '') + '" id="pilo-chart">' + barsHtml +
           '<div class="pilo-tip" id="pilo-tip"></div>' +
         '</div>' +
         kfs +
@@ -2322,6 +2423,8 @@
       var defI = bars.length - 1;
       while (defI > 0 && bars[defI].partiel) defI--;
       if (defI > 0 && bars[defI].ca > 0 && bars[defI - 1].ca > 0 && bars[defI].ca < bars[defI - 1].ca * 0.4) defI = defI - 1;
+      // Une période est choisie : l'encart s'ouvre sur son dernier mois.
+      for (var pi = bars.length - 1; pi >= 0; pi--) { if (dansPer(bars[pi])) { defI = pi; break; } }
       selectMonth(defI);
 
       // ── Tooltip au survol (conservé) ──
@@ -2425,6 +2528,9 @@
       '.pilo-ecart.eq{color:var(--muted)}' +
       // ── Mois écarté (fichier de ventes arrêté en cours de mois) ─
       '.pilo-ecarte{display:flex;align-items:center;gap:6px;margin-top:8px;font-size:11.5px;font-weight:600;color:var(--c-amber-txt,#9A5B12)}' +
+      '.pilo-perpick{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:flex-end;width:100%;margin-top:8px}' +
+      '.pilo-perpick label{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--muted)}' +
+      '.pilo-persel{font-family:var(--font);font-size:16px;font-weight:600;color:var(--ip-ink);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:7px 10px;min-height:44px}' +
       '.pilo-ecarte svg{flex-shrink:0}' +
       // ── Le marché France ───────────────────────────────────────
       '.pilo-mf{padding:18px 20px}' +
@@ -2528,6 +2634,7 @@
       // Mois incomplet : dessiné, mais visiblement mis de côté (gris, hachuré).
       '.pilo-cbar-part .pilo-cbar-fill{background:var(--line-strong)!important;background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.55) 0 3px,transparent 3px 6px)}' +
       '.pilo-cbar-part .pilo-cbar-v,.pilo-cbar-part .pilo-cbar-lbl{color:var(--muted-2)}' +
+      '.pilo-chart-per .pilo-cbar:not(.pilo-cbar-in) .pilo-cbar-fill{opacity:.3}' +
       '.pilo-cbar-d.part{color:var(--muted-2);background:var(--card-2);font-weight:600}' +
       '.pilo-tier-dot{display:inline-block;width:9px;height:9px;border-radius:3px;flex-shrink:0}' +
       '.pilo-fam-l{flex-wrap:wrap;gap:4px 8px}' +
