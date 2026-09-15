@@ -39,7 +39,7 @@
 
   var COLS = [
     { k: 'rota', l: 'Rotation', sub: '/phie/an', fmt: num },
-    { k: 'marge', l: 'Marge pharma.', sub: '/an (MDL)', fmt: eurK, accent: 'var(--c-opp)' },
+    { k: 'marge', l: 'Marge pharma.', sub: '/an', fmt: eurK, accent: 'var(--c-opp)' },
   ];
   function cap(s) { s = (s || '').toLowerCase(); return s.charAt(0).toUpperCase() + s.slice(1); }
   function famBadge(k) { var f = FAM_BY[k]; if (!f || k === 'all') return ''; return '<span class="mol-fam" style="--fc:' + f.sc + '">' + esc(FAM_SHORT[k] || f.label) + '</span>'; }
@@ -403,7 +403,7 @@
             (showStock ? '<th class="num">Stock</th>' : '') +
           '</tr></thead><tbody id="mol-tbody">' + rowsHtml() + '</tbody></table></div>' +
           '</div>' +
-          '<div class="v2-page-sub" style="margin-top:14px;font-size:12px">Ventes réelles du réseau (5 mois, annualisées) · marge MDL = remboursables · Net remisé = prix d\'achat moyen constaté · prix/stock = établissement choisi · <b>Moy. France</b> = boîtes remboursées Ameli (12 mois) ÷ ~20 000 officines, à titre indicatif (remboursables uniquement).</div>' +
+          '<div class="v2-page-sub" style="margin-top:14px;font-size:12px">Ventes réelles du réseau (5 mois, annualisées) · marge pharmacien = remboursables · Net remisé = prix d\'achat moyen constaté · prix/stock = établissement choisi · <b>Moy. France</b> = boîtes remboursées Ameli (12 mois) ÷ ~20 000 officines, à titre indicatif (remboursables uniquement).</div>' +
         '</div>';
       fill();
       // Motion discret : cascade d'entrée sur les familles + les 1res lignes du tableau

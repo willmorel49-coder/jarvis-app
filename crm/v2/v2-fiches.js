@@ -7,7 +7,7 @@
      opportunités pharmacie (clé localStorage 'v2_fiche_courante'),
      finalisable en vraie fiche.
    · Destinataire pharmacie (optionnel) — porté sur la fiche + le PDF.
-   · Marge MDL par ligne + barre de totaux (prix net IP + marge MDL).
+   · Marge pharmacien par ligne + barre de totaux (prix net IP + marge pharmacien).
    · Quantités par ligne — total réaliste (boîtes × prix net).
 
    Persistance fiches : localStorage 'v2_fiches'. Aucun emoji : ICO() seul.
@@ -91,7 +91,7 @@
     clear: function () { writeCart({ products: [] }); if (V2.updateCartBar) V2.updateCartBar(); }
   };
 
-  // ── Marge MDL (barème officiel France, remboursables) ──
+  // ── Marge pharmacien (barème officiel France, remboursables) ──
   function margeMDL(net) {
     var p = +net || 0;
     if (p <= 0) return 0;
@@ -99,7 +99,7 @@
     if (p <= 468) return p * 0.039;
     return 19.50;
   }
-  // Le barème MDL ne vaut QUE pour les remboursables. NR/para = marge libre (pas de MDL).
+  // Le barème ne vaut QUE pour les remboursables. NR/para = marge libre (pas de marge pharmacien).
   var _rembMap = null;
   function rembOf(p) {
     if (p.remb != null) return !!p.remb;
@@ -109,7 +109,7 @@
       (window.BENCHMARK || []).forEach(function (b) { var c = String(b.cip13 == null ? '' : b.cip13); if (c) _rembMap[c] = b.has_ameli === true; });
     }
     var cip = String(p.cip13 != null ? p.cip13 : (p.cip != null ? p.cip : ''));
-    return !!(cip && _rembMap[cip] === true);   // si inconnu -> pas de MDL (on ne montre jamais de fausse marge)
+    return !!(cip && _rembMap[cip] === true);   // si inconnu -> pas de marge pharmacien (on ne montre jamais de fausse marge)
   }
   function mdlOf(p) { return rembOf(p) ? margeMDL(netPrice(p)) : 0; }
   // Prix net IP = prix_ip (déjà net : PPHT − abandon barème pour les princeps,
@@ -181,7 +181,7 @@
             '<button type="button" class="fch-qstep" aria-label="Augmenter la quantité ligne ' + (i+1) + '" onclick="V2.fiches.stepQty(' + i + ',1)">' + ICO('plus', 15, 2.2) + '</button>'+
           '</div>'+
         '</div>'+
-        '<div class="fch-mdl"><div class="fch-mdl-l">Marge MDL</div><div class="fch-mdl-v mono" id="fch-mdl-' + i + '">' + V2.fmtEur(mdl) + '</div></div>'+
+        '<div class="fch-mdl"><div class="fch-mdl-l">Marge pharmacien</div><div class="fch-mdl-v mono" id="fch-mdl-' + i + '">' + V2.fmtEur(mdl) + '</div></div>'+
         '<button class="fch-rmbtn" title="Retirer ce produit" aria-label="Retirer ' + esc(p.designation) + '" onclick="V2.fiches.removeProduct(' + i + ')">' + ICO('close', 15, 2) + '</button>'+
       '</div>';
   }
@@ -393,7 +393,7 @@
             '</div>'+
             '<div class="fch-card-foot">'+
               '<div class="fch-kpi"><div class="l">Total prix net</div><div class="v">' + V2.fmtEur(totNet) + '</div></div>'+
-              '<div class="fch-kpi"><div class="l">Marge MDL</div><div class="v" style="color:var(--c-opp)">' + V2.fmtEur(totMdl) + '</div></div>'+
+              '<div class="fch-kpi"><div class="l">Marge pharmacien</div><div class="v" style="color:var(--c-opp)">' + V2.fmtEur(totMdl) + '</div></div>'+
             '</div>'+
             '<div class="fch-card-acts">'+
               '<button class="v2-btn v2-btn-ghost" onclick="V2.fiches.open(\'' + f.id + '\')">Ouvrir</button>'+
@@ -545,7 +545,7 @@
         '<div class="fch-tot-sep"></div>'+
         '<div class="fch-tot"><div class="fch-tot-l">Total prix net IP <span style="opacity:.6" id="fch-tot-sub">' + (hasQty ? '(qté incluse)' : '(1 boîte / réf.)') + '</span></div><div class="fch-tot-v blue" id="fch-tot-net">' + V2.fmtEur(net) + '</div></div>'+
         '<div class="fch-tot-sep"></div>'+
-        '<div class="fch-tot"><div class="fch-tot-l">Marge MDL totale</div><div class="fch-tot-v green" id="fch-tot-mdl">' + V2.fmtEur(mdl) + '</div></div>'+
+        '<div class="fch-tot"><div class="fch-tot-l">Marge pharmacien totale</div><div class="fch-tot-v green" id="fch-tot-mdl">' + V2.fmtEur(mdl) + '</div></div>'+
       '</div>';
   }
 
@@ -870,7 +870,7 @@
             (hasQtyPdf ? '<th style="padding:8px 12px;font-size:8.5px;text-transform:uppercase;letter-spacing:.06em;color:#9AA1B2;text-align:center">Qté</th>' : '') +
             '<th style="padding:8px 12px;font-size:8.5px;text-transform:uppercase;letter-spacing:.06em;color:#9AA1B2;text-align:right">Prix net</th>'+
             (hasQtyPdf ? '<th style="padding:8px 12px;font-size:8.5px;text-transform:uppercase;letter-spacing:.06em;color:#9AA1B2;text-align:right">Total</th>' : '') +
-            '<th style="padding:8px 12px;font-size:8.5px;text-transform:uppercase;letter-spacing:.06em;color:#9AA1B2;text-align:right">Marge MDL</th>'+
+            '<th style="padding:8px 12px;font-size:8.5px;text-transform:uppercase;letter-spacing:.06em;color:#9AA1B2;text-align:right">Marge pharmacien</th>'+
           '</tr></thead>'+
           '<tbody>' + (rows || '<tr><td colspan="' + (client ? (hasQtyPdf ? 8 : 6) : (hasQtyPdf ? 9 : 7)) + '" style="padding:24px;text-align:center;color:#9AA1B2;font-size:12px">Aucun produit</td></tr>') + '</tbody>'+
           (count ? '<tfoot><tr style="border-top:2px solid #10131C;background:#F4F8FF">'+
@@ -883,7 +883,7 @@
         // Footer
         '<div style="margin-top:30px;padding-top:14px;border-top:1px solid #ECEFF5;display:flex;justify-content:space-between;font-size:9px;color:#9AA1B2;text-transform:uppercase;letter-spacing:.04em">'+
           '<span>' + ((window.V2_BRAND && window.V2_BRAND.name) || 'Intégral Pharma') + ' · Document commercial · Prix nets HT</span>'+
-          '<span>Marge MDL : 0,18€ &lt;4,33€ · 3,9% &lt;468€ · 19,50€ au-delà</span>'+
+          '<span>Marge pharmacien : 0,18€ &lt;4,33€ · 3,9% &lt;468€ · 19,50€ au-delà</span>'+
         '</div>'+
       '</div>';
 

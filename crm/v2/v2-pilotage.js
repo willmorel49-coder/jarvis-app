@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════════
    CRM V2 · Pilier 4 — PILOTAGE (tableau de bord commercial)
-   À partir de V2.sales : CA net HT, marge MDL, familles, top pharma.
+   À partir de V2.sales : CA net HT, marge pharmacien, familles, top pharma.
    Graphes en CSS/SVG pur — aucune dépendance externe. Zéro emoji.
    Mode OPSO : section groupement (taux activation, périmètres, top produits).
    ═══════════════════════════════════════════════════════════════════ */
@@ -154,7 +154,7 @@
     return info.has_ameli && !info.isNR;
   }
 
-  // marge MDL d'une ligne de vente (0 si non remboursable)
+  // marge pharmacien d'une ligne de vente (0 si non remboursable)
   function mdlOf(sale, idx) {
     if (!isRemboursable(sale, idx)) return 0;
     return V2.margeMDLboite(sale.puNet) * (sale.qte || 0);
@@ -1239,7 +1239,7 @@
         root.innerHTML = top +
           '<div class="v2-wrap">' +
             '<div class="v2-page-title">Pilotage</div>' +
-            '<div class="v2-page-sub">' + (opso ? 'Tableau de bord groupement OPSO Santé.' : 'Ton chiffre d\'affaires, ta marge MDL et tes familles produits.') + '</div>' +
+            '<div class="v2-page-sub">' + (opso ? 'Tableau de bord groupement OPSO Santé.' : 'Ton chiffre d\'affaires, ta marge pharmacien et tes familles produits.') + '</div>' +
             '<div class="v2-card"><div class="v2-empty">' +
               '<div class="v2-empty-ico">' + ICO('pilo', 64, 1.4) + '</div>' +
               '<div class="v2-empty-t">Tes ventes ne sont pas encore disponibles</div>' +
@@ -1323,7 +1323,7 @@
       // ── KPI 1 : CA net HT ──
       var caCur = V2.sumCA(cur), caPrev = V2.sumCA(prev);
 
-      // ── KPI 2 : Marge MDL générée (remboursables) ──
+      // ── KPI 2 : Marge pharmacien générée (remboursables) ──
       var mdlCur = 0;
       cur.forEach(function (s) { mdlCur += mdlOf(s, idx); });
       var mdlPct = caCur > 0 ? (mdlCur / caCur * 100) : 0;
@@ -1356,7 +1356,7 @@
       // ── KPIs secondaires (marge / actives / panier) ──
       var kpis = heroKpi +
         '<div class="v2-kpis pilo-kpis3" data-reveal>' +
-          '<div class="v2-kpi k2"><div class="v2-kpi-l">Marge MDL générée</div>' +
+          '<div class="v2-kpi k2"><div class="v2-kpi-l">Marge pharmacien générée</div>' +
             '<div class="v2-kpi-v mono">' + V2.fmtEur(mdlCur) + '</div>' +
             '<div class="pilo-kpi-meter"><span class="pilo-kpi-meter-fill" data-w="' + Math.min(100, mdlPct).toFixed(1) + '" style="width:0;background:var(--c-mint)"></span></div>' +
             '<div class="v2-kpi-d" style="color:var(--muted)">' + mdlPct.toFixed(1).replace('.', ',') + ' % du CA net</div></div>' +
@@ -1453,7 +1453,7 @@
       // ── Chart 13 mois ──
       var chart = build13MonthChart(sales, anc, pf);
 
-      // ── Top pharmacies par CA (période) + marge MDL par pharma ──
+      // ── Top pharmacies par CA (période) + marge pharmacien par pharma ──
       // ⚠️ Une SEULE passe. Cette ligne faisait un `cur.filter()` complet POUR
       // CHAQUE officine active : 625 officines × 73 000 lignes = 45 millions de
       // comparaisons, 454 ms des 685 ms de rendu de l'écran — sur un Mac.
@@ -1479,7 +1479,7 @@
           '</div>' +
           '<div class="pilo-vals">' +
             '<div class="v2-row-val mono">' + V2.fmtEur(r.ca) + '</div>' +
-            '<div class="v2-row-meta mono">MDL ' + V2.fmtEur(r.mdl) + '</div>' +
+            '<div class="v2-row-meta mono">Marge pharm. ' + V2.fmtEur(r.mdl) + '</div>' +
           '</div>' +
           '<span class="v2-row-chev">' + ICO('chev', 16) + '</span>' +
         '</a>';
@@ -1751,7 +1751,7 @@
             '</div>' +
             '<div class="pilo-vals">' +
               '<div class="v2-row-val mono">' + V2.fmtEur(g.ca) + '</div>' +
-              '<div class="v2-row-meta mono">' + nb + ' off. · MDL ' + V2.fmtEur(g.mdl) + '</div>' +
+              '<div class="v2-row-meta mono">' + nb + ' off. · Marge pharm. ' + V2.fmtEur(g.mdl) + '</div>' +
             '</div>' +
           '</div>';
         }).join('');
