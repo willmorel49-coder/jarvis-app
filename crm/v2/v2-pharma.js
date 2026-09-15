@@ -2139,12 +2139,16 @@
     // (actives) du groupement (les produits ajoutés à la main passent toujours).
     var panel0 = Object.keys(activeSet).length;
     var seuil = Math.max(1, Math.ceil(panel0 * 0.20));
+    // Biosimilaires : peu de boîtes par officine et jamais les mêmes d'une officine à
+    // l'autre → à 20 %, Leadersanté (80 phies) en montrait 1 sur 18 commandés.
+    // Décision Will 15/09/2026 : un biosimilaire apparaît dès 2 pharmacies du groupement.
+    var seuilBiosim = Math.min(seuil, 2);
     var buckets = {}; CATS.forEach(function (c) { buckets[c.key] = []; });
     Object.keys(byCip).forEach(function (cip) {
       if (ov.removed[cip]) return;                       // produit retiré à la main
       var b = bIdx.get(cip); if (!b) return;
       var cat = classify(b, cip); if (!cat || !buckets[cat]) return;
-      if (!byCip[cip].manual && Object.keys(byCip[cip].ph).length < seuil) return;   // < 20% des pharmacies → masqué
+      if (!byCip[cip].manual && Object.keys(byCip[cip].ph).length < (cat === 'biosim' ? seuilBiosim : seuil)) return;   // < 20% des pharmacies (biosim : < 2) → masqué
       // Prix : toujours via V2.bestPrice() (gère offre labo + barème d'abandon) — cette
       // fonction recalculait son propre prix "à la main" sur b.prix_ht/prix_ip/offre_ip
       // bruts, donc ratait toutes les corrections faites dans applyPPHT()/fusionsProtegees()
