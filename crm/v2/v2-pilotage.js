@@ -59,7 +59,7 @@
   // Chaîne du froid (Will, 11/09/2026) : une boîte « froid » rapporte 0,63 € DE
   // PLUS que la règle ci-dessus, quel que soit son prix. Un produit est « froid »
   // au sens de l'index produit (is_froid, onglet « TOP Froid » du TOP IP), la
-  // même lecture que la répartition par famille de l'écran : familyOf().
+  // (lu directement sur is_froid depuis le 15/09/2026, voir estFroid).
   // Non remboursés (Will, 11/09/2026) : pas de barème par prix — le prix de vente
   // est le prix d'achat × 1,03, donc la marge d'une ligne = net vendu − net ÷ 1,03.
   // « NR » au sens de l'index produit (isNR, short list Sagitta), comme la
@@ -73,7 +73,9 @@
     if (t === 1) return (s.mntNetHt || 0) * MARGE.tauxInter;
     return q * MARGE.boiteCher;
   }
-  function estFroid(s, idx) { return familyOf(s, idx || productIndex()) === 'froid'; }
+  // 15/09/2026 — lu sur is_froid et non plus via familyOf() : un biosimilaire froid
+  // est rangé en « Biosimilaires » mais garde son supplément froid.
+  function estFroid(s, idx) { var info = (idx || productIndex())[normCip(s.artCode)]; return !!(info && info.is_froid); }
   function margeFroid(s, idx) { return estFroid(s, idx) ? (+s.qte || 0) * MARGE.boiteFroid : 0; }
   function margeVente(s, idx) { idx = idx || productIndex(); return margeBase(s, idx) + margeFroid(s, idx); }
   V2.piloMargeVente = margeVente;
@@ -100,7 +102,8 @@
     var B = window.BENCHMARK || [];
     var S = window.SAGITTA_SHORTLIST || [];
     var F = window.FROID_CIPS || [];
-    var stamp = B.length + 'x' + S.length + 'x' + F.length;
+    var PS = Array.isArray(window.PROD_STATS) ? window.PROD_STATS : [];
+    var stamp = B.length + 'x' + S.length + 'x' + F.length + 'x' + PS.length;
     if (_idx && _idxStamp === stamp) return _idx;
     var m = {};
     B.forEach(function (b) {
@@ -118,6 +121,14 @@
       if (!m[c]) m[c] = { has_ameli: false, is_froid: false, artnature: '' };
       m[c].is_froid = true;
     });
+    // 15/09/2026 — le benchmark ne marque que 27 biosimilaires : PROD_STATS (f = 'biosim')
+    // en connaît bien plus. Sans lui, la famille Biosimilaires restait à ~0 € partout.
+    PS.forEach(function (r) {
+      if (!r || r.f !== 'biosim') return;
+      var c = normCip(r.c); if (!c) return;
+      if (!m[c]) m[c] = { has_ameli: false, is_froid: false, artnature: '' };
+      m[c].artnature = 'biosimilaire';
+    });
     // SAGITTA = short list NR (non remboursable) : marque isNR=true
     S.forEach(function (s) {
       var c = normCip(s.cip13); if (!c) return;
@@ -127,20 +138,22 @@
     _idx = m; _idxStamp = stamp; return m;
   }
 
-  // famille d'une vente (priorité : froid > biosim > génériques > NR > princeps)
+  // famille d'une vente (priorité : biosim > froid > génériques > NR > princeps)
+  // 15/09/2026 — biosim passe devant froid : la plupart des biosimilaires sont froids,
+  // et la famille Biosimilaires restait vide.
   function familyOf(sale, idx) {
     var info = idx[normCip(sale.artCode)] || null;
     if (info) {
-      if (info.is_froid) return 'froid';
       if (info.artnature === 'biosimilaire') return 'biosim';
+      if (info.is_froid) return 'froid';
       if (info.artnature === 'generique' || info.artnature === 'generique_partenaire') return 'generiques';
       if (info.isNR) return 'nr';
     }
     // fallback sur artFamille texte des ventes
     var f = (sale.artFamille || '').toLowerCase();
     if (f) {
-      if (/froid|frigo|réfri|refri/.test(f)) return 'froid';
       if (/biosim/.test(f)) return 'biosim';
+      if (/froid|frigo|réfri|refri/.test(f)) return 'froid';
       if (/génér|gener|\bgx\b/.test(f)) return 'generiques';
       if (/\bnr\b|non.?rembours/.test(f)) return 'nr';
     }
