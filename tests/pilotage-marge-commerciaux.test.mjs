@@ -165,7 +165,7 @@ test('la règle par boîte rend les valeurs connues', () => {
 test('vue « Tous » : total = A + B + C + D, classement A, D, B, C ; A marqué « 1 mois sur 2 »', () => {
   const h = rendre('', { commercial: '', voitTous: true });
   const c = carte(h), t = texte(c);
-  assert.ok(c.includes('Marge produits pour l\'entreprise'), 'la carte existe');
+  assert.ok(c.includes('Notre marge — ce que les ventes rapportent à Intégral'), 'la carte existe');
   assert.ok(t.includes(V2.fmtEur(A_ATTENDU + B_ATTENDU + C_ATTENDU + D_ATTENDU)), 'total ' + V2.fmtEur(A_ATTENDU + B_ATTENDU + C_ATTENDU + D_ATTENDU) + ' dans : ' + t.slice(0, 300));
   const iA = c.indexOf('data-c="A"'), iB = c.indexOf('data-c="B"'), iC = c.indexOf('data-c="C"'), iD = c.indexOf('data-c="D"');
   assert.ok(iA > 0 && iD > 0 && iB > 0 && iC > 0 && iA < iD && iD < iB && iB < iC, 'A (55,40 €) avant D (30 €) avant B (12,12 €) avant C (8,60 €)');

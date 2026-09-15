@@ -1437,7 +1437,7 @@
         margeCard =
           '<div class="v2-card pilo-marge" data-reveal>' +
             '<div class="v2-card-head" style="align-items:flex-start">' +
-              '<div><div class="v2-card-t">' + ICO('spark', 17) + 'Marge produits pour l\'entreprise</div>' +
+              '<div><div class="v2-card-t">' + ICO('spark', 17) + 'Notre marge — ce que les ventes rapportent à Intégral</div>' +
                 '<div class="pilo-marge-sub">' + (pf ? esc(pf.label) : '') + ' · ' +
                   (V2.commFilter ? esc(V2.commFilter) : (vueTous ? 'tous les commerciaux' : 'mon périmètre')) + '</div></div>' +
               '<div class="pilo-marge-total"><span class="mono pilo-marge-v" data-count>' + V2.fmtEur(mg.total) + '</span>' +
@@ -1757,7 +1757,7 @@
         }).join('');
         grpCard =
           '<div class="v2-card">' +
-            '<div class="v2-card-head"><div class="v2-card-t">' + ICO('grid', 17) + 'CA &amp; marge par groupement</div>' +
+            '<div class="v2-card-head"><div class="v2-card-t">' + ICO('grid', 17) + 'CA &amp; marge pharmacien par groupement</div>' +
               '<span class="v2-card-link" style="color:var(--muted);cursor:default">' + grpList.length + ' groupements</span></div>' +
             grpHtml +
           '</div>';
