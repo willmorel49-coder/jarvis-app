@@ -191,14 +191,14 @@
       (back ? '' : '<span><span class="v2-brand-t">' + ((window.V2_BRAND && window.V2_BRAND.name) || 'Intégral Pharma') + '<span class="v2-brand-dot" aria-hidden="true"></span></span><br><span class="v2-brand-s">' + ((window.V2_BRAND && window.V2_BRAND.sub) || 'Espace commercial') + '</span></span>') +
       '</a>';
     // 15/09/2026 — bascule Intégral ↔ Escale, en haut à gauche. Réservée aux comptes
-    // ayant accès aux deux espaces (Alexandre Lovy).
+    // ayant accès aux deux espaces (le compte Escale à accès total).
     // Vers Escale (depuis le CRM) : même critère que la 7ᵉ carte d'accueil (14/09,
     // ligne ~1326) — un compte @escalepharma.fr. Les commerciaux Escale ne l'ont
     // jamais : ils sont renvoyés vers escale/v2 avant même de voir cette page.
     // Vers Intégral (depuis Escale) : email @escalepharma.fr NE SUFFIT PAS — tous
     // les commerciaux Escale l'ont aussi. Il faut en plus `voitTousReel` (posé dans
     // v2-boot.js AVANT la bascule locale de commercial/voitTous propre à l'espace
-    // Escale) : seul Alexandre l'a à true, pas Jean-Marie Roussel (commercial='Escale').
+    // Escale) : seul le compte à accès total l'a à true, pas le compte générique (commercial='Escale').
     var spaceSw = '';
     var mail = (V2.user && V2.user.email) || '';
     if (/@escalepharma\.fr$/i.test(mail)) {
