@@ -86,7 +86,7 @@
     if (!window.ETAB_PRICES && !D.etabEtat) {
       D.etabEtat = 1;
       var s = document.createElement('script');
-      s.src = 'etab-prices-data.js?v=' + (window.__APPRO_V || '20260916b');
+      s.src = 'etab-prices-data.js?v=' + (window.__APPRO_V || '20260916f');
       s.async = true;
       s.onload = s.onerror = function () { D.etabEtat = 2; rerender(); };
       document.head.appendChild(s);
@@ -222,9 +222,25 @@
   }
 
   // ── Le catalogue enrichi ──────────────────────────────────────
+  // NR tenus par un établissement mais absents du catalogue (arrêté de juin) :
+  // generate_etab_prices.py les donne, avec leur nature sûre (AFMCODE).
+  function ajouterNrHorsCat(CAT) {
+    var X = window.ETAB_PRICES && window.ETAB_PRICES.nrHorsCat, A = (window.ETAB_PRICES && window.ETAB_PRICES.all) || {}, c;
+    if (!X || CAT._nrAjout) return;
+    for (c in X) {
+      if (Object.prototype.hasOwnProperty.call(X, c) && !CAT[c]) {
+        var a = A[c] || [0, 0];
+        CAT[c] = { c: c, cip: c, d: X[c][0], labo: X[c][1] || '', mol: '', f: 'nr', ppht: +a[0] || 0, net: 0,
+                   stock: Math.max(0, +a[1] || 0), mitm: false, n: 0 };
+      }
+    }
+    Object.defineProperty(CAT, '_nrAjout', { value: true });
+  }
+
   function donnees() {
     var CAT = V2.produits.catalogueIndex();
     if (!CAT || D.natEtat < 2) return null;
+    ajouterNrHorsCat(CAT);
     var S = window.WML_SALES;
     var sig = (S ? S.length : 0) + '|' + D.natEtat + '|' + (window.ETAB_PRICES ? 1 : 0) + '|' + C.top +
       '|' + (window.PROD_STATS || []).length;
@@ -252,6 +268,8 @@
     var PS = {}, P = window.PROD_STATS || [];
     for (i = 0; i < P.length; i++) PS[String(P[i].c)] = P[i];
     var EP = (window.ETAB_PRICES && window.ETAB_PRICES.prices) || null;
+    var TAR = (window.ETAB_PRICES && window.ETAB_PRICES.tarif) || {};
+    var ALL = (window.ETAB_PRICES && window.ETAB_PRICES.all) || {};
     var M = window.V2PRODUITS, porte = function (f) { return M ? M.porteAbandon(f) : String(f || '').indexOf('pr_') === 0; };
 
     var lignes = [], nDetail = 0;
@@ -260,6 +278,13 @@
       var o = CAT[c], ps = PS[c];
       var fam = (ps && ps.f) || o.f;
       var ppht = +(ps && ps.ppht) || +o.ppht || 0;
+      // NR : le tarif de la dernière extraction (15/09) remplace celui de juin. Un écart
+      // hors de ×0,2–×5 ressemble à une erreur de saisie (INFRACYANINE 100,43 → 0,30) :
+      // dans le doute, on garde l'ancien.
+      var tar = +TAR[c] || 0;
+      if (fam === 'nr' && tar > 0 && (!(ppht > 0) || (tar / ppht > 0.2 && tar / ppht < 5))) ppht = tar;
+      else tar = 0;
+      if (fam === 'nr' && !(ppht > 0) && ALL[c]) ppht = +ALL[c][0] || 0;
       var net = +(ps && ps.net) || +o.net || 0;
       var lib = (ps && ps.d) || o.d || ('CIP ' + c);
       var n = N[c], vente = V.an[c] || 0, rg = rangs[c] || 0;
@@ -276,13 +301,19 @@
         // septembre ne couvre que 5 sites, un 0 inventé y lirait une rupture.
       }
       if (etab) nDetail++;
+      var stk = 0;
+      if (etab) { for (i in etab) if (Object.prototype.hasOwnProperty.call(etab, i)) stk += etab[i]; }
       lignes.push({
         cip: c, d: lib, labo: o.labo || '', mol: o.mol || '', f: fam,
-        ppht: ppht, net: net,
+        ppht: ppht, net: net, tar: tar,
+        // Prix affiché : un NR se présente à son tarif (le net réseau n'est qu'un
+        // prix moyen facturé) ; le reste, au prix net.
+        prix: fam === 'nr' ? (ppht || net) : net,
         ab: (porte(fam) && ppht > 0 && net > 0 && net < ppht) ? ppht - net : null,
         // Le fichier de stock porte des valeurs négatives (-367, -1 149…) :
         // bornées à 0, comme dans l'écran Appro.
-        stock: Math.max(0, Object.prototype.hasOwnProperty.call(STK, c) ? (+STK[c] || 0) : (+o.stock || 0)),
+        // Détail par site connu : il est plus récent que le consolidé (début septembre).
+        stock: etab ? stk : Math.max(0, Object.prototype.hasOwnProperty.call(STK, c) ? (+STK[c] || 0) : (+o.stock || 0)),
         rupt: !!R[c], an: vente, rang: rg, part: part, france: n ? n.v : 0,
         ecart: ecart, pot: opp ? ecart * (net > 0 ? net : ppht) : 0, opp: opp, etab: etab,
         hay: sansAccent(lib + ' ' + c + ' ' + (o.labo || '') + ' ' + (o.mol || ''))
@@ -467,7 +498,7 @@
     return '<button class="cp-row" onclick="V2.comptoir.ouvrir(\'' + escAttr(l.cip) + '\')">' +
       '<span class="cp-nom"><span class="cp-lib-l"><span class="cp-lib">' + esc(l.d) + '</span>' + badges(l) + '</span>' +
         '<span class="cp-meta">' + esc([l.labo, 'CIP ' + l.cip].filter(Boolean).join(' · ')) + '</span></span>' +
-      '<span class="cp-num"><b>' + (l.net > 0 ? eur2(l.net) : '—') + '</b>' +
+      '<span class="cp-num"><b>' + (l.prix > 0 ? eur2(l.prix) : '—') + '</b>' +
         (l.ab != null ? '<i title="Abandon de marge">−' + eur2(l.ab) + '</i>' : '') + '</span>' +
       '<span class="cp-num"><b>' + numK(l.an) + '</b><i>bt/an</i></span>' +
       '<span class="cp-num cp-rang">' + (l.rang ? 'n°' + fr(l.rang) : '—') + '</span>' +
@@ -481,7 +512,7 @@
     return '<button class="cp-card" onclick="V2.comptoir.ouvrir(\'' + escAttr(l.cip) + '\')">' +
       '<span class="cp-card-h"><span class="cp-card-n"><span class="cp-lib-l"><span class="cp-lib">' + esc(l.d) + '</span>' + badges(l) + '</span>' +
         '<span class="cp-meta">' + esc([l.labo, 'CIP ' + l.cip].filter(Boolean).join(' · ')) + '</span></span>' +
-        '<span class="cp-num"><b>' + (l.net > 0 ? eur2(l.net) : '—') + '</b>' +
+        '<span class="cp-num"><b>' + (l.prix > 0 ? eur2(l.prix) : '—') + '</b>' +
         (l.ab != null ? '<i>Abandon ' + eur2(l.ab) + '</i>' : '') + '</span></span>' +
       '<span class="cp-card-v"><b>' + fr(l.an) + '</b> bt/an · France <b>' + (l.rang ? 'n°' + fr(l.rang) : '—') + '</b></span>' +
       '<span class="cp-card-p">' + partHtml(l, d.partMoy, TD) + '</span>' +
@@ -509,6 +540,7 @@
         : '<div class="cp-vide">Aucun produit ne correspond' +
           (C.opp ? ' — retirez le filtre « Opportunités seulement » pour chercher dans tout le catalogue.' : '.') + '</div>');
   }
+  function dateFr(iso) { return String(iso || '').split('-').reverse().join('/'); }
   function libCompte(n) { return fr(n) + ' produit' + (n > 1 ? 's' : ''); }
   function majResultats() {
     var box = document.getElementById('cp-res'), d = donnees();
@@ -781,10 +813,13 @@
         '<p class="cp-meta">' + esc([l.labo, 'CIP ' + l.cip, FAM[l.f] ? FAM[l.f].l : ''].filter(Boolean).join(' · ')) + '</p></div>' +
         '<button class="cp-x" aria-label="Fermer" onclick="V2.comptoir.fermer()">' + (ICO('close', 18, 2) || '✕') + '</button></div>' +
       '<div class="cp-pan-c">' +
-        '<div class="cp-prix"><b>' + (l.net > 0 ? eur2(l.net) : '—') + '</b>' +
+        '<div class="cp-prix"><b>' + (l.prix > 0 ? eur2(l.prix) : '—') + '</b>' +
+          (l.f === 'nr' && l.prix > 0 ? '<span class="cp-tag">' + (l.tar ? 'Tarif au ' + dateFr(window.ETAB_PRICES.tarifDate) : 'Tarif') + '</span>' : '') +
           (l.ab != null ? '<s>' + eur2(l.ppht) + '</s><span class="cp-tag">Abandon de marge ' + eur2(l.ab) + ' / boîte</span>' : '') +
           (l.rupt ? '<span class="cp-tag cp-tag-r">Rupture ANSM</span>' : '') +
           (l.opp ? '<span class="cp-tag">Opportunité</span>' : '') + '</div>' +
+        (l.f === 'nr' && l.net > 0 && Math.abs(l.net - l.prix) >= 0.01 * l.prix
+          ? '<p class="cp-note">Prix moyen facturé au réseau : ' + eur2(l.net) + '.</p>' : '') +
         '<p class="cp-st">Ventes</p>' + ventes +
         '<p class="cp-st">Mois par mois</p><div id="cp-evo">' + evoHtml(l) + '</div>' +
         '<p class="cp-st">Stock par établissement</p>' + stock +
@@ -870,7 +905,10 @@
       '<p class="cp-src">Opportunité = dans le top ' + C.top + ' des ventes France et nos ventes sous notre part moyenne. ' +
         'Nos ventes : réseau, ' + esc(periode) + ', ramenées à l\'année. Ventes France : Open Medic' +
         (d.natGen ? ' (mis à jour le ' + esc(String(d.natGen).split('-').reverse().join('/')) + ')' : '') + '. ' +
-        'Stock par établissement connu pour ' + fr(d.nDetail) + ' références ; ailleurs, stock total des 7 sites.</p>' +
+        'Stock par établissement connu pour ' + fr(d.nDetail) + ' références ; ailleurs, stock total des 7 sites.' +
+        (window.ETAB_PRICES && window.ETAB_PRICES.tarifDate
+          ? ' Produits non remboursables : tarif et stock au ' + esc(dateFr(window.ETAB_PRICES.tarifDate)) +
+            ' (POS et SEP : juillet), y compris ceux que le catalogue de juin ne connaissait pas.' : '') + '</p>' +
       '</div>';
   };
 
