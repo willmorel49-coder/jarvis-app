@@ -42,6 +42,35 @@ for r in ws.iter_rows(min_row=2, values_only=True):
     if afm != 'REMBSS':
         nr[cip] = 1
 
+# Tarif NR plus récent : extraction STOCK <jjmmaa>.xls, déjà lue par generate_etab_prices.py
+# (tarif = atfprix, NR hors catalogue = nature sûre par AFMCODE des extractions par site).
+# Le fichier STOCK ne dit pas si un produit est remboursable : seuls les NR connus sont
+# mis à jour ; les remboursables gardent le tarif ci-dessus. Écart ×0,2–×5 refusé
+# (INFRACYANINE 100,43 → 0,30). Relancer generate_etab_prices.py avant ce script.
+ETAB_JS = 'crm/v2/etab-prices-data.js'
+if os.path.exists(ETAB_JS):
+    t = open(ETAB_JS, encoding='utf-8').read()
+    etab = json.loads(t[t.index('{'):t.rindex('}') + 1])
+    hors_cat = etab.get('nrHorsCat') or {}
+    maj = ajout = refus = 0
+    for cip, p in (etab.get('tarif') or {}).items():
+        if not (isinstance(p, (int, float)) and p > 0):
+            continue
+        p = round(float(p), 2)
+        if cip in nr:
+            if not (0.2 <= p / allp[cip] <= 5):
+                refus += 1
+                continue
+            if p != allp[cip]:
+                allp[cip] = p
+                maj += 1
+        elif cip in hors_cat and cip not in allp:
+            allp[cip] = p
+            nr[cip] = 1
+            ajout += 1
+    print('tarif NR du %s : %d prix mis à jour, %d NR ajoutés, %d écarts refusés'
+          % (etab.get('tarifDate'), maj, ajout, refus))
+
 with open(OUT, 'w', encoding='utf-8') as f:
     f.write('// Prix PPHT (tarif grossiste HT) par CIP13 — TOUS produits + set NR — generate_ppht.py\n')
     f.write('window.PPHT = ' + json.dumps(allp, ensure_ascii=False, separators=(',', ':')) + ';\n')

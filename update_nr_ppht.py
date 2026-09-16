@@ -8,7 +8,7 @@ import json
 MIX = 'crm/v2/marketing-mix-data.js'
 PPHT_F = 'crm/v2/ppht-data.js'
 
-ppht = json.loads(re.search(r'window\.PPHT\s*=\s*(\{.*\});', open(PPHT_F, encoding='utf-8').read(), re.S).group(1))
+ppht = json.loads(re.search(r'window\.PPHT\s*=\s*(\{.*?\});\n', open(PPHT_F, encoding='utf-8').read(), re.S).group(1))
 data = json.loads(re.search(r'window\.MKT_MIX\s*=\s*(\{.*\});', open(MIX, encoding='utf-8').read(), re.S).group(1))
 
 upd = 0
