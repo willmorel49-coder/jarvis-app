@@ -239,6 +239,12 @@ SOURCES = [
 # réapparaissent à la racine de STATS.
 EXCLUS = ['PG', 'PPO', 'GM', 'ADC', 'VM', 'AM', 'SEP', 'GL', 'AUL', 'SV', 'LP',
           'SOP', 'MSP', 'CPR', 'NR', 'REP', 'COMMERCIAL_INCONNU']
+# Escale écrit ses avoirs (PCVNUM « AC_… ») en POSITIF = montant rendu à l'officine,
+# là où les exports Intégral les écrivent déjà en négatif. Un avoir Escale est le
+# plus souvent une correction de prix : +24 × 127 € (recrédité) et −24 × 122,90 €
+# (refacturé) = 98,40 € rendus. On inverse le signe (quantité et montant) de ces
+# lignes pour qu'elles se retirent du CA et de la marge (Will, 16/09/2026).
+AVOIRS_EN_POSITIF = {'GUY', 'TIF', 'PHI', 'GER'}
 MONTHS_NUM = [1, 2, 3, 4, 5, 6, 7, 8]
 NB_MOIS = len(MONTHS_NUM)
 MOIS_ABBR = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil',
@@ -385,9 +391,12 @@ for comm, prefix in SOURCES:
                     if _v not in (None, '') and str(_v).split('.')[0] in ART2EAN:
                         _bc = ART2EAN[str(_v).split('.')[0]]
                         break
+            _q, _mnt = num(c(r, 'PLVQTE')), num(c(r, 'PLVMNTNETHT'))
+            if prefix in AVOIRS_EN_POSITIF and str(c(r, 'PCVNUM') or '').startswith('AC'):
+                _q, _mnt = -_q, -_mnt
             # format compact (tableau) : [pharmacyId, mois, comm, cip13, qte, puNet, mntNetHt]
             sales.append([code, mois, comm, cip13(_bc),
-                          num(c(r, 'PLVQTE')), num(c(r, 'PLVPUNET')), num(c(r, 'PLVMNTNETHT'))])
+                          _q, num(c(r, 'PLVPUNET')), _mnt])
             n += 1
         wb.close()
         print('  {} ({}) : {} lignes'.format(os.path.basename(path), comm, n))
