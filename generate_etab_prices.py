@@ -4,6 +4,10 @@ Lit JARVIS/PRIX ET STOCKS ETABLISSEMENTS/*_extrait.xlsx (7 établissements)
 → crm/v2/etab-prices-data.js (window.ETAB_PRICES).
 Sert aux fiches marketing par établissement (bon prix + stock réel) et complète
 les listes best-sellers. 100% local, Python 3.9.
+Complété par la dernière extraction SOP « STOCK *.xls » du même dossier (remboursables
+compris, codes CIP7, 5 sites) : pour ces sites, elle remplace les *_extrait.xlsx produit
+par produit ; les produits absents gardent leur valeur. Lecture .xls : xlrd
+(/usr/bin/python3).
 """
 import openpyxl, glob, os, json, re
 
@@ -65,6 +69,51 @@ for fn in sorted(glob.glob(os.path.join(SRC, '*.xlsx'))):
     wb.close()
     etabs.append({'code': code, 'n': n})
     print('  %s : %d produits' % (code, n))
+
+# extraction SOP la plus récente (STOCK <jjmmaa>.xls) : artcode, artdesignation, atfprix,
+# stocklivrablesop, stockmsp, stockhp, stockcpr, stockops
+def cip13_of(c7):
+    b = '34009' + c7
+    s = sum(int(d) * (1 if i % 2 == 0 else 3) for i, d in enumerate(b))
+    return b + str((10 - s % 10) % 10)
+
+def date_of(fn):
+    m = re.search(r'(\d{2})(\d{2})(\d{2})', os.path.basename(fn))
+    return (m.group(3), m.group(2), m.group(1)) if m else ('', '', '')
+
+stock_files = sorted(glob.glob(os.path.join(SRC, 'STOCK*.xls')), key=date_of)
+if stock_files:
+    import xlrd
+    fn = stock_files[-1]
+    ws = xlrd.open_workbook(fn).sheet_by_index(0)
+    hdr = [str(c).strip().lower() for c in ws.row_values(0)]
+    ix = {h: i for i, h in enumerate(hdr)}
+    cols = {'SOP': 'stocklivrablesop', 'MSP': 'stockmsp', 'HP': 'stockhp',
+            'CPR': 'stockcpr', 'OPS': 'stockops'}
+    n = 0
+    for k in range(1, ws.nrows):
+        r = ws.row_values(k)
+        raw = str(r[ix['artcode']]).strip()
+        # CIP7 gardé en texte : cip_of() perdrait le zéro de tête (0578005)
+        code = cip13_of(raw) if len(raw) == 7 and raw.isdigit() else cip_of(r[ix['artcode']])
+        if len(code) < 8:
+            continue
+        ppht = num(r[ix['atfprix']])
+        for etab, col in cols.items():
+            try: stock = int(float(r[ix[col]] or 0))
+            except (TypeError, ValueError): stock = 0
+            d = prices.setdefault(etab, {})
+            old = d.get(code)
+            p = ppht if ppht > 0 else (old[0] if old else 0.0)
+            if p <= 0 and stock == 0:
+                continue
+            d[code] = [p, stock]
+        if code not in labels and r[ix['artdesignation']]:
+            labels[code] = str(r[ix['artdesignation']]).strip()
+        n += 1
+    for e in etabs:
+        e['n'] = len(prices.get(e['code'], {}))
+    print('  + %s : %d produits (5 sites)' % (os.path.basename(fn), n))
 
 # combiné "TOUS" : meilleur PPHT (>0) + stock total sur tous les établissements
 allc = {}
