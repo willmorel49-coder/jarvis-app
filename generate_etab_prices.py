@@ -37,6 +37,9 @@ def num(v):
 
 prices = {}     # code -> { cip: [ppht, stock] }
 labels = {}     # cip -> désignation (pour affichage éventuel)
+nr_info = {}    # cip -> [désignation, laboratoire] : NR selon AFMCODE (≠ REMBSS)
+tarif = {}      # cip -> tarif (atfprix) de la dernière extraction STOCK *.xls
+tarif_date = ''
 etabs = []
 
 for fn in sorted(glob.glob(os.path.join(SRC, '*.xlsx'))):
@@ -47,7 +50,7 @@ for fn in sorted(glob.glob(os.path.join(SRC, '*.xlsx'))):
     hdr = [str(c) if c is not None else '' for c in next(it)]
     ix = {h: i for i, h in enumerate(hdr)}
     ci = ix.get('ARTCODEBARRE'); pi = ix.get('PPHT'); si = ix.get('STOCKDISPO')
-    di = ix.get('ARTDESIGNATION')
+    di = ix.get('ARTDESIGNATION'); li = ix.get('ARTCOLLECTION'); ai = ix.get('AFMCODE')
     d = prices.setdefault(code, {})
     n = 0
     for r in it:
@@ -65,6 +68,8 @@ for fn in sorted(glob.glob(os.path.join(SRC, '*.xlsx'))):
         d[cip] = [ppht, stock]
         if di is not None and cip not in labels and r[di]:
             labels[cip] = str(r[di]).strip()
+        if ai is not None and r[ai] and str(r[ai]).strip() != 'REMBSS' and cip.isdigit() and len(cip) <= 14:
+            nr_info.setdefault(cip, [labels.get(cip, ''), str(r[li]).strip() if li is not None and r[li] else ''])
         n += 1
     wb.close()
     etabs.append({'code': code, 'n': n})
@@ -99,6 +104,8 @@ if stock_files:
         if len(code) < 8:
             continue
         ppht = num(r[ix['atfprix']])
+        if ppht > 0:
+            tarif[code] = ppht
         for etab, col in cols.items():
             try: stock = int(float(r[ix[col]] or 0))
             except (TypeError, ValueError): stock = 0
@@ -113,7 +120,20 @@ if stock_files:
         n += 1
     for e in etabs:
         e['n'] = len(prices.get(e['code'], {}))
+    a, m_, j = date_of(fn)
+    tarif_date = '20%s-%s-%s' % (a, m_, j) if a else ''
     print('  + %s : %d produits (5 sites)' % (os.path.basename(fn), n))
+
+# NR tenus par un établissement mais absents du catalogue (arrêté de juin) : sans eux,
+# l'écran Produits en ignorait 3 225. Nature sûre : AFMCODE des extractions par site
+# (le fichier STOCK *.xls, lui, ne dit pas si un produit est remboursable).
+CAT_JS = 'crm/v2/catalogue-complet-data.js'
+extra = {}
+if os.path.exists(CAT_JS):
+    txt = open(CAT_JS, encoding='utf-8').read()
+    connus = set(re.findall(r'\["(\d+)",', txt))
+    extra = {c: v for c, v in nr_info.items() if c not in connus and v[0]}
+    print('  NR hors catalogue : %d (catalogue : %d réf.)' % (len(extra), len(connus)))
 
 # combiné "TOUS" : meilleur PPHT (>0) + stock total sur tous les établissements
 allc = {}
@@ -124,7 +144,8 @@ for code, d in prices.items():
             e[0] = p
         e[1] += s
 
-data = {'etabs': sorted(etabs, key=lambda x: x['code']), 'prices': prices, 'all': allc}
+data = {'etabs': sorted(etabs, key=lambda x: x['code']), 'prices': prices, 'all': allc,
+        'tarif': tarif, 'tarifDate': tarif_date, 'nrHorsCat': extra}
 os.makedirs(os.path.dirname(OUT), exist_ok=True)
 with open(OUT, 'w', encoding='utf-8') as fh:
     fh.write('// Prix PPHT + stock par établissement (NR) — generate_etab_prices.py\n')
