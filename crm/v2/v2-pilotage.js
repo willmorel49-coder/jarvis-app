@@ -1435,7 +1435,8 @@
               '<span class="mono pilo-rank">' + (i + 1) + '</span>' +
               '<div style="flex:1;min-width:0">' +
                 '<div class="v2-row-name">' + esc(r.cm) +
-                  (partiel ? ' <small class="pilo-marge-partiel">' + r.nbMois + ' mois sur ' + mg.nbMois + '</small>' : '') + '</div>' +
+                  (partiel ? ' <small class="pilo-marge-partiel">' + r.nbMois + ' mois sur ' + mg.nbMois + '</small>' : '') +
+                  (V2.ESCALE_COMMS.indexOf(r.cm) >= 0 ? ' <small class="pilo-marge-partiel">estimée</small>' : '') + '</div>' +
                 '<div class="pilo-bar"><span class="pilo-bar-fill" data-w="' + pct.toFixed(1) + '" style="width:0;background:var(--c-mint)"></span></div>' +
               '</div>' +
               '<div class="pilo-vals">' +
@@ -1447,10 +1448,14 @@
             '</a>';
           }).join('');
         }
+        var enEscale = !!(window.V2_BRAND && window.V2_BRAND.escale);
         margeCard =
           '<div class="v2-card pilo-marge" data-reveal>' +
             '<div class="v2-card-head" style="align-items:flex-start">' +
-              '<div><div class="v2-card-t">' + ICO('spark', 17) + 'Notre marge — ce que les ventes rapportent à Intégral</div>' +
+              // Le fichier Escale n'a pas de prix d'achat : la règle Intégral n'est qu'une estimation.
+              '<div><div class="v2-card-t">' + ICO('spark', 17) + (enEscale
+                ? 'Notre marge estimée — règle Intégral, en attendant les prix d\'achat Escale'
+                : 'Notre marge — ce que les ventes rapportent à Intégral') + '</div>' +
                 '<div class="pilo-marge-sub">' + (pf ? esc(pf.label) : '') + ' · ' +
                   (V2.commFilter ? esc(V2.commFilter) : (vueTous ? 'tous les commerciaux' : 'mon périmètre')) + '</div></div>' +
               '<div class="pilo-marge-total"><span class="mono pilo-marge-v" data-count>' + V2.fmtEur(mg.total) + '</span>' +
