@@ -10,7 +10,8 @@
    Opportunité = parmi les meilleures ventes France ET nos ventes sous
    notre part moyenne (même calcul que v2-appro.js::partGlobale).
    Stock par établissement : UNIQUEMENT ce que donne etab-prices-data.js
-   (aujourd'hui les non remboursables). Pour le reste on montre le stock
+   (remboursables compris depuis le 16/09/2026 ; POS et SEP absents de cette
+   extraction → « non communiqué »). Pour le reste on montre le stock
    consolidé et on le dit — jamais de répartition inventée.
    Les vues par officine / groupement / prospect / achats restent dans
    v2-produits.js, atteignables depuis le pied de page et le panneau.
@@ -85,7 +86,7 @@
     if (!window.ETAB_PRICES && !D.etabEtat) {
       D.etabEtat = 1;
       var s = document.createElement('script');
-      s.src = 'etab-prices-data.js?v=' + (window.__APPRO_V || '20260803j');
+      s.src = 'etab-prices-data.js?v=' + (window.__APPRO_V || '20260916a');
       s.async = true;
       s.onload = s.onerror = function () { D.etabEtat = 2; rerender(); };
       document.head.appendChild(s);
@@ -271,7 +272,8 @@
           var x = EP[ETABS[i]] && EP[ETABS[i]][c];
           if (x) { etab = etab || {}; etab[ETABS[i]] = Math.max(0, +x[1] || 0); }
         }
-        if (etab) for (i = 0; i < ETABS.length; i++) if (etab[ETABS[i]] === undefined) etab[ETABS[i]] = 0;
+        // Un site absent reste undefined (« non communiqué ») : l'extraction de
+        // septembre ne couvre que 5 sites, un 0 inventé y lirait une rupture.
       }
       if (etab) nDetail++;
       lignes.push({
@@ -447,7 +449,9 @@
     var h = '', i;
     for (i = 0; i < ETABS.length; i++) {
       var v = l.etab[ETABS[i]];
-      h += '<span class="cp-dot-c" title="' + ETABS[i] + ' : ' + fr(v) + '"><span class="cp-dot ' + dotCls(v) + '"></span></span>';
+      h += v === undefined
+        ? '<span class="cp-dot-c" title="' + ETABS[i] + ' : non communiqué"><span class="cp-dot u"></span></span>'
+        : '<span class="cp-dot-c" title="' + ETABS[i] + ' : ' + fr(v) + '"><span class="cp-dot ' + dotCls(v) + '"></span></span>';
     }
     return h;
   }
@@ -739,12 +743,15 @@
     if (l.etab) {
       stock = '<div class="cp-sgrid">';
       for (i = 0; i < ETABS.length; i++) {
-        stock += '<div class="' + (l.etab[ETABS[i]] > 0 ? '' : 'zero') + '"><em>' + ETABS[i] + '</em><b>' + fr(l.etab[ETABS[i]]) + '</b></div>';
+        var sv = l.etab[ETABS[i]];
+        stock += sv === undefined
+          ? '<div class="nd" title="Non communiqué"><em>' + ETABS[i] + '</em><b>—</b></div>'
+          : '<div class="' + (sv > 0 ? '' : 'zero') + '"><em>' + ETABS[i] + '</em><b>' + fr(sv) + '</b></div>';
       }
-      stock += '</div><p class="cp-note">Stock déclaré par chaque établissement.</p>';
+      stock += '</div><p class="cp-note">Stock déclaré par chaque établissement. « — » : non communiqué.</p>';
     } else {
       stock = '<div class="cp-sgrid"><div class="large"><em>Tous sites</em><b>' + fr(l.stock) + '</b></div></div>' +
-        '<p class="cp-note">Le détail par établissement n\'existe aujourd\'hui que pour les non remboursables.</p>';
+        '<p class="cp-note">Pas de détail par établissement pour ce produit.</p>';
     }
 
     var off;
@@ -863,7 +870,7 @@
       '<p class="cp-src">Opportunité = dans le top ' + C.top + ' des ventes France et nos ventes sous notre part moyenne. ' +
         'Nos ventes : réseau, ' + esc(periode) + ', ramenées à l\'année. Ventes France : Open Medic' +
         (d.natGen ? ' (mis à jour le ' + esc(String(d.natGen).split('-').reverse().join('/')) + ')' : '') + '. ' +
-        'Stock par établissement connu pour ' + fr(d.nDetail) + ' références (non remboursables) ; ailleurs, stock total des 7 sites.</p>' +
+        'Stock par établissement connu pour ' + fr(d.nDetail) + ' références ; ailleurs, stock total des 7 sites.</p>' +
       '</div>';
   };
 
@@ -892,6 +899,7 @@
       '.cp-dot.z{background:var(--cp-amber)}',
       '.cp-dot.l{background:var(--cp-amberw);border:1.5px solid var(--cp-amber)}',
       '.cp-dot.g{background:var(--cp-green)}',
+      '.cp-dot.u{background:transparent;border:1.5px dashed var(--cp-ink3)}',
       '.cp-badge{flex:none;display:inline-flex;align-items:center;height:20px;padding:0 7px;border-radius:6px;background:var(--cp-wash);color:var(--cp-deep);font:700 13px/1 Inter,sans-serif;white-space:nowrap}',
       '.cp-badge-r{background:var(--cp-amberw);color:var(--cp-amber)}',
       '.cp-lib-l{display:flex;align-items:center;gap:6px;min-width:0;flex-wrap:wrap}',
@@ -966,6 +974,7 @@
       '.cp-sgrid div{align-items:center}',
       '.cp-sgrid div.large{grid-column:span 4}',
       '.cp-sgrid div.zero b{color:var(--cp-amber)}',
+      '.cp-sgrid div.nd b{color:var(--cp-ink3)}',
       '.cp-sgrid b{font:800 14px/1.2 Inter,sans-serif;color:var(--ip-ink);font-variant-numeric:tabular-nums}',
       '.cp-note{margin:0 0 6px;font:400 13px/1.5 Inter,sans-serif;color:var(--cp-ink3)}',
       '.cp-off{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}',

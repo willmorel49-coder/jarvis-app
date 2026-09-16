@@ -200,7 +200,7 @@
   // ── Store prix/stock par établissement (etab-prices-data.js → window.ETAB_PRICES) ──
   function ensureEtab(cb) {
     if (window.ETAB_PRICES) { cb(); return; }
-    var s = document.createElement('script'); s.src = 'etab-prices-data.js?v=20260703d1';
+    var s = document.createElement('script'); s.src = 'etab-prices-data.js?v=20260916a';
     s.onload = function () { cb(); }; s.onerror = function () { cb(); };
     document.head.appendChild(s);
   }

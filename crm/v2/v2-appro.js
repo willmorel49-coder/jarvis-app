@@ -405,7 +405,7 @@
     if (_etabState) return;
     _etabState = 1;
     var s = document.createElement('script');
-    s.src = 'etab-prices-data.js?v=' + (window.__APPRO_V || '20260803j'); s.async = false;
+    s.src = 'etab-prices-data.js?v=' + (window.__APPRO_V || '20260916a'); s.async = false;
     s.onload = function () { _etabState = 2; approRerender(); };
     s.onerror = function () { _etabState = 2; };
     document.head.appendChild(s);
@@ -427,7 +427,8 @@
     for (var k = 0; k < PS.length; k++) {
       var c = String(PS[k].c), per = {}, tot = 0, nz = 0, mx = 0, mxE = null;
       for (var j = 0; j < etabs.length; j++) {
-        var e = etabs[j], v = (EP.prices[e] && EP.prices[e][c]) ? Math.max(0, EP.prices[e][c][1]) : 0;
+        // site sans ligne pour ce produit = non communiqué (POS/SEP en sept. 2026), pas 0
+        var e = etabs[j], v = (EP.prices[e] && EP.prices[e][c]) ? Math.max(0, EP.prices[e][c][1]) : undefined;
         per[e] = v; if (v > 0) { tot += v; nz++; } if (v > mx) { mx = v; mxE = e; }
       }
       if (tot < 20 || nz < 2) continue;
@@ -450,7 +451,8 @@
     var rows = reb.map(function (p) {
       var m = 0; etabs.forEach(function (e) { if (p.per[e] > m) m = p.per[e]; });
       var bars = etabs.map(function (e) {
-        var v = p.per[e], hpx = v === 0 ? 2 : Math.round(4 + v / m * 32);
+        var v = p.per[e], hpx = !(v > 0) ? 2 : Math.round(4 + v / m * 32);
+        if (v === undefined) return '<div class="col" title="' + e + ' : non communiqué"><div class="b" style="height:2px;opacity:.35"></div><small>' + e + '</small></div>';
         return '<div class="col"><div class="b ' + (v === 0 ? 'zero' : v === m ? 'hot' : '') + '" style="height:' + hpx + 'px"></div><small>' + e + '</small></div>';
       }).join('');
       return '<div class="imb"><div class="imn">' + esc(cap(p.d)) + '</div>' +
@@ -459,7 +461,7 @@
         '<div class="imfix">→ équilibrer depuis ' + p.mxE + ' — <b>transférer</b> plutôt que commander</div></div>';
     }).join('') || '<div class="ap-empty">Stock équilibré sur les sites.</div>';
     return '<div class="v2-card ap-card"><div class="ap-hd"><div class="ap-ic" style="background:#0E7C86">▤</div><div><h3>Stock par établissement</h3>' +
-      '<div class="ap-sub">' + fmt(ss.total) + ' unités sur 7 sites (NR) — un produit concentré sur un site, à 0 ailleurs = à rééquilibrer, pas à racheter</div></div></div>' +
+      '<div class="ap-sub">' + fmt(ss.total) + ' unités sur 7 sites (POS et SEP : non remboursables seulement) — un produit concentré sur un site, à 0 ailleurs = à rééquilibrer, pas à racheter</div></div></div>' +
       '<div class="sites">' + strip + '</div>' +
       '<div class="imbhd">Rééquilibrage inter-sites <span>' + reb.length + '</span></div>' + rows + '</div>';
   }
@@ -1597,12 +1599,12 @@
     // stock par site (ETAB, NR)
     var EP = window.ETAB_PRICES, sitesHtml = '';
     if (EP && EP.prices && EP.etabs) {
-      var per = EP.etabs.map(function (e) { var v = (EP.prices[e.code] && EP.prices[e.code][cip]) ? Math.max(0, EP.prices[e.code][cip][1]) : 0; return { code: e.code, v: v }; });
+      var per = EP.etabs.map(function (e) { var r = EP.prices[e.code] && EP.prices[e.code][cip]; return { code: e.code, v: r ? Math.max(0, r[1]) : 0, nd: !r }; });
       var tot = per.reduce(function (a, b) { return a + b.v; }, 0);
       if (tot > 0) {
         var smx = Math.max.apply(null, per.map(function (x) { return x.v; })) || 1;
         sitesHtml = '<div class="tk-h">Stock par établissement</div><div class="tk-sites">' +
-          per.map(function (x) { return '<div class="tk-site"><i style="height:' + Math.round(4 + x.v / smx * 30) + 'px"></i><span>' + x.code + '</span><b>' + fmt(x.v) + '</b></div>'; }).join('') + '</div>';
+          per.map(function (x) { return '<div class="tk-site"' + (x.nd ? ' title="Non communiqué"' : '') + '><i style="height:' + Math.round(4 + x.v / smx * 30) + 'px"></i><span>' + x.code + '</span><b>' + (x.nd ? '—' : fmt(x.v)) + '</b></div>'; }).join('') + '</div>';
       }
     }
     // signaux
