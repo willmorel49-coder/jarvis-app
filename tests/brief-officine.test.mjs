@@ -106,6 +106,32 @@ test('habitude interrompue : seulement si elle a commandé AUTRE CHOSE le dernie
   assert.equal(avecFin.points[0].titre, 'Pas commandé en août 2026 : Doliprane');
 });
 
+test('habitude interrompue : 3 lignes au plus, les plus gros volumes', () => {
+  const v = [];
+  for (let k = 1; k <= 5; k++) ['2026-03', '2026-04', '2026-05', '2026-06', '2026-07'].forEach((m) => v.push({ cip: '340090000000' + k, mois: m, qte: k }));
+  v.push({ cip: '3400900000009', mois: '2026-08', qte: 1 });
+  const r = calculer(base({ ventes: v, nom: (c) => 'P' + c.slice(-1) }));
+  assert.deepEqual(Array.from(r.points, (p) => p.titre.slice(-2)), ['P5', 'P4', 'P3']);
+});
+
+test('rupture sur un produit plus commandé depuis 3 mois : écartée', () => {
+  const r = calculer(base({
+    ventes: [{ cip: '3400900000001', mois: '2026-05', qte: 40 }, { cip: '3400900000002', mois: '2026-06', qte: 1 }],
+    ansm: ansm([rupture(['3400900000001']), rupture(['3400900000002'])]),
+  }));
+  assert.equal(r.points.length, 1);
+  assert.equal(r.points[0].volume, 1);
+});
+
+test('grands nombres : séparateur des milliers', () => {
+  const r = calculer(base({
+    ventes: [{ cip: '3400900000001', mois: '2026-08', qte: 1 }],
+    ansm: ansm([rupture(['3400900000001'])]),
+    stockSites: () => [{ site: 'CPR', q: 51495 }],
+  }));
+  assert.match(r.points[0].detail, /51\u202f495 boîtes sur CPR/);
+});
+
 test('mois couverts : un fichier de commercial plus court ne fabrique pas d\'absence', () => {
   const hab = ['2026-03', '2026-04', '2026-05', '2026-06', '2026-07'].map((m) => ({ cip: '3400900000001', mois: m, qte: 2 }));
   // moisCouverts s'arrête en juillet (calculé par la couche écran) : juillet devient le dernier mois
