@@ -1,6 +1,6 @@
 name: Veille appro · génériques BDPM
 
-# Robot GRATUIT : télécharge la base médicaments (BDPM/ANSM, miroir betagouv),
+# Robot GRATUIT : télécharge la base médicaments (BDPM/ANSM, téléchargement officiel),
 # détecte les groupes génériques et les princeps qui ont un générique dispo,
 # et signale par diff mensuel les NOUVEAUX groupes génériques (falaise de brevet
 # en pratique). Écrit crm/v2/generiques-bdpm.json (+ snapshot). Aucune clé, aucun coût.
