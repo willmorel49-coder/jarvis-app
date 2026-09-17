@@ -250,34 +250,6 @@ def build_recap(items, rappels, rlive, rtotal, today):
     return {'text': '\n'.join(lines), 'une': '', 'ai': False}
 
 
-def ai_recap(items, rappels, rlive, rtotal):
-    """Synthèse IA via Gemini (palier gratuit) si GEMINI_API_KEY présent côté robot. Repli silencieux sinon."""
-    key = os.environ.get('GEMINI_API_KEY')
-    if not key:
-        return None
-    actu = [i.get('titre', '') for i in items if i.get('today') and i.get('cat') != 'ruptures'][:8]
-    rap = ['%s — %s (%s)' % (r.get('titre', ''), r.get('risque', ''), r.get('marque', '')) for r in rappels[:5]]
-    rup = ['%s [%s]' % (r.get('titre', ''), r.get('statut', '')) for r in rlive[:8]]
-    prompt = ("Tu es l'assistant de veille d'un commercial grossiste pharma (Intégral Pharma) et de ses pharmaciens d'officine. "
-              "À partir des données du jour ci-dessous, rédige un récap ULTRA court en français : 3 puces maximum, style télégraphique, "
-              "sans phrase d'introduction, centré sur ce qui est ACTIONNABLE au comptoir (ce qu'il faut retirer, surveiller, pousser). "
-              "Commence chaque puce par « • ».\n\n"
-              "Ruptures/tensions suivies par l'ANSM : %d. Les plus récentes : %s\n"
-              "Rappels parapharma (RappelConso) : %s\n"
-              "Actu métier du jour : %s" % (rtotal, ' | '.join(rup), ' | '.join(rap), ' | '.join(actu)))
-    body = json.dumps({'contents': [{'parts': [{'text': prompt}]}],
-                       'generationConfig': {'temperature': 0.3, 'maxOutputTokens': 320}}).encode('utf-8')
-    url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=' + key
-    try:
-        req = urllib.request.Request(url, data=body, headers={'Content-Type': 'application/json'})
-        resp = json.loads(urllib.request.urlopen(req, timeout=30).read())
-        txt = html.unescape(resp['candidates'][0]['content']['parts'][0]['text']).strip()   # garde les retours à la ligne (puces)
-        return {'text': txt, 'une': '', 'ai': True} if txt else None
-    except Exception as e:
-        sys.stderr.write('AI recap FAIL : %s\n' % e)
-        return None
-
-
 def main():
     today = date.today().isoformat()
     cutoff = (date.today() - timedelta(days=WINDOW_DAYS - 1)).isoformat()
@@ -320,7 +292,7 @@ def main():
     # 5) sources API (gratuites) : rappels parapharma + ruptures médicament en direct
     rappels = fetch_rappels()
     ruptures_live, ruptures_total = fetch_ruptures_live()
-    recap = ai_recap(items, rappels, ruptures_live, ruptures_total) or build_recap(items, rappels, ruptures_live, ruptures_total, today)
+    recap = build_recap(items, rappels, ruptures_live, ruptures_total, today)
 
     payload = {
         'day': today,
