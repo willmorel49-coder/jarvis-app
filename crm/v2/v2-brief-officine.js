@@ -24,6 +24,8 @@
   var REMISE_RECENTE_J = 14;      // « de nouveau disponible » : seulement si c'est récent
   var PRINCEPS_MIN_BOITES = 10;   // en dessous, l'opportunité ne vaut pas une ligne
   var PRINCEPS_MAX_LIGNES = 2;
+  var HABITUDE_MAX_LIGNES = 3;
+  var RECENT_MOIS = 3;    // au-delà, la liste noie les vraies alertes
 
   var STATUTS = {
     'Rupture de stock': { urgence: 3, titre: 'En rupture' },
@@ -37,7 +39,7 @@
   function moisFr(ym) { var p = String(ym || '').split('-'); return p.length < 2 ? String(ym || '') : MOIS_FR[+p[1] - 1] + ' ' + p[0]; }
   function dateFr(iso) { var p = String(iso || '').slice(0, 10).split('-'); return p.length < 3 ? String(iso || '') : p[2] + '/' + p[1] + '/' + p[0]; }
   function isoDeFr(fr) { var p = String(fr || '').split('/'); return p.length === 3 ? p[2] + '-' + p[1] + '-' + p[0] : ''; }
-  function pluriel(n, mot) { n = Math.round(n); return n + ' ' + mot + (n > 1 ? 's' : ''); }
+  function pluriel(n, mot) { n = Math.round(n); return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '\u202f') + ' ' + mot + (n > 1 ? 's' : ''); }
   function nomCourt(spec) { return String(spec || '').split(' – [')[0].split(', ')[0]; }
 
   // Achats de l'officine regroupés par CIP13 : total, mois vus, dernier mois.
@@ -83,6 +85,11 @@
     var nom = e.nom || function () { return ''; };
     var stockSites = e.stockSites || function () { return []; };
     var pts = [];
+    var mc = (e.moisCouverts || []).slice().sort();
+    var fin = mc[mc.length - 1];
+    // Ruptures et prix : seulement ce qu'elle a commandé dans ses 3 derniers mois connus
+    // (un produit abandonné depuis février n'a rien à faire devant ses achats courants).
+    var recent = mc[Math.max(0, mc.length - RECENT_MOIS)] || '';
 
     // 1. Disponibilité (ANSM)
     ((e.ansm && e.ansm.items) || []).forEach(function (it) {
@@ -90,7 +97,7 @@
       if (!s || !it.cips || !it.cips.length) return;
       if (it.st === 'Remise à disposition' && !(it.since && jours(it.since, auj) <= REMISE_RECENTE_J)) return;
       var a = achatsDe(idx, it.cips);
-      if (!a.qte) return;
+      if (!a.qte || a.dernier < recent) return;
       var parMois = Math.max(1, Math.round(a.qte / nbMois));
       var detail = ['Elle en achète environ ' + pluriel(parMois, 'boîte') + ' par mois (dernière commande : ' + moisFr(a.dernier) + ').'];
       if (it.st !== 'Remise à disposition') {
@@ -109,7 +116,7 @@
         titre: s.titre + ' : ' + nomCourt(it.spec),
         detail: detail.join(' '),
         action: it.st === 'Remise à disposition' ? 'Lui signaler qu\'elle peut recommander.' : 'La prévenir avant qu\'elle le découvre au comptoir.',
-        pourquoi: 'Signalé par l\'ANSM (' + it.st.toLowerCase() + ') et présent dans ses achats.',
+        pourquoi: 'Signalé par l\'ANSM (' + it.st.toLowerCase() + ', fiche du ' + dateFr(isoDeFr(it.maj) || e.ansm.generated) + ') et présent dans ses achats.',
         source: 'ansm', date: isoDeFr(it.maj) || (e.ansm.generated || '')
       });
     });
@@ -119,7 +126,7 @@
       if (ch.sens !== 'baisse' && ch.sens !== 'hausse') return;
       if (!ch.date_effet || ch.date_effet < auj) return;
       var a = achatsDe(idx, [String(ch.c)]);
-      if (!a.qte) return;
+      if (!a.qte || a.dernier < recent) return;
       var dans = jours(auj, ch.date_effet);
       var prix = (ch.ancien_ttc ? String(ch.ancien_ttc).replace('.', ',') + ' € → ' : '') + String(ch.ppttc).replace('.', ',') + ' € TTC';
       pts.push({
@@ -154,19 +161,16 @@
     // Le dernier mois est celui où TOUS les fichiers de ses commerciaux existent
     // (sinon un fichier plus court inventerait une absence). Il faut aussi
     // qu'elle ait commandé autre chose ce mois-là : sinon on ne sait rien.
-    var mc = (e.moisCouverts || []).slice().sort();
-    var fin = mc[mc.length - 1];
     var avant = mc.slice(-7, -1);
     var aCommandeFin = false;
     Object.keys(idx).forEach(function (c) { if (idx[c].mois[fin]) aCommandeFin = true; });
     if (fin && avant.length >= 4 && aCommandeFin) {
-      Object.keys(idx).forEach(function (c) {
+      Object.keys(idx).sort(function (x, y) { return idx[y].qte - idx[x].qte; }).filter(function (c) {
         var a = idx[c];
-        if (a.mois[fin]) return;
+        return !a.mois[fin] && avant.filter(function (m) { return a.mois[m]; }).length >= 4 && nom(c);
+      }).slice(0, HABITUDE_MAX_LIGNES).forEach(function (c) {
+        var a = idx[c], n = nom(c);
         var vus = avant.filter(function (m) { return a.mois[m]; }).length;
-        if (vus < 4) return;
-        var n = nom(c);
-        if (!n) return;
         pts.push({
           rubrique: 'Ses achats',
           urgence: 1, volume: a.qte,
@@ -290,7 +294,7 @@
       '<div class="bo-tx"><b>' + esc(p.titre) + '</b>' +
         '<span>' + esc(p.detail) + '</span>' +
         '<span class="bo-act">→ ' + esc(p.action) + '</span>' +
-        '<small>' + esc(p.pourquoi) + (p.date ? ' · relevé du ' + esc(dateFr(p.date)) : '') + '</small>' +
+        '<small>' + esc(p.pourquoi) + (p.date && p.pourquoi.indexOf(dateFr(p.date)) < 0 ? ' · relevé du ' + esc(dateFr(p.date)) : '') + '</small>' +
       '</div></li>';
   }
 
@@ -305,7 +309,7 @@
         : 'Rien d\'urgent aujourd\'hui pour cette officine.') + '</p>';
     } else {
       corps = '<ol class="bo-liste">' + r.points.map(ligneHtml).join('') + '</ol>' +
-        (r.autres.length ? '<details class="bo-plus"><summary>' + pluriel(r.autres.length, 'autre point') + '</summary><ol class="bo-liste">' + r.autres.map(ligneHtml).join('') + '</ol></details>' : '');
+        (r.autres.length ? '<details class="bo-plus"><summary>' + r.autres.length + (r.autres.length > 1 ? ' autres points' : ' autre point') + '</summary><ol class="bo-liste">' + r.autres.map(ligneHtml).join('') + '</ol></details>' : '');
     }
     var src = r.sources.map(function (s) {
       var etat = !s.lue ? 'non lue' : (s.aJour ? dateFr(s.date) : dateFr(s.date) + ', en retard');
