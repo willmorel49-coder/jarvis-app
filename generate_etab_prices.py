@@ -8,6 +8,8 @@ Complété par la dernière extraction SOP « STOCK *.xls » du même dossier (r
 compris, codes CIP7, 5 sites) : pour ces sites, elle remplace les *_extrait.xlsx produit
 par produit ; les produits absents gardent leur valeur. Lecture .xls : xlrd
 (/usr/bin/python3).
+Puis l'extraction d'un site seul « stock <SITE> <jjmmaaaa>.xlsx » (SEP le 17/09/2026 :
+codes-barres CIP13, stockdispo, afmcode), même règle, la plus récente par site.
 """
 import openpyxl, glob, os, json, re
 
@@ -42,7 +44,12 @@ tarif = {}      # cip -> tarif (atfprix) de la dernière extraction STOCK *.xls
 tarif_date = ''
 etabs = []
 
+site_files = {}  # site -> extractions « stock <SITE> <jjmmaaaa>.xlsx »
 for fn in sorted(glob.glob(os.path.join(SRC, '*.xlsx'))):
+    m = re.match(r'stock ([A-Za-z]{2,4}) (\d{2})(\d{2})(\d{4})\.xlsx$', os.path.basename(fn), re.I)
+    if m:
+        site_files.setdefault(m.group(1).upper(), []).append((m.group(4) + m.group(3) + m.group(2), fn))
+        continue
     code = etab_code(fn)
     wb = openpyxl.load_workbook(fn, read_only=True, data_only=True)
     ws = wb.active
@@ -124,6 +131,51 @@ if stock_files:
     tarif_date = '20%s-%s-%s' % (a, m_, j) if a else ''
     print('  + %s : %d produits (5 sites)' % (os.path.basename(fn), n))
 
+site_dates = {}  # site -> date de sa dernière extraction (écrans : « au jj/mm »)
+if tarif_date:
+    for etab in ('SOP', 'MSP', 'HP', 'CPR', 'OPS'):
+        site_dates[etab] = tarif_date
+for etab, lst in sorted(site_files.items()):
+    ymd, fn = max(lst)
+    wb = openpyxl.load_workbook(fn, read_only=True, data_only=True)
+    it = wb.active.iter_rows(values_only=True)
+    ix = {str(h or '').strip().lower(): i for i, h in enumerate(next(it))}
+    lu = {}  # un code-barres porté par deux articles : stocks additionnés
+    for r in it:
+        code = cip_of(r[ix['artcodebarre']])
+        if len(code) < 8:
+            raw = str(r[ix['artcode']] or '').strip()
+            code = cip13_of(raw) if len(raw) == 7 and raw.isdigit() else ''
+        if not code:
+            continue
+        try: stock = max(0, int(float(r[ix['stockdispo']] or 0)))
+        except (TypeError, ValueError): stock = 0
+        ppht = num(r[ix['atfprix']])
+        e = lu.setdefault(code, [0.0, 0])
+        if ppht > 0 and e[0] <= 0:
+            e[0] = ppht
+        e[1] += stock
+        lib = str(r[ix['artdesignation']] or '').strip()
+        if lib and code not in labels:
+            labels[code] = lib
+        afm = str(r[ix['afmcode']] or '').strip()
+        if afm and afm != 'REMBSS' and code.isdigit() and len(code) <= 14 and lib:
+            labo = str(r[ix['artmarque']] or '').strip()
+            nr_info.setdefault(code, [labels.get(code, lib), '' if labo == '#N/A' else labo])
+    wb.close()
+    d = prices.setdefault(etab, {})
+    for code, (p, stock) in lu.items():
+        old = d.get(code)
+        p = p if p > 0 else (old[0] if old else 0.0)
+        if p <= 0 and stock == 0:
+            continue
+        d[code] = [p, stock]
+    for e in etabs:
+        if e['code'] == etab:
+            e['n'] = len(d)
+    site_dates[etab] = '%s-%s-%s' % (ymd[:4], ymd[4:6], ymd[6:])
+    print('  + %s : %d produits (%s)' % (os.path.basename(fn), len(lu), etab))
+
 # NR tenus par un établissement mais absents du catalogue (arrêté de juin) : sans eux,
 # l'écran Produits en ignorait 3 225. Nature sûre : AFMCODE des extractions par site
 # (le fichier STOCK *.xls, lui, ne dit pas si un produit est remboursable).
@@ -145,7 +197,7 @@ for code, d in prices.items():
         e[1] += s
 
 data = {'etabs': sorted(etabs, key=lambda x: x['code']), 'prices': prices, 'all': allc,
-        'tarif': tarif, 'tarifDate': tarif_date, 'nrHorsCat': extra}
+        'tarif': tarif, 'tarifDate': tarif_date, 'siteDates': site_dates, 'nrHorsCat': extra}
 os.makedirs(os.path.dirname(OUT), exist_ok=True)
 with open(OUT, 'w', encoding='utf-8') as fh:
     fh.write('// Prix PPHT + stock par établissement (NR) — generate_etab_prices.py\n')
