@@ -405,7 +405,7 @@
     if (_etabState) return;
     _etabState = 1;
     var s = document.createElement('script');
-    s.src = 'etab-prices-data.js?v=' + (window.__APPRO_V || '20260916g'); s.async = false;
+    s.src = 'etab-prices-data.js?v=' + (window.__APPRO_V || '20260917a'); s.async = false;
     s.onload = function () { _etabState = 2; approRerender(); };
     s.onerror = function () { _etabState = 2; };
     document.head.appendChild(s);
@@ -427,7 +427,7 @@
     for (var k = 0; k < PS.length; k++) {
       var c = String(PS[k].c), per = {}, tot = 0, nz = 0, mx = 0, mxE = null;
       for (var j = 0; j < etabs.length; j++) {
-        // site sans ligne pour ce produit = non communiqué (POS/SEP en sept. 2026), pas 0
+        // site sans ligne pour ce produit = non communiqué (POS en sept. 2026), pas 0
         var e = etabs[j], v = (EP.prices[e] && EP.prices[e][c]) ? Math.max(0, EP.prices[e][c][1]) : undefined;
         per[e] = v; if (v > 0) { tot += v; nz++; } if (v > mx) { mx = v; mxE = e; }
       }
@@ -461,7 +461,7 @@
         '<div class="imfix">→ équilibrer depuis ' + p.mxE + ' — <b>transférer</b> plutôt que commander</div></div>';
     }).join('') || '<div class="ap-empty">Stock équilibré sur les sites.</div>';
     return '<div class="v2-card ap-card"><div class="ap-hd"><div class="ap-ic" style="background:#0E7C86">▤</div><div><h3>Stock par établissement</h3>' +
-      '<div class="ap-sub">' + fmt(ss.total) + ' unités sur 7 sites (POS et SEP : non remboursables seulement) — un produit concentré sur un site, à 0 ailleurs = à rééquilibrer, pas à racheter</div></div></div>' +
+      '<div class="ap-sub">' + fmt(ss.total) + ' unités sur 7 sites (POS : non remboursables seulement) — un produit concentré sur un site, à 0 ailleurs = à rééquilibrer, pas à racheter</div></div></div>' +
       '<div class="sites">' + strip + '</div>' +
       '<div class="imbhd">Rééquilibrage inter-sites <span>' + reb.length + '</span></div>' + rows + '</div>';
   }

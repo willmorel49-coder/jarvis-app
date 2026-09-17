@@ -10,8 +10,8 @@
    Opportunité = parmi les meilleures ventes France ET nos ventes sous
    notre part moyenne (même calcul que v2-appro.js::partGlobale).
    Stock par établissement : UNIQUEMENT ce que donne etab-prices-data.js
-   (remboursables compris depuis le 16/09/2026 ; POS et SEP absents de cette
-   extraction → « non communiqué »). Pour le reste on montre le stock
+   (remboursables compris depuis le 16/09/2026 ; SEP ajouté le 17/09 ; POS absent de ces
+   extractions → « non communiqué »). Pour le reste on montre le stock
    consolidé et on le dit — jamais de répartition inventée.
    Les vues par officine / groupement / prospect / achats restent dans
    v2-produits.js, atteignables depuis le pied de page et le panneau.
@@ -86,7 +86,7 @@
     if (!window.ETAB_PRICES && !D.etabEtat) {
       D.etabEtat = 1;
       var s = document.createElement('script');
-      s.src = 'etab-prices-data.js?v=' + (window.__APPRO_V || '20260916g');
+      s.src = 'etab-prices-data.js?v=' + (window.__APPRO_V || '20260917a');
       s.async = true;
       s.onload = s.onerror = function () { D.etabEtat = 2; rerender(); };
       document.head.appendChild(s);
@@ -908,9 +908,18 @@
         'Stock par établissement connu pour ' + fr(d.nDetail) + ' références ; ailleurs, stock total des 7 sites.' +
         (window.ETAB_PRICES && window.ETAB_PRICES.tarifDate
           ? ' Produits non remboursables : tarif et stock au ' + esc(dateFr(window.ETAB_PRICES.tarifDate)) +
-            ' (POS et SEP : juillet), y compris ceux que le catalogue de juin ne connaissait pas.' : '') + '</p>' +
+            autresDates() + ', y compris ceux que le catalogue de juin ne connaissait pas.' : '') + '</p>' +
       '</div>';
   };
+
+  // Sites dont le stock n'est pas à la date du tarif : « (SEP : 17/09/2026 ; POS : juillet) ».
+  function autresDates() {
+    var EPx = window.ETAB_PRICES, SD = EPx.siteDates || {}, parts = [];
+    ETABS.forEach(function (e) {
+      if (SD[e] !== EPx.tarifDate) parts.push(e + ' : ' + (SD[e] ? esc(dateFr(SD[e])) : 'juillet'));
+    });
+    return parts.length ? ' (' + parts.join(' ; ') + ')' : '';
+  }
 
   function injectStyles() {
     if (document.getElementById('cp-styles')) return;
