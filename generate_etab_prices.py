@@ -180,6 +180,14 @@ for etab, lst in sorted(site_files.items()):
 # l'écran Produits en ignorait 3 225. Nature sûre : AFMCODE des extractions par site
 # (le fichier STOCK *.xls, lui, ne dit pas si un produit est remboursable).
 CAT_JS = 'crm/v2/catalogue-complet-data.js'
+# Codes que les extractions par site ne qualifient pas : nature tirée des fichiers de ventes
+# (generate_nature_afm.py), seulement pour les produits qu'un site tient.
+NATURE_JSON = os.path.join(SRC, 'nature-afm.json')
+if os.path.exists(NATURE_JSON):
+    tenus = set(tarif).union(*[set(d) for d in prices.values()])
+    for code, (afm, labo) in json.load(open(NATURE_JSON, encoding='utf-8')).items():
+        if afm != 'REMBSS' and code in tenus and code not in nr_info and labels.get(code):
+            nr_info[code] = [labels[code], labo]
 extra = {}
 if os.path.exists(CAT_JS):
     txt = open(CAT_JS, encoding='utf-8').read()
