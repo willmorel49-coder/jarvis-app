@@ -759,12 +759,27 @@ def clean(s):
     return re.sub(r'\s+', ' ', s).strip()
 
 
+# Âge maximal toléré (jours) de chaque fichier de robot, d'après son rythme de passage.
+# ⚠️ C'est la date d'EXÉCUTION du robot : elle ne prouve pas que ses données sont fraîches
+# (génériques BDPM : exécuté le 10/09/2026 sur une base de 2017). Le contrôle du contenu
+# se fait dans chaque robot ; celui-ci attrape le robot qui ne tourne plus.
+FRAIS_MAX_J = {
+    'infos-jour.json': 2, 'grossistes-actu.json': 2, 'jo-marges.json': 2,
+    'prix-futurs.json': 2, 'prix.json': 2, 'ansm-dispo.json': 2, 'rappels-lots.json': 2,
+    'epidemio.json': 2, 'odisse.json': 9, 'ema-generiques.json': 9, 'has-avis.json': 35,
+}
+FRAIS = {}   # fichier -> date de génération lue
+
+
 def load(name):
     """Lit un fichier de robot. Absent ou cassé = on continue sans lui."""
     p = os.path.join(V2, name)
     try:
         with open(p, 'r', encoding='utf-8') as f:
-            return json.load(f)
+            d = json.load(f)
+        if isinstance(d, dict):
+            FRAIS[name] = iso_day(d.get('generated') or d.get('generated_at') or d.get('maj') or d.get('day'))
+        return d
     except Exception as e:
         sys.stderr.write('  (absent/illisible) %s : %s\n' % (name, e))
         return None
@@ -1806,6 +1821,13 @@ def main():
         if days_ago(c['d']) <= 1:
             themes_du_jour[c['theme']] = themes_du_jour.get(c['theme'], 0) + 1
 
+    # Fraîcheur par source : un fichier absent compte comme en retard.
+    fraicheur = []
+    for f, mx in FRAIS_MAX_J.items():
+        dt = FRAIS.get(f, '')
+        age = days_ago(dt)
+        fraicheur.append({'f': f, 'date': dt, 'age': age, 'max': mx, 'ok': age <= mx})
+
     edition = {
         # l'ordre d'affichage des rubriques : de ce qui touche l'argent d'Intégral
         # au plus culturel. Trier par volume mettrait « Autre » en tête.
@@ -1851,10 +1873,15 @@ def main():
         'ema': ctx.get('ema', []),
         'amont': ctx.get('amont', []),
         'compte': {
-            'fichiers': len(lus), 'sources_lues': lus,
+            'fichiers': len(lus), 'sources_lues': lus, 'fraicheur': fraicheur,
             'entrees': len(entrees), 'sujets': len(clusters), 'retenues': len(fil),
         },
     }
+
+    for x in fraicheur:
+        if not x['ok']:
+            print('   ⚠️ source en retard : %s — générée le %s (%s j, maximum %d)'
+                  % (x['f'], x['date'] or '?', x['age'], x['max']))
 
     with open(OUT, 'w', encoding='utf-8') as f:
         json.dump(edition, f, ensure_ascii=False, separators=(',', ':'))

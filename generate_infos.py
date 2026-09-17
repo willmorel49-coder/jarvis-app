@@ -158,11 +158,6 @@ def daystr(it, today):
     return (it.get('date') or '')[:10] or it.get('seen') or today
 
 
-def deslug(url):
-    seg = (url or '').rstrip('/').split('/')[-1].replace('-', ' ').strip()
-    return ' '.join(w[:1].upper() + w[1:] for w in seg.split()) if seg else ''
-
-
 def fetch_rappels(n=16):
     """API officielle RappelConso (data.economie.gouv.fr) — rappels parapharma/cosmétiques (hygiène-beauté)."""
     out = []
@@ -191,30 +186,37 @@ def fetch_rappels(n=16):
 
 
 def fetch_ruptures_live(n=40):
-    """API BDPM/ANSM (bdpmgf.vedielaute.fr) — ruptures & tensions médicament EN COURS (état temps réel)."""
+    """Ruptures & tensions médicament EN COURS, lues dans crm/v2/ansm-dispo.json
+    (robot generate_ansm_dispo.py, liste officielle ANSM, quotidien).
+
+    ⚠️ 17/09/2026 : cette fonction interrogeait bdpmgf.vedielaute.fr — l'API répondait,
+    mais son dernier signalement datait du 04/07/2025 : « 957 ruptures » figées depuis
+    quatorze mois. Le fichier est refusé s'il n'est pas du jour ou de la veille."""
     out, total = [], 0
+    p = os.path.join(ROOT, 'crm', 'v2', 'ansm-dispo.json')
     try:
-        d = json.loads(fetch('https://bdpmgf.vedielaute.fr/api/medicaments/disponibilite?limit=400'))
+        d = json.load(open(p, encoding='utf-8'))
     except Exception as e:
-        sys.stderr.write('FAIL ruptures API : %s\n' % e); return out, total
-    rows = d.get('data') or []
-    total = (d.get('pagination') or {}).get('total') or len(rows)
-    def pdk(s):
-        m = re.match(r'(\d{2})/(\d{2})/(\d{4})', s or '')
-        return (m.group(3) + m.group(2) + m.group(1)) if m else ''
-    rows = [r for r in rows if re.search(r'rupture|tension', (r.get('classement_remboursement') or ''), re.I)]
-    rows.sort(key=lambda r: pdk(r.get('date_debut')), reverse=True)
+        sys.stderr.write('FAIL ruptures ansm-dispo.json : %s\n' % e); return out, total
+    gen = (d.get('generated') or '')[:10]
+    if gen < (date.today() - timedelta(days=2)).isoformat():
+        sys.stderr.write('FAIL ruptures : ansm-dispo.json périmé (%s)\n' % (gen or '?')); return out, total
+    rows = [r for r in (d.get('items') or []) if re.search(r'rupture|tension', r.get('st') or '', re.I)]
+    total = len(rows)
+    rows.sort(key=lambda r: r.get('since') or '', reverse=True)
     seen = {}
     for r in rows:
-        nm = deslug(r.get('type_etat'))
+        nm = clean(r.get('spec') or '')
         if not nm:
             continue
         key = re.split(r'\s\d', nm)[0].lower().strip()   # dédoublonne par nom (hors dosage/présentation)
         if key in seen:
             continue
         seen[key] = 1
-        out.append({'titre': nm, 'statut': (r.get('classement_remboursement') or '').strip(),
-                    'depuis': (r.get('date_debut') or '').strip(), 'url': (r.get('type_etat') or '').strip()})
+        since = r.get('since') or ''
+        out.append({'titre': nm, 'statut': (r.get('st') or '').strip(),
+                    'depuis': ('%s/%s/%s' % (since[8:10], since[5:7], since[:4])) if len(since) >= 10 else '',
+                    'url': 'https://ansm.sante.fr/disponibilites-des-produits-de-sante/medicaments'})
         if len(out) >= n:
             break
     return out, total
@@ -326,7 +328,7 @@ def main():
         'window_days': WINDOW_DAYS,
         'count': len(items),
         'count_today': sum(1 for i in items if i['today']),
-        'sources': [f['source'] for f in FEEDS] + ['RappelConso (DGCCRF)', 'ANSM · Disponibilités (BDPM)'],
+        'sources': [f['source'] for f in FEEDS] + ['RappelConso (DGCCRF)', 'ANSM · Disponibilités (liste officielle)'],
         'items': items,
         'recap': recap,
         'rappels': rappels,
