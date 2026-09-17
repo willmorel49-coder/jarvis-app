@@ -1601,10 +1601,12 @@
       '</div>';
     })();
 
+    // Brief du jour (v2-brief-officine.js) : rempli après coup, sans re-rendre la fiche.
+    var briefOff = V2.briefOfficine ? '<div class="v2-card pha-card" id="brief-off" data-pid="' + esc(pid) + '"><div class="pha-sub">Brief du jour en préparation…</div></div>' : '';
     var apercu =
       '<div class="pha">' +
         '<div class="pha-rail">' + idCard + listes + infos + notes + '</div>' +
-        '<div class="pha-main">' + chiffres + listing + generiqueurSec + '</div>' +
+        '<div class="pha-main">' + briefOff + chiffres + listing + generiqueurSec + '</div>' +
       '</div>';
     // ⚠️ window.ARGUMENT (part d'abandon, donnée protégée) est requis : sans lui le
     // calcul rendrait des ZÉROS silencieux. On le charge et on re-rend, comme les ventes.
@@ -1626,6 +1628,7 @@
       '</div>';
     if (V2.profil) V2.profil.hydrate();
     if (V2.notes) V2.notes.hydrate();
+    if (briefOff) V2.briefOfficine.hydrate(pid, pharmaSalesAll(pid));
   }
 
   // Changer le groupement d'une pharmacie depuis sa fiche (correction persistée + appliquée).
