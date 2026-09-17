@@ -171,6 +171,37 @@ test('sources : non lue, en retard, à jour', () => {
   assert.equal(s.rappels.lue, false);
 });
 
+test('échéance : dans sa fenêtre seulement, 2 au plus, à part des 7 points', () => {
+  const ech = (date, prevenir_j, titre) => ({ date, prevenir_j, titre, detail: 'D.', action: 'A.', source_nom: 'S' });
+  const r = calculer(base({
+    ventes: [{ cip: '3400900000001', mois: '2026-08', qte: 1 }],
+    calendrier: { generated: '2026-09-17', items: [
+      ech('2026-09-01', 365, 'Passée'),
+      ech('2027-09-01', 300, 'Trop tôt'),
+      ech('2026-10-07', 60, 'Proche'),
+      ech('2027-01-20', 150, 'Réforme'),
+      ech('2027-02-01', 200, 'Troisième'),
+    ] },
+  }));
+  assert.deepEqual(Array.from(r.echeances, (p) => p.titre), ['Proche le 07/10/2026 (dans 20 jours)', 'Réforme le 20/01/2027 (dans 125 jours)']);
+  assert.equal(r.points.length, 0);
+  const s = Object.fromEntries(Array.from(r.sources, (x) => [x.cle, x]));
+  assert.equal(s.calendrier.aJour, true);
+  const vieux = calculer(base({ calendrier: { generated: '2026-05-01', items: [] } }));
+  assert.equal(vieux.sources.find((x) => x.cle === 'calendrier').aJour, false);
+});
+
+test('calendrier-officine.json : chaque ligne a une date, une fenêtre et une source', () => {
+  const c = JSON.parse(readFileSync(new URL('calendrier-officine.json', B), 'utf8'));
+  assert.match(c.generated, /^\d{4}-\d{2}-\d{2}$/);
+  assert.ok(c.items.length >= 1);
+  for (const it of c.items) {
+    assert.match(it.date, /^\d{4}-\d{2}-\d{2}$/, it.titre);
+    assert.ok(it.prevenir_j > 0 && it.titre && it.detail && it.action && it.source_nom, it.titre);
+    assert.match(it.source_url, /^https:\/\//, it.titre);
+  }
+});
+
 // ─────────────── Chemin réel : fichiers du jour → hydrate() → HTML ───────────────
 test('chemin réel : les vrais fichiers des robots arrivent jusqu\'à la carte', async () => {
   const lireJson = (f) => JSON.parse(readFileSync(new URL(f, B), 'utf8'));
@@ -199,7 +230,15 @@ test('chemin réel : les vrais fichiers des robots arrivent jusqu\'à la carte',
   sb.V2.briefOfficine.hydrate('2000016', sb.V2.sales);
   for (let i = 0; i < 20 && !el.innerHTML; i++) await new Promise((r) => setTimeout(r, 5));
 
-  assert.deepEqual(demandes.sort(), ['ansm-dispo.json', 'generiques-bdpm.json', 'prix-futurs.json', 'rappels-lots.json']);
+  assert.deepEqual(demandes.sort(), ['ansm-dispo.json', 'calendrier-officine.json', 'generiques-bdpm.json', 'prix-futurs.json', 'rappels-lots.json']);
+  assert.match(el.innerHTML, /Calendrier réglementaire \(\d/);
+  const auj = new Date().toISOString().slice(0, 10);
+  const attendue = lireJson('calendrier-officine.json').items
+    .find((it) => it.date >= auj && (Date.parse(it.date) - Date.parse(auj)) / 864e5 <= it.prevenir_j);
+  if (attendue) {
+    assert.ok(el.innerHTML.includes(attendue.titre), 'l\'échéance du calendrier n\'arrive pas jusqu\'à la carte');
+    assert.match(el.innerHTML, /À l'agenda/);
+  }
   assert.match(el.innerHTML, /Aujourd'hui/);
   assert.ok(el.innerHTML.includes(cible.spec.split(' – [')[0].split(', ')[0]), 'la rupture réelle n\'apparaît pas');
   assert.match(el.innerHTML, /7 boîtes sur CPR/);

@@ -8,6 +8,7 @@
      - rappels de lots (rappels-lots.json)
      - produit habituel non commandé le dernier mois connu (ventes)
      - princeps encore acheté alors qu'un générique existe (generiques-bdpm.json)
+     - échéances réglementaires proches (calendrier-officine.json, tenu à la main)
    7 points maximum, triés par urgence puis volume. Aucun modèle de langue :
    chaque ligne sort d'une règle écrite ici, avec sa source et sa date.
 
@@ -26,6 +27,8 @@
   var PRINCEPS_MAX_LIGNES = 2;
   var HABITUDE_MAX_LIGNES = 3;
   var RECENT_MOIS = 3;    // au-delà, la liste noie les vraies alertes
+  var ECHEANCE_MAX_LIGNES = 2;
+  var CALENDRIER_MAX_J = 120;     // fichier tenu à la main : à revérifier au moins tous les 4 mois
 
   var STATUTS = {
     'Rupture de stock': { urgence: 3, titre: 'En rupture' },
@@ -74,6 +77,7 @@
        ventes: [{cip, mois:'AAAA-MM', qte}],     // TOUS commerciaux de l'officine
        moisCouverts: ['AAAA-MM', …],               // mois où le fichier de l'officine existe
        ansm, prixFuturs, rappels, generiques,      // JSON des robots, ou null si non lus
+       calendrier,                                  // calendrier-officine.json, ou null
        stockSites: function (cip) → [{site, q}],   // facultatif
        nom: function (cip) → libellé                // facultatif
      }
@@ -201,13 +205,30 @@
         });
       });
 
+    // 6. Échéances réglementaires : à part, sous la liste (elles ne dépendent pas
+    //    de ses achats et seraient toujours reléguées derrière les 7 points).
+    var echeances = ((e.calendrier && e.calendrier.items) || []).filter(function (it) {
+      var dans = it.date ? jours(auj, it.date) : -1;
+      return dans >= 0 && dans <= (it.prevenir_j || 0);
+    }).sort(function (x, y) { return x.date < y.date ? -1 : 1; })
+      .slice(0, ECHEANCE_MAX_LIGNES)
+      .map(function (it) {
+        var dans = jours(auj, it.date);
+        return {
+          titre: it.titre + ' le ' + dateFr(it.date) + (dans ? ' (dans ' + pluriel(dans, 'jour') + ')' : ' (aujourd\'hui)'),
+          detail: it.detail, action: it.action,
+          source: it.source_nom, url: it.source_url || ''
+        };
+      });
+
     pts.sort(function (x, y) { return (y.urgence - x.urgence) || (y.volume - x.volume); });
 
     var sources = [
       { cle: 'ansm', nom: 'Ruptures ANSM', json: e.ansm, max: FRAIS_MAX_J },
       { cle: 'prix', nom: 'Prix au JO', json: e.prixFuturs, max: FRAIS_MAX_J },
       { cle: 'rappels', nom: 'Rappels de lots', json: e.rappels, max: FRAIS_MAX_J },
-      { cle: 'generiques', nom: 'Répertoire des génériques', json: e.generiques, max: 9 }
+      { cle: 'generiques', nom: 'Répertoire des génériques', json: e.generiques, max: 9 },
+      { cle: 'calendrier', nom: 'Calendrier réglementaire', json: e.calendrier, max: CALENDRIER_MAX_J }
     ].map(function (s) {
       if (!s.json) return { cle: s.cle, nom: s.nom, lue: false, date: '', aJour: false };
       var d = String(s.json.generated || '').slice(0, 10);
@@ -217,6 +238,7 @@
     return {
       points: pts.slice(0, MAX_POINTS),
       autres: pts.slice(MAX_POINTS),
+      echeances: echeances,
       sources: sources,
       achatsConnus: Object.keys(idx).length > 0,
       periode: mc.length ? moisFr(mc[0]) + ' – ' + moisFr(fin) : ''
@@ -311,6 +333,12 @@
       corps = '<ol class="bo-liste">' + r.points.map(ligneHtml).join('') + '</ol>' +
         (r.autres.length ? '<details class="bo-plus"><summary>' + r.autres.length + (r.autres.length > 1 ? ' autres points' : ' autre point') + '</summary><ol class="bo-liste">' + r.autres.map(ligneHtml).join('') + '</ol></details>' : '');
     }
+    if (r.echeances.length) {
+      corps += '<div class="bo-agenda"><h4>À l\'agenda</h4><ul>' + r.echeances.map(function (x) {
+        return '<li><b>' + esc(x.titre) + '</b><span>' + esc(x.detail) + '</span><span class="bo-act">→ ' + esc(x.action) + '</span>' +
+          '<small>Source : ' + (/^https:\/\//.test(x.url) ? '<a href="' + esc(x.url) + '" target="_blank" rel="noopener">' + esc(x.source) + '</a>' : esc(x.source)) + '</small></li>';
+      }).join('') + '</ul></div>';
+    }
     var src = r.sources.map(function (s) {
       var etat = !s.lue ? 'non lue' : (s.aJour ? dateFr(s.date) : dateFr(s.date) + ', en retard');
       return '<span class="' + (s.lue && s.aJour ? '' : 'bo-ko') + '">' + esc(s.nom) + ' (' + esc(etat) + ')</span>';
@@ -328,6 +356,11 @@
     '.bo-tx b{font-weight:600}.bo-act{font-weight:500}.bo-tx small{color:var(--v2-muted,#64748b);font-size:11.5px}' +
     '.bo-vide{margin:8px 0 0;font-size:13.5px}' +
     '.bo-plus{margin-top:10px}.bo-plus summary{cursor:pointer;font-size:12.5px;font-weight:600}' +
+    '.bo-agenda{margin-top:12px;padding-top:10px;border-top:1px solid var(--v2-line,#e2e8f0)}' +
+    '.bo-agenda h4{margin:0 0 6px;font-size:12px;font-weight:700;letter-spacing:.02em;color:#A16207}' +
+    '.bo-agenda ul{list-style:none;margin:0;padding:0;display:grid;gap:8px}' +
+    '.bo-agenda li{display:grid;gap:2px;font-size:13px;line-height:1.4}.bo-agenda b{font-weight:600}' +
+    '.bo-agenda small{color:var(--v2-muted,#64748b);font-size:11.5px}.bo-agenda a{color:inherit}' +
     '.bo-src{margin-top:12px;font-size:11.5px;color:var(--v2-muted,#64748b)}.bo-ko{color:#B45309;font-weight:600}' +
     '@media (max-width:520px){.bo-pt{flex-direction:column;gap:4px}.bo-rub{min-width:0}}' +
     '.bo-imp{margin-left:auto;font-size:12px;padding:4px 10px}' +
@@ -348,7 +381,7 @@
     if (!_etab) {
       _etab = new Promise(function (ok) {
         var sc = document.createElement('script');
-        sc.src = 'etab-prices-data.js?v=' + (window.__APPRO_V || '20260917c');
+        sc.src = 'etab-prices-data.js?v=' + (window.__APPRO_V || '20260917d');
         sc.async = true;
         sc.onload = sc.onerror = function () { ok(); };
         document.head.appendChild(sc);
@@ -363,14 +396,14 @@
     if (!document.getElementById('bo-style')) {
       var st = document.createElement('style'); st.id = 'bo-style'; st.textContent = STYLE; document.head.appendChild(st);
     }
-    Promise.all(['ansm-dispo.json', 'prix-futurs.json', 'rappels-lots.json', 'generiques-bdpm.json'].map(lire).concat([chargerStockSites()])).then(function (j) {
+    Promise.all(['ansm-dispo.json', 'prix-futurs.json', 'rappels-lots.json', 'generiques-bdpm.json', 'calendrier-officine.json'].map(lire).concat([chargerStockSites()])).then(function (j) {
       var cible = document.getElementById('brief-off');
       if (!cible || cible.getAttribute('data-pid') !== String(pid)) return;   // l'écran a changé entre-temps
       var r = calculer({
         aujourdhui: new Date().toISOString().slice(0, 10),
         ventes: ventesOfficine.map(function (s) { return { cip: String(s.artCode || ''), mois: cleMois(s), qte: s.qte || 0 }; }),
         moisCouverts: moisCouverts(ventesOfficine),
-        ansm: j[0], prixFuturs: j[1], rappels: j[2], generiques: j[3],
+        ansm: j[0], prixFuturs: j[1], rappels: j[2], generiques: j[3], calendrier: j[4],
         stockSites: stockSites, nom: nom
       });
       cible.innerHTML = rendre(r);

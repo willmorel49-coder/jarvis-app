@@ -1,0 +1,24 @@
+{
+  "_lisezmoi": "Échéances réglementaires lues par la carte « Aujourd'hui » (v2-brief-officine.js). Une ligne n'entre ici qu'avec une date officielle et sa source. « generated » = jour de la dernière vérification de TOUTES les lignes : au-delà de 120 jours, la carte affiche la source en retard. « prevenir_j » = nombre de jours avant l'échéance où la ligne apparaît. Non inscrit faute de date officielle au 17/09/2026 : ouverture de la campagne de vaccination grippe 2026-2027.",
+  "generated": "2026-09-17",
+  "items": [
+    {
+      "date": "2027-01-20",
+      "prevenir_j": 150,
+      "titre": "Nouvelle marge des grossistes-répartiteurs",
+      "detail": "Le minimum par boîte sur les médicaments remboursables passe de 0,30 € à 0,22 € (arrêté du 3 août 2026, JO du 11 août 2026). Les médicaments à petit prix sont les premiers concernés.",
+      "action": "Lui expliquer ce qui change sur ses médicaments à petit prix.",
+      "source_nom": "Le Moniteur des pharmacies",
+      "source_url": "https://www.lemoniteurdespharmacies.fr/profession/socio-professionnel/marge-des-grossistes-ce-qui-va-changer-au-20-janvier-2027"
+    },
+    {
+      "date": "2027-09-01",
+      "prevenir_j": 365,
+      "titre": "Factures électroniques obligatoires à l'émission",
+      "detail": "Les PME et micro-entreprises devront émettre leurs factures au format électronique, via une plateforme agréée. La réception est déjà obligatoire depuis le 01/09/2026.",
+      "action": "Lui demander si elle a choisi sa plateforme agréée.",
+      "source_nom": "impots.gouv.fr",
+      "source_url": "https://www.impots.gouv.fr/professionnel/questions/partir-de-quand-suis-je-concerne-par-la-reforme-de-la-facturation"
+    }
+  ]
+}
