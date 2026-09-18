@@ -143,6 +143,9 @@
       '.lid-plus[open]>summary{margin-bottom:10px}',
 
       '.lip-fmt{font-size:11.5px;font-weight:600;color:var(--lip-ink35);padding:3px 9px;border-radius:20px;background:#f1f4f8}',
+      '.lid-txta{display:block;width:100%;min-height:230px;max-height:none;box-sizing:border-box;border:1.5px solid transparent;font-family:inherit;font-size:16px;resize:vertical;outline:none}',
+      '.lid-txta:focus{border-color:var(--lip-line);background:#fff}',
+      '.lip-apercu video{max-width:100%;max-height:300px;border-radius:11px;display:block;margin-bottom:10px;background:#000}',
       '.lip-apercu img{max-width:100%;max-height:300px;border-radius:11px;display:block;margin-bottom:10px;cursor:zoom-in;box-shadow:0 2px 12px rgba(10,14,26,.12)}',
       '.lip-imgacts{display:flex;gap:8px;flex-wrap:wrap}',
       '.lip-swatch{display:flex;gap:12px;align-items:flex-start;margin-bottom:11px;font-size:12.5px;line-height:1.5;color:var(--lip-ink70)}',
@@ -374,15 +377,20 @@
   var etats = {};          // plan_id -> {sujet, statut, variante, visuel, commentaire}
   var charge = false;
 
-  function vide() { return { sujet: 0, statut: 'attente', variante: null, visuel: null, commentaire: '', image_path: '', resp: '', publie: false }; }
+  function vide() { return { sujet: 0, statut: 'attente', variante: null, visuel: null, commentaire: '', image_path: '', resp: '', publie: false, texte: '', texteCle: '' }; }
   function copieEtat(e) { return { sujet: e.sujet || 0, statut: e.statut || 'attente', variante: e.variante, visuel: e.visuel,
-    commentaire: e.commentaire || '', image_path: e.image_path || '', resp: e.resp || '', publie: !!e.publie }; }
+    commentaire: e.commentaire || '', image_path: e.image_path || '', resp: e.resp || '', publie: !!e.publie,
+    texte: e.texte || '', texteCle: e.texteCle || '' }; }
   // « Qui s'en occupe » n'a pas de colonne : il voyage en tête du commentaire
   // (« @pauline| … ») et en est retiré à la lecture. Aucun changement de table.
   var RX_RESP = /^@(pauline|will)\|\s?/;
   // « Publié » non plus : il suit, sous la forme « #publie| ». Une ancienne version
   // de l'écran le laisse intact dans le commentaire au lieu de le perdre.
   var RX_PUB = /^#publie\|\s?/;
+  // Le texte retouché à la main non plus : il voyage en QUEUE du commentaire, sous
+  // « #texte|sujet.version| », et ne vaut que pour ce sujet et cette version-là.
+  var RX_TXT = /(?:^|\n)#texte\|(\d+\.\d+)\|\n([\s\S]*)$/;
+  function lireTexte(c) { var m = RX_TXT.exec(String(c || '')); return m ? { cle: m[1], txt: m[2] } : { cle: '', txt: '' }; }
   function lireResp(c) { var m = RX_RESP.exec(String(c || '')); return m ? m[1] : ''; }
   function etat(n) { return etats[n] || vide(); }
   function localTout() { try { var o = JSON.parse(localStorage.getItem(LS) || '{}'); return (o && typeof o === 'object') ? o : {}; } catch (e) { return {}; } }
@@ -397,7 +405,8 @@
       r.data.forEach(function (x) {
         etats[x.plan_id] = { sujet: x.sujet || 0, statut: x.statut || 'attente', variante: (x.variante === null || x.variante === undefined) ? null : x.variante,
           visuel: (x.visuel === null || x.visuel === undefined) ? null : x.visuel,
-          commentaire: String(x.commentaire || '').replace(RX_RESP, '').replace(RX_PUB, ''), resp: lireResp(x.commentaire),
+          commentaire: String(x.commentaire || '').replace(RX_TXT, '').replace(RX_RESP, '').replace(RX_PUB, ''), resp: lireResp(x.commentaire),
+          texte: lireTexte(x.commentaire).txt, texteCle: lireTexte(x.commentaire).cle,
           publie: RX_PUB.test(String(x.commentaire || '').replace(RX_RESP, '')),
           image_path: x.image_path || '',
           qui: x.qui || '', updated_at: x.updated_at || null };
@@ -439,7 +448,8 @@
 
   function ligne(n, e) {
     return { plan_id: n, sujet: e.sujet || 0, statut: e.statut, variante: e.variante, visuel: e.visuel,
-      commentaire: (e.resp ? '@' + e.resp + '| ' : '') + (e.publie ? '#publie| ' : '') + (e.commentaire || ''), image_path: e.image_path || '',
+      commentaire: (e.resp ? '@' + e.resp + '| ' : '') + (e.publie ? '#publie| ' : '') + (e.commentaire || '') +
+        (e.texte ? '\n#texte|' + e.texteCle + '|\n' + e.texte : ''), image_path: e.image_path || '',
       qui: (V2.user && V2.user.email) || '', updated_at: new Date().toISOString() };
   }
 
@@ -621,13 +631,29 @@
     if (c && c.storage) { try { return c.storage.from('marketing-media').getPublicUrl(chemin).data.publicUrl; } catch (e) {} }
     return chemin;
   }
-  var MAX_IMG = 25 * 1024 * 1024;
+  var MAX_IMG = 25 * 1024 * 1024, MAX_AUTRE = 50 * 1024 * 1024;
+  var ACCEPTE = 'image/*,video/mp4,video/quicktime,video/webm,application/pdf';
+  function genreFichier(chemin) {
+    var x = String(chemin || '').split('?')[0].toLowerCase();
+    if (/\.(mp4|mov|m4v|webm)$/.test(x)) return 'video';
+    if (/\.pdf$/.test(x)) return 'doc';
+    return 'image';
+  }
+  // Le fichier du post se partage tout de suite, comme « Qui s'en occupe » : sans
+  // emporter le sujet ou le texte encore à l'essai dans la fiche.
+  function partagerFichier(chemin, msg) {
+    var s = copieEtat(etat(ouvert.n));
+    ouvert.e.image_path = chemin; s.image_path = chemin; s.sujet = sujetEff(ouvert.p, s);
+    enregistrer(ouvert.n, s).then(function () { redessineTiroir(); if (backend === 'supabase') toast(msg); });
+  }
   V2.lip.envoyerImage = function (input) {
     var f = input.files && input.files[0]; if (!f || !ouvert) return;
     var c = sb();
     if (!(c && c.storage)) { alert('Envoi impossible : vous n’êtes pas connecté à la base.\n\nReconnectez-vous, ou collez l’adresse d’une image déjà en ligne.'); input.value = ''; return; }
-    if (!/^image\//.test(f.type)) { alert('Ce fichier n’est pas une image (' + (f.type || 'type inconnu') + ').\nFormats acceptés : JPEG, PNG, WebP, GIF, AVIF.'); input.value = ''; return; }
-    if (f.size > MAX_IMG) { alert('Image trop lourde : ' + (f.size / 1048576).toFixed(1) + ' Mo.\nLa limite est de 25 Mo.'); input.value = ''; return; }
+    var estImage = /^image\//.test(f.type), genre = estImage ? 'image' : genreFichier(f.name);
+    if (!estImage && genre === 'image') { alert('Ce type de fichier n’est pas accepté (' + (f.type || 'type inconnu') + ').\nFormats acceptés : image, vidéo MP4 ou MOV, document PDF.'); input.value = ''; return; }
+    var max = estImage ? MAX_IMG : MAX_AUTRE;
+    if (f.size > max) { alert('Fichier trop lourd : ' + (f.size / 1048576).toFixed(1) + ' Mo.\nLa limite est de ' + (max / 1048576) + ' Mo.'); input.value = ''; return; }
     ouvert.envoi = 'Envoi de « ' + f.name + ' » en cours…';
     redessineTiroir();
     var ext = (f.name.match(/\.[a-zA-Z0-9]+$/) || [''])[0].toLowerCase();
@@ -635,29 +661,29 @@
     if (base.normalize) base = base.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
     base = base.replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'visuel';
     var chemin = 'linkedin/plan' + ouvert.n + '_' + Date.now() + '_' + base + ext;
-    c.storage.from('marketing-media').upload(chemin, f, { upsert: true, contentType: f.type })
+    c.storage.from('marketing-media').upload(chemin, f, { upsert: true, contentType: f.type || undefined })
       .then(function (r) {
+        if (!ouvert) return;
         ouvert.envoi = '';
         if (r && r.error) {
           var m = r.error.message || 'raison inconnue';
           if (/bucket/i.test(m)) m = 'l’espace de stockage est introuvable côté serveur';
           else if (/policy|permission|unauthor|403/i.test(m)) m = 'votre compte n’a pas le droit d’écrire ici';
           else if (/size|large|413/i.test(m)) m = 'le fichier est trop lourd pour le serveur';
-          alert('L’image n’a pas été envoyée : ' + m + '.'); redessineTiroir(); return;
+          alert('Le fichier n’a pas été envoyé : ' + m + '.'); redessineTiroir(); return;
         }
-        ouvert.e.image_path = chemin;
-        redessineTiroir();
-        toast('Visuel ajouté — pensez à enregistrer');
+        partagerFichier(chemin, 'Fichier ajouté et partagé avec l’équipe');
       })
       .catch(function (err) {
+        if (!ouvert) return;
         ouvert.envoi = '';
-        alert('L’image n’a pas été envoyée : ' + String(err.message || err).slice(0, 140) + '.');
+        alert('Le fichier n’a pas été envoyé : ' + String(err.message || err).slice(0, 140) + '.');
         redessineTiroir();
       });
   };
-  V2.lip.retirerImage = function () { if (ouvert) { ouvert.e.image_path = ''; redessineTiroir(); } };
+  V2.lip.retirerImage = function () { if (ouvert) partagerFichier('', 'Fichier retiré'); };
   V2.lip.zoomTiroir = function () {
-    if (ouvert && ouvert.e.image_path && V2.li && V2.li.zoom) V2.li.zoom(urlImage(ouvert.e.image_path), ouvert.p.titre);
+    if (ouvert && ouvert.e.image_path && genreFichier(ouvert.e.image_path) === 'image' && V2.li && V2.li.zoom) V2.li.zoom(urlImage(ouvert.e.image_path), ouvert.p.titre);
   };
 
   /* ───────────────── ce qui est proposé ───────────────── */
@@ -886,6 +912,36 @@
     return 0;
   }
 
+  // Le texte du post : celui retouché à la main s'il porte sur ce sujet et cette
+  // version, sinon la proposition d'origine.
+  function texteDe(p, e) {
+    var cur = sujetDe(p, sujetEff(p, e)), vi = varEff(cur, e);
+    if (e.texte && e.texteCle === sujetEff(p, e) + '.' + vi) return e.texte;
+    return cur.t[vi] ? cur.t[vi].txt : '';
+  }
+  function fichierHtml(e) {
+    if (ouvert.envoi) return '<div class="lip-note">' + esc(ouvert.envoi) + '</div>';
+    var choisir = function (txt) {
+      return '<label class="lip-btn" style="min-height:44px">' + txt + '<input type="file" accept="' + ACCEPTE + '" style="display:none" onchange="V2.lip.envoyerImage(this)"></label>';
+    };
+    if (!e.image_path) return choisir('Importer un fichier') +
+      '<div class="lip-hint">Image (25 Mo), vidéo MP4 ou MOV, document PDF (50 Mo). Le fichier est partagé avec l’équipe.</div>';
+    var u = esc(urlImage(e.image_path)), g = genreFichier(e.image_path);
+    var vue = g === 'video' ? '<video src="' + u + '" controls playsinline preload="metadata"></video>'
+      : g === 'doc' ? '<div class="lip-note">Document PDF : ' + esc(String(e.image_path).replace(/^.*\/plan\d+_\d+_/, '')) + '</div>'
+      : '<img src="' + u + '" alt="Visuel du post" title="Cliquez pour voir en grand" onclick="V2.lip.zoomTiroir()">';
+    return '<div class="lip-apercu">' + vue + '<div class="lip-imgacts">' +
+      (g === 'image' ? '<button type="button" class="lip-btn" onclick="V2.lip.zoomTiroir()">Voir en grand</button>'
+        : '<a class="lip-btn" href="' + u + '" target="_blank" rel="noopener">Ouvrir</a>') +
+      choisir('Changer') +
+      '<button type="button" class="lip-btn" onclick="V2.lip.retirerImage()">Retirer</button></div></div>';
+  }
+  function libelleRetenir() {
+    var e = ouvert.e, garde = etat(ouvert.n), si = sujetEff(ouvert.p, e), vi = varEff(sujetOuvert(), e);
+    var deja = garde.statut === 'valide' && (garde.sujet || 0) === si && garde.variante === vi && texteDe(ouvert.p, garde) === texteDe(ouvert.p, e);
+    return deja ? 'Texte retenu' : (garde.statut === 'valide' ? 'Texte retenu — mettre à jour' : 'Retenir ce texte');
+  }
+
   function drawerHtml() {
     var p = ouvert.p, e = ouvert.e, pl = pilier(p.p);
     // Le créneau donne la date et le pilier ; le sujet retenu donne tout le reste.
@@ -893,7 +949,7 @@
     var d = new Date(p.d + 'T12:00:00');
     var quand = JOURS[(d.getDay() + 6) % 7] + ' ' + jj(d.getDate()) + ' ' + MOIS[d.getMonth()] + ' · ' + p.h.replace(':', ' h ');
     var vi = varEff(cur, e), garde = etat(ouvert.n);
-    var dejaRetenu = garde.statut === 'valide' && (garde.sujet || 0) === si && garde.variante === vi;
+    var retouche = texteDe(p, e) !== (cur.t[vi] ? cur.t[vi].txt : '');
 
     var tuiles = S.map(function (c, i) {
       if (!sujetPermis(p, i)) return '';   // trop « métier » : voir SUJETS_METIER
@@ -925,14 +981,17 @@
           (alts() ? '' : '<div class="lip-hint">Chargement des autres sujets proposés pour cette date…</div>') +
           '<p class="lid-angle">' + esc(cur.angle) + '</p>' +
           '<div class="lid-seg" role="group" aria-label="Version du texte">' + seg + '</div>' +
-          '<div class="lid-txt">' + esc(cur.t[vi] ? cur.t[vi].txt : '') + '</div>' +
+          '<textarea class="lid-txt lid-txta" aria-label="Texte du post" oninput="V2.lip.setTexte(this.value)">' + esc(texteDe(p, e)) + '</textarea>' +
+          '<div class="lip-hint">Vous pouvez modifier ce texte. La modification est gardée quand vous retenez le texte.</div>' +
+          '<button type="button" class="lid-skip" id="lid-orig" style="display:' + (retouche ? 'block' : 'none') + '" onclick="V2.lip.texteOrigine()">Revenir au texte proposé</button>' +
           '<span class="lid-h">Idée de visuel</span><p class="lid-vis">' + esc(cur.v[e.visuel === null ? 0 : e.visuel] || cur.v[0] || '') + '</p>' +
+          '<span class="lid-h">Image, vidéo ou document du post</span>' + fichierHtml(e) +
           '<span class="lid-h">Qui s’en occupe ?</span><div class="lid-pills">' +
             QUI.map(function (q) {
               return '<button type="button" class="lid-pill" aria-pressed="' + (e.resp === q.k) + '" onclick="V2.lip.quiTiroir(\'' + q.k + '\')">' + esc(q.label) + '</button>';
             }).join('') + '</div>' +
           '<div class="lid-actions">' +
-            (e.publie ? '' : '<button type="button" class="lip-btn lip-btn-p" onclick="V2.lip.retenir()">' + (dejaRetenu ? 'Texte retenu' : (garde.statut === 'valide' ? 'Texte retenu — mettre à jour' : 'Retenir ce texte')) + '</button>') +
+            (e.publie ? '' : '<button type="button" class="lip-btn lip-btn-p" id="lid-retenir" onclick="V2.lip.retenir()">' + libelleRetenir() + '</button>') +
             '<div class="lid-row2"><button type="button" class="lip-btn" onclick="V2.lip.copier()">' + ICO('fiche', 16, 1.8) + 'Copier le texte</button>' +
               (e.publie
                 ? '<button type="button" class="lip-btn" onclick="V2.lip.marquerPublie(false)">Annuler « publié »</button>'
@@ -941,7 +1000,7 @@
               ? '<button type="button" class="lid-skip" onclick="V2.lip.ecarter(false)">Remettre ce post dans la liste</button>'
               : '<button type="button" class="lid-skip" onclick="V2.lip.ecarter(true)">Pas cette semaine</button>')) +
           '</div>' +
-          '<details class="lid-plus"' + (ouvert.plus ? ' open' : '') + ' ontoggle="V2.lip.plusOuvert(this.open)"><summary>Visuel, image et commentaire</summary>' +
+          '<details class="lid-plus"' + (ouvert.plus ? ' open' : '') + ' ontoggle="V2.lip.plusOuvert(this.open)"><summary>Idées de visuel et commentaire</summary>' +
           '<div class="lip-field"><span class="lip-flab">Choix du visuel — ' + cur.v.length + ' propositions</span>' + vis + '</div>' +
           (function () {
             var d = da();
@@ -968,17 +1027,6 @@
                 'Aucun ne fait écrire de texte par le générateur — les accents français sont ratés, la phrase se pose après.</div>' +
             '</div>';
           })() +
-          '<div class="lip-field"><span class="lip-flab">Visuel du post</span>' +
-            (ouvert.envoi
-              ? '<div class="lip-note">' + esc(ouvert.envoi) + '</div>'
-              : e.image_path
-                ? '<div class="lip-apercu"><img src="' + esc(urlImage(e.image_path)) + '" alt="Visuel du post" title="Cliquez pour voir en grand" onclick="V2.lip.zoomTiroir()">' +
-                  '<div class="lip-imgacts"><button class="lip-btn" onclick="V2.lip.zoomTiroir()">Voir en grand</button>' +
-                  '<button class="lip-btn" onclick="V2.lip.retirerImage()">Retirer le visuel</button></div></div>'
-                : '<label class="lip-btn">Envoyer une image' +
-                  '<input type="file" accept="image/*" style="display:none" onchange="V2.lip.envoyerImage(this)"></label>' +
-                  '<div class="lip-hint">JPEG, PNG, WebP, GIF ou AVIF — 25 Mo maximum. L’image est partagée avec l’équipe.</div>') +
-          '</div>' +
           '<div class="lip-field"><span class="lip-flab">Commentaire</span>' +
             '<textarea class="lip-ta" placeholder="Ce qu\'il faut changer, préciser, éviter…" oninput="V2.lip.setChamp(\'commentaire\',this.value)">' + esc(e.commentaire || '') + '</textarea>' +
             '<div class="lip-hint">Visible par toute l\'équipe.</div>' +
@@ -1271,6 +1319,16 @@
     if (champ === 'commentaire') return;          // ne pas redessiner sous les doigts
     redessineTiroir();   // conserve la position de défilement
   };
+  V2.lip.setTexte = function (v) {
+    if (!ouvert) return;
+    var e = ouvert.e, cur = sujetOuvert(), vi = varEff(cur, e), prop = cur.t[vi] ? cur.t[vi].txt : '';
+    if (v === prop || !String(v).trim()) { e.texte = ''; e.texteCle = ''; }
+    else { e.texte = v; e.texteCle = sujetEff(ouvert.p, e) + '.' + vi; }
+    // pas de redessin sous les doigts : seuls le bouton et le lien de retour suivent
+    var b = document.getElementById('lid-retenir'); if (b) b.textContent = libelleRetenir();
+    var o = document.getElementById('lid-orig'); if (o) o.style.display = e.texte ? 'block' : 'none';
+  };
+  V2.lip.texteOrigine = function () { if (ouvert) { ouvert.e.texte = ''; ouvert.e.texteCle = ''; redessineTiroir(); } };
   V2.lip.enregistrer = function () {
     if (!ouvert) return;
     var n = ouvert.n, e = ouvert.e;
@@ -1286,7 +1344,7 @@
     if (!ouvert) return;
     var cur = sujetOuvert(), i = varEff(cur, ouvert.e);
     if (!cur.t[i]) return;
-    var txt = cur.t[i].txt;
+    var txt = texteDe(ouvert.p, ouvert.e);
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(txt).then(function () { toast('Texte copié'); }, function () { window.prompt('Copiez le texte :', txt); });
     } else window.prompt('Copiez le texte :', txt);
@@ -1296,7 +1354,7 @@
     var cur = sujetOuvert(), i = varEff(cur, ouvert.e);
     if (!cur.t[i]) return;
     if (ouvert.e.statut !== 'valide' && !confirm('Ce post n’est pas encore retenu.\n\nL’ouvrir quand même dans LinkedIn ?')) return;
-    var txt = cur.t[i].txt;
+    var txt = texteDe(ouvert.p, ouvert.e);
     var suite = function () {
       window.open('https://www.linkedin.com/feed/?shareActive=true', '_blank');
       if (ouvert && ouvert.e.image_path) {
@@ -1304,7 +1362,7 @@
         // pour qu'elle soit sous la main au moment de la glisser dans le post.
         window.open(urlImage(ouvert.e.image_path), '_blank');
       }
-      toast('Texte copié. Collez-le dans LinkedIn, puis ajoutez le visuel.');
+      toast('Texte copié. Collez-le dans LinkedIn, puis ajoutez le fichier.');
     };
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(txt).then(suite, function () { window.prompt('Copiez le texte :', txt); suite(); });
@@ -1320,7 +1378,7 @@
   V2.lip.exportCsv = function () {
     var P = plan(); if (!P) return;
     var q = function (s) { return '"' + String(s == null ? '' : s).replace(/"/g, '""') + '"'; };
-    var l = [['N','Date','Heure','Pilier','Sujet retenu','Format','Titre','Angle','Statut','Qui','Texte choisi','Visuel choisi','Commentaire','Hashtags','Texte 1','Texte 2','Texte 3','Visuel 1','Visuel 2','Autres sujets proposés'].map(q).join(';')];
+    var l = [['N','Date','Heure','Pilier','Sujet retenu','Format','Titre','Angle','Statut','Qui','Texte choisi','Visuel choisi','Commentaire','Hashtags','Texte 1','Texte 2','Texte 3','Visuel 1','Visuel 2','Autres sujets proposés','Texte modifié'].map(q).join(';')];
     P.filter(visible).forEach(function (p) {
       var e = etat(p.n), S = sujetsDe(p), si = sujetEff(p, e), c = S[si] || S[0];
       var autres = S.filter(function (x, i) { return i !== si && sujetPermis(p, i); })
@@ -1330,7 +1388,7 @@
         e.visuel === null ? '' : 'Visuel ' + (e.visuel + 1),
         e.commentaire || '', c.tags,
         c.t[0] ? c.t[0].txt : '', c.t[1] ? c.t[1].txt : '', c.t[2] ? c.t[2].txt : '',
-        c.v[0] || '', c.v[1] || '', autres].map(q).join(';'));
+        c.v[0] || '', c.v[1] || '', autres, texteDe(p, e) !== ((c.t[varEff(c, e)] || {}).txt || '') ? texteDe(p, e) : ''].map(q).join(';'));
     });
     var blob = new Blob(['﻿' + l.join('\r\n')], { type: 'text/csv;charset=utf-8' });
     var a = document.createElement('a');
