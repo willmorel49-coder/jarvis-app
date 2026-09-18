@@ -365,9 +365,9 @@
 
   function chargerEtats() {
     var c = sb();
-    if (!c) { backend = 'local'; etats = localTout(); return Promise.resolve(etats); }
+    if (!c) { backend = 'local'; etats = localTout(); reessayer(); return Promise.resolve(etats); }
     return c.from('linkedin_plan_valid').select('*').then(function (r) {
-      if (r.error || !r.data) { backend = 'local'; etats = localTout(); return etats; }
+      if (r.error || !r.data) { backend = 'local'; etats = localTout(); reessayer(); return etats; }
       backend = 'supabase'; etats = {};
       r.data.forEach(function (x) {
         etats[x.plan_id] = { sujet: x.sujet || 0, statut: x.statut || 'attente', variante: (x.variante === null || x.variante === undefined) ? null : x.variante,
@@ -378,7 +378,21 @@
       });
       remonterLocal();
       return etats;
-    }).catch(function () { backend = 'local'; etats = localTout(); return etats; });
+    }).catch(function () { backend = 'local'; etats = localTout(); reessayer(); return etats; });
+  }
+
+  // 18/09/2026 — une lecture ratée à l'ouverture (coupure de quelques secondes)
+  // laissait TOUTE la session en repli local : les choix de l'un restaient
+  // invisibles pour l'autre jusqu'à la visite suivante. On réessaie toutes les
+  // 20 s tant qu'on est sur l'écran ; ailleurs, on relira à la prochaine ouverture.
+  var relance = null;
+  function reessayer() {
+    if (relance) return;
+    relance = setTimeout(function () {
+      relance = null;
+      if (!(V2.route && V2.route.name === 'marketing' && V2.route.param === 'linkedin')) { charge = false; return; }
+      chargerEtats().then(function () { if (backend === 'supabase') redessine(); });
+    }, 20000);
   }
 
   // Un repli local antérieur ne doit pas rester orphelin : on le remonte une fois.
@@ -392,6 +406,7 @@
       if (r.error) return;                       // on garde le repli, rien n'est perdu
       manquants.forEach(function (id) { etats[id] = loc[id]; });
       localEcrire({});
+      redessine();
       toast(manquants.length + ' validation(s) de cet ordinateur partagée(s) avec l\'équipe');
     }).catch(function () {});
   }
