@@ -2263,7 +2263,8 @@
       else if (param === 'fxbank') renderFxBank(root);
       else if (param === 'docs') renderDocs(root);
       else if (param === 'linkedin') { if (V2.mktLinkedin) V2.mktLinkedin.render(root); else root.innerHTML = ''; }
-      else if (param) renderEditor(root, param); else renderList(root);
+      // 18/09/2026 (lot 1) — `fiches` = l'onglet « Fiches » de la barre Marketing, pas un id de fiche.
+      else if (param && param !== 'fiches') renderEditor(root, param); else renderList(root);
     }
   };
   V2.mktReload = function () { items = null; docs = null; };
