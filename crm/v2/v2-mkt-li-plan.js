@@ -251,14 +251,14 @@
      Les 48 créneaux des trois piliers « métier » restent dans les données mais
      ne sont plus proposés. SUJETS_METIER retire en plus, dans les piliers gardés,
      les sujets qui racontent l'entrepôt ou le froid (créneau -> n° de sujet). */
-  var PILIERS_OK = { sante: 1, depistage: 1, vaccin: 1 };
+  var PILIERS_OK = { sante: 1, depistage: 1, vaccin: 1, rse: 1, pharmaciens: 1 };
   var SUJETS_METIER = { 7: [0], 14: [2], 17: [1], 31: [2], 42: [0], 52: [1], 66: [0, 1, 2], 101: [0, 1] };
   var MAX_SEM = 2;
   var QUI = [{ k: 'pauline', label: 'Pauline' }, { k: 'will', label: 'Will' }];
-  var REGLE_OUI = 'journées et mois de sensibilisation, prévention, dépistage, vaccination, soutien aux pharmaciens et aux patients.';
+  var REGLE_OUI = 'journées et mois de sensibilisation, prévention, dépistage, vaccination, solidarité, soutien aux pharmaciens et aux patients.';
   var REGLE_NON = 'le détail de notre métier (chaîne du froid, logistique, entrepôt, tournées), les prix, les réformes, les confrères.';
   function quiLabel(k) { for (var i = 0; i < QUI.length; i++) if (QUI[i].k === k) return QUI[i].label; return ''; }
-  function sujetPermis(p, i) { var x = SUJETS_METIER[p.n]; return !(x && x.indexOf(i) >= 0); }
+  function sujetPermis(p, i) { if (p.rempl) return true; var x = SUJETS_METIER[p.n]; return !(x && x.indexOf(i) >= 0); }   // un créneau remplacé (66) ne porte plus les sujets retirés
   // Le sujet affiché : celui choisi s'il est permis, sinon le premier permis.
   function sujetEff(p, e) {
     var i = e.sujet || 0;
