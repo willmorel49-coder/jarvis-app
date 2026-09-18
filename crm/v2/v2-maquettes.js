@@ -344,7 +344,7 @@
                   'n\'imitent personne — chacune part d\'un phénomène (un fluide, une lumière, une horlogerie) ' +
                   'qui devient la mécanique de toute la page.</p>'
                 : '<p>La version unique, retenue le 28/08/2026 : la base Cimaise et les morceaux préférés des autres ' +
-                  'directions. Ouvre-la en vrai : elle défile, la carte pousse depuis Hyères, la page RSE suit le soleil. ' +
+                  'directions. Ouvre-la en vrai : elle défile, la carte en relief ouvre la fiche de chaque agence, la page RSE suit le soleil. ' +
                   'Ce n\'est pas une image.</p>') +
               '<p>Mets une note sur 10, et surtout <b>écris ce qui va ou ne va pas</b> : ' +
               'la note dit que le site plaît, elle ne dit jamais quoi corriger.</p>' +

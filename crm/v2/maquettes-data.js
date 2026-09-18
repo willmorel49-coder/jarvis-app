@@ -11,5 +11,5 @@ window.MAQUETTES_SITE = [
   { id:'site-2026', n:1, nom:'Le site', source:'Version unique — base Cimaise',
     geste:'L\'accueil et la page RSE. La carte en relief du réseau ouvre la fiche de chaque agence ; la page RSE traverse une journée, du toit solaire du siège au comptoir.',
     page:'../../site-integral/site-2026/index.html',
-    apercu:'../../site-integral/site-2026/vignette.jpg?v=20260918a' }
+    apercu:'../../site-integral/site-2026/vignette.jpg?v=20260918b' }
 ];
