@@ -67,7 +67,9 @@
     aime: '<path d="M7 11v9H4v-9zM7 11l4-7c2 0 3 1 2.5 3.5L13 10h5c1.5 0 2.3 1.2 2 2.5l-1.4 6c-.3 1-1 1.5-2 1.5H7"/>',
     commente: '<path d="M4 5h16v11H10l-4 4v-4H4z"/>',
     republie: '<path d="M7 7h11l-3-3M17 17H6l3 3M18 7v5M6 17v-5"/>',
-    envoie: '<path d="M20 4L3 11l6 3 3 6zM9 14l5-5"/>'
+    envoie: '<path d="M20 4L3 11l6 3 3 6zM9 14l5-5"/>',
+    // lot 6 — Catalogue & prix
+    filtres: '<path d="M4 7h9M19 7h1M4 17h1M11 17h9"/><circle cx="16" cy="7" r="2.5"/><circle cx="8" cy="17" r="2.5"/>'
   };
   function ic(n, s, w) {
     return '<svg width="' + (s || 20) + '" height="' + (s || 20) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' + (w || 1.75) +

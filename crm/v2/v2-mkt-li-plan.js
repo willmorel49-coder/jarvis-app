@@ -51,11 +51,11 @@
       '.lip-sel,.lip-inp{height:36px;padding:0 12px;border-radius:9px;border:1px solid var(--lip-line);background:var(--lip-panel);font-family:inherit;font-size:13.5px;font-weight:600;line-height:1;color:var(--lip-ink70)}',
       '.lip-inp{min-width:190px;font-weight:500}',
       '.lip-inp:focus,.lip-sel:focus{outline:2px solid var(--lip-blue);outline-offset:1px}',
-      '.lip-chip{display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 12px;border-radius:20px;border:1px solid var(--lip-line);background:var(--lip-panel);font-family:inherit;font-size:12.5px;font-weight:600;line-height:1;color:var(--lip-ink70);cursor:pointer;transition:all .15s var(--lip-ease)}',
+      '.lip-chip{display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 12px;border-radius:20px;border:1px solid var(--lip-line);background:var(--lip-panel);font-family:inherit;font-size:12.5px;font-weight:600;line-height:1;color:var(--lip-ink70);cursor:pointer;transition:background-color .15s var(--lip-ease),border-color .15s var(--lip-ease),color .15s var(--lip-ease)}',
       '.lip-chip .lip-cd{width:9px;height:9px;border-radius:50%;flex:none}',
       '.lip-chip.off{opacity:.38}',
       '.lip-chip:hover{border-color:#d3dae4}',
-      '.lip-btn{display:inline-flex;align-items:center;gap:7px;min-height:36px;padding:0 14px;border-radius:9px;border:1px solid var(--lip-line);background:var(--lip-panel);font-family:inherit;font-size:13.5px;font-weight:600;line-height:1;color:var(--lip-ink70);cursor:pointer;transition:all .15s var(--lip-ease)}',
+      '.lip-btn{display:inline-flex;align-items:center;gap:7px;min-height:36px;padding:0 14px;border-radius:9px;border:1px solid var(--lip-line);background:var(--lip-panel);font-family:inherit;font-size:13.5px;font-weight:600;line-height:1;color:var(--lip-ink70);cursor:pointer;transition:background-color .15s var(--lip-ease),border-color .15s var(--lip-ease),color .15s var(--lip-ease),transform .15s var(--lip-ease)}',
       '.lip-btn:hover{background:var(--lip-bg);color:var(--lip-ink)}',
       '.lip-btn-p{background:var(--lip-blue);border-color:var(--lip-blue);color:#fff;font-weight:700;box-shadow:0 4px 14px rgba(0,87,255,.24)}',
       '.lip-btn-p:hover{background:#0047d6;color:#fff;transform:translateY(-1px)}',
@@ -279,7 +279,7 @@
 
 
       /* variantes */
-      '.lip-var{border:1.5px solid var(--lip-line);border-radius:12px;padding:14px 15px;margin-bottom:10px;cursor:pointer;background:#fff;transition:all .15s var(--lip-ease);position:relative}',
+      '.lip-var{border:1.5px solid var(--lip-line);border-radius:12px;padding:14px 15px;margin-bottom:10px;cursor:pointer;background:#fff;transition:border-color .15s var(--lip-ease),background-color .15s var(--lip-ease);position:relative}',
       '.lip-var:hover{border-color:#c9d3e2;background:#fcfdff}',
       '.lip-var.on{border-color:var(--lip-blue);background:var(--lip-blue050);box-shadow:0 0 0 3px rgba(0,87,255,.09)}',
       '.lip-vtop{display:flex;align-items:center;gap:9px;margin-bottom:9px}',
@@ -291,11 +291,7 @@
       '.lip-empty{text-align:center;padding:60px 20px;color:var(--lip-ink35);font-size:14px}',
 
       /* ── veille ── */
-      '.lip-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(238px,1fr));gap:14px;margin:16px 0 8px}',
       '.lip-scard{background:var(--lip-panel);border:1px solid var(--lip-line);border-radius:14px;padding:16px 17px;box-shadow:var(--lip-sh)}',
-      '.lip-scard.nous{border-color:var(--lip-blue);box-shadow:0 0 0 3px rgba(0,87,255,.08),var(--lip-sh)}',
-      '.lip-snom{font-size:14.5px;font-weight:800;letter-spacing:-.01em;margin-bottom:2px;line-height:1.3}',
-      '.lip-sab{font-size:12px;color:var(--lip-ink35);font-weight:600;margin-bottom:12px}',
       '.lip-srow{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:5px 0;border-bottom:1px solid var(--lip-line2);font-size:12.5px}',
       '.lip-srow:last-child{border-bottom:none}',
       '.lip-sk{color:var(--lip-ink50)}',
@@ -322,6 +318,96 @@
       '.lip-ptxt.clamp{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}',
       '.lip-plus{border:0;background:transparent;color:var(--lip-blue);font-family:inherit;font-size:12.5px;font-weight:700;line-height:1;cursor:pointer;padding:8px 0 0}',
       '.lip-load{text-align:center;padding:50px 20px;color:var(--lip-ink35);font-size:14px}',
+      /* ═══ LOT 6 (19/09/2026) — la veille dans les jetons de l'espace Marketing (.lpv). Les règles .lip-* ci-dessus restent la base ;
+         ici : l'échelle 34/22/16/15/13, les élévations du socle, aucun texte sous 13 px, aucune cible sous 44 px. ═══ */
+      '#v2-root .lip.lpv{max-width:1320px;padding:32px 32px 96px;color:var(--mk-encre)}',
+      '.lpv-entete{margin-bottom:24px}',
+      '.lpv-entete h1{margin:0;font-size:var(--mk-s1);line-height:var(--mk-s1l);font-weight:700;letter-spacing:-.02em}',
+      '.lpv-entete p{margin:8px 0 0;max-width:80ch;color:var(--mk-attenue)}',
+      '.lpv .lpv-onglets{max-width:520px;margin:0 0 32px}',
+      '.lpv h2{margin:0;font-size:var(--mk-s2);line-height:var(--mk-s2l);font-weight:700;letter-spacing:-.015em;color:var(--mk-encre)}',
+      '.lpv .lip-sect{margin:48px 0 0}',
+      '.lpv .lip-sect h2{font-size:var(--mk-s2);line-height:var(--mk-s2l);font-weight:700;margin:0}',
+      '.lpv-sd{margin:8px 0 0;max-width:88ch;color:var(--mk-attenue);font-size:var(--mk-s4);line-height:var(--mk-s4l)}',
+      '.lpv-sd b{color:var(--mk-encre);font-weight:650}',
+      '.lpv-focal{padding:28px 32px 12px}',
+      '.lpv-tete3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;margin:24px 0 8px}',
+      '.lpv-ecart{display:grid;gap:2px;padding:0 24px;border-left:1px solid var(--mk-trait)}',
+      '.lpv-ecart:first-child{padding-left:0;border-left:0}',
+      '.lpv-ecart b{font-size:48px;line-height:52px;font-weight:700;letter-spacing:-.03em;color:var(--mk-bleu)}',
+      '.lpv-ecart b small{font-size:var(--mk-s3);font-weight:600;letter-spacing:0;color:var(--mk-attenue)}',
+      '.lpv-ecart span{font-size:var(--mk-s3);line-height:var(--mk-s3l);font-weight:650;color:var(--mk-encre)}',
+      '.lpv-ecart em{font-style:normal;font-size:var(--mk-s5);line-height:var(--mk-s5l);color:var(--mk-attenue)}',
+      '.lpv-plus{margin:4px 0 12px}',
+      '.lpv-plus summary{display:inline-flex;align-items:center;min-height:44px;font-size:var(--mk-s5);font-weight:600;color:var(--mk-bleu-txt);cursor:pointer;list-style:none}',
+      '.lpv-plus summary::-webkit-details-marker{display:none}',
+      '.lpv-plus[open] summary{color:var(--mk-attenue)}',
+      '.lpv-plus p{margin:0 0 8px;max-width:88ch;font-size:var(--mk-s5);line-height:20px;color:var(--mk-encre2)}',
+      '.lpv-avis{display:flex;flex-wrap:wrap;align-items:center;gap:0 8px;margin-top:12px;color:var(--mk-encre2)}',
+      '.lpv-avis>svg{flex:none;color:var(--mk-ambre)}',
+      '.lpv-avis>p{margin:0;flex:1 1 0;min-width:0;font-size:var(--mk-s5);line-height:var(--mk-s5l);font-weight:550}',
+      '.lpv-avis .lpv-plus{flex:1 1 100%;margin:0;padding-left:26px}',
+      '.lpv-carte{margin-top:16px;padding:8px 24px;overflow:hidden}',
+      '.lpv-pages{width:100%;border-collapse:collapse}',
+      '.lpv-pages th,.lpv-pages td{padding:12px;border-bottom:1px solid var(--mk-trait);text-align:left;vertical-align:middle}',
+      '.lpv-pages thead th{padding:8px 12px;font-size:var(--mk-s5);line-height:var(--mk-s5l);font-weight:600;color:var(--mk-attenue);white-space:nowrap}',
+      '.lpv-pages .num{text-align:right}',
+      '.lpv-pages tbody th{font-size:var(--mk-s4);font-weight:650;color:var(--mk-encre)}',
+      '.lpv-pages tbody td{font-size:var(--mk-s3);font-weight:600;color:var(--mk-encre)}',
+      '.lpv-pages tbody tr:last-child th,.lpv-pages tbody tr:last-child td{border-bottom:0}',
+      '.lpv-pages tr.nous th,.lpv-pages tr.nous td{background:var(--mk-pale);color:var(--mk-bleu-txt)}',
+      '.lpv-pages tr.nous th{border-radius:10px 0 0 10px}.lpv-pages tr.nous td:last-child{border-radius:0 10px 10px 0}',
+      '.lpv-pages th:first-child{padding-left:12px}',
+      '.lpv-duo{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0 32px;align-items:start}',
+      '.lpv-duo-serre{margin-top:16px}',
+      '.lpv .lip-tblwrap{margin-top:16px;overflow:hidden;border:1px solid var(--mk-trait);border-radius:16px;box-shadow:var(--mk-n1)}',
+      '.lpv-focal .lip-tblwrap{margin:0 -12px;border:0;box-shadow:none;background:none;border-radius:0}',
+      '.lpv .lip-tbl{min-width:0;font-size:var(--mk-s4)}',
+      '.lpv .lip-tbl th{padding:10px 12px;font-size:var(--mk-s5);line-height:var(--mk-s5l);font-weight:600;letter-spacing:0;text-transform:none;color:var(--mk-attenue);border-bottom-color:var(--mk-trait)}',
+      '.lpv .lip-tbl td{padding:10px 12px;border-bottom-color:var(--mk-trait)}',
+      '.lpv .lip-tbl td.num{font-weight:600;white-space:nowrap}',
+      '.lpv .lip-tbl td:last-child:not(.num){width:30%}',
+      '.lpv .lip-gap{padding:2px 10px;font-size:var(--mk-s5);line-height:var(--mk-s5l);font-weight:650}',
+      '.lpv .lip-gap.plus{background:var(--mk-pale);color:var(--mk-bleu-txt)}',
+      '.lpv .lip-gap.moins{background:var(--mk-groupe);color:var(--mk-encre2)}',
+      '.lpv .lip-mini{background:var(--mk-bleu)}',
+      '.lpv .lip-tools{margin:0 0 16px;gap:8px}',
+      '.lpv .lip-sel,.lpv .lip-inp{height:44px;border-radius:var(--mk-r-vig);border:1px solid var(--mk-trait);box-shadow:var(--mk-n1);font-size:16px;color:var(--mk-encre)}',
+      '.lpv .lip-inp{flex:1 1 280px;max-width:480px}',
+      '.lpv .lip-lab{font-size:var(--mk-s5);letter-spacing:0;text-transform:none;font-weight:600;color:var(--mk-attenue)}',
+      '.lpv .lip-post{padding:16px 20px;margin-bottom:12px;border:1px solid var(--mk-trait);border-radius:16px;box-shadow:var(--mk-n1)}',
+      '.lpv .lip-pmeta{font-size:var(--mk-s5);line-height:var(--mk-s5l);gap:4px 12px}',
+      '.lpv .lip-psrc{padding:2px 10px;background:var(--mk-pale);color:var(--mk-bleu-txt);font-weight:650}',
+      '.lpv .lip-pdate,.lpv .lip-fmt{color:var(--mk-attenue);font-weight:500;font-size:var(--mk-s5)}',
+      '.lpv .lip-peng{color:var(--mk-encre);font-weight:650}',
+      '.lpv .lip-ptxt{font-size:var(--mk-s4);line-height:var(--mk-s4l);color:var(--mk-encre2)}',
+      '.lpv .lip-tags{font-size:var(--mk-s5);color:var(--mk-attenue)}',
+      '.mk-espace.lpv .lip-plus{min-height:44px;padding:0;font-size:var(--mk-s5);font-weight:600;color:var(--mk-bleu-txt)}',
+      '.lpv .lip-empty,.lpv .lip-load{font-size:var(--mk-s4);color:var(--mk-attenue)}',
+      '@media (max-width:860px){',
+      '#v2-root .lip.lpv{padding:20px 16px 48px}',
+      '.lpv .lpv-onglets{max-width:none;margin-bottom:24px}',
+      '.mk-espace.lpv .lpv-onglets button{padding:0 4px;font-size:var(--mk-s5)}',
+      '.lpv-focal{padding:20px 16px 8px}',
+      '.lpv-tete3{grid-template-columns:1fr;gap:16px;margin:16px 0 8px}',
+      '.lpv-ecart{grid-template-columns:104px minmax(0,1fr);gap:0 12px;padding:0;border-left:0;align-items:center}',
+      '.lpv-ecart b{grid-row:1/3;font-size:34px;line-height:38px}',
+      '.lpv-focal .lip-tblwrap{margin:0 -6px}',
+      '.lpv .lip-tbl th,.lpv .lip-tbl td{padding:10px 6px}',
+      '.lpv .lip-tbl td:last-child:not(.num){width:56px!important}.lpv .lip-tbl th{white-space:normal}',
+      '.lpv .lip-tbl .lip-gap{white-space:nowrap}',
+      '.lpv-duo{grid-template-columns:minmax(0,1fr)}',
+      '.lpv-carte{padding:4px 16px}',
+      '.lpv-pages,.lpv-pages tbody{display:block}.lpv-pages thead{display:none}',
+      '.lpv-pages tbody tr{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 12px;padding:16px 0;border-bottom:1px solid var(--mk-trait)}',
+      '.lpv-pages tbody tr:last-child{border-bottom:0}',
+      '.lpv-pages tbody th,.lpv-pages tbody td,.lpv-pages tbody td.num{display:block;padding:0;border:0;text-align:left}',
+      '.lpv-pages tbody th{grid-column:1/4}',
+      '.lpv-pages td[data-l]::before{content:attr(data-l);display:block;font-size:var(--mk-s5);line-height:var(--mk-s5l);font-weight:450;color:var(--mk-attenue)}',
+      '.lpv-pages tr.nous{margin:0 -8px;padding:16px 8px;border-radius:12px;background:var(--mk-pale)}',
+      '.lpv-pages tr.nous th,.lpv-pages tr.nous td{background:none;border-radius:0}',
+      '.lpv .lip-inp{max-width:none}',
+      '}',
 
       /* mobile */
       '@media(max-width:760px){',
@@ -1057,15 +1143,14 @@
     var barre = V2.topbar ? V2.topbar({ back: true, backTo: 'marketing', backLabel: 'Marketing' }) : '';
     // Lot 3 : l'écran des posts porte son propre en-tête, dans les jetons de l'espace Marketing. La veille garde le sien.
     if (vue !== 'veille') return barre + '<div class="lip lpo mk-espace">' + corps + '</div>';
-    var seg = (V2.mktLinkedin && V2.mktLinkedin.viewSeg) ? V2.mktLinkedin.viewSeg() : '';
-    var titre = 'Veille secteur — 12 mois';
-    var sous = 'Ce que publient CERP, OCP, Sagitta Pharma et nous. ' + ((V() && V().nbPosts) || '—') + ' posts relevés, réactions et commentaires compris.';
+    // Lot 6 : la veille entre dans les jetons de l'espace. Le retour aux posts = l'onglet « Posts » de la barre, toujours visible.
+    var v = V();
+    var releve = v ? ' Relevé le ' + v.captureUTC.slice(8, 10) + '/' + v.captureUTC.slice(5, 7) + '/' + v.captureUTC.slice(0, 4) + '.' : '';
     return barre +
-      '<div class="lip">' +
-        '<div class="lip-head" style="display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap">' +
-          '<div style="flex:1;min-width:220px"><h1 class="lip-h1">' + esc(titre) + '</h1>' +
-          '<div class="lip-sub">' + esc(sous) + '</div></div>' + seg +
-        '</div>' + corps +
+      '<div class="lip lpv mk-espace">' +
+        '<header class="lpv-entete"><h1>Veille secteur</h1>' +
+        '<p>' + esc('Ce que publient CERP, OCP, Sagitta Pharma et nous : ' + ((v && v.nbPosts) || '—') + ' posts sur 12 mois, réactions et commentaires compris.' + releve) + '</p></header>' +
+        corps +
       '</div>';
   }
 
@@ -1469,20 +1554,34 @@
 
   function srcNom(k) { var v = V(); for (var i = 0; i < v.sources.length; i++) if (v.sources[i].k === k) return v.sources[i].nom; return k; }
 
-  function cartesSources() {
+  // 19/09/2026 (lot 6) — les cinq pages côte à côte, en un tableau dense (plus de carte orpheline sur un second rang).
+  function tableauPages() {
     var v = V();
-    return '<div class="lip-grid">' + v.sources.map(function (s) {
-      return '<div class="lip-scard' + (s.nous ? ' nous' : '') + '">' +
-        '<div class="lip-snom">' + esc(s.nom) + '</div>' +
-        '<div class="lip-sab">' + s.abonnes.toLocaleString('fr-FR') + ' abonnés</div>' +
-        '<div class="lip-srow"><span class="lip-sk">Posts sur 12 mois</span><span class="lip-sv">' + s.n + '</span></div>' +
-        '<div class="lip-srow"><span class="lip-sk">Par semaine</span><span class="lip-sv">' + s.parSemaine.toFixed(2).replace('.', ',') + '</span></div>' +
-        '<div class="lip-srow"><span class="lip-sk">Réactions (médiane)</span><span class="lip-sv">' + s.reactMed + '</span></div>' +
-        '<div class="lip-srow"><span class="lip-sk">Partages (médiane)</span><span class="lip-sv">' + s.partMed + '</span></div>' +
-        '<div class="lip-srow"><span class="lip-sk">Engagement /1000 ab.</span><span class="lip-sv">' + String(s.engPour1000).replace('.', ',') + '</span></div>' +
-        '</div>';
+    var cols = [['Abonnés', function (s) { return s.abonnes.toLocaleString('fr-FR'); }],
+      ['Posts sur 12 mois', function (s) { return s.n; }],
+      ['Par semaine', function (s) { return s.parSemaine.toFixed(2).replace('.', ','); }],
+      ['Réactions (médiane)', function (s) { return s.reactMed; }],
+      ['Partages (médiane)', function (s) { return s.partMed; }],
+      ['Engagement /1000 ab.', function (s) { return String(s.engPour1000).replace('.', ','); }]];
+    return '<div class="lpv-carte mk-souleve"><table class="lpv-pages"><thead><tr><th>Page</th>' +
+      cols.map(function (c) { return '<th class="num">' + esc(c[0]) + '</th>'; }).join('') + '</tr></thead><tbody>' +
+      v.sources.map(function (s) {
+        return '<tr' + (s.nous ? ' class="nous"' : '') + '><th scope="row">' + esc(s.nom) + '</th>' +
+          cols.map(function (c) { return '<td class="num" data-l="' + esc(c[0]) + '">' + c[1](s) + '</td>'; }).join('') + '</tr>';
+      }).join('') + '</tbody></table></div>';
+  }
+
+  // Les trois plus grands écarts, en tête d'écran : la réponse à « et donc ? ». Rien d'inventé : lu dans v.ecarts.
+  function ecartsEnTete() {
+    var v = V();
+    var l = v.ecarts.filter(function (e) { return e.ecart > 0; }).sort(function (a, b) { return b.ecart - a.ecart; }).slice(0, 3);
+    if (!l.length) return '';
+    return '<div class="lpv-tete3">' + l.map(function (e) {
+      return '<div class="lpv-ecart"><b>+' + e.ecart + '<small> pts</small></b><span>' + esc(e.th) + '</span>' +
+        '<em>nous ' + e.nous + ' % · confrères ' + e.conc + ' %</em></div>';
     }).join('') + '</div>';
   }
+  function plus(texte) { return '<details class="lpv-plus"><summary>En savoir plus</summary><p>' + texte + '</p></details>'; }
 
   function tableauEcarts() {
     var v = V();
@@ -1515,31 +1614,39 @@
 
   function renderVeilleSynthese() {
     var v = V(), a = v.agregats;
-    var nous = null; v.sources.forEach(function (s) { if (s.nous) nous = s; });
     var meilleurJour = Object.keys(a.jourConc).sort(function (x, y) { return a.jourConc[y][1] - a.jourConc[x][1]; })[0];
     var meilleureHeure = Object.keys(a.heureConc).sort(function (x, y) { return a.heureConc[y][1] - a.heureConc[x][1]; })[0];
-    return cartesSources() +
+    var nous = null; v.sources.forEach(function (s) { if (s.nous) nous = s; });
+    return '<section class="lpv-focal mk-souleve"><h2>Ce que les confrères couvrent et pas nous</h2>' +
+      '<p class="lpv-sd">Les trois plus grands écarts, en points de part des posts. Un écart positif est un angle qu\'ils occupent et que nous laissons vide ; ' +
+      'ce n\'est pas une consigne : à confronter à notre ligne éditoriale.</p>' +
+      ecartsEnTete() +
+      plus('Part des posts qui abordent chaque thème. « Confrères » = moyenne de CERP, CERP Bretagne Atlantique, OCP Répartition et Sagitta Pharma. ' +
+        '<b>Comment c\'est calculé :</b> par mots-clés dans le texte des posts. Un post peut compter dans plusieurs thèmes, et le classement reste approximatif — ' +
+        'à lire comme un ordre de grandeur, pas comme un décompte exact. Les écarts de plus de 20 points sont robustes ; ceux de 3 à 7 points ne le sont pas.') +
+      tableauEcarts() + '</section>' +
+      '<section class="lip-sect"><h2>Les cinq pages, côte à côte</h2>' +
+      tableauPages() +
       // Sans cet avertissement, « 53,7 contre 2,5 » se lit comme une victoire.
       // C'est un artefact : sur 564 abonnés dont une part de collègues, le taux
       // monte mécaniquement. Un chiffre qu'on ne sait pas lire vaut mieux écrit.
-      '<p class="lip-sd" style="margin:10px 0 0">⚠️ L\'engagement pour 1000 abonnés n\'est pas un classement. ' +
-      'Sur une petite base — 564 abonnés, dont une partie de collègues et de partenaires — ce taux monte ' +
-      'mécaniquement. Il sert à comparer des <b>thèmes</b> et des <b>formats</b> entre eux, pas des pages entre elles.</p>' +
-      '<div class="lip-sect"><h2>Ce que les confrères couvrent et pas nous</h2>' +
-      '<p class="lip-sd">Part des posts qui abordent chaque thème. « Confrères » = moyenne de CERP, CERP Bretagne Atlantique, OCP Répartition et Sagitta Pharma. Un écart positif est un angle qu\'ils occupent et que nous laissons vide.<br>' +
-      '<b>Comment c\'est calculé :</b> par mots-clés dans le texte des posts. Un post peut compter dans plusieurs thèmes, et le classement reste approximatif — ' +
-      'à lire comme un ordre de grandeur, pas comme un décompte exact. Les écarts de plus de 20 points sont robustes ; ceux de 3 à 7 points ne le sont pas.</p>' +
-      tableauEcarts() + '</div>' +
-      '<div class="lip-sect"><h2>Quel thème fait réagir</h2>' +
-      '<p class="lip-sd">Engagement médian rapporté à 1000 abonnés, chez les confrères uniquement (notre page est trop petite pour être comparée brut). Les coulisses logistiques arrivent en tête — et c\'est justement notre plus gros angle mort.</p>' +
-      tableauMed('Thème', a.themeConc, function (k) { return k; }) + '</div>' +
-      '<div class="lip-sect"><h2>Quel format fait réagir</h2>' +
-      tableauMed('Format', a.formatConc, function (k) { return k; }) + '</div>' +
-      '<div class="lip-sect"><h2>Quand publier</h2>' +
-      '<p class="lip-sd">Le meilleur jour mesuré est le <b>' + esc(JOURS[parseInt(meilleurJour, 10)].toLowerCase()) + '</b> et le meilleur créneau <b>' + meilleureHeure + 'h–' + (parseInt(meilleureHeure, 10) + 1) + 'h</b>. C\'est exactement sur ces créneaux qu\'est calé le rétro-planning : mardi 11h et jeudi 9h30.</p>' +
+      '<div class="lpv-avis">' + ICO('alert', 18, 2) + '<p>L\'engagement pour 1000 abonnés n\'est pas un classement : sur une petite base, il monte mécaniquement.</p>' +
+      plus('Sur une petite base — ' + (nous ? nous.abonnes.toLocaleString('fr-FR') : '') + ' abonnés, dont une partie de collègues et de partenaires — ce taux monte ' +
+        'mécaniquement. Il sert à comparer des <b>thèmes</b> et des <b>formats</b> entre eux, pas des pages entre elles.') + '</div></section>' +
+      '<div class="lpv-duo">' +
+      '<section class="lip-sect"><h2>Quel thème fait réagir</h2>' +
+      '<p class="lpv-sd">Engagement médian pour 1000 abonnés, chez les confrères uniquement. Les coulisses logistiques arrivent en tête — notre plus gros angle mort.</p>' +
+      plus('Notre page est trop petite pour être comparée brut : seuls les confrères entrent dans ce calcul.') +
+      tableauMed('Thème', a.themeConc, function (k) { return k; }) + '</section>' +
+      '<section class="lip-sect"><h2>Quel format fait réagir</h2>' +
+      '<p class="lpv-sd">Même mesure, par format de post.</p>' +
+      tableauMed('Format', a.formatConc, function (k) { return k; }) + '</section>' +
+      '</div>' +
+      '<section class="lip-sect"><h2>Quand publier</h2>' +
+      '<p class="lpv-sd">Le meilleur jour mesuré est le <b>' + esc(JOURS[parseInt(meilleurJour, 10)].toLowerCase()) + '</b> et le meilleur créneau <b>' + meilleureHeure + 'h–' + (parseInt(meilleureHeure, 10) + 1) + 'h</b>. Le rétro-planning est calé sur ces créneaux : mardi 11h et jeudi 9h30.</p>' +
+      '<div class="lpv-duo lpv-duo-serre">' +
       tableauMed('Jour', a.jourConc, function (k) { return JOURS[parseInt(k, 10)]; }) +
-      '<div style="height:14px"></div>' +
-      tableauMed('Créneau', a.heureConc, function (k) { return k + 'h – ' + (parseInt(k, 10) + 1) + 'h'; }) + '</div>';
+      tableauMed('Créneau', a.heureConc, function (k) { return k + 'h – ' + (parseInt(k, 10) + 1) + 'h'; }) + '</div></section>';
   }
 
   function renderVeillePosts() {
@@ -1590,7 +1697,7 @@
         '<input class="lip-inp" type="search" placeholder="Rechercher dans les ' + (v.nbPosts || 0) + ' posts…" value="' + esc(veilleVue.q) + '" oninput="V2.lip.setVQ(this.value)">' +
         '<span class="lip-spacer"></span><span class="lip-lab">' + tot + ' post' + (tot > 1 ? 's' : '') + '</span>' +
       '</div>' + (corps || '<div class="lip-empty">Aucun post ne correspond.</div>') +
-      (tot > veilleVue.limite ? '<div style="text-align:center;margin-top:16px"><button class="lip-btn" onclick="V2.lip.plusPosts()">Afficher 30 de plus</button></div>' : '');
+      (tot > veilleVue.limite ? '<div style="text-align:center;margin-top:16px"><button type="button" class="mk-btn" onclick="V2.lip.plusPosts()">Afficher 30 de plus</button></div>' : '');
   }
 
   function renderVeille(root) {
@@ -1605,10 +1712,10 @@
     }
     var v = V();
     var onglets = [['synthese', 'Synthèse'], ['top', 'Top engagement'], ['tous', 'Tous les posts']];
-    var nav = '<div class="lip-tools" style="margin-top:14px">' + onglets.map(function (o) {
-      return '<button class="lip-btn' + (veilleVue.onglet === o[0] ? ' lip-btn-p' : '') + '" onclick="V2.lip.setOnglet(\'' + o[0] + '\')">' + esc(o[1]) + '</button>';
-    }).join('') + '<span class="lip-spacer"></span>' +
-      '<span class="lip-lab">Relevé le ' + esc(v.captureUTC.slice(8, 10) + '/' + v.captureUTC.slice(5, 7) + '/' + v.captureUTC.slice(0, 4)) + '</span></div>';
+    var rang = 0; onglets.forEach(function (o, k) { if (o[0] === veilleVue.onglet) rang = k; });
+    var nav = '<div class="mk-seg lpv-onglets" role="group" aria-label="Vues de la veille" style="--n:3;--i:' + rang + '"><span class="mk-seg-ind" aria-hidden="true"></span>' + onglets.map(function (o) {
+      return '<button type="button" aria-pressed="' + (veilleVue.onglet === o[0] ? 'true' : 'false') + '" onclick="V2.lip.setOnglet(\'' + o[0] + '\')">' + esc(o[1]) + '</button>';
+    }).join('') + '</div>';
     var corps = veilleVue.onglet === 'synthese' ? renderVeilleSynthese() : renderVeillePosts();
     root.innerHTML = coquille(nav + corps);
   }
