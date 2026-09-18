@@ -2125,11 +2125,11 @@
     }
   }
   function vigLargeur() {
-    var p = document.querySelector('.mkd-page'), w = (p && p.clientWidth) || 280;
+    var p = document.querySelector('.mkd .mkd-page'), w = (p && p.clientWidth) || 280;   // la page du MUR : les petites vignettes de l'accueil ne rabaissent pas le rendu gardé en cache
     return Math.max(320, Math.min(VIG_LARG, Math.round(w * Math.min(window.devicePixelRatio || 1, 2))));
   }
-  function queueThumbs() {
-    docList().forEach(function (d) {
+  function queueThumbs(liste) {   // `liste` : les seuls documents à dessiner (accueil « Cette semaine ») ; à défaut, tout le mur
+    (liste || docList()).forEach(function (d) {
       if (d.xls || vigEnCours[d.name]) return;
       var t = docThumbs[d.name];
       if (t && (t.src || (t.echec && t.essais >= 2))) return;
@@ -2580,10 +2580,41 @@
       else if (param === 'docs') renderDocs(root);
       else if (param === 'linkedin') { if (V2.mktLinkedin) V2.mktLinkedin.render(root); else root.innerHTML = ''; }
       // 18/09/2026 (lot 1) — `fiches` = l'onglet « Fiches » de la barre Marketing, pas un id de fiche.
-      else if (param && param !== 'fiches') renderEditor(root, param); else renderList(root);
+      else if (param && param !== 'fiches') renderEditor(root, param);
+      // 18/09/2026 (lot 4) — `#marketing` = l'accueil « Cette semaine » (v2-mkt-semaine.js) ; l'atelier reste sur `#marketing/fiches`.
+      else if (!param && V2.mktSemaine && V2.mktSemaine.render) V2.mktSemaine.render(root);
+      else renderList(root);
     }
   };
   V2.mktReload = function () { items = null; docs = null; };
+
+  // ── Lot 4 — ce que l'accueil « Cette semaine » lit ici : les dernières fiches, les derniers documents et leurs vignettes ──
+  V2.mkt = V2.mkt || {};
+  V2.mkt.fichesRecentes = function (n) {
+    return (items || []).slice().sort(function (a, b) { return (b.updated || 0) - (a.updated || 0); }).slice(0, n || 3).map(function (it) {
+      var t = TYPES[it.type] || TYPES.support;
+      return { id: it.id, titre: it.title || '', statut: statusOf(it.status).label, nb: (it.products || []).length,
+        accent: (it.theme && it.theme.accent) || t.accent, tete: modele(it).head };
+    });
+  };
+  // null tant que la liste et le cache des vignettes ne sont pas lus (l'écran se redessine à leur arrivée).
+  var docsAccueil = false;
+  V2.mkt.docsRecents = function (n) {
+    if (docs === null || !vigLu) {
+      if (!docsAccueil) {
+        docsAccueil = true;
+        (docs === null ? loadDocs() : Promise.resolve()).then(vigCharger).then(function () {
+          docsAccueil = false;
+          if (V2.route && V2.route.name === 'marketing' && !V2.route.param) V2.render();
+        });
+      }
+      return null;
+    }
+    var L = docs.slice(0, n || 3);
+    queueThumbs(L);
+    return L.map(function (d) { return { name: d.name, nom: docSansExt(d.name), poids: docPoids(d), xls: d.xls, ratio: docRatio(d), pageHtml: docPageHtml(d) }; });
+  };
+  V2.mkt.docOuvrir = function (name, page) { docOuvrirDepuis(name, page || null); };
 
   // ── Upload / suppression des documents partagés (PDF + Excel) ──
   V2.mkt = V2.mkt || {};

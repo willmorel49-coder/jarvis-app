@@ -154,6 +154,9 @@
       '.lpo-lt div span{display:block;font-size:var(--mk-s5);line-height:var(--mk-s5l);color:var(--mk-attenue);font-weight:500}',
       '.lpo-ltxt{display:block;width:100%;margin:0;padding:4px 16px 12px;border:0;border-radius:8px;background:none;resize:none;outline:none;overflow:hidden;font-family:inherit;font-weight:inherit;font-size:16px;line-height:24px;color:var(--mk-encre);transition:box-shadow var(--mk-t1) var(--mk-sortie)}',
       '.lpo-ltxt.plie{max-height:148px}',
+      /* lot 4 — le même texte, en lecture (accueil « Cette semaine ») : quatre lignes, puis « … voir plus » */
+      'p.lpo-lecture{position:relative;max-height:100px;padding-bottom:0;margin-bottom:12px;border-radius:0;white-space:pre-wrap;overflow-wrap:anywhere}',
+      'p.lpo-lecture::after{content:"… voir plus";position:absolute;right:0;bottom:0;padding:0 16px 0 48px;line-height:24px;font-weight:500;color:var(--mk-attenue);background:linear-gradient(90deg,rgba(253,253,254,0),#FDFDFE 36px)}',
       '.lpo-ltxt:focus{box-shadow:0 0 0 2px var(--mk-bleu) inset;background:#FDFEFF}',
       '.mk-espace .lpo-deplier{display:flex;align-items:center;justify-content:flex-end;width:100%;min-height:44px;padding:0 16px;color:var(--mk-attenue);font-weight:600}',
       '.lpo-vis{position:relative;display:block;background:#0A2A7A}',
@@ -510,7 +513,7 @@
     if (relance) return;
     relance = setTimeout(function () {
       relance = null;
-      if (!(V2.route && V2.route.name === 'marketing' && V2.route.param === 'linkedin')) { charge = false; return; }
+      if (!surEcran()) { charge = false; return; }
       chargerEtats().then(function () { if (backend === 'supabase') redessine(); });
     }, 20000);
   }
@@ -911,19 +914,21 @@
     return '<span class="mk-qui" role="img" aria-label="' + esc(quiLabel(k)) + ' s’en occupe" title="' + esc(quiLabel(k)) + '">' +
       '<span class="mk-pp mk-pp-' + (k === 'pauline' ? 'p' : 'w') + '">' + esc(quiLabel(k).charAt(0)) + '</span></span>';
   }
+  // La pastille de personne ne s'affiche que si le post est attribué ; sinon « Je m'en occupe » reste à portée, comme avant.
+  function quiHtml(p, e) {
+    if (e.resp) return personneHtml(e.resp);
+    if (moi !== 'both') return '<button type="button" class="lpo-claim mk-press" onclick="event.stopPropagation();V2.lip.quiFait(' + p.n + ',\'' + moi + '\')">Je m’en occupe</button>';
+    return '<span class="lpo-picks">' + QUI.map(function (q) {
+      return '<button type="button" class="lpo-pick mk-press" aria-label="' + esc(q.label) + ' s’en occupe" title="' + esc(q.label) + ' s’en occupe" onclick="event.stopPropagation();V2.lip.quiFait(' + p.n + ',\'' + q.k + '\')"><span>' + esc(q.label.charAt(0)) + '</span></button>';
+    }).join('') + '</span>';
+  }
   function heureFr(h) { return String(h || '').replace(':', ' h '); }
 
   function carte(p) {
     var e = etat(p.n), pl = pilier(p.p);
     var S = sujetsDe(p), cur = S[sujetEff(p, e)] || S[0];
     var quand = dateCourte(new Date(p.d + 'T12:00:00'));
-    var pied;
-    // La pastille de personne ne s'affiche que si le post est attribué ; sinon « Je m'en occupe » reste à portée, comme avant.
-    if (e.resp) pied = personneHtml(e.resp);
-    else if (moi !== 'both') pied = '<button type="button" class="lpo-claim mk-press" onclick="event.stopPropagation();V2.lip.quiFait(' + p.n + ',\'' + moi + '\')">Je m’en occupe</button>';
-    else pied = '<span class="lpo-picks">' + QUI.map(function (q) {
-      return '<button type="button" class="lpo-pick mk-press" aria-label="' + esc(q.label) + ' s’en occupe" title="' + esc(q.label) + ' s’en occupe" onclick="event.stopPropagation();V2.lip.quiFait(' + p.n + ',\'' + q.k + '\')"><span>' + esc(q.label.charAt(0)) + '</span></button>';
-    }).join('') + '</span>';
+    var pied = quiHtml(p, e);
     var stat = e.publie ? '<span class="lpo-stat" title="Publié">' + icS('coche', 16, 2.5) + '</span>'
       : ((e.statut === 'refuse' || e.statut === 'retravailler') ? '<span class="lpo-stat">' + esc(statut(e.statut).label) + '</span>' : '');
     var ici = ouvert && ouvert.n === p.n;   // la carte d'origine reste marquée tant que son volet est ouvert
@@ -944,6 +949,21 @@
       '<div class="lpo-board lpo-attente" style="grid-template-columns:repeat(auto-fill,minmax(248px,1fr))" aria-hidden="true">' + sq + sq + sq + '</div>';
   }
 
+  // États, DA et sujets B / C : lancés une fois, par l'écran des posts comme par l'accueil « Cette semaine » (lot 4).
+  var etatsLus = false;
+  function lancerChargements() {
+    if (charge) return;
+    charge = true;
+    chargerEtats().then(function () { etatsLus = true; redessine(); });
+    // la DA alimente l'encart « prompt » de chaque fiche : on la charge d'emblée
+    charger('mkt-li-da-data.js', da).then(function (ok) { if (ok) redessine(); });
+    // les 2 sujets supplémentaires par créneau : fichier lourd, chargé à côté,
+    // sans bloquer l'affichage. Tant qu'il n'est pas là, un seul sujet.
+    charger('mkt-li-plan-alt-data.js', alts).then(function (ok) {
+      if (ok) { redessine(); if (ouvert) redessineTiroir(); }
+    });
+  }
+
   var dernMoi = -1, dernEtape = '';   // points de départ des indicateurs qui glissent (geste 10)
   function renderPlan(root) {
     if (!plan()) {
@@ -955,17 +975,7 @@
       });
       return;
     }
-    if (!charge) {
-      charge = true;
-      chargerEtats().then(function () { redessine(); });
-      // la DA alimente l'encart « prompt » de chaque fiche : on la charge d'emblée
-      charger('mkt-li-da-data.js', da).then(function (ok) { if (ok) redessine(); });
-      // les 2 sujets supplémentaires par créneau : fichier lourd, chargé à côté,
-      // sans bloquer l'affichage. Tant qu'il n'est pas là, un seul sujet.
-      charger('mkt-li-plan-alt-data.js', alts).then(function (ok) {
-        if (ok) { redessine(); if (ouvert) redessineTiroir(); }
-      });
-    }
+    lancerChargements();
     // Les posts du plan et les posts libres dans les mêmes colonnes, triés par
     // date. Un post reste un post, quelle que soit son origine.
     chargerLibres();
@@ -1093,7 +1103,9 @@
     setTimeout(function () { h.innerHTML = ''; }, 340);
   }
 
-  function carteDe(n) { return document.querySelector('#v2-root .lpo-carte[data-n="' + n + '"]'); }
+  function carteDe(n) { return document.querySelector('#v2-root .lpo-carte[data-n="' + n + '"]') || document.querySelector('#v2-root [data-lpo-n="' + n + '"]'); }
+  // Le bouton plein : celui du volet s'il est ouvert, sinon celui de l'accueil « Cette semaine ».
+  function principal() { return document.querySelector('#lip-drawer #lpo-principal') || document.getElementById('mks-principal'); }
   function visibleAEcran(el) {
     if (!el) return false;
     var r = el.getBoundingClientRect();
@@ -1173,11 +1185,16 @@
     setTimeout(fin, 300);
   }
 
+  // Lot 4 — contexte « muet » : l'accueil « Cette semaine » joue les actions du volet (V2.lip.agir) sans l'ouvrir.
+  // Ce contexte n'a pas d'écran : ni Échap ni glisser de fichiers ne le concernent, et il se relâche dès l'action finie.
+  function voletLa() { return !!(ouvert && !ouvert.muet); }
+  function lacher() { if (ouvert && ouvert.muet) ouvert = null; }
+
   var ecoute = false;
   function ecouterVolet() {
     if (ecoute) return; ecoute = true;
     document.addEventListener('keydown', function (e) {
-      if (e.key !== 'Escape' || !ouvert) return;
+      if (e.key !== 'Escape' || !voletLa()) return;
       var z = document.getElementById('li-zoom');
       if (z && z.firstChild) return;                 // le visuel agrandi se referme d'abord, par son propre écouteur
       if (daOuverte()) { fermerDA(); return; }
@@ -1190,17 +1207,17 @@
       return false;
     };
     var scene = function () { return document.querySelector('#lip-drawer .lpo-scene'); };
-    document.addEventListener('dragover', function (e) { if (!ouvert || !fichiers(e)) return; e.preventDefault(); var s = scene(); if (s) s.classList.add('survol'); });
-    document.addEventListener('dragleave', function (e) { if (!ouvert || e.relatedTarget) return; var s = scene(); if (s) s.classList.remove('survol'); });
+    document.addEventListener('dragover', function (e) { if (!voletLa() || !fichiers(e)) return; e.preventDefault(); var s = scene(); if (s) s.classList.add('survol'); });
+    document.addEventListener('dragleave', function (e) { if (!voletLa() || e.relatedTarget) return; var s = scene(); if (s) s.classList.remove('survol'); });
     document.addEventListener('drop', function (e) {
-      if (!ouvert || !fichiers(e)) return;
+      if (!voletLa() || !fichiers(e)) return;
       e.preventDefault();
       var s = scene(); if (s) s.classList.remove('survol');
       var f = e.dataTransfer.files && e.dataTransfer.files[0];
       if (f) envoyerFichier(f);
     });
     window.addEventListener('hashchange', function () {
-      if (ouvert && !(V2.route && V2.route.name === 'marketing' && V2.route.param === 'linkedin')) { fermerDA(); fermer(); }
+      if (ouvert && !surEcran()) { fermerDA(); fermer(); }
     });
   }
 
@@ -1320,6 +1337,16 @@
         : '<a class="mk-btn mk-texte mk-press" href="' + u + '" target="_blank" rel="noopener">Ouvrir</a>') +
       '<button type="button" class="mk-btn mk-texte mk-press lpo-rose" onclick="V2.lip.retirerImage()">Retirer</button></div>' + err;
   }
+  // L'aperçu du post, comme sur LinkedIn. Un seul composant : le volet y met le texte modifiable et le visuel
+  // en cours ; l'accueil « Cette semaine » (lot 4) y met le texte en lecture et la couverture.
+  function apercuHtml(p, texteH, visuelH, attrs) {
+    return '<div class="lpo-li mk-souleve"' + (attrs || '') + '>' +
+      '<div class="lpo-lt"><span class="lpo-logo" aria-hidden="true">IP</span><div><strong>Intégral Pharma</strong><span>Groupe de grossistes-répartiteurs</span>' +
+        '<span>' + esc(dateCourte(new Date(p.d + 'T12:00:00')) + ' · ' + heureFr(p.h)) + '</span></div></div>' +
+      texteH + visuelH +
+      '<div class="lpo-lact" aria-hidden="true"><span>' + icS('aime', 18) + 'J’aime</span><span>' + icS('commente', 18) + '</span><span>' + icS('republie', 18) + '</span><span>' + icS('envoie', 18) + '</span></div>' +
+    '</div>';
+  }
   function repliHtml(cle, titre, corps) {
     return '<section><details class="lpo-repli"' + (ouvert.replis[cle] ? ' open' : '') + ' ontoggle="V2.lip.plusOuvert(this.open,\'' + cle + '\')"><summary>' + titre + icS('bas', 20, 2) + '</summary>' + corps + '</details></section>';
   }
@@ -1377,15 +1404,10 @@
         '<button type="button" class="lpo-x mk-press" onclick="V2.lip.fermer()" aria-label="Fermer">' + icS('fermer', 22, 2) + '</button></div>' +
       '<div class="lpo-vc">' +
         '<div class="lpo-scene"><div class="lpo-cible">Déposez l’image, la vidéo ou le PDF ici</div>' +
-          '<div class="lpo-li mk-souleve">' +
-            '<div class="lpo-lt"><span class="lpo-logo" aria-hidden="true">IP</span><div><strong>Intégral Pharma</strong><span>Groupe de grossistes-répartiteurs</span>' +
-              '<span>' + esc(dateCourte(new Date(p.d + 'T12:00:00')) + ' · ' + heureFr(p.h)) + '</span></div></div>' +
-            '<textarea class="lpo-ltxt' + (ouvert.deplie ? '' : ' plie') + '" id="lpo-texte" rows="4" spellcheck="true" aria-label="Texte du post, modifiable" ' +
+          apercuHtml(p, '<textarea class="lpo-ltxt' + (ouvert.deplie ? '' : ' plie') + '" id="lpo-texte" rows="4" spellcheck="true" aria-label="Texte du post, modifiable" ' +
               'onfocus="V2.lip.deplier()" oninput="V2.lip.setTexte(this.value)">' + esc(texteDe(p, e)) + '</textarea>' +
-            (ouvert.deplie ? '' : '<button type="button" class="lpo-deplier" id="lpo-deplier" onclick="V2.lip.deplier(true)">… voir plus</button>') +
-            '<div class="lpo-vis" id="lpo-vis">' + visuelHtml() + '</div>' +
-            '<div class="lpo-lact" aria-hidden="true"><span>' + icS('aime', 18) + 'J’aime</span><span>' + icS('commente', 18) + '</span><span>' + icS('republie', 18) + '</span><span>' + icS('envoie', 18) + '</span></div>' +
-          '</div>' +
+            (ouvert.deplie ? '' : '<button type="button" class="lpo-deplier" id="lpo-deplier" onclick="V2.lip.deplier(true)">… voir plus</button>'),
+            '<div class="lpo-vis" id="lpo-vis">' + visuelHtml() + '</div>') +
           '<div class="lpo-aide" id="lpo-aide">' + aideHtml() + '</div>' +
         '</div>' +
         '<div class="lpo-regl">' +
@@ -1593,7 +1615,9 @@
 
   /* ───────────────── routage interne ───────────────── */
   var vue = 'plan';
-  function redessine() { if (V2.route && V2.route.name === 'marketing' && V2.route.param === 'linkedin') V2.render(); }
+  // Lot 4 : l'accueil « Cette semaine » (#marketing, sans paramètre) montre les mêmes posts et suit les mêmes changements.
+  function surEcran() { return !!(V2.route && V2.route.name === 'marketing' && (V2.route.param === 'linkedin' || !V2.route.param)); }
+  function redessine() { if (surEcran()) V2.render(); }
 
   function render(root, quelle) {
     vue = quelle || 'plan';
@@ -1693,7 +1717,7 @@
   // La confirmation se lit sur le bouton (geste 9) ; le volet se referme ensuite et la carte voyage.
   function puisVoyager(n, vers) {
     var S = socle();
-    if (S.confirmer) S.confirmer(document.getElementById('lpo-principal'), 900);
+    if (S.confirmer) S.confirmer(principal(), 900);
     signalerEnregistre();
     setTimeout(function () {
       if (ouvert && ouvert.n === n) fermer(function () { voyagerPost(n, vers); });
@@ -1708,14 +1732,14 @@
     enregistrer(n, copieEtat(figerChoix())).then(function () {
       if (!deja) return puisVoyager(n, 'pret');
       // Le post était déjà « Prêt » : il ne change pas de colonne. Le bouton confirme, puis propose l'étape suivante.
-      var S = socle(); if (S.confirmer) S.confirmer(document.getElementById('lpo-principal'), 900);
+      var S = socle(); if (S.confirmer) S.confirmer(principal(), 900);
       signalerEnregistre();
       setTimeout(function () { redessineTiroir(); redessine(); marquerCarte(n); }, calme() ? 0 : 900);
     });
   };
   V2.lip.marquerPublie = function (oui) {
     if (!ouvert) return;
-    if (oui && tropCetteSemaine()) { toast('Déjà ' + MAX_SEM + ' posts retenus cette semaine — retirez-en un d’abord', 'error'); return; }
+    if (oui && tropCetteSemaine()) { toast('Déjà ' + MAX_SEM + ' posts retenus cette semaine — retirez-en un d’abord', 'error'); lacher(); return; }
     var n = ouvert.n, e = oui ? figerChoix() : ouvert.e;
     e.publie = !!oui;
     enregistrer(n, copieEtat(e)).then(function () {
@@ -1743,6 +1767,53 @@
     ouvrirVolet(carteDe(n));
   };
   V2.lip.fermer = function () { fermer(); };
+
+  /* ────────── Lot 4 — ce que l'accueil « Cette semaine » (v2-mkt-semaine.js) lit et déclenche ──────────
+     Aucun second chemin d'écriture : l'accueil ouvre le volet (V2.lip.ouvrir) ou rejoue, par V2.lip.agir,
+     les fonctions mêmes du volet (publier, marquerPublie) dans un contexte sans écran. */
+  // false tant que le fichier du plan n'est pas là (il se charge, puis l'écran se redessine) ; 'rate' s'il n'a pas pu l'être.
+  var planRate = false;
+  V2.lip.pret = function () {
+    if (!plan()) {
+      if (planRate) return 'rate';
+      charger('mkt-li-plan-data.js', plan).then(function (ok) { if (!ok) planRate = true; redessine(); });
+      return false;
+    }
+    lancerChargements(); chargerLibres();
+    return etatsLus;
+  };
+  // Les posts proposés, du plus proche au plus lointain, avec ce que l'écran des posts en sait.
+  V2.lip.lecture = function () {
+    var P = plan(), out = [];
+    (P || []).filter(visible).forEach(function (p) {
+      var e = etat(p.n), cur = sujetDe(p, sujetEff(p, e)), pl = pilier(p.p), vi = varEff(cur, e);
+      out.push({ n: p.n, d: p.d, h: p.h, lundi: lundiDe(p.d), etape: etapeDe(e), ecarte: e.statut === 'refuse' && !e.publie, resp: e.resp || '',
+        qui: quiLabel(e.resp), titre: cur.titre, quand: quandLong(p), famille: pl.label, couleur: pl.color, parti: !!partis[p.n],
+        sujet: String.fromCharCode(65 + sujetEff(p, e)), ton: (function () { for (var i = 0; i < TONS.length; i++) if (cur.t[vi] && TONS[i][0] === cur.t[vi].ton) return TONS[i][1]; return ''; })(),
+        media: e.image_path ? genreFichier(e.image_path) : '' });
+    });
+    out.sort(function (a, b) { return (a.d + a.h) < (b.d + b.h) ? -1 : 1; });
+    return { posts: out, cette: lundiDe(isoJour(new Date())), moi: moi, nbSem: nbSem, max: MAX_SEM, local: backend === 'local',
+      libres: libres().map(function (x) { return { id: x.id, d: String(x.date).slice(0, 10), lundi: lundiDe(x.date), etape: etapeLibre(x), html: carteLibre(x) }; }) };
+  };
+  V2.lip.semLabel = semLabel;
+  // L'aperçu LinkedIn d'un post, en lecture : le même composant que dans le volet.
+  V2.lip.apercu = function (n, attrs) {
+    var p = postDe(n); if (!p) return '';
+    var e = etat(n);
+    return apercuHtml(p, '<p class="lpo-ltxt lpo-lecture">' + esc(texteDe(p, e)) + '</p>', '<div class="lpo-vis">' + couvDe(p, e) + '</div>', attrs);
+  };
+  V2.lip.carteHtml = function (n) { var p = postDe(n); return p ? carte(p) : ''; };
+  V2.lip.quiHtml = function (n) { var p = postDe(n); return p ? quiHtml(p, etat(n)) : ''; };
+  V2.lip.agir = function (n, quoi) {
+    if (voletLa()) return;
+    var p = postDe(n); if (!p) return;
+    ouvert = { n: n, p: p, envoi: null, erreurMedia: '', note: '', deplie: false, replis: {}, e: copieEtat(etat(n)), muet: true };
+    ouvert.e.sujet = sujetEff(p, etat(n));
+    if (quoi === 'publier') V2.lip.publier();
+    else if (quoi === 'marquer') V2.lip.marquerPublie(true);
+    else lacher();
+  };
   V2.lip.fermerDA = fermerDA;
   // La couverture d'un post du plan, pour un autre écran de l'espace Marketing (« Cette semaine », lot 4).
   V2.lip.couverture = function (n) { var p = postDe(n); return p ? couvDe(p, etat(n)) : ''; };
@@ -1807,8 +1878,8 @@
   V2.lip.publier = function () {
     if (!ouvert) return;
     var cur = sujetOuvert(), i = varEff(cur, ouvert.e);
-    if (!cur.t[i]) return;
-    if (ouvert.e.statut !== 'valide' && !confirm('Ce post n’est pas encore retenu.\n\nL’ouvrir quand même dans LinkedIn ?')) return;
+    if (!cur.t[i]) { lacher(); return; }
+    if (ouvert.e.statut !== 'valide' && !confirm('Ce post n’est pas encore retenu.\n\nL’ouvrir quand même dans LinkedIn ?')) { lacher(); return; }
     var txt = texteDe(ouvert.p, ouvert.e), n = ouvert.n;
     var suite = function () {
       window.open('https://www.linkedin.com/feed/?shareActive=true', '_blank');
@@ -1820,11 +1891,12 @@
       if (!ouvert || ouvert.n !== n) return;
       // La consigne reste sous l'aperçu (plus de message flottant), et le bouton plein passe à l'étape suivante.
       ouvert.note = 'Texte copié. Collez-le dans LinkedIn, puis ajoutez le fichier.';
-      var S = socle(), b = document.getElementById('lpo-principal');
+      var S = socle(), b = principal();
       if (etapeVolet() === 'linkedin' && S.confirmer) S.confirmer(b, 900);
       setTimeout(function () {
         if (!ouvert || ouvert.n !== n) return;
         if (etat(n).statut === 'valide') partis[n] = 1;
+        if (ouvert.muet) { ouvert = null; redessine(); return; }   // parti depuis l'accueil : son bouton passe à « Marquer comme publié »
         peindrePied();
         var a = document.getElementById('lpo-aide'); if (a) a.innerHTML = aideHtml();
       }, calme() ? 0 : 900);
