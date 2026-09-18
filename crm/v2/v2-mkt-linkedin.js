@@ -455,8 +455,8 @@
 
   // ═══════════════ COMPOSANTS COMMUNS ═══════════════
   function viewSeg() {
-    var due = dueCount();
-    var badge = due ? '<span class="li-segbadge">' + due + '</span>' : '';
+    // 18/09/2026 — Will : la pastille (vieux posts libres jamais marqués publiés) est retirée de l'onglet.
+    var badge = '';
     // 20/08/2026 — Will : « y a trop de sous-onglets ». Deux, et c'est tout.
     // Les vues 'queue' | 'cal' | 'pipeline' | 'list' restent dans le code : elles
     // ne sont plus atteignables, mais c'est la porte de sortie si on revient dessus.
