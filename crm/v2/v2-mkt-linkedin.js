@@ -818,6 +818,7 @@
     goCal: function (d) { view = 'cal'; if (d) { calRef = new Date(d); calRef.setDate(1); } V2.render(); } };
   V2.mktLinkedin.dueCount = dueCount;
   V2.mktLinkedin.viewSeg = viewSeg;              // réutilisé par v2-mkt-li-plan.js
+  V2.mktLinkedin.vue = function () { return view; };   // lu par v2-mkt-socle.js (onglet marqué, menu « Nouveau »)
   V2.li = V2.li || {};
 
   // ── Vue / navigation / filtres ──
