@@ -56,7 +56,18 @@
     suivant: '<path d="M9 6l6 6-6 6"/>',
     fermer: '<path d="M6 6l12 12M18 6L6 18"/>',
     charger: '<path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19h14"/>',
-    corbeille: '<path d="M5 7h14M10 7V4.5h4V7M7 7l1 12.5h8L17 7M10.5 11v5M13.5 11v5"/>'
+    corbeille: '<path d="M5 7h14M10 7V4.5h4V7M7 7l1 12.5h8L17 7M10.5 11v5M13.5 11v5"/>',
+    // lot 3 — Posts
+    bas: '<path d="M6 9l6 6 6-6"/>',
+    copie: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 012-2h9"/>',
+    ext: '<path d="M14 5h5v5M19 5l-8 8M11 7H6v11h11v-5"/>',
+    importer: '<path d="M12 16V5M8 9l4-4 4 4M5 19h14"/>',
+    lecture: '<path d="M8 5l11 7-11 7z"/>',
+    pile: '<rect x="4" y="7" width="13" height="13" rx="2"/><path d="M8 4h12v12"/>',
+    aime: '<path d="M7 11v9H4v-9zM7 11l4-7c2 0 3 1 2.5 3.5L13 10h5c1.5 0 2.3 1.2 2 2.5l-1.4 6c-.3 1-1 1.5-2 1.5H7"/>',
+    commente: '<path d="M4 5h16v11H10l-4 4v-4H4z"/>',
+    republie: '<path d="M7 7h11l-3-3M17 17H6l3 3M18 7v5M6 17v-5"/>',
+    envoie: '<path d="M20 4L3 11l6 3 3 6zM9 14l5-5"/>'
   };
   function ic(n, s, w) {
     return '<svg width="' + (s || 20) + '" height="' + (s || 20) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' + (w || 1.75) +
@@ -189,6 +200,42 @@
       '@media (hover:hover){.mk-menu button:hover{background:var(--mk-pale)}}',
       '.mk-menu-cap{margin:8px 0 0;padding:12px 12px 4px;border-top:1px solid var(--mk-trait);font-size:var(--mk-s5);line-height:var(--mk-s5l);font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--mk-attenue)}',
       '.mk-espace .mk-menu .mk-plus button{min-height:44px;font-weight:550}',
+
+      /* ═══ lot 3 — composants génériques (Posts, puis « Cette semaine ») ═══ */
+      /* surface soulevée (N2) : le contenu. Arête claire en haut à gauche, plus sombre en bas à droite. */
+      '.mk-souleve{position:relative;border:1px solid transparent;border-radius:var(--mk-r-carte);background:linear-gradient(180deg,#fff 0,#FAFBFE 100%) padding-box,var(--mk-arete) border-box;box-shadow:var(--mk-n2)}',
+      /* la carte en voyage passe au niveau N3 (geste 6) */
+      '.mk-lever.mk-en-voyage{z-index:30}.mk-lever.mk-en-voyage::after{opacity:1}',
+      /* anneau d’origine ou d’arrivée (gestes 4, 5, 6, 9) : posé en 120 ms, éteint en 400 ms */
+      '.mk-anneau{position:absolute;top:-3px;right:-3px;bottom:-3px;left:-3px;border-radius:calc(var(--mk-r-carte) + 3px);border:2px solid var(--mk-bleu);pointer-events:none;opacity:0;transition:opacity 400ms var(--mk-sortie)}',
+      '.mk-marque>.mk-anneau{opacity:1;transition-duration:var(--mk-t1)}',
+      /* geste 9 — la confirmation se passe SUR le bouton */
+      '.mk-espace .mk-save{position:relative;overflow:hidden}',
+      '.mk-save .mk-sa,.mk-save .mk-sb{display:flex;align-items:center;justify-content:center;gap:8px;transition:transform 160ms var(--mk-sortie),opacity 160ms var(--mk-sortie)}',
+      '.mk-save .mk-sb{position:absolute;top:0;right:0;bottom:0;left:0}',
+      '.mk-save[data-etat="ok"] .mk-sa{transform:translateY(-6px);opacity:0}',
+      '.mk-save:not([data-etat="ok"]) .mk-sb{transform:translateY(6px);opacity:0}',
+      '[data-etat="ok"] .mk-coche path{stroke-dashoffset:0}',
+      '.mk-espace .mk-btn.mk-texte{background:none;border-color:transparent;box-shadow:none;color:var(--mk-bleu-txt);padding:0 12px}',
+      '.mk-espace .mk-btn.mk-grand{min-height:48px;padding:0 24px;font-size:var(--mk-s3);font-weight:650}',
+      /* pastilles de personne : Pauline pleine, Will évidée — zéro couleur */
+      '.mk-qui{display:inline-flex;flex:none}',
+      '.mk-pp{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;flex:none;font-size:var(--mk-s5);font-weight:650;line-height:1}',
+      '.mk-pp-p{background:var(--mk-encre);color:#fff}',
+      '.mk-pp-w{background:#fff;color:var(--mk-encre);box-shadow:0 0 0 1.5px var(--mk-encre) inset}',
+      /* couverture d’un post, 1,91:1 : la couverture typographique est TOUJOURS dessous ; l’image ou la vidéo importée se pose dessus */
+      '.mk-couv{position:relative;display:block;overflow:hidden;aspect-ratio:1200/628;border-radius:var(--mk-r-vig);background:#F2F6FE}',
+      '.mk-couv::after{content:"";position:absolute;top:0;right:0;bottom:0;left:0;border-radius:inherit;box-shadow:0 0 0 1px rgba(16,19,28,.06) inset;pointer-events:none}',
+      '.mk-couv>svg{display:block;width:100%;height:100%}',
+      '.mk-couv-img,.mk-couv-vid{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;pointer-events:none}',
+      '.mk-couv-img{background:#fff}',
+      '.mk-couv-rond{position:absolute;top:50%;left:50%;width:56px;height:56px;max-width:40%;max-height:70%;margin:0;transform:translate(-50%,-50%);border-radius:50%;display:grid;place-items:center;background:rgba(8,20,60,.72);color:#fff;box-shadow:0 0 0 2px rgba(255,255,255,.85)}',
+      '.mk-couv-puce{position:absolute;right:8px;bottom:8px;max-width:calc(100% - 16px);padding:2px 8px;border-radius:var(--mk-r-puce);background:rgba(8,20,60,.72);color:#fff;font-size:var(--mk-s5);line-height:var(--mk-s5l);font-weight:600;display:flex;gap:6px;align-items:center;white-space:nowrap;overflow:hidden}',
+      '.mk-couv-puce span{overflow:hidden;text-overflow:ellipsis}',
+      /* naissance d’un média déposé (geste 8) et fondu d’un contenu remplacé */
+      '.mk-naissance{animation:mk-naissance 260ms var(--mk-ressort) both}',
+      '@keyframes mk-naissance{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:none}}',
+      '.mk-fondu{animation:mk-paraitre 160ms var(--mk-sortie) both}',
 
       '.mk-onglets-bas{display:none}',
 
@@ -458,7 +505,154 @@
     tEnreg = setTimeout(function () { etatEnreg = 'ok'; peindreEnreg(); }, 380);
   }
 
+  // ════════════════════════════════════════════
+  // LOT 3 — composants génériques : couverture d'un post, gestes 3, 6 et 9
+  // ════════════════════════════════════════════
+  function calme() { try { return window.matchMedia('(prefers-reduced-motion:reduce)').matches; } catch (e) { return false; } }
+  function tel() { try { return window.matchMedia('(max-width:860px)').matches; } catch (e) { return false; } }
+  function ressort() {
+    var e = document.querySelector('.mk-espace'), v = '';
+    try { v = e ? getComputedStyle(e).getPropertyValue('--mk-ressort').trim() : ''; } catch (x) {}
+    return v || 'cubic-bezier(.22,1,.36,1)';
+  }
+  // Une courbe `linear()` inconnue du navigateur fait lever une erreur à animate() : on retombe sur la courbe de secours.
+  function animer(n, images, opt) {
+    if (!n || !n.animate) return null;
+    try { return n.animate(images, opt); }
+    catch (e) { opt.easing = 'cubic-bezier(.22,1,.36,1)'; try { return n.animate(images, opt); } catch (e2) { return null; } }
+  }
+
+  // Coupe un titre en lignes d'au plus `n` signes, quatre lignes au plus.
+  function plier(t, n) {
+    var m = String(t || '').replace(/\s+/g, ' ').replace(/^\s+|\s+$/g, '').split(' '), L = [], c = '';
+    for (var i = 0; i < m.length; i++) {
+      var essai = c ? c + ' ' + m[i] : m[i];
+      if (essai.length > n && c) { L.push(c); c = m[i]; } else c = essai;
+    }
+    if (c) L.push(c);
+    if (L.length > 4) { L.length = 4; L[3] = L[3].replace(/.{0,2}$/, '…'); }
+    return L;
+  }
+  function motifSvg(m, pale) {
+    var s = pale ? '#0050E6' : '#fff', o = pale ? .14 : .17;
+    var a = 'fill="none" stroke="' + s + '" stroke-opacity="' + o + '" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"';
+    var M = {
+      anneau: '<circle r="190" ' + a + ' stroke-dasharray="74 25"/><circle r="190" fill="none" stroke="' + s + '" stroke-opacity="' + (pale ? .7 : .95) + '" stroke-width="30" stroke-dasharray="74 1120" transform="rotate(-150)"/>',
+      croix: '<path d="M-70-210h140v140h140v140H70v140H-70V70h-140V-70h140z" ' + a + '/>',
+      ruban: '<path d="M-70 230L50-40a80 95 0 10-100 0L70 230" ' + a + '/>',
+      oeil: '<path d="M-250 0Q0-210 250 0Q0 210-250 0z" ' + a + '/><circle r="76" ' + a + '/>',
+      gouttes: '<path d="M-90-220c70 90 110 150 110 205a110 110 0 01-220 0c0-55 40-115 110-205z" ' + a + '/><path d="M150 10c45 58 70 96 70 130a70 70 0 01-140 0c0-34 25-72 70-130z" ' + a + '/>',
+      onde: '<path d="M-330 40h150l50-150 80 300 70-220 40 70h200" ' + a + '/>',
+      bouclier: '<path d="M0-230l190 70v140c0 130-80 210-190 250-110-40-190-120-190-250V-160z" ' + a + '/><path d="M-80 10l60 60 110-120" ' + a + '/>',
+      cercles: '<circle cx="-80" r="170" ' + a + '/><circle cx="110" cy="40" r="170" ' + a + '/>'
+    };
+    return '<g transform="translate(1000 300) scale(.92)">' + (M[m] || M.anneau) + '</g>';
+  }
+  var uidCouv = 0;
+  // La couverture TYPOGRAPHIQUE : le texte est l'image. Fond bleu éclairé d'en haut à gauche (plein ou très pâle), jamais un gris.
+  function couvertureSvg(o) {
+    var L = (o.lignes && o.lignes.length) ? o.lignes : plier(o.titre || '', 20);
+    if (!L.length) L = [''];
+    var id = 'mkc' + (++uidCouv), pale = !!o.pale, g = o.graine || 0, max = 1;
+    for (var i = 0; i < L.length; i++) if (L[i].length > max) max = L[i].length;
+    var fs = Math.round(Math.min(L.length === 1 ? 230 : 124, 1330 / max, 372 / L.length)), lh = fs * 1.06, y0 = 314 - (L.length * lh) / 2 + fs * .8 + 18;
+    var enc = pale ? '#0B1E54' : '#fff';
+    var fond = pale
+      ? '<stop offset="0" stop-color="#FFFFFF"/><stop offset=".5" stop-color="#EAF1FE"/><stop offset="1" stop-color="#C9DBFB"/>'
+      : '<stop offset="0" stop-color="' + (g % 2 ? '#0E63FF' : '#0A58EC') + '"/><stop offset=".48" stop-color="#0042C2"/><stop offset="1" stop-color="' + (g % 2 ? '#001B70' : '#00227F') + '"/>';
+    var h = '<svg viewBox="0 0 1200 628" role="img" aria-label="' + esc(o.alt || ('Visuel : ' + L.join(' '))) + '" preserveAspectRatio="xMidYMid slice"><defs>' +
+      '<linearGradient id="' + id + 'g" x1="0" y1="0" x2="1" y2="1">' + fond + '</linearGradient>' +
+      '<radialGradient id="' + id + 'h" cx=".04" cy="-.1" r=".95"><stop offset="0" stop-color="#fff" stop-opacity="' + (pale ? .9 : .5) + '"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/></radialGradient></defs>' +
+      '<rect width="1200" height="628" fill="url(#' + id + 'g)"/><rect width="1200" height="628" fill="url(#' + id + 'h)"/>' + motifSvg(o.motif, pale) +
+      '<path d="M0 0h470L200 628H0z" fill="#fff" fill-opacity="' + (pale ? .5 : .075) + '"/><path d="M560 0h70L360 628h-70z" fill="#fff" fill-opacity="' + (pale ? .4 : .05) + '"/>';
+    if (o.surtitre) h += '<text x="72" y="104" font-size="28" font-weight="700" letter-spacing="3.2" fill="' + enc + '" fill-opacity=".78">' + esc(String(o.surtitre).toUpperCase()) + '</text>';
+    for (var k = 0; k < L.length; k++) {
+      h += '<text x="70" y="' + Math.round(y0 + k * lh) + '" font-size="' + fs + '" font-weight="800" letter-spacing="' + (-fs * .025) + '" fill="' + (pale && k === L.length - 1 ? '#0050E6' : enc) + '">' + esc(L[k]) + '</text>';
+    }
+    h += '<text x="72" y="576" font-size="26" font-weight="650" fill="' + enc + '" fill-opacity=".85">' + esc(o.signature || 'Intégral Pharma') + '</text>';
+    if (o.famille) h += '<text x="1128" y="576" text-anchor="end" font-size="26" font-weight="550" fill="' + enc + '" fill-opacity=".7">' + esc(o.famille) + '</text>';
+    return h + '</svg>';
+  }
+  /* couverture({ titre | lignes, surtitre, famille, motif, pale, graine, alt,
+                  media (adresse), genre ('image' | 'video' | 'doc'), fichier (nom lisible), etiquette, classe })
+     Le visuel importé s'il existe — image ; vidéo = première image + rond « lecture », jamais de lecture automatique ;
+     PDF = pastille — sinon la couverture typographique seule. Si l'image ne se charge pas, elle se retire et
+     la couverture typographique, restée dessous, reprend la place. */
+  function couverture(o) {
+    o = o || {};
+    var h = '<span class="mk-couv' + (o.classe ? ' ' + esc(o.classe) : '') + '">' + couvertureSvg(o), u = o.media ? esc(o.media) : '';
+    if (u && o.genre === 'video') {
+      h += '<video class="mk-couv-vid" src="' + u + (/#/.test(u) ? '' : '#t=0.1') + '" preload="metadata" muted playsinline tabindex="-1" aria-hidden="true"></video>' +
+        '<span class="mk-couv-rond" aria-hidden="true">' + ic('lecture', 24, 2) + '</span><span class="mk-couv-puce"><span>Vidéo</span></span>';
+    } else if (u && o.genre === 'doc') {
+      h += '<span class="mk-couv-puce">' + ic('fiches', 14, 2) + '<span>PDF' + (o.fichier ? ' · ' + esc(o.fichier) : '') + '</span></span>';
+    } else if (u) {
+      h += '<img class="mk-couv-img" src="' + u + '" alt="" loading="lazy" decoding="async" onerror="this.remove()">';
+    } else if (o.etiquette) {
+      h += '<span class="mk-couv-puce">' + (o.etiquetteIc ? ic(o.etiquetteIc, 14, 2) : '') + '<span>' + esc(o.etiquette) + '</span></span>';
+    }
+    return h + '</span>';
+  }
+
+  // Geste 3 — Cascade : à l'arrivée sur une vue seulement, huit éléments au plus décalés.
+  function cascade(nodes) {
+    if (calme() || !nodes) return;
+    for (var i = 0; i < nodes.length; i++) {
+      animer(nodes[i], [{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }],
+        { duration: 240, delay: Math.min(i, 7) * 28, easing: 'cubic-bezier(.22,1,.36,1)', fill: 'backwards' });
+    }
+  }
+  // Anneau bleu posé sur un objet, qui s'éteint seul (ms = 0 : il reste jusqu'à ce qu'on retire `.mk-marque`).
+  function marquer(n, ms) {
+    if (!n) return;
+    if (!n.querySelector('.mk-anneau')) { var an = document.createElement('i'); an.className = 'mk-anneau'; n.appendChild(an); }
+    void n.offsetWidth;
+    n.classList.add('mk-marque');
+    if (ms !== 0) setTimeout(function () { n.classList.remove('mk-marque'); }, ms || 900);
+  }
+  // Geste 9 — le bouton `.mk-save` montre sa seconde étiquette (« C'est retenu », « Copié »…) puis revient.
+  function confirmer(b, ms) {
+    if (!b) return;
+    b.setAttribute('data-etat', 'ok');
+    setTimeout(function () { b.removeAttribute('data-etat'); }, ms || 900);
+  }
+  function saveHtml(avant, apres) {
+    return '<span class="mk-sa">' + avant + '</span><span class="mk-sb" aria-hidden="true"><svg class="mk-coche" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + IC.coche + '</svg>' + apres + '</span>';
+  }
+  /* Geste 6 — Voyager (premier état / dernier état / inversion / lecture). `muter()` est le re-rendu existant ;
+     tout élément portant `data-mk-id` retrouvé après lui glisse de son ancienne place vers la nouvelle.
+     `vedette` = l'objet qui change d'étape : il passe au niveau N3 le temps du trajet et garde un anneau. */
+  function voyager(racine, muter, vedette) {
+    var avant = {}, L, i;
+    if (racine) { L = racine.querySelectorAll('[data-mk-id]'); for (i = 0; i < L.length; i++) avant[L[i].getAttribute('data-mk-id')] = L[i].getBoundingClientRect(); }
+    muter();
+    if (!racine) return;
+    var doux = calme(), courbe = ressort();
+    L = racine.querySelectorAll('[data-mk-id]');
+    for (i = 0; i < L.length; i++) {
+      var n = L[i], id = n.getAttribute('data-mk-id'), a = avant[id], b = n.getBoundingClientRect();
+      if (id === vedette) marquer(n, 1400);
+      if (doux || !a || !a.width || !b.width) continue;
+      var dx = a.left - b.left, dy = a.top - b.top, k = a.width / b.width;
+      if (Math.abs(dx) < .5 && Math.abs(dy) < .5 && Math.abs(k - 1) < .01) continue;
+      if (id === vedette) { n.classList.add('mk-en-voyage'); (function (x) { setTimeout(function () { x.classList.remove('mk-en-voyage'); }, 340); })(n); }
+      n.style.transformOrigin = '0 0';
+      animer(n, [{ transform: 'translate(' + dx + 'px,' + dy + 'px) scale(' + k + ')' }, { transform: 'none' }], { duration: 320, easing: courbe });
+    }
+  }
+
   V2.mktSocle = {
+    couverture: couverture,
+    plier: plier,
+    voyager: voyager,
+    cascade: cascade,
+    marquer: marquer,
+    confirmer: confirmer,
+    saveHtml: saveHtml,
+    animer: animer,
+    calme: calme,
+    tel: tel,
+    ressort: ressort,
     installer: installer,
     injectCss: injectCss,
     barre: barreHtml,

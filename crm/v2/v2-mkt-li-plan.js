@@ -67,101 +67,203 @@
       '.lip-mline{flex:1;height:1px;background:var(--lip-line)}',
       '.lip-mcount{font-size:12px;font-weight:700;color:var(--lip-ink35)}',
 
-      /* vue « À deux » (choix de Will, 18/09/2026) : trois colonnes, une carte compacte par post.
-         Un seul accent, le bleu ; la couleur d'une famille ne sert qu'à une pastille ronde. */
-      '.lid-who{display:flex;align-items:center;gap:22px;flex-wrap:wrap;margin:18px 0 0}',
-      '.lid-people{display:flex;align-items:center;gap:14px}',
-      '.lid-wbtn{background:none;border:0;padding:0;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;font:inherit;border-radius:16px}',
-      '.lid-wav{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;background:#fff;border:1.5px solid rgba(16,19,28,.12);color:var(--lip-ink70);box-shadow:var(--lip-sh);transition:transform .2s var(--lip-ease),background .2s var(--lip-ease),color .2s var(--lip-ease)}',
-      '.lid-wbtn:hover .lid-wav{transform:translateY(-1px)}',
-      '.lid-wbtn[aria-pressed="true"] .lid-wav{background:var(--lip-blue);border-color:transparent;color:#fff;box-shadow:0 4px 14px rgba(0,87,255,.24)}',
-      '.lid-wlab{font-size:13px;font-weight:600;color:var(--lip-ink50)}',
-      '.lid-wbtn[aria-pressed="true"] .lid-wlab{color:var(--lip-ink)}',
-      '.lid-both{min-height:44px;padding:0 16px;border-radius:999px;border:1.5px solid rgba(16,19,28,.12);background:#fff;font-family:inherit;font-size:13.5px;font-weight:600;line-height:1;color:var(--lip-ink50);box-shadow:var(--lip-sh);cursor:pointer;transition:all .2s var(--lip-ease)}',
-      '.lid-both[aria-pressed="true"]{background:var(--lip-blue050);border-color:var(--lip-blue);color:#0034A0}',
-      '.lid-wbtn:focus-visible,.lid-both:focus-visible,.lid-card:focus-visible,.lid-tab:focus-visible{outline:3px solid rgba(0,87,255,.45);outline-offset:2px}',
-      '.lid-resume{margin:18px 0 0;font-size:26px;font-weight:700;letter-spacing:-.01em;line-height:1.2}',
-      '.lid-resume b{color:var(--lip-blue);font-weight:700;font-variant-numeric:tabular-nums}',
-      '.lid-rsub{margin:4px 0 0;font-size:13px;color:var(--lip-ink50)}',
-      '.lid-tabs{display:none;gap:8px;margin:18px 0 14px}',
-      '.lid-tab{flex:1;min-height:44px;border-radius:12px;border:1px solid rgba(16,19,28,.12);background:#fff;font-family:inherit;font-size:13px;font-weight:600;line-height:1;color:var(--lip-ink50);box-shadow:var(--lip-sh);padding:0 6px;cursor:pointer}',
-      '.lid-tab[aria-selected="true"]{background:var(--lip-blue);border-color:transparent;color:#fff;box-shadow:0 4px 14px rgba(0,87,255,.24)}',
-      '.lid-board{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:22px}',
-      '.lid-col{display:flex;flex-direction:column;min-width:0}',
-      '.lid-colh{display:flex;align-items:baseline;gap:10px;padding:0 4px 12px}',
-      '.lid-cnt{font-size:30px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}',
-      '.lid-col.publie .lid-cnt{color:#0F7A52}',
-      '.lid-colt{font-size:13.5px;font-weight:600;color:var(--lip-ink50)}',
-      '.lid-list{display:flex;flex-direction:column;gap:10px;min-height:60px}',
-      '.lid-empty{border:1.5px dashed rgba(16,19,28,.14);border-radius:20px;padding:18px 14px;text-align:center;font-size:13px;color:var(--lip-ink50);line-height:1.4;margin:0}',
-      '.lid-card{display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;background:#fff;border-radius:20px;box-shadow:0 1px 2px rgba(16,19,28,.05),0 4px 10px rgba(16,19,28,.05),0 12px 24px rgba(16,19,28,.05);transition:transform .2s var(--lip-ease),box-shadow .2s var(--lip-ease)}',
-      '.lid-card:hover{transform:translateY(-1px);box-shadow:0 4px 10px rgba(16,19,28,.06),0 14px 26px rgba(16,19,28,.09)}',
-      '.lid-card.ecarte{background:#f6f7f9;box-shadow:none}',
-      '.lid-card.ecarte .lid-title{text-decoration:line-through;color:var(--lip-ink50)}',
-      '.lid-main{flex:1;min-width:0}',
-      '.lid-top{display:flex;align-items:center;justify-content:space-between;gap:8px}',
-      '.lid-date{font-size:13.5px;font-weight:700;flex:none}',
-      '.lid-col.publie .lid-date{color:#0F7A52}',
-      '.lid-pil{display:block;font-size:12.5px;color:var(--lip-ink50);min-width:0;max-width:62%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
-      '.lid-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px}',
-      '.lid-title{margin:4px 0 0;font-size:13.5px;line-height:1.35;color:var(--lip-ink70);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}',
-      '.lid-foot{display:flex;align-items:center;gap:6px;flex:none}',
-      '.lid-av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex:none;background:var(--lip-blue);color:#fff}',
-      '.lid-claim{min-height:44px;padding:0 14px;border-radius:999px;border:1.5px solid var(--lip-blue);background:#fff;color:var(--lip-blue);font-family:inherit;font-size:13px;font-weight:600;line-height:1;white-space:nowrap;cursor:pointer}',
-      '.lid-claim:hover{background:var(--lip-blue050)}',
-      '.lid-pick{width:36px;height:36px;border-radius:50%;border:1.5px solid rgba(16,19,28,.14);background:#fff;color:var(--lip-ink50);font-family:inherit;font-size:13px;font-weight:700;line-height:1;display:flex;align-items:center;justify-content:center;flex:none;cursor:pointer}',
-      '.lid-pick:hover{border-color:var(--lip-blue);color:var(--lip-blue)}',
-      '.lid-more{display:block;width:100%;min-height:44px;margin:22px 0 0;background:none;border:0;font-family:inherit;font-size:13px;font-weight:500;line-height:1;color:var(--lip-ink50);cursor:pointer}',
-      '.lid-more:hover{color:var(--lip-blue)}',
+      /* ═══ LOT 3 (18/09/2026) — Posts : cartes à couverture, trois colonnes sans boîte, la carte devient le volet.
+         Jetons, élévations et gestes : v2-mkt-socle.js (.mk-espace). Un seul accent, le bleu ; la couleur d'une
+         famille ne sert qu'à une pastille de 8 px. On n'anime que transform et opacity. */
+      '#v2-root .lip.lpo{max-width:1320px;padding:32px 32px 64px}',
+      '.lpo-tete{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:24px}',
+      '.lpo-h1{margin:0;font-size:var(--mk-s1);line-height:var(--mk-s1l);font-weight:700;letter-spacing:-.02em}',
+      '.lpo-phrase{margin:4px 0 0;color:var(--mk-attenue)}',
+      '.lpo-phrase b{color:var(--mk-encre);font-weight:700}',
+      '.lpo-local{display:flex;align-items:center;gap:8px;margin:8px 0 0;font-size:var(--mk-s5);line-height:var(--mk-s5l);font-weight:600;color:#8A5200}',
+      '.lpo-moi{--n:3;min-width:320px;flex:none}',
+      /* .lpo devant : la feuille du socle arrive après celle-ci et son .mk-seg (grid, relative) l'emporterait à égalité */
+      '.lpo .lpo-etapes{--n:3;display:none}',
+      '.mk-espace .lpo-etapes button[aria-selected="true"]{color:var(--mk-encre)}',
+      '.lpo-etapes b{font-weight:700}',
+      '.lpo-flash{animation:lpo-flash 520ms var(--mk-sortie)}',
+      '@keyframes lpo-flash{0%{opacity:1}30%{opacity:.35}100%{opacity:1}}',
 
-      /* fiche d\'un post : sujet, version du texte, qui, actions */
-      '.lid-tuiles{display:flex;gap:8px}',
-      '.lid-tuile{flex:1;min-width:0;min-height:64px;border-radius:14px;border:1.5px solid rgba(16,19,28,.12);background:#fff;padding:9px 10px;text-align:left;box-shadow:var(--lip-sh);cursor:pointer;font:inherit;transition:all .2s var(--lip-ease)}',
-      '.lid-tl{display:block;font-size:12px;font-weight:800;color:var(--lip-ink50);letter-spacing:.02em}',
-      '.lid-tt{margin-top:4px;font-size:13px;line-height:1.3;color:var(--lip-ink70);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}',
-      '.lid-tuile[aria-pressed="true"]{border-color:var(--lip-blue);background:var(--lip-blue050)}',
-      '.lid-tuile[aria-pressed="true"] .lid-tl{color:#0034A0}',
-      '.lid-angle{margin:10px 0 0;font-size:13px;color:var(--lip-ink50);line-height:1.45}',
-      '.lid-seg{display:flex;gap:6px;margin-top:16px;background:var(--lip-line2);padding:4px;border-radius:999px}',
-      '.lid-segb{flex:1;min-height:44px;border-radius:999px;border:0;background:none;font-family:inherit;font-size:13px;font-weight:600;line-height:1;color:var(--lip-ink50);cursor:pointer}',
-      '.lid-segb[aria-pressed="true"]{background:#fff;color:var(--lip-ink);box-shadow:var(--lip-sh)}',
-      '.lid-txt{margin-top:14px;font-size:14px;line-height:1.55;white-space:pre-line;word-break:break-word;background:#F7F9FC;border-radius:14px;padding:14px 15px;max-height:260px;overflow-y:auto;-webkit-overflow-scrolling:touch;color:var(--lip-ink)}',
-      '.lid-h{display:block;font-size:12.5px;font-weight:700;color:var(--lip-ink50);margin:18px 0 7px}',
-      '.lid-vis{margin:0;font-size:13px;line-height:1.5;color:var(--lip-ink70)}',
-      '.lid-pills{display:flex;gap:8px}',
-      '.lid-pill{flex:1;min-height:44px;border-radius:12px;border:1.5px solid rgba(16,19,28,.12);background:#fff;font-family:inherit;font-size:13.5px;font-weight:600;line-height:1;color:var(--lip-ink);box-shadow:var(--lip-sh);cursor:pointer}',
-      '.lid-pill[aria-pressed="true"]{background:var(--lip-blue);border-color:transparent;color:#fff;box-shadow:0 4px 14px rgba(0,87,255,.24)}',
-      '.lid-actions{display:flex;flex-direction:column;gap:10px;margin-top:20px}',
-      '.lid-actions .lip-btn{min-height:44px;justify-content:center}',
-      '.lid-row2{display:flex;gap:10px}',
-      '.lid-row2 .lip-btn{flex:1}',
-      '.lid-ok{background:#1E9E6A;border-color:#1E9E6A;color:#fff;font-weight:700}',
-      '.lid-ok:hover{background:#178556;color:#fff}',
-      '.lid-skip{min-height:44px;background:none;border:0;color:var(--lip-ink50);font-family:inherit;font-size:13px;font-weight:500;line-height:1;text-decoration:underline;cursor:pointer}',
-      '.lid-plus{margin-top:14px;border-top:1px solid var(--lip-line2);padding-top:6px}',
-      '.lid-plus>summary{min-height:44px;display:flex;align-items:center;font-size:13.5px;font-weight:700;color:var(--lip-ink70);cursor:pointer}',
-      '.lid-plus[open]>summary{margin-bottom:10px}',
+      /* colonnes : pas de boîte autour ; une colonne vide se rétracte */
+      '.lpo-board{display:grid;gap:32px;align-items:start}',
+      '.lpo-col{min-width:0}',
+      '.lpo-colt{display:flex;align-items:baseline;gap:12px;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--mk-trait)}',
+      '.lpo-colt b{font-size:var(--mk-s2);line-height:var(--mk-s2l);font-weight:700}',
+      '.lpo-cap{font-size:var(--mk-s5);line-height:var(--mk-s5l);font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--mk-attenue)}',
+      '.lpo-pile{display:grid;gap:24px;grid-template-columns:repeat(auto-fill,minmax(248px,1fr))}',
+      '.lpo-vide{padding:16px;border-radius:var(--mk-r-carte);background:rgba(238,241,246,.6);color:var(--mk-attenue);font-size:var(--mk-s5);line-height:var(--mk-s5l);font-weight:500}',
+      '.lpo-vide strong{display:block;margin-bottom:4px;color:var(--mk-encre);font-size:var(--mk-s5);font-weight:650}',
+      '.lpo-silh{width:72px;border-radius:10px;border:1.5px solid #C9CFDB;padding:6px;margin-bottom:12px}',
+      '.lpo-silh i{display:block;height:6px;border-radius:3px;background:#D5DAE5;margin-top:6px}',
+      '.lpo-silh i:first-child{height:30px;margin-top:0;border-radius:6px}',
+
+      /* la carte d'un post */
+      '.lpo-carte{display:block;min-width:0;padding:8px;cursor:pointer;text-align:left;-webkit-tap-highlight-color:transparent}',
+      '.mk-espace .lpo-carte:focus-visible{border-radius:var(--mk-r-carte)}',
+      '.lpo-carte.ecarte .mk-couv{opacity:.5}',
+      '.lpo-carte.ecarte .lpo-titre{text-decoration:line-through;color:var(--mk-attenue)}',
+      '.lpo-vig{display:block}',
+      '.lpo-corps{display:block;padding:12px 8px 0}',
+      '.lpo-haut{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:18px}',
+      '.lpo-date{font-size:var(--mk-s5);line-height:var(--mk-s5l);font-weight:550;color:var(--mk-attenue);white-space:nowrap}',
+      '.lpo-stat{display:inline-flex;align-items:center;gap:6px;font-size:var(--mk-s5);line-height:var(--mk-s5l);font-weight:600;color:var(--mk-encre2);white-space:nowrap}',
+      '.lpo-stat svg{color:var(--mk-vert)}',
+      '.lpo-titre{margin:6px 0 4px;font-size:var(--mk-s3);line-height:var(--mk-s3l);font-weight:650;color:var(--mk-encre);display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;min-height:44px}',
+      '.lpo-pied{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:44px;padding-left:8px}',
+      '.lpo-fam{flex:1;min-width:0;font-size:var(--mk-s5);line-height:var(--mk-s5l);font-weight:550;color:var(--mk-attenue);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+      '.lpo-fam i,.lpo-famv i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:8px}',
+      '.lpo-pied .mk-qui{margin-right:8px}',
+      '.mk-espace .lpo-claim{flex:none;min-height:44px;padding:0 8px;border-radius:12px;font-size:var(--mk-s5);font-weight:600;color:var(--mk-bleu-txt);white-space:nowrap}',
+      '.lpo-picks{display:flex;gap:8px;flex:none}',
+      '.mk-espace .lpo-pick{width:44px;height:44px;display:grid;place-items:center;border-radius:50%}',
+      '.lpo-pick span{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:var(--mk-s5);font-weight:650;line-height:1;color:var(--mk-attenue);border:1.5px dashed #8C95A8}',
+      '@media (hover:hover){.mk-espace .lpo-claim:hover{background:var(--mk-pale)}.lpo-pick:hover span{border-color:var(--mk-bleu);color:var(--mk-bleu-txt)}}',
+
+      /* bas d'écran : la suite, puis la ligne éditoriale */
+      '.lpo-suite{display:flex;gap:8px;flex-wrap:wrap;margin-top:32px;padding-top:16px;border-top:1px solid var(--mk-trait)}',
+      '.lpo-regle{margin-top:24px}',
+      '.lpo-regle-g{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:8px}',
+      '.lpo-pose{padding:16px 20px;background:#fff;border:1px solid var(--mk-trait);border-radius:var(--mk-r-vig);box-shadow:var(--mk-n1);color:var(--mk-encre2)}',
+      '.lpo-pose b{font-weight:700;color:var(--mk-encre)}',
+
+      /* ═══ le voile et le volet (gestes 4 et 5) ═══ */
+      '.lpo-voile{position:fixed;top:0;right:0;bottom:0;left:0;z-index:900;opacity:0;transition:opacity var(--mk-t2) var(--mk-sortie);background:linear-gradient(90deg,rgba(11,31,77,.16),rgba(11,31,77,.36))}',
+      '.lpo-voile.la{opacity:1}',
+      '.lpo-volet{position:fixed;z-index:901;top:12px;right:12px;bottom:12px;width:min(920px,calc(100vw - 24px));display:flex;flex-direction:column;overflow:hidden;transform-origin:0 0;',
+      'border-radius:var(--mk-r-carte);border:1px solid transparent;background:linear-gradient(180deg,#fff,#FAFBFE) padding-box,var(--mk-arete) border-box;box-shadow:var(--mk-n3)}',
+      '.lpo-dedans{display:flex;flex-direction:column;flex:1;min-height:0}',
+      '.lpo-poignee{display:none}',
+      '.lpo-vt{display:flex;align-items:center;gap:16px;padding:16px 16px 16px 24px;border-bottom:1px solid var(--mk-trait)}',
+      '.lpo-vt h2{margin:0;font-size:var(--mk-s2);line-height:var(--mk-s2l);font-weight:700;letter-spacing:-.01em}',
+      '.lpo-meta{display:flex;gap:4px 12px;flex-wrap:wrap;margin-bottom:2px}',
+      '.lpo-famv,.lpo-etat{display:inline-flex;align-items:center;font-size:var(--mk-s5);line-height:var(--mk-s5l);font-weight:600;color:var(--mk-encre2)}',
+      '.lpo-famv{color:var(--mk-attenue);font-weight:550}',
+      '.lpo-etat i{width:8px;height:8px;border-radius:50%;background:#C9CFDB;margin-right:6px}',
+      '.lpo-etat.pret i{background:var(--mk-bleu)}.lpo-etat.publie i{background:var(--mk-vert)}',
+      '.mk-espace .lpo-x{display:inline-grid;place-items:center;width:44px;height:44px;border-radius:12px;flex:none}',
+      '.lpo-vc{flex:1;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,384px);min-height:0}',
+      '.lpo-scene{position:relative;overflow:auto;-webkit-overflow-scrolling:touch;padding:24px;background:linear-gradient(135deg,#F6F8FD 0,#EDF1FA 100%);border-right:1px solid var(--mk-trait)}',
+      '.lpo-cible{position:absolute;top:12px;right:12px;bottom:12px;left:12px;z-index:3;border-radius:16px;border:2px solid var(--mk-bleu);background:rgba(238,243,255,.92);display:grid;place-items:center;padding:16px;text-align:center;font-weight:650;color:var(--mk-bleu-txt);opacity:0;pointer-events:none;transition:opacity var(--mk-t1) var(--mk-sortie)}',
+      '.lpo-scene.survol .lpo-cible{opacity:1}',
+
+      /* l'aperçu du post, comme sur LinkedIn */
+      '.lpo-li{overflow:hidden;max-width:480px;margin:0 auto}',
+      '.lpo-lt{display:flex;gap:12px;align-items:center;padding:16px 16px 12px}',
+      '.lpo-logo{width:48px;height:48px;border-radius:10px;flex:none;display:grid;place-items:center;color:#fff;font-weight:800;font-size:var(--mk-s3);letter-spacing:-.02em;background:linear-gradient(135deg,#2F7DFF 0,#0050E6 45%,#002A8F 100%);box-shadow:0 1px 0 rgba(255,255,255,.4) inset}',
+      '.lpo-lt strong{display:block;font-size:var(--mk-s3);font-weight:650;line-height:20px}',
+      '.lpo-lt div span{display:block;font-size:var(--mk-s5);line-height:var(--mk-s5l);color:var(--mk-attenue);font-weight:500}',
+      '.lpo-ltxt{display:block;width:100%;margin:0;padding:4px 16px 12px;border:0;border-radius:8px;background:none;resize:none;outline:none;overflow:hidden;font-family:inherit;font-weight:inherit;font-size:16px;line-height:24px;color:var(--mk-encre);transition:box-shadow var(--mk-t1) var(--mk-sortie)}',
+      '.lpo-ltxt.plie{max-height:148px}',
+      '.lpo-ltxt:focus{box-shadow:0 0 0 2px var(--mk-bleu) inset;background:#FDFEFF}',
+      '.mk-espace .lpo-deplier{display:flex;align-items:center;justify-content:flex-end;width:100%;min-height:44px;padding:0 16px;color:var(--mk-attenue);font-weight:600}',
+      '.lpo-vis{position:relative;display:block;background:#0A2A7A}',
+      '.lpo-vis .mk-couv{border-radius:0}',
+      '.mk-espace .lpo-vzoom{display:block;width:100%;padding:0;cursor:zoom-in;border-radius:0}',
+      '.lpo-vimg{display:block;width:100%;height:auto;max-height:520px;object-fit:cover;background:#fff}',
+      '.lpo-vis video{display:block;width:100%;max-height:520px;background:#000}',
+      '.lpo-envoi{position:absolute;left:0;right:0;bottom:0;z-index:2;padding:8px 16px 12px;background:rgba(8,20,60,.78);color:#fff;font-size:var(--mk-s5);line-height:var(--mk-s5l);font-weight:600}',
+      '.lpo-envoi .mk-prog{margin-top:8px;background:#fff}',
+      '.lpo-envoi-fond{display:block;height:3px;margin-top:-3px;border-radius:999px;background:rgba(255,255,255,.25)}',
+      '.lpo-lact{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--mk-trait);padding:0 8px}',
+      '.lpo-lact span{display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;font-size:var(--mk-s5);font-weight:600;color:var(--mk-attenue)}',
+      '.lpo-aide{max-width:480px;margin:12px auto 0;display:flex;justify-content:space-between;gap:12px;align-items:center;min-height:44px;font-size:var(--mk-s5);line-height:var(--mk-s5l);font-weight:500;color:var(--mk-attenue)}',
+      '.lpo-erreur{display:flex;gap:8px;align-items:flex-start;margin:8px 0 0;font-size:var(--mk-s5);line-height:var(--mk-s5l);font-weight:600;color:#A32D47}',
+
+      /* les réglages, à droite */
+      '.lpo-regl{overflow:auto;-webkit-overflow-scrolling:touch;padding:8px 24px 24px}',
+      '.lpo-regl section{padding:16px 0;border-bottom:1px solid var(--mk-trait)}',
+      '.lpo-regl section:last-child{border-bottom:0}',
+      '.lpo-regl .lpo-cap{display:block;margin-bottom:8px}',
+      '.mk-espace .lpo-sujet{display:grid;grid-template-columns:28px 1fr;gap:12px;align-items:start;width:100%;text-align:left;padding:10px 12px;border-radius:var(--mk-r-vig);min-height:48px;border:1px solid transparent}',
+      '.lpo-sujet+.lpo-sujet{margin-top:4px}',
+      '.lpo-sujet i{font-style:normal;width:28px;height:28px;border-radius:8px;display:grid;place-items:center;font-size:var(--mk-s5);font-weight:700;background:var(--mk-groupe);color:var(--mk-encre2)}',
+      '.lpo-sujet strong{font-weight:600;font-size:var(--mk-s4);line-height:22px}',
+      '.lpo-sujet.lpo-idee strong{font-weight:500;font-size:var(--mk-s5);line-height:var(--mk-s5l);color:var(--mk-encre2)}',
+      '.mk-espace .lpo-sujet[aria-pressed="true"]{background:var(--mk-pale);border-color:rgba(0,80,230,.22)}',
+      '.lpo-sujet[aria-pressed="true"] i{background:var(--mk-bleu);color:#fff}',
+      '.lpo-sujet[aria-pressed="true"] strong{color:var(--mk-encre)}',
+      '.lpo-t5{margin:8px 0 0;font-size:var(--mk-s5);line-height:var(--mk-s5l);color:var(--mk-attenue);font-weight:500}',
+      '.lpo-media{display:grid;grid-template-columns:64px minmax(0,1fr);gap:12px;align-items:center}',
+      '.lpo-mv{position:relative;width:64px;height:64px;border-radius:var(--mk-r-vig);overflow:hidden;background:#0A2A7A}',
+      '.lpo-mv .mk-couv{aspect-ratio:auto;height:100%;border-radius:0}',
+      '.lpo-mv .mk-couv-puce,.lpo-mv .mk-couv-rond{display:none}',
+      '.lpo-ok{position:absolute;right:4px;bottom:4px;width:20px;height:20px;border-radius:50%;background:var(--mk-vert);color:#fff;display:grid;place-items:center}',
+      '.lpo-media strong{display:block;font-size:var(--mk-s4);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+      '.lpo-media span{display:block;font-size:var(--mk-s5);line-height:var(--mk-s5l);color:var(--mk-attenue);font-weight:500}',
+      '.lpo-mact{display:flex;gap:4px;flex-wrap:wrap;margin:4px 0 0 -12px}',
+      '.mk-espace .mk-btn.lpo-rose{color:#B93550}',
+      '.lpo-bloc{width:100%}',
+      '.lpo-fichier{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}',
+      '.lpo-champ{display:block;width:100%;min-height:72px;padding:12px;font-family:inherit;font-size:16px;line-height:24px;color:var(--mk-encre);border-radius:var(--mk-r-vig);border:1px solid var(--mk-trait);background:#fff;box-shadow:0 1px 2px rgba(11,31,77,.06) inset;resize:vertical;outline:none}',
+      '.lpo-champ:focus{border-color:var(--mk-bleu);box-shadow:0 0 0 3px rgba(0,80,230,.16)}',
+      'details.lpo-repli>summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;cursor:pointer;font-weight:600}',
+      'details.lpo-repli>summary::-webkit-details-marker{display:none}',
+      'details.lpo-repli[open]>summary svg{transform:rotate(180deg)}',
+      'details.lpo-repli[open]>summary{margin-bottom:8px}',
+      '.lpo-appr{--n:3;margin-bottom:8px}',
+      '.mk-espace .lpo-appr button{font-size:var(--mk-s5);padding:0 4px;white-space:normal;line-height:16px}',
+      '.lpo-prompt{background:var(--mk-groupe);color:var(--mk-encre2);border-radius:var(--mk-r-vig);padding:12px;font-family:"PlexMono",ui-monospace,Menlo,monospace;font-size:13px;line-height:20px;white-space:pre-wrap;word-break:break-word;max-height:220px;overflow:auto;-webkit-overflow-scrolling:touch}',
+      '.lpo-rang{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}',
+      '.lpo-note{margin-top:8px;padding:12px;border-radius:var(--mk-r-vig);background:var(--mk-pale);font-size:var(--mk-s5);line-height:var(--mk-s5l);color:var(--mk-encre2)}',
+      '.lpo-autres{display:none;gap:8px;flex-wrap:wrap}',
+
+      /* le pied du volet : un seul bouton plein */
+      '.lpo-vp{display:flex;align-items:center;gap:8px;padding:12px 24px;border-top:1px solid var(--mk-trait);background:linear-gradient(180deg,#fff,#F8FAFE)}',
+      '.lpo-pousse{flex:1}',
+      '.lpo-publie{display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px;font-size:var(--mk-s3);font-weight:650;color:var(--mk-encre)}',
+      '.lpo-publie svg{color:var(--mk-vert)}',
+
+      /* ═══ 390 px : les trois étapes en contrôle segmenté, le volet en feuille plein écran ═══ */
+      '@media (max-width:860px){',
+      '#v2-root .lip.lpo{padding:16px 16px 32px}',
+      '.lpo-tete{flex-direction:column;align-items:stretch;gap:16px;margin-bottom:16px}',
+      '.lpo-nb{display:none}',
+      '.lpo-moi{min-width:0;width:100%}',
+      '.lpo .lpo-etapes{display:grid;position:sticky;top:calc(var(--mk-barre-h) + 8px);z-index:20;margin-bottom:16px;box-shadow:0 1px 2px rgba(11,31,77,.08) inset,0 8px 16px -8px rgba(11,31,77,.18)}',
+      '.mk-espace .lpo-etapes button{padding:0 4px;gap:6px}',
+      '.lpo-board{display:block}',
+      '.lpo-col{display:none}',
+      '.lpo-col.active{display:block}',
+      '.lpo-col.arrive{animation:lpo-vue 160ms var(--mk-sortie) both}',
+      '.lpo-colt{display:none}',
+      '.lpo-pile{grid-template-columns:minmax(0,1fr);gap:16px}',
+      '.lpo-carte{display:grid;grid-template-columns:128px minmax(0,1fr);column-gap:4px;align-items:center}',
+      '.lpo-corps{padding:4px 8px;min-width:0}',
+      '.lpo-titre{margin:2px 0 0;min-height:0}',
+      '.lpo-pied{grid-column:1/-1;padding-left:4px}',
+      '.lpo-carte .mk-couv-puce{display:none}',
+      '.lpo-regle-g{grid-template-columns:minmax(0,1fr);gap:12px}',
+      '.lpo-suite .mk-btn{flex:1 1 auto}',
+      '.lpo-volet{top:auto;left:0;right:0;bottom:0;width:100%;height:calc(100% - 12px);border-radius:var(--mk-r-carte) var(--mk-r-carte) 0 0;border-bottom:0}',
+      '.lpo-poignee{display:block;flex:none;width:40px;height:4px;border-radius:2px;background:#C9CFDB;margin:8px auto -4px}',
+      '.lpo-vt{padding:8px 8px 8px 16px}',
+      '.lpo-vc{display:block;overflow:auto;-webkit-overflow-scrolling:touch}',
+      '.lpo-scene{overflow:visible;padding:16px;border-right:0;border-bottom:1px solid var(--mk-trait)}',
+      '.lpo-regl{overflow:visible;padding:0 16px 16px}',
+      '.lpo-vp{flex-wrap:wrap;padding:8px 16px calc(8px + env(safe-area-inset-bottom,0px))}',
+      '.lpo-vp .mk-plein,.lpo-vp .lpo-publie{order:-1;width:100%}',
+      '.lpo-pousse{display:none}',
+      '.mk-espace .lpo-vp .mk-texte{flex:1;padding:0 4px}',
+      '.mk-espace .lpo-vp .lpo-sec2{display:none}',
+      '.lpo-autres{display:flex}',
+      '}',
+      '@keyframes lpo-vue{from{opacity:0;transform:translateX(calc(var(--sens,1)*8px))}to{opacity:1;transform:none}}',
+      '@media (prefers-reduced-motion:reduce){.lpo-col.arrive,.lpo-flash{animation:none}}',
 
       '.lip-fmt{font-size:11.5px;font-weight:600;color:var(--lip-ink35);padding:3px 9px;border-radius:20px;background:#f1f4f8}',
-      '.lid-txta{display:block;width:100%;min-height:230px;max-height:none;box-sizing:border-box;border:1.5px solid transparent;font-family:inherit;font-size:16px;resize:vertical;outline:none}',
-      '.lid-txta:focus{border-color:var(--lip-line);background:#fff}',
-      '.lip-apercu video{max-width:100%;max-height:300px;border-radius:11px;display:block;margin-bottom:10px;background:#000}',
-      '.lip-apercu img{max-width:100%;max-height:300px;border-radius:11px;display:block;margin-bottom:10px;cursor:zoom-in;box-shadow:0 2px 12px rgba(10,14,26,.12)}',
-      '.lip-imgacts{display:flex;gap:8px;flex-wrap:wrap}',
       '.lip-swatch{display:flex;gap:12px;align-items:flex-start;margin-bottom:11px;font-size:12.5px;line-height:1.5;color:var(--lip-ink70)}',
       '.lip-swatch span{width:42px;height:42px;border-radius:9px;flex:none;border:1px solid rgba(10,14,26,.14)}',
       '.lip-swatch code{font-size:11.5px;color:var(--lip-ink35)}',
-      '.lip-aptabs{display:flex;gap:6px;background:var(--lip-line2);border-radius:10px;padding:4px;margin-bottom:9px;flex-wrap:wrap}',
-      '.lip-apbtn{flex:1;min-width:104px;min-height:38px;padding:0 12px;border-radius:8px;border:0;background:transparent;font-family:inherit;font-size:12.5px;font-weight:700;line-height:1.25;color:var(--lip-ink50);cursor:pointer;transition:all .15s var(--lip-ease)}',
-      '.lip-apbtn.on{background:var(--lip-panel);color:var(--lip-ink);box-shadow:var(--lip-sh)}',
-      '.lip-apaide{font-size:12.5px;line-height:1.55;color:var(--lip-ink35);margin-bottom:10px}',
       '.lip-prompt{background:#12122e;color:#e7e9f5;border-radius:11px;padding:13px 15px;font:400 12.5px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap;word-break:break-word;max-height:210px;overflow:auto;-webkit-overflow-scrolling:touch}',
 
       /* drawer */
-      '#lip-drawer .lip-scrim{position:fixed;inset:0;background:rgba(12,17,28,.42);opacity:0;transition:opacity .3s var(--lip-ease);z-index:900}',
-      '#lip-drawer .lip-scrim.open{opacity:1}',
-      '#lip-drawer .lip-dr{position:fixed;top:0;right:0;bottom:0;width:min(660px,100vw);background:#fff;box-shadow:-20px 0 60px rgba(10,14,26,.20);display:flex;flex-direction:column;transform:translateX(102%);transition:transform .34s var(--lip-ease);z-index:901}',
-      '#lip-drawer .lip-dr.open{transform:translateX(0)}',
+      '#lip-da .lip-scrim{position:fixed;top:0;right:0;bottom:0;left:0;background:rgba(12,17,28,.42);opacity:0;transition:opacity .3s var(--lip-ease);z-index:910}',
+      '#lip-da .lip-scrim.open{opacity:1}',
+      '#lip-da .lip-dr{position:fixed;top:0;right:0;bottom:0;width:min(660px,100vw);background:#fff;box-shadow:-20px 0 60px rgba(10,14,26,.20);display:flex;flex-direction:column;transform:translateX(102%);transition:transform .34s var(--lip-ease);z-index:911}',
+      '#lip-da .lip-dr.open{transform:translateX(0)}',
+      /* lot 3 : dans ce panneau, aucun texte sous 13 px */
+      '#lip-da .lip-eyebrow,#lip-da .lip-flab,#lip-da .lip-swatch,#lip-da .lip-swatch code,#lip-da .lip-srow,#lip-da .lip-srow span,#lip-da .lip-vaide{font-size:13px}',
+      '#lip-da .lip-prompt{font-size:13px;background:#0E1630}',
       '.lip-drh{display:flex;align-items:flex-start;gap:12px;padding:20px 22px 16px;border-bottom:1px solid var(--lip-line2)}',
       '.lip-drh h2{margin:2px 0 0;font-size:19px;font-weight:800;letter-spacing:-.02em;line-height:1.28}',
       '.lip-eyebrow{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--lip-ink35)}',
@@ -171,7 +273,6 @@
       '.lip-drf{display:flex;gap:9px;align-items:center;padding:14px 22px;border-top:1px solid var(--lip-line2);background:#fcfdfe;flex-wrap:wrap}',
       '.lip-field{margin-bottom:24px}',
       '.lip-flab{display:block;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--lip-ink35);margin-bottom:9px}',
-      '.lip-note{font-size:13px;line-height:1.6;color:var(--lip-ink70);background:var(--lip-blue050);border-left:3px solid var(--lip-blue);border-radius:0 9px 9px 0;padding:11px 14px}',
 
 
       /* variantes */
@@ -179,18 +280,10 @@
       '.lip-var:hover{border-color:#c9d3e2;background:#fcfdff}',
       '.lip-var.on{border-color:var(--lip-blue);background:var(--lip-blue050);box-shadow:0 0 0 3px rgba(0,87,255,.09)}',
       '.lip-vtop{display:flex;align-items:center;gap:9px;margin-bottom:9px}',
-      '.lip-radio{width:19px;height:19px;border-radius:50%;border:2px solid #c3ccdb;flex:none;display:flex;align-items:center;justify-content:center;background:#fff}',
-      '.lip-var.on .lip-radio{border-color:var(--lip-blue)}',
-      '.lip-var.on .lip-radio::after{content:"";width:9px;height:9px;border-radius:50%;background:var(--lip-blue)}',
       '.lip-vton{font-size:13px;font-weight:800;letter-spacing:-.01em}',
-      '.lip-vlen{font-size:11.5px;color:var(--lip-ink35);font-weight:600;margin-left:auto}',
-      '.lip-vtxt{font-size:13.5px;line-height:1.62;color:var(--lip-ink70);white-space:pre-wrap;word-break:break-word}',
       '.lip-vaide{font-size:11.5px;color:var(--lip-ink35);margin-top:7px;font-style:italic}',
 
 
-      '.lip-ta{width:100%;min-height:96px;padding:12px 14px;border-radius:10px;border:1.5px solid var(--lip-line);font-family:inherit;font-size:16px;font-weight:400;line-height:1.55;color:var(--lip-ink);resize:vertical;background:#fff;box-sizing:border-box}',
-      '.lip-ta:focus{outline:none;border-color:var(--lip-blue);box-shadow:0 0 0 3px rgba(0,87,255,.09)}',
-      '.lip-hint{font-size:12px;color:var(--lip-ink35);margin-top:7px;line-height:1.5}',
       '.lip-tags{font-size:12.5px;color:var(--lip-ink50);font-weight:600;margin-top:8px}',
       '.lip-empty{text-align:center;padding:60px 20px;color:var(--lip-ink35);font-size:14px}',
 
@@ -230,19 +323,12 @@
       /* mobile */
       '@media(max-width:760px){',
       '#v2-root .lip{padding:6px 14px 90px}',
-      '.lid-resume{font-size:21px}',
-      '.lid-tabs{display:flex}',
-      '.lid-board{display:block;margin-top:4px}',
-      '.lid-col{display:none}',
-      '.lid-col.active{display:flex}',
-      '.lid-colh{display:none}',
-      '.lid-pick{width:44px}',
       /* flex:1 laissait 28 px au champ de recherche derrière les deux listes
          déroulantes : sur mobile il prend sa propre ligne, en entier. */
       '.lip-inp{flex:1 1 100%;min-width:0;width:100%}',
       '.lip-sel{flex:1 1 44%;min-width:0}',
       '.lip-drh,.lip-drb,.lip-drf{padding-left:16px;padding-right:16px}',
-      '.lip-btn,.lip-close,.lip-apbtn,.lid-pick{min-height:44px}',
+      '.lip-btn,.lip-close{min-height:44px}',
       /* 44 px partout au doigt, champs de saisie compris : à 36 px on rate la cible */
       '.lip-chip{height:44px}',
       '.lip-sel,.lip-inp{height:44px}',
@@ -309,7 +395,6 @@
   }
   function piliers() { return window.LI_PLAN_PILIERS || []; }
   function pilier(k) { var a = piliers(); for (var i = 0; i < a.length; i++) if (a[i].k === k) return a[i]; return { k: k, label: k, color: '#ccc', bg: '#eee' }; }
-  function meta() { return window.LI_PLAN_META || {}; }
 
   /* ────────── les 3 sujets d'un même créneau ──────────
      LI_PLAN porte le sujet d'origine ; mkt-li-plan-alt-data.js porte les deux
@@ -569,19 +654,18 @@
     var i = (ouvert.e.visuel === null) ? 0 : ouvert.e.visuel;
     var txt = promptPour(sujetOuvert(), i, apprCourante());
     if (!txt) { toast('La fiche de direction artistique n’est pas chargée', 'error'); return; }
-    var a = approcheDe(apprCourante());
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(txt).then(
-        function () { toast('Prompt « ' + a.label + ' » copié'); },
+        function () { var S = V2.mktSocle; if (S && S.confirmer) S.confirmer(document.getElementById('lpo-copier-prompt')); },
         function () { window.prompt('Copiez le prompt :', txt); });
     } else window.prompt('Copiez le prompt :', txt);
   };
   V2.lip.voirDA = function () {
     var d = da();
     if (!d) { chargerDA(); toast('Chargement de la direction artistique…'); return; }
-    monter(daHtml());
+    monterDA(daHtml());
   };
-  function chargerDA() { charger('mkt-li-da-data.js', da).then(function (ok) { if (ok) monter(daHtml()); }); }
+  function chargerDA() { charger('mkt-li-da-data.js', da).then(function (ok) { if (ok) monterDA(daHtml()); }); }
 
   function daHtml() {
     var d = da();
@@ -591,7 +675,7 @@
     }).join('');
     var mesures = d.constat.map(function (c) {
       return '<div class="lip-srow" style="align-items:flex-start"><span class="lip-sk" style="min-width:92px">' + esc(c.k) + '</span>' +
-        '<span style="flex:1;text-align:right"><b>' + esc(c.v) + '</b><br><span style="color:var(--lip-ink35);font-size:12px">' + esc(c.d) + '</span></span></div>';
+        '<span style="flex:1;text-align:right"><b>' + esc(c.v) + '</b><br><span style="color:var(--lip-ink35);font-size:13px">' + esc(c.d) + '</span></span></div>';
     }).join('');
     var fam = d.approches.map(function (f) {
       return '<div class="lip-var" style="cursor:default"><div class="lip-vtop"><span class="lip-vton">' + esc(f.label) + '</span></div>' +
@@ -600,13 +684,13 @@
     }).join('');
     var liste = function (a) { return '<ul style="margin:0;padding-left:19px;font-size:13.5px;line-height:1.65;color:var(--lip-ink70)">' +
       a.map(function (x) { return '<li style="margin-bottom:6px">' + esc(x) + '</li>'; }).join('') + '</ul>'; };
-    return '<div class="lip-scrim" onclick="V2.lip.fermer()"></div>' +
+    return '<div class="lip-scrim" onclick="V2.lip.fermerDA()"></div>' +
       '<aside class="lip-dr" role="dialog" aria-modal="true" aria-label="Direction artistique image">' +
         '<div class="lip-drh"><div style="flex:1;min-width:0">' +
           '<div class="lip-eyebrow">Direction artistique · image</div>' +
           '<h2>Ce à quoi ressemblent nos visuels</h2>' +
           '<div class="lip-sub" style="margin-top:6px">Relevé sur ' + esc(d.corpus) + '.</div>' +
-        '</div><button class="lip-close" onclick="V2.lip.fermer()" aria-label="Fermer">' + ICO('close', 18, 2) + '</button></div>' +
+        '</div><button class="lip-close" onclick="V2.lip.fermerDA()" aria-label="Fermer">' + ICO('close', 18, 2) + '</button></div>' +
         '<div class="lip-drb">' +
           '<div class="lip-field"><span class="lip-flab">Ce qui a été mesuré</span>' +
             '<div class="lip-scard" style="box-shadow:none">' + mesures + '</div></div>' +
@@ -616,7 +700,7 @@
           '<div class="lip-field"><span class="lip-flab">Ce qu’on évite</span>' + liste(d.aEviter) + '</div>' +
         '</div>' +
         '<div class="lip-drf"><span class="lip-spacer"></span>' +
-          '<button class="lip-btn lip-btn-p" onclick="V2.lip.fermer()">Fermer</button></div>' +
+          '<button class="lip-btn" onclick="V2.lip.fermerDA()">Fermer</button></div>' +
       '</aside>';
   }
 
@@ -641,47 +725,72 @@
   }
   // Le fichier du post se partage tout de suite, comme « Qui s'en occupe » : sans
   // emporter le sujet ou le texte encore à l'essai dans la fiche.
-  function partagerFichier(chemin, msg) {
-    var s = copieEtat(etat(ouvert.n));
-    ouvert.e.image_path = chemin; s.image_path = chemin; s.sujet = sujetEff(ouvert.p, s);
-    enregistrer(ouvert.n, s).then(function () { redessineTiroir(); if (backend === 'supabase') toast(msg); });
+  function partagerFichier(n, chemin) {
+    var p = postDe(n); if (!p) return;
+    var s = copieEtat(etat(n));
+    s.image_path = chemin; s.sujet = sujetEff(p, s);
+    if (ouvert && ouvert.n === n) ouvert.e.image_path = chemin;
+    enregistrer(n, s).then(function () { signalerEnregistre(); redessineTiroir(); redessine(); });
   }
-  V2.lip.envoyerImage = function (input) {
-    var f = input.files && input.files[0]; if (!f || !ouvert) return;
+  // Lot 3 — geste 8 : le refus s'écrit DANS la zone du média (mêmes limites, mêmes phrases qu'avant), plus dans une boîte du navigateur.
+  function refuserFichier(msg) { if (!ouvert) return; ouvert.erreurMedia = msg; redessineTiroir(); }
+  function envoyerFichier(f) {
+    if (!f || !ouvert || ouvert.envoi) return;
+    ouvert.erreurMedia = ''; ouvert.note = '';
     var c = sb();
-    if (!(c && c.storage)) { alert('Envoi impossible : vous n’êtes pas connecté à la base.\n\nReconnectez-vous, ou collez l’adresse d’une image déjà en ligne.'); input.value = ''; return; }
+    if (!(c && c.storage)) return refuserFichier('Envoi impossible : vous n’êtes pas connecté à la base. Reconnectez-vous, puis recommencez.');
     var estImage = /^image\//.test(f.type), genre = estImage ? 'image' : genreFichier(f.name);
-    if (!estImage && genre === 'image') { alert('Ce type de fichier n’est pas accepté (' + (f.type || 'type inconnu') + ').\nFormats acceptés : image, vidéo MP4 ou MOV, document PDF.'); input.value = ''; return; }
+    if (!estImage && genre === 'image') return refuserFichier('Ce type de fichier n’est pas accepté (' + (f.type || 'type inconnu') + '). Formats acceptés : image, vidéo MP4 ou MOV, document PDF.');
     var max = estImage ? MAX_IMG : MAX_AUTRE;
-    if (f.size > max) { alert('Fichier trop lourd : ' + (f.size / 1048576).toFixed(1) + ' Mo.\nLa limite est de ' + (max / 1048576) + ' Mo.'); input.value = ''; return; }
-    ouvert.envoi = 'Envoi de « ' + f.name + ' » en cours…';
+    if (f.size > max) return refuserFichier('Fichier trop lourd : ' + (f.size / 1048576).toFixed(1) + ' Mo. La limite est de ' + (max / 1048576) + ' Mo.');
+    var n = ouvert.n, local = '';
+    if (genre !== 'doc') { try { local = URL.createObjectURL(f); } catch (e) {} }
+    var env = ouvert.envoi = { nom: f.name, genre: genre, url: local, p: .12 };
     redessineTiroir();
+    /* Le service d'envoi ne donne pas l'avancement en octets : la barre AVANCE vers 90 % tant que l'envoi dure,
+       et ne se remplit qu'à la vraie fin. Elle dit « ça travaille », elle ne ment pas sur « c'est fini ». */
+    var minuteur = setInterval(function () {
+      env.p += (.9 - env.p) * .08;
+      var b = document.getElementById('lpo-prog'); if (b) b.style.setProperty('--p', env.p.toFixed(3));
+    }, 200);
+    var finir = function (msg, chemin) {
+      clearInterval(minuteur);
+      var ici = ouvert && ouvert.n === n && ouvert.envoi === env;
+      var solder = function () {
+        if (local) { try { URL.revokeObjectURL(local); } catch (e) {} }
+        if (ici) { ouvert.envoi = null; ouvert.erreurMedia = msg || ''; }
+        if (msg) { redessineTiroir(); return; }
+        partagerFichier(n, chemin);
+      };
+      if (msg || !ici) return solder();
+      var b = document.getElementById('lpo-prog'); if (b) b.style.setProperty('--p', 1);   // plein, puis la barre s'efface avec la zone
+      setTimeout(solder, calme() ? 0 : 240);
+    };
     var ext = (f.name.match(/\.[a-zA-Z0-9]+$/) || [''])[0].toLowerCase();
     var base = f.name.replace(/\.[a-zA-Z0-9]+$/, '');
-    if (base.normalize) base = base.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    if (base.normalize) base = base.normalize('NFD').replace(/[̀-ͯ]/g, '');
     base = base.replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'visuel';
-    var chemin = 'linkedin/plan' + ouvert.n + '_' + Date.now() + '_' + base + ext;
+    var chemin = 'linkedin/plan' + n + '_' + Date.now() + '_' + base + ext;
     c.storage.from('marketing-media').upload(chemin, f, { upsert: true, contentType: f.type || undefined })
       .then(function (r) {
-        if (!ouvert) return;
-        ouvert.envoi = '';
         if (r && r.error) {
           var m = r.error.message || 'raison inconnue';
           if (/bucket/i.test(m)) m = 'l’espace de stockage est introuvable côté serveur';
           else if (/policy|permission|unauthor|403/i.test(m)) m = 'votre compte n’a pas le droit d’écrire ici';
           else if (/size|large|413/i.test(m)) m = 'le fichier est trop lourd pour le serveur';
-          alert('Le fichier n’a pas été envoyé : ' + m + '.'); redessineTiroir(); return;
+          return finir('Le fichier n’a pas été envoyé : ' + m + '.');
         }
-        partagerFichier(chemin, 'Fichier ajouté et partagé avec l’équipe');
+        finir('', chemin);
       })
-      .catch(function (err) {
-        if (!ouvert) return;
-        ouvert.envoi = '';
-        alert('Le fichier n’a pas été envoyé : ' + String(err.message || err).slice(0, 140) + '.');
-        redessineTiroir();
-      });
+      .catch(function (err) { finir('Le fichier n’a pas été envoyé : ' + String(err.message || err).slice(0, 140) + '.'); });
+  }
+  V2.lip.envoyerImage = function (input) {
+    var f = input && input.files && input.files[0];
+    if (input) input.value = '';
+    envoyerFichier(f);
   };
-  V2.lip.retirerImage = function () { if (ouvert) partagerFichier('', 'Fichier retiré'); };
+  V2.lip.choisirFichier = function () { var i = document.getElementById('lpo-fichier'); if (i) i.click(); };
+  V2.lip.retirerImage = function () { if (ouvert) { ouvert.erreurMedia = ''; partagerFichier(ouvert.n, ''); } };
   V2.lip.zoomTiroir = function () {
     if (ouvert && ouvert.e.image_path && genreFichier(ouvert.e.image_path) === 'image' && V2.li && V2.li.zoom) V2.li.zoom(urlImage(ouvert.e.image_path), ouvert.p.titre);
   };
@@ -713,14 +822,21 @@
   // Un post libre suit son propre statut : idée et rédaction = à choisir.
   function etapeLibre(x) { return x.status === 'publie' ? 'publie' : (x.status === 'pret' ? 'pret' : 'choisir'); }
   function carteLibre(x) {
-    var id = esc(String(x.id));
-    return '<article class="lid-card" tabindex="0" role="button" aria-label="Ouvrir le post libre du ' + esc(dateCourte(new Date(x.date))) + '" ' +
+    var id = esc(String(x.id)), d = new Date(x.date), quand = dateCourte(d);
+    var S = V2.mktSocle, titre = x.title || '(sans titre)';
+    var couv = (S && S.couverture) ? S.couverture({ titre: titre, surtitre: 'Hors plan', famille: 'Post libre', motif: 'cercles', pale: true,
+      media: x.image_path ? urlImage(x.image_path) : '', genre: genreFichier(x.image_path), alt: 'Visuel du post libre : ' + titre }) : '';
+    return '<article class="lpo-carte mk-souleve mk-lever" tabindex="0" role="button" data-mk-id="L' + id + '" aria-label="Ouvrir le post libre du ' + esc(quand) + '" ' +
       'onclick="V2.lip.ouvrirLibre(\'' + id + '\')" ' +
       'onkeydown="if(event.target===this&&(event.key===\'Enter\'||event.key===\' \')){event.preventDefault();V2.lip.ouvrirLibre(\'' + id + '\')}">' +
-      '<div class="lid-main"><div class="lid-top"><span class="lid-date">' + esc(dateCourte(new Date(x.date))) + '</span>' +
-        '<span class="lid-pil">Hors plan</span></div>' +
-        '<p class="lid-title">' + esc(x.title || '(sans titre)') + '</p></div></article>';
+      '<span class="lpo-vig">' + couv + '</span>' +
+      '<div class="lpo-corps"><div class="lpo-haut"><span class="lpo-date">' + esc(quand + ' · ' + pad2(d.getHours()) + ' h ' + pad2(d.getMinutes())) + '</span>' +
+        (x.status === 'publie' ? '<span class="lpo-stat" title="Publié">' + icS('coche', 16, 2.5) + '</span>' : '') + '</div>' +
+        '<p class="lpo-titre">' + esc(titre) + '</p></div>' +
+      '<div class="lpo-pied"><span class="lpo-fam"><i style="background:#8C95A8"></i>Hors plan</span></div></article>';
   }
+  // Icône du jeu de l'espace Marketing (v2-mkt-socle.js) ; à défaut, rien.
+  function icS(n, s, w) { return (V2.mktSocle && V2.mktSocle.ic) ? V2.mktSocle.ic(n, s, w) : ''; }
   function pad2(n) { return ('0' + n).slice(-2); }
   /* ───────────────── rendu : rétro-planning ───────────────── */
   function moisLabel(ym) {
@@ -761,27 +877,77 @@
   ];
   function etapeDe(e) { return e.publie ? 'publie' : (e.statut === 'valide' ? 'pret' : 'choisir'); }
 
+  /* ────────── la couverture d'un post (lot 3) ──────────
+     Le visuel importé s'il existe ; sinon une couverture TYPOGRAPHIQUE fabriquée depuis l'idée de visuel
+     (la phrase entre guillemets d'un « visuel typographique ») ou, à défaut, depuis le titre.
+     Le dessin lui-même vit dans le socle (V2.mktSocle.couverture) : « Cette semaine » le réutilisera. */
+  var MOTIF_FAM = { sante: 'bouclier', depistage: 'oeil', vaccin: 'anneau', rse: 'cercles', pharmaciens: 'croix' };
+  var MOTIF_MOT = [[/octobre rose|cancer du sein|ruban/i, 'ruban'], [/lavage des mains|hydrat|canicule|don du sang/i, 'gouttes'],
+    [/\bvue\b|vision|\byeux\b/i, 'oeil'], [/c(œ|oe)ur|\bavc\b|tension|cardia/i, 'onde'], [/s[ée]curit[ée]/i, 'bouclier'],
+    [/vaccin|grippe/i, 'anneau'], [/pharmacien|merci/i, 'croix']];
+  var FORMATS = { carrousel: ['Carrousel', 'pile'], video: ['Vidéo', 'lecture'], 'multi-images': ['Plusieurs images', 'pile'] };
+  function nomFichier(chemin) { return String(chemin || '').split('?')[0].replace(/^.*\/plan\d+_\d+_/, '').replace(/^.*\//, ''); }
+  function infoCouv(p, e) {
+    var cur = sujetDe(p, sujetEff(p, e)), pl = pilier(p.p), titre = String(cur.titre || '');
+    var idee = (cur.v && cur.v[(e.visuel === null || e.visuel === undefined) ? 0 : e.visuel]) || (cur.v && cur.v[0]) || '';
+    var m = /^(\d{1,2}(?:er)?\s+[^\s—]+)\s+—\s+(.+)$/.exec(titre);
+    var mots = /typographique|citation/i.test(idee) ? motsAPoser(idee) : [], phrase = '';
+    for (var i = 0; i < mots.length; i++) if (mots[i].length >= 4 && mots[i].length <= 84) { phrase = mots[i]; break; }
+    var texte = phrase || (m ? m[2] : titre), motif = MOTIF_FAM[p.p] || 'anneau';
+    for (var k = 0; k < MOTIF_MOT.length; k++) if (MOTIF_MOT[k][0].test(titre)) { motif = MOTIF_MOT[k][1]; break; }
+    var fmt = FORMATS[cur.f];
+    return { lignes: V2.mktSocle.plier(texte, texte.length > 60 ? 24 : 20), surtitre: m ? m[1] : pl.label, famille: m ? pl.label : '',
+      motif: motif, pale: p.n % 3 === 0, graine: p.n, alt: 'Visuel du post : ' + titre,
+      media: e.image_path ? urlImage(e.image_path) : '', genre: genreFichier(e.image_path), fichier: nomFichier(e.image_path),
+      etiquette: fmt ? fmt[0] : '', etiquetteIc: fmt ? fmt[1] : '' };
+  }
+  function couvDe(p, e, sansMedia) {
+    if (!(V2.mktSocle && V2.mktSocle.couverture)) return '';
+    var o = infoCouv(p, e);
+    if (sansMedia) { o.media = ''; o.etiquette = ''; }
+    return V2.mktSocle.couverture(o);
+  }
+  function personneHtml(k) {
+    return '<span class="mk-qui" role="img" aria-label="' + esc(quiLabel(k)) + ' s’en occupe" title="' + esc(quiLabel(k)) + '">' +
+      '<span class="mk-pp mk-pp-' + (k === 'pauline' ? 'p' : 'w') + '">' + esc(quiLabel(k).charAt(0)) + '</span></span>';
+  }
+  function heureFr(h) { return String(h || '').replace(':', ' h '); }
+
   function carte(p) {
     var e = etat(p.n), pl = pilier(p.p);
     var S = sujetsDe(p), cur = S[sujetEff(p, e)] || S[0];
     var quand = dateCourte(new Date(p.d + 'T12:00:00'));
     var pied;
-    if (e.resp) pied = '<span class="lid-av" title="' + esc(quiLabel(e.resp)) + '">' + esc(quiLabel(e.resp).charAt(0)) + '</span>';
-    else if (moi !== 'both') pied = '<button class="lid-claim" onclick="event.stopPropagation();V2.lip.quiFait(' + p.n + ',\'' + moi + '\')">Je m’en occupe</button>';
-    else pied = QUI.map(function (q) {
-      return '<button class="lid-pick" aria-label="' + esc(q.label) + ' s’en occupe" onclick="event.stopPropagation();V2.lip.quiFait(' + p.n + ',\'' + q.k + '\')">' + esc(q.label.charAt(0)) + '</button>';
-    }).join('');
-    return '<article class="lid-card' + (e.statut === 'refuse' ? ' ecarte' : '') + '" tabindex="0" role="button" data-n="' + p.n + '" aria-label="Ouvrir le post du ' + esc(quand) + '" ' +
+    // La pastille de personne ne s'affiche que si le post est attribué ; sinon « Je m'en occupe » reste à portée, comme avant.
+    if (e.resp) pied = personneHtml(e.resp);
+    else if (moi !== 'both') pied = '<button type="button" class="lpo-claim mk-press" onclick="event.stopPropagation();V2.lip.quiFait(' + p.n + ',\'' + moi + '\')">Je m’en occupe</button>';
+    else pied = '<span class="lpo-picks">' + QUI.map(function (q) {
+      return '<button type="button" class="lpo-pick mk-press" aria-label="' + esc(q.label) + ' s’en occupe" title="' + esc(q.label) + ' s’en occupe" onclick="event.stopPropagation();V2.lip.quiFait(' + p.n + ',\'' + q.k + '\')"><span>' + esc(q.label.charAt(0)) + '</span></button>';
+    }).join('') + '</span>';
+    var stat = e.publie ? '<span class="lpo-stat" title="Publié">' + icS('coche', 16, 2.5) + '</span>'
+      : ((e.statut === 'refuse' || e.statut === 'retravailler') ? '<span class="lpo-stat">' + esc(statut(e.statut).label) + '</span>' : '');
+    var ici = ouvert && ouvert.n === p.n;   // la carte d'origine reste marquée tant que son volet est ouvert
+    return '<article class="lpo-carte mk-souleve mk-lever' + (e.statut === 'refuse' && !e.publie ? ' ecarte' : '') + (ici ? ' mk-marque' : '') + '" tabindex="0" role="button" data-n="' + p.n + '" data-mk-id="P' + p.n + '" aria-label="Ouvrir le post du ' + esc(quand) + '" ' +
       'onclick="V2.lip.ouvrir(' + p.n + ')" onkeydown="if(event.target===this&&(event.key===\'Enter\'||event.key===\' \')){event.preventDefault();V2.lip.ouvrir(' + p.n + ')}">' +
-      '<div class="lid-main"><div class="lid-top"><span class="lid-date">' + esc(quand) + '</span>' +
-        '<span class="lid-pil"><span class="lid-dot" style="background:' + pl.color + '"></span>' + esc(pl.label) + '</span></div>' +
-        '<p class="lid-title">' + esc(cur.titre) + '</p></div>' +
-      '<div class="lid-foot">' + pied + '</div></article>';
+      '<span class="lpo-vig">' + couvDe(p, e) + '</span>' +
+      '<div class="lpo-corps"><div class="lpo-haut"><span class="lpo-date">' + esc(quand + ' · ' + heureFr(p.h)) + '</span>' + stat + '</div>' +
+        '<p class="lpo-titre">' + esc(cur.titre) + '</p></div>' +
+      '<div class="lpo-pied"><span class="lpo-fam" title="' + esc(pl.label) + '"><i style="background:' + pl.color + '"></i>' + esc(pl.label) + '</span>' + pied + '</div>' +
+      (ici ? '<i class="mk-anneau"></i>' : '') + '</article>';
   }
 
+  // Attente du fichier du plan : la forme des cartes à venir (geste 11), pas une phrase seule.
+  function attenteHtml() {
+    var sq = '<div class="mk-souleve" style="padding:8px"><div class="mk-sq" style="aspect-ratio:1200/628;border-radius:12px"></div>' +
+      '<div class="mk-sq" style="height:14px;width:45%;border-radius:7px;margin:16px 8px 8px"></div><div class="mk-sq" style="height:18px;width:85%;border-radius:9px;margin:0 8px 16px"></div></div>';
+    return '<div class="lpo-tete"><div><h1 class="lpo-h1">Posts LinkedIn</h1><p class="lpo-phrase">Chargement du rétro-planning…</p></div></div>' +
+      '<div class="lpo-board lpo-attente" style="grid-template-columns:repeat(auto-fill,minmax(248px,1fr))" aria-hidden="true">' + sq + sq + sq + '</div>';
+  }
+
+  var dernMoi = -1, dernEtape = '';   // points de départ des indicateurs qui glissent (geste 10)
   function renderPlan(root) {
     if (!plan()) {
-      root.innerHTML = coquille('<div class="lip-load">Chargement du rétro-planning…</div>');
+      root.innerHTML = coquille(attenteHtml());
       charger('mkt-li-plan-data.js', plan).then(function (ok) {
         if (V2.route && V2.route.name !== 'marketing') return;   // 11/09/2026 : l'écran a pu changer pendant l'attente
         if (!ok) { root.innerHTML = coquille('<div class="lip-empty">Le fichier du rétro-planning n\'a pas pu être chargé.</div>'); return; }
@@ -819,49 +985,72 @@
     libres().forEach(function (x) {
       if (dansFenetre(x.date)) col[etapeLibre(x)].push({ cle: String(x.date).slice(0, 16), html: carteLibre(x) });
     });
+    var dejaLa = !!root.querySelector('.lpo-board:not(.lpo-attente)');   // re-rendu du même écran : pas de cascade
     var nomMoi = quiLabel(moi);
     var parts = [];
     if (col.choisir.length) parts.push('<b>' + col.choisir.length + '</b> post' + (col.choisir.length > 1 ? 's' : '') + ' à préparer');
     if (col.pret.length) parts.push('<b>' + col.pret.length + '</b> à publier');
-    var tete = '<div class="lid-who"><div class="lid-people" role="group" aria-label="Choisir qui vous êtes">' +
-      QUI.map(function (q) {
-        return '<button type="button" class="lid-wbtn" aria-pressed="' + (moi === q.k) + '" onclick="V2.lip.setMoi(\'' + q.k + '\')">' +
-          '<span class="lid-wav">' + esc(q.label.charAt(0)) + '</span><span class="lid-wlab">' + esc(q.label) + '</span></button>';
-      }).join('') + '</div>' +
-      '<button type="button" class="lid-both" aria-pressed="' + (moi === 'both') + '" onclick="V2.lip.setMoi(\'both\')">Nous deux</button></div>' +
-      '<p class="lid-resume">' + (parts.length ? parts.join(', ') : (nomMoi ? 'Rien n’attend ' + esc(nomMoi) + ' pour l’instant' : 'Rien à faire pour l’instant')) + '</p>' +
-      '<p class="lid-rsub">' + (nomMoi ? 'Ce que ' + esc(nomMoi) + ' a à faire sur les ' + nbSem + ' prochaines semaines' : 'Ce que vous avez à faire, à deux, sur les ' + nbSem + ' prochaines semaines') +
-        (backend === 'local' ? ' · ⚠️ choix gardés sur cet ordinateur, pas partagés' : '') + '</p>';
-    var onglets = '<div class="lid-tabs" role="tablist" aria-label="Étape">' + ETAPES.map(function (s) {
-      return '<button class="lid-tab" role="tab" aria-selected="' + (etape === s.k) + '" onclick="V2.lip.setEtape(\'' + s.k + '\')">' + esc(s.court) + ' ' + col[s.k].length + '</button>';
+    // La phrase-compteur : une ligne discrète. Au téléphone les chiffres sont déjà dans les trois étapes, juste dessous.
+    var phrase = '<span class="lpo-nb">' + (parts.length ? parts.join(', ') + '. ' : (nomMoi ? 'Rien n’attend ' + esc(nomMoi) + ' pour l’instant. ' : 'Rien à faire pour l’instant. ')) + '</span>' +
+      'Les ' + nbSem + ' prochaines semaines' + (nomMoi ? ', pour ' + esc(nomMoi) : ', à deux') + ' · 1 à ' + MAX_SEM + ' posts par semaine, pas plus.';
+    var MOI = [['pauline', 'Pauline'], ['will', 'Will'], ['both', 'Nous deux']];
+    var im = moi === 'pauline' ? 0 : (moi === 'will' ? 1 : 2), ie = 0;
+    for (var z = 0; z < ETAPES.length; z++) if (ETAPES[z].k === etape) ie = z;
+    var ieAvant = ie; for (z = 0; z < ETAPES.length; z++) if (ETAPES[z].k === dernEtape) ieAvant = z;
+    var tete = '<div class="lpo-tete"><div><h1 class="lpo-h1">Posts LinkedIn</h1><p class="lpo-phrase">' + phrase + '</p>' +
+      (backend === 'local' ? '<p class="lpo-local">' + ICO('alert', 16, 2) + '<span>Vos choix sont gardés sur cet appareil ; ils ne sont pas encore partagés avec l’équipe.</span></p>' : '') + '</div>' +
+      '<div class="mk-seg lpo-moi" role="group" aria-label="Choisir qui vous êtes" data-lpo-seg="' + im + '" style="--n:3;--i:' + (dernMoi < 0 ? im : dernMoi) + '"><i class="mk-seg-ind"></i>' +
+      MOI.map(function (q) {
+        return '<button type="button" class="mk-press" aria-pressed="' + (moi === q[0]) + '" onclick="V2.lip.setMoi(\'' + q[0] + '\')">' + esc(q[1]) + '</button>';
+      }).join('') + '</div></div>';
+    var onglets = '<div class="mk-seg lpo-etapes" role="tablist" aria-label="Étape" data-lpo-seg="' + ie + '" style="--n:3;--i:' + ieAvant + '"><i class="mk-seg-ind"></i>' + ETAPES.map(function (s) {
+      return '<button type="button" class="mk-press" role="tab" data-etape="' + s.k + '" aria-selected="' + (etape === s.k) + '" onclick="V2.lip.setEtape(\'' + s.k + '\')"><span>' + esc(s.court) + '</span><b>' + col[s.k].length + '</b></button>';
     }).join('') + '</div>';
-    var tableau = '<div class="lid-board">' + ETAPES.map(function (s) {
+    // Une colonne vide se rétracte : elle ne garde pas un tiers de l'écran.
+    var plein = ETAPES.filter(function (s) { return col[s.k].length; }).length;
+    var gabarit = ETAPES.map(function (s) {
+      if (!plein) return 'minmax(0,1fr)';
+      return col[s.k].length ? (s.k === 'choisir' ? 'minmax(0,2fr)' : 'minmax(0,1fr)') : '168px';
+    }).join(' ');
+    var tableau = '<div class="lpo-board" style="grid-template-columns:' + gabarit + '">' + ETAPES.map(function (s) {
       var L = col[s.k].sort(function (a, b) { return a.cle < b.cle ? -1 : (a.cle > b.cle ? 1 : 0); });
-      return '<section class="lid-col ' + s.k + (etape === s.k ? ' active' : '') + '" data-etape="' + s.k + '">' +
-        '<div class="lid-colh"><span class="lid-cnt">' + L.length + '</span><span class="lid-colt">' + esc(s.label) + '</span></div>' +
-        '<div class="lid-list">' + (L.length ? L.map(function (x) { return x.html; }).join('') : '<p class="lid-empty">' + esc(s.vide) + '</p>') + '</div></section>';
+      if (s.k === 'publie') L.reverse();   // le plus récent en tête
+      var arrive = (etape === s.k && dernEtape && dernEtape !== etape) ? ' arrive' : '';
+      return '<section class="lpo-col ' + s.k + (etape === s.k ? ' active' : '') + arrive + '" data-etape="' + s.k + '" aria-label="' + esc(s.label) + '" style="--sens:' + (ie >= ieAvant ? 1 : -1) + '">' +
+        '<div class="lpo-colt"><b>' + L.length + '</b><span class="lpo-cap">' + esc(s.label) + '</span></div>' +
+        (L.length ? '<div class="lpo-pile">' + L.map(function (x) { return x.html; }).join('') + '</div>'
+          : '<div class="lpo-vide"><div class="lpo-silh" aria-hidden="true"><i></i><i></i><i style="width:60%"></i></div>' + esc(s.vide) + '</div>') + '</section>';
     }).join('') + '</div>';
-    var suite = fin < dernier ? '<button type="button" class="lid-more" onclick="V2.lip.plusSemaines()">Voir les semaines suivantes</button>' : '';
-    var regle = '<div class="lip-note" style="margin:30px 0 4px"><b>Notre ligne : un acteur de santé bienveillant.</b><br>' +
-      '<b>Oui</b> — ' + esc(REGLE_OUI) + '<br><b>Non</b> — ' + esc(REGLE_NON) + '</div>';
-    var pied = '<div class="lip-tools" style="margin-top:14px">' +
-      (passes ? '<button class="lip-btn" onclick="V2.lip.togglePasse()">' + (voirPasse ? 'Masquer les semaines passées' : 'Voir les semaines passées') + '</button>' : '') +
-      (ecartes ? '<button class="lip-btn" onclick="V2.lip.toggleEcartes()">' + (voirEcartes ? 'Masquer les posts écartés' : 'Revoir ' + (ecartes > 1 ? 'les ' + ecartes + ' posts écartés' : 'le post écarté')) + '</button>' : '') +
-      '<span class="lip-spacer"></span>' +
-      '<button class="lip-btn" onclick="V2.lip.nouveauLibre()">' + ICO('plus', 16, 2.2) + 'Nouveau post libre</button>' +
-      '<button class="lip-btn" onclick="V2.lip.voirDA()">' + ICO('spark', 16) + 'Notre DA image</button>' +
-      '<button class="lip-btn" onclick="V2.lip.exportCsv()">' + ICO('download', 16, 2) + 'Export CSV</button></div>';
-    root.innerHTML = coquille(tete + onglets + tableau + suite + regle + pied);
+    var bouton = function (act, txt, icone) { return '<button type="button" class="mk-btn mk-press" onclick="' + act + '">' + (icone || '') + txt + '</button>'; };
+    var suite = '<div class="lpo-suite">' +
+      (fin < dernier ? bouton('V2.lip.plusSemaines()', 'Voir les semaines suivantes') : '') +
+      (passes ? bouton('V2.lip.togglePasse()', voirPasse ? 'Masquer les semaines passées' : 'Voir les semaines passées') : '') +
+      (ecartes ? bouton('V2.lip.toggleEcartes()', voirEcartes ? 'Masquer les posts écartés' : 'Revoir ' + (ecartes > 1 ? 'les ' + ecartes + ' posts écartés' : 'le post écarté')) : '') +
+      bouton('V2.lip.nouveauLibre()', 'Nouveau post libre', icS('plus', 18, 2)) +
+      bouton('V2.lip.voirDA()', 'Notre DA image') +
+      bouton('V2.lip.exportCsv()', 'Export CSV', icS('charger', 18)) +
+      bouton('V2.li.setView(\'veille\')', 'Veille secteur', icS('veille', 18)) + '</div>';
+    var regle = '<div class="lpo-regle"><span class="lpo-cap">Notre ligne : un acteur de santé bienveillant</span><div class="lpo-regle-g">' +
+      '<div class="lpo-pose"><b>Oui —</b> ' + esc(REGLE_OUI) + '</div><div class="lpo-pose"><b>Non —</b> ' + esc(REGLE_NON) + '</div></div></div>';
+    root.innerHTML = coquille(tete + onglets + tableau + suite + regle);
+    dernMoi = im; dernEtape = etape;
+    var raf = window.requestAnimationFrame || function (f) { return setTimeout(f, 16); };
+    raf(function () {   // les indicateurs glissent de leur ancienne place vers la nouvelle
+      var segs = root.querySelectorAll('[data-lpo-seg]');
+      for (var i = 0; i < segs.length; i++) segs[i].style.setProperty('--i', segs[i].getAttribute('data-lpo-seg'));
+    });
+    if (!dejaLa && V2.mktSocle && V2.mktSocle.cascade) V2.mktSocle.cascade(root.querySelectorAll('.lpo-carte'));
   }
 
+
   function coquille(corps) {
-    var m = meta();
+    var barre = V2.topbar ? V2.topbar({ back: true, backTo: 'marketing', backLabel: 'Marketing' }) : '';
+    // Lot 3 : l'écran des posts porte son propre en-tête, dans les jetons de l'espace Marketing. La veille garde le sien.
+    if (vue !== 'veille') return barre + '<div class="lip lpo mk-espace">' + corps + '</div>';
     var seg = (V2.mktLinkedin && V2.mktLinkedin.viewSeg) ? V2.mktLinkedin.viewSeg() : '';
-    var titre = vue === 'veille' ? 'Veille secteur — 12 mois' : 'Posts LinkedIn — à deux';
-    var sous = vue === 'veille'
-      ? 'Ce que publient CERP, OCP, Sagitta Pharma et nous. ' + ((V() && V().nbPosts) || '—') + ' posts relevés, réactions et commentaires compris.'
-      : '1 à ' + MAX_SEM + ' posts par semaine, pas plus · ' + (m.fenetre || '');
-    return (V2.topbar ? V2.topbar({ back: true, backTo: 'marketing', backLabel: 'Marketing' }) : '') +
+    var titre = 'Veille secteur — 12 mois';
+    var sous = 'Ce que publient CERP, OCP, Sagitta Pharma et nous. ' + ((V() && V().nbPosts) || '—') + ' posts relevés, réactions et commentaires compris.';
+    return barre +
       '<div class="lip">' +
         '<div class="lip-head" style="display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap">' +
           '<div style="flex:1;min-width:220px"><h1 class="lip-h1">' + esc(titre) + '</h1>' +
@@ -870,38 +1059,159 @@
       '</div>';
   }
 
-  /* ───────────────── drawer de validation ───────────────── */
-  var ouvert = null;   // {n, e}
+  /* ───────────────── le volet d'un post (lot 3) ─────────────────
+     La carte devient le volet : trajet animé en transform / opacity depuis la place de la carte
+     (pas de transition de vue : image double sous WebKit, prouvé au lot 2). Deux panneaux à 1280 —
+     l'aperçu du post comme sur LinkedIn, puis les réglages ; à 390, une feuille plein écran. */
+  var ouvert = null;   // {n, p, e, envoi, erreurMedia, note, deplie, replis}
+  var partis = {};     // posts dont le texte est parti vers LinkedIn pendant cette session : le bouton plein passe à « Marquer comme publié »
+  var tour = 0;        // une fermeture en cours ne vide pas un volet rouvert entre-temps
+  function socle() { return V2.mktSocle || {}; }
+  function calme() { var S = socle(); return S.calme ? S.calme() : true; }
+  function signalerEnregistre() { var S = socle(); if (S.enregistre) S.enregistre(); }
 
   function hote() {
     var h = document.getElementById('lip-drawer');
     if (!h) { h = document.createElement('div'); h.id = 'lip-drawer'; document.body.appendChild(h); }
     return h;
   }
-  function monter(html, deja) {
-    var h = hote(); h.innerHTML = html;
-    if (deja) { var d0 = h.querySelector('.lip-dr'), s0 = h.querySelector('.lip-scrim');
-      if (d0) d0.className += ' open'; if (s0) s0.className += ' open'; return; }
+  // « Notre DA image » : son propre hôte, au-dessus du volet, pour ne plus le remplacer.
+  function monterDA(html) {
+    var h = document.getElementById('lip-da');
+    if (!h) { h = document.createElement('div'); h.id = 'lip-da'; document.body.appendChild(h); }
+    h.innerHTML = html;
     void h.offsetWidth;
     var d = h.querySelector('.lip-dr'), s = h.querySelector('.lip-scrim');
     if (s) s.className += ' open'; if (d) d.className += ' open';
   }
-  function fermer() {
-    ouvert = null;
-    var h = document.getElementById('lip-drawer'); if (!h) return;
+  function daOuverte() { var h = document.getElementById('lip-da'); return !!(h && h.firstChild); }
+  function fermerDA() {
+    var h = document.getElementById('lip-da'); if (!h) return;
     var d = h.querySelector('.lip-dr'), s = h.querySelector('.lip-scrim');
     if (d) d.className = d.className.replace(' open', '');
     if (s) s.className = s.className.replace(' open', '');
-    setTimeout(function () { if (!ouvert) h.innerHTML = ''; }, 340);
+    setTimeout(function () { h.innerHTML = ''; }, 340);
+  }
+
+  function carteDe(n) { return document.querySelector('#v2-root .lpo-carte[data-n="' + n + '"]'); }
+  function visibleAEcran(el) {
+    if (!el) return false;
+    var r = el.getBoundingClientRect();
+    return r.width > 0 && r.height > 0 && r.bottom > 0 && r.top < window.innerHeight;
+  }
+  function figerFond(oui) {
+    try {
+      document.body.style.overflow = oui ? 'hidden' : '';
+      var r = document.getElementById('v2-root'); if (r) { if (oui) r.setAttribute('inert', ''); else r.removeAttribute('inert'); }
+    } catch (e) {}
+  }
+
+  function peindreVolet() {
+    var h = hote(), v = h.querySelector('.lpo-volet'), neuf = !v;
+    if (neuf) {
+      h.innerHTML = '<div class="mk-espace"><div class="lpo-voile" onclick="V2.lip.fermer()"></div>' +
+        '<aside class="lpo-volet" role="dialog" aria-modal="true" tabindex="-1"></aside></div>';
+      v = h.querySelector('.lpo-volet');
+    }
+    v.setAttribute('aria-label', 'Post du ' + quandLong(ouvert.p));
+    v.innerHTML = voletHtml();
+    ajusterTexte();
+    return neuf;
+  }
+  // Geste 4 — le volet part de la place de la carte et grandit ; son contenu arrive en fondu ; le voile en 200 ms.
+  function ouvrirVolet(source) {
+    tour++;
+    peindreVolet();
+    ecouterVolet();
+    figerFond(true);
+    var h = hote(), v = h.querySelector('.lpo-volet'), voile = h.querySelector('.lpo-voile'), S = socle();
+    void h.offsetWidth;
+    if (voile) voile.classList.add('la');
+    if (source && S.marquer) S.marquer(source, 0);
+    if (!calme() && S.animer && visibleAEcran(source)) {
+      var a = source.getBoundingClientRect(), b = v.getBoundingClientRect();
+      // la coque est opaque dès le premier quart du trajet (une carte blanche qui grandit, pas un voile) ; son contenu n'arrive qu'ensuite
+      S.animer(v, [{ transform: 'translate(' + (a.left - b.left) + 'px,' + (a.top - b.top) + 'px) scale(' + (a.width / b.width) + ',' + (a.height / b.height) + ')', opacity: 0 },
+        { opacity: 1, offset: .25 }, { transform: 'none', opacity: 1 }], { duration: 320, easing: 'cubic-bezier(.32,.72,0,1)' });
+      S.animer(v.querySelector('.lpo-dedans'), [{ opacity: 0 }, { opacity: 0, offset: .35 }, { opacity: 1 }], { duration: 320, easing: 'linear' });
+    }
+    var x = v.querySelector('.lpo-x'); if (x) { try { x.focus({ preventScroll: true }); } catch (e) { try { x.focus(); } catch (e2) {} } }
+  }
+  // Geste 5 — même chemin à l'envers, 220 ms ; à l'arrivée l'anneau de la carte s'éteint en 400 ms.
+  // `apres` : le post change d'étape — le volet s'efface sur place, et c'est la carte qui voyage ensuite.
+  function fermer(apres) {
+    if (typeof apres !== 'function') apres = null;
+    var n = ouvert ? ouvert.n : null, moment = ++tour;
+    if (ouvert && ouvert.envoi && ouvert.envoi.url) { try { URL.revokeObjectURL(ouvert.envoi.url); } catch (e) {} }
+    ouvert = null;
+    figerFond(false);
+    var h = document.getElementById('lip-drawer'), v = h && h.querySelector('.lpo-volet'), voile = h && h.querySelector('.lpo-voile');
+    var carte = n === null ? null : carteDe(n), fini = false;
+    var fin = function () {
+      if (fini) return; fini = true;
+      if (moment === tour && h) h.innerHTML = '';
+      var M = document.querySelectorAll('#v2-root .lpo-carte.mk-marque');
+      for (var i = 0; i < M.length; i++) M[i].classList.remove('mk-marque');
+      if (carte && !apres) { try { carte.focus({ preventScroll: true }); } catch (e) {} }
+      if (apres) apres();
+    };
+    if (!v) { fin(); return; }
+    if (voile) voile.classList.remove('la');
+    var S = socle();
+    if (calme() || !S.animer) { fin(); return; }
+    var images;
+    if (!apres && visibleAEcran(carte)) {
+      var a = carte.getBoundingClientRect(), b = v.getBoundingClientRect();
+      images = [{ transform: 'none', opacity: 1 }, { opacity: 1, offset: .55 },
+        { transform: 'translate(' + (a.left - b.left) + 'px,' + (a.top - b.top) + 'px) scale(' + (a.width / b.width) + ',' + (a.height / b.height) + ')', opacity: 0 }];
+      S.animer(v.querySelector('.lpo-dedans'), [{ opacity: 1 }, { opacity: 0, offset: .4 }, { opacity: 0 }], { duration: 220, easing: 'linear', fill: 'forwards' });
+    } else {
+      images = [{ transform: 'none', opacity: 1 }, { transform: S.tel && S.tel() ? 'translateY(48px)' : 'translateX(32px)', opacity: 0 }];
+    }
+    var an = S.animer(v, images, { duration: 220, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'forwards' });   // départ doux : on VOIT le volet rentrer dans sa carte
+    if (an) an.onfinish = fin;
+    setTimeout(fin, 300);
+  }
+
+  var ecoute = false;
+  function ecouterVolet() {
+    if (ecoute) return; ecoute = true;
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'Escape' || !ouvert) return;
+      var z = document.getElementById('li-zoom');
+      if (z && z.firstChild) return;                 // le visuel agrandi se referme d'abord, par son propre écouteur
+      if (daOuverte()) { fermerDA(); return; }
+      fermer();
+    });
+    // Geste 8 — pendant un glisser de fichiers, toute la scène devient la cible.
+    var fichiers = function (e) {
+      var t = e.dataTransfer && e.dataTransfer.types; if (!t) return false;
+      for (var i = 0; i < t.length; i++) if (t[i] === 'Files') return true;
+      return false;
+    };
+    var scene = function () { return document.querySelector('#lip-drawer .lpo-scene'); };
+    document.addEventListener('dragover', function (e) { if (!ouvert || !fichiers(e)) return; e.preventDefault(); var s = scene(); if (s) s.classList.add('survol'); });
+    document.addEventListener('dragleave', function (e) { if (!ouvert || e.relatedTarget) return; var s = scene(); if (s) s.classList.remove('survol'); });
+    document.addEventListener('drop', function (e) {
+      if (!ouvert || !fichiers(e)) return;
+      e.preventDefault();
+      var s = scene(); if (s) s.classList.remove('survol');
+      var f = e.dataTransfer.files && e.dataTransfer.files[0];
+      if (f) envoyerFichier(f);
+    });
+    window.addEventListener('hashchange', function () {
+      if (ouvert && !(V2.route && V2.route.name === 'marketing' && V2.route.param === 'linkedin')) { fermerDA(); fermer(); }
+    });
   }
 
   function redessineTiroir() {
     if (!ouvert) return;
-    var corps = document.querySelector('#lip-drawer .lip-drb');
-    var y = corps ? corps.scrollTop : 0;
-    monter(drawerHtml(), true);
-    var c2 = document.querySelector('#lip-drawer .lip-drb');
-    if (c2) c2.scrollTop = y;
+    var sel = ['.lpo-scene', '.lpo-regl', '.lpo-vc'], y = [], i, el;
+    for (i = 0; i < sel.length; i++) { el = document.querySelector('#lip-drawer ' + sel[i]); y.push(el ? el.scrollTop : 0); }
+    var actif = document.activeElement, surTexte = actif && actif.id === 'lpo-texte', pos = surTexte ? actif.selectionStart : 0;
+    peindreVolet();
+    for (i = 0; i < sel.length; i++) { el = document.querySelector('#lip-drawer ' + sel[i]); if (el) el.scrollTop = y[i]; }
+    if (surTexte) { var t = document.getElementById('lpo-texte'); if (t) { try { t.focus({ preventScroll: true }); t.setSelectionRange(pos, pos); } catch (e) {} } }
   }
 
   // La version du texte affichée : celle choisie, sinon « Humain », sinon la première.
@@ -919,125 +1229,192 @@
     if (e.texte && e.texteCle === sujetEff(p, e) + '.' + vi) return e.texte;
     return cur.t[vi] ? cur.t[vi].txt : '';
   }
-  function fichierHtml(e) {
-    if (ouvert.envoi) return '<div class="lip-note">' + esc(ouvert.envoi) + '</div>';
-    var choisir = function (txt) {
-      return '<label class="lip-btn" style="min-height:44px">' + txt + '<input type="file" accept="' + ACCEPTE + '" style="display:none" onchange="V2.lip.envoyerImage(this)"></label>';
-    };
-    if (!e.image_path) return choisir('Importer un fichier') +
-      '<div class="lip-hint">Image (25 Mo), vidéo MP4 ou MOV, document PDF (50 Mo). Le fichier est partagé avec l’équipe.</div>';
-    var u = esc(urlImage(e.image_path)), g = genreFichier(e.image_path);
-    var vue = g === 'video' ? '<video src="' + u + '" controls playsinline preload="metadata"></video>'
-      : g === 'doc' ? '<div class="lip-note">Document PDF : ' + esc(String(e.image_path).replace(/^.*\/plan\d+_\d+_/, '')) + '</div>'
-      : '<img src="' + u + '" alt="Visuel du post" title="Cliquez pour voir en grand" onclick="V2.lip.zoomTiroir()">';
-    return '<div class="lip-apercu">' + vue + '<div class="lip-imgacts">' +
-      (g === 'image' ? '<button type="button" class="lip-btn" onclick="V2.lip.zoomTiroir()">Voir en grand</button>'
-        : '<a class="lip-btn" href="' + u + '" target="_blank" rel="noopener">Ouvrir</a>') +
-      choisir('Changer') +
-      '<button type="button" class="lip-btn" onclick="V2.lip.retirerImage()">Retirer</button></div></div>';
+  function quandLong(p) {
+    var d = new Date(p.d + 'T12:00:00');
+    return JOURS[(d.getDay() + 6) % 7] + ' ' + jj(d.getDate()) + ' ' + MOIS[d.getMonth()] + ' · ' + heureFr(p.h);
   }
-  function libelleRetenir() {
-    var e = ouvert.e, garde = etat(ouvert.n), si = sujetEff(ouvert.p, e), vi = varEff(sujetOuvert(), e);
-    var deja = garde.statut === 'valide' && (garde.sujet || 0) === si && garde.variante === vi && texteDe(ouvert.p, garde) === texteDe(ouvert.p, e);
-    return deja ? 'Texte retenu' : (garde.statut === 'valide' ? 'Texte retenu — mettre à jour' : 'Retenir ce texte');
+  function ajusterTexte() {
+    var t = document.getElementById('lpo-texte'); if (!t) return;
+    t.style.height = 'auto'; t.style.height = (t.scrollHeight + 2) + 'px';
   }
 
-  function drawerHtml() {
-    var p = ouvert.p, e = ouvert.e, pl = pilier(p.p);
+  /* Où en est ce post, pour choisir LE bouton plein du volet :
+     retenir → (mettre à jour) → copier et ouvrir LinkedIn → marquer comme publié → publié. */
+  function etapeVolet() {
+    var e = ouvert.e, garde = etat(ouvert.n);
+    if (garde.publie) return 'publie';
+    var si = sujetEff(ouvert.p, e), vi = varEff(sujetOuvert(), e);
+    var deja = garde.statut === 'valide' && (garde.sujet || 0) === si && garde.variante === vi && texteDe(ouvert.p, garde) === texteDe(ouvert.p, e);
+    if (!deja) return garde.statut === 'valide' ? 'maj' : 'retenir';
+    return partis[ouvert.n] ? 'marquer' : 'linkedin';
+  }
+  function piedHtml() {
+    var S = socle(), et = etapeVolet(), garde = etat(ouvert.n);
+    var save = function (a, b) { return S.saveHtml ? S.saveHtml(a, b) : a; };
+    var plein = function (act, avant, apres) {
+      return '<button type="button" class="mk-btn mk-plein mk-grand mk-press mk-save" id="lpo-principal" onclick="' + act + '">' + save(avant, apres) + '</button>';
+    };
+    var principal = et === 'publie' ? '<span class="lpo-publie">' + icS('coche', 20, 2.5) + 'Publié</span>'
+      : et === 'linkedin' ? plein('V2.lip.publier()', icS('ext', 18) + 'Copier et ouvrir LinkedIn', 'Texte copié')
+      : et === 'marquer' ? plein('V2.lip.marquerPublie(true)', 'Marquer comme publié', 'C’est publié')
+      : plein('V2.lip.retenir()', et === 'maj' ? 'Mettre à jour le texte retenu' : 'Retenir ce texte', 'C’est retenu');
+    var texte = function (act, html, plus) { return '<button type="button" class="mk-btn mk-texte mk-press' + (plus || '') + '" onclick="' + act + '">' + html + '</button>'; };
+    return (et === 'publie' ? texte('V2.lip.marquerPublie(false)', 'Annuler « publié »')
+        : (garde.statut === 'refuse' ? texte('V2.lip.ecarter(false)', 'Remettre dans la liste') : texte('V2.lip.ecarter(true)', 'Pas cette semaine'))) +
+      '<button type="button" class="mk-btn mk-texte mk-press mk-save" data-lpo-copier onclick="V2.lip.copier()">' + save(icS('copie', 18) + 'Copier le texte', 'Copié') + '</button>' +
+      (et !== 'linkedin' ? texte('V2.lip.publier()', icS('ext', 18) + 'Ouvrir LinkedIn', ' lpo-sec2') : '') +
+      (et !== 'marquer' && et !== 'publie' ? texte('V2.lip.marquerPublie(true)', 'Marquer comme publié', ' lpo-sec2') : '') +
+      '<span class="lpo-pousse"></span>' + principal;
+  }
+  // À 390, le pied ne garde que deux actions à côté du bouton plein : les autres restent visibles ici, dans le corps du volet.
+  function autresHtml() {
+    var et = etapeVolet(), h = '';
+    if (et !== 'linkedin') h += '<button type="button" class="mk-btn mk-press" onclick="V2.lip.publier()">' + icS('ext', 18) + 'Ouvrir LinkedIn</button>';
+    if (et !== 'marquer' && et !== 'publie') h += '<button type="button" class="mk-btn mk-press" onclick="V2.lip.marquerPublie(true)">Marquer comme publié</button>';
+    return h;
+  }
+  function peindrePied() {
+    var a = document.querySelector('#lip-drawer .lpo-vp'), b = document.querySelector('#lip-drawer .lpo-autres');
+    if (a) a.innerHTML = piedHtml();
+    if (b) b.innerHTML = autresHtml();
+  }
+  function aideHtml() {
+    var p = ouvert.p, e = ouvert.e, cur = sujetOuvert(), vi = varEff(cur, e);
+    var retouche = texteDe(p, e) !== (cur.t[vi] ? cur.t[vi].txt : '');
+    if (ouvert.erreurMedia) return '<span class="lpo-erreur" style="margin:0" aria-hidden="true">' + ICO('alert', 16, 2) + '<span>' + esc(ouvert.erreurMedia) + '</span></span>';
+    return '<span>' + esc(ouvert.note || (retouche ? 'Texte modifié, gardé quand vous le retenez.' : 'Écrivez directement dans le post.')) + '</span>' +
+      (retouche ? '<button type="button" class="mk-btn mk-texte mk-press" onclick="V2.lip.texteOrigine()">Revenir au texte proposé</button>' : '');
+  }
+
+  // Le visuel dans l'aperçu : le fichier importé, celui en cours d'envoi (avec sa progression), sinon la couverture typographique.
+  function visuelHtml() {
+    var p = ouvert.p, e = ouvert.e, env = ouvert.envoi;
+    if (env) {
+      var corps = env.url && env.genre === 'image' ? '<img class="lpo-vimg mk-naissance" src="' + esc(env.url) + '" alt="">'
+        : env.url && env.genre === 'video' ? '<video class="mk-naissance" src="' + esc(env.url) + '" muted playsinline preload="metadata"></video>'
+        : '<div class="mk-naissance">' + couvDe(p, e, true) + '</div>';
+      return corps + '<div class="lpo-envoi" role="status"><span>Envoi de « ' + esc(env.nom) + ' » en cours…</span>' +
+        '<i class="mk-prog" id="lpo-prog" style="--p:' + env.p + '"></i><i class="lpo-envoi-fond"></i></div>';
+    }
+    if (!e.image_path) return couvDe(p, e, true);
+    var u = esc(urlImage(e.image_path)), g = genreFichier(e.image_path);
+    if (g === 'video') return '<video src="' + u + '" controls playsinline preload="metadata"></video>';
+    if (g === 'doc') return couvDe(p, e);
+    // Si l'image ne se charge pas, la couverture typographique, posée dessous, reprend la place.
+    return '<div style="position:relative">' + couvDe(p, e, true) +
+      '<button type="button" class="lpo-vzoom" style="position:absolute;top:0;left:0;height:100%" aria-label="Voir le visuel en grand" onclick="V2.lip.zoomTiroir()">' +
+      '<img class="lpo-vimg" style="height:100%" src="' + u + '" alt="Visuel du post" onerror="this.parentNode.remove()"></button></div>';
+  }
+  function mediaHtml() {
+    var e = ouvert.e, env = ouvert.envoi;
+    var err = ouvert.erreurMedia ? '<p class="lpo-erreur" role="alert">' + ICO('alert', 16, 2) + '<span>' + esc(ouvert.erreurMedia) + '</span></p>' : '';
+    var champ = '<input type="file" class="lpo-fichier" id="lpo-fichier" tabindex="-1" aria-hidden="true" accept="' + ACCEPTE + '" onchange="V2.lip.envoyerImage(this)">';
+    if (env) return '<div class="lpo-media"><div class="lpo-mv">' + couvDe(ouvert.p, e, true) + '</div><div><strong>' + esc(env.nom) + '</strong><span>Envoi en cours…</span></div></div>';
+    if (!e.image_path) return champ + '<button type="button" class="mk-btn mk-press lpo-bloc" onclick="V2.lip.choisirFichier()">' + icS('importer', 18) + 'Importer un fichier</button>' +
+      '<p class="lpo-t5">Image (25 Mo), vidéo MP4 ou MOV, document PDF (50 Mo). Le fichier est partagé avec l’équipe dès l’envoi. Vous pouvez aussi le glisser sur l’aperçu.</p>' + err;
+    var g = genreFichier(e.image_path), u = esc(urlImage(e.image_path));
+    return champ + '<div class="lpo-media"><div class="lpo-mv">' + couvDe(ouvert.p, e) + '<span class="lpo-ok">' + icS('coche', 12, 3) + '</span></div>' +
+      '<div><strong>' + esc(nomFichier(e.image_path)) + '</strong><span>' + (g === 'video' ? 'Vidéo' : g === 'doc' ? 'Document PDF' : 'Image') + ' · partagé avec l’équipe</span></div></div>' +
+      '<div class="lpo-mact"><button type="button" class="mk-btn mk-texte mk-press" onclick="V2.lip.choisirFichier()">Changer</button>' +
+      (g === 'image' ? '<button type="button" class="mk-btn mk-texte mk-press" onclick="V2.lip.zoomTiroir()">Voir en grand</button>'
+        : '<a class="mk-btn mk-texte mk-press" href="' + u + '" target="_blank" rel="noopener">Ouvrir</a>') +
+      '<button type="button" class="mk-btn mk-texte mk-press lpo-rose" onclick="V2.lip.retirerImage()">Retirer</button></div>' + err;
+  }
+  function repliHtml(cle, titre, corps) {
+    return '<section><details class="lpo-repli"' + (ouvert.replis[cle] ? ' open' : '') + ' ontoggle="V2.lip.plusOuvert(this.open,\'' + cle + '\')"><summary>' + titre + icS('bas', 20, 2) + '</summary>' + corps + '</details></section>';
+  }
+
+  function voletHtml() {
+    var p = ouvert.p, e = ouvert.e, pl = pilier(p.p), S0 = socle();
     // Le créneau donne la date et le pilier ; le sujet retenu donne tout le reste.
     var S = sujetsDe(p), si = sujetEff(p, e), cur = S[si] || S[0];
-    var d = new Date(p.d + 'T12:00:00');
-    var quand = JOURS[(d.getDay() + 6) % 7] + ' ' + jj(d.getDate()) + ' ' + MOIS[d.getMonth()] + ' · ' + p.h.replace(':', ' h ');
-    var vi = varEff(cur, e), garde = etat(ouvert.n);
-    var retouche = texteDe(p, e) !== (cur.t[vi] ? cur.t[vi].txt : '');
+    var vi = varEff(cur, e), garde = etat(ouvert.n), et = etapeDe(garde);
+    var nomEtape = ''; ETAPES.forEach(function (x) { if (x.k === et) nomEtape = x.label; });
+    if (garde.statut === 'refuse' && !garde.publie) nomEtape = 'Écarté';
 
-    var tuiles = S.map(function (c, i) {
+    var sujets = S.map(function (c, i) {
       if (!sujetPermis(p, i)) return '';   // trop « métier » : voir SUJETS_METIER
-      return '<button type="button" class="lid-tuile" aria-pressed="' + (si === i) + '" onclick="V2.lip.setChamp(\'sujet\',' + i + ')">' +
-        '<span class="lid-tl">' + String.fromCharCode(65 + i) + '</span><span class="lid-tt">' + esc(c.titre) + '</span></button>';
+      return '<button type="button" class="lpo-sujet mk-press" aria-pressed="' + (si === i) + '" onclick="V2.lip.setChamp(\'sujet\',' + i + ')">' +
+        '<i>' + String.fromCharCode(65 + i) + '</i><strong>' + esc(c.titre) + '</strong></button>';
     }).join('');
 
-    var seg = TONS.map(function (t) {
-      for (var i = 0; i < cur.t.length; i++) if (cur.t[i].ton === t[0]) {
-        return '<button type="button" class="lid-segb" aria-pressed="' + (vi === i) + '" onclick="V2.lip.setChamp(\'variante\',' + i + ')">' + t[1] + '</button>';
-      }
-      return '';
-    }).join('');
+    var tons = [], it = 0;
+    TONS.forEach(function (t) {
+      for (var i = 0; i < cur.t.length; i++) if (cur.t[i].ton === t[0]) { if (vi === i) it = tons.length; tons.push('<button type="button" class="mk-press" aria-pressed="' + (vi === i) + '" onclick="V2.lip.setChamp(\'variante\',' + i + ')">' + t[1] + '</button>'); break; }
+    });
+    var iq = e.resp === 'pauline' ? 0 : (e.resp === 'will' ? 1 : -1);
 
-    var vis = cur.v.map(function (v, i) {
-      return '<div class="lip-var' + (e.visuel === i ? ' on' : '') + '" onclick="V2.lip.setChamp(\'visuel\',' + i + ')">' +
-        '<div class="lip-vtop"><span class="lip-radio"></span><span class="lip-vton">Visuel ' + (i + 1) + '</span></div>' +
-        '<div class="lip-vtxt">' + esc(v) + '</div></div>';
+    var iv = (e.visuel === null || e.visuel === undefined) ? 0 : e.visuel;
+    var idees = cur.v.map(function (v, i) {
+      return '<button type="button" class="lpo-sujet lpo-idee mk-press" aria-pressed="' + (e.visuel === i) + '" onclick="V2.lip.setChamp(\'visuel\',' + i + ')"><i>' + (i + 1) + '</i><strong>' + esc(v) + '</strong></button>';
     }).join('');
+    var prompt = (function () {
+      var d = da();
+      if (!d) return '<p class="lpo-t5">Chargement de la direction artistique…</p>';
+      var k = apprCourante(), a = approcheDe(k), ia = 0;
+      var onglets = d.approches.map(function (x, i) {
+        if (x.k === k) ia = i;
+        return '<button type="button" class="mk-press" aria-pressed="' + (x.k === k) + '" onclick="V2.lip.setApproche(\'' + x.k + '\')">' + esc(x.label) + '</button>';
+      }).join('');
+      var mots = motsAPoser((cur.v && cur.v[iv]) || '');
+      return '<div class="mk-seg lpo-appr" role="group" aria-label="Approche" style="--n:' + d.approches.length + ';--i:' + ia + '"><i class="mk-seg-ind"></i>' + onglets + '</div>' +
+        '<p class="lpo-t5" style="margin:0 0 8px">' + esc(a.aide) + '</p>' +
+        '<div class="lpo-prompt" tabindex="0">' + esc(promptPour(cur, iv, k)) + '</div>' +
+        '<div class="lpo-rang"><button type="button" class="mk-btn mk-press mk-save" id="lpo-copier-prompt" onclick="V2.lip.copierPrompt()">' +
+          (S0.saveHtml ? S0.saveHtml(icS('copie', 18) + 'Copier ce prompt', 'Copié') : 'Copier ce prompt') + '</button>' +
+          '<button type="button" class="mk-btn mk-press" onclick="V2.lip.voirDA()">Notre DA image</button></div>' +
+        (mots.length ? '<div class="lpo-note"><b>Texte à poser ensuite</b>, dans Canva ou équivalent — il n’est volontairement dans aucun des trois prompts :<br>' +
+          mots.map(function (x) { return '« ' + esc(x) + ' »'; }).join('<br>') + '</div>' : '') +
+        '<p class="lpo-t5">Les trois restent dans notre direction artistique : même fond crème, mêmes couleurs, même format. ' +
+          'Aucun ne fait écrire de texte par le générateur — les accents français sont ratés, la phrase se pose après.</p>';
+    })();
 
-    return '<div class="lip-scrim" onclick="V2.lip.fermer()"></div>' +
-      '<aside class="lip-dr" role="dialog" aria-modal="true" aria-label="Post du ' + esc(quand) + '">' +
-        '<div class="lip-drh"><div style="flex:1;min-width:0">' +
-          '<div class="lid-pil" style="max-width:none;font-weight:600"><span class="lid-dot" style="background:' + pl.color + '"></span>' + esc(pl.label) + '</div>' +
-          '<h2>' + esc(quand) + '</h2>' +
-        '</div><button class="lip-close" onclick="V2.lip.fermer()" aria-label="Fermer">' + ICO('close', 18, 2) + '</button></div>' +
-        '<div class="lip-drb">' +
-          '<div class="lid-tuiles">' + tuiles + '</div>' +
-          (alts() ? '' : '<div class="lip-hint">Chargement des autres sujets proposés pour cette date…</div>') +
-          '<p class="lid-angle">' + esc(cur.angle) + '</p>' +
-          '<div class="lid-seg" role="group" aria-label="Version du texte">' + seg + '</div>' +
-          '<textarea class="lid-txt lid-txta" aria-label="Texte du post" oninput="V2.lip.setTexte(this.value)">' + esc(texteDe(p, e)) + '</textarea>' +
-          '<div class="lip-hint">Vous pouvez modifier ce texte. La modification est gardée quand vous retenez le texte.</div>' +
-          '<button type="button" class="lid-skip" id="lid-orig" style="display:' + (retouche ? 'block' : 'none') + '" onclick="V2.lip.texteOrigine()">Revenir au texte proposé</button>' +
-          '<span class="lid-h">Idée de visuel</span><p class="lid-vis">' + esc(cur.v[e.visuel === null ? 0 : e.visuel] || cur.v[0] || '') + '</p>' +
-          '<span class="lid-h">Image, vidéo ou document du post</span>' + fichierHtml(e) +
-          '<span class="lid-h">Qui s’en occupe ?</span><div class="lid-pills">' +
-            QUI.map(function (q) {
-              return '<button type="button" class="lid-pill" aria-pressed="' + (e.resp === q.k) + '" onclick="V2.lip.quiTiroir(\'' + q.k + '\')">' + esc(q.label) + '</button>';
-            }).join('') + '</div>' +
-          '<div class="lid-actions">' +
-            (e.publie ? '' : '<button type="button" class="lip-btn lip-btn-p" id="lid-retenir" onclick="V2.lip.retenir()">' + libelleRetenir() + '</button>') +
-            '<div class="lid-row2"><button type="button" class="lip-btn" onclick="V2.lip.copier()">' + ICO('fiche', 16, 1.8) + 'Copier le texte</button>' +
-              (e.publie
-                ? '<button type="button" class="lip-btn" onclick="V2.lip.marquerPublie(false)">Annuler « publié »</button>'
-                : '<button type="button" class="lip-btn lid-ok" onclick="V2.lip.marquerPublie(true)">' + ICO('check', 17, 2.4) + 'Marquer comme publié</button>') + '</div>' +
-            (e.publie ? '' : (garde.statut === 'refuse'
-              ? '<button type="button" class="lid-skip" onclick="V2.lip.ecarter(false)">Remettre ce post dans la liste</button>'
-              : '<button type="button" class="lid-skip" onclick="V2.lip.ecarter(true)">Pas cette semaine</button>')) +
+    return '<div class="lpo-dedans"><i class="lpo-poignee" aria-hidden="true"></i>' +
+      '<div class="lpo-vt"><div style="flex:1;min-width:0"><div class="lpo-meta">' +
+          '<span class="lpo-famv"><i style="background:' + pl.color + '"></i>' + esc(pl.label) + '</span>' +
+          '<span class="lpo-etat ' + (garde.statut === 'refuse' && !garde.publie ? '' : et) + '"><i></i>' + esc(nomEtape) + '</span></div>' +
+        '<h2>' + esc(quandLong(p)) + '</h2></div>' +
+        '<button type="button" class="lpo-x mk-press" onclick="V2.lip.fermer()" aria-label="Fermer">' + icS('fermer', 22, 2) + '</button></div>' +
+      '<div class="lpo-vc">' +
+        '<div class="lpo-scene"><div class="lpo-cible">Déposez l’image, la vidéo ou le PDF ici</div>' +
+          '<div class="lpo-li mk-souleve">' +
+            '<div class="lpo-lt"><span class="lpo-logo" aria-hidden="true">IP</span><div><strong>Intégral Pharma</strong><span>Groupe de grossistes-répartiteurs</span>' +
+              '<span>' + esc(dateCourte(new Date(p.d + 'T12:00:00')) + ' · ' + heureFr(p.h)) + '</span></div></div>' +
+            '<textarea class="lpo-ltxt' + (ouvert.deplie ? '' : ' plie') + '" id="lpo-texte" rows="4" spellcheck="true" aria-label="Texte du post, modifiable" ' +
+              'onfocus="V2.lip.deplier()" oninput="V2.lip.setTexte(this.value)">' + esc(texteDe(p, e)) + '</textarea>' +
+            (ouvert.deplie ? '' : '<button type="button" class="lpo-deplier" id="lpo-deplier" onclick="V2.lip.deplier(true)">… voir plus</button>') +
+            '<div class="lpo-vis" id="lpo-vis">' + visuelHtml() + '</div>' +
+            '<div class="lpo-lact" aria-hidden="true"><span>' + icS('aime', 18) + 'J’aime</span><span>' + icS('commente', 18) + '</span><span>' + icS('republie', 18) + '</span><span>' + icS('envoie', 18) + '</span></div>' +
           '</div>' +
-          '<details class="lid-plus"' + (ouvert.plus ? ' open' : '') + ' ontoggle="V2.lip.plusOuvert(this.open)"><summary>Idées de visuel et commentaire</summary>' +
-          '<div class="lip-field"><span class="lip-flab">Choix du visuel — ' + cur.v.length + ' propositions</span>' + vis + '</div>' +
-          (function () {
-            var d = da();
-            if (!d) return '<div class="lip-field"><span class="lip-flab">Prompt pour le générateur d’images</span>' +
-                            '<div class="lip-hint">Chargement de la direction artistique…</div></div>';
-            var iv = (e.visuel === null) ? 0 : e.visuel;
-            var k = apprCourante();
-            var a = approcheDe(k);
-            var pv = cur.v;
-            var onglets = d.approches.map(function (x) {
-              return '<button class="lip-apbtn' + (x.k === k ? ' on' : '') + '" onclick="V2.lip.setApproche(\'' + x.k + '\')">' + esc(x.label) + '</button>';
-            }).join('');
-            var mots = motsAPoser((pv && pv[iv]) || '');
-            return '<div class="lip-field"><span class="lip-flab">Prompt pour le générateur d’images — 3 approches</span>' +
-              '<div class="lip-aptabs">' + onglets + '</div>' +
-              '<div class="lip-apaide">' + esc(a.aide) + '</div>' +
-              '<div class="lip-prompt">' + esc(promptPour(cur, iv, k)) + '</div>' +
-              '<div class="lip-imgacts" style="margin-top:9px">' +
-                '<button class="lip-btn lip-btn-p" onclick="V2.lip.copierPrompt()">Copier ce prompt</button>' +
-                '<button class="lip-btn" onclick="V2.lip.voirDA()">Voir notre DA</button></div>' +
-              (mots.length ? '<div class="lip-note" style="margin-top:9px"><b>Texte à poser ensuite</b>, dans Canva ou équivalent — il n’est volontairement dans aucun des trois prompts :<br>' +
-                mots.map(function (x) { return '« ' + esc(x) + ' »'; }).join('<br>') + '</div>' : '') +
-              '<div class="lip-hint">Les trois restent dans notre direction artistique : même fond crème, mêmes couleurs, même format. ' +
-                'Aucun ne fait écrire de texte par le générateur — les accents français sont ratés, la phrase se pose après.</div>' +
-            '</div>';
-          })() +
-          '<div class="lip-field"><span class="lip-flab">Commentaire</span>' +
-            '<textarea class="lip-ta" placeholder="Ce qu\'il faut changer, préciser, éviter…" oninput="V2.lip.setChamp(\'commentaire\',this.value)">' + esc(e.commentaire || '') + '</textarea>' +
-            '<div class="lip-hint">Visible par toute l\'équipe.</div>' +
-            '<div class="lip-tags">Hashtags prévus : ' + esc(cur.tags) + '</div>' +
-          '</div>' +
-          '<div class="lip-imgacts"><button class="lip-btn" onclick="V2.lip.publier()">' + ICO('spark', 16) + 'Ouvrir LinkedIn</button>' +
-            '<button class="lip-btn lip-btn-p" onclick="V2.lip.enregistrer()">' + ICO('check', 17, 2.4) + 'Enregistrer</button></div>' +
-          '</details>' +
+          '<div class="lpo-aide" id="lpo-aide">' + aideHtml() + '</div>' +
         '</div>' +
-      '</aside>';
+        '<div class="lpo-regl">' +
+          '<section><span class="lpo-cap">Sujet</span>' + sujets +
+            (alts() ? '' : '<p class="lpo-t5">Chargement des autres sujets proposés pour cette date…</p>') +
+            '<p class="lpo-t5">' + esc(cur.angle) + '</p></section>' +
+          '<section><span class="lpo-cap">Ton</span><div class="mk-seg" role="group" aria-label="Version du texte" style="--n:' + (tons.length || 1) + ';--i:' + it + '"><i class="mk-seg-ind"></i>' + tons.join('') + '</div></section>' +
+          '<section><span class="lpo-cap">Image, vidéo ou document</span><div id="lpo-media">' + mediaHtml() + '</div>' +
+            '<p class="lpo-t5"><b>Idée de visuel</b> — ' + esc(cur.v[iv] || cur.v[0] || '') + '</p></section>' +
+          '<section><span class="lpo-cap">Qui s’en occupe ?</span><div class="mk-seg" role="group" aria-label="Qui s’en occupe ?"' + (iq < 0 ? ' data-aucun="1"' : '') + ' style="--n:' + QUI.length + ';--i:' + Math.max(iq, 0) + '"><i class="mk-seg-ind"></i>' +
+            QUI.map(function (q) {
+              return '<button type="button" class="mk-press" aria-pressed="' + (e.resp === q.k) + '" onclick="V2.lip.quiTiroir(\'' + q.k + '\')">' + esc(q.label) + '</button>';
+            }).join('') + '</div></section>' +
+          '<section><label class="lpo-cap" for="lpo-com">Commentaire pour l’équipe</label>' +
+            '<textarea class="lpo-champ" id="lpo-com" rows="2" placeholder="Ce qu’il faut changer, préciser, éviter…" oninput="V2.lip.setChamp(\'commentaire\',this.value)">' + esc(e.commentaire || '') + '</textarea>' +
+            '<p class="lpo-t5">Visible par toute l’équipe. Gardé quand vous retenez le texte ou quand vous enregistrez.</p></section>' +
+          repliHtml('visuel', 'Idées de visuel — ' + cur.v.length + ' proposition' + (cur.v.length > 1 ? 's' : ''), idees) +
+          repliHtml('prompt', 'Prompt d’image — 3 approches', prompt) +
+          repliHtml('ligne', 'Hashtags et ligne éditoriale',
+            '<p class="lpo-t5" style="margin-top:0"><b>Hashtags prévus</b> — ' + esc(cur.tags) + '</p>' +
+            '<p class="lpo-t5"><b>Oui</b> — ' + esc(REGLE_OUI) + '</p><p class="lpo-t5"><b>Non</b> — ' + esc(REGLE_NON) + '</p>') +
+          '<section><div class="lpo-rang" style="margin-top:0"><button type="button" class="mk-btn mk-press" onclick="V2.lip.enregistrer()">Enregistrer sans retenir</button>' +
+            '<span class="lpo-autres">' + autresHtml() + '</span></div>' +
+            '<p class="lpo-t5">Garde le sujet, le ton, le texte et le commentaire tels qu’ils sont ici, sans faire avancer le post.</p></section>' +
+        '</div>' +
+      '</div>' +
+      '<div class="lpo-vp">' + piedHtml() + '</div></div>';
   }
+
 
   /* ───────────────── rendu : veille ───────────────── */
   var veilleVue = { onglet: 'synthese', src: '', q: '', limite: 30, ouverts: {} };
@@ -1258,14 +1635,14 @@
   V2.lip.setEtape = function (k) { etape = k; redessine(); };
   V2.lip.plusSemaines = function () { nbSem += 4; redessine(); };
   V2.lip.toggleEcartes = function () { voirEcartes = !voirEcartes; redessine(); };
-  V2.lip.plusOuvert = function (o) { if (ouvert) ouvert.plus = !!o; };
+  V2.lip.plusOuvert = function (o, cle) { if (ouvert) ouvert.replis[cle || 'visuel'] = !!o; };
   // « Qui s'en occupe » depuis la fiche : partagé tout de suite, sans emporter
   // le sujet ou le texte encore à l'essai dans la fiche.
   V2.lip.quiTiroir = function (k) {
     if (!ouvert) return;
     var v = (ouvert.e.resp === k) ? '' : k, s = copieEtat(etat(ouvert.n));
     ouvert.e.resp = v; s.resp = v; s.sujet = sujetEff(ouvert.p, s);
-    enregistrer(ouvert.n, s).then(function () { redessineTiroir(); redessine(); if (v) toast(quiLabel(v) + ' s’en occupe'); });
+    enregistrer(ouvert.n, s).then(function () { signalerEnregistre(); redessineTiroir(); redessine(); });
   };
   function tropCetteSemaine() {
     return etat(ouvert.n).statut !== 'valide' && retenusSemaine(lundiDe(ouvert.p.d)) >= MAX_SEM;
@@ -1275,23 +1652,84 @@
     e.sujet = sujetEff(ouvert.p, e); e.variante = varEff(cur, e); e.statut = 'valide';
     return e;
   }
+  function marquerCarte(n, ms) { var S = socle(); if (S.marquer) S.marquer(carteDe(n), ms || 1400); }
+
+  /* Geste 6 — Voyager : le post change d'étape. À 1280 la carte traverse vers sa colonne et les voisines se
+     resserrent ; à 390 elle s'envole vers le segment de destination, qui prend le relais. Sans `vers`, seules
+     les voisines bougent (post écarté ou remis). Mouvement réduit : re-rendu sec + anneau sur la carte arrivée. */
+  function voyagerPost(n, vers) {
+    var S = socle(), racine = document.getElementById('v2-root'), id = 'P' + n;
+    if (!S.voyager || !racine) { redessine(); return; }
+    if (!vers || !S.tel()) { S.voyager(racine, redessine, vers ? id : null); return; }
+    var carte = racine.querySelector('.lpo-carte[data-mk-id="' + id + '"]'), onglet = racine.querySelector('.lpo-etapes [data-etape="' + vers + '"]');
+    if (!visibleAEcran(carte) || !onglet || S.calme()) { etape = vers; redessine(); marquerCarte(n); return; }
+    var r = carte.getBoundingClientRect(), o = onglet.getBoundingClientRect();
+    var enveloppe = document.createElement('div'), f = carte.cloneNode(true);
+    enveloppe.className = 'mk-espace'; enveloppe.setAttribute('aria-hidden', 'true');
+    f.removeAttribute('data-mk-id'); f.removeAttribute('data-n'); f.removeAttribute('tabindex'); f.removeAttribute('onclick'); f.removeAttribute('onkeydown');
+    f.classList.add('mk-en-voyage');
+    f.style.cssText = 'position:fixed;left:' + r.left + 'px;top:' + r.top + 'px;width:' + r.width + 'px;height:' + r.height + 'px;margin:0;z-index:75;pointer-events:none;transform-origin:0 0';
+    enveloppe.appendChild(f); document.body.appendChild(enveloppe);
+    S.voyager(racine, redessine, null);   // la carte a quitté sa colonne : les voisines se resserrent
+    var k = .34, dx = o.left + o.width / 2 - r.width * k / 2 - r.left, dy = o.top + o.height / 2 - r.height * k / 2 - r.top;
+    var fini = false, fin = function () {
+      if (fini) return; fini = true;
+      if (enveloppe.parentNode) enveloppe.parentNode.removeChild(enveloppe);
+      var og = document.querySelector('#v2-root .lpo-etapes [data-etape="' + vers + '"]');
+      if (og) { og.classList.add('lpo-flash'); }
+      setTimeout(function () {
+        etape = vers; redessine();
+        var c = carteDe(n);
+        if (c) { marquerCarte(n, 1600); S.animer(c, [{ opacity: 0, transform: 'translateY(-24px) scale(.96)' }, { opacity: 1, transform: 'none' }], { duration: 320, easing: S.ressort() }); }
+      }, 140);
+    };
+    var an = S.animer(f, [{ transform: 'none', opacity: 1, easing: 'cubic-bezier(.22,1,.36,1)' },
+      { transform: 'translateY(-6px) scale(1.03)', opacity: 1, offset: .18, easing: 'cubic-bezier(.5,0,.15,1)' },
+      { transform: 'translate(' + dx + 'px,' + dy + 'px) scale(' + k + ')', opacity: 1, offset: .88 },
+      { transform: 'translate(' + dx + 'px,' + (dy + 4) + 'px) scale(' + (k * .86) + ')', opacity: 0 }], { duration: 400, easing: 'linear', fill: 'forwards' });
+    if (an) an.onfinish = fin;
+    setTimeout(fin, 520);
+  }
+  // La confirmation se lit sur le bouton (geste 9) ; le volet se referme ensuite et la carte voyage.
+  function puisVoyager(n, vers) {
+    var S = socle();
+    if (S.confirmer) S.confirmer(document.getElementById('lpo-principal'), 900);
+    signalerEnregistre();
+    setTimeout(function () {
+      if (ouvert && ouvert.n === n) fermer(function () { voyagerPost(n, vers); });
+      else voyagerPost(n, vers);
+    }, calme() ? 0 : 560);
+  }
+
   V2.lip.retenir = function () {
     if (!ouvert) return;
     if (tropCetteSemaine()) { toast('Déjà ' + MAX_SEM + ' posts retenus cette semaine — retirez-en un d’abord', 'error'); return; }
-    enregistrer(ouvert.n, copieEtat(figerChoix())).then(function () { toast('Texte retenu'); redessineTiroir(); redessine(); });
+    var n = ouvert.n, deja = etat(n).statut === 'valide' && !etat(n).publie;
+    enregistrer(n, copieEtat(figerChoix())).then(function () {
+      if (!deja) return puisVoyager(n, 'pret');
+      // Le post était déjà « Prêt » : il ne change pas de colonne. Le bouton confirme, puis propose l'étape suivante.
+      var S = socle(); if (S.confirmer) S.confirmer(document.getElementById('lpo-principal'), 900);
+      signalerEnregistre();
+      setTimeout(function () { redessineTiroir(); redessine(); marquerCarte(n); }, calme() ? 0 : 900);
+    });
   };
   V2.lip.marquerPublie = function (oui) {
     if (!ouvert) return;
     if (oui && tropCetteSemaine()) { toast('Déjà ' + MAX_SEM + ' posts retenus cette semaine — retirez-en un d’abord', 'error'); return; }
-    var e = oui ? figerChoix() : ouvert.e;
+    var n = ouvert.n, e = oui ? figerChoix() : ouvert.e;
     e.publie = !!oui;
-    enregistrer(ouvert.n, copieEtat(e)).then(function () { toast(oui ? 'Marqué comme publié' : 'Remis dans « Prêt à publier »'); fermer(); redessine(); });
+    enregistrer(n, copieEtat(e)).then(function () {
+      if (oui) { delete partis[n]; return puisVoyager(n, 'publie'); }
+      signalerEnregistre();
+      fermer(function () { voyagerPost(n, etapeDe(etat(n))); });
+    });
   };
   V2.lip.ecarter = function (oui) {
     if (!ouvert) return;
-    var s = copieEtat(etat(ouvert.n));
+    var n = ouvert.n, s = copieEtat(etat(n));
     s.statut = oui ? 'refuse' : 'attente'; s.sujet = sujetEff(ouvert.p, s);
-    enregistrer(ouvert.n, s).then(function () { toast(oui ? 'Post écarté pour cette semaine' : 'Post remis dans la liste'); fermer(); redessine(); });
+    // Message flottant gardé ici : c'est une action sur laquelle on peut revenir (« Revoir les posts écartés »).
+    enregistrer(n, s).then(function () { toast(oui ? 'Post écarté pour cette semaine' : 'Post remis dans la liste'); fermer(function () { voyagerPost(n, ''); }); });
   };
 
   V2.lip.ouvrir = function (n) {
@@ -1300,11 +1738,20 @@
     if (!p) return;
     var e = etat(n);
     apprVue = null;
-    ouvert = { n: n, p: p, envoi: '', e: copieEtat(e) };
+    ouvert = { n: n, p: p, envoi: null, erreurMedia: '', note: '', deplie: false, replis: {}, e: copieEtat(e) };
     ouvert.e.sujet = sujetEff(p, e);
-    monter(drawerHtml());
+    ouvrirVolet(carteDe(n));
   };
-  V2.lip.fermer = fermer;
+  V2.lip.fermer = function () { fermer(); };
+  V2.lip.fermerDA = fermerDA;
+  // La couverture d'un post du plan, pour un autre écran de l'espace Marketing (« Cette semaine », lot 4).
+  V2.lip.couverture = function (n) { var p = postDe(n); return p ? couvDe(p, etat(n)) : ''; };
+  V2.lip.deplier = function (puisEcrire) {
+    if (!ouvert) return;
+    var t = document.getElementById('lpo-texte'), b = document.getElementById('lpo-deplier');
+    if (!ouvert.deplie) { ouvert.deplie = true; if (t) t.classList.remove('plie'); if (b && b.parentNode) b.parentNode.removeChild(b); ajusterTexte(); }
+    if (puisEcrire && t) { try { t.focus({ preventScroll: true }); } catch (e) {} }
+  };
   V2.lip.setChamp = function (champ, val) {
     if (!ouvert) return;
     if (champ === 'resp' && ouvert.e.resp === val) val = '';   // second clic : on retire
@@ -1317,16 +1764,21 @@
     }
     if (champ === 'visuel') apprVue = null;   // l'approche suggérée suit le visuel choisi
     if (champ === 'commentaire') return;          // ne pas redessiner sous les doigts
+    if (champ === 'sujet' || champ === 'variante') ouvert.note = '';
     redessineTiroir();   // conserve la position de défilement
+    if (champ === 'sujet' || champ === 'variante') {   // le nouvel aperçu arrive en fondu
+      var li = document.querySelector('#lip-drawer .lpo-li'); if (li) li.classList.add('mk-fondu');
+    }
   };
   V2.lip.setTexte = function (v) {
     if (!ouvert) return;
     var e = ouvert.e, cur = sujetOuvert(), vi = varEff(cur, e), prop = cur.t[vi] ? cur.t[vi].txt : '';
     if (v === prop || !String(v).trim()) { e.texte = ''; e.texteCle = ''; }
     else { e.texte = v; e.texteCle = sujetEff(ouvert.p, e) + '.' + vi; }
-    // pas de redessin sous les doigts : seuls le bouton et le lien de retour suivent
-    var b = document.getElementById('lid-retenir'); if (b) b.textContent = libelleRetenir();
-    var o = document.getElementById('lid-orig'); if (o) o.style.display = e.texte ? 'block' : 'none';
+    ouvert.note = '';
+    // pas de redessin sous les doigts : seuls le pied du volet et la ligne d'aide suivent
+    ajusterTexte(); peindrePied();
+    var a = document.getElementById('lpo-aide'); if (a) a.innerHTML = aideHtml();
   };
   V2.lip.texteOrigine = function () { if (ouvert) { ouvert.e.texte = ''; ouvert.e.texteCle = ''; redessineTiroir(); } };
   V2.lip.enregistrer = function () {
@@ -1335,9 +1787,11 @@
     if (e.statut === 'valide' && etat(n).statut !== 'valide' && retenusSemaine(lundiDe(ouvert.p.d)) >= MAX_SEM) {
       toast('Déjà ' + MAX_SEM + ' posts retenus cette semaine — retirez-en un d’abord', 'error'); return;
     }
+    var avant = etapeDe(etat(n));
     enregistrer(n, e).then(function () {
-      if (backend === 'supabase') toast('Décision enregistrée et partagée avec l\'équipe');
-      fermer(); redessine();
+      signalerEnregistre();
+      var apres = etapeDe(etat(n));
+      fermer(function () { if (apres !== avant) voyagerPost(n, apres); else { redessine(); marquerCarte(n); } });
     });
   };
   V2.lip.copier = function () {
@@ -1345,8 +1799,9 @@
     var cur = sujetOuvert(), i = varEff(cur, ouvert.e);
     if (!cur.t[i]) return;
     var txt = texteDe(ouvert.p, ouvert.e);
+    var fait = function () { var S = socle(), B = document.querySelectorAll('#lip-drawer [data-lpo-copier]'); for (var k = 0; k < B.length; k++) if (S.confirmer) S.confirmer(B[k]); };
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(txt).then(function () { toast('Texte copié'); }, function () { window.prompt('Copiez le texte :', txt); });
+      navigator.clipboard.writeText(txt).then(fait, function () { window.prompt('Copiez le texte :', txt); });
     } else window.prompt('Copiez le texte :', txt);
   };
   V2.lip.publier = function () {
@@ -1354,7 +1809,7 @@
     var cur = sujetOuvert(), i = varEff(cur, ouvert.e);
     if (!cur.t[i]) return;
     if (ouvert.e.statut !== 'valide' && !confirm('Ce post n’est pas encore retenu.\n\nL’ouvrir quand même dans LinkedIn ?')) return;
-    var txt = texteDe(ouvert.p, ouvert.e);
+    var txt = texteDe(ouvert.p, ouvert.e), n = ouvert.n;
     var suite = function () {
       window.open('https://www.linkedin.com/feed/?shareActive=true', '_blank');
       if (ouvert && ouvert.e.image_path) {
@@ -1362,7 +1817,17 @@
         // pour qu'elle soit sous la main au moment de la glisser dans le post.
         window.open(urlImage(ouvert.e.image_path), '_blank');
       }
-      toast('Texte copié. Collez-le dans LinkedIn, puis ajoutez le fichier.');
+      if (!ouvert || ouvert.n !== n) return;
+      // La consigne reste sous l'aperçu (plus de message flottant), et le bouton plein passe à l'étape suivante.
+      ouvert.note = 'Texte copié. Collez-le dans LinkedIn, puis ajoutez le fichier.';
+      var S = socle(), b = document.getElementById('lpo-principal');
+      if (etapeVolet() === 'linkedin' && S.confirmer) S.confirmer(b, 900);
+      setTimeout(function () {
+        if (!ouvert || ouvert.n !== n) return;
+        if (etat(n).statut === 'valide') partis[n] = 1;
+        peindrePied();
+        var a = document.getElementById('lpo-aide'); if (a) a.innerHTML = aideHtml();
+      }, calme() ? 0 : 900);
     };
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(txt).then(suite, function () { window.prompt('Copiez le texte :', txt); suite(); });
