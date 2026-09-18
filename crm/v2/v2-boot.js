@@ -666,7 +666,16 @@
     var cle = function (f) { return 'https://protege.local/' + f; };
     var n = fichiers.length, textes = {}, urls = null, cache = null;
     var prochainRemis = 0, prochainLance = 0, remiseEnCours = false, fini = false;
-    function rater(nom) { if (fini) return; fini = true; ko(nom); }
+    // 18/09/2026 — si une tranche est EN COURS d'exécution au moment de l'échec,
+    // on attend qu'elle ait fini avant de prévenir : sinon un nouvel essai lancé
+    // aussitôt la voyait s'ajouter à ses propres ventes (comptée deux fois —
+    // vu au banc sous WebKit, une passe sur quatre).
+    var echecEnAttente = null;
+    function rater(nom) {
+      if (fini) return; fini = true;
+      if (remiseEnCours) { echecEnAttente = nom; return; }
+      ko(nom);
+    }
     function remettre() {
       if (fini || remiseEnCours || prochainRemis >= n) return;
       var t = textes[prochainRemis];
@@ -676,6 +685,7 @@
       var i = prochainRemis++;
       onTexte(t, function () {
         remiseEnCours = false;
+        if (echecEnAttente !== null) { var ne = echecEnAttente; echecEnAttente = null; ko(ne); return; }
         if (prochainRemis >= n) { fini = true; return; }
         lancer(); remettre();
       });
@@ -874,7 +884,7 @@
   V2.chargerScripts = function (urls) {
     urls = urls || [];
     if (!urls.length) return Promise.resolve();
-    var V = '?v=20260918m' + (window.V2_VER || '20260915g');
+    var V = '?v=20260918n' + (window.V2_VER || '20260915g');
     return Promise.all(urls.map(function (u) {
       return new Promise(function (resolve) {
         var s = document.createElement('script');
@@ -1278,7 +1288,7 @@
     // de le servir, et le lecteur compacté ne trouverait pas ses dictionnaires.
     // Pas besoin de le suivre à chaque déploiement en revanche : quand `VER` de
     // sw.js change, l'activation du service worker efface tous les caches.
-    var V = '?v=20260918m';
+    var V = '?v=20260918n';
     V2.versionDonnees = V;   // lu par chargerScriptProtege (fiche carte)
     var promises = keys.map(function (k) {
       var src = (window.V2_DATA_BASE || '../') + DATA_FILES[k];
@@ -1326,6 +1336,11 @@
       // Le contrôle « la donnée est-elle là ? » n'a lieu qu'à la fin.
       function poserSuite(urls, resolve) {
         var i = 0, tranchesFaites = false;
+        // 18/09/2026 — NOUVEL ESSAI après une coupure pendant les tranches.
+        // L'en-tête est déjà exécuté : le reposer ne fait que lever « duplicate
+        // variable WML_OFFICINES » (un `const` ne se redéclare pas). On passe
+        // donc directement aux tranches.
+        if (k === 'wml' && window.WML_OFFICINES && window.WML_TRANCHES) i = urls.length;
         (function suivant() {
           if (i >= urls.length) {
             // Les ventes arrivent APRÈS l'en-tête, qui vient de nous dire
@@ -1357,6 +1372,11 @@
               // plus rien, et de nouvelles ventes changent l'empreinte d'elles-
               // mêmes. En-tête sans empreinte (ancien découpage) : jeton V.
               var versionVentes = 'ventes-' + (window.WML_TRANCHES_EMPREINTE || V);
+              // ⚠️ 18/09/2026 — on repart d'un tableau VIDE. Les tranches font
+              // `push` : après un essai coupé en route, celles déjà exécutées
+              // étaient comptées DEUX FOIS au nouvel essai. Prouvé au banc sous
+              // WebKit : 60 ventes et 6 000 € pour 50 et 5 000 € attendus.
+              window.WML_SALES = [];
               textesProteges(noms, versionVentes, TRANCHES_EN_VOL, function (texte, suite) {
                 rang++;
                 V2.ventesProgres = { n: rang, total: n };
@@ -1402,6 +1422,9 @@
             resolve();
             return;
           }
+          // Un nouvel essai RÉUSSI efface l'échec noté au premier : sinon le
+          // bandeau « chiffres non téléchargés » restait affiché pour rien.
+          delete V2.protegeEchec[k];
           loaded[src] = true;
           resolve();
         }
