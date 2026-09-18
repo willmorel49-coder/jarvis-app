@@ -180,7 +180,7 @@
   }
 })();
 
-/* ═══ La pastille LinkedIn — après le premier écran, fermable, fermée pour la visite ═══ */
+/* ═══ La pastille LinkedIn — vers le bas de la page, fermable, fermée pour la visite ═══ */
 (function(){
   "use strict";
   var CLE = "ip-pastille-fermee";
@@ -193,7 +193,11 @@
       'Nous suivre sur LinkedIn</a>' +
     '<button type="button" aria-label="Fermer l\'invitation LinkedIn"><svg viewBox="0 0 14 14" width="12" height="12" aria-hidden="true"><path d="M2 2l10 10M12 2 2 12" stroke="currentColor" stroke-width="1.7" fill="none"/></svg></button>';
   document.body.appendChild(p);
-  function voir(){ p.classList.toggle("la", window.scrollY > window.innerHeight * .6); }
+  /* tard : une fois passés 60 % du chemin de défilement de la page */
+  function voir(){
+    var chemin = document.documentElement.scrollHeight - window.innerHeight;
+    p.classList.toggle("la", chemin > 0 && window.scrollY > chemin * .6);
+  }
   window.addEventListener("scroll", voir, { passive: true });
   window.addEventListener("resize", voir);
   voir();
