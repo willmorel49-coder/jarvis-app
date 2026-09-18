@@ -60,7 +60,7 @@ body{
   border:2px solid rgba(159,182,255,.2);border-top-color:#5C97FF;animation:spin 1s linear infinite}
 .map3d__load span{font-family:"Inter",sans-serif;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#9AA6C4}
 @keyframes spin{to{transform:rotate(360deg)}}
-.map3d__info{position:absolute;left:14px;bottom:14px;z-index:6;max-width:min(300px,74%);
+.map3d__info{position:absolute;left:14px;bottom:14px;z-index:6;width:min(340px,calc(100% - 28px));
   background:rgba(7,12,28,.94);border:1px solid rgba(120,150,255,.30);border-radius:14px;
   padding:13px 15px;opacity:0;transform:translateY(10px);pointer-events:none;
   transition:opacity .3s ease,transform .35s cubic-bezier(.22,1,.36,1);box-shadow:0 22px 55px -22px rgba(0,0,0,.85)}
@@ -71,6 +71,14 @@ body{
 .map3d__info.part .mi__type{background:transparent;border:1px dashed #9FB4D8;color:#C9D6EE}
 .mi__name{font-weight:600;font-size:17px;color:#EFF3FF;letter-spacing:-.01em;line-height:1.15}
 .mi__city{font-size:13px;color:#9AA6C4;margin-top:3px}
+.mi__close{position:absolute;right:6px;top:6px;width:32px;height:32px;border:0;border-radius:50%;background:transparent;
+  color:#9AA6C4;font-size:20px;line-height:1;cursor:pointer}
+.mi__close:hover,.mi__close:focus-visible{background:rgba(255,255,255,.10);color:#fff}
+.mi__name{padding-right:26px}
+.mi__btn{width:100%;justify-content:flex-start!important;min-height:40px!important}
+.mi__btn small{font-weight:400;font-size:12px;opacity:.85;margin-left:auto;padding-left:10px;overflow:hidden;text-overflow:ellipsis}
+.map3d.peut-cliquer canvas{cursor:pointer}
+.estab.is-hover{border-color:rgba(255,193,104,.45)}
 .mi__actions{display:none;gap:8px;margin-top:11px;padding-top:10px;border-top:1px solid rgba(255,255,255,.08);flex-wrap:wrap}
 .mi__btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:34px;
   font-family:"Inter",sans-serif;font-size:12.5px;font-weight:600;text-decoration:none;
@@ -140,12 +148,13 @@ body{
         <div class="mi__name" id="miName">—</div>
         <div class="mi__city" id="miCity">—</div>
         <div class="mi__actions" id="miActions"></div>
+        <button type="button" class="mi__close" id="miClose" aria-label="Fermer la fiche">×</button>
       </div>
       <div class="map3d__load" id="mapLoad" aria-hidden="true"><span class="map3d__spin"></span><span>Chargement du réseau</span></div>
       <div class="map3d__fallback" id="mapFallback" aria-hidden="true"></div>
     </div>
     <aside class="roster" aria-label="Liste des agences">
-      <div class="roster__cap" id="rosterCap">Nos agences <b>— survolez pour situer</b></div>
+      <div class="roster__cap" id="rosterCap">Nos agences <b>— cliquez pour les coordonnées</b></div>
       <div class="roster__list" data-scroll aria-label="Annuaire des agences — faites glisser pour parcourir">
         <button type="button" class="estab estab--siege" data-i="0"><span class="estab__sig">HP</span><span class="estab__b"><span class="estab__n">Hyères Pharma</span><span class="estab__c">Hyères · 83</span></span><span class="estab__tag">Siège</span></button>
         <button type="button" class="estab" data-i="1"><span class="estab__sig">OPS</span><span class="estab__b"><span class="estab__n">Ouest Pharma Services</span><span class="estab__c">Saint-Étienne-de-Montluc · 44</span></span></button>
@@ -163,7 +172,7 @@ body{
     <span><i class="lg o"></i>Siège — Hyères</span>
     <span><i class="lg b"></i>Agences</span>
     <span><i class="lg p"></i>Partenaire — Metz</span>
-    <span class="hint" id="mapHint"><span class="dot"></span>Survolez ou touchez une agence pour la repérer et afficher ses coordonnées</span>
+    <span class="hint" id="mapHint"><span class="dot"></span>Cliquez sur une agence pour afficher son mail et son téléphone</span>
   </div>
 </div>
 
@@ -478,6 +487,7 @@ body{
   var cw=0,ch=0;
 
   var ray=new THREE.Raycaster(), ndc=new THREE.Vector2(-2,-2);
+  var lastHoverI=-2, ptX=0, ptY=0;
   var pointerInMap=false, mapHoverI=-1, rosterHoverI=-1, focusI=-1, activeI=-1, focusAmt=0, pinnedI=-1;
 
   var infoEl=document.getElementById('mapInfo'),
@@ -486,7 +496,7 @@ body{
   var curInfo=-2;
   function setInfo(i){
     if(i===curInfo) return; curInfo=i;
-    if(i<0){ if(infoEl) infoEl.classList.remove('on'); return; }
+    if(i<0){ if(infoEl){ infoEl.classList.remove('on'); infoEl.setAttribute('aria-hidden','true'); } return; }
     var m=SITES[i];
     infoEl.classList.remove('siege','part');
     if(m.t==='siege') infoEl.classList.add('siege'); else if(m.t==='part') infoEl.classList.add('part');
@@ -494,11 +504,12 @@ body{
     miName.textContent = m.n;
     miCity.textContent = m.c+' · '+m.dept;
     var html='';
-    if(m.mail) html += '<a class="mi__btn mi__btn--mail" href="mailto:'+m.mail+'">Écrire</a>';
-    if(m.tel)  html += '<a class="mi__btn mi__btn--tel" href="tel:'+telHref(m.tel)+'">Appeler</a>';
+    if(m.mail) html += '<a class="mi__btn mi__btn--mail" href="mailto:'+m.mail+'">Écrire<small>'+m.mail+'</small></a>';
+    if(m.tel)  html += '<a class="mi__btn mi__btn--tel" href="tel:'+telHref(m.tel)+'">Appeler<small>'+m.tel+'</small></a>';
+    if(!html)  html  = '<a class="mi__btn mi__btn--tel" href="mailto:contact@integralpharma.fr?subject='+encodeURIComponent(m.n)+'">Écrire au groupe<small>contact@integralpharma.fr</small></a>';
     miActions.innerHTML = html;
-    miActions.style.display = html ? 'flex' : 'none';
-    infoEl.classList.add('on');
+    miActions.style.display = 'flex';
+    infoEl.classList.add('on'); infoEl.setAttribute('aria-hidden','false');
   }
 
   function resize(){
@@ -516,9 +527,11 @@ body{
   window.addEventListener('resize',function(){ resize(); scheduleHeight(); },{passive:true});
 
   box.addEventListener('pointermove',function(e){
+    if(e.pointerType==='touch') return;
+    if(e.target.closest && e.target.closest('#mapInfo')){ pointerInMap=false; mapHoverI=-1; return; }
     var r=box.getBoundingClientRect();
-    mx=((e.clientX-r.left)/r.width-0.5)*2;
-    my=((e.clientY-r.top)/r.height-0.5)*2;
+    ptX=e.clientX-r.left; ptY=e.clientY-r.top;
+    mx=0; my=0; /* plus de parallaxe à la souris : la cible ne doit pas bouger sous le curseur */
     ndc.x=((e.clientX-r.left)/r.width)*2-1;
     ndc.y=-((e.clientY-r.top)/r.height)*2+1;
     pointerInMap=true;
@@ -529,8 +542,8 @@ body{
 
   var coarse = window.matchMedia && window.matchMedia('(pointer:coarse)').matches;
   if(coarse){
-    var _cap0=document.getElementById('rosterCap'); if(_cap0) _cap0.innerHTML='Nos agences <b>— touchez pour situer</b>';
-    var _hint0=document.getElementById('mapHint'); if(_hint0) _hint0.innerHTML='<span class="dot"></span>Touchez une agence pour la repérer et afficher ses coordonnées';
+    var _cap0=document.getElementById('rosterCap'); if(_cap0) _cap0.innerHTML='Nos agences <b>— touchez pour les coordonnées</b>';
+    var _hint0=document.getElementById('mapHint'); if(_hint0) _hint0.innerHTML='<span class="dot"></span>Touchez une agence pour afficher son mail et son téléphone';
   }
 
   function selRow(row){ document.querySelectorAll('.estab').forEach(function(r){ r.classList.remove('is-sel'); }); if(row) row.classList.add('is-sel'); }
@@ -543,21 +556,42 @@ body{
     row.addEventListener('focus',function(){ if(!coarse) rosterHoverI=i; });
     row.addEventListener('blur',function(){ if(!coarse && rosterHoverI===i) rosterHoverI=-1; });
     row.addEventListener('click',function(){
-      if(pinnedI===i){ pinnedI=-1; rosterHoverI=-1; selRow(null); }
-      else { pinnedI=i; rosterHoverI=i; selRow(row); }
+      if(pinnedI===i){ pinnedI=-1; selRow(null); }
+      else { pinnedI=i; selRow(row); }
     });
   });
 
   /* clic (ou tap) directement sur un faisceau : épingle la fiche pour rendre les boutons cliquables */
+  /* viser un faisceau à l'ÉCRAN : distance du pointeur au segment pied→sommet, seuil généreux.
+     Plus fiable qu'un lancer de rayon sur un cylindre fin, et identique au survol et au clic. */
+  var VA=new THREE.Vector3(), VB=new THREE.Vector3();
+  function ecran(i){
+    var b=beacons[i];
+    VA.set(b.wx,EXH,b.wz).project(camera); VB.set(b.wx,b.topY,b.wz).project(camera);
+    return {ax:(VA.x*.5+.5)*cw, ay:(-VA.y*.5+.5)*ch, bx:(VB.x*.5+.5)*cw, by:(-VB.y*.5+.5)*ch};
+  }
+  function viser(px,py){
+    var best=-1, bd=(coarse?34:24);
+    for(var i=0;i<beacons.length;i++){
+      var s=ecran(i), dx=s.bx-s.ax, dy=s.by-s.ay, L=dx*dx+dy*dy||1;
+      var u=Math.max(0,Math.min(1,((px-s.ax)*dx+(py-s.ay)*dy)/L));
+      var d=Math.sqrt(Math.pow(px-(s.ax+u*dx),2)+Math.pow(py-(s.ay+u*dy),2));
+      d += (1-u)*-6; /* léger avantage au pied du faisceau : c'est lui qui dit le lieu */
+      if(d<bd){ bd=d; best=beacons[i].idx; }
+    }
+    return best;
+  }
+  window.__carte={ecran:function(i){ return ecran(i); }};
+  function fermer(){ pinnedI=-1; selRow(null); }
+  if(infoEl){ infoEl.addEventListener('click',function(e){ e.stopPropagation(); }); }
+  var _cl=document.getElementById('miClose'); if(_cl) _cl.addEventListener('click',function(e){ e.stopPropagation(); fermer(); });
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape') fermer(); });
   box.addEventListener('click',function(e){
+    if(e.target.closest && e.target.closest('#mapInfo')) return;
     var r=box.getBoundingClientRect();
-    var cndc=new THREE.Vector2(((e.clientX-r.left)/r.width)*2-1, -((e.clientY-r.top)/r.height)*2+1);
-    ray.setFromCamera(cndc,camera);
-    var hits=ray.intersectObjects(pickTargets,false);
-    if(hits.length){
-      var i=hits[0].object.userData.bi;
-      if(pinnedI===i){ pinnedI=-1; selRow(null); }
-      else { pinnedI=i; selRow(rowFor(i)); }
+    var i=viser(e.clientX-r.left, e.clientY-r.top);
+    if(i>=0){
+      pinnedI=i; selRow(rowFor(i));
     } else {
       pinnedI=-1; selRow(null);
     }
@@ -582,17 +616,20 @@ body{
     var kCam  =1-Math.pow(1-0.045,dt*60);
     var kHl   =1-Math.pow(1-0.10, dt*60);
 
-    if(pointerInMap && pinnedI<0){
-      ray.setFromCamera(ndc,camera);
-      var hits=ray.intersectObjects(pickTargets,false);
-      mapHoverI = hits.length ? hits[0].object.userData.bi : -1;
+    if(pointerInMap){
+      mapHoverI = viser(ptX,ptY);
     }
-    focusI = pinnedI>=0 ? pinnedI : (pointerInMap ? mapHoverI : rosterHoverI);
+    var hoverI = pointerInMap ? mapHoverI : rosterHoverI;
+    if(hoverI!==lastHoverI){
+      lastHoverI=hoverI; box.classList.toggle('peut-cliquer', hoverI>=0);
+      document.querySelectorAll('.estab').forEach(function(r){ r.classList.toggle('is-hover', parseInt(r.getAttribute('data-i'),10)===hoverI); });
+    }
+    focusI = pinnedI;
     if(focusI>=0) activeI=focusI;
     focusAmt += ((focusI>=0?1:0)-focusAmt)*kFocus;
     setInfo(focusI);
 
-    var tAz=Math.sin(T*0.10)*0.10 + mx*0.14;
+    var tAz=Math.sin(T*0.10)*0.10*(1-focusAmt);
     var tEl=baseEl + my*0.06 + (1-e)*0.16;
     az+=(tAz-az)*kCam; elv+=(tEl-elv)*kCam;
     var R=baseR*(1.30-0.30*e);
@@ -603,7 +640,7 @@ body{
       var fx=fb.wx, fy=EXH+fb.site.h*0.4, fz=fb.wz;
       var dx=ovx-fx, dy=ovy-fy, dz=ovz-fz, dl=Math.sqrt(dx*dx+dy*dy+dz*dz)||1;
       dx/=dl; dy=Math.max(dy/dl,0.44); dz/=dl;
-      var fR=Math.max(30, baseR*0.27);
+      var fR=Math.max(52, baseR*0.50);
       camera.position.set(ovx+((fx+dx*fR)-ovx)*ea, ovy+((fy+dy*fR)-ovy)*ea, ovz+((fz+dz*fR)-ovz)*ea);
       lookX=fx*ea; lookY=2.5+(fy-2.5)*ea; lookZ=1.5+(fz-1.5)*ea;
     } else {
@@ -613,8 +650,8 @@ body{
 
     for(var i=0;i<beacons.length;i++){
       var b=beacons[i];
-      b.hlT = (b.idx===focusI)?1:0;
-      var dim = (activeI>=0 && b.idx!==activeI) ? (1-0.72*focusAmt) : 1;
+      b.hlT = (b.idx===focusI || b.idx===hoverI)?1:0;
+      var dim = (activeI>=0 && b.idx!==activeI) ? (1-0.88*focusAmt) : 1;
       var si = easeOut(Math.max(0, Math.min(1, intro*1.9 - b.idx*0.09)));
       b.grp.scale.y=Math.max(0.0001,si);
       b.hl+=(b.hlT-b.hl)*kHl;
@@ -627,11 +664,12 @@ body{
         var ph=(T*0.42+rg.userData.ph)%1;
         var sc=rg.userData.base*(0.25+ph*2.6);
         rg.scale.set(sc,sc,1);
-        rg.material.opacity=(1-ph)*0.55*si*(1+b.hl*0.7);
+        rg.material.opacity=(1-ph)*0.55*si*(1+b.hl*0.7)*dim;
       }
       var isActive = (b.idx===activeI && focusAmt>0.02);
       var isSiege  = (b.site.t==='siege');
-      var wantLabel = isActive || isSiege;
+      var isHover = (b.idx===hoverI && !isActive);
+      var wantLabel = isActive || isSiege || isHover;
       V.set(b.wx,b.topY,b.wz).project(camera);
       if(V.z<1 && si>0.35 && wantLabel){
         var lx=(V.x*0.5+0.5)*cw + b.site.ldx;
@@ -640,6 +678,8 @@ body{
         var lop;
         if(isActive){
           lop = easeOut(focusAmt);
+        } else if(isHover){
+          lop = 1;
         } else {
           lop = (activeI>=0 && activeI!==b.idx) ? (1-0.78*focusAmt) : 1;
         }
@@ -660,7 +700,7 @@ body{
       pu.sp.material.opacity=Math.pow(Math.sin(t*Math.PI),0.7)*0.85*e;
     }
 
-    hqLight.intensity=1.0+0.25*Math.sin(T*1.7);
+    hqLight.intensity=(1.0+0.25*Math.sin(T*1.7))*((activeI>=0 && SITES[activeI].t!=='siege')?(1-0.8*focusAmt):1);
     renderer.render(scene,camera);
     if(!box.classList.contains('ready')){ box.classList.add('ready'); scheduleHeight(); }
   }
