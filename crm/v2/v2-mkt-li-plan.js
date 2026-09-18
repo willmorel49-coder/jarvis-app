@@ -252,7 +252,7 @@
      ne sont plus proposés. SUJETS_METIER retire en plus, dans les piliers gardés,
      les sujets qui racontent l'entrepôt ou le froid (créneau -> n° de sujet). */
   var PILIERS_OK = { sante: 1, depistage: 1, vaccin: 1 };
-  var SUJETS_METIER = { 7: [0], 14: [2], 66: [0, 1], 101: [0, 1] };
+  var SUJETS_METIER = { 7: [0], 14: [2], 17: [1], 31: [2], 42: [0], 52: [1], 66: [0, 1, 2], 101: [0, 1] };
   var MAX_SEM = 2;
   var QUI = [{ k: 'pauline', label: 'Pauline' }, { k: 'will', label: 'Will' }];
   var REGLE_OUI = 'journées et mois de sensibilisation, prévention, dépistage, vaccination, soutien aux pharmaciens et aux patients.';
@@ -267,7 +267,21 @@
     return 0;
   }
 
-  function plan() { return window.LI_PLAN || null; }
+  /* Semaines qui restaient sans proposition : LI_PLAN_REMPL (bas de
+     mkt-li-plan-data.js) donne à un créneau « métier » un pilier gardé et trois
+     sujets de sensibilisation. Le créneau d'origine reste intact dans LI_PLAN. */
+  var planVu = null;
+  function plan() {
+    var P = window.LI_PLAN || null, R = window.LI_PLAN_REMPL;
+    if (!P || !R) return P;
+    if (!planVu) planVu = P.map(function (p) {
+      var r = R[p.n], s = r && r.sujets && r.sujets[0];
+      if (!s) return p;
+      return { n: p.n, d: p.d, h: p.h, p: r.p, f: s.f || p.f, titre: s.titre, angle: s.angle,
+        t: s.t, v: s.v, tags: s.tags || [], rempl: true };
+    });
+    return planVu;
+  }
   function piliers() { return window.LI_PLAN_PILIERS || []; }
   function pilier(k) { var a = piliers(); for (var i = 0; i < a.length; i++) if (a[i].k === k) return a[i]; return { k: k, label: k, color: '#ccc', bg: '#eee' }; }
   function meta() { return window.LI_PLAN_META || {}; }
@@ -281,6 +295,7 @@
   function alts() { return window.LI_PLAN_ALT || null; }
   function sujetsDe(p) {
     var A = alts(), out = [p];
+    if (p.rempl) A = {}, A[p.n] = window.LI_PLAN_REMPL[p.n].sujets.slice(1);
     if (A && A[p.n]) {
       for (var i = 0; i < A[p.n].length; i++) {
         var a = A[p.n][i];
@@ -612,7 +627,11 @@
   };
 
   /* ───────────────── ce qui est proposé ───────────────── */
-  function visible(p) { return !!PILIERS_OK[p.p]; }
+  function visible(p) {
+    if (!PILIERS_OK[p.p]) return false;
+    for (var j = 0; j < 3; j++) if (sujetPermis(p, j)) return true;
+    return false;   // les trois sujets du créneau sont « métier »
+  }
 
   /* ────────── posts libres (hors plan) ──────────
      Depuis le 20/08 le module n'a plus que deux onglets : tout se passe ici.
