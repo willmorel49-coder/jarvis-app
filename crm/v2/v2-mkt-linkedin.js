@@ -35,7 +35,7 @@
       '.li-today:hover{background:var(--li-bg);color:var(--li-ink)}',
       '.li-spacer{flex:1}',
       '.li-seg{display:inline-flex;background:var(--li-line2);border-radius:10px;padding:3px;gap:2px}',
-      '.li-seg button{padding:6px 13px;border-radius:8px;border:0;background:transparent;font:600 13px/1 inherit;color:var(--li-ink50);cursor:pointer;transition:all .15s var(--li-ease);display:inline-flex;align-items:center;gap:6px}',
+      '.li-seg button{padding:6px 13px;border-radius:8px;border:0;background:transparent;font-family:inherit;font-size:13px;font-weight:600;line-height:1;color:var(--li-ink50);cursor:pointer;transition:all .15s var(--li-ease);display:inline-flex;align-items:center;gap:6px}',
       '.li-seg button.on{background:var(--li-panel);color:var(--li-ink);box-shadow:var(--li-sh-sm)}',
       /* Ces deux onglets sont devenus la navigation principale du module :
          28 px de haut, c'est trop petit pour le doigt. */
