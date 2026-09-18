@@ -1380,7 +1380,7 @@ var LI_PLAN_REMPL = {
       "Visuel typographique sur fond crème : le numéro 3237 en grand, avec la mention « pharmacie de garde » en dessous, une seule couleur d’accent."],
    tags:"#PharmacieDeGarde #Santé #Mai" }
 ]},
-77: { p:'sante', sujets:[
+76: { p:'sante', sujets:[
  { f:'image', titre:"31 mai, Journée mondiale sans tabac : encourager, jamais juger",
    angle:"Bienveillance stricte. 3989.",
    t:[
@@ -1411,6 +1411,38 @@ var LI_PLAN_REMPL = {
    v:["Photo documentaire d’un comptoir d’officine vide, lumière douce, aucune personne, aucune marque visible.",
       "Illustration à plat sur fond crème : une horloge très stylisée indiquant quelques minutes, sans texte, une couleur d’accent unique."],
    tags:"#JournéeSansTabac #Pharmacie #Prévention" }
+]},
+77: { p:'sante', sujets:[
+ { f:'image', titre:"Examens de juin : le sommeil fait partie des révisions",
+   angle:"Soutien aux lycéens, aux étudiants et à leurs parents. Bienveillant, aucun conseil médical, aucun produit cité.",
+   t:[
+    {ton:'peda', txt:"Juin est le mois des examens. Pour des centaines de milliers de lycéens et d’étudiants, les semaines qui viennent se jouent entre les fiches, les annales et les nuits écourtées.\n\nLes campagnes d’information sur le sommeil rappellent pourtant une chose simple : c’est pendant la nuit que le cerveau range ce qu’il a appris dans la journée. Une nuit sacrifiée pour réviser davantage fait souvent perdre plus qu’elle ne rapporte.\n\nQuelques repères que ces campagnes répètent chaque année :\n\n• garder des horaires de coucher réguliers, y compris la veille d’une épreuve ;\n• s’accorder de vraies pauses, loin des écrans ;\n• continuer à bouger et à manger normalement.\n\nSi le stress s’installe ou si le sommeil ne revient pas, le médecin et le pharmacien sont des interlocuteurs de proximité.\n\nBon courage à toutes celles et ceux qui passent une épreuve ce mois-ci.\n\n#Examens #Sommeil #Prévention"},
+    {ton:'humain', txt:"Il y a, en ce moment, dans beaucoup de maisons, une lumière qui reste allumée tard.\n\nDerrière la porte, quelqu’un relit les mêmes pages pour la troisième fois, persuadé qu’une heure de plus fera la différence.\n\nElle la fait rarement. Ce qu’on apprend le jour se fixe la nuit, et une nuit trop courte emporte une partie du travail de la veille.\n\nAux parents qui hésitent à frapper à cette porte : proposer d’éteindre n’est pas décourager. C’est parfois l’aide la plus utile de la soirée.\n\nEt à celles et ceux qui révisent : vous en savez probablement plus que vous ne le croyez.\n\nBon courage pour les épreuves.\n\n#Examens #Sommeil #Santé"},
+    {ton:'court', txt:"Juin, le mois des examens.\n\nCe qu’on apprend le jour se fixe la nuit : une nuit écourtée pour réviser fait souvent perdre plus qu’elle ne rapporte.\n\nBon courage à toutes celles et ceux qui passent une épreuve.\n\n#Examens #Sommeil"}
+   ],
+   v:["Visuel typographique sur fond crème : « Dormir, c’est aussi réviser. » en grand, une couleur d’accent unique.",
+      "Illustration à plat sur fond crème : une lampe de bureau éteinte à côté d’une pile de livres fermés, sans texte."],
+   tags:"#Examens #Sommeil #Prévention" },
+ { f:'carrousel', titre:"Les gestes qui sauvent s’apprennent en deux heures",
+   angle:"Sensibilisation aux premiers secours. On oriente vers les formations existantes, on n’enseigne aucun geste.",
+   t:[
+    {ton:'peda', txt:"Une large part des arrêts cardiaques surviennent devant un témoin. Ce témoin est rarement un professionnel de santé : c’est un proche, un collègue, un passant.\n\nLes organismes de secours le rappellent régulièrement : ce qui se passe pendant les premières minutes, avant leur arrivée, compte énormément.\n\nTrois repères reviennent dans toutes leurs campagnes :\n\n• alerter — le 15, le 18 ou le 112 ;\n• masser, en se laissant guider au téléphone par les secours ;\n• utiliser un défibrillateur s’il y en a un à proximité : l’appareil donne lui-même les instructions.\n\nCes gestes s’apprennent. Des initiations de deux heures existent partout en France, auprès des sapeurs-pompiers, de la Croix-Rouge, de la Protection civile et de nombreuses associations agréées.\n\nCe post ne remplace aucune formation. Il rappelle simplement qu’elle existe, qu’elle est courte, et qu’elle est ouverte à tous.\n\n#GestesQuiSauvent #PremiersSecours #Prévention"},
+    {ton:'humain', txt:"La plupart des gens qui ont appris les gestes de premiers secours espèrent ne jamais s’en servir.\n\nEt beaucoup de ceux qui s’en sont servis disent la même chose : ils n’ont pas réfléchi. Les mains savaient.\n\nC’est tout l’intérêt d’une formation : elle ne rend pas courageux, elle évite de rester figé.\n\nDeux heures suffisent pour une initiation. On y apprend à alerter, à masser, à se servir d’un défibrillateur. On en ressort rarement expert, mais on n’est plus démuni.\n\nLes sapeurs-pompiers, la Croix-Rouge, la Protection civile et beaucoup d’associations en proposent toute l’année, souvent près de chez soi.\n\nSi vous cherchiez une bonne raison de vous inscrire, en voici une.\n\n#GestesQuiSauvent #PremiersSecours #Santé"},
+    {ton:'court', txt:"Alerter, masser, défibriller : trois gestes qui s’apprennent en deux heures.\n\nDes initiations existent partout en France, auprès des sapeurs-pompiers, de la Croix-Rouge ou de la Protection civile.\n\nOn espère ne jamais s’en servir. On préfère savoir.\n\n#GestesQuiSauvent #PremiersSecours"}
+   ],
+   v:["Carrousel de 3 vues, fond crème : « alerter », « masser », « défibriller » — un mot par vue, en typographie très généreuse, une couleur d’accent unique.",
+      "Photo documentaire d’un boîtier de défibrillateur fixé au mur d’un lieu public, cadrage simple, aucune personne, aucune marque lisible."],
+   tags:"#GestesQuiSauvent #PremiersSecours #Prévention" },
+ { f:'image', titre:"Guêpes, abeilles, frelons : les signes qui imposent d’appeler le 15",
+   angle:"Prévention saisonnière. On rappelle les signes d’alerte et les bons interlocuteurs, sans conseil de traitement.",
+   t:[
+    {ton:'peda', txt:"Avec les beaux jours reviennent les repas dehors, et avec eux les piqûres de guêpes, d’abeilles et de frelons.\n\nLe plus souvent, une piqûre est douloureuse et sans gravité. Les messages de prévention rappellent cependant deux situations qui ne se gèrent pas seul :\n\n• une piqûre dans la bouche ou la gorge, ou des piqûres très nombreuses ;\n• des signes qui apparaissent à distance de la piqûre : gonflement du visage, gêne pour respirer, malaise, éruption sur tout le corps.\n\nDans ces cas, on appelle le 15 sans attendre.\n\nLes personnes qui se savent allergiques ont en principe une conduite à tenir définie avec leur médecin : le début de l’été est un bon moment pour la relire, et pour vérifier que l’entourage la connaît aussi.\n\nPour tout le reste, votre pharmacien saura vous dire ce qui relève du comptoir et ce qui relève d’une consultation.\n\n#Prévention #Été #Santé"},
+    {ton:'humain', txt:"C’est une scène d’été très ordinaire : une table dehors, un verre sucré, une guêpe qu’on n’a pas vue.\n\nLe plus souvent, l’histoire s’arrête à une grimace et à une marque rouge.\n\nMais il arrive que le corps réagisse bien au-delà de la piqûre : un visage qui gonfle, une respiration qui devient difficile, un malaise. Ces signes-là ne se surveillent pas, ils se signalent : on appelle le 15.\n\nOn le rappelle maintenant parce que c’est au début de l’été qu’il est utile de l’avoir en tête, pas au moment où l’on en a besoin.\n\nEt si quelqu’un de votre entourage se sait allergique, demandez-lui simplement ce qu’il faudrait faire. La plupart apprécient qu’on pose la question.\n\n#Prévention #Été #Santé"},
+    {ton:'court', txt:"Une piqûre de guêpe est le plus souvent sans gravité.\n\nVisage qui gonfle, gêne pour respirer, malaise, piqûre dans la bouche : on appelle le 15 sans attendre.\n\nPour le reste, votre pharmacien vous orientera.\n\n#Prévention #Été"}
+   ],
+   v:["Visuel typographique sur fond crème : le chiffre 15 en très grand, et dessous, en petit, « gonflement, gêne pour respirer, malaise ». Une couleur d’accent unique.",
+      "Illustration à plat sur fond crème : une table de jardin très épurée, un verre, une petite silhouette d’insecte au trait. Aucun texte."],
+   tags:"#Prévention #Été #Santé" }
 ]},
 103: { p:'sante', sujets:[
  { f:'image', titre:"Septembre en or : une pensée pour les enfants malades et leurs familles",
