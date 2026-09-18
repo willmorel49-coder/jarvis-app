@@ -67,6 +67,22 @@
       '.lip-mline{flex:1;height:1px;background:var(--lip-line)}',
       '.lip-mcount{font-size:12px;font-weight:700;color:var(--lip-ink35)}',
 
+      /* vue simple : une semaine = un bloc, 1 à 2 posts retenus */
+      '.lip-sem{display:flex;align-items:baseline;gap:12px;margin:30px 2px 12px;flex-wrap:wrap}',
+      '.lip-sem h2{margin:0;font-size:15px;font-weight:800;letter-spacing:-.01em}',
+      '.lip-semn{font-size:12px;font-weight:700;color:var(--lip-ink35)}',
+      '.lip-semn.ok{color:#00734F}',
+      '.lip-acts{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:11px}',
+      '.lip-act{min-height:36px;padding:0 13px;border-radius:9px;border:1.5px solid var(--lip-line);background:#fff;font:700 12.5px/1 inherit;color:var(--lip-ink70);cursor:pointer;transition:all .15s var(--lip-ease)}',
+      '.lip-act:hover{background:var(--lip-bg)}',
+      '.lip-act.oui.on{background:#00734F;border-color:#00734F;color:#fff}',
+      '.lip-act.non.on{background:#C2183C;border-color:#C2183C;color:#fff}',
+      '.lip-act.qui.on{background:var(--lip-ink);border-color:var(--lip-ink);color:#fff}',
+      '.lip-qlab{font-size:11.5px;font-weight:700;color:var(--lip-ink35);margin-left:8px}',
+      '.lip-card.ecarte{background:#f6f7f9;box-shadow:none}',
+      '.lip-card.ecarte .lip-titre{color:var(--lip-ink50);text-decoration:line-through}',
+      '.lip-vide{border:1.5px dashed var(--lip-line);border-radius:14px;padding:13px 17px;font-size:13px;color:var(--lip-ink50);display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px}',
+
       /* carte post */
       '.lip-card{display:grid;grid-template-columns:62px 1fr auto;gap:16px;align-items:start;background:var(--lip-panel);border:1px solid var(--lip-line);border-radius:14px;padding:15px 17px;margin-bottom:10px;box-shadow:var(--lip-sh);cursor:pointer;position:relative;overflow:hidden;transition:box-shadow .18s var(--lip-ease),border-color .18s,transform .18s var(--lip-ease)}',
       '.lip-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--pc,#ccc)}',
@@ -201,7 +217,7 @@
       '.lip-inp{flex:1 1 100%;min-width:0;width:100%}',
       '.lip-sel{flex:1 1 44%;min-width:0}',
       '.lip-drh,.lip-drb,.lip-drf{padding-left:16px;padding-right:16px}',
-      '.lip-btn,.lip-stbtn,.lip-close,.lip-apbtn{min-height:44px}',
+      '.lip-btn,.lip-stbtn,.lip-close,.lip-apbtn,.lip-act{min-height:44px}',
       /* 44 px partout au doigt, champs de saisie compris : à 36 px on rate la cible */
       '.lip-chip{height:44px}',
       '.lip-sel,.lip-inp{height:44px}',
@@ -217,9 +233,9 @@
   // tombait à 2,4:1 — illisible. Voir [[feedback_mesurer_le_rendu_pas_le_code]].
   var STATUTS = [
     { k: 'attente',      label: 'En attente',     color: '#9aa1ae', bg: '#f1f4f8', txt: '#5A6270', on: '#5A6270' },
-    { k: 'valide',       label: 'Validé',         color: '#00B37A', bg: '#e6f7f0', txt: '#00734F', on: '#00734F' },
+    { k: 'valide',       label: 'Retenu',         color: '#00B37A', bg: '#e6f7f0', txt: '#00734F', on: '#00734F' },
     { k: 'retravailler', label: 'À retravailler', color: '#F39A1B', bg: '#fff4e0', txt: '#8A5200', on: '#A05E00' },
-    { k: 'refuse',       label: 'Refusé',         color: '#FF4D6D', bg: '#ffe9ee', txt: '#C2183C', on: '#C2183C' }
+    { k: 'refuse',       label: 'Écarté',         color: '#FF4D6D', bg: '#ffe9ee', txt: '#C2183C', on: '#C2183C' }
   ];
   function statut(k) { for (var i = 0; i < STATUTS.length; i++) if (STATUTS[i].k === k) return STATUTS[i]; return STATUTS[0]; }
   var MOIS = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
@@ -227,6 +243,29 @@
   // mars, mai, juin, août ne s'abrègent pas : « mars. » est une faute
   var MOIS_CT = ['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
   var JOURS = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'];
+
+  /* ────────── ligne éditoriale du 18/09/2026 ──────────
+     Will : « on n'a pas le droit de parler trop de notre métier en profondeur,
+     la chaîne du froid c'est exclu ; on a un rôle d'acteur de la santé
+     bienveillant — journées internationales et sensibilisation, oui ».
+     Les 48 créneaux des trois piliers « métier » restent dans les données mais
+     ne sont plus proposés. SUJETS_METIER retire en plus, dans les piliers gardés,
+     les sujets qui racontent l'entrepôt ou le froid (créneau -> n° de sujet). */
+  var PILIERS_OK = { sante: 1, depistage: 1, vaccin: 1 };
+  var SUJETS_METIER = { 7: [0], 14: [2], 66: [0, 1], 101: [0, 1] };
+  var MAX_SEM = 2;
+  var QUI = [{ k: 'pauline', label: 'Pauline' }, { k: 'will', label: 'Will' }];
+  var REGLE_OUI = 'journées et mois de sensibilisation, prévention, dépistage, vaccination, soutien aux pharmaciens et aux patients.';
+  var REGLE_NON = 'le détail de notre métier (chaîne du froid, logistique, entrepôt, tournées), les prix, les réformes, les confrères.';
+  function quiLabel(k) { for (var i = 0; i < QUI.length; i++) if (QUI[i].k === k) return QUI[i].label; return ''; }
+  function sujetPermis(p, i) { var x = SUJETS_METIER[p.n]; return !(x && x.indexOf(i) >= 0); }
+  // Le sujet affiché : celui choisi s'il est permis, sinon le premier permis.
+  function sujetEff(p, e) {
+    var i = e.sujet || 0;
+    if (sujetPermis(p, i)) return i;
+    for (var j = 0; j < 3; j++) if (sujetPermis(p, j)) return j;
+    return 0;
+  }
 
   function plan() { return window.LI_PLAN || null; }
   function piliers() { return window.LI_PLAN_PILIERS || []; }
@@ -298,7 +337,13 @@
   var etats = {};          // plan_id -> {sujet, statut, variante, visuel, commentaire}
   var charge = false;
 
-  function vide() { return { sujet: 0, statut: 'attente', variante: null, visuel: null, commentaire: '', image_path: '' }; }
+  function vide() { return { sujet: 0, statut: 'attente', variante: null, visuel: null, commentaire: '', image_path: '', resp: '' }; }
+  function copieEtat(e) { return { sujet: e.sujet || 0, statut: e.statut || 'attente', variante: e.variante, visuel: e.visuel,
+    commentaire: e.commentaire || '', image_path: e.image_path || '', resp: e.resp || '' }; }
+  // « Qui s'en occupe » n'a pas de colonne : il voyage en tête du commentaire
+  // (« @pauline| … ») et en est retiré à la lecture. Aucun changement de table.
+  var RX_RESP = /^@(pauline|will)\|\s?/;
+  function lireResp(c) { var m = RX_RESP.exec(String(c || '')); return m ? m[1] : ''; }
   function etat(n) { return etats[n] || vide(); }
   function localTout() { try { var o = JSON.parse(localStorage.getItem(LS) || '{}'); return (o && typeof o === 'object') ? o : {}; } catch (e) { return {}; } }
   function localEcrire(o) { try { localStorage.setItem(LS, JSON.stringify(o)); } catch (e) {} }
@@ -311,7 +356,8 @@
       backend = 'supabase'; etats = {};
       r.data.forEach(function (x) {
         etats[x.plan_id] = { sujet: x.sujet || 0, statut: x.statut || 'attente', variante: (x.variante === null || x.variante === undefined) ? null : x.variante,
-          visuel: (x.visuel === null || x.visuel === undefined) ? null : x.visuel, commentaire: x.commentaire || '',
+          visuel: (x.visuel === null || x.visuel === undefined) ? null : x.visuel,
+          commentaire: String(x.commentaire || '').replace(RX_RESP, ''), resp: lireResp(x.commentaire),
           image_path: x.image_path || '',
           qui: x.qui || '', updated_at: x.updated_at || null };
       });
@@ -337,7 +383,7 @@
 
   function ligne(n, e) {
     return { plan_id: n, sujet: e.sujet || 0, statut: e.statut, variante: e.variante, visuel: e.visuel,
-      commentaire: e.commentaire || '', image_path: e.image_path || '',
+      commentaire: (e.resp ? '@' + e.resp + '| ' : '') + (e.commentaire || ''), image_path: e.image_path || '',
       qui: (V2.user && V2.user.email) || '', updated_at: new Date().toISOString() };
   }
 
@@ -565,22 +611,8 @@
     V2.li.zoom(urlImage(e.image_path), t);
   };
 
-  /* ───────────────── filtres ───────────────── */
-  var flt = { mois: '', statut: '', cache: {}, q: '' };
-
-  function visible(p) {
-    if (flt.cache[p.p]) return false;
-    if (flt.mois && p.d.slice(0, 7) !== flt.mois) return false;
-    if (flt.statut && etat(p.n).statut !== flt.statut) return false;
-    if (flt.q) {
-      var q = flt.q.toLowerCase();
-      var foin = sujetsDe(p).map(function (c) {
-        return c.titre + ' ' + c.angle + ' ' + c.tags + ' ' + c.t.map(function (t) { return t.txt; }).join(' ');
-      }).join(' ').toLowerCase();
-      if (foin.indexOf(q) < 0) return false;
-    }
-    return true;
-  }
+  /* ───────────────── ce qui est proposé ───────────────── */
+  function visible(p) { return !!PILIERS_OK[p.p]; }
 
   /* ────────── posts libres (hors plan) ──────────
      Depuis le 20/08 le module n'a plus que deux onglets : tout se passe ici.
@@ -617,76 +649,44 @@
       '<div class="lip-right"><span class="lip-st" style="background:#f1eafe;color:#5B2ED6">' + esc(st.label || '') + '</span></div></div>';
   }
   function pad2(n) { return ('0' + n).slice(-2); }
-  function libreVisible(x) {
-    if (flt.mois && String(x.date).slice(0, 7) !== flt.mois) return false;
-    if (flt.statut) return false;            // les statuts du plan ne s'appliquent pas aux posts libres
-    if (flt.q) {
-      var q = flt.q.toLowerCase();
-      if (((x.title || '') + ' ' + (x.body || '')).toLowerCase().indexOf(q) < 0) return false;
-    }
-    return true;
-  }
-
   /* ───────────────── rendu : rétro-planning ───────────────── */
   function moisLabel(ym) {
     var a = ym.split('-'); return MOIS[parseInt(a[1], 10) - 1] + ' ' + a[0];
   }
 
-  function jauge() {
-    var P = plan(), c = { attente: 0, valide: 0, retravailler: 0, refuse: 0 };
-    P.forEach(function (p) { c[etat(p.n).statut] = (c[etat(p.n).statut] || 0) + 1; });
-    var tot = P.length;
-    var segs = STATUTS.map(function (s) {
-      return c[s.k] ? '<span style="width:' + (100 * c[s.k] / tot) + '%;background:' + s.color + '" title="' + esc(s.label) + ' : ' + c[s.k] + '"></span>' : '';
-    }).join('');
-    var keys = STATUTS.map(function (s) {
-      return '<span class="lip-key"><span class="lip-kd" style="background:' + s.color + '"></span>' + esc(s.label) + ' · ' + (c[s.k] || 0) + '</span>';
-    }).join('');
-    var traites = tot - (c.attente || 0);
-    return '<div class="lip-prog">' +
-      '<div class="lip-progtop"><span class="lip-progn">' + traites + ' / ' + tot + '</span>' +
-        '<span class="lip-progl">posts passés en revue par la direction' +
-        (backend === 'local' ? ' — ⚠️ décisions gardées sur cet ordinateur, pas partagées' : '') + '</span></div>' +
-      '<div class="lip-bar">' + segs + '</div>' +
-      '<div class="lip-keys">' + keys + '</div></div>';
+  function isoJour(x) { return x.getFullYear() + '-' + pad2(x.getMonth() + 1) + '-' + pad2(x.getDate()); }
+  function lundiDe(iso) {
+    var x = new Date(String(iso).slice(0, 10) + 'T12:00:00');
+    x.setDate(x.getDate() - ((x.getDay() + 6) % 7));
+    return isoJour(x);
   }
-
-  function outils() {
-    var P = plan();
-    var moisDispo = []; var vus = {};
-    P.forEach(function (p) { var m = p.d.slice(0, 7); if (!vus[m]) { vus[m] = 1; moisDispo.push(m); } });
-    var optMois = '<option value="">Tous les mois</option>' + moisDispo.map(function (m) {
-      return '<option value="' + m + '"' + (flt.mois === m ? ' selected' : '') + '>' + esc(moisLabel(m)) + '</option>';
-    }).join('');
-    var optSt = '<option value="">Tous les statuts</option>' + STATUTS.map(function (s) {
-      return '<option value="' + s.k + '"' + (flt.statut === s.k ? ' selected' : '') + '>' + esc(s.label) + '</option>';
-    }).join('');
-    var chips = piliers().map(function (pl) {
-      return '<button class="lip-chip' + (flt.cache[pl.k] ? ' off' : '') + '" onclick="V2.lip.togglePilier(\'' + pl.k + '\')" title="' + esc(pl.note) + '">' +
-        '<span class="lip-cd" style="background:' + pl.color + '"></span>' + esc(pl.label) + '</button>';
-    }).join('');
-    return '<div class="lip-tools">' +
-        '<select class="lip-sel" onchange="V2.lip.setMois(this.value)">' + optMois + '</select>' +
-        '<select class="lip-sel" onchange="V2.lip.setStatut(this.value)">' + optSt + '</select>' +
-        '<input class="lip-inp" type="search" placeholder="Rechercher un sujet…" value="' + esc(flt.q) + '" oninput="V2.lip.setQ(this.value)">' +
-        '<span class="lip-spacer"></span>' +
-        '<button class="lip-btn" onclick="V2.lip.voirDA()">' + ICO('spark', 16) + 'Notre DA image</button>' +
-        '<button class="lip-btn" onclick="V2.lip.nouveauLibre()">' + ICO('plus', 16, 2.2) + 'Nouveau post libre</button>' +
-        '<button class="lip-btn" onclick="V2.lip.exportCsv()">' + ICO('download', 16, 2) + 'Export CSV</button>' +
-      '</div>' +
-      '<div class="lip-tools" style="margin-top:2px"><span class="lip-lab">Piliers</span>' + chips + '</div>';
+  function jj(n) { return n === 1 ? '1er' : String(n); }
+  function semLabel(l) {
+    var a = new Date(l + 'T12:00:00'), b = new Date(l + 'T12:00:00'); b.setDate(b.getDate() + 6);
+    return 'Semaine du ' + jj(a.getDate()) + (a.getMonth() !== b.getMonth() ? ' ' + MOIS[a.getMonth()] : '') +
+      ' au ' + jj(b.getDate()) + ' ' + MOIS[b.getMonth()] + ' ' + b.getFullYear();
   }
+  function postDe(n) { var P = plan(); for (var i = 0; P && i < P.length; i++) if (P[i].n === n) return P[i]; return null; }
+  // Posts retenus dans une semaine : ceux du plan marqués « Retenu » + les posts libres.
+  function retenusSemaine(l) {
+    var c = 0;
+    plan().forEach(function (p) { if (visible(p) && lundiDe(p.d) === l && etat(p.n).statut === 'valide') c++; });
+    libres().forEach(function (x) { if (lundiDe(x.date) === l) c++; });
+    return c;
+  }
+  var voirPasse = false;
 
   function carte(p) {
     var e = etat(p.n), st = statut(e.statut), pl = pilier(p.p);
-    var S = sujetsDe(p), si = e.sujet || 0, cur = S[si] || S[0];
+    var S = sujetsDe(p), si = sujetEff(p, e), cur = S[si] || S[0];
     var d = new Date(p.d + 'T12:00:00');
     var choix = [];
+    var nS = S.filter(function (x, i) { return sujetPermis(p, i); }).length;
     if (S.length > 1 && si > 0) choix.push('Sujet ' + String.fromCharCode(65 + si));
     if (e.variante !== null && cur.t[e.variante]) choix.push('Texte ' + (e.variante + 1));
     if (e.visuel !== null) choix.push('Visuel ' + (e.visuel + 1));
     if (e.commentaire) choix.push('commentaire');
-    return '<div class="lip-card" style="--pc:' + pl.color + '" tabindex="0" role="button" ' +
+    return '<div class="lip-card' + (e.statut === 'refuse' ? ' ecarte' : '') + '" style="--pc:' + pl.color + '" tabindex="0" role="button" ' +
       'onclick="V2.lip.ouvrir(' + p.n + ')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();V2.lip.ouvrir(' + p.n + ')}">' +
       '<div class="lip-when"><div class="lip-dnum">' + d.getDate() + '</div>' +
         '<div class="lip-ddow">' + DOW[d.getDay()] + '</div><div class="lip-dh">' + esc(p.h) + '</div>' +
@@ -698,13 +698,21 @@
           '<span class="lip-num">#' + p.n + '</span>' +
           '<span class="lip-tag" style="background:' + pl.bg + ';color:' + (pl.txt || pl.color) + '"><span class="lip-cd" style="background:' + pl.color + '"></span>' + esc(pl.label) + '</span>' +
           '<span class="lip-fmt">' + esc(cur.f) + '</span>' +
-          (S.length > 1 ? '<span class="lip-nsuj">' + S.length + ' sujets au choix</span>' : '') +
+          (nS > 1 ? '<span class="lip-nsuj">' + nS + ' sujets au choix</span>' : '') +
         '</div>' +
         '<h3 class="lip-titre">' + esc(cur.titre) + '</h3>' +
         '<div class="lip-angle">' + esc(cur.angle) + '</div>' +
+        '<div class="lip-acts" onclick="event.stopPropagation()" onkeydown="event.stopPropagation()">' +
+          '<button class="lip-act oui' + (e.statut === 'valide' ? ' on' : '') + '" aria-pressed="' + (e.statut === 'valide') + '" onclick="V2.lip.decider(' + p.n + ',\'valide\')">' + (e.statut === 'valide' ? 'Retenu' : 'Retenir') + '</button>' +
+          '<button class="lip-act non' + (e.statut === 'refuse' ? ' on' : '') + '" aria-pressed="' + (e.statut === 'refuse') + '" onclick="V2.lip.decider(' + p.n + ',\'refuse\')">' + (e.statut === 'refuse' ? 'Écarté' : 'Écarter') + '</button>' +
+          '<span class="lip-qlab">Qui s’en occupe</span>' +
+          QUI.map(function (q) {
+            return '<button class="lip-act qui' + (e.resp === q.k ? ' on' : '') + '" aria-pressed="' + (e.resp === q.k) + '" onclick="V2.lip.quiFait(' + p.n + ',\'' + q.k + '\')">' + esc(q.label) + '</button>';
+          }).join('') +
+        '</div>' +
       '</div>' +
       '<div class="lip-right">' +
-        '<span class="lip-st" style="background:' + st.bg + ';color:' + st.txt + '">' + esc(st.label) + '</span>' +
+        (e.statut === 'retravailler' ? '<span class="lip-st" style="background:' + st.bg + ';color:' + st.txt + '">' + esc(st.label) + '</span>' : '') +
         (choix.length ? '<span class="lip-pick">' + esc(choix.join(' · ')) + '</span>' : '') +
       '</div></div>';
   }
@@ -733,35 +741,50 @@
     // une seule chronologie : les posts du plan et les posts libres mélangés,
     // triés par date. Un post reste un post, quelle que soit son origine.
     chargerLibres();
-    var lignes = plan().filter(visible).map(function (p) {
-      return { cle: p.d + 'T' + p.h, mois: p.d.slice(0, 7), html: carte(p) };
-    }).concat(libres().filter(libreVisible).map(function (x) {
-      return { cle: String(x.date).slice(0, 16), mois: String(x.date).slice(0, 7), html: carteLibre(x) };
-    }));
-    lignes.sort(function (a, b) { return a.cle < b.cle ? -1 : (a.cle > b.cle ? 1 : 0); });
-    var corps = '';
-    if (!lignes.length) corps = '<div class="lip-empty">Aucun post ne correspond à ces filtres.</div>';
-    else {
-      var courant = '';
-      lignes.forEach(function (l) {
-        if (l.mois !== courant) {
-          courant = l.mois;
-          var n = lignes.filter(function (x) { return x.mois === l.mois; }).length;
-          corps += '<div class="lip-mois"><h2>' + esc(moisLabel(l.mois)) + '</h2><div class="lip-mline"></div><span class="lip-mcount">' + n + ' post' + (n > 1 ? 's' : '') + '</span></div>';
+    var parSem = {};
+    function range(l, cle, html) { (parSem[l] = parSem[l] || []).push({ cle: cle, html: html }); }
+    plan().filter(visible).forEach(function (p) { range(lundiDe(p.d), p.d + 'T' + p.h, carte(p)); });
+    libres().forEach(function (x) { range(lundiDe(x.date), String(x.date).slice(0, 16), carteLibre(x)); });
+    var P = plan(), fin = lundiDe(P[P.length - 1].d), cette = lundiDe(isoJour(new Date()));
+    var l = lundiDe(P[0].d);
+    Object.keys(parSem).forEach(function (k) { if (k < l) l = k; if (k > fin) fin = k; });
+    var corps = '', passees = 0;
+    while (l <= fin) {
+      if (l < cette && !voirPasse) passees++;
+      else {
+        var n = retenusSemaine(l);
+        corps += '<div class="lip-sem"><h2>' + esc(semLabel(l)) + '</h2><div class="lip-mline"></div>' +
+          '<span class="lip-semn' + (n ? ' ok' : '') + '">' + n + ' retenu' + (n > 1 ? 's' : '') + ' sur ' + MAX_SEM + ' maximum</span></div>';
+        var L = (parSem[l] || []).sort(function (a, b) { return a.cle < b.cle ? -1 : (a.cle > b.cle ? 1 : 0); });
+        if (L.length) L.forEach(function (x) { corps += x.html; });
+        else {
+          var mardi = new Date(l + 'T12:00:00'); mardi.setDate(mardi.getDate() + 1);
+          corps += '<div class="lip-vide"><span>Rien de proposé cette semaine.</span>' +
+            '<button class="lip-btn" onclick="V2.lip.nouveauLibre(\'' + isoJour(mardi) + '\')">' + ICO('plus', 16, 2.2) + 'Ajouter un post</button></div>';
         }
-        corps += l.html;
-      });
+      }
+      var x2 = new Date(l + 'T12:00:00'); x2.setDate(x2.getDate() + 7); l = isoJour(x2);
     }
-    root.innerHTML = coquille(jauge() + outils() + corps);
+    var regle = '<div class="lip-note" style="margin:16px 0 4px"><b>Notre ligne : un acteur de santé bienveillant.</b><br>' +
+      '<b>Oui</b> — ' + esc(REGLE_OUI) + '<br><b>Non</b> — ' + esc(REGLE_NON) + '</div>';
+    var barre = '<div class="lip-tools">' +
+      (passees || voirPasse ? '<button class="lip-btn" onclick="V2.lip.togglePasse()">' + (voirPasse ? 'Masquer les semaines passées' : 'Voir les ' + passees + ' semaine' + (passees > 1 ? 's' : '') + ' passée' + (passees > 1 ? 's' : '')) + '</button>' : '') +
+      (backend === 'local' ? '<span class="lip-lab">⚠️ choix gardés sur cet ordinateur, pas partagés</span>' : '') +
+      '<span class="lip-spacer"></span>' +
+      '<button class="lip-btn" onclick="V2.lip.nouveauLibre()">' + ICO('plus', 16, 2.2) + 'Nouveau post libre</button></div>';
+    var pied = '<div class="lip-tools" style="margin-top:34px"><span class="lip-spacer"></span>' +
+      '<button class="lip-btn" onclick="V2.lip.voirDA()">' + ICO('spark', 16) + 'Notre DA image</button>' +
+      '<button class="lip-btn" onclick="V2.lip.exportCsv()">' + ICO('download', 16, 2) + 'Export CSV</button></div>';
+    root.innerHTML = coquille(regle + barre + corps + pied);
   }
 
   function coquille(corps) {
     var m = meta();
     var seg = (V2.mktLinkedin && V2.mktLinkedin.viewSeg) ? V2.mktLinkedin.viewSeg() : '';
-    var titre = vue === 'veille' ? 'Veille secteur — 12 mois' : 'Rétro-planning LinkedIn — 12 mois';
+    var titre = vue === 'veille' ? 'Veille secteur — 12 mois' : 'Posts LinkedIn — semaine par semaine';
     var sous = vue === 'veille'
       ? 'Ce que publient CERP, OCP, Sagitta Pharma et nous. ' + ((V() && V().nbPosts) || '—') + ' posts relevés, réactions et commentaires compris.'
-      : (m.nb || 0) + ' posts · ' + esc(m.cadence || '') + ' · ' + esc(m.fenetre || '');
+      : '1 à ' + MAX_SEM + ' posts par semaine, pas plus · ' + (m.fenetre || '');
     return (V2.topbar ? V2.topbar({ back: true, backTo: 'marketing', backLabel: 'Marketing' }) : '') +
       '<div class="lip">' +
         '<div class="lip-head" style="display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap">' +
@@ -808,7 +831,8 @@
   function drawerHtml() {
     var p = ouvert.p, e = ouvert.e, pl = pilier(p.p);
     // Le créneau donne la date et le pilier ; le sujet retenu donne tout le reste.
-    var S = sujetsDe(p), si = e.sujet || 0, cur = S[si] || S[0];
+    var S = sujetsDe(p), si = sujetEff(p, e), cur = S[si] || S[0];
+    var nS = S.filter(function (x, i) { return sujetPermis(p, i); }).length;
     var d = new Date(p.d + 'T12:00:00');
     var quand = JOURS[(d.getDay() + 6) % 7] + ' ' + d.getDate() + ' ' + MOIS[d.getMonth()] + ' ' + d.getFullYear() + ' à ' + p.h.replace(':', 'h');
 
@@ -820,6 +844,7 @@
     }).join('');
 
     var sujs = S.map(function (c, i) {
+      if (!sujetPermis(p, i)) return '';   // trop « métier » : voir SUJETS_METIER
       var extrait = String((c.t && c.t[0] && c.t[0].txt) || '').replace(/\s+/g, ' ').slice(0, 130);
       // couper au dernier espace : « les con… » se lit mal
       var esp = extrait.lastIndexOf(' ');
@@ -868,14 +893,20 @@
             '<span class="lip-fmt">' + esc(cur.f) + '</span></div>' +
         '</div><button class="lip-close" onclick="V2.lip.fermer()" aria-label="Fermer">' + ICO('close', 18, 2) + '</button></div>' +
         '<div class="lip-drb">' +
-          '<div class="lip-field"><span class="lip-flab">Choix du sujet — ' + S.length + ' proposition' + (S.length > 1 ? 's' : '') + ' pour ce créneau</span>' +
+          '<div class="lip-field"><span class="lip-flab">Choix du sujet — ' + nS + ' proposition' + (nS > 1 ? 's' : '') + ' pour ce créneau</span>' +
             sujs +
             (chargeAlt
               ? '<div class="lip-hint">Chargement des autres sujets proposés pour cette date…</div>'
               : '<div class="lip-hint">Même date, même pilier éditorial : seul le sujet change. ' +
                 'Les textes, les visuels et le prompt image ci-dessous suivent le sujet retenu.</div>') +
           '</div>' +
-          '<div class="lip-field"><span class="lip-flab">Décision de la direction</span><div class="lip-stats">' + stats + '</div></div>' +
+          '<div class="lip-field"><span class="lip-flab">Notre décision</span><div class="lip-stats">' + stats + '</div></div>' +
+          '<div class="lip-field"><span class="lip-flab">Qui s’en occupe</span><div class="lip-stats">' +
+            QUI.map(function (q) {
+              var on = e.resp === q.k;
+              return '<button class="lip-stbtn' + (on ? ' on' : '') + '"' + (on ? ' style="background:var(--lip-ink)"' : '') +
+                ' onclick="V2.lip.setChamp(\'resp\',\'' + q.k + '\')">' + esc(q.label) + '</button>';
+            }).join('') + '</div></div>' +
           '<div class="lip-field"><span class="lip-flab">Choix du texte — ' + cur.t.length + ' propositions</span>' + vars + '</div>' +
           '<div class="lip-field"><span class="lip-flab">Choix du visuel — ' + cur.v.length + ' propositions</span>' + vis + '</div>' +
           (function () {
@@ -1119,8 +1150,8 @@
   V2.liVeille = { render: function (r) { return render(r, 'veille'); } };
   V2.lip = V2.lip || {};
 
-  V2.lip.nouveauLibre = function () {
-    if (V2.li && V2.li.newAt) V2.li.newAt(new Date().toISOString().slice(0, 10));
+  V2.lip.nouveauLibre = function (jour) {
+    if (V2.li && V2.li.newAt) V2.li.newAt(jour || new Date().toISOString().slice(0, 10));
     else toast('L’éditeur de post n’est pas chargé', 'error');
   };
   V2.lip.ouvrirLibre = function (id) { if (V2.li && V2.li.openPost) V2.li.openPost(id); };
@@ -1131,10 +1162,24 @@
       }
     }
   };
-  V2.lip.setMois = function (v) { flt.mois = v; redessine(); };
-  V2.lip.setStatut = function (v) { flt.statut = v; redessine(); };
-  V2.lip.setQ = function (v) { flt.q = v; clearTimeout(V2.lip._t); V2.lip._t = setTimeout(redessine, 260); };
-  V2.lip.togglePilier = function (k) { flt.cache[k] = !flt.cache[k]; redessine(); };
+  V2.lip.togglePasse = function () { voirPasse = !voirPasse; redessine(); };
+  // Décision et attribution en un clic, depuis la carte : enregistré tout de suite.
+  V2.lip.decider = function (n, k) {
+    var p = postDe(n); if (!p) return;
+    var e = copieEtat(etat(n));
+    var nv = (e.statut === k) ? 'attente' : k;
+    if (nv === 'valide' && retenusSemaine(lundiDe(p.d)) >= MAX_SEM) {
+      toast('Déjà ' + MAX_SEM + ' posts retenus cette semaine — retirez-en un d’abord', 'error'); return;
+    }
+    e.statut = nv; e.sujet = sujetEff(p, e);
+    enregistrer(n, e).then(redessine);
+  };
+  V2.lip.quiFait = function (n, k) {
+    var p = postDe(n); if (!p) return;
+    var e = copieEtat(etat(n));
+    e.resp = (e.resp === k) ? '' : k; e.sujet = sujetEff(p, e);
+    enregistrer(n, e).then(redessine);
+  };
 
   V2.lip.ouvrir = function (n) {
     var P = plan(); if (!P) return;
@@ -1142,12 +1187,14 @@
     if (!p) return;
     var e = etat(n);
     apprVue = null;
-    ouvert = { n: n, p: p, envoi: '', e: { sujet: e.sujet || 0, statut: e.statut, variante: e.variante, visuel: e.visuel, commentaire: e.commentaire || '', image_path: e.image_path || '' } };
+    ouvert = { n: n, p: p, envoi: '', e: copieEtat(e) };
+    ouvert.e.sujet = sujetEff(p, e);
     monter(drawerHtml());
   };
   V2.lip.fermer = fermer;
   V2.lip.setChamp = function (champ, val) {
     if (!ouvert) return;
+    if (champ === 'resp' && ouvert.e.resp === val) val = '';   // second clic : on retire
     ouvert.e[champ] = val;
     if (champ === 'sujet') {
       // Texte 2 du sujet A n'a rien à voir avec Texte 2 du sujet B : garder
@@ -1161,6 +1208,9 @@
   V2.lip.enregistrer = function () {
     if (!ouvert) return;
     var n = ouvert.n, e = ouvert.e;
+    if (e.statut === 'valide' && etat(n).statut !== 'valide' && retenusSemaine(lundiDe(ouvert.p.d)) >= MAX_SEM) {
+      toast('Déjà ' + MAX_SEM + ' posts retenus cette semaine — retirez-en un d’abord', 'error'); return;
+    }
     enregistrer(n, e).then(function () {
       if (backend === 'supabase') toast('Décision enregistrée et partagée avec l\'équipe');
       fermer(); redessine();
@@ -1179,7 +1229,7 @@
     if (!ouvert) return;
     var cur = sujetOuvert(), i = ouvert.e.variante;
     if (i === null || !cur.t[i]) { toast('Choisissez d’abord une des propositions de texte', 'error'); return; }
-    if (ouvert.e.statut !== 'valide' && !confirm('Ce post n’est pas encore validé par la direction.\n\nL’ouvrir quand même dans LinkedIn ?')) return;
+    if (ouvert.e.statut !== 'valide' && !confirm('Ce post n’est pas encore retenu.\n\nL’ouvrir quand même dans LinkedIn ?')) return;
     var txt = cur.t[i].txt;
     var suite = function () {
       window.open('https://www.linkedin.com/feed/?shareActive=true', '_blank');
@@ -1204,12 +1254,12 @@
   V2.lip.exportCsv = function () {
     var P = plan(); if (!P) return;
     var q = function (s) { return '"' + String(s == null ? '' : s).replace(/"/g, '""') + '"'; };
-    var l = [['N','Date','Heure','Pilier','Sujet retenu','Format','Titre','Angle','Statut','Texte choisi','Visuel choisi','Commentaire','Hashtags','Texte 1','Texte 2','Texte 3','Visuel 1','Visuel 2','Autres sujets proposés'].map(q).join(';')];
-    P.forEach(function (p) {
-      var e = etat(p.n), S = sujetsDe(p), si = e.sujet || 0, c = S[si] || S[0];
-      var autres = S.filter(function (x, i) { return i !== si; })
+    var l = [['N','Date','Heure','Pilier','Sujet retenu','Format','Titre','Angle','Statut','Qui','Texte choisi','Visuel choisi','Commentaire','Hashtags','Texte 1','Texte 2','Texte 3','Visuel 1','Visuel 2','Autres sujets proposés'].map(q).join(';')];
+    P.filter(visible).forEach(function (p) {
+      var e = etat(p.n), S = sujetsDe(p), si = sujetEff(p, e), c = S[si] || S[0];
+      var autres = S.filter(function (x, i) { return i !== si && sujetPermis(p, i); })
         .map(function (x, i) { return x.titre; }).join(' | ');
-      l.push([p.n, p.d, p.h, pilier(p.p).label, 'Sujet ' + String.fromCharCode(65 + si), c.f, c.titre, c.angle, statut(e.statut).label,
+      l.push([p.n, p.d, p.h, pilier(p.p).label, 'Sujet ' + String.fromCharCode(65 + si), c.f, c.titre, c.angle, statut(e.statut).label, quiLabel(e.resp),
         e.variante === null ? '' : 'Texte ' + (e.variante + 1),
         e.visuel === null ? '' : 'Visuel ' + (e.visuel + 1),
         e.commentaire || '', c.tags,
