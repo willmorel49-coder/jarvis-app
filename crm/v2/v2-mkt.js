@@ -1954,7 +1954,7 @@
   // ════════════════════════════════════════════
   var docFilter = 'all';        // 'all' | 'pdf' | 'xls'
   var docBlobs = {};            // nom → Promise<Blob> (un seul téléchargement par fichier)
-  var docThumbs = {};           // nom → html de l'aperçu (image de la page 1 ou début du tableau)
+  var docThumbs = {};           // nom → { src, w, h, n } ou { echec } (voir « Vignettes du mur »)
   var docView = null;           // nom du document ouvert dans la visionneuse
   function docIsXls(n) { return /\.xlsx?$/i.test(n); }
   function docMime(n) {
@@ -2014,128 +2014,392 @@
       return '<tr>' + tds + '</tr>';
     }).join('') + '</table>';
   }
-  // Aperçus de la galerie : un fichier à la fois, gardés en mémoire pour la session.
-  var thumbQueue = [], thumbRunning = false;
+  // ── Vignettes du mur (lot 2, 18/09/2026) ─────────────────────────────────────
+  // docThumbs[nom] = { src, w, h, n } : image de la page 1, taille du rendu, nombre de pages (ou de feuilles)
+  //               ou { echec: true, essais } : vignette typographique — le document RESTE dans le mur.
+  // Avant : un seul fichier à la fois, dans l'ordre de la liste (le catalogue de 9 Mo bloquait les quatre
+  // autres), rien de gardé d'une session à l'autre, et une tuile grise pour toute attente ou tout échec.
+  // Maintenant : deux PDF à la fois, les plus légers d'abord, une garde de 60 s qui libère la file, et un
+  // cache IndexedDB (une image JPEG légère par document, clé = nom + taille + date).
+  // IndexedDB plutôt que localStorage : ~60-150 Ko par vignette rempliraient vite les 5 Mo que le reste du
+  // CRM utilise déjà. Tout accès est sous try/catch : sans stockage, l'écran marche, il redessine seulement.
+  var VIG_BASE = 'jarvis-mkt-vignettes', VIG_MAG = 'v', VIG_MAX = 80, VIG_MAX_CAR = 12000000, VIG_LARG = 560, VIG_PAR = 2;
+  var vigBase = null, vigLu = false, vigActifs = 0, vigEnCours = {}, thumbQueue = [];
+  function vigCle(d) { return d.name + '|' + (d.size || 0) + '|' + (d.created || ''); }
+  function vigOuvrir() {
+    if (vigBase) return vigBase;
+    vigBase = new Promise(function (res) {
+      var rendu = false, fin = function (v) { if (!rendu) { rendu = true; res(v); } };
+      try {
+        if (!window.indexedDB) { fin(null); return; }
+        var rq = window.indexedDB.open(VIG_BASE, 1);
+        rq.onupgradeneeded = function () { try { rq.result.createObjectStore(VIG_MAG, { keyPath: 'k' }); } catch (e) {} };
+        rq.onsuccess = function () { fin(rq.result); };
+        rq.onerror = function () { fin(null); };
+        rq.onblocked = function () { fin(null); };
+      } catch (e) { fin(null); }
+      setTimeout(function () { fin(null); }, 1500);   // un stockage qui ne répond pas ne retient pas l'écran
+    });
+    return vigBase;
+  }
+  function vigTout() {   // jamais rejetée
+    return vigOuvrir().then(function (db) {
+      if (!db) return [];
+      return new Promise(function (res) {
+        try {
+          var rq = db.transaction(VIG_MAG, 'readonly').objectStore(VIG_MAG).getAll();
+          rq.onsuccess = function () { res(rq.result || []); };
+          rq.onerror = function () { res([]); };
+        } catch (e) { res([]); }
+      });
+    }).catch(function () { return []; });
+  }
+  function vigEcrire(e) {
+    vigOuvrir().then(function (db) {
+      if (!db) return;
+      try { db.transaction(VIG_MAG, 'readwrite').objectStore(VIG_MAG).put(e); } catch (er) {}
+    });
+  }
+  function vigOter(cles) {
+    vigOuvrir().then(function (db) {
+      if (!db) return;
+      try { var st = db.transaction(VIG_MAG, 'readwrite').objectStore(VIG_MAG); cles.forEach(function (k) { st.delete(k); }); } catch (er) {}
+    });
+  }
+  // Lit le cache → remplit docThumbs ; purge ce dont le document n'existe plus, puis ce qui dépasse le plafond.
+  // La purge n'a lieu que si la liste a été LUE sans erreur et n'est pas vide : une liste vide ou en erreur
+  // (session expirée, réseau) ne condamne pas les vignettes.
+  function vigCharger() {
+    return vigTout().then(function (tous) {
+      vigLu = true;
+      var parCle = {}, sure = docsErr === null && docs && docs.length > 0, aOter = [], gardes = [];
+      (docs || []).forEach(function (d) { parCle[vigCle(d)] = d; });
+      tous.forEach(function (e) {
+        var d = parCle[e.k];
+        if (d) {
+          gardes.push(e);
+          var av = docThumbs[d.name];
+          if (!av || av.echec) { docThumbs[d.name] = { src: e.src || '', w: e.w || 0, h: e.h || 0, n: e.n || 0 }; }
+        } else if (sure) aOter.push(e.k);
+      });
+      gardes.sort(function (a, b) { return (b.t || 0) - (a.t || 0); });
+      var car = 0;
+      gardes.forEach(function (e, i) { car += (e.src || '').length; if (i >= VIG_MAX || car > VIG_MAX_CAR) aOter.push(e.k); });
+      if (aOter.length) vigOter(aOter);
+    }).catch(function () { vigLu = true; });
+  }
+  function docParNom(name) { return (docs || []).filter(function (d) { return d.name === name; })[0] || null; }
+  function docTuileEl(name) {
+    return [].slice.call(document.querySelectorAll('.mkd-tuile')).filter(function (x) { return x.getAttribute('data-name') === name; })[0] || null;
+  }
+  function docSansExt(n) { return prettyName(n).replace(/\.(pdf|xlsx?)$/i, ''); }
+  function docPoids(d) { return fmtSize(d.size).replace('.', ','); }
+  function docCompte(d) {
+    var t = docThumbs[d.name], n = t && t.n;
+    if (!n) return '';
+    return d.xls ? (n > 1 ? n + ' feuilles' : '1 feuille') : (n > 1 ? n + ' pages' : '1 page');
+  }
+  function docRatio(d) { var t = docThumbs[d.name]; return (t && t.w && t.h) ? t.w + ' / ' + t.h : '794 / 1123'; }
+  // Ce qui se voit DANS la page : l'image, la vignette typographique (Excel, ou PDF illisible), ou le squelette.
+  function docPageHtml(d, frais) {
+    var t = docThumbs[d.name];
+    if (!d.xls && t && t.src) return '<img class="mkd-img' + (frais ? '' : ' is-la') + '" alt="" draggable="false" src="' + t.src + '">';
+    if (d.xls || (t && t.echec)) {
+      return '<span class="mkd-typo"><span class="mkd-typo-cap">' + (d.xls ? 'Excel' : 'PDF') + '</span><b>' + esc(docSansExt(d.name)) + '</b>' +
+        (d.xls ? '<i class="mkd-typo-grille" aria-hidden="true"></i>' : '<span class="mkd-typo-note">Aperçu indisponible</span>') + '</span>';
+    }
+    return '<i class="mkd-att mk-sq" aria-hidden="true"></i>';
+  }
   function paintThumb(name) {
-    var el = [].slice.call(document.querySelectorAll('.mkt-dthumb')).filter(function (x) { return x.getAttribute('data-name') === name; })[0];
-    if (el && docThumbs[name] != null) { el.innerHTML = docThumbs[name]; el.classList.add('is-ready'); }
+    var el = docTuileEl(name), d = docParNom(name);
+    if (!el || !d) return;
+    var page = el.querySelector('.mkd-page'), l3 = el.querySelector('.mkd-l3');
+    if (l3) l3.textContent = docCompte(d);
+    if (!page) return;
+    page.style.aspectRatio = docRatio(d);
+    page.innerHTML = docPageHtml(d, true);
+    var img = page.querySelector('.mkd-img');
+    if (img) {   // fondu à l'arrivée (geste 11), sans saut : la place était déjà prise par le squelette
+      var la = function () { img.classList.add('is-la'); };
+      if (img.complete) { void img.offsetWidth; la(); } else { img.onload = la; img.onerror = la; }
+    }
+  }
+  function vigLargeur() {
+    var p = document.querySelector('.mkd-page'), w = (p && p.clientWidth) || 280;
+    return Math.max(320, Math.min(VIG_LARG, Math.round(w * Math.min(window.devicePixelRatio || 1, 2))));
   }
   function queueThumbs() {
-    (docs || []).forEach(function (d) {
-      if (docThumbs[d.name] != null) paintThumb(d.name);
-      else if (thumbQueue.indexOf(d.name) < 0) thumbQueue.push(d.name);
+    docList().forEach(function (d) {
+      if (d.xls || vigEnCours[d.name]) return;
+      var t = docThumbs[d.name];
+      if (t && (t.src || (t.echec && t.essais >= 2))) return;
+      if (thumbQueue.indexOf(d.name) < 0) thumbQueue.push(d.name);
     });
+    thumbQueue.sort(function (a, b) { var da = docParNom(a), db = docParNom(b); return ((da && da.size) || 0) - ((db && db.size) || 0); });
     runThumbs();
   }
-  function runThumbs() {
-    if (thumbRunning || !thumbQueue.length) return;
-    thumbRunning = true;
-    var name = thumbQueue.shift();
-    var done = function (html) { docThumbs[name] = html; paintThumb(name); thumbRunning = false; runThumbs(); };
-    var fail = function () { thumbRunning = false; runThumbs(); };   // pas d'aperçu = on garde l'icône, le document reste là
+  function runThumbs() { while (vigActifs < VIG_PAR && thumbQueue.length) vigFabriquer(thumbQueue.shift()); }
+  function vigFabriquer(name) {
+    var d = docParNom(name);
+    if (!d || vigEnCours[name]) return;
+    vigActifs++; vigEnCours[name] = 1;
+    var clos = false, garde = null;
+    var liberer = function () { if (clos) return false; clos = true; clearTimeout(garde); vigActifs--; delete vigEnCours[name]; return true; };
+    var rate = function () {
+      if (!liberer()) return;
+      var av = docThumbs[name];
+      if (!av || !av.src) { docThumbs[name] = { echec: true, essais: ((av && av.essais) || 0) + 1 }; paintThumb(name); }
+      runThumbs();
+    };
+    garde = setTimeout(rate, 60000);   // un téléchargement ou un rendu qui ne revient jamais ne bloque plus la file
     docBlob(name).then(function (blob) {
-      if (docIsXls(name)) {
-        ensureXLSX(function (ok) {
-          if (!ok) { fail(); return; }
-          blob.arrayBuffer().then(function (buf) {
-            var wb = window.XLSX.read(buf, { type: 'array', sheetRows: 12 });
-            done('<div class="mkt-dthumb-xls">' + xlsTable(wb.Sheets[wb.SheetNames[0]], 9, 5) + '</div>');
-          }).catch(fail);
-        });
-      } else {
-        ensurePdfJs(function (ok) {
-          if (!ok) { fail(); return; }
-          pdfOpen(blob).then(function (pdf) { return pdfPageCanvas(pdf, 1, 440); })
-            .then(function (cv) { done('<img alt="" src="' + cv.toDataURL('image/jpeg', 0.82) + '">'); })
-            .catch(fail);
-        });
-      }
-    }).catch(fail);
+      ensurePdfJs(function (ok) {
+        if (!ok) { rate(); return; }
+        var ref = null;
+        pdfOpen(blob).then(function (pdf) { ref = pdf; return pdfPageCanvas(pdf, 1, vigLargeur()); })
+          .then(function (cv) {
+            // JPEG et non WebP : Safari ne sait pas écrire de WebP depuis une toile (il rendrait un PNG, dix fois plus lourd)
+            var t = { src: cv.toDataURL('image/jpeg', 0.8), w: cv.width, h: cv.height, n: ref.numPages || 0 };
+            cv.width = 0; cv.height = 0;
+            try { ref.destroy(); } catch (e) {}
+            docThumbs[name] = t;   // arrivé après la garde : on garde quand même le résultat
+            vigEcrire({ k: vigCle(d), src: t.src, w: t.w, h: t.h, n: t.n, t: Date.now() });
+            var mur = document.getElementById('mkd-mur');
+            // une page paysage prend bien moins de place que le squelette A4 : on redistribue les colonnes (sauf visionneuse ouverte)
+            if (mur && !docView && t.w && Math.abs(t.h / t.w - 1123 / 794) > 0.05) mur.innerHTML = docMurHtml();
+            else paintThumb(name);
+            if (liberer()) runThumbs();
+          }).catch(rate);
+      });
+    }).catch(rate);
+  }
+
+  // ── Le mur (lot 2) : les premières pages posées sur la table, en vraie proportion, sans carte autour ──
+  var docsUp = null;   // envoi en cours : { noms: [...], faits: n }
+  function mic(n, s, w) { return (V2.mktSocle && V2.mktSocle.ic) ? V2.mktSocle.ic(n, s, w) : ''; }
+  function docCalme() { try { return window.matchMedia('(prefers-reduced-motion:reduce)').matches; } catch (e) { return false; } }
+  function docDateCourte(iso) {
+    if (!iso) return '';
+    var d = new Date(iso); if (isNaN(d)) return '';
+    var p = function (x) { return (x < 10 ? '0' : '') + x; };
+    return p(d.getDate()) + '/' + p(d.getMonth() + 1) + (d.getFullYear() !== new Date().getFullYear() ? '/' + d.getFullYear() : '');
+  }
+  function docTuileHtml(d) {
+    var nom = prettyName(d.name);
+    return '<div class="mkd-tuile" data-name="' + esc(d.name) + '">' +
+      '<button type="button" class="mkd-page mk-lever" data-ouvrir style="aspect-ratio:' + docRatio(d) + '" aria-label="Ouvrir ' + esc(nom) + '">' + docPageHtml(d) + '</button>' +
+      '<div class="mkd-leg">' +
+        '<div class="mkd-l1"><span>' + (d.xls ? 'Excel' : 'PDF') + ' · ' + docPoids(d) + '</span><span>' + docDateCourte(d.created) + '</span></div>' +
+        '<h3 class="mkd-nom" title="' + esc(nom) + '">' + esc(nom) + '</h3>' +
+        '<div class="mkd-l3">' + docCompte(d) + '</div>' +
+      '</div>' +
+      '<button type="button" class="mkd-suppr" data-del="' + esc(d.name) + '" title="Supprimer pour tous" aria-label="Supprimer ' + esc(nom) + ' pour tous">' + mic('fermer', 18, 2) + '</button>' +
+    '</div>';
+  }
+  // Le mur : des colonnes remplies par le script (chaque tuile va dans la colonne la moins haute, d'après la
+  // proportion connue de sa page). Les colonnes CSS (`columns`) ont été ESSAYÉES puis écartées le 18/09/2026 :
+  // sous WebKit, dès qu'une animation composée tourne dans le mur (reflet du squelette, cascade, survol), les
+  // tuiles des colonnes 2 à 4 ne sont plus peintes (capture lot2/captures/defaut-colonnes-css-webkit.png).
+  function docNbCols() { var w = window.innerWidth || 1280; return w > 1100 ? 4 : w > 860 ? 3 : 2; }
+  function docMurHtml() {
+    var n = docNbCols(), cols = [], haut = [], i;
+    for (i = 0; i < n; i++) { cols.push(''); haut.push(0); }
+    var poser = function (html, h) { var k = 0, j; for (j = 1; j < n; j++) if (haut[j] < haut[k] - 0.001) k = j; cols[k] += html; haut[k] += h + 0.4; };
+    if (docsBusy && docsUp) docsUp.noms.forEach(function (nm, k) {
+      poser('<div class="mkd-tuile mkd-envoi"><span class="mkd-page" style="aspect-ratio:794 / 1123"><i class="mkd-att' + (k < docsUp.faits ? '' : ' mk-sq') + '" aria-hidden="true"></i></span>' +
+        '<div class="mkd-leg"><div class="mkd-l1"><span>' + (k < docsUp.faits ? 'Envoyé' : 'Envoi en cours…') + '</span></div><h3 class="mkd-nom">' + esc(nm) + '</h3><div class="mkd-l3"></div></div></div>', 1123 / 794);
+    });
+    docList().forEach(function (d) { var t = docThumbs[d.name]; poser(docTuileHtml(d), (t && t.w && t.h) ? t.h / t.w : 1123 / 794); });
+    return cols.map(function (c) { return '<div class="mkd-col">' + c + '</div>'; }).join('');
+  }
+  var docsResizeLie = false;
+  function docsResize() {   // on ne redistribue que si le nombre de colonnes change
+    var mur = document.getElementById('mkd-mur');
+    if (!mur || +mur.getAttribute('data-cols') === docNbCols()) return;
+    mur.setAttribute('data-cols', docNbCols()); mur.innerHTML = docMurHtml(); queueThumbs();
+  }
+  function docVideHtml() {
+    var rien = !docs.length, xl = docFilter === 'xls';
+    var titre = rien ? 'Aucun document pour l’instant.' : xl ? 'Aucun tableau Excel pour l’instant.' : 'Aucun PDF pour l’instant.';
+    var mot = rien ? 'Un PDF ou un Excel déposé ici est visible par tous les comptes, et proposé sur chaque fiche officine.'
+      : xl ? 'Un tableau déposé ici s’ouvre feuille par feuille, et toute l’équipe le retrouve.'
+      : 'Un PDF déposé ici s’ouvre page par page, et toute l’équipe le retrouve.';
+    var bouton = rien ? 'Déposer un fichier' : xl ? 'Déposer un fichier Excel' : 'Déposer un PDF';
+    return '<div class="mk-vide"><div class="mk-silhouette" aria-hidden="true"><i></i><i></i><i style="width:70%"></i><i></i><i style="width:80%"></i></div>' +
+      '<div><h3>' + titre + '</h3><p>' + mot + '</p><button type="button" class="mk-btn mk-press" data-deposer' + (docsBusy ? ' disabled' : '') + '>' + bouton + '</button></div></div>';
+  }
+  function docOutilsDroite() {
+    if (docsBusy && docsUp) {
+      var n = docsUp.noms.length;
+      return '<div class="mkd-envoi-ligne" role="status"><span>Envoi en cours… ' + docsUp.faits + ' sur ' + n + '. Ne fermez pas la page.</span>' +
+        '<i class="mk-prog" style="--p:' + (n ? docsUp.faits / n : 0) + '"></i></div>';
+    }
+    return '<span class="mkd-astuce">Glissez un PDF ou un Excel n’importe où sur la table.</span>';
+  }
+  function docsUpPaint() {   // un fichier de plus est parti : la ligne et sa tuile, sans tout redessiner
+    var o = document.getElementById('mkd-droite'); if (o) o.innerHTML = docOutilsDroite();
+    if (!docsUp) return;
+    [].slice.call(document.querySelectorAll('.mkd-envoi')).forEach(function (t, i) {
+      if (i < docsUp.faits) { var s = t.querySelector('.mkd-l1 span'); if (s) s.textContent = 'Envoyé'; var a = t.querySelector('.mkd-att'); if (a) a.classList.remove('mk-sq'); }
+    });
+  }
+  function docFiltrer(k) {   // sans tout redessiner : l'indicateur glisse (geste 10), les tuiles se masquent
+    docFilter = k;
+    var seg = document.getElementById('mkd-seg'), mur = document.getElementById('mkd-mur'), vide = document.getElementById('mkd-vide');
+    if (!seg || !mur || !vide) { V2.render(); return; }
+    var ks = ['all', 'pdf', 'xls'];
+    seg.style.setProperty('--i', Math.max(0, ks.indexOf(k)));
+    [].slice.call(seg.querySelectorAll('button')).forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-filter') === k ? 'true' : 'false'); });
+    var vus = docList().length + ((docsBusy && docsUp) ? docsUp.noms.length : 0);
+    mur.innerHTML = docMurHtml();
+    mur.hidden = !vus;
+    vide.innerHTML = vus ? '' : docVideHtml();
+    queueThumbs();
   }
   function renderDocs(root) {
-    if (docs === null) {
+    if (docs === null || !vigLu) {
       root.innerHTML = V2.topbar({ back: true, backTo: 'marketing', backLabel: 'Marketing' }) +
         '<div class="v2-loading"><div class="v2-spinner"></div><div>Ouverture des documents…</div></div>';
-      loadDocs().then(function () { if (V2.route && V2.route.name === 'marketing') V2.render(); });
+      (docs === null ? loadDocs() : Promise.resolve()).then(vigCharger).then(function () { if (V2.route && V2.route.name === 'marketing') V2.render(); });
       return;
     }
+    if (docView && !docParNom(docView)) docCloseViewer(true);   // le document ouvert vient d'être supprimé
+    var dejaLa = !!root.querySelector('.mkd');                  // la cascade ne joue qu'à l'arrivée sur la vue
     var nPdf = docs.filter(function (d) { return !d.xls; }).length, nXls = docs.length - nPdf;
-    var shown = docs.filter(function (d) { return docFilter === 'all' || (docFilter === 'xls') === d.xls; });
-    var chip = function (k, label, n) {
-      return '<button type="button" class="mkt-dchip' + (docFilter === k ? ' on' : '') + '" data-filter="' + k + '">' + label + ' <span>' + n + '</span></button>';
+    var nVus = docList().length;
+    var ks = ['all', 'pdf', 'xls'];
+    var segBtn = function (k, label, n) {
+      return '<button type="button" class="mk-press" data-filter="' + k + '" aria-pressed="' + (docFilter === k ? 'true' : 'false') + '">' + label + ' <span class="mkd-nb">' + n + '</span></button>';
     };
-    var grid = shown.length ? shown.map(function (d) {
-      return '<div class="mkt-dcard" data-name="' + esc(d.name) + '" role="button" tabindex="0">' +
-        '<div class="mkt-dthumb' + (d.xls ? ' xls' : '') + '" data-name="' + esc(d.name) + '">' +
-          '<span class="mkt-dthumb-ph">' + (d.xls ? 'XLS' : 'PDF') + '</span></div>' +
-        '<div class="mkt-dinfo">' +
-          '<div class="mkt-dname" title="' + esc(prettyName(d.name)) + '">' + esc(prettyName(d.name)) + '</div>' +
-          '<div class="mkt-dmeta"><span class="mkt-dtag' + (d.xls ? ' xls' : '') + '">' + (d.xls ? 'Excel' : 'PDF') + '</span>' +
-            fmtSize(d.size) + (d.created ? ' · ' + new Date(d.created).toLocaleDateString('fr-FR') : '') + '</div>' +
-        '</div>' +
-        '<button type="button" class="mkt-ddel" data-del="' + esc(d.name) + '" title="Supprimer pour tous" aria-label="Supprimer pour tous">' + ICO('close', 15, 2) + '</button>' +
-      '</div>';
-    }).join('') : '<div class="mkt-empty">' + (docs.length ? 'Aucun document de ce type.' : 'Aucun document pour le moment. Glissez un PDF ou un Excel ci-dessus : il sera visible par tous les comptes.') + '</div>';
-
+    var enEnvoi = !!(docsBusy && docsUp && docsUp.noms.length);
     var setup = docsErr
       ? '<div class="mkt-setup">' + ICO('alert', 16, 2) + '<div><b>Bibliothèque injoignable</b><br>' +
         'Les documents n\'ont pas pu être lus (' + esc(docsErr) + '). Rechargez la page dans un instant.</div></div>'
       : '';
+    var murVide = !nVus && !enEnvoi;
 
     root.innerHTML = V2.topbar({ back: true, backTo: 'marketing', backLabel: 'Marketing' }) +
-      '<div class="v2-wrap">' +
-        '<div class="v2-page-title">Documents partagés</div>' +
-        '<div class="v2-page-sub">Catalogues, fiches, offres, tableaux : PDF et Excel visibles par <b>tous les comptes</b>, et proposés sur chaque fiche officine.</div>' +
-        '<label class="mkt-drop' + (docsBusy ? ' is-busy' : '') + '" id="mkt-drop">' +
-          '<span class="mkt-drop-ic">' + ICO('plus', 22, 2) + '</span>' +
-          '<span class="mkt-drop-t">' + (docsBusy ? 'Envoi en cours…' : 'Glissez vos PDF et Excel ici') + '</span>' +
-          '<span class="mkt-drop-s">' + (docsBusy ? 'Ne fermez pas la page.' : 'ou cliquez pour les choisir · plusieurs fichiers à la fois') + '</span>' +
-          '<input type="file" accept="application/pdf,.pdf,.xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" multiple' + (docsBusy ? ' disabled' : '') + '>' +
-        '</label>' +
+      '<div class="mkd mk-espace" id="mkd">' +
+        '<div class="mkd-entete">' +
+          '<div class="mkd-mots"><h1>Documents partagés</h1>' +
+            '<p>Catalogues, plaquettes, offres, tableaux : visibles par <b>tous les comptes</b>, et proposés sur chaque fiche officine.</p></div>' +
+          '<button type="button" class="mk-btn mk-press" data-deposer' + (docsBusy ? ' disabled' : '') + '>' + mic('charger', 20) + 'Déposer un fichier</button>' +
+          '<input type="file" class="mkd-champ" id="mkd-champ" tabindex="-1" aria-hidden="true" accept="application/pdf,.pdf,.xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" multiple' + (docsBusy ? ' disabled' : '') + '>' +
+        '</div>' +
+        '<div class="mkd-outils">' +
+          (docs.length ? '<div class="mk-seg mkd-seg" id="mkd-seg" role="group" aria-label="Type de document" style="--n:3;--i:' + Math.max(0, ks.indexOf(docFilter)) + '"><i class="mk-seg-ind"></i>' +
+            segBtn('all', 'Tous', docs.length) + segBtn('pdf', 'PDF', nPdf) + segBtn('xls', 'Excel', nXls) + '</div>' : '') +
+          '<div class="mkd-droite" id="mkd-droite">' + docOutilsDroite() + '</div>' +
+        '</div>' +
         setup +
-        (docs.length ? '<div class="mkt-dchips">' + chip('all', 'Tous', docs.length) + chip('pdf', 'PDF', nPdf) + chip('xls', 'Excel', nXls) + '</div>' : '') +
-        '<div class="mkt-dgrid" id="mkt-dgrid">' + grid + '</div>' +
+        '<section class="mkd-table" id="mkd-table" aria-label="Documents">' +
+          '<div class="mkd-mur" id="mkd-mur" data-cols="' + docNbCols() + '"' + (murVide ? ' hidden' : '') + '>' + docMurHtml() + '</div>' +
+          '<div id="mkd-vide">' + (murVide ? docVideHtml() : '') + '</div>' +
+          '<div class="mkd-cible" aria-hidden="true"><span>Déposez vos PDF et vos Excel ici</span></div>' +
+        '</section>' +
       '</div>';
 
-    // Glisser-déposer : la zone, et toute la page pour ne pas rater sa cible
-    var drop = document.getElementById('mkt-drop');
-    var inp = drop.querySelector('input');
-    inp.onchange = function () { V2.mkt.docsUploadFiles(inp.files); inp.value = ''; };
-    var wrap = drop.parentNode, depth = 0;
-    wrap.ondragenter = function (e) { e.preventDefault(); depth++; drop.classList.add('is-over'); };
-    wrap.ondragover = function (e) { e.preventDefault(); if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy'; };
-    wrap.ondragleave = function () { if (--depth <= 0) { depth = 0; drop.classList.remove('is-over'); } };
+    var wrap = document.getElementById('mkd'), table = document.getElementById('mkd-table'), champ = document.getElementById('mkd-champ');
+    champ.onchange = function () { V2.mkt.docsUploadFiles(champ.files); champ.value = ''; };
+    if (!docsResizeLie) { docsResizeLie = true; window.addEventListener('resize', docsResize); }
+    // Glisser-déposer : toute la table est la cible, et elle ne le montre que PENDANT un glisser de fichiers (geste 8)
+    var depth = 0;
+    var aFichiers = function (e) { var t = e.dataTransfer && e.dataTransfer.types; return !!t && [].indexOf.call(t, 'Files') >= 0; };
+    wrap.ondragenter = function (e) { if (!aFichiers(e)) return; e.preventDefault(); depth++; table.classList.add('is-cible'); };
+    wrap.ondragover = function (e) { if (!aFichiers(e)) return; e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; };
+    wrap.ondragleave = function () { if (--depth <= 0) { depth = 0; table.classList.remove('is-cible'); } };
     wrap.ondrop = function (e) {
-      e.preventDefault(); depth = 0; drop.classList.remove('is-over');
-      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) V2.mkt.docsUploadFiles(e.dataTransfer.files);
+      if (!aFichiers(e)) return;
+      e.preventDefault(); depth = 0; table.classList.remove('is-cible');
+      if (e.dataTransfer.files && e.dataTransfer.files.length) V2.mkt.docsUploadFiles(e.dataTransfer.files);
     };
-    var gridEl = document.getElementById('mkt-dgrid');
-    gridEl.onclick = function (e) {
-      var del = e.target.closest('[data-del]');
-      if (del) { e.stopPropagation(); V2.mkt.docsDelete(del.getAttribute('data-del')); return; }
-      var card = e.target.closest('.mkt-dcard');
-      if (card) docOpenViewer(card.getAttribute('data-name'));
+    wrap.onclick = function (e) {
+      var t = e.target;
+      if (t.closest('[data-deposer]')) { if (!docsBusy) champ.click(); return; }
+      var f = t.closest('[data-filter]');
+      if (f) { docFiltrer(f.getAttribute('data-filter')); return; }
+      var del = t.closest('[data-del]');
+      if (del) { V2.mkt.docsDelete(del.getAttribute('data-del')); return; }
+      var p = t.closest('[data-ouvrir]');
+      if (p) docOuvrirDepuis(p.parentNode.getAttribute('data-name'), p);
     };
-    gridEl.onkeydown = function (e) {
-      var card = e.target.closest && e.target.closest('.mkt-dcard');
-      if (card && (e.key === 'Enter' || e.key === ' ') && e.target === card) { e.preventDefault(); docOpenViewer(card.getAttribute('data-name')); }
-    };
-    [].slice.call(root.querySelectorAll('.mkt-dchip')).forEach(function (b) {
-      b.onclick = function () { docFilter = b.getAttribute('data-filter'); V2.render(); };
-    });
+    if (!dejaLa && !docCalme()) {   // geste 3 — Cascade : 8 éléments au plus, tout est posé en moins de 450 ms
+      [].slice.call(wrap.querySelectorAll('.mkd-tuile')).forEach(function (n, i) {
+        if (n.animate) n.animate([{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }],
+          { duration: 240, delay: Math.min(i, 7) * 28, easing: 'cubic-bezier(.22,1,.36,1)', fill: 'backwards' });
+      });
+    }
     queueThumbs();
   }
 
   // ── Visionneuse : PDF page par page, Excel feuille par feuille, sans quitter le CRM ──
-  var viewToken = 0;
+  // Lot 2 (18/09/2026) : même mécanique, nouvel habillage (table claire, panneau d'informations) et
+  // nouvelle ouverture — la vignette du mur GRANDIT et devient la première page (gestes 4 et 5).
+  var viewToken = 0, docRetourFocus = null;
   function docList() { return (docs || []).filter(function (d) { return docFilter === 'all' || (docFilter === 'xls') === d.xls; }); }
-  function docCloseViewer() {
-    viewToken++; docView = null;
-    var ov = document.getElementById('mkt-dview');
-    if (ov) ov.parentNode.removeChild(ov);
-    document.removeEventListener('keydown', docViewKeys);
-    document.documentElement.classList.remove('mkt-dview-open');
+  function docHeros() { var ov = document.getElementById('mkt-dview'); return ov ? ov.querySelector('[data-heros]') : null; }
+  function docVisible(r) { return r.width > 1 && r.height > 1 && r.bottom > 0 && r.top < window.innerHeight && r.right > 0 && r.left < window.innerWidth; }
+  function docAnneau(page) {   // on sait d'où l'on vient : l'anneau s'éteint en 400 ms (opacité seule)
+    if (!page || !page.animate) return;
+    var a = document.createElement('i'); a.className = 'mkd-anneau'; page.appendChild(a);
+    var an = a.animate([{ opacity: 1 }, { opacity: 0 }], { duration: docCalme() ? 1200 : 400, easing: 'ease-out', fill: 'forwards' });
+    an.onfinish = an.oncancel = function () { if (a.parentNode) a.parentNode.removeChild(a); };
   }
+  function docVol(a, b) { return 'translate(' + (a.left - b.left) + 'px,' + (a.top - b.top) + 'px) scale(' + (a.width / b.width) + ',' + (a.height / b.height) + ')'; }
+  // Geste 4 — la vignette devient la visionneuse : la première page part de la place de la vignette et
+  // grandit (transform + opacity seulement, comme dans la maquette 3). Mouvement réduit : ouverture sèche.
+  // La transition de vue du navigateur a été ESSAYÉE puis écartée le 18/09/2026 : sous WebKit, l'élément
+  // d'arrivée restait visible à sa place finale PENDANT le vol (image double, cas témoin dans
+  // lot2/captures/essai-vt-temoin.png). Ce trajet-ci se mesure et se voit à l'identique dans tous les moteurs.
+  function docOuvrirDepuis(name, page) {
+    docRetourFocus = page || null;
+    if (!page || docCalme() || !page.animate) { docOpenViewer(name); return; }
+    var a = page.getBoundingClientRect();
+    docOpenViewer(name);
+    var ov = document.getElementById('mkt-dview'), h = docHeros();
+    if (!ov || !h) return;
+    var b = h.getBoundingClientRect(); if (!b.width || !b.height) return;
+    ov.classList.add('is-vol'); page.style.visibility = 'hidden';   // la vignette n'est pas à deux endroits à la fois
+    [].slice.call(ov.querySelectorAll('[data-fondu]')).forEach(function (n) { n.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 240, easing: 'ease-out', fill: 'backwards' }); });
+    var an = h.animate([{ transformOrigin: '0 0', transform: docVol(a, b) }, { transformOrigin: '0 0', transform: 'none' }],
+      { duration: 320, easing: 'cubic-bezier(.32,.72,0,1)' });
+    an.onfinish = an.oncancel = function () { ov.classList.remove('is-vol'); page.style.visibility = ''; };
+  }
+  // Geste 5 — refermer : même chemin à l'envers, 220 ms. `sec` = fermeture sèche (suppression, changement d'écran).
+  function docCloseViewer(sec) {
+    var ov = document.getElementById('mkt-dview'), name = docView;
+    viewToken++; docView = null;
+    document.removeEventListener('keydown', docViewKeys);
+    window.removeEventListener('hashchange', docViewHash);
+    document.documentElement.classList.remove('mkt-dview-open');
+    var racine = document.getElementById('v2-root'); if (racine) racine.inert = false;
+    if (!ov) return;
+    ov.removeAttribute('id');   // une nouvelle ouverture pendant la fermeture repart d'une visionneuse neuve
+    var tuile = name ? docTuileEl(name) : null, page = tuile ? tuile.querySelector('.mkd-page') : null;
+    var oter = function () { if (ov.parentNode) ov.parentNode.removeChild(ov); };
+    var retour = function () {
+      if (page && sec !== true) docAnneau(page);
+      var f = page || docRetourFocus;
+      if (f && document.body.contains(f) && f.focus) { try { f.focus({ preventScroll: true }); } catch (e) {} }
+      docRetourFocus = null;
+    };
+    if (sec === true || docCalme() || !ov.animate) { oter(); retour(); return; }
+    var h = ov.querySelector('[data-heros]'), corps = ov.querySelector('.mkt-dv-body');
+    var a = page ? page.getBoundingClientRect() : null, b = h ? h.getBoundingClientRect() : null;
+    var trajet = !!(a && b && docVisible(a) && docVisible(b));
+    ov.style.pointerEvents = 'none';
+    if (!trajet || (corps && corps.scrollTop > 0)) {   // pas de trajet propre : fondu seul
+      var f0 = ov.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 180, easing: 'ease-in', fill: 'forwards' });
+      f0.onfinish = f0.oncancel = function () { oter(); retour(); };
+      return;
+    }
+    ov.classList.add('is-vol'); page.style.visibility = 'hidden';
+    [].slice.call(ov.querySelectorAll('[data-fondu]')).forEach(function (n) { n.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 180, easing: 'ease-in', fill: 'forwards' }); });
+    var an = h.animate([{ transformOrigin: '0 0', transform: 'none' }, { transformOrigin: '0 0', transform: docVol(a, b) }],
+      { duration: 220, easing: 'cubic-bezier(.32,.72,0,1)', fill: 'forwards' });
+    an.onfinish = an.oncancel = function () { page.style.visibility = ''; oter(); retour(); };
+  }
+  function docViewHash() { docCloseViewer(true); }
   function docViewKeys(e) {
     if (e.key === 'Escape') docCloseViewer();
     else if (e.key === 'ArrowRight') docStep(1);
@@ -2146,33 +2410,66 @@
     var i = l.map(function (d) { return d.name; }).indexOf(docView);
     docOpenViewer(l[(i + dir + l.length) % l.length].name);
   }
+  // Ce que l'on sait du document, redit dans le panneau (et complété dès que le nombre de pages arrive).
+  function docFormatTxt(d) { var c = docCompte(d); return (d.xls ? 'Excel' : 'PDF') + (c ? ' · ' + c : '') + ' · ' + docPoids(d); }
+  function docNoteCompte(name, n) {   // nombre de pages ou de feuilles appris en ouvrant : on le garde et on le montre
+    var d = docParNom(name); if (!d || !n) return;
+    var t = docThumbs[name] || (docThumbs[name] = { src: '', w: 0, h: 0, n: 0 });
+    if (t.n !== n) { t.n = n; if (t.src || d.xls) vigEcrire({ k: vigCle(d), src: t.src || '', w: t.w || 0, h: t.h || 0, n: n, t: Date.now() }); }
+    var el = docTuileEl(name), l3 = el && el.querySelector('.mkd-l3'); if (l3) l3.textContent = docCompte(d);
+    var f = document.getElementById('mkt-dv-format'); if (f && docView === name) f.textContent = docFormatTxt(d);
+  }
   function docOpenViewer(name) {
     var tok = ++viewToken;
     docView = name;
     var l = docList(), i = l.map(function (d) { return d.name; }).indexOf(name);
+    var d = docParNom(name) || { name: name, size: 0, created: null, xls: docIsXls(name) };
     var ov = document.getElementById('mkt-dview');
     if (!ov) {
       ov = document.createElement('div');
-      ov.id = 'mkt-dview'; ov.className = 'mkt-dview';
+      ov.id = 'mkt-dview'; ov.className = 'mkt-dview mk-espace';
+      ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true');
       document.body.appendChild(ov);
       document.addEventListener('keydown', docViewKeys);
+      window.addEventListener('hashchange', docViewHash);
       document.documentElement.classList.add('mkt-dview-open');
+      var racine = document.getElementById('v2-root'); if (racine) racine.inert = true;
     }
+    ov.setAttribute('aria-label', prettyName(name));
     var nav = l.length > 1
-      ? '<button type="button" class="mkt-dv-btn" data-act="prev" aria-label="Document précédent">‹</button>' +
+      ? '<button type="button" class="mk-btn mk-press mkt-dv-btn" data-act="prev" aria-label="Document précédent">' + mic('retour', 20, 2) + '</button>' +
         '<span class="mkt-dv-pos">' + (i + 1) + ' / ' + l.length + '</span>' +
-        '<button type="button" class="mkt-dv-btn" data-act="next" aria-label="Document suivant">›</button>'
+        '<button type="button" class="mk-btn mk-press mkt-dv-btn" data-act="next" aria-label="Document suivant">' + mic('suivant', 20, 2) + '</button>'
       : '';
+    // Le héros : la première page telle que le mur la montre déjà — c'est elle qui grandit, puis la vraie page la remplace.
+    var t = docThumbs[name], ratio = docRatio(d);
+    var heros = (!d.xls && t && t.src)
+      ? '<div class="mkt-dv-pages" id="mkt-dv-pages"><img class="mkt-dv-page" data-heros alt="" draggable="false" style="aspect-ratio:' + ratio + '" src="' + t.src + '"></div>'
+      : '<div class="mkt-dv-pages" id="mkt-dv-pages"><div class="mkt-dv-page mkt-dv-attente" data-heros style="aspect-ratio:' + ratio + '">' +
+          '<span class="mkd-typo"><span class="mkd-typo-cap">' + (d.xls ? 'Excel' : 'PDF') + '</span><b>' + esc(docSansExt(name)) + '</b><span class="mkd-typo-note">Ouverture du document…</span></span></div></div>';
     ov.innerHTML =
-      '<div class="mkt-dv-bar">' +
-        '<div class="mkt-dv-title"><span class="mkt-dtag' + (docIsXls(name) ? ' xls' : '') + '">' + (docIsXls(name) ? 'Excel' : 'PDF') + '</span>' +
-          '<b>' + esc(prettyName(name)) + '</b></div>' +
-        '<div class="mkt-dv-acts">' + nav +
-          '<button type="button" class="v2-btn v2-btn-ghost mkt-dv-dl" data-act="dl">' + ICO('download', 15) + '<span>Télécharger</span></button>' +
-          '<button type="button" class="mkt-dv-btn" data-act="close" aria-label="Fermer">' + ICO('close', 18, 2) + '</button>' +
-        '</div>' +
+      '<div class="mkt-dv-fond" data-fondu></div>' +
+      '<div class="mkt-dv-bar" data-fondu>' +
+        '<button type="button" class="mk-btn mk-press mkt-dv-retour" data-act="close" aria-label="Fermer et revenir aux documents">' + mic('retour', 20, 2) + '<span>Les documents</span></button>' +
+        '<div class="mkt-dv-title"><span class="mkt-dv-cap">' + (d.xls ? 'Excel' : 'PDF') + '</span><b>' + esc(prettyName(name)) + '</b></div>' +
+        '<div class="mkt-dv-acts">' + nav + '</div>' +
       '</div>' +
-      '<div class="mkt-dv-body" id="mkt-dv-body"><div class="v2-loading"><div class="v2-spinner"></div><div>Ouverture du document…</div></div></div>';
+      '<div class="mkt-dv-corps">' +
+        '<div class="mkt-dv-body" id="mkt-dv-body">' + heros + '</div>' +
+        '<aside class="mkt-dv-pan" data-fondu>' +
+          '<div class="mkt-dv-infos">' +
+            '<span class="mkt-dv-cap">Document partagé</span>' +
+            '<h2>' + esc(prettyName(name)) + '</h2>' +
+            '<dl><dt>Format</dt><dd id="mkt-dv-format">' + esc(docFormatTxt(d)) + '</dd>' +
+              (d.created ? '<dt>Déposé</dt><dd>le ' + new Date(d.created).toLocaleDateString('fr-FR') + '</dd>' : '') +
+              '<dt>Visible par</dt><dd>tous les comptes</dd></dl>' +
+          '</div>' +
+          '<div class="mkt-dv-pied">' +
+            '<button type="button" class="mk-btn mk-plein mk-press mkt-dv-dl" data-act="dl">' + mic('charger', 20, 2) + '<span>Télécharger</span></button>' +
+            '<button type="button" class="mk-btn mk-danger mk-press mkt-dv-del" data-act="del" aria-label="Supprimer le document pour tous">' + mic('corbeille', 20) + '<span>Supprimer le document</span></button>' +
+          '</div>' +
+        '</aside>' +
+      '</div>';
     ov.onclick = function (e) {
       var b = e.target.closest('[data-act]');
       if (b) {
@@ -2181,11 +2478,16 @@
         else if (a === 'prev') docStep(-1);
         else if (a === 'next') docStep(1);
         else if (a === 'dl') docDownload(name);
+        else if (a === 'del') V2.mkt.docsDelete(name);
         else if (a === 'sheet') docShowSheet(b.getAttribute('data-i'));
         return;
       }
-      if (e.target === ov) docCloseViewer();
+      // clic hors du document (la table autour des pages) : on referme
+      var c = e.target.classList;
+      if (c && (c.contains('mkt-dv-body') || c.contains('mkt-dv-pages') || c.contains('mkt-dv-fond'))) docCloseViewer();
     };
+    var fermer = ov.querySelector('.mkt-dv-retour');
+    if (fermer) { try { fermer.focus({ preventScroll: true }); } catch (e) {} }
     var body = document.getElementById('mkt-dv-body');
     var failed = function () {
       if (tok !== viewToken) return;
@@ -2200,11 +2502,17 @@
             if (tok !== viewToken) return;
             var wb = window.XLSX.read(buf, { type: 'array' });
             ov._wb = wb;
+            docNoteCompte(name, wb.SheetNames.length);
             var tabs = wb.SheetNames.length > 1 ? '<div class="mkt-dv-tabs">' + wb.SheetNames.map(function (s, k) {
               return '<button type="button" class="mkt-dchip' + (k === 0 ? ' on' : '') + '" data-act="sheet" data-i="' + k + '">' + esc(s) + '</button>';
             }).join('') + '</div>' : '';
-            body.innerHTML = tabs + '<div class="mkt-dv-sheet" id="mkt-dv-sheet"></div>';
-            docShowSheet(0);
+            var poser = function () {
+              if (tok !== viewToken) return;
+              if (ov.classList.contains('is-vol')) { setTimeout(poser, 60); return; }   // on ne change pas le héros en plein vol
+              body.innerHTML = tabs + '<div class="mkt-dv-sheet" id="mkt-dv-sheet"></div>';
+              docShowSheet(0);
+            };
+            poser();
           }).catch(failed);
         });
       } else {
@@ -2212,15 +2520,23 @@
           if (!ok) { failed(); return; }
           pdfOpen(blob).then(function (pdf) {
             if (tok !== viewToken) return;
-            body.innerHTML = '<div class="mkt-dv-pages" id="mkt-dv-pages"></div>';
+            docNoteCompte(name, pdf.numPages);
             var pages = document.getElementById('mkt-dv-pages');
+            if (!pages) { body.innerHTML = '<div class="mkt-dv-pages" id="mkt-dv-pages"></div>'; pages = document.getElementById('mkt-dv-pages'); }
             var w = Math.min(pages.clientWidth || 900, 1000) * Math.min(window.devicePixelRatio || 1, 2);
             var n = 1;
             var next = function () {
               if (tok !== viewToken || n > pdf.numPages) return;
               pdfPageCanvas(pdf, n, w).then(function (cv) {
                 if (tok !== viewToken) return;
-                cv.className = 'mkt-dv-page'; pages.appendChild(cv); n++; next();
+                cv.className = 'mkt-dv-page';
+                var poser = function () {
+                  if (tok !== viewToken) return;
+                  if (ov.classList.contains('is-vol')) { setTimeout(poser, 60); return; }   // on ne change pas le héros en plein vol
+                  if (n === 1) { pages.innerHTML = ''; cv.setAttribute('data-heros', ''); }   // la vraie page 1 prend la place du héros, à la même taille
+                  pages.appendChild(cv); n++; next();
+                };
+                poser();
               }).catch(failed);
             };
             next();
@@ -2279,23 +2595,28 @@
     if (!ok.length) { if (V2.toast) V2.toast('Seuls les PDF et les Excel (.xlsx, .xls) sont acceptés.'); return; }
     var c = sb();
     if (!c || !c.storage) { if (V2.toast) V2.toast('Connexion requise.'); return; }
-    docsBusy = true; if (V2.route && V2.route.name === 'marketing') V2.render();
+    docsBusy = true; docsUp = { noms: ok.map(function (f) { return f.name; }), faits: 0 };
+    if (V2.route && V2.route.name === 'marketing') V2.render();
     var chain = Promise.resolve(), failed = 0;
     ok.forEach(function (f) {
       chain = chain.then(function () {
         var key = Date.now() + '-' + Math.floor(Math.random() * 1000) + '__' + sanitize(f.name);
         return c.storage.from(BUCKET).upload(key, f, { contentType: docMime(f.name), upsert: false })
-          .then(function (r) { if (r && r.error) failed++; });
+          .then(function (r) {
+            if (r && r.error) failed++;
+            else docBlobs[key] = Promise.resolve(f);   // la vignette se fabrique depuis le fichier déjà en main, sans le re-télécharger
+            if (docsUp) { docsUp.faits++; docsUpPaint(); }
+          });
       });
     });
     chain.then(function () { return loadDocs(); }).then(function () {
-      docsBusy = false;
+      docsBusy = false; docsUp = null;
       if (V2.route && V2.route.name === 'marketing') V2.render();
       var msg = failed ? 'Envoi partiel (' + failed + ' échec).' : (ok.length > 1 ? ok.length + ' documents ajoutés.' : 'Document ajouté.');
       if (skipped) msg += ' ' + skipped + ' fichier(s) ignoré(s) : ni PDF ni Excel.';
       if (V2.toast) V2.toast(msg);
     }).catch(function () {
-      docsBusy = false;
+      docsBusy = false; docsUp = null;
       loadDocs().then(function () { if (V2.route && V2.route.name === 'marketing') V2.render(); });
       if (V2.toast) V2.toast('Échec de l\'envoi.');
     });
@@ -2311,7 +2632,7 @@
     var disp = prettyName(name);
     var go = function () {
       c.storage.from(BUCKET).remove([name]).then(function () { delete docBlobs[name]; delete docThumbs[name]; return loadDocs(); })
-        .then(function () { if (V2.route && V2.route.name === 'marketing') V2.render(); if (V2.toast) V2.toast('Supprimé.'); })
+        .then(function () { vigCharger(); if (V2.route && V2.route.name === 'marketing') V2.render(); if (V2.toast) V2.toast('Supprimé.'); })
         .catch(function () { if (V2.toast) V2.toast('Échec de la suppression.'); });
     };
     if (window.confirm('Supprimer « ' + disp + ' » ? Il disparaîtra pour tous les comptes.')) go();
@@ -2363,60 +2684,97 @@
       '.mkt-catlist-btn{display:inline-flex;align-items:center;gap:5px;border:1px solid color-mix(in srgb,var(--c-mint) 45%,var(--line));background:color-mix(in srgb,var(--c-mint) 10%,#fff);color:#0f7a52;border-radius:9px;padding:6px 11px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;transition:.14s}',
       '.mkt-catlist-btn:hover{background:var(--c-mint);color:#fff;border-color:var(--c-mint)}',
       '.mkt-catlist-btn:active{transform:scale(.97)}',
-      // Documents partagés : zone de dépôt + galerie d'aperçus + visionneuse (14/09/2026)
-      '.mkt-drop{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;margin:18px 0 6px;padding:26px 18px;text-align:center;cursor:pointer;border-radius:18px;border:1.5px dashed color-mix(in srgb,var(--ip-blue) 38%,var(--line));background:radial-gradient(120% 140% at 50% 0%,color-mix(in srgb,var(--ip-blue) 9%,#fff),var(--card) 70%);box-shadow:var(--sh-1);transition:border-color .16s var(--ease),box-shadow .16s var(--ease),transform .16s var(--ease)}',
-      '.mkt-drop:hover,.mkt-drop.is-over{border-color:var(--ip-blue);box-shadow:0 0 0 4px var(--halo),var(--sh-2)}',
-      '.mkt-drop.is-over{transform:scale(1.01)}',
-      '.mkt-drop.is-busy{opacity:.65;pointer-events:none}',
-      '.mkt-drop input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}',
-      '.mkt-drop-ic{width:46px;height:46px;border-radius:14px;display:flex;align-items:center;justify-content:center;color:#fff;background:linear-gradient(150deg,var(--ip-blue),#0034A0);box-shadow:0 6px 16px color-mix(in srgb,var(--ip-blue) 30%,transparent);margin-bottom:6px}',
-      '.mkt-drop-t{font-weight:800;font-size:16px;letter-spacing:-.01em;color:var(--ip-ink)}',
-      '.mkt-drop-s{font-size:12.5px;color:var(--muted)}',
-      '.mkt-dchips{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0 2px}',
-      '.mkt-dchip{font:inherit;font-size:13px;font-weight:700;padding:7px 13px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ip-ink-2);cursor:pointer;min-height:36px}',
-      '.mkt-dchip span{color:var(--muted);font-weight:600;margin-left:3px}',
-      '.mkt-dchip.on{background:var(--ip-ink);border-color:var(--ip-ink);color:#fff}',
-      '.mkt-dchip.on span{color:rgba(255,255,255,.7)}',
-      '.mkt-dgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px;margin-top:14px}',
-      '@media(max-width:480px){.mkt-dgrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}}',
-      '.mkt-dcard{position:relative;display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--sh-1);overflow:hidden;cursor:pointer;transition:box-shadow .16s var(--ease),transform .16s var(--ease)}',
-      '.mkt-dcard:hover,.mkt-dcard:focus-visible{box-shadow:var(--sh-2);transform:translateY(-2px);outline:none}',
-      '.mkt-dthumb{position:relative;aspect-ratio:4/5;background:linear-gradient(160deg,#f4f6fb,#e7ebf3);display:flex;align-items:flex-start;justify-content:center;overflow:hidden;border-bottom:1px solid var(--line)}',
-      '.mkt-dthumb.xls{background:linear-gradient(160deg,#f1f8f3,#e2efe6)}',
-      '.mkt-dthumb img{width:100%;height:auto;display:block}',
-      '.mkt-dthumb-ph{align-self:center;font-weight:800;font-size:13px;letter-spacing:.08em;color:#fff;padding:8px 12px;border-radius:10px;background:linear-gradient(150deg,var(--c-rose,#E0556E),#b1304a)}',
-      '.mkt-dthumb.xls .mkt-dthumb-ph{background:linear-gradient(150deg,#1f8a4c,#136236)}',
-      '.mkt-dthumb-xls{width:100%;padding:8px;box-sizing:border-box;background:#fff;height:100%}',
-      '.mkt-dthumb-xls table{border-collapse:collapse;width:100%;table-layout:fixed;font-size:9px;color:var(--ip-ink-2)}',
-      '.mkt-dthumb-xls td{border:1px solid #dfe5dc;padding:3px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
-      '.mkt-dthumb-xls tr:first-child td{background:#e6f2ea;font-weight:700;color:#136236}',
-      '.mkt-dinfo{padding:10px 12px 12px}',
-      '.mkt-dname{font-weight:700;font-size:13.5px;line-height:1.3;letter-spacing:-.01em;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}',
-      '.mkt-dmeta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:11.5px;color:var(--muted);margin-top:5px}',
-      '.mkt-dtag{font-size:10.5px;font-weight:800;letter-spacing:.03em;padding:2px 7px;border-radius:6px;color:#b1304a;background:color-mix(in srgb,#E0556E 13%,#fff)}',
-      '.mkt-dtag.xls{color:#136236;background:#e3f1e8}',
-      '.mkt-ddel{position:absolute;top:8px;right:8px;width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:var(--sh-1);transition:.15s}',
-      '.mkt-ddel:hover{color:#fff;background:var(--c-rose,#E0556E);border-color:var(--c-rose,#E0556E)}',
+      // Documents partagés — lot 2 (18/09/2026) : le mur de la maquette 3. Jetons et gestes : v2-mkt-socle.js (.mk-espace).
+      '.mkd{max-width:1320px;margin:0 auto;padding:32px 32px 64px}',
+      '.mkd-entete{display:flex;align-items:flex-end;gap:24px;flex-wrap:wrap;margin-bottom:24px}',
+      '.mkd-mots{flex:1;min-width:280px}',
+      '.mkd-mots h1{margin:0;font-size:var(--mk-s1);line-height:var(--mk-s1l);font-weight:700;letter-spacing:-.02em;color:var(--mk-encre)}',
+      '.mkd-mots p{margin:8px 0 0;max-width:64ch;color:var(--mk-attenue)}',
+      '.mkd-mots p b{color:var(--mk-encre);font-weight:650}',
+      '.mkd-champ{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}',
+      '.mkd-outils{display:flex;align-items:center;gap:12px 24px;flex-wrap:wrap;margin-bottom:24px}',
+      '.mkd-seg{width:360px;max-width:100%}',
+      '.mkd-nb{font-weight:550;color:var(--mk-attenue)}',
+      '.mkd-droite{margin-left:auto;font-size:var(--mk-s5);line-height:var(--mk-s5l);color:var(--mk-attenue)}',
+      '@media (hover:none){.mkd-astuce{display:none}}',
+      '.mkd-envoi-ligne{display:grid;gap:8px;min-width:280px;font-weight:600;color:var(--mk-encre2)}',
+      // la table lumineuse : lumière en haut à gauche, bord bas un cran plus foncé
+      '.mkd-table{position:relative;min-height:320px;padding:24px;border-radius:20px;border:1px solid rgba(16,19,28,.06);border-bottom-color:rgba(16,19,28,.12);box-shadow:0 1px 0 #fff inset;',
+      'background:linear-gradient(128deg,#fff 0,rgba(255,255,255,.72) 16%,rgba(255,255,255,0) 44%),linear-gradient(158deg,#F8FAFE 0,#EFF3FA 52%,#E6ECF7 100%)}',   /* linéaire : le radial de la maquette laissait des points jaunes dans le coin sous WebKit */
+      '.mkd-mur{display:flex;align-items:flex-start;gap:24px}',
+      '.mkd-mur[hidden]{display:none}',
+      '.mkd-col{flex:1 1 0;min-width:0}',
+      '.mkd-tuile{position:relative;padding-bottom:32px}',
+      // la page : bord net, rayon 3, N2 — jamais de carte autour
+      '.mkd .mkd-page{display:block;width:100%;padding:0;position:relative;border-radius:3px;background:#fff;box-shadow:var(--mk-n2);text-align:left;cursor:pointer}',
+      '.mkd .mkd-page:focus-visible{border-radius:3px;outline-offset:3px}',
+      '.mkd-page::before{content:"";position:absolute;top:0;right:0;bottom:0;left:0;z-index:1;border-radius:inherit;box-shadow:inset 0 0 0 1px rgba(16,19,28,.10);pointer-events:none}',
+      '.mkd-envoi .mkd-page{cursor:default}',
+      '.mkd-img{display:block;width:100%;height:100%;border-radius:3px;opacity:0;transition:opacity 160ms var(--mk-sortie);-webkit-user-drag:none;user-select:none;-webkit-user-select:none}',
+      '.mkd-img.is-la{opacity:1}',
+      '.mkd .mkd-att{position:absolute;top:0;right:0;bottom:0;left:0;border-radius:3px;background:var(--mk-groupe)}',
+      '.mkd-anneau{position:absolute;top:-5px;right:-5px;bottom:-5px;left:-5px;z-index:2;border-radius:7px;border:2px solid var(--mk-bleu);pointer-events:none}',
+      // vignette typographique : Excel, ou PDF dont la page n'a pas pu être dessinée
+      '.mkd-typo{position:absolute;top:0;right:0;bottom:0;left:0;display:flex;flex-direction:column;gap:8px;padding:10% 9% 0;overflow:hidden;border-radius:3px;background:linear-gradient(180deg,#fff,#FAFBFE)}',
+      '.mkd-typo-cap{font-size:var(--mk-s5);line-height:var(--mk-s5l);font-weight:650;letter-spacing:.06em;text-transform:uppercase;color:var(--mk-attenue)}',
+      '.mkd-typo b{font-size:20px;line-height:24px;font-weight:700;letter-spacing:-.01em;color:var(--mk-encre);overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden}',
+      '.mkd-typo-note{margin-top:auto;padding-bottom:10%;font-size:var(--mk-s5);line-height:var(--mk-s5l);font-weight:500;color:var(--mk-attenue)}',
+      '.mkd-typo-grille{display:block;flex:none;height:38%;margin:auto -12% 0;border-top:1px solid #D5DBE8;',
+      'background:linear-gradient(#E8F3EC,#E8F3EC) 0 0/100% 20% no-repeat,repeating-linear-gradient(0deg,rgba(213,219,232,0) 0,rgba(213,219,232,0) calc(20% - 1px),#D5DBE8 calc(20% - 1px),#D5DBE8 20%),repeating-linear-gradient(90deg,rgba(213,219,232,0) 0,rgba(213,219,232,0) calc(20% - 1px),#D5DBE8 calc(20% - 1px),#D5DBE8 20%)}',
+      // légende sous la page
+      '.mkd-leg{padding:12px 4px 0}',
+      '.mkd-l1{display:flex;justify-content:space-between;gap:8px;font-size:var(--mk-s5);line-height:var(--mk-s5l);font-weight:550;color:var(--mk-attenue)}',
+      '.mkd .mkd-nom{margin:4px 0;font-size:var(--mk-s4);line-height:var(--mk-s4l);font-weight:650;color:var(--mk-encre);overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}',
+      '.mkd-l3{min-height:18px;font-size:var(--mk-s5);line-height:var(--mk-s5l);font-weight:500;color:var(--mk-attenue)}',
+      // la croix n'est plus là en permanence : survol ou focus au bureau ; au doigt, la suppression est dans la visionneuse
+      '.mkd .mkd-suppr{position:absolute;top:8px;right:8px;z-index:2;width:44px;height:44px;border-radius:12px;display:grid;place-items:center;background:#fff;border:1px solid var(--mk-trait);box-shadow:var(--mk-n1);color:var(--mk-encre2);opacity:0;transition:opacity var(--mk-t1) var(--mk-sortie)}',
+      '.mkd .mkd-suppr:focus-visible{opacity:1}',
+      '@media (hover:hover){.mkd-tuile:hover .mkd-suppr{opacity:1}.mkd .mkd-suppr:hover{color:#B93550}}',
+      '@media (hover:none){.mkd .mkd-suppr{display:none}}',
+      // geste 8 : la table ne devient cible que pendant un glisser de fichiers
+      '.mkd-cible{position:absolute;top:0;right:0;bottom:0;left:0;z-index:3;display:flex;justify-content:center;align-items:flex-start;border-radius:inherit;border:2px solid var(--mk-bleu);background:rgba(238,243,255,.92);opacity:0;pointer-events:none;transition:opacity var(--mk-t1) var(--mk-sortie)}',
+      '.mkd-cible span{position:-webkit-sticky;position:sticky;top:40vh;margin:120px 16px;font-size:var(--mk-s2);line-height:var(--mk-s2l);font-weight:700;color:var(--mk-bleu-txt);text-align:center}',
+      '.mkd-table.is-cible .mkd-cible{opacity:1}',
+      '@media (max-width:860px){.mkd{padding:16px 16px 32px}.mkd-entete{gap:12px;margin-bottom:16px}.mkd-outils{gap:8px;margin-bottom:16px}.mkd-seg{width:100%}.mkd-droite{margin-left:0;width:100%}.mkd-envoi-ligne{min-width:0}',
+      '.mkd-table{padding:12px;margin:0 -4px;min-height:240px}.mkd-mur{gap:12px}.mkd-tuile{padding-bottom:20px}',
+      '.mkd-typo b{font-size:15px;line-height:19px;-webkit-line-clamp:4}.mkd-cible span{font-size:var(--mk-s3);line-height:var(--mk-s3l)}}',
+      // la visionneuse : même mécanique qu'avant, habillage de la maquette 3
       'html.mkt-dview-open,html.mkt-dview-open body{overflow:hidden}',
-      '.mkt-dview{position:fixed;inset:0;z-index:9000;display:flex;flex-direction:column;background:rgba(14,20,34,.86)}',
-      '.mkt-dv-bar{display:flex;align-items:center;gap:12px;padding:10px 16px;padding-top:max(10px,env(safe-area-inset-top));background:#fff;box-shadow:0 2px 14px rgba(0,0,0,.18)}',
-      '.mkt-dv-title{flex:1;min-width:0;display:flex;align-items:center;gap:8px}',
-      '.mkt-dv-title b{font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
-      '.mkt-dv-acts{display:flex;align-items:center;gap:6px;flex-shrink:0}',
-      '.mkt-dv-pos{font-size:12.5px;color:var(--muted);font-weight:600;min-width:42px;text-align:center}',
-      '.mkt-dv-btn{width:40px;height:40px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--ip-ink);font-size:22px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}',
-      '.mkt-dv-btn:hover{background:#f2f4f8}',
-      '.mkt-dv-body{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;padding:18px 16px 40px}',
-      '.mkt-dv-body .v2-loading{color:#fff}',
-      '.mkt-dv-pages{max-width:1000px;margin:0 auto;display:flex;flex-direction:column;gap:14px}',
-      '.mkt-dv-page{width:100%;height:auto;display:block;background:#fff;border-radius:4px;box-shadow:0 8px 30px rgba(0,0,0,.35)}',
-      '.mkt-dv-tabs{display:flex;gap:6px;flex-wrap:wrap;max-width:1200px;margin:0 auto 12px}',
-      '.mkt-dv-sheet{max-width:1200px;margin:0 auto;background:#fff;border-radius:10px;overflow:auto;box-shadow:0 8px 30px rgba(0,0,0,.35)}',
-      '.mkt-dv-sheet table{border-collapse:collapse;font-size:13px;color:var(--ip-ink)}',
+      '.mkt-dview{position:fixed;top:0;right:0;bottom:0;left:0;z-index:9000;display:flex;flex-direction:column}',
+      '.mkt-dv-fond{position:absolute;top:0;right:0;bottom:0;left:0;background:radial-gradient(70% 80% at 22% 8%,#fff 0,rgba(255,255,255,.7) 36%,rgba(255,255,255,0) 72%),linear-gradient(158deg,#F8FAFE 0,#EDF1F9 55%,#E2E9F5 100%),#FBFCFE}',
+      '.mkt-dv-bar{position:relative;flex:none;display:flex;align-items:center;gap:12px;height:calc(64px + env(safe-area-inset-top,0px));padding:env(safe-area-inset-top,0px) 24px 0;background:linear-gradient(180deg,#fff,#FAFBFE);border-bottom:1px solid var(--mk-trait)}',
+      '.mkt-dv-title{flex:1;min-width:0;display:flex;align-items:center;gap:12px}',
+      '.mkt-dv-title b{font-size:var(--mk-s3);line-height:var(--mk-s3l);font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+      '.mkt-dv-cap{flex:none;font-size:var(--mk-s5);line-height:var(--mk-s5l);font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--mk-attenue)}',
+      '.mkt-dv-acts{display:flex;align-items:center;gap:8px;flex:none}',
+      '.mkt-dv-pos{min-width:44px;text-align:center;font-size:var(--mk-s5);font-weight:600;color:var(--mk-attenue)}',
+      '.mkt-dview .mkt-dv-btn{width:44px;padding:0}',
+      '.mkt-dv-corps{position:relative;flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 400px}',
+      '.mkt-dv-body{min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;padding:40px 48px 64px}',
+      '.mkt-dv-pages{max-width:800px;margin:0 auto;display:flex;flex-direction:column;gap:16px}',
+      '.mkt-dv-page{position:relative;width:100%;height:auto;display:block;background:#fff;border-radius:3px;box-shadow:var(--mk-n2)}',
+      '.mkt-dview.is-vol .mkt-dv-body{position:relative;z-index:2;overflow:visible}',
+      '.mkt-dv-pan{position:relative;display:flex;flex-direction:column;min-height:0;background:rgba(255,255,255,.82);border-left:1px solid var(--mk-trait);box-shadow:1px 0 0 #fff inset}',
+      '.mkt-dv-infos{flex:1;min-height:0;overflow:auto;padding:32px 24px}',
+      '.mkt-dv-infos h2{margin:8px 0 20px;font-size:var(--mk-s2);line-height:var(--mk-s2l);font-weight:700;letter-spacing:-.01em;overflow-wrap:anywhere}',
+      '.mkt-dv-infos dl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 16px;margin:0}',
+      '.mkt-dv-infos dt{font-size:var(--mk-s5);line-height:22px;font-weight:550;color:var(--mk-attenue)}',
+      '.mkt-dv-infos dd{margin:0;font-weight:550}',
+      '.mkt-dv-pied{flex:none;display:grid;gap:8px;padding:16px 24px 20px;border-top:1px solid var(--mk-trait);background:#fff}',
+      '.mkt-dview .mkt-dv-pied .mk-btn{width:100%;min-height:48px}',
+      '.mkt-dv-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px}',
+      '.mkt-dchip{font:inherit;font-size:13px;font-weight:700;padding:7px 13px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ip-ink-2);cursor:pointer;min-height:36px}',
+      '.mkt-dchip.on{background:var(--ip-ink);border-color:var(--ip-ink);color:#fff}',
+      '.mkt-dview .mkt-dchip{min-height:44px;padding:0 16px;font-weight:600;background:#fff;border:1px solid var(--mk-trait);color:var(--mk-encre2)}',
+      '.mkt-dview .mkt-dchip.on{background:var(--mk-encre);border-color:var(--mk-encre);color:#fff}',
+      '.mkt-dv-sheet{background:#fff;border-radius:3px;overflow:auto;box-shadow:var(--mk-n2)}',
+      '.mkt-dv-sheet table{border-collapse:collapse;font-size:13px;color:var(--mk-encre)}',
       '.mkt-dv-sheet td{border:1px solid #e3e7ee;padding:6px 10px;white-space:nowrap;max-width:420px;overflow:hidden;text-overflow:ellipsis}',
       '.mkt-dv-sheet tr:first-child td{position:sticky;top:0;background:#eef5f0;font-weight:700;color:#136236}',
-      '.mkt-dv-empty{max-width:520px;margin:40px auto;padding:18px;border-radius:12px;background:#fff;text-align:center;font-size:14px;color:var(--ip-ink-2)}',
-      '@media(max-width:640px){.mkt-dv-dl span,.mkt-dv-pos{display:none}.mkt-dv-bar{padding-left:10px;padding-right:10px;gap:8px}.mkt-dv-body{padding:10px 8px 30px}}',
+      '.mkt-dv-empty{max-width:520px;margin:40px auto;padding:20px;border-radius:12px;background:#fff;border:1px solid var(--mk-trait);box-shadow:var(--mk-n1);text-align:center;font-size:var(--mk-s4);color:var(--mk-encre2)}',
+      '@media (max-width:860px){.mkt-dv-bar{height:calc(60px + env(safe-area-inset-top,0px));padding-left:8px;padding-right:8px;gap:4px}.mkt-dv-retour span,.mkt-dv-title .mkt-dv-cap,.mkt-dv-pos{display:none}.mkt-dview .mkt-dv-retour{width:44px;padding:0}.mkt-dv-title{margin-left:8px}.mkt-dv-acts{gap:4px}',
+      '.mkt-dv-corps{display:flex;flex-direction:column}.mkt-dv-body{flex:1;padding:16px 16px 24px}.mkt-dv-pan{flex:none;border-left:0;background:none;box-shadow:none}.mkt-dv-infos{display:none}',
+      '.mkt-dv-pied{display:flex;gap:8px;padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));box-shadow:0 -8px 24px -12px rgba(11,31,77,.18)}.mkt-dview .mkt-dv-pied .mkt-dv-dl{flex:1;width:auto}.mkt-dview .mkt-dv-pied .mkt-dv-del{flex:none;width:48px;padding:0;border:1px solid var(--mk-trait)}.mkt-dv-del span{display:none}}',
       '.mkt-cat-prod{font-weight:600;font-size:13.5px}',
       '.mkt-th-x{background:var(--card-2)}',
       '.mkt-empty{padding:24px 16px;text-align:center;color:var(--muted);font-size:13px;border:1px dashed var(--line);border-radius:14px;grid-column:1/-1}',

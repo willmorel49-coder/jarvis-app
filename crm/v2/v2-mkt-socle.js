@@ -51,7 +51,12 @@
     site: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9h18"/>',
     effets: '<path d="M12 3l2.2 5.6L20 9.5l-4.4 3.9L17 19l-5-3-5 3 1.4-5.6L4 9.5l5.8-.9z"/>',
     idee: '<path d="M9 18h6M10 21h4M12 3a6 6 0 00-3.6 10.8c.6.5 1 1.2 1 2V16h5.2v-.2c0-.8.4-1.5 1-2A6 6 0 0012 3z"/>',
-    bascule: '<path d="M7 7h11l-3-3M17 17H6l3 3"/>'
+    bascule: '<path d="M7 7h11l-3-3M17 17H6l3 3"/>',
+    // lot 2 — Documents
+    suivant: '<path d="M9 6l6 6-6 6"/>',
+    fermer: '<path d="M6 6l12 12M18 6L6 18"/>',
+    charger: '<path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19h14"/>',
+    corbeille: '<path d="M5 7h14M10 7V4.5h4V7M7 7l1 12.5h8L17 7M10.5 11v5M13.5 11v5"/>'
   };
   function ic(n, s, w) {
     return '<svg width="' + (s || 20) + '" height="' + (s || 20) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' + (w || 1.75) +
@@ -113,9 +118,37 @@
       '.mk-press{transition:transform var(--mk-t2) var(--mk-ressort)}',
       '.mk-press:active{transform:scale(.98);transition-duration:90ms}',
 
+      /* ── geste 1 — Lever (lot 2) : l'ombre N3 vit dans un pseudo-élément, on n'anime que son opacité ── */
+      '.mk-lever{position:relative;transition:transform var(--mk-t1) var(--mk-sortie)}',
+      '.mk-lever::after{content:"";position:absolute;top:0;right:0;bottom:0;left:0;border-radius:inherit;pointer-events:none;box-shadow:var(--mk-n3);opacity:0;transition:opacity var(--mk-t1) var(--mk-sortie)}',
+      '@media (hover:hover){.mk-lever:hover{transform:translateY(-2px)}.mk-lever:hover::after{opacity:1}}',
+
+      /* ── geste 11 — Squelette (lot 2) : rien avant 200 ms, puis le reflet ; teinte fixe en mouvement réduit ── */
+      '.mk-sq{position:relative;overflow:hidden;background:var(--mk-groupe);animation:mk-paraitre 160ms 200ms both}',
+      '@keyframes mk-paraitre{from{opacity:0}to{opacity:1}}',
+      '@media (prefers-reduced-motion:no-preference){.mk-sq::after{content:"";position:absolute;top:0;right:0;bottom:0;left:0;transform:translateX(-100%);',
+      'background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.75),rgba(255,255,255,0));animation:mk-reflet 1.2s linear 200ms infinite}}',
+      '@keyframes mk-reflet{to{transform:translateX(100%)}}',
+
+      /* ── geste 8 — progression fine (lot 2) ── */
+      '.mk-prog{display:block;height:3px;border-radius:999px;background:var(--mk-bleu);transform-origin:left;transform:scaleX(var(--p,0));transition:transform var(--mk-t2) linear}',
+
+      /* ── état vide (lot 2) : une silhouette en filets + une phrase + un bouton ── */
+      '.mk-vide{display:grid;grid-template-columns:200px minmax(0,1fr);gap:32px;align-items:center;max-width:640px;margin:32px auto;padding:16px}',
+      '.mk-vide h3{margin:0;font-size:var(--mk-s3);line-height:var(--mk-s3l);font-weight:700;color:var(--mk-encre)}',
+      '.mk-vide p{margin:8px 0 16px;color:var(--mk-attenue)}',
+      '.mk-silhouette{display:grid;gap:8px;align-content:start;padding:12px;border:1.5px solid #C9CFDB;border-radius:3px;aspect-ratio:794/1123;opacity:.75}',
+      '.mk-silhouette i{display:block;height:10px;border-radius:999px;background:#C9CFDB;opacity:.6}',
+      '.mk-silhouette i:first-child{height:auto;aspect-ratio:3;border-radius:8px}',
+      '@media (max-width:860px){.mk-vide{grid-template-columns:1fr;gap:16px;justify-items:start;margin:16px 0;padding:8px}.mk-silhouette{width:160px}}',
+
       /* ── boutons posés (N1) ── */
       '.mk-espace .mk-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;min-width:44px;padding:0 16px;border-radius:var(--mk-r-vig);',
       'font-size:var(--mk-s4);font-weight:600;white-space:nowrap;background:#fff;border:1px solid var(--mk-trait);box-shadow:var(--mk-n1)}',
+      /* lot 2 : le bouton plein (un seul par écran) et l'action destructrice en texte */
+      '.mk-espace .mk-btn.mk-plein{background:linear-gradient(180deg,#1A63F0,var(--mk-bleu));color:#fff;border-color:transparent;box-shadow:0 1px 0 rgba(255,255,255,.35) inset,1px 2px 2px rgba(0,40,140,.18),3px 8px 14px -4px rgba(0,60,190,.35)}',
+      '.mk-espace .mk-btn.mk-danger{background:none;border-color:transparent;box-shadow:none;color:#B93550}',
+      '.mk-espace .mk-btn[disabled]{opacity:.55;cursor:default}',
 
       /* ── contrôle segmenté — geste 10 ── */
       '.mk-seg{position:relative;display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));background:var(--mk-groupe);border-radius:var(--mk-r-vig);padding:4px;isolation:isolate;box-shadow:0 1px 2px rgba(11,31,77,.08) inset}',
@@ -123,7 +156,7 @@
       'box-shadow:0 1px 0 #fff inset,0 1px 2px rgba(11,31,77,.14),2px 4px 8px -2px rgba(11,31,77,.12);transition:transform var(--mk-t-ind) var(--mk-glisse),opacity var(--mk-t2) var(--mk-sortie)}',
       '.mk-seg[data-aucun="1"] .mk-seg-ind{opacity:0}',
       '.mk-espace .mk-seg button{min-height:44px;min-width:0;padding:0 12px;font-size:var(--mk-s4);font-weight:600;color:var(--mk-attenue);border-radius:8px;display:flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap;transition:color var(--mk-t2) var(--mk-sortie)}',
-      '.mk-espace .mk-seg button[aria-current="page"]{color:var(--mk-encre)}',
+      '.mk-espace .mk-seg button[aria-current="page"],.mk-espace .mk-seg button[aria-pressed="true"]{color:var(--mk-encre)}',
       '@media (hover:hover){.mk-espace .mk-seg button:hover{color:var(--mk-encre)}}',
 
       /* ── la barre Marketing ── */
