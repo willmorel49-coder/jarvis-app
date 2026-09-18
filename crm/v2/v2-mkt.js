@@ -197,21 +197,30 @@
   }
 
   // ── Store prix/stock par établissement (etab-prices-data.js → window.ETAB_PRICES) ──
+  // 19/09/2026 (lot 6) — UN seul essai par fichier. Avant : l'écran « Catalogue & prix » rappelait
+  // ensureEtab / ensureNr à CHAQUE rendu tant que la donnée manquait, et leur rappel relançait un
+  // rendu : fichier absent = boucle sans fin (mesuré : 286 rendus en 5 s pour etab, 0,8 /s pour NR).
+  // Un échec est retenu ; seul « Réessayer » (V2.mkt.catRetry) ou un clic sur Fiche PDF / Excel relance.
+  var etabLoading = false, etabEchec = false;
   function ensureEtab(cb) {
     if (window.ETAB_PRICES) { cb(); return; }
+    if (etabEchec || etabLoading) return;   // échec retenu, ou premier appel en cours (son rappel redessine déjà l'écran)
+    etabLoading = true;
     var s = document.createElement('script'); s.src = 'etab-prices-data.js?v=20260916b';
-    s.onload = function () { cb(); }; s.onerror = function () { cb(); };
+    s.onload = function () { etabLoading = false; cb(); }; s.onerror = function () { etabLoading = false; etabEchec = true; cb(); };
     document.head.appendChild(s);
   }
   // Store ventes NR réelles (mkt-nr-data.js → window.MKT_NR), chargé à la demande
-  var nrLoading = false;
-  function ensureNr(cb) {
+  var nrLoading = false, nrEchec = false;
+  function ensureNr(cb, encore) {
     if (window.MKT_NR) { cb(); return; }
+    if (encore) nrEchec = false;
+    if (nrEchec) { cb(); return; }
     if (nrLoading) { setTimeout(function () { ensureNr(cb); }, 250); return; }
     nrLoading = true;
     // 03/09/2026 — les ventes NR réelles sont des chiffres réseau : le fichier
     // vit sur Supabase, chargé par adresse signée avec rangement local.
-    V2.loadFiles(['mktnr']).then(function () { nrLoading = false; cb(); });
+    V2.loadFiles(['mktnr']).then(function () { nrLoading = false; nrEchec = !window.MKT_NR; cb(); });
   }
   // SheetJS chargé à la demande (export Excel) — même lib que l'import (v2-audit)
   var xlsxLoading = false;
@@ -589,8 +598,8 @@
   // ════════════════════════════════════════════
   function renderSite(root) {
     root.innerHTML = V2.topbar({ back: true, backTo: 'marketing', backLabel: 'Marketing' }) +
-      '<div style="width:100%;height:calc(100vh - 66px);min-height:520px;background:#fff">' +
-        '<iframe src="../../site-integral/site-2026/index.html?v=20260918b" title="Le nouveau site Intégral Pharma" loading="lazy" style="width:100%;height:100%;border:0;display:block"></iframe>' +
+      '<div class="mkt-cadre" style="background:#fff">' +
+        '<iframe src="../../site-integral/site-2026/index.html?v=20260918b" title="Le nouveau site Intégral Pharma" loading="lazy"></iframe>' +
       '</div>';
   }
 
@@ -604,8 +613,8 @@
   function renderPropositions(root) {
     if (V2.maquettes && V2.maquettes.render) { V2.maquettes.render(root); return; }
     root.innerHTML = V2.topbar({ back: true, backTo: 'marketing', backLabel: 'Marketing' }) +
-      '<div style="width:100%;height:calc(100vh - 66px);min-height:520px;background:#FAFAF8">' +
-        '<iframe src="../../site-integral/propositions/trionn/index.html?v=20260815a" title="La maquette du nouveau site" loading="lazy" style="width:100%;height:100%;border:0;display:block"></iframe>' +
+      '<div class="mkt-cadre" style="background:#FAFAF8">' +
+        '<iframe src="../../site-integral/propositions/trionn/index.html?v=20260815a" title="La maquette du nouveau site" loading="lazy"></iframe>' +
       '</div>';
   }
 
@@ -614,8 +623,8 @@
   // ════════════════════════════════════════════
   function renderFxBank(root) {
     root.innerHTML = V2.topbar({ back: true, backTo: 'marketing', backLabel: 'Marketing' }) +
-      '<div style="width:100%;height:calc(100vh - 66px);min-height:520px;background:#06080F">' +
-        '<iframe src="../../site-integral/fx-bank/index.html?v=20260703d" title="FX-BANK — banque d\'effets" loading="lazy" style="width:100%;height:100%;border:0;display:block"></iframe>' +
+      '<div class="mkt-cadre" style="background:#06080F">' +
+        '<iframe src="../../site-integral/fx-bank/index.html?v=20260703d" title="FX-BANK — banque d\'effets" loading="lazy"></iframe>' +
       '</div>';
   }
 
@@ -632,11 +641,38 @@
     var lbl = document.getElementById('mkt-catbar-n');
     if (lbl) lbl.textContent = n + ' produit' + (n > 1 ? 's' : '') + ' sélectionné' + (n > 1 ? 's' : '');
     bar.classList.toggle('on', n > 0);
+    var mkc = document.getElementById('mkc'); if (mkc) mkc.classList.toggle('mkc-sel-on', n > 0);
+  }
+  // 19/09/2026 (lot 6) — même contenu, nouvelle peau : UNE barre d'outils (sources · recherche · établissement · « Filtrer » ·
+  // « Exporter » · LE bouton plein), puis les produits. Les sorties (catPdf, top50Pdf, top50Xlsx, catList) ne sont pas touchées.
+  var catPop = '';   // '' | 'filtres' | 'export' : le panneau ouvert reste ouvert d'un rendu à l'autre
+  function catPopEcoute() {
+    if (catPopEcoute.fait) return; catPopEcoute.fait = true;
+    document.addEventListener('click', function (e) {
+      if (!catPop || (e.target.closest && e.target.closest('.mkc-ancre'))) return;
+      catPop = ''; catPopPeindre();
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'Escape' || !catPop) return;
+      var b = document.querySelector('.mkc-ancre [aria-expanded="true"]'); catPop = ''; catPopPeindre(); if (b) b.focus();
+    });
+  }
+  function catPopPeindre() {
+    ['filtres', 'export'].forEach(function (k) {
+      var p = document.getElementById('mkc-pop-' + k), b = document.getElementById('mkc-btn-' + k);
+      if (p) p.classList.toggle('mk-ouvert', catPop === k);
+      if (b) b.setAttribute('aria-expanded', catPop === k ? 'true' : 'false');
+    });
+  }
+  function catSeg(nom, liste, actif, clic) {
+    var idx = 0; liste.forEach(function (o, i) { if (o[0] === actif) idx = i; });
+    return '<div class="mk-seg" role="group" aria-label="' + esc(nom) + '" style="--n:' + liste.length + ';--i:' + idx + '"><span class="mk-seg-ind" aria-hidden="true"></span>' +
+      liste.map(function (o) { return '<button type="button" aria-pressed="' + (o[0] === actif ? 'true' : 'false') + '" onclick="' + clic(o[0]) + '">' + esc(o[1]) + '</button>'; }).join('') + '</div>';
   }
   function renderCatalogues(root) {
     var M = window.MKT_MIX || {}, total = M.total || 0;
     var NR = window.MKT_NR || null;
-    if (!NR) ensureNr(function () { if (V2.route && V2.route.name === 'marketing') V2.render(); });
+    if (!NR && !nrEchec) ensureNr(function () { if (V2.route && V2.route.name === 'marketing') V2.render(); });
     var srcs = [
       { k: 'nrreal', label: 'Ventes NR réelles', data: (NR && NR.cats) || [], pdf: null },
       { k: 'integral', label: 'L\'Intégral', data: M.integral || [], pdf: 'catalogue-integral.pdf' },
@@ -646,10 +682,10 @@
     ];
     var cur = srcs.filter(function (s) { return s.k === catSrc; })[0] || srcs[0];
     var isNr = (cur.k === 'nrreal');
-    var tabs = srcs.map(function (s) { return '<button class="mkt-srcbtn' + (s.k === catSrc ? ' on' : '') + '" onclick="V2.mkt.catSrc(\'' + s.k + '\')">' + esc(s.label) + '</button>'; }).join('');
-    var offre = ' <span style="font-size:8.5px;font-weight:800;color:var(--c-amber);background:color-mix(in srgb,var(--c-amber) 14%,#fff);padding:1px 5px;border-radius:5px;text-transform:uppercase">offre</span>';
+    var offre = ' <span class="mkc-offre">offre</span>';
     catRows = [];
     var showStock = !!(window.ETAB_PRICES && mktEtab);   // colonne stock si un établissement précis est choisi
+    var midTh = (cur.k === 'itp') ? 'Marge/bte' : isNr ? 'CA vendu' : 'Sorties';
     var cats = cur.data.map(function (c) {
       var rowsArr = (c.rows || []).filter(function (r) {
         if (!(mktEtab && etabStockOnly)) return true;
@@ -662,91 +698,108 @@
         var pval = (er && er[0] > 0) ? er[0] : r.p;
         var stock = er ? er[1] : null;
         var price = (pval > 0) ? V2.fmtEur(pval) : '—';
-        var midCol = (cur.k === 'itp')
-          ? '<td class="num" style="color:var(--c-mint);font-weight:700">' + (r.marge ? V2.fmtEur(r.marge) : '—') + '</td>'
+        var midCol = '<td class="num mkc-c-mid" data-l="' + esc(midTh) + '">' + ((cur.k === 'itp')
+          ? (r.marge ? V2.fmtEur(r.marge) : '—')
           : isNr
-          ? '<td class="num" style="font-weight:700;color:var(--ip-blue)">' + (r.ca > 0 ? V2.fmtEur(r.ca) : '—') + '</td>'
-          : '<td class="num" style="font-weight:700">' + (r.sortie > 0 ? r.sortie + '<span style="color:var(--muted-2);font-weight:500">/' + total + '</span>' : '—') + '</td>';
-        var volCol = '<td class="num" style="font-weight:800;color:var(--ip-ink)">' + (r.vol > 0 ? V2.fmtNum(r.vol) : '—') + '</td>';
-        var stockCol = showStock ? '<td class="num" style="font-weight:800;color:' + (stock > 0 ? 'var(--c-mint)' : 'var(--c-rose)') + '">' + (stock != null ? V2.fmtNum(stock) : '—') + '</td>' : '';
+          ? (r.ca > 0 ? V2.fmtEur(r.ca) : '—')
+          : (r.sortie > 0 ? r.sortie + '<span class="mkc-sur">/' + total + '</span>' : '—')) + '</td>';
+        var volCol = '<td class="num mkc-c-vol" data-l="Volume">' + (r.vol > 0 ? V2.fmtNum(r.vol) : '—') + '</td>';
+        var stockCol = showStock ? '<td class="num mkc-c-stock ' + (stock > 0 ? 'mkc-ok' : 'mkc-ko') + '" data-l="Stock">' + (stock != null ? V2.fmtNum(stock) : '—') + '</td>' : '';
         var fi = catRows.length;
         var pic = catImg(r.cip);
         catRows.push({ d: r.d, cip: r.cip, p: pval, stock: stock, froid: false, cat: c.cat, img: pic });
         var selKey = String(r.cip || r.d);
         var added = catSel.some(function (x) { return x.key === selKey; });
-        var addBtn = '<td style="width:36px;text-align:center"><button class="mkt-catadd' + (added ? ' on' : '') + '" id="mkt-ca-' + fi + '" title="' + (added ? 'Retirer de ma sélection' : 'Ajouter à une fiche') + '" onclick="V2.mkt.catAdd(' + fi + ')">' + ICO(added ? 'check' : 'plus', 15, 2.4) + '</button></td>';
+        var addBtn = '<td class="mkc-c-add"><button type="button" class="mkt-catadd' + (added ? ' on' : '') + '" id="mkt-ca-' + fi + '" title="' + (added ? 'Retirer de ma sélection' : 'Ajouter à une fiche') + '" aria-label="' + (added ? 'Retirer de ma sélection' : 'Ajouter à une fiche') + ' : ' + esc(r.d) + '" onclick="V2.mkt.catAdd(' + fi + ')">' + ICO(added ? 'check' : 'plus', 18, 2.2) + '</button></td>';
         var thumb = pic
-          ? '<td style="width:46px"><span class="mkt-cat-thumb" style="background-image:url(' + esc(pic) + ')"></span></td>'
-          : '<td style="width:46px"><span class="mkt-cat-thumb mkt-cat-thumb-ph">' + ICO('pill', 18, 1.5) + '</span></td>';
+          ? '<td class="mkc-c-vig"><span class="mkt-cat-thumb" style="background-image:url(' + esc(pic) + ')"></span></td>'
+          : '<td class="mkc-c-vig"><span class="mkt-cat-thumb mkt-cat-thumb-ph">' + ICO('pill', 18, 1.5) + '</span></td>';
         return '<tr data-s="' + esc(((r.d || '') + ' ' + (r.cip || '')).toLowerCase()) + '">' +
-          '<td class="num" style="color:var(--muted-2);width:28px;text-align:right;font-family:var(--mono)">' + (i + 1) + '</td>' +
+          '<td class="num mkc-c-rang">' + (i + 1) + '</td>' +
           thumb +
-          '<td><span class="mkt-cat-prod">' + esc(r.d) + '</span>' + (r.o ? offre : '') + '</td>' +
-          '<td class="mono" style="color:var(--muted);font-size:12px">' + esc(r.cip || '—') + '</td>' +
-          '<td class="num" style="color:var(--ip-blue);font-weight:700">' + price + '</td>' + midCol + volCol + stockCol + addBtn +
+          '<td class="mkc-c-nom"><span class="mkt-cat-prod">' + esc(r.d) + '</span>' + (r.o ? offre : '') + '</td>' +
+          '<td class="mkc-c-cip">' + esc(r.cip || '—') + '</td>' +
+          '<td class="num mkc-c-prix" data-l="Prix net">' + price + '</td>' + midCol + volCol + stockCol + addBtn +
         '</tr>';
       }).join('');
-      var midTh = (cur.k === 'itp') ? 'Marge/bte' : isNr ? 'CA vendu' : 'Sorties';
       var stockTh = showStock ? '<th class="num">Stock</th>' : '';
       var cn = String(c.cat).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-      return '<div class="v2-card" data-catcard="1" style="margin-bottom:14px;padding:16px 18px">' +
-        '<div class="mkt-cathead"><div class="v2-card-t">' + esc(c.cat) + ' <span class="mkt-cat-count" style="color:var(--muted);font-weight:500">· ' + rowsArr.length + '</span></div>' +
-          '<button class="mkt-catlist-btn" onclick="V2.mkt.catList(\'' + cn + '\')" title="Créer une liste avec les produits les plus commandés de cette catégorie">' + ICO('plus', 14, 2.2) + 'Créer la liste</button></div>' +
-        '<div style="overflow-x:auto"><table class="v2-table"><thead><tr><th class="num">#</th><th></th><th>Produit</th><th>CIP</th><th class="num">Prix net</th><th class="num">' + midTh + '</th><th class="num">Volume vendu</th>' + stockTh + '<th></th></tr></thead><tbody>' + trs + '</tbody></table></div>' +
-      '</div>';
+      return '<section class="mkc-cat mk-souleve" data-catcard="1">' +
+        '<div class="mkc-cat-tete"><h2>' + esc(c.cat) + ' <span class="mkt-cat-count">· ' + rowsArr.length + '</span></h2>' +
+          '<button type="button" class="mk-btn mk-texte" onclick="V2.mkt.catList(\'' + cn + '\')" title="Créer une liste avec les produits les plus commandés de cette catégorie">' + mic('plus', 18) + 'Créer la liste</button></div>' +
+        '<table class="mkc-table"><thead><tr><th class="num">#</th><th></th><th>Produit</th><th>CIP</th><th class="num">Prix net</th><th class="num">' + midTh + '</th><th class="num">Volume vendu</th>' + stockTh + '<th></th></tr></thead><tbody>' + trs + '</tbody></table>' +
+      '</section>';
     }).join('');
     if (!window.ETAB_PRICES) ensureEtab(function () { if (V2.route && V2.route.name === 'marketing') V2.render(); });
     var ETABS = (window.ETAB_PRICES && window.ETAB_PRICES.etabs) || [];
-    var etabBtns = '<button class="mkt-etabchip' + (mktEtab === '' ? ' on' : '') + '" onclick="V2.mkt.catEtab(\'\')">Tous</button>' +
-      ETABS.map(function (e) { return '<button class="mkt-etabchip' + (mktEtab === e.code ? ' on' : '') + '" onclick="V2.mkt.catEtab(\'' + e.code + '\')">' + esc(e.code) + '</button>'; }).join('');
-    var etabBar = ETABS.length ? ('<div class="mkt-etabbar"><span class="mkt-etablbl">Établissement — prix &amp; stock à jour</span>' +
-      '<div class="mkt-etabchips">' + etabBtns + '</div>' +
-      (mktEtab ? '<label class="mkt-stocktgl"><input type="checkbox"' + (etabStockOnly ? ' checked' : '') + ' onchange="V2.mkt.catStockOnly(this.checked)"> En stock uniquement</label>' : '') +
-      '</div>') : '';
-    var sortBar = isNr ? '' : ('<div class="mkt-sortbar"><span class="mkt-sortlbl">Classer par</span>' +
-      '<button class="mkt-etabchip' + (catSortBy === 'pharma' ? ' on' : '') + '" onclick="V2.mkt.catSort(\'pharma\')">Nb de pharmacies</button>' +
-      '<button class="mkt-etabchip' + (catSortBy === 'vol' ? ' on' : '') + '" onclick="V2.mkt.catSort(\'vol\')">Volume vendu</button>' +
-      '</div>');
+    catPopEcoute();
+
+    // ── la barre d'outils ──
+    var segSrc = catSeg('Source du catalogue', srcs.map(function (s) { return [s.k, s.label]; }), cur.k, function (k) { return 'V2.mkt.catSrc(\'' + k + '\')'; });
+    var selSrc = '<label class="mkc-sel mkc-sel-src"><span>Source</span><select aria-label="Source du catalogue" onchange="V2.mkt.catSrc(this.value)">' +
+      srcs.map(function (s) { return '<option value="' + s.k + '"' + (s.k === cur.k ? ' selected' : '') + '>' + esc(s.label) + '</option>'; }).join('') + '</select>' + mic('bas', 18) + '</label>';
+    var selEtab = function (cls) { return ETABS.length ? ('<label class="mkc-sel mkc-sel-etab ' + cls + '" title="Prix et stock à jour de l\'établissement choisi"><span>Établissement</span><select aria-label="Établissement — prix et stock à jour" onchange="V2.mkt.catEtab(this.value)">' +
+      '<option value=""' + (mktEtab === '' ? ' selected' : '') + '>Tous</option>' +
+      ETABS.map(function (e) { return '<option value="' + esc(e.code) + '"' + (mktEtab === e.code ? ' selected' : '') + '>' + esc(e.code) + '</option>'; }).join('') + '</select>' + mic('bas', 18) + '</label>') : '' };
     var PERCATS = [3, 5, 10, 15, 0];
-    var perCatBar = '<div class="mkt-sortbar"><span class="mkt-sortlbl">Produits/catégorie sur le doc</span>' +
-      PERCATS.map(function (n) { return '<button class="mkt-etabchip' + (catPerCat === n ? ' on' : '') + '" onclick="V2.mkt.catPerCat(' + n + ')">' + (n === 0 ? 'Tous' : n) + '</button>'; }).join('') +
-      '</div>';
-    var docLabel = 'Générer le doc — top ' + (catPerCat > 0 ? catPerCat : 'tous') + '/catégorie' + (mktEtab ? ' · ' + mktEtab : '');
+    var nFiltres = (catPerCat !== 5 ? 1 : 0) + (!isNr && catSortBy !== 'pharma' ? 1 : 0) + (mktEtab && etabStockOnly ? 1 : 0);
+    var popFiltres = '<div class="mkc-pop' + (catPop === 'filtres' ? ' mk-ouvert' : '') + '" id="mkc-pop-filtres" role="group" aria-label="Filtrer">' +
+      (isNr ? '' : '<p class="mkc-pop-cap">Classer par</p>' + catSeg('Classer par', [['pharma', 'Nombre de pharmacies'], ['vol', 'Volume vendu']], catSortBy, function (k) { return 'V2.mkt.catSort(\'' + k + '\')'; })) +
+      '<p class="mkc-pop-cap">Produits par catégorie sur le document</p>' +
+      catSeg('Produits par catégorie sur le document', PERCATS.map(function (n) { return [n, n === 0 ? 'Tous' : String(n)]; }), catPerCat, function (n) { return 'V2.mkt.catPerCat(' + n + ')'; }) +
+      (mktEtab ? '<button type="button" class="mkc-inter" role="switch" aria-checked="' + (etabStockOnly ? 'true' : 'false') + '" onclick="V2.mkt.catStockOnly(' + (etabStockOnly ? 'false' : 'true') + ')"><span>En stock uniquement</span><i aria-hidden="true"></i></button>'
+               : '<p class="mkc-pop-note">Choisissez un établissement pour filtrer sur le stock.</p>') +
+    '</div>';
+    var popExport = '<div class="mkc-pop' + (catPop === 'export' ? ' mk-ouvert' : '') + '" id="mkc-pop-export" role="menu" aria-label="Exporter">' +
+      '<p class="mkc-pop-cap">Catalogue par catégorie</p>' +
+      '<button type="button" role="menuitem" onclick="V2.mkt.catPop(\'\');V2.mkt.top50Pdf()">' + mic('charger', 20) + '<div>Fiche PDF<span>Princeps et non remboursables, avec PPHT, abandon et prix net</span></div></button>' +
+      '<button type="button" role="menuitem" onclick="V2.mkt.catPop(\'\');V2.mkt.top50Xlsx()">' + mic('charger', 20) + '<div>Excel<span>Un onglet par catégorie</span></div></button>' +
+      (cur.pdf ? '<p class="mkc-pop-cap">' + esc(cur.label) + '</p><a role="menuitem" class="mkc-pop-lien" href="' + cur.pdf + '" download>' + mic('charger', 20) + '<div>Catalogue d\'origine<span>Le PDF du fournisseur, tel quel</span></div></a>' : '') +
+    '</div>';
+    var docLabel = 'Générer le PDF';
+    var docTitle = 'Générer le document — top ' + (catPerCat > 0 ? catPerCat : 'tous') + ' par catégorie' + (mktEtab ? ' · ' + mktEtab : '');
+    var resume = (catPerCat > 0 ? catPerCat + ' produits par catégorie sur le document' : 'Tous les produits sur le document') +
+      (isNr ? ' · classés par volume vendu' : (catSortBy === 'pharma' ? ' · classés par nombre de pharmacies' : ' · classés par volume vendu')) +
+      (mktEtab ? ' · prix et stock ' + esc(mktEtab) + (etabStockOnly ? ', en stock uniquement' : '') : ' · prix net indicatif');
+
+    // ── états vides : une silhouette, une phrase, un bouton ──
+    var attente = isNr && !NR && !nrEchec;
+    var vide = '';
+    if (!cats) {
+      if (attente) vide = '<div class="mkc-attente" aria-busy="true" aria-label="Chargement du catalogue">' + [0, 1, 2, 3, 4, 5].map(function () { return '<i class="mk-sq"></i>'; }).join('') + '</div>';
+      else if (cur.data.length && mktEtab && etabStockOnly) vide = '<div class="mk-vide"><div class="mk-silhouette" aria-hidden="true"><i></i><i></i><i></i><i></i></div><div><h3>Aucun produit en stock pour ' + esc(mktEtab) + '.</h3><p>Le filtre « En stock uniquement » masque tout le catalogue de cet établissement.</p><button type="button" class="mk-btn" onclick="V2.mkt.catStockOnly(false)">Voir aussi les produits hors stock</button></div></div>';
+      else vide = '<div class="mk-vide" id="mkc-vide"><div class="mk-silhouette" aria-hidden="true"><i></i><i></i><i></i><i></i></div><div><h3>Le catalogue n\'a pas pu être chargé.</h3><p>Vérifiez la connexion, puis relancez le chargement.</p><button type="button" class="mk-btn mk-plein" onclick="V2.mkt.catRetry()">Réessayer</button></div></div>';
+    }
+    var pdfBtn = '<button type="button" class="mk-btn mkc-pdf' + (cats ? ' mk-plein' : '') + '"' + (cats ? '' : ' disabled') + ' title="' + esc(docTitle) + '" onclick="V2.mkt.catPdf(\'' + cur.k + '\')">' + mic('charger', 18) + esc(docLabel) + '</button>';
+
     root.innerHTML = V2.topbar({ back: true, backTo: 'marketing', backLabel: 'Marketing' }) +
-      '<div class="v2-wrap">' +
+      '<div class="v2-wrap mk-espace mkc' + (catSel.length ? ' mkc-sel-on' : '') + '" id="mkc">' +
         (V2.priceTabs ? V2.priceTabs('marketing:catalogues') : '') +
-        '<div class="v2-page-title">Catalogue &amp; prix — grossiste</div>' +
-        '<div class="v2-page-sub">' + (isNr
-          ? 'Nos <b>vraies ventes hors-remboursable</b> (OTC, dispositifs, parapharmacie) classées par volume réellement vendu' + (NR && NR.meta ? ' sur ' + esc((NR.meta.etabs || []).join('/')) : '') + '. Choisis un établissement pour le prix &amp; le stock à jour, puis <b>« Créer la liste »</b> pour un catalogue vendeur.'
-          : 'L\'Intégral (parapharma) &amp; ITP (pansements/DM) — ce qu\'on fait en tant que grossiste, classé par nombre de pharmacies qui commandent. Bouton <b>« Créer la liste »</b> par catégorie = sélection parfaite des produits les plus commandés.') + '</div>' +
-        '<div class="mkt-top50">' +
-          '<div class="mkt-top50-ic">' + ICO('grid', 20, 2) + '</div>' +
-          '<div class="mkt-top50-txt"><div class="mkt-top50-t">Catalogue par catégorie</div>' +
-            '<div class="mkt-top50-s">Princeps (petits prix : top 100 · intermédiaire · cher) + NR étoffé (OTC · dispositifs · parapharmacie · autres, top 100) — avec PPHT, abandon et prix net.</div></div>' +
-          '<div class="mkt-top50-btns">' +
-            '<button class="v2-btn v2-btn-primary" onclick="V2.mkt.top50Pdf()">' + ICO('download', 15) + ' Fiche PDF</button>' +
-            '<button class="v2-btn v2-btn-ghost" onclick="V2.mkt.top50Xlsx()">' + ICO('download', 15) + ' Excel</button>' +
+        '<header class="mkc-entete"><h1>Catalogue &amp; prix</h1>' +
+        '<p>' + (isNr
+          ? 'Nos ventes hors remboursable — médicaments conseil, dispositifs, parapharmacie — classées par volume réellement vendu' + (NR && NR.meta ? ' sur ' + esc((NR.meta.etabs || []).join('/')) : '') + '.'
+          : 'Ce que nous vendons en tant que grossiste, classé par nombre de pharmacies qui commandent.') + '</p></header>' +
+        '<div class="mkc-outils">' +
+          '<div class="mkc-rang mkc-rang-src">' + segSrc + selSrc + selEtab('mkc-tel') + '</div>' +
+          '<div class="mkc-rang">' +
+            '<div class="mkt-search mkc-cherche"><span class="mkt-search-ic">' + mic('loupe', 18) + '</span>' +
+              '<input type="search" id="mkt-cat-search" placeholder="Rechercher un produit ou un CIP" aria-label="Rechercher un produit ou un CIP" value="' + esc(catQuery) + '" oninput="V2.mkt.catFilter(this.value)">' +
+              '<button type="button" class="mkt-search-x" onclick="V2.mkt.catFilter(\'\')" aria-label="Effacer la recherche"' + (catQuery ? '' : ' style="display:none"') + '>' + mic('fermer', 18) + '</button>' +
+            '</div>' +
+            selEtab('mkc-bureau') +
+            '<div class="mkc-ancre"><button type="button" class="mk-btn" id="mkc-btn-filtres" aria-haspopup="true" aria-expanded="' + (catPop === 'filtres' ? 'true' : 'false') + '" onclick="V2.mkt.catPop(\'filtres\')">' + mic('filtres', 18) + '<span>Filtrer</span>' + (nFiltres ? '<b class="mkc-n">' + nFiltres + '</b>' : '') + '</button>' + popFiltres + '</div>' +
+            '<div class="mkc-ancre"><button type="button" class="mk-btn" id="mkc-btn-export" aria-haspopup="true" aria-expanded="' + (catPop === 'export' ? 'true' : 'false') + '" onclick="V2.mkt.catPop(\'export\')">' + mic('charger', 18) + '<span>Exporter</span></button>' + popExport + '</div>' +
+            '<div class="mkc-pdf-loge">' + pdfBtn + '</div>' +
           '</div>' +
+          '<p class="mkc-resume">' + resume + '</p>' +
         '</div>' +
-        '<div class="mkt-pick-src" style="margin:16px 0 10px">' + tabs + '</div>' +
-        etabBar +
-        sortBar +
-        perCatBar +
-        '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">' +
-          '<button class="v2-btn v2-btn-primary" onclick="V2.mkt.catPdf(\'' + cur.k + '\')">' + ICO('download', 16) + esc(docLabel) + '</button>' +
-          (cur.pdf ? '<a class="v2-btn v2-btn-ghost" href="' + cur.pdf + '" download>' + ICO('download', 16) + 'Catalogue ' + esc(cur.label) + ' d\'origine</a>' : '') +
-        '</div>' +
-        '<div class="mkt-search"><span class="mkt-search-ic">' + ICO('search', 16, 2) + '</span>' +
-          '<input type="search" id="mkt-cat-search" placeholder="Rechercher un produit ou un CIP…" value="' + esc(catQuery) + '" oninput="V2.mkt.catFilter(this.value)">' +
-          '<button class="mkt-search-x" onclick="V2.mkt.catFilter(\'\')" title="Effacer"' + (catQuery ? '' : ' style="display:none"') + '>' + ICO('close', 15, 2) + '</button>' +
-        '</div>' +
-        (cats || '<div class="v2-empty"><div class="v2-empty-d">Catalogue indisponible.</div></div>') +
-        '<div id="mkt-cat-nores" class="v2-empty" style="display:none"><div class="v2-empty-d">Aucun produit ne correspond à ta recherche.</div></div>' +
+        (cats || vide) +
+        '<div id="mkt-cat-nores" class="mk-vide" style="display:none"><div class="mk-silhouette" aria-hidden="true"><i></i><i></i><i></i><i></i></div><div><h3>Aucun produit ne correspond à votre recherche.</h3><p>Essayez un autre nom, ou les premiers chiffres du CIP.</p><button type="button" class="mk-btn" onclick="V2.mkt.catFilter(\'\')">Effacer la recherche</button></div></div>' +
         '<div class="mkt-catbar' + (catSel.length ? ' on' : '') + '" id="mkt-catbar">' +
           '<span id="mkt-catbar-n">' + catSel.length + ' produit' + (catSel.length > 1 ? 's' : '') + ' sélectionné' + (catSel.length > 1 ? 's' : '') + '</span>' +
-          '<div style="display:flex;gap:8px">' +
-            '<button class="v2-btn v2-btn-ghost" onclick="V2.mkt.catClear()">Vider</button>' +
-            '<button class="v2-btn v2-btn-primary" onclick="V2.mkt.catBuildFiche()">' + ICO('plus', 15) + 'Créer une fiche marketing</button>' +
+          '<div class="mkc-catbar-b">' +
+            '<button type="button" class="mk-btn mkc-vider" onclick="V2.mkt.catClear()">Vider</button>' +
+            '<button type="button" class="mk-btn mk-plein" onclick="V2.mkt.catBuildFiche()">' + mic('plus', 18) + 'Créer une fiche marketing</button>' +
           '</div>' +
         '</div>' +
       '</div>';
@@ -1720,6 +1773,8 @@
       catSel = [];
       V2.go('marketing', 'new-selection');
     },
+    catPop: function (k) { catPop = (catPop === k) ? '' : (k || ''); catPopPeindre(); },
+    catRetry: function () { nrEchec = false; etabEchec = false; V2.render(); },
     catSort: function (mode) { catSortBy = (mode === 'vol') ? 'vol' : 'pharma'; V2.render(); },
     catPerCat: function (n) { catPerCat = (+n) || 0; V2.render(); },
     // Recherche live dans le catalogue : filtre le DOM (garde le focus, pas de re-render)
@@ -1729,7 +1784,7 @@
       var input = document.getElementById('mkt-cat-search');
       if (input && input.value !== catQuery) input.value = catQuery;
       var x = document.querySelector('.mkt-search-x'); if (x) x.style.display = q ? '' : 'none';
-      var cards = document.querySelectorAll('.v2-card[data-catcard]'), shownTot = 0;
+      var cards = document.querySelectorAll('[data-catcard]'), shownTot = 0;
       Array.prototype.forEach.call(cards, function (card) {
         var shown = 0, trs = card.querySelectorAll('tbody tr');
         Array.prototype.forEach.call(trs, function (tr) {
@@ -1860,7 +1915,7 @@
             .save().then(function () { if (wrap.parentNode) document.body.removeChild(wrap); V2.toast('Fiche catalogue téléchargée'); })
             .catch(function (e) { console.error(e); if (wrap.parentNode) document.body.removeChild(wrap); V2.toast('Erreur PDF', 'error'); });
         });
-      });
+      }, true);
     },
     // ── Top 50 par catégorie : bel export Excel (1 onglet par catégorie) ──
     top50Xlsx: function () {
@@ -1897,7 +1952,7 @@
           XLSX.writeFile(wb, 'Catalogue-par-categorie-' + new Date().toISOString().slice(0, 10) + '.xlsx');
           V2.toast('Excel catalogue téléchargé');
         });
-      });
+      }, true);
     },
     openPicker: function () { openPicker(); }, closePicker: closePicker,
     // « Parcourir tous les produits » (accueil Marketing) : une sélection neuve,
@@ -3370,6 +3425,111 @@
       '.mke-corps{padding:0 16px 24px}',
       '.mke-panneau:not(.is-haut) .mke-onglets,.mke-panneau:not(.is-haut) .mke-corps{visibility:hidden;transition:visibility 0s linear var(--mk-t3)}',
       '.mke-pied{position:fixed;z-index:46;left:0;right:0;bottom:calc(65px + env(safe-area-inset-bottom,0px));height:72px;padding:12px 16px;border-left:0}',
+      '}',
+      // ════════════════════════════════════════════════════════════════════
+      // LOT 6 (19/09/2026) — « Catalogue & prix » (.mkc-*) et le cadre des écrans plein cadre (.mkt-cadre).
+      // Jetons, élévations, contrôle segmenté, états vides : v2-mkt-socle.js. On n'anime que transform et opacity.
+      // ════════════════════════════════════════════════════════════════════
+      '.mkt-cadre{width:100%;height:calc(100vh - 64px);min-height:520px}',
+      '.mkt-cadre iframe{width:100%;height:100%;border:0;display:block}',
+      '@media (max-width:860px){.mkt-cadre{min-height:0;height:calc(100vh - 56px - 72px);height:calc(100dvh - 56px - 72px - env(safe-area-inset-bottom,0px))}}',
+      '#v2-root .mkc{max-width:1320px;margin:0 auto;padding:32px 32px 64px}',
+      '.mkc-entete{margin-bottom:24px}',
+      '.mkc-entete h1{margin:0;font-size:var(--mk-s1);line-height:var(--mk-s1l);font-weight:700;letter-spacing:-.02em;color:var(--mk-encre)}',
+      '.mkc-entete p{margin:8px 0 0;max-width:80ch;color:var(--mk-attenue)}',
+      '.mkc-outils{position:relative;z-index:5;display:grid;gap:12px;margin-bottom:24px}',
+      '.mkc-rang{display:flex;align-items:center;gap:8px;min-width:0}',
+      '.mkc-rang-src .mk-seg{flex:1 1 auto;max-width:920px}',
+      '.mkc .mkc-sel-src,.mkc .mkc-tel{display:none}',
+      '.mkc-sel{position:relative;display:flex;align-items:center;gap:8px;flex:none;height:44px;padding:0 8px 0 12px;border:1px solid var(--mk-trait);border-radius:var(--mk-r-vig);background:#fff;box-shadow:var(--mk-n1);cursor:pointer}',
+      '.mkc-sel>span{font-size:var(--mk-s5);line-height:var(--mk-s5l);font-weight:500;color:var(--mk-attenue);white-space:nowrap}',
+      '.mkc-sel select{-webkit-appearance:none;appearance:none;min-width:0;height:44px;margin:-1px 0;padding:0 28px 0 0;border:0;background:none;font:inherit;font-size:16px;font-weight:600;color:var(--mk-encre);cursor:pointer;outline:none}',
+      '.mkc-sel:focus-within{outline:2px solid var(--mk-bleu);outline-offset:2px}',
+      '.mkc-sel>svg{position:absolute;right:10px;top:13px;pointer-events:none;color:var(--mk-attenue)}',
+      '.mkc .mkc-cherche{flex:1 1 240px;min-width:0;margin:0}',
+      '.mkc .mkt-search-ic{left:12px;color:var(--mk-attenue)}',
+      '.mkc .mkt-search input{height:44px;padding:0 44px 0 40px;font-family:inherit;font-size:16px;font-weight:450;color:var(--mk-encre);background:#fff;border:1px solid var(--mk-trait);border-radius:var(--mk-r-vig);box-shadow:var(--mk-n1);transition:none}',
+      '.mkc .mkt-search input:focus{border-color:var(--mk-bleu);box-shadow:0 0 0 3px var(--mk-pale)}',
+      '.mkc .mkt-search-x{right:0;width:44px;height:44px;border-radius:var(--mk-r-vig);color:var(--mk-attenue);transition:none}',
+      '.mkc-ancre{position:relative;flex:none}',
+      '.mkc-n{display:grid;place-items:center;min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:var(--mk-pale);color:var(--mk-bleu-txt);font-size:var(--mk-s5);font-weight:650}',
+      '.mkc-pop{position:absolute;top:calc(100% + 8px);right:0;width:376px;max-width:calc(100vw - 32px);padding:8px 16px 16px;z-index:60;display:none;border:1px solid transparent;border-radius:16px;',
+      'background:linear-gradient(180deg,#fff 0,#FAFBFE 100%) padding-box,var(--mk-arete) border-box;box-shadow:var(--mk-n3)}',
+      '.mkc-pop.mk-ouvert{display:block;animation:mk-naitre var(--mk-t2) var(--mk-sortie)}',
+      '.mk-espace .mkc-pop .mk-seg button{padding:0 4px;font-size:var(--mk-s5)}',
+      '.mkc-pop-cap{margin:12px 0 8px;font-size:var(--mk-s5);line-height:var(--mk-s5l);font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--mk-attenue)}',
+      '.mkc-pop-note{margin:12px 0 0;font-size:var(--mk-s5);line-height:var(--mk-s5l);color:var(--mk-attenue)}',
+      '.mk-espace .mkc-pop>button[role=menuitem],.mkc-pop-lien{display:flex;align-items:center;gap:12px;width:calc(100% + 16px);min-height:52px;margin:0 -8px;padding:6px 8px;border-radius:10px;font-size:var(--mk-s4);line-height:20px;font-weight:600;text-align:left;color:var(--mk-encre);text-decoration:none}',
+      '.mkc-pop [role=menuitem] svg{color:var(--mk-encre2)}',
+      '.mkc-pop [role=menuitem] span{display:block;font-size:var(--mk-s5);line-height:var(--mk-s5l);font-weight:450;color:var(--mk-attenue)}',
+      '.mkc-pop [role=menuitem]:focus-visible{background:var(--mk-pale)}',
+      '@media (hover:hover){.mkc-pop [role=menuitem]:hover{background:var(--mk-pale)}}',
+      '.mk-espace .mkc-inter{display:flex;align-items:center;justify-content:space-between;gap:16px;width:100%;min-height:48px;margin-top:8px;padding:4px 0;border-radius:8px;text-align:left;font-size:var(--mk-s4);line-height:20px;font-weight:550;color:var(--mk-encre)}',
+      '.mkc-inter i{position:relative;flex:none;width:44px;height:26px;border-radius:999px;background:#D5DAE5;box-shadow:0 1px 2px rgba(11,31,77,.14) inset}',
+      '.mkc-inter i::before{content:"";position:absolute;top:0;right:0;bottom:0;left:0;border-radius:inherit;background:#C3D5FB;opacity:0}',
+      '.mkc-inter i::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(11,31,77,.3)}',
+      '.mkc-inter[aria-checked=true] i::before{opacity:1}.mkc-inter[aria-checked=true] i::after{transform:translateX(18px);background:var(--mk-bleu)}',
+      '.mkc-pdf-loge{flex:none;margin-left:4px}',
+      '.mk-espace.mkc-sel-on .mk-btn.mkc-pdf.mk-plein{background:#fff;color:var(--mk-encre);border-color:var(--mk-trait);box-shadow:var(--mk-n1)}',   /* une sélection en cours : le bouton plein est celui de la barre de sélection */
+      '.mkc-resume{margin:0;font-size:var(--mk-s5);line-height:var(--mk-s5l);color:var(--mk-attenue)}',
+      '.mkc-cat{margin-bottom:24px;padding:16px 24px 8px;overflow:hidden}',
+      '.mkc-cat-tete{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 -12px 4px 0}',
+      '.mkc-cat-tete h2{margin:0;font-size:var(--mk-s3);line-height:var(--mk-s3l);font-weight:700;color:var(--mk-encre)}',
+      '.mkc-cat-tete h2 span{font-weight:500;color:var(--mk-attenue)}',
+      '.mkc-table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}',
+      '.mkc-table th{padding:8px 12px;font-size:var(--mk-s5);line-height:var(--mk-s5l);font-weight:600;color:var(--mk-attenue);text-align:left;border-bottom:1px solid var(--mk-trait);white-space:nowrap}',
+      '.mkc-table th.num,.mkc-table td.num{text-align:right}',
+      '.mkc-table td{padding:8px 12px;border-bottom:1px solid var(--mk-trait);font-size:var(--mk-s4);line-height:var(--mk-s4l);vertical-align:middle;color:var(--mk-encre)}',
+      '.mkc-table tbody tr:last-child td{border-bottom:0}',
+      '.mkc-table th:first-child,.mkc-table td:first-child{padding-left:0}.mkc-table th:last-child,.mkc-table td:last-child{padding-right:0}',
+      '@media (hover:hover){.mkc-table tbody tr:hover td{background:#F6F9FF}}',
+      '.mkc-table td.mkc-c-rang{width:36px;color:var(--mk-filet);font-size:var(--mk-s5)}',
+      '.mkc-c-vig{width:66px}',
+      '.mkc-table td.mkc-c-cip{color:var(--mk-attenue);font-size:var(--mk-s5);white-space:nowrap}',
+      '.mkc-table td.mkc-c-prix{font-weight:700;white-space:nowrap}',
+      '.mkc-table td.mkc-c-mid,.mkc-table td.mkc-c-vol{font-weight:550;color:var(--mk-encre2);white-space:nowrap}',
+      '.mkc-sur{color:var(--mk-filet);font-weight:450}',
+      '.mkc-table td.mkc-ok{font-weight:650;color:#14794F}.mkc-table td.mkc-ko{font-weight:650;color:#B93550}',
+      '.mkc-c-add{width:56px}',
+      '.mkc .mkt-cat-prod{font-size:var(--mk-s4);font-weight:600}',
+      '.mkc-offre{margin-left:6px;font-size:var(--mk-s5);font-weight:650;color:#8A5410;white-space:nowrap}',
+      '.mkc .mkt-cat-thumb{border-color:var(--mk-trait);border-radius:10px}',
+      '.mk-espace.mkc .mkt-catadd{width:44px;height:44px;margin-left:auto;border-radius:var(--mk-r-vig);border:1px solid var(--mk-trait);background:#fff;box-shadow:var(--mk-n1);color:var(--mk-bleu-txt);display:flex;align-items:center;justify-content:center;transition:transform var(--mk-t1) var(--mk-sortie)}',
+      '.mk-espace.mkc .mkt-catadd:active{transform:scale(.94)}',
+      '.mk-espace.mkc .mkt-catadd.on{background:var(--mk-pale);border-color:transparent;box-shadow:none;color:var(--mk-bleu-txt)}',
+      '.mkc-attente{display:grid;gap:12px}.mkc-attente i{display:block;height:58px;border-radius:12px}',
+      '.mkc .mkt-catbar{bottom:16px;border-radius:16px;background:var(--mk-encre);box-shadow:var(--mk-n3);padding:8px 8px 8px 20px;z-index:41}',
+      '.mkc .mkt-catbar #mkt-catbar-n{font-size:var(--mk-s4);font-weight:600}',
+      '.mkc-catbar-b{display:flex;gap:8px}',
+      '.mk-espace .mk-btn.mkc-vider{background:none;color:#fff;border-color:rgba(255,255,255,.28);box-shadow:none}',
+      '@media (max-width:860px){',
+      '#v2-root .mkc{padding:20px 16px 112px}',
+      '.mkc-entete{margin-bottom:16px}',
+      '.mkc-outils{gap:8px;margin-bottom:16px}',
+      '.mkc-rang-src .mk-seg,.mkc .mkc-bureau,.mkc-resume{display:none}',
+      '.mkc .mkc-sel-src,.mkc .mkc-tel{display:flex}',
+      '.mkc .mkc-sel-src{flex:1 1 0;min-width:0}.mkc-sel-src select{flex:1 1 0;width:100%;text-overflow:ellipsis}',
+      '.mkc-sel-src>span{display:none}',
+      '.mkc-cat-tete{flex-direction:column;align-items:flex-start;gap:0;margin:0 0 4px}.mk-espace .mkc-cat-tete .mk-btn{margin-left:-12px}',
+      '.mkc-ancre{position:static}',
+      '.mk-espace .mkc-ancre>.mk-btn{width:44px;padding:0}.mkc-ancre>.mk-btn>span{display:none}',
+      '.mkc-ancre>.mk-btn .mkc-n{position:absolute;margin:-28px -28px 0 0}',
+      '.mkc-pop{left:0;right:0;width:auto;max-width:none}',
+      '.mkc-pdf-loge{position:fixed;z-index:40;left:0;right:0;bottom:calc(65px + env(safe-area-inset-bottom,0px));margin:0;padding:12px 16px;background:#fff;border-top:1px solid var(--mk-trait)}',
+      '.mk-espace .mkc-pdf-loge .mk-btn{width:100%;min-height:48px;font-size:var(--mk-s3);font-weight:650}',
+      '.mkc-sel-on .mkc-pdf-loge{display:none}',
+      '.mkc-cat{margin-bottom:16px;padding:12px 16px 4px;border-radius:16px}',
+      '.mkc-table,.mkc-table tbody{display:block}.mkc-table thead{display:none}',
+      '.mkc-table tbody tr{display:grid;grid-template-columns:44px minmax(0,1.2fr) minmax(0,1fr) minmax(0,1fr) 44px;gap:0 12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--mk-trait)}',
+      '.mkc-table tbody tr:last-child{border-bottom:0}',
+      '.mkc-table tbody td{display:block;min-width:0;width:auto;padding:0;border:0;text-align:left}',
+      '.mkc-table td.mkc-c-rang{display:none}',
+      '.mkc-c-vig{grid-column:1;grid-row:1/3}.mkc-c-nom{grid-column:2/5;grid-row:1}.mkc-c-cip{grid-column:2/5;grid-row:2}.mkc-c-add{grid-column:5;grid-row:1/3}',
+      '.mkc-table td.num{grid-row:3;margin-top:8px;text-align:left}',
+      '.mkc-c-prix{grid-column:1/3}.mkc-c-mid{grid-column:3}.mkc-c-vol{grid-column:4}.mkc-c-stock{grid-column:5}',
+      '.mkc-table td[data-l]::before{content:attr(data-l);display:block;font-size:var(--mk-s5);line-height:var(--mk-s5l);font-weight:450;color:var(--mk-attenue);white-space:nowrap}',
+      '.mkc .mkt-cat-prod{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}',
+      '.mkc .mkt-catbar{flex-direction:column;align-items:stretch;gap:8px;padding:12px;bottom:calc(78px + env(safe-area-inset-bottom,0px))}.mkc-catbar-b .mk-btn{flex:1 1 0}',
       '}',
     ].join('');
     document.head.appendChild(s);

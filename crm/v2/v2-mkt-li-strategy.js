@@ -295,110 +295,131 @@
   var cfg = { cadence: 2, horizon: 4, tone: 'proche', themes: ['causes', 'joie', 'pharma', 'patients'], start: null };
   var stratId = '';
 
-  // ── CSS (injecté une fois, thème sombre cohérent avec la vue LinkedIn) ──
+  // ── CSS (injecté une fois). Lot 6 (19/09/2026) : l'assistant entre dans le cadre de l'espace Marketing — sous la barre,
+  //    jetons et échelle du socle (.mk-espace), UN accent #0050E6, choix actifs en bleu pâle, UN bouton plein. Plus aucun violet.
   var cssDone = false;
   function injectCss() {
     if (cssDone) return; cssDone = true;
     var css = [
-      '#lis-root{position:fixed;inset:0;z-index:9000;background:#F8FAFC;color:#0A0E1A;overflow:auto;font-family:inherit;-webkit-overflow-scrolling:touch}',
-      '.lis-wrap{max-width:920px;margin:0 auto;padding:22px 18px 80px}',
-      '.lis-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px}',
-      '.lis-title{font-size:22px;font-weight:800;letter-spacing:-.02em;display:flex;align-items:center;gap:9px}',
-      '.lis-title .g{color:#8B5CF6}',
-      '.lis-sub{color:#6b7280;font-size:13.5px;margin:2px 0 20px}',
-      '.lis-x{background:#fff;color:#3a4152;border:1px solid #E6E9F0;border-radius:10px;width:38px;height:38px;font-size:17px;cursor:pointer;flex-shrink:0;box-shadow:0 1px 2px rgba(10,14,26,.05)}',
-      '.lis-x:hover{background:#F8FAFC;color:#0A0E1A}',
-      '.lis-q{margin-bottom:20px}',
-      '.lis-ql{font-weight:700;font-size:14px;margin-bottom:9px;color:#3a4152}',
-      '.lis-opts{display:flex;flex-wrap:wrap;gap:9px}',
-      '.lis-opt{background:#fff;color:#3a4152;border:1.5px solid #E6E9F0;border-radius:12px;padding:11px 15px;cursor:pointer;font-family:inherit;font-size:13.5px;font-weight:600;line-height:1.2;box-shadow:0 1px 2px rgba(10,14,26,.04);transition:border-color .15s,background .15s}',
-      '.lis-opt small{display:block;font-weight:500;color:#9aa1ae;margin-top:3px;font-size:11.5px}',
-      '.lis-opt:hover{border-color:#c3b6f2}',
-      '.lis-opt.on{border-color:#8B5CF6;background:#f3efff;color:#5b2ec4}',
-      '.lis-opt.on small{color:#7c56e6}',
-      '.lis-date{background:#fff;color:#0A0E1A;border:1.5px solid #E6E9F0;border-radius:12px;padding:10px 14px;font-family:inherit;font-size:13.5px;font-weight:600;line-height:1}',
-      '.lis-date:focus{outline:none;border-color:#8B5CF6;box-shadow:0 0 0 3px #f3efff}',
-      '.lis-cta{position:sticky;bottom:0;left:0;right:0;margin-top:24px;padding:16px 0 6px;background:linear-gradient(to top,#F8FAFC 70%,rgba(248,250,252,0));display:flex;gap:10px;flex-wrap:wrap}',
-      '.lis-btn{border:1px solid #E6E9F0;background:#fff;color:#3a4152;border-radius:12px;padding:13px 20px;font-family:inherit;font-size:14px;font-weight:700;line-height:1;cursor:pointer;transition:all .15s}',
-      '.lis-btn:hover{background:#F8FAFC;color:#0A0E1A}',
-      '.lis-btn-p{background:linear-gradient(135deg,#8B5CF6,#0057FF);border-color:transparent;color:#fff;box-shadow:0 6px 16px rgba(88,60,220,.28)}',
-      '.lis-btn-p:hover{color:#fff;box-shadow:0 8px 22px rgba(88,60,220,.36);transform:translateY(-1px)}',
-      '.lis-recap{background:#fff;border:1px solid #E6E9F0;border-radius:14px;padding:14px 16px;margin-bottom:18px;font-size:13.5px;color:#3a4152;display:flex;flex-wrap:wrap;gap:8px 18px;box-shadow:0 1px 2px rgba(10,14,26,.05)}',
-      '.lis-recap b{color:#0A0E1A}',
-      '.lis-card{background:#fff;border:1px solid #E6E9F0;border-radius:14px;padding:14px 16px;margin-bottom:12px;border-left:4px solid var(--pc,#8B5CF6);box-shadow:0 1px 2px rgba(10,14,26,.05)}',
-      '.lis-crow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}',
-      '.lis-date2{font-weight:800;font-size:13px;color:#0A0E1A}',
-      '.lis-tag{font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;background:#eef1f6;color:#3a4152}',
-      '.lis-tag.pil{background:var(--pcb,#f3efff);color:var(--pc,#5b2ec4)}',
-      '.lis-hook{font-weight:700;font-size:15px;color:#0A0E1A;margin:4px 0 6px;line-height:1.35}',
-      '.lis-core{font-size:13px;color:#6b7280;line-height:1.5;margin-bottom:10px}',
-      '.lis-gen{white-space:pre-wrap;font-size:13px;color:#0A0E1A;line-height:1.55;background:#faf8ff;border:1px solid #e4d9fb;border-radius:10px;padding:12px 13px;margin-bottom:10px;max-height:340px;overflow:auto}',
-      '.lis-genb{border-color:#c3b6f2!important;color:#7c56e6!important;background:#f6f2ff!important}',
-      '.lis-genb:hover{color:#5b2ec4!important;background:#efe8ff!important}',
-      '.lis-choose{font-weight:700;font-size:12.5px;color:#475569;margin:2px 0 8px}',
-      '.lis-opts2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}',
-      '@media (max-width:620px){.lis-opts2{grid-template-columns:1fr}}',
-      '.lis-opt2{display:flex;flex-direction:column;gap:5px;text-align:left;background:#fff;border:1.5px solid #E2E8F0;border-radius:12px;padding:12px 13px;cursor:pointer;font:inherit;transition:border-color .15s,box-shadow .15s}',
-      '.lis-opt2:hover{border-color:#c9d3e6}',
-      '.lis-opt2.on{border-color:var(--pc,#0057FF);box-shadow:0 0 0 3px rgba(0,87,255,.10)}',
-      '.lis-opt2-top{display:flex;align-items:center;gap:7px}',
-      '.lis-opt2-num{font-size:11px;font-weight:800;color:var(--pc,#0057FF);text-transform:uppercase;letter-spacing:.03em}',
-      '.lis-opt2.on .lis-opt2-num::after{content:" ✓"}',
-      '.lis-opt2-h{font-weight:700;font-size:13.5px;color:#0f172a;line-height:1.3}',
-      '.lis-opt2-core{font-size:12px;color:#64748b;line-height:1.45}',
-      '.lis-abc{display:flex;gap:6px;flex-wrap:wrap;align-items:center}',
-      '.lis-imgidea{margin-top:9px;font-size:12.5px;color:#475569;line-height:1.5;background:#F1F5F9;border:1px solid #E2E8F0;border-radius:9px;padding:8px 11px}',
-      '.lis-imgidea b{color:#0f172a}',
-      '.lis-imgb{margin-left:6px;padding:2px 8px !important}',
-      '.lis-ab{width:30px;height:30px;border-radius:8px;border:1px solid #E6E9F0;background:#fff;color:#6b7280;font-family:inherit;font-size:12px;font-weight:700;line-height:1;cursor:pointer}',
-      '.lis-ab.on{background:#8B5CF6;border-color:#8B5CF6;color:#fff}',
-      '.lis-mini{background:#fff;border:1px solid #E6E9F0;color:#6b7280;border-radius:8px;padding:6px 10px;font-family:inherit;font-size:12px;font-weight:600;line-height:1;cursor:pointer;margin-left:auto}',
-      '.lis-mini:hover{color:#0A0E1A;border-color:#d3dae4}',
-      '.lis-del{color:#e0455f}',
-      '.lis-del:hover{border-color:#f6bcc6;background:#fff5f6}',
-      '@media (max-width:560px){.lis-wrap{padding:16px 12px 80px}.lis-title{font-size:19px}}',
-      '@media (prefers-reduced-motion:reduce){#lis-root *{transition:none!important}}'
+      '#lis-root{position:fixed;top:64px;right:0;bottom:0;left:0;z-index:45;overflow:auto;-webkit-overflow-scrolling:touch;',
+      'background:radial-gradient(80% 56% at 6% -12%,rgba(0,80,230,.13),rgba(0,80,230,.04) 45%,transparent 66%),linear-gradient(180deg,#ECF1FB 0,#F6F8FD 40%,#FBFCFE 72%)}',
+      '.lis-wrap{max-width:1320px;margin:0 auto;padding:32px 32px 64px}',
+      '.lis-top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}',
+      '.lis-title{margin:0;font-size:var(--mk-s1);line-height:var(--mk-s1l);font-weight:700;letter-spacing:-.02em;color:var(--mk-encre)}',
+      '.lis-sub{margin:8px 0 32px;max-width:72ch;color:var(--mk-attenue)}',
+      '.mk-espace .lis-x{flex:none;width:44px;height:44px;padding:0}',
+      '.lis-plan2{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:48px;align-items:start}',
+      '.lis-q{margin-bottom:24px}',
+      '.lis-ql{margin:0 0 8px;font-size:var(--mk-s5);line-height:var(--mk-s5l);font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--mk-attenue)}',
+      '.lis-ql small{font-size:inherit;font-weight:450;letter-spacing:0;text-transform:none}',
+      '.lis-q .mk-seg{max-width:520px}',
+      '.lis-opts{display:flex;flex-wrap:wrap;gap:8px}',
+      '.mk-espace .lis-opt{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 16px;border-radius:var(--mk-r-vig);background:#fff;border:1px solid var(--mk-trait);box-shadow:var(--mk-n1);font-size:var(--mk-s4);font-weight:600;color:var(--mk-encre2)}',
+      '.lis-opt i{width:8px;height:8px;border-radius:50%;flex:none}',
+      '.mk-espace .lis-opt.on{background:var(--mk-pale);border-color:transparent;box-shadow:none;color:var(--mk-bleu-txt)}',
+      '.lis-daterow{display:flex;align-items:center;gap:12px;flex-wrap:wrap}',
+      '.lis-date{height:44px;padding:0 12px;border:1px solid var(--mk-trait);border-radius:var(--mk-r-vig);background:#fff;box-shadow:var(--mk-n1);font:inherit;font-size:16px;font-weight:600;color:var(--mk-encre)}',
+      '.lis-date:focus{outline:2px solid var(--mk-bleu);outline-offset:2px}',
+      '.lis-aide{font-size:var(--mk-s5);line-height:var(--mk-s5l);color:var(--mk-attenue)}',
+      '.lis-bilan{position:sticky;top:32px;padding:28px}',
+      '.lis-bilan-n{display:block;font-size:64px;line-height:64px;font-weight:700;letter-spacing:-.03em;color:var(--mk-encre)}',
+      '.lis-bilan-n small{font-size:var(--mk-s2);font-weight:600;letter-spacing:-.01em;color:var(--mk-attenue)}',
+      '.lis-bilan ul{margin:16px 0 24px;padding:0;list-style:none;display:grid;gap:4px;color:var(--mk-encre2)}',
+      '.lis-bilan li b{font-weight:650;color:var(--mk-encre)}',
+      '.mk-espace .lis-bilan .mk-btn{width:100%}',
+      '.lis-recap{display:flex;flex-wrap:wrap;gap:4px 24px;margin:0 0 24px;color:var(--mk-encre2)}',
+      '.lis-recap b{font-weight:650;color:var(--mk-encre)}',
+      '.lis-cards{display:grid;gap:16px;max-width:960px}',
+      '.lis-card{padding:20px 24px}',
+      '.lis-crow{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:4px}',
+      '.lis-date2{font-size:var(--mk-s3);line-height:var(--mk-s3l);font-weight:700;color:var(--mk-encre)}',
+      '.lis-tag{display:inline-flex;align-items:center;gap:6px;font-size:var(--mk-s5);line-height:var(--mk-s5l);font-weight:600;color:var(--mk-attenue)}',
+      '.lis-tag i{width:8px;height:8px;border-radius:50%;flex:none}',
+      '.lis-crow .mk-btn{margin-left:auto}',
+      '.lis-choose{margin:0 0 8px;font-size:var(--mk-s5);line-height:var(--mk-s5l);font-weight:600;color:var(--mk-attenue)}',
+      '.lis-opts2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}',
+      '.mk-espace .lis-opt2{display:flex;flex-direction:column;align-items:stretch;gap:4px;min-height:44px;padding:12px 16px;border-radius:var(--mk-r-vig);background:#fff;border:1px solid var(--mk-trait);box-shadow:var(--mk-n1);text-align:left}',
+      '.mk-espace .lis-opt2.on{background:var(--mk-pale);border-color:transparent;box-shadow:0 0 0 2px var(--mk-bleu) inset}',
+      '.lis-opt2-top{display:flex;align-items:center;justify-content:space-between;gap:8px}',
+      '.lis-opt2-num{font-size:var(--mk-s5);line-height:var(--mk-s5l);font-weight:650;color:var(--mk-attenue)}',
+      '.lis-opt2.on .lis-opt2-num{color:var(--mk-bleu-txt)}',
+      '.lis-opt2-h{font-size:var(--mk-s4);line-height:var(--mk-s4l);font-weight:650;color:var(--mk-encre)}',
+      '.lis-opt2-core{font-size:var(--mk-s5);line-height:20px;color:var(--mk-attenue)}',
+      '.lis-gen{white-space:pre-wrap;margin-bottom:12px;padding:16px;max-height:340px;overflow:auto;border-radius:var(--mk-r-vig);background:var(--mk-groupe);font-size:var(--mk-s4);line-height:var(--mk-s4l);color:var(--mk-encre)}',
+      '.lis-abc{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 -12px}',
+      '.lis-imgidea{margin-top:8px;padding-top:12px;border-top:1px solid var(--mk-trait);font-size:var(--mk-s5);line-height:20px;color:var(--mk-encre2)}',
+      '.lis-imgidea b{color:var(--mk-encre);font-weight:650}',
+      '.mk-espace .lis-imgidea .mk-btn{margin-left:-12px}',
+      '.lis-cta{position:sticky;bottom:0;z-index:2;display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:24px -32px -64px;padding:12px 32px;background:#fff;border-top:1px solid var(--mk-trait)}',
+      '.lis-cta .lis-pousse{flex:1 1 0}',
+      '.lis-toast{position:fixed;left:50%;bottom:32px;transform:translateX(-50%);z-index:9999;display:flex;align-items:center;gap:8px;padding:12px 20px;border-radius:12px;background:#10131C;color:#fff;font-size:15px;font-weight:600;box-shadow:0 8px 30px rgba(11,31,77,.3)}',
+      '@media (max-width:1040px){.lis-plan2{grid-template-columns:minmax(0,1fr) 320px;gap:32px}}',
+      '@media (max-width:860px){',
+      '#lis-root{top:56px;bottom:calc(65px + env(safe-area-inset-bottom,0px))}',
+      '.lis-wrap{padding:20px 16px 0}',
+      '.lis-sub{margin-bottom:24px}',
+      '.lis-plan2{display:block}',
+      '.lis-q .mk-seg{max-width:none}',
+      '.mk-espace .lis-q .mk-seg button{padding:0 2px;font-size:var(--mk-s5)}',
+      '.lis-bilan{position:sticky;bottom:0;top:auto;z-index:2;display:flex;align-items:center;gap:12px;margin:24px -16px 0;padding:12px 16px;border-radius:0;border:0;border-top:1px solid var(--mk-trait);background:#fff;box-shadow:none}',
+      '.lis-bilan-n{font-size:var(--mk-s2);line-height:var(--mk-s2l);white-space:nowrap}.lis-bilan-n small{font-size:var(--mk-s5)}',
+      '.lis-bilan ul{display:none}',
+      '.mk-espace .lis-bilan .mk-btn{flex:1 1 0;width:auto;min-height:48px}',
+      '.lis-opts2{grid-template-columns:1fr}',
+      '.lis-card{padding:16px;border-radius:16px}',
+      '.lis-cta{margin:24px -16px 0;padding:12px 16px}',
+      '.mk-espace .lis-cta .mk-plein{flex:1 1 100%;order:-1;min-height:48px}',
+      '.lis-toast{bottom:calc(84px + env(safe-area-inset-bottom,0px));width:calc(100% - 32px);justify-content:center}',
+      '}'
     ].join('');
     var s = document.createElement('style'); s.id = 'lis-css'; s.textContent = css; document.head.appendChild(s);
   }
   function host() {
     var el = document.getElementById('lis-root');
-    if (!el) { el = document.createElement('div'); el.id = 'lis-root'; document.body.appendChild(el); }
+    if (!el) { el = document.createElement('div'); el.id = 'lis-root'; el.className = 'mk-espace'; document.body.appendChild(el); }
     return el;
   }
+  function mic(n, s, w) { return (V2.mktSocle && V2.mktSocle.ic) ? V2.mktSocle.ic(n, s, w) : ''; }
 
   // ── Rendu ──
   function seg(field, list, curr, withSub) {
-    return '<div class="lis-opts">' + list.map(function (o) {
-      var on = (curr === o.k) ? ' on' : '';
-      return '<button class="lis-opt' + on + '" onclick="V2.lis.pick(\'' + field + '\',\'' + o.k + '\')">' + esc(o.label) +
-        (withSub && o.sub ? '<small>' + esc(o.sub) + '</small>' : '') + '</button>';
+    var idx = 0; list.forEach(function (o, i) { if (o.k === curr) idx = i; });
+    return '<div class="mk-seg" role="group" style="--n:' + list.length + ';--i:' + idx + '"><span class="mk-seg-ind" aria-hidden="true"></span>' + list.map(function (o) {
+      return '<button type="button" aria-pressed="' + (curr === o.k ? 'true' : 'false') + '"' + (withSub && o.sub ? ' title="' + esc(o.sub) + '"' : '') + ' onclick="V2.lis.pick(\'' + field + '\',\'' + o.k + '\')">' + esc(o.label) + '</button>';
     }).join('') + '</div>';
   }
   function segNum(field, list, curr, suffix) {
-    return '<div class="lis-opts">' + list.map(function (n) {
-      var on = (curr === n) ? ' on' : '';
-      return '<button class="lis-opt' + on + '" onclick="V2.lis.pick(\'' + field + '\',' + n + ')">' + n + (suffix || '') + '</button>';
+    var idx = Math.max(0, list.indexOf(curr));
+    return '<div class="mk-seg" role="group" style="--n:' + list.length + ';--i:' + idx + '"><span class="mk-seg-ind" aria-hidden="true"></span>' + list.map(function (n) {
+      return '<button type="button" aria-pressed="' + (curr === n ? 'true' : 'false') + '" onclick="V2.lis.pick(\'' + field + '\',' + n + ')">' + n + (suffix || '') + '</button>';
     }).join('') + '</div>';
   }
+  function fermerBtn() { return '<button type="button" class="mk-btn lis-x" onclick="V2.lis.close()" aria-label="Fermer l\'assistant">' + mic('fermer', 20) + '</button>'; }
   function quizHtml() {
     var themeOpts = '<div class="lis-opts">' + PILL().map(function (p) {
-      var on = (cfg.themes.indexOf(p.k) !== -1) ? ' on' : '';
-      return '<button class="lis-opt' + on + '" onclick="V2.lis.theme(\'' + p.k + '\')">' + esc(p.label) + '</button>';
+      var on = (cfg.themes.indexOf(p.k) !== -1);
+      return '<button type="button" class="lis-opt' + (on ? ' on' : '') + '" aria-pressed="' + (on ? 'true' : 'false') + '" onclick="V2.lis.theme(\'' + p.k + '\')"><i style="background:' + p.color + '"></i>' + esc(p.label) + '</button>';
     }).join('') + '</div>';
+    var n = cfg.cadence * cfg.horizon;
+    var d0 = cfg.start ? new Date(cfg.start) : nextMonday();
     return '<div class="lis-wrap">' +
-      '<div class="lis-top"><div class="lis-title">Assistant stratégie</div>' +
-      '<button class="lis-x" onclick="V2.lis.close()">✕</button></div>' +
-      '<div class="lis-sub">Quelques réponses et je te génère un plan de posts daté, positif et prêt à suivre — calé sur les grandes causes du calendrier.</div>' +
-      '<div class="lis-q"><div class="lis-ql">Cadence de publication</div>' + segNum('cadence', CADENCES, cfg.cadence, ' / sem.') + '</div>' +
-      '<div class="lis-q"><div class="lis-ql">Sur combien de semaines</div>' + segNum('horizon', HORIZONS, cfg.horizon, ' sem.') + '</div>' +
-      '<div class="lis-q"><div class="lis-ql">Ton dominant</div>' + seg('tone', TONES, cfg.tone, false) + '</div>' +
-      '<div class="lis-q"><div class="lis-ql">Familles à privilégier <small style="font-weight:500;color:#8493b8">(plusieurs possibles)</small></div>' + themeOpts + '</div>' +
-      '<div class="lis-q"><div class="lis-ql">Démarrer le</div>' +
-        '<input type="date" class="lis-date" value="' + startVal() + '" onchange="V2.lis.pick(\'start\',this.value)"> ' +
-        '<span style="color:#8493b8;font-size:12.5px">par défaut : lundi prochain</span></div>' +
-      '<div class="lis-cta"><button class="lis-btn-p lis-btn" onclick="V2.lis.gen()">Générer mon plan (' + (cfg.cadence * cfg.horizon) + ' posts)</button></div>' +
-      '</div>';
+      '<div class="lis-top"><h1 class="lis-title">Assistant stratégie</h1>' + fermerBtn() + '</div>' +
+      '<p class="lis-sub">Cinq réponses, et un plan de posts daté vous est proposé — positif, calé sur les grandes causes du calendrier.</p>' +
+      '<div class="lis-plan2"><div>' +
+      '<div class="lis-q"><p class="lis-ql">Cadence de publication</p>' + segNum('cadence', CADENCES, cfg.cadence, ' / sem.') + '</div>' +
+      '<div class="lis-q"><p class="lis-ql">Sur combien de semaines</p>' + segNum('horizon', HORIZONS, cfg.horizon, ' sem.') + '</div>' +
+      '<div class="lis-q"><p class="lis-ql">Ton dominant</p>' + seg('tone', TONES, cfg.tone, true) + '</div>' +
+      '<div class="lis-q"><p class="lis-ql">Familles à privilégier <small>(plusieurs possibles)</small></p>' + themeOpts + '</div>' +
+      '<div class="lis-q"><p class="lis-ql">Démarrer le</p><div class="lis-daterow">' +
+        '<input type="date" class="lis-date" aria-label="Date de départ" value="' + startVal() + '" onchange="V2.lis.pick(\'start\',this.value)">' +
+        '<span class="lis-aide">par défaut : lundi prochain</span></div></div>' +
+      '</div>' +
+      '<aside class="lis-bilan mk-souleve"><span class="lis-bilan-n">' + n + '<small> posts</small></span>' +
+        '<ul><li><b>' + cfg.cadence + '</b> par semaine, pendant <b>' + cfg.horizon + '</b> semaines</li>' +
+        '<li>Ton <b>' + esc(((TONES.filter(function (t) { return t.k === cfg.tone; })[0] || TONES[0]).label || '').toLowerCase()) + '</b> · <b>' + cfg.themes.length + '</b> famille' + (cfg.themes.length > 1 ? 's' : '') + '</li>' +
+        '<li id="lis-depart">À partir du <b>' + fmtDate(d0) + '</b></li></ul>' +
+        '<button type="button" class="mk-btn mk-plein mk-grand" onclick="V2.lis.gen()">Générer le plan</button></aside>' +
+      '</div></div>';
   }
   function startVal() {
     var d = cfg.start ? new Date(cfg.start) : nextMonday();
@@ -409,45 +430,45 @@
   var MON = ['janv', 'févr', 'mars', 'avr', 'mai', 'juin', 'juil', 'août', 'sept', 'oct', 'nov', 'déc'];
   function fmtDate(d) { return DOW[d.getDay()] + ' ' + d.getDate() + ' ' + MON[d.getMonth()]; }
   function previewHtml() {
-    var recap = '<div class="lis-recap">' +
+    var recap = '<p class="lis-recap">' +
       '<span><b>' + plan.length + '</b> posts</span>' +
-      '<span><b>' + cfg.horizon + '</b> semaines · <b>' + cfg.cadence + '</b>/sem.</span>' +
+      '<span><b>' + cfg.horizon + '</b> semaines · <b>' + cfg.cadence + '</b> par semaine</span>' +
       '<span>Ton : <b>' + esc((TONES.filter(function (t) { return t.k === cfg.tone; })[0] || TONES[0]).label) + '</b></span>' +
-      '</div>';
+      '</p>';
     var cards = plan.map(function (s, idx) {
       var pm = pillMeta(s.pillar); var angs = anglesOf(s); if (s.sel >= angs.length) s.sel = 0; var a = angs[s.sel] || angs[0];
       var opts = angs.map(function (x, j) {
-        return '<button class="lis-opt2' + (j === s.sel ? ' on' : '') + '" onclick="V2.lis.sel(' + idx + ',' + j + ')">' +
-          '<span class="lis-opt2-top"><span class="lis-opt2-num">Idée ' + (j + 1) + '</span>' +
+        return '<button type="button" class="lis-opt2' + (j === s.sel ? ' on' : '') + '" aria-pressed="' + (j === s.sel ? 'true' : 'false') + '" onclick="V2.lis.sel(' + idx + ',' + j + ')">' +
+          '<span class="lis-opt2-top"><span class="lis-opt2-num">Idée ' + (j + 1) + (j === s.sel ? ' · choisie' : '') + '</span>' +
           '<span class="lis-tag">' + esc(FMT[x.f] || 'Texte') + '</span></span>' +
           '<span class="lis-opt2-h">' + esc(x.h) + '</span>' +
           '<span class="lis-opt2-core">' + esc(x.core) + '</span></button>';
       }).join('');
-      return '<div class="lis-card" style="--pc:' + pm.color + '">' +
+      return '<div class="lis-card mk-souleve">' +
         '<div class="lis-crow">' +
           '<span class="lis-date2">' + fmtDate(s.date) + '</span>' +
-          '<span class="lis-tag pil" style="--pcb:' + pm.color + '33">' + esc(s.seasonal ? 'Grande cause' : pm.label) + '</span>' +
-          '<button class="lis-mini lis-del" onclick="V2.lis.remove(' + idx + ')">Supprimer</button>' +
+          '<span class="lis-tag"><i style="background:' + pm.color + '"></i>' + esc(s.seasonal ? 'Grande cause' : pm.label) + '</span>' +
+          '<button type="button" class="mk-btn mk-danger" onclick="V2.lis.remove(' + idx + ')">Retirer</button>' +
         '</div>' +
-        '<div class="lis-choose">Choisis ton idée du jour :</div>' +
+        '<p class="lis-choose">Choisissez une idée :</p>' +
         '<div class="lis-opts2">' + opts + '</div>' +
         (s.gen ? '<div class="lis-gen">' + esc(s.gen) + '</div>' : '') +
         '<div class="lis-abc">' +
-          '<button class="lis-mini lis-genb" onclick="V2.lis.gentext(' + idx + ')">' + (s.gen ? '↻ Régénérer le texte' : '✍️ Générer le texte de l’idée choisie') + '</button>' +
-          '<button class="lis-mini" onclick="V2.lis.other(' + idx + ')">↻ 2 autres idées</button></div>' +
+          '<button type="button" class="mk-btn mk-texte" onclick="V2.lis.gentext(' + idx + ')">' + (s.gen ? 'Régénérer le texte' : 'Générer le texte de l’idée choisie') + '</button>' +
+          '<button type="button" class="mk-btn mk-texte" onclick="V2.lis.other(' + idx + ')">Deux autres idées</button></div>' +
         '<div class="lis-imgidea"><b>Idée visuelle :</b> ' + esc(generateImageIdea(s.seasonal ? 'causes' : s.pillar, s.imgv || 0)) +
-          ' <button class="lis-mini lis-imgb" onclick="V2.lis.otherImg(' + idx + ')">↻ Autre</button></div>' +
+          '<br><button type="button" class="mk-btn mk-texte" onclick="V2.lis.otherImg(' + idx + ')">Une autre idée visuelle</button></div>' +
       '</div>';
     }).join('');
     return '<div class="lis-wrap">' +
-      '<div class="lis-top"><div class="lis-title">Ton plan éditorial</div>' +
-      '<button class="lis-x" onclick="V2.lis.close()">✕</button></div>' +
-      '<div class="lis-sub">Pour chaque jour, choisis une des 2 idées proposées (ou « 2 autres idées »), puis ajoute tout au calendrier.</div>' +
-      recap + (cards || '<div class="lis-sub">Aucun post — reviens au quiz.</div>') +
+      '<div class="lis-top"><h1 class="lis-title">Votre plan éditorial</h1>' + fermerBtn() + '</div>' +
+      '<p class="lis-sub" style="margin-bottom:8px">Pour chaque date, choisissez l’une des deux idées proposées (ou demandez-en deux autres), puis ajoutez le tout aux posts.</p>' +
+      recap + '<div class="lis-cards">' + (cards || '<p class="lis-sub">Aucun post : revenez aux réponses.</p>') + '</div>' +
       '<div class="lis-cta">' +
-        '<button class="lis-btn" onclick="V2.lis.back()">‹ Modifier le quiz</button>' +
-        '<button class="lis-btn" onclick="V2.lis.regen()">↻ Régénérer tout</button>' +
-        '<button class="lis-btn-p lis-btn" onclick="V2.lis.add()">Ajouter au calendrier (' + plan.length + ')</button>' +
+        '<button type="button" class="mk-btn" onclick="V2.lis.back()">' + mic('retour', 18) + 'Modifier les réponses</button>' +
+        '<button type="button" class="mk-btn mk-texte" onclick="V2.lis.regen()">Tout régénérer</button>' +
+        '<span class="lis-pousse"></span>' +
+        '<button type="button" class="mk-btn mk-plein"' + (plan.length ? '' : ' disabled') + ' onclick="V2.lis.add()">Ajouter aux posts (' + plan.length + ')</button>' +
       '</div></div>';
   }
   function draw() {
@@ -463,13 +484,21 @@
   V2.lis = V2.lis || {};
   V2.lis.open = function () { if (!LI()) { alert('Le module LinkedIn n’est pas chargé.'); return; } isOpen = true; step = 'quiz'; draw(); };
   V2.lis.close = function () { isOpen = false; draw(); };
-  V2.lis.pick = function (field, val) { cfg[field] = val; if (field !== 'start') draw(); };
+  document.addEventListener('click', function (e) { if (isOpen && e.target.closest && e.target.closest('.mk-barre,.mk-onglets-bas')) V2.lis.close(); }, true);
+  document.addEventListener('keydown', function (e) { if (isOpen && e.key === 'Escape') V2.lis.close(); });
+  window.addEventListener('hashchange', function () { if (isOpen && !/^#marketing\/linkedin/.test(location.hash)) V2.lis.close(); });
+  V2.lis.pick = function (field, val) {
+    cfg[field] = val; if (field !== 'start') { draw(); return; }
+    var l = document.getElementById('lis-depart'); if (l && val) l.innerHTML = 'À partir du <b>' + fmtDate(new Date(val)) + '</b>';
+  };
   V2.lis.theme = function (k) {
     var i = cfg.themes.indexOf(k);
     if (i === -1) cfg.themes.push(k); else if (cfg.themes.length > 1) cfg.themes.splice(i, 1);
     draw();
   };
   V2.lis.gen = function () { plan = buildPlan(cfg); stratId = (LI().newId ? LI().newId() : 'strat' + (new Date()).getTime()); step = 'preview'; draw(); };
+  // Lot 6 : ce bouton existait (« Modifier le quiz ») mais sa fonction n'avait jamais été écrite — il levait une erreur.
+  V2.lis.back = function () { step = 'quiz'; draw(); };
   V2.lis.sel = function (idx, j) { if (plan[idx]) { plan[idx].sel = j; plan[idx].gen = ''; draw(); } };
   V2.lis.other = function (idx) { if (plan[idx]) { plan[idx].offset += 2; plan[idx].sel = 0; plan[idx].gen = ''; draw(); } };
   V2.lis.otherImg = function (idx) { if (plan[idx]) { plan[idx].imgv = (plan[idx].imgv || 0) + 1; draw(); } };
@@ -510,14 +539,15 @@
     rows.forEach(function (r) { chain = chain.then(function () { return LI().savePost(r); }); });
     chain.then(function () {
       isOpen = false; draw();
-      if (LI().goCal) LI().goCal(first);
-      try { toast(rows.length + ' posts ajoutés au calendrier'); } catch (e) {}
+      if (V2.li && V2.li.setView) V2.li.setView('plan'); else if (LI().goCal) LI().goCal(first);
+      try { toast(rows.length + ' posts ajoutés aux posts, à partir du ' + fmtDate(first)); } catch (e) {}
     });
   };
 
   function toast(msg) {
-    var t = document.createElement('div'); t.textContent = msg;
-    t.style.cssText = 'position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:9999;background:linear-gradient(135deg,#8B5CF6,#0057FF);color:#fff;padding:12px 20px;border-radius:12px;font:700 14px/1 sans-serif;box-shadow:0 8px 30px rgba(0,0,0,.4)';
+    var t = document.createElement('div'); t.className = 'lis-toast'; t.setAttribute('role', 'status');
+    t.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7FE0B4" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span></span>';
+    t.lastChild.textContent = msg;
     document.body.appendChild(t); setTimeout(function () { t.remove(); }, 2600);
   }
 
