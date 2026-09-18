@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>LinkedIn sur le site — six façons de le rendre visible</title>
+<link rel="stylesheet" href="charte.css">
+<style>
+  body{padding-bottom:var(--bas,132px)}
+  .entete{padding:var(--sect-demi) var(--gout) var(--e7);background:var(--doux)}
+  .entete .corps{color:var(--encre-80);margin-top:var(--e4);max-width:62ch}
+
+  /* le contexte : des morceaux réels de la page, raccourcis */
+  .tuile--court{padding-block:clamp(28px,3.4vw,48px)}
+  .tuile--court .sur-titre{margin-bottom:var(--e2)}
+  .tuile--court .t-md,.tuile--court .t-lg{font-size:clamp(20px,2.2vw,28px);max-width:none}
+  .repere{display:flex;align-items:center;gap:var(--e3);padding:var(--e3) var(--gout);background:#FFF4E0;
+    color:#6B4300;font-size:14px;font-weight:500;border-block:1px solid rgba(107,67,0,.18)}
+  .repere i{width:8px;height:8px;border-radius:50%;background:var(--accent);flex:none}
+  .ecran{display:block;width:100%;height:min(46vh,480px);object-fit:cover;object-position:0 62%}
+
+  /* une seule variante visible à la fois */
+  [data-v]{display:none}
+  body[data-choix="0"] [data-v~="0"],body[data-choix="1"] [data-v~="1"],body[data-choix="2"] [data-v~="2"],
+  body[data-choix="3"] [data-v~="3"],body[data-choix="4"] [data-v~="4"],body[data-choix="5"] [data-v~="5"],
+  body[data-choix="6"] [data-v~="6"]{display:block}
+  body[data-choix="0"] a[data-v~="0"]{display:inline-flex}
+
+  .in{flex:none;display:inline-block;vertical-align:-.12em}
+
+  /* ── 1 · LA TUILE ─────────────────────────────────────────────────────────── */
+  .v1{overflow:hidden}
+  .v1 .filigrane{position:absolute;right:-4%;bottom:-22%;width:min(62vw,720px);height:auto;color:#fff;opacity:.09;pointer-events:none}
+  .v1 .t-hero{max-width:13ch}
+  .v1 .actions{margin-top:var(--e7)}
+  .v1 .pilule{min-height:60px;padding:0 34px;font-size:19px}
+
+  /* ── 2 · LE RUBAN ─────────────────────────────────────────────────────────── */
+  .v2 a{display:flex;align-items:center;justify-content:center;gap:var(--e4);flex-wrap:wrap;min-height:64px;
+    padding:var(--e3) var(--gout);background:var(--nuit);color:#fff;font-size:17px;letter-spacing:-.011em;
+    background-image:radial-gradient(60% 220% at 50% -60%,rgba(92,151,255,.34),rgba(92,151,255,0) 70%)}
+  .v2 b{font-weight:600}
+  .v2 .suite{display:inline-flex;align-items:center;gap:8px;color:var(--accent-nuit);font-weight:500}
+  .v2 .suite svg{transition:transform var(--d-micro) var(--sortie)}
+  .v2 a:hover .suite svg{transform:translateX(4px)}
+
+  /* ── 3 · LA CARTE DE VISITE ───────────────────────────────────────────────── */
+  .v3 .fiche{position:relative;background:#fff;border-radius:var(--rond);overflow:hidden;
+    box-shadow:0 40px 80px -36px rgba(var(--voile),.45),0 2px 10px rgba(var(--voile),.08);
+    transform:perspective(1100px) rotateX(var(--rx,4deg)) rotateY(var(--ry,-9deg));
+    transition:transform var(--d-etat) var(--sortie);max-width:460px;margin-inline:auto}
+  .v3 .fiche__haut{height:112px;background:radial-gradient(90% 160% at 85% 0%,var(--halo-act),rgba(31,99,240,0) 65%),var(--act)}
+  .v3 .fiche__logo{position:absolute;left:28px;top:64px;width:92px;height:92px;border-radius:18px;background:#fff;
+    display:grid;place-items:center;box-shadow:0 6px 18px -6px rgba(var(--voile),.35);border:1px solid var(--filet)}
+  .v3 .fiche__logo img{width:60px;height:auto}
+  .v3 .fiche__corps{padding:60px 28px 28px}
+  .v3 .fiche__nom{font-size:24px;font-weight:600;letter-spacing:-.026em}
+  .v3 .fiche__quoi{font-size:15px;line-height:1.45;color:var(--encre-48);margin-top:6px}
+  .v3 .fiche .pilule{margin-top:var(--e5);width:100%;background:#0A66C2}
+  .v3 .fiche .pilule:hover{background:#084E96}
+  .v3 .reflet{position:absolute;inset:0;pointer-events:none;opacity:.0;transition:opacity var(--d-etat) var(--sortie);
+    background:radial-gradient(40% 40% at var(--mx,50%) var(--my,0%),rgba(255,255,255,.55),rgba(255,255,255,0) 70%)}
+  .v3 .fiche:hover .reflet{opacity:1}
+  @media (prefers-reduced-motion:reduce){.v3 .fiche{transform:none;transition:none}}
+
+  /* ── 4 · LA PASTILLE ──────────────────────────────────────────────────────── */
+  .v4{position:fixed;right:clamp(12px,2.4vw,28px);bottom:calc(var(--bas,132px) + 16px);z-index:60}
+  .v4 .boite{display:flex;align-items:center;gap:4px;background:#fff;border-radius:var(--pilule);padding:6px;
+    box-shadow:0 18px 44px -14px rgba(var(--voile),.5),0 0 0 1px var(--filet)}
+  .v4 a{display:inline-flex;align-items:center;gap:var(--e3);min-height:48px;padding:0 var(--e4) 0 6px;font-size:15px;font-weight:500;color:var(--encre)}
+  .v4 .rond{width:40px;height:40px;border-radius:50%;background:#0A66C2;color:#fff;display:grid;place-items:center;flex:none}
+  .v4 button{width:44px;height:44px;border-radius:50%;color:var(--encre-48);display:grid;place-items:center}
+  .v4 button:hover{background:var(--doux);color:var(--encre)}
+
+  /* ── 5 · LE GRAND LIEN ────────────────────────────────────────────────────── */
+  .v5{padding-bottom:var(--e7);margin-bottom:var(--e6);border-bottom:1px solid var(--filet-nuit)}
+  .v5 p{font-size:15px;color:rgba(255,255,255,.58);margin-bottom:var(--e4)}
+  .v5 a{display:flex;align-items:flex-end;justify-content:space-between;gap:var(--e5);color:#fff;
+    font-size:clamp(40px,9.4vw,136px);font-weight:500;line-height:.98;letter-spacing:-.045em;text-decoration:none!important}
+  .v5 a span{background:linear-gradient(var(--act-nuit),var(--act-nuit)) 0 100%/0 .06em no-repeat;
+    transition:background-size var(--d-revel) var(--sortie);padding-bottom:.08em}
+  .v5 a:hover span{background-size:100% .06em}
+  .v5 a svg{width:.62em;height:.62em;flex:none;color:var(--act-nuit);margin-bottom:.12em;transition:transform var(--d-etat) var(--sortie)}
+  .v5 a:hover svg{transform:translate(.08em,-.08em)}
+
+  /* ── 6 · LES TROIS RAISONS ────────────────────────────────────────────────── */
+  .v6 .cartes{margin-top:var(--e7)}
+  .v6 .num{display:block;font-size:14px;font-weight:600;color:var(--act);margin-bottom:var(--e5);font-variant-numeric:tabular-nums}
+  .v6 .actions{margin-top:var(--e7)}
+  @media (max-width:820px){.v6 .cartes--3{grid-template-columns:1fr}}
+
+  /* ── LE SÉLECTEUR ─────────────────────────────────────────────────────────── */
+  .choix{position:fixed;left:0;right:0;bottom:0;z-index:80;background:#fff;border-top:1px solid var(--filet);
+    box-shadow:0 -12px 32px -18px rgba(var(--voile),.35);padding:var(--e3) var(--gout) calc(var(--e3) + env(safe-area-inset-bottom))}
+  .choix__in{max-width:var(--large);margin-inline:auto;display:grid;gap:var(--e2)}
+  .choix__n{display:flex;gap:6px}
+  .choix__n button{flex:1 1 0;min-width:44px;max-width:64px;height:48px;padding:0;border-radius:var(--pilule);border:1px solid var(--filet);
+    font-size:16px;font-weight:600;color:var(--encre-80);font-variant-numeric:tabular-nums}
+  .choix__n button[aria-pressed="true"]{background:var(--act);border-color:var(--act);color:#fff}
+  .choix__txt{font-size:14px;line-height:1.4;color:var(--encre-80);min-height:2.8em}
+  .choix__txt b{color:var(--encre);font-weight:600}
+  .choix__txt em{font-style:normal;color:#8A5200}
+</style>
+</head>
+<body data-choix="1">
+
+<header class="entete">
+  <div class="dedans">
+    <p class="sur-titre">LinkedIn sur le site</p>
+    <h1 class="t-lg" style="max-width:20ch">Six façons de rendre l'invitation visible.</h1>
+    <p class="corps">
+      Aujourd'hui, LinkedIn n'apparaît que par un bouton discret tout en bas de la page. Les numéros
+      en bas de l'écran changent la proposition&nbsp;; le 0 est le site actuel. Chaque proposition est
+      montrée à sa vraie place, entre de vrais morceaux de la page.
+    </p>
+  </div>
+</header>
+
+<main>
+
+<!-- ══ 2 · LE RUBAN — sous le premier écran ═══════════════════════════════════ -->
+<div data-v="2">
+  <p class="repere"><i></i>Place&nbsp;: juste sous le premier écran du site (image ci-dessous), donc vu par tous les visiteurs.</p>
+  <img class="ecran" src="vignette.jpg" alt="Le premier écran du site." width="1280" height="960">
+  <div class="v2">
+    <a href="https://fr.linkedin.com/company/integralpharma" target="_blank" rel="noopener">
+      <svg class="in" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M4.98 3.5A2.5 2.5 0 1 1 5 8.5a2.5 2.5 0 0 1-.02-5ZM3 9.75h4V21H3V9.75Zm6.5 0h3.83v1.54h.05c.53-1 1.84-1.8 3.62-1.8 3.87 0 4.5 2.4 4.5 5.6V21h-4v-5.2c0-1.24-.02-2.84-1.73-2.84-1.73 0-2 1.35-2 2.75V21h-4V9.75Z"/></svg>
+      <span><b>Intégral Pharma est sur LinkedIn.</b> La vie de nos agences, semaine après semaine.</span>
+      <span class="suite">Nous suivre
+        <svg viewBox="0 0 9 14" width="9" height="14" aria-hidden="true"><path d="M1.5 1 7 7l-5.5 6" fill="none" stroke="currentColor" stroke-width="1.7"/></svg>
+      </span>
+    </a>
+  </div>
+</div>
+
+<!-- ══ contexte : la fin de « Notre vision » ═════════════════════════════════ -->
+<p class="repere" data-v="0 1 3 6"><i></i>Place&nbsp;: en fin de page, entre «&nbsp;Notre vision&nbsp;» et «&nbsp;Nous écrire&nbsp;».</p>
+<section class="tuile tuile--court nuit">
+  <div class="dedans">
+    <p class="sur-titre">Notre vision</p>
+    <h2 class="t-md" style="max-width:24ch">Coopérer et partager pour améliorer la santé et préserver le vivant.</h2>
+  </div>
+</section>
+
+<!-- ══ 1 · LA TUILE ═══════════════════════════════════════════════════════════ -->
+<section class="tuile bleu v1" data-v="1">
+  <svg class="filigrane" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4.98 3.5A2.5 2.5 0 1 1 5 8.5a2.5 2.5 0 0 1-.02-5ZM3 9.75h4V21H3V9.75Zm6.5 0h3.83v1.54h.05c.53-1 1.84-1.8 3.62-1.8 3.87 0 4.5 2.4 4.5 5.6V21h-4v-5.2c0-1.24-.02-2.84-1.73-2.84-1.73 0-2 1.35-2 2.75V21h-4V9.75Z"/></svg>
+  <div class="dedans">
+    <p class="sur-titre">Sur LinkedIn</p>
+    <h2 class="t-hero">La vie du groupe se raconte aussi ailleurs.</h2>
+    <p class="lead-aere doux-txt" style="margin-top:var(--e6)">
+      Nos agences, nos équipes, les nouveautés du catalogue et l'actualité de la répartition.
+    </p>
+    <div class="actions">
+      <a class="pilule" href="https://fr.linkedin.com/company/integralpharma" target="_blank" rel="noopener">
+        <svg class="in" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M4.98 3.5A2.5 2.5 0 1 1 5 8.5a2.5 2.5 0 0 1-.02-5ZM3 9.75h4V21H3V9.75Zm6.5 0h3.83v1.54h.05c.53-1 1.84-1.8 3.62-1.8 3.87 0 4.5 2.4 4.5 5.6V21h-4v-5.2c0-1.24-.02-2.84-1.73-2.84-1.73 0-2 1.35-2 2.75V21h-4V9.75Z"/></svg>
+        Nous suivre sur LinkedIn</a>
+    </div>
+  </div>
+</section>
+
+<!-- ══ 3 · LA CARTE DE VISITE ═════════════════════════════════════════════════ -->
+<section class="tuile pastel v3" data-v="3">
+  <div class="dedans duo duo--centre">
+    <div>
+      <p class="sur-titre">Sur LinkedIn</p>
+      <h2 class="t-lg">Suivez la vie de nos agences.</h2>
+      <p class="lead-aere doux-txt" style="margin-top:var(--e6)">
+        Nos équipes, les nouveautés du catalogue et l'actualité de la répartition, en quelques lignes.
+      </p>
+    </div>
+    <div class="fiche" id="fiche">
+      <div class="fiche__haut"></div>
+      <div class="fiche__logo"><img src="../assets/logo-web.png" alt="" width="60" height="47"></div>
+      <div class="fiche__corps">
+        <p class="fiche__nom">Intégral Pharma</p>
+        <p class="fiche__quoi">Groupe de grossistes-répartiteurs · 8 agences · indépendant depuis 2006</p>
+        <a class="pilule" href="https://fr.linkedin.com/company/integralpharma" target="_blank" rel="noopener">
+          <svg viewBox="0 0 14 14" width="14" height="14" aria-hidden="true"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="1.8" fill="none"/></svg>
+          Suivre la page</a>
+      </div>
+      <span class="reflet"></span>
+    </div>
+  </div>
+</section>
+
+<!-- ══ 6 · LES TROIS RAISONS ══════════════════════════════════════════════════ -->
+<section class="tuile pastel v6" data-v="6">
+  <div class="dedans">
+    <p class="sur-titre">Sur LinkedIn</p>
+    <h2 class="t-lg" style="max-width:18ch">Trois raisons de nous suivre.</h2>
+    <div class="cartes cartes--3">
+      <div class="carte"><span class="num">01</span><h3 class="t-carte">La vie de nos agences</h3><p class="corps">Les équipes qui préparent et livrent vos commandes, vues de l'intérieur.</p></div>
+      <div class="carte"><span class="num">02</span><h3 class="t-carte">Les nouveautés du catalogue</h3><p class="corps">Ce qui arrive chez nous et chez nos partenaires, dès que c'est disponible.</p></div>
+      <div class="carte"><span class="num">03</span><h3 class="t-carte">L'actualité de la répartition</h3><p class="corps">Ce qui change pour l'officine, résumé en quelques lignes.</p></div>
+    </div>
+    <div class="actions">
+      <a class="pilule" href="https://fr.linkedin.com/company/integralpharma" target="_blank" rel="noopener">Nous suivre sur LinkedIn</a>
+    </div>
+  </div>
+</section>
+
+<!-- ══ contexte : « Nous écrire » ═════════════════════════════════════════════ -->
+<section class="tuile tuile--court blanc">
+  <div class="dedans">
+    <p class="sur-titre">Nous écrire</p>
+    <h2 class="t-lg" style="max-width:14ch">Et si on travaillait ensemble&nbsp;?</h2>
+    <div class="actions" style="margin-top:var(--e6)">
+      <a class="pilule" href="mailto:contact@integralpharma.fr">contact@integralpharma.fr</a>
+      <a class="pilule pilule--vide" data-v="0 2 4" href="https://fr.linkedin.com/company/integralpharma" target="_blank" rel="noopener">Nous suivre sur LinkedIn</a>
+    </div>
+  </div>
+</section>
+<style>body[data-choix="2"] a[data-v~="2"],body[data-choix="4"] a[data-v~="4"]{display:inline-flex}</style>
+
+</main>
+
+<!-- ══ contexte : le pied de page ═════════════════════════════════════════════ -->
+<p class="repere" data-v="5"><i></i>Place&nbsp;: en tête du pied de page, sur toutes les pages du site.</p>
+<footer class="pied">
+  <div class="pied__in" style="display:block">
+    <!-- ══ 5 · LE GRAND LIEN ══ -->
+    <div class="v5" data-v="5">
+      <p>Nos agences, nos équipes, l'actualité de la répartition</p>
+      <a href="https://fr.linkedin.com/company/integralpharma" target="_blank" rel="noopener">
+        <span>Nous suivre sur LinkedIn</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 18 18 6M8 6h10v10" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+      </a>
+    </div>
+    <div class="pied__logo"><img src="../assets/logo-web.png" alt="Intégral Pharma" width="43" height="34"></div>
+    <address>Intégral Pharma — 758 chemin de la Source, ZI Saint-Martin, 83400 Hyères</address>
+    <div class="pied__sig" style="margin-top:var(--e5)"><span>Groupe de grossistes-répartiteurs</span><span>Intégral Pharma</span></div>
+  </div>
+</footer>
+
+<!-- ══ 4 · LA PASTILLE ═══════════════════════════════════════════════════════ -->
+<div class="v4" data-v="4" id="pastille">
+  <div class="boite">
+    <a href="https://fr.linkedin.com/company/integralpharma" target="_blank" rel="noopener">
+      <span class="rond"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M4.98 3.5A2.5 2.5 0 1 1 5 8.5a2.5 2.5 0 0 1-.02-5ZM3 9.75h4V21H3V9.75Zm6.5 0h3.83v1.54h.05c.53-1 1.84-1.8 3.62-1.8 3.87 0 4.5 2.4 4.5 5.6V21h-4v-5.2c0-1.24-.02-2.84-1.73-2.84-1.73 0-2 1.35-2 2.75V21h-4V9.75Z"/></svg></span>
+      Nous suivre sur LinkedIn</a>
+    <button type="button" aria-label="Fermer" id="pastille-x"><svg viewBox="0 0 14 14" width="12" height="12" aria-hidden="true"><path d="M2 2l10 10M12 2 2 12" stroke="currentColor" stroke-width="1.7" fill="none"/></svg></button>
+  </div>
+</div>
+
+<!-- ══ LE SÉLECTEUR ══════════════════════════════════════════════════════════ -->
+<div class="choix" role="group" aria-label="Choisir une proposition">
+  <div class="choix__in">
+    <div class="choix__n" id="nums"></div>
+    <p class="choix__txt" id="txt" aria-live="polite"></p>
+  </div>
+</div>
+
+<script>
+(function(){
+  var V=[
+    ["Le site actuel","Un bouton discret à côté de l'adresse mail, tout en bas.","Peu de visiteurs descendent jusque-là, et rien n'attire l'œil."],
+    ["La tuile","Un écran bleu entier pour LinkedIn, avec un très grand titre, juste avant « Nous écrire ».","C'est la plus visible, mais elle allonge la page d'un écran."],
+    ["Le ruban","Une ligne sombre sous le premier écran : tout visiteur la voit, même sans descendre.","Très efficace, mais elle concurrence le premier message du site."],
+    ["La carte de visite","La page LinkedIn présentée comme une carte qui s'incline sous la souris, avec son bouton « Suivre la page ».","Élégante ; l'effet d'inclinaison n'existe pas au doigt, sur téléphone la carte reste droite."],
+    ["La pastille","Un bouton flottant en bas à droite, présent sur toute la page, qu'on peut fermer.","Toujours sous les yeux, mais ce genre de bouton peut agacer et masque un peu le contenu sur téléphone."],
+    ["Le grand lien","« Nous suivre sur LinkedIn » écrit en très grand en tête du pied de page, sur toutes les pages.","Spectaculaire et sans section en plus ; reste tout en bas de la page."],
+    ["Les trois raisons","On dit ce que le visiteur y trouvera, en trois cartes, puis le bouton.","La plus explicative, donc aussi la plus chargée en texte."]
+  ];
+  var nums=document.getElementById("nums"),txt=document.getElementById("txt");
+  function choisir(n){
+    document.body.setAttribute("data-choix",n);
+    [].forEach.call(nums.children,function(b,i){b.setAttribute("aria-pressed",i===n?"true":"false")});
+    txt.innerHTML="<b>"+n+" · "+V[n][0]+".</b> "+V[n][1]+" <em>À savoir : "+V[n][2]+"</em>";
+    document.getElementById("pastille").style.display="";
+    bas();
+    try{history.replaceState(null,"","#"+n)}catch(e){}
+  }
+  V.forEach(function(v,i){
+    var b=document.createElement("button");b.type="button";b.textContent=i;b.title=v[0];
+    b.addEventListener("click",function(){choisir(i);
+      var c=document.querySelector('[data-v~="'+i+'"]');if(c&&i!==4)scrollTo({top:c.getBoundingClientRect().top+scrollY-8,behavior:"smooth"});});
+    nums.appendChild(b);
+  });
+  var barre=document.querySelector(".choix");
+  function bas(){document.body.style.setProperty("--bas",barre.offsetHeight+"px")}
+  addEventListener("resize",bas);
+  var d=parseInt(location.hash.slice(1),10);choisir(d>=0&&d<V.length?d:1);
+  document.getElementById("pastille-x").addEventListener("click",function(){document.getElementById("pastille").style.display="none"});
+
+  /* la carte de visite s'incline sous la souris (pas au doigt) */
+  var f=document.getElementById("fiche");
+  if(f&&matchMedia("(hover:hover)").matches&&!matchMedia("(prefers-reduced-motion:reduce)").matches){
+    f.addEventListener("pointermove",function(e){
+      var r=f.getBoundingClientRect(),x=(e.clientX-r.left)/r.width,y=(e.clientY-r.top)/r.height;
+      f.style.setProperty("--ry",((x-.5)*16)+"deg");f.style.setProperty("--rx",((.5-y)*12)+"deg");
+      f.style.setProperty("--mx",(x*100)+"%");f.style.setProperty("--my",(y*100)+"%");
+    });
+    f.addEventListener("pointerleave",function(){f.style.removeProperty("--rx");f.style.removeProperty("--ry")});
+  }
+})();
+</script>
+</body>
+</html>
