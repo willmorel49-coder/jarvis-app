@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Intégral Pharma — Rendre la marge à l'officine française.</title>
-<meta name="description" content="Groupe de grossistes-répartiteurs français indépendant. Huit implantations, plus de 2 000 officines livrées chaque jour.">
+<meta name="description" content="Groupe de grossistes-répartiteurs français indépendant. Huit agences, plus de 2 000 officines livrées chaque jour ouvré.">
 <meta name="theme-color" content="#0B1220">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230050E6'/%3E%3Cpath d='M11 9h3.4v14H11zM17 9h3.4v14H17z' fill='%23fff'/%3E%3C/svg%3E">
 <script>document.documentElement.className+=" js";</script>
@@ -84,36 +84,13 @@
 .bande .corps{margin-top:var(--e4);color:rgba(255,255,255,.92)}
 .bande .lien{margin-top:var(--e5)}
 
-/* ═════ LA CARTE — les huit maisons, et le maillage qui pousse ═══════════════ */
-.carte-boite{
-  position:relative;width:100%;max-width:680px;margin-inline:auto;aspect-ratio:1/1;
-  border-radius:var(--rond);overflow:hidden;
-  background:radial-gradient(70% 60% at 30% 20%,rgba(92,151,255,.16) 0%,rgba(92,151,255,0) 62%),var(--nuit);
-  border:1px solid var(--filet-nuit);
-}
-.carte-boite canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:manipulation}
-.carte-fiche{
-  position:absolute;left:var(--e4);right:var(--e4);bottom:var(--e4);z-index:2;pointer-events:none;
-  background:var(--blanc);color:var(--encre);border-radius:var(--rond-p);padding:var(--e4) var(--e5);
-  box-shadow:var(--ombre-2);transition:opacity var(--d-micro) var(--sortie);
-}
-.carte-fiche.change{opacity:0}
-.carte-fiche b{display:block;font-size:17px;font-weight:500;letter-spacing:-.011em}
-.carte-fiche span{display:block;margin-top:3px;color:var(--encre-48)}
-.carte-legende{display:flex;flex-wrap:wrap;gap:var(--e2) var(--e5);margin-top:var(--e5);color:var(--encre-nuit-doux)}
-.carte-legende span{display:inline-flex;align-items:center;gap:var(--e2)}
-.carte-legende i{width:19px;height:14px;flex:none;color:var(--accent)}
-.carte-legende i svg{display:block;width:100%;height:100%}
-.carte-legende i.siege{color:#fff}
-.carte-legende i.part{color:#7FAEFF}
-.mention{margin-top:var(--e6);padding-top:var(--e5);border-top:1px solid var(--filet-nuit);color:var(--encre-nuit-doux)}
+/* ═════ LA CARTE — l'iframe de la carte 3D, hauteur donnée par la page qu'elle contient ═ */
+.carte-boite{position:relative;width:100%;margin-top:var(--e7);border-radius:var(--rond);overflow:hidden;
+  background:var(--nuit);border:1px solid var(--filet-nuit)}
+.carte-boite iframe{display:block;width:100%;height:640px;border:0;background:transparent}
+.mention{margin-top:var(--e5)}
 .mention b{color:#fff;font-weight:500}
-@media (max-width:900px){
-  .carte-boite{max-width:none;overflow:visible;aspect-ratio:auto;display:flex;flex-direction:column;gap:var(--e3);background:none;border:0}
-  .carte-boite canvas{position:relative;aspect-ratio:1/1;height:auto;border-radius:var(--rond);order:2;
-    background:radial-gradient(70% 60% at 30% 20%,rgba(92,151,255,.16) 0%,rgba(92,151,255,0) 62%),var(--nuit);border:1px solid var(--filet-nuit)}
-  .carte-fiche{position:static;order:1}
-}
+@media (max-width:900px){.carte-boite iframe{height:820px}}
 
 /* ═════ LES ANNONCES EN COURS ═════════════════════════════════════════════════ */
 /* les quatre métiers de la répartition */
@@ -160,7 +137,7 @@
 .valeur .t-carte::before{content:"";flex:none;width:10px;height:10px;border-radius:50%;background:var(--accent)}
 .valeur .corps{color:var(--encre-80)}
 
-/* la quatrième colonne : ce que ces trois mots engagent au-delà du service */
+/* la quatrième colonne : ce que ces trois valeurs engagent au-delà du service */
 .suite{display:flex;flex-direction:column;
   background:radial-gradient(120% 90% at 90% 0,rgba(0,80,230,.09),rgba(0,80,230,.02) 70%)}
 .valeur.suite::before{background:var(--act)}
@@ -281,7 +258,7 @@ html:not(.js) .valeur::before,html:not(.js) .valeur .t-carte::before{transform:n
         <p class="sur-titre">Groupe de grossistes-répartiteurs français indépendant</p>
         <h1 class="t-hero" data-mots>Rendre la marge<br>à l'officine française.</h1>
         <p class="lead apres-titre">
-          Huit implantations, plus de 2 000 officines livrées chaque jour — et votre
+          Huit agences, plus de 2 000 officines livrées chaque jour ouvré — et votre
           commande part toujours de la plus proche de votre comptoir.
         </p>
         <div class="actions apres-titre">
@@ -301,12 +278,12 @@ html:not(.js) .valeur::before,html:not(.js) .valeur .t-carte::before{transform:n
 <div class="bandeau" aria-label="Repères">
   <div class="bandeau__piste">
     <div class="bandeau__lot">
-      <span>Indépendant</span><span>Huit implantations</span><span>Un réseau national</span>
+      <span>Indépendant</span><span>Huit agences</span><span>Un réseau national</span>
       <span>Plus de 2 000 officines livrées</span><span>Confiance, Engagement, Respect</span>
       <span>Une alternative aux grossistes historiques</span>
     </div>
     <div class="bandeau__lot" aria-hidden="true">
-      <span>Indépendant</span><span>Huit implantations</span><span>Un réseau national</span>
+      <span>Indépendant</span><span>Huit agences</span><span>Un réseau national</span>
       <span>Plus de 2 000 officines livrées</span><span>Confiance, Engagement, Respect</span>
       <span>Une alternative aux grossistes historiques</span>
     </div>
@@ -319,7 +296,7 @@ html:not(.js) .valeur::before,html:not(.js) .valeur .t-carte::before{transform:n
    <div class="duo">
     <div>
       <p class="sur-titre rv">Notre histoire</p>
-      <h2 class="t-lg rv" style="--i:1">Huit maisons. Un seul nom.</h2>
+      <h2 class="t-lg rv" style="--i:1">Huit agences. Un seul nom.</h2>
     </div>
     <div class="rv" style="--i:2">
       <p class="lead-aere">
@@ -328,7 +305,7 @@ html:not(.js) .valeur::before,html:not(.js) .valeur .t-carte::before{transform:n
         sur facture.
       </p>
       <p class="lead-aere">
-        Chacune de nos maisons livre sa région depuis des années, avec ses équipes et ses
+        Chacune de nos agences livre sa région depuis des années, avec ses équipes et ses
         habitudes — et la même idée qu'au premier jour : un groupe de répartiteurs indépendants
         qui a choisi de se mettre du côté du comptoir.
       </p>
@@ -343,7 +320,7 @@ html:not(.js) .valeur::before,html:not(.js) .valeur .t-carte::before{transform:n
   <div class="bande__mot">
     <div class="dedans">
       <p class="t-md">Hyères, Var.</p>
-      <p class="corps">Le siège du groupe — implantation 01 — et son toit couvert de panneaux solaires.</p>
+      <p class="corps">Le siège du groupe — agence 01 — et son toit couvert de panneaux solaires.</p>
       <span class="lien">Notre responsabilité
         <svg viewBox="0 0 9 14" aria-hidden="true"><path d="M1.5 1 7 7l-5.5 6" fill="none" stroke="currentColor" stroke-width="1.7"/></svg>
       </span>
@@ -357,7 +334,7 @@ html:not(.js) .valeur::before,html:not(.js) .valeur .t-carte::before{transform:n
     <p class="sur-titre rv">Le groupe en chiffres</p>
     <div class="compteurs rv" style="--i:1">
       <div class="compteur"><b data-cible="2006" data-depart="1986" data-brut>2006</b><small>année de création</small></div>
-      <div class="compteur"><b data-cible="8">8</b><small>implantations</small></div>
+      <div class="compteur"><b data-cible="8">8</b><small>agences</small></div>
       <div class="compteur"><b data-cible="2000" data-suffixe="+">2 000<i>+</i></b><small>officines livrées</small></div>
       <div class="compteur"><b data-cible="20">20</b><small>ans d'indépendance</small></div>
     </div>
@@ -367,39 +344,34 @@ html:not(.js) .valeur::before,html:not(.js) .valeur .t-carte::before{transform:n
 <!-- ══ 4 · BANDE PLEINE LARGEUR — le siège vu du ciel, vers la page RSE ═══════ -->
 
 
-<!-- ══ 6 · LA CARTE — les huit maisons sur la France, et le maillage qui pousse ═ -->
+<!-- ══ 6 · LA CARTE — les huit agences sur la France, reprise de la présentation groupement ═ -->
 <section class="tuile nuit" id="reseau">
-  <div class="dedans duo duo--centre">
+  <div class="dedans">
+   <div class="duo">
     <div>
       <p class="sur-titre rv">Le réseau</p>
-      <h2 class="t-lg rv" style="--i:1" data-mots>Huit implantations. Laquelle est la vôtre&nbsp;?</h2>
-      <p class="corps doux-txt rv" style="--i:2;margin-top:var(--e6)">
+      <h2 class="t-lg rv" style="--i:1" data-mots>Huit agences. Laquelle est la vôtre&nbsp;?</h2>
+    </div>
+    <div>
+      <p class="corps doux-txt rv" style="--i:2">
         C'est la seule question qui compte vraiment. Celle qui prépare votre commande, qui
-        vous livre chaque matin, et dont vous connaissez l'équipe par son prénom.
+        vous livre chaque jour ouvré, et dont vous connaissez l'équipe par son prénom.
       </p>
       <p class="corps doux-txt rv" style="--i:2">
         Les sept autres sont là pour qu'elle ne soit jamais prise au dépourvu — de la
-        Bretagne à la Méditerranée, le stock d'une maison est le stock de toutes.
+        Bretagne à la Méditerranée, le stock d'une agence est le stock de toutes.
       </p>
       <p class="corps doux-txt rv" style="--i:3" id="carte-consigne">
-        Survolez une maison pour la retrouver sur la carte.
-      </p>
-      <div class="carte-legende petit rv" style="--i:4" aria-hidden="true">
-        <span><i class="siege"><svg viewBox="0 0 19 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 5.2 9.5 1 18 5.2"/><path d="M3 4.6V13h13V4.6"/><path d="M7.3 13V9.3h4.4V13"/></svg></i>Le siège, Hyères</span>
-        <span><i><svg viewBox="0 0 19 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 5.2 9.5 1 18 5.2"/><path d="M3 4.6V13h13V4.6"/><path d="M7.3 13V9.3h4.4V13"/></svg></i>Une implantation</span>
-        <span><i class="part"><svg viewBox="0 0 19 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 5.2 9.5 1 18 5.2"/><path d="M3 4.6V13h13V4.6"/><path d="M7.3 13V9.3h4.4V13"/></svg></i>Le partenaire, Metz</span>
-      </div>
-      <p class="mention corps rv" style="--i:5">
-        Et un partenaire : <b>Pharmest</b> (Metz, 57) prolonge le maillage à l'Est.
+        Survolez une agence pour afficher ses coordonnées — mail et téléphone.
       </p>
     </div>
+   </div>
     <div class="carte-boite rv" style="--i:2" id="carte-boite">
-      <canvas id="carte-toile" aria-label="Carte de France : les huit implantations du groupe et le partenaire de Metz"></canvas>
-      <div class="carte-fiche" id="carte-fiche" aria-live="polite">
-        <b id="carte-fiche-t">Huit implantations et un partenaire</b>
-        <span class="petit" id="carte-fiche-s">Chaque maison livre sa région</span>
-      </div>
+      <iframe id="carte-3d" src="carte-3d.html" title="Carte de France : les huit agences du groupe et le partenaire de Metz" loading="lazy" scrolling="no"></iframe>
     </div>
+    <p class="mention corps rv" style="--i:5">
+      Et un partenaire : <b>Pharmest</b> (Metz, 57) prolonge le maillage à l'Est.
+    </p>
   </div>
 </section>
 
@@ -412,8 +384,8 @@ html:not(.js) .valeur::before,html:not(.js) .valeur .t-carte::before{transform:n
       <h2 class="t-md">Ce qui se passe entre votre commande et votre comptoir.</h2>
     </div>
     <p class="lead-aere doux-txt rv" style="--i:1">
-      Quelques heures, quatre métiers, et une chaîne qui ne s'arrête jamais. C'est invisible
-      depuis l'officine, et c'est tout notre travail.
+      Quatre étapes, et des équipes qui préparent à la main. Notre métier est fait par des
+      humains, pas par des robots.
     </p>
    </div>
 
@@ -423,38 +395,32 @@ html:not(.js) .valeur::before,html:not(.js) .valeur .t-carte::before{transform:n
           <svg viewBox="0 0 56 56"><path d="M14 10.5c0-1.4 1.1-2.5 2.5-2.5H38c1.7 0 3 1.3 3 3v33c0 1.7-1.3 3-3 3H17c-1.7 0-3-1.3-3-3V10.5z"/><path d="M14 13.5c0-2 1.6-3.5 3.5-3.5H41"/><path d="M21 21h14M21 27.5h14M21 34h9"/><path d="M33 38.5l2.6 2.5 5-5.5"/></svg>
         </div>
         <p class="petit-accent" style="color:var(--act);margin-bottom:var(--e4)">01 — Le référencement</p>
-        <h3 class="t-carte">Un catalogue pour huit maisons.</h3>
-        <p class="corps">Un seul référencement pour tout le groupe : un même catalogue, tenu à
-        jour, disponible dans toutes les implantations. C'est ce qui permet à une maison de
-        taille humaine de proposer la profondeur de gamme d'un réseau national.</p>
+        <h3 class="t-carte">Un catalogue pour tout le groupe.</h3>
+        <p class="corps">Un seul référencement, disponible directement dans votre logiciel d'officine.</p>
       </article>
       <article class="carte rv" style="--i:1">
         <div class="picto" aria-hidden="true">
           <svg viewBox="0 0 56 56"><path d="M9 19.5h38M9 33.5h38"/><path d="M11 9.5v38M45 9.5v38"/><path d="M16 19.5v-6.5c0-.6.4-1 1-1h7c.6 0 1 .4 1 1v6.5M31 19.5v-4.5c0-.6.4-1 1-1h8c.6 0 1 .4 1 1v4.5"/><path d="M15 33.5v-8c0-.6.4-1 1-1h9c.6 0 1 .4 1 1v8M30 33.5v-5.5c0-.6.4-1 1-1h6c.6 0 1 .4 1 1v5.5"/><path d="M19 47.5v-7c0-.6.4-1 1-1h14c.6 0 1 .4 1 1v7"/></svg>
         </div>
         <p class="petit-accent" style="color:var(--act);margin-bottom:var(--e4)">02 — La disponibilité</p>
-        <h3 class="t-carte">Le stock au plus près de vous.</h3>
-        <p class="corps">Des stocks répartis sur les huit implantations.
-        Quand une référence manque quelque part, elle existe souvent ailleurs — et le comptoir
-        est servi quand même.</p>
+        <h3 class="t-carte">Un stock près de chez vous.</h3>
+        <p class="corps">Huit agences, et chacune a son propre stock.</p>
       </article>
       <article class="carte rv" style="--i:2">
         <div class="picto" aria-hidden="true">
           <svg viewBox="0 0 56 56"><path d="M12 23.5l16-7.5 16 7.5v18l-16 7.5-16-7.5v-18z"/><path d="M12 23.5l16 7.5 16-7.5M28 31v18"/><path d="M20 19.8l16 7.6"/><path d="M9.5 15.5c2-3 5-4.6 8.5-4.8M46.5 15.5c-2-3-5-4.6-8.5-4.8"/></svg>
         </div>
         <p class="petit-accent" style="color:var(--act);margin-bottom:var(--e4)">03 — La préparation</p>
-        <h3 class="t-carte">Préparée là où l'on vous connaît.</h3>
-        <p class="corps">Chaque commande est préparée dans l'implantation la plus proche de chez vous, par
-        une équipe qui connaît votre officine et ses saisons.</p>
+        <h3 class="t-carte">Préparée à la main.</h3>
+        <p class="corps">Par de vraies personnes, qui connaissent votre officine — pas par des robots.</p>
       </article>
       <article class="carte rv" style="--i:3">
         <div class="picto" aria-hidden="true">
           <svg viewBox="0 0 56 56"><path d="M8 17.5c0-1.1.9-2 2-2h24c1.1 0 2 .9 2 2v20H8v-20z"/><path d="M36 22.5h7.2c.7 0 1.3.3 1.7.9l4.6 6.4c.3.4.5.9.5 1.4v6.3H36"/><path d="M38.5 22.5v8h9.5"/><circle cx="16" cy="40.5" r="3.5"/><circle cx="41" cy="40.5" r="3.5"/><path d="M19.5 40.5h18M8 37.5v3h4.5M44.5 40.5H50v-3"/><path d="M14 27.5h10M14 32h6"/></svg>
         </div>
         <p class="petit-accent" style="color:var(--act);margin-bottom:var(--e4)">04 — La livraison</p>
-        <h3 class="t-carte">Tous les jours, sans exception.</h3>
-        <p class="corps">Les tournées partent vers les officines, samedi compris. La régularité d'un
-        service tenu — c'est elle qui fait la confiance, pas les promesses.</p>
+        <h3 class="t-carte">Les jours ouvrés.</h3>
+        <p class="corps">Une tournée régulière, jusqu'à votre comptoir.</p>
       </article>
     </div>
 
@@ -471,7 +437,7 @@ html:not(.js) .valeur::before,html:not(.js) .valeur .t-carte::before{transform:n
     </div>
     <div class="rv" style="--i:2">
       <p class="lead-aere doux-txt">
-        Notre centrale de parapharmacie référence pour l'officine plus de 14 000 produits et
+        Notre centrale de parapharmacie référence pour vos officines plus de 14 000 produits et
         plus de 480 marques.
       </p>
       <p class="lead-aere doux-txt">
@@ -500,6 +466,9 @@ html:not(.js) .valeur::before,html:not(.js) .valeur .t-carte::before{transform:n
         automatiquement, avec celles de vos autres fournisseurs.
       </p>
       <p class="lead-aere">Rien à saisir, rien à classer, rien à réclamer.</p>
+      <div class="actions" style="margin-top:var(--e5)">
+        <a class="pilule" href="https://integralpharma.digipharmacie.fr/login" target="_blank" rel="noopener" data-aimant>Accéder à mes factures sur Digipharmacie</a>
+      </div>
     </div>
   </div>
 </section>
@@ -508,8 +477,8 @@ html:not(.js) .valeur::before,html:not(.js) .valeur .t-carte::before{transform:n
 <section class="tuile nuit" id="partenaires">
   <div class="dedans">
     <div class="rv">
-      <p class="sur-titre">Nos partenaires</p>
-      <h2 class="t-lg">Les laboratoires qui nous font confiance.</h2>
+      <p class="sur-titre">Nos partenaires génériqueurs</p>
+      <h2 class="t-lg">Les partenaires génériques qui nous font confiance.</h2>
     </div>
     <div class="rv" style="--i:1">
       <div class="labos" id="labos">
@@ -529,7 +498,7 @@ html:not(.js) .valeur::before,html:not(.js) .valeur .t-carte::before{transform:n
     <p class="sur-titre rv">Nous rejoindre</p>
     <h2 class="t-md rv" style="--i:1;max-width:22ch">Les métiers de la répartition s'apprennent chez nous.</h2>
     <p class="corps doux-txt lire rv" style="--i:2;margin-top:var(--e4)">
-      On n'arrive pas en sachant faire&nbsp;: on apprend sur place, dans l'une des huit maisons,
+      Personne n'arrive en sachant faire&nbsp;: le métier s'apprend sur place, dans l'une des huit agences,
       avec l'équipe qui y travaille depuis des années.
     </p>
 
@@ -568,24 +537,23 @@ html:not(.js) .valeur::before,html:not(.js) .valeur .t-carte::before{transform:n
 <section class="tuile bleu" id="valeurs">
   <div class="dedans">
     <p class="sur-titre rv">Nos valeurs</p>
-    <h2 class="t-lg rv" style="--i:1;max-width:16ch" data-mots>Trois mots qui se vérifient au téléphone.</h2>
+    <h2 class="t-lg rv" style="--i:1;max-width:16ch" data-mots>Trois valeurs qui nous animent au quotidien.</h2>
     <div class="valeurs">
       <div class="valeur rv" style="--i:0">
         <h3 class="t-carte">Confiance</h3>
-        <p class="corps">La personne qui décroche connaît votre officine, vos saisons et vos habitudes.</p>
+        <p class="corps">Parce que derrière chaque échange, il y a une personne. Nous connaissons votre officine, vos besoins et vos habitudes.</p>
       </div>
       <div class="valeur rv" style="--i:1">
         <h3 class="t-carte">Engagement</h3>
-        <p class="corps">C'est la même d'une année sur l'autre. Dans ce métier, c'est devenu rare.</p>
+        <p class="corps">Présents chaque jour à vos côtés, dans une collaboration de long terme.</p>
       </div>
       <div class="valeur rv" style="--i:2">
         <h3 class="t-carte">Respect</h3>
-        <p class="corps">Elle ne vous vendra pas ce dont vous n'avez pas besoin — parce qu'elle vous
-        reverra le mois suivant, et l'année d'après.</p>
+        <p class="corps">De votre indépendance, de vos accords, de votre métier.</p>
       </div>
       <div class="valeur suite rv" style="--i:3">
         <h3 class="t-carte">Et au-delà</h3>
-        <p class="corps">Ces trois mots nous engagent aussi envers nos équipes, notre territoire
+        <p class="corps">Ces trois valeurs nous engagent aussi envers nos équipes, notre territoire
         et le vivant.</p>
         <a class="lien" href="rse.html">Notre responsabilité
           <svg viewBox="0 0 9 14" aria-hidden="true"><path d="M1.5 1 7 7l-5.5 6" fill="none" stroke="currentColor" stroke-width="1.7"/></svg>
@@ -610,13 +578,13 @@ html:not(.js) .valeur::before,html:not(.js) .valeur .t-carte::before{transform:n
 <section class="tuile blanc" id="ecrire">
   <div class="dedans">
     <p class="sur-titre rv">Nous écrire</p>
-    <h2 class="t-lg rv" style="--i:1;max-width:14ch">Posez-nous la question qui vous intéresse.</h2>
+    <h2 class="t-lg rv" style="--i:1;max-width:14ch">Et si on travaillait ensemble&nbsp;?</h2>
     <p class="lead-aere doux-txt rv" style="--i:2;margin-top:var(--e6)">
-      Sur nos conditions, sur nos délais, sur la façon dont nous travaillons. Vous aurez une
-      réponse claire, et le nom de l'implantation qui livre votre secteur.
+      Comme partenaire ou comme collaborateur, il y a une place pour vous chez Intégral Pharma.
     </p>
     <div class="actions rv" style="--i:3">
       <a class="pilule" href="mailto:contact@integralpharma.fr" data-aimant>contact@integralpharma.fr</a>
+      <a class="pilule pilule--vide" href="https://fr.linkedin.com/company/integralpharma" target="_blank" rel="noopener">Nous suivre sur LinkedIn</a>
     </div>
   </div>
 </section>
@@ -643,9 +611,11 @@ html:not(.js) .valeur::before,html:not(.js) .valeur .t-carte::before{transform:n
       <a href="#valeurs">Nos valeurs</a>
       <a href="rse.html">Notre responsabilité</a>
       <a href="#ecrire">Nous écrire</a>
+      <a href="https://integralpharma.digipharmacie.fr/login" target="_blank" rel="noopener">Mes factures · Digipharmacie</a>
+      <a href="https://fr.linkedin.com/company/integralpharma" target="_blank" rel="noopener">LinkedIn</a>
     </nav>
     <ul class="pied__chif">
-      <li>8 implantations</li><li>plus de 2 000 officines livrées</li><li>indépendant depuis 2006</li>
+      <li>8 agences</li><li>plus de 2 000 officines livrées</li><li>indépendant depuis 2006</li>
     </ul>
     <div class="pied__sig">
       <span>Groupe de grossistes-répartiteurs</span>
@@ -656,6 +626,12 @@ html:not(.js) .valeur::before,html:not(.js) .valeur .t-carte::before{transform:n
 
 <script src="annonces.js"></script>
 <script src="commun.js" defer></script>
+<script>
+window.addEventListener("message",function(e){
+  var d=e.data; if(!d||d.type!=="carte3dHeight"||!(d.h>0)) return;
+  var f=document.getElementById("carte-3d"); if(f) f.style.height=Math.ceil(d.h)+"px";
+});
+</script>
 <script>
 (function(){
   "use strict";
@@ -739,6 +715,5 @@ html:not(.js) .valeur::before,html:not(.js) .valeur .t-carte::before{transform:n
 
 })();
 </script>
-<script src="carte.js" defer></script>
 </body>
 </html>
