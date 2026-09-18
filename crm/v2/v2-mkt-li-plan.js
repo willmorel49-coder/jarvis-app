@@ -55,7 +55,7 @@
       '.lip-chip .lip-cd{width:9px;height:9px;border-radius:50%;flex:none}',
       '.lip-chip.off{opacity:.38}',
       '.lip-chip:hover{border-color:#d3dae4}',
-      '.lip-btn{display:inline-flex;align-items:center;gap:7px;min-height:36px;padding:0 14px;border-radius:9px;border:1px solid var(--lip-line);background:var(--lip-panel);font:600 13.5px/1 inherit;color:var(--lip-ink70);cursor:pointer;transition:all .15s var(--lip-ease)}',
+      '.lip-btn{display:inline-flex;align-items:center;gap:7px;min-height:36px;padding:0 14px;border-radius:9px;border:1px solid var(--lip-line);background:var(--lip-panel);font-family:inherit;font-size:13.5px;font-weight:600;line-height:1;color:var(--lip-ink70);cursor:pointer;transition:all .15s var(--lip-ease)}',
       '.lip-btn:hover{background:var(--lip-bg);color:var(--lip-ink)}',
       '.lip-btn-p{background:var(--lip-blue);border-color:var(--lip-blue);color:#fff;font-weight:700;box-shadow:0 4px 14px rgba(0,87,255,.24)}',
       '.lip-btn-p:hover{background:#0047d6;color:#fff;transform:translateY(-1px)}',
@@ -67,44 +67,82 @@
       '.lip-mline{flex:1;height:1px;background:var(--lip-line)}',
       '.lip-mcount{font-size:12px;font-weight:700;color:var(--lip-ink35)}',
 
-      /* vue simple : une semaine = un bloc, 1 à 2 posts retenus */
-      '.lip-sem{display:flex;align-items:baseline;gap:12px;margin:30px 2px 12px;flex-wrap:wrap}',
-      '.lip-sem h2{margin:0;font-size:15px;font-weight:800;letter-spacing:-.01em}',
-      '.lip-semn{font-size:12px;font-weight:700;color:var(--lip-ink35)}',
-      '.lip-semn.ok{color:#00734F}',
-      '.lip-acts{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:11px}',
-      '.lip-act{min-height:36px;padding:0 13px;border-radius:9px;border:1.5px solid var(--lip-line);background:#fff;font:700 12.5px/1 inherit;color:var(--lip-ink70);cursor:pointer;transition:all .15s var(--lip-ease)}',
-      '.lip-act:hover{background:var(--lip-bg)}',
-      '.lip-act.oui.on{background:#00734F;border-color:#00734F;color:#fff}',
-      '.lip-act.non.on{background:#C2183C;border-color:#C2183C;color:#fff}',
-      '.lip-act.qui.on{background:var(--lip-ink);border-color:var(--lip-ink);color:#fff}',
-      '.lip-qlab{font-size:11.5px;font-weight:700;color:var(--lip-ink35);margin-left:8px}',
-      '.lip-card.ecarte{background:#f6f7f9;box-shadow:none}',
-      '.lip-card.ecarte .lip-titre{color:var(--lip-ink50);text-decoration:line-through}',
-      '.lip-vide{border:1.5px dashed var(--lip-line);border-radius:14px;padding:13px 17px;font-size:13px;color:var(--lip-ink50);display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px}',
+      /* vue « À deux » (choix de Will, 18/09/2026) : trois colonnes, une carte compacte par post.
+         Un seul accent, le bleu ; la couleur d'une famille ne sert qu'à une pastille ronde. */
+      '.lid-who{display:flex;align-items:center;gap:22px;flex-wrap:wrap;margin:18px 0 0}',
+      '.lid-people{display:flex;align-items:center;gap:14px}',
+      '.lid-wbtn{background:none;border:0;padding:0;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;font:inherit;border-radius:16px}',
+      '.lid-wav{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;background:#fff;border:1.5px solid rgba(16,19,28,.12);color:var(--lip-ink70);box-shadow:var(--lip-sh);transition:transform .2s var(--lip-ease),background .2s var(--lip-ease),color .2s var(--lip-ease)}',
+      '.lid-wbtn:hover .lid-wav{transform:translateY(-1px)}',
+      '.lid-wbtn[aria-pressed="true"] .lid-wav{background:var(--lip-blue);border-color:transparent;color:#fff;box-shadow:0 4px 14px rgba(0,87,255,.24)}',
+      '.lid-wlab{font-size:13px;font-weight:600;color:var(--lip-ink50)}',
+      '.lid-wbtn[aria-pressed="true"] .lid-wlab{color:var(--lip-ink)}',
+      '.lid-both{min-height:44px;padding:0 16px;border-radius:999px;border:1.5px solid rgba(16,19,28,.12);background:#fff;font-family:inherit;font-size:13.5px;font-weight:600;line-height:1;color:var(--lip-ink50);box-shadow:var(--lip-sh);cursor:pointer;transition:all .2s var(--lip-ease)}',
+      '.lid-both[aria-pressed="true"]{background:var(--lip-blue050);border-color:var(--lip-blue);color:#0034A0}',
+      '.lid-wbtn:focus-visible,.lid-both:focus-visible,.lid-card:focus-visible,.lid-tab:focus-visible{outline:3px solid rgba(0,87,255,.45);outline-offset:2px}',
+      '.lid-resume{margin:18px 0 0;font-size:26px;font-weight:700;letter-spacing:-.01em;line-height:1.2}',
+      '.lid-resume b{color:var(--lip-blue);font-weight:700;font-variant-numeric:tabular-nums}',
+      '.lid-rsub{margin:4px 0 0;font-size:13px;color:var(--lip-ink50)}',
+      '.lid-tabs{display:none;gap:8px;margin:18px 0 14px}',
+      '.lid-tab{flex:1;min-height:44px;border-radius:12px;border:1px solid rgba(16,19,28,.12);background:#fff;font-family:inherit;font-size:13px;font-weight:600;line-height:1;color:var(--lip-ink50);box-shadow:var(--lip-sh);padding:0 6px;cursor:pointer}',
+      '.lid-tab[aria-selected="true"]{background:var(--lip-blue);border-color:transparent;color:#fff;box-shadow:0 4px 14px rgba(0,87,255,.24)}',
+      '.lid-board{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:22px}',
+      '.lid-col{display:flex;flex-direction:column;min-width:0}',
+      '.lid-colh{display:flex;align-items:baseline;gap:10px;padding:0 4px 12px}',
+      '.lid-cnt{font-size:30px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}',
+      '.lid-col.publie .lid-cnt{color:#0F7A52}',
+      '.lid-colt{font-size:13.5px;font-weight:600;color:var(--lip-ink50)}',
+      '.lid-list{display:flex;flex-direction:column;gap:10px;min-height:60px}',
+      '.lid-empty{border:1.5px dashed rgba(16,19,28,.14);border-radius:20px;padding:18px 14px;text-align:center;font-size:13px;color:var(--lip-ink50);line-height:1.4;margin:0}',
+      '.lid-card{display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;background:#fff;border-radius:20px;box-shadow:0 1px 2px rgba(16,19,28,.05),0 4px 10px rgba(16,19,28,.05),0 12px 24px rgba(16,19,28,.05);transition:transform .2s var(--lip-ease),box-shadow .2s var(--lip-ease)}',
+      '.lid-card:hover{transform:translateY(-1px);box-shadow:0 4px 10px rgba(16,19,28,.06),0 14px 26px rgba(16,19,28,.09)}',
+      '.lid-card.ecarte{background:#f6f7f9;box-shadow:none}',
+      '.lid-card.ecarte .lid-title{text-decoration:line-through;color:var(--lip-ink50)}',
+      '.lid-main{flex:1;min-width:0}',
+      '.lid-top{display:flex;align-items:center;justify-content:space-between;gap:8px}',
+      '.lid-date{font-size:13.5px;font-weight:700;flex:none}',
+      '.lid-col.publie .lid-date{color:#0F7A52}',
+      '.lid-pil{display:block;font-size:12.5px;color:var(--lip-ink50);min-width:0;max-width:62%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      '.lid-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px}',
+      '.lid-title{margin:4px 0 0;font-size:13.5px;line-height:1.35;color:var(--lip-ink70);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}',
+      '.lid-foot{display:flex;align-items:center;gap:6px;flex:none}',
+      '.lid-av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex:none;background:var(--lip-blue);color:#fff}',
+      '.lid-claim{min-height:44px;padding:0 14px;border-radius:999px;border:1.5px solid var(--lip-blue);background:#fff;color:var(--lip-blue);font-family:inherit;font-size:13px;font-weight:600;line-height:1;white-space:nowrap;cursor:pointer}',
+      '.lid-claim:hover{background:var(--lip-blue050)}',
+      '.lid-pick{width:36px;height:36px;border-radius:50%;border:1.5px solid rgba(16,19,28,.14);background:#fff;color:var(--lip-ink50);font-family:inherit;font-size:13px;font-weight:700;line-height:1;display:flex;align-items:center;justify-content:center;flex:none;cursor:pointer}',
+      '.lid-pick:hover{border-color:var(--lip-blue);color:var(--lip-blue)}',
+      '.lid-more{display:block;width:100%;min-height:44px;margin:22px 0 0;background:none;border:0;font-family:inherit;font-size:13px;font-weight:500;line-height:1;color:var(--lip-ink50);cursor:pointer}',
+      '.lid-more:hover{color:var(--lip-blue)}',
 
-      /* carte post */
-      '.lip-card{display:grid;grid-template-columns:62px 1fr auto;gap:16px;align-items:start;background:var(--lip-panel);border:1px solid var(--lip-line);border-radius:14px;padding:15px 17px;margin-bottom:10px;box-shadow:var(--lip-sh);cursor:pointer;position:relative;overflow:hidden;transition:box-shadow .18s var(--lip-ease),border-color .18s,transform .18s var(--lip-ease)}',
-      '.lip-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--pc,#ccc)}',
-      '.lip-card:hover{box-shadow:var(--lip-sh-md);border-color:#dbe2ec;transform:translateY(-1px)}',
-      '.lip-card:focus-visible{outline:2px solid var(--lip-blue);outline-offset:2px}',
-      '.lip-when{text-align:center;padding-top:1px}',
-      '.lip-dnum{font-size:19px;font-weight:800;letter-spacing:-.02em;line-height:1}',
-      '.lip-ddow{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--lip-ink35);margin-top:3px}',
-      '.lip-dh{font-size:11.5px;font-weight:600;color:var(--lip-ink50);margin-top:4px}',
-      '.lip-body{min-width:0}',
-      '.lip-meta{display:flex;align-items:center;gap:7px;margin-bottom:6px;flex-wrap:wrap}',
-      '.lip-tag{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;padding:3px 9px 3px 8px;border-radius:20px}',
-      '.lip-tag .lip-cd{width:8px;height:8px;border-radius:50%}',
+      /* fiche d\'un post : sujet, version du texte, qui, actions */
+      '.lid-tuiles{display:flex;gap:8px}',
+      '.lid-tuile{flex:1;min-width:0;min-height:64px;border-radius:14px;border:1.5px solid rgba(16,19,28,.12);background:#fff;padding:9px 10px;text-align:left;box-shadow:var(--lip-sh);cursor:pointer;font:inherit;transition:all .2s var(--lip-ease)}',
+      '.lid-tl{display:block;font-size:12px;font-weight:800;color:var(--lip-ink50);letter-spacing:.02em}',
+      '.lid-tt{margin-top:4px;font-size:13px;line-height:1.3;color:var(--lip-ink70);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}',
+      '.lid-tuile[aria-pressed="true"]{border-color:var(--lip-blue);background:var(--lip-blue050)}',
+      '.lid-tuile[aria-pressed="true"] .lid-tl{color:#0034A0}',
+      '.lid-angle{margin:10px 0 0;font-size:13px;color:var(--lip-ink50);line-height:1.45}',
+      '.lid-seg{display:flex;gap:6px;margin-top:16px;background:var(--lip-line2);padding:4px;border-radius:999px}',
+      '.lid-segb{flex:1;min-height:44px;border-radius:999px;border:0;background:none;font-family:inherit;font-size:13px;font-weight:600;line-height:1;color:var(--lip-ink50);cursor:pointer}',
+      '.lid-segb[aria-pressed="true"]{background:#fff;color:var(--lip-ink);box-shadow:var(--lip-sh)}',
+      '.lid-txt{margin-top:14px;font-size:14px;line-height:1.55;white-space:pre-line;word-break:break-word;background:#F7F9FC;border-radius:14px;padding:14px 15px;max-height:260px;overflow-y:auto;-webkit-overflow-scrolling:touch;color:var(--lip-ink)}',
+      '.lid-h{display:block;font-size:12.5px;font-weight:700;color:var(--lip-ink50);margin:18px 0 7px}',
+      '.lid-vis{margin:0;font-size:13px;line-height:1.5;color:var(--lip-ink70)}',
+      '.lid-pills{display:flex;gap:8px}',
+      '.lid-pill{flex:1;min-height:44px;border-radius:12px;border:1.5px solid rgba(16,19,28,.12);background:#fff;font-family:inherit;font-size:13.5px;font-weight:600;line-height:1;color:var(--lip-ink);box-shadow:var(--lip-sh);cursor:pointer}',
+      '.lid-pill[aria-pressed="true"]{background:var(--lip-blue);border-color:transparent;color:#fff;box-shadow:0 4px 14px rgba(0,87,255,.24)}',
+      '.lid-actions{display:flex;flex-direction:column;gap:10px;margin-top:20px}',
+      '.lid-actions .lip-btn{min-height:44px;justify-content:center}',
+      '.lid-row2{display:flex;gap:10px}',
+      '.lid-row2 .lip-btn{flex:1}',
+      '.lid-ok{background:#1E9E6A;border-color:#1E9E6A;color:#fff;font-weight:700}',
+      '.lid-ok:hover{background:#178556;color:#fff}',
+      '.lid-skip{min-height:44px;background:none;border:0;color:var(--lip-ink50);font-family:inherit;font-size:13px;font-weight:500;line-height:1;text-decoration:underline;cursor:pointer}',
+      '.lid-plus{margin-top:14px;border-top:1px solid var(--lip-line2);padding-top:6px}',
+      '.lid-plus>summary{min-height:44px;display:flex;align-items:center;font-size:13.5px;font-weight:700;color:var(--lip-ink70);cursor:pointer}',
+      '.lid-plus[open]>summary{margin-bottom:10px}',
+
       '.lip-fmt{font-size:11.5px;font-weight:600;color:var(--lip-ink35);padding:3px 9px;border-radius:20px;background:#f1f4f8}',
-      '.lip-num{font-size:11.5px;font-weight:700;color:var(--lip-ink35)}',
-      '.lip-titre{font-size:15px;font-weight:700;letter-spacing:-.01em;margin:0 0 4px;line-height:1.32}',
-      '.lip-angle{font-size:12.5px;color:var(--lip-ink50);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}',
-      '.lip-right{display:flex;flex-direction:column;align-items:flex-end;gap:7px;white-space:nowrap}',
-      '.lip-st{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:5px 11px;border-radius:20px}',
-      '.lip-pick{font-size:11.5px;color:var(--lip-ink35);font-weight:600}',
-      '.lip-vig{width:56px;height:56px;border-radius:9px;object-fit:cover;display:block;margin-top:9px;cursor:zoom-in;box-shadow:0 1px 4px rgba(10,14,26,.18)}',
-      '.lip-libre{font-size:11px;font-weight:800;padding:3px 8px;border-radius:20px;background:#f1eafe;color:#5B2ED6}',
       '.lip-apercu img{max-width:100%;max-height:300px;border-radius:11px;display:block;margin-bottom:10px;cursor:zoom-in;box-shadow:0 2px 12px rgba(10,14,26,.12)}',
       '.lip-imgacts{display:flex;gap:8px;flex-wrap:wrap}',
       '.lip-swatch{display:flex;gap:12px;align-items:flex-start;margin-bottom:11px;font-size:12.5px;line-height:1.5;color:var(--lip-ink70)}',
@@ -132,12 +170,6 @@
       '.lip-flab{display:block;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--lip-ink35);margin-bottom:9px}',
       '.lip-note{font-size:13px;line-height:1.6;color:var(--lip-ink70);background:var(--lip-blue050);border-left:3px solid var(--lip-blue);border-radius:0 9px 9px 0;padding:11px 14px}',
 
-      /* statuts */
-      '.lip-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}',
-      '.lip-stbtn{display:flex;align-items:center;gap:9px;min-height:46px;padding:0 14px;border-radius:10px;border:1.5px solid var(--lip-line);background:#fff;font:700 13.5px/1.25 inherit;color:var(--lip-ink70);cursor:pointer;text-align:left;transition:all .15s var(--lip-ease)}',
-      '.lip-stbtn .lip-kd{width:11px;height:11px;border-radius:50%}',
-      '.lip-stbtn:hover{background:var(--lip-bg)}',
-      '.lip-stbtn.on{color:#fff;border-color:transparent}',
 
       /* variantes */
       '.lip-var{border:1.5px solid var(--lip-line);border-radius:12px;padding:14px 15px;margin-bottom:10px;cursor:pointer;background:#fff;transition:all .15s var(--lip-ease);position:relative}',
@@ -152,20 +184,6 @@
       '.lip-vtxt{font-size:13.5px;line-height:1.62;color:var(--lip-ink70);white-space:pre-wrap;word-break:break-word}',
       '.lip-vaide{font-size:11.5px;color:var(--lip-ink35);margin-top:7px;font-style:italic}',
 
-      /* sujets — 3 propositions de post pour un même créneau */
-      '.lip-suj{display:flex;gap:10px;align-items:flex-start;border:1.5px solid var(--lip-line);border-radius:12px;padding:13px 15px;margin-bottom:9px;cursor:pointer;background:#fff;transition:all .15s var(--lip-ease)}',
-      '.lip-suj:hover{border-color:#c9d3e2;background:#fcfdff}',
-      '.lip-suj.on{border-color:var(--lip-blue);background:var(--lip-blue050);box-shadow:0 0 0 3px rgba(0,87,255,.09)}',
-      '.lip-suj .lip-radio{margin-top:2px}',
-      '.lip-suj.on .lip-radio{border-color:var(--lip-blue)}',
-      '.lip-suj.on .lip-radio::after{content:"";width:9px;height:9px;border-radius:50%;background:var(--lip-blue)}',
-      '.lip-sujc{min-width:0;flex:1}',
-      '.lip-sujn{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--lip-ink35);margin-bottom:3px}',
-      '.lip-sujt{font-size:14.5px;font-weight:800;letter-spacing:-.015em;line-height:1.35;color:var(--lip-ink)}',
-      '.lip-suja{font-size:12.5px;line-height:1.55;color:var(--lip-ink50);margin-top:5px}',
-      '.lip-sujm{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:8px}',
-      '.lip-badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:800;background:var(--lip-blue050);color:var(--lip-blue)}',
-      '.lip-nsuj{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:800;color:var(--lip-blue);background:var(--lip-blue050);padding:3px 9px;border-radius:20px;white-space:nowrap}',
 
       '.lip-ta{width:100%;min-height:96px;padding:12px 14px;border-radius:10px;border:1.5px solid var(--lip-line);font:400 16px/1.55 inherit;color:var(--lip-ink);resize:vertical;background:#fff;box-sizing:border-box}',
       '.lip-ta:focus{outline:none;border-color:var(--lip-blue);box-shadow:0 0 0 3px rgba(0,87,255,.09)}',
@@ -209,15 +227,19 @@
       /* mobile */
       '@media(max-width:760px){',
       '#v2-root .lip{padding:6px 14px 90px}',
-      '.lip-card{grid-template-columns:52px 1fr;gap:12px;padding:13px 14px}',
-      '.lip-right{grid-column:1/-1;flex-direction:row;align-items:center;justify-content:flex-start;gap:10px;flex-wrap:wrap}',
-      '.lip-stats{grid-template-columns:1fr}',
+      '.lid-resume{font-size:21px}',
+      '.lid-tabs{display:flex}',
+      '.lid-board{display:block;margin-top:4px}',
+      '.lid-col{display:none}',
+      '.lid-col.active{display:flex}',
+      '.lid-colh{display:none}',
+      '.lid-pick{width:44px}',
       /* flex:1 laissait 28 px au champ de recherche derrière les deux listes
          déroulantes : sur mobile il prend sa propre ligne, en entier. */
       '.lip-inp{flex:1 1 100%;min-width:0;width:100%}',
       '.lip-sel{flex:1 1 44%;min-width:0}',
       '.lip-drh,.lip-drb,.lip-drf{padding-left:16px;padding-right:16px}',
-      '.lip-btn,.lip-stbtn,.lip-close,.lip-apbtn,.lip-act{min-height:44px}',
+      '.lip-btn,.lip-close,.lip-apbtn,.lid-pick{min-height:44px}',
       /* 44 px partout au doigt, champs de saisie compris : à 36 px on rate la cible */
       '.lip-chip{height:44px}',
       '.lip-sel,.lip-inp{height:44px}',
@@ -352,12 +374,15 @@
   var etats = {};          // plan_id -> {sujet, statut, variante, visuel, commentaire}
   var charge = false;
 
-  function vide() { return { sujet: 0, statut: 'attente', variante: null, visuel: null, commentaire: '', image_path: '', resp: '' }; }
+  function vide() { return { sujet: 0, statut: 'attente', variante: null, visuel: null, commentaire: '', image_path: '', resp: '', publie: false }; }
   function copieEtat(e) { return { sujet: e.sujet || 0, statut: e.statut || 'attente', variante: e.variante, visuel: e.visuel,
-    commentaire: e.commentaire || '', image_path: e.image_path || '', resp: e.resp || '' }; }
+    commentaire: e.commentaire || '', image_path: e.image_path || '', resp: e.resp || '', publie: !!e.publie }; }
   // « Qui s'en occupe » n'a pas de colonne : il voyage en tête du commentaire
   // (« @pauline| … ») et en est retiré à la lecture. Aucun changement de table.
   var RX_RESP = /^@(pauline|will)\|\s?/;
+  // « Publié » non plus : il suit, sous la forme « #publie| ». Une ancienne version
+  // de l'écran le laisse intact dans le commentaire au lieu de le perdre.
+  var RX_PUB = /^#publie\|\s?/;
   function lireResp(c) { var m = RX_RESP.exec(String(c || '')); return m ? m[1] : ''; }
   function etat(n) { return etats[n] || vide(); }
   function localTout() { try { var o = JSON.parse(localStorage.getItem(LS) || '{}'); return (o && typeof o === 'object') ? o : {}; } catch (e) { return {}; } }
@@ -372,7 +397,8 @@
       r.data.forEach(function (x) {
         etats[x.plan_id] = { sujet: x.sujet || 0, statut: x.statut || 'attente', variante: (x.variante === null || x.variante === undefined) ? null : x.variante,
           visuel: (x.visuel === null || x.visuel === undefined) ? null : x.visuel,
-          commentaire: String(x.commentaire || '').replace(RX_RESP, ''), resp: lireResp(x.commentaire),
+          commentaire: String(x.commentaire || '').replace(RX_RESP, '').replace(RX_PUB, ''), resp: lireResp(x.commentaire),
+          publie: RX_PUB.test(String(x.commentaire || '').replace(RX_RESP, '')),
           image_path: x.image_path || '',
           qui: x.qui || '', updated_at: x.updated_at || null };
       });
@@ -413,7 +439,7 @@
 
   function ligne(n, e) {
     return { plan_id: n, sujet: e.sujet || 0, statut: e.statut, variante: e.variante, visuel: e.visuel,
-      commentaire: (e.resp ? '@' + e.resp + '| ' : '') + (e.commentaire || ''), image_path: e.image_path || '',
+      commentaire: (e.resp ? '@' + e.resp + '| ' : '') + (e.publie ? '#publie| ' : '') + (e.commentaire || ''), image_path: e.image_path || '',
       qui: (V2.user && V2.user.email) || '', updated_at: new Date().toISOString() };
   }
 
@@ -633,13 +659,6 @@
   V2.lip.zoomTiroir = function () {
     if (ouvert && ouvert.e.image_path && V2.li && V2.li.zoom) V2.li.zoom(urlImage(ouvert.e.image_path), ouvert.p.titre);
   };
-  // depuis une vignette de carte : on retrouve le post par son numéro
-  V2.lip.zoomPost = function (n) {
-    var e = etat(n); if (!e.image_path || !V2.li || !V2.li.zoom) return;
-    var P = plan(), t = '';
-    for (var i = 0; P && i < P.length; i++) if (P[i].n === n) { t = P[i].titre; break; }
-    V2.li.zoom(urlImage(e.image_path), t);
-  };
 
   /* ───────────────── ce qui est proposé ───────────────── */
   function visible(p) {
@@ -664,23 +683,17 @@
     libresCharges = true;
     LI.loadPosts().then(function () { redessine(); });
   }
+  function dateCourte(d) { return DOW[d.getDay()].toLowerCase() + '. ' + jj(d.getDate()) + ' ' + MOIS_CT[d.getMonth()]; }
+  // Un post libre suit son propre statut : idée et rédaction = à choisir.
+  function etapeLibre(x) { return x.status === 'publie' ? 'publie' : (x.status === 'pret' ? 'pret' : 'choisir'); }
   function carteLibre(x) {
-    var d = new Date(x.date);
-    var st = (V2.mktLinkedin && V2.mktLinkedin.statusOf) ? V2.mktLinkedin.statusOf(x.status) : { label: x.status };
-    var extrait = String(x.body || '').replace(/\s+/g, ' ').slice(0, 150);
-    var vign = x.image_path ? '<img class="lip-vig" src="' + esc(urlImage(x.image_path)) + '" alt="Visuel" title="Voir en grand" ' +
-      'onclick="event.stopPropagation();V2.lip.zoomLibre(\'' + esc(String(x.id)) + '\')">' : '';
-    return '<div class="lip-card" style="--pc:#7C4DFF" tabindex="0" role="button" ' +
-      'onclick="V2.lip.ouvrirLibre(\'' + esc(String(x.id)) + '\')" ' +
-      'onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();V2.lip.ouvrirLibre(\'' + esc(String(x.id)) + '\')}">' +
-      '<div class="lip-when"><div class="lip-dnum">' + d.getDate() + '</div>' +
-        '<div class="lip-ddow">' + DOW[d.getDay()] + '</div>' +
-        '<div class="lip-dh">' + pad2(d.getHours()) + ':' + pad2(d.getMinutes()) + '</div>' + vign + '</div>' +
-      '<div class="lip-body"><div class="lip-meta"><span class="lip-libre">Hors plan</span>' +
-        '<span class="lip-fmt">' + esc(x.format || 'post libre') + '</span></div>' +
-        '<h3 class="lip-titre">' + esc(x.title || '(sans titre)') + '</h3>' +
-        '<div class="lip-angle">' + esc(extrait || 'Pas encore de texte.') + '</div></div>' +
-      '<div class="lip-right"><span class="lip-st" style="background:#f1eafe;color:#5B2ED6">' + esc(st.label || '') + '</span></div></div>';
+    var id = esc(String(x.id));
+    return '<article class="lid-card" tabindex="0" role="button" aria-label="Ouvrir le post libre du ' + esc(dateCourte(new Date(x.date))) + '" ' +
+      'onclick="V2.lip.ouvrirLibre(\'' + id + '\')" ' +
+      'onkeydown="if(event.target===this&&(event.key===\'Enter\'||event.key===\' \')){event.preventDefault();V2.lip.ouvrirLibre(\'' + id + '\')}">' +
+      '<div class="lid-main"><div class="lid-top"><span class="lid-date">' + esc(dateCourte(new Date(x.date))) + '</span>' +
+        '<span class="lid-pil">Hors plan</span></div>' +
+        '<p class="lid-title">' + esc(x.title || '(sans titre)') + '</p></div></article>';
   }
   function pad2(n) { return ('0' + n).slice(-2); }
   /* ───────────────── rendu : rétro-planning ───────────────── */
@@ -710,45 +723,34 @@
   }
   var voirPasse = false;
 
+  /* Vue « À deux » : ce que chacun regarde (préférence de cet ordinateur,
+     pas une donnée partagée), le nombre de semaines affichées, l'onglet mobile. */
+  var LSV = 'jarvis_li_plan_vue';
+  var moi = (function () { try { var w = JSON.parse(localStorage.getItem(LSV) || '{}').who; return (w === 'pauline' || w === 'will') ? w : 'both'; } catch (e) { return 'both'; } })();
+  var nbSem = 4, etape = 'choisir', voirEcartes = false;
+  var ETAPES = [
+    { k: 'choisir', label: 'À choisir', court: 'À choisir', vide: 'Rien à choisir pour l’instant' },
+    { k: 'pret', label: 'Prêt à publier', court: 'Prêt', vide: 'Les posts arrivent ici quand un texte est retenu' },
+    { k: 'publie', label: 'Publié', court: 'Publié', vide: 'Les posts publiés arrivent ici' }
+  ];
+  function etapeDe(e) { return e.publie ? 'publie' : (e.statut === 'valide' ? 'pret' : 'choisir'); }
+
   function carte(p) {
-    var e = etat(p.n), st = statut(e.statut), pl = pilier(p.p);
-    var S = sujetsDe(p), si = sujetEff(p, e), cur = S[si] || S[0];
-    var d = new Date(p.d + 'T12:00:00');
-    var choix = [];
-    var nS = S.filter(function (x, i) { return sujetPermis(p, i); }).length;
-    if (S.length > 1 && si > 0) choix.push('Sujet ' + String.fromCharCode(65 + si));
-    if (e.variante !== null && cur.t[e.variante]) choix.push('Texte ' + (e.variante + 1));
-    if (e.visuel !== null) choix.push('Visuel ' + (e.visuel + 1));
-    if (e.commentaire) choix.push('commentaire');
-    return '<div class="lip-card' + (e.statut === 'refuse' ? ' ecarte' : '') + '" style="--pc:' + pl.color + '" tabindex="0" role="button" ' +
-      'onclick="V2.lip.ouvrir(' + p.n + ')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();V2.lip.ouvrir(' + p.n + ')}">' +
-      '<div class="lip-when"><div class="lip-dnum">' + d.getDate() + '</div>' +
-        '<div class="lip-ddow">' + DOW[d.getDay()] + '</div><div class="lip-dh">' + esc(p.h) + '</div>' +
-        (e.image_path ? '<img class="lip-vig" src="' + esc(urlImage(e.image_path)) + '" alt="Visuel" ' +
-          'title="Voir en grand" onclick="event.stopPropagation();V2.lip.zoomPost(' + p.n + ')">' : '') +
-      '</div>' +
-      '<div class="lip-body">' +
-        '<div class="lip-meta">' +
-          '<span class="lip-num">#' + p.n + '</span>' +
-          '<span class="lip-tag" style="background:' + pl.bg + ';color:' + (pl.txt || pl.color) + '"><span class="lip-cd" style="background:' + pl.color + '"></span>' + esc(pl.label) + '</span>' +
-          '<span class="lip-fmt">' + esc(cur.f) + '</span>' +
-          (nS > 1 ? '<span class="lip-nsuj">' + nS + ' sujets au choix</span>' : '') +
-        '</div>' +
-        '<h3 class="lip-titre">' + esc(cur.titre) + '</h3>' +
-        '<div class="lip-angle">' + esc(cur.angle) + '</div>' +
-        '<div class="lip-acts" onclick="event.stopPropagation()" onkeydown="event.stopPropagation()">' +
-          '<button class="lip-act oui' + (e.statut === 'valide' ? ' on' : '') + '" aria-pressed="' + (e.statut === 'valide') + '" onclick="V2.lip.decider(' + p.n + ',\'valide\')">' + (e.statut === 'valide' ? 'Retenu' : 'Retenir') + '</button>' +
-          '<button class="lip-act non' + (e.statut === 'refuse' ? ' on' : '') + '" aria-pressed="' + (e.statut === 'refuse') + '" onclick="V2.lip.decider(' + p.n + ',\'refuse\')">' + (e.statut === 'refuse' ? 'Écarté' : 'Écarter') + '</button>' +
-          '<span class="lip-qlab">Qui s’en occupe</span>' +
-          QUI.map(function (q) {
-            return '<button class="lip-act qui' + (e.resp === q.k ? ' on' : '') + '" aria-pressed="' + (e.resp === q.k) + '" onclick="V2.lip.quiFait(' + p.n + ',\'' + q.k + '\')">' + esc(q.label) + '</button>';
-          }).join('') +
-        '</div>' +
-      '</div>' +
-      '<div class="lip-right">' +
-        (e.statut === 'retravailler' ? '<span class="lip-st" style="background:' + st.bg + ';color:' + st.txt + '">' + esc(st.label) + '</span>' : '') +
-        (choix.length ? '<span class="lip-pick">' + esc(choix.join(' · ')) + '</span>' : '') +
-      '</div></div>';
+    var e = etat(p.n), pl = pilier(p.p);
+    var S = sujetsDe(p), cur = S[sujetEff(p, e)] || S[0];
+    var quand = dateCourte(new Date(p.d + 'T12:00:00'));
+    var pied;
+    if (e.resp) pied = '<span class="lid-av" title="' + esc(quiLabel(e.resp)) + '">' + esc(quiLabel(e.resp).charAt(0)) + '</span>';
+    else if (moi !== 'both') pied = '<button class="lid-claim" onclick="event.stopPropagation();V2.lip.quiFait(' + p.n + ',\'' + moi + '\')">Je m’en occupe</button>';
+    else pied = QUI.map(function (q) {
+      return '<button class="lid-pick" aria-label="' + esc(q.label) + ' s’en occupe" onclick="event.stopPropagation();V2.lip.quiFait(' + p.n + ',\'' + q.k + '\')">' + esc(q.label.charAt(0)) + '</button>';
+    }).join('');
+    return '<article class="lid-card' + (e.statut === 'refuse' ? ' ecarte' : '') + '" tabindex="0" role="button" data-n="' + p.n + '" aria-label="Ouvrir le post du ' + esc(quand) + '" ' +
+      'onclick="V2.lip.ouvrir(' + p.n + ')" onkeydown="if(event.target===this&&(event.key===\'Enter\'||event.key===\' \')){event.preventDefault();V2.lip.ouvrir(' + p.n + ')}">' +
+      '<div class="lid-main"><div class="lid-top"><span class="lid-date">' + esc(quand) + '</span>' +
+        '<span class="lid-pil"><span class="lid-dot" style="background:' + pl.color + '"></span>' + esc(pl.label) + '</span></div>' +
+        '<p class="lid-title">' + esc(cur.titre) + '</p></div>' +
+      '<div class="lid-foot">' + pied + '</div></article>';
   }
 
   function renderPlan(root) {
@@ -767,55 +769,69 @@
       // la DA alimente l'encart « prompt » de chaque fiche : on la charge d'emblée
       charger('mkt-li-da-data.js', da).then(function (ok) { if (ok) redessine(); });
       // les 2 sujets supplémentaires par créneau : fichier lourd, chargé à côté,
-      // sans bloquer la chronologie. Tant qu'il n'est pas là, un seul sujet.
+      // sans bloquer l'affichage. Tant qu'il n'est pas là, un seul sujet.
       charger('mkt-li-plan-alt-data.js', alts).then(function (ok) {
         if (ok) { redessine(); if (ouvert) redessineTiroir(); }
       });
     }
-    // une seule chronologie : les posts du plan et les posts libres mélangés,
-    // triés par date. Un post reste un post, quelle que soit son origine.
+    // Les posts du plan et les posts libres dans les mêmes colonnes, triés par
+    // date. Un post reste un post, quelle que soit son origine.
     chargerLibres();
-    var parSem = {};
-    function range(l, cle, html) { (parSem[l] = parSem[l] || []).push({ cle: cle, html: html }); }
-    plan().filter(visible).forEach(function (p) { range(lundiDe(p.d), p.d + 'T' + p.h, carte(p)); });
-    libres().forEach(function (x) { range(lundiDe(x.date), String(x.date).slice(0, 16), carteLibre(x)); });
-    var P = plan(), fin = lundiDe(P[P.length - 1].d), cette = lundiDe(isoJour(new Date()));
-    var l = lundiDe(P[0].d);
-    Object.keys(parSem).forEach(function (k) { if (k < l) l = k; if (k > fin) fin = k; });
-    var corps = '', passees = 0;
-    while (l <= fin) {
-      if (l < cette && !voirPasse) passees++;
-      else {
-        var n = retenusSemaine(l);
-        corps += '<div class="lip-sem"><h2>' + esc(semLabel(l)) + '</h2><div class="lip-mline"></div>' +
-          '<span class="lip-semn' + (n ? ' ok' : '') + '">' + n + ' retenu' + (n > 1 ? 's' : '') + ' sur ' + MAX_SEM + ' maximum</span></div>';
-        var L = (parSem[l] || []).sort(function (a, b) { return a.cle < b.cle ? -1 : (a.cle > b.cle ? 1 : 0); });
-        if (L.length) L.forEach(function (x) { corps += x.html; });
-        else {
-          var mardi = new Date(l + 'T12:00:00'); mardi.setDate(mardi.getDate() + 1);
-          corps += '<div class="lip-vide"><span>Rien de proposé cette semaine.</span>' +
-            '<button class="lip-btn" onclick="V2.lip.nouveauLibre(\'' + isoJour(mardi) + '\')">' + ICO('plus', 16, 2.2) + 'Ajouter un post</button></div>';
-        }
-      }
-      var x2 = new Date(l + 'T12:00:00'); x2.setDate(x2.getDate() + 7); l = isoJour(x2);
-    }
-    var regle = '<div class="lip-note" style="margin:16px 0 4px"><b>Notre ligne : un acteur de santé bienveillant.</b><br>' +
+    var P = plan(), cette = lundiDe(isoJour(new Date()));
+    var finD = new Date(cette + 'T12:00:00'); finD.setDate(finD.getDate() + nbSem * 7 - 1);
+    var fin = isoJour(finD), dernier = P[P.length - 1].d;
+    function dansFenetre(iso) { iso = String(iso).slice(0, 10); return (voirPasse || iso >= cette) && iso <= fin; }
+    var col = { choisir: [], pret: [], publie: [] }, ecartes = 0, passes = 0;
+    P.filter(visible).forEach(function (p) {
+      if (p.d < cette) passes++;
+      if (!dansFenetre(p.d)) return;
+      var e = etat(p.n), s = etapeDe(e);
+      if (e.statut === 'refuse' && !e.publie) { ecartes++; if (!voirEcartes) return; }
+      if (moi !== 'both' && s !== 'publie' && e.resp && e.resp !== moi) return;
+      col[s].push({ cle: p.d + 'T' + p.h, html: carte(p) });
+    });
+    libres().forEach(function (x) {
+      if (dansFenetre(x.date)) col[etapeLibre(x)].push({ cle: String(x.date).slice(0, 16), html: carteLibre(x) });
+    });
+    var nomMoi = quiLabel(moi);
+    var parts = [];
+    if (col.choisir.length) parts.push('<b>' + col.choisir.length + '</b> post' + (col.choisir.length > 1 ? 's' : '') + ' à préparer');
+    if (col.pret.length) parts.push('<b>' + col.pret.length + '</b> à publier');
+    var tete = '<div class="lid-who"><div class="lid-people" role="group" aria-label="Choisir qui vous êtes">' +
+      QUI.map(function (q) {
+        return '<button type="button" class="lid-wbtn" aria-pressed="' + (moi === q.k) + '" onclick="V2.lip.setMoi(\'' + q.k + '\')">' +
+          '<span class="lid-wav">' + esc(q.label.charAt(0)) + '</span><span class="lid-wlab">' + esc(q.label) + '</span></button>';
+      }).join('') + '</div>' +
+      '<button type="button" class="lid-both" aria-pressed="' + (moi === 'both') + '" onclick="V2.lip.setMoi(\'both\')">Nous deux</button></div>' +
+      '<p class="lid-resume">' + (parts.length ? parts.join(', ') : (nomMoi ? 'Rien n’attend ' + esc(nomMoi) + ' pour l’instant' : 'Rien à faire pour l’instant')) + '</p>' +
+      '<p class="lid-rsub">' + (nomMoi ? 'Ce que ' + esc(nomMoi) + ' a à faire sur les ' + nbSem + ' prochaines semaines' : 'Ce que vous avez à faire, à deux, sur les ' + nbSem + ' prochaines semaines') +
+        (backend === 'local' ? ' · ⚠️ choix gardés sur cet ordinateur, pas partagés' : '') + '</p>';
+    var onglets = '<div class="lid-tabs" role="tablist" aria-label="Étape">' + ETAPES.map(function (s) {
+      return '<button class="lid-tab" role="tab" aria-selected="' + (etape === s.k) + '" onclick="V2.lip.setEtape(\'' + s.k + '\')">' + esc(s.court) + ' ' + col[s.k].length + '</button>';
+    }).join('') + '</div>';
+    var tableau = '<div class="lid-board">' + ETAPES.map(function (s) {
+      var L = col[s.k].sort(function (a, b) { return a.cle < b.cle ? -1 : (a.cle > b.cle ? 1 : 0); });
+      return '<section class="lid-col ' + s.k + (etape === s.k ? ' active' : '') + '" data-etape="' + s.k + '">' +
+        '<div class="lid-colh"><span class="lid-cnt">' + L.length + '</span><span class="lid-colt">' + esc(s.label) + '</span></div>' +
+        '<div class="lid-list">' + (L.length ? L.map(function (x) { return x.html; }).join('') : '<p class="lid-empty">' + esc(s.vide) + '</p>') + '</div></section>';
+    }).join('') + '</div>';
+    var suite = fin < dernier ? '<button type="button" class="lid-more" onclick="V2.lip.plusSemaines()">Voir les semaines suivantes</button>' : '';
+    var regle = '<div class="lip-note" style="margin:30px 0 4px"><b>Notre ligne : un acteur de santé bienveillant.</b><br>' +
       '<b>Oui</b> — ' + esc(REGLE_OUI) + '<br><b>Non</b> — ' + esc(REGLE_NON) + '</div>';
-    var barre = '<div class="lip-tools">' +
-      (passees || voirPasse ? '<button class="lip-btn" onclick="V2.lip.togglePasse()">' + (voirPasse ? 'Masquer les semaines passées' : 'Voir les ' + passees + ' semaine' + (passees > 1 ? 's' : '') + ' passée' + (passees > 1 ? 's' : '')) + '</button>' : '') +
-      (backend === 'local' ? '<span class="lip-lab">⚠️ choix gardés sur cet ordinateur, pas partagés</span>' : '') +
+    var pied = '<div class="lip-tools" style="margin-top:14px">' +
+      (passes ? '<button class="lip-btn" onclick="V2.lip.togglePasse()">' + (voirPasse ? 'Masquer les semaines passées' : 'Voir les semaines passées') + '</button>' : '') +
+      (ecartes ? '<button class="lip-btn" onclick="V2.lip.toggleEcartes()">' + (voirEcartes ? 'Masquer les posts écartés' : 'Revoir ' + (ecartes > 1 ? 'les ' + ecartes + ' posts écartés' : 'le post écarté')) + '</button>' : '') +
       '<span class="lip-spacer"></span>' +
-      '<button class="lip-btn" onclick="V2.lip.nouveauLibre()">' + ICO('plus', 16, 2.2) + 'Nouveau post libre</button></div>';
-    var pied = '<div class="lip-tools" style="margin-top:34px"><span class="lip-spacer"></span>' +
+      '<button class="lip-btn" onclick="V2.lip.nouveauLibre()">' + ICO('plus', 16, 2.2) + 'Nouveau post libre</button>' +
       '<button class="lip-btn" onclick="V2.lip.voirDA()">' + ICO('spark', 16) + 'Notre DA image</button>' +
       '<button class="lip-btn" onclick="V2.lip.exportCsv()">' + ICO('download', 16, 2) + 'Export CSV</button></div>';
-    root.innerHTML = coquille(regle + barre + corps + pied);
+    root.innerHTML = coquille(tete + onglets + tableau + suite + regle + pied);
   }
 
   function coquille(corps) {
     var m = meta();
     var seg = (V2.mktLinkedin && V2.mktLinkedin.viewSeg) ? V2.mktLinkedin.viewSeg() : '';
-    var titre = vue === 'veille' ? 'Veille secteur — 12 mois' : 'Posts LinkedIn — semaine par semaine';
+    var titre = vue === 'veille' ? 'Veille secteur — 12 mois' : 'Posts LinkedIn — à deux';
     var sous = vue === 'veille'
       ? 'Ce que publient CERP, OCP, Sagitta Pharma et nous. ' + ((V() && V().nbPosts) || '—') + ' posts relevés, réactions et commentaires compris.'
       : '1 à ' + MAX_SEM + ' posts par semaine, pas plus · ' + (m.fenetre || '');
@@ -862,53 +878,34 @@
     if (c2) c2.scrollTop = y;
   }
 
+  // La version du texte affichée : celle choisie, sinon « Humain », sinon la première.
+  var TONS = [['humain', 'Humain'], ['peda', 'Pédagogique'], ['court', 'Court']];
+  function varEff(cur, e) {
+    if (e.variante !== null && e.variante !== undefined && cur.t[e.variante]) return e.variante;
+    for (var i = 0; i < cur.t.length; i++) if (cur.t[i].ton === 'humain') return i;
+    return 0;
+  }
+
   function drawerHtml() {
     var p = ouvert.p, e = ouvert.e, pl = pilier(p.p);
     // Le créneau donne la date et le pilier ; le sujet retenu donne tout le reste.
     var S = sujetsDe(p), si = sujetEff(p, e), cur = S[si] || S[0];
-    var nS = S.filter(function (x, i) { return sujetPermis(p, i); }).length;
     var d = new Date(p.d + 'T12:00:00');
-    var quand = JOURS[(d.getDay() + 6) % 7] + ' ' + d.getDate() + ' ' + MOIS[d.getMonth()] + ' ' + d.getFullYear() + ' à ' + p.h.replace(':', 'h');
+    var quand = JOURS[(d.getDay() + 6) % 7] + ' ' + jj(d.getDate()) + ' ' + MOIS[d.getMonth()] + ' · ' + p.h.replace(':', ' h ');
+    var vi = varEff(cur, e), garde = etat(ouvert.n);
+    var dejaRetenu = garde.statut === 'valide' && (garde.sujet || 0) === si && garde.variante === vi;
 
-    var stats = STATUTS.map(function (s) {
-      var on = e.statut === s.k;
-      return '<button class="lip-stbtn' + (on ? ' on' : '') + '"' + (on ? ' style="background:' + s.on + '"' : '') +
-        ' onclick="V2.lip.setChamp(\'statut\',\'' + s.k + '\')">' +
-        '<span class="lip-kd" style="background:' + (on ? '#fff' : s.color) + '"></span>' + esc(s.label) + '</button>';
-    }).join('');
-
-    var sujs = S.map(function (c, i) {
+    var tuiles = S.map(function (c, i) {
       if (!sujetPermis(p, i)) return '';   // trop « métier » : voir SUJETS_METIER
-      var extrait = String((c.t && c.t[0] && c.t[0].txt) || '').replace(/\s+/g, ' ').slice(0, 130);
-      // couper au dernier espace : « les con… » se lit mal
-      var esp = extrait.lastIndexOf(' ');
-      if (esp > 90) extrait = extrait.slice(0, esp);
-      // le texte ouvre parfois lui-même sur un guillemet : ne pas en mettre deux
-      var cite = extrait.charAt(0) === '«';
-      return '<div class="lip-suj' + (si === i ? ' on' : '') + '" onclick="V2.lip.setChamp(\'sujet\',' + i + ')">' +
-        '<span class="lip-radio"></span><div class="lip-sujc">' +
-        '<div class="lip-sujn">Sujet ' + String.fromCharCode(65 + i) + (i === 0 && !p.rempl ? ' · proposition d’origine' : '') + '</div>' +
-        '<div class="lip-sujt">' + esc(c.titre) + '</div>' +
-        '<div class="lip-suja">' + esc(c.angle) + '</div>' +
-        '<div class="lip-sujm"><span class="lip-fmt">' + esc(c.f) + '</span>' +
-          '<span class="lip-badge">' + (c.t ? c.t.length : 0) + ' textes</span>' +
-          '<span class="lip-badge">' + (c.v ? c.v.length : 0) + ' visuels</span></div>' +
-        (si === i ? '' : '<div class="lip-suja" style="margin-top:7px;font-style:italic">' +
-          (cite ? esc(extrait) + '… »' : '« ' + esc(extrait) + '… »') + '</div>') +
-      '</div></div>';
+      return '<button type="button" class="lid-tuile" aria-pressed="' + (si === i) + '" onclick="V2.lip.setChamp(\'sujet\',' + i + ')">' +
+        '<span class="lid-tl">' + String.fromCharCode(65 + i) + '</span><span class="lid-tt">' + esc(c.titre) + '</span></button>';
     }).join('');
-    var chargeAlt = !alts();
 
-    var tons = (meta().tons || []);
-    function tonMeta(k) { for (var i = 0; i < tons.length; i++) if (tons[i].k === k) return tons[i]; return { label: k, aide: '' }; }
-    var vars = cur.t.map(function (t, i) {
-      var tm = tonMeta(t.ton);
-      return '<div class="lip-var' + (e.variante === i ? ' on' : '') + '" onclick="V2.lip.setChamp(\'variante\',' + i + ')">' +
-        '<div class="lip-vtop"><span class="lip-radio"></span><span class="lip-vton">Texte ' + (i + 1) + ' — ' + esc(tm.label) + '</span>' +
-        '<span class="lip-vlen">' + t.txt.length + ' caractères</span></div>' +
-        '<div class="lip-vtxt">' + esc(t.txt) + '</div>' +
-        (tm.aide ? '<div class="lip-vaide">' + esc(tm.aide) + '</div>' : '') +
-        '</div>';
+    var seg = TONS.map(function (t) {
+      for (var i = 0; i < cur.t.length; i++) if (cur.t[i].ton === t[0]) {
+        return '<button type="button" class="lid-segb" aria-pressed="' + (vi === i) + '" onclick="V2.lip.setChamp(\'variante\',' + i + ')">' + t[1] + '</button>';
+      }
+      return '';
     }).join('');
 
     var vis = cur.v.map(function (v, i) {
@@ -918,30 +915,33 @@
     }).join('');
 
     return '<div class="lip-scrim" onclick="V2.lip.fermer()"></div>' +
-      '<aside class="lip-dr" role="dialog" aria-modal="true" aria-label="Validation du post ' + p.n + '">' +
+      '<aside class="lip-dr" role="dialog" aria-modal="true" aria-label="Post du ' + esc(quand) + '">' +
         '<div class="lip-drh"><div style="flex:1;min-width:0">' +
-          '<div class="lip-eyebrow">Post #' + p.n + ' · ' + esc(quand) + '</div>' +
-          '<h2>' + esc(cur.titre) + '</h2>' +
-          '<div class="lip-meta" style="margin-top:9px">' +
-            '<span class="lip-tag" style="background:' + pl.bg + ';color:' + (pl.txt || pl.color) + '"><span class="lip-cd" style="background:' + pl.color + '"></span>' + esc(pl.label) + '</span>' +
-            '<span class="lip-fmt">' + esc(cur.f) + '</span></div>' +
+          '<div class="lid-pil" style="max-width:none;font-weight:600"><span class="lid-dot" style="background:' + pl.color + '"></span>' + esc(pl.label) + '</div>' +
+          '<h2>' + esc(quand) + '</h2>' +
         '</div><button class="lip-close" onclick="V2.lip.fermer()" aria-label="Fermer">' + ICO('close', 18, 2) + '</button></div>' +
         '<div class="lip-drb">' +
-          '<div class="lip-field"><span class="lip-flab">Choix du sujet — ' + nS + ' proposition' + (nS > 1 ? 's' : '') + ' pour ce créneau</span>' +
-            sujs +
-            (chargeAlt
-              ? '<div class="lip-hint">Chargement des autres sujets proposés pour cette date…</div>'
-              : '<div class="lip-hint">Même date, même pilier éditorial : seul le sujet change. ' +
-                'Les textes, les visuels et le prompt image ci-dessous suivent le sujet retenu.</div>') +
-          '</div>' +
-          '<div class="lip-field"><span class="lip-flab">Notre décision</span><div class="lip-stats">' + stats + '</div></div>' +
-          '<div class="lip-field"><span class="lip-flab">Qui s’en occupe</span><div class="lip-stats">' +
+          '<div class="lid-tuiles">' + tuiles + '</div>' +
+          (alts() ? '' : '<div class="lip-hint">Chargement des autres sujets proposés pour cette date…</div>') +
+          '<p class="lid-angle">' + esc(cur.angle) + '</p>' +
+          '<div class="lid-seg" role="group" aria-label="Version du texte">' + seg + '</div>' +
+          '<div class="lid-txt">' + esc(cur.t[vi] ? cur.t[vi].txt : '') + '</div>' +
+          '<span class="lid-h">Idée de visuel</span><p class="lid-vis">' + esc(cur.v[e.visuel === null ? 0 : e.visuel] || cur.v[0] || '') + '</p>' +
+          '<span class="lid-h">Qui s’en occupe ?</span><div class="lid-pills">' +
             QUI.map(function (q) {
-              var on = e.resp === q.k;
-              return '<button class="lip-stbtn' + (on ? ' on' : '') + '"' + (on ? ' style="background:var(--lip-ink)"' : '') +
-                ' onclick="V2.lip.setChamp(\'resp\',\'' + q.k + '\')">' + esc(q.label) + '</button>';
-            }).join('') + '</div></div>' +
-          '<div class="lip-field"><span class="lip-flab">Choix du texte — ' + cur.t.length + ' propositions</span>' + vars + '</div>' +
+              return '<button type="button" class="lid-pill" aria-pressed="' + (e.resp === q.k) + '" onclick="V2.lip.quiTiroir(\'' + q.k + '\')">' + esc(q.label) + '</button>';
+            }).join('') + '</div>' +
+          '<div class="lid-actions">' +
+            (e.publie ? '' : '<button type="button" class="lip-btn lip-btn-p" onclick="V2.lip.retenir()">' + (dejaRetenu ? 'Texte retenu' : (garde.statut === 'valide' ? 'Texte retenu — mettre à jour' : 'Retenir ce texte')) + '</button>') +
+            '<div class="lid-row2"><button type="button" class="lip-btn" onclick="V2.lip.copier()">' + ICO('fiche', 16, 1.8) + 'Copier le texte</button>' +
+              (e.publie
+                ? '<button type="button" class="lip-btn" onclick="V2.lip.marquerPublie(false)">Annuler « publié »</button>'
+                : '<button type="button" class="lip-btn lid-ok" onclick="V2.lip.marquerPublie(true)">' + ICO('check', 17, 2.4) + 'Marquer comme publié</button>') + '</div>' +
+            (e.publie ? '' : (garde.statut === 'refuse'
+              ? '<button type="button" class="lid-skip" onclick="V2.lip.ecarter(false)">Remettre ce post dans la liste</button>'
+              : '<button type="button" class="lid-skip" onclick="V2.lip.ecarter(true)">Pas cette semaine</button>')) +
+          '</div>' +
+          '<details class="lid-plus"' + (ouvert.plus ? ' open' : '') + ' ontoggle="V2.lip.plusOuvert(this.open)"><summary>Visuel, image et commentaire</summary>' +
           '<div class="lip-field"><span class="lip-flab">Choix du visuel — ' + cur.v.length + ' propositions</span>' + vis + '</div>' +
           (function () {
             var d = da();
@@ -981,15 +981,12 @@
           '</div>' +
           '<div class="lip-field"><span class="lip-flab">Commentaire</span>' +
             '<textarea class="lip-ta" placeholder="Ce qu\'il faut changer, préciser, éviter…" oninput="V2.lip.setChamp(\'commentaire\',this.value)">' + esc(e.commentaire || '') + '</textarea>' +
-            '<div class="lip-hint">Visible par toute l\'équipe. Utile surtout pour « à retravailler ».</div>' +
+            '<div class="lip-hint">Visible par toute l\'équipe.</div>' +
             '<div class="lip-tags">Hashtags prévus : ' + esc(cur.tags) + '</div>' +
           '</div>' +
-        '</div>' +
-        '<div class="lip-drf">' +
-          '<button class="lip-btn" onclick="V2.lip.copier()">' + ICO('fiche', 16, 1.8) + 'Copier le texte choisi</button>' +
-          '<button class="lip-btn" onclick="V2.lip.publier()">' + ICO('spark', 16) + 'Ouvrir LinkedIn</button>' +
-          '<span class="lip-spacer"></span>' +
-          '<button class="lip-btn lip-btn-p" onclick="V2.lip.enregistrer()">' + ICO('check', 17, 2.4) + 'Enregistrer</button>' +
+          '<div class="lip-imgacts"><button class="lip-btn" onclick="V2.lip.publier()">' + ICO('spark', 16) + 'Ouvrir LinkedIn</button>' +
+            '<button class="lip-btn lip-btn-p" onclick="V2.lip.enregistrer()">' + ICO('check', 17, 2.4) + 'Enregistrer</button></div>' +
+          '</details>' +
         '</div>' +
       '</aside>';
   }
@@ -1197,22 +1194,56 @@
     }
   };
   V2.lip.togglePasse = function () { voirPasse = !voirPasse; redessine(); };
-  // Décision et attribution en un clic, depuis la carte : enregistré tout de suite.
-  V2.lip.decider = function (n, k) {
-    var p = postDe(n); if (!p) return;
-    var e = copieEtat(etat(n));
-    var nv = (e.statut === k) ? 'attente' : k;
-    if (nv === 'valide' && retenusSemaine(lundiDe(p.d)) >= MAX_SEM) {
-      toast('Déjà ' + MAX_SEM + ' posts retenus cette semaine — retirez-en un d’abord', 'error'); return;
-    }
-    e.statut = nv; e.sujet = sujetEff(p, e);
-    enregistrer(n, e).then(redessine);
-  };
+  // Attribution en un clic, depuis la carte : enregistré tout de suite.
   V2.lip.quiFait = function (n, k) {
     var p = postDe(n); if (!p) return;
     var e = copieEtat(etat(n));
     e.resp = (e.resp === k) ? '' : k; e.sujet = sujetEff(p, e);
     enregistrer(n, e).then(redessine);
+  };
+
+  V2.lip.setMoi = function (k) {
+    moi = (moi === k) ? 'both' : k;
+    try { localStorage.setItem(LSV, JSON.stringify({ who: moi })); } catch (e) {}
+    redessine();
+  };
+  V2.lip.setEtape = function (k) { etape = k; redessine(); };
+  V2.lip.plusSemaines = function () { nbSem += 4; redessine(); };
+  V2.lip.toggleEcartes = function () { voirEcartes = !voirEcartes; redessine(); };
+  V2.lip.plusOuvert = function (o) { if (ouvert) ouvert.plus = !!o; };
+  // « Qui s'en occupe » depuis la fiche : partagé tout de suite, sans emporter
+  // le sujet ou le texte encore à l'essai dans la fiche.
+  V2.lip.quiTiroir = function (k) {
+    if (!ouvert) return;
+    var v = (ouvert.e.resp === k) ? '' : k, s = copieEtat(etat(ouvert.n));
+    ouvert.e.resp = v; s.resp = v; s.sujet = sujetEff(ouvert.p, s);
+    enregistrer(ouvert.n, s).then(function () { redessineTiroir(); redessine(); if (v) toast(quiLabel(v) + ' s’en occupe'); });
+  };
+  function tropCetteSemaine() {
+    return etat(ouvert.n).statut !== 'valide' && retenusSemaine(lundiDe(ouvert.p.d)) >= MAX_SEM;
+  }
+  function figerChoix() {
+    var e = ouvert.e, cur = sujetOuvert();
+    e.sujet = sujetEff(ouvert.p, e); e.variante = varEff(cur, e); e.statut = 'valide';
+    return e;
+  }
+  V2.lip.retenir = function () {
+    if (!ouvert) return;
+    if (tropCetteSemaine()) { toast('Déjà ' + MAX_SEM + ' posts retenus cette semaine — retirez-en un d’abord', 'error'); return; }
+    enregistrer(ouvert.n, copieEtat(figerChoix())).then(function () { toast('Texte retenu'); redessineTiroir(); redessine(); });
+  };
+  V2.lip.marquerPublie = function (oui) {
+    if (!ouvert) return;
+    if (oui && tropCetteSemaine()) { toast('Déjà ' + MAX_SEM + ' posts retenus cette semaine — retirez-en un d’abord', 'error'); return; }
+    var e = oui ? figerChoix() : ouvert.e;
+    e.publie = !!oui;
+    enregistrer(ouvert.n, copieEtat(e)).then(function () { toast(oui ? 'Marqué comme publié' : 'Remis dans « Prêt à publier »'); fermer(); redessine(); });
+  };
+  V2.lip.ecarter = function (oui) {
+    if (!ouvert) return;
+    var s = copieEtat(etat(ouvert.n));
+    s.statut = oui ? 'refuse' : 'attente'; s.sujet = sujetEff(ouvert.p, s);
+    enregistrer(ouvert.n, s).then(function () { toast(oui ? 'Post écarté pour cette semaine' : 'Post remis dans la liste'); fermer(); redessine(); });
   };
 
   V2.lip.ouvrir = function (n) {
@@ -1234,6 +1265,7 @@
       // Texte 2 du sujet A n'a rien à voir avec Texte 2 du sujet B : garder
       // l'ancien numéro ferait valider un texte que personne n'a lu.
       ouvert.e.variante = null; ouvert.e.visuel = null; apprVue = null;
+      if (ouvert.e.statut === 'valide' && !ouvert.e.publie) ouvert.e.statut = 'attente';   // nouveau sujet : à retenir de nouveau
     }
     if (champ === 'visuel') apprVue = null;   // l'approche suggérée suit le visuel choisi
     if (champ === 'commentaire') return;          // ne pas redessiner sous les doigts
@@ -1252,8 +1284,8 @@
   };
   V2.lip.copier = function () {
     if (!ouvert) return;
-    var cur = sujetOuvert(), i = ouvert.e.variante;
-    if (i === null || !cur.t[i]) { toast('Choisissez d\'abord une des propositions de texte', 'error'); return; }
+    var cur = sujetOuvert(), i = varEff(cur, ouvert.e);
+    if (!cur.t[i]) return;
     var txt = cur.t[i].txt;
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(txt).then(function () { toast('Texte copié'); }, function () { window.prompt('Copiez le texte :', txt); });
@@ -1261,8 +1293,8 @@
   };
   V2.lip.publier = function () {
     if (!ouvert) return;
-    var cur = sujetOuvert(), i = ouvert.e.variante;
-    if (i === null || !cur.t[i]) { toast('Choisissez d’abord une des propositions de texte', 'error'); return; }
+    var cur = sujetOuvert(), i = varEff(cur, ouvert.e);
+    if (!cur.t[i]) return;
     if (ouvert.e.statut !== 'valide' && !confirm('Ce post n’est pas encore retenu.\n\nL’ouvrir quand même dans LinkedIn ?')) return;
     var txt = cur.t[i].txt;
     var suite = function () {
@@ -1293,7 +1325,7 @@
       var e = etat(p.n), S = sujetsDe(p), si = sujetEff(p, e), c = S[si] || S[0];
       var autres = S.filter(function (x, i) { return i !== si && sujetPermis(p, i); })
         .map(function (x, i) { return x.titre; }).join(' | ');
-      l.push([p.n, p.d, p.h, pilier(p.p).label, 'Sujet ' + String.fromCharCode(65 + si), c.f, c.titre, c.angle, statut(e.statut).label, quiLabel(e.resp),
+      l.push([p.n, p.d, p.h, pilier(p.p).label, 'Sujet ' + String.fromCharCode(65 + si), c.f, c.titre, c.angle, e.publie ? 'Publié' : statut(e.statut).label, quiLabel(e.resp),
         e.variante === null ? '' : 'Texte ' + (e.variante + 1),
         e.visuel === null ? '' : 'Visuel ' + (e.visuel + 1),
         e.commentaire || '', c.tags,
