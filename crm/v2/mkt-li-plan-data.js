@@ -3,13 +3,18 @@
    RÈGLE ÉDITORIALE ABSOLUE : sensibilisation uniquement.
    Aucune prise de position sur les réformes, les prix, les marges, la politique
    de santé ou les confrères. Aucune condition commerciale. Aucun chiffre d'affaires.
+   LIGNE DURCIE LE 2026-09-18 : on ne détaille plus notre métier (chaîne du froid,
+   logistique, entrepôt, tournées). Les créneaux des piliers metier / coulisses /
+   froid restent ici mais l'écran ne les propose plus (PILIERS_OK dans
+   v2-mkt-li-plan.js) ; LI_PLAN_REMPL, en bas de fichier, remplit les semaines
+   que cela laissait vides. Cadence : 1 à 2 posts par semaine, pas plus.
    ⚠️ var (pas const) : fichier chargé dynamiquement, doit créer window.LI_PLAN. */
 
 var LI_PLAN_META = {
   version: '2026-08-20',
   fenetre: 'septembre 2026 → août 2027',
   nb: 103,
-  cadence: '2 posts par semaine — mardi 11h00 et jeudi 09h30',
+  cadence: '1 à 2 posts par semaine maximum — créneaux du mardi 11h00 et du jeudi 09h30',
   pourquoi_creneaux: 'Mesuré sur 442 posts du secteur : le jeudi est le meilleur jour (engagement médian 8,5 pour 1000 abonnés contre 5,6 le vendredi), et le créneau 9h-12h domine largement l’après-midi.',
   regle: 'Sensibilisation uniquement. On informe, on explique, on remercie. On ne prend jamais parti : ni sur les réformes, ni sur les prix, ni sur les marges, ni sur la politique de santé, ni sur les confrères.',
   tons: [
@@ -626,7 +631,7 @@ var LI_PLAN = [
 
 { n:50, d:'2027-02-25', h:'09:30', p:'sante', f:'image',
   titre:'Journée des maladies rares — cinq ans pour mettre un nom',
-  angle:'Marronnier du 28 février. Angle errance diagnostique, complémentaire du post du 28/01 sur la logistique.',
+  angle:'Marronnier du 28 février. Angle errance diagnostique.',
   t:[
    {ton:'peda', txt:"Le dernier jour de février est consacré à la Journée internationale des maladies rares.\n\nUne maladie est dite rare lorsqu’elle touche moins d’une personne sur 2 000. Il en existe plusieurs milliers, ce qui aboutit à un paradoxe : les maladies rares, prises ensemble, ne sont pas rares du tout.\n\nMais leur véritable difficulté est ailleurs. Elle porte un nom : l’errance diagnostique.\n\nAvant qu’un nom soit posé sur ce qu’elles ont, beaucoup de personnes traversent des années de consultations, d’examens et d’hypothèses successives. On parle couramment de plusieurs années entre les premiers symptômes et le diagnostic.\n\nPendant tout ce temps, il faut vivre avec des symptômes réels que personne n’explique — et souvent supporter d’être suspecté d’exagérer.\n\nObtenir un diagnostic ne guérit pas. Mais cela met fin à quelque chose de très lourd : ne pas savoir.\n\n#MaladiesRares #Santé #Diagnostic"},
    {ton:'humain', txt:"Imaginez avoir des symptômes bien réels, et que personne ne trouve pourquoi.\n\nPendant des années.\n\nVous consultez. On vous examine. On ne trouve rien. Et petit à petit, une petite phrase s’installe dans les conversations : « c’est peut-être le stress ».\n\nC’est le quotidien de beaucoup de personnes atteintes d’une maladie rare. Entre les premiers signes et le moment où un nom est enfin posé, il s’écoule souvent plusieurs années. On appelle ça l’errance diagnostique.\n\nEt ce que racontent les personnes concernées, c’est que le jour du diagnostic est un soulagement — même quand la nouvelle est mauvaise. Parce qu’enfin, ce n’était pas dans leur tête.\n\nJournée internationale des maladies rares. Une pensée pour ceux qui cherchent encore.\n\n#MaladiesRares #Santé"},
@@ -1273,7 +1278,176 @@ var LI_PLAN = [
   tags:'#Bilan #Pharmacie #Santé' }
 ];
 
+/* ══ SUJETS DE REMPLACEMENT (2026-09-18) ══
+   La ligne durcie masque les piliers metier / coulisses / froid : cinq semaines
+   restaient sans aucune proposition. Pour ces cinq créneaux, l'écran affiche le
+   pilier et les trois sujets ci-dessous À LA PLACE du créneau d'origine, qui
+   reste intact plus haut. Clé = n° du créneau (date et heure inchangées). */
+var LI_PLAN_REMPL = {
+26: { p:'sante', sujets:[
+ { f:'carrousel', titre:"25 novembre : le 3919, et la pharmacie comme point de repère",
+   angle:"Journée internationale contre les violences faites aux femmes. Sobre, aucune dramatisation, aucune position politique : on rappelle un numéro et un lieu de proximité.",
+   t:[
+    {ton:'peda', txt:"Le 25 novembre est la Journée internationale pour l’élimination de la violence à l’égard des femmes.\n\nUn rappel simple, à garder en tête toute l’année : le 3919 est un numéro d’écoute gratuit et anonyme, disponible pour toute personne concernée par des violences, ainsi que pour son entourage.\n\nIl ne laisse pas de trace sur les factures détaillées et ne nécessite aucune démarche préalable.\n\nUne pharmacie est aussi, pour beaucoup de personnes, un lieu dont on peut pousser la porte sans rendez-vous, aux heures d’ouverture, sans avoir à expliquer pourquoi on est venu.\n\nCe post ne remplace aucun accompagnement : il rappelle simplement qu’un numéro existe, et qu’un lieu de proximité aussi.\n\n#3919 #ViolencesFaitesAuxFemmes #Prévention"},
+    {ton:'humain', txt:"Il y a des numéros qu’on espère ne jamais avoir à composer.\n\nLe 3919 en fait partie. Gratuit, anonyme, sans laisser de trace sur une facture.\n\nOn en parle peu en dehors du 25 novembre, alors qu’il fonctionne toute l’année.\n\nUn numéro ne suffit pas toujours. Un lieu de proximité, où l’on peut entrer sans avoir de raison à donner, compte aussi.\n\nUne pharmacie est souvent ce genre d’endroit.\n\n#3919 #ViolencesFaitesAuxFemmes #Santé"},
+    {ton:'court', txt:"25 novembre — Journée internationale pour l’élimination des violences faites aux femmes.\n\nLe 3919 : gratuit, anonyme, sans trace sur une facture. À garder en tête, toute l’année.\n\n#3919 #ViolencesFaitesAuxFemmes"}
+   ],
+   v:["Visuel typographique sur fond crème : le numéro 3919 en très grand, seul, une couleur d’accent unique. Aucun autre élément.",
+      "Photo documentaire d’une porte de pharmacie entrouverte vue de l’extérieur, personne dans le cadre, lumière douce de fin de journée."],
+   tags:"#3919 #ViolencesFaitesAuxFemmes #Prévention" },
+ { f:'image', titre:"Rapporter ses médicaments non utilisés : un geste simple, pas une corvée",
+   angle:"Semaine européenne de la réduction des déchets. Ton léger, aucun nom d’éco-organisme, aucun chiffre.",
+   t:[
+    {ton:'peda', txt:"Cette semaine est consacrée à la réduction des déchets à l’échelle européenne. L’occasion d’un rappel qui concerne à peu près toutes les maisons : que faire des médicaments non utilisés ou périmés qui traînent dans un tiroir ?\n\nLa réponse est simple : on les rapporte en pharmacie, tels quels, dans leur emballage si possible.\n\nPas besoin de trier par type de médicament, pas besoin d’enlever les notices, pas besoin de prendre rendez-vous. Le geste prend quelques secondes au comptoir.\n\nCela évite qu’ils finissent à la poubelle ou dans l’évier, deux endroits où ils n’ont rien à faire.\n\nUn petit geste, à l’occasion d’un passage qu’on fait de toute façon.\n\n#RéductionDesDéchets #Environnement #Pharmacie"},
+    {ton:'humain', txt:"Il y a toujours ce tiroir. Celui où s’accumulent des boîtes entamées, des plaquettes à moitié vides, une notice froissée qu’on ne relira jamais.\n\nOn se dit qu’on s’en occupera un jour. Le jour n’arrive jamais vraiment.\n\nCette semaine dédiée à la réduction des déchets est une bonne occasion de vider ce tiroir-là. Pas de tri à faire, pas de question à se poser : on rapporte tout à la pharmacie, tel quel.\n\nÇa prend moins de temps que d’y penser.\n\n#RéductionDesDéchets #Environnement #Santé"},
+    {ton:'court', txt:"Le tiroir aux médicaments oubliés, on l’a tous.\n\nCette semaine est dédiée à la réduction des déchets : l’occasion de le vider. On rapporte tout en pharmacie, tel quel, sans tri à faire.\n\n#RéductionDesDéchets #Environnement"}
+   ],
+   v:["Photo macro d’un tiroir entrouvert avec quelques boîtes de médicaments en désordre, lumière naturelle, aucune marque lisible.",
+      "Illustration à plat sur fond crème : une flèche épurée allant d’une icône de tiroir vers une icône de pharmacie, sans texte."],
+   tags:"#RéductionDesDéchets #Environnement #Pharmacie" },
+ { f:'image', titre:"Avant l’hiver, un quart d’heure pour trier l’armoire à pharmacie",
+   angle:"Geste de saison. On invite à vérifier dates et état des boîtes, en renvoyant au pharmacien en cas de doute. Aucun nom de produit.",
+   t:[
+    {ton:'peda', txt:"L’arrivée de l’hiver est un bon moment pour ouvrir l’armoire à pharmacie et faire un tri rapide.\n\nQuelques points à vérifier :\n\n• Les dates de péremption, y compris sur les boîtes entamées depuis longtemps.\n• Les boîtes ouvertes dont on ne sait plus depuis quand elles le sont.\n• Les notices manquantes, qui empêchent de vérifier la posologie en cas de besoin.\n• Les produits qui ne correspondent plus à un traitement en cours.\n\nEn cas de doute sur ce qu’on peut garder ou non, la question se pose simplement à son pharmacien, qui saura répondre en quelques instants.\n\nUn geste de quinze minutes qui évite bien des hésitations en pleine nuit, quand on cherche quelque chose dans l’urgence.\n\n#Prévention #Santé #Hiver"},
+    {ton:'humain', txt:"On ouvre rarement l’armoire à pharmacie par curiosité. On l’ouvre en urgence, un soir, en cherchant quelque chose vite.\n\nC’est justement pour ça que ça vaut le coup d’y jeter un œil avant, tranquillement.\n\nUne boîte dont la date est passée depuis longtemps. Une plaquette sans notice. Un produit qui ne sert plus à rien depuis un traitement terminé.\n\nRien de tout ça ne prend longtemps à repérer. Et en cas de doute sur ce qu’on garde, le pharmacien répond en un instant.\n\nUn quart d’heure avant l’hiver, pour un peu de tranquillité pendant.\n\n#Prévention #Santé #Hiver"},
+    {ton:'court', txt:"Avant l’hiver, un quart d’heure pour trier l’armoire à pharmacie : dates, boîtes entamées, notices manquantes.\n\nEn cas de doute sur ce qu’on garde : la question se pose à son pharmacien.\n\n#Prévention #Santé"}
+   ],
+   v:["Photo documentaire d’une armoire à pharmacie ouverte, quelques boîtes bien rangées, lumière douce, aucune marque lisible.",
+      "Illustration à plat sur fond crème : une checklist épurée de quatre lignes vides, sans texte, une coche en couleur d’accent sur une seule ligne."],
+   tags:"#Prévention #Santé #Hiver" }
+]},
+34: { p:'sante', sujets:[
+ { f:'image', titre:"Nos vœux de santé pour 2027, pour vous et pour eux",
+   angle:"Vœux tournés vers les pharmaciens et leurs patients, jamais vers nous. Ton chaleureux, sobre.",
+   t:[
+    {ton:'peda', txt:"En cette fin d’année, une pensée pour tous ceux qui, au comptoir d’une pharmacie, écoutent, expliquent, rassurent, parfois orientent vers un médecin ou vers le 15.\n\nCe métier demande de la patience et de l’attention, jour après jour, y compris les jours où tout le monde est pressé.\n\nUne pensée aussi pour les patients : ceux qui attendent un résultat, ceux qui accompagnent un proche, ceux qui commencent l’année avec un nouveau traitement à apprivoiser.\n\nPour 2027, on souhaite à chacun une santé simple : celle qui ne réclame pas d’attention particulière, et qui laisse la place à tout le reste.\n\nBonne année 2027.\n\n#BonneAnnée2027 #Santé"},
+    {ton:'humain', txt:"Il y a des métiers qu’on remarque surtout quand ils manquent.\n\nCelui de pharmacien en fait partie. On y va sans y penser, on en repart avec une réponse, et on oublie vite qu’il a fallu l’écouter, la chercher, parfois la formuler avec des mots simples pour que ce soit clair.\n\nEn cette fin d’année, une pensée pour ce travail-là, et pour tous ceux qui, de l’autre côté du comptoir, viennent chercher un peu plus qu’une boîte.\n\nBonne année 2027, à tous.\n\n#BonneAnnée2027 #Santé"},
+    {ton:'court', txt:"2027 arrive.\n\nUne pensée pour les pharmaciens qui écoutent et expliquent chaque jour, et pour leurs patients.\n\nBonne année, une santé simple, qui laisse la place à tout le reste.\n\n#BonneAnnée2027 #Santé"}
+   ],
+   v:["Illustration à plat sur fond crème : un feu d’artifice très épuré fait de traits fins en couleur d’accent, sans texte.",
+      "Photo documentaire d’une vitrine de pharmacie de nuit, croix lumineuse floutée en arrière-plan, rue vide, ambiance chaleureuse."],
+   tags:"#BonneAnnée2027 #Santé" },
+ { f:'carrousel', titre:"Le soir du réveillon, quatre numéros à garder en tête",
+   angle:"Post de service, ton posé, sans dramatisation : 15, 112, 114, 3237.",
+   t:[
+    {ton:'peda', txt:"Le soir du réveillon rassemble souvent du monde, parfois loin de chez soi, parfois dans des lieux inhabituels.\n\nQuatre numéros utiles à avoir en tête, pour soi ou pour les autres :\n\n• 15 : le SAMU, en cas d’urgence médicale.\n• 112 : le numéro d’urgence européen, utile notamment en déplacement.\n• 114 : le numéro d’urgence par SMS, pour les personnes sourdes ou malentendantes.\n• 3237 : pour trouver la pharmacie de garde la plus proche.\n\nAucun de ces numéros ne dérange en cas de doute. Ils existent justement pour ça.\n\nBonnes fêtes, et une soirée sans besoin de les composer.\n\n#Urgences #Santé #Sécurité"},
+    {ton:'humain', txt:"Le réveillon, c’est souvent une soirée un peu différente des autres : plus de monde, parfois plus loin de chez soi, parfois plus tard que d’habitude.\n\nOn n’a pas toujours ces numéros en tête, alors qu’ils prennent deux secondes à enregistrer.\n\nLe 15 pour une urgence. Le 112 en déplacement. Le 114 par SMS pour les personnes sourdes ou malentendantes. Le 3237 pour trouver une pharmacie de garde.\n\nOn espère ne jamais avoir à s’en servir ce soir-là. Mais s’ils sont utiles, ils sont là pour ça.\n\nBonnes fêtes à tous.\n\n#Urgences #Santé"},
+    {ton:'court', txt:"Ce soir : 15 pour une urgence, 112 en déplacement, 114 par SMS, 3237 pour une pharmacie de garde.\n\nDeux secondes pour les enregistrer. Bonnes fêtes.\n\n#Urgences #Santé"}
+   ],
+   v:["Visuel typographique sur fond crème : les quatre numéros alignés verticalement, chacun avec une icône très simple, une seule couleur d’accent.",
+      "Photo documentaire d’un téléphone posé sur une table de fête, flou d’arrière-plan avec quelques lumières, aucun visage."],
+   tags:"#Urgences #Santé #Sécurité" },
+ { f:'image', titre:"Les bonnes résolutions de santé qui tiennent sont souvent les plus petites",
+   angle:"Résolutions modestes, sans culpabilité, avec renvoi vers un professionnel de santé pour en parler.",
+   t:[
+    {ton:'peda', txt:"Chaque début d’année ramène son lot de bonnes résolutions ambitieuses, qui tiennent rarement au-delà de quelques semaines.\n\nCelles qui durent ressemblent souvent à autre chose : plus petites, plus précises, plus faciles à tenir un mardi soir de février.\n\nQuelques exemples : se coucher quinze minutes plus tôt trois fois par semaine. Marcher jusqu’à l’arrêt suivant. Boire un verre d’eau de plus au réveil.\n\nAucune de ces résolutions ne se juge à sa taille. Elles se jugent à leur régularité.\n\nEt pour une résolution qui touche un traitement en cours ou une vraie question de santé, en parler à son médecin ou à son pharmacien reste la meilleure option : eux peuvent adapter le conseil à votre situation.\n\n#BonnesRésolutions #Santé #2027"},
+    {ton:'humain', txt:"Le 1er janvier, tout le monde a de grandes idées. Le 15 janvier, la plupart ont déjà été abandonnées.\n\nCe n’est pas un manque de volonté. C’est souvent que la résolution était trop grande dès le départ.\n\nCelles qui tiennent sont rarement spectaculaires. Une marche de plus. Un coucher un peu plus tôt. Un verre d’eau au réveil.\n\nAucune culpabilité à avoir si les grandes résolutions n’ont pas tenu les autres années. Il suffisait peut-être qu’elles soient plus petites.\n\nEt pour tout ce qui touche vraiment à la santé, la meilleure des résolutions reste d’en parler à un professionnel.\n\n#BonnesRésolutions #Santé"},
+    {ton:'court', txt:"Les résolutions qui tiennent sont rarement les plus grandes.\n\nUne marche de plus, un coucher plus tôt, un verre d’eau au réveil. Sans culpabilité pour les autres années.\n\nPour le reste, en parler à un professionnel de santé.\n\n#BonnesRésolutions #Santé"}
+   ],
+   v:["Illustration à plat sur fond crème : une liste de résolutions très courte, trois lignes seulement, sans texte lisible, une coche en couleur d’accent.",
+      "Photo documentaire d’un verre d’eau posé près d’une fenêtre au petit matin, lumière douce, aucune personne."],
+   tags:"#BonnesRésolutions #Santé #2027" }
+]},
+68: { p:'sante', sujets:[
+ { f:'image', titre:"Le mal de dos au travail ne touche pas que les métiers physiques",
+   angle:"Journée mondiale de la sécurité et de la santé au travail, angle grand public tous métiers. Encourager à en parler tôt, sans conseil médical.",
+   t:[
+    {ton:'peda', txt:"Le 28 avril est la Journée mondiale de la sécurité et de la santé au travail.\n\nUne idée reçue a la vie dure : le mal de dos serait surtout l’affaire des métiers physiques. La réalité est plus large : rester longtemps assis, répéter le même geste, forcer sa posture devant un écran, tout cela pèse aussi sur le dos.\n\nCe qui compte le plus n’est pas l’intensité d’une douleur ponctuelle, mais sa répétition dans le temps.\n\nEn parler tôt à un professionnel — médecin du travail ou médecin traitant — permet souvent d’ajuster quelque chose de simple avant que la gêne ne s’installe : un réglage de poste, une pause plus fréquente, un geste à revoir.\n\nAttendre que la douleur devienne handicapante n’est jamais la meilleure option.\n\n#SantéAuTravail #Prévention #Santé"},
+    {ton:'humain', txt:"On imagine souvent le mal de dos lié au travail comme une affaire de charges lourdes.\n\nLa réalité est plus large : une chaise mal réglée, un écran trop bas, une position tenue huit heures durant sans y penser. Le corps encaisse, silencieusement, jusqu’au jour où il ne veut plus.\n\nÀ l’occasion de la Journée mondiale de la sécurité et de la santé au travail, un rappel simple : une gêne qui revient régulièrement mérite d’être signalée, pas ignorée en se disant que ça passera.\n\nLe médecin du travail est justement là pour ce genre de question, aussi anodine qu’elle paraisse.\n\n#SantéAuTravail #Prévention #Santé"},
+    {ton:'court', txt:"28 avril — Journée mondiale de la sécurité et de la santé au travail.\n\nLe mal de dos ne touche pas que les métiers physiques : une chaise mal réglée, un écran trop bas, huit heures assis suffisent.\n\nUne gêne qui revient : on en parle tôt, à son médecin.\n\n#SantéAuTravail #Prévention"}
+   ],
+   v:["Illustration à plat sur fond crème : une silhouette assise très stylisée avec un point d’accent sur le bas du dos, aucun visage, aucun texte.",
+      "Photo documentaire d’un poste de bureau vide bien réglé, chaise, écran à hauteur des yeux, lumière naturelle."],
+   tags:"#SantéAuTravail #Prévention #Santé" },
+ { f:'image', titre:"Le muguet du 1er mai est aussi toxique pour les enfants et les animaux",
+   angle:"Ton léger, factuel. Réflexe centre antipoison / 15.",
+   t:[
+    {ton:'peda', txt:"Le muguet est une tradition du 1er mai que presque tout le monde connaît. Ce qu’on sait moins : toutes les parties de la plante, y compris l’eau du vase, sont toxiques en cas d’ingestion.\n\nLes enfants en bas âge et les animaux domestiques sont les plus exposés, souvent par simple curiosité.\n\nQuelques réflexes simples suffisent : placer le bouquet hors de portée, changer l’eau du vase sans la laisser traîner, et jeter les fleurs fanées rapidement plutôt que de les laisser dans un coin accessible.\n\nEn cas d’ingestion, même en petite quantité, le réflexe est d’appeler un centre antipoison ou le 15 sans attendre de voir apparaître des symptômes.\n\nUn brin de tradition, à placer un peu plus haut que d’habitude.\n\n#1erMai #Prévention #Sécurité"},
+    {ton:'humain', txt:"On offre le muguet sans y penser. C’est un geste doux, presque automatique, le 1er mai.\n\nOn pense rarement à ce petit bouquet comme à quelque chose de dangereux. Pourtant, toute la plante l’est, y compris l’eau dans laquelle elle trempe.\n\nUn enfant qui explore un vase, un chien qui renifle une fleur tombée : ça arrive plus souvent qu’on ne le croit.\n\nRien d’alarmant si le bouquet est simplement posé un peu plus haut. Et en cas de doute après une ingestion, le centre antipoison ou le 15 répondent, sans attendre que quelque chose se passe.\n\nBon 1er mai, en toute tranquillité.\n\n#1erMai #Prévention #Santé"},
+    {ton:'court', txt:"Le muguet du 1er mai est toxique, y compris l’eau du vase.\n\nHors de portée des enfants et des animaux. En cas d’ingestion : centre antipoison ou 15, sans attendre.\n\n#1erMai #Prévention"}
+   ],
+   v:["Photo documentaire d’un brin de muguet dans un petit vase posé en hauteur, sur une étagère, lumière naturelle douce.",
+      "Illustration à plat sur fond crème : un brin de muguet très stylisé à côté d’un pictogramme d’alerte discret, une seule couleur d’accent."],
+   tags:"#1erMai #Prévention #Sécurité" },
+ { f:'image', titre:"Merci aux pharmacies de garde des jours fériés de mai",
+   angle:"Reconnaissance sobre, information pratique pour trouver une pharmacie de garde (3237).",
+   t:[
+    {ton:'peda', txt:"Le mois de mai compte plusieurs jours fériés rapprochés, et donc plusieurs jours où une bonne partie des officines sont fermées.\n\nCertaines restent ouvertes, ou assurent une garde, pour répondre aux besoins qui ne prennent pas de vacances : une ordonnance urgente, un traitement à renouveler, une question qui ne peut pas attendre le lendemain.\n\nPour trouver la pharmacie de garde la plus proche, un seul numéro à retenir : le 3237.\n\nUne pensée, aujourd’hui, pour celles et ceux qui assurent ces gardes pendant que beaucoup profitent d’un jour de repos.\n\n#PharmacieDeGarde #Santé #Mai"},
+    {ton:'humain', txt:"Les jours fériés de mai sont souvent synonymes de ponts, de grasses matinées, de journées sans agenda.\n\nPas pour tout le monde. Certaines pharmacies restent ouvertes ce jour-là, précisément parce que la santé, elle, ne prend jamais de jour férié.\n\nOn y pense rarement, sauf le jour où l’on en a besoin.\n\nLe 3237 permet de trouver la pharmacie de garde la plus proche en quelques secondes. Une chose simple à garder en tête, pour soi ou pour un proche.\n\n#PharmacieDeGarde #Santé"},
+    {ton:'court', txt:"Jours fériés de mai : certaines pharmacies restent ouvertes ou assurent une garde.\n\nPour en trouver une : le 3237.\n\nMerci à celles et ceux qui assurent ces gardes.\n\n#PharmacieDeGarde #Santé"}
+   ],
+   v:["Photo documentaire d’une croix de pharmacie allumée de jour, ciel clair, rue calme, aucune personne visible.",
+      "Visuel typographique sur fond crème : le numéro 3237 en grand, avec la mention « pharmacie de garde » en dessous, une seule couleur d’accent."],
+   tags:"#PharmacieDeGarde #Santé #Mai" }
+]},
+77: { p:'sante', sujets:[
+ { f:'image', titre:"31 mai, Journée mondiale sans tabac : encourager, jamais juger",
+   angle:"Bienveillance stricte. 3989.",
+   t:[
+    {ton:'peda', txt:"Le 31 mai est la Journée mondiale sans tabac.\n\nCe post n’a pas vocation à convaincre qui que ce soit de ce qu’il doit faire de sa consommation. Il vise simplement à rappeler qu’une ressource existe pour ceux qui souhaitent être accompagnés : le 3989, Tabac info service.\n\nCe service permet d’échanger avec un tabacologue, sans jugement et sans engagement.\n\nArrêter de fumer est difficile à mener seul, et beaucoup de personnes qui y parviennent s’y sont reprises à plusieurs fois.\n\nÀ chacun son rythme, et sans pression.\n\n#JournéeSansTabac #Prévention #3989"},
+    {ton:'humain', txt:"On a tous croisé, un jour, quelqu’un qui essayait d’arrêter de fumer. Et on a probablement, sans le vouloir, donné un conseil ou un avis qui n’avait pas été demandé.\n\nCe n’est pas ce dont la plupart des gens ont besoin. Ils ont surtout besoin de ne pas se sentir jugés à chaque cigarette reprise.\n\nÀ l’occasion de cette journée mondiale, un rappel simple : le 3989 existe pour ceux qui veulent en parler, à leur rythme, avec quelqu’un dont c’est le métier d’écouter sans juger.\n\n#JournéeSansTabac #Prévention #Santé"},
+    {ton:'court', txt:"31 mai — Journée mondiale sans tabac.\n\nCe n’est pas à nous de juger une consommation. Le 3989 existe pour ceux qui veulent être accompagnés, à leur rythme.\n\n#JournéeSansTabac #3989"}
+   ],
+   v:["Visuel typographique sur fond crème : le numéro 3989 en très grand, seul, une couleur d’accent unique.",
+      "Illustration à plat sur fond crème : une ligne courbe représentant un chemin sinueux, sans texte, symbolisant les allers-retours d’un parcours d’arrêt."],
+   tags:"#JournéeSansTabac #Prévention #3989" },
+ { f:'carrousel', titre:"Ce que l’entourage peut dire, et éviter de dire, à quelqu’un qui arrête de fumer",
+   angle:"Conseils relationnels, pas médicaux. Ton bienveillant.",
+   t:[
+    {ton:'peda', txt:"Quand un proche décide d’arrêter de fumer, l’entourage a souvent envie de bien faire, et se retrouve parfois à dire l’inverse de ce qui aide.\n\nCe qui aide généralement : féliciter l’intention elle-même, sans attendre un résultat parfait. Poser des questions ouvertes plutôt que des jugements. Accepter qu’une rechute ne signifie pas un échec définitif.\n\nCe qui aide rarement : rappeler les tentatives précédentes qui n’ont pas tenu, minimiser la difficulté avec un « il suffit d’arrêter », ou fumer devant la personne sans y penser.\n\nPersonne ne détient la bonne formule universelle. Mais l’écoute, elle, se trompe rarement.\n\n#JournéeSansTabac #Entourage #Santé"},
+    {ton:'humain', txt:"« Tu vas y arriver cette fois ? »\n\nLa question part d’une bonne intention. Elle ramène pourtant, sans le vouloir, les fois où ça n’a pas marché.\n\nQuand quelqu’un arrête de fumer, l’entourage a rarement les mots justes du premier coup. Ce n’est pas grave. Ce qui compte davantage, c’est de rester présent sans faire de commentaire à chaque cigarette évitée ou reprise.\n\nUne rechute n’efface pas ce qui a été tenu avant. Elle fait juste partie du chemin, pour beaucoup de monde.\n\n#JournéeSansTabac #Entourage #Santé"},
+    {ton:'court', txt:"« Tu vas y arriver cette fois ? » part d’une bonne intention, mais ramène les échecs passés.\n\nCe qui aide vraiment : rester présent, sans commentaire à chaque écart. Une rechute ne compte pas pour rien.\n\n#JournéeSansTabac #Entourage"}
+   ],
+   v:["Photo documentaire de deux tasses posées côte à côte sur une table, une conversation suggérée sans personnes visibles.",
+      "Illustration à plat sur fond crème : deux bulles de dialogue très épurées, l’une vide, l’autre avec un simple point d’accent, sans texte."],
+   tags:"#JournéeSansTabac #Entourage #Santé" },
+ { f:'image', titre:"Parler d’arrêt du tabac sans rendez-vous, ça existe",
+   angle:"Le pharmacien comme interlocuteur accessible. Aucune promesse, aucun produit cité.",
+   t:[
+    {ton:'peda', txt:"Beaucoup de personnes qui envisagent d’arrêter de fumer n’en parlent à personne avant d’être sûres de leur décision. Une forme de pudeur, ou l’impression que ce n’est pas encore le moment d’en discuter.\n\nUn pharmacien peut être un premier interlocuteur, justement parce qu’on peut lui poser une question sans rendez-vous, en quelques minutes, sans avoir à s’engager sur quoi que ce soit.\n\nIl pourra orienter vers les ressources adaptées à chaque situation, ou vers un médecin si cela semble utile.\n\nAucune formule ne convient à tout le monde. Mais la première question, elle, peut se poser à n’importe quel moment d’ouverture.\n\n#JournéeSansTabac #Pharmacie #Prévention"},
+    {ton:'humain', txt:"On repousse souvent la première conversation sur l’arrêt du tabac. On se dit qu’il faut d’abord être sûr, ou avoir déjà essayé.\n\nCe n’est pas nécessaire. Une pharmacie est un des rares endroits où l’on peut poser une question sans avoir pris de décision définitive, sans rendez-vous, sans y être allé exprès.\n\nUne question de deux minutes, posée un jour comme un autre, peut être le vrai point de départ.\n\n#JournéeSansTabac #Pharmacie #Santé"},
+    {ton:'court', txt:"Pas besoin d’être décidé pour poser la question.\n\nUn pharmacien répond sans rendez-vous, en quelques minutes. Une question de deux minutes peut être le vrai point de départ.\n\n#JournéeSansTabac #Pharmacie"}
+   ],
+   v:["Photo documentaire d’un comptoir d’officine vide, lumière douce, aucune personne, aucune marque visible.",
+      "Illustration à plat sur fond crème : une horloge très stylisée indiquant quelques minutes, sans texte, une couleur d’accent unique."],
+   tags:"#JournéeSansTabac #Pharmacie #Prévention" }
+]},
+103: { p:'sante', sujets:[
+ { f:'image', titre:"Septembre en or : une pensée pour les enfants malades et leurs familles",
+   angle:"Sensibilisation aux cancers de l’enfant. Sobre, soutien, aucun chiffre, aucun appel au don.",
+   t:[
+    {ton:'peda', txt:"Septembre est le mois de sensibilisation aux cancers de l’enfant, souvent désigné par sa couleur symbole : Septembre en or.\n\nCe mois met en lumière une réalité que l’on préfère ne pas imaginer : des enfants et des adolescents confrontés à une maladie qui bouleverse leur quotidien et celui de leur famille, souvent pendant de longs mois.\n\nDe nombreuses associations accompagnent ces familles au quotidien, sur des aspects très concrets : le lien avec l’école, le soutien psychologique, l’organisation du quotidien pendant les soins.\n\nCe post ne cherche qu’à rappeler leur existence, et à saluer le travail mené auprès de ces familles, aujourd’hui et tout au long de l’année.\n\n#SeptembreEnOr #CancersDeLEnfant #Solidarité"},
+    {ton:'humain', txt:"Il y a des mois de sensibilisation qui parlent à tout le monde, et d’autres qu’on préfère ne pas regarder de trop près.\n\nSeptembre en or fait partie de ceux-là. Parce qu’un enfant malade touche quelque chose que l’on n’a pas envie d’imaginer.\n\nDerrière ce mois, il y a des familles qui réorganisent leur vie entière autour d’un traitement, et des associations qui les accompagnent, souvent dans l’ombre.\n\nUne pensée pour elles aujourd’hui, simplement.\n\n#SeptembreEnOr #CancersDeLEnfant #Solidarité"},
+    {ton:'court', txt:"Septembre en or : le mois de sensibilisation aux cancers de l’enfant.\n\nUne pensée pour les familles concernées, et pour les associations qui les accompagnent au quotidien.\n\n#SeptembreEnOr #Solidarité"}
+   ],
+   v:["Illustration à plat sur fond crème : un ruban doré très épuré, seul, sans aucun autre élément ni texte.",
+      "Photo documentaire d’une salle d’attente pédiatrique vide, mobilier doux, lumière naturelle, aucune personne, aucun visage."],
+   tags:"#SeptembreEnOr #CancersDeLEnfant #Solidarité" },
+ { f:'image', titre:"Le sommeil des enfants se recale quelques jours avant la rentrée",
+   angle:"Ton léger, aucun conseil médical. Astuce de bon sens sur le rythme.",
+   t:[
+    {ton:'peda', txt:"Après des vacances où les horaires se sont souvent relâchés, le rythme de sommeil des enfants a besoin d’un peu de temps pour se remettre en place.\n\nQuelques jours avant la reprise, avancer progressivement l’heure du coucher, de dix à quinze minutes chaque soir, permet souvent d’éviter un choc trop brutal le premier jour d’école.\n\nGarder des repères simples aide aussi : une routine avant le coucher, une lumière plus tamisée le soir, moins d’écrans en fin de journée.\n\nCe ne sont là que des habitudes de bon sens, à adapter selon chaque enfant. Pour toute question plus précise sur le sommeil d’un enfant, le pédiatre reste le bon interlocuteur.\n\n#Rentrée #Sommeil #Enfants"},
+    {ton:'humain', txt:"Le dernier jour de vacances, le coucher a souvent lieu bien après l’heure habituelle. Le jour de la rentrée, il faut se lever tôt. Entre les deux, il y a un fossé que beaucoup de familles connaissent bien.\n\nAvancer le coucher de dix minutes chaque soir, quelques jours avant, adoucit ce passage. Ce n’est pas une science exacte, juste une habitude qui fait souvent la différence sur l’humeur du matin.\n\nBonne rentrée à tous, enfants compris.\n\n#Rentrée #Sommeil #Famille"},
+    {ton:'court', txt:"Vacances : coucher tardif. Rentrée : lever tôt. Entre les deux, un fossé bien connu.\n\nAvancer le coucher de dix minutes chaque soir, quelques jours avant, adoucit le passage.\n\n#Rentrée #Sommeil"}
+   ],
+   v:["Photo documentaire d’une chambre d’enfant dans la pénombre du soir, veilleuse allumée, aucun visage, ambiance douce.",
+      "Illustration à plat sur fond crème : une horloge stylisée avec une aiguille qui recule légèrement, sans texte, une couleur d’accent."],
+   tags:"#Rentrée #Sommeil #Enfants" },
+ { f:'image', titre:"Les poux de la rentrée n’ont rien à voir avec la propreté",
+   angle:"Dédramatiser, déculpabiliser les parents, renvoyer au pharmacien. Aucun produit cité.",
+   t:[
+    {ton:'peda', txt:"Chaque rentrée ramène son lot de mots dans les cahiers de correspondance : présence de poux signalée dans la classe.\n\nUne idée reçue mérite d’être rappelée : les poux ne sont pas liés à un manque d’hygiène. Ils se transmettent par contact direct entre cheveux, quel que soit leur état de propreté, et touchent aussi bien les enfants qui se lavent les cheveux tous les jours que les autres.\n\nAucune raison, donc, de culpabiliser ou de culpabiliser son enfant.\n\nEn cas de doute sur la présence de poux ou de lentes, le pharmacien peut aider à vérifier et à orienter vers la solution adaptée à la situation.\n\nUn sujet agaçant, mais banal.\n\n#Rentrée #Poux #Enfants"},
+    {ton:'humain', txt:"Le petit mot dans le cahier fait toujours un peu peur : « présence de poux signalée dans la classe ».\n\nOn pense tout de suite à mal faire, à ne pas avoir été assez vigilant. Ce n’est pas une question de vigilance. Les poux se transmettent par simple contact entre cheveux, sans lien avec la propreté.\n\nÇa touche toutes les familles, à un moment ou un autre de la scolarité. Rien d’exceptionnel, rien à se reprocher.\n\nEn cas de doute, le pharmacien aide à vérifier et à choisir la bonne marche à suivre.\n\n#Rentrée #Poux #Famille"},
+    {ton:'court', txt:"« Présence de poux signalée dans la classe » : ce mot ne veut rien dire sur l’hygiène.\n\nLes poux se transmettent par contact, pas par manque de propreté. Rien à se reprocher.\n\nEn cas de doute : votre pharmacien.\n\n#Rentrée #Poux"}
+   ],
+   v:["Illustration à plat sur fond crème : un peigne fin très stylisé, seul, sans texte, une couleur d’accent unique.",
+      "Photo documentaire d’un cahier de correspondance fermé posé sur un cartable, lumière naturelle, aucun texte lisible sur la couverture."],
+   tags:"#Rentrée #Poux #Enfants" }
+]}
+};
+
 /* ── expose global (var, pas const : fichier chargé dynamiquement) ── */
 window.LI_PLAN = LI_PLAN;
 window.LI_PLAN_META = LI_PLAN_META;
 window.LI_PLAN_PILIERS = LI_PLAN_PILIERS;
+window.LI_PLAN_REMPL = LI_PLAN_REMPL;
