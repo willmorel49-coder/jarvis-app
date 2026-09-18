@@ -326,6 +326,7 @@
       item('veille', 'veille', 'Veille secteur') +
       item('strategie', 'strategie', 'Assistant stratégie') +
       item('propositions', 'site', 'Le nouveau site') +
+      item('site', 'site', 'Le nouveau site, en plein écran') +
       item('fxbank', 'effets', 'Banque d’effets');
     // Deux actions de l'ancienne barre de l'app, gardées ici pour ne rien perdre.
     if (!(window.V2_BRAND && (window.V2_BRAND.opso || window.V2_BRAND.escale)) && V2.remonteeOpen) {
@@ -478,7 +479,7 @@
     if (act === 'fiche') { if (V2.mkt && V2.mkt.create) V2.mkt.create('support'); return; }
     if (act === 'selection') { if (V2.mkt && V2.mkt.create) V2.mkt.create('selection'); return; }
     if (act === 'document') return V2.go('marketing', 'docs');
-    if (act === 'catalogues' || act === 'propositions' || act === 'fxbank') return V2.go('marketing', act);
+    if (act === 'catalogues' || act === 'propositions' || act === 'fxbank' || act === 'site') return V2.go('marketing', act);
     if (act === 'veille') return ouvrirLinkedin('veille');
     if (act === 'strategie') {
       var assistant = function () { if (V2.lis && V2.lis.open) V2.lis.open(); };

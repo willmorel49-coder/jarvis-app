@@ -65,7 +65,6 @@
 
   var items = null;          // null = pas encore chargé
   var backend = 'local';     // 'supabase' | 'local'
-  var liKicked = false;      // posts LinkedIn chargés une seule fois (badge « à publier »)
   var editing = null;
   var replaceIdx = null;     // index du produit à remplacer quand le sélecteur s'ouvre depuis une photo de l'aperçu
   var pickSrc = 'cat';       // univers : 'cat' (tout le catalogue) | 'offilog' (parapharmacie) | 'mix' (nos sélections) — 'gros' reste accepté par addProduct pour les fiches existantes
@@ -387,224 +386,202 @@
     editing = prev;
     return html;
   }
-  // Feuille d'exemple affichée quand il n'existe encore aucune création — mêmes
-  // textes que la maquette « L'atelier » (modèle Promo de la semaine).
-  function exampleSheetHtml() {
+  // ════════════════════════════════════════════
+  // LOT 5 (19/09/2026) — ÉCRAN « FICHES » : la liste. Remplace l'ancien atelier sur `#marketing/fiches`.
+  // « Mes fiches » = la VRAIE feuille de chaque fiche, réduite par transform:scale (jamais redessinée) ;
+  // « Commencer » = les 4 modèles, un rayon, tout le catalogue, les deux types ; puis les catalogues prêts
+  // à présenter qui vivaient dans les tiroirs de l'atelier. Le stockage ne change pas.
+  // ════════════════════════════════════════════
+  var volDepuis = null;      // place de la vignette cliquée : la feuille de l'éditeur en part et grandit (transform + opacity)
+  var retourFiche = null;    // fiche que l'on vient de quitter : sa vignette porte l'anneau un instant (geste 5)
+  var listeVue = false;      // la cascade ne joue qu'à l'arrivée sur l'écran, pas à chaque re-rendu
+  function exampleSheetHtml(m) {
+    m = m || MODELES[0];
     var prev = editing;
     editing = { id: 'example', type: 'support', title: 'Sécheresse oculaire : trois collyres à mettre en avant',
       accroche: 'Les trois références hydratantes les plus demandées de la rentrée, disponibles sur tout le réseau.',
       footer: '', status: 'brouillon',
       products: [
-        { src: 'custom', key: 'ex1', name: 'Thealose sol. opht. flacon 15 mL', brand: 'Théa', cip: '3662042005664', price: 8.34, remise: 0, ppht: 0, img: '', froid: false, cat: 'Yeux & ophtalmologie' },
-        { src: 'custom', key: 'ex2', name: 'Hylo Confort collyre hydratant flacon 10 mL', brand: 'Ursapharm', cip: '3401040669580', price: 7.02, remise: 0, ppht: 0, img: '', froid: false, cat: 'Yeux & ophtalmologie' },
-        { src: 'custom', key: 'ex3', name: 'Vismed Multi gouttes lubrifiantes flacon 15 mL', brand: 'Horus', cip: '4028694001468', price: 8.60, remise: 0, ppht: 0, img: '', froid: false, cat: 'Yeux & ophtalmologie' }
+        { src: 'custom', key: 'ex1', name: 'Thealose sol. opht. flacon 15 mL', brand: 'Théa', cip: '3662042005664', price: 0, remise: 0, ppht: 0, img: '', froid: false, cat: 'Yeux & ophtalmologie' },
+        { src: 'custom', key: 'ex2', name: 'Hylo Confort collyre hydratant flacon 10 mL', brand: 'Ursapharm', cip: '3401040669580', price: 0, remise: 0, ppht: 0, img: '', froid: false, cat: 'Yeux & ophtalmologie' },
+        { src: 'custom', key: 'ex3', name: 'Vismed Multi gouttes lubrifiantes flacon 15 mL', brand: 'Horus', cip: '4028694001468', price: 0, remise: 0, ppht: 0, img: '', froid: false, cat: 'Yeux & ophtalmologie' }
       ],
-      theme: Object.assign(defaultTheme('support'), { tpl: 'promo' }), owner: '' };
+      // La vignette d'un modèle est de l'interface : le violet d'origine de « Fiche produit simple » y est rendu en encre.
+      // La fiche réellement créée garde l'accent du modèle (rien ne change dans le PDF).
+      theme: Object.assign(defaultTheme('support'), { tpl: m.k, accent: m.accent === '#6D4FC4' ? '#10131C' : m.accent }), owner: '' };
     var html = buildFlyerHtml(false, false);
     editing = prev;
     return html;
   }
-
-  // Puces du tiroir « Rayons » de l'accueil : les 7 plus gros rayons du catalogue s'il est
-  // en mémoire, sinon les 7 premiers libellés du fichier des rayons. Au tout premier passage
-  // rien n'est chargé : on demande le fichier des rayons (léger) et on regarnit le tiroir.
-  function rayonsChips(catTotal) {
-    var K = catCache(), html, n;
-    if (K) {
-      n = K.rayons.length;
-      html = K.rayons.slice(0, 7).map(function (r) {
-        return '<button class="mkt-chip" type="button" onclick="V2.mkt.createFromRayon(' + r.i + ')">' + esc(r.l) + ' <small>' + V2.fmtNum(r.n) + '</small></button>';
-      }).join('');
-    } else {
-      var rLabels = (window.MKT_RAYONS && window.MKT_RAYONS.rayons) || [];
-      n = rLabels.length;
-      html = rLabels.slice(0, 7).map(function (l, i) {
-        return '<button class="mkt-chip" type="button" onclick="V2.mkt.createFromRayon(' + i + ')">' + esc(l) + '</button>';
-      }).join('');
-      if (!rLabels.length && V2.loadFiles && !rayonsDemandes) {
-        rayonsDemandes = true;
-        V2.loadFiles(['mktrayons']).then(function () {
-          var box = document.getElementById('mkt-rayons-chips'), hd = document.getElementById('mkt-rayons-n');
-          if (!box) return;                       // on a quitté l'accueil entre-temps
-          var r2 = rayonsChips(catTotal);
-          box.innerHTML = r2.html;
-          if (hd && r2.n) hd.innerHTML = '<span class="n">' + V2.fmtNum(r2.n) + '</span>';
-        }, function () { rayonsDemandes = false; });
-      }
-    }
-    html += '<button class="mkt-chip more" type="button" onclick="V2.mkt.createFromCatalogue()">Tous les rayons · ' + V2.fmtNum(catTotal) + ' réf.</button>';
-    return { html: html, n: n };
+  function ficheQuand(ms) {
+    if (!ms) return '';
+    var d = new Date(ms), j = new Date(), h = new Date(j.getTime() - 86400000);
+    if (d.toDateString() === j.toDateString()) return 'aujourd’hui';
+    if (d.toDateString() === h.toDateString()) return 'hier';
+    return d.toLocaleDateString('fr-FR', d.getFullYear() === j.getFullYear() ? { day: 'numeric', month: 'short' } : { day: 'numeric', month: 'short', year: 'numeric' });
   }
-  var rayonsDemandes = false;
+  function fichePageHtml(html, bg) {
+    return '<span class="mkf-page" aria-hidden="true"' + (bg ? ' style="background:' + esc(bg) + '"' : '') + '><span class="mkf-feuille">' + html + '</span></span>';
+  }
+  function ficheTuileHtml(it) {
+    var t = TYPES[it.type] || TYPES.support, n = (it.products || []).length, st = statusOf(it.status);
+    return '<div class="mkf-tuile mk-press" role="button" tabindex="0" data-mkf="ouvrir" data-id="' + esc(it.id) + '">' +
+      fichePageHtml(flyerPreviewHtml(it)) +
+      '<strong>' + (it.title ? esc(it.title) : 'Sans titre') + '</strong>' +
+      '<small>' + (it.type === 'selection' ? 'Sélection' : 'Fiche produit') + ' · ' + n + ' produit' + (n > 1 ? 's' : '') + '</small>' +
+      '<small class="mkf-etat" data-etat="' + esc(st.k) + '">' + (st.k === 'envoye' ? mic('coche', 16, 2.4) : '') + esc(st.label) + (it.updated ? ' · ' + esc(ficheQuand(it.updated)) : '') + '</small>' +
+    '</div>';
+  }
+  function ficheModeleHtml(m) {
+    return '<div class="mkf-tuile mkf-modele mk-press" role="button" tabindex="0" data-mkf="modele" data-k="' + m.k + '">' +
+      fichePageHtml(exampleSheetHtml(m)) +
+      '<strong>' + esc(m.label) + '</strong><small>' + esc(m.desc) + '</small></div>';
+  }
+  function ficheDepartHtml(act, icone, titre, sous) {
+    return '<button type="button" class="mkf-depart mk-press" data-mkf="' + act + '">' + mic(icone, 22) +
+      '<span><b>' + titre + '</b><small' + (act === 'rayon' ? ' id="mkf-ray-n"' : '') + '>' + sous + '</small></span>' + mic('suivant', 18, 2) + '</button>';
+  }
+  function ficheVideHtml() {
+    return '<div class="mk-vide mkf-vide"><div class="mk-silhouette" aria-hidden="true"><i></i><i></i><i style="width:70%"></i><i style="width:85%"></i><i style="width:55%"></i></div>' +
+      '<div><h3>Votre première fiche se prépare en deux minutes.</h3>' +
+      '<p>Choisissez un modèle, posez vos produits, téléchargez le PDF.</p>' +
+      '<button type="button" class="mk-btn mk-plein mk-press" data-mkf="support">' + mic('plus', 20, 2) + 'Créer une fiche</button></div></div>';
+  }
+  // Les vraies feuilles font 794 px de large : chaque vignette les réduit à sa propre largeur.
+  function ficheCaler() {
+    var L = document.querySelectorAll('.mkf-page'), i, w;
+    for (i = 0; i < L.length; i++) { w = L[i].clientWidth; if (w > 0) L[i].style.setProperty('--k', (w / 794).toFixed(4)); }
+  }
+  function rayonsNb() {
+    var K = catCache(); if (K) return K.rayons.length;
+    return ((window.MKT_RAYONS && window.MKT_RAYONS.rayons) || []).length || 47;
+  }
+  // ── « Depuis un rayon » : les rayons du catalogue avec leurs effectifs. Le catalogue (1,5 Mo) n'arrive qu'à ce clic. ──
+  function rayonsFermer() {
+    var ov = document.getElementById('mkf-rayons'); if (!ov) return;
+    document.removeEventListener('keydown', rayonsTouches);
+    ov.parentNode.removeChild(ov);
+    var b = document.querySelector('[data-mkf="rayon"]'); if (b && b.focus) { try { b.focus({ preventScroll: true }); } catch (e) {} }
+  }
+  function rayonsTouches(e) { if (e.key === 'Escape') rayonsFermer(); }
+  function rayonsCorps() {
+    var K = catCache(), h = '', i;
+    if (K) {
+      for (i = 0; i < K.rayons.length; i++) h += '<button type="button" class="mkf-rayon mk-press" data-mkf="rayon-choisi" data-i="' + K.rayons[i].i + '"><span>' + esc(K.rayons[i].l) + '</span><small>' + V2.fmtNum(K.rayons[i].n) + '</small></button>';
+      return h;
+    }
+    var R = (window.MKT_RAYONS && window.MKT_RAYONS.rayons) || [];
+    for (i = 0; i < R.length; i++) h += '<button type="button" class="mkf-rayon mk-press" data-mkf="rayon-choisi" data-i="' + i + '"><span>' + esc(R[i]) + '</span></button>';
+    return h;
+  }
+  function rayonsOuvrir() {
+    var hote = document.getElementById('mkf'); if (!hote || document.getElementById('mkf-rayons')) return;
+    var ov = document.createElement('div'); ov.id = 'mkf-rayons'; ov.className = 'mkf-voile';
+    ov.innerHTML = '<div class="mkf-boite" role="dialog" aria-modal="true" aria-labelledby="mkf-ray-t">' +
+      '<header><h2 id="mkf-ray-t">Partir d’un rayon</h2><button type="button" class="mk-btn mk-press" data-mkf="rayons-fermer" aria-label="Fermer la liste des rayons">' + mic('fermer', 20, 2) + '</button></header>' +
+      '<p>Une sélection neuve s’ouvre, et le catalogue se présente déjà trié sur ce rayon.</p>' +
+      '<div class="mkf-rayons" id="mkf-ray-liste"><span class="mk-sq mkf-ray-sq"></span><span class="mk-sq mkf-ray-sq"></span><span class="mk-sq mkf-ray-sq"></span></div></div>';
+    hote.appendChild(ov);
+    document.addEventListener('keydown', rayonsTouches);
+    var fermer = ov.querySelector('[data-mkf="rayons-fermer"]'); if (fermer) fermer.focus();
+    var poser = function () {
+      var box = document.getElementById('mkf-ray-liste'); if (!box) return;
+      var h = rayonsCorps();
+      box.innerHTML = h || '<p class="mkf-ray-rate">Le catalogue n’a pas pu être lu pour l’instant. <button type="button" class="mk-btn mk-texte" data-mkf="rayons-relire">Réessayer</button></p>';
+      var nb = document.getElementById('mkf-ray-n'); if (nb && h) nb.textContent = rayonsNb() + ' rayons, avec leurs effectifs';
+    };
+    if (catCache() || !V2.loadFiles) { poser(); return; }
+    V2.loadFiles(['catcomplet', 'mktrayons']).then(poser, poser);
+  }
+
   function renderList(root) {
-    if (!liKicked && V2.mktLinkedin && V2.mktLinkedin.loadPosts) { liKicked = true; V2.mktLinkedin.loadPosts().then(function () { if (V2.route && V2.route.name === 'marketing' && !V2.route.param) V2.render(); }); }
+    volDepuis = null;
     var all = (items || []).slice().sort(function (a, b) { return (b.updated || 0) - (a.updated || 0); });
-    var shareNote = backend === 'supabase'
-      ? '<span class="mkt-share ok">' + ICO('check', 14, 2) + ' Partagé avec Pauline</span>'
-      : '<span class="mkt-share local">' + ICO('alert', 14, 2) + ' Enregistré sur cet appareil</span>';
     var catTotal = (window.CATALOGUE_COMPLET && window.CATALOGUE_COMPLET.rows && window.CATALOGUE_COMPLET.rows.length) || CAT_TOTAL_ATTENDU;
-
-    // ── Tiroir « Modèles » : les 4 modèles, tuile = mini-feuille ──
-    var modelsHtml = MODELES.map(function (m) {
-      return '<button class="mkt-mtile" type="button" style="--m:' + m.accent + '" data-model="' + m.k + '" data-head="' + m.head + '" onclick="V2.mkt.createWith(\'' + m.k + '\')">' +
-        '<b>' + esc(m.label) + '</b><small>' + esc(m.desc) + '</small></button>';
-    }).join('');
-
-    // ── Tiroir « Rayons » : les 7 plus gros, avec repli si le catalogue n'est pas encore chargé ──
-    var ray = rayonsChips(catTotal), rayChips = ray.html, rayCount = ray.n;
-
-    // ── La feuille sur le plan de travail : la dernière création, ou un exemple ──
-    var mostRecent = all[0];
-    var sheetHtml = mostRecent ? flyerPreviewHtml(mostRecent) : exampleSheetHtml();
-    var sheetClick = mostRecent ? "V2.mkt.open('" + esc(mostRecent.id) + "')" : "V2.mkt.create('support')";
-
-    // ── Créations récentes : éventail de mini-feuilles ──
-    var recentHtml;
-    if (all.length) {
-      var fan = all.slice(0, 6).map(function (it) {
-        var t = TYPES[it.type] || TYPES.support;
-        var n = (it.products || []).length;
-        var st = statusOf(it.status);
-        var acc = (it.theme && it.theme.accent) || t.accent;
-        var who = (it.owner || '').split('@')[0];
-        return '<button class="mkt-mini" type="button" style="--m:' + acc + '" onclick="V2.mkt.open(\'' + esc(it.id) + '\')">' +
-          '<i></i><b>' + (it.title ? esc(it.title) : 'Sans titre') + '</b>' +
-          '<small>' + n + ' produit' + (n > 1 ? 's' : '') + ' · ' + esc(st.label) +
-            (who ? '<br><span class="who"><em>' + esc(who.charAt(0).toUpperCase()) + '</em> ' + esc(who) + '</span>' : '') + '</small>' +
-        '</button>';
-      }).join('');
-      recentHtml = '<div class="mkt-recent"><h2>Créations récentes' + (backend === 'supabase' ? ' · partagées avec Pauline' : '') + '</h2><div class="mkt-fan">' + fan + '</div></div>';
-    } else {
-      recentHtml = '<div class="mkt-recent"><div class="mkt-empty">Aucune création pour l\'instant — clique la feuille pour commencer.</div></div>';
-    }
-
-    // ── Tiroir « Le nouveau site » : bandeau de vignettes si présentes ──
-    var mqStrip = '';
-    if (window.MAQUETTES_SITE && window.MAQUETTES_SITE.length) {
-      var mqL = window.MAQUETTES_SITE, mqShots = '';
-      for (var mqi = 0; mqi < 3 && mqi < mqL.length; mqi++) {
-        var mqA = mqL[mqi].apercu || ('../../site-integral/propositions/vignettes/' + mqL[mqi].id + '.jpg');
-        mqShots += '<img src="' + mqA + '" loading="lazy" decoding="async" alt="">';
-      }
-      mqStrip = '<span class="mkt-mqstrip">' + mqShots + '</span>';
-    }
-    var liDue = (V2.mktLinkedin && V2.mktLinkedin.dueCount) ? V2.mktLinkedin.dueCount() : 0;
+    var partage = backend === 'supabase'
+      ? 'Elles sont partagées avec Pauline dès l’enregistrement.'
+      : 'Pour l’instant, elles ne sont visibles que par vous.';
+    var dejaLa = listeVue && !!root.querySelector('#mkf');
 
     root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
-      '<main class="mkt-atelier"><div class="v2-wrap mkt-bench">' +
-
-        '<div class="mkt-headline">' +
-          '<div><h1>Une feuille vierge, et tout à portée de main.</h1>' +
-            '<p>Tape directement dans la feuille. Les modèles, les rayons et les produits sont rangés dans les tiroirs autour. ' + shareNote + '</p></div>' +
-          '<div class="mkt-hacts">' +
-            '<button class="v2-btn v2-btn-ghost" type="button" onclick="V2.mkt.create(\'support\')">' + ICO('fiche', 17, 2) + 'Une fiche produit</button>' +
-            '<button class="v2-btn v2-btn-primary" type="button" onclick="V2.mkt.create(\'selection\')">' + ICO('plus', 17, 2.4) + 'Une sélection de produits</button>' +
-          '</div>' +
+      '<div class="mkf mk-espace" id="mkf">' +
+        '<header class="mkf-entete"><h1>Fiches</h1>' +
+          '<p>Fiches produit et sélections à remettre aux officines. <span class="mkf-partage">' + partage + '</span></p></header>' +
+        '<div class="mkf-plan">' +
+          '<section class="mkf-bloc mkf-mes" aria-labelledby="mkf-t-mes">' +
+            '<h2 class="mkf-cap" id="mkf-t-mes">Mes fiches' + (all.length ? ' <span>' + all.length + '</span>' : '') + '</h2>' +
+            (all.length ? '<div class="mkf-mur" id="mkf-mur">' + all.map(ficheTuileHtml).join('') + '</div>' : ficheVideHtml()) +
+          '</section>' +
+          '<aside class="mkf-cote">' +
+            '<section class="mkf-bloc" aria-labelledby="mkf-t-com">' +
+              '<h2 class="mkf-cap" id="mkf-t-com">Commencer</h2>' +
+              '<div class="mkf-modeles">' + MODELES.map(ficheModeleHtml).join('') + '</div>' +
+              '<div class="mkf-departs">' +
+                ficheDepartHtml('rayon', 'catalogue', 'Depuis un rayon', rayonsNb() + ' rayons, avec leurs effectifs') +
+                ficheDepartHtml('catalogue', 'loupe', 'Depuis tout le catalogue', V2.fmtNum(catTotal) + ' références') +
+                ficheDepartHtml('support', 'fiches', 'Fiche produit vierge', 'Un support à remettre à l’officine') +
+                ficheDepartHtml('selection', 'selection', 'Sélection à pousser', 'Une liste de produits du moment') +
+              '</div>' +
+            '</section>' +
+            '<section class="mkf-bloc" aria-labelledby="mkf-t-pret">' +
+              '<h2 class="mkf-cap" id="mkf-t-pret">Prêts à présenter</h2>' +
+              '<div class="mkf-prets">' +
+                ficheDepartHtml('catalogues', 'catalogue', 'Catalogue &amp; prix', V2.fmtNum(catTotal) + ' références, prix et stock par établissement') +
+                '<div class="mkf-pret"><b>Catalogue par catégorie</b><small>Princeps par tranche de prix et non remboursables.</small>' +
+                  '<span><button type="button" class="mk-btn mk-press" data-mkf="top50pdf">' + mic('charger', 18) + 'PDF</button>' +
+                  '<button type="button" class="mk-btn mk-press" data-mkf="top50xls">' + mic('charger', 18) + 'Excel</button></span></div>' +
+                '<div class="mkf-pret"><b>Biosimilaires substituables</b><small>Une fiche prête à présenter au comptoir.</small>' +
+                  '<span><button type="button" class="mk-btn mk-press" data-mkf="biosim-fiche">' + mic('charger', 18) + 'Fiche PDF</button>' +
+                  '<button type="button" class="mk-btn mk-press" data-mkf="biosim-detail">' + mic('charger', 18) + 'Toutes les présentations</button>' +
+                  (V2.pages && V2.pages.biosimilaires ? '<button type="button" class="mk-btn mk-press" data-mkf="biosim-base">Ouvrir la base' + mic('suivant', 18, 2) + '</button>' : '') +
+                  '</span></div>' +
+              '</div>' +
+            '</section>' +
+          '</aside>' +
         '</div>' +
+      '</div>';
 
-        '<aside class="mkt-rail" aria-label="Tiroirs de gauche">' +
-          '<section class="mkt-drawer"><header>' + ICO('grid', 20, 1.8) + 'Modèles<span class="handle"></span></header>' +
-            '<div class="body"><div class="mkt-models">' + modelsHtml + '</div></div></section>' +
-          '<section class="mkt-drawer"><header>' + ICO('cat', 20, 1.8) + 'Rayons<span id="mkt-rayons-n">' + (rayCount ? '<span class="n">' + V2.fmtNum(rayCount) + '</span>' : '') + '</span></header>' +
-            '<div class="body"><div class="mkt-chips" id="mkt-rayons-chips">' + rayChips + '</div></div></section>' +
-        '</aside>' +
-
-        '<section class="mkt-stage" aria-label="La feuille">' +
-          '<div class="mkt-hint">' + ICO('spark', 14, 2) + 'La feuille est vivante : clique-la pour l\'ouvrir dans l\'atelier.</div>' +
-          '<div class="mkt-sheetwrap" id="mkt-home-wrap">' +
-            '<button class="mkt-sheet-home" type="button" id="mkt-home-btn" onclick="' + sheetClick + '" aria-label="Ouvrir la feuille">' +
-              '<div class="mkt-home-holder" id="mkt-home-holder"><div class="mkt-home-sheet" id="mkt-home-sheet">' + sheetHtml + '</div></div>' +
-            '</button>' +
-          '</div>' +
-          recentHtml +
-        '</section>' +
-
-        '<aside class="mkt-rail right" aria-label="Instruments">' +
-          '<section class="mkt-drawer"><header>' + ICO('cat', 20, 1.8) + 'Catalogue<span class="handle"></span></header>' +
-            '<div class="body">' +
-              '<button class="mkt-tool" type="button" onclick="V2.go(\'marketing\',\'catalogues\')">' +
-                '<span class="tico">' + ICO('grid', 20, 1.8) + '</span>' +
-                '<span><b>Catalogue &amp; prix</b><span>' + V2.fmtNum(catTotal) + ' références, PPHT et stock par établissement. « Créer la liste » en un clic.</span></span>' +
-                '<span class="arr">' + ICO('chev', 16, 2.2) + '</span></button>' +
-              '<div class="mkt-tool" style="cursor:default">' +
-                '<span class="tico pdf">' + ICO('download', 20, 1.8) + '</span>' +
-                '<span><b>Catalogue par catégorie</b><span>Princeps petits prix · intermédiaire · cher + NR. PDF ou Excel.</span>' +
-                  '<span style="display:flex;gap:8px;margin-top:8px"><button class="v2-btn v2-btn-ghost" style="min-height:36px" onclick="event.stopPropagation();V2.mkt.top50Pdf()">' + ICO('download', 14) + ' PDF</button>' +
-                  '<button class="v2-btn v2-btn-ghost" style="min-height:36px" onclick="event.stopPropagation();V2.mkt.top50Xlsx()">' + ICO('download', 14) + ' Excel</button></span></span></div>' +
-              '<div class="mkt-tool" style="cursor:default">' +
-                '<span class="tico">' + ICO('pill', 20, 1.8) + '</span>' +
-                '<span><b>Biosimilaires substituables</b><span>Fiche façon Teva prête à présenter.</span>' +
-                  '<span style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">' +
-                    '<button class="v2-btn v2-btn-ghost" style="min-height:36px" onclick="event.stopPropagation();V2.ouvrirDocProtege(\'biosimSynthesePharma\')">' + ICO('download', 14) + ' Fiche PDF</button>' +
-                    '<button class="v2-btn v2-btn-ghost" style="min-height:36px" onclick="event.stopPropagation();V2.ouvrirDocProtege(\'biosimDetailPharma\')">' + ICO('download', 14) + ' Toutes présentations</button>' +
-                    (V2.pages && V2.pages.biosimilaires ? '<button class="v2-btn v2-btn-ghost" style="min-height:36px" onclick="event.stopPropagation();V2.go(\'biosimilaires\')">' + ICO('chev', 14, 2.2) + ' Ouvrir la base</button>' : '') +
-                  '</span></span></div>' +
-            '</div></section>' +
-          '<section class="mkt-drawer"><header>' + ICO('cal', 20, 1.8) + 'Communication<span class="handle"></span></header>' +
-            '<div class="body">' +
-              '<button class="mkt-tool" type="button" onclick="V2.go(\'marketing\',\'linkedin\')">' +
-                '<span class="tico">' + ICO('cal', 20, 1.8) + '</span>' +
-                '<span><b>Rétroplanning LinkedIn' + (liDue > 0 ? ' <span class="mkt-badge">' + liDue + ' à publier</span>' : '') + '</b><span>Calendrier éditorial : anciens posts, prochains à préparer, publication en un clic.</span></span>' +
-                '<span class="arr">' + ICO('chev', 16, 2.2) + '</span></button>' +
-              '<button class="mkt-tool" type="button" onclick="V2.go(\'marketing\',\'docs\')">' +
-                '<span class="tico">' + ICO('download', 20, 1.8) + '</span>' +
-                '<span><b>Documents partagés</b><span>Catalogues, fiches et offres en PDF ou Excel, visibles par tous les comptes.</span></span>' +
-                '<span class="arr">' + ICO('chev', 16, 2.2) + '</span></button>' +
-              '<button class="mkt-tool" type="button" onclick="V2.go(\'marketing\',\'propositions\')">' +
-                '<span class="tico">' + ICO('cat', 20, 1.8) + '</span>' +
-                '<span><b>Le nouveau site</b><span>Intégral Pharma, version unique — voir et noter.</span></span>' +
-                '<span class="arr">' + ICO('chev', 16, 2.2) + '</span></button>' +
-              mqStrip +
-            '</div></section>' +
-          '<details class="mkt-drawer mkt-more"><summary>' + ICO('cat', 20, 1.8) + 'Autres outils<span class="n">maquettes, supports</span><span class="mkt-more-chev">' + ICO('chev', 16, 2) + '</span></summary>' +
-            '<div class="body">' +
-              '<button class="mkt-tool" type="button" onclick="V2.go(\'marketing\',\'site\')">' +
-                '<span class="tico">' + ICO('cat', 20, 1.8) + '</span>' +
-                '<span><b>Le nouveau site, en plein écran</b><span>La version unique, servie telle qu\'elle sera en ligne.</span></span>' +
-                '<span class="arr">' + ICO('chev', 16, 2.2) + '</span></button>' +
-              '<button class="mkt-tool" type="button" onclick="V2.go(\'marketing\',\'fxbank\')">' +
-                '<span class="tico">' + ICO('spark', 20, 1.8) + '</span>' +
-                '<span><b>Banque d\'effets</b><span>Composants 3D / motion / design prêts à assembler.</span></span>' +
-                '<span class="arr">' + ICO('chev', 16, 2.2) + '</span></button>' +
-            '</div></details>' +
-        '</aside>' +
-
-        (backend === 'local'
-          ? '<div class="mkt-setup" style="grid-column:1/-1">' + ICO('alert', 16, 2) + '<div><b>Activer le partage entre vous</b><br>' +
-            'Pour l\'instant les supports sont enregistrés sur cet appareil. Pour que Pauline et toi voyiez les mêmes, il faut créer une table dans Supabase (une seule fois). Demande-moi le script SQL, il est prêt.</div></div>'
-          : '') +
-      '</div></main>';
-
-    fitHomeSheet();
-    if (!V2._mktHomeFitBound) { window.addEventListener('resize', fitHomeSheet); V2._mktHomeFitBound = true; }
-    wireHomeTilt();
-
-    if (V2.motion) {
-      V2.motion.stagger(root.querySelectorAll('.mkt-mini'), { step: 45, y: 10 });
-      var drawers = root.querySelectorAll('.mkt-drawer');
-      for (var di = 0; di < drawers.length; di++) V2.motion.enter(drawers[di], { y: 8, delay: 40 * di });
-    }
-  }
-  // ── Mise à l'échelle de la feuille d'accueil (même principe que fitSheet, id distincts) ──
-  function fitHomeSheet() {
-    var ho = document.getElementById('mkt-home-holder'), sh = document.getElementById('mkt-home-sheet');
-    if (!ho || !sh) return;
-    var avail = Math.min(ho.parentNode.clientWidth || 600, 600);
-    var scale = Math.min(1, avail / 794);
-    sh.style.transform = 'scale(' + scale + ')';
-    var h = sh.firstChild ? sh.firstChild.offsetHeight : sh.offsetHeight;
-    ho.style.width = (794 * scale) + 'px'; ho.style.height = (h * scale) + 'px';
-  }
-  // ── Inclinaison 3D de la feuille d'accueil sous le curseur (souris fine, hors reduced-motion) ──
-  function wireHomeTilt() {
-    var wrap = document.getElementById('mkt-home-wrap'); if (!wrap) return;
-    if (!(window.matchMedia && matchMedia('(hover:hover) and (pointer:fine)').matches && !matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
-    wrap.addEventListener('mousemove', function (e) {
-      var r = wrap.getBoundingClientRect(), x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5;
-      wrap.style.setProperty('--ry', (-10 + x * 12).toFixed(2) + 'deg');
-      wrap.style.setProperty('--rx', (6 - y * 9).toFixed(2) + 'deg');
+    var hote = document.getElementById('mkf');
+    var agir = function (b, e) {
+      var act = b.getAttribute('data-mkf');
+      if (act === 'ouvrir') {
+        var pg = b.querySelector('.mkf-page'); volDepuis = pg ? pg.getBoundingClientRect() : null;
+        V2.mkt.open(b.getAttribute('data-id'));
+      } else if (act === 'modele') { var pm = b.querySelector('.mkf-page'); volDepuis = pm ? pm.getBoundingClientRect() : null; V2.mkt.createWith(b.getAttribute('data-k')); }
+      else if (act === 'rayon') rayonsOuvrir();
+      else if (act === 'rayons-fermer') rayonsFermer();
+      else if (act === 'rayons-relire') { rayonsFermer(); rayonsOuvrir(); }
+      else if (act === 'rayon-choisi') { var ri = parseInt(b.getAttribute('data-i'), 10); rayonsFermer(); V2.mkt.createFromRayon(ri); }
+      else if (act === 'catalogue') V2.mkt.createFromCatalogue();
+      else if (act === 'support' || act === 'selection') V2.mkt.create(act);
+      else if (act === 'catalogues') V2.go('marketing', 'catalogues');
+      else if (act === 'top50pdf') V2.mkt.top50Pdf();
+      else if (act === 'top50xls') V2.mkt.top50Xlsx();
+      else if (act === 'biosim-fiche') V2.ouvrirDocProtege('biosimSynthesePharma');
+      else if (act === 'biosim-detail') V2.ouvrirDocProtege('biosimDetailPharma');
+      else if (act === 'biosim-base') V2.go('biosimilaires');
+    };
+    hote.addEventListener('click', function (e) {
+      if (e.target.id === 'mkf-rayons') { rayonsFermer(); return; }   // clic sur le voile
+      var b = e.target.closest ? e.target.closest('[data-mkf]') : null; if (b) agir(b, e);
     });
-    wrap.addEventListener('mouseleave', function () { wrap.style.removeProperty('--rx'); wrap.style.removeProperty('--ry'); });
+    hote.addEventListener('keydown', function (e) {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      var b = e.target.getAttribute && e.target.getAttribute('role') === 'button' ? e.target : null;
+      if (b && b.getAttribute('data-mkf')) { e.preventDefault(); agir(b, e); }
+    });
+    ficheCaler();
+    if (!V2._mktListeFitBound) { window.addEventListener('resize', ficheCaler); V2._mktListeFitBound = true; }
+    if (!dejaLa && V2.mktSocle && V2.mktSocle.cascade) V2.mktSocle.cascade(root.querySelectorAll('.mkf-mur .mkf-tuile'));
+    listeVue = true;
+    if (retourFiche) {
+      var rid = retourFiche; retourFiche = null;
+      var L = root.querySelectorAll('.mkf-mur .mkf-tuile'), i;
+      for (i = 0; i < L.length; i++) if (L[i].getAttribute('data-id') === rid) {
+        if (V2.mktSocle && V2.mktSocle.marquer) V2.mktSocle.marquer(L[i], 900);
+        try { L[i].focus({ preventScroll: true }); } catch (e2) {}
+      }
+    }
   }
 
   // ════════════════════════════════════════════
@@ -789,83 +766,153 @@
       }
     } else {
       var ex = (items || []).filter(function (x) { return x.id === id; })[0];
-      if (!ex) { V2.toast('Support introuvable', 'error'); V2.go('marketing'); return; }
+      if (!ex) { V2.toast('Fiche introuvable', 'error'); V2.go('marketing', 'fiches'); return; }
       if (!editing || editing.id !== ex.id) {
         editing = { id: ex.id, type: ex.type, title: ex.title, accroche: ex.accroche, footer: ex.footer || '', status: ex.status,
                     products: (ex.products || []).map(function (p) { return Object.assign({}, p); }),
                     theme: Object.assign(defaultTheme(ex.type), ex.theme || {}), owner: ex.owner };
       }
     }
-    var t = TYPES[editing.type] || TYPES.support;
     var n = editing.products.length;
-    var statusChips = '<div class="mkt-seg" role="group" aria-label="Statut">' + STATUSES.map(function (s) {
-      return '<button type="button" aria-pressed="' + (editing.status === s.k ? 'true' : 'false') + '" onclick="V2.mkt.setStatus(\'' + s.k + '\',this)">' + esc(s.label) + '</button>';
-    }).join('') + '</div>';
-    var prodHtml = n ? editing.products.map(prodRow).join('') : '<div class="mkt-empty" style="border:none">Aucun produit. Ajoute des références ci-dessous.</div>';
     var curTpl = (editing.theme && editing.theme.tpl) || 'promo';
+    var iOng = Math.max(0, ONGLETS_P.indexOf(ongletPanneau)), iSt = 0;
+    STATUSES.forEach(function (s, i) { if (s.k === editing.status) iSt = i; });
+    // Le choix du modèle : la tuile est de l'interface, le violet d'origine de « Fiche produit simple » y passe en encre
+    // (la feuille, elle, garde l'accent du modèle : le PDF ne change pas).
     var modelsHtml = MODELES.map(function (m) {
-      return '<button class="mkt-mtile" type="button" style="--m:' + m.accent + '" data-model="' + m.k + '" data-head="' + m.head + '" aria-pressed="' + (curTpl === m.k ? 'true' : 'false') + '" onclick="V2.mkt.setModele(\'' + m.k + '\')">' +
+      return '<button class="mkt-mtile mk-press" type="button" style="--m:' + (m.accent === '#6D4FC4' ? '#10131C' : m.accent) + '" data-model="' + m.k + '" data-head="' + m.head + '" aria-pressed="' + (curTpl === m.k ? 'true' : 'false') + '" onclick="V2.mkt.setModele(\'' + m.k + '\')">' +
         '<b>' + esc(m.label) + '</b><small>' + esc(m.desc) + '</small></button>';
     }).join('');
+    var statutHtml = '<div class="mk-seg mke-statut" role="group" aria-label="Statut" style="--n:3;--i:' + iSt + '"><i class="mk-seg-ind"></i>' + STATUSES.map(function (s) {
+      return '<button type="button" class="mk-press" aria-pressed="' + (editing.status === s.k ? 'true' : 'false') + '" onclick="V2.mkt.setStatus(\'' + s.k + '\',this)">' + esc(s.label) + '</button>';
+    }).join('') + '</div>';
+    var ongletBtn = function (k, label) {
+      return '<button type="button" class="mk-press" data-mke="onglet" data-k="' + k + '" aria-pressed="' + (ongletPanneau === k ? 'true' : 'false') + '">' + label + '</button>';
+    };
+    var S = V2.mktSocle || {};
 
     root.innerHTML = V2.topbar({ back: true, backTo: 'marketing', backLabel: 'Marketing' }) +
-      '<main class="mkt-atelier"><div class="v2-wrap mkt-bench">' +
+      '<div class="mke mk-espace" id="mke" data-zoom="' + zoomFeuille + '" data-onglet="' + ongletPanneau + '">' +
 
-        '<div class="mkt-headline">' +
-          '<div><h1>' + (editing.title ? esc(editing.title) : 'Sans titre') + '</h1>' +
-            '<p>Modèle choisi · tu personnalises · tu télécharges. Tout se fait sur la feuille.</p></div>' +
-          '<div class="mkt-hacts">' +
-            '<button class="v2-btn v2-btn-ghost" type="button" onclick="V2.mkt.openPicker()">' + ICO('plus', 17, 2.4) + 'Ajouter des produits</button>' +
-            '<button class="v2-btn v2-btn-primary" type="button" onclick="V2.mkt.downloadPdf()">' + ICO('download', 17, 2) + 'Télécharger le PDF</button>' +
+        '<nav class="mke-rail" aria-label="Outils de la fiche">' +
+          '<button type="button" class="mke-outil mk-press" data-mke="retour" aria-label="Revenir à la liste des fiches">' + mic('retour', 22, 2) + '<span>Fiches</span></button>' +
+          '<div class="mke-zoom" role="group" aria-label="Taille de la feuille">' +
+            '<button type="button" class="mke-outil mk-press" data-mke="zoom" data-z="ajuster" aria-pressed="' + (zoomFeuille === 'ajuster' ? 'true' : 'false') + '">' + svgTrait('<path d="M4 9V5h4M20 9V5h-4M4 15v4h4M20 15v4h-4"/><rect x="9" y="8" width="6" height="8" rx="1"/>', 22) + '<span>Ajuster</span></button>' +
+            '<button type="button" class="mke-outil mk-press" data-mke="zoom" data-z="largeur" aria-pressed="' + (zoomFeuille === 'largeur' ? 'true' : 'false') + '">' + svgTrait('<path d="M3 12h18M7 8l-4 4 4 4M17 8l4 4-4 4"/>', 22) + '<span>Largeur</span></button>' +
           '</div>' +
-        '</div>' +
+          '<span class="mke-pousse"></span>' +
+          '<button type="button" class="mke-outil mk-save mk-press" id="mke-enreg" data-mke="enregistrer">' +
+            (S.saveHtml ? S.saveHtml(mic('coche', 22, 2) + '<span>Enregistrer</span>', '<span>Enregistré</span>') : '<span>Enregistrer</span>') + '</button>' +
+        '</nav>' +
 
-        '<aside class="mkt-rail" aria-label="Tiroirs de gauche">' +
-          '<section class="mkt-drawer"><header>' + ICO('grid', 20, 1.8) + 'Modèles<span class="handle"></span></header>' +
-            '<div class="body"><div class="mkt-models">' + modelsHtml + '</div></div></section>' +
-          '<section class="mkt-drawer"><header>' + ICO('check', 20, 1.8) + 'Statut<span class="handle"></span></header>' +
-            '<div class="body">' + statusChips + '<p class="desc" style="padding-top:10px">Partagée avec Pauline dès l\'enregistrement.</p></div></section>' +
-          '<section class="mkt-drawer"><header>' + ICO('spark', 20, 1.8) + 'Affichage<span class="handle"></span></header>' +
-            '<div class="body">' + personalizePanel() + '</div></section>' +
-        '</aside>' +
-
-        '<section class="mkt-stage" aria-label="La feuille">' +
-          '<div class="mkt-toolbar"><div class="mkt-tbsteps"><b><i class="done">' + ICO('check', 12, 3) + '</i>Modèle</b><span>—</span><b><i>2</i>Personnaliser</b></div>' +
-            '<div class="mkt-tbhint"><i></i>Aperçu en direct</div></div>' +
-          '<div class="mkt-sheetwrap">' +
-            '<div class="mkt-mscroll" id="mkt-mscroll"><div class="mkt-mholder" id="mkt-mholder"><div class="mkt-msheet" id="mkt-msheet"></div></div></div>' +
-          '</div>' +
-          '<section class="mkt-drawer" style="width:min(100%,600px)">' +
-            '<header>' + ICO('cart', 20, 1.8) + 'Produits sur la feuille<span class="n" id="mkt-count">' + n + '</span></header>' +
-            '<div class="body">' +
-              '<div id="mkt-prodlist">' + prodHtml + '</div>' +
-              catDatalist() +
-              '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">' +
-                '<button class="v2-btn v2-btn-ghost" type="button" onclick="V2.mkt.openPicker()">' + ICO('plus', 16, 2.4) + 'Ajouter des produits</button>' +
-                '<button class="v2-btn v2-btn-ghost" type="button" onclick="V2.mkt.addCustom()">' + ICO('plus', 16, 2) + 'Produit libre</button>' +
-              '</div>' +
-            '</div></section>' +
+        '<section class="mke-scene" id="mke-scene" aria-label="La feuille">' +
+          '<div class="mkt-mscroll mke-defile" id="mkt-mscroll"><div class="mkt-mholder" id="mkt-mholder"><div class="mkt-msheet" id="mkt-msheet"></div></div></div>' +
         '</section>' +
 
-        '<aside class="mkt-rail right" aria-label="Instruments">' +
-          '<section class="mkt-drawer"><header>' + ICO('fiche', 20, 1.8) + 'Texte<span class="handle"></span></header>' +
-            '<div class="body">' +
-              '<div class="mkt-field"><label for="mkt-title">Titre</label><input id="mkt-title" type="text" placeholder="Titre du ' + esc(t.label.toLowerCase()) + '…" value="' + esc(editing.title) + '" oninput="V2.mkt.setTitle(this.value)"></div>' +
-              '<div class="mkt-field" style="margin-top:10px"><label for="mkt-accroche">Accroche</label><textarea id="mkt-accroche" rows="3" placeholder="Accroche / message (ex : Notre sélection solaires de l\'été)…" oninput="V2.mkt.setAccroche(this.value)">' + esc(editing.accroche || '') + '</textarea></div>' +
-            '</div></section>' +
-          '<section class="mkt-drawer"><header>' + ICO('check', 20, 1.8) + 'Actions<span class="handle"></span></header>' +
-            '<div class="body" style="display:flex;flex-direction:column;gap:8px">' +
-              '<button class="v2-btn v2-btn-ghost" type="button" onclick="V2.mkt.save()">' + ICO('check', 16, 2) + 'Enregistrer</button>' +
-              '<button class="v2-btn v2-btn-primary" type="button" onclick="V2.mkt.downloadPdf()">' + ICO('download', 16, 2) + 'Télécharger le PDF</button>' +
-              '<button class="v2-btn v2-btn-ghost mkt-del-a" type="button" onclick="V2.mkt.remove()">' + ICO('close', 16, 2) + 'Supprimer</button>' +
-            '</div></section>' +
+        '<aside class="mke-panneau' + (panneauHaut ? ' is-haut' : '') + '" id="mke-panneau" aria-label="Réglages de la fiche">' +
+          '<button type="button" class="mke-poignee" data-mke="poignee" aria-expanded="' + (panneauHaut ? 'true' : 'false') + '" aria-controls="mke-corps"><i aria-hidden="true"></i><span>Produits, apparence, envoi</span></button>' +
+          '<div class="mk-seg mke-onglets" role="group" aria-label="Réglages" style="--n:3;--i:' + iOng + '"><i class="mk-seg-ind"></i>' +
+            ongletBtn('produits', 'Produits') + ongletBtn('apparence', 'Apparence') + ongletBtn('envoi', 'Envoi') + '</div>' +
+          '<div class="mke-corps" id="mke-corps">' +
+
+            '<div class="mke-volet" data-volet="produits">' +
+              '<div class="mke-cap"><span>Sur la feuille</span><b id="mkt-count">' + n + ' produit' + (n > 1 ? 's' : '') + '</b></div>' +
+              '<div id="mkt-prodlist">' + (n ? editing.products.map(prodRow).join('') : prodVideHtml()) + '</div>' +
+              catDatalist() +
+              '<button type="button" class="mk-btn mke-large mk-press" data-mke="ajouter">' + mic('plus', 20, 2) + 'Ajouter des produits</button>' +
+              '<button type="button" class="mk-btn mk-texte mke-large mk-press" data-mke="libre">' + mic('plus', 18, 2) + 'Produit libre, hors catalogue</button>' +
+            '</div>' +
+
+            '<div class="mke-volet" data-volet="apparence">' +
+              '<div class="mke-cap"><span>Modèle</span></div>' +
+              '<div class="mkt-models">' + modelsHtml + '</div>' +
+              personalizePanel() +
+            '</div>' +
+
+            '<div class="mke-volet" data-volet="envoi">' +
+              '<div class="mke-cap"><span>Statut</span></div>' + statutHtml +
+              '<p class="mke-note">' + (backend === 'supabase'
+                ? 'La fiche est partagée avec Pauline dès l’enregistrement.'
+                : 'Pour l’instant, la fiche enregistrée n’est visible que par vous.') + '</p>' +
+              '<button type="button" class="mk-btn mk-danger mke-suppr mk-press" data-mke="supprimer">' + mic('corbeille', 20) + 'Supprimer la fiche</button>' +
+            '</div>' +
+
+          '</div>' +
         '</aside>' +
 
-      '</div></main>' + pickerMarkup();
+        '<div class="mke-pied"><button type="button" class="mk-btn mk-plein mk-grand mk-press" id="mke-pdf" data-mke="pdf">' + mic('charger', 20, 2) + 'Télécharger le PDF</button></div>' +
+
+      '</div>' + pickerMarkup();
+
+    var hote = document.getElementById('mke');
+    hote.addEventListener('click', function (e) {
+      var b = e.target.closest ? e.target.closest('[data-mke]') : null;
+      if (!b) { if (panneauHaut && e.target.closest && e.target.closest('#mke-scene')) etabliPanneau(false); return; }
+      var act = b.getAttribute('data-mke');
+      if (act === 'retour') { retourFiche = editing ? editing.id : null; V2.go('marketing', 'fiches'); }
+      else if (act === 'zoom') etabliZoom(b.getAttribute('data-z'));
+      else if (act === 'enregistrer') V2.mkt.save();
+      else if (act === 'poignee') etabliPanneau(!panneauHaut);
+      else if (act === 'onglet') { etabliOnglet(b.getAttribute('data-k')); if (!panneauHaut) etabliPanneau(true); }
+      else if (act === 'ajouter') V2.mkt.openPicker();
+      else if (act === 'libre') V2.mkt.addCustom();
+      else if (act === 'supprimer') V2.mkt.remove();
+      else if (act === 'pdf') V2.mkt.downloadPdf();
+    });
     wirePicker();
     refreshPreview();
     if (!V2._mktFitBound) { window.addEventListener('resize', fitSheet); V2._mktFitBound = true; }
+    etabliVol();
     if (pickOpenOnRender) { pickOpenOnRender = false; openPicker(); }
+  }
+  // ── L'établi : taille de la feuille, onglet du panneau, feuille basse du téléphone, arrivée depuis la liste ──
+  var ONGLETS_P = ['produits', 'apparence', 'envoi'];
+  var zoomFeuille = 'ajuster';      // 'ajuster' = la page entière · 'largeur' = toute la largeur (téléphone : taille réelle, pour écrire)
+  var ongletPanneau = 'produits';
+  var panneauHaut = false;          // téléphone : la feuille basse est montée
+  function etabliTel() { try { return window.matchMedia('(max-width:860px)').matches; } catch (e) { return false; } }
+  function svgTrait(d, s) {
+    return '<svg width="' + s + '" height="' + s + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + d + '</svg>';
+  }
+  function prodVideHtml() { return '<p class="mke-note mke-sans">Posez vos premiers produits avec le bouton ci-dessous : ils arrivent aussitôt sur la feuille.</p>'; }
+  function etabliZoom(z) {
+    zoomFeuille = z === 'largeur' ? 'largeur' : 'ajuster';
+    var hote = document.getElementById('mke'); if (!hote) return;
+    hote.setAttribute('data-zoom', zoomFeuille);
+    Array.prototype.forEach.call(hote.querySelectorAll('[data-mke="zoom"]'), function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-z') === zoomFeuille ? 'true' : 'false'); });
+    var sc = document.getElementById('mkt-mscroll'); if (sc) { sc.scrollTop = 0; sc.scrollLeft = 0; }
+    fitSheet();
+  }
+  function etabliOnglet(k) {
+    if (ONGLETS_P.indexOf(k) < 0) return;
+    ongletPanneau = k;
+    var hote = document.getElementById('mke'); if (!hote) return;
+    hote.setAttribute('data-onglet', k);
+    var seg = hote.querySelector('.mke-onglets'); if (seg) seg.style.setProperty('--i', ONGLETS_P.indexOf(k));
+    Array.prototype.forEach.call(hote.querySelectorAll('[data-mke="onglet"]'), function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-k') === k ? 'true' : 'false'); });
+    var corps = document.getElementById('mke-corps'); if (corps) corps.scrollTop = 0;
+  }
+  // Téléphone : le panneau est une feuille basse posée PAR-DESSUS la scène. Elle monte et descend en transform :
+  // la scène ne change jamais de taille, donc la feuille A4 non plus.
+  function etabliPanneau(haut) {
+    panneauHaut = !!haut;
+    var p = document.getElementById('mke-panneau'); if (!p) return;
+    p.classList.toggle('is-haut', panneauHaut);
+    var g = p.querySelector('.mke-poignee'); if (g) g.setAttribute('aria-expanded', panneauHaut ? 'true' : 'false');
+  }
+  // Arrivée depuis la liste : la vignette grandit et devient la feuille (transform + opacity, 320 ms) ; le rail et le
+  // panneau arrivent en fondu. Pas de transition de vue du navigateur (image double sous WebKit, constat du lot 2).
+  function etabliVol() {
+    var a = volDepuis; volDepuis = null;
+    var ho = document.getElementById('mkt-mholder');
+    if (!a || !ho || !ho.animate || docCalme()) return;
+    var b = ho.getBoundingClientRect(); if (!b.width || !a.width) return;
+    var k = a.width / b.width;
+    ho.animate([{ transformOrigin: '0 0', transform: 'translate(' + (a.left - b.left) + 'px,' + (a.top - b.top) + 'px) scale(' + k + ')', opacity: .7 },
+                { transformOrigin: '0 0', transform: 'none', opacity: 1 }], { duration: 320, easing: 'cubic-bezier(.32,.72,0,1)' });
+    Array.prototype.forEach.call(document.querySelectorAll('#mke .mke-rail,#mke .mke-panneau,#mke .mke-pied'), function (n) {
+      n.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 240, easing: 'ease-out', fill: 'backwards' });
+    });
   }
   var CAT_SUGG = ['Antalgiques & douleur', 'ORL · Nez & gorge', 'Digestif & transit', 'Dermatologie', 'Circulation veineuse', 'Compléments & vitamines', 'Diabète & autosurveillance', 'Ophtalmologie', 'Pansements & cicatrisation', 'Hygiène · Bébé · Sérum phy', 'Sommeil · Stress', 'Sevrage tabac', 'Contraception & gynéco', 'Solaire', 'Minceur', 'Vétérinaire'];
   function catDatalist() {
@@ -892,13 +939,13 @@
       '</div>' +
       '<label class="mkt-prow-f"><span>Prix €</span><input type="number" inputmode="decimal" step="0.01" min="0" value="' + (p.price != null && p.price !== 0 ? p.price : '') + '" aria-label="Prix" oninput="V2.mkt.setProd(' + i + ',\'price\',this.value)"></label>' +
       '<label class="mkt-prow-f"><span>Abandon %</span><input type="number" inputmode="decimal" step="0.1" min="0" value="' + (p.remise != null && p.remise !== 0 ? p.remise : '') + '" aria-label="Abandon de marge" oninput="V2.mkt.setProd(' + i + ',\'remise\',this.value)"></label>' +
-      '<button class="mkt-prow-x" onclick="V2.mkt.removeProduct(' + i + ')" title="Retirer">' + ICO('close', 15, 2) + '</button>' +
+      '<button type="button" class="mkt-prow-x" onclick="V2.mkt.removeProduct(' + i + ')" title="Retirer" aria-label="Retirer ce produit de la feuille">' + ICO('close', 15, 2) + '</button>' +
     '</div>';
   }
   function refreshProducts() {
     var box = document.getElementById('mkt-prodlist'); if (!box) { V2.render(); return; }
     var n = editing.products.length;
-    box.innerHTML = n ? editing.products.map(prodRow).join('') : '<div class="mkt-empty" style="border:none">Aucun produit. Ajoute des références ci-dessous.</div>';
+    box.innerHTML = n ? editing.products.map(prodRow).join('') : prodVideHtml();
     var c = document.getElementById('mkt-count'); if (c) c.textContent = n + ' produit' + (n > 1 ? 's' : '');
     refreshPreview();
   }
@@ -1042,18 +1089,19 @@
   }
 
   function pickerMarkup() {
-    return '<div id="mkt-picker" class="mkt-pick-bd">' +
-      '<div class="mkt-pick" onclick="event.stopPropagation()">' +
+    return '<div id="mkt-picker" class="mkt-pick-bd mk-espace mke-pick">' +
+      '<div class="mkt-pick" id="mkt-pick-box" role="dialog" aria-label="Ajouter des produits" onclick="event.stopPropagation()">' +
         '<span class="mkt-pick-grip" aria-hidden="true"></span>' +
         '<div class="mkt-pick-search">' + ICO('search', 21, 2) +
           '<input id="mkt-pick-input" placeholder="' + esc(pickPlaceholder()) + '" autocomplete="off">' +
-          '<button class="mkt-prow-x" onclick="V2.mkt.closePicker()" aria-label="Fermer">' + ICO('close', 16, 2) + '</button></div>' +
+          '<button type="button" class="mkt-prow-x" onclick="V2.mkt.closePicker()" aria-label="Fermer le sélecteur">' + ICO('close', 18, 2) + '</button></div>' +
         '<div class="mkt-pick-src" id="mkt-pick-src">' + pickTabs() + '</div>' +
         '<div class="mkt-pick-body">' +
           '<div class="mkt-pick-rail mkt-pick-strip" id="mkt-pick-rail"></div>' +
           '<div class="mkt-pick-main">' +
             '<div class="mkt-pick-bar">' +
               '<span class="mkt-pick-n mkt-pick-count" id="mkt-pick-n"></span>' +
+              '<button type="button" class="mke-ftoggle mk-press" id="mkt-pick-ftoggle" aria-expanded="false" onclick="V2.mkt.pickFiltres()"><span>Rayons et filtres</span>' + mic('bas', 18, 2) + '</button>' +
               '<div class="mkt-pick-filters mkt-pick-strip" id="mkt-pick-filters"></div>' +
             '</div>' +
             '<div id="mkt-pick-list" class="mkt-pick-list"></div>' +
@@ -1168,7 +1216,7 @@
     var box = document.getElementById('mkt-pick-list'); if (!box || !editing) return;
     var cnt = document.getElementById('mkt-pick-n');
     if ((pickSrc === 'cat' && !catCache()) || (pickSrc === 'offilog' && !offCache())) {
-      box.innerHTML = '<div class="mkt-empty" style="border:none">Le catalogue n\'a pas pu être chargé. Ferme le sélecteur et réessaie.</div>';
+      box.innerHTML = '<div class="mkt-empty" style="border:none">Le catalogue n\'a pas pu être chargé. Fermez le sélecteur, puis réessayez.</div>';
       if (cnt) cnt.textContent = '';
       pickFoot();
       return;
@@ -1178,7 +1226,7 @@
     for (i = 0; i < end; i++) {
       html += pickSrc === 'cat' ? pickRowCat(rows[i], have) : (pickSrc === 'offilog' ? pickRowOff(rows[i], have) : pickRowMix(rows[i], have));
     }
-    if (n > end) html += '<button class="v2-btn v2-btn-ghost mkt-pick-more" onclick="V2.mkt.pickMore()">Voir ' + Math.min(PICK_PAGE, n - end) + ' produits de plus</button>';
+    if (n > end) html += '<button type="button" class="mk-btn mkt-pick-more mk-press" onclick="V2.mkt.pickMore()">Voir ' + Math.min(PICK_PAGE, n - end) + ' produits de plus</button>';
     var top = box.scrollTop;
     box.innerHTML = html || '<div class="mkt-empty" style="border:none">Aucun produit ne correspond à ces critères.</div>';
     box.scrollTop = pickShown > PICK_PAGE ? top : 0;
@@ -1188,17 +1236,15 @@
   function pickFoot() {
     var foot = document.getElementById('mkt-pick-foot'); if (!foot) return;
     if (replaceIdx != null) {
-      foot.innerHTML = '<span class="mkt-pick-nsel">Un clic sur un produit remplace celui de l\'aperçu.</span>' +
-        '<button class="v2-btn v2-btn-ghost" onclick="V2.mkt.closePicker()">Fermer</button>';
+      foot.innerHTML = '<span class="mkt-pick-nsel">Touchez un produit : il remplace celui de la feuille.</span>';
       return;
     }
     var n = Object.keys(pickSel).length;
     foot.innerHTML =
-      '<span class="mkt-pick-nsel">' + (n ? n + ' coché' + (n > 1 ? 's' : '') : 'Coche les produits à ajouter') + '</span>' +
-      '<button class="v2-btn v2-btn-ghost" onclick="V2.mkt.pickClearSel()"' + (n ? '' : ' disabled') + '>Tout décocher</button>' +
-      '<button class="v2-btn v2-btn-primary" onclick="V2.mkt.pickAddSel()"' + (n ? '' : ' disabled') + '>' + ICO('plus', 16, 2) +
-        'Ajouter ' + (n ? n + ' produit' + (n > 1 ? 's' : '') : 'les produits') + '</button>' +
-      '<button class="v2-btn v2-btn-ghost" onclick="V2.mkt.closePicker()">Fermer</button>';
+      '<span class="mkt-pick-nsel">' + (n ? n + ' coché' + (n > 1 ? 's' : '') : 'Cochez les produits à poser sur la feuille') + '</span>' +
+      (n ? '<button type="button" class="mk-btn mk-texte mk-press" onclick="V2.mkt.pickClearSel()">Tout décocher</button>' : '') +
+      '<button type="button" class="mk-btn mk-plein mk-press" onclick="V2.mkt.pickAddSel()"' + (n ? '' : ' disabled') + '>' + mic('plus', 20, 2) +
+        'Ajouter ' + (n ? n + ' produit' + (n > 1 ? 's' : '') : 'les produits') + '</button>';
   }
   function renderPickAll() {
     var tabs = document.getElementById('mkt-pick-src'); if (tabs) tabs.innerHTML = pickTabs();
@@ -1207,6 +1253,13 @@
     var flt = document.getElementById('mkt-pick-filters');
     if (flt) { var left = flt.scrollLeft; flt.innerHTML = pickFilters(); flt.hidden = !flt.innerHTML; flt.scrollLeft = left; }
     var inp = document.getElementById('mkt-pick-input'); if (inp) inp.placeholder = pickPlaceholder();
+    // Le bouton « Rayons et filtres » dit combien de critères sont posés ; il disparaît quand l'univers n'en a aucun.
+    var ft = document.getElementById('mkt-pick-ftoggle');
+    if (ft) {
+      var f = pickF, nf = (f.rayon !== 'all' ? 1 : 0) + (f.fam !== 'all' ? 1 : 0) + (f.labo ? 1 : 0) + (f.stock ? 1 : 0) + (f.orayon !== 'all' ? 1 : 0) + (f.marque ? 1 : 0);
+      ft.hidden = !((rail && rail.innerHTML) || (flt && flt.innerHTML));
+      ft.firstChild.textContent = 'Rayons et filtres' + (nf ? ' · ' + nf : '');
+    }
     renderPickList();
   }
   function wirePicker() {
@@ -1433,26 +1486,39 @@
           '<span>Intégral Pharma · ' + esc(t.plural) + '</span><span style="text-align:right;min-width:140px"' + zoneAttrs(edit, 'footer', 'Mentions', { ph: footDefaut }) + '>' + (edit ? esc((it.footer || '').trim()) : footer) + '</span></div>' +
       '</div>';
   }
-  // ── Panneau de personnalisation (charte) ──
+  // ── Onglet « Apparence » du panneau (lot 5) : de vrais interrupteurs bleu pâle, les couleurs de la FEUILLE rangées
+  // dans deux tiroirs repliés (c'est du contenu, pas de l'interface), un « + » neutre pour la couleur libre. ──
+  var ACCENTS_NOMS = ['Bleu Intégral', 'Bleu nuit', 'Rose', 'Violet', 'Vert', 'Ambre', 'Cyan', 'Encre'];
+  var BGS_NOMS = ['Blanc', 'Ivoire', 'Bleu très pâle', 'Gris très pâle', 'Rose très pâle', 'Vert très pâle'];
   function personalizePanel() {
     var th = editing.theme || defaultTheme(editing.type);
-    var accSw = ACCENTS.map(function (c) {
-      return '<button class="mkt-sw mkt-sw-acc' + (th.accent === c ? ' on' : '') + '" data-c="' + c + '" style="background:' + c + '" onclick="V2.mkt.setAccent(\'' + c + '\')"></button>';
+    var inter = function (key, label, note) {
+      var on = th[key] !== false;
+      return '<button type="button" class="mkt-tg mke-inter' + (on ? ' on' : '') + '" role="switch" aria-checked="' + (on ? 'true' : 'false') + '" onclick="V2.mkt.toggle(\'' + key + '\',this)">' +
+        '<span>' + label + (note ? '<small>' + note + '</small>' : '') + '</span><i aria-hidden="true"></i></button>';
+    };
+    var accSw = ACCENTS.map(function (c, i) {
+      return '<button type="button" class="mkt-sw mkt-sw-acc' + (th.accent === c ? ' on' : '') + '" data-c="' + c + '" aria-label="' + ACCENTS_NOMS[i] + '" onclick="V2.mkt.setAccent(\'' + c + '\')"><i style="background:' + c + '"></i></button>';
     }).join('');
-    var bgSw = BGS.map(function (c) {
-      return '<button class="mkt-sw mkt-sw-bg' + (th.bg === c ? ' on' : '') + '" data-c="' + c + '" style="background:' + c + '" onclick="V2.mkt.setBg(\'' + c + '\')"></button>';
+    var bgSw = BGS.map(function (c, i) {
+      return '<button type="button" class="mkt-sw mkt-sw-bg' + (th.bg === c ? ' on' : '') + '" data-c="' + c + '" aria-label="' + BGS_NOMS[i] + '" onclick="V2.mkt.setBg(\'' + c + '\')"><i style="background:' + c + '"></i></button>';
     }).join('');
-    return '<div class="mkt-chips">' +
-        '<button class="mkt-tg' + (th.showPrice !== false ? ' on' : '') + '" onclick="V2.mkt.toggle(\'showPrice\',this)">Prix</button>' +
-        '<button class="mkt-tg' + (th.showRemise !== false ? ' on' : '') + '" onclick="V2.mkt.toggle(\'showRemise\',this)">Abandon</button>' +
-        '<button class="mkt-tg' + (th.showImg !== false ? ' on' : '') + '" onclick="V2.mkt.toggle(\'showImg\',this)">Photos</button>' +
+    var plus = function (titre, val, fn) {
+      return '<label class="mkt-sw mke-sw-plus" title="' + titre + '">' + mic('plus', 18, 2) + '<input type="color" aria-label="' + titre + '" value="' + esc(val) + '" oninput="V2.mkt.' + fn + '(this.value)"></label>';
+    };
+    return '<div class="mke-cap"><span>Afficher</span></div>' +
+      '<div class="mke-inters">' +
+        inter('showPrice', 'Prix') +
+        inter('showRemise', 'Abandon de marge', 'À l’écran seulement : jamais imprimé dans le PDF') +
+        inter('showImg', 'Photos') +
       '</div>' +
-      '<div class="mkt-sws" style="margin-top:10px">' + accSw +
-        '<label class="mkt-sw mkt-sw-pick" title="Couleur libre"><input type="color" value="' + esc(th.accent) + '" oninput="V2.mkt.setAccent(this.value)"></label></div>' +
-      '<div class="mkt-sws" style="margin-top:8px">' + bgSw +
-        '<label class="mkt-sw mkt-sw-pick" title="Fond libre"><input type="color" value="' + esc(th.bg) + '" oninput="V2.mkt.setBg(this.value)"></label></div>' +
-      '<div class="mkt-field" style="margin-top:12px"><label for="mkt-footer">Mentions en pied</label>' +
-        '<input class="mkt-foot" id="mkt-footer" type="text" placeholder="ex : Offre valable jusqu\'au 31/07 · contact@integralpharma.fr" value="' + esc(editing.footer || '') + '" oninput="V2.mkt.setFooter(this.value)"></div>';
+      '<div class="mke-cap"><span>Couleurs de la feuille</span></div>' +
+      '<details class="mke-coul"><summary><span>Couleur d’accent</span><i class="mke-pastille" id="mke-acc-cur" style="background:' + esc(th.accent) + '"></i>' + mic('bas', 18, 2) + '</summary>' +
+        '<div class="mkt-sws">' + accSw + plus('Couleur libre', th.accent, 'setAccent') + '</div></details>' +
+      '<details class="mke-coul"><summary><span>Fond</span><i class="mke-pastille" id="mke-bg-cur" style="background:' + esc(th.bg) + '"></i>' + mic('bas', 18, 2) + '</summary>' +
+        '<div class="mkt-sws">' + bgSw + plus('Fond libre', th.bg, 'setBg') + '</div></details>' +
+      '<div class="mke-cap"><label for="mkt-footer">Mentions en pied</label></div>' +
+      '<input class="mke-champ" id="mkt-footer" type="text" placeholder="ex. : Offre valable jusqu’au 31/07" value="' + esc(editing.footer || '') + '" oninput="V2.mkt.setFooter(this.value)">';
   }
   // aperçu live inline (toujours visible dans l'éditeur)
   function refreshPreview() {
@@ -1471,14 +1537,9 @@
     if (!sh._zoneFocusWired) {
       sh._zoneFocusWired = true;
       sh.addEventListener('focusin', function (e) {
-        if (window.innerWidth > 640 || !e.target.classList || !e.target.classList.contains('mkt-zone')) return;
-        sh.style.transform = 'none';
-        var ho = document.getElementById('mkt-mholder'); if (ho) { ho.style.width = '794px'; ho.style.height = 'auto'; }
-        try { e.target.scrollIntoView({ block: 'center', inline: 'center' }); } catch (err) {}
-      });
-      sh.addEventListener('focusout', function (e) {
-        if (window.innerWidth > 640 || !e.target.classList || !e.target.classList.contains('mkt-zone')) return;
-        fitSheet();
+        if (!etabliTel() || zoomFeuille === 'largeur' || !e.target.classList || !e.target.classList.contains('mkt-zone')) return;
+        etabliZoom('largeur');
+        try { e.target.scrollIntoView({ block: 'center', inline: 'start' }); } catch (err) {}
       });
     }
     Array.prototype.forEach.call(sh.querySelectorAll('[data-zone]'), function (el) {
@@ -1524,10 +1585,18 @@
   function fitSheet() {
     var sc = document.getElementById('mkt-mscroll'), ho = document.getElementById('mkt-mholder'), sh = document.getElementById('mkt-msheet');
     if (!sc || !ho || !sh) return;
-    var avail = sc.clientWidth - 48; if (avail <= 0) return;
+    var etabli = !!document.getElementById('mke'), tel = etabli && etabliTel();
+    var pad = etabli ? (tel ? 32 : 64) : 48;
+    var avail = sc.clientWidth - pad; if (avail <= 0) return;
     var scale = Math.min(1, avail / 794);
-    sh.style.transform = 'scale(' + scale + ')';
     var h = sh.firstChild ? sh.firstChild.offsetHeight : sh.offsetHeight;
+    if (etabli) {
+      // La feuille se montre comme la page qui sortira : un A4 entier, même peu rempli (le blanc du bas est celui du PDF).
+      h = Math.max(h, 1123);
+      if (zoomFeuille === 'largeur') { if (tel) scale = 1; }                      // téléphone : taille réelle, pour écrire sur la feuille
+      else scale = Math.min(scale, Math.max((sc.clientHeight - pad) / h, Math.min(scale, 640 / 794)));   // la page entière, sans descendre sous 640 px de large
+    }
+    sh.style.transform = 'scale(' + scale + ')';
     ho.style.width = (794 * scale) + 'px'; ho.style.height = (h * scale) + 'px';
   }
   function waitImages(node, timeout) {
@@ -1576,6 +1645,7 @@
         editing.theme.tpl = k;
         Array.prototype.forEach.call(document.querySelectorAll('.mkt-mtile'), function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-model') === k ? 'true' : 'false'); });
         Array.prototype.forEach.call(document.querySelectorAll('.mkt-sw-acc'), function (el) { el.classList.toggle('on', el.getAttribute('data-c') === m.accent); });
+        var pa = document.getElementById('mke-acc-cur'); if (pa) pa.style.background = m.accent;
         refreshPreview();
       };
       var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -1607,23 +1677,27 @@
     setAccent: function (c) {
       if (!editing) return; editing.theme = editing.theme || defaultTheme(editing.type); editing.theme.accent = c;
       Array.prototype.forEach.call(document.querySelectorAll('.mkt-sw-acc'), function (el) { el.classList.toggle('on', el.getAttribute('data-c') === c); });
+      var pa = document.getElementById('mke-acc-cur'); if (pa) pa.style.background = c;
       refreshPreview();
     },
     setBg: function (c) {
       if (!editing) return; editing.theme = editing.theme || defaultTheme(editing.type); editing.theme.bg = c;
       Array.prototype.forEach.call(document.querySelectorAll('.mkt-sw-bg'), function (el) { el.classList.toggle('on', el.getAttribute('data-c') === c); });
+      var pb = document.getElementById('mke-bg-cur'); if (pb) pb.style.background = c;
       refreshPreview();
     },
     toggle: function (key, btn) {
       if (!editing) return; editing.theme = editing.theme || defaultTheme(editing.type);
       editing.theme[key] = editing.theme[key] === false ? true : false;
-      if (btn) btn.classList.toggle('on', editing.theme[key] !== false);
+      if (btn) { btn.classList.toggle('on', editing.theme[key] !== false); if (btn.getAttribute('role') === 'switch') btn.setAttribute('aria-checked', editing.theme[key] !== false ? 'true' : 'false'); }
       refreshPreview();
     },
     setStatus: function (k, btn) {
       if (!editing) return; editing.status = k;
-      Array.prototype.forEach.call(document.querySelectorAll('.mkt-seg button'), function (b) { b.setAttribute('aria-pressed', 'false'); });
+      Array.prototype.forEach.call(document.querySelectorAll('.mkt-seg button,.mke-statut button'), function (b) { b.setAttribute('aria-pressed', 'false'); });
       if (btn) btn.setAttribute('aria-pressed', 'true');
+      var seg = document.querySelector('.mke-statut');   // l'indicateur glisse (geste 10)
+      if (seg) STATUSES.forEach(function (s, i) { if (s.k === k) seg.style.setProperty('--i', i); });
     },
     catSrc: function (s) { catSrc = s; V2.render(); },
     catAdd: function (fi) {
@@ -1852,6 +1926,13 @@
       renderPickAll();
     },
     pickMore: function () { pickShown += PICK_PAGE; renderPickList(); },
+    // Rayons et filtres se déplient sous le compteur (rangés par défaut : des produits dès le premier écran).
+    pickFiltres: function () {
+      var bx = document.getElementById('mkt-pick-box'), ft = document.getElementById('mkt-pick-ftoggle'); if (!bx) return;
+      var on = !bx.classList.contains('is-filtres');
+      bx.classList.toggle('is-filtres', on);
+      if (ft) ft.setAttribute('aria-expanded', on ? 'true' : 'false');
+    },
     // Un clic coche / décoche. En mode remplacement (ouvert depuis la photo), il remplace et ferme.
     pickToggle: function (src, key, el) {
       if (!editing) return;
@@ -1899,12 +1980,18 @@
                     status: editing.status, theme: Object.assign({}, editing.theme || defaultTheme(editing.type)),
                     products: editing.products.map(function (p) { return Object.assign({}, p); }), owner: editing.owner };
       V2.toast('Enregistrement…');
-      saveItem(clean).then(function () { V2.toast('Enregistré' + (backend === 'supabase' ? ' (partagé)' : '')); var tf = document.getElementById('mkt-title'); if (tf) tf.value = editing.title; });
+      saveItem(clean).then(function () {
+        // Geste 9 : la confirmation se passe sur le bouton et dans la barre ; le message flottant ne reste qu'en secours.
+        var S = V2.mktSocle, be = document.getElementById('mke-enreg');
+        if (S && S.confirmer && be) { S.confirmer(be, 1400); if (S.enregistre) S.enregistre(); }
+        else V2.toast('Enregistré' + (backend === 'supabase' ? ' (partagé)' : ''));
+        refreshPreview();   // un titre laissé vide vient de recevoir son nom par défaut : la feuille le montre
+      });
     },
     remove: function () {
       if (!editing) return;
-      if (!confirm('Supprimer ce support ?')) return;
-      removeItem(editing.id).then(function () { V2.toast('Supprimé'); editing = null; V2.go('marketing'); });
+      if (!confirm('Supprimer cette fiche ? Elle disparaît aussi pour Pauline.')) return;
+      removeItem(editing.id).then(function () { V2.toast('Fiche supprimée'); editing = null; V2.go('marketing', 'fiches'); });
     },
     preview: function () {
       if (!editing || !editing.products.length) { V2.toast('Ajoute au moins un produit', 'warn'); return; }
@@ -3069,6 +3156,220 @@
         '.mkt-pick,.mkt-dialog,.mkt-drawer,.mkt-mini,.mkt-mtile,.mkt-tool,.mkt-pick-item{transition:none!important}',
         '.mkt-drawer:hover,.mkt-mini:hover,.mkt-mtile:hover,.mkt-pick-item:hover{transform:none!important}',
         '.mkt-sheetwrap,#mkt-home-wrap,#mkt-mholder{transform:none!important}',
+      '}',
+      // ════════════════════════════════════════════════════════════════════
+      // LOT 5 (19/09/2026) — écran « Fiches » (.mkf-*) et l'établi (.mke-*). Jetons, élévations et gestes : v2-mkt-socle.js.
+      // On n'anime que transform et opacity ; le repli « mouvement réduit » est celui du socle (.mk-espace).
+      // ════════════════════════════════════════════════════════════════════
+      '.mkf{max-width:1320px;margin:0 auto;padding:32px 32px 64px}',
+      '.mkf-entete{margin-bottom:32px}',
+      '.mkf-entete h1{margin:0;font-size:var(--mk-s1);line-height:var(--mk-s1l);font-weight:700;letter-spacing:-.02em;color:var(--mk-encre)}',
+      '.mkf-entete p{margin:8px 0 0;max-width:72ch;color:var(--mk-attenue)}',
+      '.mkf-plan{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:48px;align-items:start}',
+      '.mkf-bloc+.mkf-bloc{margin-top:24px}',
+      '.mkf-cap{display:flex;gap:8px;margin:0 0 16px;font-size:var(--mk-s5);line-height:var(--mk-s5l);font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--mk-attenue)}',
+      '.mkf-cap span{color:var(--mk-encre)}',
+      '.mkf-mur{display:grid;grid-template-columns:repeat(auto-fill,minmax(176px,1fr));gap:32px 24px}',
+      '.mkf-tuile{position:relative;display:flex;flex-direction:column;gap:2px;min-width:0;border-radius:8px;text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent}',
+      '.mkf-page{position:relative;display:block;aspect-ratio:794/1123;overflow:hidden;margin-bottom:12px;border-radius:3px;background:#fff;box-shadow:0 0 0 1px rgba(16,19,28,.06),var(--mk-n2);transition:transform var(--mk-t1) var(--mk-sortie)}',
+      '.mkf-feuille{position:absolute;top:0;left:0;display:block;width:794px;transform-origin:0 0;transform:scale(var(--k,.22));pointer-events:none}',
+      '@media (hover:hover){.mkf-tuile:hover .mkf-page{transform:translateY(-2px)}}',
+      '.mkf-tuile strong{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;font-size:var(--mk-s4);line-height:20px;font-weight:650;color:var(--mk-encre)}',
+      '.mkf-tuile small{display:flex;align-items:center;gap:4px;font-size:var(--mk-s5);line-height:var(--mk-s5l);color:var(--mk-attenue)}',
+      '.mkf-etat svg{color:var(--mk-vert)}',
+      '.mkf-cote .mkf-bloc{padding:20px;border-radius:var(--mk-r-carte);border:1px solid var(--mk-trait);background:linear-gradient(180deg,#fff,#FAFBFE);box-shadow:var(--mk-n1)}',
+      '.mkf-modeles{display:grid;gap:4px;margin:0 -8px}',
+      '.mkf-modele{display:grid;grid-template-columns:56px minmax(0,1fr);grid-template-rows:auto auto;column-gap:16px;align-content:center;padding:8px;border-radius:12px}',
+      '.mkf-modele .mkf-page{grid-row:1/3;margin:0;box-shadow:0 0 0 1px rgba(16,19,28,.08),0 1px 2px rgba(11,31,77,.08),2px 4px 8px -2px rgba(11,31,77,.12)}',
+      '.mkf-modele strong{align-self:end}.mkf-modele small{align-self:start}',
+      '@media (hover:hover){.mkf-modele:hover{background:var(--mk-pale)}.mkf-modele:hover .mkf-page{transform:none}}',
+      '.mkf-departs,.mkf-prets{display:grid;gap:4px;margin:12px -8px 0;padding-top:12px;border-top:1px solid var(--mk-trait)}',
+      '.mkf-prets{margin-top:0;padding-top:0;border-top:0}',
+      '.mk-espace .mkf-depart{display:flex;align-items:center;gap:12px;width:100%;min-height:56px;padding:8px;border-radius:12px;text-align:left;color:var(--mk-encre2)}',
+      '.mkf-depart>span{flex:1;min-width:0}',
+      '.mkf-depart b,.mkf-pret b{display:block;font-size:var(--mk-s4);line-height:20px;font-weight:600;color:var(--mk-encre)}',
+      '.mkf-depart small,.mkf-pret small{display:block;font-size:var(--mk-s5);line-height:var(--mk-s5l);font-weight:450;color:var(--mk-attenue)}',
+      '.mkf-depart>svg:last-child{color:var(--mk-filet)}',
+      '@media (hover:hover){.mk-espace .mkf-depart:hover{background:var(--mk-pale)}}',
+      '.mkf-pret{padding:12px 8px 8px;border-top:1px solid var(--mk-trait)}',
+      '.mkf-pret>span{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}',
+      '.mkf-vide{margin:0;max-width:none;justify-content:start}',
+      /* « Depuis un rayon » : boîte N3 au bureau, feuille basse au téléphone */
+      '.mkf-voile{position:fixed;top:0;right:0;bottom:0;left:0;z-index:80;display:grid;place-items:center;padding:24px;background:rgba(11,31,77,.30);animation:mk-paraitre 160ms both}',
+      '.mkf-boite{display:flex;flex-direction:column;width:min(760px,100%);max-height:min(80vh,720px);padding:24px;border-radius:var(--mk-r-carte);background:linear-gradient(180deg,#fff,#FAFBFE);box-shadow:var(--mk-n3);animation:mk-naitre var(--mk-t2) var(--mk-sortie)}',
+      '.mkf-boite header{display:flex;align-items:center;justify-content:space-between;gap:16px}',
+      '.mkf-boite h2{margin:0;font-size:var(--mk-s2);line-height:var(--mk-s2l);font-weight:700;letter-spacing:-.01em}',
+      '.mkf-boite>p{margin:4px 0 16px;color:var(--mk-attenue)}',
+      '.mkf-rayons{display:flex;flex-wrap:wrap;align-content:flex-start;gap:8px;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:2px 2px 8px}',
+      '.mk-espace .mkf-rayon{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 16px;border-radius:999px;border:1px solid var(--mk-trait);background:#fff;box-shadow:var(--mk-n1);font-size:var(--mk-s4);font-weight:600;color:var(--mk-encre)}',
+      '.mkf-rayon small{font-size:var(--mk-s5);font-weight:500;color:var(--mk-attenue)}',
+      '@media (hover:hover){.mk-espace .mkf-rayon:hover{background:var(--mk-pale);border-color:transparent}}',
+      '.mkf-ray-sq{display:block;width:160px;height:44px;border-radius:999px}',
+      '.mkf-ray-rate{margin:0;color:var(--mk-attenue)}',
+      '@media (max-width:1100px){.mkf-plan{grid-template-columns:minmax(0,1fr) 320px;gap:32px}}',
+      '@media (max-width:860px){',
+      '.mkf{padding:20px 16px 32px}.mkf-entete{margin-bottom:24px}',
+      '.mkf-plan{grid-template-columns:minmax(0,1fr);gap:32px}',
+      '.mkf-mur{grid-template-columns:repeat(2,minmax(0,1fr));gap:24px 16px}',
+      '.mkf-voile{place-items:end stretch;padding:0}',
+      '.mkf-boite{width:100%;max-height:82vh;padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px));border-radius:var(--mk-r-carte) var(--mk-r-carte) 0 0}',
+      '}',
+
+      /* ═══ L'ÉTABLI : rail fin · scène (la grande feuille sur la table pointée) · un panneau à 3 onglets · pied ═══ */
+      '.mke{display:grid;grid-template-columns:88px minmax(0,1fr) 380px;grid-template-rows:minmax(0,1fr) auto;height:calc(100vh - var(--mk-barre-h));height:calc(100dvh - var(--mk-barre-h));overflow:hidden}',
+      '.mke-rail{grid-column:1;grid-row:1/3;display:flex;flex-direction:column;align-items:center;gap:4px;padding:16px 8px;border-right:1px solid var(--mk-trait);background:linear-gradient(180deg,#fff,#FAFBFE)}',
+      '.mk-espace .mke-outil{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;width:72px;min-height:56px;padding:6px 2px;border-radius:12px;font-size:var(--mk-s5);line-height:var(--mk-s5l);font-weight:600;color:var(--mk-encre2)}',
+      '.mk-espace .mke-outil[aria-pressed="true"]{background:var(--mk-pale);color:var(--mk-bleu-txt)}',
+      '@media (hover:hover){.mk-espace .mke-outil:hover{background:var(--mk-groupe)}.mk-espace .mke-outil[aria-pressed="true"]:hover{background:var(--mk-pale)}}',
+      '.mke-zoom{display:flex;flex-direction:column;gap:4px;margin-top:8px;padding-top:12px;border-top:1px solid var(--mk-trait)}',
+      '.mke-pousse{flex:1}',
+      '.mke-outil .mk-sa,.mke-outil .mk-sb{flex-direction:column;gap:2px}',
+      '.mke-outil .mk-sb svg{color:var(--mk-vert)}',
+      /* la table pointée : une variante du fond Verrière (motif en image, pas de dégradé radial : points jaunes sous WebKit au lot 2) */
+      '.mke-scene{grid-column:2;grid-row:1/3;position:relative;min-width:0;min-height:0;overflow:hidden;background-color:rgba(228,235,249,.6);',
+      'background-image:url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'24\' height=\'24\'%3E%3Ccircle cx=\'2\' cy=\'2\' r=\'1\' fill=\'%230B1F4D\' fill-opacity=\'.2\'/%3E%3C/svg%3E");background-size:24px 24px;',
+      'box-shadow:0 1px 0 rgba(255,255,255,.9) inset,0 12px 24px -16px rgba(11,31,77,.18) inset}',
+      '.mke .mke-defile{position:absolute;top:0;right:0;bottom:0;left:0;overflow:auto;-webkit-overflow-scrolling:touch;padding:32px}',
+      /* la feuille : rendu réel réduit, bord net, N2, jamais inclinée (le changement de modèle devient un fondu) */
+      '.mke #mkt-mholder{margin:0 auto;overflow:hidden;border-radius:3px;background:#fff;box-shadow:0 0 0 1px rgba(16,19,28,.07),var(--mk-n2);transform-style:flat;transition:opacity var(--mk-t2) var(--mk-sortie)}',
+      '.mke #mkt-mholder.mkt-turn{transform:none;opacity:0}',
+      '.mke-panneau{grid-column:3;grid-row:1;display:flex;flex-direction:column;min-height:0;border-left:1px solid var(--mk-trait);background:linear-gradient(180deg,#fff,#FAFBFE)}',
+      '.mk-espace .mke-poignee{display:none}',
+      '.mke-onglets{flex:none;margin:16px 20px 0}',
+      '.mke-corps{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 20px 24px}',
+      '.mke-volet{display:none}',
+      '.mke[data-onglet="produits"] .mke-volet[data-volet="produits"],.mke[data-onglet="apparence"] .mke-volet[data-volet="apparence"],.mke[data-onglet="envoi"] .mke-volet[data-volet="envoi"]{display:block}',
+      '.mke-cap{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:24px 0 8px;font-size:var(--mk-s5);line-height:var(--mk-s5l);font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--mk-attenue)}',
+      '.mke-cap b{font-weight:600;letter-spacing:0;text-transform:none;color:var(--mk-encre)}',
+      '.mke-note{margin:12px 0;font-size:var(--mk-s5);line-height:var(--mk-s5l);color:var(--mk-attenue)}',
+      '.mk-espace .mke-large{width:100%;margin-top:12px}',
+      '.mk-espace .mke-suppr{margin-top:24px;padding:0 8px}',
+      '.mke-pied{grid-column:3;grid-row:2;padding:12px 20px 16px;border-left:1px solid var(--mk-trait);border-top:1px solid var(--mk-trait);background:#fff}',
+      '.mk-espace .mke-pied .mk-btn{width:100%}',
+      'body.mkt-picking .mke-pied .mk-btn{visibility:hidden}',   /* sélecteur ouvert : il recouvre le pied, et SON bouton est alors le seul plein */
+      /* lignes de produit : compactes ; la catégorie, le prix et l'abandon se déplient quand on entre dans la ligne */
+      '.mke .mkt-prow{flex-wrap:wrap;align-items:flex-start;gap:8px 12px;padding:8px 0;border-bottom:1px solid var(--mk-trait)}',
+      '.mke .mkt-prow-img{width:44px;height:44px;border-radius:10px;border-color:var(--mk-trait)}',
+      '.mke .mkt-prow-pill{color:var(--mk-encre2);background:var(--mk-groupe)}',
+      '.mke .mkt-prow-main{order:1;flex:1 1 calc(100% - 112px);min-width:0}',
+      '.mke .mkt-prow-x{order:2;width:44px;height:44px;border:0;border-radius:12px;background:none;color:var(--mk-attenue)}',
+      '.mke .mkt-prow-f{order:3;flex:1 1 40%;width:auto;display:none}',
+      '.mke .mkt-prow-cati{display:none}',
+      '.mke .mkt-prow:focus-within .mkt-prow-f{display:flex}.mke .mkt-prow:focus-within .mkt-prow-cati{display:block}',
+      '.mke .mkt-prow-namei{min-height:44px;margin:0;padding:0 8px;font-family:inherit;font-size:16px;font-weight:600;color:var(--mk-encre);border-radius:10px;text-overflow:ellipsis}',
+      '.mke .mkt-prow-sub2{margin:0;padding:0 8px;gap:8px}',
+      '.mke .mkt-prow-sub{font-family:"PlexMono",ui-monospace,monospace;font-size:var(--mk-s5);color:var(--mk-attenue)}',
+      '.mke .mkt-prow-cati{flex:1 1 100%;max-width:none;min-height:44px;margin:4px -8px 0;padding:0 8px;font-family:inherit;font-size:16px;font-weight:500;color:var(--mk-encre2);border-radius:10px;border-color:var(--mk-trait)}',
+      '.mke .mkt-prow-f span{font-size:var(--mk-s5);font-weight:500;letter-spacing:0;text-transform:none;color:var(--mk-attenue)}',
+      '.mke .mkt-prow-f input{min-height:44px;padding:0 12px;font-family:inherit;font-size:16px;font-weight:600;border-radius:10px;border-color:var(--mk-trait)}',
+      '.mke-sans{margin:8px 0 0}',
+      /* le choix du modèle */
+      '.mke .mkt-models{grid-template-columns:1fr 1fr;gap:8px}',
+      '.mke .mkt-mtile{min-height:96px;padding:28px 12px 10px;border-radius:12px;border:1px solid var(--mk-trait);background:#fff;box-shadow:var(--mk-n1);transition:transform var(--mk-t1) var(--mk-sortie)}',
+      '.mke .mkt-mtile b{font-size:var(--mk-s5);line-height:var(--mk-s5l);color:var(--mk-encre)}.mke .mkt-mtile small{font-size:var(--mk-s5);line-height:var(--mk-s5l);color:var(--mk-attenue)}',
+      '.mke .mkt-mtile[aria-pressed="true"]{border-color:var(--mk-bleu);box-shadow:0 0 0 3px var(--mk-pale),var(--mk-n1)}',
+      /* interrupteurs : bleu pâle quand ils sont actifs (la couleur vit dans un calque dont on anime l'opacité) */
+      '.mke .mke-inter{display:flex;align-items:center;justify-content:space-between;gap:16px;width:100%;min-height:48px;padding:4px 0;border:0;border-radius:8px;background:none;text-align:left;font-size:var(--mk-s4);line-height:20px;font-weight:550;color:var(--mk-encre)}',
+      '.mke-inter small{display:block;font-size:var(--mk-s5);line-height:var(--mk-s5l);font-weight:450;color:var(--mk-attenue)}',
+      '.mke-inter i{position:relative;flex:none;width:44px;height:26px;border-radius:999px;background:#D5DAE5;box-shadow:0 1px 2px rgba(11,31,77,.14) inset}',
+      '.mke-inter i::before{content:"";position:absolute;top:0;right:0;bottom:0;left:0;border-radius:inherit;background:#C3D5FB;opacity:0;transition:opacity var(--mk-t2) var(--mk-sortie)}',
+      '.mke-inter i::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(11,31,77,.3);transition:transform var(--mk-t2) var(--mk-glisse)}',
+      '.mke-inter.on i::before{opacity:1}.mke-inter.on i::after{transform:translateX(18px);background:var(--mk-bleu)}',
+      /* les couleurs de la feuille, rangées */
+      '.mke-coul{border-top:1px solid var(--mk-trait)}.mke-coul+.mke-coul{border-bottom:1px solid var(--mk-trait)}',
+      '.mke-coul summary{display:flex;align-items:center;gap:12px;min-height:48px;cursor:pointer;list-style:none;font-weight:550;border-radius:8px}',
+      '.mke-coul summary::-webkit-details-marker{display:none}',
+      '.mke-coul summary span{flex:1}',
+      '.mke-coul summary svg{color:var(--mk-attenue);transition:transform var(--mk-t2) var(--mk-sortie)}',
+      '.mke-coul[open] summary svg{transform:rotate(180deg)}',
+      '.mke-pastille{width:24px;height:24px;border-radius:50%;box-shadow:0 0 0 1px rgba(16,19,28,.16) inset}',
+      '.mke .mkt-sws{gap:0;padding:0 0 12px;margin:0 -8px}',
+      '.mke .mkt-sw{position:relative;display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;border-radius:50%;background:none;box-shadow:none;overflow:hidden}',
+      '.mke .mkt-sw i{width:28px;height:28px;border-radius:50%;box-shadow:0 0 0 1px rgba(16,19,28,.16) inset}',
+      '.mke .mkt-sw.on i{box-shadow:0 0 0 2px #fff,0 0 0 4px var(--mk-encre)}',
+      '.mke .mke-sw-plus{color:var(--mk-encre2);cursor:pointer}',
+      '.mke .mke-sw-plus::before{content:"";position:absolute;top:8px;right:8px;bottom:8px;left:8px;border-radius:50%;border:1.5px dashed #9AA3B5}',
+      '.mke .mke-sw-plus input{position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;cursor:pointer;border:0;padding:0}',
+      '.mke-champ{width:100%;min-height:44px;padding:0 12px;border-radius:10px;border:1px solid var(--mk-trait);background:#fff;box-shadow:var(--mk-n1);font:inherit;font-size:16px;color:var(--mk-encre)}',
+      '.mke-champ:focus{outline:2px solid var(--mk-bleu);outline-offset:1px}',
+      '@media (max-width:1100px){.mke{grid-template-columns:88px minmax(0,1fr) 340px}}',
+
+      /* ═══ le sélecteur de produits, dans la peau de l'établi : au bureau il prend la place du panneau (la feuille reste
+         visible, les produits y arrivent) ; rayons et filtres se rangent derrière UN bouton : des produits dès le premier écran ═══ */
+      '.mke-pick .mkt-pick{font-family:inherit;background:linear-gradient(180deg,#fff,#FAFBFE);box-shadow:var(--mk-n3)}',
+      '.mke-pick .mkt-pick-search{gap:8px;padding:20px 16px 12px;border-bottom:0}',
+      '.mke-pick .mkt-pick-search svg{color:var(--mk-attenue)}',
+      '.mke-pick .mkt-pick-search input{min-width:0;min-height:44px;font-family:inherit;font-size:16px;color:var(--mk-encre)}',
+      '.mke-pick .mkt-prow-x{width:44px;height:44px;border:1px solid var(--mk-trait);border-radius:12px;background:#fff;box-shadow:var(--mk-n1);color:var(--mk-encre2)}',
+      '.mke-pick .mkt-pick-src{gap:0;margin:0 16px;padding:4px;border-radius:12px;background:var(--mk-groupe);box-shadow:0 1px 2px rgba(11,31,77,.08) inset;overflow:visible}',
+      '.mke-pick .mkt-srcbtn{flex:1 1 0;min-width:0;min-height:44px;padding:0 4px;border:0;border-radius:8px;background:none;font-size:var(--mk-s5);line-height:var(--mk-s5l);font-weight:600;color:var(--mk-attenue);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      '.mke-pick .mkt-srcbtn.on{background:#fff;color:var(--mk-encre);box-shadow:0 1px 0 #fff inset,0 1px 2px rgba(11,31,77,.14),2px 4px 8px -2px rgba(11,31,77,.12)}',
+      '.mke-pick .mkt-srcbtn-n{display:none}',
+      '#mkt-picker.mke-pick #mkt-pick-src .mkt-srcbtn{padding:0 4px;font-size:var(--mk-s5)}',
+      '.mke-pick .mkt-pick-body{flex-direction:column}',
+      '.mke-pick .mkt-pick-bar{flex-direction:row;flex-wrap:wrap;align-items:center;gap:0 8px;padding:8px 16px 4px;border-bottom:1px solid var(--mk-trait)}',
+      '.mke-pick .mkt-pick-n{padding:0;font-size:var(--mk-s5);font-weight:600;letter-spacing:.05em;color:var(--mk-attenue)}',
+      '.mk-espace .mke-ftoggle{display:inline-flex;align-items:center;gap:4px;min-height:44px;margin-left:auto;padding:0 8px;border-radius:10px;font-size:var(--mk-s4);font-weight:600;color:var(--mk-bleu-txt)}',
+      '.mke-ftoggle svg{transition:transform var(--mk-t2) var(--mk-sortie)}.is-filtres .mke-ftoggle svg{transform:rotate(180deg)}',
+      '.mke-pick .mkt-pick-rail,.mke-pick .mkt-pick-filters{display:none}',
+      '.mke-pick .is-filtres .mkt-pick-rail:not([hidden]){display:flex;flex-wrap:wrap;align-items:center;gap:6px;width:auto;max-height:30vh;overflow-x:hidden;overflow-y:auto;padding:8px 16px;border-right:0;border-bottom:1px solid var(--mk-trait);background:none}',
+      '.mke-pick .is-filtres .mkt-pick-filters:not([hidden]){display:flex;flex-wrap:wrap;flex:1 1 100%;gap:6px;overflow:visible;padding:4px 0 8px}',
+      '.mke-pick .mkt-fac{display:contents}.mke-pick .mkt-fac-t{display:none}',
+      '.mke-pick .mkt-fchip,.mke-pick .mkt-pick-filters .mkt-fchip{width:auto;flex:0 0 auto;min-height:44px;padding:0 12px;border:1px solid var(--mk-trait);border-radius:999px;background:#fff;font-size:var(--mk-s5);font-weight:600;color:var(--mk-encre);white-space:nowrap}',
+      '.mke-pick .mkt-fchip i{font-family:inherit;font-size:var(--mk-s5);color:var(--mk-attenue)}',
+      '.mke-pick .mkt-fchip.on,.mke-pick .mkt-pick-filters .mkt-fchip.on{background:var(--mk-pale);border-color:transparent;color:var(--mk-bleu-txt)}',
+      '.mke-pick .mkt-fchip.on i{color:var(--mk-bleu-txt)}',
+      '.mke-pick .mkt-pick-filters .mkt-fsel{flex:1 1 100%;max-width:none;min-height:44px;font-family:inherit;font-size:16px;border-color:var(--mk-trait);border-radius:10px;color:var(--mk-encre)}',
+      '.mke-pick .mkt-pick-filters .mkt-fchk{min-height:44px;font-size:var(--mk-s4);color:var(--mk-encre)}',
+      '.mke-pick .mkt-pick-list{flex:1;min-height:0;padding:4px 8px}',
+      '.mke-pick .mkt-pick-item{min-height:60px;gap:12px;padding:8px;border-radius:12px}',
+      '.mke-pick .mkt-pick-item:hover{background:var(--mk-pale);transform:none}.mke-pick .mkt-pick-item.sel{background:var(--mk-pale)}',
+      '.mke-pick .mkt-pick-img,.mke-pick .mkt-pick-ic{width:44px;height:44px;border-radius:10px}',
+      '.mke-pick .mkt-pick-ic{color:var(--mk-encre2);background:var(--mk-groupe)}',
+      '.mke-pick .mkt-pick-nm b{font-size:var(--mk-s4);line-height:20px;font-weight:600;color:var(--mk-encre)}',
+      '.mke-pick .mkt-pick-nm span{font-size:var(--mk-s5);line-height:var(--mk-s5l);letter-spacing:0;text-transform:none;color:var(--mk-attenue)}',
+      '.mke-pick .mkt-pick-pr{font-family:inherit;font-size:var(--mk-s4);font-weight:600;color:var(--mk-encre)}',
+      '.mke-pick .mkt-pick-rupt{padding:0;border-radius:0;background:none;font-size:var(--mk-s5);font-weight:600;letter-spacing:0;text-transform:capitalize;color:#B93550}',
+      '.mke-pick .mkt-pick-sortie{font-family:inherit;font-size:var(--mk-s5);font-weight:600;color:var(--mk-encre2);background:var(--mk-groupe)}',
+      '.mke-pick .mkt-pick-sortie.marge{color:var(--mk-encre2);background:var(--mk-groupe)}',
+      '.mke-pick .mkt-pick-ck{width:24px;height:24px;border-radius:7px;border:1.5px solid #9AA3B5}',
+      '.mke-pick .mkt-pick-item.sel .mkt-pick-ck{background:var(--mk-bleu);border-color:var(--mk-bleu)}',
+      '.mke-pick .mkt-pick-item.added::after{content:"Déjà sur la feuille";padding:0;background:none;font-size:var(--mk-s5);font-weight:500;letter-spacing:0;color:var(--mk-attenue)}',
+      '.mke-pick .mkt-pick-foot{gap:8px;padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--mk-trait);background:#fff}',
+      '.mke-pick .mkt-pick-nsel{flex:1;min-width:0;font-size:var(--mk-s4);font-weight:500;color:var(--mk-attenue)}',
+      '.mk-espace.mke-pick .mkt-pick-foot .mk-plein{flex:1 1 100%;min-height:48px}',
+      '.mk-espace.mke-pick .mkt-pick-more{width:100%;margin:8px 0}',
+      '.mke-pick .mkt-empty{border:0;font-size:var(--mk-s4);color:var(--mk-attenue)}',
+      '@media (min-width:861px){',
+      '.mke-pick.mkt-pick-bd{align-items:stretch;justify-content:flex-end;background:none;pointer-events:none}',
+      '.mke-pick .mkt-pick{pointer-events:auto;width:380px;max-width:380px;height:auto;max-height:none;margin-top:var(--mk-barre-h);border-radius:0;border-left:1px solid var(--mk-trait);box-shadow:-24px 0 48px -28px rgba(11,31,77,.32);transform:translateX(104%);transition:transform var(--mk-t3) var(--mk-glisse)}',
+      '.mke-pick.open .mkt-pick{transform:none}',
+      '.mke-pick .mkt-pick-grip{display:none}',
+      '}',
+      '@media (min-width:861px) and (max-width:1100px){.mke-pick .mkt-pick{width:340px;max-width:340px}}',
+
+      /* ═══ 390 px : le rail devient une bande, le panneau une FEUILLE BASSE par-dessus la scène (elle ne la redimensionne
+         pas), le bouton principal reste collé au-dessus des onglets bas ═══ */
+      '@media (max-width:860px){',
+      '.mke{display:block;position:relative;height:calc(100vh - var(--mk-barre-h) - 72px);height:calc(100dvh - var(--mk-barre-h) - 72px - env(safe-area-inset-bottom,0px))}',
+      '.mke-rail{flex-direction:row;height:56px;padding:6px 8px;gap:4px;border-right:0;border-bottom:1px solid var(--mk-trait)}',
+      '.mk-espace .mke-outil{flex-direction:row;gap:6px;width:auto;min-width:44px;min-height:44px;padding:0 10px}',
+      '.mke-outil .mk-sa,.mke-outil .mk-sb{flex-direction:row}',
+      '.mke-outil.mk-save span span{display:none}',
+      '.mke-zoom{flex-direction:row;margin:0 auto;padding:0;border-top:0}',
+      '.mke-pousse{display:none}',
+      '.mke-scene{position:absolute;top:56px;right:0;bottom:0;left:0}',
+      '.mke .mke-defile{padding:16px 16px 160px}',
+      '.mke-panneau{position:fixed;z-index:45;left:0;right:0;bottom:calc(137px + env(safe-area-inset-bottom,0px));height:min(62vh,540px);border:1px solid var(--mk-trait);border-bottom:0;border-radius:var(--mk-r-carte) var(--mk-r-carte) 0 0;',
+      'box-shadow:0 1px 0 #fff inset,0 -2px 4px rgba(11,31,77,.05),0 -16px 40px -16px rgba(11,31,77,.28);transform:translateY(calc(100% - 60px));transition:transform var(--mk-t3) var(--mk-glisse)}',
+      '.mke-panneau.is-haut{transform:none}',
+      '.mk-espace .mke-poignee{display:flex;flex:none;flex-direction:column;align-items:center;gap:8px;width:100%;min-height:60px;padding:8px 16px 0;font-size:var(--mk-s3);line-height:var(--mk-s3l);font-weight:650;color:var(--mk-encre)}',
+      '.mke-poignee i{display:block;width:40px;height:5px;border-radius:999px;background:#C9CFDB}',
+      '.mke-panneau.is-haut .mke-poignee span{display:none}.mke-panneau.is-haut .mke-poignee{min-height:44px}',
+      '.mke-onglets{margin:4px 16px 0}',
+      '.mke-corps{padding:0 16px 24px}',
+      '.mke-panneau:not(.is-haut) .mke-onglets,.mke-panneau:not(.is-haut) .mke-corps{visibility:hidden;transition:visibility 0s linear var(--mk-t3)}',
+      '.mke-pied{position:fixed;z-index:46;left:0;right:0;bottom:calc(65px + env(safe-area-inset-bottom,0px));height:72px;padding:12px 16px;border-left:0}',
       '}',
     ].join('');
     document.head.appendChild(s);
