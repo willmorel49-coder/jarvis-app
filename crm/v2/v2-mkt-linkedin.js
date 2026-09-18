@@ -13,14 +13,15 @@
     var s = document.createElement('style'); s.id = 'li-css';
     s.textContent = [
       /* ── tokens locaux (clair) ── */
-      '#v2-root .li-wrap{--li-blue:var(--ip-blue);--li-blue600:#0047d6;--li-blue050:#eef3ff;--li-blue100:#dbe6ff;',
+      '#v2-root .li-wrap,#v2-root .lip .li-seg{--li-blue:var(--ip-blue);--li-blue600:#0047d6;--li-blue050:#eef3ff;--li-blue100:#dbe6ff;',
       '--li-orange:#F39A1B;--li-ink:var(--ip-ink);--li-ink70:#3a4152;--li-ink50:#6b7280;--li-ink35:#9aa1ae;',
       '--li-bg:#F8FAFC;--li-panel:#fff;--li-line:#E6E9F0;--li-line2:#eef1f6;',
       '--li-sh-sm:0 1px 2px rgba(10,14,26,.05),0 1px 3px rgba(10,14,26,.05);',
       '--li-sh-md:0 6px 20px rgba(10,14,26,.08),0 2px 6px rgba(10,14,26,.05);',
       '--li-sh-lg:0 24px 60px rgba(10,14,26,.18),0 6px 18px rgba(10,14,26,.10);',
-      '--li-ease:cubic-bezier(.22,.61,.36,1);',
-      'max-width:1200px;margin:0 auto;padding:8px 22px 70px;color:var(--li-ink)}',
+      '--li-ease:cubic-bezier(.22,.61,.36,1)}',
+      /* .lip .li-seg : l'onglet est réutilisé par le rétro-planning, hors de .li-wrap */
+      '#v2-root .li-wrap{max-width:1200px;margin:0 auto;padding:8px 22px 70px;color:var(--li-ink)}',
 
       /* ── toolbar ── */
       '.li-topbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:6px 0 4px}',

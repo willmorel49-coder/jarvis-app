@@ -887,7 +887,7 @@
       var cite = extrait.charAt(0) === '«';
       return '<div class="lip-suj' + (si === i ? ' on' : '') + '" onclick="V2.lip.setChamp(\'sujet\',' + i + ')">' +
         '<span class="lip-radio"></span><div class="lip-sujc">' +
-        '<div class="lip-sujn">Sujet ' + String.fromCharCode(65 + i) + (i === 0 ? ' · proposition d’origine' : '') + '</div>' +
+        '<div class="lip-sujn">Sujet ' + String.fromCharCode(65 + i) + (i === 0 && !p.rempl ? ' · proposition d’origine' : '') + '</div>' +
         '<div class="lip-sujt">' + esc(c.titre) + '</div>' +
         '<div class="lip-suja">' + esc(c.angle) + '</div>' +
         '<div class="lip-sujm"><span class="lip-fmt">' + esc(c.f) + '</span>' +
