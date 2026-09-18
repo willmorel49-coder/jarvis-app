@@ -179,3 +179,28 @@
     }
   }
 })();
+
+/* ═══ La pastille LinkedIn — après le premier écran, fermable, fermée pour la visite ═══ */
+(function(){
+  "use strict";
+  var CLE = "ip-pastille-fermee";
+  try { if (sessionStorage.getItem(CLE)) return; } catch(e){}
+  var p = document.createElement("div");
+  p.className = "pastille";
+  p.innerHTML =
+    '<a href="https://fr.linkedin.com/company/integralpharma" target="_blank" rel="noopener">' +
+      '<span class="pastille__rond"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M4.98 3.5A2.5 2.5 0 1 1 5 8.5a2.5 2.5 0 0 1-.02-5ZM3 9.75h4V21H3V9.75Zm6.5 0h3.83v1.54h.05c.53-1 1.84-1.8 3.62-1.8 3.87 0 4.5 2.4 4.5 5.6V21h-4v-5.2c0-1.24-.02-2.84-1.73-2.84-1.73 0-2 1.35-2 2.75V21h-4V9.75Z"/></svg></span>' +
+      'Nous suivre sur LinkedIn</a>' +
+    '<button type="button" aria-label="Fermer l\'invitation LinkedIn"><svg viewBox="0 0 14 14" width="12" height="12" aria-hidden="true"><path d="M2 2l10 10M12 2 2 12" stroke="currentColor" stroke-width="1.7" fill="none"/></svg></button>';
+  document.body.appendChild(p);
+  function voir(){ p.classList.toggle("la", window.scrollY > window.innerHeight * .6); }
+  window.addEventListener("scroll", voir, { passive: true });
+  window.addEventListener("resize", voir);
+  voir();
+  p.querySelector("button").addEventListener("click", function(){
+    window.removeEventListener("scroll", voir);
+    window.removeEventListener("resize", voir);
+    p.classList.remove("la");
+    try { sessionStorage.setItem(CLE, "1"); } catch(e){}
+  });
+})();
