@@ -149,6 +149,11 @@
       // (ex. Coordonnées + Profil + Identité vivent dans le même enregistrement 'client').
       load(st, sid).then(function (res) {
         var base = (res && res.rec && res.rec.data) || {};
+        // 19/09/2026 — une relance est PERSONNELLE (demande de Will) : on retient qui a posé la date,
+        // pour que l'accueil de chacun ne liste que les siennes (v2-app.js, loadRelances).
+        if (mine.hasOwnProperty('relance_date') && (mine.relance_date || '') !== (base.relance_date || '')) {
+          if (mine.relance_date) base.relance_par = V2.user.id; else delete base.relance_par;
+        }
         Object.keys(mine).forEach(function (k) { if (mine[k] && mine[k] !== '__add__') base[k] = mine[k]; else delete base[k]; });
         var rec = save(st, sid, base);
         setMeta(box, rec);
@@ -187,11 +192,11 @@
     // une contrainte en base qui refusait le type 'override', corrigée le 03/08/2026.)
     var PAS = 1000, out = [];
     function tranche(depart) {
-      return c.from(TABLE).select('scope_id,data').eq('scope_type', st)
+      return c.from(TABLE).select('scope_id,data,updated_by').eq('scope_type', st)
         .range(depart, depart + PAS - 1)
         .then(function (r) {
           if (r.error || !r.data) return null;
-          r.data.forEach(function (x) { out.push({ sid: String(x.scope_id), data: x.data || {} }); });
+          r.data.forEach(function (x) { out.push({ sid: String(x.scope_id), data: x.data || {}, by: x.updated_by || '' }); });
           if (r.data.length === PAS && depart + PAS < 20000) return tranche(depart + PAS);
           return out;
         });
