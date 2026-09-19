@@ -1107,6 +1107,18 @@
   // listant les officines en retard / à relancer aujourd'hui / bientôt.
   // Chargée une fois (cache module), l'accueil se réaffiche dès qu'elle arrive.
   var _relances = null;
+  // 19/09/2026 — chacun ne voit que SES relances (demande de Will : « tout le monde voit
+  // celles des autres commerciaux »). Dans l'ordre : qui a posé la date (`relance_par`,
+  // retenu depuis ce jour) ; pour les dates plus anciennes, le commercial de l'officine
+  // (`comms`, même critère que la liste des officines) ; à défaut, le dernier auteur de
+  // la fiche. `by` absent = repli local de cet appareil, donc les siennes.
+  function relanceEstAMoi(o, ph) {
+    var u = V2.user || {}, par = o.data.relance_par;
+    if (par) return par === u.id;
+    var comms = ph.comms || [];
+    if (comms.length) return !!u.commercial && comms.indexOf(String(u.commercial)) >= 0;
+    return o.by === undefined || o.by === u.id;
+  }
   function loadRelances() {
     if (_relances || !V2.profil || !V2.profil.loadScope) return;
     _relances = [];
@@ -1117,6 +1129,7 @@
       (all || []).forEach(function (o) {
         var d = o && o.data && o.data.relance_date; if (!d) return;
         var ph = byId[String(o.sid)]; if (!ph) return;
+        if (!relanceEstAMoi(o, ph)) return;
         var dt = new Date(d + 'T00:00:00'); if (isNaN(dt.getTime())) return;
         var diff = Math.round((dt - today0) / 86400000);
         out.push({ pid: o.sid, name: ph.name || '', diff: diff });
