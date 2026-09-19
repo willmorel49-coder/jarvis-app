@@ -119,7 +119,7 @@
       '.v2-gres b{display:block;font-size:14.5px}',
       '.v2-gres span{color:var(--muted,#737A8C);font-size:13px}',
       '.v2-gpu{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px}',
-      '.v2-gpu button{min-height:44px;padding:0 14px;border-radius:12px;font:600 14px/1 inherit;',
+      '.v2-gpu button{min-height:44px;padding:0 14px;border-radius:12px;font-family:inherit;font-size:14px;font-weight:600;line-height:1;',
       '  border:1px solid var(--line,#E4E8F0);background:#fff;color:var(--ip-blue,#0050E6);cursor:pointer}',
       '.v2-gpu button.on{border-color:var(--ip-blue,#0050E6);background:#EAF0FE;font-weight:800}',
       '.v2-gok{width:100%;min-height:50px;border-radius:13px;border:0;color:#fff;cursor:pointer;',

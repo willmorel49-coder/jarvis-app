@@ -39,7 +39,7 @@
     { k: 'promo',     label: 'Promo de la semaine',  accent: '#0050E6', head: 'band',  desc: 'Bandeau de couleur, grand titre' },
     { k: 'nouveaute', label: 'Nouveauté',            accent: '#1E9E6A', head: 'band',  tag: 'Nouveau', desc: 'Bandeau et pastille « Nouveau »' },
     { k: 'selection', label: 'Sélection du mois',    accent: '#C7791A', head: 'slim',  desc: 'Filet de couleur, titre sombre' },
-    { k: 'fiche',     label: 'Fiche produit simple', accent: '#6D4FC4', head: 'plain', desc: 'Sans bandeau, sobre' }
+    { k: 'fiche',     label: 'Fiche produit simple', accent: '#0050E6', head: 'plain', desc: 'Sans bandeau, sobre' }
   ];
   function modele(it) {
     var k = it && it.theme && it.theme.tpl;
@@ -415,9 +415,7 @@
         { src: 'custom', key: 'ex2', name: 'Hylo Confort collyre hydratant flacon 10 mL', brand: 'Ursapharm', cip: '3401040669580', price: 0, remise: 0, ppht: 0, img: '', froid: false, cat: 'Yeux & ophtalmologie' },
         { src: 'custom', key: 'ex3', name: 'Vismed Multi gouttes lubrifiantes flacon 15 mL', brand: 'Horus', cip: '4028694001468', price: 0, remise: 0, ppht: 0, img: '', froid: false, cat: 'Yeux & ophtalmologie' }
       ],
-      // La vignette d'un modèle est de l'interface : le violet d'origine de « Fiche produit simple » y est rendu en encre.
-      // La fiche réellement créée garde l'accent du modèle (rien ne change dans le PDF).
-      theme: Object.assign(defaultTheme('support'), { tpl: m.k, accent: m.accent === '#6D4FC4' ? '#10131C' : m.accent }), owner: '' };
+      theme: Object.assign(defaultTheme('support'), { tpl: m.k, accent: m.accent }), owner: '' };
     var html = buildFlyerHtml(false, false);
     editing = prev;
     return html;
@@ -830,10 +828,8 @@
     var curTpl = (editing.theme && editing.theme.tpl) || 'promo';
     var iOng = Math.max(0, ONGLETS_P.indexOf(ongletPanneau)), iSt = 0;
     STATUSES.forEach(function (s, i) { if (s.k === editing.status) iSt = i; });
-    // Le choix du modèle : la tuile est de l'interface, le violet d'origine de « Fiche produit simple » y passe en encre
-    // (la feuille, elle, garde l'accent du modèle : le PDF ne change pas).
     var modelsHtml = MODELES.map(function (m) {
-      return '<button class="mkt-mtile mk-press" type="button" style="--m:' + (m.accent === '#6D4FC4' ? '#10131C' : m.accent) + '" data-model="' + m.k + '" data-head="' + m.head + '" aria-pressed="' + (curTpl === m.k ? 'true' : 'false') + '" onclick="V2.mkt.setModele(\'' + m.k + '\')">' +
+      return '<button class="mkt-mtile mk-press" type="button" style="--m:' + m.accent + '" data-model="' + m.k + '" data-head="' + m.head + '" aria-pressed="' + (curTpl === m.k ? 'true' : 'false') + '" onclick="V2.mkt.setModele(\'' + m.k + '\')">' +
         '<b>' + esc(m.label) + '</b><small>' + esc(m.desc) + '</small></button>';
     }).join('');
     var statutHtml = '<div class="mk-seg mke-statut" role="group" aria-label="Statut" style="--n:3;--i:' + iSt + '"><i class="mk-seg-ind"></i>' + STATUSES.map(function (s) {
@@ -1390,7 +1386,7 @@
       : (p.remise > 0 && p.price > 0 ? Math.round(p.price / (1 - p.remise / 100) * 100) / 100 : 0);
     var pct = (ppht > 0 && p.price > 0 && p.price < ppht) ? Math.round((1 - p.price / ppht) * 1000) / 10 : 0;
     var visuel = img
-      ? '<img' + (forPdf ? ' crossorigin="anonymous"' : '') + ' src="' + esc(img) + '" style="width:100%;height:100%;object-fit:contain">'
+      ? '<img data-imgprod' + (forPdf ? ' crossorigin="anonymous"' : '') + ' src="' + esc(img) + '" style="width:100%;height:100%;object-fit:contain">'
       : '<svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="#C6CEDC" stroke-width="1.4">' +
         '<rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M21 15l-5-5L4 21"/></svg>';
     var ref = p.cip ? ('CIP ' + esc(p.cip)) : (p.ean ? ('EAN ' + esc(p.ean)) : '');
@@ -1463,7 +1459,7 @@
       var ph = '<div style="width:34px;height:34px;border-radius:6px;background:#F1F4F9;display:flex;align-items:center;justify-content:center">' +
         '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#B6BFCE" stroke-width="1.7"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M21 15l-5-5L4 21"/></svg></div>';
       var thumb = anyImg
-        ? '<td style="padding:6px 8px;width:40px;text-align:center"' + zoneAttrs(edit, 'photo', 'Photo', { i: idx, click: true, quiet: true }) + '>' + (img ? '<img' + (forPdf ? ' crossorigin="anonymous"' : '') + ' src="' + esc(img) + '" style="width:34px;height:34px;object-fit:contain;border-radius:6px;background:#FBFCFE">' : ph) + '</td>'
+        ? '<td style="padding:6px 8px;width:40px;text-align:center"' + zoneAttrs(edit, 'photo', 'Photo', { i: idx, click: true, quiet: true }) + '>' + (img ? '<img data-imgprod' + (forPdf ? ' crossorigin="anonymous"' : '') + ' src="' + esc(img) + '" style="width:34px;height:34px;object-fit:contain;border-radius:6px;background:#FBFCFE">' : ph) + '</td>'
         : '';
       var ref = p.cip ? esc(p.cip) : (p.ean ? esc(p.ean) : '—');
       // PPHT connu, sinon reconstitué depuis la remise portée par le produit. 0 = NR/prix libre → net seul.

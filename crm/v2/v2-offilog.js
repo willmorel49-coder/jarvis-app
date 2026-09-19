@@ -367,7 +367,7 @@
   function card(it) {
     var sel = (S.sel != null && String(it.id) === String(S.sel)) ? ' sel' : '';
     var img = it.img
-      ? '<img class="off-card-img" src="' + esc(it.img) + '" loading="lazy" alt="" onerror="V2.offImgFail(this)">'
+      ? '<img class="off-card-img" data-imgprod src="' + esc(it.img) + '" loading="lazy" alt="">'
       : '<div class="off-card-noimg">' + ICO('pill', 30, 1.4) + '</div>';
     var onMkt = mktSel.has(String(it.id));
     var alertCls = it.alert ? ' alert' : '';
@@ -433,7 +433,7 @@
     return ref + rows + lec;
   }
   function inspector(it) {
-    var img = it.img ? '<div class="off-insp-img"><img src="' + esc(it.img) + '" loading="lazy" alt="" onerror="this.parentNode.style.display=\'none\'"></div>' : '';
+    var img = it.img ? '<div class="off-insp-img"><img data-imgprod src="' + esc(it.img) + '" loading="lazy" alt=""></div>' : '';
     function kpi(l, v, col) { return '<div class="off-kpi"><div class="off-kpi-l">' + l + '</div><div class="off-kpi-v"' + (col ? ' style="color:' + col + '"' : '') + '>' + v + '</div></div>'; }
     // Comparatif d'achat pro : Offilog vs Pharmazon vs Sagitta vs OCP — seules les
     // plateformes qui portent un prix pour CE produit entrent dans le bloc.
@@ -485,18 +485,7 @@
   }
 
   // ── Handlers ──────────────────────────────────
-  // photo cassée → placeholder propre (jamais de case blanche)
-  V2.offImgFail = function (img) {
-    try {
-      img.onerror = null;
-      var m = img.parentNode; if (!m) return;
-      if (img.remove) img.remove(); else m.removeChild(img);
-      var d = document.createElement('div');
-      d.className = 'off-card-noimg';
-      d.innerHTML = ICO('pill', 30, 1.4);
-      m.appendChild(d);
-    } catch (e) {}
-  };
+  // photo cassée → gestionnaire unique dans v2-app.js (délégation `error` sur [data-imgprod])
 
   // FLIP par famille/alertes : on mémorise la position des cartes AVANT le re-render,
   // le passage motion post-render (voir fin de render) rejoue le repositionnement.

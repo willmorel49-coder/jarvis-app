@@ -1724,6 +1724,26 @@
     else if (e.key === 'Escape') { V2.closeCmdk(); }
   });
 
+  // ── Photo de produit cassée (404 chez un tiers : cdn.pharma-gdd.com, weserv→offilog.fr…) ──
+  // Un seul gestionnaire, jamais un onerror recopié par écran. `error` ne remonte pas sur
+  // <img> : on l'intercepte en phase de CAPTURE au niveau du document (ça marche quand même,
+  // la capture descend vers la cible avant que l'événement n'ait besoin de remonter).
+  // Limité aux <img data-imgprod> (photo de produit) : jamais les autres images de l'app.
+  // Se retire après le premier remplacement — ne boucle jamais, même si le data: échouait.
+  var IMGPROD_SECOURS = 'data:image/svg+xml;utf8,' + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">' +
+    '<rect width="24" height="24" fill="#EEF2FA"/>' +
+    '<g fill="none" stroke="#AEB8CE" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">' +
+    '<rect x="3" y="8" width="18" height="8" rx="4" transform="rotate(-30 12 12)"/><path d="M8.8 7.2 14 16.4"/>' +
+    '</g></svg>');
+  document.addEventListener('error', function (e) {
+    var t = e.target;
+    if (!t || t.tagName !== 'IMG' || !t.hasAttribute('data-imgprod') || t.dataset.imgprodSecouru) return;
+    t.dataset.imgprodSecouru = '1';
+    t.removeAttribute('crossorigin');
+    t.src = IMGPROD_SECOURS;
+  }, true);
+
   // ── helpers ───────────────────────────────────
   // 03/09/2026 — échappe AUSSI l'apostrophe. Le pattern onclick="V2.x('+esc(d)+')"
   // est partout : sans ', une donnée avec apostrophe refermait la chaîne JS et
@@ -1910,7 +1930,7 @@
         '<input class="v2-field" id="v2-email" type="email" inputmode="email" aria-label="Adresse email" placeholder="Email" autocomplete="username">' +
         '<div style="position:relative">' +
           '<input class="v2-field" id="v2-pass" type="password" aria-label="Mot de passe" placeholder="Mot de passe" autocomplete="current-password" style="padding-right:82px">' +
-          '<button type="button" id="v2-eye" aria-label="Afficher le mot de passe" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:0;color:var(--muted);font:600 12.5px/1 inherit;cursor:pointer;padding:10px">Afficher</button>' +
+          '<button type="button" id="v2-eye" aria-label="Afficher le mot de passe" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:0;color:var(--muted);font-family:inherit;font-size:12.5px;font-weight:600;line-height:1;cursor:pointer;padding:10px">Afficher</button>' +
         '</div>' +
         '<button type="submit" class="v2-btn v2-btn-primary" id="v2-login-btn">Se connecter</button>' +
         '<div class="v2-login-err" id="v2-login-err" role="alert"></div>' +
