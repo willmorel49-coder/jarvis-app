@@ -17,6 +17,27 @@ BASE = str(Path(__file__).parent)
 OUT  = os.path.join(BASE, 'crm', 'benchmark-data.js')
 N_PHARMA = 19000
 
+# ⚠️ 19/09/2026 — remontée d'une commerciale (« diprostene baqsimi colpotrophine ... qui
+# sortent dans les produits froids »). Ces CIP13 sont classés « ❄️ Froid » dans la colonne 9
+# du fichier fourni par le grossiste (TOP IP DÉCROISSANT.xlsx) — une erreur du grossiste,
+# pas du calcul JARVIS. Vérifié un par un sur base-donnees-publique.medicaments.gouv.fr /
+# VIDAL (section « Précautions particulières de conservation ») : conservation officielle
+# ≤25°C ou ≤30°C, jamais 2-8°C — ce ne sont pas des produits de la chaîne du froid.
+# Sources officielles : base-donnees-publique.medicaments.gouv.fr (RCP, conservation).
+# Ne pas retirer une entrée d'ici sans nouvelle preuve officielle contraire.
+FROID_EXCEPTIONS = {
+    '3400932005093': 'DIPROSTENE INJ SERING1ML 1 — RCP : conserver ≤25°C, à l’abri de la lumière',
+    '3400930195291': 'BAQSIMI 3MG PDR NAS UNIDOS 1 — RCP/VIDAL : ne pas conserver au-dessus de 30°C',
+    '3400931623298': 'COLPOTROPHINE CAPS VAG BT20 — RCP : conserver ≤25°C',
+    '3400935876782': 'UTROGESTAN 100MG CAPS MOL BT90 — RCP : pas de précaution particulière de conservation',
+    '3400935811387': 'PROGESTAN 100MG CAPS MOL BT90 — RCP : pas de précaution particulière de conservation',
+    '3400933913083': 'ESTREVA GEL FL-DOS 50G — RCP/VIDAL : conserver ≤25°C, pas de fridge',
+    '3400933829247': 'OESTRODOSE 0,06% GEL LOC FL80G — RCP : « sans objet » (pas de conservation particulière)',
+    '3400930208229': 'CALCIFEDIOL GRD BUV GTT FL10ML — RCP : à l’abri de la lumière, pas de température imposée',
+    '3400935179043': 'MYCOSTATINE BUV SUSP FL24ML — RCP : ≤30°C avant ouverture, ≤25°C après ouverture',
+    '3400930045343': 'ACARIZAX 12 LYOT ORAL BT30 — RCP : pas de précaution particulière de conservation',
+}
+
 def norm(s):
     return re.sub(r'\s+', ' ', str(s or '').strip().upper())
 
@@ -95,6 +116,7 @@ for sname, cat_default in (sheet_cat_ip.items() if wb2 is not None else {}.items
         offre_ip  = safe_float(row[8] if len(row)>8 else None)
         froid_val = row[9] if len(row)>9 else None
         is_froid  = froid_val is not None and str(froid_val).strip() not in ('', 'None')
+        if cip in FROID_EXCEPTIONS: is_froid = False
 
         cip_to_prix[cip] = {'prix_ht':prix_ht,'prix_ip':prix_ip,'remise_pct':remise,'offre_ip':offre_ip,'is_froid':is_froid,'cat':cat_default}
 
@@ -106,7 +128,7 @@ for sname, cat_default in (sheet_cat_ip.items() if wb2 is not None else {}.items
             records[key]['prix_ip'] = prix_ip
             records[key]['remise_pct'] = remise
             records[key]['offre_ip'] = offre_ip
-            records[key]['is_froid'] = is_froid or records[key]['is_froid']
+            records[key]['is_froid'] = (is_froid or records[key]['is_froid']) and cip not in FROID_EXCEPTIONS
             matched_from_ip += 1
 
 if wb2 is not None:
