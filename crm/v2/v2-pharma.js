@@ -2081,6 +2081,14 @@
   // Vue Groupements = vue d'équipe : TOUJOURS toutes les pharmacies des 4
   // commerciaux, sans tenir compte du filtre commercial.
   var grpListSort = 'active';   // 'active' (par défaut, nb pharmacies actives) | 'name' (alphabétique)
+  // Recherche du sous-écran « Listes d'achats à proposer » (Karine, 17/09/2026, aee2d602).
+  // Variable de module (pas seulement la valeur du <input>) : elle survit à l'ouverture
+  // d'un groupement puis au retour, tant que l'onglet Groupements reste ouvert.
+  var grpListSearch = '';
+  function grpSearchNorm(s) {
+    s = String(s == null ? '' : s).toLowerCase();
+    return s.normalize ? s.normalize('NFD').replace(/[̀-ͯ]/g, '') : s;
+  }
   function groupementList() {
     var byG = {};
     (V2.pharmacies || []).forEach(function (p) {
@@ -2095,6 +2103,10 @@
     });
     if (grpListSort === 'name') list.sort(function (a, b) { return a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' }); });
     else list.sort(function (a, b) { return b.active - a.active || b.nb - a.nb; });
+    if (grpListSearch) {
+      var q = grpSearchNorm(grpListSearch);
+      list = list.filter(function (g) { return grpSearchNorm(g.name).indexOf(q) >= 0; });
+    }
     return list;
   }
   V2.grpListSortSet = function (mode) { grpListSort = mode === 'name' ? 'name' : 'active'; V2.render(); };
@@ -2200,8 +2212,11 @@
     };
   }
 
-  function renderGroupementsList(root) {
+  // Compteur + lignes de la liste — extrait à part pour ne redessiner QUE ce
+  // bloc à chaque frappe dans la recherche (le champ garde le focus et le curseur).
+  function grpListBody() {
     var list = groupementList();
+    var n = list.length;
     var rows = list.map(function (g) {
       return '<a class="v2-row" onclick="V2.pharmaGroup(\'' + encodeURIComponent(g.name).replace(/'/g, '%27') + '\')">' +
         grpLogo(g.name) +
@@ -2209,7 +2224,15 @@
         '<span class="v2-row-opp mono">' + g.active + ' / ' + g.nb + ' actives</span>' +
         '<span class="v2-row-chev">' + ICO('chev', 16) + '</span>' +
       '</a>';
-    }).join('') || '<div class="v2-empty"><div class="v2-empty-d">Aucun groupement.</div></div>';
+    }).join('');
+    var empty = grpListSearch
+      ? '<div class="v2-empty"><div class="v2-empty-d">Aucun groupement ne correspond à « ' + esc(grpListSearch) + ' ».</div></div>'
+      : '<div class="v2-empty"><div class="v2-empty-d">Aucun groupement.</div></div>';
+    return '<div class="v2-grp-count mono" style="font-size:12px;color:var(--muted);font-weight:600;padding:0 2px 12px">' +
+        n + ' groupement' + (n > 1 ? 's' : '') +
+      '</div>' + (rows || empty);
+  }
+  function renderGroupementsList(root) {
     var sortBar =
       '<div class="v2-card" style="margin-top:16px;padding:10px 14px;display:flex;align-items:center;gap:10px">' +
         '<span style="font-size:12px;color:var(--muted);font-weight:600">Trier :</span>' +
@@ -2218,15 +2241,41 @@
           '<button type="button" class="v2-seg' + (grpListSort === 'name' ? ' on' : '') + '" style="--sc:var(--ip-blue)" onclick="V2.grpListSortSet(\'name\')">Nom (A→Z)</button>' +
         '</div>' +
       '</div>';
+    var searchBar =
+      '<div class="v2-search" style="margin-top:16px;padding:12px 16px">' + ICO('search', 18, 2) +
+        '<input id="v2-grp-search" placeholder="Rechercher un groupement…" autocomplete="off" value="' + esc(grpListSearch) + '">' +
+        '<button type="button" id="v2-grp-search-x" class="v2-grp-search-x" aria-label="Effacer la recherche" onclick="V2.grpListSearchClear()"' +
+          (grpListSearch ? '' : ' style="display:none"') + '>' + ICO('close', 16, 2) + '</button>' +
+      '</div>';
     root.innerHTML = V2.topbar({ back: true, backTo: 'groupements', backLabel: 'Groupements' }) +
       '<div class="v2-wrap">' +
         '<div class="v2-page-title">Groupements</div>' +
         '<div class="v2-page-sub">Opportunités par groupement · ce que commandent les pharmacies adhérentes — liste d\'achats à pousser</div>' +
         (V2.grpSpaceTabs ? V2.grpSpaceTabs('opp') : '') +
         sortBar +
-        '<div class="v2-card" style="margin-top:16px">' + rows + '</div>' +
+        searchBar +
+        '<div class="v2-card" style="margin-top:16px" id="v2-grp-list-card">' + grpListBody() + '</div>' +
       '</div>';
+    // Recherche live : on ne re-render QUE la liste (+ compteur) pour préserver
+    // le focus et le curseur du champ (même modèle que la recherche officines).
+    var inp = document.getElementById('v2-grp-search');
+    if (inp) {
+      inp.addEventListener('input', function () {
+        grpListSearch = inp.value;
+        var card = document.getElementById('v2-grp-list-card');
+        if (card) card.innerHTML = grpListBody();
+        var x = document.getElementById('v2-grp-search-x');
+        if (x) x.style.display = grpListSearch ? '' : 'none';
+      });
+    }
   }
+  V2.grpListSearchClear = function () {
+    grpListSearch = '';
+    var inp = document.getElementById('v2-grp-search'); if (inp) inp.value = '';
+    var card = document.getElementById('v2-grp-list-card'); if (card) card.innerHTML = grpListBody();
+    var x = document.getElementById('v2-grp-search-x'); if (x) x.style.display = 'none';
+    if (inp) inp.focus();
+  };
 
   function renderGrpCatCard(o, idx, panel, ovKey) {
     var c = o.cat, key = 'g_' + c.key;
@@ -2349,8 +2398,27 @@
     V2.fiches.createFrom({ title: 'Commande recommandée — ' + (ph ? ph.name : ''), destId: String(pid), products: products });
     V2.toast(rows.length + ' produits recommandés');
   };
-  V2.pharmaGroup = function (enc) { try { selGroup = decodeURIComponent(enc); } catch (e) { selGroup = enc; } V2.render(); window.scrollTo(0, 0); };
-  V2.pharmaGroupBack = function () { selGroup = null; V2.render(); };
+  V2.pharmaGroup = function (enc) {
+    try { selGroup = decodeURIComponent(enc); } catch (e) { selGroup = enc; }
+    // 19/09/2026 (Karine, aee2d602) — ouvrir un groupement ne changeait pas le hash :
+    // le bouton PRÉCÉDENT du navigateur sortait alors carrément de l'onglet Groupements
+    // au lieu d'y revenir. On pousse une entrée d'historique dédiée (même adresse) ;
+    // le popstate ci-dessous la referme comme le bouton « Retour » de l'appli.
+    try { history.pushState({ v2GrpDetail: true }, '', location.href); } catch (e) {}
+    V2.render(); window.scrollTo(0, 0);
+  };
+  V2.pharmaGroupBack = function () {
+    try {
+      if (selGroup && window.history.state && window.history.state.v2GrpDetail) { window.history.back(); return; }
+    } catch (e) {}
+    selGroup = null; V2.render();
+  };
+  // Bouton précédent du navigateur depuis un groupement ouvert : referme le détail et
+  // republie la liste — recherche (grpListSearch) et tri (grpListSort) restent en mémoire,
+  // ce sont des variables de module, pas des valeurs lues dans le DOM qu'on vient de jeter.
+  window.addEventListener('popstate', function () {
+    if (selGroup && V2.route && V2.route.name === 'pharma') { selGroup = null; V2.render(); }
+  });
 
   // ── Handlers LISTES personnalisées ──
   V2.pharmaListOpen = function (id) { selList = id; V2.render(); window.scrollTo(0, 0); };

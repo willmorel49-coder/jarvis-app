@@ -215,6 +215,10 @@ border-bottom:1px solid var(--line)}
 .v2-search input{border:none;outline:none;background:none;font-family:var(--font);font-size:17px;font-weight:450;
   color:var(--ip-ink);flex:1;min-width:0}
 .v2-search input::placeholder{color:var(--muted)}
+/* Bouton d'effacement d'une recherche v2-search (cible tactile 44px, ex. recherche groupements) */
+.v2-grp-search-x{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;
+  border:none;background:none;color:var(--muted-2);cursor:pointer;border-radius:50%;flex-shrink:0;padding:0}
+.v2-grp-search-x:hover{background:var(--card-2);color:var(--ip-ink)}
 .v2-search kbd{font-family:var(--mono);font-size:12px;background:#F1F3F8;padding:6px 10px;border-radius:9px;
   color:var(--ip-ink-2);box-shadow:0 1px 0 rgba(16,19,28,.06),0 1px 2px rgba(16,19,28,.04) inset;font-weight:500}
 

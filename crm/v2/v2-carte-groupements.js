@@ -303,6 +303,11 @@
       '.cg-rk-head{position:sticky;top:0;z-index:2;background:var(--paper);padding:14px 16px 10px;border-bottom:1px solid var(--line)}' +
       '.cg-rk-t{font-family:var(--font);font-size:15px;font-weight:800;color:var(--ip-ink)}' +
       '.cg-rk-sum{font-size:12px;color:var(--muted);margin-top:2px;font-weight:600}' +
+      '.cg-rk-search{display:flex;align-items:center;gap:8px;margin-top:10px;background:var(--card-2);border:1px solid var(--line);border-radius:11px;padding:6px 12px;transition:border-color .18s var(--ease),box-shadow .18s var(--ease)}' +
+      '.cg-rk-search:focus-within{border-color:var(--ip-blue);box-shadow:0 0 0 3px var(--halo)}' +
+      '.cg-rk-search svg{color:var(--ip-blue);flex-shrink:0}' +
+      '.cg-rk-search input{border:none;outline:none;background:none;font-family:var(--font);font-size:16px;color:var(--ip-ink);flex:1;min-width:0}' +
+      '.cg-rk-search input::placeholder{color:var(--muted)}' +
       '.cg-rk-sorts{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:10px}.cg-rk-sorts>span{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;margin-right:2px}' +
       '.cg-rk-sb{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:5px 12px;font-family:var(--font);font-size:12px;font-weight:700;color:var(--muted);cursor:pointer;transition:all .15s}' +
       '.cg-rk-sb:hover{color:var(--ip-ink)}.cg-rk-sb.on{background:var(--ip-blue);color:#fff;border-color:var(--ip-blue)}' +
@@ -420,6 +425,10 @@
   }
   // ── Classement : tous les groupements, triable ──
   var rankSort = 'c';
+  // Recherche du classement (Karine, 17/09/2026, aee2d602 — ce classement n'avait aucun
+  // moyen de filtrer par nom). Variable de module : persiste tant que la carte reste ouverte.
+  var rankSearch = '';
+  function rkNorm(s) { s = String(s == null ? '' : s).toLowerCase(); return s.normalize ? s.normalize('NFD').replace(/[̀-ͯ]/g, '') : s; }
   function rankRows() {
     var out = [];
     for (var g in GIDX) {
@@ -429,26 +438,53 @@
     }
     var key = rankSort === 'ca' ? 'ca' : rankSort === 'pr' ? 'pr' : rankSort === 'pen' ? 'pen' : 'c';
     out.sort(function (a, b) { return (b[key] - a[key]) || (b.c - a.c); });
+    if (rankSearch) {
+      var q = rkNorm(rankSearch);
+      out = out.filter(function (r) { return rkNorm(r.name).indexOf(q) >= 0; });
+    }
     return out;
   }
-  function rankingHtml() {
-    var rows = rankRows(), totC = 0, totCa = 0, totPr = 0;
-    rows.forEach(function (r) { totC += r.c; totCa += r.ca; totPr += r.pr; });
-    var sb = function (k, lbl) { return '<button class="cg-rk-sb' + (rankSort === k ? ' on' : '') + '" onclick="V2.cgRankSort(\'' + k + '\')">' + lbl + '</button>'; };
-    var head = '<div class="cg-rk-head"><div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px"><div><div class="cg-rk-t">Tous les groupements · ' + rows.length + '</div>' +
-      '<div class="cg-rk-sum">' + totC + ' clients · ' + eur(totCa) + ' · ' + totPr + ' prospects</div></div>' +
-      '<button class="cg-rk-exp" onclick="V2.cgExport()" title="Exporter en CSV (Excel)">⬇ Export</button></div>' +
-      '<div class="cg-rk-sorts"><span>Trier</span>' + sb('c', 'Clients') + sb('ca', 'CA') + sb('pr', 'Prospects') + sb('pen', 'Pénétr.') + '</div></div>';
-    var body = rows.map(function (r, i) {
+  function rankRowsHtml(rows) {
+    return rows.map(function (r, i) {
       return '<div class="cg-rk-row" data-g="' + esc(r.name) + '" onclick="V2.cgSelect(this.dataset.g)">' +
         '<span class="cg-rk-n">' + (i + 1) + '</span>' +
         '<div class="cg-rk-main"><div class="cg-rk-nm">' + esc(r.name) + '</div>' +
           '<div class="cg-rk-meta"><b>' + r.c + '</b> clients · ' + r.pr + ' prospects' + (r.ca > 0 ? ' · ' + eur(r.ca) : '') + (r.topComm ? ' · ' + esc(r.topComm) : '') + '</div></div>' +
         '<span class="cg-rk-pen" title="Pénétration = clients / pharmacies">' + r.pen + '%</span></div>';
-    }).join('') || '<div class="cg-empty">Aucun groupement.</div>';
-    return '<div class="cg-rk">' + head + '<div class="cg-rk-list">' + body + '</div></div>';
+    }).join('') || ('<div class="cg-empty">' + (rankSearch ? 'Aucun groupement ne correspond à « ' + esc(rankSearch) + ' ».' : 'Aucun groupement.') + '</div>');
+  }
+  function rankingHtml() {
+    var rows = rankRows(), totC = 0, totCa = 0, totPr = 0;
+    rows.forEach(function (r) { totC += r.c; totCa += r.ca; totPr += r.pr; });
+    var sb = function (k, lbl) { return '<button class="cg-rk-sb' + (rankSort === k ? ' on' : '') + '" onclick="V2.cgRankSort(\'' + k + '\')">' + lbl + '</button>'; };
+    var head = '<div class="cg-rk-head"><div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px"><div><div class="cg-rk-t" id="cg-rk-count">Tous les groupements · ' + rows.length + '</div>' +
+      '<div class="cg-rk-sum">' + totC + ' clients · ' + eur(totCa) + ' · ' + totPr + ' prospects</div></div>' +
+      '<button class="cg-rk-exp" onclick="V2.cgExport()" title="Exporter en CSV (Excel)">⬇ Export</button></div>' +
+      '<div class="cg-rk-search">' + ICO('search', 16, 2) +
+        '<input id="cg-rk-search" placeholder="Rechercher un groupement…" autocomplete="off" value="' + esc(rankSearch) + '" oninput="V2.cgRankSearch(this.value)">' +
+        '<button type="button" id="cg-rk-search-x" class="v2-grp-search-x" aria-label="Effacer la recherche" onclick="V2.cgRankSearchClear()"' +
+          (rankSearch ? '' : ' style="display:none"') + '>' + ICO('close', 14, 2) + '</button>' +
+      '</div>' +
+      '<div class="cg-rk-sorts"><span>Trier</span>' + sb('c', 'Clients') + sb('ca', 'CA') + sb('pr', 'Prospects') + sb('pen', 'Pénétr.') + '</div></div>';
+    return '<div class="cg-rk">' + head + '<div class="cg-rk-list" id="cg-rk-rows">' + rankRowsHtml(rows) + '</div></div>';
   }
   V2.cgRankSort = function (k) { rankSort = k; var ls = document.getElementById('cg-list'); if (ls) ls.innerHTML = listHtml(); };
+  // Recherche live : on ne re-render QUE les lignes + le compteur, jamais le champ
+  // lui-même (même modèle que la recherche officines/groupements du pilier pharma) —
+  // sinon le focus et le curseur sautent à chaque lettre tapée.
+  V2.cgRankSearch = function (q) {
+    rankSearch = q || '';
+    var rows = rankRows();
+    var box = document.getElementById('cg-rk-rows'); if (box) box.innerHTML = rankRowsHtml(rows);
+    var ct = document.getElementById('cg-rk-count'); if (ct) ct.textContent = 'Tous les groupements · ' + rows.length;
+    var x = document.getElementById('cg-rk-search-x'); if (x) x.style.display = rankSearch ? '' : 'none';
+  };
+  V2.cgRankSearchClear = function () {
+    rankSearch = '';
+    var inp = document.getElementById('cg-rk-search'); if (inp) inp.value = '';
+    V2.cgRankSearch('');
+    if (inp) inp.focus();
+  };
   function csvCell(s) { s = String(s == null ? '' : s); return /[;"\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }
   V2.cgExport = function () {
     var rows = rankRows();
