@@ -977,9 +977,15 @@
         (V2.profil ? V2.profil.newProspectSection(pid, seed) : '') +
         (V2.profil ? V2.profil.section('client', pid) : '') +
         (V2.notes ? V2.notes.section('client', pid) : '') +
+        '<div class="v2-card v2-prospect-acts">' + txProspectBtn(pid) + '</div>' +
       '</div>';
     if (V2.profil) V2.profil.hydrate();
     if (V2.notes) V2.notes.hydrate();
+  }
+  // 21/09/2026 — demande de Will : on transmet aussi des documents depuis une fiche prospect.
+  function txProspectBtn(pid) {
+    return '<button class="v2-btn v2-btn-ghost" onclick="V2.pharmaTransmettre(\'' + esc(String(pid)) + '\')" title="catalogues, documents de l\'équipe — en pièces jointes">' +
+      (V2.ICO ? V2.ICO('fiche', 15, 2) : '') + 'Choisir quoi lui transmettre</button>';
   }
 
   // Officine trouvée dans la base nationale (prospect / non-cliente) par son id.
@@ -1077,6 +1083,7 @@
           ((V2.promoted && V2.promoted[String(pid)])
             ? '<span class="v2-btn v2-btn-ghost" style="cursor:default;color:var(--c-opp);border-color:var(--c-opp)">✓ Passé en client</span>'
             : '<button class="v2-btn v2-btn-primary" onclick="V2.promoteToClient(\'' + esc(String(pid)) + '\')">➕ Passer en client</button>') +
+          txProspectBtn(pid) +
           '<a class="v2-btn v2-btn-ghost" href="https://www.google.com/maps/search/?api=1&query=' + q + '" target="_blank" rel="noopener">Voir sur Google Maps</a>' +
         '</div>' +
       '</div>';
@@ -2912,10 +2919,12 @@
         .map(function (f) { return { name: f.name, size: (f.metadata || {}).size || 0 }; });
     }).catch(function () { tx.docs = []; tx.docsErr = 'Bibliothèque partagée injoignable — réessaie dans un instant.'; });
   }
+  function txIsClient(pid) { return (V2.pharmacies || []).some(function (p) { return String(p.id) === String(pid); }); }
   function txCount(pid, scope) { return buildRecoCats(pid, scope).cats.reduce(function (s, o) { return s + o.rows.length; }, 0); }
   function txItems(pid) {
     var its = [];
-    var nR = txCount(pid, 'reseau');
+    // Prospect : pas d'achats chez nous, donc pas de listing « ce qu'elle n'a pas encore ».
+    var nR = txIsClient(pid) ? txCount(pid, 'reseau') : 0;
     if (nR > 0) its.push({ k: 'L:reseau', grp: 'listing', label: 'Listing ' + reseauLbl(), meta: V2.fmtNum(nR) + ' produits · PDF généré' });
     var g = groupementPids(pid);
     if (g.set && g.set.size >= 2) {
@@ -2933,7 +2942,7 @@
     var bd = document.getElementById('tx-modal');
     if (!bd || !tx.pid) return;
     var pharma = (V2.pharmacies || []).find(function (p) { return String(p.id) === tx.pid; });
-    var nom = pharma ? nameOf(tx.pid, pharma.name) : 'l\'officine';
+    var nom = pharma ? nameOf(tx.pid, pharma.name) : (tx.nom || 'l\'officine');
     var mail = txMail[tx.pid] || '';
     var its = txItems(tx.pid);
     var nSel = its.filter(function (i) { return tx.sel[i.k]; }).length;
@@ -2993,6 +3002,12 @@
     pid = String(pid);
     if (tx.pid !== pid) { tx.sel = {}; tx.files = null; }
     tx.pid = pid; tx.busy = '';
+    if (!txIsClient(pid)) {   // fiche prospect : l'e-mail et le nom sont ceux affichés à l'écran
+      var em = document.querySelector('.v2-prospect input[data-fk="email"]'), nm = document.querySelector('.v2-prospect input[data-fk="nom"]');
+      var pt = pharmaFrById(pid);
+      txMail[pid] = em ? (em.value || '').trim() : '';
+      tx.nom = nameOf(pid, (nm && (nm.value || '').trim()) || (pt && (pt[6] || pt[10])) || '');
+    }
     var bd = document.getElementById('tx-modal');
     if (!bd) {
       bd = document.createElement('div');
