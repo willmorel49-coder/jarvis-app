@@ -207,7 +207,7 @@
     if (window.ETAB_PRICES) { cb(); return; }
     if (etabEchec || etabLoading) return;   // échec retenu, ou premier appel en cours (son rappel redessine déjà l'écran)
     etabLoading = true;
-    var s = document.createElement('script'); s.src = 'etab-prices-data.js?v=20260921e';
+    var s = document.createElement('script'); s.src = 'etab-prices-data.js?v=20260921k';
     s.onload = function () { etabLoading = false; cb(); }; s.onerror = function () { etabLoading = false; etabEchec = true; cb(); };
     document.head.appendChild(s);
   }
@@ -1090,7 +1090,7 @@
       else if (f.rayon !== 'all' && String(r.r) !== f.rayon) continue;
       if (f.fam !== 'all' && r.o.f !== f.fam) continue;
       if (f.labo && r.o.labo !== f.labo) continue;
-      if (f.stock && !(r.o.stock > 0)) continue;
+      if (f.stock && !(pickStock(r.o) > 0)) continue;
       if (q && r.s.indexOf(q) < 0) continue;
       out.push(r);
     }
@@ -1258,6 +1258,14 @@
     return '<div class="mkt-pick-item' + (have[k] ? ' added' : (pickSel[sk] ? ' sel' : '')) + '" onclick="V2.mkt.pickToggle(\'' + src + '\',\'' + esc(String(key)) + '\',this)">';
   }
   function pickItemClose() { return '<span class="mkt-pick-ck">' + ICO('check', 13, 3) + '</span></div>'; }
+  // Stock d'un produit du catalogue = somme des 7 sites (STOCK_IP) ; le stock figé dans le catalogue de juin
+  // ne sert que si le produit est inconnu des relevés — sinon « rupture » contredisait le bandeau des sites.
+  function pickStock(o) {
+    var S = window.STOCK_IP && window.STOCK_IP.data, c = String(o.cip), E = window.ETAB_PRICES;
+    if (S && S[c] > 0) return S[c];
+    if (S && E && E.all && E.all[c]) return 0;
+    return +o.stock || 0;
+  }
   function pickRowCat(r, have) {
     var o = r.o, cip = String(o.cip);
     var p = (V2.produits && V2.produits.produitMkt) ? V2.produits.produitMkt(cip) : null;
@@ -1265,8 +1273,8 @@
     var sub = [o.labo, 'CIP ' + cip, rayonLibelle(r.r)].filter(function (x) { return !!x; }).join(' · ');
     return pickItemOpen('cat', cip, have, 'cat|' + cip) +
       (img ? '<span class="mkt-pick-img" style="background-image:url(' + esc(img) + ')"></span>' : '<span class="mkt-pick-ic">' + ICO('pill', 18, 1.7) + '</span>') +
-      '<span class="mkt-pick-nm"><b>' + esc(o.d) + '</b><span>' + esc(sub) + '</span></span>' +
-      (o.stock > 0 ? '' : '<span class="mkt-pick-rupt">rupture</span>') +
+      '<span class="mkt-pick-nm"><b>' + esc(o.d) + '</b><span>' + esc(sub) + '</span>' + sitesHtml(cip) + '</span>' +
+      (pickStock(o) > 0 ? '' : '<span class="mkt-pick-rupt">rupture</span>') +
       '<span class="mkt-pick-pr mono">' + (p && p.price > 0 ? V2.fmtEur(p.price) : '') + '</span>' +
       pickItemClose();
   }
@@ -1289,7 +1297,7 @@
     var subm = b.sortie > 0 ? ' · ' + b.sortie + '/' + b.total + ' pharm' : (b.cip ? ' · CIP ' + esc(b.cip) : ' · ' + esc(b.cat));
     return pickItemOpen('mix', id, have, 'mix|' + id) +
       '<span class="mkt-pick-ic">' + ICO('pill', 18, 1.7) + '</span>' +
-      '<span class="mkt-pick-nm"><b>' + esc(b.name) + '</b><span>' + tag + subm + '</span></span>' +
+      '<span class="mkt-pick-nm"><b>' + esc(b.name) + '</b><span>' + tag + subm + '</span>' + (b.cip ? sitesHtml(b.cip) : '') + '</span>' +
       chip +
       '<span class="mkt-pick-pr mono">' + (b.price > 0 ? V2.fmtEur(b.price) : '') + '</span>' +
       pickItemClose();
@@ -1393,6 +1401,8 @@
     document.body.classList.add('mkt-picking');
     var inp = document.getElementById('mkt-pick-input');
     if (inp) { inp.value = ''; inp.placeholder = pickPlaceholder(); }
+    // Stock de chaque site sous les produits : chargé à la demande, la liste se redessine à l'arrivée.
+    if (!window.ETAB_PRICES) ensureEtab(function () { if (window.ETAB_PRICES && bd.classList.contains('open')) renderPickList(); });
     ensureSrc(function () {
       renderPickAll();
       // Sur téléphone, le clavier couvrirait les rayons : pas de focus automatique.
@@ -3062,7 +3072,7 @@
       // Ligne de résultat : le NOM peut prendre deux lignes, la sous-ligne
       // « labo · CIP · rayon » reste sur une seule, coupée par « … ».
       '.mkt-pick-list .mkt-pick-nm b{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;white-space:normal;overflow:hidden;line-height:1.25}',
-      '.mkt-pick-list .mkt-pick-nm span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      '.mkt-pick-list .mkt-pick-nm>span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
       '.mkt-pick-search{display:flex;align-items:center;gap:12px;padding:15px 18px;border-bottom:1px solid var(--line)}',
       '.mkt-pick-search svg{color:var(--ip-blue);flex-shrink:0}',
       '.mkt-pick-search input{border:none;outline:none;background:none;font-family:var(--font);font-size:16px;flex:1;color:var(--ip-ink)}',
@@ -3094,7 +3104,7 @@
       '.mkt-pick-img{width:40px;height:40px;border-radius:9px;background:#fff center/contain no-repeat;border:1px solid var(--line);flex-shrink:0}',
       '.mkt-pick-nm{flex:1;min-width:0}',
       '.mkt-pick-nm b{display:block;font-weight:600;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
-      '.mkt-pick-nm span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}',
+      '.mkt-pick-nm>span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}',
       '.mkt-pick-pr{font-size:13px;font-weight:700;color:var(--c-mint);flex-shrink:0}',
       '.mkt-pick-sortie{flex-shrink:0;font-family:var(--mono);font-size:11px;font-weight:700;color:var(--ip-blue);background:var(--halo);border-radius:999px;padding:3px 8px;margin-right:2px;white-space:nowrap}',
       '.mkt-pick-sortie.marge{color:var(--c-mint);background:color-mix(in srgb,var(--c-mint) 12%,#fff)}',
@@ -3409,7 +3419,7 @@
       '.mke-pick .mkt-pick-img,.mke-pick .mkt-pick-ic{width:44px;height:44px;border-radius:10px}',
       '.mke-pick .mkt-pick-ic{color:var(--mk-encre2);background:var(--mk-groupe)}',
       '.mke-pick .mkt-pick-nm b{font-size:var(--mk-s4);line-height:20px;font-weight:600;color:var(--mk-encre)}',
-      '.mke-pick .mkt-pick-nm span{font-size:var(--mk-s5);line-height:var(--mk-s5l);letter-spacing:0;text-transform:none;color:var(--mk-attenue)}',
+      '.mke-pick .mkt-pick-nm>span{font-size:var(--mk-s5);line-height:var(--mk-s5l);letter-spacing:0;text-transform:none;color:var(--mk-attenue)}',
       '.mke-pick .mkt-pick-pr{font-family:inherit;font-size:var(--mk-s4);font-weight:600;color:var(--mk-encre)}',
       '.mke-pick .mkt-pick-rupt{padding:0;border-radius:0;background:none;font-size:var(--mk-s5);font-weight:600;letter-spacing:0;text-transform:capitalize;color:#B93550}',
       '.mke-pick .mkt-pick-sortie{font-family:inherit;font-size:var(--mk-s5);font-weight:600;color:var(--mk-encre2);background:var(--mk-groupe)}',

@@ -405,7 +405,7 @@
     if (_etabState) return;
     _etabState = 1;
     var s = document.createElement('script');
-    s.src = 'etab-prices-data.js?v=' + (window.__APPRO_V || '20260921e'); s.async = false;
+    s.src = 'etab-prices-data.js?v=' + (window.__APPRO_V || '20260921k'); s.async = false;
     s.onload = function () { _etabState = 2; approRerender(); };
     s.onerror = function () { _etabState = 2; };
     document.head.appendChild(s);
@@ -421,6 +421,13 @@
     out.sort(function (a, b) { return b.stock - a.stock; });
     return { sites: out, total: tot };
   }
+  // Ce site a-t-il déjà vendu ce produit ? true / false, ou null quand on ne sait pas
+  // (pas de fichier de ventes lu pour ce site) — un « on ne sait pas » ne se signale pas.
+  function aVendu(cip, site) {
+    var EP = window.ETAB_PRICES, i = EP && EP.venduSites ? EP.venduSites.indexOf(site) : -1;
+    if (i < 0 || !EP.vendu) return null;
+    return !!((EP.vendu[cip] || 0) & (1 << i));
+  }
   function rebalance() {
     var EP = window.ETAB_PRICES; if (!EP || !EP.prices) return [];
     var PS = window.PROD_STATS || [], etabs = EP.etabs.map(function (e) { return e.code; }), out = [];
@@ -433,7 +440,7 @@
       }
       if (tot < 20 || nz < 2) continue;
       var conc = mx / tot, zeros = etabs.filter(function (e) { return per[e] === 0; }).length;
-      if (conc > 0.55 && zeros >= 1) out.push({ d: PS[k].d, per: per, tot: tot, mxE: mxE, conc: conc, zeros: zeros });
+      if (conc > 0.55 && zeros >= 1) out.push({ c: c, d: PS[k].d, per: per, tot: tot, mxE: mxE, conc: conc, zeros: zeros });
     }
     out.sort(function (a, b) { return b.tot - a.tot; });
     return out.slice(0, 10);
@@ -458,7 +465,9 @@
       return '<div class="imb"><div class="imn">' + esc(cap(p.d)) + '</div>' +
         '<div class="imm">' + fmt(p.tot) + ' u · <b>' + Math.round(p.conc * 100) + ' % sur ' + p.mxE + '</b> · ' + p.zeros + ' site' + (p.zeros > 1 ? 's' : '') + ' à 0</div>' +
         '<div class="imbar">' + bars + '</div>' +
-        '<div class="imfix">→ <b>transférer</b> de ' + p.mxE + ' vers ' + etabs.filter(function (e) { return p.per[e] === 0; }).join(', ') + ' — plutôt que commander</div></div>';
+        '<div class="imfix">→ <b>transférer</b> de ' + p.mxE + ' vers ' + etabs.filter(function (e) { return p.per[e] === 0; }).map(function (e) {
+          return aVendu(p.c, e) === false ? e + ' <span class="imnv">(aucune vente relevée sur ce site)</span>' : e;
+        }).join(', ') + ' — plutôt que commander</div></div>';
     }).join('') || '<div class="ap-empty">Stock équilibré sur les sites.</div>';
     // Les sites ne sont pas tous extraits le même jour : on le dit, regroupé par date.
     var SD = window.ETAB_PRICES.siteDates || {}, parDate = {}, ordre = [];
@@ -768,7 +777,7 @@
     // On l'affiche et on alerte si le stock est vieux (> 35 j) car les jours-avant-rupture s'en trouvent optimistes.
     var stk = window.STOCK_IP && window.STOCK_IP.meta, stockTxt = '<b>stock plateforme = dernier inventaire importé</b> (photographie, pas temps réel)', warn = '';
     if (stk && stk.gen) {
-      stockTxt = '<b>stock plateforme arrêté au ' + fdate(stk.gen) + '</b> (photographie, pas temps réel)';
+      stockTxt = '<b>stock ' + (stk.sites ? 'des ' + stk.sites.length + ' établissements' : 'plateforme') + ' arrêté au ' + fdate(stk.gen) + '</b> (photographie, pas temps réel)';
       var age = null;
       try { age = Math.round((new Date().getTime() - new Date(stk.gen + 'T00:00:00').getTime()) / 864e5); } catch (e) {}
       if (age != null && age > 35) warn = '<div class="ap-fresh-warn">🔄 Pense à réimporter le stock des établissements pour des chiffres au plus juste — dernier import il y a ' + age + ' jours.</div>';
@@ -1363,8 +1372,8 @@
     if (out.length < 3) return '';
     var age = '';
     try {
-      var g = window.STOCK_IP && window.STOCK_IP.meta && window.STOCK_IP.meta.gen;
-      if (g) age = '<span class="rb-fl">stock plateforme arrêté au ' +
+      var g = window.STOCK_IP && window.STOCK_IP.meta && window.STOCK_IP.meta.gen, ns = window.STOCK_IP && window.STOCK_IP.meta && window.STOCK_IP.meta.sites;
+      if (g) age = '<span class="rb-fl">stock ' + (ns ? 'des ' + ns.length + ' établissements' : 'plateforme') + ' arrêté au ' +
         esc(g.split('-').reverse().join('/')) + ' — photographie</span>';
     } catch (e) {}
     var suite = out.join('') + age;
@@ -2574,7 +2583,7 @@
       '.imbar .col{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px}' +
       '.imbar .col .b{width:100%;max-width:32px;border-radius:3px 3px 0 0;background:#C6D0DE;min-height:2px}.imbar .col .b.hot{background:var(--c-amber)}.imbar .col .b.zero{background:#EAEDF2}' +
       '.imbar .col small{font-size:9px;color:var(--muted);font-weight:700}' +
-      '.imb .imfix{font-size:11.5px;font-weight:800;color:#0E7C86;margin-top:8px}.imb .imfix b{color:var(--ip-ink)}' +
+      '.imb .imfix{font-size:11.5px;font-weight:800;color:#0E7C86;margin-top:8px}.imb .imfix b{color:var(--ip-ink)}.imb .imnv{font-weight:700;color:#9A5B00}' +
       /* négo labo chiffrée */
       '.neg-row{padding:12px 16px;border-top:1px solid var(--line)}.neg-row:first-of-type{border-top:0}' +
       '.neg-top{display:flex;align-items:center;gap:9px}' +
