@@ -452,17 +452,22 @@
       var m = 0; etabs.forEach(function (e) { if (p.per[e] > m) m = p.per[e]; });
       var bars = etabs.map(function (e) {
         var v = p.per[e], hpx = !(v > 0) ? 2 : Math.round(4 + v / m * 32);
-        if (v === undefined) return '<div class="col" title="' + e + ' : non communiqué"><div class="b" style="height:2px;opacity:.35"></div><small>' + e + '</small></div>';
-        return '<div class="col"><div class="b ' + (v === 0 ? 'zero' : v === m ? 'hot' : '') + '" style="height:' + hpx + 'px"></div><small>' + e + '</small></div>';
+        if (v === undefined) return '<div class="col" title="' + e + ' : non communiqué"><em class="q">—</em><div class="b" style="height:2px;opacity:.35"></div><small>' + e + '</small></div>';
+        return '<div class="col"><em class="q' + (v === 0 ? ' z' : '') + '">' + fmt(v) + '</em><div class="b ' + (v === 0 ? 'zero' : v === m ? 'hot' : '') + '" style="height:' + hpx + 'px"></div><small>' + e + '</small></div>';
       }).join('');
       return '<div class="imb"><div class="imn">' + esc(cap(p.d)) + '</div>' +
         '<div class="imm">' + fmt(p.tot) + ' u · <b>' + Math.round(p.conc * 100) + ' % sur ' + p.mxE + '</b> · ' + p.zeros + ' site' + (p.zeros > 1 ? 's' : '') + ' à 0</div>' +
         '<div class="imbar">' + bars + '</div>' +
-        '<div class="imfix">→ équilibrer depuis ' + p.mxE + ' — <b>transférer</b> plutôt que commander</div></div>';
+        '<div class="imfix">→ <b>transférer</b> de ' + p.mxE + ' vers ' + etabs.filter(function (e) { return p.per[e] === 0; }).join(', ') + ' — plutôt que commander</div></div>';
     }).join('') || '<div class="ap-empty">Stock équilibré sur les sites.</div>';
+    // Les sites ne sont pas tous extraits le même jour : on le dit, regroupé par date.
+    var SD = window.ETAB_PRICES.siteDates || {}, parDate = {}, ordre = [];
+    etabs.forEach(function (e) { var d = SD[e]; if (!d) return; if (!parDate[d]) { parDate[d] = []; ordre.push(d); } parDate[d].push(e); });
+    ordre.sort();
+    var datesHtml = ordre.length ? '<div class="ap-foot" style="padding:0 16px 12px;margin:0">Stock relevé ' + ordre.map(function (d) { return 'le ' + fdate(d) + ' (' + parDate[d].join(', ') + ')'; }).join(' · ') + '.</div>' : '';
     return '<div class="v2-card ap-card"><div class="ap-hd"><div class="ap-ic" style="background:#0E7C86">▤</div><div><h3>Stock par établissement</h3>' +
       '<div class="ap-sub">' + fmt(ss.total) + ' unités sur 7 sites — un produit concentré sur un site, à 0 ailleurs = à rééquilibrer, pas à racheter</div></div></div>' +
-      '<div class="sites">' + strip + '</div>' +
+      '<div class="sites">' + strip + '</div>' + datesHtml +
       '<div class="imbhd">Rééquilibrage inter-sites <span>' + reb.length + '</span></div>' + rows + '</div>';
   }
 
@@ -2564,7 +2569,8 @@
       '.imb{padding:12px 16px;border-top:1px solid var(--line)}' +
       '.imb .imn{font-size:13px;font-weight:800;color:var(--ip-ink)}' +
       '.imb .imm{font-size:11.5px;color:var(--muted);margin:2px 0 8px}.imb .imm b{color:var(--ip-ink)}' +
-      '.imbar{display:flex;align-items:flex-end;gap:6px;height:44px}' +
+      '.imbar{display:flex;align-items:flex-end;gap:6px;height:58px}' +
+      '.imbar .col .q{font:700 10.5px/1 Inter,sans-serif;font-style:normal;color:var(--ip-ink);white-space:nowrap}.imbar .col .q.z{color:#B42318}' +
       '.imbar .col{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px}' +
       '.imbar .col .b{width:100%;max-width:32px;border-radius:3px 3px 0 0;background:#C6D0DE;min-height:2px}.imbar .col .b.hot{background:var(--c-amber)}.imbar .col .b.zero{background:#EAEDF2}' +
       '.imbar .col small{font-size:9px;color:var(--muted);font-weight:700}' +
