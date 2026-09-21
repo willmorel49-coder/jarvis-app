@@ -47,6 +47,7 @@
   var LIST_STEP = 500, listShown = LIST_STEP;   // liste : rendu par paquets (toutes dispo, DOM borné)
   var deptFocus = [];    // filtre département multi (2 chiffres, 3 pour DOM)
   var caMin = 0;         // filtre CA minimum (€)
+  var potMin = 0, POT_HI = 0, repOnly = false;   // 21/09/2026 (lot 2) — potentiel minimum (€) · reprises récentes seulement
   var caMax = 0;         // filtre CA maximum (€) — 0 = pas de plafond (plage de CA)
   var ugaFocus = [];     // filtre UGA multi (secteur)
   var villeFocus = '';   // filtre ville (contient)
@@ -106,14 +107,15 @@
   // c'est SON client (champ `comms` de WML_OFFICINES), sinon si elle est dans
   // une UGA où ce commercial a le plus de clients — ses prospects de secteur.
   // Sans WML (dégradé), on retombe sur l'ancien tag de la base nationale.
-  var commById = null, commByUga = null, caById = null;
+  var commById = null, commByUga = null, caById = null, potById = null;
   function buildCommMaps() {
-    commById = {}; commByUga = null; caById = {};
+    commById = {}; commByUga = null; caById = {}; potById = {};
     var W = window.WML_OFFICINES; if (!W || !W.length || !D || !D.p) return;
     W.forEach(function (o) {
       var k = String((o && o.id) || '').replace(/[^0-9]/g, '');
       if (k && o.comms && o.comms.length) commById[k] = o.comms;
       if (k && o.ca > 0) caById[k] = o.ca;
+      if (k && o.potentiel > 0) potById[k] = o.potentiel;
     });
     var count = {};
     D.p.forEach(function (p) {
@@ -138,6 +140,17 @@
   // vraie session le 21/09/2026 : la base nationale n'en porte que 603, anciens ; le CRM 1 829 sur 1 830 clients.
   function commLbl(p) { return commsOf(p).join(', '); }
   function caOf(p) { if (!p) return 0; var c = caById && caById[String(p[13] || '').replace(/[^0-9]/g, '')]; return c || p[12] || 0; }
+  function potLbl(v) { return POT_HI <= 100 ? String(v) : eurK(v); }   // une note s'écrit telle quelle, jamais en euros
+  function potOf(p) { return (p && potById && potById[String(p[13] || '').replace(/[^0-9]/g, '')]) || 0; }
+  function hasReprises() { var R = window.REPRISES; if (!R) return false; for (var k in R) return true; return false; }
+  function isReprise(p) { return !!(window.REPRISES && p[13] && window.REPRISES[String(p[13])]); }
+  // Coordonnées d'une officine : la règle de la fiche officine (V2.rdvInfo : base clients > CRM > base nationale >
+  // e-mails retrouvés) pour un client ; base nationale puis e-mails retrouvés (MAILS_COMPLEMENT) pour un prospect.
+  function coordOf(p, complet) {
+    if (p[13] && V2.rdvInfo && (complet || isClient(p))) { var r = V2.rdvInfo(p[13]); return { tel: r.tel || p[9] || '', email: r.email || p[11] || '', info: r }; }
+    var xt = (window.MAILS_COMPLEMENT || {})[String(p[13])] || {};
+    return { tel: p[9] || xt.tel || '', email: p[11] || xt.email || '', info: null };
+  }
   function eurK(n) { n = n || 0; return n >= 1000 ? (Math.round(n / 100) / 10).toLocaleString('fr') + ' k€' : Math.round(n) + ' €'; }
   function colorFor(p) {
     if (colorMode === 'comm') {
@@ -197,6 +210,8 @@
     if (ugaFocus.length && ugaFocus.indexOf(D.uga[p[2]]) < 0) return false;
     if (caMin && caOf(p) < caMin) return false;
     if (caMax && caOf(p) > caMax) return false;
+    if (potMin && potOf(p) < potMin) return false;
+    if (repOnly && !isReprise(p)) return false;
     if (villeFocus && norm(p[7]).indexOf(norm(villeFocus)) < 0) return false;
     if (titFocus && norm(p[10]).indexOf(norm(titFocus)) < 0) return false;
     if (searchTerm && !matchTxt(p)) return false;
@@ -1037,16 +1052,17 @@
     try {
       var wm = window.WML_MOIS || [], lm = moisLbls();
       var caTitre = 'CA' + (wm.length ? ' ' + lm[0] + '–' + lm[lm.length - 1] + ' ' + wm[wm.length - 1].split('-')[0] : '') + ' (€)';
-      var aoa = [['Client / Prospect', 'Palier', 'Officine', 'Titulaire', 'Ville', 'Code postal', 'Département', 'Téléphone', 'E-mail', caTitre, 'Groupement', 'Commercial', 'UGA', 'N° officine', 'Latitude', 'Longitude']];
+      var aoa = [['Client / Prospect', 'Palier', 'Officine', 'Titulaire', 'Ville', 'Code postal', 'Département', 'Téléphone', 'E-mail', caTitre, 'Potentiel', 'Groupement', 'Commercial', 'UGA', 'N° officine', 'Latitude', 'Longitude']];
+      var avecRep = hasReprises(); if (avecRep) aoa[0].push('Reprise récente');
       var nCli = 0;
       rows.forEach(function (p) {
-        var dep = deptOf(p[8]), grp = (D.grp[p[3]] && D.grp[p[3]] !== '—') ? D.grp[p[3]] : '', cli = isClient(p), seg = D.seg[p[4]] || '';
+        var dep = deptOf(p[8]), grp = (D.grp[p[3]] && D.grp[p[3]] !== '—') ? D.grp[p[3]] : '', cli = isClient(p), seg = D.seg[p[4]] || '', co = coordOf(p);
         if (cli) nCli++;
-        aoa.push([cli ? 'Client' : 'Prospect', cli ? seg.replace('Client ', '') : '', p[6] || '', p[10] || '', p[7] || '', String(p[8] || ''), dep ? dep + (DEPT_NAMES[dep] ? ' · ' + DEPT_NAMES[dep] : '') : '', String(p[9] || ''), p[11] || '',
-          caOf(p) ? Math.round(caOf(p)) : '', grp, commsOf(p).join(', '), D.uga[p[2]] || '', String(p[13] || ''), p[0] || '', p[1] || '']);
+        aoa.push([cli ? 'Client' : 'Prospect', cli ? seg.replace('Client ', '') : '', p[6] || '', p[10] || '', p[7] || '', String(p[8] || ''), dep ? dep + (DEPT_NAMES[dep] ? ' · ' + DEPT_NAMES[dep] : '') : '', String(co.tel || ''), co.email || '',
+          caOf(p) ? Math.round(caOf(p)) : '', potOf(p) || '', grp, commsOf(p).join(', '), D.uga[p[2]] || '', String(p[13] || ''), p[0] || '', p[1] || ''].concat(avecRep ? [isReprise(p) ? 'Oui' : ''] : []));
       });
       var X = window.XLSX, wb = X.utils.book_new(), ws = X.utils.aoa_to_sheet(aoa);
-      ws['!cols'] = [15, 7, 34, 28, 22, 11, 24, 15, 30, 18, 24, 18, 9, 12, 10, 10].map(function (w) { return { wch: w }; });
+      ws['!cols'] = [15, 7, 34, 28, 22, 11, 24, 15, 30, 18, 14, 24, 18, 9, 12, 10, 10, 14].map(function (w) { return { wch: w }; });
       ws['!autofilter'] = { ref: X.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: aoa.length - 1, c: aoa[0].length - 1 } }) };
       X.utils.book_append_sheet(wb, ws, 'Officines');
       // 2e feuille : le filtre qui a produit cette liste — le fichier se comprend tout seul
@@ -1057,6 +1073,8 @@
       if (deptFocus.length) f.push(['Département', deptFocus.join(', ')]);
       if (ugaFocus.length) f.push(['UGA', ugaFocus.join(', ')]);
       if (caMin || caMax) f.push(['Tranche de CA', caLabel()]);
+      if (potMin) f.push(['Potentiel minimum', potMin]);
+      if (repOnly) f.push(['Reprise récente', 'Oui']);
       if (villeFocus) f.push(['Ville', villeFocus]);
       if (titFocus) f.push(['Titulaire', titFocus]);
       if (searchTerm) f.push(['Recherche', searchTerm]);
@@ -1525,7 +1543,25 @@
   // Tout ce qui dépend de WML / du CA protégé, en UN point rappelable : à l'ouverture, avant l'export
   // Excel, et quand ces fichiers arrivent APRÈS l'ouverture (v2-boot.js, fusionsProtegees). Sans lui,
   // une carte ouverte trop tôt gardait 0 CA et 2 223 faux clients jusqu'au clic « Excel ».
+  // 21/09/2026 (lot 2) — des clients du CRM n'existent pas dans la base nationale (12/2024) : ils n'avaient
+  // aucun point. Ils ont pourtant leurs coordonnées dans WML_OFFICINES → on leur ajoute une ligne, une seule
+  // fois ; le réconciliateur commun pose ensuite palier et groupement comme pour les autres.
+  function ajouterClientsSansPoint() {
+    var W = window.WML_OFFICINES; if (!W || !W.length || !D || !D.p) return;
+    var vu = {}; D.p.forEach(function (p) { var k = String(p[13] || '').replace(/[^0-9]/g, ''); if (k) vu[k] = 1; });
+    var iU = D.uga.indexOf(''); if (iU < 0) { D.uga.push(''); iU = D.uga.length - 1; }
+    var iG = D.grp.indexOf('—'); if (iG < 0) { D.grp.push('—'); iG = D.grp.length - 1; }
+    var iS = D.seg.indexOf('Client C'); if (iS < 0) { D.seg.push('Client C'); iS = D.seg.length - 1; }
+    W.forEach(function (o) {
+      var k = String((o && o.id) || '').replace(/[^0-9]/g, '');
+      if (!k || vu[k] || typeof o.lat !== 'number' || typeof o.lng !== 'number' || (!o.lat && !o.lng)) return;
+      vu[k] = 1;
+      var row = [o.lat, o.lng, iU, iG, iS, 0, o.name || '', o.ville || '', String(o.cp || ''), o.tel || '', '', '', 0, o.id];
+      row._wml = true; D.p.push(row);
+    });
+  }
   function recaler() {
+    ajouterClientsSansPoint();
     reconcileWithWml();   // WML = vérité clients : corrige statut + groupement AVANT tout calcul de couleur
     buildCommMaps();      // portefeuilles réels + secteurs UGA pour le filtre Commercial
     computeColors();
@@ -1539,6 +1575,9 @@
     UGAS = Object.keys(_uu).sort(function (a, b) { return a.localeCompare(b, 'fr', { sensitivity: 'base' }); });
     var _cm = 0; D.p.forEach(function (p) { var c = caOf(p); if (c > _cm) _cm = c; });
     CA_HI = Math.max(10000, Math.ceil(_cm / 10000) * 10000);
+    var _pm = 0; if (potById) for (var _pk in potById) if (potById[_pk] > _pm) _pm = potById[_pk];
+    // Mesuré en vraie session le 21/09/2026 : le potentiel du CRM est une NOTE (1 à 8, 168 clients), pas des euros.
+    POT_HI = _pm ? (_pm <= 100 ? Math.ceil(_pm) : Math.ceil(_pm / 10000) * 10000) : 0;   // 0 = pas (encore) arrivé → filtre masqué
   }
   V2.carteRecalage = function () {
     if (!D || !D.p || !map || !document.getElementById('carte-map')) return;   // carte fermée : le prochain boot() recalera
@@ -1651,6 +1690,13 @@
         '<button class="cn-fb-ca-clr" onclick="V2.carteFilterRemove(\'ca\')">Réinitialiser</button>' +
         '</div>';
     }
+    if (key === 'pot') {
+      return '<div class="cn-fb-ca">' +
+        '<div class="cn-fb-ca-lbl" id="cn-pot-lbl">' + esc(potMin ? 'Potentiel ≥ ' + potLbl(potMin) : 'Tous les potentiels') + '</div>' +
+        '<label class="cn-fb-ca-row"><span>Mini</span><input type="range" id="cn-pot-min" min="0" max="' + POT_HI + '" step="' + (POT_HI <= 100 ? 1 : 1000) + '" value="' + potMin + '" oninput="V2.cartePotMin(this.value)"></label>' +
+        '<button class="cn-fb-ca-clr" onclick="V2.carteFilterRemove(\'pot\')">Réinitialiser</button>' +
+        '</div>';
+    }
     if (key === 'ville' || key === 'tit') {
       var cur = key === 'ville' ? villeFocus : titFocus, setter = key === 'ville' ? 'carteVille' : 'carteTit';
       var ph = key === 'ville' ? 'ex. Nantes' : 'ex. Dupont';
@@ -1671,7 +1717,7 @@
   // Le reste (département, UGA, tranche de CA, ville, titulaire, couleur des points,
   // bulles, zones, export) vit sous « Plus de filtres » : toujours là, jamais en travers.
   var fbMore = false;
-  function fbSecondaryActive() { return !!(deptFocus.length || ugaFocus.length || caMin || caMax || villeFocus || titFocus || zonesOn || displayMode !== 'points' || colorMode !== 'type'); }
+  function fbSecondaryActive() { return !!(deptFocus.length || ugaFocus.length || caMin || caMax || potMin || repOnly || villeFocus || titFocus || zonesOn || displayMode !== 'points' || colorMode !== 'type'); }
   function renderFbRow() {
     var el = document.getElementById('cn-fbrow'); if (!el) return;
     var narrow = window.matchMedia && window.matchMedia('(max-width:760px)').matches;
@@ -1696,6 +1742,8 @@
       fbItem('dept', deptFocus.length === 1 ? 'Dépt ' + deptFocus[0] : deptFocus.length ? deptFocus.length + ' départements' : 'Département', deptFocus.length > 0) +
       fbItem('uga', ugaFocus.length === 1 ? 'UGA ' + ugaFocus[0] : ugaFocus.length ? ugaFocus.length + ' UGA' : 'UGA', ugaFocus.length > 0) +
       fbItem('ca', caLabel(), !!(caMin || caMax)) +
+      (POT_HI ? fbItem('pot', potMin ? 'Potentiel ≥ ' + potLbl(potMin) : 'Potentiel', !!potMin) : '') +
+      (hasReprises() ? '<button class="cn-fb-btn' + (repOnly ? ' on' : '') + '" onclick="V2.carteReprise()">' + (repOnly ? '✓ ' : '') + 'Reprise récente</button>' : '') +
       fbItem('ville', villeFocus ? 'Ville : ' + villeFocus : 'Ville', !!villeFocus) +
       fbItem('tit', titFocus ? 'Titulaire : ' + titFocus : 'Titulaire', !!titFocus) +
       '<span class="cn-fbsep" aria-hidden="true"></span>' +
@@ -1725,6 +1773,8 @@
     grpFocus.forEach(function (v) { chv('grp', v, v); });
     deptFocus.forEach(function (v) { chv('dept', 'Dépt ' + v + (DEPT_NAMES[v] ? ' · ' + DEPT_NAMES[v] : ''), v); });
     if (caMin || caMax) ch('ca', 'CA ' + caLabel());
+    if (potMin) ch('pot', 'Potentiel ≥ ' + potLbl(potMin));
+    if (repOnly) ch('rep', 'Reprise récente');
     if (villeFocus) ch('ville', 'Ville : ' + villeFocus);
     if (titFocus) ch('tit', 'Titulaire : ' + titFocus);
     if (searchTerm) ch('search', '« ' + searchTerm + ' »');
@@ -1756,6 +1806,13 @@
     var b = document.getElementById('cn-fbb-ca'); if (b) b.classList.toggle('on', !!(caMin || caMax));
     fbApplyLight();
   };
+  V2.cartePotMin = function (val) {
+    potMin = Math.max(0, Math.min(POT_HI, parseInt(val, 10) || 0));
+    var lbl = document.getElementById('cn-pot-lbl'); if (lbl) lbl.textContent = potMin ? 'Potentiel ≥ ' + potLbl(potMin) : 'Tous les potentiels';
+    var b = document.getElementById('cn-fbb-pot'); if (b) b.classList.toggle('on', !!potMin);
+    fbApplyLight();
+  };
+  V2.carteReprise = function () { repOnly = !repOnly; applyFilters(); };
   V2.carteFilterRemove = function (key) {
     if (key === 'statut') typeFocus = 'all';
     else if (key === 'comm') commFocus = [];
@@ -1763,6 +1820,8 @@
     else if (key === 'grp') grpFocus = [];
     else if (key === 'dept') deptFocus = [];
     else if (key === 'ca') { caMin = 0; caMax = 0; }
+    else if (key === 'pot') potMin = 0;
+    else if (key === 'rep') repOnly = false;
     else if (key === 'ville') villeFocus = '';
     else if (key === 'tit') titFocus = '';
     else if (key === 'search') { searchTerm = ''; var s = document.getElementById('cn-search'); if (s) s.value = ''; var s2 = document.getElementById('cn-search2'); if (s2) s2.value = ''; }
@@ -1916,7 +1975,7 @@
   }
   V2.carteClearFilters = function () {
     typeFocus = 'all'; commFocus = []; grpFocus = []; deptFocus = []; searchTerm = '';
-    ugaFocus = []; caMin = 0; caMax = 0; villeFocus = ''; titFocus = ''; fbOpen = ''; fbFilter = '';
+    ugaFocus = []; caMin = 0; caMax = 0; potMin = 0; repOnly = false; villeFocus = ''; titFocus = ''; fbOpen = ''; fbFilter = '';
     ['cn-search', 'cn-search2'].forEach(function (id) { var e = document.getElementById(id); if (e) e.value = ''; });
     applyFilters();
   };
@@ -1966,7 +2025,9 @@
       (host || document.body).appendChild(el);
     }
     document.getElementById('cn-fiche').innerHTML = '<div class="cn-pdialog" onclick="event.stopPropagation()"><div class="cn-tempty">Chargement de la fiche…</div></div>';
-    ensureDetail(function () { renderFiche(i); });
+    // La base clients (portable, interlocuteur, logiciel, livraison) est protégée et peut arriver après : on l'attend.
+    var pr = V2.loadFiles ? V2.loadFiles(['clientsactifs']) : null, fin = function () { ensureDetail(function () { renderFiche(i); }); };
+    if (pr && pr.then) pr.then(fin, fin); else fin();
   };
   V2.carteFicheClose = function () { var el = document.getElementById('cn-fiche'); if (el) el.remove(); };
   // Libellés des mois RÉELLEMENT couverts par les exports (WML_MOIS, écrit par le
@@ -1987,6 +2048,13 @@
     if (det && det.m) { var mx = Math.max.apply(null, det.m.concat([1])); spark = '<div class="cn-fspark">' + det.m.map(function (v, j) { var h = Math.round((v / mx) * 46) + 2; return '<div class="cn-fbar" title="' + FMO[j] + ' : ' + eurK(v) + '"><i style="height:' + h + 'px"></i><span>' + FMO[j] + '</span></div>'; }).join('') + '</div>'; }
     var top = (det && det.top && det.top.length) ? '<div class="cn-fsec"><h4>Top produits (CA)</h4>' + det.top.map(function (t) { return '<div class="cn-ftrow"><span>' + esc(t[0]) + '</span><b>' + eurK(t[1]) + '</b></div>'; }).join('') + '</div>' : '';
     var q = encodeURIComponent((p[6] || '') + ' ' + (p[7] || '') + ' ' + (p[8] || ''));
+    // Lot 2 — mêmes coordonnées que la fiche officine (V2.rdvInfo), plus ce que la base clients sait de l'officine.
+    var co = coordOf(p, true), inf = co.info || {}, lignes = [];
+    if (inf.contact && inf.contact !== p[10]) lignes.push(['Interlocuteur', inf.contact + (inf.fonction ? ' · ' + inf.fonction : '')]);
+    if (inf.portable) lignes.push(['Portable', inf.portable]);
+    if (inf.logiciel) lignes.push(['Logiciel', inf.logiciel]);
+    if (inf.livraison) lignes.push(['Livraison', inf.livraison]);
+    var equip = lignes.length ? '<div class="cn-fsec"><h4>Interlocuteur et équipement</h4>' + lignes.map(function (l) { return '<div class="cn-ftrow"><span>' + esc(l[0]) + '</span><b>' + esc(l[1]) + '</b></div>'; }).join('') + '</div>' : '';
     el.innerHTML = '<div class="cn-pdialog" onclick="event.stopPropagation()">' +
       '<div class="cn-phead"><div><b>' + esc(p[6] || 'Pharmacie') + '</b>' + (p[10] ? '<small>' + esc(p[10]) + '</small>' : '') + '</div><button class="cn-px" onclick="V2.carteFicheClose()">✕</button></div>' +
       '<div class="cn-plist" style="padding:0">' +
@@ -2002,13 +2070,15 @@
         '<div class="cn-fkpis">' +
           '<div class="cn-fkpi"><b>' + eurK(caOf(p)) + '</b><span>CA (' + FMO.length + ' mois)</span></div>' +
           (det ? '<div class="cn-fkpi"><b>' + (det.np || 0) + '</b><span>références</span></div>' : '') +
-          (det && det.pot ? '<div class="cn-fkpi"><b>' + eurK(det.pot) + '</b><span>potentiel</span></div>' : '') +
+          (det && det.pot ? '<div class="cn-fkpi"><b>' + (det.pot <= 100 ? esc(String(det.pot)) : eurK(det.pot)) + '</b><span>potentiel</span></div>' : '') +
         '</div>' +
         (spark ? '<div class="cn-fsec"><h4>CA par mois</h4>' + spark + '</div>' : (caOf(p) ? '' : '<div class="cn-tempty" style="padding:18px 16px">Pas encore de ventes réseau pour cette officine.</div>')) +
         top +
-        ((p[9] || p[11]) ? '<div class="cn-pop-contact" style="padding:10px 16px 14px">' + (p[9] ? '<a href="tel:' + esc((p[9] || '').replace(/[^0-9+]/g, '')) + '">' + esc(p[9]) + '</a>' : '') + (p[11] ? '<a href="mailto:' + esc(p[11]) + '">' + esc(p[11]) + '</a>' : '') + '</div>' : '') +
+        ((co.tel || co.email) ? '<div class="cn-pop-contact" style="padding:10px 16px 14px">' + (co.tel ? '<a href="tel:' + esc(String(co.tel).replace(/[^0-9+]/g, '')) + '">' + esc(co.tel) + '</a>' : '') + (co.email ? '<a href="mailto:' + esc(co.email) + '">' + esc(co.email) + '</a>' : '') + '</div>' : '') +
+        equip +
+        '<div id="cn-fsuivi"></div>' +
         // Infos client ÉDITABLES + notes — même id (p[13]) que l'onglet Pharmacies → même fiche, même sauvegarde
-        (p[13] ? '<div class="cn-fedit">' + (V2.profil ? V2.profil.section('client', p[13]) : '') + (V2.notes ? V2.notes.section('client', p[13]) : '') + '</div>' : '') +
+        (p[13] ? '<div class="cn-fedit">' + (V2.profil && V2.profil.coordSection ? V2.profil.coordSection(p[13], {}, ['relance_date'], 'Relance') : '') + (V2.profil ? V2.profil.section('client', p[13]) : '') + (V2.notes ? V2.notes.section('client', p[13]) : '') + '</div>' : '') +
       '</div>' +
       // Actions : la fiche CRM complète d'abord (quand l'officine est dans tes clients), la tournée, l'itinéraire.
       '<div class="cn-pacts">' +
@@ -2018,5 +2088,17 @@
       '</div></div>';
     if (V2.profil) V2.profil.hydrate();   // charge/sauve les infos officine (Supabase profils), comme l'onglet Pharmacies
     if (V2.notes) V2.notes.hydrate();
+    // Suivi : dernière visite (3 sources réunies par V2.rdvVuLe) et prochain rendez-vous — lus à l'ouverture de la fiche.
+    if (p[13] && V2.rdvVuCharger) {
+      var pid = String(p[13]), fr = function (d) { var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(d || '')); return m ? m[3] + '/' + m[2] + '/' + m[1] : ''; };
+      var pProch = V2.rdvProchainDe ? V2.rdvProchainDe(pid) : null;
+      Promise.all([V2.rdvVuCharger(), pProch]).then(function (r) {
+        var box = document.getElementById('cn-fsuivi'); if (!box || !D.p[i] || String(D.p[i][13]) !== pid) return;
+        var vu = V2.rdvVuLe ? V2.rdvVuLe(pid) : null, pr = r[1], l = [];
+        if (vu) l.push(['Dernière visite', fr(vu)]);
+        if (pr && pr.date) l.push(['Prochain rendez-vous', fr(pr.date) + (pr.heure ? ' à ' + String(pr.heure).slice(0, 5).replace(':', ' h ') : '')]);
+        if (l.length) box.innerHTML = '<div class="cn-fsec"><h4>Suivi</h4>' + l.map(function (x) { return '<div class="cn-ftrow"><span>' + esc(x[0]) + '</span><b>' + esc(x[1]) + '</b></div>'; }).join('') + '</div>';
+      }, function () {});
+    }
   }
 })();
