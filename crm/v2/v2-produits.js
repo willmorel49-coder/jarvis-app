@@ -488,6 +488,7 @@
     selSauver(); V2.render();
   };
   V2.produits.selVider = function () { S.sel = {}; selSauver(); V2.render(); };
+  V2.produits.selSauver = selSauver;   // le panier du comptoir (v2-comptoir.js) écrit dans la même sélection
   V2.produits.setCatStock = function () { S.catStock = !S.catStock; S.page = 0; V2.render(); };
   V2.produits.setCatLabo = function (v) { S.catLabo = v || ''; S.page = 0; V2.render(); };
 
@@ -1487,6 +1488,15 @@
     var nom = nomCible();
     ouvrirFiche(cips, nom ? ('Sélection — ' + nom) : 'Sélection Intégral Pharma',
       cips.length + ' produits sélectionnés par Intégral Pharma.');
+  };
+
+  // Le panier du comptoir : tous les produits retenus, dans l'ordre où ils ont été ajoutés.
+  V2.produits.ficheDuPanier = function () {
+    if (!S.sel) S.sel = selCharger();
+    var cips = Object.keys(S.sel);
+    if (!cips.length) { if (V2.toast) V2.toast('Le panier est vide'); return; }
+    ouvrirFiche(cips, 'Sélection Intégral Pharma',
+      cips.length + ' produit' + (cips.length > 1 ? 's' : '') + ' sélectionné' + (cips.length > 1 ? 's' : '') + ' par Intégral Pharma.');
   };
 
   // ── L'aperçu : le document tel qu'il sortira, modifiable ───────
