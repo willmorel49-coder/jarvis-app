@@ -10,6 +10,10 @@ par produit ; les produits absents gardent leur valeur. Lecture .xls : xlrd
 (/usr/bin/python3).
 Puis l'extraction d'un site seul « stock <SITE> <jjmmaaaa>.xlsx » (SEP le 17/09/2026 :
 codes-barres CIP13, stockdispo, afmcode ; POS le 21/09/2026), même règle, la plus récente par site.
+UN PRODUIT = UN CODE (21/09/2026) : le relevé des 5 sites range par CIP, POS/SEP et le catalogue par
+code-barres, souvent celui du FABRICANT (3700…, 4028…) — le même produit était coupé en deux
+(Versol 1000 mL : 5 315 + 1 853). Pont sûr = une ligne d'article qui porte les deux codes ;
+voir canon() plus bas.
 """
 import openpyxl, glob, os, json, re
 
@@ -37,6 +41,55 @@ def num(v):
     except (TypeError, ValueError):
         return 0.0
 
+def cip13_of(c7):
+    b = '34009' + c7
+    s = sum(int(d) * (1 if i % 2 == 0 else 3) for i, d in enumerate(b))
+    return b + str((10 - s % 10) % 10)
+
+CAT_JS = 'crm/v2/catalogue-complet-data.js'
+connus = set()  # codes du catalogue (rangé par code-barres, comme les ventes)
+if os.path.exists(CAT_JS):
+    connus = set(re.findall(r'\["(\d+)",', open(CAT_JS, encoding='utf-8').read()))
+
+# Pont code-barres <-> CIP, lu dans les fichiers qui portent LES DEUX colonnes sur la même ligne
+# (extractions par site + fichier catalogue « stock et prix »), jamais déduit des noms.
+# Code retenu = le code-barres (catalogue et ventes sont rangés dessus : mesuré, 2 exceptions
+# sur 1 312), sauf si le catalogue ne connaît que le CIP. Un code-barres porté par deux articles,
+# ou un article à deux codes-barres, est AMBIGU (72 cas, dont « test d'ovulation » et « test de
+# grossesse » sous le même code-barres) : on n'y touche pas, liste à arbitrer à la main.
+alias = {}
+def lire_pont():
+    paires = set()
+    srcs = glob.glob(os.path.join(SRC, 'stock *.xlsx')) + glob.glob('STATS/stock et prix*.xlsx')
+    for fn in sorted(srcs):
+        wb = openpyxl.load_workbook(fn, read_only=True, data_only=True)
+        it = wb.active.iter_rows(values_only=True)
+        ix = {str(h or '').strip().lower(): i for i, h in enumerate(next(it))}
+        if 'artcode' not in ix or 'artcodebarre' not in ix:
+            continue
+        for r in it:
+            raw = str(r[ix['artcode']] or '').strip()
+            bc = cip_of(r[ix['artcodebarre']])
+            if len(raw) == 7 and raw.isdigit() and len(bc) >= 8 and cip13_of(raw) != bc:
+                paires.add((bc, cip13_of(raw)))
+        wb.close()
+    nb, nc = {}, {}
+    for bc, c in paires:
+        nb[bc] = nb.get(bc, 0) + 1
+        nc[c] = nc.get(c, 0) + 1
+    for bc, c in paires:
+        if nb[bc] > 1 or nc[c] > 1:
+            continue
+        if c in connus and bc not in connus:
+            alias[bc] = c
+        else:
+            alias[c] = bc
+    print('  pont code-barres/CIP : %d paires, %d rapprochées, %d ambiguës laissées telles quelles'
+          % (len(paires), len(alias), len(paires) - len(alias)))
+
+def canon(code):
+    return alias.get(code, code)
+
 prices = {}     # code -> { cip: [ppht, stock] }
 labels = {}     # cip -> désignation (pour affichage éventuel)
 nr_info = {}    # cip -> [désignation, laboratoire] : NR selon AFMCODE (≠ REMBSS)
@@ -44,6 +97,7 @@ tarif = {}      # cip -> tarif (atfprix) de la dernière extraction STOCK *.xls
 tarif_date = ''
 etabs = []
 
+lire_pont()
 site_files = {}  # site -> extractions « stock <SITE> <jjmmaaaa>.xlsx »
 for fn in sorted(glob.glob(os.path.join(SRC, '*.xlsx'))):
     m = re.match(r'stock ([A-Za-z]{2,4}) (\d{2})(\d{2})(\d{4})\.xlsx$', os.path.basename(fn), re.I)
@@ -61,7 +115,7 @@ for fn in sorted(glob.glob(os.path.join(SRC, '*.xlsx'))):
     d = prices.setdefault(code, {})
     n = 0
     for r in it:
-        cip = cip_of(r[ci]) if ci is not None else ''
+        cip = canon(cip_of(r[ci])) if ci is not None else ''
         if not cip or len(cip) < 8:
             continue
         ppht = num(r[pi]) if pi is not None else 0.0
@@ -84,11 +138,6 @@ for fn in sorted(glob.glob(os.path.join(SRC, '*.xlsx'))):
 
 # extraction SOP la plus récente (STOCK <jjmmaa>.xls) : artcode, artdesignation, atfprix,
 # stocklivrablesop, stockmsp, stockhp, stockcpr, stockops
-def cip13_of(c7):
-    b = '34009' + c7
-    s = sum(int(d) * (1 if i % 2 == 0 else 3) for i, d in enumerate(b))
-    return b + str((10 - s % 10) % 10)
-
 def date_of(fn):
     m = re.search(r'(\d{2})(\d{2})(\d{2})', os.path.basename(fn))
     return (m.group(3), m.group(2), m.group(1)) if m else ('', '', '')
@@ -110,6 +159,7 @@ if stock_files:
         code = cip13_of(raw) if len(raw) == 7 and raw.isdigit() else cip_of(r[ix['artcode']])
         if len(code) < 8:
             continue
+        code = canon(code)
         ppht = num(r[ix['atfprix']])
         if ppht > 0:
             tarif[code] = ppht
@@ -151,6 +201,7 @@ for etab, lst in sorted(site_files.items()):
             code = cip13_of(raw) if len(raw) == 7 and raw.isdigit() else ''
         if not code:
             continue
+        code = canon(code)
         try: stock = max(0, int(float(r[ix['stockdispo']] or 0)))
         except (TypeError, ValueError): stock = 0
         ppht = num(r[pcol])
@@ -182,19 +233,17 @@ for etab, lst in sorted(site_files.items()):
 # NR tenus par un établissement mais absents du catalogue (arrêté de juin) : sans eux,
 # l'écran Produits en ignorait 3 225. Nature sûre : AFMCODE des extractions par site
 # (le fichier STOCK *.xls, lui, ne dit pas si un produit est remboursable).
-CAT_JS = 'crm/v2/catalogue-complet-data.js'
 # Codes que les extractions par site ne qualifient pas : nature tirée des fichiers de ventes
 # (generate_nature_afm.py), seulement pour les produits qu'un site tient.
 NATURE_JSON = os.path.join(SRC, 'nature-afm.json')
 if os.path.exists(NATURE_JSON):
     tenus = set(tarif).union(*[set(d) for d in prices.values()])
     for code, (afm, labo) in json.load(open(NATURE_JSON, encoding='utf-8')).items():
+        code = canon(code)
         if afm != 'REMBSS' and code in tenus and code not in nr_info and labels.get(code):
             nr_info[code] = [labels[code], labo]
 extra = {}
-if os.path.exists(CAT_JS):
-    txt = open(CAT_JS, encoding='utf-8').read()
-    connus = set(re.findall(r'\["(\d+)",', txt))
+if connus:
     extra = {c: v for c, v in nr_info.items() if c not in connus and v[0]}
     print('  NR hors catalogue : %d (catalogue : %d réf.)' % (len(extra), len(connus)))
 
@@ -234,6 +283,7 @@ for site in sorted(prices):
         if 'ARTCODEBARRE' in ix:
             cands.append(cip_of(r[ix['ARTCODEBARRE']]))
         for c in cands:
+            c = canon(c)
             if c in allc:
                 vendu.setdefault(c, set()).add(site)
                 break
