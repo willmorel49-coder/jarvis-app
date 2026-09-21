@@ -884,7 +884,7 @@
   V2.chargerScripts = function (urls) {
     urls = urls || [];
     if (!urls.length) return Promise.resolve();
-    var V = '?v=20260921e' + (window.V2_VER || '20260915g');
+    var V = '?v=20260921f' + (window.V2_VER || '20260915g');
     return Promise.all(urls.map(function (u) {
       return new Promise(function (resolve) {
         var s = document.createElement('script');
@@ -1185,7 +1185,20 @@
       _fusionsFaites.clientsactifs = true;
     }
     if (V2.applyPPHT && (_fusionsFaites.bench)) { try { V2.applyPPHT(); } catch (e) {} }
+    // 21/09/2026 — WML, son CA protégé ou le CA national viennent d'arriver : les paliers client de la
+    // base nationale se recalculent (V2.reconcilePharma, la seule règle), et La carte, si elle est
+    // ouverte, se recale. Vu en vraie session : une carte ouverte avant eux restait à 0 CA. Même filet
+    // que REPRISES en tête de fichier. Une seule fois par arrivée (_etatCarte), pas à chaque bridge().
+    var etat = (window.WML_OFFICINES ? 'w' : '') + (_fusionsFaites.wmlca ? 'c' : '') + (_fusionsFaites.pharmafr ? 'p' : '') + (_fusionsFaites.clientsactifs ? 'a' : '');
+    if (etat !== _etatCarte) {
+      _etatCarte = etat;
+      if (window.PHARMA_FR) {
+        try { if (V2.reconcilePharma) V2.reconcilePharma(true); } catch (e) {}
+        try { if (V2.carteRecalage) V2.carteRecalage(); } catch (e) {}
+      }
+    }
   }
+  var _etatCarte = '';
   V2.fusionsProtegees = fusionsProtegees;
 
   function bridge() {
@@ -1288,7 +1301,7 @@
     // de le servir, et le lecteur compacté ne trouverait pas ses dictionnaires.
     // Pas besoin de le suivre à chaque déploiement en revanche : quand `VER` de
     // sw.js change, l'activation du service worker efface tous les caches.
-    var V = '?v=20260921e';
+    var V = '?v=20260921f';
     V2.versionDonnees = V;   // lu par chargerScriptProtege (fiche carte)
     var promises = keys.map(function (k) {
       var src = (window.V2_DATA_BASE || '../') + DATA_FILES[k];

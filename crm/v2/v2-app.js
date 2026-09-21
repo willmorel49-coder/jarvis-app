@@ -1598,11 +1598,15 @@
   // ── VÉRITÉ CLIENT (canonique, partagée) — un client = officine dont l'id est dans WML_OFFICINES.
   // Le seg BRUT de PHARMA_FR est FAUX (gonflé). MÊME règle que le Copilote (reconcileWithWml).
   // Idempotent (flag D._wmlRecon). À appeler dès que PHARMA_FR est chargé, avant tout affichage de client.
+  // 21/09/2026 — c'est le SEUL réconciliateur : La carte et la carte des groupements en portaient chacune
+  // une copie, avec un palier calculé sur le seul CA national (ancien, 603 officines) — ouvrir Pharmacies
+  // après La carte écrasait les bons paliers. Le palier se lit d'abord dans le CA du CRM (o.ca).
+  // `force` = repasser malgré le flag (le CA protégé ou WML sont arrivés après le premier passage).
   // Nom canonique d'un groupement (fusionne les variantes via window.GRP_ALIAS, produit par les agents)
   V2.canonGrp = function (name) { var A = window.GRP_ALIAS || {}; return A[String(name || '').toLowerCase().replace(/[^a-z0-9]/g, '')] || name; };
-  V2.reconcilePharma = function () {
+  V2.reconcilePharma = function (force) {
     var D = window.PHARMA_FR, W = window.WML_OFFICINES;
-    if (!D || !D.p || !D.seg || D._wmlRecon || !W || !W.length) return;
+    if (!D || !D.p || !D.seg || (D._wmlRecon && !force) || !W || !W.length) return;
     var segIdx = {}; for (var s = 0; s < D.seg.length; s++) segIdx[D.seg[s]] = s;
     function ensureSeg(l) { if (segIdx[l] == null) { D.seg.push(l); segIdx[l] = D.seg.length - 1; } return segIdx[l]; }
     var iA = ensureSeg('Client A'), iB = ensureSeg('Client B'), iC = ensureSeg('Client C'), iPro = ensureSeg('Prospect');
@@ -1613,7 +1617,7 @@
     var nC = 0;
     D.p.forEach(function (p) {
       var o = wml[String(p[13] || '').replace(/[^0-9]/g, '')];
-      if (o) { var ca = p[12] || 0; p[4] = ca >= 40000 ? iA : (ca >= 12000 ? iB : iC); var gr = o.groupement && String(o.groupement).trim(); if (gr && gr !== '—') p[3] = ensureGrp(V2.canonGrp(gr)); nC++; }
+      if (o) { var ca = o.ca || p[12] || 0; p[4] = ca >= 40000 ? iA : (ca >= 12000 ? iB : iC); var gr = o.groupement && String(o.groupement).trim(); if (gr && gr !== '—') p[3] = ensureGrp(V2.canonGrp(gr)); nC++; }
       else if (D.seg[p[4]] !== 'Prospect') { p[4] = iPro; }
     });
     // Canonicalise TOUS les groupements (fusionne les doublons partout dans l'appli)
