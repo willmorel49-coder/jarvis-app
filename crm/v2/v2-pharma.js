@@ -2607,7 +2607,7 @@
     '</div>';
   }
 
-  function achatsPdf(title, data, useSel, mode, portraitPid) {
+  function achatsPdf(title, data, useSel, mode, portraitPid, prospectNom) {
     if (typeof window.ensureHtml2Pdf !== 'function') { V2.toast('Module PDF indisponible', 'error'); return; }
     var grpName = title;
     var dateStr = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
@@ -2626,7 +2626,7 @@
     if (!sections.length || !panel) { V2.toast('Aucun produit à proposer pour cette liste', 'warn'); return; }
     var MONO = "'Geist Mono',ui-monospace,monospace";
     var pharma = portraitPid ? (V2.pharmacies || []).find(function (p) { return String(p.id) === String(portraitPid); }) : null;
-    var headName = pharma ? pharma.name : grpName;
+    var headName = pharma ? pharma.name : (prospectNom || grpName);
     var headSub = pharma ? [pharma.code, pharma.ville].filter(function (x) { return x; }).join(' · ') : (panel + ' pharmacies du panel');
     var COLS6 = '<colgroup><col style="width:34%"><col style="width:15%"><col style="width:14%"><col style="width:11%"><col style="width:15%"><col style="width:11%"></colgroup>';
 
@@ -2666,18 +2666,18 @@
         '<div style="text-align:right;color:#FFFFFF">' +
           '<div style="font-size:11px;font-weight:700">' + esc(headName) + '</div>' +
           '<div style="font-size:10px;color:#A9C2F5;margin-top:1px">' + esc(headSub) + '</div>' +
-          '<div style="font-size:10px;color:#A9C2F5;margin-top:1px">Édité le ' + dateStr + ' · <span style="color:#FFFFFF;font-weight:700">' + totalProd + ' produits à pousser</span></div>' +
+          '<div style="font-size:10px;color:#A9C2F5;margin-top:1px">Édité le ' + dateStr + ' · <span style="color:#FFFFFF;font-weight:700">' + totalProd + (prospectNom ? ' produits' : ' produits à pousser') + '</span></div>' +
         '</div>' +
       '</div>' +
       // Sous-bandeau référence
       '<div style="background:#10131C;padding:6px 22px;page-break-inside:avoid">' +
-        '<span style="color:#C7D2E6;font-size:9.5px;font-weight:600;letter-spacing:.3px">RÉFÉRENCE — ' + esc(grpName) + ' · <span style="color:#FFFFFF">' + panel + ' pharmacies</span> · produits commandés par la référence et absents de l\'officine</span>' +
+        '<span style="color:#C7D2E6;font-size:9.5px;font-weight:600;letter-spacing:.3px">RÉFÉRENCE — ' + esc(grpName) + ' · <span style="color:#FFFFFF">' + panel + ' pharmacies</span> · ' + (prospectNom ? 'produits les plus commandés par la référence' : 'produits commandés par la référence et absents de l\'officine') + '</span>' +
       '</div>' +
       '<div style="padding:16px 22px 20px">' +
         (portraitPid ? recapPdfHtml(portraitPid) : '') +
         // Titre liste + en-tête colonnes global (sombre)
         '<div style="display:flex;align-items:center;justify-content:space-between;border-top:2px solid #10131C;padding-top:9px;margin-bottom:9px;page-break-after:avoid">' +
-          '<div style="font-size:12px;font-weight:800;color:#10131C">Liste à pousser <span style="color:#737A8C;font-weight:600;font-size:10px">— ' + totalProd + ' produits, par famille</span></div>' +
+          '<div style="font-size:12px;font-weight:800;color:#10131C">' + (prospectNom ? 'Meilleures rotations' : 'Liste à pousser') + ' <span style="color:#737A8C;font-weight:600;font-size:10px">— ' + totalProd + ' produits, par famille</span></div>' +
           '<div style="font-size:9px;color:#737A8C">Nbr pharma = pharmacies qui commandent / ' + panel + '</div>' +
         '</div>' +
         '<table style="width:100%;border-collapse:collapse;table-layout:fixed;page-break-after:avoid">' + COLS6 +
@@ -2876,9 +2876,17 @@
   // scope = 'reseau' (réf. réseau IP) | 'groupement' (réf. son groupement). Toute la liste.
   V2.pharmaListPdf = function (pid, scope, mode) {
     var pharma = (V2.pharmacies || []).find(function (p) { return String(p.id) === String(pid); });
-    if (!pharma) { V2.toast('Pharmacie introuvable', 'error'); return; }
+    var prospect = (!pharma && tx.pid === String(pid)) ? (tx.nom || 'Officine') : '';
+    if (!pharma && !prospect) { V2.toast('Pharmacie introuvable', 'error'); return; }
     if (!window.BENCHMARK) { V2.toast('Catalogue en cours de chargement…'); V2.loadFiles(['bench', 'sagitta']).then(function () {}); return; }
     scope = (scope === 'groupement') ? 'groupement' : 'reseau';
+    // Prospect (21/09/2026) : rien d'acheté chez nous, donc la liste ENTIÈRE — celle de son
+    // groupement (la même que l'écran Groupements) ou les meilleures rotations du réseau.
+    if (prospect) {
+      return (scope === 'groupement')
+        ? achatsPdf(tx.grp, groupementProducts(tx.grp), false, mode, null, prospect)
+        : achatsPdf(reseauLbl(), buildRecoCats(pid, 'reseau'), false, mode, null, prospect);
+    }
     var data = buildRecoCats(pid, scope);
     var label = (scope === 'groupement') ? (groupementPids(pid).name || 'Groupement') : reseauLbl();
     return achatsPdf(pharma.name + ' — ' + label, data, false, mode, pid);
@@ -2923,10 +2931,17 @@
   function txCount(pid, scope) { return buildRecoCats(pid, scope).cats.reduce(function (s, o) { return s + o.rows.length; }, 0); }
   function txItems(pid) {
     var its = [];
-    // Prospect : pas d'achats chez nous, donc pas de listing « ce qu'elle n'a pas encore ».
-    var nR = txIsClient(pid) ? txCount(pid, 'reseau') : 0;
-    if (nR > 0) its.push({ k: 'L:reseau', grp: 'listing', label: 'Listing ' + reseauLbl(), meta: V2.fmtNum(nR) + ' produits · PDF généré' });
-    var g = groupementPids(pid);
+    var cli = txIsClient(pid);
+    // Prospect : pas d'achats chez nous → meilleures rotations du réseau, et la liste de son
+    // groupement s'il est connu. benchIndex() se fige s'il est lu avant l'arrivée du catalogue.
+    var nR = (cli || window.BENCHMARK) ? txCount(pid, 'reseau') : 0;
+    if (nR > 0) its.push({ k: 'L:reseau', grp: 'listing', label: (cli ? 'Listing ' : 'Meilleures rotations · ') + reseauLbl(), meta: V2.fmtNum(nR) + ' produits · PDF généré' });
+    if (!cli && tx.grp && window.BENCHMARK) {
+      var gp = groupementProducts(tx.grp);
+      var nP = gp.panel >= 2 ? gp.cats.reduce(function (s, o) { return s + o.rows.length; }, 0) : 0;
+      if (nP > 0) its.push({ k: 'L:groupement', grp: 'listing', label: 'Listing ' + tx.grp, meta: V2.fmtNum(nP) + ' produits · ' + gp.panel + ' pharmacies du groupement · PDF généré' });
+    }
+    var g = cli ? groupementPids(pid) : {};
     if (g.set && g.set.size >= 2) {
       var nG = txCount(pid, 'groupement');
       if (nG > 0) its.push({ k: 'L:groupement', grp: 'listing', label: 'Listing ' + (g.name || 'groupement'), meta: V2.fmtNum(nG) + ' produits · PDF généré' });
@@ -2972,7 +2987,9 @@
     body.innerHTML =
       (mail ? '<div class="tx-to">Destinataire : <b>' + esc(mail) + '</b></div>'
             : '<div class="tx-to tx-err">Pas d\'e-mail connu pour cette officine — à renseigner dans « Infos officine ».</div>') +
-      group('Ses listings produits', 'ce qu\'elle n\'a pas encore', of('listing')) +
+      (pharma ? group('Ses listings produits', 'ce qu\'elle n\'a pas encore', of('listing'))
+              : group('Listings produits', 'les plus commandés' + (tx.grp ? ' · son groupement : ' + esc(tx.grp) : ''), of('listing'),
+                  window.BENCHMARK ? '' : '<div class="tx-empty">Chargement du catalogue…</div>')) +
       group('Documents Intégral Pharma', '', of('app')) +
       group('Bibliothèque de l\'équipe', 'déposés par chacun, visibles par tous', lib, libMsg + upl);
     body.scrollTop = keepY;
@@ -3004,6 +3021,9 @@
     tx.pid = pid; tx.busy = '';
     if (!txIsClient(pid)) {   // fiche prospect : l'e-mail et le nom sont ceux affichés à l'écran
       var em = document.querySelector('.v2-prospect input[data-fk="email"]'), nm = document.querySelector('.v2-prospect input[data-fk="nom"]');
+      var gr = document.querySelector('.v2-prospect input[data-fk="groupement"]');
+      tx.grp = (gr && (gr.value || '').trim()) ? canonG((gr.value || '').trim()) : '';
+      if (!window.BENCHMARK && V2.loadFiles) V2.loadFiles(['bench', 'sagitta']).then(txRender, txRender);
       var pt = pharmaFrById(pid);
       txMail[pid] = em ? (em.value || '').trim() : '';
       tx.nom = nameOf(pid, (nm && (nm.value || '').trim()) || (pt && (pt[6] || pt[10])) || '');
