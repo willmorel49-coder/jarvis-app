@@ -1604,6 +1604,15 @@
   // `force` = repasser malgré le flag (le CA protégé ou WML sont arrivés après le premier passage).
   // Nom canonique d'un groupement (fusionne les variantes via window.GRP_ALIAS, produit par les agents)
   V2.canonGrp = function (name) { var A = window.GRP_ALIAS || {}; return A[String(name || '').toLowerCase().replace(/[^a-z0-9]/g, '')] || name; };
+  // Seuils du palier client A/B/C — décision Will du 21/09/2026 : le palier se lit au CA MOYEN PAR
+  // MOIS (5 000 €/mois pour A, 1 500 €/mois pour B), jamais en dur sur le total. Le nombre de mois
+  // couverts vient de window.WML_MOIS (wml-officines-data.js) ; repli à 8 si absent — c'est le nombre
+  // de mois du jeu de données du 21/09/2026, ça retombe donc exactement sur les anciens seuils fixes
+  // (40 000 € / 12 000 €).
+  V2.seuilsPalier = function () {
+    var m = (window.WML_MOIS && window.WML_MOIS.length) ? window.WML_MOIS.length : 8;
+    return { a: 5000 * m, b: 1500 * m, mois: m };
+  };
   V2.reconcilePharma = function (force) {
     var D = window.PHARMA_FR, W = window.WML_OFFICINES;
     if (!D || !D.p || !D.seg || (D._wmlRecon && !force) || !W || !W.length) return;
@@ -1614,10 +1623,11 @@
     var grpIdx = {}; for (var g = 0; g < D.grp.length; g++) grpIdx[canon(D.grp[g])] = g;
     function ensureGrp(nm) { var k = canon(nm); if (grpIdx[k] == null) { D.grp.push(nm); grpIdx[k] = D.grp.length - 1; } return grpIdx[k]; }
     var wml = {}; W.forEach(function (o) { if (o && o.id) wml[String(o.id).replace(/[^0-9]/g, '')] = o; });
+    var seuils = V2.seuilsPalier();
     var nC = 0;
     D.p.forEach(function (p) {
       var o = wml[String(p[13] || '').replace(/[^0-9]/g, '')];
-      if (o) { var ca = o.ca || p[12] || 0; p[4] = ca >= 40000 ? iA : (ca >= 12000 ? iB : iC); var gr = o.groupement && String(o.groupement).trim(); if (gr && gr !== '—') p[3] = ensureGrp(V2.canonGrp(gr)); nC++; }
+      if (o) { var ca = o.ca || p[12] || 0; p[4] = ca >= seuils.a ? iA : (ca >= seuils.b ? iB : iC); var gr = o.groupement && String(o.groupement).trim(); if (gr && gr !== '—') p[3] = ensureGrp(V2.canonGrp(gr)); nC++; }
       else if (D.seg[p[4]] !== 'Prospect') { p[4] = iPro; }
     });
     // Canonicalise TOUS les groupements (fusionne les doublons partout dans l'appli)

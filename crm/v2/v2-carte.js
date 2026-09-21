@@ -1291,7 +1291,7 @@
       commNames().forEach(function (c) { out += lg(COMM_COL[c], c); });
       return out + lg(PROSPECT_COL, 'Prospect (à conquérir)') + lg('#D4DAE3', 'Hors réseau');
     }
-    if (colorMode === 'type') return lg(SEG_COL['Client A'], 'Client A · ≥ 40 k€') + lg(SEG_COL['Client B'], 'Client B · 12–40 k€') + lg(SEG_COL['Client C'], 'Client C · < 12 k€') + lg(SEG_COL.Prospect, 'Prospect');
+    if (colorMode === 'type') return lg(SEG_COL['Client A'], 'Client A · 5 000 €/mois et plus') + lg(SEG_COL['Client B'], 'Client B · 1 500 à 5 000 €/mois') + lg(SEG_COL['Client C'], 'Client C · moins de 1 500 €/mois') + lg(SEG_COL.Prospect, 'Prospect');
     if (colorMode === 'grp') return Object.keys(GRP_COL).map(function (g) { return lg(GRP_COL[g], D.grp[g]); }).join('') + lg('#CBD2DD', 'Autres');
     if (colorMode === 'ca') return lg('#FCD34D', '< 2 k€') + lg('#F59E0B', '2–8 k€') + lg('#EA580C', '8–20 k€') + lg('#C7283D', '20–50 k€') + lg('#7A0C2E', '≥ 50 k€') + lg('#E2E6EC', 'Pas de CA');
     return '<span class="cn-lg-txt">' + (D ? D.uga.length : 0) + ' UGA · une couleur par secteur</span>';

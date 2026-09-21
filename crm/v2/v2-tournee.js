@@ -38,14 +38,17 @@
       else if (Date.now() - t0 > 15000) { clearInterval(iv); cb('err'); }
     }, 100);
   }
+  // 21/09/2026 — la base passe par le chargeur COMMUN (V2.ensurePharmaFr), comme v2-carte.js : un
+  // <script> posé ici en propre pouvait s'exécuter une 2e fois si l'accueil avait déjà lancé le sien,
+  // et la copie brute remplaçait alors window.PHARMA_FR par un objet non réconcilié (2 223 faux clients).
   function ensureData(cb) {
     if (window.PHARMA_FR) { cb(); return; }
     var done = false, fin = function (e) { if (!done) { done = true; cb(e); } };
-    // Même adresse que v2-app.js (jeton des données V2_DATAV) : un seul téléchargement.
-    var s = document.createElement('script'); s.src = 'pharma-fr-data.js?v=' + (window.V2_DATAV || '');
-    s.onload = function () { if (V2.loadFiles) V2.loadFiles(['pharmafrca']); fin(window.PHARMA_FR ? null : 'err'); };
-    s.onerror = function () { fin('err'); };
-    document.head.appendChild(s);
+    V2.ensurePharmaFr(function () {
+      var pr = (window.PHARMA_FR && V2.loadFiles) ? V2.loadFiles(['pharmafrca']) : null;   // colonne CA protégée
+      var suite = function () { fin(window.PHARMA_FR ? null : 'err'); };
+      if (pr && pr.then) pr.then(suite, suite); else suite();
+    });
     var t0 = Date.now(), iv = setInterval(function () {
       if (window.PHARMA_FR) { clearInterval(iv); fin(null); }
       else if (Date.now() - t0 > 25000) { clearInterval(iv); fin('err'); }
