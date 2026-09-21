@@ -992,6 +992,54 @@
       if (V2.toast) V2.toast(nExp + ' officines exportées — importe le .kml dans Google My Maps');
     } catch (e) { if (V2.toast) V2.toast('Export impossible sur ce navigateur', 'error'); }
   };
+  // Export Excel des officines du filtre courant (Will, 21/09/2026 : « quand on filtre sur la
+  // carte, pouvoir extraire une base de données en excel »). Même SheetJS que la liste d'achats
+  // des groupements (v2-pharma.js), chargé à la demande.
+  var xlsxLoading = false;
+  function ensureXLSX(cb) {
+    if (window.XLSX) { cb(true); return; }
+    if (xlsxLoading) { setTimeout(function () { ensureXLSX(cb); }, 250); return; }
+    xlsxLoading = true;
+    js('https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js', function () { xlsxLoading = false; cb(!!window.XLSX); });
+  }
+  V2.carteExportXlsx = function () {
+    if (!D || !D.p || !D.p.length) { if (V2.toast) V2.toast('Carte pas encore chargée'); return; }
+    var rows = [];
+    D.p.forEach(function (p) { if (pass(p)) rows.push(p); });
+    if (!rows.length) { if (V2.toast) V2.toast('Aucune officine dans le filtre courant'); return; }
+    rows.sort(function (a, b) { return String(a[8] || '').localeCompare(String(b[8] || '')) || String(a[6] || '').localeCompare(String(b[6] || '')); });
+    if (V2.toast) V2.toast('Préparation du fichier Excel…');
+    ensureXLSX(function (ok) {
+      if (!ok || !window.XLSX) { if (V2.toast) V2.toast('Export Excel indisponible (hors ligne ?)', 'error'); return; }
+      try {
+        var aoa = [['Officine', 'Titulaire', 'Ville', 'Code postal', 'Département', 'Téléphone', 'E-mail', 'Statut', 'Groupement', 'Commercial', 'UGA', 'CA (€)', 'N° officine', 'Latitude', 'Longitude']];
+        rows.forEach(function (p) {
+          var dep = deptOf(p[8]), grp = (D.grp[p[3]] && D.grp[p[3]] !== '—') ? D.grp[p[3]] : '';
+          aoa.push([p[6] || '', p[10] || '', p[7] || '', String(p[8] || ''), dep ? dep + (DEPT_NAMES[dep] ? ' · ' + DEPT_NAMES[dep] : '') : '', String(p[9] || ''), p[11] || '',
+            D.seg[p[4]] || '', grp, commsOf(p).join(', '), D.uga[p[2]] || '', caOf(p) ? Math.round(caOf(p)) : '', String(p[13] || ''), p[0] || '', p[1] || '']);
+        });
+        var X = window.XLSX, wb = X.utils.book_new(), ws = X.utils.aoa_to_sheet(aoa);
+        ws['!cols'] = [34, 28, 22, 11, 24, 15, 30, 12, 24, 18, 9, 11, 12, 10, 10].map(function (w) { return { wch: w }; });
+        ws['!autofilter'] = { ref: X.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: aoa.length - 1, c: aoa[0].length - 1 } }) };
+        X.utils.book_append_sheet(wb, ws, 'Officines');
+        // 2e feuille : le filtre qui a produit cette liste — le fichier se comprend tout seul
+        var f = [['Extraction de La carte', new Date().toLocaleString('fr-FR')], ['Officines', rows.length],
+          ['Statut', typeFocus === 'clients' ? 'Clients' : typeFocus === 'prospects' ? 'Prospects' : 'Tout']];
+        if (commFocus.length) f.push(['Commercial', commFocus.join(', ')]);
+        if (grpFocus.length) f.push(['Groupement', grpFocus.join(', ')]);
+        if (deptFocus.length) f.push(['Département', deptFocus.join(', ')]);
+        if (ugaFocus.length) f.push(['UGA', ugaFocus.join(', ')]);
+        if (caMin || caMax) f.push(['Tranche de CA', caLabel()]);
+        if (villeFocus) f.push(['Ville', villeFocus]);
+        if (titFocus) f.push(['Titulaire', titFocus]);
+        if (searchTerm) f.push(['Recherche', searchTerm]);
+        var wf = X.utils.aoa_to_sheet(f); wf['!cols'] = [{ wch: 24 }, { wch: 60 }];
+        X.utils.book_append_sheet(wb, wf, 'Filtre');
+        X.writeFile(wb, 'officines-carte-' + new Date().toISOString().slice(0, 10) + '.xlsx');
+        if (V2.toast) V2.toast(rows.length.toLocaleString('fr') + ' officine' + (rows.length > 1 ? 's' : '') + ' dans le fichier Excel');
+      } catch (e) { if (V2.toast) V2.toast('Export impossible sur ce navigateur', 'error'); }
+    });
+  };
   V2.carteTourAgenda = function () {
     if (!tour.length) return;
     var d = new Date(); d.setDate(d.getDate() + 1); d.setHours(9, 0, 0, 0);
@@ -1631,6 +1679,7 @@
     var acts = document.getElementById('cn-fbacts');
     if (acts) acts.innerHTML =
       '<button class="cn-fb-btn cn-fb-act" onclick="V2.carteListOpen()">' + ICO('list', 14) + '<span>Liste</span></button>' +
+      '<button class="cn-fb-btn cn-fb-act" title="Extraire les officines du filtre dans un fichier Excel" aria-label="Extraire en Excel" onclick="V2.carteExportXlsx()">' + ICO('download', 14) + '<span>Excel</span></button>' +
       '<button class="cn-fb-btn cn-fb-act cn-fb-tour" onclick="V2.carteTourOpen()">' + ICO('pharma', 14) + '<span>Ma tournée</span><b id="cn-fb-tourn"' + (tour.length ? '' : ' style="display:none"') + '>' + tour.length + '</b></button>';
     var el2 = document.getElementById('cn-fbrow2'); if (!el2) return;
     el2.style.display = more ? '' : 'none';
