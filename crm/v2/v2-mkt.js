@@ -93,6 +93,7 @@
   // ── Prix + stock par établissement (fiches marketing par établissement) ──
   var mktEtab = '';         // '' = tous établissements · sinon code (CPR, HP, MSP, OPS, POS, SEP, SOP)
   var etabStockOnly = false;
+  var nrDispo = '';         // ventes NR réelles, tous sites : '' = tout · 'partout' = en stock sur chaque site · 'manque' = à 0 sur au moins un site
   var catSortBy = 'pharma';   // 'pharma' = nb de pharmacies qui commandent · 'vol' = volume vendu
   var catPerCat = 5;          // nb de produits par catégorie affichés sur le document (0 = tous)
 
@@ -320,6 +321,34 @@
     cip = String(cip);
     if (mktEtab && E.prices && E.prices[mktEtab]) return E.prices[mktEtab][cip] || null;
     return (E.all && E.all[cip]) || null;
+  }
+
+  // 21/09/2026 — ventes NR × stock de CHAQUE site (demande de Will : choisir les produits d'une fiche
+  // en voyant où ils sont livrables). q = null : le site n'a aucune ligne pour ce produit (≠ 0).
+  function sitesStock(cip) {
+    var E = window.ETAB_PRICES; if (!E || !E.etabs || !E.prices || cip == null || cip === '') return [];
+    cip = String(cip);
+    return E.etabs.map(function (e) { var r = E.prices[e.code] && E.prices[e.code][cip]; return { e: e.code, q: r ? Math.max(0, r[1] || 0) : null }; });
+  }
+  // Filtre commun à l'écran, à « Créer la liste » et au PDF : ce qu'on voit est ce qui sort.
+  function catGarde(r, isNr) {
+    if (mktEtab && etabStockOnly) { var er = etabRec(r.cip); if (!(er && er[1] > 0)) return false; }
+    if (isNr && !mktEtab && nrDispo && window.ETAB_PRICES) {
+      var ss = sitesStock(r.cip), n = ss.filter(function (x) { return x.q > 0; }).length;
+      // « — » (pas de ligne dans le relevé du site) n'est PAS un zéro : le relevé des 5 sites du 15/09 liste
+      // deux fois moins de produits que ceux de POS et SEP. Seul un vrai 0 compte comme un manque.
+      return nrDispo === 'partout' ? (ss.length > 0 && n === ss.length) : ss.some(function (x) { return x.q === 0; });
+    }
+    return true;
+  }
+  function sitesHtml(cip) {
+    var ss = sitesStock(cip); if (!ss.length) return '';
+    var n = ss.filter(function (x) { return x.q > 0; }).length, z = ss.filter(function (x) { return x.q === 0; }).length, a = ss.length - n - z;
+    var txt = n === ss.length ? 'En stock partout'
+      : 'En stock sur ' + n + ' site' + (n > 1 ? 's' : '') + (z ? ' · à 0 sur ' + z : '') + (a ? ' · ' + a + ' sans relevé' : '');
+    return '<div class="mkc-sites" data-sites="' + n + '" data-zeros="' + z + '" aria-label="Stock par site : ' + txt + '">' +
+      ss.map(function (x) { return '<span class="' + (x.q > 0 ? 'ok' : x.q === 0 ? 'ko' : 'nd') + '"' + (x.q == null ? ' title="Pas de ligne pour ce produit dans le relevé de ce site"' : '') + '><i>' + esc(x.e) + '</i>' + (x.q == null ? '—' : V2.fmtNum(x.q)) + '</span>'; }).join('') +
+      '<b class="' + (n === ss.length ? 'ok' : '') + '">' + txt + '</b></div>';
   }
 
   // ════════════════════════════════════════════
@@ -683,12 +712,10 @@
     var offre = ' <span class="mkc-offre">offre</span>';
     catRows = [];
     var showStock = !!(window.ETAB_PRICES && mktEtab);   // colonne stock si un établissement précis est choisi
+    var parSite = !!(window.ETAB_PRICES && isNr && !mktEtab);   // ventes NR, tous sites : le stock de chaque site sous le produit
     var midTh = (cur.k === 'itp') ? 'Marge/bte' : isNr ? 'CA vendu' : 'Sorties';
     var cats = cur.data.map(function (c) {
-      var rowsArr = (c.rows || []).filter(function (r) {
-        if (!(mktEtab && etabStockOnly)) return true;
-        var er = etabRec(r.cip); return !!(er && er[1] > 0);
-      });
+      var rowsArr = (c.rows || []).filter(function (r) { return catGarde(r, isNr); });
       if (!rowsArr.length) return '';
       if (catSortBy === 'pharma') rowsArr.sort(function (a, b) { return (b.sortie || 0) - (a.sortie || 0) || (b.vol || 0) - (a.vol || 0); });
       var trs = rowsArr.map(function (r, i) {
@@ -715,7 +742,7 @@
         return '<tr data-s="' + esc(((r.d || '') + ' ' + (r.cip || '')).toLowerCase()) + '">' +
           '<td class="num mkc-c-rang">' + (i + 1) + '</td>' +
           thumb +
-          '<td class="mkc-c-nom"><span class="mkt-cat-prod">' + esc(r.d) + '</span>' + (r.o ? offre : '') + '</td>' +
+          '<td class="mkc-c-nom"><span class="mkt-cat-prod">' + esc(r.d) + '</span>' + (r.o ? offre : '') + (parSite ? sitesHtml(r.cip) : '') + '</td>' +
           '<td class="mkc-c-cip">' + esc(r.cip || '—') + '</td>' +
           '<td class="num mkc-c-prix" data-l="Prix net">' + price + '</td>' + midCol + volCol + stockCol + addBtn +
         '</tr>';
@@ -740,11 +767,15 @@
       '<option value=""' + (mktEtab === '' ? ' selected' : '') + '>Tous</option>' +
       ETABS.map(function (e) { return '<option value="' + esc(e.code) + '"' + (mktEtab === e.code ? ' selected' : '') + '>' + esc(e.code) + '</option>'; }).join('') + '</select>' + mic('bas', 18) + '</label>') : '' };
     var PERCATS = [3, 5, 10, 15, 0];
-    var nFiltres = (catPerCat !== 5 ? 1 : 0) + (!isNr && catSortBy !== 'pharma' ? 1 : 0) + (mktEtab && etabStockOnly ? 1 : 0);
+    var nFiltres = (catPerCat !== 5 ? 1 : 0) + (!isNr && catSortBy !== 'pharma' ? 1 : 0) + (mktEtab && etabStockOnly ? 1 : 0) + (parSite && nrDispo ? 1 : 0);
+    var SD = (window.ETAB_PRICES && window.ETAB_PRICES.siteDates) || {}, dts = Object.keys(SD).map(function (k) { return SD[k]; }).sort();
+    var jm = function (d) { return d.slice(8, 10) + '/' + d.slice(5, 7); };
+    var releve = dts.length ? (dts[0] === dts[dts.length - 1] ? 'stock relevé le ' + jm(dts[0]) : 'stock relevé du ' + jm(dts[0]) + ' au ' + jm(dts[dts.length - 1])) : '';
     var popFiltres = '<div class="mkc-pop' + (catPop === 'filtres' ? ' mk-ouvert' : '') + '" id="mkc-pop-filtres" role="group" aria-label="Filtrer">' +
       (isNr ? '' : '<p class="mkc-pop-cap">Classer par</p>' + catSeg('Classer par', [['pharma', 'Nombre de pharmacies'], ['vol', 'Volume vendu']], catSortBy, function (k) { return 'V2.mkt.catSort(\'' + k + '\')'; })) +
       '<p class="mkc-pop-cap">Produits par catégorie sur le document</p>' +
       catSeg('Produits par catégorie sur le document', PERCATS.map(function (n) { return [n, n === 0 ? 'Tous' : String(n)]; }), catPerCat, function (n) { return 'V2.mkt.catPerCat(' + n + ')'; }) +
+      (parSite ? '<p class="mkc-pop-cap">Disponibilité sur les ' + ETABS.length + ' sites</p>' + catSeg('Disponibilité sur les sites', [['', 'Tout'], ['partout', 'En stock partout'], ['manque', 'À 0 sur un site']], nrDispo, function (k) { return 'V2.mkt.catDispo(\'' + k + '\')'; }) : '') +
       (mktEtab ? '<button type="button" class="mkc-inter" role="switch" aria-checked="' + (etabStockOnly ? 'true' : 'false') + '" onclick="V2.mkt.catStockOnly(' + (etabStockOnly ? 'false' : 'true') + ')"><span>En stock uniquement</span><i aria-hidden="true"></i></button>'
                : '<p class="mkc-pop-note">Choisissez un établissement pour filtrer sur le stock.</p>') +
     '</div>';
@@ -758,13 +789,15 @@
     var docTitle = 'Générer le document — top ' + (catPerCat > 0 ? catPerCat : 'tous') + ' par catégorie' + (mktEtab ? ' · ' + mktEtab : '');
     var resume = (catPerCat > 0 ? catPerCat + ' produits par catégorie sur le document' : 'Tous les produits sur le document') +
       (isNr ? ' · classés par volume vendu' : (catSortBy === 'pharma' ? ' · classés par nombre de pharmacies' : ' · classés par volume vendu')) +
-      (mktEtab ? ' · prix et stock ' + esc(mktEtab) + (etabStockOnly ? ', en stock uniquement' : '') : ' · prix net indicatif');
+      (mktEtab ? ' · prix et stock ' + esc(mktEtab) + (etabStockOnly ? ', en stock uniquement' : '') : ' · prix net indicatif') +
+      (parSite ? ' · ' + (nrDispo === 'partout' ? 'en stock sur chaque site' : nrDispo === 'manque' ? 'à 0 sur au moins un site' : 'stock de chaque site') + (releve ? ' (' + releve + ')' : '') : '');
 
     // ── états vides : une silhouette, une phrase, un bouton ──
     var attente = isNr && !NR && !nrEchec;
     var vide = '';
     if (!cats) {
       if (attente) vide = '<div class="mkc-attente" aria-busy="true" aria-label="Chargement du catalogue">' + [0, 1, 2, 3, 4, 5].map(function () { return '<i class="mk-sq"></i>'; }).join('') + '</div>';
+      else if (cur.data.length && parSite && nrDispo) vide = '<div class="mk-vide"><div class="mk-silhouette" aria-hidden="true"><i></i><i></i><i></i><i></i></div><div><h3>Aucun produit ne correspond à ce filtre de disponibilité.</h3><button type="button" class="mk-btn" onclick="V2.mkt.catDispo(\'\')">Voir tous les produits</button></div></div>';
       else if (cur.data.length && mktEtab && etabStockOnly) vide = '<div class="mk-vide"><div class="mk-silhouette" aria-hidden="true"><i></i><i></i><i></i><i></i></div><div><h3>Aucun produit en stock pour ' + esc(mktEtab) + '.</h3><p>Le filtre « En stock uniquement » masque tout le catalogue de cet établissement.</p><button type="button" class="mk-btn" onclick="V2.mkt.catStockOnly(false)">Voir aussi les produits hors stock</button></div></div>';
       else vide = '<div class="mk-vide" id="mkc-vide"><div class="mk-silhouette" aria-hidden="true"><i></i><i></i><i></i><i></i></div><div><h3>Le catalogue n\'a pas pu être chargé.</h3><p>Vérifiez la connexion, puis relancez le chargement.</p><button type="button" class="mk-btn mk-plein" onclick="V2.mkt.catRetry()">Réessayer</button></div></div>';
     }
@@ -1807,10 +1840,7 @@
       var data = (catSrc === 'nrreal') ? ((window.MKT_NR && window.MKT_NR.cats) || []) : (M[srcMap[catSrc] || 'nr'] || []);
       var c = null; for (var i = 0; i < data.length; i++) { if (data[i].cat === catName) { c = data[i]; break; } }
       if (!c) { V2.toast('Catégorie introuvable', 'warn'); return; }
-      var rows = (c.rows || []).filter(function (r) {
-        if (!(mktEtab && etabStockOnly)) return true;
-        var er = etabRec(r.cip); return !!(er && er[1] > 0);
-      });
+      var rows = (c.rows || []).filter(function (r) { return catGarde(r, catSrc === 'nrreal'); });
       rows.sort(function (a, b) { return (b.sortie || 0) - (a.sortie || 0) || (b.vol || 0) - (a.vol || 0); });
       rows = rows.slice(0, 20);
       if (!rows.length) { V2.toast('Aucun produit en stock pour cette catégorie', 'warn'); return; }
@@ -1841,7 +1871,7 @@
       var e2 = function (v) { return (v ? (+v).toFixed(2).replace('.', ',') : '—') + (v ? ' €' : ''); };
       V2.toast('Génération du PDF…');
       var secs = data.map(function (c) {
-        var rows = (c.rows || []).filter(function (r) { if (!(mktEtab && etabStockOnly)) return true; var er = etabRec(r.cip); return !!(er && er[1] > 0); });
+        var rows = (c.rows || []).filter(function (r) { return catGarde(r, srcKey === 'nrreal'); });
         rows = rows.slice();
         rows.sort(byPharma
           ? function (a, b) { return (b.sortie || 0) - (a.sortie || 0) || (b.vol || 0) - (a.vol || 0); }
@@ -2795,6 +2825,7 @@
     if (!window.ETAB_PRICES) ensureEtab(function () { if (V2.route && V2.route.name === 'marketing') V2.render(); });
     if (V2.route && V2.route.name === 'marketing') V2.render();
   };
+  V2.mkt.catDispo = function (k) { nrDispo = (k === 'partout' || k === 'manque') ? k : ''; if (V2.route && V2.route.name === 'marketing') V2.render(); };
   V2.mkt.catStockOnly = function (on) { etabStockOnly = !!on; if (V2.route && V2.route.name === 'marketing') V2.render(); };
   V2.mkt.docsDelete = function (name) {
     var c = sb(); if (!c || !c.storage) return;
@@ -3487,6 +3518,10 @@
       '.mkc-sur{color:var(--mk-filet);font-weight:450}',
       '.mkc-table td.mkc-ok{font-weight:650;color:#14794F}.mkc-table td.mkc-ko{font-weight:650;color:#B93550}',
       '.mkc-c-add{width:56px}',
+      '.mkc-sites{display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px;margin-top:6px;font-size:var(--mk-s5);line-height:var(--mk-s5l);font-variant-numeric:tabular-nums}',
+      '.mkc-sites span{display:inline-flex;gap:4px;padding:1px 6px;border-radius:6px;background:#EDF7F1;color:#14794F;font-weight:600;white-space:nowrap}',
+      '.mkc-sites span.ko{background:#FBEEF1;color:#B93550}.mkc-sites span.nd{background:#F1F3F8;color:var(--mk-attenue);font-weight:450}.mkc-sites span i{font-style:normal;font-weight:450;opacity:.8}',
+      '.mkc-sites b{font-weight:600;color:var(--mk-attenue);white-space:nowrap}.mkc-sites b.ok{color:#14794F}',
       '.mkc .mkt-cat-prod{font-size:var(--mk-s4);font-weight:600}',
       '.mkc-offre{margin-left:6px;font-size:var(--mk-s5);font-weight:650;color:#8A5410;white-space:nowrap}',
       '.mkc .mkt-cat-thumb{border-color:var(--mk-trait);border-radius:10px}',
