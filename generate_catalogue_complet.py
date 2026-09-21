@@ -56,6 +56,31 @@ XLSX = os.path.join(ROOT, 'STATS', 'stock et prix 22 06 2026.xlsx')
 PROD_STATS = os.path.join(ROOT, 'crm', 'v2', 'prod-stats-data.js')
 GENERIQUEURS = os.path.join(ROOT, 'crm', 'v2', 'generiqueurs-data.js')
 OUT = os.path.join(ROOT, 'crm', 'v2', 'catalogue-complet-data.js')
+ETAB = os.path.join(ROOT, 'crm', 'v2', 'etab-prices-data.js')
+
+
+def stock_des_sites():
+    """Stock = SOMME des établissements (même lecture que generate_copilote_stock.py,
+    lancer generate_etab_prices.py AVANT). Rend (somme par CIP, CIP connus d'un relevé,
+    date du relevé le plus ancien). Le stock du fichier de prix de juin ne sert plus que
+    pour un produit qu'aucun relevé ne connaît."""
+    txt = open(ETAB, encoding='utf-8').read()
+    etab = json.loads(txt[txt.index('{'):txt.rindex('}') + 1])
+    somme, connus = {}, set()
+    for site in sorted(etab['prices']):
+        for code, pq in etab['prices'][site].items():
+            if not code.isdigit() or len(code) > 13:
+                continue
+            code = code.zfill(13)
+            connus.add(code)
+            q = int(pq[1] or 0)
+            if q > 0:
+                somme[code] = somme.get(code, 0) + q
+    dates = etab.get('siteDates') or {}
+    manquants = [s for s in etab['prices'] if not dates.get(s)]
+    if not somme or manquants:
+        sys.exit('Stock des sites illisible (%s) : %s' % (ETAB, ', '.join(manquants) or 'aucun stock'))
+    return somme, connus, min(dates[s] for s in etab['prices'])
 
 # ── Règles métier (miroir de generate_prod_stats.py) ────────────────────
 TAUX_COEUR = 0.0389          # abandon du cœur de gamme, base PGHT
@@ -212,6 +237,7 @@ def main():
           % (len(generiqueurs),
              ', '.join(sorted(generiqueurs, key=lambda l: -generiqueurs[l][0])[:6])))
 
+    stk_sites, stk_connus, stk_date = stock_des_sites()
     labos, mols = {}, {}
     rows = []
     fam_compte = Counter()
@@ -258,7 +284,8 @@ def main():
         mi = mols.setdefault(o['mol'], len(mols)) if o['mol'] else -1
         st = ps.get(cip)
         rows.append([
-            cip, o['d'], li, mi, f, ppht, net, o['s'],
+            cip, o['d'], li, mi, f, ppht, net,
+            stk_sites.get(cip, 0) if cip in stk_connus else o['s'],
             1 if o['mitm'] else 0,
             int(st['n']) if st and st.get('n') else 0,      # nb pharmacies acheteuses
         ])
@@ -292,6 +319,8 @@ def main():
     meta = {
         'source': 'STATS/stock et prix 22 06 2026.xlsx',
         'arrete': '2026-06-22',
+        'stockSource': 'crm/v2/etab-prices-data.js (somme des établissements)',
+        'stockArrete': stk_date,
         'n': len(rows),
         'enStock': sum(1 for r in rows if r[7] > 0),
         'connusReseau': sum(1 for r in rows if r[9] > 0),
