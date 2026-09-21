@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """Marketing · source « Ventes NR réelles » (hors médicament remboursable).
 
-Croise les VRAIES ventes Intégral hors-remboursable (fichiers *_NETTOYE_agregation.xlsx,
-sell-out CA + quantités) avec le prix de référence (PPHT) tiré des fichiers de stock
+Croise les VRAIES ventes Intégral hors-remboursable (fichiers <SITE>_Pharma_agregation.xlsx,
+sell-out CA + quantités — les 7 sites depuis le 21/09/2026 ; les *_NETTOYE_* n'en couvraient que 4) avec le prix de référence (PPHT) tiré des fichiers de stock
 par établissement, et produit crm/v2/mkt-nr-data.js = window.MKT_NR :
 un catalogue de catégories NR classées par ventes réelles, prêt pour la machine de
 catalogues du CRM (sélecteur d'établissement = prix + stock à jour via ETAB_PRICES).
@@ -18,7 +18,7 @@ import os
 import re
 import json
 
-AGG_DIR = 'STATS'                                        # *_NETTOYE_agregation.xlsx (sell-out)
+AGG_DIR = 'STATS'                                        # <SITE>_Pharma_agregation.xlsx (sell-out)
 STOCK_DIR = '/Users/williammorel/JARVIS/PRIX ET STOCKS ETABLISSEMENTS'   # *_extrait.xlsx (prix/stock)
 OUT = 'crm/v2/mkt-nr-data.js'
 
@@ -85,7 +85,7 @@ def main():
 
     prod = {}   # ean -> {d, lab, fam, ca, vol}
     etabs = set()
-    for fn in sorted(glob.glob(os.path.join(AGG_DIR, '*_NETTOYE_agregation.xlsx'))):
+    for fn in sorted(glob.glob(os.path.join(AGG_DIR, '*_Pharma_agregation.xlsx'))):
         code = re.match(r'([A-Za-z]{2,4})', os.path.basename(fn))
         etabs.add(code.group(1).upper() if code else '?')
         wb = openpyxl.load_workbook(fn, read_only=True, data_only=True)
@@ -159,7 +159,7 @@ def main():
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     with open(OUT, 'w', encoding='utf-8') as fh:
         fh.write('// Marketing — ventes NR réelles Intégral (hors remboursable) — generate_mkt_nr.py\n')
-        fh.write('// Sell-out (*_NETTOYE_agregation) x prix PPHT (stocks établissements). Ne pas éditer.\n')
+        fh.write('// Sell-out (<SITE>_Pharma_agregation) x prix PPHT (stocks établissements). Ne pas éditer.\n')
         fh.write('window.MKT_NR = ' + json.dumps(data, ensure_ascii=False, separators=(',', ':')) + ';\n')
 
     print('OK ->', OUT)

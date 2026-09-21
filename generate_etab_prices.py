@@ -207,8 +207,42 @@ for code, d in prices.items():
             e[0] = p
         e[1] += s
 
+# Quels sites ont VENDU le produit (Appro : un transfert vers un site qui ne le vend pas se signale).
+# Source : STATS/<SITE>_Pharma_agregation.xlsx (cumul des ventes du site, sans mois). On ne sort
+# qu'un oui/non par site — ni quantité ni chiffre d'affaires. Le CIP est dans ARTCODE (CIP7 ou 13),
+# ARTCODEBARRE étant souvent un EAN fabricant : on retient celui des deux que le stock connaît.
+vendu = {}        # cip -> masque de bits : bit i = une vente est relevée sur vendu_sites[i]
+vendu_sites = []  # sites dont le fichier de ventes a été lu : hors de cette liste = on ne sait pas
+for site in sorted(prices):
+    fn = os.path.join('STATS', '%s_Pharma_agregation.xlsx' % site)
+    if not os.path.exists(fn):
+        continue
+    ws = openpyxl.load_workbook(fn, read_only=True, data_only=True).active
+    it = ws.iter_rows(values_only=True)
+    ix = {str(h): i for i, h in enumerate(next(it)) if h is not None}
+    if 'QTE_TOTALE' not in ix or 'ARTCODE' not in ix:
+        continue
+    vendu_sites.append(site)
+    for r in it:
+        try:
+            if float(r[ix['QTE_TOTALE']] or 0) <= 0:
+                continue
+        except (TypeError, ValueError):
+            continue
+        raw = cip_of(r[ix['ARTCODE']])
+        cands = [cip13_of(raw) if len(raw) == 7 else raw]
+        if 'ARTCODEBARRE' in ix:
+            cands.append(cip_of(r[ix['ARTCODEBARRE']]))
+        for c in cands:
+            if c in allc:
+                vendu.setdefault(c, set()).add(site)
+                break
+vendu = {c: sum(1 << vendu_sites.index(x) for x in v) for c, v in vendu.items()}
+print('  ventes par site : %d produits, sites lus : %s' % (len(vendu), ', '.join(vendu_sites) or 'aucun'))
+
 data = {'etabs': sorted(etabs, key=lambda x: x['code']), 'prices': prices, 'all': allc,
-        'tarif': tarif, 'tarifDate': tarif_date, 'siteDates': site_dates, 'nrHorsCat': extra}
+        'tarif': tarif, 'tarifDate': tarif_date, 'siteDates': site_dates, 'nrHorsCat': extra,
+        'vendu': vendu, 'venduSites': vendu_sites}
 os.makedirs(os.path.dirname(OUT), exist_ok=True)
 with open(OUT, 'w', encoding='utf-8') as fh:
     fh.write('// Prix PPHT + stock par établissement (NR) — generate_etab_prices.py\n')
