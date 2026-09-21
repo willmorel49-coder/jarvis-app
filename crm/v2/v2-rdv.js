@@ -173,6 +173,16 @@
     return _vuPromesse;
   };
 
+  // Prochain rendez-vous confirmé de l'utilisateur dans cette officine (La carte, 21/09/2026).
+  // Une lecture par fiche ouverte, jamais mise en cache : un RDV pris à l'instant doit s'y voir.
+  V2.rdvProchainDe = function (cip) {
+    var c = sb(), u = uid();
+    if (!c || !u || !cip) return Promise.resolve(null);
+    return c.from('rdv').select('date, heure').eq('user_id', u).eq('statut', 'confirme').eq('cip', String(cip))
+      .gte('date', new Date().toISOString().slice(0, 10)).order('date').limit(1)
+      .then(function (r) { return ((r && r.data) || [])[0] || null; }, function () { return null; });
+  };
+
   V2.rdvVuLe = function (cip) {
     var k = String(cip || ''), best = null;
     function garder(d) { if (d && (!best || d > best)) best = d; }
