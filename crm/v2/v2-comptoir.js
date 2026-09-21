@@ -36,7 +36,8 @@
   var GRIS = '#6B7385';    // l'année précédente, en retrait (4,7:1 sur blanc)
 
   var C = { q: '', fam: 'all', opp: true, stock: false, top: 200, tri: 'potentiel',
-            page: 1, cip: null, offTout: false, unite: 'q' };
+            page: 1, cip: null, offTout: false, unite: 'q', panier: false };
+  var PANIER_MAX = 200;    // au-delà, une fiche n'est plus lisible : « Tout ajouter » s'arrête là et le dit
   var D = { nat: null, natEtat: 0, etabEtat: 0, catEtat: 0,
             cache: null, sig: '', aqui: null, aquiIdx: null, aquiEtat: 0, noms: null,
             frEtat: 0, mensuel: null, mensuelRef: null, mensuelN: 0, frPos: null, frPosRef: null,
@@ -66,6 +67,40 @@
     return v;
   }
   function stockIP() { return (window.STOCK_IP && window.STOCK_IP.data) || {}; }
+  // ── Panier : la sélection de v2-produits.js (même mémoire, même document, même fiche) ──
+  function sel() { var S = V2.produits.S; if (!S.sel) S.sel = {}; return S.sel; }
+  function selN() { return Object.keys(sel()).length; }
+  function majPanier() {
+    if (V2.produits.selSauver) V2.produits.selSauver();
+    if (C.panier && !selN()) C.panier = false;
+    majResultats();
+    var b = document.getElementById('cp-bar-hote'); if (b) b.innerHTML = barreHtml();
+    var p = document.getElementById('cp-pan-add'); if (p && C.cip) p.outerHTML = boutonPanneau(C.cip);
+  }
+  function boutonAdd(cip) {
+    var pris = !!sel()[cip];
+    return '<button class="cp-add' + (pris ? ' on' : '') + '" aria-pressed="' + pris + '" aria-label="' + (pris ? 'Retirer du panier' : 'Ajouter au panier') +
+      '" title="' + (pris ? 'Retirer du panier' : 'Ajouter au panier') + '" onclick="V2.comptoir.panier(\'' + escAttr(cip) + '\',event)">' + (pris ? '✓' : '+') + '</button>';
+  }
+  function boutonPanneau(cip) {
+    var pris = !!sel()[cip];
+    return '<button id="cp-pan-add" class="v2-btn cp-cta cp-cta2" onclick="V2.comptoir.panier(\'' + escAttr(cip) + '\',event)">' +
+      (pris ? '✓ Au panier — retirer' : 'Ajouter au panier') + '</button>';
+  }
+  function outilsPanierHtml(n) {
+    var np = selN();
+    return '<button class="cp-chip cp-chip-add" ' + (n ? '' : 'disabled ') + 'onclick="V2.comptoir.panierTout()">+ Tout ajouter au panier (' + fr(Math.min(n, PANIER_MAX)) + ')</button>' +
+      (np ? '<button class="cp-chip' + (C.panier ? ' on' : '') + '" onclick="V2.comptoir.panierVoir()">Au panier (' + fr(np) + ')</button>' : '');
+  }
+  function barreHtml() {
+    var n = selN();
+    if (!n) return '';
+    return '<div class="cp-bar" role="region" aria-label="Panier"><span class="cp-bar-n"><b>' + fr(n) + '</b> produit' + (n > 1 ? 's' : '') + ' au panier</span>' +
+      '<button class="cp-bar-l" onclick="V2.comptoir.panierVoir()">' + (C.panier ? 'Tout le catalogue' : 'Voir') + '</button>' +
+      '<button class="cp-bar-l" onclick="V2.comptoir.panierVider()">Vider</button>' +
+      '<button class="v2-btn v2-btn-primary cp-bar-go" onclick="V2.comptoir.panierFiche()">Créer la fiche</button></div>';
+  }
+
   function rerender() { if (V2.route && V2.route.name === 'produits' && V2.render) V2.render(); }
 
   // ── Chargements à la demande ──────────────────────────────────
@@ -86,7 +121,7 @@
     if (!window.ETAB_PRICES && !D.etabEtat) {
       D.etabEtat = 1;
       var s = document.createElement('script');
-      s.src = 'etab-prices-data.js?v=' + (window.__APPRO_V || '20260921m');
+      s.src = 'etab-prices-data.js?v=' + (window.__APPRO_V || '20260921n');
       s.async = true;
       s.onload = s.onerror = function () { D.etabEtat = 2; rerender(); };
       document.head.appendChild(s);
@@ -370,6 +405,8 @@
     var q = sansAccent(C.q).trim(), out = [], i;
     for (i = 0; i < L.length; i++) {
       var l = L[i];
+      // « Au panier » montre TOUT le panier : les autres filtres ne doivent pas en cacher une partie.
+      if (C.panier) { if (sel()[l.cip]) out.push(l); continue; }
       if (C.fam !== 'all' && l.f !== C.fam) continue;
       if (C.opp && !l.opp) continue;
       if (C.stock && !(l.stock > 0)) continue;
@@ -442,6 +479,24 @@
       }
     },
     plus: function () { C.page += 1; majResultats(); },
+    panier: function (cip, ev) {
+      if (ev) ev.stopPropagation();
+      cip = String(cip);
+      if (sel()[cip]) delete sel()[cip]; else sel()[cip] = 1;
+      majPanier();
+    },
+    // En gros : tout ce que les filtres affichent, dans l'ordre du tri, jusqu'à PANIER_MAX.
+    panierTout: function () {
+      var d = donnees(); if (!d) return;
+      var L = filtrees(d.lignes), s = sel(), ajout = 0, i;
+      for (i = 0; i < L.length && i < PANIER_MAX; i++) if (!s[L[i].cip]) { s[L[i].cip] = 1; ajout++; }
+      majPanier();
+      if (V2.toast) V2.toast(ajout ? fr(ajout) + ' produit' + (ajout > 1 ? 's ajoutés' : ' ajouté') + ' au panier' +
+        (L.length > PANIER_MAX ? ' (les ' + PANIER_MAX + ' premiers du tri)' : '') : 'Ces produits sont déjà au panier');
+    },
+    panierVoir: function () { C.panier = !C.panier; C.page = 1; majPanier(); },
+    panierVider: function () { V2.produits.S.sel = {}; C.panier = false; majPanier(); },
+    panierFiche: function () { V2.comptoir.fermerPanneau(); V2.produits.ficheDuPanier(); },
     ouvrir: function (cip) { C.cip = String(cip); C.offTout = false; rerender(); },
     fermer: function () { C.cip = null; rerender(); },
     offTout: function () { C.offTout = true; rerender(); },
@@ -495,21 +550,24 @@
       (l.rupt ? '<span class="cp-badge cp-badge-r">Rupture ANSM</span>' : '');
   }
   function ligneTable(l, d, AQ, TD) {
-    return '<button class="cp-row" onclick="V2.comptoir.ouvrir(\'' + escAttr(l.cip) + '\')">' +
+    return '<div class="cp-row' + (sel()[l.cip] ? ' pris' : '') + '" role="button" tabindex="0" onclick="V2.comptoir.ouvrir(\'' + escAttr(l.cip) + '\')"' +
+      ' onkeydown="if(event.target===this&&(event.key===\'Enter\'||event.key===\' \')){event.preventDefault();this.click()}">' +
+      boutonAdd(l.cip) +
       '<span class="cp-nom"><span class="cp-lib-l"><span class="cp-lib">' + esc(l.d) + '</span>' + badges(l) + '</span>' +
         '<span class="cp-meta">' + esc([l.labo, 'CIP ' + l.cip].filter(Boolean).join(' · ')) + '</span></span>' +
       '<span class="cp-num"><b>' + (l.prix > 0 ? eur2(l.prix) : '—') + '</b>' +
-        (l.ab != null ? '<i title="Abandon de marge">−' + eur2(l.ab) + '</i>' : '') + '</span>' +
+        (l.ab != null ? '<i title=""Abandon de marge">−' + eur2(l.ab) + '</i>' : '') + '</span>' +
       '<span class="cp-num"><b>' + numK(l.an) + '</b><i>bt/an</i></span>' +
       '<span class="cp-num cp-rang">' + (l.rang ? 'n°' + fr(l.rang) : '—') + '</span>' +
       partHtml(l, d.partMoy, TD) +
       '<span class="cp-num">' + (l.opp ? '<b>' + eurK(l.pot) + '</b><i>par an</i>' : '<span class="cp-na">—</span>') + '</span>' +
       etabsCellules(l) +
       '<span class="cp-aqui">' + aQuiNb(l, AQ) + '</span>' +
-      '</button>';
+      '</div>';
   }
   function carte(l, d, AQ, TD) {
-    return '<button class="cp-card" onclick="V2.comptoir.ouvrir(\'' + escAttr(l.cip) + '\')">' +
+    return '<div class="cp-card' + (sel()[l.cip] ? ' pris' : '') + '" role="button" tabindex="0" onclick="V2.comptoir.ouvrir(\'' + escAttr(l.cip) + '\')"' +
+      ' onkeydown="if(event.target===this&&(event.key===\'Enter\'||event.key===\' \')){event.preventDefault();this.click()}">' +
       '<span class="cp-card-h"><span class="cp-card-n"><span class="cp-lib-l"><span class="cp-lib">' + esc(l.d) + '</span>' + badges(l) + '</span>' +
         '<span class="cp-meta">' + esc([l.labo, 'CIP ' + l.cip].filter(Boolean).join(' · ')) + '</span></span>' +
         '<span class="cp-num"><b>' + (l.prix > 0 ? eur2(l.prix) : '—') + '</b>' +
@@ -518,15 +576,15 @@
       '<span class="cp-card-p">' + partHtml(l, d.partMoy, TD) + '</span>' +
       (l.opp ? '<span class="cp-pill">Potentiel <b>' + eurK(l.pot) + '</b> par an</span>' : '') +
       '<span class="cp-card-b"><span class="cp-strip">' + etabsCellules(l) + '</span>' +
-        '<span class="cp-aqui">à qui : ' + aQuiNb(l, AQ) + '</span></span>' +
-      '</button>';
+        '<span class="cp-aqui">à qui : ' + aQuiNb(l, AQ) + '</span>' + boutonAdd(l.cip) + '</span>' +
+      '</div>';
   }
   function resultatsHtml(d) {
     var L = filtrees(d.lignes), AQ = aQui();
     var TD = (C.tri === 'hausse' || C.tri === 'baisse') ? tendances() : null;
     var vis = L.slice(0, C.page * PAR_PAGE), rows = '', cards = '', i;
     for (i = 0; i < vis.length; i++) { rows += ligneTable(vis[i], d, AQ, TD); cards += carte(vis[i], d, AQ, TD); }
-    var head = '<div class="cp-head"><span>Produit</span><span class="n">Prix net</span><span class="n">Ventes</span>' +
+    var head = '<div class="cp-head"><span class="c">Panier</span><span>Produit</span><span class="n">Prix net</span><span class="n">Ventes</span>' +
       '<span class="n">France</span><span>Part</span><span class="n">Potentiel</span>';
     for (i = 0; i < ETABS.length; i++) head += '<span class="c">' + ETABS[i] + '</span>';
     head += '<span class="c">À qui</span></div>';
@@ -537,6 +595,7 @@
           '<div class="cp-cards">' + cards + '</div>' +
           (reste > 0 ? '<button class="cp-more" onclick="V2.comptoir.plus()">Voir ' + fr(Math.min(reste, PAR_PAGE)) +
             ' produits de plus <i>(' + fr(reste) + ' restants)</i></button>' : '')
+        : C.panier ? '<div class="cp-vide">Le panier est vide.</div>'
         : '<div class="cp-vide">Aucun produit ne correspond' +
           (C.opp ? ' — retirez le filtre « Opportunités seulement » pour chercher dans tout le catalogue.' : '.') + '</div>');
   }
@@ -548,6 +607,7 @@
     box.innerHTML = resultatsHtml(d);
     var src = document.getElementById('cp-count-src'), cnt = document.getElementById('cp-count');
     if (src && cnt) cnt.textContent = libCompte(+src.getAttribute('data-n') || 0);
+    var o = document.getElementById('cp-outils'); if (o && src) o.innerHTML = outilsPanierHtml(+src.getAttribute('data-n') || 0);
   }
 
   // ── Courbes mois par mois ─────────────────────────────────────
@@ -824,6 +884,7 @@
         '<p class="cp-st">Mois par mois</p><div id="cp-evo">' + evoHtml(l) + '</div>' +
         '<p class="cp-st">Stock par établissement</p>' + stock +
         '<p class="cp-st">À qui le proposer' + (liste ? ' <span>' + fr(liste.length) + '</span>' : '') + '</p>' + off +
+        boutonPanneau(l.cip) +
         '<button class="v2-btn v2-btn-primary cp-cta" onclick="V2.produits.ficheMarketing(\'' + escAttr(l.cip) + '\')">Fiche marketing du produit</button>' +
       '</div></aside>';
   }
@@ -898,10 +959,12 @@
           '<select class="cp-sel" aria-label="Meilleures ventes France" onchange="V2.comptoir.top(this.value)">' + selTop + '</select>' +
           '<select class="cp-sel" aria-label="Tri" onchange="V2.comptoir.tri(this.value)">' + selTri + '</select>' +
         '</div>' +
+        '<div class="cp-chips" id="cp-outils">' + outilsPanierHtml(n) + '</div>' +
         '<div class="cp-leg"><span><i class="cp-dot g"></i>stock ≥ 50</span><span><i class="cp-dot l"></i>1 à 49</span>' +
           '<span><i class="cp-dot z"></i>0</span><span><i class="cp-leg-m"></i>part moyenne ' + fr(d.partMoy * 100, 2) + ' %</span></div>' +
       '</div>' +
       '<div id="cp-res">' + resultatsHtml(d) + '</div>' +
+      '<div id="cp-bar-hote">' + barreHtml() + '</div>' +
       '<p class="cp-src">Opportunité = dans le top ' + C.top + ' des ventes France et nos ventes sous notre part moyenne. ' +
         'Nos ventes : réseau, ' + esc(periode) + ', ramenées à l\'année. Ventes France : Open Medic' +
         (d.natGen ? ' (mis à jour le ' + esc(String(d.natGen).split('-').reverse().join('/')) + ')' : '') + '. ' +
@@ -967,13 +1030,29 @@
       '.cp-dot-c{display:flex;align-items:center;justify-content:center}',
       // Ordinateur : le tableau. Téléphone : des cartes.
       '.cp-table{display:none}',
-      '.cp-head,.cp-row{display:grid;grid-template-columns:minmax(200px,1.4fr) 84px 72px 62px 118px 84px repeat(7,30px) 62px;align-items:center;gap:8px;padding:0 12px}',
+      '.cp-head,.cp-row{display:grid;grid-template-columns:44px minmax(200px,1.4fr) 78px 66px 58px 110px 74px repeat(7,30px) 54px;align-items:center;gap:8px;padding:0 12px}',
       '.cp-head{height:34px;font:700 13px/1 Inter,sans-serif;color:var(--cp-ink3);text-transform:uppercase;white-space:nowrap}',
       '.cp-head .n{text-align:right}.cp-head .c{text-align:center}',
       '.cp-body{background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--cp-shadow);overflow:hidden}',
       '.cp-row{width:100%;min-height:58px;padding-top:8px;padding-bottom:8px;border:0;border-top:1px solid var(--line);background:transparent;cursor:pointer;font:inherit;color:inherit}',
       '.cp-row:first-child{border-top:0}',
       '.cp-row:hover{background:var(--cp-alt)}',
+      '.cp-row.pris,.cp-card.pris{background:var(--cp-wash)}',
+      '.cp-row:focus-visible,.cp-card:focus-visible{outline:2px solid var(--ip-blue);outline-offset:-2px}',
+      '.cp-add{flex:none;justify-self:center;width:44px;height:44px;border-radius:12px;border:1px solid rgba(16,19,28,.14);background:var(--card);font:700 18px/1 Inter,sans-serif;color:var(--ip-blue);cursor:pointer}',
+      '.cp-add.on{background:var(--ip-blue);border-color:var(--ip-blue);color:#fff}',
+      '.cp-chip-add{border-style:dashed;color:var(--cp-deep)}',
+      '.cp-chip:disabled{opacity:.5;cursor:default}',
+      '.cp-cta2{margin-bottom:8px;border:1px solid rgba(16,19,28,.14);background:var(--card);color:var(--ip-ink)}',
+      // La barre du panier reste au pied de l'écran pendant qu'on parcourt la liste (sticky : pas de position:fixed sous #v2-root).
+      '#cp-bar-hote{position:sticky;bottom:calc(12px + env(safe-area-inset-bottom));z-index:5}',
+      '.cp-bar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:12px 0 0;padding:8px 8px 8px 16px;border-radius:16px;background:var(--ip-ink);color:#fff;box-shadow:0 14px 34px -12px rgba(16,19,28,.55)}',
+      '.cp-bar-n{flex:1;min-width:140px;font:500 14px/1.2 Inter,sans-serif}',
+      '.cp-bar-n b{font-weight:800;font-variant-numeric:tabular-nums}',
+      '.cp-bar-l{min-height:44px;padding:0 12px;border:0;border-radius:12px;background:transparent;color:#fff;font:650 14px/1 Inter,sans-serif;cursor:pointer;text-decoration:underline;text-underline-offset:3px}',
+      '.cp-bar-go{min-height:44px}',
+      // Téléphone : le bouton rond « + » du CRM occupe le coin bas droit — la barre lui laisse la place.
+      '@media (max-width:879px){.cp-bar{padding-right:80px}}',
       '.cp-nom{min-width:0}',
       '.cp-row .cp-aqui{justify-self:stretch}',
       '.cp-cards{display:flex;flex-direction:column;gap:8px}',
