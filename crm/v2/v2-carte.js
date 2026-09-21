@@ -108,13 +108,14 @@
   // c'est SON client (champ `comms` de WML_OFFICINES), sinon si elle est dans
   // une UGA où ce commercial a le plus de clients — ses prospects de secteur.
   // Sans WML (dégradé), on retombe sur l'ancien tag de la base nationale.
-  var commById = null, commByUga = null;
+  var commById = null, commByUga = null, caById = null;
   function buildCommMaps() {
-    commById = {}; commByUga = null;
+    commById = {}; commByUga = null; caById = {};
     var W = window.WML_OFFICINES; if (!W || !W.length || !D || !D.p) return;
     W.forEach(function (o) {
       var k = String((o && o.id) || '').replace(/[^0-9]/g, '');
       if (k && o.comms && o.comms.length) commById[k] = o.comms;
+      if (k && o.ca > 0) caById[k] = o.ca;
     });
     var count = {};
     D.p.forEach(function (p) {
@@ -135,7 +136,9 @@
     if (commByUga) { var c = commByUga[p[2]]; if (c) return [c]; }
     return p[5] ? [D.comm[p[5]]] : [];
   }
-  function caOf(p) { return (p && p[12]) || 0; }
+  // CA d'une officine : celui du CRM (WML_OFFICINES, mois de WML_MOIS) quand il existe. Mesuré en
+  // vraie session le 21/09/2026 : la base nationale n'en porte que 603, anciens ; le CRM 1 829 sur 1 830 clients.
+  function caOf(p) { if (!p) return 0; var c = caById && caById[String(p[13] || '').replace(/[^0-9]/g, '')]; return c || p[12] || 0; }
   function eurK(n) { n = n || 0; return n >= 1000 ? (Math.round(n / 100) / 10).toLocaleString('fr') + ' k€' : Math.round(n) + ' €'; }
   function colorFor(p) {
     if (colorMode === 'comm') {
@@ -1004,42 +1007,59 @@
   }
   V2.carteExportXlsx = function () {
     if (!D || !D.p || !D.p.length) { if (V2.toast) V2.toast('Carte pas encore chargée'); return; }
+    if (V2.toast) V2.toast('Préparation du fichier Excel…');
+    // Le CA et les vrais clients arrivent par des fichiers protégés, parfois APRÈS l'ouverture de la
+    // carte (vu en vraie session : fichier sorti sans aucun CA). On les attend, on recale, puis on écrit.
+    var pret = (V2.loadFiles ? V2.loadFiles(['wml', 'pharmafrca']) : null);
+    if (!pret || !pret.then) pret = { then: function (f) { f(); } };
+    var suite = function () {
+      reconcileWithWml(); buildCommMaps(); applyFilters();
+      ensureXLSX(function (ok) { if (!ok || !window.XLSX) { if (V2.toast) V2.toast('Export Excel indisponible (hors ligne ?)', 'error'); return; } ecrireXlsx(); });
+    };
+    pret.then(suite, suite);
+  };
+  function ecrireXlsx() {
     var rows = [];
     D.p.forEach(function (p) { if (pass(p)) rows.push(p); });
     if (!rows.length) { if (V2.toast) V2.toast('Aucune officine dans le filtre courant'); return; }
-    rows.sort(function (a, b) { return String(a[8] || '').localeCompare(String(b[8] || '')) || String(a[6] || '').localeCompare(String(b[6] || '')); });
-    if (V2.toast) V2.toast('Préparation du fichier Excel…');
-    ensureXLSX(function (ok) {
-      if (!ok || !window.XLSX) { if (V2.toast) V2.toast('Export Excel indisponible (hors ligne ?)', 'error'); return; }
-      try {
-        var aoa = [['Officine', 'Titulaire', 'Ville', 'Code postal', 'Département', 'Téléphone', 'E-mail', 'Statut', 'Groupement', 'Commercial', 'UGA', 'CA (€)', 'N° officine', 'Latitude', 'Longitude']];
-        rows.forEach(function (p) {
-          var dep = deptOf(p[8]), grp = (D.grp[p[3]] && D.grp[p[3]] !== '—') ? D.grp[p[3]] : '';
-          aoa.push([p[6] || '', p[10] || '', p[7] || '', String(p[8] || ''), dep ? dep + (DEPT_NAMES[dep] ? ' · ' + DEPT_NAMES[dep] : '') : '', String(p[9] || ''), p[11] || '',
-            D.seg[p[4]] || '', grp, commsOf(p).join(', '), D.uga[p[2]] || '', caOf(p) ? Math.round(caOf(p)) : '', String(p[13] || ''), p[0] || '', p[1] || '']);
-        });
-        var X = window.XLSX, wb = X.utils.book_new(), ws = X.utils.aoa_to_sheet(aoa);
-        ws['!cols'] = [34, 28, 22, 11, 24, 15, 30, 12, 24, 18, 9, 11, 12, 10, 10].map(function (w) { return { wch: w }; });
-        ws['!autofilter'] = { ref: X.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: aoa.length - 1, c: aoa[0].length - 1 } }) };
-        X.utils.book_append_sheet(wb, ws, 'Officines');
-        // 2e feuille : le filtre qui a produit cette liste — le fichier se comprend tout seul
-        var f = [['Extraction de La carte', new Date().toLocaleString('fr-FR')], ['Officines', rows.length],
-          ['Statut', typeFocus === 'clients' ? 'Clients' : typeFocus === 'prospects' ? 'Prospects' : 'Tout']];
-        if (commFocus.length) f.push(['Commercial', commFocus.join(', ')]);
-        if (grpFocus.length) f.push(['Groupement', grpFocus.join(', ')]);
-        if (deptFocus.length) f.push(['Département', deptFocus.join(', ')]);
-        if (ugaFocus.length) f.push(['UGA', ugaFocus.join(', ')]);
-        if (caMin || caMax) f.push(['Tranche de CA', caLabel()]);
-        if (villeFocus) f.push(['Ville', villeFocus]);
-        if (titFocus) f.push(['Titulaire', titFocus]);
-        if (searchTerm) f.push(['Recherche', searchTerm]);
-        var wf = X.utils.aoa_to_sheet(f); wf['!cols'] = [{ wch: 24 }, { wch: 60 }];
-        X.utils.book_append_sheet(wb, wf, 'Filtre');
-        X.writeFile(wb, 'officines-carte-' + new Date().toISOString().slice(0, 10) + '.xlsx');
-        if (V2.toast) V2.toast(rows.length.toLocaleString('fr') + ' officine' + (rows.length > 1 ? 's' : '') + ' dans le fichier Excel');
-      } catch (e) { if (V2.toast) V2.toast('Export impossible sur ce navigateur', 'error'); }
+    // clients d'abord (plus gros CA en tête), puis prospects par code postal
+    rows.sort(function (a, b) {
+      var ca = isClient(a) ? 0 : 1, cb = isClient(b) ? 0 : 1; if (ca !== cb) return ca - cb;
+      if (!ca && caOf(a) !== caOf(b)) return caOf(b) - caOf(a);
+      return String(a[8] || '').localeCompare(String(b[8] || '')) || String(a[6] || '').localeCompare(String(b[6] || ''));
     });
-  };
+    try {
+      var wm = window.WML_MOIS || [], lm = moisLbls();
+      var caTitre = 'CA' + (wm.length ? ' ' + lm[0] + '–' + lm[lm.length - 1] + ' ' + wm[wm.length - 1].split('-')[0] : '') + ' (€)';
+      var aoa = [['Client / Prospect', 'Palier', 'Officine', 'Titulaire', 'Ville', 'Code postal', 'Département', 'Téléphone', 'E-mail', caTitre, 'Groupement', 'Commercial', 'UGA', 'N° officine', 'Latitude', 'Longitude']];
+      var nCli = 0;
+      rows.forEach(function (p) {
+        var dep = deptOf(p[8]), grp = (D.grp[p[3]] && D.grp[p[3]] !== '—') ? D.grp[p[3]] : '', cli = isClient(p), seg = D.seg[p[4]] || '';
+        if (cli) nCli++;
+        aoa.push([cli ? 'Client' : 'Prospect', cli ? seg.replace('Client ', '') : '', p[6] || '', p[10] || '', p[7] || '', String(p[8] || ''), dep ? dep + (DEPT_NAMES[dep] ? ' · ' + DEPT_NAMES[dep] : '') : '', String(p[9] || ''), p[11] || '',
+          caOf(p) ? Math.round(caOf(p)) : '', grp, commsOf(p).join(', '), D.uga[p[2]] || '', String(p[13] || ''), p[0] || '', p[1] || '']);
+      });
+      var X = window.XLSX, wb = X.utils.book_new(), ws = X.utils.aoa_to_sheet(aoa);
+      ws['!cols'] = [15, 7, 34, 28, 22, 11, 24, 15, 30, 18, 24, 18, 9, 12, 10, 10].map(function (w) { return { wch: w }; });
+      ws['!autofilter'] = { ref: X.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: aoa.length - 1, c: aoa[0].length - 1 } }) };
+      X.utils.book_append_sheet(wb, ws, 'Officines');
+      // 2e feuille : le filtre qui a produit cette liste — le fichier se comprend tout seul
+      var f = [['Extraction de La carte', new Date().toLocaleString('fr-FR')], ['Officines', rows.length], ['dont clients', nCli], ['dont prospects', rows.length - nCli],
+        ['Statut', typeFocus === 'clients' ? 'Clients' : typeFocus === 'prospects' ? 'Prospects' : 'Tout']];
+      if (commFocus.length) f.push(['Commercial', commFocus.join(', ')]);
+      if (grpFocus.length) f.push(['Groupement', grpFocus.join(', ')]);
+      if (deptFocus.length) f.push(['Département', deptFocus.join(', ')]);
+      if (ugaFocus.length) f.push(['UGA', ugaFocus.join(', ')]);
+      if (caMin || caMax) f.push(['Tranche de CA', caLabel()]);
+      if (villeFocus) f.push(['Ville', villeFocus]);
+      if (titFocus) f.push(['Titulaire', titFocus]);
+      if (searchTerm) f.push(['Recherche', searchTerm]);
+      var wf = X.utils.aoa_to_sheet(f); wf['!cols'] = [{ wch: 24 }, { wch: 60 }];
+      X.utils.book_append_sheet(wb, wf, 'Filtre');
+      X.writeFile(wb, 'officines-carte-' + new Date().toISOString().slice(0, 10) + '.xlsx');
+      if (V2.toast) V2.toast(nCli.toLocaleString('fr') + ' client' + (nCli > 1 ? 's' : '') + ' et ' + (rows.length - nCli).toLocaleString('fr') + ' prospect' + (rows.length - nCli > 1 ? 's' : '') + ' dans le fichier Excel');
+    } catch (e) { if (V2.toast) V2.toast('Export impossible sur ce navigateur', 'error'); }
+  }
   V2.carteTourAgenda = function () {
     if (!tour.length) return;
     var d = new Date(); d.setDate(d.getDate() + 1); d.setHours(9, 0, 0, 0);
@@ -1509,7 +1529,7 @@
     D.p.forEach(function (p) {
       var o = wml[String(p[13] || '').replace(/[^0-9]/g, '')];
       if (o) {   // vrai client Intégral → tier selon CA + groupement depuis WML (vérité)
-        var ca = p[12] || 0;
+        var ca = o.ca || p[12] || 0;
         p[4] = ca >= 40000 ? iA : (ca >= 12000 ? iB : iC);
         var gr = o.groupement && String(o.groupement).trim();
         if (gr && gr !== '—') p[3] = ensureGrp(V2.canonGrp ? V2.canonGrp(gr) : gr);
