@@ -274,7 +274,7 @@
       });
       // Annuaire déjà réconcilié avant l'arrivée des corrections → on le repasse une fois.
       var D = window.PHARMA_FR;
-      if (D && D.p && D._wmlRecon && window.GRP_OVR && V2.reconcilePharma) { D._wmlRecon = false; try { V2.reconcilePharma(); } catch (e) {} }
+      if (D && D.p && D._wmlRecon && window.GRP_OVR && V2.reconcilePharma) { D._wmlRecon = false; try { V2.reconcilePharma(); } catch (e) {} try { if (V2.carteRecalage) V2.carteRecalage(); } catch (e) {} }
       if (cb) cb();
     });
   }

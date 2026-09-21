@@ -81,18 +81,16 @@
       else if (Date.now() - t0 > 15000) { clearInterval(iv); cb('err'); }
     }, 100);
   }
+  // 21/09/2026 — la base passe par le chargeur COMMUN (V2.ensurePharmaFr). La carte posait son propre
+  // <script> : quand l'accueil avait déjà lancé le sien, le fichier s'exécutait deux fois et la seconde
+  // copie, brute, remplaçait window.PHARMA_FR — la carte corrigeait un objet, le reste de l'appli lisait l'autre.
   function ensureData(cb) {
     if (window.PHARMA_FR) { cb(); return; }
-    var done = false, fin = function (e) { if (!done) { done = true; cb(e); } };
-    // Même adresse que v2-app.js (jeton des données V2_DATAV) : un seul téléchargement.
-    var s = document.createElement('script'); s.src = 'pharma-fr-data.js?v=' + (window.V2_DATAV || '');
-    s.onload = function () { if (V2.loadFiles) V2.loadFiles(['pharmafrca']); fin(window.PHARMA_FR ? null : 'err'); };
-    s.onerror = function () { fin('err'); };
-    document.head.appendChild(s);
-    var t0 = Date.now(), iv = setInterval(function () {
-      if (window.PHARMA_FR) { clearInterval(iv); fin(null); }
-      else if (Date.now() - t0 > 25000) { clearInterval(iv); fin('err'); }
-    }, 150);
+    V2.ensurePharmaFr(function () {
+      var suite = function () { cb(window.PHARMA_FR ? null : 'err'); };
+      var pr = (window.PHARMA_FR && V2.loadFiles) ? V2.loadFiles(['pharmafrca']) : null;   // la colonne CA protégée, attendue avant de dessiner
+      if (pr && pr.then) pr.then(suite, suite); else suite();
+    });
   }
 
   var PROSPECT_COL = '#A3ABBD';   // prospect = gris neutre (mode « par commercial » aussi)
@@ -138,12 +136,13 @@
   }
   // CA d'une officine : celui du CRM (WML_OFFICINES, mois de WML_MOIS) quand il existe. Mesuré en
   // vraie session le 21/09/2026 : la base nationale n'en porte que 603, anciens ; le CRM 1 829 sur 1 830 clients.
+  function commLbl(p) { return commsOf(p).join(', '); }
   function caOf(p) { if (!p) return 0; var c = caById && caById[String(p[13] || '').replace(/[^0-9]/g, '')]; return c || p[12] || 0; }
   function eurK(n) { n = n || 0; return n >= 1000 ? (Math.round(n / 100) / 10).toLocaleString('fr') + ' k€' : Math.round(n) + ' €'; }
   function colorFor(p) {
     if (colorMode === 'comm') {
-      if (p[5]) return COMM_COL[p[5]] || '#94A3B8';        // dans un portefeuille commercial
       if (isProspect(p)) return PROSPECT_COL;              // prospect libre → ambre visible
+      var _cs = commsOf(p); if (_cs.length) return COMM_COL[_cs[0]] || '#94A3B8';   // dans un portefeuille commercial (CRM)
       return '#D4DAE3';
     }
     if (colorMode === 'type') return SEG_COL[D.seg[p[4]]] || '#AEB6C4';
@@ -152,9 +151,16 @@
     return hsl(D.uga[p[2]] || '');
   }
 
+  // Commerciaux connus : ceux de la base nationale (même ordre, mêmes couleurs qu'avant) puis ceux du CRM seul.
+  function commNames() {
+    var vu = {}, out = [];
+    D.comm.slice(1).forEach(function (c) { if (c && !vu[c]) { vu[c] = 1; out.push(c); } });
+    if (commById) Object.keys(commById).forEach(function (k) { commById[k].forEach(function (c) { if (c && !vu[c]) { vu[c] = 1; out.push(c); } }); });
+    return out;
+  }
   function computeColors() {
     COMM_COL = {};
-    for (var k = 1; k < D.comm.length; k++) COMM_COL[k] = PALETTE[(k - 1) % PALETTE.length];
+    commNames().forEach(function (c, k) { COMM_COL[c] = PALETTE[k % PALETTE.length]; });
     var cnt = {};
     D.p.forEach(function (p) { cnt[p[3]] = (cnt[p[3]] || 0) + 1; });
     var top = Object.keys(cnt).filter(function (g) { return D.grp[g] && D.grp[g] !== '—'; })
@@ -166,7 +172,7 @@
   function tipHtml(p) {
     if (!p) return '';
     var grp = (D.grp[p[3]] && D.grp[p[3]] !== '—') ? D.grp[p[3]] : '';
-    var comm = p[5] ? D.comm[p[5]] : '', st = D.seg[p[4]] || '';
+    var comm = commLbl(p), st = D.seg[p[4]] || '';
     var bits = [];
     if (st) bits.push(st);
     if (grp) bits.push(grp);
@@ -589,7 +595,7 @@
     for (var i = 0; i < D.p.length; i++) {
       var p = D.p[i]; if (!llOK(p) || plan.pinnedIds[p[13]]) continue;
       if (p[0] < minLat || p[0] > maxLat || p[1] < minLng || p[1] > maxLng) continue;
-      if (plan.commFocus && D.comm[p[5]] !== plan.commFocus) continue;
+      if (plan.commFocus && commsOf(p).indexOf(plan.commFocus) < 0) continue;
       var estClient = (D.seg[p[4]] || '').indexOf('Client') === 0;
       if (estClient && !plan.incClients) continue;
       var c = LL(p);
@@ -599,7 +605,7 @@
       var dVille = haversine(c, B), det = detourKm(A, c, B, dAB), nearV = dVille <= TP.NEAR_VILLE;
       if (!nearV && det > corridorMax) continue;
       if (!nearV) { var t = projT(A, c, B); if (t < TP.T_LO || t > TP.T_HI) continue; }
-      out.push({ ref: c, grp: p[3], seg: p[4], id: p[13], ca: p[12] || 0, detour: det, latKm: segLatKm(A, c, B), dVille: dVille, dClient: dClient, dens: 0, name: p[6], ville: p[7], cp: p[8], tel: p[9] });
+      out.push({ ref: c, grp: p[3], seg: p[4], id: p[13], ca: caOf(p), detour: det, latKm: segLatKm(A, c, B), dVille: dVille, dClient: dClient, dens: 0, name: p[6], ville: p[7], cp: p[8], tel: p[9] });
     }
     return out;
   }
@@ -747,12 +753,12 @@
     if (!cand.length) {   // repli radial autour de la ville (désert / home≈ville)
       var B = plan.ville, all = [], i;
       for (i = 0; i < D.p.length; i++) { var p = D.p[i]; if (!llOK(p) || plan.pinnedIds[p[13]]) continue;
-        if (plan.commFocus && D.comm[p[5]] !== plan.commFocus) continue;
+        if (plan.commFocus && commsOf(p).indexOf(plan.commFocus) < 0) continue;
         var estCli = (D.seg[p[4]] || '').indexOf('Client') === 0;
         if (estCli && !plan.incClients) continue;
         var c = LL(p), dCl = estCli ? 0 : nearestClientKm(c);
         if (!estCli && dCl > TP.DELIV_RADIUS) continue;   // même règle : pas de prospect hors zone de livraison
-        all.push({ ref: c, grp: p[3], seg: p[4], id: p[13], ca: p[12] || 0, detour: 2 * haversine(c, B), latKm: 0, dVille: haversine(c, B), dClient: dCl, dens: 0, name: p[6], ville: p[7], cp: p[8], tel: p[9] }); }
+        all.push({ ref: c, grp: p[3], seg: p[4], id: p[13], ca: caOf(p), detour: 2 * haversine(c, B), latKm: 0, dVille: haversine(c, B), dClient: dCl, dens: 0, name: p[6], ville: p[7], cp: p[8], tel: p[9] }); }
       all.sort(function (x, y) { return x.dVille - y.dVille || x.id - y.id; }); cand = all.slice(0, TP.K_SHORT);
     } else {   // shortlist double : proches de la ville + faibles détours (prospecter la ville ET rester sur l'axe)
       var byDet = cand.slice().sort(function (x, y) { return x.detour - y.detour || x.id - y.id; });
@@ -967,7 +973,7 @@
       styles += '<Style id="' + sid + '"><IconStyle><color>' + kmlColor(GRP_COL[g]) + '</color><scale>1.1</scale>' +
         '<Icon><href>http://maps.google.com/mapfiles/kml/shapes/placemark_circle.png</href></Icon></IconStyle></Style>';
       var pms = byGrp[g].map(function (p) {
-        var ca = caOf(p), seg = D.seg[p[4]] || '', comm = p[5] ? D.comm[p[5]] : '', uga = D.uga[p[2]] || '';
+        var ca = caOf(p), seg = D.seg[p[4]] || '', comm = commLbl(p), uga = D.uga[p[2]] || '';
         var desc = [
           xe((p[7] || '') + (p[8] ? ', ' + p[8] : '')),
           p[10] ? 'Titulaire : ' + xe(p[10]) : '',
@@ -1013,7 +1019,7 @@
     var pret = (V2.loadFiles ? V2.loadFiles(['wml', 'pharmafrca']) : null);
     if (!pret || !pret.then) pret = { then: function (f) { f(); } };
     var suite = function () {
-      reconcileWithWml(); buildCommMaps(); applyFilters();
+      recaler(); applyFilters();
       ensureXLSX(function (ok) { if (!ok || !window.XLSX) { if (V2.toast) V2.toast('Export Excel indisponible (hors ligne ?)', 'error'); return; } ecrireXlsx(); });
     };
     pret.then(suite, suite);
@@ -1264,7 +1270,7 @@
     }
     if (colorMode === 'comm') {
       var out = '';
-      for (var k = 1; k < D.comm.length; k++) out += lg(COMM_COL[k], D.comm[k]);
+      commNames().forEach(function (c) { out += lg(COMM_COL[c], c); });
       return out + lg(PROSPECT_COL, 'Prospect (à conquérir)') + lg('#D4DAE3', 'Hors réseau');
     }
     if (colorMode === 'type') return lg(SEG_COL['Client A'], 'Client A · ≥ 40 k€') + lg(SEG_COL['Client B'], 'Client B · 12–40 k€') + lg(SEG_COL['Client C'], 'Client C · < 12 k€') + lg(SEG_COL.Prospect, 'Prospect');
@@ -1512,50 +1518,19 @@
     document.head.appendChild(s);
   }
 
-  // Réconciliation avec WML_OFFICINES (source de vérité clients) : corrige le statut client/prospect
-  // et le groupement de la base nationale (PHARMA_FR), qui sont faux/vides pour les vrais clients.
-  function reconcileWithWml() {
-    var W = window.WML_OFFICINES; if (!W || !W.length || !D || !D.seg || !D.p) return;
-    var segIdx = {}; for (var s = 0; s < D.seg.length; s++) segIdx[D.seg[s]] = s;
-    function ensureSeg(l) { if (segIdx[l] == null) { D.seg.push(l); segIdx[l] = D.seg.length - 1; } return segIdx[l]; }
-    var iA = ensureSeg('Client A'), iB = ensureSeg('Client B'), iC = ensureSeg('Client C'), iPro = ensureSeg('Prospect');
-    // Canon = même règle que build_pharma_fr.py (accents + ponctuation + casse ignorés)
-    // pour ne PAS recréer « LEADERSANTE » à côté de « Leadersanté » (WML sans accent).
-    var canon = function (s) { return String(s || '').normalize ? String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '') : String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); };
-    var grpIdx = {}; for (var g = 0; g < D.grp.length; g++) grpIdx[canon(D.grp[g])] = g;
-    function ensureGrp(name) { var k = canon(name); if (grpIdx[k] == null) { D.grp.push(name); grpIdx[k] = D.grp.length - 1; } return grpIdx[k]; }
-    var wml = {}; W.forEach(function (o) { if (o && o.id) wml[String(o.id).replace(/[^0-9]/g, '')] = o; });
-    var nClient = 0, nDemoted = 0;
-    D.p.forEach(function (p) {
-      var o = wml[String(p[13] || '').replace(/[^0-9]/g, '')];
-      if (o) {   // vrai client Intégral → tier selon CA + groupement depuis WML (vérité)
-        var ca = o.ca || p[12] || 0;
-        p[4] = ca >= 40000 ? iA : (ca >= 12000 ? iB : iC);
-        var gr = o.groupement && String(o.groupement).trim();
-        if (gr && gr !== '—') p[3] = ensureGrp(V2.canonGrp ? V2.canonGrp(gr) : gr);
-        nClient++;
-      } else if (D.seg[p[4]] !== 'Prospect') {   // pas un client WML → prospect (faux clients ET « Non défini »)
-        p[4] = iPro; nDemoted++;
-      }
-    });
-    // Canonicalise tous les groupements + corrections manuelles (cohérence appli)
-    if (window.GRP_ALIAS && V2.canonGrp) D.p.forEach(function (p) { var g = D.grp[p[3]]; if (g && g !== '—') { var cg = V2.canonGrp(g); if (cg !== g) p[3] = ensureGrp(cg); } });
-    var _OV = window.GRP_OVR; if (_OV) D.p.forEach(function (p) { var g = _OV[String(p[13] || '').replace(/[^0-9]/g, '')]; if (g) p[3] = ensureGrp(g); });
-    if (D.meta) D.meta.clients = nClient;
-    try { console.log('[carte] WML réconcilié : ' + nClient + ' clients confirmés · ' + nDemoted + ' faux clients → prospects'); } catch (e) {}
-  }
+  // Réconciliation avec WML_OFFICINES (source de vérité clients) : UNE seule règle pour toute l'appli,
+  // V2.reconcilePharma (v2-app.js). `true` = repasser même si un autre écran l'a déjà fait sans le CA du CRM.
+  function reconcileWithWml() { if (V2.reconcilePharma) V2.reconcilePharma(true); }
 
-  function boot(root) {
-    D = window.PHARMA_FR;
+  // Tout ce qui dépend de WML / du CA protégé, en UN point rappelable : à l'ouverture, avant l'export
+  // Excel, et quand ces fichiers arrivent APRÈS l'ouverture (v2-boot.js, fusionsProtegees). Sans lui,
+  // une carte ouverte trop tôt gardait 0 CA et 2 223 faux clients jusqu'au clic « Excel ».
+  function recaler() {
     reconcileWithWml();   // WML = vérité clients : corrige statut + groupement AVANT tout calcul de couleur
     buildCommMaps();      // portefeuilles réels + secteurs UGA pour le filtre Commercial
-    loadTour();
-    try { var dp = JSON.parse(localStorage.getItem('jarvis_depot_v1') || 'null'); if (dp && dp.lat) depot = dp; } catch (e) {}
     computeColors();
     // Valeurs des menus de la barre de filtres (calculées sur les données réellement présentes)
-    var _cu = {}; D.comm.slice(1).forEach(function (c) { if (c) _cu[c] = 1; });
-    if (commById) Object.keys(commById).forEach(function (k) { commById[k].forEach(function (c) { if (c) _cu[c] = 1; }); });
-    COMMS = Object.keys(_cu).sort(function (a, b) { return a.localeCompare(b, 'fr', { sensitivity: 'base' }); });
+    COMMS = commNames().sort(function (a, b) { return a.localeCompare(b, 'fr', { sensitivity: 'base' }); });
     var _gu = {}; D.p.forEach(function (p) { var g = D.grp[p[3]]; if (g && g !== '—') _gu[g] = 1; });
     GRPS = Object.keys(_gu).sort(function (a, b) { return a.localeCompare(b, 'fr', { sensitivity: 'base' }); });
     var _du = {}; D.p.forEach(function (p) { var d = deptOf(p[8]); if (d) _du[d] = 1; });
@@ -1564,6 +1539,19 @@
     UGAS = Object.keys(_uu).sort(function (a, b) { return a.localeCompare(b, 'fr', { sensitivity: 'base' }); });
     var _cm = 0; D.p.forEach(function (p) { var c = caOf(p); if (c > _cm) _cm = c; });
     CA_HI = Math.max(10000, Math.ceil(_cm / 10000) * 10000);
+  }
+  V2.carteRecalage = function () {
+    if (!D || !D.p || !map || !document.getElementById('carte-map')) return;   // carte fermée : le prochain boot() recalera
+    recaler();
+    var lg = document.getElementById('carte-legend'); if (lg) lg.innerHTML = legendHtml();
+    applyFilters();
+  };
+
+  function boot(root) {
+    D = window.PHARMA_FR;
+    recaler();
+    loadTour();
+    try { var dp = JSON.parse(localStorage.getItem('jarvis_depot_v1') || 'null'); if (dp && dp.lat) depot = dp; } catch (e) {}
     root.querySelector('#carte-legend').innerHTML = legendHtml();
     renderFbRow(); renderFbChips();   // barre de filtres Direction 2
     // Nettoie une éventuelle carte précédente (évite l'accumulation d'instances Leaflet au fil des visites).
@@ -1622,11 +1610,11 @@
   function homeView() {
     if (!map || !D) return;
     var me = (V2.user && V2.user.commercial) ? norm(String(V2.user.commercial)).replace(/\./g, '').trim() : '';
-    var idx = 0;
-    if (me) for (var k = 1; k < D.comm.length; k++) { var c = norm(D.comm[k] || '').replace(/\./g, '').trim(); if (c && (c === me || c.split(' ')[0] === me.split(' ')[0])) { idx = k; break; } }
+    var idx = '', noms = commNames();
+    if (me) for (var k = 0; k < noms.length; k++) { var c = norm(noms[k] || '').replace(/\./g, '').trim(); if (c && (c === me || c.split(' ')[0] === me.split(' ')[0])) { idx = noms[k]; break; } }
     if (!idx) return;   // direction / profil sans commercial : la France
     var pts = [];
-    for (var i = 0; i < D.p.length; i++) { var p = D.p[i]; if (p[5] === idx && isClient(p) && isFinite(p[0]) && isFinite(p[1]) && (p[0] || p[1])) pts.push([p[0], p[1]]); }
+    for (var i = 0; i < D.p.length; i++) { var p = D.p[i]; if (isClient(p) && commsOf(p).indexOf(idx) >= 0 && isFinite(p[0]) && isFinite(p[1]) && (p[0] || p[1])) pts.push([p[0], p[1]]); }
     if (pts.length < 3) return;
     try { map.fitBounds(pts, { padding: [40, 40], maxZoom: 10 }); } catch (e) {}
   }
@@ -1903,7 +1891,7 @@
     var shown = ids.slice(0, listShown), remaining = total - shown.length;
     var rows = shown.map(function (i) {
       var p = D.p[i], cl = isClient(p), pr = D.seg[p[4]] === 'Prospect', inT = tourPos(keyOf(p)) >= 0;
-      var comm = p[5] ? D.comm[p[5]] : '';
+      var comm = commLbl(p);
       return '<div class="cn-lrow">' +
         '<div class="cn-lmain" onclick="V2.carteFiche(' + i + ')">' +
           '<b>' + esc(p[6] || p[10] || ('Pharmacie' + (p[7] ? ' · ' + p[7] : ''))) + '</b>' +
@@ -1993,7 +1981,7 @@
     var el = document.getElementById('cn-fiche'); if (!el) return;
     var FMO = moisLbls();
     var p = D.p[i], det = (DETAIL && p[13]) ? DETAIL[p[13]] : null;
-    var comm = p[5] ? D.comm[p[5]] : '', inT = inTour(i);
+    var comm = commLbl(p), inT = inTour(i);
     var inWml = !!(p[13] && (V2.pharmacies || []).some(function (x) { return String(x.id) === String(p[13]); }));   // une de tes 630 officines → lien fiche complète
     var spark = '';
     if (det && det.m) { var mx = Math.max.apply(null, det.m.concat([1])); spark = '<div class="cn-fspark">' + det.m.map(function (v, j) { var h = Math.round((v / mx) * 46) + 2; return '<div class="cn-fbar" title="' + FMO[j] + ' : ' + eurK(v) + '"><i style="height:' + h + 'px"></i><span>' + FMO[j] + '</span></div>'; }).join('') + '</div>'; }
