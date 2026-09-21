@@ -9,7 +9,7 @@ compris, codes CIP7, 5 sites) : pour ces sites, elle remplace les *_extrait.xlsx
 par produit ; les produits absents gardent leur valeur. Lecture .xls : xlrd
 (/usr/bin/python3).
 Puis l'extraction d'un site seul « stock <SITE> <jjmmaaaa>.xlsx » (SEP le 17/09/2026 :
-codes-barres CIP13, stockdispo, afmcode), même règle, la plus récente par site.
+codes-barres CIP13, stockdispo, afmcode ; POS le 21/09/2026), même règle, la plus récente par site.
 """
 import openpyxl, glob, os, json, re
 
@@ -140,6 +140,9 @@ for etab, lst in sorted(site_files.items()):
     wb = openpyxl.load_workbook(fn, read_only=True, data_only=True)
     it = wb.active.iter_rows(values_only=True)
     ix = {str(h or '').strip().lower(): i for i, h in enumerate(next(it))}
+    # POS (21/09/2026) : prix en « ppht » et laboratoire en « artcollection »
+    pcol = ix['atfprix'] if 'atfprix' in ix else ix['ppht']
+    lcol = ix['artmarque'] if 'artmarque' in ix else ix['artcollection']
     lu = {}  # un code-barres porté par deux articles : stocks additionnés
     for r in it:
         code = cip_of(r[ix['artcodebarre']])
@@ -150,7 +153,7 @@ for etab, lst in sorted(site_files.items()):
             continue
         try: stock = max(0, int(float(r[ix['stockdispo']] or 0)))
         except (TypeError, ValueError): stock = 0
-        ppht = num(r[ix['atfprix']])
+        ppht = num(r[pcol])
         e = lu.setdefault(code, [0.0, 0])
         if ppht > 0 and e[0] <= 0:
             e[0] = ppht
@@ -160,7 +163,7 @@ for etab, lst in sorted(site_files.items()):
             labels[code] = lib
         afm = str(r[ix['afmcode']] or '').strip()
         if afm and afm != 'REMBSS' and code.isdigit() and len(code) <= 14 and lib:
-            labo = str(r[ix['artmarque']] or '').strip()
+            labo = str(r[lcol] or '').strip()
             nr_info.setdefault(code, [labels.get(code, lib), '' if labo == '#N/A' else labo])
     wb.close()
     d = prices.setdefault(etab, {})

@@ -206,7 +206,7 @@
     if (window.ETAB_PRICES) { cb(); return; }
     if (etabEchec || etabLoading) return;   // échec retenu, ou premier appel en cours (son rappel redessine déjà l'écran)
     etabLoading = true;
-    var s = document.createElement('script'); s.src = 'etab-prices-data.js?v=20260916b';
+    var s = document.createElement('script'); s.src = 'etab-prices-data.js?v=20260921e';
     s.onload = function () { etabLoading = false; cb(); }; s.onerror = function () { etabLoading = false; etabEchec = true; cb(); };
     document.head.appendChild(s);
   }

@@ -10,8 +10,8 @@
    Opportunité = parmi les meilleures ventes France ET nos ventes sous
    notre part moyenne (même calcul que v2-appro.js::partGlobale).
    Stock par établissement : UNIQUEMENT ce que donne etab-prices-data.js
-   (remboursables compris depuis le 16/09/2026 ; SEP ajouté le 17/09 ; POS absent de ces
-   extractions → « non communiqué »). Pour le reste on montre le stock
+   (remboursables compris depuis le 16/09/2026 ; SEP ajouté le 17/09, POS le 21/09 ; un site
+   sans ligne → « non communiqué »). Pour le reste on montre le stock
    consolidé et on le dit — jamais de répartition inventée.
    Les vues par officine / groupement / prospect / achats restent dans
    v2-produits.js, atteignables depuis le pied de page et le panneau.
@@ -86,7 +86,7 @@
     if (!window.ETAB_PRICES && !D.etabEtat) {
       D.etabEtat = 1;
       var s = document.createElement('script');
-      s.src = 'etab-prices-data.js?v=' + (window.__APPRO_V || '20260918b');
+      s.src = 'etab-prices-data.js?v=' + (window.__APPRO_V || '20260921e');
       s.async = true;
       s.onload = s.onerror = function () { D.etabEtat = 2; rerender(); };
       document.head.appendChild(s);
