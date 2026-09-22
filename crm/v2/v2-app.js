@@ -1099,62 +1099,40 @@
       '.v2-home-x .v2-lch-feat-d{font-size:13.5px;color:rgba(255,255,255,.86);line-height:1.4}',
       '.v2-home-x .v2-lch-feat .v2-lch-arrow{position:static;color:rgba(255,255,255,.9);font-size:22px;flex:none}',
       '@media(prefers-reduced-motion:reduce){.v2-home-x .v2-lch-feat{animation:none;transition:none}}',
-      // ─── Accueil « Le tableau vivant » (22-23/09/2026, p4 amélioré, choix Will)
-      // Rangé par fréquence d'usage : Tous les jours (4 grandes) · Souvent
-      // (5 moyennes) · Quand il faut (le reste, petites). Un seul accent
-      // (--ip-blue), la lumière de la verrière déjà posée par v2-verriere.css
-      // n'est pas doublée ici.
-      '.v2-home-x .hx-note{position:relative;display:flex;align-items:center;gap:10px;margin:-18px 0 18px;padding:10px 14px;border-radius:var(--r-pill);background:color-mix(in srgb,var(--ip-blue) 7%,var(--card));border:1px solid color-mix(in srgb,var(--ip-blue) 16%,var(--line));font-size:13px;color:var(--ip-ink-2,var(--muted))}',
-      '.v2-home-x .hx-note button{flex:none;width:44px;height:44px;margin:-10px -8px -10px auto;border:none;background:none;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:50%}',
-      '.v2-home-x .hx-note button:hover{color:var(--ip-ink);background:color-mix(in srgb,var(--ip-blue) 8%,transparent)}',
-      '.v2-home-x .hx-sect-h{font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:26px 2px 12px}',
-      '.v2-home-x .hx-sect-h:first-of-type{margin-top:8px}',
-      // rang 1 : 4 grandes tuiles — la taille = la priorité
-      '.v2-home-x .hx-big-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}',
-      '.v2-home-x .hx-big{position:relative;overflow:hidden;grid-column:span 2;min-height:150px;padding:22px;display:flex;flex-direction:column;justify-content:space-between;background:linear-gradient(180deg,var(--card),var(--card-2));border:1px solid var(--line);border-radius:var(--r-lg,20px);box-shadow:var(--sh-1);text-decoration:none;color:var(--ip-ink);cursor:pointer;transition:transform .25s var(--mo-ease-soft),box-shadow .25s var(--mo-ease-soft)}',
-      // ⚠️ Cette media query DOIT rester APRÈS la règle .hx-big non conditionnelle
-      // ci-dessus (même spécificité : c'est l'ordre dans la feuille qui tranche).
-      // 4 grandes tuiles en 2×2, jamais 3+1 orpheline (correction du 23/09/2026).
-      '@media(min-width:860px){.v2-home-x .hx-big-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.v2-home-x .hx-big{grid-column:span 2;min-height:184px}}',
-      '.v2-home-x .hx-big::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .2s;background:radial-gradient(200px circle at var(--mx,50%) var(--my,0%),rgba(255,255,255,.55),transparent 62%)}',
-      '@media(hover:hover){.v2-home-x .hx-big:hover{transform:translateY(-3px);box-shadow:var(--sh-2)}.v2-home-x .hx-big:hover::after{opacity:1}}',
-      '.v2-home-x .hx-big:active{transform:scale(.98)}',
-      '.v2-home-x .hx-big-top{display:flex;align-items:center;gap:14px}',
-      '.v2-home-x .hx-big-ico{width:52px;height:52px;border-radius:14px;background:var(--ip-blue);color:#fff;display:flex;align-items:center;justify-content:center;flex:none}',
-      '.v2-home-x .hx-big-t{font-size:22px;font-weight:800;letter-spacing:-.02em;line-height:1.15}',
-      '.v2-home-x .hx-big-bot{margin-top:14px}',
-      '.v2-home-x .hx-big-chiffre{font-size:30px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.02em;display:block}',
-      '.v2-home-x .hx-big-unite{font-size:13px;color:var(--muted);margin-top:2px;display:block}',
-      // les icônes des 4 grandes tuiles se dessinent au premier rendu (posé par le script, jamais figé sans JS)
-      '.v2-home-x.js-anim .hx-big-ico svg *{stroke-dasharray:60;stroke-dashoffset:60;animation:hxDessiner 600ms cubic-bezier(.2,.8,.2,1) forwards;animation-delay:calc(var(--i) * 80ms + 160ms)}',
-      '@keyframes hxDessiner{to{stroke-dashoffset:0}}',
-      // rang 2 : 5 tuiles moyennes
-      '.v2-home-x .hx-med-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}',
-      // Nombre impair de tuiles moyennes (5, ou 6 avec Escale) : à 390 la
-      // dernière solitaire prend les deux colonnes plutôt que de rester seule
-      // à gauche. Règle générale (comme p4), pas un rattrapage pour 5.
-      '.v2-home-x .hx-med-grid .hx-med:last-child:nth-child(odd){grid-column:1/-1}',
-      // ≥ 860 : une seule rangée de 5 plutôt qu\'un 3+2 (correction du 23/09/2026).
-      '@media(min-width:860px){.v2-home-x .hx-med-grid{grid-template-columns:repeat(5,minmax(0,1fr))}.v2-home-x .hx-med-grid .hx-med:last-child:nth-child(odd){grid-column:auto}}',
-      '.v2-home-x .hx-med{position:relative;overflow:hidden;min-height:92px;padding:14px 16px;display:flex;flex-direction:column;justify-content:center;gap:8px;background:linear-gradient(180deg,var(--card),var(--card-2));border:1px solid var(--line);border-radius:var(--r-card,16px);box-shadow:var(--sh-1);text-decoration:none;color:var(--ip-ink);cursor:pointer;transition:transform .25s var(--mo-ease-soft),box-shadow .25s var(--mo-ease-soft)}',
-      '.v2-home-x .hx-med::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .2s;background:radial-gradient(160px circle at var(--mx,50%) var(--my,0%),rgba(255,255,255,.55),transparent 62%)}',
-      '@media(hover:hover){.v2-home-x .hx-med:hover{transform:translateY(-3px);box-shadow:var(--sh-2)}.v2-home-x .hx-med:hover::after{opacity:1}}',
-      '.v2-home-x .hx-med:active{transform:scale(.98)}',
-      '.v2-home-x .hx-med-ico{width:38px;height:38px;border-radius:11px;background:color-mix(in srgb,var(--ip-blue) 10%,var(--card));color:var(--ip-blue);display:flex;align-items:center;justify-content:center;flex:none}',
-      '.v2-home-x .hx-med-t{font-size:15px;font-weight:800;letter-spacing:-.01em;display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px}',
-      '.v2-home-x .hx-med-chip{font-size:13px;font-weight:800;letter-spacing:.02em;text-transform:uppercase;color:var(--ip-blue);background:color-mix(in srgb,var(--ip-blue) 12%,var(--card));border-radius:var(--r-pill);padding:2px 7px;white-space:nowrap}',
-      // rang 3 : petites tuiles, tout le reste — 2 col à 390, 4 col ≥ 860
-      '.v2-home-x .hx-small-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}',
-      '@media(min-width:860px){.v2-home-x .hx-small-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}',
-      '.v2-home-x .hx-small{position:relative;min-height:56px;padding:10px 12px;display:flex;align-items:center;gap:10px;background:linear-gradient(180deg,var(--card),var(--card-2));border:1px solid var(--line);border-radius:var(--r-card,16px);box-shadow:var(--sh-1);text-decoration:none;color:var(--ip-ink);cursor:pointer;transition:transform .25s var(--mo-ease-soft),box-shadow .25s var(--mo-ease-soft)}',
-      '@media(hover:hover){.v2-home-x .hx-small:hover{transform:translateY(-3px);box-shadow:var(--sh-2)}}',
-      '.v2-home-x .hx-small:active{transform:scale(.98)}',
-      '.v2-home-x .hx-small-ico{width:30px;height:30px;border-radius:9px;background:color-mix(in srgb,var(--ip-blue) 10%,var(--card));color:var(--ip-blue);display:flex;align-items:center;justify-content:center;flex:none}',
-      '.v2-home-x .hx-small-t{font-size:14px;font-weight:700;line-height:1.25}',
-      // cascade d\'entrée : posée UNE fois par session, jamais rejouée aux re-rendus (ventes/relances)
-      '.v2-home-x.js-anim .hx-anim{opacity:0;transform:scale(.92);animation:hxPousser 520ms cubic-bezier(.2,.8,.2,1) forwards;animation-delay:calc(var(--i) * 50ms)}',
-      '@keyframes hxPousser{to{opacity:1;transform:scale(1)}}',
-      '@media(prefers-reduced-motion:reduce){.v2-home-x.js-anim .hx-anim{animation:none;opacity:1;transform:none}.v2-home-x.js-anim .hx-big-ico svg *{animation:none;stroke-dashoffset:0}.v2-home-x .hx-big,.v2-home-x .hx-med,.v2-home-x .hx-small{transition:none}.v2-home-x .hx-big::after,.v2-home-x .hx-med::after{display:none}}'
+      // ─── Accueil « Le lanceur retrouvé » (23/09/2026, r1, choix Will) ───
+      // Après p4 « Le tableau vivant » (en ligne 24 h), Will : « je préférais
+      // l'ancien et j'aime bien le 4 [q4, jardin de lumière] mais il faut vraiment
+      // que ce soit nuancé » ; sa gêne : la structure en trois sections. Donc la
+      // STRUCTURE de l'ancien Launcher (bandeau, grandes cartes, autres outils),
+      // habillée : la lumière vient d'en haut à gauche (reflet linéaire, jamais de
+      // flou), l'icône vit dans un disque bleu dégradé, un seul accent, arrivée en
+      // cascade avec un léger ressort — une fois par session. Les règles du
+      // Launcher ci-dessus restent la base ; celles-ci les affinent (même
+      // spécificité : l'ordre dans la feuille tranche).
+      '.v2-home-x .v2-lch-grid{gap:14px}',
+      '.v2-home-x .v2-lch-card{gap:36px;padding:22px;box-shadow:var(--sh-1);transition:transform .3s cubic-bezier(.3,.7,.4,1.2),box-shadow .3s var(--mo-ease-soft),border-color .3s var(--mo-ease-soft)}',
+      '.v2-home-x .v2-lch-card::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(135deg,rgba(255,255,255,.85),rgba(255,255,255,0) 45%)}',
+      '.v2-home-x .v2-lch-card::after{background:radial-gradient(260px circle at var(--mx,50%) var(--my,0%),color-mix(in srgb,var(--ip-blue) 12%,transparent),transparent 62%)}',
+      '.v2-home-x .v2-lch-card:hover{border-color:color-mix(in srgb,var(--ip-blue) 28%,var(--line))}',
+      '.v2-home-x .v2-lch-card:active{transform:scale(.98)}',
+      '.v2-home-x .v2-lch-ico{position:relative;border-radius:50%;color:#fff;background:radial-gradient(circle at 32% 26%,#9BC0FF 0%,var(--ip-blue) 55%,var(--ip-blue-d,#0034A0) 100%);box-shadow:0 6px 14px -6px color-mix(in srgb,var(--ip-blue) 55%,transparent)}',
+      '.v2-home-x .v2-lch-meta{position:relative}',
+      '.v2-home-x .v2-lch-card:hover .v2-lch-arrow{color:var(--ip-blue)}',
+      '.v2-home-x .v2-lch-card:last-child:nth-child(odd){gap:26px}',
+      '@media(max-width:640px){.v2-home-x .v2-lch-card:last-child:nth-child(odd){gap:36px}}',
+      // pastilles « Autres outils » : zone tactile 44 px, icône bleue, même matière que les cartes
+      '.v2-home-x .v2-lch-more .lbl{font-size:13px}',
+      '.v2-home-x .v2-lch-mini{min-height:44px;padding:9px 14px;font-weight:600;background:linear-gradient(180deg,var(--card),var(--card-2));box-shadow:var(--sh-1)}',
+      '.v2-home-x .v2-lch-mini svg{color:var(--ip-blue)}',
+      // puce du bandeau : 11 px → 13 px (rien d'utile en dessous de 13 px)
+      '.v2-home-x .v2-lch-beta .chip{font-size:13px;letter-spacing:.06em}',
+      '.v2-home-x .v2-lch-mini:hover{transform:translateY(-2px);box-shadow:var(--sh-2)}',
+      // cascade : l'ancienne (nth-of-type, rejouée à chaque rendu) est remplacée par
+      // une arrivée posée UNE fois par session (js-anim / v2-home-still, comme p4)
+      '.v2-home-x .v2-lch-card,.v2-home-x .v2-lch-more,.v2-home-x .v2-lch-beta{animation:none}',
+      '.v2-home-x.js-anim .lch-anim{opacity:0;transform:translateY(14px) scale(.97);animation:lchArriver 560ms cubic-bezier(.3,.7,.4,1.2) forwards;animation-delay:calc(var(--i) * 55ms)}',
+      '@keyframes lchArriver{to{opacity:1;transform:none}}',
+      '@media(prefers-reduced-motion:reduce){.v2-home-x.js-anim .lch-anim{animation:none;opacity:1;transform:none}.v2-home-x .v2-lch-card,.v2-home-x .v2-lch-mini{transition:none}}'
     ].join('');
     document.head.appendChild(st);
   }
@@ -1227,14 +1205,6 @@
       el.style.setProperty('--mx', ((e.clientX - r.left) / r.width * 100) + '%');
       el.style.setProperty('--my', ((e.clientY - r.top) / r.height * 100) + '%');
     } catch (err) {}
-  };
-  // Note « premier passage » de l'accueil refondu : mémorisée par appareil,
-  // jamais renvoyée par le serveur (try/catch : un navigateur privé ou un
-  // stockage bloqué ne doit pas empêcher la fermeture).
-  V2.homeNoteFerme = function () {
-    try { localStorage.setItem('v2HomeNoteV1', '1'); } catch (err) {}
-    var el = document.getElementById('v2-home-note');
-    if (el && el.parentNode) el.parentNode.removeChild(el);
   };
 
   // 11/09/2026 — perf : CA par officine calculé en UNE passe sur les ventes et
@@ -1404,96 +1374,73 @@
         // identifiée avec le logo ».
         if (pmap.offilog) { pmap.offilog.t = 'Offilog'; }
 
-        // ── « Le tableau vivant » (22-23/09/2026, p4 amélioré, choix Will) ──
-        // Rangé par fréquence d'usage, pas par famille : Tous les jours (4
-        // grandes tuiles) · Souvent (5 moyennes) · Quand il faut (le reste).
-        // Mêmes noms, mêmes icônes qu'avant le 22/09 — personne ne doit
-        // chercher ses outils dans ce nouvel accueil.
+        // ── « Le lanceur retrouvé » (23/09/2026, r1, choix Will) ──────────
+        // La structure de l'accueil d'avant le 22/09 (bandeau Rendez-vous en
+        // essai, grandes cartes, « Autres outils » en pastilles), les outils les
+        // plus utilisés d'abord — mot pour mot : « le 1 mais les features les
+        // plus utilisées en priorité ». L'ordre suit le classement qu'il a retenu
+        // le 22/09 : Officines · Produits · Pilotage · La carte, puis Marketing ·
+        // Infos du matin · Appro. La carte monte donc dans les grandes cartes ;
+        // à sept, la dernière prend les deux colonnes (règle du Launcher pour un
+        // nombre impair). Mêmes noms, mêmes icônes : personne ne cherche ses outils.
+        var ESSENTIAL = ['pharma', 'produits', 'pilotage', 'carte', 'marketing', 'infos', 'appro'];
+        var SUB = {
+          pharma: 'Fiches, visites & suivi terrain',
+          produits: 'Client, groupement ou prospect — la liste à proposer',
+          pilotage: 'CA, marge, tranches de prix & marché France',
+          carte: 'Toutes les officines de France : clients, prospects, tournée',
+          marketing: 'Supports & sélections à pousser',
+          infos: 'Les 5 sujets du jour, le radar & les opportunités',
+          appro: 'Ce qu\'il faut acheter — et la courbe du marché à 3, 6 et 12 mois'
+        };
+        var ICOK = { pharma: 'pharma', produits: 'cat', pilotage: 'pilo', carte: 'grid', marketing: 'fiche', infos: 'spark', appro: 'spark' };
+        // catalogue grossiste médicaments replié · fiches retiré · audit fusionné dans la fiche pharmacie
         var used = { catalogue: 1, fiches: 1, audit: 1 };
-        var hxI = 0;
-        function hxBigNum(k, ico, titre, chiffre, unite) {
-          var idx = hxI++;
-          return '<a class="hx-big hx-anim" style="--i:' + idx + '" onmousemove="V2.homeSpot(event,this)" onclick="V2.go(\'' + k + '\')">' +
-            '<div class="hx-big-top"><span class="hx-big-ico">' + ICO(ico, 28) + '</span><span class="hx-big-t">' + esc(titre) + '</span></div>' +
-            '<div class="hx-big-bot"><span class="hx-big-chiffre hx-chiffre" data-count>' + esc(chiffre) + '</span><span class="hx-big-unite">' + esc(unite) + '</span></div></a>';
+        var lchI = 0;
+        function bigCard(k) {
+          var p = pmap[k]; if (!p) return ''; used[k] = 1;
+          return '<a class="v2-lch-card lch-anim" style="--i:' + (lchI++) + '" onmousemove="V2.homeSpot(event,this)" onclick="V2.go(\'' + k + '\')">' +
+            '<span class="v2-lch-ico">' + ICO(ICOK[k] || p.ico, 24) + '</span>' +
+            '<span class="v2-lch-arrow">→</span>' +
+            '<span class="v2-lch-meta"><span class="v2-lch-t">' + esc(p.t) + '</span><span class="v2-lch-d">' + (SUB[k] || '') + '</span></span></a>';
         }
-        function hxBigTxt(k, ico, titre, texte) {
-          var idx = hxI++;
-          return '<a class="hx-big hx-anim" style="--i:' + idx + '" onmousemove="V2.homeSpot(event,this)" onclick="V2.go(\'' + k + '\')">' +
-            '<div class="hx-big-top"><span class="hx-big-ico">' + ICO(ico, 28) + '</span><span class="hx-big-t">' + esc(titre) + '</span></div>' +
-            '<div class="hx-big-bot"><span class="hx-big-unite" style="font-size:14px;line-height:1.35;color:var(--ip-ink-2,var(--muted))">' + esc(texte) + '</span></div></a>';
+        // Rendez-vous garde son bandeau « Nouveau · en essai » (17/08/2026) : c'est
+        // le repère actuel de l'équipe pour l'outil en essai.
+        var beta = '';
+        if (pmap.rdv) {
+          used.rdv = 1;
+          beta = '<a class="v2-lch-beta lch-anim" style="--i:' + (lchI++) + '" onclick="V2.go(\'rdv\')">' +
+            '<span class="ic">' + ICO('cal', 24) + '</span>' +
+            '<span class="tx"><span class="chip">Nouveau · en essai</span>' +
+              '<span class="t">Rendez-vous</span>' +
+              '<span class="d">Envoie un lien à une officine, ou un seul mail à 25 en copie ' +
+              'cachée : elles choisissent leur créneau, calé sur la géographie de ta journée. ' +
+              'L’invitation part dans ton agenda.</span></span>' +
+            '<span class="go">→</span></a>';
         }
-        function hxMed(k, ico, titre, chip, nav) {
-          var idx = hxI++;
-          return '<a class="hx-med hx-anim" style="--i:' + idx + '" onmousemove="V2.homeSpot(event,this)" onclick="' + (nav || ('V2.go(\'' + k + '\')')) + '">' +
-            '<span class="hx-med-ico">' + ICO(ico, 20) + '</span>' +
-            '<span class="hx-med-t">' + esc(titre) + (chip ? '<span class="hx-med-chip">' + esc(chip) + '</span>' : '') + '</span></a>';
-        }
-        function hxSmall(ico, titre, nav) {
-          var idx = hxI++;
-          return '<a class="hx-small hx-anim" style="--i:' + idx + '" onclick="' + nav + '">' +
-            '<span class="hx-small-ico">' + ICO(ico, 16) + '</span>' +
-            '<span class="hx-small-t">' + esc(titre) + '</span></a>';
-        }
-        function hxSect(t) {
-          var idx = hxI++;
-          return '<div class="hx-sect-h hx-anim" style="--i:' + idx + '">' + esc(t) + '</div>';
-        }
-
-        // Rang 1 · Tous les jours — la taille = la priorité
-        var bigTiles = '';
-        if (pmap.pharma) {
-          used.pharma = 1;
-          bigTiles += (mesOfficines != null)
-            ? hxBigNum('pharma', 'pharma', 'Officines', hxNum(mesOfficines), 'tes officines')
-            : hxBigNum('pharma', 'pharma', 'Officines', hxNum(nbPharma), 'officines actives');
-        }
-        if (pmap.produits) {
-          used.produits = 1;
-          // Pas de compteur de sites existant côté Produits : un texte plutôt
-          // qu'un chiffre inventé (un compte animé qui ne bouge jamais ment).
-          bigTiles += hxBigTxt('produits', 'cat', 'Produits', 'Le catalogue des 7 établissements');
-        }
-        if (pmap.pilotage) {
-          used.pilotage = 1;
-          var caMoi = 0;
-          if (mesOfficines != null) { withCa.forEach(function (x) { if ((x.p.comms || []).indexOf(uComm) >= 0) caMoi += x.ca; }); }
-          var caTuile = mesOfficines != null ? caMoi : caTotal;
-          bigTiles += hxBigNum('pilotage', 'pilo', 'Pilotage', partiel ? '…' : (V2.fmtK(caTuile) + ' €'), partiel ? 'chargement' : 'cette période');
-        }
-        if (pmap.carte) {
-          used.carte = 1;
-          bigTiles += (window.PHARMA_FR && window.PHARMA_FR.p)
-            ? hxBigNum('carte', 'grid', 'La carte', hxNum(window.PHARMA_FR.p.length), 'officines sur la carte')
-            : hxBigTxt('carte', 'grid', 'La carte', 'Toutes les officines de France');
-        }
-
-        // Rang 2 · Souvent
-        var medTiles = '';
-        if (pmap.marketing) { used.marketing = 1; medTiles += hxMed('marketing', 'fiche', 'Marketing'); }
-        if (pmap.infos) { used.infos = 1; medTiles += hxMed('infos', 'spark', 'Infos du matin'); }
-        if (pmap.appro) { used.appro = 1; medTiles += hxMed('appro', 'spark', 'Appro Intégral'); }
-        // La puce « En essai » reste le repère actuel de l'équipe pour Rendez-vous.
-        if (pmap.rdv) { used.rdv = 1; medTiles += hxMed('rdv', 'cal', 'Rendez-vous', 'En essai'); }
-        // Espace Groupements : listes des groupements + listings produits (renderGroupementsList via pharma?groupements)
-        medTiles += hxMed(null, 'list', 'Groupements', null, 'V2.go(\'pharma\',\'groupements\')');
+        var big = ESSENTIAL.map(bigCard).filter(Boolean).join('');
         // 14/09/2026 — le responsable d'Escale Pharma a l'accès total ET garde son
         // espace escale/v2 (demande de Will). Seul un compte @escalepharma.fr
         // arrive ici : les commerciaux Escale sont renvoyés avant.
         if (/@escalepharma\.fr$/i.test((V2.user && V2.user.email) || '')) {
-          medTiles += hxMed(null, 'pilo', 'Espace Escale Pharma', null, 'location.href=\'../../escale/v2/index.html\'');
+          big += '<a class="v2-lch-card lch-anim" style="--i:' + (lchI++) + '" onmousemove="V2.homeSpot(event,this)" onclick="location.href=\'../../escale/v2/index.html\'">' +
+            '<span class="v2-lch-ico">' + ICO('pilo', 24) + '</span>' +
+            '<span class="v2-lch-arrow">→</span>' +
+            '<span class="v2-lch-meta"><span class="v2-lch-t">Espace Escale Pharma</span><span class="v2-lch-d">Le suivi Escale et ses officines clientes</span></span></a>';
         }
+        pilHtml = beta + '<div class="v2-lch-grid">' + big + '</div>';
 
-        // Rang 3 · Quand il faut — tout le reste de P, + Réforme 2027 (doc protégé)
         var rest = P.filter(function (p) { return !used[p.k]; });
-        var smallTiles = rest.map(function (p) { return hxSmall(p.ico, p.t, 'V2.go(\'' + p.k + '\')'); }).join('');
-        // Document privé : s'ouvre par une adresse signée valable 1 h, jamais servi
-        // par le dépôt public. Le fichier porte du CA réseau, il reste dans Supabase.
-        smallTiles += hxSmall('pilo', 'Réforme 2027', 'V2.ouvrirDocProtege(\'reforme2027\')');
-
-        pilHtml = (bigTiles ? hxSect('Tous les jours') + '<div class="hx-big-grid">' + bigTiles + '</div>' : '') +
-          (medTiles ? hxSect('Souvent') + '<div class="hx-med-grid">' + medTiles + '</div>' : '') +
-          (smallTiles ? hxSect('Quand il faut') + '<div class="hx-small-grid">' + smallTiles + '</div>' : '');
+        if (rest.length) {
+          pilHtml += '<div class="v2-lch-more lch-anim" style="--i:' + (lchI++) + '"><span class="lbl">Autres outils</span>' +
+            rest.map(function (p) { return '<a class="v2-lch-mini" onclick="V2.go(\'' + p.k + '\')">' + ICO(p.ico, 15) + esc(p.t) + '</a>'; }).join('') +
+            // Espace Groupements : listes des groupements + listings produits (renderGroupementsList via pharma?groupements)
+            '<a class="v2-lch-mini" onclick="V2.go(\'pharma\',\'groupements\')">' + ICO('list', 15) + 'Groupements</a>' +
+            // Document privé : s'ouvre par une adresse signée valable 1 h, jamais servi
+            // par le dépôt public. Le fichier porte du CA réseau, il reste dans Supabase.
+            '<a class="v2-lch-mini" onclick="V2.ouvrirDocProtege(\'reforme2027\')">' + ICO('pilo', 15) + 'Réforme 2027</a>' +
+            '</div>';
+        }
       }
 
       // ── Bientôt · bêta test ──────────────────────────────────────────
@@ -1542,14 +1489,6 @@
       var salut = (!isBrandApart && new Date().getHours() >= 18) ? 'Bonsoir' : 'Bonjour';
       var tiennesTxt = (!isBrandApart && mesOfficines != null) ? ' · <b>tes officines : ' + hxNum(mesOfficines) + '</b>' : '';
 
-      // Premier passage sur le nouvel accueil : ligne discrète, mémorisée par
-      // appareil (try/catch : un stockage bloqué ne doit rien casser).
-      var noteVue = false;
-      try { noteVue = localStorage.getItem('v2HomeNoteV1') === '1'; } catch (eNote) {}
-      var noteHtml = (!isBrandApart && !noteVue)
-        ? '<div class="hx-note" id="v2-home-note"><span>Nouvel accueil : les mêmes outils, rangés par fréquence d\'usage.</span>' +
-          '<button type="button" aria-label="Fermer" onclick="V2.homeNoteFerme()">' + ICO('close', 16) + '</button></div>'
-        : '';
 
       // La cascade d'entrée ne joue qu'une fois par session : V2.render() est
       // rappelé quand les relances arrivent et quand les ventes finissent, ce
@@ -1567,23 +1506,12 @@
               ? '<span id="v2-ventes-etat">Chargement des ventes… <b>' + ((V2.ventesProgres && V2.ventesProgres.n) || 0) + '</b> / ' + ((V2.ventesProgres && V2.ventesProgres.total) || '?') + '</span>'
               : '<b>' + nbPharma + '</b> officines actives') + tiennesTxt + '</p>' +
           '</div>' +
-          noteHtml +
           '<div class="v2-search" role="button" tabindex="0" aria-label="Rechercher une pharmacie, un produit" onclick="V2.onTopSearch()"><span class="srch-ic">' + ICO('search', 18, 2) + '</span>' +
             '<input readonly aria-hidden="true" tabindex="-1" placeholder="Cherche une pharmacie, un produit…" style="cursor:pointer"><kbd>' + MOD + 'K</kbd></div>' +
           relancesCardHtml() +
           pilHtml +
         '</div>';
 
-      // Chiffre qui compte : au tout premier rendu seulement (voir jouerAnim).
-      // 23/09/2026 — les rendus suivants (relances, fin des ventes, retour à
-      // l'accueil) recréent les éléments : la révélation générale de v2-motion
-      // les recompterait depuis 0 à chaque fois (vu en prod : 1 932 → 1 410 lu
-      // en plein comptage). On les marque déjà comptés.
-      var hxChiffres = root.querySelectorAll('.hx-chiffre[data-count]');
-      for (var hci = 0; hci < hxChiffres.length; hci++) {
-        if (jouerAnim && V2.motion && V2.motion.countUp) { try { V2.motion.countUp(hxChiffres[hci]); } catch (eCount) {} }
-        else hxChiffres[hci].setAttribute('data-mo-counted', '1');
-      }
     }
   };
 
