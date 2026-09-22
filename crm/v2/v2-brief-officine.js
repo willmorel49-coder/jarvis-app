@@ -1,7 +1,7 @@
 /* ═══════════════════════════════════════════════════════════════════════
    BRIEF DE L'OFFICINE — « Aujourd'hui », sur la fiche officine : une ligne de
-   résumé APRÈS les chiffres + un bouton à droite des onglets, qui ouvrent une
-   fenêtre centrée (maquette B du 22/09/2026). Point rouge tant qu'il y a un
+   résumé APRÈS les chiffres + un bouton bleu « Voir le brief du jour » à droite des onglets, qui ouvrent le
+   panneau latéral (maquette C du 22/09/2026). Point rouge tant qu'il y a un
    rappel de lots « À retirer ».
    Phase 1 de la recherche IA × officine (17/09/2026) : vu par le commercial.
 
@@ -372,7 +372,7 @@
     return '<button type="button" class="bo-ligne" onclick="V2.briefOfficine.ouvrir()">' +
       '<span class="bo-dot' + (s.rouge ? '' : ' vu') + '"></span><b>Aujourd\'hui</b>' +
       (s.html || '<span class="bo-sum">' + (r.achatsConnus ? 'rien d\'urgent pour cette officine' : 'aucun achat connu sur la période') + '</span>') +
-      '<span class="bo-voir">Voir' + sousTitre + CHEVRON + '</span></button>';
+      '<span class="bo-voir">Ouvrir le brief' + sousTitre + CHEVRON + '</span></button>';
   }
 
   var CHEVRON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
@@ -387,17 +387,21 @@
         '<button type="button" class="bo-x" aria-label="Fermer" onclick="V2.briefOfficine.fermer()">×</button>' +
         '<span class="pha-sub">ce qui la concerne, tiré de ses achats' + (s.nb ? ' · ' + pluriel(s.nb, 'point') : '') + '</span></div>' +
       '<div class="bo-win-b">' + corpsHtml(r) + '</div>' +
-      '<div class="bo-win-f"><span class="pha-sub">Se rouvre depuis la ligne « Aujourd\'hui » de la fiche.</span>' +
+      '<div class="bo-win-f"><span class="pha-sub">Se rouvre avec le bouton « Voir le brief du jour ».</span>' +
         (r.points.length ? '<button type="button" class="v2-btn bo-imp" onclick="V2.briefOfficine.imprimer()">Imprimer pour l\'équipe</button>' : '') +
         '<button type="button" class="v2-btn dark" onclick="V2.briefOfficine.fermer()">Fermer</button></div>' +
     '</div>';
   }
 
-  // Le bouton « Aujourd'hui · 7 » à droite des onglets Analyse / Audit marge.
+  // Le bouton « Voir le brief du jour · 7 » à droite des onglets Analyse / Audit marge.
+  // Bleu plein + verbe : les commerciaux ne voyaient pas qu'une pastille blanche « Aujourd'hui » se cliquait (Will, 22/09/2026).
   function boutonHtml(s) {
-    return '<span class="bo-dot' + (s && s.rouge ? '' : ' vu') + '"></span>Aujourd\'hui' +
-      (s && s.nb ? ' <span class="n">' + s.nb + '</span>' : '') + CHEVRON;
+    if (!s) return ICONE + 'Brief du jour en préparation…';
+    return ICONE + 'Voir le brief du jour' +
+      (s.nb ? ' <span class="n">' + s.nb + '</span>' : '') +
+      (s.rouge ? '<span class="bo-dot" aria-label="rappel de lot à traiter"></span>' : '') + CHEVRON;
   }
+  var ICONE = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H8l-4 4z"/><path d="M8 9h8M8 12.5h5"/></svg>';
 
   var STYLE = '.bo-liste{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:10px}' +
     '.bo-pt{display:flex;gap:12px;align-items:flex-start}' +
@@ -424,11 +428,17 @@
     '.bo-ligne{display:flex;align-items:center;gap:10px;flex-wrap:wrap;width:100%;padding:12px 18px;border:0;background:transparent;font-family:inherit;text-align:left;cursor:pointer;color:inherit}' +
     '.bo-ligne:hover{background:var(--card-2,#f6f7fa)}' +
     '.bo-ligne b{font-size:14px;font-weight:800;letter-spacing:-.01em}' +
-    '.bo-voir{margin-left:auto;display:inline-flex;align-items:center;gap:4px;font-weight:600;font-size:12.5px;color:var(--ip-blue,#0050E6);white-space:nowrap}' +
+    '.bo-voir{margin-left:auto;display:inline-flex;align-items:center;gap:4px;padding:7px 12px;border-radius:999px;background:var(--ip-blue,#0050E6);color:#fff;font-weight:700;font-size:12.5px;white-space:nowrap}' +
+    '.bo-ligne:hover .bo-voir{background:var(--ip-blue-d,#0034A0)}' +
     /* le bouton à droite des onglets */
-    '.bo-open{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;border:1px solid var(--line-strong,#cbd2dd);background:var(--card,#fff);font-family:inherit;font-weight:700;font-size:13px;color:inherit;cursor:pointer;box-shadow:var(--sh-1,none);min-height:var(--tap-min,44px)}' +
-    '.bo-open .n{background:var(--ip-ink,#10131C);color:#fff;border-radius:999px;padding:1px 8px;font-size:12px}' +
-    '.bo-open:hover{background:var(--card-2,#f6f7fa)}' +
+    '.bo-open{position:relative;display:inline-flex;align-items:center;gap:8px;padding:9px 16px 9px 14px;border-radius:999px;border:0;background:var(--ip-blue,#0050E6);font-family:inherit;font-weight:700;font-size:13.5px;color:#fff;cursor:pointer;box-shadow:0 6px 16px -6px rgba(0,80,230,.55);min-height:var(--tap-min,44px);transition:background .15s,transform .15s}' +
+    '.bo-open .n{background:#fff;color:var(--ip-blue,#0050E6);border-radius:999px;padding:1px 8px;font-size:12px;font-weight:800}' +
+    '.bo-open .bo-dot{position:absolute;top:-3px;right:-3px;width:11px;height:11px;border:2px solid #fff;box-shadow:none;animation:bo-pouls 1.6s ease-in-out infinite}' +
+    '@keyframes bo-pouls{0%,100%{transform:scale(1)}50%{transform:scale(1.35)}}' +
+    '@media (prefers-reduced-motion:reduce){.bo-open .bo-dot{animation:none}}' +
+    '.bo-open:hover{background:var(--ip-blue-d,#0034A0)}.bo-open:active{transform:translateY(1px)}' +
+    '.bo-open:disabled{background:var(--card-2,#eef0f4);color:var(--ip-ink-2,#334155);box-shadow:none;cursor:default}' +
+    '@media (max-width:640px){.bo-open{flex:1;justify-content:center}}' +
     '.ph-fiche-line{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:2px 0 16px}' +
     '.ph-fiche-line .ph-fiche-tabs{margin:0 !important}.ph-fiche-line .bo-spacer{flex:1}' +
     /* le panneau latéral */
