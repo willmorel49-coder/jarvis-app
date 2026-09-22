@@ -486,7 +486,7 @@
     var ov = document.getElementById('bo-ov');
     if (!ov || !ov.firstChild) return;
     ov.classList.add('on'); document.body.style.overflow = 'hidden';
-    var x = ov.querySelector('.bo-x'); if (x) x.focus();
+    var x = ov.querySelector('.bo-x'); if (x) x.focus({ preventScroll: true });
   }
   function fermer() {
     var ov = document.getElementById('bo-ov');
@@ -500,8 +500,11 @@
     if (!document.getElementById('bo-style')) {
       var st = document.createElement('style'); st.id = 'bo-style'; st.textContent = STYLE; document.head.appendChild(st);
     }
-    fermer();
-    var ov = overlay(); ov.innerHTML = '';
+    // La fiche se re-dessine parfois après coup (ex. fichier « argument » qui arrive et fait
+    // apparaître l'onglet Audit) : sur la MÊME officine, la fenêtre reste ouverte et son contenu
+    // est remplacé quand le brief est prêt ; sur une autre officine, on ferme et on vide.
+    var ov = overlay();
+    if (ov.getAttribute('data-pid') !== String(pid)) { fermer(); ov.innerHTML = ''; ov.setAttribute('data-pid', String(pid)); }
     Promise.all(['ansm-dispo.json', 'prix-futurs.json', 'rappels-lots.json', 'generiques-bdpm.json', 'calendrier-officine.json'].map(lire).concat([chargerStockSites()])).then(function (j) {
       var cible = document.getElementById('brief-off');
       if (!cible || cible.getAttribute('data-pid') !== String(pid)) return;   // l'écran a changé entre-temps
