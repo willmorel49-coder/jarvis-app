@@ -162,6 +162,28 @@ def nombre(v):
         return 0.0
 
 
+# Pont code-barres/CIP + fusions manuelles écrits par generate_etab_prices.py (à lancer AVANT) :
+# un article fusionné (« RP » = remplacé par, ou même code-barres) se range sous le code gardé,
+# sinon le comptoir montre encore deux lignes, l'ancienne à 0 stock.
+PONT_JSON = os.path.join(ROOT, 'STATS', 'pont-codes.json')
+try:
+    ALIAS = json.load(open(PONT_JSON, encoding='utf-8'))['alias']
+except (OSError, ValueError, KeyError):
+    ALIAS = {}
+    print('⚠️ %s absent : lancer generate_etab_prices.py avant — catalogue sans pont' % PONT_JSON)
+# Libellé de l'article gardé (fusions-codes.csv) : quand seul l'ancien article figure au catalogue
+# de juin (le remplaçant est né après), sa ligne repliée ne doit pas s'appeler « … - RP nnnnnnn ».
+LIBELLES, RP_RE = {}, re.compile(r'\s*-?\s*\bRP\s*\d{7}\b')
+try:
+    import csv
+    for _r in csv.DictReader(open(os.path.join(ROOT, 'fusions-codes.csv'), encoding='utf-8'), delimiter=';'):
+        _g = _r['garde_code_barres'] or _r['garde_cip13']
+        if _r['libelle']:
+            LIBELLES[ALIAS.get(_g, _g)] = _r['libelle']
+except OSError:
+    pass
+
+
 def lire_catalogue():
     ws = openpyxl.load_workbook(XLSX, read_only=True, data_only=True).active
     hh = [c.value for c in next(ws.iter_rows(min_row=1, max_row=1))]
@@ -170,17 +192,22 @@ def lire_catalogue():
             'artnature', 'afmcode', 'ppht', 'stockdispo', 'artclasse')}
     out = {}
     for r in ws.iter_rows(min_row=2, values_only=True):
-        cip = str(r[col['artcodebarre']] or '').strip()
-        if not (cip.isdigit() and len(cip) >= 12):
+        brut = str(r[col['artcodebarre']] or '').strip()
+        if not (brut.isdigit() and len(brut) >= 12):
             continue
+        cip = ALIAS.get(brut, brut)
         d = txt(r[col['artdesignation']])
         if not d:
             continue
+        if cip != brut:  # ligne repliée : le nom de l'article gardé
+            d = LIBELLES.get(cip) or RP_RE.sub('', d).strip()
         # Un CIP peut revenir sur deux lignes : on garde celle qui a du stock.
+        # Fusion : la ligne de l'article GARDÉ (son propre code) prime sur celle d'un article replié.
         stock = int(nombre(r[col['stockdispo']]))
-        if cip in out and out[cip]['s'] >= stock:
+        if cip in out and (out[cip]['own'] and cip != brut or out[cip]['own'] == (cip == brut) and out[cip]['s'] >= stock):
             continue
         out[cip] = {
+            'own': cip == brut,
             'c': cip,
             'd': d,
             'labo': txt(r[col['artcollection']]),

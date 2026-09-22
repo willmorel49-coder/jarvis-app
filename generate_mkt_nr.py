@@ -59,6 +59,8 @@ except (OSError, ValueError, KeyError):
 def canon(code):
     return ALIAS.get(code, code)
 
+RP_RE = re.compile(r'\bRP\s*\d{7}\b')
+
 
 def num(v):
     try:
@@ -122,7 +124,8 @@ def main():
             p['ca'] += num(r[ix['CA_NET_HT']])
             p['vol'] += int(num(r[ix['QTE_TOTALE']]))
             nm = r[ix['PLVDESIGNATION']]
-            if nm and not p['d']:
+            # fusions : l'article gardé donne son nom, jamais « … RP nnnnnnn » (remplacé par)
+            if nm and (not p['d'] or (RP_RE.search(p['d']) and not RP_RE.search(str(nm)))):
                 p['d'] = str(nm).strip()
             lb = r[ix['ARTCOLLECTION']]
             if lb and not p['lab']:

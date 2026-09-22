@@ -15,7 +15,7 @@ code-barres, souvent celui du FABRICANT (3700…, 4028…) — le même produit 
 (Versol 1000 mL : 5 315 + 1 853). Pont sûr = une ligne d'article qui porte les deux codes ;
 voir canon() plus bas.
 """
-import openpyxl, glob, os, json, re
+import openpyxl, glob, os, json, re, csv
 
 SRC = '/Users/williammorel/JARVIS/PRIX ET STOCKS ETABLISSEMENTS'
 OUT = 'crm/v2/etab-prices-data.js'
@@ -90,6 +90,44 @@ def lire_pont():
 def canon(code):
     return alias.get(code, code)
 
+# Fusions MANUELLES (accord de Will, 22/09/2026) : fusions-codes.csv, fabriqué par
+# ~/.claude/outils/doubles-codes-fusions.py depuis les listes A (même code-barres, plusieurs
+# articles) et B1 (article « RP nnnnnnn » = remplacé par l'article nnnnnnn du même labo).
+# Rien n'y est déduit d'un nom : chaque ligne vient d'un code-barres partagé ou d'un renvoi
+# explicite de l'extraction. Le code gardé suit la même règle que le pont (code-barres,
+# sauf si le catalogue ne connaît que le CIP) ; les fusions sont pliées dans `alias`,
+# donc écrites dans le pont lu par generate_mkt_nr.py et generate_establishments.py.
+FUSIONS_CSV = 'fusions-codes.csv'
+fus_label = {}  # code gardé -> libellé de l'article gardé (jamais celui qui porte « RP »)
+def cle(cip, bc):
+    cands = [c for c in (bc, cip) if c]
+    for c in cands:
+        k = alias.get(c, c)
+        if k in connus:
+            return k
+    return alias.get(cands[0], cands[0])
+def lire_fusions():
+    if not os.path.exists(FUSIONS_CSV):
+        print('  fusions manuelles : aucune (%s absent)' % FUSIONS_CSV)
+        return
+    n = 0
+    with open(FUSIONS_CSV, encoding='utf-8') as fh:
+        for r in csv.DictReader(fh, delimiter=';'):
+            tgt = cle(r['garde_cip13'], r['garde_code_barres'])
+            for c in (r['ancien_cip13'], r['ancien_code_barres'], r['garde_cip13'], r['garde_code_barres']):
+                if c and c != tgt:
+                    alias[c] = tgt
+            if r['libelle']:
+                fus_label[tgt] = r['libelle']
+            n += 1
+    # pas de chaîne : canon() ne fait qu'un saut
+    for k, v in list(alias.items()):
+        hop = 0
+        while v in alias and alias[v] != v and hop < 10:
+            v = alias[v]; hop += 1
+        alias[k] = v
+    print('  fusions manuelles : %d lignes, %d codes gardés' % (n, len(fus_label)))
+
 # Le pont est ÉCRIT sur le disque (hors dépôt : STATS/ est ignoré) pour que les générateurs
 # qui lisent les VENTES par site (generate_mkt_nr.py, generate_establishments.py) rangent
 # chaque vente sous le même code que le stock. Sans lui, Vismed 0,18 % unidoses (66 boîtes
@@ -109,6 +147,7 @@ tarif_date = ''
 etabs = []
 
 lire_pont()
+lire_fusions()
 ecrire_pont()
 site_files = {}  # site -> extractions « stock <SITE> <jjmmaaaa>.xlsx »
 for fn in sorted(glob.glob(os.path.join(SRC, '*.xlsx'))):
@@ -138,7 +177,8 @@ for fn in sorted(glob.glob(os.path.join(SRC, '*.xlsx'))):
         # on garde même si ppht=0 (stock utile) mais on ignore les lignes vides
         if ppht <= 0 and stock == 0:
             continue
-        d[cip] = [ppht, stock]
+        old = d.get(cip)  # deux articles fusionnés (canon) dans le même fichier : stocks additionnés
+        d[cip] = [ppht if ppht > 0 else (old[0] if old else 0.0), stock + (old[1] if old else 0)]
         if di is not None and cip not in labels and r[di]:
             labels[cip] = str(r[di]).strip()
         if ai is not None and r[ai] and str(r[ai]).strip() != 'REMBSS' and cip.isdigit() and len(cip) <= 14:
@@ -164,6 +204,7 @@ if stock_files:
     cols = {'SOP': 'stocklivrablesop', 'MSP': 'stockmsp', 'HP': 'stockhp',
             'CPR': 'stockcpr', 'OPS': 'stockops'}
     n = 0
+    lu5 = {}  # (site, code) -> [ppht, stock] : deux articles fusionnés dans le fichier s'additionnent
     for k in range(1, ws.nrows):
         r = ws.row_values(k)
         raw = str(r[ix['artcode']]).strip()
@@ -178,15 +219,20 @@ if stock_files:
         for etab, col in cols.items():
             try: stock = int(float(r[ix[col]] or 0))
             except (TypeError, ValueError): stock = 0
-            d = prices.setdefault(etab, {})
-            old = d.get(code)
-            p = ppht if ppht > 0 else (old[0] if old else 0.0)
-            if p <= 0 and stock == 0:
-                continue
-            d[code] = [p, stock]
+            e = lu5.setdefault((etab, code), [0.0, 0])
+            if ppht > 0 and e[0] <= 0:
+                e[0] = ppht
+            e[1] += stock
         if code not in labels and r[ix['artdesignation']]:
             labels[code] = str(r[ix['artdesignation']]).strip()
         n += 1
+    for (etab, code), (ppht, stock) in lu5.items():
+        d = prices.setdefault(etab, {})
+        old = d.get(code)
+        p = ppht if ppht > 0 else (old[0] if old else 0.0)
+        if p <= 0 and stock == 0:
+            continue
+        d[code] = [p, stock]
     for e in etabs:
         e['n'] = len(prices.get(e['code'], {}))
     a, m_, j = date_of(fn)
@@ -254,6 +300,10 @@ if os.path.exists(NATURE_JSON):
         code = canon(code)
         if afm != 'REMBSS' and code in tenus and code not in nr_info and labels.get(code):
             nr_info[code] = [labels[code], labo]
+for code, lib in fus_label.items():  # le libellé affiché est celui de l'article gardé, pas « … RP nnnnnnn »
+    labels[code] = lib
+    if code in nr_info:
+        nr_info[code][0] = lib
 extra = {}
 if connus:
     extra = {c: v for c, v in nr_info.items() if c not in connus and v[0]}
