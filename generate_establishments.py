@@ -31,6 +31,19 @@ def clean(v):
     return s
 
 
+# Pont code-barres/CIP écrit par generate_etab_prices.py (à lancer AVANT) : le champ `ean`
+# porte le même code que le stock (ETAB_PRICES), sinon une vente rangée sous le CIP ne le retrouve pas.
+PONT_JSON = Path('STATS/pont-codes.json')
+try:
+    ALIAS = json.load(open(PONT_JSON, encoding='utf-8'))['alias']
+except (OSError, ValueError, KeyError):
+    ALIAS = {}
+    print('⚠️ %s absent : lancer generate_etab_prices.py avant — ventes sans pont' % PONT_JSON)
+
+def canon(code):
+    return ALIAS.get(code, code)
+
+
 def parse_establishment(src):
     """Lit un fichier xlsx d'agregation IP et renvoie (products_dict, by_labo, totals)."""
     wb = openpyxl.load_workbook(src, read_only=True, data_only=True)
@@ -52,7 +65,7 @@ def parse_establishment(src):
         total_ca += ca
         total_qte += qte
         products[artcode] = {
-            'ean': clean(g(row, 'ARTCODEBARRE')),
+            'ean': canon(clean(g(row, 'ARTCODEBARRE'))),
             'designation': clean(g(row, 'PLVDESIGNATION')),
             'marque': clean(g(row, 'ARTMARQUE')),
             'nature': clean(g(row, 'ARTNATURE')),
