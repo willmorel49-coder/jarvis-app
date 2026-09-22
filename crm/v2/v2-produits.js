@@ -1104,7 +1104,8 @@
       '</div>' +
       '<select class="pr-select pr-catlabo" aria-label="Laboratoire"' +
         ' onchange="V2.produits.setCatLabo(this.value)">' + opts + '</select>' +
-      actionsHtml('catalogue Intégral arrêté au ' + esc(dateFr(meta.arrete)) +
+      actionsHtml('tarifs au ' + esc(dateFr(meta.arrete)) +
+        (meta.stockArrete ? ' · stock des établissements au ' + esc(dateFr(meta.stockArrete)) : '') +
         ' · prix nets réseau, sinon barème') +
       '</div>' +
       filtresHtml() +
