@@ -214,7 +214,7 @@ test('chemin réel : les vrais fichiers des robots arrivent jusqu\'à la carte',
   const el = { innerHTML: '', getAttribute: (k) => (k === 'data-pid' ? '2000016' : null) };
   // Depuis le 22/09/2026 la ligne de résumé est dans #brief-off et le contenu dans la fenêtre #bo-ov (sur <body>).
   const rien = () => {};
-  const ov = { id: '', innerHTML: '', firstChild: null, addEventListener: rien, classList: { add: rien, remove: rien, contains: () => false }, querySelector: () => null };
+  const ov = { id: '', innerHTML: '', firstChild: null, addEventListener: rien, getAttribute: () => null, setAttribute: rien, classList: { add: rien, remove: rien, contains: () => false }, querySelector: () => null };
   const demandes = [];
   const sb = charger({
     fetch: (url) => {
