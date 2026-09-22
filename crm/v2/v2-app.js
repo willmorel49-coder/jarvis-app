@@ -1004,135 +1004,45 @@
       '.v2-home-x .v2-search{height:62px;border-radius:16px}',
       '.v2-home-x .v2-search input{font-size:16px}',
       '.v2-home-x .v2-recent{justify-content:center}',
-      '.v2-home-x .v2-lch-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-top:10px}',
-      '@media(max-width:640px){.v2-home-x .v2-lch-grid{grid-template-columns:1fr;gap:12px}.v2-home-x .v2-search kbd{display:none}}',
-      '.v2-home-x .v2-lch-card{position:relative;display:flex;flex-direction:column;gap:42px;min-height:150px;padding:24px 22px;background:linear-gradient(180deg,var(--card),var(--card-2));border:1px solid var(--line);border-radius:var(--r-lg,20px);text-decoration:none;color:var(--ip-ink);cursor:pointer;overflow:hidden;transition:transform .28s var(--mo-ease-soft),box-shadow .28s var(--mo-ease-soft),border-color .28s var(--mo-ease-soft)}',
-      '.v2-home-x .v2-lch-card::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .3s var(--mo-ease-soft);background:radial-gradient(260px circle at var(--mx,50%) var(--my,0%),color-mix(in srgb,var(--accent) 14%,transparent),transparent 62%)}',
-      '.v2-home-x .v2-lch-card:hover{transform:translateY(-4px);box-shadow:var(--sh-2,0 18px 42px rgba(16,24,43,.10));border-color:color-mix(in srgb,var(--accent) 30%,var(--line))}',
-      '.v2-home-x .v2-lch-card:hover::after{opacity:1}',
-      '.v2-home-x .v2-lch-ico{width:46px;height:46px;border-radius:13px;display:flex;align-items:center;justify-content:center;background:linear-gradient(150deg,color-mix(in srgb,var(--accent) 16%,var(--card)),color-mix(in srgb,var(--accent) 6%,var(--card)));color:var(--accent);box-shadow:0 1px 0 rgba(255,255,255,.7) inset}',
-      '.v2-home-x .v2-lch-arrow{position:absolute;top:24px;right:22px;color:var(--muted-2,#98a1b4);font-size:19px;font-weight:700;line-height:1;transition:transform .28s var(--mo-ease-soft),color .28s}',
-      '.v2-home-x .v2-lch-card:hover .v2-lch-arrow{transform:translateX(3px);color:var(--accent)}',
-      '.v2-home-x .v2-lch-meta{display:flex;flex-direction:column;gap:4px}',
-      '.v2-home-x .v2-lch-t{font-size:18px;font-weight:700;letter-spacing:-.01em}',
-      '.v2-home-x .v2-lch-d{font-size:13.5px;color:var(--muted);line-height:1.35}',
-      // ── Bandeau « nouveauté en essai » ────────────────────────────────
-      // La bannière Copilote avait été retirée le 12/08 : c'était un chantier,
-      // il n'avait pas à occuper la tête de l'accueil. Celle-ci est d'une autre
-      // nature — l'outil est complet et en service, il est en essai, et Will a
-      // demandé le 17/08 qu'il soit mis en avant à ce titre.
-      // Le dégradé porte une source de lumière en haut à gauche : un aplat bleu
-      // serait plus mort qu'utile.
-      '.v2-home-x .v2-lch-beta{position:relative;display:flex;flex-wrap:wrap;align-items:center;',
-      '  gap:16px;margin-top:10px;padding:20px 22px;border-radius:var(--r-lg,20px);',
-      '  border:1px solid rgba(255,255,255,.16);cursor:pointer;overflow:hidden;color:#fff;',
-      '  background:radial-gradient(760px circle at 12% -20%,rgba(255,255,255,.30),transparent 58%),',
-      '  linear-gradient(158deg,#0B5BEE,#0031A0);',
-      '  box-shadow:0 14px 34px -18px rgba(11,58,160,.75);',
-      '  transition:transform .28s var(--mo-ease-soft),box-shadow .28s var(--mo-ease-soft)}',
-      '.v2-home-x .v2-lch-beta:hover{transform:translateY(-3px);',
-      '  box-shadow:0 20px 44px -18px rgba(11,58,160,.85)}',
-      '.v2-home-x .v2-lch-beta .ic{flex:0 0 auto;width:46px;height:46px;border-radius:13px;',
-      '  display:flex;align-items:center;justify-content:center;color:#fff;',
-      '  background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.26)}',
-      '.v2-home-x .v2-lch-beta .tx{flex:1 1 220px;min-width:0}',
-      '.v2-home-x .v2-lch-beta .chip{display:inline-block;margin:0 0 7px;padding:3px 9px;',
-      '  border-radius:20px;font-size:11px;font-weight:800;letter-spacing:.09em;',
-      '  text-transform:uppercase;background:rgba(255,255,255,.20);',
-      '  border:1px solid rgba(255,255,255,.42)}',
-      '.v2-home-x .v2-lch-beta .t{display:block;font-size:18px;font-weight:800;letter-spacing:-.01em}',
-      '.v2-home-x .v2-lch-beta .d{display:block;font-size:13.5px;line-height:1.45;margin-top:4px;',
-      '  color:rgba(255,255,255,.86)}',
-      '.v2-home-x .v2-lch-beta .go{flex:0 0 auto;font-size:19px;font-weight:700;line-height:1;',
-      '  color:rgba(255,255,255,.9)}',
-      '@media(max-width:640px){.v2-home-x .v2-lch-beta{padding:18px}',
-      '  .v2-home-x .v2-lch-beta .go{display:none}}',
-      // ── « Bientôt · bêta test » : les deux apps sœurs ────────────────
-      // Will, 18/08/2026 : « mettre sur l'app JARVIS l'app JARVIS Academy et
-      // JARVIS Design en nouveautés bientôt (bêta test) ».
-      // ⚠️ Volontairement SOUS le lanceur et non au-dessus : ce sont des outils
-      // qui n'existent pas encore pour l'équipe. Un module qu'on annonce ne
-      // prend pas la place d'un module qui sert tous les jours.
-      '.v2-home-x .v2-lch-soon{margin-top:22px}',
-      '.v2-home-x .v2-lch-soon-h{display:flex;align-items:center;gap:10px;margin-bottom:10px}',
-      '.v2-home-x .v2-lch-soon-h .lbl{font-size:12.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--ip-ink-3,#6B7280)}',
-      '.v2-home-x .v2-lch-soon-h .ln{flex:1;height:1px;background:var(--line,#E4E8F0)}',
-      '.v2-home-x .v2-lch-soon-g{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}',
-      '.v2-home-x .v2-lch-soon-c{position:relative;display:flex;gap:13px;padding:16px 17px;border-radius:var(--r-card,16px);text-decoration:none;color:inherit;border:1px dashed color-mix(in srgb,var(--ip-blue,#0050E6) 30%,var(--line,#E4E8F0));background:linear-gradient(180deg,var(--card,#fff),var(--card-2,#F7F9FC));box-shadow:var(--sh-1)}',
-      // La lumière vient d'en haut : un filet clair sur l'arête, jamais de flou.
-      '.v2-home-x .v2-lch-soon-c::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;box-shadow:0 1px 0 rgba(255,255,255,.7) inset}',
-      '@media(hover:hover){.v2-home-x .v2-lch-soon-c{transition:transform .24s var(--mo-ease-soft),box-shadow .24s var(--mo-ease-soft),border-color .24s var(--mo-ease-soft)}',
-      '  .v2-home-x .v2-lch-soon-c:hover{transform:translateY(-2px);box-shadow:var(--sh-2);border-color:color-mix(in srgb,var(--ip-blue,#0050E6) 55%,transparent)}}',
-      '.v2-home-x .v2-lch-soon-c .ic{flex:none;width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--ip-blue,#0050E6) 10%,#fff);color:var(--ip-blue,#0050E6);border:1px solid color-mix(in srgb,var(--ip-blue,#0050E6) 18%,transparent)}',
-      '.v2-home-x .v2-lch-soon-c .chip{display:inline-block;margin-bottom:5px;padding:3px 9px;border-radius:99px;font-size:11.5px;font-weight:800;letter-spacing:.04em;background:color-mix(in srgb,var(--ip-blue,#0050E6) 12%,#fff);color:var(--ip-blue,#0050E6)}',
-      '.v2-home-x .v2-lch-soon-c .t{display:block;font-size:16px;font-weight:800;letter-spacing:-.01em}',
-      '.v2-home-x .v2-lch-soon-c .d{display:block;margin-top:3px;font-size:13.5px;line-height:1.45;color:var(--ip-ink-2,#4B5563)}',
-      // ⚠️ 13 px : cette ligne dit COMMENT obtenir l'accès. Le reste de l'app
-      // descend à 11-12,5 px sur des étiquettes, mais une information utile ne
-      // se met pas en petit.
-      '.v2-home-x .v2-lch-soon-n{margin-top:10px;font-size:13px;line-height:1.5;color:var(--ip-ink-3,#6B7280)}',
-      '@media(max-width:640px){.v2-home-x .v2-lch-soon-g{grid-template-columns:1fr}}',
-      '@media(prefers-reduced-motion:reduce){.v2-home-x .v2-lch-soon-c{transition:none}}',
-      '@media(prefers-reduced-motion:reduce){.v2-home-x .v2-lch-beta{transition:none}',
-      '  .v2-home-x .v2-lch-beta:hover{transform:none}}',
-      '.v2-home-x .v2-lch-more{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:24px;padding-top:18px;border-top:1px solid var(--line)}',
-      '.v2-home-x .v2-lch-more .lbl{font-size:12.5px;color:var(--muted);margin-right:4px;font-weight:600}',
-      '.v2-home-x .v2-lch-mini{display:inline-flex;align-items:center;gap:7px;padding:7px 13px;border:1px solid var(--line);border-radius:var(--r-pill);background:var(--card);color:var(--ip-ink);font-size:13px;font-weight:500;text-decoration:none;cursor:pointer;transition:border-color .2s,transform .2s,box-shadow .2s}',
-      '.v2-home-x .v2-lch-mini svg{color:var(--muted-2,#98a1b4);width:15px;height:15px;flex-shrink:0}',
-      '.v2-home-x .v2-lch-mini:hover{border-color:color-mix(in srgb,var(--ip-blue) 40%,var(--line));transform:translateY(-1px);box-shadow:var(--sh-1)}',
-      '.v2-home-x .v2-lch-card,.v2-home-x .v2-lch-more{animation:v2homeIn .5s var(--mo-ease-in) both}',
-      '.v2-home-x .v2-lch-card:nth-of-type(1){animation-delay:.10s}.v2-home-x .v2-lch-card:nth-of-type(2){animation-delay:.14s}.v2-home-x .v2-lch-card:nth-of-type(3){animation-delay:.18s}.v2-home-x .v2-lch-card:nth-of-type(4){animation-delay:.22s}.v2-home-x .v2-lch-card:nth-of-type(5){animation-delay:.26s}.v2-home-x .v2-lch-card:nth-of-type(6){animation-delay:.30s}.v2-home-x .v2-lch-more{animation-delay:.34s}',
-      // Nombre impair de grandes entrées : la dernière resterait seule sur une
-      // demi-ligne. Elle prend les deux colonnes. Règle générale, pas un
-      // rattrapage pour 5 : elle vaut pour 3, 5, 7… sans rien à maintenir.
-      '.v2-home-x .v2-lch-card:last-child:nth-child(odd){grid-column:1/-1;min-height:120px;gap:28px}',
-      '@media(max-width:640px){.v2-home-x .v2-lch-card:last-child:nth-child(odd){min-height:150px;gap:42px}}',
-      '@media(prefers-reduced-motion:reduce){.v2-home-x .v2-lch-card,.v2-home-x .v2-lch-more{animation:none}.v2-home-x .v2-lch-card,.v2-home-x .v2-lch-arrow{transition:none}.v2-home-x .v2-lch-card::after{display:none}}',
-      // ─── Carte vedette « Copilote » (pleine largeur, en tête de l\'accueil)
-      '.v2-home-x .v2-lch-feat{position:relative;display:flex;align-items:center;gap:18px;padding:22px 24px;margin-bottom:16px;border-radius:var(--r-lg,20px);text-decoration:none;color:#fff;cursor:pointer;overflow:hidden;background:linear-gradient(120deg,var(--ip-blue),#0034A0);box-shadow:0 14px 34px color-mix(in srgb,var(--ip-blue) 30%,transparent);transition:transform .28s var(--mo-ease-soft),box-shadow .28s var(--mo-ease-soft);animation:v2homeIn .5s var(--mo-ease-in) both}',
-      '.v2-home-x .v2-lch-feat::after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(320px circle at var(--mx,80%) var(--my,0%),rgba(255,255,255,.18),transparent 60%)}',
-      '.v2-home-x .v2-lch-feat:hover{transform:translateY(-3px);box-shadow:0 20px 46px color-mix(in srgb,var(--ip-blue) 38%,transparent)}',
-      '.v2-home-x .v2-lch-feat-ic{flex:none;width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.16);color:#fff}',
-      '.v2-home-x .v2-lch-feat-main{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0;position:relative}',
-      '.v2-home-x .v2-lch-feat-tag{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.82)}',
-      '.v2-home-x .v2-lch-feat-t{font-size:19px;font-weight:800;letter-spacing:-.01em}',
-      '.v2-home-x .v2-lch-feat-d{font-size:13.5px;color:rgba(255,255,255,.86);line-height:1.4}',
-      '.v2-home-x .v2-lch-feat .v2-lch-arrow{position:static;color:rgba(255,255,255,.9);font-size:22px;flex:none}',
-      '@media(prefers-reduced-motion:reduce){.v2-home-x .v2-lch-feat{animation:none;transition:none}}',
-      // ─── Accueil « Le lanceur retrouvé » (23/09/2026, r1, choix Will) ───
-      // Après p4 « Le tableau vivant » (en ligne 24 h), Will : « je préférais
-      // l'ancien et j'aime bien le 4 [q4, jardin de lumière] mais il faut vraiment
-      // que ce soit nuancé » ; sa gêne : la structure en trois sections. Donc la
-      // STRUCTURE de l'ancien Launcher (bandeau, grandes cartes, autres outils),
-      // habillée : la lumière vient d'en haut à gauche (reflet linéaire, jamais de
-      // flou), l'icône vit dans un disque bleu dégradé, un seul accent, arrivée en
-      // cascade avec un léger ressort — une fois par session. Les règles du
-      // Launcher ci-dessus restent la base ; celles-ci les affinent (même
-      // spécificité : l'ordre dans la feuille tranche).
-      '.v2-home-x .v2-lch-grid{gap:14px}',
-      '.v2-home-x .v2-lch-card{gap:36px;padding:22px;box-shadow:var(--sh-1);transition:transform .3s cubic-bezier(.3,.7,.4,1.2),box-shadow .3s var(--mo-ease-soft),border-color .3s var(--mo-ease-soft)}',
-      '.v2-home-x .v2-lch-card::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(135deg,rgba(255,255,255,.85),rgba(255,255,255,0) 45%)}',
-      '.v2-home-x .v2-lch-card::after{background:radial-gradient(260px circle at var(--mx,50%) var(--my,0%),color-mix(in srgb,var(--ip-blue) 12%,transparent),transparent 62%)}',
-      '.v2-home-x .v2-lch-card:hover{border-color:color-mix(in srgb,var(--ip-blue) 28%,var(--line))}',
-      '.v2-home-x .v2-lch-card:active{transform:scale(.98)}',
-      '.v2-home-x .v2-lch-ico{position:relative;border-radius:50%;color:#fff;background:radial-gradient(circle at 32% 26%,#9BC0FF 0%,var(--ip-blue) 55%,var(--ip-blue-d,#0034A0) 100%);box-shadow:0 6px 14px -6px color-mix(in srgb,var(--ip-blue) 55%,transparent)}',
-      '.v2-home-x .v2-lch-meta{position:relative}',
-      '.v2-home-x .v2-lch-card:hover .v2-lch-arrow{color:var(--ip-blue)}',
-      '.v2-home-x .v2-lch-card:last-child:nth-child(odd){gap:26px}',
-      '@media(max-width:640px){.v2-home-x .v2-lch-card:last-child:nth-child(odd){gap:36px}}',
-      // pastilles « Autres outils » : zone tactile 44 px, icône bleue, même matière que les cartes
-      '.v2-home-x .v2-lch-more .lbl{font-size:13px}',
-      '.v2-home-x .v2-lch-mini{min-height:44px;padding:9px 14px;font-weight:600;background:linear-gradient(180deg,var(--card),var(--card-2));box-shadow:var(--sh-1)}',
-      '.v2-home-x .v2-lch-mini svg{color:var(--ip-blue)}',
-      // puce du bandeau : 11 px → 13 px (rien d'utile en dessous de 13 px)
-      '.v2-home-x .v2-lch-beta .chip{font-size:13px;letter-spacing:.06em}',
-      '.v2-home-x .v2-lch-mini:hover{transform:translateY(-2px);box-shadow:var(--sh-2)}',
-      // cascade : l'ancienne (nth-of-type, rejouée à chaque rendu) est remplacée par
-      // une arrivée posée UNE fois par session (js-anim / v2-home-still, comme p4)
-      '.v2-home-x .v2-lch-card,.v2-home-x .v2-lch-more,.v2-home-x .v2-lch-beta{animation:none}',
+      // ── « Les rayons » (23/09/2026, s5, choix Will) ─────────────────────
+      // Quatre rayons pleine largeur : scène en dégradé bleu (lumière radiale en
+      // haut à gauche, dessin SVG inline) + tuiles. Un seul bleu, reflet blanc
+      // haut-gauche sur le rayon, aucun flou. Sous-outils cliquables : le texte
+      // reste petit (13 px), la ZONE touchable fait 44 px (marge négative).
+      '.v2-home-x .v2-ray-lbl{font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ip-ink-3,#6B7280);margin:22px 4px 12px}',
+      '.v2-home-x .v2-ray{position:relative;overflow:hidden;background:var(--card,#fff);border:1px solid var(--line);border-radius:22px;box-shadow:var(--sh-1);padding:16px;margin-bottom:14px}',
+      '.v2-home-x .v2-ray::before{content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;background:linear-gradient(135deg,rgba(255,255,255,.7) 0%,rgba(255,255,255,0) 34%)}',
+      '.v2-home-x .v2-ray-corps{position:relative;display:flex;flex-direction:column;gap:14px}',
+      '.v2-home-x .v2-ray-scene{position:relative;overflow:hidden;border-radius:16px;min-height:120px;display:flex;align-items:flex-end;padding:14px 16px;flex:none;color:#fff;background:linear-gradient(155deg,#0034A0 0%,var(--ip-blue,#0050E6) 62%,#4C82F5 100%)}',
+      '.v2-home-x .v2-ray-scene::before{content:"";position:absolute;top:-30%;left:-15%;width:70%;height:110%;border-radius:50%;pointer-events:none;background:radial-gradient(circle,rgba(255,255,255,.30) 0%,rgba(255,255,255,0) 65%)}',
+      '.v2-home-x .v2-ray-scene svg{position:absolute;right:10px;top:8px;width:112px;height:96px;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}',
+      '.v2-home-x .v2-ray-scene-nom{position:relative;font-size:17px;font-weight:800;letter-spacing:-.01em}',
+      '.v2-home-x .v2-ray-tuiles{display:grid;grid-template-columns:1fr;gap:10px}',
+      '.v2-home-x .v2-ray-tuile{display:flex;align-items:center;gap:12px;background:color-mix(in srgb,var(--ip-blue,#0050E6) 6%,var(--card,#fff));border-radius:14px;padding:12px 14px;min-height:64px;cursor:pointer;color:var(--ip-ink);transition:background .25s,transform .25s cubic-bezier(.3,.7,.4,1.2)}',
+      '.v2-home-x .v2-ray-tuile:hover{background:color-mix(in srgb,var(--ip-blue,#0050E6) 12%,var(--card,#fff));transform:translateY(-2px)}',
+      '.v2-home-x .v2-ray-tuile:active{transform:scale(.98)}',
+      '.v2-home-x .v2-ray-tuile:focus-visible{outline:2px solid var(--ip-blue,#0050E6);outline-offset:2px}',
+      '.v2-home-x .v2-ray-disque{width:38px;height:38px;border-radius:11px;flex:none;display:flex;align-items:center;justify-content:center;color:#fff;background:radial-gradient(circle at 32% 26%,#9BC0FF 0%,var(--ip-blue,#0050E6) 55%,#0034A0 100%)}',
+      '.v2-home-x .v2-ray-txt{min-width:0;display:flex;flex-direction:column}',
+      '.v2-home-x .v2-ray-nom{font-size:15px;font-weight:800;letter-spacing:-.005em}',
+      '.v2-home-x .v2-ray-sous{font-size:13px;color:var(--ip-ink-3,#5B6273);margin-top:2px;line-height:1.35}',
+      '.v2-home-x .v2-ray-sous-l{display:inline-block;padding:13px 8px;margin:-13px -8px;color:inherit;text-decoration:none;cursor:pointer;border-bottom:1px solid transparent;transition:color .2s,border-color .2s}',
+      '.v2-home-x .v2-ray-sous-l:hover{color:var(--ip-blue,#0050E6);border-bottom-color:currentColor}',
+      '@media(min-width:860px){.v2-home-x .v2-ray{padding:20px}.v2-home-x .v2-ray-corps{flex-direction:row;align-items:stretch;gap:20px}.v2-home-x .v2-ray-scene{width:220px;min-height:172px}.v2-home-x .v2-ray-tuiles{flex:1;grid-template-columns:1fr 1fr;align-content:start}}',
+      // « En cours de développement » : en retrait (filet pointillé, gris), cliquable.
+      '.v2-home-x .v2-enc-chip{display:inline-flex;align-items:center;font-size:13px;font-weight:800;letter-spacing:.02em;text-transform:uppercase;color:var(--ip-ink-3,#5B6273);background:color-mix(in srgb,var(--ip-blue,#0050E6) 6%,var(--card,#fff));border-radius:999px;padding:6px 13px;margin:26px 0 12px 4px}',
+      '.v2-home-x .v2-enc{position:relative;background:var(--card,#fff);border:1.5px dashed rgba(16,19,28,.16);border-radius:20px;padding:16px 18px;margin-bottom:16px}',
+      '.v2-home-x .v2-enc-liens{display:flex;flex-wrap:wrap;gap:10px}',
+      '.v2-home-x .v2-enc-l{min-height:44px;display:inline-flex;align-items:center;gap:8px;background:color-mix(in srgb,var(--ip-blue,#0050E6) 6%,var(--card,#fff));border-radius:12px;padding:10px 14px;font-size:14px;font-weight:700;color:var(--ip-ink-3,#5B6273);text-decoration:none;cursor:pointer;transition:background .25s,transform .25s cubic-bezier(.3,.7,.4,1.2)}',
+      '.v2-home-x .v2-enc-l:hover{background:color-mix(in srgb,var(--ip-blue,#0050E6) 12%,var(--card,#fff));transform:translateY(-3px)}',
+      '.v2-home-x .v2-enc-l svg{color:inherit}.v2-home-x .v2-enc-l .fl{font-weight:800}',
+      // 13 px : cette ligne dit COMMENT obtenir l'accès, une information utile ne se met pas en petit.
+      '.v2-home-x .v2-enc-n{margin:12px 0 0;font-size:13px;line-height:1.5;color:var(--ip-ink-3,#6B7280)}',
+      '@media(prefers-reduced-motion:reduce){.v2-home-x .v2-ray-tuile,.v2-home-x .v2-enc-l,.v2-home-x .v2-ray-sous-l{transition:none}.v2-home-x .v2-ray-tuile:hover,.v2-home-x .v2-enc-l:hover{transform:none}}',
+      // cascade : arrivée posée UNE fois par session (js-anim / v2-home-still)
       '.v2-home-x.js-anim .lch-anim{opacity:0;transform:translateY(14px) scale(.97);animation:lchArriver 560ms cubic-bezier(.3,.7,.4,1.2) forwards;animation-delay:calc(var(--i) * 55ms)}',
       '@keyframes lchArriver{to{opacity:1;transform:none}}',
-      '@media(prefers-reduced-motion:reduce){.v2-home-x.js-anim .lch-anim{animation:none;opacity:1;transform:none}.v2-home-x .v2-lch-card,.v2-home-x .v2-lch-mini{transition:none}}'
+      '@media(prefers-reduced-motion:reduce){.v2-home-x.js-anim .lch-anim{animation:none;opacity:1;transform:none}}'
     ].join('');
     document.head.appendChild(st);
   }
@@ -1374,76 +1284,84 @@
         // identifiée avec le logo ».
         if (pmap.offilog) { pmap.offilog.t = 'Offilog'; }
 
-        // ── « Le lanceur retrouvé » (23/09/2026, r1, choix Will) ──────────
-        // La structure de l'accueil d'avant le 22/09 (bandeau Rendez-vous en
-        // essai, grandes cartes, « Autres outils » en pastilles), les outils les
-        // plus utilisés d'abord — mot pour mot : « le 1 mais les features les
-        // plus utilisées en priorité ». L'ordre suit le classement qu'il a retenu
-        // le 22/09 : Officines · Produits · Pilotage · La carte, puis Marketing ·
-        // Infos du matin · Appro. La carte monte donc dans les grandes cartes ;
-        // à sept, la dernière prend les deux colonnes (règle du Launcher pour un
-        // nombre impair). Mêmes noms, mêmes icônes : personne ne cherche ses outils.
-        var ESSENTIAL = ['pharma', 'produits', 'pilotage', 'carte', 'marketing', 'infos', 'appro'];
-        var SUB = {
-          pharma: 'Fiches, visites & suivi terrain',
-          produits: 'Client, groupement ou prospect — la liste à proposer',
-          pilotage: 'CA, marge, tranches de prix & marché France',
-          carte: 'Toutes les officines de France : clients, prospects, tournée',
-          marketing: 'Supports & sélections à pousser',
-          infos: 'Les 5 sujets du jour, le radar & les opportunités',
-          appro: 'Ce qu\'il faut acheter — et la courbe du marché à 3, 6 et 12 mois'
-        };
-        var ICOK = { pharma: 'pharma', produits: 'cat', pilotage: 'pilo', carte: 'grid', marketing: 'fiche', infos: 'spark', appro: 'spark' };
-        // catalogue grossiste médicaments replié · fiches retiré · audit fusionné dans la fiche pharmacie
-        var used = { catalogue: 1, fiches: 1, audit: 1 };
+        // ── « Les rayons » (23/09/2026, s5, choix Will) ────────────────────
+        // Retour de Will sur r1 : « plus visuel, qu'on capte vraiment dans quelle
+        // feature on va aller ; rassembler des features ; celles qui ne sont pas
+        // finies en cours de développement — Rendez-vous descend, Groupements et
+        // Remontées montent ». Quatre rayons pleine largeur, chacun avec sa scène
+        // (dégradé bleu + dessin SVG inline) et ses portes en tuiles : le rayon
+        // dit OÙ on est, la tuile dit QUOI ouvrir. Dix portes au lieu de dix-neuf ;
+        // les outils réunis restent atteignables par les sous-outils cliquables
+        // de leur tuile (et par ⌘K). Une tuile ou un sous-outil dont l'écran
+        // n'est pas chargé ne s'affiche pas.
         var lchI = 0;
-        function bigCard(k) {
-          var p = pmap[k]; if (!p) return ''; used[k] = 1;
-          return '<a class="v2-lch-card lch-anim" style="--i:' + (lchI++) + '" onmousemove="V2.homeSpot(event,this)" onclick="V2.go(\'' + k + '\')">' +
-            '<span class="v2-lch-ico">' + ICO(ICOK[k] || p.ico, 24) + '</span>' +
-            '<span class="v2-lch-arrow">→</span>' +
-            '<span class="v2-lch-meta"><span class="v2-lch-t">' + esc(p.t) + '</span><span class="v2-lch-d">' + (SUB[k] || '') + '</span></span></a>';
+        function goJs(k, param) { return 'V2.go(\'' + k + '\'' + (param ? ',\'' + param + '\'' : '') + ')'; }
+        function sousHtml(list) {
+          return list.filter(function (s) { return !s.k || V2.pages[s.k]; }).map(function (s) {
+            var js = s.js || (s.k ? goJs(s.k, s.param) : '');
+            return js
+              ? '<a class="v2-ray-sous-l" onclick="event.stopPropagation();' + js + '">' + esc(s.t) + '</a>'
+              : '<span>' + esc(s.t) + '</span>';
+          }).join('<span class="sep"> · </span>');
         }
-        // Rendez-vous garde son bandeau « Nouveau · en essai » (17/08/2026) : c'est
-        // le repère actuel de l'équipe pour l'outil en essai.
-        var beta = '';
-        if (pmap.rdv) {
-          used.rdv = 1;
-          beta = '<a class="v2-lch-beta lch-anim" style="--i:' + (lchI++) + '" onclick="V2.go(\'rdv\')">' +
-            '<span class="ic">' + ICO('cal', 24) + '</span>' +
-            '<span class="tx"><span class="chip">Nouveau · en essai</span>' +
-              '<span class="t">Rendez-vous</span>' +
-              '<span class="d">Envoie un lien à une officine, ou un seul mail à 25 en copie ' +
-              'cachée : elles choisissent leur créneau, calé sur la géographie de ta journée. ' +
-              'L’invitation part dans ton agenda.</span></span>' +
-            '<span class="go">→</span></a>';
+        function tuile(k, ico, nom, sous, js) {
+          if (!V2.pages[k]) return '';
+          return '<div class="v2-ray-tuile" role="link" tabindex="0" onclick="' + (js || goJs(k)) + '" onkeydown="if(event.key===\'Enter\')this.click()">' +
+            '<span class="v2-ray-disque">' + ICO(ico, 20) + '</span>' +
+            '<span class="v2-ray-txt"><span class="v2-ray-nom">' + esc(nom) + '</span>' +
+            '<span class="v2-ray-sous">' + sousHtml(sous) + '</span></span></div>';
         }
-        var big = ESSENTIAL.map(bigCard).filter(Boolean).join('');
+        function rayon(nom, scene, tuiles) {
+          var t = tuiles.join(''); if (!t) return '';
+          return '<div class="v2-ray lch-anim" style="--i:' + (lchI++) + '"><div class="v2-ray-corps">' +
+            '<div class="v2-ray-scene"><svg viewBox="0 0 120 100" aria-hidden="true" focusable="false">' + scene + '</svg>' +
+            '<span class="v2-ray-scene-nom">' + nom + '</span></div>' +
+            '<div class="v2-ray-tuiles">' + t + '</div></div></div>';
+        }
+        var W = 'rgba(255,255,255,';
+        var SC_TERRAIN = '<rect x="14" y="34" width="34" height="52" rx="3" fill="' + W + '.22)" stroke="' + W + '.7)"/><line x1="31" y1="48" x2="31" y2="64" stroke="' + W + '.85)"/><line x1="23" y1="56" x2="39" y2="56" stroke="' + W + '.85)"/><circle cx="86" cy="30" r="16" fill="' + W + '.16)" stroke="' + W + '.6)"/><path d="M86 48c-9 12-9 22 0 32 9-10 9-20 0-32z" fill="' + W + '.22)" stroke="' + W + '.7)"/><path d="M52 86c14-6 30-6 44 0" stroke="' + W + '.35)" fill="none"/>';
+        var SC_PRODUITS = '<rect x="16" y="52" width="28" height="26" rx="3" fill="' + W + '.20)" stroke="' + W + '.7)"/><rect x="44" y="40" width="28" height="38" rx="3" fill="' + W + '.26)" stroke="' + W + '.75)"/><rect x="72" y="28" width="28" height="50" rx="3" fill="' + W + '.16)" stroke="' + W + '.6)"/><line x1="16" y1="62" x2="44" y2="62" stroke="' + W + '.4)"/>';
+        var SC_PILOTER = '<line x1="16" y1="20" x2="16" y2="82" stroke="' + W + '.55)"/><line x1="16" y1="82" x2="104" y2="82" stroke="' + W + '.55)"/><polyline points="20,66 40,50 58,58 78,32 100,24" fill="none" stroke="' + W + '.85)"/><rect x="66" y="14" width="30" height="20" rx="4" fill="' + W + '.20)" stroke="' + W + '.7)"/><circle cx="72" cy="20" r="2" fill="' + W + '.85)"/><circle cx="80" cy="20" r="2" fill="' + W + '.85)"/>';
+        var SC_VENDRE = '<path d="M14 44v18h14l24 16V28L28 44H14z" fill="' + W + '.22)" stroke="' + W + '.75)"/><path d="M58 40a16 16 0 0 1 0 26" fill="none" stroke="' + W + '.6)"/><path d="M66 32a26 26 0 0 1 0 42" fill="none" stroke="' + W + '.35)"/><rect x="82" y="26" width="24" height="18" rx="3" fill="' + W + '.18)" stroke="' + W + '.6)"/>';
+
+        var terrain = [
+          tuile('pharma', 'pharma', 'Officines', [{ t: 'Fiches', k: 'pharma' }, { t: 'Visites' }, { t: 'À relancer' }, { t: 'Audit marge', k: 'audit' }]),
+          tuile('carte', 'grid', 'La carte', [{ t: 'Clients' }, { t: 'Prospects' }, { t: 'Tournée', k: 'tournee' }]),
+          // Espace Groupements : listes des groupements + listings produits (renderGroupementsList via pharma?groupements)
+          tuile('pharma', 'list', 'Groupements', [{ t: 'Listes', k: 'pharma', param: 'groupements' }, { t: 'Listings d\'achats', k: 'pharma', param: 'groupements' }, { t: 'Carte des groupements', k: 'carteGrp' }], goJs('pharma', 'groupements'))
+        ];
         // 14/09/2026 — le responsable d'Escale Pharma a l'accès total ET garde son
         // espace escale/v2 (demande de Will). Seul un compte @escalepharma.fr
         // arrive ici : les commerciaux Escale sont renvoyés avant.
         if (/@escalepharma\.fr$/i.test((V2.user && V2.user.email) || '')) {
-          big += '<a class="v2-lch-card lch-anim" style="--i:' + (lchI++) + '" onmousemove="V2.homeSpot(event,this)" onclick="location.href=\'../../escale/v2/index.html\'">' +
-            '<span class="v2-lch-ico">' + ICO('pilo', 24) + '</span>' +
-            '<span class="v2-lch-arrow">→</span>' +
-            '<span class="v2-lch-meta"><span class="v2-lch-t">Espace Escale Pharma</span><span class="v2-lch-d">Le suivi Escale et ses officines clientes</span></span></a>';
+          terrain.push('<div class="v2-ray-tuile" role="link" tabindex="0" onclick="location.href=\'../../escale/v2/index.html\'" onkeydown="if(event.key===\'Enter\')this.click()">' +
+            '<span class="v2-ray-disque">' + ICO('pilo', 20) + '</span>' +
+            '<span class="v2-ray-txt"><span class="v2-ray-nom">Espace Escale Pharma</span>' +
+            '<span class="v2-ray-sous"><span>Le suivi Escale et ses officines clientes</span></span></span></div>');
         }
-        pilHtml = beta + '<div class="v2-lch-grid">' + big + '</div>';
-
-        var rest = P.filter(function (p) { return !used[p.k]; });
-        if (rest.length) {
-          pilHtml += '<div class="v2-lch-more lch-anim" style="--i:' + (lchI++) + '"><span class="lbl">Autres outils</span>' +
-            rest.map(function (p) { return '<a class="v2-lch-mini" onclick="V2.go(\'' + p.k + '\')">' + ICO(p.ico, 15) + esc(p.t) + '</a>'; }).join('') +
-            // Espace Groupements : listes des groupements + listings produits (renderGroupementsList via pharma?groupements)
-            '<a class="v2-lch-mini" onclick="V2.go(\'pharma\',\'groupements\')">' + ICO('list', 15) + 'Groupements</a>' +
-            // Document privé : s'ouvre par une adresse signée valable 1 h, jamais servi
+        pilHtml = '<div class="v2-ray-lbl lch-anim" style="--i:' + (lchI++) + '">Les rayons</div>' +
+          rayon('Le terrain', SC_TERRAIN, terrain) +
+          rayon('Les produits', SC_PRODUITS, [
+            tuile('produits', 'cat', 'Produits', [{ t: 'Catalogue des 7 établissements', k: 'produits' }, { t: 'Fiches PDF', k: 'fiches' }, { t: 'Biosimilaires', k: 'biosimilaires' }, { t: 'Offilog', k: 'offilog' }]),
+            tuile('appro', 'cart', 'Appro Intégral', [{ t: 'Couverture de stock' }, { t: 'Ruptures' }, { t: 'La courbe du marché' }])
+          ]) +
+          rayon('Piloter &amp; informer', SC_PILOTER, [
+            // Réforme 2027 : document privé, adresse signée valable 1 h, jamais servi
             // par le dépôt public. Le fichier porte du CA réseau, il reste dans Supabase.
-            '<a class="v2-lch-mini" onclick="V2.ouvrirDocProtege(\'reforme2027\')">' + ICO('pilo', 15) + 'Réforme 2027</a>' +
-            '</div>';
-        }
+            tuile('pilotage', 'pilo', 'Pilotage', [{ t: 'CA' }, { t: 'Marge' }, { t: 'Objectifs' }, { t: 'Réforme 2027', js: 'V2.ouvrirDocProtege(\'reforme2027\')' }]),
+            tuile('infos', 'spark', 'Infos & veille', [{ t: 'Infos du matin', k: 'infos' }, { t: 'Concurrents', k: 'concurrents' }, { t: 'Actualité du secteur', k: 'concurrents' }]),
+            tuile('remontees', 'plus', 'Remontées', [{ t: 'Le mur d\'idées de l\'équipe' }, { t: 'Votes' }, { t: 'Statuts' }])
+          ]) +
+          rayon('Vendre &amp; convaincre', SC_VENDRE, [
+            tuile('marketing', 'fiche', 'Marketing', [{ t: 'Supports' }, { t: 'Sélections à pousser' }, { t: 'LinkedIn' }]),
+            tuile('argument', 'opp', 'Convaincre un prospect', [{ t: 'L\'Argument', k: 'argument' }, { t: 'Présentation Intégral', k: 'presentation' }, { t: 'Missions rémunérées', k: 'missions' }])
+          ]);
       }
 
-      // ── Bientôt · bêta test ──────────────────────────────────────────
+      // ── En cours de développement ─────────────────────────────────────
+      // Ce qui n'est pas fini descend ici, en retrait (Will, 23/09/2026) :
+      // Rendez-vous (« en cours de dev donc pas prioritaire ») et les deux apps
+      // sœurs en bêta.
       // ⚠️ CE DÉPÔT EST PUBLIC : aucun code d'accès n'est écrit ici. Les deux
       // apps sont protégées par un code partagé qui se demande de vive voix.
       // ⚠️ TROIS ADRESSES EXISTENT POUR JARVIS DESIGN, une seule convient :
@@ -1455,33 +1373,18 @@
       //  · « jarvis-design-delta.vercel.app » : celle-ci, À LA RACINE.
       // ⚠️ LE CHEMIN A CHANGÉ LE 18/08/2026. Le catalogue vivait sous « /app/ » ;
       //    le projet sert désormais ce dossier COMME racine (`outputDirectory`),
-      //    donc « /app/ » rend un 404 et la racine sert le catalogue. Les vingt
-      //    maquettes de direction, qui occupaient la racine, ont déménagé sous
-      //    « /directions/ » et répondent toujours.
-      //    Vérifié dans un navigateur vierge : racine 200 « la boîte à outils
-      //    du beau », /directions/ 200, /app/ 404.
+      //    donc « /app/ » rend un 404 et la racine sert le catalogue.
       // Outils INTERNES Intégral (bêta) : jamais montrés au groupement — le
       // 04/09/2026, Will : « ils n'ont pas accès à jarvis academy ni jarvis design ! »
       if (!(window.V2_BRAND && (window.V2_BRAND.opso || window.V2_BRAND.escale))) pilHtml +=
-        '<div class="v2-lch-soon">' +
-            '<div class="v2-lch-soon-h"><span class="lbl">Bientôt</span><span class="ln"></span></div>' +
-            '<div class="v2-lch-soon-g">' +
-              '<a class="v2-lch-soon-c" href="https://jarvis-academy-fr.vercel.app/" target="_blank" rel="noopener">' +
-                '<span class="ic">' + ICO('spark', 22) + '</span>' +
-                '<span><span class="chip">Bêta test</span>' +
-                  '<span class="t">JARVIS Academy ↗</span>' +
-                  '<span class="d">L\'école interne de l\'IA. Trois choses par semaine, trente minutes, ' +
-                  'et un geste à faire sur ton vrai travail. Ni cours, ni note, ni niveau.</span></span></a>' +
-              '<a class="v2-lch-soon-c" href="https://jarvis-design-delta.vercel.app/" target="_blank" rel="noopener">' +
-                '<span class="ic">' + ICO('grid', 22) + '</span>' +
-                '<span><span class="chip">Bêta test</span>' +
-                  '<span class="t">JARVIS Design ↗</span>' +
-                  '<span class="d">La boîte à outils du beau : polices, palettes, icônes, composants. ' +
-                  'Chaque ressource ouverte une par une, avec son coût et sa licence réels.</span></span></a>' +
-            '</div>' +
-            '<p class="v2-lch-soon-n">Deux outils en cours d\'essai, ouverts à qui veut les tester. ' +
-            'Le code d\'accès se demande à Will — il n\'est écrit nulle part.</p>' +
-        '</div>';
+        '<div class="v2-enc-chip lch-anim" style="--i:' + (lchI++) + '">En cours de développement</div>' +
+        '<div class="v2-enc lch-anim" style="--i:' + (lchI++) + '"><div class="v2-enc-liens">' +
+          (V2.pages.rdv ? '<a class="v2-enc-l" onclick="V2.go(\'rdv\')">' + ICO('cal', 18) + 'Rendez-vous</a>' : '') +
+          '<a class="v2-enc-l" href="https://jarvis-academy-fr.vercel.app/" target="_blank" rel="noopener">' + ICO('spark', 18) + 'JARVIS Academy <span class="fl">↗</span></a>' +
+          '<a class="v2-enc-l" href="https://jarvis-design-delta.vercel.app/" target="_blank" rel="noopener">' + ICO('grid', 18) + 'JARVIS Design <span class="fl">↗</span></a>' +
+        '</div>' +
+        '<p class="v2-enc-n">Outils en cours de développement, ouverts à qui veut les essayer. ' +
+        'Le code d\'accès des deux apps se demande à Will — il n\'est écrit nulle part.</p></div>';
 
       var firstName = (V2.user && V2.user.name ? V2.user.name.split(' ')[0] : 'Will');
       // Salutation par moment de la journée : réservée à l'app JARVIS pour ne
