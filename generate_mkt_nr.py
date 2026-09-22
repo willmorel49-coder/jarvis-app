@@ -47,6 +47,19 @@ def ean_of(v):
         return re.sub(r'[^0-9]', '', str(v))
 
 
+# Pont code-barres/CIP écrit par generate_etab_prices.py (à lancer AVANT) : une vente rangée
+# sous le CIP retombe sur le code du stock, sinon ventes et stock restent séparés à l'écran.
+PONT_JSON = 'STATS/pont-codes.json'
+try:
+    ALIAS = json.load(open(PONT_JSON, encoding='utf-8'))['alias']
+except (OSError, ValueError, KeyError):
+    ALIAS = {}
+    print('⚠️ %s absent : lancer generate_etab_prices.py avant — ventes sans pont' % PONT_JSON)
+
+def canon(code):
+    return ALIAS.get(code, code)
+
+
 def num(v):
     try:
         return float(v)
@@ -97,7 +110,7 @@ def main():
             afm = str(r[ix['AFMCODE']] or '').strip()
             if afm == 'REMBSS' or afm not in FAM:      # on ne garde que le NR connu
                 continue
-            ean = ean_of(r[ix['ARTCODEBARRE']])
+            ean = canon(ean_of(r[ix['ARTCODEBARRE']]))
             if not ean or len(ean) < 8:
                 continue
             nom_u = str(r[ix['PLVDESIGNATION']] or '').upper()

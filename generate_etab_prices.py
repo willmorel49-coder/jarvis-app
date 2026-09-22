@@ -90,6 +90,17 @@ def lire_pont():
 def canon(code):
     return alias.get(code, code)
 
+# Le pont est ÉCRIT sur le disque (hors dépôt : STATS/ est ignoré) pour que les générateurs
+# qui lisent les VENTES par site (generate_mkt_nr.py, generate_establishments.py) rangent
+# chaque vente sous le même code que le stock. Sans lui, Vismed 0,18 % unidoses (66 boîtes
+# vendues à HP sous le CIP 3400974936034) restait séparé de son stock (3401074936030).
+PONT_JSON = 'STATS/pont-codes.json'
+def ecrire_pont():
+    with open(PONT_JSON, 'w', encoding='utf-8') as fh:
+        json.dump({'source': 'generate_etab_prices.py — lire_pont()', 'n': len(alias), 'alias': alias},
+                  fh, ensure_ascii=False, separators=(',', ':'))
+    print('  pont écrit :', PONT_JSON)
+
 prices = {}     # code -> { cip: [ppht, stock] }
 labels = {}     # cip -> désignation (pour affichage éventuel)
 nr_info = {}    # cip -> [désignation, laboratoire] : NR selon AFMCODE (≠ REMBSS)
@@ -98,6 +109,7 @@ tarif_date = ''
 etabs = []
 
 lire_pont()
+ecrire_pont()
 site_files = {}  # site -> extractions « stock <SITE> <jjmmaaaa>.xlsx »
 for fn in sorted(glob.glob(os.path.join(SRC, '*.xlsx'))):
     m = re.match(r'stock ([A-Za-z]{2,4}) (\d{2})(\d{2})(\d{4})\.xlsx$', os.path.basename(fn), re.I)
