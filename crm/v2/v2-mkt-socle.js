@@ -1,22 +1,28 @@
 /* ═══════════════════════════════════════════════════════════════════
-   CRM V2 · Espace Marketing — SOCLE ET COQUILLE (lot 1, 18/09/2026)
-   Choix de Will : structure de la maquette 4 (« Verrière »).
+   CRM V2 · Espace Marketing — SOCLE ET COQUILLE (lot 1, 18/09/2026 ;
+   barre du BUREAU, 22/09/2026 : Will a choisi « Le bureau » — quatre
+   portes égales, plus de contrôle segmenté. La barre porte maintenant
+   un fil d'Ariane (bureau → porte → écran), pas des onglets.)
    Ce fichier apporte, pour TOUT l'espace Marketing (routes `marketing/*`) :
    - les jetons (couleurs, échelle 34/22/16/15/13, élévations N1/N2/N3 sans
      flou, durées et courbes --mk-*), portés par `.mk-espace` seulement :
      rien ne change dans le reste du CRM ;
    - Hanken Grotesk + IBM Plex Mono servies en local (polices/, licence OFL) ;
    - le fond « Verrière » et son grain (lumière en haut à gauche) ;
-   - UNE barre Marketing (Retour · 4 onglets · Rechercher · Nouveau · avatar),
-     et la barre d'onglets basse sous 860 px ;
-   - le menu « Nouveau » ; le petit « Enregistré » de la barre (geste 9).
+   - UNE barre Marketing (Retour · fil d'Ariane · Rechercher · Nouveau · avatar),
+     et une barre basse (« Le bureau » + le geste de création du lieu où l'on
+     est) sous 860 px ;
+   - le menu « Nouveau » (les 4 créations + la bascule Escale) ; le petit
+     « Enregistré » de la barre (geste 9).
 
    Méthode : on ENVELOPPE `V2.topbar` (même procédé que v2-bg.js, qui
    enveloppe V2.render). Les modules Marketing continuent d'appeler
    V2.topbar(...) sans rien savoir : dans l'espace Marketing ils reçoivent la
    barre Marketing, ailleurs la barre de l'app, inchangée.
-   La même enveloppe pose/retire la classe `mk-dans` sur <body> : c'est elle
-   qui masque le rond « + » global (.v2-fab) le temps du Marketing.
+   La même enveloppe pose/retire la classe `mk-dans` sur <body> (et `mk-bureau`
+   quand on est SUR le bureau, sans paramètre de route) : c'est elle qui
+   masque le rond « + » global (.v2-fab) le temps du Marketing, et qui évite
+   une marge basse inutile sur le bureau (qui n'a pas de barre basse).
    Aucun effet refusé par le garde-fou Safari ; on n'anime que transform/opacity.
    ═══════════════════════════════════════════════════════════════════ */
 (function () {
@@ -24,16 +30,6 @@
   var V2 = window.V2 = window.V2 || {};
 
   var MOD = (/Mac|iPhone|iPad|iPod/.test((navigator.platform || '') + ' ' + (navigator.userAgent || ''))) ? '⌘' : 'Ctrl';
-
-  // Les 4 onglets. `court` = libellé de la barre basse (390 px).
-  var ONGLETS = [
-    { k: 'semaine', label: 'Cette semaine', court: 'Semaine' },
-    { k: 'posts', label: 'Posts', court: 'Posts' },
-    { k: 'fiches', label: 'Fiches', court: 'Fiches' },
-    { k: 'documents', label: 'Documents', court: 'Documents' }
-  ];
-  // Écrans secondaires : aucun onglet n'est marqué quand on s'y trouve.
-  var HORS_ONGLET = { catalogues: 1, site: 1, propositions: 1, fxbank: 1 };
 
   var IC = {
     retour: '<path d="M15 6l-6 6 6 6"/>',
@@ -52,6 +48,7 @@
     effets: '<path d="M12 3l2.2 5.6L20 9.5l-4.4 3.9L17 19l-5-3-5 3 1.4-5.6L4 9.5l5.8-.9z"/>',
     idee: '<path d="M9 18h6M10 21h4M12 3a6 6 0 00-3.6 10.8c.6.5 1 1.2 1 2V16h5.2v-.2c0-.8.4-1.5 1-2A6 6 0 0012 3z"/>',
     bascule: '<path d="M7 7h11l-3-3M17 17H6l3 3"/>',
+    bureau: '<path d="M6 21V6.5a1.5 1.5 0 011.5-1.5h9A1.5 1.5 0 0118 6.5V21M4 21h16M13 12h.01"/>',
     // lot 2 — Documents
     suivant: '<path d="M9 6l6 6-6 6"/>',
     fermer: '<path d="M6 6l12 12M18 6L6 18"/>',
@@ -78,8 +75,9 @@
   function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
   // ════════════════════════════════════════════
-  // CSS — tout est porté par .mk-espace, sauf les 5 règles `body.mk-dans`
-  // qui règlent la cohabitation avec l'app (rond « + », marges basses).
+  // CSS — tout est porté par .mk-espace, sauf les règles `body.mk-dans` /
+  // `body.mk-bureau` qui règlent la cohabitation avec l'app (rond « + »,
+  // marges basses).
   // ════════════════════════════════════════════
   function injectCss() {
     if (document.getElementById('v2-mkt-socle-css')) return;
@@ -163,7 +161,7 @@
       '.mk-espace .mk-btn.mk-danger{background:none;border-color:transparent;box-shadow:none;color:#B93550}',
       '.mk-espace .mk-btn[disabled]{opacity:.55;cursor:default}',
 
-      /* ── contrôle segmenté — geste 10 ── */
+      /* ── contrôle segmenté — geste 10 (encore utilisé par l'éditeur et le catalogue) ── */
       '.mk-seg{position:relative;display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));background:var(--mk-groupe);border-radius:var(--mk-r-vig);padding:4px;isolation:isolate;box-shadow:0 1px 2px rgba(11,31,77,.08) inset}',
       '.mk-seg-ind{position:absolute;z-index:-1;top:4px;bottom:4px;left:4px;width:calc((100% - 8px)/var(--n));transform:translateX(calc(var(--i)*100%));border-radius:8px;background:#fff;',
       'box-shadow:0 1px 0 #fff inset,0 1px 2px rgba(11,31,77,.14),2px 4px 8px -2px rgba(11,31,77,.12);transition:transform var(--mk-t-ind) var(--mk-glisse),opacity var(--mk-t2) var(--mk-sortie)}',
@@ -172,12 +170,13 @@
       '.mk-espace .mk-seg button[aria-current="page"],.mk-espace .mk-seg button[aria-pressed="true"]{color:var(--mk-encre)}',
       '@media (hover:hover){.mk-espace .mk-seg button:hover{color:var(--mk-encre)}}',
 
-      /* ── la barre Marketing ── */
+      /* ── la barre Marketing : Retour · fil d'Ariane · Rechercher · Nouveau · avatar ── */
       '.mk-barre{position:sticky;top:0;z-index:50;height:var(--mk-barre-h);display:flex;align-items:center;gap:12px;padding:0 32px;',
       'background:linear-gradient(180deg,#fff,#FAFBFE);border-bottom:1px solid var(--mk-trait);box-shadow:0 1px 0 #fff inset}',   /* opaque : le contenu qui défile dessous ne transparaît pas */
-      '.mk-barre .mk-nav{--n:4;flex:0 1 520px;min-width:0;margin-left:12px}',
-      '.mk-barre .mk-pousse{flex:1 1 0;min-width:0}',
-      '.mk-titre-tel{display:none}',
+      '.mk-fil{display:flex;flex-direction:column;justify-content:center;min-width:0;margin-left:4px;flex:1 1 auto}',
+      '.mk-fil strong{display:block;font-size:var(--mk-s3);line-height:20px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:520px}',
+      '.mk-fil span{display:block;font-size:var(--mk-s5);line-height:16px;font-weight:550;color:var(--mk-attenue);white-space:nowrap}',
+      '.mk-barre .mk-pousse{flex:0 0 auto}',
       '.mk-espace .mk-cherche{display:flex;align-items:center;gap:8px;width:232px;height:44px;padding:0 12px;color:var(--mk-attenue);font-weight:500;font-size:var(--mk-s4);',
       'background:#fff;border:1px solid var(--mk-trait);border-radius:var(--mk-r-vig);box-shadow:var(--mk-n1);text-align:left}',
       '.mk-cherche kbd{margin-left:auto;font:inherit;font-size:var(--mk-s5);font-weight:600;padding:2px 6px;border-radius:6px;background:var(--mk-groupe)}',
@@ -203,7 +202,7 @@
       '.mk-menu-cap{margin:8px 0 0;padding:12px 12px 4px;border-top:1px solid var(--mk-trait);font-size:var(--mk-s5);line-height:var(--mk-s5l);font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--mk-attenue)}',
       '.mk-espace .mk-menu .mk-plus button{min-height:44px;font-weight:550}',
 
-      /* ═══ lot 3 — composants génériques (Posts, puis « Cette semaine ») ═══ */
+      /* ═══ lot 3 — composants génériques (Posts, puis « Cette semaine », puis « Le bureau ») ═══ */
       /* surface soulevée (N2) : le contenu. Arête claire en haut à gauche, plus sombre en bas à droite. */
       '.mk-souleve{position:relative;border:1px solid transparent;border-radius:var(--mk-r-carte);background:linear-gradient(180deg,#fff 0,#FAFBFE 100%) padding-box,var(--mk-arete) border-box;box-shadow:var(--mk-n2)}',
       /* la carte en voyage passe au niveau N3 (geste 6) */
@@ -239,35 +238,36 @@
       '@keyframes mk-naissance{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:none}}',
       '.mk-fondu{animation:mk-paraitre 160ms var(--mk-sortie) both}',
 
+      /* ── barre basse (< 860 px) : « Le bureau » + le geste de création du lieu où l'on est. Vide sur le bureau lui-même. ── */
       '.mk-onglets-bas{display:none}',
+      '.mk-onglets-bas:empty{display:none!important}',
 
       /* ── cohabitation avec l'app, le temps du Marketing ── */
       'body.mk-dans .v2-fab{display:none}',
       /* Hors .v2-wrap (écrans LinkedIn), v2-motion pose son glissé d'entrée sur #v2-root lui-même et le laisse
-         figé sur une transformation : les éléments fixes de la coquille (fond, onglets bas) seraient alors
+         figé sur une transformation : les éléments fixes de la coquille (fond, barre basse) seraient alors
          placés par rapport à la page entière et non à l'écran. */
       'body.mk-dans #v2-root.mo-view-in{animation:none}',
 
       /* ── largeurs intermédiaires : la barre ne déborde jamais ── */
       '@media (max-width:1240px){.mk-barre{padding:0 24px}.mk-espace .mk-cherche{width:44px;padding:0;justify-content:center}.mk-cherche span,.mk-cherche kbd{display:none}.mk-enreg{min-width:0}}',
-      '@media (max-width:1040px){.mk-barre{padding:0 16px;gap:8px}.mk-barre .mk-nav{margin-left:4px}.mk-retour span,.mk-nouveau span{display:none}.mk-espace .mk-retour,.mk-espace .mk-nouveau{width:44px;padding:0}.mk-enreg span{display:none}}',
+      '@media (max-width:1040px){.mk-barre{padding:0 16px;gap:8px}.mk-retour span,.mk-nouveau span{display:none}.mk-espace .mk-retour,.mk-espace .mk-nouveau{width:44px;padding:0}.mk-enreg span{display:none}}',
 
-      /* ═══ 390 px : onglets en bas ═══ */
+      /* ═══ 390 px : « Le bureau » + l'action du lieu, en bas, au-dessus des zones sûres ═══ */
       '@media (max-width:860px){',
       '.mk-espace{--mk-s1:28px;--mk-s1l:32px;--mk-s2:20px;--mk-s2l:26px;--mk-s4:16px;--mk-s4l:24px;--mk-barre-h:56px}',
       '.mk-barre{padding:0 8px;gap:4px}',
-      '.mk-barre .mk-nav{display:none}',
-      '.mk-titre-tel{display:block;font-weight:650;font-size:var(--mk-s3);line-height:var(--mk-s3l);margin-left:4px;white-space:nowrap}',
+      '.mk-fil{margin-left:4px}',
+      '.mk-fil strong{max-width:none}',
       '.mk-espace .mk-cherche{border:0;box-shadow:none;background:none}',
       '.mk-enreg{width:28px;justify-content:center}',
-      '.mk-onglets-bas{display:block;position:fixed;z-index:70;left:0;right:0;bottom:0;padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px));',
+      '.mk-onglets-bas{display:flex;gap:8px;position:fixed;z-index:70;left:0;right:0;bottom:0;padding:8px 16px calc(8px + env(safe-area-inset-bottom,0px));',
       'background:#fff;border-top:1px solid var(--mk-trait);box-shadow:0 -8px 24px -12px rgba(11,31,77,.18)}',
-      '.mk-onglets-bas .mk-seg{--n:4;background:none;box-shadow:none;padding:0}',
-      '.mk-onglets-bas .mk-seg-ind{top:0;bottom:0;left:0;width:25%;background:var(--mk-pale);box-shadow:none;border-radius:12px}',
-      '.mk-espace.mk-onglets-bas .mk-seg button{flex-direction:column;gap:2px;min-height:52px;font-size:var(--mk-s5);line-height:var(--mk-s5l);padding:0 2px}',
-      '.mk-espace.mk-onglets-bas .mk-seg button[aria-current="page"]{color:var(--mk-bleu-txt)}',
-      /* les anciens écrans gardent leur dernier bouton visible au-dessus des onglets bas */
-      'body.mk-dans #v2-root{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}',
+      '.mk-onglets-bas .mk-btn{min-height:48px}',
+      '.mk-onglets-bas .mk-btn.mk-plein{flex:1}',
+      '.mk-onglets-bas .mk-btn:not(.mk-plein):only-child{flex:1}',
+      /* les anciens écrans gardent leur dernier bouton visible au-dessus de la barre basse */
+      'body.mk-dans:not(.mk-bureau) #v2-root{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}',
       'body.mk-dans .mkt-catbar{bottom:calc(78px + env(safe-area-inset-bottom,0px))}',
       'body.mk-dans .v2-appbar{bottom:calc(84px + env(safe-area-inset-bottom,0px))}',
       '}'
@@ -276,37 +276,48 @@
   }
 
   // ════════════════════════════════════════════
-  // Où est-on ?
+  // Où est-on ? (fil d'Ariane et bouton Retour)
   // ════════════════════════════════════════════
   function dansMarketing() { return !!(V2.user && V2.route && V2.route.name === 'marketing'); }
   function vueLinkedin() { return (V2.mktLinkedin && V2.mktLinkedin.vue) ? V2.mktLinkedin.vue() : 'plan'; }
-  // Indice de l'onglet marqué, ou -1 (écrans secondaires).
-  function ongletActif() {
+  function surLinkedin() { return dansMarketing() && V2.route.param === 'linkedin'; }
+  // Ouvre l'écran LinkedIn sur la vue demandée (`plan` = les posts, `veille`).
+  function ouvrirLinkedin(vue) {
+    if (!surLinkedin()) V2.go('marketing', 'linkedin');
+    if (vueLinkedin() !== vue && V2.li && V2.li.setView) V2.li.setView(vue);
+  }
+  // Les portes du bureau : nom affiché dans le fil, et où revenir (par défaut : le bureau).
+  var PORTES_FIL = {
+    fiches: { strong: 'Supports officine' },
+    docs: { strong: 'Documents partagés' },
+    site: { strong: 'Le nouveau site' },
+    catalogues: { strong: 'Catalogue & prix' },
+    propositions: { strong: 'Les 20 maquettes', retourLabel: 'Le nouveau site', retourTo: ['marketing', 'site'] },
+    fxbank: { strong: 'Banque d’effets', retourLabel: 'Le nouveau site', retourTo: ['marketing', 'site'] },
+    'site-plein': { strong: 'Le site en plein écran', retourLabel: 'Le nouveau site', retourTo: ['marketing', 'site'] }
+  };
+  function filInfo() {
     var p = (V2.route && V2.route.param) || '';
-    if (!p) return 0;
-    if (p === 'linkedin') return vueLinkedin() === 'veille' ? -1 : 1;
-    if (p === 'docs') return 3;
-    if (HORS_ONGLET[p]) return -1;
-    return 2;   // `fiches`, et tout le reste = l'éditeur d'une fiche
+    if (!p) return { strong: 'Marketing', sous: 'Le bureau', retourLabel: 'Retour', retourAria: 'Retour à l’accueil', retour: function () { V2.go('home'); } };
+    if (p === 'linkedin') {
+      if (vueLinkedin() === 'veille') return { strong: 'Veille secteur', sous: 'LinkedIn', retourLabel: 'LinkedIn', retourAria: 'Retour à LinkedIn', retour: function () { ouvrirLinkedin('plan'); } };
+      return { strong: 'LinkedIn', sous: 'Marketing', retourLabel: 'Le bureau', retourAria: 'Retour au bureau', retour: function () { V2.go('marketing'); } };
+    }
+    var d = PORTES_FIL[p];
+    if (d) {
+      var to = d.retourTo || ['marketing'];
+      return { strong: d.strong, sous: 'Marketing', retourLabel: d.retourLabel || 'Le bureau', retourAria: 'Retour au bureau', retour: function () { V2.go.apply(V2, to); } };
+    }
+    // Tout le reste = l'éditeur d'une fiche (le paramètre est son identifiant).
+    return { strong: 'Supports officine', sous: 'l’éditeur', retourLabel: 'Supports officine', retourAria: 'Retour aux supports', retour: function () { V2.go('marketing', 'fiches'); } };
   }
 
   // ════════════════════════════════════════════
   // La barre
   // ════════════════════════════════════════════
-  var dernierI = -1;        // onglet marqué au rendu précédent : point de départ du glissé
   var etatEnreg = '';       // '' | 'cours' | 'ok'
   var tEnreg = null;
   var apres = [];           // actions à jouer une fois l'écran suivant rendu (ex. ouvrir l'éditeur de post)
-
-  function segHtml(bas, actif, depart) {
-    var h = '<i class="mk-seg-ind"></i>';
-    for (var n = 0; n < ONGLETS.length; n++) {
-      var o = ONGLETS[n];
-      h += '<button type="button" class="mk-press" data-mk-onglet="' + o.k + '"' + (n === actif ? ' aria-current="page"' : '') +
-        ' onclick="V2.mktSocle.aller(\'' + o.k + '\')">' + (bas ? ic(o.k, 22) : '') + '<span>' + (bas ? o.court : o.label) + '</span></button>';
-    }
-    return '<div class="mk-seg' + (bas ? '' : ' mk-nav') + '" data-mk-seg style="--n:4;--i:' + (depart < 0 ? 0 : depart) + '"' + (actif < 0 ? ' data-aucun="1"' : '') + '>' + h + '</div>';
-  }
 
   function enregHtml() {
     if (etatEnreg === 'cours') return '<span>Enregistrement…</span>';
@@ -323,20 +334,9 @@
       item('fiche', 'fiches', 'Nouvelle fiche produit', 'Un support à remettre à l’officine') +
       item('selection', 'selection', 'Nouvelle sélection', 'Une liste de produits à mettre en avant') +
       item('document', 'documents', 'Déposer un document', 'PDF ou Excel, partagé avec l’équipe');
-    h += '<div class="mk-menu-cap" role="presentation">Plus</div><div class="mk-plus" role="group" aria-label="Plus">' +
-      item('catalogues', 'catalogue', 'Catalogue &amp; prix') +
-      item('veille', 'veille', 'Veille secteur') +
-      item('strategie', 'strategie', 'Assistant stratégie') +
-      item('propositions', 'site', 'Le nouveau site') +
-      item('site', 'site', 'Le nouveau site, en plein écran') +
-      item('fxbank', 'effets', 'Banque d’effets');
-    // Deux actions de l'ancienne barre de l'app, gardées ici pour ne rien perdre.
-    if (!(window.V2_BRAND && (window.V2_BRAND.opso || window.V2_BRAND.escale)) && V2.remonteeOpen) {
-      h += item('idee', 'idee', 'Proposer une amélioration');
-    }
     var sw = bascule();
-    if (sw) h += item('bascule', 'bascule', 'Basculer vers l’espace ' + sw.label);
-    return h + '</div>';
+    if (sw) h += '<div class="mk-menu-cap" role="presentation">Plus</div><div class="mk-plus" role="group" aria-label="Plus">' + item('bascule', 'bascule', 'Basculer vers l’espace ' + sw.label) + '</div>';
+    return h;
   }
   // Même condition que la bascule Intégral ↔ Escale de V2.topbar (v2-app.js).
   function bascule() {
@@ -347,17 +347,31 @@
     return { to: inEscale ? 'crm' : 'escale', label: inEscale ? 'Intégral' : 'Escale' };
   }
 
+  // La barre basse (< 860 px) : « Le bureau » (absent sur le bureau lui-même) + le geste de création du lieu où l'on est.
+  function barreBasHtml() {
+    var p = (V2.route && V2.route.param) || '';
+    if (!p) return '';   // sur le bureau : rien — pas de vide inutile en bas de l'écran
+    var act = '';
+    if (p === 'fiches') act = '<button type="button" class="mk-btn mk-plein mk-press" onclick="V2.mktSocle.nouveau(\'fiche\')">' + ic('plus', 20, 2) + 'Nouvelle fiche</button>';
+    else if (p === 'docs') act = '<button type="button" class="mk-btn mk-plein mk-press" onclick="V2.mktSocle.docsDeposer()">' + ic('importer', 20, 2) + 'Déposer</button>';
+    else if (p === 'linkedin' && vueLinkedin() !== 'veille') act = '<button type="button" class="mk-btn mk-plein mk-press" onclick="V2.mktSocle.nouveau(\'post\')">' + ic('plus', 20, 2) + 'Nouveau post</button>';
+    return '<button type="button" class="mk-btn mk-press" onclick="V2.go(\'marketing\')">' + ic('bureau', 20) + '<span>Le bureau</span></button>' + act;
+  }
+  // Barre basse, écran Documents : ouvre le sélecteur de fichiers de l'écran s'il existe.
+  function docsDeposer() {
+    var i = document.getElementById('mkd-champ');
+    if (i) { try { i.click(); } catch (e) {} }
+  }
+
   function barreHtml() {
-    var actif = ongletActif();
-    var depart = (dernierI >= 0 && actif >= 0) ? dernierI : actif;
+    var fil = filInfo();
     var nom = (V2.user && V2.user.name) || '';
     var initiales = (nom ? nom.split(' ').map(function (w) { return w[0]; }).slice(0, 2).join('') : 'WM').toUpperCase();
     return '' +
       '<div class="mk-espace mk-fond" aria-hidden="true"><div class="mk-verriere"></div><div class="mk-grain"></div></div>' +
       '<header class="mk-espace mk-barre" data-mk-barre>' +
-        '<button type="button" class="mk-btn mk-retour mk-press" onclick="V2.go(\'home\')" aria-label="Retour à l’accueil">' + ic('retour', 20, 2) + '<span>Retour</span></button>' +
-        '<strong class="mk-titre-tel">Marketing</strong>' +
-        '<nav aria-label="Espace Marketing" style="display:contents">' + segHtml(false, actif, depart) + '</nav>' +
+        '<button type="button" class="mk-btn mk-retour mk-press" onclick="V2.mktSocle.retour()" aria-label="' + esc(fil.retourAria) + '">' + ic('retour', 20, 2) + '<span>' + esc(fil.retourLabel) + '</span></button>' +
+        '<div class="mk-fil"><strong>' + esc(fil.strong) + '</strong><span>' + esc(fil.sous) + '</span></div>' +
         '<div class="mk-pousse"></div>' +
         '<div class="mk-enreg' + (etatEnreg === 'ok' ? ' mk-fait' : '') + '" id="mk-enreg" aria-live="polite">' + enregHtml() + '</div>' +
         '<button type="button" class="mk-cherche mk-press" onclick="V2.onTopSearch()" aria-label="Rechercher">' + ic('loupe', 20) + '<span>Rechercher</span><kbd>' + MOD + 'K</kbd></button>' +
@@ -367,16 +381,11 @@
         '</div>' +
         '<button type="button" class="mk-avatar v2-av" title="' + esc(nom) + '" aria-label="Mon compte" onclick="V2.userMenu()">' + esc(initiales) + '</button>' +
       '</header>' +
-      '<nav class="mk-espace mk-onglets-bas" aria-label="Espace Marketing">' + segHtml(true, actif, depart) + '</nav>';
+      '<nav class="mk-espace mk-onglets-bas" aria-label="Espace Marketing">' + barreBasHtml() + '</nav>';
   }
 
-  // Après le rendu : l'indicateur glisse de l'ancien onglet vers le nouveau (geste 10),
-  // puis on joue les actions en attente.
+  // Après le rendu : on joue les actions en attente (ex. ouvrir l'éditeur de post depuis le menu « Nouveau »).
   function apresRendu() {
-    var actif = ongletActif();
-    var segs = document.querySelectorAll('[data-mk-seg]');
-    for (var n = 0; n < segs.length; n++) if (actif >= 0) segs[n].style.setProperty('--i', actif);
-    dernierI = actif;
     var file = apres; apres = [];
     for (var k = 0; k < file.length; k++) { try { file[k](); } catch (e) {} }
   }
@@ -385,8 +394,10 @@
     var dedans = dansMarketing();
     try {
       if (dedans) document.body.classList.add('mk-dans'); else document.body.classList.remove('mk-dans');
+      var surBureau = dedans && !(V2.route && V2.route.param);
+      if (surBureau) document.body.classList.add('mk-bureau'); else document.body.classList.remove('mk-bureau');
     } catch (e) {}
-    if (!dedans) { dernierI = -1; etatEnreg = ''; clearTimeout(tEnreg); apres = []; }
+    if (!dedans) { etatEnreg = ''; clearTimeout(tEnreg); apres = []; }
     return dedans;
   }
 
@@ -448,20 +459,15 @@
     window.addEventListener('hashchange', function () {
       // Sortie du Marketing par le bouton « précédent » du navigateur : on retire la classe sans attendre le rendu.
       var h = (location.hash || '').replace(/^#/, '').split('/')[0];
-      if (h !== 'marketing') { try { document.body.classList.remove('mk-dans'); } catch (e) {} }
+      if (h !== 'marketing') { try { document.body.classList.remove('mk-dans'); document.body.classList.remove('mk-bureau'); } catch (e) {} }
     });
   }
 
   // ════════════════════════════════════════════
   // Navigation
   // ════════════════════════════════════════════
-  function surLinkedin() { return dansMarketing() && V2.route.param === 'linkedin'; }
-  // Ouvre l'écran LinkedIn sur la vue demandée (`plan` = les posts, `veille`).
-  function ouvrirLinkedin(vue) {
-    if (!surLinkedin()) V2.go('marketing', 'linkedin');
-    if (vueLinkedin() !== vue && V2.li && V2.li.setView) V2.li.setView(vue);
-  }
-
+  function retour() { menu(false); filInfo().retour(); }
+  // Points d'entrée depuis le bureau (les quatre portes) — 'semaine' reste un synonyme du bureau.
   function aller(k) {
     menu(false);
     if (k === 'semaine') return V2.go('marketing');
@@ -488,6 +494,7 @@
       if (surLinkedin()) return assistant();
       apres.push(assistant); return ouvrirLinkedin('plan');
     }
+    // Conservé pour compatibilité : plus aucun bouton n'appelle 'idee' (le bureau appelle V2.remonteeOpen() directement).
     if (act === 'idee') { if (V2.remonteeOpen) V2.remonteeOpen(); return; }
     if (act === 'bascule') { var sw = bascule(); if (sw && V2.goSpace) V2.goSpace(sw.to); return; }
   }
@@ -660,10 +667,11 @@
     injectCss: injectCss,
     barre: barreHtml,
     aller: aller,
+    retour: retour,
     menu: menu,
     nouveau: nouveau,
+    docsDeposer: docsDeposer,
     enregistre: enregistre,
-    ongletActif: ongletActif,
     ic: ic
   };
 

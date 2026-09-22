@@ -207,7 +207,7 @@
     if (window.ETAB_PRICES) { cb(); return; }
     if (etabEchec || etabLoading) return;   // échec retenu, ou premier appel en cours (son rappel redessine déjà l'écran)
     etabLoading = true;
-    var s = document.createElement('script'); s.src = 'etab-prices-data.js?v=20260922i';
+    var s = document.createElement('script'); s.src = 'etab-prices-data.js?v=20260922j';
     s.onload = function () { etabLoading = false; cb(); }; s.onerror = function () { etabLoading = false; etabEchec = true; cb(); };
     document.head.appendChild(s);
   }
@@ -2752,15 +2752,18 @@
         return;
       }
       if (param === 'catalogues') renderCatalogues(root);
-      else if (param === 'site') renderSite(root);
+      // 22/09/2026 (lot « Le bureau ») — `site` = la page-relais du bureau (deux boutons, deux tuiles) ;
+      // `site-plein` = l'ancien plein cadre (l'iframe du site 2026), inchangé.
+      else if (param === 'site') { if (V2.mktBureau && V2.mktBureau.renderSite) V2.mktBureau.renderSite(root); else renderSite(root); }
+      else if (param === 'site-plein') renderSite(root);
       else if (param === 'propositions') renderPropositions(root);
       else if (param === 'fxbank') renderFxBank(root);
       else if (param === 'docs') renderDocs(root);
       else if (param === 'linkedin') { if (V2.mktLinkedin) V2.mktLinkedin.render(root); else root.innerHTML = ''; }
       // 18/09/2026 (lot 1) — `fiches` = l'onglet « Fiches » de la barre Marketing, pas un id de fiche.
       else if (param && param !== 'fiches') renderEditor(root, param);
-      // 18/09/2026 (lot 4) — `#marketing` = l'accueil « Cette semaine » (v2-mkt-semaine.js) ; l'atelier reste sur `#marketing/fiches`.
-      else if (!param && V2.mktSemaine && V2.mktSemaine.render) V2.mktSemaine.render(root);
+      // 22/09/2026 — `#marketing` = « Le bureau » (v2-mkt-bureau.js) ; l'atelier reste sur `#marketing/fiches`.
+      else if (!param && V2.mktBureau && V2.mktBureau.render) V2.mktBureau.render(root);
       else renderList(root);
     }
   };
@@ -2774,6 +2777,16 @@
       return { id: it.id, titre: it.title || '', statut: statusOf(it.status).label, nb: (it.products || []).length,
         accent: (it.theme && it.theme.accent) || t.accent, tete: modele(it).head };
     });
+  };
+  // 22/09/2026 (« Le bureau ») — l'état affiché sur la porte « Supports officine » : total, et le compte de chaque statut.
+  V2.mkt.fichesResume = function () {
+    var L = items || [], out = { total: L.length, aEnvoyer: 0, brouillons: 0, envoyees: 0 };
+    L.forEach(function (it) {
+      if (it.status === 'a_envoyer') out.aEnvoyer++;
+      else if (it.status === 'envoye') out.envoyees++;
+      else out.brouillons++;
+    });
+    return out;
   };
   // null tant que la liste et le cache des vignettes ne sont pas lus (l'écran se redessine à leur arrivée).
   var docsAccueil = false;
@@ -2791,6 +2804,20 @@
     var L = docs.slice(0, n || 3);
     queueThumbs(L);
     return L.map(function (d) { return { name: d.name, nom: docSansExt(d.name), poids: docPoids(d), xls: d.xls, ratio: docRatio(d), pageHtml: docPageHtml(d) }; });
+  };
+  // 22/09/2026 (« Le bureau ») — l'état affiché sur la porte « Documents partagés » : juste le compte, pas besoin des vignettes.
+  V2.mkt.docsNb = function () {
+    if (docs === null) {
+      if (!docsAccueil) {
+        docsAccueil = true;
+        loadDocs().then(vigCharger).then(function () {
+          docsAccueil = false;
+          if (V2.route && V2.route.name === 'marketing' && !V2.route.param) V2.render();
+        });
+      }
+      return null;
+    }
+    return docs.length;
   };
   V2.mkt.docOuvrir = function (name, page) { docOuvrirDepuis(name, page || null); };
 
