@@ -1,5 +1,8 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   BRIEF DE L'OFFICINE — « Aujourd'hui », en tête de la fiche officine.
+   BRIEF DE L'OFFICINE — « Aujourd'hui », sur la fiche officine : une ligne de
+   résumé APRÈS les chiffres + un bouton à droite des onglets, qui ouvrent une
+   fenêtre centrée (maquette B du 22/09/2026). Point rouge tant qu'il y a un
+   rappel de lots « À retirer ».
    Phase 1 de la recherche IA × officine (17/09/2026) : vu par le commercial.
 
    Croise les signaux publics du jour avec les achats de CETTE officine :
@@ -320,7 +323,23 @@
       '</div></li>';
   }
 
-  function rendre(r) {
+  // Résumé en une ligne : « 1 rappel de lots · 6 ruptures ou tensions · 2 échéances ».
+  // Le point rouge reste tant qu'il y a quelque chose « À retirer » (rappel de lots).
+  function resume(r) {
+    var tous = r.points.concat(r.autres);
+    var rappels = tous.filter(function (p) { return p.rubrique === 'À retirer'; }).length;
+    var ruptures = tous.filter(function (p) { return p.rubrique === 'Va manquer'; }).length;
+    var autres = tous.length - rappels - ruptures;
+    var morceaux = [];
+    if (rappels) morceaux.push('<em>' + pluriel(rappels, 'rappel') + ' de lots</em>');
+    if (ruptures) morceaux.push(ruptures + (ruptures > 1 ? ' ruptures ou tensions' : ' rupture ou tension'));
+    if (autres) morceaux.push(autres + (autres > 1 ? ' autres points' : ' autre point'));
+    if (r.echeances.length) morceaux.push(pluriel(r.echeances.length, 'échéance'));
+    return { rappels: rappels, nb: r.points.length, rouge: rappels > 0,
+      html: morceaux.length ? '<span class="bo-sum">' + morceaux.join('<span>·</span>') + '</span>' : '' };
+  }
+
+  function corpsHtml(r) {
     var nonLues = r.sources.filter(function (s) { return !s.lue; });
     var corps;
     if (!r.achatsConnus) {
@@ -343,10 +362,40 @@
       var etat = !s.lue ? 'non lue' : (s.aJour ? dateFr(s.date) : dateFr(s.date) + ', en retard');
       return '<span class="' + (s.lue && s.aJour ? '' : 'bo-ko') + '">' + esc(s.nom) + ' (' + esc(etat) + ')</span>';
     }).join(' · ');
-    return '<div class="pha-ch"><h3>Aujourd\'hui</h3><span class="pha-sub">ce qui la concerne, tiré de ses achats</span>' +
-        (r.points.length ? '<button class="v2-btn bo-imp" onclick="V2.briefOfficine.imprimer()">Imprimer pour l\'équipe</button>' : '') + '</div>' +
-      corps +
-      '<div class="bo-src">Sources : ' + src + (r.periode ? ' · Ses achats (' + esc(r.periode) + ')' : '') + '</div>';
+    return corps + '<div class="bo-src">Sources : ' + src + (r.periode ? ' · Ses achats (' + esc(r.periode) + ')' : '') + '</div>';
+  }
+
+  // La ligne posée dans la fiche, APRÈS les chiffres : résumé + point rouge + « Voir ».
+  function rendre(r) {
+    var s = resume(r);
+    var sousTitre = s.nb ? ' · ' + pluriel(s.nb, 'point') : '';
+    return '<button type="button" class="bo-ligne" onclick="V2.briefOfficine.ouvrir()">' +
+      '<span class="bo-dot' + (s.rouge ? '' : ' vu') + '"></span><b>Aujourd\'hui</b>' +
+      (s.html || '<span class="bo-sum">' + (r.achatsConnus ? 'rien d\'urgent pour cette officine' : 'aucun achat connu sur la période') + '</span>') +
+      '<span class="bo-voir">Voir' + sousTitre + CHEVRON + '</span></button>';
+  }
+
+  var CHEVRON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
+
+  // La fenêtre centrée (maquette B), accrochée à <body> : .v2-wrap porte un transform
+  // (animation d'entrée) qui rendrait un position:fixed relatif à la page.
+  function fenetreHtml(r) {
+    var s = resume(r);
+    return '<div class="bo-win" role="dialog" aria-modal="true" aria-labelledby="bo-win-t">' +
+      '<div class="bo-win-h"><h3 id="bo-win-t">Aujourd\'hui</h3>' + s.html +
+        '<button type="button" class="bo-x" aria-label="Fermer" onclick="V2.briefOfficine.fermer()">×</button>' +
+        '<span class="pha-sub">ce qui la concerne, tiré de ses achats' + (s.nb ? ' · ' + pluriel(s.nb, 'point') : '') + '</span></div>' +
+      '<div class="bo-win-b">' + corpsHtml(r) + '</div>' +
+      '<div class="bo-win-f"><span class="pha-sub">Se rouvre depuis la ligne « Aujourd\'hui » de la fiche.</span>' +
+        (r.points.length ? '<button type="button" class="v2-btn bo-imp" onclick="V2.briefOfficine.imprimer()">Imprimer pour l\'équipe</button>' : '') +
+        '<button type="button" class="v2-btn dark" onclick="V2.briefOfficine.fermer()">Fermer</button></div>' +
+    '</div>';
+  }
+
+  // Le bouton « Aujourd'hui · 7 » à droite des onglets Analyse / Audit marge.
+  function boutonHtml(s) {
+    return '<span class="bo-dot' + (s && s.rouge ? '' : ' vu') + '"></span>Aujourd\'hui' +
+      (s && s.nb ? ' <span class="n">' + s.nb + '</span>' : '') + CHEVRON;
   }
 
   var STYLE = '.bo-liste{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:10px}' +
@@ -363,9 +412,40 @@
     '.bo-agenda small{color:var(--v2-muted,#64748b);font-size:11.5px}.bo-agenda a{color:inherit}' +
     '.bo-src{margin-top:12px;font-size:11.5px;color:var(--v2-muted,#64748b)}.bo-ko{color:#B45309;font-weight:600}' +
     '@media (max-width:520px){.bo-pt{flex-direction:column;gap:4px}.bo-rub{min-width:0}}' +
-    '.bo-imp{margin-left:auto;font-size:12px;padding:4px 10px}' +
-    '@media print{body.bo-imprime *{visibility:hidden}body.bo-imprime #brief-off,body.bo-imprime #brief-off *{visibility:visible}' +
-    'body.bo-imprime #brief-off{position:absolute;left:0;top:0;width:100%}body.bo-imprime .bo-imp,body.bo-imprime .bo-plus{display:none}}';
+    '.bo-imp{font-size:12px;padding:4px 10px}' +
+    /* résumé + point rouge */
+    '.bo-sum{display:inline-flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:13px;color:var(--ip-ink-2,#334155)}' +
+    '.bo-sum em{font-style:normal;color:#C7283D;font-weight:700}' +
+    '.bo-dot{flex:0 0 auto;width:8px;height:8px;border-radius:50%;background:#E0556E;display:inline-block;box-shadow:0 0 0 3px rgba(224,85,110,.18)}' +
+    '.bo-dot.vu{background:#B7BCC9;box-shadow:none}' +
+    /* la ligne dans la fiche, après les chiffres */
+    '#brief-off{padding:0}' +
+    '.bo-ligne{display:flex;align-items:center;gap:10px;flex-wrap:wrap;width:100%;padding:12px 18px;border:0;background:transparent;font-family:inherit;text-align:left;cursor:pointer;color:inherit}' +
+    '.bo-ligne:hover{background:var(--card-2,#f6f7fa)}' +
+    '.bo-ligne b{font-size:14px;font-weight:800;letter-spacing:-.01em}' +
+    '.bo-voir{margin-left:auto;display:inline-flex;align-items:center;gap:4px;font-weight:600;font-size:12.5px;color:var(--ip-blue,#0050E6);white-space:nowrap}' +
+    /* le bouton à droite des onglets */
+    '.bo-open{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;border:1px solid var(--line-strong,#cbd2dd);background:var(--card,#fff);font-family:inherit;font-weight:700;font-size:13px;color:inherit;cursor:pointer;box-shadow:var(--sh-1,none);min-height:var(--tap-min,44px)}' +
+    '.bo-open .n{background:var(--ip-ink,#10131C);color:#fff;border-radius:999px;padding:1px 8px;font-size:12px}' +
+    '.bo-open:hover{background:var(--card-2,#f6f7fa)}' +
+    '.ph-fiche-line{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:2px 0 16px}' +
+    '.ph-fiche-line .ph-fiche-tabs{margin:0 !important}.ph-fiche-line .bo-spacer{flex:1}' +
+    /* la fenêtre centrée */
+    '.bo-ov{position:fixed;inset:0;background:rgba(16,19,28,.42);z-index:1000;display:none;align-items:center;justify-content:center;padding:20px}' +
+    '.bo-ov.on{display:flex}' +
+    '.bo-win{background:var(--card,#fff);border-radius:var(--r-card,16px);box-shadow:0 24px 60px -12px rgba(16,19,28,.45);width:min(780px,100%);max-height:min(86vh,900px);display:flex;flex-direction:column;overflow:hidden;color:var(--ip-ink,#10131C)}' +
+    '.bo-win-h{position:relative;display:flex;align-items:center;gap:10px;padding:16px 56px 12px 20px;border-bottom:1px solid var(--line,#e2e8f0);flex-wrap:wrap}' +
+    '.bo-win-h h3{margin:0;font-size:16px;font-weight:800;letter-spacing:-.01em}' +
+    '.bo-win-h .pha-sub{flex:1 1 100%}' +
+    '.bo-x{position:absolute;right:14px;top:12px;width:34px;height:34px;border-radius:50%;border:1px solid var(--line-strong,#cbd2dd);background:var(--card-2,#f6f7fa);display:inline-flex;align-items:center;justify-content:center;font-size:18px;line-height:1;cursor:pointer;color:inherit}' +
+    '.bo-win-b{overflow:auto;padding:12px 20px 16px;-webkit-overflow-scrolling:touch}' +
+    '.bo-win-f{display:flex;gap:8px;padding:12px 20px;border-top:1px solid var(--line,#e2e8f0);background:var(--card-2,#f6f7fa);align-items:center;flex-wrap:wrap}' +
+    '.bo-win-f .pha-sub{flex:1}' +
+    '@media (max-width:640px){.bo-ov{padding:0;align-items:flex-end}.bo-win{width:100%;max-height:92vh;border-radius:var(--r-card,16px) var(--r-card,16px) 0 0}.bo-voir{margin-left:0;flex-basis:100%}}' +
+    '@media print{body.bo-imprime *{visibility:hidden}body.bo-imprime #bo-ov,body.bo-imprime #bo-ov *{visibility:visible}' +
+    'body.bo-imprime #bo-ov{position:absolute;left:0;top:0;width:100%;height:auto;display:block;padding:0;background:#fff}' +
+    'body.bo-imprime .bo-win{max-height:none;box-shadow:none;width:100%}body.bo-imprime .bo-win-b{overflow:visible}' +
+    'body.bo-imprime .bo-imp,body.bo-imprime .bo-x,body.bo-imprime .bo-win-f,body.bo-imprime .bo-plus{display:none}}';
 
   function imprimer() {
     document.body.classList.add('bo-imprime');
@@ -390,12 +470,38 @@
     return _etab;
   }
 
+  // ── Fenêtre : un seul #bo-ov sur <body>, recréé à chaque fiche, fermé si l'écran change.
+  function overlay() {
+    var ov = document.getElementById('bo-ov');
+    if (!ov) {
+      ov = document.createElement('div'); ov.id = 'bo-ov'; ov.className = 'bo-ov';
+      ov.addEventListener('click', function (e) { if (e.target === ov) fermer(); });
+      document.body.appendChild(ov);
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && ov.classList.contains('on')) fermer(); });
+      window.addEventListener('hashchange', fermer);
+    }
+    return ov;
+  }
+  function ouvrir() {
+    var ov = document.getElementById('bo-ov');
+    if (!ov || !ov.firstChild) return;
+    ov.classList.add('on'); document.body.style.overflow = 'hidden';
+    var x = ov.querySelector('.bo-x'); if (x) x.focus();
+  }
+  function fermer() {
+    var ov = document.getElementById('bo-ov');
+    if (!ov) return;
+    ov.classList.remove('on'); document.body.style.overflow = '';
+  }
+
   function hydrate(pid, ventesOfficine) {
     var el = document.getElementById('brief-off');
     if (!el) return;
     if (!document.getElementById('bo-style')) {
       var st = document.createElement('style'); st.id = 'bo-style'; st.textContent = STYLE; document.head.appendChild(st);
     }
+    fermer();
+    var ov = overlay(); ov.innerHTML = '';
     Promise.all(['ansm-dispo.json', 'prix-futurs.json', 'rappels-lots.json', 'generiques-bdpm.json', 'calendrier-officine.json'].map(lire).concat([chargerStockSites()])).then(function (j) {
       var cible = document.getElementById('brief-off');
       if (!cible || cible.getAttribute('data-pid') !== String(pid)) return;   // l'écran a changé entre-temps
@@ -407,8 +513,16 @@
         stockSites: stockSites, nom: nom
       });
       cible.innerHTML = rendre(r);
+      overlay().innerHTML = fenetreHtml(r);
+      var btn = document.getElementById('bo-open');
+      if (btn) { btn.innerHTML = boutonHtml(resume(r)); btn.disabled = false; }
     });
   }
 
-  V2.briefOfficine = { calculer: calculer, hydrate: hydrate, imprimer: imprimer };
+  // HTML du bouton posé par la fiche à droite des onglets (rempli quand le brief est prêt).
+  function bouton() {
+    return '<button type="button" class="bo-open" id="bo-open" disabled onclick="V2.briefOfficine.ouvrir()">' + boutonHtml(null) + '</button>';
+  }
+
+  V2.briefOfficine = { calculer: calculer, hydrate: hydrate, imprimer: imprimer, ouvrir: ouvrir, fermer: fermer, bouton: bouton };
 })();

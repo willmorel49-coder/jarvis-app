@@ -212,6 +212,9 @@ test('chemin réel : les vrais fichiers des robots arrivent jusqu\'à la carte',
   assert.ok(cible, 'aucune rupture avec code produit dans le fichier du jour');
 
   const el = { innerHTML: '', getAttribute: (k) => (k === 'data-pid' ? '2000016' : null) };
+  // Depuis le 22/09/2026 la ligne de résumé est dans #brief-off et le contenu dans la fenêtre #bo-ov (sur <body>).
+  const rien = () => {};
+  const ov = { id: '', innerHTML: '', firstChild: null, addEventListener: rien, classList: { add: rien, remove: rien, contains: () => false }, querySelector: () => null };
   const demandes = [];
   const sb = charger({
     fetch: (url) => {
@@ -219,34 +222,41 @@ test('chemin réel : les vrais fichiers des robots arrivent jusqu\'à la carte',
       demandes.push(f);
       return Promise.resolve({ ok: true, json: () => Promise.resolve(lireJson(f)) });
     },
+    addEventListener: rien,
     document: {
-      getElementById: (id) => (id === 'brief-off' ? el : null),
-      createElement: () => ({}),
+      getElementById: (id) => (id === 'brief-off' ? el : (id === 'bo-ov' && ov.id ? ov : null)),
+      createElement: () => ov,
+      addEventListener: rien,
       head: { appendChild() {} },
+      body: { appendChild() {}, style: {} },
     },
   });
+  // la carte « vue par le commercial » = la ligne de la fiche + la fenêtre
+  const carte = () => el.innerHTML && (el.innerHTML + ov.innerHTML);
   sb.ETAB_PRICES = { prices: { CPR: { [cible.cips[0]]: [1, 7] } } };
   sb.V2.sales = [{ pharmacyId: '2000016', commercial: 'A', year: 2026, month: 8, artCode: cible.cips[0], qte: 6 }];
   sb.V2.briefOfficine.hydrate('2000016', sb.V2.sales);
-  for (let i = 0; i < 20 && !el.innerHTML; i++) await new Promise((r) => setTimeout(r, 5));
+  for (let i = 0; i < 20 && !carte(); i++) await new Promise((r) => setTimeout(r, 5));
 
   assert.deepEqual(demandes.sort(), ['ansm-dispo.json', 'calendrier-officine.json', 'generiques-bdpm.json', 'prix-futurs.json', 'rappels-lots.json']);
-  assert.match(el.innerHTML, /Calendrier réglementaire \(\d/);
+  assert.match(carte(), /Calendrier réglementaire \(\d/);
   const auj = new Date().toISOString().slice(0, 10);
   const attendue = lireJson('calendrier-officine.json').items
     .find((it) => it.date >= auj && (Date.parse(it.date) - Date.parse(auj)) / 864e5 <= it.prevenir_j);
   if (attendue) {
-    assert.ok(el.innerHTML.includes(attendue.titre), 'l\'échéance du calendrier n\'arrive pas jusqu\'à la carte');
-    assert.match(el.innerHTML, /À l'agenda/);
+    assert.ok(carte().includes(attendue.titre), 'l\'échéance du calendrier n\'arrive pas jusqu\'à la carte');
+    assert.match(carte(), /À l'agenda/);
   }
   assert.match(el.innerHTML, /Aujourd'hui/);
-  assert.ok(el.innerHTML.includes(cible.spec.split(' – [')[0].split(', ')[0]), 'la rupture réelle n\'apparaît pas');
-  assert.match(el.innerHTML, /7 boîtes sur CPR/);
-  assert.ok(!/non lue/.test(el.innerHTML), 'une source réelle n\'a pas été lue');
+  assert.match(el.innerHTML, /bo-dot|bo-sum/, 'la ligne de résumé (point + résumé) n\'est pas dans la fiche');
+  assert.match(ov.innerHTML, /bo-win/, 'la fenêtre n\'est pas fabriquée');
+  assert.ok(carte().includes(cible.spec.split(' – [')[0].split(', ')[0]), 'la rupture réelle n\'apparaît pas');
+  assert.match(carte(), /7 boîtes sur CPR/);
+  assert.ok(!/non lue/.test(carte()), 'une source réelle n\'a pas été lue');
   // contre-épreuve : la même officine sans cet achat ne voit pas cette rupture
-  el.innerHTML = '';
+  el.innerHTML = ''; ov.innerHTML = '';
   sb.V2.briefOfficine.hydrate('2000016', [{ pharmacyId: '2000016', commercial: 'A', year: 2026, month: 8, artCode: '3400900000000', qte: 1 }]);
-  for (let i = 0; i < 20 && !el.innerHTML; i++) await new Promise((r) => setTimeout(r, 5));
-  assert.ok(el.innerHTML.length > 0);
-  assert.ok(!el.innerHTML.includes(cible.spec.split(' – [')[0].split(', ')[0]));
+  for (let i = 0; i < 20 && !carte(); i++) await new Promise((r) => setTimeout(r, 5));
+  assert.ok(carte().length > 0);
+  assert.ok(!carte().includes(cible.spec.split(' – [')[0].split(', ')[0]));
 });

@@ -1609,11 +1609,12 @@
     })();
 
     // Brief du jour (v2-brief-officine.js) : rempli après coup, sans re-rendre la fiche.
-    var briefOff = V2.briefOfficine ? '<div class="v2-card pha-card" id="brief-off" data-pid="' + esc(pid) + '"><div class="pha-sub">Brief du jour en préparation…</div></div>' : '';
+    // Posé APRÈS les chiffres (demande de Will, 22/09/2026) : une ligne de résumé qui ouvre la fenêtre.
+    var briefOff = V2.briefOfficine ? '<div class="v2-card pha-card" id="brief-off" data-pid="' + esc(pid) + '"><div class="pha-sub" style="padding:12px 18px">Brief du jour en préparation…</div></div>' : '';
     var apercu =
       '<div class="pha">' +
         '<div class="pha-rail">' + idCard + listes + infos + notes + '</div>' +
-        '<div class="pha-main">' + briefOff + chiffres + listing + generiqueurSec + '</div>' +
+        '<div class="pha-main">' + chiffres + briefOff + listing + generiqueurSec + '</div>' +
       '</div>';
     // ⚠️ window.ARGUMENT (part d'abandon, donnée protégée) est requis : sans lui le
     // calcul rendrait des ZÉROS silencieux. On le charge et on re-rend, comme les ventes.
@@ -1626,6 +1627,8 @@
       '<button class="ph-vtab on" id="phft-apercu" onclick="V2.phFicheTab(\'apercu\')">' + ICO('pharma', 15, 2) + 'Analyse</button>' +
       '<button class="ph-vtab" id="phft-audit" onclick="V2.phFicheTab(\'audit\')">' + ICO('pilo', 15, 2) + 'Audit marge</button>' +
       '</div>' : '';
+    // Bouton « Aujourd'hui · N » à droite des onglets — la ligne existe même sans onglet Audit.
+    if (briefOff) tabs = '<div class="ph-fiche-line">' + tabs + '<span class="bo-spacer"></span>' + V2.briefOfficine.bouton() + '</div>';
 
     root.innerHTML = V2.topbar({ back: true, backTo: 'pharma', backLabel: 'Officines' }) +
       '<div class="v2-wrap ph-detail pha-wrap" style="--accent:var(--pil-opp)">' +
