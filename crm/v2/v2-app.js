@@ -1575,9 +1575,14 @@
         '</div>';
 
       // Chiffre qui compte : au tout premier rendu seulement (voir jouerAnim).
-      if (jouerAnim && V2.motion && V2.motion.countUp) {
-        var hxChiffres = root.querySelectorAll('.hx-chiffre[data-count]');
-        for (var hci = 0; hci < hxChiffres.length; hci++) { try { V2.motion.countUp(hxChiffres[hci]); } catch (eCount) {} }
+      // 23/09/2026 — les rendus suivants (relances, fin des ventes, retour à
+      // l'accueil) recréent les éléments : la révélation générale de v2-motion
+      // les recompterait depuis 0 à chaque fois (vu en prod : 1 932 → 1 410 lu
+      // en plein comptage). On les marque déjà comptés.
+      var hxChiffres = root.querySelectorAll('.hx-chiffre[data-count]');
+      for (var hci = 0; hci < hxChiffres.length; hci++) {
+        if (jouerAnim && V2.motion && V2.motion.countUp) { try { V2.motion.countUp(hxChiffres[hci]); } catch (eCount) {} }
+        else hxChiffres[hci].setAttribute('data-mo-counted', '1');
       }
     }
   };

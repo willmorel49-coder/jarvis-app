@@ -475,7 +475,7 @@
     if (!_etab) {
       _etab = new Promise(function (ok) {
         var sc = document.createElement('script');
-        sc.src = 'etab-prices-data.js?v=' + (window.__APPRO_V || '20260922k');
+        sc.src = 'etab-prices-data.js?v=' + (window.__APPRO_V || '20260922l');
         sc.async = true;
         sc.onload = sc.onerror = function () { ok(); };
         document.head.appendChild(sc);

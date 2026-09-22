@@ -121,7 +121,7 @@
     if (!window.ETAB_PRICES && !D.etabEtat) {
       D.etabEtat = 1;
       var s = document.createElement('script');
-      s.src = 'etab-prices-data.js?v=' + (window.__APPRO_V || '20260922k');
+      s.src = 'etab-prices-data.js?v=' + (window.__APPRO_V || '20260922l');
       s.async = true;
       s.onload = s.onerror = function () { D.etabEtat = 2; rerender(); };
       document.head.appendChild(s);
