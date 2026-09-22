@@ -377,7 +377,8 @@
 
   var CHEVRON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
 
-  // La fenêtre centrée (maquette B), accrochée à <body> : .v2-wrap porte un transform
+  // Le panneau latéral (maquette C, choix de Will le 22/09/2026) : il glisse depuis la droite et laisse
+  // les chiffres visibles à côté ; sur iPhone il monte depuis le bas. Accroché à <body> : .v2-wrap porte un transform
   // (animation d'entrée) qui rendrait un position:fixed relatif à la page.
   function fenetreHtml(r) {
     var s = resume(r);
@@ -430,22 +431,24 @@
     '.bo-open:hover{background:var(--card-2,#f6f7fa)}' +
     '.ph-fiche-line{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:2px 0 16px}' +
     '.ph-fiche-line .ph-fiche-tabs{margin:0 !important}.ph-fiche-line .bo-spacer{flex:1}' +
-    /* la fenêtre centrée */
+    /* le panneau latéral */
     /* 9450 : au-dessus du rond « + » (.v2-fab, 9400) qui cachait « Fermer » sur iPhone, sous les barres d'alerte (9500+) */
-    '.bo-ov{position:fixed;inset:0;background:rgba(16,19,28,.42);z-index:9450;display:none;align-items:center;justify-content:center;padding:20px}' +
+    '.bo-ov{position:fixed;inset:0;background:rgba(16,19,28,.22);z-index:9450;display:none;align-items:stretch;justify-content:flex-end;padding:0}' +
     '.bo-ov.on{display:flex}' +
-    '.bo-win{background:var(--card,#fff);border-radius:var(--r-card,16px);box-shadow:0 24px 60px -12px rgba(16,19,28,.45);width:min(780px,100%);max-height:min(86vh,900px);display:flex;flex-direction:column;overflow:hidden;color:var(--ip-ink,#10131C)}' +
+    '.bo-win{background:var(--card,#fff);box-shadow:-12px 0 40px -12px rgba(16,19,28,.35);width:min(520px,100%);height:100%;display:flex;flex-direction:column;overflow:hidden;color:var(--ip-ink,#10131C);animation:bo-glisse .22s ease}' +
+    '@keyframes bo-glisse{from{transform:translateX(24px);opacity:.6}to{transform:none;opacity:1}}' +
+    '@media (prefers-reduced-motion:reduce){.bo-win{animation:none}}' +
     '.bo-win-h{position:relative;display:flex;align-items:center;gap:10px;padding:16px 56px 12px 20px;border-bottom:1px solid var(--line,#e2e8f0);flex-wrap:wrap}' +
     '.bo-win-h h3{margin:0;font-size:16px;font-weight:800;letter-spacing:-.01em}' +
     '.bo-win-h .pha-sub{flex:1 1 100%}' +
     '.bo-x{position:absolute;right:14px;top:12px;width:34px;height:34px;border-radius:50%;border:1px solid var(--line-strong,#cbd2dd);background:var(--card-2,#f6f7fa);display:inline-flex;align-items:center;justify-content:center;font-size:18px;line-height:1;cursor:pointer;color:inherit}' +
-    '.bo-win-b{overflow:auto;padding:12px 20px 16px;-webkit-overflow-scrolling:touch}' +
+    '.bo-win-b{flex:1;overflow:auto;padding:12px 20px 16px;-webkit-overflow-scrolling:touch}' +
     '.bo-win-f{display:flex;gap:8px;padding:12px 20px;border-top:1px solid var(--line,#e2e8f0);background:var(--card-2,#f6f7fa);align-items:center;flex-wrap:wrap}' +
     '.bo-win-f .pha-sub{flex:1}' +
-    '@media (max-width:640px){.bo-ov{padding:0;align-items:flex-end}.bo-win-f .pha-sub{display:none}.bo-win-f{justify-content:flex-end}.bo-win{width:100%;max-height:92vh;border-radius:var(--r-card,16px) var(--r-card,16px) 0 0}.bo-voir{margin-left:0;flex-basis:100%}}' +
+    '@media (max-width:640px){.bo-ov{align-items:flex-end}.bo-win-f .pha-sub{display:none}.bo-win-f{justify-content:flex-end}.bo-win{width:100%;height:88vh;border-radius:var(--r-card,16px) var(--r-card,16px) 0 0;box-shadow:0 -12px 40px -12px rgba(16,19,28,.35)}@keyframes bo-glisse{from{transform:translateY(24px);opacity:.6}to{transform:none;opacity:1}}.bo-voir{margin-left:0;flex-basis:100%}}' +
     '@media print{body.bo-imprime *{visibility:hidden}body.bo-imprime #bo-ov,body.bo-imprime #bo-ov *{visibility:visible}' +
     'body.bo-imprime #bo-ov{position:absolute;left:0;top:0;width:100%;height:auto;display:block;padding:0;background:#fff}' +
-    'body.bo-imprime .bo-win{max-height:none;box-shadow:none;width:100%}body.bo-imprime .bo-win-b{overflow:visible}' +
+    'body.bo-imprime .bo-win{height:auto;max-height:none;box-shadow:none;width:100%;animation:none}body.bo-imprime .bo-win-b{overflow:visible}' +
     'body.bo-imprime .bo-imp,body.bo-imprime .bo-x,body.bo-imprime .bo-win-f,body.bo-imprime .bo-plus{display:none}}';
 
   function imprimer() {
@@ -462,7 +465,7 @@
     if (!_etab) {
       _etab = new Promise(function (ok) {
         var sc = document.createElement('script');
-        sc.src = 'etab-prices-data.js?v=' + (window.__APPRO_V || '20260922e');
+        sc.src = 'etab-prices-data.js?v=' + (window.__APPRO_V || '20260922f');
         sc.async = true;
         sc.onload = sc.onerror = function () { ok(); };
         document.head.appendChild(sc);
