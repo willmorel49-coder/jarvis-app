@@ -13,6 +13,7 @@ Source prix + libelle + statut remb : STATS/stock et prix 22 06 2026.xlsx
 Source ventes : crm/v2/wml-officines-data.js (WML_SALES compact)
 """
 import openpyxl, re, json, os
+from pont_codes import canon, rekey  # un produit = un code (22/09/2026)
 from collections import defaultdict
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -75,6 +76,11 @@ for r in ws.iter_rows(min_row=2, values_only=True):
             'remb': str(r[ai] or '') == 'REMBSS',
             'nat': (str(r[ni]).strip() if (ni is not None and r[ni]) else ''),
         }
+
+# Un produit = un code : l'ancien article du catalogue de juin prête ses infos au code gardé
+# (33 des 68 codes gardés n'existent que dans les relevés de septembre).
+info = rekey(info)
+froid = froid | {canon(c) for c in froid}
 
 # Filet de sécurité : quand `artnature` manque ou dit "Referent" à tort, un générique
 # se retrouve classé princeps et reçoit un abandon de marge qu'il ne devrait PAS avoir
@@ -217,7 +223,7 @@ print(f'[prod-stats] {NM} mois distincts couverts')
 
 ag = defaultdict(lambda: {'qte': 0.0, 'ph': set(), 'ca': 0.0, 'tarif': 0.0, 'marge': 0.0, 'pw': 0.0, 'pn': 0.0})
 for s in sales:                       # [pharmacyId, mois, comm, cip13, qte, puNet, mntNetHt]
-    c = str(s[3]); nfo = info.get(c)
+    c = canon(s[3]); nfo = info.get(c)
     if not nfo: continue
     qte = s[4] or 0; ca = s[6] or 0; pu = s[5] or 0; a = ag[c]
     a['qte'] += qte; a['ph'].add(str(s[0])); a['ca'] += ca

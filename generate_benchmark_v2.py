@@ -363,6 +363,42 @@ for rec in records.values():
 
 print(f"\nAmeli matched: {ameli_matched} / {len(records)}")
 
+# ── 5 bis. UN PRODUIT = UN CODE (22/09/2026) ────────────────────────────────
+# Le pont (STATS/pont-codes.json) range chaque article sous son code gardé ; deux fiches qui
+# tombent sur le même code gardé sont réunies (quantités additionnées, la fiche déjà sous le
+# code gardé l'emporte pour le nom et les prix, Ameli pris là où il existe).
+from pont_codes import canon
+_par_code = {}
+for _rec in records.values():
+    if _rec['cip13']:
+        _par_code.setdefault(_rec['cip13'], []).append(_rec)
+_deplaces = _reunis = 0
+for _key, _rec in list(records.items()):
+    _c = _rec['cip13']
+    if not _c or canon(_c) == _c:
+        continue
+    _k = canon(_c)
+    _deplaces += 1
+    _garde = next((r for r in _par_code.get(_k, []) if r is not _rec), None)
+    if _garde is None:
+        _rec['cip13'] = _k
+        _par_code.setdefault(_k, []).append(_rec)
+        continue
+    _garde['ip_qty'] += _rec['ip_qty']; _garde['ip_ca'] += _rec['ip_ca']
+    for _f in ('ip_rank_qty', 'ip_rank_ca'):
+        if _rec[_f] and (not _garde[_f] or _rec[_f] < _garde[_f]):
+            _garde[_f] = _rec[_f]
+    if _garde['prix_ip'] == 0 and _rec['prix_ip'] > 0:
+        _garde.update({f: _rec[f] for f in ('prix_ht', 'prix_ip', 'remise_pct', 'offre_ip')})
+    _garde['is_froid'] = _garde['is_froid'] or _rec['is_froid']
+    if not _garde['has_ameli'] and _rec['has_ameli']:
+        _garde.update({f: _rec[f] for f in ('has_ameli', 'ameli_months', 'ameli_jan26', 'rot_pharma_jan26', 'ameli_total', 'yoy_jan', 'atc2')})
+    if not _garde.get('artnature') and _rec.get('artnature'):
+        _garde['artnature'] = _rec['artnature']
+    del records[_key]
+    _reunis += 1
+print(f"  Un produit = un code : {_deplaces} fiches rangées sous leur code gardé, dont {_reunis} réunies avec une fiche existante")
+
 # ── 6. SORT & WRITE ──────────────────────────────────────────────────────────
 recs = sorted(records.values(), key=lambda r: r['ip_qty'], reverse=True)
 
