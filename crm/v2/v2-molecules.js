@@ -46,7 +46,7 @@
 
   function ensureEtab(cb) {
     if (window.ETAB_PRICES) { cb(); return; }
-    var s = document.createElement('script'); s.src = 'etab-prices-data.js?v=20260922e';
+    var s = document.createElement('script'); s.src = 'etab-prices-data.js?v=20260922f';
     s.onload = function () { cb(); }; s.onerror = function () { cb(); };
     document.head.appendChild(s);
   }
