@@ -431,7 +431,8 @@
     '.ph-fiche-line{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:2px 0 16px}' +
     '.ph-fiche-line .ph-fiche-tabs{margin:0 !important}.ph-fiche-line .bo-spacer{flex:1}' +
     /* la fenêtre centrée */
-    '.bo-ov{position:fixed;inset:0;background:rgba(16,19,28,.42);z-index:1000;display:none;align-items:center;justify-content:center;padding:20px}' +
+    /* 9450 : au-dessus du rond « + » (.v2-fab, 9400) qui cachait « Fermer » sur iPhone, sous les barres d'alerte (9500+) */
+    '.bo-ov{position:fixed;inset:0;background:rgba(16,19,28,.42);z-index:9450;display:none;align-items:center;justify-content:center;padding:20px}' +
     '.bo-ov.on{display:flex}' +
     '.bo-win{background:var(--card,#fff);border-radius:var(--r-card,16px);box-shadow:0 24px 60px -12px rgba(16,19,28,.45);width:min(780px,100%);max-height:min(86vh,900px);display:flex;flex-direction:column;overflow:hidden;color:var(--ip-ink,#10131C)}' +
     '.bo-win-h{position:relative;display:flex;align-items:center;gap:10px;padding:16px 56px 12px 20px;border-bottom:1px solid var(--line,#e2e8f0);flex-wrap:wrap}' +
@@ -441,7 +442,7 @@
     '.bo-win-b{overflow:auto;padding:12px 20px 16px;-webkit-overflow-scrolling:touch}' +
     '.bo-win-f{display:flex;gap:8px;padding:12px 20px;border-top:1px solid var(--line,#e2e8f0);background:var(--card-2,#f6f7fa);align-items:center;flex-wrap:wrap}' +
     '.bo-win-f .pha-sub{flex:1}' +
-    '@media (max-width:640px){.bo-ov{padding:0;align-items:flex-end}.bo-win{width:100%;max-height:92vh;border-radius:var(--r-card,16px) var(--r-card,16px) 0 0}.bo-voir{margin-left:0;flex-basis:100%}}' +
+    '@media (max-width:640px){.bo-ov{padding:0;align-items:flex-end}.bo-win-f .pha-sub{display:none}.bo-win-f{justify-content:flex-end}.bo-win{width:100%;max-height:92vh;border-radius:var(--r-card,16px) var(--r-card,16px) 0 0}.bo-voir{margin-left:0;flex-basis:100%}}' +
     '@media print{body.bo-imprime *{visibility:hidden}body.bo-imprime #bo-ov,body.bo-imprime #bo-ov *{visibility:visible}' +
     'body.bo-imprime #bo-ov{position:absolute;left:0;top:0;width:100%;height:auto;display:block;padding:0;background:#fff}' +
     'body.bo-imprime .bo-win{max-height:none;box-shadow:none;width:100%}body.bo-imprime .bo-win-b{overflow:visible}' +
