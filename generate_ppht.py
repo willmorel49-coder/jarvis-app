@@ -14,6 +14,7 @@ import openpyxl
 # fichier stock+prix le plus récent
 cands = sorted(glob.glob('STATS/stock et prix*.xlsx'), key=os.path.getmtime, reverse=True)
 SRC = cands[0]
+from pont_codes import rekey  # un produit = un code (22/09/2026)
 OUT = 'crm/v2/ppht-data.js'
 print('source:', SRC)
 
@@ -47,6 +48,9 @@ for r in ws.iter_rows(min_row=2, values_only=True):
 # Le fichier STOCK ne dit pas si un produit est remboursable : seuls les NR connus sont
 # mis à jour ; les remboursables gardent le tarif ci-dessus. Écart ×0,2–×5 refusé
 # (INFRACYANINE 100,43 → 0,30). Relancer generate_etab_prices.py avant ce script.
+allp = rekey(allp)
+nr = rekey(nr)   # un produit = un code : PPHT et statut NR sous le code gardé
+
 ETAB_JS = 'crm/v2/etab-prices-data.js'
 if os.path.exists(ETAB_JS):
     t = open(ETAB_JS, encoding='utf-8').read()

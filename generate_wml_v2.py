@@ -265,6 +265,9 @@ def num(v):
         return 0.0
 
 
+from pont_codes import canon, rekey  # un produit = un code (22/09/2026)
+
+
 def cip13(v):
     """ARTCODEBARRE -> chaîne CIP13 propre (sans .0)."""
     if v is None:
@@ -395,7 +398,7 @@ for comm, prefix in SOURCES:
             if prefix in AVOIRS_EN_POSITIF and str(c(r, 'PCVNUM') or '').startswith('AC'):
                 _q, _mnt = -_q, -_mnt
             # format compact (tableau) : [pharmacyId, mois, comm, cip13, qte, puNet, mntNetHt]
-            sales.append([code, mois, comm, cip13(_bc),
+            sales.append([code, mois, comm, canon(cip13(_bc)),
                           _q, num(c(r, 'PLVPUNET')), _mnt])
             n += 1
         wb.close()
@@ -556,9 +559,18 @@ def load_benchmark_names():
             names[m.group(2)] = m.group(1)
     except Exception as e:
         print('  [bench] err', e)
+    # un produit = un code (22/09/2026) : le catalogue complet nomme les articles que le
+    # benchmark ne connaît pas (codes gardés des fusions, articles de septembre).
+    try:
+        for l in open(os.path.join(BASE, 'crm', 'v2', 'catalogue-complet-data.js'), encoding='utf-8'):
+            m = _re.match(r'\["(\d{8,14})","((?:[^"\\]|\\.)*)"', l)
+            if m and m.group(1) not in names and m.group(2):
+                names[m.group(1)] = json.loads('"' + m.group(2) + '"')
+    except Exception as e:
+        print('  [catalogue] err', e)
     return names
 
-name_by_cip = load_benchmark_names()
+name_by_cip = rekey(load_benchmark_names())
 pot_by_code = {o['id']: o.get('potentiel') for o in officines}
 _det = {}
 for srow in sales:
