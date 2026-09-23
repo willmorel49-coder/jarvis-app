@@ -2074,7 +2074,7 @@
     var siren = (caB && caB[14]) || (oi && oi[3]) || '';
     if (siren) lignes.push(['SIREN', siren]);
     // 23/09/2026 — annuaire des entreprises : dirigeants déclarés, société cessée (reprise ou fermeture à vérifier).
-    if (oi && oi[5] && !(p[10] && String(oi[5]).toUpperCase().indexOf(String(p[10]).toUpperCase().split(/\s+/).pop()) >= 0)) lignes.push(['Dirigeant(s) déclaré(s)', oi[5]]);
+    if (oi && oi[5] && oi[6] !== 'C' && !(p[10] && String(oi[5]).toUpperCase().indexOf(String(p[10]).toUpperCase().split(/\s+/).pop()) >= 0)) lignes.push(['Dirigeant(s) déclaré(s)', oi[5]]);
     if (oi && oi[6] === 'C') {   // même règle que la fiche (v2-pharma.js, cessation) : cliente ou réouverture FINESS = reprise probable
       var repr = isClient(p) || (oi[4] && oi[7] && (new Date(oi[4]) - new Date(oi[7])) / 864e5 > -62);
       lignes.push(['Société', 'cessée' + (oi[7] ? ' le ' + oi[7].split('-').reverse().join('/') : '') + (repr ? ' — reprise probable' : ' — reprise ou fermeture à vérifier')]);
