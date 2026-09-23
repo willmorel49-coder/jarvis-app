@@ -5,10 +5,12 @@
 import { test } from 'node:test';
 import { existsSync } from 'node:fs';
 
-const DONNEES = new URL('../crm/v2/wml-officines-data.js', import.meta.url);
+// ⚠️ 23/09/2026 : wml-officines-data.js est revenu dans le dépôt (sans les ventes) ;
+// les ventes vivent dans wml-ventes-NN.js, hors dépôt depuis le 03/09. C'est lui qu'on guette.
+const DONNEES = new URL('../crm/v2/wml-ventes-01.js', import.meta.url);
 
 if (existsSync(DONNEES)) {
   await import('./corps-produits-rendu.mjs');
 } else {
-  test('rendu de l ecran Produits sur ventes reelles', { skip: 'wml-officines-data.js absent du depot depuis le 13/08/2026 — joue ce test en local' }, () => {});
+  test('rendu de l ecran Produits sur ventes reelles', { skip: 'ventes protegees (wml-ventes-NN.js) absentes du depot — joue ce test en local' }, () => {});
 }

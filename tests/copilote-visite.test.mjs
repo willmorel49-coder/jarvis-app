@@ -12,7 +12,7 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
@@ -26,7 +26,15 @@ const bac = { window: {}, console };
 vm.createContext(bac);
 const charger = (f) => vm.runInContext(lire(f), bac, { filename: f });
 for (const f of ['prod-stats-data.js', 'ameli-avg-data.js', 'stock-data.js', 'wml-officines-data.js']) charger(f);
-for (let i = 1; i <= 10; i++) charger(`wml-ventes-${String(i).padStart(2, '0')}.js`);
+// Autant de fichiers wml-ventes-NN.js que le dépôt en contient réellement — jamais un
+// compte figé. Le 03/09/2026 le découpage est passé de 10 à 38 fichiers (grande passe
+// conditions commerciales) : un « 10 » en dur chargeait alors moins d'un tiers des
+// ventes et faisait disparaître les produits chers du panier testé.
+for (const f of readdirSync(DIR)
+  .filter((f) => /^wml-ventes-\d+\.js$/.test(f))
+  .sort((a, b) => Number(a.match(/\d+/)[0]) - Number(b.match(/\d+/)[0]))) {
+  charger(f);
+}
 const W = bac.window, dO = W.WML_D_OFFICINES, dP = W.WML_D_PRODUITS;
 
 // Ce que chaque officine commande déjà
@@ -71,7 +79,22 @@ const gaps = (pid, n) => vm.runInContext('officineGaps', bac2)(pid, n);
 
 const tranche = (net) => (net < 4.33 ? 0 : net < 468 ? 1 : net < 2000 ? 2 : 3);
 
-test('les donnees portent bien des produits chers candidats — sinon rien a prouver', () => {
+// ⚠️ Depuis la « grande passe conditions commerciales » (commit dda303b0, 03/09/2026),
+// PROD_STATS PUBLIC (prod-stats-data.js) ne porte plus `net` (prix net après remise) :
+// ce chiffre vit dans prod-stats-conditions.js, hors dépôt, servi par adresse signée
+// après connexion, et RECOLLÉ en mémoire sur PROD_STATS au runtime (v2-boot.js,
+// fusionsProtegees()). Sans ce fichier, `r.net` vaut toujours `undefined`, `tranche(0)`
+// reste sous le seuil « cher » et `officineGaps()` ne trouve jamais rien à classer —
+// ce n'est pas la fonction testée qui est en cause, seule sa donnée protégée manque.
+// C'est une condition commerciale chiffrée (§8 pharma-metier) : jamais reconstruite ni
+// recopiée ici. On saute proprement plutôt que d'échouer pour la mauvaise raison — ou
+// pire, de passer par le vide (une liste `gaps` vide rend « pass » sur du rien).
+const DONNEES_PROTEGEES_ABSENTES = !existsSync(join(DIR, 'prod-stats-conditions.js'));
+const SKIP_NET = DONNEES_PROTEGEES_ABSENTES
+  && 'données protégées absentes (crm/v2/prod-stats-conditions.js — prix net) — '
+  + 'condition commerciale chiffrée, jamais dans ce dépôt ; test à lancer en local avec ces données déposées';
+
+test('les donnees portent bien des produits chers candidats — sinon rien a prouver', { skip: SKIP_NET }, () => {
   const owned = commande[CIBLE];
   const chers = W.PROD_STATS.filter((r) => bac2.eligible(r) && !owned.has(String(r.c))
     && W.AMELI_AVG.data[String(r.c)] > 0 && tranche(+r.net || 0) >= 2);
@@ -79,7 +102,7 @@ test('les donnees portent bien des produits chers candidats — sinon rien a pro
     `seulement ${chers.length} produits chers candidats : le cas n est pas represente`);
 });
 
-test('le classement suit les EUROS, pas le nombre de boites', () => {
+test('le classement suit les EUROS, pas le nombre de boites', { skip: SKIP_NET }, () => {
   const l = gaps(CIBLE, 25);
   assert.ok(l.length >= 10, `seulement ${l.length} arguments`);
   for (let i = 1; i < l.length; i++) {
@@ -91,7 +114,7 @@ test('le classement suit les EUROS, pas le nombre de boites', () => {
     'le premier argument est aussi le plus gros volume : le tri pourrait encore etre celui des boites');
 });
 
-test('un produit cher peut ENFIN apparaitre dans les arguments', () => {
+test('un produit cher peut ENFIN apparaitre dans les arguments', { skip: SKIP_NET }, () => {
   // ⚠️ Le coeur du defaut : avec l ancien plancher de 12 boites par an, la
   // reponse etait NON pour toutes les officines testees.
   let officinesAvecCher = 0, testees = 0;
@@ -107,7 +130,7 @@ test('un produit cher peut ENFIN apparaitre dans les arguments', () => {
     + 'le classement en euros ne les fait toujours pas remonter');
 });
 
-test('l ancien plancher au VOLUME aurait tout ecarte — contre-epreuve', () => {
+test('l ancien plancher au VOLUME aurait tout ecarte — contre-epreuve', { skip: SKIP_NET }, () => {
   // On rejoue l ancienne regle pour prouver que le test discrimine.
   const owned = commande[CIBLE];
   const chers = W.PROD_STATS.filter((r) => bac2.eligible(r) && !owned.has(String(r.c))
@@ -117,7 +140,7 @@ test('l ancien plancher au VOLUME aurait tout ecarte — contre-epreuve', () => 
     `${survivants.length} produits chers passaient l ancien plancher : le defaut n etait pas celui decrit`);
 });
 
-test('le potentiel affiche vaut boites France x prix net', () => {
+test('le potentiel affiche vaut boites France x prix net', { skip: SKIP_NET }, () => {
   const l = gaps(CIBLE, 25);
   for (const x of l.slice(0, 8)) {
     const attendu = W.AMELI_AVG.data[String(x.r.c)] * (+x.r.net);
@@ -126,7 +149,7 @@ test('le potentiel affiche vaut boites France x prix net', () => {
   }
 });
 
-test('aucun argument sur un produit hors stock, ni deja commande', () => {
+test('aucun argument sur un produit hors stock, ni deja commande', { skip: SKIP_NET }, () => {
   const l = gaps(CIBLE, 25);
   for (const x of l) {
     assert.ok(W.STOCK_IP.data[String(x.r.c)] > 0, `${x.r.d} propose sans stock Integral`);

@@ -69,7 +69,7 @@ const CIP_FROID_GROSSISTE = '3400930141861';   // SHINGRIX, sous-famille Froid c
 win.FROID_CIPS = [CIP_FROID_GROSSISTE, '3400930000001'];   // le second est aussi marqué non-froid dans le benchmark : la liste grossiste prime
 const fmtNum = (n) => (Math.round(n) || 0).toLocaleString('fr-FR');
 const V2 = win.V2 = {
-  pages: {}, user: null, pharmacies: [{ id: 'p1', name: 'Pharma test' }], sales: VENTES, commFilter: '',
+  pages: {}, user: null, pharmacies: [{ id: 'p1', name: 'Pharma test' }], sales: VENTES, commFilter: '', ESCALE_COMMS: [],
   commSales() { return V2.commFilter ? V2.sales.filter((s) => s.commercial === V2.commFilter) : V2.sales; },
   commercials() { const s = {}; V2.sales.forEach((x) => { if (x.commercial) s[x.commercial] = 1; }); return Object.keys(s).sort(); },
   esc: (s) => String(s == null ? '' : s),

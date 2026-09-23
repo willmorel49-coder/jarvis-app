@@ -34,7 +34,7 @@ const VENTES = [
 ];
 const V2 = win.V2 = {
   pages: {}, user: { commercial: '', voitTous: true }, pharmacies: [{ id: 'p1', name: 'Un' }, { id: 'p2', name: 'Deux' }, { id: 'p3', name: 'Trois' }],
-  sales: VENTES, commFilter: '',
+  sales: VENTES, commFilter: '', ESCALE_COMMS: [],
   commSales() { return V2.commFilter ? V2.sales.filter((s) => s.commercial === V2.commFilter) : V2.sales; },
   commercials: () => ['A', 'B'],
   esc: (s) => String(s == null ? '' : s),
