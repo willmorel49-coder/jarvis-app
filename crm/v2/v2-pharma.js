@@ -3041,6 +3041,11 @@
     // Prospect (21/09/2026) : rien d'acheté chez nous, donc la liste ENTIÈRE — celle de son
     // groupement (la même que l'écran Groupements) ou les meilleures rotations du réseau.
     if (prospect) {
+      // 23/09/2026 : 5 styles au choix et pages découpées par nous (v2-pdf-prospect.js)
+      if (V2.prospectPdf) {
+        return V2.prospectPdf(scope === 'groupement' ? groupementProducts(tx.grp) : buildRecoCats(pid, 'reseau'),
+          { nom: prospect, ref: scope === 'groupement' ? tx.grp : reseauLbl(), reseau: scope !== 'groupement' }, mode);
+      }
       return (scope === 'groupement')
         ? achatsPdf(tx.grp, groupementProducts(tx.grp), false, mode, null, prospect)
         : achatsPdf(reseauLbl(), buildRecoCats(pid, 'reseau'), false, mode, null, prospect);
