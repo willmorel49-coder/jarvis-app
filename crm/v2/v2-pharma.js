@@ -2695,6 +2695,55 @@
     '</div>';
   }
 
+  // 23/09/2026 — demande de Will : le PDF officine montre aussi CE QU'ELLE COMMANDE,
+  // toutes familles confondues (le top 5 par tranche ne suffisait pas), avant ses opportunités.
+  var PDF_TOP_VENTES = 30;
+  function topVentesPdfHtml(pid) {
+    var sales = pharmaSales(pid);
+    if (!sales.length) return '';
+    var MONO = "'Geist Mono',ui-monospace,monospace";
+    var bIdx = benchIndex(), by = {}, caTot = 0;
+    // nom de secours : catalogue complet (produits absents du BENCHMARK, ventes compactes sans libellé)
+    var cc = V2.produits && V2.produits.catalogueIndex ? V2.produits.catalogueIndex() : null;
+    sales.forEach(function (s) {
+      var cip = String(s.artCode || ''); if (cip.length < 7) return;
+      var e = by[cip];
+      if (!e) {
+        var b = bIdx.get(cip), ck = b ? classify(b, cip) : null;
+        e = by[cip] = { cip: cip, designation: (b && b.designation) || s.artDesignation || (cc && cc[cip] && cc[cip].d) || cip, cat: CATS.filter(function (c) { return c.key === ck; })[0] || null, ca: 0, qte: 0 };
+      }
+      e.ca += s.mntNetHt || 0; e.qte += s.qte || 0;
+    });
+    var all = Object.keys(by).map(function (k) { return by[k]; }).filter(function (r) { return r.ca > 0; });
+    all.forEach(function (r) { caTot += r.ca; });
+    all.sort(function (a, b) { return b.ca - a.ca; });
+    var rows = all.slice(0, PDF_TOP_VENTES);
+    if (!rows.length) return '';
+    var caTop = rows.reduce(function (a, r) { return a + r.ca; }, 0);
+    var COLS = '<colgroup><col style="width:5%"><col style="width:39%"><col style="width:22%"><col style="width:10%"><col style="width:14%"><col style="width:10%"></colgroup>';
+    var th = function (h, al) { return '<th style="text-align:' + al + ';padding:6px 8px;font-size:8.5px;font-weight:800;letter-spacing:.6px;color:#FFFFFF;text-transform:uppercase">' + h + '</th>'; };
+    var trs = rows.map(function (r, i) {
+      var c = r.cat;
+      return '<tr style="page-break-inside:avoid;background:' + (i % 2 ? '#F7F9FC' : '#FFFFFF') + ';border-bottom:1px solid #F1F4F9">' +
+        '<td style="padding:6px 8px;font-family:' + MONO + ';font-size:9px;color:#9AA1B2">' + (i + 1) + '</td>' +
+        '<td style="padding:6px 8px;font-size:10px;font-weight:700;color:#10131C">' + esc(String(r.designation).slice(0, 52)) + '</td>' +
+        '<td style="padding:6px 8px;font-size:9px;color:#4A5163;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><span style="display:inline-block;width:7px;height:7px;border-radius:2px;background:' + (c ? c.color : '#C9CFDA') + ';margin-right:5px;vertical-align:middle"></span>' + esc(c ? c.label : 'Autres') + '</td>' +
+        '<td style="padding:6px 8px;text-align:right;font-family:' + MONO + ';font-size:9.5px;color:#10131C">' + V2.fmtNum(r.qte) + '</td>' +
+        '<td style="padding:6px 8px;text-align:right;font-family:' + MONO + ';font-size:10.5px;font-weight:800;color:#10131C;white-space:nowrap">' + V2.fmtEur(r.ca) + '</td>' +
+        '<td style="padding:6px 8px;text-align:right;font-family:' + MONO + ';font-size:9px;color:#737A8C">' + (caTot > 0 ? (r.ca / caTot * 100).toFixed(1).replace('.', ',') + ' %' : '—') + '</td>' +
+      '</tr>';
+    }).join('');
+    return '<div style="margin-bottom:16px">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;border-top:2px solid #10131C;padding-top:9px;margin-bottom:9px;page-break-after:avoid">' +
+        '<div style="font-size:12px;font-weight:800;color:#10131C">Ce qu\'elle commande <span style="color:#737A8C;font-weight:600;font-size:10px">— ses ' + rows.length + ' premiers produits, toutes familles</span></div>' +
+        '<div style="font-size:9px;color:#737A8C">' + (caTot > 0 ? Math.round(caTop / caTot * 100) + ' % de son CA · ' : '') + V2.fmtNum(all.length) + ' réf. commandées</div>' +
+      '</div>' +
+      '<table style="width:100%;border-collapse:collapse;table-layout:fixed;border:1px solid #E7EBF2">' + COLS +
+        '<thead><tr style="background:#10131C">' + th('#', 'left') + th('Produit', 'left') + th('Famille', 'left') + th('Boîtes', 'right') + th('CA HT', 'right') + th('Part', 'right') + '</tr></thead>' +
+        '<tbody>' + trs + '</tbody></table>' +
+    '</div>';
+  }
+
   function achatsPdf(title, data, useSel, mode, portraitPid, prospectNom) {
     if (typeof window.ensureHtml2Pdf !== 'function') { V2.toast('Module PDF indisponible', 'error'); return; }
     var grpName = title;
@@ -2749,7 +2798,7 @@
         '<div style="display:flex;align-items:center;gap:13px">' +
           '<div style="width:34px;height:34px;border-radius:8px;background:#FFFFFF;display:flex;align-items:center;justify-content:center;font-weight:800;color:#0050E6;font-size:17px;letter-spacing:-1px">IP</div>' +
           '<div><div style="color:#FFFFFF;font-size:15px;font-weight:800;line-height:1.1">Intégral Pharma</div>' +
-            '<div style="color:#A9C2F5;font-size:10px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;margin-top:2px">Liste d\'achats recommandée</div></div>' +
+            '<div style="color:#A9C2F5;font-size:10px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;margin-top:2px">' + (pharma ? 'Ses achats · ses opportunités' : 'Liste d\'achats recommandée') + '</div></div>' +
         '</div>' +
         '<div style="text-align:right;color:#FFFFFF">' +
           '<div style="font-size:11px;font-weight:700">' + esc(headName) + '</div>' +
@@ -2762,10 +2811,10 @@
         '<span style="color:#C7D2E6;font-size:9.5px;font-weight:600;letter-spacing:.3px">RÉFÉRENCE — ' + esc(grpName) + ' · <span style="color:#FFFFFF">' + panel + ' pharmacies</span> · ' + (prospectNom ? 'produits les plus commandés par la référence' : 'produits commandés par la référence et absents de l\'officine') + '</span>' +
       '</div>' +
       '<div style="padding:16px 22px 20px">' +
-        (portraitPid ? recapPdfHtml(portraitPid) : '') +
+        (portraitPid ? recapPdfHtml(portraitPid) + topVentesPdfHtml(portraitPid) : '') +
         // Titre liste + en-tête colonnes global (sombre)
         '<div style="display:flex;align-items:center;justify-content:space-between;border-top:2px solid #10131C;padding-top:9px;margin-bottom:9px;page-break-after:avoid">' +
-          '<div style="font-size:12px;font-weight:800;color:#10131C">' + (prospectNom ? 'Meilleures rotations' : 'Liste à pousser') + ' <span style="color:#737A8C;font-weight:600;font-size:10px">— ' + totalProd + ' produits, par famille</span></div>' +
+          '<div style="font-size:12px;font-weight:800;color:#10131C">' + (prospectNom ? 'Meilleures rotations' : pharma ? 'Ses opportunités d\'achat' : 'Liste à pousser') + ' <span style="color:#737A8C;font-weight:600;font-size:10px">— ' + totalProd + ' produits, par famille</span></div>' +
           '<div style="font-size:9px;color:#737A8C">Nbr pharma = pharmacies qui commandent / ' + panel + '</div>' +
         '</div>' +
         '<table style="width:100%;border-collapse:collapse;table-layout:fixed;page-break-after:avoid">' + COLS6 +
@@ -2977,6 +3026,11 @@
     }
     var data = buildRecoCats(pid, scope);
     var label = (scope === 'groupement') ? (groupementPids(pid).name || 'Groupement') : reseauLbl();
+    // « Ce qu'elle commande » nomme ses produits hors BENCHMARK via le catalogue complet (différé)
+    if (!window.CATALOGUE_COMPLET && V2.loadFiles) {
+      var go = function () { return achatsPdf(pharma.name + ' — ' + label, data, false, mode, pid); };
+      return V2.loadFiles(['catcomplet']).then(go, go);
+    }
     return achatsPdf(pharma.name + ' — ' + label, data, false, mode, pid);
   };
 
