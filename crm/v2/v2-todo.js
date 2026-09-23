@@ -24,7 +24,7 @@
   var V2 = window.V2 = window.V2 || {};
   V2.pages = V2.pages || {};
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s); };
-  var ICO = function (n, s, w) { return V2.ICO ? V2.ICO(n, s, w) : ''; };
+  var ICO = function (n, s, w) { return window.ICO ? window.ICO(n, s, w) : ''; };   // v2-icons.js expose window.ICO
   var LS = 'jarvis_todo_v1';
 
   var KINDS = {
