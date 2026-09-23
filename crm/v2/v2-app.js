@@ -1325,7 +1325,7 @@
         var SC_VENDRE = '<path d="M14 44v18h14l24 16V28L28 44H14z" fill="' + W + '.22)" stroke="' + W + '.75)"/><path d="M58 40a16 16 0 0 1 0 26" fill="none" stroke="' + W + '.6)"/><path d="M66 32a26 26 0 0 1 0 42" fill="none" stroke="' + W + '.35)"/><rect x="82" y="26" width="24" height="18" rx="3" fill="' + W + '.18)" stroke="' + W + '.6)"/>';
 
         var terrain = [
-          tuile('pharma', 'pharma', 'Officines', [{ t: 'Fiches', k: 'pharma' }, { t: 'Visites' }, { t: 'À relancer' }, { t: 'Audit marge', k: 'audit' }]),
+          tuile('pharma', 'pharma', 'Officines', [{ t: 'Fiches', k: 'pharma' }, { t: 'Visites' }, { t: 'À relancer' }, { t: 'À faire', k: 'todo' }, { t: 'Audit marge', k: 'audit' }]),
           tuile('carte', 'grid', 'La carte', [{ t: 'Clients' }, { t: 'Prospects' }, { t: 'Tournée', k: 'tournee' }]),
           // Espace Groupements : listes des groupements + listings produits (renderGroupementsList via pharma?groupements)
           tuile('pharma', 'list', 'Groupements', [{ t: 'Listes', k: 'pharma', param: 'groupements' }, { t: 'Listings d\'achats', k: 'pharma', param: 'groupements' }, { t: 'Carte des groupements', k: 'carteGrp' }], goJs('pharma', 'groupements'))
@@ -1412,6 +1412,7 @@
           '<div class="v2-search" role="button" tabindex="0" aria-label="Rechercher une pharmacie, un produit" onclick="V2.onTopSearch()"><span class="srch-ic">' + ICO('search', 18, 2) + '</span>' +
             '<input readonly aria-hidden="true" tabindex="-1" placeholder="Cherche une pharmacie, un produit…" style="cursor:pointer"><kbd>' + MOD + 'K</kbd></div>' +
           relancesCardHtml() +
+          (V2.todo ? V2.todo.cardHtml() : '') +
           pilHtml +
         '</div>';
 
