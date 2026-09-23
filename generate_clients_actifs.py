@@ -181,6 +181,13 @@ def tel(v):
     return t
 
 
+def fax(v):
+    """Même mise en forme que tel() ; un numéro qui n'a pas la forme 0X XX XX XX XX après
+    correction (ex. « 4940818258 », zéro mangé ET chiffre en trop) est écarté plutôt qu'affiché faux."""
+    t = tel(v)
+    return t if re.match(r'^0\d( \d\d){4}$', t) else ''
+
+
 def contact(r, H):
     civ, nom, pre = s(r[H['ADRCONTACTTYPE']]), s(r[H['ADRCONTACTNOM']]), s(r[H['ADRCONTACTPRENOM']])
     if not nom and not pre:
@@ -240,7 +247,7 @@ def main():
             s(r[H['ADRCODEPOSTAL']]),            # 12 code postal
             s(r[H['ADRVILLE']]),                 # 13 ville
             s(r[H['TIRSIREN']]),                 # 14 SIREN
-            s(r[H['ADRFAX']]),                   # 15 fax
+            fax(r[H['ADRFAX']]),                 # 15 fax (vide si le numéro est illisible : la fiche prend alors celui du FINESS)
             [s(r[H['Structure']])] if s(r[H['Structure']]) else [],  # 16 structure(s) qui la livrent
             s(r[H['PMLCLE']]),                   # 17 clé PharmaML
             '',                                  # 18 grossiste principal — comblé après coup (STATS/*_pharmacies.xlsx)

@@ -1559,7 +1559,7 @@
           kv('Titulaire', esc(titulaire)) +
           (interloc ? kv('Interlocuteur', esc(interloc)) : '') +
           kv('Groupement', (pharma.groupement && pharma.groupement !== '—') ? esc(canonG(pharma.groupement)) : '') +
-          (grpInfo && grpInfo.description ? '<span></span><span class="pha-grpinfo">' + esc(grpInfo.description) + (grpInfo.site ? ' <a href="' + esc(grpInfo.site) + '" target="_blank" rel="noopener">' + esc(grpInfo.site.replace(/^https?:\/\//, '').replace(/\/$/, '')) + '</a>' : '') + '</span>' : '') +
+          (grpInfo && grpInfo.description ? '<span></span><span class="pha-grpinfo"><span class="pha-grpdesc" title="' + esc(grpInfo.description) + '">' + esc(grpInfo.description) + '</span>' + (grpInfo.site ? ' <a href="' + esc(grpInfo.site) + '" target="_blank" rel="noopener">' + esc(grpInfo.site.replace(/^https?:\/\//, '').replace(/\/$/, '')) + '</a>' : '') + '</span>' : '') +
           kv('Téléphone', tel ? esc(tel) : '') +
           (portable && portable !== tel ? kv('Portable', esc(portable)) : '') +
           (fax ? kv('Fax', esc(fax)) : '') +
@@ -3885,6 +3885,8 @@
       '.pha-kv .pha-probable{font-style:italic;font-weight:600;color:rgba(255,196,110,.92)}',
       '.pha-kv .pha-grpinfo{text-align:left;font-weight:500;font-size:12px;color:rgba(255,255,255,.75);line-height:1.4;overflow-wrap:anywhere}',
       '.pha-kv .pha-grpinfo a{color:#fff;text-decoration:underline}',
+      // Description du groupement ramenée à 2 lignes (texte complet au survol) : elle prenait un demi-écran sur téléphone.
+      '.pha-kv .pha-grpdesc{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}',
       '.pha-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}',
       '.pha-btn{display:inline-flex;align-items:center;gap:7px;min-height:var(--tap-min,44px);padding:0 14px;border-radius:var(--r-btn,12px);border:1px solid var(--line-strong);background:var(--card);font:inherit;font-weight:700;font-size:13px;color:var(--ip-ink);cursor:pointer;text-decoration:none;white-space:nowrap}',
       '.pha-id .pha-btn{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.22);color:#fff}',
