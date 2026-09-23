@@ -184,6 +184,7 @@
       var nom = (o && o._nom) || '', mail = (o && o._mail) || '';
       V2.todo.fermer();
       var it = { id: newId(), k: k, pid: String(pid), nom: nom, mail: mail, note: '', pour: '', fait: false, faitLe: '', cree: new Date().toISOString() };
+      st.filtre = 'afaire';   // la nouvelle ligne doit se voir en revenant sur Ma liste
       charger().then(function () { return ecrire(function (items) { return items.concat([it]); }); }).then(function () {
         if (V2.toast) V2.toast('Ajouté à ma liste : ' + KINDS[k].l + (nom ? ' · ' + nom : ''));
         if (V2.route && V2.route.name === 'home' && V2.render) V2.render();
@@ -199,6 +200,7 @@
       if (!nom && !note) { if (V2.toast) V2.toast('Indiquer une officine ou une note', 'warn'); return; }
       var p = nom ? (V2.pharmacies || []).find(function (x) { return String(x.name || '').trim().toLowerCase() === nom.toLowerCase(); }) : null;
       var it = { id: newId(), k: st.kind, pid: p ? String(p.id) : '', nom: p ? p.name : nom, mail: '', note: note, pour: pour, fait: false, faitLe: '', cree: new Date().toISOString() };
+      st.filtre = 'afaire';
       ecrire(function (items) { return items.concat([it]); }).then(function () {
         if (nomEl) nomEl.value = ''; if (noteEl) noteEl.value = ''; if (pourEl) pourEl.value = '';
         rendre();
