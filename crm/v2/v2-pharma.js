@@ -3264,6 +3264,12 @@
       return (r && r.data && !r.error) ? new File([r.data], txPretty(name), { type: txMime(name) }) : null;
     });
   }
+  // 24/09/2026 : le style du listing prospect est écrit dans la trace (savoir lequel l'équipe utilise)
+  function txStyleNote(pid, k) {
+    if (k.indexOf('L:') !== 0 || txIsClient(pid) || !V2.prospectPdfStyle || !V2.prospectPdfStyles) return '';
+    var n = V2.prospectPdfStyle(), s = V2.prospectPdfStyles.find(function (x) { return x.id === n; });
+    return s ? ' (style ' + s.id + ' · ' + s.nom + ')' : '';
+  }
   // Deux temps (Préparer puis Envoyer) : Safari n'ouvre la feuille de partage que
   // dans le clic lui-même — après plusieurs secondes de génération, il la refuse.
   V2.pharmaTxPrepare = function () {
@@ -3276,7 +3282,7 @@
     its.forEach(function (it) {
       chain = chain.then(function () {
         tx.step++; txRender();
-        return txFetch(pid, it.k).then(function (f) { if (f) { f.txLabel = it.label; out.push(f); } else fails.push(it.label); },
+        return txFetch(pid, it.k).then(function (f) { if (f) { f.txLabel = it.label + txStyleNote(pid, it.k); out.push(f); } else fails.push(it.label); },
           function () { fails.push(it.label); });
       });
     });
