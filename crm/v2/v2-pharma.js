@@ -1074,7 +1074,7 @@
     }
     var oi = (window.OFFICINES_INFOS || {})[String(pid)] || null;
     var oiAdresse = oi ? (oi[0] || '') : '', oiTel = oi ? (oi[1] || '') : '', oiFax = oi ? (oi[2] || '') : '', oiSiren = oi ? (oi[3] || '') : '', oiDateouv = oi ? (oi[4] || '') : '';
-    var seed = { nom: p[6] || '', groupement: grp || '', titulaire: p[10] || (oi && oi[5]) || '', tel: p[9] || oiTel, email: p[11] || '', adresse: oiAdresse };
+    var seed = { nom: p[6] || '', groupement: grp || '', titulaire: p[10] || dirigeantsDe(oi), tel: p[9] || oiTel, email: p[11] || '', adresse: oiAdresse };
     var badge = function (t, cls) { return t ? '<span class="v2-chip' + (cls ? ' ' + cls : '') + '">' + esc(t) + '</span>' : ''; };
     // 23/09/2026 — un prospect n'a jamais de grossiste/génériqueur connu (base clients
     // = clientes seulement) : estimation d'après son groupement, jamais écrite en base.
@@ -1098,7 +1098,7 @@
                 (oiFax ? (oiSiren ? ' · ' : '') + 'Fax ' + esc(oiFax) : '') +
                 (oiDateouv ? ((oiSiren || oiFax) ? ' · ' : '') + 'Ouverte le ' + esc(oiDateouv) : '') +
               '</div>' : '') +
-              ((oi && oi[5] && !memesNoms(p[10], oi[5])) ? '<div class="v2-prospect-extra">Dirigeant(s) déclaré(s) : ' + esc(oi[5]) + '</div>' : '') +
+              ((dirigeantsDe(oi) && !memesNoms(p[10], dirigeantsDe(oi))) ? '<div class="v2-prospect-extra">Dirigeant(s) déclaré(s) : ' + esc(dirigeantsDe(oi)) + '</div>' : '') +
               (cessation(oi) ? '<div class="v2-prospect-extra v2-cessee">' + esc(cessation(oi)) + '</div>' : '') +
               probableLignes +
             '</div>' +
@@ -1133,6 +1133,8 @@
   }
   // Reprise probable quand l'établissement a été (ré)ouvert au FINESS au plus 2 mois avant la
   // cessation ou après, ou quand l'officine nous commande encore (cliente) ; sinon « à vérifier ».
+  // Dirigeants déclarés — JAMAIS ceux d'une société cessée (anciens propriétaires), même si le fichier en portait.
+  function dirigeantsDe(oi) { return (oi && oi[6] !== 'C' && oi[5]) || ''; }
   function cessation(oi, cliente) {
     if (!oi || oi[6] !== 'C') return '';
     var reprise = cliente || (oi[4] && oi[7] && (new Date(oi[4]) - new Date(oi[7])) / 864e5 > -62);
@@ -1573,8 +1575,8 @@
         '<div class="pha-kv">' +
           kv('Ville', esc(loc)) +
           (adresse ? kv('Adresse', esc(adresse)) : '') +
-          kv('Titulaire', esc(titulaire || (oi && oi[5]) || '')) +
-          ((oi && oi[5] && titulaire && !memesNoms(titulaire, oi[5])) ? kv('Dirigeant(s) déclaré(s)', esc(oi[5])) : '') +
+          kv('Titulaire', esc(titulaire || dirigeantsDe(oi))) +
+          ((dirigeantsDe(oi) && titulaire && !memesNoms(titulaire, dirigeantsDe(oi))) ? kv('Dirigeant(s) déclaré(s)', esc(dirigeantsDe(oi))) : '') +
           (cessation(oi, true) ? '<span>Société</span><span class="pha-cessee">' + esc(cessation(oi, true)) + '</span>' : '') +
           (interloc ? kv('Interlocuteur', esc(interloc)) : '') +
           kv('Groupement', (pharma.groupement && pharma.groupement !== '—') ? esc(canonG(pharma.groupement)) : '') +
