@@ -1099,6 +1099,7 @@
                 (oiDateouv ? ((oiSiren || oiFax) ? ' · ' : '') + 'Ouverte le ' + esc(oiDateouv) : '') +
               '</div>' : '') +
               ((dirigeantsDe(oi) && !memesNoms(p[10], dirigeantsDe(oi))) ? '<div class="v2-prospect-extra">Dirigeant(s) déclaré(s) : ' + esc(dirigeantsDe(oi)) + '</div>' : '') +
+              (equipeDe(oi) ? '<div class="v2-prospect-extra">Pharmaciens : ' + esc(equipeDe(oi)) + '</div>' : '') +
               (cessation(oi) ? '<div class="v2-prospect-extra v2-cessee">' + esc(cessation(oi)) + '</div>' : '') +
               (retraiteDe(oi) ? '<div class="v2-prospect-extra v2-retraite">Titulaire proche de la retraite (62 ans ou plus)</div>' : '') +
               (autresOfficinesHtml(oi) ? '<div class="v2-prospect-extra">Dirige aussi : ' + autresOfficinesHtml(oi) + '</div>' : '') +
@@ -1160,6 +1161,15 @@
     var v = oi && oi[12] ? String(oi[12]).split('|') : null;
     if (!v || !v[0]) return '';
     return esc(v[1] || 'Procédure collective') + ' — publié le ' + esc(dateFr(v[0])) + bodaccLien(v[2]);
+  }
+  // 24/09/2026 — colonne 13 (robot ~/fiches-officines, Annuaire Santé RPPS) : 'titulaires|adjoints',
+  // pharmaciens déclarés sur le FINESS de l'officine. Des comptes seulement, jamais de nom.
+  function equipeDe(oi) {
+    var v = oi && oi[13] ? String(oi[13]).split('|') : null;
+    if (!v) return '';
+    var t = +v[0] || 0, a = +v[1] || 0;
+    return (t ? t + ' titulaire' + (t > 1 ? 's' : '') : 'titulaire non déclaré') +
+      (a ? ' + ' + a + ' adjoint' + (a > 1 ? 's' : '') : ', sans adjoint déclaré');
   }
   var _nomsPf = null;
   function officineLabel(id) {
@@ -1615,6 +1625,7 @@
           (adresse ? kv('Adresse', esc(adresse)) : '') +
           kv('Titulaire', esc(titulaire || dirigeantsDe(oi))) +
           ((dirigeantsDe(oi) && titulaire && !memesNoms(titulaire, dirigeantsDe(oi))) ? kv('Dirigeant(s) déclaré(s)', esc(dirigeantsDe(oi))) : '') +
+          (equipeDe(oi) ? kv('Pharmaciens', esc(equipeDe(oi))) : '') +
           (cessation(oi, true) ? '<span>Société</span><span class="pha-cessee">' + esc(cessation(oi, true)) + '</span>' : '') +
           (retraiteDe(oi) ? '<span>À savoir</span><span class="pha-retraite">Titulaire proche de la retraite (62 ans ou plus)</span>' : '') +
           (autresOfficinesHtml(oi) ? '<span>Dirige aussi</span><span class="pha-grpinfo">' + autresOfficinesHtml(oi) + '</span>' : '') +
