@@ -991,7 +991,7 @@
     return '<button class="v2-btn v2-btn-ghost" onclick="V2.pharmaTransmettre(\'' + esc(String(pid)) + '\')" title="catalogues, documents de l\'équipe — en pièces jointes">' +
       (V2.ICO ? V2.ICO('fiche', 15, 2) : '') + 'Choisir quoi lui transmettre</button>' +
       (V2.todo ? '<button class="v2-btn v2-btn-ghost" onclick="V2.todo.menu(\'' + esc(String(pid).replace(/[^0-9A-Za-z_-]/g, '')) + '\')" title="demande de rendez-vous, suite de rendez-vous, ouverture de compte…">' +
-        (window.ICO ? window.ICO('check', 15, 2) : '') + 'Ajouter à ma liste</button>' : '');
+        (window.ICO ? window.ICO('check', 15, 2) : '') + 'Ajouter à la to do list</button>' : '');
   }
 
   // Officine trouvée dans la base nationale (prospect / non-cliente) par son id.
@@ -1529,7 +1529,7 @@
       ICO('fiche', 15, 2) + 'Choisir quoi lui transmettre</button>';
     // 23/09/2026 — Ma liste : demande de rendez-vous, suite de rendez-vous, ouverture de compte…
     var btnTodo = V2.todo ? '<button class="pha-btn pha-btn-w" onclick="V2.todo.menu(\'' + pidSafe + '\')" title="demande de rendez-vous, suite de rendez-vous, ouverture de compte…">' +
-      ICO('check', 15, 2) + 'Ajouter à ma liste</button>' : '';
+      ICO('check', 15, 2) + 'Ajouter à la to do list</button>' : '';
     var listes =
       '<div class="v2-card pha-card pha-lists"><div class="pha-kl">Listes à proposer</div>' +
         btnProduits +

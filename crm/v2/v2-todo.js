@@ -167,8 +167,8 @@
       var ex = document.getElementById('v2-todo-pop'); if (ex) ex.remove();
       var o = document.createElement('div');
       o.id = 'v2-todo-pop'; o.className = 'v2-todo-ov';
-      o.innerHTML = '<div class="v2-todo-pop" role="dialog" aria-label="Ajouter à ma liste" onclick="event.stopPropagation()">' +
-        '<div class="v2-todo-pop-h"><b>Ajouter à ma liste</b><span>' + esc(nom || 'cette officine') + '</span>' +
+      o.innerHTML = '<div class="v2-todo-pop" role="dialog" aria-label="Ajouter à la to do list" onclick="event.stopPropagation()">' +
+        '<div class="v2-todo-pop-h"><b>Ajouter à la to do list</b><span>' + esc(nom || 'cette officine') + '</span>' +
           '<button class="v2-todo-x" aria-label="Fermer" onclick="V2.todo.fermer()">&times;</button></div>' +
         ORDER.map(function (k) {
           return '<button class="v2-todo-choix" onclick="V2.todo.ajouterDepuis(\'' + esc(String(pid)) + '\',\'' + k + '\')">' +
@@ -188,7 +188,7 @@
       var it = { id: newId(), k: k, pid: String(pid), nom: nom, mail: mail, note: '', pour: '', fait: false, faitLe: '', cree: new Date().toISOString() };
       st.filtre = 'afaire';   // la nouvelle ligne doit se voir en revenant sur Ma liste
       charger().then(function () { return ecrire(function (items) { return items.concat([it]); }); }).then(function () {
-        if (V2.toast) V2.toast('Ajouté à ma liste : ' + KINDS[k].l + (nom ? ' · ' + nom : ''));
+        if (V2.toast) V2.toast('Ajouté à la to do list : ' + KINDS[k].l + (nom ? ' · ' + nom : ''));
         if (V2.route && V2.route.name === 'home' && V2.render) V2.render();
         rendre();
       });
@@ -255,14 +255,14 @@
       if (!ouv.length) {
         return '<div class="v2-card" style="margin-bottom:16px;padding:14px 18px;display:flex;align-items:center;gap:12px">' +
           '<span style="flex:none;color:var(--ip-blue);display:inline-flex">' + ICO('list', 18, 2) + '</span>' +
-          '<span style="flex:1;min-width:0"><b style="font-size:13px;font-weight:800;color:var(--ip-ink)">Ma liste</b>' +
+          '<span style="flex:1;min-width:0"><b style="font-size:13px;font-weight:800;color:var(--ip-ink)">To do list</b>' +
             '<span style="display:block;font-size:12.5px;color:var(--ip-ink-2)">Rien à faire pour l\'instant.</span></span>' +
           '<button class="v2-btn v2-btn-ghost" style="flex:none" onclick="V2.go(\'todo\')">' + ICO('plus', 14, 2) + ' Ajouter</button></div>';
       }
       return '<div class="v2-card" style="margin-bottom:16px;padding:16px 18px">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">' +
           '<span style="font-size:13px;font-weight:800;letter-spacing:-.01em;color:var(--ip-ink)">À faire</span>' +
-          '<a class="v2-card-link" onclick="V2.go(\'todo\')">Ma liste · ' + V2.todo.ouverts().length + '</a></div>' +
+          '<a class="v2-card-link" onclick="V2.go(\'todo\')">To do list · ' + V2.todo.ouverts().length + '</a></div>' +
         ouv.map(function (it) {
           var b = badge(it);
           return '<a onclick="V2.go(\'todo\')" style="display:flex;align-items:center;gap:10px;padding:8px 0;text-decoration:none;color:inherit;cursor:pointer;border-top:1px solid var(--line);font-size:13.5px">' +
@@ -316,13 +316,50 @@
       '</div></div>';
   }
 
+  // ── Les mails tout prêts (23/09, Will : « avoir des exemples de mail aussi préfaits ») ──
+  // Les MÊMES textes que ceux qui partent d'une ligne de la liste, lisibles d'avance,
+  // à copier ou à ouvrir dans sa messagerie sans rien ajouter à la liste.
+  var MODELES = [
+    { k: 'rdv',    t: 'Demande de rendez-vous', s: 'après un passage à l\'officine' },
+    { k: 'merci',  t: 'Remerciement',           s: 'après le rendez-vous' },
+    { k: 'compte', t: 'Ouverture de compte',    s: 'le formulaire 2026 est à joindre' }
+  ];
+  function modele(k) {
+    var it = { k: k, nom: '', pid: '', cree: new Date().toISOString() }, lien = st.lien || '';
+    return k === 'compte' ? mailCompte(it) : k === 'merci' ? mailMerci(it, lien) : mailRdv(it, lien);
+  }
+  function mailsPrets() {
+    if (st.lien == null) {
+      st.lien = '';
+      var p = (V2.rdvLien && V2.rdvLien.charger) ? V2.rdvLien.charger() : null;
+      if (p) Promise.resolve(p).then(function (l) { st.lien = (l && l.actif !== false && V2.rdvLien.url) ? V2.rdvLien.url(l) : ''; if (st.lien) rendre(); }).catch(function () {});
+    }
+    return '<div class="v2-todo-mh"><h2>Les mails tout prêts</h2><p>À lire, copier ou ouvrir dans ta messagerie — l\'adresse du pharmacien reste à ajouter.</p></div>' +
+      '<div class="v2-card v2-todo-list">' + MODELES.map(function (m) {
+        var x = modele(m.k);
+        return '<details class="v2-todo-mail"><summary><span class="v2-todo-ico">' + ICO(KINDS[m.k].ico, 16, 2) + '</span>' +
+          '<span class="v2-todo-mt"><b>' + esc(m.t) + '</b><small>' + esc(m.s) + '</small></span><span class="v2-todo-chev">' + ICO('chev', 16, 2) + '</span></summary>' +
+          '<div class="v2-todo-mb"><div class="v2-todo-obj"><span>Objet</span>' + esc(x.objet) + '</div>' +
+          '<pre class="v2-todo-corps">' + esc(x.corps) + '</pre>' +
+          '<div class="v2-todo-acts"><button class="v2-btn v2-btn-primary v2-todo-sm" onclick="V2.todo.ouvrirModele(\'' + m.k + '\')">' + ICO('fiche', 14, 2) + 'Ouvrir dans ma messagerie</button>' +
+          '<button class="v2-btn v2-btn-ghost v2-todo-sm" onclick="V2.todo.copierModele(\'' + m.k + '\')">' + ICO('check', 14, 2) + 'Copier le texte</button></div></div></details>';
+      }).join('') + '</div>';
+  }
+  V2.todo.ouvrirModele = function (k) { ouvrirMail('', modele(k)); };
+  V2.todo.copierModele = function (k) {
+    var x = modele(k), t = 'Objet : ' + x.objet + '\n\n' + x.corps;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(t).then(function () { if (V2.toast) V2.toast('Texte copié'); }, function () { window.prompt('Copie ce texte :', t); });
+    } else window.prompt('Copie ce texte :', t);
+  };
+
   V2.pages.todo = {
     needs: [],
     render: function (root) {
       ensureCss();
       var top = V2.topbar ? V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) : '';
       if (st.items == null) {
-        root.innerHTML = top + '<div class="v2-wrap narrow"><div class="v2-todo-hero"><h1>Ma liste</h1><p>Chargement…</p></div></div>';
+        root.innerHTML = top + '<div class="v2-wrap narrow"><div class="v2-todo-hero"><h1>To do list</h1><p>Chargement…</p></div></div>';
         charger().then(rendre);
         return;
       }
@@ -332,7 +369,7 @@
       var noms = (V2.pharmacies || []).map(function (p) { return '<option value="' + esc(p.name || '') + '">'; }).join('');
       root.innerHTML = top +
         '<div class="v2-wrap narrow">' +
-          '<div class="v2-todo-hero"><h1>Ma liste</h1>' +
+          '<div class="v2-todo-hero"><h1>To do list</h1>' +
             '<p>Demandes de rendez-vous à envoyer, suites de rendez-vous, ouvertures de compte, et tout le reste. Personnelle : chacun voit la sienne.' +
             (st.backend === 'local' ? ' <b>Gardée sur cet appareil seulement.</b>' : '') + '</p></div>' +
           '<div class="v2-card v2-todo-add">' +
@@ -345,13 +382,14 @@
               '<label class="v2-todo-wide"><span>Note</span><input id="v2-todo-note" type="text" placeholder="' + (st.kind === 'libre' ? 'Ce qu\'il y a à faire' : 'Une précision (facultatif)') + '" onkeydown="if(event.key===\'Enter\')V2.todo.ajouter()"></label>' +
               '<button class="v2-btn v2-btn-primary" onclick="V2.todo.ajouter()">' + ICO('plus', 15, 2) + 'Ajouter</button>' +
             '</div>' +
-            '<div class="v2-todo-hint">Depuis une fiche officine, le bouton « Ajouter à ma liste » remplit l\'officine et son e-mail tout seul.</div>' +
+            '<div class="v2-todo-hint">Depuis une fiche officine, le bouton « Ajouter à la to do list » remplit l\'officine et son e-mail tout seul.</div>' +
           '</div>' +
           '<div class="v2-todo-tools"><div class="v2-todo-seg">' +
             '<button class="' + (st.filtre !== 'fait' ? 'is-on' : '') + '" onclick="V2.todo.filtrer(\'afaire\')">À faire · ' + ouv.length + '</button>' +
             '<button class="' + (st.filtre === 'fait' ? 'is-on' : '') + '" onclick="V2.todo.filtrer(\'fait\')">Fait · ' + faits.length + '</button></div></div>' +
           (liste.length ? '<div class="v2-card v2-todo-list">' + liste.map(ligne).join('') + '</div>'
             : '<div class="v2-card v2-todo-empty">' + (st.filtre === 'fait' ? 'Rien de coché pour l\'instant.' : 'Rien à faire pour l\'instant — la liste est vide.') + '</div>') +
+          mailsPrets() +
         '</div>';
     }
   };
@@ -412,6 +450,22 @@
       '.v2-todo-choix b{display:block;font-size:14px;font-weight:700}',
       '.v2-todo-choix small{display:block;font-size:12px;color:var(--muted)}',
       '.v2-todo-ico{flex:none;width:36px;height:36px;border-radius:10px;background:var(--halo,#E9F0FF);color:var(--ip-blue);display:inline-flex;align-items:center;justify-content:center}',
+      '.v2-todo-mh{margin:28px 0 10px}',
+      '.v2-todo-mh h2{font-size:18px;font-weight:800;letter-spacing:-.02em;margin:0 0 4px;color:var(--ip-ink)}',
+      '.v2-todo-mh p{margin:0;font-size:13.5px;color:var(--ip-ink-2)}',
+      '.v2-todo-mail{border-top:1px solid var(--line)}',
+      '.v2-todo-mail:first-child{border-top:none}',
+      '.v2-todo-mail summary{display:flex;align-items:center;gap:12px;min-height:56px;padding:10px 18px;cursor:pointer;list-style:none}',
+      '.v2-todo-mail summary::-webkit-details-marker{display:none}',
+      '.v2-todo-mt{flex:1;min-width:0}',
+      '.v2-todo-mt b{display:block;font-size:14px;font-weight:700;color:var(--ip-ink)}',
+      '.v2-todo-mt small{display:block;font-size:12.5px;color:var(--ip-ink-2)}',
+      '.v2-todo-chev{flex:none;color:var(--muted);display:inline-flex;transition:transform .2s var(--ease)}',
+      '.v2-todo-mail[open] .v2-todo-chev{transform:rotate(90deg)}',
+      '.v2-todo-mb{padding:0 18px 16px;display:flex;flex-direction:column;gap:10px}',
+      '.v2-todo-obj{font-size:14px;font-weight:700;color:var(--ip-ink)}',
+      '.v2-todo-obj span{display:block;font-size:11.5px;font-weight:700;color:var(--ip-ink-2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px}',
+      '.v2-todo-corps{margin:0;padding:14px 16px;background:var(--card-2,#F7F9FC);border:1px solid var(--line);border-radius:12px;font:inherit;font-size:14px;line-height:1.55;color:var(--ip-ink);white-space:pre-wrap;overflow-wrap:anywhere}',
       '@media (max-width:760px){.v2-todo-kinds{grid-template-columns:1fr 1fr}.v2-todo-form{grid-template-columns:1fr}.v2-todo-wide{grid-column:auto}.v2-todo-b{margin-left:0}}'
     ].join('\n');
     document.head.appendChild(s);

@@ -1328,7 +1328,7 @@
           // 23/09 — Will : « je capte pas ce qui se passe dans Officines, ça ouvre différents trucs ».
           // Ma liste devient sa propre porte, Officines n'ouvre plus que les fiches,
           // Audit marge part dans « Vendre & convaincre ».
-          tuile('todo', 'check', 'Ma liste', [{ t: 'Rendez-vous à demander' }, { t: 'Remerciements' }, { t: 'Ouvertures de compte' }]),
+          tuile('todo', 'check', 'To do list', [{ t: 'Rendez-vous à demander' }, { t: 'Remerciements' }, { t: 'Ouvertures de compte' }]),
           tuile('pharma', 'pharma', 'Officines', [{ t: 'Fiches clients et prospects' }, { t: 'Visites' }, { t: 'À relancer' }]),
           tuile('carte', 'grid', 'La carte', [{ t: 'Clients' }, { t: 'Prospects' }, { t: 'Tournée', k: 'tournee' }]),
           // Espace Groupements : listes des groupements + listings produits (renderGroupementsList via pharma?groupements)
