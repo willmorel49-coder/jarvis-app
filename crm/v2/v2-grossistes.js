@@ -18,6 +18,7 @@
   var sortBy = 'rang';     // tri : rang | part | ca
   var actuTag = '';        // filtre actualités par grossiste
   var ACTU = null;         // cache actualités
+  var VERIF = null;        // faits vérifiés à la main (grossistes-verifie.json, jamais écrit par le robot)
 
   function DATA() { return window.GROSSISTES_DATA || null; }
   function list() { var d = DATA(); return (d && d.grossistes) || []; }
@@ -35,8 +36,12 @@
     // Clé du jour, comme les autres fichiers des robots : avec le jeton fixe,
     // le service worker (cache-first) resservait indéfiniment la première
     // version reçue — l'actualité « mise à jour chaque jour » ne bougeait plus.
-    fetch('grossistes-actu.json?d=' + new Date().toISOString().slice(0, 10), { cache: 'no-store' }).then(function (r) { return r.json(); })
-      .then(function (j) { ACTU = j; cb(); }).catch(function () { ACTU = { items: [] }; cb('err'); });
+    var d = '?d=' + new Date().toISOString().slice(0, 10);
+    var verif = fetch('grossistes-verifie.json' + d, { cache: 'no-store' }).then(function (r) { return r.json(); })
+      .then(function (j) { VERIF = j; }).catch(function () { VERIF = null; });
+    fetch('grossistes-actu.json' + d, { cache: 'no-store' }).then(function (r) { return r.json(); })
+      .then(function (j) { ACTU = j; }).catch(function () { ACTU = { items: [] }; })
+      .then(function () { return verif; }).then(function () { cb(); });
   }
 
   // ── helpers d'affichage ─────────────────────────────────────────
@@ -230,6 +235,29 @@
   }
 
   // ── ACTUALITÉS ──────────────────────────────────────────────────
+  // Encadré « Vérifié » : faits relus à la source lors de la veille mensuelle,
+  // au-dessus du fil ramassé chaque jour par le robot.
+  function verifHtml() {
+    var items = (VERIF && VERIF.items) || [];
+    if (!items.length) return '';
+    var ligne = function (i) {
+      var dt = (i.date || '').split('-').reverse().slice(0, 2).join('/');
+      return '<li class="gr-vf-it"><span class="gr-vf-d">' + esc(dt) + '</span><div>' +
+        '<a href="' + esc(i.url) + '" target="_blank" rel="noopener"><b>' + esc(i.titre) + '</b></a>' +
+        (i.nonConfirme ? ' <span class="gr-vf-nc">non confirmé</span>' : '') +
+        '<span class="gr-vf-t">' + esc(i.texte || '') + '</span>' +
+        '<span class="gr-vf-s">' + esc(i.source || '') + ' ↗</span></div></li>';
+    };
+    var tete = items.slice(0, 4).map(ligne).join('');
+    var reste = items.slice(4);
+    var maj = (VERIF.maj || '').split('-').reverse().join('/');
+    return '<section class="gr-vf"><div class="gr-vf-h"><span class="gr-vf-k">✔ Vérifié</span>' +
+        '<span class="gr-vf-m">Faits relus à la source ' + esc(VERIF.periode || '') + ' · veille du ' + esc(maj) + '</span></div>' +
+      '<ul class="gr-vf-l">' + tete + '</ul>' +
+      (reste.length ? '<details class="gr-vf-plus"><summary>Voir les ' + reste.length + ' autres faits</summary><ul class="gr-vf-l">' + reste.map(ligne).join('') + '</ul></details>' : '') +
+      (VERIF.rien ? '<p class="gr-vf-rien">' + esc(VERIF.rien) + '</p>' : '') +
+      '</section>';
+  }
   function actuHtml() {
     var items = (ACTU && ACTU.items) || [];
     var tags = {}; items.forEach(function (i) { tags[i.tag || ''] = (tags[i.tag || ''] || 0) + 1; });
@@ -248,7 +276,7 @@
         '<span class="gr-actu-go">↗</span></a>';
     }).join('') || '<div class="gr-empty">Pas encore d\'actualités. Le robot de veille tourne chaque jour.</div>';
     var maj = ACTU && ACTU.maj ? 'Mis à jour ' + timeAgo(ACTU.maj) : '';
-    return '<div class="gr-actubar">' + chips + '</div>' +
+    return verifHtml() + '<div class="gr-actubar">' + chips + '</div>' +
       '<div class="gr-actumaj">' + esc(maj) + ' · sources : FSPF, ANSM &amp; presse (Google News) — filtre « accès libre » pour l\'info lisible en entier</div>' +
       '<div class="gr-actulist">' + rows + '</div>';
   }
@@ -370,6 +398,21 @@
       '.gr-src a{color:var(--ip-blue);text-decoration:none}',
       '.gr-notes{margin-top:22px;border-top:2px solid var(--line);padding-top:16px}',
       '.gr-notes h4{font-size:14px;font-weight:800;margin:0 0 8px}',
+      '.gr-vf{margin:0 0 22px;padding:16px 18px 14px;border:1px solid color-mix(in srgb,var(--ip-blue,#0057FF) 22%,var(--line));border-radius:16px;background:linear-gradient(160deg,color-mix(in srgb,var(--ip-blue,#0057FF) 7%,var(--card)) 0%,var(--card) 55%);box-shadow:0 1px 0 rgba(255,255,255,.7) inset,0 8px 24px -14px color-mix(in srgb,var(--ip-blue,#0057FF) 45%,transparent)}',
+      '.gr-vf-h{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 10px;margin-bottom:10px}',
+      '.gr-vf-k{font-size:12px;font-weight:800;letter-spacing:.02em;color:var(--ip-blue,#0057FF)}',
+      '.gr-vf-m{font-size:11.5px;color:var(--muted)}',
+      '.gr-vf-l{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}',
+      '.gr-vf-it{display:flex;gap:12px;padding:10px 0;border-top:1px solid var(--line)}',
+      '.gr-vf-d{flex:0 0 40px;font-size:12px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums;padding-top:1px}',
+      '.gr-vf-it > div{flex:1;min-width:0}',
+      '.gr-vf-it a{color:var(--ip-ink);text-decoration:none}.gr-vf-it a:hover b{color:var(--ip-blue,#0057FF)}',
+      '.gr-vf-it b{font-size:14px;font-weight:650;line-height:1.35}',
+      '.gr-vf-t{display:block;font-size:12.5px;line-height:1.5;color:var(--ip-ink);margin:3px 0 2px}',
+      '.gr-vf-s{display:block;font-size:11.5px;color:var(--muted)}',
+      '.gr-vf-nc{font-size:10px;font-weight:800;padding:1px 7px;border-radius:999px;background:#FFF4E0;color:#8A4B00;white-space:nowrap}',
+      '.gr-vf-plus summary{cursor:pointer;padding:10px 0 2px;border-top:1px solid var(--line);font-size:12.5px;font-weight:700;color:var(--ip-blue,#0057FF)}',
+      '.gr-vf-rien{margin:10px 0 0;font-size:11.5px;line-height:1.5;color:var(--muted)}',
       '.gr-actubar{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:8px}',
       '.gr-actutag{padding:6px 12px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--ip-ink);font:inherit;font-size:12px;font-weight:600;cursor:pointer}',
       '.gr-actutag.on{background:var(--ip-blue,#0057FF);color:#fff;border-color:transparent}',
