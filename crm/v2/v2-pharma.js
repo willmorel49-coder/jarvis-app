@@ -1074,7 +1074,7 @@
     }
     var oi = (window.OFFICINES_INFOS || {})[String(pid)] || null;
     var oiAdresse = oi ? (oi[0] || '') : '', oiTel = oi ? (oi[1] || '') : '', oiFax = oi ? (oi[2] || '') : '', oiSiren = oi ? (oi[3] || '') : '', oiDateouv = oi ? (oi[4] || '') : '';
-    var seed = { nom: p[6] || '', groupement: grp || '', titulaire: p[10] || '', tel: p[9] || oiTel, email: p[11] || '', adresse: oiAdresse };
+    var seed = { nom: p[6] || '', groupement: grp || '', titulaire: p[10] || (oi && oi[5]) || '', tel: p[9] || oiTel, email: p[11] || '', adresse: oiAdresse };
     var badge = function (t, cls) { return t ? '<span class="v2-chip' + (cls ? ' ' + cls : '') + '">' + esc(t) + '</span>' : ''; };
     // 23/09/2026 — un prospect n'a jamais de grossiste/génériqueur connu (base clients
     // = clientes seulement) : estimation d'après son groupement, jamais écrite en base.
@@ -1098,6 +1098,8 @@
                 (oiFax ? (oiSiren ? ' · ' : '') + 'Fax ' + esc(oiFax) : '') +
                 (oiDateouv ? ((oiSiren || oiFax) ? ' · ' : '') + 'Ouverte le ' + esc(oiDateouv) : '') +
               '</div>' : '') +
+              ((oi && oi[5] && !memesNoms(p[10], oi[5])) ? '<div class="v2-prospect-extra">Dirigeant(s) déclaré(s) : ' + esc(oi[5]) + '</div>' : '') +
+              (cessation(oi) ? '<div class="v2-prospect-extra v2-cessee">' + esc(cessation(oi)) + '</div>' : '') +
               probableLignes +
             '</div>' +
           '</div>' +
@@ -1121,6 +1123,21 @@
 
   var _clientsAsked = false;   // évite de redemander clients-data.js à chaque rendu
   var _oiAsked = false;        // évite de redemander officines-infos-data.js à chaque rendu
+  // 23/09/2026 — annuaire des entreprises (colonnes 5-8 d'OFFICINES_INFOS) : dirigeants déclarés,
+  // société cessée. « Cessée » ne veut PAS dire pharmacie fermée : une vente ferme souvent
+  // l'ancienne société et en ouvre une nouvelle — d'où « reprise ou fermeture à vérifier ».
+  function dateFr(d) { var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(d || '')); return m ? m[3] + '/' + m[2] + '/' + m[1] : ''; }
+  function memesNoms(a, b) {   // au moins un nom de famille commun → même personne, pas de doublon
+    var mots = function (s) { return String(s || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').split(/[^A-Z]+/).filter(function (x) { return x.length > 2 && ['MME', 'MLLE'].indexOf(x) < 0; }); };
+    var A = mots(a); return mots(b).some(function (x) { return A.indexOf(x) >= 0; });
+  }
+  // Reprise probable quand l'établissement a été (ré)ouvert au FINESS au plus 2 mois avant la
+  // cessation ou après, ou quand l'officine nous commande encore (cliente) ; sinon « à vérifier ».
+  function cessation(oi, cliente) {
+    if (!oi || oi[6] !== 'C') return '';
+    var reprise = cliente || (oi[4] && oi[7] && (new Date(oi[4]) - new Date(oi[7])) / 864e5 > -62);
+    return 'Société cessée' + (oi[7] ? ' le ' + dateFr(oi[7]) : '') + (reprise ? ' — reprise probable' : ' — reprise ou fermeture à vérifier');
+  }
   // Coordonnées SAISIES par l'équipe sur la fiche (table `profils`, scope 'client').
   // Elles étaient enregistrées mais jamais relues : le commercial corrigeait un
   // numéro, le rechargement le faisait disparaître de l'en-tête. Une lecture par
@@ -1556,7 +1573,9 @@
         '<div class="pha-kv">' +
           kv('Ville', esc(loc)) +
           (adresse ? kv('Adresse', esc(adresse)) : '') +
-          kv('Titulaire', esc(titulaire)) +
+          kv('Titulaire', esc(titulaire || (oi && oi[5]) || '')) +
+          ((oi && oi[5] && titulaire && !memesNoms(titulaire, oi[5])) ? kv('Dirigeant(s) déclaré(s)', esc(oi[5])) : '') +
+          (cessation(oi, true) ? '<span>Société</span><span class="pha-cessee">' + esc(cessation(oi, true)) + '</span>' : '') +
           (interloc ? kv('Interlocuteur', esc(interloc)) : '') +
           kv('Groupement', (pharma.groupement && pharma.groupement !== '—') ? esc(canonG(pharma.groupement)) : '') +
           (grpInfo && grpInfo.description ? '<span></span><span class="pha-grpinfo"><span class="pha-grpdesc" title="' + esc(grpInfo.description) + '">' + esc(grpInfo.description) + '</span>' + (grpInfo.site ? ' <a href="' + esc(grpInfo.site) + '" target="_blank" rel="noopener">' + esc(grpInfo.site.replace(/^https?:\/\//, '').replace(/\/$/, '')) + '</a>' : '') + '</span>' : '') +
@@ -3624,6 +3643,7 @@
       '.v2-prospect-badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}',
       '.v2-prospect-extra{margin-top:6px;font-size:11.5px;color:var(--muted);overflow-wrap:anywhere}',
       '.v2-prospect-extra a{color:inherit;text-decoration:underline}',
+      '.v2-prospect-extra.v2-cessee{color:var(--c-rose-txt);font-weight:700}',
       // Estimation « probable » (grossiste/génériqueur, jamais une donnée connue) :
       // italique, teinte ambre distincte du reste de la fiche.
       '.v2-prospect-probable{margin-top:8px;font-size:11.5px;font-style:italic;color:var(--c-amber-txt);display:flex;flex-direction:column;gap:2px}',
@@ -3940,6 +3960,7 @@
       '.pha-kv .pha-grpinfo{text-align:left;font-weight:500;font-size:12px;color:rgba(255,255,255,.75);line-height:1.4;overflow-wrap:anywhere}',
       '.pha-kv .pha-grpinfo a{color:#fff;text-decoration:underline}',
       // Description du groupement ramenée à 2 lignes (texte complet au survol) : elle prenait un demi-écran sur téléphone.
+      '.pha-kv .pha-cessee{color:#FFB3B3;font-weight:700}',
       '.pha-kv .pha-grpdesc{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}',
       '.pha-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}',
       '.pha-btn{display:inline-flex;align-items:center;gap:7px;min-height:var(--tap-min,44px);padding:0 14px;border-radius:var(--r-btn,12px);border:1px solid var(--line-strong);background:var(--card);font:inherit;font-weight:700;font-size:13px;color:var(--ip-ink);cursor:pointer;text-decoration:none;white-space:nowrap}',
