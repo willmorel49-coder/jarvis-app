@@ -42,10 +42,11 @@
   function lsKey() { return LS + ':' + ((V2.user && V2.user.id) || 'local'); }
   function localRead() { try { var a = JSON.parse(localStorage.getItem(lsKey()) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
   function localWrite(a) { try { localStorage.setItem(lsKey(), JSON.stringify(a)); } catch (e) {} }
+  function sur(v) { return String(v == null ? '' : v).replace(/[^0-9A-Za-z_-]/g, ''); }
   function newId() { return 't' + Date.now() + Math.floor(Math.random() * 1000); }
   function nettoie(a) {
-    return (Array.isArray(a) ? a : []).filter(function (x) { return x && x.id && KINDS[x.k]; }).map(function (x) {
-      return { id: String(x.id), k: x.k, pid: x.pid ? String(x.pid) : '', nom: String(x.nom || ''), mail: String(x.mail || ''),
+    return (Array.isArray(a) ? a : []).filter(function (x) { return x && sur(x.id) && KINDS[x.k]; }).map(function (x) {
+      return { id: sur(x.id), k: x.k, pid: sur(x.pid), nom: String(x.nom || ''), mail: String(x.mail || ''),
                note: String(x.note || ''), pour: String(x.pour || ''), fait: !!x.fait, faitLe: x.faitLe || '', cree: x.cree || new Date().toISOString() };
     });
   }
@@ -156,6 +157,7 @@
     // Sur une fiche prospect, le nom et l'e-mail sont ceux affichés à l'écran.
     menu: function (pid, mail) {
       ensureCss();
+      pid = sur(pid);
       var p = client(pid), nom = p ? (p.name || '') : '';
       if (!p) {
         var nm = document.querySelector('.v2-prospect input[data-fk="nom"]'), em = document.querySelector('.v2-prospect input[data-fk="email"]');
@@ -228,7 +230,9 @@
       var dest = mailDe(it);
       if (!dest && V2.toast) V2.toast('Pas d\'e-mail connu pour ' + (it.nom || 'cette officine') + ' — à compléter dans le mail', 'warn');
       if (it.k === 'compte') return ouvrirMail(dest, mailCompte(it));
-      var lienP = (V2.rdvLienPermanent ? V2.rdvLienPermanent() : Promise.resolve(''));
+      var lienP = (V2.rdvLien && V2.rdvLien.charger) ? V2.rdvLien.charger().then(function (l) {
+        return (l && l.actif !== false && V2.rdvLien.url) ? V2.rdvLien.url(l) : '';
+      }) : Promise.resolve('');
       Promise.resolve(lienP).catch(function () { return ''; }).then(function (lien) {
         ouvrirMail(dest, it.k === 'merci' ? mailMerci(it, lien || '') : mailRdv(it, lien || ''));
       });
