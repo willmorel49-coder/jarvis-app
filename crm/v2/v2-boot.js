@@ -455,6 +455,11 @@
     // produits de l'éditeur marketing, chargé avec le catalogue complet.
     // Du rangement, pas du tarif : public.
     mktrayons: 'v2/mkt-rayons-data.js',
+    // 23/09/2026 — adresse, tel, fax, SIREN, date d'ouverture pour 17 967/19 770
+    // officines (FINESS du jour, data.gouv.fr, gratuit). AUCUNE donnée interne
+    // (commercial, grossiste, CA, potentiel) : fichier PUBLIC, 1,5 Mo → chargé
+    // à l'ouverture d'une fiche (client ou prospect), jamais au démarrage.
+    officinesinfos: 'v2/officines-infos-data.js',
   };
 
   // ── Les fichiers de données reviennent dans le dépôt (15/08/2026) ────

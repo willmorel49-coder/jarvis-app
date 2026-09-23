@@ -86,9 +86,13 @@
   }
 
   V2.profil = {
-    section: function (scopeType, scopeId) {
+    // 23/09/2026 — `seed` (optionnel) : valeurs proposées par la fiche (base clients :
+    // logiciel, grossiste principal, génériqueur…) quand rien n'a encore été saisi par
+    // l'équipe. Rien n'est écrit en base tant que personne ne modifie (voir fill()).
+    section: function (scopeType, scopeId, seed) {
       ensureCss();
-      return '<div class="v2-profil-box v2-card" data-st="' + esc(scopeType) + '" data-sid="' + esc(String(scopeId)) + '">' +
+      var seedAttr = seed ? ' data-seed="' + esc(JSON.stringify(seed)) + '"' : '';
+      return '<div class="v2-profil-box v2-card" data-st="' + esc(scopeType) + '" data-sid="' + esc(String(scopeId)) + '"' + seedAttr + '>' +
           '<div class="v2-profil-hd">' + (V2.ICO ? V2.ICO('pilo', 16, 2) : '') + '<span>Profil commercial</span><small id="" class="v2-profil-meta"></small></div>' +
           '<div class="v2-profil-grid">' +
             FIELDS.map(function (f) {
@@ -281,10 +285,16 @@
 
   function fill(box) {
     var st = box.getAttribute('data-st'), sid = box.getAttribute('data-sid');
+    // 23/09/2026 — proposition (base clients) quand AUCUNE saisie n'existe pour ce champ.
+    var seed = {}; try { seed = JSON.parse(box.getAttribute('data-seed') || '{}') || {}; } catch (e) {}
     load(st, sid).then(function (res) {
       var rec = res.rec; var data = (rec && rec.data) || {};
+      var uneProposition = false;
       Array.prototype.forEach.call(box.querySelectorAll('[data-fk]'), function (f) {
-        var v = data[f.getAttribute('data-fk')]; if (v == null) return;
+        var fk = f.getAttribute('data-fk');
+        var saisi = data[fk], v = saisi;
+        if (v == null && seed[fk]) { v = seed[fk]; uneProposition = true; }   // rien de saisi, mais une valeur connue
+        if (v == null) return;
         if (f.tagName === 'SELECT') {
           var found = false;
           Array.prototype.forEach.call(f.options, function (o) { if (o.value === v || o.textContent === v) found = true; });
@@ -292,12 +302,13 @@
         }
         f.value = v;
       });
-      setMeta(box, rec);
+      setMeta(box, rec, uneProposition);
     });
   }
-  function setMeta(box, rec) {
+  function setMeta(box, rec, uneProposition) {
     var m = box.querySelector('.v2-profil-meta'); if (!m) return;
     if (rec && rec.by) { var d = ''; try { d = new Date(rec.at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }); } catch (e) {} m.textContent = 'maj ' + rec.by + (d ? ' · ' + d : ''); }
+    else if (uneProposition) m.textContent = 'd\'après la base clients';
     else m.textContent = 'à compléter';
   }
 

@@ -1441,7 +1441,11 @@
       '.cn-fbar i{width:100%;max-width:26px;background:linear-gradient(180deg,#3B82F6,var(--ip-blue));border-radius:4px 4px 0 0;display:block}',
       '.cn-fbar span{font-size:10px;color:var(--muted)}',
       '.cn-ftrow{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--line);font-size:12.5px}',
-      '.cn-ftrow span{color:var(--ip-ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cn-ftrow b{color:var(--ip-ink);white-space:nowrap}',
+      '.cn-ftrow span{color:var(--ip-ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:0 0 auto}',
+      // 23/09/2026 — l'adresse et le grossiste principal (valeurs longues, ajoutées à la
+      // fiche) débordaient à 390 px avec `white-space:nowrap` : la valeur peut revenir
+      // à la ligne et se couper n'importe où plutôt que pousser la carte hors écran.
+      '.cn-ftrow b{color:var(--ip-ink);text-align:right;overflow-wrap:anywhere;min-width:0}',
       '.cn-sortlbl{font-size:11.5px;font-weight:700;color:var(--muted);margin-left:4px}',
       '.cn-sortseg button{font-size:12px;padding:5px 10px}',
       '.cn-pop-contact{display:flex;flex-direction:column;gap:2px;margin-top:8px}',
@@ -2026,7 +2030,8 @@
     }
     document.getElementById('cn-fiche').innerHTML = '<div class="cn-pdialog" onclick="event.stopPropagation()"><div class="cn-tempty">Chargement de la fiche…</div></div>';
     // La base clients (portable, interlocuteur, logiciel, livraison) est protégée et peut arriver après : on l'attend.
-    var pr = V2.loadFiles ? V2.loadFiles(['clientsactifs']) : null, fin = function () { ensureDetail(function () { renderFiche(i); }); };
+    // officinesinfos (public, FINESS) complète adresse/SIREN pour les PROSPECTS aussi.
+    var pr = V2.loadFiles ? V2.loadFiles(['clientsactifs', 'officinesinfos']) : null, fin = function () { ensureDetail(function () { renderFiche(i); }); };
     if (pr && pr.then) pr.then(fin, fin); else fin();
   };
   V2.carteFicheClose = function () { var el = document.getElementById('cn-fiche'); if (el) el.remove(); };
@@ -2054,7 +2059,21 @@
     if (inf.portable) lignes.push(['Portable', inf.portable]);
     if (inf.logiciel) lignes.push(['Logiciel', inf.logiciel]);
     if (inf.livraison) lignes.push(['Livraison', inf.livraison]);
-    var equip = lignes.length ? '<div class="cn-fsec"><h4>Interlocuteur et équipement</h4>' + lignes.map(function (l) { return '<div class="cn-ftrow"><span>' + esc(l[0]) + '</span><b>' + esc(l[1]) + '</b></div>'; }).join('') + '</div>' : '';
+    // 23/09/2026 — adresse, grossiste principal, SIREN : lus directement dans la base
+    // clients (pas dans V2.rdvInfo). Jamais l'encours ni une condition commerciale.
+    var caB = (p[13] && (window.CLIENTS_ACTIFS || {}).d) ? window.CLIENTS_ACTIFS.d[String(p[13])] : null;
+    // Officine PROSPECT (pas de caB) ou trou dans la base clients : FINESS du jour (public).
+    var oi = (p[13] && window.OFFICINES_INFOS) ? window.OFFICINES_INFOS[String(p[13])] : null;
+    var adrCaB = caB && caB[11] ? caB[11] + (caB[12] || caB[13] ? ' · ' + [caB[12], caB[13]].filter(function (x) { return x; }).join(' ') : '') : '';
+    var adrOi = oi && oi[0] ? oi[0] + ((p[7] || p[8]) ? ' · ' + [p[8], p[7]].filter(function (x) { return x; }).join(' ') : '') : '';
+    if (adrCaB || adrOi) lignes.push(['Adresse', adrCaB || adrOi]);
+    if (caB && caB[18]) lignes.push(['Grossiste principal', caB[18]]);
+    var siren = (caB && caB[14]) || (oi && oi[3]) || '';
+    if (siren) lignes.push(['SIREN', siren]);
+    var equip = lignes.length ? '<div class="cn-fsec"><h4>Interlocuteur et équipement</h4>' + lignes.map(function (l) {
+      var v = (l[0] === 'SIREN') ? '<a href="https://annuaire-entreprises.data.gouv.fr/entreprise/' + esc(l[1]) + '" target="_blank" rel="noopener">' + esc(l[1]) + '</a>' : esc(l[1]);
+      return '<div class="cn-ftrow"><span>' + esc(l[0]) + '</span><b>' + v + '</b></div>';
+    }).join('') + '</div>' : '';
     el.innerHTML = '<div class="cn-pdialog" onclick="event.stopPropagation()">' +
       '<div class="cn-phead"><div><b>' + esc(p[6] || 'Pharmacie') + '</b>' + (p[10] ? '<small>' + esc(p[10]) + '</small>' : '') + '</div><button class="cn-px" onclick="V2.carteFicheClose()">✕</button></div>' +
       '<div class="cn-plist" style="padding:0">' +

@@ -1066,7 +1066,15 @@
     var ville = p[7] || '', cp = p[8] || '', seg = D.seg[p[4]] || 'Prospect';
     var grp = (D.grp[p[3]] && D.grp[p[3]] !== '—') ? D.grp[p[3]] : '', uga = D.uga[p[2]] || '';
     var q = encodeURIComponent((p[6] || '') + ' ' + ville + ' ' + cp);
-    var seed = { nom: p[6] || '', groupement: grp || '', titulaire: p[10] || '', tel: p[9] || '', email: p[11] || '', adresse: '' };
+    // 23/09/2026 — FINESS du jour (officinesinfos, public, 90 % des officines) : adresse,
+    // tel, fax, SIREN, date d'ouverture. Chargé en tâche de fond, jamais au démarrage
+    // (poids). Ne remplace jamais une saisie de l'équipe (coordSection gère la priorité).
+    if (!window.OFFICINES_INFOS && V2.loadFiles) {
+      if (!_oiAsked) { _oiAsked = true; V2.loadFiles(['officinesinfos']).then(function () { if (V2.route && V2.route.param) V2.render(); }); }
+    }
+    var oi = (window.OFFICINES_INFOS || {})[String(pid)] || null;
+    var oiAdresse = oi ? (oi[0] || '') : '', oiTel = oi ? (oi[1] || '') : '', oiFax = oi ? (oi[2] || '') : '', oiSiren = oi ? (oi[3] || '') : '', oiDateouv = oi ? (oi[4] || '') : '';
+    var seed = { nom: p[6] || '', groupement: grp || '', titulaire: p[10] || '', tel: p[9] || oiTel, email: p[11] || '', adresse: oiAdresse };
     var badge = function (t, cls) { return t ? '<span class="v2-chip' + (cls ? ' ' + cls : '') + '">' + esc(t) + '</span>' : ''; };
     root.innerHTML = V2.topbar({ back: true, backTo: 'pharma', backLabel: 'Officines' }) +
       '<div class="v2-wrap v2-prospect">' +
@@ -1077,6 +1085,11 @@
               '<div class="v2-prospect-n">' + esc(nameOf(pid, p[6] || p[10]) || 'Pharmacie') + '</div>' +
               '<div class="v2-prospect-a">' + esc(ville) + (cp ? ' · ' + esc(cp) : '') + '</div>' +
               '<div class="v2-prospect-badges">' + badge(seg, 'pr') + badge(grp) + badge(uga ? 'UGA ' + uga : '') + '</div>' +
+              ((oiSiren || oiFax || oiDateouv) ? '<div class="v2-prospect-extra">' +
+                (oiSiren ? '<a href="https://annuaire-entreprises.data.gouv.fr/entreprise/' + esc(oiSiren) + '" target="_blank" rel="noopener">SIREN ' + esc(oiSiren) + '</a>' : '') +
+                (oiFax ? (oiSiren ? ' · ' : '') + 'Fax ' + esc(oiFax) : '') +
+                (oiDateouv ? ((oiSiren || oiFax) ? ' · ' : '') + 'Ouverte le ' + esc(oiDateouv) : '') +
+              '</div>' : '') +
             '</div>' +
           '</div>' +
           '<p class="v2-prospect-note">Officine non cliente — complète ses coordonnées, infos et notes pour la suivre comme un futur client. Tout est sauvegardé.</p>' +
@@ -1098,6 +1111,7 @@
   }
 
   var _clientsAsked = false;   // évite de redemander clients-data.js à chaque rendu
+  var _oiAsked = false;        // évite de redemander officines-infos-data.js à chaque rendu
   // Coordonnées SAISIES par l'équipe sur la fiche (table `profils`, scope 'client').
   // Elles étaient enregistrées mais jamais relues : le commercial corrigeait un
   // numéro, le rechargement le faisait disparaître de l'en-tête. Une lecture par
@@ -1431,6 +1445,11 @@
         V2.loadFiles(['clients']).then(function () { if (V2.route && V2.route.param) V2.render(); });
       }
     }
+    // 23/09/2026 — FINESS du jour (adresse, tel, fax, SIREN) : complète les trous
+    // de la base clients pour les clientes aussi (pas seulement les prospects).
+    if (!window.OFFICINES_INFOS && V2.loadFiles) {
+      if (!_oiAsked) { _oiAsked = true; V2.loadFiles(['officinesinfos']).then(function () { if (V2.route && V2.route.param) V2.render(); }); }
+    }
 
     // Nouvelle pharma → on repart d'une sélection vide
     if (String(selPid) !== String(pid)) { selPid = String(pid); selCips = new Set(); }
@@ -1482,13 +1501,37 @@
     // Sans le module Rendez-vous (espace Escale), V2.rdvInfo n'existe pas : la base clients se lit ici directement.
     if (!infoRdv && caBase) { logiciel = logiciel || caBase[5] || ''; portable = portable || caBase[1] || ''; }
     var mail = String(saisi.email || '').trim() || (pharma.email == null ? '' : String(pharma.email)).trim() || (infoRdv && infoRdv.email) || (!infoRdv && caBase && caBase[2]) || '';
-    var adresse = String(saisi.adresse || '').trim() || (infoRdv && infoRdv.adresse) || '';
+    // 23/09/2026 — l'adresse et la ville se complètent aussi depuis la base clients
+    // (caBase[11] adresse, [12] cp, [13] ville) quand la saisie et l'annuaire RDV n'ont rien.
+    // 23/09/2026 — FINESS du jour (public, national) : dernier recours, après la
+    // saisie de l'équipe, l'annuaire RDV et la base clients (ROBOT.md, priorité par champ).
+    var oi = (window.OFFICINES_INFOS || {})[String(pid)] || null;
+    if (!tel) tel = (oi && oi[1]) || '';
+    var adresse = String(saisi.adresse || '').trim() || (infoRdv && infoRdv.adresse) || (caBase && caBase[11]) || (oi && oi[0]) || '';
     // Même trou pour la ville : WML ne la connaît pas partout (« à compléter »
     // sur une officine dont l'annuaire donne pourtant la commune).
-    var loc = [pharma.cp || (infoRdv && infoRdv.cp), pharma.ville || (infoRdv && infoRdv.ville)]
+    var loc = [pharma.cp || (infoRdv && infoRdv.cp) || (caBase && caBase[12]), pharma.ville || (infoRdv && infoRdv.ville) || (caBase && caBase[13])]
       .filter(function (x) { return x; }).join(' ');
     var titulaire = clientTitulaire(pid);
     var comms = (pharma.comms || []).join(', ');
+    // 23/09/2026 — données de la base clients jamais montrées jusqu'ici : interlocuteur
+    // (si différent du titulaire), UGA, fax, SIREN, grossiste principal, structure qui livre,
+    // note de potentiel (1-8, PAS un €, sens non confirmé). Jamais l'encours ni une condition
+    // commerciale : ROBOT.md interdit.
+    var interloc = (caBase && caBase[3]) ? (caBase[3] + (caBase[4] ? ' (' + caBase[4] + ')' : '')) : '';
+    if (interloc && titulaire && caBase[3] === titulaire) interloc = '';  // même personne que le titulaire : pas de doublon
+    var uga = (caBase && caBase[8]) || '';
+    var fax = (caBase && caBase[15]) || (oi && oi[2]) || '';
+    var siren = (caBase && caBase[14]) || (oi && oi[3]) || '';
+    var grossiste = (caBase && caBase[18]) || '';
+    var livreePar = (caBase && caBase[16]) || '';
+    var potentiel = (pharma.potentiel != null && pharma.potentiel !== '') ? (pharma.potentiel + ' / 8') : '';
+    var grpInfo = (function () {
+      var g = String(pharma.groupement || '').trim();
+      if (!g || g === '—' || !window.GRP_INFO) return null;
+      var key = canonG(g).toLowerCase().replace(/[^a-z0-9]/g, '');
+      return window.GRP_INFO[key] || null;
+    })();
     var kv = function (l, v, empty) { return '<span>' + l + '</span><span' + (v ? '' : ' class="pha-empty"') + '>' + (v ? v : (empty || 'à compléter')) + '</span>'; };
     var idCard =
       '<div class="pha-id">' +
@@ -1498,13 +1541,21 @@
           kv('Ville', esc(loc)) +
           (adresse ? kv('Adresse', esc(adresse)) : '') +
           kv('Titulaire', esc(titulaire)) +
+          (interloc ? kv('Interlocuteur', esc(interloc)) : '') +
           kv('Groupement', (pharma.groupement && pharma.groupement !== '—') ? esc(canonG(pharma.groupement)) : '') +
+          (grpInfo && grpInfo.description ? '<span></span><span class="pha-grpinfo">' + esc(grpInfo.description) + (grpInfo.site ? ' <a href="' + esc(grpInfo.site) + '" target="_blank" rel="noopener">' + esc(grpInfo.site.replace(/^https?:\/\//, '').replace(/\/$/, '')) + '</a>' : '') + '</span>' : '') +
           kv('Téléphone', tel ? esc(tel) : '') +
           (portable && portable !== tel ? kv('Portable', esc(portable)) : '') +
+          (fax ? kv('Fax', esc(fax)) : '') +
           kv('E-mail', mail ? esc(mail) : '') +
+          (uga ? kv('UGA', esc(uga)) : '') +
+          (siren ? '<span>SIREN</span><span><a href="https://annuaire-entreprises.data.gouv.fr/entreprise/' + esc(siren) + '" target="_blank" rel="noopener">' + esc(siren) + '</a></span>' : '') +
           kv('Logiciel', logiciel ? esc(logiciel) : '', 'inconnu') +
           (livraison ? kv('Livraison', esc(livraison)) : '') +
           (generiqueur ? kv('Génériqueur', esc(generiqueur)) : '') +
+          (grossiste ? kv('Grossiste principal', esc(grossiste)) : '') +
+          (livreePar ? kv('Livrée par', esc(livreePar)) : '') +
+          (potentiel ? kv('Potentiel', esc(potentiel)) : '') +
         '</div>' +
         '<div class="pha-acts">' +
           (tel ? '<a class="pha-btn" href="tel:' + esc(tel.replace(/[^+0-9]/g, '')) + '">' + ICO('phone', 15) + 'Appeler</a>' : '') +
@@ -1557,7 +1608,15 @@
         // jusqu'ici la promesse était vide, il n'y avait aucun champ où les mettre.
         V2.profil.coordSection(pid, { tel: tel, email: mail, adresse: adresse }, ['tel', 'email', 'adresse'], 'Coordonnées') +
         V2.profil.coordSection(pid, {}, ['relance_date'], 'Relance') +
-        V2.profil.section('client', pid) + '</div>';
+        // 23/09/2026 — pré-remplissage « d'après la base clients » quand personne n'a
+        // encore saisi (logiciel, grossiste principal, génériqueur(s), clé PharmaML) :
+        // une saisie de l'équipe gagne toujours (fill() dans v2-profil.js).
+        V2.profil.section('client', pid, {
+          lgo: logiciel || '', gros1: grossiste || '',
+          gen1: generiqueur ? generiqueur.split(' / ')[0] : '',
+          gen2: generiqueur ? (generiqueur.split(' / ')[1] || '') : '',
+          cle_crypto: (caBase && caBase[17]) || ''
+        }) + '</div>';
     })() : '';
     var notes = V2.notes ? '<div class="pha-notes">' + V2.notes.section('client', pid) + '</div>' : '';
 
@@ -3493,6 +3552,8 @@
       '.v2-prospect-n{font-size:18px;font-weight:800;letter-spacing:-.01em;line-height:1.2}',
       '.v2-prospect-a{color:var(--muted);font-size:13px;margin-top:2px}',
       '.v2-prospect-badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}',
+      '.v2-prospect-extra{margin-top:6px;font-size:11.5px;color:var(--muted);overflow-wrap:anywhere}',
+      '.v2-prospect-extra a{color:inherit;text-decoration:underline}',
       '.v2-chip.pr{background:color-mix(in srgb,var(--ip-blue) 12%,#fff);color:var(--ip-blue);box-shadow:0 0 0 1px color-mix(in srgb,var(--ip-blue) 22%,transparent) inset}',
       '.v2-prospect-note{margin:14px 0 0;font-size:12.5px;line-height:1.5;color:var(--muted)}',
       '.v2-prospect-acts{padding:14px 18px;display:flex;gap:10px;flex-wrap:wrap}',
@@ -3787,6 +3848,9 @@
       '.pha-sub{font-size:12px;color:var(--muted);font-weight:500}',
       '.pha-up{color:var(--c-mint-txt)}.pha-dn{color:var(--c-rose-txt)}.pha-flat{color:var(--muted)}',
       '.pha-id{border-radius:var(--r-card);padding:22px 22px 20px;color:#fff;position:relative;overflow:hidden;background:linear-gradient(160deg,#173FA8 0%,#0B1F4D 55%,#08163A 100%);box-shadow:0 18px 40px rgba(11,31,77,.30),inset 0 1px 0 rgba(255,255,255,.18)}',
+      // 23/09/2026 — le lien SIREN prenait le bleu par défaut du navigateur, illisible
+      // sur la carte bleu nuit : il reprend la couleur du texte de la carte, souligné.
+      '.pha-id a{color:inherit;text-decoration:underline}',
       '.pha-id::before{content:"";position:absolute;width:420px;height:420px;border-radius:50%;left:-120px;top:-260px;background:radial-gradient(closest-side,rgba(120,170,255,.55),rgba(120,170,255,0))}',
       '.pha-id>*{position:relative}',
       '.pha-code{font-size:11.5px;opacity:.75;font-weight:700;letter-spacing:.04em}',
@@ -3795,6 +3859,8 @@
       '.pha-kv span:nth-child(odd){color:rgba(255,255,255,.62);font-weight:600}',
       '.pha-kv span:nth-child(even){font-weight:700;text-align:right;overflow-wrap:anywhere}',
       '.pha-kv .pha-empty{color:rgba(255,255,255,.45);font-weight:500}',
+      '.pha-kv .pha-grpinfo{text-align:left;font-weight:500;font-size:12px;color:rgba(255,255,255,.75);line-height:1.4;overflow-wrap:anywhere}',
+      '.pha-kv .pha-grpinfo a{color:#fff;text-decoration:underline}',
       '.pha-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}',
       '.pha-btn{display:inline-flex;align-items:center;gap:7px;min-height:var(--tap-min,44px);padding:0 14px;border-radius:var(--r-btn,12px);border:1px solid var(--line-strong);background:var(--card);font:inherit;font-weight:700;font-size:13px;color:var(--ip-ink);cursor:pointer;text-decoration:none;white-space:nowrap}',
       '.pha-id .pha-btn{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.22);color:#fff}',
