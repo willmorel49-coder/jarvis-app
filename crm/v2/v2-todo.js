@@ -89,10 +89,11 @@
   }
 
   // ── Réglages des mails : l'accès test Offilog ───────────────────
-  // Jamais dans le code (dépôt public) : chacun l'enregistre une fois, dans une
-  // ligne `profils` à part — la liste (items) n'est jamais touchée par ici.
+  // Jamais dans le code (dépôt public) : UN accès commun à l'équipe (23/09, Will :
+  // « il faut que ce soit dessus »), rangé dans une ligne `profils` à part, lue par
+  // tous les comptes — la liste (items) n'est jamais touchée par ici.
   var LS_REG = 'jarvis_todo_reg_v1';
-  function scopeReg() { return { st: 'groupement', sid: '__todoreg_' + ((V2.user && V2.user.id) || 'local') + '__' }; }
+  function scopeReg() { return { st: 'groupement', sid: '__todoreg_equipe__' }; }
   function nettoieReg(o) { o = o || {}; return { offilogId: String(o.offilogId || '').trim(), offilogMdp: String(o.offilogMdp || '').trim() }; }
   function reglages() {
     if (!st.reg) {
@@ -146,7 +147,7 @@
   // mailto: transporte, et ça s'affiche pareil dans toutes les messageries.
   // Rien de confidentiel en dur (dépôt public) : le franco de 300 € est affiché
   // sur offilog.fr, 30 jours est le délai légal par défaut ; le mot de passe du
-  // compte test Offilog, lui, est rangé dans le compte du commercial (reglages).
+  // compte test Offilog, lui, est rangé en base, commun à l'équipe (reglages).
   // 16 traits : au-delà, le filet passe à la ligne sur un écran d'iPhone.
   var FILET = '━━━━━━━━━━━━━━━━';
   function partie(n, titre) { return '\n\n' + FILET + '\n' + (n ? n + ' · ' : '') + titre + '\n' + FILET + '\n\n'; }
@@ -451,11 +452,11 @@
           '<button class="v2-btn v2-btn-ghost v2-todo-sm" onclick="V2.todo.copierModele(\'' + m.k + '\')">' + ICO('check', 14, 2) + 'Copier le texte</button></div></div></details>';
       }).join('') + '</div>';
   }
-  // L'accès test Offilog cité dans le mail d'après rendez-vous, enregistré une fois par personne.
+  // L'accès test Offilog cité dans le mail d'après rendez-vous, commun à toute l'équipe.
   function accesOffilog() {
     var r = reglages();
     return '<div class="v2-todo-reg"><b>Accès test Offilog cité dans ce mail</b>' +
-      '<span>' + (r.offilogId && r.offilogMdp ? 'Enregistré dans ton compte : il se remplit tout seul.' : 'À enregistrer une fois : il se remplira ensuite tout seul, dans chaque mail.') + '</span>' +
+      '<span>' + (r.offilogId && r.offilogMdp ? 'Déjà rempli dans le mail, pour toute l\'équipe. À modifier ici seulement si l\'accès change.' : 'À enregistrer une fois : il se remplira ensuite tout seul dans le mail, pour toute l\'équipe.') + '</span>' +
       '<div class="v2-todo-reg-f"><input id="v2-todo-oid" type="email" autocomplete="off" placeholder="Identifiant" value="' + esc(r.offilogId) + '">' +
       '<input id="v2-todo-omdp" type="text" autocomplete="off" placeholder="Mot de passe" value="' + esc(r.offilogMdp) + '">' +
       '<button class="v2-btn v2-btn-ghost v2-todo-sm" onclick="V2.todo.enregistrerOffilog()">Enregistrer</button></div></div>';
