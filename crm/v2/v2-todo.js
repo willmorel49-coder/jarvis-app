@@ -251,7 +251,14 @@
         return '';
       }
       var ouv = trier(V2.todo.ouverts()).slice(0, 6);
-      if (!ouv.length) return '';
+      // Liste vide : la carte reste là (23/09, Will ne la voyait pas), avec de quoi ajouter.
+      if (!ouv.length) {
+        return '<div class="v2-card" style="margin-bottom:16px;padding:14px 18px;display:flex;align-items:center;gap:12px">' +
+          '<span style="flex:none;color:var(--ip-blue);display:inline-flex">' + ICO('list', 18, 2) + '</span>' +
+          '<span style="flex:1;min-width:0"><b style="font-size:13px;font-weight:800;color:var(--ip-ink)">Ma liste</b>' +
+            '<span style="display:block;font-size:12.5px;color:var(--ip-ink-2)">Rien à faire pour l\'instant.</span></span>' +
+          '<button class="v2-btn v2-btn-ghost" style="flex:none" onclick="V2.go(\'todo\')">' + ICO('plus', 14, 2) + ' Ajouter</button></div>';
+      }
       return '<div class="v2-card" style="margin-bottom:16px;padding:16px 18px">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">' +
           '<span style="font-size:13px;font-weight:800;letter-spacing:-.01em;color:var(--ip-ink)">À faire</span>' +
