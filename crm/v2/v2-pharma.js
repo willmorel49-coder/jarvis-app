@@ -234,7 +234,7 @@
     mergeMarket().forEach(function (m, cip) {
       var b = bIdx.get(cip); if (!b) return;
       var cat = classify(b, cip);
-      if (cat && CATS.some(function (c) { return c.key === cat; })) out.add(cip);
+      if (cat && cat !== 'gen' && CATS.some(function (c) { return c.key === cat; })) out.add(cip);
     });
     return (_mkClassified = out);
   }
@@ -269,7 +269,7 @@
       var b = bIdx.get(cip);
       if (!b) return;                        // pas dans le catalogue IP → on ignore
       var cat = classify(b, cip);
-      if (!cat || !buckets[cat]) return;
+      if (!cat || !buckets[cat] || cat === 'gen') return;   // génériques non partenaires : jamais une opportunité
       var bp = V2.bestPrice(b);
       buckets[cat].push({
         cip: cip,
@@ -282,7 +282,11 @@
     });
 
     // tri par qté marché desc + cap par catégorie
-    return CATS.map(function (c) {
+    // 23/09/2026 — remontée de Pauline S. : « tu marques le générique de Spasfon Lyoc
+    // mais en général cela nous échappe quand ça passe générique (Viatris, Biogaran) ».
+    // Les génériques NON partenaires ne sont plus des opportunités ; les génériques
+    // partenaires (EG · Zentiva · Zydus · Teva) le restent (seau 'genp').
+    return CATS.filter(function (c) { return c.key !== 'gen'; }).map(function (c) {
       var rows = buckets[c.key];
       rows.sort(function (a, b) { return b.marketQte - a.marketQte; });
       var totalQte = rows.reduce(function (s, r) { return s + r.marketQte; }, 0);
