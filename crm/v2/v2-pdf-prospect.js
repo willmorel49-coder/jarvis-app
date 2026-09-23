@@ -304,8 +304,8 @@
       document.body.appendChild(veil);
       var els = pages.map(function (h) { var d = document.createElement('div'); d.innerHTML = h; return d.firstChild; });
       var w = window.html2pdf().set({
-        filename: fn, margin: 0, image: { type: 'jpeg', quality: 0.95 },
-        html2canvas: { scale: 2.5, useCORS: true, backgroundColor: '#ffffff', scrollX: 0, scrollY: 0 },
+        filename: fn, margin: 0, image: { type: 'jpeg', quality: 0.92 },
+        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', scrollX: 0, scrollY: 0 },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: [] }
       }).from(els[0]).toPdf();
       els.slice(1).forEach(function (el) {
@@ -331,7 +331,7 @@
     st.textContent = '#pdfp-modal{z-index:130}.pdfp-styles{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 18px;border-bottom:1px solid var(--line);background:var(--card)}' +
       '.pdfp-styles .pdfp-lbl{font-size:12px;font-weight:700;color:var(--muted);margin-right:2px}' +
       '.pdfp-styles .v2-seg{padding:7px 12px;font-size:12.5px;font-weight:700;cursor:pointer;background:var(--card);color:var(--ip-ink)}' +
-      '.pdfp-styles .v2-seg.on{color:#fff}' +
+      '.pdfp-styles .v2-seg.on{background:var(--ip-blue);color:#fff;border-color:transparent}' +
       '.pdfp-page{margin:0 auto 18px;overflow:hidden;border-radius:6px;box-shadow:0 14px 44px rgba(16,19,28,.2);background:#fff}' +
       '.pdfp-page>div{transform-origin:top left}' +
       '.pdfp-wait{padding:60px 0;text-align:center;color:var(--muted);font-weight:600}';
