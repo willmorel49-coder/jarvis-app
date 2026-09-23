@@ -2945,11 +2945,13 @@
   function txItems(pid) {
     var its = [];
     var cli = txIsClient(pid);
+    // Mail type de la To do list (aucune officine) : pas de listing, seulement les documents.
+    if (tx.modele) pid = null;
     // Prospect : pas d'achats chez nous → meilleures rotations du réseau, et la liste de son
     // groupement s'il est connu. benchIndex() se fige s'il est lu avant l'arrivée du catalogue.
-    var nR = (cli || window.BENCHMARK) ? txCount(pid, 'reseau') : 0;
+    var nR = pid && (cli || window.BENCHMARK) ? txCount(pid, 'reseau') : 0;
     if (nR > 0) its.push({ k: 'L:reseau', grp: 'listing', label: (cli ? 'Listing ' : 'Meilleures rotations · ') + reseauLbl(), meta: V2.fmtNum(nR) + ' produits · PDF généré' });
-    if (!cli && tx.grp && window.BENCHMARK) {
+    if (pid && !cli && tx.grp && window.BENCHMARK) {
       var gp = groupementProducts(tx.grp);
       var nP = gp.panel >= 2 ? gp.cats.reduce(function (s, o) { return s + o.rows.length; }, 0) : 0;
       if (nP > 0) its.push({ k: 'L:groupement', grp: 'listing', label: 'Listing ' + tx.grp, meta: V2.fmtNum(nP) + ' produits · ' + gp.panel + ' pharmacies du groupement · PDF généré' });
@@ -2996,11 +2998,12 @@
 
     var body = document.getElementById('tx-body');
     var keepY = body ? body.scrollTop : 0;
-    document.getElementById('tx-tt').innerHTML = ICO('fiche', 17, 2) + ' Transmettre à ' + esc(nom);
+    document.getElementById('tx-tt').innerHTML = ICO('fiche', 17, 2) + (tx.modele ? ' Documents à joindre au mail' : ' Transmettre à ' + esc(nom));
     body.innerHTML =
-      (mail ? '<div class="tx-to">Destinataire : <b>' + esc(mail) + '</b></div>'
+      (tx.modele ? '<div class="tx-to">Mail : <b>' + esc(tx.texte.objet) + '</b><br>L\'adresse du pharmacien s\'ajoute ensuite dans ta messagerie.</div>'
+        : mail ? '<div class="tx-to">Destinataire : <b>' + esc(mail) + '</b></div>'
             : '<div class="tx-to tx-err">Pas d\'e-mail connu pour cette officine — à renseigner dans « Infos officine ».</div>') +
-      (pharma ? group('Ses listings produits', 'ce qu\'elle n\'a pas encore', of('listing'))
+      (tx.modele ? '' : pharma ? group('Ses listings produits', 'ce qu\'elle n\'a pas encore', of('listing'))
               : group('Listings produits', 'les plus commandés' + (tx.grp ? ' · son groupement : ' + esc(tx.grp) : ''), of('listing'),
                   window.BENCHMARK ? '' : '<div class="tx-empty">Chargement du catalogue…</div>')) +
       group('Documents Intégral Pharma', '', of('app')) +
@@ -3015,15 +3018,15 @@
       var canSh = false;
       try { canSh = !!(navigator.share && navigator.canShare && navigator.canShare({ files: tx.files })); } catch (e) {}
       var names = tx.files.map(function (f) { return '- ' + f.name; }).join('\n');
-      var href = 'mailto:' + encodeURIComponent(mail) + '?subject=' + encodeURIComponent('Documents pour votre officine') +
-        '&body=' + encodeURIComponent('Bonjour,\n\nVeuillez trouver ci-joint :\n' + names + '\n\nJe reste à votre disposition pour en parler.\n\nBien cordialement,');
+      var href = 'mailto:' + encodeURIComponent(mail) + '?subject=' + encodeURIComponent(tx.texte ? tx.texte.objet : 'Documents pour votre officine') +
+        '&body=' + encodeURIComponent(tx.texte ? tx.texte.corps : 'Bonjour,\n\nVeuillez trouver ci-joint :\n' + names + '\n\nJe reste à votre disposition pour en parler.\n\nBien cordialement,');
       foot = '<div class="tx-state"><b>' + tx.files.length + ' fichier' + (tx.files.length > 1 ? 's' : '') + ' prêt' + (tx.files.length > 1 ? 's' : '') + '</b> · ' + txSize(tot) +
           (tot > 20 * 1048576 ? '<span class="tx-warn">Plus de 20 Mo : de nombreuses messageries refusent un mail aussi lourd.</span>' : '') + '</div>' +
         '<button class="v2-btn v2-btn-ghost" onclick="V2.pharmaTxReset()">Modifier</button>' +
-        (!canSh && mail ? '<a class="v2-btn v2-btn-ghost" href="' + esc(href) + '">Ouvrir le mail</a>' : '') +
+        (!canSh && (mail || tx.modele) ? '<a class="v2-btn v2-btn-ghost" href="' + esc(href) + '">Ouvrir le mail</a>' : '') +
         '<button class="v2-btn v2-btn-primary" onclick="V2.pharmaTxSend()">' + ICO(canSh ? 'spark' : 'download', 16) + (canSh ? 'Envoyer' : 'Télécharger les fichiers') + '</button>';
     } else {
-      foot = '<div class="tx-state">' + (nSel ? '<b>' + nSel + '</b> sélectionné' + (nSel > 1 ? 's' : '') : 'Coche ce que tu veux lui transmettre') + '</div>' +
+      foot = '<div class="tx-state">' + (nSel ? '<b>' + nSel + '</b> sélectionné' + (nSel > 1 ? 's' : '') : tx.modele ? 'Coche les documents à joindre' : 'Coche ce que tu veux lui transmettre') + '</div>' +
         '<button class="v2-btn v2-btn-primary"' + (nSel && !tx.busy ? '' : ' disabled') + ' onclick="V2.pharmaTxPrepare()">' + ICO('check', 16, 2) + 'Préparer les fichiers</button>';
     }
     document.getElementById('tx-foot').innerHTML = foot;
@@ -3031,12 +3034,16 @@
   // 23/09/2026 — `presel` : clés à pré-cocher (Ma liste › Ouverture de compte coche le
   // formulaire) ; `info` {nom, mail} : quand on n'est pas sur la fiche (Ma liste), le nom et
   // l'e-mail d'un prospect ne sont pas à l'écran, ils viennent de la ligne de la liste.
+  // 23/09 soir : `info.texte` {objet, corps} = le mail type de la To do list, qui part AVEC
+  // les pièces jointes (feuille de partage) ; sans officine (`pid` vide), mode « modèle ».
   V2.pharmaTransmettre = function (pid, presel, info) {
-    pid = String(pid);
-    if (tx.pid !== pid) { tx.sel = {}; tx.files = null; }
-    tx.pid = pid; tx.busy = '';
+    var texte = (info && info.texte) || null, modele = !pid;
+    pid = modele ? '__modele__' : String(pid);
+    if (tx.pid !== pid || (tx.texte && texte && tx.texte.objet !== texte.objet)) { tx.sel = {}; tx.files = null; }
+    tx.pid = pid; tx.busy = ''; tx.texte = texte; tx.modele = modele;
     (presel || []).forEach(function (k) { tx.sel[k] = true; });
-    if (!txIsClient(pid)) {   // fiche prospect : l'e-mail et le nom sont ceux affichés à l'écran
+    if (modele) txMail[pid] = '';
+    else if (!txIsClient(pid)) {   // fiche prospect : l'e-mail et le nom sont ceux affichés à l'écran
       var em = document.querySelector('.v2-prospect input[data-fk="email"]'), nm = document.querySelector('.v2-prospect input[data-fk="nom"]');
       var gr = document.querySelector('.v2-prospect input[data-fk="groupement"]');
       tx.grp = (gr && (gr.value || '').trim()) ? canonG((gr.value || '').trim()) : '';
@@ -3113,7 +3120,7 @@
   // Trace dans les notes de la fiche : une ligne par lot préparé (pas de doublon si
   // on appuie deux fois). Le CRM ne voit pas le mail partir, d'où « préparés pour envoi ».
   function txTrace(pid, files) {
-    if (!V2.notes || !V2.notes.addAuto || tx.traced === files) return;
+    if (!V2.notes || !V2.notes.addAuto || tx.traced === files || tx.modele) return;
     tx.traced = files;
     var body = 'Documents préparés pour envoi en pièces jointes :\n' + files.map(function (f) { return '- ' + (f.txLabel || f.name); }).join('\n');
     V2.notes.addAuto('client', pid, body).then(function (ok) {
@@ -3125,7 +3132,8 @@
     if (!files || !files.length) return;
     try {
       if (navigator.share && navigator.canShare && navigator.canShare({ files: files })) {
-        navigator.share({ files: files, title: 'Documents pour votre officine' })
+        var sh = tx.texte ? { files: files, title: tx.texte.objet, text: tx.texte.corps } : { files: files, title: 'Documents pour votre officine' };
+        navigator.share(sh)
           .then(function () { txTrace(pid, files); })
           .catch(function (e) { if (!e || e.name !== 'AbortError') { txDownloadAll(files); txTrace(pid, files); } });
         return;
