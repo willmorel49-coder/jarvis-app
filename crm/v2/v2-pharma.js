@@ -1507,7 +1507,7 @@
     // saisie de l'équipe, l'annuaire RDV et la base clients (ROBOT.md, priorité par champ).
     var oi = (window.OFFICINES_INFOS || {})[String(pid)] || null;
     if (!tel) tel = (oi && oi[1]) || '';
-    var adresse = String(saisi.adresse || '').trim() || (infoRdv && infoRdv.adresse) || (caBase && caBase[11]) || (oi && oi[0]) || '';
+    var adresse = String(saisi.adresse || '').trim() || (caBase && caBase[11]) || (infoRdv && infoRdv.adresse) || (oi && oi[0]) || '';   // base clients (09/2026) avant CLIENTS (05/2026)
     // Même trou pour la ville : WML ne la connaît pas partout (« à compléter »
     // sur une officine dont l'annuaire donne pourtant la commune).
     var loc = [pharma.cp || (infoRdv && infoRdv.cp) || (caBase && caBase[12]), pharma.ville || (infoRdv && infoRdv.ville) || (caBase && caBase[13])]
