@@ -3123,6 +3123,16 @@
     });
     return its;
   }
+  // Prospect (23/09/2026) : chacun choisit le style de ses listings PDF parmi 5 (v2-pdf-prospect.js)
+  function txStyleHtml(listings) {
+    if (!listings.length || !V2.prospectPdfStyles || !V2.prospectPdfStyle) return '';
+    var cur = V2.prospectPdfStyle();
+    return '<div class="tx-style"><span class="tx-gs">Style des listings PDF</span><div class="tx-style-b">' +
+      V2.prospectPdfStyles.map(function (s) {
+        return '<button type="button" class="v2-seg' + (s.id === cur ? ' on' : '') + '" data-s="' + s.id + '"' + (tx.busy ? ' disabled' : '') + ' onclick="V2.pharmaTxStyle(' + s.id + ')">' + s.id + ' · ' + esc(s.nom) + '</button>';
+      }).join('') + '</div>' +
+      '<button type="button" class="v2-btn v2-btn-ghost tx-apercu"' + (tx.busy ? ' disabled' : '') + ' onclick="V2.pharmaTxApercu()">' + ICO('fiche', 15, 2) + 'Voir l\'aperçu</button></div>';
+  }
   function txRender() {
     var bd = document.getElementById('tx-modal');
     if (!bd || !tx.pid) return;
@@ -3160,7 +3170,7 @@
             : '<div class="tx-to tx-err">Pas d\'e-mail connu pour cette officine — à renseigner dans « Infos officine ».</div>') +
       (tx.modele ? '' : pharma ? group('Ses listings produits', 'ce qu\'elle n\'a pas encore', of('listing'))
               : group('Listings produits', 'les plus commandés' + (tx.grp ? ' · son groupement : ' + esc(tx.grp) : ''), of('listing'),
-                  window.BENCHMARK ? '' : '<div class="tx-empty">Chargement du catalogue…</div>')) +
+                  (window.BENCHMARK ? '' : '<div class="tx-empty">Chargement du catalogue…</div>') + txStyleHtml(of('listing')))) +
       group('Documents Intégral Pharma', '', of('app')) +
       group('Bibliothèque de l\'équipe', 'déposés par chacun, visibles par tous', lib, libMsg + upl);
     body.scrollTop = keepY;
@@ -3224,6 +3234,19 @@
   };
   V2.pharmaTxClose = function () { var bd = document.getElementById('tx-modal'); if (bd) bd.classList.remove('open'); };
   V2.pharmaTxReset = function () { tx.files = null; txRender(); };
+  V2.pharmaTxStyle = function (n) { if (!tx.busy && V2.prospectPdfStyle) V2.prospectPdfStyle(n); };
+  V2.pharmaTxApercu = function () {
+    if (tx.busy || !tx.pid) return;
+    var ls = txItems(tx.pid).filter(function (i) { return i.grp === 'listing'; });
+    var pick = ls.filter(function (i) { return tx.sel[i.k]; })[0] || ls[0];
+    if (pick) V2.pharmaListPdf(tx.pid, pick.k.slice(2));
+  };
+  // Style changé (ici ou dans l'aperçu) : les fichiers déjà préparés ne sont plus les bons.
+  window.addEventListener('pdfp-style', function () {
+    if (tx.busy) return;
+    tx.files = null;
+    var bd = document.getElementById('tx-modal'); if (bd && bd.classList.contains('open')) txRender();
+  });
   V2.pharmaTxToggle = function (el) {
     var k = el.getAttribute('data-k');
     if (el.checked) tx.sel[k] = true; else delete tx.sel[k];
@@ -3996,6 +4019,10 @@
       '.tx-l b{font-size:13.5px;color:var(--ip-ink);overflow-wrap:anywhere}',
       '.tx-l small{font-size:11.5px;color:var(--muted)}',
       '.tx-empty{font-size:12.5px;color:var(--muted);padding:6px 2px 10px}',
+      '.tx-style{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:6px 0 4px}',
+      '.tx-style-b{display:flex;flex-wrap:wrap;gap:6px;width:100%}',
+      '.tx-style .v2-seg{padding:6px 11px;font-size:12px;font-weight:700;cursor:pointer}',
+      '.tx-style .v2-seg[disabled]{opacity:.45;pointer-events:none}',
       '.tx-upl{min-height:44px;gap:7px}',
       '.tx-upl.is-busy{opacity:.6;pointer-events:none}',
       '.tx-foot{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 18px;border-top:1px solid var(--line);background:var(--card)}',

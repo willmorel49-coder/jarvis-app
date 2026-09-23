@@ -20,8 +20,13 @@
     { id: 4, nom: 'Le prix d\'abord' }, { id: 5, nom: 'Par où commencer' }
   ];
   var CLE = 'jarvis.pdfProspectStyle';
-  function styleLu() { try { var v = +localStorage.getItem(CLE); if (v >= 1 && v <= 5) return v; } catch (e) {} return 1; }
-  function styleEcrit(v) { try { localStorage.setItem(CLE, String(v)); } catch (e) {} }
+  var memo = 1;   // si le stockage du navigateur est bloqué, le choix tient au moins jusqu'au rechargement
+  function styleLu() { try { var v = +localStorage.getItem(CLE); if (v >= 1 && v <= 5) return v; } catch (e) {} return memo; }
+  function styleEcrit(v) {
+    memo = v;
+    try { localStorage.setItem(CLE, String(v)); } catch (e) {}
+    try { window.dispatchEvent(new CustomEvent('pdfp-style', { detail: v })); } catch (e) {}
+  }
 
   // Polices libres (OFL) servies par nous — voir fonts/LISEZ-MOI.md. Satoshi et Geist Mono : déjà chargées par l'app.
   var polices = null;
@@ -323,7 +328,7 @@
   function css() {
     if (document.getElementById('pdfp-css')) return;
     var st = document.createElement('style'); st.id = 'pdfp-css';
-    st.textContent = '.pdfp-styles{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 18px;border-bottom:1px solid var(--line);background:var(--card)}' +
+    st.textContent = '#pdfp-modal{z-index:130}.pdfp-styles{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 18px;border-bottom:1px solid var(--line);background:var(--card)}' +
       '.pdfp-styles .pdfp-lbl{font-size:12px;font-weight:700;color:var(--muted);margin-right:2px}' +
       '.pdfp-styles .v2-seg{padding:7px 12px;font-size:12.5px;font-weight:700;cursor:pointer;background:var(--card);color:var(--ip-ink)}' +
       '.pdfp-styles .v2-seg.on{color:#fff}' +
@@ -407,5 +412,6 @@
     apercu(c, fn, titre);
   };
   V2.prospectPdfStyles = STYLES;
+  V2.prospectPdfStyle = function (v) { if (v >= 1 && v <= 5) styleEcrit(v); return styleLu(); };
   V2.prospectPdfClose = fermer;
 })();
