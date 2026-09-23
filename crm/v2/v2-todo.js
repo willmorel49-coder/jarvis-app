@@ -442,7 +442,7 @@
     return '<div class="v2-todo-mh"><h2>Les mails tout prêts</h2><p>À lire, copier ou ouvrir dans ta messagerie — l\'adresse du pharmacien reste à ajouter.</p></div>' +
       '<div class="v2-card v2-todo-list">' + MODELES.map(function (m) {
         var x = modele(m.k);
-        return '<details class="v2-todo-mail"' + (st.ouvert === m.k ? ' open' : '') + '><summary><span class="v2-todo-ico">' + ICO(KINDS[m.k].ico, 16, 2) + '</span>' +
+        return '<details class="v2-todo-mail"' + ((st.ouverts || {})[m.k] ? ' open' : '') + ' ontoggle="V2.todo.plier(\'' + m.k + '\',this.open)"><summary><span class="v2-todo-ico">' + ICO(KINDS[m.k].ico, 16, 2) + '</span>' +
           '<span class="v2-todo-mt"><b>' + esc(m.t) + '</b><small>' + esc(m.s) + '</small></span><span class="v2-todo-chev">' + ICO('chev', 16, 2) + '</span></summary>' +
           '<div class="v2-todo-mb">' + (m.k === 'merci' ? accesOffilog() : '') + '<div class="v2-todo-obj"><span>Objet</span>' + esc(x.objet) + '</div>' +
           '<pre class="v2-todo-corps">' + esc(x.corps) + '</pre>' +
@@ -463,9 +463,11 @@
     var i = document.getElementById('v2-todo-oid'), m = document.getElementById('v2-todo-omdp');
     ecrireReg({ offilogId: i ? i.value : '', offilogMdp: m ? m.value : '' }).then(function (ok) {
       if (V2.toast) V2.toast(ok ? 'Accès Offilog enregistré' : 'Gardé sur cet appareil seulement — la base n\'a pas répondu', ok ? '' : 'warn');
-      st.ouvert = 'merci'; rendre();
+      rendre();
     });
   };
+  // Un modèle ouvert le reste quand la page se redessine (réglages arrivés de la base, enregistrement).
+  V2.todo.plier = function (k, o) { st.ouverts = st.ouverts || {}; st.ouverts[k] = !!o; };
   V2.todo.ouvrirModele = function (k) { ouvrirMail('', modele(k)); };
   V2.todo.copierModele = function (k) {
     var x = modele(k), t = 'Objet : ' + x.objet + '\n\n' + x.corps;
