@@ -1325,7 +1325,11 @@
         var SC_VENDRE = '<path d="M14 44v18h14l24 16V28L28 44H14z" fill="' + W + '.22)" stroke="' + W + '.75)"/><path d="M58 40a16 16 0 0 1 0 26" fill="none" stroke="' + W + '.6)"/><path d="M66 32a26 26 0 0 1 0 42" fill="none" stroke="' + W + '.35)"/><rect x="82" y="26" width="24" height="18" rx="3" fill="' + W + '.18)" stroke="' + W + '.6)"/>';
 
         var terrain = [
-          tuile('pharma', 'pharma', 'Officines', [{ t: 'Fiches', k: 'pharma' }, { t: 'Visites' }, { t: 'À relancer' }, { t: 'À faire', k: 'todo' }, { t: 'Audit marge', k: 'audit' }]),
+          // 23/09 — Will : « je capte pas ce qui se passe dans Officines, ça ouvre différents trucs ».
+          // Ma liste devient sa propre porte, Officines n'ouvre plus que les fiches,
+          // Audit marge part dans « Vendre & convaincre ».
+          tuile('todo', 'check', 'Ma liste', [{ t: 'Rendez-vous à demander' }, { t: 'Remerciements' }, { t: 'Ouvertures de compte' }]),
+          tuile('pharma', 'pharma', 'Officines', [{ t: 'Fiches clients et prospects' }, { t: 'Visites' }, { t: 'À relancer' }]),
           tuile('carte', 'grid', 'La carte', [{ t: 'Clients' }, { t: 'Prospects' }, { t: 'Tournée', k: 'tournee' }]),
           // Espace Groupements : listes des groupements + listings produits (renderGroupementsList via pharma?groupements)
           tuile('pharma', 'list', 'Groupements', [{ t: 'Listes', k: 'pharma', param: 'groupements' }, { t: 'Listings d\'achats', k: 'pharma', param: 'groupements' }, { t: 'Carte des groupements', k: 'carteGrp' }], goJs('pharma', 'groupements'))
@@ -1354,7 +1358,8 @@
           ]) +
           rayon('Vendre &amp; convaincre', SC_VENDRE, [
             tuile('marketing', 'fiche', 'Marketing', [{ t: 'Supports' }, { t: 'Sélections à pousser' }, { t: 'LinkedIn' }]),
-            tuile('argument', 'opp', 'Convaincre un prospect', [{ t: 'L\'Argument', k: 'argument' }, { t: 'Présentation Intégral', k: 'presentation' }, { t: 'Missions rémunérées', k: 'missions' }])
+            tuile('argument', 'opp', 'Convaincre un prospect', [{ t: 'L\'Argument', k: 'argument' }, { t: 'Présentation Intégral', k: 'presentation' }, { t: 'Missions rémunérées', k: 'missions' }]),
+            (window.V2_BRAND && window.V2_BRAND.opso) ? '' : tuile('audit', 'euro', 'Audit marge', [{ t: 'L\'abandon de marge officine par officine' }, { t: 'En PDF' }])
           ]);
       }
 
