@@ -991,7 +991,7 @@
     return '<button class="v2-btn v2-btn-ghost" onclick="V2.pharmaTransmettre(\'' + esc(String(pid)) + '\')" title="catalogues, documents de l\'équipe — en pièces jointes">' +
       (V2.ICO ? V2.ICO('fiche', 15, 2) : '') + 'Choisir quoi lui transmettre</button>' +
       (V2.todo ? '<button class="v2-btn v2-btn-ghost" onclick="V2.todo.menu(\'' + esc(String(pid).replace(/[^0-9A-Za-z_-]/g, '')) + '\')" title="demande de rendez-vous, suite de rendez-vous, ouverture de compte…">' +
-        (V2.ICO ? V2.ICO('check', 15, 2) : '') + 'Ajouter à ma liste</button>' : '');
+        (window.ICO ? window.ICO('check', 15, 2) : '') + 'Ajouter à ma liste</button>' : '');
   }
 
   // Officine trouvée dans la base nationale (prospect / non-cliente) par son id.
