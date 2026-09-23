@@ -348,7 +348,8 @@
       var it = (st.items || []).find(function (x) { return x.id === id; }); if (!it) return;
       if (!it.pid) { if (V2.toast) V2.toast('Cette ligne n\'est rattachée à aucune officine', 'warn'); return; }
       if (!V2.pharmaTransmettre) return;
-      V2.pharmaTransmettre(it.pid, KINDS[it.k].presel || null, { nom: it.nom, mail: mailDe(it) });
+      V2.pharmaTransmettre(it.pid, KINDS[it.k].presel || null, { nom: it.nom, mail: mailDe(it),
+        texte: it.k === 'compte' ? mailCompte(it) : it.k === 'merci' ? mailMerci(it) : it.k === 'rdv' ? mailRdv(it, st.lien || '') : null });
     },
 
     // Carte de l'accueil : mes lignes à faire (les plus urgentes d'abord), rien si la liste est vide.
@@ -449,6 +450,7 @@
           '<div class="v2-todo-mb">' + (m.k === 'merci' ? accesOffilog() : '') + '<div class="v2-todo-obj"><span>Objet</span>' + esc(x.objet) + '</div>' +
           '<pre class="v2-todo-corps">' + esc(x.corps) + '</pre>' +
           '<div class="v2-todo-acts"><button class="v2-btn v2-btn-primary v2-todo-sm" onclick="V2.todo.ouvrirModele(\'' + m.k + '\')">' + ICO('fiche', 14, 2) + 'Ouvrir dans ma messagerie</button>' +
+          '<button class="v2-btn v2-btn-ghost v2-todo-sm" onclick="V2.todo.joindreModele(\'' + m.k + '\')">' + ICO('plus', 14, 2) + 'Choisir les documents à joindre</button>' +
           '<button class="v2-btn v2-btn-ghost v2-todo-sm" onclick="V2.todo.copierModele(\'' + m.k + '\')">' + ICO('check', 14, 2) + 'Copier le texte</button></div></div></details>';
       }).join('') + '</div>';
   }
@@ -471,6 +473,11 @@
   // Un modèle ouvert le reste quand la page se redessine (réglages arrivés de la base, enregistrement).
   V2.todo.plier = function (k, o) { st.ouverts = st.ouverts || {}; st.ouverts[k] = !!o; };
   V2.todo.ouvrirModele = function (k) { ouvrirMail('', modele(k)); };
+  // 23/09 soir, Will : « il faut aussi qu'on puisse choisir les documents à joindre avec le mail ».
+  // Même fenêtre que « Transmettre » des fiches ; le texte du mail part avec les pièces jointes.
+  V2.todo.joindreModele = function (k) {
+    if (V2.pharmaTransmettre) V2.pharmaTransmettre('', (KINDS[k] && KINDS[k].presel) || null, { texte: modele(k) });
+  };
   V2.todo.copierModele = function (k) {
     var x = modele(k), t = 'Objet : ' + x.objet + '\n\n' + x.corps;
     if (navigator.clipboard && navigator.clipboard.writeText) {
