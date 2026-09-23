@@ -58,6 +58,21 @@ QUERIES = [
     {'tag': 'groupement', 'q': 'Aprium pharmacie'},
     {'tag': 'marge', 'q': 'marge officine pharmacien rémunération'},
     {'tag': 'marge', 'q': 'honoraires dispensation pharmacien'},
+
+    # 23/09/2026 : une commerciale rapporte que Sagitta rachèterait Médiane
+    # Répartition (Carcassonne) et Mezegel Répartition (Hillion), deux petits
+    # grossistes aux mêmes propriétaires. Rien dans la presse ce jour-là.
+    {'tag': 'sagitta', 'q': '"Médiane Répartition"'},
+    {'tag': 'sagitta', 'q': 'Mezegel Répartition'},
+]
+
+# Annonces OFFICIELLES (BODACC, gratuit, sans clé) : une cession ou un changement
+# de dirigeant y paraît souvent avant la presse. Dépôts de comptes ignorés (bruit).
+BODACC = 'https://bodacc-datadila.opendatasoft.com/api/explore/v2.1/catalog/datasets/annonces-commerciales/records?where=%s&order_by=dateparution%%20desc&limit=20'
+BODACC_SUIVIS = [
+    {'siren': '977768548', 'nom': 'Médiane Répartition', 'tag': 'sagitta'},
+    {'siren': '949685143', 'nom': 'Mezegel Répartition', 'tag': 'sagitta'},
+    {'siren': '534188941', 'nom': 'Sagitta Pharma', 'tag': 'sagitta'},
 ]
 
 # Filtre pertinence : au moins un mot du secteur (évite le bruit "alliance"/"phoenix" hors pharma).
@@ -182,10 +197,43 @@ def parse_direct(feed):
     return out
 
 
+def parse_bodacc(suivi):
+    """Annonces BODACC d'une société suivie -> items (hors dépôts de comptes)."""
+    siren = suivi['siren']
+    espace = '%s %s %s' % (siren[:3], siren[3:6], siren[6:])
+    url = BODACC % urllib.parse.quote('registre like "%%%s%%"' % espace)
+    try:
+        rows = json.loads(fetch(url)).get('results', [])
+    except Exception as e:
+        sys.stderr.write('FAIL bodacc %s : %s\n' % (siren, e)); return []
+    out = []
+    for r in rows:
+        # le filtre "like" peut attraper un autre numéro : on revérifie le SIREN exact
+        if siren not in str(r.get('registre') or ''):
+            continue
+        if r.get('familleavis') == 'dpc':
+            continue
+        detail = ''
+        try:
+            detail = (json.loads(r.get('modificationsgenerales') or '{}') or {}).get('descriptif') or ''
+        except Exception:
+            pass
+        titre = '%s — %s (annonce officielle)' % (suivi['nom'], r.get('familleavis_lib') or 'Annonce')
+        d = r.get('dateparution') or ''
+        out.append({'titre': titre, 'url': r.get('url_complete') or 'https://www.bodacc.fr/',
+                    'source': 'BODACC', 'date': (d + 'T08:00:00+00:00') if d else '',
+                    'tag': suivi['tag'], 'resume': clean(detail)[:240], 'libre': True})
+    return out
+
+
 def main():
     seen, items = {}, []
     for feed in FEEDS:                 # flux directs gratuits d'abord (accès libre prioritaire)
         for row in parse_direct(feed):
+            if row['url'] not in seen:
+                seen[row['url']] = row; items.append(row)
+    for suivi in BODACC_SUIVIS:
+        for row in parse_bodacc(suivi):
             if row['url'] not in seen:
                 seen[row['url']] = row; items.append(row)
     for q in QUERIES:
