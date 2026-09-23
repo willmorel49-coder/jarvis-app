@@ -36,6 +36,11 @@ FROID_EXCEPTIONS = {
     '3400930208229': 'CALCIFEDIOL GRD BUV GTT FL10ML — RCP : à l’abri de la lumière, pas de température imposée',
     '3400935179043': 'MYCOSTATINE BUV SUSP FL24ML — RCP : ≤30°C avant ouverture, ≤25°C après ouverture',
     '3400930045343': 'ACARIZAX 12 LYOT ORAL BT30 — RCP : pas de précaution particulière de conservation',
+    # 23/09/2026 — remontée de Pauline S. (« monoprost geltim costec tagués froid ») : trois collyres,
+    # conservation officielle vérifiée sur le RCP (ANSM) — jamais 2-8°C.
+    '3400926738266': 'MONOPROST 50MCG/ML COLLY DOS30 — RCP 6.4 : conserver ≤25°C (ANSM R0218939)',
+    '3400937068291': 'GELTIM LP 1MG/G GEL OPHT DOS30 — RCP 6.4 : dans le sachet et l’étui, à l’abri de la lumière, aucune température imposée (ANSM R0206175)',
+    '3400930158494': 'COSTEC 20+5MG/ML COLLY FL10ML1 — RCP 6.4 : conserver ≤25°C avant ouverture (ANSM R0327006)',
 }
 
 def norm(s):
