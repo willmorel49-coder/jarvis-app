@@ -1984,8 +1984,8 @@
       return '<div style="border:1px solid #E5E9F2;border-radius:9px;padding:9px 11px"><div style="font-size:8px;color:#737A8C;text-transform:uppercase;letter-spacing:.05em;font-weight:700">' + l + '</div><div style="font-size:15px;font-weight:800;color:' + col + ';font-family:monospace">' + v + '</div></div>';
     }
 
-    // Top 5 commandé par catégorie (en valeur) — cartes 2 colonnes
-    var tops = ownedTopByCat(sales, 5);
+    // Top 10 commandé par catégorie (en valeur) — cartes 2 colonnes
+    var tops = ownedTopByCat(sales, 10);
     var topCards = tops.map(function (o) {
       var rws = o.rows.map(function (r, i) {
         return '<div style="display:flex;align-items:center;gap:7px;padding:3px 9px;border-top:1px solid #F4F6FB">' +
@@ -2001,7 +2001,7 @@
         rws + '</div>';
     }).join('');
     var topCatBlock = tops.length
-      ? '<h2 style="font-size:14px;font-weight:800;margin:0 0 10px;border-bottom:1px solid #E5E9F2;padding-bottom:5px">Top 5 commandé · par catégorie (en valeur)</h2>' +
+      ? '<h2 style="font-size:14px;font-weight:800;margin:0 0 10px;border-bottom:1px solid #E5E9F2;padding-bottom:5px">Top 10 commandé · par catégorie (en valeur)</h2>' +
         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:18px">' + topCards + '</div>'
       : '';
 
