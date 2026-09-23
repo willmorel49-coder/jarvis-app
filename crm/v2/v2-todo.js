@@ -147,7 +147,8 @@
   // Rien de confidentiel en dur (dépôt public) : le franco de 300 € est affiché
   // sur offilog.fr, 30 jours est le délai légal par défaut ; le mot de passe du
   // compte test Offilog, lui, est rangé dans le compte du commercial (reglages).
-  var FILET = '━━━━━━━━━━━━━━━━━━━━━━━━';
+  // 16 traits : au-delà, le filet passe à la ligne sur un écran d'iPhone.
+  var FILET = '━━━━━━━━━━━━━━━━';
   function partie(n, titre) { return '\n\n' + FILET + '\n' + (n ? n + ' · ' : '') + titre + '\n' + FILET + '\n\n'; }
   var LIVRAISONS = '• Commandes via PharmaML, directement depuis votre LGO\n' +
     '• Livraisons le mardi et le vendredi\n\n' +
