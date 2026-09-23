@@ -1100,6 +1100,8 @@
               '</div>' : '') +
               ((dirigeantsDe(oi) && !memesNoms(p[10], dirigeantsDe(oi))) ? '<div class="v2-prospect-extra">Dirigeant(s) déclaré(s) : ' + esc(dirigeantsDe(oi)) + '</div>' : '') +
               (cessation(oi) ? '<div class="v2-prospect-extra v2-cessee">' + esc(cessation(oi)) + '</div>' : '') +
+              (retraiteDe(oi) ? '<div class="v2-prospect-extra v2-retraite">Titulaire proche de la retraite (62 ans ou plus)</div>' : '') +
+              (autresOfficinesHtml(oi) ? '<div class="v2-prospect-extra">Dirige aussi : ' + autresOfficinesHtml(oi) + '</div>' : '') +
               probableLignes +
             '</div>' +
           '</div>' +
@@ -1135,6 +1137,22 @@
   // cessation ou après, ou quand l'officine nous commande encore (cliente) ; sinon « à vérifier ».
   // Dirigeants déclarés — JAMAIS ceux d'une société cessée (anciens propriétaires), même si le fichier en portait.
   function dirigeantsDe(oi) { return (oi && oi[6] !== 'C' && oi[5]) || ''; }
+  // 24/09/2026 — colonnes 9-10 (robot ~/fiches-officines) : 'R' = un dirigeant a 62 ans ou plus
+  // (l'année de naissance n'est jamais publiée), et les officines dirigées par la même personne
+  // (nom + prénoms + mois de naissance identiques à l'annuaire des entreprises).
+  function retraiteDe(oi) { return !!(oi && oi[6] !== 'C' && oi[9] === 'R'); }
+  var _nomsPf = null;
+  function officineLabel(id) {
+    var D = window.PHARMA_FR;
+    if (!_nomsPf && D && D.p) { _nomsPf = {}; D.p.forEach(function (r) { _nomsPf[String(r[13])] = (r[6] || '') + (r[7] ? ' (' + r[7] + ')' : ''); }); }
+    return (_nomsPf && _nomsPf[id]) || 'Officine ' + id;
+  }
+  function autresOfficinesHtml(oi) {
+    if (!oi || oi[6] === 'C' || !oi[10]) return '';
+    return String(oi[10]).split(',').map(function (id) {
+      return '<a href="#" onclick="V2.go(\'pharma\',\'' + esc(id) + '\');return false">' + esc(officineLabel(id)) + '</a>';
+    }).join(' · ');
+  }
   function cessation(oi, cliente) {
     if (!oi || oi[6] !== 'C') return '';
     var reprise = cliente || (oi[4] && oi[7] && (new Date(oi[4]) - new Date(oi[7])) / 864e5 > -62);
@@ -1578,6 +1596,8 @@
           kv('Titulaire', esc(titulaire || dirigeantsDe(oi))) +
           ((dirigeantsDe(oi) && titulaire && !memesNoms(titulaire, dirigeantsDe(oi))) ? kv('Dirigeant(s) déclaré(s)', esc(dirigeantsDe(oi))) : '') +
           (cessation(oi, true) ? '<span>Société</span><span class="pha-cessee">' + esc(cessation(oi, true)) + '</span>' : '') +
+          (retraiteDe(oi) ? '<span>À savoir</span><span class="pha-retraite">Titulaire proche de la retraite (62 ans ou plus)</span>' : '') +
+          (autresOfficinesHtml(oi) ? '<span>Dirige aussi</span><span class="pha-grpinfo">' + autresOfficinesHtml(oi) + '</span>' : '') +
           (interloc ? kv('Interlocuteur', esc(interloc)) : '') +
           kv('Groupement', (pharma.groupement && pharma.groupement !== '—') ? esc(canonG(pharma.groupement)) : '') +
           (grpInfo && grpInfo.description ? '<span></span><span class="pha-grpinfo"><span class="pha-grpdesc" title="' + esc(grpInfo.description) + '">' + esc(grpInfo.description) + '</span>' + (grpInfo.site ? ' <a href="' + esc(grpInfo.site) + '" target="_blank" rel="noopener">' + esc(grpInfo.site.replace(/^https?:\/\//, '').replace(/\/$/, '')) + '</a>' : '') + '</span>' : '') +
@@ -3680,6 +3700,7 @@
       '.v2-prospect-extra{margin-top:6px;font-size:11.5px;color:var(--muted);overflow-wrap:anywhere}',
       '.v2-prospect-extra a{color:inherit;text-decoration:underline}',
       '.v2-prospect-extra.v2-cessee{color:var(--c-rose-txt);font-weight:700}',
+      '.v2-prospect-extra.v2-retraite{color:var(--c-amber-txt);font-weight:700}',
       // Estimation « probable » (grossiste/génériqueur, jamais une donnée connue) :
       // italique, teinte ambre distincte du reste de la fiche.
       '.v2-prospect-probable{margin-top:8px;font-size:11.5px;font-style:italic;color:var(--c-amber-txt);display:flex;flex-direction:column;gap:2px}',
@@ -3997,6 +4018,7 @@
       '.pha-kv .pha-grpinfo a{color:#fff;text-decoration:underline}',
       // Description du groupement ramenée à 2 lignes (texte complet au survol) : elle prenait un demi-écran sur téléphone.
       '.pha-kv .pha-cessee{color:#FFB3B3;font-weight:700}',
+      '.pha-kv .pha-retraite{color:#FFD39A;font-weight:700}',
       '.pha-kv .pha-grpdesc{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}',
       '.pha-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}',
       '.pha-btn{display:inline-flex;align-items:center;gap:7px;min-height:var(--tap-min,44px);padding:0 14px;border-radius:var(--r-btn,12px);border:1px solid var(--line-strong);background:var(--card);font:inherit;font-weight:700;font-size:13px;color:var(--ip-ink);cursor:pointer;text-decoration:none;white-space:nowrap}',
