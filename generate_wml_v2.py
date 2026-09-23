@@ -226,6 +226,9 @@ SOURCES = [
     ('Ingrid L.', 'ILE'),    # Ingrid Lefebure
     ('Ingrid M.', 'IMM'),    # Ingrid Mazerm
     ('Pauline A.', 'PA'),    # Pauline Attali
+    ('Pascale P.', 'PPO'),   # Pascale Prieto — réintégrée le 23/09/2026 (demande de Will)
+    ('Pascale G.', 'PG'),    # Pascale Gracia — réintégrée le 23/09/2026
+    ('Grégoire', 'GM'),      # Grégoire Méric — réintégré le 23/09/2026
     # Escale Pharma (établissement du groupe, région parisienne) — fichier
     # d'Alexandre Lovy déposé le 11/09/2026 ; prénoms lus dans sa liste clients
     ('Guy', 'GUY'),          # Escale Pharma
@@ -237,7 +240,7 @@ SOURCES = [
 # (décision de Will, 10/09/2026 : focus sur l'équipe commerciale). Leurs fichiers
 # vivent dans STATS/hors-perimetre/ ; le robot les y range tout seul s'ils
 # réapparaissent à la racine de STATS.
-EXCLUS = ['PG', 'PPO', 'GM', 'ADC', 'VM', 'AM', 'SEP', 'GL', 'AUL', 'SV', 'LP',
+EXCLUS = ['ADC', 'VM', 'AM', 'SEP', 'GL', 'AUL', 'SV', 'LP',
           'SOP', 'MSP', 'CPR', 'NR', 'REP', 'COMMERCIAL_INCONNU']
 # Escale écrit ses avoirs (PCVNUM « AC_… ») en POSITIF = montant rendu à l'officine,
 # là où les exports Intégral les écrivent déjà en négatif. Un avoir Escale est le
