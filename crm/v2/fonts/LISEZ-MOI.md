@@ -37,3 +37,10 @@ node /Users/williammorel/JARVIS/verif-ecran/verif-police.js <url>
 
 Le script coupe Fontshare et contrôle que la page retombe sur Inter servi depuis
 notre propre serveur — et qu'aucun fichier Satoshi n'est servi par nos soins.
+
+## PDF remis aux prospects : Archivo, Bricolage Grotesque, IBM Plex Mono (23/09/2026)
+
+`archivo.woff2` · `bricolage.woff2` · `plexmono.woff2` — chargés **uniquement** quand on
+fabrique le PDF d'un prospect (`v2-pdf-prospect.js`), jamais à l'ouverture de l'app.
+Fichiers Google Fonts non modifiés. Licence : **SIL Open Font License 1.1**, textes
+intégraux dans `ARCHIVO-OFL.txt`, `BRICOLAGE-OFL.txt`, `PLEXMONO-OFL.txt`.
