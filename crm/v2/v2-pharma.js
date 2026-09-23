@@ -1076,6 +1076,14 @@
     var oiAdresse = oi ? (oi[0] || '') : '', oiTel = oi ? (oi[1] || '') : '', oiFax = oi ? (oi[2] || '') : '', oiSiren = oi ? (oi[3] || '') : '', oiDateouv = oi ? (oi[4] || '') : '';
     var seed = { nom: p[6] || '', groupement: grp || '', titulaire: p[10] || '', tel: p[9] || oiTel, email: p[11] || '', adresse: oiAdresse };
     var badge = function (t, cls) { return t ? '<span class="v2-chip' + (cls ? ' ' + cls : '') + '">' + esc(t) + '</span>' : ''; };
+    // 23/09/2026 — un prospect n'a jamais de grossiste/génériqueur connu (base clients
+    // = clientes seulement) : estimation d'après son groupement, jamais écrite en base.
+    var probable = V2.probableParGroupement ? V2.probableParGroupement(pid) : null;
+    var probableLignes = (probable && (probable.grossiste || probable.generiqueur)) ?
+      '<div class="v2-prospect-probable">' +
+        (probable.grossiste ? '<span>Grossiste probable</span><b>' + esc(V2.probableTexte(probable.grossiste, probable.groupement)) + '</b>' : '') +
+        (probable.generiqueur ? '<span>Génériqueur probable</span><b>' + esc(V2.probableTexte(probable.generiqueur, probable.groupement)) + '</b>' : '') +
+      '</div>' : '';
     root.innerHTML = V2.topbar({ back: true, backTo: 'pharma', backLabel: 'Officines' }) +
       '<div class="v2-wrap v2-prospect">' +
         '<div class="v2-card v2-prospect-hd">' +
@@ -1090,6 +1098,7 @@
                 (oiFax ? (oiSiren ? ' · ' : '') + 'Fax ' + esc(oiFax) : '') +
                 (oiDateouv ? ((oiSiren || oiFax) ? ' · ' : '') + 'Ouverte le ' + esc(oiDateouv) : '') +
               '</div>' : '') +
+              probableLignes +
             '</div>' +
           '</div>' +
           '<p class="v2-prospect-note">Officine non cliente — complète ses coordonnées, infos et notes pour la suivre comme un futur client. Tout est sauvegardé.</p>' +
@@ -1523,9 +1532,15 @@
     var uga = (caBase && caBase[8]) || '';
     var fax = (caBase && caBase[15]) || (oi && oi[2]) || '';
     var siren = (caBase && caBase[14]) || (oi && oi[3]) || '';
-    var grossiste = (caBase && caBase[18]) || '';
+    var nf = V2.normFournisseur || function (v) { return v || ''; };   // « Phoenix » → « Phoenix Pharma », « Mylan » → « Viatris (Mylan) »…
+    var grossiste = nf((caBase && caBase[18]) || '');
     var livreePar = (caBase && caBase[16]) || '';
     var potentiel = (pharma.potentiel != null && pharma.potentiel !== '') ? (pharma.potentiel + ' / 8') : '';
+    // 23/09/2026 — demande Will : quand le grossiste/génériqueur n'est connu ni de la
+    // base clients ni d'une saisie de l'équipe, estimation d'après la répartition
+    // CONNUE du même groupement (V2.probableParGroupement, jamais devant une donnée
+    // connue, jamais écrite en base ni dans le Profil commercial).
+    var probable = V2.probableParGroupement ? V2.probableParGroupement(pid) : null;
     var grpInfo = (function () {
       var g = String(pharma.groupement || '').trim();
       if (!g || g === '—' || !window.GRP_INFO) return null;
@@ -1533,6 +1548,7 @@
       return window.GRP_INFO[key] || null;
     })();
     var kv = function (l, v, empty) { return '<span>' + l + '</span><span' + (v ? '' : ' class="pha-empty"') + '>' + (v ? v : (empty || 'à compléter')) + '</span>'; };
+    var kvProbable = function (l, estim) { return '<span>' + l + '</span><span class="pha-probable">' + esc(V2.probableTexte(estim, probable && probable.groupement)) + '</span>'; };
     var idCard =
       '<div class="pha-id">' +
         '<div class="pha-code mono">' + (pharma.code ? 'CIP ' + esc(String(pharma.code)) + ' · ' : '') + (isEscale() ? 'CLIENTE ESCALE' : 'CLIENTE INTÉGRAL') + (comms ? ' · ' + esc(comms.toUpperCase()) : '') + '</div>' +
@@ -1552,8 +1568,8 @@
           (siren ? '<span>SIREN</span><span><a href="https://annuaire-entreprises.data.gouv.fr/entreprise/' + esc(siren) + '" target="_blank" rel="noopener">' + esc(siren) + '</a></span>' : '') +
           kv('Logiciel', logiciel ? esc(logiciel) : '', 'inconnu') +
           (livraison ? kv('Livraison', esc(livraison)) : '') +
-          (generiqueur ? kv('Génériqueur', esc(generiqueur)) : '') +
-          (grossiste ? kv('Grossiste principal', esc(grossiste)) : '') +
+          (generiqueur ? kv('Génériqueur', esc(generiqueur)) : (probable && probable.generiqueur ? kvProbable('Génériqueur probable', probable.generiqueur) : '')) +
+          (grossiste ? kv('Grossiste principal', esc(grossiste)) : (probable && probable.grossiste ? kvProbable('Grossiste probable', probable.grossiste) : '')) +
           (livreePar ? kv('Livrée par', esc(livreePar)) : '') +
           (potentiel ? kv('Potentiel', esc(potentiel)) : '') +
         '</div>' +
@@ -1613,8 +1629,8 @@
         // une saisie de l'équipe gagne toujours (fill() dans v2-profil.js).
         V2.profil.section('client', pid, {
           lgo: logiciel || '', gros1: grossiste || '',
-          gen1: generiqueur ? generiqueur.split(' / ')[0] : '',
-          gen2: generiqueur ? (generiqueur.split(' / ')[1] || '') : '',
+          gen1: generiqueur ? nf(generiqueur.split(' / ')[0]) : '',
+          gen2: generiqueur ? nf(generiqueur.split(' / ')[1] || '') : '',
           cle_crypto: (caBase && caBase[17]) || ''
         }) + '</div>';
     })() : '';
@@ -3554,6 +3570,11 @@
       '.v2-prospect-badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}',
       '.v2-prospect-extra{margin-top:6px;font-size:11.5px;color:var(--muted);overflow-wrap:anywhere}',
       '.v2-prospect-extra a{color:inherit;text-decoration:underline}',
+      // Estimation « probable » (grossiste/génériqueur, jamais une donnée connue) :
+      // italique, teinte ambre distincte du reste de la fiche.
+      '.v2-prospect-probable{margin-top:8px;font-size:11.5px;font-style:italic;color:var(--c-amber-txt);display:flex;flex-direction:column;gap:2px}',
+      '.v2-prospect-probable span{font-weight:700;font-style:normal}',
+      '.v2-prospect-probable b{font-weight:600}',
       '.v2-chip.pr{background:color-mix(in srgb,var(--ip-blue) 12%,#fff);color:var(--ip-blue);box-shadow:0 0 0 1px color-mix(in srgb,var(--ip-blue) 22%,transparent) inset}',
       '.v2-prospect-note{margin:14px 0 0;font-size:12.5px;line-height:1.5;color:var(--muted)}',
       '.v2-prospect-acts{padding:14px 18px;display:flex;gap:10px;flex-wrap:wrap}',
@@ -3859,6 +3880,9 @@
       '.pha-kv span:nth-child(odd){color:rgba(255,255,255,.62);font-weight:600}',
       '.pha-kv span:nth-child(even){font-weight:700;text-align:right;overflow-wrap:anywhere}',
       '.pha-kv .pha-empty{color:rgba(255,255,255,.45);font-weight:500}',
+      // Estimation « probable » (jamais une donnée connue) : italique, teinte ambre
+      // distincte du blanc plein des vraies valeurs, lisible sur la carte bleu nuit.
+      '.pha-kv .pha-probable{font-style:italic;font-weight:600;color:rgba(255,196,110,.92)}',
       '.pha-kv .pha-grpinfo{text-align:left;font-weight:500;font-size:12px;color:rgba(255,255,255,.75);line-height:1.4;overflow-wrap:anywhere}',
       '.pha-kv .pha-grpinfo a{color:#fff;text-decoration:underline}',
       '.pha-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}',
