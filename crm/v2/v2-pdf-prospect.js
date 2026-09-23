@@ -2,6 +2,8 @@
    PDF remis à un PROSPECT — 5 styles au choix (Will, 23/09/2026 : « on les
    met tous, l'équipe choisit celui qu'elle préfère »). Le choix est retenu
    sur l'appareil et sert aussi à « Transmettre ».
+   24/09/2026 : aussi pour un CLIENT (o.client) — récap, ce qu'elle commande,
+   puis ses opportunités, chaque partie dans le style choisi.
 
    Pagination faite ICI, pas par html2pdf : sous Safari, ses coupures de page
    tombaient au mauvais endroit (ligne coupée en bas de page + trou). Chaque
@@ -71,7 +73,7 @@
       }) };
     }).filter(function (k) { return k.rows.length; });
     var tot = cats.reduce(function (a, k) { return a + k.rows.length; }, 0);
-    return { cats: cats, panel: data.panel > 0 ? data.panel : 0, ref: o.ref || '', nom: o.nom || 'Officine', reseau: !!o.reseau, tot: tot,
+    return { cats: cats, panel: data.panel > 0 ? data.panel : 0, ref: o.ref || '', nom: o.nom || 'Officine', reseau: !!o.reseau, tot: tot, client: o.client || null,
       date: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) };
   }
   function pct(n, c) { return Math.min(100, Math.round(n / c.panel * 100)); }
@@ -79,6 +81,49 @@
   // Chaque direction rend : fond, marges, polices, blocs (t: 'head' | 'row' | 'autre', f: n° de famille,
   // mt: espace au-dessus, keep: nb de blocs suivants à garder sur la même page, g: carte qui les regroupe),
   // et pour chaque famille un bloc « suite » posé en haut d'une page qui la continue.
+
+  // ── Client : récap, « ce qu'elle commande », puis l'annonce de ses opportunités ──
+  // T = habillage du style : num (police des chiffres), carte (encadré), sec (titre de partie), g (cartes groupées).
+  function blocsClient(c, T, blocks, suite) {
+    var C = c.client; if (!C) return;
+    var N = 'font-family:' + T.num;
+    var lab = function (t) { return '<div style="font-size:8.5px;font-weight:700;letter-spacing:.8px;color:' + PALE + ';text-transform:uppercase">' + t + '</div>'; };
+    var tuile = function (l, v, col) { return '<div style="flex:1;min-width:0;' + T.carte + ';padding:11px 13px">' + lab(l) + '<div style="' + N + ';font-size:18px;font-weight:700;margin-top:4px;color:' + (col || ENCRE) + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + v + '</div></div>'; };
+    var maxM = C.mois.reduce(function (m, x) { return Math.max(m, x.ca); }, 1);
+    var barres = C.mois.map(function (m) {
+      var h = m.ca > 0 ? Math.max(6, Math.round(m.ca / maxM * 60)) : 0, fort = m.ca >= maxM * 0.999;
+      return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px"><div style="' + N + ';font-size:8px;color:' + (fort ? T.acc : GRIS) + ';font-weight:' + (fort ? 700 : 400) + '">' + esc(C.fmtK(m.ca)) + '</div>' +
+        '<div style="width:100%;max-width:24px;height:' + h + 'px;border-radius:3px 3px 0 0;background:' + (fort ? T.acc : '#DCE6FB') + '"></div><div style="font-size:8px;font-weight:600;color:' + GRIS + '">' + esc(m.m) + '</div></div>';
+    }).join('');
+    var tr = C.tranches.map(function (r, i) {
+      return '<div style="display:flex;align-items:center;gap:8px;padding:4px 0' + (i ? ';border-top:1px solid ' + FILET : '') + ';font-size:10px"><span style="width:7px;height:7px;border-radius:2px;background:' + r.color + '"></span><span style="flex:1;min-width:0;font-weight:600">' + esc(r.label) + '</span>' +
+        '<span style="' + N + ';color:' + GRIS + '">' + esc(C.fmtNum(r.refs)) + ' réf.</span><span style="' + N + ';font-weight:700;width:86px;text-align:right">' + esc(C.fmtEur(r.ca)) + '</span></div>';
+    }).join('');
+    blocks.push({ t: 'autre', mt: T.mt, h: T.sec('Récap de l\'officine', C.code) });
+    blocks.push({ t: 'autre', mt: 10, h: '<div style="display:flex;gap:10px">' + tuile('CA cumulé', esc(C.fmtEur(C.ca))) + tuile('Marge nette générée', esc(C.fmtEur(C.marge)), '#1E9E6A') + tuile('Réf. commandées', esc(C.fmtNum(C.refs))) + tuile(C.lieu[0], esc(C.lieu[1]), T.acc) + '</div>' +
+      '<div style="display:flex;gap:10px;margin-top:10px"><div style="flex:0 0 250px;' + T.carte + ';padding:11px 13px">' + lab('CA par mois') + '<div style="display:flex;align-items:flex-end;gap:8px;height:84px;margin-top:8px">' + (barres || '—') + '</div></div>' +
+      '<div style="flex:1;min-width:0;' + T.carte + ';padding:11px 13px">' + lab('Ce qu\'elle commande déjà · par tranche') + '<div style="margin-top:6px">' + (tr || '<span style="font-size:10px;color:' + PALE + '">Aucune commande identifiée.</span>') + '</div></div></div>' });
+    var t = C.top;
+    if (t) {
+      var sous = 'ses ' + t.rows.length + ' premiers produits' + (t.caTot > 0 ? ' · ' + Math.round(t.caTop / t.caTot * 100) + ' % de son CA' : '') + ' · ' + C.fmtNum(t.nb) + ' réf. commandées';
+      var cols = '<div style="display:flex;gap:10px;padding:7px ' + T.px + 'px 3px;font-size:8.5px;font-weight:700;letter-spacing:.7px;color:' + PALE + ';text-transform:uppercase"><div style="width:18px">#</div><div style="flex:1">Produit</div><div style="width:120px">Famille</div><div style="width:44px;text-align:right">Boîtes</div><div style="width:78px;text-align:right">CA HT</div><div style="width:40px;text-align:right">Part</div></div>';
+      var g = T.g ? 'top' : undefined;
+      blocks.push({ t: 'head', f: 'top', g: g, mt: T.mt, keep: 2, h: T.sec('Ce qu\'elle commande', sous) + cols });
+      suite.top = { t: 'autre', g: g, mt: 0, h: T.sec('Ce qu\'elle commande', '', true) + cols };
+      t.rows.forEach(function (r, i) {
+        var n = nom(r.designation), k = r.cat;
+        blocks.push({ t: 'row', f: 'top', g: g, mt: 0, h: '<div style="display:flex;align-items:center;gap:10px;padding:6px ' + T.px + 'px;border-top:1px solid ' + FILET + (T.zebre && i % 2 ? ';background:#F6F8FC' : '') + '">' +
+          '<div style="width:18px;' + N + ';font-size:9px;color:' + PALE + '">' + (i + 1) + '</div>' +
+          '<div style="flex:1;min-width:0;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><b>' + esc(n.m) + '</b> <span style="color:' + GRIS + '">' + esc(n.r) + '</span></div>' +
+          '<div style="width:120px;font-size:9.5px;color:' + GRIS + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><span style="display:inline-block;width:7px;height:7px;border-radius:2px;margin-right:5px;background:' + (k ? k.color : '#C9CFDA') + '"></span>' + esc(k ? k.label : 'Autres') + '</div>' +
+          '<div style="width:44px;text-align:right;' + N + ';font-size:10px">' + esc(C.fmtNum(r.qte)) + '</div>' +
+          '<div style="width:78px;text-align:right;' + N + ';font-size:11px;font-weight:700;white-space:nowrap">' + esc(C.fmtEur(r.ca)) + '</div>' +
+          '<div style="width:40px;text-align:right;' + N + ';font-size:9.5px;color:' + GRIS + '">' + (t.caTot > 0 ? (r.ca / t.caTot * 100).toFixed(1).replace('.', ',') + ' %' : '—') + '</div></div>' });
+      });
+    }
+    blocks.push({ t: 'autre', mt: T.mt + 6, keep: 1, h: '<div style="font-size:11px;font-weight:700;letter-spacing:1.3px;color:' + T.acc + ';text-transform:uppercase">Ses opportunités d\'achat</div>' +
+      '<div style="margin-top:5px;font-size:12.5px;line-height:1.45;color:' + GRIS + ';max-width:600px">' + nb(c.tot) + ' produits commandés par ' + refPhrase(c) + ' qu\'elle ne commande pas encore, famille par famille, avec leur prix net.</div>' });
+  }
 
   // ───────── 1 · L'ESSENTIEL — blanc, air, Archivo, une seule couleur
   function v1(c) {
@@ -96,11 +141,13 @@
         '<div style="display:flex;align-items:center;gap:10px">' + LOGO(BLEU, '#fff') + '<span style="font-size:14px;font-weight:800">Intégral Pharma</span></div>' +
         '<span style="font-size:10px;color:' + GRIS + '">Édité le ' + c.date + '</span></div>' +
       '<div style="margin-top:34px;font-size:11px;font-weight:700;letter-spacing:1.4px;color:' + BLEU + ';text-transform:uppercase">Sélection préparée pour ' + esc(c.nom) + '</div>' +
-      '<div style="margin-top:8px;font-size:34px;font-weight:800;letter-spacing:-1px;line-height:1.05;max-width:600px">' + (c.reseau ? 'Les produits qui tournent le plus dans le réseau' : 'Ce que commandent les pharmacies ' + esc(c.ref)) + '</div>' +
-      '<div style="margin-top:12px;font-size:13px;line-height:1.5;color:' + GRIS + ';max-width:560px">' + nb(c.tot) + ' références, commandées chaque mois par ' + refPhrase(c) + ', avec leur prix net.</div>' +
+      '<div style="margin-top:8px;font-size:34px;font-weight:800;letter-spacing:-1px;line-height:1.05;max-width:600px">' + (c.client ? 'Ses achats et ses opportunités' : c.reseau ? 'Les produits qui tournent le plus dans le réseau' : 'Ce que commandent les pharmacies ' + esc(c.ref)) + '</div>' +
+      '<div style="margin-top:12px;font-size:13px;line-height:1.5;color:' + GRIS + ';max-width:560px">' + (c.client ? 'Ce qu\'elle commande aujourd\'hui, puis ' + nb(c.tot) + ' produits commandés par ' + refPhrase(c) + ' qu\'elle n\'a pas encore, avec leur prix net.' : nb(c.tot) + ' références, commandées chaque mois par ' + refPhrase(c) + ', avec leur prix net.') + '</div>' +
       '<div style="display:flex;margin-top:24px;border-top:1px solid ' + FILET + ';border-bottom:1px solid ' + FILET + '">' +
-        [[nb(c.tot), 'produits'], [nb(c.panel), 'pharmacies de référence'], [String(c.cats.length), 'familles']].map(function (x, i) { return '<div style="flex:1;padding:14px 0' + (i ? ';padding-left:18px;border-left:1px solid ' + FILET : '') + '"><div style="font-size:26px;font-weight:800;letter-spacing:-.6px">' + x[0] + '</div><div style="font-size:10.5px;color:' + GRIS + ';margin-top:2px">' + x[1] + '</div></div>'; }).join('') +
+        [[nb(c.tot), c.client ? 'opportunités' : 'produits'], [nb(c.panel), 'pharmacies de référence'], [String(c.cats.length), 'familles']].map(function (x, i) { return '<div style="flex:1;padding:14px 0' + (i ? ';padding-left:18px;border-left:1px solid ' + FILET : '') + '"><div style="font-size:26px;font-weight:800;letter-spacing:-.6px">' + x[0] + '</div><div style="font-size:10.5px;color:' + GRIS + ';margin-top:2px">' + x[1] + '</div></div>'; }).join('') +
       '</div>' });
+    blocsClient(c, { num: 'PdfArchivo,system-ui,sans-serif', acc: BLEU, carte: 'border:1px solid ' + FILET + ';border-radius:4px', px: 0, mt: 30,
+      sec: function (l, sub, su) { return '<div style="display:flex;align-items:baseline;gap:12px;border-bottom:2px solid ' + ENCRE + ';padding-bottom:7px"><span style="font-size:17px;font-weight:800;letter-spacing:-.3px">' + esc(l) + (su ? ' <span style="font-weight:600;color:' + PALE + ';font-size:13px">(suite)</span>' : '') + '</span><span style="font-size:11px;color:' + GRIS + '">' + esc(sub) + '</span></div>'; } }, blocks, suite);
     c.cats.forEach(function (k, ki) {
       blocks.push({ t: 'head', f: ki, mt: 26, keep: 2, h: entete(k, ki) });
       suite[ki] = { t: 'autre', mt: 0, h: entete(k, ki, true) };
@@ -120,25 +167,28 @@
   // ───────── 2 · LA COUVERTURE — page 1 bleu profond éclairé, intérieur clair
   function v2(c) {
     var M = "'Geist Mono',ui-monospace,monospace", blocks = [], suite = {};
-    var som = c.cats.map(function (k, i) {
+    var somLigne = function (n, l, sub, v) { return '<div style="display:flex;align-items:baseline;gap:12px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.14)"><span style="font-family:' + M + ';font-size:11px;color:#8FB0F5">' + n + '</span><span style="font-size:15px;font-weight:700;color:#fff">' + esc(l) + '</span><span style="font-size:11px;color:#A9C2F5">' + esc(sub) + '</span><span style="margin-left:auto;font-family:' + M + ';font-size:12px;color:#fff">' + v + '</span></div>'; };
+    var som = (c.client && c.client.top ? somLigne('—', 'Ce qu\'elle commande', 'ses premiers produits', c.client.top.rows.length) : '') + c.cats.map(function (k, i) {
       return '<div style="display:flex;align-items:baseline;gap:12px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.14)"><span style="font-family:' + M + ';font-size:11px;color:#8FB0F5">' + num2(i) + '</span><span style="font-size:15px;font-weight:700;color:#fff">' + esc(k.label) + '</span><span style="font-size:11px;color:#A9C2F5">' + esc(k.sub) + '</span><span style="margin-left:auto;font-family:' + M + ';font-size:12px;color:#fff">' + k.rows.length + '</span></div>';
     }).join('');
     var cover = '<div style="position:absolute;left:22px;right:22px;top:22px;bottom:22px;border-radius:22px;overflow:hidden;background:radial-gradient(120% 80% at 85% 0%,#3B7BFF 0%,#0050E6 30%,#0A2F8F 70%,#071C57 100%);color:#fff">' +
       '<div style="position:absolute;right:-120px;top:-140px;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.28),rgba(255,255,255,0) 65%)"></div>' +
       '<div style="position:relative;padding:44px 48px">' +
         '<div style="display:flex;align-items:center;gap:11px">' + LOGO('#fff', BLEU) + '<span style="font-size:15px;font-weight:800">Intégral Pharma</span><span style="margin-left:auto;font-size:11px;color:#A9C2F5">' + c.date + '</span></div>' +
-        '<div style="margin-top:' + (c.cats.length > 9 ? 90 : 150) + 'px;font-size:12px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:#A9C2F5">Préparé pour ' + esc(c.nom) + '</div>' +
-        '<div style="margin-top:12px;font-size:52px;font-weight:900;letter-spacing:-1.8px;line-height:1">' + (c.reseau ? 'Meilleures<br>rotations du réseau' : 'La sélection<br>' + esc(c.ref)) + '</div>' +
-        '<div style="margin-top:18px;font-size:15px;line-height:1.5;color:#D6E2FB;max-width:520px">' + nb(c.tot) + ' produits commandés par ' + refPhrase(c) + ', classés par famille, avec leur prix net.</div>' +
-        '<div style="margin-top:' + (c.cats.length > 9 ? 36 : 60) + 'px;font-size:10px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:#8FB0F5;margin-bottom:4px">Au sommaire</div>' + som +
+        '<div style="margin-top:' + (c.cats.length > (c.client ? 8 : 9) ? 90 : 150) + 'px;font-size:12px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:#A9C2F5">Préparé pour ' + esc(c.nom) + '</div>' +
+        '<div style="margin-top:12px;font-size:52px;font-weight:900;letter-spacing:-1.8px;line-height:1">' + (c.client ? 'Ses achats,<br>ses opportunités' : c.reseau ? 'Meilleures<br>rotations du réseau' : 'La sélection<br>' + esc(c.ref)) + '</div>' +
+        '<div style="margin-top:18px;font-size:15px;line-height:1.5;color:#D6E2FB;max-width:520px">' + (c.client ? 'Ce qu\'elle commande, puis ' + nb(c.tot) + ' produits commandés par ' + refPhrase(c) + ' qu\'elle n\'a pas encore, avec leur prix net.' : nb(c.tot) + ' produits commandés par ' + refPhrase(c) + ', classés par famille, avec leur prix net.') + '</div>' +
+        '<div style="margin-top:' + (c.cats.length > (c.client ? 8 : 9) ? 36 : 60) + 'px;font-size:10px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:#8FB0F5;margin-bottom:4px">Au sommaire</div>' + som +
       '</div></div>';
     var TH = 'padding:6px 10px;font-size:8.5px;font-weight:700;letter-spacing:.8px;color:' + GRIS;
     var entete = function (k, ki, s) {
       return '<div style="display:flex;align-items:baseline;gap:10px;padding:0 4px 8px"><span style="font-family:' + M + ';font-size:11px;color:' + BLEU + '">' + num2(ki) + '</span><span style="font-size:18px;font-weight:800;letter-spacing:-.3px">' + esc(k.label) + (s ? ' <span style="font-weight:600;color:' + PALE + ';font-size:13px">(suite)</span>' : '') + '</span><span style="font-size:11px;color:' + GRIS + '">' + esc(k.sub) + '</span></div>' +
         '<div style="display:flex;background:#EAF0FD;border-radius:10px 10px 0 0"><div style="flex:1;' + TH + '">PRODUIT</div><div style="width:92px;text-align:right;' + TH + '">PHARMACIES</div><div style="width:80px;text-align:right;' + TH + '">TARIF</div><div style="width:92px;text-align:right;' + TH + ';color:' + BLEU + '">PRIX NET</div></div>';
     };
+    blocsClient(c, { num: M, acc: BLEU, carte: 'background:#F6F8FC;border-radius:12px', px: 10, mt: 22, zebre: true,
+      sec: function (l, sub, su) { return '<div style="display:flex;align-items:baseline;gap:10px;padding:0 4px 8px"><span style="font-size:18px;font-weight:800;letter-spacing:-.3px">' + esc(l) + (su ? ' <span style="font-weight:600;color:' + PALE + ';font-size:13px">(suite)</span>' : '') + '</span><span style="font-size:11px;color:' + GRIS + '">' + esc(sub) + '</span></div>'; } }, blocks, suite);
     c.cats.forEach(function (k, ki) {
-      blocks.push({ t: 'head', f: ki, mt: ki ? 22 : 6, keep: 2, h: entete(k, ki) });
+      blocks.push({ t: 'head', f: ki, mt: ki || c.client ? 22 : 6, keep: 2, h: entete(k, ki) });
       suite[ki] = { t: 'autre', mt: 0, h: entete(k, ki, true) };
       k.rows.forEach(function (r, i) {
         var n = nom(r.d);
@@ -157,12 +207,14 @@
     var M = "'Geist Mono',ui-monospace,monospace", blocks = [], suite = {};
     var tile = function (l, v, s) { return '<div style="flex:1;background:#fff;border-radius:14px;padding:14px 16px;box-shadow:0 1px 2px rgba(15,20,32,.06)"><div style="font-size:9px;font-weight:700;letter-spacing:.9px;color:' + PALE + ';text-transform:uppercase">' + l + '</div><div style="font-family:' + M + ';font-size:24px;font-weight:700;margin-top:4px;color:' + ENCRE + '">' + v + '</div><div style="font-size:10px;color:' + GRIS + ';margin-top:2px">' + s + '</div></div>'; };
     blocks.push({ t: 'autre', mt: 0, h: '<div style="background:#fff;border-radius:18px;padding:20px 22px;display:flex;align-items:center;gap:14px;box-shadow:0 1px 2px rgba(15,20,32,.06)">' + LOGO(BLEU, '#fff') +
-      '<div><div style="font-size:20px;font-weight:900;letter-spacing:-.4px">' + (c.reseau ? 'Meilleures rotations du réseau' : 'Sélection ' + esc(c.ref)) + '</div><div style="font-size:11px;color:' + GRIS + ';margin-top:2px">Pour ' + esc(c.nom) + ' · ' + c.date + '</div></div>' +
+      '<div><div style="font-size:20px;font-weight:900;letter-spacing:-.4px">' + (c.client ? 'Ses achats · ses opportunités' : c.reseau ? 'Meilleures rotations du réseau' : 'Sélection ' + esc(c.ref)) + '</div><div style="font-size:11px;color:' + GRIS + ';margin-top:2px">Pour ' + esc(c.nom) + ' · ' + c.date + '</div></div>' +
       '<div style="margin-left:auto;font-size:10px;color:' + GRIS + ';text-align:right">Intégral Pharma<br>groupe de grossistes-répartiteurs</div></div>' });
-    blocks.push({ t: 'autre', mt: 12, h: '<div style="display:flex;gap:12px">' + tile('Produits', nb(c.tot), 'sélectionnés pour vous') + tile('Pharmacies', nb(c.panel), c.reseau ? 'dans le réseau' : 'du groupement ' + esc(c.ref)) + tile('Familles', c.cats.length, 'du petit prix au froid') + '</div>' });
+    blocks.push({ t: 'autre', mt: 12, h: '<div style="display:flex;gap:12px">' + tile(c.client ? 'Opportunités' : 'Produits', nb(c.tot), c.client ? 'qu\'elle n\'a pas encore' : 'sélectionnés pour vous') + tile('Pharmacies', nb(c.panel), c.reseau ? 'dans le réseau' : 'du groupement ' + esc(c.ref)) + tile('Familles', c.cats.length, 'du petit prix au froid') + '</div>' });
     var entete = function (k, s) {
       return '<div style="display:flex;align-items:center;gap:10px;padding:12px 14px 9px"><span style="width:9px;height:9px;border-radius:3px;background:' + k.color + '"></span><span style="font-size:14px;font-weight:800">' + esc(k.label) + (s ? ' <span style="font-weight:600;color:' + PALE + ';font-size:11px">(suite)</span>' : '') + '</span><span style="font-size:10.5px;color:' + GRIS + '">' + esc(k.sub) + '</span><span style="margin-left:auto;font-size:9px;font-weight:700;letter-spacing:.8px;color:' + PALE + '">RÉSEAU · TARIF · <span style="color:' + ENCRE + '">PRIX NET</span></span></div>';
     };
+    blocsClient(c, { num: M, acc: BLEU, carte: 'background:#fff;border-radius:14px;box-shadow:0 1px 2px rgba(15,20,32,.06)', px: 14, mt: 14, g: true,
+      sec: function (l, sub, su) { return '<div style="display:flex;align-items:center;gap:10px;padding:12px 14px 4px"><span style="width:9px;height:9px;border-radius:3px;background:' + BLEU + '"></span><span style="font-size:14px;font-weight:800">' + esc(l) + (su ? ' <span style="font-weight:600;color:' + PALE + ';font-size:11px">(suite)</span>' : '') + '</span><span style="font-size:10.5px;color:' + GRIS + '">' + esc(sub) + '</span></div>'; } }, blocks, suite);
     c.cats.forEach(function (k, ki) {
       var g = 'k' + ki;
       blocks.push({ t: 'head', f: ki, g: g, mt: 14, keep: 2, h: entete(k) });
@@ -192,9 +244,11 @@
     };
     var barre = function (k, s) { return '<div style="background:' + ENCRE + ';color:#fff;border-radius:8px;padding:8px 12px;display:flex;align-items:baseline;gap:10px"><span style="font-size:14px;font-weight:800">' + esc(k.label) + (s ? ' <span style="font-weight:600;color:#AEB6C6;font-size:11px">(suite)</span>' : '') + '</span><span style="font-size:10.5px;color:#AEB6C6">' + esc(k.sub) + '</span><span style="margin-left:auto;font-family:' + M + ';font-size:10px;color:#AEB6C6">' + k.rows.length + ' produits</span></div>'; };
     blocks.push({ t: 'autre', mt: 0, h: '<div style="display:flex;align-items:flex-end;gap:20px;border-bottom:3px solid ' + BLEU + ';padding-bottom:14px">' +
-      '<div><div style="font-size:11px;font-weight:700;color:' + BLEU + ';letter-spacing:.4px">INTÉGRAL PHARMA · TARIF NET</div><div style="font-size:30px;font-weight:800;letter-spacing:-.8px;line-height:1.05;margin-top:6px">' + (c.reseau ? 'Meilleures rotations' : 'Sélection ' + esc(c.ref)) + '</div></div>' +
-      '<div style="margin-left:auto;text-align:right;font-size:11px;line-height:1.45;color:' + GRIS + '"><b style="color:' + ENCRE + '">' + esc(c.nom) + '</b><br>' + nb(c.tot) + ' produits · ' + c.date + '</div></div>' });
+      '<div><div style="font-size:11px;font-weight:700;color:' + BLEU + ';letter-spacing:.4px">INTÉGRAL PHARMA · TARIF NET</div><div style="font-size:30px;font-weight:800;letter-spacing:-.8px;line-height:1.05;margin-top:6px">' + (c.client ? 'Ses achats, ses opportunités' : c.reseau ? 'Meilleures rotations' : 'Sélection ' + esc(c.ref)) + '</div></div>' +
+      '<div style="margin-left:auto;text-align:right;font-size:11px;line-height:1.45;color:' + GRIS + '"><b style="color:' + ENCRE + '">' + esc(c.nom) + '</b><br>' + nb(c.tot) + (c.client ? ' opportunités · ' : ' produits · ') + c.date + '</div></div>' });
     blocks.push({ t: 'autre', mt: 10, h: '<div style="font-size:10px;color:' + GRIS + '">En bleu, le prix net. En dessous : le tarif barré, puis la part des ' + refPhrase(c) + ' qui le commandent.</div>' });
+    blocsClient(c, { num: M, acc: BLEU, carte: 'border:1px solid #CBD2DE;border-radius:8px', px: 4, mt: 20,
+      sec: function (l, sub, su) { return '<div style="background:' + ENCRE + ';color:#fff;border-radius:8px;padding:8px 12px;display:flex;align-items:baseline;gap:10px"><span style="font-size:14px;font-weight:800">' + esc(l) + (su ? ' <span style="font-weight:600;color:#AEB6C6;font-size:11px">(suite)</span>' : '') + '</span><span style="font-size:10.5px;color:#AEB6C6">' + esc(sub) + '</span></div>'; } }, blocks, suite);
     c.cats.forEach(function (k, ki) {
       blocks.push({ t: 'head', f: ki, mt: 20, keep: 2, h: barre(k) });
       suite[ki] = { t: 'autre', mt: 0, h: barre(k, true) };
@@ -225,9 +279,11 @@
     blocks.push({ t: 'autre', mt: 0, h: '<div style="margin:-30px -40px 0;padding:30px 40px 26px;background:linear-gradient(180deg,#EEF3FF 0%,#FFFFFF 100%)">' +
       '<div style="display:flex;align-items:center;gap:10px">' + LOGO(BLEU, '#fff') + '<span style="font-size:14px;font-weight:800">Intégral Pharma</span><span style="margin-left:auto;font-size:10.5px;color:' + GRIS + '">' + esc(c.nom) + ' · ' + c.date + '</span></div>' +
       '<div style="margin-top:26px;font-size:30px;font-weight:800;letter-spacing:-.8px;line-height:1.05">Par où commencer</div>' +
-      '<div style="margin-top:8px;font-size:12.5px;color:' + GRIS + ';max-width:560px;line-height:1.5">Les ' + top.length + ' produits les plus commandés par ' + refPhrase(c) + '. La liste complète des ' + nb(c.tot) + ' produits suit, famille par famille.</div>' +
+      '<div style="margin-top:8px;font-size:12.5px;color:' + GRIS + ';max-width:560px;line-height:1.5">' + (c.client ? 'Les ' + top.length + ' produits qu\'elle n\'a pas encore et que commandent le plus ' + refPhrase(c) + '. Suivent ce qu\'elle commande aujourd\'hui, puis ses ' + nb(c.tot) + ' opportunités, famille par famille.' : 'Les ' + top.length + ' produits les plus commandés par ' + refPhrase(c) + '. La liste complète des ' + nb(c.tot) + ' produits suit, famille par famille.') + '</div>' +
       cartes + '</div>' });
     var entete = function (k, s) { return '<div style="display:flex;align-items:baseline;gap:10px;padding-bottom:6px;border-bottom:2px solid ' + ENCRE + '"><span style="font-size:15px;font-weight:800">' + esc(k.label) + (s ? ' <span style="font-weight:600;color:' + PALE + ';font-size:12px">(suite)</span>' : '') + '</span><span style="font-size:10.5px;color:' + GRIS + '">' + esc(k.sub) + '</span><span style="margin-left:auto;font-size:9px;font-weight:700;letter-spacing:.7px;color:' + PALE + '">PHARMACIES · TARIF · <span style="color:' + BLEU + '">PRIX NET</span></span></div>'; };
+    blocsClient(c, { num: 'PdfArchivo,system-ui,sans-serif', acc: BLEU, carte: 'background:#fff;border:1px solid ' + FILET + ';border-radius:14px;box-shadow:0 6px 16px -10px rgba(0,50,160,.25)', px: 0, mt: 24,
+      sec: function (l, sub, su) { return '<div style="display:flex;align-items:baseline;gap:10px;padding-bottom:6px;border-bottom:2px solid ' + ENCRE + '"><span style="font-size:15px;font-weight:800">' + esc(l) + (su ? ' <span style="font-weight:600;color:' + PALE + ';font-size:12px">(suite)</span>' : '') + '</span><span style="font-size:10.5px;color:' + GRIS + '">' + esc(sub) + '</span></div>'; } }, blocks, suite);
     c.cats.forEach(function (k, ki) {
       blocks.push({ t: 'head', f: ki, mt: 20, keep: 2, h: entete(k) });
       suite[ki] = { t: 'autre', mt: 0, h: entete(k, true) };
@@ -398,13 +454,14 @@
   }
   function fermer() { var b = document.getElementById('pdfp-modal'); if (b) b.classList.remove('open'); }
 
-  // data = {cats:[{cat, rows}], panel} (comme achatsPdf) · o = {nom, ref, reseau} · mode : 'blob' | 'share' | aperçu
+  // data = {cats:[{cat, rows}], panel} (comme achatsPdf) · o = {nom, ref, reseau, client?, fichier?} · mode : 'blob' | 'share' | aperçu
   V2.prospectPdf = function (data, o, mode) {
     if (typeof window.ensureHtml2Pdf !== 'function') { V2.toast('Module PDF indisponible', 'error'); return; }
     var c = contexte(data, o);
     if (!c.tot || !c.panel) { V2.toast('Aucun produit à proposer pour cette liste', 'warn'); return; }
-    var fn = 'Liste-' + String(c.ref).replace(/[^A-Za-z0-9-]/g, '_') + '-' + new Date().toISOString().slice(0, 10) + '.pdf';
-    var titre = 'Liste d\'achats · ' + c.ref;
+    var lib = o.fichier || c.ref;
+    var fn = 'Liste-' + String(lib).replace(/[^A-Za-z0-9-]/g, '_') + '-' + new Date().toISOString().slice(0, 10) + '.pdf';
+    var titre = 'Liste d\'achats · ' + lib;
     if (mode === 'blob' || mode === 'share') {
       V2.toast('Génération du PDF…');
       return construire(c, styleLu()).then(function (pages) { return fabriquer(pages, fn, mode, titre); });
