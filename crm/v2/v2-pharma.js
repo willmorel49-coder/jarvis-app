@@ -1194,7 +1194,7 @@
     return g + '</svg>';
   }
 
-  var top5Cat = null;   // catégorie ouverte dans « Top 5 par catégorie »
+  var top5Cat = null;   // catégorie ouverte dans « Top 10 par catégorie »
   V2.pharmaTop5Cat = function (key) { top5Cat = key; V2.render(); };
 
   // Tout ce que la fiche d'analyse calcule, en un seul objet (partagé ordinateur / téléphone).
@@ -1207,7 +1207,7 @@
     var caTot = pts.reduce(function (a, p) { return a + p.ca; }, 0);
     var netTot = pts.reduce(function (a, p) { return a + p.net; }, 0);
     var oc = ownedByCat(sales);
-    var topAll = ownedTopByCat(sales, 5);
+    var topAll = ownedTopByCat(sales, 10);
     var cats = CATS.map(function (c) {
       var bk = oc.buckets[c.key];
       var netByM = netMonths.map(function (m) { return m.avgByCat[c.key] || 0; });
@@ -1302,9 +1302,9 @@
       '<b>19,50 €</b> par boîte au-delà · non remboursés <b>15 %</b>. Génériques et biosimilaires : pas d\'abandon Intégral, hors calcul.</div>';
     var desk ='<div class="v2-card pha-card pha-desk" style="padding:0;overflow:hidden"><div class="pha-ch" style="padding:16px 18px 6px"><h3>Son CA par tranche, face à l\'officine moyenne du réseau</h3><span class="pha-sub">écart = sa moyenne mensuelle vs celle du réseau · évolution = dernier mois vs le précédent</span></div>' +
       '<div class="v2-cat-table-wrap" style="border-top:none"><table class="v2-table pha-table"><thead><tr><th>Tranche</th><th class="num">Réf.</th><th class="num">CA ' + A.n + ' mois</th><th class="num">Part</th><th class="num">Marge nette</th><th class="num">Taux</th><th class="num">Réseau / mois</th><th class="num">Écart</th><th class="num">Évol.</th></tr></thead><tbody>' + rows + '</tbody></table></div>' + legende + '</div>';
-    // Téléphone : une ligne par tranche, dépliable sur son top 5
+    // Téléphone : une ligne par tranche, dépliable sur son top 10
     var on = A.cats.filter(function (c) { return c.ca > 0; }).sort(function (x, y) { return y.ca - x.ca; });
-    var mob = '<div class="v2-card pha-card pha-mob"><div class="pha-ch"><h3>Par tranche</h3><span class="pha-sub">' + A.n + ' mois · top 5 au clic</span></div>' +
+    var mob = '<div class="v2-card pha-card pha-mob"><div class="pha-ch"><h3>Par tranche</h3><span class="pha-sub">' + A.n + ' mois · top 10 au clic</span></div>' +
       on.map(function (c, i) {
         return '<details class="pha-det"' + (i === 0 ? ' open' : '') + '><summary><span><span class="ph-tr-dot" style="background:' + c.color + '"></span>' + esc(c.label) + '</span><span class="mono">' + V2.fmtK(c.ca) + ' <span class="pha-sub">' + Math.round(c.part) + ' %</span> ' + ICO('chev', 14) + '</span></summary>' +
           '<div class="pha-bar" style="margin:0 0 8px"><i style="width:' + (maxCa > 0 ? (c.ca / maxCa * 100).toFixed(1) : 0) + '%;background:' + c.color + '"></i></div>' +
@@ -1421,7 +1421,7 @@
     var on = A.cats.filter(function (c) { return c.top.length; }).sort(function (x, y) { return y.ca - x.ca; });
     if (!on.length) return '';
     var cur = on.filter(function (c) { return c.key === top5Cat; })[0] || on[0];
-    return '<div class="v2-card pha-card pha-desk"><div class="pha-ch"><h3>Top 5 par catégorie</h3><span class="pha-sub">ses meilleures références, en valeur</span></div>' +
+    return '<div class="v2-card pha-card pha-desk"><div class="pha-ch"><h3>Top 10 par catégorie</h3><span class="pha-sub">ses meilleures références, en valeur</span></div>' +
       '<div class="pha-tabs">' + on.map(function (c) { return '<button class="pha-tab' + (c.key === cur.key ? ' on' : '') + '" onclick="V2.pharmaTop5Cat(\'' + c.key + '\')"><span class="ph-tr-dot" style="background:' + c.color + '"></span>' + esc(c.label.replace('Princeps · ', '')) + '</button>'; }).join('') + '</div>' +
       cur.top.map(function (t, i) { return '<div class="pha-r"><i>' + (i + 1) + '</i><span>' + esc(t.designation) + '</span><b class="mono">' + V2.fmtEur(t.ca) + ' <small>· ' + V2.fmtNum(t.qte) + ' u</small></b></div>'; }).join('') +
       '<div class="pha-sub" style="margin-top:6px">' + V2.fmtNum(cur.nbRefs) + ' référence' + (cur.nbRefs > 1 ? 's' : '') + ' commandée' + (cur.nbRefs > 1 ? 's' : '') + ' dans cette catégorie</div></div>';
@@ -2697,7 +2697,7 @@
 
   // 23/09/2026 — demande de Will : le PDF officine montre aussi CE QU'ELLE COMMANDE,
   // toutes familles confondues (le top 5 par tranche ne suffisait pas), avant ses opportunités.
-  var PDF_TOP_VENTES = 30;
+  var PDF_TOP_VENTES = 50;
   function topVentesPdfHtml(pid) {
     var sales = pharmaSales(pid);
     if (!sales.length) return '';
