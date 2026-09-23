@@ -2739,10 +2739,9 @@
   // 23/09/2026 — demande de Will : le PDF officine montre aussi CE QU'ELLE COMMANDE,
   // toutes familles confondues (le top 5 par tranche ne suffisait pas), avant ses opportunités.
   var PDF_TOP_VENTES = 50;
-  function topVentesPdfHtml(pid) {
+  function topVentesData(pid) {
     var sales = pharmaSales(pid);
-    if (!sales.length) return '';
-    var MONO = "'Geist Mono',ui-monospace,monospace";
+    if (!sales.length) return null;
     var bIdx = benchIndex(), by = {}, caTot = 0;
     // nom de secours : catalogue complet (produits absents du BENCHMARK, ventes compactes sans libellé)
     var cc = V2.produits && V2.produits.catalogueIndex ? V2.produits.catalogueIndex() : null;
@@ -2759,8 +2758,14 @@
     all.forEach(function (r) { caTot += r.ca; });
     all.sort(function (a, b) { return b.ca - a.ca; });
     var rows = all.slice(0, PDF_TOP_VENTES);
-    if (!rows.length) return '';
-    var caTop = rows.reduce(function (a, r) { return a + r.ca; }, 0);
+    if (!rows.length) return null;
+    return { rows: rows, nb: all.length, caTot: caTot, caTop: rows.reduce(function (a, r) { return a + r.ca; }, 0) };
+  }
+  function topVentesPdfHtml(pid) {
+    var t = topVentesData(pid);
+    if (!t) return '';
+    var MONO = "'Geist Mono',ui-monospace,monospace";
+    var rows = t.rows, caTot = t.caTot, caTop = t.caTop, all = { length: t.nb };
     var COLS = '<colgroup><col style="width:5%"><col style="width:39%"><col style="width:22%"><col style="width:10%"><col style="width:14%"><col style="width:10%"></colgroup>';
     var th = function (h, al) { return '<th style="text-align:' + al + ';padding:6px 8px;font-size:8.5px;font-weight:800;letter-spacing:.6px;color:#FFFFFF;text-transform:uppercase">' + h + '</th>'; };
     var trs = rows.map(function (r, i) {
@@ -2783,6 +2788,26 @@
         '<thead><tr style="background:#10131C">' + th('#', 'left') + th('Produit', 'left') + th('Famille', 'left') + th('Boîtes', 'right') + th('CA HT', 'right') + th('Part', 'right') + '</tr></thead>' +
         '<tbody>' + trs + '</tbody></table>' +
     '</div>';
+  }
+
+  // 24/09/2026 — Will : les 5 styles aussi pour le PDF d'un CLIENT. Mêmes contenus que
+  // recapPdfHtml + topVentesPdfHtml, en données brutes : chaque style les met en page.
+  function clientPdfData(pid) {
+    var pharma = (V2.pharmacies || []).find(function (p) { return String(p.id) === String(pid); });
+    var sales = pharma ? pharmaSales(pid) : [];
+    if (!sales.length) return null;
+    var oc = ownedByCat(sales);
+    return {
+      ca: V2.sumCA(sales), marge: margeNettePharma(sales),
+      refs: new Set(sales.map(function (s) { return String(s.artCode || ''); }).filter(function (c) { return c.length >= 7; })).size,
+      lieu: pharma.groupement ? ['Groupement', pharma.groupement] : ['Ville', pharma.ville || '—'],
+      code: [pharma.code, pharma.ville].filter(function (x) { return x; }).join(' · '),
+      mois: monthlyCA(sales).map(function (m) { return { m: cap(MN_SHORT[m.month - 1]), ca: m.ca }; }),
+      tranches: CATS.map(function (c) { var b = oc.buckets[c.key]; return { label: c.label, color: c.color, refs: b.refs.size, ca: b.ca }; })
+        .filter(function (r) { return r.refs > 0; }).sort(function (a, b) { return b.ca - a.ca; }),
+      top: topVentesData(pid),
+      fmtEur: V2.fmtEur, fmtK: V2.fmtK, fmtNum: V2.fmtNum
+    };
   }
 
   function achatsPdf(title, data, useSel, mode, portraitPid, prospectNom) {
@@ -3072,12 +3097,15 @@
     }
     var data = buildRecoCats(pid, scope);
     var label = (scope === 'groupement') ? (groupementPids(pid).name || 'Groupement') : reseauLbl();
+    var faire = function () {
+      if (V2.prospectPdf) {
+        return V2.prospectPdf(data, { nom: pharma.name, ref: label, reseau: scope !== 'groupement', client: clientPdfData(pid), fichier: pharma.name + ' — ' + label }, mode);
+      }
+      return achatsPdf(pharma.name + ' — ' + label, data, false, mode, pid);
+    };
     // « Ce qu'elle commande » nomme ses produits hors BENCHMARK via le catalogue complet (différé)
-    if (!window.CATALOGUE_COMPLET && V2.loadFiles) {
-      var go = function () { return achatsPdf(pharma.name + ' — ' + label, data, false, mode, pid); };
-      return V2.loadFiles(['catcomplet']).then(go, go);
-    }
-    return achatsPdf(pharma.name + ' — ' + label, data, false, mode, pid);
+    if (!window.CATALOGUE_COMPLET && V2.loadFiles) return V2.loadFiles(['catcomplet']).then(faire, faire);
+    return faire();
   };
 
   // ════════════════════════════════════════════
@@ -3143,7 +3171,7 @@
     });
     return its;
   }
-  // Prospect (23/09/2026) : chacun choisit le style de ses listings PDF parmi 5 (v2-pdf-prospect.js)
+  // Prospect (23/09/2026), puis client (24/09) : chacun choisit le style de ses listings PDF parmi 5 (v2-pdf-prospect.js)
   function txStyleHtml(listings) {
     if (!listings.length || !V2.prospectPdfStyles || !V2.prospectPdfStyle) return '';
     var cur = V2.prospectPdfStyle();
@@ -3188,7 +3216,7 @@
       (tx.modele ? '<div class="tx-to">Mail : <b>' + esc(tx.texte.objet) + '</b><br>L\'adresse du pharmacien s\'ajoute ensuite dans ta messagerie.</div>'
         : mail ? '<div class="tx-to">Destinataire : <b>' + esc(mail) + '</b></div>'
             : '<div class="tx-to tx-err">Pas d\'e-mail connu pour cette officine — à renseigner dans « Infos officine ».</div>') +
-      (tx.modele ? '' : pharma ? group('Ses listings produits', 'ce qu\'elle n\'a pas encore', of('listing'))
+      (tx.modele ? '' : pharma ? group('Ses listings produits', 'ce qu\'elle n\'a pas encore', of('listing'), txStyleHtml(of('listing')))
               : group('Listings produits', 'les plus commandés' + (tx.grp ? ' · son groupement : ' + esc(tx.grp) : ''), of('listing'),
                   (window.BENCHMARK ? '' : '<div class="tx-empty">Chargement du catalogue…</div>') + txStyleHtml(of('listing')))) +
       group('Documents Intégral Pharma', '', of('app')) +
@@ -3284,9 +3312,9 @@
       return (r && r.data && !r.error) ? new File([r.data], txPretty(name), { type: txMime(name) }) : null;
     });
   }
-  // 24/09/2026 : le style du listing prospect est écrit dans la trace (savoir lequel l'équipe utilise)
+  // 24/09/2026 : le style du listing (prospect ou client) est écrit dans la trace (savoir lequel l'équipe utilise)
   function txStyleNote(pid, k) {
-    if (k.indexOf('L:') !== 0 || txIsClient(pid) || !V2.prospectPdfStyle || !V2.prospectPdfStyles) return '';
+    if (k.indexOf('L:') !== 0 || !V2.prospectPdfStyle || !V2.prospectPdfStyles) return '';
     var n = V2.prospectPdfStyle(), s = V2.prospectPdfStyles.find(function (x) { return x.id === n; });
     return s ? ' (style ' + s.id + ' · ' + s.nom + ')' : '';
   }
