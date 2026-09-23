@@ -8,7 +8,7 @@
 
    Quatre sortes de lignes, chacune avec son geste :
      rdv    → mail « suite à mon passage » avec le lien de prise de rendez-vous
-     merci  → mail de remerciement (le modèle existant de v2-rdv-modeles) + pièces jointes
+     merci  → mail de suite de rendez-vous (le modèle de Will, 23/09) + pièces jointes
      compte → mail d'ouverture de compte + formulaire 2026 pré-coché dans « Transmettre »
      libre  → n'importe quoi d'autre, juste à cocher
 
@@ -29,7 +29,7 @@
 
   var KINDS = {
     rdv:    { l: 'Demande de rendez-vous', s: 'suite à un passage à l\'officine', ico: 'cal',   mail: 'Écrire la demande de rendez-vous' },
-    merci:  { l: 'Après le rendez-vous',   s: 'mot de remerciement + documents',  ico: 'check', mail: 'Écrire le mot de remerciement', docs: 'Joindre les documents' },
+    merci:  { l: 'Après le rendez-vous',   s: 'mail de suite + documents',        ico: 'check', mail: 'Écrire le mail de suite', docs: 'Joindre les documents' },
     compte: { l: 'Ouverture de compte',    s: 'mail + formulaire à joindre',      ico: 'fiche', mail: 'Écrire le mail d\'ouverture',   docs: 'Joindre le formulaire', presel: ['S:ouverture-compte-integral-pharma-2026.pdf'] },
     libre:  { l: 'Autre chose à faire',    s: '',                                  ico: 'list' }
   };
@@ -88,6 +88,35 @@
     });
   }
 
+  // ── Réglages des mails : l'accès test Offilog ───────────────────
+  // Jamais dans le code (dépôt public) : chacun l'enregistre une fois, dans une
+  // ligne `profils` à part — la liste (items) n'est jamais touchée par ici.
+  var LS_REG = 'jarvis_todo_reg_v1';
+  function scopeReg() { return { st: 'groupement', sid: '__todoreg_' + ((V2.user && V2.user.id) || 'local') + '__' }; }
+  function nettoieReg(o) { o = o || {}; return { offilogId: String(o.offilogId || '').trim(), offilogMdp: String(o.offilogMdp || '').trim() }; }
+  function reglages() {
+    if (!st.reg) {
+      try { st.reg = nettoieReg(JSON.parse(localStorage.getItem(LS_REG + ':' + ((V2.user && V2.user.id) || 'local')) || '{}')); } catch (e) { st.reg = nettoieReg(); }
+      var c = sb(), s = scopeReg();
+      if (c && V2.user) c.from('profils').select('data').eq('scope_type', s.st).eq('scope_id', s.sid).maybeSingle().then(function (r) {
+        if (r.error || !(r.data && r.data.data)) return;
+        st.reg = nettoieReg(r.data.data);
+        try { localStorage.setItem(LS_REG + ':' + V2.user.id, JSON.stringify(st.reg)); } catch (e) {}
+        rendre();
+      }, function () {});
+    }
+    return st.reg;
+  }
+  function ecrireReg(reg) {
+    st.reg = nettoieReg(reg);
+    try { localStorage.setItem(LS_REG + ':' + ((V2.user && V2.user.id) || 'local'), JSON.stringify(st.reg)); } catch (e) {}
+    var c = sb(), s = scopeReg();
+    if (!(c && V2.user)) return Promise.resolve(false);
+    return c.from('profils').upsert({ scope_type: s.st, scope_id: s.sid, data: st.reg, updated_by: V2.user.id,
+      updated_by_name: V2.user.name || '', updated_at: new Date().toISOString() }, { onConflict: 'scope_type,scope_id' })
+      .then(function (u) { if (u.error) throw u.error; return true; }).catch(function () { return false; });
+  }
+
   // ── Officines : nom, e-mail ─────────────────────────────────────
   function client(pid) { return (V2.pharmacies || []).find(function (p) { return String(p.id) === String(pid); }) || null; }
   function mailDe(it) {
@@ -102,7 +131,7 @@
   function marque() { return 'Intégral Pharma'; }
   function signature() {
     var t = String(V2.rdvTel || '').trim();
-    return '\n\nCordialement,\n\n' + ((V2.user && V2.user.name) || prenom()) + '\n' + marque() + (t ? '\n' + t : '');
+    return '\n\nBien cordialement,\n\n' + ((V2.user && V2.user.name) || prenom()) + '\n' + marque() + (t ? '\n' + t : '');
   }
   function dateFr(iso) {
     if (!iso) return '';
@@ -111,36 +140,112 @@
   }
 
   // ── Les trois mails types ───────────────────────────────────────
+  // 23/09, Will : « voilà le genre de mail que j'envoie […] il faut cette qualité-là
+  // pour les 3 options ». Modèle = SON mail d'après rendez-vous : parties titrées
+  // entre deux filets, puces courtes, rien d'inventé. Texte brut : c'est ce que
+  // mailto: transporte, et ça s'affiche pareil dans toutes les messageries.
+  // Rien de confidentiel en dur (dépôt public) : le franco de 300 € est affiché
+  // sur offilog.fr, 30 jours est le délai légal par défaut ; le mot de passe du
+  // compte test Offilog, lui, est rangé dans le compte du commercial (reglages).
+  var FILET = '━━━━━━━━━━━━━━━━━━━━━━━━';
+  function partie(n, titre) { return '\n\n' + FILET + '\n' + (n ? n + ' · ' : '') + titre + '\n' + FILET + '\n\n'; }
+  var LIVRAISONS = '• Commandes via PharmaML, directement depuis votre LGO\n' +
+    '• Livraisons le mardi et le vendredi\n\n' +
+    'Heures limites de commande :\n' +
+    '• avant lundi 12 h 30 → livraison mardi\n' +
+    '• avant jeudi 12 h 30 → livraison vendredi\n\n' +
+    '👉 En cas d\'urgence, vous pouvez ajouter des produits jusqu\'à 16 h en me contactant directement.';
+  var FACTURATION = '• Facturation le 1er et le 15 du mois\n' +
+    '• Règlement à 30 jours date de facture\n' +
+    '• Factures et bons de livraison disponibles sur Digipharmacie';
+  var PIECES_COMPTE = '• le document d\'ouverture, complété et signé ;\n• un RIB ;\n• un extrait Kbis.';
+
   function mailRdv(it, lien) {
+    var dejaClient = !!(it.pid && client(it.pid));
     var corps = 'Bonjour,\n\n' +
-      'Merci pour l\'accueil qui m\'a été réservé lors de mon passage dans votre officine' +
+      'Merci pour votre accueil lors de mon passage à la pharmacie' +
       (it.cree ? ' le ' + dateFr(it.cree.slice(0, 10)) : '') + '.\n\n' +
-      'Comme évoqué, je vous propose que nous prenions un moment ensemble. Trois points au programme :\n\n' +
-      (it.pid && client(it.pid)
-        ? '• Vos chiffres — votre activité avec ' + marque() + ' depuis le début de l\'année.\n' +
-          '• Votre liste personnalisée — établie avant ma venue à partir de ce que vous commandez.\n'
-        : '• Notre offre — les gammes et les références les plus commandées par les officines que nous livrons.\n' +
-          '• Une liste personnalisée — préparée avant ma venue pour votre officine.\n') +
-      '• L\'actualité du secteur — réglementation, approvisionnement, rémunération de l\'officine.\n\n' +
-      (lien ? 'Vous choisissez la date et l\'heure qui vous conviennent :\n' + lien
+      'Comme évoqué, je vous propose que nous prenions un moment ensemble, à la date qui vous convient.' +
+      partie(0, 'CE QUE JE VOUS PRÉSENTERAI') +
+      (dejaClient
+        ? '• votre activité avec ' + marque() + ' depuis le début de l\'année ;\n' +
+          '• une sélection de références préparée à partir de vos commandes ;\n' +
+          '• les opportunités prix du moment sur les familles que vous travaillez ;\n' +
+          '• l\'actualité du secteur : réglementation, approvisionnement, rémunération de l\'officine.'
+        : '• ' + marque() + ', grossiste complémentaire : ce que nous pouvons vous apporter en complément de votre grossiste principal ;\n' +
+          '• une sélection de références préparée pour votre officine, parmi les meilleures ventes des pharmaciens ;\n' +
+          '• notre fonctionnement : prix nets à la boîte sur facture, aucun minimum de commande, froid compris ;\n' +
+          '• génériques et biosimilaires : nos laboratoires partenaires, avec remontée dès la première boîte.') +
+      partie(0, 'CHOISIR VOTRE CRÉNEAU') +
+      (lien ? 'Vous choisissez directement le jour et l\'heure qui vous conviennent :\n👉 ' + lien +
+              '\n\nVous pouvez aussi me répondre simplement par mail ou par téléphone.'
             : 'Indiquez-moi simplement le jour et l\'heure qui vous arrangent, en réponse à ce mail ou par téléphone.') +
-      signature();
-    return { objet: 'Suite à mon passage dans votre officine', corps: corps };
+      '\n\nAu plaisir d\'échanger avec vous prochainement.' + signature();
+    return { objet: 'Suite à mon passage à la pharmacie – proposition de rendez-vous', corps: corps };
   }
-  function mailMerci(it, lien) {
-    if (window.V2MOD && window.V2MOD.remerciement) {
-      return window.V2MOD.remerciement({ nom_officine: it.nom, prenom_commercial: prenom(),
-        nom_complet_commercial: (V2.user && V2.user.name) || '', tel_commercial: V2.rdvTel || '', lien: lien || '' });
-    }
-    return { objet: 'Merci pour votre accueil', corps: 'Bonjour,\n\nJe vous remercie pour le temps que vous m\'avez accordé.' +
-      '\n\nSi une question vous revient, mon numéro figure ci-dessous.' + signature() };
+  function mailMerci(it) {
+    var r = reglages(), id = r.offilogId || '[identifiant]', mdp = r.offilogMdp || '[mot de passe]';
+    var corps = 'Bonjour,\n\n' +
+      'Je vous remercie sincèrement pour le temps que vous m\'avez accordé lors de notre rendez-vous.\n\n' +
+      'Comme convenu, vous trouverez en pièces jointes :\n\n' +
+      '• un fichier Excel des meilleures opportunités, sélectionnées directement par les pharmaciens ;\n' +
+      '• notre affiche « process », avec nos jours de livraison ;\n' +
+      '• le document d\'ouverture de compte Offilog, si cela vous intéresse : franco à 300 €, sans adhésion, livraison sous 72 h à une semaine.' +
+      partie(1, 'NOTRE POSITIONNEMENT') +
+      marque() + ' intervient comme grossiste complémentaire. Notre rôle : vous apporter une solution simple, réactive et rentable, en complément de votre grossiste principal.\n\n' +
+      'Vous pouvez nous solliciter :\n' +
+      '• sur des références bien positionnées en prix ;\n' +
+      '• en cas de manquants ;\n' +
+      '• pour des recherches spécifiques ;\n' +
+      '• pour optimiser la marge sur certaines familles de produits ;\n' +
+      '• pour les besoins ponctuels du quotidien.' +
+      partie(2, 'CONDITIONS COMMERCIALES') +
+      'Un fonctionnement simple et transparent :\n' +
+      '• aucun minimum de commande ;\n' +
+      '• prix nets à la boîte, directement visibles sur facture ;\n' +
+      '• aucune exclusion de produit, froid compris ;\n' +
+      '• catalogue grossiste complet accessible.' +
+      partie(3, 'TRANCHES D\'ABANDON DE MARGE') +
+      'Notre politique tarifaire est structurée par tranches, de manière claire, à la boîte et sur facture, comme évoqué en rendez-vous.\n\n' +
+      '→ Cette structure nous permet de rester compétitifs sur l\'intégralité du catalogue grossiste.' +
+      partie(4, 'GÉNÉRIQUES & BIOSIMILAIRES') +
+      'Laboratoires partenaires : Zentiva · EG Labo · Teva · Zydus\n\n' +
+      'Les remontées de chiffres se font dès la première boîte, sans palier minimum. Cela vous permet :\n' +
+      '• de sécuriser certains volumes ;\n' +
+      '• de garder de la souplesse dans vos approvisionnements ;\n' +
+      '• de travailler certaines références ponctuellement, selon vos besoins.\n\n' +
+      'Nous sommes également bien positionnés sur les biosimilaires, avec une remontée laboratoire dans les mêmes conditions.' +
+      partie(5, 'COMMANDES & LIVRAISONS') + LIVRAISONS +
+      partie(6, 'FACTURATION & SUIVI') + FACTURATION + '\n\n' +
+      'Nous attachons une importance particulière à la simplicité et à la lisibilité du suivi administratif pour l\'officine.' +
+      partie(7, 'ACCÈS TEST OFFILOG') +
+      'Pour consulter la plateforme avant toute création de compte :\n\n' +
+      '👉 https://offilog.fr/\n' +
+      'Identifiant : ' + id + '\n' +
+      'Mot de passe : ' + mdp + '\n\n' +
+      'Vous y trouverez notamment les meilleures ventes, les tarifs et les gammes disponibles.' +
+      partie(8, 'OUVERTURE DE COMPTE') +
+      'Comme évoqué ensemble, je reste disponible pour avancer sur l\'ouverture de compte quand vous le souhaiterez. Il suffira de me transmettre :\n\n' +
+      PIECES_COMPTE + '\n\n' +
+      'Je reste bien entendu disponible pour toute question ou pour faire un point ensemble, selon vos besoins.' + signature();
+    return { objet: 'Suite à notre rendez-vous – documents et fonctionnement ' + marque(), corps: corps };
   }
   function mailCompte(it) {
     var corps = 'Bonjour,\n\n' +
-      'Comme convenu, vous trouverez ci-joint le formulaire d\'ouverture de compte ' + marque() + '.\n\n' +
-      'Il suffit de le compléter, de le signer et de me le retourner en réponse à ce mail, avec les pièces indiquées sur le formulaire. ' +
-      'Dès réception, votre compte est créé et vos premières commandes peuvent partir.\n\n' +
-      'Je reste à votre disposition pour toute question.' + signature();
+      'Je vous remercie pour votre confiance.\n\n' +
+      'Comme convenu, vous trouverez ci-joint le document d\'ouverture de compte ' + marque() + '.' +
+      partie(1, 'POUR OUVRIR VOTRE COMPTE') +
+      'Il suffit de me retourner, en réponse à ce mail :\n\n' +
+      PIECES_COMPTE + '\n\n' +
+      'Dès réception, je lance la création de votre compte et je vous confirme sa mise en place.' +
+      partie(2, 'COMMANDES & LIVRAISONS') + LIVRAISONS +
+      partie(3, 'FACTURATION & SUIVI') + FACTURATION +
+      partie(4, 'RAPPEL DE NOTRE FONCTIONNEMENT') +
+      '• aucun minimum de commande ;\n' +
+      '• prix nets à la boîte, directement visibles sur facture ;\n' +
+      '• aucune exclusion de produit, froid compris ;\n' +
+      '• génériques et biosimilaires : remontées laboratoire dès la première boîte.\n\n' +
+      'Je reste bien entendu disponible pour vous accompagner lors de vos premières commandes, ou pour toute question.' + signature();
     return { objet: 'Ouverture de votre compte ' + marque(), corps: corps };
   }
   function ouvrirMail(dest, m) {
@@ -234,7 +339,7 @@
         return (l && l.actif !== false && V2.rdvLien.url) ? V2.rdvLien.url(l) : '';
       }) : Promise.resolve('');
       Promise.resolve(lienP).catch(function () { return ''; }).then(function (lien) {
-        ouvrirMail(dest, it.k === 'merci' ? mailMerci(it, lien || '') : mailRdv(it, lien || ''));
+        ouvrirMail(dest, it.k === 'merci' ? mailMerci(it) : mailRdv(it, lien || ''));
       });
     },
     docs: function (id) {
@@ -321,12 +426,12 @@
   // à copier ou à ouvrir dans sa messagerie sans rien ajouter à la liste.
   var MODELES = [
     { k: 'rdv',    t: 'Demande de rendez-vous', s: 'après un passage à l\'officine' },
-    { k: 'merci',  t: 'Remerciement',           s: 'après le rendez-vous' },
+    { k: 'merci',  t: 'Après le rendez-vous',   s: 'remerciement, fonctionnement et documents' },
     { k: 'compte', t: 'Ouverture de compte',    s: 'le formulaire 2026 est à joindre' }
   ];
   function modele(k) {
     var it = { k: k, nom: '', pid: '', cree: new Date().toISOString() }, lien = st.lien || '';
-    return k === 'compte' ? mailCompte(it) : k === 'merci' ? mailMerci(it, lien) : mailRdv(it, lien);
+    return k === 'compte' ? mailCompte(it) : k === 'merci' ? mailMerci(it) : mailRdv(it, lien);
   }
   function mailsPrets() {
     if (st.lien == null) {
@@ -337,14 +442,30 @@
     return '<div class="v2-todo-mh"><h2>Les mails tout prêts</h2><p>À lire, copier ou ouvrir dans ta messagerie — l\'adresse du pharmacien reste à ajouter.</p></div>' +
       '<div class="v2-card v2-todo-list">' + MODELES.map(function (m) {
         var x = modele(m.k);
-        return '<details class="v2-todo-mail"><summary><span class="v2-todo-ico">' + ICO(KINDS[m.k].ico, 16, 2) + '</span>' +
+        return '<details class="v2-todo-mail"' + (st.ouvert === m.k ? ' open' : '') + '><summary><span class="v2-todo-ico">' + ICO(KINDS[m.k].ico, 16, 2) + '</span>' +
           '<span class="v2-todo-mt"><b>' + esc(m.t) + '</b><small>' + esc(m.s) + '</small></span><span class="v2-todo-chev">' + ICO('chev', 16, 2) + '</span></summary>' +
-          '<div class="v2-todo-mb"><div class="v2-todo-obj"><span>Objet</span>' + esc(x.objet) + '</div>' +
+          '<div class="v2-todo-mb">' + (m.k === 'merci' ? accesOffilog() : '') + '<div class="v2-todo-obj"><span>Objet</span>' + esc(x.objet) + '</div>' +
           '<pre class="v2-todo-corps">' + esc(x.corps) + '</pre>' +
           '<div class="v2-todo-acts"><button class="v2-btn v2-btn-primary v2-todo-sm" onclick="V2.todo.ouvrirModele(\'' + m.k + '\')">' + ICO('fiche', 14, 2) + 'Ouvrir dans ma messagerie</button>' +
           '<button class="v2-btn v2-btn-ghost v2-todo-sm" onclick="V2.todo.copierModele(\'' + m.k + '\')">' + ICO('check', 14, 2) + 'Copier le texte</button></div></div></details>';
       }).join('') + '</div>';
   }
+  // L'accès test Offilog cité dans le mail d'après rendez-vous, enregistré une fois par personne.
+  function accesOffilog() {
+    var r = reglages();
+    return '<div class="v2-todo-reg"><b>Accès test Offilog cité dans ce mail</b>' +
+      '<span>' + (r.offilogId && r.offilogMdp ? 'Enregistré dans ton compte : il se remplit tout seul.' : 'À enregistrer une fois : il se remplira ensuite tout seul, dans chaque mail.') + '</span>' +
+      '<div class="v2-todo-reg-f"><input id="v2-todo-oid" type="email" autocomplete="off" placeholder="Identifiant" value="' + esc(r.offilogId) + '">' +
+      '<input id="v2-todo-omdp" type="text" autocomplete="off" placeholder="Mot de passe" value="' + esc(r.offilogMdp) + '">' +
+      '<button class="v2-btn v2-btn-ghost v2-todo-sm" onclick="V2.todo.enregistrerOffilog()">Enregistrer</button></div></div>';
+  }
+  V2.todo.enregistrerOffilog = function () {
+    var i = document.getElementById('v2-todo-oid'), m = document.getElementById('v2-todo-omdp');
+    ecrireReg({ offilogId: i ? i.value : '', offilogMdp: m ? m.value : '' }).then(function (ok) {
+      if (V2.toast) V2.toast(ok ? 'Accès Offilog enregistré' : 'Gardé sur cet appareil seulement — la base n\'a pas répondu', ok ? '' : 'warn');
+      st.ouvert = 'merci'; rendre();
+    });
+  };
   V2.todo.ouvrirModele = function (k) { ouvrirMail('', modele(k)); };
   V2.todo.copierModele = function (k) {
     var x = modele(k), t = 'Objet : ' + x.objet + '\n\n' + x.corps;
@@ -463,6 +584,11 @@
       '.v2-todo-chev{flex:none;color:var(--muted);display:inline-flex;transition:transform .2s var(--ease)}',
       '.v2-todo-mail[open] .v2-todo-chev{transform:rotate(90deg)}',
       '.v2-todo-mb{padding:0 18px 16px;display:flex;flex-direction:column;gap:10px}',
+      '.v2-todo-reg{padding:12px 14px;border:1px dashed var(--line);border-radius:12px;display:flex;flex-direction:column;gap:4px}',
+      '.v2-todo-reg b{font-size:13px;font-weight:800;color:var(--ip-ink)}',
+      '.v2-todo-reg span{font-size:12.5px;color:var(--ip-ink-2)}',
+      '.v2-todo-reg-f{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}',
+      '.v2-todo-reg-f input{flex:1 1 160px;min-width:0;min-height:44px;padding:8px 12px;border:1px solid var(--line);border-radius:10px;font:inherit;font-size:16px;background:var(--card,#fff);color:var(--ip-ink)}',
       '.v2-todo-obj{font-size:14px;font-weight:700;color:var(--ip-ink)}',
       '.v2-todo-obj span{display:block;font-size:11.5px;font-weight:700;color:var(--ip-ink-2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px}',
       '.v2-todo-corps{margin:0;padding:14px 16px;background:var(--card-2,#F7F9FC);border:1px solid var(--line);border-radius:12px;font:inherit;font-size:14px;line-height:1.55;color:var(--ip-ink);white-space:pre-wrap;overflow-wrap:anywhere}',
