@@ -1102,6 +1102,8 @@
               (cessation(oi) ? '<div class="v2-prospect-extra v2-cessee">' + esc(cessation(oi)) + '</div>' : '') +
               (retraiteDe(oi) ? '<div class="v2-prospect-extra v2-retraite">Titulaire proche de la retraite (62 ans ou plus)</div>' : '') +
               (autresOfficinesHtml(oi) ? '<div class="v2-prospect-extra">Dirige aussi : ' + autresOfficinesHtml(oi) + '</div>' : '') +
+              (venteFondsHtml(oi) ? '<div class="v2-prospect-extra">' + venteFondsHtml(oi) + '</div>' : '') +
+              (procedureHtml(oi) ? '<div class="v2-prospect-extra v2-retraite">Procédure collective : ' + procedureHtml(oi) + '</div>' : '') +
               probableLignes +
             '</div>' +
           '</div>' +
@@ -1141,6 +1143,24 @@
   // (l'année de naissance n'est jamais publiée), et les officines dirigées par la même personne
   // (nom + prénoms + mois de naissance identiques à l'annuaire des entreprises).
   function retraiteDe(oi) { return !!(oi && oi[6] !== 'C' && oi[9] === 'R'); }
+  // 24/09/2026 — colonnes 11-12 (robot ~/fiches-officines, BODACC) : dernière vente du fonds publiée
+  // depuis 2019 ('A|V|date|prix|id' — A = cette société a racheté, V = elle a vendu) et dernière
+  // procédure collective publiée depuis 2021 ('date|libellé|id'). Date = parution au BODACC.
+  function bodaccLien(id) {
+    return id ? ' · <a href="https://www.bodacc.fr/pages/annonces-commerciales-detail/?q.id=id:' + encodeURIComponent(id) +
+      '" target="_blank" rel="noopener">voir l\'annonce</a>' : '';
+  }
+  function venteFondsHtml(oi) {
+    var v = oi && oi[11] ? String(oi[11]).split('|') : null;
+    if (!v || !v[1]) return '';
+    return (v[0] === 'V' ? 'Vente' : 'Rachat') + ' du fonds publié' + (v[0] === 'V' ? 'e' : '') + ' le ' + esc(dateFr(v[1])) +
+      (v[2] ? ' · prix annoncé ' + esc(Number(v[2]).toLocaleString('fr-FR')) + ' €' : '') + bodaccLien(v[3]);
+  }
+  function procedureHtml(oi) {
+    var v = oi && oi[12] ? String(oi[12]).split('|') : null;
+    if (!v || !v[0]) return '';
+    return esc(v[1] || 'Procédure collective') + ' — publié le ' + esc(dateFr(v[0])) + bodaccLien(v[2]);
+  }
   var _nomsPf = null;
   function officineLabel(id) {
     var D = window.PHARMA_FR;
@@ -1598,6 +1618,8 @@
           (cessation(oi, true) ? '<span>Société</span><span class="pha-cessee">' + esc(cessation(oi, true)) + '</span>' : '') +
           (retraiteDe(oi) ? '<span>À savoir</span><span class="pha-retraite">Titulaire proche de la retraite (62 ans ou plus)</span>' : '') +
           (autresOfficinesHtml(oi) ? '<span>Dirige aussi</span><span class="pha-grpinfo">' + autresOfficinesHtml(oi) + '</span>' : '') +
+          (venteFondsHtml(oi) ? '<span>Annonce légale</span><span class="pha-grpinfo">' + venteFondsHtml(oi) + '</span>' : '') +
+          (procedureHtml(oi) ? '<span>Procédure collective</span><span class="pha-retraite">' + procedureHtml(oi) + '</span>' : '') +
           (interloc ? kv('Interlocuteur', esc(interloc)) : '') +
           kv('Groupement', (pharma.groupement && pharma.groupement !== '—') ? esc(canonG(pharma.groupement)) : '') +
           (grpInfo && grpInfo.description ? '<span></span><span class="pha-grpinfo"><span class="pha-grpdesc" title="' + esc(grpInfo.description) + '">' + esc(grpInfo.description) + '</span>' + (grpInfo.site ? ' <a href="' + esc(grpInfo.site) + '" target="_blank" rel="noopener">' + esc(grpInfo.site.replace(/^https?:\/\//, '').replace(/\/$/, '')) + '</a>' : '') + '</span>' : '') +
@@ -4047,6 +4069,7 @@
       // Description du groupement ramenée à 2 lignes (texte complet au survol) : elle prenait un demi-écran sur téléphone.
       '.pha-kv .pha-cessee{color:#FFB3B3;font-weight:700}',
       '.pha-kv .pha-retraite{color:#FFD39A;font-weight:700}',
+      '.pha-kv .pha-retraite a{color:inherit;text-decoration:underline}',
       '.pha-kv .pha-grpdesc{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}',
       '.pha-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}',
       '.pha-btn{display:inline-flex;align-items:center;gap:7px;min-height:var(--tap-min,44px);padding:0 14px;border-radius:var(--r-btn,12px);border:1px solid var(--line-strong);background:var(--card);font:inherit;font-weight:700;font-size:13px;color:var(--ip-ink);cursor:pointer;text-decoration:none;white-space:nowrap}',
