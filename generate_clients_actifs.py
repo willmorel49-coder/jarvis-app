@@ -26,14 +26,26 @@ Quand tircible1 est vide, la base groupements (~/JARVIS/GROUPEMENTS, scrapée
 « changé » / « confirmé » — jamais « non_retrouvé » (= PHIRST 2025, périmé).
 Un 11ᵉ champ (génériqueur·s) est ajouté à chaque ligne ; vide côté Intégral.
 
-Usage : /usr/bin/python3 generate_clients_actifs.py
+23/09/2026 — 8 champs de fin de ligne (11 à 18, JAMAIS d'insertion avant : d'autres
+écrans lisent les indices 0-10) : adresse (ADRL1+ADRL2, sans CP/ville), cp, ville,
+siren (TIRSIREN), fax (ADRFAX), structure(s) réunies (colonne Structure — une
+même pharmacie a jusqu'à 3 lignes, une par société qui la livre : « CPR / OPS »),
+clé PharmaML (PMLCLE), grossiste principal. Le grossiste principal n'est PAS dans
+ce fichier source : il est lu dans STATS/*_pharmacies.xlsx (MD_pharmacies.xlsx,
+WML_pharmacies.xlsx) par Code CIP = TIRCODE, colonne « Grossiste Principal »
+(« modif grossiste » gagne quand elle est remplie — c'est une correction manuelle
+de l'équipe). JAMAIS repris : TRQENCOURS (encours), TIRCATEGORIE, TIRBRANCHE —
+ce sont des conditions commerciales.
+
+Usage : /usr/bin/python3 generate_clients_actifs.py [--out CHEMIN]
 """
-import glob, io, json, os, re, sys, datetime, sqlite3, unicodedata
+import argparse, glob, io, json, os, re, sys, datetime, sqlite3, unicodedata
 import openpyxl
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 STATS = '/Users/williammorel/JARVIS/APP/STATS/total ventes'
-OUT = os.path.join(BASE, 'crm/v2/clients-actifs.js')
+PHARM_FILES = glob.glob('/Users/williammorel/JARVIS/APP/STATS/*_pharmacies.xlsx')
+OUT_DEFAUT = os.path.join(BASE, 'crm/v2/clients-actifs.js')
 LGO = [('LGPI', 'LGPI'), ('WINPHARMA', 'Winpharma'), ('OFFILOG', 'Offilog'),
        ('ALLIADIS', 'Alliadis'), ('PHARMALAND', 'Pharmaland'), ('AUTRES', 'Autre')]
 # Libellés de la colonne `lgo` du fichier Escale → même orthographe que ci-dessus
@@ -60,6 +72,38 @@ def groupements_db():
         print('⚠️ base groupements illisible (%s) : aucun comblement' % e)
         return {}
     return {k: next(iter(v)) for k, v in idx.items() if len(v) == 1}
+
+
+def grossiste_principal():
+    """Code CIP (TIRCODE) → grossiste principal, lu dans STATS/*_pharmacies.xlsx.
+    « modif grossiste » (correction manuelle de l'équipe) gagne sur « Grossiste Principal »."""
+    idx = {}
+    for pf in PHARM_FILES:
+        try:
+            wb = openpyxl.load_workbook(pf, read_only=True, data_only=True)
+        except Exception as e:
+            print('⚠️ %s illisible (%s) : ignoré' % (os.path.basename(pf), e))
+            continue
+        ws = wb.active
+        rows = ws.iter_rows(values_only=True)
+        H = {h: i for i, h in enumerate(next(rows))}
+        if 'Code CIP' not in H or 'Grossiste Principal' not in H:
+            wb.close()
+            continue
+        for r in rows:
+            code = s(r[H['Code CIP']])
+            if not code:
+                continue
+            try:
+                code = str(int(float(code)))
+            except (TypeError, ValueError):
+                pass
+            g = s(r[H.get('modif grossiste')]) if 'modif grossiste' in H else ''
+            g = g or s(r[H['Grossiste Principal']])
+            if g:
+                idx[code] = g
+        wb.close()
+    return idx
 
 
 def lire_escale(d):
@@ -96,6 +140,13 @@ def lire_escale(d):
             ' '.join(x for x in (pre.title(), nom.upper()) if x),
             '', LGO_ESCALE.get(s(r[H['lgo']]).upper(), s(r[H['lgo']]).title()),
             grp, s(r[H['repcode']]), '', '', ' / '.join(gen),
+            # 23/09/2026 — 11 adresse, 12 cp, 13 ville, 14 siren : présents côté Escale.
+            # 15 fax, 16 structure, 17 clé PharmaML : absents de ce fichier, vides.
+            s(r[H.get('adrl1', -1)]) if 'adrl1' in H else '',
+            s(r[H.get('adrcodepostal', -1)]) if 'adrcodepostal' in H else '',
+            s(r[H.get('adrville', -1)]) if 'adrville' in H else '',
+            s(r[H.get('tirsiren', -1)]) if 'tirsiren' in H else '',
+            '', '', '',
         ]
         if code not in d:
             d[code] = ligne
@@ -156,7 +207,8 @@ def main():
     ws = openpyxl.load_workbook(src, read_only=True).active
     rows = ws.iter_rows(values_only=True)
     H = {h: i for i, h in enumerate(next(rows))}
-    for c in ('TIRCODE', 'TIRACTIVITE', 'ADRTEL', 'ADRMAIL', 'ADRCONTACTNOM', 'TIRENSEIGNE', 'REPCODE', 'LGPI'):
+    for c in ('TIRCODE', 'TIRACTIVITE', 'ADRTEL', 'ADRMAIL', 'ADRCONTACTNOM', 'TIRENSEIGNE', 'REPCODE', 'LGPI',
+              'ADRL1', 'ADRL2', 'ADRCODEPOSTAL', 'ADRVILLE', 'TIRSIREN', 'ADRFAX', 'Structure', 'PMLCLE'):
         if c not in H:
             sys.exit('colonne manquante : ' + c)
     # Une même pharmacie apparaît jusqu'à 3 fois : une ligne par société du
@@ -184,23 +236,40 @@ def main():
             s(r[H['UGA']]),                      # 8 UGA
             s(r[H['TYPO']]).capitalize(),        # 9 rythme de livraison
             '',                                  # 10 génériqueur(s) — fichier Escale seulement
+            ' '.join(x for x in (s(r[H['ADRL1']]), s(r[H['ADRL2']])) if x),  # 11 adresse (sans CP/ville)
+            s(r[H['ADRCODEPOSTAL']]),            # 12 code postal
+            s(r[H['ADRVILLE']]),                 # 13 ville
+            s(r[H['TIRSIREN']]),                 # 14 SIREN
+            s(r[H['ADRFAX']]),                   # 15 fax
+            [s(r[H['Structure']])] if s(r[H['Structure']]) else [],  # 16 structure(s) qui la livrent
+            s(r[H['PMLCLE']]),                   # 17 clé PharmaML
+            '',                                  # 18 grossiste principal — comblé après coup (STATS/*_pharmacies.xlsx)
         ]
         if code not in d:
             d[code] = ligne
             continue
         cur = d[code]
         for i, v in enumerate(ligne):
-            if i in (5, 7):
+            if i in (5, 7, 16):
                 cur[i] = cur[i] + [x for x in v if x not in cur[i]]
             elif not cur[i] and v:
                 cur[i] = v
     for v in d.values():
         v[5] = ' / '.join(v[5])
         v[7] = ' / '.join(v[7])
+        v[16] = ' / '.join(v[16])
     src_escale = lire_escale(d)
+    gp = grossiste_principal()
+    n_gros = 0
+    for code, v in d.items():
+        g = gp.get(code, '')
+        if g:
+            v[18] = g
+            n_gros += 1
     txt = ('// Intégral Pharma — base clients (export clients actifs du %s) — généré le %s\n'
            '// ⚠️ NE JAMAIS COMMITER. Servi par adresse signée (Supabase).\n'
-           '// code officine → [tel, portable, email, contact, fonction, logiciel, enseigne, commercial, uga, livraison, generiqueurs]\n'
+           '// code officine → [tel, portable, email, contact, fonction, logiciel, enseigne, commercial, uga, livraison,\n'
+           '//   generiqueurs, adresse, cp, ville, siren, fax, structure, cle_pharmaml, grossiste_principal]\n'
            'window.CLIENTS_ACTIFS = {date:%s, n:%d, d:%s};\n'
            % (date, datetime.date.today(), json.dumps(date), len(d), json.dumps(d, ensure_ascii=False)))
     io.open(OUT, 'w', encoding='utf-8').write(txt)
@@ -213,8 +282,16 @@ def main():
     print('lignes pharmacie : %d → %d officines distinctes (autres tiers ignorés : %d)' % (n_pharma, len(d), n_autres))
     print('avec tel %d · mail %d · contact %d · logiciel %d · enseigne %d' % tuple(
         sum(1 for v in d.values() if v[i]) for i in (0, 2, 3, 5, 6)))
+    print('avec adresse %d · siren %d · fax %d · structure %d · clé PharmaML %d · grossiste principal %d' % (
+        sum(1 for v in d.values() if v[11]), sum(1 for v in d.values() if v[14]),
+        sum(1 for v in d.values() if v[15]), sum(1 for v in d.values() if v[16]),
+        sum(1 for v in d.values() if v[17]), n_gros))
     print('écrit    : %s (%d Ko)' % (OUT, os.path.getsize(OUT) // 1024))
 
 
 if __name__ == '__main__':
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--out', default=OUT_DEFAUT, help='chemin de sortie (défaut : crm/v2/clients-actifs.js)')
+    args = ap.parse_args()
+    OUT = args.out
     main()
