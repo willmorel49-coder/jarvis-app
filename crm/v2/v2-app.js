@@ -1372,9 +1372,9 @@
           // Audit marge part dans « Vendre & convaincre ».
           tuile('todo', 'check', 'To do list', 'Tes rendez-vous à demander, remerciements, ouvertures'),
           tuile('pharma', 'pharma', 'Officines', 'La fiche de chaque client et prospect'),
-          tuileChoix('grid', 'La carte', 'Clients et prospects sur la carte', [
-            { t: 'La carte', d: 'Clients et prospects sur la carte', ico: 'grid', k: 'carte' },
-            { t: 'Tournée', d: 'L\'itinéraire de ta journée', ico: 'cal', k: 'tournee' }]),
+          // La tournée se compose DANS la carte (« Ajouter à ma tournée ») : la page
+          // autonome v2-tournee.js n'est plus chargée depuis le 11/09 (redondante).
+          tuile('carte', 'grid', 'La carte', 'Clients, prospects et ta tournée'),
           // Espace Groupements : listes des groupements + listings produits (renderGroupementsList via pharma?groupements)
           tuileChoix('list', 'Groupements', 'Les groupements de tes officines', [
             { t: 'Groupements', d: 'Les listes et listings d\'achats', ico: 'list', k: 'pharma', param: 'groupements' },
