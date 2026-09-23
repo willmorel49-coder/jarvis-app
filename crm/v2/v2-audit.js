@@ -175,7 +175,7 @@
       var top = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' });
       if (!window.WML_SALES || !window.PROD_STATS || !window.ARGUMENT) {
         root.innerHTML = top + '<div class="v2-wrap"><div class="v2-loading"><div class="v2-spinner"></div><div>Chargement des ventes…</div></div></div>';
-        if (V2.loadFiles) V2.loadFiles(['wml', 'prod', 'argument']).then(function () { if (V2.route && V2.route.name === 'audit') V2.render(); });
+        if (V2.loadFiles) V2.loadFiles(['wml', 'prodstats', 'argument']).then(function () { if (V2.route && V2.route.name === 'audit') V2.render(); });
         return;
       }
       ensureCss();
