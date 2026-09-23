@@ -1026,8 +1026,25 @@
       '.v2-home-x .v2-ray-txt{min-width:0;display:flex;flex-direction:column}',
       '.v2-home-x .v2-ray-nom{font-size:15px;font-weight:800;letter-spacing:-.005em}',
       '.v2-home-x .v2-ray-sous{font-size:13px;color:var(--ip-ink-3,#5B6273);margin-top:2px;line-height:1.35}',
-      '.v2-home-x .v2-ray-sous-l{display:inline-block;padding:13px 8px;margin:-13px -8px;color:inherit;text-decoration:none;cursor:pointer;border-bottom:1px solid transparent;transition:color .2s,border-color .2s}',
-      '.v2-home-x .v2-ray-sous-l:hover{color:var(--ip-blue,#0050E6);border-bottom-color:currentColor}',
+      // Tuile à plusieurs choix (maquette 3, 23/09/2026) : « n choix » + chevron, dépli sur place.
+      '.v2-home-x .v2-ray-multi{width:100%;border:0;font:inherit;text-align:left;-webkit-appearance:none;appearance:none}',
+      '.v2-home-x .v2-ray-multi .v2-ray-txt{flex:1}',
+      '.v2-home-x .v2-ray-nb{flex:none;font-size:13px;font-weight:700;color:#0034A0;background:color-mix(in srgb,var(--ip-blue,#0050E6) 12%,var(--card,#fff));border-radius:999px;padding:5px 11px;white-space:nowrap}',
+      '.v2-home-x .v2-ray-chev{flex:none;display:flex;color:var(--ip-ink-3,#5B6273);transform:rotate(90deg);transition:transform .3s cubic-bezier(.3,.7,.4,1.2)}',
+      '.v2-home-x .v2-ray-item.open .v2-ray-chev{transform:rotate(-90deg)}',
+      '.v2-home-x .v2-ray-item.open .v2-ray-multi{background:color-mix(in srgb,var(--ip-blue,#0050E6) 14%,var(--card,#fff))}',
+      '.v2-home-x .v2-ray-depli{display:grid;grid-template-rows:0fr;transition:grid-template-rows .38s cubic-bezier(.3,.7,.4,1.2)}',
+      '.v2-home-x .v2-ray-item.open .v2-ray-depli{grid-template-rows:1fr}',
+      '.v2-home-x .v2-ray-depli-in{overflow:hidden;min-height:0;display:grid;grid-template-columns:1fr;gap:8px}',
+      '.v2-home-x .v2-ray-item.open .v2-ray-depli-in{padding-top:8px}',
+      '.v2-home-x .v2-ray-choix{display:flex;align-items:center;gap:12px;min-height:56px;padding:10px 14px;border-radius:14px;background:var(--card,#fff);border:1px solid color-mix(in srgb,var(--ip-blue,#0050E6) 14%,transparent);color:var(--ip-ink);text-decoration:none;cursor:pointer;transform:translateY(8px);transition:transform .35s cubic-bezier(.3,.7,.4,1.2),background .2s,border-color .2s}',
+      '.v2-home-x .v2-ray-item.open .v2-ray-choix{transform:none}',
+      '.v2-home-x .v2-ray-item.open .v2-ray-choix:nth-child(2){transition-delay:60ms}.v2-home-x .v2-ray-item.open .v2-ray-choix:nth-child(3){transition-delay:120ms}.v2-home-x .v2-ray-item.open .v2-ray-choix:nth-child(4){transition-delay:180ms}',
+      '.v2-home-x .v2-ray-choix:hover{background:color-mix(in srgb,var(--ip-blue,#0050E6) 6%,var(--card,#fff));border-color:color-mix(in srgb,var(--ip-blue,#0050E6) 30%,transparent)}',
+      '.v2-home-x .v2-ray-choix:active{transform:scale(.98)}',
+      '.v2-home-x .v2-ray-choix-ico{width:34px;height:34px;border-radius:10px;flex:none;display:flex;align-items:center;justify-content:center;color:var(--ip-blue,#0050E6);background:color-mix(in srgb,var(--ip-blue,#0050E6) 8%,var(--card,#fff))}',
+      '.v2-home-x .v2-ray-choix-nom{font-size:14px;font-weight:800}',
+      '@media(min-width:860px){.v2-home-x .v2-ray-item.open{grid-column:1/-1}.v2-home-x .v2-ray-depli-in{grid-template-columns:1fr 1fr}}',
       '@media(min-width:860px){.v2-home-x .v2-ray{padding:20px}.v2-home-x .v2-ray-corps{flex-direction:row;align-items:stretch;gap:20px}.v2-home-x .v2-ray-scene{width:220px;min-height:172px}.v2-home-x .v2-ray-tuiles{flex:1;grid-template-columns:1fr 1fr;align-content:start}}',
       // « En cours de développement » : en retrait (filet pointillé, gris), cliquable.
       '.v2-home-x .v2-enc-chip{display:inline-flex;align-items:center;font-size:13px;font-weight:800;letter-spacing:.02em;text-transform:uppercase;color:var(--ip-ink-3,#5B6273);background:color-mix(in srgb,var(--ip-blue,#0050E6) 6%,var(--card,#fff));border-radius:999px;padding:6px 13px;margin:26px 0 12px 4px}',
@@ -1038,7 +1055,7 @@
       '.v2-home-x .v2-enc-l svg{color:inherit}.v2-home-x .v2-enc-l .fl{font-weight:800}',
       // 13 px : cette ligne dit COMMENT obtenir l'accès, une information utile ne se met pas en petit.
       '.v2-home-x .v2-enc-n{margin:12px 0 0;font-size:13px;line-height:1.5;color:var(--ip-ink-3,#6B7280)}',
-      '@media(prefers-reduced-motion:reduce){.v2-home-x .v2-ray-tuile,.v2-home-x .v2-enc-l,.v2-home-x .v2-ray-sous-l{transition:none}.v2-home-x .v2-ray-tuile:hover,.v2-home-x .v2-enc-l:hover{transform:none}}',
+      '@media(prefers-reduced-motion:reduce){.v2-home-x .v2-ray-tuile,.v2-home-x .v2-enc-l,.v2-home-x .v2-ray-depli,.v2-home-x .v2-ray-choix,.v2-home-x .v2-ray-chev{transition:none}.v2-home-x .v2-ray-tuile:hover,.v2-home-x .v2-enc-l:hover{transform:none}}',
       // cascade : arrivée posée UNE fois par session (js-anim / v2-home-still)
       '.v2-home-x.js-anim .lch-anim{opacity:0;transform:translateY(14px) scale(.97);animation:lchArriver 560ms cubic-bezier(.3,.7,.4,1.2) forwards;animation-delay:calc(var(--i) * 55ms)}',
       '@keyframes lchArriver{to{opacity:1;transform:none}}',
@@ -1109,6 +1126,18 @@
       '</div>';
   }
   // Spotlight : la souris met à jour --mx/--my sur la tuile survolée
+  // Dépli d'une tuile à plusieurs choix de l'accueil : un seul ouvert à la fois,
+  // re-clic referme. Les choix fermés sortent de l'ordre de tabulation.
+  V2.homeDeplier = function (btn) {
+    var item = btn.parentNode, ouvrir = !item.classList.contains('open');
+    document.querySelectorAll('.v2-ray-item.open').forEach(function (x) {
+      x.classList.remove('open'); x.firstChild.setAttribute('aria-expanded', 'false');
+      x.querySelectorAll('.v2-ray-choix').forEach(function (a) { a.setAttribute('tabindex', '-1'); });
+    });
+    if (!ouvrir) return;
+    item.classList.add('open'); btn.setAttribute('aria-expanded', 'true');
+    item.querySelectorAll('.v2-ray-choix').forEach(function (a) { a.setAttribute('tabindex', '0'); });
+  };
   V2.homeSpot = function (e, el) {
     try {
       var r = el.getBoundingClientRect();
@@ -1290,26 +1319,39 @@
         // finies en cours de développement — Rendez-vous descend, Groupements et
         // Remontées montent ». Quatre rayons pleine largeur, chacun avec sa scène
         // (dégradé bleu + dessin SVG inline) et ses portes en tuiles : le rayon
-        // dit OÙ on est, la tuile dit QUOI ouvrir. Dix portes au lieu de dix-neuf ;
-        // les outils réunis restent atteignables par les sous-outils cliquables
-        // de leur tuile (et par ⌘K). Une tuile ou un sous-outil dont l'écran
-        // n'est pas chargé ne s'affiche pas.
+        // dit OÙ on est, la tuile dit QUOI ouvrir. Une tuile ou un choix dont
+        // l'écran n'est pas chargé ne s'affiche pas.
+        // 23/09/2026 — « La porte qui s'ouvre » (maquette 3, choix Will) : plus de
+        // ligne de petits liens sous la tuile (« compliqué à capter »). Une tuile
+        // qui mène à UN endroit l'ouvre ; une tuile qui en regroupe plusieurs
+        // porte « n choix » et se déplie sur place en grands boutons expliqués.
         var lchI = 0;
         function goJs(k, param) { return 'V2.go(\'' + k + '\'' + (param ? ',\'' + param + '\'' : '') + ')'; }
-        function sousHtml(list) {
-          return list.filter(function (s) { return !s.k || V2.pages[s.k]; }).map(function (s) {
-            var js = s.js || (s.k ? goJs(s.k, s.param) : '');
-            return js
-              ? '<a class="v2-ray-sous-l" onclick="event.stopPropagation();' + js + '">' + esc(s.t) + '</a>'
-              : '<span>' + esc(s.t) + '</span>';
-          }).join('<span class="sep"> · </span>');
-        }
-        function tuile(k, ico, nom, sous, js) {
+        function tuile(k, ico, nom, phrase, js) {
           if (!V2.pages[k]) return '';
           return '<div class="v2-ray-tuile" role="link" tabindex="0" onclick="' + (js || goJs(k)) + '" onkeydown="if(event.key===\'Enter\')this.click()">' +
             '<span class="v2-ray-disque">' + ICO(ico, 20) + '</span>' +
             '<span class="v2-ray-txt"><span class="v2-ray-nom">' + esc(nom) + '</span>' +
-            '<span class="v2-ray-sous">' + sousHtml(sous) + '</span></span></div>';
+            '<span class="v2-ray-sous">' + esc(phrase) + '</span></span></div>';
+        }
+        // choix : [{ t, d, ico, k, param?, js? }] — un seul choix disponible = tuile directe.
+        function tuileChoix(ico, nom, phrase, choix) {
+          var ok = choix.filter(function (c) { return V2.pages[c.k]; });
+          if (!ok.length) return '';
+          if (ok.length === 1) return tuile(ok[0].k, ico, nom, phrase, ok[0].js || goJs(ok[0].k, ok[0].param));
+          return '<div class="v2-ray-item">' +
+            '<button type="button" class="v2-ray-tuile v2-ray-multi" aria-expanded="false" onclick="V2.homeDeplier(this)">' +
+              '<span class="v2-ray-disque">' + ICO(ico, 20) + '</span>' +
+              '<span class="v2-ray-txt"><span class="v2-ray-nom">' + esc(nom) + '</span>' +
+              '<span class="v2-ray-sous">' + esc(phrase) + '</span></span>' +
+              '<span class="v2-ray-nb">' + ok.length + ' choix</span>' +
+              '<span class="v2-ray-chev" aria-hidden="true">' + ICO('chev', 18) + '</span></button>' +
+            '<div class="v2-ray-depli"><div class="v2-ray-depli-in">' + ok.map(function (c) {
+              return '<a class="v2-ray-choix" role="link" tabindex="-1" onclick="' + (c.js || goJs(c.k, c.param)) + '" onkeydown="if(event.key===\'Enter\')this.click()">' +
+                '<span class="v2-ray-choix-ico">' + ICO(c.ico, 18) + '</span>' +
+                '<span class="v2-ray-txt"><span class="v2-ray-choix-nom">' + esc(c.t) + '</span>' +
+                '<span class="v2-ray-sous">' + esc(c.d) + '</span></span></a>';
+            }).join('') + '</div></div></div>';
         }
         function rayon(nom, scene, tuiles) {
           var t = tuiles.join(''); if (!t) return '';
@@ -1328,11 +1370,15 @@
           // 23/09 — Will : « je capte pas ce qui se passe dans Officines, ça ouvre différents trucs ».
           // Ma liste devient sa propre porte, Officines n'ouvre plus que les fiches,
           // Audit marge part dans « Vendre & convaincre ».
-          tuile('todo', 'check', 'To do list', [{ t: 'Rendez-vous à demander' }, { t: 'Remerciements' }, { t: 'Ouvertures de compte' }]),
-          tuile('pharma', 'pharma', 'Officines', [{ t: 'Fiches clients et prospects' }, { t: 'Visites' }, { t: 'À relancer' }]),
-          tuile('carte', 'grid', 'La carte', [{ t: 'Clients' }, { t: 'Prospects' }, { t: 'Tournée', k: 'tournee' }]),
+          tuile('todo', 'check', 'To do list', 'Tes rendez-vous à demander, remerciements, ouvertures'),
+          tuile('pharma', 'pharma', 'Officines', 'La fiche de chaque client et prospect'),
+          tuileChoix('grid', 'La carte', 'Clients et prospects sur la carte', [
+            { t: 'La carte', d: 'Clients et prospects sur la carte', ico: 'grid', k: 'carte' },
+            { t: 'Tournée', d: 'L\'itinéraire de ta journée', ico: 'cal', k: 'tournee' }]),
           // Espace Groupements : listes des groupements + listings produits (renderGroupementsList via pharma?groupements)
-          tuile('pharma', 'list', 'Groupements', [{ t: 'Listes', k: 'pharma', param: 'groupements' }, { t: 'Listings d\'achats', k: 'pharma', param: 'groupements' }, { t: 'Carte des groupements', k: 'carteGrp' }], goJs('pharma', 'groupements'))
+          tuileChoix('list', 'Groupements', 'Les groupements de tes officines', [
+            { t: 'Groupements', d: 'Les listes et listings d\'achats', ico: 'list', k: 'pharma', param: 'groupements' },
+            { t: 'Carte des groupements', d: 'Où sont les adhérents de chaque groupement', ico: 'grid', k: 'carteGrp' }])
         ];
         // 14/09/2026 — le responsable d'Escale Pharma a l'accès total ET garde son
         // espace escale/v2 (demande de Will). Seul un compte @escalepharma.fr
@@ -1341,25 +1387,36 @@
           terrain.push('<div class="v2-ray-tuile" role="link" tabindex="0" onclick="location.href=\'../../escale/v2/index.html\'" onkeydown="if(event.key===\'Enter\')this.click()">' +
             '<span class="v2-ray-disque">' + ICO('pilo', 20) + '</span>' +
             '<span class="v2-ray-txt"><span class="v2-ray-nom">Espace Escale Pharma</span>' +
-            '<span class="v2-ray-sous"><span>Le suivi Escale et ses officines clientes</span></span></span></div>');
+            '<span class="v2-ray-sous">Le suivi Escale et ses officines clientes</span></span></div>');
         }
         pilHtml = '<div class="v2-ray-lbl lch-anim" style="--i:' + (lchI++) + '">Les rayons</div>' +
           rayon('Le terrain', SC_TERRAIN, terrain) +
           rayon('Les produits', SC_PRODUITS, [
-            tuile('produits', 'cat', 'Produits', [{ t: 'Catalogue des 7 établissements', k: 'produits' }, { t: 'Fiches PDF', k: 'fiches' }, { t: 'Biosimilaires', k: 'biosimilaires' }, { t: 'Offilog', k: 'offilog' }]),
-            tuile('appro', 'cart', 'Appro Intégral', [{ t: 'Couverture de stock' }, { t: 'Ruptures' }, { t: 'La courbe du marché' }])
+            tuileChoix('cat', 'Produits', 'Catalogue, fiches, biosimilaires, parapharmacie', [
+              { t: 'Catalogue produits', d: 'Prix et stock des 7 établissements', ico: 'cat', k: 'produits' },
+              { t: 'Fiches PDF', d: 'Les fiches produits à envoyer', ico: 'fiche', k: 'fiches' },
+              { t: 'Biosimilaires', d: 'Les biosimilaires et leurs références', ico: 'pill', k: 'biosimilaires' },
+              { t: 'Offilog', d: 'La centrale parapharmacie', ico: 'cart', k: 'offilog' }]),
+            tuile('appro', 'cart', 'Appro Intégral', 'Couverture de stock et ruptures')
           ]) +
           rayon('Piloter &amp; informer', SC_PILOTER, [
             // Réforme 2027 : document privé, adresse signée valable 1 h, jamais servi
             // par le dépôt public. Le fichier porte du CA réseau, il reste dans Supabase.
-            tuile('pilotage', 'pilo', 'Pilotage', [{ t: 'CA' }, { t: 'Marge' }, { t: 'Objectifs' }, { t: 'Réforme 2027', js: 'V2.ouvrirDocProtege(\'reforme2027\')' }]),
-            tuile('infos', 'spark', 'Infos & veille', [{ t: 'Infos du matin', k: 'infos' }, { t: 'Concurrents', k: 'concurrents' }, { t: 'Actualité du secteur', k: 'concurrents' }]),
-            tuile('remontees', 'plus', 'Remontées', [{ t: 'Le mur d\'idées de l\'équipe' }, { t: 'Votes' }, { t: 'Statuts' }])
+            tuileChoix('pilo', 'Pilotage', 'Tes chiffres et la réforme 2027', [
+              { t: 'Pilotage', d: 'CA, marge et objectifs', ico: 'pilo', k: 'pilotage' },
+              { t: 'Réforme 2027', d: 'Ce que la réforme change, en document', ico: 'fiche', k: 'pilotage', js: 'V2.ouvrirDocProtege(\'reforme2027\')' }]),
+            tuileChoix('spark', 'Infos & veille', 'Le brief du jour et les concurrents', [
+              { t: 'Infos du matin', d: 'Le brief du jour', ico: 'spark', k: 'infos' },
+              { t: 'Concurrents', d: 'Ce que font les autres', ico: 'search', k: 'concurrents' }]),
+            tuile('remontees', 'plus', 'Remontées', 'Le mur d\'idées de l\'équipe')
           ]) +
           rayon('Vendre &amp; convaincre', SC_VENDRE, [
-            tuile('marketing', 'fiche', 'Marketing', [{ t: 'Supports' }, { t: 'Sélections à pousser' }, { t: 'LinkedIn' }]),
-            tuile('argument', 'opp', 'Convaincre un prospect', [{ t: 'L\'Argument', k: 'argument' }, { t: 'Présentation Intégral', k: 'presentation' }, { t: 'Missions rémunérées', k: 'missions' }]),
-            (window.V2_BRAND && window.V2_BRAND.opso) ? '' : tuile('audit', 'euro', 'Audit marge', [{ t: 'L\'abandon de marge officine par officine' }, { t: 'En PDF' }])
+            tuile('marketing', 'fiche', 'Marketing', 'Supports, sélections, LinkedIn'),
+            tuileChoix('opp', 'Convaincre un prospect', 'Les outils pour convaincre au comptoir', [
+              { t: 'L\'Argument', d: 'Les chiffres qui convainquent', ico: 'opp', k: 'argument' },
+              { t: 'Présentation Intégral', d: 'Le pitch à montrer au comptoir', ico: 'pharma', k: 'presentation' },
+              { t: 'Missions rémunérées', d: 'Ce que l\'officine peut gagner', ico: 'euro', k: 'missions' }]),
+            (window.V2_BRAND && window.V2_BRAND.opso) ? '' : tuile('audit', 'euro', 'Audit marge', 'L\'abandon de marge, officine par officine')
           ]);
       }
 
