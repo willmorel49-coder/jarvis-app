@@ -989,7 +989,9 @@
   // 21/09/2026 — demande de Will : on transmet aussi des documents depuis une fiche prospect.
   function txProspectBtn(pid) {
     return '<button class="v2-btn v2-btn-ghost" onclick="V2.pharmaTransmettre(\'' + esc(String(pid)) + '\')" title="catalogues, documents de l\'équipe — en pièces jointes">' +
-      (V2.ICO ? V2.ICO('fiche', 15, 2) : '') + 'Choisir quoi lui transmettre</button>';
+      (V2.ICO ? V2.ICO('fiche', 15, 2) : '') + 'Choisir quoi lui transmettre</button>' +
+      (V2.todo ? '<button class="v2-btn v2-btn-ghost" onclick="V2.todo.menu(\'' + esc(String(pid)) + '\')" title="demande de rendez-vous, suite de rendez-vous, ouverture de compte…">' +
+        (V2.ICO ? V2.ICO('check', 15, 2) : '') + 'Ajouter à ma liste</button>' : '');
   }
 
   // Officine trouvée dans la base nationale (prospect / non-cliente) par son id.
@@ -1525,9 +1527,13 @@
     txMail[String(pid)] = mail;
     var btnTx = '<button class="pha-btn pha-btn-w pha-btn-tx" onclick="V2.pharmaTransmettre(\'' + pidSafe + '\')" title="listings, catalogues, documents de l\'équipe — en pièces jointes">' +
       ICO('fiche', 15, 2) + 'Choisir quoi lui transmettre</button>';
+    // 23/09/2026 — Ma liste : demande de rendez-vous, suite de rendez-vous, ouverture de compte…
+    var btnTodo = V2.todo ? '<button class="pha-btn pha-btn-w" onclick="V2.todo.menu(\'' + pidSafe + '\',\'' + esc(mail) + '\')" title="demande de rendez-vous, suite de rendez-vous, ouverture de compte…">' +
+      ICO('check', 15, 2) + 'Ajouter à ma liste</button>' : '';
     var listes =
       '<div class="v2-card pha-card pha-lists"><div class="pha-kl">Listes à proposer</div>' +
         btnProduits +
+        btnTodo +
         (aDesPdf ? pdfBtn('reseau', reseauLbl(true), nReseau, '') : '') +
         (aDesPdf && hasGrp ? pdfBtn('groupement', esc(g.name), nGrp, 'pha-btn-grp') : '') +
         btnTx +
@@ -3022,19 +3028,23 @@
     }
     document.getElementById('tx-foot').innerHTML = foot;
   }
-  V2.pharmaTransmettre = function (pid) {
+  // 23/09/2026 — `presel` : clés à pré-cocher (Ma liste › Ouverture de compte coche le
+  // formulaire) ; `info` {nom, mail} : quand on n'est pas sur la fiche (Ma liste), le nom et
+  // l'e-mail d'un prospect ne sont pas à l'écran, ils viennent de la ligne de la liste.
+  V2.pharmaTransmettre = function (pid, presel, info) {
     pid = String(pid);
     if (tx.pid !== pid) { tx.sel = {}; tx.files = null; }
     tx.pid = pid; tx.busy = '';
+    (presel || []).forEach(function (k) { tx.sel[k] = true; });
     if (!txIsClient(pid)) {   // fiche prospect : l'e-mail et le nom sont ceux affichés à l'écran
       var em = document.querySelector('.v2-prospect input[data-fk="email"]'), nm = document.querySelector('.v2-prospect input[data-fk="nom"]');
       var gr = document.querySelector('.v2-prospect input[data-fk="groupement"]');
       tx.grp = (gr && (gr.value || '').trim()) ? canonG((gr.value || '').trim()) : '';
       if (!window.BENCHMARK && V2.loadFiles) V2.loadFiles(['bench', 'sagitta']).then(txRender, txRender);
       var pt = pharmaFrById(pid);
-      txMail[pid] = em ? (em.value || '').trim() : '';
-      tx.nom = nameOf(pid, (nm && (nm.value || '').trim()) || (pt && (pt[6] || pt[10])) || '');
-    }
+      txMail[pid] = (em ? (em.value || '').trim() : '') || (info && info.mail) || '';
+      tx.nom = nameOf(pid, (nm && (nm.value || '').trim()) || (info && info.nom) || (pt && (pt[6] || pt[10])) || '');
+    } else if (info && info.mail && !txMail[pid]) txMail[pid] = info.mail;
     var bd = document.getElementById('tx-modal');
     if (!bd) {
       bd = document.createElement('div');
