@@ -15,7 +15,7 @@
   V2.pages = V2.pages || {};
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
 
-  var CB = '?v=20260923t';
+  var CB = '?v=20260923u';
   var map = null, cluster = null, markers = null, D = null, canvas = null;
   var displayMode = 'points';    // points | bulles (taille = CA)
   var tourLayer = null;          // tracé de la tournée (polyline + n° d'arrêts)
@@ -1446,6 +1446,8 @@
       // fiche) débordaient à 390 px avec `white-space:nowrap` : la valeur peut revenir
       // à la ligne et se couper n'importe où plutôt que pousser la carte hors écran.
       '.cn-ftrow b{color:var(--ip-ink);text-align:right;overflow-wrap:anywhere;min-width:0}',
+      // Estimation « probable » (jamais une donnée connue) : italique, teinte ambre.
+      '.cn-ftrow-probable span,.cn-ftrow-probable b{font-style:italic;color:var(--c-amber-txt)}',
       '.cn-sortlbl{font-size:11.5px;font-weight:700;color:var(--muted);margin-left:4px}',
       '.cn-sortseg button{font-size:12px;padding:5px 10px}',
       '.cn-pop-contact{display:flex;flex-direction:column;gap:2px;margin-top:8px}',
@@ -2067,13 +2069,23 @@
     var adrCaB = caB && caB[11] ? caB[11] + (caB[12] || caB[13] ? ' · ' + [caB[12], caB[13]].filter(function (x) { return x; }).join(' ') : '') : '';
     var adrOi = oi && oi[0] ? oi[0] + ((p[7] || p[8]) ? ' · ' + [p[8], p[7]].filter(function (x) { return x; }).join(' ') : '') : '';
     if (adrCaB || adrOi) lignes.push(['Adresse', adrCaB || adrOi]);
-    if (caB && caB[18]) lignes.push(['Grossiste principal', caB[18]]);
+    var grosCa = caB ? (V2.normFournisseur ? V2.normFournisseur(caB[18]) : caB[18]) : '';   // même libellé que la fiche
+    if (grosCa) lignes.push(['Grossiste principal', grosCa]);
     var siren = (caB && caB[14]) || (oi && oi[3]) || '';
     if (siren) lignes.push(['SIREN', siren]);
     var equip = lignes.length ? '<div class="cn-fsec"><h4>Interlocuteur et équipement</h4>' + lignes.map(function (l) {
       var v = (l[0] === 'SIREN') ? '<a href="https://annuaire-entreprises.data.gouv.fr/entreprise/' + esc(l[1]) + '" target="_blank" rel="noopener">' + esc(l[1]) + '</a>' : esc(l[1]);
       return '<div class="cn-ftrow"><span>' + esc(l[0]) + '</span><b>' + v + '</b></div>';
     }).join('') + '</div>' : '';
+    // 23/09/2026 — demande Will : grossiste/génériqueur estimés d'après le groupement
+    // quand ni la base clients ni une saisie de l'équipe ne les connaît (jamais devant
+    // une donnée connue — caB[18]/caB[10] ci-dessus — ni écrit en base).
+    var probable = (p[13] && V2.probableParGroupement) ? V2.probableParGroupement(p[13]) : null;
+    var probEquip = (probable && (probable.grossiste || probable.generiqueur)) ?
+      '<div class="cn-fsec"><h4>Estimation probable</h4>' +
+        (probable.grossiste ? '<div class="cn-ftrow cn-ftrow-probable"><span>Grossiste probable</span><b>' + esc(V2.probableTexte(probable.grossiste, probable.groupement)) + '</b></div>' : '') +
+        (probable.generiqueur ? '<div class="cn-ftrow cn-ftrow-probable"><span>Génériqueur probable</span><b>' + esc(V2.probableTexte(probable.generiqueur, probable.groupement)) + '</b></div>' : '') +
+      '</div>' : '';
     el.innerHTML = '<div class="cn-pdialog" onclick="event.stopPropagation()">' +
       '<div class="cn-phead"><div><b>' + esc(p[6] || 'Pharmacie') + '</b>' + (p[10] ? '<small>' + esc(p[10]) + '</small>' : '') + '</div><button class="cn-px" onclick="V2.carteFicheClose()">✕</button></div>' +
       '<div class="cn-plist" style="padding:0">' +
@@ -2095,6 +2107,7 @@
         top +
         ((co.tel || co.email) ? '<div class="cn-pop-contact" style="padding:10px 16px 14px">' + (co.tel ? '<a href="tel:' + esc(String(co.tel).replace(/[^0-9+]/g, '')) + '">' + esc(co.tel) + '</a>' : '') + (co.email ? '<a href="mailto:' + esc(co.email) + '">' + esc(co.email) + '</a>' : '') + '</div>' : '') +
         equip +
+        probEquip +
         '<div id="cn-fsuivi"></div>' +
         // Infos client ÉDITABLES + notes — même id (p[13]) que l'onglet Pharmacies → même fiche, même sauvegarde
         (p[13] ? '<div class="cn-fedit">' + (V2.profil && V2.profil.coordSection ? V2.profil.coordSection(p[13], {}, ['relance_date'], 'Relance') : '') + (V2.profil ? V2.profil.section('client', p[13]) : '') + (V2.notes ? V2.notes.section('client', p[13]) : '') + '</div>' : '') +
