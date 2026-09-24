@@ -73,7 +73,7 @@
       }) };
     }).filter(function (k) { return k.rows.length; });
     var tot = cats.reduce(function (a, k) { return a + k.rows.length; }, 0);
-    return { cats: cats, panel: data.panel > 0 ? data.panel : 0, ref: o.ref || '', nom: o.nom || 'Officine', reseau: !!o.reseau, tot: tot, client: o.client || null,
+    return { cats: cats, panel: data.panel > 0 ? data.panel : 0, ref: o.ref || '', nom: o.nom || 'Officine', reseau: !!o.reseau, tot: tot, client: o.client || null, maxPages: o.maxPages || 0,
       date: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) };
   }
   function pct(n, c) { return Math.min(100, Math.round(n / c.panel * 100)); }
@@ -339,14 +339,41 @@
       '<div style="display:flow-root">' + inner + '</div>' +
       '<div style="position:absolute;left:0;right:0;bottom:16px;text-align:center;font:500 8px/1 Satoshi,system-ui,sans-serif;letter-spacing:.3px;color:' + PALE + '">Intégral Pharma · ' + esc(c.nom) + ' · ' + num + ' / ' + total + '</div></div>';
   }
+  function mettreEnPages(c, style) {
+    var B = DIR[style](c);
+    mesurer(B);
+    var pages = paginer(B), total = pages.length + (B.cover ? 1 : 0), out = [];
+    if (B.cover) out.push('<div style="position:relative;box-sizing:border-box;width:' + PAGE_W + 'px;height:' + PAGE_H + 'px;overflow:hidden;background:#fff;' + base(B) + '">' + B.cover + '</div>');
+    pages.forEach(function (p, k) { out.push(pageHtml(B, p, out.length + 1, total, c)); });
+    return out;
+  }
+  // Ne garde que les K produits commandés par le plus de pharmacies (ordre des familles conservé)
+  function garder(c, K) {
+    var tous = [];
+    c.cats.forEach(function (k, ki) { k.rows.forEach(function (r, ri) { tous.push({ n: r.n, ki: ki, ri: ri }); }); });
+    tous.sort(function (a, b) { return b.n - a.n || a.ki - b.ki || a.ri - b.ri; });
+    var pris = {}; tous.slice(0, K).forEach(function (x) { pris[x.ki + ':' + x.ri] = 1; });
+    var d = {}; Object.keys(c).forEach(function (x) { d[x] = c[x]; });
+    d.cats = c.cats.map(function (k, ki) {
+      var e = {}; Object.keys(k).forEach(function (x) { e[x] = k[x]; });
+      e.rows = k.rows.filter(function (r, ri) { return pris[ki + ':' + ri]; });
+      return e;
+    }).filter(function (k) { return k.rows.length; });
+    d.tot = Math.min(K, c.tot);
+    return d;
+  }
   function construire(c, style) {
     return chargerPolices().then(function () {
-      var B = DIR[style](c);
-      mesurer(B);
-      var pages = paginer(B), total = pages.length + (B.cover ? 1 : 0), out = [];
-      if (B.cover) out.push('<div style="position:relative;box-sizing:border-box;width:' + PAGE_W + 'px;height:' + PAGE_H + 'px;overflow:hidden;background:#fff;' + base(B) + '">' + B.cover + '</div>');
-      pages.forEach(function (p, k) { out.push(pageHtml(B, p, out.length + 1, total, c)); });
-      return out;
+      var out = mettreEnPages(c, style);
+      // Plafond de pages (Will, 24/09/2026 : « 8-10 pages maximum ») : on retire les produits
+      // commandés par le moins de pharmacies jusqu'à tenir dedans (recherche par dichotomie).
+      if (!c.maxPages || out.length <= c.maxPages) return out;
+      var lo = 1, hi = c.tot - 1, best = mettreEnPages(garder(c, 1), style);
+      while (lo <= hi) {
+        var mid = (lo + hi) >> 1, essai = mettreEnPages(garder(c, mid), style);
+        if (essai.length <= c.maxPages) { best = essai; lo = mid + 1; } else hi = mid - 1;
+      }
+      return best;
     });
   }
 
@@ -454,7 +481,7 @@
   }
   function fermer() { var b = document.getElementById('pdfp-modal'); if (b) b.classList.remove('open'); }
 
-  // data = {cats:[{cat, rows}], panel} (comme achatsPdf) · o = {nom, ref, reseau, client?, fichier?} · mode : 'blob' | 'share' | aperçu
+  // data = {cats:[{cat, rows}], panel} (comme achatsPdf) · o = {nom, ref, reseau, client?, fichier?, maxPages?} · mode : 'blob' | 'share' | aperçu
   V2.prospectPdf = function (data, o, mode) {
     if (typeof window.ensureHtml2Pdf !== 'function') { V2.toast('Module PDF indisponible', 'error'); return; }
     var c = contexte(data, o);
