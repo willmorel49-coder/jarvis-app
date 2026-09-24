@@ -1038,6 +1038,9 @@
       '.v2-home-x .hv-grand{flex-direction:column;align-items:flex-start;padding:8px 14px 16px}',
       '.v2-home-x .hv-grand .hv-obj{width:88px;height:88px;margin:0 0 4px -6px}',
       '.v2-home-x .hv-grand .hv-nom{font-size:17px}',
+      // 24/09 — le rond « + » flottant (.v2-fab, 58 px à 16 px du bord droit) couvrait
+      // « CA, marge et objectifs » à 390 px : le texte de la colonne de droite s'arrête avant lui.
+      '@media (max-width:760px){body:has(.v2-fab:not([hidden])) .v2-home-x .hv-grand:nth-child(2n) .hv-txt{padding-right:50px}}',
       // Les rayons
       '.v2-home-x .hv-rayons{display:grid;gap:12px}',
       '.v2-home-x .hv-rayon{position:relative;overflow:hidden;background:var(--card,#fff);border:1px solid var(--line);border-radius:22px;box-shadow:0 1px 2px rgba(16,19,28,.05),0 4px 10px rgba(16,19,28,.05),0 12px 24px rgba(16,19,28,.05);padding:12px}',
@@ -1374,7 +1377,7 @@
       // optionnel absent) ne s'affiche pas : un clic vers rien n'existe pas.
       P = P.filter(function (p) { return p.route ? !!V2.pages[p.route.name] : !!V2.pages[p.k]; });
       // Accueil regroupé "par moment d'usage" (hors OPSO qui garde son ordre suivi-groupement)
-      var pilHtml;
+      var pilHtml, todoTuile = false;
       if (window.V2_BRAND && (window.V2_BRAND.opso || window.V2_BRAND.escale)) {
         pilHtml = '<div class="v2-piliers">' + P.map(tile).join('') + '</div>';
       } else {
@@ -1449,6 +1452,7 @@
           porte('hv-grand', 'produits', 'catalogue', 'Catalogue produits', 'Prix et stock des 7 établissements', 3),
           porte('hv-grand', 'pilotage', 'pilotage', 'Pilotage', 'CA, marge et objectifs', 4)
         ].join('');
+        todoTuile = !!V2.pages.todo;
         pilHtml = HV_DEFS + '<div class="hv-titre hv-anim" style="--i:' + (hvI++) + '">Tous les jours</div>' +
           porte('hv-todo hv-anim', 'todo', 'todo', 'To do list', 'Tes rendez-vous à demander, remerciements, ouvertures', 0, '', true, hvI++) +
           (grille ? '<div class="hv-grille hv-anim" style="--i:' + (hvI++) + '">' + grille + '</div>' : '') +
@@ -1535,7 +1539,8 @@
           '<div class="v2-search" role="button" tabindex="0" aria-label="Rechercher une pharmacie, un produit" onclick="V2.onTopSearch()"><span class="srch-ic">' + ICO('search', 18, 2) + '</span>' +
             '<input readonly aria-hidden="true" tabindex="-1" placeholder="Cherche une pharmacie, un produit…" style="cursor:pointer"><kbd>' + MOD + 'K</kbd></div>' +
           relancesCardHtml() +
-          (V2.todo ? V2.todo.cardHtml() : '') +
+          // Accueil « objets bien rangés » : la grande tuile To do list suffit, la petite carte faisait doublon.
+          (V2.todo && !todoTuile ? V2.todo.cardHtml() : '') +
           pilHtml +
         '</div>';
       if (jouerAnim) hvReveler(root);
