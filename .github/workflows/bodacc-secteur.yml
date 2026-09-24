@@ -1,0 +1,52 @@
+name: Bodacc secteur (Dans ton secteur)
+
+# Robot GRATUIT : interroge l'API ouverte du Bodacc et committe
+# crm/v2/bodacc-secteur.json, que l'écran « Infos du jour » lit pour le bloc
+# « Dans ton secteur ». Aucune clé, aucun coût. Déclenchable aussi à la main.
+
+on:
+  schedule:
+    # Cron GitHub "best effort" -> minutes non-rondes + filet de sécurité.
+    - cron: '37 4 * * *'    # ~06h37 Paris (été)
+    - cron: '11 11 * * *'   # ~13h11 Paris — filet si le matin est sauté
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: bodacc-secteur
+  cancel-in-progress: false
+
+jobs:
+  veille:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Générer le secteur
+        run: python3 generate_bodacc_secteur.py
+      - name: Committer si changement
+        run: |
+          if git diff --quiet -- crm/v2/bodacc-secteur.json; then
+            echo "Pas de changement."
+          else
+            git config user.name  "JARVIS veille"
+            git config user.email "actions@users.noreplace.github.com"
+            git add crm/v2/bodacc-secteur.json
+            git commit -m "data(secteur): bodacc du $(date -u +%Y-%m-%d)"
+            # 24 robots poussent sur le meme depot et GitHub livre leurs executions
+            # planifiees en paquet : une seule reprise ne suffit pas. On retente, en
+            # se remettant a jour sur la branche courante, et on echoue BRUYAMMENT
+            # si tout est refuse.
+            pousse=0
+            for essai in 1 2 3 4 5; do
+              if git push; then pousse=1; break; fi
+              echo "push refuse (tentative $essai/5) — un autre robot est passe, rattrapage"
+              git pull --rebase --autostash origin "$GITHUB_REF_NAME" || exit 1
+              sleep $(( essai * 5 + RANDOM % 10 ))
+            done
+            [ "$pousse" = 1 ] || { echo "ECHEC : 5 tentatives de push refusees"; exit 1; }
+          fi
