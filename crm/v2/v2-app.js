@@ -1004,62 +1004,113 @@
       '.v2-home-x .v2-search{height:62px;border-radius:16px}',
       '.v2-home-x .v2-search input{font-size:16px}',
       '.v2-home-x .v2-recent{justify-content:center}',
-      // ── « Les rayons » (23/09/2026, s5, choix Will) ─────────────────────
-      // Quatre rayons pleine largeur : scène en dégradé bleu (lumière radiale en
-      // haut à gauche, dessin SVG inline) + tuiles. Un seul bleu, reflet blanc
-      // haut-gauche sur le rayon, aucun flou. Sous-outils cliquables : le texte
-      // reste petit (13 px), la ZONE touchable fait 44 px (marge négative).
-      '.v2-home-x .v2-ray-lbl{font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ip-ink-3,#6B7280);margin:22px 4px 12px}',
-      '.v2-home-x .v2-ray{position:relative;overflow:hidden;background:var(--card,#fff);border:1px solid var(--line);border-radius:22px;box-shadow:var(--sh-1);padding:16px;margin-bottom:14px}',
-      '.v2-home-x .v2-ray::before{content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;background:linear-gradient(135deg,rgba(255,255,255,.7) 0%,rgba(255,255,255,0) 34%)}',
-      '.v2-home-x .v2-ray-corps{position:relative;display:flex;flex-direction:column;gap:14px}',
-      '.v2-home-x .v2-ray-scene{position:relative;overflow:hidden;border-radius:16px;min-height:120px;display:flex;align-items:flex-end;padding:14px 16px;flex:none;color:#fff;background:linear-gradient(155deg,#0034A0 0%,var(--ip-blue,#0050E6) 62%,#4C82F5 100%)}',
-      '.v2-home-x .v2-ray-scene::before{content:"";position:absolute;top:-30%;left:-15%;width:70%;height:110%;border-radius:50%;pointer-events:none;background:radial-gradient(circle,rgba(255,255,255,.30) 0%,rgba(255,255,255,0) 65%)}',
-      '.v2-home-x .v2-ray-scene svg{position:absolute;right:10px;top:8px;width:112px;height:96px;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}',
-      '.v2-home-x .v2-ray-scene-nom{position:relative;font-size:17px;font-weight:800;letter-spacing:-.01em}',
-      '.v2-home-x .v2-ray-tuiles{display:grid;grid-template-columns:1fr;gap:10px}',
-      '.v2-home-x .v2-ray-tuile{display:flex;align-items:center;gap:12px;background:color-mix(in srgb,var(--ip-blue,#0050E6) 6%,var(--card,#fff));border-radius:14px;padding:12px 14px;min-height:64px;cursor:pointer;color:var(--ip-ink);transition:background .25s,transform .25s cubic-bezier(.3,.7,.4,1.2)}',
-      '.v2-home-x .v2-ray-tuile:hover{background:color-mix(in srgb,var(--ip-blue,#0050E6) 12%,var(--card,#fff));transform:translateY(-2px)}',
-      '.v2-home-x .v2-ray-tuile:active{transform:scale(.98)}',
-      '.v2-home-x .v2-ray-tuile:focus-visible{outline:2px solid var(--ip-blue,#0050E6);outline-offset:2px}',
-      '.v2-home-x .v2-ray-disque{width:38px;height:38px;border-radius:11px;flex:none;display:flex;align-items:center;justify-content:center;color:#fff;background:radial-gradient(circle at 32% 26%,#9BC0FF 0%,var(--ip-blue,#0050E6) 55%,#0034A0 100%)}',
-      '.v2-home-x .v2-ray-txt{min-width:0;display:flex;flex-direction:column}',
-      '.v2-home-x .v2-ray-nom{font-size:15px;font-weight:800;letter-spacing:-.005em}',
-      '.v2-home-x .v2-ray-sous{font-size:13px;color:var(--ip-ink-3,#5B6273);margin-top:2px;line-height:1.35}',
-      // Tuile à plusieurs choix (maquette 3, 23/09/2026) : « n choix » + chevron, dépli sur place.
-      '.v2-home-x .v2-ray-multi{width:100%;border:0;font:inherit;text-align:left;-webkit-appearance:none;appearance:none}',
-      '.v2-home-x .v2-ray-multi .v2-ray-txt{flex:1}',
-      '.v2-home-x .v2-ray-nb{flex:none;font-size:13px;font-weight:700;color:#0034A0;background:color-mix(in srgb,var(--ip-blue,#0050E6) 12%,var(--card,#fff));border-radius:999px;padding:5px 11px;white-space:nowrap}',
-      '.v2-home-x .v2-ray-chev{flex:none;display:flex;color:var(--ip-ink-3,#5B6273);transform:rotate(90deg);transition:transform .3s cubic-bezier(.3,.7,.4,1.2)}',
-      '.v2-home-x .v2-ray-item.open .v2-ray-chev{transform:rotate(-90deg)}',
-      '.v2-home-x .v2-ray-item.open .v2-ray-multi{background:color-mix(in srgb,var(--ip-blue,#0050E6) 14%,var(--card,#fff))}',
-      '.v2-home-x .v2-ray-depli{display:grid;grid-template-rows:0fr;transition:grid-template-rows .38s cubic-bezier(.3,.7,.4,1.2)}',
-      '.v2-home-x .v2-ray-item.open .v2-ray-depli{grid-template-rows:1fr}',
-      '.v2-home-x .v2-ray-depli-in{overflow:hidden;min-height:0;display:grid;grid-template-columns:1fr;gap:8px}',
-      '.v2-home-x .v2-ray-item.open .v2-ray-depli-in{padding-top:8px}',
-      '.v2-home-x .v2-ray-choix{display:flex;align-items:center;gap:12px;min-height:56px;padding:10px 14px;border-radius:14px;background:var(--card,#fff);border:1px solid color-mix(in srgb,var(--ip-blue,#0050E6) 14%,transparent);color:var(--ip-ink);text-decoration:none;cursor:pointer;transform:translateY(8px);transition:transform .35s cubic-bezier(.3,.7,.4,1.2),background .2s,border-color .2s}',
-      '.v2-home-x .v2-ray-item.open .v2-ray-choix{transform:none}',
-      '.v2-home-x .v2-ray-item.open .v2-ray-choix:nth-child(2){transition-delay:60ms}.v2-home-x .v2-ray-item.open .v2-ray-choix:nth-child(3){transition-delay:120ms}.v2-home-x .v2-ray-item.open .v2-ray-choix:nth-child(4){transition-delay:180ms}',
-      '.v2-home-x .v2-ray-choix:hover{background:color-mix(in srgb,var(--ip-blue,#0050E6) 6%,var(--card,#fff));border-color:color-mix(in srgb,var(--ip-blue,#0050E6) 30%,transparent)}',
-      '.v2-home-x .v2-ray-choix:active{transform:scale(.98)}',
-      '.v2-home-x .v2-ray-choix-ico{width:34px;height:34px;border-radius:10px;flex:none;display:flex;align-items:center;justify-content:center;color:var(--ip-blue,#0050E6);background:color-mix(in srgb,var(--ip-blue,#0050E6) 8%,var(--card,#fff))}',
-      '.v2-home-x .v2-ray-choix-nom{font-size:14px;font-weight:800}',
-      '@media(min-width:860px){.v2-home-x .v2-ray-item.open{grid-column:1/-1}.v2-home-x .v2-ray-depli-in{grid-template-columns:1fr 1fr}}',
-      '@media(min-width:860px){.v2-home-x .v2-ray{padding:20px}.v2-home-x .v2-ray-corps{flex-direction:row;align-items:stretch;gap:20px}.v2-home-x .v2-ray-scene{width:220px;min-height:172px}.v2-home-x .v2-ray-tuiles{flex:1;grid-template-columns:1fr 1fr;align-content:start}}',
-      // « En cours de développement » : en retrait (filet pointillé, gris), cliquable.
+      // ── « Les objets bien rangés » (24/09/2026, maquette v5, « go » de Will) ──
+      // Objets en volume (SVG inline, lumière en haut à gauche, un seul bleu
+      // décliné), rangés : « Tous les jours » en grand, les rayons en lignes
+      // (objet + nom + phrase + chevron), « En cours de développement » en bas.
+      // Mouvement : transform et opacity seulement, rien ne boucle.
+      '.v2-home-x .hv-titre{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;color:var(--ip-ink-3,#5B6273);margin:22px 4px 10px}',
+      '.v2-home-x .hv-titre::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,rgba(16,19,28,.12),rgba(16,19,28,0))}',
+      '.v2-home-x .hv-obj{display:block;flex:none;overflow:visible}',
+      '.v2-home-x .hv-obj g,.v2-home-x .hv-obj rect,.v2-home-x .hv-obj path,.v2-home-x .hv-obj circle,.v2-home-x .hv-obj ellipse,.v2-home-x .hv-obj line{transform-box:fill-box;transform-origin:50% 50%}',
+      '.v2-home-x .hv-obj .o-corps{transform-origin:50% 100%}',
+      '.v2-home-x .hv-obj .o-leve{transition:transform 420ms cubic-bezier(.3,.7,.4,1.2)}',
+      '.v2-home-x .hv-obj .o-sol{transition:transform 420ms cubic-bezier(.3,.7,.4,1.2),opacity 420ms cubic-bezier(.2,.8,.2,1)}',
+      '.v2-home-x .hv-porte:hover .o-leve,.v2-home-x .hv-porte.joue .o-leve{transform:translateY(-5px)}',
+      '.v2-home-x .hv-porte:hover .o-sol,.v2-home-x .hv-porte.joue .o-sol{transform:scale(.8);opacity:.6}',
+      '.v2-home-x .hv-porte{position:relative;display:flex;cursor:pointer;color:var(--ip-ink);text-decoration:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}',
+      '.v2-home-x .hv-porte:focus-visible{outline:3px solid var(--ip-blue,#0050E6);outline-offset:3px}',
+      '.v2-home-x .hv-txt{display:block;min-width:0}',
+      '.v2-home-x .hv-nom{display:block;font-weight:800;letter-spacing:-.01em;line-height:1.2}',
+      '.v2-home-x .hv-phrase{display:block;font-size:13px;color:var(--ip-ink-3,#5B6273);line-height:1.35;margin-top:3px}',
+      '.v2-home-x .hv-fleche{flex:none;display:flex;align-self:center;margin-left:auto;color:var(--ip-ink-3,#5B6273);transition:transform 300ms cubic-bezier(.3,.7,.4,1.2)}',
+      '.v2-home-x .hv-porte:hover .hv-fleche,.v2-home-x .hv-porte.joue .hv-fleche{transform:translateX(3px);color:var(--ip-blue,#0050E6)}',
+      // Tous les jours : To do list pleine largeur, puis la grille 2×2.
+      '.v2-home-x .hv-todo,.v2-home-x .hv-grand{overflow:hidden;background:radial-gradient(180px 130px at 22% 18%,var(--card,#fff) 0%,color-mix(in srgb,var(--ip-blue,#0050E6) 5%,var(--card,#fff)) 100%);border:1px solid var(--line);border-radius:22px;box-shadow:0 1px 2px rgba(16,19,28,.05),0 4px 10px rgba(16,19,28,.05),0 12px 24px rgba(16,19,28,.05);min-height:44px;transition:transform 300ms cubic-bezier(.3,.7,.4,1.2)}',
+      '.v2-home-x .hv-todo::before,.v2-home-x .hv-grand::before{content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;background:linear-gradient(135deg,rgba(255,255,255,.9) 0%,rgba(255,255,255,0) 38%)}',
+      '.v2-home-x .hv-todo>*,.v2-home-x .hv-grand>*{position:relative}',
+      '.v2-home-x .hv-todo:hover,.v2-home-x .hv-grand:hover{box-shadow:0 3px 6px rgba(0,52,160,.08),0 10px 22px rgba(0,52,160,.08),0 20px 36px rgba(0,52,160,.08);transform:translateY(-2px)}',
+      '.v2-home-x .hv-todo:active,.v2-home-x .hv-grand:active,.v2-home-x .hv-ligne:active{transform:scale(.98)}',
+      '.v2-home-x .hv-todo{align-items:center;gap:14px;padding:10px 18px 10px 10px;margin-bottom:10px}',
+      '.v2-home-x .hv-todo .hv-obj{width:78px;height:78px}',
+      '.v2-home-x .hv-todo .hv-nom{font-size:18px}',
+      '.v2-home-x .hv-grille{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px}',
+      '.v2-home-x .hv-grand{flex-direction:column;align-items:flex-start;padding:8px 14px 16px}',
+      '.v2-home-x .hv-grand .hv-obj{width:88px;height:88px;margin:0 0 4px -6px}',
+      '.v2-home-x .hv-grand .hv-nom{font-size:17px}',
+      // Les rayons
+      '.v2-home-x .hv-rayons{display:grid;gap:12px}',
+      '.v2-home-x .hv-rayon{position:relative;overflow:hidden;background:var(--card,#fff);border:1px solid var(--line);border-radius:22px;box-shadow:0 1px 2px rgba(16,19,28,.05),0 4px 10px rgba(16,19,28,.05),0 12px 24px rgba(16,19,28,.05);padding:12px}',
+      '.v2-home-x .hv-rayon::before{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(135deg,rgba(255,255,255,.7) 0%,rgba(255,255,255,0) 34%)}',
+      '.v2-home-x .hv-rayon>*{position:relative}',
+      '.v2-home-x .hv-rayon-tete{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:2px 6px 8px;flex-wrap:wrap}',
+      '.v2-home-x .hv-rayon-nom{margin:0;font-size:16px;font-weight:800;line-height:1.3;letter-spacing:-.01em;color:var(--ip-blue,#0050E6)}',
+      '.v2-home-x .hv-rayon-rappel{font-size:13px;color:var(--ip-ink-3,#5B6273)}',
+      '.v2-home-x .hv-lignes{display:grid;gap:8px}',
+      '.v2-home-x .hv-ligne{align-items:center;gap:10px;background:color-mix(in srgb,var(--ip-blue,#0050E6) 5%,var(--card,#fff));border-radius:16px;padding:5px 14px 5px 5px;min-height:72px;transition:transform 250ms cubic-bezier(.3,.7,.4,1.2)}',
+      '.v2-home-x .hv-ligne:hover{background:color-mix(in srgb,var(--ip-blue,#0050E6) 12%,var(--card,#fff))}',
+      '.v2-home-x .hv-ligne .hv-obj{width:58px;height:58px}',
+      '.v2-home-x .hv-ligne .hv-nom{font-size:15px}',
+      '.v2-home-x .hv-ligne .hv-txt{flex:1}',
+      '@media(min-width:640px){.v2-home-x .hv-lignes{grid-template-columns:1fr 1fr}}',
+      '@media(min-width:860px){.v2-home-x .hv-rayons{grid-template-columns:1fr 1fr;align-items:start;gap:14px}.v2-home-x .hv-lignes{grid-template-columns:1fr}}',
+      // « En cours de développement » : en retrait (filet pointillé, gris), même pastille pour tous.
       '.v2-home-x .v2-enc-chip{display:inline-flex;align-items:center;font-size:13px;font-weight:800;letter-spacing:.02em;text-transform:uppercase;color:var(--ip-ink-3,#5B6273);background:color-mix(in srgb,var(--ip-blue,#0050E6) 6%,var(--card,#fff));border-radius:999px;padding:6px 13px;margin:26px 0 12px 4px}',
       '.v2-home-x .v2-enc{position:relative;background:var(--card,#fff);border:1.5px dashed rgba(16,19,28,.16);border-radius:20px;padding:16px 18px;margin-bottom:16px}',
       '.v2-home-x .v2-enc-liens{display:flex;flex-wrap:wrap;gap:10px}',
-      '.v2-home-x .v2-enc-l{min-height:44px;display:inline-flex;align-items:center;gap:8px;background:color-mix(in srgb,var(--ip-blue,#0050E6) 6%,var(--card,#fff));border-radius:12px;padding:10px 14px;font-size:14px;font-weight:700;color:var(--ip-ink-3,#5B6273);text-decoration:none;cursor:pointer;transition:background .25s,transform .25s cubic-bezier(.3,.7,.4,1.2)}',
+      '.v2-home-x .v2-enc-l{min-height:46px;display:inline-flex;align-items:center;gap:8px;background:color-mix(in srgb,var(--ip-blue,#0050E6) 6%,var(--card,#fff));border-radius:12px;padding:10px 14px;font-size:14px;font-weight:700;color:var(--ip-ink-3,#5B6273);text-decoration:none;cursor:pointer;transition:transform .25s cubic-bezier(.3,.7,.4,1.2)}',
       '.v2-home-x .v2-enc-l:hover{background:color-mix(in srgb,var(--ip-blue,#0050E6) 12%,var(--card,#fff));transform:translateY(-3px)}',
-      '.v2-home-x .v2-enc-l svg{color:inherit}.v2-home-x .v2-enc-l .fl{font-weight:800}',
+      '.v2-home-x .v2-enc-l:focus-visible{outline:3px solid var(--ip-blue,#0050E6);outline-offset:3px}',
+      '.v2-home-x .v2-enc-l svg{color:inherit;flex:none}.v2-home-x .v2-enc-l .fl{font-weight:800}',
       // 13 px : cette ligne dit COMMENT obtenir l'accès, une information utile ne se met pas en petit.
       '.v2-home-x .v2-enc-n{margin:12px 0 0;font-size:13px;line-height:1.5;color:var(--ip-ink-3,#6B7280)}',
-      '@media(prefers-reduced-motion:reduce){.v2-home-x .v2-ray-tuile,.v2-home-x .v2-enc-l,.v2-home-x .v2-ray-depli,.v2-home-x .v2-ray-choix,.v2-home-x .v2-ray-chev{transition:none}.v2-home-x .v2-ray-tuile:hover,.v2-home-x .v2-enc-l:hover{transform:none}}',
-      // cascade : arrivée posée UNE fois par session (js-anim / v2-home-still)
-      '.v2-home-x.js-anim .lch-anim{opacity:0;transform:translateY(14px) scale(.97);animation:lchArriver 560ms cubic-bezier(.3,.7,.4,1.2) forwards;animation-delay:calc(var(--i) * 55ms)}',
-      '@keyframes lchArriver{to{opacity:1;transform:none}}',
-      '@media(prefers-reduced-motion:reduce){.v2-home-x.js-anim .lch-anim{animation:none;opacity:1;transform:none}}'
+      // Arrivée : masquage posé par le script (classe js-anim, UNE fois par session),
+      // chaque bloc se révèle en entrant à l'écran ; l'objet se pose, son ombre se resserre.
+      '.v2-home-x.js-anim .hv-anim:not(.vu){opacity:0;transform:translateY(14px) scale(.97)}',
+      '.v2-home-x.js-anim .hv-anim.vu:not(.fin){animation:hvArriver 560ms cubic-bezier(.3,.7,.4,1.2) both;animation-delay:calc(var(--i,0) * 55ms)}',
+      '@keyframes hvArriver{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}',
+      '.v2-home-x.js-anim .hv-anim:not(.vu) .o-corps{opacity:0}',
+      '.v2-home-x.js-anim .hv-anim.vu .o-corps{animation:hvPoser 820ms cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--d,0) * 70ms + 180ms)}',
+      '.v2-home-x.js-anim .hv-anim.vu .o-ombre{animation:hvOmbre 820ms cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--d,0) * 70ms + 180ms)}',
+      '@keyframes hvPoser{0%{opacity:0;transform:translateY(-18px)}42%{opacity:1;transform:translateY(0) scale(1.04,.94)}62%{transform:translateY(-5px) scale(.99,1.02)}82%{transform:translateY(0) scale(1.01,.99)}100%{opacity:1;transform:none}}',
+      '@keyframes hvOmbre{0%{opacity:.2;transform:scale(1.5,1.3)}42%{opacity:1;transform:scale(.92,1)}100%{opacity:1;transform:none}}',
+      // Au survol ou à l'appui, le détail propre à chaque objet bouge, une fois par geste.
+      '.v2-home-x .hv-porte:hover .d-pop,.v2-home-x .hv-porte.joue .d-pop{animation:hvPop 560ms cubic-bezier(.3,.7,.4,1.2) both;animation-delay:calc(var(--r,0) * 90ms)}',
+      '.v2-home-x .hv-porte:hover .d-pulse,.v2-home-x .hv-porte.joue .d-pulse{animation:hvPulse 620ms cubic-bezier(.3,.7,.4,1.2)}',
+      '.v2-home-x .hv-porte:hover .d-saut,.v2-home-x .hv-porte.joue .d-saut{animation:hvSaut 760ms cubic-bezier(.2,.8,.2,1)}',
+      '.v2-home-x .hv-porte:hover .d-leve,.v2-home-x .hv-porte.joue .d-leve{animation:hvLeve 700ms cubic-bezier(.3,.7,.4,1.2)}',
+      '.v2-home-x .hv-porte:hover .d-monte,.v2-home-x .hv-porte.joue .d-monte{animation:hvMonte 620ms cubic-bezier(.3,.7,.4,1.2) both;animation-delay:calc(var(--r,0) * 90ms)}',
+      '.v2-home-x .hv-porte:hover .d-fleche,.v2-home-x .hv-porte.joue .d-fleche{animation:hvFleche 620ms cubic-bezier(.3,.7,.4,1.2) 200ms both}',
+      '.v2-home-x .hv-porte:hover .d-orbite,.v2-home-x .hv-porte.joue .d-orbite{animation:hvOrbite 900ms cubic-bezier(.3,.7,.4,1.2)}',
+      '.v2-home-x .hv-porte:hover .d-balance,.v2-home-x .hv-porte.joue .d-balance{animation:hvBalance 820ms ease-out}',
+      '.v2-home-x .hv-porte:hover .d-balance2,.v2-home-x .hv-porte.joue .d-balance2{animation:hvBalance2 820ms ease-out 80ms}',
+      '.v2-home-x .hv-porte:hover .d-presse,.v2-home-x .hv-porte.joue .d-presse{animation:hvPresse 420ms ease-in-out}',
+      '.v2-home-x .hv-porte:hover .d-jauge,.v2-home-x .hv-porte.joue .d-jauge{animation:hvJauge 760ms cubic-bezier(.3,.7,.4,1.2) both}',
+      '.v2-home-x .hv-porte:hover .d-soleil,.v2-home-x .hv-porte.joue .d-soleil{animation:hvSoleil 820ms cubic-bezier(.2,.8,.2,1) both}',
+      '.v2-home-x .hv-porte:hover .d-tourne,.v2-home-x .hv-porte.joue .d-tourne{animation:hvTourne 1100ms ease-in-out}',
+      '.v2-home-x .hv-porte:hover .d-note,.v2-home-x .hv-porte.joue .d-note{animation:hvNote 700ms cubic-bezier(.3,.7,.4,1.2)}',
+      '.v2-home-x .hv-porte:hover .d-ondes,.v2-home-x .hv-porte.joue .d-ondes{animation:hvOndes 560ms cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--r,0) * 110ms)}',
+      '.v2-home-x .hv-obj .d-monte{transform-origin:50% 100%}',
+      '.v2-home-x .hv-obj .d-jauge{transform-origin:0% 50%}',
+      '.v2-home-x .hv-obj .d-balance,.v2-home-x .hv-obj .d-balance2{transform-origin:50% 100%}',
+      '.v2-home-x .hv-obj .d-orbite{transform-box:view-box;transform-origin:48px 46px}',
+      '.v2-home-x .hv-obj .d-tourne{transform-box:view-box;transform-origin:48px 42px}',
+      '@keyframes hvPop{0%{transform:scale(0)}60%{transform:scale(1.22)}100%{transform:scale(1)}}',
+      '@keyframes hvPulse{0%{transform:scale(1)}35%{transform:scale(.86)}70%{transform:scale(1.14)}100%{transform:scale(1)}}',
+      '@keyframes hvSaut{0%{transform:translateY(0)}28%{transform:translateY(-12px)}52%{transform:translateY(0) scale(1.06,.92)}70%{transform:translateY(-4px)}86%{transform:translateY(0)}100%{transform:none}}',
+      '@keyframes hvLeve{0%{transform:none}40%{transform:translate(1px,-8px) rotate(-4deg)}100%{transform:none}}',
+      '@keyframes hvMonte{0%{transform:scaleY(.2)}70%{transform:scaleY(1.08)}100%{transform:none}}',
+      '@keyframes hvFleche{0%{opacity:0;transform:translate(-6px,6px)}100%{opacity:1;transform:none}}',
+      '@keyframes hvOrbite{0%{transform:none}45%{transform:rotate(14deg)}100%{transform:none}}',
+      '@keyframes hvBalance{0%{transform:none}25%{transform:rotate(-9deg)}55%{transform:rotate(5deg)}80%{transform:rotate(-2deg)}100%{transform:none}}',
+      '@keyframes hvBalance2{0%{transform:none}25%{transform:rotate(9deg)}55%{transform:rotate(-5deg)}80%{transform:rotate(2deg)}100%{transform:none}}',
+      '@keyframes hvPresse{0%{transform:none}45%{transform:translateY(4px)}100%{transform:none}}',
+      '@keyframes hvJauge{0%{transform:scaleX(.15)}75%{transform:scaleX(1.06)}100%{transform:none}}',
+      '@keyframes hvSoleil{0%{opacity:.3;transform:translateY(16px)}100%{opacity:1;transform:none}}',
+      '@keyframes hvTourne{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}',
+      '@keyframes hvNote{0%{transform:none}35%{transform:translateY(-6px) rotate(-10deg) scale(1.08)}70%{transform:rotate(3deg)}100%{transform:none}}',
+      '@keyframes hvOndes{0%{opacity:0;transform:translateX(-7px) scale(.6)}100%{opacity:1;transform:none}}',
+      '@media(prefers-reduced-motion:reduce){.v2-home-x .hv-anim,.v2-home-x .hv-obj .o-corps,.v2-home-x .hv-obj .o-ombre{opacity:1!important;transform:none!important;animation:none!important}.v2-home-x .hv-obj *{animation:none!important;transition:none!important}.v2-home-x .hv-porte,.v2-home-x .hv-fleche,.v2-home-x .v2-enc-l{transition:none!important;animation:none!important}.v2-home-x .hv-porte:hover,.v2-home-x .hv-porte:hover .hv-fleche,.v2-home-x .v2-enc-l:hover{transform:none!important}}'
     ].join('');
     document.head.appendChild(st);
   }
@@ -1125,19 +1176,43 @@
       }).join('') +
       '</div>';
   }
+  // Accueil v5 (24/09/2026) : chaque bloc .hv-anim se révèle en entrant à
+  // l'écran, une seule fois. Filets : ce qui est déjà à l'écran est révélé tout
+  // de suite, et au bout de 8 s plus rien ne reste masqué.
+  function hvReveler(root) {
+    var blocs = [].slice.call(root.querySelectorAll('.hv-anim'));
+    if (!blocs.length) return;
+    function montrer(el) { el.classList.add('vu'); }
+    function aLEcran(el) { var r = el.getBoundingClientRect(); return r.top < window.innerHeight && r.bottom > 0; }
+    function verifier() { blocs.forEach(function (el) { if (!el.classList.contains('vu') && aLEcran(el)) montrer(el); }); }
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function (entrees) {
+        entrees.forEach(function (en) { if (en.isIntersecting) { montrer(en.target); io.unobserve(en.target); } });
+      }, { rootMargin: '0px 0px -6% 0px', threshold: 0 });
+      blocs.forEach(function (el) { io.observe(el); });
+    }
+    verifier();
+    setTimeout(verifier, 1200);
+    setTimeout(function () { blocs.forEach(montrer); }, 8000);
+    var enAttente = false;
+    window.addEventListener('scroll', function () {
+      if (enAttente) return; enAttente = true;
+      requestAnimationFrame(function () { enAttente = false; verifier(); });
+    }, { passive: true, capture: true });
+  }
+  // Une fois l'arrivée jouée, le bloc rend la main (le survol peut le soulever) ;
+  // à l'appui sur téléphone, le détail de l'objet joue une fois (classe joue).
+  document.addEventListener('animationend', function (e) {
+    var t = e.target;
+    if (e.animationName === 'hvArriver' && t.classList && t.classList.contains('hv-anim')) t.classList.add('fin');
+  });
+  document.addEventListener('pointerdown', function (e) {
+    var p = e.target && e.target.closest ? e.target.closest('.v2-home-x .hv-porte') : null;
+    if (!p) return;
+    p.classList.remove('joue'); void p.offsetWidth; p.classList.add('joue');
+    clearTimeout(p._hvT); p._hvT = setTimeout(function () { p.classList.remove('joue'); }, 1200);
+  });
   // Spotlight : la souris met à jour --mx/--my sur la tuile survolée
-  // Dépli d'une tuile à plusieurs choix de l'accueil : un seul ouvert à la fois,
-  // re-clic referme. Les choix fermés sortent de l'ordre de tabulation.
-  V2.homeDeplier = function (btn) {
-    var item = btn.parentNode, ouvrir = !item.classList.contains('open');
-    document.querySelectorAll('.v2-ray-item.open').forEach(function (x) {
-      x.classList.remove('open'); x.firstChild.setAttribute('aria-expanded', 'false');
-      x.querySelectorAll('.v2-ray-choix').forEach(function (a) { a.setAttribute('tabindex', '-1'); });
-    });
-    if (!ouvrir) return;
-    item.classList.add('open'); btn.setAttribute('aria-expanded', 'true');
-    item.querySelectorAll('.v2-ray-choix').forEach(function (a) { a.setAttribute('tabindex', '0'); });
-  };
   V2.homeSpot = function (e, el) {
     try {
       var r = el.getBoundingClientRect();
@@ -1313,140 +1388,126 @@
         // identifiée avec le logo ».
         if (pmap.offilog) { pmap.offilog.t = 'Offilog'; }
 
-        // ── « Les rayons » (23/09/2026, s5, choix Will) ────────────────────
-        // Retour de Will sur r1 : « plus visuel, qu'on capte vraiment dans quelle
-        // feature on va aller ; rassembler des features ; celles qui ne sont pas
-        // finies en cours de développement — Rendez-vous descend, Groupements et
-        // Remontées montent ». Quatre rayons pleine largeur, chacun avec sa scène
-        // (dégradé bleu + dessin SVG inline) et ses portes en tuiles : le rayon
-        // dit OÙ on est, la tuile dit QUOI ouvrir. Une tuile ou un choix dont
-        // l'écran n'est pas chargé ne s'affiche pas.
-        // 23/09/2026 — « La porte qui s'ouvre » (maquette 3, choix Will) : plus de
-        // ligne de petits liens sous la tuile (« compliqué à capter »). Une tuile
-        // qui mène à UN endroit l'ouvre ; une tuile qui en regroupe plusieurs
-        // porte « n choix » et se déplie sur place en grands boutons expliqués.
-        var lchI = 0;
+        // ── « Les objets bien rangés » (24/09/2026, maquette v5, « go » de Will) ──
+        // Will : « le 1 mais bien rangé comme le 4 ». Le quotidien en grand
+        // (To do list, puis Officines · La carte · Catalogue produits · Pilotage),
+        // les rayons en lignes objet + nom + phrase + chevron, et tout en bas
+        // « En cours de développement ». Une porte = une page, plus de dépli.
+        // Missions rémunérées n'est plus sur l'accueil (sa page reste, ⌘K aussi).
+        // Une porte dont l'écran n'est pas chargé ne s'affiche pas.
+        // Objets en volume de la maquette v5 (24/09/2026), repris tels quels ; dégradés préfixés hv.
+        var HV_DEFS = '<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs><linearGradient id="hvB" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7FA6FF"/><stop offset=".5" stop-color="#0050E6"/><stop offset="1" stop-color="#0034A0"/></linearGradient><linearGradient id="hvBm" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#CFDEFF"/><stop offset=".55" stop-color="#6C9BFF"/><stop offset="1" stop-color="#2F6BEF"/></linearGradient><linearGradient id="hvF" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0050E6"/><stop offset="1" stop-color="#002C8A"/></linearGradient><linearGradient id="hvP" x1="0" y1="0" x2=".6" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".6" stop-color="#F3F7FF"/><stop offset="1" stop-color="#D6E2F8"/></linearGradient><linearGradient id="hvC" x1="0" y1="0" x2=".7" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".5" stop-color="#E1EBFF"/><stop offset="1" stop-color="#BFD3FF"/></linearGradient><radialGradient id="hvS" cx=".36" cy=".3" r=".75"><stop offset="0" stop-color="#DCE7FF"/><stop offset=".45" stop-color="#4C82F5"/><stop offset="1" stop-color="#0034A0"/></radialGradient><radialGradient id="hvO" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#0034A0" stop-opacity=".36"/><stop offset=".55" stop-color="#0034A0" stop-opacity=".12"/><stop offset="1" stop-color="#0034A0" stop-opacity="0"/></radialGradient></defs></svg>';
+        var HV_OBJ = {
+          todo: '<svg class="hv-obj" focusable="false" viewBox="0 0 96 96" aria-hidden="true"><g class="o-sol"><ellipse class="o-ombre" cx="48" cy="87" rx="29" ry="5" fill="url(#hvO)"/></g><g class="o-leve"><g class="o-corps"><rect x="20" y="17" width="56" height="67" rx="13" fill="url(#hvB)"/><rect x="25" y="24" width="46" height="54" rx="8" fill="url(#hvP)"/><rect x="36" y="11" width="24" height="12" rx="6" fill="url(#hvBm)"/><ellipse cx="43" cy="14" rx="5" ry="1.5" fill="#fff" opacity=".7"/><rect x="31" y="33" width="13" height="13" rx="4" fill="#E1EBFF"/><g class="d-pop"><rect x="31" y="33" width="13" height="13" rx="4" fill="url(#hvB)"/><path d="M34.2 39.8l2.6 2.6 4.6-5.2" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></g><rect x="48" y="37" width="18" height="5" rx="2.5" fill="#BFD3FF"/><rect x="31" y="54" width="13" height="13" rx="4" fill="#E1EBFF"/><rect x="48" y="58" width="13" height="5" rx="2.5" fill="#D6E2F8"/><path d="M23.5 27 q1-6 8-7.5" stroke="#fff" stroke-opacity=".6" stroke-width="2.5" stroke-linecap="round" fill="none"/></g></g></svg>',
+          officines: '<svg class="hv-obj" focusable="false" viewBox="0 0 96 96" aria-hidden="true"><g class="o-sol"><ellipse class="o-ombre" cx="48" cy="86" rx="32" ry="5" fill="url(#hvO)"/></g><g class="o-leve"><g class="o-corps"><rect x="14" y="27" width="68" height="54" rx="12" fill="#BFD3FF"/><rect x="14" y="22" width="68" height="54" rx="12" fill="url(#hvP)"/><g class="d-pulse"><rect x="22" y="31" width="27" height="27" rx="8" fill="url(#hvB)"/><path d="M33 36h5v6h6v5h-6v6h-5v-6h-6v-5h6z" fill="#fff"/></g><rect x="55" y="34" width="19" height="5" rx="2.5" fill="#BFD3FF"/><rect x="55" y="44" width="13" height="5" rx="2.5" fill="#D6E2F8"/><rect x="22" y="64" width="52" height="5" rx="2.5" fill="#E1EBFF"/><path d="M21 27h24" stroke="#fff" stroke-width="3" stroke-linecap="round"/></g></g></svg>',
+          carte: '<svg class="hv-obj" focusable="false" viewBox="0 0 96 96" aria-hidden="true"><g class="o-sol"><ellipse class="o-ombre" cx="48" cy="87" rx="36" ry="5" fill="url(#hvO)"/></g><g class="o-leve"><g class="o-corps"><path d="M12 32 L34 25 L34 76 L12 83Z" fill="url(#hvC)"/><path d="M34 25 L60 32 L60 83 L34 76Z" fill="#BFD3FF"/><path d="M60 32 L84 25 L84 76 L60 83Z" fill="url(#hvC)"/><path d="M18 72 C26 64 32 72 40 64 S54 54 60 58 S72 52 78 44" fill="none" stroke="#0050E6" stroke-width="2.8" stroke-linecap="round" stroke-dasharray="0.1 5.5"/><ellipse cx="47" cy="58" rx="5" ry="1.8" fill="#0034A0" opacity=".3"/><g class="d-saut"><path d="M47 57 C41 49 37 44 37 38 A10 10 0 1 1 57 38 C57 44 53 49 47 57Z" fill="url(#hvB)"/><circle cx="47" cy="38" r="4" fill="#fff"/><ellipse cx="42.5" cy="32.5" rx="3" ry="2" fill="#fff" opacity=".55"/></g><path d="M15 36 L31 31" stroke="#fff" stroke-width="2.5" stroke-linecap="round" opacity=".85"/></g></g></svg>',
+          catalogue: '<svg class="hv-obj" focusable="false" viewBox="0 0 96 96" aria-hidden="true"><g class="o-sol"><ellipse class="o-ombre" cx="46" cy="86" rx="32" ry="5" fill="url(#hvO)"/></g><g class="o-leve"><g class="o-corps"><path d="M16 54 L26 44 L72 44 L62 54Z" fill="#9BC0FF"/><path d="M62 54 L72 44 L72 72 L62 82Z" fill="url(#hvF)"/><rect x="16" y="54" width="46" height="28" rx="3" fill="url(#hvB)"/><rect x="35" y="54" width="8" height="28" fill="#fff" opacity=".26"/><path d="M35 54 L45 44 L53 44 L43 54Z" fill="#fff" opacity=".35"/><path d="M19.5 58 v12" stroke="#fff" stroke-width="2.5" stroke-linecap="round" opacity=".5"/><g class="d-leve"><path d="M24 34 L31 27 L61 27 L54 34Z" fill="#E1EBFF"/><path d="M54 34 L61 27 L61 45 L54 52Z" fill="#4C82F5"/><rect x="24" y="34" width="30" height="18" rx="2.5" fill="url(#hvBm)"/><path d="M37 38.5h4v3.5h3.5v4h-3.5v3.5h-4v-3.5h-3.5v-4h3.5z" fill="#fff"/></g></g></g></svg>',
+          pilotage: '<svg class="hv-obj" focusable="false" viewBox="0 0 96 96" aria-hidden="true"><g class="o-sol"><ellipse class="o-ombre" cx="48" cy="87" rx="36" ry="5" fill="url(#hvO)"/></g><g class="o-leve"><g class="o-corps"><rect x="12" y="24" width="72" height="58" rx="14" fill="#BFD3FF"/><rect x="12" y="19" width="72" height="58" rx="14" fill="url(#hvP)"/><rect x="22" y="66" width="52" height="3" rx="1.5" fill="#E1EBFF"/><rect class="d-monte" style="--r:0" x="26" y="52" width="11" height="14" rx="3" fill="url(#hvBm)"/><rect class="d-monte" style="--r:1" x="42.5" y="43" width="11" height="23" rx="3" fill="url(#hvBm)"/><rect class="d-monte" style="--r:2" x="59" y="32" width="11" height="34" rx="3" fill="url(#hvB)"/><g class="d-fleche"><path d="M24 44 L39 34 L50 38 L67 23" fill="none" stroke="#0034A0" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M61 20.5 L71 19 L69.5 29Z" fill="#0034A0" stroke="#0034A0" stroke-width="1.5" stroke-linejoin="round"/></g><path d="M19 24h22" stroke="#fff" stroke-width="3" stroke-linecap="round"/></g></g></svg>',
+          groupements: '<svg class="hv-obj" focusable="false" viewBox="0 0 96 96" aria-hidden="true"><g class="o-sol"><ellipse class="o-ombre" cx="48" cy="85" rx="30" ry="5" fill="url(#hvO)"/></g><g class="o-leve"><g class="o-corps"><g class="d-orbite"><g stroke="#BFD3FF" stroke-width="3.5" stroke-linecap="round"><line x1="48" y1="46" x2="21" y2="27"/><line x1="48" y1="46" x2="76" y2="26"/><line x1="48" y1="46" x2="19" y2="66"/><line x1="48" y1="46" x2="77" y2="64"/><line x1="21" y1="27" x2="76" y2="26"/></g><circle cx="21" cy="27" r="8" fill="url(#hvS)"/><circle cx="76" cy="26" r="8" fill="url(#hvS)"/><circle cx="19" cy="66" r="8" fill="url(#hvS)"/><circle cx="77" cy="64" r="8" fill="url(#hvS)"/></g><g class="d-pulse"><circle cx="48" cy="46" r="14" fill="url(#hvS)"/><ellipse cx="43" cy="40" rx="4.5" ry="2.8" fill="#fff" opacity=".6"/></g></g></g></svg>',
+          carteGrp: '<svg class="hv-obj" focusable="false" viewBox="0 0 96 96" aria-hidden="true"><g class="o-sol"><ellipse class="o-ombre" cx="48" cy="87" rx="36" ry="5" fill="url(#hvO)"/></g><g class="o-leve"><g class="o-corps"><path d="M12 32 L34 25 L34 76 L12 83Z" fill="url(#hvC)"/><path d="M34 25 L60 32 L60 83 L34 76Z" fill="#BFD3FF"/><path d="M60 32 L84 25 L84 76 L60 83Z" fill="url(#hvC)"/><g stroke="#0050E6" stroke-width="2.6" stroke-linecap="round" opacity=".5"><line x1="25" y1="48" x2="47" y2="62"/><line x1="47" y1="62" x2="71" y2="42"/><line x1="25" y1="48" x2="71" y2="42"/></g><circle class="d-pop" style="--r:0" cx="25" cy="48" r="7.5" fill="url(#hvS)"/><circle class="d-pop" style="--r:1" cx="47" cy="62" r="7.5" fill="url(#hvS)"/><circle class="d-pop" style="--r:2" cx="71" cy="42" r="7.5" fill="url(#hvS)"/><path d="M15 36 L31 31" stroke="#fff" stroke-width="2.5" stroke-linecap="round" opacity=".85"/></g></g></svg>',
+          biosimilaires: '<svg class="hv-obj" focusable="false" viewBox="0 0 96 96" aria-hidden="true"><g class="o-sol"><ellipse class="o-ombre" cx="48" cy="86" rx="32" ry="5" fill="url(#hvO)"/></g><g class="o-leve"><g class="o-corps"><g class="d-balance"><rect x="17" y="34" width="27" height="48" rx="8" fill="url(#hvP)"/><path d="M17 56 H44 V74 A8 8 0 0 1 36 82 H25 A8 8 0 0 1 17 74Z" fill="url(#hvBm)"/><rect x="22.5" y="28" width="16" height="8" rx="2" fill="#D6E2F8"/><rect x="20.5" y="18" width="20" height="12" rx="3.5" fill="url(#hvB)"/><rect x="21" y="39" width="4" height="34" rx="2" fill="#fff" opacity=".8"/></g><g class="d-balance2"><rect x="52" y="34" width="27" height="48" rx="8" fill="url(#hvP)"/><path d="M52 52 H79 V74 A8 8 0 0 1 71 82 H60 A8 8 0 0 1 52 74Z" fill="url(#hvB)"/><rect x="57.5" y="28" width="16" height="8" rx="2" fill="#D6E2F8"/><rect x="55.5" y="18" width="20" height="12" rx="3.5" fill="url(#hvB)"/><rect x="56" y="39" width="4" height="34" rx="2" fill="#fff" opacity=".8"/></g></g></g></svg>',
+          offilog: '<svg class="hv-obj" focusable="false" viewBox="0 0 96 96" aria-hidden="true"><g class="o-sol"><ellipse class="o-ombre" cx="50" cy="86" rx="33" ry="5" fill="url(#hvO)"/></g><g class="o-leve"><g class="o-corps"><g class="d-presse"><rect x="31" y="19" width="6" height="12" rx="1.5" fill="#0034A0"/><rect x="31" y="15" width="20" height="6" rx="3" fill="#0034A0"/></g><rect x="27" y="30" width="14" height="9" rx="2.5" fill="url(#hvBm)"/><rect x="18" y="38" width="32" height="44" rx="10" fill="url(#hvB)"/><rect x="23" y="51" width="22" height="17" rx="4" fill="#fff" opacity=".92"/><rect x="27" y="56" width="14" height="3" rx="1.5" fill="#BFD3FF"/><rect x="27" y="62" width="9" height="3" rx="1.5" fill="#BFD3FF"/><rect x="21" y="42" width="3.5" height="30" rx="1.75" fill="#fff" opacity=".35"/><g class="d-balance2"><path d="M54 32 H80 L76 70 H58Z" fill="url(#hvC)"/><rect x="52" y="27" width="30" height="6" rx="2" fill="#BFD3FF"/><rect x="60" y="70" width="14" height="12" rx="3" fill="url(#hvB)"/><rect x="59" y="42" width="16" height="10" rx="3" fill="url(#hvBm)"/></g></g></g></svg>',
+          appro: '<svg class="hv-obj" focusable="false" viewBox="0 0 96 96" aria-hidden="true"><g class="o-sol"><ellipse class="o-ombre" cx="48" cy="89" rx="34" ry="4.5" fill="url(#hvO)"/></g><g class="o-leve"><g class="o-corps"><rect x="14" y="14" width="68" height="58" rx="11" fill="url(#hvP)"/><rect x="20" y="20" width="56" height="46" rx="6" fill="#E1EBFF"/><rect x="20" y="41" width="56" height="4" fill="#BFD3FF"/><rect x="24" y="27" width="12" height="14" rx="2.5" fill="url(#hvB)"/><rect x="38" y="31" width="10" height="10" rx="2.5" fill="url(#hvBm)"/><rect x="50" y="25" width="14" height="16" rx="2.5" fill="url(#hvB)"/><rect x="66" y="31" width="7" height="10" rx="2" fill="url(#hvBm)"/><rect x="24" y="50" width="14" height="16" rx="2.5" fill="url(#hvBm)"/><rect x="40" y="54" width="10" height="12" rx="2.5" fill="url(#hvB)"/><path d="M20 19h22" stroke="#fff" stroke-width="3" stroke-linecap="round"/><rect x="14" y="76" width="68" height="9" rx="4.5" fill="#E1EBFF"/><rect class="d-jauge" x="14" y="76" width="44" height="9" rx="4.5" fill="url(#hvB)"/></g></g></svg>',
+          infos: '<svg class="hv-obj" focusable="false" viewBox="0 0 96 96" aria-hidden="true"><g class="o-sol"><ellipse class="o-ombre" cx="46" cy="87" rx="32" ry="5" fill="url(#hvO)"/></g><g class="o-leve"><g class="o-corps"><g class="d-soleil"><circle cx="64" cy="28" r="19" fill="#E1EBFF"/><circle cx="64" cy="28" r="11.5" fill="url(#hvS)"/></g><rect x="20" y="32" width="58" height="48" rx="6" fill="#BFD3FF"/><rect x="14" y="36" width="58" height="46" rx="6" fill="url(#hvP)"/><rect x="20" y="43" width="36" height="6" rx="3" fill="url(#hvB)"/><rect x="20" y="54" width="18" height="21" rx="3" fill="url(#hvBm)"/><rect x="42" y="55" width="24" height="4" rx="2" fill="#BFD3FF"/><rect x="42" y="63" width="20" height="4" rx="2" fill="#BFD3FF"/><rect x="42" y="71" width="24" height="4" rx="2" fill="#D6E2F8"/><path d="M19 40.5h16" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/></g></g></svg>',
+          concurrents: '<svg class="hv-obj" focusable="false" viewBox="0 0 96 96" aria-hidden="true"><g class="o-sol"><ellipse class="o-ombre" cx="48" cy="87" rx="28" ry="4.5" fill="url(#hvO)"/></g><g class="o-leve"><g class="o-corps"><rect x="42" y="70" width="12" height="12" rx="3" fill="#0034A0"/><rect x="31" y="80" width="34" height="5" rx="2.5" fill="url(#hvBm)"/><circle cx="48" cy="42" r="32" fill="url(#hvC)"/><circle cx="48" cy="42" r="27" fill="url(#hvB)"/><circle cx="48" cy="42" r="18" fill="none" stroke="#fff" stroke-opacity=".28" stroke-width="1.5"/><circle cx="48" cy="42" r="9" fill="none" stroke="#fff" stroke-opacity=".28" stroke-width="1.5"/><line x1="21" y1="42" x2="75" y2="42" stroke="#fff" stroke-opacity=".2" stroke-width="1.2"/><line x1="48" y1="15" x2="48" y2="69" stroke="#fff" stroke-opacity=".2" stroke-width="1.2"/><g class="d-tourne"><path d="M48 42 L48 15 A27 27 0 0 1 71.4 28.5Z" fill="#fff" opacity=".3"/></g><circle cx="61" cy="33" r="3.2" fill="#E1EBFF"/><circle cx="37" cy="54" r="2.6" fill="#E1EBFF" opacity=".85"/><ellipse cx="34" cy="24" rx="9" ry="4" fill="#fff" opacity=".22" transform="rotate(-32 34 24)"/></g></g></svg>',
+          remontees: '<svg class="hv-obj" focusable="false" viewBox="0 0 96 96" aria-hidden="true"><g class="o-sol"><ellipse class="o-ombre" cx="48" cy="86" rx="34" ry="5" fill="url(#hvO)"/></g><g class="o-leve"><g class="o-corps"><rect x="12" y="20" width="72" height="62" rx="11" fill="#BFD3FF"/><rect x="12" y="16" width="72" height="62" rx="11" fill="url(#hvP)"/><rect x="19" y="24" width="25" height="22" rx="3.5" fill="#E1EBFF" transform="rotate(-5 31.5 35)"/><rect x="24" y="33" width="14" height="3" rx="1.5" fill="#BFD3FF" transform="rotate(-5 31.5 35)"/><circle cx="31" cy="26" r="2.6" fill="#0034A0"/><rect x="20" y="51" width="25" height="22" rx="3.5" fill="url(#hvBm)" transform="rotate(3 32.5 62)"/><circle cx="32" cy="53" r="2.6" fill="#0034A0"/><rect x="51" y="51" width="25" height="21" rx="3.5" fill="#D6E2F8" transform="rotate(-3 63.5 61.5)"/><circle cx="63" cy="53" r="2.6" fill="#0034A0"/><g class="d-note"><rect x="50" y="22" width="26" height="24" rx="3.5" fill="url(#hvB)" transform="rotate(5 63 34)"/><rect x="55" y="32" width="15" height="3" rx="1.5" fill="#fff" opacity=".7" transform="rotate(5 63 34)"/><rect x="55" y="38" width="10" height="3" rx="1.5" fill="#fff" opacity=".5" transform="rotate(5 63 34)"/><circle cx="63" cy="24" r="2.6" fill="#E1EBFF"/></g><path d="M18 21h24" stroke="#fff" stroke-width="3" stroke-linecap="round"/></g></g></svg>',
+          marketing: '<svg class="hv-obj" focusable="false" viewBox="0 0 96 96" aria-hidden="true"><g class="o-sol"><ellipse class="o-ombre" cx="46" cy="84" rx="30" ry="5" fill="url(#hvO)"/></g><g class="o-leve"><g class="o-corps"><path d="M34 55 L39 72 Q40 76 44 75 L47 74 L43 58Z" fill="#0034A0"/><rect x="15" y="38" width="17" height="18" rx="5" fill="url(#hvBm)"/><path d="M28 40 L62 22 Q70 18 70 27 V65 Q70 74 62 70 L28 54Z" fill="url(#hvB)"/><ellipse cx="68" cy="46" rx="6" ry="24" fill="#0034A0"/><ellipse cx="69" cy="46" rx="3.8" ry="19" fill="#9BC0FF"/><path d="M32 42 L59 28" stroke="#fff" stroke-opacity=".55" stroke-width="3" stroke-linecap="round"/><path class="d-ondes" style="--r:0" d="M79 37 Q84 46 79 55" fill="none" stroke="#0050E6" stroke-width="3.5" stroke-linecap="round"/><path class="d-ondes" style="--r:1" d="M85.5 30 Q93 46 85.5 62" fill="none" stroke="#6C9BFF" stroke-width="3.5" stroke-linecap="round"/></g></g></svg>'
+        };
+        var hvI = 0;
         function goJs(k, param) { return 'V2.go(\'' + k + '\'' + (param ? ',\'' + param + '\'' : '') + ')'; }
-        function tuile(k, ico, nom, phrase, js) {
-          if (!V2.pages[k]) return '';
-          return '<div class="v2-ray-tuile" role="link" tabindex="0" onclick="' + (js || goJs(k)) + '" onkeydown="if(event.key===\'Enter\')this.click()">' +
-            '<span class="v2-ray-disque">' + ICO(ico, 20) + '</span>' +
-            '<span class="v2-ray-txt"><span class="v2-ray-nom">' + esc(nom) + '</span>' +
-            '<span class="v2-ray-sous">' + esc(phrase) + '</span></span></div>';
+        // cls : hv-todo | hv-grand | hv-ligne ; d : rang de l'objet dans son bloc (délai de pose).
+        function porte(cls, k, obj, nom, phrase, d, js, fleche, i) {
+          if (k && !V2.pages[k]) return '';
+          return '<a class="hv-porte ' + cls + '" role="link" tabindex="0" style="--d:' + d + (i != null ? ';--i:' + i : '') + '" onclick="' + (js || goJs(k)) + '" onkeydown="if(event.key===\'Enter\')this.click()">' +
+            HV_OBJ[obj] +
+            '<span class="hv-txt"><span class="hv-nom">' + esc(nom) + '</span><span class="hv-phrase">' + esc(phrase) + '</span></span>' +
+            (fleche ? '<span class="hv-fleche" aria-hidden="true">' + ICO('chev', 18) + '</span>' : '') + '</a>';
         }
-        // choix : [{ t, d, ico, k, param?, js? }] — un seul choix disponible = tuile directe.
-        function tuileChoix(ico, nom, phrase, choix) {
-          var ok = choix.filter(function (c) { return V2.pages[c.k]; });
-          if (!ok.length) return '';
-          if (ok.length === 1) return tuile(ok[0].k, ico, nom, phrase, ok[0].js || goJs(ok[0].k, ok[0].param));
-          return '<div class="v2-ray-item">' +
-            '<button type="button" class="v2-ray-tuile v2-ray-multi" aria-expanded="false" onclick="V2.homeDeplier(this)">' +
-              '<span class="v2-ray-disque">' + ICO(ico, 20) + '</span>' +
-              '<span class="v2-ray-txt"><span class="v2-ray-nom">' + esc(nom) + '</span>' +
-              '<span class="v2-ray-sous">' + esc(phrase) + '</span></span>' +
-              '<span class="v2-ray-nb">' + ok.length + ' choix</span>' +
-              '<span class="v2-ray-chev" aria-hidden="true">' + ICO('chev', 18) + '</span></button>' +
-            '<div class="v2-ray-depli"><div class="v2-ray-depli-in">' + ok.map(function (c) {
-              return '<a class="v2-ray-choix" role="link" tabindex="-1" onclick="' + (c.js || goJs(c.k, c.param)) + '" onkeydown="if(event.key===\'Enter\')this.click()">' +
-                '<span class="v2-ray-choix-ico">' + ICO(c.ico, 18) + '</span>' +
-                '<span class="v2-ray-txt"><span class="v2-ray-choix-nom">' + esc(c.t) + '</span>' +
-                '<span class="v2-ray-sous">' + esc(c.d) + '</span></span></a>';
-            }).join('') + '</div></div></div>';
+        function ligne(k, obj, nom, phrase, d, js) { return porte('hv-ligne', k, obj, nom, phrase, d, js, true); }
+        function rayon(nom, label, rappel, lignes) {
+          var l = lignes.join(''); if (!l) return '';
+          return '<section class="hv-rayon hv-anim" style="--i:' + (hvI++) + '" aria-label="' + label + '">' +
+            '<div class="hv-rayon-tete"><h2 class="hv-rayon-nom">' + nom + '</h2>' +
+            (rappel ? '<span class="hv-rayon-rappel">' + rappel + '</span>' : '') + '</div>' +
+            '<div class="hv-lignes">' + l + '</div></section>';
         }
-        function rayon(nom, scene, tuiles) {
-          var t = tuiles.join(''); if (!t) return '';
-          return '<div class="v2-ray lch-anim" style="--i:' + (lchI++) + '"><div class="v2-ray-corps">' +
-            '<div class="v2-ray-scene"><svg viewBox="0 0 120 100" aria-hidden="true" focusable="false">' + scene + '</svg>' +
-            '<span class="v2-ray-scene-nom">' + nom + '</span></div>' +
-            '<div class="v2-ray-tuiles">' + t + '</div></div></div>';
-        }
-        var W = 'rgba(255,255,255,';
-        var SC_TERRAIN = '<rect x="14" y="34" width="34" height="52" rx="3" fill="' + W + '.22)" stroke="' + W + '.7)"/><line x1="31" y1="48" x2="31" y2="64" stroke="' + W + '.85)"/><line x1="23" y1="56" x2="39" y2="56" stroke="' + W + '.85)"/><circle cx="86" cy="30" r="16" fill="' + W + '.16)" stroke="' + W + '.6)"/><path d="M86 48c-9 12-9 22 0 32 9-10 9-20 0-32z" fill="' + W + '.22)" stroke="' + W + '.7)"/><path d="M52 86c14-6 30-6 44 0" stroke="' + W + '.35)" fill="none"/>';
-        var SC_PRODUITS = '<rect x="16" y="52" width="28" height="26" rx="3" fill="' + W + '.20)" stroke="' + W + '.7)"/><rect x="44" y="40" width="28" height="38" rx="3" fill="' + W + '.26)" stroke="' + W + '.75)"/><rect x="72" y="28" width="28" height="50" rx="3" fill="' + W + '.16)" stroke="' + W + '.6)"/><line x1="16" y1="62" x2="44" y2="62" stroke="' + W + '.4)"/>';
-        var SC_PILOTER = '<line x1="16" y1="20" x2="16" y2="82" stroke="' + W + '.55)"/><line x1="16" y1="82" x2="104" y2="82" stroke="' + W + '.55)"/><polyline points="20,66 40,50 58,58 78,32 100,24" fill="none" stroke="' + W + '.85)"/><rect x="66" y="14" width="30" height="20" rx="4" fill="' + W + '.20)" stroke="' + W + '.7)"/><circle cx="72" cy="20" r="2" fill="' + W + '.85)"/><circle cx="80" cy="20" r="2" fill="' + W + '.85)"/>';
-        var SC_VENDRE = '<path d="M14 44v18h14l24 16V28L28 44H14z" fill="' + W + '.22)" stroke="' + W + '.75)"/><path d="M58 40a16 16 0 0 1 0 26" fill="none" stroke="' + W + '.6)"/><path d="M66 32a26 26 0 0 1 0 42" fill="none" stroke="' + W + '.35)"/><rect x="82" y="26" width="24" height="18" rx="3" fill="' + W + '.18)" stroke="' + W + '.6)"/>';
-
         var terrain = [
-          // 23/09 — Will : « je capte pas ce qui se passe dans Officines, ça ouvre différents trucs ».
-          // Ma liste devient sa propre porte, Officines n'ouvre plus que les fiches,
-          // Audit marge part dans « Vendre & convaincre ».
-          tuile('todo', 'check', 'To do list', 'Tes rendez-vous à demander, remerciements, ouvertures'),
-          tuile('pharma', 'pharma', 'Officines', 'La fiche de chaque client et prospect'),
-          // La tournée se compose DANS la carte (« Ajouter à ma tournée ») : la page
-          // autonome v2-tournee.js n'est plus chargée depuis le 11/09 (redondante).
-          tuile('carte', 'grid', 'La carte', 'Clients, prospects et ta tournée'),
-          // Espace Groupements : listes des groupements + listings produits (renderGroupementsList via pharma?groupements)
-          tuileChoix('list', 'Groupements', 'Les groupements de tes officines', [
-            { t: 'Groupements', d: 'Les listes et listings d\'achats', ico: 'list', k: 'pharma', param: 'groupements' },
-            { t: 'Carte des groupements', d: 'Où sont les adhérents de chaque groupement', ico: 'grid', k: 'carteGrp' }])
+          ligne('pharma', 'groupements', 'Groupements', 'Les listes et listings d\'achats', 0, goJs('pharma', 'groupements')),
+          ligne('carteGrp', 'carteGrp', 'Carte des groupements', 'Où sont les adhérents de chaque groupement', 1)
         ];
         // 14/09/2026 — le responsable d'Escale Pharma a l'accès total ET garde son
         // espace escale/v2 (demande de Will). Seul un compte @escalepharma.fr
         // arrive ici : les commerciaux Escale sont renvoyés avant.
         if (/@escalepharma\.fr$/i.test((V2.user && V2.user.email) || '')) {
-          terrain.push('<div class="v2-ray-tuile" role="link" tabindex="0" onclick="location.href=\'../../escale/v2/index.html\'" onkeydown="if(event.key===\'Enter\')this.click()">' +
-            '<span class="v2-ray-disque">' + ICO('pilo', 20) + '</span>' +
-            '<span class="v2-ray-txt"><span class="v2-ray-nom">Espace Escale Pharma</span>' +
-            '<span class="v2-ray-sous">Le suivi Escale et ses officines clientes</span></span></div>');
+          terrain.push(ligne('', 'pilotage', 'Espace Escale Pharma', 'Le suivi Escale et ses officines clientes', 2, 'location.href=\'../../escale/v2/index.html\''));
         }
-        pilHtml = '<div class="v2-ray-lbl lch-anim" style="--i:' + (lchI++) + '">Les rayons</div>' +
-          rayon('Le terrain', SC_TERRAIN, terrain) +
-          rayon('Les produits', SC_PRODUITS, [
-            tuileChoix('cat', 'Produits', 'Catalogue, fiches, biosimilaires, parapharmacie', [
-              { t: 'Catalogue produits', d: 'Prix et stock des 7 établissements', ico: 'cat', k: 'produits' },
-              { t: 'Fiches PDF', d: 'Les fiches produits à envoyer', ico: 'fiche', k: 'fiches' },
-              { t: 'Biosimilaires', d: 'Les biosimilaires et leurs références', ico: 'pill', k: 'biosimilaires' },
-              { t: 'Offilog', d: 'La centrale parapharmacie', ico: 'cart', k: 'offilog' }]),
-            tuile('appro', 'cart', 'Appro Intégral', 'Couverture de stock et ruptures')
-          ]) +
-          rayon('Piloter &amp; informer', SC_PILOTER, [
+        var grille = [
+          porte('hv-grand', 'pharma', 'officines', 'Officines', 'La fiche de chaque client et prospect', 1),
+          // La tournée se compose DANS la carte (« Ajouter à ma tournée ») : la page
+          // autonome v2-tournee.js n'est plus chargée depuis le 11/09 (redondante).
+          porte('hv-grand', 'carte', 'carte', 'La carte', 'Clients, prospects et ta tournée', 2),
+          porte('hv-grand', 'produits', 'catalogue', 'Catalogue produits', 'Prix et stock des 7 établissements', 3),
+          porte('hv-grand', 'pilotage', 'pilotage', 'Pilotage', 'CA, marge et objectifs', 4)
+        ].join('');
+        pilHtml = HV_DEFS + '<div class="hv-titre hv-anim" style="--i:' + (hvI++) + '">Tous les jours</div>' +
+          porte('hv-todo hv-anim', 'todo', 'todo', 'To do list', 'Tes rendez-vous à demander, remerciements, ouvertures', 0, '', true, hvI++) +
+          (grille ? '<div class="hv-grille hv-anim" style="--i:' + (hvI++) + '">' + grille + '</div>' : '') +
+          '<div class="hv-titre hv-anim" style="--i:0">Les rayons</div>' +
+          '<div class="hv-rayons">' +
+            rayon('Le terrain', 'Le terrain', 'et 3 objets plus haut', terrain) +
+            rayon('Les produits', 'Les produits', 'et le Catalogue plus haut', [
+              ligne('biosimilaires', 'biosimilaires', 'Biosimilaires', 'Les biosimilaires et leurs références', 0),
+              ligne('offilog', 'offilog', 'Offilog', 'La centrale parapharmacie', 1),
+              ligne('appro', 'appro', 'Appro Intégral', 'Couverture de stock et ruptures', 2)
+            ]) +
+            rayon('Piloter &amp; informer', 'Piloter et informer', 'et le Pilotage plus haut', [
+              ligne('infos', 'infos', 'Infos du matin', 'Le brief du jour', 0),
+              ligne('concurrents', 'concurrents', 'Concurrents', 'Ce que font les autres', 1),
+              ligne('remontees', 'remontees', 'Remontées', 'Le mur d\'idées de l\'équipe', 2)
+            ]) +
+            rayon('Vendre &amp; convaincre', 'Vendre et convaincre', '', [
+              ligne('marketing', 'marketing', 'Marketing', 'Supports, sélections, LinkedIn', 0)
+            ]) +
+          '</div>';
+
+        // ── En cours de développement ─────────────────────────────────────
+        // Ce qui n'est pas fini ou sert rarement descend ici, en retrait, même
+        // pastille pour tous (Will, 23 et 24/09/2026) : Rendez-vous, JARVIS
+        // Academy, puis Réforme 2027, Fiches PDF, L'Argument, Audit marge et
+        // Présentation Intégral. JARVIS Design n'a plus sa place sur le CRM.
+        // ⚠️ CE DÉPÔT EST PUBLIC : aucun code d'accès n'est écrit ici. JARVIS
+        // Academy est protégée par un code partagé qui se demande de vive voix.
+        // Outil INTERNE Intégral (bêta) : jamais montré au groupement — le
+        // 04/09/2026, Will : « ils n'ont pas accès à jarvis academy ni jarvis design ! »
+        function pic(d) { return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' + d + '</svg>'; }
+        var PIC = {
+          cal: '<rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/>',
+          cap: '<path d="M2 9 12 4l10 5-10 5-10-5z"/><path d="M6 11.5V17c0 1.5 3 3 6 3s6-1.5 6-3v-5.5"/><line x1="22" y1="9" x2="22" y2="15"/>',
+          reforme: '<rect x="5" y="3" width="12" height="17" rx="1.5"/><line x1="8" y1="8" x2="14" y2="8"/><line x1="8" y1="12" x2="14" y2="12"/><circle cx="17" cy="17" r="4"/><path d="M15.3 17l1.1 1.1 2.1-2.3"/>',
+          fiche: '<path d="M6 3h7l4 4v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M13 3v4a1 1 0 0 0 1 1h4"/><line x1="8" y1="13" x2="15" y2="13"/><line x1="8" y1="16" x2="12" y2="16"/>',
+          argument: '<line x1="4" y1="20" x2="20" y2="20"/><rect x="6" y="14" width="3" height="6" rx="0.5"/><rect x="11" y="10" width="3" height="10" rx="0.5"/><rect x="16" y="6" width="3" height="14" rx="0.5"/>',
+          audit: '<circle cx="10" cy="10" r="6"/><line x1="7.5" y1="12.5" x2="12.5" y2="7.5"/><line x1="14.3" y1="14.3" x2="20" y2="20"/><circle cx="8" cy="8" r="0.9" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="0.9" fill="currentColor" stroke="none"/>',
+          presentation: '<rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M7 12l3-3 2 2 4-4"/><line x1="12" y1="16" x2="12" y2="20"/><line x1="8" y1="20" x2="16" y2="20"/>'
+        };
+        function enc(k, ico, nom, js) {
+          if (!V2.pages[k]) return '';
+          return '<a class="v2-enc-l" role="link" tabindex="0" onclick="' + (js || goJs(k)) + '" onkeydown="if(event.key===\'Enter\')this.click()">' + pic(PIC[ico]) + esc(nom) + '</a>';
+        }
+        pilHtml +=
+          '<div class="v2-enc-chip hv-anim" style="--i:0">En cours de développement</div>' +
+          '<div class="v2-enc hv-anim" style="--i:1"><div class="v2-enc-liens">' +
+            enc('rdv', 'cal', 'Rendez-vous') +
+            '<a class="v2-enc-l" href="https://jarvis-academy-fr.vercel.app/" target="_blank" rel="noopener">' + pic(PIC.cap) + 'JARVIS Academy <span class="fl">↗</span></a>' +
             // Réforme 2027 : document privé, adresse signée valable 1 h, jamais servi
             // par le dépôt public. Le fichier porte du CA réseau, il reste dans Supabase.
-            tuileChoix('pilo', 'Pilotage', 'Tes chiffres et la réforme 2027', [
-              { t: 'Pilotage', d: 'CA, marge et objectifs', ico: 'pilo', k: 'pilotage' },
-              { t: 'Réforme 2027', d: 'Ce que la réforme change, en document', ico: 'fiche', k: 'pilotage', js: 'V2.ouvrirDocProtege(\'reforme2027\')' }]),
-            tuileChoix('spark', 'Infos & veille', 'Le brief du jour et les concurrents', [
-              { t: 'Infos du matin', d: 'Le brief du jour', ico: 'spark', k: 'infos' },
-              { t: 'Concurrents', d: 'Ce que font les autres', ico: 'search', k: 'concurrents' }]),
-            tuile('remontees', 'plus', 'Remontées', 'Le mur d\'idées de l\'équipe')
-          ]) +
-          rayon('Vendre &amp; convaincre', SC_VENDRE, [
-            tuile('marketing', 'fiche', 'Marketing', 'Supports, sélections, LinkedIn'),
-            tuileChoix('opp', 'Convaincre un prospect', 'Les outils pour convaincre au comptoir', [
-              { t: 'L\'Argument', d: 'Les chiffres qui convainquent', ico: 'opp', k: 'argument' },
-              { t: 'Présentation Intégral', d: 'Le pitch à montrer au comptoir', ico: 'pharma', k: 'presentation' },
-              { t: 'Missions rémunérées', d: 'Ce que l\'officine peut gagner', ico: 'euro', k: 'missions' }]),
-            (window.V2_BRAND && window.V2_BRAND.opso) ? '' : tuile('audit', 'euro', 'Audit marge', 'L\'abandon de marge, officine par officine')
-          ]);
+            enc('pilotage', 'reforme', 'Réforme 2027', 'V2.ouvrirDocProtege(\'reforme2027\')') +
+            enc('fiches', 'fiche', 'Fiches PDF') +
+            enc('argument', 'argument', 'L\'Argument') +
+            enc('audit', 'audit', 'Audit marge') +
+            enc('presentation', 'presentation', 'Présentation Intégral') +
+          '</div>' +
+          '<p class="v2-enc-n">Le code d\'accès de JARVIS Academy se demande à Will — il n\'est écrit nulle part.</p></div>';
       }
-
-      // ── En cours de développement ─────────────────────────────────────
-      // Ce qui n'est pas fini descend ici, en retrait (Will, 23/09/2026) :
-      // Rendez-vous (« en cours de dev donc pas prioritaire ») et les deux apps
-      // sœurs en bêta.
-      // ⚠️ CE DÉPÔT EST PUBLIC : aucun code d'accès n'est écrit ici. Les deux
-      // apps sont protégées par un code partagé qui se demande de vive voix.
-      // ⚠️ TROIS ADRESSES EXISTENT POUR JARVIS DESIGN, une seule convient :
-      //  · « jarvis-design.vercel.app » APPARTIENT À QUELQU'UN D'AUTRE — elle
-      //    sert un 404 d'une app tierce de 470 octets. Même piège que
-      //    « allez-app.vercel.app ». À ne jamais écrire.
-      //  · « jarvis-design-willmorel49-coders-projects.vercel.app » marche,
-      //    mais expose le nom de l'équipe Vercel — et ce dépôt est PUBLIC.
-      //  · « jarvis-design-delta.vercel.app » : celle-ci, À LA RACINE.
-      // ⚠️ LE CHEMIN A CHANGÉ LE 18/08/2026. Le catalogue vivait sous « /app/ » ;
-      //    le projet sert désormais ce dossier COMME racine (`outputDirectory`),
-      //    donc « /app/ » rend un 404 et la racine sert le catalogue.
-      // Outils INTERNES Intégral (bêta) : jamais montrés au groupement — le
-      // 04/09/2026, Will : « ils n'ont pas accès à jarvis academy ni jarvis design ! »
-      if (!(window.V2_BRAND && (window.V2_BRAND.opso || window.V2_BRAND.escale))) pilHtml +=
-        '<div class="v2-enc-chip lch-anim" style="--i:' + (lchI++) + '">En cours de développement</div>' +
-        '<div class="v2-enc lch-anim" style="--i:' + (lchI++) + '"><div class="v2-enc-liens">' +
-          (V2.pages.rdv ? '<a class="v2-enc-l" onclick="V2.go(\'rdv\')">' + ICO('cal', 18) + 'Rendez-vous</a>' : '') +
-          '<a class="v2-enc-l" href="https://jarvis-academy-fr.vercel.app/" target="_blank" rel="noopener">' + ICO('spark', 18) + 'JARVIS Academy <span class="fl">↗</span></a>' +
-          '<a class="v2-enc-l" href="https://jarvis-design-delta.vercel.app/" target="_blank" rel="noopener">' + ICO('grid', 18) + 'JARVIS Design <span class="fl">↗</span></a>' +
-        '</div>' +
-        '<p class="v2-enc-n">Outils en cours de développement, ouverts à qui veut les essayer. ' +
-        'Le code d\'accès des deux apps se demande à Will — il n\'est écrit nulle part.</p></div>';
 
       var firstName = (V2.user && V2.user.name ? V2.user.name.split(' ')[0] : 'Will');
       // Salutation par moment de la journée : réservée à l'app JARVIS pour ne
@@ -1477,7 +1538,7 @@
           (V2.todo ? V2.todo.cardHtml() : '') +
           pilHtml +
         '</div>';
-
+      if (jouerAnim) hvReveler(root);
     }
   };
 
