@@ -463,6 +463,14 @@
           }).join('') + '</ol></section>';
       }
 
+      /* ──────────── LES CONCURRENTS ────────────
+         Will, 24/09/2026 : les infos concurrents, jusque-là dans la feature
+         « Concurrents », se lisent ici. Même bloc (v2-grossistes.js) : faits
+         vérifiés, annonces officielles, presse — rempli après le rendu. */
+      html += '<section class="inf-conc" id="infos-concurrents">' +
+        '<div class="mur-rub"><b>Les concurrents</b><span>faits vérifiés, annonces officielles et presse</span></div>' +
+        '<div id="inf-conc-host"></div></section>';
+
       /* ════════════════ LE MUR ════════════════ */
       if (mur.length) {
         var compte = {};
@@ -536,6 +544,15 @@
       html += '</div>';
       root.innerHTML = html;
       markSeen();
+      var concHost = document.getElementById('inf-conc-host');
+      if (concHost && V2.grossistesCorps) V2.grossistesCorps(concHost, 'actu');
+      // venu de « Concurrents » : descendre au bloc, APRÈS la remise en haut que fait la navigation
+      if (V2.route && V2.route.param === 'concurrents') {
+        setTimeout(function () {
+          var concSec = document.getElementById('infos-concurrents');
+          if (concSec) concSec.scrollIntoView({ block: 'start' });
+        }, 120);
+      }
 
       if (QUERY) {
         var inp = root.querySelector('.brf-search input');
@@ -736,6 +753,10 @@
       '.inf2 .mur-rub{display:flex;align-items:baseline;gap:var(--sp-3);flex-wrap:wrap;padding-bottom:var(--sp-3);border-bottom:1.5px solid var(--ip-ink);margin-bottom:var(--sp-4)}',
       '.inf2 .mur-rub b{font-family:var(--serif);font-weight:600;font-size:24px;letter-spacing:-.02em;color:var(--ip-ink)}',
       '.inf2 .mur-rub span{font:600 11px/1 var(--mono);letter-spacing:.11em;text-transform:uppercase;color:var(--muted-2)}',
+      // bloc « Les concurrents » : le fil est long (jusqu'à 120 articles) → boîte à défilement, le mur reste visible dessous
+      '.inf2 .inf-conc{margin:var(--sp-6) 0;scroll-margin-top:72px}',
+      '.inf2 .inf-conc .gr-wrap{padding:0}',
+      '.inf2 .inf-conc .gr-actulist{max-height:480px;overflow-y:auto;overscroll-behavior:contain}',
       '.inf2 .mur-sec{margin-bottom:var(--section-gap)}',
 
       /* ══════════ COUVERTURE ══════════ */

@@ -63,7 +63,7 @@
       return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: '2-digit' });
     } catch (e) { return (iso || '').slice(0, 10); }
   }
-  var TAGNAME = { '': 'Secteur', 'ocp': 'Phoenix OCP', 'cerp-rouen': 'CERP Rouen', 'cerp-rrm': 'CERP RRM', 'alliance': 'Alliance Healthcare', 'phoenix': 'Phoenix', 'sagitta': 'Sagitta', 'cophana': 'Cophana', 'welcoop': 'Welcoop', 'giphar': 'Giphar' };
+  var TAGNAME = { '': 'Secteur', 'ocp': 'Phoenix OCP', 'cerp-rouen': 'CERP Rouen', 'cerp-rrm': 'CERP RRM', 'alliance': 'Alliance Healthcare', 'phoenix': 'Phoenix', 'sagitta': 'Sagitta', 'cophana': 'Cophana', 'welcoop': 'Welcoop', 'giphar': 'Giphar', 'drapier': 'Groupe Drapier', 'aredis': 'Aredis', 'rbp': 'RBP Pharma' };
 
   // ── ANNUAIRE PAR GROUPE (niveau 0 marché → 1 groupes → 2 membres/mère) ──
   function groupes() { var d = DATA(); return (d && d.groupes) || []; }
@@ -282,7 +282,8 @@
   }
 
   // ── actions ─────────────────────────────────────────────────────
-  V2.grossisteTab = function (v) { selId = null; V2.go('concurrents', v === 'actu' ? 'actu' : 'acteurs'); };
+  // 24/09/2026 — Will : l'actualité des concurrents se lit dans « Infos du jour ».
+  V2.grossisteTab = function (v) { selId = null; if (v === 'actu') V2.go('infos', 'concurrents'); else V2.go('concurrents', 'acteurs'); };
   // Depuis un catalogue de prix : ouvrir directement la fiche du grossiste.
   V2.grossisteVoir = function (id) { selId = id; V2.go('concurrents', 'acteurs'); };
   V2.grossisteOpen = function (id) { selId = id; V2.render(); };

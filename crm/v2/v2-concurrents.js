@@ -658,7 +658,7 @@
   var ESPACES = [
     { k: 'acteurs', q: 'Qui sont-ils ?', t: 'Les grossistes', d: 'Les grossistes-répartiteurs de France : leur poids sur le marché, leurs groupes, leurs enseignes, leurs forces et faiblesses — et tes remontées terrain.', go: 'Voir les grossistes' },
     { k: 'prix', q: 'À quel prix ?', t: 'Leurs prix', d: 'Leurs catalogues, référence par référence : Sagitta, OCP, Pharmazon, Cooper, Farmaline… avec notre net en face pour savoir qui est le moins cher.', go: 'Comparer les prix' },
-    { k: 'actu', q: 'Quoi de neuf ?', t: 'L\'actualité', d: 'Ce que la presse et les autorités disent des grossistes et du secteur, mis à jour chaque jour.', go: 'Lire l\'actualité' }
+    { k: 'actu', q: 'Quoi de neuf ?', t: 'L\'actualité', d: 'Ce que la presse et les annonces officielles disent des grossistes, mis à jour chaque jour. Se lit dans Infos du jour.', go: 'Lire dans Infos du jour' }
   ];
   // Aller vers un espace. « Les grossistes » ramène à la liste même depuis une fiche.
   function allerA(k) {
@@ -812,6 +812,8 @@
       // Sans paramètre : l'accueil (trois portes + recherche produit).
       // acteurs / actu : v2-grossistes.js. Une source (ou « prix ») : son dossier.
       var p = param || '';
+      // 24/09/2026 — l'actualité a rejoint « Infos du jour » : les anciens favoris y mènent.
+      if (p === 'actu') { V2.route = { name: 'infos', param: 'concurrents' }; try { history.replaceState(null, '', '#infos/concurrents'); } catch (e) {} V2.render(); return; }
       var espace = (p === 'acteurs' || p === 'actu') ? p : ((SRC[p] || p === 'prix') ? 'prix' : 'accueil');
       var src = espace === 'prix' ? (SRC[p] ? p : ORDRE[0]) : '';
       if (src !== S.src) { S.src = src; S.q = ''; S.chip = ''; S.sort = ''; S.desc = false; }
