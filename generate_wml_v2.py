@@ -227,8 +227,8 @@ SOURCES = [
     ('Ingrid M.', 'IMM'),    # Ingrid Mazerm
     ('Pauline A.', 'PA'),    # Pauline Attali
     ('Pascale P.', 'PPO'),   # Pascale Prieto — réintégrée le 23/09/2026 (demande de Will)
-    ('Pascale G.', 'PG'),    # Pascale Gracia — réintégrée le 23/09/2026
-    ('Grégoire', 'GM'),      # Grégoire Méric — réintégré le 23/09/2026
+    ('Pascal G.', 'PG'),     # Pascal Gracia — réintégré le 23/09/2026 ; « Pascale G. » corrigé le 24/09/2026 (Pascale Prieto)
+    ('Christophe', 'GM'),    # réintégré le 23/09/2026 ; « Grégoire » corrigé en Christophe le 24/09/2026 (Pascale Prieto)
     # Escale Pharma (établissement du groupe, région parisienne) — fichier
     # d'Alexandre Lovy déposé le 11/09/2026 ; prénoms lus dans sa liste clients
     ('Guy', 'GUY'),          # Escale Pharma
