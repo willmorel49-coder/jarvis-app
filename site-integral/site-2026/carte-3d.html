@@ -60,7 +60,9 @@ body{
   border:2px solid rgba(159,182,255,.2);border-top-color:#5C97FF;animation:spin 1s linear infinite}
 .map3d__load span{font-family:"Inter",sans-serif;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#9AA6C4}
 @keyframes spin{to{transform:rotate(360deg)}}
-.map3d__info{position:absolute;left:14px;bottom:14px;z-index:6;width:min(340px,calc(100% - 28px));
+.mi__photo{display:block;width:calc(100% + 30px);margin:-13px -15px 12px;aspect-ratio:16/9;object-fit:cover;border-radius:13px 13px 0 0}
+.mi__photo[hidden]{display:none}
+.map3d__info{position:absolute;overflow:hidden;left:14px;bottom:14px;z-index:6;width:min(340px,calc(100% - 28px));
   background:rgba(7,12,28,.94);border:1px solid rgba(120,150,255,.30);border-radius:14px;
   padding:13px 15px;opacity:0;transform:translateY(10px);pointer-events:none;
   transition:opacity .3s ease,transform .35s cubic-bezier(.22,1,.36,1);box-shadow:0 22px 55px -22px rgba(0,0,0,.85)}
@@ -144,6 +146,7 @@ body{
       <div class="map3d__labels" id="lbls" aria-hidden="true"></div>
       <div class="map3d__badge"><span class="dot"></span>Réseau Intégral<span class="badge-full"> — huit agences et un partenaire</span></div>
       <div class="map3d__info" id="mapInfo" aria-hidden="true">
+        <img class="mi__photo" id="miPhoto" alt="" hidden>
         <span class="mi__type" id="miType">Agence Intégral</span>
         <div class="mi__name" id="miName">—</div>
         <div class="mi__city" id="miCity">—</div>
@@ -508,6 +511,8 @@ body{
     if(m.tel)  html += '<a class="mi__btn mi__btn--tel" href="tel:'+telHref(m.tel)+'">Appeler<small>'+m.tel+'</small></a>';
     if(!html)  html  = '<a class="mi__btn mi__btn--tel" href="mailto:contact@integralpharma.fr?subject='+encodeURIComponent(m.n)+'">Écrire au groupe<small>contact@integralpharma.fr</small></a>';
     miActions.innerHTML = html;
+    var ph=document.getElementById('miPhoto');
+    if(ph){ ph.hidden=true; ph.onload=function(){ ph.hidden=false; }; ph.onerror=function(){ ph.hidden=true; }; ph.alt='Illustration — '+m.n; ph.src='../assets/agences/agence-'+(i+1)+'.jpg'; }
     miActions.style.display = 'flex';
     infoEl.classList.add('on'); infoEl.setAttribute('aria-hidden','false');
   }
