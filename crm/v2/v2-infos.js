@@ -24,6 +24,11 @@
    ⚠️ brief-jour.json est PUBLIC (dépôt GitHub Pages) : il ne contient que de
       l'information publique. Tout ce qui est prix / remise / stock Intégral est
       calculé ici, dans le navigateur, à partir du catalogue déjà chargé.
+
+   25/09/2026 — nouveau bloc « Dans ton secteur », juste après la tête : les
+   annonces Bodacc (generate_bodacc_secteur.py → bodacc-secteur.json, public)
+   sur les officines de ses départements, avec étiquette client/prospect
+   calculée ici (jamais publiée) et bascule de secteur réservée à la direction.
    ═══════════════════════════════════════════════════════════════════ */
 (function () {
   // 03/09/2026 — un lien de flux scrapé ne doit jamais porter un schéma
@@ -42,6 +47,7 @@
   function norm(s) { return String(s == null ? '' : s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
 
   var BRIEF = null, ARCHIVE = null, LOADED = false, FAILED = false;
+  var SECTEUR = null;   // bodacc-secteur.json — jamais obligatoire, jamais bloquant
   var TOUS = [];        // tous les articles à plat : le panneau de lecture s'y réfère par rang
   var OUVERT = -1;      // l'article actuellement ouvert dans le panneau (-1 = aucun)
 
@@ -100,8 +106,8 @@
         .catch(function (e) { if (obligatoire) throw e; return null; });
     };
     try {
-      Promise.all([get('brief-jour.json', true), get('brief-archive.json', false)])
-        .then(function (res) { BRIEF = res[0]; ARCHIVE = res[1]; LOADED = true; cb(); })
+      Promise.all([get('brief-jour.json', true), get('brief-archive.json', false), get('bodacc-secteur.json', false)])
+        .then(function (res) { BRIEF = res[0]; ARCHIVE = res[1]; SECTEUR = res[2]; LOADED = true; cb(); })
         .catch(function () { FAILED = true; cb(); });
     } catch (e) { FAILED = true; cb(); }
   }
@@ -219,6 +225,347 @@
     // plusieurs clients compatibles : on ne tranche que si UN SEUL est nettement devant
     candidats.sort(function (a, b) { return b.n - a.n; });
     return (candidats[0].n > candidats[1].n) ? candidats[0].p : null;
+  }
+
+  /* ════════════════ « DANS TON SECTEUR » (Bodacc) ════════════════
+     Maquette validée par Will le 25/09/2026. Le robot generate_bodacc_secteur.py
+     dépose chaque matin crm/v2/bodacc-secteur.json (annonces légales publiques,
+     5 familles). Tout le reste — secteur du commercial, étiquette client/prospect,
+     tri — est calculé ICI, dans le navigateur, à partir de V2.pharmacies (jamais
+     publié). Le fichier ne doit JAMAIS écraser le fonctionnement du reste de la
+     page : son absence, son vide, ou une erreur de lecture ne font que masquer
+     ce seul bloc. */
+  var SCT_FAM = {
+    cession:   { l: 'Ventes', l1: 'Vente de l’officine', c: '--ip-blue', ct: '--ip-blue',
+      ico: '<path d="M15 7a4 4 0 1 1-4.9 3.9L3 18v3h3v-2h2v-2h2l1.1-1.1A4 4 0 0 1 15 7z"/><circle cx="16" cy="8" r="1"/>' },
+    procedure: { l: 'Redressements', l1: 'Procédure au tribunal', c: '--c-rose', ct: '--c-rose-txt',
+      ico: '<path d="M12 3l9 16H3z"/><path d="M12 10v4"/><path d="M12 17h.01"/>' },
+    creation:  { l: 'Nouvelles sociétés', l1: 'Nouvelle société', c: '--c-opp', ct: '--c-mint-txt',
+      ico: '<path d="M12 5v14M5 12h14"/>' },
+    fermeture: { l: 'Fermetures', l1: 'Fermeture', c: '--c-amber', ct: '--c-amber-txt',
+      ico: '<path d="M4 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16"/><path d="M2 21h20"/><path d="M11 12h.01"/><path d="M19 8l3 3-3 3"/>' },
+    dirigeant: { l: 'Nouveaux dirigeants', l1: 'Nouveau dirigeant', c: '--c-cat', ct: '--c-cat',
+      ico: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>' }
+  };
+  var SCT_ORDRE = ['cession', 'procedure', 'creation', 'fermeture', 'dirigeant'];
+  var SCT_TAG_L = { client: 'Ton client', prospect: 'Ton prospect', hors: 'Hors fichier' };
+  // table INSEE des départements — pour ÉTIQUETER un secteur par noms, jamais par
+  // le prénom d'un membre de l'équipe (règle ferme, cf. AGENTS.md).
+  var SCT_DEPNOMS = (function () {
+    var s = "01:Ain,02:Aisne,03:Allier,04:Alpes-de-Haute-Provence,05:Hautes-Alpes,06:Alpes-Maritimes,07:Ardèche,08:Ardennes,09:Ariège,10:Aube,11:Aude,12:Aveyron,13:Bouches-du-Rhône,14:Calvados,15:Cantal,16:Charente,17:Charente-Maritime,18:Cher,19:Corrèze,2A:Corse-du-Sud,2B:Haute-Corse,21:Côte-d'Or,22:Côtes-d'Armor,23:Creuse,24:Dordogne,25:Doubs,26:Drôme,27:Eure,28:Eure-et-Loir,29:Finistère,30:Gard,31:Haute-Garonne,32:Gers,33:Gironde,34:Hérault,35:Ille-et-Vilaine,36:Indre,37:Indre-et-Loire,38:Isère,39:Jura,40:Landes,41:Loir-et-Cher,42:Loire,43:Haute-Loire,44:Loire-Atlantique,45:Loiret,46:Lot,47:Lot-et-Garonne,48:Lozère,49:Maine-et-Loire,50:Manche,51:Marne,52:Haute-Marne,53:Mayenne,54:Meurthe-et-Moselle,55:Meuse,56:Morbihan,57:Moselle,58:Nièvre,59:Nord,60:Oise,61:Orne,62:Pas-de-Calais,63:Puy-de-Dôme,64:Pyrénées-Atlantiques,65:Hautes-Pyrénées,66:Pyrénées-Orientales,67:Bas-Rhin,68:Haut-Rhin,69:Rhône,70:Haute-Saône,71:Saône-et-Loire,72:Sarthe,73:Savoie,74:Haute-Savoie,75:Paris,76:Seine-Maritime,77:Seine-et-Marne,78:Yvelines,79:Deux-Sèvres,80:Somme,81:Tarn,82:Tarn-et-Garonne,83:Var,84:Vaucluse,85:Vendée,86:Vienne,87:Haute-Vienne,88:Vosges,89:Yonne,90:Territoire de Belfort,91:Essonne,92:Hauts-de-Seine,93:Seine-Saint-Denis,94:Val-de-Marne,95:Val-d'Oise,971:Guadeloupe,972:Martinique,973:Guyane,974:La Réunion,976:Mayotte";
+    var m = {}; s.split(',').forEach(function (p) { var kv = p.split(':'); m[kv[0]] = kv[1]; }); return m;
+  })();
+  function sctSvg(p, s) { return '<svg width="' + (s || 18) + '" height="' + (s || 18) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + p + '</svg>'; }
+  var SCT_PETIT = { de: 1, du: 1, des: 1, la: 1, le: 1, les: 1, et: 1, sur: 1, en: 1, aux: 1, au: 1 };
+  function sctJoli(s) {
+    return String(s || '').toLowerCase().split(/(\s+|-)/).map(function (w, i) {
+      if (/^\s+$|^-$/.test(w) || !w) return w;
+      if (/^(selarl|selas|sarl|snc|spfpl|sas|eurl|spfplas|sa)$/.test(w)) return w.toUpperCase();
+      var m = /^([dl]')(.*)$/.exec(w); if (m) return m[1] + m[2].charAt(0).toUpperCase() + m[2].slice(1);
+      if (i > 0 && SCT_PETIT[w]) return w;
+      return w.charAt(0).toUpperCase() + w.slice(1);
+    }).join('');
+  }
+  function sctJours(d) { try { return Math.round((new Date(new Date().toISOString().slice(0, 10) + 'T00:00:00') - new Date(d + 'T00:00:00')) / 864e5); } catch (e) { return 9999; } }
+  function sctQuand(d) {
+    var n = sctJours(d);
+    return n <= 0 ? 'aujourd’hui' : n === 1 ? 'hier' : n < 7 ? 'il y a ' + n + ' j' : n < 14 ? 'il y a 1 sem.' : n < 60 ? 'il y a ' + Math.floor(n / 7) + ' sem.' : 'il y a ' + Math.floor(n / 30) + ' mois';
+  }
+  function sctDateLongue(d) { try { return new Date(d + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }); } catch (e) { return d; } }
+  // ⚠️ le CP ne dit pas exactement le département pour la Corse et les DOM : on
+  // applique la même convention que le champ `numerodepartement` du Bodacc.
+  function sctDepDeCP(cp) {
+    cp = String(cp || '').trim();
+    if (!/^\d{5}$/.test(cp)) return '';
+    if (cp.slice(0, 2) === '20') return parseInt(cp, 10) < 20200 ? '2A' : '2B';
+    if (/^97[1234]|^976/.test(cp)) return cp.slice(0, 3);
+    return cp.slice(0, 2);
+  }
+
+  var SCT_LU_KEY = 'jarvis_secteur_lu_v1';
+  var SCT_LU = (function () { try { return JSON.parse(localStorage.getItem(SCT_LU_KEY) || '{}'); } catch (e) { return {}; } })();
+  function sctSaveLu() { try { localStorage.setItem(SCT_LU_KEY, JSON.stringify(SCT_LU)); } catch (e) {} }
+
+  var SCT_S = { scope: null, autre: -1, per: 30, off: {}, cap: 12 };
+  var SCT_TOUS = [];     // liste à plat affichée, pour retrouver un item par id au clic
+  var SCT_OUVERT = null; // id de l'annonce ouverte dans le panneau (null = fermé)
+
+  function sctEstDirection() { return !!(V2.user && V2.user.voitTousReel); }
+
+  /* Ses départements : ceux où V2.pharmacies (WML_OFFICINES) lui donne au moins
+     3 officines. Rien de tout ça n'est écrit en dur — recalculé à chaque visite. */
+  function sctMonSecteur() {
+    var mes = (V2.mesComms && V2.mesComms()) || [];
+    if (!mes.length) return null;
+    var liste = (window.V2 && V2.pharmacies) || [];
+    var cnt = {};
+    liste.forEach(function (p) {
+      var comms = p.comms || [];
+      if (!comms.some(function (c) { return mes.indexOf(c) >= 0; })) return;
+      var d = sctDepDeCP(p.cp);
+      if (d) cnt[d] = (cnt[d] || 0) + 1;
+    });
+    var deps = Object.keys(cnt).filter(function (d) { return cnt[d] >= 3; });
+    return deps.length ? deps : null;
+  }
+
+  /* Les secteurs des AUTRES commerciaux — réservé à la direction. Étiquetés par
+     départements, JAMAIS par prénom (aucun de ces libellés ne doit porter un nom). */
+  function sctAutresSecteurs() {
+    var liste = (window.V2 && V2.pharmacies) || [];
+    var moi = (V2.mesComms && V2.mesComms()) || [];
+    var parComm = {};
+    liste.forEach(function (p) {
+      (p.comms || []).forEach(function (c) {
+        if (!c || moi.indexOf(c) >= 0 || V2.ESCALE_COMMS && V2.ESCALE_COMMS.indexOf(c) >= 0) return;
+        var d = sctDepDeCP(p.cp);
+        if (!d) return;
+        parComm[c] = parComm[c] || {};
+        parComm[c][d] = (parComm[c][d] || 0) + 1;
+      });
+    });
+    var out = [];
+    Object.keys(parComm).forEach(function (c) {
+      var deps = Object.keys(parComm[c]).filter(function (d) { return parComm[c][d] >= 3; });
+      if (!deps.length) return;
+      var noms = deps.map(function (d) { return SCT_DEPNOMS[d] || d; }).sort();
+      out.push({ l: noms.join(' · '), deps: deps });
+    });
+    // secteurs identiques regroupés (deux commerciaux sur le même secteur = une seule entrée)
+    var vu = {}, res = [];
+    out.forEach(function (o) { var k = o.deps.slice().sort().join(','); if (vu[k]) return; vu[k] = 1; res.push(o); });
+    res.sort(function (a, b) { return a.l.localeCompare(b.l, 'fr'); });
+    return res;
+  }
+
+  function sctDeps() {
+    if (SCT_S.scope === 'fr') return null;
+    if (SCT_S.scope === 'autre') { var a = sctAutresSecteurs()[SCT_S.autre]; return a ? a.deps : null; }
+    return sctMonSecteur();
+  }
+
+  /* « Ton client / Ton prospect / Hors fichier » — calculé ICI, jamais publié.
+     Client : réutilise clientTouche() (nom + ville, un seul candidat compatible).
+     Prospect : uniquement si la base nationale (PHARMA_FR) est DÉJÀ chargée par
+     ailleurs — on ne déclenche jamais son chargement pour ce seul bloc. */
+  function sctMatchProspect(nom, ville) {
+    if (!(window.PHARMA_FR && window.PHARMA_FR.p)) return null;
+    var mots = motsUtiles(nom); if (!mots.length) return null;
+    var v = norm(ville || '').replace(/[^a-z0-9]+/g, ' ').trim();
+    var P = window.PHARMA_FR.p, cands = [];
+    for (var i = 0; i < P.length; i++) {
+      var p = P[i], nomP = norm(p[6] || '').replace(/[^a-z0-9]+/g, ' ');
+      if (!nomP.trim()) continue;
+      var communs = 0;
+      for (var k = 0; k < mots.length; k++) if (nomP.indexOf(mots[k]) >= 0) communs++;
+      if (!communs) continue;
+      var villeP = norm(p[7] || '').replace(/[^a-z0-9]+/g, ' ');
+      if (v && villeP.indexOf(v) < 0) continue;
+      cands.push({ p: p, n: communs });
+    }
+    if (!cands.length) return null;
+    if (cands.length === 1) return cands[0].p;
+    cands.sort(function (a, b) { return b.n - a.n; });
+    return (cands[0].n > cands[1].n) ? cands[0].p : null;
+  }
+  function sctTag(e) {
+    var cli = clientTouche(e.nom, e.ville);
+    if (cli) return { t: 'client', ficheId: cli.id };
+    var pr = sctMatchProspect(e.nom, e.ville);
+    if (pr) return { t: 'prospect', ficheId: String(pr[13] || '') };
+    return { t: 'hors', ficheId: '' };
+  }
+  function sctGeste(e, t) {
+    switch (e.f) {
+      case 'cession': return t === 'client' ? 'Ton client change de mains : rencontrer le repreneur avant la concurrence.' : 'Nouveau titulaire : prendre rendez-vous dans le mois, il choisit ses fournisseurs maintenant.';
+      case 'procedure': return t === 'client' ? 'Prudence sur l’encours : faire le point avec la direction avant la prochaine commande.' : 'Officine fragilisée : ses voisines peuvent récupérer une partie de sa patientèle.';
+      case 'creation': return /SPFPL|HOLDING/i.test(e.nom) ? 'Des pharmaciens montent une holding : un rachat se prépare dans le secteur.' : 'Nouvelle société d’officine : une reprise ou une ouverture se prépare, se présenter tôt.';
+      case 'fermeture': return 'Ses patients vont se répartir chez les voisines : appeler les officines les plus proches.';
+      default: return t === 'client' ? 'Nouvel interlocuteur chez ton client : se présenter et reprendre le fil.' : 'Nouvel interlocuteur : bonne occasion de se présenter.';
+    }
+  }
+
+  function sctBase() {
+    var d = sctDeps(), ev = (SECTEUR && SECTEUR.ev) || [];
+    return ev.filter(function (e) { return (!d || d.indexOf(e.dep) >= 0) && sctJours(e.d) < SCT_S.per; });
+  }
+
+  V2.secteurScope = function (s) {
+    SCT_S.scope = s; SCT_S.autre = -1; SCT_S.cap = 12;
+    if (V2.route && V2.route.name === 'infos') V2.render();
+  };
+  V2.secteurAutre = function (sel) {
+    if (sel.value === '') return;
+    SCT_S.scope = 'autre'; SCT_S.autre = +sel.value; SCT_S.cap = 12;
+    if (V2.route && V2.route.name === 'infos') V2.render();
+  };
+  V2.secteurPeriode = function (n) {
+    SCT_S.per = +n; SCT_S.cap = 12;
+    if (V2.route && V2.route.name === 'infos') V2.render();
+  };
+  V2.secteurFam = function (f) {
+    SCT_S.off[f] = !SCT_S.off[f]; SCT_S.cap = 12;
+    if (V2.route && V2.route.name === 'infos') V2.render();
+  };
+  V2.secteurPlus = function () {
+    SCT_S.cap += 20;
+    if (V2.route && V2.route.name === 'infos') V2.render();
+  };
+  V2.secteurFicheOfficine = function (id) {
+    if (!id) return;
+    SCT_OUVERT = null; sctPanneau();
+    V2.go('pharma', id);
+  };
+  V2.secteurOuvrir = function (id) {
+    SCT_OUVERT = id; SCT_LU[id] = 1; sctSaveLu(); sctPanneau();
+  };
+  V2.secteurNonLu = function (id) {
+    delete SCT_LU[id]; sctSaveLu(); SCT_OUVERT = null; sctPanneau();
+    if (V2.route && V2.route.name === 'infos') V2.render();
+  };
+  V2.secteurFermer = function () {
+    SCT_OUVERT = null; sctPanneau();
+    if (V2.route && V2.route.name === 'infos') V2.render();
+  };
+  if (!V2._sctEchap) {
+    V2._sctEchap = true;
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && SCT_OUVERT !== null) V2.secteurFermer(); });
+  }
+
+  function sctPanneau() {
+    var vieux = document.getElementById('sct-panneau');
+    if (vieux) vieux.parentNode.removeChild(vieux);
+    if (SCT_OUVERT === null) return;
+    var ev = (SECTEUR && SECTEUR.ev) || [];
+    var e = null; for (var i = 0; i < ev.length; i++) if (ev[i].id === SCT_OUVERT) { e = ev[i]; break; }
+    if (!e) return;
+    var fam = SCT_FAM[e.f] || SCT_FAM.dirigeant;
+    var tag = sctTag(e);
+    var h = '<div class="sct-fond" onclick="V2.secteurFermer()"></div>' +
+      '<aside class="sct-pan" role="dialog" aria-modal="true" aria-label="' + esc(sctJoli(e.nom)) + '" style="--c:var(' + fam.c + ');--ct:var(' + fam.ct + ')">' +
+        '<button class="sct-x" onclick="V2.secteurFermer()" aria-label="Fermer">' + sctSvg('<path d="M6 6l12 12M18 6L6 18"/>', 18) + '</button>' +
+        '<div class="sct-pan-top">' +
+          '<span class="sct-pan-f">' + sctSvg(fam.ico, 15) + esc(fam.l1) + '</span>' +
+          '<h2>' + esc(sctJoli(e.nom)) + '</h2>' +
+          '<div class="sct-pan-v">' + esc(e.ville) + (e.depNom ? ' · ' + esc(e.depNom) : '') + (e.dep ? ' (' + esc(e.dep) + ')' : '') + '</div>' +
+        '</div>' +
+        '<div class="sct-pan-b">' +
+          '<dl class="sct-kv"><dt>Ce qui s’est passé</dt><dd>' + esc(e.detail) + '</dd>' +
+            '<dt>Publié le</dt><dd>' + sctDateLongue(e.d) + '</dd>' +
+            '<dt>Dans ton fichier</dt><dd><span class="sct-tag ' + tag.t + '">' + SCT_TAG_L[tag.t] + '</span></dd></dl>' +
+          '<div class="sct-do"><small>Ce que tu peux en faire</small><p>' + esc(sctGeste(e, tag.t)) + '</p></div>' +
+          '<div class="sct-act">' +
+            (tag.ficheId ? '<button type="button" class="sct-btn pri" onclick="V2.secteurFicheOfficine(\'' + esc(tag.ficheId) + '\')">' + sctSvg('<path d="M3 21V8l9-5 9 5v13"/><path d="M9 21v-6h6v6"/>', 18) + 'Ouvrir la fiche officine</button>' : '') +
+            '<a class="sct-btn sec" href="' + esc(urlSure(e.url)) + '" target="_blank" rel="noopener">' + sctSvg('<path d="M14 3h7v7"/><path d="M10 14L21 3"/><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/>', 17) + 'Lire l’annonce officielle</a>' +
+            '<button type="button" class="sct-btn ghost" onclick="V2.secteurNonLu(\'' + esc(e.id) + '\')">Marquer comme non lue</button>' +
+          '</div>' +
+        '</div>' +
+      '</aside>';
+    var d = document.createElement('div');
+    d.id = 'sct-panneau';
+    d.innerHTML = h;
+    document.body.appendChild(d);
+    var x = d.querySelector('.sct-x'); if (x) x.focus();
+  }
+
+  /* Le bloc entier, en HTML. Rend '' (rien) si le fichier manque, est vide, ou
+     si le secteur calculé est vide pour un commercial qui ne peut pas basculer
+     sur « Toute la France » — jamais de carte qui crie dans le vide. */
+  function secteurBlocHtml() {
+    var ev = (SECTEUR && SECTEUR.ev) || [];
+    if (!ev.length) return '';
+    var direction = sctEstDirection();
+    if (SCT_S.scope === null) {
+      var moi0 = sctMonSecteur();
+      SCT_S.scope = (direction && !moi0) ? 'fr' : 'moi';
+    }
+    if (!direction) SCT_S.scope = 'moi';   // la bascule est réservée à la direction
+    var deps = sctDeps();
+    if (!direction && !deps) return '';    // rien à montrer, et pas de bascule possible : on se tait
+
+    var autres = direction ? sctAutresSecteurs() : [];
+    var base = sctBase();
+    var cnt = {}; base.forEach(function (e) { cnt[e.f] = (cnt[e.f] || 0) + 1; });
+    var vis = base.filter(function (e) { return !SCT_S.off[e.f]; });
+    var nonLus = vis.filter(function (e) { return !SCT_LU[e.id]; }).length;
+
+    var rang = { client: 0, prospect: 1, hors: 2 };
+    var withTag = vis.map(function (e) { var t = sctTag(e); return { e: e, t: t.t, ficheId: t.ficheId }; });
+    withTag.sort(function (x, y) { return (deps ? rang[x.t] - rang[y.t] : 0) || y.e.d.localeCompare(x.e.d); });
+    SCT_TOUS = withTag.map(function (x) { return x.e.id; });
+
+    var whyHtml;
+    if (!deps) {
+      var nDeps = {}; ev.forEach(function (e) { if (e.dep) nDeps[e.dep] = 1; });
+      whyHtml = '<span class="sct-why-l">Toute la France :</span><span class="sct-dep"><b>' + Object.keys(nDeps).length + '</b>départements</span>';
+    } else {
+      whyHtml = '<span class="sct-why-l">' + (SCT_S.scope === 'moi' ? 'Pourquoi ces départements ? Tes officines y sont :' : 'Ce secteur couvre :') + '</span>' +
+        deps.map(function (d) { return '<span class="sct-dep"><b>' + esc(d) + '</b>' + esc(SCT_DEPNOMS[d] || '') + '</span>'; }).join('');
+    }
+
+    var famsHtml = SCT_ORDRE.map(function (f) {
+      var on = !SCT_S.off[f], n = cnt[f] || 0, def = SCT_FAM[f];
+      return '<button type="button" class="sct-fam' + (on ? '' : ' off') + (n ? '' : ' zero') + '" style="--c:var(' + def.c + ')" onclick="V2.secteurFam(\'' + f + '\')" aria-pressed="' + on + '" title="' + (on ? 'Masquer' : 'Afficher') + '">' +
+        '<span class="sct-fi">' + sctSvg(def.ico, 17) + '</span><span class="sct-fn">' + n + '</span><span class="sct-fl">' + esc(def.l) + '</span>' +
+        '<span class="sct-ck">' + sctSvg('<path d="M5 12l5 5L20 7"/>', 12) + '</span></button>';
+    }).join('');
+
+    var listHtml = '';
+    if (!withTag.length) {
+      listHtml = '<div class="sct-grp">Rien de neuf</div><div class="sct-empty">Aucune annonce sur cette période. Élargir à 30 jours ou 3 mois.</div>';
+    } else {
+      var shown = withTag.slice(0, SCT_S.cap), last = null, rows = '';
+      shown.forEach(function (x, i) {
+        var e = x.e, def = SCT_FAM[e.f] || SCT_FAM.dirigeant;
+        var g = !deps ? 'Les plus récentes' : (x.t === 'client' ? 'Chez tes clients' : 'Dans le reste de ton secteur');
+        if (g !== last) { rows += (last ? '</div>' : '') + '<div class="sct-grp">' + esc(g) + '</div><div class="sct-list">'; last = g; }
+        rows += '<button type="button" class="sct-row' + (SCT_LU[e.id] ? ' lu' : '') + '" onclick="V2.secteurOuvrir(\'' + esc(e.id) + '\')" style="--c:var(' + def.c + ');--ct:var(' + def.ct + ');--i:' + i + '">' +
+          '<span class="sct-new" aria-hidden="true"></span>' +
+          '<span class="sct-ri">' + sctSvg(def.ico, 18) + '</span>' +
+          '<span class="sct-rb"><span class="sct-rn">' + esc(sctJoli(e.nom)) + '</span>' +
+            '<span class="sct-rm"><span class="k">' + esc(e.detail) + '</span> · ' + esc(e.ville) + ' (' + esc(e.dep) + ')</span>' +
+            '<span class="sct-rg">' + sctSvg('<path d="M5 12h14M13 6l6 6-6 6"/>', 14) + '<span>' + esc(sctGeste(e, x.t)) + '</span></span></span>' +
+          '<span class="sct-rt"><span class="sct-tag ' + x.t + '">' + SCT_TAG_L[x.t] + '</span><span class="sct-when">' + sctQuand(e.d) + '</span></span>' +
+        '</button>';
+      });
+      rows += '</div>';
+      if (withTag.length > SCT_S.cap) rows += '<button type="button" class="sct-more" onclick="V2.secteurPlus()">Voir les ' + (withTag.length - SCT_S.cap) + ' autres</button>';
+      listHtml = rows;
+    }
+
+    var scopeHtml = '';
+    if (direction) {
+      scopeHtml = '<div style="display:flex;flex-direction:column;align-items:flex-end">' +
+        '<div class="sct-scope" role="group" aria-label="Portée">' +
+          '<button type="button" onclick="V2.secteurScope(\'moi\')" aria-pressed="' + (SCT_S.scope === 'moi') + '">Mon secteur</button>' +
+          '<button type="button" onclick="V2.secteurScope(\'fr\')" aria-pressed="' + (SCT_S.scope === 'fr') + '">Toute la France</button>' +
+          (autres.length ? '<select aria-label="Voir un autre secteur" onchange="V2.secteurAutre(this)">' +
+            '<option value="">Un autre secteur</option>' +
+            autres.map(function (a, i) { return '<option value="' + i + '"' + (SCT_S.scope === 'autre' && SCT_S.autre === i ? ' selected' : '') + '>' + esc(a.l) + '</option>'; }).join('') +
+          '</select>' : '') +
+        '</div><div class="sct-scope-note">Réservé à la direction</div></div>';
+    }
+
+    return '<section class="sct" aria-labelledby="sct-t">' +
+      '<div class="sct-head">' +
+        '<span class="sct-ic" aria-hidden="true">' + sctSvg('<path d="M12 21s-7-5.6-7-11a7 7 0 0 1 14 0c0 5.4-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/>', 22) + '</span>' +
+        '<div class="sct-meta">' +
+          '<h2 class="sct-t" id="sct-t">Dans ton secteur</h2>' +
+          '<div class="sct-s">Ventes, redressements, fermetures, nouveaux dirigeants : tout ce que publie le journal officiel des annonces légales sur les pharmacies de tes départements.</div>' +
+        '</div>' +
+        scopeHtml +
+      '</div>' +
+      '<div class="sct-why">' + whyHtml + '</div>' +
+      '<div class="sct-bar">' +
+        '<div class="sct-bar-t">' + vis.length + ' annonce' + (vis.length > 1 ? 's' : '') + ' <span>· ' + nonLus + ' non lue' + (nonLus > 1 ? 's' : '') + '</span></div>' +
+        '<div class="sct-per" role="group" aria-label="Période">' +
+          [7, 30, 90].map(function (n) { return '<button type="button" onclick="V2.secteurPeriode(' + n + ')" aria-pressed="' + (SCT_S.per === n) + '">' + (n === 90 ? '3 mois' : n + ' jours') + '</button>'; }).join('') +
+        '</div>' +
+      '</div>' +
+      '<div class="sct-fams">' + famsHtml + '</div>' +
+      listHtml +
+      '<div class="sct-src">Source : Bodacc, mis à jour chaque matin. Toucher une ligne pour la détailler.</div>' +
+    '</section>';
   }
 
   /* ════════════════ LE PANNEAU DE LECTURE ════════════════
@@ -366,6 +713,10 @@
           (ARCHIVE && ARCHIVE.n > 1 ? '<button class="inf-ghost" onclick="V2.briefArchive()">' + ICO('cal', 14, 2) + 'Les matins d\'avant</button>' : '') +
         '</div>' +
       '</header>';
+
+      /* ════════════════ DANS TON SECTEUR (Bodacc) ════════════════
+       25/09/2026 — juste après la tête, avant « À ne pas manquer ». */
+      html += secteurBlocHtml();
 
       /* ════════════════ À NE PAS MANQUER ════════════════
          Will, 02/09/2026 : « on doit absolument pas passer à côté d'infos comme
@@ -995,6 +1346,135 @@
       '#inf-panneau .inf-pan-b{padding:var(--sp-5) var(--sp-4) var(--sp-7)}',
       '#inf-panneau h2{font-size:22px}',
       '}',
+
+      /* ══════════ « DANS TON SECTEUR » (Bodacc) — 25/09/2026 ══════════
+         Sa propre lumière, comme la carte de tête : deux halos radiaux discrets,
+         SANS backdrop-filter ni blur (interdits Safari). */
+      '.inf2 .sct{position:relative;background:linear-gradient(180deg,var(--card) 0%,var(--card-2) 100%);' +
+        'border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-2);' +
+        'padding:var(--sp-6) var(--sp-6) var(--sp-5);overflow:hidden;isolation:isolate;margin-bottom:var(--section-gap)}',
+      '.inf2 .sct::before{content:"";position:absolute;inset:-1px;z-index:-1;pointer-events:none;' +
+        'background:radial-gradient(520px 260px at 0% 0%,color-mix(in srgb,var(--ip-blue) 10%,transparent),transparent 70%),' +
+                   'radial-gradient(420px 240px at 100% 0%,color-mix(in srgb,var(--c-cat) 8%,transparent),transparent 70%)}',
+      '.inf2 .sct-head{display:flex;align-items:flex-start;gap:var(--sp-4);flex-wrap:wrap}',
+      '.inf2 .sct-ic{width:46px;height:46px;flex:none;border-radius:14px;display:flex;align-items:center;justify-content:center;color:#fff;' +
+        'background:linear-gradient(145deg,#2F74FF 0%,var(--ip-blue) 55%,#0034A0 100%);box-shadow:var(--sh-blue)}',
+      '.inf2 .sct-meta{flex:1;min-width:220px}',
+      '.inf2 .sct-t{font-family:var(--serif);font-weight:600;font-size:21px;letter-spacing:-.02em;line-height:1.1;margin:2px 0 4px;color:var(--ip-ink)}',
+      '.inf2 .sct-s{font-size:13.5px;color:var(--muted);line-height:1.4;font-weight:500}',
+      '.inf2 .sct-scope{display:flex;gap:4px;padding:4px;background:var(--surf-sunken);border-radius:var(--r-pill);flex-wrap:wrap}',
+      '.inf2 .sct-scope button,.inf2 .sct-scope select{border:0;background:transparent;padding:8px 13px;border-radius:var(--r-pill);' +
+        'font-size:13px;font-weight:700;color:var(--ip-ink-2);cursor:pointer;min-height:var(--tap-min);font-family:inherit}',
+      '.inf2 .sct-scope button[aria-pressed="true"]{background:var(--card);color:var(--ip-blue);box-shadow:var(--sh-1)}',
+      '.inf2 .sct-scope select{max-width:190px;text-overflow:ellipsis;-webkit-appearance:none;appearance:none;padding-right:26px;font-size:16px}',
+      '.inf2 .sct-scope-note{font-size:11.5px;color:var(--muted);font-weight:600;margin:8px 2px 0;text-align:right;width:100%}',
+      '.inf2 .sct-why{margin-top:var(--sp-4);display:flex;align-items:center;gap:8px;flex-wrap:wrap}',
+      '.inf2 .sct-why-l{font-size:12.5px;font-weight:700;color:var(--ip-ink-2);margin-right:2px}',
+      '.inf2 .sct-dep{display:inline-flex;align-items:center;gap:7px;padding:5px 11px 5px 5px;background:var(--card);' +
+        'border:1px solid var(--line);border-radius:var(--r-pill);font-size:12.5px;font-weight:600;color:var(--ip-ink-2);box-shadow:var(--sh-1)}',
+      '.inf2 .sct-dep b{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 6px;' +
+        'border-radius:var(--r-pill);background:color-mix(in srgb,var(--ip-blue) 12%,transparent);color:var(--ip-blue);font-size:11.5px;font-weight:800}',
+      '.inf2 .sct-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:var(--sp-5) 0 var(--sp-3)}',
+      '.inf2 .sct-bar-t{font-size:13px;font-weight:700;color:var(--ip-ink-2)}',
+      '.inf2 .sct-bar-t span{font-weight:500;color:var(--muted)}',
+      '.inf2 .sct-per{display:flex;gap:4px;padding:3px;background:var(--surf-sunken);border-radius:12px}',
+      '.inf2 .sct-per button{border:0;background:transparent;padding:7px 12px;border-radius:9px;font-size:12.5px;font-weight:700;' +
+        'color:var(--ip-ink-2);cursor:pointer;min-height:34px;font-family:inherit}',
+      '.inf2 .sct-per button[aria-pressed="true"]{background:var(--card);color:var(--ip-ink);box-shadow:var(--sh-1)}',
+      '.inf2 .sct-fams{display:grid;grid-template-columns:repeat(5,1fr);gap:9px}',
+      '@media(max-width:760px){.inf2 .sct-fams{grid-template-columns:repeat(2,1fr)}.inf2 .sct-fams .sct-fam:last-child{grid-column:span 2}}',
+      '.inf2 .sct-fam{--c:var(--ip-blue);position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:7px;' +
+        'padding:12px 12px 11px;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:var(--r-sm);' +
+        'box-shadow:var(--sh-1);cursor:pointer;overflow:hidden;min-height:var(--tap-min);' +
+        'transition:transform .22s var(--ease),box-shadow .22s var(--ease)}',
+      '.inf2 .sct-fam::before{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:var(--c);opacity:.9}',
+      '.inf2 .sct-fam:hover{transform:translateY(-2px);box-shadow:var(--sh-2)}',
+      '.inf2 .sct-fam:focus-visible{outline:2px solid var(--c);outline-offset:2px}',
+      '.inf2 .sct-fi{width:28px;height:28px;border-radius:9px;display:flex;align-items:center;justify-content:center;color:var(--c);' +
+        'background:color-mix(in srgb,var(--c) 11%,var(--card))}',
+      '.inf2 .sct-fn{font-size:24px;font-weight:800;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums;color:var(--ip-ink)}',
+      '.inf2 .sct-fl{font-size:12px;font-weight:600;color:var(--ip-ink-2);line-height:1.25}',
+      '.inf2 .sct-ck{position:absolute;top:9px;right:9px;width:17px;height:17px;border-radius:6px;background:var(--c);color:#fff;' +
+        'display:flex;align-items:center;justify-content:center}',
+      '.inf2 .sct-fam.off{background:var(--card-2)}',
+      '.inf2 .sct-fam.off .sct-fn,.inf2 .sct-fam.off .sct-fl{color:var(--muted-2)}',
+      '.inf2 .sct-fam.off .sct-fi{background:var(--surf-sunken);color:var(--muted-2)}',
+      '.inf2 .sct-fam.off::before{background:var(--line-strong)}',
+      '.inf2 .sct-fam.off .sct-ck{background:transparent;border:1.5px solid var(--line-strong);color:transparent}',
+      '.inf2 .sct-fam.zero .sct-fn{color:var(--muted-2)}',
+      '.inf2 .sct-grp{font-size:11.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);' +
+        'margin:var(--sp-5) 2px var(--sp-3);display:flex;align-items:center;gap:10px}',
+      '.inf2 .sct-grp::after{content:"";flex:1;height:1px;background:var(--line)}',
+      '.inf2 .sct-list{display:flex;flex-direction:column;gap:9px}',
+      '.inf2 .sct-row{--c:var(--ip-blue);--ct:var(--ip-blue);position:relative;display:flex;align-items:flex-start;gap:13px;' +
+        'width:100%;text-align:left;padding:14px 16px 14px 14px;background:var(--card);border:1px solid var(--line);' +
+        'border-radius:var(--r-sm);box-shadow:var(--sh-1);cursor:pointer;font-family:inherit;' +
+        'transition:transform .22s var(--ease),box-shadow .22s var(--ease),border-color .22s var(--ease)}',
+      '.inf2 .sct-row:hover{transform:translateY(-2px);box-shadow:var(--sh-2);border-color:color-mix(in srgb,var(--c) 32%,var(--line))}',
+      '.inf2 .sct-row:focus-visible{outline:2px solid var(--c);outline-offset:2px}',
+      '.inf2 .sct-ri{width:38px;height:38px;flex:none;border-radius:11px;display:flex;align-items:center;justify-content:center;color:var(--c);' +
+        'background:color-mix(in srgb,var(--c) 11%,var(--card));border:1px solid color-mix(in srgb,var(--c) 18%,var(--line))}',
+      '.inf2 .sct-rb{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}',
+      '.inf2 .sct-rn{font-size:15px;font-weight:700;letter-spacing:-.01em;line-height:1.25;color:var(--ip-ink)}',
+      '.inf2 .sct-rm{font-size:12.5px;color:var(--muted);font-weight:500;line-height:1.35}',
+      '.inf2 .sct-rm .k{color:var(--ct);font-weight:700}',
+      '.inf2 .sct-rg{font-size:13px;font-weight:600;color:var(--ip-ink-2);line-height:1.35;margin-top:3px;display:flex;gap:6px}',
+      '.inf2 .sct-rg svg{flex:none;margin-top:2px;color:var(--ct)}',
+      '.inf2 .sct-rt{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:8px}',
+      '.inf2 .sct-tag{font-size:10.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:4px 9px;' +
+        'border-radius:var(--r-pill);white-space:nowrap}',
+      '.inf2 .sct-tag.client{background:var(--ip-blue);color:#fff}',
+      '.inf2 .sct-tag.prospect{background:color-mix(in srgb,var(--ip-blue) 12%,var(--card));color:var(--ip-blue)}',
+      '.inf2 .sct-tag.hors{background:var(--surf-sunken);color:var(--ip-ink-2)}',
+      '.inf2 .sct-when{font-size:11.5px;color:var(--muted);font-weight:600;white-space:nowrap}',
+      '.inf2 .sct-new{position:absolute;left:-4px;top:18px;width:8px;height:8px;border-radius:50%;background:var(--ip-blue);' +
+        'box-shadow:0 0 0 3px var(--card)}',
+      '.inf2 .sct-row.lu{background:var(--card-2);box-shadow:none}',
+      '.inf2 .sct-row.lu .sct-rn{color:var(--ip-ink-2);font-weight:600}',
+      '.inf2 .sct-row.lu .sct-ri{background:var(--surf-sunken);color:var(--muted-2);border-color:var(--line)}',
+      '.inf2 .sct-row.lu .sct-new{display:none}',
+      '@media(max-width:560px){.inf2 .sct-row{flex-wrap:wrap}.inf2 .sct-row .sct-rt{flex-direction:row;align-items:center;width:100%;' +
+        'padding-left:51px;justify-content:space-between}}',
+      '.inf2 .sct-empty{padding:26px 18px;text-align:center;color:var(--muted);font-size:14px;background:var(--card-2);' +
+        'border:1px dashed var(--line-strong);border-radius:var(--r-sm)}',
+      '.inf2 .sct-more{display:block;margin:14px auto 0;border:1px solid var(--line);background:var(--card);border-radius:var(--r-pill);' +
+        'padding:9px 18px;font-size:13px;font-weight:700;color:var(--ip-blue);cursor:pointer;box-shadow:var(--sh-1);min-height:40px;font-family:inherit}',
+      '.inf2 .sct-src{margin-top:var(--sp-4);font-size:12px;color:var(--muted);line-height:1.5;text-align:center}',
+      /* ── panneau de détail (préfixé sct-, à part de #inf-panneau) ── */
+      '#sct-panneau{--serif:var(--serif,Georgia,serif)}',
+      '#sct-panneau .sct-fond{position:fixed;inset:0;z-index:200;background:rgba(10,13,22,.52);animation:inf-fondu .22s ease both}',
+      '#sct-panneau .sct-pan{position:fixed;top:0;right:0;bottom:0;z-index:201;width:min(440px,100%);overflow-y:auto;' +
+        'background:var(--card);box-shadow:-20px 0 60px rgba(16,19,28,.16);animation:sct-glisse .32s var(--ease) both}',
+      '@keyframes sct-glisse{from{transform:translateX(24px);opacity:0}to{transform:none;opacity:1}}',
+      '@media(prefers-reduced-motion:reduce){#sct-panneau .sct-pan,#sct-panneau .sct-fond{animation-duration:.01ms}}',
+      '#sct-panneau .sct-x{position:absolute;right:14px;top:14px;z-index:3;width:var(--tap-min);height:var(--tap-min);' +
+        'border-radius:12px;border:1px solid var(--line);background:var(--card);cursor:pointer;display:flex;align-items:center;' +
+        'justify-content:center;color:var(--ip-ink-2)}',
+      '#sct-panneau .sct-pan-top{--c:var(--ip-blue);position:relative;padding:22px 22px 18px;border-bottom:1px solid var(--line);' +
+        'background:radial-gradient(360px 180px at 0% 0%,color-mix(in srgb,var(--c) 14%,transparent),transparent 72%)}',
+      '#sct-panneau .sct-pan-f{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:800;letter-spacing:.04em;' +
+        'text-transform:uppercase;color:var(--ct)}',
+      '#sct-panneau h2{font-family:var(--serif);font-weight:600;font-size:22px;letter-spacing:-.02em;line-height:1.15;' +
+        'margin:10px 50px 6px 0;color:var(--ip-ink)}',
+      '#sct-panneau .sct-pan-v{font-size:14px;color:var(--muted);font-weight:600}',
+      '#sct-panneau .sct-pan-b{padding:20px 22px;display:flex;flex-direction:column;gap:16px}',
+      '#sct-panneau .sct-kv{display:grid;grid-template-columns:auto 1fr;gap:9px 16px;font-size:14px;margin:0}',
+      '#sct-panneau .sct-kv dt{color:var(--muted);font-weight:600}',
+      '#sct-panneau .sct-kv dd{margin:0;font-weight:700;color:var(--ip-ink)}',
+      '#sct-panneau .sct-do{border-radius:var(--r-sm);padding:14px 15px;background:color-mix(in srgb,var(--c) 8%,var(--card));' +
+        'border:1px solid color-mix(in srgb,var(--c) 20%,var(--line))}',
+      '#sct-panneau .sct-do small{display:block;font-size:11.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;' +
+        'color:var(--ct);margin-bottom:5px}',
+      '#sct-panneau .sct-do p{margin:0;font-size:15px;font-weight:700;line-height:1.4;color:var(--ip-ink)}',
+      '#sct-panneau .sct-act{display:flex;flex-direction:column;gap:9px;margin-top:2px}',
+      '#sct-panneau .sct-btn{display:flex;align-items:center;justify-content:center;gap:8px;min-height:var(--tap-min);' +
+        'border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;text-decoration:none;border:1px solid var(--line);font-family:inherit}',
+      '#sct-panneau .sct-btn.pri{background:linear-gradient(180deg,#1A63F0,var(--ip-blue));color:#fff;border-color:transparent;box-shadow:var(--sh-blue)}',
+      '#sct-panneau .sct-btn.sec{background:var(--card);color:var(--ip-ink)}',
+      '#sct-panneau .sct-btn.ghost{background:transparent;border-color:transparent;color:var(--muted);font-size:13.5px;min-height:40px}',
+      '@media(max-width:560px){#sct-panneau .sct-pan{top:auto;left:0;width:100%;max-height:88vh;' +
+        'border-radius:var(--r-card) var(--r-card) 0 0;animation:sct-monte .32s var(--ease) both}}',
+      '@keyframes sct-monte{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}',
 
       /* ══════════ LE MUR ══════════ */
 '.inf2 .mur{display:flex;align-items:flex-start;gap:var(--sp-3)}',
