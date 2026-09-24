@@ -103,6 +103,20 @@ def comms_du_jeu(commercial):
     return set(parts)
 
 
+def noms_produits():
+    """Mêmes noms que la fiche de la carte (generate_wml_v2.py, load_benchmark_names)."""
+    from pont_codes import rekey
+    noms = {}
+    txt = lire(os.path.join(BASE, 'crm', 'benchmark-data.js'))
+    for m in re.finditer(r'designation:"([^"]*)"[^}]*?cip13:"(\d+)"', txt):
+        noms[m.group(2)] = m.group(1)
+    for l in open(os.path.join(V2, 'catalogue-complet-data.js'), encoding='utf-8'):
+        m = re.match(r'\["(\d{8,14})","((?:[^"\\]|\\.)*)"', l)
+        if m and m.group(1) not in noms and m.group(2):
+            noms[m.group(1)] = json.loads('"' + m.group(2) + '"')
+    return rekey(noms)
+
+
 def tranches(lignes):
     out, cour, poids = [], [], 0
     for v in lignes:
@@ -187,9 +201,14 @@ def main():
         shutil.rmtree(SORTIE)
 
     total_reseau = sum(v[6] for v in ventes)
+    d_pro = declaration(tete, 'WML_D_PRODUITS')
+    nb_mois = len(next(iter(carte.values()))['m'])
+    noms = noms_produits()
     for commercial in jeux:
         mes = comms_du_jeu(commercial)
-        a_moi = [bool(comms_rang[v[0]] & mes) for v in ventes]
+        # 25/09/2026 — officine PARTAGÉE entre deux commerciaux : seules SES lignes restent en détail ;
+        # celles du collègue partent dans le reste du réseau (le Pilotage montrait les ventes du collègue).
+        a_moi = [bool(comms_rang[v[0]] & mes) and d_com[v[2]] in mes for v in ventes]
         detail = [v for v, ok in zip(ventes, a_moi) if ok]
         reste = {}
         for i, (v, ok) in enumerate(zip(ventes, a_moi)):
@@ -227,9 +246,25 @@ def main():
                           'rgg': {c: r for c, r in rp['rgg'].items() if c in mes_codes}}
         ecrire(os.path.join(rep, 'wml-ventes-index.js'), 'window.WML_TRANCHES_JEU = %s;\n' % compact(index))
         mes_ca = {k: v for k, v in off_ca.items() if comms_par_code.get(k, set()) & mes}
+        # officines partagées avec un collègue : CA et fiche de carte recalculés sur SES lignes
+        a_lui = {}
+        for v in detail:
+            dd = a_lui.setdefault(re.sub(r'[^0-9]', '', str(d_off[v[0]])), {'m': [0] * nb_mois, 'prod': {}})
+            if isinstance(v[1], int) and 1 <= v[1] <= nb_mois:
+                dd['m'][v[1] - 1] += v[6]
+            dd['prod'][d_pro[v[3]]] = dd['prod'].get(d_pro[v[3]], 0) + v[6]
+        partagee = lambda k: bool(comms_par_code.get(re.sub(r'[^0-9]', '', k), set()) - mes)
+        vide = {'m': [0] * nb_mois, 'prod': {}}
+        for k in [k for k in mes_ca if partagee(k)]:
+            mes_ca[k] = [round(sum(a_lui.get(k, vide)['m'])), mes_ca[k][1]]
         ecrire(os.path.join(rep, 'wml-officines-ca.js'),
                tete_ca + 'window.WML_OFF_CA = {n:%d, m:%s};\n' % (len(mes_ca), json.dumps(mes_ca)))
         mes_det = {k: v for k, v in carte.items() if comms_par_code.get(re.sub(r'[^0-9]', '', k), set()) & mes}
+        for k in [k for k in mes_det if partagee(k)]:
+            dd = a_lui.get(re.sub(r'[^0-9]', '', k), vide)
+            top = sorted(dd['prod'].items(), key=lambda x: -x[1])[:6]
+            mes_det[k] = {'m': [round(x) for x in dd['m']], 'top': [[noms.get(c, c), round(x)] for c, x in top if x > 0],
+                          'np': len(dd['prod']), 'pot': mes_det[k].get('pot')}
         ecrire(os.path.join(rep, 'carte-detail.js'), tete_det + 'window.CARTE_DETAIL=' + compact(mes_det) + ';\n')
         print('  %-24s %s  %6d lignes à lui · %6d totaux réseau · %d tranche(s) · %d CA · %d fiches'
               % (commercial, dossier(commercial), len(detail), len(agreges), len(tr), len(mes_ca), len(mes_det)))
