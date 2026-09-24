@@ -193,28 +193,25 @@
     // 15/09/2026 — bascule Intégral ↔ Escale, en haut à gauche. Réservée aux comptes
     // ayant accès aux deux espaces (le compte Escale à accès total).
     // Vers Escale (depuis le CRM) : même critère que la 7ᵉ carte d'accueil (14/09,
-    // ligne ~1326) — un compte @escalepharma.fr. Les commerciaux Escale ne l'ont
-    // jamais : ils sont renvoyés vers escale/v2 avant même de voir cette page.
+    // ligne ~1326) — un compte @escalepharma.fr (et, depuis le 24/09, les quatre
+    // commerciaux Escale, qui ne sont plus renvoyés vers l'espace Escale).
     // Vers Intégral (depuis Escale) : email @escalepharma.fr NE SUFFIT PAS — tous
     // les commerciaux Escale l'ont aussi. Il faut en plus `voitTousReel` (posé dans
     // v2-boot.js AVANT la bascule locale de commercial/voitTous propre à l'espace
     // Escale) : seul le compte à accès total l'a à true, pas le compte générique (commercial='Escale').
+    // 24/09/2026 — les quatre commerciaux Escale (adresses @integralpharma.fr) l'ont
+    // aussi, dans les deux sens : même CRM, seul le périmètre change (V2.basculeEspace).
     var spaceSw = '';
-    var mail = (V2.user && V2.user.email) || '';
-    if (/@escalepharma\.fr$/i.test(mail)) {
-      var inEscale = !!(window.V2_BRAND && window.V2_BRAND.escale);
-      if (!inEscale || (V2.user && V2.user.voitTousReel === true)) {
-        var swTo = inEscale ? 'crm' : 'escale';
-        var swLabel = inEscale ? 'Intégral' : 'Escale';
-        spaceSw = '<button class="v2-spacesw" title="Basculer vers l\'espace ' + swLabel + '" aria-label="Basculer vers l\'espace ' + swLabel + '" onclick="V2.goSpace(\'' + swTo + '\')">' +
-          '<span aria-hidden="true">⇄</span>' + swLabel + '</button>';
-      }
+    var bsc = V2.basculeEspace();
+    if (bsc) {
+      spaceSw = '<button class="v2-spacesw" title="Basculer vers l\'espace ' + bsc.label + '" aria-label="Basculer vers l\'espace ' + bsc.label + '" onclick="V2.goSpace(\'' + bsc.to + '\')">' +
+        '<span aria-hidden="true">⇄</span>' + bsc.label + '</button>';
     }
     return '' +
       '<div class="v2-top">' +
         back + brand + spaceSw +
         ((V2.route && V2.route.name === 'home') ? '' : '<div class="v2-top-search" onclick="V2.onTopSearch()">' + ICO('search', 15, 2) + 'Rechercher<kbd>' + MOD + 'K</kbd></div>') +
-        ((!(window.V2_BRAND && (window.V2_BRAND.opso || window.V2_BRAND.escale)) && V2.remonteeOpen) ? '<button class="v2-idea" title="Proposer une amélioration à l\'équipe" aria-label="Proposer une amélioration" onclick="V2.remonteeOpen()">' + ICO('spark', 16, 2) + '</button>' : '') +
+        ((!(window.V2_BRAND && window.V2_BRAND.opso) && V2.remonteeOpen) ? '<button class="v2-idea" title="Proposer une amélioration à l\'équipe" aria-label="Proposer une amélioration" onclick="V2.remonteeOpen()">' + ICO('spark', 16, 2) + '</button>' : '') +
         '<div class="v2-av" title="' + (V2.user ? V2.user.name : '') + '" onclick="V2.userMenu()">' + initials + '</div>' +
       '</div>';
   }
@@ -224,9 +221,23 @@
   // gardé (localStorage, en échec silencieux) pour un usage futur ; la navigation
   // elle-même se fait par l'URL, qui suffit à rester dans l'espace choisi après
   // un rechargement — pas de session cassée, `V2.user` est rechargé par l'autre app.
+  // 24/09/2026 — l'espace Escale est le MÊME CRM (?espace=escale, lu dans index.html
+  // avant le démarrage) : mêmes modules, données bornées à Escale. escale/v2 redirige ici.
   V2.goSpace = function (dest) {
     try { localStorage.setItem('v2-space', dest); } catch (e) {}
-    location.href = dest === 'escale' ? '../../escale/v2/index.html' : '../../crm/v2/index.html';
+    location.href = dest === 'escale' ? '../../crm/v2/index.html?espace=escale' : '../../crm/v2/index.html';
+  };
+  // Qui a la bascule, et vers où (topbar + barre du Marketing, v2-mkt-socle.js) :
+  // - un commercial Escale nommé (Guy, Tiffany, Philippe, Germain) : dans les deux sens ;
+  // - un compte @escalepharma.fr : vers Escale toujours, vers Intégral seulement
+  //   s'il a l'accès total (`voitTousReel`) — pas le compte générique 'Escale'.
+  V2.basculeEspace = function () {
+    var u = V2.user || {};
+    var inEscale = !!(window.V2_BRAND && window.V2_BRAND.escale);
+    var ok = u.commEscale === true ||
+      (/@escalepharma\.fr$/i.test(u.email || '') && (!inEscale || u.voitTousReel === true));
+    if (!ok) return null;
+    return { to: inEscale ? 'crm' : 'escale', label: inEscale ? 'Intégral' : 'Escale' };
   };
 
   // ── Sous-onglets des espaces fusionnés (Catalogue & prix / Fiches & présentation) ──
@@ -1267,7 +1278,7 @@
       // jamais de prénom en dur ailleurs que via V2.user.name. Même critère
       // que le reste de l'app (relanceEstAMoi, v2-pilotage.js) : un commercial
       // renseigné ET qui ne voit pas tout le monde.
-      var isBrandApart = !!(window.V2_BRAND && (window.V2_BRAND.opso || window.V2_BRAND.escale));
+      var isBrandApart = !!(window.V2_BRAND && window.V2_BRAND.opso);
       var uComm = (V2.user && V2.user.commercial) ? String(V2.user.commercial) : '';
       var voitTous = !!(V2.user && V2.user.voitTous);
       var mesOfficines = (!isBrandApart && uComm && !voitTous)
@@ -1358,13 +1369,13 @@
           P.unshift(pil);
         }
       }
-      // 11/09/2026 — espace ESCALE PHARMA (escale/v2) : un visu pour Alexandre et ses
-      // quatre commerciaux. Deux entrées, le suivi en tête ; le reste n'est pas chargé.
+      // 11/09/2026 — espace ESCALE PHARMA. 24/09/2026 — Will : « features communes,
+      // pas de distinctions » : même accueil, mêmes portes que le CRM ; seules les
+      // données (bornées à Escale) et ces deux textes changent.
       if (window.V2_BRAND && window.V2_BRAND.escale) {
         var pmE = {}; P.forEach(function (x) { pmE[x.k] = x; });
-        if (pmE.pharma) { pmE.pharma.d = 'Les officines clientes d\'Escale Pharma : coordonnées, groupement, chiffre d\'affaires, et ce qu\'elles commandent ou pas encore.'; pmE.pharma.go = 'Voir les officines'; }
-        if (pmE.pilotage) { pmE.pilotage.t = 'Suivi Escale'; pmE.pilotage.d = 'Le chiffre d\'affaires d\'Escale Pharma par commercial, par mois et par groupement, avec la marge et les familles produits.'; pmE.pilotage.go = 'Voir le suivi'; }
-        P = [pmE.pilotage, pmE.pharma].filter(Boolean);
+        if (pmE.pharma) { pmE.pharma.d = 'Les officines clientes d\'Escale Pharma : coordonnées, groupement, chiffre d\'affaires, et ce qu\'elles commandent ou pas encore.'; }
+        if (pmE.pilotage) { pmE.pilotage.d = 'Le chiffre d\'affaires d\'Escale Pharma par commercial, par mois et par groupement, avec la marge et les familles produits.'; }
       }
       function tile(p) {
         var nav = p.route ? ('V2.go(\'' + p.route.name + '\'' + (p.route.param ? ',\'' + p.route.param + '\'' : '') + ')') : ('V2.go(\'' + p.k + '\')');
@@ -1378,7 +1389,7 @@
       P = P.filter(function (p) { return p.route ? !!V2.pages[p.route.name] : !!V2.pages[p.k]; });
       // Accueil regroupé "par moment d'usage" (hors OPSO qui garde son ordre suivi-groupement)
       var pilHtml, todoTuile = false;
-      if (window.V2_BRAND && (window.V2_BRAND.opso || window.V2_BRAND.escale)) {
+      if (window.V2_BRAND && window.V2_BRAND.opso) {
         pilHtml = '<div class="v2-piliers">' + P.map(tile).join('') + '</div>';
       } else {
         var pmap = {}; P.forEach(function (p) { pmap[p.k] = p; });
@@ -1439,10 +1450,10 @@
           ligne('carteGrp', 'carteGrp', 'Carte des groupements', 'Où sont les adhérents de chaque groupement', 1)
         ];
         // 14/09/2026 — le responsable d'Escale Pharma a l'accès total ET garde son
-        // espace escale/v2 (demande de Will). Seul un compte @escalepharma.fr
-        // arrive ici : les commerciaux Escale sont renvoyés avant.
-        if (/@escalepharma\.fr$/i.test((V2.user && V2.user.email) || '')) {
-          terrain.push(ligne('', 'pilotage', 'Espace Escale Pharma', 'Le suivi Escale et ses officines clientes', 2, 'location.href=\'../../escale/v2/index.html\''));
+        // espace Escale (demande de Will). 24/09 : les commerciaux Escale aussi.
+        var bscE = V2.basculeEspace();
+        if (bscE && bscE.to === 'escale') {
+          terrain.push(ligne('', 'pilotage', 'Espace Escale Pharma', 'Le suivi Escale et ses officines clientes', 2, 'V2.goSpace(\'escale\')'));
         }
         var grille = [
           porte('hv-grand', 'pharma', 'officines', 'Officines', 'La fiche de chaque client et prospect', 1),
