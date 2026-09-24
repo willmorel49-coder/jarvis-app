@@ -3135,7 +3135,8 @@
     var label = (scope === 'groupement') ? (groupementPids(pid).name || 'Groupement') : reseauLbl();
     var faire = function () {
       if (V2.prospectPdf) {
-        return V2.prospectPdf(data, { nom: pharma.name, ref: label, reseau: scope !== 'groupement', client: clientPdfData(pid), fichier: pharma.name + ' — ' + label }, mode);
+        return V2.prospectPdf(data, { nom: pharma.name, ref: label, reseau: scope !== 'groupement', client: clientPdfData(pid), fichier: pharma.name + ' — ' + label,
+          maxPages: 10 }, mode);   // Will, 24/09/2026 : 8-10 pages maximum
       }
       return achatsPdf(pharma.name + ' — ' + label, data, false, mode, pid);
     };
