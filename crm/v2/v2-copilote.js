@@ -253,7 +253,8 @@
   }
   var selPid = null;
   function pharmaOptions() {
-    var phs = (V2.pharmacies || []).slice();
+    // 24/09/2026 — confidentialité : ses officines seulement (le tri par CA trahirait un classement)
+    var phs = (V2.pharmacies || []).filter(function (p) { return !V2.voitVentesDe || V2.voitVentesDe(p.id); });
     // tri par CA décroissant (proxy activité) pour un défaut pertinent
     var caOf = coIndex();   // 11/09/2026 — perf : index partagé, plus de passe complète
     phs.sort(function (a, b) { return ((caOf[String(b.id)] || {}).ca || 0) - ((caOf[String(a.id)] || {}).ca || 0); });

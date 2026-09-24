@@ -129,7 +129,8 @@
   // officine : V2.rdvCA balaie les 437 000 lignes à chaque appel, et 691
   // appels figeraient l'écran plusieurs secondes sur un téléphone.
   function caParOfficine() {
-    var m = {}, s = V2.sales || [];
+    // 24/09/2026 — confidentialité : seulement les officines que l'utilisateur peut voir
+    var m = {}, s = V2.ventesVisibles ? V2.ventesVisibles(V2.sales || []) : (V2.sales || []);
     for (var i = 0; i < s.length; i++) {
       var k = String(s[i].pharmacyId);
       m[k] = (m[k] || 0) + (s[i].mntNetHt || 0);

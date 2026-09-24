@@ -139,9 +139,14 @@
   // CA d'une officine : celui du CRM (WML_OFFICINES, mois de WML_MOIS) quand il existe. Mesuré en
   // vraie session le 21/09/2026 : la base nationale n'en porte que 603, anciens ; le CRM 1 829 sur 1 830 clients.
   function commLbl(p) { return commsOf(p).join(', '); }
-  function caOf(p) { if (!p) return 0; var c = caById && caById[String(p[13] || '').replace(/[^0-9]/g, '')]; return c || p[12] || 0; }
+  // 24/09/2026 — confidentialité : un commercial restreint ne voit aucun chiffre d'une officine
+  // qui n'est pas la sienne (bulle, couleur, tri, liste, fiche, KML, Excel passent tous par ici).
+  function voitCa(p) { return !V2.voitVentesDe || V2.voitVentesDe(p[13]); }
+  // Le palier (Client A/B/C) est une tranche de CA : « Client » tout court pour la cliente d'un collègue.
+  function segOf(p) { var s = D.seg[p[4]] || ''; return (s.indexOf('Client') === 0 && !voitCa(p)) ? 'Client' : s; }
+  function caOf(p) { if (!p || !voitCa(p)) return 0; var c = caById && caById[String(p[13] || '').replace(/[^0-9]/g, '')]; return c || p[12] || 0; }
   function potLbl(v) { return POT_HI <= 100 ? String(v) : eurK(v); }   // une note s'écrit telle quelle, jamais en euros
-  function potOf(p) { return (p && potById && potById[String(p[13] || '').replace(/[^0-9]/g, '')]) || 0; }
+  function potOf(p) { return (p && voitCa(p) && potById && potById[String(p[13] || '').replace(/[^0-9]/g, '')]) || 0; }
   function hasReprises() { var R = window.REPRISES; if (!R) return false; for (var k in R) return true; return false; }
   function isReprise(p) { return !!(window.REPRISES && p[13] && window.REPRISES[String(p[13])]); }
   // Coordonnées d'une officine : la règle de la fiche officine (V2.rdvInfo : base clients > CRM > base nationale >
@@ -158,7 +163,7 @@
       var _cs = commsOf(p); if (_cs.length) return COMM_COL[_cs[0]] || '#94A3B8';   // dans un portefeuille commercial (CRM)
       return '#D4DAE3';
     }
-    if (colorMode === 'type') return SEG_COL[D.seg[p[4]]] || '#AEB6C4';
+    if (colorMode === 'type') return SEG_COL[segOf(p)] || (isClient(p) ? '#7C93C9' : '#AEB6C4');
     if (colorMode === 'grp') return GRP_COL[p[3]] || '#CBD2DD';
     if (colorMode === 'ca') { var c = caOf(p); if (!c) return '#E2E6EC'; if (c >= 50000) return '#7A0C2E'; if (c >= 20000) return '#C7283D'; if (c >= 8000) return '#EA580C'; if (c >= 2000) return '#F59E0B'; return '#FCD34D'; }
     return hsl(D.uga[p[2]] || '');
@@ -185,7 +190,7 @@
   function tipHtml(p) {
     if (!p) return '';
     var grp = (D.grp[p[3]] && D.grp[p[3]] !== '—') ? D.grp[p[3]] : '';
-    var comm = commLbl(p), st = D.seg[p[4]] || '';
+    var comm = commLbl(p), st = segOf(p);
     var bits = [];
     if (st) bits.push(st);
     if (grp) bits.push(grp);
@@ -226,7 +231,7 @@
   // taille du point : uniforme, sauf en mode « CA » où le rayon grandit avec le CA (grosses cibles = gros points)
   function caRadius(c) { if (!c || c <= 0) return 4; return Math.min(13, 4.5 + Math.sqrt(c / 1000) * 1.15); }
   // Client/Prospect (défaut) : le point grossit avec le palier client (A > B > C > prospect)
-  function tierRadius(p) { var s = D.seg[p[4]] || ''; return s === 'Client A' ? 7.5 : s === 'Client B' ? 6 : s.indexOf('Client') === 0 ? 5 : 4.2; }
+  function tierRadius(p) { var s = segOf(p); return s === 'Client A' ? 7.5 : s === 'Client B' ? 6 : s.indexOf('Client') === 0 ? 5 : 4.2; }
   function markerStyle(p, i) {
     var t = inTour(i);
     var r = t ? 7 : (colorMode === 'ca' ? caRadius(caOf(p)) : colorMode === 'type' ? tierRadius(p) : 5.5);
@@ -988,7 +993,7 @@
       styles += '<Style id="' + sid + '"><IconStyle><color>' + kmlColor(GRP_COL[g]) + '</color><scale>1.1</scale>' +
         '<Icon><href>http://maps.google.com/mapfiles/kml/shapes/placemark_circle.png</href></Icon></IconStyle></Style>';
       var pms = byGrp[g].map(function (p) {
-        var ca = caOf(p), seg = D.seg[p[4]] || '', comm = commLbl(p), uga = D.uga[p[2]] || '';
+        var ca = caOf(p), seg = segOf(p), comm = commLbl(p), uga = D.uga[p[2]] || '';
         var desc = [
           xe((p[7] || '') + (p[8] ? ', ' + p[8] : '')),
           p[10] ? 'Titulaire : ' + xe(p[10]) : '',
@@ -1056,9 +1061,9 @@
       var avecRep = hasReprises(); if (avecRep) aoa[0].push('Reprise récente');
       var nCli = 0;
       rows.forEach(function (p) {
-        var dep = deptOf(p[8]), grp = (D.grp[p[3]] && D.grp[p[3]] !== '—') ? D.grp[p[3]] : '', cli = isClient(p), seg = D.seg[p[4]] || '', co = coordOf(p);
+        var dep = deptOf(p[8]), grp = (D.grp[p[3]] && D.grp[p[3]] !== '—') ? D.grp[p[3]] : '', cli = isClient(p), seg = segOf(p), co = coordOf(p);
         if (cli) nCli++;
-        aoa.push([cli ? 'Client' : 'Prospect', cli ? seg.replace('Client ', '') : '', p[6] || '', p[10] || '', p[7] || '', String(p[8] || ''), dep ? dep + (DEPT_NAMES[dep] ? ' · ' + DEPT_NAMES[dep] : '') : '', String(co.tel || ''), co.email || '',
+        aoa.push([cli ? 'Client' : 'Prospect', cli ? seg.replace(/^Client ?/, '') : '', p[6] || '', p[10] || '', p[7] || '', String(p[8] || ''), dep ? dep + (DEPT_NAMES[dep] ? ' · ' + DEPT_NAMES[dep] : '') : '', String(co.tel || ''), co.email || '',
           caOf(p) ? Math.round(caOf(p)) : '', potOf(p) || '', grp, commsOf(p).join(', '), D.uga[p[2]] || '', String(p[13] || ''), p[0] || '', p[1] || ''].concat(avecRep ? [isReprise(p) ? 'Oui' : ''] : []));
       });
       var X = window.XLSX, wb = X.utils.book_new(), ws = X.utils.aoa_to_sheet(aoa);
@@ -1942,7 +1947,7 @@
     V2.carteListClose();
     V2.carteFiche(i);
   };
-  function statusLabel(p) { return D.seg[p[4]] || '—'; }
+  function statusLabel(p) { return segOf(p) || '—'; }
   // ── Cœur partagé : calcule la liste filtrée + triée (utilisé par le dock ET la modale) ──
   function listComputed() {
     var ids = filtered(), total = ids.length;
@@ -2048,7 +2053,8 @@
   function renderFiche(i) {
     var el = document.getElementById('cn-fiche'); if (!el) return;
     var FMO = moisLbls();
-    var p = D.p[i], det = (DETAIL && p[13]) ? DETAIL[p[13]] : null;
+    var p = D.p[i], det = (DETAIL && p[13] && voitCa(p)) ? DETAIL[p[13]] : null;
+    var caCache = !voitCa(p) && isClient(p);   // cliente d'un collègue : aucun chiffre
     var comm = commLbl(p), inT = inTour(i);
     var inWml = !!(p[13] && (V2.pharmacies || []).some(function (x) { return String(x.id) === String(p[13]); }));   // une de tes 630 officines → lien fiche complète
     var spark = '';
@@ -2097,19 +2103,20 @@
       '<div class="cn-plist" style="padding:0">' +
         '<div class="cn-pop-a" style="padding:12px 16px 0">' + esc(p[7]) + (p[8] ? ' · ' + esc(p[8]) : '') + '</div>' +
         '<div class="cn-pop-tags" style="padding:8px 16px">' +
-          '<span class="cn-tag ' + (isClient(p) ? 'cl' : (isProspect(p) ? 'pr' : '')) + '">' + esc(D.seg[p[4]]) + '</span>' +
+          '<span class="cn-tag ' + (isClient(p) ? 'cl' : (isProspect(p) ? 'pr' : '')) + '">' + esc(segOf(p)) + '</span>' +
           (window.REPRISES && REPRISES[String(p[13])] ? '<span class="cn-tag" style="background:#FFF1DB;color:#8a4b00;border:1px solid #F0C98A">🔄 Reprise</span>' : '') +
           (comm ? '<span class="cn-tag co">' + esc(comm) + '</span>' : '') +
           '<span class="cn-tag">UGA ' + esc(D.uga[p[2]] || '—') + '</span>' +
           (D.grp[p[3]] && D.grp[p[3]] !== '—' ? '<span class="cn-tag">' + esc(D.grp[p[3]]) + '</span>' : '') +
           (p[13] ? '<span class="cn-tag" title="Identifiant officine">n° ' + esc(String(p[13])) + '</span>' : '') +
         '</div>' +
+        (caCache ? '<div class="cn-tempty" style="padding:18px 16px">Chiffres de vente réservés au commercial de cette officine.</div>' :
         '<div class="cn-fkpis">' +
           '<div class="cn-fkpi"><b>' + eurK(caOf(p)) + '</b><span>CA (' + FMO.length + ' mois)</span></div>' +
           (det ? '<div class="cn-fkpi"><b>' + (det.np || 0) + '</b><span>références</span></div>' : '') +
           (det && det.pot ? '<div class="cn-fkpi"><b>' + (det.pot <= 100 ? esc(String(det.pot)) : eurK(det.pot)) + '</b><span>potentiel</span></div>' : '') +
         '</div>' +
-        (spark ? '<div class="cn-fsec"><h4>CA par mois</h4>' + spark + '</div>' : (caOf(p) ? '' : '<div class="cn-tempty" style="padding:18px 16px">Pas encore de ventes réseau pour cette officine.</div>')) +
+        (spark ? '<div class="cn-fsec"><h4>CA par mois</h4>' + spark + '</div>' : (caOf(p) ? '' : '<div class="cn-tempty" style="padding:18px 16px">Pas encore de ventes réseau pour cette officine.</div>'))) +
         top +
         ((co.tel || co.email) ? '<div class="cn-pop-contact" style="padding:10px 16px 14px">' + (co.tel ? '<a href="tel:' + esc(String(co.tel).replace(/[^0-9+]/g, '')) + '">' + esc(co.tel) + '</a>' : '') + (co.email ? '<a href="mailto:' + esc(co.email) + '">' + esc(co.email) + '</a>' : '') + '</div>' : '') +
         equip +

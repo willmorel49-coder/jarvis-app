@@ -151,7 +151,10 @@
     _salesIdxRef = V2.sales; return _salesIdx;
   }
   // toutes ventes d'une pharma, TOUS commerciaux (vue groupements = vue d'équipe)
-  function pharmaSalesAll(pid) { return salesIndex()[String(pid)] || []; }
+  // 24/09/2026 — confidentialité : rien pour l'officine d'un collègue (V2.voitVentesDe, v2-boot.js)
+  function pharmaSalesAll(pid) { if (V2.voitVentesDe && !V2.voitVentesDe(pid)) return []; return salesIndex()[String(pid)] || []; }
+  // cliente ou non — pas un chiffre de vente : reste vrai pour l'officine d'un collègue
+  function aDesVentes(pid) { return (salesIndex()[String(pid)] || []).length > 0; }
   function pharmaSales(pid) {
     var base = pharmaSalesAll(pid);
     return V2.commFilter ? base.filter(function (s) { return s.commercial === V2.commFilter; }) : base;
@@ -584,8 +587,9 @@
       badge +
       oppPill +
       '<span class="v2-row-meta">marge nette</span>' +
-      '<span class="v2-row-val mono" style="color:var(--c-opp)">' + V2.fmtEur(x.marge) + '</span>' +
-      '<span class="v2-row-val mono" style="min-width:84px;text-align:right">' + V2.fmtEur(x.ca) + '</span>' +
+      // 24/09/2026 — officine d'un collègue : « — » plutôt qu'un faux « 0 € »
+      '<span class="v2-row-val mono" style="color:var(--c-opp)">' + (V2.voitVentesDe(x.p.id) ? V2.fmtEur(x.marge) : '—') + '</span>' +
+      '<span class="v2-row-val mono" style="min-width:84px;text-align:right">' + (V2.voitVentesDe(x.p.id) ? V2.fmtEur(x.ca) : '—') + '</span>' +
       '<span class="v2-row-chev">' + ICO('chev', 16) + '</span>' +
       '</a>';
   }
@@ -1716,6 +1720,10 @@
     // ── Colonne « chiffres » ──
     var A = analyseData(pid, sales);
     var chiffres = analyseKpis(A, marge, nbRefs) + analyseChart(A) + analyseTranches(A) + analyseParts(A) + analyseTop5(A);
+    // 24/09/2026 — officine d'un collègue (commercial restreint) : aucun chiffre de vente,
+    // ni « déjà commandé / à pousser » (ça dirait ce qu'elle achète), ni audit de marge.
+    var voitVentes = V2.voitVentesDe(pid);
+    if (!voitVentes) chiffres = '<div class="v2-card pha-card"><div class="pha-sub" style="padding:16px 18px">Les chiffres de vente de cette officine sont réservés à son commercial' + (pharma.comms && pharma.comms.length ? ' (' + esc(pharma.comms.join(', ')) + ')' : '') + '.</div></div>';
 
     // Best rotations du groupement / réseau : détail produit par produit, replié (inchangé)
     var rot = grpBestRotations(pid, 60);
@@ -1780,7 +1788,8 @@
       '</div>';
     // ⚠️ window.ARGUMENT (part d'abandon, donnée protégée) est requis : sans lui le
     // calcul rendrait des ZÉROS silencieux. On le charge et on re-rend, comme les ventes.
-    var auditTab = (V2.audit && window.WML_SALES && window.PROD_STATS && window.ARGUMENT)
+    if (!voitVentes) { listing = ''; generiqueurSec = ''; }
+    var auditTab = (voitVentes && V2.audit && window.WML_SALES && window.PROD_STATS && window.ARGUMENT)
       ? '<div id="aud">' + V2.audit.sheetFor(pid) + V2.audit.importSection() + '</div>' : '';
     if (V2.audit && window.WML_SALES && window.PROD_STATS && !window.ARGUMENT && V2.loadFiles) {
       V2.loadFiles(['argument']).then(function () { if (V2.route && V2.route.name === 'pharma') V2.render(); });
@@ -2270,7 +2279,7 @@
     var list = Object.keys(byG).map(function (g) {
       var o = byG[g];
       o.nb = o.members.length;
-      o.active = o.members.filter(function (p) { return pharmaSalesAll(p.id).length > 0; }).length;
+      o.active = o.members.filter(function (p) { return aDesVentes(p.id); }).length;
       return o;
     });
     if (grpListSort === 'name') list.sort(function (a, b) { return a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' }); });
@@ -2340,6 +2349,12 @@
   // ovKey (optionnel) : applique les produits retirés/ajoutés à la main.
   function productsForIds(ids, ovKey) {
     var bIdx = benchIndex(), byCip = {}, activeSet = {};
+    // 24/09/2026 — confidentialité : une liste personnalisée ou un petit groupement (< 5 officines)
+    // trahirait les achats d'une officine précise → seulement les siennes pour un commercial restreint.
+    // Un groupement d'au moins 5 officines reste un agrégat par produit (accepté par Will).
+    if (V2.ventesRestreintes() && !(String(ovKey || '').indexOf('GRP:') === 0 && Object.keys(ids).length >= 5)) {
+      var idsV = {}; Object.keys(ids).forEach(function (k) { if (V2.voitVentesDe(k)) idsV[k] = ids[k]; }); ids = idsV;
+    }
     (V2.sales || []).forEach(function (s) {
       if (!ids[String(s.pharmacyId)]) return;
       var cip = String(s.artCode || ''); if (cip.length < 7) return;
@@ -2513,13 +2528,13 @@
       return groupName(p) === grpName;
     }).map(function (p) {
       var ps = pharmaSalesAll(p.id);
-      return { p: p, ca: V2.sumCA(ps), active: ps.length > 0 };
+      return { p: p, ca: V2.sumCA(ps), active: aDesVentes(p.id), voit: V2.voitVentesDe(p.id) };
     }).sort(function (a, b) { return (b.active - a.active) || (b.ca - a.ca); });
     var memRows = members.map(function (m) {
       return '<a class="v2-row" onclick="V2.go(\'pharma\',\'' + esc(String(m.p.id)) + '\')">' +
         '<span class="v2-row-dot" style="background:' + esc(m.p.color || 'var(--c-cat)') + '"></span>' +
         '<span class="v2-row-name">' + esc(m.p.name) + (m.p.ville ? ' <span style="color:var(--muted);font-weight:500">· ' + esc(m.p.ville) + '</span>' : '') + '</span>' +
-        (m.active ? '<span class="v2-row-val mono">' + V2.fmtEur(m.ca) + '</span>' : '<span class="v2-row-meta">non cliente</span>') +
+        (m.active ? (m.voit ? '<span class="v2-row-val mono">' + V2.fmtEur(m.ca) + '</span>' : '<span class="v2-row-meta">cliente</span>') : '<span class="v2-row-meta">non cliente</span>') +
         '<span class="v2-row-chev">' + ICO('chev', 16) + '</span>' +
       '</a>';
     }).join('');
@@ -3454,7 +3469,8 @@
       // 11/09/2026 — perf : par l'index ventes (une passe complète PAR liste sinon)
       Object.keys(ids).forEach(function (pid) {
         var ss = pharmaSalesAll(pid);
-        for (var si = 0; si < ss.length; si++) { ca += ss[si].mntNetHt || 0; actSet[pid] = 1; }
+        for (var si = 0; si < ss.length; si++) ca += ss[si].mntNetHt || 0;
+        if (aDesVentes(pid)) actSet[pid] = 1;
       });
       var nb = (l.ids || []).length, active = Object.keys(actSet).length;
       return '<a class="v2-row" onclick="V2.pharmaListOpen(\'' + esc(l.id) + '\')">' +
@@ -3511,14 +3527,14 @@
       '</div>';
     var members = (V2.pharmacies || []).filter(function (p) { return ids[String(p.id)]; }).map(function (p) {
       var ps = pharmaSalesAll(p.id);
-      return { p: p, ca: V2.sumCA(ps), active: ps.length > 0 };
+      return { p: p, ca: V2.sumCA(ps), active: aDesVentes(p.id), voit: V2.voitVentesDe(p.id) };
     }).sort(function (a, b) { return (b.active - a.active) || (b.ca - a.ca); });
     var memRows = members.map(function (m) {
       return '<div class="v2-row pl-mem" onclick="V2.go(\'pharma\',\'' + esc(String(m.p.id)) + '\')">' +
         '<span class="v2-row-dot" style="background:' + esc(m.p.color || 'var(--c-cat)') + '"></span>' +
         '<span class="v2-row-name">' + esc(m.p.name) + (m.p.ville ? ' <span style="color:var(--muted);font-weight:500">· ' + esc(m.p.ville) + '</span>' : '') +
           (m.p.groupement ? ' <span class="pl-mem-grp">' + esc(groupName(m.p)) + '</span>' : '') + '</span>' +
-        (m.active ? '<span class="v2-row-val mono">' + V2.fmtEur(m.ca) + '</span>' : '<span class="v2-row-meta">non cliente</span>') +
+        (m.active ? (m.voit ? '<span class="v2-row-val mono">' + V2.fmtEur(m.ca) + '</span>' : '<span class="v2-row-meta">cliente</span>') : '<span class="v2-row-meta">non cliente</span>') +
         '<button class="pl-rm" title="Retirer de la liste" onclick="event.stopPropagation();V2.pharmaListRemovePh(\'' + esc(id) + '\',\'' + esc(String(m.p.id)) + '\')">' + ICO('close', 15, 2) + '</button>' +
       '</div>';
     }).join('');
@@ -3661,7 +3677,7 @@
       var mk = window.L.circleMarker([p.lat, p.lng], { radius: st.r, color: st.color, weight: 1.5, fillColor: st.fill, fillOpacity: .82 });
       var pop = '<b>' + esc(p.name) + '</b>' + (p.ville ? '<br>' + esc(p.cp || '') + ' ' + esc(p.ville) : '') +
         (p.groupement ? '<br><span style="color:#737A8C">' + esc(groupName(p)) + '</span>' : '') +
-        '<br><b style="color:#0050E6">' + V2.fmtEur(ca) + '</b> de CA' +
+        (V2.voitVentesDe(p.id) ? '<br><b style="color:#0050E6">' + V2.fmtEur(ca) + '</b> de CA' : '') +
         '<br><a href="#" onclick="V2.go(\'pharma\',\'' + esc(String(p.id)) + '\');return false" style="color:#0050E6;font-weight:700">Ouvrir la fiche →</a>';
       mk.bindPopup(pop); mk.addTo(_secMap); pts.push([p.lat, p.lng]);
     });

@@ -106,6 +106,7 @@
   // CA cumulé d'une officine, depuis les ventes réseau déjà en mémoire.
   V2.rdvCA = function (pid) {
     if (!V2.sumCA || !V2.sales) return null;
+    if (V2.voitVentesDe && !V2.voitVentesDe(pid)) return null;   // 24/09/2026 — officine d'un collègue
     var s = V2.sales.filter(function (x) { return String(x.pharmacyId) === String(pid); });
     return s.length ? V2.sumCA(s) : null;
   };

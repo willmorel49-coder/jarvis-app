@@ -52,6 +52,8 @@
     // (le piège des « zéros silencieux »). On déclenche le chargement et on rend null,
     // que tous les appelants traitent déjà (garde `a && a.annAb > 0`, `d.net`).
     if (!abPart()) { if (V2.loadFiles) V2.loadFiles(['argument']); return null; }
+    // 24/09/2026 — confidentialité : pas d'audit de l'officine d'un collègue (la moyenne réseau reste)
+    if (pid && V2.voitVentesDe && !V2.voitVentesDe(pid)) return null;
     var ck = String(pid || '_reseau'); if (_ac[ck]) return _ac[ck];
     var M = cipMap();
     var S = pid ? (salesByPid()[String(pid)] || []) : (window.WML_SALES || []);

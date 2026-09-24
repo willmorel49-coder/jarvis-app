@@ -376,6 +376,7 @@
       if (M) {
         for (id in idx.officines) {
           if (!Object.prototype.hasOwnProperty.call(idx.officines, id)) continue;
+          if (V2.voitVentesDe && !V2.voitVentesDe(id)) continue;   // 24/09/2026 — confidentialité : ses officines seulement
           var r = M.listingOfficine(idx, id, { stock: stk, garantirMin: false, exigerStock: false });
           for (i = 0; i < r.lignes.length; i++) {
             var l = r.lignes[i];

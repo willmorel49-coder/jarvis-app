@@ -1238,10 +1238,12 @@
   // 11/09/2026 — perf : CA par officine calculé en UNE passe sur les ventes et
   // mémorisé sur la référence de V2.sales. Avant : 690 × filter() sur ~600 000
   // ventes à CHAQUE retour à l'accueil (≈ 1 s sur Mac, plusieurs sur iPhone).
-  var _caByPid = null, _caRef = null;
+  // 24/09/2026 — confidentialité : un commercial restreint n'additionne que SES officines.
+  var _caByPid = null, _caRef = null, _caUser = null;
   V2.caByPharma = function () {
-    if (_caByPid && _caRef === V2.sales) return _caByPid;
-    var m = {}, S = V2.sales || [];
+    if (_caByPid && _caRef === V2.sales && _caUser === V2.user) return _caByPid;
+    _caUser = V2.user;
+    var m = {}, S = V2.ventesVisibles ? V2.ventesVisibles(V2.sales || []) : (V2.sales || []);
     for (var i = 0; i < S.length; i++) { var s = S[i]; m[s.pharmacyId] = (m[s.pharmacyId] || 0) + (s.mntNetHt || 0); }
     _caByPid = m; _caRef = V2.sales; return m;
   };
