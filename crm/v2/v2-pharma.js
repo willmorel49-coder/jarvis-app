@@ -489,7 +489,9 @@
     pharmaSales(pid).forEach(function (s) { var c = String(s.artCode || ''); if (c.length >= 7) owned.add(c); });
     // RÉSEAU : seuil de pénétration par famille (bas, pour avoir BEAUCOUP de produits et
     // bien répartis) + plafond par famille (équilibre, aucune famille n'écrase les autres).
-    // GROUPEMENT : on prend TOUT ce que le groupement commande et qu'elle n'a pas (aucun seuil).
+    // GROUPEMENT : ce que le groupement commande et qu'elle n'a pas, commandé par au moins
+    // 10 % de ses pharmacies (Will, 24/09/2026 : 38 pages et 1 à 2 min de PDF sans seuil).
+    var PEN_GRP = 0.10;
     var PEN = { pp: 0.20, mi: 0.08, gen: 0.08, genp: 0.08, nr: 0.08, ch: 0.04, froid: 0.04, biosim: 0.02 };
     var penFor = function (k) { return PEN[k] != null ? PEN[k] : 0.08; };
     var CAP = grpScope ? 200 : 40;   // plafond par famille
@@ -499,6 +501,7 @@
       var b = bIdx.get(cip); if (!b) return;
       var cat = classify(b, cip); if (!cat || !buckets[cat]) return;
       if (!grpScope && total >= 2 && e.ph.size < Math.max(2, Math.ceil(total * penFor(cat)))) return;  // réseau : seuil
+      if (grpScope && e.ph.size < Math.max(2, Math.ceil(total * PEN_GRP))) return;  // groupement : seuil 10 %
       var bp = V2.bestPrice(b), ht = bp.ht || 0, ip = bp.ip || 0;
       var rem = (ht > 0 && ip > 0 && ip <= ht) ? Math.round((1 - ip / ht) * 1000) / 10 : 0;
       buckets[cat].push({ cip: cip, designation: b.designation || '', prix_ht: ht, prix_ip: ip, offre: bp.offre,
