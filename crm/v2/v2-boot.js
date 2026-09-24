@@ -50,6 +50,56 @@
     return Object.keys(set).sort();
   };
 
+  // ── Confidentialité des ventes entre commerciaux (24/09/2026, demande de la DR) ──
+  // Un commercial « restreint » ne voit AUCUN chiffre de vente (CA, marge, quantités,
+  // top produits, potentiel) d'une officine qui n'est pas la sienne. Même règle que le
+  // Pilotage : restreint = `commercial` renseigné et pas `voit_tous_commerciaux`
+  // (`role` ne discrimine rien : toute l'équipe est en admin). « Sienne » = ses `comms`
+  // (WML_OFFICINES) contiennent son prénom ou un collègue ouvert (`voitAussi`).
+  // UNE seule fonction pour tous les écrans — ne pas en réécrire une locale.
+  // ⚠️ TEMPS 1 = masquage à l'écran : les ventes sont encore téléchargées en entier.
+  V2.ventesRestreintes = function () {
+    var u = V2.user;
+    return !!(u && u.commercial && !(u.voitTous || u.voitTousReel));
+  };
+  V2.mesComms = function () {
+    var u = V2.user; if (!u || !u.commercial) return [];
+    return [String(u.commercial)].concat(u.voitAussi || []);
+  };
+  function cleOfficine(x) { return String(x == null ? '' : x).replace(/[^0-9]/g, ''); }
+  // x = identifiant d'officine (id/code WML, CIP de la carte) OU objet portant `comms`/`id`
+  V2.estMonOfficine = function (x) {
+    var mes = V2.mesComms(); if (!mes.length) return false;
+    var comms = (x && typeof x === 'object' && x.comms) ? x.comms : null;
+    if (!comms) {
+      var W = window.WML_OFFICINES || [];
+      var m = V2.estMonOfficine._m;
+      if (!m || m.ref !== W || m.n !== W.length) {
+        var idx = {};
+        W.forEach(function (o) { if (!o) return; var cs = o.comms || []; [o.id, o.code].forEach(function (k) { k = cleOfficine(k); if (k) idx[k] = cs; }); });
+        m = V2.estMonOfficine._m = { ref: W, n: W.length, idx: idx };
+      }
+      comms = m.idx[cleOfficine(x && typeof x === 'object' ? (x.id || x.code) : x)] || [];
+    }
+    return comms.some(function (c) { return mes.indexOf(c) >= 0; });
+  };
+  V2.voitVentesDe = function (x) { return !V2.ventesRestreintes() || V2.estMonOfficine(x); };
+  // ventes (V2.sales ou tableau équivalent) réduites aux officines visibles
+  V2.ventesVisibles = function (rows) {
+    rows = rows || V2.sales || [];
+    if (!V2.ventesRestreintes()) return rows;
+    var m = V2.ventesVisibles._m;
+    if (m && m.ref === rows && m.u === V2.user) return m.val;
+    var ok = {};
+    var val = rows.filter(function (s) {
+      var k = String(s.pharmacyId);
+      if (!(k in ok)) ok[k] = V2.estMonOfficine(k);
+      return ok[k];
+    });
+    V2.ventesVisibles._m = { ref: rows, u: V2.user, val: val };
+    return val;
+  };
+
   // ── Prix le plus bas (offre labo Sanofi/UPSA… via offre_ip) ─────
   // Renvoie { ip, ht, remise, offre } : on prend l'offre labo si elle existe
   // et est inférieure au prix net standard. La remise est recalculée sur ce

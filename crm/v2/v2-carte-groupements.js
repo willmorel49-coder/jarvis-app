@@ -86,15 +86,18 @@
   function frow(k, v) { return '<div class="cg-f-row"><span class="cg-f-k">' + k + '</span><span class="cg-f-v">' + v + '</span></div>'; }
   function eur(v) { return (v || 0) >= 1000 ? Math.round(v / 1000) + ' k€' : Math.round(v || 0) + ' €'; }
   // stats clients précises d'un groupement (depuis données réconciliées) : CA, tiers, commerciaux
+  // 24/09/2026 — confidentialité : CA et palier A/B/C (tranche de CA) comptés sur les seules
+  // officines que l'utilisateur peut voir (V2.voitVentesDe, v2-boot.js) ; nCa = celles-là.
+  function voit(p) { return !V2.voitVentesDe || V2.voitVentesDe(p[13]); }
   function grpClientStats(pts) {
-    var ca = 0, tiers = { 'Client A': 0, 'Client B': 0, 'Client C': 0 }, byComm = {}, n = 0;
+    var ca = 0, tiers = { 'Client A': 0, 'Client B': 0, 'Client C': 0 }, byComm = {}, n = 0, nCa = 0;
     for (var i = 0; i < pts.length; i++) {
       var p = D.p[pts[i]]; if (!isClient(p)) continue;
-      n++; ca += p[12] || 0;
-      var t = segOf(p); if (tiers[t] != null) tiers[t]++;
+      n++;
+      if (voit(p)) { nCa++; ca += p[12] || 0; var t = segOf(p); if (tiers[t] != null) tiers[t]++; }
       var cm = commOf(p); if (cm) byComm[cm] = (byComm[cm] || 0) + 1;
     }
-    return { n: n, ca: ca, tiers: tiers, byComm: byComm };
+    return { n: n, nCa: nCa, ca: ca, tiers: tiers, byComm: byComm };
   }
   function ficheHtml(name) {
     var e = GIDX[name] || { c: 0, pr: 0, pts: [] };
@@ -103,7 +106,7 @@
     var cs = grpClientStats(e.pts);
     var pen = tot > 0 ? Math.round(e.c / tot * 100) : 0;
     var gq = encodeURIComponent(name + ' groupement pharmacie');
-    var caMoy = cs.n > 0 ? cs.ca / cs.n : 0;
+    var caMoy = cs.nCa > 0 ? cs.ca / cs.nCa : 0;
     var h = '<div class="cg-fiche">';
     h += '<a class="cg-f-back" onclick="V2.cgSelect(\'\')">← Tous les groupements</a>';
     h += '<div class="cg-f-nm">' + esc(name) + (d && d.statut ? ' <span class="cg-f-st st-' + esc(d.statut) + '">' + esc(d.statut) + '</span>' : '') + '</div>';
@@ -169,8 +172,8 @@
       }).join('') + '</div>';
     }
     // Top clients du groupement (par CA)
-    if (cs.n > 0) {
-      var cli = e.pts.filter(function (idx) { return isClient(D.p[idx]); })
+    if (cs.nCa > 0) {
+      var cli = e.pts.filter(function (idx) { return isClient(D.p[idx]) && voit(D.p[idx]); })
         .sort(function (a, b) { return (D.p[b][12] || 0) - (D.p[a][12] || 0); }).slice(0, 6);
       h += '<div class="cg-f-sub">Top clients (CA)</div><div class="cg-f-top">';
       h += cli.map(function (idx) {

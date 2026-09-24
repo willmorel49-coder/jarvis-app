@@ -202,7 +202,7 @@
       if (sansAccent(n).indexOf(q) < 0) continue;
       out.push({ type: 'grp', cle: n, titre: n, sous: G.n[n] + ' officines', logo: logoGrp(n) });
     }
-    var phs = V2.pharmacies || [], nOff = 0;
+    var phs = (V2.pharmacies || []).filter(function (p) { return !V2.voitVentesDe || V2.voitVentesDe(p.id); }), nOff = 0;   // 24/09/2026 — ses officines seulement
     for (i = 0; i < phs.length && nOff < MAX_OFF; i++) {
       var p = phs[i];
       // ⚠️ ville et cp sont vides pour une partie du parc : on ne se repose
@@ -709,11 +709,12 @@
   function rendreClient() {
     var M = window.V2PRODUITS, idx = V2.produits.index();
     if (!M || !idx) return vide('Moteur indisponible', 'Le fichier v2-produits-moteur.js n\'est pas chargé.');
-    var phs = (V2.pharmacies || []).slice().sort(function (a, b) {
+    // 24/09/2026 — confidentialité : un commercial restreint ne choisit que ses officines
+    var phs = (V2.pharmacies || []).filter(function (p) { return !V2.voitVentesDe || V2.voitVentesDe(p.id); }).sort(function (a, b) {
       return String(a.name || '').localeCompare(String(b.name || ''), 'fr');
     });
     if (!phs.length) return vide('Aucune officine', 'Les données réseau ne sont pas chargées.');
-    if (!S.ph) S.ph = String(phs[0].id);
+    if (!S.ph || (V2.voitVentesDe && !V2.voitVentesDe(S.ph))) S.ph = String(phs[0].id);
 
     var i;
     var r = M.listingOfficine(idx, S.ph, { stock: stockIP() });
