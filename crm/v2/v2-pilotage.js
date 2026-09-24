@@ -1239,7 +1239,10 @@
       var mesComms = myComm ? [myComm].concat(voitAussi) : [];
       if (myComm && !voitTous) {
         if (!V2._piloScopedInit) { V2.commFilter = myComm; V2._piloScopedInit = true; }   // atterrit sur « Moi »
-        if (V2.commFilter !== '' && mesComms.indexOf(V2.commFilter) < 0) V2.commFilter = myComm;  // jamais un collègue non ouvert
+        // 25/09/2026 — plus de « Global » non plus : dans l'espace Escale (4 commerciaux), le total
+        // revenait à montrer le CA des collègues (Will, sur le compte de Philippe : « il a accès à des
+        // stats de Tiffany »). Un restreint ne voit que « Moi » et les collègues ouverts sur son profil.
+        if (mesComms.indexOf(V2.commFilter) < 0) V2.commFilter = myComm;  // jamais un collègue non ouvert, jamais le global
       }
       var sales = V2.commSales ? V2.commSales() : (V2.sales || []);
       var top = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' });
@@ -2004,8 +2007,8 @@
         // Mode OPSO (Normandie Pharma) : pas de découpage par commercial Intégral
         commSeg = '';
       } else if (myComm && !voitTous) {
-        // Restreint : uniquement son périmètre ou le global national (jamais un collègue nommé)
-        commSeg = '<div class="pilo-seg" style="margin-right:8px">' + cb(myComm, 'Moi') + voitAussi.map(function (cm) { return cb(cm, cm); }).join('') + cb('', (window.V2_BRAND && window.V2_BRAND.escale) ? 'Global Escale' : 'Global national') + '</div>';
+        // Restreint : uniquement son périmètre et les collègues ouverts sur son profil (ni collègue nommé, ni global)
+        commSeg = voitAussi.length ? '<div class="pilo-seg" style="margin-right:8px">' + cb(myComm, 'Moi') + voitAussi.map(function (cm) { return cb(cm, cm); }).join('') + '</div>' : '';
       } else if (comms.length > 1) {
         // Super-admin : Tous + chaque commercial
         commSeg = '<div class="pilo-seg" style="margin-right:8px">' + cb('', 'Tous') + comms.map(function (cm) { return cb(cm, cm); }).join('') + '</div>';
