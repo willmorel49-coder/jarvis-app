@@ -27,11 +27,11 @@
   V2.ready = false;
   V2.commFilter = '';   // '' = tous | 'Will' | 'Pauline'
   // 11/09/2026 — ESCALE PHARMA (Chilly-Mazarin, établissement du groupe) a son
-  // propre espace escale/v2 : le responsable Escale et ses quatre commerciaux. Le
+  // propre espace (crm/v2/index.html?espace=escale depuis le 24/09) : le responsable Escale et ses quatre commerciaux. Le
   // périmètre, c'est LEURS officines (prénoms exacts des données de ventes).
   // Pas de colonne dédiée dans user_profiles (pas de DDL possible) : un compte
   // Escale se reconnaît à `commercial` ∈ cette liste, ou = 'Escale' (Alexandre).
-  V2.ESCALE_COMMS = ['Guy', 'Tiffany', 'Philippine', 'Germain'];
+  V2.ESCALE_COMMS = ['Guy', 'Tiffany', 'Philippe', 'Germain'];
   V2.estCommEscale = function (c) { c = String(c || ''); return c === 'Escale' || V2.ESCALE_COMMS.indexOf(c) >= 0; };
   // ventes du commercial filtré (ou toutes)
   // 11/09/2026 — perf : mémorisé sur (V2.sales, V2.commFilter). Le Pilotage
@@ -100,13 +100,18 @@
         try { location.replace('../../opso/v2/index.html'); } catch (e) {}
         return false;
       }
-      // 11/09/2026 — Escale Pharma : un compte Escale qui ouvre le CRM Intégral est
-      // renvoyé vers son espace ; un commercial NON Escale qui ouvre l'espace Escale
+      // 11/09/2026 — Escale Pharma : un commercial NON Escale qui ouvre l'espace Escale
       // est renvoyé vers le CRM. Un compte sans `commercial` (direction) va partout.
+      // 24/09/2026 — Will : les commerciaux Escale ont « accès à toute l'app comme les
+      // commerciaux Intégral », en voyant soit Intégral soit Escale, « features
+      // communes, pas de distinctions ». Ils ne sont donc plus renvoyés : l'espace
+      // Escale est le MÊME CRM (crm/v2/index.html?espace=escale), borné à leurs
+      // officines. Seul le compte générique (commercial='Escale', aucun prénom)
+      // reste confiné à l'espace Escale.
       var appEscale = !!(window.V2_BRAND && window.V2_BRAND.escale);
       var commProfil = String(pr.data.commercial || '');
-      if (V2.estCommEscale(commProfil) && !appEscale && !(window.V2_BRAND && window.V2_BRAND.opso)) {
-        try { location.replace('../../escale/v2/index.html'); } catch (e) {}
+      if (commProfil === 'Escale' && !appEscale && !(window.V2_BRAND && window.V2_BRAND.opso)) {
+        try { location.replace('../../crm/v2/index.html?espace=escale'); } catch (e) {}
         return false;
       }
       if (appEscale && commProfil && !V2.estCommEscale(commProfil)) {
@@ -130,6 +135,9 @@
       // générique (commercial='Escale') ne l'a pas — il ne doit pas voir le
       // bouton « Intégral » alors que son V2.user ressemble sinon au premier.
       V2.user.voitTousReel = pr.data.voit_tous_commerciaux === true;
+      // 24/09/2026 — `commercial` BRUT du profil : ouvre la bascule Intégral ↔ Escale
+      // aux quatre commerciaux Escale (adresses @integralpharma.fr), dans les deux sens.
+      V2.user.commEscale = V2.ESCALE_COMMS.indexOf(commProfil) >= 0;
       // 'Escale' n'est le prénom d'aucun commercial : dans l'espace Escale, ce
       // compte voit tout le périmètre (les données y sont déjà bornées aux quatre).
       if (appEscale && commProfil === 'Escale') { V2.user.commercial = ''; V2.user.voitTous = true; }
@@ -265,9 +273,9 @@
     return phs;
   };
 
-  // ── Périmètre ESCALE PHARMA (app escale/v2) ─────────────────────────────
+  // ── Périmètre ESCALE PHARMA (crm/v2/index.html?espace=escale) ─────────────────────────────
   // Même mécanique que l'OPSO : V2.pharmacies réduit aux officines suivies par
-  // Guy, Tiffany, Philippine ou Germain, puis V2.sales aux ventes de CES officines
+  // Guy, Tiffany, Philippe ou Germain, puis V2.sales aux ventes de CES officines
   // faites par CES commerciaux. Hors app Escale : ne touche à rien.
   V2.estOfficineEscale = function (p) {
     return (p && p.comms || []).some(function (c) { return V2.ESCALE_COMMS.indexOf(c) >= 0; });
@@ -275,6 +283,10 @@
   V2.applyEscalePerimeter = function () {
     if (!(window.V2_BRAND && window.V2_BRAND.escale)) return;
     V2.pharmacies = (V2.pharmacies || []).filter(V2.estOfficineEscale);
+    // 24/09/2026 — l'espace Escale charge désormais TOUS les modules (carte, audit,
+    // RDV…), dont plusieurs lisent window.WML_OFFICINES en direct : bornée ici aussi,
+    // sinon une officine Intégral y passerait pour une cliente Escale.
+    if (window.WML_OFFICINES) window.WML_OFFICINES = window.WML_OFFICINES.filter(V2.estOfficineEscale);
     var ids = {}; V2.pharmacies.forEach(function (p) { ids[String(p.id)] = 1; });
     V2.sales = (V2.sales || []).filter(function (s) {
       return ids[String(s.pharmacyId)] && (!s.commercial || V2.ESCALE_COMMS.indexOf(s.commercial) >= 0);
@@ -889,7 +901,7 @@
   V2.chargerScripts = function (urls) {
     urls = urls || [];
     if (!urls.length) return Promise.resolve();
-    var V = '?v=20260924j' + (window.V2_VER || '20260915g');
+    var V = '?v=20260924k' + (window.V2_VER || '20260915g');
     return Promise.all(urls.map(function (u) {
       return new Promise(function (resolve) {
         var s = document.createElement('script');
@@ -1306,7 +1318,7 @@
     // de le servir, et le lecteur compacté ne trouverait pas ses dictionnaires.
     // Pas besoin de le suivre à chaque déploiement en revanche : quand `VER` de
     // sw.js change, l'activation du service worker efface tous les caches.
-    var V = '?v=20260924j';
+    var V = '?v=20260924k';
     V2.versionDonnees = V;   // lu par chargerScriptProtege (fiche carte)
     var promises = keys.map(function (k) {
       var src = (window.V2_DATA_BASE || '../') + DATA_FILES[k];

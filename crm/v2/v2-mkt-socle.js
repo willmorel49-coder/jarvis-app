@@ -340,11 +340,7 @@
   }
   // Même condition que la bascule Intégral ↔ Escale de V2.topbar (v2-app.js).
   function bascule() {
-    var mail = (V2.user && V2.user.email) || '';
-    if (!/@escalepharma\.fr$/i.test(mail)) return null;
-    var inEscale = !!(window.V2_BRAND && window.V2_BRAND.escale);
-    if (inEscale && !(V2.user && V2.user.voitTousReel === true)) return null;
-    return { to: inEscale ? 'crm' : 'escale', label: inEscale ? 'Intégral' : 'Escale' };
+    return V2.basculeEspace ? V2.basculeEspace() : null;
   }
 
   // La barre basse (< 860 px) : « Le bureau » (absent sur le bureau lui-même) + le geste de création du lieu où l'on est.

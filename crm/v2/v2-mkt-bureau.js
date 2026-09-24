@@ -201,7 +201,7 @@
   }
 
   function reperesHtml() {
-    var libre = !(window.V2_BRAND && (window.V2_BRAND.opso || window.V2_BRAND.escale)) && !!V2.remonteeOpen;
+    var libre = !(window.V2_BRAND && window.V2_BRAND.opso) && !!V2.remonteeOpen;
     var h = '<span class="mkb-cap">Repères</span>' + REPERES.map(function (r) {
       return '<button type="button" class="mkb-repere mk-souleve mk-press" data-mkb-repere="' + r[0] + '"><i>' + ic(r[2], 20) + '</i>' +
         '<span class="mkb-txt"><strong>' + esc(r[1]) + '</strong></span>' + ic('suivant', 18, 2) + '</button>';
