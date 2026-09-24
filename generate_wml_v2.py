@@ -651,3 +651,10 @@ import subprocess as _sp, sys as _sys, os as _os
 _r = _sp.run([_sys.executable, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), 'proteger_conditions.py')])
 if _r.returncode != 0:
     _sys.exit('ARRÊT : proteger_conditions.py a échoué — ne pas committer.')
+
+# ── 24/09/2026 — confidentialité des ventes, temps 2 : un jeu PAR COMMERCIAL
+# (ses officines + le reste du réseau en total par produit), après proteger_conditions
+# qui vient d'écrire wml-officines-ca.js. publier.py le refait de toute façon.
+_r = _sp.run([_sys.executable, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), 'decouper_par_commercial.py')])
+if _r.returncode != 0:
+    _sys.exit('ARRÊT : decouper_par_commercial.py a échoué — ne pas publier.')

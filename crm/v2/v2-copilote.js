@@ -83,8 +83,9 @@
     return by;
   }
   function totalPharma() {
+    var R = V2.reperesReseau(); if (R) return R.nph || 1;   // restreint : réseau tout fait
     var by = coIndex(), n = 0;
-    for (var k in by) if (by[k].actif) n++;
+    for (var k in by) if (by[k].actif && !V2.estReste(k)) n++;
     return n || (V2.pharmacies || []).length || 1;
   }
   function orderedCips(pid) {

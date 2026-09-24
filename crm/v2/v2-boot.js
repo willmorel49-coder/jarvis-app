@@ -100,6 +100,18 @@
     return val;
   };
 
+  // ── TEMPS 2 (24/09/2026) : le jeu de ventes d'un commercial restreint ──
+  // Le reste du réseau n'y est qu'en total par (mois, produit), sur une officine fictive
+  // « 0 » ou « 0E » : les sommes par produit restent exactes, mais rien ne s'y COMPTE par
+  // officine. Les repères qu'on ne peut plus compter (officines actives par mois, rang de
+  // ses officines) arrivent tout faits dans l'index du jeu (decouper_par_commercial.py).
+  V2.estReste = function (pid) { pid = String(pid); return pid === '0' || pid === '0E'; };
+  // null = ventes complètes (accès total) : compter comme avant.
+  V2.reperesReseau = function () {
+    var j = V2._dossierVentes && window.WML_TRANCHES_JEU; if (!j) return null;
+    return (window.V2_BRAND && window.V2_BRAND.escale) ? j.E : j.T;
+  };
+
   // ── Prix le plus bas (offre labo Sanofi/UPSA… via offre_ip) ─────
   // Renvoie { ip, ht, remise, offre } : on prend l'offre labo si elle existe
   // et est inférieure au prix net standard. La remise est recalculée sur ce
@@ -134,6 +146,25 @@
     return sb;
   }
   V2.sb = getSb;
+
+  // Dossier du jeu de ventes = 16 premiers caractères hexa du SHA-256 de `commercial`
+  // (identique côté Python et côté SQL). En cas d'échec, un dossier qui n'existe pas :
+  // le chargement échoue et l'écran le DIT — jamais de repli sur les fichiers complets.
+  function dossierVentes(commercial) {
+    var fini = function (d) { V2._dossierVentes = d; V2._dossierVentesConnu = true; };
+    try {
+      return crypto.subtle.digest('SHA-256', new TextEncoder().encode(commercial)).then(function (b) {
+        fini(Array.prototype.map.call(new Uint8Array(b), function (x) { return (x < 16 ? '0' : '') + x.toString(16); }).join('').slice(0, 16));
+      }, function () { fini('indisponible'); });
+    } catch (e) { fini('indisponible'); return Promise.resolve(); }
+  }
+  V2._dossierVentesPret = Promise.resolve();
+  var FICHIERS_VENTES = { 'wml-officines-ca.js': 1, 'carte-detail.js': 1, 'wml-ventes-index.js': 1 };
+  // Nom dans le seau d'un fichier de ventes : celui du jeu du commercial s'il est restreint.
+  V2.cheminVentes = function (nom) {
+    return (V2._dossierVentes && (FICHIERS_VENTES[nom] || /^wml-ventes-\d+\.js$/.test(nom)))
+      ? 'ventes/' + V2._dossierVentes + '/' + nom : nom;
+  };
 
   // ── AUTH ──────────────────────────────────────
   V2.loadUserProfile = async function () {
@@ -185,6 +216,13 @@
       // générique (commercial='Escale') ne l'a pas — il ne doit pas voir le
       // bouton « Intégral » alors que son V2.user ressemble sinon au premier.
       V2.user.voitTousReel = pr.data.voit_tous_commerciaux === true;
+      // 24/09/2026 — TEMPS 2, le vrai verrou : un compte restreint ne reçoit plus que SON
+      // jeu de ventes (ventes/<dossier>/ sur Supabase, decouper_par_commercial.py). La règle
+      // d'accès (docs/supabase/ventes-par-commercial.sql) lui refuse les fichiers complets.
+      // Même critère que cette règle : `commercial` BRUT non vide et pas voit_tous_commerciaux.
+      V2._dossierVentes = null; V2._dossierVentesConnu = false;
+      V2._dossierVentesPret = (commProfil.trim() && !V2.user.voitTousReel)
+        ? dossierVentes(commProfil) : Promise.resolve().then(function () { V2._dossierVentesConnu = true; });
       // 24/09/2026 — `commercial` BRUT du profil : ouvre la bascule Intégral ↔ Escale
       // aux quatre commerciaux Escale (adresses @integralpharma.fr), dans les deux sens.
       V2.user.commEscale = V2.ESCALE_COMMS.indexOf(commProfil) >= 0;
@@ -339,7 +377,8 @@
     if (window.WML_OFFICINES) window.WML_OFFICINES = window.WML_OFFICINES.filter(V2.estOfficineEscale);
     var ids = {}; V2.pharmacies.forEach(function (p) { ids[String(p.id)] = 1; });
     V2.sales = (V2.sales || []).filter(function (s) {
-      return ids[String(s.pharmacyId)] && (!s.commercial || V2.ESCALE_COMMS.indexOf(s.commercial) >= 0);
+      // « 0E » = part Escale du reste du réseau (jeu d'un commercial restreint)
+      return (ids[String(s.pharmacyId)] || String(s.pharmacyId) === '0E') && (!s.commercial || V2.ESCALE_COMMS.indexOf(s.commercial) >= 0);
     });
   };
 
@@ -378,7 +417,9 @@
         var W = window.WML_SALES;
         for (var iw = 0; iw < W.length; iw++) {
           var s = W[iw];
-          s[0] = dOff[s[0]]; s[2] = dCom[s[2]]; s[3] = dPro[s[3]];
+          // rang -1/-2 = total du reste du réseau (jeu d'un commercial) : officine « 0 » (hors
+          // Escale) ou « 0E » (part Escale), sans commercial — voir V2.estReste
+          s[0] = s[0] < 0 ? (s[0] === -2 ? '0E' : '0') : dOff[s[0]]; s[2] = s[2] < 0 ? '' : dCom[s[2]]; s[3] = dPro[s[3]];
         }
       }
       // format tableau : [pharmacyId, mois, commercial, cip13, qte, puNet, mntNetHt]
@@ -658,6 +699,7 @@
   // Rend le TEXTE du fichier protégé `fichier` (nom dans le seau), par le
   // rangement local d'abord, par adresse signée sinon. cb(texte) / ko().
   function texteProtege(fichier, version, cb, ko) {
+    fichier = V2.cheminVentes(fichier);
     var nomCache = CACHE_PROTEGE + version;
     var cle = 'https://protege.local/' + fichier;   // clé synthétique STABLE
     function telecharger(c) {
@@ -729,6 +771,7 @@
   // l'appel de suite(), donc jamais plus de `enVol` + 1 textes en mémoire —
   // c'est la garde contre la panne mémoire du 13/08 (iPhone). ko(nom) sinon.
   function textesProteges(fichiers, version, enVol, onTexte, ko) {
+    fichiers = fichiers.map(V2.cheminVentes);
     var nomCache = CACHE_PROTEGE + version;
     var cle = function (f) { return 'https://protege.local/' + f; };
     var n = fichiers.length, textes = {}, urls = null, cache = null;
@@ -817,6 +860,7 @@
   // protégé comme les tranches de ventes : plus dans le dépôt public, chargé à
   // la demande par la fiche de la carte (v2-carte.js), avec le rangement local.
   V2.chargerScriptProtege = function (nom, cb) {
+    if (!V2._dossierVentesConnu) { V2._dossierVentesPret.then(function () { V2.chargerScriptProtege(nom, cb); }); return; }
     texteProtege(nom, V2.versionDonnees || '', function (texte) { poserTexte(texte, cb); },
                  function () { console.warn('[V2] fichier protégé manquant : ' + nom); cb(false); });
   };
@@ -951,7 +995,7 @@
   V2.chargerScripts = function (urls) {
     urls = urls || [];
     if (!urls.length) return Promise.resolve();
-    var V = '?v=20260924m' + (window.V2_VER || '20260915g');
+    var V = '?v=20260924n' + (window.V2_VER || '20260915g');
     return Promise.all(urls.map(function (u) {
       return new Promise(function (resolve) {
         var s = document.createElement('script');
@@ -1354,6 +1398,11 @@
     if (keys && keys.indexOf('wml') >= 0 && keys.indexOf('wmlca') < 0) {
       keys = keys.concat(['wmlca']);
     }
+    // TEMPS 2 : savoir QUEL jeu de ventes lire avant d'en demander un seul fichier.
+    if (keys && keys.indexOf('wmlca') >= 0 && !V2._dossierVentesConnu) {
+      var ensuite = keys;
+      return V2._dossierVentesPret.then(function () { V2._dossierVentesConnu = true; return V2.loadFiles(ensuite); });
+    }
     if (keys && keys.indexOf('clients') >= 0 && keys.indexOf('clientscond') < 0) {
       keys = keys.concat(['clientscond']);
     }
@@ -1368,7 +1417,7 @@
     // de le servir, et le lecteur compacté ne trouverait pas ses dictionnaires.
     // Pas besoin de le suivre à chaque déploiement en revanche : quand `VER` de
     // sw.js change, l'activation du service worker efface tous les caches.
-    var V = '?v=20260924m';
+    var V = '?v=20260924n';
     V2.versionDonnees = V;   // lu par chargerScriptProtege (fiche carte)
     var promises = keys.map(function (k) {
       var src = (window.V2_DATA_BASE || '../') + DATA_FILES[k];
@@ -1437,7 +1486,19 @@
               // téléchargements à la fois, mais toujours EXÉCUTÉES une par
               // une et dans l'ordre (le pic mémoire reste celui d'une tranche
               // en cours d'exécution + quelques textes en attente).
-              var n = window.WML_TRANCHES || WML_TRANCHES_REPLI;
+              // TEMPS 2 : un compte restreint lit d'abord l'index de SON jeu (nombre de
+              // tranches + empreinte), puis ses tranches — jamais le découpage complet.
+              if (V2._dossierVentes && !window.WML_TRANCHES_JEU) {
+                texteProtege('wml-ventes-index.js', V, function (t) {
+                  poserTexte(t, function () {
+                    if (!window.WML_TRANCHES_JEU) { V2.protegeEchec[k] = true; delete pending[src]; resolve(); return; }
+                    tranchesFaites = false; suivant();
+                  });
+                }, function () { V2.protegeEchec[k] = true; delete pending[src]; resolve(); });
+                return;
+              }
+              var jeu = V2._dossierVentes ? window.WML_TRANCHES_JEU : null;
+              var n = jeu ? jeu.n : (window.WML_TRANCHES || WML_TRANCHES_REPLI);
               var noms = [];
               for (var ti = 1; ti <= n; ti++) noms.push('wml-ventes-' + (ti < 10 ? '0' + ti : ti) + '.js');
               var rang = 0;
@@ -1451,7 +1512,7 @@
               // ligne : une mise en ligne sans nouvelles ventes ne retélécharge
               // plus rien, et de nouvelles ventes changent l'empreinte d'elles-
               // mêmes. En-tête sans empreinte (ancien découpage) : jeton V.
-              var versionVentes = 'ventes-' + (window.WML_TRANCHES_EMPREINTE || V);
+              var versionVentes = 'ventes-' + ((jeu && jeu.e) || window.WML_TRANCHES_EMPREINTE || V);
               // ⚠️ 18/09/2026 — on repart d'un tableau VIDE. Les tranches font
               // `push` : après un essai coupé en route, celles déjà exécutées
               // étaient comptées DEUX FOIS au nouvel essai. Prouvé au banc sous
