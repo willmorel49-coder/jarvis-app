@@ -345,7 +345,7 @@
   }
 
   /* « Ton client / Ton prospect / Hors fichier » — calculé ICI, jamais publié.
-     Client : réutilise clientTouche() (nom + ville, un seul candidat compatible).
+     Client : sctMatchClient() ci-dessous (code postal ou ville + nom).
      Prospect : uniquement si la base nationale (PHARMA_FR) est DÉJÀ chargée par
      ailleurs — on ne déclenche jamais son chargement pour ce seul bloc. */
   function sctMatchProspect(nom, ville) {
@@ -368,12 +368,42 @@
     cands.sort(function (a, b) { return b.n - a.n; });
     return (cands[0].n > cands[1].n) ? cands[0].p : null;
   }
+  /* Client : SON portefeuille (tout le fichier pour qui n'en a pas), même code
+     postal ou même ville, au moins un mot rare du nom en commun, UN seul candidat.
+     (clientTouche() compare la ville au NOM de l'officine : il rate ce cas.) */
+  function sctMatchClient(nom, ville, cp) {
+    // formes juridiques absentes de MOTS_VIDES, et mots de la ville (« Pharmacie de
+    // Livry-Gargan » ne désigne pas une officine précise) ; deux mots rares = les deux exigés
+    var v = norm(ville || '').replace(/[^a-z0-9]+/g, ' ').trim(), c = String(cp || '').trim();
+    var mots = motsUtiles(nom).filter(function (m) {
+      return !/^(selas|selafa|selarlu|spfpl|spfplas)$/.test(m) && (' ' + v + ' ').indexOf(' ' + m + ' ') < 0;
+    });
+    if (!mots.length) return null;
+    var exige = Math.min(2, mots.length);
+    var mes = (V2.mesComms && V2.mesComms()) || [];
+    var liste = (window.V2 && V2.pharmacies) || [], cands = [];
+    for (var i = 0; i < liste.length; i++) {
+      var p = liste[i];
+      if (mes.length && !(p.comms || []).some(function (x) { return mes.indexOf(x) >= 0; })) continue;
+      var memeLieu = (c && String(p.cp || '').trim() === c) ||
+        (v && norm(p.ville || '').replace(/[^a-z0-9]+/g, ' ').trim() === v);
+      if (!memeLieu) continue;
+      var nomP = norm(p.name || '').replace(/[^a-z0-9]+/g, ' '), communs = 0;
+      for (var k = 0; k < mots.length; k++) if (nomP.indexOf(mots[k]) >= 0) communs++;
+      if (communs >= exige) cands.push({ p: p, n: communs });
+    }
+    if (!cands.length) return null;
+    if (cands.length === 1) return cands[0].p;
+    cands.sort(function (a, b) { return b.n - a.n; });
+    return (cands[0].n > cands[1].n) ? cands[0].p : null;
+  }
   function sctTag(e) {
-    var cli = clientTouche(e.nom, e.ville);
+    var cli = sctMatchClient(e.nom, e.ville, e.cp);
     if (cli) return { t: 'client', ficheId: cli.id };
     var pr = sctMatchProspect(e.nom, e.ville);
     if (pr) return { t: 'prospect', ficheId: String(pr[13] || '') };
-    return { t: 'hors', ficheId: '' };
+    // sans la base prospects chargée, on ne sait pas : pas d'étiquette plutôt qu'un « Hors fichier » faux
+    return { t: (window.PHARMA_FR && window.PHARMA_FR.p) ? 'hors' : 'reste', ficheId: '' };
   }
   function sctGeste(e, t) {
     switch (e.f) {
@@ -452,7 +482,7 @@
         '<div class="sct-pan-b">' +
           '<dl class="sct-kv"><dt>Ce qui s’est passé</dt><dd>' + esc(e.detail) + '</dd>' +
             '<dt>Publié le</dt><dd>' + sctDateLongue(e.d) + '</dd>' +
-            '<dt>Dans ton fichier</dt><dd><span class="sct-tag ' + tag.t + '">' + SCT_TAG_L[tag.t] + '</span></dd></dl>' +
+            (SCT_TAG_L[tag.t] ? '<dt>Dans ton fichier</dt><dd><span class="sct-tag ' + tag.t + '">' + SCT_TAG_L[tag.t] + '</span></dd>' : '') + '</dl>' +
           '<div class="sct-do"><small>Ce que tu peux en faire</small><p>' + esc(sctGeste(e, tag.t)) + '</p></div>' +
           '<div class="sct-act">' +
             (tag.ficheId ? '<button type="button" class="sct-btn pri" onclick="V2.secteurFicheOfficine(\'' + esc(tag.ficheId) + '\')">' + sctSvg('<path d="M3 21V8l9-5 9 5v13"/><path d="M9 21v-6h6v6"/>', 18) + 'Ouvrir la fiche officine</button>' : '') +
@@ -489,7 +519,7 @@
     var vis = base.filter(function (e) { return !SCT_S.off[e.f]; });
     var nonLus = vis.filter(function (e) { return !SCT_LU[e.id]; }).length;
 
-    var rang = { client: 0, prospect: 1, hors: 2 };
+    var rang = { client: 0, prospect: 1, hors: 2, reste: 2 };
     var withTag = vis.map(function (e) { var t = sctTag(e); return { e: e, t: t.t, ficheId: t.ficheId }; });
     withTag.sort(function (x, y) { return (deps ? rang[x.t] - rang[y.t] : 0) || y.e.d.localeCompare(x.e.d); });
     SCT_TOUS = withTag.map(function (x) { return x.e.id; });
@@ -525,7 +555,7 @@
           '<span class="sct-rb"><span class="sct-rn">' + esc(sctJoli(e.nom)) + '</span>' +
             '<span class="sct-rm"><span class="k">' + esc(e.detail) + '</span> · ' + esc(e.ville) + ' (' + esc(e.dep) + ')</span>' +
             '<span class="sct-rg">' + sctSvg('<path d="M5 12h14M13 6l6 6-6 6"/>', 14) + '<span>' + esc(sctGeste(e, x.t)) + '</span></span></span>' +
-          '<span class="sct-rt"><span class="sct-tag ' + x.t + '">' + SCT_TAG_L[x.t] + '</span><span class="sct-when">' + sctQuand(e.d) + '</span></span>' +
+          '<span class="sct-rt">' + (SCT_TAG_L[x.t] ? '<span class="sct-tag ' + x.t + '">' + SCT_TAG_L[x.t] + '</span>' : '') + '<span class="sct-when">' + sctQuand(e.d) + '</span></span>' +
         '</button>';
       });
       rows += '</div>';
