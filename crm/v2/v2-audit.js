@@ -66,11 +66,12 @@
       if (!(q > 0) || !(nh > 0)) continue;
       var m = M[r[3]]; if (!m || !m.p || m.g) continue;     // princeps remboursable, hors génériques
       var pf = pfFromNet(r[5]), a = abPF(pf) * q;
-      ph[r[0]] = 1; net += nh; ab += a;
+      if (!V2.estReste(r[0])) ph[r[0]] = 1; net += nh; ab += a;
       var k = pf < 4.33 ? 'petits' : (pf <= 468.97 ? 'coeur' : 'chers'); t3[k].n += nh; t3[k].a += a;
       var bi = pf <= 1.91 ? 0 : (pf <= 22.90 ? 1 : (pf <= 150 ? 2 : (pf <= 1930 ? 3 : 4))); t5[bi].n += nh; t5[bi].a += a;
     }
-    var nph = pid ? 1 : Math.max(1, Object.keys(ph).length);
+    var R = !pid && V2.reperesReseau();   // restreint : nombre d'officines du réseau tout fait
+    var nph = pid ? 1 : Math.max(1, R ? R.nph : Object.keys(ph).length);
     var div = nph * MOIS / 12;                              // total -> €/an par pharmacie
     var out = { net: net, ab: ab, t3: t3, t5: t5, nph: nph, annNet: net / div, annAb: ab / div, div: div, rate: net ? ab / net * 100 : 0 };
     _ac[ck] = out; return out;

@@ -1220,17 +1220,19 @@
       var cat = (b ? classify(b, cip) : null) || 'other';
       var v = s.mntNetHt || 0, pk = String(s.pharmacyId);
       m.byCat[cat] = (m.byCat[cat] || 0) + v; m.total += v;
+      if (V2.estReste(pk)) continue;   // total du reste du réseau : compté en €, pas comme officine
       (act[mk] || (act[mk] = {}))[pk] = 1;
       caByPid[pk] = (caByPid[pk] || 0) + v;
     }
+    var R = V2.reperesReseau();   // commercial restreint : repères réseau tout faits
     var list = Object.keys(months).map(function (k) { return months[k]; }).sort(function (x, y) { return x.mk - y.mk; });
     list.forEach(function (m) {
-      m.n = Object.keys(act[m.mk] || {}).length || 1;   // officines actives ce mois-là
+      m.n = (R && R.act[m.month]) || Object.keys(act[m.mk] || {}).length || 1;   // officines actives ce mois-là
       m.avg = m.total / m.n; m.avgByCat = {};
       Object.keys(m.byCat).forEach(function (c) { m.avgByCat[c] = m.byCat[c] / m.n; });
     });
     var ranking = Object.keys(caByPid).sort(function (x, y) { return caByPid[y] - caByPid[x]; });
-    _netCache = { months: list, caByPid: caByPid, ranking: ranking }; _netRef = V2.sales;
+    _netCache = { months: list, caByPid: caByPid, ranking: ranking, R: R }; _netRef = V2.sales;
     return _netCache;
   }
   function pctOf(a, b) { return (b > 0) ? Math.round((a - b) / b * 100) : null; }
@@ -1316,17 +1318,19 @@
       c.caByM = netMonths.map(function (m) { return (byM[m.mk] || 0) > 0 ? (mm[m.mk] || 0) : null; });
       c.qByM = netMonths.map(function (m) { return (byM[m.mk] || 0) > 0 ? (mq[m.mk] || 0) : null; });
     });
-    var rank = net.ranking.indexOf(String(pid)) + 1;
+    var rank = net.R ? (net.R.rg[String(pid)] || 0) : net.ranking.indexOf(String(pid)) + 1;
     var pharma = (V2.pharmacies || []).find(function (p) { return String(p.id) === String(pid); }) || {};
     var grpName = String(pharma.groupement || '').trim();
     if (grpName && grpName !== '—') grpName = canonG(grpName);
     var grpPids = (grpName && grpName !== '—') ? (V2.pharmacies || []).filter(function (p) { var g = String(p.groupement || '').trim(); return g && canonG(g) === grpName; }).map(function (p) { return String(p.id); }) : [];
     var grpRank = 0;
-    if (grpPids.length >= 2) { var sorted = grpPids.slice().sort(function (x, y) { return (net.caByPid[y] || 0) - (net.caByPid[x] || 0); }); grpRank = sorted.indexOf(String(pid)) + 1; }
+    var rgg = net.R && net.R.rgg[String(pid)];
+    if (rgg) { grpRank = rgg[0]; grpPids = { length: rgg[1] }; }
+    else if (grpPids.length >= 2 && !net.R) { var sorted = grpPids.slice().sort(function (x, y) { return (net.caByPid[y] || 0) - (net.caByPid[x] || 0); }); grpRank = sorted.indexOf(String(pid)) + 1; }
     return { pts: pts, n: n, last: last, prev: prev, caTot: caTot, caMoy: n ? caTot / n : 0, netMoy: n ? netTot / n : 0,
       evoM: (last && prev) ? pctOf(last.ca, prev.ca) : null, evoNet: (last && prev) ? pctOf(last.net, prev.net) : null,
       cats: cats, other: { refs: oc.other.refs.size, qte: oc.other.qte, ca: oc.other.ca },
-      rank: rank, nOff: net.ranking.length, grpName: grpName, grpRank: grpRank, nGrp: grpPids.length };
+      rank: rank, nOff: net.R ? net.R.no : net.ranking.length, grpName: grpName, grpRank: grpRank, nGrp: grpPids.length };
   }
 
   function analyseKpis(A, marge, nbRefs) {

@@ -141,10 +141,11 @@
     var off = {}, m, i;
     for (i = 0; i < S.length; i++) {
       m = S[i][1];
-      if (m >= 1 && m <= 12) (off[m] || (off[m] = {}))[S[i][0]] = 1;
+      if (m >= 1 && m <= 12 && !V2.estReste(S[i][0])) (off[m] || (off[m] = {}))[S[i][0]] = 1;
     }
-    var mois = Object.keys(off).map(Number).sort(function (a, b) { return a - b; });
-    var nb = function (x) { return Object.keys(off[x]).length; };
+    var R = V2.reperesReseau();   // restreint : officines actives du réseau, toutes faites
+    var mois = Object.keys(R ? R.act : off).map(Number).sort(function (a, b) { return a - b; });
+    var nb = function (x) { return R ? (R.act[x] || 0) : Object.keys(off[x]).length; };
     while (mois.length > 3) {
       var dernier = mois[mois.length - 1], reste = mois.slice(0, -1);
       var moy = 0;
@@ -1297,6 +1298,7 @@
     for (var j = 0; j < S.length; j++) {
       var r = S[j], q = r[4] || 0;
       if (q <= 0 || !garde[r[1]]) continue;
+      if (V2.estReste(r[0])) continue;   // restreint : le profil ne se calcule que sur SES officines
       var c = String(r[3]);
       var a = parPh[c] || (parPh[c] = {}); a[r[0]] = (a[r[0]] || 0) + q;
       var b = parCom[c] || (parCom[c] = {}); b[r[2]] = (b[r[2]] || 0) + q;
@@ -1460,6 +1462,7 @@
     for (var j = 0; j < S.length; j++) {
       var r = S[j], q = r[4] || 0;
       if (q <= 0 || !garde[r[1]]) continue;
+      if (V2.estReste(r[0])) continue;   // pas un secteur : le total du reste du réseau
       var co = r[2] || '—', a = par[co] || (par[co] = { q: 0, ph: {}, ref: {}, ca: 0 });
       a.q += q; a.ph[r[0]] = 1; a.ref[String(r[3])] = 1; a.ca += (r[6] || 0);
     }
