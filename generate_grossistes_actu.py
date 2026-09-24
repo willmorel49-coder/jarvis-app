@@ -15,7 +15,7 @@ import html
 import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 ROOT = os.path.dirname(__file__)
 OUT = os.path.join(ROOT, 'crm', 'v2', 'grossistes-actu.json')
@@ -64,6 +64,8 @@ QUERIES = [
     # grossistes aux mêmes propriétaires. Rien dans la presse ce jour-là.
     {'tag': 'sagitta', 'q': '"Médiane Répartition"'},
     {'tag': 'sagitta', 'q': 'Mezegel Répartition'},
+    {'tag': 'aredis', 'q': 'Aredis pharmacie'},
+    {'tag': 'rbp', 'q': '"RBP Pharma"'},
 ]
 
 # Annonces OFFICIELLES (BODACC, gratuit, sans clé) : une cession ou un changement
@@ -73,6 +75,16 @@ BODACC_SUIVIS = [
     {'siren': '977768548', 'nom': 'Médiane Répartition', 'tag': 'sagitta'},
     {'siren': '949685143', 'nom': 'Mezegel Répartition', 'tag': 'sagitta'},
     {'siren': '534188941', 'nom': 'Sagitta Pharma', 'tag': 'sagitta'},
+    # 24/09/2026 : rumeur « Drapier crée un grossiste en Auvergne, repris par
+    # Aredis ou RBP ». Au registre : ALVERNIA (Cournon-d'Auvergne, créée le
+    # 30/07/2026, sans activité) et MEDISCA (Couchey, grossiste actif depuis
+    # 03/2026). La reprise se lira comme un changement de président.
+    {'siren': '108299611', 'nom': 'Alvernia', 'tag': 'drapier'},
+    {'siren': '994320257', 'nom': 'Medisca', 'tag': 'drapier'},
+    {'siren': '893833285', 'nom': 'Triorose (holding Drapier-Dupin)', 'tag': 'drapier'},
+    {'siren': '897446050', 'nom': 'Miastra (holding Drapier)', 'tag': 'drapier'},
+    {'siren': '451436083', 'nom': 'Aredis', 'tag': 'aredis'},
+    {'siren': '419582358', 'nom': 'RBP Pharma', 'tag': 'rbp'},
 ]
 
 # Filtre pertinence : au moins un mot du secteur (évite le bruit "alliance"/"phoenix" hors pharma).
@@ -212,6 +224,9 @@ def parse_bodacc(suivi):
         if siren not in str(r.get('registre') or ''):
             continue
         if r.get('familleavis') == 'dpc':
+            continue
+        # plus de 2 ans : de l'histoire, pas de l'actualité (Aredis et RBP en ont depuis 2017)
+        if (r.get('dateparution') or '') < (datetime.now(timezone.utc).date() - timedelta(days=730)).isoformat():
             continue
         detail = ''
         try:
