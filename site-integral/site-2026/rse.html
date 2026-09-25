@@ -308,6 +308,13 @@ html.mo .terr.vu .pt{opacity:1;transform:none}
 /* le toit : la vraie photo du siège, et le reflet du soleil qui la traverse */
 .toit{aspect-ratio:16/9}
 .toit__legende{text-shadow:0 1px 8px rgba(11,18,32,.8)}
+/* la légende reste lisible sur la photo : un voile de nuit monte du bas */
+.toit::after{content:"";position:absolute;left:0;right:0;bottom:0;height:62%;z-index:1;pointer-events:none;
+  background:linear-gradient(180deg,rgba(11,18,32,0) 0%,rgba(11,18,32,.5) 45%,rgba(11,18,32,.8) 100%)}
+/* sur téléphone, le texte de midi remonte haut dans la photo : le voile commence plus tôt */
+@media (max-width:640px){
+  .bande__texte{background:linear-gradient(180deg,rgba(var(--voile),0) 0%,rgba(var(--voile),.62) 22%,rgba(var(--voile),.86) 100%)}
+}
 
 @media (prefers-reduced-motion:reduce){
   body{transition:none}
