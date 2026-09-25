@@ -1147,6 +1147,8 @@
         '--pp-r:26px;--pp-mono:"Martian Mono",ui-monospace,Menlo,monospace;--pp-sans:"Onest",-apple-system,"Helvetica Neue",Arial,sans-serif;' +
         '--pp-ombre:0 1px 0 rgba(255,255,255,.95) inset,0 -1px 0 rgba(15,20,32,.035) inset,0 1px 2px rgba(15,20,32,.06),0 22px 40px -22px rgba(0,48,140,.32)}',
       '.v2-wrap.inf2.pp{position:relative;max-width:1272px;padding:0 16px 8px;color:var(--pp-encre);font:400 15px/1.45 var(--pp-sans);font-feature-settings:"tnum" 1}',
+      /* 25/09 — le rond « + » flottant (.v2-fab, 58 px, bas droite) couvrait au bureau le bouton « Voir la fraîcheur des sources » en fin de page : le bas défile au-delà, à toutes les largeurs */
+      'body:has(.v2-fab:not([hidden])) .v2-wrap.inf2.pp{padding-bottom:calc(104px + env(safe-area-inset-bottom,0px))}',
       '.pp *,#pp-pan *{box-sizing:border-box}',
       '.pp button,#pp-pan button,#pp-pan select{font-family:inherit;cursor:pointer}',
       '#pp-pan .pp-onglets button{color:var(--pp-encre)}',
