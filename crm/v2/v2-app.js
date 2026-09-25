@@ -130,8 +130,20 @@
     } catch (e) { /* silence : la mesure ne casse jamais l'app */ }
   };
 
+  // Le bandeau rouge de diagnostic (index.html, #__err) est posé en position:fixed
+  // sur <body>, HORS de #v2-root : il ne survivait PAS au re-rendu de l'écran, mais
+  // il survivait à la NAVIGATION (constaté au banc de nuit 25/09/2026, ex. l'erreur
+  // d'un écran quitté restait affichée avec « [écran : X] » par-dessus l'écran
+  // suivant — un diagnostic devient un mensonge dès qu'il désigne le mauvais écran).
+  // On l'efface au moment où on QUITTE réellement un écran pour un autre (pas à
+  // chaque re-rendu du même écran, qui doit pouvoir garder son erreur visible).
+  function __clearStaleErrBanner() {
+    try { var b = document.getElementById('__err'); if (b && b.parentNode) b.parentNode.removeChild(b); } catch (e) {}
+  }
+
   V2._navStack = V2._navStack || ['home'];
   V2.go = function (name, param) {
+    __clearStaleErrBanner();
     // sens de navigation (pour la transition) : si on revient sur l'écran
     // précédent de la pile → 'back', sinon → 'fwd'
     try {
@@ -1877,9 +1889,12 @@
 
       // ══ TOP BAR — raffinée ═══════════════════════════════════════════
       // (2) Wordmark signature : la baseline banale devient marque-outil mono.
-      '.v2-brand-s{font-family:var(--mono);text-transform:uppercase;letter-spacing:.12em;' +
-        'font-size:9.5px;font-weight:500;color:var(--muted);line-height:1}' +
-      '@media(max-width:640px){.v2-brand-s{font-size:9px;letter-spacing:.1em}}' +
+      // 25/09/2026 — 9,5px/9px étaient sous le plancher de lecture (12px) : cette
+      // règle (injectée après v2.css) gagnait sur le fichier et rendait "ESPACE
+      // COMMERCIAL" illisible. Remonté à 12px, desktop et mobile.
+      '.v2-brand-s{font-family:var(--mono);text-transform:uppercase;letter-spacing:.1em;' +
+        'font-size:12px;font-weight:500;color:var(--muted);line-height:1}' +
+      '@media(max-width:640px){.v2-brand-s{letter-spacing:.08em}}' +
       // Point-étincelle après le wordmark : signature de marque minuscule.
       '.v2-brand-dot{display:inline-block;width:5px;height:5px;border-radius:50%;margin-left:5px;' +
         'vertical-align:middle;background:var(--v2-spark);' +
@@ -1938,7 +1953,8 @@
       '@keyframes v2-login-mono{from{opacity:0;transform:translateY(6px) scale(.92)}to{opacity:1;transform:none}}' +
       // Titre net, baseline login en mono uppercase = même voix que le wordmark.
       '.v2-login h1{margin-bottom:5px}' +
-      '.v2-login p{font-family:var(--mono);text-transform:uppercase;letter-spacing:.1em;font-size:10.5px;' +
+      // 25/09/2026 — 10,5px sous le plancher de lecture (12px).
+      '.v2-login p{font-family:var(--mono);text-transform:uppercase;letter-spacing:.09em;font-size:12px;' +
         'color:var(--muted-2);margin-bottom:24px}' +
       // Micro-séparateur d\'étincelle sous la baseline : signe de marque discret.
       '.v2-login-spark{width:34px;height:2.5px;border-radius:2px;margin:0 auto 22px;' +
@@ -1952,8 +1968,9 @@
       '@media(max-width:640px){#v2-eye{min-height:44px;display:flex;align-items:center}}' +
       '#v2-eye:hover{color:var(--ip-ink-2);background:var(--card-2)}' +
       // Pied de carte : réassurance sobre en mono.
-      '.v2-login-foot{margin-top:22px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.11em;' +
-        'font-size:9px;color:var(--muted-2);display:flex;align-items:center;justify-content:center;gap:7px;line-height:1}' +
+      // 25/09/2026 — 9px sous le plancher de lecture (12px).
+      '.v2-login-foot{margin-top:22px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;' +
+        'font-size:12px;color:var(--muted-2);display:flex;align-items:center;justify-content:center;gap:7px;line-height:1}' +
       '.v2-login-foot::before{content:"";width:5px;height:5px;border-radius:50%;flex:0 0 auto;' +
         'background:var(--c-mint);box-shadow:0 0 0 3px color-mix(in srgb,var(--c-mint) 20%,transparent)}' +
 
@@ -2019,7 +2036,7 @@
     }
     window.addEventListener('hashchange', function () {
       var r = parseHash();
-      if (r.name !== V2.route.name || r.param !== V2.route.param) { V2.route = r; V2.render(); }
+      if (r.name !== V2.route.name || r.param !== V2.route.param) { __clearStaleErrBanner(); V2.route = r; V2.render(); }
     });
   };
 
