@@ -3,6 +3,11 @@
 -> impossibles à embarquer dans le PDF (canvas taint). Solution : on les télécharge
 en LOCAL (crm/v2/pimg/<cip>.jpg), servies en même origine = PDF-safe, sans proxy.
 Réécrit les entrées offilog de mkt-images-data.js en chemins relatifs. Python 3.9.
+25/09/2026 : generate_mkt_images.py remettait les adresses offilog.fr à chaque passage
+(PDF Marketing : 7 photos vides sur 21). Désormais le fichier de données N'EST PLUS
+réécrit : v2-mkt.js prodImg() lit pimg/<cip>.jpg pour le PDF dès que la photo vient
+d'offilog.fr. Ce script ne fait que télécharger les copies manquantes — à relancer
+après chaque generate_mkt_images.py.
 """
 import re, json, os, urllib.request
 
@@ -19,6 +24,9 @@ ok = 0
 for cip, url in off.items():
     small = url.replace('-large_default', '-home_default')   # variante plus légère
     dest = os.path.join(DIR, cip + '.jpg')
+    if os.path.exists(dest):
+        ok += 1
+        continue
     try:
         req = urllib.request.Request(small, headers=UA)
         with urllib.request.urlopen(req, timeout=20) as r:
@@ -27,13 +35,8 @@ for cip, url in off.items():
             raise ValueError('trop petit')
         with open(dest, 'wb') as fh:
             fh.write(data)
-        d[cip] = 'pimg/' + cip + '.jpg'           # chemin relatif, même origine
         ok += 1
     except Exception as e:
         print('  ! échec', cip, str(e)[:40])
 
-with open(F, 'w', encoding='utf-8') as fh:
-    fh.write('// Photos produit (pharma-gdd/mesoigner/cap3000/drakkars + offilog local pimg/) par CIP\n')
-    fh.write('window.MKT_IMG = ' + json.dumps(d, ensure_ascii=False, separators=(',', ':')) + ';\n')
-print('OK : %d/%d offilog hébergées en local -> %s/' % (ok, len(off), DIR))
-print('total photos:', len(d))
+print('OK : %d/%d offilog en local -> %s/' % (ok, len(off), DIR))
