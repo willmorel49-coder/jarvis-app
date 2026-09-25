@@ -174,6 +174,16 @@
 
   // ── Classement d'un produit benchmark dans une des 8 catégories ──
   // Priorité : NR > biosim > gen.part > gen > froid > princeps(pp/mi/ch)
+  // 25/09/2026 — le BENCHMARK du 07/05 ne marque que 54 produits froids : Eylea, les vaccins,
+  // Mounjaro… (491 CIP) sortaient hors « Froid » ici alors que Pilotage les y range. Même source
+  // que Pilotage : FROID_CIPS (froid-data.js, sous-famille Froid du grossiste, corrigée le 19/09).
+  var _froidSrc = null, _froidSet = {};
+  function estFroid(b, cip) {
+    if (b && b.is_froid === true) return true;
+    var F = window.FROID_CIPS; if (!F) return false;
+    if (_froidSrc !== F) { _froidSrc = F; _froidSet = {}; F.forEach(function (c) { _froidSet[String(c).replace(/\D/g, '')] = 1; }); }
+    return !!_froidSet[String(cip || (b && b.cip13) || '')];
+  }
   function classify(b, cip) {
     if (!b) return null;
     var nat = String(b.artnature || '').toLowerCase();
@@ -186,7 +196,7 @@
     // 5. Génériques
     if (nat === 'generique') return 'gen';
     // 4. Froid
-    if (b.is_froid === true) return 'froid';
+    if (estFroid(b, cip)) return 'froid';
     // 1-3. Princeps par tranche prix (champ categorie : pp/mi/ch)
     if (b.categorie === 'pp' || b.categorie === 'mi' || b.categorie === 'ch') return b.categorie;
     return null; // hors périmètre des 8 catégories
@@ -2238,7 +2248,10 @@
       '<button class="ph-vtab' + (active === 'carte' ? ' on' : '') + '" onclick="V2.pharmaView(\'carte\')">' + ICO('grid', 15, 2) + 'Carte secteur</button>' +
     '</div>';
   }
-  function groupName(p) { var g = String(p.groupement || '').trim(); return g ? canonG(g) : '— Sans groupement'; }
+  // 25/09/2026 — la table d'alias range fermées et statuts inconnus sous « — » : un 2e « sans
+  // groupement » (9 officines) s'affichait comme un groupement à part. Un seul panier — et Intégral
+  // Pharma / Themis Conseil, notés « PAS un groupement » dans la table d'alias, y vont aussi.
+  function groupName(p) { var g = String(p.groupement || '').trim(), c = g ? canonG(g) : ''; return (!c || c === '—' || /PAS un groupement/.test(c)) ? '— Sans groupement' : c; }
   function grpLogo(name, big) {
     // ⚠️ 15/08/2026 — les 3,6 Mo de logos ont quitté le fichier de ventes.
     // Ils ne se chargent plus au démarrage mais ICI, au premier écran qui en
@@ -2344,6 +2357,21 @@
     return { cip13: cip, designation: r.d, artnature: 'biosimilaire', has_ameli: true, prix_ht: r.ppht,
              prix_ip: (r.net > 0 && r.net <= r.ppht) ? r.net : null };
   }
+  // 25/09/2026 — 1 221 produits vendus (≈ 3,3 M€, Entresto 798 k€, Ozempic, Takhzyro…) manquaient au
+  // BENCHMARK du 07/05 : invisibles dans toutes les listes de groupement. Même rattrapage que les
+  // biosimilaires, pour toutes les familles : fiche reconstituée depuis le catalogue complet, tarif
+  // du jour (PPHT), tranche recalculée, net jamais au-dessus du PPHT, barème d'abandon pour un princeps.
+  function horsBenchmark(cip) {
+    var cat = V2.produits && V2.produits.catalogueIndex ? V2.produits.catalogueIndex() : null;
+    var r = cat && cat[cip]; if (!r) return null;
+    var pp = (window.PPHT && window.PPHT[cip] > 0) ? window.PPHT[cip] : (r.ppht > 0 ? r.ppht : 0);
+    var f = r.f, pr = f === 'pr_low' || f === 'pr_mid' || f === 'pr_high';
+    var net = (r.net > 0 && pp > 0 && r.net <= pp) ? r.net
+      : ((pr || f === 'biosim') && pp > 0 && V2.abandonBareme) ? Math.round((pp - V2.abandonBareme(pp)) * 100) / 100 : pp;
+    return { cip13: cip, designation: r.d, prix_ht: pp, prix_ip: net > 0 ? net : null, has_ameli: f !== 'nr',
+             artnature: f === 'gen' ? 'generique' : (f === 'biosim' ? 'biosimilaire' : ''),
+             categorie: pr ? (pp <= 4.33 ? 'pp' : (pp <= 468 ? 'mi' : 'ch')) : '' };
+  }
   // Le catalogue complet (1,3 Mo) arrive sans bloquer l'écran ; la liste se redessine à son arrivée.
   function demanderCatComplet() {
     if (window.CATALOGUE_COMPLET || _catDemande || !V2.loadFiles) return;
@@ -2384,7 +2412,7 @@
     var buckets = {}; CATS.forEach(function (c) { buckets[c.key] = []; });
     Object.keys(byCip).forEach(function (cip) {
       if (ov.removed[cip]) return;                       // produit retiré à la main
-      var b = bIdx.get(cip) || biosimHorsCatalogue(cip); if (!b) return;
+      var b = bIdx.get(cip) || biosimHorsCatalogue(cip) || horsBenchmark(cip); if (!b) return;
       var cat = classify(b, cip); if (!cat || !buckets[cat]) return;
       if (!byCip[cip].manual && Object.keys(byCip[cip].ph).length < (cat === 'biosim' ? seuilBiosim : seuil)) return;   // < 20% des pharmacies (biosim : < 2) → masqué
       // Prix : toujours via V2.bestPrice() (gère offre labo + barème d'abandon) — cette
@@ -2393,9 +2421,10 @@
       // (produits froid, princeps mal classés NR, biosimilaires, génériques sans prix —
       // signalé par Will le 10/09/2026, ce moteur alimente Groupements + Listes + leurs PDF/Excel).
       var e = byCip[cip], bp = V2.bestPrice(b);
+      if (!bp.ht && !bp.ip) return;   // 25/09/2026 — ni PPHT ni prix net connus : jamais « 0 € » sur un document
       buckets[cat].push({ cip: cip, designation: b.designation, prix_ht: bp.ht || 0, prix_ip: bp.ip || 0,
                           offre: bp.offre, remise: bp.remise,
-                          froid: !!b.is_froid, sortie: Object.keys(e.ph).length, qte: e.qte, manual: !!e.manual });
+                          froid: estFroid(b, cip), sortie: Object.keys(e.ph).length, qte: e.qte, manual: !!e.manual });
     });
     return {
       panel: Object.keys(activeSet).length,
@@ -2485,7 +2514,9 @@
         '<span class="v2-cat-chev' + (collapsed ? '' : ' open') + '">' + ICO('chev', 18) + '</span>' +
       '</div>';
     if (collapsed) return '<div class="v2-card v2-cat">' + head + '</div>';
-    var trs = o.rows.slice(0, 80).map(function (r, i) {
+    // 25/09/2026 — plus de plafond à 80 lignes : l'en-tête annonçait « 432 produits » et n'en montrait
+    // que 80, alors que le PDF et l'Excel les donnent tous. L'écran montre ce que le document contient.
+    var trs = o.rows.map(function (r, i) {
       var on = !!(selCips && selCips.has(r.cip));
       return '<tr>' +
         '<td class="num" style="color:var(--muted-2);width:30px;text-align:right;font-family:var(--mono)">' + (i + 1) + '</td>' +
@@ -2946,7 +2977,7 @@
         (catHtml || '<div style="color:#9AA1B2;padding:36px;text-align:center;font-size:12px">Aucun produit à proposer.</div>') +
         // Pied
         '<div style="margin-top:16px;padding-top:9px;border-top:1px solid #E7EBF2;display:flex;align-items:center;justify-content:space-between;page-break-inside:avoid">' +
-          '<div style="font-size:8.5px;color:#737A8C;line-height:1.45"><span style="font-weight:800;color:#0050E6">Intégral Pharma</span> · Liste d\'achats recommandée — données réseau au ' + dateStr + '.<br>Prix nets HT indicatifs. Nbr pharma = nb de pharmacies de la référence commandant le produit / ' + panel + '.' + (truncated ? '<br>Top ' + PDF_CAP + ' par famille (les plus commandés) — pour cocher d\'autres produits, sélectionne-les dans l\'app avant l\'export.' : '') + '</div>' +
+          '<div style="font-size:8.5px;color:#737A8C;line-height:1.45"><span style="font-weight:800;color:#0050E6">Intégral Pharma</span> · Liste d\'achats recommandée — données réseau : ' + (periodLabel() || 'au ' + dateStr) + '.<br>Prix nets HT indicatifs. Nbr pharma = nb de pharmacies de la référence commandant le produit / ' + panel + '.' + (truncated ? '<br>Top ' + PDF_CAP + ' par famille (les plus commandés) — pour cocher d\'autres produits, sélectionne-les dans l\'app avant l\'export.' : '') + '</div>' +
           '<div style="text-align:right;font-size:8.5px;color:#A8AFBE;white-space:nowrap">' + esc(grpName) + (pharma && pharma.ville ? '<br>' + esc(pharma.ville) : '') + '</div>' +
         '</div>' +
       '</div>' +
@@ -3059,11 +3090,22 @@
     requestAnimationFrame(function () { requestAnimationFrame(fitPrevSheet); });
     if (!V2._pdfPrevResize) { window.addEventListener('resize', fitPrevSheet); V2._pdfPrevResize = true; }
   };
+  // 25/09/2026 — les produits absents du BENCHMARK viennent du catalogue complet (1,3 Mo, chargé
+  // en différé) : un PDF lancé avant son arrivée partait sans eux. On l'attend avant tout document.
+  var _catEssai = false;   // une seule attente : si le catalogue ne vient pas, le document part quand même
+  function avecCatalogue(fn) {
+    if (window.CATALOGUE_COMPLET || !V2.loadFiles) return fn();
+    _catEssai = true;
+    V2.toast('Mise à jour du catalogue…');
+    V2.loadFiles(['catcomplet']).then(fn, fn);
+  }
   V2.grpDownloadPdf = function (enc, mode) {
+    if (!window.CATALOGUE_COMPLET && V2.loadFiles && !_catEssai) return avecCatalogue(function () { V2.grpDownloadPdf(enc, mode); });
     var grpName; try { grpName = decodeURIComponent(enc); } catch (e) { grpName = enc; }
     achatsPdf(grpName, groupementProducts(grpName), !!(selCips && selCips.size && selPid === 'GRP:' + grpName), mode);
   };
   V2.listDownloadPdf = function (id, mode) {
+    if (!window.CATALOGUE_COMPLET && V2.loadFiles && !_catEssai) return avecCatalogue(function () { V2.listDownloadPdf(id, mode); });
     var l = listGet(id); if (!l) return;
     achatsPdf(l.name, productsForIds(listIdsObj(l), 'LST:' + id), !!(selCips && selCips.size && selPid === 'LST:' + id), mode);
   };
@@ -3102,7 +3144,7 @@
         var head = ['#', 'Produit', 'CIP13', 'PPHT (€)', 'Prix net IP (€)', 'Nb pharmacies / ' + panel];
         var aoa = [
           ['Intégral Pharma — Liste d\'achats recommandée · ' + title],
-          [o.cat.label + (o.cat.sub ? ' · ' + o.cat.sub : '') + ' — éditée le ' + dateStr + ' · référence ' + panel + ' pharmacie' + (panel > 1 ? 's' : '')],
+          [o.cat.label + (o.cat.sub ? ' · ' + o.cat.sub : '') + ' — éditée le ' + dateStr + (periodLabel() ? ' · ventes ' + periodLabel() : '') + ' · référence ' + panel + ' pharmacie' + (panel > 1 ? 's' : '')],
           [],
           head
         ];
@@ -3351,10 +3393,12 @@
     });
   };
   V2.grpDownloadXlsx = function (enc) {
+    if (!window.CATALOGUE_COMPLET && V2.loadFiles && !_catEssai) return avecCatalogue(function () { V2.grpDownloadXlsx(enc); });
     var grpName; try { grpName = decodeURIComponent(enc); } catch (e) { grpName = enc; }
     achatsXlsx(grpName, groupementProducts(grpName), !!(selCips && selCips.size && selPid === 'GRP:' + grpName));
   };
   V2.listDownloadXlsx = function (id) {
+    if (!window.CATALOGUE_COMPLET && V2.loadFiles && !_catEssai) return avecCatalogue(function () { V2.listDownloadXlsx(id); });
     var l = listGet(id); if (!l) return;
     achatsXlsx(l.name, productsForIds(listIdsObj(l), 'LST:' + id), !!(selCips && selCips.size && selPid === 'LST:' + id));
   };

@@ -1036,6 +1036,7 @@
     if (pp <= 468) return Math.round(pp * 0.0389 * 100) / 100;
     return 19.50;
   }
+  V2.abandonBareme = abandonBareme;   // lu par horsBenchmark (v2-pharma) : même barème partout
   V2.applyPPHT = function () {
     if (V2._pphtDone) return;
     var P = window.PPHT, NR = window.PPHT_NR || {}, B = window.BENCHMARK;
@@ -1057,6 +1058,10 @@
       if (!c || !(P[c] > 0)) continue;          // ignore PPHT absent ou ≤ 0 (ex Shingrix=0) → jamais de prix à 0
       var pp = P[c];
       b.prix_ht = pp;                           // tarif grossiste officiel (HT) — corrige les prix_ht=0
+      // 25/09/2026 — la tranche princeps (pp/mi/ch) venait du BENCHMARK du 07/05, souvent
+      // calculée sur un prix à 0 ou périmé : 348 produits dans la mauvaise tranche, dont
+      // Eylea (302,95 €) listé en « Chers > 468 € » (signalé par Will). Elle suit le tarif du jour.
+      if (b.categorie === 'pp' || b.categorie === 'mi' || b.categorie === 'ch') b.categorie = pp <= 4.33 ? 'pp' : (pp <= 468 ? 'mi' : 'ch');
       // Le champ NR (afmcode du fichier stock) peut être faux/périmé sur des princeps
       // pourtant bien remboursés au vu d'Ameli (ex Plavix, Telfast : stock dit NR, Ameli
       // dit remboursé avec des vraies boîtes vendues) → on fait confiance à Ameli
