@@ -2212,7 +2212,7 @@
       var fn = 'Prepa-RDV-' + (built.pharma.name || 'pharma').replace(/[^A-Za-z0-9-]/g, '_') + '-' + new Date().toISOString().slice(0, 10) + '.pdf';
       window.html2pdf().from(wrap.firstChild).set({
         filename: fn, margin: [0, 0, 0, 0], image: { type: 'jpeg', quality: 0.95 },
-        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', width: 794, windowWidth: 794 },
+        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' }, // sans windowWidth : html2pdf centre la feuille dans la fenêtre, la capture partait rognée à gauche
         jsPDF: { unit: 'pt', format: [595.5, 842.25], orientation: 'portrait' }, // 794 × 1123 px entiers : pas de dérive de 0,5 px par page
         pagebreak: { mode: ['css', 'legacy'] }
       }).save().then(function () {
