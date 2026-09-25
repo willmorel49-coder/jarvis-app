@@ -462,6 +462,8 @@
       var node = document.createElement('div');
       node.style.cssText = 'position:fixed;left:-10000px;top:0';
       node.innerHTML = sheetHtml(sel);
+      // Feuille à 297 mm pile : html2pdf débordait d'un pixel sur une 2e page blanche (mesuré 25/09/2026, WebKit).
+      node.firstChild.style.minHeight = '296mm';
       document.body.appendChild(node);
       var fname = 'Selection-OPSO-' + fileSafe(sel.title) + '-' + new Date().toISOString().slice(0, 10) + '.pdf';
       window.html2pdf().set({
