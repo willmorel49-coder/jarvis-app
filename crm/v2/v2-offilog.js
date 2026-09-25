@@ -470,7 +470,7 @@
         img +
         '<div class="off-badges">' + badges + '</div>' +
         '<div class="off-kpi-grid">' +
-          kpi('Prix Offilog', it.price > 0 ? V2.fmtEur(it.price) : '—', 'var(--pil-froid)') +
+          kpi('Prix Offilog', it.price > 0 ? V2.fmtEur(it.price) : '—', 'color-mix(in srgb,var(--pil-froid) 70%,black)') +
           kpi('Rang ventes', '#' + it.rank) +
           kpi('Achat IP (HT)', it.achat > 0 ? V2.fmtEur(it.achat) : '—', it.achat > 0 ? 'var(--ok)' : 'var(--muted-2)') +
           kpi('Concurrent mini', it.minConc > 0 ? V2.fmtEur(it.minConc) : '—', '') +
@@ -825,16 +825,16 @@
       '.off-count{font-size:13px;color:var(--muted)}',
       '.off-count b{color:var(--ip-ink)}',
       // bouton « Filtres » (progressive disclosure)
-      '.off-advbtn{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);background:var(--card);color:var(--ip-ink-2);border-radius:var(--r-md);padding:8px 13px;font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;box-shadow:var(--sh-1);transition:.16s var(--mo-ease-soft)}',
+      '.off-advbtn{display:inline-flex;align-items:center;gap:7px;min-height:var(--tap-min);border:1px solid var(--line);background:var(--card);color:var(--ip-ink-2);border-radius:var(--r-md);padding:8px 13px;font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;box-shadow:var(--sh-1);transition:.16s var(--mo-ease-soft)}',
       '.off-advbtn svg{color:var(--muted)}',
       '.off-advbtn:hover{border-color:color-mix(in srgb,var(--pil-froid) 32%,var(--line));color:var(--ip-ink)}',
       '.off-advbtn.open{border-color:color-mix(in srgb,var(--pil-froid) 40%,var(--line));background:var(--card-2)}',
-      '.off-advbtn-tag{background:color-mix(in srgb,var(--pil-froid) 12%,#fff);color:var(--pil-froid);border-radius:var(--r-pill);padding:2px 9px;font-size:11px;font-weight:700}',
+      '.off-advbtn-tag{background:color-mix(in srgb,var(--pil-froid) 12%,#fff);color:var(--pil-froid);border-radius:var(--r-pill);padding:2px 9px;font-size:12px;font-weight:700}',
       '.off-advbtn-chev{display:inline-flex;color:var(--muted-2);transition:transform .2s var(--mo-ease-soft)}',
       '.off-advbtn.open .off-advbtn-chev{transform:rotate(90deg)}',
       // panneau avancé déplié
       '.off-adv{background:var(--card-2);border:1px solid var(--line);border-radius:var(--r-card);padding:16px 18px;margin-bottom:var(--sp-5);box-shadow:var(--sh-1)}',
-      '.off-adv-l{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;margin:0 0 10px}',
+      '.off-adv-l{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;margin:0 0 10px}',
       '.off-adv-segs{margin-bottom:16px}',
       '.off-adv-segs .v2-seg .sw{width:9px;height:9px;border-radius:50%;background:var(--sc,var(--muted-2));flex-shrink:0}',
       '.off-adv-segs .v2-seg.on .sw{background:#fff}',
@@ -857,9 +857,9 @@
       '.off-card.alert{border-color:color-mix(in srgb,var(--bad) 30%,transparent)}',
       '.off-card.alert:hover{border-color:color-mix(in srgb,var(--bad) 46%,transparent)}',
       // pastille "Alerte prix" en pied de média — hiérarchie forte du signal rouge
-      '.off-card-flag{position:absolute;left:8px;bottom:8px;z-index:3;display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:800;letter-spacing:.01em;color:#fff;background:var(--bad);padding:3px 8px 3px 6px;border-radius:8px;box-shadow:0 2px 7px color-mix(in srgb,var(--bad) 42%,transparent)}',
+      '.off-card-flag{position:absolute;left:8px;bottom:8px;z-index:3;display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:800;letter-spacing:.01em;color:#fff;background:var(--bad);padding:3px 8px 3px 6px;border-radius:8px;box-shadow:0 2px 7px color-mix(in srgb,var(--bad) 42%,transparent)}',
       '.off-card-flag svg{flex:none}',
-      '.off-card-conc{font-size:10.5px;font-weight:800;color:var(--bad);font-variant-numeric:tabular-nums}',
+      '.off-card-conc{font-size:12px;font-weight:800;color:var(--bad);font-variant-numeric:tabular-nums}',
       '.off-card-media{position:relative;height:150px;background:var(--surf-sunken);display:flex;align-items:center;justify-content:center;border-bottom:1px solid var(--line-2);padding:10px}',
       '.off-card-img{max-width:100%;max-height:100%;object-fit:contain}',
       '.off-card-noimg{color:var(--muted-2)}',
@@ -869,7 +869,7 @@
       '.off-sk-body{padding:11px 13px 14px;display:flex;flex-direction:column;gap:8px}',
       '.off-sk-line{height:10px;border-radius:var(--r-control)}',
       '.off-sk-price{height:16px;width:52px;border-radius:var(--r-control);margin-top:4px}',
-      '.off-rank{position:absolute;top:8px;left:8px;background:rgba(16,19,28,0.66);color:#fff;font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:8px;}',
+      '.off-rank{position:absolute;top:8px;left:8px;background:rgba(16,19,28,0.66);color:#fff;font-size:12px;font-weight:700;padding:3px 8px;border-radius:8px;}',
       '.off-card-alert{position:absolute;bottom:8px;left:8px;width:24px;height:24px;border-radius:8px;background:var(--c-rose);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px color-mix(in srgb,var(--c-rose) 45%,transparent)}',
       '.off-mkt-add{position:absolute;top:8px;right:8px;width:28px;height:28px;border-radius:9px;border:1px solid var(--line);background:rgba(255,255,255,.94);color:var(--muted);display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:var(--sh-1);transition:transform .14s var(--ease),color .14s var(--ease),border-color .14s var(--ease),background .14s var(--ease);z-index:2}',
       '.off-mkt-add:hover{color:var(--c-opp);border-color:var(--c-opp)}',
@@ -905,18 +905,18 @@
       '.off-mkt-sheet{width:794px;transform-origin:top left;background:#fff}',
       '@media(max-width:560px){.off-mkt-top{flex-wrap:wrap}.off-mkt-top .v2-btn{order:3;width:100%}}',
       '.off-card-body{padding:11px 13px 14px;display:flex;flex-direction:column;gap:3px;flex:1}',
-      '.off-card-brand{font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+      '.off-card-brand{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
       '.off-card-name{font-size:12.5px;font-weight:600;line-height:1.35;color:var(--ip-ink);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:34px}',
-      '.off-card-price{font-size:16px;font-weight:800;color:var(--pil-froid);margin-top:5px;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}',
-      '.off-card-pz{font-size:10.5px;font-weight:700;color:var(--muted);background:var(--card-2);border:1px solid var(--line);border-radius:7px;padding:1px 6px;font-variant-numeric:tabular-nums}',
+      '.off-card-price{font-size:16px;font-weight:800;color:color-mix(in srgb,var(--pil-froid) 70%,black);margin-top:5px;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}',
+      '.off-card-pz{font-size:12px;font-weight:700;color:var(--muted);background:var(--card-2);border:1px solid var(--line);border-radius:7px;padding:1px 6px;font-variant-numeric:tabular-nums}',
       '@media(max-width:640px){.off-grid{grid-template-columns:repeat(2,1fr);gap:10px}.off-card-media{height:118px}.off-card-name{font-size:12px}}',
       '.off-card-pz.win{color:var(--ip-blue-d);background:color-mix(in srgb,var(--ip-blue-d) 10%,#fff);border-color:color-mix(in srgb,var(--ip-blue-d) 28%,transparent)}',
       // comparatif Offilog vs Pharmazon (inspecteur)
       '.off-pz{margin-top:18px;padding:15px;background:color-mix(in srgb,var(--ip-blue-d) 5%,#fff);border:1px solid color-mix(in srgb,var(--ip-blue-d) 22%,transparent);border-radius:13px}',
-      '.off-pz-l{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--ip-blue-d);font-weight:800;margin-bottom:11px}',
+      '.off-pz-l{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--ip-blue-d);font-weight:800;margin-bottom:11px}',
       '.off-pz-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}',
       '.off-pz-cell{border:1px solid var(--line);border-radius:11px;padding:11px 13px;background:var(--card);display:flex;flex-direction:column;gap:3px}',
-      '.off-pz-cell span{font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:700}',
+      '.off-pz-cell span{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:700}',
       '.off-pz-cell b{font-size:18px;color:var(--ip-ink)}',
       '.off-pz-cell.win{border-color:var(--ip-blue-d);background:color-mix(in srgb,var(--ip-blue-d) 8%,#fff);box-shadow:0 0 0 2px color-mix(in srgb,var(--ip-blue-d) 18%,transparent)}',
       '.off-pz-cell.win b{color:var(--ip-blue-d)}',
@@ -931,7 +931,7 @@
       '.off-insp-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:20px;border-bottom:1px solid var(--line);background:rgba(251,252,254,0.96);position:sticky;top:0;z-index:1}',
       '.off-insp-name{font-size:16px;font-weight:800;letter-spacing:-.02em;line-height:1.25}',
       '.off-insp-sub{font-size:12.5px;color:var(--ip-ink-2);font-weight:600;margin-top:4px;text-transform:uppercase;letter-spacing:.03em}',
-      '.off-insp-cip{font-size:11.5px;color:var(--muted);margin-top:3px}',
+      '.off-insp-cip{font-size:12px;color:var(--muted);margin-top:3px}',
       '.off-insp-x{position:relative;width:32px;height:32px;border-radius:9px;border:1px solid var(--line);background:var(--card);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted);flex-shrink:0;transition:.18s var(--ease)}',
       '.off-insp-x:hover{color:var(--ip-ink);transform:rotate(90deg)}',
       '.off-insp-x:active{transform:scale(.97)}',
@@ -939,13 +939,13 @@
       '.off-insp-img{width:100%;height:180px;border-radius:13px;overflow:hidden;background:var(--surf-sunken);border:1px solid var(--line);margin-bottom:16px;display:flex;align-items:center;justify-content:center;padding:12px}',
       '.off-insp-img img{max-width:100%;max-height:100%;object-fit:contain}',
       '.off-badges{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}',
-      '.off-badge{display:inline-block;padding:3px 9px;border-radius:8px;font-size:10.5px;font-weight:700;background:color-mix(in srgb,var(--bc) 13%,#fff);color:var(--bc)}',
+      '.off-badge{display:inline-block;padding:3px 9px;border-radius:8px;font-size:12px;font-weight:700;background:color-mix(in srgb,var(--bc) 13%,#fff);color:var(--bc)}',
       '.off-kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}',
       '.off-kpi{background:var(--card-2);border:1px solid var(--line);border-radius:12px;padding:13px 14px}',
-      '.off-kpi-l{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700;margin-bottom:5px}',
+      '.off-kpi-l{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700;margin-bottom:5px}',
       '.off-kpi-v{font-family:var(--mono);font-size:17px;font-weight:700;font-variant-numeric:tabular-nums}',
       '.off-cmp{margin-top:18px;padding:15px;background:var(--card-2);border:1px solid var(--line);border-radius:13px}',
-      '.off-cmp-l{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700;margin-bottom:11px}',
+      '.off-cmp-l{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700;margin-bottom:11px}',
       '.off-cmp-l span{text-transform:none;letter-spacing:0;font-weight:500}',
       '.off-cmp-row,.off-cmp-ref{display:grid;grid-template-columns:1fr auto 78px;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line-2)}',
       '.off-cmp-row:last-child{border-bottom:none}',
@@ -961,7 +961,7 @@
       '.off-cmp-price{font-size:14px;font-weight:700;text-align:right;white-space:nowrap}',
       '.off-cmp-price.bad{color:var(--bad)}',
       '.off-cmp-na{font-size:12px;color:var(--muted);font-style:italic;text-align:right;white-space:nowrap}',
-      '.off-cmp-delta{font-size:11px;font-weight:700;font-family:var(--mono);text-align:right}',
+      '.off-cmp-delta{font-size:12px;font-weight:700;font-family:var(--mono);text-align:right}',
       '.off-cmp-delta.bad{color:var(--bad)}.off-cmp-delta.ok{color:var(--ok)}',
       '.off-insp-cta{margin-top:20px;display:flex;flex-direction:column}',
       '.off-insp-cta .v2-btn{width:100%}',
@@ -985,7 +985,7 @@
       '.offb-ns{display:flex;gap:34px;flex-wrap:wrap}',
       '.offb-n b{display:block;font-size:29px;font-weight:800;letter-spacing:-.03em;color:var(--ip-ink);font-variant-numeric:tabular-nums;line-height:1}',
       '.offb-n span{display:block;margin-top:7px;font-size:12.5px;font-weight:700;color:var(--ip-ink-2)}',
-      '.offb-n em{display:block;margin-top:3px;font-size:11px;font-style:normal;color:var(--muted)}',
+      '.offb-n em{display:block;margin-top:3px;font-size:12px;font-style:normal;color:var(--muted)}',
       '@media(max-width:720px){.offb-in{padding:20px 18px 18px;gap:var(--sp-4)}.offb-logo{height:30px}.offb-ns{gap:22px}.offb-n b{font-size:23px}}',
 
       '.off-cond-ko{display:flex;gap:12px;align-items:flex-start;background:var(--c-warm-bg,#FFF7E8);border:1px solid var(--c-warm,#E8A33D);border-radius:14px;padding:14px 16px;margin-bottom:var(--sp-4);font-size:13.5px;line-height:1.5;color:var(--ip-ink-2)}',
@@ -1002,7 +1002,7 @@
       '.offr.on{border-color:var(--ip-ink);background:var(--ip-ink)}',
       '.offr.on .offr-l{color:#fff}.offr.on .offr-s{color:rgba(255,255,255,.62)}.offr.on .offr-n{color:#FFAF0F}',
       '.offr-l{display:block;font-size:13.5px;font-weight:700;color:var(--ip-ink);letter-spacing:-.01em}',
-      '.offr-s{display:block;margin-top:3px;font-size:11px;color:var(--muted);white-space:nowrap}',
+      '.offr-s{display:block;margin-top:3px;font-size:12px;color:var(--muted);white-space:nowrap}',
       '.offr-n{display:block;margin-top:6px;font-size:13px;font-weight:800;color:var(--ip-ink-2);font-variant-numeric:tabular-nums}',
       '.offr-all{min-width:126px}.offr-all .offr-n{margin-top:8px}',
       // Sur ordinateur : une GRILLE, pas un flex qui se plie. Avec flex-wrap,
@@ -1014,12 +1014,12 @@
       // ══════════ LES SOUS-RAYONS ══════════
       '.offsr-w{display:flex;gap:8px;overflow-x:auto;padding:0 2px 12px;margin:-4px 0 var(--sp-3);scrollbar-width:thin;-webkit-overflow-scrolling:touch}',
       '.offsr{flex:0 0 auto;display:inline-flex;align-items:center;gap:7px;min-height:var(--tap-min);padding:0 14px;border-radius:var(--r-pill);border:1.5px solid var(--line-strong);background:var(--card);font-size:12.5px;font-weight:650;color:var(--ip-ink-2);cursor:pointer;transition:all .18s var(--ease)}',
-      '.offsr i{font-style:normal;font-size:11px;font-weight:700;color:var(--muted-2);font-variant-numeric:tabular-nums}',
+      '.offsr i{font-style:normal;font-size:12px;font-weight:700;color:var(--muted-2);font-variant-numeric:tabular-nums}',
       '.offsr:hover{border-color:color-mix(in srgb,#345DA0 40%,transparent)}',
       '.offsr.on{background:var(--ip-ink);border-color:var(--ip-ink);color:#fff}',
       '.offsr.on i{color:#FFAF0F}',
 
-      '.off-card-lec{font-size:10.5px;font-weight:700;color:#0066B3;background:color-mix(in srgb,#0066B3 8%,#fff);border:1px solid color-mix(in srgb,#0066B3 24%,transparent);border-radius:7px;padding:1px 6px;font-variant-numeric:tabular-nums}',
+      '.off-card-lec{font-size:12px;font-weight:700;color:#0066B3;background:color-mix(in srgb,#0066B3 8%,#fff);border:1px solid color-mix(in srgb,#0066B3 24%,transparent);border-radius:7px;padding:1px 6px;font-variant-numeric:tabular-nums}',
       '.off-card-lec.bad{color:var(--c-rose-txt,#C2263F);background:color-mix(in srgb,#C2263F 8%,#fff);border-color:color-mix(in srgb,#C2263F 26%,transparent)}',
 
       // ══════════ LA CARTE, REGISTRE PARA ══════════
