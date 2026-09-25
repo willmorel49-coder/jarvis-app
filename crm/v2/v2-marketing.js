@@ -207,7 +207,7 @@
       '.mkt-sel-item.added{opacity:.45;pointer-events:none}',
       '.mkt-sel-item .nm{flex:1;min-width:0;font-size:13.5px}',
       '.mkt-sel-item .nm b{display:block;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
-      '.mkt-sel-item .nm span{font-size:11.5px;color:var(--muted-2)}',
+      '.mkt-sel-item .nm span{font-size:12px;color:var(--muted-2)}',
       '.mkt-sel-item .pr{font-size:13px;font-weight:700;color:var(--ip-blue)}',
       '.mkt-sel-empty{padding:28px 16px;text-align:center;color:var(--muted);font-size:13.5px}',
       // ════ LA FICHE (charte Normandie Pharma) ════
