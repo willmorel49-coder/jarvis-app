@@ -322,7 +322,7 @@
     render: function (root, param) {
       if (param != null && param !== '') { S.q = String(param); S.chip = 'all'; }
       if (!window.PROD_STATS) {
-        root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) + '<div class="v2-wrap"><div class="v2-empty"><div class="v2-empty-d">Données produits indisponibles.</div></div></div>';
+        root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) + '<div class="v2-wrap"><div class="v2-empty"><div class="v2-empty-ico">' + ICO('cat', 64, 1.4) + '</div><div class="v2-empty-t">Données produits indisponibles</div><div class="v2-empty-d">Les données ne sont pas encore chargées sur ton poste.</div></div></div>';
         return;
       }
       if (!window.ETAB_PRICES) ensureEtab(function () { if (V2.route && V2.route.name === 'molecules') V2.render(); });
@@ -426,7 +426,7 @@
     st.textContent =
       // ── Face à Sagitta / OCP : bandes de verdict + mini-prix sous le net ──
       '.mol-sagband{margin:0 0 16px}' +
-      '.mol-sagband-l{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;margin:0 0 10px}' +
+      '.mol-sagband-l{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;margin:0 0 10px}' +
       '.mol-sagband-l span{text-transform:none;letter-spacing:0;font-weight:600;color:var(--muted-2)}' +
       '.mol-sagband-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}' +
       '@media(max-width:640px){.mol-sagband-row{grid-template-columns:1fr}}' +
@@ -444,7 +444,7 @@
       '.mol-sagv.lose.on{border-color:var(--c-amber);box-shadow:0 0 0 3px color-mix(in srgb,var(--c-amber) 22%,transparent),var(--sh-2)}' +
       '.mol-sagv.lose .mol-sagv-go{color:var(--c-amber)}' +
       '@media(prefers-reduced-motion:reduce){.mol-sagv{transition:none}.mol-sagv:hover{transform:none}}' +
-      '.mol-sag{display:block;font-size:10.5px;font-weight:700;color:var(--muted);margin-top:2px}' +
+      '.mol-sag{display:block;font-size:12px;font-weight:700;color:var(--muted);margin-top:2px}' +
       '.mol-sag.win{color:var(--c-mint)}' +
       '.mol-sag.lose{color:var(--c-amber)}' +
       // en-tête : titre + bandeau de repères (vraies données)
@@ -453,7 +453,7 @@
       '.mol-head .v2-page-sub{margin-bottom:0;max-width:620px}' +
       '.mol-kfs{display:flex;gap:10px;flex-wrap:wrap}' +
       '.mol-kf{background:var(--card);border:1px solid var(--line);border-radius:var(--r-md,14px);padding:10px 15px;min-width:104px;box-shadow:var(--sh-1)}' +
-      '.mol-kf-l{display:block;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);white-space:nowrap}' +
+      '.mol-kf-l{display:block;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);white-space:nowrap}' +
       '.mol-kf-v{display:block;font-family:var(--mono);font-size:17px;font-weight:700;letter-spacing:-.02em;margin-top:4px;color:var(--ip-ink);font-variant-numeric:tabular-nums}' +
       '.mol-kf-acc{border-color:color-mix(in srgb,var(--c-opp) 26%,var(--line));background:color-mix(in srgb,var(--c-opp) 4%,var(--card))}' +
       '.mol-kf-acc .mol-kf-v{color:var(--c-mint-txt,#0F7A52)}' +
@@ -472,8 +472,8 @@
       '.mol-table{border-collapse:separate;border-spacing:0;width:100%}' +
       '.mol-table td,.mol-table th{padding:10px 12px;vertical-align:middle}' +
       '.mol-table td.num,.mol-table th.num,.mol-table .mono{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}' +
-      '.mol-table thead th{position:sticky;top:0;z-index:2;background:linear-gradient(180deg,var(--card),var(--card-2,#f7f9fc));font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;box-shadow:inset 0 -1px 0 var(--line-strong,var(--line))}' +
-      '.mol-table thead th small{font-size:10px;text-transform:none;letter-spacing:0}' +
+      '.mol-table thead th{position:sticky;top:0;z-index:2;background:linear-gradient(180deg,var(--card),var(--card-2,#f7f9fc));font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;box-shadow:inset 0 -1px 0 var(--line-strong,var(--line))}' +
+      '.mol-table thead th small{font-size:12px;text-transform:none;letter-spacing:0}' +
       '.mol-table th.mol-th{transition:background .14s var(--ease),color .14s var(--ease)}' +
       '.mol-table th.mol-th.on{color:var(--ip-blue);background:color-mix(in srgb,var(--ip-blue) 9%,#fff);box-shadow:inset 0 -2px 0 var(--ip-blue)}' +
       '.mol-table th.mol-th.on small{color:var(--ip-blue) !important;opacity:.8}' +
@@ -486,7 +486,7 @@
       '.mol-table tbody tr.mol-more:hover{background:none}' +
       '.mol-rk{color:var(--muted-2);width:34px;text-align:right;font-family:var(--mono);font-size:12px}' +
       '.mol-name{max-width:280px}.mol-name span{font-weight:700;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ip-ink-2,var(--ip-ink));transition:color .13s var(--ease)}' +
-      '.mol-cip{color:var(--muted-2);font-size:11px;width:1%;white-space:nowrap;letter-spacing:-.01em}' +
+      '.mol-cip{color:var(--muted-2);font-size:12px;width:1%;white-space:nowrap;letter-spacing:-.01em}' +
       '.mol-nph{font-weight:800;color:var(--ip-ink)}' +
       '.mol-ppht{color:var(--muted-2);text-decoration:line-through;text-decoration-color:color-mix(in srgb,var(--muted-2) 50%,transparent);text-decoration-thickness:1px}' +
       '.mol-net{color:var(--ip-blue);font-weight:800;font-size:15px;background:color-mix(in srgb,var(--ip-blue) 5%,transparent);box-shadow:inset 2px 0 0 color-mix(in srgb,var(--ip-blue) 30%,transparent)}' +
@@ -496,17 +496,17 @@
       // colonnes secondaires (CIP, PPHT, rotation, marge) allégées pour la hiérarchie
       '.mol-table td.mol-cip,.mol-table td.mol-ppht{opacity:.85}' +
       '.mol-table td.mol-frv{color:var(--muted)}.mol-table th.mol-fr{color:var(--muted-2)}' +
-      '.mol-fam{display:inline-block;padding:3px 10px;border-radius:var(--r-pill,999px);font-size:11px;font-weight:700;letter-spacing:.01em;color:var(--fc);background:color-mix(in srgb,var(--fc) 12%,#fff);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--fc) 24%,transparent);white-space:nowrap}' +
+      '.mol-fam{display:inline-block;padding:3px 10px;border-radius:var(--r-pill,999px);font-size:12px;font-weight:700;letter-spacing:.01em;color:var(--fc);background:color-mix(in srgb,var(--fc) 12%,#fff);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--fc) 24%,transparent);white-space:nowrap}' +
       '.mol-rem{display:inline-block;padding:3px 10px;border-radius:var(--r-pill,999px);font-size:12px;font-weight:800;font-family:var(--mono);letter-spacing:-.01em;color:var(--c-mint-txt,var(--c-opp));background:color-mix(in srgb,var(--c-opp) 12%,#fff);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c-opp) 26%,transparent)}' +
       // segs (familles)
       '.mol-segs .v2-seg{transition:transform .16s var(--ease),border-color .16s var(--ease),background .16s var(--ease),box-shadow .16s var(--ease)}' +
       '.mol-segs .v2-seg .sw{box-shadow:0 0 0 3px color-mix(in srgb,var(--sc) 16%,transparent)}' +
       '.mol-segs .v2-seg.on{box-shadow:0 2px 8px color-mix(in srgb,var(--sc,var(--ip-blue)) 32%,transparent)}' +
-      '.mol-segs .v2-seg .cnt{margin-left:6px;padding:1px 7px;border-radius:var(--r-pill,999px);font-family:var(--mono);font-size:11px;font-weight:800;color:var(--muted);background:color-mix(in srgb,var(--ip-ink) 7%,transparent)}' +
+      '.mol-segs .v2-seg .cnt{margin-left:6px;padding:1px 7px;border-radius:var(--r-pill,999px);font-family:var(--mono);font-size:12px;font-weight:800;color:var(--muted);background:color-mix(in srgb,var(--ip-ink) 7%,transparent)}' +
       '.mol-segs .v2-seg.on .cnt{background:color-mix(in srgb,#fff 24%,transparent);color:#fff;opacity:1}' +
       // champs du panneau (établissement, stock, export PDF)
       '.mol-field{display:flex;flex-direction:column;gap:5px;min-width:210px}' +
-      '.mol-field-l{font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}' +
+      '.mol-field-l{font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}' +
       '.mol-select{min-height:42px;border:1px solid var(--line-strong,#d7dbe6);border-radius:var(--r-btn,12px);background:#fff;color:var(--ip-ink);font-family:inherit;font-size:14.5px;font-weight:600;padding:0 12px;cursor:pointer;transition:border-color .14s var(--ease),box-shadow .14s var(--ease)}' +
       '.mol-select:hover{border-color:color-mix(in srgb,var(--ip-blue) 35%,var(--line))}' +
       '.mol-select:focus{outline:none;border-color:color-mix(in srgb,var(--ip-blue) 55%,var(--line));box-shadow:0 0 0 3px var(--halo)}' +
@@ -542,7 +542,7 @@
       '@media(max-width:640px){' +
         '.mol-head{margin-bottom:14px}' +
         '.mol-kfs{width:100%;display:grid;grid-template-columns:repeat(3,1fr);gap:8px}' +
-        '.mol-kf{min-width:0;padding:9px 11px}.mol-kf-l{white-space:normal;font-size:9.5px}.mol-kf-v{font-size:15px}' +
+        '.mol-kf{min-width:0;padding:9px 11px}.mol-kf-l{white-space:normal;font-size:12px}.mol-kf-v{font-size:15px}' +
         // le panneau se déplie en flux : la recherche redevient sticky plein écran
         '.mol-panel,.mol-panel-top{display:contents}' +
         '#mol-q{font-size:16px}' +
@@ -563,7 +563,7 @@
         '.mol-table tbody tr:nth-child(even){background:var(--card)}' +
         '.mol-table tbody tr:hover{background:var(--card)}' +
         '.mol-table tbody td{padding:5px 0;border:none;display:flex;justify-content:space-between;align-items:baseline;gap:12px;text-align:right;font-size:13.5px;min-height:32px}' +
-        '.mol-table tbody td::before{content:attr(data-label);color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.02em;flex:0 0 auto;text-align:left;align-self:center}' +
+        '.mol-table tbody td::before{content:attr(data-label);color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.02em;flex:0 0 auto;text-align:left;align-self:center}' +
         '.mol-table td.mol-name{display:block;font-size:16px;font-weight:800;margin:0 42px 8px 0;padding-bottom:9px;border-bottom:1px solid var(--line);text-align:left;min-height:0}.mol-table td.mol-name::before{display:none}.mol-name span{white-space:normal;color:var(--ip-ink)}' +
         '.mol-table td[data-label="Famille"]{padding-top:2px;padding-bottom:6px}' +
         '.mol-table td.mol-net{font-size:17px;font-weight:800;margin-top:2px;padding-top:7px;border-top:1px solid var(--line-2,var(--line))}.mol-table td.mol-net::before{color:var(--ip-blue);font-weight:800}' +
