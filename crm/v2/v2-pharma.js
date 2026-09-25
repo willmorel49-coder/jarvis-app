@@ -594,27 +594,29 @@
       '</a>';
   }
 
-  // ── Secteur : UGA -> commercial (auto : celui qui a le plus de clients dans l'UGA) ──
+  // ── Secteur : UGA -> commerciaux (25/09/2026, choix de Will) ──
+  // Une UGA appartient à TOUS les commerciaux qui y ont au moins un client (tous les noms
+  // de `comms`, pas seulement le premier) : avant, le seul « plus de clients » laissait
+  // Guillaume ou Pauline A. sans aucun prospect. Ordre = plus de clients d'abord.
   var _ugaComm = null;
   function ugaCommMap() {
     if (_ugaComm) return _ugaComm;
     var D = window.PHARMA_FR; if (!D || !D.p) return {};   // pas de cache tant que PHARMA_FR absent
     var idComm = {};
     (V2.pharmacies || []).forEach(function (p) {
-      var c = (p.comms && p.comms[0]) || '';
       var k = String(p.id).replace(/[^0-9]/g, '');
-      if (c && k) idComm[k] = c;
+      if (k && p.comms && p.comms.length) idComm[k] = p.comms;
     });
     var count = {};
     D.p.forEach(function (p) {
-      var comm = idComm[String(p[13] || '').replace(/[^0-9]/g, '')]; if (!comm) return;
+      var cs = idComm[String(p[13] || '').replace(/[^0-9]/g, '')]; if (!cs) return;
       var uga = p[2]; if (uga == null) return;
-      (count[uga] || (count[uga] = {}))[comm] = ((count[uga] && count[uga][comm]) || 0) + 1;
+      var m = count[uga] || (count[uga] = {});
+      cs.forEach(function (c) { if (c) m[c] = (m[c] || 0) + 1; });
     });
     var map = {};
     Object.keys(count).forEach(function (uga) {
-      var best = null, bn = 0; for (var c in count[uga]) if (count[uga][c] > bn) { bn = count[uga][c]; best = c; }
-      if (best) map[uga] = best;
+      map[uga] = Object.keys(count[uga]).sort(function (a, b) { return count[uga][b] - count[uga][a] || (a < b ? -1 : 1); });
     });
     if (Object.keys(map).length) _ugaComm = map;   // ne pas cacher une map vide (clients pas encore chargés)
     return map;
@@ -624,13 +626,13 @@
     return { p: { id: p[13], name: nameOf(p[13], p[6] || p[10] || 'Pharmacie'), color: '#9AA1B2', inDb: false, comms: [], _prospect: true }, ca: 0, marge: 0, opp: 0 };
   }
   function isClientSeg(p) { var s = window.PHARMA_FR && window.PHARMA_FR.seg[p[4]]; return s && s.indexOf('Client') === 0; }
-  // Prospects (non-clients) des UGA possédées par un commercial. Plafonné à `cap`.
+  // Prospects (non-clients) des UGA d'un ou plusieurs commerciaux. Plafonné à `cap`.
   function commercialProspects(comm, cap) {
-    var D = window.PHARMA_FR; if (!D || !D.p || !comm) return { rows: [], total: 0 };
+    var D = window.PHARMA_FR, cms = [].concat(comm || []); if (!D || !D.p || !cms.length) return { rows: [], total: 0 };
     var uc = ugaCommMap(), out = [];
     for (var i = 0; i < D.p.length; i++) {
       var p = D.p[i];
-      if (uc[p[2]] !== comm || isClientSeg(p) || (V2.promoted && V2.promoted[String(p[13])])) continue;
+      if (!(uc[p[2]] || []).some(function (c) { return cms.indexOf(c) >= 0; }) || isClientSeg(p) || (V2.promoted && V2.promoted[String(p[13])])) continue;
       out.push(p);
     }
     var total = out.length;
@@ -761,9 +763,11 @@
     function listBody() {
       try {
         if (!isOpso() && secteurTab === 'prospects') {
-          if (!V2.commFilter) return '<div class="v2-empty"><div class="v2-empty-t">Choisis un commercial</div><div class="v2-empty-d">Sélectionne un commercial au-dessus pour voir les prospects de son secteur (UGA).</div></div>';
+          // 25/09/2026 — un commercial n'a pas de barre de choix (un seul nom dans ses ventes) : ses UGA d'office.
+          var qui = V2.commFilter || (V2.mesComms ? V2.mesComms() : []);
+          if (!qui.length) return '<div class="v2-empty"><div class="v2-empty-t">Choisis un commercial</div><div class="v2-empty-d">Sélectionne un commercial au-dessus pour voir les prospects de son secteur (UGA).</div></div>';
           if (!window.PHARMA_FR) return '<div class="v2-loading"><div class="v2-spinner"></div><div>Chargement des prospects…</div></div>';
-          var pr = commercialProspects(V2.commFilter, 300);
+          var pr = commercialProspects(qui, 300);
           var q = searchQuery.trim().toLowerCase();
           var rows = q ? pr.rows.filter(function (x) { return (x.p.name || '').toLowerCase().indexOf(q) >= 0; }) : pr.rows;
           if (!rows.length) return '<div class="v2-empty"><div class="v2-empty-t">Aucun prospect</div><div class="v2-empty-d">' + (q ? 'Aucun résultat.' : 'Aucun prospect dans les UGA de ce commercial.') + '</div></div>';
@@ -1082,6 +1086,7 @@
     var oi = (window.OFFICINES_INFOS || {})[String(pid)] || null;
     var oiAdresse = oi ? (oi[0] || '') : '', oiTel = oi ? (oi[1] || '') : '', oiFax = oi ? (oi[2] || '') : '', oiSiren = oi ? (oi[3] || '') : '', oiDateouv = oi ? (oi[4] || '') : '';
     var seed = { nom: p[6] || '', groupement: grp || '', titulaire: p[10] || dirigeantsDe(oi), tel: p[9] || oiTel, email: p[11] || '', adresse: oiAdresse };
+    var secteurDe = (ugaCommMap()[p[2]] || []).join(', ');   // commerciaux présents dans son UGA
     var badge = function (t, cls) { return t ? '<span class="v2-chip' + (cls ? ' ' + cls : '') + '">' + esc(t) + '</span>' : ''; };
     // 23/09/2026 — un prospect n'a jamais de grossiste/génériqueur connu (base clients
     // = clientes seulement) : estimation d'après son groupement, jamais écrite en base.
@@ -1099,7 +1104,7 @@
             '<div style="flex:1;min-width:0">' +
               '<div class="v2-prospect-n">' + esc(nameOf(pid, p[6] || p[10]) || 'Pharmacie') + '</div>' +
               '<div class="v2-prospect-a">' + esc(ville) + (cp ? ' · ' + esc(cp) : '') + '</div>' +
-              '<div class="v2-prospect-badges">' + badge(seg, 'pr') + badge(grp) + badge(uga ? 'UGA ' + uga : '') + '</div>' +
+              '<div class="v2-prospect-badges">' + badge(seg, 'pr') + badge(grp) + badge(uga ? 'UGA ' + uga : '') + badge(secteurDe ? 'Secteur de ' + secteurDe : '') + '</div>' +
               ((oiSiren || oiFax || oiDateouv) ? '<div class="v2-prospect-extra">' +
                 (oiSiren ? '<a href="https://annuaire-entreprises.data.gouv.fr/entreprise/' + esc(oiSiren) + '" target="_blank" rel="noopener">SIREN ' + esc(oiSiren) + '</a>' : '') +
                 (oiFax ? (oiSiren ? ' · ' : '') + 'Fax ' + esc(oiFax) : '') +
