@@ -729,7 +729,11 @@
         return window.html2pdf().from(wrap.firstChild).set({
           // margin 0 : la fiche fait 794 px et porte son padding ; des marges en plus la rognaient à droite (mesuré 25/09/2026, WebKit).
           filename: fn, margin: 0, image: { type: 'jpeg', quality: 0.95 },
-          html2canvas: { scale: 2, useCORS: true, allowTaint: false, backgroundColor: '#ffffff', logging: false },
+          // ignoreElements : html2canvas recopie toute la page ; les ~60 photos offilog.fr de la liste étaient
+          // rechargées dans la copie, et une seule qui traîne bloquait le PDF pour toujours (≈ 1 fois sur 8, WebKit, 25/09/2026).
+          // On ne recopie que la fiche (calque html2pdf) et les styles.
+          html2canvas: { scale: 2, useCORS: true, allowTaint: false, backgroundColor: '#ffffff', logging: false,
+            ignoreElements: function (el) { return el.parentNode === document.body && !el.classList.contains('html2pdf__overlay') && el.tagName !== 'STYLE' && el.tagName !== 'LINK'; } },
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
           pagebreak: { mode: ['css', 'legacy'] }
         }).save().then(function () {
