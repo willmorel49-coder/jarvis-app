@@ -193,38 +193,20 @@
       .filter(function (m) { return m.length > 3 && !MOTS_VIDES[m]; });
   }
   /* ⚠️ « PHARMACIE CENTRALE » existe dans presque chaque ville : le nom seul ne
-     prouve rien. On exige la VILLE en plus, sinon on n'affirme pas. */
+     prouve rien. Même règle que « Dans ton secteur » (sctMatchClient, choix de
+     Will le 25/09/2026) : SON portefeuille, même lieu, mots rares du nom, UN seul
+     candidat. Jusqu'au 25/09 la ville était cherchée dans le NOM de l'officine :
+     presque aucun client n'était reconnu.
+     ⚠️ FINESS donne un CODE INSEE (« 63315 »), pas un nom de ville : on se
+     rabat alors sur le département du code. */
   function clientTouche(nomSociete, ville) {
-    var liste = (window.V2 && V2.pharmacies) || [];
-    if (!liste.length || !nomSociete) return null;
-    var mots = motsUtiles(nomSociete);
-    if (!mots.length) return null;
-    var v = norm(ville || '').replace(/[^a-z0-9]+/g, ' ').trim();
-    // ⚠️ FINESS donne un CODE INSEE (« 63315 »), pas un nom de ville : le chercher
-    //    dans le nom d'un client ne peut rien donner.
-    if (/^\d[\d ]*$/.test(v)) v = '';
-
-    /* La règle qui décide : UN SEUL CLIENT POSSIBLE.
-       « Deux mots rares exigés » perdait « SELARL Pharmacie SABOURIN » (un seul mot
-       rare une fois « selarl » et « pharmacie » retirés) ; « un mot suffit » faisait
-       crier au loup sur les noms répandus. On rassemble donc TOUS les clients
-       compatibles : on n'affirme que s'il n'y en a qu'un. Une ambiguïté, on se tait. */
-    var candidats = [];
-    for (var i = 0; i < liste.length; i++) {
-      var p = liste[i];
-      var nomP = norm(p.name || '').replace(/[^a-z0-9]+/g, ' ');
-      if (!nomP.trim()) continue;
-      var communs = 0;
-      for (var k = 0; k < mots.length; k++) if (nomP.indexOf(mots[k]) >= 0) communs++;
-      if (!communs) continue;
-      if (v && nomP.indexOf(v) < 0) continue;   // ville connue : elle doit concorder
-      candidats.push({ p: p, n: communs });
+    if (!nomSociete) return null;
+    var v = String(ville || '').trim();
+    if (/^(\d{2}|2[ab])\d{3}$/i.test(v)) {
+      var dep = /^97/.test(v) ? v.slice(0, 3) : /^2[ab]/i.test(v) ? '20' : v.slice(0, 2);
+      return sctMatchClient(nomSociete, '', '', dep);
     }
-    if (!candidats.length) return null;
-    if (candidats.length === 1) return candidats[0].p;
-    // plusieurs clients compatibles : on ne tranche que si UN SEUL est nettement devant
-    candidats.sort(function (a, b) { return b.n - a.n; });
-    return (candidats[0].n > candidats[1].n) ? candidats[0].p : null;
+    return sctMatchClient(nomSociete, v, '');
   }
 
   /* ════════════════ « DANS TON SECTEUR » (Bodacc) ════════════════
@@ -369,9 +351,9 @@
     return (cands[0].n > cands[1].n) ? cands[0].p : null;
   }
   /* Client : SON portefeuille (tout le fichier pour qui n'en a pas), même code
-     postal ou même ville, au moins un mot rare du nom en commun, UN seul candidat.
-     (clientTouche() compare la ville au NOM de l'officine : il rate ce cas.) */
-  function sctMatchClient(nom, ville, cp) {
+     postal ou même ville (ou, faute de mieux, même département : dep = début du
+     code postal), au moins un mot rare du nom en commun, UN seul candidat. */
+  function sctMatchClient(nom, ville, cp, dep) {
     // formes juridiques absentes de MOTS_VIDES, et mots de la ville (« Pharmacie de
     // Livry-Gargan » ne désigne pas une officine précise) ; deux mots rares = les deux exigés
     var v = norm(ville || '').replace(/[^a-z0-9]+/g, ' ').trim(), c = String(cp || '').trim();
@@ -386,7 +368,8 @@
       var p = liste[i];
       if (mes.length && !(p.comms || []).some(function (x) { return mes.indexOf(x) >= 0; })) continue;
       var memeLieu = (c && String(p.cp || '').trim() === c) ||
-        (v && norm(p.ville || '').replace(/[^a-z0-9]+/g, ' ').trim() === v);
+        (v && norm(p.ville || '').replace(/[^a-z0-9]+/g, ' ').trim() === v) ||
+        (dep && String(p.cp || '').trim().indexOf(dep) === 0);
       if (!memeLieu) continue;
       var nomP = norm(p.name || '').replace(/[^a-z0-9]+/g, ' '), communs = 0;
       for (var k = 0; k < mots.length; k++) if (nomP.indexOf(mots[k]) >= 0) communs++;
