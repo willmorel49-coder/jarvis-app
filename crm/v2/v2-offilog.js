@@ -1216,6 +1216,7 @@
           verdictBand(filtered) +
           '<div class="off-toolbar">' +
             '<div class="off-count"><b class="mono">' + V2.fmtNum(total) + '</b> produit' + (total > 1 ? 's' : '') + ' · ' + ctxLabel + '</div>' +
+            (V2.offCatalogue ? '<button type="button" class="v2-btn v2-btn-primary" onclick="V2.offCatalogue()">' + ICO('download', 15, 2) + ' Catalogue client</button>' : '') +
             advBtn +
           '</div>' +
           advPanel +
