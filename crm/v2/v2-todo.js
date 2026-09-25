@@ -339,19 +339,22 @@
       var lienP = (V2.rdvLien && V2.rdvLien.charger) ? V2.rdvLien.charger().then(function (l) {
         return (l && l.actif !== false && V2.rdvLien.url) ? V2.rdvLien.url(l) : '';
       }) : Promise.resolve('');
-      Promise.resolve(lienP).catch(function () { return ''; }).then(function (lien) {
-        st.lien = lien || st.lien || '';
+      // Ma version du mail tout prêt, si j'en ai une : chargée avant d'écrire le texte.
+      Promise.all([Promise.resolve(lienP).catch(function () { return ''; }), chargerMods()]).then(function (r) {
+        st.lien = r[0] || st.lien || '';
         var m = it.k === 'libre' ? { objet: '', corps: 'Bonjour,\n\n' + signature().replace(/^\n\n/, '') } : texteDe(it.k, it);
         composer({ it: it, pid: it.pid, nom: it.nom, dest: dest, objet: m.objet, corps: m.corps,
-          docs: (KINDS[it.k].presel || []).slice(), base: it.k === 'libre' ? '' : 'b:' + it.k });
+          docs: docsDe(it.k), base: it.k === 'libre' ? '' : 'b:' + it.k });
       });
     },
     docs: function (id) {
       var it = (st.items || []).find(function (x) { return x.id === id; }); if (!it) return;
       if (!it.pid) { if (V2.toast) V2.toast('Cette ligne n\'est rattachée à aucune officine', 'warn'); return; }
       if (!V2.pharmaTransmettre) return;
-      V2.pharmaTransmettre(it.pid, KINDS[it.k].presel || null, { nom: it.nom, mail: mailDe(it),
-        texte: it.k === 'compte' ? mailCompte(it) : it.k === 'merci' ? mailMerci(it) : it.k === 'rdv' ? mailRdv(it, st.lien || '') : null });
+      chargerMods().then(function () {
+        var d = it.k === 'libre' ? [] : docsDe(it.k);
+        V2.pharmaTransmettre(it.pid, d.length ? d : null, { nom: it.nom, mail: mailDe(it), texte: it.k === 'libre' ? null : texteDe(it.k, it) });
+      });
     },
 
     // Carte de l'accueil : mes lignes à faire (les plus urgentes d'abord), rien si la liste est vide.
@@ -434,25 +437,26 @@
     { k: 'merci',  t: 'Après le rendez-vous',   s: 'remerciement, fonctionnement et documents' },
     { k: 'compte', t: 'Ouverture de compte',    s: 'le formulaire 2026 est à joindre' }
   ];
-  function modele(k) {
-    var it = { k: k, nom: '', pid: '', cree: new Date().toISOString() }, lien = st.lien || '';
-    return k === 'compte' ? mailCompte(it) : k === 'merci' ? mailMerci(it) : mailRdv(it, lien);
-  }
+  function modele(k) { return texteDe(k); }
   function mailsPrets() {
     if (st.lien == null) {
       st.lien = '';
       var p = (V2.rdvLien && V2.rdvLien.charger) ? V2.rdvLien.charger() : null;
       if (p) Promise.resolve(p).then(function (l) { st.lien = (l && l.actif !== false && V2.rdvLien.url) ? V2.rdvLien.url(l) : ''; if (st.lien) rendre(); }).catch(function () {});
     }
-    return '<div class="v2-todo-mh"><h2>Les mails tout prêts</h2><p>À lire, copier ou ouvrir dans ta messagerie — l\'adresse du pharmacien reste à ajouter.</p></div>' +
+    if (st.mods == null) chargerMods().then(rendre);
+    // 25/09, Will : « chacun doit pouvoir avoir des modèles de base et pouvoir les modifier pour lui
+    // et que pour lui » → mêmes 3 modèles au départ pour tous, « Ma version » rangée avec ses modèles.
+    return '<div class="v2-todo-mh"><h2>Les mails tout prêts</h2><p>Les mêmes pour toute l\'équipe au départ. Tu peux les modifier à ta façon : ta version ne vaut que pour toi.</p></div>' +
       '<div class="v2-card v2-todo-list">' + MODELES.map(function (m) {
-        var x = modele(m.k);
+        var x = modele(m.k), mien = !!(st.bases || {})[m.k];
         return '<details class="v2-todo-mail"' + ((st.ouverts || {})[m.k] ? ' open' : '') + ' ontoggle="V2.todo.plier(\'' + m.k + '\',this.open)"><summary><span class="v2-todo-ico">' + ICO(KINDS[m.k].ico, 16, 2) + '</span>' +
-          '<span class="v2-todo-mt"><b>' + esc(m.t) + '</b><small>' + esc(m.s) + '</small></span><span class="v2-todo-chev">' + ICO('chev', 16, 2) + '</span></summary>' +
+          '<span class="v2-todo-mt"><b>' + esc(m.t) + (mien ? ' <em class="v2-todo-mien">Ma version</em>' : '') + '</b><small>' + esc(m.s) + '</small></span><span class="v2-todo-chev">' + ICO('chev', 16, 2) + '</span></summary>' +
           '<div class="v2-todo-mb">' + (m.k === 'merci' ? accesOffilog() : '') + '<div class="v2-todo-obj"><span>Objet</span>' + esc(x.objet) + '</div>' +
           '<pre class="v2-todo-corps">' + esc(x.corps) + '</pre>' +
           '<div class="v2-todo-acts"><button class="v2-btn v2-btn-primary v2-todo-sm" onclick="V2.todo.preparer(\'b:' + m.k + '\')">' + ICO('fiche', 14, 2) + 'Modifier et envoyer</button>' +
-          '<button class="v2-btn v2-btn-ghost v2-todo-sm" onclick="V2.todo.editerModele(\'b:' + m.k + '\')">' + ICO('plus', 14, 2) + 'En faire mon modèle</button>' +
+          '<button class="v2-btn v2-btn-ghost v2-todo-sm" onclick="V2.todo.editerBase(\'' + m.k + '\')">' + ICO('plus', 14, 2) + (mien ? 'Modifier ma version' : 'Modifier ce modèle pour moi') + '</button>' +
+          (mien ? '<button class="v2-btn v2-btn-ghost v2-todo-sm" onclick="V2.todo.baseOrigine(\'' + m.k + '\')">Revenir au modèle d\'origine</button>' : '') +
           '<button class="v2-btn v2-btn-ghost v2-todo-sm" onclick="V2.todo.copierModele(\'' + m.k + '\')">' + ICO('check', 14, 2) + 'Copier le texte</button></div></div></details>';
       }).join('') + '</div>' + mesModeles();
   }
@@ -502,40 +506,75 @@
                docs: (Array.isArray(m.docs) ? m.docs : []).map(String).filter(function (k) { return /^[SD]:/.test(k); }) };
     });
   }
+  // Ma version d'un mail tout prêt : { rdv|merci|compte: { objet, corps, docs } }, dans la même ligne.
+  function nettoieBases(o) {
+    var r = {}; o = o || {};
+    MODELES.forEach(function (m) {
+      var b = o[m.k]; if (!b || typeof b !== 'object' || !(b.objet || b.corps)) return;
+      r[m.k] = { objet: String(b.objet || ''), corps: String(b.corps || ''),
+                 docs: (Array.isArray(b.docs) ? b.docs : []).map(String).filter(function (k) { return /^[SD]:/.test(k); }) };
+    });
+    return r;
+  }
   function chargerMods() {
     if (st.modsP) return st.modsP;
     var c = sb(), s = scopeMod();
-    var local = function () { try { st.mods = nettoieMods(JSON.parse(localStorage.getItem(lsMod()) || '[]')); } catch (e) { st.mods = []; } return st.mods; };
+    var local = function () {
+      try { st.mods = nettoieMods(JSON.parse(localStorage.getItem(lsMod()) || '[]')); } catch (e) { st.mods = []; }
+      try { st.bases = nettoieBases(JSON.parse(localStorage.getItem(lsMod() + ':bases') || '{}')); } catch (e) { st.bases = {}; }
+      return st.mods;
+    };
     st.modsP = (c && V2.user) ? c.from('profils').select('data').eq('scope_type', s.st).eq('scope_id', s.sid).maybeSingle().then(function (r) {
       if (r.error) throw r.error;
-      st.mods = nettoieMods(r.data && r.data.data && r.data.data.modeles);
-      try { localStorage.setItem(lsMod(), JSON.stringify(st.mods)); } catch (e) {}
+      var d = (r.data && r.data.data) || {};
+      st.mods = nettoieMods(d.modeles); st.bases = nettoieBases(d.bases);
+      try { localStorage.setItem(lsMod(), JSON.stringify(st.mods)); localStorage.setItem(lsMod() + ':bases', JSON.stringify(st.bases)); } catch (e) {}
       return st.mods;
     }).catch(local) : Promise.resolve().then(local);
     return st.modsP;
   }
   // Relit avant d'écrire (iPhone + Mac de la même personne), comme la liste.
-  function ecrireMods(fn) {
+  // `fn` transforme mes modèles, `fnB` mes versions des mails tout prêts (l'un ou l'autre peut manquer).
+  function ecrireMods(fn, fnB) {
     var c = sb(), s = scopeMod();
-    var garde = function (a) { st.mods = a; try { localStorage.setItem(lsMod(), JSON.stringify(a)); } catch (e) {} };
-    if (!(c && V2.user)) { garde(fn(nettoieMods(st.mods))); return Promise.resolve(false); }
+    fn = fn || function (a) { return a; }; fnB = fnB || function (b) { return b; };
+    var garde = function (a, b) {
+      st.mods = a; st.bases = b;
+      try { localStorage.setItem(lsMod(), JSON.stringify(a)); localStorage.setItem(lsMod() + ':bases', JSON.stringify(b)); } catch (e) {}
+    };
+    var local = function () { garde(nettoieMods(fn(nettoieMods(st.mods))), nettoieBases(fnB(nettoieBases(st.bases)))); return false; };
+    if (!(c && V2.user)) return Promise.resolve(local());
     return c.from('profils').select('data').eq('scope_type', s.st).eq('scope_id', s.sid).maybeSingle().then(function (r) {
       if (r.error) throw r.error;
-      var a = nettoieMods(fn(nettoieMods(r.data && r.data.data && r.data.data.modeles)));
-      return c.from('profils').upsert({ scope_type: s.st, scope_id: s.sid, data: { modeles: a }, updated_by: V2.user.id,
+      var d = (r.data && r.data.data) || {};
+      var a = nettoieMods(fn(nettoieMods(d.modeles))), b = nettoieBases(fnB(nettoieBases(d.bases)));
+      return c.from('profils').upsert({ scope_type: s.st, scope_id: s.sid, data: { modeles: a, bases: b }, updated_by: V2.user.id,
         updated_by_name: V2.user.name || '', updated_at: new Date().toISOString() }, { onConflict: 'scope_type,scope_id' })
-        .then(function (u) { if (u.error) throw u.error; garde(a); return true; });
-    }).catch(function () { garde(nettoieMods(fn(nettoieMods(st.mods)))); return false; });
+        .then(function (u) { if (u.error) throw u.error; garde(a, b); return true; });
+    }).catch(local);
   }
 
   // ── « Préparer le mail » : tout se modifie avant de partir ──────
   // c = { it, pid, nom, dest, objet, corps, docs:[clés], base: 'b:rdv' | 'm:<id>' | '', mode: 'envoi' | 'modele', modId }
-  function texteDe(k, it) {
+  function origine(k, it) {
     it = it || { k: k, nom: '', pid: '', cree: new Date().toISOString() };
     return k === 'compte' ? mailCompte(it) : k === 'merci' ? mailMerci(it) : mailRdv(it, st.lien || '');
   }
+  // Ma version garde des repères à la place du lien de rendez-vous et de l'accès Offilog :
+  // s'ils changent, ma version suit. Repère sans valeur → le même [ ] que dans les mails d'origine.
+  function jetons() {
+    var r = reglages();
+    return [['{lien}', st.lien || '', '[lien de prise de rendez-vous]'], ['{offilogId}', r.offilogId, '[identifiant]'], ['{offilogMdp}', r.offilogMdp, '[mot de passe]']];
+  }
+  function remplir(s) { return jetons().reduce(function (t, j) { return t.split(j[0]).join(j[1] || j[2]); }, String(s || '')); }
+  function reperer(s) { return jetons().reduce(function (t, j) { return j[1] && j[1].length >= 6 ? t.split(j[1]).join(j[0]) : t; }, String(s || '')); }
+  function texteDe(k, it) {
+    var b = (st.bases || {})[k];
+    return b ? { objet: remplir(b.objet), corps: remplir(b.corps) } : origine(k, it);
+  }
+  function docsDe(k) { var b = (st.bases || {})[k]; return (b ? b.docs : (KINDS[k] && KINDS[k].presel) || []).slice(); }
   function depuis(base, it) {
-    if (base.indexOf('b:') === 0 && KINDS[base.slice(2)]) { var m = texteDe(base.slice(2), it); return { objet: m.objet, corps: m.corps, docs: (KINDS[base.slice(2)].presel || []).slice(), nom: MODELES.filter(function (x) { return x.k === base.slice(2); })[0].t }; }
+    if (base.indexOf('b:') === 0 && KINDS[base.slice(2)]) { var m = texteDe(base.slice(2), it); return { objet: m.objet, corps: m.corps, docs: docsDe(base.slice(2)), nom: MODELES.filter(function (x) { return x.k === base.slice(2); })[0].t }; }
     var x = (st.mods || []).filter(function (m) { return 'm:' + m.id === base; })[0];
     return x ? { objet: x.objet, corps: x.corps, docs: x.docs.slice(), nom: x.nom } : null;
   }
@@ -561,7 +600,7 @@
       document.body.appendChild(o);
       document.body.classList.add('v2-tc-on');
     }
-    var modele = c.mode === 'modele';
+    var modele = c.mode === 'modele', enBase = c.mode === 'base';
     var opts = '<option value="">' + (modele ? 'Partir d\'un mail existant…' : 'Changer de modèle…') + '</option>' +
       '<optgroup label="Les mails tout prêts">' + MODELES.map(function (m) { return '<option value="b:' + m.k + '">' + esc(m.t) + '</option>'; }).join('') + '</optgroup>' +
       ((st.mods || []).length ? '<optgroup label="Mes modèles">' + st.mods.map(function (m) { return '<option value="m:' + m.id + '">' + esc(m.nom) + '</option>'; }).join('') + '</optgroup>' : '');
@@ -569,13 +608,13 @@
       return '<span class="v2-tc-doc">' + ICO('fiche', 13, 2) + '<span>' + esc(libDoc(k)) + '</span><button aria-label="Retirer ce document" onclick="V2.todo.compRetirerDoc(' + i + ')">&times;</button></span>';
     }).join('') : '<span class="v2-tc-vide">Aucun document joint.</span>';
     var nDocs = c.docs.length;
-    o.innerHTML = '<div class="v2-todo-pop v2-tc" role="dialog" aria-label="' + (modele ? 'Mon modèle' : 'Préparer le mail') + '" onclick="event.stopPropagation()">' +
-      '<div class="v2-todo-pop-h"><b>' + (modele ? (c.modId ? 'Modifier mon modèle' : 'Nouveau modèle') : 'Préparer le mail') + '</b>' +
-        '<span>' + esc(modele ? '' : (c.nom || '')) + '</span><button class="v2-todo-x" aria-label="Fermer" onclick="V2.todo.fermerComp()">&times;</button></div>' +
+    o.innerHTML = '<div class="v2-todo-pop v2-tc" role="dialog" aria-label="' + (enBase ? 'Ma version' : modele ? 'Mon modèle' : 'Préparer le mail') + '" onclick="event.stopPropagation()">' +
+      '<div class="v2-todo-pop-h"><b>' + (enBase ? 'Ma version · ' + esc(c.nom) : modele ? (c.modId ? 'Modifier mon modèle' : 'Nouveau modèle') : 'Préparer le mail') + '</b>' +
+        '<span>' + esc(enBase ? 'Ne vaut que pour toi' : modele ? '' : (c.nom || '')) + '</span><button class="v2-todo-x" aria-label="Fermer" onclick="V2.todo.fermerComp()">&times;</button></div>' +
       '<div class="v2-tc-b">' +
         (modele ? '<label><span>Nom du modèle</span><input id="v2-tc-nomMod" type="text" value="' + esc(c.nomMod) + '" placeholder="Ex. : Relance après salon"></label>' : '') +
-        '<label><span>' + (modele ? 'Partir d\'un mail existant' : 'Modèle') + '</span><select id="v2-tc-base" onchange="V2.todo.compBase(this.value)">' + opts + '</select></label>' +
-        (modele ? '' : '<label><span>À</span><input id="v2-tc-dest" type="email" autocomplete="off" value="' + esc(c.dest || '') + '" placeholder="Adresse du pharmacien (facultatif)"></label>') +
+        (enBase ? '' : '<label><span>' + (modele ? 'Partir d\'un mail existant' : 'Modèle') + '</span><select id="v2-tc-base" onchange="V2.todo.compBase(this.value)">' + opts + '</select></label>') +
+        (modele || enBase ? '' : '<label><span>À</span><input id="v2-tc-dest" type="email" autocomplete="off" value="' + esc(c.dest || '') + '" placeholder="Adresse du pharmacien (facultatif)"></label>') +
         '<label><span>Objet</span><input id="v2-tc-objet" type="text" value="' + esc(c.objet || '') + '"></label>' +
         '<label><span>Texte du mail</span><textarea id="v2-tc-corps" rows="14">' + esc(c.corps || '') + '</textarea></label>' +
         '<div class="v2-tc-docs"><span class="v2-tc-lab">Documents joints</span><div class="v2-tc-chips">' + docs + '</div>' +
@@ -583,7 +622,10 @@
         (!modele && c.garder ? '<div class="v2-tc-garde"><input id="v2-tc-nomMod" type="text" value="' + esc(c.nomMod) + '" placeholder="Nom du modèle"><button class="v2-btn v2-btn-primary v2-todo-sm" onclick="V2.todo.compEnregistrer()">Enregistrer</button></div>' : '') +
       '</div>' +
       '<div class="v2-tc-f">' +
-        (modele
+        (enBase
+          ? ((st.bases || {})[c.baseK] ? '<button class="v2-btn v2-btn-ghost v2-todo-sm v2-tc-sup" onclick="V2.todo.baseOrigine(\'' + c.baseK + '\')">Revenir au modèle d\'origine</button>' : '') +
+            '<button class="v2-btn v2-btn-primary" onclick="V2.todo.compEnregistrer()">' + ICO('check', 15, 2) + 'Enregistrer ma version</button>'
+        : modele
           ? (c.modId ? '<button class="v2-btn v2-btn-ghost v2-todo-sm v2-tc-sup" onclick="V2.todo.compSupprimer()">Supprimer ce modèle</button>' : '') +
             '<button class="v2-btn v2-btn-primary" onclick="V2.todo.compEnregistrer()">' + ICO('check', 15, 2) + 'Enregistrer le modèle</button>'
           : (c.garder ? '' : '<button class="v2-btn v2-btn-ghost v2-todo-sm" onclick="V2.todo.compGarder()">Enregistrer comme modèle</button>') +
@@ -604,6 +646,23 @@
         objet: d ? d.objet : '', corps: d ? d.corps : 'Bonjour,\n\n' + signature().replace(/^\n\n/, ''), docs: d ? d.docs : [], base: base });
     });
   };
+  // Un mail tout prêt modifié pour moi seul (ligne `profils` personnelle, data.bases).
+  V2.todo.editerBase = function (k) {
+    if (!KINDS[k]) return;
+    chargerMods().then(function () {
+      var b = (st.bases || {})[k], m = b ? texteDe(k) : origine(k, { k: k, nom: '', pid: '', cree: '' });  // sans date : elle serait figée
+      composer({ mode: 'base', baseK: k, nom: MODELES.filter(function (x) { return x.k === k; })[0].t, objet: m.objet, corps: m.corps, docs: docsDe(k), base: 'b:' + k });
+    });
+  };
+  V2.todo.baseOrigine = function (k) {
+    var nom = (MODELES.filter(function (x) { return x.k === k; })[0] || {}).t || '';
+    if (!window.confirm('Revenir au modèle d\'origine « ' + nom + ' » ? Ta version sera effacée.')) return;
+    ecrireMods(null, function (b) { delete b[k]; return b; }).then(function (ok) {
+      if (V2.toast) V2.toast(ok ? 'Modèle d\'origine rétabli' : 'Rétabli sur cet appareil seulement — la base n\'a pas répondu', ok ? '' : 'warn');
+      if (st.comp && st.comp.mode === 'base') V2.todo.fermerComp();
+      rendre();
+    });
+  };
   V2.todo.compBase = function (base) {
     var c = lireComp(); if (!c || !base) return;
     var d = depuis(base, c.it); if (!d) return;
@@ -617,11 +676,19 @@
   V2.todo.compChoisirDocs = function () {
     var c = lireComp(); if (!c || !V2.pharmaTransmettre) return;
     V2.pharmaTransmettre(c.mode === 'envoi' ? (c.pid || '') : '', c.docs, { nom: c.nom, mail: c.dest, texte: { objet: c.objet, corps: c.corps }, choixSeul: true,
-      surChoix: function (keys) { if (st.comp === c) { c.docs = c.mode === 'modele' ? keys.filter(function (k) { return /^[SD]:/.test(k); }) : keys; dessinerComp(); } } });
+      surChoix: function (keys) { if (st.comp === c) { c.docs = c.mode !== 'envoi' ? keys.filter(function (k) { return /^[SD]:/.test(k); }) : keys; dessinerComp(); } } });
   };
   V2.todo.compGarder = function () { var c = lireComp(); if (!c) return; c.garder = true; dessinerComp(); var el = document.getElementById('v2-tc-nomMod'); if (el) el.focus(); };
   V2.todo.compEnregistrer = function () {
     var c = lireComp(); if (!c) return;
+    if (c.mode === 'base') {
+      var v = { objet: reperer(String(c.objet || '').trim()), corps: reperer(c.corps || ''), docs: c.docs.filter(function (k) { return /^[SD]:/.test(k); }) };
+      ecrireMods(null, function (b) { b[c.baseK] = v; return b; }).then(function (ok) {
+        if (V2.toast) V2.toast(ok ? 'Ta version de « ' + c.nom + ' » est enregistrée' : 'Gardée sur cet appareil seulement — la base n\'a pas répondu', ok ? '' : 'warn');
+        V2.todo.fermerComp(); rendre();
+      });
+      return;
+    }
     var nom = String(c.nomMod || '').trim();
     if (!nom) { if (V2.toast) V2.toast('Donne un nom au modèle', 'warn'); var el = document.getElementById('v2-tc-nomMod'); if (el) el.focus(); return; }
     var id = (c.mode === 'modele' && c.modId) || newId();
@@ -799,6 +866,7 @@
       '.v2-todo-mod{display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px;padding:12px 18px;border-top:1px solid var(--line)}',
       '.v2-todo-mod:first-child{border-top:none}',
       '.v2-todo-mod .v2-todo-mt{flex:1 1 200px}',
+      '.v2-todo-mien{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:999px;background:var(--halo,#E9F0FF);color:var(--ip-blue);font-size:12px;font-style:normal;font-weight:700;vertical-align:1px}',
       '.v2-todo-mod-add{padding:12px 18px;border-top:1px solid var(--line)}',
       '@media (max-width:760px){.v2-todo-kinds{grid-template-columns:1fr 1fr}.v2-todo-form{grid-template-columns:1fr}.v2-todo-wide{grid-column:auto}.v2-todo-b{margin-left:0}}'
     ].join('\n');
