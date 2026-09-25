@@ -391,6 +391,9 @@
   }
   function prodImg(p, forPdf) {
     if (forPdf && window.OFFILOG_IMG && p.id && window.OFFILOG_IMG[p.id]) return proxify(window.OFFILOG_IMG[p.id]);
+    // 25/09/2026 : le relais refuse offilog.fr (403) → photo vide dans le PDF. Copie
+    // locale pimg/<cip>.jpg (host_offilog_img.py), même origine = PDF-safe.
+    if (forPdf && p.cip && /^https?:\/\/(www\.)?offilog\.fr\//.test(p.img || '')) return 'pimg/' + p.cip + '.jpg';
     // À l'écran, la photo se charge en direct (aucune contrainte CORS) ; le relais ne sert qu'au PDF/canvas.
     // Offilog répond 403 aux serveurs du relais (constaté le 10/09/2026), pas au navigateur.
     return forPdf ? proxify(p.img || '') : (p.img || '');
