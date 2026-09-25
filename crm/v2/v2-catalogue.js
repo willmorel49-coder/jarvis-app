@@ -41,6 +41,7 @@
 
   // ── Index ─────────────────────────────────────
   var idxBuilt = false, sagittaSet = null, sortedBench = null, benchByCip = null;
+  var catEssai = false;   // catalogue complet (labos) demandé une seule fois : s'il ne vient pas, l'écran s'affiche quand même
   function norm(s) { return String(s == null ? '' : s).toLowerCase(); }
   function refPrice(b) {
     var bp = V2.bestPrice(b);            // prix le plus bas (offre labo incluse)
@@ -51,7 +52,12 @@
     if (b.is_froid) return 'froid';
     var an = norm(b.artnature);
     if (an === 'biosimilaire') return 'bio';
-    if (an === 'generique_partenaire' || an === 'generique partenaire') return 'genp';
+    // 26/09/2026 — même règle que Groupements (décision de Will 25/09) : seuls EG · Zentiva · Zydus · Teva
+    // sont partenaires. Labo lu dans le catalogue complet ; labo inconnu → on garde le BENCHMARK.
+    if (an === 'generique_partenaire' || an === 'generique partenaire') {
+      var ci = V2.produits && V2.produits.catalogueIndex ? V2.produits.catalogueIndex() : null, cr = ci && ci[String(b.cip13)];
+      return (cr && cr.labo && !/^(EG|ZENTIVA|ZYDUS|TEVA)\b/i.test(cr.labo)) ? 'gen' : 'genp';
+    }
     if (an === 'generique') return 'gen';
     if ((sagittaSet && sagittaSet.has(String(b.cip13))) || b.has_ameli === false) return 'nr';
     var p = refPrice(b);
@@ -503,10 +509,11 @@
       if (param != null && param !== '' && String(param) !== String(S._lastParam)) S.sel = param;
       S._lastParam = param;
 
-      if (!window.BENCHMARK) {
+      if (!window.BENCHMARK || (!window.CATALOGUE_COMPLET && !catEssai)) {
+        catEssai = true;
         root.innerHTML = V2.topbar({ back: true }) +
           '<div class="v2-loading"><div class="v2-spinner"></div><div>Chargement du catalogue…</div></div>';
-        V2.loadFiles(['bench', 'sagitta']).then(function () { idxBuilt = false; if (V2.route && V2.route.name !== 'catalogue') return; /* 11/09/2026 (phase 4) : l'écran a pu changer pendant l'attente */ V2.render(); });
+        V2.loadFiles(['bench', 'sagitta', 'catcomplet']).then(function () { idxBuilt = false; if (V2.route && V2.route.name !== 'catalogue') return; /* 11/09/2026 (phase 4) : l'écran a pu changer pendant l'attente */ V2.render(); });
         return;
       }
       buildIndex();
