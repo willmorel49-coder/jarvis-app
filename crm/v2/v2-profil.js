@@ -210,6 +210,17 @@
       .catch(function () { return localScopeList(st); });
   };
 
+  // 25/09/2026 — rubrique « Logiciels officine » : poser UN champ sans ouvrir la fiche,
+  // par la même fusion que V2.profil.set (les autres champs de l'enregistrement sont gardés).
+  V2.profil.LGO = LGO;
+  V2.profil.poser = function (st, sid, k, v) {
+    return load(st, String(sid)).then(function (res) {
+      var base = (res && res.rec && res.rec.data) || {};
+      if (v) base[k] = v; else delete base[k];
+      return save(st, String(sid), base);
+    });
+  };
+
   // ── Corrections par pharmacie (scope 'override') : ex. groupement corrigé à la main ──
   V2.profil.saveOverride = function (pid, patch, cb) {
     load('override', String(pid)).then(function (res) {
