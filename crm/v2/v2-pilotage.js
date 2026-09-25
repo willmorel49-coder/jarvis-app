@@ -1743,7 +1743,9 @@
       })();
 
       // ── CA & marge par groupement ──
-      function grpKey(ph) { var g = ph && (ph.groupement || '').trim(); if (!g) return 'Indépendants'; return (V2.canonGrp ? V2.canonGrp(g) : g) || g; }
+      // 25/09/2026 — même libellé que Groupements (groupName, v2-pharma.js) : « — » et
+      // « Intégral Pharma (… PAS un groupement) » ne sont pas des groupements.
+      function grpKey(ph) { var g = ph && (ph.groupement || '').trim(), c = g ? ((V2.canonGrp ? V2.canonGrp(g) : g) || g) : ''; return (!c || c === '—' || /PAS un groupement/.test(c)) ? '— Sans groupement' : c; }
       var grpAgg = {};
       cur.forEach(function (s) {
         var ph = phById[s.pharmacyId]; if (!ph) return;

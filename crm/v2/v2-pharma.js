@@ -161,19 +161,34 @@
   // libellé période couverte par les données (ex. "cumul 5 mois · janv.–mai 2026")
   function periodLabel() {
     var MN = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
-    var ms = {}, yr = null;
+    var ms = {}, yr = null, parCom = {};
     // 11/09/2026 — perf : mémorisé sur la référence de V2.sales (passe complète sinon)
     if (periodLabel._ref === V2.sales && periodLabel._val != null) return periodLabel._val;
-    (V2.sales || []).forEach(function (s) { if (s.month) { ms[s.month] = 1; if (s.year) yr = s.year; } });
+    (V2.sales || []).forEach(function (s) {
+      if (!s.month) return;
+      ms[s.month] = 1; if (s.year) yr = s.year;
+      if (s.commercial) (parCom[s.commercial] || (parCom[s.commercial] = {}))[s.month] = 1;
+    });
     var ks = Object.keys(ms).map(Number).sort(function (a, b) { return a - b; });
     periodLabel._ref = V2.sales;
     if (!ks.length) return (periodLabel._val = '');
-    var span = MN[ks[0] - 1] + '–' + MN[ks[ks.length - 1] - 1] + (yr ? ' ' + yr : '');
-    return (periodLabel._val = 'cumul ' + ks.length + ' mois · ' + span);
+    var der = ks[ks.length - 1];
+    var span = MN[ks[0] - 1] + '–' + MN[der - 1] + (yr ? ' ' + yr : '');
+    // 25/09/2026 — garde « mois incomplet » (reference_dernier_mois_incomplet) : chaque secteur
+    // a son fichier, qui ne s'arrête pas forcément au même mois. Les listes sont des cumuls
+    // (rien n'est écarté ni comparé), mais l'étiquette le DIT quand le dernier mois manque à un
+    // secteur actif dans les 3 mois d'avant (un secteur parti plus tôt ne compte pas).
+    var actifs = 0, courts = 0;
+    Object.keys(parCom).forEach(function (c) {
+      var m = parCom[c]; if (!(m[der - 1] || m[der - 2] || m[der - 3] || m[der])) return;
+      actifs++; if (!m[der]) courts++;
+    });
+    var note = courts ? ' (' + MN[der - 1] + ' incomplet : ' + courts + ' secteur' + (courts > 1 ? 's' : '') + ' sur ' + actifs + ' s\'arrête' + (courts > 1 ? 'nt' : '') + ' avant)' : '';
+    return (periodLabel._val = 'cumul ' + ks.length + ' mois · ' + span + note);
   }
 
   // ── Classement d'un produit benchmark dans une des 8 catégories ──
-  // Priorité : NR > biosim > gen.part > gen > froid > princeps(pp/mi/ch)
+  // Priorité : NR (sauf froid) > biosim > gen.part > gen > froid > princeps(pp/mi/ch)
   // 25/09/2026 — le BENCHMARK du 07/05 ne marque que 54 produits froids : Eylea, les vaccins,
   // Mounjaro… (491 CIP) sortaient hors « Froid » ici alors que Pilotage les y range. Même source
   // que Pilotage : FROID_CIPS (froid-data.js, sous-famille Froid du grossiste, corrigée le 19/09).
@@ -188,7 +203,9 @@
     if (!b) return null;
     var nat = String(b.artnature || '').toLowerCase();
     // 8. Non remboursés : dans Sagitta OU has_ameli=false
-    if (!rembourseForce(b) && (nrIndex().has(cip) || b.has_ameli === false)) return 'nr';
+    // 25/09/2026 — un NR de la chaîne du froid (vaccins TICOVAC, RABIPUR…) va en « Froid »,
+    // comme dans Pilotage (familyOf : froid avant NR). Sa marge reste hors calcul (isRemboursable).
+    if (!rembourseForce(b) && (nrIndex().has(cip) || b.has_ameli === false)) return estFroid(b, cip) ? 'froid' : 'nr';
     // 7. Biosimilaires
     if (nat === 'biosimilaire') return 'biosim';
     // 6. Génériques partenaires
