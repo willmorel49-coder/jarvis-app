@@ -3428,6 +3428,7 @@
     }
     return '';
   }
+  V2.lgoSlug = txLgoSlug;   // rubrique « Logiciels officine » (v2-lgo.js) : même reconnaissance
   // Même ordre que la fiche : saisie de l'équipe, puis annuaire RDV, puis base clients.
   function txLgoDetect(pid, saisi) {
     var ri = V2.rdvInfo ? V2.rdvInfo(pid) : null;
