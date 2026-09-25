@@ -103,7 +103,7 @@ html.p-nuit main .pilule:hover,html.p-soir main .pilule:hover{background:var(--a
   padding:var(--sect) var(--marge-colonne);scroll-margin-top:var(--barre)}
 .bascule::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
   background:linear-gradient(180deg,rgba(var(--voile),0) 0%,rgba(var(--voile),.38) 35%,rgba(var(--voile),.38) 65%,rgba(var(--voile),0) 100%)}
-.bascule .sur-titre{color:#fff;justify-content:center}
+.bascule .sur-titre{color:#fff;justify-content:center;text-shadow:0 2px 12px rgba(var(--voile),.5)}
 .bascule .sur-titre::before{color:rgba(255,255,255,.82)}
 .bascule .t-hero{max-width:none;color:#fff;text-shadow:0 4px 30px rgba(var(--voile),.55)}
 .bascule .lead{color:#fff;margin:var(--e6) auto 0;text-shadow:0 2px 12px rgba(var(--voile),.5)}
@@ -275,12 +275,12 @@ html.mo .rv.vu .respire::before{animation:respire 6s ease-in-out infinite}
 .olivier .olivier__net{background-image:url(../assets/olivier-net.png)}
 .olivier .olivier__ombre{background-image:url(../assets/olivier-ombre.png);top:5%}
 html.p-nuit .olivier__net{opacity:.55}
-html.p-soir .olivier__net{opacity:.78}
-html.p-jour .olivier__ombre{opacity:calc(.12 + .30 * var(--I))}
+html.p-soir .olivier__net,html.p-jour .olivier__net{opacity:calc(.78 * var(--silh,0))}
+html.p-jour .olivier__ombre{opacity:calc((.12 + .30 * var(--I)) * (1 - var(--silh,0)))}
 html.mo .olivier i{animation:vent 12s ease-in-out infinite alternate}
 html.mo .olivier__ombre{animation-duration:14s;animation-delay:-5s}
 @keyframes vent{0%{transform:rotate(-1.6deg)}45%{transform:rotate(.5deg) translateY(5px)}100%{transform:rotate(1.8deg) translateY(-2px)}}
-@media (max-width:640px){.olivier{width:118vw;right:-14vw}}
+@media (max-width:640px){.olivier{top:calc(var(--barre) - 6px);width:118vw;right:-14vw}}
 /* deux-niveaux : le filet orange pousse du haut */
 .deux-niveaux p{border-left:0;position:relative}
 .deux-niveaux p::before{content:"";position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--accent);transform-origin:top}
@@ -635,16 +635,26 @@ var DOUX = window.matchMedia && window.matchMedia('(prefers-reduced-motion: redu
 var ETAPES = [
   {cle:'aube',     x: 8, y:62, alt:.04, min: 340, haut:'#0B1220', bas:'#141C30', noyau:'#FF7A3D', halo:'#B3421C', I:.34},
   {cle:'matin0',   x:17, y:58, alt:.15, min: 430, haut:'#0B1220', bas:'#1D2438', noyau:'#FF8A3A', halo:'#C2521E', I:.50},
+  {cle:'nuitfin',  x:21, y:56, alt:.20, min: 465, haut:'#0B1220', bas:'#1D2438', noyau:'#FF8A3A', halo:'#C2521E', I:.55},
   {cle:'levant',   x:27, y:51, alt:.33, min: 500, haut:'#7A2F14', bas:'#C9531B', noyau:'#FFD08A', halo:'#FF8A3A', I:.80},
+  {cle:'levant2',  x:32, y:42, alt:.48, min: 560, haut:'#7A2F14', bas:'#F4E4D4', noyau:'#FFE3B0', halo:'#FFB070', I:.86},
   {cle:'matin',    x:38, y:30, alt:.66, min: 630, haut:'#E2EBFF', bas:'#F5F8FD', noyau:'#FFFFFF', halo:'#FFE9BE', I:.94},
   {cle:'midi',     x:50, y:13, alt:1,   min: 720, haut:'#EDF3FF', bas:'#FFFFFF', noyau:'#FFFFFF', halo:'#FFF4DC', I:1},
   {cle:'aprem',    x:64, y:29, alt:.70, min: 870, haut:'#E9F0FF', bas:'#F8FAFF', noyau:'#FFFDF6', halo:'#FFE3AE', I:.94},
   {cle:'soiree',   x:71, y:40, alt:.50, min: 990, haut:'#F1E6D6', bas:'#F8F1E6', noyau:'#FFF3D6', halo:'#FFC98A', I:.88},
+  {cle:'soiree2',  x:74, y:45, alt:.42, min:1060, haut:'#F1E6D6', bas:'#D98E5E', noyau:'#FFE9C4', halo:'#FFB477', I:.86},
   {cle:'couchant', x:76, y:51, alt:.33, min:1100, haut:'#8C3A14', bas:'#C9531B', noyau:'#FFC46E', halo:'#FF7A28', I:.80},
+  {cle:'couchant2',x:84, y:56, alt:.18, min:1150, haut:'#8C3A14', bas:'#23140E', noyau:'#FFB060', halo:'#C8501A', I:.60},
   {cle:'soir',     x:93, y:60, alt:.04, min:1210, haut:'#0B1220', bas:'#1B120A', noyau:'#FF9440', halo:'#8A3A12', I:.34}
 ];
-var ANCRES = {aube:null, matin0:'#principes', levant:'#levant', matin:'#gouvernance', midi:'#midi',
-              aprem:'#social', soiree:'#environnement', couchant:'#couchant', soir:null};
+/* Une ancre est un sélecteur (le haut de la section à 45 % de l'écran), ou
+   [sélecteur, 'fin', f] : le bas de la section à f de l'écran — le ciel tient
+   tant que le texte est là — ou [sélecteur, 'entre', f] : le haut de la section
+   à f de l'écran. Le ciel ne change de couleur que sous les panneaux de bascule. */
+var ANCRES = {aube:null, matin0:'#principes', nuitfin:['#principes','fin',.35], levant:'#levant',
+              levant2:['#gouvernance','entre',.80], matin:['#gouvernance','entre',.30], midi:'#midi', aprem:'#social',
+              soiree:'#environnement', soiree2:['#environnement','fin',.35], couchant:'#couchant',
+              couchant2:['#territoires','entre',.69], soir:null};
 var hauteurDoc = 1, vh = 1, SEUILS = {levant:.22, couchant:.82};
 
 function construireEtapes(){
@@ -654,10 +664,12 @@ function construireEtapes(){
     var e = ETAPES[i], sel = ANCRES[e.cle], p;
     if (i === 0) p = 0;
     else if (i === ETAPES.length - 1) p = 1;
-    else if (sel && document.querySelector(sel)){
-      var el = document.querySelector(sel);
+    else if (sel && document.querySelector(sel[0] === '#' ? sel : sel[0])){
+      var el = document.querySelector(sel[0] === '#' ? sel : sel[0]);
       var haut = el.getBoundingClientRect().top + window.pageYOffset;
-      var centre = (e.cle === 'levant' || e.cle === 'couchant' || e.cle === 'midi')
+      var centre = (typeof sel !== 'string')
+                 ? (sel[1] === 'fin' ? haut + el.offsetHeight - vh * sel[2] : haut - vh * sel[2])
+                 : (e.cle === 'levant' || e.cle === 'couchant' || e.cle === 'midi')
                  ? haut + el.offsetHeight / 2 - vh / 2 : haut - vh * 0.45;
       p = centre / hauteurDoc;
     } else p = i / (ETAPES.length - 1);
@@ -699,6 +711,9 @@ function ecrire(){
   poserVar('--ly', (Math.round(etat.y / 2) * 2) + '%');
   poserVar('--teinte', etat.halo);
   poserVar('--I', (Math.round(etat.I * 50) / 50).toString());
+  var hc = etat.haut.charAt(0) === '#' ? versRVB(etat.haut) : etat.haut.slice(4, -1).split(',').map(Number);
+  var lum = (0.2126 * hc[0] + 0.7152 * hc[1] + 0.0722 * hc[2]) / 255;
+  poserVar('--silh', (Math.round(Math.min(1, Math.max(0, (0.62 - lum) / 0.4)) * 20) / 20).toString());
   poserVar('--alt', (Math.round(etat.alt * 50) / 50).toString());
   var az = (etat.x - 50) / 50;
   var lon = 5 + 25 * Math.pow(1 - etat.alt, 1.4);
