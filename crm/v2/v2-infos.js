@@ -415,6 +415,9 @@
     }
   }
 
+  // la phrase du jour et la carte des concurrents suivent la MÊME portée que ce bloc
+  V2.infosSecteur = function () { return { deps: sctDeps(), noms: SCT_DEPNOMS }; };
+
   function sctBase() {
     var d = sctDeps(), ev = (SECTEUR && SECTEUR.ev) || [];
     return ev.filter(function (e) { return (!d || d.indexOf(e.dep) >= 0) && sctJours(e.d) < SCT_S.per; });
@@ -850,7 +853,7 @@
          vérifiés, annonces officielles, presse — rempli après le rendu. */
       html += '<section class="inf-conc" id="infos-concurrents">' +
         '<div class="mur-rub"><b>Les concurrents</b><span>faits vérifiés, annonces officielles et presse</span></div>' +
-        '<div id="inf-conc-host"></div></section>';
+        '<div id="inf-cnc-host"></div><div id="inf-conc-host"></div></section>';
 
       /* ════════════════ LE MUR ════════════════ */
       if (mur.length) {
@@ -925,6 +928,8 @@
       html += '</div>';
       root.innerHTML = html;
       markSeen();
+      var cncHost = document.getElementById('inf-cnc-host');
+      if (cncHost && V2.concurrentsSecteur) V2.concurrentsSecteur(cncHost);
       var concHost = document.getElementById('inf-conc-host');
       if (concHost && V2.grossistesCorps) V2.grossistesCorps(concHost, 'actu');
       // venu de « Concurrents » : descendre au bloc, APRÈS la remise en haut que fait la navigation
