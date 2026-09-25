@@ -227,8 +227,59 @@ html.p-nuit main .pilule:hover,html.p-soir main .pilule:hover{background:var(--a
 @media (max-width:640px){.fr__nom{display:none}.pt span{font-size:12px}}
 @media (prefers-reduced-motion:reduce){.pt i::after{animation:none;opacity:0}.fiche.change{animation:none}}
 
+/* ═══ MOTION DU 25/09 — posé par le script (classe « mo »), jamais en CSS seul ═══ */
+/* pictos : le trait se dessine */
+html.mo .picto svg *{stroke-dasharray:1;stroke-dashoffset:1;transition:stroke-dashoffset 1.1s var(--sortie)}
+html.mo .rv.vu .picto svg *{stroke-dashoffset:0}
+html.mo .rv.vu .picto svg *:nth-child(2){transition-delay:.12s}
+html.mo .rv.vu .picto svg *:nth-child(3){transition-delay:.24s}
+html.mo .rv.vu .picto svg *:nth-child(n+4){transition-delay:.36s}
+/* labels : un reflet traverse le sceau, une fois */
+.label__sceau{position:relative;overflow:hidden}
+.label__sceau::after{content:"";position:absolute;inset:-40%;transform:translateX(-120%) rotate(20deg);
+  background:linear-gradient(90deg,rgba(255,255,255,0) 30%,rgba(255,255,255,.55) 50%,rgba(255,255,255,0) 70%)}
+html.mo .rv.vu .label__sceau::after{animation:reflet 1.4s .5s var(--sortie) both}
+html.mo .rv.vu .label + .label .label__sceau::after{animation-delay:.8s}
+@keyframes reflet{to{transform:translateX(120%) rotate(20deg)}}
+/* leviers : les points s'allument l'un après l'autre */
+html.mo .leviers li{opacity:0;transform:translateX(-10px);transition:opacity .6s var(--sortie),transform .6s var(--sortie);transition-delay:calc(var(--k,0) * 70ms)}
+html.mo .leviers li::before{transform:scale(0);transition:transform .5s var(--sortie);transition-delay:calc(var(--k,0) * 70ms + 200ms)}
+html.mo .rv.vu .leviers li{opacity:1;transform:none}
+html.mo .rv.vu .leviers li::before{transform:scale(1)}
+/* deux-niveaux : le filet orange pousse du haut */
+.deux-niveaux p{border-left:0;position:relative}
+.deux-niveaux p::before{content:"";position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--accent);transform-origin:top}
+html.mo .deux-niveaux p::before{transform:scaleY(0);transition:transform .9s var(--sortie)}
+html.mo .rv.vu.deux-niveaux p::before{transform:scaleY(1)}
+html.mo .rv.vu.deux-niveaux p + p::before{transition-delay:.15s}
+/* bande photo : l'image glisse plus lentement que la page */
+.bande img{will-change:transform;transform:translate3d(0,var(--para,0px),0) scale(1.12)}
+/* la carte : le tracé se pose, les points arrivent, le lien part du siège */
+html.mo .fr__pays{stroke-dasharray:1;stroke-dashoffset:1;fill-opacity:0;transition:stroke-dashoffset 2.4s var(--sortie),fill-opacity 1s 1.6s var(--sortie)}
+html.mo .terr.vu .fr__pays{stroke-dashoffset:0;fill-opacity:1}
+html.mo .pt{opacity:0;transform:scale(.4);transition:opacity .5s var(--sortie),transform .6s cubic-bezier(.34,1.56,.64,1);transition-delay:calc(1.4s + var(--k,0) * 120ms)}
+html.mo .terr.vu .pt{opacity:1;transform:none}
+.fr__lien{fill:none;stroke:#FFC46B;stroke-width:.35;stroke-linecap:round;stroke-dasharray:1.2 1.2;opacity:.85}
+.fr__lien.trace{animation:lien 1s var(--sortie) both, defile 1.6s linear 1s infinite}
+@keyframes lien{from{opacity:0}to{opacity:.85}}
+@keyframes defile{to{stroke-dashoffset:-2.4}}
+.pt--siege i{background:#fff;box-shadow:0 0 0 3px #F39A1B,0 0 18px 4px rgba(243,154,27,.4)}
+.chiffre b{font-variant-numeric:tabular-nums}
+.tour{grid-column:1/-1;height:2px;border-radius:2px;background:rgba(255,255,255,.12);overflow:hidden;margin-top:calc(-1 * var(--e2))}
+.tour i{display:block;height:100%;width:100%;background:#F39A1B;transform-origin:left;transform:scaleX(0)}
+.tour.court i{animation:tour var(--tour,6s) linear both}
+.tour.fini{visibility:hidden}
+@keyframes tour{to{transform:scaleX(1)}}
+/* le toit : la vraie photo du siège, et le reflet du soleil qui la traverse */
+.toit{aspect-ratio:16/9}
+.toit__legende{text-shadow:0 1px 8px rgba(11,18,32,.8)}
+
 @media (prefers-reduced-motion:reduce){
   body{transition:none}
+  .bande img{transform:none}
+  .label__sceau::after{display:none}
+  .fr__lien.trace{animation:none}
+  .tour{display:none}
 }
 </style>
 </head>
@@ -444,9 +495,9 @@ html.p-nuit main .pilule:hover,html.p-soir main .pilule:hover{background:var(--a
         <p class="lead-aere rv" style="--i:2;margin-top:var(--e6)">Énergie, bâtiments, mobilités, déchets : nous réduisons au maximum l'empreinte de nos activités sur le vivant.</p>
       </div>
       <div class="toit rv" style="--i:2" id="toit">
-        <canvas id="toit-toile" aria-label="Des panneaux solaires qui s'allument à mesure que le soleil de la page monte"></canvas>
+        <canvas id="toit-toile" role="img" aria-label="Les toits du siège, à Hyères, couverts de panneaux solaires, vus du ciel"></canvas>
         <div class="toit__legende petit">
-          <span><b>L'énergie renouvelable</b>Elle suit le soleil de la page</span>
+          <span><b>Les toits du siège, à Hyères</b>Le reflet suit le soleil de la page</span>
           <span class="toit__jauge" aria-hidden="true"><i></i></span>
         </div>
       </div>
@@ -736,70 +787,65 @@ function dessinerCiel(){
   ctx.globalCompositeOperation = 'source-over';
 }
 
-/* ══ LE TOIT — une nappe de panneaux qui s'allume avec la hauteur du soleil ══ */
-var toitCv = document.getElementById('toit-toile'), tctx = null, TL = 0, TH = 0, cellules = [];
+/* ══ LE TOIT — la vraie photo du siège (panneaux solaires, Hyères). Le soleil de
+   la page la réveille : voile de nuit quand il est bas, reflet qui glisse sur les
+   panneaux selon sa course. Si la photo manque, la tuile reste d'un bleu de nuit. ══ */
+var toitCv = document.getElementById('toit-toile'), tctx = null, TL = 0, TH = 0;
 try { tctx = toitCv ? toitCv.getContext('2d') : null; } catch(e){ tctx = null; }
-var COLS = 14, LIGS = 6;
+var photoToit = new Image(), photoPrete = false;
+photoToit.decoding = 'async';
+photoToit.onload = function(){ photoPrete = true; dernierToit = -1; reveiller(); };
+photoToit.src = '../assets/siege-solaire.jpg';
 function preparerToit(){
   if (!tctx) return;
   var r = toitCv.getBoundingClientRect();
   TL = Math.max(1, Math.round(r.width)); TH = Math.max(1, Math.round(r.height));
   toitCv.width = Math.round(TL * dpr); toitCv.height = Math.round(TH * dpr);
   tctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  cellules = [];
-  var s = 1234;
-  function rnd(){ s = (s * 9301 + 49297) % 233280; return s / 233280; }
-  for (var l = 0; l < LIGS; l++) for (var c = 0; c < COLS; c++){
-    var trou = ((l === 1 || l === 4) && (c === 3 || c === 9));
-    cellules.push({l:l, c:c, trou:trou, seuil:0.10 + rnd() * 0.42, gain:0.85 + rnd() * 0.3});
-  }
 }
 var dernierToit = -1;
 function dessinerToit(){
-  if (!tctx || !cellules.length) return;
-  var cle = Math.round(etat.alt * 100) + '|' + Math.round(etat.x) + '|' + Math.round(etat.I * 50);
+  if (!tctx || !TL) return;
+  var cle = Math.round(etat.alt * 100) + '|' + Math.round(etat.x) + '|' + Math.round(etat.I * 50) + '|' + photoPrete;
   if (cle === dernierToit) return;
   dernierToit = cle;
   var c = tctx;
-  c.clearRect(0, 0, TL, TH);
-  c.fillStyle = melange('#0B1220', '#2A3448', etat.alt);
-  c.fillRect(0, 0, TL, TH);
-  var marge = TL * 0.07, haut = TH * 0.12;
-  var lw = (TL - marge * 2) / COLS, lh = (TH - haut * 2) / LIGS;
-  var ecart = Math.max(2, lw * 0.07);
-  var az = (etat.x - 50) / 50;
-  for (var i = 0; i < cellules.length; i++){
-    var ce = cellules[i];
-    var x = marge + ce.c * lw + ecart / 2, y = haut + ce.l * lh + ecart / 2, w = lw - ecart, h = lh - ecart;
-    if (ce.trou){
-      c.fillStyle = 'rgba(255,255,255,' + (0.10 + 0.25 * etat.alt).toFixed(2) + ')';
-      c.fillRect(x + w * 0.22, y + h * 0.22, w * 0.56, h * 0.56);
-      continue;
-    }
-    var k = Math.min(1, Math.max(0, (etat.alt - ce.seuil) / (1 - ce.seuil))) * ce.gain;
-    k = Math.min(1, k);
-    var g = c.createLinearGradient(x, y, x + w, y + h);
-    var teinte = melange('#0B1220', '#0050E6', k);
-    var clair = melange('#1B2A4A', '#5C97FF', k);
-    g.addColorStop(0, az < 0 ? clair : teinte);
-    g.addColorStop(1, az < 0 ? teinte : clair);
-    c.fillStyle = g;
-    c.fillRect(x, y, w, h);
-    var rx = x + w * (0.5 + az * 0.35);
-    var gr = c.createRadialGradient(rx, y + h * 0.4, 0, rx, y + h * 0.4, w * 0.9);
-    gr.addColorStop(0, 'rgba(255,244,214,' + (0.55 * k * etat.I).toFixed(3) + ')');
-    gr.addColorStop(1, 'rgba(255,244,214,0)');
-    c.fillStyle = gr; c.fillRect(x, y, w, h);
-    c.strokeStyle = 'rgba(8,14,30,' + (0.35 - 0.15 * k).toFixed(2) + ')'; c.lineWidth = 1;
-    c.beginPath();
-    for (var q = 1; q < 3; q++){ c.moveTo(x + w * q / 3, y); c.lineTo(x + w * q / 3, y + h); }
-    c.moveTo(x, y + h / 2); c.lineTo(x + w, y + h / 2);
-    c.stroke();
+  c.globalCompositeOperation = 'source-over'; c.globalAlpha = 1;
+  c.fillStyle = '#0B1220'; c.fillRect(0, 0, TL, TH);
+  if (photoPrete){
+    var ech = Math.max(TL / photoToit.naturalWidth, TH / photoToit.naturalHeight);
+    var w = photoToit.naturalWidth * ech, h = photoToit.naturalHeight * ech;
+    c.drawImage(photoToit, (TL - w) / 2, (TH - h) / 2, w, h);
   }
-  var ombreW = TL * 0.18 * (1 - etat.alt);
-  var og = c.createLinearGradient(az < 0 ? TL : 0, 0, az < 0 ? TL - ombreW : ombreW, 0);
-  og.addColorStop(0, 'rgba(11,18,32,' + (0.45 * (1 - etat.alt)).toFixed(2) + ')'); og.addColorStop(1, 'rgba(11,18,32,0)');
-  c.fillStyle = og; c.fillRect(0, 0, TL, TH);
+  /* la nuit tombe sur la photo quand le soleil est bas */
+  c.fillStyle = 'rgba(11,18,32,' + (0.08 + 0.62 * (1 - etat.alt)).toFixed(3) + ')';
+  c.fillRect(0, 0, TL, TH);
+  /* la teinte de l'heure */
+  c.globalCompositeOperation = 'multiply';
+  c.fillStyle = 'rgba(' + versRVB2(etat.halo) + ',' + (0.10 + 0.35 * (1 - etat.alt)).toFixed(3) + ')';
+  c.fillRect(0, 0, TL, TH);
+  /* le reflet : une bande de lumière qui traverse les panneaux avec le soleil */
+  c.globalCompositeOperation = 'lighter';
+  var bx = TL * (1.15 - etat.x / 100 * 1.3), larg = TL * 0.34;
+  var g = c.createLinearGradient(bx - larg, 0, bx + larg, TH * 0.5);
+  var f = (0.30 * etat.alt * etat.I).toFixed(3);
+  g.addColorStop(0, 'rgba(255,244,214,0)'); g.addColorStop(.5, 'rgba(255,244,214,' + f + ')'); g.addColorStop(1, 'rgba(255,244,214,0)');
+  c.fillStyle = g; c.fillRect(0, 0, TL, TH);
+  c.globalCompositeOperation = 'source-over';
+  /* bas de tuile assombri pour la légende */
+  var gl = c.createLinearGradient(0, TH * 0.55, 0, TH);
+  gl.addColorStop(0, 'rgba(11,18,32,0)'); gl.addColorStop(1, 'rgba(11,18,32,.78)');
+  c.fillStyle = gl; c.fillRect(0, TH * 0.55, TL, TH * 0.45);
+}
+
+/* ══ LA BANDE PHOTO — l'image glisse un peu moins vite que la page ══ */
+var bandeImg = DOUX ? null : document.querySelector('#midi img'), bandeSec = document.getElementById('midi');
+function parallaxe(){
+  if (!bandeImg || !bandeSec) return;
+  var r = bandeSec.getBoundingClientRect();
+  if (r.bottom < -50 || r.top > vh + 50) return;
+  var k = (r.top + r.height / 2 - vh / 2) / (vh + r.height);
+  bandeImg.style.setProperty('--para', Math.round(-k * r.height * 0.18) + 'px');
 }
 
 /* ══ UN SEUL ORCHESTRATEUR — qui s'arrête au repos et repart au défilement ══ */
@@ -811,7 +857,7 @@ function boucle(ts){
   if (y !== derniereY){
     derniereY = y; dernierMouvement = horloge;
     calculer(hauteurDoc > 0 ? Math.min(1, Math.max(0, y / hauteurDoc)) : 0);
-    ecrire();
+    ecrire(); parallaxe();
     if (heure && pied) heure.classList.toggle('cachee', pied.getBoundingClientRect().top < window.innerHeight);
   }
   dessinerCiel();
@@ -841,10 +887,16 @@ window.__rse = { heure:function(){ return pendule ? pendule.textContent : ''; },
 })();
 </script>
 <script>
-/* LA CARTE DES INITIATIVES — positions reprises de carte.js (repère 0→100) */
+/* LA CARTE DES INITIATIVES — positions reprises de carte.js (repère 0→100).
+   Motion : le tracé se pose, les points arrivent un à un, un fil part du siège
+   vers la structure choisie, et la carte fait seule le tour des initiatives
+   jusqu'au premier geste du visiteur. */
 (function(){
 'use strict';
+var DOUX = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 var INIT = [
+  {c:'hp', s:'Hyères', nom:'Hyères Pharma', lieu:'Hyères · Var (83) — siège du groupe', x:76.61, y:81.53, siege:true,
+   titre:'Des toits couverts de panneaux solaires', texte:'Au siège du groupe, à Hyères, les toits des bâtiments sont couverts de panneaux photovoltaïques.', points:[], themes:['Énergie']},
   {c:'cpr', s:'CPR', nom:'Comptoir Pharmaceutique du Rhône', lieu:'Région lyonnaise · Saint-Maurice-l’Exil (38)', x:66.74, y:58.48,
    titre:'Sa propre électricité, produite sur le toit', texte:'En 2025, CPR a installé des panneaux photovoltaïques sur le toit de son site pour produire sa propre électricité renouvelable.', points:[], themes:['Énergie']},
   {c:'ep', s:'Escale', nom:'Escale Pharma', lieu:'Île-de-France · Chilly-Mazarin (91)', x:49.51, y:24.89,
@@ -857,39 +909,119 @@ var INIT = [
    titre:'Réduire ses déchets, et leur donner une seconde vie', texte:'La structure réduit et valorise ses déchets pour éviter au maximum leur destruction.',
    points:['Palettes réutilisées','Tri et recyclage des déchets','Recherche de nouvelles possibilités de réemploi','Don de matières encore utiles, comme du papier pour des écoles'], themes:['Déchets','Réemploi']}
 ];
-var AUTRES = [{x:76.61,y:81.53,n:'Hyères'},{x:76.69,y:78.92},{x:40.27,y:67.81,n:'Montayral'},{x:77.67,y:78.64}];
+var AUTRES = [{x:76.69,y:78.92},{x:40.27,y:67.81,n:'Montayral'},{x:77.67,y:78.64}];
+var SIEGE = INIT[0];
 var fr = document.getElementById('fr'), fiche = document.getElementById('fiche'), ong = document.getElementById('onglets'), g = document.getElementById('fr-autres');
-if (!fr || !fiche) return;
+var terr = fr ? fr.closest('.terr') : null;
+if (!fr || !fiche || !terr) return;
 var NS = 'http://www.w3.org/2000/svg';
 AUTRES.forEach(function(a){
   var c = document.createElementNS(NS,'circle'); c.setAttribute('cx',a.x); c.setAttribute('cy',a.y); c.setAttribute('r','.9'); c.setAttribute('class','fr__agence'); g.appendChild(c);
   if (a.n){ var t = document.createElementNS(NS,'text'); t.setAttribute('x',a.x - 2); t.setAttribute('y',a.y + 3.6); t.setAttribute('class','fr__nom'); t.setAttribute('text-anchor','end'); t.textContent = a.n; g.appendChild(t); }
 });
-var pts = [], btns = [];
+var lien = document.createElementNS(NS,'path'); lien.setAttribute('class','fr__lien'); g.appendChild(lien);
+var pts = [], btns = [], courant = -1;
 function esc(s){ return String(s).replace(/[&<>"]/g, function(ch){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]; }); }
+function tracerLien(d){
+  if (d.siege){ lien.setAttribute('d',''); lien.classList.remove('trace'); return; }
+  var x0 = SIEGE.x, y0 = SIEGE.y, x1 = d.x, y1 = d.y;
+  var mx = (x0 + x1) / 2, my = (y0 + y1) / 2, dx = x1 - x0, dy = y1 - y0, n = Math.sqrt(dx*dx + dy*dy) || 1;
+  var cx = mx - dy / n * n * 0.22, cy = my + dx / n * n * 0.22;
+  if (cy > my) { cx = mx + dy * 0.22; cy = my - dx * 0.22; }
+  lien.setAttribute('d', 'M' + x0 + ' ' + y0 + ' Q' + cx.toFixed(2) + ' ' + cy.toFixed(2) + ' ' + x1 + ' ' + y1);
+  lien.classList.remove('trace'); void lien.getBoundingClientRect(); lien.classList.add('trace');
+}
 function choisir(i, anime){
+  if (i === courant && anime) return;
+  courant = i;
   var d = INIT[i];
   fiche.innerHTML = '<p class="fiche__lieu">' + esc(d.lieu) + '</p><h3 class="t-carte">' + esc(d.titre) + '</h3><p>' + esc(d.texte) + '</p>' +
     (d.points.length ? '<ul>' + d.points.map(function(p){ return '<li>' + esc(p) + '</li>'; }).join('') + '</ul>' : '') +
     '<div class="fiche__theme"><span>' + esc(d.nom) + '</span>' + d.themes.map(function(t){ return '<span>' + esc(t) + '</span>'; }).join('') + '</div>';
   pts.forEach(function(p, k){ p.setAttribute('aria-pressed', k === i ? 'true' : 'false'); });
   btns.forEach(function(b, k){ b.setAttribute('aria-pressed', k === i ? 'true' : 'false'); });
-  if (anime){ fiche.classList.remove('change'); void fiche.offsetWidth; fiche.classList.add('change'); }
+  tracerLien(d);
+  if (anime && !DOUX){ fiche.classList.remove('change'); void fiche.offsetWidth; fiche.classList.add('change'); }
 }
+/* la visite guidée : un tour complet, puis la main au visiteur */
+var tour = document.createElement('div'); tour.className = 'tour'; tour.setAttribute('aria-hidden','true'); tour.innerHTML = '<i></i>';
+var PAS = 6000, minuterie = null, arrete = DOUX, vus = 1;
+function relancerBarre(){ if (arrete) return; tour.classList.remove('court'); void tour.offsetWidth; tour.style.setProperty('--tour', PAS + 'ms'); tour.classList.add('court'); }
+function suivant(){
+  if (arrete) return;
+  if (vus >= INIT.length){ arreter(); choisir(0, true); return; }
+  choisir((courant + 1) % INIT.length, true); vus++;
+  relancerBarre(); minuterie = setTimeout(suivant, PAS);
+}
+function arreter(){ arrete = true; if (minuterie) clearTimeout(minuterie); tour.classList.remove('court'); tour.classList.add('fini'); }
+function geste(i){ arreter(); choisir(i, true); }
 INIT.forEach(function(d, i){
-  var p = document.createElement('button'); p.type = 'button'; p.className = 'pt';
-  p.style.left = d.x + '%'; p.style.top = d.y + '%';
+  var p = document.createElement('button'); p.type = 'button'; p.className = 'pt' + (d.siege ? ' pt--siege' : '');
+  p.style.left = d.x + '%'; p.style.top = d.y + '%'; p.style.setProperty('--k', i);
   p.setAttribute('aria-label', d.nom + ' — voir son initiative'); p.tabIndex = -1;
   p.innerHTML = '<i></i><span>' + esc(d.s) + '</span>';
-  p.addEventListener('click', function(){ choisir(i, true); });
-  p.addEventListener('mouseenter', function(){ if (window.matchMedia('(hover:hover)').matches) choisir(i, true); });
+  p.addEventListener('click', function(){ geste(i); });
+  p.addEventListener('mouseenter', function(){ if (window.matchMedia('(hover:hover)').matches) geste(i); });
   fr.appendChild(p); pts.push(p);
   var b = document.createElement('button'); b.type = 'button'; b.textContent = d.nom;
-  b.addEventListener('click', function(){ choisir(i, true); });
+  b.addEventListener('click', function(){ geste(i); });
   ong.appendChild(b); btns.push(b);
 });
+ong.parentNode.insertBefore(tour, ong.nextSibling);
 choisir(0, false);
-window.__initiatives = { nb:function(){ return pts.length; }, choisir:choisir };
+/* le tour ne démarre qu'une fois la carte à l'écran, et s'arrête si elle en sort */
+if (!DOUX && 'IntersectionObserver' in window){
+  var lance = false;
+  new IntersectionObserver(function(en){
+    en.forEach(function(e){
+      if (e.isIntersecting && !lance && !arrete){ lance = true; setTimeout(function(){ if (!arrete){ relancerBarre(); minuterie = setTimeout(suivant, PAS); } }, 2200); }
+      else if (!e.isIntersecting && lance && !arrete){ arreter(); }
+    });
+  }, {threshold:.45}).observe(terr);
+} else { tour.classList.add('fini'); }
+window.__initiatives = { nb:function(){ return pts.length; }, choisir:choisir, courant:function(){ return courant; } };
+})();
+</script>
+<script>
+/* LE MOTION DE LA PAGE — tout est posé par le script : sans lui, la page reste
+   entière et immobile. Sous « mouvement réduit », rien ne s'anime. */
+(function(){
+'use strict';
+if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+if (!('IntersectionObserver' in window)) return;
+var doc = document.documentElement;
+/* les traits des pictos et de la carte, mesurés à 1 pour se dessiner */
+[].forEach.call(document.querySelectorAll('.picto svg *, .fr__pays'), function(el){ el.setAttribute('pathLength', '1'); });
+[].forEach.call(document.querySelectorAll('.leviers li'), function(li, k){ li.style.setProperty('--k', k); });
+doc.classList.add('mo');
+/* la carte : sa propre révélation (la tuile n'est pas masquée, seul son tracé l'est) */
+var terr = document.querySelector('.terr');
+/* les chiffres : ils comptent jusqu'à leur valeur, une fois */
+var chiffres = [].slice.call(document.querySelectorAll('.chiffre b'));
+chiffres.forEach(function(b){
+  var n = b.firstChild; if (!n || n.nodeType !== 3) return;
+  var cible = parseInt(n.nodeValue, 10); if (isNaN(cible)) return;
+  b.__n = n; b.__cible = cible;
+});
+function compter(b){
+  if (!b.__n) return;
+  var t0 = performance.now(), duree = 1400 + Math.min(600, b.__cible * 6);
+  (function pas(t){
+    var k = Math.min(1, (t - t0) / duree), e = 1 - Math.pow(1 - k, 3);
+    b.__n.nodeValue = String(Math.round(b.__cible * e));
+    if (k < 1) requestAnimationFrame(pas);
+  })(t0);
+}
+var io = new IntersectionObserver(function(en){
+  en.forEach(function(e){
+    if (!e.isIntersecting) return;
+    io.unobserve(e.target);
+    if (e.target === terr) terr.classList.add('vu');
+    else { var b = e.target.querySelector('b'); if (b) setTimeout(function(){ compter(b); }, 150); }
+  });
+}, {threshold:.35});
+if (terr) io.observe(terr);
+chiffres.forEach(function(b){ if (b.__n){ b.__n.nodeValue = '0'; io.observe(b.parentNode); } });
 })();
 </script>
 </body>
