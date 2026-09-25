@@ -2488,11 +2488,11 @@
       '.pilo-hero::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;' +
         'background:linear-gradient(180deg,var(--ip-blue),var(--ip-blue-d))}' +
       '.pilo-hero-main{min-width:0}' +
-      '.pilo-hero-l{font-size:11.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}' +
+      '.pilo-hero-l{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}' +
       '.pilo-hero-v{font-family:var(--mono);font-size:clamp(34px,6vw,46px);font-weight:700;letter-spacing:-.035em;line-height:1.02;margin-top:8px;color:var(--ip-ink)}' +
       '.pilo-hero-delta{margin-top:8px}.pilo-hero-delta .v2-kpi-d{font-size:13px}' +
       '.pilo-hero-trend{flex-shrink:0;text-align:right}' +
-      '.pilo-hero-trend-t{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted-2);font-weight:700;margin-bottom:6px}' +
+      '.pilo-hero-trend-t{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted-2);font-weight:700;margin-bottom:6px}' +
       '@media(max-width:560px){.pilo-hero{padding:20px 20px}.pilo-hero-trend{text-align:left}.pilo-hero .pilo-spark{width:100%}}' +
       // sparklines
       '.pilo-spark{display:block;overflow:visible}' +
@@ -2521,9 +2521,9 @@
       // `flex:none` + `nowrap` : sans eux, « 4,33 – 468 € · intermédiaires »
       // poussait le « € » de sa valeur à la ligne suivante sur iPhone.
       '.pilo-fam-v{display:flex;align-items:baseline;gap:9px;flex:none;white-space:nowrap}' +
-      '.pilo-fam-pct{font-size:11.5px;color:var(--muted)}' +
+      '.pilo-fam-pct{font-size:12px;color:var(--muted)}' +
       // ── Repère réseau sur la barre + ligne d'écart ─────────────
-      '.pilo-legende{font-size:11.5px;line-height:1.45;color:var(--muted);margin:0 0 14px;max-width:52ch}' +
+      '.pilo-legende{font-size:12px;line-height:1.45;color:var(--muted);margin:0 0 14px;max-width:52ch}' +
       '.pilo-legende-vide{color:var(--c-amber-txt,#9A5B12);font-weight:600}' +
       '.pilo-bar{position:relative}' +
       '.pilo-bar.cmp{height:8px}' +
@@ -2538,17 +2538,17 @@
       '.pilo-marge-sub{font-size:12px;color:var(--muted);margin-top:3px}' +
       '.pilo-marge-total{text-align:right;flex:none}' +
       '.pilo-marge-v{display:block;font-size:clamp(24px,4vw,30px);font-weight:700;letter-spacing:-.03em;line-height:1.05;color:var(--ip-ink)}' +
-      '.pilo-marge-pct{display:block;font-size:11.5px;color:var(--muted);margin-top:4px}' +
+      '.pilo-marge-pct{display:block;font-size:12px;color:var(--muted);margin-top:4px}' +
       '.pilo-marge-body{display:grid;grid-template-columns:1fr 1fr;gap:22px;padding:4px 20px 18px}' +
       '@media(max-width:820px){.pilo-marge-body{grid-template-columns:1fr;gap:14px}}' +
-      '.pilo-marge-d{display:block;font-weight:500;font-size:11px;color:var(--muted);margin-top:1px}' +
-      '.pilo-marge-rows-t{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700;margin-bottom:4px}' +
+      '.pilo-marge-d{display:block;font-weight:500;font-size:12px;color:var(--muted);margin-top:1px}' +
+      '.pilo-marge-rows-t{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700;margin-bottom:4px}' +
       '.pilo-marge-rows .v2-row{padding-left:0;padding-right:0}' +
-      '.pilo-marge-partiel{font-weight:500;font-size:11px;color:var(--c-amber-txt,#9A5B12)}' +
+      '.pilo-marge-partiel{font-weight:500;font-size:12px;color:var(--c-amber-txt,#9A5B12)}' +
       '@media(max-width:560px){.pilo-marge-boites{display:none}}' +
       '.pilo-ecart.eq{color:var(--muted)}' +
       // ── Mois écarté (fichier de ventes arrêté en cours de mois) ─
-      '.pilo-ecarte{display:flex;align-items:center;gap:6px;margin-top:8px;font-size:11.5px;font-weight:600;color:var(--c-amber-txt,#9A5B12)}' +
+      '.pilo-ecarte{display:flex;align-items:center;gap:6px;margin-top:8px;font-size:12px;font-weight:600;color:var(--c-amber-txt,#9A5B12)}' +
       '.pilo-perpick{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:flex-end;width:100%;margin-top:8px}' +
       '.pilo-perpick label{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--muted)}' +
       '.pilo-persel{font-family:var(--font);font-size:16px;font-weight:600;color:var(--ip-ink);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:0 32px 0 12px;height:44px;' +
@@ -2561,7 +2561,7 @@
       '.pilo-mf-expo b{font-variant-numeric:tabular-nums lining-nums;font-weight:800}' +
       '.pilo-mf-expo b.up{color:var(--c-mint-txt,#0F7A52)}' +
       '.pilo-mf-expo b.dn{color:var(--c-rose-txt,#C7283D)}' +
-      '.pilo-mf-src{display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;color:var(--muted);margin-bottom:12px}' +
+      '.pilo-mf-src{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:12px}' +
       // ⚠️ `min-width:0` sur les colonnes : sans lui, une désignation produit
       // sans espace (« EFFERALGANMED 1000MG C.EFFV T8 ») pousse la colonne
       // au-delà de sa part et la valeur de droite sort de la carte.
@@ -2569,9 +2569,9 @@
       '.pilo-mf-col{min-width:0}' +
       '@media(max-width:900px){.pilo-mf-grid{grid-template-columns:1fr;gap:22px}}' +
       '.pilo-mf-h{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;font-size:13px;font-weight:800;letter-spacing:-.01em;padding-bottom:9px;margin-bottom:4px;border-bottom:2px solid var(--line-strong)}' +
-      '.pilo-mf-h-moi{flex:none;font-size:11px;font-weight:700;color:var(--muted);text-align:right;letter-spacing:0}' +
-      '.pilo-mf-h-moi small{display:block;font-size:10px;font-weight:500;color:var(--muted-2);margin-top:1px}' +
-      '.pilo-mf-h small{display:block;font-size:11px;font-weight:500;color:var(--muted);margin-top:2px;letter-spacing:0}' +
+      '.pilo-mf-h-moi{flex:none;font-size:12px;font-weight:700;color:var(--muted);text-align:right;letter-spacing:0}' +
+      '.pilo-mf-h-moi small{display:block;font-size:12px;font-weight:500;color:var(--muted-2);margin-top:1px}' +
+      '.pilo-mf-h small{display:block;font-size:12px;font-weight:500;color:var(--muted);margin-top:2px;letter-spacing:0}' +
       '.pilo-mf-h.up{border-bottom-color:color-mix(in srgb,#0F7A52 45%,transparent);color:var(--c-mint-txt,#0F7A52)}' +
       '.pilo-mf-h.dn{border-bottom-color:color-mix(in srgb,#C7283D 45%,transparent);color:var(--c-rose-txt,#C7283D)}' +
       '.pilo-mf-row{display:flex;align-items:flex-start;gap:11px;padding:10px 0;border-bottom:1px solid var(--line-2)}' +
@@ -2581,17 +2581,17 @@
       '.pilo-mf-pct.dn{color:var(--c-rose-txt,#C7283D)}' +
       '.pilo-mf-main{flex:1;min-width:0}' +
       '.pilo-mf-nom{display:block;font-size:13px;font-weight:600;color:var(--ip-ink);line-height:1.3;overflow-wrap:anywhere}' +
-      '.pilo-mf-meta{display:block;font-size:10.5px;color:var(--muted-2);margin-top:3px}' +
+      '.pilo-mf-meta{display:block;font-size:12px;color:var(--muted-2);margin-top:3px}' +
       '.pilo-mf-stk{display:inline-block;margin-left:7px;padding:1px 6px;border-radius:999px;background:color-mix(in srgb,var(--ip-blue) 9%,transparent);color:var(--ip-blue);font-weight:700;letter-spacing:0}' +
       '.pilo-mf-moi{flex:none;text-align:right;min-width:92px}' +
       '.pilo-mf-moi b{display:block;font-size:13px;font-weight:700;color:var(--ip-ink);letter-spacing:-.02em}' +
-      '.pilo-mf-moi b.zero{font-size:11.5px;font-weight:600;color:var(--c-amber-txt,#9A5B12)}' +
-      '.pilo-mf-moi small{display:block;font-size:10.5px;color:var(--muted-2);margin-top:2px}' +
+      '.pilo-mf-moi b.zero{font-size:12px;font-weight:600;color:var(--c-amber-txt,#9A5B12)}' +
+      '.pilo-mf-moi small{display:block;font-size:12px;color:var(--muted-2);margin-top:2px}' +
       '.pilo-mf-more{margin-top:6px}' +
       '.pilo-mf-more>summary{display:flex;align-items:center;min-height:44px;cursor:pointer;list-style:none;font-size:12.5px;font-weight:700;color:var(--ip-blue)}' +
       '.pilo-mf-more>summary::-webkit-details-marker{display:none}' +
-      '.pilo-mf-note{margin-top:16px;padding-top:13px;border-top:1px solid var(--line);font-size:11px;line-height:1.55;color:var(--muted-2)}' +
-      '@media(max-width:480px){.pilo-mf-pct{width:64px;font-size:11.5px}.pilo-mf-moi{min-width:76px}}' +
+      '.pilo-mf-note{margin-top:16px;padding-top:13px;border-top:1px solid var(--line);font-size:12px;line-height:1.55;color:var(--muted-2)}' +
+      '@media(max-width:480px){.pilo-mf-pct{width:64px;font-size:12px}.pilo-mf-moi{min-width:76px}}' +
       // ── Comparatif « mon secteur / les autres / la France » ────
       '.pilo-prod{padding:18px 20px}' +
       '.pilo-prod-h{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px}' +
@@ -2606,19 +2606,19 @@
       '.pilo-cmp-head{margin-bottom:7px}' +
       '.pilo-cmp-h{display:flex;flex-direction:column;justify-content:center;gap:1px;padding:6px 9px 6px 0;min-width:0}' +
       '.pilo-cmp-hn{font-size:13px;font-weight:800;color:var(--ip-ink);letter-spacing:-.01em}' +
-      '.pilo-cmp-hs{font-size:10.5px;color:var(--muted-2)}' +
-      '.pilo-cmp-hv{font-size:10.5px;color:var(--muted);font-weight:700;margin-top:2px}' +
+      '.pilo-cmp-hs{font-size:12px;color:var(--muted-2)}' +
+      '.pilo-cmp-hv{font-size:12px;color:var(--muted);font-weight:700;margin-top:2px}' +
       '.pilo-cmp-ch{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:6px 8px;border:1px solid transparent;border-radius:9px;background:transparent;font-family:var(--font);cursor:pointer;text-align:left;min-height:44px;justify-content:center;transition:background .15s var(--ease),border-color .15s var(--ease)}' +
       '.pilo-cmp-ch:hover{background:var(--card-2);border-color:var(--line)}' +
       '.pilo-cmp-ch.vise{background:var(--halo);border-color:color-mix(in srgb,var(--ip-blue) 26%,transparent)}' +
       '.pilo-mx-dot{width:8px;height:8px;border-radius:3px;flex-shrink:0}' +
-      '.pilo-mx-cl{font-size:11.5px;font-weight:700;color:var(--ip-ink);white-space:nowrap}' +
-      '.pilo-mx-cs{font-size:10px;color:var(--muted-2);white-space:nowrap}' +
+      '.pilo-mx-cl{font-size:12px;font-weight:700;color:var(--ip-ink);white-space:nowrap}' +
+      '.pilo-mx-cs{font-size:12px;color:var(--muted-2);white-space:nowrap}' +
       '.pilo-cmp-c{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-height:52px;padding:6px;border:1px solid var(--line);border-radius:10px;transition:opacity .15s var(--ease)}' +
       '.pilo-cmp-c.pale{opacity:.34}' +
       '.pilo-cmp-c.fort{border-color:color-mix(in srgb,var(--ip-blue) 26%,var(--line))}' +
       '.pilo-cmp-p{font-size:14px;font-weight:800;color:var(--ip-ink);letter-spacing:-.02em}' +
-      '.pilo-cmp-e{font-size:10px;font-weight:700}' +
+      '.pilo-cmp-e{font-size:12px;font-weight:700}' +
       '.pilo-cmp-e.up{color:var(--c-mint-txt,#0F7A52)}' +
       '.pilo-cmp-e.dn{color:var(--c-rose-txt,#C7283D)}' +
       // La ligne France est la référence : trait plein au-dessus, jamais un accent de couleur.
@@ -2627,19 +2627,19 @@
       // séparateur + liste produits
       '.pilo-prod-sep{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:20px 0 4px;padding-top:15px;border-top:1px solid var(--line)}' +
       '.pilo-prod-lt{font-size:13.5px;font-weight:800;color:var(--ip-ink);letter-spacing:-.01em}' +
-      '.pilo-prod-lc{font-size:11.5px;color:var(--muted);flex:1}' +
+      '.pilo-prod-lc{font-size:12px;color:var(--muted);flex:1}' +
       '.pilo-prod-raz{border:1px solid var(--line);background:var(--card);border-radius:9px;padding:6px 11px;font-family:var(--font);font-size:12px;font-weight:700;color:var(--ip-blue);cursor:pointer;min-height:32px}' +
       '.pilo-prod-raz:hover{border-color:var(--ip-blue)}' +
       '.pilo-pr{display:flex;align-items:flex-start;gap:11px;padding:11px 0;border-bottom:1px solid var(--line-2)}' +
       '.pilo-pr:last-child{border-bottom:none}' +
       '.pilo-pr-main{flex:1;min-width:0}' +
       '.pilo-pr-n{font-size:13.5px;font-weight:600;color:var(--ip-ink);line-height:1.3;overflow-wrap:anywhere}' +
-      '.pilo-pr-n small{display:block;font-size:10.5px;font-weight:500;color:var(--c-amber-txt,#9A5B12);margin-top:1px}' +
+      '.pilo-pr-n small{display:block;font-size:12px;font-weight:500;color:var(--c-amber-txt,#9A5B12);margin-top:1px}' +
       '.pilo-pr-anon{font-weight:700;color:var(--muted)}' +
-      '.pilo-pr-meta{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;margin-top:6px;font-size:10.5px;color:var(--muted-2)}' +
+      '.pilo-pr-meta{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;margin-top:6px;font-size:12px;color:var(--muted-2)}' +
       '.pilo-pr-tag{display:inline-flex;align-items:center;gap:5px;font-weight:700}' +
       '.pilo-pr-fr{font-weight:700;cursor:help}' +
-      '.pilo-prod-reste{margin-top:14px;padding-top:12px;border-top:1px solid var(--line);font-size:11px;line-height:1.5;color:var(--muted-2)}' +
+      '.pilo-prod-reste{margin-top:14px;padding-top:12px;border-top:1px solid var(--line);font-size:12px;line-height:1.5;color:var(--muted-2)}' +
       '.pilo-pr-fr.up{color:var(--c-mint-txt,#0F7A52)}' +
       '.pilo-pr-fr.dn{color:var(--c-rose-txt,#C7283D)}' +
       '@media(max-width:560px){.pilo-prod{padding:16px 14px}.pilo-cmp-r{grid-template-columns:118px repeat(var(--cols),1fr)}}' +
@@ -2648,10 +2648,10 @@
       '.pilo-gis-chip{display:inline-flex;align-items:center;gap:7px;min-height:36px;padding:6px 12px;border:1px solid var(--line);border-radius:999px;background:var(--card);font-family:var(--font);font-size:12px;font-weight:700;color:var(--ip-ink);cursor:pointer;transition:border-color .15s var(--ease),background .15s var(--ease)}' +
       '.pilo-gis-chip:hover{border-color:color-mix(in srgb,var(--ip-blue) 40%,transparent)}' +
       '.pilo-gis-chip.on{background:var(--halo);border-color:color-mix(in srgb,var(--ip-blue) 34%,transparent)}' +
-      '.pilo-gis-chipv{font-size:11px;color:var(--muted);font-weight:700}' +
+      '.pilo-gis-chipv{font-size:12px;color:var(--muted);font-weight:700}' +
       '.pilo-gis-ok{color:var(--c-mint-txt,#0F7A52);font-weight:700}' +
       '.pilo-gis-neuf{color:var(--c-amber-txt,#9A5B12);font-weight:700}' +
-      '.pilo-gis-note{margin-top:16px;padding-top:13px;border-top:1px solid var(--line);font-size:11px;line-height:1.55;color:var(--muted-2)}' +
+      '.pilo-gis-note{margin-top:16px;padding-top:13px;border-top:1px solid var(--line);font-size:12px;line-height:1.55;color:var(--muted-2)}' +
       '.pilo-gis-note b{color:var(--muted);font-weight:800}' +
       // tranches de prix
       // Mois incomplet : dessiné, mais visiblement mis de côté (gris, hachuré).
@@ -2662,8 +2662,8 @@
       '.pilo-tier-dot{display:inline-block;width:9px;height:9px;border-radius:3px;flex-shrink:0}' +
       '.pilo-fam-l{flex-wrap:wrap;gap:4px 8px}' +
       '.pilo-tier-lbl{white-space:nowrap}' +
-      '.pilo-tier-sub{color:var(--muted);font-weight:500;font-size:11.5px;white-space:nowrap}' +
-      '.pilo-tier-meta{font-size:10.5px;color:var(--muted-2);margin-top:4px}' +
+      '.pilo-tier-sub{color:var(--muted);font-weight:500;font-size:12px;white-space:nowrap}' +
+      '.pilo-tier-meta{font-size:12px;color:var(--muted-2);margin-top:4px}' +
       '.pilo-ameli-sub{font-size:12px;font-weight:600;color:var(--muted);margin-bottom:10px;letter-spacing:.005em}' +
       // ── Blocs dépliables (progressive disclosure) : le détail reste calme et rangé ──
       '.pilo-marche{display:flex;align-items:center;gap:12px;margin-top:var(--sp-4,16px);padding:14px 16px;border:1px solid var(--line);border-radius:var(--r-card,14px);background:var(--card);box-shadow:var(--sh-1);cursor:pointer;text-decoration:none;color:inherit;transition:border-color .15s,transform .15s}' +
@@ -2689,17 +2689,17 @@
       '.pilo-chart-card{padding:20px 22px 18px;margin-bottom:14px}' +
       '@media(max-width:640px){.pilo-chart-card{padding:16px 14px}}' +
       '.pilo-chart-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px}' +
-      '.pilo-chart-period{font-size:11px;color:var(--muted);font-weight:600;white-space:nowrap}' +
+      '.pilo-chart-period{font-size:12px;color:var(--muted);font-weight:600;white-space:nowrap}' +
       // ── Encart d\'évolution du mois choisi (sélection sur le graphe) ──
       '.pilo-readout{display:flex;align-items:center;flex-wrap:wrap;gap:8px 13px;margin:14px 0 4px;padding:11px 15px;background:var(--card-2);border:1px solid var(--line);border-radius:var(--r-md)}' +
       '.pilo-ro-m{font-size:13.5px;font-weight:800;color:var(--ip-ink);letter-spacing:-.01em;text-transform:capitalize}' +
       '.pilo-ro-v{font-size:16px;font-weight:800;color:var(--ip-blue);font-variant-numeric:tabular-nums}' +
-      '.pilo-ro-d{font-size:11.5px;font-weight:800;display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:999px}' +
+      '.pilo-ro-d{font-size:12px;font-weight:800;display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:999px}' +
       '.pilo-ro-d.up{color:var(--c-mint-txt,#0F7A52);background:color-mix(in srgb,#0F7A52 12%,transparent)}' +
       '.pilo-ro-d.dn{color:var(--c-rose-txt,#C7283D);background:color-mix(in srgb,#C7283D 12%,transparent)}' +
       '.pilo-ro-d.mut{color:var(--muted);background:var(--card)}' +
       '.pilo-ro-a{margin-left:auto;font-size:12px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}' +
-      '.pilo-hint{font-size:10.5px;color:var(--muted-2,#9AA1B2);font-weight:600;margin:0 0 8px 2px}' +
+      '.pilo-hint{font-size:12px;color:var(--muted-2,#9AA1B2);font-weight:600;margin:0 0 8px 2px}' +
       '.pilo-cbar{cursor:pointer;transition:transform .15s var(--ease)}' +
       '.pilo-cbar:hover{transform:translateY(-2px)}' +
       '.pilo-cbar.sel .pilo-cbar-track{box-shadow:0 0 0 2px var(--ip-blue),0 0 0 5px color-mix(in srgb,var(--ip-blue) 16%,transparent)}' +
@@ -2708,8 +2708,8 @@
       '.pilo-chart{position:relative;display:flex;align-items:flex-end;gap:8px;height:196px}' +
       '@media(max-width:640px){.pilo-chart{gap:5px;height:168px}}' +
       '.pilo-cbar{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;cursor:default;min-width:0}' +
-      '.pilo-cbar-v{font-size:10.5px;font-weight:700;color:var(--muted);white-space:nowrap}' +
-      '.pilo-cbar-d{font-size:9px;font-weight:800;line-height:1;white-space:nowrap;margin-top:1px}' +
+      '.pilo-cbar-v{font-size:12px;font-weight:700;color:var(--muted);white-space:nowrap}' +
+      '.pilo-cbar-d{font-size:12px;font-weight:800;line-height:1;white-space:nowrap;margin-top:1px}' +
       '.pilo-cbar-d.up{color:#0F7A52}.pilo-cbar-d.dn{color:#E0556E}' +
       '@media(max-width:640px){.pilo-cbar-d{display:none}}' +
       '@media(max-width:640px){.pilo-cbar-v{visibility:hidden}.pilo-cbar-hot .pilo-cbar-v,.pilo-cbar-cur .pilo-cbar-v{visibility:visible}}' +
@@ -2724,20 +2724,20 @@
       '.pilo-cbar-hot .pilo-cbar-v{color:var(--ip-blue);font-weight:800}' +
       '.pilo-cbar-hot .pilo-cbar-lbl{color:var(--ip-ink);font-weight:700}' +
       '@media(prefers-reduced-motion:reduce){.pilo-bar-fill,.opso-gauge-fill,.pilo-kpi-meter-fill{transition:none}}' +
-      '.pilo-cbar-lbl{font-size:10.5px;color:var(--muted);font-weight:600;font-family:var(--mono)}' +
+      '.pilo-cbar-lbl{font-size:12px;color:var(--muted);font-weight:600;font-family:var(--mono)}' +
       '.pilo-cbar-lbl.on{color:var(--ip-blue);font-weight:700}' +
       /* repères dérivés sous le graphe (moyenne · meilleur mois · mois actifs) */
       '.pilo-kfs{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;padding-top:14px;border-top:1px dashed var(--line)}' +
       '.pilo-kf{flex:1;min-width:110px;background:var(--card-2);border:1px solid var(--line);border-radius:var(--r-md);padding:9px 12px}' +
-      '.pilo-kf-l{display:block;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);white-space:nowrap}' +
+      '.pilo-kf-l{display:block;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);white-space:nowrap}' +
       '.pilo-kf-v{display:block;font-size:14.5px;font-weight:800;letter-spacing:-.01em;margin-top:3px;color:var(--ip-ink)}' +
-      '.pilo-kf-v small{font-size:10.5px;color:var(--muted);font-weight:600}' +
+      '.pilo-kf-v small{font-size:12px;color:var(--muted);font-weight:600}' +
       '.pilo-tip{position:absolute;top:-6px;transform:translateX(-50%);background:var(--ip-ink);color:#fff;font-size:12px;font-weight:600;' +
         'padding:7px 11px;border-radius:9px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .15s;box-shadow:var(--sh-pop);z-index:5;font-family:var(--mono)}' +
       '.pilo-tip.show{opacity:1}' +
       // ── OPSO section ──────────────────────────────
       '.opso-section{margin-bottom:10px}' +
-      '.opso-section-head{display:flex;align-items:center;gap:8px;font-size:11px;text-transform:uppercase;letter-spacing:.07em;' +
+      '.opso-section-head{display:flex;align-items:center;gap:8px;font-size:12px;text-transform:uppercase;letter-spacing:.07em;' +
         'font-weight:700;color:var(--ip-blue);margin-bottom:14px;padding:0 2px}' +
       '.opso-act-body{display:flex;flex-direction:column;gap:18px}' +
       '.opso-gauge-track{height:10px;border-radius:999px;background:var(--surf-sunken);overflow:hidden;margin-bottom:8px;box-shadow:inset 0 1px 2px rgba(16,19,28,.06)}' +
@@ -2748,7 +2748,7 @@
       '.opso-chip-stat.active{border-color:color-mix(in srgb,var(--ip-blue) 30%,var(--line));background:color-mix(in srgb,var(--ip-blue) 5%,var(--card))}' +
       '.opso-chip-stat.prospect{border-color:color-mix(in srgb,var(--c-amber) 30%,var(--line));background:color-mix(in srgb,var(--c-amber) 5%,var(--card))}' +
       '.opso-chip-n{font-size:26px;font-weight:700;letter-spacing:-.03em;color:var(--ip-ink)}' +
-      '.opso-chip-l{font-size:11.5px;color:var(--muted);font-weight:600;margin-top:3px}' +
+      '.opso-chip-l{font-size:12px;color:var(--muted);font-weight:600;margin-top:3px}' +
       '.opso-chip-stat.active .opso-chip-n{color:var(--ip-blue)}' +
       '.opso-chip-stat.prospect .opso-chip-n{color:var(--c-amber)}' +
       '.opso-kpi-grp{grid-template-columns:repeat(2,1fr) !important}' +
@@ -2757,7 +2757,7 @@
       '.opso-perim-top{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}' +
       '.opso-perim-badge{display:inline-flex;align-items:center;padding:4px 11px;border-radius:10px;font-size:12px;font-weight:700;letter-spacing:.01em}' +
       '.opso-perim-nums{display:flex;align-items:center;flex-wrap:wrap}' +
-      '.opso-new-tag{display:inline-block;margin-left:6px;vertical-align:middle;font-size:9.5px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;color:var(--ok);background:color-mix(in srgb,var(--ok) 14%,transparent);border:1px solid color-mix(in srgb,var(--ok) 30%,transparent);border-radius:999px;padding:1px 7px;font-family:var(--mono)}' +
+      '.opso-new-tag{display:inline-block;margin-left:6px;vertical-align:middle;font-size:12px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;color:var(--ok);background:color-mix(in srgb,var(--ok) 14%,transparent);border:1px solid color-mix(in srgb,var(--ok) 30%,transparent);border-radius:999px;padding:1px 7px;font-family:var(--mono)}' +
       // ── Parts par famille, mois par mois ──────────
       '.pilo-part-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:6px}' +
       '.pilo-part-segs{display:flex;gap:8px;flex-wrap:wrap}' +
@@ -2771,8 +2771,8 @@
       '.pilo-part-hd{display:flex;justify-content:space-between;align-items:baseline;gap:8px}' +
       '.pilo-part-t{font-size:12.5px;font-weight:800;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-flex;align-items:center;gap:6px}' +
       '.pilo-part-v{font-size:18px;font-weight:800;letter-spacing:-.02em;white-space:nowrap}' +
-      '.pilo-part-v small{font-size:11px;color:var(--muted);font-weight:700}' +
-      '.pilo-part-sub{font-size:11.5px;font-weight:700;margin:1px 0 6px}' +
+      '.pilo-part-v small{font-size:12px;color:var(--muted);font-weight:700}' +
+      '.pilo-part-sub{font-size:12px;font-weight:700;margin:1px 0 6px}' +
       '.pilo-part-ch{width:100%;height:auto;display:block}' +
       '.pilo-net-dash{display:inline-block;width:16px;height:0;border-top:2px dashed #7A8299;vertical-align:middle}';
 

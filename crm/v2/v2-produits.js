@@ -1720,7 +1720,7 @@
       '  .pr-tc .pr-t-l{max-width:150px}',
       '  .pr-tc .pr-t-cip{white-space:normal;overflow-wrap:anywhere}',
       '  .pr-t-act{white-space:normal;width:52px}',
-      '  .pr-t-fiche{margin:6px 0 0;display:block;width:44px;padding:0;height:40px;font-size:11px}',
+      '  .pr-t-fiche{margin:6px 0 0;display:block;width:44px;padding:0;height:44px;font-size:12px}',
       '}',
       // Sous 620 px, la colonne Statut et la colonne Abandon sortent — mais
       // JAMAIS les deux compteurs : c est eux qu on montre au pharmacien.
@@ -1731,7 +1731,7 @@
       '  .pr-t-mini{display:inline-block}',
       '  .pr-t-l{min-width:112px}',
       '  .pr-t th,.pr-t td{padding:8px 4px;font-size:12px}',
-      '  .pr-t th{font-size:9.5px;letter-spacing:0}',
+      '  .pr-t th{font-size:12px;letter-spacing:0}',
       '  .pr-t-d{font-size:12.5px}',
       '  .pr-t-prix{font-size:12px}',
       '  .pr-t-bar{width:38px}',
