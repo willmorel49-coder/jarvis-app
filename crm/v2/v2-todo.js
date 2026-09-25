@@ -450,7 +450,7 @@
     return '<div class="v2-todo-mh"><h2>Les mails tout prêts</h2><p>Les mêmes pour toute l\'équipe au départ. Tu peux les modifier à ta façon : ta version ne vaut que pour toi.</p></div>' +
       '<div class="v2-card v2-todo-list">' + MODELES.map(function (m) {
         var x = modele(m.k), mien = !!(st.bases || {})[m.k];
-        return '<details class="v2-todo-mail"' + ((st.ouverts || {})[m.k] ? ' open' : '') + ' ontoggle="V2.todo.plier(\'' + m.k + '\',this.open)"><summary><span class="v2-todo-ico">' + ICO(KINDS[m.k].ico, 16, 2) + '</span>' +
+        return '<details class="v2-todo-mail"' + ((st.ouverts || {})[m.k] ? ' open' : '') + ' ontoggle="window.V2&&V2.todo.plier(\'' + m.k + '\',this.open)"><summary><span class="v2-todo-ico">' + ICO(KINDS[m.k].ico, 16, 2) + '</span>' +
           '<span class="v2-todo-mt"><b>' + esc(m.t) + (mien ? ' <em class="v2-todo-mien">Ma version</em>' : '') + '</b><small>' + esc(m.s) + '</small></span><span class="v2-todo-chev">' + ICO('chev', 16, 2) + '</span></summary>' +
           '<div class="v2-todo-mb">' + (m.k === 'merci' ? accesOffilog() : '') + '<div class="v2-todo-obj"><span>Objet</span>' + esc(x.objet) + '</div>' +
           '<pre class="v2-todo-corps">' + esc(x.corps) + '</pre>' +
@@ -503,7 +503,7 @@
   function nettoieMods(a) {
     return (Array.isArray(a) ? a : []).filter(function (m) { return m && sur(m.id); }).map(function (m) {
       return { id: sur(m.id), nom: String(m.nom || 'Mon modèle').slice(0, 80), objet: String(m.objet || ''), corps: String(m.corps || ''),
-               docs: (Array.isArray(m.docs) ? m.docs : []).map(String).filter(function (k) { return /^[SD]:/.test(k); }) };
+               docs: (Array.isArray(m.docs) ? m.docs : []).map(String).filter(function (k) { return /^[SDMCP]:/.test(k); }) };
     });
   }
   // Ma version d'un mail tout prêt : { rdv|merci|compte: { objet, corps, docs } }, dans la même ligne.
@@ -512,7 +512,7 @@
     MODELES.forEach(function (m) {
       var b = o[m.k]; if (!b || typeof b !== 'object' || !(b.objet || b.corps)) return;
       r[m.k] = { objet: String(b.objet || ''), corps: String(b.corps || ''),
-                 docs: (Array.isArray(b.docs) ? b.docs : []).map(String).filter(function (k) { return /^[SD]:/.test(k); }) };
+                 docs: (Array.isArray(b.docs) ? b.docs : []).map(String).filter(function (k) { return /^[SDMCP]:/.test(k); }) };
     });
     return r;
   }
@@ -589,6 +589,8 @@
     c.mode = c.mode || 'envoi'; c.docs = c.docs || []; c.nomMod = c.nomMod || '';
     st.comp = c;
     chargerMods().then(function () { if (st.comp === c) dessinerComp(); });
+    // Le nom d'une fiche Marketing jointe (clé M:) se lit dans la liste des fiches de l'équipe.
+    if (V2.pharmaTxFiches) V2.pharmaTxFiches().then(function () { if (st.comp === c) dessinerComp(); });
     dessinerComp();
   }
   function dessinerComp() {
@@ -676,13 +678,13 @@
   V2.todo.compChoisirDocs = function () {
     var c = lireComp(); if (!c || !V2.pharmaTransmettre) return;
     V2.pharmaTransmettre(c.mode === 'envoi' ? (c.pid || '') : '', c.docs, { nom: c.nom, mail: c.dest, texte: { objet: c.objet, corps: c.corps }, choixSeul: true,
-      surChoix: function (keys) { if (st.comp === c) { c.docs = c.mode !== 'envoi' ? keys.filter(function (k) { return /^[SD]:/.test(k); }) : keys; dessinerComp(); } } });
+      surChoix: function (keys) { if (st.comp === c) { c.docs = c.mode !== 'envoi' ? keys.filter(function (k) { return /^[SDMCP]:/.test(k); }) : keys; dessinerComp(); } } });
   };
   V2.todo.compGarder = function () { var c = lireComp(); if (!c) return; c.garder = true; dessinerComp(); var el = document.getElementById('v2-tc-nomMod'); if (el) el.focus(); };
   V2.todo.compEnregistrer = function () {
     var c = lireComp(); if (!c) return;
     if (c.mode === 'base') {
-      var v = { objet: reperer(String(c.objet || '').trim()), corps: reperer(c.corps || ''), docs: c.docs.filter(function (k) { return /^[SD]:/.test(k); }) };
+      var v = { objet: reperer(String(c.objet || '').trim()), corps: reperer(c.corps || ''), docs: c.docs.filter(function (k) { return /^[SDMCP]:/.test(k); }) };
       ecrireMods(null, function (b) { b[c.baseK] = v; return b; }).then(function (ok) {
         if (V2.toast) V2.toast(ok ? 'Ta version de « ' + c.nom + ' » est enregistrée' : 'Gardée sur cet appareil seulement — la base n\'a pas répondu', ok ? '' : 'warn');
         V2.todo.fermerComp(); rendre();
@@ -692,7 +694,7 @@
     var nom = String(c.nomMod || '').trim();
     if (!nom) { if (V2.toast) V2.toast('Donne un nom au modèle', 'warn'); var el = document.getElementById('v2-tc-nomMod'); if (el) el.focus(); return; }
     var id = (c.mode === 'modele' && c.modId) || newId();
-    var m = { id: id, nom: nom, objet: String(c.objet || '').trim(), corps: c.corps || '', docs: c.docs.filter(function (k) { return /^[SD]:/.test(k); }) };
+    var m = { id: id, nom: nom, objet: String(c.objet || '').trim(), corps: c.corps || '', docs: c.docs.filter(function (k) { return /^[SDMCP]:/.test(k); }) };
     ecrireMods(function (a) { return a.some(function (x) { return x.id === id; }) ? a.map(function (x) { return x.id === id ? m : x; }) : a.concat([m]); }).then(function (ok) {
       if (V2.toast) V2.toast(ok ? 'Modèle « ' + nom + ' » enregistré' : 'Modèle gardé sur cet appareil seulement — la base n\'a pas répondu', ok ? '' : 'warn');
       if (c.mode === 'modele') V2.todo.fermerComp(); else { c.garder = false; c.base = 'm:' + id; dessinerComp(); }

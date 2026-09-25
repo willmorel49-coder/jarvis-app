@@ -2769,6 +2769,62 @@
   };
   V2.mktReload = function () { items = null; docs = null; };
 
+  // ── 25/09/2026 — To do list › Préparer le mail : les documents FAITS dans l'app se joignent au mail ──
+  // Les fiches de l'équipe et le catalogue par catégorie sortent en fichier (même rendu que « PDF »), sans téléchargement.
+  V2.mkt = V2.mkt || {};
+  V2.mkt.fichesPourMail = function () {
+    return (items ? Promise.resolve(items) : loadItems()).then(function (a) {
+      return (a || []).map(function (it) {
+        var t = TYPES[it.type] || TYPES.support;
+        return { id: String(it.id), titre: (it.title && it.title.trim()) || t.plural, type: t.label, n: (it.products || []).length, updated: it.updated || 0 };
+      }).filter(function (f) { return f.n > 0; }).sort(function (a, b) { return b.updated - a.updated; });
+    });
+  };
+  function pdfFichier(html, fn, opts) {
+    return window.ensureHtml2Pdf().then(function () { return (document.fonts && document.fonts.ready) ? document.fonts.ready : null; }).then(function () {
+      // Même mise en place que les listings (pdfGenerate, v2-pharma.js) : une feuille hors écran
+      // (position:fixed à -10000 px) sortait BLANCHE sous WebKit — mesuré le 25/09/2026.
+      try { window.scrollTo(0, 0); } catch (e) {}
+      var wrap = document.createElement('div');
+      wrap.style.cssText = 'position:absolute;left:0;top:0;width:794px;overflow:hidden;background:#fff;z-index:1';
+      wrap.innerHTML = html; document.body.appendChild(wrap);
+      var voile = document.createElement('div');
+      voile.style.cssText = 'position:fixed;inset:0;background:#fff;z-index:2147483600;display:flex;align-items:center;justify-content:center;font:600 14px Satoshi,system-ui,sans-serif;color:#737A8C';
+      voile.textContent = 'Génération du PDF…'; document.body.appendChild(voile);
+      var fin = function () { if (wrap.parentNode) document.body.removeChild(wrap); if (voile.parentNode) document.body.removeChild(voile); };
+      return waitImages(wrap, 12000).then(function () {
+        return window.html2pdf().from(wrap.firstChild).set(opts).outputPdf('blob');
+      }).then(function (blob) { fin(); return new File([blob], fn, { type: 'application/pdf' }); }, function (e) { fin(); throw e; });
+    });
+  }
+  V2.mkt.fichePdfFichier = function (id) {
+    return (items ? Promise.resolve(items) : loadItems()).then(function (a) {
+      var it = (a || []).filter(function (x) { return String(x.id) === String(id); })[0];
+      if (!it || typeof window.ensureHtml2Pdf !== 'function') return null;
+      var t = TYPES[it.type] || TYPES.support;
+      var title = (it.title && it.title.trim()) ? it.title.trim() : t.plural;
+      var fn = (t.label + '-' + title).replace(/[^A-Za-z0-9-]/g, '_').slice(0, 50) + '.pdf';
+      return new Promise(function (res) {
+        // buildFlyerHtml et ensureImg lisent la fiche ouverte : on leur prête celle-ci le temps d'un appel synchrone.
+        var prev = editing; editing = it;
+        ensureImg(function () { var cur = editing; editing = it; var html = buildFlyerHtml(true); editing = cur; res(html); });
+        editing = prev;
+      }).then(function (html) {
+        return pdfFichier(html, fn, { margin: 0, image: { type: 'jpeg', quality: 0.95 },
+          html2canvas: { scale: 2, useCORS: true, allowTaint: false, backgroundColor: '#ffffff', logging: false },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'] } });
+      });
+    });
+  };
+  V2.mkt.catalogueCategoriesFichier = function () {
+    return new Promise(function (res) { ensureNr(res, true); }).then(function () {
+      var cats = buildTop50();
+      if (!cats.length || typeof window.ensureHtml2Pdf !== 'function') return null;
+      return pdfFichier(top50Html(cats), 'Catalogue-par-categorie.pdf', { margin: [0, 0, 0, 0],   // marges [8…] : bord droit rogné (mesuré 25/09) ; la feuille a déjà son padding image: { type: 'jpeg', quality: 0.95 },
+        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'], avoid: ['tr'] } });
+    });
+  };
+
   // ── Lot 4 — ce que l'accueil « Cette semaine » lit ici : les dernières fiches, les derniers documents et leurs vignettes ──
   V2.mkt = V2.mkt || {};
   V2.mkt.fichesRecentes = function (n) {
