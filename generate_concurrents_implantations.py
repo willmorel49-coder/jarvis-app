@@ -65,6 +65,29 @@ def dep(cp):
     return cp[:2]
 
 
+_NOMS = {}
+
+
+def nom_commune(e):
+    """Nom officiel AVEC accents (« Saint-Lô ») : le registre ne donne que des majuscules
+    sans accent (« SAINT-LO »). Si l'API des communes se tait, on garde le nom du registre."""
+    brut = (e.get('libelle_commune') or '').title()
+    code = e.get('commune') or ''
+    if not code:
+        return brut
+    if code not in _NOMS:
+        try:
+            req = urllib.request.Request('https://geo.api.gouv.fr/communes/%s?fields=nom' % code,
+                                         headers={'User-Agent': 'JARVIS-veille (robot mensuel, gratuit)'})
+            with urllib.request.urlopen(req, timeout=15) as r:
+                _NOMS[code] = json.load(r).get('nom') or ''
+        except Exception as err:
+            sys.stderr.write('nom de commune %s non lu (%s) : nom du registre gardé\n' % (code, err))
+            _NOMS[code] = ''
+    # « Paris 5e Arrondissement » → « Paris 5e » : le mot ne dit rien de plus sur la carte.
+    return (_NOMS[code] or brut).replace(' Arrondissement', '')
+
+
 def coord(v):
     try:
         return round(float(v), 4)
@@ -87,7 +110,7 @@ def main():
                 cp = e.get('code_postal') or ''
                 if not cp:
                     continue
-                agences.append({'ville': (e.get('libelle_commune') or '').title(), 'cp': cp, 'dep': dep(cp),
+                agences.append({'ville': nom_commune(e), 'cp': cp, 'dep': dep(cp),
                                 'lat': coord(e.get('latitude')), 'lon': coord(e.get('longitude'))})
             print('  %-30s %s retenus=%d' % (nom, siren, len(agences)))
             time.sleep(0.4)
