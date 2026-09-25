@@ -71,7 +71,9 @@
     if (!C) { corps.innerHTML = '<div class="offcat-wait">' + (V2._offcatKO ? 'Le catalogue n\'a pas pu être chargé. Vérifie la connexion puis rouvre-le.' : 'Chargement du catalogue…') + '</div>'; return; }
     var pdfs = declarerPdfs();
     var complet = pdfs.filter(function (d) { return !d.p.rayon; })[0];
-    var rayons = pdfs.filter(function (d) { return d.p.rayon; });
+    // 26/09 : « Meilleures ventes » n'est pas un rayon (nos meilleures ventes + top ventes du marché + index des marques)
+    var ventes = pdfs.filter(function (d) { return /meilleures-ventes/.test(d.p.fichier); })[0];
+    var rayons = pdfs.filter(function (d) { return d.p.rayon && d !== ventes; });
     function actions(d) {
       return '<button class="v2-btn v2-btn-ghost" onclick="V2.ouvrirDocProtege(\'' + d.cle + '\')">' + ICO('fiche', 15, 2) + ' Voir</button>' +
         '<button class="v2-btn v2-btn-primary" onclick="V2.offCatEnvoyer(\'' + d.cle + '\')">' + ICO('spark', 15, 2) + ' Envoyer</button>';
@@ -90,6 +92,9 @@
       (complet ? '<div class="offcat-hero"><div><div class="offcat-h">Le catalogue complet</div>' +
         '<div class="offcat-d">' + V2.fmtNum(complet.p.produits) + ' produits · ' + complet.p.pages + ' pages · ' + mo(complet.p.octets) + '</div></div>' +
         '<div class="offcat-act">' + actions(complet) + '</div></div>' : '') +
+      (ventes ? '<div class="offcat-hero"><div><div class="offcat-h">Nos meilleures ventes</div>' +
+        '<div class="offcat-d">' + V2.fmtNum(ventes.p.produits) + ' produits · top ventes du marché signalés · toutes nos marques · ' + ventes.p.pages + ' pages · ' + mo(ventes.p.octets) + '</div></div>' +
+        '<div class="offcat-act">' + actions(ventes) + '</div></div>' : '') +
       (rayons.length ? '<div class="offcat-l">Un rayon seulement</div><div class="offcat-rayons">' + rayons.map(function (d) {
         return '<div class="offcat-rayon"><div class="offcat-rn">' + esc(d.p.rayon) + '</div>' +
           '<div class="offcat-d">' + V2.fmtNum(d.p.produits) + ' produits · ' + mo(d.p.octets) + '</div>' +
