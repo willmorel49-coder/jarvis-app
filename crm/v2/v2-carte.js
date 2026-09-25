@@ -15,7 +15,7 @@
   V2.pages = V2.pages || {};
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
 
-  var CB = '?v=20260925c';
+  var CB = '?v=20260925d';
   var map = null, cluster = null, markers = null, D = null, canvas = null;
   var displayMode = 'points';    // points | bulles (taille = CA)
   var tourLayer = null;          // tracé de la tournée (polyline + n° d'arrêts)
@@ -105,7 +105,7 @@
   // commercial, nulle part). La règle devient celle de l'écran Pharmacies
   // (ugaCommMap de v2-pharma.js) : une officine compte pour un commercial si
   // c'est SON client (champ `comms` de WML_OFFICINES), sinon si elle est dans
-  // une UGA où ce commercial a le plus de clients — ses prospects de secteur.
+  // une UGA où ce commercial a au moins un client — ses prospects de secteur.
   // Sans WML (dégradé), on retombe sur l'ancien tag de la base nationale.
   var commById = null, commByUga = null, caById = null, potById = null;
   function buildCommMaps() {
@@ -117,23 +117,24 @@
       if (k && o.ca > 0) caById[k] = o.ca;
       if (k && o.potentiel > 0) potById[k] = o.potentiel;
     });
+    // 25/09/2026 (choix de Will) : une UGA est à TOUS les commerciaux qui y ont au moins un
+    // client, tous les noms de `comms` comptés ; plus de clients d'abord (couleur = le premier).
     var count = {};
     D.p.forEach(function (p) {
       var cs = commById[String(p[13] || '').replace(/[^0-9]/g, '')]; if (!cs) return;
       var uga = p[2]; if (uga == null) return;
-      var c = cs[0];
-      (count[uga] || (count[uga] = {}))[c] = (count[uga][c] || 0) + 1;
+      var m = count[uga] || (count[uga] = {});
+      cs.forEach(function (c) { if (c) m[c] = (m[c] || 0) + 1; });
     });
     commByUga = {};
     Object.keys(count).forEach(function (uga) {
-      var best = null, bn = 0; for (var c in count[uga]) if (count[uga][c] > bn) { bn = count[uga][c]; best = c; }
-      if (best) commByUga[uga] = best;
+      commByUga[uga] = Object.keys(count[uga]).sort(function (a, b) { return count[uga][b] - count[uga][a] || (a < b ? -1 : 1); });
     });
   }
   function commsOf(p) {
     var cs = commById && commById[String(p[13] || '').replace(/[^0-9]/g, '')];
     if (cs && cs.length) return cs;
-    if (commByUga) { var c = commByUga[p[2]]; if (c) return [c]; }
+    if (commByUga) { var c = commByUga[p[2]]; if (c && c.length) return c; }
     return p[5] ? [D.comm[p[5]]] : [];
   }
   // CA d'une officine : celui du CRM (WML_OFFICINES, mois de WML_MOIS) quand il existe. Mesuré en
