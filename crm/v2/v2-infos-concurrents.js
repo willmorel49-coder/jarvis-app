@@ -179,6 +179,26 @@
         : n ? 'Dernière nouvelle : ' + esc(n.titre) + ' (' + esc(dcourt(n.date)) + ').' : 'Rien de nouveau dans la veille.');
   };
 
+  /* ── résumé pour la carte 5 du brief (v2-infos.js, 25/09/2026) ──
+     Même phrase du jour, mêmes présences que le bloc ci-dessous : on réutilise
+     charger()/phrase(), on ne les recalcule jamais deux fois. */
+  V2.concurrentsResume = function (cb) {
+    charger(function () {
+      if (ETAT !== 'pret' || !IMPL) { cb(null); return; }
+      var S = V2.infosSecteur ? V2.infosSecteur() : { deps: null };
+      var deps = S.deps, SS = {};
+      (deps || []).forEach(function (c) { SS[c] = 1; });
+      var A = {};
+      IMPL.acteurs.forEach(function (a) {
+        A[a.cle] = { cle: a.cle, nom: a.nom, chez: a.agences.filter(function (g) { return !deps || SS[g.dep]; }) };
+      });
+      var presents = IMPL.acteurs.map(function (a) { return A[a.cle]; })
+        .filter(function (a) { return a.chez.length && COUL[a.cle]; })
+        .sort(function (x, y) { return y.chez.length - x.chez.length; });
+      cb({ p: phrase(A, deps), presents: presents, deps: deps, coul: COUL });
+    });
+  };
+
   /* ── point d'entrée, appelé par v2-infos.js après le rendu ── */
   V2.concurrentsSecteur = function (host) {
     injectCss();

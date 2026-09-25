@@ -29,6 +29,13 @@
    annonces Bodacc (generate_bodacc_secteur.py → bodacc-secteur.json, public)
    sur les officines de ses départements, avec étiquette client/prospect
    calculée ici (jamais publiée) et bascule de secteur réservée à la direction.
+
+   25/09/2026 (soir) — choix de Will : « v4 · Le brief en 5 cartes » (maquette
+   ~/maquette-infos-du-jour/v4.html). Au-dessus de tout, cinq cartes plein
+   écran (secteur, prix, ruptures, à la une, concurrents), calculées depuis
+   les mêmes données déjà chargées ici. Tout ce qui existait avant (tête,
+   secteur, alertes, une, essentiel, concurrents, mur, archives, pied) reste
+   intact, replié sous « Tout le reste » (V2.infosReste / #inf-reste).
    ═══════════════════════════════════════════════════════════════════ */
 (function () {
   // 03/09/2026 — un lien de flux scrapé ne doit jamais porter un schéma
@@ -48,6 +55,7 @@
 
   var BRIEF = null, ARCHIVE = null, LOADED = false, FAILED = false;
   var SECTEUR = null;   // bodacc-secteur.json — jamais obligatoire, jamais bloquant
+  var CONTOURS = null;  // departements-contours.json — jamais obligatoire : sert la mini-carte de la carte 1 du brief
   var TOUS = [];        // tous les articles à plat : le panneau de lecture s'y réfère par rang
   var OUVERT = -1;      // l'article actuellement ouvert dans le panneau (-1 = aucun)
 
@@ -106,8 +114,8 @@
         .catch(function (e) { if (obligatoire) throw e; return null; });
     };
     try {
-      Promise.all([get('brief-jour.json', true), get('brief-archive.json', false), get('bodacc-secteur.json', false)])
-        .then(function (res) { BRIEF = res[0]; ARCHIVE = res[1]; SECTEUR = res[2]; LOADED = true; cb(); })
+      Promise.all([get('brief-jour.json', true), get('brief-archive.json', false), get('bodacc-secteur.json', false), get('departements-contours.json', false)])
+        .then(function (res) { BRIEF = res[0]; ARCHIVE = res[1]; SECTEUR = res[2]; CONTOURS = res[3]; LOADED = true; cb(); })
         .catch(function () { FAILED = true; cb(); });
     } catch (e) { FAILED = true; cb(); }
   }
@@ -660,6 +668,308 @@
   var ARCH_OPEN = false;
   V2.briefArchive = function () { ARCH_OPEN = !ARCH_OPEN; if (V2.route && V2.route.name === 'infos') V2.render(); };
 
+  /* ════════════════ « TOUT LE RESTE » (25/09/2026, v4) ════════════════
+     Le brief en 5 cartes est au-dessus ; tout ce qui existait avant reste
+     intact, mais replié dans #inf-reste. Mémorisé (localStorage), jamais
+     bloquant : une lecture ratée retombe simplement replié. */
+  var RESTE_KEY = 'jarvis_infos_reste_v1';
+  var RESTE_OPEN = (function () { try { return localStorage.getItem(RESTE_KEY) === '1'; } catch (e) { return false; } })();
+  var RESTE_ANCRE = null;   // sélecteur à faire défiler juste après le prochain rendu
+  V2.infosReste = function (ancre) {
+    RESTE_OPEN = true;
+    try { localStorage.setItem(RESTE_KEY, '1'); } catch (e) {}
+    RESTE_ANCRE = ancre || '#inf-reste';
+    if (V2.route && V2.route.name === 'infos') V2.render();
+  };
+  V2.infosResteFermer = function () {
+    RESTE_OPEN = false;
+    try { localStorage.setItem(RESTE_KEY, '0'); } catch (e) {}
+    if (V2.route && V2.route.name === 'infos') V2.render();
+  };
+  V2.infosResteBascule = function () { if (RESTE_OPEN) V2.infosResteFermer(); else V2.infosReste(); };
+
+  /* ════════════════ panneau « Les ruptures » (carte 3 du brief) ════════════════
+     Simple liste, même gabarit visuel que le panneau de lecture (inf-pan). */
+  var RUPT_OUVERT = false;
+  V2.rupturesOuvrir = function () { RUPT_OUVERT = true; rupturesPanneau(); };
+  V2.rupturesFermer = function () { RUPT_OUVERT = false; rupturesPanneau(); };
+  if (!V2._ruptEchap) {
+    V2._ruptEchap = true;
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && RUPT_OUVERT) V2.rupturesFermer(); });
+  }
+  function rupturesPanneau() {
+    var vieux = document.getElementById('rupt-panneau');
+    if (vieux) vieux.parentNode.removeChild(vieux);
+    if (!RUPT_OUVERT || !BRIEF) return;
+    var liste = BRIEF.ruptures_neuves || [];
+    var h = '<div class="inf-pan-fond" onclick="V2.rupturesFermer()"></div>' +
+      '<aside class="inf-pan a-rose" role="dialog" aria-modal="true" aria-label="Les ruptures">' +
+        '<button class="inf-pan-x" onclick="V2.rupturesFermer()" aria-label="Fermer">' + ICO('close', 18, 2.2) + '</button>' +
+        '<div class="inf-pan-b">' +
+          '<div class="inf-pan-top"><span class="cat">Ruptures · ANSM</span></div>' +
+          '<h2>' + liste.length + ' nouvelle' + (liste.length > 1 ? 's' : '') + ' alerte' + (liste.length > 1 ? 's' : '') + ' de disponibilité</h2>' +
+          '<div class="inf-pan-sec">' + liste.map(function (r) {
+            return '<div class="ligne" style="border-top:1px solid var(--line,rgba(16,19,28,.08));padding:10px 0">' +
+              '<span class="txt"><span class="t" style="font-weight:700;font-size:15px">' + esc((r.spec || '').split(/ – | - /)[0]) + '</span>' +
+              '<span class="s" style="display:block;color:var(--muted,#5E6679);font-size:13px;margin-top:2px">' + esc(r.st) + (r.dom ? ' · ' + esc(r.dom) : '') + (r.retour ? ' · retour ' + esc(r.retour) : '') + '</span></span></div>';
+          }).join('') + '</div>' +
+        '</div>' +
+      '</aside>';
+    var d = document.createElement('div');
+    d.id = 'rupt-panneau';
+    d.innerHTML = h;
+    document.body.appendChild(d);
+    var f = d.querySelector('.inf-pan-x');
+    if (f) f.focus();
+  }
+
+  /* ════════════════ LE BRIEF EN 5 CARTES (25/09/2026, choix de Will · v4) ════════════════
+     Maquette : ~/maquette-infos-du-jour/v4.html. Cinq cartes plein écran, calculées ICI à
+     partir des mêmes données déjà en mémoire (BRIEF, SECTEUR, CONTOURS) — rien en dur.
+     Fenêtre « Ton secteur » : 7 derniers jours glissants (plus simple et toujours non-vide
+     qu'un « depuis lundi », qui retombe à zéro chaque lundi matin). */
+  var BRF5_CUR = 0;
+
+  function brf5Svg(p, s) { return '<svg width="' + (s || 18) + '" height="' + (s || 18) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + p + '</svg>'; }
+
+  /* bbox d'un chemin SVG « d », par lecture brute des nombres — même technique que
+     la carte concurrents (v2-infos-concurrents.js, fonction boite()). */
+  function brf5Bbox(d) {
+    var n = (d || '').match(/-?\d+(?:\.\d+)?/g) || [], b = [1e9, 1e9, -1e9, -1e9];
+    for (var i = 0; i + 1 < n.length; i += 2) {
+      var x = +n[i], y = +n[i + 1];
+      if (x < b[0]) b[0] = x; if (y < b[1]) b[1] = y; if (x > b[2]) b[2] = x; if (y > b[3]) b[3] = y;
+    }
+    return b;
+  }
+
+  /* mini-carte choroplèthe du secteur : un département = une teinte + un chiffre,
+     jamais un point (les annonces Bodacc n'ont pas de coordonnées). */
+  function brf5Map(deps, evWeek) {
+    if (!CONTOURS || !CONTOURS.deps) return '';
+    var cnt = {}; evWeek.forEach(function (e) { if (e.dep) cnt[e.dep] = (cnt[e.dep] || 0) + 1; });
+    var codes = (deps && deps.length) ? deps.slice() : Object.keys(cnt);
+    codes = codes.filter(function (c) { return CONTOURS.deps[c]; });
+    if (!codes.length) return '';
+    var B = [1e9, 1e9, -1e9, -1e9];
+    codes.forEach(function (c) { var b = brf5Bbox(CONTOURS.deps[c].d); if (b[2] < b[0]) return; B = [Math.min(B[0], b[0]), Math.min(B[1], b[1]), Math.max(B[2], b[2]), Math.max(B[3], b[3])]; });
+    if (B[2] < B[0]) return '';
+    var m = Math.max(B[2] - B[0], B[3] - B[1]) * 0.08;
+    B = [B[0] - m, B[1] - m, B[2] + m, B[3] + m];
+    var u = Math.max(B[2] - B[0], B[3] - B[1]) / 900;
+    var max = 1; codes.forEach(function (c) { if (cnt[c] > max) max = cnt[c]; });
+    var sv = '<svg class="brf5-map" viewBox="' + [B[0], B[1], B[2] - B[0], B[3] - B[1]].map(Math.round).join(' ') + '" role="img" aria-label="Nombre d\'annonces par département dans ton secteur cette semaine">';
+    codes.forEach(function (c) {
+      var n = cnt[c] || 0, op = n ? Math.min(.82, .16 + (n / max) * .58) : .05;
+      sv += '<path d="' + CONTOURS.deps[c].d + '" fill="rgba(0,80,230,' + op.toFixed(2) + ')" stroke="#fff" stroke-width="' + (2 * u).toFixed(2) + '"/>';
+    });
+    codes.forEach(function (c) {
+      var b = brf5Bbox(CONTOURS.deps[c].d); if (b[2] < b[0]) return;
+      var n = cnt[c] || 0;
+      sv += '<text x="' + Math.round((b[0] + b[2]) / 2) + '" y="' + Math.round((b[1] + b[3]) / 2 + 8 * u) + '" font-size="' + Math.round(22 * u) + '" font-weight="800" fill="' + (n ? '#0034A0' : 'rgba(16,19,28,.28)') + '" text-anchor="middle">' + (n || c) + '</text>';
+    });
+    sv += '</svg>';
+    return sv;
+  }
+
+  /* ruptures neuves regroupées par molécule — même principe que la maquette */
+  function brf5RuptChips(liste) {
+    var g = {}, o = [];
+    (liste || []).forEach(function (r) {
+      var n = (r.dci || r.spec || '').split(',')[0].slice(0, 40), c = n + '|' + r.st;
+      if (!g[c]) { g[c] = { n: n, k: 0, st: r.st }; o.push(g[c]); }
+      g[c].k++;
+    });
+    return o.slice(0, 6).map(function (x) { return '<span>' + esc(cap(x.n)) + (x.k > 1 ? ' ×' + x.k : '') + ' · ' + esc(x.st) + '</span>'; }).join('');
+  }
+
+  /* la carte « prix » : le premier épinglé qui parle vraiment de prix/marge */
+  function brf5EpinglePrix(epingles) {
+    for (var i = 0; i < epingles.length; i++) {
+      var e = epingles[i];
+      if (e.motif === 'echeance' && (e.theme === 'remboursement' || e.theme === 'marge')) return e;
+    }
+    return null;
+  }
+
+  /* barres « agences par concurrent », mêmes données que v2-infos-concurrents.js */
+  function brf5Barres(presents, coul) {
+    if (!presents || !presents.length) return '';
+    var top = presents.slice(0, 4), max = 1; top.forEach(function (a) { if (a.chez.length > max) max = a.chez.length; });
+    return '<div class="brf5-mini brf5-bars"><span class="brf5-mini-t">' + presents.reduce(function (s, a) { return s + a.chez.length; }, 0) + ' agences concurrentes dans ton secteur</span>' +
+      top.map(function (a) {
+        return '<div class="brf5-bar-row"><span class="brf5-bar-l">' + esc(a.nom) + '</span>' +
+          '<i class="brf5-bar" style="width:' + Math.round(6 + (a.chez.length / max) * 100) + '%;background:' + (coul[a.cle] || '#465063') + '"></i>' +
+          '<b>' + a.chez.length + '</b></div>';
+      }).join('') + '</div>';
+  }
+
+  /* remplissage différé de la carte 5 (concurrents) — V2.concurrentsResume() vient
+     de v2-infos-concurrents.js : même phrase du jour, même carte que le bloc du
+     dessous, jamais recalculée deux fois. Si les fichiers manquent ou échouent :
+     phrase de repli, jamais un trou (spec du 25/09/2026). */
+  function brf5ConcHtml(r) {
+    var inner;
+    if (!r) {
+      inner = '<p class="brf5-p">Les concurrents de ton secteur ne sont pas disponibles pour l\'instant.</p>';
+    } else if (!r.p) {
+      inner = '<p class="brf5-p">Rien de neuf cette semaine chez les concurrents installés ' + (r.deps ? 'dans ton secteur' : 'en France') + '.</p>' + brf5Barres(r.presents, r.coul);
+    } else {
+      inner = '<p class="brf5-p" style="font-weight:700">' + esc(r.p.titre) + '</p>' +
+        (r.p.texte ? '<p class="brf5-p">' + esc(r.p.texte) + '</p>' : '') +
+        brf5Barres(r.presents, r.coul) +
+        (r.p.angle ? '<div class="brf5-quote"><b>L\'angle en rendez-vous</b>' + esc(r.p.angle) + '</div>' : '');
+    }
+    return '<div id="brf5-conc-host">' + inner + '</div>';
+  }
+
+  function brf5Html(une, epingles) {
+    var deps = sctDeps();
+    var evAll = (SECTEUR && SECTEUR.ev) || [];
+    var evWeek = evAll.filter(function (e) { return (!deps || deps.indexOf(e.dep) >= 0) && sctJours(e.d) <= 6; })
+      .sort(function (a, b) { return b.d < a.d ? -1 : 1; });
+
+    var radarByK = {}; (BRIEF.radar || []).forEach(function (r) { radarByK[r.k] = r; });
+    var prixEp = brf5EpinglePrix(epingles);
+    var rangPrix = prixEp ? epingles.indexOf(prixEp) : -1;
+    var margeAVenir = (BRIEF.jo || []).filter(function (j) { return j.a_venir; })[0];
+    var radarJo = radarByK.jo;
+    var radarPrix = radarByK.prix;
+    var radarRupt = radarByK.ruptures;
+    var radarRetours = radarByK.retours;
+    var nAmont = (BRIEF.amont || []).length;
+    var nRuptNeuves = (BRIEF.ruptures_neuves || []).length;
+    var rangUne = une ? TOUS.indexOf(une) : -1;
+
+    /* carte 1 · Ton secteur */
+    var c1Body, c1Cta;
+    if (!evAll.length) {
+      c1Body = '<p class="brf5-p" style="margin-top:16px">Les annonces de ton secteur ne sont pas disponibles pour l\'instant.</p>';
+      c1Cta = '';
+    } else if (!evWeek.length) {
+      c1Body = '<p class="brf5-p" style="margin-top:16px">Rien de neuf dans ton secteur cette semaine.</p>';
+      c1Cta = '<button type="button" class="brf5-cta" onclick="V2.infosReste(\'.sct\')">Voir ton secteur</button>';
+    } else {
+      var map1 = brf5Map(deps, evWeek);
+      c1Body = '<div class="brf5-t">' + evWeek.length + ' officine' + (evWeek.length > 1 ? 's' : '') + ' bouge' + (evWeek.length > 1 ? 'nt' : '') + ' ces 7 derniers jours</div>' +
+        (map1 || '') + '<div class="brf5-fill"></div>' +
+        '<div class="brf5-list">' + evWeek.slice(0, 8).map(function (e) {
+          var fam = SCT_FAM[e.f] || SCT_FAM.dirigeant, tag = sctTag(e);
+          return '<span class="brf5-list-row"><i style="background:var(' + fam.c + ')"></i>' + esc(sctJoli(e.nom)) + ' · ' + esc(String(fam.l1 || '').toLowerCase()) +
+            (SCT_TAG_L[tag.t] ? ' · <b class="brf5-tag">' + SCT_TAG_L[tag.t] + '</b>' : '') + '</span>';
+        }).join('') + '</div>';
+      c1Cta = '<button type="button" class="brf5-cta" onclick="V2.infosReste(\'.sct\')">Voir ' + (evWeek.length > 1 ? 'les ' + evWeek.length + ' fiches' : 'la fiche') + '</button>';
+    }
+
+    /* carte 2 · Les prix */
+    var chips2 = '';
+    if (prixEp && prixEp.points && prixEp.points.length > 1) {
+      chips2 = prixEp.points[prixEp.points.length - 1].split(',').map(function (s) { return s.trim(); }).filter(Boolean)
+        .slice(0, 4).map(function (s) { return '<span>' + esc(s) + '</span>'; }).join('');
+    }
+    var c2Body = (radarPrix ? '<div class="brf5-num a-amber">' + radarPrix.v + '</div><div class="brf5-t">' + esc(radarPrix.l) + '</div>' : '<div class="brf5-t" style="margin-top:16px">Aucun changement de prix publié pour l\'instant</div>') +
+      (chips2 ? '<div class="brf5-chips">' + chips2 + '</div>' : '') +
+      '<div class="brf5-fill"></div>' +
+      (margeAVenir ? '<div class="brf5-mini"><b class="a-amber">J-' + (radarJo ? radarJo.v : '?') + '</b><span>' + esc(margeAVenir.resume || margeAVenir.titre) + '</span></div>' : '');
+    var c2Cta = prixEp ? '<button type="button" class="brf5-cta" onclick="return V2.infosLire(event,' + rangPrix + ')">Lire le détail</button>' : '';
+
+    /* carte 3 · Les ruptures */
+    var c3Body = (nRuptNeuves ? '<div class="brf5-num a-rose">' + nRuptNeuves + '</div><div class="brf5-t">nouvelle' + (nRuptNeuves > 1 ? 's alertes' : ' alerte') + ' de disponibilité à l\'ANSM</div>' : radarRupt ? '<div class="brf5-num a-rose">' + radarRupt.v + '</div><div class="brf5-t">' + esc(radarRupt.l) + '</div>' : '<div class="brf5-t" style="margin-top:16px">' + nRuptNeuves + ' nouvelles alertes de disponibilité</div>') +
+      (nRuptNeuves ? '<div class="brf5-chips">' + brf5RuptChips(BRIEF.ruptures_neuves) + '</div>' : '') +
+      '<div class="brf5-fill"></div>' +
+      '<div class="brf5-mini"><b class="a-rose">' + nAmont + '</b><span>molécule' + (nAmont > 1 ? 's' : '') + ' en rupture chez nos voisins, pas encore en France</span></div>' +
+      (radarRetours ? '<div class="brf5-mini"><b class="a-green">' + radarRetours.v + '</b><span>retours de stock annoncés sous 60 jours</span></div>' : '');
+    var c3Cta = nRuptNeuves ? '<button type="button" class="brf5-cta" onclick="V2.rupturesOuvrir()">Voir les ' + nRuptNeuves + ' produits</button>' : '';
+
+    /* carte 4 · À la une */
+    var c4Body = une ? ('<div class="brf5-t" style="font-size:24px;margin-top:16px">' + esc(une.t) + '</div>' +
+      (une.r ? '<p class="brf5-p">' + esc(une.r) + '</p>' : '') + '<div class="brf5-fill"></div>' +
+      '<p class="brf5-p" style="font-size:13px;color:var(--muted,#5E6679)">' + esc(une.s || '') + (une.mn ? ' · ' + une.mn + ' min de lecture' : '') + '</p>') : '<div class="brf5-t" style="margin-top:16px">Pas encore de une aujourd\'hui</div>';
+    var c4Cta = (une && rangUne >= 0) ? '<button type="button" class="brf5-cta" onclick="return V2.infosLire(event,' + rangUne + ')">Lire l\'article</button>' : '';
+
+    /* carte 5 · Les concurrents — remplie après coup par V2.concurrentsResume() */
+    var c5Body = '<div class="brf5-t" style="margin-top:16px">Les concurrents dans ton secteur</div><div class="brf5-conc-wait" id="brf5-conc-host">Composition en cours…</div>';
+    var c5Cta = '<button type="button" class="brf5-cta" onclick="V2.infosReste(\'#infos-concurrents\')">Voir le détail</button>';
+
+    var CARTES = [
+      { ico: 'pharma', acc: 'blue', sur: '1 · Ton secteur', body: c1Body, cta: c1Cta },
+      { ico: 'euro', acc: 'amber', sur: '2 · Les prix', body: c2Body, cta: c2Cta },
+      { ico: 'alert', acc: 'rose', sur: '3 · Les ruptures', body: c3Body, cta: c3Cta },
+      { ico: 'spark', acc: 'blue', sur: '4 · À la une', body: c4Body, cta: c4Cta },
+      { ico: 'opp', acc: 'muted', sur: '5 · Les concurrents', body: c5Body, cta: c5Cta }
+    ];
+
+    var jourTxt = topDate();
+    var progres = CARTES.map(function () { return '<i></i>'; }).join('');
+    var cartesHtml = CARTES.map(function (c, i) {
+      return '<article class="brf5-c a-' + c.acc + '" aria-label="Carte ' + (i + 1) + ' sur 5">' +
+        '<span class="brf5-lum" aria-hidden="true"></span>' +
+        '<div class="brf5-sur"><span class="brf5-ico">' + ICO(c.ico, 16, 2.1) + '</span>' + esc(c.sur) + '</div>' +
+        c.body +
+        (c.cta ? '<div class="brf5-cta-wrap">' + c.cta + '</div>' : '') +
+      '</article>';
+    }).join('');
+
+    return '<section class="brf5" aria-label="Le brief du matin">' +
+      '<div class="brf5-head">' +
+        '<div class="brf5-prog" data-brf5-prog aria-hidden="true">' + progres + '</div>' +
+        '<div class="brf5-l">' +
+          '<h1>Le brief du matin<span>' + esc(jourTxt) + '</span></h1>' +
+          '<button type="button" class="brf5-reste" onclick="V2.infosResteBascule()">' + (RESTE_OPEN ? 'Replier' : 'Tout le reste') + '</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="brf5-rail" data-brf5-rail tabindex="0" role="group" aria-roledescription="carrousel" aria-label="Cinq cartes, faire glisser ou utiliser les flèches">' + cartesHtml + '</div>' +
+      '<nav class="brf5-nav" aria-label="Navigation des cartes">' +
+        '<button type="button" class="brf5-rond" data-brf5-prec aria-label="Carte précédente" onclick="V2.brf5Aller(-1)">' + brf5Svg('<path d="M15 5l-7 7 7 7"/>', 18) + '</button>' +
+        '<span class="brf5-ou" data-brf5-ou>1 sur 5</span>' +
+        '<button type="button" class="brf5-suiv" data-brf5-suiv onclick="V2.brf5Suivant()">Suivante ' + brf5Svg('<path d="M9 5l7 7-7 7"/>', 16) + '</button>' +
+      '</nav>' +
+    '</section>';
+  }
+
+  /* navigation du rail — DOM pur, comme le reste de l'app (pas de framework) */
+  function brf5Els() {
+    var rail = document.querySelector('[data-brf5-rail]');
+    if (!rail) return null;
+    return { rail: rail, cartes: rail.querySelectorAll('.brf5-c'), barres: document.querySelectorAll('[data-brf5-prog] i'),
+      ou: document.querySelector('[data-brf5-ou]'), prec: document.querySelector('[data-brf5-prec]'), suiv: document.querySelector('[data-brf5-suiv]') };
+  }
+  function brf5Maj() {
+    var E = brf5Els(); if (!E) return;
+    var w = E.cartes[0] ? E.cartes[0].getBoundingClientRect().width + 12 : 1;
+    BRF5_CUR = Math.max(0, Math.min(4, Math.round(E.rail.scrollLeft / w)));
+    E.barres.forEach(function (b, i) { b.classList.toggle('vu', i <= BRF5_CUR); });
+    if (E.ou) E.ou.textContent = (BRF5_CUR + 1) + ' sur 5';
+    if (E.prec) E.prec.disabled = BRF5_CUR === 0;
+    if (E.suiv) E.suiv.innerHTML = BRF5_CUR === 4 ? 'Voir tout le reste ' + brf5Svg('<path d="M9 5l7 7-7 7"/>', 16) : 'Suivante ' + brf5Svg('<path d="M9 5l7 7-7 7"/>', 16);
+  }
+  V2.brf5Aller = function (delta) {
+    var E = brf5Els(); if (!E) return;
+    var i = Math.max(0, Math.min(4, BRF5_CUR + delta));
+    var w = E.cartes[0] ? E.cartes[0].getBoundingClientRect().width + 12 : 0;
+    E.rail.scrollTo({ left: i * w, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+  };
+  V2.brf5Suivant = function () { if (BRF5_CUR === 4) V2.infosReste(); else V2.brf5Aller(1); };
+  var BRF5_SCROLL_T = null;
+  function brf5Init() {
+    var E = brf5Els(); if (!E) return;
+    BRF5_CUR = 0;
+    E.rail.addEventListener('scroll', function () { clearTimeout(BRF5_SCROLL_T); BRF5_SCROLL_T = setTimeout(brf5Maj, 60); });
+    brf5Maj();
+  }
+  // flèches clavier ← → : seulement sur la page Infos, et seulement si aucun panneau n'est ouvert
+  if (!V2._brf5Keys) {
+    V2._brf5Keys = true;
+    document.addEventListener('keydown', function (e) {
+      if (!V2.route || V2.route.name !== 'infos') return;
+      if (document.querySelector('.panneau.ouvert, #inf-panneau, #sct-panneau, #rupt-panneau')) return;
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+      if (!brf5Els()) return;
+      e.preventDefault();
+      V2.brf5Aller(e.key === 'ArrowRight' ? 1 : -1);
+    });
+  }
+
   /* ════════════════════════════ RENDU ════════════════════════════ */  /* ════════════════════════════ RENDU · « LE MUR » ════════════════════════════
      Direction choisie par Will le 01/09/2026 parmi quatre maquettes.
      Le parti pris : l'IMAGE D'ABORD. Aucune carte blanche dans le fil — chaque
@@ -707,12 +1017,23 @@
       var nbNew = base ? mur.filter(function (i) { return i.d && i.d > base; }).length : 0;
       var nIll = mur.filter(function (i) { return i.img; }).length + (une && une.img ? 1 : 0);
 
+      // venu de « Concurrents » : ouvrir « Tout le reste » et descendre au bloc,
+      // comme avant le 25/09/2026 — juste porté par le mécanisme RESTE_ANCRE.
+      if (V2.route && V2.route.param === 'concurrents' && !RESTE_OPEN) { RESTE_OPEN = true; RESTE_ANCRE = '#infos-concurrents'; }
+
       var html = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
         '<div class="v2-wrap inf2">';
 
+      /* ──────────── LE BRIEF EN 5 CARTES ────────────
+         25/09/2026, choix de Will : ça, toujours visible ; tout le reste se replie
+         dessous (#inf-reste). */
+      html += brf5Html(une, epingles);
+
+      var resteHtml = '';
+
       /* ──────────── TÊTE COMPACTE ────────────
          Le mur commence tout de suite : pas de grand bandeau qui mange un écran. */
-      html += '<header class="mur-tete">' +
+      resteHtml += '<header class="mur-tete">' +
         '<span class="mur-halo" aria-hidden="true"></span>' +
         '<div class="mur-tete-g">' +
           '<span class="mur-d"><i></i>Édition du jour · ' + esc(topDate()) +
@@ -732,7 +1053,7 @@
 
       /* ════════════════ DANS TON SECTEUR (Bodacc) ════════════════
        25/09/2026 — juste après la tête, avant « À ne pas manquer ». */
-      html += secteurBlocHtml();
+      resteHtml += secteurBlocHtml();
 
       /* ════════════════ À NE PAS MANQUER ════════════════
          Will, 02/09/2026 : « on doit absolument pas passer à côté d'infos comme
@@ -741,7 +1062,7 @@
          entrée en vigueur, avec le compte à rebours) et les MOUVEMENTS de concurrents.
          Ce bandeau n'est ni filtrable, ni repliable, ni soumis à la fenêtre de 21 jours. */
       if (epingles.length) {
-        html += '<section class="alerte">' +
+        resteHtml += '<section class="alerte">' +
           '<div class="alerte-h">' + ICO('alert', 16, 2.2) + 'À ne pas manquer' +
             '<span>échéances réglementaires & mouvements de concurrents</span></div>' +
           '<div class="al-grille">' + (ALERTES_TOUT ? epingles : epingles.slice(0, 6)).map(function (e, i) {
@@ -797,7 +1118,7 @@
       }
 
       /* ──────────── LA TUILE DE TÊTE ──────────── */
-      if (une) html += tuileUne(une);
+      if (une) resteHtml += tuileUne(une);
 
       /* Will, 02/09/2026 : « vire de “ce qui touche tes marges” à “à retirer
          des rayons” ». Six blocs retirés d'un coup — Journal officiel, radar,
@@ -809,7 +1130,7 @@
          en tête, chacun réduit à sa phrase la plus porteuse — de quoi savoir ce
          qui compte aujourd'hui sans ouvrir un seul article. */
       if (cinq.length > 1) {
-        html += '<section class="ess">' +
+        resteHtml += '<section class="ess">' +
           '<div class="ess-h"><b>L\'essentiel en 30 secondes</b>' +
             '<span>' + (cinq.length) + ' sujets · ' + esc(BRIEF.compte.fichiers) + ' sources relues ce matin</span></div>' +
           '<ol class="ess-l">' + cinq.map(function (c, i) {
@@ -834,7 +1155,7 @@
          Will, 24/09/2026 : les infos concurrents, jusque-là dans la feature
          « Concurrents », se lisent ici. Même bloc (v2-grossistes.js) : faits
          vérifiés, annonces officielles, presse — rempli après le rendu. */
-      html += '<section class="inf-conc" id="infos-concurrents">' +
+      resteHtml += '<section class="inf-conc" id="infos-concurrents">' +
         '<div class="mur-rub"><b>Les concurrents</b><span>faits vérifiés, annonces officielles et presse</span></div>' +
         '<div id="inf-cnc-host"></div><div id="inf-conc-host"></div></section>';
 
@@ -870,7 +1191,7 @@
         });
         var tuiles = cols.map(function (c) { return '<div class="mur-col">' + c + '</div>'; }).join('');
 
-        html += '<section class="mur-sec" id="brief-fil">' +
+        resteHtml += '<section class="mur-sec" id="brief-fil">' +
           '<div class="mur-rub"><b>Le mur</b>' +
             '<span id="brief-fil-cpt">' + visibles.length + (visibles.length > 1 ? ' articles' : ' article') + '</span></div>' +
           '<div class="brf-chips">' + chips + '</div>' +
@@ -884,7 +1205,7 @@
 
       /* ── LES MATINS D'AVANT ── */
       if (ARCH_OPEN && ARCHIVE && (ARCHIVE.jours || []).length) {
-        html += '<section class="inf-sec a-violet">' +
+        resteHtml += '<section class="inf-sec a-violet">' +
           rubrique('Les matins d\'avant', ARCHIVE.n + ' édition' + (ARCHIVE.n > 1 ? 's' : '') + ' archivée' + (ARCHIVE.n > 1 ? 's' : '') + ' — la une de chaque jour et ses cinq titres.') +
           '<div class="brf-arch">' + ARCHIVE.jours.slice(0, 30).map(function (j) {
             return '<div class="brf-day"><div class="brf-day-d">' + esc(joDateFr(j.d)) + '</div>' +
@@ -903,25 +1224,34 @@
       /* ── pied de page : la traçabilité ── */
       var maj = '';
       try { maj = new Date(BRIEF.genere).toLocaleString('fr-FR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }); } catch (e) {}
-      html += '<div class="brf-foot">Édition composée le ' + esc(maj) + ' à partir de ' +
+      resteHtml += '<div class="brf-foot">Édition composée le ' + esc(maj) + ' à partir de ' +
         esc(BRIEF.compte.fichiers) + ' sources gratuites, toutes lisibles en entier.<br>' +
         esc(BRIEF.compte.entrees) + ' informations lues, ' + esc(BRIEF.compte.sujets) +
         ' sujets après regroupement des doublons.</div>';
 
+      html += '<div id="inf-reste"' + (RESTE_OPEN ? '' : ' style="display:none"') + '>' + resteHtml + '</div>';
       html += '</div>';
       root.innerHTML = html;
       markSeen();
+      brf5Init();
+      var brf5ConcHost = document.getElementById('brf5-conc-host');
+      if (brf5ConcHost && V2.concurrentsResume) {
+        V2.concurrentsResume(function (r) {
+          if (!brf5ConcHost.isConnected) return;
+          brf5ConcHost.outerHTML = brf5ConcHtml(r);
+        });
+      }
+      if (RESTE_ANCRE) {
+        var brf5Ancre = RESTE_ANCRE; RESTE_ANCRE = null;
+        setTimeout(function () {
+          var elA = document.querySelector(brf5Ancre);
+          if (elA) elA.scrollIntoView({ block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+        }, 140);
+      }
       var cncHost = document.getElementById('inf-cnc-host');
       if (cncHost && V2.concurrentsSecteur) V2.concurrentsSecteur(cncHost);
       var concHost = document.getElementById('inf-conc-host');
       if (concHost && V2.grossistesCorps) V2.grossistesCorps(concHost, 'actu');
-      // venu de « Concurrents » : descendre au bloc, APRÈS la remise en haut que fait la navigation
-      if (V2.route && V2.route.param === 'concurrents') {
-        setTimeout(function () {
-          var concSec = document.getElementById('infos-concurrents');
-          if (concSec) concSec.scrollIntoView({ block: 'start' });
-        }, 120);
-      }
 
       if (QUERY) {
         var inp = root.querySelector('.brf-search input');
@@ -1534,7 +1864,68 @@
       '.inf2 .tu .b{padding:var(--sp-3) 13px 12px}',
       '.inf2 .tu .cat{font-size:12px;padding:5px 9px;margin-bottom:9px}',
       '.inf2 .tu .f{font-size:12px;line-height:1.5}',
-      '}'
+      '}',
+
+      /* ══════════ LE BRIEF EN 5 CARTES (25/09/2026, choix de Will · v4) ══════════
+         Safari : pas de backdrop-filter, pas de filter:blur, pas de background-clip
+         sur du texte — la « lumière » est un simple radial-gradient posé en ::before. */
+      '.inf2 .brf5{max-width:520px;margin:0 auto 28px}',
+      '.inf2 .brf5-head{padding:2px 4px 0}',
+      '.inf2 .brf5-prog{display:flex;gap:5px}',
+      '.inf2 .brf5-prog i{flex:1;height:5px;border-radius:9px;background:rgba(16,19,28,.1);overflow:hidden;position:relative}',
+      '.inf2 .brf5-prog i::after{content:"";position:absolute;inset:0;background:var(--ip-blue,#0050E6);border-radius:9px;transform:scaleX(0);transform-origin:left;transition:transform .35s ease}',
+      '.inf2 .brf5-prog i.vu::after{transform:scaleX(1)}',
+      '.inf2 .brf5-l{display:flex;align-items:center;gap:10px;margin-top:9px}',
+      '.inf2 .brf5-l h1{flex:1;min-width:0;font-size:19px;font-weight:800;letter-spacing:-.02em;line-height:1.15;margin:0}',
+      '.inf2 .brf5-l h1 span{display:block;font-size:12.5px;font-weight:600;color:var(--muted,#5E6679);letter-spacing:0;margin-top:2px}',
+      '.inf2 .brf5-reste{flex:none;min-height:40px;padding:0 14px;border-radius:12px;background:var(--card,#fff);border:1px solid var(--line,rgba(16,19,28,.08));font:inherit;font-size:13.5px;font-weight:700;color:var(--ip-ink,#10131C);cursor:pointer}',
+      '.inf2 .brf5-rail{margin-top:10px;height:clamp(420px,64vh,560px);display:flex;gap:12px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scroll-padding-inline:0;scrollbar-width:none;overscroll-behavior-x:contain}',
+      '.inf2 .brf5-rail::-webkit-scrollbar{display:none}',
+      '.inf2 .brf5-rail:focus-visible{outline:3px solid rgba(0,80,230,.4);outline-offset:2px;border-radius:22px}',
+      '.inf2 .brf5-c{flex:0 0 100%;width:100%;scroll-snap-align:start;scroll-snap-stop:always;position:relative;isolation:isolate;overflow:hidden;' +
+        'display:flex;flex-direction:column;padding:20px 20px 16px;border-radius:22px;background:linear-gradient(180deg,#FFFFFF 0%,#FAFBFE 100%);' +
+        'border:1px solid var(--line,rgba(16,19,28,.08));box-shadow:0 1px 2px rgba(16,19,28,.05),0 16px 36px -18px rgba(16,19,28,.22);overflow-y:auto}',
+      '.inf2 .brf5-lum{position:absolute;z-index:-1;width:320px;height:320px;border-radius:50%;right:-140px;top:-150px;pointer-events:none;' +
+        'background:radial-gradient(circle,color-mix(in srgb,var(--acc,#0050E6) 22%,transparent) 0%,rgba(255,255,255,0) 68%)}',
+      '.inf2 .brf5-sur{display:flex;align-items:center;gap:8px;font:800 12.5px/1 inherit;letter-spacing:.06em;text-transform:uppercase;color:var(--muted,#5E6679)}',
+      '.inf2 .brf5-ico{display:inline-grid;place-items:center;width:32px;height:32px;border-radius:10px;flex:none;color:var(--acc-t,#0050E6);background:color-mix(in srgb,var(--acc,#0050E6) 14%,#fff)}',
+      '.inf2 .brf5-num{font-size:clamp(48px,11vw,72px);font-weight:800;letter-spacing:-.04em;line-height:.9;margin-top:14px;font-variant-numeric:tabular-nums;color:var(--acc-t,#0050E6)}',
+      '.inf2 .brf5-t{font-size:20px;font-weight:800;letter-spacing:-.02em;line-height:1.18;margin-top:6px;color:var(--ip-ink,#10131C)}',
+      '.inf2 .brf5-p{font-size:14.5px;color:var(--ip-ink-2,#2A2F3C);line-height:1.5;margin-top:8px}',
+      '.inf2 .brf5-fill{flex:1;min-height:6px}',
+      '.inf2 .brf5-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}',
+      '.inf2 .brf5-chips span{font-size:12.5px;font-weight:600;padding:6px 10px;border-radius:10px;background:#F1F4F9;color:var(--ip-ink-2,#2A2F3C)}',
+      '.inf2 .brf5-mini{margin-top:10px;display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:14px;background:#F5F7FB}',
+      '.inf2 .brf5-mini b{font-size:22px;font-weight:800;letter-spacing:-.02em;flex:none;font-variant-numeric:tabular-nums;color:var(--acc-t,var(--ip-ink,#10131C))}',
+      '.inf2 .brf5-mini span{font-size:13px;color:var(--ip-ink-2,#2A2F3C);line-height:1.32}',
+      '.inf2 .brf5-map{display:block;width:100%;max-height:30vh;margin-top:8px}',
+      '.inf2 .brf5-map path{stroke-linejoin:round}',
+      '.inf2 .brf5-list{margin-top:8px;display:grid;gap:5px;max-height:132px;overflow-y:auto}',
+      '.inf2 .brf5-list-row{display:flex;align-items:center;font-size:13.5px;color:var(--ip-ink-2,#2A2F3C);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+      '.inf2 .brf5-list-row i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:8px;flex:none}',
+      '.inf2 .brf5-tag{font-weight:700;color:var(--ip-blue,#0050E6)}',
+      '.inf2 .brf5-quote{margin-top:12px;padding:13px;border-radius:16px;background:var(--halo,#E9F0FF);color:#0A2F7A;font-size:14px;line-height:1.45}',
+      '.inf2 .brf5-quote b{display:block;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--ip-blue,#0050E6);margin-bottom:3px}',
+      '.inf2 .brf5-bars{display:block}',
+      '.inf2 .brf5-mini-t{display:block;font-size:12.5px;font-weight:700;color:var(--muted,#5E6679);margin-bottom:8px}',
+      '.inf2 .brf5-bar-row{display:flex;align-items:center;gap:8px;margin-top:5px}',
+      '.inf2 .brf5-bar-l{width:112px;flex:none;font-size:12.5px;color:var(--ip-ink-2,#2A2F3C);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+      '.inf2 .brf5-bar{display:block;height:9px;border-radius:6px;min-width:6px}',
+      '.inf2 .brf5-bar-row b{font-size:13px}',
+      '.inf2 .brf5-conc-wait{font-size:13.5px;color:var(--muted,#5E6679);margin-top:14px}',
+      '.inf2 .brf5-cta-wrap{margin-top:14px}',
+      '.inf2 .brf5-cta{width:100%;min-height:44px;padding:0 16px;border-radius:14px;background:#fff;border:1px solid var(--line,rgba(16,19,28,.08));' +
+        'box-shadow:0 1px 0 rgba(255,255,255,.9) inset,0 6px 16px -10px rgba(16,19,28,.22);font:inherit;font-size:14.5px;font-weight:700;color:var(--ip-ink,#10131C);cursor:pointer}',
+      '.inf2 .brf5-nav{display:flex;align-items:center;gap:10px;padding:10px 4px 0}',
+      '.inf2 .brf5-rond{flex:none;display:inline-grid;place-items:center;width:44px;height:44px;border-radius:14px;background:var(--card,#fff);' +
+        'border:1px solid var(--line,rgba(16,19,28,.08));color:var(--ip-ink-2,#2A2F3C);cursor:pointer}',
+      '.inf2 .brf5-rond[disabled]{opacity:.4;cursor:default}',
+      '.inf2 .brf5-ou{flex:1;text-align:center;font-size:13.5px;font-weight:700;color:var(--ip-ink-2,#2A2F3C);font-variant-numeric:tabular-nums}',
+      '.inf2 .brf5-suiv{flex:none;min-width:150px;min-height:44px;padding:0 18px;border-radius:14px;display:inline-flex;align-items:center;justify-content:center;gap:6px;' +
+        'background:linear-gradient(180deg,#1463F5 0%,#0050E6 55%,#0046CC 100%);color:#fff;font:inherit;font-size:14.5px;font-weight:700;' +
+        'box-shadow:0 1px 0 rgba(255,255,255,.35) inset,0 10px 22px -10px rgba(0,80,230,.65);cursor:pointer;white-space:nowrap}',
+      '@media (max-height:760px){.inf2 .brf5-num{font-size:clamp(38px,9vw,54px);margin-top:8px}.inf2 .brf5-map{max-height:22vh}}',
+      '@media (max-width:420px){.inf2 .brf5-bar-l{width:88px}}'
     ].join('\n');
     document.head.appendChild(st);
   }
