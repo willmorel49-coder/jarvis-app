@@ -3407,6 +3407,34 @@
     { f: 'ouverture-compte-integral-pharma-2026.pdf', label: 'Formulaire d\'ouverture de compte 2026' }
   ];
   var tx = { pid: null, sel: {}, docs: null, docsErr: null, busy: '', step: 0, total: 0, files: null };
+  // 25/09/2026 — catalogue TOP 200/300/500 prêt à importer dans SON logiciel (LGO) :
+  // mode d'emploi PDF + fichier CSV + Excel, déposés dans lgo/ (fabriqués par
+  // ~/jarvis-catalogues-lgo). Classement = nombre de pharmacies du réseau, génériques exclus.
+  var TX_LGO = [
+    { s: 'leo', nom: 'LEO', re: /\bleo\b|isipharm/ }, { s: 'lgpi', nom: 'LGPI', re: /lgpi|pharmagest/ },
+    { s: 'pharmaland', nom: 'Pharmaland', re: /pharmaland|\blsi\b/ }, { s: 'pharmony', nom: 'Pharmony', re: /pharmony/ },
+    { s: 'smartrx', nom: 'Smart RX', re: /smart/ }, { s: 'winpharma', nom: 'Winpharma', re: /winpharma/ },
+    { s: 'pharmavitale', nom: 'Pharmavitale', re: /pharmavitale/ }, { s: 'visiopharm', nom: 'VisioPharm', re: /visio/ }
+  ];
+  var TX_LGO_N = [200, 300, 500];
+  tx.lgo = { pid: null, s: '', n: 300, auto: false, touched: false };
+  function txLgoNom(s) { var l = TX_LGO.filter(function (x) { return x.s === s; })[0]; return l ? l.nom : s; }
+  // « LGPI / Offilog » → lgpi : on prend le premier morceau qui désigne un logiciel connu.
+  function txLgoSlug(v) {
+    var parts = String(v || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().split('/');
+    for (var i = 0; i < parts.length; i++) {
+      var l = TX_LGO.filter(function (x) { return x.re.test(parts[i]); })[0];
+      if (l) return l.s;
+    }
+    return '';
+  }
+  // Même ordre que la fiche : saisie de l'équipe, puis annuaire RDV, puis base clients.
+  function txLgoDetect(pid, saisi) {
+    var ri = V2.rdvInfo ? V2.rdvInfo(pid) : null;
+    var ca = ((window.CLIENTS_ACTIFS || {}).d || {})[String(pid)];
+    return txLgoSlug(saisi && saisi.lgo) || txLgoSlug(ri && ri.logiciel) || txLgoSlug(ca && ca[5]);
+  }
+  function txLgoLabel(s, n) { return 'Catalogue TOP ' + n + ' · ' + txLgoNom(s); }
   var txMail = {};
   function txSb() { return (V2.sb && V2.sb()) || null; }
   function txPretty(n) { n = String(n || ''); var i = n.indexOf('__'); return i >= 0 ? n.slice(i + 2) : n; }
@@ -3464,6 +3492,8 @@
       (txFiches || []).forEach(function (f) { its.push({ k: 'M:' + f.id, grp: 'fab', label: f.titre, meta: 'Fiche ' + f.type.toLowerCase() + ' · ' + f.n + ' produit' + (f.n > 1 ? 's' : '') + ' · PDF généré' }); });
       if (V2.mkt && V2.mkt.catalogueCategoriesFichier) its.push({ k: 'C:categories', grp: 'fab', label: 'Catalogue par catégorie', meta: 'Princeps par tranche de prix et non remboursables · PDF généré' });
       if (V2.docProtegeFichier) TX_PROTEGES.forEach(function (c) { its.push({ k: 'P:' + c, grp: 'fab', label: txProtegeTitre(c), meta: 'PDF' }); });
+      if (tx.lgo.s) its.push({ k: 'G:' + tx.lgo.s + ':' + tx.lgo.n, grp: 'lgo', ic: 'LGO', label: txLgoLabel(tx.lgo.s, tx.lgo.n),
+        meta: 'Mode d\'emploi PDF + fichier CSV + Excel · 3 pièces jointes' });
     }
     (tx.docs || []).forEach(function (d) {
       its.push({ k: 'D:' + d.name, grp: 'lib', label: txPretty(d.name), meta: (txIsXls(d.name) ? 'Excel' : 'PDF') + ' · ' + txSize(d.size), xls: txIsXls(d.name) });
@@ -3490,7 +3520,7 @@
     var nSel = its.filter(function (i) { return tx.sel[i.k]; }).length;
     function row(i) {
       return '<label class="tx-row"><input type="checkbox" data-k="' + esc(i.k) + '"' + (tx.sel[i.k] ? ' checked' : '') + (tx.busy ? ' disabled' : '') + ' onchange="V2.pharmaTxToggle(this)">' +
-        '<span class="tx-ic' + (i.xls ? ' tx-ic-x' : '') + '">' + (i.xls ? 'XLS' : 'PDF') + '</span>' +
+        '<span class="tx-ic' + (i.xls ? ' tx-ic-x' : i.ic ? ' tx-ic-g' : '') + '">' + (i.ic || (i.xls ? 'XLS' : 'PDF')) + '</span>' +
         '<span class="tx-l"><b>' + esc(i.label) + '</b><small>' + esc(i.meta) + '</small></span></label>';
     }
     function group(title, sub, arr, extra) {
@@ -3499,6 +3529,18 @@
         arr.map(row).join('') + (extra || '') + '</div>';
     }
     var of = function (grp) { return its.filter(function (i) { return i.grp === grp; }); };
+    var lgoHtml = '';
+    if (!isEscale() && !isOpso()) {
+      var dis = tx.busy ? ' disabled' : '';
+      lgoHtml = '<div class="tx-g"><div class="tx-gh"><span class="pha-kl">Catalogue pour son logiciel</span><span class="tx-gs">' +
+          (tx.lgo.auto && !tx.lgo.touched ? 'logiciel repris de sa fiche' : tx.lgo.s ? 'produits les plus commandés du réseau, hors génériques' : 'logiciel inconnu : à choisir') + '</span></div>' +
+        '<div class="tx-lgo"><select class="tx-lgo-s" aria-label="Logiciel de l\'officine" onchange="V2.pharmaTxLgo(this.value)"' + dis + '>' +
+          '<option value="">Choisir le logiciel…</option>' +
+          TX_LGO.map(function (l) { return '<option value="' + l.s + '"' + (l.s === tx.lgo.s ? ' selected' : '') + '>' + esc(l.nom) + '</option>'; }).join('') +
+        '</select><div class="tx-style-b tx-lgo-n">' +
+          TX_LGO_N.map(function (n) { return '<button type="button" class="v2-seg' + (n === tx.lgo.n ? ' on' : '') + '"' + dis + ' onclick="V2.pharmaTxLgoN(' + n + ')">' + n + ' produits</button>'; }).join('') +
+        '</div></div>' + of('lgo').map(row).join('') + '</div>';
+    }
     var lib = of('lib');
     var libMsg = tx.docs === null ? '<div class="tx-empty">Chargement de la bibliothèque…</div>'
       : tx.docsErr ? '<div class="tx-empty tx-err">' + esc(tx.docsErr) + '</div>'
@@ -3518,6 +3560,7 @@
       (tx.modele ? '' : pharma ? group('Ses listings produits', 'ce qu\'elle n\'a pas encore', of('listing'), txStyleHtml(of('listing')))
               : group('Listings produits', 'les plus commandés' + (tx.grp ? ' · son groupement : ' + esc(tx.grp) : ''), of('listing'),
                   (window.BENCHMARK ? '' : '<div class="tx-empty">Chargement du catalogue…</div>') + txStyleHtml(of('listing')))) +
+      lgoHtml +
       group('Documents Intégral Pharma', '', of('app')) +
       group('Faits dans l\'app', 'fiches Marketing de l\'équipe, biosimilaires, catalogue', of('fab'),
         txFiches === null && !isEscale() && !isOpso() ? '<div class="tx-empty">Chargement des fiches Marketing…</div>' : '') +
@@ -3563,6 +3606,15 @@
     tx.surChoix = (info && info.surChoix) || null; tx.choixSeul = !!(info && info.choixSeul);
     if (tx.surChoix) { tx.sel = {}; tx.files = null; }
     (presel || []).forEach(function (k) { tx.sel[k] = true; });
+    if (tx.lgo.pid !== pid) {
+      var s0 = modele ? '' : txLgoDetect(pid, null);
+      tx.lgo = { pid: pid, s: s0, n: 300, auto: !!s0, touched: false };
+      // La saisie de l'équipe (Infos officine) passe avant la base clients : lue en différé.
+      if (!modele && V2.profil && V2.profil.charger) V2.profil.charger('client', pid).then(function (d) {
+        var s1 = txLgoDetect(pid, d);
+        if (tx.lgo.pid === pid && !tx.lgo.touched && s1 && s1 !== tx.lgo.s) { tx.lgo.s = s1; tx.lgo.auto = true; txRender(); }
+      }, function () {});
+    }
     if (modele) txMail[pid] = '';
     else if (!txIsClient(pid)) {   // fiche prospect : l'e-mail et le nom sont ceux affichés à l'écran
       var em = document.querySelector('.v2-prospect input[data-fk="email"]'), nm = document.querySelector('.v2-prospect input[data-fk="nom"]');
@@ -3596,6 +3648,7 @@
     if (k.indexOf('D:') === 0) return txPretty(k.slice(2));
     if (k.indexOf('P:') === 0) return txProtegeTitre(k.slice(2));
     if (k === 'C:categories') return 'Catalogue par catégorie';
+    if (k.indexOf('G:') === 0) { var g = k.split(':'); return txLgoLabel(g[1], g[2]); }
     if (k.indexOf('M:') === 0) { var f = (txFiches || []).filter(function (x) { return x.id === k.slice(2); })[0]; return f ? f.titre : 'Fiche Marketing'; }
     if (k === 'L:reseau') return 'Listing produits (réseau)';
     if (k === 'L:groupement') return 'Listing produits (groupement)';
@@ -3616,6 +3669,17 @@
     tx.files = null;
     var bd = document.getElementById('tx-modal'); if (bd && bd.classList.contains('open')) txRender();
   });
+  // Changer de logiciel ou de taille : la case suit (une seule version du catalogue cochée).
+  function txLgoSet(s, n) {
+    var old = 'G:' + tx.lgo.s + ':' + tx.lgo.n, was = !!tx.sel[old];
+    delete tx.sel[old];
+    tx.lgo.s = s; tx.lgo.n = n; tx.lgo.touched = true;
+    if (was && s) tx.sel['G:' + s + ':' + n] = true;
+    if (tx.surChoix) tx.surChoix(Object.keys(tx.sel));
+    tx.files = null; txRender();
+  }
+  V2.pharmaTxLgo = function (s) { if (!tx.busy) txLgoSet(TX_LGO.some(function (l) { return l.s === s; }) ? s : '', tx.lgo.n); };
+  V2.pharmaTxLgoN = function (n) { if (!tx.busy && TX_LGO_N.indexOf(+n) >= 0) txLgoSet(tx.lgo.s, +n); };
   V2.pharmaTxToggle = function (el) {
     var k = el.getAttribute('data-k');
     if (el.checked) tx.sel[k] = true; else delete tx.sel[k];
@@ -3627,6 +3691,20 @@
     if (k.indexOf('M:') === 0) return V2.mkt && V2.mkt.fichePdfFichier ? V2.mkt.fichePdfFichier(k.slice(2)) : Promise.resolve(null);
     if (k === 'C:categories') return V2.mkt && V2.mkt.catalogueCategoriesFichier ? V2.mkt.catalogueCategoriesFichier() : Promise.resolve(null);
     if (k.indexOf('P:') === 0) return TX_PROTEGES.indexOf(k.slice(2)) >= 0 && V2.docProtegeFichier ? V2.docProtegeFichier(k.slice(2)) : Promise.resolve(null);
+    if (k.indexOf('G:') === 0) {
+      var g = k.split(':'), s = g[1], n = +g[2];
+      if (!TX_LGO.some(function (l) { return l.s === s; }) || TX_LGO_N.indexOf(n) < 0) return Promise.resolve(null);
+      var base = 'integral-top' + n + '-' + s, nom = txLgoLabel(s, n);
+      var parts = [
+        { f: 'tuto-' + s + '.pdf', name: 'mode-emploi-import-' + s + '.pdf', type: 'application/pdf', l: nom + ' · mode d\'emploi' },
+        { f: base + '.csv', name: base + '.csv', type: 'text/csv', l: nom + ' · fichier CSV' },
+        { f: base + '.xlsx', name: base + '.xlsx', type: txMime('x.xlsx'), l: nom + ' · fichier Excel' }
+      ];
+      return Promise.all(parts.map(function (p) {
+        return fetch('lgo/' + p.f).then(function (r) { if (!r.ok) throw new Error(p.f); return r.blob(); })
+          .then(function (b) { var fl = new File([b], p.name, { type: p.type }); fl.txLabel = p.l; return fl; });
+      }));
+    }
     if (k.indexOf('S:') === 0) {
       return fetch(k.slice(2)).then(function (r) { return r.ok ? r.blob() : null; })
         .then(function (b) { return b ? new File([b], k.slice(2), { type: 'application/pdf' }) : null; });
@@ -3655,7 +3733,10 @@
     its.forEach(function (it) {
       chain = chain.then(function () {
         tx.step++; txRender();
-        return txFetch(pid, it.k).then(function (f) { if (f) { f.txLabel = it.label + txStyleNote(pid, it.k); out.push(f); } else fails.push(it.label); },
+        return txFetch(pid, it.k).then(function (f) {
+          if (Array.isArray(f)) { if (f.length) out.push.apply(out, f); else fails.push(it.label); }
+          else if (f) { f.txLabel = it.label + txStyleNote(pid, it.k); out.push(f); } else fails.push(it.label);
+        },
           function () { fails.push(it.label); });
       });
     });
@@ -4398,6 +4479,12 @@
       '.tx-row input{width:20px;height:20px;margin:0;flex-shrink:0;accent-color:var(--ip-blue)}',
       '.tx-ic{flex-shrink:0;width:38px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font:800 10px var(--mono,ui-monospace,monospace);letter-spacing:.04em;color:#fff;background:#C7283D}',
       '.tx-ic-x{background:#1E7A45}',
+      '.tx-ic-g{background:var(--ip-blue)}',
+      '.tx-lgo{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:8px}',
+      '.tx-lgo-s{min-height:40px;border:1px solid var(--line-strong);border-radius:10px;padding:8px 11px;font:inherit;font-size:14px;color:var(--ip-ink);background:var(--card-2);cursor:pointer}',
+      '.tx-lgo .tx-lgo-n{width:auto}',
+      '.tx-lgo .v2-seg{padding:6px 11px;font-size:12px;font-weight:700;cursor:pointer}',
+      '.tx-lgo .v2-seg[disabled],.tx-lgo-s[disabled]{opacity:.45;pointer-events:none}',
       '.tx-l{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}',
       '.tx-l b{font-size:13.5px;color:var(--ip-ink);overflow-wrap:anywhere}',
       '.tx-l small{font-size:12px;color:var(--muted)}',
