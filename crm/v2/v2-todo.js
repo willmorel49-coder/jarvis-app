@@ -335,13 +335,15 @@
     mail: function (id) {
       var it = (st.items || []).find(function (x) { return x.id === id; }); if (!it) return;
       var dest = mailDe(it);
-      if (!dest && V2.toast) V2.toast('Pas d\'e-mail connu pour ' + (it.nom || 'cette officine') + ' — à compléter dans le mail', 'warn');
-      if (it.k === 'compte') return ouvrirMail(dest, mailCompte(it));
+      // 25/09, Will : « pouvoir tout modifier avant » → le mail s'ouvre d'abord dans « Préparer le mail ».
       var lienP = (V2.rdvLien && V2.rdvLien.charger) ? V2.rdvLien.charger().then(function (l) {
         return (l && l.actif !== false && V2.rdvLien.url) ? V2.rdvLien.url(l) : '';
       }) : Promise.resolve('');
       Promise.resolve(lienP).catch(function () { return ''; }).then(function (lien) {
-        ouvrirMail(dest, it.k === 'merci' ? mailMerci(it) : mailRdv(it, lien || ''));
+        st.lien = lien || st.lien || '';
+        var m = it.k === 'libre' ? { objet: '', corps: 'Bonjour,\n\n' + signature().replace(/^\n\n/, '') } : texteDe(it.k, it);
+        composer({ it: it, pid: it.pid, nom: it.nom, dest: dest, objet: m.objet, corps: m.corps,
+          docs: (KINDS[it.k].presel || []).slice(), base: it.k === 'libre' ? '' : 'b:' + it.k });
       });
     },
     docs: function (id) {
@@ -409,7 +411,7 @@
     var K = KINDS[it.k], b = badge(it);
     var qui = it.nom ? (it.pid ? '<a class="v2-todo-off" onclick="V2.go(\'pharma\',\'' + esc(it.pid) + '\')">' + esc(it.nom) + '</a>' : '<span class="v2-todo-off">' + esc(it.nom) + '</span>') : '';
     var actes = it.fait ? '<button class="v2-btn v2-btn-ghost v2-todo-sm" onclick="V2.todo.retirer(\'' + it.id + '\')">Retirer de la liste</button>'
-      : ((K.mail ? '<button class="v2-btn v2-btn-primary v2-todo-sm" onclick="V2.todo.mail(\'' + it.id + '\')">' + ICO('fiche', 14, 2) + esc(K.mail) + '</button>' : '') +
+      : ((K.mail || it.nom ? '<button class="v2-btn v2-btn-primary v2-todo-sm" onclick="V2.todo.mail(\'' + it.id + '\')">' + ICO('fiche', 14, 2) + esc(K.mail || 'Écrire un mail') + '</button>' : '') +
          (K.docs && it.pid ? '<button class="v2-btn v2-btn-ghost v2-todo-sm" onclick="V2.todo.docs(\'' + it.id + '\')">' + ICO('download', 14, 2) + esc(K.docs) + '</button>' : ''));
     return '<div class="v2-todo-it' + (it.fait ? ' is-fait' : '') + '">' +
       '<label class="v2-todo-chk"><input type="checkbox"' + (it.fait ? ' checked' : '') + ' onchange="V2.todo.cocher(\'' + it.id + '\',this.checked)" aria-label="' + (it.fait ? 'Remettre à faire' : 'Marquer comme fait') + '"><span></span></label>' +
@@ -449,10 +451,27 @@
           '<span class="v2-todo-mt"><b>' + esc(m.t) + '</b><small>' + esc(m.s) + '</small></span><span class="v2-todo-chev">' + ICO('chev', 16, 2) + '</span></summary>' +
           '<div class="v2-todo-mb">' + (m.k === 'merci' ? accesOffilog() : '') + '<div class="v2-todo-obj"><span>Objet</span>' + esc(x.objet) + '</div>' +
           '<pre class="v2-todo-corps">' + esc(x.corps) + '</pre>' +
-          '<div class="v2-todo-acts"><button class="v2-btn v2-btn-primary v2-todo-sm" onclick="V2.todo.ouvrirModele(\'' + m.k + '\')">' + ICO('fiche', 14, 2) + 'Ouvrir dans ma messagerie</button>' +
-          '<button class="v2-btn v2-btn-ghost v2-todo-sm" onclick="V2.todo.joindreModele(\'' + m.k + '\')">' + ICO('plus', 14, 2) + 'Choisir les documents à joindre</button>' +
+          '<div class="v2-todo-acts"><button class="v2-btn v2-btn-primary v2-todo-sm" onclick="V2.todo.preparer(\'b:' + m.k + '\')">' + ICO('fiche', 14, 2) + 'Modifier et envoyer</button>' +
+          '<button class="v2-btn v2-btn-ghost v2-todo-sm" onclick="V2.todo.editerModele(\'b:' + m.k + '\')">' + ICO('plus', 14, 2) + 'En faire mon modèle</button>' +
           '<button class="v2-btn v2-btn-ghost v2-todo-sm" onclick="V2.todo.copierModele(\'' + m.k + '\')">' + ICO('check', 14, 2) + 'Copier le texte</button></div></div></details>';
-      }).join('') + '</div>';
+      }).join('') + '</div>' + mesModeles();
+  }
+  // ── Mes modèles (25/09, Will : « pouvoir mettre nous-mêmes des modèles et les enregistrer ») ──
+  function mesModeles() {
+    if (st.mods == null) { chargerMods().then(rendre); }
+    var a = st.mods || [];
+    return '<div class="v2-todo-mh"><h2>Mes modèles</h2><p>Tes propres mails, avec leurs documents joints. Personnels : chacun a les siens.</p></div>' +
+      '<div class="v2-card v2-todo-list">' +
+        (st.mods == null ? '<div class="v2-todo-empty">Chargement…</div>'
+          : a.length ? a.map(function (m) {
+            return '<div class="v2-todo-mod"><span class="v2-todo-ico">' + ICO('fiche', 16, 2) + '</span>' +
+              '<span class="v2-todo-mt"><b>' + esc(m.nom) + '</b><small>' + esc(m.objet || 'Sans objet') +
+                (m.docs.length ? ' · ' + m.docs.length + ' document' + (m.docs.length > 1 ? 's' : '') + ' joint' + (m.docs.length > 1 ? 's' : '') : '') + '</small></span>' +
+              '<span class="v2-todo-acts"><button class="v2-btn v2-btn-primary v2-todo-sm" onclick="V2.todo.preparer(\'m:' + m.id + '\')">Utiliser</button>' +
+              '<button class="v2-btn v2-btn-ghost v2-todo-sm" onclick="V2.todo.editerModele(\'m:' + m.id + '\')">Modifier</button></span></div>';
+          }).join('') : '<div class="v2-todo-empty">Aucun modèle pour l\'instant.</div>') +
+        '<div class="v2-todo-mod-add"><button class="v2-btn v2-btn-ghost" onclick="V2.todo.editerModele(\'\')">' + ICO('plus', 15, 2) + 'Créer un modèle</button></div>' +
+      '</div>';
   }
   // L'accès test Offilog cité dans le mail d'après rendez-vous, commun à toute l'équipe.
   function accesOffilog() {
@@ -472,11 +491,160 @@
   };
   // Un modèle ouvert le reste quand la page se redessine (réglages arrivés de la base, enregistrement).
   V2.todo.plier = function (k, o) { st.ouverts = st.ouverts || {}; st.ouverts[k] = !!o; };
-  V2.todo.ouvrirModele = function (k) { ouvrirMail('', modele(k)); };
-  // 23/09 soir, Will : « il faut aussi qu'on puisse choisir les documents à joindre avec le mail ».
-  // Même fenêtre que « Transmettre » des fiches ; le texte du mail part avec les pièces jointes.
-  V2.todo.joindreModele = function (k) {
-    if (V2.pharmaTransmettre) V2.pharmaTransmettre('', (KINDS[k] && KINDS[k].presel) || null, { texte: modele(k) });
+
+  // ── Stockage des modèles : une ligne `profils` à part par personne, comme la liste ──
+  var LS_MOD = 'jarvis_todo_mod_v1';
+  function scopeMod() { return { st: 'groupement', sid: '__todomod_' + ((V2.user && V2.user.id) || 'local') + '__' }; }
+  function lsMod() { return LS_MOD + ':' + ((V2.user && V2.user.id) || 'local'); }
+  function nettoieMods(a) {
+    return (Array.isArray(a) ? a : []).filter(function (m) { return m && sur(m.id); }).map(function (m) {
+      return { id: sur(m.id), nom: String(m.nom || 'Mon modèle').slice(0, 80), objet: String(m.objet || ''), corps: String(m.corps || ''),
+               docs: (Array.isArray(m.docs) ? m.docs : []).map(String).filter(function (k) { return /^[SD]:/.test(k); }) };
+    });
+  }
+  function chargerMods() {
+    if (st.modsP) return st.modsP;
+    var c = sb(), s = scopeMod();
+    var local = function () { try { st.mods = nettoieMods(JSON.parse(localStorage.getItem(lsMod()) || '[]')); } catch (e) { st.mods = []; } return st.mods; };
+    st.modsP = (c && V2.user) ? c.from('profils').select('data').eq('scope_type', s.st).eq('scope_id', s.sid).maybeSingle().then(function (r) {
+      if (r.error) throw r.error;
+      st.mods = nettoieMods(r.data && r.data.data && r.data.data.modeles);
+      try { localStorage.setItem(lsMod(), JSON.stringify(st.mods)); } catch (e) {}
+      return st.mods;
+    }).catch(local) : Promise.resolve().then(local);
+    return st.modsP;
+  }
+  // Relit avant d'écrire (iPhone + Mac de la même personne), comme la liste.
+  function ecrireMods(fn) {
+    var c = sb(), s = scopeMod();
+    var garde = function (a) { st.mods = a; try { localStorage.setItem(lsMod(), JSON.stringify(a)); } catch (e) {} };
+    if (!(c && V2.user)) { garde(fn(nettoieMods(st.mods))); return Promise.resolve(false); }
+    return c.from('profils').select('data').eq('scope_type', s.st).eq('scope_id', s.sid).maybeSingle().then(function (r) {
+      if (r.error) throw r.error;
+      var a = nettoieMods(fn(nettoieMods(r.data && r.data.data && r.data.data.modeles)));
+      return c.from('profils').upsert({ scope_type: s.st, scope_id: s.sid, data: { modeles: a }, updated_by: V2.user.id,
+        updated_by_name: V2.user.name || '', updated_at: new Date().toISOString() }, { onConflict: 'scope_type,scope_id' })
+        .then(function (u) { if (u.error) throw u.error; garde(a); return true; });
+    }).catch(function () { garde(nettoieMods(fn(nettoieMods(st.mods)))); return false; });
+  }
+
+  // ── « Préparer le mail » : tout se modifie avant de partir ──────
+  // c = { it, pid, nom, dest, objet, corps, docs:[clés], base: 'b:rdv' | 'm:<id>' | '', mode: 'envoi' | 'modele', modId }
+  function texteDe(k, it) {
+    it = it || { k: k, nom: '', pid: '', cree: new Date().toISOString() };
+    return k === 'compte' ? mailCompte(it) : k === 'merci' ? mailMerci(it) : mailRdv(it, st.lien || '');
+  }
+  function depuis(base, it) {
+    if (base.indexOf('b:') === 0 && KINDS[base.slice(2)]) { var m = texteDe(base.slice(2), it); return { objet: m.objet, corps: m.corps, docs: (KINDS[base.slice(2)].presel || []).slice(), nom: MODELES.filter(function (x) { return x.k === base.slice(2); })[0].t }; }
+    var x = (st.mods || []).filter(function (m) { return 'm:' + m.id === base; })[0];
+    return x ? { objet: x.objet, corps: x.corps, docs: x.docs.slice(), nom: x.nom } : null;
+  }
+  function libDoc(k) { return V2.pharmaTxLabel ? V2.pharmaTxLabel(k) : k.slice(2); }
+  function lireComp() {
+    var c = st.comp; if (!c) return null;
+    ['dest', 'objet', 'corps', 'nomMod'].forEach(function (f) { var el = document.getElementById('v2-tc-' + f); if (el) c[f] = el.value; });
+    return c;
+  }
+  function composer(c) {
+    ensureCss();
+    c.mode = c.mode || 'envoi'; c.docs = c.docs || []; c.nomMod = c.nomMod || '';
+    st.comp = c;
+    chargerMods().then(function () { if (st.comp === c) dessinerComp(); });
+    dessinerComp();
+  }
+  function dessinerComp() {
+    var c = st.comp; if (!c) return;
+    var o = document.getElementById('v2-todo-comp');
+    if (!o) {
+      o = document.createElement('div'); o.id = 'v2-todo-comp'; o.className = 'v2-todo-ov v2-todo-ov-comp';
+      o.onclick = function () { V2.todo.fermerComp(); };
+      document.body.appendChild(o);
+      document.body.classList.add('v2-tc-on');
+    }
+    var modele = c.mode === 'modele';
+    var opts = '<option value="">' + (modele ? 'Partir d\'un mail existant…' : 'Changer de modèle…') + '</option>' +
+      '<optgroup label="Les mails tout prêts">' + MODELES.map(function (m) { return '<option value="b:' + m.k + '">' + esc(m.t) + '</option>'; }).join('') + '</optgroup>' +
+      ((st.mods || []).length ? '<optgroup label="Mes modèles">' + st.mods.map(function (m) { return '<option value="m:' + m.id + '">' + esc(m.nom) + '</option>'; }).join('') + '</optgroup>' : '');
+    var docs = c.docs.length ? c.docs.map(function (k, i) {
+      return '<span class="v2-tc-doc">' + ICO('fiche', 13, 2) + '<span>' + esc(libDoc(k)) + '</span><button aria-label="Retirer ce document" onclick="V2.todo.compRetirerDoc(' + i + ')">&times;</button></span>';
+    }).join('') : '<span class="v2-tc-vide">Aucun document joint.</span>';
+    var nDocs = c.docs.length;
+    o.innerHTML = '<div class="v2-todo-pop v2-tc" role="dialog" aria-label="' + (modele ? 'Mon modèle' : 'Préparer le mail') + '" onclick="event.stopPropagation()">' +
+      '<div class="v2-todo-pop-h"><b>' + (modele ? (c.modId ? 'Modifier mon modèle' : 'Nouveau modèle') : 'Préparer le mail') + '</b>' +
+        '<span>' + esc(modele ? '' : (c.nom || '')) + '</span><button class="v2-todo-x" aria-label="Fermer" onclick="V2.todo.fermerComp()">&times;</button></div>' +
+      '<div class="v2-tc-b">' +
+        (modele ? '<label><span>Nom du modèle</span><input id="v2-tc-nomMod" type="text" value="' + esc(c.nomMod) + '" placeholder="Ex. : Relance après salon"></label>' : '') +
+        '<label><span>' + (modele ? 'Partir d\'un mail existant' : 'Modèle') + '</span><select id="v2-tc-base" onchange="V2.todo.compBase(this.value)">' + opts + '</select></label>' +
+        (modele ? '' : '<label><span>À</span><input id="v2-tc-dest" type="email" autocomplete="off" value="' + esc(c.dest || '') + '" placeholder="Adresse du pharmacien (facultatif)"></label>') +
+        '<label><span>Objet</span><input id="v2-tc-objet" type="text" value="' + esc(c.objet || '') + '"></label>' +
+        '<label><span>Texte du mail</span><textarea id="v2-tc-corps" rows="14">' + esc(c.corps || '') + '</textarea></label>' +
+        '<div class="v2-tc-docs"><span class="v2-tc-lab">Documents joints</span><div class="v2-tc-chips">' + docs + '</div>' +
+          '<button class="v2-btn v2-btn-ghost v2-todo-sm" onclick="V2.todo.compChoisirDocs()">' + ICO('plus', 14, 2) + 'Choisir dans la banque de fichiers</button></div>' +
+        (!modele && c.garder ? '<div class="v2-tc-garde"><input id="v2-tc-nomMod" type="text" value="' + esc(c.nomMod) + '" placeholder="Nom du modèle"><button class="v2-btn v2-btn-primary v2-todo-sm" onclick="V2.todo.compEnregistrer()">Enregistrer</button></div>' : '') +
+      '</div>' +
+      '<div class="v2-tc-f">' +
+        (modele
+          ? (c.modId ? '<button class="v2-btn v2-btn-ghost v2-todo-sm v2-tc-sup" onclick="V2.todo.compSupprimer()">Supprimer ce modèle</button>' : '') +
+            '<button class="v2-btn v2-btn-primary" onclick="V2.todo.compEnregistrer()">' + ICO('check', 15, 2) + 'Enregistrer le modèle</button>'
+          : (c.garder ? '' : '<button class="v2-btn v2-btn-ghost v2-todo-sm" onclick="V2.todo.compGarder()">Enregistrer comme modèle</button>') +
+            '<button class="v2-btn v2-btn-primary" onclick="V2.todo.compEnvoyer()">' + ICO(nDocs ? 'download' : 'fiche', 15, 2) +
+              (nDocs ? 'Continuer avec ' + nDocs + ' document' + (nDocs > 1 ? 's' : '') : 'Ouvrir dans ma messagerie') + '</button>') +
+      '</div></div>';
+  }
+  V2.todo.fermerComp = function () { st.comp = null; document.body.classList.remove('v2-tc-on'); var o = document.getElementById('v2-todo-comp'); if (o) o.remove(); };
+  // Depuis la page : un mail tout prêt ou un de mes modèles, sans officine.
+  V2.todo.preparer = function (base) {
+    var run = function () { var d = depuis(base); if (d) composer({ pid: '', nom: '', dest: '', objet: d.objet, corps: d.corps, docs: d.docs, base: base }); };
+    if (base.indexOf('m:') === 0) chargerMods().then(run); else run();
+  };
+  V2.todo.editerModele = function (base) {
+    chargerMods().then(function () {
+      var d = base ? depuis(base) : null, mine = base.indexOf('m:') === 0;
+      composer({ mode: 'modele', modId: mine ? base.slice(2) : '', nomMod: d ? (mine ? d.nom : d.nom + ' (ma version)') : '',
+        objet: d ? d.objet : '', corps: d ? d.corps : 'Bonjour,\n\n' + signature().replace(/^\n\n/, ''), docs: d ? d.docs : [], base: base });
+    });
+  };
+  V2.todo.compBase = function (base) {
+    var c = lireComp(); if (!c || !base) return;
+    var d = depuis(base, c.it); if (!d) return;
+    if (c.corps && c.corps !== d.corps && !window.confirm('Remplacer le texte actuel par « ' + d.nom + ' » ?')) { dessinerComp(); return; }
+    c.objet = d.objet; c.corps = d.corps; c.docs = d.docs; c.base = base;
+    dessinerComp();
+  };
+  V2.todo.compRetirerDoc = function (i) { var c = lireComp(); if (!c) return; c.docs.splice(i, 1); dessinerComp(); };
+  // La banque de fichiers = la fenêtre « Transmettre » (documents de l'app + bibliothèque de l'équipe),
+  // en simple choix : chaque coche revient ici, « Valider le choix » ramène au mail.
+  V2.todo.compChoisirDocs = function () {
+    var c = lireComp(); if (!c || !V2.pharmaTransmettre) return;
+    V2.pharmaTransmettre(c.mode === 'envoi' ? (c.pid || '') : '', c.docs, { nom: c.nom, mail: c.dest, texte: { objet: c.objet, corps: c.corps }, choixSeul: true,
+      surChoix: function (keys) { if (st.comp === c) { c.docs = c.mode === 'modele' ? keys.filter(function (k) { return /^[SD]:/.test(k); }) : keys; dessinerComp(); } } });
+  };
+  V2.todo.compGarder = function () { var c = lireComp(); if (!c) return; c.garder = true; dessinerComp(); var el = document.getElementById('v2-tc-nomMod'); if (el) el.focus(); };
+  V2.todo.compEnregistrer = function () {
+    var c = lireComp(); if (!c) return;
+    var nom = String(c.nomMod || '').trim();
+    if (!nom) { if (V2.toast) V2.toast('Donne un nom au modèle', 'warn'); var el = document.getElementById('v2-tc-nomMod'); if (el) el.focus(); return; }
+    var id = (c.mode === 'modele' && c.modId) || newId();
+    var m = { id: id, nom: nom, objet: String(c.objet || '').trim(), corps: c.corps || '', docs: c.docs.filter(function (k) { return /^[SD]:/.test(k); }) };
+    ecrireMods(function (a) { return a.some(function (x) { return x.id === id; }) ? a.map(function (x) { return x.id === id ? m : x; }) : a.concat([m]); }).then(function (ok) {
+      if (V2.toast) V2.toast(ok ? 'Modèle « ' + nom + ' » enregistré' : 'Modèle gardé sur cet appareil seulement — la base n\'a pas répondu', ok ? '' : 'warn');
+      if (c.mode === 'modele') V2.todo.fermerComp(); else { c.garder = false; c.base = 'm:' + id; dessinerComp(); }
+      rendre();
+    });
+  };
+  V2.todo.compSupprimer = function () {
+    var c = lireComp(); if (!c || !c.modId) return;
+    if (!window.confirm('Supprimer le modèle « ' + (c.nomMod || '') + ' » ?')) return;
+    ecrireMods(function (a) { return a.filter(function (x) { return x.id !== c.modId; }); }).then(function () { V2.todo.fermerComp(); rendre(); });
+  };
+  V2.todo.compEnvoyer = function () {
+    var c = lireComp(); if (!c) return;
+    var m = { objet: String(c.objet || '').trim(), corps: c.corps || '' }, dest = String(c.dest || '').trim();
+    if (!c.docs.length) { ouvrirMail(dest, m); return; }
+    // Avec documents : la fenêtre « Transmettre » les prépare puis les envoie avec CE texte (Safari
+    // n'ouvre la feuille de partage que dans un clic, d'où ses deux temps « Préparer » puis « Envoyer »).
+    if (V2.pharmaTransmettre) V2.pharmaTransmettre(c.pid || '', c.docs, { nom: c.nom, mail: dest, texte: m,
+      surChoix: function (keys) { if (st.comp === c) { c.docs = keys; dessinerComp(); } } });
   };
   V2.todo.copierModele = function (k) {
     var x = modele(k), t = 'Objet : ' + x.objet + '\n\n' + x.corps;
@@ -605,6 +773,33 @@
       '.v2-todo-obj{font-size:14px;font-weight:700;color:var(--ip-ink)}',
       '.v2-todo-obj span{display:block;font-size:12px;font-weight:700;color:var(--ip-ink-2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px}',
       '.v2-todo-corps{margin:0;padding:14px 16px;background:var(--card-2,#F7F9FC);border:1px solid var(--line);border-radius:12px;font:inherit;font-size:14px;line-height:1.55;color:var(--ip-ink);white-space:pre-wrap;overflow-wrap:anywhere}',
+      // Sous la fenêtre « Transmettre » (z-index 120), qui s'ouvre par-dessus pour choisir les fichiers
+      '.v2-todo-ov-comp{z-index:110;align-items:flex-start;padding:4vh 16px;overflow-y:auto}',
+      '.v2-tc{width:min(640px,100%);padding:8px 8px 12px}',
+      '.v2-tc-b{display:flex;flex-direction:column;gap:12px;padding:6px 12px 4px}',
+      '.v2-tc-b label{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:700;color:var(--ip-ink-2)}',
+      '.v2-tc-b input,.v2-tc-b select,.v2-tc-b textarea,.v2-tc-garde input{min-height:44px;padding:8px 12px;border:1px solid var(--line);border-radius:10px;font:inherit;font-size:16px;font-weight:400;background:#fff;color:var(--ip-ink);width:100%;box-sizing:border-box}',
+      // Le rond « + » de l'app (z-index 9400) passait par-dessus la fenêtre du mail
+      'body.v2-tc-on .v2-fab{display:none}',
+      '.v2-tc-b select{-webkit-appearance:none;appearance:none;padding-right:36px;background:#fff url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2716%27 height=%2716%27 fill=%27none%27 stroke=%27%235B6475%27 stroke-width=%272%27%3E%3Cpath d=%27M4 6l4 4 4-4%27/%3E%3C/svg%3E") no-repeat right 12px center}',
+      '.v2-tc-b textarea{line-height:1.5;resize:vertical;min-height:240px}',
+      '.v2-tc-b input:focus,.v2-tc-b select:focus,.v2-tc-b textarea:focus{outline:none;border-color:var(--ip-blue);box-shadow:0 0 0 3px var(--halo,#E9F0FF)}',
+      '.v2-tc-docs{display:flex;flex-direction:column;gap:8px;align-items:flex-start}',
+      '.v2-tc-lab{font-size:12px;font-weight:700;color:var(--ip-ink-2)}',
+      '.v2-tc-chips{display:flex;flex-wrap:wrap;gap:6px}',
+      '.v2-tc-doc{display:inline-flex;align-items:center;gap:6px;max-width:100%;padding:4px 4px 4px 10px;border-radius:999px;background:var(--halo,#E9F0FF);color:var(--ip-ink);font-size:13px;font-weight:600}',
+      '.v2-tc-doc span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      '.v2-tc-doc svg{flex:none;color:var(--ip-blue)}',
+      '.v2-tc-doc button{flex:none;width:32px;height:32px;border:none;border-radius:50%;background:none;font-size:18px;line-height:1;color:var(--ip-ink-2);cursor:pointer}',
+      '.v2-tc-vide{font-size:13px;color:var(--ip-ink-2)}',
+      '.v2-tc-garde{display:flex;gap:8px;align-items:center}',
+      '.v2-tc-f{display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:8px;padding:12px 12px 0;margin-top:8px;border-top:1px solid var(--line)}',
+      '.v2-tc-f .v2-btn-primary{min-height:44px}',
+      '.v2-tc-sup{margin-right:auto;color:var(--c-rose)}',
+      '.v2-todo-mod{display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px;padding:12px 18px;border-top:1px solid var(--line)}',
+      '.v2-todo-mod:first-child{border-top:none}',
+      '.v2-todo-mod .v2-todo-mt{flex:1 1 200px}',
+      '.v2-todo-mod-add{padding:12px 18px;border-top:1px solid var(--line)}',
       '@media (max-width:760px){.v2-todo-kinds{grid-template-columns:1fr 1fr}.v2-todo-form{grid-template-columns:1fr}.v2-todo-wide{grid-column:auto}.v2-todo-b{margin-left:0}}'
     ].join('\n');
     document.head.appendChild(s);

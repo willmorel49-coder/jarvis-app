@@ -3299,6 +3299,9 @@
         '<button class="v2-btn v2-btn-ghost" onclick="V2.pharmaTxReset()">Modifier</button>' +
         (!canSh && (mail || tx.modele) ? '<a class="v2-btn v2-btn-ghost" href="' + esc(href) + '">Ouvrir le mail</a>' : '') +
         '<button class="v2-btn v2-btn-primary" onclick="V2.pharmaTxSend()">' + ICO(canSh ? 'spark' : 'download', 16) + (canSh ? 'Envoyer' : 'Télécharger les fichiers') + '</button>';
+    } else if (tx.choixSeul) {   // simple choix pour « Préparer le mail » : on revient à la fenêtre du mail
+      foot = '<div class="tx-state">' + (nSel ? '<b>' + nSel + '</b> document' + (nSel > 1 ? 's' : '') + ' choisi' + (nSel > 1 ? 's' : '') : 'Coche les documents à joindre') + '</div>' +
+        '<button class="v2-btn v2-btn-primary" onclick="V2.pharmaTxClose()">' + ICO('check', 16, 2) + 'Valider le choix</button>';
     } else {
       foot = '<div class="tx-state">' + (nSel ? '<b>' + nSel + '</b> sélectionné' + (nSel > 1 ? 's' : '') : tx.modele ? 'Coche les documents à joindre' : 'Coche ce que tu veux lui transmettre') + '</div>' +
         '<button class="v2-btn v2-btn-primary"' + (nSel && !tx.busy ? '' : ' disabled') + ' onclick="V2.pharmaTxPrepare()">' + ICO('check', 16, 2) + 'Préparer les fichiers</button>';
@@ -3315,6 +3318,10 @@
     pid = modele ? '__modele__' : String(pid);
     if (tx.pid !== pid || (tx.texte && texte && tx.texte.objet !== texte.objet)) { tx.sel = {}; tx.files = null; }
     tx.pid = pid; tx.busy = ''; tx.texte = texte; tx.modele = modele;
+    // 25/09/2026 — la fenêtre « Préparer le mail » de la To do list tient la liste des pièces
+    // jointes : la sélection repart EXACTEMENT de la sienne et lui est renvoyée à chaque coche.
+    tx.surChoix = (info && info.surChoix) || null; tx.choixSeul = !!(info && info.choixSeul);
+    if (tx.surChoix) { tx.sel = {}; tx.files = null; }
     (presel || []).forEach(function (k) { tx.sel[k] = true; });
     if (modele) txMail[pid] = '';
     else if (!txIsClient(pid)) {   // fiche prospect : l'e-mail et le nom sont ceux affichés à l'écran
@@ -3341,6 +3348,15 @@
     txRender();
     txLoadDocs().then(txRender);
   };
+  // Nom lisible d'une pièce jointe à partir de sa clé (S: document de l'app, D: bibliothèque, L: listing généré).
+  V2.pharmaTxLabel = function (k) {
+    k = String(k || '');
+    if (k.indexOf('S:') === 0) { var d = TX_APP_DOCS.find(function (x) { return x.f === k.slice(2); }); return d ? d.label : k.slice(2); }
+    if (k.indexOf('D:') === 0) return txPretty(k.slice(2));
+    if (k === 'L:reseau') return 'Listing produits (réseau)';
+    if (k === 'L:groupement') return 'Listing produits (groupement)';
+    return k;
+  };
   V2.pharmaTxClose = function () { var bd = document.getElementById('tx-modal'); if (bd) bd.classList.remove('open'); };
   V2.pharmaTxReset = function () { tx.files = null; txRender(); };
   V2.pharmaTxStyle = function (n) { if (!tx.busy && V2.prospectPdfStyle) V2.prospectPdfStyle(n); };
@@ -3359,6 +3375,7 @@
   V2.pharmaTxToggle = function (el) {
     var k = el.getAttribute('data-k');
     if (el.checked) tx.sel[k] = true; else delete tx.sel[k];
+    if (tx.surChoix) tx.surChoix(Object.keys(tx.sel));
     tx.files = null; txRender();
   };
   function txFetch(pid, k) {
