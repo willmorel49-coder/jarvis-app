@@ -208,8 +208,13 @@
     if (!rembourseForce(b) && (nrIndex().has(cip) || b.has_ameli === false)) return estFroid(b, cip) ? 'froid' : 'nr';
     // 7. Biosimilaires
     if (nat === 'biosimilaire') return 'biosim';
-    // 6. Génériques partenaires
-    if (nat === 'generique_partenaire') return 'genp';
+    // 6. Génériques partenaires — 25/09/2026, décision de Will : seuls EG · Zentiva · Zydus · Teva
+    // (liste du 04/08). Le BENCHMARK du 07/05 y rangeait aussi Accord, KRKA, Viatris GE, Cooper (210) :
+    // labo lu dans le catalogue complet ; labo inconnu (catalogue pas encore arrivé) → on garde le BENCHMARK.
+    if (nat === 'generique_partenaire') {
+      var ci = V2.produits && V2.produits.catalogueIndex ? V2.produits.catalogueIndex() : null, cr = ci && ci[cip];
+      return (cr && cr.labo && !/^(EG|ZENTIVA|ZYDUS|TEVA)\b/i.test(cr.labo)) ? 'gen' : 'genp';
+    }
     // 5. Génériques
     if (nat === 'generique') return 'gen';
     // 4. Froid
@@ -2208,7 +2213,7 @@
       window.html2pdf().from(wrap.firstChild).set({
         filename: fn, margin: [0, 0, 0, 0], image: { type: 'jpeg', quality: 0.95 },
         html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', width: 794, windowWidth: 794 },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        jsPDF: { unit: 'pt', format: [595.5, 842.25], orientation: 'portrait' }, // 794 × 1123 px entiers : pas de dérive de 0,5 px par page
         pagebreak: { mode: ['css', 'legacy'] }
       }).save().then(function () {
         cleanP(); V2.toast('PDF téléchargé');
