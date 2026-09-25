@@ -119,10 +119,11 @@
   }
 
   // ── Marge nette officine — ce que la pharmacie gagne grâce à Intégral ──
-  // Barème V2.margeNetteBoite (v2-boot.js). Aucun abandon Intégral sur les génériques,
-  // génériques partenaires et biosimilaires → hors calcul, jamais 0 € déguisé en marge.
+  // Barème V2.margeNetteBoite (v2-boot.js). 25/09/2026 — Will : calculable sur le PRINCEPS
+  // remboursé seulement (tranches pp/mi/ch + froid). Génériques, biosimilaires et NR
+  // (marge libre, incalculable) → hors calcul, jamais 0 € déguisé en marge.
   // Produit inconnu du BENCHMARK : on ne compte rien (jamais de fausse marge).
-  function margeNetteExclue(cat) { return cat === 'gen' || cat === 'genp' || cat === 'biosim'; }
+  function margeNettePrinceps(cat) { return cat === 'pp' || cat === 'mi' || cat === 'ch' || cat === 'froid'; }
   function margeNetteCat(cip) {
     var b = cip ? benchIndex().get(cip) : null;
     return b ? classify(b, cip) : null;
@@ -130,10 +131,8 @@
   function margeNetteLigne(s) {
     var cip = String(s.artCode || '');
     var cat = margeNetteCat(cip);
-    if (margeNetteExclue(cat)) return 0;
-    var remb = isRemboursable(cip);
-    if (!remb && cat !== 'nr') return 0;
-    return V2.margeNetteBoite(s.puNet || 0, remb) * (s.qte || 0);
+    if (!margeNettePrinceps(cat) || !isRemboursable(cip)) return 0;
+    return V2.margeNetteBoite(s.puNet || 0, true) * (s.qte || 0);
   }
   function margeNettePharma(sales) {
     var total = 0;
@@ -1371,8 +1370,7 @@
     var rows = A.cats.map(function (c) { return trancheRow(c, maxCa); }).join('');
     if (A.other.refs > 0) rows += '<tr><td><span class="ph-tr-dot" style="background:var(--muted-2)"></span>Hors catégories</td><td class="num">' + V2.fmtNum(A.other.refs) + '</td><td class="num"><b>' + V2.fmtEur(A.other.ca) + '</b></td><td class="num">' + Math.round(A.caTot > 0 ? A.other.ca / A.caTot * 100 : 0) + ' %</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td></tr>';
     // Total : la marge nette de l'officine, toutes tranches confondues. Le taux se lit
-    // sur les achats qui ont réellement produit de la marge (génériques, biosimilaires
-    // et produits inconnus du benchmark exclus).
+    // sur les achats qui ont réellement produit de la marge (princeps remboursés seuls).
     var totRefs = A.other.refs, totMarge = 0, caMarge = 0;
     A.cats.forEach(function (c) { totRefs += c.refs; totMarge += c.mdl; if (c.mdl > 0) caMarge += c.ca; });
     rows += '<tr style="border-top:1.5px solid var(--line)"><td><b>Total · marge nette de l\'officine</b></td>' +
@@ -1382,7 +1380,7 @@
       '<td class="num">—</td><td class="num">—</td><td class="num">—</td></tr>';
     var legende = '<div class="pha-sub" style="padding:8px 18px 12px;line-height:1.5">' +
       'Marge nette gagnée par l\'officine : <b>0,18 €</b> par boîte jusqu\'à 4,33 € · <b>4,2 %</b> de 4,33 à 468 € · ' +
-      '<b>19,50 €</b> par boîte au-delà · non remboursés <b>15 %</b>. Génériques et biosimilaires : pas d\'abandon Intégral, hors calcul.</div>';
+      '<b>19,50 €</b> par boîte au-delà. Princeps remboursés seulement : génériques, biosimilaires et non remboursés hors calcul.</div>';
     var desk ='<div class="v2-card pha-card pha-desk" style="padding:0;overflow:hidden"><div class="pha-ch" style="padding:16px 18px 6px"><h3>Son CA par tranche, face à l\'officine moyenne du réseau</h3><span class="pha-sub">écart = sa moyenne mensuelle vs celle du réseau · évolution = dernier mois vs le précédent</span></div>' +
       '<div class="v2-cat-table-wrap" style="border-top:none"><table class="v2-table pha-table"><thead><tr><th>Tranche</th><th class="num">Réf.</th><th class="num">CA ' + A.n + ' mois</th><th class="num">Part</th><th class="num">Marge nette</th><th class="num">Taux</th><th class="num">Réseau / mois</th><th class="num">Écart</th><th class="num">Évol.</th></tr></thead><tbody>' + rows + '</tbody></table></div>' + legende + '</div>';
     // Téléphone : une ligne par tranche, dépliable sur son top 10
@@ -2153,7 +2151,7 @@
         '</div>' +
         // Footer
         '<div style="margin-top:14px;padding-top:8px;border-top:1px solid #E5E9F2;display:flex;justify-content:space-between;font-size:8px;color:#9AA1B2;text-transform:uppercase;letter-spacing:.04em">' +
-          '<div>Intégral Pharma · Normandie · Document confidentiel</div><div>Marge nette : 0,18€ &le;4,33€ · 4,2% &le;468€ · 19,50€ au-delà · NR 15%</div></div>' +
+          '<div>Intégral Pharma · Normandie · Document confidentiel</div><div>Marge nette (princeps) : 0,18€ &le;4,33€ · 4,2% &le;468€ · 19,50€ au-delà</div></div>' +
       '</div>';
 
     return { html: html, pharma: pharma };
@@ -2735,7 +2733,7 @@
     var sales = pharmaSales(pid);
     if (!sales.length) return '';
     var MONO = "'Geist Mono',ui-monospace,monospace";
-    var ca = V2.sumCA(sales), marge = margeNettePharma(sales);
+    var ca = V2.sumCA(sales);
     var nbRefs = new Set(sales.map(function (s) { return String(s.artCode || ''); }).filter(function (c) { return c.length >= 7; })).size;
     var months = monthlyCA(sales);
     var maxM = months.reduce(function (m, x) { return Math.max(m, x.ca); }, 1);
@@ -2779,7 +2777,6 @@
       '<div style="font-size:9.5px;font-weight:800;letter-spacing:1.2px;color:#737A8C;text-transform:uppercase;margin-bottom:7px">Récap de l\'officine</div>' +
       '<div style="display:flex;gap:8px;margin-bottom:10px">' +
         kpiTile('CA cumulé', V2.fmtEur(ca), '#10131C', '') +
-        kpiTile('Marge nette générée',V2.fmtEur(marge), '#1E9E6A', '#1E9E6A') +
         kpiTile('Réf. commandées', V2.fmtNum(nbRefs), '#10131C', '') +
         grpTile +
       '</div>' +
@@ -2858,7 +2855,7 @@
     if (!sales.length) return null;
     var oc = ownedByCat(sales);
     return {
-      ca: V2.sumCA(sales), marge: margeNettePharma(sales),
+      ca: V2.sumCA(sales),
       refs: new Set(sales.map(function (s) { return String(s.artCode || ''); }).filter(function (c) { return c.length >= 7; })).size,
       lieu: pharma.groupement ? ['Groupement', pharma.groupement] : ['Ville', pharma.ville || '—'],
       code: [pharma.code, pharma.ville].filter(function (x) { return x; }).join(' · '),

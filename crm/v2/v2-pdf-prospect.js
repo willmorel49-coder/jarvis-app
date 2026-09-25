@@ -100,7 +100,7 @@
         '<span style="' + N + ';color:' + GRIS + '">' + esc(C.fmtNum(r.refs)) + ' réf.</span><span style="' + N + ';font-weight:700;width:86px;text-align:right">' + esc(C.fmtEur(r.ca)) + '</span></div>';
     }).join('');
     blocks.push({ t: 'autre', mt: T.mt, h: T.sec('Récap de l\'officine', C.code) });
-    blocks.push({ t: 'autre', mt: 10, h: '<div style="display:flex;gap:10px">' + tuile('CA cumulé', esc(C.fmtEur(C.ca))) + tuile('Marge nette générée', esc(C.fmtEur(C.marge)), '#1E9E6A') + tuile('Réf. commandées', esc(C.fmtNum(C.refs))) + tuile(C.lieu[0], esc(C.lieu[1]), T.acc) + '</div>' +
+    blocks.push({ t: 'autre', mt: 10, h: '<div style="display:flex;gap:10px">' + tuile('CA cumulé', esc(C.fmtEur(C.ca))) + tuile('Réf. commandées', esc(C.fmtNum(C.refs))) + tuile(C.lieu[0], esc(C.lieu[1]), T.acc) + '</div>' +
       '<div style="display:flex;gap:10px;margin-top:10px"><div style="flex:0 0 250px;' + T.carte + ';padding:11px 13px">' + lab('CA par mois') + '<div style="display:flex;align-items:flex-end;gap:8px;height:84px;margin-top:8px">' + (barres || '—') + '</div></div>' +
       '<div style="flex:1;min-width:0;' + T.carte + ';padding:11px 13px">' + lab('Ce qu\'elle commande déjà · par tranche') + '<div style="margin-top:6px">' + (tr || '<span style="font-size:10px;color:' + PALE + '">Aucune commande identifiée.</span>') + '</div></div></div>' });
     var t = C.top;

@@ -1003,7 +1003,7 @@
   V2.chargerScripts = function (urls) {
     urls = urls || [];
     if (!urls.length) return Promise.resolve();
-    var V = '?v=20260925m' + (window.V2_VER || '20260915g');
+    var V = '?v=20260925n' + (window.V2_VER || '20260915g');
     return Promise.all(urls.map(function (u) {
       return new Promise(function (resolve) {
         var s = document.createElement('script');
@@ -1425,7 +1425,7 @@
     // de le servir, et le lecteur compacté ne trouverait pas ses dictionnaires.
     // Pas besoin de le suivre à chaque déploiement en revanche : quand `VER` de
     // sw.js change, l'activation du service worker efface tous les caches.
-    var V = '?v=20260925m';
+    var V = '?v=20260925n';
     V2.versionDonnees = V;   // lu par chargerScriptProtege (fiche carte)
     var promises = keys.map(function (k) {
       var src = (window.V2_DATA_BASE || '../') + DATA_FILES[k];
@@ -1688,7 +1688,8 @@
   // sur le prix NET payé par l'officine. Vocabulaire maison : « marge nette »,
   // jamais « marge MDL » (la MDL est la marge réglementaire de l'officine, autre chose).
   //   Remboursés ≤ 4,33 € → 0,18 €/boîte · 4,33→468 € → 4,2 % · > 468 € → 19,50 €/boîte
-  //   NR → 15 % du prix d'achat (marge libre) · génériques et biosimilaires : non calculé
+  //   Princeps remboursés SEULEMENT (Will, 25/09/2026) : génériques, biosimilaires et NR
+  //   (marge libre, incalculable) non calculés — la branche NR ci-dessous ne sert plus.
   V2.MARGE_NETTE = { mi: 0.042, nr: 0.15, pp: 0.18, ch: 19.50, seuilPP: 4.33, seuilCH: 468 };
   V2.margeNetteBoite = function (prixNet, remboursable) {
     var p = +prixNet || 0;
