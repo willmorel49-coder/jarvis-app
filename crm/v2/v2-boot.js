@@ -502,6 +502,8 @@
     sagittaprix: 'v2/sagitta-prix.js',
     // Catalogue OCP « Les Incontournables » (meilleur net par code 13) : même raison, même traitement.
     ocpprix: 'v2/ocp-prix.js',
+    // 25/09/2026 — catalogue client Offilog : tarif labo + prix Offilog (v2-offilog-catalogue.js).
+    offilogcatalogue: 'v2/offilog-catalogue-prix.js',
     // 10/09/2026 — écran « Ressources concurrents » : catalogues COMPLETS Sagitta
     // (3 exports fusionnés, 2 Mo) et OCP (tous paliers + Marque Conseil, 125 Ko).
     // Conditions de tiers : protégés, jamais côté OPSO. generate_concurrents.py.
@@ -592,6 +594,7 @@
     pharmazonprix: 'pharmazon-prix.js',
     sagittaprix: 'sagitta-prix.js',
     ocpprix: 'ocp-prix.js',
+    offilogcatalogue: 'offilog-catalogue-prix.js',
     concsagitta: 'concurrents-sagitta-data.js',
     concocp: 'concurrents-ocp-data.js',
     concetudes: 'concurrents-etudes-data.js',
@@ -1003,7 +1006,7 @@
   V2.chargerScripts = function (urls) {
     urls = urls || [];
     if (!urls.length) return Promise.resolve();
-    var V = '?v=20260925zd' + (window.V2_VER || '20260915g');
+    var V = '?v=20260925ze' + (window.V2_VER || '20260915g');
     return Promise.all(urls.map(function (u) {
       return new Promise(function (resolve) {
         var s = document.createElement('script');
@@ -1125,6 +1128,7 @@
     pharmazonprix: 'PHARMAZON_PRIX',
     sagittaprix: 'SAGITTA_PRIX',
     ocpprix: 'OCP_PRIX',
+    offilogcatalogue: 'OFFILOG_CATALOGUE',
     concsagitta: 'CONCURRENTS_SAGITTA',
     concocp: 'CONCURRENTS_OCP',
     concetudes: 'CONCURRENTS_ETUDES',
@@ -1430,7 +1434,7 @@
     // de le servir, et le lecteur compacté ne trouverait pas ses dictionnaires.
     // Pas besoin de le suivre à chaque déploiement en revanche : quand `VER` de
     // sw.js change, l'activation du service worker efface tous les caches.
-    var V = '?v=20260925zd';
+    var V = '?v=20260925ze';
     V2.versionDonnees = V;   // lu par chargerScriptProtege (fiche carte)
     var promises = keys.map(function (k) {
       var src = (window.V2_DATA_BASE || '../') + DATA_FILES[k];

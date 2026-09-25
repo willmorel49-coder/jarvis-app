@@ -12,7 +12,7 @@
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function () {
         var hadController = !!navigator.serviceWorker.controller;
-        navigator.serviceWorker.register('sw.js?v=20260925zd').then(function (reg) {
+        navigator.serviceWorker.register('sw.js?v=20260925ze').then(function (reg) {
           try { reg.update(); } catch (e) {}   // vérifie tout de suite au chargement          // pendant une longue session, re-vérifier périodiquement s'il y a une nouvelle version
           setInterval(function () { try { reg.update(); } catch (e) {} }, 5 * 60 * 1000);
           // dès qu'on revient sur l'appli (onglet réactivé) : re-check -> bannière « Actualiser » si nouvelle version
@@ -152,13 +152,13 @@
     <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600;700&family=Onest:wght@400;500;600;700;800&family=Martian+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   </noscript>
   <link rel="dns-prefetch" href="https://images.weserv.nl">
-  <link rel="stylesheet" href="v2.css?v=20260925zd" />
-  <link rel="stylesheet" href="v2-motion.css?v=20260925zd" />
+  <link rel="stylesheet" href="v2.css?v=20260925ze" />
+  <link rel="stylesheet" href="v2-motion.css?v=20260925ze" />
   <!-- Peau « Verrière » (choix Will 12/08/2026) — chargée en dernier, purement additive -->
-  <link rel="stylesheet" href="v2-verriere.css?v=20260925zd" />
+  <link rel="stylesheet" href="v2-verriere.css?v=20260925ze" />
 
   <!-- PWA : installable sur l'écran d'accueil (iOS + Android) -->
-  <link rel="manifest" href="manifest.webmanifest?v=20260925zd" />
+  <link rel="manifest" href="manifest.webmanifest?v=20260925ze" />
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />  <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="JARVIS" />
@@ -181,7 +181,7 @@
   <!-- 11/09/2026 — perf : copie locale épinglée (même fichier que rdv.html). Servie par le
        service worker, plus de troisième domaine avant le premier rendu, et la version ne
        change plus sans nous. Même origine = traces d'erreur complètes. -->
-  <script src="vendor/supabase/supabase-2.112.2.min.js?v=20260925zd"></script>
+  <script src="vendor/supabase/supabase-2.112.2.min.js?v=20260925ze"></script>
   <script>
     window.V2_DATAV = '20260923r';   // version des données lazy (pharma-fr-data.js) — recherche & fiches prospect
     // La marque de l'OUTIL. Will, 19/08/2026 : « c'est JARVIS CRM ; où il y a
@@ -199,7 +199,7 @@
         window.V2_BRAND = { name: 'Escale Pharma', sub: 'Espace commercial', escale: true };
         document.title = 'Escale Pharma · Espace commercial';
         var mt = document.querySelector('meta[name="theme-color"]'); if (mt) mt.setAttribute('content', '#0B6E8F');
-        document.write('<link rel="stylesheet" href="../../escale/v2/escale-theme.css?v=20260925zd">');
+        document.write('<link rel="stylesheet" href="../../escale/v2/escale-theme.css?v=20260925ze">');
       }
     } catch (e) {}
     window.SUPABASE_URL = 'https://iyvavhnlhxksokkerkos.supabase.co';
@@ -221,12 +221,12 @@
 
   <!-- ═══ SOCLE (≈ 275 Ko) : le strict nécessaire à l'écran de connexion — 11/09/2026 ═══
        Avant : 80 scripts (6,05 Mo) chargés et exécutés AVANT le premier pixel. -->
-  <script src="v2-icons.js?v=20260925zd"></script>
+  <script src="v2-icons.js?v=20260925ze"></script>
   <!-- Table d'alias groupements (canonicalisation) : fusionne les doublons partout -->
-  <script src="groupement-alias.js?v=20260925zd"></script>
-  <script src="v2-boot.js?v=20260925zd"></script>
+  <script src="groupement-alias.js?v=20260925ze"></script>
+  <script src="v2-boot.js?v=20260925ze"></script>
   <!-- Profil commercial : lu DANS loadData (corrections manuelles de groupement) → avant les données -->
-  <script src="v2-profil.js?v=20260925zd"></script>
+  <script src="v2-profil.js?v=20260925ze"></script>
   <script>
     // ═══ LE RESTE (≈ 5,4 Mo) : MÊME ORDRE qu'avant, posé par V2.chargerScripts (v2-boot.js)
     // juste après le premier rendu, en scripts `async=false` (téléchargés en parallèle,
@@ -246,7 +246,7 @@
       'v2-rdv-mesmodeles.js', 'v2-rdv-radar.js', 'v2-rdv-appels.js', 'v2-rdv-apercu.js',
       'v2-rdv-suivi.js', 'v2-rdv-groupe.js', 'v2-campagne.js', '../marketing-offers.js',
       'grp-logos-plus.js', 'v2-produits-moteur.js', 'v2-produits.js', 'v2-comptoir.js', 'generiqueurs-data.js',
-      'v2-generiqueurs.js', 'v2-brief-officine.js', 'v2-probable.js', 'v2-pharma.js', 'v2-pdf-prospect.js', 'v2-offilog.js', 'v2-fiches.js',
+      'v2-generiqueurs.js', 'v2-brief-officine.js', 'v2-probable.js', 'v2-pharma.js', 'v2-pdf-prospect.js', 'v2-offilog.js', 'v2-offilog-catalogue.js', 'v2-fiches.js',
       'froid-data.js', 'v2-pilotage.js', 'ameli-avg-data.js', 'ruptures-data.js', 'zone-data.js',
       'saison-data.js', 'stock-data.js', 'tendance-data.js', 'momentum-data.js',
       'nouveautes-data.js', 'v2-copilote.js', 'vendor/leaflet/leaflet.js', 'vendor/leaflet/leaflet.markercluster.js',
@@ -258,11 +258,11 @@
       'v2-visites.js', 'v2-campagne-cible.js', 'lgo-process-data.js', 'v2-lgo.js'
     ];
   </script>
-  <link rel="stylesheet" href="vendor/leaflet/leaflet.css?v=20260925zd">
-  <link rel="stylesheet" href="vendor/leaflet/MarkerCluster.css?v=20260925zd">
-  <link rel="stylesheet" href="vendor/leaflet/MarkerCluster.Default.css?v=20260925zd">
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css?v=20260925ze">
+  <link rel="stylesheet" href="vendor/leaflet/MarkerCluster.css?v=20260925ze">
+  <link rel="stylesheet" href="vendor/leaflet/MarkerCluster.Default.css?v=20260925ze">
   <!-- App (boot), puis les deux couches qui enveloppent V2.render (sondage ≤ 500 ms : rester collées à v2-app) -->
-  <script src="v2-app.js?v=20260925zd"></script>
-  <script src="v2-motion.js?v=20260925zd"></script>
-  <script src="v2-bg.js?v=20260925zd"></script>
+  <script src="v2-app.js?v=20260925ze"></script>
+  <script src="v2-motion.js?v=20260925ze"></script>
+  <script src="v2-bg.js?v=20260925ze"></script>
 </body></html>
