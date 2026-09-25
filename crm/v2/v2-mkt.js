@@ -223,6 +223,15 @@
     // vit sur Supabase, chargé par adresse signée avec rangement local.
     V2.loadFiles(['mktnr']).then(function () { nrLoading = false; nrEchec = !window.MKT_NR; cb(); });
   }
+  // Le catalogue par catégorie lit aussi PROD_STATS (partie princeps), chargé en arrière-plan au démarrage :
+  // demandé trop tôt, le PDF sortait sans aucun princeps, sans message — mesuré le 25/09/2026.
+  // loadFiles réutilise un chargement déjà en cours.
+  function ensureNrEtPrinceps(cb) {
+    ensureNr(function () {
+      if (typeof window.PROD_STATS !== 'undefined' || !V2.loadFiles) { cb(); return; }
+      V2.loadFiles(['prodstats']).then(cb, cb);
+    }, true);
+  }
   // SheetJS chargé à la demande (export Excel) — même lib que l'import (v2-audit)
   var xlsxLoading = false;
   function ensureXLSX(cb) {
@@ -1936,7 +1945,7 @@
     },
     // ── Top 50 par catégorie : belle fiche PDF ──
     top50Pdf: function () {
-      ensureNr(function () {
+      ensureNrEtPrinceps(function () {
         var cats = buildTop50();
         if (!cats.length) { V2.toast('Catalogue en cours de chargement…', 'warn'); return; }
         if (typeof window.ensureHtml2Pdf !== 'function') { V2.toast('Module PDF indisponible', 'error'); return; }
@@ -1946,7 +1955,8 @@
           var wrap = document.createElement('div'); wrap.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;background:#fff';
           wrap.innerHTML = html; document.body.appendChild(wrap);
           var fn = 'Catalogue-par-categorie-' + new Date().toISOString().slice(0, 10) + '.pdf';
-          window.html2pdf().from(wrap.firstChild).set({ filename: fn, margin: [8, 8, 10, 8], image: { type: 'jpeg', quality: 0.95 },
+          // margin 0 : la feuille fait 794 px et porte son padding ; des marges en plus la rognaient à droite (mesuré 25/09/2026, WebKit).
+          window.html2pdf().from(wrap.firstChild).set({ filename: fn, margin: 0, image: { type: 'jpeg', quality: 0.95 },
             html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'], avoid: ['tr'] } })
             .save().then(function () { if (wrap.parentNode) document.body.removeChild(wrap); V2.toast('Fiche catalogue téléchargée'); })
             .catch(function (e) { console.error(e); if (wrap.parentNode) document.body.removeChild(wrap); V2.toast('Erreur PDF', 'error'); });
@@ -1955,7 +1965,7 @@
     },
     // ── Top 50 par catégorie : bel export Excel (1 onglet par catégorie) ──
     top50Xlsx: function () {
-      ensureNr(function () {
+      ensureNrEtPrinceps(function () {
         var cats = buildTop50();
         if (!cats.length) { V2.toast('Catalogue en cours de chargement…', 'warn'); return; }
         V2.toast('Génération de l\'Excel…');
@@ -2817,7 +2827,7 @@
     });
   };
   V2.mkt.catalogueCategoriesFichier = function () {
-    return new Promise(function (res) { ensureNr(res, true); }).then(function () {
+    return new Promise(function (res) { ensureNrEtPrinceps(res); }).then(function () {
       var cats = buildTop50();
       if (!cats.length || typeof window.ensureHtml2Pdf !== 'function') return null;
       return pdfFichier(top50Html(cats), 'Catalogue-par-categorie.pdf', { margin: [0, 0, 0, 0],   // marges [8…] : bord droit rogné (mesuré 25/09) ; la feuille a déjà son padding image: { type: 'jpeg', quality: 0.95 },
