@@ -6,7 +6,8 @@
    et les pharmacies qui l'utilisent. Données : window.LGO_PROCESS
    (lgo-process-data.js, généré par ~/jarvis-catalogues-lgo/process.py depuis
    les mêmes étapes que les PDF). Le logiciel d'une officine est reconnu comme
-   dans Transmettre (V2.lgoSlug de v2-pharma.js) : annuaire, puis base clients.
+   dans Transmettre (V2.lgoSlug de v2-pharma.js) : saisie de l'équipe (Infos
+   officine, qui fait foi), puis annuaire, puis base clients.
    ═══════════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
@@ -14,7 +15,20 @@
   V2.pages = V2.pages || {};
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s); };
   var ICO = window.ICO || function () { return ''; };
-  var S = { reseau: false };
+  var S = { reseau: false, saisie: null, completer: false };
+
+  // Saisie de l'équipe (profils, scope 'client', champ lgo) : lue une fois pour toutes les
+  // officines, puis tenue à jour ici quand on complète depuis la rubrique.
+  function chargerSaisie() {
+    if (S.saisie || S.charge || !V2.profil || !V2.profil.loadScope) return;
+    S.charge = true;
+    V2.profil.loadScope('client').then(function (list) {
+      var m = {};
+      (list || []).forEach(function (r) { var v = r && r.data && String(r.data.lgo || '').trim(); if (v) m[String(r.sid)] = v; });
+      S.saisie = m;
+      if (V2.route && V2.route.name === 'lgo') V2.render();
+    }, function () { S.saisie = {}; });
+  }
 
   function data() { return window.LGO_PROCESS || { lgo: [] }; }
   // Pharmacies par logiciel. Un commercial restreint ne voit que les siennes ;
@@ -23,18 +37,24 @@
     var mes = V2.mesComms ? V2.mesComms() : [];
     var restreint = V2.ventesRestreintes && V2.ventesRestreintes();
     var seulMiennes = restreint || (mes.length && !S.reseau);
-    var par = {}, inconnu = 0, total = 0;
+    var par = {}, sans = [], autre = 0, autres = {}, total = 0, sai = S.saisie || {};
     (V2.pharmacies || []).forEach(function (p) {
       if (seulMiennes && !(V2.estMonOfficine && V2.estMonOfficine(p))) return;
       total++;
       var ri = V2.rdvInfo ? V2.rdvInfo(p.id) : null;
       var ca = ((window.CLIENTS_ACTIFS || {}).d || {})[String(p.id)];
-      var s = V2.lgoSlug ? (V2.lgoSlug(ri && ri.logiciel) || V2.lgoSlug(ca && ca[5])) : '';
-      if (!s) { inconnu++; return; }
+      var v = sai[String(p.id)], s;
+      if (v) {   // la saisie fait foi, même pour un logiciel sans mode d'emploi (Caduciel…)
+        s = V2.lgoSlug ? V2.lgoSlug(v) : '';
+        if (!s) { autre++; autres[v] = 1; return; }
+      } else s = V2.lgoSlug ? (V2.lgoSlug(ri && ri.logiciel) || V2.lgoSlug(ca && ca[5])) : '';
+      if (!s) { sans.push(p); return; }
       (par[s] = par[s] || []).push(p);
     });
-    Object.keys(par).forEach(function (k) { par[k].sort(function (a, b) { return String(a.name).localeCompare(String(b.name), 'fr'); }); });
-    return { par: par, inconnu: inconnu, total: total, miennes: !!seulMiennes, choix: !!(mes.length && !restreint) };
+    var tri = function (a, b) { return String(a.name).localeCompare(String(b.name), 'fr'); };
+    Object.keys(par).forEach(function (k) { par[k].sort(tri); });
+    sans.sort(tri);
+    return { par: par, sans: sans, autre: autre, autres: Object.keys(autres).sort(), total: total, miennes: !!seulMiennes, choix: !!(mes.length && !restreint) };
   }
 
   function fichiers(l) {
@@ -61,8 +81,22 @@
       ? '<div class="lgo-ph">' + list.map(function (p) {
           return '<a onclick="V2.go(\'pharma\',\'' + esc(p.id) + '\')"><span>' + esc(p.name) + '</span><small>' + esc(p.ville || '') + '</small></a>';
         }).join('') + '</div>'
-      : '<p class="lgo-mini">Aucune pour l\'instant d\'après l\'annuaire et la base clients.</p>';
+      : '<p class="lgo-mini">Aucune pour l\'instant.</p>';
     return '<div class="lgo-bloc"><h2>' + titre + ' <span class="lgo-n">' + list.length + '</span></h2>' + corps + '</div>';
+  }
+
+  // Pharmacies sans logiciel connu : on le renseigne ici, et c'est enregistré dans leur fiche
+  // (Infos officine › Logiciel), comme si on l'avait saisi là-bas. Rien n'est deviné.
+  function aCompleter(R) {
+    var opts = '<option value="">Choisir…</option>' + ((V2.profil && V2.profil.LGO) || []).map(function (o) {
+      return '<option>' + esc(o) + '</option>';
+    }).join('');
+    return '<div class="lgo-bloc lgo-ac"><h2>À compléter <span class="lgo-n">' + R.sans.length + '</span></h2>' +
+      '<p class="lgo-mini lgo-ac-t">Le logiciel choisi s\'enregistre dans la fiche de la pharmacie (Infos officine), pour toute l\'équipe.</p>' +
+      '<div class="lgo-ac-l">' + R.sans.map(function (p) {
+        return '<div class="lgo-ac-r"><a onclick="V2.go(\'pharma\',\'' + esc(p.id) + '\')"><span>' + esc(p.name) + '</span><small>' + esc(p.ville || '') + '</small></a>' +
+          '<select aria-label="Logiciel de ' + esc(p.name) + '" data-pid="' + esc(p.id) + '" onchange="V2.lgoPoser(this)">' + opts + '</select></div>';
+      }).join('') + '</div></div>';
   }
 
   function etapes(l) {
@@ -115,17 +149,40 @@
       '.lgo-ph{display:flex;flex-direction:column;max-height:420px;overflow:auto;margin:0 -6px}',
       '.lgo-ph a{display:flex;justify-content:space-between;gap:10px;padding:9px 6px;border-radius:8px;cursor:pointer;font-size:14px;color:#0B1B3A;min-height:40px;align-items:center}',
       '.lgo-ph a:hover{background:#F3F7FF}.lgo-ph small{color:#586377;font-size:12.5px;white-space:nowrap}',
+      '.lgo-inconnu button{border:0;background:none;padding:0 0 0 4px;font:inherit;font-weight:700;color:#0050E6;cursor:pointer;text-decoration:underline;text-underline-offset:3px;min-height:36px}',
+      '.lgo-ac-t{margin:-4px 0 10px}',
+      '.lgo-ac-l{display:flex;flex-direction:column;max-height:480px;overflow:auto;margin:0 -6px}',
+      '.lgo-ac-r{display:flex;align-items:center;gap:10px;padding:5px 6px;border-bottom:1px solid #EDF1F8}.lgo-ac-r:last-child{border-bottom:0}',
+      '.lgo-ac-r a{flex:1;min-width:0;display:flex;flex-direction:column;cursor:pointer;font-size:14px;color:#0B1B3A;min-height:40px;justify-content:center}',
+      '.lgo-ac-r a span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.lgo-ac-r small{color:#586377;font-size:12.5px}',
+      '.lgo-ac-r select{flex:none;width:150px;min-height:40px;border:1px solid #C9D6EE;border-radius:10px;padding:6px 9px;font:inherit;font-size:16px;color:#0B1B3A;background:#fff;cursor:pointer}',
       '@media (max-width:860px){.lgo-choix{grid-template-columns:repeat(2,minmax(0,1fr))}.lgo-grille{grid-template-columns:minmax(0,1fr)}.lgo-hero{padding:20px 18px}.lgo-hero h1{font-size:22px}}'
     ].join('\n');
     document.head.appendChild(s);
   }
 
   V2.lgoReseau = function (v) { S.reseau = !!v; V2.render(); };
+  V2.lgoCompleter = function () { S.completer = !S.completer; V2.render(); };
+  V2.lgoPoser = function (el) {
+    var pid = el.getAttribute('data-pid'), v = el.value;
+    if (!v || !pid || !V2.profil || !V2.profil.poser) return;
+    if (!V2.user) { if (V2.toast) V2.toast('Connecte-toi pour enregistrer'); el.value = ''; return; }
+    el.disabled = true;
+    V2.profil.poser('client', pid, 'lgo', v).then(function () {
+      (S.saisie = S.saisie || {})[pid] = v;
+      if (V2.toast) V2.toast('Enregistré : ' + v);
+      var l = document.querySelector('.lgo-ac-l'), y = l ? l.scrollTop : 0, wy = window.scrollY;
+      V2.render();   // la pharmacie quitte la liste et rejoint son logiciel
+      var l2 = document.querySelector('.lgo-ac-l'); if (l2) l2.scrollTop = y;
+      window.scrollTo(0, wy);
+    }, function () { el.disabled = false; if (V2.toast) V2.toast('Enregistrement impossible — réessaie', 'error'); });
+  };
 
   V2.pages.lgo = {
     needs: ['clientsactifs'],
     render: function (root, param) {
       css();
+      chargerSaisie();
       var top = V2.topbar ? V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) : '';
       var L = data().lgo || [];
       if (!L.length) { root.innerHTML = top + '<div class="v2-wrap"><div class="v2-empty"><div class="v2-empty-t">Données des logiciels indisponibles</div></div></div>'; return; }
@@ -146,7 +203,11 @@
             '<b>' + esc(l.nom) + '</b><small>' + esc(l.editeur || ' ') + '</small>' +
             '<span class="lgo-cn">' + n + ' pharmacie' + (n > 1 ? 's' : '') + '</span></button>';
         }).join('') + '</div>' +
-        (R.inconnu ? '<p class="lgo-inconnu">' + R.inconnu + ' pharmacie' + (R.inconnu > 1 ? 's' : '') + ' sur ' + R.total + ' sans logiciel connu : à renseigner dans « Infos officine » de leur fiche.</p>' : '') +
+        (!S.saisie ? '<p class="lgo-inconnu">Lecture des logiciels saisis par l\'équipe…</p>'
+          : R.sans.length ? '<p class="lgo-inconnu">' + R.sans.length + ' pharmacie' + (R.sans.length > 1 ? 's' : '') + ' sur ' + R.total + ' sans logiciel connu.' +
+              '<button onclick="V2.lgoCompleter()" aria-expanded="' + S.completer + '">' + (S.completer ? 'Masquer la liste' : 'Les compléter') + '</button></p>' : '') +
+        (R.autre ? '<p class="lgo-inconnu">' + R.autre + ' sur un logiciel sans mode d\'emploi pour l\'instant (' + esc(R.autres.join(', ')) + ').</p>' : '') +
+        (S.saisie && S.completer && R.sans.length ? aCompleter(R) : '') +
         '<div class="lgo-grille"><div>' + etapes(cur) + '</div><div>' + fichiers(cur) + pharmas(cur, R) + '</div></div>' +
       '</div>';
     }

@@ -3413,7 +3413,7 @@
   var TX_LGO = [
     { s: 'leo', nom: 'LEO', re: /\bleo\b|isipharm/ }, { s: 'lgpi', nom: 'LGPI', re: /lgpi|pharmagest/ },
     { s: 'pharmaland', nom: 'Pharmaland', re: /pharmaland|\blsi\b/ }, { s: 'pharmony', nom: 'Pharmony', re: /pharmony/ },
-    { s: 'smartrx', nom: 'Smart RX', re: /smart/ }, { s: 'winpharma', nom: 'Winpharma', re: /winpharma/ },
+    { s: 'smartrx', nom: 'Smart RX', re: /smart/ }, { s: 'winpharma', nom: 'Winpharma', re: /winpharma|\bwin ?auto/ },   // « WIN AUTOPILOTE » = module de Winpharma
     { s: 'pharmavitale', nom: 'Pharmavitale', re: /pharmavitale/ }, { s: 'visiopharm', nom: 'VisioPharm', re: /visio/ }
   ];
   var TX_LGO_N = [200, 300, 500];
@@ -3430,7 +3430,10 @@
   }
   V2.lgoSlug = txLgoSlug;   // rubrique « Logiciels officine » (v2-lgo.js) : même reconnaissance
   // Même ordre que la fiche : saisie de l'équipe, puis annuaire RDV, puis base clients.
+  // La saisie fait foi : un logiciel saisi sans mode d'emploi (Caduciel…) ne laisse pas
+  // l'annuaire en proposer un autre — le commercial choisit.
   function txLgoDetect(pid, saisi) {
+    if (saisi && String(saisi.lgo || '').trim()) return txLgoSlug(saisi.lgo);
     var ri = V2.rdvInfo ? V2.rdvInfo(pid) : null;
     var ca = ((window.CLIENTS_ACTIFS || {}).d || {})[String(pid)];
     return txLgoSlug(saisi && saisi.lgo) || txLgoSlug(ri && ri.logiciel) || txLgoSlug(ca && ca[5]);
@@ -3540,7 +3543,8 @@
           TX_LGO.map(function (l) { return '<option value="' + l.s + '"' + (l.s === tx.lgo.s ? ' selected' : '') + '>' + esc(l.nom) + '</option>'; }).join('') +
         '</select><div class="tx-style-b tx-lgo-n">' +
           TX_LGO_N.map(function (n) { return '<button type="button" class="v2-seg' + (n === tx.lgo.n ? ' on' : '') + '"' + dis + ' onclick="V2.pharmaTxLgoN(' + n + ')">' + n + ' produits</button>'; }).join('') +
-        '</div></div>' + of('lgo').map(row).join('') + '</div>';
+        '</div>' + (tx.lgo.s && !tx.modele ? '<a class="tx-lgo-pas" onclick="V2.pharmaTxClose();V2.go(\'lgo\',\'' + tx.lgo.s + '\')">Voir le pas-à-pas ' + esc(txLgoNom(tx.lgo.s)) + ' ›</a>' : '') +
+        '</div>' + of('lgo').map(row).join('') + '</div>';
     }
     var lib = of('lib');
     var libMsg = tx.docs === null ? '<div class="tx-empty">Chargement de la bibliothèque…</div>'
@@ -3613,7 +3617,11 @@
       // La saisie de l'équipe (Infos officine) passe avant la base clients : lue en différé.
       if (!modele && V2.profil && V2.profil.charger) V2.profil.charger('client', pid).then(function (d) {
         var s1 = txLgoDetect(pid, d);
-        if (tx.lgo.pid === pid && !tx.lgo.touched && s1 && s1 !== tx.lgo.s) { tx.lgo.s = s1; tx.lgo.auto = true; txRender(); }
+        if (tx.lgo.pid === pid && !tx.lgo.touched && s1 !== tx.lgo.s) {
+          var k0 = 'G:' + tx.lgo.s + ':' + tx.lgo.n;   // case déjà cochée : elle suit le logiciel
+          if (tx.sel[k0]) { delete tx.sel[k0]; if (s1) tx.sel['G:' + s1 + ':' + tx.lgo.n] = true; if (tx.surChoix) tx.surChoix(Object.keys(tx.sel)); }
+          tx.lgo.s = s1; tx.lgo.auto = !!s1; txRender();
+        }
       }, function () {});
     }
     if (modele) txMail[pid] = '';
@@ -4484,6 +4492,7 @@
       '.tx-lgo{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:8px}',
       '.tx-lgo-s{min-height:40px;border:1px solid var(--line-strong);border-radius:10px;padding:8px 11px;font:inherit;font-size:14px;color:var(--ip-ink);background:var(--card-2);cursor:pointer}',
       '.tx-lgo .tx-lgo-n{width:auto}',
+      '.tx-lgo-pas{font-size:13px;font-weight:700;color:var(--info,#0050E6);cursor:pointer;min-height:40px;display:inline-flex;align-items:center;text-decoration:underline;text-underline-offset:3px}',
       '.tx-lgo .v2-seg{padding:6px 11px;font-size:12px;font-weight:700;cursor:pointer}',
       '.tx-lgo .v2-seg[disabled],.tx-lgo-s[disabled]{opacity:.45;pointer-events:none}',
       '.tx-l{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}',
